@@ -1,0 +1,5 @@
+*.dSYM
+sscxx
+*.swp
+*.o
+/build
