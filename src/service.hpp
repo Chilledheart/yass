@@ -54,7 +54,8 @@ public:
     acceptor_ =
         std::make_unique<boost::asio::ip::tcp::acceptor>(io_context_, endpoint);
     if (FLAGS_reuse_port) {
-      acceptor_->set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+      acceptor_->set_option(
+          boost::asio::ip::tcp::acceptor::reuse_address(true));
     }
     LOG(WARNING) << "listen to " << endpoint_ << " with upstream "
                  << remote_endpoint_;
@@ -82,8 +83,9 @@ private:
                     boost::asio::ip::tcp::socket socket) {
     if (!error) {
       conn->on_accept(peer_endpoint_, std::move(socket), peer_endpoint_,
-                    remote_endpoint_);
-      conn->set_disconnect_cb([this, conn]() mutable { handleDisconnect(conn); });
+                      remote_endpoint_);
+      conn->set_disconnect_cb(
+          [this, conn]() mutable { handleDisconnect(conn); });
       connections_.push_back(conn);
       LOG(WARNING) << "accepted a new connection total: "
                    << connections_.size();

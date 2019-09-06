@@ -8,23 +8,19 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "config.hpp"
 #include "cipher.hpp"
+#include "config.hpp"
 #include "socks5_server.hpp"
 
 #include <boost/asio.hpp>
 #include <gflags/gflags.h>
 #include <glog/logging.h>
-#include <memory>
 
 using boost::asio::ip::tcp;
 using namespace socks5;
 
-cipher::cipher_method cipher_method;
-
-static
-boost::asio::ip::tcp::endpoint
-resolveEndpoint(boost::asio::io_context &io_context, const std::string &host, uint16_t port) {
+static tcp::endpoint resolveEndpoint(boost::asio::io_context &io_context,
+                                     const std::string &host, uint16_t port) {
   boost::asio::ip::tcp::resolver resolver(io_context);
   auto endpoints = resolver.resolve(host, std::to_string(port));
   return endpoints->endpoint();
@@ -50,13 +46,16 @@ int main(int argc, const char *argv[]) {
     ReadFromConfigfile(FLAGS_configfile);
   }
 
-  if ((cipher_method = cipher::to_cipher_method(FLAGS_method)) == cipher::PLAINTEXT) {
+  if ((cipher_method = cipher::to_cipher_method(FLAGS_method)) ==
+      cipher::PLAINTEXT) {
     fprintf(stderr, "Not supported cipher: %s\n", FLAGS_method.c_str());
     return -1;
   }
 
-  tcp::endpoint endpoint(resolveEndpoint(io_context, FLAGS_local_host, FLAGS_local_port));
-  tcp::endpoint remoteEndpoint(resolveEndpoint(io_context, FLAGS_server_host, FLAGS_server_port));
+  tcp::endpoint endpoint(
+      resolveEndpoint(io_context, FLAGS_local_host, FLAGS_local_port));
+  tcp::endpoint remoteEndpoint(
+      resolveEndpoint(io_context, FLAGS_server_host, FLAGS_server_port));
 
   LOG(WARNING) << "using " << endpoint << " with upstream " << remoteEndpoint;
 

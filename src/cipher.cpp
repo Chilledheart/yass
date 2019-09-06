@@ -32,6 +32,8 @@ extern "C" {
 
 #define MAX_MD_SIZE 64 /* longest known is SHA512 */
 
+cipher::cipher_method cipher_method;
+
 static constexpr int nonce_size[cipher::MAX_CIPHER_METHOD] = {0,  8,  8,
                                                               12, 12, 24};
 static constexpr int key_size[cipher::MAX_CIPHER_METHOD] = {0,  32, 32,

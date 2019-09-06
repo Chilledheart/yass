@@ -4,6 +4,14 @@ set(PACKAGE_NAME      "Yet-Another-Shadow-Socket")
 
 project(${PACKAGE_NAME} CXX C)
 
+option(WX_CONFIG_PATH "Default path to wx-config" "")
+
+if (APPLE)
+  set(WX_CONFIG_PATH
+    "/opt/local/Library/Frameworks/wxWidgets.framework/Versions/wxWidgets/3.1/bin"
+  )
+endif()
+
 if(NOT MSVC)
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -std=c99")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
@@ -54,15 +62,63 @@ add_library(yass_base OBJECT
 
 set_target_properties(yass_base PROPERTIES POSITION_INDEPENDENT_CODE True)
 
-add_executable(yass_client
+add_executable(yass_cli
     src/local.cpp
     $<TARGET_OBJECTS:yass_base>
     )
 
-target_link_libraries(yass_client PRIVATE
+target_link_libraries(yass_cli PUBLIC
     glog
     gflags
     sodium
     mbedcrypto
     jsoncpp
+    boost_thread-mt
+    boost_filesystem-mt
     )
+
+find_program(
+  WX_CONFIG
+  wx-config
+  PATHS
+  ${WX_CONFIG_PATH}
+  )
+if (WX_CONFIG)
+  add_executable(yass
+    src/gui/yass.cpp
+    src/gui/yass_frame.cpp
+    src/gui/panels.cpp
+    src/gui/worker.cpp
+    $<TARGET_OBJECTS:yass_base>
+    )
+  target_include_directories(yass PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+  target_link_libraries(yass PUBLIC
+      glog
+      gflags
+      sodium
+      mbedcrypto
+      jsoncpp
+      boost_thread-mt
+      boost_filesystem-mt
+      )
+
+  # "-framework wxWidgets.framework" fix by wx-config
+  execute_process(COMMAND ${WX_CONFIG} --cxxflags
+    OUTPUT_VARIABLE WX_CONFIG_INCLUDES
+    )
+  string(REGEX REPLACE "\n$" "" WX_CONFIG_INCLUDES "${WX_CONFIG_INCLUDES}")
+  separate_arguments(WX_CONFIG_INCLUDES)
+
+  execute_process(COMMAND ${WX_CONFIG} --libs
+    OUTPUT_VARIABLE WX_CONFIG_LIBS
+    )
+
+  string(REGEX REPLACE "\n$" "" WX_CONFIG_LIBS "${WX_CONFIG_LIBS}")
+
+  target_compile_options(yass PRIVATE ${WX_CONFIG_INCLUDES})
+
+  set_target_properties(yass
+    PROPERTIES LINK_FLAGS "${WX_CONFIG_LIBS}"
+    )
+endif()

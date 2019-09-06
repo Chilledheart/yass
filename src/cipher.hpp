@@ -48,6 +48,22 @@ public:
     }
     return PLAINTEXT;
   }
+  static const char *to_cipher_method_str(cipher_method method) {
+    switch (method) {
+    case SALSA20:
+      return "salsa20";
+    case CHACHA20:
+      return "chacha20";
+    case CHACHA20IETF:
+      return "chacha20-ietf";
+    case CHACHA20POLY1305IETF:
+      return "chacha20-ietf-poly1305";
+    case XCHACHA20POLY1305IETF:
+      return "xchacha20-ietf-poly1305";
+    default:
+      return "plaintext";
+    }
+  }
 
   cipher(const std::string &key, const std::string &password,
          cipher_method method, bool enc = false);
@@ -111,5 +127,7 @@ private:
 
   uint64_t counter_;
 };
+
+extern cipher::cipher_method cipher_method;
 
 #endif // H_CIPHER

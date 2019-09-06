@@ -15,6 +15,8 @@
 
 // TBD: read settinsg from json config file
 
+#define DEFAULT_CONFIGDIR "~/.yass"
+#define DEFAULT_CONFIGFILE "~/.yass/config.json"
 #define DEFAULT_SERVER "0.0.0.0"
 #define DEFAULT_SERVER_PORT 8443
 #define DEFAULT_PASS "<default-pass>"
@@ -37,5 +39,6 @@ DECLARE_int32(timeout);
 DECLARE_int32(fast_open);
 
 void ReadFromConfigfile(const std::string &file_path);
+void SaveToConfigFile(const std::string &file_path);
 
 #endif // H_CONFIG
