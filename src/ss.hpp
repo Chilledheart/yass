@@ -62,7 +62,6 @@ public:
     *i++ = domain_name.size();
 
     memcpy(i, domain_name.c_str(), domain_name.size());
-    LOG(INFO) << i;
     i += domain_name.size();
 
     port = htons(port);
