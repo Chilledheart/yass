@@ -35,7 +35,7 @@ wxBEGIN_EVENT_TABLE(YASSFrame, wxFrame) EVT_MENU(ID_Hello, YASSFrame::OnHello)
   SetMenuBar(menuBar);
 
   CreateStatusBar();
-  SetStatusText("Welcome to Yet-Another-Shadow-Socket!");
+  SetStatusText("READY");
 
   wxPanel *panel = new wxPanel(this, wxID_ANY);
 
@@ -52,8 +52,39 @@ wxBEGIN_EVENT_TABLE(YASSFrame, wxFrame) EVT_MENU(ID_Hello, YASSFrame::OnHello)
   Centre();
 }
 
+std::string YASSFrame::GetServerHost() {
+  return std::string(m_rightpanel->m_serverhost_tc->GetValue());
+}
+
+std::string YASSFrame::GetServerPort() {
+  return std::string(m_rightpanel->m_serverport_tc->GetValue());
+}
+
+std::string YASSFrame::GetPassword() {
+  return std::string(m_rightpanel->m_password_tc->GetValue());
+}
+
+std::string YASSFrame::GetMethod() {
+  return std::string(m_rightpanel->m_method_tc->GetValue());
+}
+
+std::string YASSFrame::GetLocalHost() {
+  return std::string(m_rightpanel->m_localhost_tc->GetValue());
+}
+
+std::string YASSFrame::GetLocalPort() {
+  return std::string(m_rightpanel->m_localport_tc->GetValue());
+}
+
 void YASSFrame::UpdateStatus() {
-  m_rightpanel->m_text->SetLabel(mApp->GetStatus());
+  m_rightpanel->m_serverhost_tc->SetValue(FLAGS_server_host);
+  m_rightpanel->m_serverport_tc->SetValue(std::to_string(FLAGS_server_port));
+  m_rightpanel->m_password_tc->SetValue(FLAGS_password);
+  m_rightpanel->m_method_tc->SetValue(FLAGS_method);
+  m_rightpanel->m_localhost_tc->SetValue(FLAGS_local_host);
+  m_rightpanel->m_localport_tc->SetValue(std::to_string(FLAGS_local_port));
+
+  SetStatusText(mApp->GetStatus());
 }
 
 void YASSFrame::OnExit(wxCommandEvent &event) { Close(true); }

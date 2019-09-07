@@ -19,11 +19,7 @@ static tcp::endpoint resolveEndpoint(boost::asio::io_context &io_context,
   return endpoints->endpoint();
 }
 
-Worker::Worker() : thread_(std::bind(&Worker::WorkFunc, this)) {
-  endpoint_ = resolveEndpoint(io_context_, FLAGS_local_host, FLAGS_local_port);
-  remote_endpoint_ =
-      resolveEndpoint(io_context_, FLAGS_server_host, FLAGS_server_port);
-}
+Worker::Worker() : thread_(std::bind(&Worker::WorkFunc, this)) {}
 
 void Worker::Start() {
   endpoint_ = resolveEndpoint(io_context_, FLAGS_local_host, FLAGS_local_port);

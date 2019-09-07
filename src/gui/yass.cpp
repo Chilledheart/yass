@@ -10,6 +10,8 @@
 #include "yass.hpp"
 #include "yass_frame.hpp"
 
+#include <string>
+
 YASSApp *mApp;
 
 bool YASSApp::OnInit() {
@@ -36,7 +38,16 @@ std::string YASSApp::GetStatus() const {
 
 void YASSApp::LoadConfigFromDisk() { ReadFromConfigfile(FLAGS_configfile); }
 
-void YASSApp::SaveConfigToDisk() { SaveToConfigFile(FLAGS_configfile); }
+void YASSApp::SaveConfigToDisk() {
+  FLAGS_server_host = frame_->GetServerHost();
+  FLAGS_server_port = stoi(frame_->GetServerPort());
+  FLAGS_password = frame_->GetPassword();
+  FLAGS_method = frame_->GetMethod();
+  FLAGS_local_host = frame_->GetLocalHost();
+  FLAGS_local_port = stoi(frame_->GetLocalPort());
+
+  SaveToConfigFile(FLAGS_configfile);
+}
 
 void YASSApp::OnStart() {
   state_ = STARTED;

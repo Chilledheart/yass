@@ -35,6 +35,13 @@ public:
   void OnSetText(wxCommandEvent &event);
 
   wxStaticText *m_text;
+
+  wxTextCtrl *m_serverhost_tc;
+  wxTextCtrl *m_serverport_tc;
+  wxTextCtrl *m_password_tc;
+  wxTextCtrl *m_method_tc;
+  wxTextCtrl *m_localhost_tc;
+  wxTextCtrl *m_localport_tc;
 };
 
 enum { ID_START = 0x101, ID_STOP = 0x102 };

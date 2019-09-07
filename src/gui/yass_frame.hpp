@@ -22,6 +22,13 @@ class YASSFrame : public wxFrame {
 public:
   YASSFrame(const wxString &title, const wxPoint &pos, const wxSize &size);
 
+  std::string GetServerHost();
+  std::string GetServerPort();
+  std::string GetPassword();
+  std::string GetMethod();
+  std::string GetLocalHost();
+  std::string GetLocalPort();
+
   void UpdateStatus();
 
 private:
