@@ -39,7 +39,7 @@ public:
   wxTextCtrl *m_serverhost_tc;
   wxTextCtrl *m_serverport_tc;
   wxTextCtrl *m_password_tc;
-  wxTextCtrl *m_method_tc;
+  wxChoice *m_method_tc;
   wxTextCtrl *m_localhost_tc;
   wxTextCtrl *m_localport_tc;
 };

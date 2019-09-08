@@ -30,7 +30,7 @@ DEFINE_bool(reuse_port, true, "Reuse the local port");
 
 using namespace boost::filesystem;
 
-static path ResolvePath(const std::string &file_path) {
+static path ExpandUser(const std::string &file_path) {
   std::string real_path = file_path;
 
   if (real_path[0] == '~') {
@@ -42,7 +42,7 @@ static path ResolvePath(const std::string &file_path) {
 }
 
 static void CreateConfigDirectory() {
-  path real_path = ResolvePath(DEFAULT_CONFIGDIR);
+  path real_path = ExpandUser(DEFAULT_CONFIGDIR);
   boost::system::error_code ec;
   if (!is_directory(real_path, ec)) {
     create_directory(real_path, ec);
@@ -52,7 +52,7 @@ static void CreateConfigDirectory() {
 void ReadFromConfigfile(const std::string &file_path) {
   Json::Value root;
   boost::filesystem::ifstream fs;
-  path real_path = ResolvePath(file_path);
+  path real_path = ExpandUser(file_path);
 
   CreateConfigDirectory();
 
@@ -84,7 +84,7 @@ void ReadFromConfigfile(const std::string &file_path) {
 void SaveToConfigFile(const std::string &file_path) {
   Json::Value root;
   boost::filesystem::ofstream fs;
-  path real_path = ResolvePath(file_path);
+  path real_path = ExpandUser(file_path);
 
   CreateConfigDirectory();
 

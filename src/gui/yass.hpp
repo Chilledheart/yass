@@ -41,4 +41,6 @@ private:
 
 extern YASSApp *mApp;
 
+wxDECLARE_APP(YASSApp);
+
 #endif

@@ -12,12 +12,18 @@
 #include "yass.hpp"
 #include <wx/stattext.h>
 
-wxBEGIN_EVENT_TABLE(YASSFrame, wxFrame) EVT_MENU(ID_Hello, YASSFrame::OnHello)
-    EVT_MENU(wxID_EXIT, YASSFrame::OnExit)
-        EVT_MENU(wxID_ABOUT, YASSFrame::OnAbout) wxEND_EVENT_TABLE()
+// clang-format off
 
-            YASSFrame::YASSFrame(const wxString &title, const wxPoint &pos,
-                                 const wxSize &size)
+wxBEGIN_EVENT_TABLE(YASSFrame, wxFrame)
+  EVT_MENU(ID_Hello, YASSFrame::OnHello)
+  EVT_MENU(wxID_EXIT, YASSFrame::OnExit)
+  EVT_MENU(wxID_ABOUT, YASSFrame::OnAbout)
+wxEND_EVENT_TABLE()
+
+// clang-format on
+
+YASSFrame::YASSFrame(const wxString &title, const wxPoint &pos,
+                     const wxSize &size)
     : wxFrame(NULL, wxID_ANY, title, pos, size) {
   wxMenu *menuFile = new wxMenu;
   menuFile->Append(ID_Hello, "&Hello...\tCtrl-H",
@@ -65,7 +71,7 @@ std::string YASSFrame::GetPassword() {
 }
 
 std::string YASSFrame::GetMethod() {
-  return std::string(m_rightpanel->m_method_tc->GetValue());
+  return std::string(m_rightpanel->m_method_tc->GetStringSelection());
 }
 
 std::string YASSFrame::GetLocalHost() {
@@ -80,7 +86,7 @@ void YASSFrame::UpdateStatus() {
   m_rightpanel->m_serverhost_tc->SetValue(FLAGS_server_host);
   m_rightpanel->m_serverport_tc->SetValue(std::to_string(FLAGS_server_port));
   m_rightpanel->m_password_tc->SetValue(FLAGS_password);
-  m_rightpanel->m_method_tc->SetValue(FLAGS_method);
+  m_rightpanel->m_method_tc->SetStringSelection(FLAGS_method);
   m_rightpanel->m_localhost_tc->SetValue(FLAGS_local_host);
   m_rightpanel->m_localport_tc->SetValue(std::to_string(FLAGS_local_port));
 
