@@ -7,9 +7,9 @@ project(${PACKAGE_NAME} CXX C)
 option(WX_CONFIG_PATH "Default path to wx-config" "")
 
 if (APPLE)
-  set(WX_CONFIG_PATH
-    "/opt/local/Library/Frameworks/wxWidgets.framework/Versions/wxWidgets/3.1/bin"
-  )
+    set(WX_CONFIG_PATH
+      "/opt/local/Library/Frameworks/wxWidgets.framework/Versions/wxWidgets/3.1/bin"
+    )
 endif()
 
 if(NOT MSVC)
@@ -43,6 +43,14 @@ endif()
 #add_definitions(-DBOOST_ASIO_DISABLE_KQUEUE)
 #add_definitions(-DBOOST_ASIO_ENABLE_HANDLER_TRACKING)
 
+find_library(GLOG_LIB glog)
+find_library(GFLAGS_LIB gflags)
+find_library(SODIUM_LIB sodium)
+find_library(MBEDCRYPTO_LIB mbedcrypto)
+find_library(JSONCPP_LIB jsoncpp)
+find_library(BOOST_THREAD_LIB boost_thread-mt)
+find_library(BOOST_FILESYSTEM_LIB boost_filesystem-mt)
+
 set(files
     src/base64.c
     src/cipher.cpp
@@ -68,57 +76,77 @@ add_executable(yass_cli
     )
 
 target_link_libraries(yass_cli PUBLIC
-    glog
-    gflags
-    sodium
-    mbedcrypto
-    jsoncpp
-    boost_thread-mt
-    boost_filesystem-mt
+    ${GLOG_LIB}
+    ${GFLAGS_LIB}
+    ${SODIUM_LIB}
+    ${MBEDCRYPTO_LIB}
+    ${JSONCPP_LIB}
+    ${BOOST_THREAD_LIB}
+    ${BOOST_FILESYSTEM_LIB}
     )
 
 find_program(
-  WX_CONFIG
-  wx-config
-  PATHS
-  ${WX_CONFIG_PATH}
-  )
-if (WX_CONFIG)
-  add_executable(yass
-    src/gui/yass.cpp
-    src/gui/yass_frame.cpp
-    src/gui/panels.cpp
-    src/gui/worker.cpp
-    $<TARGET_OBJECTS:yass_base>
+    WX_CONFIG
+    wx-config
+    PATHS
+    ${WX_CONFIG_PATH}
     )
-  target_include_directories(yass PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+if (WX_CONFIG)
+    set(APP_NAME yass)
+    set(SRC_FILES
+        src/gui/yass.cpp
+        src/gui/yass_frame.cpp
+        src/gui/panels.cpp
+        src/gui/worker.cpp
+        $<TARGET_OBJECTS:yass_base>
+        )
 
-  target_link_libraries(yass PUBLIC
-      glog
-      gflags
-      sodium
-      mbedcrypto
-      jsoncpp
-      boost_thread-mt
-      boost_filesystem-mt
+    if (APPLE)
+        list(APPEND SRC_FILES wxmac.icns)
+    endif()
+
+    add_executable(${APP_NAME} WIN32 MACOSX_BUNDLE
+        ${SRC_FILES}
+        )
+
+    target_include_directories(${APP_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+    target_link_libraries(${APP_NAME} PUBLIC
+        ${GLOG_LIB}
+        ${GFLAGS_LIB}
+        ${SODIUM_LIB}
+        ${MBEDCRYPTO_LIB}
+        ${JSONCPP_LIB}
+        ${BOOST_THREAD_LIB}
+        ${BOOST_FILESYSTEM_LIB}
+        )
+
+    # "-framework wxWidgets.framework" fix by wx-config
+    execute_process(COMMAND ${WX_CONFIG} --cxxflags
+        OUTPUT_VARIABLE WX_CONFIG_INCLUDES
+      )
+    string(REGEX REPLACE "\n$" "" WX_CONFIG_INCLUDES "${WX_CONFIG_INCLUDES}")
+    separate_arguments(WX_CONFIG_INCLUDES)
+
+    execute_process(COMMAND ${WX_CONFIG} --libs
+        OUTPUT_VARIABLE WX_CONFIG_LIBS
       )
 
-  # "-framework wxWidgets.framework" fix by wx-config
-  execute_process(COMMAND ${WX_CONFIG} --cxxflags
-    OUTPUT_VARIABLE WX_CONFIG_INCLUDES
-    )
-  string(REGEX REPLACE "\n$" "" WX_CONFIG_INCLUDES "${WX_CONFIG_INCLUDES}")
-  separate_arguments(WX_CONFIG_INCLUDES)
+    string(REGEX REPLACE "\n$" "" WX_CONFIG_LIBS "${WX_CONFIG_LIBS}")
 
-  execute_process(COMMAND ${WX_CONFIG} --libs
-    OUTPUT_VARIABLE WX_CONFIG_LIBS
-    )
+    target_compile_options(${APP_NAME} PRIVATE ${WX_CONFIG_INCLUDES})
 
-  string(REGEX REPLACE "\n$" "" WX_CONFIG_LIBS "${WX_CONFIG_LIBS}")
+    set_target_properties(${APP_NAME}
+        PROPERTIES LINK_FLAGS "${WX_CONFIG_LIBS}"
+      )
 
-  target_compile_options(yass PRIVATE ${WX_CONFIG_INCLUDES})
-
-  set_target_properties(yass
-    PROPERTIES LINK_FLAGS "${WX_CONFIG_LIBS}"
-    )
+    if (APPLE)
+        set_target_properties(${APP_NAME} PROPERTIES
+            RESOURCE "wxmac.icns"
+            MACOSX_BUNDLE_ICON_FILE wxmac.icns
+            MACOSX_BUNDLE_COPYRIGHT "Copyright ${PACKAGE_NAME}"
+            MACOSX_BUNDLE_GUI_IDENTIFIER "it.yass.gui"
+            MACOSX_BUNDLE_BUNDLE_NAME ${PACKAGE_NAME}
+          )
+    endif()
 endif()

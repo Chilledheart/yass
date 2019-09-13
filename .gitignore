@@ -2,4 +2,5 @@
 sscxx
 *.swp
 *.o
+.DS_Store
 /build
