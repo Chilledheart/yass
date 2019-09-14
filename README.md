@@ -1,5 +1,7 @@
 # Yet Another Shadow Socket
 
+## Once upon a time, there are (virtual) Nics, so are (shadow) Sockets.
+
 YASS(Yet-Another-Shadow-Socket) acts as a modern cplusplus port of the existing [shadowsocks](http://github.com/shadowsocks) project.
 
 For now, it is heavily developed under macOS.
