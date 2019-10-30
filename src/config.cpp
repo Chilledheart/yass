@@ -45,7 +45,7 @@ static void CreateConfigDirectory() {
   path real_path = ExpandUser(DEFAULT_CONFIGDIR);
   boost::system::error_code ec;
   if (!is_directory(real_path, ec)) {
-    create_directory(real_path, ec);
+    create_directories(real_path, ec);
   }
 }
 
@@ -58,24 +58,33 @@ void ReadFromConfigfile(const std::string &file_path) {
 
   fs.open(real_path);
 
-  fs >> root;
-  if (root.isMember("server")) {
-    FLAGS_server_host = root["server"].asString();
+  if (!fs.is_open()) {
+    LOG(WARNING) << "configure file does not exist";
+    return;
   }
-  if (root.isMember("server_port")) {
-    FLAGS_server_port = root["server_port"].asUInt();
-  }
-  if (root.isMember("method")) {
-    FLAGS_method = root["method"].asString();
-  }
-  if (root.isMember("password")) {
-    FLAGS_password = root["password"].asString();
-  }
-  if (root.isMember("local")) {
-    FLAGS_local_host = root["local"].asString();
-  }
-  if (root.isMember("local_port")) {
-    FLAGS_local_port = root["local_port"].asUInt();
+
+  try {
+    fs >> root;
+    if (root.isMember("server")) {
+      FLAGS_server_host = root["server"].asString();
+    }
+    if (root.isMember("server_port")) {
+      FLAGS_server_port = root["server_port"].asUInt();
+    }
+    if (root.isMember("method")) {
+      FLAGS_method = root["method"].asString();
+    }
+    if (root.isMember("password")) {
+      FLAGS_password = root["password"].asString();
+    }
+    if (root.isMember("local")) {
+      FLAGS_local_host = root["local"].asString();
+    }
+    if (root.isMember("local_port")) {
+      FLAGS_local_port = root["local_port"].asUInt();
+    }
+  } catch (std::exception &e) {
+    LOG(WARNING) << "bad configuration: " << e.what();
   }
 
   cipher_method = cipher::to_cipher_method(FLAGS_method);

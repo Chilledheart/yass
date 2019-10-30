@@ -28,7 +28,7 @@ It is dual-licensed with GPLv2 and Boost Software License.
 ```
     cmake
     boost
-    libglog
+    google-glog
     gflags
     libsodium
     mbedtls
