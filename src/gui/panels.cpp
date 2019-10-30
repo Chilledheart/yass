@@ -30,14 +30,12 @@ LeftPanel::LeftPanel(wxPanel *parent)
 void LeftPanel::OnStart(wxCommandEvent &WXUNUSED(event)) {
   m_start->Disable();
   m_stop->Enable();
-  wxLogMessage("Start");
   mApp->OnStart();
 }
 
 void LeftPanel::OnStop(wxCommandEvent &WXUNUSED(event)) {
   m_stop->Disable();
   m_start->Enable();
-  wxLogMessage("Stop");
   mApp->OnStop();
 }
 

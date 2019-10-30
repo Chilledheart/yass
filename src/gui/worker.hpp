@@ -29,8 +29,13 @@ public:
   const boost::asio::ip::tcp::endpoint &GetEndpoint() const {
     return endpoint_;
   }
+
   const boost::asio::ip::tcp::endpoint &GetRemoteEndpoint() const {
     return remote_endpoint_;
+  }
+
+  size_t currentConnections() const {
+    return socks5_server_ ? socks5_server_->currentConnections() : 0;
   }
 
 private:

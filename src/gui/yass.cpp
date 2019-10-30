@@ -29,7 +29,7 @@ bool YASSApp::OnInit() {
 std::string YASSApp::GetStatus() const {
   std::stringstream ss;
   if (state_ == STARTED) {
-    ss << "Connected with " << worker_.GetRemoteEndpoint();
+    ss << "Connected with " << worker_.GetRemoteEndpoint() << " with conns: " << worker_.currentConnections();
   } else {
     ss << "Disconnected with " << worker_.GetRemoteEndpoint();
   }
@@ -51,16 +51,18 @@ void YASSApp::SaveConfigToDisk() {
 }
 
 void YASSApp::OnStart() {
+  wxLogMessage("Start");
   state_ = STARTED;
   SaveConfigToDisk();
   worker_.Start();
-  frame_->UpdateStatus();
+  frame_->StartStats();
 }
 
 void YASSApp::OnStop() {
+  wxLogMessage("Stop");
   state_ = STOPPED;
   worker_.Stop();
-  frame_->UpdateStatus();
+  frame_->StopStats();
 }
 
 wxIMPLEMENT_APP(YASSApp);

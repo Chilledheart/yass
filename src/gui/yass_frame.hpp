@@ -29,21 +29,26 @@ public:
   std::string GetLocalHost();
   std::string GetLocalPort();
 
+  void StartStats();
+  void StopStats();
   void UpdateStatus();
 
 private:
   void OnHello(wxCommandEvent &event);
   void OnExit(wxCommandEvent &event);
   void OnAbout(wxCommandEvent &event);
+  void OnUpdateStats(wxTimerEvent& event);
 
   LeftPanel *m_leftpanel;
   RightPanel *m_rightpanel;
+  wxTimer *m_update_timer;
 
   wxDECLARE_EVENT_TABLE();
 };
 
 enum {
-  ID_Hello = 1,
+  ID_Hello = 1, // NOP
+  ID_UPDATE_STATS = 2,
 };
 
 #endif // YASS_FRAME

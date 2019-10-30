@@ -70,6 +70,10 @@ public:
     }
   }
 
+  size_t currentConnections() const {
+    return connections_.size();
+  }
+
 private:
   void startAccept() {
     std::shared_ptr<T> conn = std::make_unique<T>(io_context_);

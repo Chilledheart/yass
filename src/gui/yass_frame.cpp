@@ -12,12 +12,15 @@
 #include "yass.hpp"
 #include <wx/stattext.h>
 
+#define UPDATE_STATS_MILLISECONDS 1000
+
 // clang-format off
 
 wxBEGIN_EVENT_TABLE(YASSFrame, wxFrame)
   EVT_MENU(ID_Hello, YASSFrame::OnHello)
   EVT_MENU(wxID_EXIT, YASSFrame::OnExit)
   EVT_MENU(wxID_ABOUT, YASSFrame::OnAbout)
+  EVT_TIMER(ID_UPDATE_STATS, YASSFrame::OnUpdateStats)
 wxEND_EVENT_TABLE()
 
 // clang-format on
@@ -56,6 +59,8 @@ YASSFrame::YASSFrame(const wxString &title, const wxPoint &pos,
   panel->SetSizer(hbox);
 
   Centre();
+
+  m_update_timer = new wxTimer(this, ID_UPDATE_STATS);
 }
 
 std::string YASSFrame::GetServerHost() {
@@ -82,6 +87,15 @@ std::string YASSFrame::GetLocalPort() {
   return std::string(m_rightpanel->m_localport_tc->GetValue());
 }
 
+void YASSFrame::StartStats() {
+  UpdateStatus();
+  m_update_timer->Start(UPDATE_STATS_MILLISECONDS);
+}
+
+void YASSFrame::StopStats() {
+  m_update_timer->Stop();
+}
+
 void YASSFrame::UpdateStatus() {
   m_rightpanel->m_serverhost_tc->SetValue(FLAGS_server_host);
   m_rightpanel->m_serverport_tc->SetValue(std::to_string(FLAGS_server_port));
@@ -102,4 +116,8 @@ void YASSFrame::OnAbout(wxCommandEvent &event) {
 
 void YASSFrame::OnHello(wxCommandEvent &event) {
   wxLogMessage("Hello world from wxWidgets!");
+}
+
+void YASSFrame::OnUpdateStats(wxTimerEvent& event) {
+  UpdateStatus();
 }

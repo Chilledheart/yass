@@ -37,6 +37,7 @@ public:
   void close() {
     if (conn_) {
       conn_->close();
+      conn_.reset();
     }
   }
 
