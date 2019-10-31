@@ -23,10 +23,10 @@ wxBEGIN_EVENT_TABLE(YASSFrame, wxFrame)
   EVT_TIMER(ID_UPDATE_STATS, YASSFrame::OnUpdateStats)
 wxEND_EVENT_TABLE()
 
-// clang-format on
+    // clang-format on
 
-YASSFrame::YASSFrame(const wxString &title, const wxPoint &pos,
-                     const wxSize &size)
+    YASSFrame::YASSFrame(const wxString &title, const wxPoint &pos,
+                         const wxSize &size)
     : wxFrame(NULL, wxID_ANY, title, pos, size) {
   wxMenu *menuFile = new wxMenu;
   menuFile->Append(ID_Hello, "&Hello...\tCtrl-H",
@@ -92,9 +92,7 @@ void YASSFrame::StartStats() {
   m_update_timer->Start(UPDATE_STATS_MILLISECONDS);
 }
 
-void YASSFrame::StopStats() {
-  m_update_timer->Stop();
-}
+void YASSFrame::StopStats() { m_update_timer->Stop(); }
 
 void YASSFrame::UpdateStatus() {
   m_rightpanel->m_serverhost_tc->SetValue(FLAGS_server_host);
@@ -118,6 +116,4 @@ void YASSFrame::OnHello(wxCommandEvent &event) {
   wxLogMessage("Hello world from wxWidgets!");
 }
 
-void YASSFrame::OnUpdateStats(wxTimerEvent& event) {
-  UpdateStatus();
-}
+void YASSFrame::OnUpdateStats(wxTimerEvent &event) { UpdateStatus(); }

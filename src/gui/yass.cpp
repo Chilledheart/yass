@@ -29,7 +29,8 @@ bool YASSApp::OnInit() {
 std::string YASSApp::GetStatus() const {
   std::stringstream ss;
   if (state_ == STARTED) {
-    ss << "Connected with " << worker_.GetRemoteEndpoint() << " with conns: " << worker_.currentConnections();
+    ss << "Connected with " << worker_.GetRemoteEndpoint()
+       << " with conns: " << worker_.currentConnections();
   } else {
     ss << "Disconnected with " << worker_.GetRemoteEndpoint();
   }

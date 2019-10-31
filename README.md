@@ -31,7 +31,7 @@ It is dual-licensed with GPLv2 and Boost Software License.
     google-glog
     gflags
     libsodium
-    mbedtls
+    openssl
     jsoncpp
 ```
 3. run

@@ -44,8 +44,6 @@ public:
   wxTextCtrl *m_localport_tc;
 };
 
-enum { ID_START = 0x101,
-       ID_STOP = 0x102,
-       ID_TIMER = 0x103 };
+enum { ID_START = 0x101, ID_STOP = 0x102, ID_TIMER = 0x103 };
 
 #endif // PANELS

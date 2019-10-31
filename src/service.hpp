@@ -70,9 +70,7 @@ public:
     }
   }
 
-  size_t currentConnections() const {
-    return connections_.size();
-  }
+  size_t currentConnections() const { return connections_.size(); }
 
 private:
   void startAccept() {

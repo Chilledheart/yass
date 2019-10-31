@@ -6,16 +6,23 @@ project(${PACKAGE_NAME} CXX C)
 
 option(WX_CONFIG_PATH "Default path to wx-config" "")
 
-if (APPLE)
-    set(WX_CONFIG_PATH
-      "/opt/local/Library/Frameworks/wxWidgets.framework/Versions/wxWidgets/3.1/bin"
-    )
+# *****************************************************************************************
+#           Baisc Setups
+# *****************************************************************************************
+
+if(NOT MSVC)
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -Wall -Wextra")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 endif()
 
 if(NOT MSVC)
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -std=c99")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 endif()
+
+# *****************************************************************************************
+#           Debug facilities
+# *****************************************************************************************
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
     CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
@@ -35,21 +42,48 @@ if (NOT MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_link_options(-fsanitize=address)
 endif()
 
+#add_definitions(-DBOOST_ASIO_DISABLE_KQUEUE)
+#add_definitions(-DBOOST_ASIO_ENABLE_HANDLER_TRACKING)
+
+# *****************************************************************************************
+#           Support Libraries
+# *****************************************************************************************
+
+if (APPLE)
+    set(WX_CONFIG_PATH
+      "/opt/local/Library/Frameworks/wxWidgets.framework/Versions/wxWidgets/3.1/bin"
+    )
+endif()
+
 if (APPLE)
     include_directories(/opt/local/include)
     link_directories(/opt/local/lib)
 endif()
-
-#add_definitions(-DBOOST_ASIO_DISABLE_KQUEUE)
-#add_definitions(-DBOOST_ASIO_ENABLE_HANDLER_TRACKING)
-
 find_library(GLOG_LIB glog)
 find_library(GFLAGS_LIB gflags)
 find_library(SODIUM_LIB sodium)
-find_library(MBEDCRYPTO_LIB mbedcrypto)
+if (APPLE)
+    find_library(CRYPTO_LIB crypto PATHS /usr/lib NO_DEFAULT_PATH)
+else()
+    find_library(CRYPTO_LIB crypto)
+endif()
 find_library(JSONCPP_LIB jsoncpp)
 find_library(BOOST_THREAD_LIB boost_thread-mt)
 find_library(BOOST_FILESYSTEM_LIB boost_filesystem-mt)
+
+set(SUPPORT_LIBS
+    ${GLOG_LIB}
+    ${GFLAGS_LIB}
+    ${SODIUM_LIB}
+    ${CRYPTO_LIB}
+    ${JSONCPP_LIB}
+    ${BOOST_THREAD_LIB}
+    ${BOOST_FILESYSTEM_LIB}
+    )
+
+# *****************************************************************************************
+#           Source code
+# *****************************************************************************************
 
 set(files
     src/base64.c
@@ -76,13 +110,7 @@ add_executable(yass_cli
     )
 
 target_link_libraries(yass_cli PUBLIC
-    ${GLOG_LIB}
-    ${GFLAGS_LIB}
-    ${SODIUM_LIB}
-    ${MBEDCRYPTO_LIB}
-    ${JSONCPP_LIB}
-    ${BOOST_THREAD_LIB}
-    ${BOOST_FILESYSTEM_LIB}
+    ${SUPPORT_LIBS}
     )
 
 find_program(
@@ -91,6 +119,11 @@ find_program(
     PATHS
     ${WX_CONFIG_PATH}
     )
+
+# *****************************************************************************************
+#           Source code: GUI part
+# *****************************************************************************************
+
 if (WX_CONFIG)
     set(APP_NAME yass)
     set(SRC_FILES
@@ -112,13 +145,7 @@ if (WX_CONFIG)
     target_include_directories(${APP_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
     target_link_libraries(${APP_NAME} PUBLIC
-        ${GLOG_LIB}
-        ${GFLAGS_LIB}
-        ${SODIUM_LIB}
-        ${MBEDCRYPTO_LIB}
-        ${JSONCPP_LIB}
-        ${BOOST_THREAD_LIB}
-        ${BOOST_FILESYSTEM_LIB}
+        ${SUPPORT_LIBS}
         )
 
     # "-framework wxWidgets.framework" fix by wx-config

@@ -15,8 +15,6 @@ extern "C" {
 #include "base64.h"
 }
 
-#include <mbedtls/md.h>
-#include <mbedtls/md5.h>
 #include <sodium/core.h>
 #include <sodium/crypto_aead_chacha20poly1305.h>
 #include <sodium/crypto_aead_xchacha20poly1305.h>
@@ -24,13 +22,31 @@ extern "C" {
 #include <sodium/crypto_stream_salsa20.h>
 #include <sodium/randombytes.h>
 
+#include <openssl/md5.h>
+#include <openssl/sha.h>
+#define internal_md5_ctx MD5_CTX
+#define internal_md5_init MD5_Init
+#define internal_md5_update MD5_Update
+#define internal_md5_final MD5_Final
+
+#define internal_sha1_ctx SHA_CTX
+#define internal_sha1_init SHA1_Init
+#define internal_sha1_update SHA1_Update
+#define internal_sha1_final SHA1_Final
+
 #define SODIUM_BLOCK_SIZE 64
 #define SUBKEY_INFO "ss-subkey"
 
 #define CHUNK_SIZE_LEN 2
 #define CHUNK_SIZE_MASK 0x3FFF
 
-#define MAX_MD_SIZE 64 /* longest known is SHA512 */
+#define MAX_MD_SIZE 64     /* longest known is SHA512 */
+#define MD_MAX_SIZE_256 32 /* longest known is SHA256 or less */
+
+#define HASH_BLOCK_SIZE 128
+#define HASH_BLOCK_SIZE_256 64
+
+#define OUTPUT_SIZE_SHA1 20
 
 cipher::cipher_method cipher_method;
 
@@ -57,8 +73,8 @@ static int parse_key(const std::string &key, uint8_t *skey, size_t skey_len) {
 static int derive_key(const std::string &key, uint8_t *skey, size_t skey_len) {
   const char *pass = key.c_str();
   size_t datal = key.size();
-  mbedtls_md5_context c;
-  unsigned char md_buf[MAX_MD_SIZE];
+  internal_md5_ctx c;
+  unsigned char md_buf[MD_MAX_SIZE_256];
   int addmd;
   unsigned int i, j, mds;
 
@@ -66,15 +82,15 @@ static int derive_key(const std::string &key, uint8_t *skey, size_t skey_len) {
     return skey_len;
 
   mds = 16;
-  mbedtls_md5_init(&c);
+  internal_md5_init(&c);
 
   for (j = 0, addmd = 0; j < skey_len; addmd++) {
-    mbedtls_md5_starts(&c);
+    internal_md5_init(&c);
     if (addmd) {
-      mbedtls_md5_update(&c, md_buf, mds);
+      internal_md5_update(&c, md_buf, mds);
     }
-    mbedtls_md5_update(&c, (uint8_t *)pass, datal);
-    mbedtls_md5_finish(&c, &(md_buf[0]));
+    internal_md5_update(&c, (uint8_t *)pass, datal);
+    internal_md5_final(&(md_buf[0]), &c);
 
     for (i = 0; i < mds; i++, j++) {
       if (j >= skey_len)
@@ -83,9 +99,102 @@ static int derive_key(const std::string &key, uint8_t *skey, size_t skey_len) {
     }
   }
 
-  mbedtls_md5_free(&c);
-
   return skey_len;
+}
+
+static int hmac_sha1_starts(internal_sha1_ctx *ctx, unsigned char *ipad,
+                            unsigned char *opad, const unsigned char *key,
+                            size_t keylen) {
+  int ret = 0;
+  unsigned char sum[MD_MAX_SIZE_256];
+  size_t i;
+
+  if (ctx == NULL || ipad == NULL || opad == NULL)
+    return -1;
+
+  if (keylen > (size_t)HASH_BLOCK_SIZE_256) {
+    internal_sha1_init(ctx);
+    internal_sha1_update(ctx, key, keylen);
+    internal_sha1_final(sum, ctx);
+
+    keylen = OUTPUT_SIZE_SHA1;
+    key = sum;
+  }
+
+  memset(ipad, 0x36, HASH_BLOCK_SIZE_256);
+  memset(opad, 0x5C, HASH_BLOCK_SIZE_256);
+
+  for (i = 0; i < keylen; i++) {
+    ipad[i] = (unsigned char)(ipad[i] ^ key[i]);
+    opad[i] = (unsigned char)(opad[i] ^ key[i]);
+  }
+
+  internal_sha1_init(ctx);
+  internal_sha1_update(ctx, ipad, HASH_BLOCK_SIZE_256);
+
+  memset(sum, 0, sizeof(sum));
+
+  return ret;
+}
+
+static int hmac_sha1_update(internal_sha1_ctx *ctx, unsigned char *ipad,
+                            unsigned char *opad, const unsigned char *input,
+                            size_t ilen) {
+  if (ctx == NULL || ipad == NULL || opad == NULL)
+    return -1;
+
+  internal_sha1_update(ctx, input, ilen);
+
+  return 0;
+}
+
+static int hmac_sha1_finish(internal_sha1_ctx *ctx, unsigned char *ipad,
+                            unsigned char *opad, unsigned char *output) {
+  unsigned char tmp[MD_MAX_SIZE_256];
+
+  if (ctx == NULL || ipad == NULL || opad == NULL)
+    return -1;
+
+  internal_sha1_final(tmp, ctx);
+
+  internal_sha1_init(ctx);
+  internal_sha1_update(ctx, opad, HASH_BLOCK_SIZE_256);
+  internal_sha1_update(ctx, tmp, OUTPUT_SIZE_SHA1);
+  internal_sha1_final(output, ctx);
+
+  return 0;
+}
+
+static int hmac_sha1_reset(internal_sha1_ctx *ctx, unsigned char *ipad,
+                           unsigned char *opad) {
+  if (ctx == NULL || ipad == NULL || opad == NULL)
+    return -1;
+
+  internal_sha1_init(ctx);
+  internal_sha1_update(ctx, ipad, HASH_BLOCK_SIZE_256);
+
+  return 0;
+}
+
+static int hmac_sha1(const unsigned char *key, size_t keylen,
+                     const unsigned char *input, size_t ilen,
+                     unsigned char *output) {
+  internal_sha1_ctx ctx;
+  unsigned char ipad[HASH_BLOCK_SIZE_256], opad[HASH_BLOCK_SIZE_256];
+  int ret;
+
+  internal_sha1_init(&ctx);
+
+  if ((ret = hmac_sha1_starts(&ctx, ipad, opad, key, keylen)) != 0)
+    goto cleanup;
+  if ((ret = hmac_sha1_update(&ctx, ipad, opad, input, ilen)) != 0)
+    goto cleanup;
+  if ((ret = hmac_sha1_finish(&ctx, ipad, opad, output)) != 0)
+    goto cleanup;
+
+cleanup:
+
+  return ret;
 }
 
 /*
@@ -141,64 +250,63 @@ static int derive_key(const std::string &key, uint8_t *skey, size_t skey_len) {
  *
  */
 
-static int crypto_hkdf_extract(const mbedtls_md_info_t *md,
-                               const unsigned char *salt, int salt_len,
+static int crypto_hkdf_extract(const unsigned char *salt, int salt_len,
                                const unsigned char *ikm, int ikm_len,
                                unsigned char *prk);
 
-static int crypto_hkdf_expand(const mbedtls_md_info_t *md,
-                              const unsigned char *prk, int prk_len,
+static int crypto_hkdf_expand(const unsigned char *prk, int prk_len,
                               const unsigned char *info, int info_len,
                               unsigned char *okm, int okm_len);
 
 /* HKDF-Extract + HKDF-Expand */
-static int crypto_hkdf(const mbedtls_md_info_t *md, const unsigned char *salt,
-                       int salt_len, const unsigned char *ikm, int ikm_len,
+static int crypto_hkdf(const unsigned char *salt, int salt_len,
+                       const unsigned char *ikm, int ikm_len,
                        const unsigned char *info, int info_len,
                        unsigned char *okm, int okm_len) {
-  unsigned char prk[MBEDTLS_MD_MAX_SIZE];
+  unsigned char prk[MD_MAX_SIZE_256];
 
-  return crypto_hkdf_extract(md, salt, salt_len, ikm, ikm_len, prk) ||
-         crypto_hkdf_expand(md, prk, mbedtls_md_get_size(md), info, info_len,
-                            okm, okm_len);
+  return crypto_hkdf_extract(salt, salt_len, ikm, ikm_len, prk) ||
+         crypto_hkdf_expand(prk, OUTPUT_SIZE_SHA1, info, info_len, okm,
+                            okm_len);
 }
 
 /* HKDF-Extract(salt, IKM) -> PRK */
-int crypto_hkdf_extract(const mbedtls_md_info_t *md, const unsigned char *salt,
-                        int salt_len, const unsigned char *ikm, int ikm_len,
+int crypto_hkdf_extract(const unsigned char *salt, int salt_len,
+                        const unsigned char *ikm, int ikm_len,
                         unsigned char *prk) {
   int hash_len;
-  unsigned char null_salt[MBEDTLS_MD_MAX_SIZE] = {'\0'};
+  unsigned char null_salt[MD_MAX_SIZE_256] = {'\0'};
 
   if (salt_len < 0) {
     return -1;
   }
 
-  hash_len = mbedtls_md_get_size(md);
+  hash_len = OUTPUT_SIZE_SHA1;
 
   if (salt == NULL) {
     salt = null_salt;
     salt_len = hash_len;
   }
 
-  return mbedtls_md_hmac(md, salt, salt_len, ikm, ikm_len, prk);
+  return hmac_sha1(salt, salt_len, ikm, ikm_len, prk);
 }
 
 /* HKDF-Expand(PRK, info, L) -> OKM */
-int crypto_hkdf_expand(const mbedtls_md_info_t *md, const unsigned char *prk,
-                       int prk_len, const unsigned char *info, int info_len,
+int crypto_hkdf_expand(const unsigned char *prk, int prk_len,
+                       const unsigned char *info, int info_len,
                        unsigned char *okm, int okm_len) {
   int hash_len;
   int N;
   int T_len = 0, where = 0, i, ret;
-  mbedtls_md_context_t ctx;
-  unsigned char T[MBEDTLS_MD_MAX_SIZE];
+  internal_sha1_ctx ctx;
+  unsigned char ipad[HASH_BLOCK_SIZE_256], opad[HASH_BLOCK_SIZE_256];
+  unsigned char T[MD_MAX_SIZE_256];
 
   if (info_len < 0 || okm_len < 0 || okm == NULL) {
     return -1;
   }
 
-  hash_len = mbedtls_md_get_size(md);
+  hash_len = OUTPUT_SIZE_SHA1;
 
   if (prk_len < hash_len) {
     return -1;
@@ -218,28 +326,22 @@ int crypto_hkdf_expand(const mbedtls_md_info_t *md, const unsigned char *prk,
     return -1;
   }
 
-  mbedtls_md_init(&ctx);
-
-  if ((ret = mbedtls_md_setup(&ctx, md, 1)) != 0) {
-    mbedtls_md_free(&ctx);
-    return ret;
-  }
+  internal_sha1_init(&ctx);
 
   /* Section 2.3. */
   for (i = 1; i <= N; i++) {
     unsigned char c = i;
 
-    ret = mbedtls_md_hmac_starts(&ctx, prk, prk_len) ||
-          mbedtls_md_hmac_update(&ctx, T, T_len) ||
-          mbedtls_md_hmac_update(&ctx, info, info_len) ||
+    ret = hmac_sha1_starts(&ctx, ipad, opad, prk, prk_len) ||
+          hmac_sha1_update(&ctx, ipad, opad, T, T_len) ||
+          hmac_sha1_update(&ctx, ipad, opad, info, info_len) ||
           /* The constant concatenated to the end of each T(n) is a single
            * octet. */
-          mbedtls_md_hmac_update(&ctx, &c, 1) ||
-          mbedtls_md_hmac_finish(&ctx, T);
+          hmac_sha1_update(&ctx, ipad, opad, &c, 1) ||
+          hmac_sha1_finish(&ctx, ipad, opad, T);
 
     if (ret != 0) {
-      mbedtls_md_free(&ctx);
-      return ret;
+      goto cleanup;
     }
 
     memcpy(okm + where, T, (i != N) ? hash_len : (okm_len - where));
@@ -247,7 +349,7 @@ int crypto_hkdf_expand(const mbedtls_md_info_t *md, const unsigned char *prk,
     T_len = hash_len;
   }
 
-  mbedtls_md_free(&ctx);
+cleanup:
 
   return 0;
 }
@@ -585,14 +687,8 @@ bool cipher::chunk_encrypt_aead(const IOBuf *plaintext,
 }
 
 void cipher::set_key_aead() {
-  const mbedtls_md_info_t *md = mbedtls_md_info_from_type(MBEDTLS_MD_SHA1);
-  if (md == NULL) {
-    LOG(FATAL) << "SHA1 Digest does not exist";
-  }
-
-  int err =
-      crypto_hkdf(md, salt_, key_len_, key_, key_len_, (uint8_t *)SUBKEY_INFO,
-                  sizeof(SUBKEY_INFO) - 1, skey_, key_len_);
+  int err = crypto_hkdf(salt_, key_len_, key_, key_len_, (uint8_t *)SUBKEY_INFO,
+                        sizeof(SUBKEY_INFO) - 1, skey_, key_len_);
   if (err) {
     LOG(FATAL) << "Unable to generate subkey";
   }

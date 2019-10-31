@@ -31,7 +31,7 @@ public:
   stream(boost::asio::io_context &io_context,
          boost::asio::ip::tcp::endpoint endpoint,
          const std::shared_ptr<Channel> &channel)
-      : socket_(io_context), endpoint_(endpoint), channel_(channel) {
+      : endpoint_(endpoint), socket_(io_context), channel_(channel) {
     assert(channel && "channel must defined to use with stream");
   }
 

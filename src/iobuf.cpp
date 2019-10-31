@@ -97,7 +97,7 @@ IOBuf IOBuf::cloneAsValue() const {
 IOBuf::IOBuf() noexcept {}
 
 IOBuf::IOBuf(IOBuf &&other) noexcept
-    : data_(other.data_), buf_(other.buf_), length_(other.length_),
+    : buf_(other.buf_), data_(other.data_), length_(other.length_),
       capacity_(other.capacity_) {
   // Reset other so it is a clean state to be destroyed.
   other.buf_ = nullptr;

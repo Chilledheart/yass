@@ -40,7 +40,7 @@ public:
     InputIterator i = begin;
     switch (state_) {
     case request_start:
-      if (end - i < sizeof(method_select_request_header)) {
+      if (end - i < (int)sizeof(method_select_request_header)) {
         return std::make_tuple(indeterminate, i);
       }
       memcpy(&req.req_, &*i, sizeof(method_select_request_header));
@@ -51,7 +51,7 @@ public:
       state_ = request;
     case request: {
       bool auth_checked = false;
-      if (end - i < req.nmethods() * sizeof(uint8_t)) {
+      if (end - i < (int)req.nmethods() * (int)sizeof(uint8_t)) {
         return std::make_tuple(indeterminate, i);
       }
       memcpy(&req.methods_, &*i, req.nmethods() * sizeof(uint8_t));
@@ -99,7 +99,7 @@ public:
     InputIterator i = begin;
     switch (state_) {
     case request_start:
-      if (end - i < sizeof(request_header)) {
+      if (end - i < (int)sizeof(request_header)) {
         return std::make_tuple(indeterminate, i);
       }
       memcpy(&req.req_, &*i, sizeof(request_header));
@@ -113,7 +113,7 @@ public:
       i += sizeof(request_header);
       state_ = request_address_start;
     case request_address_start:
-      if (end - i < sizeof(uint8_t)) {
+      if (end - i < (int)sizeof(uint8_t)) {
         return std::make_tuple(indeterminate, i);
       }
       memcpy(&req.atyp_req_.address_type, &*i, sizeof(uint8_t));
@@ -125,7 +125,7 @@ public:
         return std::make_tuple(bad, i);
       }
       size_t address_type_size = req.address_type_size();
-      if (end - i < address_type_size) {
+      if (end - i < (int)address_type_size) {
         return std::make_tuple(indeterminate, i);
       }
       /* deal with header, variable part */
@@ -142,7 +142,8 @@ public:
         break;
       case domain:
         memcpy(&req.atyp_req_.domain_name_len, &*i, sizeof(uint8_t));
-        if (end - i < req.atyp_req_.domain_name_len + sizeof(uint16_t)) {
+        if (end - i <
+            (int)req.atyp_req_.domain_name_len + (int)sizeof(uint16_t)) {
           return std::make_tuple(indeterminate, i);
         }
         i += sizeof(uint8_t);

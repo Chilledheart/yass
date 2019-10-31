@@ -84,7 +84,7 @@ char *base64_encode(char *out, int out_size, const uint8_t *in, int in_size)
     int i_shift = 0;
     int bytes_remaining = in_size;
 
-    if (in_size >= UINT_MAX / 4 ||
+    if (in_size >= (int)UINT_MAX / 4 ||
         out_size < BASE64_SIZE(in_size))
         return NULL;
     ret = dst = out;
