@@ -19,25 +19,64 @@ It is not so good to stay as "SOCKS" (meaning silly rocket some how), but at mos
 ## License
 It is dual-licensed with GPLv2 and Boost Software License.
 
-## Support
-### Installation
+## Build
+### GeneralInstallation/Ubuntu
+1. Install GNU C++ Compiler:
+```
+apt-get install -y build-essential
+```
+2. Install below dependencies:
+```
+apt-get install -y \
+    cmake \
+    ninja-build \
+    libjemalloc-dev \
+    libboost-all-dev \
+    libgoogle-glog-dev \
+    libgflags-dev \
+    libsodium-dev \
+    libssl-dev \
+    libjsoncpp-dev \
+    libwxgtk3.0-dev (optional)
+```
+3. compile the program with default configuration.
+```
+mkdir build
+cd build
+cmake -G Ninja..
+ninja
+```
+4. run
+```
+./build/yass_cli
+```
+
+### macOS
 1. Make sure you have Xcode Command Line Tools installed (Xcode if possible):
    ```xcode-select --install```
 
-2. Install [MacPorts] and ...
+2. Install [MacPorts] and dependencies...
 ```
-    cmake
     boost
+    cmake
     google-glog
     gflags
     libsodium
-    openssl
     jsoncpp
+    jemalloc
+    openssl
+    wxWidgets-3.2
 ```
-3. run
-```yass_client --configfile <path-to-shadowsocks-json>```
+3. use script to build release App under `build` directory.
+```scripts/build.py```
 
-### cipherers
+4. copy `build/yass.app` into `/Application` directory.
+
+## Crypto
+### message digest
+- md5 (used in stream)
+- sha1+hmac (used in aead)
+### ciphers
 - chacha20-ietf-poly1305
 - xchacha20-ietf-poly1305
 - salsa20
@@ -45,9 +84,9 @@ It is dual-licensed with GPLv2 and Boost Software License.
 - chacha20-ietf
 
 ### Operating System
-- macOS Catalina
+- macOS
 - Linux
-- Windows (possible)
+- Windows (incoming)
 
 [MacPorts]: https://www.macports.org/install.php
 [aead]: https://shadowsocks.org/en/spec/AEAD-Ciphers.html

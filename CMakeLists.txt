@@ -59,6 +59,7 @@ if (APPLE)
     include_directories(/opt/local/include)
     link_directories(/opt/local/lib)
 endif()
+find_library(JEMALLOC_LIB jemalloc)
 find_library(GLOG_LIB glog)
 find_library(GFLAGS_LIB gflags)
 find_library(SODIUM_LIB sodium)
@@ -72,6 +73,7 @@ find_library(BOOST_THREAD_LIB boost_thread-mt)
 find_library(BOOST_FILESYSTEM_LIB boost_filesystem-mt)
 
 set(SUPPORT_LIBS
+    ${JEMALLOC_LIB}
     ${GLOG_LIB}
     ${GFLAGS_LIB}
     ${SODIUM_LIB}
