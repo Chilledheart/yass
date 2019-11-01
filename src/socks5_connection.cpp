@@ -27,7 +27,7 @@ Socks5Connection::Socks5Connection(
   downstream_writable_ = false;
 }
 
-Socks5Connection::~Socks5Connection() { close(); }
+Socks5Connection::~Socks5Connection() {}
 
 void Socks5Connection::start() {
   channel_ = std::make_unique<ss::stream>(

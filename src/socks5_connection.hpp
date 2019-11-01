@@ -72,24 +72,20 @@ public:
   /// Enter the start phase, begin to read requests
   void start() override;
 
-  /// Cancel all asynchronous operations on the service
-  void cancel() {
-    boost::system::error_code ec;
-    socket_.cancel(ec);
-  }
-
   /// Close the socket and clean up
   void close() override {
-    LOG(WARNING) << "disconnected with client at stage: "
-                 << Socks5Connection::state_to_str(currentState());
     if (!socket_.is_open()) {
       return;
     }
+    LOG(WARNING) << "disconnected with client at stage: "
+                 << Socks5Connection::state_to_str(currentState());
     boost::system::error_code ec;
     socket_.close(ec);
+    channel_->close();
     auto cb = std::move(disconnect_cb_);
-    cb();
-    channel_->cancel();
+    if (cb) {
+      cb();
+    }
   }
 
 private:

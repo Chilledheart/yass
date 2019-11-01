@@ -74,14 +74,6 @@ public:
                   std::placeholders::_2));
   }
 
-  void cancel() {
-    boost::system::error_code ec;
-    socket_.cancel(ec);
-    if (ec) {
-      LOG(WARNING) << "cancel() error: " << ec;
-    }
-  }
-
   void close() {
     boost::system::error_code ec;
     socket_.close(ec);
