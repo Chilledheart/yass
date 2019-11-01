@@ -69,8 +69,18 @@ else()
     find_library(CRYPTO_LIB crypto)
 endif()
 find_library(JSONCPP_LIB jsoncpp)
-find_library(BOOST_THREAD_LIB boost_thread-mt)
-find_library(BOOST_FILESYSTEM_LIB boost_filesystem-mt)
+find_library(BOOST_FILESYSTEM_LIB boost_filesystem)
+if (NOT BOOST_FILESYSTEM_LIB)
+    find_library(BOOST_FILESYSTEM_LIB boost_filesystem-mt)
+endif()
+find_library(BOOST_SYSTEM_LIB boost_system)
+if (NOT BOOST_SYSTEM_LIB)
+    find_library(BOOST_SYSTEM_LIB boost_system-mt)
+endif()
+find_library(BOOST_THREAD_LIB boost_thread)
+if (NOT BOOST_THREAD_LIB)
+    find_library(BOOST_THREAD_LIB boost_thread-mt)
+endif()
 
 set(SUPPORT_LIBS
     ${JEMALLOC_LIB}
@@ -79,8 +89,9 @@ set(SUPPORT_LIBS
     ${SODIUM_LIB}
     ${CRYPTO_LIB}
     ${JSONCPP_LIB}
-    ${BOOST_THREAD_LIB}
     ${BOOST_FILESYSTEM_LIB}
+    ${BOOST_SYSTEM_LIB}
+    ${BOOST_THREAD_LIB}
     )
 
 # *****************************************************************************************

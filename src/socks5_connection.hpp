@@ -173,23 +173,21 @@ private:
   void disconnected(boost::system::error_code error) override;
 
 private:
-  struct {
-    state state_;
+  state state_;
 
-    method_select_request_parser method_select_request_parser_;
-    method_select_request method_select_request_;
+  method_select_request_parser method_select_request_parser_;
+  method_select_request method_select_request_;
 
-    request_parser request_parser_;
-    request request_;
+  request_parser request_parser_;
+  request request_;
 
-    method_select_response method_select_reply_;
-    reply reply_;
+  method_select_response method_select_reply_;
+  reply reply_;
 
-    std::unique_ptr<ss::request> ss_request_;
+  std::unique_ptr<ss::request> ss_request_;
 
-    /// Buffer for incoming data.
-    std::array<char, 8192> buffer_;
-  };
+  /// Buffer for incoming data.
+  std::array<char, 8192> buffer_;
 
   /// the queue to write upstream
   std::deque<std::shared_ptr<IOBuf>> upstream_;
