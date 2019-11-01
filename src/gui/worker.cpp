@@ -14,8 +14,9 @@ using namespace socks5;
 
 static tcp::endpoint resolveEndpoint(boost::asio::io_context &io_context,
                                      const std::string &host, uint16_t port) {
+  boost::system::error_code ec;
   boost::asio::ip::tcp::resolver resolver(io_context);
-  auto endpoints = resolver.resolve(host, std::to_string(port));
+  auto endpoints = resolver.resolve(host, std::to_string(port), ec);
   return endpoints->endpoint();
 }
 
@@ -32,8 +33,9 @@ void Worker::Start() {
 
   /// listen in the worker thread
   io_context_.post([this]() {
-    socks5_server_ = std::make_unique<Socks5Factory>(io_context_);
-    socks5_server_->listen(endpoint_, remote_endpoint_);
+    socks5_server_ =
+        std::make_unique<Socks5Factory>(io_context_, remote_endpoint_);
+    socks5_server_->listen(endpoint_);
   });
 }
 

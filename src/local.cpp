@@ -10,7 +10,7 @@
 
 #include "cipher.hpp"
 #include "config.hpp"
-#include "socks5_server.hpp"
+#include "socks5_factory.hpp"
 
 #include <boost/asio.hpp>
 #include <gflags/gflags.h>
@@ -21,8 +21,9 @@ using namespace socks5;
 
 static tcp::endpoint resolveEndpoint(boost::asio::io_context &io_context,
                                      const std::string &host, uint16_t port) {
+  boost::system::error_code ec;
   boost::asio::ip::tcp::resolver resolver(io_context);
-  auto endpoints = resolver.resolve(host, std::to_string(port));
+  auto endpoints = resolver.resolve(host, std::to_string(port), ec);
   return endpoints->endpoint();
 }
 
@@ -59,8 +60,8 @@ int main(int argc, const char *argv[]) {
 
   LOG(WARNING) << "using " << endpoint << " with upstream " << remoteEndpoint;
 
-  Socks5Factory factory(io_context);
-  factory.listen(endpoint, remoteEndpoint);
+  Socks5Factory factory(io_context, remoteEndpoint);
+  factory.listen(endpoint);
 
   boost::asio::signal_set signals(io_context);
   signals.add(SIGINT);

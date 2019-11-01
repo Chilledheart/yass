@@ -10,7 +10,7 @@
 
 #include "cipher.hpp"
 #include "config.hpp"
-#include "socks5_server.hpp"
+#include "socks5_factory.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
@@ -46,7 +46,7 @@ private:
   boost::asio::executor_work_guard<boost::asio::io_context::executor_type>
       work_guard_;
 
-  std::unique_ptr<socks5::Socks5Factory> socks5_server_;
+  std::unique_ptr<Socks5Factory> socks5_server_;
   boost::asio::ip::tcp::endpoint endpoint_;
   boost::asio::ip::tcp::endpoint remote_endpoint_;
 

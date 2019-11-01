@@ -1,5 +1,5 @@
 //
-// service.hpp
+// connection_factory.hpp
 // ~~~~~~~~~~
 //
 // Copyright (c) 2019 James Hu (hukeyue at hotmail dot com)
@@ -8,8 +8,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef H_SERVICE
-#define H_SERVICE
+#ifndef H_CONNECTION_FACTORY
+#define H_CONNECTION_FACTORY
 
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/error.hpp>
@@ -23,34 +23,16 @@
 #include <utility>
 
 #include "config.hpp"
-#include "protocol.hpp"
-
-class Service {
-public:
-  Service(boost::asio::io_context &io_context) : io_context_(io_context) {}
-
-  boost::asio::io_context &io_context() { return io_context_; }
-
-  virtual ~Service() {}
-
-  virtual void on_accept(boost::asio::ip::tcp::endpoint endpoint,
-                         boost::asio::ip::tcp::socket &&socket,
-                         boost::asio::ip::tcp::endpoint peer_endpoint,
-                         boost::asio::ip::tcp::endpoint remote_endpoint) = 0;
-
-private:
-  boost::asio::io_context &io_context_;
-};
+#include "connection.hpp"
 
 template <class T> class ServiceFactory {
 public:
-  ServiceFactory(boost::asio::io_context &io_context)
-      : io_context_(io_context) {}
+  ServiceFactory(boost::asio::io_context &io_context,
+                 const boost::asio::ip::tcp::endpoint &remote_endpoint)
+      : io_context_(io_context), remote_endpoint_(remote_endpoint) {}
 
-  void listen(const boost::asio::ip::tcp::endpoint &endpoint,
-              const boost::asio::ip::tcp::endpoint &remote_endpoint) {
+  void listen(const boost::asio::ip::tcp::endpoint &endpoint) {
     endpoint_ = endpoint;
-    remote_endpoint_ = remote_endpoint;
     acceptor_ =
         std::make_unique<boost::asio::ip::tcp::acceptor>(io_context_, endpoint);
     if (FLAGS_reuse_port) {
@@ -74,7 +56,8 @@ public:
 
 private:
   void startAccept() {
-    std::shared_ptr<T> conn = std::make_unique<T>(io_context_);
+    std::shared_ptr<T> conn =
+        std::make_unique<T>(io_context_, remote_endpoint_);
     acceptor_->async_accept(peer_endpoint_,
                             std::bind(&ServiceFactory<T>::handleAccept, this,
                                       conn, std::placeholders::_1,
@@ -84,11 +67,11 @@ private:
   void handleAccept(std::shared_ptr<T> conn, boost::system::error_code error,
                     boost::asio::ip::tcp::socket socket) {
     if (!error) {
-      conn->on_accept(peer_endpoint_, std::move(socket), peer_endpoint_,
-                      remote_endpoint_);
+      conn->on_accept(std::move(socket), endpoint_, peer_endpoint_);
       conn->set_disconnect_cb(
           [this, conn]() mutable { handleDisconnect(conn); });
       connections_.push_back(conn);
+      conn->start();
       LOG(WARNING) << "accepted a new connection total: "
                    << connections_.size();
       startAccept();
@@ -106,13 +89,13 @@ private:
 
 private:
   boost::asio::io_context &io_context_;
+  const boost::asio::ip::tcp::endpoint remote_endpoint_;
+
   boost::asio::ip::tcp::endpoint endpoint_;
   boost::asio::ip::tcp::endpoint peer_endpoint_;
-
-  boost::asio::ip::tcp::endpoint remote_endpoint_;
 
   std::unique_ptr<boost::asio::ip::tcp::acceptor> acceptor_;
   std::vector<std::shared_ptr<T>> connections_;
 };
 
-#endif // H_SERVICE
+#endif // H_CONNECTION_FACTORY

@@ -12,9 +12,9 @@
 #define H_SOCKS5_CONNECTION
 
 #include "channel.hpp"
+#include "connection.hpp"
 #include "iobuf.hpp"
 #include "protocol.hpp"
-#include "service.hpp"
 #include "socks5.hpp"
 #include "socks5_request.hpp"
 #include "socks5_request_parser.hpp"
@@ -30,7 +30,8 @@ namespace socks5 {
 /// The ultimate service class to deliever the network traffic to the remote
 /// endpoint
 class Socks5Connection : public std::enable_shared_from_this<Socks5Connection>,
-                         public Channel {
+                         public Channel,
+                         public Connection {
 public:
   /// The state of service
   enum state {
@@ -61,21 +62,15 @@ public:
   /// Construct the service with io context and socket
   ///
   /// \param io_context the io context associated with the service
-  /// \param socket the socket bound to the service
-  /// \param endpoint the service socket's endpoint
-  /// \param peer_endpoint the peer endpoint
   /// \param remote_endpoint the upstream's endpoint
   Socks5Connection(boost::asio::io_context &io_context,
-                   boost::asio::ip::tcp::socket &&socket,
-                   const boost::asio::ip::tcp::endpoint &endpoint,
-                   const boost::asio::ip::tcp::endpoint &peer_endpoint,
                    const boost::asio::ip::tcp::endpoint &remote_endpoint);
 
   /// Destruct the service
   ~Socks5Connection();
 
   /// Enter the start phase, begin to read requests
-  void start();
+  void start() override;
 
   /// Cancel all asynchronous operations on the service
   void cancel() {
@@ -84,7 +79,7 @@ public:
   }
 
   /// Close the socket and clean up
-  void close() {
+  void close() override {
     LOG(WARNING) << "disconnected with client at stage: "
                  << Socks5Connection::state_to_str(currentState());
     if (!socket_.is_open()) {
@@ -96,9 +91,6 @@ public:
     cb();
     channel_->cancel();
   }
-
-  /// set callback
-  void set_disconnect_cb(std::function<void()> cb) { disconnect_cb_ = cb; }
 
 private:
   /// dispatch the command to delegate
@@ -185,14 +177,6 @@ private:
   void disconnected(boost::system::error_code error) override;
 
 private:
-  /// the io context associated with
-  boost::asio::io_context &io_context_;
-  /// the socket the service bound with
-  boost::asio::ip::tcp::socket socket_;
-
-  /// the callback invoked when disconnect event happens
-  std::function<void()> disconnect_cb_;
-
   struct {
     state state_;
 
@@ -215,13 +199,6 @@ private:
   std::deque<std::shared_ptr<IOBuf>> upstream_;
   /// the flag to mark current write
   bool upstream_writable_;
-
-  /// service's bound endpoint
-  const boost::asio::ip::tcp::endpoint endpoint_;
-  /// the peer endpoint the connection connects
-  const boost::asio::ip::tcp::endpoint peer_endpoint_;
-  /// the upstream endpoint to be established with
-  const boost::asio::ip::tcp::endpoint remote_endpoint_;
 
   /// the upstream the service bound with
   std::unique_ptr<ss::stream> channel_;

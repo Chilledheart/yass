@@ -18,13 +18,9 @@ extern cipher::cipher_method cipher_method;
 namespace socks5 {
 
 Socks5Connection::Socks5Connection(
-    boost::asio::io_context &io_context, boost::asio::ip::tcp::socket &&socket,
-    const boost::asio::ip::tcp::endpoint &endpoint,
-    const boost::asio::ip::tcp::endpoint &peer_endpoint,
+    boost::asio::io_context &io_context,
     const boost::asio::ip::tcp::endpoint &remote_endpoint)
-    : io_context_(io_context), socket_(std::move(socket)), state_(),
-      endpoint_(endpoint), peer_endpoint_(peer_endpoint),
-      remote_endpoint_(remote_endpoint),
+    : Connection(io_context, remote_endpoint), state_(),
       encoder_(new cipher("", FLAGS_password, cipher_method, true)),
       decoder_(new cipher("", FLAGS_password, cipher_method)) {
   upstream_writable_ = false;
@@ -287,16 +283,15 @@ void Socks5Connection::processReceivedData(
           // TBD fix AAAA record
           // Get a list of endpoints corresponding to the SOCKS 5 domain name.
           boost::asio::ip::tcp::resolver resolver(io_context_);
-          auto endpoints = resolver.resolve(request_.domain_name(),
-                                            std::to_string(request_.port()),
-                                            error);
+          auto endpoints = resolver.resolve(
+              request_.domain_name(), std::to_string(request_.port()), error);
           endpoint = endpoints->endpoint();
           if (error) {
-            LOG(ERROR) << "[dns] reply with error: " << error
-              << " for domain " << request_.domain_name();
+            LOG(ERROR) << "[dns] reply with error: " << error << " for domain "
+                       << request_.domain_name();
           } else {
             LOG(WARNING) << "[dns] reply with endpoint: " << endpoint
-              << " for domain " << request_.domain_name();
+                         << " for domain " << request_.domain_name();
           }
         }
         reply_.set_endpoint(endpoint);
