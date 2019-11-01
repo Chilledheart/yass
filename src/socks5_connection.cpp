@@ -288,10 +288,16 @@ void Socks5Connection::processReceivedData(
           // Get a list of endpoints corresponding to the SOCKS 5 domain name.
           boost::asio::ip::tcp::resolver resolver(io_context_);
           auto endpoints = resolver.resolve(request_.domain_name(),
-                                            std::to_string(request_.port()));
+                                            std::to_string(request_.port()),
+                                            error);
           endpoint = endpoints->endpoint();
-          LOG(WARNING) << "[dns] reply with endpoint: " << endpoint
-                       << " for domain " << request_.domain_name();
+          if (error) {
+            LOG(ERROR) << "[dns] reply with error: " << error
+              << " for domain " << request_.domain_name();
+          } else {
+            LOG(WARNING) << "[dns] reply with endpoint: " << endpoint
+              << " for domain " << request_.domain_name();
+          }
         }
         reply_.set_endpoint(endpoint);
       }
@@ -305,7 +311,6 @@ void Socks5Connection::processReceivedData(
       start_read(); // continously read
       break;
     case state_error:
-    defaults:
       error = boost::system::errc::make_error_code(
           boost::system::errc::bad_message);
       break;
