@@ -8,8 +8,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef H_SOCKS5_REQUEST
-#define H_SOCKS5_REQUEST
+#ifndef H_CORE_SOCKS5_REQUEST
+#define H_CORE_SOCKS5_REQUEST
 
 #include "protocol.hpp"
 #include "socks5.hpp"
@@ -85,4 +85,4 @@ private:
   address_type_header atyp_req_;
 };
 } // namespace socks5
-#endif // H_SOCKS5_REQUEST
+#endif // H_CORE_SOCKS5_REQUEST

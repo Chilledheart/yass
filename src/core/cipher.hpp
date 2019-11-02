@@ -8,8 +8,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef H_CIPHER
-#define H_CIPHER
+#ifndef H_CORE_CIPHER
+#define H_CORE_CIPHER
 
 #include <cstdint>
 #include <functional>
@@ -130,4 +130,4 @@ private:
 
 extern cipher::cipher_method cipher_method;
 
-#endif // H_CIPHER
+#endif // H_CORE_CIPHER

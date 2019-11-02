@@ -8,8 +8,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef H_SOCKS5_REQUEST_PARSER
-#define H_SOCKS5_REQUEST_PARSER
+#ifndef H_CORE_SOCKS5_REQUEST_PARSER
+#define H_CORE_SOCKS5_REQUEST_PARSER
 
 #include <boost/system/error_code.hpp>
 #include <cstdlib>
@@ -182,4 +182,4 @@ private:
 
 } // namespace socks5
 
-#endif // H_SOCKS5_REQUEST_PARSER
+#endif // H_CORE_SOCKS5_REQUEST_PARSER

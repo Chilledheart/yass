@@ -8,8 +8,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef H_SOCKS5
-#define H_SOCKS5
+#ifndef H_CORE_SOCKS5
+#define H_CORE_SOCKS5
 
 #include <array>
 #include <boost/asio/buffers_iterator.hpp>
@@ -57,14 +57,15 @@ struct method_select_request_header {
 struct method_select_response {
   uint8_t ver;
   uint8_t method;
-
-  static method_select_response stock_reply(uint8_t method = no_auth_required) {
-    method_select_response resp;
-    resp.ver = version;
-    resp.method = method;
-    return resp;
-  }
 } __attribute__((packed, aligned(1)));
+
+inline method_select_response
+method_select_response_stock_reply(uint8_t method = no_auth_required) {
+  method_select_response resp;
+  resp.ver = version;
+  resp.method = method;
+  return resp;
+}
 
 // In an address field (DST.ADDR, BND.ADDR), the ATYP field specifies
 //    the type of address contained within the field:
@@ -255,4 +256,4 @@ private:
 
 } // namespace socks5
 
-#endif // H_SOCKS5
+#endif // H_CORE_SOCKS5

@@ -56,9 +56,6 @@ public:
     return "unknown";
   }
 
-  /// Return current state of service
-  state currentState() const { return state_; }
-
   /// Construct the service with io context and socket
   ///
   /// \param io_context the io context associated with the service
@@ -73,91 +70,136 @@ public:
   void start() override;
 
   /// Close the socket and clean up
-  void close() override {
-    if (!socket_.is_open()) {
-      return;
-    }
-    LOG(WARNING) << "disconnected with client at stage: "
-                 << Socks5Connection::state_to_str(currentState());
-    boost::system::error_code ec;
-    socket_.close(ec);
-    channel_->close();
-    auto cb = std::move(disconnect_cb_);
-    if (cb) {
-      cb();
-    }
-  }
+  void close() override;
 
 private:
-  /// dispatch the command to delegate
-  boost::system::error_code
-  performCmdOps(const std::shared_ptr<Socks5Connection> &delegate,
-                command_type command, reply *reply);
-
-  /// perform cmd connect request
-  boost::system::error_code onCmdConnect(ByteRange vaddress, reply *reply);
-
-  /// handle with connnect event (downstream)
-  void onConnect();
-
-  /// handle the read data from stream read event (downstream)
-  void onStreamRead(std::shared_ptr<IOBuf> buf);
-
-  /// handle the written data from stream write event (downstream)
-  void onStreamWrite(std::shared_ptr<IOBuf> buf);
-
-  /// handle with disconnect event (downstream)
-  void onDisconnect(boost::system::error_code error);
-
-  /// flush downstream and try to write if any in queue
-  void performDownstreamFlush();
-
-  /// write the given data to downstream
-  void performDownstreamWrite(std::shared_ptr<IOBuf> buf);
-
-  /// write the given data to upstream
-  void performUpstreamWrite(std::shared_ptr<IOBuf> buf);
-
-  /// flush upstream and try to write if any in queue
-  void performUpstreamFlush();
+  /// flag to mark connection is closed
+  bool closed_ = true;
 
 private:
-  /// Start the read procedure
-  void start_read();
-
-  /// Write the given buf with the endpoint
+  /// Get the state machine to the given state
+  /// state(Read)            state(Write)
+  /// method_select->ReadMethodSelect
+  ///                        method_select->WriteMethodSelect
+  /// handshake->ReadHandshake
+  ///          ->PerformCmdOps
+  ///          ->ResolveDns
+  ///                        handshake->WriteHandShake
+  /// stream->ReadStream
+  ///                        stream->WriteStream
   ///
-  /// \param buf the buffer used to write to socket
-  void start_write(std::shared_ptr<IOBuf> buf);
-
-  /// set the state machine to the given state
+  /// Return current state of service
+  state CurrentState() const { return state_; }
+  /// Set the state machine to the given state
   /// \param nextState the state the service would be set to
-  void setState(state nextState) { state_ = nextState; }
+  void SetState(state nextState) { state_ = nextState; }
 
-  /// read method select request
-  void readMethodSelect();
-  /// read handshake request
-  void readHandshake();
-  /// read from stream
-  void readStream();
+  /// Start to read method select request
+  void ReadMethodSelect();
+  /// Start to read handshake request
+  void ReadHandshake();
+  /// Start to read stream
+  void ReadStream();
 
   /// write method select response
-  void writeMethodSelect();
+  void WriteMethodSelect();
   /// write handshake response
-  void writeHandshake(reply *reply);
+  /// \param reply the reply used to write to socket
+  void WriteHandshake(reply *reply);
   /// write to stream
-  void writeStream(std::shared_ptr<IOBuf> buf);
+  /// \param buf the buffer used to write to socket
+  void WriteStream(std::shared_ptr<IOBuf> buf);
 
-  /// process the recevied data
-  void processReceivedData(const std::shared_ptr<Socks5Connection> &delegate,
-                           std::shared_ptr<IOBuf> buf,
-                           boost::system::error_code error,
-                           size_t bytes_transferred);
-  /// process the sent data
-  void processSentData(const std::shared_ptr<Socks5Connection> &delegate,
-                       std::shared_ptr<IOBuf> buf,
-                       boost::system::error_code error,
-                       size_t bytes_transferred);
+  /// dispatch the command to delegate
+  /// \param self pointer to self
+  /// \param command command type
+  /// \param reply reply to given command type
+  static boost::system::error_code
+  PerformCmdOps(std::shared_ptr<Socks5Connection> self, command_type command,
+                reply *reply);
+
+  /// Process the recevied data
+  /// \param self pointer to self
+  /// \param buf pointer to received buffer
+  /// \param error the error state
+  /// \param bytes_transferred transferred bytes
+  static void ProcessReceivedData(std::shared_ptr<Socks5Connection> self,
+                                  std::shared_ptr<IOBuf> buf,
+                                  boost::system::error_code error,
+                                  size_t bytes_transferred);
+  /// Process the sent data
+  /// \param self pointer to self
+  /// \param buf pointer to sent buffer
+  /// \param error the error state
+  /// \param bytes_transferred transferred bytes
+  static void ProcessSentData(std::shared_ptr<Socks5Connection> self,
+                              std::shared_ptr<IOBuf> buf,
+                              boost::system::error_code error,
+                              size_t bytes_transferred);
+  /// state machine
+  state state_;
+
+  /// Buffer for incoming data (temporary).
+  std::array<char, SOCKET_BUF_SIZE> buffer_;
+
+  /// parser of method select request
+  method_select_request_parser method_select_request_parser_;
+  /// copy of method select request
+  method_select_request method_select_request_;
+
+  /// parser of handshake request
+  request_parser request_parser_;
+  /// copy of handshake request
+  request request_;
+
+  /// copy of method select response
+  method_select_response method_select_reply_;
+  /// copy of handshake response
+  reply reply_;
+
+  /// copy of upstream request
+  std::unique_ptr<ss::request> ss_request_;
+
+private:
+  /// perform cmd connect request
+  boost::system::error_code OnCmdConnect(ByteRange vaddress, reply *reply);
+
+  /// handle with connnect event (downstream)
+  void OnConnect();
+
+  /// handle the read data from stream read event (downstream)
+  void OnStreamRead(std::shared_ptr<IOBuf> buf);
+
+  /// handle the written data from stream write event (downstream)
+  void OnStreamWrite(std::shared_ptr<IOBuf> buf);
+
+  /// handle with disconnect event (downstream)
+  void OnDisconnect(boost::system::error_code error);
+
+  /// flush downstream and try to write if any in queue
+  void OnDownstreamWriteFlush();
+
+  /// write the given data to downstream
+  void OnDownstreamWrite(std::shared_ptr<IOBuf> buf);
+
+  /// flush upstream and try to write if any in queue
+  void OnUpstreamWriteFlush();
+
+  /// write the given data to upstream
+  void OnUpstreamWrite(std::shared_ptr<IOBuf> buf);
+
+  /// the queue to write upstream
+  std::deque<std::shared_ptr<IOBuf>> upstream_;
+  /// the flag to mark current write
+  bool upstream_writable_ = false;
+
+  /// the upstream the service bound with
+  std::unique_ptr<ss::stream> channel_;
+
+  /// the queue to write downstream
+  std::deque<std::shared_ptr<IOBuf>> downstream_;
+  /// the flag to mark current write
+  bool downstream_writable_ = false;
 
 private:
   /// handle with connnect event (upstream)
@@ -173,42 +215,14 @@ private:
   void disconnected(boost::system::error_code error) override;
 
 private:
-  state state_;
-
-  method_select_request_parser method_select_request_parser_;
-  method_select_request method_select_request_;
-
-  request_parser request_parser_;
-  request request_;
-
-  method_select_response method_select_reply_;
-  reply reply_;
-
-  std::unique_ptr<ss::request> ss_request_;
-
-  /// Buffer for incoming data.
-  std::array<char, 8192> buffer_;
-
-  /// the queue to write upstream
-  std::deque<std::shared_ptr<IOBuf>> upstream_;
-  /// the flag to mark current write
-  bool upstream_writable_;
-
-  /// the upstream the service bound with
-  std::unique_ptr<ss::stream> channel_;
-  /// the encode cipher
+  /// encode cipher to perform data encoder for upstream
   std::unique_ptr<cipher> encoder_;
-  /// the decode cipher
+  /// decode cipher to perform data decoder from upstream
   std::unique_ptr<cipher> decoder_;
 
-  /// the queue to write downstream
-  std::deque<std::shared_ptr<IOBuf>> downstream_;
-  /// the flag to mark current write
-  bool downstream_writable_;
-
-  /// read statistics number
+  /// statistics of read bytes (non-encoded)
   size_t rbytes_transferred_ = 0;
-  /// write statistics number
+  /// statistics of write bytes (non-encoded)
   size_t wbytes_transferred_ = 0;
 };
 

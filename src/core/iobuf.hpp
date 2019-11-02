@@ -13,8 +13,8 @@
 #include <cstdint>
 #include <glog/logging.h>
 
-#ifndef H_IOBUF
-#define H_IOBUF
+#ifndef H_CORE_IOBUF
+#define H_CORE_IOBUF
 
 class ByteRange {
 public:
@@ -346,4 +346,4 @@ inline std::unique_ptr<IOBuf> IOBuf::copyBuffer(const std::string &buf,
   return copyBuffer(buf.data(), buf.size(), headroom, minTailroom);
 }
 
-#endif // H_IOBUF
+#endif // H_CORE_IOBUF

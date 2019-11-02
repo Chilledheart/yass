@@ -99,16 +99,24 @@ set(SUPPORT_LIBS
 # *****************************************************************************************
 
 set(files
-    src/base64.c
-    src/cipher.cpp
+    src/core/base64.c
+    src/core/cipher.cpp
+    src/core/iobuf.cpp
+    src/core/socks5_request_parser.cpp
     src/config.cpp
     src/socks5_connection.cpp
-    src/socks5_request_parser.cpp
-    src/iobuf.cpp
     )
 
 set(hfils
-    src/base64.h
+    src/core/base64.h
+    src/core/cipher.hpp
+    src/core/iobuf.hpp
+    src/core/ss.hpp
+    src/core/socks5.hpp
+    src/core/socks5_request.hpp
+    src/core/socks5_request_parser.hpp
+    src/config.hpp
+    src/socks5_connection.hpp
     )
 
 add_library(yass_base OBJECT
@@ -116,11 +124,18 @@ add_library(yass_base OBJECT
     )
 
 set_target_properties(yass_base PROPERTIES POSITION_INDEPENDENT_CODE True)
+target_include_directories(yass_base PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core)
 
 add_executable(yass_cli
-    src/local.cpp
+    src/cli/cli.cpp
     $<TARGET_OBJECTS:yass_base>
     )
+
+target_include_directories(yass_cli PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core)
 
 target_link_libraries(yass_cli PUBLIC
     ${SUPPORT_LIBS}
@@ -155,7 +170,11 @@ if (WX_CONFIG)
         ${SRC_FILES}
         )
 
-    target_include_directories(${APP_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_include_directories(${APP_NAME} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui
+        )
 
     target_link_libraries(${APP_NAME} PUBLIC
         ${SUPPORT_LIBS}
