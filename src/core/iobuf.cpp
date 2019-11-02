@@ -67,7 +67,7 @@ IOBuf::IOBuf(CopyBufferOp /* op */, const void *buf, std::size_t size,
     : IOBuf(CREATE, headroom + size + minTailroom) {
   advance(headroom);
   if (size > 0) {
-    assert(buf != nullptr);
+    DCHECK(buf != nullptr);
     memcpy(mutable_data(), buf, size);
     append(size);
   }
@@ -111,8 +111,8 @@ IOBuf::IOBuf(const IOBuf &other) { *this = other.cloneAsValue(); }
 IOBuf::IOBuf(InternalConstructor, uint8_t *buf, std::size_t capacity,
              uint8_t *data, std::size_t length) noexcept
     : buf_(buf), data_(data), length_(length), capacity_(capacity) {
-  assert(data >= buf);
-  assert(data + length <= buf + capacity);
+  DCHECK(data >= buf);
+  DCHECK(data + length <= buf + capacity);
 }
 
 IOBuf &IOBuf::operator=(IOBuf &&other) noexcept {
@@ -190,7 +190,7 @@ void IOBuf::reserveSlow(std::size_t minHeadroom, std::size_t minTailroom) {
     newAllocatedCapacity = goodExtBufferSize(newCapacity);
     newBuffer = static_cast<uint8_t *>(checkedMalloc(newAllocatedCapacity));
     if (length_ > 0) {
-      assert(data_ != nullptr);
+      DCHECK(data_ != nullptr);
       memcpy(newBuffer + minHeadroom, data_, length_);
     }
     newHeadroom = minHeadroom;

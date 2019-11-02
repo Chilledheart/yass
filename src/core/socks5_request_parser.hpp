@@ -171,6 +171,7 @@ public:
       }
       return std::make_tuple(good, i);
     }
+    return std::make_tuple(bad, i);
   }
 
 private:

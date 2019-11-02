@@ -22,6 +22,8 @@ public:
   uint8_t ver() const { return req_.ver; }
   uint8_t nmethods() const { return req_.nmethods; }
 
+  size_t length() const { return sizeof(req_) + req_.nmethods; }
+
 private:
   friend class method_select_request_parser;
   method_select_request_header req_;
@@ -39,12 +41,16 @@ public:
     case ipv4:
       return sizeof(boost::asio::ip::address_v4::bytes_type) + sizeof(uint16_t);
     case domain:
-      return sizeof(uint8_t) + sizeof(uint16_t); // indeterminant
+      return sizeof(uint8_t) + atyp_req_.domain_name_len + sizeof(uint16_t);
     case ipv6:
       return sizeof(boost::asio::ip::address_v6::bytes_type) + sizeof(uint16_t);
     default:
       return 0;
     }
+  }
+
+  size_t length() const {
+    return sizeof(req_) + sizeof(uint8_t) + address_type_size();
   }
 
   boost::asio::ip::tcp::endpoint endpoint() const {

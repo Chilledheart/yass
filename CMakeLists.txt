@@ -37,7 +37,7 @@ if (UNIX AND ${HAS_CLANG} AND
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcolor-diagnostics")
 endif()
 
-if (NOT MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+if (NOT MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug" AND HAS_CLANG)
     add_compile_options(-g3 -fsanitize=address)
     add_link_options(-fsanitize=address)
 endif()
@@ -77,9 +77,10 @@ find_library(BOOST_SYSTEM_LIB boost_system)
 if (NOT BOOST_SYSTEM_LIB)
     find_library(BOOST_SYSTEM_LIB boost_system-mt)
 endif()
-find_library(BOOST_THREAD_LIB boost_thread)
-if (NOT BOOST_THREAD_LIB)
-    find_library(BOOST_THREAD_LIB boost_thread-mt)
+if (UNIX AND NOT APPLE)
+    find_library(PTHREAD_LIB pthread)
+else()
+    set(PTHREAD_LIB)
 endif()
 
 set(SUPPORT_LIBS
@@ -91,7 +92,7 @@ set(SUPPORT_LIBS
     ${JSONCPP_LIB}
     ${BOOST_FILESYSTEM_LIB}
     ${BOOST_SYSTEM_LIB}
-    ${BOOST_THREAD_LIB}
+    ${PTHREAD_LIB}
     )
 
 # *****************************************************************************************
@@ -99,24 +100,29 @@ set(SUPPORT_LIBS
 # *****************************************************************************************
 
 set(files
+    src/config.cpp
     src/core/base64.c
     src/core/cipher.cpp
     src/core/iobuf.cpp
     src/core/socks5_request_parser.cpp
-    src/config.cpp
+    src/core/ss_request_parser.cpp
     src/socks5_connection.cpp
+    src/ss_connection.cpp
     )
 
 set(hfils
+    src/config.hpp
     src/core/base64.h
     src/core/cipher.hpp
     src/core/iobuf.hpp
-    src/core/ss.hpp
     src/core/socks5.hpp
     src/core/socks5_request.hpp
     src/core/socks5_request_parser.hpp
-    src/config.hpp
+    src/core/ss.hpp
+    src/core/ss_request.hpp
+    src/core/ss_request_parser.hpp
     src/socks5_connection.hpp
+    src/ss_connection.hpp
     )
 
 add_library(yass_base OBJECT
@@ -138,6 +144,19 @@ target_include_directories(yass_cli PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core)
 
 target_link_libraries(yass_cli PUBLIC
+    ${SUPPORT_LIBS}
+    )
+
+add_executable(yass_server
+    src/server/server.cpp
+    $<TARGET_OBJECTS:yass_base>
+    )
+
+target_include_directories(yass_server PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core)
+
+target_link_libraries(yass_server PUBLIC
     ${SUPPORT_LIBS}
     )
 

@@ -1,5 +1,5 @@
 //
-// socks5_connection.hpp
+// ss_connection.hpp
 // ~~~~~~~~~~~~~~~~~~~~~
 //
 // Copyright (c) 2019 James Hu (hukeyue at hotmail dot com)
@@ -8,17 +8,16 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef H_SOCKS5_CONNECTION
-#define H_SOCKS5_CONNECTION
+#ifndef H_SS_CONNECTION
+#define H_SS_CONNECTION
 
 #include "channel.hpp"
 #include "connection.hpp"
 #include "iobuf.hpp"
 #include "protocol.hpp"
-#include "socks5.hpp"
-#include "socks5_request.hpp"
-#include "socks5_request_parser.hpp"
+#include "ss.hpp"
 #include "ss_request.hpp"
+#include "ss_request_parser.hpp"
 #include "ss_stream.hpp"
 
 #include <boost/asio/read.hpp>
@@ -27,18 +26,17 @@
 #include <glog/logging.h>
 
 class cipher;
-namespace socks5 {
+namespace ss {
 /// The ultimate service class to deliever the network traffic to the remote
 /// endpoint
-class Socks5Connection : public std::enable_shared_from_this<Socks5Connection>,
-                         public Channel,
-                         public Connection {
+class SsConnection : public std::enable_shared_from_this<SsConnection>,
+                     public Channel,
+                     public Connection {
 public:
   /// The state of service
   enum state {
     state_error,
-    state_method_select, /* handshake with method extension */
-    state_handshake,     /* handshake with destination */
+    state_handshake, /* handshake with destination */
     state_stream,
   };
 
@@ -47,8 +45,6 @@ public:
     switch (state) {
     case state_error:
       return "error";
-    case state_method_select:
-      return "method_select";
     case state_handshake:
       return "handshake";
     case state_stream:
@@ -61,11 +57,11 @@ public:
   ///
   /// \param io_context the io context associated with the service
   /// \param remote_endpoint the upstream's endpoint
-  Socks5Connection(boost::asio::io_context &io_context,
-                   const boost::asio::ip::tcp::endpoint &remote_endpoint);
+  SsConnection(boost::asio::io_context &io_context,
+               const boost::asio::ip::tcp::endpoint &remote_endpoint);
 
   /// Destruct the service
-  ~Socks5Connection();
+  ~SsConnection();
 
   /// Enter the start phase, begin to read requests
   void start() override;
@@ -80,12 +76,8 @@ private:
 private:
   /// Get the state machine to the given state
   /// state(Read)            state(Write)
-  /// method_select->ReadMethodSelect
-  ///                        method_select->WriteMethodSelect
   /// handshake->ReadHandshake
-  ///          ->PerformCmdOps
   ///          ->ResolveDns
-  ///                        handshake->WriteHandShake
   /// stream->ReadStream
   ///                        stream->WriteStream
   ///
@@ -95,36 +87,21 @@ private:
   /// \param nextState the state the service would be set to
   void SetState(state nextState) { state_ = nextState; }
 
-  /// Start to read method select request
-  void ReadMethodSelect();
   /// Start to read handshake request
   void ReadHandshake();
   /// Start to read stream
   void ReadStream();
 
-  /// write method select response
-  void WriteMethodSelect();
-  /// write handshake response
-  /// \param reply the reply used to write to socket
-  void WriteHandshake(reply *reply);
   /// write to stream
   /// \param buf the buffer used to write to socket
   void WriteStream(std::shared_ptr<IOBuf> buf);
-
-  /// dispatch the command to delegate
-  /// \param self pointer to self
-  /// \param command command type
-  /// \param reply reply to given command type
-  static boost::system::error_code
-  PerformCmdOps(std::shared_ptr<Socks5Connection> self, command_type command,
-                reply *reply);
 
   /// Process the recevied data
   /// \param self pointer to self
   /// \param buf pointer to received buffer
   /// \param error the error state
   /// \param bytes_transferred transferred bytes
-  static void ProcessReceivedData(std::shared_ptr<Socks5Connection> self,
+  static void ProcessReceivedData(std::shared_ptr<SsConnection> self,
                                   std::shared_ptr<IOBuf> buf,
                                   boost::system::error_code error,
                                   size_t bytes_transferred);
@@ -133,38 +110,19 @@ private:
   /// \param buf pointer to sent buffer
   /// \param error the error state
   /// \param bytes_transferred transferred bytes
-  static void ProcessSentData(std::shared_ptr<Socks5Connection> self,
+  static void ProcessSentData(std::shared_ptr<SsConnection> self,
                               std::shared_ptr<IOBuf> buf,
                               boost::system::error_code error,
                               size_t bytes_transferred);
   /// state machine
   state state_;
 
-  /// Buffer for incoming data (temporary).
-  std::array<char, SOCKET_BUF_SIZE> buffer_;
-
-  /// parser of method select request
-  method_select_request_parser method_select_request_parser_;
-  /// copy of method select request
-  method_select_request method_select_request_;
-
   /// parser of handshake request
   request_parser request_parser_;
   /// copy of handshake request
   request request_;
 
-  /// copy of method select response
-  method_select_response method_select_reply_;
-  /// copy of handshake response
-  reply reply_;
-
-  /// copy of upstream request
-  std::unique_ptr<ss::request> ss_request_;
-
 private:
-  /// perform cmd connect request
-  boost::system::error_code OnCmdConnect(ByteRange vaddress, reply *reply);
-
   /// handle with connnect event (downstream)
   void OnConnect();
 
@@ -232,6 +190,6 @@ private:
   size_t wbytes_transferred_ = 0;
 };
 
-} // namespace socks5
+} // namespace ss
 
-#endif // H_SOCKS5_CONNECTION
+#endif // H_SS_CONNECTION

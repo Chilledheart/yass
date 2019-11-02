@@ -65,7 +65,7 @@ protected:
   /// the io context associated with
   boost::asio::io_context &io_context_;
   /// the upstream endpoint to be established with
-  const boost::asio::ip::tcp::endpoint remote_endpoint_;
+  boost::asio::ip::tcp::endpoint remote_endpoint_;
 
   /// the socket the service bound with
   boost::asio::ip::tcp::socket socket_;

@@ -1,6 +1,6 @@
 //
-// cli.cpp
-// ~~~~~~~~~
+// server.cpp
+// ~~~~~~~~~~
 //
 // Copyright (c) 2019 James Hu (hukeyue at hotmail dot com)
 //
@@ -10,14 +10,14 @@
 
 #include "cipher.hpp"
 #include "config.hpp"
-#include "socks5_factory.hpp"
+#include "ss_factory.hpp"
 
 #include <boost/asio.hpp>
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
 using boost::asio::ip::tcp;
-using namespace socks5;
+using namespace ss;
 
 static tcp::endpoint resolveEndpoint(boost::asio::io_context &io_context,
                                      const std::string &host, uint16_t port) {
@@ -55,13 +55,14 @@ int main(int argc, const char *argv[]) {
   }
 
   tcp::endpoint endpoint(
-      resolveEndpoint(io_context, FLAGS_local_host, FLAGS_local_port));
-  tcp::endpoint remoteEndpoint(
       resolveEndpoint(io_context, FLAGS_server_host, FLAGS_server_port));
+  // not used
+  tcp::endpoint remoteEndpoint(
+      resolveEndpoint(io_context, FLAGS_local_host, FLAGS_local_port));
 
-  LOG(WARNING) << "using " << endpoint << " with upstream " << remoteEndpoint;
+  LOG(WARNING) << "using " << endpoint << " with endpoint " << endpoint;
 
-  Socks5Factory factory(io_context, remoteEndpoint);
+  SsFactory factory(io_context, remoteEndpoint);
   factory.listen(endpoint);
 
   boost::asio::signal_set signals(io_context);

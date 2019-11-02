@@ -13,10 +13,10 @@
 #include "socks5_factory.hpp"
 
 #include <boost/asio.hpp>
-#include <boost/thread.hpp>
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 #include <memory>
+#include <thread>
 
 class Worker {
 public:
@@ -50,5 +50,5 @@ private:
   boost::asio::ip::tcp::endpoint endpoint_;
   boost::asio::ip::tcp::endpoint remote_endpoint_;
 
-  boost::thread thread_;
+  std::thread thread_;
 };

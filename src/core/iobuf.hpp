@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <glog/logging.h>
+#include <memory>
 
 #ifndef H_CORE_IOBUF
 #define H_CORE_IOBUF

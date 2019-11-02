@@ -69,11 +69,10 @@ void Socks5Connection::ReadMethodSelect() {
                 self->buffer_.data() + bytes_transferred);
 
         if (result == method_select_request_parser::good) {
+          DCHECK_EQ(self->method_select_request_.length(), bytes_transferred);
           self->ProcessReceivedData(self, nullptr, error, bytes_transferred);
         } else if (result == method_select_request_parser::bad) {
           self->OnDisconnect(error);
-        } else {
-          self->ReadMethodSelect();
         }
       });
 }
@@ -93,11 +92,14 @@ void Socks5Connection::ReadHandshake() {
             self->buffer_.data() + bytes_transferred);
 
         if (result == request_parser::good) {
-          self->ProcessReceivedData(self, nullptr, error, bytes_transferred);
+          ByteRange vaddress((uint8_t *)self->buffer_.data(),
+                             bytes_transferred);
+          std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(vaddress);
+          buf->trimStart(self->request_.length());
+          DCHECK_LE(self->request_.length(), bytes_transferred);
+          self->ProcessReceivedData(self, buf, error, buf->length());
         } else if (result == request_parser::bad) {
           self->OnDisconnect(error);
-        } else {
-          self->ReadHandshake();
         }
       });
 }
@@ -116,6 +118,7 @@ void Socks5Connection::ReadStream() {
                   << " bytes transferred: " << bytes_transferred << " bytes.";
         }
         if (bytes_transferred || error) {
+          buf->append(bytes_transferred);
           ProcessReceivedData(self, buf, error, bytes_transferred);
           return 0;
         }
@@ -213,9 +216,10 @@ void Socks5Connection::ProcessReceivedData(
         self->reply_.set_endpoint(endpoint);
       }
       self->WriteHandshake(&self->reply_);
-      break;
+      if (!buf->length()) {
+        break;
+      }
     case state_stream:
-      buf->append(bytes_transferred);
       if (bytes_transferred) {
         self->OnStreamRead(buf);
       }
@@ -274,6 +278,7 @@ boost::system::error_code Socks5Connection::OnCmdConnect(ByteRange vaddress,
                                                          reply *reply) {
   reply->mutable_status() = reply::request_granted;
 
+  // ensure the remote is connected prior to header write
   channel_->connect();
   // write variable address directly as ss header
   std::unique_ptr<IOBuf> buf = IOBuf::copyBuffer(vaddress);
@@ -335,16 +340,8 @@ void Socks5Connection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
     std::shared_ptr<IOBuf> buf = upstream_[0];
     upstream_writable_ = false;
 
-    std::unique_ptr<IOBuf> cipherbuf = IOBuf::create(buf->length());
-#ifndef NDEBUG
-    DumpHex("PWrite->", buf.get());
-#endif
-    encoder_->encrypt(buf.get(), cipherbuf);
-#ifndef NDEBUG
-    DumpHex("EWrite->", cipherbuf.get());
-#endif
-    std::shared_ptr<IOBuf> sharedBuf{cipherbuf.release()};
-    channel_->start_write(sharedBuf);
+    buf = EncryptData(buf);
+    channel_->start_write(buf);
   }
 }
 
@@ -356,19 +353,8 @@ void Socks5Connection::connected() {
 
 void Socks5Connection::received(std::shared_ptr<IOBuf> buf) {
   VLOG(4) << "upstream: received reply: " << buf->length() << " bytes.";
-  std::unique_ptr<IOBuf> plainbuf = IOBuf::create(buf->length());
-
-#ifndef NDEBUG
-  DumpHex("ERead->", buf.get());
-#endif
-  decoder_->decrypt(buf.get(), plainbuf);
-#ifndef NDEBUG
-  DumpHex("PRead->", plainbuf.get());
-#endif
-
-  std::shared_ptr<IOBuf> sharedbuf{plainbuf.release()};
-
-  OnDownstreamWrite(sharedbuf);
+  buf = DecryptData(buf);
+  OnDownstreamWrite(buf);
 }
 
 void Socks5Connection::sent(std::shared_ptr<IOBuf> buf) {
@@ -384,6 +370,34 @@ void Socks5Connection::sent(std::shared_ptr<IOBuf> buf) {
 void Socks5Connection::disconnected(boost::system::error_code error) {
   VLOG(2) << "upstream: lost connection with: " << remote_endpoint_;
   close();
+}
+
+std::shared_ptr<IOBuf>
+Socks5Connection::DecryptData(std::shared_ptr<IOBuf> cipherbuf) {
+  std::unique_ptr<IOBuf> plainbuf = IOBuf::create(cipherbuf->length());
+#ifndef NDEBUG
+  DumpHex("ERead->", cipherbuf.get());
+#endif
+  decoder_->decrypt(cipherbuf.get(), plainbuf);
+#ifndef NDEBUG
+  DumpHex("PRead->", plainbuf.get());
+#endif
+  std::shared_ptr<IOBuf> buf{plainbuf.release()};
+  return buf;
+}
+
+std::shared_ptr<IOBuf>
+Socks5Connection::EncryptData(std::shared_ptr<IOBuf> buf) {
+  std::unique_ptr<IOBuf> cipherbuf = IOBuf::create(buf->length());
+#ifndef NDEBUG
+  DumpHex("PWrite->", buf.get());
+#endif
+  encoder_->encrypt(buf.get(), cipherbuf);
+#ifndef NDEBUG
+  DumpHex("EWrite->", cipherbuf.get());
+#endif
+  std::shared_ptr<IOBuf> sharedBuf{cipherbuf.release()};
+  return sharedBuf;
 }
 
 } // namespace socks5
