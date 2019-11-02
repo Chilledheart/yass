@@ -43,7 +43,9 @@ void SsConnection::close() {
   boost::system::error_code ec;
   closed_ = true;
   socket_.close(ec);
-  channel_->close();
+  if (channel_) {
+    channel_->close();
+  }
   auto cb = std::move(disconnect_cb_);
   if (cb) {
     cb();
