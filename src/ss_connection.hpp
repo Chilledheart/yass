@@ -89,10 +89,13 @@ private:
 
   /// Start to read handshake request
   void ReadHandshake();
+  /// Start to resolve DNS domain name
+  /// \param buf the buffer after domain name
+  void ResolveDns(std::shared_ptr<IOBuf> buf);
+
   /// Start to read stream
   void ReadStream();
-
-  /// write to stream
+  /// Write to stream
   /// \param buf the buffer used to write to socket
   void WriteStream(std::shared_ptr<IOBuf> buf);
 
@@ -121,6 +124,8 @@ private:
   request_parser request_parser_;
   /// copy of handshake request
   request request_;
+  /// DNS resolver
+  boost::asio::ip::tcp::resolver resolver_;
 
 private:
   /// handle with connnect event (downstream)

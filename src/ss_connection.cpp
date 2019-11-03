@@ -20,7 +20,7 @@ namespace ss {
 SsConnection::SsConnection(
     boost::asio::io_context &io_context,
     const boost::asio::ip::tcp::endpoint &remote_endpoint)
-    : Connection(io_context, remote_endpoint), state_(),
+    : Connection(io_context, remote_endpoint), state_(), resolver_(io_context_),
       encoder_(new cipher("", FLAGS_password, cipher_method, true)),
       decoder_(new cipher("", FLAGS_password, cipher_method)) {}
 
@@ -46,6 +46,7 @@ void SsConnection::close() {
   if (channel_) {
     channel_->close();
   }
+  resolver_.cancel();
   auto cb = std::move(disconnect_cb_);
   if (cb) {
     cb();
@@ -78,6 +79,29 @@ void SsConnection::ReadHandshake() {
           DCHECK_LE(self->request_.length(), bytes_transferred);
           ProcessReceivedData(self, buf, error, buf->length());
         } else if (result == request_parser::bad) {
+          self->OnDisconnect(error);
+        }
+      });
+}
+
+void SsConnection::ResolveDns(std::shared_ptr<IOBuf> buf) {
+  std::shared_ptr<SsConnection> self = shared_from_this();
+  resolver_.async_resolve(
+      self->request_.domain_name(), std::to_string(self->request_.port()),
+      [self, buf](const boost::system::error_code &error,
+                  boost::asio::ip::tcp::resolver::results_type results) {
+        // Get a list of endpoints corresponding to the SOCKS 5 domain name.
+        if (!error) {
+          self->remote_endpoint_ = results->endpoint();
+          LOG(INFO) << "found address name: " << self->request_.domain_name();
+          self->SetState(state_stream);
+          self->OnConnect();
+          if (buf.length()) {
+            ProcessReceivedData(self, buf, error, buf->length());
+          } else {
+            self->ReadStream(); // read next state info
+          }
+        } else {
           self->OnDisconnect(error);
         }
       });
@@ -132,19 +156,10 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<SsConnection> self,
     switch (self->CurrentState()) {
     case state_handshake:
       if (self->request_.address_type() == domain) {
-        // Get a list of endpoints corresponding to the SOCKS 5 domain name.
-        boost::asio::ip::tcp::resolver resolver(self->io_context_);
-        auto endpoints =
-            resolver.resolve(self->request_.domain_name(),
-                             std::to_string(self->request_.port()), error);
-        if (!error) {
-          self->remote_endpoint_ = endpoints->endpoint();
-          LOG(WARNING) << "found address name: "
-                       << self->request_.domain_name();
-        }
-      } else {
-        self->remote_endpoint_ = self->request_.endpoint();
+        self->ResolveDns(buf);
+        return;
       }
+      self->remote_endpoint_ = self->request_.endpoint();
       self->SetState(state_stream);
       self->OnConnect();
       if (!buf->length()) {
@@ -260,7 +275,7 @@ void SsConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
 }
 
 void SsConnection::connected() {
-  VLOG(2) << "remote: established connection with: " << remote_endpoint_;
+  LOG(INFO) << "remote: established connection with: " << remote_endpoint_;
   channel_->start_read();
   OnDownstreamWriteFlush();
 }
