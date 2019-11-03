@@ -49,6 +49,5 @@ private:
   std::unique_ptr<Socks5Factory> socks5_server_;
   boost::asio::ip::tcp::endpoint endpoint_;
   boost::asio::ip::tcp::endpoint remote_endpoint_;
-
   std::thread thread_;
 };

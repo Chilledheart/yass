@@ -24,7 +24,10 @@ Worker::Worker()
     : work_guard_(boost::asio::make_work_guard(io_context_)),
       thread_(std::bind(&Worker::WorkFunc, this)) {}
 
-Worker::~Worker() { work_guard_.reset(); }
+Worker::~Worker() {
+  work_guard_.reset();
+  thread_.join();
+}
 
 void Worker::Start() {
   endpoint_ = resolveEndpoint(io_context_, FLAGS_local_host, FLAGS_local_port);
