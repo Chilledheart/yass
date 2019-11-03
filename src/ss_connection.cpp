@@ -1,6 +1,6 @@
 //
 // ss_connection.cpp
-// ~~~~~~~~~~~~~~~~~~~~~
+// ~~~~~~~~~~~~~~~~~
 //
 // Copyright (c) 2019 James Hu (hukeyue at hotmail dot com)
 //
@@ -29,7 +29,7 @@ SsConnection::~SsConnection() {}
 void SsConnection::start() {
   SetState(state_handshake);
   closed_ = false;
-  upstream_writable_ = true;
+  upstream_writable_ = false;
   downstream_writable_ = true;
   ReadHandshake();
 }
@@ -76,6 +76,7 @@ void SsConnection::ReadHandshake() {
 
         if (result == request_parser::good) {
           buf->trimStart(self->request_.length());
+          buf->retreat(self->request_.length());
           DCHECK_LE(self->request_.length(), bytes_transferred);
           ProcessReceivedData(self, buf, error, buf->length());
         } else if (result == request_parser::bad) {
@@ -96,11 +97,7 @@ void SsConnection::ResolveDns(std::shared_ptr<IOBuf> buf) {
           LOG(INFO) << "found address name: " << self->request_.domain_name();
           self->SetState(state_stream);
           self->OnConnect();
-          if (buf.length()) {
-            ProcessReceivedData(self, buf, error, buf->length());
-          } else {
-            self->ReadStream(); // read next state info
-          }
+          ProcessReceivedData(self, buf, error, buf->length());
         } else {
           self->OnDisconnect(error);
         }
@@ -117,18 +114,14 @@ void SsConnection::ReadStream() {
                                   cipherbuf->capacity()),
       [self, cipherbuf](boost::system::error_code error,
                         std::size_t bytes_transferred) -> std::size_t {
-        if (!error) {
-          VLOG(4) << "remaining available " << self->socket_.available()
-                  << " bytes transferred: " << bytes_transferred << " bytes.";
-
+        if (bytes_transferred || error) {
           cipherbuf->append(bytes_transferred);
-          std::shared_ptr<IOBuf> buf = self->DecryptData(cipherbuf);
-
-          ProcessReceivedData(self, buf, error, buf->length());
-          return 0;
-        }
-        if (error) {
-          ProcessReceivedData(self, nullptr, error, bytes_transferred);
+          std::shared_ptr<IOBuf> buf;
+          if (!error) {
+            buf = self->DecryptData(cipherbuf);
+            bytes_transferred = buf->length();
+          }
+          ProcessReceivedData(self, buf, error, bytes_transferred);
           return 0;
         }
         return SOCKET_BUF_SIZE;
@@ -149,7 +142,7 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<SsConnection> self,
                                        size_t bytes_transferred) {
   self->rbytes_transferred_ += bytes_transferred;
   if (bytes_transferred) {
-    VLOG(4) << "received request: " << bytes_transferred << " bytes.";
+    VLOG(2) << "received request: " << bytes_transferred << " bytes.";
   }
 
   if (!error) {
@@ -162,10 +155,7 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<SsConnection> self,
       self->remote_endpoint_ = self->request_.endpoint();
       self->SetState(state_stream);
       self->OnConnect();
-      if (!buf->length()) {
-        self->ReadStream(); // read next state info
-        break;
-      }
+      DCHECK_EQ(buf->length(), bytes_transferred);
     case state_stream:
       if (bytes_transferred) {
         self->OnStreamRead(buf);
@@ -191,7 +181,7 @@ void SsConnection::ProcessSentData(std::shared_ptr<SsConnection> self,
   self->wbytes_transferred_ += bytes_transferred;
 
   if (bytes_transferred) {
-    VLOG(4) << "Process sent data: " << bytes_transferred << " bytes.";
+    VLOG(2) << "sent data: " << bytes_transferred << " bytes.";
   }
 
   if (!error) {
@@ -214,7 +204,7 @@ void SsConnection::ProcessSentData(std::shared_ptr<SsConnection> self,
 };
 
 void SsConnection::OnConnect() {
-  VLOG(2) << "ss: established connection with: " << endpoint_
+  VLOG(1) << "ss: established connection with: " << endpoint_
           << " remote: " << remote_endpoint_;
   channel_ = std::make_unique<ss::stream>(
       io_context_, remote_endpoint_,
@@ -223,12 +213,10 @@ void SsConnection::OnConnect() {
 }
 
 void SsConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
-  VLOG(4) << "ss: read: " << buf->length() << " bytes.";
   OnUpstreamWrite(buf);
 }
 
 void SsConnection::OnStreamWrite(std::shared_ptr<IOBuf> buf) {
-  VLOG(4) << "ss: sent reply: " << buf->length() << " bytes.";
   downstream_writable_ = true;
 
   DCHECK(!downstream_.empty() && downstream_[0] == buf);
@@ -239,7 +227,7 @@ void SsConnection::OnStreamWrite(std::shared_ptr<IOBuf> buf) {
 }
 
 void SsConnection::OnDisconnect(boost::system::error_code error) {
-  VLOG(2) << "ss: lost connection with: " << endpoint_ << " due to " << error;
+  VLOG(1) << "ss: lost connection with: " << endpoint_ << " due to " << error;
   close();
 }
 
@@ -276,18 +264,19 @@ void SsConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
 
 void SsConnection::connected() {
   LOG(INFO) << "remote: established connection with: " << remote_endpoint_;
+  upstream_writable_ = true;
   channel_->start_read();
-  OnDownstreamWriteFlush();
+  OnUpstreamWriteFlush();
 }
 
 void SsConnection::received(std::shared_ptr<IOBuf> buf) {
-  VLOG(4) << "upstream: received reply: " << buf->length() << " bytes.";
+  VLOG(2) << "upstream: received reply: " << buf->length() << " bytes.";
   OnDownstreamWrite(buf);
 }
 
 void SsConnection::sent(std::shared_ptr<IOBuf> buf) {
-  VLOG(4) << "upstream: sent reply: " << buf->length() << " bytes.";
-  DCHECK(!upstream_.empty());
+  VLOG(2) << "upstream: sent request: " << buf->length() << " bytes.";
+  DCHECK(!upstream_.empty() && upstream_[0] == buf);
   upstream_.pop_front();
 
   /* recursively send the remainings */
@@ -296,8 +285,9 @@ void SsConnection::sent(std::shared_ptr<IOBuf> buf) {
 }
 
 void SsConnection::disconnected(boost::system::error_code error) {
-  VLOG(2) << "upstream: lost connection with: " << remote_endpoint_
-          << " due to " << error;
+  LOG(WARNING) << "upstream: lost connection with: " << remote_endpoint_
+               << " due to " << error;
+  upstream_writable_ = false;
   close();
 }
 

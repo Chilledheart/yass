@@ -423,7 +423,8 @@ cipher::cipher(const std::string &key, const std::string &password,
       key_len_(!key.empty() ? parse_key(key, key_, key_bitlen_ / 8)
                             : derive_key(password, key_, key_bitlen_ / 8)),
       nonce_len_(nonce_size[method]), tag_len_(tag_size[method]), init_(false),
-      nonce_left_(nonce_len_), nonce_(), counter_() {
+      nonce_left_(nonce_len_), skey_(), nonce_(),
+      salt_(), counter_() {
 
   // Initialize sodium for random generator
   if (sodium_init() == -1) {
@@ -447,6 +448,7 @@ void cipher::decrypt_stream(IOBuf *ciphertext,
       memcpy(nonce_ + nonce_len_ - nonce_left_, ciphertext->data(),
              nonce_left_);
       ciphertext->trimStart(nonce_len_);
+      ciphertext->retreat(nonce_len_);
 
       /* mark as init done */
       set_key_stream();
@@ -457,6 +459,7 @@ void cipher::decrypt_stream(IOBuf *ciphertext,
       memcpy(nonce_ + nonce_len_ - nonce_left_, ciphertext->data(),
              ciphertext->length());
       ciphertext->trimStart(ciphertext->length());
+      ciphertext->retreat(ciphertext->length());
       return;
     }
   }
@@ -545,8 +548,11 @@ void cipher::decrypt_aead(IOBuf *ciphertext, std::unique_ptr<IOBuf> &plaintext,
     if (chunk_->length() < key_len_) {
       return;
     }
+    VLOG(3) << "decrypt: salt: " << salt_len;
+
     memcpy(salt_, chunk_->data(), salt_len);
     chunk_->trimStart(salt_len);
+    chunk_->retreat(salt_len);
 
     set_key_aead();
 
@@ -565,35 +571,35 @@ void cipher::decrypt_aead(IOBuf *ciphertext, std::unique_ptr<IOBuf> &plaintext,
     }
 
     chunk_->trimStart(chunk_len);
-    chunk_->retreat(chunk_len);
   }
+  chunk_->retreat(chunk_->headroom());
 }
 
 void cipher::encrypt_aead(IOBuf *plaintext, std::unique_ptr<IOBuf> &ciphertext,
                           size_t capacity) {
   size_t salt_len = key_len_;
-  size_t salt_ofst = 0;
 
   ciphertext = IOBuf::create(capacity);
   if (!init_) {
-    salt_ofst = salt_len;
-    ciphertext->reserve(salt_ofst, 0);
+    ciphertext->reserve(salt_len, 0);
     memcpy(ciphertext->mutable_buffer(), salt_, salt_len);
+    ciphertext->prepend(salt_len);
     set_key_aead();
 #ifndef NDEBUG
     DumpHex("EN-SALT", salt_, salt_len);
 #endif
     init_ = true;
+
+    VLOG(3) << "encrypt: salt: " << salt_len;
   }
 
   size_t clen = 2 * tag_len_ + CHUNK_SIZE_LEN + plaintext->length();
 
-  ciphertext->reserve(salt_ofst, clen);
-
+  ciphertext->reserve(0, clen);
   chunk_encrypt_aead(plaintext, ciphertext.get());
 
-  ciphertext->prepend(salt_ofst);
-  ciphertext->append(clen);
+  VLOG(3) << "encrypt: current chunk: " << clen
+          << " original: " << plaintext->length();
 }
 
 bool cipher::chunk_decrypt_aead(IOBuf *plaintext, const IOBuf *ciphertext,
@@ -604,8 +610,12 @@ bool cipher::chunk_decrypt_aead(IOBuf *plaintext, const IOBuf *ciphertext,
   size_t tlen = tag_len_;
   size_t plen = 0;
 
-  if (ciphertext->length() <= 2 * tlen + CHUNK_SIZE_LEN)
+  VLOG(3) << "decrypt: current chunk: " << ciphertext->length()
+          << " expected: " << (2 * tlen + CHUNK_SIZE_LEN);
+
+  if (ciphertext->length() <= 2 * tlen + CHUNK_SIZE_LEN) {
     return false;
+  }
 
   uint8_t len_buf[2];
   err = aead_cipher_decrypt(len_buf, &plen, ciphertext->data(),
@@ -625,6 +635,9 @@ bool cipher::chunk_decrypt_aead(IOBuf *plaintext, const IOBuf *ciphertext,
   }
 
   size_t chunk_len = 2 * tlen + CHUNK_SIZE_LEN + mlen;
+
+  VLOG(3) << "decrypt: current chunk: " << ciphertext->length()
+          << " expected: " << chunk_len;
 
   if (ciphertext->length() < chunk_len) {
     return false;
@@ -663,25 +676,30 @@ bool cipher::chunk_encrypt_aead(const IOBuf *plaintext,
   memcpy(len_buf, &t, CHUNK_SIZE_LEN);
 
   clen = CHUNK_SIZE_LEN + tlen;
-  err = aead_cipher_encrypt(ciphertext->mutable_data(), &clen, len_buf,
+  err = aead_cipher_encrypt(ciphertext->mutable_tail(), &clen, len_buf,
                             CHUNK_SIZE_LEN, NULL, 0, nonce_, skey_, method_);
-  if (err)
+  if (err) {
     return false;
+  }
 
   DCHECK_EQ(clen, CHUNK_SIZE_LEN + tlen);
+  ciphertext->append(clen);
 
   sodium_increment(nonce_, nlen);
 
   clen = plaintext->length() + tlen;
-  err = aead_cipher_encrypt(ciphertext->mutable_data() + CHUNK_SIZE_LEN + tlen,
+  err = aead_cipher_encrypt(ciphertext->mutable_tail(),
                             &clen, plaintext->data(), plaintext->length(), NULL,
                             0, nonce_, skey_, method_);
-  if (err)
+  if (err) {
     return false;
+  }
 
   DCHECK_EQ(clen, plaintext->length() + tlen);
 
   sodium_increment(nonce_, nlen);
+
+  ciphertext->append(clen);
 
   return true;
 }

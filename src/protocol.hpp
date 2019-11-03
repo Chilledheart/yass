@@ -26,9 +26,11 @@
 #define SOCKET_BUF_SIZE (4 * 1024)
 
 inline void DumpHex(const char *prefix, const uint8_t *data, uint32_t length) {
-  if (!VLOG_IS_ON(4)) {
+  if (!VLOG_IS_ON(2)) {
     return;
   }
+  fprintf(stderr, "%s LEN %u\n", prefix, length);
+  length = std::min(length, 16U);
   for (uint32_t i = 0; i * 2 + 1 < length; ++i) {
     if (i % 8 == 0) {
       fprintf(stderr, "%s ", prefix);

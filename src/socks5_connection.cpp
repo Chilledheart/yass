@@ -96,6 +96,7 @@ void Socks5Connection::ReadHandshake() {
                              bytes_transferred);
           std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(vaddress);
           buf->trimStart(self->request_.length());
+          buf->retreat(self->request_.length());
           DCHECK_LE(self->request_.length(), bytes_transferred);
           self->ProcessReceivedData(self, buf, error, buf->length());
         } else if (result == request_parser::bad) {
@@ -111,12 +112,8 @@ void Socks5Connection::ReadStream() {
 
   socket_.async_read_some(
       boost::asio::mutable_buffer(buf->mutable_data(), buf->capacity()),
-      [this, buf, self](const boost::system::error_code &error,
-                        std::size_t bytes_transferred) -> std::size_t {
-        if (!error) {
-          VLOG(4) << "remaining available " << socket_.available()
-                  << " bytes transferred: " << bytes_transferred << " bytes.";
-        }
+      [self, buf](const boost::system::error_code &error,
+                  std::size_t bytes_transferred) -> std::size_t {
         if (bytes_transferred || error) {
           buf->append(bytes_transferred);
           ProcessReceivedData(self, buf, error, bytes_transferred);
@@ -180,7 +177,7 @@ void Socks5Connection::ProcessReceivedData(
     boost::system::error_code error, size_t bytes_transferred) {
   self->rbytes_transferred_ += bytes_transferred;
   if (bytes_transferred) {
-    VLOG(4) << "received request: " << bytes_transferred << " bytes.";
+    VLOG(2) << "received request: " << bytes_transferred << " bytes.";
   }
 
   if (!error) {
@@ -244,7 +241,7 @@ void Socks5Connection::ProcessSentData(std::shared_ptr<Socks5Connection> self,
   self->wbytes_transferred_ += bytes_transferred;
 
   if (bytes_transferred) {
-    VLOG(4) << "Process sent data: " << bytes_transferred << " bytes.";
+    VLOG(2) << "sent data: " << bytes_transferred << " bytes.";
   }
 
   if (!error) {
@@ -289,16 +286,14 @@ boost::system::error_code Socks5Connection::OnCmdConnect(ByteRange vaddress,
 }
 
 void Socks5Connection::OnConnect() {
-  VLOG(2) << "socks5: established connection with: " << endpoint_;
+  VLOG(1) << "socks5: established connection with: " << endpoint_;
 }
 
 void Socks5Connection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
-  VLOG(4) << "socks5: read: " << buf->length() << " bytes.";
   OnUpstreamWrite(buf);
 }
 
 void Socks5Connection::OnStreamWrite(std::shared_ptr<IOBuf> buf) {
-  VLOG(4) << "socks5: sent reply: " << buf->length() << " bytes.";
   downstream_writable_ = true;
 
   DCHECK(!downstream_.empty() && downstream_[0] == buf);
@@ -334,32 +329,31 @@ void Socks5Connection::OnUpstreamWriteFlush() {
 
 void Socks5Connection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf && !buf->empty()) {
+    buf = EncryptData(buf);
     upstream_.push_back(buf);
   }
   if (!upstream_.empty() && upstream_writable_) {
     std::shared_ptr<IOBuf> buf = upstream_[0];
     upstream_writable_ = false;
-
-    buf = EncryptData(buf);
     channel_->start_write(buf);
   }
 }
 
 void Socks5Connection::connected() {
-  VLOG(2) << "remote: established connection with: " << remote_endpoint_;
+  VLOG(1) << "remote: established connection with: " << remote_endpoint_;
   channel_->start_read();
   OnDownstreamWriteFlush();
 }
 
 void Socks5Connection::received(std::shared_ptr<IOBuf> buf) {
-  VLOG(4) << "upstream: received reply: " << buf->length() << " bytes.";
+  VLOG(2) << "upstream: received reply: " << buf->length() << " bytes.";
   buf = DecryptData(buf);
   OnDownstreamWrite(buf);
 }
 
 void Socks5Connection::sent(std::shared_ptr<IOBuf> buf) {
-  VLOG(4) << "upstream: sent reply: " << buf->length() << " bytes.";
-  DCHECK(!upstream_.empty());
+  VLOG(2) << "upstream: sent request: " << buf->length() << " bytes.";
+  DCHECK(!upstream_.empty() && upstream_[0] == buf);
   upstream_.pop_front();
 
   /* recursively send the remainings */
@@ -368,7 +362,8 @@ void Socks5Connection::sent(std::shared_ptr<IOBuf> buf) {
 }
 
 void Socks5Connection::disconnected(boost::system::error_code error) {
-  VLOG(2) << "upstream: lost connection with: " << remote_endpoint_;
+  VLOG(1) << "upstream: lost connection with: " << remote_endpoint_
+          << " due to " << error;
   close();
 }
 
