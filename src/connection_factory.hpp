@@ -50,6 +50,7 @@ public:
     for (auto conn : conns) {
       conn->close();
     }
+    acceptor_.reset();
   }
 
   size_t currentConnections() const { return connections_.size(); }

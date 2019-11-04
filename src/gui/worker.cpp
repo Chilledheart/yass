@@ -25,6 +25,7 @@ Worker::Worker()
       thread_(std::bind(&Worker::WorkFunc, this)) {}
 
 Worker::~Worker() {
+  Stop();
   work_guard_.reset();
   thread_.join();
 }
