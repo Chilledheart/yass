@@ -62,6 +62,9 @@ void Socks5Connection::ReadMethodSelect() {
           self->OnDisconnect(error);
           return;
         }
+#ifndef NDEBUG
+        DumpHex("METHOD_SELECT->", (uint8_t*)self->buffer_.data(), bytes_transferred);
+#endif
         method_select_request_parser::result_type result;
         std::tie(result, std::ignore) =
             self->method_select_request_parser_.parse(
@@ -71,7 +74,7 @@ void Socks5Connection::ReadMethodSelect() {
         if (result == method_select_request_parser::good) {
           DCHECK_EQ(self->method_select_request_.length(), bytes_transferred);
           self->ProcessReceivedData(self, nullptr, error, bytes_transferred);
-        } else if (result == method_select_request_parser::bad) {
+        } else {
           self->OnDisconnect(error);
         }
       });
@@ -86,6 +89,9 @@ void Socks5Connection::ReadHandshake() {
           self->OnDisconnect(error);
           return;
         }
+#ifndef NDEBUG
+        DumpHex("HANDSHAKE->", (uint8_t*)self->buffer_.data(), bytes_transferred);
+#endif
         request_parser::result_type result;
         std::tie(result, std::ignore) = self->request_parser_.parse(
             self->request_, self->buffer_.data(),
@@ -99,7 +105,7 @@ void Socks5Connection::ReadHandshake() {
           buf->retreat(self->request_.length());
           DCHECK_LE(self->request_.length(), bytes_transferred);
           self->ProcessReceivedData(self, buf, error, buf->length());
-        } else if (result == request_parser::bad) {
+        } else {
           self->OnDisconnect(error);
         }
       });
@@ -213,9 +219,10 @@ void Socks5Connection::ProcessReceivedData(
         self->reply_.set_endpoint(endpoint);
       }
       self->WriteHandshake(&self->reply_);
-      if (!buf->length()) {
-        break;
+      if (buf->length()) {
+        self->ProcessReceivedData(self, buf, error, buf->length());
       }
+      break;
     case state_stream:
       if (bytes_transferred) {
         self->OnStreamRead(buf);

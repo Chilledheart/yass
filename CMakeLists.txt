@@ -4,8 +4,6 @@ set(PACKAGE_NAME      "Yet-Another-Shadow-Socket")
 
 project(${PACKAGE_NAME} CXX C)
 
-option(WX_CONFIG_PATH "Default path to wx-config" "")
-
 # *****************************************************************************************
 #           Baisc Setups
 # *****************************************************************************************
@@ -31,10 +29,22 @@ else()
     set(HAS_CLANG FALSE)
 endif()
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set(HAS_GCC TRUE)
+else()
+    set(HAS_GCC FALSE)
+endif()
+
 if (UNIX AND ${HAS_CLANG} AND
     CMAKE_GENERATOR STREQUAL "Ninja")
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fcolor-diagnostics")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcolor-diagnostics")
+endif()
+
+if (UNIX AND ${HAS_GCC} AND
+    CMAKE_GENERATOR STREQUAL "Ninja")
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fdiagnostics-color=always")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
 endif()
 
 if (NOT MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug" AND HAS_CLANG)
@@ -49,9 +59,10 @@ endif()
 #           Support Libraries
 # *****************************************************************************************
 
+# change wxWidgets_CONFIG_EXECUTABLE
 if (APPLE)
-    set(WX_CONFIG_PATH
-      "/opt/local/Library/Frameworks/wxWidgets.framework/Versions/wxWidgets/3.1/bin"
+    set(wxWidgets_CONFIG_EXECUTABLE
+      "/opt/local/Library/Frameworks/wxWidgets.framework/Versions/wxWidgets/3.1/bin/wx-config"
     )
 endif()
 
@@ -69,6 +80,9 @@ else()
     find_library(CRYPTO_LIB crypto)
 endif()
 find_library(JSONCPP_LIB jsoncpp)
+if (UNIX AND NOT APPLE)
+    include_directories(/usr/include/jsoncpp)
+endif()
 find_library(BOOST_FILESYSTEM_LIB boost_filesystem)
 if (NOT BOOST_FILESYSTEM_LIB)
     find_library(BOOST_FILESYSTEM_LIB boost_filesystem-mt)
@@ -110,7 +124,7 @@ set(files
     src/ss_connection.cpp
     )
 
-set(hfils
+set(hfiles
     src/config.hpp
     src/core/base64.h
     src/core/cipher.hpp
@@ -160,18 +174,12 @@ target_link_libraries(yass_server PUBLIC
     ${SUPPORT_LIBS}
     )
 
-find_program(
-    WX_CONFIG
-    wx-config
-    PATHS
-    ${WX_CONFIG_PATH}
-    )
-
 # *****************************************************************************************
 #           Source code: GUI part
 # *****************************************************************************************
 
-if (WX_CONFIG)
+find_package(wxWidgets COMPONENTS core base)
+if (wxWidgets_FOUND)
     set(APP_NAME yass)
     set(SRC_FILES
         src/gui/yass.cpp
@@ -187,36 +195,27 @@ if (WX_CONFIG)
 
     add_executable(${APP_NAME} WIN32 MACOSX_BUNDLE
         ${SRC_FILES}
+        ${wxWidgets_USE_FILE}
         )
 
     target_include_directories(${APP_NAME} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gui
+        ${wxWidgets_INCLUDE_DIRS}
         )
 
     target_link_libraries(${APP_NAME} PUBLIC
         ${SUPPORT_LIBS}
+        ${wxWidgets_LIBRARIES}
         )
 
-    # "-framework wxWidgets.framework" fix by wx-config
-    execute_process(COMMAND ${WX_CONFIG} --cxxflags
-        OUTPUT_VARIABLE WX_CONFIG_INCLUDES
-      )
-    string(REGEX REPLACE "\n$" "" WX_CONFIG_INCLUDES "${WX_CONFIG_INCLUDES}")
-    separate_arguments(WX_CONFIG_INCLUDES)
+    target_compile_options(${APP_NAME} PRIVATE ${wxWidgets_CXX_FLAGS})
+    foreach(DEF IN LISTS wxWidgets_DEFINITIONS)
+        target_compile_definitions(${APP_NAME} PRIVATE ${DEF})
+    endforeach()
 
-    execute_process(COMMAND ${WX_CONFIG} --libs
-        OUTPUT_VARIABLE WX_CONFIG_LIBS
-      )
-
-    string(REGEX REPLACE "\n$" "" WX_CONFIG_LIBS "${WX_CONFIG_LIBS}")
-
-    target_compile_options(${APP_NAME} PRIVATE ${WX_CONFIG_INCLUDES})
-
-    set_target_properties(${APP_NAME}
-        PROPERTIES LINK_FLAGS "${WX_CONFIG_LIBS}"
-      )
+    target_link_directories(${APP_NAME} PRIVATE ${wxWidgets_LIBRARY_DIRS})
 
     if (APPLE)
         set_target_properties(${APP_NAME} PROPERTIES

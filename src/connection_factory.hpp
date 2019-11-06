@@ -46,7 +46,9 @@ public:
 
   void stop() {
     std::vector<std::shared_ptr<T>> conns = std::move(connections_);
-    acceptor_->cancel();
+    if (acceptor_) {
+      acceptor_->cancel();
+    }
     for (auto conn : conns) {
       conn->close();
     }

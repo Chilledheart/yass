@@ -70,6 +70,10 @@ void SsConnection::ReadHandshake() {
         cipherbuf->append(bytes_transferred);
         std::shared_ptr<IOBuf> buf = self->DecryptData(cipherbuf);
 
+#ifndef NDEBUG
+        DumpHex("HANDSHAKE->", buf.get());
+#endif
+
         request_parser::result_type result;
         std::tie(result, std::ignore) = self->request_parser_.parse(
             self->request_, buf->data(), buf->data() + bytes_transferred);
@@ -79,7 +83,7 @@ void SsConnection::ReadHandshake() {
           buf->retreat(self->request_.length());
           DCHECK_LE(self->request_.length(), bytes_transferred);
           ProcessReceivedData(self, buf, error, buf->length());
-        } else if (result == request_parser::bad) {
+        } else {
           self->OnDisconnect(error);
         }
       });

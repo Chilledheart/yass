@@ -49,6 +49,7 @@ public:
       }
       i += sizeof(method_select_request_header);
       state_ = request;
+      return parse(req, i, end);
     case request: {
       bool auth_checked = false;
       if (end - i < (int)req.nmethods() * (int)sizeof(uint8_t)) {
@@ -112,6 +113,7 @@ public:
 
       i += sizeof(request_header);
       state_ = request_address_start;
+      return parse(req, i, end);
     case request_address_start:
       if (end - i < (int)sizeof(uint8_t)) {
         return std::make_tuple(indeterminate, i);
