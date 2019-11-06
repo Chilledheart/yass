@@ -64,7 +64,12 @@ int main(int argc, const char *argv[]) {
   LOG(WARNING) << "using " << endpoint << " with upstream " << remoteEndpoint;
 
   Socks5Factory factory(io_context, remoteEndpoint);
-  factory.listen(endpoint);
+  try {
+    factory.listen(endpoint);
+  } catch (std::exception& e) {
+    LOG(ERROR) << "listen failed due to " << e.what();
+    return -1;
+  }
 
   boost::asio::signal_set signals(io_context);
   signals.add(SIGINT);
