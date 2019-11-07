@@ -1,6 +1,6 @@
 //
 // socks5_request_parser.hpp
-// ~~~~~~~~~~
+// ~~~~~~~~~~~~~~~~~~~~~~~~~
 //
 // Copyright (c) 2019 James Hu (hukeyue at hotmail dot com)
 //

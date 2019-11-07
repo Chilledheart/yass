@@ -15,6 +15,9 @@
 #include "connection.hpp"
 #include "iobuf.hpp"
 #include "protocol.hpp"
+#include "socks4.hpp"
+#include "socks4_request.hpp"
+#include "socks4_request_parser.hpp"
 #include "socks5.hpp"
 #include "socks5_request.hpp"
 #include "socks5_request_parser.hpp"
@@ -37,8 +40,9 @@ public:
   /// The state of service
   enum state {
     state_error,
-    state_method_select, /* handshake with method extension */
-    state_handshake,     /* handshake with destination */
+    state_method_select,    /* handshake with method extension */
+    state_handshake,        /* handshake with destination */
+    state_socks4_handshake, /* handshake with socks4/socks4a */
     state_stream,
   };
 
@@ -50,7 +54,9 @@ public:
     case state_method_select:
       return "method_select";
     case state_handshake:
-      return "handshake";
+      return "s5handshake";
+    case state_socks4_handshake:
+      return "s4handshake";
     case state_stream:
       return "stream";
     }
@@ -95,10 +101,19 @@ private:
   /// \param nextState the state the service would be set to
   void SetState(state nextState) { state_ = nextState; }
 
-  /// Start to read method select request
+  /// Start to read socks5 method select request
   void ReadMethodSelect();
-  /// Start to read handshake request
+  /// Start to read socks5 handshake request
   void ReadHandshake();
+
+  /// Start to read socks5 method_select request
+  boost::system::error_code
+  OnReadSocks5MethodSelect(std::shared_ptr<IOBuf> buf);
+  /// Start to read socks5 handshake request
+  boost::system::error_code OnReadSocks5Handshake(std::shared_ptr<IOBuf> buf);
+  /// Start to read socks4 handshake request
+  boost::system::error_code OnReadSocks4Handshake(std::shared_ptr<IOBuf> buf);
+
   /// Start to read stream
   void ReadStream();
 
@@ -106,18 +121,22 @@ private:
   void WriteMethodSelect();
   /// write handshake response
   /// \param reply the reply used to write to socket
-  void WriteHandshake(reply *reply);
+  void WriteHandshake();
   /// write to stream
   /// \param buf the buffer used to write to socket
   void WriteStream(std::shared_ptr<IOBuf> buf);
 
   /// dispatch the command to delegate
-  /// \param self pointer to self
   /// \param command command type
   /// \param reply reply to given command type
-  static boost::system::error_code
-  PerformCmdOps(std::shared_ptr<Socks5Connection> self, command_type command,
-                reply *reply);
+  boost::system::error_code PerformCmdOps(const socks5::request *request,
+                                          socks5::reply *reply);
+
+  /// dispatch the command to delegate
+  /// \param command command type
+  /// \param reply reply to given command type
+  boost::system::error_code PerformCmdOpsV4(const socks4::request *request,
+                                            socks4::reply *reply);
 
   /// Process the recevied data
   /// \param self pointer to self
@@ -140,9 +159,6 @@ private:
   /// state machine
   state state_;
 
-  /// Buffer for incoming data (temporary).
-  std::array<char, SOCKET_BUF_SIZE> buffer_;
-
   /// parser of method select request
   method_select_request_parser method_select_request_parser_;
   /// copy of method select request
@@ -158,12 +174,20 @@ private:
   /// copy of handshake response
   reply reply_;
 
+  /// parser of handshake request
+  socks4::request_parser s4_request_parser_;
+  /// copy of handshake request
+  socks4::request s4_request_;
+
+  /// copy of handshake response
+  socks4::reply s4_reply_;
+
   /// copy of upstream request
   std::unique_ptr<ss::request> ss_request_;
 
 private:
   /// perform cmd connect request
-  boost::system::error_code OnCmdConnect(ByteRange vaddress, reply *reply);
+  void OnCmdConnect(ByteRange req);
 
   /// handle with connnect event (downstream)
   void OnConnect();

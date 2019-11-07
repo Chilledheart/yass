@@ -118,6 +118,7 @@ set(files
     src/core/base64.c
     src/core/cipher.cpp
     src/core/iobuf.cpp
+    src/core/socks4_request_parser.cpp
     src/core/socks5_request_parser.cpp
     src/core/ss_request_parser.cpp
     src/socks5_connection.cpp
@@ -129,6 +130,9 @@ set(hfiles
     src/core/base64.h
     src/core/cipher.hpp
     src/core/iobuf.hpp
+    src/core/socks4.hpp
+    src/core/socks4_request.hpp
+    src/core/socks4_request_parser.hpp
     src/core/socks5.hpp
     src/core/socks5_request.hpp
     src/core/socks5_request_parser.hpp

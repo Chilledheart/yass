@@ -423,8 +423,7 @@ cipher::cipher(const std::string &key, const std::string &password,
       key_len_(!key.empty() ? parse_key(key, key_, key_bitlen_ / 8)
                             : derive_key(password, key_, key_bitlen_ / 8)),
       nonce_len_(nonce_size[method]), tag_len_(tag_size[method]), init_(false),
-      nonce_left_(nonce_len_), skey_(), nonce_(),
-      salt_(), counter_() {
+      nonce_left_(nonce_len_), skey_(), nonce_(), salt_(), counter_() {
 
   // Initialize sodium for random generator
   if (sodium_init() == -1) {
@@ -688,9 +687,9 @@ bool cipher::chunk_encrypt_aead(const IOBuf *plaintext,
   sodium_increment(nonce_, nlen);
 
   clen = plaintext->length() + tlen;
-  err = aead_cipher_encrypt(ciphertext->mutable_tail(),
-                            &clen, plaintext->data(), plaintext->length(), NULL,
-                            0, nonce_, skey_, method_);
+  err =
+      aead_cipher_encrypt(ciphertext->mutable_tail(), &clen, plaintext->data(),
+                          plaintext->length(), NULL, 0, nonce_, skey_, method_);
   if (err) {
     return false;
   }

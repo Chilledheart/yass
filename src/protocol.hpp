@@ -23,8 +23,9 @@
 
 #include "iobuf.hpp"
 
-#define SOCKET_BUF_SIZE (4 * 1024)
+#define SOCKET_BUF_SIZE (4096)
 
+#ifndef NDEBUG
 inline void DumpHex(const char *prefix, const uint8_t *data, uint32_t length) {
   if (!VLOG_IS_ON(2)) {
     return;
@@ -48,5 +49,9 @@ inline void DumpHex(const char *prefix, const IOBuf *buf) {
   uint64_t length = buf->length();
   DumpHex(prefix, data, length);
 }
+#else
+#define DumpHex(x, y, z)
+#define DumpHex(x, y)
+#endif
 
 #endif // H_PROTOCOL

@@ -19,48 +19,39 @@
 
 namespace socks4 {
 
+// see also: https://www.openssh.com/txt/socks4.protocol
+// VN is the SOCKS protocol version number and should be 4.
 const uint8_t version = 0x04;
 
-class request {
-public:
-  enum command_type { connect = 0x01, bind = 0x02 };
-
-  request(command_type cmd, const boost::asio::ip::tcp::endpoint &endpoint,
-          const std::string &user_id)
-      : version_(version), command_(cmd), user_id_(user_id), null_byte_(0) {
-    // Only IPv4 is supported by the SOCKS 4 protocol.
-    if (endpoint.protocol() != boost::asio::ip::tcp::v4()) {
-      throw boost::system::system_error(
-          boost::asio::error::address_family_not_supported);
-    }
-
-    // Convert port number to network byte order.
-    unsigned short port = endpoint.port();
-    port_high_byte_ = (port >> 8) & 0xff;
-    port_low_byte_ = port & 0xff;
-
-    // Save IP address in network byte order.
-    address_ = endpoint.address().to_v4().to_bytes();
-  }
-
-  std::array<boost::asio::const_buffer, 7> buffers() const {
-    return {
-        {boost::asio::buffer(&version_, 1), boost::asio::buffer(&command_, 1),
-         boost::asio::buffer(&port_high_byte_, 1),
-         boost::asio::buffer(&port_low_byte_, 1), boost::asio::buffer(address_),
-         boost::asio::buffer(user_id_), boost::asio::buffer(&null_byte_, 1)}};
-  }
-
-private:
-  uint8_t version_;
-  uint8_t command_;
-  uint8_t port_high_byte_;
-  uint8_t port_low_byte_;
-  boost::asio::ip::address_v4::bytes_type address_;
-  std::string user_id_;
-  uint8_t null_byte_;
+// CD is the SOCKS command code and should be 1 for CONNECT or 2 for BIND.
+// NULL is a byte of all zero bits.
+enum command_type {
+  cmd_connect = 0x01,
+  cmd_bind = 0x02,
 };
 
+// +----+----+----+----+----+----+----+----+----+----+....+----+
+// | VN | CD | DSTPORT |      DSTIP        | USERID       |NULL|
+// +----+----+----+----+----+----+----+----+----+----+....+----+
+//    1    1      2              4           variable       1
+struct request_header {
+  uint8_t version;
+  uint8_t command;
+  uint8_t port_high_byte;
+  uint8_t port_low_byte;
+  boost::asio::ip::address_v4::bytes_type address;
+} __attribute__((packed, aligned(1)));
+
+// +----+----+----+----+----+----+----+----+
+// | VN | CD | DSTPORT |      DSTIP        |
+// +----+----+----+----+----+----+----+----+
+//    1    1      2              4
+//	90: request granted
+//  91: request rejected or failed
+//  92: request rejected becasue SOCKS server cannot connect to
+//      identd on the client
+//  93: request rejected because the client program and identd
+//      report different user-ids
 class reply {
 public:
   enum status_type {
@@ -83,6 +74,7 @@ public:
   bool success() const { return null_byte_ == 0 && status_ == request_granted; }
 
   uint8_t status() const { return status_; }
+  uint8_t &mutable_status() { return status_; }
 
   boost::asio::ip::tcp::endpoint endpoint() const {
     unsigned short port = port_high_byte_;
@@ -92,6 +84,28 @@ public:
     boost::asio::ip::address_v4 address(address_);
 
     return boost::asio::ip::tcp::endpoint(address, port);
+  }
+
+  void set_endpoint(const boost::asio::ip::tcp::endpoint &endpoint) {
+    address_ = endpoint.address().to_v4().to_bytes();
+
+    // Convert port number to network byte order.
+    unsigned short port = endpoint.port();
+    port_high_byte_ = (port >> 8) & 0xff;
+    port_low_byte_ = port & 0xff;
+  }
+
+  const boost::asio::ip::address_v4::bytes_type &address() const {
+    return address_;
+  }
+
+  size_t length() const { return sizeof(uint8_t) * 4 + sizeof(address_); }
+
+  uint16_t port() const {
+    unsigned short port = port_high_byte_;
+    port = (port << 8) & 0xff00;
+    port = port | port_low_byte_;
+    return port;
   }
 
 private:
