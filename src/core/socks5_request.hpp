@@ -19,6 +19,8 @@ namespace socks5 {
 
 class method_select_request {
 public:
+  method_select_request() : req_() {}
+
   uint8_t ver() const { return req_.ver; }
   uint8_t nmethods() const { return req_.nmethods; }
 
@@ -32,6 +34,8 @@ private:
 
 class request {
 public:
+  request() : req_(), atyp_req_() {}
+
   uint8_t version() const { return req_.version; }
   uint8_t command() const { return req_.command; }
   uint8_t address_type() const { return atyp_req_.address_type; }

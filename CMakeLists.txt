@@ -48,8 +48,9 @@ if (UNIX AND ${HAS_GCC} AND
 endif()
 
 if (NOT MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug" AND HAS_CLANG)
-    add_compile_options(-g3 -fsanitize=address)
-    add_link_options(-fsanitize=address)
+    set(APPLY_ASAN TRUE)
+else()
+    set(APPLY_ASAN FALSE)
 endif()
 
 #add_definitions(-DBOOST_ASIO_DISABLE_KQUEUE)
@@ -98,7 +99,6 @@ else()
 endif()
 
 set(SUPPORT_LIBS
-    ${JEMALLOC_LIB}
     ${GLOG_LIB}
     ${GFLAGS_LIB}
     ${SODIUM_LIB}
@@ -108,6 +108,15 @@ set(SUPPORT_LIBS
     ${BOOST_SYSTEM_LIB}
     ${PTHREAD_LIB}
     )
+
+if (APPLY_ASAN)
+    add_compile_options(-g3 -fsanitize=address)
+    add_link_options(-fsanitize=address)
+else()
+    set(SUPPORT_LIBS
+        ${JEMALLOC_LIB}
+        ${SUPPORT_LIBS})
+endif()
 
 # *****************************************************************************************
 #           Source code

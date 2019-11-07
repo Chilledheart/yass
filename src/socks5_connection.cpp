@@ -386,9 +386,10 @@ void Socks5Connection::ProcessSentData(std::shared_ptr<Socks5Connection> self,
       self->ReadHandshake(); // read next state info
       break;
     case state_stream:
-      self->ReadStream(); // read next state info
       if (buf) {
         self->OnStreamWrite(buf);
+      } else {
+        self->ReadStream(); // read next state info
       }
       break;
     case state_socks4_handshake:

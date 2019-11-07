@@ -120,8 +120,6 @@ public:
       }
       memcpy(&req.atyp_req_.address_type, &*i, sizeof(uint8_t));
       ++i;
-      VLOG(2) << "socks5: adt: 0x" << std::hex << (int)req.address_type()
-              << std::dec;
       if (req.address_type() != ipv4 && req.address_type() != domain &&
           req.address_type() != ipv6) {
         return std::make_tuple(bad, i);
@@ -170,6 +168,14 @@ public:
         break;
       default:
         return std::make_tuple(bad, i);
+      }
+
+      if (req.address_type() == domain) {
+        VLOG(2) << "socks5: adt: 0x" << std::hex << (int)req.address_type()
+          << std::dec << " addr: " << req.domain_name();
+      } else {
+        VLOG(2) << "socks5: adt: 0x" << std::hex << (int)req.address_type()
+          << std::dec << " addr: " << req.endpoint();
       }
       return std::make_tuple(good, i);
     }
