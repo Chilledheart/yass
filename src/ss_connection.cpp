@@ -13,6 +13,9 @@
 #include "cipher.hpp"
 #include "config.hpp"
 
+#define MAX_DOWNSTREAM_DEPS 1024
+#define MAX_UPSTREAM_DEPS 1024
+
 extern cipher::cipher_method cipher_method;
 
 namespace ss {
@@ -31,6 +34,7 @@ void SsConnection::start() {
   closed_ = false;
   upstream_writable_ = false;
   downstream_writable_ = true;
+  downstream_readable_ = true;
   ReadHandshake();
 }
 
@@ -70,9 +74,7 @@ void SsConnection::ReadHandshake() {
         cipherbuf->append(bytes_transferred);
         std::shared_ptr<IOBuf> buf = self->DecryptData(cipherbuf);
 
-#ifndef NDEBUG
         DumpHex("HANDSHAKE->", buf.get());
-#endif
 
         request_parser::result_type result;
         std::tie(result, std::ignore) = self->request_parser_.parse(
@@ -112,6 +114,7 @@ void SsConnection::ReadStream() {
   std::shared_ptr<SsConnection> self = shared_from_this();
   std::shared_ptr<IOBuf> cipherbuf{IOBuf::create(SOCKET_BUF_SIZE).release()};
   cipherbuf->reserve(0, SOCKET_BUF_SIZE);
+  downstream_read_inprogress_ = true;
 
   socket_.async_read_some(
       boost::asio::mutable_buffer(cipherbuf->mutable_data(),
@@ -125,6 +128,7 @@ void SsConnection::ReadStream() {
             buf = self->DecryptData(cipherbuf);
             bytes_transferred = buf->length();
           }
+          self->downstream_read_inprogress_ = false;
           ProcessReceivedData(self, buf, error, bytes_transferred);
           return 0;
         }
@@ -164,7 +168,9 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<SsConnection> self,
       if (bytes_transferred) {
         self->OnStreamRead(buf);
       }
-      self->ReadStream(); // continously read
+      if (self->downstream_readable_) {
+        self->ReadStream(); // continously read
+      }
       break;
     case state_error:
       error = boost::system::errc::make_error_code(
@@ -217,6 +223,11 @@ void SsConnection::OnConnect() {
 }
 
 void SsConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
+  // queue limit to downstream read
+  if (upstream_.size() >= MAX_UPSTREAM_DEPS && downstream_readable_) {
+    DisableStreamRead();
+  }
+
   OnUpstreamWrite(buf);
 }
 
@@ -228,6 +239,25 @@ void SsConnection::OnStreamWrite(std::shared_ptr<IOBuf> buf) {
 
   /* recursively send the remainings */
   OnDownstreamWriteFlush();
+
+  /* disable queue limit to re-enable upstream read */
+  if (downstream_.size() < MAX_DOWNSTREAM_DEPS && !upstream_readable_) {
+    upstream_readable_ = true;
+    channel_->enable_read();
+  }
+}
+
+void SsConnection::EnableStreamRead() {
+  if (!downstream_readable_) {
+    downstream_readable_ = true;
+    if (!downstream_read_inprogress_) {
+      ReadStream();
+    }
+  }
+}
+
+void SsConnection::DisableStreamRead() {
+  downstream_readable_ = false;
 }
 
 void SsConnection::OnDisconnect(boost::system::error_code error) {
@@ -242,6 +272,7 @@ void SsConnection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
     buf = EncryptData(buf);
     downstream_.push_back(buf);
   }
+
   if (!downstream_.empty() && downstream_writable_) {
     std::shared_ptr<IOBuf> buf = downstream_[0];
     downstream_writable_ = false;
@@ -268,6 +299,7 @@ void SsConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
 
 void SsConnection::connected() {
   LOG(INFO) << "remote: established connection with: " << remote_endpoint_;
+  upstream_readable_ = true;
   upstream_writable_ = true;
   channel_->start_read();
   OnUpstreamWriteFlush();
@@ -275,6 +307,13 @@ void SsConnection::connected() {
 
 void SsConnection::received(std::shared_ptr<IOBuf> buf) {
   VLOG(2) << "upstream: received reply: " << buf->length() << " bytes.";
+
+  // queue limit to upstream read
+  if (downstream_.size() >= MAX_DOWNSTREAM_DEPS && upstream_readable_) {
+    upstream_readable_ = false;
+    channel_->disable_read();
+  }
+
   OnDownstreamWrite(buf);
 }
 
@@ -286,6 +325,10 @@ void SsConnection::sent(std::shared_ptr<IOBuf> buf) {
   /* recursively send the remainings */
   upstream_writable_ = true;
   OnUpstreamWriteFlush();
+
+  if (upstream_.size() < MAX_UPSTREAM_DEPS && !downstream_readable_) {
+    EnableStreamRead();
+  }
 }
 
 void SsConnection::disconnected(boost::system::error_code error) {
@@ -298,26 +341,18 @@ void SsConnection::disconnected(boost::system::error_code error) {
 std::shared_ptr<IOBuf>
 SsConnection::DecryptData(std::shared_ptr<IOBuf> cipherbuf) {
   std::unique_ptr<IOBuf> plainbuf = IOBuf::create(cipherbuf->length());
-#ifndef NDEBUG
   DumpHex("ERead->", cipherbuf.get());
-#endif
   decoder_->decrypt(cipherbuf.get(), plainbuf);
-#ifndef NDEBUG
   DumpHex("PRead->", plainbuf.get());
-#endif
   std::shared_ptr<IOBuf> buf{plainbuf.release()};
   return buf;
 }
 
 std::shared_ptr<IOBuf> SsConnection::EncryptData(std::shared_ptr<IOBuf> buf) {
   std::unique_ptr<IOBuf> cipherbuf = IOBuf::create(buf->length());
-#ifndef NDEBUG
   DumpHex("PWrite->", buf.get());
-#endif
   encoder_->encrypt(buf.get(), cipherbuf);
-#ifndef NDEBUG
   DumpHex("EWrite->", cipherbuf.get());
-#endif
   std::shared_ptr<IOBuf> sharedBuf{cipherbuf.release()};
   return sharedBuf;
 }

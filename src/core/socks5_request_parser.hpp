@@ -172,10 +172,10 @@ public:
 
       if (req.address_type() == domain) {
         VLOG(2) << "socks5: adt: 0x" << std::hex << (int)req.address_type()
-          << std::dec << " addr: " << req.domain_name();
+                << std::dec << " addr: " << req.domain_name();
       } else {
         VLOG(2) << "socks5: adt: 0x" << std::hex << (int)req.address_type()
-          << std::dec << " addr: " << req.endpoint();
+                << std::dec << " addr: " << req.endpoint();
       }
       return std::make_tuple(good, i);
     }

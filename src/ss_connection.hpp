@@ -137,6 +137,12 @@ private:
   /// handle the written data from stream write event (downstream)
   void OnStreamWrite(std::shared_ptr<IOBuf> buf);
 
+  /// enable stream read
+  void EnableStreamRead();
+
+  /// disable stream read
+  void DisableStreamRead();
+
   /// handle with disconnect event (downstream)
   void OnDisconnect(boost::system::error_code error);
 
@@ -156,6 +162,8 @@ private:
   std::deque<std::shared_ptr<IOBuf>> upstream_;
   /// the flag to mark current write
   bool upstream_writable_ = false;
+  /// the flag to mark current read
+  bool upstream_readable_ = false;
 
   /// the upstream the service bound with
   std::unique_ptr<ss::stream> channel_;
@@ -164,6 +172,10 @@ private:
   std::deque<std::shared_ptr<IOBuf>> downstream_;
   /// the flag to mark current write
   bool downstream_writable_ = false;
+  /// the flag to mark current read
+  bool downstream_readable_ = false;
+  /// the flag to mark current read in progress
+  bool downstream_read_inprogress_ = false;
 
 private:
   /// handle with connnect event (upstream)

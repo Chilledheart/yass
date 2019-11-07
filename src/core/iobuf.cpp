@@ -78,8 +78,9 @@ IOBuf::IOBuf(CopyBufferOp op, ByteRange br, std::size_t headroom,
     : IOBuf(op, br.data(), br.size(), headroom, minTailroom) {}
 
 IOBuf::~IOBuf() {
-  if (buf_)
+  if (buf_) {
     free(buf_);
+  }
 }
 
 std::unique_ptr<IOBuf> IOBuf::create(std::size_t capacity) {
@@ -196,9 +197,6 @@ void IOBuf::reserveSlow(std::size_t minHeadroom, std::size_t minTailroom) {
     newHeadroom = minHeadroom;
     free(buf_);
   }
-
-  // std::size_t cap;
-  // initExtBuffer(newBuffer, newAllocatedCapacity, &info, &cap);
 
   capacity_ = newAllocatedCapacity;
   buf_ = newBuffer;
