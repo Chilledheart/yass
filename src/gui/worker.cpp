@@ -63,8 +63,10 @@ void Worker::Stop() {
   io_context_.post([this]() {
     if (socks5_server_) {
       socks5_server_->stop();
-      wxCommandEvent *evt = new wxCommandEvent(MY_EVENT, ID_STOPPED);
-      wxTheApp->QueueEvent(evt);
+      if (wxTheApp) {
+        wxCommandEvent *evt = new wxCommandEvent(MY_EVENT, ID_STOPPED);
+        wxTheApp->QueueEvent(evt);
+      }
     }
   });
 }
