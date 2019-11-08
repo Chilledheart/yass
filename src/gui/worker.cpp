@@ -45,7 +45,11 @@ void Worker::Start() {
 
 void Worker::Stop() {
   /// stop in the worker thread
-  io_context_.post([this]() { socks5_server_->stop(); });
+  io_context_.post([this]() {
+    if (socks5_server_) {
+      socks5_server_->stop();
+    }
+  });
 }
 
 void Worker::WorkFunc() {

@@ -256,9 +256,7 @@ void SsConnection::EnableStreamRead() {
   }
 }
 
-void SsConnection::DisableStreamRead() {
-  downstream_readable_ = false;
-}
+void SsConnection::DisableStreamRead() { downstream_readable_ = false; }
 
 void SsConnection::OnDisconnect(boost::system::error_code error) {
   VLOG(1) << "ss: lost connection with: " << endpoint_ << " due to " << error;

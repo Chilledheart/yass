@@ -48,11 +48,11 @@ public:
     std::vector<std::shared_ptr<T>> conns = std::move(connections_);
     if (acceptor_) {
       acceptor_->cancel();
+      acceptor_.reset();
     }
     for (auto conn : conns) {
       conn->close();
     }
-    acceptor_.reset();
   }
 
   size_t currentConnections() const { return connections_.size(); }
