@@ -547,7 +547,7 @@ void cipher::decrypt_aead(IOBuf *ciphertext, std::unique_ptr<IOBuf> &plaintext,
     if (chunk_->length() < key_len_) {
       return;
     }
-    VLOG(3) << "decrypt: salt: " << salt_len;
+    VLOG(4) << "decrypt: salt: " << salt_len;
 
     memcpy(salt_, chunk_->data(), salt_len);
     chunk_->trimStart(salt_len);
@@ -589,7 +589,7 @@ void cipher::encrypt_aead(IOBuf *plaintext, std::unique_ptr<IOBuf> &ciphertext,
 #endif
     init_ = true;
 
-    VLOG(3) << "encrypt: salt: " << salt_len;
+    VLOG(4) << "encrypt: salt: " << salt_len;
   }
 
   size_t clen = 2 * tag_len_ + CHUNK_SIZE_LEN + plaintext->length();
@@ -597,7 +597,7 @@ void cipher::encrypt_aead(IOBuf *plaintext, std::unique_ptr<IOBuf> &ciphertext,
   ciphertext->reserve(0, clen);
   chunk_encrypt_aead(plaintext, ciphertext.get());
 
-  VLOG(3) << "encrypt: current chunk: " << clen
+  VLOG(4) << "encrypt: current chunk: " << clen
           << " original: " << plaintext->length();
 }
 
@@ -609,7 +609,7 @@ bool cipher::chunk_decrypt_aead(IOBuf *plaintext, const IOBuf *ciphertext,
   size_t tlen = tag_len_;
   size_t plen = 0;
 
-  VLOG(3) << "decrypt: current chunk: " << ciphertext->length()
+  VLOG(4) << "decrypt: current chunk: " << ciphertext->length()
           << " expected: " << (2 * tlen + CHUNK_SIZE_LEN);
 
   if (ciphertext->length() <= 2 * tlen + CHUNK_SIZE_LEN) {
@@ -635,7 +635,7 @@ bool cipher::chunk_decrypt_aead(IOBuf *plaintext, const IOBuf *ciphertext,
 
   size_t chunk_len = 2 * tlen + CHUNK_SIZE_LEN + mlen;
 
-  VLOG(3) << "decrypt: current chunk: " << ciphertext->length()
+  VLOG(4) << "decrypt: current chunk: " << ciphertext->length()
           << " expected: " << chunk_len;
 
   if (ciphertext->length() < chunk_len) {

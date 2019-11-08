@@ -44,7 +44,7 @@ public:
         return std::make_tuple(indeterminate, i);
       }
       memcpy(&req.req_, &*i, sizeof(request_header));
-      VLOG(2) << "socks4: anom request:" << std::hex << " ver: 0x"
+      VLOG(3) << "socks4: anom request:" << std::hex << " ver: 0x"
               << (int)req.version() << " cmd: 0x" << (int)req.command()
               << std::dec << " addr: " << req.endpoint()
               << " is_socks4a: " << std::boolalpha << req.is_socks4a()
@@ -63,7 +63,7 @@ public:
       if (i == end) {
         return std::make_tuple(indeterminate, i);
       }
-      VLOG(2) << "socks4: user id: " << std::hex << (int)*begin;
+      VLOG(3) << "socks4: user id: " << std::hex << (int)*begin;
       req.user_id_ = std::string(begin, i);
       ++i;
       if (req.is_socks4a()) {
@@ -78,7 +78,7 @@ public:
       if (i == end) {
         return std::make_tuple(indeterminate, i);
       }
-      VLOG(2) << "socks4: domain_name: " << begin;
+      VLOG(3) << "socks4: domain_name: " << begin;
       req.domain_name_ = std::string(begin, i);
       ++i;
       break;

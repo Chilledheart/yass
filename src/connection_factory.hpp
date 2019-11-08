@@ -75,8 +75,8 @@ private:
           [this, conn]() mutable { handleDisconnect(conn); });
       connections_.push_back(conn);
       conn->start();
-      LOG(WARNING) << "connection established with remaining: "
-                   << connections_.size();
+      VLOG(2) << "connection established with remaining: "
+              << connections_.size();
       startAccept();
     }
   }
@@ -85,7 +85,7 @@ private:
     connections_.erase(
         std::remove(connections_.begin(), connections_.end(), conn),
         connections_.end());
-    LOG(WARNING) << "connection closed with remaining: " << connections_.size();
+    VLOG(2) << "connection closed with remaining: " << connections_.size();
     conn->set_disconnect_cb(std::function<void()>());
     conn->close();
   }

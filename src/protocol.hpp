@@ -27,7 +27,7 @@
 
 #ifndef NDEBUG
 inline void DumpHex(const char *prefix, const uint8_t *data, uint32_t length) {
-  if (!VLOG_IS_ON(2)) {
+  if (!VLOG_IS_ON(3)) {
     return;
   }
   fprintf(stderr, "%s LEN %u\n", prefix, length);

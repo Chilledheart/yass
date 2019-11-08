@@ -41,8 +41,8 @@ void Socks5Connection::close() {
   if (closed_) {
     return;
   }
-  LOG(WARNING) << "disconnected with client at stage: "
-               << Socks5Connection::state_to_str(CurrentState());
+  VLOG(2) << "disconnected with client at stage: "
+          << Socks5Connection::state_to_str(CurrentState());
   boost::system::error_code ec;
   closed_ = true;
   socket_.close(ec);
@@ -114,7 +114,7 @@ Socks5Connection::OnReadSocks5MethodSelect(std::shared_ptr<IOBuf> buf) {
     auto error =
         boost::system::errc::make_error_code(boost::system::errc::success);
 
-    VLOG(2) << "client: socks5 method select";
+    VLOG(3) << "client: socks5 method select";
     ProcessReceivedData(self, buf, error, buf->length());
     return error;
   }
@@ -137,7 +137,7 @@ Socks5Connection::OnReadSocks5Handshake(std::shared_ptr<IOBuf> buf) {
     auto error =
         boost::system::errc::make_error_code(boost::system::errc::success);
 
-    VLOG(2) << "client: socks5 handshake";
+    VLOG(3) << "client: socks5 handshake";
     self->ProcessReceivedData(self, buf, error, buf->length());
     return error;
   }
@@ -160,7 +160,7 @@ Socks5Connection::OnReadSocks4Handshake(std::shared_ptr<IOBuf> buf) {
     auto error =
         boost::system::errc::make_error_code(boost::system::errc::success);
 
-    VLOG(2) << "client: socks4 handshake";
+    VLOG(3) << "client: socks4 handshake";
     ProcessReceivedData(self, buf, error, buf->length());
     return error;
   }
@@ -240,11 +240,11 @@ Socks5Connection::PerformCmdOps(const socks5::request *request,
                                         std::to_string(request->port()), error);
       if (!error) {
         endpoint = endpoints->endpoint();
-        LOG(INFO) << "[dns] reply with endpoint: " << endpoint << " for domain "
-                  << request->domain_name();
+        VLOG(2) << "[dns] reply with endpoint: " << endpoint << " for domain "
+                << request->domain_name();
       } else {
-        LOG(WARNING) << "[dns] resolve failure for domain "
-                     << request->domain_name();
+        VLOG(1) << "[dns] resolve failure for domain "
+                << request->domain_name();
       }
     } else {
       endpoint = request->endpoint();
@@ -293,11 +293,11 @@ Socks5Connection::PerformCmdOpsV4(const socks4::request *request,
                                         std::to_string(request->port()), error);
       if (!error) {
         endpoint = endpoints->endpoint();
-        LOG(INFO) << "[dns] reply with endpoint: " << endpoint << " for domain "
-                  << request->domain_name();
+        VLOG(2) << "[dns] reply with endpoint: " << endpoint << " for domain "
+                << request->domain_name();
       } else {
-        LOG(WARNING) << "[dns] resolve failure for domain "
-                     << request->domain_name();
+        VLOG(1) << "[dns] resolve failure for domain "
+                << request->domain_name();
       }
     }
 
@@ -325,7 +325,7 @@ void Socks5Connection::ProcessReceivedData(
     boost::system::error_code error, size_t bytes_transferred) {
   self->rbytes_transferred_ += bytes_transferred;
   if (bytes_transferred) {
-    VLOG(2) << "client: received request: " << bytes_transferred << " bytes.";
+    VLOG(3) << "client: received request: " << bytes_transferred << " bytes.";
   }
 
   if (!error) {
@@ -377,7 +377,7 @@ void Socks5Connection::ProcessSentData(std::shared_ptr<Socks5Connection> self,
   self->wbytes_transferred_ += bytes_transferred;
 
   if (bytes_transferred) {
-    VLOG(2) << "client: sent data: " << bytes_transferred << " bytes.";
+    VLOG(3) << "client: sent data: " << bytes_transferred << " bytes.";
   }
 
   if (!error) {
@@ -472,19 +472,19 @@ void Socks5Connection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
 }
 
 void Socks5Connection::connected() {
-  VLOG(1) << "remote: established connection with: " << remote_endpoint_;
+  VLOG(2) << "remote: established connection with: " << remote_endpoint_;
   channel_->start_read();
   OnDownstreamWriteFlush();
 }
 
 void Socks5Connection::received(std::shared_ptr<IOBuf> buf) {
-  VLOG(2) << "upstream: received reply: " << buf->length() << " bytes.";
+  VLOG(3) << "upstream: received reply: " << buf->length() << " bytes.";
   buf = DecryptData(buf);
   OnDownstreamWrite(buf);
 }
 
 void Socks5Connection::sent(std::shared_ptr<IOBuf> buf) {
-  VLOG(2) << "upstream: sent request: " << buf->length() << " bytes.";
+  VLOG(3) << "upstream: sent request: " << buf->length() << " bytes.";
   DCHECK(!upstream_.empty() && upstream_[0] == buf);
   upstream_.pop_front();
 
@@ -494,7 +494,7 @@ void Socks5Connection::sent(std::shared_ptr<IOBuf> buf) {
 }
 
 void Socks5Connection::disconnected(boost::system::error_code error) {
-  VLOG(1) << "upstream: lost connection with: " << remote_endpoint_
+  VLOG(2) << "upstream: lost connection with: " << remote_endpoint_
           << " due to " << error;
   close();
 }

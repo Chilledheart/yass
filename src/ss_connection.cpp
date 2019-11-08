@@ -42,8 +42,8 @@ void SsConnection::close() {
   if (closed_) {
     return;
   }
-  LOG(WARNING) << "disconnected with client at stage: "
-               << SsConnection::state_to_str(CurrentState());
+  VLOG(2) << "disconnected with client at stage: "
+          << SsConnection::state_to_str(CurrentState());
   boost::system::error_code ec;
   closed_ = true;
   socket_.close(ec);
@@ -100,7 +100,7 @@ void SsConnection::ResolveDns(std::shared_ptr<IOBuf> buf) {
         // Get a list of endpoints corresponding to the SOCKS 5 domain name.
         if (!error) {
           self->remote_endpoint_ = results->endpoint();
-          LOG(INFO) << "found address name: " << self->request_.domain_name();
+          VLOG(2) << "found address name: " << self->request_.domain_name();
           self->SetState(state_stream);
           self->OnConnect();
           ProcessReceivedData(self, buf, error, buf->length());
@@ -150,7 +150,7 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<SsConnection> self,
                                        size_t bytes_transferred) {
   self->rbytes_transferred_ += bytes_transferred;
   if (bytes_transferred) {
-    VLOG(2) << "received request: " << bytes_transferred << " bytes.";
+    VLOG(3) << "received request: " << bytes_transferred << " bytes.";
   }
 
   if (!error) {
@@ -191,7 +191,7 @@ void SsConnection::ProcessSentData(std::shared_ptr<SsConnection> self,
   self->wbytes_transferred_ += bytes_transferred;
 
   if (bytes_transferred) {
-    VLOG(2) << "sent data: " << bytes_transferred << " bytes.";
+    VLOG(3) << "sent data: " << bytes_transferred << " bytes.";
   }
 
   if (!error) {
@@ -214,7 +214,7 @@ void SsConnection::ProcessSentData(std::shared_ptr<SsConnection> self,
 };
 
 void SsConnection::OnConnect() {
-  VLOG(1) << "ss: established connection with: " << endpoint_
+  VLOG(2) << "ss: established connection with: " << endpoint_
           << " remote: " << remote_endpoint_;
   channel_ = std::make_unique<ss::stream>(
       io_context_, remote_endpoint_,
@@ -259,7 +259,7 @@ void SsConnection::EnableStreamRead() {
 void SsConnection::DisableStreamRead() { downstream_readable_ = false; }
 
 void SsConnection::OnDisconnect(boost::system::error_code error) {
-  VLOG(1) << "ss: lost connection with: " << endpoint_ << " due to " << error;
+  VLOG(2) << "ss: lost connection with: " << endpoint_ << " due to " << error;
   close();
 }
 
@@ -296,7 +296,7 @@ void SsConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
 }
 
 void SsConnection::connected() {
-  LOG(INFO) << "remote: established connection with: " << remote_endpoint_;
+  VLOG(2) << "remote: established connection with: " << remote_endpoint_;
   upstream_readable_ = true;
   upstream_writable_ = true;
   channel_->start_read();
@@ -304,7 +304,7 @@ void SsConnection::connected() {
 }
 
 void SsConnection::received(std::shared_ptr<IOBuf> buf) {
-  VLOG(2) << "upstream: received reply: " << buf->length() << " bytes.";
+  VLOG(3) << "upstream: received reply: " << buf->length() << " bytes.";
 
   // queue limit to upstream read
   if (downstream_.size() >= MAX_DOWNSTREAM_DEPS && upstream_readable_) {
@@ -316,7 +316,7 @@ void SsConnection::received(std::shared_ptr<IOBuf> buf) {
 }
 
 void SsConnection::sent(std::shared_ptr<IOBuf> buf) {
-  VLOG(2) << "upstream: sent request: " << buf->length() << " bytes.";
+  VLOG(3) << "upstream: sent request: " << buf->length() << " bytes.";
   DCHECK(!upstream_.empty() && upstream_[0] == buf);
   upstream_.pop_front();
 
@@ -330,8 +330,8 @@ void SsConnection::sent(std::shared_ptr<IOBuf> buf) {
 }
 
 void SsConnection::disconnected(boost::system::error_code error) {
-  LOG(WARNING) << "upstream: lost connection with: " << remote_endpoint_
-               << " due to " << error;
+  VLOG(2) << "upstream: lost connection with: " << remote_endpoint_
+          << " due to " << error;
   upstream_writable_ = false;
   close();
 }

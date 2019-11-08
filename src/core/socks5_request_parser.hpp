@@ -104,7 +104,7 @@ public:
         return std::make_tuple(indeterminate, i);
       }
       memcpy(&req.req_, &*i, sizeof(request_header));
-      VLOG(2) << "socks5: anom request:" << std::hex << " ver: 0x"
+      VLOG(3) << "socks5: anom request:" << std::hex << " ver: 0x"
               << (int)req.version() << " cmd: 0x" << (int)req.command()
               << std::dec;
       if (req.version() != version) {
@@ -171,10 +171,10 @@ public:
       }
 
       if (req.address_type() == domain) {
-        VLOG(2) << "socks5: adt: 0x" << std::hex << (int)req.address_type()
+        VLOG(3) << "socks5: adt: 0x" << std::hex << (int)req.address_type()
                 << std::dec << " addr: " << req.domain_name();
       } else {
-        VLOG(2) << "socks5: adt: 0x" << std::hex << (int)req.address_type()
+        VLOG(3) << "socks5: adt: 0x" << std::hex << (int)req.address_type()
                 << std::dec << " addr: " << req.endpoint();
       }
       return std::make_tuple(good, i);
