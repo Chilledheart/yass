@@ -7,6 +7,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
+#ifndef YASS_WORKER
+#define YASS_WORKER
 
 #include "cipher.hpp"
 #include "config.hpp"
@@ -51,3 +53,5 @@ private:
   boost::asio::ip::tcp::endpoint remote_endpoint_;
   std::thread thread_;
 };
+
+#endif // YASS_WORKER

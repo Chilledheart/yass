@@ -8,6 +8,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 #include "worker.hpp"
+#include "yass.hpp"
 
 using boost::asio::ip::tcp;
 using namespace socks5;
@@ -39,7 +40,21 @@ void Worker::Start() {
   io_context_.post([this]() {
     socks5_server_ =
         std::make_unique<Socks5Factory>(io_context_, remote_endpoint_);
-    socks5_server_->listen(endpoint_);
+
+    bool successed = false;
+    std::string msg;
+
+    try {
+      socks5_server_->listen(endpoint_);
+      successed = true;
+    } catch (std::exception &e) {
+      msg = e.what();
+    }
+
+    wxCommandEvent *evt =
+        new wxCommandEvent(MY_EVENT, successed ? ID_STARTED : ID_START_FAILED);
+    evt->SetString(msg.c_str());
+    wxTheApp->QueueEvent(evt);
   });
 }
 
@@ -48,18 +63,10 @@ void Worker::Stop() {
   io_context_.post([this]() {
     if (socks5_server_) {
       socks5_server_->stop();
+      wxCommandEvent *evt = new wxCommandEvent(MY_EVENT, ID_STOPPED);
+      wxTheApp->QueueEvent(evt);
     }
   });
 }
 
-void Worker::WorkFunc() {
-#if 0
-  boost::asio::signal_set signals(io_context_);
-  signals.add(SIGINT);
-  signals.add(SIGTERM);
-  signals.add(SIGQUIT);
-  signals.async_wait([&](const boost::system::error_code &error,
-                         int signal_number) { factory.stop(); });
-#endif
-  io_context_.run();
-}
+void Worker::WorkFunc() { io_context_.run(); }

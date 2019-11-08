@@ -12,9 +12,25 @@
 
 #include <string>
 
+#define UPDATE_STATS_MILLISECONDS 100
+
 YASSApp *mApp;
 
-bool YASSApp::OnInit() {
+// this is a definition so can't be in a header
+wxDEFINE_EVENT(MY_EVENT, wxCommandEvent);
+
+// clang-format off
+
+wxBEGIN_EVENT_TABLE(YASSApp, wxApp)
+  EVT_COMMAND(ID_STARTED, MY_EVENT, YASSApp::OnStarted)
+  EVT_COMMAND(ID_START_FAILED, MY_EVENT, YASSApp::OnStartFailed)
+  EVT_COMMAND(ID_STOPPED, MY_EVENT, YASSApp::OnStopped)
+  EVT_TIMER(ID_UPDATE_STATS, YASSApp::OnUpdateStats)
+wxEND_EVENT_TABLE()
+
+    // clang-format on
+
+    bool YASSApp::OnInit() {
   LoadConfigFromDisk();
   mApp = this;
   state_ = STOPPED;
@@ -23,6 +39,8 @@ bool YASSApp::OnInit() {
                          wxSize(450, 340));
   frame_->Show(true);
   frame_->UpdateStatus();
+
+  update_timer_ = new wxTimer(this, ID_UPDATE_STATS);
   return true;
 }
 
@@ -31,6 +49,9 @@ std::string YASSApp::GetStatus() const {
   if (state_ == STARTED) {
     ss << "Connected with " << worker_.GetRemoteEndpoint()
        << " with conns: " << worker_.currentConnections();
+  } else if (state_ == START_FAILED) {
+    ss << "Failed to connect with " << worker_.GetRemoteEndpoint() << " due to "
+       << error_msg_.c_str();
   } else {
     ss << "Disconnected with " << worker_.GetRemoteEndpoint();
   }
@@ -52,18 +73,30 @@ void YASSApp::SaveConfigToDisk() {
 }
 
 void YASSApp::OnStart() {
-  wxLogMessage("Start");
-  state_ = STARTED;
   SaveConfigToDisk();
   worker_.Start();
-  frame_->StartStats();
 }
 
-void YASSApp::OnStop() {
-  wxLogMessage("Stop");
-  state_ = STOPPED;
-  worker_.Stop();
-  frame_->StopStats();
+void YASSApp::OnStarted(wxCommandEvent &event) {
+  state_ = STARTED;
+  frame_->Started();
+  update_timer_->Start(UPDATE_STATS_MILLISECONDS);
 }
+
+void YASSApp::OnStartFailed(wxCommandEvent &event) {
+  state_ = START_FAILED;
+  error_msg_ = event.GetString();
+  frame_->StartFailed();
+}
+
+void YASSApp::OnStop() { worker_.Stop(); }
+
+void YASSApp::OnStopped(wxCommandEvent &event) {
+  state_ = STOPPED;
+  frame_->Stopped();
+  update_timer_->Stop();
+}
+
+void YASSApp::OnUpdateStats(wxTimerEvent &event) { frame_->UpdateStatus(); }
 
 wxIMPLEMENT_APP(YASSApp);
