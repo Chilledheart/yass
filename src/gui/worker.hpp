@@ -25,8 +25,8 @@ public:
   Worker();
   ~Worker();
 
-  void Start();
-  void Stop();
+  void Start(bool quiet = false);
+  void Stop(bool quiet = false);
 
   const boost::asio::ip::tcp::endpoint &GetEndpoint() const {
     return endpoint_;

@@ -12,6 +12,8 @@ DEFAULT_BUILD_TYPE = 'MinSizeRel'
 DEFAULT_OS_MIN = '10.9'
 DEFAULT_WXWIDGETS_FRAMEWORK = '/opt/local/Library/Frameworks/wxWidgets.framework'
 
+VCPKG_DIR = os.getenv('VCPKG_ROOT')
+
 num_cpus=cpu_count()
 
 def macdeploywxwidgets(name):
@@ -37,7 +39,8 @@ def macdeploywxwidgets(name):
         write_output(['install_name_tool', '-change', dep, '@loader_path/../../../../../../Frameworks/%s' % dep_name, lib])
 
 def write_output(command):
-  proc = subprocess.Popen(command, stdout=sys.stdout, stderr=sys.stdout, shell=False)
+  proc = subprocess.Popen(command, stdout=sys.stdout, stderr=sys.stdout,
+      shell=False, env=os.environ)
   proc.communicate()
 
 def get_dependencies_by_otool(path):
@@ -104,7 +107,7 @@ def get_dependencies_by_dependency_walker(path):
   return []
 
 def get_dependencies(path):
-  if os.name == 'winnt':
+  if sys.platform == 'win32':
     return get_dependencies_by_objdump(path)
   elif sys.platform == 'darwin':
     return get_dependencies_by_otool(path)
@@ -114,7 +117,7 @@ def get_dependencies(path):
     raise IOError('not supported in platform %s' % sys.platform)
 
 def get_dependencies_recursively(path):
-  if os.name == 'winnt':
+  if sys.platform == 'win32':
     return get_dependencies_by_objdump(path)
   elif sys.platform == 'darwin':
     deps = get_dependencies_by_otool(path)
@@ -134,10 +137,13 @@ def get_dependencies_recursively(path):
 
 def postbuild_copy_libraries():
   print 'copying dependent libraries...'
-  if sys.platform == 'darwin':
-      postbuild_copy_libraries_xcode()
+  if sys.platform == 'win32':
+    # not supported
+    pass
+  elif sys.platform == 'darwin':
+    postbuild_copy_libraries_xcode()
   else:
-      postbuild_copy_libraries_posix()
+    postbuild_copy_libraries_posix()
 
 def postbuild_copy_libraries_posix():
   lib_path = os.path.join(APP_NAME, 'lib')
@@ -167,7 +173,7 @@ def postbuild_copy_libraries_xcode():
 
 def postbuild_fix_rpath():
   print 'fixing rpath...'
-  if os.name == 'winnt':
+  if sys.platform == 'win32':
     print 'not need to fix rpath'
   elif sys.platform == 'linux':
     postbuild_patchelf()
@@ -231,34 +237,31 @@ def postbuild_patchelf():
 
 def postbuild_fix_retina_display():
   print 'fixing retina display...'
-  write_output(['plutil', '-insert', 'NSPrincipalClass', '-string', 'NSApplication', APP_NAME + '.app/Contents/Info.plist'])
-  write_output(['plutil', '-insert', 'NSHighResolutionCapable', '-bool', 'YES', APP_NAME + '.app/Contents/Info.plist'])
+  if sys.platform == 'darwin':
+    write_output(['plutil', '-insert', 'NSPrincipalClass', '-string', 'NSApplication', APP_NAME + '.app/Contents/Info.plist'])
+    write_output(['plutil', '-insert', 'NSHighResolutionCapable', '-bool', 'YES', APP_NAME + '.app/Contents/Info.plist'])
   print 'fixing retina display...done'
 
 
-def execute_buildscript(generator = 'ninja', configuration = 'Release'):
+def execute_buildscript(configuration = 'Release'):
   print 'executing build scripts...'
-  if generator == 'xcode':
-    command = ['xcodebuild', '-target', 'ALL_BUILD', '-configuration', configuration, '-jobs', num_cpus]
-  elif generator == 'ninja':
-    command = ['ninja']
-  else:
-    command = ['make', '-j', num_cpus]
+  command = ['cmake', '--build', '.', '--config', 'Release']
   write_output(command)
-  if generator == 'xcode':
-    shutil.copytree(os.path.join(configuration, APP_NAME + '.app'), APP_NAME + '.app')
 
 
-def generate_buildscript(generator = 'ninja', build_type = DEFAULT_BUILD_TYPE, os_min = DEFAULT_OS_MIN):
+def generate_buildscript(build_type = DEFAULT_BUILD_TYPE):
   print 'generate build scripts...'
   cmake_args = ['-DCMAKE_BUILD_TYPE=' + build_type]
-  cmake_args.append('-DCMAKE_OSX_DEPLOYMENT_TARGET=' + os_min);
-  if generator == 'xcode':
-    cmake_args.extend(['-G', 'XCode'])
-  elif generator == 'ninja':
-    cmake_args.extend(['-G', 'Ninja'])
+  if sys.platform == 'win32':
+    cmake_args.extend(['-G', 'Visual Studio 15 2017'])
+    cmake_args.extend(['-DCMAKE_TOOLCHAIN_FILE=%s\\scripts\\buildsystems\\vcpkg.cmake' % VCPKG_DIR])
+    cmake_args.extend(['-DVCPKG_ROOT_DIR=%s' % VCPKG_DIR])
   else:
-    cmake_args.extend(['-G', 'Unix Makefiles'])
+    cmake_args.extend(['-G', 'Ninja'])
+
+  if sys.platform == 'darwin':
+    cmake_args.append('-DCMAKE_OSX_DEPLOYMENT_TARGET=%s' % DEFAULT_OS_MIN);
+
   command = ['cmake', '..'] + cmake_args
   write_output(command)
 

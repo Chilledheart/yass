@@ -81,7 +81,7 @@ void Socks5Connection::start() {
       std::static_pointer_cast<Channel>(shared_from_this()));
   SetState(state_method_select);
   closed_ = false;
-  upstream_writable_ = true;
+  upstream_writable_ = false;
   downstream_writable_ = true;
   ReadMethodSelect();
 }
@@ -222,17 +222,27 @@ Socks5Connection::OnReadSocks4Handshake(std::shared_ptr<IOBuf> buf) {
 
 boost::system::error_code
 Socks5Connection::OnReadHttpRequest(std::shared_ptr<IOBuf> buf) {
-  static http_parser_settings settings_connect = {
-      .on_message_begin = http_request_cb,
-      .on_url = &Socks5Connection::OnReadHttpRequestURL,
-      .on_status = http_request_data_cb,
-      .on_header_field = &Socks5Connection::OnReadHttpRequestHeaderField,
-      .on_header_value = &Socks5Connection::OnReadHttpRequestHeaderValue,
-      .on_headers_complete = Socks5Connection::OnReadHttpRequestHeadersDone,
-      .on_body = http_request_data_cb,
-      .on_message_complete = http_request_cb,
-      .on_chunk_header = http_request_cb,
-      .on_chunk_complete = http_request_cb};
+  static struct http_parser_settings settings_connect = {
+      //.on_message_begin
+      http_request_cb,
+      //.on_url
+      &Socks5Connection::OnReadHttpRequestURL,
+      //.on_status
+      http_request_data_cb,
+      //.on_header_field
+      &Socks5Connection::OnReadHttpRequestHeaderField,
+      //.on_header_value
+      &Socks5Connection::OnReadHttpRequestHeaderValue,
+      //.on_headers_complete
+      Socks5Connection::OnReadHttpRequestHeadersDone,
+      //.on_body
+      http_request_data_cb,
+      //.on_message_complete
+      http_request_cb,
+      //.on_chunk_header
+      http_request_cb,
+      //.on_chunk_complete
+      http_request_cb};
 
   ::http_parser parser;
   size_t nparsed;
@@ -676,8 +686,10 @@ void Socks5Connection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
 
 void Socks5Connection::connected() {
   VLOG(2) << "remote: established connection with: " << remote_endpoint_;
+  upstream_writable_ = true;
   channel_->start_read();
   OnDownstreamWriteFlush();
+  OnUpstreamWriteFlush();
 }
 
 void Socks5Connection::received(std::shared_ptr<IOBuf> buf) {

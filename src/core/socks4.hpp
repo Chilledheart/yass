@@ -23,6 +23,14 @@ namespace socks4 {
 // VN is the SOCKS protocol version number and should be 4.
 const uint8_t version = 0x04;
 
+#ifdef __GNUC__
+#define PACK( __Declaration__ ) __Declaration__ __attribute__((packed, aligned(1)))
+#endif
+
+#ifdef _MSC_VER
+#define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop))
+#endif
+
 // CD is the SOCKS command code and should be 1 for CONNECT or 2 for BIND.
 // NULL is a byte of all zero bits.
 enum command_type {
@@ -34,13 +42,13 @@ enum command_type {
 // | VN | CD | DSTPORT |      DSTIP        | USERID       |NULL|
 // +----+----+----+----+----+----+----+----+----+----+....+----+
 //    1    1      2              4           variable       1
-struct request_header {
+PACK(struct request_header {
   uint8_t version;
   uint8_t command;
   uint8_t port_high_byte;
   uint8_t port_low_byte;
   boost::asio::ip::address_v4::bytes_type address;
-} __attribute__((packed, aligned(1)));
+});
 
 // +----+----+----+----+----+----+----+----+
 // | VN | CD | DSTPORT |      DSTIP        |
@@ -115,6 +123,8 @@ private:
   uint8_t port_low_byte_;
   boost::asio::ip::address_v4::bytes_type address_;
 };
+
+#undef PACK
 
 } // namespace socks4
 

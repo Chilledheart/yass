@@ -26,18 +26,18 @@ Worker::Worker()
       thread_(std::bind(&Worker::WorkFunc, this)) {}
 
 Worker::~Worker() {
-  Stop();
+  Stop(true);
   work_guard_.reset();
   thread_.join();
 }
 
-void Worker::Start() {
+void Worker::Start(bool quiet) {
   endpoint_ = resolveEndpoint(io_context_, FLAGS_local_host, FLAGS_local_port);
   remote_endpoint_ =
       resolveEndpoint(io_context_, FLAGS_server_host, FLAGS_server_port);
 
   /// listen in the worker thread
-  io_context_.post([this]() {
+  io_context_.post([this, quiet]() {
     socks5_server_ =
         std::make_unique<Socks5Factory>(io_context_, remote_endpoint_);
 
@@ -51,6 +51,10 @@ void Worker::Start() {
       msg = e.what();
     }
 
+    if (quiet) {
+      return;
+    }
+
     wxCommandEvent *evt =
         new wxCommandEvent(MY_EVENT, successed ? ID_STARTED : ID_START_FAILED);
     evt->SetString(msg.c_str());
@@ -58,15 +62,16 @@ void Worker::Start() {
   });
 }
 
-void Worker::Stop() {
+void Worker::Stop(bool quiet) {
   /// stop in the worker thread
-  io_context_.post([this]() {
+  io_context_.post([this, quiet]() {
     if (socks5_server_) {
       socks5_server_->stop();
-      if (wxTheApp) {
-        wxCommandEvent *evt = new wxCommandEvent(MY_EVENT, ID_STOPPED);
-        wxTheApp->QueueEvent(evt);
+      if (quiet) {
+        return;
       }
+      wxCommandEvent *evt = new wxCommandEvent(MY_EVENT, ID_STOPPED);
+      wxTheApp->QueueEvent(evt);
     }
   });
 }

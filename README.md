@@ -38,6 +38,7 @@ apt-get install -y \
     libssl-dev \
     libjsoncpp-dev \
     libwxgtk3.0-dev (optional)
+
 ```
 3. compile the program with default configuration.
 ```
@@ -71,6 +72,10 @@ ninja
 ```scripts/build.py```
 
 4. copy `build/yass.app` into `/Application` directory.
+### vcpkg
+```
+vcpkg install boost-asio:x86-windows-static boost-filesystem:x86-windows-static boost-system:x86-windows-static glog:x86-windows-static gflags:x86-windows-static libsodium:x86-windows-static jsoncpp:x86-windows-static openssl:x86-windows-static jemalloc wxwidgets
+```
 
 ## Crypto
 ### message digest
@@ -86,7 +91,7 @@ ninja
 ### Operating System
 - macOS
 - Linux
-- Windows (incoming)
+- Windows
 
 ### Protocols supported
 - Socks4
@@ -97,3 +102,4 @@ ninja
 [MacPorts]: https://www.macports.org/install.php
 [aead]: https://shadowsocks.org/en/spec/AEAD-Ciphers.html
 [asan]: https://github.com/google/sanitizers/wiki/AddressSanitizer
+[vcredist]: https://support.microsoft.com/zh-tw/help/2977003/the-latest-supported-visual-c-downloads

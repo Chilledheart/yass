@@ -13,7 +13,6 @@
 #include <boost/filesystem.hpp>
 #include <gflags/gflags.h>
 #include <json/json.h>
-#include <unistd.h>
 
 DEFINE_string(configfile, DEFAULT_CONFIGFILE, "load configs from file");
 DEFINE_string(server_host, DEFAULT_SERVER,
@@ -34,7 +33,11 @@ static path ExpandUser(const std::string &file_path) {
   std::string real_path = file_path;
 
   if (real_path[0] == '~') {
+#ifdef _WIN32
+    std::string home = getenv("USERPROFILE");
+#else
     std::string home = getenv("HOME");
+#endif
     real_path = home + "/" + real_path.substr(1);
   }
 

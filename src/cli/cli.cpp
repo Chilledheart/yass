@@ -74,7 +74,9 @@ int main(int argc, const char *argv[]) {
   boost::asio::signal_set signals(io_context);
   signals.add(SIGINT);
   signals.add(SIGTERM);
+#ifdef SIGQUIT
   signals.add(SIGQUIT);
+#endif
   signals.async_wait([&](const boost::system::error_code &error,
                          int signal_number) { factory.stop(); });
 

@@ -28,6 +28,14 @@ namespace socks5 {
 // see also: https://www.ietf.org/rfc/rfc1928.txt
 const uint8_t version = 0x05;
 
+#ifdef __GNUC__
+#define PACK( __Declaration__ ) __Declaration__ __attribute__((packed, aligned(1)))
+#endif
+
+#ifdef _MSC_VER
+#define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop))
+#endif
+
 //  X'00' NO AUTHENTICATION REQUIRED
 //  X'01' GSSAPI
 //  X'02' USERNAME/PASSWORD
@@ -44,20 +52,20 @@ enum method_select {
 // +----+----------+----------+
 // | 1  |    1     | 1 to 255 |
 // +----+----------+----------+
-struct method_select_request_header {
+PACK(struct method_select_request_header {
   uint8_t ver;
   uint8_t nmethods;
-} __attribute__((packed, aligned(1)));
+});
 
 // +----+--------+
 // |VER | METHOD |
 // +----+--------+
 // | 1  |   1    |
 // +----+--------+
-struct method_select_response {
+PACK(struct method_select_response {
   uint8_t ver;
   uint8_t method;
-} __attribute__((packed, aligned(1)));
+});
 
 inline method_select_response
 method_select_response_stock_reply(uint8_t method = no_auth_required) {
@@ -107,11 +115,11 @@ enum command_type {
 //  o  BIND X'02'
 //  o  UDP ASSOCIATE X'03'
 //  RSV    RESERVED
-struct request_header {
+PACK(struct request_header {
   uint8_t version;
   uint8_t command;
   uint8_t null_byte;
-} __attribute__((packed, aligned(1)));
+});
 
 // +------+----------+----------+
 // | ATYP | DST.ADDR | DST.PORT |
@@ -253,6 +261,8 @@ private:
   uint8_t port_high_byte_;
   uint8_t port_low_byte_;
 };
+
+#undef PACK
 
 } // namespace socks5
 

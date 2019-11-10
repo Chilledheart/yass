@@ -46,12 +46,11 @@ inline void DumpHex(const char *prefix, const uint8_t *data, uint32_t length) {
 
 inline void DumpHex(const char *prefix, const IOBuf *buf) {
   const uint8_t *data = buf->data();
-  uint64_t length = buf->length();
+  uint32_t length = buf->length();
   DumpHex(prefix, data, length);
 }
 #else
-#define DumpHex(x, y, z)
-#define DumpHex(x, y)
+#define DumpHex(...)
 #endif
 
 #endif // H_PROTOCOL

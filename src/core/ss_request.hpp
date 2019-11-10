@@ -25,7 +25,7 @@ public:
     *i++ = domain;
     DCHECK_LE(domain_name.size(), uint8_t(~0));
 
-    *i++ = domain_name.size();
+    *i++ = (uint8_t)domain_name.size();
 
     memcpy(i, domain_name.c_str(), domain_name.size());
     i += domain_name.size();

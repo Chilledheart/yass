@@ -67,7 +67,7 @@ int main(int argc, const char *argv[]) {
   SsFactory factory(io_context, remoteEndpoint);
   try {
     factory.listen(endpoint);
-  } catch (std::exception& e) {
+  } catch (std::exception &e) {
     LOG(ERROR) << "listen failed due to " << e.what();
     return -1;
   }
@@ -75,7 +75,9 @@ int main(int argc, const char *argv[]) {
   boost::asio::signal_set signals(io_context);
   signals.add(SIGINT);
   signals.add(SIGTERM);
+#ifdef SIGQUIT
   signals.add(SIGQUIT);
+#endif
   signals.async_wait([&](const boost::system::error_code &error,
                          int signal_number) { factory.stop(); });
 

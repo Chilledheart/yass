@@ -55,6 +55,10 @@ wxEND_EVENT_TABLE()
 
   panel->SetSizer(hbox);
 
+#ifdef _WIN32
+  SetIcon(wxICON(IDI_ICON1));
+#endif
+
   Centre();
 }
 
@@ -111,7 +115,7 @@ void YASSFrame::UpdateStatus() {
 void YASSFrame::OnExit(wxCommandEvent &event) { Close(true); }
 
 void YASSFrame::OnAbout(wxCommandEvent &event) {
-  wxMessageBox("This is a wxWidgets' Hello world sample", "About Hello World",
+  wxMessageBox("This is Yet-Another-Shadow-Socket", "About YASS",
                wxOK | wxICON_INFORMATION);
 }
 

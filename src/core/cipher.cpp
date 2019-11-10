@@ -14,6 +14,7 @@
 extern "C" {
 #include "base64.h"
 }
+#include <vector>
 
 #include <sodium/core.h>
 #include <sodium/crypto_aead_chacha20poly1305.h>
@@ -37,8 +38,8 @@ extern "C" {
 #define SODIUM_BLOCK_SIZE 64
 #define SUBKEY_INFO "ss-subkey"
 
-#define CHUNK_SIZE_LEN 2
-#define CHUNK_SIZE_MASK 0x3FFF
+#define CHUNK_SIZE_LEN 2U
+#define CHUNK_SIZE_MASK 0x3FFFU
 
 #define MAX_MD_SIZE 64     /* longest known is SHA512 */
 #define MD_MAX_SIZE_256 32 /* longest known is SHA256 or less */
@@ -58,13 +59,14 @@ static constexpr int tag_size[cipher::MAX_CIPHER_METHOD] = {0, 0, 0, 0, 16, 16};
 
 static int parse_key(const std::string &key, uint8_t *skey, size_t skey_len) {
   const char *base64 = key.c_str();
-  size_t base64_len = key.size();
+  const size_t base64_len = key.size();
   uint32_t out_len = BASE64_SIZE(base64_len);
-  uint8_t out[out_len];
+  std::vector<uint8_t> out;
+  out.resize(out_len);
 
-  out_len = base64_decode(out, base64, out_len);
+  out_len = base64_decode(out.data(), base64, out_len);
   if (out_len > 0 && out_len >= skey_len) {
-    memcpy(skey, out, skey_len);
+    memcpy(skey, out.data(), skey_len);
     return skey_len;
   }
   return 0;
