@@ -13,6 +13,7 @@
 
 #include "channel.hpp"
 #include "connection.hpp"
+#include "http_parser.h"
 #include "iobuf.hpp"
 #include "protocol.hpp"
 #include "socks4.hpp"
@@ -28,6 +29,7 @@
 #include <boost/asio/write.hpp>
 #include <deque>
 #include <glog/logging.h>
+#include <unordered_map>
 
 class cipher;
 namespace socks5 {
@@ -43,6 +45,7 @@ public:
     state_method_select,    /* handshake with method extension */
     state_handshake,        /* handshake with destination */
     state_socks4_handshake, /* handshake with socks4/socks4a */
+    state_http_handshake,   /* handshake with http */
     state_stream,
   };
 
@@ -57,6 +60,8 @@ public:
       return "s5handshake";
     case state_socks4_handshake:
       return "s4handshake";
+    case state_http_handshake:
+      return "hhandshake";
     case state_stream:
       return "stream";
     }
@@ -113,6 +118,19 @@ private:
   boost::system::error_code OnReadSocks5Handshake(std::shared_ptr<IOBuf> buf);
   /// Start to read socks4 handshake request
   boost::system::error_code OnReadSocks4Handshake(std::shared_ptr<IOBuf> buf);
+  /// Start to read http handshake request
+  boost::system::error_code OnReadHttpRequest(std::shared_ptr<IOBuf> buf);
+
+  /// Callback to read http handshake request's URL field
+  static int OnReadHttpRequestURL(http_parser *p, const char *buf, size_t len);
+  /// Callback to read http handshake request's URL field
+  static int OnReadHttpRequestHeaderField(http_parser *p, const char *buf,
+                                          size_t len);
+  /// Callback to read http handshake request's headers done
+  static int OnReadHttpRequestHeaderValue(http_parser *p, const char *buf,
+                                          size_t len);
+  /// Callback to read http handshake request's headers done
+  static int OnReadHttpRequestHeadersDone(http_parser *p);
 
   /// Start to read stream
   void ReadStream();
@@ -137,6 +155,11 @@ private:
   /// \param reply reply to given command type
   boost::system::error_code PerformCmdOpsV4(const socks4::request *request,
                                             socks4::reply *reply);
+
+  /// dispatch the command to delegate
+  /// \param command command type
+  /// \param reply reply to given command type
+  boost::system::error_code PerformCmdOpsHttp();
 
   /// Process the recevied data
   /// \param self pointer to self
@@ -181,6 +204,24 @@ private:
 
   /// copy of handshake response
   socks4::reply s4_reply_;
+
+  /// copy of url;
+  std::string http_url_;
+  /// copy of parsed connect host or host field
+  std::string http_host_;
+  /// copy of parsed connect host or host field
+  uint16_t http_port_ = 0U;
+  /// copy of parsed header field
+  std::string http_field_;
+  /// copy of parsed header value
+  std::string http_value_;
+  /// copy of parsed headers
+  std::unordered_map<std::string, std::string> http_headers_;
+  /// copy of connect method
+  bool http_is_connect_ = false;
+  /// copy of connect response
+  const std::string http_connect_reply_ =
+      "HTTP/1.1 200 Connection established\r\n\r\n";
 
   /// copy of upstream request
   std::unique_ptr<ss::request> ss_request_;

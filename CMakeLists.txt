@@ -126,18 +126,18 @@ set(files
     src/config.cpp
     src/core/base64.c
     src/core/cipher.cpp
+    src/core/http_parser.c
     src/core/iobuf.cpp
     src/core/socks4_request_parser.cpp
     src/core/socks5_request_parser.cpp
     src/core/ss_request_parser.cpp
-    src/socks5_connection.cpp
-    src/ss_connection.cpp
     )
 
 set(hfiles
     src/config.hpp
     src/core/base64.h
     src/core/cipher.hpp
+    src/core/http_parser.h
     src/core/iobuf.hpp
     src/core/socks4.hpp
     src/core/socks4_request.hpp
@@ -148,8 +148,6 @@ set(hfiles
     src/core/ss.hpp
     src/core/ss_request.hpp
     src/core/ss_request_parser.hpp
-    src/socks5_connection.hpp
-    src/ss_connection.hpp
     )
 
 add_library(yass_base OBJECT
@@ -163,12 +161,15 @@ target_include_directories(yass_base PRIVATE
 
 add_executable(yass_cli
     src/cli/cli.cpp
+    src/cli/socks5_connection.cpp
+    src/cli/socks5_connection.hpp
     $<TARGET_OBJECTS:yass_base>
     )
 
 target_include_directories(yass_cli PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/core)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli)
 
 target_link_libraries(yass_cli PUBLIC
     ${SUPPORT_LIBS}
@@ -176,12 +177,16 @@ target_link_libraries(yass_cli PUBLIC
 
 add_executable(yass_server
     src/server/server.cpp
+    src/server/ss_connection.cpp
+    src/server/ss_connection.hpp
     $<TARGET_OBJECTS:yass_base>
     )
 
 target_include_directories(yass_server PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/core)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/server
+    )
 
 target_link_libraries(yass_server PUBLIC
     ${SUPPORT_LIBS}
@@ -199,6 +204,8 @@ if (wxWidgets_FOUND)
         src/gui/yass_frame.cpp
         src/gui/panels.cpp
         src/gui/worker.cpp
+        src/cli/socks5_connection.cpp
+        src/cli/socks5_connection.hpp
         $<TARGET_OBJECTS:yass_base>
         )
 
@@ -213,6 +220,7 @@ if (wxWidgets_FOUND)
 
     target_include_directories(${APP_NAME} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/cli
         ${CMAKE_CURRENT_SOURCE_DIR}/src/core
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gui
         ${wxWidgets_INCLUDE_DIRS}

@@ -15,6 +15,55 @@
 
 extern cipher::cipher_method cipher_method;
 
+static int http_request_cb(http_parser *p) { return 0; }
+
+static int http_request_data_cb(http_parser *p, const char *buf, size_t len) {
+  return 0;
+}
+
+static int http_request_url_parse(const char *buf, size_t len,
+                                  std::string *host, uint16_t *port,
+                                  int is_connect) {
+  struct http_parser_url url;
+
+  if (0 != ::http_parser_parse_url(buf, len, is_connect, &url)) {
+    LOG(ERROR) << "Failed to parse url: '" << std::string(buf, len) << "'";
+    return 1;
+  }
+
+  if (url.field_set & (1 << (UF_HOST))) {
+    *host = std::string(buf + url.field_data[UF_HOST].off,
+                        url.field_data[UF_HOST].len);
+  }
+
+  if (url.field_set & (1 << (UF_PORT))) {
+    *port = url.port;
+  }
+
+  return 0;
+}
+
+// Convert plain http proxy header to http request header
+//
+// reforge HTTP Request Header and pretend it to buf
+// including removal of Proxy-Connection header
+static void http_request_reforge_to_bytes(
+    std::string *header, ::http_parser *p, const std::string &url,
+    const std::unordered_map<std::string, std::string> &headers) {
+  std::stringstream ss;
+  ss << http_method_str((http_method)p->method) << " " << url
+     << " HTTP/1.1\r\n";
+  for (const std::pair<std::string, std::string> &pair : headers) {
+    if (pair.first == "Proxy-Connection") {
+      continue;
+    }
+    ss << pair.first << ": " << pair.second << "\r\n";
+  }
+  ss << "\r\n";
+
+  *header = ss.str();
+}
+
 namespace socks5 {
 
 Socks5Connection::Socks5Connection(
@@ -67,12 +116,18 @@ void Socks5Connection::ReadMethodSelect() {
         }
         buf->append(bytes_transferred);
         DumpHex("METHOD_SELECT->", buf.get());
+
         error = self->OnReadSocks5MethodSelect(buf);
         if (error) {
           error = self->OnReadSocks4Handshake(buf);
         }
         if (error) {
+          error = self->OnReadHttpRequest(buf);
+        }
+        if (error) {
           self->OnDisconnect(error);
+        } else {
+          self->ProcessReceivedData(self, buf, error, buf->length());
         }
       });
 }
@@ -138,7 +193,6 @@ Socks5Connection::OnReadSocks5Handshake(std::shared_ptr<IOBuf> buf) {
         boost::system::errc::make_error_code(boost::system::errc::success);
 
     VLOG(3) << "client: socks5 handshake";
-    self->ProcessReceivedData(self, buf, error, buf->length());
     return error;
   }
   return boost::system::errc::make_error_code(boost::system::errc::bad_message);
@@ -161,10 +215,106 @@ Socks5Connection::OnReadSocks4Handshake(std::shared_ptr<IOBuf> buf) {
         boost::system::errc::make_error_code(boost::system::errc::success);
 
     VLOG(3) << "client: socks4 handshake";
-    ProcessReceivedData(self, buf, error, buf->length());
     return error;
   }
   return boost::system::errc::make_error_code(boost::system::errc::bad_message);
+}
+
+boost::system::error_code
+Socks5Connection::OnReadHttpRequest(std::shared_ptr<IOBuf> buf) {
+  static http_parser_settings settings_connect = {
+      .on_message_begin = http_request_cb,
+      .on_header_field = &Socks5Connection::OnReadHttpRequestHeaderField,
+      .on_header_value = &Socks5Connection::OnReadHttpRequestHeaderValue,
+      .on_url = &Socks5Connection::OnReadHttpRequestURL,
+      .on_status = http_request_data_cb,
+      .on_body = http_request_data_cb,
+      .on_headers_complete = Socks5Connection::OnReadHttpRequestHeadersDone,
+      .on_message_complete = http_request_cb,
+      .on_chunk_header = http_request_cb,
+      .on_chunk_complete = http_request_cb};
+
+  ::http_parser parser;
+  size_t nparsed;
+  ::http_parser_init(&parser, HTTP_REQUEST);
+
+  parser.data = this;
+  nparsed = http_parser_execute(&parser, &settings_connect,
+                                (const char *)buf->data(), buf->length());
+  buf->trimStart(nparsed);
+  buf->retreat(nparsed);
+
+  if (HTTP_PARSER_ERRNO(&parser) == HPE_OK) {
+    if (!http_is_connect_) {
+      std::string header;
+      http_request_reforge_to_bytes(&header, &parser, http_url_, http_headers_);
+      buf->reserve(header.size(), 0);
+      buf->prepend(header.size());
+      memcpy(buf->mutable_data(), header.c_str(), header.size());
+    }
+
+    SetState(state_http_handshake);
+    return boost::system::errc::make_error_code(boost::system::errc::success);
+  }
+
+  LOG(ERROR) << http_errno_description(HTTP_PARSER_ERRNO(&parser));
+  return boost::system::errc::make_error_code(boost::system::errc::bad_message);
+}
+
+int Socks5Connection::OnReadHttpRequestURL(http_parser *p, const char *buf,
+                                           size_t len) {
+  Socks5Connection *conn = reinterpret_cast<Socks5Connection *>(p->data);
+  conn->http_url_ = std::string(buf, len);
+  if (p->method == HTTP_CONNECT) {
+    if (0 != http_request_url_parse(buf, len, &conn->http_host_,
+                                    &conn->http_port_, 1)) {
+      return 1;
+    }
+    conn->http_is_connect_ = true;
+    VLOG(2) << "CONNECT: " << conn->http_host_ << " PORT: " << conn->http_port_;
+  }
+  return 0;
+}
+
+int Socks5Connection::OnReadHttpRequestHeaderField(http_parser *p,
+                                                   const char *buf,
+                                                   size_t len) {
+  Socks5Connection *conn = reinterpret_cast<Socks5Connection *>(p->data);
+  conn->http_field_ = std::string(buf, len);
+  return 0;
+}
+
+int Socks5Connection::OnReadHttpRequestHeaderValue(http_parser *p,
+                                                   const char *buf,
+                                                   size_t len) {
+  Socks5Connection *conn = reinterpret_cast<Socks5Connection *>(p->data);
+  conn->http_value_ = std::string(buf, len);
+  conn->http_headers_[conn->http_field_] = conn->http_value_;
+  if (conn->http_field_ == "Host" && !conn->http_is_connect_) {
+    const char *url = buf;
+    const char *port;
+    // Host = "Host" ":" host [ ":" port ] ; Section 3.2.2
+    // TBD hand with IPv6 address // [xxx]:port/xxx
+    while (*buf != ':' && *buf != '\0' && len != 0) {
+      buf++, len--;
+    }
+
+    conn->http_host_ = std::string(url, buf);
+    if (len > 1 && *buf == ':') {
+      ++buf, --len;
+      conn->http_port_ = stoi(std::string(buf, len));
+    } else {
+      conn->http_port_ = 80;
+    }
+
+    VLOG(2) << "Host: " << conn->http_host_ << " PORT: " << conn->http_port_;
+  }
+  return 0;
+}
+
+int Socks5Connection::OnReadHttpRequestHeadersDone(http_parser *p) {
+  // abort the rest part
+  return 1;
 }
 
 void Socks5Connection::ReadStream() {
@@ -197,16 +347,35 @@ void Socks5Connection::WriteMethodSelect() {
 
 void Socks5Connection::WriteHandshake() {
   std::shared_ptr<Socks5Connection> self = shared_from_this();
-  if (CurrentState() == state_handshake) {
+  switch (CurrentState()) {
+  case state_handshake:
     boost::asio::async_write(socket_, reply_.buffers(),
                              std::bind(&Socks5Connection::ProcessSentData, self,
                                        nullptr, std::placeholders::_1,
                                        std::placeholders::_2));
-  } else {
+    break;
+  case state_socks4_handshake:
     boost::asio::async_write(socket_, s4_reply_.buffers(),
                              std::bind(&Socks5Connection::ProcessSentData, self,
                                        nullptr, std::placeholders::_1,
                                        std::placeholders::_2));
+    break;
+  case state_http_handshake:
+    /// reply on CONNECT request
+    if (http_is_connect_) {
+      boost::asio::async_write(socket_,
+                               boost::asio::buffer(http_connect_reply_.c_str(),
+                                                   http_connect_reply_.size()),
+                               std::bind(&Socks5Connection::ProcessSentData,
+                                         self, nullptr, std::placeholders::_1,
+                                         std::placeholders::_2));
+    }
+    break;
+  case state_method_select: // impossible
+  case state_error:
+  default:
+    break;
+    // bad
   }
 }
 
@@ -320,6 +489,31 @@ Socks5Connection::PerformCmdOpsV4(const socks4::request *request,
   return boost::system::errc::make_error_code(boost::system::errc::success);
 }
 
+boost::system::error_code Socks5Connection::PerformCmdOpsHttp() {
+  ss_request_ = std::make_unique<ss::request>(http_host_, http_port_);
+
+  boost::system::error_code error;
+  error = boost::system::errc::make_error_code(boost::system::errc::success);
+
+  boost::asio::ip::tcp::endpoint endpoint;
+
+  boost::asio::ip::tcp::resolver resolver(io_context_);
+  auto endpoints =
+      resolver.resolve(http_host_, std::to_string(http_port_), error);
+  if (!error) {
+    endpoint = endpoints->endpoint();
+    VLOG(2) << "[dns] reply with endpoint: " << endpoint << " for domain "
+            << http_host_;
+  } else {
+    VLOG(1) << "[dns] resolve failure for domain " << http_host_;
+  }
+
+  ByteRange req(ss_request_->data(), ss_request_->length());
+  OnCmdConnect(req);
+
+  return boost::system::errc::make_error_code(boost::system::errc::success);
+}
+
 void Socks5Connection::ProcessReceivedData(
     std::shared_ptr<Socks5Connection> self, std::shared_ptr<IOBuf> buf,
     boost::system::error_code error, size_t bytes_transferred) {
@@ -345,6 +539,15 @@ void Socks5Connection::ProcessReceivedData(
       break;
     case state_socks4_handshake:
       error = self->PerformCmdOpsV4(&self->s4_request_, &self->s4_reply_);
+
+      self->WriteHandshake();
+      self->SetState(state_stream);
+      if (buf->length()) {
+        self->ProcessReceivedData(self, buf, error, buf->length());
+      }
+      break;
+    case state_http_handshake:
+      error = self->PerformCmdOpsHttp();
 
       self->WriteHandshake();
       self->SetState(state_stream);
@@ -394,6 +597,7 @@ void Socks5Connection::ProcessSentData(std::shared_ptr<Socks5Connection> self,
       break;
     case state_socks4_handshake:
     case state_method_select: // impossible
+    case state_http_handshake:
     case state_error:
       error = boost::system::errc::make_error_code(
           boost::system::errc::bad_message);

@@ -66,7 +66,7 @@ int main(int argc, const char *argv[]) {
   Socks5Factory factory(io_context, remoteEndpoint);
   try {
     factory.listen(endpoint);
-  } catch (std::exception& e) {
+  } catch (std::exception &e) {
     LOG(ERROR) << "listen failed due to " << e.what();
     return -1;
   }
