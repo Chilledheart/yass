@@ -88,6 +88,12 @@ ninja
 - Linux
 - Windows (incoming)
 
+### Protocols supported
+- Socks4
+- Socks4A
+- Socks5
+- HTTP/HTTPS
+
 [MacPorts]: https://www.macports.org/install.php
 [aead]: https://shadowsocks.org/en/spec/AEAD-Ciphers.html
 [asan]: https://github.com/google/sanitizers/wiki/AddressSanitizer
