@@ -224,12 +224,12 @@ boost::system::error_code
 Socks5Connection::OnReadHttpRequest(std::shared_ptr<IOBuf> buf) {
   static http_parser_settings settings_connect = {
       .on_message_begin = http_request_cb,
-      .on_header_field = &Socks5Connection::OnReadHttpRequestHeaderField,
-      .on_header_value = &Socks5Connection::OnReadHttpRequestHeaderValue,
       .on_url = &Socks5Connection::OnReadHttpRequestURL,
       .on_status = http_request_data_cb,
-      .on_body = http_request_data_cb,
+      .on_header_field = &Socks5Connection::OnReadHttpRequestHeaderField,
+      .on_header_value = &Socks5Connection::OnReadHttpRequestHeaderValue,
       .on_headers_complete = Socks5Connection::OnReadHttpRequestHeadersDone,
+      .on_body = http_request_data_cb,
       .on_message_complete = http_request_cb,
       .on_chunk_header = http_request_cb,
       .on_chunk_complete = http_request_cb};
@@ -292,7 +292,6 @@ int Socks5Connection::OnReadHttpRequestHeaderValue(http_parser *p,
   conn->http_headers_[conn->http_field_] = conn->http_value_;
   if (conn->http_field_ == "Host" && !conn->http_is_connect_) {
     const char *url = buf;
-    const char *port;
     // Host = "Host" ":" host [ ":" port ] ; Section 3.2.2
     // TBD hand with IPv6 address // [xxx]:port/xxx
     while (*buf != ':' && *buf != '\0' && len != 0) {
