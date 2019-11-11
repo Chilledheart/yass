@@ -39,6 +39,7 @@ private:
   void OnHello(wxCommandEvent &event);
   void OnExit(wxCommandEvent &event);
   void OnAbout(wxCommandEvent &event);
+  void OnIdle(wxIdleEvent &event);
 
   LeftPanel *m_leftpanel;
   RightPanel *m_rightpanel;

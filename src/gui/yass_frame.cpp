@@ -15,9 +15,10 @@
 // clang-format off
 
 wxBEGIN_EVENT_TABLE(YASSFrame, wxFrame)
-  EVT_MENU(ID_Hello, YASSFrame::OnHello)
-  EVT_MENU(wxID_EXIT, YASSFrame::OnExit)
+  EVT_MENU(ID_Hello,   YASSFrame::OnHello)
+  EVT_MENU(wxID_EXIT,  YASSFrame::OnExit)
   EVT_MENU(wxID_ABOUT, YASSFrame::OnAbout)
+  EVT_IDLE(            YASSFrame::OnIdle)
 wxEND_EVENT_TABLE()
 
     // clang-format on
@@ -112,13 +113,15 @@ void YASSFrame::UpdateStatus() {
   SetStatusText(mApp->GetStatus());
 }
 
-void YASSFrame::OnExit(wxCommandEvent &event) { Close(true); }
+void YASSFrame::OnHello(wxCommandEvent &WXUNUSED(event)) {
+  wxLogMessage("Hello world from wxWidgets!");
+}
 
-void YASSFrame::OnAbout(wxCommandEvent &event) {
+void YASSFrame::OnExit(wxCommandEvent &WXUNUSED(event)) { Close(true); }
+
+void YASSFrame::OnAbout(wxCommandEvent &WXUNUSED(event)) {
   wxMessageBox("This is Yet-Another-Shadow-Socket", "About YASS",
                wxOK | wxICON_INFORMATION);
 }
 
-void YASSFrame::OnHello(wxCommandEvent &event) {
-  wxLogMessage("Hello world from wxWidgets!");
-}
+void YASSFrame::OnIdle(wxIdleEvent &WXUNUSED(event)) { UpdateStatus(); }

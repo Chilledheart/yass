@@ -12,8 +12,6 @@
 
 #include <string>
 
-#define UPDATE_STATS_MILLISECONDS 100
-
 YASSApp *mApp;
 
 // this is a definition so can't be in a header
@@ -25,7 +23,6 @@ wxBEGIN_EVENT_TABLE(YASSApp, wxApp)
   EVT_COMMAND(ID_STARTED, MY_EVENT, YASSApp::OnStarted)
   EVT_COMMAND(ID_START_FAILED, MY_EVENT, YASSApp::OnStartFailed)
   EVT_COMMAND(ID_STOPPED, MY_EVENT, YASSApp::OnStopped)
-  EVT_TIMER(ID_UPDATE_STATS, YASSApp::OnUpdateStats)
 wxEND_EVENT_TABLE()
 
     // clang-format on
@@ -39,8 +36,6 @@ wxEND_EVENT_TABLE()
                          wxSize(450, 340));
   frame_->Show(true);
   frame_->UpdateStatus();
-
-  update_timer_ = new wxTimer(this, ID_UPDATE_STATS);
   return true;
 }
 
@@ -77,10 +72,9 @@ void YASSApp::OnStart() {
   worker_.Start();
 }
 
-void YASSApp::OnStarted(wxCommandEvent &event) {
+void YASSApp::OnStarted(wxCommandEvent &WXUNUSED(event)) {
   state_ = STARTED;
   frame_->Started();
-  update_timer_->Start(UPDATE_STATS_MILLISECONDS);
 }
 
 void YASSApp::OnStartFailed(wxCommandEvent &event) {
@@ -91,12 +85,9 @@ void YASSApp::OnStartFailed(wxCommandEvent &event) {
 
 void YASSApp::OnStop() { worker_.Stop(); }
 
-void YASSApp::OnStopped(wxCommandEvent &event) {
+void YASSApp::OnStopped(wxCommandEvent &WXUNUSED(event)) {
   state_ = STOPPED;
   frame_->Stopped();
-  update_timer_->Stop();
 }
-
-void YASSApp::OnUpdateStats(wxTimerEvent &event) { frame_->UpdateStatus(); }
 
 wxIMPLEMENT_APP(YASSApp);
