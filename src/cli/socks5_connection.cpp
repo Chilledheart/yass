@@ -267,7 +267,7 @@ Socks5Connection::OnReadHttpRequest(std::shared_ptr<IOBuf> buf) {
     return boost::system::errc::make_error_code(boost::system::errc::success);
   }
 
-  LOG(ERROR) << http_errno_description(HTTP_PARSER_ERRNO(&parser));
+  LOG(WARNING) << http_errno_description(HTTP_PARSER_ERRNO(&parser));
   return boost::system::errc::make_error_code(boost::system::errc::bad_message);
 }
 

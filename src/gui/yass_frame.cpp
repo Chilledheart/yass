@@ -25,7 +25,8 @@ wxEND_EVENT_TABLE()
 
     YASSFrame::YASSFrame(const wxString &title, const wxPoint &pos,
                          const wxSize &size)
-    : wxFrame(NULL, wxID_ANY, title, pos, size) {
+    : wxFrame(NULL, wxID_ANY, title, pos, size,
+              wxDEFAULT_FRAME_STYLE & (~wxMAXIMIZE_BOX) & (~wxRESIZE_BORDER)) {
   wxMenu *menuFile = new wxMenu;
   menuFile->Append(ID_Hello, "&Hello...\tCtrl-H",
                    "Hell string shown in status bar for this menu item");
