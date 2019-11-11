@@ -45,6 +45,8 @@ public:
                                                channel, std::placeholders::_1));
   }
 
+  bool connected() const { return connected_; }
+
   void disable_read() { read_enabled_ = false; }
 
   void enable_read() {

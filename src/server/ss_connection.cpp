@@ -240,6 +240,12 @@ void SsConnection::OnStreamWrite(std::shared_ptr<IOBuf> buf) {
   /* recursively send the remainings */
   OnDownstreamWriteFlush();
 
+  /* close the socket if upstream is eof */
+  if (!channel_->connected() && downstream_.empty()) {
+    close();
+    return;
+  }
+
   /* disable queue limit to re-enable upstream read */
   if (downstream_.size() < MAX_DOWNSTREAM_DEPS && !upstream_readable_) {
     upstream_readable_ = true;
@@ -333,7 +339,10 @@ void SsConnection::disconnected(boost::system::error_code error) {
   VLOG(2) << "upstream: lost connection with: " << remote_endpoint_
           << " due to " << error;
   upstream_writable_ = false;
-  close();
+  /* delay the socket's close because downstream is buffered */
+  if (downstream_.empty()) {
+    close();
+  }
 }
 
 std::shared_ptr<IOBuf>
