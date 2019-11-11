@@ -16,27 +16,44 @@ VCPKG_DIR = os.getenv('VCPKG_ROOT')
 
 num_cpus=cpu_count()
 
-def macdeploywxwidgets(name):
-  frameworks_path = os.path.join(name, 'Contents', 'Frameworks', os.path.basename(DEFAULT_WXWIDGETS_FRAMEWORK))
-  shutil.copytree(DEFAULT_WXWIDGETS_FRAMEWORK, frameworks_path, symlinks=True)
-  lib_path = os.path.join(frameworks_path, 'Versions', 'wxWidgets', '3.1', 'lib')
-  libs = os.listdir(lib_path)
-  for lib_name in libs:
+def copy_file_with_symlinks(src, dst):
+  if os.path.lexists(dst):
+    return
+  if os.path.islink(src):
+    linkto = os.readlink(src)
+    os.symlink(linkto, dst)
+    return
+  shutil.copyfile(src, dst)
+
+def macdeploywxwidgets(name, components = ['baseu', 'core', 'gl']):
+  lib_path = os.path.join(DEFAULT_WXWIDGETS_FRAMEWORK, 'Versions', 'wxWidgets', '3.1', 'lib')
+  libs = []
+  for lib_name in os.listdir(lib_path):
     lib = os.path.join(lib_path, lib_name)
     if os.path.isdir(lib):
       continue
+    is_comp = False
+    for comp in components:
+      if comp + "-" in lib_name:
+        is_comp = True
+    if not is_comp:
+      continue
+    libs.append(lib)
+
+  frameworks_path = os.path.join(name, 'Contents', 'Frameworks')
+
+  for lib in libs:
+    dstname = frameworks_path + '/' + os.path.basename(lib)
+    copy_file_with_symlinks(lib, dstname)
+
     write_output(['install_name_tool', '-id', '@loader_path/%s' % os.path.basename(lib), lib])
-    write_output(['install_name_tool', '-add_rpath', '@loader_path/../../../../../../Frameworks/', lib])
     write_output(['install_name_tool', '-add_rpath', '@loader_path/', lib])
     write_output(['install_name_tool', '-delete_rpath', '/usr/local/lib', lib])
     write_output(['install_name_tool', '-delete_rpath', '/opt/local/lib', lib])
     deps = get_dependencies(lib)
     for dep in deps:
       dep_name = os.path.basename(dep)
-      if '.framework' in dep:
-        write_output(['install_name_tool', '-change', dep, '@loader_path/%s' % dep_name, lib])
-      else:
-        write_output(['install_name_tool', '-change', dep, '@loader_path/../../../../../../Frameworks/%s' % dep_name, lib])
+      write_output(['install_name_tool', '-change', dep, '@loader_path/%s' % dep_name, lib])
 
 def write_output(command):
   proc = subprocess.Popen(command, stdout=sys.stdout, stderr=sys.stdout,
@@ -168,7 +185,12 @@ def postbuild_copy_libraries_xcode():
   if not os.path.isdir(frameworks_path):
     os.makedirs(frameworks_path)
   for lib in libs:
-    shutil.copyfile(lib, frameworks_path + '/' + os.path.basename(lib))
+    dstname = frameworks_path + '/' + os.path.basename(lib)
+    copy_file_with_symlinks(lib, dstname)
+    if os.path.islink(lib):
+      lib = os.path.dirname(lib) + '/' + os.readlink(lib)
+      dstname = frameworks_path + '/' + os.readlink(dstname)
+      copy_file_with_symlinks(lib, dstname)
   macdeploywxwidgets(APP_NAME + '.app')
 
 def postbuild_fix_rpath():
@@ -191,12 +213,9 @@ def postbuild_install_name_tool():
   binaries = [os.path.join(macos_path, APP_NAME)]
   for binary in binaries:
     write_output(['install_name_tool', '-add_rpath', '@executable_path/../Frameworks', binary])
-    write_output(['install_name_tool', '-add_rpath', '@executable_path/../Frameworks/wxWidgets.framework/Versions/wxWidgets/3.1/lib/', binary])
     deps = get_dependencies(binary)
     for dep in deps:
       dep_name = os.path.basename(dep)
-      if '.framework' in dep:
-        dep_name = dep[len('/opt/local/Library/Frameworks/'):]
       write_output(['install_name_tool', '-change', dep, '@executable_path/../Frameworks/%s' % dep_name, binary])
     write_output(['install_name_tool', '-delete_rpath', '/usr/local/lib', binary])
     write_output(['install_name_tool', '-delete_rpath', '/opt/local/lib', binary])
@@ -207,14 +226,11 @@ def postbuild_install_name_tool():
       continue
     write_output(['install_name_tool', '-id', '@loader_path/../Frameworks/%s' % os.path.basename(lib), lib])
     write_output(['install_name_tool', '-add_rpath', '@loader_path/../Frameworks', lib])
-    write_output(['install_name_tool', '-add_rpath', '@loader_path/../Frameworks/wxWidgets.framework/Versions/wxWidgets/3.1/lib/', lib])
     write_output(['install_name_tool', '-delete_rpath', '/usr/local/lib', lib])
     write_output(['install_name_tool', '-delete_rpath', '/opt/local/lib', lib])
     deps = get_dependencies(lib)
     for dep in deps:
       dep_name = os.path.basename(dep)
-      if '.framework' in dep:
-        dep_name = dep[len('/opt/local/Library/Frameworks/'):]
       write_output(['install_name_tool', '-change', dep, '@loader_path/../Frameworks/%s' % dep_name, lib])
 
 
