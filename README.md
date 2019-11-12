@@ -74,7 +74,7 @@ ninja
 4. copy `build/yass.app` into `/Application` directory.
 ### vcpkg
 ```
-vcpkg install boost-asio:x86-windows-static boost-filesystem:x86-windows-static boost-system:x86-windows-static glog:x86-windows-static gflags:x86-windows-static libsodium:x86-windows-static jsoncpp:x86-windows-static openssl:x86-windows-static jemalloc wxwidgets
+vcpkg install boost-asio:x86-windows-static boost-filesystem:x86-windows-static boost-system:x86-windows-static glog:x86-windows-static gflags:x86-windows-static libsodium:x86-windows-static jsoncpp:x86-windows-static openssl:x86-windows-static wxwidgets:x86-windows-static jemalloc
 ```
 
 ## Crypto

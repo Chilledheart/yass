@@ -25,6 +25,21 @@ def copy_file_with_symlinks(src, dst):
     return
   shutil.copyfile(src, dst)
 
+
+def write_output(command):
+  proc = subprocess.Popen(command, stdout=sys.stdout, stderr=sys.stdout,
+      shell=False, env=os.environ)
+  proc.communicate()
+
+
+def get_app_name():
+  if sys.platform == 'win32':
+    return '%s.exe' % APP_NAME
+  elif sys.platform == 'darwin':
+    return '%s.app' % APP_NAME
+  return APP_NAME
+
+
 def macdeploywxwidgets(name, components = ['baseu', 'core', 'gl']):
   lib_path = os.path.join(DEFAULT_WXWIDGETS_FRAMEWORK, 'Versions', 'wxWidgets', '3.1', 'lib')
   libs = []
@@ -55,10 +70,6 @@ def macdeploywxwidgets(name, components = ['baseu', 'core', 'gl']):
       dep_name = os.path.basename(dep)
       write_output(['install_name_tool', '-change', dep, '@loader_path/%s' % dep_name, lib])
 
-def write_output(command):
-  proc = subprocess.Popen(command, stdout=sys.stdout, stderr=sys.stdout,
-      shell=False, env=os.environ)
-  proc.communicate()
 
 def get_dependencies_by_otool(path):
   if path.endswith('.app') and os.path.isdir(path):
@@ -86,6 +97,7 @@ def get_dependencies_by_otool(path):
     outputs.append(os.path.normpath(name))
 
   return outputs
+
 
 def get_dependencies_by_ldd(path):
   lines = subprocess.check_output(['ldd', '-v', path]).split('Version information:')[1].split('\n\t')
@@ -115,13 +127,16 @@ def get_dependencies_by_ldd(path):
   # remove duplicate items
   return list(set(outputs))
 
+
 def get_dependencies_by_objdump(path):
   print 'todo'
   return []
 
+
 def get_dependencies_by_dependency_walker(path):
   print 'todo'
   return []
+
 
 def get_dependencies(path):
   if sys.platform == 'win32':
@@ -132,6 +147,7 @@ def get_dependencies(path):
     return get_dependencies_by_ldd(path)
   else:
     raise IOError('not supported in platform %s' % sys.platform)
+
 
 def get_dependencies_recursively(path):
   if sys.platform == 'win32':
@@ -152,17 +168,8 @@ def get_dependencies_recursively(path):
   else:
     raise IOError('not supported in platform %s' % sys.platform)
 
-def postbuild_copy_libraries():
-  print 'copying dependent libraries...'
-  if sys.platform == 'win32':
-    # not supported
-    pass
-  elif sys.platform == 'darwin':
-    postbuild_copy_libraries_xcode()
-  else:
-    postbuild_copy_libraries_posix()
 
-def postbuild_copy_libraries_posix():
+def _postbuild_copy_libraries_posix():
   lib_path = os.path.join(APP_NAME, 'lib')
   bin_path = os.path.join(APP_NAME, 'bin')
   binaries = [os.path.join(bin_path, APP_NAME)]
@@ -174,7 +181,8 @@ def postbuild_copy_libraries_posix():
   for lib in libs:
       shutil.copyfile(lib, lib_path + '/' + os.path.basename(lib))
 
-def postbuild_copy_libraries_xcode():
+
+def _postbuild_copy_libraries_xcode():
   frameworks_path = os.path.join(APP_NAME + '.app', 'Contents', 'Frameworks')
   resources_path = os.path.join(APP_NAME + '.app', 'Contents', 'Resources')
   macos_path = os.path.join(APP_NAME + '.app', 'Contents', 'MacOS')
@@ -193,20 +201,8 @@ def postbuild_copy_libraries_xcode():
       copy_file_with_symlinks(lib, dstname)
   macdeploywxwidgets(APP_NAME + '.app')
 
-def postbuild_fix_rpath():
-  print 'fixing rpath...'
-  if sys.platform == 'win32':
-    print 'not need to fix rpath'
-  elif sys.platform == 'linux':
-    postbuild_patchelf()
-  elif sys.platform == 'darwin':
-    postbuild_install_name_tool()
-  else:
-    print 'not supported in platform %s' % sys.platform
-  print 'fixing rpath...done'
 
-
-def postbuild_install_name_tool():
+def _postbuild_install_name_tool():
   frameworks_path = os.path.join(APP_NAME + '.app', 'Contents', 'Frameworks')
   resources_path = os.path.join(APP_NAME + '.app', 'Contents', 'Resources')
   macos_path = os.path.join(APP_NAME + '.app', 'Contents', 'MacOS')
@@ -234,7 +230,7 @@ def postbuild_install_name_tool():
       write_output(['install_name_tool', '-change', dep, '@loader_path/../Frameworks/%s' % dep_name, lib])
 
 
-def postbuild_patchelf():
+def _postbuild_patchelf():
   lib_path = os.path.join(APP_NAME, 'lib')
   bin_path = os.path.join(APP_NAME, 'bin')
   binaries = os.listdir(bin_path)
@@ -251,37 +247,6 @@ def postbuild_patchelf():
     write_output(['patchelf', '-set-rpath', '\\\$ORIGIN/../lib', lib])
 
 
-def postbuild_fix_retina_display():
-  print 'fixing retina display...'
-  if sys.platform == 'darwin':
-    write_output(['plutil', '-insert', 'NSPrincipalClass', '-string', 'NSApplication', APP_NAME + '.app/Contents/Info.plist'])
-    write_output(['plutil', '-insert', 'NSHighResolutionCapable', '-bool', 'YES', APP_NAME + '.app/Contents/Info.plist'])
-  print 'fixing retina display...done'
-
-
-def execute_buildscript(configuration = 'Release'):
-  print 'executing build scripts...'
-  command = ['cmake', '--build', '.', '--config', 'Release']
-  write_output(command)
-
-
-def generate_buildscript(build_type = DEFAULT_BUILD_TYPE):
-  print 'generate build scripts...'
-  cmake_args = ['-DCMAKE_BUILD_TYPE=' + build_type]
-  if sys.platform == 'win32':
-    cmake_args.extend(['-G', 'Visual Studio 15 2017'])
-    cmake_args.extend(['-DCMAKE_TOOLCHAIN_FILE=%s\\scripts\\buildsystems\\vcpkg.cmake' % VCPKG_DIR])
-    cmake_args.extend(['-DVCPKG_ROOT_DIR=%s' % VCPKG_DIR])
-  else:
-    cmake_args.extend(['-G', 'Ninja'])
-
-  if sys.platform == 'darwin':
-    cmake_args.append('-DCMAKE_OSX_DEPLOYMENT_TARGET=%s' % DEFAULT_OS_MIN);
-
-  command = ['cmake', '..'] + cmake_args
-  write_output(command)
-
-
 def find_source_directory():
   print 'find source directory...'
   os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -295,10 +260,85 @@ def find_source_directory():
   os.chdir('build')
 
 
+def generate_buildscript(configuration_type):
+  print 'generate build scripts...(%s)' % configuration_type
+  cmake_args = []
+  if sys.platform == 'win32':
+    cmake_args.extend(['-G', 'Visual Studio 15 2017'])
+    cmake_args.extend(['-DCMAKE_TOOLCHAIN_FILE=%s\\scripts\\buildsystems\\vcpkg.cmake' % VCPKG_DIR])
+    cmake_args.extend(['-DVCPKG_ROOT_DIR=%s' % VCPKG_DIR])
+  else:
+    cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])
+    cmake_args.extend(['-G', 'Ninja'])
+
+  if sys.platform == 'darwin':
+    cmake_args.append('-DCMAKE_OSX_DEPLOYMENT_TARGET=%s' % DEFAULT_OS_MIN);
+
+  command = ['cmake', '..'] + cmake_args
+  write_output(command)
+
+
+def execute_buildscript(configuration_type):
+  print 'executing build scripts...(%s)' % configuration_type
+
+  command = ['cmake', '--build', '.', '--parallel', '--config', configuration_type, '--target', APP_NAME]
+  write_output(command)
+  if sys.platform == 'win32':
+    src = '%s/%s' % (configuration_type, get_app_name())
+    dst = '%s' % get_app_name()
+    os.rename(src, dst)
+
+  outputs = ['build/%s' % get_app_name()]
+
+  if sys.platform == 'win32':
+    print 'executing build scripts...(debug)'
+    command = ['cmake', '--build', '.', '--parallel', '--config', 'Debug']
+    write_output(command)
+
+    outputs.append('build\Debug\%s' % get_app_name())
+
+  return outputs
+
+
+def postbuild_copy_libraries():
+  print 'copying dependent libraries...'
+  if sys.platform == 'win32':
+    # not supported
+    pass
+  elif sys.platform == 'darwin':
+    _postbuild_copy_libraries_xcode()
+  else:
+    _postbuild_copy_libraries_posix()
+
+
+def postbuild_fix_rpath():
+  print 'fixing rpath...'
+  if sys.platform == 'win32':
+    # 'no need to fix rpath'
+    pass
+  elif sys.platform == 'linux':
+    _postbuild_patchelf()
+  elif sys.platform == 'darwin':
+    _postbuild_install_name_tool()
+  else:
+    print 'not supported in platform %s' % sys.platform
+
+
+def postbuild_fix_retina_display():
+  print 'fixing retina display...'
+  write_output(['plutil', '-insert', 'NSPrincipalClass', '-string', 'NSApplication', '%s.app/Contents/Info.plist' % APP_NAME])
+  write_output(['plutil', '-insert', 'NSHighResolutionCapable', '-bool', 'YES', '%s.app/Contents/Info.plist' % APP_NAME])
+
 if __name__ == '__main__':
+  configuration_type = 'Release'
+
   find_source_directory()
-  generate_buildscript()
-  execute_buildscript()
+  generate_buildscript(configuration_type)
+  outputs = execute_buildscript(configuration_type)
   postbuild_copy_libraries()
   postbuild_fix_rpath()
-  postbuild_fix_retina_display()
+  if sys.platform == 'darwin':
+    postbuild_fix_retina_display()
+  for output in outputs:
+    print '------ %s' % output
+  print 'done'
