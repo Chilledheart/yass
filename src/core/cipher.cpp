@@ -11,9 +11,8 @@
 #include "cipher.hpp"
 #include "protocol.hpp"
 
-extern "C" {
-#include "base64.h"
-}
+#include "modp_b64.h"
+
 #include <vector>
 
 #include <sodium/core.h>
@@ -23,17 +22,8 @@ extern "C" {
 #include <sodium/crypto_stream_salsa20.h>
 #include <sodium/randombytes.h>
 
-#include <openssl/md5.h>
-#include <openssl/sha.h>
-#define internal_md5_ctx MD5_CTX
-#define internal_md5_init MD5_Init
-#define internal_md5_update MD5_Update
-#define internal_md5_final MD5_Final
-
-#define internal_sha1_ctx SHA_CTX
-#define internal_sha1_init SHA1_Init
-#define internal_sha1_update SHA1_Update
-#define internal_sha1_final SHA1_Final
+#include "core/md5.h"
+#include "core/sha1.h"
 
 #define SODIUM_BLOCK_SIZE 64
 #define SUBKEY_INFO "ss-subkey"
@@ -68,11 +58,11 @@ static constexpr int tag_size[cipher::MAX_CIPHER_METHOD] = {0, 0, 0, 0, 16, 16};
 static int parse_key(const std::string &key, uint8_t *skey, size_t skey_len) {
   const char *base64 = key.c_str();
   const size_t base64_len = key.size();
-  uint32_t out_len = BASE64_SIZE(base64_len);
-  std::vector<uint8_t> out;
+  uint32_t out_len = modp_b64_decode_len(base64_len);
+  std::vector<char> out;
   out.resize(out_len);
 
-  out_len = base64_decode(out.data(), base64, out_len);
+  out_len = modp_b64_decode(out.data(), base64, out_len);
   if (out_len > 0 && out_len >= skey_len) {
     memcpy(skey, out.data(), skey_len);
     return skey_len;
@@ -83,7 +73,7 @@ static int parse_key(const std::string &key, uint8_t *skey, size_t skey_len) {
 static int derive_key(const std::string &key, uint8_t *skey, size_t skey_len) {
   const char *pass = key.c_str();
   size_t datal = key.size();
-  internal_md5_ctx c;
+  MD5Context c;
   unsigned char md_buf[MD_MAX_SIZE_256];
   int addmd;
   unsigned int i, j, mds;
@@ -92,15 +82,15 @@ static int derive_key(const std::string &key, uint8_t *skey, size_t skey_len) {
     return skey_len;
 
   mds = 16;
-  internal_md5_init(&c);
+  MD5Init(&c);
 
   for (j = 0, addmd = 0; j < skey_len; addmd++) {
-    internal_md5_init(&c);
+    MD5Init(&c);
     if (addmd) {
-      internal_md5_update(&c, md_buf, mds);
+      MD5Update(&c, md_buf, mds);
     }
-    internal_md5_update(&c, (uint8_t *)pass, datal);
-    internal_md5_final(&(md_buf[0]), &c);
+    MD5Update(&c, (uint8_t *)pass, datal);
+    MD5Final((MD5Digest*)md_buf, &c);
 
     for (i = 0; i < mds; i++, j++) {
       if (j >= skey_len)
@@ -112,7 +102,7 @@ static int derive_key(const std::string &key, uint8_t *skey, size_t skey_len) {
   return skey_len;
 }
 
-static int hmac_sha1_starts(internal_sha1_ctx *ctx, unsigned char *ipad,
+static int hmac_sha1_starts(SHA1Context *ctx, unsigned char *ipad,
                             unsigned char *opad, const unsigned char *key,
                             size_t keylen) {
   int ret = 0;
@@ -123,9 +113,9 @@ static int hmac_sha1_starts(internal_sha1_ctx *ctx, unsigned char *ipad,
     return -1;
 
   if (keylen > (size_t)HASH_BLOCK_SIZE_256) {
-    internal_sha1_init(ctx);
-    internal_sha1_update(ctx, key, keylen);
-    internal_sha1_final(sum, ctx);
+    SHA1Init(ctx);
+    SHA1Update(ctx, key, keylen);
+    SHA1Final((SHA1Digest*)sum, ctx);
 
     keylen = OUTPUT_SIZE_SHA1;
     key = sum;
@@ -139,50 +129,50 @@ static int hmac_sha1_starts(internal_sha1_ctx *ctx, unsigned char *ipad,
     opad[i] = (unsigned char)(opad[i] ^ key[i]);
   }
 
-  internal_sha1_init(ctx);
-  internal_sha1_update(ctx, ipad, HASH_BLOCK_SIZE_256);
+  SHA1Init(ctx);
+  SHA1Update(ctx, ipad, HASH_BLOCK_SIZE_256);
 
   memset(sum, 0, sizeof(sum));
 
   return ret;
 }
 
-static int hmac_sha1_update(internal_sha1_ctx *ctx, unsigned char *ipad,
+static int hmac_sha1_update(SHA1Context *ctx, unsigned char *ipad,
                             unsigned char *opad, const unsigned char *input,
                             size_t ilen) {
   if (ctx == NULL || ipad == NULL || opad == NULL)
     return -1;
 
-  internal_sha1_update(ctx, input, ilen);
+  SHA1Update(ctx, input, ilen);
 
   return 0;
 }
 
-static int hmac_sha1_finish(internal_sha1_ctx *ctx, unsigned char *ipad,
+static int hmac_sha1_finish(SHA1Context *ctx, unsigned char *ipad,
                             unsigned char *opad, unsigned char *output) {
   unsigned char tmp[MD_MAX_SIZE_256];
 
   if (ctx == NULL || ipad == NULL || opad == NULL)
     return -1;
 
-  internal_sha1_final(tmp, ctx);
+  SHA1Final((SHA1Digest*)tmp, ctx);
 
-  internal_sha1_init(ctx);
-  internal_sha1_update(ctx, opad, HASH_BLOCK_SIZE_256);
-  internal_sha1_update(ctx, tmp, OUTPUT_SIZE_SHA1);
-  internal_sha1_final(output, ctx);
+  SHA1Init(ctx);
+  SHA1Update(ctx, opad, HASH_BLOCK_SIZE_256);
+  SHA1Update(ctx, tmp, OUTPUT_SIZE_SHA1);
+  SHA1Final((SHA1Digest*)output, ctx);
 
   return 0;
 }
 
 static UNUSED_F
-int hmac_sha1_reset(internal_sha1_ctx *ctx, unsigned char *ipad,
+int hmac_sha1_reset(SHA1Context *ctx, unsigned char *ipad,
                     unsigned char *opad) {
   if (ctx == NULL || ipad == NULL || opad == NULL)
     return -1;
 
-  internal_sha1_init(ctx);
-  internal_sha1_update(ctx, ipad, HASH_BLOCK_SIZE_256);
+  SHA1Init(ctx);
+  SHA1Update(ctx, ipad, HASH_BLOCK_SIZE_256);
 
   return 0;
 }
@@ -190,11 +180,11 @@ int hmac_sha1_reset(internal_sha1_ctx *ctx, unsigned char *ipad,
 static int hmac_sha1(const unsigned char *key, size_t keylen,
                      const unsigned char *input, size_t ilen,
                      unsigned char *output) {
-  internal_sha1_ctx ctx;
+  SHA1Context ctx;
   unsigned char ipad[HASH_BLOCK_SIZE_256], opad[HASH_BLOCK_SIZE_256];
   int ret;
 
-  internal_sha1_init(&ctx);
+  SHA1Init(&ctx);
 
   if ((ret = hmac_sha1_starts(&ctx, ipad, opad, key, keylen)) != 0)
     goto cleanup;
@@ -309,7 +299,7 @@ int crypto_hkdf_expand(const unsigned char *prk, int prk_len,
   int hash_len;
   int N;
   int T_len = 0, where = 0, i, ret;
-  internal_sha1_ctx ctx;
+  SHA1Context ctx;
   unsigned char ipad[HASH_BLOCK_SIZE_256], opad[HASH_BLOCK_SIZE_256];
   unsigned char T[MD_MAX_SIZE_256];
 
@@ -337,7 +327,7 @@ int crypto_hkdf_expand(const unsigned char *prk, int prk_len,
     return -1;
   }
 
-  internal_sha1_init(&ctx);
+  SHA1Init(&ctx);
 
   /* Section 2.3. */
   for (i = 1; i <= N; i++) {

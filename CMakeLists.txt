@@ -221,15 +221,6 @@ if (WIN32)
       optimized ${JSONCPP_RELEASE_LIB}
       )
 
-    find_library(CRYPTO_RELEASE_LIB libeay32
-      PATHS ${VCPKG_STATIC_LIB_PATH} NO_DEFAULT_PATH)
-    find_library(CRYPTO_DEBUG_LIB libeay32
-      PATHS ${VCPKG_STATIC_LIB_DEBUG_PATH} NO_DEFAULT_PATH)
-    set(CRYPTO_LIB
-      debug ${CRYPTO_DEBUG_LIB}
-      optimized ${CRYPTO_RELEASE_LIB}
-      )
-
     find_library(BOOST_FILESYSTEM_RELEASE_LIB boost_filesystem-vc140-mt
       PATHS ${VCPKG_STATIC_LIB_PATH} NO_DEFAULT_PATH)
     find_library(BOOST_FILESYSTEM_DEBUG_LIB boost_filesystem-vc140-mt-gd
@@ -268,11 +259,6 @@ else()
     find_library(GLOG_LIB glog)
     find_library(GFLAGS_LIB gflags)
     find_library(SODIUM_LIB sodium)
-    if (APPLE)
-        find_library(CRYPTO_LIB crypto PATHS /usr/lib NO_DEFAULT_PATH)
-    else()
-        find_library(CRYPTO_LIB crypto)
-    endif()
     find_library(JSONCPP_LIB jsoncpp)
 
     find_library(BOOST_FILESYSTEM_LIB boost_filesystem)
@@ -289,7 +275,6 @@ set(SUPPORT_LIBS
     ${GLOG_LIB}
     ${GFLAGS_LIB}
     ${SODIUM_LIB}
-    ${CRYPTO_LIB}
     ${JSONCPP_LIB}
     ${BOOST_FILESYSTEM_LIB}
     ${BOOST_SYSTEM_LIB}
@@ -311,9 +296,11 @@ endif()
 
 set(files
     src/config.cpp
-    src/core/base64.c
     src/core/cipher.cpp
     src/core/http_parser.c
+    src/core/md5.cc
+    src/core/modp_b64.cc
+    src/core/sha1.cc
     src/core/iobuf.cpp
     src/core/socks4_request_parser.cpp
     src/core/socks5_request_parser.cpp
@@ -322,9 +309,12 @@ set(files
 
 set(hfiles
     src/config.hpp
-    src/core/base64.h
     src/core/cipher.hpp
     src/core/http_parser.h
+    src/core/md5.h
+    src/core/modp_b64.h
+    src/core/modp_b64_data.h
+    src/core/sha1.h
     src/core/iobuf.hpp
     src/core/socks4.hpp
     src/core/socks4_request.hpp
