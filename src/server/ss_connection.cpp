@@ -278,9 +278,8 @@ void SsConnection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
   }
 
   if (!downstream_.empty() && downstream_writable_) {
-    std::shared_ptr<IOBuf> buf = downstream_[0];
     downstream_writable_ = false;
-    WriteStream(buf);
+    WriteStream(downstream_[0]);
   }
 }
 
@@ -294,10 +293,8 @@ void SsConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
     upstream_.push_back(buf);
   }
   if (!upstream_.empty() && upstream_writable_) {
-    std::shared_ptr<IOBuf> buf = upstream_[0];
     upstream_writable_ = false;
-
-    channel_->start_write(buf);
+    channel_->start_write(upstream_[0]);
   }
 }
 

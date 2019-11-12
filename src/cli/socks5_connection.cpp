@@ -251,8 +251,11 @@ Socks5Connection::OnReadHttpRequest(std::shared_ptr<IOBuf> buf) {
   parser.data = this;
   nparsed = http_parser_execute(&parser, &settings_connect,
                                 (const char *)buf->data(), buf->length());
-  buf->trimStart(nparsed);
-  buf->retreat(nparsed);
+  if (nparsed) {
+    VLOG(3) << "http: " << std::string((const char *)buf->data(), nparsed);
+    buf->trimStart(nparsed);
+    buf->retreat(nparsed);
+  }
 
   if (HTTP_PARSER_ERRNO(&parser) == HPE_OK) {
     if (!http_is_connect_) {
@@ -281,7 +284,7 @@ int Socks5Connection::OnReadHttpRequestURL(http_parser *p, const char *buf,
       return 1;
     }
     conn->http_is_connect_ = true;
-    VLOG(2) << "CONNECT: " << conn->http_host_ << " PORT: " << conn->http_port_;
+    VLOG(4) << "CONNECT: " << conn->http_host_ << " PORT: " << conn->http_port_;
   }
   return 0;
 }
@@ -316,7 +319,7 @@ int Socks5Connection::OnReadHttpRequestHeaderValue(http_parser *p,
       conn->http_port_ = 80;
     }
 
-    VLOG(2) << "Host: " << conn->http_host_ << " PORT: " << conn->http_port_;
+    VLOG(4) << "Host: " << conn->http_host_ << " PORT: " << conn->http_port_;
   }
   return 0;
 }
@@ -661,9 +664,8 @@ void Socks5Connection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
     downstream_.push_back(buf);
   }
   if (!downstream_.empty() && downstream_writable_) {
-    std::shared_ptr<IOBuf> buf = downstream_[0];
     downstream_writable_ = false;
-    WriteStream(buf);
+    WriteStream(downstream_[0]);
   }
 }
 
@@ -678,9 +680,8 @@ void Socks5Connection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
     upstream_.push_back(buf);
   }
   if (!upstream_.empty() && upstream_writable_) {
-    std::shared_ptr<IOBuf> buf = upstream_[0];
     upstream_writable_ = false;
-    channel_->start_write(buf);
+    channel_->start_write(upstream_[0]);
   }
 }
 

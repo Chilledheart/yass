@@ -56,8 +56,8 @@ public:
         return std::make_tuple(indeterminate, i);
       }
       memcpy(&req.methods_, &*i, req.nmethods() * sizeof(uint8_t));
-      for (uint32_t i = 0; i < req.nmethods(); ++i) {
-        if (req.methods_[i] == no_auth_required) {
+      for (uint32_t method = 0; method < req.nmethods(); ++method) {
+        if (req.methods_[method] == no_auth_required) {
           auth_checked = true;
         }
       }
@@ -141,15 +141,15 @@ public:
         i += sizeof(uint8_t);
         break;
       case domain:
-        memcpy(&req.atyp_req_.domain_name_len, &*i, sizeof(uint8_t));
+        memcpy(&req.atyp_req_.domain.domain_name_len, &*i, sizeof(uint8_t));
         if (end - i <
-            (int)req.atyp_req_.domain_name_len + (int)sizeof(uint16_t)) {
+            (int)req.atyp_req_.domain.domain_name_len + (int)sizeof(uint16_t)) {
           return std::make_tuple(indeterminate, i);
         }
         i += sizeof(uint8_t);
 
-        memcpy(req.atyp_req_.domain_name, &*i, req.atyp_req_.domain_name_len);
-        i += req.atyp_req_.domain_name_len;
+        memcpy(req.atyp_req_.domain.domain_name, &*i, req.atyp_req_.domain.domain_name_len);
+        i += req.atyp_req_.domain.domain_name_len;
 
         memcpy(&req.atyp_req_.port_high_byte, &*i, sizeof(uint8_t));
         i += sizeof(uint8_t);

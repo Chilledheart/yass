@@ -8,14 +8,83 @@ project(${PACKAGE_NAME} CXX C)
 #           Baisc Setups
 # *****************************************************************************************
 
-if(NOT MSVC)
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -Wall -Wextra")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
-endif()
+if (NOT MSVC)
+    ## warnings
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -Wall -Wextra -Wno-unused-parameter")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter")
 
-if(NOT MSVC)
+    ## c/c++ standard
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -std=c99")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+
+    ## optimization flags
+    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
+
+    ## can gc eliminate any unused functions and data items
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fdata-sections -ffunction-sections")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdata-sections -ffunction-sections")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fdata-sections -ffunction-sections")
+    set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} -fdata-sections -ffunction-sections")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fdata-sections -ffunction-sections")
+    if (APPLE)
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dead_strip")
+        set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} -Wl,-dead_strip")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-dead_strip")
+    else()
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
+        set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} -Wl,--gc-sections")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
+    endif()
+
+    ## adopt LTO
+    if (APPLE)
+        set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -flto -fwhole-program-vtables")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto -fwhole-program-vtables")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -flto -fwhole-program-vtables")
+        set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} -flto -fwhole-program-vtables")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto -fwhole-program-vtables")
+    endif()
+
+    ## definitions
+    add_definitions(-D_FILE_OFFSET_BITS=64)
+    add_definitions(-D__STDC_CONSTANT_MACROS)
+    add_definitions(-D__STDC_FORMAT_MACROS)
+    if (NOT APPLE)
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--as-needed")
+        set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} -Wl,--as-needed")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--as-needed")
+    endif()
+
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -pthread -pipe")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -pipe")
+else()
+    ## warnings
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /W4 /WX /wd4099 /wd4100 /wd4127 /wd4244 /wd4267 /wd4505 /wd4838 /wd4996")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /WX /wd4099 /wd4100 /wd4127 /wd4244 /wd4267 /wd4505 /wd4838 /wd4996")
+
+    ## c/c++ standard
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++14 /GR-")
+
+    ## optimization flags
+    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
+
+    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /GL")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG")
+    set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
+
+    ## definitions
+    add_definitions(/DNOMINMAX)
+    add_definitions(/DUNICODE)
+    add_definitions(/DWIN32_LEAN_AND_MEAN)
+    add_definitions(/DWINVER=0x0601)
+    add_definitions(/D_CRT_SECURE_NO_DEPRECATE)
+    add_definitions(/D_SCL_SECURE_NO_DEPRECATE)
+    add_definitions(/D_UNICODE)
+    add_definitions(/D_WIN32_WINNT=0x0601)
 endif()
 
 # *****************************************************************************************
@@ -90,7 +159,6 @@ if (WIN32)
     set(VCPKG_STATIC_LIB_DEBUG_PATH ${VCPKG_ROOT_DIR}/installed/x86-windows-static/debug/lib)
 
     add_definitions(-DGLOG_STATIC)
-    add_definitions(-D_WIN32_WINNT=0x0601)
     add_definitions(-DGFLAGS_DLL_DECLARE_FLAG=)
     add_definitions(-DGFLAGS_DLL_DEFINE_FLAG=)
     add_definitions(-DGOOGLE_GLOG_DLL_DECL=)
@@ -203,10 +271,6 @@ else()
     if (NOT BOOST_SYSTEM_LIB)
         find_library(BOOST_SYSTEM_LIB boost_system-mt)
     endif()
-    if (UNIX AND NOT APPLE)
-        find_library(PTHREAD_LIB pthread)
-    endif()
-    set(SYSTEM_LIBS ${PTHREAD_LIB})
 endif()
 
 set(SUPPORT_LIBS

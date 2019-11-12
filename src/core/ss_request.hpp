@@ -71,7 +71,7 @@ public:
       return sizeof(uint8_t) + sizeof(boost::asio::ip::address_v4::bytes_type) +
              sizeof(uint16_t);
     case domain:
-      return sizeof(uint8_t) + sizeof(uint8_t) + atyp_req_.domain_name_len +
+      return sizeof(uint8_t) + sizeof(uint8_t) + atyp_req_.domain.domain_name_len +
              sizeof(uint16_t);
     case ipv6:
       return sizeof(uint8_t) + sizeof(boost::asio::ip::address_v6::bytes_type) +
@@ -102,8 +102,8 @@ public:
   }
 
   std::string domain_name() const {
-    return std::string((char *)atyp_req_.domain_name,
-                       atyp_req_.domain_name_len);
+    return std::string((char *)atyp_req_.domain.domain_name,
+                       atyp_req_.domain.domain_name_len);
   }
 
   uint16_t port() const {

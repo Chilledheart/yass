@@ -61,15 +61,16 @@ enum address_type {
 //  DST.ADDR       desired destination address
 //  DST.PORT desired destination port in network octet
 //  order
+struct address_type_domain_header {
+  uint8_t domain_name_len;
+  uint8_t domain_name[255];
+};
 struct address_type_header {
   uint8_t address_type;
   union {
     boost::asio::ip::address_v4::bytes_type address4;
     boost::asio::ip::address_v6::bytes_type address6;
-    struct {
-      uint8_t domain_name_len;
-      uint8_t domain_name[255];
-    };
+    address_type_domain_header domain;
   };
   uint8_t port_high_byte;
   uint8_t port_low_byte;

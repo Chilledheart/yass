@@ -66,15 +66,15 @@ public:
         i += sizeof(uint8_t);
         break;
       case domain:
-        memcpy(&req.atyp_req_.domain_name_len, &*i, sizeof(uint8_t));
+        memcpy(&req.atyp_req_.domain.domain_name_len, &*i, sizeof(uint8_t));
         if (end - i <
-            (int)req.atyp_req_.domain_name_len + (int)sizeof(uint16_t)) {
+            (int)req.atyp_req_.domain.domain_name_len + (int)sizeof(uint16_t)) {
           return std::make_tuple(indeterminate, i);
         }
         i += sizeof(uint8_t);
 
-        memcpy(req.atyp_req_.domain_name, &*i, req.atyp_req_.domain_name_len);
-        i += req.atyp_req_.domain_name_len;
+        memcpy(req.atyp_req_.domain.domain_name, &*i, req.atyp_req_.domain.domain_name_len);
+        i += req.atyp_req_.domain.domain_name_len;
 
         req.port_high_byte() = *i;
         i += sizeof(uint8_t);
