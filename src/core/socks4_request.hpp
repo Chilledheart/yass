@@ -14,7 +14,7 @@
 #include "protocol.hpp"
 #include "socks4.hpp"
 
-#include <cstdint>
+#include <stdint.h>
 
 namespace socks4 {
 

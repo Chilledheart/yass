@@ -14,7 +14,7 @@
 #include "protocol.hpp"
 #include "socks5.hpp"
 
-#include <cstdint>
+#include <stdint.h>
 namespace socks5 {
 
 class method_select_request {

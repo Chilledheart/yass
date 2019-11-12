@@ -42,11 +42,10 @@ RightPanel::RightPanel(wxPanel *parent)
               wxBORDER_SUNKEN) {
   wxString methodStrings[] = {
       wxT("plaintext"),
-      wxT("salsa20"),
-      wxT("chacha20"),
-      wxT("chacha20-ietf"),
       wxT("chacha20-ietf-poly1305"),
       wxT("xchacha20-ietf-poly1305"),
+      wxT("chacha20-ietf-poly1305-evp"),
+      wxT("xchacha20-ietf-poly1305-evp"),
   };
   wxBoxSizer *hbox = new wxBoxSizer(wxHORIZONTAL);
   wxFlexGridSizer *fgs = new wxFlexGridSizer(7, 2, 9, 25);

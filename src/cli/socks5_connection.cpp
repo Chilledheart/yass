@@ -13,8 +13,6 @@
 #include "cipher.hpp"
 #include "config.hpp"
 
-extern cipher::cipher_method cipher_method;
-
 static int http_request_cb(http_parser *p) { return 0; }
 
 static int http_request_data_cb(http_parser *p, const char *buf, size_t len) {
@@ -253,11 +251,12 @@ Socks5Connection::OnReadHttpRequest(std::shared_ptr<IOBuf> buf) {
                                 (const char *)buf->data(), buf->length());
   if (nparsed) {
     VLOG(3) << "http: " << std::string((const char *)buf->data(), nparsed);
-    buf->trimStart(nparsed);
-    buf->retreat(nparsed);
   }
 
   if (HTTP_PARSER_ERRNO(&parser) == HPE_OK) {
+    buf->trimStart(nparsed);
+    buf->retreat(nparsed);
+
     if (!http_is_connect_) {
       std::string header;
       http_request_reforge_to_bytes(&header, &parser, http_url_, http_headers_);
@@ -270,7 +269,8 @@ Socks5Connection::OnReadHttpRequest(std::shared_ptr<IOBuf> buf) {
     return boost::system::errc::make_error_code(boost::system::errc::success);
   }
 
-  LOG(WARNING) << http_errno_description(HTTP_PARSER_ERRNO(&parser));
+  LOG(WARNING) << http_errno_description(HTTP_PARSER_ERRNO(&parser)) << ": " <<
+    std::string((const char *)buf->data(), nparsed);
   return boost::system::errc::make_error_code(boost::system::errc::bad_message);
 }
 

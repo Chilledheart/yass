@@ -39,11 +39,11 @@ if (NOT MSVC)
 
     ## adopt LTO
     if (APPLE)
-        set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -flto -fwhole-program-vtables")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto -fwhole-program-vtables")
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -flto -fwhole-program-vtables")
-        set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} -flto -fwhole-program-vtables")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto -fwhole-program-vtables")
+        set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto -fwhole-program-vtables")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto -fwhole-program-vtables")
+        set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -flto -fwhole-program-vtables")
+        set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} -flto -fwhole-program-vtables")
+        set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -flto -fwhole-program-vtables")
     endif()
 
     ## definitions
@@ -60,8 +60,8 @@ if (NOT MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -pipe")
 
     # default stack frame
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fno-omit-frame-pointer")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer")
+    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -fno-omit-frame-pointer")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-omit-frame-pointer")
 else()
     ## warnings
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /W4 /WX /wd4099 /wd4100 /wd4127 /wd4244 /wd4267 /wd4505 /wd4838 /wd4996")
@@ -95,8 +95,8 @@ else()
     add_definitions(/D_WIN32_WINNT=0x0601)
 
     # default stack frame
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /Oy-")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Oy-")
+    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Oy-")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Oy-")
 endif()
 
 # *****************************************************************************************
@@ -128,10 +128,52 @@ if (UNIX AND ${HAS_GCC} AND
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
 endif()
 
-if (NOT MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug" AND HAS_CLANG)
-    set(APPLY_ASAN TRUE)
-else()
-    set(APPLY_ASAN FALSE)
+if(MSAN)
+  if(NOT HAS_CLANG)
+    message(FATAL_ERROR "Cannot enable MSAN unless using Clang")
+  endif()
+
+  if(ASAN)
+    message(FATAL_ERROR "ASAN and MSAN are mutually exclusive")
+  endif()
+
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer")
+  set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer")
+endif()
+
+if(ASAN)
+  if(NOT HAS_CLANG)
+    message(FATAL_ERROR "Cannot enable ASAN unless using Clang")
+  endif()
+
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer")
+endif()
+
+if(TSAN)
+  if(NOT HAS_CLANG)
+    message(FATAL_ERROR "Cannot enable TSAN unless using Clang")
+  endif()
+
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=thread")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=thread")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=thread")
+endif()
+
+if(UBSAN)
+  if(NOT HAS_CLANG)
+    message(FATAL_ERROR "Cannot enable UBSAN unless using Clang")
+  endif()
+
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=undefined")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined")
+endif()
+
+if(GCOV)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-arcs -ftest-coverage")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
 endif()
 
 #add_definitions(-DBOOST_ASIO_DISABLE_KQUEUE)
@@ -150,14 +192,7 @@ if (APPLE)
     )
 endif()
 
-if (APPLE)
-    include_directories(/opt/local/include)
-    link_directories(/opt/local/lib)
-endif()
-
-if (UNIX AND NOT APPLE)
-    include_directories(/usr/include/jsoncpp)
-endif()
+set(boringssl_DIR "${CMAKE_SOURCE_DIR}/../boringssl" CACHE STRING "path to boringssl root directory")
 
 if (WIN32)
     option(VCPKG_ROOT_DIR "" "vcpkg root path")
@@ -255,6 +290,8 @@ if (WIN32)
       string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
     endforeach()
 else()
+    include(CheckIncludeFile)
+
     find_library(JEMALLOC_LIB jemalloc)
     find_library(GLOG_LIB glog)
     find_library(GFLAGS_LIB gflags)
@@ -269,6 +306,28 @@ else()
     if (NOT BOOST_SYSTEM_LIB)
         find_library(BOOST_SYSTEM_LIB boost_system-mt)
     endif()
+
+    find_library(BORINGSSL_CRYPTO_LIB crypto
+      PATHS ${boringssl_DIR}/build/crypto
+      NO_DEFAULT_PATH)
+
+    set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES}
+        ${boringssl_DIR}/include)
+    check_include_file(openssl/is_boringssl.h BORINGSSL_CRYPTO_INCLUDE)
+    if (BORINGSSL AND BORINGSSL_CRYPTO_LIB AND BORINGSSL_CRYPTO_INCLUDE)
+        add_definitions(-DHAVE_BORINGSSL)
+        include_directories(${boringssl_DIR}/include)
+        set(SYSTEM_LIBS ${SYSTEM_LIBS} ${BORINGSSL_CRYPTO_LIB})
+    endif()
+
+    if (APPLE)
+        include_directories(/opt/local/include)
+        link_directories(/opt/local/lib)
+    endif()
+
+    if (UNIX AND NOT APPLE)
+        include_directories(/usr/include/jsoncpp)
+    endif()
 endif()
 
 set(SUPPORT_LIBS
@@ -281,10 +340,7 @@ set(SUPPORT_LIBS
     ${SYSTEM_LIBS}
     )
 
-if (APPLY_ASAN)
-    add_compile_options(-g3 -fsanitize=address)
-    add_link_options(-fsanitize=address)
-else()
+if (NOT ASAN AND NOT MSAN)
     set(SUPPORT_LIBS
         ${JEMALLOC_LIB}
         ${SUPPORT_LIBS})
@@ -297,6 +353,8 @@ endif()
 set(files
     src/config.cpp
     src/core/cipher.cpp
+    src/core/hkdf_sha1.cpp
+    src/core/hmac_sha1.cpp
     src/core/http_parser.c
     src/core/md5.cc
     src/core/modp_b64.cc
@@ -305,11 +363,25 @@ set(files
     src/core/socks4_request_parser.cpp
     src/core/socks5_request_parser.cpp
     src/core/ss_request_parser.cpp
+    src/crypto/aead_base_decrypter.cpp
+    src/crypto/aead_base_encrypter.cpp
+    src/crypto/aead_evp_decrypter.cpp
+    src/crypto/aead_evp_encrypter.cpp
+    src/crypto/chacha20_poly1305_evp_decrypter.cpp
+    src/crypto/chacha20_poly1305_evp_encrypter.cpp
+    src/crypto/chacha20_poly1305_sodium_decrypter.cpp
+    src/crypto/chacha20_poly1305_sodium_encrypter.cpp
+    src/crypto/xchacha20_poly1305_evp_decrypter.cpp
+    src/crypto/xchacha20_poly1305_evp_encrypter.cpp
+    src/crypto/xchacha20_poly1305_sodium_decrypter.cpp
+    src/crypto/xchacha20_poly1305_sodium_encrypter.cpp
     )
 
 set(hfiles
     src/config.hpp
     src/core/cipher.hpp
+    src/core/hkdf_sha1.hpp
+    src/core/hmac_sha1.hpp
     src/core/http_parser.h
     src/core/md5.h
     src/core/modp_b64.h
@@ -325,6 +397,18 @@ set(hfiles
     src/core/ss.hpp
     src/core/ss_request.hpp
     src/core/ss_request_parser.hpp
+    src/crypto/aead_base_decrypter.hpp
+    src/crypto/aead_base_encrypter.hpp
+    src/crypto/aead_evp_decrypter.hpp
+    src/crypto/aead_evp_encrypter.hpp
+    src/crypto/chacha20_poly1305_evp_decrypter.hpp
+    src/crypto/chacha20_poly1305_evp_encrypter.hpp
+    src/crypto/chacha20_poly1305_sodium_decrypter.hpp
+    src/crypto/chacha20_poly1305_sodium_encrypter.hpp
+    src/crypto/xchacha20_poly1305_evp_decrypter.hpp
+    src/crypto/xchacha20_poly1305_evp_encrypter.hpp
+    src/crypto/xchacha20_poly1305_sodium_decrypter.hpp
+    src/crypto/xchacha20_poly1305_sodium_encrypter.hpp
     )
 
 add_library(yass_base OBJECT
@@ -499,7 +583,8 @@ if (WIN32)
 else()
   find_package(wxWidgets COMPONENTS core base)
 endif()
-if (wxWidgets_FOUND)
+
+if (GUI AND wxWidgets_FOUND)
     set(APP_NAME yass)
     set(SRC_FILES
         src/gui/yass.cpp

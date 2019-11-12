@@ -11,7 +11,7 @@
 #ifndef H_SS
 #define H_SS
 
-#include <cstdint>
+#include <stdint.h>
 #include <glog/logging.h>
 
 namespace ss {

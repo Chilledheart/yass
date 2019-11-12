@@ -16,8 +16,6 @@
 #define MAX_DOWNSTREAM_DEPS 1024
 #define MAX_UPSTREAM_DEPS 1024
 
-extern cipher::cipher_method cipher_method;
-
 namespace ss {
 
 SsConnection::SsConnection(

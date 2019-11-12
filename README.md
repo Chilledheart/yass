@@ -78,15 +78,12 @@ vcpkg install boost-asio:x86-windows-static boost-filesystem:x86-windows-static 
 ```
 
 ## Crypto
-### message digest
-- md5 (used in stream)
-- sha1+hmac (used in aead)
 ### ciphers
+- aes-128-gcm (incoming)
+- aes-192-gcm (incoming)
+- aes-256-gcm (incoming)
 - chacha20-ietf-poly1305
 - xchacha20-ietf-poly1305
-- salsa20
-- chacha20
-- chacha20-ietf
 
 ### Operating System
 - macOS

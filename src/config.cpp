@@ -46,7 +46,7 @@ static std::string GetEnv(const char *name) {
 static path ExpandUser(const std::string &file_path) {
   std::string real_path = file_path;
 
-  if (real_path[0] == '~') {
+  if (real_path.size() >= 1 && real_path[0] == '~') {
 #ifdef _WIN32
     std::string home = GetEnv("USERPROFILE");
 #else
@@ -60,7 +60,7 @@ static path ExpandUser(const std::string &file_path) {
 
 static void CreateConfigDirectory() {
   path real_path = ExpandUser(DEFAULT_CONFIGDIR);
-  boost::system::error_code ec;
+  boost::system::error_code ec = boost::system::error_code();
   if (!is_directory(real_path, ec)) {
     create_directories(real_path, ec);
   }
@@ -82,29 +82,29 @@ void ReadFromConfigfile(const std::string &file_path) {
 
   try {
     fs >> root;
-    if (root.isMember("server")) {
+    if (root.isMember("server") && root["server"].isString()) {
       FLAGS_server_host = root["server"].asString();
     }
-    if (root.isMember("server_port")) {
+    if (root.isMember("server_port") && root["server_port"].isUInt()) {
       FLAGS_server_port = root["server_port"].asUInt();
     }
-    if (root.isMember("method")) {
+    if (root.isMember("method") && root["method"].isString()) {
       FLAGS_method = root["method"].asString();
     }
-    if (root.isMember("password")) {
+    if (root.isMember("password") && root["password"].isString()) {
       FLAGS_password = root["password"].asString();
     }
-    if (root.isMember("local")) {
+    if (root.isMember("local") && root["local"].isString()) {
       FLAGS_local_host = root["local"].asString();
     }
-    if (root.isMember("local_port")) {
+    if (root.isMember("local_port") && root["local_port"].isUInt()) {
       FLAGS_local_port = root["local_port"].asUInt();
     }
   } catch (std::exception &e) {
     LOG(WARNING) << "bad configuration: " << e.what();
   }
 
-  cipher_method = cipher::to_cipher_method(FLAGS_method);
+  cipher_method = to_cipher_method(FLAGS_method);
 }
 
 void SaveToConfigFile(const std::string &file_path) {
@@ -116,7 +116,7 @@ void SaveToConfigFile(const std::string &file_path) {
 
   fs.open(real_path);
 
-  FLAGS_method = cipher::to_cipher_method_str(cipher_method);
+  FLAGS_method = to_cipher_method_str(cipher_method);
 
   root["server"] = FLAGS_server_host;
   root["server_port"] = FLAGS_server_port;

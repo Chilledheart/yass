@@ -10,7 +10,7 @@
 
 #include <cinttypes>
 #include <cstddef>
-#include <cstdint>
+#include <stdint.h>
 #include <glog/logging.h>
 #include <memory>
 

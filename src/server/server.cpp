@@ -50,8 +50,7 @@ int main(int argc, const char *argv[]) {
     ReadFromConfigfile(FLAGS_configfile);
   }
 
-  if ((cipher_method = cipher::to_cipher_method(FLAGS_method)) ==
-      cipher::PLAINTEXT) {
+  if ((cipher_method = to_cipher_method(FLAGS_method)) == PLAINTEXT) {
     fprintf(stderr, "Not supported cipher: %s\n", FLAGS_method.c_str());
     return -1;
   }

@@ -14,7 +14,7 @@
 #include "protocol.hpp"
 #include "ss.hpp"
 
-#include <cstdint>
+#include <stdint.h>
 namespace ss {
 
 class request {

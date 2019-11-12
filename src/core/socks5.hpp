@@ -16,7 +16,7 @@
 #include <boost/asio/ip/address_v4.hpp>
 #include <boost/asio/ip/address_v6.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <cstdint>
+#include <stdint.h>
 #include <string>
 #include <tuple>
 
