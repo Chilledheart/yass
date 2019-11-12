@@ -49,6 +49,14 @@ extern "C" {
 
 #define OUTPUT_SIZE_SHA1 20
 
+#ifdef __GNUC__
+#define UNUSED_F __attribute__((unused))
+#endif
+
+#ifdef _MSC_VER
+#define UNUSED_F [[maybe_unused]]
+#endif
+
 cipher::cipher_method cipher_method;
 
 static constexpr int nonce_size[cipher::MAX_CIPHER_METHOD] = {0,  8,  8,
@@ -167,8 +175,9 @@ static int hmac_sha1_finish(internal_sha1_ctx *ctx, unsigned char *ipad,
   return 0;
 }
 
-static int hmac_sha1_reset(internal_sha1_ctx *ctx, unsigned char *ipad,
-                           unsigned char *opad) {
+static UNUSED_F
+int hmac_sha1_reset(internal_sha1_ctx *ctx, unsigned char *ipad,
+                    unsigned char *opad) {
   if (ctx == NULL || ipad == NULL || opad == NULL)
     return -1;
 
