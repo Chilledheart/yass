@@ -29,19 +29,33 @@ DEFINE_bool(reuse_port, true, "Reuse the local port");
 
 using namespace boost::filesystem;
 
+static std::string GetEnv(const char *name) {
+#ifdef _WIN32
+  char buf[4096];
+  size_t len = 0;
+  if (getenv_s(&len, buf, name) != 0 || len <= 1) {
+    return std::string();
+  }
+
+  return std::string(buf, len - 1);
+#else
+  return getenv(name);
+#endif
+}
+
 static path ExpandUser(const std::string &file_path) {
   std::string real_path = file_path;
 
   if (real_path[0] == '~') {
 #ifdef _WIN32
-    std::string home = getenv("USERPROFILE");
+    std::string home = GetEnv("USERPROFILE");
 #else
-    std::string home = getenv("HOME");
+    std::string home = GetEnv("HOME");
 #endif
-    real_path = home + "/" + real_path.substr(1);
+    return path(home) / real_path.substr(2);
   }
 
-  return real_path;
+  return path(real_path);
 }
 
 static void CreateConfigDirectory() {
@@ -62,7 +76,7 @@ void ReadFromConfigfile(const std::string &file_path) {
   fs.open(real_path);
 
   if (!fs.is_open()) {
-    LOG(WARNING) << "configure file does not exist";
+    LOG(WARNING) << "configure file does not exist: " << real_path;
     return;
   }
 
