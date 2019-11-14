@@ -8,9 +8,9 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "cipher.hpp"
 #include "config.hpp"
-#include "socks5_factory.hpp"
+#include "core/cipher.hpp"
+#include "cli/socks5_factory.hpp"
 
 #include <boost/asio.hpp>
 #include <gflags/gflags.h>

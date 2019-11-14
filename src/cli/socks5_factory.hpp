@@ -11,8 +11,8 @@
 #ifndef H_SOCKS5_FACTORY
 #define H_SOCKS5_FACTORY
 
+#include "cli/socks5_connection.hpp"
 #include "connection_factory.hpp"
-#include "socks5_connection.hpp"
 
 typedef ServiceFactory<socks5::Socks5Connection> Socks5Factory;
 

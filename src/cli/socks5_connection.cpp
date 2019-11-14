@@ -8,16 +8,10 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "socks5_connection.hpp"
+#include "cli/socks5_connection.hpp"
 
-#include "cipher.hpp"
 #include "config.hpp"
-
-static int http_request_cb(http_parser *p) { return 0; }
-
-static int http_request_data_cb(http_parser *p, const char *buf, size_t len) {
-  return 0;
-}
+#include "core/cipher.hpp"
 
 static int http_request_url_parse(const char *buf, size_t len,
                                   std::string *host, uint16_t *port,
@@ -222,11 +216,11 @@ boost::system::error_code
 Socks5Connection::OnReadHttpRequest(std::shared_ptr<IOBuf> buf) {
   static struct http_parser_settings settings_connect = {
       //.on_message_begin
-      http_request_cb,
+      nullptr,
       //.on_url
       &Socks5Connection::OnReadHttpRequestURL,
       //.on_status
-      http_request_data_cb,
+      nullptr,
       //.on_header_field
       &Socks5Connection::OnReadHttpRequestHeaderField,
       //.on_header_value
@@ -234,13 +228,13 @@ Socks5Connection::OnReadHttpRequest(std::shared_ptr<IOBuf> buf) {
       //.on_headers_complete
       Socks5Connection::OnReadHttpRequestHeadersDone,
       //.on_body
-      http_request_data_cb,
+      nullptr,
       //.on_message_complete
-      http_request_cb,
+      nullptr,
       //.on_chunk_header
-      http_request_cb,
+      nullptr,
       //.on_chunk_complete
-      http_request_cb};
+      nullptr};
 
   ::http_parser parser;
   size_t nparsed;
@@ -325,8 +319,9 @@ int Socks5Connection::OnReadHttpRequestHeaderValue(http_parser *p,
 }
 
 int Socks5Connection::OnReadHttpRequestHeadersDone(http_parser *p) {
-  // abort the rest part
-  return 1;
+  // Treat the rest part as Upgrade even when it is not CONNECT
+  // (binary protocol such as ocsp-request and dns-message).
+  return 2;
 }
 
 void Socks5Connection::ReadStream() {
