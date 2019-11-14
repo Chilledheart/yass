@@ -33,7 +33,7 @@
 class cipher_impl {
 public:
   cipher_impl(enum cipher_method method, bool enc) {
-    DCHECK_GE(method, CHACHA20POLY1305IETF);
+    DCHECK_GE(method, CRYPTO_CHACHA20POLY1305IETF);
     if (enc) {
       encrypter = crypto::Encrypter::CreateFromCipherSuite(method);
     } else {

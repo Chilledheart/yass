@@ -20,7 +20,7 @@
 #define DEFAULT_SERVER "0.0.0.0"
 #define DEFAULT_SERVER_PORT 8443
 #define DEFAULT_PASS "<default-pass>"
-#define DEFAULT_CIPHER "plaintext"
+#define DEFAULT_CIPHER CRYPTO_PLAINTEXT_STR
 #define DEFAULT_LOCAL "127.0.0.1"
 #define DEFAULT_LOCAL_PORT 8000
 

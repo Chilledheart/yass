@@ -31,7 +31,7 @@ XChaCha20Poly1305EvpEncrypter::XChaCha20Poly1305EvpEncrypter()
 XChaCha20Poly1305EvpEncrypter::~XChaCha20Poly1305EvpEncrypter() {}
 
 uint32_t XChaCha20Poly1305EvpEncrypter::cipher_id() const {
-  return XCHACHA20POLY1305IETF_EVP;
+  return CRYPTO_XCHACHA20POLY1305IETF_EVP;
 }
 
 } // namespace crypto

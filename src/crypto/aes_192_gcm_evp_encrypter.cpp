@@ -31,7 +31,7 @@ Aes192GcmEvpEncrypter::Aes192GcmEvpEncrypter()
 Aes192GcmEvpEncrypter::~Aes192GcmEvpEncrypter() {}
 
 uint32_t Aes192GcmEvpEncrypter::cipher_id() const {
-  return AES192GCMSHA256_EVP;
+  return CRYPTO_AES192GCMSHA256_EVP;
 }
 
 } // namespace crypto

@@ -41,11 +41,9 @@ RightPanel::RightPanel(wxPanel *parent)
     : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(250, 150),
               wxBORDER_SUNKEN) {
   wxString methodStrings[] = {
-      wxT("plaintext"),
-      wxT("chacha20-ietf-poly1305"),
-      wxT("xchacha20-ietf-poly1305"),
-      wxT("chacha20-ietf-poly1305-evp"),
-      wxT("xchacha20-ietf-poly1305-evp"),
+#define XX(num, name, string) wxT(string),
+      CIPHER_METHOD_MAP(XX)
+#undef XX
   };
   wxBoxSizer *hbox = new wxBoxSizer(wxHORIZONTAL);
   wxFlexGridSizer *fgs = new wxFlexGridSizer(7, 2, 9, 25);

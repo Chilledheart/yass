@@ -31,7 +31,7 @@ Aes128GcmEvpEncrypter::Aes128GcmEvpEncrypter()
 Aes128GcmEvpEncrypter::~Aes128GcmEvpEncrypter() {}
 
 uint32_t Aes128GcmEvpEncrypter::cipher_id() const {
-  return AES128GCMSHA256_EVP;
+  return CRYPTO_AES128GCMSHA256_EVP;
 }
 
 } // namespace crypto

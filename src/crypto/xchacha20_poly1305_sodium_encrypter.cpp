@@ -58,7 +58,7 @@ bool XChaCha20Poly1305SodiumEncrypter::EncryptPacket(
 }
 
 uint32_t XChaCha20Poly1305SodiumEncrypter::cipher_id() const {
-  return XCHACHA20POLY1305IETF;
+  return CRYPTO_XCHACHA20POLY1305IETF;
 }
 
 } // namespace crypto

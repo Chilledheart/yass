@@ -26,15 +26,23 @@ Decrypter::~Decrypter() {}
 
 std::unique_ptr<Decrypter> Decrypter::CreateFromCipherSuite(uint32_t cipher_suite) {
   switch (cipher_suite) {
-    case CHACHA20POLY1305IETF:
+    case CRYPTO_CHACHA20POLY1305IETF:
       return std::make_unique<ChaCha20Poly1305SodiumDecrypter>();
-    case XCHACHA20POLY1305IETF:
+    case CRYPTO_XCHACHA20POLY1305IETF:
       return std::make_unique<XChaCha20Poly1305SodiumDecrypter>();
 #ifdef HAVE_BORINGSSL
-    case CHACHA20POLY1305IETF_EVP:
+    case CRYPTO_CHACHA20POLY1305IETF_EVP:
       return std::make_unique<ChaCha20Poly1305EvpDecrypter>();
-    case XCHACHA20POLY1305IETF_EVP:
+    case CRYPTO_XCHACHA20POLY1305IETF_EVP:
       return std::make_unique<XChaCha20Poly1305EvpDecrypter>();
+    case CRYPTO_AES128GCMSHA256_EVP:
+      return std::make_unique<Aes128GcmEvpDecrypter>();
+    case CRYPTO_AES128GCM12SHA256_EVP:
+      return std::make_unique<Aes128Gcm12EvpDecrypter>();
+    case CRYPTO_AES192GCMSHA256_EVP:
+      return std::make_unique<Aes192GcmEvpDecrypter>();
+    case CRYPTO_AES256GCMSHA256_EVP:
+      return std::make_unique<Aes256GcmEvpDecrypter>();
 #endif
     default:
       return nullptr;

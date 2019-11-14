@@ -60,7 +60,7 @@ bool ChaCha20Poly1305SodiumDecrypter::DecryptPacket(
 }
 
 uint32_t ChaCha20Poly1305SodiumDecrypter::cipher_id() const {
-  return CHACHA20POLY1305IETF;
+  return CRYPTO_CHACHA20POLY1305IETF;
 }
 
 } // namespace crypto
