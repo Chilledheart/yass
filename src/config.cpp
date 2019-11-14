@@ -16,7 +16,7 @@
 #include <json/json.h>
 #include <memory>
 #ifdef _WIN32
-#include <shlwapi.h>
+#include <windows.h>
 #else
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -68,7 +68,11 @@ static boost::filesystem::path ExpandUser(const std::string &file_path) {
 
 #ifdef _WIN32
 static bool is_directory(const boost::filesystem::path &p) {
-  return ::PathIsDirectoryW(p.wstring().c_str());
+  DWORD dwAttrs = ::GetFileAttributesW(p.wstring().c_str());
+  if (dwAttrs == INVALID_FILE_ATTRIBUTES) {
+    return false;
+  }
+  return dwAttrs & FILE_ATTRIBUTE_DIRECTORY;
 }
 
 static bool create_directory(const boost::filesystem::path &p) {
