@@ -16,28 +16,9 @@
 #include <string>
 #include <utility>
 
-#include "iobuf.hpp"
+#include "core/iobuf.hpp"
 #include "protocol.hpp"
-
-#define MAX_KEY_LENGTH 64
-#define MAX_NONCE_LENGTH 32
-
-enum cipher_method {
-  PLAINTEXT = 0x0,
-  /* UNUSED = 0x1 */
-  /* UNUSED = 0x2 */
-  /* UNUSED = 0x3 */
-  CHACHA20POLY1305IETF = 0x4,
-  XCHACHA20POLY1305IETF = 0x5,
-#ifdef HAVE_BORINGSSL
-  CHACHA20POLY1305IETF_EVP = 0x6,
-  XCHACHA20POLY1305IETF_EVP = 0x7,
-#endif
-  MAX_CIPHER_METHOD,
-};
-
-enum cipher_method to_cipher_method(const std::string &method);
-const char *to_cipher_method_str(enum cipher_method method);
+#include "crypto/crypter_export.hpp"
 
 class cipher_impl;
 class cipher {

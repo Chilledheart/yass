@@ -19,14 +19,9 @@
 #include "core/md5.h"
 #include "core/modp_b64.h"
 #include "core/sys_byteorder.h"
-#include "crypto/chacha20_poly1305_evp_decrypter.hpp"
-#include "crypto/chacha20_poly1305_evp_encrypter.hpp"
-#include "crypto/chacha20_poly1305_sodium_decrypter.hpp"
-#include "crypto/chacha20_poly1305_sodium_encrypter.hpp"
-#include "crypto/xchacha20_poly1305_evp_decrypter.hpp"
-#include "crypto/xchacha20_poly1305_evp_encrypter.hpp"
-#include "crypto/xchacha20_poly1305_sodium_decrypter.hpp"
-#include "crypto/xchacha20_poly1305_sodium_encrypter.hpp"
+
+#include "crypto/encrypter.hpp"
+#include "crypto/decrypter.hpp"
 
 #define SUBKEY_INFO "ss-subkey"
 
@@ -35,76 +30,14 @@
 
 #define MD_MAX_SIZE_256 32 /* longest known is SHA256 or less */
 
-enum cipher_method cipher_method;
-
-enum cipher_method to_cipher_method(const std::string &method) {
-  if (method == "chacha20-ietf-poly1305") {
-    return CHACHA20POLY1305IETF;
-  } else if (method == "xchacha20-ietf-poly1305") {
-    return XCHACHA20POLY1305IETF;
-#ifdef HAVE_BORINGSSL
-  } else if (method == "chacha20-ietf-poly1305-evp") {
-    return CHACHA20POLY1305IETF_EVP;
-  } else if (method == "xchacha20-ietf-poly1305-evp") {
-    return XCHACHA20POLY1305IETF_EVP;
-#endif
-  }
-  return PLAINTEXT;
-}
-
-const char *to_cipher_method_str(enum cipher_method method) {
-  switch (method) {
-  case CHACHA20POLY1305IETF:
-    return "chacha20-ietf-poly1305";
-  case XCHACHA20POLY1305IETF:
-    return "xchacha20-ietf-poly1305";
-#ifdef HAVE_BORINGSSL
-  case CHACHA20POLY1305IETF_EVP:
-    return "chacha20-ietf-poly1305-evp";
-  case XCHACHA20POLY1305IETF_EVP:
-    return "xchacha20-ietf-poly1305-evp";
-#endif
-  default:
-    return "plaintext";
-  }
-}
-
 class cipher_impl {
 public:
   cipher_impl(enum cipher_method method, bool enc) {
     DCHECK_GE(method, CHACHA20POLY1305IETF);
-    switch (method) {
-    case CHACHA20POLY1305IETF:
-      if (enc) {
-        encrypter.reset(new crypto::ChaCha20Poly1305SodiumEncrypter);
-      } else {
-        decrypter.reset(new crypto::ChaCha20Poly1305SodiumDecrypter);
-      }
-      break;
-    case XCHACHA20POLY1305IETF:
-      if (enc) {
-        encrypter.reset(new crypto::XChaCha20Poly1305SodiumEncrypter);
-      } else {
-        decrypter.reset(new crypto::XChaCha20Poly1305SodiumDecrypter);
-      }
-      break;
-#ifdef HAVE_BORINGSSL
-    case CHACHA20POLY1305IETF_EVP:
-      if (enc) {
-        encrypter.reset(new crypto::ChaCha20Poly1305EvpEncrypter);
-      } else {
-        decrypter.reset(new crypto::ChaCha20Poly1305EvpDecrypter);
-      }
-      break;
-    case XCHACHA20POLY1305IETF_EVP:
-      if (enc) {
-        encrypter.reset(new crypto::XChaCha20Poly1305EvpEncrypter);
-      } else {
-        decrypter.reset(new crypto::XChaCha20Poly1305EvpDecrypter);
-      }
-#endif
-    default:
-      break;
+    if (enc) {
+      encrypter = crypto::Encrypter::CreateFromCipherSuite(method);
+    } else {
+      decrypter = crypto::Decrypter::CreateFromCipherSuite(method);
     }
   }
 
@@ -218,8 +151,8 @@ public:
     return encrypter ? encrypter->GetNoncePrefix() : decrypter->GetNoncePrefix();
   }
 
-  std::unique_ptr<crypto::AeadBaseEncrypter> encrypter;
-  std::unique_ptr<crypto::AeadBaseDecrypter> decrypter;
+  std::unique_ptr<crypto::Encrypter> encrypter;
+  std::unique_ptr<crypto::Decrypter> decrypter;
 };
 
 cipher::cipher(const std::string &key, const std::string &password,

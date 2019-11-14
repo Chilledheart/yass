@@ -367,10 +367,22 @@ set(files
     src/crypto/aead_base_encrypter.cpp
     src/crypto/aead_evp_decrypter.cpp
     src/crypto/aead_evp_encrypter.cpp
+    src/crypto/aes_128_gcm_12_evp_decrypter.cpp
+    src/crypto/aes_128_gcm_12_evp_encrypter.cpp
+    src/crypto/aes_128_gcm_evp_decrypter.cpp
+    src/crypto/aes_128_gcm_evp_encrypter.cpp
+    src/crypto/aes_192_gcm_evp_decrypter.cpp
+    src/crypto/aes_192_gcm_evp_encrypter.cpp
+    src/crypto/aes_256_gcm_evp_decrypter.cpp
+    src/crypto/aes_256_gcm_evp_encrypter.cpp
     src/crypto/chacha20_poly1305_evp_decrypter.cpp
     src/crypto/chacha20_poly1305_evp_encrypter.cpp
     src/crypto/chacha20_poly1305_sodium_decrypter.cpp
     src/crypto/chacha20_poly1305_sodium_encrypter.cpp
+    src/crypto/crypter.cpp
+    src/crypto/crypter_export.cpp
+    src/crypto/decrypter.cpp
+    src/crypto/encrypter.cpp
     src/crypto/xchacha20_poly1305_evp_decrypter.cpp
     src/crypto/xchacha20_poly1305_evp_encrypter.cpp
     src/crypto/xchacha20_poly1305_sodium_decrypter.cpp
@@ -401,10 +413,22 @@ set(hfiles
     src/crypto/aead_base_encrypter.hpp
     src/crypto/aead_evp_decrypter.hpp
     src/crypto/aead_evp_encrypter.hpp
+    src/crypto/aes_128_gcm_12_evp_decrypter.hpp
+    src/crypto/aes_128_gcm_12_evp_encrypter.hpp
+    src/crypto/aes_128_gcm_evp_decrypter.hpp
+    src/crypto/aes_128_gcm_evp_encrypter.hpp
+    src/crypto/aes_192_gcm_evp_decrypter.hpp
+    src/crypto/aes_192_gcm_evp_encrypter.hpp
+    src/crypto/aes_256_gcm_evp_decrypter.hpp
+    src/crypto/aes_256_gcm_evp_encrypter.hpp
     src/crypto/chacha20_poly1305_evp_decrypter.hpp
     src/crypto/chacha20_poly1305_evp_encrypter.hpp
     src/crypto/chacha20_poly1305_sodium_decrypter.hpp
     src/crypto/chacha20_poly1305_sodium_encrypter.hpp
+    src/crypto/crypter.hpp
+    src/crypto/crypter_export.hpp
+    src/crypto/decrypter.hpp
+    src/crypto/encrypter.hpp
     src/crypto/xchacha20_poly1305_evp_decrypter.hpp
     src/crypto/xchacha20_poly1305_evp_encrypter.hpp
     src/crypto/xchacha20_poly1305_sodium_decrypter.hpp
