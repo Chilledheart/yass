@@ -19,7 +19,7 @@ inline size_t goodMallocSize(size_t minSize) noexcept { return minSize; }
 inline void *checkedMalloc(size_t size) {
   void *p = malloc(size);
   if (!p) {
-    throw std::bad_alloc();
+    std::abort();
   }
   return p;
 }
@@ -27,7 +27,7 @@ inline void *checkedMalloc(size_t size) {
 inline void *checkedCalloc(size_t n, size_t size) {
   void *p = calloc(n, size);
   if (!p) {
-    throw std::bad_alloc();
+    std::abort();
   }
   return p;
 }
@@ -35,7 +35,7 @@ inline void *checkedCalloc(size_t n, size_t size) {
 inline void *checkedRealloc(void *ptr, size_t size) {
   void *p = realloc(ptr, size);
   if (!p) {
-    throw std::bad_alloc();
+    std::abort();
   }
   return p;
 }
@@ -178,7 +178,7 @@ void IOBuf::reserveSlow(std::size_t minHeadroom, std::size_t minTailroom) {
     if (copySlack * 2 <= length_) {
       void *p = realloc(buf_, newAllocatedCapacity);
       if (p == nullptr) {
-        throw std::bad_alloc();
+        std::abort();
       }
       newBuffer = static_cast<uint8_t *>(p);
       newHeadroom = oldHeadroom;

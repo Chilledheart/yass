@@ -50,7 +50,7 @@ int main(int argc, const char *argv[]) {
     ReadFromConfigfile(FLAGS_configfile);
   }
 
-  if ((cipher_method = to_cipher_method(FLAGS_method)) == CRYPTO_PLAINTEXT) {
+  if ((cipher_method_in_use = to_cipher_method(FLAGS_method)) == CRYPTO_PLAINTEXT) {
     fprintf(stderr, "Not supported cipher: %s\n", FLAGS_method.c_str());
     return -1;
   }
@@ -64,23 +64,27 @@ int main(int argc, const char *argv[]) {
   LOG(WARNING) << "using " << endpoint << " with endpoint " << endpoint;
 
   SsFactory factory(io_context, remoteEndpoint);
-  try {
-    factory.listen(endpoint);
-  } catch (std::exception &e) {
-    LOG(ERROR) << "listen failed due to " << e.what();
+  boost::system::error_code ec = factory.listen(endpoint);
+  if (ec) {
+    LOG(ERROR) << "listen failed due to: " << ec;
     return -1;
   }
 
   boost::asio::signal_set signals(io_context);
-  signals.add(SIGINT);
-  signals.add(SIGTERM);
+  signals.add(SIGINT, ec);
+  signals.add(SIGTERM, ec);
 #ifdef SIGQUIT
-  signals.add(SIGQUIT);
+  signals.add(SIGQUIT, ec);
 #endif
   signals.async_wait([&](const boost::system::error_code &error,
                          int signal_number) { factory.stop(); });
 
-  io_context.run();
+  io_context.run(ec);
+
+  if (ec) {
+    LOG(ERROR) << "io_context failed due to: " << ec;
+    return -1;
+  }
 
   ::google::ShutdownGoogleLogging();
 

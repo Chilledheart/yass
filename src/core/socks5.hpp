@@ -250,6 +250,13 @@ public:
     port_low_byte_ = port & 0xff;
   }
 
+  void set_loopback() {
+    address_type_ = ipv4;
+    address4_ = boost::asio::ip::address_v4::loopback().to_bytes();
+    port_high_byte_ = 0;
+    port_low_byte_ = 0;
+  }
+
 public:
   static const uint8_t kHeaderLength = 4;
 

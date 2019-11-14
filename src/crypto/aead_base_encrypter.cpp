@@ -10,8 +10,8 @@
 
 #include "aead_base_encrypter.hpp"
 
+#include <algorithm>
 #include <sodium/utils.h>
-
 #include <glog/logging.h>
 
 namespace crypto {

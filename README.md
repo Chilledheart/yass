@@ -76,7 +76,7 @@ ninja
 
 2. Run vcpkg to install required dependencies.
 ```
-vcpkg install boost-asio:x86-windows-static boost-filesystem:x86-windows-static boost-system:x86-windows-static glog:x86-windows-static gflags:x86-windows-static libsodium:x86-windows-static jsoncpp:x86-windows-static wxwidgets:x86-windows-static jemalloc
+vcpkg install boost-asio:x86-windows-static boost-filesystem:x86-windows-static boost-system:x86-windows-static glog:x86-windows-static gflags:x86-windows-static libsodium:x86-windows-static jsoncpp:x86-windows-static wxwidgets:x86-windows-static
 ```
 
 ## Crypto

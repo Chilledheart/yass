@@ -1,6 +1,6 @@
 //
 // connection_factory.hpp
-// ~~~~~~~~~~
+// ~~~~~~~~~~~~~~~~~~~~~~
 //
 // Copyright (c) 2019 James Hu (hukeyue at hotmail dot com)
 //
@@ -31,17 +31,31 @@ public:
                  const boost::asio::ip::tcp::endpoint &remote_endpoint)
       : io_context_(io_context), remote_endpoint_(remote_endpoint) {}
 
-  void listen(const boost::asio::ip::tcp::endpoint &endpoint) {
+  boost::system::error_code listen(const boost::asio::ip::tcp::endpoint &endpoint) {
     endpoint_ = endpoint;
-    acceptor_ =
-        std::make_unique<boost::asio::ip::tcp::acceptor>(io_context_, endpoint);
+    acceptor_ = std::make_unique<boost::asio::ip::tcp::acceptor>(io_context_);
+
+    boost::system::error_code ec = boost::system::error_code();
+    acceptor_->open(endpoint.protocol(), ec);
+    if (ec) {
+      return ec;
+    }
     if (FLAGS_reuse_port) {
       acceptor_->set_option(
           boost::asio::ip::tcp::acceptor::reuse_address(true));
     }
+    acceptor_->bind(endpoint, ec);
+    if (ec) {
+      return ec;
+    }
+    acceptor_->listen(1 /*backlog*/, ec);
+    if (ec) {
+      return ec;
+    }
     LOG(WARNING) << "listen to " << endpoint_ << " with upstream "
                  << remote_endpoint_;
     startAccept();
+    return ec;
   }
 
   void stop() {

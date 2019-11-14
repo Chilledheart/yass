@@ -62,7 +62,7 @@ void YASSApp::SaveConfigToDisk() {
   FLAGS_method = frame_->GetMethod();
   FLAGS_local_host = frame_->GetLocalHost();
   FLAGS_local_port = stoi(frame_->GetLocalPort());
-  cipher_method = to_cipher_method(FLAGS_method);
+  cipher_method_in_use = to_cipher_method(FLAGS_method);
 
   SaveToConfigFile(FLAGS_configfile);
 }

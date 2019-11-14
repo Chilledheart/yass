@@ -27,6 +27,8 @@ public:
   void OnStop();
 
   std::string GetStatus() const;
+  enum YASSState { STARTED, START_FAILED, STOPPED };
+  YASSState GetState() const { return state_; }
 
 private:
   void OnStarted(wxCommandEvent &event);
@@ -38,7 +40,7 @@ private:
   void SaveConfigToDisk();
 
 private:
-  enum { STARTED, START_FAILED, STOPPED } state_;
+  YASSState state_;
 
   YASSFrame *frame_;
 

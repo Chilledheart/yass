@@ -68,8 +68,8 @@ Socks5Connection::Socks5Connection(
     boost::asio::io_context &io_context,
     const boost::asio::ip::tcp::endpoint &remote_endpoint)
     : Connection(io_context, remote_endpoint), state_(),
-      encoder_(new cipher("", FLAGS_password, cipher_method, true)),
-      decoder_(new cipher("", FLAGS_password, cipher_method)) {}
+      encoder_(new cipher("", FLAGS_password, cipher_method_in_use, true)),
+      decoder_(new cipher("", FLAGS_password, cipher_method_in_use)) {}
 
 Socks5Connection::~Socks5Connection() {}
 
@@ -435,6 +435,7 @@ Socks5Connection::PerformCmdOps(const socks5::request *request,
       reply->mutable_status() = socks5::reply::request_failed;
     } else {
       reply->set_endpoint(endpoint);
+      // reply->set_loopback();
       reply->mutable_status() = socks5::reply::request_granted;
     }
 
@@ -486,6 +487,7 @@ Socks5Connection::PerformCmdOpsV4(const socks4::request *request,
       reply->mutable_status() = socks4::reply::request_failed;
     } else {
       reply->set_endpoint(endpoint);
+      // reply->set_loopback();
       reply->mutable_status() = socks4::reply::request_granted;
     }
 

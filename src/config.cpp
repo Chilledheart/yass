@@ -9,10 +9,20 @@
 //
 
 #include "config.hpp"
-#include "cipher.hpp"
-#include <boost/filesystem.hpp>
+
+#include <boost/filesystem/fstream.hpp>
+#include <boost/filesystem/path.hpp>
 #include <gflags/gflags.h>
 #include <json/json.h>
+#include <memory>
+#ifdef _WIN32
+#include <shlwapi.h>
+#else
+#include <sys/types.h>
+#include <sys/stat.h>
+#endif
+
+#include "cipher.hpp"
 
 DEFINE_string(configfile, DEFAULT_CONFIGFILE, "load configs from file");
 DEFINE_string(server_host, DEFAULT_SERVER,
@@ -26,8 +36,6 @@ DEFINE_string(local_host, DEFAULT_LOCAL,
 DEFINE_int32(local_port, DEFAULT_LOCAL_PORT,
              "Port number which local server listens to");
 DEFINE_bool(reuse_port, true, "Reuse the local port");
-
-using namespace boost::filesystem;
 
 static std::string GetEnv(const char *name) {
 #ifdef _WIN32
@@ -43,7 +51,7 @@ static std::string GetEnv(const char *name) {
 #endif
 }
 
-static path ExpandUser(const std::string &file_path) {
+static boost::filesystem::path ExpandUser(const std::string &file_path) {
   std::string real_path = file_path;
 
   if (real_path.size() >= 1 && real_path[0] == '~') {
@@ -52,71 +60,136 @@ static path ExpandUser(const std::string &file_path) {
 #else
     std::string home = GetEnv("HOME");
 #endif
-    return path(home) / real_path.substr(2);
+    return boost::filesystem::path(home) / real_path.substr(2);
   }
 
-  return path(real_path);
+  return boost::filesystem::path(real_path);
 }
 
-static void CreateConfigDirectory() {
-  path real_path = ExpandUser(DEFAULT_CONFIGDIR);
-  boost::system::error_code ec = boost::system::error_code();
-  if (!is_directory(real_path, ec)) {
-    create_directories(real_path, ec);
+#ifdef _WIN32
+static bool is_directory(const boost::filesystem::path &p) {
+  return ::PathIsDirectoryW(p.wstring().c_str());
+}
+
+static bool create_directory(const boost::filesystem::path &p) {
+  return ::CreateDirectoryW(p.wstring().c_str(), nullptr);
+}
+#else
+static bool is_directory(const boost::filesystem::path &p) {
+  struct stat Stat;
+  std::string pStr = p.string();
+  if (::stat(pStr.c_str(), &Stat) != 0) {
+    return false;
   }
+  return S_ISDIR(Stat.st_mode);
 }
 
-void ReadFromConfigfile(const std::string &file_path) {
+static bool create_directory(const boost::filesystem::path &p) {
+  std::string pStr = p.string();
+  return ::mkdir(pStr.c_str(), 0644) != 0;
+}
+#endif
+
+static bool CreateConfigDirectory() {
+  boost::filesystem::path real_path = ExpandUser(DEFAULT_CONFIGDIR);
+
+  if (!is_directory(real_path) && !create_directory(real_path)) {
+    return false;
+  }
+  return true;
+}
+
+bool ReadFromConfigfile(const std::string &file_path) {
   Json::Value root;
   boost::filesystem::ifstream fs;
-  path real_path = ExpandUser(file_path);
+  boost::filesystem::path real_path = ExpandUser(file_path);
 
-  CreateConfigDirectory();
+  if (!CreateConfigDirectory()) {
+    LOG(WARNING) << "configure dir does not exist: " << real_path;
+    return false;
+  }
 
   fs.open(real_path);
 
   if (!fs.is_open()) {
     LOG(WARNING) << "configure file does not exist: " << real_path;
-    return;
+    return false;
   }
 
-  try {
-    fs >> root;
-    if (root.isMember("server") && root["server"].isString()) {
-      FLAGS_server_host = root["server"].asString();
-    }
-    if (root.isMember("server_port") && root["server_port"].isUInt()) {
-      FLAGS_server_port = root["server_port"].asUInt();
-    }
-    if (root.isMember("method") && root["method"].isString()) {
-      FLAGS_method = root["method"].asString();
-    }
-    if (root.isMember("password") && root["password"].isString()) {
-      FLAGS_password = root["password"].asString();
-    }
-    if (root.isMember("local") && root["local"].isString()) {
-      FLAGS_local_host = root["local"].asString();
-    }
-    if (root.isMember("local_port") && root["local_port"].isUInt()) {
-      FLAGS_local_port = root["local_port"].asUInt();
-    }
-  } catch (std::exception &e) {
-    LOG(WARNING) << "bad configuration: " << e.what();
+  Json::CharReaderBuilder builder;
+  builder["collectComments"] = false;
+  JSONCPP_STRING errs;
+  if (!Json::parseFromStream(builder, fs, &root, &errs)) {
+    LOG(WARNING) << "bad configuration: " << errs;
+    return false;
   }
 
-  cipher_method = to_cipher_method(FLAGS_method);
+  const char *bad_field = nullptr;
+
+  if (root.isMember("server") && root["server"].isString()) {
+    FLAGS_server_host = root["server"].asString();
+  } else {
+    bad_field = "server";
+  }
+
+  if (root.isMember("server_port") && root["server_port"].isUInt()) {
+    FLAGS_server_port = root["server_port"].asUInt();
+  } else {
+    bad_field = "server_port";
+  }
+
+  if (root.isMember("method") && root["method"].isString()) {
+    FLAGS_method = root["method"].asString();
+  } else {
+    bad_field = "method";
+  }
+
+  if (root.isMember("password") && root["password"].isString()) {
+    FLAGS_password = root["password"].asString();
+  } else {
+    bad_field = "password";
+  }
+
+  if (root.isMember("local") && root["local"].isString()) {
+    FLAGS_local_host = root["local"].asString();
+  } else {
+    bad_field = "local";
+  }
+
+  if (root.isMember("local_port") && root["local_port"].isUInt()) {
+    FLAGS_local_port = root["local_port"].asUInt();
+  } else {
+    bad_field = "local_port";
+  }
+
+  if (bad_field) {
+    LOG(WARNING) << "bad field: " << bad_field << root[bad_field];
+    return false;
+  }
+
+  cipher_method_in_use = to_cipher_method(FLAGS_method);
+
+  return true;
 }
 
-void SaveToConfigFile(const std::string &file_path) {
+bool SaveToConfigFile(const std::string &file_path) {
   Json::Value root;
   boost::filesystem::ofstream fs;
-  path real_path = ExpandUser(file_path);
+  boost::filesystem::path real_path = ExpandUser(file_path);
 
-  CreateConfigDirectory();
+  if (!CreateConfigDirectory()) {
+    LOG(WARNING) << "configure dir does not exist: " << real_path;
+    return false;
+  }
 
   fs.open(real_path);
 
-  FLAGS_method = to_cipher_method_str(cipher_method);
+  if (!fs.is_open()) {
+    LOG(WARNING) << "configure file does not exist: " << real_path;
+    return false;
+  }
+
+  FLAGS_method = to_cipher_method_str(cipher_method_in_use);
 
   root["server"] = FLAGS_server_host;
   root["server_port"] = FLAGS_server_port;
@@ -125,5 +198,14 @@ void SaveToConfigFile(const std::string &file_path) {
   root["local"] = FLAGS_local_host;
   root["local_port"] = FLAGS_local_port;
 
-  fs << root;
+  Json::StreamWriterBuilder builder;
+  builder["commentStyle"] = "None";
+  builder["indentation"] = "   ";  // or whatever you like
+  std::unique_ptr<Json::StreamWriter> writer(
+      builder.newStreamWriter());
+  if (writer->write(root, &fs) !=0) {
+    return false;
+  }
+
+  return true;
 }

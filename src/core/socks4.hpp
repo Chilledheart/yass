@@ -103,6 +103,12 @@ public:
     port_low_byte_ = port & 0xff;
   }
 
+  void set_loopback() {
+    address_ = boost::asio::ip::address_v4::loopback().to_bytes();
+    port_high_byte_ = 0;
+    port_low_byte_ = 0;
+  }
+
   const boost::asio::ip::address_v4::bytes_type &address() const {
     return address_;
   }

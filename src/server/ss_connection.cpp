@@ -22,8 +22,8 @@ SsConnection::SsConnection(
     boost::asio::io_context &io_context,
     const boost::asio::ip::tcp::endpoint &remote_endpoint)
     : Connection(io_context, remote_endpoint), state_(), resolver_(io_context_),
-      encoder_(new cipher("", FLAGS_password, cipher_method, true)),
-      decoder_(new cipher("", FLAGS_password, cipher_method)) {}
+      encoder_(new cipher("", FLAGS_password, cipher_method_in_use, true)),
+      decoder_(new cipher("", FLAGS_password, cipher_method_in_use)) {}
 
 SsConnection::~SsConnection() {}
 

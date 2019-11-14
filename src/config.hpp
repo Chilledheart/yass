@@ -38,7 +38,7 @@ DECLARE_string(password);
 DECLARE_int32(timeout);
 DECLARE_int32(fast_open);
 
-void ReadFromConfigfile(const std::string &file_path);
-void SaveToConfigFile(const std::string &file_path);
+bool ReadFromConfigfile(const std::string &file_path);
+bool SaveToConfigFile(const std::string &file_path);
 
 #endif // H_CONFIG

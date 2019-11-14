@@ -44,15 +44,18 @@ void Worker::Start(bool quiet) {
     bool successed = false;
     std::string msg;
 
-    try {
-      socks5_server_->listen(endpoint_);
-      successed = true;
-    } catch (std::exception &e) {
-      msg = e.what();
-    }
+    boost::system::error_code ec = socks5_server_->listen(endpoint_);
 
     if (quiet) {
       return;
+    }
+
+    if (ec) {
+      LOG(ERROR) << "listen failed due to: " << ec;
+      msg = ec.message();
+      successed = false;
+    } else {
+      successed = true;
     }
 
     wxCommandEvent *evt =
@@ -76,4 +79,11 @@ void Worker::Stop(bool quiet) {
   });
 }
 
-void Worker::WorkFunc() { io_context_.run(); }
+void Worker::WorkFunc() {
+  boost::system::error_code ec = boost::system::error_code();
+  io_context_.run(ec);
+
+  if (ec) {
+    LOG(ERROR) << "io_context failed due to: " << ec;
+  }
+}

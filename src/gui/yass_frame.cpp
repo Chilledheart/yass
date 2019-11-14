@@ -125,4 +125,8 @@ void YASSFrame::OnAbout(wxCommandEvent &WXUNUSED(event)) {
                wxOK | wxICON_INFORMATION);
 }
 
-void YASSFrame::OnIdle(wxIdleEvent &WXUNUSED(event)) { UpdateStatus(); }
+void YASSFrame::OnIdle(wxIdleEvent &WXUNUSED(event)) {
+  if (mApp->GetState() == YASSApp::STARTED) {
+    UpdateStatus();
+  }
+}

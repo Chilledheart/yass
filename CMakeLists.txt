@@ -50,19 +50,27 @@ if (NOT MSVC)
     add_definitions(-D_FILE_OFFSET_BITS=64)
     add_definitions(-D__STDC_CONSTANT_MACROS)
     add_definitions(-D__STDC_FORMAT_MACROS)
-    if (NOT APPLE)
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--as-needed")
-        set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} -Wl,--as-needed")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--as-needed")
-    endif()
 
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -pthread -pipe")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -pipe")
+
+    if (NOT APPLE)
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,noexecstack -Wl,-z,relro")
+        set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} -Wl,-z,noexecstack -Wl,-z,relro")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,noexecstack -Wl,-z,relro")
+    endif()
+
+    # no longer exceptions
+    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
 
     # default stack frame
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -fno-omit-frame-pointer")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-omit-frame-pointer")
 else()
+    ## Set Source and Excutable character sets to UTF-8
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
+
     ## warnings
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /W4 /WX /wd4099 /wd4100 /wd4127 /wd4244 /wd4267 /wd4505 /wd4838 /wd4996")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /WX /wd4099 /wd4100 /wd4127 /wd4244 /wd4267 /wd4505 /wd4838 /wd4996")
@@ -85,14 +93,15 @@ else()
     set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
 
     ## definitions
-    add_definitions(/DNOMINMAX)
-    add_definitions(/DUNICODE)
-    add_definitions(/DWIN32_LEAN_AND_MEAN)
-    add_definitions(/DWINVER=0x0601)
-    add_definitions(/D_CRT_SECURE_NO_DEPRECATE)
-    add_definitions(/D_SCL_SECURE_NO_DEPRECATE)
-    add_definitions(/D_UNICODE)
-    add_definitions(/D_WIN32_WINNT=0x0601)
+    add_definitions(-D_HAS_EXCEPTIONS=0)
+    add_definitions(-DNOMINMAX)
+    add_definitions(-DUNICODE)
+    add_definitions(-DWIN32_LEAN_AND_MEAN)
+    add_definitions(-DWINVER=0x0601)
+    add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
+    add_definitions(-D_SCL_SECURE_NO_DEPRECATE)
+    add_definitions(-D_UNICODE)
+    add_definitions(-D_WIN32_WINNT=0x0601)
 
     # default stack frame
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Oy-")
@@ -194,7 +203,9 @@ endif()
 
 set(boringssl_DIR "${CMAKE_SOURCE_DIR}/../boringssl" CACHE STRING "path to boringssl root directory")
 
-if (WIN32)
+include(CheckIncludeFile)
+
+if (MSVC)
     option(VCPKG_ROOT_DIR "" "vcpkg root path")
     set(VCPKG_INCLUDE_DIRS
       ${VCPKG_ROOT_DIR}/installed/x86-windows-static/include
@@ -210,15 +221,6 @@ if (WIN32)
     add_definitions(-DGFLAGS_DLL_DEFINE_FLAG=)
     add_definitions(-DGOOGLE_GLOG_DLL_DECL=)
     include_directories(${VCPKG_INCLUDE_DIRS})
-
-    find_library(JEMALLOC_RELEASE_LIB jemalloc
-      PATHS ${VCPKG_LIB_PATH} NO_DEFAULT_PATH)
-    find_library(JEMALLOC_DEBUG_LIB jemalloc
-      PATHS ${VCPKG_LIB_DEBUG_PATH} NO_DEFAULT_PATH)
-    set(JEMALLOC_LIB
-      debug ${JEMALLOC_DEBUG_LIB}
-      optimized ${JEMALLOC_RELEASE_LIB}
-      )
 
     find_library(GLOG_RELEASE_LIB glog
       PATHS ${VCPKG_STATIC_LIB_PATH} NO_DEFAULT_PATH)
@@ -255,6 +257,7 @@ if (WIN32)
       debug ${JSONCPP_DEBUG_LIB}
       optimized ${JSONCPP_RELEASE_LIB}
       )
+    add_definitions(-DJSON_USE_EXCEPTION=0)
 
     find_library(BOOST_FILESYSTEM_RELEASE_LIB boost_filesystem-vc140-mt
       PATHS ${VCPKG_STATIC_LIB_PATH} NO_DEFAULT_PATH)
@@ -274,8 +277,32 @@ if (WIN32)
       optimized ${BOOST_SYSTEM_RELEASE_LIB}
       )
 
+    # boringssl
+    find_library(BORINGSSL_CRYPTO_LIB crypto
+      PATHS ${boringssl_DIR}/build/crypto
+      NO_DEFAULT_PATH)
+
+    find_library(BORINGSSL_CRYPTO_RELEASE_LIB crypto
+      PATHS ${boringssl_DIR}/build/crypto/Release NO_DEFAULT_PATH)
+    find_library(BORINGSSL_CRYPTO_DEBUG_LIB crypto
+      PATHS ${boringssl_DIR}/build/crypto/Debug NO_DEFAULT_PATH)
+    set(BORINGSSL_CRYPTO_LIB
+      debug ${BORINGSSL_CRYPTO_DEBUG_LIB}
+      optimized ${BORINGSSL_CRYPTO_RELEASE_LIB}
+      )
+
+    set(CMAKE_REQUIRED_INCLUDES
+        ${boringssl_DIR}/include
+        ${CMAKE_REQUIRED_INCLUDES})
+    check_include_file(openssl/is_boringssl.h BORINGSSL_CRYPTO_INCLUDE)
+    if (BORINGSSL AND BORINGSSL_CRYPTO_LIB AND BORINGSSL_CRYPTO_INCLUDE)
+        add_definitions(-DHAVE_BORINGSSL)
+        include_directories(BEFORE ${boringssl_DIR}/include)
+        set(SYSTEM_LIBS ${SYSTEM_LIBS} ${BORINGSSL_CRYPTO_LIB})
+    endif()
+
     find_library(ShLwApi_LIB ShLwApi)
-    set(SYSTEM_LIBS ${ShLwApi_LIB})
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${ShLwApi_LIB})
 
     # replace /MD with /MT
     set(CompilerFlags
@@ -290,13 +317,12 @@ if (WIN32)
       string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
     endforeach()
 else()
-    include(CheckIncludeFile)
-
     find_library(JEMALLOC_LIB jemalloc)
     find_library(GLOG_LIB glog)
     find_library(GFLAGS_LIB gflags)
     find_library(SODIUM_LIB sodium)
     find_library(JSONCPP_LIB jsoncpp)
+    add_definitions(-DJSON_USE_EXCEPTION=0)
 
     find_library(BOOST_FILESYSTEM_LIB boost_filesystem)
     if (NOT BOOST_FILESYSTEM_LIB)
@@ -307,16 +333,18 @@ else()
         find_library(BOOST_SYSTEM_LIB boost_system-mt)
     endif()
 
+    # boringssl
     find_library(BORINGSSL_CRYPTO_LIB crypto
       PATHS ${boringssl_DIR}/build/crypto
       NO_DEFAULT_PATH)
 
-    set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES}
-        ${boringssl_DIR}/include)
+    set(CMAKE_REQUIRED_INCLUDES
+        ${boringssl_DIR}/include
+        ${CMAKE_REQUIRED_INCLUDES})
     check_include_file(openssl/is_boringssl.h BORINGSSL_CRYPTO_INCLUDE)
     if (BORINGSSL AND BORINGSSL_CRYPTO_LIB AND BORINGSSL_CRYPTO_INCLUDE)
         add_definitions(-DHAVE_BORINGSSL)
-        include_directories(${boringssl_DIR}/include)
+        include_directories(BEFORE ${boringssl_DIR}/include)
         set(SYSTEM_LIBS ${SYSTEM_LIBS} ${BORINGSSL_CRYPTO_LIB})
     endif()
 
@@ -340,7 +368,12 @@ set(SUPPORT_LIBS
     ${SYSTEM_LIBS}
     )
 
-if (NOT ASAN AND NOT MSAN)
+if (NOT MSAN AND NOT ASAN AND NOT TSAN AND NOT UBSAN)
+    if (NOT APPLE AND NOT MSVC)
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,defs -Wl,--as-needed")
+        set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} -Wl,-z,defs -Wl,--as-needed")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,defs -Wl,--as-needed")
+    endif()
     set(SUPPORT_LIBS
         ${JEMALLOC_LIB}
         ${SUPPORT_LIBS})
@@ -488,7 +521,7 @@ target_link_libraries(yass_server PUBLIC
 # *****************************************************************************************
 
 
-if (WIN32)
+if (MSVC)
   set(wxWidgets_ROOT_DIR ${VCPKG_ROOT_DIR}/installed/x86-windows-static)
   set(wxWidgets_LIB_DIR ${VCPKG_STATIC_LIB_PATH})
   set(wxWidgets_LIB_DEBUG_DIR ${VCPKG_STATIC_LIB_DEBUG_PATH})
@@ -626,7 +659,7 @@ if (GUI AND wxWidgets_FOUND)
         $<TARGET_OBJECTS:yass_base>
         )
 
-    if (WIN32)
+    if (MSVC)
         list(APPEND SRC_FILES yass.rc)
     endif()
 
