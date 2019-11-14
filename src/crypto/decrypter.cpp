@@ -15,6 +15,7 @@
 #include "crypto/aes_128_gcm_evp_decrypter.hpp"
 #include "crypto/aes_192_gcm_evp_decrypter.hpp"
 #include "crypto/aes_256_gcm_evp_decrypter.hpp"
+#include "crypto/aes_256_gcm_sodium_decrypter.hpp"
 #include "crypto/chacha20_poly1305_evp_decrypter.hpp"
 #include "crypto/chacha20_poly1305_sodium_decrypter.hpp"
 #include "crypto/xchacha20_poly1305_evp_decrypter.hpp"
@@ -26,6 +27,8 @@ Decrypter::~Decrypter() {}
 
 std::unique_ptr<Decrypter> Decrypter::CreateFromCipherSuite(uint32_t cipher_suite) {
   switch (cipher_suite) {
+    case CRYPTO_AES256GCMSHA256:
+      return std::make_unique<Aes256GcmSodiumDecrypter>();
     case CRYPTO_CHACHA20POLY1305IETF:
       return std::make_unique<ChaCha20Poly1305SodiumDecrypter>();
     case CRYPTO_XCHACHA20POLY1305IETF:

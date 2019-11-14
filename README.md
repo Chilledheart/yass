@@ -40,14 +40,14 @@ apt-get install -y \
     libwxgtk3.0-dev (optional)
 
 ```
-3. compile the program with default configuration.
+3. Compile the program with default configuration.
 ```
 mkdir build
 cd build
 cmake -G Ninja..
 ninja
 ```
-4. run
+4. Run CLI tool.
 ```
 ./build/yass_cli
 ```
@@ -65,7 +65,6 @@ ninja
     libsodium
     jsoncpp
     jemalloc
-    openssl
     wxWidgets-3.2
 ```
 3. use script to build release App under `build` directory.
@@ -73,17 +72,23 @@ ninja
 
 4. copy `build/yass.app` into `/Application` directory.
 ### vcpkg
+1. Make sure you use visual studio 2015 Update 3 or later to get vcpkg work.
+
+2. Run vcpkg to install required dependencies.
 ```
-vcpkg install boost-asio:x86-windows-static boost-filesystem:x86-windows-static boost-system:x86-windows-static glog:x86-windows-static gflags:x86-windows-static libsodium:x86-windows-static jsoncpp:x86-windows-static openssl:x86-windows-static wxwidgets:x86-windows-static jemalloc
+vcpkg install boost-asio:x86-windows-static boost-filesystem:x86-windows-static boost-system:x86-windows-static glog:x86-windows-static gflags:x86-windows-static libsodium:x86-windows-static jsoncpp:x86-windows-static wxwidgets:x86-windows-static jemalloc
 ```
 
 ## Crypto
-### ciphers
-- aes-128-gcm (incoming)
-- aes-192-gcm (incoming)
-- aes-256-gcm (incoming)
-- chacha20-ietf-poly1305
-- xchacha20-ietf-poly1305
+### Ciphers for fips modules
+- [aes-128-gcm][aes128gcm]
+- [aes-128-gcm12][aes128gcm12]
+- aes-192-gcm
+- [aes-256-gcm][aes256gcm]
+
+### Ciphers for [tls 1.3][tls13]
+- [chacha20-ietf-poly1305][chacha20]
+- [xchacha20-ietf-poly1305][chacha20]
 
 ### Operating System
 - macOS
@@ -100,3 +105,8 @@ vcpkg install boost-asio:x86-windows-static boost-filesystem:x86-windows-static 
 [aead]: https://shadowsocks.org/en/spec/AEAD-Ciphers.html
 [asan]: https://github.com/google/sanitizers/wiki/AddressSanitizer
 [vcredist]: https://support.microsoft.com/zh-tw/help/2977003/the-latest-supported-visual-c-downloads
+[aes128gcm]: https://tools.ietf.org/html/rfc5116
+[aes128gcm12]: https://tools.ietf.org/html/rfc5282
+[aes256gcm]: https://tools.ietf.org/html/rfc5116
+[chacha20]: https://tools.ietf.org/html/rfc7539
+[tls13]: https://tools.ietf.org/html/rfc7905

@@ -363,6 +363,7 @@ set(files
     src/core/socks4_request_parser.cpp
     src/core/socks5_request_parser.cpp
     src/core/ss_request_parser.cpp
+    src/core/rand_util.cpp
     src/crypto/aead_base_decrypter.cpp
     src/crypto/aead_base_encrypter.cpp
     src/crypto/aead_evp_decrypter.cpp
@@ -375,6 +376,8 @@ set(files
     src/crypto/aes_192_gcm_evp_encrypter.cpp
     src/crypto/aes_256_gcm_evp_decrypter.cpp
     src/crypto/aes_256_gcm_evp_encrypter.cpp
+    src/crypto/aes_256_gcm_sodium_decrypter.cpp
+    src/crypto/aes_256_gcm_sodium_encrypter.cpp
     src/crypto/chacha20_poly1305_evp_decrypter.cpp
     src/crypto/chacha20_poly1305_evp_encrypter.cpp
     src/crypto/chacha20_poly1305_sodium_decrypter.cpp
@@ -409,6 +412,7 @@ set(hfiles
     src/core/ss.hpp
     src/core/ss_request.hpp
     src/core/ss_request_parser.hpp
+    src/core/rand_util.hpp
     src/crypto/aead_base_decrypter.hpp
     src/crypto/aead_base_encrypter.hpp
     src/crypto/aead_evp_decrypter.hpp
@@ -421,6 +425,8 @@ set(hfiles
     src/crypto/aes_192_gcm_evp_encrypter.hpp
     src/crypto/aes_256_gcm_evp_decrypter.hpp
     src/crypto/aes_256_gcm_evp_encrypter.hpp
+    src/crypto/aes_256_gcm_sodium_decrypter.hpp
+    src/crypto/aes_256_gcm_sodium_encrypter.hpp
     src/crypto/chacha20_poly1305_evp_decrypter.hpp
     src/crypto/chacha20_poly1305_evp_encrypter.hpp
     src/crypto/chacha20_poly1305_sodium_decrypter.hpp

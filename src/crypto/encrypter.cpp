@@ -15,6 +15,7 @@
 #include "crypto/aes_128_gcm_evp_encrypter.hpp"
 #include "crypto/aes_192_gcm_evp_encrypter.hpp"
 #include "crypto/aes_256_gcm_evp_encrypter.hpp"
+#include "crypto/aes_256_gcm_sodium_encrypter.hpp"
 #include "crypto/chacha20_poly1305_evp_encrypter.hpp"
 #include "crypto/chacha20_poly1305_sodium_encrypter.hpp"
 #include "crypto/xchacha20_poly1305_evp_encrypter.hpp"
@@ -26,6 +27,8 @@ Encrypter::~Encrypter() {}
 
 std::unique_ptr<Encrypter> Encrypter::CreateFromCipherSuite(uint32_t cipher_suite) {
   switch (cipher_suite) {
+    case CRYPTO_AES256GCMSHA256:
+      return std::make_unique<Aes256GcmSodiumEncrypter>();
     case CRYPTO_CHACHA20POLY1305IETF:
       return std::make_unique<ChaCha20Poly1305SodiumEncrypter>();
     case CRYPTO_XCHACHA20POLY1305IETF:

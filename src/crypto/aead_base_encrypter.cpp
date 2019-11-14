@@ -10,7 +10,6 @@
 
 #include "aead_base_encrypter.hpp"
 
-#include <sodium/randombytes.h>
 #include <sodium/utils.h>
 
 #include <glog/logging.h>

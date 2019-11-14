@@ -10,8 +10,6 @@
 
 #include "core/cipher.hpp"
 
-#include <sodium/core.h>
-#include <sodium/randombytes.h>
 #include <sodium/utils.h>
 #include <vector>
 
@@ -19,7 +17,7 @@
 #include "core/md5.h"
 #include "core/modp_b64.h"
 #include "core/sys_byteorder.h"
-
+#include "core/rand_util.hpp"
 #include "crypto/encrypter.hpp"
 #include "crypto/decrypter.hpp"
 
@@ -29,6 +27,7 @@
 #define CHUNK_SIZE_MASK 0x3FFFU
 
 #define MD_MAX_SIZE_256 32 /* longest known is SHA256 or less */
+
 
 class cipher_impl {
 public:
@@ -158,11 +157,6 @@ public:
 cipher::cipher(const std::string &key, const std::string &password,
                enum cipher_method method, bool enc)
     : salt_(), key_(), counter_(), init_(false) {
-
-  // Initialize sodium for random generator
-  if (sodium_init() == -1) {
-  }
-
   impl_ = new cipher_impl(method, enc);
   key_bitlen_ = impl_->GetKeySize() * 8;
   key_len_ = !key.empty()
@@ -243,7 +237,7 @@ void cipher::encrypt_salt(IOBuf *chunk) {
 
   size_t salt_len = key_len_;
   VLOG(4) << "encrypt: salt: " << salt_len;
-  ::randombytes_buf(salt_, key_len_);
+  RandBytes(salt_, key_len_);
   chunk->reserve(salt_len, 0);
   chunk->prepend(salt_len);
   memcpy(chunk->mutable_data(), salt_, salt_len);
