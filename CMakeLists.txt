@@ -348,9 +348,16 @@ else()
         set(SYSTEM_LIBS ${SYSTEM_LIBS} ${BORINGSSL_CRYPTO_LIB})
     endif()
 
+    # include extra paths
     if (APPLE)
         include_directories(/opt/local/include)
         link_directories(/opt/local/lib)
+    endif()
+    if (CMAKE_FIND_ROOT_PATH)
+        foreach(ROOT_PATH ${CMAKE_FIND_ROOT_PATH})
+            include_directories(${ROOT_PATH}/include)
+            link_directories(${ROOT_PATH}/lib)
+        endforeach()
     endif()
 
     if (UNIX AND NOT APPLE)
