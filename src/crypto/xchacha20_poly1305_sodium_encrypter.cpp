@@ -41,8 +41,10 @@ bool XChaCha20Poly1305SodiumEncrypter::EncryptPacket(
   }
   char nonce_buffer[kMaxNonceSize];
   memcpy(nonce_buffer, iv_, nonce_size_);
+#if 0
   size_t prefix_len = nonce_size_ - sizeof(uint64_t);
   memcpy(nonce_buffer + prefix_len, &packet_number, sizeof(uint64_t));
+#endif
 
   if (::crypto_aead_xchacha20poly1305_ietf_encrypt(
           reinterpret_cast<uint8_t *>(output), &ciphertext_size,

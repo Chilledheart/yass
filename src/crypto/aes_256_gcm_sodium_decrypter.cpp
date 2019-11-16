@@ -63,8 +63,10 @@ bool Aes256GcmSodiumDecrypter::DecryptPacket(
 
   uint8_t nonce[kMaxNonceSize];
   memcpy(nonce, iv_, nonce_size_);
+#if 0
   size_t prefix_len = nonce_size_ - sizeof(packet_number);
   memcpy(nonce + prefix_len, &packet_number, sizeof(packet_number));
+#endif
 
   if (::crypto_aead_aes256gcm_decrypt_afternm(
           reinterpret_cast<uint8_t *>(output), &plaintext_size, nullptr,

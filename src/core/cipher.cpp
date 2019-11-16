@@ -88,10 +88,11 @@ public:
     return skey_len;
   }
 
-  int EncryptPacket(uint8_t *c, size_t *clen, const uint8_t *m, size_t mlen) {
+  int EncryptPacket(uint64_t packet_number,
+                    uint8_t *c, size_t *clen, const uint8_t *m, size_t mlen) {
     int err = 0;
 
-    if (!encrypter->EncryptPacket(0U, nullptr, 0U, (const char *)m,
+    if (!encrypter->EncryptPacket(packet_number, nullptr, 0U, (const char *)m,
                                   mlen, (char *)c, clen, *clen)) {
       err = -1;
     }
@@ -99,10 +100,11 @@ public:
     return err;
   }
 
-  int DecryptPacket(uint8_t *p, size_t *plen, const uint8_t *m, size_t mlen) {
+  int DecryptPacket(uint64_t packet_number,
+                    uint8_t *p, size_t *plen, const uint8_t *m, size_t mlen) {
     int err = 0;
 
-    if (!decrypter->DecryptPacket(0U, nullptr, 0U, (const char *)m,
+    if (!decrypter->DecryptPacket(packet_number, nullptr, 0U, (const char *)m,
                                   mlen, (char *)p, plen, *plen)) {
       err = -1;
     }
@@ -130,12 +132,25 @@ public:
     }
   }
 
+  void SetIV(const uint8_t *iv, size_t iv_len) {
+    if (encrypter) {
+      encrypter->SetIV(reinterpret_cast<const char*>(iv), iv_len);
+    }
+    if (decrypter) {
+      decrypter->SetIV(reinterpret_cast<const char*>(iv), iv_len);
+    }
+  }
+
   size_t GetKeySize() const {
     return encrypter ? encrypter->GetKeySize() : decrypter->GetKeySize();
   }
 
   size_t GetNoncePrefixSize() const {
     return encrypter ? encrypter->GetNoncePrefixSize() : decrypter->GetNoncePrefixSize();
+  }
+
+  size_t GetIVSize() const {
+    return encrypter ? encrypter->GetIVSize() : decrypter->GetIVSize();
   }
 
   size_t GetTagSize() const {
@@ -192,11 +207,20 @@ void cipher::decrypt(IOBuf *ciphertext, std::unique_ptr<IOBuf> &plaintext,
 
   plaintext = IOBuf::create(capacity);
   while (!chunk_->empty()) {
+    uint64_t counter = counter_;
+    uint8_t nonce[MAX_NONCE_LENGTH];
     size_t chunk_len = 0;
-    if (!chunk_decrypt_aead(plaintext.get(), chunk_.get(), &chunk_len)) {
+
+    counter = counter_;
+    memcpy(nonce, nonce_, impl_->GetIVSize());
+
+    if (!chunk_decrypt_aead(&counter, nonce,
+                            plaintext.get(), chunk_.get(), &chunk_len)) {
       break;
     }
 
+    counter_ = counter;
+    memcpy(nonce_, nonce, impl_->GetIVSize());
     chunk_->trimStart(chunk_len);
   }
   chunk_->retreat(chunk_->headroom());
@@ -214,7 +238,18 @@ void cipher::encrypt(IOBuf *plaintext, std::unique_ptr<IOBuf> &ciphertext,
   size_t clen = 2 * tag_len_ + CHUNK_SIZE_LEN + plaintext->length();
 
   ciphertext->reserve(0, clen);
-  chunk_encrypt_aead(plaintext, ciphertext.get());
+
+  uint64_t counter = counter_;
+  uint8_t nonce[MAX_NONCE_LENGTH];
+
+  counter = counter_;
+  memcpy(nonce, nonce_, impl_->GetIVSize());
+
+  // TBD better to apply MTU-like things
+  chunk_encrypt_aead(&counter, nonce, plaintext, ciphertext.get());
+
+  counter_ = counter;
+  memcpy(nonce_, nonce, impl_->GetIVSize());
 }
 
 void cipher::decrypt_salt(IOBuf *chunk) {
@@ -248,8 +283,9 @@ void cipher::encrypt_salt(IOBuf *chunk) {
 #endif
 }
 
-bool cipher::chunk_decrypt_aead(IOBuf *plaintext, const IOBuf *ciphertext,
-                                size_t *consumed_len) {
+bool cipher::chunk_decrypt_aead(uint64_t* counter, uint8_t *nonce,
+                                IOBuf *plaintext, const IOBuf *ciphertext,
+                                size_t *consumed_len) const {
   int err;
   size_t mlen;
   size_t tlen = tag_len_;
@@ -258,12 +294,13 @@ bool cipher::chunk_decrypt_aead(IOBuf *plaintext, const IOBuf *ciphertext,
   VLOG(4) << "decrypt: current chunk: " << ciphertext->length()
           << " expected: " << (2 * tlen + CHUNK_SIZE_LEN);
 
+
   if (ciphertext->length() <= 2 * tlen + CHUNK_SIZE_LEN) {
     return false;
   }
 
   uint8_t len_buf[2];
-  err = impl_->DecryptPacket(len_buf, &plen, ciphertext->data(),
+  err = impl_->DecryptPacket(*counter, len_buf, &plen, ciphertext->data(),
                              CHUNK_SIZE_LEN + tlen);
   if (err) {
     return false;
@@ -287,11 +324,11 @@ bool cipher::chunk_decrypt_aead(IOBuf *plaintext, const IOBuf *ciphertext,
     return false;
   }
 
-  counter_++;
-  ::sodium_increment(nonce_, sizeof(nonce_));
-  impl_->SetNoncePrefix(nonce_, sizeof(nonce_));
+  (*counter)++;
+  ::sodium_increment(nonce, impl_->GetIVSize());
+  impl_->SetIV(nonce, impl_->GetIVSize());
 
-  err = impl_->DecryptPacket(plaintext->mutable_tail(), &plen,
+  err = impl_->DecryptPacket(*counter, plaintext->mutable_tail(), &plen,
                              ciphertext->data() + CHUNK_SIZE_LEN + tlen,
                              mlen + tlen);
   if (err) {
@@ -299,9 +336,9 @@ bool cipher::chunk_decrypt_aead(IOBuf *plaintext, const IOBuf *ciphertext,
   }
   DCHECK_EQ(plen, mlen);
 
-  counter_++;
-  ::sodium_increment(nonce_, sizeof(nonce_));
-  impl_->SetNoncePrefix(nonce_, sizeof(nonce_));
+  (*counter)++;
+  ::sodium_increment(nonce, impl_->GetIVSize());
+  impl_->SetIV(nonce, impl_->GetIVSize());
 
   *consumed_len = chunk_len;
 
@@ -310,7 +347,8 @@ bool cipher::chunk_decrypt_aead(IOBuf *plaintext, const IOBuf *ciphertext,
   return true;
 }
 
-bool cipher::chunk_encrypt_aead(const IOBuf *plaintext, IOBuf *ciphertext) {
+bool cipher::chunk_encrypt_aead(uint64_t* counter, uint8_t *nonce,
+                                const IOBuf *plaintext, IOBuf *ciphertext) const {
   size_t tlen = tag_len_;
 
   DCHECK_LE(plaintext->length(), CHUNK_SIZE_MASK);
@@ -324,7 +362,7 @@ bool cipher::chunk_encrypt_aead(const IOBuf *plaintext, IOBuf *ciphertext) {
   clen = CHUNK_SIZE_LEN + tlen;
   VLOG(4) << "encrypt: current chunk: " << clen
           << " original: " << sizeof(len_buf);
-  err = impl_->EncryptPacket(ciphertext->mutable_tail(), &clen, len_buf,
+  err = impl_->EncryptPacket(*counter, ciphertext->mutable_tail(), &clen, len_buf,
                              CHUNK_SIZE_LEN);
   if (err) {
     return false;
@@ -333,14 +371,14 @@ bool cipher::chunk_encrypt_aead(const IOBuf *plaintext, IOBuf *ciphertext) {
   DCHECK_EQ(clen, CHUNK_SIZE_LEN + tlen);
   ciphertext->append(clen);
 
-  counter_++;
-  ::sodium_increment(nonce_, sizeof(nonce_));
-  impl_->SetNoncePrefix(nonce_, sizeof(nonce_));
+  (*counter)++;
+  ::sodium_increment(nonce, impl_->GetIVSize());
+  impl_->SetIV(nonce, impl_->GetIVSize());
 
   clen = plaintext->length() + tlen;
   VLOG(4) << "encrypt: current chunk: " << clen
           << " original: " << plaintext->length();
-  err = impl_->EncryptPacket(ciphertext->mutable_tail(), &clen, plaintext->data(),
+  err = impl_->EncryptPacket(*counter, ciphertext->mutable_tail(), &clen, plaintext->data(),
                              plaintext->length());
   if (err) {
     return false;
@@ -348,9 +386,9 @@ bool cipher::chunk_encrypt_aead(const IOBuf *plaintext, IOBuf *ciphertext) {
 
   DCHECK_EQ(clen, plaintext->length() + tlen);
 
-  counter_++;
-  ::sodium_increment(nonce_, sizeof(nonce_));
-  impl_->SetNoncePrefix(nonce_, sizeof(nonce_));
+  (*counter)++;
+  ::sodium_increment(nonce, impl_->GetIVSize());
+  impl_->SetIV(nonce, impl_->GetIVSize());
 
   ciphertext->append(clen);
 
@@ -370,7 +408,7 @@ void cipher::set_key_aead(const uint8_t *salt, size_t salt_len) {
   ::sodium_memzero(nonce_, sizeof(nonce_));
 
   impl_->SetKey(skey, key_len_);
-  impl_->SetNoncePrefix(nonce_, sizeof(nonce_));
+  impl_->SetIV(nonce_, impl_->GetIVSize());
 
 #ifndef NDEBUG
   DumpHex("SKEY", impl_->GetKey(), impl_->GetKeySize());

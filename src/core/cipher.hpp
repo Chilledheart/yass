@@ -38,10 +38,12 @@ private:
 
   void encrypt_salt(IOBuf *chunk);
 
-  bool chunk_decrypt_aead(IOBuf *plaintext, const IOBuf *ciphertext,
-                          size_t *consumed_length);
+  bool chunk_decrypt_aead(uint64_t* counter, uint8_t *nonce,
+                          IOBuf *plaintext, const IOBuf *ciphertext,
+                          size_t *consumed_length) const;
 
-  bool chunk_encrypt_aead(const IOBuf *plaintext, IOBuf *ciphertext);
+  bool chunk_encrypt_aead(uint64_t* counter, uint8_t *nonce,
+                          const IOBuf *plaintext, IOBuf *ciphertext) const;
 
   void set_key_aead(const uint8_t *salt, size_t salt_len);
 
