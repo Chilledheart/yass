@@ -53,7 +53,9 @@ std::string YASSApp::GetStatus() const {
   return ss.str();
 };
 
-void YASSApp::LoadConfigFromDisk() { ReadFromConfigfile(FLAGS_configfile); }
+void YASSApp::LoadConfigFromDisk() {
+  config::ReadConfig();
+}
 
 void YASSApp::SaveConfigToDisk() {
   FLAGS_server_host = frame_->GetServerHost();
@@ -64,7 +66,7 @@ void YASSApp::SaveConfigToDisk() {
   FLAGS_local_port = stoi(frame_->GetLocalPort());
   cipher_method_in_use = to_cipher_method(FLAGS_method);
 
-  SaveToConfigFile(FLAGS_configfile);
+  config::SaveConfig();
 }
 
 void YASSApp::OnStart() {

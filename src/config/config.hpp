@@ -8,15 +8,13 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef H_CONFIG
-#define H_CONFIG
+#ifndef H_CONFIG_CONFIG
+#define H_CONFIG_CONFIG
 
 #include <gflags/gflags_declare.h>
 
 // TBD: read settinsg from json config file
 
-#define DEFAULT_CONFIGDIR "~/.yass"
-#define DEFAULT_CONFIGFILE "~/.yass/config.json"
 #define DEFAULT_SERVER "0.0.0.0"
 #define DEFAULT_SERVER_PORT 8443
 #define DEFAULT_PASS "<default-pass>"
@@ -38,7 +36,9 @@ DECLARE_string(password);
 DECLARE_int32(timeout);
 DECLARE_int32(fast_open);
 
-bool ReadFromConfigfile(const std::string &file_path);
-bool SaveToConfigFile(const std::string &file_path);
+namespace config {
+bool ReadConfig();
+bool SaveConfig();
+} // namespace config
 
-#endif // H_CONFIG
+#endif // H_CONFIG_CONFIG

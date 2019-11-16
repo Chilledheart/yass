@@ -22,7 +22,7 @@
 #include <glog/logging.h>
 #include <utility>
 
-#include "config.hpp"
+#include "config/config.hpp"
 #include "protocol.hpp"
 
 class Connection {

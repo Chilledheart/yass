@@ -10,7 +10,7 @@
 
 #include "cli/socks5_connection.hpp"
 
-#include "config.hpp"
+#include "config/config.hpp"
 #include "core/cipher.hpp"
 
 static int http_request_url_parse(const char *buf, size_t len,

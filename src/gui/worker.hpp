@@ -11,7 +11,7 @@
 #define YASS_WORKER
 
 #include "cipher.hpp"
-#include "config.hpp"
+#include "config/config.hpp"
 #include "socks5_factory.hpp"
 
 #include <boost/asio.hpp>

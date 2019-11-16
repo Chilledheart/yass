@@ -22,7 +22,7 @@
 #include <glog/logging.h>
 #include <utility>
 
-#include "config.hpp"
+#include "config/config.hpp"
 #include "connection.hpp"
 
 template <class T> class ServiceFactory {

@@ -249,25 +249,6 @@ if (MSVC)
       optimized ${SODIUM_RELEASE_LIB}
       )
 
-    find_library(JSONCPP_RELEASE_LIB jsoncpp
-      PATHS ${VCPKG_STATIC_LIB_PATH} NO_DEFAULT_PATH)
-    find_library(JSONCPP_DEBUG_LIB jsoncpp
-      PATHS ${VCPKG_STATIC_LIB_DEBUG_PATH} NO_DEFAULT_PATH)
-    set(JSONCPP_LIB
-      debug ${JSONCPP_DEBUG_LIB}
-      optimized ${JSONCPP_RELEASE_LIB}
-      )
-    add_definitions(-DJSON_USE_EXCEPTION=0)
-
-    find_library(BOOST_FILESYSTEM_RELEASE_LIB boost_filesystem-vc140-mt
-      PATHS ${VCPKG_STATIC_LIB_PATH} NO_DEFAULT_PATH)
-    find_library(BOOST_FILESYSTEM_DEBUG_LIB boost_filesystem-vc140-mt-gd
-      PATHS ${VCPKG_STATIC_LIB_DEBUG_PATH} NO_DEFAULT_PATH)
-    set(BOOST_FILESYSTEM_LIB
-      debug ${BOOST_FILESYSTEM_DEBUG_LIB}
-      optimized ${BOOST_FILESYSTEM_RELEASE_LIB}
-      )
-
     find_library(BOOST_SYSTEM_RELEASE_LIB boost_system-vc140-mt
       PATHS ${VCPKG_STATIC_LIB_PATH} NO_DEFAULT_PATH)
     find_library(BOOST_SYSTEM_DEBUG_LIB boost_system-vc140-mt-gd
@@ -391,7 +372,8 @@ endif()
 # *****************************************************************************************
 
 set(files
-    src/config.cpp
+    src/config/config.cpp
+    src/config/config_impl.cpp
     src/core/cipher.cpp
     src/core/hkdf_sha1.cpp
     src/core/hmac_sha1.cpp
@@ -433,7 +415,10 @@ set(files
     )
 
 set(hfiles
-    src/config.hpp
+    src/config/config.hpp
+    src/config/config_impl.hpp
+    src/config/config_impl_posix.hpp
+    src/config/config_impl_windows.hpp
     src/core/cipher.hpp
     src/core/hkdf_sha1.hpp
     src/core/hmac_sha1.hpp

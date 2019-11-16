@@ -11,7 +11,7 @@
 #include "ss_connection.hpp"
 
 #include "cipher.hpp"
-#include "config.hpp"
+#include "config/config.hpp"
 
 #define MAX_DOWNSTREAM_DEPS 1024
 #define MAX_UPSTREAM_DEPS 1024

@@ -8,7 +8,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "config.hpp"
+#include "config/config.hpp"
 #include "core/cipher.hpp"
 #include "cli/socks5_factory.hpp"
 
@@ -46,14 +46,7 @@ int main(int argc, const char *argv[]) {
   ::google::ParseCommandLineFlags(&argc, (char ***)&argv, true);
   ::google::InstallFailureSignalHandler();
 
-  if (!FLAGS_configfile.empty()) {
-    ReadFromConfigfile(FLAGS_configfile);
-  }
-
-  if ((cipher_method_in_use = to_cipher_method(FLAGS_method)) == CRYPTO_PLAINTEXT) {
-    fprintf(stderr, "Not supported cipher: %s\n", FLAGS_method.c_str());
-    return -1;
-  }
+  (void)config::ReadConfig();
 
   tcp::endpoint endpoint(
       resolveEndpoint(io_context, FLAGS_local_host, FLAGS_local_port));
