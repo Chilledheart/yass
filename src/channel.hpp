@@ -18,16 +18,26 @@
 
 class Channel {
 public:
+  /// Construct the channel
   Channel() {}
 
+  /// Deconstruct the channel
   virtual ~Channel() {}
 
+  /// Called once connection established
   virtual void connected() = 0;
 
+  /// Called once an IOBuf is received
+  ///
+  /// \param buf the io buf received
   virtual void received(std::shared_ptr<IOBuf> buf) = 0;
 
+  /// Called once an IOBuf is sent
+  ///
+  /// \param buf the io buf sent
   virtual void sent(std::shared_ptr<IOBuf> buf) = 0;
 
+  /// Called once connection closed
   virtual void disconnected(boost::system::error_code error) = 0;
 };
 

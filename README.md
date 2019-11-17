@@ -19,71 +19,11 @@ It is not so good to stay as "SOCKS" (meaning silly rocket some how), but at mos
 ## License
 It is dual-licensed with GPLv2 and Boost Software License.
 
-## Build
-### GeneralInstallation/Ubuntu
-1. Install GNU C++ Compiler:
-```
-apt-get install -y build-essential
-```
-2. Install below dependencies:
-```
-apt-get install -y \
-    cmake \
-    ninja-build \
-    libjemalloc-dev \
-    libboost-all-dev \
-    libgoogle-glog-dev \
-    libgflags-dev \
-    libsodium-dev \
-    libssl-dev \
-    libjsoncpp-dev \
-    libwxgtk3.0-dev (optional)
-
-```
-3. Compile the program with default configuration.
-```
-mkdir build
-cd build
-cmake -G Ninja..
-ninja
-```
-4. Run CLI tool.
-```
-./build/yass_cli
-```
-
-### macOS
-1. Make sure you have Xcode Command Line Tools installed (Xcode if possible):
-   ```xcode-select --install```
-
-2. Install [MacPorts] and dependencies...
-```
-    boost
-    cmake
-    google-glog
-    gflags
-    libsodium
-    jsoncpp
-    jemalloc
-    wxWidgets-3.2
-```
-3. use script to build release App under `build` directory.
-```scripts/build.py```
-
-4. copy `build/yass.app` into `/Application` directory.
-### vcpkg
-1. Make sure you use visual studio 2015 Update 3 or later to get vcpkg work.
-
-2. Run vcpkg to install required dependencies.
-```
-vcpkg install boost-asio:x86-windows-static boost-filesystem:x86-windows-static boost-system:x86-windows-static glog:x86-windows-static gflags:x86-windows-static libsodium:x86-windows-static jsoncpp:x86-windows-static wxwidgets:x86-windows-static
-```
-
 ## Crypto
 ### Ciphers for fips modules
 - [aes-128-gcm][aes128gcm]
 - [aes-128-gcm12][aes128gcm12]
-- aes-192-gcm
+- [aes-192-gcm][aes192gcm]
 - [aes-256-gcm][aes256gcm]
 
 ### Ciphers for [tls 1.3][tls13]
@@ -101,12 +41,12 @@ vcpkg install boost-asio:x86-windows-static boost-filesystem:x86-windows-static 
 - Socks5
 - HTTP/HTTPS
 
-[MacPorts]: https://www.macports.org/install.php
 [aead]: https://shadowsocks.org/en/spec/AEAD-Ciphers.html
 [asan]: https://github.com/google/sanitizers/wiki/AddressSanitizer
 [vcredist]: https://support.microsoft.com/zh-tw/help/2977003/the-latest-supported-visual-c-downloads
 [aes128gcm]: https://tools.ietf.org/html/rfc5116
 [aes128gcm12]: https://tools.ietf.org/html/rfc5282
+[aes192gcm]: https://tools.ietf.org/html/rfc5084
 [aes256gcm]: https://tools.ietf.org/html/rfc5116
 [chacha20]: https://tools.ietf.org/html/rfc7539
 [tls13]: https://tools.ietf.org/html/rfc7905

@@ -1,6 +1,7 @@
-The Linux Kernel is provided under:
+The Yet-Another-Shadow-Socket is provided under:
 
 	SPDX-License-Identifier: GPL-2.0
+	SPDX-License-Identifier: BSL-1.0
 
 Being under the terms of the GNU General Public License version 2 only,
 according with:

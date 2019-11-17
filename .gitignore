@@ -4,3 +4,5 @@ sscxx
 *.o
 .DS_Store
 /build
+/cmake-build-debug
+/.idea
