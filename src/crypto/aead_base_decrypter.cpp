@@ -10,8 +10,7 @@
 
 #include "aead_base_decrypter.hpp"
 
-#include <sodium/utils.h>
-
+#include <cstring>
 #include <glog/logging.h>
 
 namespace crypto {
@@ -24,8 +23,8 @@ AeadBaseDecrypter::AeadBaseDecrypter(size_t key_size, size_t auth_tag_size,
   DCHECK_LE(nonce_size_, sizeof(iv_));
   DCHECK_GE(kMaxNonceSize, nonce_size_);
 
-  ::sodium_memzero(key_, key_size_);
-  ::sodium_memzero(iv_, kMaxNonceSize);
+  memset(key_, 0, key_size_);
+  memset(iv_, 0, kMaxNonceSize);
 }
 
 AeadBaseDecrypter::~AeadBaseDecrypter() {}

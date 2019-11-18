@@ -9,12 +9,24 @@
 //
 #include "crypto/chacha20_poly1305_sodium_encrypter.hpp"
 
-#include "core/cipher.hpp"
 #include <glog/logging.h>
 #include <sodium/crypto_aead_chacha20poly1305.h>
 
+#include "core/cipher.hpp"
+
 static const size_t kKeySize = crypto_aead_chacha20poly1305_ietf_KEYBYTES;
 static const size_t kNonceSize = crypto_aead_chacha20poly1305_ietf_NPUBBYTES;
+
+static void PacketNumberToNonce(uint8_t *nonce, uint64_t packet_number) {
+  uint8_t pn_1 = packet_number & 0xff;
+  uint8_t pn_2 = (packet_number & 0xff00) >> 8;
+  uint8_t pn_3 = (packet_number & 0xff0000) >> 16;
+  uint8_t pn_4 = (packet_number & 0xff000000) >> 24;
+  *nonce++ = pn_1;
+  *nonce++ = pn_2;
+  *nonce++ = pn_3;
+  *nonce = pn_4;
+}
 
 namespace crypto {
 
@@ -41,10 +53,9 @@ bool ChaCha20Poly1305SodiumEncrypter::EncryptPacket(
   }
   char nonce_buffer[kMaxNonceSize];
   memcpy(nonce_buffer, iv_, nonce_size_);
-#if 0
-  size_t prefix_len = nonce_size_ - sizeof(uint64_t);
-  memcpy(nonce_buffer + prefix_len, &packet_number, sizeof(uint64_t));
-#endif
+
+  // for libsodium, packet number is written ahead
+  PacketNumberToNonce((uint8_t*)nonce_buffer, packet_number);
 
   if (::crypto_aead_chacha20poly1305_ietf_encrypt(
           reinterpret_cast<uint8_t *>(output), &ciphertext_size,

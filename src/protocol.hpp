@@ -31,7 +31,7 @@ inline void DumpHex(const char *prefix, const uint8_t *data, uint32_t length) {
     return;
   }
   fprintf(stderr, "%s LEN %u\n", prefix, length);
-  length = std::min(length, 16U);
+  length = std::min(length, 32U);
   for (uint32_t i = 0; i * 2 + 1 < length; ++i) {
     if (i % 8 == 0) {
       fprintf(stderr, "%s ", prefix);
