@@ -13,6 +13,8 @@
 
 #include "aead_base_decrypter.hpp"
 
+#ifdef HAVE_LIBSODIUM
+
 extern "C"
 typedef struct crypto_aead_aes256gcm_state_ crypto_aead_aes256gcm_state;
 
@@ -45,5 +47,7 @@ private:
 };
 
 } // namespace crypto
+
+#endif // HAVE_LIBSODIUM
 
 #endif // H_CRYPTO_AES256_GCM_SODIUM_DECRYPTER

@@ -18,11 +18,14 @@
 #define MAX_KEY_LENGTH 64
 #define MAX_NONCE_LENGTH 32
 
+#ifdef HAVE_LIBSODIUM
 #define CIPHER_METHOD_MAP_SODIUM(XX) \
-  XX(0x0U, PLAINTEXT, "plaintext")                           \
   XX(0x3U, AES256GCMSHA256, "aes-256-gcm")                   \
   XX(0x4U, CHACHA20POLY1305IETF, "chacha20-ietf-poly1305")   \
   XX(0x5U, XCHACHA20POLY1305IETF, "xchacha20-ietf-poly1305")
+#else
+#define CIPHER_METHOD_MAP_SODIUM(XX)
+#endif
 
 #ifdef HAVE_BORINGSSL
 #define CIPHER_METHOD_MAP_BORINGSSL(XX) \
@@ -37,6 +40,7 @@
 #endif
 
 #define CIPHER_METHOD_MAP(XX) \
+  XX(0x0U, PLAINTEXT, "plaintext")                           \
   CIPHER_METHOD_MAP_SODIUM(XX) \
   CIPHER_METHOD_MAP_BORINGSSL(XX)
 

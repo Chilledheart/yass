@@ -9,6 +9,7 @@
 //
 #include "crypto/aes_256_gcm_sodium_decrypter.hpp"
 
+#ifdef HAVE_LIBSODIUM
 #include <glog/logging.h>
 #include <sodium/crypto_aead_aes256gcm.h>
 
@@ -95,3 +96,5 @@ uint32_t Aes256GcmSodiumDecrypter::cipher_id() const {
 }
 
 } // namespace crypto
+
+#endif // HAVE_LIBSODIUM

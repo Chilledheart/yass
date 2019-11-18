@@ -21,14 +21,14 @@ It is dual-licensed with GPLv2 and Boost Software License.
 
 ## Crypto
 ### Ciphers for fips modules
-- [aes-128-gcm][aes128gcm]
-- [aes-128-gcm12][aes128gcm12]
-- [aes-192-gcm][aes192gcm]
-- [aes-256-gcm][aes256gcm]
+- [AEAD_AES_128_GCM][aes128gcm]
+- [AEAD_AES_256_GCM][aes256gcm]
+- [AEAD_AES_128_GCM_12][aes128gcm12]
+- [AEAD_AES_192_GCM][aes192gcm]
 
 ### Ciphers for [tls 1.3][tls13]
-- [chacha20-ietf-poly1305][chacha20]
-- [xchacha20-ietf-poly1305][chacha20]
+- [AEAD_CHACHA20_POLY1305][chacha20]
+- [AEAD_XCHACHA20_POLY1305][chacha20]
 
 ### Operating System
 - macOS
@@ -46,7 +46,7 @@ It is dual-licensed with GPLv2 and Boost Software License.
 [vcredist]: https://support.microsoft.com/zh-tw/help/2977003/the-latest-supported-visual-c-downloads
 [aes128gcm]: https://tools.ietf.org/html/rfc5116
 [aes128gcm12]: https://tools.ietf.org/html/rfc5282
-[aes192gcm]: https://tools.ietf.org/html/rfc5084
+[aes192gcm]: https://tools.ietf.org/html/rfc55282
 [aes256gcm]: https://tools.ietf.org/html/rfc5116
 [chacha20]: https://tools.ietf.org/html/rfc7539
 [tls13]: https://tools.ietf.org/html/rfc7905

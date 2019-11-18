@@ -20,18 +20,15 @@
 #include "crypto/encrypter.hpp"
 #include "crypto/decrypter.hpp"
 
-#define SUBKEY_INFO "ss-subkey"
-
 #define CHUNK_SIZE_LEN 2U
 #define CHUNK_SIZE_MASK 0x3FFFU
 
 #define MD_MAX_SIZE_256 32 /* longest known is SHA256 or less */
 
-
 class cipher_impl {
 public:
   cipher_impl(enum cipher_method method, bool enc) {
-    DCHECK_GE(method, CRYPTO_CHACHA20POLY1305IETF);
+    DCHECK_GT(method, CRYPTO_PLAINTEXT);
     if (enc) {
       encrypter = crypto::Encrypter::CreateFromCipherSuite(method);
     } else {
@@ -53,6 +50,8 @@ public:
     return 0;
   }
 
+  /// The master key can be input directly from user or generated from a password.
+  /// The key derivation is still following EVP_BytesToKey(3) in OpenSSL.
   static int derive_key(const std::string &key, uint8_t *skey,
                         size_t skey_len) {
     const char *pass = key.c_str();
@@ -62,8 +61,9 @@ public:
     int addmd;
     unsigned int i, j, mds;
 
-    if (key.empty())
+    if (key.empty()) {
       return skey_len;
+    }
 
     mds = 16;
     MD5Init(&c);
@@ -86,6 +86,9 @@ public:
     return skey_len;
   }
 
+  /// EncryptPacket is a function that takes a secret key,
+  /// a non-secret nonce, a message, and produces ciphertext and authentication tag.
+  /// Nonce (NoncePrefix + packet_number, or vice versa) must be unique for a given key in each invocation.
   int EncryptPacket(uint64_t packet_number,
                     uint8_t *c, size_t *clen, const uint8_t *m, size_t mlen) {
     int err = 0;
@@ -98,6 +101,9 @@ public:
     return err;
   }
 
+  /// DecryptPacket is a function that takes a secret key,
+  /// non-secret nonce, ciphertext, authentication tag, and produces original message.
+  /// If any of the input is tampered with, decryption will fail.
   int DecryptPacket(uint64_t packet_number,
                     uint8_t *p, size_t *plen, const uint8_t *m, size_t mlen) {
     int err = 0;

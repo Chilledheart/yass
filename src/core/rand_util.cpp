@@ -28,7 +28,7 @@
 /* RAND_bytes() returns 1 on success, 0 otherwise*/
 #ifdef HAVE_BORINGSSL
 #define crypto_RAND_bytes RAND_bytes
-#else
+#elif defined(HAVE_LIBSODIUM)
 static int crypto_RAND_bytes(uint8_t *out, size_t out_len) {
   // Initialize sodium for random generator
   if (sodium_init() == -1) {

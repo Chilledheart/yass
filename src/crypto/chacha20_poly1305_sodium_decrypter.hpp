@@ -11,6 +11,8 @@
 #ifndef H_CRYPTO_CHACHA20_POLY1305_SODIUM_DECRYPTER
 #define H_CRYPTO_CHACHA20_POLY1305_SODIUM_DECRYPTER
 
+#ifdef HAVE_LIBSODIUM
+
 #include "aead_base_decrypter.hpp"
 
 namespace crypto {
@@ -37,5 +39,7 @@ public:
 };
 
 } // namespace crypto
+
+#endif // HAVE_LIBSODIUM
 
 #endif // H_CRYPTO_CHACHA20_POLY1305_SODIUM_DECRYPTER

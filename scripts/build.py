@@ -262,7 +262,7 @@ def find_source_directory():
 
 def generate_buildscript(configuration_type):
   print 'generate build scripts...(%s)' % configuration_type
-  cmake_args = ['-DGUI=ON']
+  cmake_args = ['-DGUI=ON', '-DCLI=ON', '-DSERVER=ON']
   if sys.platform == 'win32':
     cmake_args.extend(['-G', 'Visual Studio 15 2017'])
     cmake_args.extend(['-DCMAKE_TOOLCHAIN_FILE=%s\\scripts\\buildsystems\\vcpkg.cmake' % VCPKG_DIR])

@@ -21,6 +21,49 @@
 #include "crypto/crypter_export.hpp"
 
 class cipher_impl;
+///
+/// The authenticated encryption used in yass program.
+///
+/// In this protocol, the cipher and MAC are replaced by
+/// an Authenticated Encryption with Associated Data (AEAD) algorithm.
+/// Several crypto algorithms that implements AEAD algorithms have been
+/// included:
+///
+///    Advanced Encryption Standard (AES) in Galois/Counter
+///    Mode [GCM] with 128- and 256-bit keys.
+///
+///    AEAD_AES_128_GCM
+///    AEAD_AES_256_GCM
+///    AEAD_AES_128_GCM_12
+///    AEAD_AES_192_GCM
+///
+/// and:
+///
+///    AEAD_CHACHA20_POLY1305
+///    AEAD_XCHACHA20_POLY1305
+///
+/// Binary Packet Protocol:
+///
+///    Each packet is in the following format:
+///    uint16  packet_length
+///    byte[?] authenticated_tag
+///    byte[]  payload
+///    byte[?] authenticated_tag
+///
+///    packet_length
+///       The length of the packet in bytes, not including 'mac' or the
+///       'packet_length' field itself.
+///
+///    authenticated_tag
+///       AEAD Code. If message authentification has been neogotiated,
+///       this field contains the AEAD/MAC bytes.
+///
+///    payload
+///       The useful contents of the packet. If compression has been
+///       negotiated, this field is compressed. Initially, compression
+///       MUST be "none".
+///
+///  NO padding or MAC is added in this protocol.
 class cipher {
 public:
   cipher(const std::string &key, const std::string &password,

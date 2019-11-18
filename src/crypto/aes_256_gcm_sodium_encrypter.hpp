@@ -11,6 +11,8 @@
 #ifndef H_CRYPTO_AES256_GCM_SODIUM_ENCRYPTER
 #define H_CRYPTO_AES256_GCM_SODIUM_ENCRYPTER
 
+#ifdef HAVE_LIBSODIUM
+
 #include "aead_base_encrypter.hpp"
 
 extern "C"
@@ -45,5 +47,7 @@ private:
 };
 
 } // namespace crypto
+
+#endif // HAVE_LIBSODIUM
 
 #endif // H_CRYPTO_AES256_GCM_SODIUM_ENCRYPTER

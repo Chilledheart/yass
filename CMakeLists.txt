@@ -194,13 +194,8 @@ add_definitions(-DGLOG_NO_ABBREVIATED_SEVERITIES)
 #           Support Libraries
 # *****************************************************************************************
 
-# change wxWidgets_CONFIG_EXECUTABLE
-if (APPLE)
-    set(wxWidgets_CONFIG_EXECUTABLE
-      "/opt/local/Library/Frameworks/wxWidgets.framework/Versions/wxWidgets/3.1/bin/wx-config"
-    )
-endif()
-
+option(SODIUM "Build against libsodium." ON)
+option(BORINGSSL "Build against boringssl." OFF)
 set(boringssl_DIR "${CMAKE_SOURCE_DIR}/../boringssl" CACHE STRING "path to boringssl root directory")
 
 include(CheckIncludeFile)
@@ -220,7 +215,11 @@ if (MSVC)
     add_definitions(-DGFLAGS_DLL_DECLARE_FLAG=)
     add_definitions(-DGFLAGS_DLL_DEFINE_FLAG=)
     add_definitions(-DGOOGLE_GLOG_DLL_DECL=)
+
     include_directories(${VCPKG_INCLUDE_DIRS})
+    set(CMAKE_REQUIRED_INCLUDES
+        ${VCPKG_INCLUDE_DIRS}
+        ${CMAKE_REQUIRED_INCLUDES})
 
     find_library(GLOG_RELEASE_LIB glog
       PATHS ${VCPKG_STATIC_LIB_PATH} NO_DEFAULT_PATH)
@@ -240,6 +239,7 @@ if (MSVC)
       optimized ${GFLAGS_RELEASE_LIB}
       )
 
+    # libsodium
     find_library(SODIUM_RELEASE_LIB libsodium
       PATHS ${VCPKG_STATIC_LIB_PATH} NO_DEFAULT_PATH)
     find_library(SODIUM_DEBUG_LIB libsodium
@@ -248,6 +248,11 @@ if (MSVC)
       debug ${SODIUM_DEBUG_LIB}
       optimized ${SODIUM_RELEASE_LIB}
       )
+    check_include_file(sodium.h SODIUM_INCLUDE)
+    if (SODIUM AND SODIUM_LIB AND SODIUM_INCLUDE)
+      add_definitions(-DHAVE_LIBSODIUM)
+      set(SYSTEM_LIBS ${SYSTEM_LIBS} ${SODIUM_LIB})
+    endif()
 
     find_library(BOOST_SYSTEM_RELEASE_LIB boost_system-vc140-mt
       PATHS ${VCPKG_STATIC_LIB_PATH} NO_DEFAULT_PATH)
@@ -298,10 +303,35 @@ if (MSVC)
       string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
     endforeach()
 else()
+    # include extra paths
+    if (APPLE)
+        include_directories(/opt/local/include)
+        set(CMAKE_REQUIRED_INCLUDES
+            /opt/local/include
+            ${CMAKE_REQUIRED_INCLUDES})
+        link_directories(/opt/local/lib)
+    endif()
+    if (CMAKE_FIND_ROOT_PATH)
+        foreach(ROOT_PATH ${CMAKE_FIND_ROOT_PATH})
+            include_directories(${ROOT_PATH}/include)
+            link_directories(${ROOT_PATH}/lib)
+        endforeach()
+    endif()
+    if (UNIX AND NOT APPLE)
+        include_directories(/usr/include/jsoncpp)
+    endif()
+
     find_library(JEMALLOC_LIB jemalloc)
     find_library(GLOG_LIB glog)
     find_library(GFLAGS_LIB gflags)
+
     find_library(SODIUM_LIB sodium)
+    check_include_file(sodium.h SODIUM_INCLUDE)
+    if (SODIUM AND SODIUM_LIB AND SODIUM_INCLUDE)
+      add_definitions(-DHAVE_LIBSODIUM)
+      set(SYSTEM_LIBS ${SYSTEM_LIBS} ${SODIUM_LIB})
+    endif()
+
     find_library(JSONCPP_LIB jsoncpp)
     add_definitions(-DJSON_USE_EXCEPTION=0)
 
@@ -328,28 +358,11 @@ else()
         include_directories(BEFORE ${boringssl_DIR}/include)
         set(SYSTEM_LIBS ${SYSTEM_LIBS} ${BORINGSSL_CRYPTO_LIB})
     endif()
-
-    # include extra paths
-    if (APPLE)
-        include_directories(/opt/local/include)
-        link_directories(/opt/local/lib)
-    endif()
-    if (CMAKE_FIND_ROOT_PATH)
-        foreach(ROOT_PATH ${CMAKE_FIND_ROOT_PATH})
-            include_directories(${ROOT_PATH}/include)
-            link_directories(${ROOT_PATH}/lib)
-        endforeach()
-    endif()
-
-    if (UNIX AND NOT APPLE)
-        include_directories(/usr/include/jsoncpp)
-    endif()
 endif()
 
 set(SUPPORT_LIBS
     ${GLOG_LIB}
     ${GFLAGS_LIB}
-    ${SODIUM_LIB}
     ${JSONCPP_LIB}
     ${BOOST_FILESYSTEM_LIB}
     ${BOOST_SYSTEM_LIB}
@@ -370,6 +383,8 @@ endif()
 # *****************************************************************************************
 #           Source code
 # *****************************************************************************************
+option(CLI "Build with cli." ON)
+option(SERVER "Build with server." ON)
 
 set(files
     src/config/config.cpp
@@ -475,43 +490,55 @@ target_include_directories(yass_base PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core)
 
-add_executable(yass_cli
-    src/cli/cli.cpp
-    src/cli/socks5_connection.cpp
-    src/cli/socks5_connection.hpp
-    $<TARGET_OBJECTS:yass_base>
-    )
+if (CLI)
+  add_executable(yass_cli
+      src/cli/cli.cpp
+      src/cli/socks5_connection.cpp
+      src/cli/socks5_connection.hpp
+      $<TARGET_OBJECTS:yass_base>
+      )
 
-target_include_directories(yass_cli PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/core
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/cli)
+  target_include_directories(yass_cli PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/src
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/core
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/cli)
 
-target_link_libraries(yass_cli PUBLIC
-    ${SUPPORT_LIBS}
-    )
+  target_link_libraries(yass_cli PUBLIC
+      ${SUPPORT_LIBS}
+      )
+endif()
 
-add_executable(yass_server
-    src/server/server.cpp
-    src/server/ss_connection.cpp
-    src/server/ss_connection.hpp
-    $<TARGET_OBJECTS:yass_base>
-    )
+if (SERVER)
+  add_executable(yass_server
+      src/server/server.cpp
+      src/server/ss_connection.cpp
+      src/server/ss_connection.hpp
+      $<TARGET_OBJECTS:yass_base>
+      )
 
-target_include_directories(yass_server PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/core
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/server
-    )
+  target_include_directories(yass_server PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/src
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/core
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/server
+      )
 
-target_link_libraries(yass_server PUBLIC
-    ${SUPPORT_LIBS}
-    )
+  target_link_libraries(yass_server PUBLIC
+      ${SUPPORT_LIBS}
+      )
+endif()
 
 # *****************************************************************************************
-#           Source code: GUI part
+#           Source code: extra part
 # *****************************************************************************************
 
+option(GUI "Build against GUI." OFF)
+
+# change wxWidgets_CONFIG_EXECUTABLE
+if (APPLE)
+    set(wxWidgets_CONFIG_EXECUTABLE
+      "/opt/local/Library/Frameworks/wxWidgets.framework/Versions/wxWidgets/3.1/bin/wx-config"
+    )
+endif()
 
 if (MSVC)
   set(wxWidgets_ROOT_DIR ${VCPKG_ROOT_DIR}/installed/x86-windows-static)

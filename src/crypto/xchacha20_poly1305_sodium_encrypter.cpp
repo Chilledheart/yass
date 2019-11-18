@@ -9,6 +9,8 @@
 //
 #include "crypto/xchacha20_poly1305_sodium_encrypter.hpp"
 
+#ifdef HAVE_LIBSODIUM
+
 #include <glog/logging.h>
 #include <sodium/crypto_aead_xchacha20poly1305.h>
 
@@ -75,3 +77,5 @@ uint32_t XChaCha20Poly1305SodiumEncrypter::cipher_id() const {
 }
 
 } // namespace crypto
+
+#endif // HAVE_LIBSODIUM
