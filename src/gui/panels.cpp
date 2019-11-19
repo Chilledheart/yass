@@ -13,7 +13,8 @@
 #include <wx/stattext.h>
 
 LeftPanel::LeftPanel(wxPanel *parent)
-    : wxPanel(parent, -1, wxPoint(-1, -1), wxSize(-1, -1), wxBORDER_SUNKEN) {
+    : wxPanel(parent, -1, wxPoint(-1, -1), wxSize(-1, -1),
+              wxBORDER_THEME) {
   m_parent = parent;
   m_start = new wxButton(this, ID_START, wxT("START"), wxPoint(10, 10));
   m_stop = new wxButton(this, ID_STOP, wxT("STOP"), wxPoint(10, 60));
@@ -39,7 +40,7 @@ void LeftPanel::OnStop(wxCommandEvent &WXUNUSED(event)) {
 
 RightPanel::RightPanel(wxPanel *parent)
     : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(250, 150),
-              wxBORDER_SUNKEN) {
+              wxBORDER_THEME) {
   wxString methodStrings[] = {
 #define XX(num, name, string) wxT(string),
       CIPHER_METHOD_MAP(XX)
