@@ -1,5 +1,11 @@
 # Yet Another Shadow Socket
 
+## Windows 7
+<img width="484" alt="snapshot-win7" src="https://user-images.githubusercontent.com/54673341/69158208-02fa3600-0b21-11ea-9bf4-c38e26ff38a3.png">
+
+## Windows XP
+<img width="457" alt="snapshot-xp" src="https://user-images.githubusercontent.com/54673341/69158209-0392cc80-0b21-11ea-97ef-e22dbc7ab27f.png">
+
 ## Once upon a time, there are (virtual) Nics, so are (shadow) Sockets.
 
 YASS(Yet-Another-Shadow-Socket) acts as a modern cplusplus port of the existing [shadowsocks](http://github.com/shadowsocks) project.

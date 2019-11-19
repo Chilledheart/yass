@@ -39,7 +39,7 @@ void LeftPanel::OnStop(wxCommandEvent &WXUNUSED(event)) {
 }
 
 RightPanel::RightPanel(wxPanel *parent)
-    : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(250, 150),
+    : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(315, -1),
               wxBORDER_THEME) {
   wxString methodStrings[] = {
 #define XX(num, name, string) wxT(string),
@@ -51,7 +51,8 @@ RightPanel::RightPanel(wxPanel *parent)
 
   wxStaticText *serverhost = new wxStaticText(this, -1, wxT("Server Host"));
   wxStaticText *serverport = new wxStaticText(this, -1, wxT("Server Port"));
-  wxStaticText *password = new wxStaticText(this, -1, wxT("Password"));
+  wxStaticText *password = new wxStaticText(this, -1, wxT("Password"),
+                           wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD);
   wxStaticText *method = new wxStaticText(this, -1, wxT("Cipher/Method"));
   wxStaticText *localhost = new wxStaticText(this, -1, wxT("Local Host"));
   wxStaticText *localport = new wxStaticText(this, -1, wxT("Local Port"));
@@ -60,8 +61,7 @@ RightPanel::RightPanel(wxPanel *parent)
   m_serverhost_tc = new wxTextCtrl(this, -1);
   m_serverport_tc = new wxTextCtrl(this, -1);
   m_password_tc = new wxTextCtrl(this, -1);
-  m_password_tc->SetDefaultStyle(wxTextAttr(wxTE_PASSWORD));
-  m_method_tc = new wxChoice(this, -1, wxDefaultPosition, wxSize(80, -1),
+  m_method_tc = new wxChoice(this, -1, wxDefaultPosition, wxSize(100, -1),
                              WXSIZEOF(methodStrings), methodStrings, 0);
   m_localhost_tc = new wxTextCtrl(this, -1);
   m_localport_tc = new wxTextCtrl(this, -1);
