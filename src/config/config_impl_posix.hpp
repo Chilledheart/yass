@@ -83,7 +83,7 @@ inline bool is_directory(const boost::filesystem::path &p) {
 
 inline bool create_directory(const boost::filesystem::path &p) {
   std::string pStr = p.string();
-  return ::mkdir(pStr.c_str(), 0644) != 0;
+  return ::mkdir(pStr.c_str(), 0700) != 0;
 }
 #endif
 
