@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.2 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.4.6 FATAL_ERROR)
 
 set(PACKAGE_NAME      "Yet-Another-Shadow-Socket")
 
