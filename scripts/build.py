@@ -272,7 +272,7 @@ def generate_buildscript(configuration_type):
     cmake_args.extend(['-DVCPKG_LIBRARY_LINKAGE=static'])
     cmake_args.extend(['-DVCPKG_TARGET_TRIPLET=x86-windows-static-xp'])
     cmake_args.extend(['-DVCPKG_ROOT_DIR=%s' % VCPKG_DIR])
-    cmake_args.extend(['-DBORINGSSL=OFF']) # WNetResotreConnection, AcquireSRWLockShared
+    cmake_args.extend(['-DBORINGSSL=ON'])
   else:
     cmake_args.extend(['-G', 'Ninja'])
     cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])

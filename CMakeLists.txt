@@ -27,6 +27,7 @@ if (NOT MSVC)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fdata-sections -ffunction-sections")
     set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} -fdata-sections -ffunction-sections")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fdata-sections -ffunction-sections")
+
     if (APPLE)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dead_strip")
         set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} -Wl,-dead_strip")
@@ -60,10 +61,10 @@ if (NOT MSVC)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,noexecstack -Wl,-z,relro")
     endif()
 
-    # no longer exceptions
+    ## disable rtti and exceptions
     # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
 
-    # default stack frame
+    ## not omit stack frame pointer for release
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -fno-omit-frame-pointer")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-omit-frame-pointer")
 else()
@@ -86,11 +87,33 @@ else()
     set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /OPT:REF")
     set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /OPT:REF")
 
-    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /GL")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")
-    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG")
-    set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
-    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
+    ## Disable LTCG for static libraries because this setting introduces ABI incompatibility between minor compiler versions
+    if (NOT VCPKG_LIBRARY_LINKAGE STREQUAL "static")
+      set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /GL")
+      set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")
+      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG")
+      set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
+      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
+    endif()
+
+    ## #define WINVER 0x0A00
+    ## #define _WIN32_WINNT 0x0A00
+    ## //
+    ## // _WIN32_WINNT version constants
+    ## //
+    ## #define _WIN32_WINNT_NT4                    0x0400 // Windows NT 4.0
+    ## #define _WIN32_WINNT_WIN2K                  0x0500 // Windows 2000
+    ## #define _WIN32_WINNT_WINXP                  0x0501 // Windows XP
+    ## #define _WIN32_WINNT_WS03                   0x0502 // Windows Server 2003
+    ## #define _WIN32_WINNT_WIN6                   0x0600 // Windows Vista
+    ## #define _WIN32_WINNT_VISTA                  0x0600 // Windows Vista
+    ## #define _WIN32_WINNT_WS08                   0x0600 // Windows Server 2008
+    ## #define _WIN32_WINNT_LONGHORN               0x0600 // Windows Vista
+    ## #define _WIN32_WINNT_WIN7                   0x0601 // Windows 7
+    ## #define _WIN32_WINNT_WIN8                   0x0602 // Windows 8
+    ## #define _WIN32_WINNT_WINBLUE                0x0603 // Windows 8.1
+    ## #define _WIN32_WINNT_WINTHRESHOLD           0x0A00 // Windows 10
+    ## #define _WIN32_WINNT_WIN10                  0x0A00 // Windows 10
 
     ## definitions
     add_definitions(-D_HAS_EXCEPTIONS=0)
@@ -103,7 +126,7 @@ else()
     add_definitions(-D_UNICODE)
     add_definitions(-D_WIN32_WINNT=0x0501)
 
-    # default stack frame
+    ## not omit stack frame pointer
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Oy-")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Oy-")
 endif()
@@ -287,18 +310,20 @@ if (MSVC)
     find_library(ShLwApi_LIB ShLwApi)
     set(SYSTEM_LIBS ${SYSTEM_LIBS} ${ShLwApi_LIB})
 
-    # replace /MD with /MT
-    set(CompilerFlags
-      CMAKE_CXX_FLAGS
-      CMAKE_CXX_FLAGS_DEBUG
-      CMAKE_CXX_FLAGS_RELEASE
-      CMAKE_C_FLAGS
-      CMAKE_C_FLAGS_DEBUG
-      CMAKE_C_FLAGS_RELEASE
-      )
-    foreach(CompilerFlag ${CompilerFlags})
-      string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
-    endforeach()
+    if (VCPKG_CRT_LINKAGE STREQUAL "static")
+      # replace /MD with /MT
+      set(CompilerFlags
+        CMAKE_CXX_FLAGS
+        CMAKE_CXX_FLAGS_DEBUG
+        CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_C_FLAGS
+        CMAKE_C_FLAGS_DEBUG
+        CMAKE_C_FLAGS_RELEASE
+        )
+      foreach(CompilerFlag ${CompilerFlags})
+        string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
+      endforeach()
+   endif()
 else()
     # include extra paths
     if (APPLE)
