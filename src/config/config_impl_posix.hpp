@@ -108,14 +108,14 @@ public:
       return false;
     }
 
+    boost::filesystem::path real_path = ExpandUser(FLAGS_configfile);
+    fs_.open(real_path, dontread ? std::ios_base::out : std::ios_base::in);
+
     if (!dontread) {
-      boost::filesystem::path real_path = ExpandUser(FLAGS_configfile);
-      fs_.open(real_path);
       if (!fs_.is_open()) {
         LOG(WARNING) << "configure file does not exist: " << real_path;
         return false;
       }
-
       Json::CharReaderBuilder builder;
       builder["collectComments"] = false;
       JSONCPP_STRING errs;
@@ -130,8 +130,6 @@ public:
   }
 
   bool Close() override {
-    fs_.seekp(0, std::ios_base::beg);
-
     Json::StreamWriterBuilder builder;
     builder["commentStyle"] = "None";
     builder["indentation"] = "   "; // or whatever you like
