@@ -70,6 +70,7 @@ void YASSApp::SaveConfigToDisk() {
 }
 
 void YASSApp::OnStart() {
+  state_ = STARTING;
   SaveConfigToDisk();
   worker_.Start();
 }
@@ -85,7 +86,10 @@ void YASSApp::OnStartFailed(wxCommandEvent &event) {
   frame_->StartFailed();
 }
 
-void YASSApp::OnStop() { worker_.Stop(); }
+void YASSApp::OnStop() {
+  state_ = STOPPING;
+  worker_.Stop();
+}
 
 void YASSApp::OnStopped(wxCommandEvent &WXUNUSED(event)) {
   state_ = STOPPED;

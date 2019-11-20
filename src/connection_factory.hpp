@@ -42,7 +42,10 @@ public:
     }
     if (FLAGS_reuse_port) {
       acceptor_->set_option(
-          boost::asio::ip::tcp::acceptor::reuse_address(true));
+          boost::asio::ip::tcp::acceptor::reuse_address(true), ec);
+    }
+    if (ec) {
+      return ec;
     }
     acceptor_->bind(endpoint, ec);
     if (ec) {
@@ -61,7 +64,8 @@ public:
   void stop() {
     std::vector<std::shared_ptr<T>> conns = std::move(connections_);
     if (acceptor_) {
-      acceptor_->cancel();
+      boost::system::error_code ec = boost::system::error_code();
+      acceptor_->close(ec);
       acceptor_.reset();
     }
     for (auto conn : conns) {

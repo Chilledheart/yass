@@ -27,7 +27,7 @@ public:
   void OnStop();
 
   std::string GetStatus() const;
-  enum YASSState { STARTED, START_FAILED, STOPPED };
+  enum YASSState { STARTED, STARTING, START_FAILED, STOPPING, STOPPED };
   YASSState GetState() const { return state_; }
 
 private:
