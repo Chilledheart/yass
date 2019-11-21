@@ -51,7 +51,7 @@ public:
     if (ec) {
       return ec;
     }
-    acceptor_->listen(1 /*backlog*/, ec);
+    acceptor_->listen(7 /*backlog*/, ec);
     if (ec) {
       return ec;
     }
