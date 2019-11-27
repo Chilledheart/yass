@@ -68,7 +68,7 @@ Socks5Connection::Socks5Connection(
 Socks5Connection::~Socks5Connection() {}
 
 void Socks5Connection::start() {
-  channel_ = std::make_unique<ss::stream>(
+  channel_ = std::make_unique<stream>(
       io_context_, remote_endpoint_,
       std::static_pointer_cast<Channel>(shared_from_this()));
   SetState(state_method_select);

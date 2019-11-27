@@ -214,7 +214,7 @@ void SsConnection::ProcessSentData(std::shared_ptr<SsConnection> self,
 void SsConnection::OnConnect() {
   VLOG(2) << "ss: established connection with: " << endpoint_
           << " remote: " << remote_endpoint_;
-  channel_ = std::make_unique<ss::stream>(
+  channel_ = std::make_unique<stream>(
       io_context_, remote_endpoint_,
       std::static_pointer_cast<Channel>(shared_from_this()));
   channel_->connect();

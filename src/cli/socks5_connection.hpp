@@ -23,7 +23,7 @@
 #include "socks5_request.hpp"
 #include "socks5_request_parser.hpp"
 #include "ss_request.hpp"
-#include "ss_stream.hpp"
+#include "stream.hpp"
 
 #include <boost/asio/read.hpp>
 #include <boost/asio/write.hpp>
@@ -260,7 +260,7 @@ private:
   bool upstream_writable_ = false;
 
   /// the upstream the service bound with
-  std::unique_ptr<ss::stream> channel_;
+  std::unique_ptr<stream> channel_;
 
   /// the queue to write downstream
   std::deque<std::shared_ptr<IOBuf>> downstream_;

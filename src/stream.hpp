@@ -1,6 +1,6 @@
 //
-// ss.hpp
-// ~~~~~~
+// stream.hpp
+// ~~~~~~~~~~
 //
 // Copyright (c) 2019 James Hu (hukeyue at hotmail dot com)
 //
@@ -8,17 +8,13 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef H_SS_STREAM
-#define H_SS_STREAM
-
-#include "ss.hpp"
+#ifndef H_STREAM
+#define H_STREAM
 
 #include <boost/asio/read.hpp>
 #include <boost/asio/write.hpp>
 #include <deque>
 #include <glog/logging.h>
-
-namespace ss {
 
 /// the class to describe the traffic between given node (endpoint)
 class stream {
@@ -166,6 +162,4 @@ private:
   size_t wbytes_transferred_ = 0;
 };
 
-} // namespace ss
-
-#endif // H_SS_STREAM
+#endif // H_STREAM
