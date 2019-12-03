@@ -208,8 +208,6 @@ if(GCOV)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
 endif()
 
-#add_definitions(-DBOOST_ASIO_DISABLE_KQUEUE)
-#add_definitions(-DBOOST_ASIO_ENABLE_HANDLER_TRACKING)
 # add macro GLOG_NO_ABBREVIATED_SEVERITIES
 add_definitions(-DGLOG_NO_ABBREVIATED_SEVERITIES)
 
@@ -222,6 +220,7 @@ option(BORINGSSL "Build against boringssl." OFF)
 set(boringssl_DIR "${CMAKE_SOURCE_DIR}/../boringssl" CACHE STRING "path to boringssl root directory")
 
 include(CheckIncludeFile)
+include(CheckCSourceCompiles)
 
 if (MSVC)
     option(VCPKG_ROOT_DIR "" "vcpkg root path")
@@ -274,15 +273,6 @@ if (MSVC)
       set(SYSTEM_LIBS ${SYSTEM_LIBS} ${SODIUM_LIB})
     endif()
 
-    find_library(BOOST_SYSTEM_RELEASE_LIB boost_system-vc140-mt
-      PATHS ${VCPKG_STATIC_LIB_PATH} NO_DEFAULT_PATH)
-    find_library(BOOST_SYSTEM_DEBUG_LIB boost_system-vc140-mt-gd
-      PATHS ${VCPKG_STATIC_LIB_DEBUG_PATH} NO_DEFAULT_PATH)
-    set(BOOST_SYSTEM_LIB
-      debug ${BOOST_SYSTEM_DEBUG_LIB}
-      optimized ${BOOST_SYSTEM_RELEASE_LIB}
-      )
-
     # boringssl
     find_library(BORINGSSL_CRYPTO_LIB crypto
       PATHS ${boringssl_DIR}/build/crypto
@@ -309,6 +299,12 @@ if (MSVC)
 
     find_library(ShLwApi_LIB ShLwApi)
     set(SYSTEM_LIBS ${SYSTEM_LIBS} ${ShLwApi_LIB})
+
+    find_library(Ws2_32_LIB Ws2_32)
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${Ws2_32_LIB})
+
+    find_library(WinMM_LIB WinMM)
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${WinMM_LIB})
 
     if (VCPKG_CRT_LINKAGE STREQUAL "static")
       # replace /MD with /MT
@@ -341,6 +337,21 @@ else()
     endif()
     if (UNIX AND NOT APPLE)
         include_directories(/usr/include/jsoncpp)
+    endif()
+
+# simple socketpair test code
+set(SOCKETPAIR_C_CXX_TEST_SOURCE [====[
+#include <sys/types.h>
+#include <sys/socket.h>
+int main() {
+    int fds[2];
+    socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
+}
+]====])
+    check_c_source_compiles("${SOCKETPAIR_C_CXX_TEST_SOURCE}"
+        HAVE_SOCKETPAIR)
+    if (HAVE_SOCKETPAIR)
+        add_definitions(-DHAVE_SOCKETPAIR)
     endif()
 
     find_library(JEMALLOC_LIB jemalloc)
@@ -422,6 +433,14 @@ set(files
     src/core/socks4_request_parser.cpp
     src/core/socks5_request_parser.cpp
     src/core/ss_request_parser.cpp
+    src/core/pr_error.cpp
+    src/core/pr_error_posix.cpp
+    src/core/pr_error_windows.cpp
+    src/core/pr_util_thread.cpp
+    src/core/pr_util_inrval.cpp
+    src/core/pr_util_netdb.cpp
+    src/core/pr_util_posix.cpp
+    src/core/pr_util_windows.cpp
     src/core/rand_util.cpp
     src/crypto/aead_base_decrypter.cpp
     src/crypto/aead_base_encrypter.cpp
