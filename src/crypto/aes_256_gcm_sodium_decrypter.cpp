@@ -10,7 +10,7 @@
 #include "crypto/aes_256_gcm_sodium_decrypter.hpp"
 
 #ifdef HAVE_LIBSODIUM
-#include <glog/logging.h>
+#include "core/logging.hpp"
 #include <sodium/crypto_aead_aes256gcm.h>
 
 #include "core/cipher.hpp"

@@ -177,6 +177,7 @@ uint32_t PR_IntervalToMicroseconds(PRIntervalTime ticks);
 /* prio.h */
 #ifdef _WIN32
 #include <winsock2.h>
+#include <ws2ipdef.h>         /* INADDR_ANY, ..., ntohl(), ... */
 #define P_AF_INET 2
 #define P_AF_LOCAL 1
 #define P_INADDR_ANY (unsigned long)0x00000000
@@ -254,6 +255,30 @@ union PNetAddr {
         char path[104];                 /* null-terminated pathname */
     } local;
 };
+
+#include <cstring>
+
+inline uint32_t
+PNetAddrGetLen(const PNetAddr *addr) {
+    switch (addr->raw.family) {
+      case  P_AF_INET:
+         return sizeof(addr->inet);
+      case  P_AF_INET6:
+         return sizeof(addr->ipv6);
+         break;
+      case  P_AF_LOCAL:
+         return sizeof(addr->local.family) + strlen(addr->local.path);
+      default:
+         return 0;
+
+    }
+}
+
+inline bool
+PNetAddrCmp(const PNetAddr *lhs, const PNetAddr *rhs) {
+  return PNetAddrGetLen(lhs) == PNetAddrGetLen(rhs) &&
+    memcmp(lhs, &rhs, PNetAddrGetLen(lhs)) == 0;
+}
 
 /*
 ***************************************************************************

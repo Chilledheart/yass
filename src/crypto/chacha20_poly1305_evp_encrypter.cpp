@@ -10,7 +10,7 @@
 
 #include "crypto/chacha20_poly1305_evp_encrypter.hpp"
 
-#include <glog/logging.h>
+#include "core/logging.hpp"
 
 #ifdef HAVE_BORINGSSL
 #include "core/cipher.hpp"

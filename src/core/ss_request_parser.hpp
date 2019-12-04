@@ -13,8 +13,8 @@
 
 #include <boost/system/error_code.hpp>
 #include <cstdlib>
-#include <glog/logging.h>
 
+#include "core/logging.hpp"
 #include "ss_request.hpp"
 
 namespace ss {

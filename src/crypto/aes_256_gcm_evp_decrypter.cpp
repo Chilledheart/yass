@@ -10,7 +10,7 @@
 
 #include "crypto/aes_256_gcm_evp_decrypter.hpp"
 
-#include <glog/logging.h>
+#include "core/logging.hpp"
 
 #ifdef HAVE_BORINGSSL
 #include "core/cipher.hpp"

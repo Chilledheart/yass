@@ -19,6 +19,7 @@
 #include "core/rand_util.hpp"
 #include "crypto/encrypter.hpp"
 #include "crypto/decrypter.hpp"
+#include "core/logging.hpp"
 
 #define CHUNK_SIZE_LEN 2U
 #define CHUNK_SIZE_MASK 0x3FFFU
@@ -391,7 +392,7 @@ void cipher::set_key_aead(const uint8_t *salt, size_t salt_len) {
   int err = crypto_hkdf(salt, salt_len, key_, key_len_, (uint8_t *)SUBKEY_INFO,
                         sizeof(SUBKEY_INFO) - 1, skey, key_len_);
   if (err) {
-    LOG(FATAL) << "Unable to generate subkey";
+    NOTREACHED() << "Unable to generate subkey";
   }
 
   counter_ = 0;

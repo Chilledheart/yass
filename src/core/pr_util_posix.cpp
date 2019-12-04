@@ -170,22 +170,6 @@ static void pt_MakeSocketNonblock(int osfd)
 #define pt_MakeSocketNonblock pt_MakeFdNonblock
 #endif
 
-static uint32_t
-PNetAddrGetLen(const PNetAddr *addr) {
-    switch (addr->raw.family) {
-      case  P_AF_INET:
-         return sizeof(addr->inet);
-      case  P_AF_INET6:
-         return sizeof(addr->ipv6);
-         break;
-      case  P_AF_LOCAL:
-         return sizeof(addr->local.family) + strlen(addr->local.path);
-      default:
-         return 0;
-
-    }
-}
-
 PRFileDesc*    PR_NewUDPSocket(void) {
    int sd = socket(PF_INET, SOCK_DGRAM, 0);
    if (sd >= 0) {

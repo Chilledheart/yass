@@ -12,7 +12,6 @@
 
 #ifdef _WIN32
 #include <algorithm>
-#include <ws2ipdef.h>
 #include <windows.h>
 #include <stdio.h>
 
@@ -185,22 +184,6 @@ PRStatus _PR_MapOptionName(
     *level = socketLevels[optname];
     return PR_SUCCESS;
 }  /* _PR_MapOptionName */
-
-static uint32_t
-PNetAddrGetLen(const PNetAddr *addr) {
-    switch (addr->raw.family) {
-      case  P_AF_INET:
-         return sizeof(addr->inet);
-      case  P_AF_INET6:
-         return sizeof(addr->ipv6);
-         break;
-      case  P_AF_LOCAL:
-         return sizeof(addr->local.family) + strlen(addr->local.path);
-      default:
-         return 0;
-
-    }
-}
 
 PRFileDesc*    PR_NewUDPSocket(void) {
     if (!_pr_initialized) _PR_ImplicitInitialization();

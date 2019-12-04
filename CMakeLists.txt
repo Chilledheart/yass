@@ -422,6 +422,7 @@ option(SERVER "Build with server." ON)
 set(files
     src/config/config.cpp
     src/config/config_impl.cpp
+    src/core/address_family.cpp
     src/core/cipher.cpp
     src/core/hkdf_sha1.cpp
     src/core/hmac_sha1.cpp
@@ -430,9 +431,12 @@ set(files
     src/core/modp_b64.cc
     src/core/sha1.cc
     src/core/iobuf.cpp
+    src/core/ip_address.cpp
+    src/core/ip_endpoint.cpp
     src/core/socks4_request_parser.cpp
     src/core/socks5_request_parser.cpp
     src/core/ss_request_parser.cpp
+    src/core/stringprintf.cpp
     src/core/pr_error.cpp
     src/core/pr_error_posix.cpp
     src/core/pr_error_windows.cpp
@@ -528,8 +532,7 @@ add_library(yass_base OBJECT
 
 set_target_properties(yass_base PROPERTIES POSITION_INDEPENDENT_CODE True)
 target_include_directories(yass_base PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/core)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 if (CLI)
   add_executable(yass_cli
@@ -540,9 +543,7 @@ if (CLI)
       )
 
   target_include_directories(yass_cli PRIVATE
-      ${CMAKE_CURRENT_SOURCE_DIR}/src
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/core
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/cli)
+      ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
   target_link_libraries(yass_cli PUBLIC
       ${SUPPORT_LIBS}
@@ -558,10 +559,7 @@ if (SERVER)
       )
 
   target_include_directories(yass_server PRIVATE
-      ${CMAKE_CURRENT_SOURCE_DIR}/src
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/core
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/server
-      )
+      ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
   target_link_libraries(yass_server PUBLIC
       ${SUPPORT_LIBS}
@@ -734,11 +732,7 @@ if (GUI AND wxWidgets_FOUND)
 
     target_include_directories(${APP_NAME} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/cli
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/core
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui
-        ${wxWidgets_INCLUDE_DIRS}
-        )
+        ${wxWidgets_INCLUDE_DIRS})
 
     target_link_libraries(${APP_NAME} PUBLIC
         ${SUPPORT_LIBS}

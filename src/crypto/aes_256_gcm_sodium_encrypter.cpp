@@ -12,10 +12,10 @@
 #ifdef HAVE_LIBSODIUM
 
 #include <cstring>
-#include <glog/logging.h>
 #include <sodium/crypto_aead_aes256gcm.h>
 
 #include "core/cipher.hpp"
+#include "core/logging.hpp"
 
 static const size_t kKeySize = crypto_aead_aes256gcm_KEYBYTES;
 static const size_t kNonceSize = crypto_aead_aes256gcm_NPUBBYTES;

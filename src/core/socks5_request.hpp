@@ -12,7 +12,7 @@
 #define H_CORE_SOCKS5_REQUEST
 
 #include "protocol.hpp"
-#include "socks5.hpp"
+#include "core/socks5.hpp"
 
 #include <stdint.h>
 namespace socks5 {

@@ -19,9 +19,9 @@
 #include <boost/system/error_code.hpp>
 #include <deque>
 #include <functional>
-#include <glog/logging.h>
 #include <utility>
 
+#include "core/logging.hpp"
 #include "config/config.hpp"
 #include "connection.hpp"
 

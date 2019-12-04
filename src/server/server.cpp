@@ -8,13 +8,14 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "cipher.hpp"
+#include "core/cipher.hpp"
 #include "config/config.hpp"
 #include "ss_factory.hpp"
 
 #include <boost/asio.hpp>
 #include <gflags/gflags.h>
-#include <glog/logging.h>
+
+#include "core/logging.hpp"
 
 using boost::asio::ip::tcp;
 using namespace ss;

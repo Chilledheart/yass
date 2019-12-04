@@ -11,7 +11,8 @@
 #include "aead_base_decrypter.hpp"
 
 #include <cstring>
-#include <glog/logging.h>
+
+#include "core/logging.hpp"
 
 namespace crypto {
 

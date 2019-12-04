@@ -8,7 +8,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "iobuf.hpp"
+#include "core/iobuf.hpp"
 
 inline size_t goodMallocSize(size_t minSize) noexcept { return minSize; }
 

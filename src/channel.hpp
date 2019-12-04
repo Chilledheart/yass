@@ -14,7 +14,7 @@
 #include <boost/system/error_code.hpp>
 #include <memory>
 
-#include "iobuf.hpp"
+#include "core/iobuf.hpp"
 
 class Channel {
 public:

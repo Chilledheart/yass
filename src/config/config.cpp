@@ -13,7 +13,7 @@
 
 #include <gflags/gflags.h>
 
-#include "cipher.hpp"
+#include "core/cipher.hpp"
 
 DEFINE_string(server_host, DEFAULT_SERVER,
               "IP address which remote server listens to");

@@ -18,7 +18,7 @@
 #include <memory>
 #include <string>
 
-#include <glog/logging.h>
+#include "core/logging.hpp"
 
 #define DEFAULT_CONFIG_KEY  "SOFTWARE\\YetAnotherShadowSocket"
 

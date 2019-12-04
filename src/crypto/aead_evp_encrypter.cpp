@@ -9,7 +9,7 @@
 //
 #include "crypto/aead_evp_encrypter.hpp"
 
-#include <glog/logging.h>
+#include "core/logging.hpp"
 
 #ifdef HAVE_BORINGSSL
 #include <openssl/crypto.h>

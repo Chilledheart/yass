@@ -13,23 +13,24 @@
 
 #include "channel.hpp"
 #include "connection.hpp"
-#include "http_parser.h"
-#include "iobuf.hpp"
+#include "core/http_parser.h"
+#include "core/iobuf.hpp"
 #include "protocol.hpp"
-#include "socks4.hpp"
-#include "socks4_request.hpp"
-#include "socks4_request_parser.hpp"
-#include "socks5.hpp"
-#include "socks5_request.hpp"
-#include "socks5_request_parser.hpp"
-#include "ss_request.hpp"
+#include "core/socks4.hpp"
+#include "core/socks4_request.hpp"
+#include "core/socks4_request_parser.hpp"
+#include "core/socks5.hpp"
+#include "core/socks5_request.hpp"
+#include "core/socks5_request_parser.hpp"
+#include "core/ss_request.hpp"
 #include "stream.hpp"
 
 #include <boost/asio/read.hpp>
 #include <boost/asio/write.hpp>
 #include <deque>
-#include <glog/logging.h>
 #include <unordered_map>
+
+#include "core/logging.hpp"
 
 class cipher;
 namespace socks5 {

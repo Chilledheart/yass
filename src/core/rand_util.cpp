@@ -23,7 +23,8 @@
 
 #include <algorithm>
 #include <limits>
-#include <glog/logging.h>
+
+#include "core/logging.hpp"
 
 /* RAND_bytes() returns 1 on success, 0 otherwise*/
 #ifdef HAVE_BORINGSSL

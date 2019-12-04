@@ -18,10 +18,10 @@
 #include <boost/asio/ip/udp.hpp>
 #include <boost/system/error_code.hpp>
 #include <functional>
-#include <glog/logging.h>
 #include <utility>
 
-#include "iobuf.hpp"
+#include "core/logging.hpp"
+#include "core/iobuf.hpp"
 
 #define SOCKET_BUF_SIZE (4096)
 

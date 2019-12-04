@@ -11,8 +11,9 @@
 #include <cinttypes>
 #include <cstddef>
 #include <stdint.h>
-#include <glog/logging.h>
 #include <memory>
+
+#include "core/logging.hpp"
 
 #ifndef H_CORE_IOBUF
 #define H_CORE_IOBUF

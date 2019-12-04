@@ -19,10 +19,10 @@
 #include <boost/system/error_code.hpp>
 #include <deque>
 #include <functional>
-#include <glog/logging.h>
 #include <utility>
 
 #include "config/config.hpp"
+#include "core/logging.hpp"
 #include "protocol.hpp"
 
 class Connection {

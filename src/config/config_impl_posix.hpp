@@ -20,10 +20,11 @@
 
 #include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/path.hpp>
-#include <glog/logging.h>
 #include <json/json.h>
 #include <memory>
 #include <string>
+
+#include "core/logging.hpp"
 
 #define DEFAULT_CONFIGDIR "~/.yass"
 #define DEFAULT_CONFIGFILE "~/.yass/config.json"

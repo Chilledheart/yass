@@ -14,7 +14,8 @@
 
 #include <boost/asio.hpp>
 #include <gflags/gflags.h>
-#include <glog/logging.h>
+
+#include "core/logging.hpp"
 
 using boost::asio::ip::tcp;
 using namespace socks5;

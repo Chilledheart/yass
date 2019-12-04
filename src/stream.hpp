@@ -14,7 +14,8 @@
 #include <boost/asio/read.hpp>
 #include <boost/asio/write.hpp>
 #include <deque>
-#include <glog/logging.h>
+
+#include "core/logging.hpp"
 
 /// the class to describe the traffic between given node (endpoint)
 class stream {

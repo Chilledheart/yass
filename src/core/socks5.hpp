@@ -20,7 +20,7 @@
 #include <string>
 #include <tuple>
 
-#include "iobuf.hpp"
+#include "core/iobuf.hpp"
 #include "ss.hpp"
 
 namespace socks5 {

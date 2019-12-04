@@ -10,15 +10,16 @@
 #ifndef YASS_WORKER
 #define YASS_WORKER
 
-#include "cipher.hpp"
-#include "config/config.hpp"
-#include "socks5_factory.hpp"
+#include "core/cipher.hpp"
 
 #include <boost/asio.hpp>
 #include <gflags/gflags.h>
-#include <glog/logging.h>
 #include <memory>
 #include <thread>
+
+#include "cli/socks5_factory.hpp"
+#include "config/config.hpp"
+#include "core/logging.hpp"
 
 class Worker {
 public:

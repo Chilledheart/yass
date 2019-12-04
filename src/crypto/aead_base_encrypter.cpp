@@ -12,7 +12,7 @@
 
 #include <algorithm>
 #include <cstring>
-#include <glog/logging.h>
+#include "core/logging.hpp"
 
 namespace crypto {
 

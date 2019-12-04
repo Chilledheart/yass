@@ -12,7 +12,8 @@
 #define H_SS
 
 #include <stdint.h>
-#include <glog/logging.h>
+
+#include "core/logging.hpp"
 
 namespace ss {
 

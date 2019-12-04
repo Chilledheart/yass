@@ -11,7 +11,7 @@
 
 #ifdef HAVE_LIBSODIUM
 
-#include <glog/logging.h>
+#include "core/logging.hpp"
 #include <sodium/crypto_aead_chacha20poly1305.h>
 
 #include "core/cipher.hpp"

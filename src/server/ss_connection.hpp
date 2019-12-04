@@ -13,17 +13,18 @@
 
 #include "channel.hpp"
 #include "connection.hpp"
-#include "iobuf.hpp"
+#include "core/iobuf.hpp"
 #include "protocol.hpp"
-#include "ss.hpp"
-#include "ss_request.hpp"
-#include "ss_request_parser.hpp"
+#include "core/ss.hpp"
+#include "core/ss_request.hpp"
+#include "core/ss_request_parser.hpp"
 #include "stream.hpp"
 
 #include <boost/asio/read.hpp>
 #include <boost/asio/write.hpp>
 #include <deque>
-#include <glog/logging.h>
+
+#include "core/logging.hpp"
 
 class cipher;
 namespace ss {
