@@ -45,6 +45,135 @@ PRThread* PR_GetCurrentThread(void);
 
 #endif /* defined(_DEBUG) || defined(FORCE_PR_ASSERT) */
 
+/* prinrval.h */
+/**********************************************************************/
+/************************* TYPES AND CONSTANTS ************************/
+/**********************************************************************/
+
+typedef uint32_t PRIntervalTime;
+
+/***********************************************************************
+** DEFINES:     PR_INTERVAL_MIN
+**              PR_INTERVAL_MAX
+** DESCRIPTION:
+**  These two constants define the range (in ticks / second) of the
+**  platform dependent type, PRIntervalTime. These constants bound both
+**  the period and the resolution of a PRIntervalTime.
+***********************************************************************/
+#define PR_INTERVAL_MIN 1000UL
+#define PR_INTERVAL_MAX 100000UL
+
+/***********************************************************************
+** DEFINES:     PR_INTERVAL_NO_WAIT
+**              PR_INTERVAL_NO_TIMEOUT
+** DESCRIPTION:
+**  Two reserved constants are defined in the PRIntervalTime namespace.
+**  They are used to indicate that the process should wait no time (return
+**  immediately) or wait forever (never time out), respectively.
+**  Note: PR_INTERVAL_NO_TIMEOUT passed as input to PR_Connect is
+**  interpreted as use the OS's connect timeout.
+**
+***********************************************************************/
+#define PR_INTERVAL_NO_WAIT 0UL
+#define PR_INTERVAL_NO_TIMEOUT 0xffffffffUL
+
+/**********************************************************************/
+/****************************** FUNCTIONS *****************************/
+/**********************************************************************/
+
+/***********************************************************************
+** FUNCTION:    PR_IntervalNow
+** DESCRIPTION:
+**  Return the value of NSPR's free running interval timer. That timer
+**  can be used to establish epochs and determine intervals (be computing
+**  the difference between two times).
+** INPUTS:      void
+** OUTPUTS:     void
+** RETURN:      PRIntervalTime
+**
+** SIDE EFFECTS:
+**  None
+** RESTRICTIONS:
+**  The units of PRIntervalTime are platform dependent. They are chosen
+**  such that they are appropriate for the host OS, yet provide sufficient
+**  resolution and period to be useful to clients.
+** MEMORY:      N/A
+** ALGORITHM:   Platform dependent
+***********************************************************************/
+PRIntervalTime PR_IntervalNow(void);
+
+/***********************************************************************
+** FUNCTION:    PR_TicksPerSecond
+** DESCRIPTION:
+**  Return the number of ticks per second for PR_IntervalNow's clock.
+**  The value will be in the range [PR_INTERVAL_MIN..PR_INTERVAL_MAX].
+** INPUTS:      void
+** OUTPUTS:     void
+** RETURN:      uint32_t
+**
+** SIDE EFFECTS:
+**  None
+** RESTRICTIONS:
+**  None
+** MEMORY:      N/A
+** ALGORITHM:   N/A
+***********************************************************************/
+uint32_t PR_TicksPerSecond(void);
+
+/***********************************************************************
+** FUNCTION:    PR_SecondsToInterval
+**              PR_MillisecondsToInterval
+**              PR_MicrosecondsToInterval
+** DESCRIPTION:
+**  Convert standard clock units to platform dependent intervals.
+** INPUTS:      uint32_t
+** OUTPUTS:     void
+** RETURN:      PRIntervalTime
+**
+** SIDE EFFECTS:
+**  None
+** RESTRICTIONS:
+**  Conversion may cause overflow, which is not reported.
+** MEMORY:      N/A
+** ALGORITHM:   N/A
+***********************************************************************/
+PRIntervalTime PR_SecondsToInterval(uint32_t seconds);
+PRIntervalTime PR_MillisecondsToInterval(uint32_t milli);
+PRIntervalTime PR_MicrosecondsToInterval(uint32_t micro);
+
+/***********************************************************************
+** FUNCTION:    PR_IntervalToSeconds
+**              PR_IntervalToMilliseconds
+**              PR_IntervalToMicroseconds
+** DESCRIPTION:
+**  Convert platform dependent intervals to standard clock units.
+** INPUTS:      PRIntervalTime
+** OUTPUTS:     void
+** RETURN:      uint32_t
+**
+** SIDE EFFECTS:
+**  None
+** RESTRICTIONS:
+**  Conversion may cause overflow, which is not reported.
+** MEMORY:      N/A
+** ALGORITHM:   N/A
+***********************************************************************/
+uint32_t PR_IntervalToSeconds(PRIntervalTime ticks);
+uint32_t PR_IntervalToMilliseconds(PRIntervalTime ticks);
+uint32_t PR_IntervalToMicroseconds(PRIntervalTime ticks);
+
+/* prtime.h */
+/**********************************************************************/
+/************************* TYPES AND CONSTANTS ************************/
+/**********************************************************************/
+
+#define PR_MSEC_PER_SEC		1000L
+#define PR_USEC_PER_SEC		1000000L
+#define PR_NSEC_PER_SEC		1000000000L
+#define PR_USEC_PER_MSEC	1000L
+#define PR_NSEC_PER_MSEC	1000000L
+
+
 /* prio.h */
 #ifdef _WIN32
 #include <winsock2.h>
@@ -126,66 +255,76 @@ union PNetAddr {
     } local;
 };
 
-/***********************************************************************
-** FUNCTION: PR_InitializeNetAddr(),
-** DESCRIPTION:
-**  Initialize the fields of a PNetAddr, assigning well known values as
-**  appropriate.
+/*
+***************************************************************************
+** PRSockOption
 **
-** INPUTS
-**  PNetAddrValue val  The value to be assigned to the IP Address portion
-**                      of the network address. This can only specify the
-**                      special well known values that are equivalent to
-**                      INADDR_ANY and INADDR_LOOPBACK.
-**
-**  uint16_t port       The port number to be assigned in the structure.
-**
-** OUTPUTS:
-**  PNetAddr *addr     The address to be manipulated.
-**
-** RETURN:
-**  PRStatus            To indicate success or failure. If the latter, the
-**                      reason for the failure can be retrieved by calling
-**                      PR_GetError();
-***********************************************************************/
-typedef enum PNetAddrValue
+** The file descriptors can have predefined options set after they file
+** descriptor is created to change their behavior. Only the options in
+** the following enumeration are supported.
+***************************************************************************
+*/
+typedef enum PRSockOption
 {
-    P_IpAddrNull,      /* do NOT overwrite the IP address */
-    P_IpAddrAny,       /* assign logical INADDR_ANY to IP address */
-    P_IpAddrLoopback,  /* assign logical INADDR_LOOPBACK  */
-    P_IpAddrV4Mapped   /* IPv4 mapped address */
-} PNetAddrValue;
+    P_SockOpt_Nonblocking,     /* nonblocking io */
+    P_SockOpt_Linger,          /* linger on close if data present */
+    P_SockOpt_Reuseaddr,       /* allow local address reuse */
+    P_SockOpt_Keepalive,       /* keep connections alive */
+    P_SockOpt_RecvBufferSize,  /* receive buffer size */
+    P_SockOpt_SendBufferSize,  /* send buffer size */
 
-PRStatus PR_InitializeNetAddr(
-    PNetAddrValue val, uint16_t port, PNetAddr *addr);
+    P_SockOpt_IpTimeToLive,    /* time to live */
+    P_SockOpt_IpTypeOfService, /* type of service and precedence */
 
-/***********************************************************************
-** FUNCTION: PR_SetNetAddr(),
-** DESCRIPTION:
-**  Set the fields of a PRNetAddr, assigning well known values as
-**  appropriate. This function is similar to PR_InitializeNetAddr
-**  but differs in that the address family is specified.
-**
-** INPUTS
-**  PRNetAddrValue val  The value to be assigned to the IP Address portion
-**                      of the network address. This can only specify the
-**                      special well known values that are equivalent to
-**                      INADDR_ANY and INADDR_LOOPBACK.
-**
-**  PRUint16 af         The address family (either PR_AF_INET or PR_AF_INET6)
-**
-**  PRUint16 port       The port number to be assigned in the structure.
-**
-** OUTPUTS:
-**  PRNetAddr *addr     The address to be manipulated.
-**
-** RETURN:
-**  PRStatus            To indicate success or failure. If the latter, the
-**                      reason for the failure can be retrieved by calling
-**                      PR_GetError();
-***********************************************************************/
-PRStatus PR_SetNetAddr(
-    PNetAddrValue val, uint16_t af, uint16_t port, PNetAddr *addr);
+    P_SockOpt_AddMember,       /* add an IP group membership */
+    P_SockOpt_DropMember,      /* drop an IP group membership */
+    P_SockOpt_McastInterface,  /* multicast interface address */
+    P_SockOpt_McastTimeToLive, /* multicast timetolive */
+    P_SockOpt_McastLoopback,   /* multicast loopback */
+
+    P_SockOpt_NoDelay,         /* don't delay send to coalesce packets */
+    P_SockOpt_MaxSegment,      /* maximum segment size */
+    P_SockOpt_Broadcast,       /* enable broadcast */
+    P_SockOpt_Reuseport,       /* allow local address & port reuse on
+                                * platforms that support it */
+    P_SockOpt_Last
+} PRSockOption;
+
+typedef struct PRLinger {
+	bool polarity;		    /* Polarity of the option's setting */
+	PRIntervalTime linger;	    /* Time to linger before closing */
+} PRLinger;
+
+typedef struct PRMcastRequest {
+	PNetAddr mcaddr;			/* IP multicast address of group */
+	PNetAddr ifaddr;			/* local IP address of interface */
+} PRMcastRequest;
+
+typedef struct PRSocketOptionData
+{
+    PRSockOption option;
+    union
+    {
+        unsigned int ip_ttl;             /* IP time to live */
+        unsigned int mcast_ttl;          /* IP multicast time to live */
+        unsigned int tos;                /* IP type of service and precedence */
+        bool non_blocking;        /* Non-blocking (network) I/O */
+        bool reuse_addr;          /* Allow local address reuse */
+        bool reuse_port;          /* Allow local address & port reuse on
+                                     * platforms that support it */
+        bool keep_alive;          /* Keep connections alive */
+        bool mcast_loopback;      /* IP multicast loopback */
+        bool no_delay;            /* Don't delay send to coalesce packets */
+        bool broadcast;           /* Enable broadcast */
+        size_t max_segment;         /* Maximum segment size */
+        size_t recv_buffer_size;    /* Receive buffer size */
+        size_t send_buffer_size;    /* Send buffer size */
+        PRLinger linger;            /* Time to linger on close if data present */
+        PRMcastRequest add_member;  /* add an IP group membership */
+        PRMcastRequest drop_member; /* Drop an IP group membership */
+        PNetAddr mcast_if;         /* multicast interface address */
+    } value;
+} PRSocketOptionData;
 
 typedef struct PRFileDesc       PRFileDesc;
 
@@ -598,10 +737,10 @@ PRStatus
 PR_GetPeerName(PRFileDesc *socketFD, const PNetAddr *addr);
 
 PRStatus
-PR_GetSocketOption(PRFileDesc *socketFD, int option, void *option_value);
+PR_GetSocketOption(PRFileDesc *socketFD, PRSocketOptionData *data);
 
 PRStatus
-PR_SetSocketOption(PRFileDesc *socketFD, int option, const void *option_value);
+PR_SetSocketOption(PRFileDesc *socketFD, const PRSocketOptionData *data);
 
 /*
  **************************************************************************
@@ -755,6 +894,68 @@ int32_t PR_Poll(
     PRPollDesc *pds, int npds, int timeout);
 
 /* prnetdb.h */
+/***********************************************************************
+** FUNCTION: PR_InitializeNetAddr(),
+** DESCRIPTION:
+**  Initialize the fields of a PNetAddr, assigning well known values as
+**  appropriate.
+**
+** INPUTS
+**  PNetAddrValue val  The value to be assigned to the IP Address portion
+**                      of the network address. This can only specify the
+**                      special well known values that are equivalent to
+**                      INADDR_ANY and INADDR_LOOPBACK.
+**
+**  uint16_t port       The port number to be assigned in the structure.
+**
+** OUTPUTS:
+**  PNetAddr *addr     The address to be manipulated.
+**
+** RETURN:
+**  PRStatus            To indicate success or failure. If the latter, the
+**                      reason for the failure can be retrieved by calling
+**                      PR_GetError();
+***********************************************************************/
+typedef enum PNetAddrValue
+{
+    P_IpAddrNull,      /* do NOT overwrite the IP address */
+    P_IpAddrAny,       /* assign logical INADDR_ANY to IP address */
+    P_IpAddrLoopback,  /* assign logical INADDR_LOOPBACK  */
+    P_IpAddrV4Mapped   /* IPv4 mapped address */
+} PNetAddrValue;
+
+PRStatus PR_InitializeNetAddr(
+    PNetAddrValue val, uint16_t port, PNetAddr *addr);
+
+/***********************************************************************
+** FUNCTION: PR_SetNetAddr(),
+** DESCRIPTION:
+**  Set the fields of a PRNetAddr, assigning well known values as
+**  appropriate. This function is similar to PR_InitializeNetAddr
+**  but differs in that the address family is specified.
+**
+** INPUTS
+**  PRNetAddrValue val  The value to be assigned to the IP Address portion
+**                      of the network address. This can only specify the
+**                      special well known values that are equivalent to
+**                      INADDR_ANY and INADDR_LOOPBACK.
+**
+**  PRUint16 af         The address family (either PR_AF_INET or PR_AF_INET6)
+**
+**  PRUint16 port       The port number to be assigned in the structure.
+**
+** OUTPUTS:
+**  PRNetAddr *addr     The address to be manipulated.
+**
+** RETURN:
+**  PRStatus            To indicate success or failure. If the latter, the
+**                      reason for the failure can be retrieved by calling
+**                      PR_GetError();
+***********************************************************************/
+PRStatus PR_SetNetAddr(
+    PNetAddrValue val, uint16_t af, uint16_t port, PNetAddr *addr);
+
+
 /*
  *********************************************************************
  *  Translate an Internet address to/from a character string
@@ -765,134 +966,6 @@ PRStatus PR_StringToNetAddr(
 
 PRStatus PR_NetAddrToString(
     const PNetAddr *addr, char *string, uint32_t size);
-
-/* prinrval.h */
-/**********************************************************************/
-/************************* TYPES AND CONSTANTS ************************/
-/**********************************************************************/
-
-typedef uint32_t PRIntervalTime;
-
-/***********************************************************************
-** DEFINES:     PR_INTERVAL_MIN
-**              PR_INTERVAL_MAX
-** DESCRIPTION:
-**  These two constants define the range (in ticks / second) of the
-**  platform dependent type, PRIntervalTime. These constants bound both
-**  the period and the resolution of a PRIntervalTime.
-***********************************************************************/
-#define PR_INTERVAL_MIN 1000UL
-#define PR_INTERVAL_MAX 100000UL
-
-/***********************************************************************
-** DEFINES:     PR_INTERVAL_NO_WAIT
-**              PR_INTERVAL_NO_TIMEOUT
-** DESCRIPTION:
-**  Two reserved constants are defined in the PRIntervalTime namespace.
-**  They are used to indicate that the process should wait no time (return
-**  immediately) or wait forever (never time out), respectively.
-**  Note: PR_INTERVAL_NO_TIMEOUT passed as input to PR_Connect is
-**  interpreted as use the OS's connect timeout.
-**
-***********************************************************************/
-#define PR_INTERVAL_NO_WAIT 0UL
-#define PR_INTERVAL_NO_TIMEOUT 0xffffffffUL
-
-/**********************************************************************/
-/****************************** FUNCTIONS *****************************/
-/**********************************************************************/
-
-/***********************************************************************
-** FUNCTION:    PR_IntervalNow
-** DESCRIPTION:
-**  Return the value of NSPR's free running interval timer. That timer
-**  can be used to establish epochs and determine intervals (be computing
-**  the difference between two times).
-** INPUTS:      void
-** OUTPUTS:     void
-** RETURN:      PRIntervalTime
-**
-** SIDE EFFECTS:
-**  None
-** RESTRICTIONS:
-**  The units of PRIntervalTime are platform dependent. They are chosen
-**  such that they are appropriate for the host OS, yet provide sufficient
-**  resolution and period to be useful to clients.
-** MEMORY:      N/A
-** ALGORITHM:   Platform dependent
-***********************************************************************/
-PRIntervalTime PR_IntervalNow(void);
-
-/***********************************************************************
-** FUNCTION:    PR_TicksPerSecond
-** DESCRIPTION:
-**  Return the number of ticks per second for PR_IntervalNow's clock.
-**  The value will be in the range [PR_INTERVAL_MIN..PR_INTERVAL_MAX].
-** INPUTS:      void
-** OUTPUTS:     void
-** RETURN:      uint32_t
-**
-** SIDE EFFECTS:
-**  None
-** RESTRICTIONS:
-**  None
-** MEMORY:      N/A
-** ALGORITHM:   N/A
-***********************************************************************/
-uint32_t PR_TicksPerSecond(void);
-
-/***********************************************************************
-** FUNCTION:    PR_SecondsToInterval
-**              PR_MillisecondsToInterval
-**              PR_MicrosecondsToInterval
-** DESCRIPTION:
-**  Convert standard clock units to platform dependent intervals.
-** INPUTS:      uint32_t
-** OUTPUTS:     void
-** RETURN:      PRIntervalTime
-**
-** SIDE EFFECTS:
-**  None
-** RESTRICTIONS:
-**  Conversion may cause overflow, which is not reported.
-** MEMORY:      N/A
-** ALGORITHM:   N/A
-***********************************************************************/
-PRIntervalTime PR_SecondsToInterval(uint32_t seconds);
-PRIntervalTime PR_MillisecondsToInterval(uint32_t milli);
-PRIntervalTime PR_MicrosecondsToInterval(uint32_t micro);
-
-/***********************************************************************
-** FUNCTION:    PR_IntervalToSeconds
-**              PR_IntervalToMilliseconds
-**              PR_IntervalToMicroseconds
-** DESCRIPTION:
-**  Convert platform dependent intervals to standard clock units.
-** INPUTS:      PRIntervalTime
-** OUTPUTS:     void
-** RETURN:      uint32_t
-**
-** SIDE EFFECTS:
-**  None
-** RESTRICTIONS:
-**  Conversion may cause overflow, which is not reported.
-** MEMORY:      N/A
-** ALGORITHM:   N/A
-***********************************************************************/
-uint32_t PR_IntervalToSeconds(PRIntervalTime ticks);
-uint32_t PR_IntervalToMilliseconds(PRIntervalTime ticks);
-uint32_t PR_IntervalToMicroseconds(PRIntervalTime ticks);
-
-/* prtime.h */
-/**********************************************************************/
-/************************* TYPES AND CONSTANTS ************************/
-/**********************************************************************/
-
-#define PR_MSEC_PER_SEC		1000L
-#define PR_USEC_PER_SEC		1000000L
-#define PR_NSEC_PER_SEC		1000000000L
-#define PR_USEC_PER_MSEC	1000L
-#define PR_NSEC_PER_MSEC	1000000L
 
 /* primpl.h */
 extern bool _pr_initialized;

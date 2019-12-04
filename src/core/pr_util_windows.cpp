@@ -12,6 +12,7 @@
 
 #ifdef _WIN32
 #include <algorithm>
+#include <ws2ipdef.h>
 #include <windows.h>
 #include <stdio.h>
 
@@ -32,7 +33,160 @@ struct PRFileDesc {
     SOCKET fd;
 };
 
-inline uint32_t
+/* winnt.h */
+PRStatus
+_PR_MD_GETSOCKOPT(PRFileDesc *fd, int32_t level, int32_t optname, char* optval, int32_t* optlen)
+{
+    int32_t rv;
+
+    rv = getsockopt(fd->fd, level, optname, optval, optlen);
+    if (rv==0)
+		return PR_SUCCESS;
+	else {
+		_PR_MD_MAP_GETSOCKOPT_ERROR(WSAGetLastError());
+		return PR_FAILURE;
+	}
+}
+
+PRStatus
+_PR_MD_SETSOCKOPT(PRFileDesc *fd, int32_t level, int32_t optname, const char* optval, int32_t optlen)
+{
+    int32_t rv;
+
+    rv = setsockopt(fd->fd, level, optname, optval, optlen);
+    if (rv==0)
+		return PR_SUCCESS;
+	else {
+		_PR_MD_MAP_SETSOCKOPT_ERROR(WSAGetLastError());
+		return PR_FAILURE;
+	}
+}
+
+/*
+ * Not every platform has all the socket options we want to
+ * support.  Some older operating systems such as SunOS 4.1.3
+ * don't have the IP multicast socket options.  Win32 doesn't
+ * have TCP_MAXSEG.
+ *
+ * To deal with this problem, we define the missing socket
+ * options as _PR_NO_SUCH_SOCKOPT.  _PR_MapOptionName() fails with
+ * PR_OPERATION_NOT_SUPPORTED_ERROR if a socket option not
+ * available on the platform is requested.
+ */
+
+/*
+ * Sanity check.  SO_LINGER and TCP_NODELAY should be available
+ * on all platforms.  Just to make sure we have included the
+ * appropriate header files.  Then any undefined socket options
+ * are really missing.
+ */
+
+#if !defined(SO_LINGER)
+#error "SO_LINGER is not defined"
+#endif
+
+#if !defined(TCP_NODELAY)
+#error "TCP_NODELAY is not defined"
+#endif
+
+/*
+ * Make sure the value of _PR_NO_SUCH_SOCKOPT is not
+ * a valid socket option.
+ */
+#define _PR_NO_SUCH_SOCKOPT -1
+
+#ifndef SO_KEEPALIVE
+#define SO_KEEPALIVE        _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef SO_SNDBUF
+#define SO_SNDBUF           _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef SO_RCVBUF
+#define SO_RCVBUF           _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef IP_MULTICAST_IF                 /* set/get IP multicast interface   */
+#define IP_MULTICAST_IF     _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef IP_MULTICAST_TTL                /* set/get IP multicast timetolive  */
+#define IP_MULTICAST_TTL    _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef IP_MULTICAST_LOOP               /* set/get IP multicast loopback    */
+#define IP_MULTICAST_LOOP   _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef IP_ADD_MEMBERSHIP               /* add  an IP group membership      */
+#define IP_ADD_MEMBERSHIP   _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef IP_DROP_MEMBERSHIP              /* drop an IP group membership      */
+#define IP_DROP_MEMBERSHIP  _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef IP_TTL                          /* set/get IP Time To Live          */
+#define IP_TTL              _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef IP_TOS                          /* set/get IP Type Of Service       */
+#define IP_TOS              _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef TCP_NODELAY                     /* don't delay to coalesce data     */
+#define TCP_NODELAY         _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef TCP_MAXSEG                      /* maxumum segment size for tcp     */
+#define TCP_MAXSEG          _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef SO_BROADCAST                    /* enable broadcast on UDP sockets  */
+#define SO_BROADCAST        _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef SO_REUSEPORT                    /* allow local address & port reuse */
+#define SO_REUSEPORT        _PR_NO_SUCH_SOCKOPT
+#endif
+
+PRStatus _PR_MapOptionName(
+    PRSockOption optname, int32_t *level, int32_t *name)
+{
+    static int32_t socketOptions[P_SockOpt_Last] =
+    {
+        0, SO_LINGER, SO_REUSEADDR, SO_KEEPALIVE, SO_RCVBUF, SO_SNDBUF,
+        IP_TTL, IP_TOS, IP_ADD_MEMBERSHIP, IP_DROP_MEMBERSHIP,
+        IP_MULTICAST_IF, IP_MULTICAST_TTL, IP_MULTICAST_LOOP,
+        TCP_NODELAY, TCP_MAXSEG, SO_BROADCAST, SO_REUSEPORT
+    };
+    static int32_t socketLevels[P_SockOpt_Last] =
+    {
+        0, SOL_SOCKET, SOL_SOCKET, SOL_SOCKET, SOL_SOCKET, SOL_SOCKET,
+        IPPROTO_IP, IPPROTO_IP, IPPROTO_IP, IPPROTO_IP,
+        IPPROTO_IP, IPPROTO_IP, IPPROTO_IP,
+        IPPROTO_TCP, IPPROTO_TCP, SOL_SOCKET, SOL_SOCKET
+    };
+
+    if ((optname < P_SockOpt_Linger)
+    || (optname >= P_SockOpt_Last))
+    {
+        PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
+        return PR_FAILURE;
+    }
+
+    if (socketOptions[optname] == _PR_NO_SUCH_SOCKOPT)
+    {
+        PR_SetError(PR_OPERATION_NOT_SUPPORTED_ERROR, 0);
+        return PR_FAILURE;
+    }
+    *name = socketOptions[optname];
+    *level = socketLevels[optname];
+    return PR_SUCCESS;
+}  /* _PR_MapOptionName */
+
+static uint32_t
 PNetAddrGetLen(const PNetAddr *addr) {
     switch (addr->raw.family) {
       case  P_AF_INET:
@@ -324,24 +478,261 @@ PR_GetPeerName(PRFileDesc *socketFD, const PNetAddr *addr) {
 
 
 PRStatus
-PR_GetSocketOption(PRFileDesc *socketFD, int option, void *option_value) {
-    int option_value_len = sizeof(char);
-    if (getsockopt(socketFD->fd, SOL_SOCKET, option, reinterpret_cast<char*>(option_value),
-          &option_value_len) == 0) {
+PR_GetSocketOption(PRFileDesc *socketFD, PRSocketOptionData *data) {
+    PRStatus rv;
+    int32_t length;
+    int32_t level, name;
+
+    /*
+     * P_SockOpt_Nonblocking is a special case that does not
+     * translate to a getsockopt() call
+     */
+    if (P_SockOpt_Nonblocking == data->option)
+    {
+        data->value.non_blocking = true;
         return PR_SUCCESS;
     }
-    return PR_FAILURE;
+
+    rv = _PR_MapOptionName(data->option, &level, &name);
+    if (PR_SUCCESS == rv)
+    {
+        switch (data->option)
+        {
+            case P_SockOpt_Linger:
+            {
+                struct linger linger;
+                length = sizeof(linger);
+                rv = _PR_MD_GETSOCKOPT(
+                    socketFD, level, name, (char *) &linger, &length);
+                if (PR_SUCCESS == rv)
+                {
+                    PR_ASSERT(sizeof(linger) == length);
+                    data->value.linger.polarity =
+                        (linger.l_onoff) ? true : false;
+                    data->value.linger.linger =
+                        PR_SecondsToInterval(linger.l_linger);
+                }
+                break;
+            }
+            case P_SockOpt_Reuseaddr:
+            case P_SockOpt_Keepalive:
+            case P_SockOpt_NoDelay:
+            case P_SockOpt_Broadcast:
+            case P_SockOpt_Reuseport:
+            {
+#ifdef _WIN32 /* Winsock */
+                bool value;
+#else
+                int value;
+#endif
+                length = sizeof(value);
+                rv = _PR_MD_GETSOCKOPT(
+                    socketFD, level, name, (char*)&value, &length);
+                if (PR_SUCCESS == rv)
+                    data->value.reuse_addr = (0 == value) ? false : true;
+                break;
+            }
+            case P_SockOpt_McastLoopback:
+            {
+#ifdef _WIN32 /* Winsock */
+                bool value;
+#else
+                uint8_t value;
+#endif
+                length = sizeof(bool);
+                rv = _PR_MD_GETSOCKOPT(
+                    socketFD, level, name, (char*)&value, &length);
+                if (PR_SUCCESS == rv)
+                    data->value.mcast_loopback = (0 == value) ? false : true;
+                break;
+            }
+            case P_SockOpt_RecvBufferSize:
+            case P_SockOpt_SendBufferSize:
+            case P_SockOpt_MaxSegment:
+            {
+                int value;
+                length = sizeof(value);
+                rv = _PR_MD_GETSOCKOPT(
+                    socketFD, level, name, (char*)&value, &length);
+                if (PR_SUCCESS == rv)
+                    data->value.recv_buffer_size = value;
+                break;
+            }
+            case P_SockOpt_IpTimeToLive:
+            case P_SockOpt_IpTypeOfService:
+            {
+                /* These options should really be an int (or int). */
+                length = sizeof(unsigned);
+                rv = _PR_MD_GETSOCKOPT(
+                    socketFD, level, name, (char*)&data->value.ip_ttl, &length);
+                break;
+            }
+            case P_SockOpt_McastTimeToLive:
+            {
+#ifdef _WIN32 /* Winsock */
+                int ttl;
+#else
+                uint8_t ttl;
+#endif
+                length = sizeof(ttl);
+                rv = _PR_MD_GETSOCKOPT(
+                    socketFD, level, name, (char*)&ttl, &length);
+                if (PR_SUCCESS == rv)
+                    data->value.mcast_ttl = ttl;
+                break;
+            }
+#ifdef IP_ADD_MEMBERSHIP
+            case P_SockOpt_AddMember:
+            case P_SockOpt_DropMember:
+            {
+                struct ip_mreq mreq;
+                length = sizeof(mreq);
+                rv = _PR_MD_GETSOCKOPT(
+                    socketFD, level, name, (char*)&mreq, &length);
+                if (PR_SUCCESS == rv)
+                {
+                    data->value.add_member.mcaddr.inet.ip =
+                        mreq.imr_multiaddr.s_addr;
+                    data->value.add_member.ifaddr.inet.ip =
+                        mreq.imr_interface.s_addr;
+                }
+                break;
+            }
+#endif /* IP_ADD_MEMBERSHIP */
+            case P_SockOpt_McastInterface:
+            {
+                /* This option is a struct in_addr. */
+                length = sizeof(data->value.mcast_if.inet.ip);
+                rv = _PR_MD_GETSOCKOPT(
+                    socketFD, level, name,
+                    (char*)&data->value.mcast_if.inet.ip, &length);
+                break;
+            }
+            default:
+                PR_NOT_REACHED("Unknown socket option");
+                break;
+        }
+    }
+    return rv;
 }
 
 
 PRStatus
-PR_SetSocketOption(PRFileDesc *socketFD, int option, const void *option_value) {
-    int option_value_len = sizeof(char);
-    if (setsockopt(socketFD->fd, SOL_SOCKET, option, reinterpret_cast<const char*>(option_value),
-          option_value_len) == 0) {
+PR_SetSocketOption(PRFileDesc *socketFD, const PRSocketOptionData *data) {
+    PRStatus rv;
+    int32_t level, name;
+
+    /*
+     * P_SockOpt_Nonblocking is a special case that does not
+     * translate to a setsockopt call.
+     */
+    if (P_SockOpt_Nonblocking == data->option)
+    {
+#ifdef _WIN32
+        // fd->secret->nonblocking = data->value.non_blocking;
+#endif
         return PR_SUCCESS;
     }
-    return PR_FAILURE;
+
+    rv = _PR_MapOptionName(data->option, &level, &name);
+    if (PR_SUCCESS == rv)
+    {
+        switch (data->option)
+        {
+            case P_SockOpt_Linger:
+            {
+                struct linger linger;
+                linger.l_onoff = data->value.linger.polarity;
+                linger.l_linger = PR_IntervalToSeconds(data->value.linger.linger);
+                rv = _PR_MD_SETSOCKOPT(
+                    socketFD, level, name, (char*)&linger, sizeof(linger));
+                break;
+            }
+            case P_SockOpt_Reuseaddr:
+            case P_SockOpt_Keepalive:
+            case P_SockOpt_NoDelay:
+            case P_SockOpt_Broadcast:
+            case P_SockOpt_Reuseport:
+            {
+#ifdef _WIN32 /* Winsock */
+                bool value;
+#else
+                int value;
+#endif
+                value = (data->value.reuse_addr) ? 1 : 0;
+                rv = _PR_MD_SETSOCKOPT(
+                    socketFD, level, name, (char*)&value, sizeof(value));
+                break;
+            }
+            case P_SockOpt_McastLoopback:
+            {
+#ifdef _WIN32 /* Winsock */
+                bool value;
+#else
+                uint8_t value;
+#endif
+                value = data->value.mcast_loopback ? 1 : 0;
+                rv = _PR_MD_SETSOCKOPT(
+                    socketFD, level, name, (char*)&value, sizeof(value));
+                break;
+            }
+            case P_SockOpt_RecvBufferSize:
+            case P_SockOpt_SendBufferSize:
+            case P_SockOpt_MaxSegment:
+            {
+                int value = data->value.recv_buffer_size;
+                rv = _PR_MD_SETSOCKOPT(
+                    socketFD, level, name, (char*)&value, sizeof(value));
+                break;
+            }
+            case P_SockOpt_IpTimeToLive:
+            case P_SockOpt_IpTypeOfService:
+            {
+                /* These options should really be an int (or int). */
+                rv = _PR_MD_SETSOCKOPT(
+                    socketFD, level, name, (char*)&data->value.ip_ttl, sizeof(unsigned));
+                break;
+            }
+            case P_SockOpt_McastTimeToLive:
+            {
+#ifdef _WIN32 /* Winsock */
+                int ttl;
+#else
+                uint8_t ttl;
+#endif
+                ttl = data->value.mcast_ttl;
+                rv = _PR_MD_SETSOCKOPT(
+                    socketFD, level, name, (char*)&ttl, sizeof(ttl));
+                break;
+            }
+#ifdef IP_ADD_MEMBERSHIP
+            case P_SockOpt_AddMember:
+            case P_SockOpt_DropMember:
+            {
+                struct ip_mreq mreq;
+                mreq.imr_multiaddr.s_addr =
+                    data->value.add_member.mcaddr.inet.ip;
+                mreq.imr_interface.s_addr =
+                    data->value.add_member.ifaddr.inet.ip;
+                rv = _PR_MD_SETSOCKOPT(
+                    socketFD, level, name, (char*)&mreq, sizeof(mreq));
+                break;
+            }
+#endif /* IP_ADD_MEMBERSHIP */
+            case P_SockOpt_McastInterface:
+            {
+                /* This option is a struct in_addr. */
+                rv = _PR_MD_SETSOCKOPT(
+                    socketFD, level, name, (char*)&data->value.mcast_if.inet.ip,
+                    sizeof(data->value.mcast_if.inet.ip));
+                break;
+            }
+            default:
+                PR_NOT_REACHED("Unknown socket option");
+                break;
+        }
+    }
+    return rv;
 }
 
 

@@ -13,6 +13,7 @@
 #ifndef _WIN32
 
 #include <cstring>
+#include <fcntl.h>
      #include <sys/types.h>
      #include <sys/socket.h>
 #include <unistd.h>
@@ -27,7 +28,149 @@ struct PRFileDesc {
     int fd;
 };
 
-inline uint32_t
+/*
+ * Make sure the value of _PR_NO_SUCH_SOCKOPT is not
+ * a valid socket option.
+ */
+#define _PR_NO_SUCH_SOCKOPT -1
+
+#ifndef SO_KEEPALIVE
+#define SO_KEEPALIVE        _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef SO_SNDBUF
+#define SO_SNDBUF           _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef SO_RCVBUF
+#define SO_RCVBUF           _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef IP_MULTICAST_IF                 /* set/get IP multicast interface   */
+#define IP_MULTICAST_IF     _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef IP_MULTICAST_TTL                /* set/get IP multicast timetolive  */
+#define IP_MULTICAST_TTL    _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef IP_MULTICAST_LOOP               /* set/get IP multicast loopback    */
+#define IP_MULTICAST_LOOP   _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef IP_ADD_MEMBERSHIP               /* add  an IP group membership      */
+#define IP_ADD_MEMBERSHIP   _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef IP_DROP_MEMBERSHIP              /* drop an IP group membership      */
+#define IP_DROP_MEMBERSHIP  _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef IP_TTL                          /* set/get IP Time To Live          */
+#define IP_TTL              _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef IP_TOS                          /* set/get IP Type Of Service       */
+#define IP_TOS              _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef TCP_NODELAY                     /* don't delay to coalesce data     */
+#define TCP_NODELAY         _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef TCP_MAXSEG                      /* maxumum segment size for tcp     */
+#define TCP_MAXSEG          _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef SO_BROADCAST                    /* enable broadcast on UDP sockets  */
+#define SO_BROADCAST        _PR_NO_SUCH_SOCKOPT
+#endif
+
+#ifndef SO_REUSEPORT                    /* allow local address & port reuse */
+#define SO_REUSEPORT        _PR_NO_SUCH_SOCKOPT
+#endif
+
+PRStatus _PR_MapOptionName(
+    PRSockOption optname, int32_t *level, int32_t *name)
+{
+    static int32_t socketOptions[P_SockOpt_Last] =
+    {
+        0, SO_LINGER, SO_REUSEADDR, SO_KEEPALIVE, SO_RCVBUF, SO_SNDBUF,
+        IP_TTL, IP_TOS, IP_ADD_MEMBERSHIP, IP_DROP_MEMBERSHIP,
+        IP_MULTICAST_IF, IP_MULTICAST_TTL, IP_MULTICAST_LOOP,
+        TCP_NODELAY, TCP_MAXSEG, SO_BROADCAST, SO_REUSEPORT
+    };
+    static int32_t socketLevels[P_SockOpt_Last] =
+    {
+        0, SOL_SOCKET, SOL_SOCKET, SOL_SOCKET, SOL_SOCKET, SOL_SOCKET,
+        IPPROTO_IP, IPPROTO_IP, IPPROTO_IP, IPPROTO_IP,
+        IPPROTO_IP, IPPROTO_IP, IPPROTO_IP,
+        IPPROTO_TCP, IPPROTO_TCP, SOL_SOCKET, SOL_SOCKET
+    };
+
+    if ((optname < P_SockOpt_Linger)
+    || (optname >= P_SockOpt_Last))
+    {
+        PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
+        return PR_FAILURE;
+    }
+
+    if (socketOptions[optname] == _PR_NO_SUCH_SOCKOPT)
+    {
+        PR_SetError(PR_OPERATION_NOT_SUPPORTED_ERROR, 0);
+        return PR_FAILURE;
+    }
+    *name = socketOptions[optname];
+    *level = socketLevels[optname];
+    return PR_SUCCESS;
+}  /* _PR_MapOptionName */
+
+#define _PR_FCNTL_FLAGS O_NONBLOCK
+
+static bool pt_IsFdNonblock(int osfd)
+{
+    int flags;
+    flags = fcntl(osfd, F_GETFL, 0);
+    return flags & _PR_FCNTL_FLAGS;
+}
+
+/*
+ * Put a Unix file descriptor in non-blocking mode.
+ */
+static void pt_MakeFdNonblock(int osfd)
+{
+    int flags;
+    flags = fcntl(osfd, F_GETFL, 0);
+    flags |= _PR_FCNTL_FLAGS;
+    (void)fcntl(osfd, F_SETFL, flags);
+}
+
+/*
+ * Put a Unix socket fd in non-blocking mode that can
+ * ideally be inherited by an accepted socket.
+ *
+ * Why doesn't pt_MakeFdNonblock do?  This is to deal with
+ * the special case of HP-UX.  HP-UX has three kinds of
+ * non-blocking modes for sockets: the fcntl() O_NONBLOCK
+ * and O_NDELAY flags and ioctl() FIOSNBIO request.  Only
+ * the ioctl() FIOSNBIO form of non-blocking mode is
+ * inherited by an accepted socket.
+ *
+ * Other platforms just use the generic pt_MakeFdNonblock
+ * to put a socket in non-blocking mode.
+ */
+#ifdef HPUX
+static void pt_MakeSocketNonblock(int osfd)
+{
+    int one = 1;
+    (void)ioctl(osfd, FIOSNBIO, &one);
+}
+#else
+#define pt_IsSocketNonblock pt_IsFdNonblock
+#define pt_MakeSocketNonblock pt_MakeFdNonblock
+#endif
+
+static uint32_t
 PNetAddrGetLen(const PNetAddr *addr) {
     switch (addr->raw.family) {
       case  P_AF_INET:
@@ -310,24 +453,239 @@ PR_GetPeerName(PRFileDesc *socketFD, const PNetAddr *addr) {
 
 
 PRStatus
-PR_GetSocketOption(PRFileDesc *socketFD, int option, void *option_value) {
+PR_GetSocketOption(PRFileDesc *socketFD, PRSocketOptionData *data) {
 
-    socklen_t option_value_len = sizeof(char);
-    if (getsockopt(socketFD->fd, SOL_SOCKET, option, option_value, &option_value_len) == 0) {
+    int rv;
+    socklen_t length;
+    int32_t level, name;
+
+    /*
+     * P_SockOpt_Nonblocking is a special case that does not
+     * translate to a getsockopt() call
+     */
+    if (P_SockOpt_Nonblocking == data->option)
+    {
+        data->value.non_blocking = pt_IsSocketNonblock(socketFD->fd);
         return PR_SUCCESS;
     }
-    return PR_FAILURE;
+
+    rv = _PR_MapOptionName(data->option, &level, &name);
+    if (PR_SUCCESS == rv)
+    {
+        switch (data->option)
+        {
+            case P_SockOpt_Linger:
+            {
+                struct linger linger;
+                length = sizeof(linger);
+                rv = getsockopt(
+                    socketFD->fd, level, name, (char *) &linger, &length);
+                PR_ASSERT((-1 == rv) || (sizeof(linger) == length));
+                data->value.linger.polarity =
+                    (linger.l_onoff) ? true : false;
+                data->value.linger.linger =
+                    PR_SecondsToInterval(linger.l_linger);
+                break;
+            }
+            case P_SockOpt_Reuseaddr:
+            case P_SockOpt_Keepalive:
+            case P_SockOpt_NoDelay:
+            case P_SockOpt_Broadcast:
+            case P_SockOpt_Reuseport:
+            {
+                int value;
+                length = sizeof(int);
+                rv = getsockopt(
+                    socketFD->fd, level, name, (char*)&value, &length);
+                PR_ASSERT((-1 == rv) || (sizeof(int) == length));
+                data->value.reuse_addr = (0 == value) ? false : true;
+                break;
+            }
+            case P_SockOpt_McastLoopback:
+            {
+                uint8_t xbool;
+                length = sizeof(xbool);
+                rv = getsockopt(
+                    socketFD->fd, level, name,
+                    (char*)&xbool, &length);
+                PR_ASSERT((-1 == rv) || (sizeof(xbool) == length));
+                data->value.mcast_loopback = (0 == xbool) ? false : true;
+                break;
+            }
+            case P_SockOpt_RecvBufferSize:
+            case P_SockOpt_SendBufferSize:
+            case P_SockOpt_MaxSegment:
+            {
+                int value;
+                length = sizeof(int);
+                rv = getsockopt(
+                    socketFD->fd, level, name, (char*)&value, &length);
+                PR_ASSERT((-1 == rv) || (sizeof(int) == length));
+                data->value.recv_buffer_size = value;
+                break;
+            }
+            case P_SockOpt_IpTimeToLive:
+            case P_SockOpt_IpTypeOfService:
+            {
+                length = sizeof(unsigned);
+                rv = getsockopt(
+                    socketFD->fd, level, name,
+                    (char*)&data->value.ip_ttl, &length);
+                PR_ASSERT((-1 == rv) || (sizeof(int) == length));
+                break;
+            }
+            case P_SockOpt_McastTimeToLive:
+            {
+                uint8_t ttl;
+                length = sizeof(ttl);
+                rv = getsockopt(
+                    socketFD->fd, level, name,
+                    (char*)&ttl, &length);
+                PR_ASSERT((-1 == rv) || (sizeof(ttl) == length));
+                data->value.mcast_ttl = ttl;
+                break;
+            }
+            case P_SockOpt_AddMember:
+            case P_SockOpt_DropMember:
+            {
+                struct ip_mreq mreq;
+                length = sizeof(mreq);
+                rv = getsockopt(
+                    socketFD->fd, level, name, (char*)&mreq, &length);
+                PR_ASSERT((-1 == rv) || (sizeof(mreq) == length));
+                data->value.add_member.mcaddr.inet.ip =
+                    mreq.imr_multiaddr.s_addr;
+                data->value.add_member.ifaddr.inet.ip =
+                    mreq.imr_interface.s_addr;
+                break;
+            }
+            case P_SockOpt_McastInterface:
+            {
+                length = sizeof(data->value.mcast_if.inet.ip);
+                rv = getsockopt(
+                    socketFD->fd, level, name,
+                    (char*)&data->value.mcast_if.inet.ip, &length);
+                PR_ASSERT((-1 == rv)
+                    || (sizeof(data->value.mcast_if.inet.ip) == length));
+                break;
+            }
+            default:
+                PR_NOT_REACHED("Unknown socket option");
+                break;
+        }
+        if (-1 == rv) _PR_MD_MAP_GETSOCKOPT_ERROR(errno);
+    }
+    return (-1 == rv) ? PR_FAILURE : PR_SUCCESS;
 }
 
 
 PRStatus
-PR_SetSocketOption(PRFileDesc *socketFD, int option, const void *option_value) {
+PR_SetSocketOption(PRFileDesc *socketFD, const PRSocketOptionData *data) {
 
-    socklen_t option_value_len = sizeof(char);
-    if (setsockopt(socketFD->fd, SOL_SOCKET, option, option_value, option_value_len) == 0) {
+    int rv;
+    int32_t level, name;
+    /*
+     * P_SockOpt_Nonblocking is a special case that does not
+     * translate to a setsockopt call.
+     */
+    if (P_SockOpt_Nonblocking == data->option)
+    {
+        pt_MakeSocketNonblock(socketFD->fd);
         return PR_SUCCESS;
     }
-    return PR_FAILURE;
+    rv = _PR_MapOptionName(data->option, &level, &name);
+    if (PR_SUCCESS == rv)
+    {
+        switch (data->option)
+        {
+            case P_SockOpt_Linger:
+            {
+                struct linger linger;
+                linger.l_onoff = data->value.linger.polarity;
+                linger.l_linger = PR_IntervalToSeconds(data->value.linger.linger);
+                rv = setsockopt(
+                    socketFD->fd, level, name, (char*)&linger, sizeof(linger));
+                break;
+            }
+            case P_SockOpt_Reuseaddr:
+            case P_SockOpt_Keepalive:
+            case P_SockOpt_NoDelay:
+            case P_SockOpt_Broadcast:
+            case P_SockOpt_Reuseport:
+            {
+                int value = (data->value.reuse_addr) ? 1 : 0;
+                rv = setsockopt(
+                    socketFD->fd, level, name,
+                    (char*)&value, sizeof(int));
+#ifdef LINUX
+                /* for pt_LinuxSendFile */
+                if (name == TCP_NODELAY && rv == 0) {
+                }
+#endif
+                break;
+            }
+            case P_SockOpt_McastLoopback:
+            {
+                uint8_t xbool = data->value.mcast_loopback ? 1 : 0;
+                rv = setsockopt(
+                    socketFD->fd, level, name,
+                    (char*)&xbool, sizeof(xbool));
+                break;
+            }
+            case P_SockOpt_RecvBufferSize:
+            case P_SockOpt_SendBufferSize:
+            case P_SockOpt_MaxSegment:
+            {
+                int value = data->value.recv_buffer_size;
+                rv = setsockopt(
+                    socketFD->fd, level, name,
+                    (char*)&value, sizeof(int));
+                break;
+            }
+            case P_SockOpt_IpTimeToLive:
+            case P_SockOpt_IpTypeOfService:
+            {
+                rv = setsockopt(
+                    socketFD->fd, level, name,
+                    (char*)&data->value.ip_ttl, sizeof(unsigned));
+                break;
+            }
+            case P_SockOpt_McastTimeToLive:
+            {
+                uint8_t ttl = data->value.mcast_ttl;
+                rv = setsockopt(
+                    socketFD->fd, level, name,
+                    (char*)&ttl, sizeof(ttl));
+                break;
+            }
+            case P_SockOpt_AddMember:
+            case P_SockOpt_DropMember:
+            {
+                struct ip_mreq mreq;
+                mreq.imr_multiaddr.s_addr =
+                    data->value.add_member.mcaddr.inet.ip;
+                mreq.imr_interface.s_addr =
+                    data->value.add_member.ifaddr.inet.ip;
+                rv = setsockopt(
+                    socketFD->fd, level, name,
+                    (char*)&mreq, sizeof(mreq));
+                break;
+            }
+            case P_SockOpt_McastInterface:
+            {
+                rv = setsockopt(
+                    socketFD->fd, level, name,
+                    (char*)&data->value.mcast_if.inet.ip,
+                    sizeof(data->value.mcast_if.inet.ip));
+                break;
+            }
+            default:
+                PR_NOT_REACHED("Unknown socket option");
+                break;
+        }
+        if (-1 == rv) _PR_MD_MAP_SETSOCKOPT_ERROR(errno);
+    }
+    return (-1 == rv) ? PR_FAILURE : PR_SUCCESS;
 }
 
 
