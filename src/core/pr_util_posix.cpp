@@ -417,7 +417,7 @@ failed:
 
 
 PRStatus
-PR_GetSockName(PRFileDesc *socketFD, const PNetAddr *addr) {
+PR_GetSockName(PRFileDesc *socketFD, PNetAddr *addr) {
     socklen_t addrlen = sizeof(*addr);
     if (getsockname(socketFD->fd, (struct sockaddr*)addr, &addrlen) == 0) {
         return PR_SUCCESS;
@@ -427,7 +427,7 @@ PR_GetSockName(PRFileDesc *socketFD, const PNetAddr *addr) {
 
 
 PRStatus
-PR_GetPeerName(PRFileDesc *socketFD, const PNetAddr *addr) {
+PR_GetPeerName(PRFileDesc *socketFD, PNetAddr *addr) {
     socklen_t addrlen = sizeof(*addr);
     if (getpeername(socketFD->fd, (struct sockaddr*)addr, &addrlen) == 0) {
         return PR_SUCCESS;

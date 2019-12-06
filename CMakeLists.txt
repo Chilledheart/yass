@@ -433,10 +433,6 @@ set(files
     src/core/iobuf.cpp
     src/core/ip_address.cpp
     src/core/ip_endpoint.cpp
-    src/core/socks4_request_parser.cpp
-    src/core/socks5_request_parser.cpp
-    src/core/ss_request_parser.cpp
-    src/core/stringprintf.cpp
     src/core/pr_error.cpp
     src/core/pr_error_posix.cpp
     src/core/pr_error_windows.cpp
@@ -445,6 +441,11 @@ set(files
     src/core/pr_util_netdb.cpp
     src/core/pr_util_posix.cpp
     src/core/pr_util_windows.cpp
+    src/core/server_socket.cpp
+    src/core/socks4_request_parser.cpp
+    src/core/socks5_request_parser.cpp
+    src/core/ss_request_parser.cpp
+    src/core/stringprintf.cpp
     src/core/rand_util.cpp
     src/crypto/aead_base_decrypter.cpp
     src/crypto/aead_base_encrypter.cpp

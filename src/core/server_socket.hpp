@@ -10,6 +10,8 @@
 #ifndef H_SERVER_SOCKET
 #define H_SERVER_SOCKET
 
+#include <stdint.h>
+
 #include "core/completion_once_callback.hpp"
 
 class IPEndPoint;

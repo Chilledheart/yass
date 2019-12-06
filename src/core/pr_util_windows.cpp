@@ -437,7 +437,7 @@ failed:
 
 
 PRStatus
-PR_GetSockName(PRFileDesc *socketFD, const PNetAddr *addr) {
+PR_GetSockName(PRFileDesc *socketFD, PNetAddr *addr) {
     int addrlen = sizeof(*addr);
     if (getsockname(socketFD->fd, (struct sockaddr*)addr, &addrlen) == 0) {
         return PR_SUCCESS;
@@ -447,7 +447,7 @@ PR_GetSockName(PRFileDesc *socketFD, const PNetAddr *addr) {
 
 
 PRStatus
-PR_GetPeerName(PRFileDesc *socketFD, const PNetAddr *addr) {
+PR_GetPeerName(PRFileDesc *socketFD, PNetAddr *addr) {
     int addrlen = sizeof(*addr);
     /*
      * NT has a bug that, when invoked on a socket accepted by

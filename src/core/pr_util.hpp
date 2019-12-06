@@ -736,7 +736,7 @@ PRStatus PR_NewTCPSocketPair(PRFileDesc *fds[2]);
 **************************************************************************
 **/
 PRStatus
-PR_GetSockName(PRFileDesc *socketFD, const PNetAddr *addr);
+PR_GetSockName(PRFileDesc *socketFD, PNetAddr *addr);
 
 /*
 *************************************************************************
@@ -759,7 +759,7 @@ PR_GetSockName(PRFileDesc *socketFD, const PNetAddr *addr);
 **************************************************************************
 **/
 PRStatus
-PR_GetPeerName(PRFileDesc *socketFD, const PNetAddr *addr);
+PR_GetPeerName(PRFileDesc *socketFD, PNetAddr *addr);
 
 PRStatus
 PR_GetSocketOption(PRFileDesc *socketFD, PRSocketOptionData *data);
