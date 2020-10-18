@@ -45,7 +45,7 @@ static void http_request_reforge_to_bytes(
   std::stringstream ss;
   ss << http_method_str((http_method)p->method) << " " << url
      << " HTTP/1.1\r\n";
-  for (const std::pair<std::string, std::string> &pair : headers) {
+  for (const std::pair<std::string, std::string> pair : headers) {
     if (pair.first == "Proxy-Connection") {
       continue;
     }
