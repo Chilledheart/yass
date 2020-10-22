@@ -11,6 +11,7 @@
 #define H_SERVER_SOCKET
 
 #include <stdint.h>
+#include <memory>
 
 #include "core/completion_once_callback.hpp"
 

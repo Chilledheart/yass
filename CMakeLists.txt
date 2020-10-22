@@ -329,6 +329,10 @@ else()
             ${CMAKE_REQUIRED_INCLUDES})
         link_directories(/opt/local/lib)
     endif()
+    if (UNIX)
+        include_directories(/opt/local/include)
+        link_directories(/opt/local/lib)
+    endif()
     if (CMAKE_FIND_ROOT_PATH)
         foreach(ROOT_PATH ${CMAKE_FIND_ROOT_PATH})
             include_directories(${ROOT_PATH}/include)
@@ -372,9 +376,20 @@ int main() {
     if (NOT BOOST_FILESYSTEM_LIB)
         find_library(BOOST_FILESYSTEM_LIB boost_filesystem-mt)
     endif()
+    if (NOT BOOST_FILESYSTEM_LIB)
+        find_library(BOOST_FILESYSTEM_LIB boost_system
+      PATHS /opt/local/lib
+      NO_DEFAULT_PATH)
+    endif()
+
     find_library(BOOST_SYSTEM_LIB boost_system)
     if (NOT BOOST_SYSTEM_LIB)
         find_library(BOOST_SYSTEM_LIB boost_system-mt)
+    endif()
+    if (NOT BOOST_SYSTEM_LIB)
+        find_library(BOOST_SYSTEM_LIB boost_system
+      PATHS /opt/local/lib
+      NO_DEFAULT_PATH)
     endif()
 
     # boringssl
