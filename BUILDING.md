@@ -44,6 +44,20 @@ xcode-select --install
     jemalloc
     wxWidgets-3.2
 ```
+2. Install Homebrew and dependencies...
+```
+    boost
+    ninja
+    cmake
+    libsodium
+    glog
+    gflags
+    libsodium
+    jsoncpp
+    jemalloc
+    wxwidgets
+```
+
 3. use script to build Release App under `build` directory.
 ```
 scripts/build.py

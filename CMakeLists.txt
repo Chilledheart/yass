@@ -11,7 +11,7 @@ project(${PACKAGE_NAME} CXX C)
 if (NOT MSVC)
     ## warnings
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -Wall -Wextra -Werror -Wno-unused-parameter")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -Wno-unused-parameter")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -Wno-unused-parameter -Wno-inconsistent-missing-override")
 
     ## c/c++ standard
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -std=c99")
@@ -323,11 +323,12 @@ if (MSVC)
 else()
     # include extra paths
     if (APPLE)
-        include_directories(/opt/local/include)
+        include_directories(/opt/local/include /usr/local/include)
         set(CMAKE_REQUIRED_INCLUDES
             /opt/local/include
+            /usr/local/include
             ${CMAKE_REQUIRED_INCLUDES})
-        link_directories(/opt/local/lib)
+        link_directories(/opt/local/lib /usr/local/lib)
     endif()
     if (UNIX)
         include_directories(/opt/local/include)
@@ -589,9 +590,11 @@ endif()
 option(GUI "Build against GUI." OFF)
 
 # change wxWidgets_CONFIG_EXECUTABLE
-if (APPLE)
-    set(wxWidgets_CONFIG_EXECUTABLE
-      "/opt/local/Library/Frameworks/wxWidgets.framework/Versions/wxWidgets/3.1/bin/wx-config"
+if (APPLE OR UNIX)
+    #set(wxWidgets_CONFIG_EXECUTABLE
+    find_program(wxWidgets_CONFIG_EXECUTABLE
+      wx-config
+      PATHS /opt/local/Library/Frameworks/wxWidgets.framework/Versions/wxWidgets/3.1/bin
     )
 endif()
 

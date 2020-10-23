@@ -39,8 +39,7 @@ def get_app_name():
     return '%s.app' % APP_NAME
   return APP_NAME
 
-
-def macdeploywxwidgets(name, components = ['baseu', 'core', 'gl']):
+def macfindframework():
   lib_path = os.path.join(DEFAULT_WXWIDGETS_FRAMEWORK, 'Versions', 'wxWidgets', '3.1', 'lib')
   libs = []
   for lib_name in os.listdir(lib_path):
@@ -55,10 +54,13 @@ def macdeploywxwidgets(name, components = ['baseu', 'core', 'gl']):
       continue
     libs.append(lib)
 
-  frameworks_path = os.path.join(name, 'Contents', 'Frameworks')
+  lib_path = os.path.join(name, 'Contents', 'Frameworks')
+  return libs, lib_path
 
+def macdeploywxwidgets(name, components = ['baseu', 'core', 'gl']):
+  libs, lib_path = macfindframework()
   for lib in libs:
-    dstname = frameworks_path + '/' + os.path.basename(lib)
+    dstname = lib_path + '/' + os.path.basename(lib)
     copy_file_with_symlinks(lib, dstname)
 
     write_output(['install_name_tool', '-id', '@loader_path/%s' % os.path.basename(lib), lib])
@@ -199,7 +201,11 @@ def _postbuild_copy_libraries_xcode():
       lib = os.path.dirname(lib) + '/' + os.readlink(lib)
       dstname = frameworks_path + '/' + os.readlink(dstname)
       copy_file_with_symlinks(lib, dstname)
-  macdeploywxwidgets(APP_NAME + '.app')
+      if os.path.islink(lib):
+        lib = os.path.dirname(lib) + '/' + os.readlink(lib)
+        dstname = frameworks_path + '/' + os.readlink(dstname)
+        copy_file_with_symlinks(lib, dstname)
+  #macdeploywxwidgets(APP_NAME + '.app')
 
 
 def _postbuild_install_name_tool():
