@@ -9,6 +9,7 @@
 //
 
 #include "core/pr_util.hpp"
+#include "core/pr_log.hpp"
 
 #ifdef _WIN32
 #include <algorithm>

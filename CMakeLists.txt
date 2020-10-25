@@ -125,6 +125,9 @@ else()
     add_definitions(-D_SCL_SECURE_NO_DEPRECATE)
     add_definitions(-D_UNICODE)
     add_definitions(-D_WIN32_WINNT=0x0501)
+    add_definitions(-DXP_OS2)
+    add_definitions(-D_WIN32)
+    add_definitions(-DWIN32)
 
     ## not omit stack frame pointer
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Oy-")
@@ -452,6 +455,7 @@ set(files
     src/core/pr_error.cpp
     src/core/pr_error_posix.cpp
     src/core/pr_error_windows.cpp
+    src/core/pr_log.cpp
     src/core/pr_util_thread.cpp
     src/core/pr_util_inrval.cpp
     src/core/pr_util_netdb.cpp
@@ -511,6 +515,7 @@ set(hfiles
     src/core/socks5.hpp
     src/core/socks5_request.hpp
     src/core/socks5_request_parser.hpp
+    src/core/pr_log.hpp
     src/core/ss.hpp
     src/core/ss_request.hpp
     src/core/ss_request_parser.hpp

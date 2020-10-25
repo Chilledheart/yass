@@ -12,6 +12,7 @@
 
 #include "core/pr_util.hpp"
 #include "core/pr_error.hpp"
+#include "core/pr_log.hpp"
 #include <errno.h>
 #include <windows.h>
 #include <stdint.h>

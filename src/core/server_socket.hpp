@@ -26,11 +26,13 @@ class ServerSocket {
   // listening.
   virtual int Listen(const IPEndPoint& address, int backlog) = 0;
 
+#if 0
   // Binds the socket with address and port, and starts listening. It expects
   // a valid IPv4 or IPv6 address. Otherwise, it returns ERR_ADDRESS_INVALID.
   virtual int ListenWithAddressAndPort(const std::string& address_string,
                                        uint16_t port,
                                        int backlog);
+#endif
 
   // Gets current address the socket is bound to.
   virtual int GetLocalAddress(IPEndPoint* address) const = 0;

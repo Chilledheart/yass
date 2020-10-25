@@ -69,7 +69,7 @@ scripts/build.py
 
 2. Run [vcpkg][vcpkg] to install required dependencies.
 ```
-vcpkg install boost-asio:x86-windows-static boost-filesystem:x86-windows-static boost-system:x86-windows-static glog:x86-windows-static gflags:x86-windows-static libsodium:x86-windows-static jsoncpp:x86-windows-static wxwidgets:x86-windows-static
+vcpkg install boost-asio:x86-windows-static-xp boost-filesystem:x86-windows-static-xp boost-system:x86-windows-static-xp glog:x86-windows-static-xp gflags:x86-windows-static-xp libsodium:x86-windows-static-xp jsoncpp:x86-windows-static-xp wxwidgets:x86-windows-static-xp
 ```
 3. use script to build Release App under `build` directory.
 ```

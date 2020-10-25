@@ -11,6 +11,8 @@
 #define PR_ERROR
 
 #include <stdint.h>
+#include <assert.h>
+
 
 /*
  *
