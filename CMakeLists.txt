@@ -376,16 +376,6 @@ int main() {
     find_library(JSONCPP_LIB jsoncpp)
     add_definitions(-DJSON_USE_EXCEPTION=0)
 
-    find_library(BOOST_FILESYSTEM_LIB boost_filesystem)
-    if (NOT BOOST_FILESYSTEM_LIB)
-        find_library(BOOST_FILESYSTEM_LIB boost_filesystem-mt)
-    endif()
-    if (NOT BOOST_FILESYSTEM_LIB)
-        find_library(BOOST_FILESYSTEM_LIB boost_system
-      PATHS /opt/local/lib
-      NO_DEFAULT_PATH)
-    endif()
-
     find_library(BOOST_SYSTEM_LIB boost_system)
     if (NOT BOOST_SYSTEM_LIB)
         find_library(BOOST_SYSTEM_LIB boost_system-mt)
@@ -416,7 +406,6 @@ set(SUPPORT_LIBS
     ${GLOG_LIB}
     ${GFLAGS_LIB}
     ${JSONCPP_LIB}
-    ${BOOST_FILESYSTEM_LIB}
     ${BOOST_SYSTEM_LIB}
     ${SYSTEM_LIBS}
     )

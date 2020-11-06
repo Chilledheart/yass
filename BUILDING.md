@@ -36,6 +36,7 @@ xcode-select --install
 2. Install [MacPorts] and dependencies...
 ```
     boost
+    ninja
     cmake
     google-glog
     gflags
@@ -49,7 +50,6 @@ xcode-select --install
     boost
     ninja
     cmake
-    libsodium
     glog
     gflags
     libsodium

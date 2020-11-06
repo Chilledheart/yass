@@ -15,10 +15,11 @@
 
 #ifndef _WIN32
 
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
-#include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/path.hpp>
 #include <json/json.h>
 #include <memory>
@@ -31,67 +32,67 @@
 
 DEFINE_string(configfile, DEFAULT_CONFIGFILE, "load configs from file");
 
-inline std::string GetEnv(const char *name) {
-#ifdef _WIN32
-  char buf[4096];
-  size_t len = 0;
-  if (getenv_s(&len, buf, name) != 0 || len <= 1) {
-    return std::string();
-  }
 
-  return std::string(buf, len - 1);
-#else
-  return getenv(name);
-#endif
-}
-
-inline boost::filesystem::path ExpandUser(const std::string &file_path) {
+std::string ExpandUser(const std::string &file_path) {
   std::string real_path = file_path;
 
-  if (real_path.size() >= 1 && real_path[0] == '~') {
-#ifdef _WIN32
-    std::string home = GetEnv("USERPROFILE");
-#else
-    std::string home = GetEnv("HOME");
-#endif
-    return boost::filesystem::path(home) / real_path.substr(2);
+  if (!real_path.empty() && real_path[0] == '~') {
+    std::string home = getenv("HOME");
+    return home + "/" + real_path.substr(2);
   }
 
-  return boost::filesystem::path(real_path);
+  return real_path;
 }
 
-#ifdef _WIN32
-inline bool is_directory(const boost::filesystem::path &p) {
-  DWORD dwAttrs = ::GetFileAttributesW(p.wstring().c_str());
-  if (dwAttrs == INVALID_FILE_ATTRIBUTES) {
-    return false;
-  }
-  return dwAttrs & FILE_ATTRIBUTE_DIRECTORY;
-}
-
-inline bool create_directory(const boost::filesystem::path &p) {
-  return ::CreateDirectoryW(p.wstring().c_str(), nullptr);
-}
-#else
-inline bool is_directory(const boost::filesystem::path &p) {
+bool is_directory(const std::string &path) {
   struct stat Stat;
-  std::string pStr = p.string();
-  if (::stat(pStr.c_str(), &Stat) != 0) {
+  if (::stat(path.c_str(), &Stat) != 0) {
     return false;
   }
   return S_ISDIR(Stat.st_mode);
 }
 
-inline bool create_directory(const boost::filesystem::path &p) {
-  std::string pStr = p.string();
-  return ::mkdir(pStr.c_str(), 0700) != 0;
+bool create_directory(const std::string &path) {
+  return ::mkdir(path.c_str(), 0700) != 0;
 }
-#endif
 
-inline bool CreateConfigDirectory(const std::string &configdir) {
-  boost::filesystem::path real_path = ExpandUser(configdir);
+bool CreateConfigDirectory(const std::string &configdir) {
+  std::string real_path = ExpandUser(configdir);
 
   if (!is_directory(real_path) && !create_directory(real_path)) {
+    return false;
+  }
+  return true;
+}
+
+inline bool ReadFile(const std::string &path, std::string* context) {
+  char buf[4096];
+  int fd = ::open(path.c_str(), O_RDONLY);
+  if (fd < 0) {
+    LOG(WARNING) << "configure file does not exist: " << real_path_;
+    return false;
+  }
+  ssize_t ret = ::read(fd, buf, sizeof(buf) - 1);
+  close(fd);
+  if (ret <= 0) {
+    LOG(WARNING) << "configure file failed to read: " << real_path_;
+    return false;
+  }
+  buf[ret] = '\0';
+  *context = buf;
+  return true;
+}
+
+inline bool WriteFile(const std::string &path, const std::string &context) {
+  int fd = ::open(path.c_str(), O_RDONLY);
+  if (fd < 0) {
+    LOG(WARNING) << "configure file does not exist: " << real_path_;
+    return false;
+  }
+  ssize_t ret = ::write(fd, context.c_str(), context.size()+1);
+  close(fd);
+  if (ret != static_cast<long>(context.size()) + 1) {
+    LOG(WARNING) << "configure file failed to write: " << real_path_;
     return false;
   }
   return true;
@@ -105,23 +106,23 @@ public:
 
   bool Open(bool dontread) override {
     if (!CreateConfigDirectory(DEFAULT_CONFIGDIR)) {
-      LOG(WARNING) << "configure dir does not exist: " << DEFAULT_CONFIGDIR;
+      LOG(WARNING) << "configure dir could not create: " << DEFAULT_CONFIGDIR;
       return false;
     }
 
-    boost::filesystem::path real_path = ExpandUser(FLAGS_configfile);
-    fs_.open(real_path, dontread ? std::ios_base::out : std::ios_base::in);
+    real_path_ = ExpandUser(FLAGS_configfile);
 
     if (!dontread) {
-      if (!fs_.is_open()) {
-        LOG(WARNING) << "configure file does not exist: " << real_path;
+      std::string context;
+      if (!ReadFile(real_path_, &context)) {
         return false;
       }
       Json::CharReaderBuilder builder;
       builder["collectComments"] = false;
       JSONCPP_STRING errs;
+      const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
 
-      if (!Json::parseFromStream(builder, fs_, &root_, &errs)) {
+      if (!reader->parse(context.c_str(), context.c_str() + context.size() + 1, &root_, &errs)) {
         LOG(WARNING) << "bad configuration: " << errs;
         return false;
       }
@@ -134,13 +135,10 @@ public:
     Json::StreamWriterBuilder builder;
     builder["commentStyle"] = "None";
     builder["indentation"] = "   "; // or whatever you like
-    std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
-    if (writer->write(root_, &fs_) != 0) {
-      return false;
+    const std::string context = Json::writeString(builder, root_);
+    if (!WriteFile(real_path_, context)){
+      LOG(WARNING) << "failed to write: " << context;
     }
-
-    fs_.flush();
-    return true;
   }
 
   bool Read(const std::string &key, std::string *value) override {
@@ -214,8 +212,8 @@ public:
   }
 
 private:
+  std::string real_path_;
   Json::Value root_;
-  boost::filesystem::fstream fs_;
 };
 
 } // namespace config
