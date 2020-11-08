@@ -668,6 +668,16 @@ if (MSVC)
     optimized ${ZLIB_RELEASE_LIB}
     )
 
+  # find wxregex library
+  find_library(WX_REGEX_RELEASE_LIB wxregexu
+    PATHS ${wxWidgets_LIB_DIR} NO_DEFAULT_PATH)
+  find_library(WX_REGEX_DEBUG_LIB wxregexud
+    PATHS ${wxWidgets_LIB_DEBUG_DIR} NO_DEFAULT_PATH)
+  set(WX_REGEX_LIB
+    debug ${WX_REGEX_DEBUG_LIB}
+    optimized ${WX_REGEX_RELEASE_LIB}
+    )
+
   # find wxbase library
   find_library(WX_BASE_RELEASE_LIB wxbase31u
     PATHS ${wxWidgets_LIB_DIR} NO_DEFAULT_PATH)
@@ -703,6 +713,7 @@ if (MSVC)
       ${COMCTL32_LIB}
       ${RPCRT4_LIB}
       ${UUID_LIB}
+      ${WX_REGEX_LIB}
       ${WX_BASE_LIB}
       ${WX_CORE_LIB})
 

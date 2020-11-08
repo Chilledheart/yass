@@ -270,15 +270,15 @@ def generate_buildscript(configuration_type):
   print 'generate build scripts...(%s)' % configuration_type
   cmake_args = ['-DGUI=ON', '-DCLI=ON', '-DSERVER=ON']
   if sys.platform == 'win32':
-    cmake_args.extend(['-G', 'Visual Studio 15 2017'])
+    cmake_args.extend(['-G', 'Visual Studio 15 2017 Win64'])
     cmake_args.extend(['-DCMAKE_TOOLCHAIN_FILE=%s\\scripts\\buildsystems\\vcpkg.cmake' % VCPKG_DIR])
-    cmake_args.extend(['-DCMAKE_GENERATOR_TOOLSET=v141_xp'])
-    cmake_args.extend(['-DCMAKE_VS_PLATFORM_TOOLSET=v141_xp'])
+    cmake_args.extend(['-DCMAKE_GENERATOR_TOOLSET=v141'])
+    cmake_args.extend(['-DCMAKE_VS_PLATFORM_TOOLSET=v141'])
     cmake_args.extend(['-DVCPKG_CRT_LINKAGE=static'])
     cmake_args.extend(['-DVCPKG_LIBRARY_LINKAGE=static'])
-    cmake_args.extend(['-DVCPKG_TARGET_TRIPLET=x86-windows-static-xp'])
+    cmake_args.extend(['-DVCPKG_TARGET_TRIPLET=x64-windows-static'])
     cmake_args.extend(['-DVCPKG_ROOT_DIR=%s' % VCPKG_DIR])
-    cmake_args.extend(['-DBORINGSSL=ON'])
+    cmake_args.extend(['-DBORINGSSL=OFF'])
   else:
     cmake_args.extend(['-G', 'Ninja'])
     cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])
