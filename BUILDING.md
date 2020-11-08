@@ -10,7 +10,6 @@ apt-get install -y build-essential
 apt-get install -y \
     cmake \
     ninja-build \
-    libjemalloc-dev \
     libboost-all-dev \
     libgoogle-glog-dev \
     libgflags-dev \
@@ -42,7 +41,6 @@ xcode-select --install
     gflags
     libsodium
     jsoncpp
-    jemalloc
     wxWidgets-3.2
 ```
 2. Install Homebrew and dependencies...
@@ -54,7 +52,6 @@ xcode-select --install
     gflags
     libsodium
     jsoncpp
-    jemalloc
     wxwidgets
 ```
 

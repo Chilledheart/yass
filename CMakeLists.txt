@@ -362,7 +362,6 @@ int main() {
         add_definitions(-DHAVE_SOCKETPAIR)
     endif()
 
-    find_library(JEMALLOC_LIB jemalloc)
     find_library(GLOG_LIB glog)
     find_library(GFLAGS_LIB gflags)
 
@@ -417,7 +416,6 @@ if (NOT MSAN AND NOT ASAN AND NOT TSAN AND NOT UBSAN)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,defs -Wl,--as-needed")
     endif()
     set(SUPPORT_LIBS
-        ${JEMALLOC_LIB}
         ${SUPPORT_LIBS})
 endif()
 
