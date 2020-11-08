@@ -43,7 +43,7 @@ xcode-select --install
     jsoncpp
     wxWidgets-3.2
 ```
-2. Install Homebrew and dependencies...
+2. Install [HomeBrew] and dependencies...
 ```
     boost
     ninja
@@ -73,5 +73,10 @@ vcpkg install boost-asio:x64-windows-static boost-filesystem:x64-windows-static 
 scripts/build.py
 ```
 
+## boringssl
+
+For boringssl, you should only need crypto target.
+
 [vcpkg]: https://github.com/microsoft/vcpkg
 [MacPorts]: https://www.macports.org/install.php
+[HomeBrew]: https://brew.sh

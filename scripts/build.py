@@ -278,7 +278,7 @@ def generate_buildscript(configuration_type):
     cmake_args.extend(['-DVCPKG_LIBRARY_LINKAGE=static'])
     cmake_args.extend(['-DVCPKG_TARGET_TRIPLET=x64-windows-static'])
     cmake_args.extend(['-DVCPKG_ROOT_DIR=%s' % VCPKG_DIR])
-    cmake_args.extend(['-DBORINGSSL=OFF'])
+    cmake_args.extend(['-DBORINGSSL=ON'])
   else:
     cmake_args.extend(['-G', 'Ninja'])
     cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])
