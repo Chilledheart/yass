@@ -69,13 +69,13 @@ inline bool ReadFile(const std::string &path, std::string* context) {
   char buf[4096];
   int fd = ::open(path.c_str(), O_RDONLY);
   if (fd < 0) {
-    LOG(WARNING) << "configure file does not exist: " << real_path_;
+    LOG(WARNING) << "configure file does not exist: " << path;
     return false;
   }
   ssize_t ret = ::read(fd, buf, sizeof(buf) - 1);
   close(fd);
   if (ret <= 0) {
-    LOG(WARNING) << "configure file failed to read: " << real_path_;
+    LOG(WARNING) << "configure file failed to read: " << path;
     return false;
   }
   buf[ret] = '\0';
@@ -86,13 +86,13 @@ inline bool ReadFile(const std::string &path, std::string* context) {
 inline bool WriteFile(const std::string &path, const std::string &context) {
   int fd = ::open(path.c_str(), O_RDONLY);
   if (fd < 0) {
-    LOG(WARNING) << "configure file does not exist: " << real_path_;
+    LOG(WARNING) << "configure file does not exist: " << path;
     return false;
   }
   ssize_t ret = ::write(fd, context.c_str(), context.size()+1);
   close(fd);
   if (ret != static_cast<long>(context.size()) + 1) {
-    LOG(WARNING) << "configure file failed to write: " << real_path_;
+    LOG(WARNING) << "configure file failed to write: " << path;
     return false;
   }
   return true;
@@ -110,11 +110,11 @@ public:
       return false;
     }
 
-    real_path_ = ExpandUser(FLAGS_configfile);
+    path_ = ExpandUser(FLAGS_configfile);
 
     if (!dontread) {
       std::string context;
-      if (!ReadFile(real_path_, &context)) {
+      if (!ReadFile(path_, &context)) {
         return false;
       }
       Json::CharReaderBuilder builder;
@@ -136,9 +136,11 @@ public:
     builder["commentStyle"] = "None";
     builder["indentation"] = "   "; // or whatever you like
     const std::string context = Json::writeString(builder, root_);
-    if (!WriteFile(real_path_, context)){
+    if (!WriteFile(path_, context)){
       LOG(WARNING) << "failed to write: " << context;
+      return false;
     }
+    return true;
   }
 
   bool Read(const std::string &key, std::string *value) override {
@@ -212,7 +214,7 @@ public:
   }
 
 private:
-  std::string real_path_;
+  std::string path_;
   Json::Value root_;
 };
 
