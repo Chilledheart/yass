@@ -11,12 +11,10 @@
 #ifndef H_CORE_SOCKS4_REQUEST_PARSER
 #define H_CORE_SOCKS4_REQUEST_PARSER
 
-#include <boost/system/error_code.hpp>
 #include <cstdlib>
 
 #include "core/logging.hpp"
-
-#include "socks4_request.hpp"
+#include "core/socks4_request.hpp"
 
 namespace socks4 {
 class request;

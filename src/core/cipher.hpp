@@ -16,6 +16,10 @@
 #include <string>
 #include <utility>
 
+#ifdef _WIN32
+#include <malloc.h>
+#endif
+
 #include "core/iobuf.hpp"
 #include "protocol.hpp"
 #include "crypto/crypter_export.hpp"

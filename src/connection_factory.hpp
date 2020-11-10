@@ -11,12 +11,12 @@
 #ifndef H_CONNECTION_FACTORY
 #define H_CONNECTION_FACTORY
 
-#include <boost/asio/buffer.hpp>
-#include <boost/asio/error.hpp>
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/ip/udp.hpp>
-#include <boost/system/error_code.hpp>
+#include <asio/buffer.hpp>
+#include <asio/error.hpp>
+#include <asio/io_context.hpp>
+#include <asio/ip/tcp.hpp>
+#include <asio/ip/udp.hpp>
+#include <asio/error_code.hpp>
 #include <deque>
 #include <functional>
 #include <utility>
@@ -27,22 +27,22 @@
 
 template <class T> class ServiceFactory {
 public:
-  ServiceFactory(boost::asio::io_context &io_context,
-                 const boost::asio::ip::tcp::endpoint &remote_endpoint)
+  ServiceFactory(asio::io_context &io_context,
+                 const asio::ip::tcp::endpoint &remote_endpoint)
       : io_context_(io_context), remote_endpoint_(remote_endpoint) {}
 
-  boost::system::error_code listen(const boost::asio::ip::tcp::endpoint &endpoint) {
+  asio::error_code listen(const asio::ip::tcp::endpoint &endpoint) {
     endpoint_ = endpoint;
-    acceptor_ = std::make_unique<boost::asio::ip::tcp::acceptor>(io_context_);
+    acceptor_ = std::make_unique<asio::ip::tcp::acceptor>(io_context_);
 
-    boost::system::error_code ec = boost::system::error_code();
+    asio::error_code ec = asio::error_code();
     acceptor_->open(endpoint.protocol(), ec);
     if (ec) {
       return ec;
     }
     if (FLAGS_reuse_port) {
       acceptor_->set_option(
-          boost::asio::ip::tcp::acceptor::reuse_address(true), ec);
+          asio::ip::tcp::acceptor::reuse_address(true), ec);
     }
     if (ec) {
       return ec;
@@ -64,7 +64,7 @@ public:
   void stop() {
     std::vector<std::shared_ptr<T>> conns = std::move(connections_);
     if (acceptor_) {
-      boost::system::error_code ec = boost::system::error_code();
+      asio::error_code ec = asio::error_code();
       acceptor_->close(ec);
       acceptor_.reset();
     }
@@ -85,8 +85,8 @@ private:
                                       std::placeholders::_2));
   }
 
-  void handleAccept(std::shared_ptr<T> conn, boost::system::error_code error,
-                    boost::asio::ip::tcp::socket socket) {
+  void handleAccept(std::shared_ptr<T> conn, asio::error_code error,
+                    asio::ip::tcp::socket socket) {
     if (!error) {
       conn->on_accept(std::move(socket), endpoint_, peer_endpoint_);
       conn->set_disconnect_cb(
@@ -109,13 +109,13 @@ private:
   }
 
 private:
-  boost::asio::io_context &io_context_;
-  const boost::asio::ip::tcp::endpoint remote_endpoint_;
+  asio::io_context &io_context_;
+  const asio::ip::tcp::endpoint remote_endpoint_;
 
-  boost::asio::ip::tcp::endpoint endpoint_;
-  boost::asio::ip::tcp::endpoint peer_endpoint_;
+  asio::ip::tcp::endpoint endpoint_;
+  asio::ip::tcp::endpoint peer_endpoint_;
 
-  std::unique_ptr<boost::asio::ip::tcp::acceptor> acceptor_;
+  std::unique_ptr<asio::ip::tcp::acceptor> acceptor_;
   std::vector<std::shared_ptr<T>> connections_;
 };
 

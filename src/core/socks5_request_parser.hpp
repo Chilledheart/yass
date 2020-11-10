@@ -11,12 +11,10 @@
 #ifndef H_CORE_SOCKS5_REQUEST_PARSER
 #define H_CORE_SOCKS5_REQUEST_PARSER
 
-#include <boost/system/error_code.hpp>
 #include <cstdlib>
 
 #include "core/logging.hpp"
-
-#include "socks5_request.hpp"
+#include "core/socks5_request.hpp"
 
 namespace socks5 {
 class method_select_request;
@@ -133,8 +131,8 @@ public:
       switch (req.address_type()) {
       case ipv4:
         memcpy(&req.atyp_req_.address4, &*i,
-               sizeof(boost::asio::ip::address_v4::bytes_type));
-        i += sizeof(boost::asio::ip::address_v4::bytes_type);
+               sizeof(asio::ip::address_v4::bytes_type));
+        i += sizeof(asio::ip::address_v4::bytes_type);
 
         memcpy(&req.atyp_req_.port_high_byte, &*i, sizeof(uint8_t));
         i += sizeof(uint8_t);
@@ -159,8 +157,8 @@ public:
         break;
       case ipv6:
         memcpy(&req.atyp_req_.address6, &*i,
-               sizeof(boost::asio::ip::address_v6::bytes_type));
-        i += sizeof(boost::asio::ip::address_v4::bytes_type);
+               sizeof(asio::ip::address_v6::bytes_type));
+        i += sizeof(asio::ip::address_v4::bytes_type);
 
         memcpy(&req.atyp_req_.port_high_byte, &*i, sizeof(uint8_t));
         i += sizeof(uint8_t);

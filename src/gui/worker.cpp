@@ -8,21 +8,26 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 #include "worker.hpp"
+
 #include "yass.hpp"
 
-using boost::asio::ip::tcp;
+using asio::ip::tcp;
 using namespace socks5;
 
-static tcp::endpoint resolveEndpoint(boost::asio::io_context &io_context,
+static tcp::endpoint resolveEndpoint(asio::io_context &io_context,
                                      const std::string &host, uint16_t port) {
-  boost::system::error_code ec;
-  boost::asio::ip::tcp::resolver resolver(io_context);
+  asio::error_code ec;
+  asio::ip::tcp::resolver resolver(io_context);
   auto endpoints = resolver.resolve(host, std::to_string(port), ec);
+  if (ec) {
+    LOG(WARNING) << "name resolved failed due to: " << ec;
+    // TODO
+  }
   return endpoints->endpoint();
 }
 
 Worker::Worker()
-    : work_guard_(boost::asio::make_work_guard(io_context_)),
+    : work_guard_(asio::make_work_guard(io_context_)),
       thread_(std::bind(&Worker::WorkFunc, this)) {}
 
 Worker::~Worker() {
@@ -44,7 +49,7 @@ void Worker::Start(bool quiet) {
     bool successed = false;
     std::string msg;
 
-    boost::system::error_code ec = socks5_server_->listen(endpoint_);
+    asio::error_code ec = socks5_server_->listen(endpoint_);
 
     if (quiet) {
       return;
@@ -80,7 +85,7 @@ void Worker::Stop(bool quiet) {
 }
 
 void Worker::WorkFunc() {
-  boost::system::error_code ec = boost::system::error_code();
+  asio::error_code ec = asio::error_code();
   io_context_.run(ec);
 
   if (ec) {

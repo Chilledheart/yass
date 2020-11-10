@@ -69,8 +69,8 @@ struct address_type_domain_header {
 struct address_type_header {
   uint8_t address_type;
   union {
-    boost::asio::ip::address_v4::bytes_type address4;
-    boost::asio::ip::address_v6::bytes_type address6;
+    asio::ip::address_v4::bytes_type address4;
+    asio::ip::address_v6::bytes_type address6;
     address_type_domain_header domain;
   };
   uint8_t port_high_byte;

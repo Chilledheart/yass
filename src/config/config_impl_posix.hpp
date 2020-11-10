@@ -20,7 +20,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <boost/filesystem/path.hpp>
 #include <json/json.h>
 #include <memory>
 #include <string>

@@ -12,7 +12,7 @@
 #define H_CORE_SOCKS4_REQUEST
 
 #include "protocol.hpp"
-#include "socks4.hpp"
+#include "core/socks4.hpp"
 
 #include <stdint.h>
 
@@ -36,13 +36,13 @@ public:
   uint8_t version() const { return req_.version; }
   uint8_t command() const { return req_.command; }
 
-  const boost::asio::ip::address_v4::bytes_type &address() const {
+  const asio::ip::address_v4::bytes_type &address() const {
     return req_.address;
   }
 
-  boost::asio::ip::tcp::endpoint endpoint() const {
-    boost::asio::ip::address_v4 address(req_.address);
-    return boost::asio::ip::tcp::endpoint(address, port());
+  asio::ip::tcp::endpoint endpoint() const {
+    asio::ip::address_v4 address(req_.address);
+    return asio::ip::tcp::endpoint(address, port());
   }
 
   bool is_socks4a() const {

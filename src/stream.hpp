@@ -11,8 +11,8 @@
 #ifndef H_STREAM
 #define H_STREAM
 
-#include <boost/asio/read.hpp>
-#include <boost/asio/write.hpp>
+#include <asio/read.hpp>
+#include <asio/write.hpp>
 #include <deque>
 
 #include "core/logging.hpp"
@@ -24,8 +24,8 @@ public:
   /// \param io_context
   /// \param endpoint
   /// \param channel
-  stream(boost::asio::io_context &io_context,
-         boost::asio::ip::tcp::endpoint endpoint,
+  stream(asio::io_context &io_context,
+         asio::ip::tcp::endpoint endpoint,
          const std::shared_ptr<Channel> &channel)
       : endpoint_(endpoint), socket_(io_context), channel_(channel) {
     assert(channel && "channel must defined to use with stream");
@@ -61,8 +61,8 @@ public:
     read_inprogress_ = true;
 
     socket_.async_read_some(
-        boost::asio::mutable_buffer(buf->mutable_data(), buf->capacity()),
-        [this, buf, channel](const boost::system::error_code &error,
+        asio::mutable_buffer(buf->mutable_data(), buf->capacity()),
+        [this, buf, channel](const asio::error_code &error,
                              std::size_t bytes_transferred) -> std::size_t {
           if (bytes_transferred || error) {
             read_inprogress_ = false;
@@ -75,14 +75,14 @@ public:
 
   void start_write(std::shared_ptr<IOBuf> buf) {
     std::shared_ptr<Channel> channel = std::shared_ptr<Channel>(channel_);
-    boost::asio::async_write(
-        socket_, boost::asio::const_buffer(buf->data(), buf->length()),
+    asio::async_write(
+        socket_, asio::const_buffer(buf->data(), buf->length()),
         std::bind(&stream::on_write, this, channel, buf, std::placeholders::_1,
                   std::placeholders::_2));
   }
 
   void close() {
-    boost::system::error_code ec;
+    asio::error_code ec;
     socket_.close(ec);
     if (ec) {
       LOG(WARNING) << "close() error: " << ec;
@@ -91,7 +91,7 @@ public:
 
 private:
   void on_connect(const std::shared_ptr<Channel> &channel,
-                  boost::system::error_code error) {
+                  asio::error_code error) {
     if (error) {
       channel->disconnected(error);
       return;
@@ -101,7 +101,7 @@ private:
   }
 
   void on_read(const std::shared_ptr<Channel> &channel,
-               std::shared_ptr<IOBuf> buf, boost::system::error_code error,
+               std::shared_ptr<IOBuf> buf, asio::error_code error,
                size_t bytes_transferred) {
     rbytes_transferred_ += bytes_transferred;
     buf->append(bytes_transferred);
@@ -123,7 +123,7 @@ private:
   }
 
   void on_write(const std::shared_ptr<Channel> &channel,
-                std::shared_ptr<IOBuf> buf, boost::system::error_code error,
+                std::shared_ptr<IOBuf> buf, asio::error_code error,
                 size_t bytes_transferred) {
     wbytes_transferred_ += bytes_transferred;
 
@@ -142,15 +142,15 @@ private:
   }
 
   void on_disconnect(const std::shared_ptr<Channel> &channel,
-                     boost::system::error_code error) {
+                     asio::error_code error) {
     VLOG(2) << "data transfer failed with " << endpoint_ << " due to " << error;
     connected_ = false;
     channel->disconnected(error);
   }
 
 private:
-  boost::asio::ip::tcp::endpoint endpoint_;
-  boost::asio::ip::tcp::socket socket_;
+  asio::ip::tcp::endpoint endpoint_;
+  asio::ip::tcp::socket socket_;
 
   std::weak_ptr<Channel> channel_;
   bool connected_;

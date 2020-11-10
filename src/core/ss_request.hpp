@@ -12,7 +12,7 @@
 #define H_CORE_SS_REQUEST
 
 #include "protocol.hpp"
-#include "ss.hpp"
+#include "core/ss.hpp"
 
 #include <stdint.h>
 namespace ss {
@@ -35,17 +35,17 @@ public:
     i += sizeof(port);
   }
 
-  request(const boost::asio::ip::tcp::endpoint &endpoint) {
-    boost::asio::ip::address addr = endpoint.address();
+  request(const asio::ip::tcp::endpoint &endpoint) {
+    asio::ip::address addr = endpoint.address();
     uint16_t port = endpoint.port();
     uint8_t *i = data();
     if (addr.is_v4()) {
-      boost::asio::ip::address_v4::bytes_type bytes = addr.to_v4().to_bytes();
+      asio::ip::address_v4::bytes_type bytes = addr.to_v4().to_bytes();
       *i++ = ipv4;
       memcpy(i, &bytes, sizeof(bytes));
       i += sizeof(bytes);
     } else if (addr.is_v6()) {
-      boost::asio::ip::address_v6::bytes_type bytes = addr.to_v6().to_bytes();
+      asio::ip::address_v6::bytes_type bytes = addr.to_v6().to_bytes();
       *i++ = ipv6;
       memcpy(i, &bytes, sizeof(bytes));
       i += sizeof(bytes);
@@ -68,36 +68,36 @@ public:
   size_t address_type_size() const {
     switch (address_type()) {
     case ipv4:
-      return sizeof(uint8_t) + sizeof(boost::asio::ip::address_v4::bytes_type) +
+      return sizeof(uint8_t) + sizeof(asio::ip::address_v4::bytes_type) +
              sizeof(uint16_t);
     case domain:
       return sizeof(uint8_t) + sizeof(uint8_t) + atyp_req_.domain.domain_name_len +
              sizeof(uint16_t);
     case ipv6:
-      return sizeof(uint8_t) + sizeof(boost::asio::ip::address_v6::bytes_type) +
+      return sizeof(uint8_t) + sizeof(asio::ip::address_v6::bytes_type) +
              sizeof(uint16_t);
     default:
       return 0;
     }
   }
 
-  boost::asio::ip::tcp::endpoint endpoint() const {
-    boost::asio::ip::tcp::endpoint endpoint;
+  asio::ip::tcp::endpoint endpoint() const {
+    asio::ip::tcp::endpoint endpoint;
     if (address_type() == ipv4) {
-      boost::asio::ip::address_v4 address(atyp_req_.address4);
-      endpoint = boost::asio::ip::tcp::endpoint(address, port());
+      asio::ip::address_v4 address(atyp_req_.address4);
+      endpoint = asio::ip::tcp::endpoint(address, port());
     } else if (address_type() == ipv6) {
-      boost::asio::ip::address_v6 address(atyp_req_.address6);
-      endpoint = boost::asio::ip::tcp::endpoint(address, port());
+      asio::ip::address_v6 address(atyp_req_.address6);
+      endpoint = asio::ip::tcp::endpoint(address, port());
     }
     return endpoint;
   }
 
-  const boost::asio::ip::address_v4::bytes_type &address4() const {
+  const asio::ip::address_v4::bytes_type &address4() const {
     return atyp_req_.address4;
   }
 
-  const boost::asio::ip::address_v6::bytes_type &address6() const {
+  const asio::ip::address_v6::bytes_type &address6() const {
     return atyp_req_.address6;
   }
 

@@ -120,11 +120,11 @@ else()
     add_definitions(-DNOMINMAX)
     add_definitions(-DUNICODE)
     add_definitions(-DWIN32_LEAN_AND_MEAN)
-    add_definitions(-DWINVER=0x0501)
+    add_definitions(-DWINVER=0x0601)
     add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
     add_definitions(-D_SCL_SECURE_NO_DEPRECATE)
     add_definitions(-D_UNICODE)
-    add_definitions(-D_WIN32_WINNT=0x0501)
+    add_definitions(-D_WIN32_WINNT=0x0601)
     add_definitions(-DXP_OS2)
     add_definitions(-D_WIN32)
     add_definitions(-DWIN32)
@@ -375,16 +375,6 @@ int main() {
     find_library(JSONCPP_LIB jsoncpp)
     add_definitions(-DJSON_USE_EXCEPTION=0)
 
-    find_library(BOOST_SYSTEM_LIB boost_system)
-    if (NOT BOOST_SYSTEM_LIB)
-        find_library(BOOST_SYSTEM_LIB boost_system-mt)
-    endif()
-    if (NOT BOOST_SYSTEM_LIB)
-        find_library(BOOST_SYSTEM_LIB boost_system
-      PATHS /opt/local/lib
-      NO_DEFAULT_PATH)
-    endif()
-
     # boringssl
     find_library(BORINGSSL_CRYPTO_LIB crypto
       PATHS ${boringssl_DIR}/build/crypto
@@ -405,7 +395,6 @@ set(SUPPORT_LIBS
     ${GLOG_LIB}
     ${GFLAGS_LIB}
     ${JSONCPP_LIB}
-    ${BOOST_SYSTEM_LIB}
     ${SYSTEM_LIBS}
     )
 
@@ -418,6 +407,10 @@ if (NOT MSAN AND NOT ASAN AND NOT TSAN AND NOT UBSAN)
     set(SUPPORT_LIBS
         ${SUPPORT_LIBS})
 endif()
+
+# asio
+add_definitions(-DASIO_STANDALONE)
+include_directories(../asio-1.18.0/include)
 
 # *****************************************************************************************
 #           Source code

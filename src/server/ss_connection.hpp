@@ -13,18 +13,16 @@
 
 #include "channel.hpp"
 #include "connection.hpp"
-#include "core/iobuf.hpp"
 #include "protocol.hpp"
+#include "stream.hpp"
+#include "core/iobuf.hpp"
 #include "core/ss.hpp"
 #include "core/ss_request.hpp"
 #include "core/ss_request_parser.hpp"
-#include "stream.hpp"
+#include "core/logging.hpp"
 
-#include <boost/asio/read.hpp>
-#include <boost/asio/write.hpp>
 #include <deque>
 
-#include "core/logging.hpp"
 
 class cipher;
 namespace ss {
@@ -58,8 +56,8 @@ public:
   ///
   /// \param io_context the io context associated with the service
   /// \param remote_endpoint the upstream's endpoint
-  SsConnection(boost::asio::io_context &io_context,
-               const boost::asio::ip::tcp::endpoint &remote_endpoint);
+  SsConnection(asio::io_context &io_context,
+               const asio::ip::tcp::endpoint &remote_endpoint);
 
   /// Destruct the service
   ~SsConnection();
@@ -107,7 +105,7 @@ private:
   /// \param bytes_transferred transferred bytes
   static void ProcessReceivedData(std::shared_ptr<SsConnection> self,
                                   std::shared_ptr<IOBuf> buf,
-                                  boost::system::error_code error,
+                                  const asio::error_code &error,
                                   size_t bytes_transferred);
   /// Process the sent data
   /// \param self pointer to self
@@ -116,7 +114,7 @@ private:
   /// \param bytes_transferred transferred bytes
   static void ProcessSentData(std::shared_ptr<SsConnection> self,
                               std::shared_ptr<IOBuf> buf,
-                              boost::system::error_code error,
+                              const asio::error_code &error,
                               size_t bytes_transferred);
   /// state machine
   state state_;
@@ -126,7 +124,7 @@ private:
   /// copy of handshake request
   request request_;
   /// DNS resolver
-  boost::asio::ip::tcp::resolver resolver_;
+  asio::ip::tcp::resolver resolver_;
 
 private:
   /// handle with connnect event (downstream)
@@ -145,7 +143,7 @@ private:
   void DisableStreamRead();
 
   /// handle with disconnect event (downstream)
-  void OnDisconnect(boost::system::error_code error);
+  void OnDisconnect(asio::error_code error);
 
   /// flush downstream and try to write if any in queue
   void OnDownstreamWriteFlush();
@@ -189,7 +187,7 @@ private:
   void sent(std::shared_ptr<IOBuf> buf) override;
 
   /// handle with disconnect event (upstream)
-  void disconnected(boost::system::error_code error) override;
+  void disconnected(asio::error_code error) override;
 
 private:
   /// decrypt data

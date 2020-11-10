@@ -10,6 +10,11 @@
 
 #include "cli/socks5_connection.hpp"
 
+#include <asio/error_code.hpp>
+#include <asio/read.hpp>
+#include <asio/write.hpp>
+
+
 #include "config/config.hpp"
 #include "core/cipher.hpp"
 
@@ -59,8 +64,8 @@ static void http_request_reforge_to_bytes(
 namespace socks5 {
 
 Socks5Connection::Socks5Connection(
-    boost::asio::io_context &io_context,
-    const boost::asio::ip::tcp::endpoint &remote_endpoint)
+    asio::io_context &io_context,
+    const asio::ip::tcp::endpoint &remote_endpoint)
     : Connection(io_context, remote_endpoint), state_(),
       encoder_(new cipher("", FLAGS_password, cipher_method_in_use, true)),
       decoder_(new cipher("", FLAGS_password, cipher_method_in_use)) {}
@@ -84,7 +89,7 @@ void Socks5Connection::close() {
   }
   VLOG(2) << "disconnected with client at stage: "
           << Socks5Connection::state_to_str(CurrentState());
-  boost::system::error_code ec;
+  asio::error_code ec;
   closed_ = true;
   socket_.close(ec);
   channel_->close();
@@ -100,26 +105,27 @@ void Socks5Connection::ReadMethodSelect() {
   buf->reserve(0, SOCKET_BUF_SIZE);
 
   socket_.async_read_some(
-      boost::asio::mutable_buffer(buf->mutable_data(), buf->capacity()),
-      [self, buf](boost::system::error_code error, size_t bytes_transferred) {
+      asio::mutable_buffer(buf->mutable_data(), buf->capacity()),
+      [self, buf](const asio::error_code &error, size_t bytes_transferred) {
         if (error) {
           self->OnDisconnect(error);
           return;
         }
+        asio::error_code ec;
         buf->append(bytes_transferred);
         DumpHex("METHOD_SELECT->", buf.get());
 
-        error = self->OnReadSocks5MethodSelect(buf);
-        if (error) {
-          error = self->OnReadSocks4Handshake(buf);
+        ec = self->OnReadSocks5MethodSelect(buf);
+        if (ec) {
+          ec = self->OnReadSocks4Handshake(buf);
         }
-        if (error) {
-          error = self->OnReadHttpRequest(buf);
+        if (ec) {
+          ec = self->OnReadHttpRequest(buf);
         }
-        if (error) {
-          self->OnDisconnect(error);
+        if (ec) {
+          self->OnDisconnect(ec);
         } else {
-          self->ProcessReceivedData(self, buf, error, buf->length());
+          self->ProcessReceivedData(self, buf, ec, buf->length());
         }
       });
 }
@@ -130,22 +136,23 @@ void Socks5Connection::ReadHandshake() {
   buf->reserve(0, SOCKET_BUF_SIZE);
 
   socket_.async_read_some(
-      boost::asio::mutable_buffer(buf->mutable_data(), buf->capacity()),
-      [self, buf](boost::system::error_code error, size_t bytes_transferred) {
+      asio::mutable_buffer(buf->mutable_data(), buf->capacity()),
+      [self, buf](const asio::error_code &error, size_t bytes_transferred) {
         if (error) {
           self->OnDisconnect(error);
           return;
         }
+        asio::error_code ec;
         buf->append(bytes_transferred);
         DumpHex("HANDSHAKE->", buf.get());
-        error = self->OnReadSocks5Handshake(buf);
-        if (error) {
-          self->OnDisconnect(error);
+        ec = self->OnReadSocks5Handshake(buf);
+        if (ec) {
+          self->OnDisconnect(ec);
         }
       });
 }
 
-boost::system::error_code
+asio::error_code
 Socks5Connection::OnReadSocks5MethodSelect(std::shared_ptr<IOBuf> buf) {
   std::shared_ptr<Socks5Connection> self = shared_from_this();
   method_select_request_parser::result_type result;
@@ -158,17 +165,16 @@ Socks5Connection::OnReadSocks5MethodSelect(std::shared_ptr<IOBuf> buf) {
     buf->retreat(method_select_request_.length());
     SetState(state_method_select);
 
-    auto error =
-        boost::system::errc::make_error_code(boost::system::errc::success);
+    auto error = asio::error_code();
 
     VLOG(3) << "client: socks5 method select";
     ProcessReceivedData(self, buf, error, buf->length());
     return error;
   }
-  return boost::system::errc::make_error_code(boost::system::errc::bad_message);
+  return std::make_error_code(std::errc::bad_message);
 }
 
-boost::system::error_code
+asio::error_code
 Socks5Connection::OnReadSocks5Handshake(std::shared_ptr<IOBuf> buf) {
   std::shared_ptr<Socks5Connection> self = shared_from_this();
   request_parser::result_type result;
@@ -182,15 +188,15 @@ Socks5Connection::OnReadSocks5Handshake(std::shared_ptr<IOBuf> buf) {
     SetState(state_handshake);
 
     auto error =
-        boost::system::errc::make_error_code(boost::system::errc::success);
+        asio::error_code();
 
     VLOG(3) << "client: socks5 handshake";
     return error;
   }
-  return boost::system::errc::make_error_code(boost::system::errc::bad_message);
+  return std::make_error_code(std::errc::bad_message);
 }
 
-boost::system::error_code
+asio::error_code
 Socks5Connection::OnReadSocks4Handshake(std::shared_ptr<IOBuf> buf) {
   std::shared_ptr<Socks5Connection> self = shared_from_this();
 
@@ -204,15 +210,15 @@ Socks5Connection::OnReadSocks4Handshake(std::shared_ptr<IOBuf> buf) {
     SetState(state_socks4_handshake);
 
     auto error =
-        boost::system::errc::make_error_code(boost::system::errc::success);
+        asio::error_code();
 
     VLOG(3) << "client: socks4 handshake";
     return error;
   }
-  return boost::system::errc::make_error_code(boost::system::errc::bad_message);
+  return std::make_error_code(std::errc::bad_message);
 }
 
-boost::system::error_code
+asio::error_code
 Socks5Connection::OnReadHttpRequest(std::shared_ptr<IOBuf> buf) {
   static struct http_parser_settings settings_connect = {
       //.on_message_begin
@@ -260,12 +266,12 @@ Socks5Connection::OnReadHttpRequest(std::shared_ptr<IOBuf> buf) {
     }
 
     SetState(state_http_handshake);
-    return boost::system::errc::make_error_code(boost::system::errc::success);
+    return asio::error_code();
   }
 
   LOG(WARNING) << http_errno_description(HTTP_PARSER_ERRNO(&parser)) << ": "
                << std::string((const char *)buf->data(), nparsed);
-  return boost::system::errc::make_error_code(boost::system::errc::bad_message);
+  return std::make_error_code(std::errc::bad_message);
 }
 
 int Socks5Connection::OnReadHttpRequestURL(http_parser *p, const char *buf,
@@ -330,8 +336,8 @@ void Socks5Connection::ReadStream() {
   buf->reserve(0, SOCKET_BUF_SIZE);
 
   socket_.async_read_some(
-      boost::asio::mutable_buffer(buf->mutable_data(), buf->capacity()),
-      [self, buf](const boost::system::error_code &error,
+      asio::mutable_buffer(buf->mutable_data(), buf->capacity()),
+      [self, buf](const asio::error_code &error,
                   std::size_t bytes_transferred) -> std::size_t {
         if (bytes_transferred || error) {
           buf->append(bytes_transferred);
@@ -345,9 +351,9 @@ void Socks5Connection::ReadStream() {
 void Socks5Connection::WriteMethodSelect() {
   std::shared_ptr<Socks5Connection> self = shared_from_this();
   method_select_reply_ = method_select_response_stock_reply();
-  boost::asio::async_write(
+  asio::async_write(
       socket_,
-      boost::asio::buffer(&method_select_reply_, sizeof(method_select_reply_)),
+      asio::buffer(&method_select_reply_, sizeof(method_select_reply_)),
       std::bind(&Socks5Connection::ProcessSentData, self, nullptr,
                 std::placeholders::_1, std::placeholders::_2));
 }
@@ -356,13 +362,13 @@ void Socks5Connection::WriteHandshake() {
   std::shared_ptr<Socks5Connection> self = shared_from_this();
   switch (CurrentState()) {
   case state_handshake:
-    boost::asio::async_write(socket_, reply_.buffers(),
+    asio::async_write(socket_, reply_.buffers(),
                              std::bind(&Socks5Connection::ProcessSentData, self,
                                        nullptr, std::placeholders::_1,
                                        std::placeholders::_2));
     break;
   case state_socks4_handshake:
-    boost::asio::async_write(socket_, s4_reply_.buffers(),
+    asio::async_write(socket_, s4_reply_.buffers(),
                              std::bind(&Socks5Connection::ProcessSentData, self,
                                        nullptr, std::placeholders::_1,
                                        std::placeholders::_2));
@@ -370,8 +376,8 @@ void Socks5Connection::WriteHandshake() {
   case state_http_handshake:
     /// reply on CONNECT request
     if (http_is_connect_) {
-      boost::asio::async_write(socket_,
-                               boost::asio::buffer(http_connect_reply_.c_str(),
+      asio::async_write(socket_,
+                               asio::buffer(http_connect_reply_.c_str(),
                                                    http_connect_reply_.size()),
                                std::bind(&Socks5Connection::ProcessSentData,
                                          self, nullptr, std::placeholders::_1,
@@ -388,13 +394,13 @@ void Socks5Connection::WriteHandshake() {
 
 void Socks5Connection::WriteStream(std::shared_ptr<IOBuf> buf) {
   std::shared_ptr<Socks5Connection> self = shared_from_this();
-  boost::asio::async_write(
-      socket_, boost::asio::buffer(buf->data(), buf->length()),
+  asio::async_write(
+      socket_, asio::buffer(buf->data(), buf->length()),
       std::bind(&Socks5Connection::ProcessSentData, self, buf,
                 std::placeholders::_1, std::placeholders::_2));
 }
 
-boost::system::error_code
+asio::error_code
 Socks5Connection::PerformCmdOps(const socks5::request *request,
                                 socks5::reply *reply) {
   if (request->address_type() == domain) {
@@ -404,16 +410,17 @@ Socks5Connection::PerformCmdOps(const socks5::request *request,
     ss_request_ = std::make_unique<ss::request>(request->endpoint());
   }
 
-  boost::system::error_code error;
-  error = boost::system::errc::make_error_code(boost::system::errc::success);
+  asio::error_code error;
+  error = asio::error_code();
 
   switch (request->command()) {
   case socks5::cmd_connect: {
-    boost::asio::ip::tcp::endpoint endpoint;
+    asio::ip::tcp::endpoint endpoint;
     if (request->address_type() == domain) {
-      boost::asio::ip::tcp::resolver resolver(io_context_);
+      asio::ip::tcp::resolver resolver(io_context_);
       auto endpoints = resolver.resolve(request->domain_name(),
-                                        std::to_string(request->port()), error);
+                                        std::to_string(request->port()),
+		                                    error);
       if (!error) {
         endpoint = endpoints->endpoint();
         VLOG(2) << "[dns] reply with endpoint: " << endpoint << " for domain "
@@ -447,7 +454,7 @@ Socks5Connection::PerformCmdOps(const socks5::request *request,
   return error;
 }
 
-boost::system::error_code
+asio::error_code
 Socks5Connection::PerformCmdOpsV4(const socks4::request *request,
                                   socks4::reply *reply) {
   if (request->is_socks4a()) {
@@ -457,15 +464,15 @@ Socks5Connection::PerformCmdOpsV4(const socks4::request *request,
     ss_request_ = std::make_unique<ss::request>(request->endpoint());
   }
 
-  boost::system::error_code error;
-  error = boost::system::errc::make_error_code(boost::system::errc::success);
+  asio::error_code error;
+  error = asio::error_code();
 
   switch (request->command()) {
   case socks4::cmd_connect: {
-    boost::asio::ip::tcp::endpoint endpoint;
+    asio::ip::tcp::endpoint endpoint;
 
     if (request->is_socks4a()) {
-      boost::asio::ip::tcp::resolver resolver(io_context_);
+      asio::ip::tcp::resolver resolver(io_context_);
       auto endpoints = resolver.resolve(request->domain_name(),
                                         std::to_string(request->port()), error);
       if (!error) {
@@ -495,18 +502,18 @@ Socks5Connection::PerformCmdOpsV4(const socks4::request *request,
     reply->mutable_status() = socks4::reply::request_failed;
     break;
   }
-  return boost::system::errc::make_error_code(boost::system::errc::success);
+  return asio::error_code();
 }
 
-boost::system::error_code Socks5Connection::PerformCmdOpsHttp() {
+asio::error_code Socks5Connection::PerformCmdOpsHttp() {
   ss_request_ = std::make_unique<ss::request>(http_host_, http_port_);
 
-  boost::system::error_code error;
-  error = boost::system::errc::make_error_code(boost::system::errc::success);
+  asio::error_code error;
+  error = asio::error_code();
 
-  boost::asio::ip::tcp::endpoint endpoint;
+  asio::ip::tcp::endpoint endpoint;
 
-  boost::asio::ip::tcp::resolver resolver(io_context_);
+  asio::ip::tcp::resolver resolver(io_context_);
   auto endpoints =
       resolver.resolve(http_host_, std::to_string(http_port_), error);
   if (!error) {
@@ -520,48 +527,50 @@ boost::system::error_code Socks5Connection::PerformCmdOpsHttp() {
   ByteRange req(ss_request_->data(), ss_request_->length());
   OnCmdConnect(req);
 
-  return boost::system::errc::make_error_code(boost::system::errc::success);
+  return asio::error_code();
 }
 
 void Socks5Connection::ProcessReceivedData(
     std::shared_ptr<Socks5Connection> self, std::shared_ptr<IOBuf> buf,
-    boost::system::error_code error, size_t bytes_transferred) {
+    const asio::error_code &error, size_t bytes_transferred) {
   self->rbytes_transferred_ += bytes_transferred;
   if (bytes_transferred) {
     VLOG(3) << "client: received request: " << bytes_transferred << " bytes.";
   }
 
-  if (!error) {
+  asio::error_code ec = error;
+
+  if (!ec) {
     switch (self->CurrentState()) {
     case state_method_select:
       self->WriteMethodSelect();
       self->SetState(state_handshake);
       break;
     case state_handshake:
-      error = self->PerformCmdOps(&self->request_, &self->reply_);
+      ec = self->PerformCmdOps(&self->request_, &self->reply_);
 
       self->WriteHandshake();
       self->SetState(state_stream);
       if (buf->length()) {
-        self->ProcessReceivedData(self, buf, error, buf->length());
+        self->ProcessReceivedData(self, buf, ec, buf->length());
       }
       break;
     case state_socks4_handshake:
-      error = self->PerformCmdOpsV4(&self->s4_request_, &self->s4_reply_);
+      ec = self->PerformCmdOpsV4(&self->s4_request_, &self->s4_reply_);
 
       self->WriteHandshake();
       self->SetState(state_stream);
       if (buf->length()) {
-        self->ProcessReceivedData(self, buf, error, buf->length());
+        self->ProcessReceivedData(self, buf, ec, buf->length());
       }
       break;
     case state_http_handshake:
-      error = self->PerformCmdOpsHttp();
+      ec = self->PerformCmdOpsHttp();
 
       self->WriteHandshake();
       self->SetState(state_stream);
       if (buf->length()) {
-        self->ProcessReceivedData(self, buf, error, buf->length());
+        self->ProcessReceivedData(self, buf, ec, buf->length());
       }
       break;
     case state_stream:
@@ -571,20 +580,20 @@ void Socks5Connection::ProcessReceivedData(
       self->ReadStream(); // continously read
       break;
     case state_error:
-      error = boost::system::errc::make_error_code(
-          boost::system::errc::bad_message);
+      ec = std::make_error_code(
+          std::errc::bad_message);
       break;
     };
   }
-  if (error) {
+  if (ec) {
     self->SetState(state_error);
-    self->OnDisconnect(error);
+    self->OnDisconnect(ec);
   }
 };
 
 void Socks5Connection::ProcessSentData(std::shared_ptr<Socks5Connection> self,
                                        std::shared_ptr<IOBuf> buf,
-                                       boost::system::error_code error,
+                                       const asio::error_code &error,
                                        size_t bytes_transferred) {
   self->wbytes_transferred_ += bytes_transferred;
 
@@ -592,7 +601,9 @@ void Socks5Connection::ProcessSentData(std::shared_ptr<Socks5Connection> self,
     VLOG(3) << "client: sent data: " << bytes_transferred << " bytes.";
   }
 
-  if (!error) {
+  asio::error_code ec = error;
+
+  if (!ec) {
     switch (self->CurrentState()) {
     case state_handshake:
       self->ReadHandshake(); // read next state info
@@ -608,15 +619,15 @@ void Socks5Connection::ProcessSentData(std::shared_ptr<Socks5Connection> self,
     case state_method_select: // impossible
     case state_http_handshake:
     case state_error:
-      error = boost::system::errc::make_error_code(
-          boost::system::errc::bad_message);
+      ec = std::make_error_code(
+          std::errc::bad_message);
       break;
     }
   }
 
-  if (error) {
+  if (ec) {
     self->SetState(state_error);
-    self->OnDisconnect(error);
+    self->OnDisconnect(ec);
   }
 };
 
@@ -648,7 +659,7 @@ void Socks5Connection::OnStreamWrite(std::shared_ptr<IOBuf> buf) {
   OnDownstreamWriteFlush();
 }
 
-void Socks5Connection::OnDisconnect(boost::system::error_code error) {
+void Socks5Connection::OnDisconnect(asio::error_code error) {
   VLOG(2) << "client: lost connection with: " << endpoint_ << " due to "
           << error;
   close();
@@ -706,7 +717,7 @@ void Socks5Connection::sent(std::shared_ptr<IOBuf> buf) {
   OnUpstreamWriteFlush();
 }
 
-void Socks5Connection::disconnected(boost::system::error_code error) {
+void Socks5Connection::disconnected(asio::error_code error) {
   VLOG(2) << "upstream: lost connection with: " << remote_endpoint_
           << " due to " << error;
   close();

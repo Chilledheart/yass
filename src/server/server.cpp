@@ -12,18 +12,17 @@
 #include "config/config.hpp"
 #include "ss_factory.hpp"
 
-#include <boost/asio.hpp>
+#include <asio.hpp>
 #include <gflags/gflags.h>
 
 #include "core/logging.hpp"
 
-using boost::asio::ip::tcp;
 using namespace ss;
 
-static tcp::endpoint resolveEndpoint(boost::asio::io_context &io_context,
+static asio::ip::tcp::endpoint resolveEndpoint(asio::io_context *io_context,
                                      const std::string &host, uint16_t port) {
-  boost::system::error_code ec;
-  boost::asio::ip::tcp::resolver resolver(io_context);
+  asio::error_code ec;
+  asio::ip::tcp::resolver resolver(*io_context);
   auto endpoints = resolver.resolve(host, std::to_string(port), ec);
   return endpoints->endpoint();
 }
@@ -32,7 +31,7 @@ int main(int argc, const char *argv[]) {
   // Major routine
   // - Read config from ss config file
   // - Listen by local address and local port
-  boost::asio::io_context io_context;
+  asio::io_context io_context;
   // Start Io Context
   ::google::InitGoogleLogging(argv[0]);
   ::FLAGS_stderrthreshold = true;
@@ -49,28 +48,28 @@ int main(int argc, const char *argv[]) {
 
   (void)config::ReadConfig();
 
-  tcp::endpoint endpoint(
-      resolveEndpoint(io_context, FLAGS_server_host, FLAGS_server_port));
+  asio::ip::tcp::endpoint endpoint(
+      resolveEndpoint(&io_context, FLAGS_server_host, FLAGS_server_port));
   // not used
-  tcp::endpoint remoteEndpoint(
-      resolveEndpoint(io_context, FLAGS_local_host, FLAGS_local_port));
+  asio::ip::tcp::endpoint remoteEndpoint(
+      resolveEndpoint(&io_context, FLAGS_local_host, FLAGS_local_port));
 
   LOG(WARNING) << "using " << endpoint << " with endpoint " << endpoint;
 
   SsFactory factory(io_context, remoteEndpoint);
-  boost::system::error_code ec = factory.listen(endpoint);
+  asio::error_code ec = factory.listen(endpoint);
   if (ec) {
     LOG(ERROR) << "listen failed due to: " << ec;
     return -1;
   }
 
-  boost::asio::signal_set signals(io_context);
+  asio::signal_set signals(io_context);
   signals.add(SIGINT, ec);
   signals.add(SIGTERM, ec);
 #ifdef SIGQUIT
   signals.add(SIGQUIT, ec);
 #endif
-  signals.async_wait([&](const boost::system::error_code &error,
+  signals.async_wait([&](const asio::error_code &error,
                          int signal_number) { factory.stop(); });
 
   io_context.run(ec);

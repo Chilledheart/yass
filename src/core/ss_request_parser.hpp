@@ -11,11 +11,10 @@
 #ifndef H_CORE_SS_REQUEST_PARSER
 #define H_CORE_SS_REQUEST_PARSER
 
-#include <boost/system/error_code.hpp>
 #include <cstdlib>
 
 #include "core/logging.hpp"
-#include "ss_request.hpp"
+#include "core/ss_request.hpp"
 
 namespace ss {
 class request;
@@ -57,8 +56,8 @@ public:
       switch (req.address_type()) {
       case ipv4:
         memcpy(&req.atyp_req_.address4, &*i,
-               sizeof(boost::asio::ip::address_v4::bytes_type));
-        i += sizeof(boost::asio::ip::address_v4::bytes_type);
+               sizeof(asio::ip::address_v4::bytes_type));
+        i += sizeof(asio::ip::address_v4::bytes_type);
 
         req.port_high_byte() = *i;
         i += sizeof(uint8_t);
@@ -83,8 +82,8 @@ public:
         break;
       case ipv6:
         memcpy(&req.atyp_req_.address6, &*i,
-               sizeof(boost::asio::ip::address_v6::bytes_type));
-        i += sizeof(boost::asio::ip::address_v4::bytes_type);
+               sizeof(asio::ip::address_v6::bytes_type));
+        i += sizeof(asio::ip::address_v4::bytes_type);
 
         req.port_high_byte() = *i;
         i += sizeof(uint8_t);

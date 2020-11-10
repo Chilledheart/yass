@@ -11,10 +11,10 @@
 #ifndef H_CHANNEL
 #define H_CHANNEL
 
-#include <boost/system/error_code.hpp>
 #include <memory>
 
 #include "core/iobuf.hpp"
+#include <asio/error_code.hpp>
 
 class Channel {
 public:
@@ -38,7 +38,7 @@ public:
   virtual void sent(std::shared_ptr<IOBuf> buf) = 0;
 
   /// Called once connection closed
-  virtual void disconnected(boost::system::error_code error) = 0;
+  virtual void disconnected(asio::error_code error) = 0;
 };
 
 #endif // H_CHANNEL

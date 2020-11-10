@@ -47,7 +47,7 @@ PACK(struct request_header {
   uint8_t command;
   uint8_t port_high_byte;
   uint8_t port_low_byte;
-  boost::asio::ip::address_v4::bytes_type address;
+  asio::ip::address_v4::bytes_type address;
 });
 
 // +----+----+----+----+----+----+----+----+
@@ -71,12 +71,12 @@ public:
 
   reply() : null_byte_(0), status_() {}
 
-  std::array<boost::asio::mutable_buffer, 5> buffers() {
-    return {{boost::asio::buffer(&null_byte_, 1),
-             boost::asio::buffer(&status_, 1),
-             boost::asio::buffer(&port_high_byte_, 1),
-             boost::asio::buffer(&port_low_byte_, 1),
-             boost::asio::buffer(address_)}};
+  std::array<asio::mutable_buffer, 5> buffers() {
+    return {{asio::buffer(&null_byte_, 1),
+             asio::buffer(&status_, 1),
+             asio::buffer(&port_high_byte_, 1),
+             asio::buffer(&port_low_byte_, 1),
+             asio::buffer(address_)}};
   }
 
   bool success() const { return null_byte_ == 0 && status_ == request_granted; }
@@ -84,17 +84,17 @@ public:
   uint8_t status() const { return status_; }
   uint8_t &mutable_status() { return status_; }
 
-  boost::asio::ip::tcp::endpoint endpoint() const {
+  asio::ip::tcp::endpoint endpoint() const {
     unsigned short port = port_high_byte_;
     port = (port << 8) & 0xff00;
     port = port | port_low_byte_;
 
-    boost::asio::ip::address_v4 address(address_);
+    asio::ip::address_v4 address(address_);
 
-    return boost::asio::ip::tcp::endpoint(address, port);
+    return asio::ip::tcp::endpoint(address, port);
   }
 
-  void set_endpoint(const boost::asio::ip::tcp::endpoint &endpoint) {
+  void set_endpoint(const asio::ip::tcp::endpoint &endpoint) {
     address_ = endpoint.address().to_v4().to_bytes();
 
     // Convert port number to network byte order.
@@ -104,12 +104,12 @@ public:
   }
 
   void set_loopback() {
-    address_ = boost::asio::ip::address_v4::loopback().to_bytes();
+    address_ = asio::ip::address_v4::loopback().to_bytes();
     port_high_byte_ = 0;
     port_low_byte_ = 0;
   }
 
-  const boost::asio::ip::address_v4::bytes_type &address() const {
+  const asio::ip::address_v4::bytes_type &address() const {
     return address_;
   }
 
@@ -127,7 +127,7 @@ private:
   uint8_t status_;
   uint8_t port_high_byte_;
   uint8_t port_low_byte_;
-  boost::asio::ip::address_v4::bytes_type address_;
+  asio::ip::address_v4::bytes_type address_;
 };
 
 #undef PACK

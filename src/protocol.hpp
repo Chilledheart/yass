@@ -11,12 +11,16 @@
 #ifndef H_PROTOCOL
 #define H_PROTOCOL
 
-#include <boost/asio/buffer.hpp>
-#include <boost/asio/error.hpp>
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/ip/udp.hpp>
-#include <boost/system/error_code.hpp>
+#ifdef _WIN32
+#include <malloc.h>
+#endif
+
+#include <asio/buffer.hpp>
+#include <asio/error.hpp>
+#include <asio/io_context.hpp>
+#include <asio/ip/tcp.hpp>
+#include <asio/ip/udp.hpp>
+#include <asio/error_code.hpp>
 #include <functional>
 #include <utility>
 

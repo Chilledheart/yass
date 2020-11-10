@@ -13,9 +13,9 @@
 
 #include "channel.hpp"
 #include "connection.hpp"
+#include "protocol.hpp"
 #include "core/http_parser.h"
 #include "core/iobuf.hpp"
-#include "protocol.hpp"
 #include "core/socks4.hpp"
 #include "core/socks4_request.hpp"
 #include "core/socks4_request_parser.hpp"
@@ -23,14 +23,13 @@
 #include "core/socks5_request.hpp"
 #include "core/socks5_request_parser.hpp"
 #include "core/ss_request.hpp"
+#include "core/logging.hpp"
 #include "stream.hpp"
 
-#include <boost/asio/read.hpp>
-#include <boost/asio/write.hpp>
 #include <deque>
 #include <unordered_map>
 
-#include "core/logging.hpp"
+
 
 class cipher;
 namespace socks5 {
@@ -73,8 +72,8 @@ public:
   ///
   /// \param io_context the io context associated with the service
   /// \param remote_endpoint the upstream's endpoint
-  Socks5Connection(boost::asio::io_context &io_context,
-                   const boost::asio::ip::tcp::endpoint &remote_endpoint);
+  Socks5Connection(asio::io_context &io_context,
+                   const asio::ip::tcp::endpoint &remote_endpoint);
 
   /// Destruct the service
   ~Socks5Connection();
@@ -113,14 +112,14 @@ private:
   void ReadHandshake();
 
   /// Start to read socks5 method_select request
-  boost::system::error_code
+  asio::error_code
   OnReadSocks5MethodSelect(std::shared_ptr<IOBuf> buf);
   /// Start to read socks5 handshake request
-  boost::system::error_code OnReadSocks5Handshake(std::shared_ptr<IOBuf> buf);
+  asio::error_code OnReadSocks5Handshake(std::shared_ptr<IOBuf> buf);
   /// Start to read socks4 handshake request
-  boost::system::error_code OnReadSocks4Handshake(std::shared_ptr<IOBuf> buf);
+  asio::error_code OnReadSocks4Handshake(std::shared_ptr<IOBuf> buf);
   /// Start to read http handshake request
-  boost::system::error_code OnReadHttpRequest(std::shared_ptr<IOBuf> buf);
+  asio::error_code OnReadHttpRequest(std::shared_ptr<IOBuf> buf);
 
   /// Callback to read http handshake request's URL field
   static int OnReadHttpRequestURL(http_parser *p, const char *buf, size_t len);
@@ -148,19 +147,19 @@ private:
   /// dispatch the command to delegate
   /// \param command command type
   /// \param reply reply to given command type
-  boost::system::error_code PerformCmdOps(const socks5::request *request,
+  asio::error_code PerformCmdOps(const socks5::request *request,
                                           socks5::reply *reply);
 
   /// dispatch the command to delegate
   /// \param command command type
   /// \param reply reply to given command type
-  boost::system::error_code PerformCmdOpsV4(const socks4::request *request,
+  asio::error_code PerformCmdOpsV4(const socks4::request *request,
                                             socks4::reply *reply);
 
   /// dispatch the command to delegate
   /// \param command command type
   /// \param reply reply to given command type
-  boost::system::error_code PerformCmdOpsHttp();
+  asio::error_code PerformCmdOpsHttp();
 
   /// Process the recevied data
   /// \param self pointer to self
@@ -169,7 +168,7 @@ private:
   /// \param bytes_transferred transferred bytes
   static void ProcessReceivedData(std::shared_ptr<Socks5Connection> self,
                                   std::shared_ptr<IOBuf> buf,
-                                  boost::system::error_code error,
+                                  const asio::error_code &error,
                                   size_t bytes_transferred);
   /// Process the sent data
   /// \param self pointer to self
@@ -178,7 +177,7 @@ private:
   /// \param bytes_transferred transferred bytes
   static void ProcessSentData(std::shared_ptr<Socks5Connection> self,
                               std::shared_ptr<IOBuf> buf,
-                              boost::system::error_code error,
+                              const asio::error_code &error,
                               size_t bytes_transferred);
   /// state machine
   state state_;
@@ -241,7 +240,7 @@ private:
   void OnStreamWrite(std::shared_ptr<IOBuf> buf);
 
   /// handle with disconnect event (downstream)
-  void OnDisconnect(boost::system::error_code error);
+  void OnDisconnect(asio::error_code error);
 
   /// flush downstream and try to write if any in queue
   void OnDownstreamWriteFlush();
@@ -279,7 +278,7 @@ private:
   void sent(std::shared_ptr<IOBuf> buf) override;
 
   /// handle with disconnect event (upstream)
-  void disconnected(boost::system::error_code error) override;
+  void disconnected(asio::error_code error) override;
 
 private:
   /// decrypt data

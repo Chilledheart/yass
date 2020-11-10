@@ -10,7 +10,6 @@ apt-get install -y build-essential
 apt-get install -y \
     cmake \
     ninja-build \
-    libboost-all-dev \
     libgoogle-glog-dev \
     libgflags-dev \
     libsodium-dev \
@@ -34,7 +33,6 @@ xcode-select --install
 ```
 2. Install [MacPorts] and dependencies...
 ```
-    boost
     ninja
     cmake
     google-glog
@@ -45,7 +43,6 @@ xcode-select --install
 ```
 2. Install [HomeBrew] and dependencies...
 ```
-    boost
     ninja
     cmake
     glog
@@ -66,7 +63,7 @@ scripts/build.py
 
 2. Run [vcpkg][vcpkg] to install required dependencies.
 ```
-vcpkg install boost-asio:x64-windows-static boost-filesystem:x64-windows-static boost-system:x64-windows-static glog:x64-windows-static gflags:x64-windows-static libsodium:x64-windows-static jsoncpp:x64-windows-static wxwidgets:x64-windows-static
+vcpkg install asio:x64-windows-static glog:x64-windows-static gflags:x64-windows-static libsodium:x64-windows-static jsoncpp:x64-windows-static wxwidgets:x64-windows-static
 ```
 3. use script to build Release App under `build` directory.
 ```
@@ -80,3 +77,6 @@ For boringssl, you should only need crypto target.
 [vcpkg]: https://github.com/microsoft/vcpkg
 [MacPorts]: https://www.macports.org/install.php
 [HomeBrew]: https://brew.sh
+
+
+## asio

@@ -11,7 +11,12 @@
 #ifndef H_CONFIG_CONFIG
 #define H_CONFIG_CONFIG
 
+#ifdef _WIN32
+#include <malloc.h>
+#endif
+
 #include <gflags/gflags_declare.h>
+
 
 // TBD: read settinsg from json config file
 

@@ -10,6 +10,10 @@
 
 #include "ss_connection.hpp"
 
+#include <asio/read.hpp>
+#include <asio/write.hpp>
+#include <asio/error_code.hpp>
+
 #include "core/cipher.hpp"
 #include "config/config.hpp"
 
@@ -19,8 +23,8 @@
 namespace ss {
 
 SsConnection::SsConnection(
-    boost::asio::io_context &io_context,
-    const boost::asio::ip::tcp::endpoint &remote_endpoint)
+    asio::io_context &io_context,
+    const asio::ip::tcp::endpoint &remote_endpoint)
     : Connection(io_context, remote_endpoint), state_(), resolver_(io_context_),
       encoder_(new cipher("", FLAGS_password, cipher_method_in_use, true)),
       decoder_(new cipher("", FLAGS_password, cipher_method_in_use)) {}
@@ -42,7 +46,7 @@ void SsConnection::close() {
   }
   VLOG(2) << "disconnected with client at stage: "
           << SsConnection::state_to_str(CurrentState());
-  boost::system::error_code ec;
+  asio::error_code ec;
   closed_ = true;
   socket_.close(ec);
   if (channel_) {
@@ -61,9 +65,9 @@ void SsConnection::ReadHandshake() {
   cipherbuf->reserve(0, SOCKET_BUF_SIZE);
 
   socket_.async_read_some(
-      boost::asio::mutable_buffer(cipherbuf->mutable_data(),
+      asio::mutable_buffer(cipherbuf->mutable_data(),
                                   cipherbuf->capacity()),
-      [self, cipherbuf](boost::system::error_code error,
+      [self, cipherbuf](asio::error_code error,
                         size_t bytes_transferred) {
         if (error) {
           self->OnDisconnect(error);
@@ -93,8 +97,8 @@ void SsConnection::ResolveDns(std::shared_ptr<IOBuf> buf) {
   std::shared_ptr<SsConnection> self = shared_from_this();
   resolver_.async_resolve(
       self->request_.domain_name(), std::to_string(self->request_.port()),
-      [self, buf](const boost::system::error_code &error,
-                  boost::asio::ip::tcp::resolver::results_type results) {
+      [self, buf](const asio::error_code &error,
+                  asio::ip::tcp::resolver::results_type results) {
         // Get a list of endpoints corresponding to the SOCKS 5 domain name.
         if (!error) {
           self->remote_endpoint_ = results->endpoint();
@@ -115,9 +119,9 @@ void SsConnection::ReadStream() {
   downstream_read_inprogress_ = true;
 
   socket_.async_read_some(
-      boost::asio::mutable_buffer(cipherbuf->mutable_data(),
+      asio::mutable_buffer(cipherbuf->mutable_data(),
                                   cipherbuf->capacity()),
-      [self, cipherbuf](boost::system::error_code error,
+      [self, cipherbuf](asio::error_code error,
                         std::size_t bytes_transferred) -> std::size_t {
         if (bytes_transferred || error) {
           cipherbuf->append(bytes_transferred);
@@ -136,22 +140,24 @@ void SsConnection::ReadStream() {
 
 void SsConnection::WriteStream(std::shared_ptr<IOBuf> buf) {
   std::shared_ptr<SsConnection> self = shared_from_this();
-  boost::asio::async_write(
-      socket_, boost::asio::buffer(buf->data(), buf->length()),
+  asio::async_write(
+      socket_, asio::buffer(buf->data(), buf->length()),
       std::bind(&SsConnection::ProcessSentData, self, buf,
                 std::placeholders::_1, std::placeholders::_2));
 }
 
 void SsConnection::ProcessReceivedData(std::shared_ptr<SsConnection> self,
                                        std::shared_ptr<IOBuf> buf,
-                                       boost::system::error_code error,
+                                       const asio::error_code &error,
                                        size_t bytes_transferred) {
   self->rbytes_transferred_ += bytes_transferred;
   if (bytes_transferred) {
     VLOG(3) << "received request: " << bytes_transferred << " bytes.";
   }
 
-  if (!error) {
+  asio::error_code ec = error;
+
+  if (!ec) {
     switch (self->CurrentState()) {
     case state_handshake:
       if (self->request_.address_type() == domain) {
@@ -171,20 +177,20 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<SsConnection> self,
       }
       break;
     case state_error:
-      error = boost::system::errc::make_error_code(
-          boost::system::errc::bad_message);
+      ec = std::make_error_code(
+          std::errc::bad_message);
       break;
     };
   }
-  if (error) {
+  if (ec) {
     self->SetState(state_error);
-    self->OnDisconnect(error);
+    self->OnDisconnect(ec);
   }
 };
 
 void SsConnection::ProcessSentData(std::shared_ptr<SsConnection> self,
                                    std::shared_ptr<IOBuf> buf,
-                                   boost::system::error_code error,
+                                   const asio::error_code &error,
                                    size_t bytes_transferred) {
   self->wbytes_transferred_ += bytes_transferred;
 
@@ -192,22 +198,24 @@ void SsConnection::ProcessSentData(std::shared_ptr<SsConnection> self,
     VLOG(3) << "sent data: " << bytes_transferred << " bytes.";
   }
 
-  if (!error) {
+  asio::error_code ec = error;
+
+  if (!ec) {
     switch (self->CurrentState()) {
     case state_stream:
       self->OnStreamWrite(buf);
       break;
     case state_handshake:
     case state_error:
-      error = boost::system::errc::make_error_code(
-          boost::system::errc::bad_message);
+      ec = std::make_error_code(
+          std::errc::bad_message);
       break;
     }
   }
 
-  if (error) {
+  if (ec) {
     self->SetState(state_error);
-    self->OnDisconnect(error);
+    self->OnDisconnect(ec);
   }
 };
 
@@ -262,7 +270,7 @@ void SsConnection::EnableStreamRead() {
 
 void SsConnection::DisableStreamRead() { downstream_readable_ = false; }
 
-void SsConnection::OnDisconnect(boost::system::error_code error) {
+void SsConnection::OnDisconnect(asio::error_code error) {
   VLOG(2) << "ss: lost connection with: " << endpoint_ << " due to " << error;
   close();
 }
@@ -330,7 +338,7 @@ void SsConnection::sent(std::shared_ptr<IOBuf> buf) {
   }
 }
 
-void SsConnection::disconnected(boost::system::error_code error) {
+void SsConnection::disconnected(asio::error_code error) {
   VLOG(2) << "upstream: lost connection with: " << remote_endpoint_
           << " due to " << error;
   upstream_writable_ = false;

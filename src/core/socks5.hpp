@@ -12,16 +12,20 @@
 #define H_CORE_SOCKS5
 
 #include <array>
-#include <boost/asio/buffers_iterator.hpp>
-#include <boost/asio/ip/address_v4.hpp>
-#include <boost/asio/ip/address_v6.hpp>
-#include <boost/asio/ip/tcp.hpp>
+#include <asio/buffers_iterator.hpp>
+#include <asio/ip/address_v4.hpp>
+#include <asio/ip/address_v6.hpp>
+#include <asio/ip/tcp.hpp>
 #include <stdint.h>
 #include <string>
 #include <tuple>
 
+#ifdef _WIN32
+#include <malloc.h>
+#endif
+
 #include "core/iobuf.hpp"
-#include "ss.hpp"
+#include "core/ss.hpp"
 
 namespace socks5 {
 
@@ -142,8 +146,8 @@ struct address_type_domain_header {
 struct address_type_header {
   uint8_t address_type;
   union {
-    boost::asio::ip::address_v4::bytes_type address4;
-    boost::asio::ip::address_v6::bytes_type address6;
+    asio::ip::address_v4::bytes_type address4;
+    asio::ip::address_v6::bytes_type address6;
     address_type_domain_header domain;
   };
   uint8_t port_high_byte;
@@ -186,26 +190,26 @@ public:
 
   reply() : version_(version), status_(), null_byte_(0), address_type_(0) {}
 
-  std::array<boost::asio::mutable_buffer, 7> buffers() {
+  std::array<asio::mutable_buffer, 7> buffers() {
     if (address_type_ == address_type::ipv6) {
       return {{
-          boost::asio::buffer(&version_, 1),
-          boost::asio::buffer(&status_, 1),
-          boost::asio::buffer(&null_byte_, 1),
-          boost::asio::buffer(&address_type_, 1),
-          boost::asio::buffer(address6_),
-          boost::asio::buffer(&port_high_byte_, 1),
-          boost::asio::buffer(&port_low_byte_, 1),
+          asio::buffer(&version_, 1),
+          asio::buffer(&status_, 1),
+          asio::buffer(&null_byte_, 1),
+          asio::buffer(&address_type_, 1),
+          asio::buffer(address6_),
+          asio::buffer(&port_high_byte_, 1),
+          asio::buffer(&port_low_byte_, 1),
       }};
     }
     return {{
-        boost::asio::buffer(&version_, 1),
-        boost::asio::buffer(&status_, 1),
-        boost::asio::buffer(&null_byte_, 1),
-        boost::asio::buffer(&address_type_, 1),
-        boost::asio::buffer(address4_),
-        boost::asio::buffer(&port_high_byte_, 1),
-        boost::asio::buffer(&port_low_byte_, 1),
+        asio::buffer(&version_, 1),
+        asio::buffer(&status_, 1),
+        asio::buffer(&null_byte_, 1),
+        asio::buffer(&address_type_, 1),
+        asio::buffer(address4_),
+        asio::buffer(&port_high_byte_, 1),
+        asio::buffer(&port_low_byte_, 1),
     }};
   }
 
@@ -219,24 +223,24 @@ public:
 
   uint8_t &mutable_status() { return status_; }
 
-  boost::asio::ip::tcp::endpoint endpoint() const {
+  asio::ip::tcp::endpoint endpoint() const {
     unsigned short port = port_high_byte_;
     port = (port << 8) & 0xff00;
     port = port | port_low_byte_;
 
     if (address_type_ == address_type::ipv4) {
-      boost::asio::ip::address_v4 address(address4_);
+      asio::ip::address_v4 address(address4_);
 
-      return boost::asio::ip::tcp::endpoint(address, port);
+      return asio::ip::tcp::endpoint(address, port);
     } else {
-      boost::asio::ip::address_v6 address(address6_);
+      asio::ip::address_v6 address(address6_);
 
-      return boost::asio::ip::tcp::endpoint(address, port);
+      return asio::ip::tcp::endpoint(address, port);
     }
   }
 
-  void set_endpoint(const boost::asio::ip::tcp::endpoint &endpoint) {
-    if (endpoint.protocol() != boost::asio::ip::tcp::v4()) {
+  void set_endpoint(const asio::ip::tcp::endpoint &endpoint) {
+    if (endpoint.protocol() != asio::ip::tcp::v4()) {
       address_type_ = ipv6;
       address6_ = endpoint.address().to_v6().to_bytes();
     } else {
@@ -252,7 +256,7 @@ public:
 
   void set_loopback() {
     address_type_ = ipv4;
-    address4_ = boost::asio::ip::address_v4::loopback().to_bytes();
+    address4_ = asio::ip::address_v4::loopback().to_bytes();
     port_high_byte_ = 0;
     port_low_byte_ = 0;
   }
@@ -265,8 +269,8 @@ private:
   uint8_t status_;
   uint8_t null_byte_;
   uint8_t address_type_;
-  boost::asio::ip::address_v4::bytes_type address4_;
-  boost::asio::ip::address_v6::bytes_type address6_;
+  asio::ip::address_v4::bytes_type address4_;
+  asio::ip::address_v6::bytes_type address6_;
   uint8_t port_high_byte_;
   uint8_t port_low_byte_;
 };
