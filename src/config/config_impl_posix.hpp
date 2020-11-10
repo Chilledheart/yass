@@ -65,7 +65,7 @@ bool CreateConfigDirectory(const std::string &configdir) {
   return true;
 }
 
-inline bool ReadFile(const std::string &path, std::string* context) {
+bool ReadFile(const std::string &path, std::string* context) {
   char buf[4096];
   int fd = ::open(path.c_str(), O_RDONLY);
   if (fd < 0) {
@@ -83,8 +83,8 @@ inline bool ReadFile(const std::string &path, std::string* context) {
   return true;
 }
 
-inline bool WriteFile(const std::string &path, const std::string &context) {
-  int fd = ::open(path.c_str(), O_RDONLY);
+bool WriteFile(const std::string &path, const std::string &context) {
+  int fd = ::open(path.c_str(), O_WRONLY | O_TRUNC | O_CREAT);
   if (fd < 0) {
     LOG(WARNING) << "configure file does not exist: " << path;
     return false;
