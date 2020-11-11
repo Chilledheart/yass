@@ -59,7 +59,7 @@ scripts/build.py
 
 ## Windows/vcpkg
 
-1. Make sure you use Visual Studio 2015 Update 3 or later to get vcpkg work.
+1. Make sure you use Visual Studio 2019 or later to get vcpkg work.
 
 2. Run [vcpkg][vcpkg] to install required dependencies.
 ```

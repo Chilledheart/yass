@@ -237,7 +237,7 @@ PRFileDesc*    PR_OpenTCPSocket(int af) {
 
 PRStatus
 PR_Connect(PRFileDesc *socketFD, const PNetAddr *addr,
-           int timeout) {
+           int /*timeout*/) {
     int addrlen = PNetAddrGetLen(addr);
     if (connect(socketFD->fd, (const struct sockaddr*)addr, addrlen) == 0) {
         return PR_SUCCESS;
@@ -247,7 +247,7 @@ PR_Connect(PRFileDesc *socketFD, const PNetAddr *addr,
 
 
 PRFileDesc*
-PR_Accept(PRFileDesc *socketFD, PNetAddr *addr, int timeout) {
+PR_Accept(PRFileDesc *socketFD, PNetAddr *addr, int /*timeout*/) {
     PNetAddr ad;
     int addrlen = sizeof(ad);
     SOCKET sd = accept(socketFD->fd, (struct sockaddr*)&ad, &addrlen);
@@ -305,7 +305,7 @@ PR_Shutdown(PRFileDesc *socketFD, PRShutdownHow how) {
 
 int32_t
 PR_Recv(PRFileDesc *fd, void *buf, int32_t amount,
-                int flags, int timeout) {
+                int flags, int /*timeout*/) {
     int sflags = 0;
     if (flags == PR_MSG_PEEK) {
         sflags = MSG_PEEK;
@@ -316,15 +316,15 @@ PR_Recv(PRFileDesc *fd, void *buf, int32_t amount,
 
 int32_t
 PR_Send(PRFileDesc *fd, const void *buf, int32_t amount,
-                int flags, int timeout) {
+                int /*flags*/, int /*timeout*/) {
     return send(fd->fd, reinterpret_cast<const char*>(buf), amount, 0);
 }
 
 
 int32_t
 PR_RecvFrom(
-    PRFileDesc *fd, void *buf, int32_t amount, int flags,
-    PNetAddr *addr, int timeout) {
+    PRFileDesc *fd, void *buf, int32_t amount, int /*flags*/,
+    PNetAddr *addr, int /*timeout*/) {
     int addrlen = sizeof(*addr);
     return recvfrom(fd->fd, reinterpret_cast<char*>(buf), amount, 0,
         (struct sockaddr*)addr, &addrlen);
@@ -333,8 +333,8 @@ PR_RecvFrom(
 
 int32_t
 PR_SendTo(
-    PRFileDesc *fd, const void *buf, int32_t amount, int flags,
-    const PNetAddr *addr, int timeout) {
+    PRFileDesc *fd, const void *buf, int32_t amount, int /*flags*/,
+    const PNetAddr *addr, int /*timeout*/) {
     int addrlen = PNetAddrGetLen(addr);
     return sendto(fd->fd, reinterpret_cast<const char*>(buf), amount, 0,
         (const struct sockaddr*)addr, addrlen);

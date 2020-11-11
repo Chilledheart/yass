@@ -34,6 +34,7 @@ char *InetNtopA(
   DWORD dwAddressStringLength;
   int rv;
   struct sockaddr_in6 zsa = {};
+  (void)StringBufSize;
 
   if (Family == AF_INET) {
     struct sockaddr_in* pzsa4 = reinterpret_cast<struct sockaddr_in*>(&zsa);

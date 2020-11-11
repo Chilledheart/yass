@@ -270,10 +270,13 @@ def generate_buildscript(configuration_type):
   print 'generate build scripts...(%s)' % configuration_type
   cmake_args = ['-DGUI=ON', '-DCLI=ON', '-DSERVER=ON']
   if sys.platform == 'win32':
-    cmake_args.extend(['-G', 'Visual Studio 15 2017 Win64'])
+    cmake_args.extend(['-G', 'Visual Studio 16 2019'])
+    #cmake_args.extend(['-T', 'llvm'])
+    # use Win32 for 32-bit target
+    cmake_args.extend(['-A', 'x64'])
     cmake_args.extend(['-DCMAKE_TOOLCHAIN_FILE=%s\\scripts\\buildsystems\\vcpkg.cmake' % VCPKG_DIR])
-    cmake_args.extend(['-DCMAKE_GENERATOR_TOOLSET=v141'])
-    cmake_args.extend(['-DCMAKE_VS_PLATFORM_TOOLSET=v141'])
+    cmake_args.extend(['-DCMAKE_GENERATOR_TOOLSET=v142'])
+    cmake_args.extend(['-DCMAKE_VS_PLATFORM_TOOLSET=v142'])
     cmake_args.extend(['-DVCPKG_CRT_LINKAGE=static'])
     cmake_args.extend(['-DVCPKG_LIBRARY_LINKAGE=static'])
     cmake_args.extend(['-DVCPKG_TARGET_TRIPLET=x64-windows-static'])

@@ -38,8 +38,9 @@ void PR_SetErrorText(int textLength, const char *text)
 
     if (0 == textLength)
     {
-	    if (NULL != thread->errorString)
+	    if (NULL != thread->errorString) {
 	        delete (thread->errorString);
+        }
 	    thread->errorStringSize = 0;
     }
     else
@@ -47,10 +48,11 @@ void PR_SetErrorText(int textLength, const char *text)
 	    int size = textLength + 31;  /* actual length to allocate. Plus a little extra */
         if (thread->errorStringSize < textLength+1)  /* do we have room? */
         {
-	        if (NULL != thread->errorString)
+	        if (NULL != thread->errorString) {
 	            delete (thread->errorString);
+            }
 		    thread->errorString = new char[size];
-            if ( NULL == thread->errorString ) {
+            if (NULL == thread->errorString ) {
                 thread->errorStringSize = 0;
                 thread->errorStringLength = 0;
                 return;

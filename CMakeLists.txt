@@ -2,7 +2,17 @@ cmake_minimum_required(VERSION 3.4.6 FATAL_ERROR)
 
 set(PACKAGE_NAME      "Yet-Another-Shadow-Socket")
 
-project(${PACKAGE_NAME} CXX C)
+# Defer enabling C and CXX languages.
+project(${PACKAGE_NAME} NONE)
+
+if(WIN32)
+  # On Windows, prefer cl over gcc if both are available. By default most of
+  # the CMake generators prefer gcc, even on Windows.
+  set(CMAKE_GENERATOR_CC cl)
+endif()
+
+enable_language(C)
+enable_language(CXX)
 
 # *****************************************************************************************
 #           Basic Setups
@@ -128,6 +138,7 @@ else()
     add_definitions(-DXP_OS2)
     add_definitions(-D_WIN32)
     add_definitions(-DWIN32)
+    add_definitions(-D_WINSOCK_DEPRECATED_NO_WARNINGS)
 
     ## not omit stack frame pointer
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Oy-")
@@ -282,9 +293,13 @@ if (MSVC)
       NO_DEFAULT_PATH)
 
     find_library(BORINGSSL_CRYPTO_RELEASE_LIB crypto
-      PATHS ${boringssl_DIR}/build/crypto/Release NO_DEFAULT_PATH)
+      PATHS ${boringssl_DIR}/build/crypto/Release
+            ${boringssl_DIR}/build/Release/crypto
+       NO_DEFAULT_PATH)
     find_library(BORINGSSL_CRYPTO_DEBUG_LIB crypto
-      PATHS ${boringssl_DIR}/build/crypto/Debug NO_DEFAULT_PATH)
+      PATHS ${boringssl_DIR}/build/crypto/Debug
+            ${boringssl_DIR}/build/Debug/crypto
+       NO_DEFAULT_PATH)
     set(BORINGSSL_CRYPTO_LIB
       debug ${BORINGSSL_CRYPTO_DEBUG_LIB}
       optimized ${BORINGSSL_CRYPTO_RELEASE_LIB}
