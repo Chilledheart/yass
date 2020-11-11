@@ -289,18 +289,18 @@ int Socks5Connection::OnReadHttpRequestURL(http_parser *p, const char *buf,
   return 0;
 }
 
-int Socks5Connection::OnReadHttpRequestHeaderField(http_parser *p,
+int Socks5Connection::OnReadHttpRequestHeaderField(http_parser *parser,
                                                    const char *buf,
                                                    size_t len) {
-  Socks5Connection *conn = reinterpret_cast<Socks5Connection *>(p->data);
+  Socks5Connection *conn = reinterpret_cast<Socks5Connection *>(parser->data);
   conn->http_field_ = std::string(buf, len);
   return 0;
 }
 
-int Socks5Connection::OnReadHttpRequestHeaderValue(http_parser *p,
+int Socks5Connection::OnReadHttpRequestHeaderValue(http_parser *parser,
                                                    const char *buf,
                                                    size_t len) {
-  Socks5Connection *conn = reinterpret_cast<Socks5Connection *>(p->data);
+  Socks5Connection *conn = reinterpret_cast<Socks5Connection *>(parser->data);
   conn->http_value_ = std::string(buf, len);
   conn->http_headers_[conn->http_field_] = conn->http_value_;
   if (conn->http_field_ == "Host" && !conn->http_is_connect_) {
@@ -324,7 +324,7 @@ int Socks5Connection::OnReadHttpRequestHeaderValue(http_parser *p,
   return 0;
 }
 
-int Socks5Connection::OnReadHttpRequestHeadersDone(http_parser *p) {
+int Socks5Connection::OnReadHttpRequestHeadersDone(http_parser */*parser*/) {
   // Treat the rest part as Upgrade even when it is not CONNECT
   // (binary protocol such as ocsp-request and dns-message).
   return 2;

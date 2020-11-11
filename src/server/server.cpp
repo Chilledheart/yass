@@ -69,8 +69,8 @@ int main(int argc, const char *argv[]) {
 #ifdef SIGQUIT
   signals.add(SIGQUIT, ec);
 #endif
-  signals.async_wait([&](const asio::error_code &error,
-                         int signal_number) { factory.stop(); });
+  signals.async_wait([&](const asio::error_code &/*error*/,
+                         int /*signal_number*/) { factory.stop(); });
 
   io_context.run(ec);
 

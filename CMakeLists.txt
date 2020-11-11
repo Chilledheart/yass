@@ -5,7 +5,7 @@ set(PACKAGE_NAME      "Yet-Another-Shadow-Socket")
 # Defer enabling C and CXX languages.
 project(${PACKAGE_NAME} NONE)
 
-if(WIN32)
+if(MSVC)
   # On Windows, prefer cl over gcc if both are available. By default most of
   # the CMake generators prefer gcc, even on Windows.
   set(CMAKE_GENERATOR_CC cl)
@@ -13,6 +13,19 @@ endif()
 
 enable_language(C)
 enable_language(CXX)
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
+    CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    set(HAS_CLANG TRUE)
+else()
+    set(HAS_CLANG FALSE)
+endif()
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set(HAS_GCC TRUE)
+else()
+    set(HAS_GCC FALSE)
+endif()
 
 # *****************************************************************************************
 #           Basic Setups
@@ -87,16 +100,18 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /WX /wd4099 /wd4100 /wd4127 /wd4244 /wd4267 /wd4505 /wd4838 /wd4996")
 
     ## c/c++ standard, disabled rtti
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 /GR-")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++14 /GR-")
 
     ## optimization flags
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
 
-    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /OPT:REF")
-    set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /OPT:REF")
-    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /OPT:REF")
-
+    if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /OPT:REF")
+      set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /OPT:REF")
+      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /OPT:REF")
+    endif()
+    
     ## Disable LTCG for static libraries because this setting introduces ABI incompatibility between minor compiler versions
     if (NOT VCPKG_LIBRARY_LINKAGE STREQUAL "static")
       set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /GL")
@@ -148,19 +163,6 @@ endif()
 # *****************************************************************************************
 #           Debug facilities
 # *****************************************************************************************
-
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
-    CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    set(HAS_CLANG TRUE)
-else()
-    set(HAS_CLANG FALSE)
-endif()
-
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set(HAS_GCC TRUE)
-else()
-    set(HAS_GCC FALSE)
-endif()
 
 if (UNIX AND ${HAS_CLANG} AND
     CMAKE_GENERATOR STREQUAL "Ninja")
@@ -338,6 +340,12 @@ if (MSVC)
         string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
       endforeach()
    endif()
+
+   # disable precompiled head files for clang
+   if (HAS_CLANG)
+     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Y-")
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Y-")
+   endif()
 else()
     # include extra paths
     if (APPLE)
@@ -426,6 +434,10 @@ endif()
 # asio
 add_definitions(-DASIO_STANDALONE)
 include_directories(../asio-1.18.0/include)
+if (HAS_CLANG)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-error=inconsistent-missing-override -Wno-error=unused-private-field")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=inconsistent-missing-override -Wno-error=unused-private-field")
+endif()
 
 # *****************************************************************************************
 #           Source code
@@ -604,7 +616,10 @@ if (MSVC)
   set(wxWidgets_LIB_DEBUG_DIR ${VCPKG_STATIC_LIB_DEBUG_PATH})
   set(wxWidgets_INCLUDE_DIRS
       ${wxWidgets_ROOT_DIR}/include
-      ${wxWidgets_ROOT_DIR}/include/msw)
+      ${wxWidgets_ROOT_DIR}/include/wx/msw)
+
+  # find manifest if any
+  file(GLOB wxWidgets_MANIFESTS "${wxWidgets_ROOT_DIR}/include/wx/msw/amd64*.manifest")
 
   # find jpeg library
   find_library(JPEG_RELEASE_LIB jpeg
@@ -749,6 +764,11 @@ if (GUI AND wxWidgets_FOUND)
 
     if (MSVC)
         list(APPEND SRC_FILES yass.rc)
+        # But wxWidgets looked different.
+        foreach(manifest ${wxWidgets_MANIFESTS})
+          string(REPLACE "\\" "/" manifest_win ${manifest})
+          list(APPEND SRC_FILES ${manifest_win})
+        endforeach()
     endif()
 
     if (APPLE)

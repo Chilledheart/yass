@@ -124,13 +124,13 @@ private:
   /// Callback to read http handshake request's URL field
   static int OnReadHttpRequestURL(http_parser *p, const char *buf, size_t len);
   /// Callback to read http handshake request's URL field
-  static int OnReadHttpRequestHeaderField(http_parser *p, const char *buf,
+  static int OnReadHttpRequestHeaderField(http_parser *parser, const char *buf,
                                           size_t len);
   /// Callback to read http handshake request's headers done
-  static int OnReadHttpRequestHeaderValue(http_parser *p, const char *buf,
+  static int OnReadHttpRequestHeaderValue(http_parser *parser, const char *buf,
                                           size_t len);
   /// Callback to read http handshake request's headers done
-  static int OnReadHttpRequestHeadersDone(http_parser *p);
+  static int OnReadHttpRequestHeadersDone(http_parser *parser);
 
   /// Start to read stream
   void ReadStream();

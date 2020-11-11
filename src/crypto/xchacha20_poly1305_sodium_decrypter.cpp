@@ -45,7 +45,7 @@ bool XChaCha20Poly1305SodiumDecrypter::DecryptPacket(
                                      size_t ciphertext_len,
                                      char *output,
                                      size_t *output_length,
-                                     size_t max_output_length) {
+                                     size_t /*max_output_length*/) {
   unsigned long long plaintext_size;
   if (ciphertext_len < auth_tag_size_) {
     return false;
