@@ -10,6 +10,7 @@ from time import sleep
 APP_NAME = 'yass'
 DEFAULT_BUILD_TYPE = 'MinSizeRel'
 DEFAULT_OS_MIN = '10.9'
+DEFAULT_TOOLSET='v142'
 DEFAULT_WXWIDGETS_FRAMEWORK = '/opt/local/Library/Frameworks/wxWidgets.framework'
 
 VCPKG_DIR = os.getenv('VCPKG_ROOT')
@@ -270,14 +271,13 @@ def generate_buildscript(configuration_type):
   print 'generate build scripts...(%s)' % configuration_type
   cmake_args = ['-DGUI=ON', '-DCLI=ON', '-DSERVER=ON']
   if sys.platform == 'win32':
-    TOOLSET='ClangCL'
     cmake_args.extend(['-G', 'Visual Studio 16 2019'])
-    cmake_args.extend(['-T', TOOLSET])
+    cmake_args.extend(['-T', DEFAULT_TOOLSET])
     # use Win32 for 32-bit target
     cmake_args.extend(['-A', 'x64'])
     cmake_args.extend(['-DCMAKE_TOOLCHAIN_FILE=%s\\scripts\\buildsystems\\vcpkg.cmake' % VCPKG_DIR])
-    cmake_args.extend(['-DCMAKE_GENERATOR_TOOLSET=' + TOOLSET])
-    cmake_args.extend(['-DCMAKE_VS_PLATFORM_TOOLSET=' + TOOLSET])
+    cmake_args.extend(['-DCMAKE_GENERATOR_TOOLSET=%s' % DEFAULT_TOOLSET])
+    cmake_args.extend(['-DCMAKE_VS_PLATFORM_TOOLSET=%s' % DEFAULT_TOOLSET])
     cmake_args.extend(['-DVCPKG_CRT_LINKAGE=static'])
     cmake_args.extend(['-DVCPKG_LIBRARY_LINKAGE=static'])
     cmake_args.extend(['-DVCPKG_TARGET_TRIPLET=x64-windows-static'])
