@@ -63,7 +63,7 @@ scripts/build.py
 
 2. Run [vcpkg][vcpkg] to install required dependencies.
 ```
-vcpkg install asio:x64-windows-static glog:x64-windows-static gflags:x64-windows-static libsodium:x64-windows-static jsoncpp:x64-windows-static wxwidgets:x64-windows-static
+vcpkg install glog:x64-windows-static gflags:x64-windows-static libsodium:x64-windows-static jsoncpp:x64-windows-static wxwidgets:x64-windows-static
 ```
 3. use script to build Release App under `build` directory.
 ```
@@ -73,6 +73,21 @@ scripts/build.py
 ## boringssl
 
 For boringssl, you should only need crypto target.
+```
+mkdir build
+cd build
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_OSX_DEPLOYMENT_TARGET=10.9 ..
+ninja crypto
+```
+or
+```
+mkdir build
+cd build
+cmake -G "Visual Studio 16 2019" -A x64 -T v142 ..
+cmake --build . --config Debug
+cmake --build . --config Release
+```
 
 [vcpkg]: https://github.com/microsoft/vcpkg
 [MacPorts]: https://www.macports.org/install.php
