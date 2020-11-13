@@ -73,6 +73,23 @@ scripts/build.py
 ## boringssl
 
 For boringssl, you should only need crypto target.
+
+Add these code at CMakeLists.txt to target static build.
+```
+set(CompilerFlags
+        CMAKE_CXX_FLAGS
+        CMAKE_CXX_FLAGS_DEBUG
+        CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_C_FLAGS
+        CMAKE_C_FLAGS_DEBUG
+        CMAKE_C_FLAGS_RELEASE
+        )
+foreach(CompilerFlag ${CompilerFlags})
+  string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
+endforeach()
+```
+
+Run these commands to build crypto target.
 ```
 mkdir build
 cd build
