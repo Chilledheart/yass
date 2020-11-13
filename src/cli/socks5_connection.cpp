@@ -324,7 +324,7 @@ int Socks5Connection::OnReadHttpRequestHeaderValue(http_parser *parser,
   return 0;
 }
 
-int Socks5Connection::OnReadHttpRequestHeadersDone(http_parser */*parser*/) {
+int Socks5Connection::OnReadHttpRequestHeadersDone(http_parser*) {
   // Treat the rest part as Upgrade even when it is not CONNECT
   // (binary protocol such as ocsp-request and dns-message).
   return 2;
