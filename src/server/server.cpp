@@ -17,6 +17,11 @@
 
 #include "core/logging.hpp"
 
+#ifndef SSMAXCONN
+#define SSMAXCONN 1024
+#endif
+
+
 using namespace ss;
 
 static asio::ip::tcp::endpoint resolveEndpoint(asio::io_context *io_context,
@@ -57,7 +62,8 @@ int main(int argc, const char *argv[]) {
   LOG(WARNING) << "using " << endpoint << " with endpoint " << endpoint;
 
   SsFactory factory(io_context, remoteEndpoint);
-  asio::error_code ec = factory.listen(endpoint);
+  asio::error_code ec;
+  factory.listen(endpoint, SSMAXCONN, ec);
   if (ec) {
     LOG(ERROR) << "listen failed due to: " << ec;
     return -1;

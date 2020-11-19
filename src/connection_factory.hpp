@@ -31,11 +31,11 @@ public:
                  const asio::ip::tcp::endpoint &remote_endpoint)
       : io_context_(io_context), remote_endpoint_(remote_endpoint) {}
 
-  asio::error_code listen(const asio::ip::tcp::endpoint &endpoint) {
+  asio::error_code listen(const asio::ip::tcp::endpoint &endpoint, int backlog,
+                          asio::error_code &ec) {
     endpoint_ = endpoint;
     acceptor_ = std::make_unique<asio::ip::tcp::acceptor>(io_context_);
 
-    asio::error_code ec = asio::error_code();
     acceptor_->open(endpoint.protocol(), ec);
     if (ec) {
       return ec;
@@ -51,7 +51,7 @@ public:
     if (ec) {
       return ec;
     }
-    acceptor_->listen(7 /*backlog*/, ec);
+    acceptor_->listen(backlog, ec);
     if (ec) {
       return ec;
     }

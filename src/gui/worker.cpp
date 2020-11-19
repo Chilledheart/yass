@@ -49,7 +49,8 @@ void Worker::Start(bool quiet) {
     bool successed = false;
     std::string msg;
 
-    asio::error_code ec = socks5_server_->listen(endpoint_);
+    asio::error_code ec;
+    socks5_server_->listen(endpoint_, SOMAXCONN, ec);
 
     if (quiet) {
       return;

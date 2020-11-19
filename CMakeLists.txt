@@ -607,6 +607,7 @@ if (APPLE OR UNIX)
     find_program(wxWidgets_CONFIG_EXECUTABLE
       wx-config
       PATHS /opt/local/Library/Frameworks/wxWidgets.framework/Versions/wxWidgets/3.1/bin
+            /opt/local/Library/Frameworks/wxWidgets.framework/Versions/wxWidgets/3.0/bin
     )
 endif()
 
