@@ -83,7 +83,7 @@ bool ReadFile(const std::string &path, std::string* context) {
 }
 
 bool WriteFile(const std::string &path, const std::string &context) {
-  int fd = ::open(path.c_str(), O_WRONLY | O_TRUNC | O_CREAT);
+  int fd = ::open(path.c_str(), O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if (fd < 0) {
     LOG(WARNING) << "configure file does not exist: " << path;
     return false;
