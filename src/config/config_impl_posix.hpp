@@ -104,6 +104,7 @@ public:
   ~ConfigImplPosix() override{};
 
   bool Open(bool dontread) override {
+    dontread_ = dontread;
     if (!CreateConfigDirectory(DEFAULT_CONFIGDIR)) {
       LOG(WARNING) << "configure dir could not create: " << DEFAULT_CONFIGDIR;
       return false;
@@ -131,6 +132,9 @@ public:
   }
 
   bool Close() override {
+    if (dontread_) {
+      return true;
+    }
     Json::StreamWriterBuilder builder;
     builder["commentStyle"] = "None";
     builder["indentation"] = "   "; // or whatever you like

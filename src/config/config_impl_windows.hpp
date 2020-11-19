@@ -30,6 +30,7 @@ public:
   ~ConfigImplWindows() override{};
 
   bool Open(bool dontread) override {
+    dontread_ = dontread;
     DWORD disp;
     REGSAM samDesired =
       KEY_WOW64_64KEY |

@@ -90,6 +90,10 @@ public:
   /// \param key the key value
   /// \param value the value (int64_t)
   virtual bool Write(const std::string &key, int64_t value) = 0;
+
+protected:
+  /// Mark as don't touch this file
+  bool dontread_;
 };
 } // namespace config
 

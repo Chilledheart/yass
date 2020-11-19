@@ -17,6 +17,7 @@
 #include <asio/ip/tcp.hpp>
 #include <asio/ip/udp.hpp>
 #include <asio/error_code.hpp>
+#include <algorithm>
 #include <deque>
 #include <functional>
 #include <utility>
