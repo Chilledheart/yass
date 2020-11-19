@@ -92,7 +92,7 @@ public:
   virtual bool Write(const std::string &key, int64_t value) = 0;
 
 protected:
-  /// Mark as don't touch this file
+  /// dontread don't load from config tree, useful for write-only object
   bool dontread_;
 };
 } // namespace config

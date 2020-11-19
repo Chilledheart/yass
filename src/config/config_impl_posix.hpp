@@ -132,7 +132,7 @@ public:
   }
 
   bool Close() override {
-    if (dontread_) {
+    if (!dontread_) {
       return true;
     }
     Json::StreamWriterBuilder builder;
