@@ -88,5 +88,5 @@ RightPanel::RightPanel(wxPanel *parent)
 }
 
 void RightPanel::OnSetText(wxCommandEvent &WXUNUSED(event)) {
-  wxLogMessage("SetText");
+  wxLogMessage(wxT("SetText"));
 }

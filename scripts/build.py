@@ -9,7 +9,7 @@ from time import sleep
 
 APP_NAME = 'yass'
 DEFAULT_BUILD_TYPE = 'MinSizeRel'
-DEFAULT_OS_MIN = '10.9'
+DEFAULT_OS_MIN = '10.10'
 DEFAULT_OS_ARCHS = 'arm64;x86_64'
 DEFAULT_TOOLSET = 'v142'
 DEFAULT_WXWIDGETS_FRAMEWORK = '/opt/local/Library/Frameworks/wxWidgets.framework'
@@ -291,7 +291,7 @@ def generate_buildscript(configuration_type):
 
   if sys.platform == 'darwin':
     cmake_args.append('-DCMAKE_OSX_DEPLOYMENT_TARGET=%s' % DEFAULT_OS_MIN)
-    #cmake_args.append('-DCMAKE_OSX_ARCHITECTURES=%s' % DEFAULT_OS_ARCHS)
+    cmake_args.append('-DCMAKE_OSX_ARCHITECTURES=%s' % DEFAULT_OS_ARCHS)
 
   command = ['cmake', '..'] + cmake_args
   write_output(command)

@@ -81,7 +81,7 @@ endforeach()
 
 (for macOS)
 ```
-set(CMAKE_ASM_FLAGS "-mmacosx-version-min=10.9 ${CMAKE_ASM_FLAGS}")
+set(CMAKE_ASM_FLAGS "-mmacosx-version-min=10.10 ${CMAKE_ASM_FLAGS}")
 ```
 
 Run these commands to build crypto target.
@@ -90,7 +90,7 @@ mkdir build
 cd build
 git clean -xfd
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_OSX_DEPLOYMENT_TARGET=10.9 \
+  -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
   -DCMAKE_OSX_ARCHITECTURES="x86_64" ..
 ninja crypto
 ```
@@ -100,7 +100,7 @@ Building a universal target
 cp -fv crypto/libcrypto.a ../x64-libcrypto.a
 git clean -xfd
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_OSX_DEPLOYMENT_TARGET=10.9 \
+  -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
   -DCMAKE_OSX_ARCHITECTURES="arm64" ..
 ninja crypto
 cp -fv crypto/libcrypto.a ../arm64-libcrypto.a
@@ -114,6 +114,30 @@ cmake -G "Visual Studio 16 2019" -A x64 -T v142 ..
 cmake --build . --config Debug
 cmake --build . --config Release
 ```
+## wxWidgets
+```
+git submodule update --init
+mkdir build
+cd build
+CFLAGS="-I/opt/local/include" \
+CXXFLAGS="-I/opt/local/include" \
+LDFLAGS="-L/opt/local/lib" \
+LIBS="-L/opt/local/lib -ljpeg -ltiff -lexpat -liconv" \
+  ../configure --enable-universal_binary=x86_64,arm64 \
+  --with-cxx=14 \
+  --with-libpng \
+  --with-libjpeg \
+  --with-libtiff \
+  --with-zlib \
+  --with-expat \
+  --with-macosx-version-min=10.10 \
+  --with-osx \
+  --prefix /opt/wxWidgets
+make -j8
+sudo make install
+cd ..
+```
+
 
 [vcpkg]: https://github.com/microsoft/vcpkg
 [MacPorts]: https://www.macports.org/install.php

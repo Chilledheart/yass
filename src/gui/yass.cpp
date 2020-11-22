@@ -32,7 +32,7 @@ wxEND_EVENT_TABLE()
   mApp = this;
   state_ = STOPPED;
 
-  frame_ = new YASSFrame("Yet-Another-Shadow-Socket", wxPoint(50, 50),
+  frame_ = new YASSFrame(wxT("Yet-Another-Shadow-Socket"), wxPoint(50, 50),
                          wxSize(450, 340));
   frame_->Show(true);
   frame_->UpdateStatus();

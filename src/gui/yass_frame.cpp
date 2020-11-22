@@ -28,8 +28,8 @@ wxEND_EVENT_TABLE()
     : wxFrame(NULL, wxID_ANY, title, pos, size,
               wxDEFAULT_FRAME_STYLE & (~wxMAXIMIZE_BOX) & (~wxRESIZE_BORDER)) {
   wxMenu *menuFile = new wxMenu;
-  menuFile->Append(ID_Hello, "&Hello...\tCtrl-H",
-                   "Hell string shown in status bar for this menu item");
+  menuFile->Append(ID_Hello, wxT("&Hello...\tCtrl-H"),
+                   wxT("Hell string shown in status bar for this menu item"));
   menuFile->AppendSeparator();
   menuFile->Append(wxID_EXIT);
 
@@ -37,13 +37,13 @@ wxEND_EVENT_TABLE()
   menuHelp->Append(wxID_ABOUT);
 
   wxMenuBar *menuBar = new wxMenuBar;
-  menuBar->Append(menuFile, "&File");
-  menuBar->Append(menuHelp, "&Help");
+  menuBar->Append(menuFile, wxT("&File"));
+  menuBar->Append(menuHelp, wxT("&Help"));
 
   SetMenuBar(menuBar);
 
   CreateStatusBar();
-  SetStatusText("READY");
+  SetStatusText(wxT("READY"));
 
   wxPanel *panel = new wxPanel(this, wxID_ANY);
 
@@ -115,13 +115,13 @@ void YASSFrame::UpdateStatus() {
 }
 
 void YASSFrame::OnHello(wxCommandEvent &WXUNUSED(event)) {
-  wxLogMessage("Hello world from wxWidgets!");
+  wxLogMessage(wxT("Hello world from YASS!"));
 }
 
 void YASSFrame::OnExit(wxCommandEvent &WXUNUSED(event)) { Close(true); }
 
 void YASSFrame::OnAbout(wxCommandEvent &WXUNUSED(event)) {
-  wxMessageBox("This is Yet-Another-Shadow-Socket", "About YASS",
+  wxMessageBox(wxT("This is Yet-Another-Shadow-Socket"), wxT("About YASS"),
                wxOK | wxICON_INFORMATION);
 }
 

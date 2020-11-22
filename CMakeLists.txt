@@ -606,7 +606,8 @@ if (APPLE OR UNIX)
     #set(wxWidgets_CONFIG_EXECUTABLE
     find_program(wxWidgets_CONFIG_EXECUTABLE
       wx-config
-      PATHS /opt/local/Library/Frameworks/wxWidgets.framework/Versions/wxWidgets/3.1/bin
+      PATHS /opt/wxWidgets/bin
+            /opt/local/Library/Frameworks/wxWidgets.framework/Versions/wxWidgets/3.1/bin
             /opt/local/Library/Frameworks/wxWidgets.framework/Versions/wxWidgets/3.0/bin
     )
 endif()
