@@ -33,23 +33,13 @@ xcode-select --install
 ```
 2. Install [MacPorts] and dependencies...
 ```
-    ninja
-    cmake
-    google-glog
-    gflags
-    libsodium
-    jsoncpp
-    wxWidgets-3.2
+    ninja cmake python27 go
+
+    google-glog +universal gflags +universal libsodium +universal jsoncpp +universal wxWidgets-3.0 +universal
 ```
 2. Install [HomeBrew] and dependencies...
 ```
-    ninja
-    cmake
-    glog
-    gflags
-    libsodium
-    jsoncpp
-    wxwidgets
+    ninja    cmake    glog    gflags    libsodium    jsoncpp    wxwidgets
 ```
 
 3. use script to build Release App under `build` directory.
@@ -89,13 +79,32 @@ foreach(CompilerFlag ${CompilerFlags})
 endforeach()
 ```
 
+(for macOS)
+```
+set(CMAKE_ASM_FLAGS "-mmacosx-version-min=10.9 ${CMAKE_ASM_FLAGS}")
+```
+
 Run these commands to build crypto target.
 ```
 mkdir build
 cd build
+git clean -xfd
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_OSX_DEPLOYMENT_TARGET=10.9 ..
+  -DCMAKE_OSX_DEPLOYMENT_TARGET=10.9 \
+  -DCMAKE_OSX_ARCHITECTURES="x86_64" ..
 ninja crypto
+```
+
+Building a universal target
+```
+cp -fv crypto/libcrypto.a ../x64-libcrypto.a
+git clean -xfd
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_OSX_DEPLOYMENT_TARGET=10.9 \
+  -DCMAKE_OSX_ARCHITECTURES="arm64" ..
+ninja crypto
+cp -fv crypto/libcrypto.a ../arm64-libcrypto.a
+lipo -create ../arm64-libcrypto.a ../x64-libcrypto.a -output crypto/libcrypto.a
 ```
 or
 ```
