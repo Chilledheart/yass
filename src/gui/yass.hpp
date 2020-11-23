@@ -22,6 +22,8 @@ class YASSApp : public wxApp {
 public:
   /// On Program Init
   bool OnInit() override;
+  /// On Program Exit
+  int OnExit() override;
 
   void OnStart();
   void OnStop();

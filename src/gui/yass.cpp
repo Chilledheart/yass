@@ -12,7 +12,9 @@
 
 #include <string>
 
-YASSApp *mApp;
+#include "core/logging.hpp"
+
+YASSApp *mApp = nullptr;
 
 // this is a definition so can't be in a header
 wxDEFINE_EVENT(MY_EVENT, wxCommandEvent);
@@ -25,9 +27,14 @@ wxBEGIN_EVENT_TABLE(YASSApp, wxApp)
   EVT_COMMAND(ID_STOPPED, MY_EVENT, YASSApp::OnStopped)
 wxEND_EVENT_TABLE()
 
-    // clang-format on
+// clang-format on
 
-    bool YASSApp::OnInit() {
+wxIMPLEMENT_APP(YASSApp);
+
+bool YASSApp::OnInit() {
+  ::google::InitGoogleLogging("yass");
+  LOG(INFO) << "Application starting";
+
   LoadConfigFromDisk();
   mApp = this;
   state_ = STOPPED;
@@ -37,6 +44,11 @@ wxEND_EVENT_TABLE()
   frame_->Show(true);
   frame_->UpdateStatus();
   return true;
+}
+
+int YASSApp::OnExit() {
+  LOG(INFO) << "Application exiting";
+  return wxApp::OnExit();
 }
 
 std::string YASSApp::GetStatus() const {
@@ -96,4 +108,3 @@ void YASSApp::OnStopped(wxCommandEvent &WXUNUSED(event)) {
   frame_->Stopped();
 }
 
-wxIMPLEMENT_APP(YASSApp);

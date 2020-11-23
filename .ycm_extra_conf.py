@@ -80,6 +80,11 @@ flags = [
 '-I',
 'src/gui',
 '-std=c++17',
+'-I/opt/wxWidgets/lib/wx/include/osx_cocoa-unicode-3.1',
+'-I/opt/wxWidgets/include/wx-3.1',
+'-D_FILE_OFFSET_BITS=64',
+'-DWXUSINGDLL'
+'-D__WXMAC__', '-D__WXOSX__', '-D__WXOSX_COCOA__',
 ]
 
 # Set this to the absolute path to the folder (NOT the file!) containing the

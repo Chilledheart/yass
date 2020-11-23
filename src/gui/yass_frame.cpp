@@ -19,6 +19,7 @@ wxBEGIN_EVENT_TABLE(YASSFrame, wxFrame)
   EVT_MENU(wxID_EXIT,  YASSFrame::OnExit)
   EVT_MENU(wxID_ABOUT, YASSFrame::OnAbout)
   EVT_IDLE(            YASSFrame::OnIdle)
+  EVT_CLOSE(YASSFrame::OnClose)
 wxEND_EVENT_TABLE()
 
     // clang-format on
@@ -26,7 +27,7 @@ wxEND_EVENT_TABLE()
     YASSFrame::YASSFrame(const wxString &title, const wxPoint &pos,
                          const wxSize &size)
     : wxFrame(NULL, wxID_ANY, title, pos, size,
-              wxDEFAULT_FRAME_STYLE & (~wxMAXIMIZE_BOX) & (~wxRESIZE_BORDER)) {
+              (wxDEFAULT_FRAME_STYLE | wxSTAY_ON_TOP) & (~wxMAXIMIZE_BOX) & (~wxRESIZE_BORDER)) {
   wxMenu *menuFile = new wxMenu;
   menuFile->Append(ID_Hello, wxT("&Hello...\tCtrl-H"),
                    wxT("Hell string shown in status bar for this menu item"));
@@ -90,16 +91,34 @@ std::string YASSFrame::GetLocalPort() {
 
 void YASSFrame::Started() {
   UpdateStatus();
+  m_rightpanel->m_serverhost_tc->SetEditable(false);
+  m_rightpanel->m_serverport_tc->SetEditable(false);
+  m_rightpanel->m_password_tc->SetEditable(false);
+  // m_rightpanel->m_method_tc->SetEditable(false);
+  m_rightpanel->m_localhost_tc->SetEditable(false);
+  m_rightpanel->m_localport_tc->SetEditable(false);
   m_leftpanel->m_stop->Enable();
 }
 
 void YASSFrame::StartFailed() {
   UpdateStatus();
+  m_rightpanel->m_serverhost_tc->SetEditable(true);
+  m_rightpanel->m_serverport_tc->SetEditable(true);
+  m_rightpanel->m_password_tc->SetEditable(true);
+  // m_rightpanel->m_method_tc->SetEditable(true);
+  m_rightpanel->m_localhost_tc->SetEditable(true);
+  m_rightpanel->m_localport_tc->SetEditable(true);
   m_leftpanel->m_start->Enable();
 }
 
 void YASSFrame::Stopped() {
   UpdateStatus();
+  m_rightpanel->m_serverhost_tc->SetEditable(true);
+  m_rightpanel->m_serverport_tc->SetEditable(true);
+  m_rightpanel->m_password_tc->SetEditable(true);
+  // m_rightpanel->m_method_tc->SetEditable(true);
+  m_rightpanel->m_localhost_tc->SetEditable(true);
+  m_rightpanel->m_localport_tc->SetEditable(true);
   m_leftpanel->m_start->Enable();
 }
 
@@ -118,7 +137,9 @@ void YASSFrame::OnHello(wxCommandEvent &WXUNUSED(event)) {
   wxLogMessage(wxT("Hello world from YASS!"));
 }
 
-void YASSFrame::OnExit(wxCommandEvent &WXUNUSED(event)) { Close(true); }
+void YASSFrame::OnExit(wxCommandEvent &WXUNUSED(event)) {
+  wxFrame::Close(true);
+}
 
 void YASSFrame::OnAbout(wxCommandEvent &WXUNUSED(event)) {
   wxMessageBox(wxT("This is Yet-Another-Shadow-Socket"), wxT("About YASS"),
@@ -128,5 +149,18 @@ void YASSFrame::OnAbout(wxCommandEvent &WXUNUSED(event)) {
 void YASSFrame::OnIdle(wxIdleEvent &WXUNUSED(event)) {
   if (mApp->GetState() == YASSApp::STARTED) {
     UpdateStatus();
+  }
+}
+
+void YASSFrame::OnClose(wxCloseEvent &event) {
+  if(event.CanVeto()) {
+    if(wxMessageBox(wxT("Are you sure to quit?"),wxT("Confirm Quit"),wxICON_QUESTION|wxYES_NO)==wxYES) {
+      event.Skip(); //Destroy() also works here.
+    }
+    else {
+      event.Veto();
+    }
+  } else {
+    event.Skip();
   }
 }
