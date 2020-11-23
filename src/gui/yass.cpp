@@ -43,12 +43,24 @@ bool YASSApp::OnInit() {
                          wxSize(450, 340));
   frame_->Show(true);
   frame_->UpdateStatus();
+  SetTopWindow(frame_);
+
   return true;
 }
 
 int YASSApp::OnExit() {
   LOG(INFO) << "Application exiting";
   return wxApp::OnExit();
+}
+
+int YASSApp::OnRun() {
+  int exitcode = wxApp::OnRun();
+  SaveConfigToDisk();
+  LOG(INFO) << "Application is done with exitcode: " << exitcode;
+  if (exitcode != 0) {
+    return exitcode;
+  }
+  return 0;
 }
 
 std::string YASSApp::GetStatus() const {

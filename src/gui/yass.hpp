@@ -24,6 +24,8 @@ public:
   bool OnInit() override;
   /// On Program Exit
   int OnExit() override;
+  /// On Program Run
+  int OnRun() override;
 
   void OnStart();
   void OnStop();
