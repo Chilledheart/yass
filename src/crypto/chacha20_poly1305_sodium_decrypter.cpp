@@ -1,12 +1,5 @@
-//
-// chacha20_poly1305_sodium_decrypter.cpp
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Copyright (c) 2019 James Hu (hukeyue at hotmail dot com)
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-//
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright (c) 2019-2020 Chilledheart  */
 #include "crypto/chacha20_poly1305_sodium_decrypter.hpp"
 
 #ifdef HAVE_LIBSODIUM
