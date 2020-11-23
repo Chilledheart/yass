@@ -27,9 +27,9 @@ wxBEGIN_EVENT_TABLE(YASSApp, wxApp)
   EVT_COMMAND(ID_STOPPED, MY_EVENT, YASSApp::OnStopped)
 wxEND_EVENT_TABLE()
 
-// clang-format on
+    // clang-format on
 
-wxIMPLEMENT_APP(YASSApp);
+    wxIMPLEMENT_APP(YASSApp);
 
 bool YASSApp::OnInit() {
   ::google::InitGoogleLogging("yass");
@@ -65,9 +65,7 @@ std::string YASSApp::GetStatus() const {
   return ss.str();
 };
 
-void YASSApp::LoadConfigFromDisk() {
-  config::ReadConfig();
-}
+void YASSApp::LoadConfigFromDisk() { config::ReadConfig(); }
 
 void YASSApp::SaveConfigToDisk() {
   FLAGS_server_host = frame_->GetServerHost();
@@ -107,4 +105,3 @@ void YASSApp::OnStopped(wxCommandEvent &WXUNUSED(event)) {
   state_ = STOPPED;
   frame_->Stopped();
 }
-

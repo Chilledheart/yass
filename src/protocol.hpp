@@ -17,15 +17,15 @@
 
 #include <asio/buffer.hpp>
 #include <asio/error.hpp>
+#include <asio/error_code.hpp>
 #include <asio/io_context.hpp>
 #include <asio/ip/tcp.hpp>
 #include <asio/ip/udp.hpp>
-#include <asio/error_code.hpp>
 #include <functional>
 #include <utility>
 
-#include "core/logging.hpp"
 #include "core/iobuf.hpp"
+#include "core/logging.hpp"
 
 #define SOCKET_BUF_SIZE (4096)
 

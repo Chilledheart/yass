@@ -18,18 +18,13 @@
 #include <arpa/inet.h> // For inet_ntop and ...
 #endif
 
-
 #include "core/pr_util.hpp"
 #include "core/stringprintf.hpp"
 
 #ifdef _WIN32
-char *InetNtopA(
-    __in                                INT             Family,
-    __in                                LPCVOID           pAddr,
-    __out_ecount(StringBufSize)         PSTR            pStringBuf,
-    __in                                size_t          StringBufSize
-    )
-{
+char *InetNtopA(__in INT Family, __in LPCVOID pAddr,
+                __out_ecount(StringBufSize) PSTR pStringBuf,
+                __in size_t StringBufSize) {
   DWORD dwAddressLength;
   DWORD dwAddressStringLength;
   int rv;
@@ -37,12 +32,12 @@ char *InetNtopA(
   (void)StringBufSize;
 
   if (Family == AF_INET) {
-    struct sockaddr_in* pzsa4 = reinterpret_cast<struct sockaddr_in*>(&zsa);
+    struct sockaddr_in *pzsa4 = reinterpret_cast<struct sockaddr_in *>(&zsa);
     pzsa4->sin_family = AF_INET;
     memcpy(&pzsa4->sin_addr, pAddr, sizeof(struct in_addr));
     dwAddressLength = sizeof(struct sockaddr_in);
   } else {
-    struct sockaddr_in6* pzsa6 = &zsa;
+    struct sockaddr_in6 *pzsa6 = &zsa;
     pzsa6->sin6_family = AF_INET6;
     memcpy(&pzsa6->sin6_addr, pAddr, sizeof(struct in6_addr));
     dwAddressLength = sizeof(struct sockaddr_in6);
@@ -50,15 +45,11 @@ char *InetNtopA(
     return NULL;
   }
 
-  rv = WSAAddressToStringA(
-    (struct sockaddr*)&zsa,
-    dwAddressLength,
-    NULL,
-    pStringBuf,
-    &dwAddressStringLength);
+  rv = WSAAddressToStringA((struct sockaddr *)&zsa, dwAddressLength, NULL,
+                           pStringBuf, &dwAddressStringLength);
   return rv == 0 ? pStringBuf : NULL;
 }
-#define inet_ntop       InetNtopA
+#define inet_ntop InetNtopA
 #endif
 
 // The prefix for IPv6 mapped IPv4 addresses.
@@ -69,8 +60,8 @@ constexpr uint8_t kIPv4MappedPrefix[] = {0, 0, 0, 0, 0,    0,
 // Note that this function assumes:
 // * |ip_address| is at least |prefix_length_in_bits| (bits) long;
 // * |ip_prefix| is at least |prefix_length_in_bits| (bits) long.
-bool IPAddressPrefixCheck(const IPAddressBytes& ip_address,
-                          const uint8_t* ip_prefix,
+bool IPAddressPrefixCheck(const IPAddressBytes &ip_address,
+                          const uint8_t *ip_prefix,
                           size_t prefix_length_in_bits) {
   // Compare all the bytes that fall entirely within the prefix.
   size_t num_entire_bytes_in_prefix = prefix_length_in_bits / 8;
@@ -98,7 +89,7 @@ bool IPAddressPrefixCheck(const IPAddressBytes& ip_address,
 // www.iana.org/assignments/ipv4-address-space/ipv4-address-space.xhtml
 // www.iana.org/assignments/iana-ipv4-special-registry/
 // iana-ipv4-special-registry.xhtml
-bool IsPubliclyRoutableIPv4(const IPAddressBytes& ip_address) {
+bool IsPubliclyRoutableIPv4(const IPAddressBytes &ip_address) {
   // Different IP versions have different range reservations.
   DCHECK_EQ(IPAddress::kIPv4AddressSize, ip_address.size());
   struct {
@@ -111,7 +102,7 @@ bool IsPubliclyRoutableIPv4(const IPAddressBytes& ip_address) {
       {{198, 18, 0, 0}, 15}, {{198, 51, 100, 0}, 24}, {{203, 0, 113, 0}, 24},
       {{224, 0, 0, 0}, 3}};
 
-  for (const auto& range : kReservedIPv4Ranges) {
+  for (const auto &range : kReservedIPv4Ranges) {
     if (IPAddressPrefixCheck(ip_address, range.address,
                              range.prefix_length_in_bits)) {
       return false;
@@ -126,7 +117,7 @@ bool IsPubliclyRoutableIPv4(const IPAddressBytes& ip_address) {
 // IPv6 ranges, plus the blacklist of reserved IPv4 ranges mapped to IPv6.
 // Sources for info:
 // www.iana.org/assignments/ipv6-address-space/ipv6-address-space.xhtml
-bool IsPubliclyRoutableIPv6(const IPAddressBytes& ip_address) {
+bool IsPubliclyRoutableIPv6(const IPAddressBytes &ip_address) {
   DCHECK_EQ(IPAddress::kIPv6AddressSize, ip_address.size());
   struct {
     const uint8_t address_prefix[2];
@@ -136,7 +127,7 @@ bool IsPubliclyRoutableIPv6(const IPAddressBytes& ip_address) {
                                         // ff00::/8  -- Multicast
                                         {{0xff, 0}, 8}};
 
-  for (const auto& range : kPublicIPv6Ranges) {
+  for (const auto &range : kPublicIPv6Ranges) {
     if (IPAddressPrefixCheck(ip_address, range.address_prefix,
                              range.prefix_length_in_bits)) {
       return true;
@@ -182,41 +173,41 @@ bool ParseIPLiteralToBytes(const base::StringPiece& ip_literal,
 
 IPAddressBytes::IPAddressBytes() : size_(0) {}
 
-IPAddressBytes::IPAddressBytes(const uint8_t* data, size_t data_len) {
+IPAddressBytes::IPAddressBytes(const uint8_t *data, size_t data_len) {
   Assign(data, data_len);
 }
 
 IPAddressBytes::~IPAddressBytes() = default;
-IPAddressBytes::IPAddressBytes(IPAddressBytes const& other) = default;
+IPAddressBytes::IPAddressBytes(IPAddressBytes const &other) = default;
 
-void IPAddressBytes::Assign(const uint8_t* data, size_t data_len) {
+void IPAddressBytes::Assign(const uint8_t *data, size_t data_len) {
   size_ = data_len;
   CHECK_GE(16u, data_len);
   std::copy_n(data, data_len, bytes_.data());
 }
 
-bool IPAddressBytes::operator<(const IPAddressBytes& other) const {
+bool IPAddressBytes::operator<(const IPAddressBytes &other) const {
   if (size_ == other.size_)
     return std::lexicographical_compare(begin(), end(), other.begin(),
                                         other.end());
   return size_ < other.size_;
 }
 
-bool IPAddressBytes::operator==(const IPAddressBytes& other) const {
+bool IPAddressBytes::operator==(const IPAddressBytes &other) const {
   return size_ == other.size_ && std::equal(begin(), end(), other.begin());
 }
 
-bool IPAddressBytes::operator!=(const IPAddressBytes& other) const {
+bool IPAddressBytes::operator!=(const IPAddressBytes &other) const {
   return !(*this == other);
 }
 
 IPAddress::IPAddress() = default;
 
-IPAddress::IPAddress(const IPAddress& other) = default;
+IPAddress::IPAddress(const IPAddress &other) = default;
 
-IPAddress::IPAddress(const IPAddressBytes& address) : ip_address_(address) {}
+IPAddress::IPAddress(const IPAddressBytes &address) : ip_address_(address) {}
 
-IPAddress::IPAddress(const uint8_t* address, size_t address_len)
+IPAddress::IPAddress(const uint8_t *address, size_t address_len)
     : ip_address_(address, address_len) {}
 
 IPAddress::IPAddress(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3) {
@@ -226,22 +217,10 @@ IPAddress::IPAddress(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3) {
   ip_address_.push_back(b3);
 }
 
-IPAddress::IPAddress(uint8_t b0,
-                     uint8_t b1,
-                     uint8_t b2,
-                     uint8_t b3,
-                     uint8_t b4,
-                     uint8_t b5,
-                     uint8_t b6,
-                     uint8_t b7,
-                     uint8_t b8,
-                     uint8_t b9,
-                     uint8_t b10,
-                     uint8_t b11,
-                     uint8_t b12,
-                     uint8_t b13,
-                     uint8_t b14,
-                     uint8_t b15) {
+IPAddress::IPAddress(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
+                     uint8_t b5, uint8_t b6, uint8_t b7, uint8_t b8, uint8_t b9,
+                     uint8_t b10, uint8_t b11, uint8_t b12, uint8_t b13,
+                     uint8_t b14, uint8_t b15) {
   ip_address_.push_back(b0);
   ip_address_.push_back(b1);
   ip_address_.push_back(b2);
@@ -270,9 +249,7 @@ bool IPAddress::IsIPv6() const {
   return ip_address_.size() == kIPv6AddressSize;
 }
 
-bool IPAddress::IsValid() const {
-  return IsIPv4() || IsIPv6();
-}
+bool IPAddress::IsValid() const { return IsIPv4() || IsIPv6(); }
 
 bool IPAddress::IsPubliclyRoutable() const {
   if (IsIPv4()) {
@@ -361,24 +338,20 @@ IPAddress IPAddress::AllZeros(size_t num_zero_bytes) {
 }
 
 // static
-IPAddress IPAddress::IPv4AllZeros() {
-  return AllZeros(kIPv4AddressSize);
-}
+IPAddress IPAddress::IPv4AllZeros() { return AllZeros(kIPv4AddressSize); }
 
 // static
-IPAddress IPAddress::IPv6AllZeros() {
-  return AllZeros(kIPv6AddressSize);
-}
+IPAddress IPAddress::IPv6AllZeros() { return AllZeros(kIPv6AddressSize); }
 
-bool IPAddress::operator==(const IPAddress& that) const {
+bool IPAddress::operator==(const IPAddress &that) const {
   return ip_address_ == that.ip_address_;
 }
 
-bool IPAddress::operator!=(const IPAddress& that) const {
+bool IPAddress::operator!=(const IPAddress &that) const {
   return ip_address_ != that.ip_address_;
 }
 
-bool IPAddress::operator<(const IPAddress& that) const {
+bool IPAddress::operator<(const IPAddress &that) const {
   // Sort IPv4 before IPv6.
   if (ip_address_.size() != that.ip_address_.size()) {
     return ip_address_.size() < that.ip_address_.size();
@@ -401,11 +374,11 @@ std::string IPAddress::ToString() const {
   output.Complete();
 #else
   if (IsIPv4()) {
-    char buf[INET_ADDRSTRLEN+1];
+    char buf[INET_ADDRSTRLEN + 1];
     inet_ntop(AF_INET, ip_address_.data(), buf, sizeof(buf));
     str = buf;
   } else {
-    char buf6[INET6_ADDRSTRLEN+1];
+    char buf6[INET6_ADDRSTRLEN + 1];
     inet_ntop(AF_INET6, ip_address_.data(), buf6, sizeof(buf6));
     str = buf6;
   }
@@ -413,7 +386,7 @@ std::string IPAddress::ToString() const {
   return str;
 }
 
-std::string IPAddressToStringWithPort(const IPAddress& address, uint16_t port) {
+std::string IPAddressToStringWithPort(const IPAddress &address, uint16_t port) {
   std::string address_str = address.ToString();
   if (address_str.empty())
     return address_str;
@@ -425,34 +398,35 @@ std::string IPAddressToStringWithPort(const IPAddress& address, uint16_t port) {
   return StringPrintf("%s:%d", address_str.c_str(), port);
 }
 
-std::string IPAddressToPackedString(const IPAddress& address) {
-  return std::string(reinterpret_cast<const char*>(address.bytes().data()),
+std::string IPAddressToPackedString(const IPAddress &address) {
+  return std::string(reinterpret_cast<const char *>(address.bytes().data()),
                      address.size());
 }
 
-IPAddress ConvertIPv4ToIPv4MappedIPv6(const IPAddress& address) {
+IPAddress ConvertIPv4ToIPv4MappedIPv6(const IPAddress &address) {
   DCHECK(address.IsIPv4());
   // IPv4-mapped addresses are formed by:
   // <80 bits of zeros>  + <16 bits of ones> + <32-bit IPv4 address>.
   std::vector<uint8_t> bytes(16);
   bytes.insert(bytes.end(), std::begin(kIPv4MappedPrefix),
-                std::end(kIPv4MappedPrefix));
+               std::end(kIPv4MappedPrefix));
   bytes.insert(bytes.end(), address.bytes().begin(), address.bytes().end());
   return IPAddress(bytes.data(), bytes.size());
 }
 
-IPAddress ConvertIPv4MappedIPv6ToIPv4(const IPAddress& address) {
+IPAddress ConvertIPv4MappedIPv6ToIPv4(const IPAddress &address) {
   DCHECK(address.IsIPv4MappedIPv6());
 
   std::vector<uint8_t> bytes(16);
   bytes.insert(bytes.end(),
-                address.bytes().begin() + sizeof(kIPv4MappedPrefix) / sizeof(uint8_t),
-                address.bytes().end());
+               address.bytes().begin() +
+                   sizeof(kIPv4MappedPrefix) / sizeof(uint8_t),
+               address.bytes().end());
   return IPAddress(bytes.data(), bytes.size());
 }
 
-bool IPAddressMatchesPrefix(const IPAddress& ip_address,
-                            const IPAddress& ip_prefix,
+bool IPAddressMatchesPrefix(const IPAddress &ip_address,
+                            const IPAddress &ip_prefix,
                             size_t prefix_length_in_bits) {
   // Both the input IP address and the prefix IP address should be either IPv4
   // or IPv6.
@@ -523,7 +497,7 @@ bool ParseURLHostnameToAddress(const base::StringPiece& hostname,
 }
 #endif
 
-size_t CommonPrefixLength(const IPAddress& a1, const IPAddress& a2) {
+size_t CommonPrefixLength(const IPAddress &a1, const IPAddress &a2) {
   DCHECK_EQ(a1.size(), a2.size());
   for (size_t i = 0; i < a1.size(); ++i) {
     unsigned diff = a1.bytes()[i] ^ a2.bytes()[i];
@@ -539,9 +513,8 @@ size_t CommonPrefixLength(const IPAddress& a1, const IPAddress& a2) {
   return a1.size() * CHAR_BIT;
 }
 
-size_t MaskPrefixLength(const IPAddress& mask) {
+size_t MaskPrefixLength(const IPAddress &mask) {
   std::vector<uint8_t> all_ones(16);
   all_ones.resize(mask.size(), 0xFF);
-  return CommonPrefixLength(mask,
-                            IPAddress(all_ones.data(), all_ones.size()));
+  return CommonPrefixLength(mask, IPAddress(all_ones.data(), all_ones.size()));
 }

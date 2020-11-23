@@ -46,7 +46,7 @@ EvpAeadEncrypter::EvpAeadEncrypter(const EVP_AEAD *(*aead_getter)(),
 
 EvpAeadEncrypter::~EvpAeadEncrypter() {}
 
-bool EvpAeadEncrypter::SetKey(const char* key, size_t key_len) {
+bool EvpAeadEncrypter::SetKey(const char *key, size_t key_len) {
   if (!AeadBaseEncrypter::SetKey(key, key_len)) {
     return false;
   }
@@ -59,19 +59,20 @@ bool EvpAeadEncrypter::SetKey(const char* key, size_t key_len) {
   return true;
 }
 
-bool EvpAeadEncrypter::Encrypt(const char* nonce, size_t nonce_len,
-                               const char* associated_data, size_t associated_data_len,
+bool EvpAeadEncrypter::Encrypt(const char *nonce, size_t nonce_len,
+                               const char *associated_data,
+                               size_t associated_data_len,
                                const char *plaintext, size_t plaintext_len,
                                uint8_t *output) {
   DCHECK_EQ(nonce_len, nonce_size_);
 
   size_t ciphertext_len;
   if (!EVP_AEAD_CTX_seal(
-          ctx_.get(), output, &ciphertext_len,
-          plaintext_len + auth_tag_size_,
+          ctx_.get(), output, &ciphertext_len, plaintext_len + auth_tag_size_,
           reinterpret_cast<const uint8_t *>(nonce), nonce_len,
           reinterpret_cast<const uint8_t *>(plaintext), plaintext_len,
-          reinterpret_cast<const uint8_t *>(associated_data), associated_data_len)) {
+          reinterpret_cast<const uint8_t *>(associated_data),
+          associated_data_len)) {
     DLogOpenSslErrors();
     return false;
   }
@@ -79,14 +80,10 @@ bool EvpAeadEncrypter::Encrypt(const char* nonce, size_t nonce_len,
   return true;
 }
 
-bool EvpAeadEncrypter::EncryptPacket(uint64_t packet_number,
-                                     const char *associated_data,
-                                     size_t associated_data_len,
-                                     const char *plaintext,
-                                     size_t plaintext_len,
-                                     char *output,
-                                     size_t *output_length,
-                                     size_t max_output_length) {
+bool EvpAeadEncrypter::EncryptPacket(
+    uint64_t packet_number, const char *associated_data,
+    size_t associated_data_len, const char *plaintext, size_t plaintext_len,
+    char *output, size_t *output_length, size_t max_output_length) {
   size_t ciphertext_size = GetCiphertextSize(plaintext_len);
   if (max_output_length < ciphertext_size) {
     return false;
@@ -96,9 +93,9 @@ bool EvpAeadEncrypter::EncryptPacket(uint64_t packet_number,
   size_t prefix_len = nonce_size_ - sizeof(uint64_t);
   memcpy(nonce_buffer + prefix_len, &packet_number, sizeof(uint64_t));
 
-  if (!Encrypt((const char*)nonce_buffer, nonce_size_,
-               associated_data, associated_data_len,
-               plaintext, plaintext_len, (uint8_t *)output)) {
+  if (!Encrypt((const char *)nonce_buffer, nonce_size_, associated_data,
+               associated_data_len, plaintext, plaintext_len,
+               (uint8_t *)output)) {
     return false;
   }
   *output_length = ciphertext_size;

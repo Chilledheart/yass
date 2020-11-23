@@ -10,7 +10,7 @@
 #include "core/pr_util.hpp"
 
 // TBD
-PRThread* PR_GetCurrentThread(void) {
-    static PRThread thread;
-    return &thread;
+PRThread *PR_GetCurrentThread(void) {
+  static PRThread thread;
+  return &thread;
 }

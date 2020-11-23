@@ -15,8 +15,8 @@
 
 #ifdef HAVE_LIBSODIUM
 
-extern "C"
-typedef struct crypto_aead_aes256gcm_state_ crypto_aead_aes256gcm_state;
+extern "C" typedef struct crypto_aead_aes256gcm_state_
+    crypto_aead_aes256gcm_state;
 
 namespace crypto {
 
@@ -29,15 +29,11 @@ public:
   Aes256GcmSodiumDecrypter();
   ~Aes256GcmSodiumDecrypter() override;
 
-  bool SetKey(const char* key, size_t key_len) override;
+  bool SetKey(const char *key, size_t key_len) override;
 
-  bool DecryptPacket(uint64_t packet_number,
-                     const char *associated_data,
-                     size_t associated_data_len,
-                     const char *ciphertext,
-                     size_t ciphertext_len,
-                     char *output,
-                     size_t *output_length,
+  bool DecryptPacket(uint64_t packet_number, const char *associated_data,
+                     size_t associated_data_len, const char *ciphertext,
+                     size_t ciphertext_len, char *output, size_t *output_length,
                      size_t max_output_length) override;
 
   uint32_t cipher_id() const override;

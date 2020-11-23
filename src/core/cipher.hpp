@@ -21,8 +21,8 @@
 #endif
 
 #include "core/iobuf.hpp"
-#include "protocol.hpp"
 #include "crypto/crypter_export.hpp"
+#include "protocol.hpp"
 
 class cipher_impl;
 ///
@@ -85,12 +85,12 @@ private:
 
   void encrypt_salt(IOBuf *chunk);
 
-  bool chunk_decrypt_frame(uint64_t* counter,
-                           IOBuf *plaintext, const IOBuf *ciphertext,
+  bool chunk_decrypt_frame(uint64_t *counter, IOBuf *plaintext,
+                           const IOBuf *ciphertext,
                            size_t *consumed_length) const;
 
-  bool chunk_encrypt_frame(uint64_t* counter,
-                           const IOBuf *plaintext, IOBuf *ciphertext) const;
+  bool chunk_encrypt_frame(uint64_t *counter, const IOBuf *plaintext,
+                           IOBuf *ciphertext) const;
 
   void set_key_aead(const uint8_t *salt, size_t salt_len);
 

@@ -15,31 +15,29 @@
 #ifdef ANDROID
 #include <android/log.h>
 #endif
-#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-void PR_Abort(void)
-{
-    //PR_LogPrint("Aborting");
+void PR_Abort(void) {
+  // PR_LogPrint("Aborting");
 #ifdef ANDROID
-    __android_log_write(ANDROID_LOG_ERROR, "PRLog", "Aborting");
+  __android_log_write(ANDROID_LOG_ERROR, "PRLog", "Aborting");
 #endif
-    abort();
+  abort();
 }
 
-void PR_Assert(const char *s, const char *file, int ln)
-{
-    //PR_LogPrint("Assertion failure: %s, at %s:%d\n", s, file, ln);
-    fprintf(stderr, "Assertion failure: %s, at %s:%d\n", s, file, ln);
-    fflush(stderr);
+void PR_Assert(const char *s, const char *file, int ln) {
+  // PR_LogPrint("Assertion failure: %s, at %s:%d\n", s, file, ln);
+  fprintf(stderr, "Assertion failure: %s, at %s:%d\n", s, file, ln);
+  fflush(stderr);
 #ifdef WIN32
-    DebugBreak();
+  DebugBreak();
 #elif defined(XP_OS2)
-    asm("int $3");
+  asm("int $3");
 #elif defined(ANDROID)
-    __android_log_assert(NULL, "PRLog", "Assertion failure: %s, at %s:%d\n",
-                         s, file, ln);
+  __android_log_assert(NULL, "PRLog", "Assertion failure: %s, at %s:%d\n", s,
+                       file, ln);
 #endif
-    abort();
+  abort();
 }

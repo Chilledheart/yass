@@ -147,7 +147,8 @@ public:
         }
         i += sizeof(uint8_t);
 
-        memcpy(req.atyp_req_.domain.domain_name, &*i, req.atyp_req_.domain.domain_name_len);
+        memcpy(req.atyp_req_.domain.domain_name, &*i,
+               req.atyp_req_.domain.domain_name_len);
         i += req.atyp_req_.domain.domain_name_len;
 
         memcpy(&req.atyp_req_.port_high_byte, &*i, sizeof(uint8_t));

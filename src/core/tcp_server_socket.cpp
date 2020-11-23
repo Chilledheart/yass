@@ -15,7 +15,7 @@ TCPServerSocket::TCPServerSocket(PRFileDesc *socket)
 
 TCPServerSocket::~TCPServerSocket() = default;
 
-int TCPServerSocket::Listen(const IPEndPoint& address, int backlog) {
+int TCPServerSocket::Listen(const IPEndPoint &address, int backlog) {
   PRStatus result;
 
   socket_ = PR_OpenTCPSocket(address.GetFamily());
@@ -47,16 +47,16 @@ err_and_failure:
   return -1;
 }
 
-int TCPServerSocket::GetLocalAddress(IPEndPoint* address) const {
+int TCPServerSocket::GetLocalAddress(IPEndPoint *address) const {
   PNetAddr nAddr;
   if (PR_GetSockName(socket_, &nAddr) == PR_SUCCESS) {
-     *address = IPAddress(&nAddr, PNetAddrGetLen(&nAddr));
-     return 0;
+    *address = IPAddress(&nAddr, PNetAddrGetLen(&nAddr));
+    return 0;
   }
   return -1;
 }
 
-int TCPServerSocket::Accept(std::unique_ptr<StreamSocket>* socket,
+int TCPServerSocket::Accept(std::unique_ptr<StreamSocket> *socket,
                             CompletionOnceCallback callback) {
   DCHECK(socket);
   DCHECK(callback);
@@ -68,9 +68,8 @@ int TCPServerSocket::Accept(std::unique_ptr<StreamSocket>* socket,
 
   // It is safe to use base::Unretained(this). |socket_| is owned by this class,
   // and the callback won't be run after |socket_| is destroyed.
-  CompletionOnceCallback accept_callback =
-      std::bind(&TCPServerSocket::OnAcceptCompleted,
-                this, socket, std::move(callback));
+  CompletionOnceCallback accept_callback = std::bind(
+      &TCPServerSocket::OnAcceptCompleted, this, socket, std::move(callback));
 
   PNetAddr nAddr;
   accepted_socket_ = PR_Accept(socket_, &nAddr, 0);
@@ -87,8 +86,7 @@ int TCPServerSocket::Accept(std::unique_ptr<StreamSocket>* socket,
 }
 
 int TCPServerSocket::ConvertAcceptedSocket(
-    int result,
-    std::unique_ptr<StreamSocket>* output_accepted_socket) {
+    int result, std::unique_ptr<StreamSocket> *output_accepted_socket) {
   // Make sure the TCPSocket object is destroyed in any case.
   std::unique_ptr<TCPSocket> temp_accepted_socket(std::move(accepted_socket_));
   if (result != OK)
@@ -101,12 +99,9 @@ int TCPServerSocket::ConvertAcceptedSocket(
 }
 
 void TCPServerSocket::OnAcceptCompleted(
-    std::unique_ptr<StreamSocket>* output_accepted_socket,
-    CompletionOnceCallback forward_callback,
-    int result) {
+    std::unique_ptr<StreamSocket> *output_accepted_socket,
+    CompletionOnceCallback forward_callback, int result) {
   result = ConvertAcceptedSocket(result, output_accepted_socket);
   pending_accept_ = false;
   std::move(forward_callback)(result);
 }
-
-

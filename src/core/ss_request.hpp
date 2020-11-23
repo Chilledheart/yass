@@ -11,8 +11,8 @@
 #ifndef H_CORE_SS_REQUEST
 #define H_CORE_SS_REQUEST
 
-#include "protocol.hpp"
 #include "core/ss.hpp"
+#include "protocol.hpp"
 
 #include <stdint.h>
 namespace ss {
@@ -71,8 +71,8 @@ public:
       return sizeof(uint8_t) + sizeof(asio::ip::address_v4::bytes_type) +
              sizeof(uint16_t);
     case domain:
-      return sizeof(uint8_t) + sizeof(uint8_t) + atyp_req_.domain.domain_name_len +
-             sizeof(uint16_t);
+      return sizeof(uint8_t) + sizeof(uint8_t) +
+             atyp_req_.domain.domain_name_len + sizeof(uint16_t);
     case ipv6:
       return sizeof(uint8_t) + sizeof(asio::ip::address_v6::bytes_type) +
              sizeof(uint16_t);

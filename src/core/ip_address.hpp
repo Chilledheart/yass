@@ -23,14 +23,14 @@
 // A vector<uint8_t> would be simpler but incurs heap allocation, so
 // IPAddressBytes uses a fixed size array.
 class IPAddressBytes {
- public:
+public:
   IPAddressBytes();
-  IPAddressBytes(const uint8_t* data, size_t data_len);
-  IPAddressBytes(const IPAddressBytes& other);
+  IPAddressBytes(const uint8_t *data, size_t data_len);
+  IPAddressBytes(const IPAddressBytes &other);
   ~IPAddressBytes();
 
   // Copies |data_len| elements from |data| into this object.
-  void Assign(const uint8_t* data, size_t data_len);
+  void Assign(const uint8_t *data, size_t data_len);
 
   // Returns the number of elements in the underlying array.
   size_t size() const { return size_; }
@@ -46,23 +46,23 @@ class IPAddressBytes {
   bool empty() const { return size_ == 0; }
 
   // Returns a pointer to the underlying array of bytes.
-  const uint8_t* data() const { return bytes_.data(); }
-  uint8_t* data() { return bytes_.data(); }
+  const uint8_t *data() const { return bytes_.data(); }
+  uint8_t *data() { return bytes_.data(); }
 
   // Returns a pointer to the first element.
-  const uint8_t* begin() const { return data(); }
-  uint8_t* begin() { return data(); }
+  const uint8_t *begin() const { return data(); }
+  uint8_t *begin() { return data(); }
 
   // Returns a pointer past the last element.
-  const uint8_t* end() const { return data() + size_; }
-  uint8_t* end() { return data() + size_; }
+  const uint8_t *end() const { return data() + size_; }
+  uint8_t *end() { return data() + size_; }
 
   // Returns a reference to the last element.
-  uint8_t& back() {
+  uint8_t &back() {
     DCHECK(!empty());
     return bytes_[size_ - 1];
   }
-  const uint8_t& back() const {
+  const uint8_t &back() const {
     DCHECK(!empty());
     return bytes_[size_ - 1];
   }
@@ -74,20 +74,20 @@ class IPAddressBytes {
   }
 
   // Returns a reference to the byte at index |pos|.
-  uint8_t& operator[](size_t pos) {
+  uint8_t &operator[](size_t pos) {
     DCHECK_LT(pos, size_);
     return bytes_[pos];
   }
-  const uint8_t& operator[](size_t pos) const {
+  const uint8_t &operator[](size_t pos) const {
     DCHECK_LT(pos, size_);
     return bytes_[pos];
   }
 
-  bool operator<(const IPAddressBytes& other) const;
-  bool operator!=(const IPAddressBytes& other) const;
-  bool operator==(const IPAddressBytes& other) const;
+  bool operator<(const IPAddressBytes &other) const;
+  bool operator!=(const IPAddressBytes &other) const;
+  bool operator==(const IPAddressBytes &other) const;
 
- private:
+private:
   // Underlying sequence of bytes
   std::array<uint8_t, 16> bytes_;
 
@@ -97,26 +97,25 @@ class IPAddressBytes {
 };
 
 class IPAddress {
- public:
+public:
   enum : size_t { kIPv4AddressSize = 4, kIPv6AddressSize = 16 };
 
   // Creates a zero-sized, invalid address.
   IPAddress();
 
-  IPAddress(const IPAddress& other);
+  IPAddress(const IPAddress &other);
 
   // Copies the input address to |ip_address_|.
-  explicit IPAddress(const IPAddressBytes& address);
+  explicit IPAddress(const IPAddressBytes &address);
 
   // Copies the input address to |ip_address_|. The input is expected to be in
   // network byte order.
   template <size_t N>
-  IPAddress(const uint8_t(&address)[N])
-      : IPAddress(address, N) {}
+  IPAddress(const uint8_t (&address)[N]) : IPAddress(address, N) {}
 
   // Copies the input address to |ip_address_| taking an additional length
   // parameter. The input is expected to be in network byte order.
-  IPAddress(const uint8_t* address, size_t address_len);
+  IPAddress(const uint8_t *address, size_t address_len);
 
   // Initializes |ip_address_| from the 4 bX bytes to form an IPv4 address.
   // The bytes are expected to be in network byte order.
@@ -124,21 +123,9 @@ class IPAddress {
 
   // Initializes |ip_address_| from the 16 bX bytes to form an IPv6 address.
   // The bytes are expected to be in network byte order.
-  IPAddress(uint8_t b0,
-            uint8_t b1,
-            uint8_t b2,
-            uint8_t b3,
-            uint8_t b4,
-            uint8_t b5,
-            uint8_t b6,
-            uint8_t b7,
-            uint8_t b8,
-            uint8_t b9,
-            uint8_t b10,
-            uint8_t b11,
-            uint8_t b12,
-            uint8_t b13,
-            uint8_t b14,
+  IPAddress(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
+            uint8_t b5, uint8_t b6, uint8_t b7, uint8_t b8, uint8_t b9,
+            uint8_t b10, uint8_t b11, uint8_t b12, uint8_t b13, uint8_t b14,
             uint8_t b15);
 
   ~IPAddress();
@@ -192,7 +179,7 @@ class IPAddress {
 #endif
 
   // Returns the underlying bytes.
-  const IPAddressBytes& bytes() const { return ip_address_; }
+  const IPAddressBytes &bytes() const { return ip_address_; }
 
   // Copies the bytes to a new vector. Generally callers should be using
   // |bytes()| and the IPAddressBytes abstraction. This method is provided as a
@@ -215,11 +202,11 @@ class IPAddress {
   // Returns an IPAddress instance representing the :: address.
   static IPAddress IPv6AllZeros();
 
-  bool operator==(const IPAddress& that) const;
-  bool operator!=(const IPAddress& that) const;
-  bool operator<(const IPAddress& that) const;
+  bool operator==(const IPAddress &that) const;
+  bool operator!=(const IPAddress &that) const;
+  bool operator<(const IPAddress &that) const;
 
- private:
+private:
   IPAddressBytes ip_address_;
 
   // This class is copyable and assignable.
@@ -229,19 +216,18 @@ using IPAddressList = std::vector<IPAddress>;
 
 // Returns the canonical string representation of an IP address along with its
 // port. For example: "192.168.0.1:99" or "[::1]:80".
-std::string IPAddressToStringWithPort(const IPAddress& address,
-                                                 uint16_t port);
+std::string IPAddressToStringWithPort(const IPAddress &address, uint16_t port);
 
 // Returns the address as a sequence of bytes in network-byte-order.
-std::string IPAddressToPackedString(const IPAddress& address);
+std::string IPAddressToPackedString(const IPAddress &address);
 
 // Converts an IPv4 address to an IPv4-mapped IPv6 address.
 // For example 192.168.0.1 would be converted to ::ffff:192.168.0.1.
-IPAddress ConvertIPv4ToIPv4MappedIPv6(const IPAddress& address);
+IPAddress ConvertIPv4ToIPv4MappedIPv6(const IPAddress &address);
 
 // Converts an IPv4-mapped IPv6 address to IPv4 address. Should only be called
 // on IPv4-mapped IPv6 addresses.
-IPAddress ConvertIPv4MappedIPv6ToIPv4(const IPAddress& address);
+IPAddress ConvertIPv4MappedIPv6ToIPv4(const IPAddress &address);
 
 // Compares an IP address to see if it falls within the specified IP block.
 // Returns true if it does, false otherwise.
@@ -253,8 +239,8 @@ IPAddress ConvertIPv4MappedIPv6ToIPv4(const IPAddress& address);
 // In cases when an IPv4 address is being compared to an IPv6 address prefix
 // and vice versa, the IPv4 addresses will be converted to IPv4-mapped
 // (IPv6) addresses.
-bool IPAddressMatchesPrefix(const IPAddress& ip_address,
-                            const IPAddress& ip_prefix,
+bool IPAddressMatchesPrefix(const IPAddress &ip_address,
+                            const IPAddress &ip_prefix,
                             size_t prefix_length_in_bits);
 
 #if 0
@@ -286,20 +272,19 @@ bool ParseURLHostnameToAddress(const base::StringPiece& hostname,
 #endif
 
 // Returns number of matching initial bits between the addresses |a1| and |a2|.
-size_t CommonPrefixLength(const IPAddress& a1, const IPAddress& a2);
+size_t CommonPrefixLength(const IPAddress &a1, const IPAddress &a2);
 
 // Computes the number of leading 1-bits in |mask|.
-size_t MaskPrefixLength(const IPAddress& mask);
+size_t MaskPrefixLength(const IPAddress &mask);
 
 // Checks whether |address| starts with |prefix|. This provides similar
 // functionality as IPAddressMatchesPrefix() but doesn't perform automatic IPv4
 // to IPv4MappedIPv6 conversions and only checks against full bytes.
 template <size_t N>
-bool IPAddressStartsWith(const IPAddress& address, const uint8_t (&prefix)[N]) {
+bool IPAddressStartsWith(const IPAddress &address, const uint8_t (&prefix)[N]) {
   if (address.size() < N)
     return false;
   return std::equal(prefix, prefix + N, address.bytes().begin());
 }
-
 
 #endif // H_IP_ADDRESS

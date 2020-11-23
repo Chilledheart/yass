@@ -11,8 +11,8 @@
 #ifndef H_CORE_SOCKS4_REQUEST
 #define H_CORE_SOCKS4_REQUEST
 
-#include "protocol.hpp"
 #include "core/socks4.hpp"
+#include "protocol.hpp"
 
 #include <stdint.h>
 

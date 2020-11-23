@@ -13,10 +13,10 @@
 
 #include "crypto/crypter.hpp"
 
+#include <memory>
 #include <stddef.h>
 #include <stdint.h>
 #include <string>
-#include <memory>
 
 namespace crypto {
 
@@ -24,7 +24,8 @@ class Decrypter : public Crypter {
 public:
   virtual ~Decrypter();
 
-  static std::unique_ptr<Decrypter> CreateFromCipherSuite(uint32_t cipher_suite);
+  static std::unique_ptr<Decrypter>
+  CreateFromCipherSuite(uint32_t cipher_suite);
 
   // Sets the encryption key. Returns true on success, false on failure.
   // |DecryptPacket| may not be called until |SetDiversificationNonce| is
@@ -33,7 +34,7 @@ public:
   //
   // If this function is called, neither |SetKey| nor |SetNoncePrefix| may be
   // called.
-  virtual bool SetPreliminaryKey(const char* key, size_t key_len) = 0;
+  virtual bool SetPreliminaryKey(const char *key, size_t key_len) = 0;
 
 #if 0
   // SetDiversificationNonce uses |nonce| to derive final keys based on the
@@ -54,10 +55,8 @@ public:
   // to non-authentic inputs, as opposed to other reasons for failure.
   virtual bool DecryptPacket(uint64_t packet_number,
                              const char *associated_data,
-                             size_t associated_data_len,
-                             const char *ciphertext,
-                             size_t ciphertext_len,
-                             char *output,
+                             size_t associated_data_len, const char *ciphertext,
+                             size_t ciphertext_len, char *output,
                              size_t *output_length,
                              size_t max_output_length) = 0;
 #if 0

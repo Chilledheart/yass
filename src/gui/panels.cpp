@@ -13,8 +13,7 @@
 #include <wx/stattext.h>
 
 LeftPanel::LeftPanel(wxPanel *parent)
-    : wxPanel(parent, -1, wxPoint(-1, -1), wxSize(-1, -1),
-              wxBORDER_THEME) {
+    : wxPanel(parent, -1, wxPoint(-1, -1), wxSize(-1, -1), wxBORDER_THEME) {
   m_parent = parent;
   m_start = new wxButton(this, ID_START, wxT("START"), wxPoint(10, 10));
   m_stop = new wxButton(this, ID_STOP, wxT("STOP"), wxPoint(10, 60));
@@ -51,8 +50,9 @@ RightPanel::RightPanel(wxPanel *parent)
 
   wxStaticText *serverhost = new wxStaticText(this, -1, wxT("Server Host"));
   wxStaticText *serverport = new wxStaticText(this, -1, wxT("Server Port"));
-  wxStaticText *password = new wxStaticText(this, -1, wxT("Password"),
-                           wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD);
+  wxStaticText *password =
+      new wxStaticText(this, -1, wxT("Password"), wxDefaultPosition,
+                       wxDefaultSize, wxTE_PASSWORD);
   wxStaticText *method = new wxStaticText(this, -1, wxT("Cipher/Method"));
   wxStaticText *localhost = new wxStaticText(this, -1, wxT("Local Host"));
   wxStaticText *localport = new wxStaticText(this, -1, wxT("Local Port"));

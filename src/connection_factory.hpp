@@ -11,20 +11,20 @@
 #ifndef H_CONNECTION_FACTORY
 #define H_CONNECTION_FACTORY
 
+#include <algorithm>
 #include <asio/buffer.hpp>
 #include <asio/error.hpp>
+#include <asio/error_code.hpp>
 #include <asio/io_context.hpp>
 #include <asio/ip/tcp.hpp>
 #include <asio/ip/udp.hpp>
-#include <asio/error_code.hpp>
-#include <algorithm>
 #include <deque>
 #include <functional>
 #include <utility>
 
-#include "core/logging.hpp"
 #include "config/config.hpp"
 #include "connection.hpp"
+#include "core/logging.hpp"
 
 template <class T> class ServiceFactory {
 public:
@@ -42,8 +42,7 @@ public:
       return ec;
     }
     if (FLAGS_reuse_port) {
-      acceptor_->set_option(
-          asio::ip::tcp::acceptor::reuse_address(true), ec);
+      acceptor_->set_option(asio::ip::tcp::acceptor::reuse_address(true), ec);
     }
     if (ec) {
       return ec;

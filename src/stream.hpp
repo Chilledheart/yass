@@ -24,8 +24,7 @@ public:
   /// \param io_context
   /// \param endpoint
   /// \param channel
-  stream(asio::io_context &io_context,
-         asio::ip::tcp::endpoint endpoint,
+  stream(asio::io_context &io_context, asio::ip::tcp::endpoint endpoint,
          const std::shared_ptr<Channel> &channel)
       : endpoint_(endpoint), socket_(io_context), channel_(channel) {
     assert(channel && "channel must defined to use with stream");
@@ -75,10 +74,9 @@ public:
 
   void start_write(std::shared_ptr<IOBuf> buf) {
     std::shared_ptr<Channel> channel = std::shared_ptr<Channel>(channel_);
-    asio::async_write(
-        socket_, asio::const_buffer(buf->data(), buf->length()),
-        std::bind(&stream::on_write, this, channel, buf, std::placeholders::_1,
-                  std::placeholders::_2));
+    asio::async_write(socket_, asio::const_buffer(buf->data(), buf->length()),
+                      std::bind(&stream::on_write, this, channel, buf,
+                                std::placeholders::_1, std::placeholders::_2));
   }
 
   void close() {

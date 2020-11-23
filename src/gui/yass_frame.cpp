@@ -27,7 +27,8 @@ wxEND_EVENT_TABLE()
     YASSFrame::YASSFrame(const wxString &title, const wxPoint &pos,
                          const wxSize &size)
     : wxFrame(NULL, wxID_ANY, title, pos, size,
-              (wxDEFAULT_FRAME_STYLE | wxSTAY_ON_TOP) & (~wxMAXIMIZE_BOX) & (~wxRESIZE_BORDER)) {
+              (wxDEFAULT_FRAME_STYLE | wxSTAY_ON_TOP) & (~wxMAXIMIZE_BOX) &
+                  (~wxRESIZE_BORDER)) {
   wxMenu *menuFile = new wxMenu;
   menuFile->Append(ID_Hello, wxT("&Hello...\tCtrl-H"),
                    wxT("Hell string shown in status bar for this menu item"));
@@ -153,11 +154,11 @@ void YASSFrame::OnIdle(wxIdleEvent &WXUNUSED(event)) {
 }
 
 void YASSFrame::OnClose(wxCloseEvent &event) {
-  if(event.CanVeto()) {
-    if(wxMessageBox(wxT("Are you sure to quit?"),wxT("Confirm Quit"),wxICON_QUESTION|wxYES_NO)==wxYES) {
-      event.Skip(); //Destroy() also works here.
-    }
-    else {
+  if (event.CanVeto()) {
+    if (wxMessageBox(wxT("Are you sure to quit?"), wxT("Confirm Quit"),
+                     wxICON_QUESTION | wxYES_NO) == wxYES) {
+      event.Skip(); // Destroy() also works here.
+    } else {
       event.Veto();
     }
   } else {

@@ -31,8 +31,9 @@ static void PacketNumberToNonce(uint8_t *nonce, uint64_t packet_number) {
 
 namespace crypto {
 
-static_assert(Aes256GcmSodiumDecrypter::kAuthTagSize == crypto_aead_aes256gcm_ABYTES,
-    "mismatched AES-256-GCM auth tag size");
+static_assert(Aes256GcmSodiumDecrypter::kAuthTagSize ==
+                  crypto_aead_aes256gcm_ABYTES,
+              "mismatched AES-256-GCM auth tag size");
 
 Aes256GcmSodiumDecrypter::Aes256GcmSodiumDecrypter()
     : AeadBaseDecrypter(kKeySize, kAuthTagSize, kNonceSize),
@@ -40,11 +41,9 @@ Aes256GcmSodiumDecrypter::Aes256GcmSodiumDecrypter()
   memset(ctx_, 0, sizeof(*ctx_));
 }
 
-Aes256GcmSodiumDecrypter::~Aes256GcmSodiumDecrypter() {
-  delete ctx_;
-}
+Aes256GcmSodiumDecrypter::~Aes256GcmSodiumDecrypter() { delete ctx_; }
 
-bool Aes256GcmSodiumDecrypter::SetKey(const char* key, size_t key_len) {
+bool Aes256GcmSodiumDecrypter::SetKey(const char *key, size_t key_len) {
   if (!AeadBaseDecrypter::SetKey(key, key_len)) {
     return false;
   }
@@ -55,14 +54,9 @@ bool Aes256GcmSodiumDecrypter::SetKey(const char* key, size_t key_len) {
 }
 
 bool Aes256GcmSodiumDecrypter::DecryptPacket(
-                                     uint64_t packet_number,
-                                     const char *associated_data,
-                                     size_t associated_data_len,
-                                     const char *ciphertext,
-                                     size_t ciphertext_len,
-                                     char *output,
-                                     size_t *output_length,
-                                     size_t /*max_output_length*/) {
+    uint64_t packet_number, const char *associated_data,
+    size_t associated_data_len, const char *ciphertext, size_t ciphertext_len,
+    char *output, size_t *output_length, size_t /*max_output_length*/) {
   unsigned long long plaintext_size;
   if (ciphertext_len < auth_tag_size_) {
     return false;
@@ -82,8 +76,8 @@ bool Aes256GcmSodiumDecrypter::DecryptPacket(
   if (::crypto_aead_aes256gcm_decrypt_afternm(
           reinterpret_cast<uint8_t *>(output), &plaintext_size, nullptr,
           reinterpret_cast<const uint8_t *>(ciphertext), ciphertext_len,
-          reinterpret_cast<const uint8_t *>(associated_data), associated_data_len,
-          reinterpret_cast<const uint8_t *>(nonce),
+          reinterpret_cast<const uint8_t *>(associated_data),
+          associated_data_len, reinterpret_cast<const uint8_t *>(nonce),
           ctx_) != 0) {
     return false;
   }

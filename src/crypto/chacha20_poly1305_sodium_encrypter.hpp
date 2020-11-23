@@ -26,13 +26,9 @@ public:
   ChaCha20Poly1305SodiumEncrypter();
   ~ChaCha20Poly1305SodiumEncrypter() override;
 
-  bool EncryptPacket(uint64_t packet_number,
-                     const char *associated_data,
-                     size_t associated_data_len,
-                     const char *plaintext,
-                     size_t plaintext_len,
-                     char *output,
-                     size_t *output_length,
+  bool EncryptPacket(uint64_t packet_number, const char *associated_data,
+                     size_t associated_data_len, const char *plaintext,
+                     size_t plaintext_len, char *output, size_t *output_length,
                      size_t max_output_length) override;
 
   uint32_t cipher_id() const override;

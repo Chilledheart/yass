@@ -10,21 +10,20 @@
 
 #include "ss_connection.hpp"
 
+#include <asio/error_code.hpp>
 #include <asio/read.hpp>
 #include <asio/write.hpp>
-#include <asio/error_code.hpp>
 
-#include "core/cipher.hpp"
 #include "config/config.hpp"
+#include "core/cipher.hpp"
 
 #define MAX_DOWNSTREAM_DEPS 1024
 #define MAX_UPSTREAM_DEPS 1024
 
 namespace ss {
 
-SsConnection::SsConnection(
-    asio::io_context &io_context,
-    const asio::ip::tcp::endpoint &remote_endpoint)
+SsConnection::SsConnection(asio::io_context &io_context,
+                           const asio::ip::tcp::endpoint &remote_endpoint)
     : Connection(io_context, remote_endpoint), state_(), resolver_(io_context_),
       encoder_(new cipher("", FLAGS_password, cipher_method_in_use, true)),
       decoder_(new cipher("", FLAGS_password, cipher_method_in_use)) {}
@@ -65,10 +64,8 @@ void SsConnection::ReadHandshake() {
   cipherbuf->reserve(0, SOCKET_BUF_SIZE);
 
   socket_.async_read_some(
-      asio::mutable_buffer(cipherbuf->mutable_data(),
-                                  cipherbuf->capacity()),
-      [self, cipherbuf](asio::error_code error,
-                        size_t bytes_transferred) {
+      asio::mutable_buffer(cipherbuf->mutable_data(), cipherbuf->capacity()),
+      [self, cipherbuf](asio::error_code error, size_t bytes_transferred) {
         if (error) {
           self->OnDisconnect(error);
           return;
@@ -119,8 +116,7 @@ void SsConnection::ReadStream() {
   downstream_read_inprogress_ = true;
 
   socket_.async_read_some(
-      asio::mutable_buffer(cipherbuf->mutable_data(),
-                                  cipherbuf->capacity()),
+      asio::mutable_buffer(cipherbuf->mutable_data(), cipherbuf->capacity()),
       [self, cipherbuf](asio::error_code error,
                         std::size_t bytes_transferred) -> std::size_t {
         if (bytes_transferred || error) {
@@ -140,10 +136,9 @@ void SsConnection::ReadStream() {
 
 void SsConnection::WriteStream(std::shared_ptr<IOBuf> buf) {
   std::shared_ptr<SsConnection> self = shared_from_this();
-  asio::async_write(
-      socket_, asio::buffer(buf->data(), buf->length()),
-      std::bind(&SsConnection::ProcessSentData, self, buf,
-                std::placeholders::_1, std::placeholders::_2));
+  asio::async_write(socket_, asio::buffer(buf->data(), buf->length()),
+                    std::bind(&SsConnection::ProcessSentData, self, buf,
+                              std::placeholders::_1, std::placeholders::_2));
 }
 
 void SsConnection::ProcessReceivedData(std::shared_ptr<SsConnection> self,
@@ -177,8 +172,7 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<SsConnection> self,
       }
       break;
     case state_error:
-      ec = std::make_error_code(
-          std::errc::bad_message);
+      ec = std::make_error_code(std::errc::bad_message);
       break;
     };
   }
@@ -207,8 +201,7 @@ void SsConnection::ProcessSentData(std::shared_ptr<SsConnection> self,
       break;
     case state_handshake:
     case state_error:
-      ec = std::make_error_code(
-          std::errc::bad_message);
+      ec = std::make_error_code(std::errc::bad_message);
       break;
     }
   }

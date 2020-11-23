@@ -14,7 +14,6 @@
 #include <asio/read.hpp>
 #include <asio/write.hpp>
 
-
 #include "config/config.hpp"
 #include "core/cipher.hpp"
 
@@ -187,8 +186,7 @@ Socks5Connection::OnReadSocks5Handshake(std::shared_ptr<IOBuf> buf) {
     buf->retreat(request_.length());
     SetState(state_handshake);
 
-    auto error =
-        asio::error_code();
+    auto error = asio::error_code();
 
     VLOG(3) << "client: socks5 handshake";
     return error;
@@ -209,8 +207,7 @@ Socks5Connection::OnReadSocks4Handshake(std::shared_ptr<IOBuf> buf) {
     buf->retreat(s4_request_.length());
     SetState(state_socks4_handshake);
 
-    auto error =
-        asio::error_code();
+    auto error = asio::error_code();
 
     VLOG(3) << "client: socks4 handshake";
     return error;
@@ -324,7 +321,7 @@ int Socks5Connection::OnReadHttpRequestHeaderValue(http_parser *parser,
   return 0;
 }
 
-int Socks5Connection::OnReadHttpRequestHeadersDone(http_parser*) {
+int Socks5Connection::OnReadHttpRequestHeadersDone(http_parser *) {
   // Treat the rest part as Upgrade even when it is not CONNECT
   // (binary protocol such as ocsp-request and dns-message).
   return 2;
@@ -363,25 +360,24 @@ void Socks5Connection::WriteHandshake() {
   switch (CurrentState()) {
   case state_handshake:
     asio::async_write(socket_, reply_.buffers(),
-                             std::bind(&Socks5Connection::ProcessSentData, self,
-                                       nullptr, std::placeholders::_1,
-                                       std::placeholders::_2));
+                      std::bind(&Socks5Connection::ProcessSentData, self,
+                                nullptr, std::placeholders::_1,
+                                std::placeholders::_2));
     break;
   case state_socks4_handshake:
     asio::async_write(socket_, s4_reply_.buffers(),
-                             std::bind(&Socks5Connection::ProcessSentData, self,
-                                       nullptr, std::placeholders::_1,
-                                       std::placeholders::_2));
+                      std::bind(&Socks5Connection::ProcessSentData, self,
+                                nullptr, std::placeholders::_1,
+                                std::placeholders::_2));
     break;
   case state_http_handshake:
     /// reply on CONNECT request
     if (http_is_connect_) {
-      asio::async_write(socket_,
-                               asio::buffer(http_connect_reply_.c_str(),
-                                                   http_connect_reply_.size()),
-                               std::bind(&Socks5Connection::ProcessSentData,
-                                         self, nullptr, std::placeholders::_1,
-                                         std::placeholders::_2));
+      asio::async_write(
+          socket_,
+          asio::buffer(http_connect_reply_.c_str(), http_connect_reply_.size()),
+          std::bind(&Socks5Connection::ProcessSentData, self, nullptr,
+                    std::placeholders::_1, std::placeholders::_2));
     }
     break;
   case state_method_select: // impossible
@@ -394,15 +390,13 @@ void Socks5Connection::WriteHandshake() {
 
 void Socks5Connection::WriteStream(std::shared_ptr<IOBuf> buf) {
   std::shared_ptr<Socks5Connection> self = shared_from_this();
-  asio::async_write(
-      socket_, asio::buffer(buf->data(), buf->length()),
-      std::bind(&Socks5Connection::ProcessSentData, self, buf,
-                std::placeholders::_1, std::placeholders::_2));
+  asio::async_write(socket_, asio::buffer(buf->data(), buf->length()),
+                    std::bind(&Socks5Connection::ProcessSentData, self, buf,
+                              std::placeholders::_1, std::placeholders::_2));
 }
 
-asio::error_code
-Socks5Connection::PerformCmdOps(const socks5::request *request,
-                                socks5::reply *reply) {
+asio::error_code Socks5Connection::PerformCmdOps(const socks5::request *request,
+                                                 socks5::reply *reply) {
   if (request->address_type() == domain) {
     ss_request_ =
         std::make_unique<ss::request>(request->domain_name(), request->port());
@@ -419,8 +413,7 @@ Socks5Connection::PerformCmdOps(const socks5::request *request,
     if (request->address_type() == domain) {
       asio::ip::tcp::resolver resolver(io_context_);
       auto endpoints = resolver.resolve(request->domain_name(),
-                                        std::to_string(request->port()),
-		                                    error);
+                                        std::to_string(request->port()), error);
       if (!error) {
         endpoint = endpoints->endpoint();
         VLOG(2) << "[dns] reply with endpoint: " << endpoint << " for domain "
@@ -580,8 +573,7 @@ void Socks5Connection::ProcessReceivedData(
       self->ReadStream(); // continously read
       break;
     case state_error:
-      ec = std::make_error_code(
-          std::errc::bad_message);
+      ec = std::make_error_code(std::errc::bad_message);
       break;
     };
   }
@@ -619,8 +611,7 @@ void Socks5Connection::ProcessSentData(std::shared_ptr<Socks5Connection> self,
     case state_method_select: // impossible
     case state_http_handshake:
     case state_error:
-      ec = std::make_error_code(
-          std::errc::bad_message);
+      ec = std::make_error_code(std::errc::bad_message);
       break;
     }
   }

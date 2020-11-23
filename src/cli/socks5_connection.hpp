@@ -13,9 +13,9 @@
 
 #include "channel.hpp"
 #include "connection.hpp"
-#include "protocol.hpp"
 #include "core/http_parser.h"
 #include "core/iobuf.hpp"
+#include "core/logging.hpp"
 #include "core/socks4.hpp"
 #include "core/socks4_request.hpp"
 #include "core/socks4_request_parser.hpp"
@@ -23,13 +23,11 @@
 #include "core/socks5_request.hpp"
 #include "core/socks5_request_parser.hpp"
 #include "core/ss_request.hpp"
-#include "core/logging.hpp"
+#include "protocol.hpp"
 #include "stream.hpp"
 
 #include <deque>
 #include <unordered_map>
-
-
 
 class cipher;
 namespace socks5 {
@@ -112,8 +110,7 @@ private:
   void ReadHandshake();
 
   /// Start to read socks5 method_select request
-  asio::error_code
-  OnReadSocks5MethodSelect(std::shared_ptr<IOBuf> buf);
+  asio::error_code OnReadSocks5MethodSelect(std::shared_ptr<IOBuf> buf);
   /// Start to read socks5 handshake request
   asio::error_code OnReadSocks5Handshake(std::shared_ptr<IOBuf> buf);
   /// Start to read socks4 handshake request
@@ -148,13 +145,13 @@ private:
   /// \param command command type
   /// \param reply reply to given command type
   asio::error_code PerformCmdOps(const socks5::request *request,
-                                          socks5::reply *reply);
+                                 socks5::reply *reply);
 
   /// dispatch the command to delegate
   /// \param command command type
   /// \param reply reply to given command type
   asio::error_code PerformCmdOpsV4(const socks4::request *request,
-                                            socks4::reply *reply);
+                                   socks4::reply *reply);
 
   /// dispatch the command to delegate
   /// \param command command type

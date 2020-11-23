@@ -52,7 +52,7 @@ AeadEvpDecrypter::AeadEvpDecrypter(const EVP_AEAD *(*aead_getter)(),
 
 AeadEvpDecrypter::~AeadEvpDecrypter() {}
 
-bool AeadEvpDecrypter::SetKey(const char* key, size_t key_len) {
+bool AeadEvpDecrypter::SetKey(const char *key, size_t key_len) {
   if (!AeadBaseDecrypter::SetKey(key, key_len)) {
     return false;
   }
@@ -65,14 +65,10 @@ bool AeadEvpDecrypter::SetKey(const char* key, size_t key_len) {
   return true;
 }
 
-bool AeadEvpDecrypter::DecryptPacket(uint64_t packet_number,
-                                     const char *associated_data,
-                                     size_t associated_data_len,
-                                     const char *ciphertext,
-                                     size_t ciphertext_len,
-                                     char *output,
-                                     size_t *output_length,
-                                     size_t max_output_length) {
+bool AeadEvpDecrypter::DecryptPacket(
+    uint64_t packet_number, const char *associated_data,
+    size_t associated_data_len, const char *ciphertext, size_t ciphertext_len,
+    char *output, size_t *output_length, size_t max_output_length) {
   if (ciphertext_len < auth_tag_size_) {
     return false;
   }
@@ -88,10 +84,10 @@ bool AeadEvpDecrypter::DecryptPacket(uint64_t packet_number,
   memcpy(nonce + prefix_len, &packet_number, sizeof(packet_number));
   if (!EVP_AEAD_CTX_open(
           ctx_.get(), reinterpret_cast<uint8_t *>(output), output_length,
-          max_output_length,
-          reinterpret_cast<const uint8_t *>(nonce), nonce_size_,
-          reinterpret_cast<const uint8_t *>(ciphertext), ciphertext_len,
-          reinterpret_cast<const uint8_t *>(associated_data), associated_data_len)) {
+          max_output_length, reinterpret_cast<const uint8_t *>(nonce),
+          nonce_size_, reinterpret_cast<const uint8_t *>(ciphertext),
+          ciphertext_len, reinterpret_cast<const uint8_t *>(associated_data),
+          associated_data_len)) {
     ClearOpenSslErrors();
     return false;
   }

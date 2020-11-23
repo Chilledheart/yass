@@ -17,16 +17,21 @@ CIPHER_METHOD_MAP(XX)
 #undef XX
 
 enum cipher_method to_cipher_method(const std::string &method) {
-#define XX(num, name, string) if (method == string) { return CRYPTO_##name; }
+#define XX(num, name, string)                                                  \
+  if (method == string) {                                                      \
+    return CRYPTO_##name;                                                      \
+  }
   CIPHER_METHOD_MAP(XX)
 #undef XX
   return CRYPTO_PLAINTEXT;
 }
 
 const char *to_cipher_method_str(enum cipher_method method) {
-#define XX(num, name, string) if (method == num) { return string; }
+#define XX(num, name, string)                                                  \
+  if (method == num) {                                                         \
+    return string;                                                             \
+  }
   CIPHER_METHOD_MAP(XX)
 #undef XX
   return CRYPTO_PLAINTEXT_STR;
 }
-

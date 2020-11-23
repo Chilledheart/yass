@@ -13,16 +13,15 @@
 
 #include "channel.hpp"
 #include "connection.hpp"
-#include "protocol.hpp"
-#include "stream.hpp"
 #include "core/iobuf.hpp"
+#include "core/logging.hpp"
 #include "core/ss.hpp"
 #include "core/ss_request.hpp"
 #include "core/ss_request_parser.hpp"
-#include "core/logging.hpp"
+#include "protocol.hpp"
+#include "stream.hpp"
 
 #include <deque>
-
 
 class cipher;
 namespace ss {

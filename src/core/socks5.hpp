@@ -33,11 +33,13 @@ namespace socks5 {
 const uint8_t version = 0x05;
 
 #ifdef __GNUC__
-#define PACK( __Declaration__ ) __Declaration__ __attribute__((packed, aligned(1)))
+#define PACK(__Declaration__)                                                  \
+  __Declaration__ __attribute__((packed, aligned(1)))
 #endif
 
 #ifdef _MSC_VER
-#define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop))
+#define PACK(__Declaration__)                                                  \
+  __pragma(pack(push, 1)) __Declaration__ __pragma(pack(pop))
 #endif
 
 //  X'00' NO AUTHENTICATION REQUIRED

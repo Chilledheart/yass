@@ -16,9 +16,9 @@ class IPAddress;
 // Enum wrapper around the address family types supported by host resolver
 // procedures.
 enum AddressFamily {
-  ADDRESS_FAMILY_UNSPECIFIED,   // AF_UNSPEC
-  ADDRESS_FAMILY_IPV4,          // AF_INET
-  ADDRESS_FAMILY_IPV6,          // AF_INET6
+  ADDRESS_FAMILY_UNSPECIFIED, // AF_UNSPEC
+  ADDRESS_FAMILY_IPV4,        // AF_INET
+  ADDRESS_FAMILY_IPV6,        // AF_INET6
   ADDRESS_FAMILY_LAST = ADDRESS_FAMILY_IPV6
 };
 
@@ -26,7 +26,7 @@ enum AddressFamily {
 // determine the value of addrinfo.ai_flags and work around getaddrinfo
 // peculiarities.
 enum {
-  HOST_RESOLVER_CANONNAME = 1 << 0,  // AI_CANONNAME
+  HOST_RESOLVER_CANONNAME = 1 << 0, // AI_CANONNAME
   // Hint to the resolver proc that only loopback addresses are configured.
   HOST_RESOLVER_LOOPBACK_ONLY = 1 << 1,
   // Indicate the address family was set because no IPv6 support was detected.
@@ -37,7 +37,7 @@ enum {
 typedef int HostResolverFlags;
 
 // Returns AddressFamily for |address|.
-AddressFamily GetAddressFamily(const IPAddress& address);
+AddressFamily GetAddressFamily(const IPAddress &address);
 
 // Maps the given AddressFamily to either AF_INET, AF_INET6 or AF_UNSPEC.
 int ConvertAddressFamily(AddressFamily address_family);

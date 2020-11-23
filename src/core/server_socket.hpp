@@ -10,21 +10,21 @@
 #ifndef H_SERVER_SOCKET
 #define H_SERVER_SOCKET
 
-#include <stdint.h>
 #include <memory>
+#include <stdint.h>
 
 #include "core/completion_once_callback.hpp"
 
 class IPEndPoint;
 class StreamSocket;
 class ServerSocket {
- public:
+public:
   ServerSocket();
   virtual ~ServerSocket();
 
   // Binds the socket and starts listening. Destroys the socket to stop
   // listening.
-  virtual int Listen(const IPEndPoint& address, int backlog) = 0;
+  virtual int Listen(const IPEndPoint &address, int backlog) = 0;
 
 #if 0
   // Binds the socket with address and port, and starts listening. It expects
@@ -35,16 +35,16 @@ class ServerSocket {
 #endif
 
   // Gets current address the socket is bound to.
-  virtual int GetLocalAddress(IPEndPoint* address) const = 0;
+  virtual int GetLocalAddress(IPEndPoint *address) const = 0;
 
   // Accepts connection. Callback is called when new connection is
   // accepted.
-  virtual int Accept(std::unique_ptr<StreamSocket>* socket,
+  virtual int Accept(std::unique_ptr<StreamSocket> *socket,
                      CompletionOnceCallback callback) = 0;
 
- private:
-  ServerSocket (const ServerSocket&) = delete;
-  ServerSocket& operator=(const ServerSocket&) = delete;
+private:
+  ServerSocket(const ServerSocket &) = delete;
+  ServerSocket &operator=(const ServerSocket &) = delete;
 };
 
 #endif // H_SERVER_SOCKET

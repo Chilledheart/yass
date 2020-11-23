@@ -25,15 +25,11 @@ public:
                    size_t auth_tag_size, size_t nonce_size);
   ~AeadEvpDecrypter() override;
 
-  bool SetKey(const char* key, size_t key_len) override;
+  bool SetKey(const char *key, size_t key_len) override;
 
-  bool DecryptPacket(uint64_t packet_number,
-                     const char *associated_data,
-                     size_t associated_data_len,
-                     const char *ciphertext,
-                     size_t ciphertext_len,
-                     char *output,
-                     size_t *output_length,
+  bool DecryptPacket(uint64_t packet_number, const char *associated_data,
+                     size_t associated_data_len, const char *ciphertext,
+                     size_t ciphertext_len, char *output, size_t *output_length,
                      size_t max_output_length) override;
 
 private:

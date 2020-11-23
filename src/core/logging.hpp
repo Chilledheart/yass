@@ -17,7 +17,6 @@
 #endif
 
 #include <glog/logging.h>
-#define NOTREACHED()                                       \
-  LOG(FATAL)
+#define NOTREACHED() LOG(FATAL)
 
 #endif // H_LOGGING

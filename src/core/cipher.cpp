@@ -13,13 +13,13 @@
 #include <memory>
 
 #include "core/hkdf_sha1.hpp"
+#include "core/logging.hpp"
 #include "core/md5.h"
 #include "core/modp_b64.h"
-#include "core/sys_byteorder.h"
 #include "core/rand_util.hpp"
-#include "crypto/encrypter.hpp"
+#include "core/sys_byteorder.h"
 #include "crypto/decrypter.hpp"
-#include "core/logging.hpp"
+#include "crypto/encrypter.hpp"
 
 #define CHUNK_SIZE_LEN 2U
 #define CHUNK_SIZE_MASK 0x3FFFU
@@ -51,8 +51,9 @@ public:
     return 0;
   }
 
-  /// The master key can be input directly from user or generated from a password.
-  /// The key derivation is still following EVP_BytesToKey(3) in OpenSSL.
+  /// The master key can be input directly from user or generated from a
+  /// password. The key derivation is still following EVP_BytesToKey(3) in
+  /// OpenSSL.
   static int derive_key(const std::string &key, uint8_t *skey,
                         size_t skey_len) {
     const char *pass = key.c_str();
@@ -88,10 +89,11 @@ public:
   }
 
   /// EncryptPacket is a function that takes a secret key,
-  /// a non-secret nonce, a message, and produces ciphertext and authentication tag.
-  /// Nonce (NoncePrefix + packet_number, or vice versa) must be unique for a given key in each invocation.
-  int EncryptPacket(uint64_t packet_number,
-                    uint8_t *c, size_t *clen, const uint8_t *m, size_t mlen) {
+  /// a non-secret nonce, a message, and produces ciphertext and authentication
+  /// tag. Nonce (NoncePrefix + packet_number, or vice versa) must be unique for
+  /// a given key in each invocation.
+  int EncryptPacket(uint64_t packet_number, uint8_t *c, size_t *clen,
+                    const uint8_t *m, size_t mlen) {
     int err = 0;
 
     if (!encrypter->EncryptPacket(packet_number, nullptr, 0U, (const char *)m,
@@ -103,10 +105,10 @@ public:
   }
 
   /// DecryptPacket is a function that takes a secret key,
-  /// non-secret nonce, ciphertext, authentication tag, and produces original message.
-  /// If any of the input is tampered with, decryption will fail.
-  int DecryptPacket(uint64_t packet_number,
-                    uint8_t *p, size_t *plen, const uint8_t *m, size_t mlen) {
+  /// non-secret nonce, ciphertext, authentication tag, and produces original
+  /// message. If any of the input is tampered with, decryption will fail.
+  int DecryptPacket(uint64_t packet_number, uint8_t *p, size_t *plen,
+                    const uint8_t *m, size_t mlen) {
     int err = 0;
 
     if (!decrypter->DecryptPacket(packet_number, nullptr, 0U, (const char *)m,
@@ -128,21 +130,23 @@ public:
 
   void SetNoncePrefix(const uint8_t *nonce_prefix, size_t nonce_prefix_len) {
     if (encrypter) {
-      encrypter->SetNoncePrefix(reinterpret_cast<const char*>(nonce_prefix),
-                                std::min(nonce_prefix_len, encrypter->GetNoncePrefixSize()));
+      encrypter->SetNoncePrefix(
+          reinterpret_cast<const char *>(nonce_prefix),
+          std::min(nonce_prefix_len, encrypter->GetNoncePrefixSize()));
     }
     if (decrypter) {
-      decrypter->SetNoncePrefix(reinterpret_cast<const char*>(nonce_prefix),
-                                std::min(nonce_prefix_len, decrypter->GetNoncePrefixSize()));
+      decrypter->SetNoncePrefix(
+          reinterpret_cast<const char *>(nonce_prefix),
+          std::min(nonce_prefix_len, decrypter->GetNoncePrefixSize()));
     }
   }
 
   void SetIV(const uint8_t *iv, size_t iv_len) {
     if (encrypter) {
-      encrypter->SetIV(reinterpret_cast<const char*>(iv), iv_len);
+      encrypter->SetIV(reinterpret_cast<const char *>(iv), iv_len);
     }
     if (decrypter) {
-      decrypter->SetIV(reinterpret_cast<const char*>(iv), iv_len);
+      decrypter->SetIV(reinterpret_cast<const char *>(iv), iv_len);
     }
   }
 
@@ -151,7 +155,8 @@ public:
   }
 
   size_t GetNoncePrefixSize() const {
-    return encrypter ? encrypter->GetNoncePrefixSize() : decrypter->GetNoncePrefixSize();
+    return encrypter ? encrypter->GetNoncePrefixSize()
+                     : decrypter->GetNoncePrefixSize();
   }
 
   size_t GetIVSize() const {
@@ -162,12 +167,13 @@ public:
     return encrypter ? encrypter->GetTagSize() : decrypter->GetTagSize();
   }
 
-  const uint8_t* GetKey() const {
+  const uint8_t *GetKey() const {
     return encrypter ? encrypter->GetKey() : decrypter->GetKey();
   }
 
-  const uint8_t* GetNoncePrefix() const {
-    return encrypter ? encrypter->GetNoncePrefix() : decrypter->GetNoncePrefix();
+  const uint8_t *GetNoncePrefix() const {
+    return encrypter ? encrypter->GetNoncePrefix()
+                     : decrypter->GetNoncePrefix();
   }
 
   std::unique_ptr<crypto::Encrypter> encrypter;
@@ -217,8 +223,8 @@ void cipher::decrypt(IOBuf *ciphertext, std::unique_ptr<IOBuf> &plaintext,
 
     counter = counter_;
 
-    if (!chunk_decrypt_frame(&counter,
-                             plaintext.get(), chunk_.get(), &chunk_len)) {
+    if (!chunk_decrypt_frame(&counter, plaintext.get(), chunk_.get(),
+                             &chunk_len)) {
       break;
     }
 
@@ -282,8 +288,8 @@ void cipher::encrypt_salt(IOBuf *chunk) {
 #endif
 }
 
-bool cipher::chunk_decrypt_frame(uint64_t* counter,
-                                 IOBuf *plaintext, const IOBuf *ciphertext,
+bool cipher::chunk_decrypt_frame(uint64_t *counter, IOBuf *plaintext,
+                                 const IOBuf *ciphertext,
                                  size_t *consumed_len) const {
   int err;
   size_t mlen;
@@ -292,7 +298,6 @@ bool cipher::chunk_decrypt_frame(uint64_t* counter,
 
   VLOG(4) << "decrypt: current chunk: " << ciphertext->length()
           << " expected: " << (2 * tlen + CHUNK_SIZE_LEN);
-
 
   if (ciphertext->length() <= 2 * tlen + CHUNK_SIZE_LEN) {
     return false;
@@ -342,8 +347,8 @@ bool cipher::chunk_decrypt_frame(uint64_t* counter,
   return true;
 }
 
-bool cipher::chunk_encrypt_frame(uint64_t* counter,
-                                 const IOBuf *plaintext, IOBuf *ciphertext) const {
+bool cipher::chunk_encrypt_frame(uint64_t *counter, const IOBuf *plaintext,
+                                 IOBuf *ciphertext) const {
   size_t tlen = tag_len_;
 
   DCHECK_LE(plaintext->length(), CHUNK_SIZE_MASK);
@@ -357,8 +362,8 @@ bool cipher::chunk_encrypt_frame(uint64_t* counter,
   clen = CHUNK_SIZE_LEN + tlen;
   VLOG(4) << "encrypt: current chunk: " << clen
           << " original: " << sizeof(len_buf);
-  err = impl_->EncryptPacket(*counter, ciphertext->mutable_tail(), &clen, len_buf,
-                             CHUNK_SIZE_LEN);
+  err = impl_->EncryptPacket(*counter, ciphertext->mutable_tail(), &clen,
+                             len_buf, CHUNK_SIZE_LEN);
   if (err) {
     return false;
   }
@@ -371,8 +376,8 @@ bool cipher::chunk_encrypt_frame(uint64_t* counter,
   clen = plaintext->length() + tlen;
   VLOG(4) << "encrypt: current chunk: " << clen
           << " original: " << plaintext->length();
-  err = impl_->EncryptPacket(*counter, ciphertext->mutable_tail(), &clen, plaintext->data(),
-                             plaintext->length());
+  err = impl_->EncryptPacket(*counter, ciphertext->mutable_tail(), &clen,
+                             plaintext->data(), plaintext->length());
   if (err) {
     return false;
   }

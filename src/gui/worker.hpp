@@ -29,9 +29,7 @@ public:
   void Start(bool quiet = false);
   void Stop(bool quiet = false);
 
-  const asio::ip::tcp::endpoint &GetEndpoint() const {
-    return endpoint_;
-  }
+  const asio::ip::tcp::endpoint &GetEndpoint() const { return endpoint_; }
 
   const asio::ip::tcp::endpoint &GetRemoteEndpoint() const {
     return remote_endpoint_;
@@ -46,8 +44,7 @@ private:
 
   asio::io_context io_context_;
   /// stopping the io_context from running out of work
-  asio::executor_work_guard<asio::io_context::executor_type>
-      work_guard_;
+  asio::executor_work_guard<asio::io_context::executor_type> work_guard_;
 
   std::unique_ptr<Socks5Factory> socks5_server_;
   asio::ip::tcp::endpoint endpoint_;

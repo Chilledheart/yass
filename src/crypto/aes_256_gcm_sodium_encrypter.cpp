@@ -33,8 +33,9 @@ static void PacketNumberToNonce(uint8_t *nonce, uint64_t packet_number) {
 
 namespace crypto {
 
-static_assert(Aes256GcmSodiumEncrypter::kAuthTagSize == crypto_aead_aes256gcm_ABYTES,
-    "mismatched AES-256-GCM auth tag size");
+static_assert(Aes256GcmSodiumEncrypter::kAuthTagSize ==
+                  crypto_aead_aes256gcm_ABYTES,
+              "mismatched AES-256-GCM auth tag size");
 
 Aes256GcmSodiumEncrypter::Aes256GcmSodiumEncrypter()
     : AeadBaseEncrypter(kKeySize, kAuthTagSize, kNonceSize),
@@ -42,11 +43,9 @@ Aes256GcmSodiumEncrypter::Aes256GcmSodiumEncrypter()
   memset(ctx_, 0, sizeof(*ctx_));
 }
 
-Aes256GcmSodiumEncrypter::~Aes256GcmSodiumEncrypter() {
-  delete ctx_;
-}
+Aes256GcmSodiumEncrypter::~Aes256GcmSodiumEncrypter() { delete ctx_; }
 
-bool Aes256GcmSodiumEncrypter::SetKey(const char* key, size_t key_len) {
+bool Aes256GcmSodiumEncrypter::SetKey(const char *key, size_t key_len) {
   if (!AeadBaseEncrypter::SetKey(key, key_len)) {
     return false;
   }
@@ -57,14 +56,9 @@ bool Aes256GcmSodiumEncrypter::SetKey(const char* key, size_t key_len) {
 }
 
 bool Aes256GcmSodiumEncrypter::EncryptPacket(
-                     uint64_t packet_number,
-                     const char *associated_data,
-                     size_t associated_data_len,
-                     const char *plaintext,
-                     size_t plaintext_len,
-                     char *output,
-                     size_t *output_length,
-                     size_t max_output_length) {
+    uint64_t packet_number, const char *associated_data,
+    size_t associated_data_len, const char *plaintext, size_t plaintext_len,
+    char *output, size_t *output_length, size_t max_output_length) {
   unsigned long long ciphertext_size = GetCiphertextSize(plaintext_len);
   if (max_output_length < ciphertext_size) {
     return false;
@@ -76,15 +70,14 @@ bool Aes256GcmSodiumEncrypter::EncryptPacket(
   memcpy(nonce_buffer, iv_, nonce_size_);
 
   // for libsodium, packet number is written ahead
-  PacketNumberToNonce((uint8_t*)nonce_buffer, packet_number);
+  PacketNumberToNonce((uint8_t *)nonce_buffer, packet_number);
 
   if (::crypto_aead_aes256gcm_encrypt_afternm(
           reinterpret_cast<uint8_t *>(output), &ciphertext_size,
           reinterpret_cast<const uint8_t *>(plaintext), plaintext_len,
-          reinterpret_cast<const uint8_t *>(associated_data), associated_data_len,
-          nullptr,
-          reinterpret_cast<const uint8_t *>(nonce_buffer),
-          ctx_) != 0) {
+          reinterpret_cast<const uint8_t *>(associated_data),
+          associated_data_len, nullptr,
+          reinterpret_cast<const uint8_t *>(nonce_buffer), ctx_) != 0) {
     return false;
   }
   *output_length = ciphertext_size;

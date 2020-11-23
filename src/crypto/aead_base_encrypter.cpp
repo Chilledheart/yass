@@ -10,9 +10,9 @@
 
 #include "aead_base_encrypter.hpp"
 
+#include "core/logging.hpp"
 #include <algorithm>
 #include <cstring>
-#include "core/logging.hpp"
 
 namespace crypto {
 
@@ -30,7 +30,7 @@ AeadBaseEncrypter::AeadBaseEncrypter(size_t key_size, size_t auth_tag_size,
 
 AeadBaseEncrypter::~AeadBaseEncrypter() {}
 
-bool AeadBaseEncrypter::SetKey(const char* key, size_t key_len) {
+bool AeadBaseEncrypter::SetKey(const char *key, size_t key_len) {
   DCHECK_EQ(key_len, key_size_);
   if (key_len != key_size_) {
     return false;
@@ -39,7 +39,8 @@ bool AeadBaseEncrypter::SetKey(const char* key, size_t key_len) {
   return true;
 }
 
-bool AeadBaseEncrypter::SetNoncePrefix(const char* nonce_prefix, size_t nonce_prefix_len) {
+bool AeadBaseEncrypter::SetNoncePrefix(const char *nonce_prefix,
+                                       size_t nonce_prefix_len) {
   DCHECK_EQ(nonce_prefix_len, nonce_size_ - sizeof(uint64_t));
   if (nonce_prefix_len != nonce_size_ - sizeof(uint64_t)) {
     return false;
@@ -48,7 +49,7 @@ bool AeadBaseEncrypter::SetNoncePrefix(const char* nonce_prefix, size_t nonce_pr
   return true;
 }
 
-bool AeadBaseEncrypter::SetIV(const char* iv, size_t iv_len) {
+bool AeadBaseEncrypter::SetIV(const char *iv, size_t iv_len) {
   DCHECK_EQ(iv_len, nonce_size_);
   if (iv_len != nonce_size_) {
     return false;

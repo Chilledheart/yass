@@ -8,8 +8,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "core/cipher.hpp"
 #include "config/config.hpp"
+#include "core/cipher.hpp"
 #include "ss_factory.hpp"
 
 #include <asio.hpp>
@@ -21,11 +21,11 @@
 #define SSMAXCONN 1024
 #endif
 
-
 using namespace ss;
 
 static asio::ip::tcp::endpoint resolveEndpoint(asio::io_context *io_context,
-                                     const std::string &host, uint16_t port) {
+                                               const std::string &host,
+                                               uint16_t port) {
   asio::error_code ec;
   asio::ip::tcp::resolver resolver(*io_context);
   auto endpoints = resolver.resolve(host, std::to_string(port), ec);
@@ -75,7 +75,7 @@ int main(int argc, const char *argv[]) {
 #ifdef SIGQUIT
   signals.add(SIGQUIT, ec);
 #endif
-  signals.async_wait([&](const asio::error_code &/*error*/,
+  signals.async_wait([&](const asio::error_code & /*error*/,
                          int /*signal_number*/) { factory.stop(); });
 
   io_context.run(ec);

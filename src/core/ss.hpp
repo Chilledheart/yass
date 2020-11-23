@@ -11,9 +11,9 @@
 #ifndef H_SS
 #define H_SS
 
-#include <stdint.h>
-
 #include "core/logging.hpp"
+#include <asio/ip/address.hpp>
+#include <stdint.h>
 
 namespace ss {
 

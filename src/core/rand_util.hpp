@@ -34,7 +34,7 @@ double BitsToOpenEndedUnitInterval(uint64_t bits);
 
 // Fills |output_length| bytes of |output| with random data. Thread-safe.
 //
-void RandBytes(void* output, size_t output_length);
+void RandBytes(void *output, size_t output_length);
 
 // Fills a string of length |length| with random data and returns it.
 // |length| should be nonzero. Thread-safe.
@@ -50,7 +50,7 @@ std::string RandBytesAsString(size_t length);
 // An STL UniformRandomBitGenerator backed by RandUint64.
 // TODO(tzik): Consider replacing this with a faster implementation.
 class RandomBitGenerator {
- public:
+public:
   using result_type = uint64_t;
   static constexpr result_type min() { return 0; }
   static constexpr result_type max() { return UINT64_MAX; }

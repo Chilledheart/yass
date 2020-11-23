@@ -59,9 +59,7 @@ int RandInt(int min, int max) {
   return result;
 }
 
-double RandDouble() {
-  return BitsToOpenEndedUnitInterval(RandUint64());
-}
+double RandDouble() { return BitsToOpenEndedUnitInterval(RandUint64()); }
 
 double BitsToOpenEndedUnitInterval(uint64_t bits) {
   // We try to get maximum precision by masking out as many bits as will fit
@@ -105,6 +103,6 @@ std::string RandBytesAsString(size_t length) {
   return result;
 }
 
-void RandBytes(void* output, size_t output_length) {
-  crypto_RAND_bytes(reinterpret_cast<uint8_t*>(output), output_length);
+void RandBytes(void *output, size_t output_length) {
+  crypto_RAND_bytes(reinterpret_cast<uint8_t *>(output), output_length);
 }

@@ -40,7 +40,7 @@ int crypto_hkdf_expand(const unsigned char *prk, int prk_len,
 /* HKDF-Extract + HKDF-Expand */
 int crypto_hkdf(const unsigned char *salt, int salt_len,
                 const unsigned char *ikm, int ikm_len,
-                const unsigned char *info, int info_len,
-                unsigned char *okm, int okm_len);
+                const unsigned char *info, int info_len, unsigned char *okm,
+                int okm_len);
 
 #endif // H_HKDF_SHA1

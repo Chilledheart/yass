@@ -38,14 +38,9 @@ XChaCha20Poly1305SodiumEncrypter::XChaCha20Poly1305SodiumEncrypter()
 XChaCha20Poly1305SodiumEncrypter::~XChaCha20Poly1305SodiumEncrypter() {}
 
 bool XChaCha20Poly1305SodiumEncrypter::EncryptPacket(
-                     uint64_t packet_number,
-                     const char *associated_data,
-                     size_t associated_data_len,
-                     const char *plaintext,
-                     size_t plaintext_len,
-                     char *output,
-                     size_t *output_length,
-                     size_t max_output_length) {
+    uint64_t packet_number, const char *associated_data,
+    size_t associated_data_len, const char *plaintext, size_t plaintext_len,
+    char *output, size_t *output_length, size_t max_output_length) {
   unsigned long long ciphertext_size = GetCiphertextSize(plaintext_len);
   if (max_output_length < ciphertext_size) {
     return false;
@@ -57,13 +52,13 @@ bool XChaCha20Poly1305SodiumEncrypter::EncryptPacket(
   memcpy(nonce_buffer, iv_, nonce_size_);
 
   // for libsodium, packet number is written ahead
-  PacketNumberToNonce((uint8_t*)nonce_buffer, packet_number);
+  PacketNumberToNonce((uint8_t *)nonce_buffer, packet_number);
 
   if (::crypto_aead_xchacha20poly1305_ietf_encrypt(
           reinterpret_cast<uint8_t *>(output), &ciphertext_size,
           reinterpret_cast<const uint8_t *>(plaintext), plaintext_len,
-          reinterpret_cast<const uint8_t *>(associated_data), associated_data_len,
-          nullptr,
+          reinterpret_cast<const uint8_t *>(associated_data),
+          associated_data_len, nullptr,
           reinterpret_cast<const uint8_t *>(nonce_buffer),
           reinterpret_cast<const uint8_t *>(key_)) != 0) {
     return false;

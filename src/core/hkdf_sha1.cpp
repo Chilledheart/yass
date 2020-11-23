@@ -20,8 +20,8 @@
 
 int crypto_hkdf(const unsigned char *salt, int salt_len,
                 const unsigned char *ikm, int ikm_len,
-                const unsigned char *info, int info_len,
-                unsigned char *okm, int okm_len) {
+                const unsigned char *info, int info_len, unsigned char *okm,
+                int okm_len) {
   unsigned char prk[MD_MAX_SIZE_256];
 
   return crypto_hkdf_extract(salt, salt_len, ikm, ikm_len, prk) ||
@@ -112,4 +112,3 @@ cleanup:
 
   return 0;
 }
-

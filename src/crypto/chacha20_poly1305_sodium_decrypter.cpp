@@ -38,14 +38,9 @@ ChaCha20Poly1305SodiumDecrypter::ChaCha20Poly1305SodiumDecrypter()
 ChaCha20Poly1305SodiumDecrypter::~ChaCha20Poly1305SodiumDecrypter() {}
 
 bool ChaCha20Poly1305SodiumDecrypter::DecryptPacket(
-                                     uint64_t packet_number,
-                                     const char *associated_data,
-                                     size_t associated_data_len,
-                                     const char *ciphertext,
-                                     size_t ciphertext_len,
-                                     char *output,
-                                     size_t *output_length,
-                                     size_t /*max_output_length*/) {
+    uint64_t packet_number, const char *associated_data,
+    size_t associated_data_len, const char *ciphertext, size_t ciphertext_len,
+    char *output, size_t *output_length, size_t /*max_output_length*/) {
   unsigned long long plaintext_size;
   if (ciphertext_len < auth_tag_size_) {
     return false;
@@ -65,8 +60,8 @@ bool ChaCha20Poly1305SodiumDecrypter::DecryptPacket(
   if (::crypto_aead_chacha20poly1305_ietf_decrypt(
           reinterpret_cast<uint8_t *>(output), &plaintext_size, nullptr,
           reinterpret_cast<const uint8_t *>(ciphertext), ciphertext_len,
-          reinterpret_cast<const uint8_t *>(associated_data), associated_data_len,
-          reinterpret_cast<const uint8_t *>(nonce),
+          reinterpret_cast<const uint8_t *>(associated_data),
+          associated_data_len, reinterpret_cast<const uint8_t *>(nonce),
           reinterpret_cast<const uint8_t *>(key_)) != 0) {
     return false;
   }

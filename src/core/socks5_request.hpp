@@ -11,8 +11,8 @@
 #ifndef H_CORE_SOCKS5_REQUEST
 #define H_CORE_SOCKS5_REQUEST
 
-#include "protocol.hpp"
 #include "core/socks5.hpp"
+#include "protocol.hpp"
 
 #include <stdint.h>
 namespace socks5 {
@@ -45,7 +45,8 @@ public:
     case ipv4:
       return sizeof(asio::ip::address_v4::bytes_type) + sizeof(uint16_t);
     case domain:
-      return sizeof(uint8_t) + atyp_req_.domain.domain_name_len + sizeof(uint16_t);
+      return sizeof(uint8_t) + atyp_req_.domain.domain_name_len +
+             sizeof(uint16_t);
     case ipv6:
       return sizeof(asio::ip::address_v6::bytes_type) + sizeof(uint16_t);
     default:

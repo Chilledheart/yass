@@ -8,9 +8,9 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
+#include "cli/socks5_factory.hpp"
 #include "config/config.hpp"
 #include "core/cipher.hpp"
-#include "cli/socks5_factory.hpp"
 
 #include <asio.hpp>
 #include <gflags/gflags.h>
@@ -20,7 +20,8 @@
 using namespace socks5;
 
 asio::ip::tcp::endpoint resolveEndpoint(asio::io_context *io_context,
-                                               const std::string &host, uint16_t port) {
+                                        const std::string &host,
+                                        uint16_t port) {
   asio::error_code ec = asio::error_code();
   asio::ip::tcp::resolver resolver(*io_context);
   auto endpoints = resolver.resolve(host, std::to_string(port), ec);
@@ -69,10 +70,8 @@ int main(int argc, const char *argv[]) {
 #ifdef SIGQUIT
   signals.add(SIGQUIT, ec);
 #endif
-  signals.async_wait([&](const asio::error_code &/*error*/,
-                         int /*signal_number*/) {
-    factory.stop();
-  });
+  signals.async_wait([&](const asio::error_code & /*error*/,
+                         int /*signal_number*/) { factory.stop(); });
 
   io_context.run(ec);
 

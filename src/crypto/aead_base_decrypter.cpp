@@ -30,7 +30,7 @@ AeadBaseDecrypter::AeadBaseDecrypter(size_t key_size, size_t auth_tag_size,
 
 AeadBaseDecrypter::~AeadBaseDecrypter() {}
 
-bool AeadBaseDecrypter::SetKey(const char* key, size_t key_len) {
+bool AeadBaseDecrypter::SetKey(const char *key, size_t key_len) {
   DCHECK_EQ(key_len, key_size_);
   if (key_len != key_size_) {
     return false;
@@ -39,7 +39,8 @@ bool AeadBaseDecrypter::SetKey(const char* key, size_t key_len) {
   return true;
 }
 
-bool AeadBaseDecrypter::SetNoncePrefix(const char* nonce_prefix, size_t nonce_prefix_len) {
+bool AeadBaseDecrypter::SetNoncePrefix(const char *nonce_prefix,
+                                       size_t nonce_prefix_len) {
   DCHECK_EQ(nonce_prefix_len, nonce_size_ - sizeof(uint64_t));
   if (nonce_prefix_len != nonce_size_ - sizeof(uint64_t)) {
     return false;
@@ -48,7 +49,7 @@ bool AeadBaseDecrypter::SetNoncePrefix(const char* nonce_prefix, size_t nonce_pr
   return true;
 }
 
-bool AeadBaseDecrypter::SetIV(const char* iv, size_t iv_len) {
+bool AeadBaseDecrypter::SetIV(const char *iv, size_t iv_len) {
   DCHECK_EQ(iv_len, nonce_size_);
   if (iv_len != nonce_size_) {
     return false;
@@ -57,7 +58,7 @@ bool AeadBaseDecrypter::SetIV(const char* iv, size_t iv_len) {
   return true;
 }
 
-bool AeadBaseDecrypter::SetPreliminaryKey(const char* key, size_t key_len) {
+bool AeadBaseDecrypter::SetPreliminaryKey(const char *key, size_t key_len) {
   DCHECK(!have_preliminary_key_);
   SetKey(key, key_len);
   have_preliminary_key_ = true;

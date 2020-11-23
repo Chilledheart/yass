@@ -11,8 +11,8 @@
 #ifndef PSOCKET_TRANSPORT
 #define PSOCKET_TRANSPORT
 
-#include <string>
 #include "stream.hpp"
+#include <string>
 
 using InputOutputStream = stream;
 
@@ -44,7 +44,7 @@ public:
    * to a smaller range of values (e.g., 0 to 0xFFFF).
    */
   unsigned long getTimeout(in unsigned long aType) const;
-  void          setTimeout(in unsigned long aType, in unsigned long aValue);
+  void setTimeout(in unsigned long aType, in unsigned long aValue);
 
   /**
    * True to set addr and port reuse socket options.
@@ -65,20 +65,16 @@ public:
    */
   bool getKeepaliveEnabled() const;
   void setKeepaliveVals(in long keepaliveIdleTime,
-                          in long keepaliveRetryInterval);
+                        in long keepaliveRetryInterval);
 
-  bool OpenInputStream(uint32_t flags,
-                       uint32_t segsize,
-                       uint32_t segcount,
+  bool OpenInputStream(uint32_t flags, uint32_t segsize, uint32_t segcount,
                        InputOutputStream **result)
 
-  bool OpenOutputStream(uint32_t flags,
-                        uint32_t segsize,
-                        uint32_t segcount,
-                        InputOutputStream **result)
+      bool OpenOutputStream(uint32_t flags, uint32_t segsize, uint32_t segcount,
+                            InputOutputStream **result)
 
-  // default construct of PSocketTransport
-  PSocketTransport();
+      // default construct of PSocketTransport
+      PSocketTransport();
 
   // this method instructs the socket transport to open a socket of the
   // given type(s) to the given host.
@@ -88,8 +84,7 @@ public:
 
   // this method instructs the socket transport to use an already connected
   // socket with the given address.
-  bool InitWithConnectedSocket(PRFileDesc *socketFD,
-                               const PNetAddr *addr);
+  bool InitWithConnectedSocket(PRFileDesc *socketFD, const PNetAddr *addr);
 
   //
   // called to service a socket
@@ -140,26 +135,26 @@ private:
   void OnSocketConnected();
 
   // socket methods
-  void     SendStatus(bool status);
-  bool     ResolveHost();
-  bool     BuildSocket(PRFileDesc *&, bool &, bool &);
-  bool     InitiateSocket();
-  bool     RecoverFromError();
+  void SendStatus(bool status);
+  bool ResolveHost();
+  bool BuildSocket(PRFileDesc *&, bool &, bool &);
+  bool InitiateSocket();
+  bool RecoverFromError();
 
 private:
   std::string host_;
   uint16_t port_;
 
-  // self_addr_/peer_addr_ is valid from GetPeerAddr()/GetSelfAddr() once we have
-  // reached STATE_TRANSFERRING. It must not change after that.
-  void                    SetSocketName(PRFileDesc *fd);
-  PRFileDesc              fd_;
-  PNetAddr                peer_addr_;
-  PNetAddr                self_addr_;
+  // self_addr_/peer_addr_ is valid from GetPeerAddr()/GetSelfAddr() once we
+  // have reached STATE_TRANSFERRING. It must not change after that.
+  void SetSocketName(PRFileDesc *fd);
+  PRFileDesc fd_;
+  PNetAddr peer_addr_;
+  PNetAddr self_addr_;
 
-  InputOutputStream       yStream_;
+  InputOutputStream yStream_;
 
-  uint64_t                rByteCount_;
-  uint64_t                wByteCount_;
+  uint64_t rByteCount_;
+  uint64_t wByteCount_;
 };
 #endif // PSOCKET_TRANSPORT

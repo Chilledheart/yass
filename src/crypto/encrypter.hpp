@@ -13,10 +13,10 @@
 
 #include "crypto/crypter.hpp"
 
+#include <memory>
 #include <stddef.h>
 #include <stdint.h>
 #include <string>
-#include <memory>
 
 namespace crypto {
 
@@ -24,8 +24,8 @@ class Encrypter : public Crypter {
 public:
   virtual ~Encrypter();
 
-  static std::unique_ptr<Encrypter> CreateFromCipherSuite(
-      uint32_t cipher_suite);
+  static std::unique_ptr<Encrypter>
+  CreateFromCipherSuite(uint32_t cipher_suite);
 
   // Writes encrypted |plaintext| and a MAC over |plaintext| and
   // |associated_data| into output. Sets |output_length| to the number of
@@ -36,10 +36,8 @@ public:
   // |plaintext| must be <= |output|.
   virtual bool EncryptPacket(uint64_t packet_number,
                              const char *associated_data,
-                             size_t associated_data_len,
-                             const char *plaintext,
-                             size_t plaintext_len,
-                             char *output,
+                             size_t associated_data_len, const char *plaintext,
+                             size_t plaintext_len, char *output,
                              size_t *output_length,
                              size_t max_output_length) = 0;
 

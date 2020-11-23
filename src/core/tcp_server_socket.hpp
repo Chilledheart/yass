@@ -23,24 +23,21 @@ public:
   ~TCPServerSocket() override;
 
   // ServerSocket implementation.
-  int Listen(const IPEndPoint& address, int backlog) override;
-  int GetLocalAddress(IPEndPoint* address) const override;
-  int Accept(std::unique_ptr<StreamSocket>* socket,
+  int Listen(const IPEndPoint &address, int backlog) override;
+  int GetLocalAddress(IPEndPoint *address) const override;
+  int Accept(std::unique_ptr<StreamSocket> *socket,
              CompletionOnceCallback callback) override;
 
-
- private:
+private:
   // Converts |accepted_socket_| and stores the result in
   // |output_accepted_socket|.
   // |output_accepted_socket| is untouched on failure. But |accepted_socket_| is
   // set to NULL in any case.
   int ConvertAcceptedSocket(
-      int result,
-      std::unique_ptr<StreamSocket>* output_accepted_socket);
+      int result, std::unique_ptr<StreamSocket> *output_accepted_socket);
   // Completion callback for calling TCPSocket::Accept().
-  void OnAcceptCompleted(std::unique_ptr<StreamSocket>* output_accepted_socket,
-                         CompletionOnceCallback forward_callback,
-                         int result);
+  void OnAcceptCompleted(std::unique_ptr<StreamSocket> *output_accepted_socket,
+                         CompletionOnceCallback forward_callback, int result);
 
   PRFileDesc *socket_;
 
@@ -49,6 +46,6 @@ public:
   bool pending_accept_;
 
   // DISALLOW_COPY_AND_ASSIGN
-  TCPServerSocket(const TCPServerSocket&) = delete;
-  TCPServerSocket& operator=(const TCPServerSocket&) = delete;
+  TCPServerSocket(const TCPServerSocket &) = delete;
+  TCPServerSocket &operator=(const TCPServerSocket &) = delete;
 };

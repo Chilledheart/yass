@@ -10,12 +10,10 @@
 #ifndef PR_LOG
 #define PR_LOG
 
-#include <stdint.h>
 #include <assert.h>
+#include <stdint.h>
 
 void PR_Abort(void);
-void PR_Assert(const char *s, const char *file, int ln);	
-
-
+void PR_Assert(const char *s, const char *file, int ln);
 
 #endif // PR_LOG

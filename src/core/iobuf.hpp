@@ -10,8 +10,8 @@
 
 #include <cinttypes>
 #include <cstddef>
-#include <stdint.h>
 #include <memory>
+#include <stdint.h>
 
 #include "core/logging.hpp"
 

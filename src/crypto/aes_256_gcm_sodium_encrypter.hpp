@@ -15,8 +15,8 @@
 
 #include "aead_base_encrypter.hpp"
 
-extern "C"
-typedef struct crypto_aead_aes256gcm_state_ crypto_aead_aes256gcm_state;
+extern "C" typedef struct crypto_aead_aes256gcm_state_
+    crypto_aead_aes256gcm_state;
 
 namespace crypto {
 
@@ -29,15 +29,11 @@ public:
   Aes256GcmSodiumEncrypter();
   ~Aes256GcmSodiumEncrypter() override;
 
-  bool SetKey(const char* key, size_t key_len) override;
+  bool SetKey(const char *key, size_t key_len) override;
 
-  bool EncryptPacket(uint64_t packet_number,
-                     const char *associated_data,
-                     size_t associated_data_len,
-                     const char *plaintext,
-                     size_t plaintext_len,
-                     char *output,
-                     size_t *output_length,
+  bool EncryptPacket(uint64_t packet_number, const char *associated_data,
+                     size_t associated_data_len, const char *plaintext,
+                     size_t plaintext_len, char *output, size_t *output_length,
                      size_t max_output_length) override;
 
   uint32_t cipher_id() const override;
