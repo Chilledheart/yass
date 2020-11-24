@@ -35,7 +35,7 @@ xcode-select --install
 ```
     ninja cmake python27 go
 
-    google-glog +universal gflags +universal libsodium +universal jsoncpp +universal wxWidgets-3.0 +universal
+    google-glog +universal gflags +universal libsodium +universal jsoncpp +universal
 ```
 2. Install [HomeBrew] and dependencies...
 ```
@@ -93,11 +93,12 @@ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
   -DCMAKE_OSX_ARCHITECTURES="x86_64" ..
 ninja crypto
+cp -fv crypto/libcrypto.a ../x64-libcrypto.a
 ```
 
 Building a universal target
 ```
-cp -fv crypto/libcrypto.a ../x64-libcrypto.a
+
 git clean -xfd
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
@@ -114,7 +115,7 @@ cmake -G "Visual Studio 16 2019" -A x64 -T v142 ..
 cmake --build . --config Debug
 cmake --build . --config Release
 ```
-## wxWidgets
+## wxWidgets for macports
 ```
 git submodule update --init
 mkdir build

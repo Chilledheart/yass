@@ -8,7 +8,7 @@ from multiprocessing import cpu_count
 from time import sleep
 
 APP_NAME = 'yass'
-DEFAULT_BUILD_TYPE = 'MinSizeRel'
+DEFAULT_BUILD_TYPE = 'Release'
 DEFAULT_OS_MIN = '10.10'
 DEFAULT_OS_ARCHS = 'arm64;x86_64'
 DEFAULT_TOOLSET = 'v142'
@@ -349,7 +349,7 @@ def postbuild_fix_retina_display():
   write_output(['plutil', '-insert', 'NSHighResolutionCapable', '-bool', 'YES', '%s.app/Contents/Info.plist' % APP_NAME])
 
 if __name__ == '__main__':
-  configuration_type = 'Release'
+  configuration_type = DEFAULT_BUILD_TYPE
 
   find_source_directory()
   generate_buildscript(configuration_type)
