@@ -128,10 +128,11 @@ void YASSFrame::UpdateStatus() {
 }
 
 void YASSFrame::OnHello(wxCommandEvent &WXUNUSED(event)) {
-  wxLogMessage(wxT("Hello world from YASS!"));
+  SetStatusText(wxT("Hello world from YASS!"));
 }
 
 void YASSFrame::OnExit(wxCommandEvent &WXUNUSED(event)) {
+  LOG(INFO) << "Frame is called to exit";
   wxFrame::Close(true);
 }
 
@@ -147,14 +148,9 @@ void YASSFrame::OnIdle(wxIdleEvent &WXUNUSED(event)) {
 }
 
 void YASSFrame::OnClose(wxCloseEvent &event) {
-  if (event.CanVeto()) {
-    if (wxMessageBox(wxT("Are you sure to quit?"), wxT("Confirm Quit"),
-                     wxICON_QUESTION | wxYES_NO) == wxYES) {
-      event.Skip(); // Destroy() also works here.
-    } else {
-      event.Veto();
-    }
-  } else {
-    event.Skip();
-  }
+  LOG(INFO) << "Frame is closing";
+  event.Skip(); // Destroy() also works here.
+#ifdef __APPLE__ /* TODO Destroy cannot help in some cases */
+  ::exit(0);
+#endif
 }

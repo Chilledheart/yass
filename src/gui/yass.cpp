@@ -26,7 +26,24 @@ wxEND_EVENT_TABLE()
 
 bool YASSApp::OnInit() {
   ::google::InitGoogleLogging("yass");
-  LOG(INFO) << "Application starting";
+  ::FLAGS_stderrthreshold = true;
+#ifndef NDEBUG
+  ::FLAGS_logtostderr = true;
+  ::FLAGS_logbuflevel = 0;
+  ::FLAGS_v = 2;
+#else
+  ::FLAGS_logbuflevel = 1;
+  ::FLAGS_v = 1;
+#endif
+
+#ifdef _WIN32
+  if((HWND wnd = FindWindow(NULL, wxT("Yet-Another-Shadow-Socket")))) {
+    wxMessageBox(wxT("Already exists!"), wxT("WndChecker"));
+    return false;
+  }
+#endif
+
+  LOG(WARNING) << "Application starting";
 
   LoadConfigFromDisk();
   mApp = this;
@@ -42,13 +59,12 @@ bool YASSApp::OnInit() {
 }
 
 int YASSApp::OnExit() {
-  LOG(INFO) << "Application exiting";
+  LOG(WARNING) << "Application exiting";
   return wxApp::OnExit();
 }
 
 int YASSApp::OnRun() {
   int exitcode = wxApp::OnRun();
-  SaveConfigToDisk();
   LOG(INFO) << "Application is done with exitcode: " << exitcode;
   if (exitcode != 0) {
     return exitcode;
@@ -84,10 +100,10 @@ void YASSApp::SaveConfigToDisk() {
   config::SaveConfig();
 }
 
-void YASSApp::OnStart() {
+void YASSApp::OnStart(bool quiet) {
   state_ = STARTING;
   SaveConfigToDisk();
-  worker_.Start();
+  worker_.Start(quiet);
 }
 
 void YASSApp::OnStarted(wxCommandEvent &WXUNUSED(event)) {
@@ -101,9 +117,9 @@ void YASSApp::OnStartFailed(wxCommandEvent &event) {
   frame_->StartFailed();
 }
 
-void YASSApp::OnStop() {
+void YASSApp::OnStop(bool quiet) {
   state_ = STOPPING;
-  worker_.Stop();
+  worker_.Stop(quiet);
 }
 
 void YASSApp::OnStopped(wxCommandEvent &WXUNUSED(event)) {

@@ -19,8 +19,8 @@ public:
   Worker();
   ~Worker();
 
-  void Start(bool quiet = false);
-  void Stop(bool quiet = false);
+  void Start(bool quiet);
+  void Stop(bool quiet);
 
   const asio::ip::tcp::endpoint &GetEndpoint() const { return endpoint_; }
 

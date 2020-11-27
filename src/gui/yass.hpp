@@ -20,8 +20,8 @@ public:
   /// On Program Run
   int OnRun() override;
 
-  void OnStart();
-  void OnStop();
+  void OnStart(bool quiet = false);
+  void OnStop(bool quiet = false);
 
   std::string GetStatus() const;
   enum YASSState { STARTED, STARTING, START_FAILED, STOPPING, STOPPED };
