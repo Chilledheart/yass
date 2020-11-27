@@ -35,7 +35,7 @@ xcode-select --install
 ```
     ninja cmake python27 go
 
-    google-glog +universal gflags +universal libsodium +universal jsoncpp +universal
+    google-glog +universal gflags +universal libsodium +universal jsoncpp +universal jpeg +universal tiff +universal libpng +universal zlib +universal libiconv +universal expat +universal
 ```
 2. Install [HomeBrew] and dependencies...
 ```
