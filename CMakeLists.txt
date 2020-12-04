@@ -233,6 +233,7 @@ add_definitions(-DGLOG_NO_ABBREVIATED_SEVERITIES)
 
 option(SODIUM "Build against libsodium." ON)
 option(BORINGSSL "Build against boringssl." OFF)
+option(ARM64 "Build with arm64." OFF)
 set(boringssl_DIR "${CMAKE_SOURCE_DIR}/../boringssl" CACHE STRING "path to boringssl root directory")
 
 include(CheckIncludeFile)
@@ -318,13 +319,22 @@ if (MSVC)
     endif()
 
     find_library(ShLwApi_LIB ShLwApi)
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${ShLwApi_LIB})
-
     find_library(Ws2_32_LIB Ws2_32)
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${Ws2_32_LIB})
-
     find_library(WinMM_LIB WinMM)
+    find_library(Gdi32_LIB Gdi32)
+    find_library(Comdlg32_LIB Comdlg32)
+    find_library(Shell32_LIB Shell32)
+    find_library(Ole32_LIB Ole32)
+    find_library(Winspool_LIB Winspool)
+
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${ShLwApi_LIB})
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${Ws2_32_LIB})
     set(SYSTEM_LIBS ${SYSTEM_LIBS} ${WinMM_LIB})
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${Gdi32_LIB})
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${Comdlg32_LIB})
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${Shell32_LIB})
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${Ole32_LIB})
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${Winspool_LIB})
 
     if (VCPKG_CRT_LINKAGE STREQUAL "static")
       # replace /MD with /MT
@@ -663,7 +673,8 @@ if (MSVC)
     optimized ${TIFF_RELEASE_LIB}
     )
 
-  # find tiffxx library
+  # find tiffxx library, not available on arm64 port
+  if (MSVC AND NOT ARM64)
   find_library(TIFFXX_RELEASE_LIB tiffxx
     PATHS ${wxWidgets_LIB_DIR} NO_DEFAULT_PATH)
   find_library(TIFFXX_DEBUG_LIB tiffxxd
@@ -672,6 +683,7 @@ if (MSVC)
     debug ${TIFFXX_DEBUG_LIB}
     optimized ${TIFFXX_RELEASE_LIB}
     )
+  endif()
 
   # find turbojpeg library
   find_library(TURBOJPEG_RELEASE_LIB turbojpeg

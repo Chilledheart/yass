@@ -55,6 +55,14 @@ scripts/build.py
 ```
 vcpkg install glog:x64-windows-static gflags:x64-windows-static libsodium:x64-windows-static jsoncpp:x64-windows-static wxwidgets:x64-windows-static
 ```
+or
+```
+vcpkg install glog:arm64-windows-static gflags:arm64-windows-static libsodium:arm64-windows-static jsoncpp:arm64-windows-static wxwidgets:arm64-windows-static
+```
+or
+```
+vcpkg install glog:x86-windows-static gflags:x86-windows-static libsodium:x86-windows-static jsoncpp:x86-windows-static wxwidgets:x86-windows-static
+```
 3. use script to build Release App under `build` directory.
 ```
 scripts/build.py
@@ -112,8 +120,8 @@ or
 mkdir build
 cd build
 cmake -G "Visual Studio 16 2019" -A x64 -T v142 ..
-cmake --build . --config Debug
-cmake --build . --config Release
+cmake --build . --config Debug --target crypto
+cmake --build . --config Release --target crypto
 ```
 ## wxWidgets for macports
 ```

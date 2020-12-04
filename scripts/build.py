@@ -10,10 +10,10 @@ from time import sleep
 
 APP_NAME = 'yass'
 DEFAULT_BUILD_TYPE = 'Release'
-DEFAULT_OS_MIN = '10.10'
-DEFAULT_OS_ARCHS = 'arm64;x86_64'
+DEFAULT_OSX_MIN = '10.10'
+DEFAULT_OSX_ARCHS = 'arm64;x86_64'
 DEFAULT_TOOLSET = 'v142'
-
+DEFAULT_ARCH = os.getenv('Platform')
 VCPKG_DIR = os.getenv('VCPKG_ROOT')
 
 num_cpus=cpu_count()
@@ -29,6 +29,7 @@ def copy_file_with_symlinks(src, dst):
 
 
 def write_output(command):
+  print '--- %s' % ' '.join(command)
   proc = subprocess.Popen(command, stdout=sys.stdout, stderr=sys.stdout,
       shell=False, env=os.environ)
   proc.communicate()
@@ -235,30 +236,38 @@ def find_source_directory():
 
 def generate_buildscript(configuration_type):
   print 'generate build scripts...(%s)' % configuration_type
-  cmake_args = ['-DGUI=ON', '-DCLI=ON', '-DSERVER=ON']
+  cmake_args = ['-DGUI=ON', '-DCLI=OFF', '-DSERVER=OFF']
   if sys.platform == 'win32':
     cmake_args.extend(['-G', 'Visual Studio 16 2019'])
     cmake_args.extend(['-T', DEFAULT_TOOLSET])
-    # use Win32 for 32-bit target
-    cmake_args.extend(['-A', 'x64'])
+    # use Win32 for 32-bit target, x64 for 64-bit target
+    cmake_args.extend(['-A', DEFAULT_ARCH])
     cmake_args.extend(['-DCMAKE_TOOLCHAIN_FILE=%s\\scripts\\buildsystems\\vcpkg.cmake' % VCPKG_DIR])
     cmake_args.extend(['-DCMAKE_GENERATOR_TOOLSET=%s' % DEFAULT_TOOLSET])
     cmake_args.extend(['-DCMAKE_VS_PLATFORM_TOOLSET=%s' % DEFAULT_TOOLSET])
+    cmake_args.extend(['-DVCPKG_TARGET_ARCHITECTURE=%s' % DEFAULT_ARCH])
     cmake_args.extend(['-DVCPKG_CRT_LINKAGE=static'])
     cmake_args.extend(['-DVCPKG_LIBRARY_LINKAGE=static'])
-    cmake_args.extend(['-DVCPKG_TARGET_TRIPLET=x64-windows-static'])
+    cmake_args.extend(['-DVCPKG_TARGET_TRIPLET=%s-windows-static' % DEFAULT_ARCH])
     cmake_args.extend(['-DVCPKG_ROOT_DIR=%s' % VCPKG_DIR])
-    cmake_args.extend(['-DBORINGSSL=ON'])
+    cmake_args.extend(['-DVCPKG_VERBOSE=ON'])
+    if DEFAULT_ARCH == 'x64':
+      cmake_args.extend(['-DBORINGSSL=ON'])
+    elif DEFAULT_ARCH == 'arm64':
+      cmake_args.extend(['-DBORINGSSL=OFF'])
+      cmake_args.extend(['-DARM64=ON'])
+    else: #x86
+      cmake_args.extend(['-DBORINGSSL=OFF'])
   else:
     cmake_args.extend(['-G', 'Ninja'])
     cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])
     cmake_args.extend(['-DBORINGSSL=ON'])
 
   if sys.platform == 'darwin':
-    cmake_args.append('-DCMAKE_OSX_DEPLOYMENT_TARGET=%s' % DEFAULT_OS_MIN)
+    cmake_args.append('-DCMAKE_OSX_DEPLOYMENT_TARGET=%s' % DEFAULT_OSX_MIN)
     # if we run arm64/arm64e, use universal build
     if platform.machine() == 'arm64':
-      cmake_args.append('-DCMAKE_OSX_ARCHITECTURES=%s' % DEFAULT_OS_ARCHS)
+      cmake_args.append('-DCMAKE_OSX_ARCHITECTURES=%s' % DEFAULT_OSX_ARCHS)
 
   command = ['cmake', '..'] + cmake_args
   write_output(command)
@@ -271,7 +280,7 @@ def execute_buildscript(configuration_type):
   write_output(command)
   if sys.platform == 'win32':
     src = '%s/%s' % (configuration_type, get_app_name())
-    dst = '%s' % get_app_name()
+    dst = '%s-%s' % (DEFAULT_ARCH, get_app_name())
     os.rename(src, dst)
 
   outputs = ['build/%s' % get_app_name()]
