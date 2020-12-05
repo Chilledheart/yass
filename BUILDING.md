@@ -57,11 +57,11 @@ vcpkg install glog:x64-windows-static gflags:x64-windows-static libsodium:x64-wi
 ```
 or
 ```
-vcpkg install glog:arm64-windows-static gflags:arm64-windows-static libsodium:arm64-windows-static jsoncpp:arm64-windows-static wxwidgets:arm64-windows-static
+vcpkg install expat:arm64-windows-static libjpeg-turbo:arm64-windows-static liblzma:arm64-windows-static libpng:arm64-windows-static tiff:arm64-windows-static zlib:arm64-windows-static glog:arm64-windows-static gflags:arm64-windows-static libsodium:arm64-windows-static jsoncpp:arm64-windows-static wxwidgets:arm64-windows-static
 ```
 or
 ```
-vcpkg install glog:x86-windows-static gflags:x86-windows-static libsodium:x86-windows-static jsoncpp:x86-windows-static wxwidgets:x86-windows-static
+vcpkg install expat:x86-windows-static libjpeg-turbo:x86-windows-static liblzma:x86-windows-static libpng:x86-windows-static tiff:x86-windows-static zlib:x86-windows-static glog:x86-windows-static gflags:x86-windows-static libsodium:x86-windows-static jsoncpp:x86-windows-static wxwidgets:x86-windows-static
 ```
 3. use script to build Release App under `build` directory.
 ```

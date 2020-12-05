@@ -336,6 +336,7 @@ if (MSVC)
     set(SYSTEM_LIBS ${SYSTEM_LIBS} ${Winspool_LIB})
 
     if (VCPKG_CRT_LINKAGE STREQUAL "static")
+      message(STATUS "Build against static crt")
       # replace /MD with /MT
       set(CompilerFlags
         CMAKE_CXX_FLAGS
@@ -623,6 +624,7 @@ endif()
 
 if (MSVC)
   message(STATUS "Build against $ENV{Platform}")
+
   set(wxWidgets_ROOT_DIR ${VCPKG_ROOT_DIR}/installed/${VCPKG_TARGET_TRIPLET})
   set(wxWidgets_LIB_DIR ${VCPKG_STATIC_LIB_PATH})
   set(wxWidgets_LIB_DEBUG_DIR ${VCPKG_STATIC_LIB_DEBUG_PATH})
@@ -630,8 +632,12 @@ if (MSVC)
       ${wxWidgets_ROOT_DIR}/include
       ${wxWidgets_ROOT_DIR}/include/wx/msw)
 
-  # find manifest if any
-  file(GLOB wxWidgets_MANIFESTS "${wxWidgets_ROOT_DIR}/include/wx/msw/amd64*.manifest")
+  if ($ENV{Platform} MATCHES "x64")
+    # find manifest if any
+    file(GLOB wxWidgets_MANIFESTS "${wxWidgets_ROOT_DIR}/include/wx/msw/amd64*.manifest")
+  elif ($ENV{Platform} MATCHES "x86")
+    file(GLOB wxWidgets_MANIFESTS "${wxWidgets_ROOT_DIR}/include/wx/msw/wx*.manifest")
+  endif()
 
   # find jpeg library
   find_library(JPEG_RELEASE_LIB jpeg

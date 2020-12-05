@@ -14,6 +14,7 @@ DEFAULT_OSX_MIN = '10.10'
 DEFAULT_OSX_ARCHS = 'arm64;x86_64'
 DEFAULT_TOOLSET = 'v142'
 DEFAULT_ARCH = os.getenv('Platform')
+DEFAULT_CRT_LINKAGE = 'static'
 VCPKG_DIR = os.getenv('VCPKG_ROOT')
 
 num_cpus=cpu_count()
@@ -250,9 +251,14 @@ def generate_buildscript(configuration_type):
     cmake_args.extend(['-DCMAKE_GENERATOR_TOOLSET=%s' % DEFAULT_TOOLSET])
     cmake_args.extend(['-DCMAKE_VS_PLATFORM_TOOLSET=%s' % DEFAULT_TOOLSET])
     cmake_args.extend(['-DVCPKG_TARGET_ARCHITECTURE=%s' % DEFAULT_ARCH])
-    cmake_args.extend(['-DVCPKG_CRT_LINKAGE=static'])
-    cmake_args.extend(['-DVCPKG_LIBRARY_LINKAGE=static'])
-    cmake_args.extend(['-DVCPKG_TARGET_TRIPLET=%s-windows-static' % DEFAULT_ARCH])
+    if DEFAULT_CRT_LINKAGE == 'static':
+      cmake_args.extend(['-DVCPKG_CRT_LINKAGE=static'])
+      cmake_args.extend(['-DVCPKG_LIBRARY_LINKAGE=static'])
+      cmake_args.extend(['-DVCPKG_TARGET_TRIPLET=%s-windows-static' % DEFAULT_ARCH])
+    else:
+      cmake_args.extend(['-DVCPKG_CRT_LINKAGE=dynamic'])
+      cmake_args.extend(['-DVCPKG_LIBRARY_LINKAGE=dynamic'])
+      cmake_args.extend(['-DVCPKG_TARGET_TRIPLET=%s-windows' % DEFAULT_ARCH])
     cmake_args.extend(['-DVCPKG_ROOT_DIR=%s' % VCPKG_DIR])
     cmake_args.extend(['-DVCPKG_VERBOSE=ON'])
     # skip boringssl for platforms except amd64
