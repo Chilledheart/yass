@@ -241,7 +241,11 @@ def generate_buildscript(configuration_type):
     cmake_args.extend(['-G', 'Visual Studio 16 2019'])
     cmake_args.extend(['-T', DEFAULT_TOOLSET])
     # use Win32 for 32-bit target, x64 for 64-bit target
-    cmake_args.extend(['-A', DEFAULT_ARCH])
+    if DEFAULT_ARCH == 'x86':
+      ARCH = 'Win32'
+    else:
+      ARCH = DEFAULT_ARCH
+    cmake_args.extend(['-A', ARCH])
     cmake_args.extend(['-DCMAKE_TOOLCHAIN_FILE=%s\\scripts\\buildsystems\\vcpkg.cmake' % VCPKG_DIR])
     cmake_args.extend(['-DCMAKE_GENERATOR_TOOLSET=%s' % DEFAULT_TOOLSET])
     cmake_args.extend(['-DCMAKE_VS_PLATFORM_TOOLSET=%s' % DEFAULT_TOOLSET])
@@ -251,12 +255,10 @@ def generate_buildscript(configuration_type):
     cmake_args.extend(['-DVCPKG_TARGET_TRIPLET=%s-windows-static' % DEFAULT_ARCH])
     cmake_args.extend(['-DVCPKG_ROOT_DIR=%s' % VCPKG_DIR])
     cmake_args.extend(['-DVCPKG_VERBOSE=ON'])
+    # skip boringssl for platforms except amd64
     if DEFAULT_ARCH == 'x64':
       cmake_args.extend(['-DBORINGSSL=ON'])
-    elif DEFAULT_ARCH == 'arm64':
-      cmake_args.extend(['-DBORINGSSL=OFF'])
-      cmake_args.extend(['-DARM64=ON'])
-    else: #x86
+    else: #x86, arm64, arm
       cmake_args.extend(['-DBORINGSSL=OFF'])
   else:
     cmake_args.extend(['-G', 'Ninja'])

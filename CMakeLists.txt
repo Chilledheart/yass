@@ -233,7 +233,6 @@ add_definitions(-DGLOG_NO_ABBREVIATED_SEVERITIES)
 
 option(SODIUM "Build against libsodium." ON)
 option(BORINGSSL "Build against boringssl." OFF)
-option(ARM64 "Build with arm64." OFF)
 set(boringssl_DIR "${CMAKE_SOURCE_DIR}/../boringssl" CACHE STRING "path to boringssl root directory")
 
 include(CheckIncludeFile)
@@ -623,6 +622,7 @@ if (APPLE OR UNIX)
 endif()
 
 if (MSVC)
+  message(STATUS "Build against $ENV{Platform}")
   set(wxWidgets_ROOT_DIR ${VCPKG_ROOT_DIR}/installed/${VCPKG_TARGET_TRIPLET})
   set(wxWidgets_LIB_DIR ${VCPKG_STATIC_LIB_PATH})
   set(wxWidgets_LIB_DEBUG_DIR ${VCPKG_STATIC_LIB_DEBUG_PATH})
@@ -673,8 +673,8 @@ if (MSVC)
     optimized ${TIFF_RELEASE_LIB}
     )
 
-  # find tiffxx library, not available on arm64 port
-  if (MSVC AND NOT ARM64)
+  # find tiffxx library, not available on arm/arm64 port
+  if (MSVC AND NOT $ENV{Platform} MATCHES "arm")
   find_library(TIFFXX_RELEASE_LIB tiffxx
     PATHS ${wxWidgets_LIB_DIR} NO_DEFAULT_PATH)
   find_library(TIFFXX_DEBUG_LIB tiffxxd
