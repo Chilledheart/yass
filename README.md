@@ -3,6 +3,9 @@
 ## Windows 7
 <img width="484" alt="snapshot-win7" src="https://user-images.githubusercontent.com/54673341/69158208-02fa3600-0b21-11ea-9bf4-c38e26ff38a3.png">
 
+## Windows 10 on ARM64
+<img width="529" alt="Screen Shot 2020-12-05 at 6 49 32 PM" src="https://user-images.githubusercontent.com/54673341/101240623-715d6680-372b-11eb-9124-43817adb96a2.png">
+
 ## Once upon a time, there are (virtual) Nics, so are (shadow) Sockets.
 
 YASS(Yet-Another-Shadow-Socket) acts as a modern cplusplus port of the existing [shadowsocks](http://github.com/shadowsocks) project.
