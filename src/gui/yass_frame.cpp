@@ -149,7 +149,7 @@ void YASSFrame::OnIdle(wxIdleEvent &WXUNUSED(event)) {
 
 void YASSFrame::OnClose(wxCloseEvent &event) {
   LOG(INFO) << "Frame is closing";
-  event.Skip(); // Destroy() also works here.
+  event.Skip();  // Destroy() also works here.
 #ifdef __APPLE__ /* TODO Destroy cannot help in some cases */
   ::exit(0);
 #endif

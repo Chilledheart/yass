@@ -14,12 +14,6 @@
 
 enum { kSHA1Length = 20 };  // Length in bytes of a SHA-1 hash.
 
-#if 0
-// Computes the SHA-1 hash of the input |data| and returns the full hash.
-std::array<uint8_t, kSHA1Length> SHA1HashSpan(
-    span<const uint8_t> data);
-#endif
-
 // Computes the SHA-1 hash of the input string |str| and returns the full
 // hash.
 std::string SHA1HashString(const std::string& str);

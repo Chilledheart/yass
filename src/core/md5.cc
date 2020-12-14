@@ -211,16 +211,6 @@ void MD5Update(MD5Context* context, const uint8_t* buf, size_t len) {
   memcpy(ctx->in, buf, len);
 }
 
-#if 0
-/*
- * Update context to reflect the concatenation of another buffer full
- * of bytes.
- */
-void MD5Update(MD5Context* context, const std::string_view& data) {
-  MD5Update(context, (const uint8_t*)data.data(), data.size());
-}
-#endif
-
 /*
  * Final wrapup - pad to 64-byte boundary with the bit pattern
  * 1 0* (64-bit count of bits processed, MSB-first)
@@ -297,10 +287,8 @@ void MD5Sum(const void* data, size_t length, MD5Digest* digest) {
   MD5Final(digest, &ctx);
 }
 
-#if 0
-std::string MD5String(const std::string_view& str) {
+std::string MD5String(const uint8_t* data, size_t len) {
   MD5Digest digest;
-  MD5Sum(str.data(), str.length(), &digest);
+  MD5Sum(data, len, &digest);
   return MD5DigestToBase16(digest);
 }
-#endif

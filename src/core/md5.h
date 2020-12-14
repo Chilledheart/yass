@@ -43,9 +43,6 @@ void MD5Init(MD5Context* context);
 // For the given buffer of |data| as a std::string_view, updates the given MD5
 // context with the sum of the data. You can call this any number of times
 // during the computation, except that MD5Init() must have been called first.
-#if 0
-void MD5Update(MD5Context* context, const std::string_view& data);
-#endif
 void MD5Update(MD5Context* context, const uint8_t* data, size_t len);
 
 // Finalizes the MD5 operation and fills the buffer with the digest.
@@ -63,8 +60,6 @@ std::string MD5DigestToBase16(const MD5Digest& digest);
 // The given 'digest' structure will be filled with the result data.
 void MD5Sum(const void* data, size_t length, MD5Digest* digest);
 
-#if 0
 // Returns the MD5 (in hexadecimal) of a string.
-std::string MD5String(const std::string_view& str);
-#endif
+std::string MD5String(const uint8_t* data, size_t len);
 #endif  // CORE_MD5_H_

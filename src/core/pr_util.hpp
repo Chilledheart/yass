@@ -838,16 +838,16 @@ struct PRPollDesc {
 #define PR_POLL_READ POLLIN
 #define PR_POLL_WRITE POLLOUT
 #define PR_POLL_EXCEPT POLLPRI
-#define PR_POLL_ERR POLLERR /* only in out_flags */
+#define PR_POLL_ERR POLLERR   /* only in out_flags */
 #define PR_POLL_NVAL POLLNVAL /* only in out_flags when fd is bad */
-#define PR_POLL_HUP POLLHUP /* only in out_flags */
+#define PR_POLL_HUP POLLHUP   /* only in out_flags */
 #else
 #define PR_POLL_READ 0x1
 #define PR_POLL_WRITE 0x2
 #define PR_POLL_EXCEPT 0x4
-#define PR_POLL_ERR 0x8 /* only in out_flags */
+#define PR_POLL_ERR 0x8   /* only in out_flags */
 #define PR_POLL_NVAL 0x10 /* only in out_flags when fd is bad */
-#define PR_POLL_HUP 0x20 /* only in out_flags */
+#define PR_POLL_HUP 0x20  /* only in out_flags */
 #endif
 
 /*
