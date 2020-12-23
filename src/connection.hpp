@@ -15,6 +15,7 @@
 
 #include "config/config.hpp"
 #include "core/logging.hpp"
+#include "network.hpp"
 #include "protocol.hpp"
 
 class Connection {

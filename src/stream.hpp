@@ -4,11 +4,14 @@
 #ifndef H_STREAM
 #define H_STREAM
 
+#include <asio/ip/tcp.hpp>
 #include <asio/read.hpp>
 #include <asio/write.hpp>
 #include <deque>
 
+#include "channel.hpp"
 #include "core/logging.hpp"
+#include "network.hpp"
 
 /// the class to describe the traffic between given node (endpoint)
 class stream {
@@ -29,6 +32,7 @@ public:
     std::shared_ptr<Channel> channel = std::shared_ptr<Channel>(channel_);
     connected_ = false;
     read_enabled_ = true;
+    SetTCPFastOpenConnect(socket_.native_handle());
     socket_.async_connect(endpoint_, std::bind(&stream::on_connect, this,
                                                channel, std::placeholders::_1));
   }

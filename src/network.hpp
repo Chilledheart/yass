@@ -1,0 +1,16 @@
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright (c) 2020 Chilledheart  */
+
+#ifndef H_NETWORK
+#define H_NETWORK
+
+#include <asio/error.hpp>
+#include <asio/ip/tcp.hpp>
+
+asio::error_code
+SetTCPFastOpen(asio::ip::tcp::acceptor::native_handle_type handle);
+
+asio::error_code
+SetTCPFastOpenConnect(asio::ip::tcp::socket::native_handle_type handle);
+
+#endif // H_NETWORK

@@ -18,6 +18,7 @@
 #include "config/config.hpp"
 #include "connection.hpp"
 #include "core/logging.hpp"
+#include "network.hpp"
 
 template <class T> class ServiceFactory {
 public:
@@ -37,6 +38,7 @@ public:
     if (FLAGS_reuse_port) {
       acceptor_->set_option(asio::ip::tcp::acceptor::reuse_address(true), ec);
     }
+    SetTCPFastOpen(acceptor_->native_handle());
     if (ec) {
       return ec;
     }

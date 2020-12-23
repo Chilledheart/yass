@@ -111,7 +111,7 @@ else()
       set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /OPT:REF")
       set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /OPT:REF")
     endif()
-    
+
     ## Disable LTCG for static libraries because this setting introduces ABI incompatibility between minor compiler versions
     if (NOT VCPKG_LIBRARY_LINKAGE STREQUAL "static")
       set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /GL")
@@ -456,6 +456,7 @@ option(CLI "Build with cli." ON)
 option(SERVER "Build with server." ON)
 
 set(files
+    src/network.cpp
     src/config/config.cpp
     src/config/config_impl.cpp
     src/core/address_family.cpp

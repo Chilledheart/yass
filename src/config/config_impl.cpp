@@ -2,6 +2,7 @@
 /* Copyright (c) 2019-2020 Chilledheart  */
 #include "config/config_impl.hpp"
 #include <gflags/gflags.h>
+#include <stdint.h>
 #include "config/config_impl_posix.hpp"
 #include "config/config_impl_windows.hpp"
 

@@ -19,6 +19,7 @@
 #define DEFAULT_CIPHER CRYPTO_PLAINTEXT_STR
 #define DEFAULT_LOCAL "127.0.0.1"
 #define DEFAULT_LOCAL_PORT 8000
+#define DEFAULT_TCP_FASTOPEN true
 
 DECLARE_string(configfile);
 DECLARE_string(server_host);
@@ -27,12 +28,13 @@ DECLARE_string(password);
 DECLARE_string(method);
 DECLARE_string(local_host);
 DECLARE_int32(local_port);
-DECLARE_bool(reuse_port);
 DECLARE_string(password);
+DECLARE_bool(reuse_port);
+DECLARE_bool(tcp_fastopen);
+DECLARE_bool(tcp_fastopen_connect);
 
 // Not implemented
 DECLARE_int32(timeout);
-DECLARE_int32(fast_open);
 
 namespace config {
 bool ReadConfig();

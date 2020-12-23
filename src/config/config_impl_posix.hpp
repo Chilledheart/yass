@@ -24,7 +24,6 @@
 
 DEFINE_string(configfile, DEFAULT_CONFIGFILE, "load configs from file");
 
-
 std::string ExpandUser(const std::string &file_path) {
   std::string real_path = file_path;
 
@@ -190,22 +189,22 @@ public:
   }
 
   bool Write(const std::string &key, uint32_t value) override {
-    root_[key] = value;
+    root_[key] = static_cast<Json::UInt>(value);
     return true;
   }
 
   bool Write(const std::string &key, int32_t value) override {
-    root_[key] = value;
+    root_[key] = static_cast<Json::Int>(value);
     return true;
   }
 
   bool Write(const std::string &key, uint64_t value) override {
-    root_[key] = value;
+    root_[key] = static_cast<Json::UInt64>(value);
     return true;
   }
 
   bool Write(const std::string &key, int64_t value) override {
-    root_[key] = value;
+    root_[key] = static_cast<Json::Int64>(value);
     return true;
   }
 

@@ -19,6 +19,8 @@ DEFINE_string(local_host, DEFAULT_LOCAL,
 DEFINE_int32(local_port, DEFAULT_LOCAL_PORT,
              "Port number which local server listens to");
 DEFINE_bool(reuse_port, true, "Reuse the local port");
+DEFINE_bool(tcp_fastopen, true, "TCP fastopen");
+DEFINE_bool(tcp_fastopen_connect, true, "TCP fastopen connect");
 
 namespace config {
 
@@ -48,6 +50,20 @@ bool ReadConfig() {
   VLOG(1) << "loaded option password: " << FLAGS_password;
   VLOG(1) << "loaded option local: " << FLAGS_local_host;
   VLOG(1) << "loaded option local_port: " << FLAGS_local_port;
+
+  if (FLAGS_reuse_port) {
+    LOG(WARNING) << "using port reuse";
+  }
+#if defined(TCP_FASTOPEN)
+  if (FLAGS_tcp_fastopen) {
+    LOG(WARNING) << "using tcp fast open";
+  }
+#endif
+#if defined(TCP_FASTOPEN_CONNECT)
+  if (FLAGS_tcp_fastopen_connect) {
+    LOG(WARNING) << "using tcp fast open connect";
+  }
+#endif
 
   return true;
 }
