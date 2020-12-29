@@ -4,6 +4,10 @@
 #ifndef H_NETWORK
 #define H_NETWORK
 
+#ifdef _WIN32
+#include <malloc.h>
+#endif
+
 #include <asio/error.hpp>
 #include <asio/ip/tcp.hpp>
 
