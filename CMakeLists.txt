@@ -636,7 +636,7 @@ if (MSVC)
   if ($ENV{Platform} MATCHES "x64")
     # find manifest if any
     file(GLOB wxWidgets_MANIFESTS "${wxWidgets_ROOT_DIR}/include/wx/msw/amd64*.manifest")
-  elif ($ENV{Platform} MATCHES "x86")
+  elseif ($ENV{Platform} MATCHES "x86")
     file(GLOB wxWidgets_MANIFESTS "${wxWidgets_ROOT_DIR}/include/wx/msw/wx*.manifest")
   endif()
 
