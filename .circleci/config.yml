@@ -1,0 +1,14 @@
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable-20.04
+    environment:
+      - DEBIAN_FRONTEND: "noninteractive"
+    steps:
+      - checkout
+      # Whatever you want to do
+      - run: cd .. && wget https://downloads.sourceforge.net/project/asio/asio/1.18.0%20%28Stable%29/asio-1.18.0.tar.bz2 && tar -xvf asio-1.18.0.tar.bz2 && cd -
+      - run: sudo apt-get update && sudo apt-get install -y cmake ninja-build libgoogle-glog-dev libgflags-dev libsodium-dev libjsoncpp-dev
+      - run: mkdir build && cd build && cmake -G Ninja -DCLI=on -DSERVER=on -DGUI=off .. && ninja -j2 && cd ..
+      #- run: sudo apt-get update && sudo apt-get install -y libwxgtk3.0-gtk3-dev
+      #- run: mkdir build && cd build && cmake -G Ninja -DCLI=on -DSERVER=on -DGUI=on .. && ninja -j2 && cd ..

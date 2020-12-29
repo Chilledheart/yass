@@ -48,9 +48,15 @@ IPEndPoint::~IPEndPoint() = default;
 IPEndPoint::IPEndPoint(const IPAddress &address, uint16_t port)
     : address_(address), port_(port) {}
 
-IPEndPoint::IPEndPoint(const IPEndPoint &endpoint) {
-  address_ = endpoint.address_;
-  port_ = endpoint.port_;
+IPEndPoint::IPEndPoint(const IPEndPoint &other) {
+  address_ = other.address_;
+  port_ = other.port_;
+}
+
+IPEndPoint &IPEndPoint::operator=(const IPEndPoint &other) {
+  address_ = other.address_;
+  port_ = other.port_;
+  return *this;
 }
 
 AddressFamily IPEndPoint::GetFamily() const {

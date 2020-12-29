@@ -172,6 +172,8 @@ IPAddressBytes::IPAddressBytes(const uint8_t *data, size_t data_len) {
 
 IPAddressBytes::~IPAddressBytes() = default;
 IPAddressBytes::IPAddressBytes(IPAddressBytes const &other) = default;
+IPAddressBytes &
+IPAddressBytes::operator=(IPAddressBytes const &other) = default;
 
 void IPAddressBytes::Assign(const uint8_t *data, size_t data_len) {
   size_ = data_len;
@@ -197,6 +199,8 @@ bool IPAddressBytes::operator!=(const IPAddressBytes &other) const {
 IPAddress::IPAddress() = default;
 
 IPAddress::IPAddress(const IPAddress &other) = default;
+
+IPAddress &IPAddress::operator=(const IPAddress &other) = default;
 
 IPAddress::IPAddress(const IPAddressBytes &address) : ip_address_(address) {}
 

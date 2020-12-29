@@ -20,6 +20,7 @@ public:
   IPAddressBytes();
   IPAddressBytes(const uint8_t *data, size_t data_len);
   IPAddressBytes(const IPAddressBytes &other);
+  IPAddressBytes &operator=(const IPAddressBytes &other);
   ~IPAddressBytes();
 
   // Copies |data_len| elements from |data| into this object.
@@ -97,6 +98,8 @@ public:
   IPAddress();
 
   IPAddress(const IPAddress &other);
+
+  IPAddress &operator=(const IPAddress &other);
 
   // Copies the input address to |ip_address_|.
   explicit IPAddress(const IPAddressBytes &address);

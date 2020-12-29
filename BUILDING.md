@@ -14,7 +14,7 @@ apt-get install -y \
     libgflags-dev \
     libsodium-dev \
     libjsoncpp-dev \
-    libwxgtk3.0-dev (optional)
+    libwxgtk3.0-gtk3-dev (optional)
 
 ```
 3. Compile the program with default configuration.
