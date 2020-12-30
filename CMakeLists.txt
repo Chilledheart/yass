@@ -33,8 +33,14 @@ endif()
 
 if (NOT MSVC)
     ## warnings
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -Wall -Wextra -Werror -Wno-unused-parameter")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -Wno-unused-parameter -Wno-inconsistent-missing-override")
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -Wall -Wextra")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+
+    if (HAS_CLANG)
+        set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -Werror -Wno-unused-parameter")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-unused-parameter -Wno-inconsistent-missing-override")
+
+    endif()
 
     ## c/c++ standard
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -std=c99")
@@ -98,6 +104,11 @@ else()
     ## warnings
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /W4 /wd4099 /wd4100 /wd4127 /wd4244 /wd4267 /wd4505 /wd4838 /wd4996")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /wd4099 /wd4100 /wd4127 /wd4244 /wd4267 /wd4505 /wd4838 /wd4996")
+
+    if (HAS_CLANG)
+        set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /WX")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX")
+    endif()
 
     ## c/c++ standard, disabled rtti
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 /GR-")
