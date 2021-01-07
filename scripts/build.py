@@ -13,7 +13,7 @@ DEFAULT_BUILD_TYPE = 'Release'
 DEFAULT_OSX_MIN = '10.10'
 DEFAULT_OSX_ARCHS = 'arm64;x86_64'
 DEFAULT_TOOLSET = 'v142'
-DEFAULT_ARCH = os.getenv('Platform')
+DEFAULT_ARCH = os.getenv('VSCMD_ARG_TGT_ARCH')
 DEFAULT_CRT_LINKAGE = 'static'
 VCPKG_DIR = os.getenv('VCPKG_ROOT')
 
@@ -276,8 +276,9 @@ def generate_buildscript(configuration_type):
     # if we run arm64/arm64e, use universal build
     if platform.machine() == 'arm64':
       cmake_args.append('-DCMAKE_OSX_ARCHITECTURES=%s' % DEFAULT_OSX_ARCHS)
-
+  
   command = ['cmake', '..'] + cmake_args
+
   write_output(command)
 
 
@@ -288,17 +289,14 @@ def execute_buildscript(configuration_type):
   write_output(command)
   if sys.platform == 'win32':
     src = '%s/%s' % (configuration_type, get_app_name())
-    dst = '%s-%s' % (DEFAULT_ARCH, get_app_name())
+    dst = '../%s-%s' % (DEFAULT_ARCH, get_app_name())
+    try:
+      os.unlink(dst)
+    except:
+      pass
     os.rename(src, dst)
 
   outputs = ['build/%s' % get_app_name()]
-
-  if sys.platform == 'win32':
-    print 'executing build scripts...(debug)'
-    command = ['cmake', '--build', '.', '--parallel', '--config', 'Debug']
-    write_output(command)
-
-    outputs.append('build\Debug\%s' % get_app_name())
 
   return outputs
 

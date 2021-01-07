@@ -6,3 +6,4 @@ sscxx
 /build
 /cmake-build-debug
 /.idea
+*.exe
