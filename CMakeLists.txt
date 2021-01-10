@@ -470,7 +470,6 @@ set(files
     src/network.cpp
     src/config/config.cpp
     src/config/config_impl.cpp
-    src/core/address_family.cpp
     src/core/cipher.cpp
     src/core/hkdf_sha1.cpp
     src/core/hmac_sha1.cpp
@@ -479,18 +478,6 @@ set(files
     src/core/modp_b64.cc
     src/core/sha1.cc
     src/core/iobuf.cpp
-    src/core/ip_address.cpp
-    src/core/ip_endpoint.cpp
-    src/core/pr_error.cpp
-    src/core/pr_error_posix.cpp
-    src/core/pr_error_windows.cpp
-    src/core/pr_log.cpp
-    src/core/pr_util_thread.cpp
-    src/core/pr_util_inrval.cpp
-    src/core/pr_util_netdb.cpp
-    src/core/pr_util_posix.cpp
-    src/core/pr_util_windows.cpp
-    src/core/server_socket.cpp
     src/core/socks4_request_parser.cpp
     src/core/socks5_request_parser.cpp
     src/core/ss_request_parser.cpp
@@ -544,7 +531,6 @@ set(hfiles
     src/core/socks5.hpp
     src/core/socks5_request.hpp
     src/core/socks5_request_parser.hpp
-    src/core/pr_log.hpp
     src/core/ss.hpp
     src/core/ss_request.hpp
     src/core/ss_request_parser.hpp

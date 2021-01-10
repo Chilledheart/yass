@@ -5,7 +5,6 @@
 
 #include "core/completion_once_callback.hpp"
 #include "core/iobuf.hpp"
-#include "core/pr_util.hpp"
 #include <functional>
 
 class IPEndPoint;
