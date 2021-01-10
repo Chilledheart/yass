@@ -456,7 +456,7 @@ endif()
 
 # asio
 add_definitions(-DASIO_STANDALONE)
-include_directories(../asio-1.18.0/include)
+include_directories(../asio-1.18.1/include)
 if (HAS_CLANG)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-error=inconsistent-missing-override -Wno-error=unused-private-field")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=inconsistent-missing-override -Wno-error=unused-private-field")
