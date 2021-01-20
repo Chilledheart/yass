@@ -110,6 +110,19 @@ else()
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX")
     endif()
 
+    set(CompilerFlags
+        CMAKE_CXX_FLAGS
+        CMAKE_CXX_FLAGS_DEBUG
+        CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_C_FLAGS
+        CMAKE_C_FLAGS_DEBUG
+        CMAKE_C_FLAGS_RELEASE
+        )
+    foreach(CompilerFlag ${CompilerFlags})
+      string(REPLACE "/W3" "/W4" ${CompilerFlag} "${${CompilerFlag}}")
+      string(REPLACE "/GR" "/GR-" ${CompilerFlag} "${${CompilerFlag}}")
+    endforeach()
+
     ## c/c++ standard, disabled rtti
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 /GR-")
 
