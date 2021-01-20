@@ -302,15 +302,17 @@ if (MSVC)
 
     # boringssl
     find_library(BORINGSSL_CRYPTO_LIB crypto
-      PATHS ${boringssl_DIR}/build/crypto
+      PATHS ${boringssl_DIR}
       NO_DEFAULT_PATH)
 
     find_library(BORINGSSL_CRYPTO_RELEASE_LIB crypto
-      PATHS ${boringssl_DIR}/build/crypto/Release
+      PATHS ${boringssl_DIR}
+            ${boringssl_DIR}/build/crypto/Release
             ${boringssl_DIR}/build/Release/crypto
        NO_DEFAULT_PATH)
     find_library(BORINGSSL_CRYPTO_DEBUG_LIB crypto
-      PATHS ${boringssl_DIR}/build/crypto/Debug
+      PATHS ${boringssl_DIR}/debug
+            ${boringssl_DIR}/build/crypto/Debug
             ${boringssl_DIR}/build/Debug/crypto
        NO_DEFAULT_PATH)
     set(BORINGSSL_CRYPTO_LIB

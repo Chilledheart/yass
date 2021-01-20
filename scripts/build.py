@@ -12,7 +12,6 @@ APP_NAME = 'yass'
 DEFAULT_BUILD_TYPE = 'Release'
 DEFAULT_OSX_MIN = '10.10'
 DEFAULT_OSX_ARCHS = 'arm64;x86_64'
-DEFAULT_TOOLSET = 'v142'
 DEFAULT_ARCH = os.getenv('VSCMD_ARG_TGT_ARCH')
 DEFAULT_CRT_LINKAGE = 'static'
 VCPKG_DIR = os.getenv('VCPKG_ROOT')
@@ -239,17 +238,9 @@ def generate_buildscript(configuration_type):
   print 'generate build scripts...(%s)' % configuration_type
   cmake_args = ['-DGUI=ON', '-DCLI=OFF', '-DSERVER=OFF']
   if sys.platform == 'win32':
-    cmake_args.extend(['-G', 'Visual Studio 16 2019'])
-    cmake_args.extend(['-T', DEFAULT_TOOLSET])
-    # use Win32 for 32-bit target, x64 for 64-bit target
-    if DEFAULT_ARCH == 'x86':
-      ARCH = 'Win32'
-    else:
-      ARCH = DEFAULT_ARCH
-    cmake_args.extend(['-A', ARCH])
+    cmake_args.extend(['-G', 'Ninja'])
+    cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])
     cmake_args.extend(['-DCMAKE_TOOLCHAIN_FILE=%s\\scripts\\buildsystems\\vcpkg.cmake' % VCPKG_DIR])
-    cmake_args.extend(['-DCMAKE_GENERATOR_TOOLSET=%s' % DEFAULT_TOOLSET])
-    cmake_args.extend(['-DCMAKE_VS_PLATFORM_TOOLSET=%s' % DEFAULT_TOOLSET])
     cmake_args.extend(['-DVCPKG_TARGET_ARCHITECTURE=%s' % DEFAULT_ARCH])
     if DEFAULT_CRT_LINKAGE == 'static':
       cmake_args.extend(['-DVCPKG_CRT_LINKAGE=static'])
@@ -288,15 +279,16 @@ def execute_buildscript(configuration_type):
   command = ['cmake', '--build', '.', '--parallel', '--config', configuration_type, '--target', APP_NAME]
   write_output(command)
   if sys.platform == 'win32':
-    src = '%s/%s' % (configuration_type, get_app_name())
+    src = get_app_name()
     dst = '../%s-%s' % (DEFAULT_ARCH, get_app_name())
     try:
       os.unlink(dst)
     except:
       pass
     os.rename(src, dst)
-
-  outputs = ['build/%s' % get_app_name()]
+    outputs = ['%s-%s' % (DEFAULT_ARCH, get_app_name())]
+  else:
+    outputs = ['build/%s' % get_app_name()]
 
   return outputs
 

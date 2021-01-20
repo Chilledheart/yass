@@ -117,11 +117,17 @@ lipo -create ../arm64-libcrypto.a ../x64-libcrypto.a -output crypto/libcrypto.a
 ```
 or
 ```
+
 mkdir build
+mkdir debug
 cd build
-cmake -G "Visual Studio 16 2019" -A x64 -T v142 ..
-cmake --build . --config Debug --target crypto
-cmake --build . --config Release --target crypto
+cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Debug ..
+ninja crypto
+copy /y crypto\crypto.lib ..\debug\crypto.lib
+
+cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
+ninja crypto
+copy /y crypto\crypto.lib ..\crypto.lib
 ```
 ## wxWidgets for macports
 ```
