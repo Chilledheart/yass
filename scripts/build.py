@@ -114,7 +114,7 @@ def get_dependencies(path):
     return get_dependencies_by_objdump(path)
   elif sys.platform == 'darwin':
     return get_dependencies_by_otool(path)
-  elif sys.platform == 'linux':
+  elif sys.platform in [ 'linux', 'linux2' ]:
     return get_dependencies_by_ldd(path)
   else:
     raise IOError('not supported in platform %s' % sys.platform)
@@ -134,16 +134,15 @@ def get_dependencies_recursively(path):
             deps = deps_extened;
         else:
             return list(deps_extened)
-  elif sys.platform == 'linux':
+  elif sys.platform in [ 'linux', 'linux2' ]:
     return get_dependencies_by_ldd(path)
   else:
     raise IOError('not supported in platform %s' % sys.platform)
 
 
 def _postbuild_copy_libraries_posix():
-  lib_path = os.path.join(APP_NAME, 'lib')
-  bin_path = os.path.join(APP_NAME, 'bin')
-  binaries = [os.path.join(bin_path, APP_NAME)]
+  lib_path = 'lib'
+  binaries = [APP_NAME]
   libs = []
   for binrary in binaries:
       libs.extend(get_dependencies_recursively(binrary))
@@ -205,20 +204,18 @@ def _postbuild_install_name_tool():
 
 
 def _postbuild_patchelf():
-  lib_path = os.path.join(APP_NAME, 'lib')
-  bin_path = os.path.join(APP_NAME, 'bin')
-  binaries = os.listdir(bin_path)
-  for binrary_name in binaries:
-    binrary = os.path.join(bin_path, binrary_name)
+  lib_path = 'lib'
+  binaries = [APP_NAME]
+  for binrary in binaries:
     if os.path.isdir(binrary):
       continue
-    write_output(['patchelf', '-set-rpath', '\\\$ORIGIN/../lib', binrary])
+    write_output(['patchelf', '--set-rpath', '$ORIGIN/lib', binrary])
   libs = os.listdir(lib_path)
   for lib_name in libs:
     lib = os.path.join(lib_path, lib_name)
     if os.path.isdir(lib):
       continue
-    write_output(['patchelf', '-set-rpath', '\\\$ORIGIN/../lib', lib])
+    write_output(['patchelf', '--set-rpath', '$ORIGIN/lib', lib])
 
 
 def find_source_directory():
@@ -309,7 +306,7 @@ def postbuild_fix_rpath():
   if sys.platform == 'win32':
     # 'no need to fix rpath'
     pass
-  elif sys.platform == 'linux':
+  elif sys.platform in [ 'linux', 'linux2' ]:
     _postbuild_patchelf()
   elif sys.platform == 'darwin':
     _postbuild_install_name_tool()
