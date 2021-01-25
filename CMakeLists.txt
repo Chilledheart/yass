@@ -802,10 +802,12 @@ if (GUI AND wxWidgets_FOUND)
           string(REPLACE "\\" "/" manifest_win ${manifest})
           list(APPEND SRC_FILES ${manifest_win})
         endforeach()
+        list(APPEND SRC_FILES src/gui/utils_win.cpp)
     endif()
 
     if (APPLE)
         list(APPEND SRC_FILES wxmac.icns)
+        list(APPEND SRC_FILES src/gui/utils_mac.mm)
     endif()
 
     add_executable(${APP_NAME} WIN32 MACOSX_BUNDLE

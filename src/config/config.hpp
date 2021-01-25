@@ -32,6 +32,7 @@ DECLARE_string(password);
 DECLARE_bool(reuse_port);
 DECLARE_bool(tcp_fastopen);
 DECLARE_bool(tcp_fastopen_connect);
+DECLARE_bool(auto_start);
 
 // Not implemented
 DECLARE_int32(timeout);

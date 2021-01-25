@@ -25,9 +25,7 @@ class RightPanel : public wxPanel {
 public:
   RightPanel(wxPanel *parent);
 
-  void OnSetText(wxCommandEvent &event);
-
-  wxStaticText *m_text;
+  void OnCheckedAutoStart(wxCommandEvent &event);
 
   wxTextCtrl *m_serverhost_tc;
   wxTextCtrl *m_serverport_tc;
@@ -35,8 +33,9 @@ public:
   wxChoice *m_method_tc;
   wxTextCtrl *m_localhost_tc;
   wxTextCtrl *m_localport_tc;
+  wxCheckBox *m_autostart_cb;
 };
 
-enum { ID_START = 0x101, ID_STOP = 0x102, ID_TIMER = 0x103 };
+enum { ID_START = 0x101, ID_STOP = 0x102, ID_AUTOSTART = 0x103 };
 
 #endif // PANELS

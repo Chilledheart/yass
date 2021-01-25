@@ -21,6 +21,7 @@ DEFINE_int32(local_port, DEFAULT_LOCAL_PORT,
 DEFINE_bool(reuse_port, true, "Reuse the local port");
 DEFINE_bool(tcp_fastopen, true, "TCP fastopen");
 DEFINE_bool(tcp_fastopen_connect, true, "TCP fastopen connect");
+DEFINE_bool(auto_start, false, "Auto Start");
 
 namespace config {
 
@@ -34,6 +35,7 @@ bool ReadConfig() {
       !config_impl->Read("password", &FLAGS_password) ||
       !config_impl->Read("local", &FLAGS_local_host) ||
       !config_impl->Read("local_port", &FLAGS_local_port) ||
+      !config_impl->Read("auto_start", &FLAGS_auto_start) ||
       !config_impl->Close()) {
     return false;
   }
@@ -64,6 +66,9 @@ bool ReadConfig() {
     LOG(WARNING) << "using tcp fast open connect";
   }
 #endif
+  if (FLAGS_auto_start) {
+    LOG(WARNING) << "using autostart";
+  }
 
   return true;
 }
@@ -84,6 +89,7 @@ bool SaveConfig() {
       !config_impl->Write("password", FLAGS_password) ||
       !config_impl->Write("local", FLAGS_local_host) ||
       !config_impl->Write("local_port", FLAGS_local_port) ||
+      !config_impl->Write("auto_start", FLAGS_auto_start) ||
       !config_impl->Close()) {
     return false;
   }
@@ -94,6 +100,8 @@ bool SaveConfig() {
   VLOG(1) << "saved option password: " << FLAGS_password;
   VLOG(1) << "saved option local: " << FLAGS_local_host;
   VLOG(1) << "saved option local_port: " << FLAGS_local_port;
+
+  VLOG(1) << "saved option auto_start: " << std::boolalpha << FLAGS_auto_start;
 
   return true;
 }

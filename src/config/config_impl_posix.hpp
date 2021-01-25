@@ -147,6 +147,15 @@ public:
     return false;
   }
 
+  bool Read(const std::string &key, bool *value) override {
+    if (root_.isMember(key) && root_[key].isBool()) {
+      *value = root_[key].asBool();
+      return true;
+    }
+    LOG(WARNING) << "bad field: " << key;
+    return false;
+  }
+
   bool Read(const std::string &key, uint32_t *value) override {
     if (root_.isMember(key) && root_[key].isUInt()) {
       *value = root_[key].asUInt();
@@ -185,6 +194,11 @@ public:
 
   bool Write(const std::string &key, const std::string &value) override {
     root_[key] = value;
+    return true;
+  }
+
+  bool Write(const std::string &key, bool value) override {
+    root_[key] = static_cast<bool>(value);
     return true;
   }
 

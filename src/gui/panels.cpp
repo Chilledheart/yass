@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2019-2020 Chilledheart  */
 
-#include "panels.hpp"
-#include "yass.hpp"
+#include "gui/panels.hpp"
+
+#include "gui/utils.hpp"
+#include "gui/yass.hpp"
 #include <wx/stattext.h>
 
 LeftPanel::LeftPanel(wxPanel *parent)
@@ -49,7 +51,6 @@ RightPanel::RightPanel(wxPanel *parent)
   wxStaticText *method = new wxStaticText(this, -1, wxT("Cipher/Method"));
   wxStaticText *localhost = new wxStaticText(this, -1, wxT("Local Host"));
   wxStaticText *localport = new wxStaticText(this, -1, wxT("Local Port"));
-  m_text = new wxStaticText(this, -1, wxT("Latency: "), wxPoint(40, 60));
 
   m_serverhost_tc = new wxTextCtrl(this, -1);
   m_serverport_tc = new wxTextCtrl(this, -1);
@@ -58,6 +59,8 @@ RightPanel::RightPanel(wxPanel *parent)
                              WXSIZEOF(methodStrings), methodStrings, 0);
   m_localhost_tc = new wxTextCtrl(this, -1);
   m_localport_tc = new wxTextCtrl(this, -1);
+
+  m_autostart_cb = new wxCheckBox(this, ID_AUTOSTART, wxT("Auto Start"));
 
   fgs->Add(serverhost);
   fgs->Add(m_serverhost_tc, 1, wxEXPAND);
@@ -71,15 +74,25 @@ RightPanel::RightPanel(wxPanel *parent)
   fgs->Add(m_localhost_tc, 1, wxEXPAND);
   fgs->Add(localport);
   fgs->Add(m_localport_tc, 1, wxEXPAND);
-  fgs->Add(m_text);
+  fgs->Add(m_autostart_cb);
 
   fgs->AddGrowableRow(6, 1);
   fgs->AddGrowableCol(1, 1);
 
   hbox->Add(fgs, 1, wxALL | wxEXPAND, 15);
   this->SetSizer(hbox);
+
+  Connect(ID_AUTOSTART, wxEVT_CHECKBOX,
+          wxCommandEventHandler(RightPanel::OnCheckedAutoStart));
+#if defined(__APPLE__) || defined(_WIN32)
+  m_autostart_cb->SetValue(Utils::GetAutoStart());
+#else
+  m_autostart_cb->Enable(false);
+#endif
 }
 
-void RightPanel::OnSetText(wxCommandEvent &WXUNUSED(event)) {
-  wxLogMessage(wxT("SetText"));
+void RightPanel::OnCheckedAutoStart(wxCommandEvent &WXUNUSED(event)) {
+#if defined(__APPLE__) || defined(_WIN32)
+  Utils::EnableAutoStart(m_autostart_cb->IsChecked());
+#endif
 }

@@ -33,6 +33,12 @@ public:
   /// Read the key from ConfigTree
   ///
   /// \param key the key value
+  /// \param value the output value (bool)
+  virtual bool Read(const std::string &key, bool *value) = 0;
+
+  /// Read the key from ConfigTree
+  ///
+  /// \param key the key value
   /// \param value the output value (uint32_t)
   virtual bool Read(const std::string &key, uint32_t *value) = 0;
 
@@ -59,6 +65,12 @@ public:
   /// \param key the key value
   /// \param value the value (string)
   virtual bool Write(const std::string &key, const std::string &value) = 0;
+
+  /// Write the key,value into ConfigTree
+  ///
+  /// \param key the key value
+  /// \param value the value (bool)
+  virtual bool Write(const std::string &key, bool value) = 0;
 
   /// Write the key,value into ConfigTree
   ///

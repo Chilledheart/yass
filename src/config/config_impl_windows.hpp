@@ -78,6 +78,13 @@ public:
     return false;
   }
 
+  bool Read(const std::string &key, bool *value) override {
+    uint32_t v;
+    bool ret = Read(key, &v);
+    *value = v ? true : false;
+    return ret;
+  }
+
   bool Read(const std::string &key, uint32_t *value) override {
     DWORD type;
     std::unique_ptr<char[]> output;
@@ -127,6 +134,11 @@ public:
     }
     LOG(WARNING) << "bad field: " << key;
     return false;
+  }
+
+  bool Write(const std::string &key, bool value) override {
+    uint32_t v = value ? 1 : 0;
+    return Write(key, v);
   }
 
   bool Write(const std::string &key, uint32_t value) override {
