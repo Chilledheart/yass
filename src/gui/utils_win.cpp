@@ -5,14 +5,15 @@
 #ifdef _WIN32
 
 #define DEFAULT_AUTOSTART_KEY                                                  \
-  "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"
+  L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"
 
+#include <Tchar.h>
 #include <windows.h>
 
 static LONG get_win_run_key(HKEY *pKey) {
-  const char *key_run = DEFAULT_AUTOSTART_KEY;
+  const wchar_t *key_run = DEFAULT_AUTOSTART_KEY;
   LONG result =
-      RegOpenKeyEx(HKEY_CURRENT_USER, key_run, 0L, KEY_WRITE | KEY_READ, pKey);
+      RegOpenKeyExW(HKEY_CURRENT_USER, key_run, 0L, KEY_WRITE | KEY_READ, pKey);
 
   return result;
 }
