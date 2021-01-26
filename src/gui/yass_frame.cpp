@@ -133,7 +133,7 @@ void YASSFrame::UpdateStatus() {
 }
 
 void YASSFrame::OnHello(wxCommandEvent &WXUNUSED(event)) {
-  SetStatusText(wxT("Hello world from YASS!"));
+  wxLogMessage(wxT("Hello from YASS!"));
 }
 
 void YASSFrame::OnExit(wxCommandEvent &WXUNUSED(event)) {
