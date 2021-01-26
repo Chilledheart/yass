@@ -88,7 +88,7 @@ void YASSFrame::Started() {
   m_rightpanel->m_serverhost_tc->SetEditable(false);
   m_rightpanel->m_serverport_tc->SetEditable(false);
   m_rightpanel->m_password_tc->SetEditable(false);
-  // m_rightpanel->m_method_tc->SetEditable(false);
+  m_rightpanel->m_method_tc->Enable(false);
   m_rightpanel->m_localhost_tc->SetEditable(false);
   m_rightpanel->m_localport_tc->SetEditable(false);
   m_leftpanel->m_stop->Enable();
@@ -99,7 +99,7 @@ void YASSFrame::StartFailed() {
   m_rightpanel->m_serverhost_tc->SetEditable(true);
   m_rightpanel->m_serverport_tc->SetEditable(true);
   m_rightpanel->m_password_tc->SetEditable(true);
-  // m_rightpanel->m_method_tc->SetEditable(true);
+  m_rightpanel->m_method_tc->Enable(true);
   m_rightpanel->m_localhost_tc->SetEditable(true);
   m_rightpanel->m_localport_tc->SetEditable(true);
   m_leftpanel->m_start->Enable();
@@ -110,7 +110,7 @@ void YASSFrame::Stopped() {
   m_rightpanel->m_serverhost_tc->SetEditable(true);
   m_rightpanel->m_serverport_tc->SetEditable(true);
   m_rightpanel->m_password_tc->SetEditable(true);
-  // m_rightpanel->m_method_tc->SetEditable(true);
+  m_rightpanel->m_method_tc->Enable(true);
   m_rightpanel->m_localhost_tc->SetEditable(true);
   m_rightpanel->m_localport_tc->SetEditable(true);
   m_leftpanel->m_start->Enable();
