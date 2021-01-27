@@ -166,12 +166,20 @@ def _postbuild_copy_libraries_xcode():
     dstname = frameworks_path + '/' + os.path.basename(lib)
     copy_file_with_symlinks(lib, dstname)
     if os.path.islink(lib):
-      lib = os.path.dirname(lib) + '/' + os.readlink(lib)
-      dstname = frameworks_path + '/' + os.readlink(dstname)
-      copy_file_with_symlinks(lib, dstname)
-      if os.path.islink(lib):
+      if os.readlink(lib).startswith('/'):
+        lib = os.readlink(lib)
+        dstname = frameworks_path + '/' + os.path.basename(lib)
+      else:
         lib = os.path.dirname(lib) + '/' + os.readlink(lib)
         dstname = frameworks_path + '/' + os.readlink(dstname)
+      copy_file_with_symlinks(lib, dstname)
+      if os.path.islink(lib):
+        if os.readlink(lib).startswith('/'):
+          lib = os.readlink(lib)
+          dstname = frameworks_path + '/' + os.path.basename(lib)
+        else:
+          lib = os.path.dirname(lib) + '/' + os.readlink(lib)
+          dstname = frameworks_path + '/' + os.readlink(dstname)
         copy_file_with_symlinks(lib, dstname)
 
 
@@ -264,7 +272,7 @@ def generate_buildscript(configuration_type):
     # if we run arm64/arm64e, use universal build
     if platform.machine() == 'arm64':
       cmake_args.append('-DCMAKE_OSX_ARCHITECTURES=%s' % DEFAULT_OSX_ARCHS)
-  
+
   command = ['cmake', '..'] + cmake_args
 
   write_output(command)
