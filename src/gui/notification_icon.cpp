@@ -15,8 +15,11 @@ NotificationIcon::~NotificationIcon() {}
 void NotificationIcon::SetMainFrame(YASSFrame *frame) { mainFrame = frame; }
 
 void NotificationIcon::OnLeftDoubleClick(wxTaskBarIconEvent &event) {
-  if (mainFrame)
+  if (mainFrame) {
+    if (!!mainFrame->IsShown())
+      mainFrame->Raise();
     mainFrame->Show(!mainFrame->IsShown());
+  }
 }
 
 wxMenu *NotificationIcon::CreatePopupMenu() {

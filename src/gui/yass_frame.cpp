@@ -163,7 +163,7 @@ void YASSFrame::OnClose(wxCloseEvent &event) {
   m_notification->RemoveIcon();
 #endif
   event.Skip();  // Destroy() also works here.
-#ifdef __APPLE__ /* TODO Destroy cannot help in some cases */
+#if defined(__APPLE__) || defined(_WIN32) /* TODO Destroy cannot help in some cases */
   ::exit(0);
 #endif
 }
