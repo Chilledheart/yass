@@ -316,8 +316,10 @@ def postbuild_fix_rpath():
 
 def postbuild_fix_retina_display():
   print 'fixing retina display...'
+  #write_output(['plutil', '-insert', 'LSUIElement', '-bool', 'YES', '%s.app/Contents/Info.plist' % APP_NAME])
   write_output(['plutil', '-insert', 'NSPrincipalClass', '-string', 'NSApplication', '%s.app/Contents/Info.plist' % APP_NAME])
   write_output(['plutil', '-insert', 'NSHighResolutionCapable', '-bool', 'YES', '%s.app/Contents/Info.plist' % APP_NAME])
+
 
 if __name__ == '__main__':
   configuration_type = DEFAULT_BUILD_TYPE

@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2019-2020 Chilledheart  */
-#include "yass_frame.hpp"
-#include "panels.hpp"
-#include "yass.hpp"
+#include "gui/yass_frame.hpp"
+
+#include "gui/notification_icon.hpp"
+#include "gui/panels.hpp"
+#include "gui/yass.hpp"
 #include <wx/stattext.h>
 
 // clang-format off
@@ -20,7 +22,7 @@ wxEND_EVENT_TABLE()
     YASSFrame::YASSFrame(const wxString &title, const wxPoint &pos,
                          const wxSize &size)
     : wxFrame(NULL, wxID_ANY, title, pos, size,
-              (wxDEFAULT_FRAME_STYLE) & (~wxMAXIMIZE_BOX) &
+              (wxDEFAULT_FRAME_STYLE | wxFRAME_NO_TASKBAR) & (~wxMAXIMIZE_BOX) &
                   (~wxRESIZE_BORDER)) {
   wxMenu *menuFile = new wxMenu;
   menuFile->Append(ID_Hello, wxT("&Hello...\tCtrl-H"),
@@ -54,6 +56,9 @@ wxEND_EVENT_TABLE()
 
 #ifdef _WIN32
   SetIcon(wxICON(IDI_ICON1));
+  m_notification = new NotificationIcon();
+  m_notification->SetMainFrame(this);
+  m_notification->SetIcon(wxICON(IDI_ICON1));
 #endif
 
   Centre();
@@ -149,6 +154,14 @@ void YASSFrame::OnIdle(wxIdleEvent &WXUNUSED(event)) {
 
 void YASSFrame::OnClose(wxCloseEvent &event) {
   LOG(INFO) << "Frame is closing";
+#ifdef _WIN32
+  if (event.CanVeto()) {
+    Show(false);
+    event.Veto();
+    return;
+  }
+  m_notification->RemoveIcon();
+#endif
   event.Skip();  // Destroy() also works here.
 #ifdef __APPLE__ /* TODO Destroy cannot help in some cases */
   ::exit(0);

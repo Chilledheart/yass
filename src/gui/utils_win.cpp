@@ -62,12 +62,12 @@ static int get_yass_auto_start() {
 
   char buf[MAX_PATH] = {0};
   DWORD len = sizeof(buf);
-  result = RegQueryValueExW(hKey,                        /* Key */
-                            _T(DEFAULT_AUTOSTART_NAME),  /* value */
-                            NULL,                        /* reserved */
-                            NULL,                        /* output type */
-                            (LPBYTE)buf,                 /* output data */
-                            &len);                       /* output length */
+  result = RegQueryValueExW(hKey,                       /* Key */
+                            _T(DEFAULT_AUTOSTART_NAME), /* value */
+                            NULL,                       /* reserved */
+                            NULL,                       /* output type */
+                            (LPBYTE)buf,                /* output data */
+                            &len);                      /* output length */
 
   RegCloseKey(hKey);
   if (result != ERROR_SUCCESS) {

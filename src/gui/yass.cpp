@@ -37,8 +37,8 @@ bool YASSApp::OnInit() {
 #endif
 
 #ifdef _WIN32
-  HWND wnd;
-  if ((wnd = FindWindow(NULL, wxT("Yet-Another-Shadow-Socket")))) {
+  HWND wnd = FindWindowW(NULL, wxT("Yet-Another-Shadow-Socket"));
+  if (wnd) {
     wxMessageBox(wxT("Already exists!"), wxT("WndChecker"));
     return false;
   }
