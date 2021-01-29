@@ -7,20 +7,8 @@
 #include "gui/yass.hpp"
 #include <wx/stattext.h>
 
-// clang-format off
-
-wxBEGIN_EVENT_TABLE(YASSFrame, wxFrame)
-  EVT_MENU(ID_Hello,   YASSFrame::OnHello)
-  EVT_MENU(wxID_EXIT,  YASSFrame::OnExit)
-  EVT_MENU(wxID_ABOUT, YASSFrame::OnAbout)
-  EVT_IDLE(            YASSFrame::OnIdle)
-  EVT_CLOSE(YASSFrame::OnClose)
-wxEND_EVENT_TABLE()
-
-    // clang-format on
-
-    YASSFrame::YASSFrame(const wxString &title, const wxPoint &pos,
-                         const wxSize &size)
+YASSFrame::YASSFrame(const wxString &title, const wxPoint &pos,
+                     const wxSize &size)
     : wxFrame(NULL, wxID_ANY, title, pos, size,
               (wxDEFAULT_FRAME_STYLE | wxFRAME_NO_TASKBAR) & (~wxMAXIMIZE_BOX) &
                   (~wxRESIZE_BORDER)) {
@@ -162,8 +150,21 @@ void YASSFrame::OnClose(wxCloseEvent &event) {
   }
   m_notification->RemoveIcon();
 #endif
-  event.Skip();  // Destroy() also works here.
-#if defined(__APPLE__) || defined(_WIN32) /* TODO Destroy cannot help in some cases */
+  event.Skip(); // Destroy() also works here.
+#if defined(__APPLE__) ||                                                      \
+    defined(_WIN32) /* TODO Destroy cannot help in some cases */
   ::exit(0);
 #endif
 }
+
+// clang-format off
+
+wxBEGIN_EVENT_TABLE(YASSFrame, wxFrame)
+  EVT_MENU(ID_Hello,   YASSFrame::OnHello)
+  EVT_MENU(wxID_EXIT,  YASSFrame::OnExit)
+  EVT_MENU(wxID_ABOUT, YASSFrame::OnAbout)
+  EVT_IDLE(            YASSFrame::OnIdle)
+  EVT_CLOSE(YASSFrame::OnClose)
+wxEND_EVENT_TABLE()
+
+    // clang-format on

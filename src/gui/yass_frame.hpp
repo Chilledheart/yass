@@ -43,6 +43,7 @@ private:
   NotificationIcon *m_notification;
 #endif
 
+private:
   wxDECLARE_EVENT_TABLE();
 };
 

@@ -12,17 +12,7 @@ YASSApp *mApp = nullptr;
 // this is a definition so can't be in a header
 wxDEFINE_EVENT(MY_EVENT, wxCommandEvent);
 
-// clang-format off
-
-wxBEGIN_EVENT_TABLE(YASSApp, wxApp)
-  EVT_COMMAND(ID_STARTED, MY_EVENT, YASSApp::OnStarted)
-  EVT_COMMAND(ID_START_FAILED, MY_EVENT, YASSApp::OnStartFailed)
-  EVT_COMMAND(ID_STOPPED, MY_EVENT, YASSApp::OnStopped)
-wxEND_EVENT_TABLE()
-
-    // clang-format on
-
-    wxIMPLEMENT_APP(YASSApp);
+wxIMPLEMENT_APP(YASSApp);
 
 bool YASSApp::OnInit() {
   ::google::InitGoogleLogging("yass");
@@ -127,3 +117,13 @@ void YASSApp::OnStopped(wxCommandEvent &WXUNUSED(event)) {
   state_ = STOPPED;
   frame_->Stopped();
 }
+
+// clang-format off
+
+wxBEGIN_EVENT_TABLE(YASSApp, wxApp)
+  EVT_COMMAND(ID_STARTED, MY_EVENT, YASSApp::OnStarted)
+  EVT_COMMAND(ID_START_FAILED, MY_EVENT, YASSApp::OnStartFailed)
+  EVT_COMMAND(ID_STOPPED, MY_EVENT, YASSApp::OnStopped)
+wxEND_EVENT_TABLE()
+
+    // clang-format on
