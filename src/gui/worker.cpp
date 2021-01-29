@@ -57,6 +57,10 @@ void Worker::Start(bool quiet) {
       successed = true;
     }
 
+    if (!wxTheApp) {
+      return;
+    }
+
     wxCommandEvent *evt =
         new wxCommandEvent(MY_EVENT, successed ? ID_STARTED : ID_START_FAILED);
     evt->SetString(msg.c_str());
@@ -72,6 +76,8 @@ void Worker::Stop(bool quiet) {
       if (quiet) {
         return;
       }
+    }
+    if (wxTheApp) {
       wxCommandEvent *evt = new wxCommandEvent(MY_EVENT, ID_STOPPED);
       wxTheApp->QueueEvent(evt);
     }

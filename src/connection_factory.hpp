@@ -57,15 +57,15 @@ public:
   }
 
   void stop() {
-    std::vector<std::shared_ptr<T>> conns = std::move(connections_);
     if (acceptor_) {
       asio::error_code ec = asio::error_code();
       acceptor_->close(ec);
-      acceptor_.reset();
     }
+    std::vector<std::shared_ptr<T>> conns = std::move(connections_);
     for (auto conn : conns) {
       conn->close();
     }
+    acceptor_.reset();
   }
 
   size_t currentConnections() const { return connections_.size(); }
@@ -95,12 +95,12 @@ private:
   }
 
   void handleDisconnect(std::shared_ptr<T> conn) {
-    connections_.erase(
-        std::remove(connections_.begin(), connections_.end(), conn),
-        connections_.end());
     VLOG(2) << "connection closed with remaining: " << connections_.size();
     conn->set_disconnect_cb(std::function<void()>());
     conn->close();
+    connections_.erase(
+        std::remove(connections_.begin(), connections_.end(), conn),
+        connections_.end());
   }
 
 private:
