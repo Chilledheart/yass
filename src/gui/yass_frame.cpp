@@ -10,13 +10,15 @@
 YASSFrame::YASSFrame(const wxString &title, const wxPoint &pos,
                      const wxSize &size)
     : wxFrame(NULL, wxID_ANY, title, pos, size,
-              (wxDEFAULT_FRAME_STYLE | wxFRAME_NO_TASKBAR) & (~wxMAXIMIZE_BOX) &
-                  (~wxRESIZE_BORDER)) {
+              (wxDEFAULT_FRAME_STYLE | wxFRAME_NO_TASKBAR)
+#ifdef _WIN32
+              & (~wxMINIMIZE_BOX)
+#endif
+              & (~wxMAXIMIZE_BOX)
+              & (~wxRESIZE_BORDER)) {
   wxMenu *menuFile = new wxMenu;
   menuFile->Append(ID_Hello, wxT("&Hello...\tCtrl-H"),
                    wxT("Hell string shown in status bar for this menu item"));
-  menuFile->AppendSeparator();
-  menuFile->Append(wxID_EXIT);
 
   wxMenu *menuHelp = new wxMenu;
   menuHelp->Append(wxID_ABOUT);
@@ -124,11 +126,6 @@ void YASSFrame::OnHello(wxCommandEvent &WXUNUSED(event)) {
   wxLogMessage(wxT("Hello from YASS!"));
 }
 
-void YASSFrame::OnExit(wxCommandEvent &WXUNUSED(event)) {
-  LOG(INFO) << "Frame is called to exit";
-  wxFrame::Close(true);
-}
-
 void YASSFrame::OnAbout(wxCommandEvent &WXUNUSED(event)) {
   wxMessageBox(wxT("This is Yet-Another-Shadow-Socket"), wxT("About YASS"),
                wxOK | wxICON_INFORMATION);
@@ -161,7 +158,6 @@ void YASSFrame::OnClose(wxCloseEvent &event) {
 
 wxBEGIN_EVENT_TABLE(YASSFrame, wxFrame)
   EVT_MENU(ID_Hello,   YASSFrame::OnHello)
-  EVT_MENU(wxID_EXIT,  YASSFrame::OnExit)
   EVT_MENU(wxID_ABOUT, YASSFrame::OnAbout)
   EVT_IDLE(            YASSFrame::OnIdle)
   EVT_CLOSE(YASSFrame::OnClose)
