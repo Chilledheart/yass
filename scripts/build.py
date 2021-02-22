@@ -14,13 +14,14 @@ DEFAULT_OSX_MIN = '10.10'
 DEFAULT_OSX_ARCHS = 'arm64;x86_64'
 DEFAULT_ARCH = os.getenv('VSCMD_ARG_TGT_ARCH')
 DEFAULT_CRT_LINKAGE = 'static'
+DEFAULT_SIGNING_IDENTITY = '-'
 VCPKG_DIR = os.getenv('VCPKG_ROOT')
 
 num_cpus=cpu_count()
 
 def copy_file_with_symlinks(src, dst):
   if os.path.lexists(dst):
-    return
+    os.unlink(dst)
   if os.path.islink(src):
     linkto = os.readlink(src)
     os.symlink(linkto, dst)
@@ -153,9 +154,9 @@ def _postbuild_copy_libraries_posix():
 
 
 def _postbuild_copy_libraries_xcode():
-  frameworks_path = os.path.join(APP_NAME + '.app', 'Contents', 'Frameworks')
-  resources_path = os.path.join(APP_NAME + '.app', 'Contents', 'Resources')
-  macos_path = os.path.join(APP_NAME + '.app', 'Contents', 'MacOS')
+  frameworks_path = os.path.join(get_app_name(), 'Contents', 'Frameworks')
+  resources_path = os.path.join(get_app_name(), 'Contents', 'Resources')
+  macos_path = os.path.join(get_app_name(), 'Contents', 'MacOS')
   binaries = [os.path.join(macos_path, APP_NAME)]
   libs = []
   for binrary in binaries:
@@ -184,9 +185,9 @@ def _postbuild_copy_libraries_xcode():
 
 
 def _postbuild_install_name_tool():
-  frameworks_path = os.path.join(APP_NAME + '.app', 'Contents', 'Frameworks')
-  resources_path = os.path.join(APP_NAME + '.app', 'Contents', 'Resources')
-  macos_path = os.path.join(APP_NAME + '.app', 'Contents', 'MacOS')
+  frameworks_path = os.path.join(get_app_name(), 'Contents', 'Frameworks')
+  resources_path = os.path.join(get_app_name(), 'Contents', 'Resources')
+  macos_path = os.path.join(get_app_name(), 'Contents', 'MacOS')
   binaries = [os.path.join(macos_path, APP_NAME)]
   for binary in binaries:
     write_output(['install_name_tool', '-add_rpath', '@executable_path/../Frameworks', binary])
@@ -281,7 +282,7 @@ def generate_buildscript(configuration_type):
 def execute_buildscript(configuration_type):
   print 'executing build scripts...(%s)' % configuration_type
 
-  command = ['cmake', '--build', '.', '--parallel', '--config', configuration_type, '--target', APP_NAME]
+  command = ['ninja']
   write_output(command)
   if sys.platform == 'win32':
     src = get_app_name()
@@ -324,10 +325,15 @@ def postbuild_fix_rpath():
 
 def postbuild_fix_retina_display():
   print 'fixing retina display...'
-  #write_output(['plutil', '-insert', 'LSUIElement', '-bool', 'YES', '%s.app/Contents/Info.plist' % APP_NAME])
-  write_output(['plutil', '-insert', 'NSPrincipalClass', '-string', 'NSApplication', '%s.app/Contents/Info.plist' % APP_NAME])
-  write_output(['plutil', '-insert', 'NSHighResolutionCapable', '-bool', 'YES', '%s.app/Contents/Info.plist' % APP_NAME])
+  #write_output(['plutil', '-insert', 'LSUIElement', '-bool', 'YES', '%s/Contents/Info.plist' % get_app_name()])
+  write_output(['plutil', '-insert', 'NSPrincipalClass', '-string', 'NSApplication', '%s/Contents/Info.plist' % get_app_name()])
+  write_output(['plutil', '-insert', 'NSHighResolutionCapable', '-bool', 'YES', '%s/Contents/Info.plist' % get_app_name()])
 
+def postbuild_codesign():
+  print 'fixing codesign...'
+  write_output(['find', get_app_name(), '-name', '*.dylib', '-exec',\
+                'codesign', '--force', '--sign', DEFAULT_SIGNING_IDENTITY, '{}', ';'])
+  write_output(['codesign', '--force', '--sign', DEFAULT_SIGNING_IDENTITY, get_app_name()])
 
 if __name__ == '__main__':
   configuration_type = DEFAULT_BUILD_TYPE
@@ -339,6 +345,7 @@ if __name__ == '__main__':
   postbuild_fix_rpath()
   if sys.platform == 'darwin':
     postbuild_fix_retina_display()
+    postbuild_codesign()
   for output in outputs:
     print '------ %s' % output
   print 'done'
