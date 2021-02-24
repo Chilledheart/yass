@@ -14,8 +14,11 @@ DEFAULT_OSX_MIN = '10.10'
 DEFAULT_OSX_ARCHS = 'arm64;x86_64'
 DEFAULT_ARCH = os.getenv('VSCMD_ARG_TGT_ARCH')
 DEFAULT_CRT_LINKAGE = 'static'
-DEFAULT_SIGNING_IDENTITY = '-'
+DEFAULT_SIGNING_IDENTITY = os.getenv('CODESIGN_IDENTITY')
 VCPKG_DIR = os.getenv('VCPKG_ROOT')
+
+if not DEFAULT_SIGNING_IDENTITY:
+  DEFAULT_SIGNING_IDENTITY = '-'
 
 num_cpus=cpu_count()
 
@@ -332,8 +335,8 @@ def postbuild_fix_retina_display():
 def postbuild_codesign():
   print 'fixing codesign...'
   write_output(['find', get_app_name(), '-name', '*.dylib', '-exec',\
-                'codesign', '--force', '--sign', DEFAULT_SIGNING_IDENTITY, '{}', ';'])
-  write_output(['codesign', '--force', '--sign', DEFAULT_SIGNING_IDENTITY, get_app_name()])
+                'codesign', '--timestamp=none', '--force', '--sign', DEFAULT_SIGNING_IDENTITY, '{}', ';'])
+  write_output(['codesign', '--timestamp=none', '--force', '--sign', DEFAULT_SIGNING_IDENTITY, get_app_name()])
 
 if __name__ == '__main__':
   configuration_type = DEFAULT_BUILD_TYPE
