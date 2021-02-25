@@ -114,6 +114,7 @@ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
 ninja crypto
 cp -fv crypto/libcrypto.a ../arm64-libcrypto.a
 lipo -create ../arm64-libcrypto.a ../x64-libcrypto.a -output crypto/libcrypto.a
+lipo -info crypto/libcrypto.a
 ```
 or
 ```
@@ -129,9 +130,9 @@ cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
 ninja crypto
 copy /y crypto\crypto.lib ..\crypto.lib
 ```
-## wxWidgets for macports
+## wxWidgets for macOS
 ```
-git submodule update --init
+git submodule update --init --recursive
 mkdir build
 cd build
 CFLAGS="-I/opt/local/include" \
