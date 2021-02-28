@@ -39,6 +39,32 @@ SetTCPFastOpen(asio::ip::tcp::acceptor::native_handle_type handle) {
     return asio::error::no_protocol_option;
   }
 #endif // TCP_FASTOPEN
+#if defined(TCP_CONGESTION)
+  /* manually enable bbr */
+  char buf[256];
+  socklen_t len = sizeof(buf);
+  ret = getsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, buf, &len);
+  if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
+    LOG(WARNING) << "TCP_CONGESTION is not supported on this platform";
+    goto out_congestion;
+  }
+  LOG(INFO) << "Current congestion: " << buf;
+  strcpy(buf, "bbr");
+  len = strlen(buf);
+  ret = setsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, buf, len);
+  if (ret < 0) {
+    LOG(WARNING) << "Congestion algorithm bbr is not supported on this platform";
+    goto out_congestion;
+  }
+  len = sizeof(buf);
+  ret = getsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, buf, &len);
+  if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
+    LOG(WARNING) << "TCP_CONGESTION is not supported on this platform";
+    goto out_congestion;
+  }
+  LOG(INFO) << "New congestion: " << buf;
+out_congestion:
+#endif // TCP_CONGESTION
   return asio::error_code();
 }
 
