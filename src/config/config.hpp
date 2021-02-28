@@ -19,7 +19,10 @@
 #define DEFAULT_CIPHER CRYPTO_PLAINTEXT_STR
 #define DEFAULT_LOCAL "127.0.0.1"
 #define DEFAULT_LOCAL_PORT 8000
+#define DEFAULT_REUSE_PORT true
 #define DEFAULT_TCP_FASTOPEN true
+#define DEFAULT_AUTO_START true
+#define DEFAULT_CONGESTION_ALGORITHM "bbr"
 
 DECLARE_string(configfile);
 DECLARE_string(server_host);
@@ -33,6 +36,7 @@ DECLARE_bool(reuse_port);
 DECLARE_bool(tcp_fastopen);
 DECLARE_bool(tcp_fastopen_connect);
 DECLARE_bool(auto_start);
+DECLARE_string(congestion_algorithm);
 
 // Not implemented
 DECLARE_int32(timeout);

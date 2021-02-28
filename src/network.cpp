@@ -34,35 +34,36 @@ SetTCPFastOpen(asio::ip::tcp::acceptor::native_handle_type handle) {
 #endif // __APPLE__
   int ret = setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN, &opt, sizeof(opt));
   if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
-    LOG(WARNING) << "TCP Fast Open is not supported on this platform";
+    VLOG(1) << "TCP Fast Open is not supported on this platform";
     FLAGS_tcp_fastopen = false;
-    return asio::error::no_protocol_option;
+  } else {
+    VLOG(2) << "applied current tcp_option: tcp_fastopen";
   }
 #endif // TCP_FASTOPEN
 #if defined(TCP_CONGESTION)
-  /* manually enable bbr */
-  char buf[256];
+  /* manually enable congestion algorithm */
+  char buf[256] = {};;
   socklen_t len = sizeof(buf);
   ret = getsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, buf, &len);
   if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
-    LOG(WARNING) << "TCP_CONGESTION is not supported on this platform";
+    VLOG(1) << "TCP_CONGESTION is not supported on this platform";
     goto out_congestion;
   }
-  LOG(INFO) << "Current congestion: " << buf;
-  strcpy(buf, "bbr");
-  len = strlen(buf);
-  ret = setsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, buf, len);
+  VLOG(2) << "previous congestion: " << buf;
+  len = FLAGS_congestion_algorithm.size();
+  ret = setsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, FLAGS_congestion_algorithm.c_str(), len);
   if (ret < 0) {
-    LOG(WARNING) << "Congestion algorithm bbr is not supported on this platform";
+    VLOG(1) << "Congestion algorithm " << FLAGS_congestion_algorithm << "is not supported on this platform";
+    FLAGS_congestion_algorithm = buf;
     goto out_congestion;
   }
   len = sizeof(buf);
   ret = getsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, buf, &len);
   if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
-    LOG(WARNING) << "TCP_CONGESTION is not supported on this platform";
+    VLOG(1) << "TCP_CONGESTION is not supported on this platform";
     goto out_congestion;
   }
-  LOG(INFO) << "New congestion: " << buf;
+  VLOG(2) << "current congestion: " << buf;
 out_congestion:
 #endif // TCP_CONGESTION
   return asio::error_code();
@@ -82,9 +83,10 @@ SetTCPFastOpenConnect(asio::ip::tcp::socket::native_handle_type handle) {
   int ret =
       setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN_CONNECT, &opt, sizeof(opt));
   if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
-    LOG(WARNING) << "TCP Fast Open Connect is not supported on this platform";
+    VLOG(2) << "TCP Fast Open Connect is not supported on this platform";
     FLAGS_tcp_fastopen_connect = false;
-    return asio::error::no_protocol_option;
+  } else {
+    VLOG(2) << "applied current tcp_option: tcp_fastopen_connect";
   }
 #endif // TCP_FASTOPEN_CONNECT
   return asio::error_code();

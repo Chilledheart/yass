@@ -52,7 +52,7 @@ int main(int argc, const char *argv[]) {
   asio::ip::tcp::endpoint remoteEndpoint(
       resolveEndpoint(&io_context, FLAGS_local_host, FLAGS_local_port));
 
-  LOG(WARNING) << "using " << endpoint << " with endpoint " << endpoint;
+  LOG(WARNING) << "tcp server listening at " << endpoint;
 
   SsFactory factory(io_context, remoteEndpoint);
   asio::error_code ec;
