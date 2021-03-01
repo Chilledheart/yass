@@ -8,8 +8,7 @@
 YASSFrame::YASSFrame(const wxString &title, const wxPoint &pos,
                      const wxSize &size)
     : wxFrame(NULL, wxID_ANY, title, pos, size,
-              (wxDEFAULT_FRAME_STYLE | wxFRAME_NO_TASKBAR) & (~wxMAXIMIZE_BOX) &
-                  (~wxRESIZE_BORDER)) {
+              wxDEFAULT_FRAME_STYLE & (~wxMAXIMIZE_BOX) & (~wxRESIZE_BORDER)) {
   wxMenu *menuFile = new wxMenu;
   menuFile->Append(ID_Hello, wxT("&Hello...\tCtrl-H"),
                    wxT("Hell string shown in status bar for this menu item"));
