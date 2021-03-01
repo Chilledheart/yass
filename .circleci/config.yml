@@ -12,7 +12,7 @@ jobs:
       - run: mkdir build && cd build && cmake -G Ninja -DCLI=on -DSERVER=on -DGUI=off .. && ninja -v -j2 && cd ..
       - run: rm -rf build
       - run: sudo apt-get update && sudo apt-get install -y golang libunwind-dev nasm
-      - run: cd .. && git clone https://github.com/Chilledheart/boringssl && cd boringssl && mkdir build && cd build && cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release .. && ninja -v -j2 crypto && cd ..\..
+      - run: cd .. && git clone https://github.com/Chilledheart/boringssl && cd boringssl && mkdir build && cd build && cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release .. && ninja -v -j2 crypto && cd ../..
       - run: mkdir build && cd build && cmake -G Ninja -DCLI=on -DSERVER=on -DBORINGSSL=on .. && ninja -v -j2 && cd ..
       - run: rm -rf build
       - run: sudo apt-get update && sudo apt-get install -y libwxgtk3.0-gtk3-dev
