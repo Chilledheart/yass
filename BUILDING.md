@@ -72,6 +72,7 @@ scripts/build.py
 
 For boringssl, you should only need crypto target.
 
+(for Windows)
 Add these code at CMakeLists.txt to target static build.
 ```
 set(CompilerFlags
@@ -86,37 +87,7 @@ foreach(CompilerFlag ${CompilerFlags})
   string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
 endforeach()
 ```
-
-(for macOS)
-```
-set(CMAKE_ASM_FLAGS "-mmacosx-version-min=10.10 ${CMAKE_ASM_FLAGS}")
-```
-
-Run these commands to build crypto target.
-```
-mkdir build
-cd build
-git clean -xfd
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
-  -DCMAKE_OSX_ARCHITECTURES="x86_64" ..
-ninja crypto
-cp -fv crypto/libcrypto.a ../x64-libcrypto.a
-```
-
-Building a universal target
-```
-
-git clean -xfd
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
-  -DCMAKE_OSX_ARCHITECTURES="arm64" ..
-ninja crypto
-cp -fv crypto/libcrypto.a ../arm64-libcrypto.a
-lipo -create ../arm64-libcrypto.a ../x64-libcrypto.a -output crypto/libcrypto.a
-lipo -info crypto/libcrypto.a
-```
-or
+And run:
 ```
 
 mkdir build
@@ -130,6 +101,42 @@ cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
 ninja crypto
 copy /y crypto\crypto.lib ..\crypto.lib
 ```
+(for macOS)
+```
+set(CMAKE_ASM_FLAGS "-mmacosx-version-min=10.10 ${CMAKE_ASM_FLAGS}")
+```
+
+Run these commands to build crypto target.
+(first x86_64 slice)
+```
+mkdir build
+cd build
+git clean -xfd
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
+  -DCMAKE_OSX_ARCHITECTURES="x86_64" ..
+ninja crypto
+cp -fv crypto/libcrypto.a ../x64-libcrypto.a
+```
+(and then arm64 slice)
+```
+
+git clean -xfd
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
+  -DCMAKE_OSX_ARCHITECTURES="arm64" ..
+ninja crypto
+cp -fv crypto/libcrypto.a ../arm64-libcrypto.a
+lipo -create ../arm64-libcrypto.a ../x64-libcrypto.a -output crypto/libcrypto.a
+lipo -info crypto/libcrypto.a
+```
+Built universal target at ``crypto/libcrypto.a``
+
+## Updating boringssl
+
+Follow ``https://chromium.googlesource.com/chromium/src/+/HEAD/DEPS``
+Use ``boringssl_revision`` field's value to rebase TOT.
+
 ## wxWidgets for macOS
 ```
 git submodule update --init --recursive
