@@ -9,7 +9,12 @@ jobs:
       # Whatever you want to do
       - run: cd .. && wget https://downloads.sourceforge.net/project/asio/asio/1.18.1%20%28Stable%29/asio-1.18.1.tar.bz2 && tar -xvf asio-1.18.1.tar.bz2 && cd -
       - run: sudo apt-get update && sudo apt-get install -y cmake ninja-build libgoogle-glog-dev libgflags-dev libsodium-dev libjsoncpp-dev
-      - run: mkdir build && cd build && cmake -G Ninja -DCLI=on -DSERVER=on -DGUI=off .. && ninja -j2 && cd ..
+      - run: mkdir build && cd build && cmake -G Ninja -DCLI=on -DSERVER=on -DGUI=off .. && ninja -v -j2 && cd ..
       - run: rm -rf build
       - run: sudo apt-get update && sudo apt-get install -y libwxgtk3.0-gtk3-dev
-      - run: mkdir build && cd build && cmake -G Ninja -DCLI=off -DSERVER=off -DGUI=on .. && ninja -j2 && cd ..
+      - run: mkdir build && cd build && cmake -G Ninja -DCLI=off -DSERVER=off -DGUI=on .. && ninja -v -j2 && cd ..
+      - run: rm -rf build
+      - run: sudo apt-get update && sudo apt-get install -y golang
+      - run: cd .. && git clone https://github.com/Chilledheart/boringssl && mkdir -p build && cd build && cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release .. && ninja -v -j2 crypto && cd ..\..
+      - run: mkdir build && cd build && cmake -G Ninja -DCLI=on -DSERVER=on -DBORINGSSL=on .. && ninja -v -j2 && cd ..
+      - run: rm -rf build
