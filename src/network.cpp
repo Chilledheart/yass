@@ -42,7 +42,7 @@ SetTCPFastOpen(asio::ip::tcp::acceptor::native_handle_type handle) {
 #endif // TCP_FASTOPEN
 #if defined(TCP_CONGESTION)
   /* manually enable congestion algorithm */
-  char buf[256] = {};;
+  char buf[256] = {};
   socklen_t len = sizeof(buf);
   ret = getsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, buf, &len);
   if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
@@ -51,9 +51,11 @@ SetTCPFastOpen(asio::ip::tcp::acceptor::native_handle_type handle) {
   }
   VLOG(2) << "previous congestion: " << buf;
   len = FLAGS_congestion_algorithm.size();
-  ret = setsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, FLAGS_congestion_algorithm.c_str(), len);
+  ret = setsockopt(fd, IPPROTO_TCP, TCP_CONGESTION,
+                   FLAGS_congestion_algorithm.c_str(), len);
   if (ret < 0) {
-    VLOG(1) << "Congestion algorithm " << FLAGS_congestion_algorithm << "is not supported on this platform";
+    VLOG(1) << "Congestion algorithm " << FLAGS_congestion_algorithm
+            << "is not supported on this platform";
     FLAGS_congestion_algorithm = buf;
     goto out_congestion;
   }

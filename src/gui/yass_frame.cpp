@@ -8,8 +8,8 @@
 YASSFrame::YASSFrame(const wxString &title, const wxPoint &pos,
                      const wxSize &size)
     : wxFrame(NULL, wxID_ANY, title, pos, size,
-              (wxDEFAULT_FRAME_STYLE | wxFRAME_NO_TASKBAR)
-              & (~wxMAXIMIZE_BOX) & (~wxRESIZE_BORDER)) {
+              (wxDEFAULT_FRAME_STYLE | wxFRAME_NO_TASKBAR) & (~wxMAXIMIZE_BOX) &
+                  (~wxRESIZE_BORDER)) {
   wxMenu *menuFile = new wxMenu;
   menuFile->Append(ID_Hello, wxT("&Hello...\tCtrl-H"),
                    wxT("Hell string shown in status bar for this menu item"));
@@ -130,7 +130,7 @@ void YASSFrame::OnIdle(wxIdleEvent &WXUNUSED(event)) {
 
 void YASSFrame::OnClose(wxCloseEvent &event) {
   LOG(INFO) << "Frame is closing";
-  event.Skip(); // Destroy() also works here.
+  event.Skip();  // Destroy() also works here.
 #ifdef __APPLE__ /* TODO Destroy cannot help in some cases */
   ::exit(0);
 #endif
