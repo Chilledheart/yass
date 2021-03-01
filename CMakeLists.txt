@@ -334,13 +334,16 @@ if (MSVC)
       )
 
     set(CMAKE_REQUIRED_INCLUDES
-        ${boringssl_DIR}/include
-        ${CMAKE_REQUIRED_INCLUDES})
+      ${boringssl_DIR}/include
+      ${CMAKE_REQUIRED_INCLUDES})
     check_include_file(openssl/is_boringssl.h BORINGSSL_CRYPTO_INCLUDE)
     if (BORINGSSL AND BORINGSSL_CRYPTO_LIB AND BORINGSSL_CRYPTO_INCLUDE)
-        add_definitions(-DHAVE_BORINGSSL)
-        include_directories(BEFORE ${boringssl_DIR}/include)
-        set(SYSTEM_LIBS ${SYSTEM_LIBS} ${BORINGSSL_CRYPTO_LIB})
+      add_definitions(-DHAVE_BORINGSSL)
+      include_directories(BEFORE ${boringssl_DIR}/include)
+      set(SYSTEM_LIBS ${SYSTEM_LIBS} ${BORINGSSL_CRYPTO_LIB})
+      message(STATUS "Build with boringssl")
+    else()
+      message(STATUS "Build without boringssl")
     endif()
 
     find_library(ShLwApi_LIB ShLwApi)

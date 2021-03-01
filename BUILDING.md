@@ -90,9 +90,11 @@ endforeach()
 And run:
 ```
 
+git clean -xfd
 mkdir build
 mkdir debug
 cd build
+
 cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Debug ..
 ninja crypto
 copy /y crypto\crypto.lib ..\debug\crypto.lib
@@ -100,18 +102,37 @@ copy /y crypto\crypto.lib ..\debug\crypto.lib
 cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
 ninja crypto
 copy /y crypto\crypto.lib ..\crypto.lib
+cd ..
 ```
+
+(for Linux)
+```
+wget https://golang.org/dl/go1.16.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.16.linux-amd64.tar.gz
+echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
+sudo apt-get install libunwind-dev nasm
+```
+Relogin and run:
+```
+go version
+git clean -xfd
+mkdir build
+cd build
+cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
+ninja crypto
+cd ..
+```
+
 (for macOS)
 ```
 set(CMAKE_ASM_FLAGS "-mmacosx-version-min=10.10 ${CMAKE_ASM_FLAGS}")
 ```
-
 Run these commands to build crypto target.
 (first x86_64 slice)
 ```
+git clean -xfd
 mkdir build
 cd build
-git clean -xfd
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
   -DCMAKE_OSX_ARCHITECTURES="x86_64" ..
@@ -120,7 +141,6 @@ cp -fv crypto/libcrypto.a ../x64-libcrypto.a
 ```
 (and then arm64 slice)
 ```
-
 git clean -xfd
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
@@ -129,6 +149,7 @@ ninja crypto
 cp -fv crypto/libcrypto.a ../arm64-libcrypto.a
 lipo -create ../arm64-libcrypto.a ../x64-libcrypto.a -output crypto/libcrypto.a
 lipo -info crypto/libcrypto.a
+cd ..
 ```
 Built universal target at ``crypto/libcrypto.a``
 
