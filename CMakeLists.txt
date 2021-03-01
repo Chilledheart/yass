@@ -803,7 +803,6 @@ if (GUI AND wxWidgets_FOUND)
           list(APPEND SRC_FILES ${manifest_win})
         endforeach()
         list(APPEND SRC_FILES src/gui/utils_win.cpp)
-        list(APPEND SRC_FILES src/gui/notification_icon.cpp)
     endif()
 
     if (APPLE)

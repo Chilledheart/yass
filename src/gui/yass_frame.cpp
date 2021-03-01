@@ -1,21 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2019-2020 Chilledheart  */
-#include "gui/yass_frame.hpp"
-
-#include "gui/notification_icon.hpp"
-#include "gui/panels.hpp"
-#include "gui/yass.hpp"
+#include "yass_frame.hpp"
+#include "panels.hpp"
+#include "yass.hpp"
 #include <wx/stattext.h>
 
 YASSFrame::YASSFrame(const wxString &title, const wxPoint &pos,
                      const wxSize &size)
     : wxFrame(NULL, wxID_ANY, title, pos, size,
               (wxDEFAULT_FRAME_STYLE | wxFRAME_NO_TASKBAR)
-#ifdef _WIN32
-              & (~wxMINIMIZE_BOX)
-#endif
-              & (~wxMAXIMIZE_BOX)
-              & (~wxRESIZE_BORDER)) {
+              & (~wxMAXIMIZE_BOX) & (~wxRESIZE_BORDER)) {
   wxMenu *menuFile = new wxMenu;
   menuFile->Append(ID_Hello, wxT("&Hello...\tCtrl-H"),
                    wxT("Hell string shown in status bar for this menu item"));
@@ -46,9 +40,6 @@ YASSFrame::YASSFrame(const wxString &title, const wxPoint &pos,
 
 #ifdef _WIN32
   SetIcon(wxICON(IDI_ICON1));
-  m_notification = new NotificationIcon();
-  m_notification->SetMainFrame(this);
-  m_notification->SetIcon(wxICON(IDI_ICON1));
 #endif
 
   Centre();
@@ -139,17 +130,8 @@ void YASSFrame::OnIdle(wxIdleEvent &WXUNUSED(event)) {
 
 void YASSFrame::OnClose(wxCloseEvent &event) {
   LOG(INFO) << "Frame is closing";
-#ifdef _WIN32
-  if (event.CanVeto()) {
-    Show(false);
-    event.Veto();
-    return;
-  }
-  m_notification->RemoveIcon();
-#endif
   event.Skip(); // Destroy() also works here.
-#if defined(__APPLE__) ||                                                      \
-    defined(_WIN32) /* TODO Destroy cannot help in some cases */
+#ifdef __APPLE__ /* TODO Destroy cannot help in some cases */
   ::exit(0);
 #endif
 }

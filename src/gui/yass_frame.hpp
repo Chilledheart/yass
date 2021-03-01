@@ -11,7 +11,6 @@
 
 class LeftPanel;
 class RightPanel;
-class NotificationIcon;
 class YASSFrame : public wxFrame {
 public:
   YASSFrame(const wxString &title, const wxPoint &pos, const wxSize &size);
@@ -38,9 +37,6 @@ private:
 
   LeftPanel *m_leftpanel;
   RightPanel *m_rightpanel;
-#ifdef _WIN32
-  NotificationIcon *m_notification;
-#endif
 
 private:
   wxDECLARE_EVENT_TABLE();
