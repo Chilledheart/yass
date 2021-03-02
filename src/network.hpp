@@ -20,4 +20,7 @@ SetTCPFastOpen(asio::ip::tcp::acceptor::native_handle_type handle);
 asio::error_code
 SetTCPFastOpenConnect(asio::ip::tcp::socket::native_handle_type handle);
 
+asio::error_code
+SetTCPUserTimeout(asio::ip::tcp::socket::native_handle_type handle);
+
 #endif // H_NETWORK

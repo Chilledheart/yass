@@ -40,6 +40,7 @@ public:
     }
     SetTCPCongestion(acceptor_->native_handle());
     SetTCPFastOpen(acceptor_->native_handle());
+    SetTCPUserTimeout(acceptor_->native_handle());
     if (ec) {
       return ec;
     }

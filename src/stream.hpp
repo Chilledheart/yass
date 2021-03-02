@@ -99,6 +99,7 @@ private:
     }
     connect_timer_.cancel(error);
     SetTCPCongestion(socket_.native_handle());
+    SetTCPUserTimeout(socket_.native_handle());
     connected_ = true;
     channel->connected();
   }

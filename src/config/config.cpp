@@ -25,7 +25,9 @@ DEFINE_bool(tcp_fastopen_connect, DEFAULT_TCP_FASTOPEN, "TCP fastopen connect");
 DEFINE_bool(auto_start, DEFAULT_AUTO_START, "Auto Start");
 
 DEFINE_int32(timeout, DEFAULT_CONNECT_TIMEOUT,
-             "Connect timeout");
+             "Connect timeout (Linux only)");
+DEFINE_int32(tcp_user_timeout, DEFAULT_TCP_USER_TIMEOUT,
+             "TCP user timeout (Linux only)");
 
 namespace config {
 
@@ -63,8 +65,10 @@ bool ReadConfig() {
   config_impl->Read("auto_start", &FLAGS_auto_start);
   config_impl->Read("congestion_algorithm", &FLAGS_congestion_algorithm);
   config_impl->Read("timeout", &FLAGS_timeout);
+  config_impl->Read("tcp_user_timeout", &FLAGS_tcp_user_timeout);
 
   FLAGS_timeout = std::max(MAX_CONNECT_TIMEOUT, FLAGS_timeout);
+  FLAGS_tcp_user_timeout = std::max(0, FLAGS_tcp_user_timeout);
 
   VLOG(1) << "loaded option congestion_algorithm: " << FLAGS_congestion_algorithm;
   VLOG(1) << "loaded option fast_open: " << std::boolalpha << FLAGS_tcp_fastopen;
@@ -72,6 +76,7 @@ bool ReadConfig() {
 	  << FLAGS_tcp_fastopen_connect;
   VLOG(1) << "loaded option auto_start: " << std::boolalpha << FLAGS_auto_start;
   VLOG(1) << "loaded option timeout: " << FLAGS_timeout;
+  VLOG(1) << "loaded option tcp_user_timeout: " << FLAGS_tcp_user_timeout;
 
   VLOG(1) << "initializing ciphers... " << FLAGS_method;
 
@@ -119,6 +124,7 @@ bool SaveConfig() {
       !config_impl->Write("fast_open_connect", FLAGS_tcp_fastopen_connect) ||
       !config_impl->Write("auto_start", FLAGS_auto_start) ||
       !config_impl->Write("timeout", FLAGS_timeout) ||
+      !config_impl->Write("tcp_user_timeout", FLAGS_tcp_user_timeout) ||
       !config_impl->Close()) {
     return false;
   }
@@ -136,6 +142,7 @@ bool SaveConfig() {
 	  << FLAGS_tcp_fastopen_connect;
   VLOG(1) << "saved option auto_start: " << std::boolalpha << FLAGS_auto_start;
   VLOG(1) << "saved option timeout: " << FLAGS_timeout;
+  VLOG(1) << "saved option tcp_user_timeout: " << FLAGS_tcp_user_timeout;
 
   return true;
 }

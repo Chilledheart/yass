@@ -100,3 +100,24 @@ SetTCPFastOpenConnect(asio::ip::tcp::socket::native_handle_type handle) {
 #endif // TCP_FASTOPEN_CONNECT
   return asio::error_code();
 }
+
+asio::error_code
+SetTCPUserTimeout(asio::ip::tcp::acceptor::native_handle_type handle) {
+  if (!FLAGS_tcp_user_timeout) {
+    return asio::error_code();
+  }
+  (void)handle;
+#if defined(TCP_USER_TIMEOUT)
+  int fd = handle;
+  unsigned int opt = FLAGS_tcp_user_timeout;
+  int ret = setsockopt(fd, IPPROTO_TCP, TCP_USER_TIMEOUT, &opt, sizeof(opt));
+  if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
+    VLOG(1) << "TCP User Timeout is not supported on this platform";
+    FLAGS_tcp_user_timeout = 0;
+  } else {
+    VLOG(2) << "applied current tcp_option: tcp_user_timeout "
+	    << FLAGS_tcp_user_timeout;
+  }
+#endif // TCP_USER_TIMEOUT
+  return asio::error_code();
+}

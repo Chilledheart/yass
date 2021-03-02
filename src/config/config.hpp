@@ -27,6 +27,8 @@
 #define DEFAULT_CONNECT_TIMEOUT 60
 #define MAX_CONNECT_TIMEOUT 10
 
+#define DEFAULT_TCP_USER_TIMEOUT 300
+
 DECLARE_string(configfile);
 DECLARE_string(server_host);
 DECLARE_int32(server_port);
@@ -42,6 +44,7 @@ DECLARE_bool(tcp_fastopen_connect);
 DECLARE_bool(auto_start);
 
 DECLARE_int32(timeout);
+DECLARE_int32(tcp_user_timeout);
 
 namespace config {
 bool ReadConfig();
