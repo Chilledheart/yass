@@ -41,7 +41,7 @@ RightPanel::RightPanel(wxPanel *parent)
 #undef XX
   };
   wxBoxSizer *hbox = new wxBoxSizer(wxHORIZONTAL);
-  wxFlexGridSizer *fgs = new wxFlexGridSizer(7, 2, 9, 25);
+  wxFlexGridSizer *fgs = new wxFlexGridSizer(8, 2, 9, 25);
 
   wxStaticText *serverhost = new wxStaticText(this, -1, wxT("Server Host"));
   wxStaticText *serverport = new wxStaticText(this, -1, wxT("Server Port"));
@@ -87,7 +87,7 @@ RightPanel::RightPanel(wxPanel *parent)
   fgs->AddGrowableRow(7, 1);
   fgs->AddGrowableCol(1, 1);
 
-  hbox->Add(fgs, 1, wxALL | wxEXPAND, 15);
+  hbox->Add(fgs, 1, wxALL | wxEXPAND, 16);
   this->SetSizer(hbox);
 
   Connect(ID_AUTOSTART, wxEVT_CHECKBOX,
