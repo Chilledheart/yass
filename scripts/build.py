@@ -289,7 +289,7 @@ def execute_buildscript(configuration_type):
   write_output(command)
   if sys.platform == 'win32':
     src = get_app_name()
-    dst = '../%s-%s' % (DEFAULT_ARCH, get_app_name())
+    dst = '../%s-windows-%s' % (DEFAULT_ARCH, get_app_name())
     try:
       os.unlink(dst)
     except:
