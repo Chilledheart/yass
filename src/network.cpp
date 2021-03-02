@@ -14,6 +14,41 @@
 #include "core/logging.hpp"
 
 asio::error_code
+SetTCPCongestion(asio::ip::tcp::acceptor::native_handle_type handle) {
+  (void)handle;
+#if defined(TCP_CONGESTION)
+  int fd = handle;
+  /* manually enable congestion algorithm */
+  char buf[256] = {};
+  socklen_t len = sizeof(buf);
+  int ret = getsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, buf, &len);
+  if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
+    VLOG(1) << "TCP_CONGESTION is not supported on this platform";
+    goto out;
+  }
+  VLOG(2) << "previous congestion: " << buf;
+  len = FLAGS_congestion_algorithm.size();
+  ret = setsockopt(fd, IPPROTO_TCP, TCP_CONGESTION,
+                   FLAGS_congestion_algorithm.c_str(), len);
+  if (ret < 0) {
+    VLOG(1) << "Congestion algorithm \"" << FLAGS_congestion_algorithm
+            << "\" is not supported on this platform";
+    FLAGS_congestion_algorithm = buf;
+    goto out;
+  }
+  len = sizeof(buf);
+  ret = getsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, buf, &len);
+  if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
+    VLOG(1) << "TCP_CONGESTION is not supported on this platform";
+    goto out;
+  }
+  VLOG(2) << "current congestion: " << buf;
+out:
+#endif // TCP_CONGESTION
+  return asio::error_code();
+}
+
+asio::error_code
 SetTCPFastOpen(asio::ip::tcp::acceptor::native_handle_type handle) {
   if (!FLAGS_tcp_fastopen) {
     return asio::error_code();
@@ -40,34 +75,6 @@ SetTCPFastOpen(asio::ip::tcp::acceptor::native_handle_type handle) {
     VLOG(2) << "applied current tcp_option: tcp_fastopen";
   }
 #endif // TCP_FASTOPEN
-#if defined(TCP_CONGESTION)
-  /* manually enable congestion algorithm */
-  char buf[256] = {};
-  socklen_t len = sizeof(buf);
-  ret = getsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, buf, &len);
-  if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
-    VLOG(1) << "TCP_CONGESTION is not supported on this platform";
-    goto out_congestion;
-  }
-  VLOG(2) << "previous congestion: " << buf;
-  len = FLAGS_congestion_algorithm.size();
-  ret = setsockopt(fd, IPPROTO_TCP, TCP_CONGESTION,
-                   FLAGS_congestion_algorithm.c_str(), len);
-  if (ret < 0) {
-    VLOG(1) << "Congestion algorithm " << FLAGS_congestion_algorithm
-            << "is not supported on this platform";
-    FLAGS_congestion_algorithm = buf;
-    goto out_congestion;
-  }
-  len = sizeof(buf);
-  ret = getsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, buf, &len);
-  if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
-    VLOG(1) << "TCP_CONGESTION is not supported on this platform";
-    goto out_congestion;
-  }
-  VLOG(2) << "current congestion: " << buf;
-out_congestion:
-#endif // TCP_CONGESTION
   return asio::error_code();
 }
 

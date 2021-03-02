@@ -38,6 +38,7 @@ public:
     if (FLAGS_reuse_port) {
       acceptor_->set_option(asio::ip::tcp::acceptor::reuse_address(true), ec);
     }
+    SetTCPCongestion(acceptor_->native_handle());
     SetTCPFastOpen(acceptor_->native_handle());
     if (ec) {
       return ec;

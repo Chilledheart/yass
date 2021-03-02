@@ -12,6 +12,9 @@
 #include <asio/ip/tcp.hpp>
 
 asio::error_code
+SetTCPCongestion(asio::ip::tcp::acceptor::native_handle_type handle);
+
+asio::error_code
 SetTCPFastOpen(asio::ip::tcp::acceptor::native_handle_type handle);
 
 asio::error_code

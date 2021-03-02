@@ -91,6 +91,7 @@ private:
       channel->disconnected(error);
       return;
     }
+    SetTCPCongestion(socket_.native_handle());
     connected_ = true;
     channel->connected();
   }
