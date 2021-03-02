@@ -6,8 +6,10 @@
 
 #include <asio/ip/tcp.hpp>
 #include <asio/read.hpp>
+#include <asio/steady_timer.hpp>
 #include <asio/write.hpp>
 #include <deque>
+#include <chrono>
 
 #include "channel.hpp"
 #include "core/logging.hpp"
@@ -22,7 +24,8 @@ public:
   /// \param channel
   stream(asio::io_context &io_context, asio::ip::tcp::endpoint endpoint,
          const std::shared_ptr<Channel> &channel)
-      : endpoint_(endpoint), socket_(io_context), channel_(channel) {
+      : endpoint_(endpoint), socket_(io_context), connect_timer_(io_context),
+      channel_(channel) {
     assert(channel && "channel must defined to use with stream");
   }
 
@@ -33,6 +36,9 @@ public:
     connected_ = false;
     read_enabled_ = true;
     SetTCPFastOpenConnect(socket_.native_handle());
+    connect_timer_.expires_from_now(std::chrono::milliseconds(FLAGS_timeout));
+    connect_timer_.async_wait(std::bind(&stream::on_connect_expired, this,
+                                        std::placeholders::_1));
     socket_.async_connect(endpoint_, std::bind(&stream::on_connect, this,
                                                channel, std::placeholders::_1));
   }
@@ -91,9 +97,21 @@ private:
       channel->disconnected(error);
       return;
     }
+    connect_timer_.cancel(error);
     SetTCPCongestion(socket_.native_handle());
     connected_ = true;
     channel->connected();
+  }
+
+  void on_connect_expired(asio::error_code error) {
+    if (connected_) {
+      return;
+    }
+    if (error) {
+      socket_.close(error);
+      return;
+    }
+    LOG(WARNING) << "connection timed out with endpoint: " << endpoint_;
   }
 
   void on_read(const std::shared_ptr<Channel> &channel,
@@ -147,6 +165,7 @@ private:
 private:
   asio::ip::tcp::endpoint endpoint_;
   asio::ip::tcp::socket socket_;
+  asio::steady_timer connect_timer_;
 
   std::weak_ptr<Channel> channel_;
   bool connected_;

@@ -60,7 +60,11 @@ RightPanel::RightPanel(wxPanel *parent)
   m_localhost_tc = new wxTextCtrl(this, -1);
   m_localport_tc = new wxTextCtrl(this, -1);
 
-  m_autostart_cb = new wxCheckBox(this, ID_AUTOSTART, wxT("Auto Start"));
+  wxStaticText *timeout = new wxStaticText(this, -1, wxT("Timeout"));
+  wxStaticText *autostart = new wxStaticText(this, -1, wxT("Auto Start"));
+
+  m_timeout_tc = new wxTextCtrl(this, -1);
+  m_autostart_cb = new wxCheckBox(this, ID_AUTOSTART, wxT("Enable"));
 
   fgs->Add(serverhost);
   fgs->Add(m_serverhost_tc, 1, wxEXPAND);
@@ -74,9 +78,13 @@ RightPanel::RightPanel(wxPanel *parent)
   fgs->Add(m_localhost_tc, 1, wxEXPAND);
   fgs->Add(localport);
   fgs->Add(m_localport_tc, 1, wxEXPAND);
+
+  fgs->Add(timeout);
+  fgs->Add(m_timeout_tc, 1, wxEXPAND);
+  fgs->Add(autostart);
   fgs->Add(m_autostart_cb);
 
-  fgs->AddGrowableRow(6, 1);
+  fgs->AddGrowableRow(7, 1);
   fgs->AddGrowableCol(1, 1);
 
   hbox->Add(fgs, 1, wxALL | wxEXPAND, 15);

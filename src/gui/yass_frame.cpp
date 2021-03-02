@@ -68,6 +68,10 @@ std::string YASSFrame::GetLocalPort() {
   return std::string(m_rightpanel->m_localport_tc->GetValue());
 }
 
+std::string YASSFrame::GetTimeout() {
+  return std::string(m_rightpanel->m_timeout_tc->GetValue());
+}
+
 void YASSFrame::Started() {
   UpdateStatus();
   m_rightpanel->m_serverhost_tc->SetEditable(false);
@@ -76,6 +80,7 @@ void YASSFrame::Started() {
   m_rightpanel->m_method_tc->Enable(false);
   m_rightpanel->m_localhost_tc->SetEditable(false);
   m_rightpanel->m_localport_tc->SetEditable(false);
+  m_rightpanel->m_timeout_tc->SetEditable(false);
   m_leftpanel->m_stop->Enable();
 }
 
@@ -87,6 +92,7 @@ void YASSFrame::StartFailed() {
   m_rightpanel->m_method_tc->Enable(true);
   m_rightpanel->m_localhost_tc->SetEditable(true);
   m_rightpanel->m_localport_tc->SetEditable(true);
+  m_rightpanel->m_timeout_tc->SetEditable(true);
   m_leftpanel->m_start->Enable();
 }
 
@@ -108,6 +114,7 @@ void YASSFrame::UpdateStatus() {
   m_rightpanel->m_method_tc->SetStringSelection(FLAGS_method);
   m_rightpanel->m_localhost_tc->SetValue(FLAGS_local_host);
   m_rightpanel->m_localport_tc->SetValue(std::to_string(FLAGS_local_port));
+  m_rightpanel->m_timeout_tc->SetValue(std::to_string(FLAGS_timeout));
 
   SetStatusText(mApp->GetStatus());
 }

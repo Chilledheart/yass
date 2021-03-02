@@ -33,6 +33,7 @@ public:
   wxChoice *m_method_tc;
   wxTextCtrl *m_localhost_tc;
   wxTextCtrl *m_localport_tc;
+  wxTextCtrl *m_timeout_tc;
   wxCheckBox *m_autostart_cb;
 };
 

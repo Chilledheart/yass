@@ -24,6 +24,9 @@
 #define DEFAULT_AUTO_START true
 #define DEFAULT_CONGESTION_ALGORITHM "bbr"
 
+#define DEFAULT_CONNECT_TIMEOUT 60
+#define MAX_CONNECT_TIMEOUT 10
+
 DECLARE_string(configfile);
 DECLARE_string(server_host);
 DECLARE_int32(server_port);
@@ -38,7 +41,6 @@ DECLARE_bool(tcp_fastopen_connect);
 DECLARE_bool(auto_start);
 DECLARE_string(congestion_algorithm);
 
-// Not implemented
 DECLARE_int32(timeout);
 
 namespace config {
