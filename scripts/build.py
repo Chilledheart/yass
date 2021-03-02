@@ -295,7 +295,7 @@ def execute_buildscript(configuration_type):
     except:
       pass
     os.rename(src, dst)
-    outputs = ['%s-%s' % (DEFAULT_ARCH, get_app_name())]
+    outputs = ['%s-windows-%s' % (DEFAULT_ARCH, get_app_name())]
   else:
     outputs = ['build/%s' % get_app_name()]
 
