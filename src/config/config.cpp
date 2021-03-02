@@ -19,10 +19,10 @@ DEFINE_string(local_host, DEFAULT_LOCAL,
 DEFINE_int32(local_port, DEFAULT_LOCAL_PORT,
              "Port number which local server listens to");
 DEFINE_bool(reuse_port, DEFAULT_REUSE_PORT, "Reuse the listening port");
+DEFINE_string(congestion_algorithm, DEFAULT_CONGESTION_ALGORITHM, "TCP Congestion Algorithm");
 DEFINE_bool(tcp_fastopen, DEFAULT_TCP_FASTOPEN, "TCP fastopen");
 DEFINE_bool(tcp_fastopen_connect, DEFAULT_TCP_FASTOPEN, "TCP fastopen connect");
 DEFINE_bool(auto_start, DEFAULT_AUTO_START, "Auto Start");
-DEFINE_string(congestion_algorithm, DEFAULT_CONGESTION_ALGORITHM, "TCP Congestion Algorithm");
 
 DEFINE_int32(timeout, DEFAULT_CONNECT_TIMEOUT,
              "Connect timeout");
@@ -66,9 +66,11 @@ bool ReadConfig() {
 
   FLAGS_timeout = std::max(MAX_CONNECT_TIMEOUT, FLAGS_timeout);
 
-  VLOG(1) << "loaded option fast_open: " << std::boolalpha << FLAGS_tcp_fastopen;
-  VLOG(1) << "loaded option auto_start: " << std::boolalpha << FLAGS_auto_start;
   VLOG(1) << "loaded option congestion_algorithm: " << FLAGS_congestion_algorithm;
+  VLOG(1) << "loaded option fast_open: " << std::boolalpha << FLAGS_tcp_fastopen;
+  VLOG(1) << "loaded option fast_open_connect: " << std::boolalpha
+	  << FLAGS_tcp_fastopen_connect;
+  VLOG(1) << "loaded option auto_start: " << std::boolalpha << FLAGS_auto_start;
   VLOG(1) << "loaded option timeout: " << FLAGS_timeout;
 
   VLOG(1) << "initializing ciphers... " << FLAGS_method;
@@ -76,6 +78,9 @@ bool ReadConfig() {
   if (FLAGS_reuse_port) {
     LOG(WARNING) << "using port reuse";
   }
+#if defined(TCP_CONGESTION)
+  LOG(WARNING) << "using congestion: " << FLAGS_congestion_algorithm;
+#endif
 #if defined(TCP_FASTOPEN)
   if (FLAGS_tcp_fastopen) {
     LOG(WARNING) << "using tcp fast open";
@@ -89,9 +94,6 @@ bool ReadConfig() {
   if (FLAGS_auto_start) {
     LOG(WARNING) << "using autostart";
   }
-#if defined(TCP_CONGESTION)
-  LOG(WARNING) << "using congestion: " << FLAGS_congestion_algorithm;
-#endif
 
   return true;
 }
@@ -112,9 +114,10 @@ bool SaveConfig() {
       !config_impl->Write("password", FLAGS_password) ||
       !config_impl->Write("local", FLAGS_local_host) ||
       !config_impl->Write("local_port", FLAGS_local_port) ||
-      !config_impl->Write("auto_start", FLAGS_auto_start) ||
-      !config_impl->Write("fast_open", FLAGS_tcp_fastopen) ||
       !config_impl->Write("congestion_algorithm", FLAGS_congestion_algorithm) ||
+      !config_impl->Write("fast_open", FLAGS_tcp_fastopen) ||
+      !config_impl->Write("fast_open_connect", FLAGS_tcp_fastopen_connect) ||
+      !config_impl->Write("auto_start", FLAGS_auto_start) ||
       !config_impl->Write("timeout", FLAGS_timeout) ||
       !config_impl->Close()) {
     return false;
@@ -127,9 +130,11 @@ bool SaveConfig() {
   VLOG(1) << "saved option local: " << FLAGS_local_host;
   VLOG(1) << "saved option local_port: " << FLAGS_local_port;
 
-  VLOG(1) << "saved option fast_open: " << std::boolalpha << FLAGS_tcp_fastopen;
-  VLOG(1) << "saved option auto_start: " << std::boolalpha << FLAGS_auto_start;
   VLOG(1) << "saved option congestion_algorithm: " << FLAGS_congestion_algorithm;
+  VLOG(1) << "saved option fast_open: " << std::boolalpha << FLAGS_tcp_fastopen;
+  VLOG(1) << "saved option fast_open_connect: " << std::boolalpha
+	  << FLAGS_tcp_fastopen_connect;
+  VLOG(1) << "saved option auto_start: " << std::boolalpha << FLAGS_auto_start;
   VLOG(1) << "saved option timeout: " << FLAGS_timeout;
 
   return true;

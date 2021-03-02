@@ -20,9 +20,9 @@
 #define DEFAULT_LOCAL "127.0.0.1"
 #define DEFAULT_LOCAL_PORT 8000
 #define DEFAULT_REUSE_PORT true
+#define DEFAULT_CONGESTION_ALGORITHM "bbr"
 #define DEFAULT_TCP_FASTOPEN true
 #define DEFAULT_AUTO_START true
-#define DEFAULT_CONGESTION_ALGORITHM "bbr"
 
 #define DEFAULT_CONNECT_TIMEOUT 60
 #define MAX_CONNECT_TIMEOUT 10
@@ -36,10 +36,10 @@ DECLARE_string(local_host);
 DECLARE_int32(local_port);
 DECLARE_string(password);
 DECLARE_bool(reuse_port);
+DECLARE_string(congestion_algorithm);
 DECLARE_bool(tcp_fastopen);
 DECLARE_bool(tcp_fastopen_connect);
 DECLARE_bool(auto_start);
-DECLARE_string(congestion_algorithm);
 
 DECLARE_int32(timeout);
 
