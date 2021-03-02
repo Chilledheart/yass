@@ -93,11 +93,11 @@ public:
 private:
   void on_connect(const std::shared_ptr<Channel> &channel,
                   asio::error_code error) {
+    connect_timer_.cancel(error);
     if (error) {
       channel->disconnected(error);
       return;
     }
-    connect_timer_.cancel(error);
     SetTCPCongestion(socket_.native_handle());
     SetTCPUserTimeout(socket_.native_handle());
     connected_ = true;
@@ -109,7 +109,7 @@ private:
       return;
     }
     if (error) {
-      socket_.close(error);
+      close();
       return;
     }
     LOG(WARNING) << "connection timed out with endpoint: " << endpoint_;
