@@ -334,10 +334,8 @@ def postbuild_fix_retina_display():
 
 def postbuild_codesign():
   print 'fixing codesign...'
-  write_output(['find', get_app_name(), '-name', '*.dylib', '-exec',\
-                'codesign', '--timestamp=none', '--force', '--sign', DEFAULT_SIGNING_IDENTITY, '{}', ';'])
-  write_output(['codesign', '--timestamp=none', '--force', '--sign', DEFAULT_SIGNING_IDENTITY, get_app_name()])
-  write_output(['codesign', '-dv', '--verbose=4', get_app_name()])
+  write_output(['codesign', '--timestamp=none', '--force', '--deep', '--sign', DEFAULT_SIGNING_IDENTITY, get_app_name()])
+  write_output(['codesign', '-dv', '--deep', '--verbose=4', get_app_name()])
 
 if __name__ == '__main__':
   configuration_type = DEFAULT_BUILD_TYPE
