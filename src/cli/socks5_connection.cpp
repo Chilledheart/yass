@@ -674,7 +674,7 @@ void Socks5Connection::sent(std::shared_ptr<IOBuf> buf) {
 
 void Socks5Connection::disconnected(asio::error_code error) {
   VLOG(2) << "upstream: lost connection with: " << remote_endpoint_
-          << " due to " << error;
+          << " due to " << error << " and data to write: " << downstream_.size();
   close();
 }
 

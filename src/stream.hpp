@@ -125,7 +125,7 @@ private:
       return;
     }
 
-    if (!error) {
+    if (bytes_transferred) {
       channel->received(buf);
       if (read_enabled_) {
         start_read();
@@ -133,6 +133,9 @@ private:
     }
 
     if (error) {
+      if (bytes_transferred) {
+        VLOG(1) << "data receiving failed with data " << endpoint_ << " due to " << error;
+      }
       on_disconnect(channel, error);
     }
   }
@@ -146,12 +149,15 @@ private:
       return;
     }
 
-    if (!error) {
+    if (bytes_transferred) {
       DCHECK_EQ(bytes_transferred, buf->length());
       channel->sent(buf);
     }
 
     if (error) {
+      if (bytes_transferred) {
+        VLOG(1) << "data sending failed with data " << endpoint_ << " due to " << error;
+      }
       on_disconnect(channel, error);
     }
   }
