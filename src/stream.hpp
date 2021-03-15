@@ -4,6 +4,7 @@
 #ifndef H_STREAM
 #define H_STREAM
 
+#include <asio/error_code.hpp>
 #include <asio/ip/tcp.hpp>
 #include <asio/read.hpp>
 #include <asio/steady_timer.hpp>
@@ -13,6 +14,7 @@
 
 #include "channel.hpp"
 #include "core/logging.hpp"
+#include "config/config.hpp"
 #include "network.hpp"
 
 /// the class to describe the traffic between given node (endpoint)
@@ -37,6 +39,7 @@ public:
     eof_ = false;
     read_enabled_ = true;
     SetTCPFastOpenConnect(socket_.native_handle());
+    SetSocketLinger(&socket_);
     connect_timer_.expires_from_now(std::chrono::milliseconds(FLAGS_timeout));
     connect_timer_.async_wait(std::bind(&stream::on_connect_expired, this,
                                         std::placeholders::_1));
