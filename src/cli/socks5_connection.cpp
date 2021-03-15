@@ -404,17 +404,7 @@ asio::error_code Socks5Connection::PerformCmdOps(const socks5::request *request,
   case socks5::cmd_connect: {
     asio::ip::tcp::endpoint endpoint;
     if (request->address_type() == domain) {
-      asio::ip::tcp::resolver resolver(io_context_);
-      auto endpoints = resolver.resolve(request->domain_name(),
-                                        std::to_string(request->port()), error);
-      if (!error) {
-        endpoint = endpoints->endpoint();
-        VLOG(2) << "[dns] reply with endpoint: " << endpoint << " for domain "
-                << request->domain_name();
-      } else {
-        VLOG(1) << "[dns] resolve failure for domain "
-                << request->domain_name();
-      }
+      endpoint = asio::ip::tcp::endpoint(asio::ip::tcp::v4(), 0);
     } else {
       endpoint = request->endpoint();
     }
@@ -458,18 +448,9 @@ Socks5Connection::PerformCmdOpsV4(const socks4::request *request,
     asio::ip::tcp::endpoint endpoint;
 
     if (request->is_socks4a()) {
-      asio::ip::tcp::resolver resolver(io_context_);
-      auto endpoints = resolver.resolve(request->domain_name(),
-                                        std::to_string(request->port()), error);
-      if (!error) {
-        endpoint = endpoints->endpoint();
-        VLOG(2) << "[dns] reply with endpoint: " << endpoint << " for domain "
-                << request->domain_name();
-      } else {
-        VLOG(1) << "[dns] resolve failure for domain "
-                << request->domain_name();
-      }
+      // TBD
     }
+    endpoint = asio::ip::tcp::endpoint(asio::ip::tcp::v4(), 0);
 
     if (error) {
       reply->mutable_status() = socks4::reply::request_failed;
@@ -499,16 +480,7 @@ asio::error_code Socks5Connection::PerformCmdOpsHttp() {
 
   asio::ip::tcp::endpoint endpoint;
 
-  asio::ip::tcp::resolver resolver(io_context_);
-  auto endpoints =
-      resolver.resolve(http_host_, std::to_string(http_port_), error);
-  if (!error) {
-    endpoint = endpoints->endpoint();
-    VLOG(2) << "[dns] reply with endpoint: " << endpoint << " for domain "
-            << http_host_;
-  } else {
-    VLOG(1) << "[dns] resolve failure for domain " << http_host_;
-  }
+  endpoint = asio::ip::tcp::endpoint(asio::ip::tcp::v4(), 0);
 
   ByteRange req(ss_request_->data(), ss_request_->length());
   OnCmdConnect(req);
