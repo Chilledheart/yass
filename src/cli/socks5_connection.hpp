@@ -23,7 +23,6 @@
 #include <unordered_map>
 
 class cipher;
-namespace socks5 {
 /// The ultimate service class to deliever the network traffic to the remote
 /// endpoint
 class Socks5Connection : public std::enable_shared_from_this<Socks5Connection>,
@@ -33,8 +32,8 @@ public:
   /// The state of service
   enum state {
     state_error,
-    state_method_select,    /* handshake with method extension */
-    state_handshake,        /* handshake with destination */
+    state_method_select,    /* handshake with socks5 method extension */
+    state_socks5_handshake, /* handshake with socks5 destination */
     state_socks4_handshake, /* handshake with socks4/socks4a */
     state_http_handshake,   /* handshake with http */
     state_stream,
@@ -47,7 +46,7 @@ public:
       return "error";
     case state_method_select:
       return "method_select";
-    case state_handshake:
+    case state_socks5_handshake:
       return "s5handshake";
     case state_socks4_handshake:
       return "s4handshake";
@@ -86,7 +85,6 @@ private:
   ///                        method_select->WriteMethodSelect
   /// handshake->ReadHandshake
   ///          ->PerformCmdOps
-  ///          ->ResolveDns
   ///                        handshake->WriteHandShake
   /// stream->ReadStream
   ///                        stream->WriteStream
@@ -97,10 +95,10 @@ private:
   /// \param nextState the state the service would be set to
   void SetState(state nextState) { state_ = nextState; }
 
-  /// Start to read socks5 method select request
+  /// Start to read socks5 method select/socks4 handshake/http handshake request
   void ReadMethodSelect();
   /// Start to read socks5 handshake request
-  void ReadHandshake();
+  void ReadSocks5Handshake();
 
   /// Start to read socks5 method_select request
   asio::error_code OnReadSocks5MethodSelect(std::shared_ptr<IOBuf> buf);
@@ -137,8 +135,8 @@ private:
   /// dispatch the command to delegate
   /// \param command command type
   /// \param reply reply to given command type
-  asio::error_code PerformCmdOps(const socks5::request *request,
-                                 socks5::reply *reply);
+  asio::error_code PerformCmdOpsV5(const socks5::request *request,
+                                   socks5::reply *reply);
 
   /// dispatch the command to delegate
   /// \param command command type
@@ -173,19 +171,19 @@ private:
   state state_;
 
   /// parser of method select request
-  method_select_request_parser method_select_request_parser_;
+  socks5::method_select_request_parser method_select_request_parser_;
   /// copy of method select request
-  method_select_request method_select_request_;
+  socks5::method_select_request method_select_request_;
 
   /// parser of handshake request
-  request_parser request_parser_;
+  socks5::request_parser request_parser_;
   /// copy of handshake request
-  request request_;
+  socks5::request s5_request_;
 
   /// copy of method select response
-  method_select_response method_select_reply_;
+  socks5::method_select_response method_select_reply_;
   /// copy of handshake response
-  reply reply_;
+  socks5::reply s5_reply_;
 
   /// parser of handshake request
   socks4::request_parser s4_request_parser_;
@@ -286,7 +284,5 @@ private:
   /// statistics of write bytes (non-encoded)
   size_t wbytes_transferred_ = 0;
 };
-
-} // namespace socks5
 
 #endif // H_SOCKS5_CONNECTION

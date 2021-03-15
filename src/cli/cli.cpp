@@ -32,10 +32,10 @@ int main(int argc, const char *argv[]) {
 #ifndef NDEBUG
   ::FLAGS_logtostderr = true;
   ::FLAGS_logbuflevel = 0;
-  ::FLAGS_v = 2;
+  ::FLAGS_v = 1;
 #else
   ::FLAGS_logbuflevel = 1;
-  ::FLAGS_v = 1;
+  ::FLAGS_v = 2;
 #endif
   ::google::ParseCommandLineFlags(&argc, (char ***)&argv, true);
   ::google::InstallFailureSignalHandler();

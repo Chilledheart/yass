@@ -96,12 +96,6 @@ public:
     port_low_byte_ = port & 0xff;
   }
 
-  void set_loopback() {
-    address_ = asio::ip::address_v4::loopback().to_bytes();
-    port_high_byte_ = 0;
-    port_low_byte_ = 0;
-  }
-
   const asio::ip::address_v4::bytes_type &address() const { return address_; }
 
   size_t length() const { return sizeof(uint8_t) * 4 + sizeof(address_); }

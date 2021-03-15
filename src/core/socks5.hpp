@@ -249,20 +249,13 @@ public:
     port_low_byte_ = port & 0xff;
   }
 
-  void set_loopback() {
-    address_type_ = ipv4;
-    address4_ = asio::ip::address_v4::loopback().to_bytes();
-    port_high_byte_ = 0;
-    port_low_byte_ = 0;
-  }
-
 public:
   static const uint8_t kHeaderLength = 4;
 
 private:
   uint8_t version_;
   uint8_t status_;
-  uint8_t null_byte_;
+  uint8_t null_byte_ = 0;
   uint8_t address_type_;
   asio::ip::address_v4::bytes_type address4_;
   asio::ip::address_v6::bytes_type address6_;
