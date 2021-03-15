@@ -612,6 +612,11 @@ void Socks5Connection::OnStreamWrite(std::shared_ptr<IOBuf> buf) {
 
   /* recursively send the remainings */
   OnDownstreamWriteFlush();
+
+  if (channel_->eof() && downstream_.empty()) {
+    close();
+    return;
+  }
 }
 
 void Socks5Connection::OnDisconnect(asio::error_code error) {
@@ -675,7 +680,15 @@ void Socks5Connection::sent(std::shared_ptr<IOBuf> buf) {
 void Socks5Connection::disconnected(asio::error_code error) {
   VLOG(2) << "upstream: lost connection with: " << remote_endpoint_
           << " due to " << error << " and data to write: " << downstream_.size();
-  close();
+  /* close socket directly when it is not eof */
+  if (!channel_->eof()) {
+    close();
+    return;
+  }
+  /* delay the socket's close because downstream is buffered */
+  if (downstream_.empty()) {
+    close();
+  }
 }
 
 std::shared_ptr<IOBuf>

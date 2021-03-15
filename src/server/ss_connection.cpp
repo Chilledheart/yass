@@ -233,7 +233,7 @@ void SsConnection::OnStreamWrite(std::shared_ptr<IOBuf> buf) {
   OnDownstreamWriteFlush();
 
   /* close the socket if upstream is eof */
-  if (!channel_->connected() && downstream_.empty()) {
+  if (channel_->eof() && downstream_.empty()) {
     close();
     return;
   }
@@ -326,8 +326,13 @@ void SsConnection::sent(std::shared_ptr<IOBuf> buf) {
 
 void SsConnection::disconnected(asio::error_code error) {
   VLOG(2) << "upstream: lost connection with: " << remote_endpoint_
-          << " due to " << error;
+          << " due to " << error << " and data to write: " << downstream_.size();
   upstream_writable_ = false;
+  /* close socket directly when it is not eof */
+  if (!channel_->eof()) {
+    close();
+    return;
+  }
   /* delay the socket's close because downstream is buffered */
   if (downstream_.empty()) {
     close();

@@ -34,6 +34,7 @@ public:
   void connect() {
     std::shared_ptr<Channel> channel = std::shared_ptr<Channel>(channel_);
     connected_ = false;
+    eof_ = false;
     read_enabled_ = true;
     SetTCPFastOpenConnect(socket_.native_handle());
     connect_timer_.expires_from_now(std::chrono::milliseconds(FLAGS_timeout));
@@ -44,6 +45,8 @@ public:
   }
 
   bool connected() const { return connected_; }
+
+  bool eof() const { return eof_; }
 
   void disable_read() { read_enabled_ = false; }
 
@@ -136,6 +139,9 @@ private:
       if (bytes_transferred) {
         VLOG(1) << "data receiving failed with data " << endpoint_ << " due to " << error;
       }
+      if (error == asio::error::eof) {
+        eof_ = true;
+      }
       on_disconnect(channel, error);
     }
   }
@@ -158,6 +164,9 @@ private:
       if (bytes_transferred) {
         VLOG(1) << "data sending failed with data " << endpoint_ << " due to " << error;
       }
+      if (error == asio::error::eof) {
+        eof_ = true;
+      }
       on_disconnect(channel, error);
     }
   }
@@ -176,6 +185,7 @@ private:
 
   std::weak_ptr<Channel> channel_;
   bool connected_;
+  bool eof_;
 
   bool read_enabled_;
   bool read_inprogress_ = false;
