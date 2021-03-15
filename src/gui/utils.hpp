@@ -6,6 +6,7 @@ class Utils {
 public:
   static bool GetAutoStart();
   static void EnableAutoStart(bool on);
+  static bool SetProcessDPIAware();
 };
 
 #define DEFAULT_AUTOSTART_NAME "YASS"

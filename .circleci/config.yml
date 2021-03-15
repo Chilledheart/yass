@@ -15,6 +15,6 @@ jobs:
       - run: cd .. && git clone https://github.com/Chilledheart/boringssl && cd boringssl && mkdir build && cd build && cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release .. && ninja -v -j2 crypto && cd ../..
       - run: mkdir build && cd build && cmake -G Ninja -DCLI=on -DSERVER=on -DBORINGSSL=on .. && ninja -v -j2 && cd ..
       - run: rm -rf build
-      - run: sudo apt-get update && sudo apt-get install -y libwxgtk3.0-gtk3-dev
-      - run: mkdir build && cd build && cmake -G Ninja -DCLI=off -DSERVER=off -DGUI=on .. && ninja -v -j2 && cd ..
-      - run: rm -rf build
+      # - run: sudo apt-get update && sudo apt-get install -y libwxgtk3.0-gtk3-dev
+      # - run: mkdir build && cd build && cmake -G Ninja -DCLI=off -DSERVER=off -DGUI=on .. && ninja -v -j2 && cd ..
+      # - run: rm -rf build

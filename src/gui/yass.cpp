@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2019-2020 Chilledheart  */
-#include "yass.hpp"
-#include "yass_frame.hpp"
+#include "gui/yass.hpp"
 
+#include "gui/utils.hpp"
+#include "gui/yass_frame.hpp"
 #include <string>
-
 #include "core/logging.hpp"
 
 YASSApp *mApp = nullptr;
@@ -20,10 +20,10 @@ bool YASSApp::OnInit() {
 #ifndef NDEBUG
   ::FLAGS_logtostderr = true;
   ::FLAGS_logbuflevel = 0;
-  ::FLAGS_v = 2;
+  ::FLAGS_v = 1;
 #else
   ::FLAGS_logbuflevel = 1;
-  ::FLAGS_v = 1;
+  ::FLAGS_v = 2;
 #endif
 
 #ifdef _WIN32
@@ -31,6 +31,9 @@ bool YASSApp::OnInit() {
   if (wnd) {
     wxMessageBox(wxT("Already exists!"), wxT("WndChecker"));
     return false;
+  }
+  if (Utils::SetProcessDPIAware()) {
+    LOG(WARNING) << "SetProcessDPIAware applied";
   }
 #endif
 
@@ -42,6 +45,7 @@ bool YASSApp::OnInit() {
 
   frame_ = new YASSFrame(wxT("Yet-Another-Shadow-Socket"), wxPoint(50, 50),
                          wxSize(450, 390));
+  frame_->SetClientSize(frame_->FromDIP(frame_->GetClientSize()));
   frame_->Show(true);
   frame_->UpdateStatus();
   SetTopWindow(frame_);
