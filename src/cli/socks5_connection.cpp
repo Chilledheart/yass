@@ -167,8 +167,8 @@ asio::error_code
 Socks5Connection::OnReadSocks5Handshake(std::shared_ptr<IOBuf> buf) {
   std::shared_ptr<Socks5Connection> self = shared_from_this();
   socks5::request_parser::result_type result;
-  std::tie(result, std::ignore) =
-      request_parser_.parse(s5_request_, buf->data(), buf->data() + buf->length());
+  std::tie(result, std::ignore) = request_parser_.parse(
+      s5_request_, buf->data(), buf->data() + buf->length());
 
   if (result == socks5::request_parser::good) {
     DCHECK_LE(s5_request_.length(), buf->length());
@@ -378,7 +378,8 @@ void Socks5Connection::WriteHandshake() {
   case state_stream:
     break;
   default:
-    LOG(FATAL) << "bad state 0x" << std::hex << (int)self->CurrentState() << std::dec;
+    LOG(FATAL) << "bad state 0x" << std::hex << (int)self->CurrentState()
+               << std::dec;
   }
 }
 
@@ -389,8 +390,9 @@ void Socks5Connection::WriteStream(std::shared_ptr<IOBuf> buf) {
                               std::placeholders::_1, std::placeholders::_2));
 }
 
-asio::error_code Socks5Connection::PerformCmdOpsV5(const socks5::request *request,
-                                                   socks5::reply *reply) {
+asio::error_code
+Socks5Connection::PerformCmdOpsV5(const socks5::request *request,
+                                  socks5::reply *reply) {
   if (request->address_type() == socks5::domain) {
     ss_request_ =
         std::make_unique<ss::request>(request->domain_name(), request->port());
@@ -419,7 +421,8 @@ asio::error_code Socks5Connection::PerformCmdOpsV5(const socks5::request *reques
   case socks5::cmd_udp_associate:
   default:
     // NOT IMPLETMENTED
-    VLOG(2) << "not supported command 0x" << std::hex << (int)request->command() << std::dec;
+    VLOG(2) << "not supported command 0x" << std::hex << (int)request->command()
+            << std::dec;
     reply->mutable_status() = socks5::reply::request_failed_cmd_not_supported;
     break;
   }
@@ -536,7 +539,8 @@ void Socks5Connection::ProcessReceivedData(
       ec = std::make_error_code(std::errc::bad_message);
       break;
     default:
-      LOG(FATAL) << "bad state 0x" << std::hex << (int)self->CurrentState() << std::dec;
+      LOG(FATAL) << "bad state 0x" << std::hex << (int)self->CurrentState()
+                 << std::dec;
     };
   }
   if (ec) {
@@ -576,7 +580,8 @@ void Socks5Connection::ProcessSentData(std::shared_ptr<Socks5Connection> self,
       ec = std::make_error_code(std::errc::bad_message);
       break;
     default:
-      LOG(FATAL) << "bad state 0x" << std::hex << (int)self->CurrentState() << std::dec;
+      LOG(FATAL) << "bad state 0x" << std::hex << (int)self->CurrentState()
+                 << std::dec;
     }
   }
 
@@ -679,7 +684,8 @@ void Socks5Connection::sent(std::shared_ptr<IOBuf> buf) {
 
 void Socks5Connection::disconnected(asio::error_code error) {
   VLOG(2) << "upstream: lost connection with: " << remote_endpoint_
-          << " due to " << error << " and data to write: " << downstream_.size();
+          << " due to " << error
+          << " and data to write: " << downstream_.size();
   /* close socket directly when it is not eof */
   if (!channel_->eof()) {
     close();

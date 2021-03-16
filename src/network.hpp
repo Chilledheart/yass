@@ -23,7 +23,6 @@ SetTCPFastOpenConnect(asio::ip::tcp::socket::native_handle_type handle);
 asio::error_code
 SetTCPUserTimeout(asio::ip::tcp::socket::native_handle_type handle);
 
-asio::error_code
-SetSocketLinger(asio::ip::tcp::socket *socket);
+asio::error_code SetSocketLinger(asio::ip::tcp::socket *socket);
 
 #endif // H_NETWORK

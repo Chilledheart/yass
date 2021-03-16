@@ -2,10 +2,10 @@
 /* Copyright (c) 2019-2020 Chilledheart  */
 #include "gui/yass.hpp"
 
+#include "core/logging.hpp"
 #include "gui/utils.hpp"
 #include "gui/yass_frame.hpp"
 #include <string>
-#include "core/logging.hpp"
 
 YASSApp *mApp = nullptr;
 

@@ -326,7 +326,8 @@ void SsConnection::sent(std::shared_ptr<IOBuf> buf) {
 
 void SsConnection::disconnected(asio::error_code error) {
   VLOG(2) << "upstream: lost connection with: " << remote_endpoint_
-          << " due to " << error << " and data to write: " << downstream_.size();
+          << " due to " << error
+          << " and data to write: " << downstream_.size();
   upstream_writable_ = false;
   /* close socket directly when it is not eof */
   if (!channel_->eof()) {

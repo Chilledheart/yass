@@ -116,14 +116,13 @@ SetTCPUserTimeout(asio::ip::tcp::acceptor::native_handle_type handle) {
     FLAGS_tcp_user_timeout = 0;
   } else {
     VLOG(2) << "applied current tcp_option: tcp_user_timeout "
-	    << FLAGS_tcp_user_timeout;
+            << FLAGS_tcp_user_timeout;
   }
 #endif // TCP_USER_TIMEOUT
   return asio::error_code();
 }
 
-asio::error_code
-SetSocketLinger(asio::ip::tcp::socket *socket) {
+asio::error_code SetSocketLinger(asio::ip::tcp::socket *socket) {
   if (!FLAGS_so_linger_timeout) {
     return asio::error_code();
   }

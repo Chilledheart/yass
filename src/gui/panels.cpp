@@ -10,8 +10,10 @@
 LeftPanel::LeftPanel(wxPanel *parent)
     : wxPanel(parent, -1, wxPoint(-1, -1), wxSize(-1, -1), wxBORDER_THEME) {
   m_parent = parent;
-  m_start = new wxButton(this, ID_START, wxT("START"), parent->FromDIP(wxPoint(10, 10)));
-  m_stop = new wxButton(this, ID_STOP, wxT("STOP"), parent->FromDIP(wxPoint(10, 60)));
+  m_start = new wxButton(this, ID_START, wxT("START"),
+                         parent->FromDIP(wxPoint(10, 10)));
+  m_stop = new wxButton(this, ID_STOP, wxT("STOP"),
+                        parent->FromDIP(wxPoint(10, 60)));
 
   Connect(ID_START, wxEVT_COMMAND_BUTTON_CLICKED,
           wxCommandEventHandler(LeftPanel::OnStart));
@@ -33,15 +35,16 @@ void LeftPanel::OnStop(wxCommandEvent &WXUNUSED(event)) {
 }
 
 RightPanel::RightPanel(wxPanel *parent)
-    : wxPanel(parent, wxID_ANY, wxDefaultPosition, parent->FromDIP(wxSize(315, -1)),
-              wxBORDER_THEME) {
+    : wxPanel(parent, wxID_ANY, wxDefaultPosition,
+              parent->FromDIP(wxSize(315, -1)), wxBORDER_THEME) {
   wxString methodStrings[] = {
 #define XX(num, name, string) wxT(string),
       CIPHER_METHOD_MAP(XX)
 #undef XX
   };
   wxBoxSizer *hbox = new wxBoxSizer(wxHORIZONTAL);
-  wxFlexGridSizer *fgs = new wxFlexGridSizer(8, 2, parent->FromDIP(9), parent->FromDIP(25));
+  wxFlexGridSizer *fgs =
+      new wxFlexGridSizer(8, 2, parent->FromDIP(9), parent->FromDIP(25));
 
   wxStaticText *serverhost = new wxStaticText(this, -1, wxT("Server Host"));
   wxStaticText *serverport = new wxStaticText(this, -1, wxT("Server Port"));

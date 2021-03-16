@@ -10,11 +10,9 @@
 #include <Tchar.h>
 #include <windows.h>
 
-HANDLE EnsureUser32Loaded() {
-    return LoadLibraryExW(L"User32.dll", 0, 0);
-}
+HANDLE EnsureUser32Loaded() { return LoadLibraryExW(L"User32.dll", 0, 0); }
 
-typedef BOOL (__stdcall *PFNSETPROCESSDPIAWARE)();
+typedef BOOL(__stdcall *PFNSETPROCESSDPIAWARE)();
 
 static LONG get_win_run_key(HKEY *pKey) {
   const wchar_t *key_run = DEFAULT_AUTOSTART_KEY;
@@ -111,7 +109,9 @@ void Utils::EnableAutoStart(bool on) { set_yass_auto_start(on); }
 
 bool Utils::SetProcessDPIAware() {
   HANDLE hLibrary = EnsureUser32Loaded();
-  PFNSETPROCESSDPIAWARE const SetProcessDPIAware = (PFNSETPROCESSDPIAWARE)GetProcAddress((HMODULE)hLibrary, "SetProcessDPIAware");
+  PFNSETPROCESSDPIAWARE const SetProcessDPIAware =
+      (PFNSETPROCESSDPIAWARE)GetProcAddress((HMODULE)hLibrary,
+                                            "SetProcessDPIAware");
   if (SetProcessDPIAware == nullptr) {
     return false;
   }
