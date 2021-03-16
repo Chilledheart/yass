@@ -38,9 +38,7 @@ public:
     if (FLAGS_reuse_port) {
       acceptor_->set_option(asio::ip::tcp::acceptor::reuse_address(true), ec);
     }
-    SetTCPCongestion(acceptor_->native_handle());
     SetTCPFastOpen(acceptor_->native_handle());
-    SetTCPUserTimeout(acceptor_->native_handle());
     if (ec) {
       return ec;
     }
@@ -85,6 +83,9 @@ private:
   void handleAccept(std::shared_ptr<T> conn, asio::error_code error,
                     asio::ip::tcp::socket socket) {
     if (!error) {
+      SetTCPCongestion(socket.native_handle());
+      SetTCPUserTimeout(socket.native_handle());
+      SetSocketLinger(&socket);
       conn->on_accept(std::move(socket), endpoint_, peer_endpoint_);
       conn->set_disconnect_cb(
           [this, conn]() mutable { handleDisconnect(conn); });

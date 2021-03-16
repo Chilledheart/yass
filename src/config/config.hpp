@@ -28,6 +28,7 @@
 #define MAX_CONNECT_TIMEOUT 10
 
 #define DEFAULT_TCP_USER_TIMEOUT 300
+#define DEFAULT_SO_LINGER_TIMEOUT 30
 
 DECLARE_string(configfile);
 DECLARE_string(server_host);
@@ -45,6 +46,7 @@ DECLARE_bool(auto_start);
 
 DECLARE_int32(timeout);
 DECLARE_int32(tcp_user_timeout);
+DECLARE_int32(so_linger_timeout);
 
 namespace config {
 bool ReadConfig();

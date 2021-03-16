@@ -39,7 +39,6 @@ public:
     eof_ = false;
     read_enabled_ = true;
     SetTCPFastOpenConnect(socket_.native_handle());
-    SetSocketLinger(&socket_);
     connect_timer_.expires_from_now(std::chrono::milliseconds(FLAGS_timeout));
     connect_timer_.async_wait(std::bind(&stream::on_connect_expired, this,
                                         std::placeholders::_1));
@@ -106,6 +105,7 @@ private:
     }
     SetTCPCongestion(socket_.native_handle());
     SetTCPUserTimeout(socket_.native_handle());
+    SetSocketLinger(&socket_);
     connected_ = true;
     channel->connected();
   }

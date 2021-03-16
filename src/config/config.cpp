@@ -28,6 +28,8 @@ DEFINE_int32(timeout, DEFAULT_CONNECT_TIMEOUT,
              "Connect timeout (Linux only)");
 DEFINE_int32(tcp_user_timeout, DEFAULT_TCP_USER_TIMEOUT,
              "TCP user timeout (Linux only)");
+DEFINE_int32(so_linger_timeout, DEFAULT_SO_LINGER_TIMEOUT,
+             "SO Linger timeout");
 
 namespace config {
 
@@ -66,9 +68,11 @@ bool ReadConfig() {
   config_impl->Read("congestion_algorithm", &FLAGS_congestion_algorithm);
   config_impl->Read("timeout", &FLAGS_timeout);
   config_impl->Read("tcp_user_timeout", &FLAGS_tcp_user_timeout);
+  config_impl->Read("so_linger_timeout", &FLAGS_so_linger_timeout);
 
   FLAGS_timeout = std::max(MAX_CONNECT_TIMEOUT, FLAGS_timeout);
   FLAGS_tcp_user_timeout = std::max(0, FLAGS_tcp_user_timeout);
+  FLAGS_so_linger_timeout = std::max(0, FLAGS_so_linger_timeout);
 
   VLOG(1) << "loaded option congestion_algorithm: " << FLAGS_congestion_algorithm;
   VLOG(1) << "loaded option fast_open: " << std::boolalpha << FLAGS_tcp_fastopen;
@@ -77,6 +81,7 @@ bool ReadConfig() {
   VLOG(1) << "loaded option auto_start: " << std::boolalpha << FLAGS_auto_start;
   VLOG(1) << "loaded option timeout: " << FLAGS_timeout;
   VLOG(1) << "loaded option tcp_user_timeout: " << FLAGS_tcp_user_timeout;
+  VLOG(1) << "loaded option so_linger_timeout: " << FLAGS_so_linger_timeout;
 
   VLOG(1) << "initializing ciphers... " << FLAGS_method;
 
@@ -125,6 +130,7 @@ bool SaveConfig() {
       !config_impl->Write("auto_start", FLAGS_auto_start) ||
       !config_impl->Write("timeout", FLAGS_timeout) ||
       !config_impl->Write("tcp_user_timeout", FLAGS_tcp_user_timeout) ||
+      !config_impl->Write("so_linger_timeout", FLAGS_so_linger_timeout) ||
       !config_impl->Close()) {
     return false;
   }
@@ -143,6 +149,7 @@ bool SaveConfig() {
   VLOG(1) << "saved option auto_start: " << std::boolalpha << FLAGS_auto_start;
   VLOG(1) << "saved option timeout: " << FLAGS_timeout;
   VLOG(1) << "saved option tcp_user_timeout: " << FLAGS_tcp_user_timeout;
+  VLOG(1) << "saved option so_linger_timeout: " << FLAGS_so_linger_timeout;
 
   return true;
 }

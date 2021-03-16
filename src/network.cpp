@@ -124,13 +124,17 @@ SetTCPUserTimeout(asio::ip::tcp::acceptor::native_handle_type handle) {
 
 asio::error_code
 SetSocketLinger(asio::ip::tcp::socket *socket) {
-  asio::socket_base::linger option(true, 30);
+  if (!FLAGS_so_linger_timeout) {
+    return asio::error_code();
+  }
+  asio::socket_base::linger option(true, FLAGS_so_linger_timeout);
   asio::error_code ec;
   socket->set_option(option, ec);
   if (ec) {
-    VLOG(2) << "Applied SO linger by " << 30 << " seconds";
+    VLOG(1) << "SO Linger is not supported on this platform: " << ec;
+    FLAGS_so_linger_timeout = 0;
   } else {
-    VLOG(1) << "SO Linger is not supported on this platform";
+    VLOG(2) << "Applied SO Linger by " << FLAGS_so_linger_timeout << " seconds";
   }
   return ec;
 }
