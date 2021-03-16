@@ -137,3 +137,35 @@ asio::error_code SetSocketLinger(asio::ip::tcp::socket *socket) {
   }
   return ec;
 }
+
+asio::error_code SetSocketSndBuffer(asio::ip::tcp::socket *socket) {
+  if (!FLAGS_so_snd_buffer) {
+    return asio::error_code();
+  }
+  asio::socket_base::send_buffer_size option(FLAGS_so_snd_buffer);
+  asio::error_code ec;
+  socket->set_option(option, ec);
+  if (ec) {
+    VLOG(1) << "SO_SNDBUF is not supported on this platform: " << ec;
+    FLAGS_so_snd_buffer = 0;
+  } else {
+    VLOG(2) << "Applied SO_SNDBUF by " << FLAGS_so_snd_buffer << " bytes";
+  }
+  return ec;
+}
+
+asio::error_code SetSocketRcvBuffer(asio::ip::tcp::socket *socket) {
+  if (!FLAGS_so_rcv_buffer) {
+    return asio::error_code();
+  }
+  asio::socket_base::receive_buffer_size option(FLAGS_so_rcv_buffer);
+  asio::error_code ec;
+  socket->set_option(option, ec);
+  if (ec) {
+    VLOG(1) << "SO_RCVBUF is not supported on this platform: " << ec;
+    FLAGS_so_rcv_buffer = 0;
+  } else {
+    VLOG(2) << "Applied SO_RCVBUF by " << FLAGS_so_rcv_buffer << " bytes";
+  }
+  return ec;
+}

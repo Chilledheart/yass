@@ -86,6 +86,8 @@ private:
       SetTCPCongestion(socket.native_handle());
       SetTCPUserTimeout(socket.native_handle());
       SetSocketLinger(&socket);
+      SetSocketSndBuffer(&socket);
+      SetSocketRcvBuffer(&socket);
       conn->on_accept(std::move(socket), endpoint_, peer_endpoint_);
       conn->set_disconnect_cb(
           [this, conn]() mutable { handleDisconnect(conn); });

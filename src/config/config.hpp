@@ -30,6 +30,9 @@
 #define DEFAULT_TCP_USER_TIMEOUT 300
 #define DEFAULT_SO_LINGER_TIMEOUT 30
 
+#define DEFAULT_SO_SND_BUFFER (16 * 1024)
+#define DEFAULT_SO_RCV_BUFFER (128 * 1024)
+
 DECLARE_string(configfile);
 DECLARE_string(server_host);
 DECLARE_int32(server_port);
@@ -47,6 +50,9 @@ DECLARE_bool(auto_start);
 DECLARE_int32(timeout);
 DECLARE_int32(tcp_user_timeout);
 DECLARE_int32(so_linger_timeout);
+
+DECLARE_int32(so_snd_buffer);
+DECLARE_int32(so_rcv_buffer);
 
 namespace config {
 bool ReadConfig();

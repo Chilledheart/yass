@@ -10,8 +10,8 @@
 #include "config/config.hpp"
 #include "core/cipher.hpp"
 
-#define MAX_DOWNSTREAM_DEPS 1024
-#define MAX_UPSTREAM_DEPS 1024
+#define MAX_DOWNSTREAM_DEPS 1
+#define MAX_UPSTREAM_DEPS 1
 
 namespace ss {
 

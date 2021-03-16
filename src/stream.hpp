@@ -107,6 +107,8 @@ private:
     SetTCPCongestion(socket_.native_handle());
     SetTCPUserTimeout(socket_.native_handle());
     SetSocketLinger(&socket_);
+    SetSocketSndBuffer(&socket_);
+    SetSocketRcvBuffer(&socket_);
     connected_ = true;
     channel->connected();
   }
