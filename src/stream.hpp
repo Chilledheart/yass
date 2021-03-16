@@ -9,13 +9,14 @@
 #include <asio/read.hpp>
 #include <asio/steady_timer.hpp>
 #include <asio/write.hpp>
-#include <deque>
 #include <chrono>
+#include <deque>
 
 #include "channel.hpp"
-#include "core/logging.hpp"
 #include "config/config.hpp"
+#include "core/logging.hpp"
 #include "network.hpp"
+#include "protocol.hpp"
 
 /// the class to describe the traffic between given node (endpoint)
 class stream {
@@ -27,7 +28,7 @@ public:
   stream(asio::io_context &io_context, asio::ip::tcp::endpoint endpoint,
          const std::shared_ptr<Channel> &channel)
       : endpoint_(endpoint), socket_(io_context), connect_timer_(io_context),
-      channel_(channel) {
+        channel_(channel) {
     assert(channel && "channel must defined to use with stream");
   }
 
@@ -40,8 +41,8 @@ public:
     read_enabled_ = true;
     SetTCPFastOpenConnect(socket_.native_handle());
     connect_timer_.expires_from_now(std::chrono::milliseconds(FLAGS_timeout));
-    connect_timer_.async_wait(std::bind(&stream::on_connect_expired, this,
-                                        std::placeholders::_1));
+    connect_timer_.async_wait(
+        std::bind(&stream::on_connect_expired, this, std::placeholders::_1));
     socket_.async_connect(endpoint_, std::bind(&stream::on_connect, this,
                                                channel, std::placeholders::_1));
   }
@@ -140,10 +141,8 @@ private:
 
     if (error) {
       if (bytes_transferred) {
-        VLOG(1) << "data receiving failed with data " << endpoint_ << " due to " << error;
-      }
-      if (error == asio::error::eof) {
-        eof_ = true;
+        VLOG(1) << "data receiving failed with data " << endpoint_ << " due to "
+                << error;
       }
       on_disconnect(channel, error);
     }
@@ -165,10 +164,8 @@ private:
 
     if (error) {
       if (bytes_transferred) {
-        VLOG(1) << "data sending failed with data " << endpoint_ << " due to " << error;
-      }
-      if (error == asio::error::eof) {
-        eof_ = true;
+        VLOG(1) << "data sending failed with data " << endpoint_ << " due to "
+                << error;
       }
       on_disconnect(channel, error);
     }
@@ -176,7 +173,15 @@ private:
 
   void on_disconnect(const std::shared_ptr<Channel> &channel,
                      asio::error_code error) {
-    VLOG(2) << "data transfer failed with " << endpoint_ << " due to " << error;
+    if (error) {
+      VLOG(2) << "data transfer failed with " << endpoint_ << " due to "
+              << error;
+      if (error == asio::error::eof) {
+        eof_ = true;
+      }
+    }
+    VLOG(1) << "data transfer closed with: " << endpoint_ << " stats: readed "
+            << rbytes_transferred_ << " written: " << wbytes_transferred_;
     connected_ = false;
     channel->disconnected(error);
   }
