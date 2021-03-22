@@ -48,8 +48,7 @@ bool ReadConfig() {
       !config_impl->Read("method", &FLAGS_method) ||
       !config_impl->Read("password", &FLAGS_password) ||
       !config_impl->Read("local", &FLAGS_local_host) ||
-      !config_impl->Read("local_port", &FLAGS_local_port) ||
-      !config_impl->Close()) {
+      !config_impl->Read("local_port", &FLAGS_local_port)) {
     return false;
   }
 
@@ -115,6 +114,9 @@ bool ReadConfig() {
   if (FLAGS_auto_start) {
     LOG(WARNING) << "using autostart";
   }
+
+  /* close fields */
+  config_impl->Close();
 
   return true;
 }
