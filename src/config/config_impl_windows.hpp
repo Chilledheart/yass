@@ -8,12 +8,16 @@
 
 #ifdef _WIN32
 
+#include <codecvt>
+#include <locale>
 #include <memory>
 #include <string>
 
+using convert_type = std::codecvt_utf8<wchar_t>;
+
 #include "core/logging.hpp"
 
-#define DEFAULT_CONFIG_KEY  "SOFTWARE\\YetAnotherShadowSocket"
+#define DEFAULT_CONFIG_KEY  L"SOFTWARE\\YetAnotherShadowSocket"
 
 #include <windows.h>
 
@@ -30,7 +34,7 @@ public:
       (dontread ? KEY_WRITE : KEY_READ);
 
     // if not exist, create
-    if (::RegCreateKeyExA(HKEY_CURRENT_USER /*hKey*/,
+    if (::RegCreateKeyExW(HKEY_CURRENT_USER /*hKey*/,
             DEFAULT_CONFIG_KEY /* lpSubKey */,
             0 /* Reserved */,
             NULL /*lpClass*/,
@@ -57,19 +61,22 @@ public:
     if (ReadReg(key, &type, output, &output_len) &&
         (type == REG_EXPAND_SZ || type == REG_SZ || type == REG_NONE ||
          type == REG_BINARY)) {
-      char expanded_buf[MAX_PATH];
-      DWORD expanded_size = ::ExpandEnvironmentStringsA(
-          output.get(), expanded_buf, sizeof(expanded_buf));
+      wchar_t expanded_buf[MAX_PATH];
+      const wchar_t *wvalue = reinterpret_cast<wchar_t*>(output.get());
+      DWORD expanded_size = ::ExpandEnvironmentStringsW(
+          wvalue, expanded_buf, sizeof(expanded_buf));
+      std::wstring_convert<convert_type, wchar_t> converter;
       if (expanded_size == 0 || expanded_size > sizeof(expanded_buf)) {
         // the return value maybe contains terminating null characters.
-        while (output_len && *(output.get() + output_len - 1) == '\0') {
-          output_len--;
-        }
-        *value = std::string(output.get(), output_len);
+
+        // use converter (.to_bytes: wstr->str, .from_bytes: str->wstr)
+        *value = converter.to_bytes(wvalue);
       } else {
         // the return value is the number of TCHARs,
         // including the terminating null character.
-        *value = std::string(expanded_buf, expanded_size - 1);
+
+        // use converter (.to_bytes: wstr->str, .from_bytes: str->wstr)
+        *value = converter.to_bytes(expanded_buf);
       }
       return true;
     }
@@ -124,12 +131,15 @@ public:
   }
 
   bool Write(const std::string &key, const std::string &value) override {
-    if (::RegSetValueExA(hkey_ /* hKey*/,
-                         key.c_str() /*lpValueName*/,
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    std::wstring wkey = converter.from_bytes(key);
+    std::wstring wvalue = converter.from_bytes(value);
+    if (::RegSetValueExW(hkey_ /* hKey*/,
+                         wkey.c_str() /*lpValueName*/,
                          0 /*Reserved*/,
                          REG_SZ /*dwType*/,
-                         reinterpret_cast<const BYTE*>(value.c_str()) /*lpData*/,
-                         value.size() + 1 /*cbData*/) == ERROR_SUCCESS) {
+                         reinterpret_cast<const BYTE*>(wvalue.c_str()) /*lpData*/,
+                         (wvalue.size() + 1) * sizeof(wchar_t) /*cbData*/) == ERROR_SUCCESS) {
       return true;
     }
     LOG(WARNING) << "bad field: " << key;
@@ -142,8 +152,9 @@ public:
   }
 
   bool Write(const std::string &key, uint32_t value) override {
-    if (::RegSetValueExA(hkey_ /* hKey*/,
-                         key.c_str() /*lpValueName*/,
+    std::wstring wkey = std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(key);
+    if (::RegSetValueExW(hkey_ /* hKey*/,
+                         wkey.c_str() /*lpValueName*/,
                          0 /*Reserved*/,
                          REG_DWORD /*dwType*/,
                          reinterpret_cast<const BYTE*>(&value) /*lpData*/,
@@ -159,8 +170,9 @@ public:
   }
 
   bool Write(const std::string &key, uint64_t value) override {
-    if (::RegSetValueExA(hkey_ /* hKey*/,
-                         key.c_str() /*lpValueName*/,
+    std::wstring wkey = std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(key);
+    if (::RegSetValueExW(hkey_ /* hKey*/,
+                         wkey.c_str() /*lpValueName*/,
                          0 /*Reserved*/,
                          REG_QWORD /*dwType*/,
                          reinterpret_cast<const BYTE*>(&value) /*lpData*/,
@@ -178,8 +190,9 @@ private:
   bool ReadReg(const std::string &key, DWORD *type,
       std::unique_ptr<char[]> &output, size_t *output_len) {
     DWORD BufferSize;
-    if (::RegQueryValueExA(hkey_ /* HKEY */,
-          key.c_str() /* lpValueName */,
+    std::wstring wkey = std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(key);
+    if (::RegQueryValueExW(hkey_ /* HKEY */,
+          wkey.c_str() /* lpValueName */,
           NULL /* lpReserved */,
           type /* lpType */,
           NULL /* lpData */,
@@ -196,14 +209,15 @@ private:
     // the application should ensure that the string is properly terminated
     // before using it; otherwise, it may overwrite a buffer.
     output = std::make_unique<char[]>(BufferSize);
-    if (::RegQueryValueExA(hkey_ /* HKEY */,
-          key.c_str() /* lpValueName */,
+    if (::RegQueryValueExW(hkey_ /* HKEY */,
+          wkey.c_str() /* lpValueName */,
           NULL /* lpReserved */,
           type /* lpType */,
           reinterpret_cast<BYTE*>(output.get()) /* lpData */,
           &BufferSize /* lpcbData */) != ERROR_SUCCESS) {
       return false;
     }
+
     *output_len = BufferSize;
     return true;
   }
