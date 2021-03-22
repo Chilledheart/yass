@@ -152,10 +152,10 @@ void YASSFrame::UpdateStatus() {
 
   std::stringstream ss;
   ss << mApp->GetStatus();
-  ss << " rx rate: ";
+  ss << " tx rate: ";
   humanReadableByteCountBin(&ss, rx_rate_);
   ss << "/s";
-  ss << " tx rate: ";
+  ss << " rx rate: ";
   humanReadableByteCountBin(&ss, tx_rate_);
   ss << "/s";
 
