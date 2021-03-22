@@ -8,7 +8,7 @@ public:
   static bool GetAutoStart();
   static void EnableAutoStart(bool on);
   static bool SetProcessDPIAware();
-  static uint64_t GetCurrentTime();
+  static uint64_t GetMonotonicTime();
 };
 
 #define DEFAULT_AUTOSTART_NAME "YASS"

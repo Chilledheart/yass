@@ -136,7 +136,7 @@ static uint64_t MachTimeToNanoseconds(uint64_t machTime) {
   return nanoseconds;
 }
 
-uint64_t Utils::GetCurrentTime() {
+uint64_t Utils::GetMonotonicTime() {
   uint64_t now = mach_absolute_time();
   return MachTimeToNanoseconds(now);
 }

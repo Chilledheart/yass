@@ -6,7 +6,7 @@
 #include "core/logging.hpp"
 #ifdef __linux__
 #include <time.h>
-uint64_t Utils::GetCurrentTime() {
+uint64_t Utils::GetMonotonicTime() {
   static struct timespec start_ts;
   static bool started;
   struct timespec ts;

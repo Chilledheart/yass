@@ -19,7 +19,7 @@ static void humanReadableByteCountBin(std::ostream *ss, uint64_t bytes) {
   uint64_t value = bytes;
   char ci[] = {"KMGTPE"};
   const char *c = ci;
-  for (int i = 40; i >= 0 && bytes > 0xfffccccccccccccL >> i; i -= 10) {
+  for (unsigned i = 40; i >= 0 && bytes > 0xfffccccccccccccLU >> i; i -= 10) {
     value >>= 10;
     ++c;
   }
@@ -138,7 +138,7 @@ void YASSFrame::UpdateStatus() {
   m_rightpanel->m_localport_tc->SetValue(std::to_string(FLAGS_local_port));
   m_rightpanel->m_timeout_tc->SetValue(std::to_string(FLAGS_timeout));
 
-  uint64_t sync_time = Utils::GetCurrentTime();
+  uint64_t sync_time = Utils::GetMonotonicTime();
   uint64_t delta_time = sync_time - last_sync_time_;
   if (delta_time > NS_PER_SECOND / 10) {
     uint64_t rx_bytes = total_rx_bytes;

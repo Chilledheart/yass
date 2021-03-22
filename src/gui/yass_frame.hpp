@@ -45,8 +45,8 @@ private:
   uint64_t last_sync_time_ = 0;
   uint64_t last_rx_bytes_ = 0;
   uint64_t last_tx_bytes_ = 0;
-  uint64_t rx_rate_;
-  uint64_t tx_rate_;
+  uint64_t rx_rate_ = 0;
+  uint64_t tx_rate_ = 0;
 };
 
 enum {

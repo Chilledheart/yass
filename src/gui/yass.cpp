@@ -70,11 +70,9 @@ int YASSApp::OnRun() {
 std::string YASSApp::GetStatus() const {
   std::stringstream ss;
   if (state_ == STARTED) {
-    ss << "Connected with " << worker_.GetRemoteEndpoint()
-       << " with conns: " << worker_.currentConnections();
+    ss << "Connected with conns: " << worker_.currentConnections();
   } else if (state_ == START_FAILED) {
-    ss << "Failed to connect with " << worker_.GetRemoteEndpoint() << " due to "
-       << error_msg_.c_str();
+    ss << "Failed to connect due to " << error_msg_.c_str();
   } else {
     ss << "Disconnected with " << worker_.GetRemoteEndpoint();
   }

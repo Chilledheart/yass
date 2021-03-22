@@ -121,7 +121,7 @@ bool Utils::SetProcessDPIAware() {
   return SetProcessDPIAware();
 }
 
-uint64_t Utils::GetCurrentTime() {
+uint64_t Utils::GetMonotonicTime() {
   static LARGE_INTEGER StartTime, Frequency;
   static bool started;
 
