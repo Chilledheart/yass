@@ -246,6 +246,7 @@ def find_source_directory():
 def generate_buildscript(configuration_type):
   print 'generate build scripts...(%s)' % configuration_type
   cmake_args = ['-DGUI=ON', '-DCLI=OFF', '-DSERVER=OFF']
+  cmake_args.extend(['-DCMAKE_EXPORT_COMPILE_COMMANDS=1'])
   if sys.platform == 'win32':
     cmake_args.extend(['-G', 'Ninja'])
     cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])
