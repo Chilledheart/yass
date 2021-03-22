@@ -68,7 +68,7 @@ bool ReadConfig() {
 
   /* optional fields */
   config_impl->Read("fast_open", &FLAGS_tcp_fastopen);
-  config_impl->Read("fast_open", &FLAGS_tcp_fastopen_connect);
+  config_impl->Read("fast_open_connect", &FLAGS_tcp_fastopen_connect);
   config_impl->Read("auto_start", &FLAGS_auto_start);
   config_impl->Read("congestion_algorithm", &FLAGS_congestion_algorithm);
   config_impl->Read("timeout", &FLAGS_timeout);
