@@ -5,6 +5,7 @@
 #define H_SOCKS5_CONNECTION
 
 #include "channel.hpp"
+#include "cli/socks5_connection_stats.hpp"
 #include "connection.hpp"
 #include "core/http_parser.h"
 #include "core/iobuf.hpp"
@@ -281,7 +282,7 @@ private:
 
   /// statistics of read bytes (non-encoded)
   size_t rbytes_transferred_ = 0;
-  /// statistics of write bytes (non-encoded)
+  /// statistics of written bytes (non-encoded)
   size_t wbytes_transferred_ = 0;
 };
 

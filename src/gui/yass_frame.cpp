@@ -1,9 +1,31 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2019-2020 Chilledheart  */
-#include "yass_frame.hpp"
-#include "panels.hpp"
-#include "yass.hpp"
+
+#include "gui/yass_frame.hpp"
+
+#include "cli/socks5_connection_stats.hpp"
+#include "gui/panels.hpp"
+#include "gui/utils.hpp"
+#include "gui/yass.hpp"
+#include <iomanip>
+#include <sstream>
 #include <wx/stattext.h>
+
+static void humanReadableByteCountBin(std::ostream *ss, uint64_t bytes) {
+  if (bytes < 1024) {
+    *ss << bytes << " B";
+    return;
+  }
+  uint64_t value = bytes;
+  char ci[] = {"KMGTPE"};
+  const char *c = ci;
+  for (int i = 40; i >= 0 && bytes > 0xfffccccccccccccL >> i; i -= 10) {
+    value >>= 10;
+    ++c;
+  }
+  *ss << std::fixed << std::setw(5) << std::setprecision(2) << value / 1024.0
+      << " " << *c;
+}
 
 YASSFrame::YASSFrame(const wxString &title, const wxPoint &pos,
                      const wxSize &size)
@@ -116,7 +138,28 @@ void YASSFrame::UpdateStatus() {
   m_rightpanel->m_localport_tc->SetValue(std::to_string(FLAGS_local_port));
   m_rightpanel->m_timeout_tc->SetValue(std::to_string(FLAGS_timeout));
 
-  SetStatusText(mApp->GetStatus());
+  uint64_t sync_time = Utils::GetCurrentTime();
+  uint64_t delta_time = sync_time - last_sync_time_;
+  if (delta_time > NS_PER_SECOND / 10) {
+    uint64_t rx_bytes = total_rx_bytes;
+    uint64_t tx_bytes = total_tx_bytes;
+    rx_rate_ = (double)(rx_bytes - last_rx_bytes_) / delta_time * NS_PER_SECOND;
+    tx_rate_ = (double)(tx_bytes - last_tx_bytes_) / delta_time * NS_PER_SECOND;
+    last_sync_time_ = sync_time;
+    last_rx_bytes_ = rx_bytes;
+    last_tx_bytes_ = tx_bytes;
+  }
+
+  std::stringstream ss;
+  ss << mApp->GetStatus();
+  ss << " rx rate: ";
+  humanReadableByteCountBin(&ss, rx_rate_);
+  ss << "/s";
+  ss << " tx rate: ";
+  humanReadableByteCountBin(&ss, tx_rate_);
+  ss << "/s";
+
+  SetStatusText(ss.str());
 }
 
 void YASSFrame::OnHello(wxCommandEvent &WXUNUSED(event)) {

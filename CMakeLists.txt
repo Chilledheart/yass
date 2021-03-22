@@ -594,6 +594,8 @@ if (CLI)
       src/cli/cli.cpp
       src/cli/socks5_connection.cpp
       src/cli/socks5_connection.hpp
+      src/cli/socks5_connection_stats.cpp
+      src/cli/socks5_connection_stats.hpp
       $<TARGET_OBJECTS:yass_base>
       )
 
@@ -795,6 +797,8 @@ if (GUI AND wxWidgets_FOUND)
         src/gui/worker.cpp
         src/cli/socks5_connection.cpp
         src/cli/socks5_connection.hpp
+        src/cli/socks5_connection_stats.cpp
+        src/cli/socks5_connection_stats.hpp
         $<TARGET_OBJECTS:yass_base>
         )
 
@@ -811,6 +815,11 @@ if (GUI AND wxWidgets_FOUND)
     if (APPLE)
         list(APPEND SRC_FILES wxmac.icns)
         list(APPEND SRC_FILES src/gui/utils_mac.mm)
+    endif()
+
+    if (UNIX AND NOT APPLE)
+        # for Linux, BSD, Solaris, Minix
+        list(APPEND SRC_FILES src/gui/utils_linux.cpp)
     endif()
 
     add_executable(${APP_NAME} WIN32 MACOSX_BUNDLE

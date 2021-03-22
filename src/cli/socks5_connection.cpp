@@ -491,6 +491,7 @@ void Socks5Connection::ProcessReceivedData(
     std::shared_ptr<Socks5Connection> self, std::shared_ptr<IOBuf> buf,
     const asio::error_code &error, size_t bytes_transferred) {
   self->rbytes_transferred_ += bytes_transferred;
+  total_rx_bytes += bytes_transferred;
   if (bytes_transferred) {
     VLOG(3) << "client: received request: " << bytes_transferred << " bytes.";
   }
@@ -554,6 +555,7 @@ void Socks5Connection::ProcessSentData(std::shared_ptr<Socks5Connection> self,
                                        const asio::error_code &error,
                                        size_t bytes_transferred) {
   self->wbytes_transferred_ += bytes_transferred;
+  total_tx_bytes += bytes_transferred;
 
   if (bytes_transferred) {
     VLOG(3) << "client: sent data: " << bytes_transferred << " bytes.";
