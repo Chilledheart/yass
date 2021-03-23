@@ -64,7 +64,7 @@ public:
       wchar_t expanded_buf[MAX_PATH];
       const wchar_t *wvalue = reinterpret_cast<wchar_t*>(output.get());
       DWORD expanded_size = ::ExpandEnvironmentStringsW(
-          wvalue, expanded_buf, sizeof(expanded_buf));
+          wvalue, expanded_buf, sizeof(expanded_buf) / sizeof(expanded_buf[0]));
       std::wstring_convert<convert_type, wchar_t> converter;
       if (expanded_size == 0 || expanded_size > sizeof(expanded_buf)) {
         // the return value maybe contains terminating null characters.
