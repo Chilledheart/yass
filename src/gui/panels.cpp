@@ -59,7 +59,7 @@ RightPanel::RightPanel(wxPanel *parent)
   m_serverport_tc = new wxTextCtrl(this, -1);
   m_password_tc = new wxTextCtrl(this, -1);
   m_method_tc = new wxChoice(this, -1, wxDefaultPosition, wxSize(100, -1),
-                             WXSIZEOF(methodStrings), methodStrings, 0);
+                             WXSIZEOF(methodStrings) - 1, methodStrings + 1, 0);
   m_localhost_tc = new wxTextCtrl(this, -1);
   m_localport_tc = new wxTextCtrl(this, -1);
 

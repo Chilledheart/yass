@@ -45,6 +45,9 @@ int main(int argc, const char *argv[]) {
   ::google::InstallFailureSignalHandler();
 
   (void)config::ReadConfig();
+  if (cipher_method_in_use == CRYPTO_PLAINTEXT) {
+    return -1;
+  }
 
   asio::ip::tcp::endpoint endpoint(
       resolveEndpoint(&io_context, FLAGS_server_host, FLAGS_server_port));
