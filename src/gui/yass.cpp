@@ -43,9 +43,9 @@ bool YASSApp::OnInit() {
   mApp = this;
   state_ = STOPPED;
 
-  frame_ = new YASSFrame(wxT("Yet-Another-Shadow-Socket"), wxPoint(50, 50),
-                         wxSize(450, 390));
-  frame_->SetClientSize(frame_->FromDIP(frame_->GetClientSize()));
+  frame_ = new YASSFrame(wxT("Yet-Another-Shadow-Socket"));
+  frame_->SetSize(frame_->FromDIP(wxSize(450, 390)));
+  frame_->Centre();
   frame_->Show(true);
   frame_->UpdateStatus();
   SetTopWindow(frame_);

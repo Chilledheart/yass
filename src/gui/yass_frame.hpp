@@ -13,7 +13,8 @@ class LeftPanel;
 class RightPanel;
 class YASSFrame : public wxFrame {
 public:
-  YASSFrame(const wxString &title, const wxPoint &pos, const wxSize &size);
+  YASSFrame(const wxString &title, const wxPoint &pos = wxDefaultPosition,
+    const wxSize &size = wxDefaultSize);
 
   std::string GetServerHost();
   std::string GetServerPort();
