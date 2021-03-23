@@ -43,7 +43,7 @@ bool YASSApp::OnInit() {
   if (cipher_method_in_use == CRYPTO_PLAINTEXT) {
     wxMessageBox(wxT("Bad configuration: cipher method!"),
                  wxT("CypherChecker"));
-    return -1;
+    return false;
   }
 
   mApp = this;
