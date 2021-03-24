@@ -90,8 +90,8 @@ if (NOT MSVC)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,noexecstack -Wl,-z,relro")
     endif()
 
-    ## disable rtti and exceptions
-    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
+    ## disable rtti
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
 
     ## not omit stack frame pointer for release
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -fno-omit-frame-pointer")
@@ -472,6 +472,7 @@ endif()
 
 # asio
 add_definitions(-DASIO_STANDALONE)
+add_definitions(-DASIO_NO_TYPEID)
 include_directories(../asio-1.18.1/include)
 if (HAS_CLANG)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-error=inconsistent-missing-override -Wno-error=unused-private-field")
