@@ -29,6 +29,13 @@ set CXX=
 python .\scripts\build.py
 
 set "VSCMD_START_DIR=%CD%"
+call "%vsdevcmd%" -arch=arm -host_arch=amd64
+set CC=
+set CXX=
+
+python .\scripts\build.py
+
+set "VSCMD_START_DIR=%CD%"
 call "%vsdevcmd%" -arch=arm64 -host_arch=amd64
 set CC=
 set CXX=

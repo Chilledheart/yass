@@ -39,7 +39,6 @@ if (NOT MSVC)
     if (HAS_CLANG)
         set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -Werror -Wno-unused-parameter")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-unused-parameter -Wno-inconsistent-missing-override")
-
     endif()
 
     ## c/c++ standard
@@ -125,6 +124,10 @@ else()
 
     ## c/c++ standard, disabled rtti
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 /GR-")
+
+    ## C4530, The code uses C++ exception handling,
+    ## but /EHsc wasn't included in the compiler options
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
 
     ## optimization flags
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
