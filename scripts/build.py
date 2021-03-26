@@ -254,9 +254,13 @@ def generate_buildscript(configuration_type):
       os.environ['PATH'] += os.pathsep + 'C:\\Program Files\\LLVM\\bin\\'
       os.environ['CC'] = DEFAULT_COMPILER
       os.environ['CXX'] = DEFAULT_COMPILER
-      if os.environ['Platform'] == 'x86':
-        os.environ['CFLAGS'] = '-m32'
-        os.environ['CXXFLAGS'] = '-m32'
+      target_name = os.environ['VSCMD_ARG_TGT_ARCH']
+      if target_name == 'x64':
+        target_name = 'x86_64'
+      elif target_name == 'x86':
+        target_name = 'i386'
+      os.environ['CFLAGS'] = '--target=%s-pc-windows-msvc' % target_name
+      os.environ['CXXFLAGS'] = '--target=%s-pc-windows-msvc' % target_name
     cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])
     cmake_args.extend(['-DCMAKE_TOOLCHAIN_FILE=%s\\scripts\\buildsystems\\vcpkg.cmake' % VCPKG_DIR])
     cmake_args.extend(['-DVCPKG_TARGET_ARCHITECTURE=%s' % DEFAULT_ARCH])
