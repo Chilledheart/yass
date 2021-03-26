@@ -104,11 +104,6 @@ else()
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /W4 /wd4099 /wd4100 /wd4127 /wd4244 /wd4267 /wd4505 /wd4838 /wd4996")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /wd4099 /wd4100 /wd4127 /wd4244 /wd4267 /wd4505 /wd4838 /wd4996")
 
-    if (HAS_CLANG)
-        set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /WX")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX")
-    endif()
-
     set(CompilerFlags
         CMAKE_CXX_FLAGS
         CMAKE_CXX_FLAGS_DEBUG
@@ -185,6 +180,16 @@ else()
     ## not omit stack frame pointer
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Oy-")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Oy-")
+
+    ## supress some warnings
+    if (HAS_CLANG)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-microsoft-exception-spec")
+    endif(HAS_CLANG)
+
+    if (HAS_CLANG)
+        set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /WX")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX")
+    endif()
 endif()
 
 # *****************************************************************************************

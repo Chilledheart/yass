@@ -252,8 +252,11 @@ def generate_buildscript(configuration_type):
     cmake_args.extend(['-G', 'Ninja'])
     if DEFAULT_COMPILER == 'clang-cl':
       os.environ['PATH'] += os.pathsep + 'C:\\Program Files\\LLVM\\bin\\'
-      cmake_args.extend(['-DCMAKE_C_COMPILER=clang-cl'])
-      cmake_args.extend(['-DCMAKE_CXX_COMPILER=clang-cl'])
+      os.environ['CC'] = DEFAULT_COMPILER
+      os.environ['CXX'] = DEFAULT_COMPILER
+      if os.environ['Platform'] == 'x86':
+        os.environ['CFLAGS'] = '-m32'
+        os.environ['CXXFLAGS'] = '-m32'
     cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])
     cmake_args.extend(['-DCMAKE_TOOLCHAIN_FILE=%s\\scripts\\buildsystems\\vcpkg.cmake' % VCPKG_DIR])
     cmake_args.extend(['-DVCPKG_TARGET_ARCHITECTURE=%s' % DEFAULT_ARCH])
