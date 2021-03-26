@@ -40,7 +40,7 @@ bool YASSApp::OnInit() {
   LOG(WARNING) << "Application starting";
 
   LoadConfigFromDisk();
-  if (cipher_method_in_use == CRYPTO_PLAINTEXT) {
+  if (cipher_method_in_use == CRYPTO_INVALID) {
     wxMessageBox(wxT("Bad configuration: cipher method!"),
                  wxT("CypherChecker"));
     return false;

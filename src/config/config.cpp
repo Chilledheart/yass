@@ -53,7 +53,7 @@ bool ReadConfig() {
   }
 
   cipher_method_in_use = to_cipher_method(FLAGS_method);
-  if (cipher_method_in_use == CRYPTO_PLAINTEXT) {
+  if (cipher_method_in_use == CRYPTO_INVALID) {
     LOG(WARNING) << "bad method: " << FLAGS_method;
     return false;
   }
@@ -124,7 +124,7 @@ bool ReadConfig() {
 bool SaveConfig() {
   FLAGS_method = to_cipher_method_str(cipher_method_in_use);
 
-  if (cipher_method_in_use == CRYPTO_PLAINTEXT) {
+  if (cipher_method_in_use == CRYPTO_INVALID) {
     return false;
   }
 

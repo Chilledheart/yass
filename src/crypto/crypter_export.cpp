@@ -3,7 +3,7 @@
 
 #include "crypto/crypter_export.hpp"
 
-enum cipher_method cipher_method = CRYPTO_PLAINTEXT;
+enum cipher_method cipher_method = CRYPTO_INVALID;
 
 #define XX(num, name, string) const char *CRYPTO_##name##_STR = string;
 CIPHER_METHOD_MAP(XX)
@@ -16,7 +16,7 @@ enum cipher_method to_cipher_method(const std::string &method) {
   }
   CIPHER_METHOD_MAP(XX)
 #undef XX
-  return CRYPTO_PLAINTEXT;
+  return CRYPTO_INVALID;
 }
 
 const char *to_cipher_method_str(enum cipher_method method) {
@@ -26,5 +26,5 @@ const char *to_cipher_method_str(enum cipher_method method) {
   }
   CIPHER_METHOD_MAP(XX)
 #undef XX
-  return CRYPTO_PLAINTEXT_STR;
+  return CRYPTO_INVALID_STR;
 }

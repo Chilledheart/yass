@@ -33,7 +33,7 @@
 #endif
 
 #define CIPHER_METHOD_MAP(XX)                                                  \
-  XX(0x0U, PLAINTEXT, "plaintext")                                             \
+  XX(0x0U, INVALID, "invalid")                                                 \
   CIPHER_METHOD_MAP_SODIUM(XX)                                                 \
   CIPHER_METHOD_MAP_BORINGSSL(XX)
 

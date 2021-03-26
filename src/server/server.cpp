@@ -45,7 +45,7 @@ int main(int argc, const char *argv[]) {
   ::google::InstallFailureSignalHandler();
 
   (void)config::ReadConfig();
-  if (cipher_method_in_use == CRYPTO_PLAINTEXT) {
+  if (cipher_method_in_use == CRYPTO_INVALID) {
     return -1;
   }
 
