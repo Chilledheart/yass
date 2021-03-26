@@ -171,6 +171,21 @@ void YASSFrame::OnAbout(wxCommandEvent &WXUNUSED(event)) {
                wxOK | wxICON_INFORMATION);
 }
 
+void YASSFrame::OnDIPChanged(wxDPIChangedEvent &event) {
+  wxLogMessage(wxT("old dpi %u/%u new dpi %u/%u"),
+    event.GetOldDPI().GetWidth(), event.GetOldDPI().GetHeight(),
+    event.GetNewDPI().GetWidth(), event.GetNewDPI().GetHeight());
+  wxSize newSize = GetSize();
+  newSize.x *= (double)event.GetNewDPI().GetWidth() / event.GetOldDPI().GetWidth();
+  newSize.y *= (double)event.GetNewDPI().GetHeight() / event.GetOldDPI().GetHeight();
+  SetSize(newSize);
+
+  newSize = m_rightpanel->GetSize();
+  newSize.x *= (double)event.GetNewDPI().GetWidth() / event.GetOldDPI().GetWidth();
+  newSize.y *= (double)event.GetNewDPI().GetHeight() / event.GetOldDPI().GetHeight();
+  m_rightpanel->SetSize(newSize);
+}
+
 void YASSFrame::OnIdle(wxIdleEvent &WXUNUSED(event)) {
   if (mApp->GetState() == YASSApp::STARTED) {
     UpdateStatus();
@@ -190,6 +205,7 @@ void YASSFrame::OnClose(wxCloseEvent &event) {
 wxBEGIN_EVENT_TABLE(YASSFrame, wxFrame)
   EVT_MENU(ID_Hello,   YASSFrame::OnHello)
   EVT_MENU(wxID_ABOUT, YASSFrame::OnAbout)
+  EVT_DPI_CHANGED(YASSFrame::OnDIPChanged)
   EVT_IDLE(            YASSFrame::OnIdle)
   EVT_CLOSE(YASSFrame::OnClose)
 wxEND_EVENT_TABLE()

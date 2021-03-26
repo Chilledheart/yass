@@ -33,6 +33,7 @@ public:
 private:
   void OnHello(wxCommandEvent &event);
   void OnAbout(wxCommandEvent &event);
+  void OnDIPChanged(wxDPIChangedEvent &event);
 
   void OnIdle(wxIdleEvent &event);
   void OnClose(wxCloseEvent &event);
