@@ -3,8 +3,6 @@
 
 #include "crypto/crypter_export.hpp"
 
-enum cipher_method cipher_method = CRYPTO_INVALID;
-
 #define XX(num, name, string) const char *CRYPTO_##name##_STR = string;
 CIPHER_METHOD_MAP(XX)
 #undef XX
