@@ -11,10 +11,11 @@
 
 #include <Tchar.h>
 #include <windows.h>
+#include <shellscalingapi.h>
 
-HANDLE EnsureUser32Loaded() { return LoadLibraryExW(L"User32.dll", 0, 0); }
+HANDLE EnsureShcoreLoaded() { return LoadLibraryExW(L"Shcore.dll", 0, 0); }
 
-typedef BOOL(__stdcall *PFNSETPROCESSDPIAWARE)();
+typedef HRESULT(__stdcall *PFNSETPROCESSDPIAWARENESS)(PROCESS_DPI_AWARENESS);
 
 static LONG get_win_run_key(HKEY *pKey) {
   const wchar_t *key_run = DEFAULT_AUTOSTART_KEY;
@@ -109,16 +110,20 @@ bool Utils::GetAutoStart() {
 
 void Utils::EnableAutoStart(bool on) { set_yass_auto_start(on); }
 
-bool Utils::SetProcessDPIAware() {
-  HANDLE hLibrary = EnsureUser32Loaded();
-  PFNSETPROCESSDPIAWARE const SetProcessDPIAware =
-      (PFNSETPROCESSDPIAWARE)GetProcAddress((HMODULE)hLibrary,
-                                            "SetProcessDPIAware");
-  if (SetProcessDPIAware == nullptr) {
+bool Utils::SetProcessDpiAwareness() {
+  HANDLE hLibrary = EnsureShcoreLoaded();
+  PFNSETPROCESSDPIAWARENESS const SetProcessDpiAwareness =
+      (PFNSETPROCESSDPIAWARENESS)GetProcAddress((HMODULE)hLibrary,
+                                            "SetProcessDpiAwareness");
+  if (SetProcessDpiAwareness == nullptr) {
     return false;
   }
 
-  return SetProcessDPIAware();
+  HRESULT hr = SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
+  if (FAILED(hr)) {
+    return false;
+  }
+  return true;
 }
 
 uint64_t Utils::GetMonotonicTime() {

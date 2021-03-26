@@ -32,8 +32,8 @@ bool YASSApp::OnInit() {
     wxMessageBox(wxT("Already exists!"), wxT("WndChecker"));
     return false;
   }
-  if (Utils::SetProcessDPIAware()) {
-    LOG(WARNING) << "SetProcessDPIAware applied";
+  if (Utils::SetProcessDpiAwareness()) {
+    LOG(WARNING) << "SetProcessDpiAwareness applied";
   }
 #endif
 

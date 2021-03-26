@@ -7,7 +7,7 @@ class Utils {
 public:
   static bool GetAutoStart();
   static void EnableAutoStart(bool on);
-  static bool SetProcessDPIAware();
+  static bool SetProcessDpiAwareness();
   static uint64_t GetMonotonicTime();
 };
 
