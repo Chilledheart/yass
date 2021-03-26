@@ -15,6 +15,7 @@ DEFAULT_OSX_ARCHS = 'arm64;x86_64'
 DEFAULT_ARCH = os.getenv('VSCMD_ARG_TGT_ARCH')
 DEFAULT_CRT_LINKAGE = 'static'
 DEFAULT_SIGNING_IDENTITY = os.getenv('CODESIGN_IDENTITY')
+DEFAULT_COMPILER = ''
 VCPKG_DIR = os.getenv('VCPKG_ROOT')
 
 if not DEFAULT_SIGNING_IDENTITY:
@@ -249,6 +250,10 @@ def generate_buildscript(configuration_type):
   cmake_args.extend(['-DCMAKE_EXPORT_COMPILE_COMMANDS=1'])
   if sys.platform == 'win32':
     cmake_args.extend(['-G', 'Ninja'])
+    if DEFAULT_COMPILER == 'clang-cl':
+      os.environ['PATH'] += os.pathsep + 'C:\\Program Files\\LLVM\\bin\\'
+      cmake_args.extend(['-DCMAKE_C_COMPILER=clang-cl'])
+      cmake_args.extend(['-DCMAKE_CXX_COMPILER=clang-cl'])
     cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])
     cmake_args.extend(['-DCMAKE_TOOLCHAIN_FILE=%s\\scripts\\buildsystems\\vcpkg.cmake' % VCPKG_DIR])
     cmake_args.extend(['-DVCPKG_TARGET_ARCHITECTURE=%s' % DEFAULT_ARCH])

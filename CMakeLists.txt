@@ -478,8 +478,8 @@ add_definitions(-DASIO_STANDALONE)
 add_definitions(-DASIO_NO_TYPEID)
 include_directories(../asio-1.18.1/include)
 if (HAS_CLANG)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-error=inconsistent-missing-override -Wno-error=unused-private-field")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=inconsistent-missing-override -Wno-error=unused-private-field")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-inconsistent-missing-override -Wno-unused-private-field")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-inconsistent-missing-override -Wno-unused-private-field")
 endif()
 
 # *****************************************************************************************
