@@ -406,4 +406,4 @@ void cipher::set_key_aead(const uint8_t *salt, size_t salt_len) {
 #endif
 }
 
-enum cipher_method cipher_method_in_use;
+enum cipher_method cipher_method_in_use = CRYPTO_AES256GCMSHA256;
