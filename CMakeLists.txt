@@ -661,9 +661,9 @@ if (MSVC)
 
   if ($ENV{Platform} MATCHES "x64")
     # find manifest if any
-    file(GLOB wxWidgets_MANIFESTS "${wxWidgets_ROOT_DIR}/include/wx/msw/amd64.manifest")
+    file(GLOB wxWidgets_MANIFESTS "${wxWidgets_ROOT_DIR}/include/wx/msw/amd64_dpi_aware_pmv2.manifest")
   elseif ($ENV{Platform} MATCHES "x86")
-    file(GLOB wxWidgets_MANIFESTS "${wxWidgets_ROOT_DIR}/include/wx/msw/wx.manifest")
+    file(GLOB wxWidgets_MANIFESTS "${wxWidgets_ROOT_DIR}/include/wx/msw/wx_dpi_aware_pmv2.manifest")
   endif()
 
   # find jpeg library
