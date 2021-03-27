@@ -167,7 +167,9 @@ void YASSFrame::OnHello(wxCommandEvent &WXUNUSED(event)) {
 }
 
 void YASSFrame::OnOption(wxCommandEvent &WXUNUSED(event)) {
-  OptionDialog dialog(this, wxT("YASS Option"));
+  wxSize size(this->FromDIP(wxSize(400, 240)));
+  OptionDialog dialog(this, wxT("YASS Option"), wxDefaultPosition,
+    size);
   if (dialog.ShowModal() == wxID_OK) {
     mApp->SaveConfigToDisk();
   }
