@@ -10,8 +10,8 @@
   L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"
 
 #include <Tchar.h>
-#include <windows.h>
 #include <shellscalingapi.h>
+#include <windows.h>
 
 HANDLE EnsureShcoreLoaded() { return LoadLibraryExW(L"Shcore.dll", 0, 0); }
 
@@ -114,7 +114,7 @@ bool Utils::SetProcessDpiAwareness() {
   HANDLE hLibrary = EnsureShcoreLoaded();
   PFNSETPROCESSDPIAWARENESS const SetProcessDpiAwareness =
       (PFNSETPROCESSDPIAWARENESS)GetProcAddress((HMODULE)hLibrary,
-                                            "SetProcessDpiAwareness");
+                                                "SetProcessDpiAwareness");
   if (SetProcessDpiAwareness == nullptr) {
     return false;
   }

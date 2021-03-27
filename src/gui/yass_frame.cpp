@@ -4,6 +4,7 @@
 #include "gui/yass_frame.hpp"
 
 #include "cli/socks5_connection_stats.hpp"
+#include "gui/option_dialog.hpp"
 #include "gui/panels.hpp"
 #include "gui/utils.hpp"
 #include "gui/yass.hpp"
@@ -32,8 +33,9 @@ YASSFrame::YASSFrame(const wxString &title, const wxPoint &pos,
     : wxFrame(NULL, wxID_ANY, title, pos, size,
               wxDEFAULT_FRAME_STYLE & (~wxMAXIMIZE_BOX) & (~wxRESIZE_BORDER)) {
   wxMenu *menuFile = new wxMenu;
-  menuFile->Append(ID_Hello, wxT("&Hello...\tCtrl-H"),
-                   wxT("Hell string shown in status bar for this menu item"));
+  menuFile->Append(ID_Hello, wxT("&Hello...\tCtrl-H"), wxT("Hello String"));
+  menuFile->Append(ID_Option, wxT("&Option...\tCtrl-O"),
+                   wxT("More Options for this applications"));
 
   wxMenu *menuHelp = new wxMenu;
   menuHelp->Append(wxID_ABOUT);
@@ -62,8 +64,6 @@ YASSFrame::YASSFrame(const wxString &title, const wxPoint &pos,
 #ifdef _WIN32
   SetIcon(wxICON(IDI_ICON1));
 #endif
-
-  Centre();
 }
 
 std::string YASSFrame::GetServerHost() {
@@ -166,23 +166,31 @@ void YASSFrame::OnHello(wxCommandEvent &WXUNUSED(event)) {
   wxLogMessage(wxT("Hello from YASS!"));
 }
 
+void YASSFrame::OnOption(wxCommandEvent &WXUNUSED(event)) {
+  OptionDialog dialog(this, wxT("YASS Option"));
+  if (dialog.ShowModal() == wxID_OK) {
+    mApp->SaveConfigToDisk();
+  }
+}
+
 void YASSFrame::OnAbout(wxCommandEvent &WXUNUSED(event)) {
   wxMessageBox(wxT("This is Yet-Another-Shadow-Socket"), wxT("About YASS"),
                wxOK | wxICON_INFORMATION);
 }
 
 void YASSFrame::OnDIPChanged(wxDPIChangedEvent &event) {
-  wxLogMessage(wxT("old dpi %u/%u new dpi %u/%u"),
-    event.GetOldDPI().GetWidth(), event.GetOldDPI().GetHeight(),
-    event.GetNewDPI().GetWidth(), event.GetNewDPI().GetHeight());
   wxSize newSize = GetSize();
-  newSize.x *= (double)event.GetNewDPI().GetWidth() / event.GetOldDPI().GetWidth();
-  newSize.y *= (double)event.GetNewDPI().GetHeight() / event.GetOldDPI().GetHeight();
+  newSize.x *=
+      (double)event.GetNewDPI().GetWidth() / event.GetOldDPI().GetWidth();
+  newSize.y *=
+      (double)event.GetNewDPI().GetHeight() / event.GetOldDPI().GetHeight();
   SetSize(newSize);
 
   newSize = m_rightpanel->GetSize();
-  newSize.x *= (double)event.GetNewDPI().GetWidth() / event.GetOldDPI().GetWidth();
-  newSize.y *= (double)event.GetNewDPI().GetHeight() / event.GetOldDPI().GetHeight();
+  newSize.x *=
+      (double)event.GetNewDPI().GetWidth() / event.GetOldDPI().GetWidth();
+  newSize.y *=
+      (double)event.GetNewDPI().GetHeight() / event.GetOldDPI().GetHeight();
   m_rightpanel->SetSize(newSize);
 }
 
@@ -193,7 +201,7 @@ void YASSFrame::OnIdle(wxIdleEvent &WXUNUSED(event)) {
 }
 
 void YASSFrame::OnClose(wxCloseEvent &event) {
-  LOG(INFO) << "Frame is closing";
+  LOG(WARNING) << "Frame is closing ";
   event.Skip();  // Destroy() also works here.
 #ifdef __APPLE__ /* TODO Destroy cannot help in some cases */
   ::exit(0);
@@ -204,6 +212,7 @@ void YASSFrame::OnClose(wxCloseEvent &event) {
 
 wxBEGIN_EVENT_TABLE(YASSFrame, wxFrame)
   EVT_MENU(ID_Hello,   YASSFrame::OnHello)
+  EVT_MENU(ID_Option,   YASSFrame::OnOption)
   EVT_MENU(wxID_ABOUT, YASSFrame::OnAbout)
   EVT_DPI_CHANGED(YASSFrame::OnDIPChanged)
   EVT_IDLE(            YASSFrame::OnIdle)

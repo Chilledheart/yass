@@ -2,10 +2,11 @@
 /* Copyright (c) 2019-2020 Chilledheart  */
 #include "gui/yass.hpp"
 
+#include <string>
+
 #include "core/logging.hpp"
 #include "gui/utils.hpp"
 #include "gui/yass_frame.hpp"
-#include <string>
 
 YASSApp *mApp = nullptr;
 
@@ -95,7 +96,7 @@ void YASSApp::SaveConfigToDisk() {
   FLAGS_local_host = frame_->GetLocalHost();
   FLAGS_local_port = stoi(frame_->GetLocalPort());
   cipher_method_in_use = to_cipher_method(FLAGS_method);
-  FLAGS_tcp_user_timeout = FLAGS_timeout = stoi(frame_->GetTimeout());
+  FLAGS_timeout = stoi(frame_->GetTimeout());
 
   config::SaveConfig();
 }

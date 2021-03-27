@@ -89,8 +89,8 @@ if (NOT MSVC)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,noexecstack -Wl,-z,relro")
     endif()
 
-    ## disable rtti
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
+    ## disable rtti, wxWidgets modal requires this
+    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
 
     ## not omit stack frame pointer for release
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -fno-omit-frame-pointer")
@@ -802,6 +802,7 @@ if (GUI AND wxWidgets_FOUND)
     set(SRC_FILES
         src/gui/yass.cpp
         src/gui/yass_frame.cpp
+        src/gui/option_dialog.cpp
         src/gui/panels.cpp
         src/gui/worker.cpp
         src/cli/socks5_connection.cpp

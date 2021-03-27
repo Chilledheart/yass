@@ -39,6 +39,7 @@ private:
 private:
   YASSState state_;
 
+  friend class YASSFrame;
   YASSFrame *frame_;
 
   Worker worker_;
