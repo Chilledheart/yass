@@ -39,6 +39,7 @@ private:
   void OnIdle(wxIdleEvent &event);
   void OnClose(wxCloseEvent &event);
 
+  friend class YASSApp;
   LeftPanel *m_leftpanel = nullptr;
   RightPanel *m_rightpanel = nullptr;
 

@@ -5,6 +5,7 @@
 #include <string>
 
 #include "core/logging.hpp"
+#include "gui/panels.hpp"
 #include "gui/utils.hpp"
 #include "gui/yass_frame.hpp"
 
@@ -56,6 +57,13 @@ bool YASSApp::OnInit() {
   frame_->Show(true);
   frame_->UpdateStatus();
   SetTopWindow(frame_);
+
+#if defined(__APPLE__) || defined(_WIN32)
+  if (Utils::GetAutoStart()) {
+    wxCommandEvent event;
+    frame_->m_leftpanel->OnStart(event);
+  }
+#endif
 
   return true;
 }
