@@ -300,19 +300,6 @@ def execute_buildscript(configuration_type):
 
   command = ['ninja', 'yass']
   write_output(command)
-  if sys.platform == 'win32':
-    src = get_app_name()
-    dst = '../%s-windows-%s' % (DEFAULT_ARCH, get_app_name())
-    try:
-      os.unlink(dst)
-    except:
-      pass
-    os.rename(src, dst)
-    outputs = ['%s-windows-%s' % (DEFAULT_ARCH, get_app_name())]
-  else:
-    outputs = ['build/%s' % get_app_name()]
-
-  return outputs
 
 
 def postbuild_copy_libraries():
@@ -350,17 +337,54 @@ def postbuild_codesign():
   write_output(['codesign', '--timestamp=none', '--force', '--deep', '--sign', DEFAULT_SIGNING_IDENTITY, get_app_name()])
   write_output(['codesign', '-dv', '--deep', '--verbose=4', get_app_name()])
 
+def postbuild_archive():
+  if sys.platform == 'win32':
+    src = get_app_name()
+    dst = '%s-windows-%s' % (DEFAULT_ARCH, get_app_name())
+  else:
+    src = get_app_name()
+    dst = '%s-%s' % (sys.platform, get_app_name())
+  os.rename(src, dst)
+
+  from zipfile import ZipFile, ZIP_DEFLATED, ZipInfo
+  with ZipFile(dst + '.zip', 'w', compression=ZIP_DEFLATED) as archive:
+    for root, dirs, files in os.walk(dst):
+      for f in files:
+        fullPath = os.path.join(root, f)
+        if os.path.islink(fullPath):
+          # http://www.mail-archive.com/python-list@python.org/msg34223.html
+          zipInfo = ZipInfo(fullPath)
+          zipInfo.create_system = 3
+          # long type of hex val of '0xA1ED0000L',
+          # say, symlink attr magic...
+          zipInfo.external_attr = 2716663808L
+          archive.writestr(zipInfo, os.readlink(fullPath))
+        else:
+          archive.write(fullPath, fullPath, ZIP_DEFLATED)
+
+  output = dst + '.zip'
+  archive = os.path.join('..', output)
+
+  try:
+    os.unlink(archive)
+  except:
+    pass
+  os.rename(output, archive)
+
+  return [ output ]
+
 if __name__ == '__main__':
   configuration_type = DEFAULT_BUILD_TYPE
 
   find_source_directory()
   generate_buildscript(configuration_type)
-  outputs = execute_buildscript(configuration_type)
+  execute_buildscript(configuration_type)
   postbuild_copy_libraries()
   postbuild_fix_rpath()
   if sys.platform == 'darwin':
     postbuild_fix_retina_display()
     postbuild_codesign()
+  outputs = postbuild_archive()
   for output in outputs:
     print '------ %s' % output
   print 'done'
