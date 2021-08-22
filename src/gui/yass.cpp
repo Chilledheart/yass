@@ -2,6 +2,7 @@
 /* Copyright (c) 2019-2020 Chilledheart  */
 #include "gui/yass.hpp"
 
+#include <stdexcept>
 #include <string>
 
 #include "core/logging.hpp"
@@ -98,13 +99,31 @@ void YASSApp::LoadConfigFromDisk() { config::ReadConfig(); }
 
 void YASSApp::SaveConfigToDisk() {
   FLAGS_server_host = frame_->GetServerHost();
-  FLAGS_server_port = stoi(frame_->GetServerPort());
+  try {
+    FLAGS_server_port = std::stoi(frame_->GetServerPort());
+  } catch (const std::invalid_argument &e) {
+    LOG(WARNING) << e.what() << " for " << frame_->GetServerPort();
+  } catch (const std::out_of_range &e) {
+    LOG(WARNING) << e.what() << " for " << frame_->GetServerPort();
+  }
   FLAGS_password = frame_->GetPassword();
   FLAGS_method = frame_->GetMethod();
   FLAGS_local_host = frame_->GetLocalHost();
-  FLAGS_local_port = stoi(frame_->GetLocalPort());
+  try {
+    FLAGS_local_port = std::stoi(frame_->GetLocalPort());
+  } catch (const std::invalid_argument &e) {
+    LOG(WARNING) << e.what() << " for " << frame_->GetLocalPort();
+  } catch (const std::out_of_range &e) {
+    LOG(WARNING) << e.what() << " for " << frame_->GetLocalPort();
+  }
   cipher_method_in_use = to_cipher_method(FLAGS_method);
-  FLAGS_timeout = stoi(frame_->GetTimeout());
+  try {
+    FLAGS_timeout = std::stoi(frame_->GetTimeout());
+  } catch (const std::invalid_argument &e) {
+    LOG(WARNING) << e.what() << " for " << frame_->GetTimeout();
+  } catch (const std::out_of_range &e) {
+    LOG(WARNING) << e.what() << " for " << frame_->GetTimeout();
+  }
 
   config::SaveConfig();
 }
