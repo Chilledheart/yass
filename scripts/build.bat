@@ -18,6 +18,7 @@ set "VSCMD_START_DIR=%CD%"
 call "%vsdevcmd%" -arch=x86 -host_arch=amd64
 set CC=
 set CXX=
+set Platform=x86
 
 python .\scripts\build.py || exit /b
 
@@ -25,6 +26,7 @@ set "VSCMD_START_DIR=%CD%"
 call "%vsdevcmd%" -arch=amd64 -host_arch=amd64
 set CC=
 set CXX=
+set Platform=x64
 
 python .\scripts\build.py || exit /b
 
@@ -32,6 +34,7 @@ python .\scripts\build.py || exit /b
 @REM call "%vsdevcmd%" -arch=arm -host_arch=amd64
 @REM set CC=
 @REM set CXX=
+@REM set Platform=arm
 
 @REM python .\scripts\build.py || exit /b
 
@@ -39,5 +42,6 @@ set "VSCMD_START_DIR=%CD%"
 call "%vsdevcmd%" -arch=arm64 -host_arch=amd64
 set CC=
 set CXX=
+set Platform=arm64
 
 python .\scripts\build.py || exit /b

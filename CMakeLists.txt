@@ -318,7 +318,9 @@ if (MSVC)
     check_include_file(sodium.h SODIUM_INCLUDE)
     if (SODIUM AND SODIUM_LIB AND SODIUM_INCLUDE)
       add_definitions(-DHAVE_LIBSODIUM)
+      add_definitions(-DSODIUM_STATIC)
       set(SYSTEM_LIBS ${SYSTEM_LIBS} ${SODIUM_LIB})
+      message(STATUS "Build with libsodium")
     endif()
 
     # boringssl
@@ -650,7 +652,7 @@ if (APPLE OR UNIX)
 endif()
 
 if (MSVC)
-  message(STATUS "Build against $ENV{Platform}")
+  message(STATUS "Build with Platform $ENV{Platform}")
 
   set(wxWidgets_ROOT_DIR ${VCPKG_ROOT_DIR}/installed/${VCPKG_TARGET_TRIPLET})
   set(wxWidgets_LIB_DIR ${VCPKG_STATIC_LIB_PATH})
@@ -705,18 +707,6 @@ if (MSVC)
     debug ${TIFF_DEBUG_LIB}
     optimized ${TIFF_RELEASE_LIB}
     )
-
-  # find tiffxx library, not available on arm/arm64 port
-  if (MSVC AND NOT $ENV{Platform} MATCHES "arm")
-  find_library(TIFFXX_RELEASE_LIB tiffxx
-    PATHS ${wxWidgets_LIB_DIR} NO_DEFAULT_PATH)
-  find_library(TIFFXX_DEBUG_LIB tiffxxd
-    PATHS ${wxWidgets_LIB_DEBUG_DIR} NO_DEFAULT_PATH)
-  set(TIFFXX_LIB
-    debug ${TIFFXX_DEBUG_LIB}
-    optimized ${TIFFXX_RELEASE_LIB}
-    )
-  endif()
 
   # find turbojpeg library
   find_library(TURBOJPEG_RELEASE_LIB turbojpeg
@@ -777,7 +767,6 @@ if (MSVC)
       ${PNG16_LIB}
       ${LZMA_LIB}
       ${TIFF_LIB}
-      ${TIFFXX_LIB}
       ${TURBOJPEG_LIB}
       ${ZLIB_LIB}
       ${COMCTL32_LIB}
