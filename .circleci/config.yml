@@ -7,7 +7,7 @@ jobs:
     steps:
       - checkout
       # Whatever you want to do
-      - run: cd .. && wget https://downloads.sourceforge.net/project/asio/asio/1.18.1%20%28Stable%29/asio-1.18.1.tar.bz2 && tar -xvf asio-1.18.1.tar.bz2 && cd -
+      - run: cd .. && wget https://downloads.sourceforge.net/project/asio/asio/1.18.2%20%28Stable%29/asio-1.18.2.tar.bz2 && tar -xvf asio-1.18.2.tar.bz2 && cd -
       - run: sudo apt-get update && sudo apt-get install -y cmake ninja-build libgoogle-glog-dev libgflags-dev libsodium-dev libjsoncpp-dev
       - run: mkdir build && cd build && cmake -G Ninja -DCLI=on -DSERVER=on -DGUI=off .. && ninja -v -j2 && cd ..
       - run: rm -rf build
