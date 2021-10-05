@@ -66,32 +66,32 @@ YASSFrame::YASSFrame(const wxString &title, const wxPoint &pos,
 #endif
 }
 
-std::string YASSFrame::GetServerHost() {
-  return std::string(m_rightpanel->m_serverhost_tc->GetValue());
+const char* YASSFrame::GetServerHost() {
+  return m_rightpanel->m_serverhost_tc->GetValue();
 }
 
-std::string YASSFrame::GetServerPort() {
-  return std::string(m_rightpanel->m_serverport_tc->GetValue());
+const char* YASSFrame::GetServerPort() {
+  return m_rightpanel->m_serverport_tc->GetValue();
 }
 
-std::string YASSFrame::GetPassword() {
-  return std::string(m_rightpanel->m_password_tc->GetValue());
+const char* YASSFrame::GetPassword() {
+  return m_rightpanel->m_password_tc->GetValue();
 }
 
-std::string YASSFrame::GetMethod() {
-  return std::string(m_rightpanel->m_method_tc->GetStringSelection());
+const char* YASSFrame::GetMethod() {
+  return m_rightpanel->m_method_tc->GetStringSelection();
 }
 
-std::string YASSFrame::GetLocalHost() {
-  return std::string(m_rightpanel->m_localhost_tc->GetValue());
+const char* YASSFrame::GetLocalHost() {
+  return m_rightpanel->m_localhost_tc->GetValue();
 }
 
-std::string YASSFrame::GetLocalPort() {
-  return std::string(m_rightpanel->m_localport_tc->GetValue());
+const char* YASSFrame::GetLocalPort() {
+  return m_rightpanel->m_localport_tc->GetValue();
 }
 
-std::string YASSFrame::GetTimeout() {
-  return std::string(m_rightpanel->m_timeout_tc->GetValue());
+const char* YASSFrame::GetTimeout() {
+  return m_rightpanel->m_timeout_tc->GetValue();
 }
 
 void YASSFrame::Started() {

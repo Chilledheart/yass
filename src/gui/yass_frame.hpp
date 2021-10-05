@@ -16,13 +16,13 @@ public:
   YASSFrame(const wxString &title, const wxPoint &pos = wxDefaultPosition,
             const wxSize &size = wxDefaultSize);
 
-  std::string GetServerHost();
-  std::string GetServerPort();
-  std::string GetPassword();
-  std::string GetMethod();
-  std::string GetLocalHost();
-  std::string GetLocalPort();
-  std::string GetTimeout();
+  const char* GetServerHost();
+  const char* GetServerPort();
+  const char* GetPassword();
+  const char* GetMethod();
+  const char* GetLocalHost();
+  const char* GetLocalPort();
+  const char* GetTimeout();
 
   void Started();
   void Stopped();
