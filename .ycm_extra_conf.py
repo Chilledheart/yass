@@ -66,7 +66,7 @@ flags = [
 '-isystem',
 '/usr/local/include',
 '-isystem',
-'../asio-1.18.2/include',
+'third_party/asio/asio/include',
 '-isystem',
 '../boringssl/include',
 '-I',
