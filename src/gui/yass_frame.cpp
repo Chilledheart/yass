@@ -66,31 +66,31 @@ YASSFrame::YASSFrame(const wxString &title, const wxPoint &pos,
 #endif
 }
 
-const char* YASSFrame::GetServerHost() {
+const char *YASSFrame::GetServerHost() {
   return m_rightpanel->m_serverhost_tc->GetValue();
 }
 
-const char* YASSFrame::GetServerPort() {
+const char *YASSFrame::GetServerPort() {
   return m_rightpanel->m_serverport_tc->GetValue();
 }
 
-const char* YASSFrame::GetPassword() {
+const char *YASSFrame::GetPassword() {
   return m_rightpanel->m_password_tc->GetValue();
 }
 
-const char* YASSFrame::GetMethod() {
+const char *YASSFrame::GetMethod() {
   return m_rightpanel->m_method_tc->GetStringSelection();
 }
 
-const char* YASSFrame::GetLocalHost() {
+const char *YASSFrame::GetLocalHost() {
   return m_rightpanel->m_localhost_tc->GetValue();
 }
 
-const char* YASSFrame::GetLocalPort() {
+const char *YASSFrame::GetLocalPort() {
   return m_rightpanel->m_localport_tc->GetValue();
 }
 
-const char* YASSFrame::GetTimeout() {
+const char *YASSFrame::GetTimeout() {
   return m_rightpanel->m_timeout_tc->GetValue();
 }
 
@@ -168,8 +168,7 @@ void YASSFrame::OnHello(wxCommandEvent &WXUNUSED(event)) {
 
 void YASSFrame::OnOption(wxCommandEvent &WXUNUSED(event)) {
   wxSize size(this->FromDIP(wxSize(400, 240)));
-  OptionDialog dialog(this, wxT("YASS Option"), wxDefaultPosition,
-    size);
+  OptionDialog dialog(this, wxT("YASS Option"), wxDefaultPosition, size);
   if (dialog.ShowModal() == wxID_OK) {
     mApp->SaveConfigToDisk();
   }

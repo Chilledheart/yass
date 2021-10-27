@@ -110,14 +110,16 @@ void OptionDialog::OnSave() {
     wxLogMessage(wxT("out_of_range: %s"), m_connecttimeout_tc->GetValue());
   }
   try {
-    FLAGS_tcp_user_timeout = std::stoi(std::string(m_tcpusertimeout_tc->GetValue()));
+    FLAGS_tcp_user_timeout =
+        std::stoi(std::string(m_tcpusertimeout_tc->GetValue()));
   } catch (const std::invalid_argument &) {
     wxLogMessage(wxT("invalid_argument: %s"), m_tcpusertimeout_tc->GetValue());
   } catch (const std::out_of_range &) {
     wxLogMessage(wxT("out_of_range: %s"), m_tcpusertimeout_tc->GetValue());
   }
   try {
-    FLAGS_so_linger_timeout = std::stoi(std::string(m_lingertimeout_tc->GetValue()));
+    FLAGS_so_linger_timeout =
+        std::stoi(std::string(m_lingertimeout_tc->GetValue()));
   } catch (const std::invalid_argument &) {
     wxLogMessage(wxT("invalid_argument: %s"), m_lingertimeout_tc->GetValue());
   } catch (const std::out_of_range &) {
