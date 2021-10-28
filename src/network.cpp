@@ -26,15 +26,21 @@ SetTCPCongestion(asio::ip::tcp::acceptor::native_handle_type handle) {
     VLOG(1) << "TCP_CONGESTION is not supported on this platform";
     goto out;
   }
-  VLOG(2) << "previous congestion: " << buf;
-  len = FLAGS_congestion_algorithm.size();
-  ret = setsockopt(fd, IPPROTO_TCP, TCP_CONGESTION,
-                   FLAGS_congestion_algorithm.c_str(), len);
-  if (ret < 0) {
-    VLOG(1) << "Congestion algorithm \"" << FLAGS_congestion_algorithm
-            << "\" is not supported on this platform";
-    FLAGS_congestion_algorithm = buf;
-    goto out;
+  if (buf != FLAGS_congestion_algorithm) {
+    len = FLAGS_congestion_algorithm.size();
+    ret = setsockopt(fd, IPPROTO_TCP, TCP_CONGESTION,
+                     FLAGS_congestion_algorithm.c_str(), len);
+    if (ret < 0) {
+      VLOG(1) << "Congestion algorithm \"" << FLAGS_congestion_algorithm
+              << "\" is not supported on this platform";
+      VLOG(1) << "Current congestion: " << buf;
+      FLAGS_congestion_algorithm = buf;
+      goto out;
+    } else {
+      VLOG(2) << "Previous congestion: " << buf;
+      VLOG(2) << "Applied current congestion algorithm: "
+              << FLAGS_congestion_algorithm;
+    }
   }
   len = sizeof(buf);
   ret = getsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, buf, &len);
@@ -42,7 +48,7 @@ SetTCPCongestion(asio::ip::tcp::acceptor::native_handle_type handle) {
     VLOG(1) << "TCP_CONGESTION is not supported on this platform";
     goto out;
   }
-  VLOG(2) << "current congestion: " << buf;
+  VLOG(2) << "Current congestion: " << buf;
 out:
 #endif // TCP_CONGESTION
   return asio::error_code();
@@ -72,7 +78,7 @@ SetTCPFastOpen(asio::ip::tcp::acceptor::native_handle_type handle) {
     VLOG(1) << "TCP Fast Open is not supported on this platform";
     FLAGS_tcp_fastopen = false;
   } else {
-    VLOG(2) << "applied current tcp_option: tcp_fastopen";
+    VLOG(2) << "Applied current tcp_option: tcp_fastopen";
   }
 #endif // TCP_FASTOPEN
   return asio::error_code();
@@ -95,7 +101,7 @@ SetTCPFastOpenConnect(asio::ip::tcp::socket::native_handle_type handle) {
     VLOG(2) << "TCP Fast Open Connect is not supported on this platform";
     FLAGS_tcp_fastopen_connect = false;
   } else {
-    VLOG(2) << "applied current tcp_option: tcp_fastopen_connect";
+    VLOG(2) << "Applied current tcp_option: tcp_fastopen_connect";
   }
 #endif // TCP_FASTOPEN_CONNECT
   return asio::error_code();
@@ -115,7 +121,7 @@ SetTCPUserTimeout(asio::ip::tcp::acceptor::native_handle_type handle) {
     VLOG(1) << "TCP User Timeout is not supported on this platform";
     FLAGS_tcp_user_timeout = 0;
   } else {
-    VLOG(2) << "applied current tcp_option: tcp_user_timeout "
+    VLOG(2) << "Applied current tcp_option: tcp_user_timeout "
             << FLAGS_tcp_user_timeout;
   }
 #endif // TCP_USER_TIMEOUT
