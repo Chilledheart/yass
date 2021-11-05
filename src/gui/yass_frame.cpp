@@ -33,7 +33,6 @@ YASSFrame::YASSFrame(const wxString &title, const wxPoint &pos,
     : wxFrame(NULL, wxID_ANY, title, pos, size,
               wxDEFAULT_FRAME_STYLE & (~wxMAXIMIZE_BOX) & (~wxRESIZE_BORDER)) {
   wxMenu *menuFile = new wxMenu;
-  menuFile->Append(ID_Hello, wxT("&Hello...\tCtrl-H"), wxT("Hello String"));
   menuFile->Append(ID_Option, wxT("&Option...\tCtrl-O"),
                    wxT("More Options for this applications"));
 
@@ -162,10 +161,6 @@ void YASSFrame::UpdateStatus() {
   SetStatusText(ss.str());
 }
 
-void YASSFrame::OnHello(wxCommandEvent &WXUNUSED(event)) {
-  wxLogMessage(wxT("Hello from YASS!"));
-}
-
 void YASSFrame::OnOption(wxCommandEvent &WXUNUSED(event)) {
   wxSize size(this->FromDIP(wxSize(400, 240)));
   OptionDialog dialog(this, wxT("YASS Option"), wxDefaultPosition, size);
@@ -175,7 +170,7 @@ void YASSFrame::OnOption(wxCommandEvent &WXUNUSED(event)) {
 }
 
 void YASSFrame::OnAbout(wxCommandEvent &WXUNUSED(event)) {
-  wxMessageBox(wxT("This is Yet-Another-Shadow-Socket"), wxT("About YASS"),
+  wxMessageBox(wxT("This is Yet Another Shadow Socket"), wxT("About YASS"),
                wxOK | wxICON_INFORMATION);
 }
 
@@ -212,7 +207,6 @@ void YASSFrame::OnClose(wxCloseEvent &event) {
 // clang-format off
 
 wxBEGIN_EVENT_TABLE(YASSFrame, wxFrame)
-  EVT_MENU(ID_Hello,   YASSFrame::OnHello)
   EVT_MENU(ID_Option,   YASSFrame::OnOption)
   EVT_MENU(wxID_ABOUT, YASSFrame::OnAbout)
   EVT_DPI_CHANGED(YASSFrame::OnDIPChanged)

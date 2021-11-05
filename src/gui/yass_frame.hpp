@@ -31,7 +31,6 @@ public:
   void UpdateStatus();
 
 private:
-  void OnHello(wxCommandEvent &event);
   void OnAbout(wxCommandEvent &event);
   void OnOption(wxCommandEvent &event);
   void OnDIPChanged(wxDPIChangedEvent &event);
@@ -54,8 +53,7 @@ private:
 };
 
 enum {
-  ID_Hello = 1,
-  ID_Option = 2,
+  ID_Option = 1,
 };
 
 #endif // YASS_FRAME
