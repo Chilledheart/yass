@@ -8,13 +8,13 @@ using asio::ip::tcp;
 using namespace socks5;
 
 static tcp::endpoint resolveEndpoint(asio::io_context &io_context,
-                                     const std::string &host, uint16_t port) {
-  asio::error_code ec;
+                                     const std::string &host, uint16_t port,
+                                     asio::error_code &ec) {
   asio::ip::tcp::resolver resolver(io_context);
   auto endpoints = resolver.resolve(host, std::to_string(port), ec);
   if (ec) {
     LOG(WARNING) << "name resolved failed due to: " << ec;
-    // TODO
+    return tcp::endpoint();
   }
   return endpoints->endpoint();
 }
@@ -30,20 +30,26 @@ Worker::~Worker() {
 }
 
 void Worker::Start(bool quiet) {
-  endpoint_ = resolveEndpoint(io_context_, FLAGS_local_host, FLAGS_local_port);
-  remote_endpoint_ =
-      resolveEndpoint(io_context_, FLAGS_server_host, FLAGS_server_port);
+  asio::error_code ec_old;
+  endpoint_ =
+      resolveEndpoint(io_context_, FLAGS_local_host, FLAGS_local_port, ec_old);
+  if (!ec_old) {
+    remote_endpoint_ = resolveEndpoint(io_context_, FLAGS_server_host,
+                                       FLAGS_server_port, ec_old);
+  }
 
   /// listen in the worker thread
-  io_context_.post([this, quiet]() {
+  io_context_.post([this, quiet, ec_old]() {
     socks5_server_ =
         std::make_unique<Socks5Factory>(io_context_, remote_endpoint_);
 
     bool successed = false;
     std::string msg;
+    asio::error_code ec = ec_old;
 
-    asio::error_code ec;
-    socks5_server_->listen(endpoint_, SOMAXCONN, ec);
+    if (!ec) {
+      socks5_server_->listen(endpoint_, SOMAXCONN, ec);
+    }
 
     if (quiet) {
       return;
