@@ -66,31 +66,53 @@ YASSFrame::YASSFrame(const wxString &title, const wxPoint &pos,
 }
 
 const char *YASSFrame::GetServerHost() {
-  return m_rightpanel->m_serverhost_tc->GetValue();
+  static char cstring[1024];
+  strncpy(cstring, m_rightpanel->m_serverhost_tc->GetValue().mb_str(wxConvUTF8),
+          sizeof(cstring) - 1);
+  return cstring;
 }
 
 const char *YASSFrame::GetServerPort() {
-  return m_rightpanel->m_serverport_tc->GetValue();
+  static char cstring[1024];
+  strncpy(cstring, m_rightpanel->m_serverport_tc->GetValue().mb_str(wxConvUTF8),
+          sizeof(cstring) - 1);
+  return cstring;
 }
 
 const char *YASSFrame::GetPassword() {
-  return m_rightpanel->m_password_tc->GetValue();
+  static char cstring[1024];
+  strncpy(cstring, m_rightpanel->m_password_tc->GetValue().mb_str(wxConvUTF8),
+          sizeof(cstring) - 1);
+  return cstring;
 }
 
 const char *YASSFrame::GetMethod() {
-  return m_rightpanel->m_method_tc->GetStringSelection();
+  static char cstring[1024];
+  strncpy(cstring,
+          m_rightpanel->m_method_tc->GetStringSelection().mb_str(wxConvUTF8),
+          sizeof(cstring) - 1);
+  return cstring;
 }
 
 const char *YASSFrame::GetLocalHost() {
-  return m_rightpanel->m_localhost_tc->GetValue();
+  static char cstring[1024];
+  strncpy(cstring, m_rightpanel->m_localhost_tc->GetValue().mb_str(wxConvUTF8),
+          sizeof(cstring) - 1);
+  return cstring;
 }
 
 const char *YASSFrame::GetLocalPort() {
-  return m_rightpanel->m_localport_tc->GetValue();
+  static char cstring[1024];
+  strncpy(cstring, m_rightpanel->m_localport_tc->GetValue().mb_str(wxConvUTF8),
+          sizeof(cstring) - 1);
+  return cstring;
 }
 
 const char *YASSFrame::GetTimeout() {
-  return m_rightpanel->m_timeout_tc->GetValue();
+  static char cstring[1024];
+  strncpy(cstring, m_rightpanel->m_timeout_tc->GetValue().mb_str(wxConvUTF8),
+          sizeof(cstring) - 1);
+  return cstring;
 }
 
 void YASSFrame::Started() {
