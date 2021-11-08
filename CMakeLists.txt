@@ -671,7 +671,7 @@ if (MSVC)
   # find jpeg library
   find_library(JPEG_RELEASE_LIB jpeg
     PATHS ${wxWidgets_LIB_DIR} NO_DEFAULT_PATH)
-  find_library(JPEG_DEBUG_LIB jpegd
+  find_library(JPEG_DEBUG_LIB jpeg
     PATHS ${wxWidgets_LIB_DEBUG_DIR} NO_DEFAULT_PATH)
   set(JPEG_LIB
     debug ${JPEG_DEBUG_LIB}
@@ -711,7 +711,7 @@ if (MSVC)
   # find turbojpeg library
   find_library(TURBOJPEG_RELEASE_LIB turbojpeg
     PATHS ${wxWidgets_LIB_DIR} NO_DEFAULT_PATH)
-  find_library(TURBOJPEG_DEBUG_LIB turbojpegd
+  find_library(TURBOJPEG_DEBUG_LIB turbojpeg
     PATHS ${wxWidgets_LIB_DEBUG_DIR} NO_DEFAULT_PATH)
   set(TURBOJPEG_LIB
     debug ${TURBOJPEG_DEBUG_LIB}
