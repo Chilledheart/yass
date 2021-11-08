@@ -99,31 +99,13 @@ void YASSApp::LoadConfigFromDisk() { config::ReadConfig(); }
 
 void YASSApp::SaveConfigToDisk() {
   FLAGS_server_host = frame_->GetServerHost();
-  try {
-    FLAGS_server_port = std::stoi(frame_->GetServerPort());
-  } catch (const std::invalid_argument &) {
-    wxLogMessage(wxT("invalid_argument: %s"), frame_->GetServerPort());
-  } catch (const std::out_of_range &) {
-    wxLogMessage(wxT("out_of_range: %s"), frame_->GetServerPort());
-  }
+  FLAGS_server_port = Utils::Stoi(frame_->GetServerPort());
   FLAGS_password = frame_->GetPassword();
   FLAGS_method = frame_->GetMethod();
   FLAGS_local_host = frame_->GetLocalHost();
-  try {
-    FLAGS_local_port = std::stoi(frame_->GetLocalPort());
-  } catch (const std::invalid_argument &) {
-    wxLogMessage(wxT("invalid_argument: %s"), frame_->GetLocalPort());
-  } catch (const std::out_of_range &) {
-    wxLogMessage(wxT("out_of_range: %s"), frame_->GetLocalPort());
-  }
+  FLAGS_local_port = Utils::Stoi(frame_->GetLocalPort());
   cipher_method_in_use = to_cipher_method(FLAGS_method);
-  try {
-    FLAGS_timeout = std::stoi(frame_->GetTimeout());
-  } catch (const std::invalid_argument &) {
-    wxLogMessage(wxT("invalid_argument: %s"), frame_->GetTimeout());
-  } catch (const std::out_of_range &) {
-    wxLogMessage(wxT("out_of_range: %s"), frame_->GetTimeout());
-  }
+  FLAGS_timeout = Utils::Stoi(frame_->GetTimeout());
 
   config::SaveConfig();
 }

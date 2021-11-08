@@ -794,6 +794,7 @@ if (GUI AND wxWidgets_FOUND)
         src/gui/option_dialog.cpp
         src/gui/panels.cpp
         src/gui/worker.cpp
+        src/gui/utils.cpp
         src/cli/socks5_connection.cpp
         src/cli/socks5_connection.hpp
         src/cli/socks5_connection_stats.cpp

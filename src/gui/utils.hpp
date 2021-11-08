@@ -3,12 +3,14 @@
 #ifndef YASS_UTILS
 #define YASS_UTILS
 #include <stdint.h>
+#include <string>
 class Utils {
 public:
   static bool GetAutoStart();
   static void EnableAutoStart(bool on);
   static bool SetProcessDpiAwareness();
   static uint64_t GetMonotonicTime();
+  static int32_t Stoi(const std::string &value);
 };
 
 #define DEFAULT_AUTOSTART_NAME "YASS"

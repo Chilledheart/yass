@@ -3,7 +3,7 @@
 
 #include "gui/option_dialog.hpp"
 
-#include <string>
+#include "gui/utils.hpp"
 
 #include "config/config.hpp"
 
@@ -102,41 +102,11 @@ void OptionDialog::OnLoad() {
 }
 
 void OptionDialog::OnSave() {
-  try {
-    FLAGS_timeout = std::stoi(std::string(m_connecttimeout_tc->GetValue()));
-  } catch (const std::invalid_argument &) {
-    wxLogMessage(wxT("invalid_argument: %s"), m_connecttimeout_tc->GetValue());
-  } catch (const std::out_of_range &) {
-    wxLogMessage(wxT("out_of_range: %s"), m_connecttimeout_tc->GetValue());
-  }
-  try {
-    FLAGS_tcp_user_timeout =
-        std::stoi(std::string(m_tcpusertimeout_tc->GetValue()));
-  } catch (const std::invalid_argument &) {
-    wxLogMessage(wxT("invalid_argument: %s"), m_tcpusertimeout_tc->GetValue());
-  } catch (const std::out_of_range &) {
-    wxLogMessage(wxT("out_of_range: %s"), m_tcpusertimeout_tc->GetValue());
-  }
-  try {
-    FLAGS_so_linger_timeout =
-        std::stoi(std::string(m_lingertimeout_tc->GetValue()));
-  } catch (const std::invalid_argument &) {
-    wxLogMessage(wxT("invalid_argument: %s"), m_lingertimeout_tc->GetValue());
-  } catch (const std::out_of_range &) {
-    wxLogMessage(wxT("out_of_range: %s"), m_lingertimeout_tc->GetValue());
-  }
-  try {
-    FLAGS_so_snd_buffer = std::stoi(std::string(m_sendbuffer_tc->GetValue()));
-  } catch (const std::invalid_argument &) {
-    wxLogMessage(wxT("invalid_argument: %s"), m_sendbuffer_tc->GetValue());
-  } catch (const std::out_of_range &) {
-    wxLogMessage(wxT("out_of_range: %s"), m_sendbuffer_tc->GetValue());
-  }
-  try {
-    FLAGS_so_rcv_buffer = std::stoi(std::string(m_recvbuffer_tc->GetValue()));
-  } catch (const std::invalid_argument &) {
-    wxLogMessage(wxT("invalid_argument: %s"), m_recvbuffer_tc->GetValue());
-  } catch (const std::out_of_range &) {
-    wxLogMessage(wxT("out_of_range: %s"), m_recvbuffer_tc->GetValue());
-  }
+  FLAGS_timeout = Utils::Stoi(std::string(m_connecttimeout_tc->GetValue()));
+  FLAGS_tcp_user_timeout =
+      Utils::Stoi(std::string(m_tcpusertimeout_tc->GetValue()));
+  FLAGS_so_linger_timeout =
+      Utils::Stoi(std::string(m_lingertimeout_tc->GetValue()));
+  FLAGS_so_snd_buffer = Utils::Stoi(std::string(m_sendbuffer_tc->GetValue()));
+  FLAGS_so_rcv_buffer = Utils::Stoi(std::string(m_recvbuffer_tc->GetValue()));
 }
