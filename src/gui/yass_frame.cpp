@@ -65,54 +65,32 @@ YASSFrame::YASSFrame(const wxString &title, const wxPoint &pos,
 #endif
 }
 
-const char *YASSFrame::GetServerHost() {
-  static char cstring[1024];
-  strncpy(cstring, m_rightpanel->m_serverhost_tc->GetValue().mb_str(wxConvUTF8),
-          sizeof(cstring) - 1);
-  return cstring;
+std::string YASSFrame::GetServerHost() {
+  return Utils::ToString(m_rightpanel->m_serverhost_tc->GetValue());
 }
 
-const char *YASSFrame::GetServerPort() {
-  static char cstring[1024];
-  strncpy(cstring, m_rightpanel->m_serverport_tc->GetValue().mb_str(wxConvUTF8),
-          sizeof(cstring) - 1);
-  return cstring;
+std::string YASSFrame::GetServerPort() {
+  return Utils::ToString(m_rightpanel->m_serverport_tc->GetValue());
 }
 
-const char *YASSFrame::GetPassword() {
-  static char cstring[1024];
-  strncpy(cstring, m_rightpanel->m_password_tc->GetValue().mb_str(wxConvUTF8),
-          sizeof(cstring) - 1);
-  return cstring;
+std::string YASSFrame::GetPassword() {
+  return Utils::ToString(m_rightpanel->m_password_tc->GetValue());
 }
 
-const char *YASSFrame::GetMethod() {
-  static char cstring[1024];
-  strncpy(cstring,
-          m_rightpanel->m_method_tc->GetStringSelection().mb_str(wxConvUTF8),
-          sizeof(cstring) - 1);
-  return cstring;
+std::string YASSFrame::GetMethod() {
+  return Utils::ToString(m_rightpanel->m_method_tc->GetStringSelection());
 }
 
-const char *YASSFrame::GetLocalHost() {
-  static char cstring[1024];
-  strncpy(cstring, m_rightpanel->m_localhost_tc->GetValue().mb_str(wxConvUTF8),
-          sizeof(cstring) - 1);
-  return cstring;
+std::string YASSFrame::GetLocalHost() {
+  return Utils::ToString(m_rightpanel->m_localhost_tc->GetValue());
 }
 
-const char *YASSFrame::GetLocalPort() {
-  static char cstring[1024];
-  strncpy(cstring, m_rightpanel->m_localport_tc->GetValue().mb_str(wxConvUTF8),
-          sizeof(cstring) - 1);
-  return cstring;
+std::string YASSFrame::GetLocalPort() {
+  return Utils::ToString(m_rightpanel->m_localport_tc->GetValue());
 }
 
-const char *YASSFrame::GetTimeout() {
-  static char cstring[1024];
-  strncpy(cstring, m_rightpanel->m_timeout_tc->GetValue().mb_str(wxConvUTF8),
-          sizeof(cstring) - 1);
-  return cstring;
+std::string YASSFrame::GetTimeout() {
+  return Utils::ToString(m_rightpanel->m_timeout_tc->GetValue());
 }
 
 void YASSFrame::Started() {

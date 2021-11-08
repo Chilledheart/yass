@@ -19,3 +19,9 @@ int32_t Utils::Stoi(const std::string &value) {
   }
   return result;
 }
+
+std::string Utils::ToString(const wxString &value) {
+  char cstring[1024];
+  strncpy(cstring, value.mb_str(wxConvUTF8), sizeof(cstring) - 1);
+  return cstring;
+}

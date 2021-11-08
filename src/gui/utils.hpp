@@ -4,6 +4,7 @@
 #define YASS_UTILS
 #include <stdint.h>
 #include <string>
+#include <wx/string.h>
 class Utils {
 public:
   static bool GetAutoStart();
@@ -11,6 +12,7 @@ public:
   static bool SetProcessDpiAwareness();
   static uint64_t GetMonotonicTime();
   static int32_t Stoi(const std::string &value);
+  static std::string ToString(const wxString &value);
 };
 
 #define DEFAULT_AUTOSTART_NAME "YASS"
