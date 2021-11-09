@@ -102,11 +102,13 @@ void OptionDialog::OnLoad() {
 }
 
 void OptionDialog::OnSave() {
-  FLAGS_timeout = Utils::Stoi(std::string(m_connecttimeout_tc->GetValue()));
+  FLAGS_timeout = Utils::Stoi(Utils::ToString(m_connecttimeout_tc->GetValue()));
   FLAGS_tcp_user_timeout =
-      Utils::Stoi(std::string(m_tcpusertimeout_tc->GetValue()));
+      Utils::Stoi(Utils::ToString(m_tcpusertimeout_tc->GetValue()));
   FLAGS_so_linger_timeout =
-      Utils::Stoi(std::string(m_lingertimeout_tc->GetValue()));
-  FLAGS_so_snd_buffer = Utils::Stoi(std::string(m_sendbuffer_tc->GetValue()));
-  FLAGS_so_rcv_buffer = Utils::Stoi(std::string(m_recvbuffer_tc->GetValue()));
+      Utils::Stoi(Utils::ToString(m_lingertimeout_tc->GetValue()));
+  FLAGS_so_snd_buffer =
+      Utils::Stoi(Utils::ToString(m_sendbuffer_tc->GetValue()));
+  FLAGS_so_rcv_buffer =
+      Utils::Stoi(Utils::ToString(m_recvbuffer_tc->GetValue()));
 }
