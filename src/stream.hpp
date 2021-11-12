@@ -160,7 +160,7 @@ private:
     }
 
     if (bytes_transferred) {
-      DCHECK_EQ(bytes_transferred, buf->length());
+      DCHECK_LE(bytes_transferred, buf->length());
       channel->sent(buf);
     }
 
