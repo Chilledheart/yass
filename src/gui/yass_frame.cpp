@@ -125,6 +125,7 @@ void YASSFrame::Stopped() {
   m_rightpanel->m_method_tc->Enable(true);
   m_rightpanel->m_localhost_tc->SetEditable(true);
   m_rightpanel->m_localport_tc->SetEditable(true);
+  m_rightpanel->m_timeout_tc->SetEditable(true);
   m_leftpanel->m_start->Enable();
 }
 
