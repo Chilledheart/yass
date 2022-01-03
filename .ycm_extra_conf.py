@@ -51,40 +51,13 @@ flags = [
 '-Wno-variadic-macros',
 '-fexceptions',
 '-DNDEBUG',
-# You 100% do NOT need -DUSE_CLANG_COMPLETER and/or -DYCM_EXPORT in your flags;
-# only the YCM source code needs it.
-'-DUSE_CLANG_COMPLETER',
-'-DYCM_EXPORT=',
 # THIS IS IMPORTANT! Without the '-x' flag, Clang won't know which language to
 # use when compiling headers. So it will guess. Badly. So C++ headers will be
 # compiled as C headers. You don't want that so ALWAYS specify the '-x' flag.
 # For a C project, you would set this to 'c' instead of 'c++'.
 '-x',
 'c++',
-'-isystem',
-'/opt/local/include',
-'-isystem',
-'/usr/local/include',
-'-isystem',
-'third_party/asio/asio/include',
-'-isystem',
-'../boringssl/include',
-'-I',
-'src',
-'-I',
-'src/core',
-'-I',
-'src/cli',
-'-I',
-'src/server',
-'-I',
-'src/gui',
 '-std=c++17',
-'-I/opt/wxWidgets/lib/wx/include/osx_cocoa-unicode-3.1',
-'-I/opt/wxWidgets/include/wx-3.1',
-'-D_FILE_OFFSET_BITS=64',
-'-DWXUSINGDLL'
-'-D__WXMAC__', '-D__WXOSX__', '-D__WXOSX_COCOA__',
 ]
 
 # Set this to the absolute path to the folder (NOT the file!) containing the
@@ -97,7 +70,7 @@ flags = [
 #
 # Most projects will NOT need to set this to anything; you can just change the
 # 'flags' list of compilation flags. Notice that YCM itself uses that approach.
-compilation_database_folder = ''
+compilation_database_folder = p.join(DIR_OF_THIS_SCRIPT, 'build')
 
 
 def IsHeaderFile( filename ):
@@ -166,6 +139,19 @@ def Settings( **kwargs ):
     except ValueError:
       pass
 
+    # skip universal build flag which causing libclang's AST Parsing issues
+    final_flags_copy = final_flags
+    final_flags = []
+    continue_again = False
+    for flag in final_flags_copy:
+      if continue_again:
+        continue_again = False
+        continue
+      if flag == '-arch':
+        continue_again = True
+        continue
+      final_flags.append(flag)
+
     return {
       'flags': final_flags,
       'include_paths_relative_to_dir': compilation_info.compiler_working_dir_,
@@ -178,3 +164,4 @@ def Settings( **kwargs ):
     }
 
   return {}
+
