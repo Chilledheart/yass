@@ -334,8 +334,11 @@ def postbuild_fix_retina_display():
 
 def postbuild_codesign():
   print 'fixing codesign...'
-  write_output(['codesign', '--timestamp=none', '--force', '--deep', '--sign', DEFAULT_SIGNING_IDENTITY, get_app_name()])
-  write_output(['codesign', '-dv', '--deep', '--verbose=4', get_app_name()])
+  # reference https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/resolving_common_notarization_issues?language=objc
+  # Hardened runtime is available in the Capabilities pane of Xcode 10 or later
+  write_output(['codesign', '--timestamp=none', '--preserve-metadata=entitlements', '--options=runtime', '--force', '--deep', '--sign', DEFAULT_SIGNING_IDENTITY, get_app_name()])
+  write_output(['codesign', '-dv', '--deep', '--strict', '--verbose=4', get_app_name()])
+  write_output(['codesign', '-d', '--entitlements', ':-', get_app_name()])
 
 def postbuild_archive():
   if sys.platform == 'win32':
