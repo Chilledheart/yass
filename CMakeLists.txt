@@ -134,6 +134,17 @@ else()
       set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /OPT:REF")
     endif()
 
+    ## generate debug info
+    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zi")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
+
+    # tell linker to include symbol data
+    if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /INCREMENTAL:NO /DEBUG /OPT:ICF")
+      set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /INCREMENTAL:NO /DEBUG /OPT:ICF")
+      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /INCREMENTAL:NO /DEBUG /OPT:ICF")
+    endif()
+
     ## Disable LTCG for static libraries because this setting introduces ABI incompatibility between minor compiler versions
     if (NOT VCPKG_LIBRARY_LINKAGE STREQUAL "static")
       set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /GL")
@@ -842,6 +853,13 @@ if (GUI AND wxWidgets_FOUND)
     endforeach()
 
     target_link_directories(${APP_NAME} PRIVATE ${wxWidgets_LIBRARY_DIRS})
+
+    if (MSVC)
+        set_target_properties(${APP_NAME} PROPERTIES
+            COMPILE_PDB_NAME ${APP_NAME}
+            COMPILE_PDB_OUTPUT_DIR ${CMAKE_BINARY_DIR}
+        )
+    endif()
 
     if (APPLE)
         set_target_properties(${APP_NAME} PROPERTIES

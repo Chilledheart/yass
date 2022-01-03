@@ -349,6 +349,8 @@ def postbuild_archive():
   from zipfile import ZipFile, ZIP_DEFLATED, ZipInfo
   with ZipFile(dst + '.zip', 'w', compression=ZIP_DEFLATED) as archive:
     archive.write(dst, dst, ZIP_DEFLATED)
+    if os.path.exists(src + '.pdb'):
+      archive.write(src + '.pdb', src + '.pdb', ZIP_DEFLATED)
     for root, dirs, files in os.walk(dst):
       for f in files:
         fullPath = os.path.join(root, f)
