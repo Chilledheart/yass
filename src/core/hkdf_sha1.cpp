@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2020 Chilledheart  */
 /* HKDF-Extract + HKDF-Expand */
 

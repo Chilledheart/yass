@@ -23,7 +23,7 @@ It is not so good to stay as "SOCKS" (meaning silly rocket some how), but at mos
 - Safe memory layout, tested against [Address Sanitizer][asan].
 
 ## License
-It is dual-licensed with GPLv2 and Boost Software License.
+It is licensed with GPLv2.
 
 ## Crypto
 ### Ciphers for fips modules
