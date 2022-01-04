@@ -23,8 +23,10 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
-      - run: vcpkg install glog:${{ matrix.arch }}-windows-static gflags:${{ matrix.arch }}-windows-static libsodium:${{ matrix.arch }}-windows-static jsoncpp:${{ matrix.arch }}-windows-static wxwidgets:${{ matrix.arch }}-windows-static
-      - run: |
+      - name: Install dependencies
+        run: vcpkg install glog:${{ matrix.arch }}-windows-static gflags:${{ matrix.arch }}-windows-static libsodium:${{ matrix.arch }}-windows-static jsoncpp:${{ matrix.arch }}-windows-static wxwidgets:${{ matrix.arch }}-windows-static
+      - name: Build
+        run: |
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
           call "%vsdevcmd%" -arch=${{ matrix.arch }} -host_arch=amd64
@@ -61,8 +63,10 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
-      - run: brew install ninja cmake glog gflags libsodium jsoncpp wxwidgets
-      - run: ./scripts/build.py
+      - name: Install dependencies
+        run: brew install ninja cmake glog gflags libsodium jsoncpp wxwidgets
+      - name: Build
+        run: ./scripts/build.py
       - run: mv -f darwin-yass.app.zip ${{ env.BUNDLE_NAME }}.zip
       - uses: actions/upload-release-asset@v1
         if: ${{ github.event_name == 'release' }}
@@ -91,8 +95,10 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
-      - run: sudo apt-get install -y cmake ninja-build libgoogle-glog-dev libgflags-dev libsodium-dev libjsoncpp-dev libwxgtk3.0-gtk3-dev
-      - run: |
+      - name: Install dependencies
+        run: sudo apt-get install -y cmake ninja-build libgoogle-glog-dev libgflags-dev libsodium-dev libjsoncpp-dev libwxgtk3.0-gtk3-dev
+      - name: Build
+        run: |
           mkdir build
           cd build
           cmake -G Ninja -DCLI=off -DSERVER=off -DGUI=on ..
@@ -110,10 +116,35 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
-      - run: sudo apt-get install -y cmake ninja-build libgoogle-glog-dev libgflags-dev libsodium-dev libjsoncpp-dev
-      - run: |
+      - name: Install dependencies
+        run: sudo apt-get install -y cmake ninja-build libgoogle-glog-dev libgflags-dev libsodium-dev libjsoncpp-dev
+      - name: Build
+        run: |
           mkdir build
           cd build
+          cmake -G Ninja -DCLI=on -DSERVER=on -DGUI=off ..
+          ninja -v
+          cd ..
+  linux-clang-server:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, x86, arm64]
+    env:
+      BUNDLE_NAME: 'yass-server-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}'
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
+      - name: Install dependencies
+        run: sudo apt-get install -y cmake ninja-build libgoogle-glog-dev libgflags-dev libsodium-dev libjsoncpp-dev
+      - name: Build
+        run: |
+          mkdir build
+          cd build
+          export CC=clang-12
+          export CXX=clang++-12
           cmake -G Ninja -DCLI=on -DSERVER=on -DGUI=off ..
           ninja -v
           cd ..
