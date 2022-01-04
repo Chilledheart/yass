@@ -478,7 +478,7 @@ if __name__ == '__main__':
   if sys.platform == 'darwin':
     postbuild_fix_retina_display()
     postbuild_codesign()
-  postbuild_check_universal_build()
+  #postbuild_check_universal_build()
   outputs = postbuild_archive()
   for output in outputs:
     print '------ %s' % output
