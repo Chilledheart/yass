@@ -1,0 +1,39 @@
+name: Build Artifacts
+on:
+  push:
+    branches: [master]
+    paths-ignore: [README.md]
+  release:
+    types: [published]
+defaults:
+  run:
+    shell: bash
+jobs:
+  mac:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, arm64]
+    env:
+      BUNDLE_NAME: 'yass-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}'
+    steps:
+      - uses: actions/checkout@v2
+      - run: brew install ninja cmake glog gflags libsodium jsoncpp wxwidgets
+      - run: ./scripts/build.py
+      - run: mv -f darwin-yass.app.zip ${{ env.BUNDLE_NAME }}.zip
+      - uses: actions/upload-release-asset@v1
+        if: ${{ github.event_name == 'release' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ${{ env.BUNDLE_NAME }}.zip
+          asset_name: ${{ env.BUNDLE_NAME }}.zip
+          asset_content_type: application/octet-stream
+      - run: openssl sha256 ${{ env.BUNDLE_NAME }}.zip >sha256sum.txt
+      - run: echo "SHA256SUM=$(cut -d' ' -f2 sha256sum.txt)" >>$GITHUB_ENV
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.job }}-${{ matrix.arch }}-sha256 ${{ env.SHA256SUM }}
+          path: sha256sum.txt
