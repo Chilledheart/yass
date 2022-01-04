@@ -18,14 +18,20 @@ jobs:
       matrix:
         arch: [x64, x86, arm64]
     env:
-      Platform: '${{ matrix.arch }}'
       BUNDLE_NAME: 'yass-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}'
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
       - run: vcpkg install glog:${{ matrix.arch }}-windows-static gflags:${{ matrix.arch }}-windows-static libsodium:${{ matrix.arch }}-windows-static jsoncpp:${{ matrix.arch }}-windows-static wxwidgets:${{ matrix.arch }}-windows-static
-      - run: scripts/build_workflow.bat
+      - run: |
+          set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
+          set "VSCMD_START_DIR=%CD%"
+          call "%vsdevcmd%" -arch=${{ matrix.arch }} -host_arch=amd64
+          set CC=
+          set CXX=
+          set Platform=${{ matrix.arch }}
+          python .\scripts\build.py || exit /b
         shell: cmd
       - run: mv -f ${{ matrix.arch }}-windows-yass.exe.zip ${{ env.BUNDLE_NAME }}.zip
       - uses: actions/upload-release-asset@v1
