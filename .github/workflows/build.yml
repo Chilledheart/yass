@@ -19,6 +19,8 @@ jobs:
       BUNDLE_NAME: 'yass-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}'
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
       - run: brew install ninja cmake glog gflags libsodium jsoncpp wxwidgets
       - run: ./scripts/build.py
       - run: mv -f darwin-yass.app.zip ${{ env.BUNDLE_NAME }}.zip
