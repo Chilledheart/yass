@@ -2,7 +2,6 @@
 
 [![License][license-svg]][license-link]
 
-[![Build Status][build-status-svg]][build-status-link]
 [![Build Artifacts](https://github.com/Chilledheart/yass/actions/workflows/build.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/build.yml)
 
 ## Windows 7
@@ -64,6 +63,3 @@ It is licensed with GPLv2.
 
 [license-svg]: https://img.shields.io/badge/license-GPL2-lightgrey.svg
 [license-link]: https://github.com/Chilledheart/yass/blob/master/COPYING
-
-[build-status-svg]: https://circleci.com/gh/Chilledheart/yass.svg?style=svg
-[build-status-link]: https://circleci.com/gh/Chilledheart/yass
