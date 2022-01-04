@@ -16,8 +16,14 @@ OptionDialog::OptionDialog(wxFrame *parent, const wxString &title,
 
   wxBoxSizer *hbox = new wxBoxSizer(wxHORIZONTAL);
 
-  wxFlexGridSizer *fgs =
-      new wxFlexGridSizer(6, 2, parent->FromDIP(9), parent->FromDIP(25));
+#if wxCHECK_VERSION(3, 1, 0)
+  int vgap = parent->FromDIP(9);
+  int hgap = parent->FromDIP(25);
+#else
+  int vgap = 9;
+  int hgap = 25;
+#endif
+  wxFlexGridSizer *fgs = new wxFlexGridSizer(6, 2, vgap, hgap);
 
   wxStaticText *connecttimeout =
       new wxStaticText(this, -1, wxT("Connect Timeout"));
@@ -56,9 +62,20 @@ OptionDialog::OptionDialog(wxFrame *parent, const wxString &title,
   wxBoxSizer *hbox_buttons = new wxBoxSizer(wxHORIZONTAL);
 
   m_okay =
-      new wxButton(this, wxOK, wxT("OK"), parent->FromDIP(wxPoint(10, 10)));
+      new wxButton(this, wxOK, wxT("OK"),
+#if wxCHECK_VERSION(3, 1, 0)
+                   parent->FromDIP(wxPoint(10, 10))
+#else
+                   wxPoint(10, 10)
+#endif
+                   );
   m_cancel = new wxButton(this, wxCANCEL, wxT("Cancel"),
-                          parent->FromDIP(wxPoint(10, 60)));
+#if wxCHECK_VERSION(3, 1, 0)
+                          parent->FromDIP(wxPoint(10, 60))
+#else
+                          wxPoint(10, 60)
+#endif
+                          );
 
   hbox_buttons->Add(m_okay, 1, wxEXPAND, 1);
   hbox_buttons->Add(m_cancel, 1, wxEXPAND, 1);

@@ -53,7 +53,11 @@ bool YASSApp::OnInit() {
   state_ = STOPPED;
 
   frame_ = new YASSFrame(wxT("Yet-Another-Shadow-Socket"));
+#if wxCHECK_VERSION(3, 1, 0)
   frame_->SetSize(frame_->FromDIP(wxSize(450, 390)));
+#else
+  frame_->SetSize(wxSize(450, 390));
+#endif
   frame_->Centre();
   frame_->Show(true);
   frame_->UpdateStatus();

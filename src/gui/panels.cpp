@@ -11,9 +11,19 @@ LeftPanel::LeftPanel(wxPanel *parent)
     : wxPanel(parent, -1, wxPoint(-1, -1), wxSize(-1, -1), wxBORDER_THEME) {
   m_parent = parent;
   m_start = new wxButton(this, ID_START, wxT("START"),
-                         parent->FromDIP(wxPoint(10, 10)));
+#if wxCHECK_VERSION(3, 1, 0)
+                         parent->FromDIP(wxPoint(10, 10))
+#else
+                         wxPoint(10, 10)
+#endif
+                         );
   m_stop = new wxButton(this, ID_STOP, wxT("STOP"),
-                        parent->FromDIP(wxPoint(10, 60)));
+#if wxCHECK_VERSION(3, 1, 0)
+                        parent->FromDIP(wxPoint(10, 60))
+#else
+                        wxPoint(10, 60)
+#endif
+                        );
 
   Connect(ID_START, wxEVT_COMMAND_BUTTON_CLICKED,
           wxCommandEventHandler(LeftPanel::OnStart));
@@ -36,7 +46,12 @@ void LeftPanel::OnStop(wxCommandEvent &WXUNUSED(event)) {
 
 RightPanel::RightPanel(wxPanel *parent)
     : wxPanel(parent, wxID_ANY, wxDefaultPosition,
-              parent->FromDIP(wxSize(315, -1)), wxBORDER_THEME) {
+#if wxCHECK_VERSION(3, 1, 0)
+              parent->FromDIP(wxSize(315, -1)),
+#else
+              wxSize(315, -1),
+#endif
+              wxBORDER_THEME) {
   wxString methodStrings[] = {
 #define XX(num, name, string) wxT(string),
       CIPHER_METHOD_MAP(XX)
@@ -44,7 +59,11 @@ RightPanel::RightPanel(wxPanel *parent)
   };
   wxBoxSizer *hbox = new wxBoxSizer(wxHORIZONTAL);
   wxFlexGridSizer *fgs =
+#if wxCHECK_VERSION(3, 1, 0)
       new wxFlexGridSizer(8, 2, parent->FromDIP(9), parent->FromDIP(25));
+#else
+      new wxFlexGridSizer(8, 2, 9, 25);
+#endif
 
   wxStaticText *serverhost = new wxStaticText(this, -1, wxT("Server Host"));
   wxStaticText *serverport = new wxStaticText(this, -1, wxT("Server Port"));
@@ -59,7 +78,11 @@ RightPanel::RightPanel(wxPanel *parent)
   m_serverport_tc = new wxTextCtrl(this, -1);
   m_password_tc = new wxTextCtrl(this, -1);
   m_method_tc = new wxChoice(this, -1, wxDefaultPosition,
+#if wxCHECK_VERSION(3, 1, 0)
                              parent->FromDIP(wxSize(100, -1)),
+#else
+                             wxSize(100, -1),
+#endif
                              WXSIZEOF(methodStrings) - 1, methodStrings + 1, 0);
   m_localhost_tc = new wxTextCtrl(this, -1);
   m_localport_tc = new wxTextCtrl(this, -1);
