@@ -35,7 +35,7 @@ def copy_file_with_symlinks(src, dst):
 
 
 def write_output(command):
-  print '--- %s' % ' '.join(command)
+  print('--- %s' % ' '.join(command))
   proc = subprocess.Popen(command, stdout=sys.stdout, stderr=sys.stdout,
       shell=False, env=os.environ)
   proc.communicate()
@@ -106,12 +106,12 @@ def get_dependencies_by_ldd(path):
 
 
 def get_dependencies_by_objdump(path):
-  print 'todo'
+  print('todo')
   return []
 
 
 def get_dependencies_by_dependency_walker(path):
-  print 'todo'
+  print('todo')
   return []
 
 
@@ -262,10 +262,10 @@ def _postbuild_patchelf():
 
 
 def find_source_directory():
-  print 'find source directory...'
+  print('find source directory...')
   os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
   if not os.path.exists('CMakeLists.txt'):
-    print 'Please execute this frome the top dir of the source'
+    print('Please execute this frome the top dir of the source')
     sys.exit(-1)
   if os.path.exists('build'):
     shutil.rmtree('build')
@@ -275,7 +275,7 @@ def find_source_directory():
 
 
 def generate_buildscript(configuration_type):
-  print 'generate build scripts...(%s)' % configuration_type
+  print('generate build scripts...(%s)' % configuration_type)
   cmake_args = ['-DGUI=ON', '-DCLI=ON', '-DSERVER=ON']
   cmake_args.extend(['-DCMAKE_EXPORT_COMPILE_COMMANDS=1'])
   if sys.platform == 'win32':
@@ -326,14 +326,14 @@ def generate_buildscript(configuration_type):
 
 
 def execute_buildscript(configuration_type):
-  print 'executing build scripts...(%s)' % configuration_type
+  print('executing build scripts...(%s)' % configuration_type)
 
   command = ['ninja', 'yass']
   write_output(command)
 
 
 def postbuild_copy_libraries():
-  print 'copying dependent libraries...'
+  print('copying dependent libraries...')
   if sys.platform == 'win32':
     # not supported
     pass
@@ -344,7 +344,7 @@ def postbuild_copy_libraries():
 
 
 def postbuild_fix_rpath():
-  print 'fixing rpath...'
+  print('fixing rpath...')
   if sys.platform == 'win32':
     # 'no need to fix rpath'
     pass
@@ -353,18 +353,18 @@ def postbuild_fix_rpath():
   elif sys.platform == 'darwin':
     _postbuild_install_name_tool()
   else:
-    print 'not supported in platform %s' % sys.platform
+    print('not supported in platform %s' % sys.platform)
 
 
 def postbuild_fix_retina_display():
-  print 'fixing retina display...'
+  print('fixing retina display...')
   #write_output(['plutil', '-insert', 'LSUIElement', '-bool', 'YES', '%s/Contents/Info.plist' % get_app_name()])
   write_output(['plutil', '-insert', 'NSPrincipalClass', '-string', 'NSApplication', '%s/Contents/Info.plist' % get_app_name()])
   write_output(['plutil', '-insert', 'NSHighResolutionCapable', '-bool', 'YES', '%s/Contents/Info.plist' % get_app_name()])
 
 
 def postbuild_codesign():
-  print 'fixing codesign...'
+  print('fixing codesign...')
   # reference https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/resolving_common_notarization_issues?language=objc
   # Hardened runtime is available in the Capabilities pane of Xcode 10 or later
   write_output(['codesign', '--timestamp=none', '--preserve-metadata=entitlements', '--options=runtime', '--force', '--deep', '--sign', DEFAULT_SIGNING_IDENTITY, get_app_name()])
@@ -416,14 +416,14 @@ def _check_universal_build_darwin(path, verbose = False):
 
 
   if verbose:
-    print status_msg
+    print(status_msg)
 
   if not checked:
     raise IOError(error_msg)
 
 
 def postbuild_check_universal_build():
-    print 'check universal build...'
+    print('check universal build...')
     # check if binary is built universally
     if sys.platform == 'darwin':
         _check_universal_build_darwin(get_app_name(), verbose = True)
@@ -452,7 +452,7 @@ def postbuild_archive():
           zipInfo.create_system = 3
           # long type of hex val of '0xA1ED0000L',
           # say, symlink attr magic...
-          zipInfo.external_attr = 2716663808L
+          zipInfo.external_attr = 2716663808
           archive.writestr(zipInfo, os.readlink(fullPath))
         else:
           archive.write(fullPath, fullPath, ZIP_DEFLATED)
@@ -482,5 +482,5 @@ if __name__ == '__main__':
   #postbuild_check_universal_build()
   outputs = postbuild_archive()
   for output in outputs:
-    print '------ %s' % output
-  print 'done'
+    print('------ %s' % output)
+  print('done')

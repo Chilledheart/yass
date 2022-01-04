@@ -20,7 +20,7 @@ set CC=
 set CXX=
 set Platform=x86
 
-C:\Python27\python .\scripts\build.py || exit /b
+python .\scripts\build.py || exit /b
 
 set "VSCMD_START_DIR=%CD%"
 call "%vsdevcmd%" -arch=amd64 -host_arch=amd64
@@ -28,7 +28,7 @@ set CC=
 set CXX=
 set Platform=x64
 
-C:\Python27\python .\scripts\build.py || exit /b
+python .\scripts\build.py || exit /b
 
 @REM set "VSCMD_START_DIR=%CD%"
 @REM call "%vsdevcmd%" -arch=arm -host_arch=amd64
@@ -36,7 +36,7 @@ C:\Python27\python .\scripts\build.py || exit /b
 @REM set CXX=
 @REM set Platform=arm
 
-@REM C:\Python27\python .\scripts\build.py || exit /b
+@REM python .\scripts\build.py || exit /b
 
 set "VSCMD_START_DIR=%CD%"
 call "%vsdevcmd%" -arch=arm64 -host_arch=amd64
@@ -44,4 +44,4 @@ set CC=
 set CXX=
 set Platform=arm64
 
-C:\Python27\python .\scripts\build.py || exit /b
+python .\scripts\build.py || exit /b

@@ -31,7 +31,7 @@ jobs:
           set CC=
           set CXX=
           set Platform=${{ matrix.arch }}
-          C:\Python27\python .\scripts\build.py || exit /b
+          python .\scripts\build.py || exit /b
         shell: cmd
       - run: mv -f ${{ matrix.arch }}-windows-yass.exe.zip ${{ env.BUNDLE_NAME }}.zip
       - uses: actions/upload-release-asset@v1
