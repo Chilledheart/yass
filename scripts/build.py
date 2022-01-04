@@ -16,7 +16,8 @@ DEFAULT_ARCH = os.getenv('VSCMD_ARG_TGT_ARCH')
 DEFAULT_CRT_LINKAGE = 'static'
 DEFAULT_SIGNING_IDENTITY = os.getenv('CODESIGN_IDENTITY')
 DEFAULT_COMPILER = ''
-VCPKG_DIR = os.getenv('VCPKG_ROOT')
+# documented in github actions https://github.com/actions/virtual-environments/blob/main/images/win/Windows2019-Readme.md
+VCPKG_DIR = os.getenv('VCPKG_INSTALLATION_ROOT') if os.getenv('VCPKG_INSTALLATION_ROOT') else os.getenv('VCPKG_ROOT')
 
 if not DEFAULT_SIGNING_IDENTITY:
   DEFAULT_SIGNING_IDENTITY = '-'

@@ -12,7 +12,7 @@ REM   Visual Studio 2019 SDK and Python.
 REM
 
 REM You need to modify the paths below:
-set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\Common7\Tools\VsDevCmd.bat
+set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
 
 set "VSCMD_START_DIR=%CD%"
 call "%vsdevcmd%" -arch=x86 -host_arch=amd64

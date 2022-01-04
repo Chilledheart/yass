@@ -9,6 +9,39 @@ defaults:
   run:
     shell: bash
 jobs:
+  win:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, x86, arm64]
+    env:
+      BUNDLE_NAME: 'yass-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}'
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
+      - run: vcpkg install glog:x64-windows-static gflags:x64-windows-static libsodium:x64-windows-static jsoncpp:x64-windows-static wxwidgets:x64-windows-static
+      - run: vcpkg install expat:arm64-windows-static libjpeg-turbo:arm64-windows-static liblzma:arm64-windows-static libpng:arm64-windows-static tiff:arm64-windows-static zlib:arm64-windows-static glog:arm64-windows-static gflags:arm64-windows-static libsodium:arm64-windows-static jsoncpp:arm64-windows-static wxwidgets:arm64-windows-static
+      - run: vcpkg install expat:x86-windows-static libjpeg-turbo:x86-windows-static liblzma:x86-windows-static libpng:x86-windows-static tiff:x86-windows-static zlib:x86-windows-static glog:x86-windows-static gflags:x86-windows-static libsodium:x86-windows-static jsoncpp:x86-windows-static wxwidgets:x86-windows-static
+
+      - run: ./scripts/build.bat
+      - run: mv -f ${{ matrix.arch }}-windows-yass.exe.zip ${{ env.BUNDLE_NAME }}.zip
+      - uses: actions/upload-release-asset@v1
+        if: ${{ github.event_name == 'release' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ${{ env.BUNDLE_NAME }}.zip
+          asset_name: ${{ env.BUNDLE_NAME }}.zip
+          asset_content_type: application/octet-stream
+      - run: openssl sha256 ${{ env.BUNDLE_NAME }}.zip >sha256sum.txt
+      - run: echo "SHA256SUM=$(cut -d' ' -f2 sha256sum.txt)" >>$GITHUB_ENV
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.job }}-${{ matrix.arch }}-sha256 ${{ env.SHA256SUM }}
+          path: sha256sum.txt
   mac:
     runs-on: macos-latest
     strategy:
