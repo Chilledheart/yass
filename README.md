@@ -1,5 +1,9 @@
 # Yet Another Shadow Socket
 
+[![License][license-svg]][license-link]
+
+[![Build Status][build-status-svg]][build-status-link]
+
 ## Windows 7
 <img width="484" alt="snapshot-win7" src="https://user-images.githubusercontent.com/54673341/69158208-02fa3600-0b21-11ea-9bf4-c38e26ff38a3.png">
 
@@ -56,3 +60,9 @@ It is licensed with GPLv2.
 [aes256gcm]: https://tools.ietf.org/html/rfc5116
 [chacha20]: https://tools.ietf.org/html/rfc7539
 [tls13]: https://tools.ietf.org/html/rfc7905
+
+[license-svg]: https://img.shields.io/badge/license-GPL2-lightgrey.svg
+[license-link]: https://github.com/Chilledheart/yass/blob/master/COPYING
+
+[build-status-svg]: https://circleci.com/gh/Chilledheart/yass.svg?style=svg
+[build-status-link]: https://circleci.com/gh/Chilledheart/yass
