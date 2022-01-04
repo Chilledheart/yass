@@ -79,3 +79,22 @@ jobs:
         with:
           name: ${{ github.job }}-${{ matrix.arch }}-sha256 ${{ env.SHA256SUM }}
           path: sha256sum.txt
+  linux:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, x86, arm64]
+    env:
+      BUNDLE_NAME: 'yass-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}'
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
+      - run: sudo apt-get install -y cmake ninja-build libgoogle-glog-dev libgflags-dev libsodium-dev libjsoncpp-dev libwxgtk3.0-gtk3-dev
+      - run: |
+          mkdir build
+          cd build
+          cmake -G Ninja -DCLI=off -DSERVER=off -DGUI=on ..
+          ninja -v
+          cd ..
