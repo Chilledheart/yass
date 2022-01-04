@@ -3,6 +3,7 @@
 [![License][license-svg]][license-link]
 
 [![Build Status][build-status-svg]][build-status-link]
+[![Build Artifacts](https://github.com/Chilledheart/yass/actions/workflows/build.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/build.yml)
 
 ## Windows 7
 <img width="484" alt="snapshot-win7" src="https://user-images.githubusercontent.com/54673341/69158208-02fa3600-0b21-11ea-9bf4-c38e26ff38a3.png">
