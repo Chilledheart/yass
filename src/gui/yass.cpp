@@ -4,6 +4,9 @@
 
 #include <stdexcept>
 #include <string>
+#ifdef __APPLE__
+#include <pthread.h>
+#endif
 
 #include "core/logging.hpp"
 #include "gui/panels.hpp"
@@ -38,6 +41,10 @@ bool YASSApp::OnInit() {
   if (Utils::SetProcessDpiAwareness()) {
     LOG(WARNING) << "SetProcessDpiAwareness applied";
   }
+#endif
+#ifdef __APPLE__
+  /// documented in https://developer.apple.com/documentation/apple-silicon/tuning-your-code-s-performance-for-apple-silicon
+  pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
 #endif
 
   LOG(WARNING) << "Application starting";

@@ -2,6 +2,10 @@
 /* Copyright (c) 2019-2020 Chilledheart  */
 #include "worker.hpp"
 
+#ifdef __APPLE__
+#include <pthread.h>
+#endif
+
 #include "yass.hpp"
 
 using asio::ip::tcp;
@@ -92,6 +96,11 @@ void Worker::Stop(bool quiet) {
 
 void Worker::WorkFunc() {
   asio::error_code ec = asio::error_code();
+#ifdef __APPLE__
+  /// documented in https://developer.apple.com/documentation/apple-silicon/tuning-your-code-s-performance-for-apple-silicon
+  /// see sys/qos.h
+  pthread_set_qos_class_self_np(QOS_CLASS_UTILITY, 0);
+#endif
   io_context_.run(ec);
 
   if (ec) {
