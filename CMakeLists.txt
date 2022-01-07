@@ -95,6 +95,11 @@ if (NOT MSVC)
     ## not omit stack frame pointer for release
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -fno-omit-frame-pointer")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-omit-frame-pointer")
+
+    ## When compiling Objective-C, warns if a method is used whose
+    ## availability is newer than the deployment target.
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wunguarded-availability")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wunguarded-availability")
 else()
     ## Set Source and Excutable character sets to UTF-8
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
