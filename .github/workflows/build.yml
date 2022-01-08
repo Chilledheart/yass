@@ -23,6 +23,13 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
+      - name: Install dependency: nasm
+        run: |
+          mkdir -p third_party
+          cd third_party
+          curl -O https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win64/nasm-2.15.05-win64.zip
+          7za x nasm-2.15.05-win64.zip
+          mv nasm-2.15.05 nasm
       - name: Install dependency: glog
         run: vcpkg install glog:${{ matrix.arch }}-windows-static
       - name: Install dependency: gflags
@@ -41,6 +48,8 @@ jobs:
           set CC=
           set CXX=
           set Platform=${{ matrix.arch }}
+
+          set "CMAKE_ASM_NASM_COMPILER=%CD%/third_party/nasm/nasm.exe"
           python .\scripts\build.py || exit /b
         shell: cmd
       - run: mv -f ${{ matrix.arch }}-windows-yass.exe.zip ${{ env.BUNDLE_NAME }}.zip
@@ -78,6 +87,13 @@ jobs:
           mkdir -p third_party/llvm-build/Release+Asserts
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+      - name: Install dependency: nasm
+        run: |
+          mkdir -p third_party
+          cd third_party
+          curl -O https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win64/nasm-2.15.05-win64.zip
+          7za x nasm-2.15.05-win64.zip
+          mv nasm-2.15.05 nasm
       - name: Install dependency: glog
         run: vcpkg install glog:${{ matrix.arch }}-windows-static
       - name: Install dependency: gflags
@@ -98,6 +114,7 @@ jobs:
           set Platform=${{ matrix.arch }}
 
           set "CLANG_TIDY_EXECUTABLE=%CD%/third_party/llvm-build/Release+Asserts/bin/clang-tidy.exe"
+          set "CMAKE_ASM_NASM_COMPILER=%CD%/third_party/nasm/nasm.exe"
           python .\scripts\build.py || exit /b
         shell: cmd
   mac:
