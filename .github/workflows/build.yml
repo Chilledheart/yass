@@ -196,8 +196,6 @@ jobs:
       BUNDLE_NAME: 'yass-clang-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}'
       CLANG_REVISION: 'llvmorg-14-init-12719-gc4b45eeb-2'
       WITH_CLANG: 'Linux_x64'
-      CC: 'third_party/llvm-build/Release+Asserts/bin/clang'
-      CXX: 'third_party/llvm-build/Release+Asserts/bin/clang++'
     steps:
       - uses: actions/checkout@v2
         with:
@@ -206,11 +204,12 @@ jobs:
         run: |
           mkdir -p third_party/llvm-build/Release+Asserts
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$WITH_CLANG/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
-          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$WITH_CLANG/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
       - name: Install dependencies
         run: sudo apt-get install -y cmake ninja-build libgoogle-glog-dev libgflags-dev libsodium-dev libjsoncpp-dev libwxgtk3.0-gtk3-dev
       - name: Build
         run: |
+          export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
+          export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
           mkdir build
           cd build
           cmake -G Ninja -DCLI=on -DSERVER=on -DGUI=on ..
@@ -225,9 +224,6 @@ jobs:
     env:
       CLANG_REVISION: 'llvmorg-14-init-12719-gc4b45eeb-2'
       WITH_CLANG: 'Linux_x64'
-      CC: 'third_party/llvm-build/Release+Asserts/bin/clang'
-      CXX: 'third_party/llvm-build/Release+Asserts/bin/clang++'
-      CLANG_TIDY: 'third_party/llvm-build/Release+Asserts/bin/clang-tidy'
     steps:
       - uses: actions/checkout@v2
         with:
@@ -241,6 +237,9 @@ jobs:
         run: sudo apt-get install -y cmake ninja-build libgoogle-glog-dev libgflags-dev libsodium-dev libjsoncpp-dev libwxgtk3.0-gtk3-dev
       - name: Build
         run: |
+          export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
+          export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
+          export CLANG_TIDY=$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy
           mkdir build
           cd build
           cmake -G Ninja -DCMAKE_C_CLANG_TIDY="$CLANG_TIDY" -DCMAKE_CXX_CLANG_TIDY="$CLANG_TIDY" -DCLI=on -DSERVER=on -DGUI=on ..
