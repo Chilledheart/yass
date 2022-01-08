@@ -44,7 +44,7 @@ jobs:
       - name: "Install dependency: clang-tidy"
         run: |
           mkdir -p third_party/llvm-build/Release+Asserts
-          CLANG_REVISION=$(cat CLANG_REVISION)
+          CLANG_REVISION=$(< CLANG_REVISION)
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
       - name: "Install dependency: glog"
@@ -74,7 +74,7 @@ jobs:
       - name: "Install dependency: clang and clang-tidy"
         run: |
           mkdir -p third_party/llvm-build/Release+Asserts
-          CLANG_REVISION=$(cat CLANG_REVISION)
+          CLANG_REVISION=$(< CLANG_REVISION)
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
   cache-toolchain-mac:
     runs-on: macos-latest
