@@ -12,14 +12,14 @@
 
 ## Once upon a time, there are (virtual) Nics, so are (shadow) Sockets.
 
-YASS(Yet-Another-Shadow-Socket) acts as a modern cplusplus port of the existing [shadowsocks](http://github.com/shadowsocks) project.
+YASS(YetAnotherShadowSocket) acts as a modern cplusplus port of the existing [shadowsocks](http://github.com/shadowsocks) project.
 
 For now, it is heavily developed under macOS.
 
 ## History
 Originally, ss is written to deal with TCP Relay Proxy and provide the similar functionality with openssh's builtin SOCKS proxy (provided with '-D' option).
 
-It is not so good to stay as "SOCKS" (meaning silly rocket some how), but at most times programs are silly designed. Another port would make it stronger, so here we come with "Yet-Another-Shadow-Socket".
+It is not so good to stay as "SOCKS" (meaning silly rocket some how), but at most times programs are silly designed. Another port would make it stronger, so here we come with "YetAnotherShadowSocket".
 
 ## Benefit
 - Better scale, less memory consumption and CPU cycles, less than 0.1% on my iMac.

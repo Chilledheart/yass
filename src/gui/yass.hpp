@@ -10,7 +10,7 @@
 #include "worker.hpp"
 
 class YASSFrame;
-/// The main Application for Yet-Another-Shadow-Socket
+/// The main Application for YetAnotherShadowSocket
 class YASSApp : public wxApp {
  public:
   /// On Program Init

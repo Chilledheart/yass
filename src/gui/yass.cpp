@@ -15,6 +15,8 @@
 
 YASSApp* mApp = nullptr;
 
+static const auto kMainFrameName = wxT("YetAnotherShadowSocket");
+
 // this is a definition so can't be in a header
 wxDEFINE_EVENT(MY_EVENT, wxCommandEvent);
 
@@ -33,7 +35,7 @@ bool YASSApp::OnInit() {
 #endif
 
 #ifdef _WIN32
-  HWND wnd = FindWindowW(NULL, wxT("Yet-Another-Shadow-Socket"));
+  HWND wnd = FindWindowW(nullptr, kMainFrameName);
   if (wnd) {
     wxMessageBox(wxT("Already exists!"), wxT("WndChecker"));
     return false;
@@ -60,7 +62,7 @@ bool YASSApp::OnInit() {
   mApp = this;
   state_ = STOPPED;
 
-  frame_ = new YASSFrame(wxT("Yet-Another-Shadow-Socket"));
+  frame_ = new YASSFrame(kMainFrameName);
 #if wxCHECK_VERSION(3, 1, 0)
   frame_->SetSize(frame_->FromDIP(wxSize(450, 390)));
 #else
