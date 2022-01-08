@@ -19,6 +19,8 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x64, x86, arm64]
+    env:
+      CLANG_ARCH: 'Win'
     steps:
       - uses: actions/checkout@v2
       - name: Cache clang and nasm
@@ -63,6 +65,8 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x64, x86, arm64]
+    env:
+      CLANG_ARCH: 'Linux_x64'
     steps:
       - uses: actions/checkout@v2
       - name: Cache clang
@@ -165,7 +169,6 @@ jobs:
         arch: [x64, x86, arm64]
     env:
       ENABLE_CLANG_TIDY: '1'
-      CLANG_ARCH: 'Win'
     steps:
       - uses: actions/checkout@v2
         with:
@@ -313,7 +316,6 @@ jobs:
         arch: [x64, x86, arm64]
     env:
       BUNDLE_NAME: 'yass-clang-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}'
-      CLANG_ARCH: 'Linux_x64'
     steps:
       - uses: actions/checkout@v2
         with:
@@ -342,8 +344,6 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x64, x86, arm64]
-    env:
-      CLANG_ARCH: 'Linux_x64'
     steps:
       - uses: actions/checkout@v2
         with:
