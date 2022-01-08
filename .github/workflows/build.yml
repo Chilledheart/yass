@@ -68,7 +68,7 @@ jobs:
           submodules: 'true'
       - name: Install clang-tidy
         run: |
-          mkdir third_party/llvm-build/Release+Asserts
+          mkdir -p third_party/llvm-build/Release+Asserts
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$WITH_CLANG/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$WITH_CLANG/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
       - name: Install dependencies
@@ -131,7 +131,7 @@ jobs:
           submodules: 'true'
       - name: Install clang-tidy
         run: |
-          mkdir third_party/llvm-build/Release+Asserts
+          mkdir -p third_party/llvm-build/Release+Asserts
           MACHINE=$(uname -m)
           if [ "$MACHINE" = "arm64" ]; then
             WITH_CLANG=Mac_arm64
@@ -204,7 +204,7 @@ jobs:
           submodules: 'true'
       - name: Install clang-tidy
         run: |
-          mkdir third_party/llvm-build/Release+Asserts
+          mkdir -p third_party/llvm-build/Release+Asserts
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$WITH_CLANG/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$WITH_CLANG/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
       - name: Install dependencies
@@ -234,7 +234,7 @@ jobs:
           submodules: 'true'
       - name: Install clang-tidy
         run: |
-          mkdir third_party/llvm-build/Release+Asserts
+          mkdir -p third_party/llvm-build/Release+Asserts
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$WITH_CLANG/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$WITH_CLANG/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
       - name: Install dependencies
