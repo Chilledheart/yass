@@ -45,6 +45,8 @@
 /* public header */
 #include "modp_b64.h"
 
+// NOLINTBEGIN(google-*)
+
 /*
  * If you are ripping this out of the library, comment out the next
  * line and uncomment the next lines as approrpiate
@@ -251,3 +253,5 @@ size_t modp_b64_decode(char* dest, const char* src, size_t len)
 }
 
 #endif  /* if bigendian / else / endif */
+
+// NOLINTEND(google-*)

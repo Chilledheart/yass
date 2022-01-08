@@ -38,7 +38,7 @@ EvpAeadEncrypter::EvpAeadEncrypter(const EVP_AEAD* (*aead_getter)(),
     : AeadBaseEncrypter(key_size, auth_tag_size, nonce_size),
       aead_alg_(InitAndCall(aead_getter)) {}
 
-EvpAeadEncrypter::~EvpAeadEncrypter() {}
+EvpAeadEncrypter::~EvpAeadEncrypter() = default;
 
 bool EvpAeadEncrypter::SetKey(const char* key, size_t key_len) {
   if (!AeadBaseEncrypter::SetKey(key, key_len)) {
@@ -93,9 +93,8 @@ bool EvpAeadEncrypter::EncryptPacket(uint64_t packet_number,
   size_t prefix_len = nonce_size_ - sizeof(uint64_t);
   memcpy(nonce_buffer + prefix_len, &packet_number, sizeof(uint64_t));
 
-  if (!Encrypt((const char*)nonce_buffer, nonce_size_, associated_data,
-               associated_data_len, plaintext, plaintext_len,
-               (uint8_t*)output)) {
+  if (!Encrypt(nonce_buffer, nonce_size_, associated_data, associated_data_len,
+               plaintext, plaintext_len, reinterpret_cast<uint8_t*>(output))) {
     return false;
   }
   *output_length = ciphertext_size;

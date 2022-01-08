@@ -44,7 +44,8 @@ AeadEvpDecrypter::AeadEvpDecrypter(const EVP_AEAD* (*aead_getter)(),
     : AeadBaseDecrypter(key_size, auth_tag_size, nonce_size),
       aead_alg_(InitAndCall(aead_getter)) {}
 
-AeadEvpDecrypter::~AeadEvpDecrypter() {}
+AeadEvpDecrypter::~AeadEvpDecrypter() = default;
+;
 
 bool AeadEvpDecrypter::SetKey(const char* key, size_t key_len) {
   if (!AeadBaseDecrypter::SetKey(key, key_len)) {

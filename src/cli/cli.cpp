@@ -37,7 +37,7 @@ int main(int argc, const char* argv[]) {
   ::FLAGS_logbuflevel = 1;
   ::FLAGS_v = 2;
 #endif
-  ::google::ParseCommandLineFlags(&argc, (char***)&argv, true);
+  ::google::ParseCommandLineFlags(&argc, const_cast<char***>(&argv), true);
   ::google::InstallFailureSignalHandler();
 
   (void)config::ReadConfig();

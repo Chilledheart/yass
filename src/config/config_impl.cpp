@@ -8,7 +8,7 @@
 
 namespace config {
 
-ConfigImpl::~ConfigImpl() {}
+ConfigImpl::~ConfigImpl() = default;
 
 std::unique_ptr<ConfigImpl> ConfigImpl::Create() {
 #ifdef _WIN32

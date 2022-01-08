@@ -44,7 +44,7 @@ static void http_request_reforge_to_bytes(
     const std::string& url,
     const std::unordered_map<std::string, std::string>& headers) {
   std::stringstream ss;
-  ss << http_method_str((http_method)p->method) << " " << url
+  ss << http_method_str((http_method)p->method) << " " << url // NOLINT(google-*)
      << " HTTP/1.1\r\n";
   for (const std::pair<std::string, std::string> pair : headers) {
     if (pair.first == "Proxy-Connection") {
@@ -65,7 +65,7 @@ Socks5Connection::Socks5Connection(
       encoder_(new cipher("", FLAGS_password, cipher_method_in_use, true)),
       decoder_(new cipher("", FLAGS_password, cipher_method_in_use)) {}
 
-Socks5Connection::~Socks5Connection() {}
+Socks5Connection::~Socks5Connection() = default;
 
 void Socks5Connection::start() {
   channel_ = std::make_unique<stream>(
@@ -240,9 +240,11 @@ asio::error_code Socks5Connection::OnReadHttpRequest(
 
   parser.data = this;
   nparsed = http_parser_execute(&parser, &settings_connect,
-                                (const char*)buf->data(), buf->length());
+                                reinterpret_cast<const char*>(buf->data()),
+                                buf->length());
   if (nparsed) {
-    VLOG(3) << "http: " << std::string((const char*)buf->data(), nparsed);
+    VLOG(3) << "http: "
+            << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
   }
 
   if (HTTP_PARSER_ERRNO(&parser) == HPE_OK) {
@@ -263,7 +265,8 @@ asio::error_code Socks5Connection::OnReadHttpRequest(
   }
 
   LOG(WARNING) << http_errno_description(HTTP_PARSER_ERRNO(&parser)) << ": "
-               << std::string((const char*)buf->data(), nparsed);
+               << std::string(reinterpret_cast<const char*>(buf->data()),
+                              nparsed);
   VLOG(3) << "client: http bad handshake";
   return std::make_error_code(std::errc::bad_message);
 }
@@ -349,8 +352,11 @@ void Socks5Connection::WriteMethodSelect() {
   asio::async_write(
       socket_,
       asio::buffer(&method_select_reply_, sizeof(method_select_reply_)),
-      std::bind(&Socks5Connection::ProcessSentData, self, nullptr,
-                std::placeholders::_1, std::placeholders::_2));
+      [self](auto&& PH1, auto&& PH2) {
+        return Socks5Connection::ProcessSentData(
+            self, nullptr, std::forward<decltype(PH1)>(PH1),
+            std::forward<decltype(PH2)>(PH2));
+      });
 }
 
 void Socks5Connection::WriteHandshake() {
@@ -358,26 +364,32 @@ void Socks5Connection::WriteHandshake() {
   switch (CurrentState()) {
     case state_method_select:  // impossible
     case state_socks5_handshake:
-      asio::async_write(
-          socket_, s5_reply_.buffers(),
-          std::bind(&Socks5Connection::ProcessSentData, self, nullptr,
-                    std::placeholders::_1, std::placeholders::_2));
+      asio::async_write(socket_, s5_reply_.buffers(),
+                        [self](auto&& PH1, auto&& PH2) {
+                          return Socks5Connection::ProcessSentData(
+                              self, nullptr, std::forward<decltype(PH1)>(PH1),
+                              std::forward<decltype(PH2)>(PH2));
+                        });
       break;
     case state_socks4_handshake:
-      asio::async_write(
-          socket_, s4_reply_.buffers(),
-          std::bind(&Socks5Connection::ProcessSentData, self, nullptr,
-                    std::placeholders::_1, std::placeholders::_2));
+      asio::async_write(socket_, s4_reply_.buffers(),
+                        [self](auto&& PH1, auto&& PH2) {
+                          return Socks5Connection::ProcessSentData(
+                              self, nullptr, std::forward<decltype(PH1)>(PH1),
+                              std::forward<decltype(PH2)>(PH2));
+                        });
       break;
     case state_http_handshake:
       /// reply on CONNECT request
       if (http_is_connect_) {
-        asio::async_write(
-            socket_,
-            asio::buffer(http_connect_reply_.c_str(),
-                         http_connect_reply_.size()),
-            std::bind(&Socks5Connection::ProcessSentData, self, nullptr,
-                      std::placeholders::_1, std::placeholders::_2));
+        asio::async_write(socket_,
+                          asio::buffer(http_connect_reply_.c_str(),
+                                       http_connect_reply_.size()),
+                          [self](auto&& PH1, auto&& PH2) {
+                            return Socks5Connection::ProcessSentData(
+                                self, nullptr, std::forward<decltype(PH1)>(PH1),
+                                std::forward<decltype(PH2)>(PH2));
+                          });
       }
       break;
     case state_error:
@@ -385,16 +397,19 @@ void Socks5Connection::WriteHandshake() {
     case state_stream:
       break;
     default:
-      LOG(FATAL) << "bad state 0x" << std::hex << (int)self->CurrentState()
-                 << std::dec;
+      LOG(FATAL) << "bad state 0x" << std::hex
+                 << static_cast<int>(self->CurrentState()) << std::dec;
   }
 }
 
 void Socks5Connection::WriteStream(std::shared_ptr<IOBuf> buf) {
   std::shared_ptr<Socks5Connection> self = shared_from_this();
   asio::async_write(socket_, asio::buffer(buf->data(), buf->length()),
-                    std::bind(&Socks5Connection::ProcessSentData, self, buf,
-                              std::placeholders::_1, std::placeholders::_2));
+                    [self, buf](auto&& PH1, auto&& PH2) {
+                      return Socks5Connection::ProcessSentData(
+                          self, buf, std::forward<decltype(PH1)>(PH1),
+                          std::forward<decltype(PH2)>(PH2));
+                    });
 }
 
 asio::error_code Socks5Connection::PerformCmdOpsV5(
@@ -429,7 +444,7 @@ asio::error_code Socks5Connection::PerformCmdOpsV5(
     default:
       // NOT IMPLETMENTED
       VLOG(2) << "not supported command 0x" << std::hex
-              << (int)request->command() << std::dec;
+              << static_cast<int>(request->command()) << std::dec;
       reply->mutable_status() = socks5::reply::request_failed_cmd_not_supported;
       break;
   }
@@ -549,8 +564,8 @@ void Socks5Connection::ProcessReceivedData(
         ec = std::make_error_code(std::errc::bad_message);
         break;
       default:
-        LOG(FATAL) << "bad state 0x" << std::hex << (int)self->CurrentState()
-                   << std::dec;
+        LOG(FATAL) << "bad state 0x" << std::hex
+                   << static_cast<int>(self->CurrentState()) << std::dec;
     };
   }
   if (ec) {
@@ -591,8 +606,8 @@ void Socks5Connection::ProcessSentData(std::shared_ptr<Socks5Connection> self,
         ec = std::make_error_code(std::errc::bad_message);
         break;
       default:
-        LOG(FATAL) << "bad state 0x" << std::hex << (int)self->CurrentState()
-                   << std::dec;
+        LOG(FATAL) << "bad state 0x" << std::hex
+                   << static_cast<int>(self->CurrentState()) << std::dec;
     }
   }
 

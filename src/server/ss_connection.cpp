@@ -23,7 +23,7 @@ SsConnection::SsConnection(asio::io_context& io_context,
       encoder_(new cipher("", FLAGS_password, cipher_method_in_use, true)),
       decoder_(new cipher("", FLAGS_password, cipher_method_in_use)) {}
 
-SsConnection::~SsConnection() {}
+SsConnection::~SsConnection() = default;
 
 void SsConnection::start() {
   SetState(state_handshake);
@@ -132,8 +132,11 @@ void SsConnection::ReadStream() {
 void SsConnection::WriteStream(std::shared_ptr<IOBuf> buf) {
   std::shared_ptr<SsConnection> self = shared_from_this();
   asio::async_write(socket_, asio::buffer(buf->data(), buf->length()),
-                    std::bind(&SsConnection::ProcessSentData, self, buf,
-                              std::placeholders::_1, std::placeholders::_2));
+                    [self, buf](auto&& PH1, auto&& PH2) {
+                      return SsConnection::ProcessSentData(
+                          self, buf, std::forward<decltype(PH1)>(PH1),
+                          std::forward<decltype(PH2)>(PH2));
+                    });
 }
 
 void SsConnection::ProcessReceivedData(std::shared_ptr<SsConnection> self,

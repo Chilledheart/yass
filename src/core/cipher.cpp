@@ -69,8 +69,8 @@ class cipher_impl {
       if (addmd) {
         MD5Update(&c, md_buf, mds);
       }
-      MD5Update(&c, (uint8_t*)pass, datal);
-      MD5Final((MD5Digest*)md_buf, &c);
+      MD5Update(&c, reinterpret_cast<const uint8_t*>(pass), datal);
+      MD5Final(reinterpret_cast<MD5Digest*>(md_buf), &c);
 
       for (i = 0; i < mds; i++, j++) {
         if (j >= skey_len)
@@ -93,8 +93,9 @@ class cipher_impl {
                     size_t mlen) {
     int err = 0;
 
-    if (!encrypter->EncryptPacket(packet_number, nullptr, 0U, (const char*)m,
-                                  mlen, (char*)c, clen, *clen)) {
+    if (!encrypter->EncryptPacket(packet_number, nullptr, 0U,
+                                  reinterpret_cast<const char*>(m), mlen,
+                                  reinterpret_cast<char*>(c), clen, *clen)) {
       err = -1;
     }
 
@@ -111,8 +112,9 @@ class cipher_impl {
                     size_t mlen) {
     int err = 0;
 
-    if (!decrypter->DecryptPacket(packet_number, nullptr, 0U, (const char*)m,
-                                  mlen, (char*)p, plen, *plen)) {
+    if (!decrypter->DecryptPacket(packet_number, nullptr, 0U,
+                                  reinterpret_cast<const char*>(m), mlen,
+                                  reinterpret_cast<char*>(p), plen, *plen)) {
       err = -1;
     }
 
@@ -121,10 +123,10 @@ class cipher_impl {
 
   void SetKey(const uint8_t* key, size_t key_len) {
     if (encrypter) {
-      encrypter->SetKey((const char*)key, key_len);
+      encrypter->SetKey(reinterpret_cast<const char*>(key), key_len);
     }
     if (decrypter) {
-      decrypter->SetKey((const char*)key, key_len);
+      decrypter->SetKey(reinterpret_cast<const char*>(key), key_len);
     }
   }
 
@@ -402,7 +404,8 @@ bool cipher::chunk_encrypt_frame(uint64_t* counter,
 void cipher::set_key_aead(const uint8_t* salt, size_t salt_len) {
   DCHECK_EQ(salt_len, key_len_);
   uint8_t skey[MAX_KEY_LENGTH];
-  int err = crypto_hkdf(salt, salt_len, key_, key_len_, (uint8_t*)SUBKEY_INFO,
+  int err = crypto_hkdf(salt, salt_len, key_, key_len_,
+                        reinterpret_cast<const uint8_t*>(SUBKEY_INFO),
                         sizeof(SUBKEY_INFO) - 1, skey, key_len_);
   if (err) {
     NOTREACHED() << "Unable to generate subkey";

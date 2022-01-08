@@ -95,7 +95,7 @@ IOBuf IOBuf::cloneAsValue() const {
   return IOBuf(InternalConstructor(), buf_, capacity_, data_, length_);
 }
 
-IOBuf::IOBuf() noexcept {}
+IOBuf::IOBuf() noexcept = default;
 
 IOBuf::IOBuf(IOBuf&& other) noexcept
     : buf_(other.buf_),
@@ -149,7 +149,7 @@ IOBuf& IOBuf::operator=(const IOBuf& other) {
 }
 
 void IOBuf::reserveSlow(std::size_t minHeadroom, std::size_t minTailroom) {
-  size_t newCapacity = (size_t)length_ + minHeadroom + minTailroom;
+  size_t newCapacity = length_ + minHeadroom + minTailroom;
   DCHECK_LT(newCapacity, UINT32_MAX);
 
   // We'll need to reallocate the buffer.

@@ -73,8 +73,8 @@ static int get_yass_auto_start() {
   DWORD len = sizeof(buf);
   result = RegQueryValueExW(hKey,                       /* Key */
                             _T(DEFAULT_AUTOSTART_NAME), /* value */
-                            NULL,                       /* reserved */
-                            NULL,                       /* output type */
+                            nullptr,                    /* reserved */
+                            nullptr,                    /* output type */
                             (LPBYTE)buf,                /* output data */
                             &len);                      /* output length */
 
@@ -92,7 +92,7 @@ static int set_yass_auto_start(bool on) {
   if (on) {
     /* turn on auto start  */
     wchar_t applet_path[MAX_PATH];
-    if (GetModuleFileNameW(NULL, applet_path, MAX_PATH) == 0) {
+    if (GetModuleFileNameW(nullptr, applet_path, MAX_PATH) == 0) {
       return -1;
     }
 

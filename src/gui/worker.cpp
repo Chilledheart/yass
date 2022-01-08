@@ -26,7 +26,7 @@ static tcp::endpoint resolveEndpoint(asio::io_context& io_context,
 
 Worker::Worker()
     : work_guard_(asio::make_work_guard(io_context_)),
-      thread_(std::bind(&Worker::WorkFunc, this)) {}
+      thread_([this] { WorkFunc(); }) {}
 
 Worker::~Worker() {
   Stop(true);

@@ -12,23 +12,15 @@
 static const size_t kKeySize = crypto_aead_xchacha20poly1305_ietf_KEYBYTES;
 static const size_t kNonceSize = crypto_aead_xchacha20poly1305_ietf_NPUBBYTES;
 
-static void PacketNumberToNonce(uint8_t* nonce, uint64_t packet_number) {
-  uint8_t pn_1 = packet_number & 0xff;
-  uint8_t pn_2 = (packet_number & 0xff00) >> 8;
-  uint8_t pn_3 = (packet_number & 0xff0000) >> 16;
-  uint8_t pn_4 = (packet_number & 0xff000000) >> 24;
-  *nonce++ = pn_1;
-  *nonce++ = pn_2;
-  *nonce++ = pn_3;
-  *nonce = pn_4;
-}
-
 namespace crypto {
 
 XChaCha20Poly1305SodiumEncrypter::XChaCha20Poly1305SodiumEncrypter()
-    : AeadBaseEncrypter(kKeySize, kAuthTagSize, kNonceSize) {}
+    : AeadBaseEncrypter(kKeySize, kAuthTagSize, kNonceSize) {
+  static_assert(kKeySize <= kMaxKeySize, "key size too big");
+  static_assert(kNonceSize <= kMaxNonceSize, "nonce size too big");
+}
 
-XChaCha20Poly1305SodiumEncrypter::~XChaCha20Poly1305SodiumEncrypter() {}
+XChaCha20Poly1305SodiumEncrypter::~XChaCha20Poly1305SodiumEncrypter() = default;
 
 bool XChaCha20Poly1305SodiumEncrypter::EncryptPacket(
     uint64_t packet_number,
@@ -46,18 +38,17 @@ bool XChaCha20Poly1305SodiumEncrypter::EncryptPacket(
   if (associated_data || associated_data_len) {
     return false;
   }
-  char nonce_buffer[kMaxNonceSize];
-  memcpy(nonce_buffer, iv_, nonce_size_);
+  uint8_t nonce[kMaxNonceSize];
+  memcpy(nonce, iv_, nonce_size_);
 
   // for libsodium, packet number is written ahead
-  PacketNumberToNonce((uint8_t*)nonce_buffer, packet_number);
+  PacketNumberToNonce(nonce, packet_number);
 
   if (::crypto_aead_xchacha20poly1305_ietf_encrypt(
           reinterpret_cast<uint8_t*>(output), &ciphertext_size,
           reinterpret_cast<const uint8_t*>(plaintext), plaintext_len,
           reinterpret_cast<const uint8_t*>(associated_data),
-          associated_data_len, nullptr,
-          reinterpret_cast<const uint8_t*>(nonce_buffer),
+          associated_data_len, nullptr, nonce,
           reinterpret_cast<const uint8_t*>(key_)) != 0) {
     return false;
   }

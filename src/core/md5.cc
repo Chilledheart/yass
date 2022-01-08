@@ -26,6 +26,8 @@
 #include <stddef.h>
 #include <string.h>
 
+// NOLINTBEGIN(google-*)
+
 namespace {
 
 struct Context {
@@ -292,3 +294,5 @@ std::string MD5String(const uint8_t* data, size_t len) {
   MD5Sum(data, len, &digest);
   return MD5DigestToBase16(digest);
 }
+
+// NOLINTEND(google-*)

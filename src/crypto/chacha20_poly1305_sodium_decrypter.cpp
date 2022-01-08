@@ -12,23 +12,15 @@
 static const size_t kKeySize = crypto_aead_chacha20poly1305_ietf_KEYBYTES;
 static const size_t kNonceSize = crypto_aead_chacha20poly1305_ietf_NPUBBYTES;
 
-static void PacketNumberToNonce(uint8_t* nonce, uint64_t packet_number) {
-  uint8_t pn_1 = packet_number & 0xff;
-  uint8_t pn_2 = (packet_number & 0xff00) >> 8;
-  uint8_t pn_3 = (packet_number & 0xff0000) >> 16;
-  uint8_t pn_4 = (packet_number & 0xff000000) >> 24;
-  *nonce++ = pn_1;
-  *nonce++ = pn_2;
-  *nonce++ = pn_3;
-  *nonce = pn_4;
-}
-
 namespace crypto {
 
 ChaCha20Poly1305SodiumDecrypter::ChaCha20Poly1305SodiumDecrypter()
-    : AeadBaseDecrypter(kKeySize, kAuthTagSize, kNonceSize) {}
+    : AeadBaseDecrypter(kKeySize, kAuthTagSize, kNonceSize) {
+  static_assert(kKeySize <= kMaxKeySize, "key size too big");
+  static_assert(kNonceSize <= kMaxNonceSize, "nonce size too big");
+}
 
-ChaCha20Poly1305SodiumDecrypter::~ChaCha20Poly1305SodiumDecrypter() {}
+ChaCha20Poly1305SodiumDecrypter::~ChaCha20Poly1305SodiumDecrypter() = default;
 
 bool ChaCha20Poly1305SodiumDecrypter::DecryptPacket(
     uint64_t packet_number,

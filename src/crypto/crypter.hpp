@@ -84,6 +84,8 @@ class Crypter {
   virtual size_t GetTagSize() const = 0;
 };
 
+void PacketNumberToNonce(uint8_t* nonce, uint64_t packet_number);
+
 }  // namespace crypto
 
 #endif  // H_CRYPTO_CRYPTER

@@ -42,7 +42,7 @@ int crypto_hkdf_extract(const unsigned char* salt,
 
   hash_len = OUTPUT_SIZE_SHA1;
 
-  if (salt == NULL) {
+  if (salt == nullptr) {
     salt = null_salt;
     salt_len = hash_len;
   }
@@ -64,7 +64,7 @@ int crypto_hkdf_expand(const unsigned char* prk,
   unsigned char ipad[HASH_BLOCK_SIZE_256], opad[HASH_BLOCK_SIZE_256];
   unsigned char T[MD_MAX_SIZE_256];
 
-  if (info_len < 0 || okm_len < 0 || okm == NULL) {
+  if (info_len < 0 || okm_len < 0 || okm == nullptr) {
     return -1;
   }
 
@@ -74,8 +74,8 @@ int crypto_hkdf_expand(const unsigned char* prk,
     return -1;
   }
 
-  if (info == NULL) {
-    info = (const unsigned char*)"";
+  if (info == nullptr) {
+    info = reinterpret_cast<const unsigned char*>("");
   }
 
   N = okm_len / hash_len;

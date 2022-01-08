@@ -24,8 +24,8 @@ static bool get_yass_auto_start() {
 
   bool found = false;
 
-  LSSharedFileListRef loginItems =
-      LSSharedFileListCreate(NULL, kLSSharedFileListSessionLoginItems, NULL);
+  LSSharedFileListRef loginItems = LSSharedFileListCreate(
+      nullptr, kLSSharedFileListSessionLoginItems, nullptr);
   if (loginItems) {
     UInt32 seed = 0U;
     CFArrayRef currentLoginItems =
@@ -35,13 +35,13 @@ static bool get_yass_auto_start() {
       LSSharedFileListItemRef item =
           (LSSharedFileListItemRef)CFArrayGetValueAtIndex(currentLoginItems,
                                                           idx);
-      CFURLRef outURL = NULL;
+      CFURLRef outURL = nullptr;
 
       const UInt32 resolutionFlags = kLSSharedFileListNoUserInteraction |
                                      kLSSharedFileListDoNotMountVolumes;
       outURL = LSSharedFileListItemCopyResolvedURL(item, resolutionFlags,
-                                                   /*outError*/ NULL);
-      if (outURL == NULL) {
+                                                   /*outError*/ nullptr);
+      if (outURL == nullptr) {
         if (outURL)
           CFRelease(outURL);
         continue;
@@ -64,11 +64,11 @@ static void set_yass_auto_start(bool enabled) {
 
   LSSharedFileListRef loginItems = LSSharedFileListCreate(
       kCFAllocatorDefault, kLSSharedFileListSessionLoginItems,
-      /*options*/ NULL);
+      /*options*/ nullptr);
   if (loginItems) {
     UInt32 seed = 0U;
     Boolean found;
-    LSSharedFileListItemRef existingItem = NULL;
+    LSSharedFileListItemRef existingItem = nullptr;
 
     CFArrayRef currentLoginItems =
         LSSharedFileListCopySnapshot(loginItems, &seed);
@@ -77,13 +77,13 @@ static void set_yass_auto_start(bool enabled) {
       LSSharedFileListItemRef item =
           (LSSharedFileListItemRef)CFArrayGetValueAtIndex(currentLoginItems,
                                                           idx);
-      CFURLRef outURL = NULL;
+      CFURLRef outURL = nullptr;
 
       const UInt32 resolutionFlags = kLSSharedFileListNoUserInteraction |
                                      kLSSharedFileListDoNotMountVolumes;
       outURL = LSSharedFileListItemCopyResolvedURL(item, resolutionFlags,
-                                                   /*outError*/ NULL);
-      if (outURL == NULL) {
+                                                   /*outError*/ nullptr);
+      if (outURL == nullptr) {
         if (outURL)
           CFRelease(outURL);
         continue;
@@ -103,8 +103,8 @@ static void set_yass_auto_start(bool enabled) {
       LSSharedFileListItemRef newItem = LSSharedFileListInsertItemURL(
           loginItems, kLSSharedFileListItemBeforeFirst,
           (__bridge CFStringRef)displayName,
-          /*icon*/ NULL, URLToToggle,
-          /*propertiesToSet*/ NULL, /*propertiesToClear*/ NULL);
+          /*icon*/ nullptr, URLToToggle,
+          /*propertiesToSet*/ nullptr, /*propertiesToClear*/ nullptr);
       if (newItem)
         CFRelease(newItem);
     } else if (!enabled && found) {

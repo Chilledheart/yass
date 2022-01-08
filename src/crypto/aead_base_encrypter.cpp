@@ -23,7 +23,7 @@ AeadBaseEncrypter::AeadBaseEncrypter(size_t key_size,
   memset(iv_, 0, kMaxNonceSize);
 }
 
-AeadBaseEncrypter::~AeadBaseEncrypter() {}
+AeadBaseEncrypter::~AeadBaseEncrypter() = default;
 
 bool AeadBaseEncrypter::SetKey(const char* key, size_t key_len) {
   DCHECK_EQ(key_len, key_size_);

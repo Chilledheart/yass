@@ -24,7 +24,7 @@ AeadBaseDecrypter::AeadBaseDecrypter(size_t key_size,
   memset(iv_, 0, kMaxNonceSize);
 }
 
-AeadBaseDecrypter::~AeadBaseDecrypter() {}
+AeadBaseDecrypter::~AeadBaseDecrypter() = default;
 
 bool AeadBaseDecrypter::SetKey(const char* key, size_t key_len) {
   DCHECK_EQ(key_len, key_size_);

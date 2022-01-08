@@ -23,7 +23,7 @@ ChaCha20Poly1305EvpDecrypter::ChaCha20Poly1305EvpDecrypter()
   static_assert(kNonceSize <= kMaxNonceSize, "nonce size too big");
 }
 
-ChaCha20Poly1305EvpDecrypter::~ChaCha20Poly1305EvpDecrypter() {}
+ChaCha20Poly1305EvpDecrypter::~ChaCha20Poly1305EvpDecrypter() = default;
 
 uint32_t ChaCha20Poly1305EvpDecrypter::cipher_id() const {
   return CRYPTO_CHACHA20POLY1305IETF_EVP;

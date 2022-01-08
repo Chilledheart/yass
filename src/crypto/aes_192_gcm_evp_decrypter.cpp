@@ -23,7 +23,7 @@ Aes192GcmEvpDecrypter::Aes192GcmEvpDecrypter()
   static_assert(kNonceSize <= kMaxNonceSize, "nonce size too big");
 }
 
-Aes192GcmEvpDecrypter::~Aes192GcmEvpDecrypter() {}
+Aes192GcmEvpDecrypter::~Aes192GcmEvpDecrypter() = default;
 
 uint32_t Aes192GcmEvpDecrypter::cipher_id() const {
   return CRYPTO_AES192GCMSHA256_EVP;

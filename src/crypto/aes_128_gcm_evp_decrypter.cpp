@@ -23,7 +23,7 @@ Aes128GcmEvpDecrypter::Aes128GcmEvpDecrypter()
   static_assert(kNonceSize <= kMaxNonceSize, "nonce size too big");
 }
 
-Aes128GcmEvpDecrypter::~Aes128GcmEvpDecrypter() {}
+Aes128GcmEvpDecrypter::~Aes128GcmEvpDecrypter() = default;
 
 uint32_t Aes128GcmEvpDecrypter::cipher_id() const {
   return CRYPTO_AES128GCMSHA256_EVP;

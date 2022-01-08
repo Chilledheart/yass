@@ -16,7 +16,7 @@
 
 namespace crypto {
 
-Encrypter::~Encrypter() {}
+Encrypter::~Encrypter() = default;
 
 std::unique_ptr<Encrypter> Encrypter::CreateFromCipherSuite(
     uint32_t cipher_suite) {

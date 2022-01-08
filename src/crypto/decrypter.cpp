@@ -16,7 +16,7 @@
 
 namespace crypto {
 
-Decrypter::~Decrypter() {}
+Decrypter::~Decrypter() = default;
 
 std::unique_ptr<Decrypter> Decrypter::CreateFromCipherSuite(
     uint32_t cipher_suite) {

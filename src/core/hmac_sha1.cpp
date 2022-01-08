@@ -18,13 +18,13 @@ int hmac_sha1_starts(SHA1Context* ctx,
   unsigned char sum[kSHA1Length];
   size_t i;
 
-  if (ctx == NULL || ipad == NULL || opad == NULL)
+  if (ctx == nullptr || ipad == nullptr || opad == nullptr)
     return -1;
 
-  if (keylen > (size_t)HASH_BLOCK_SIZE_256) {
+  if (keylen > static_cast<size_t>(HASH_BLOCK_SIZE_256)) {
     SHA1Init(ctx);
     SHA1Update(ctx, key, keylen);
-    SHA1Final((SHA1Digest*)sum, ctx);
+    SHA1Final(reinterpret_cast<SHA1Digest*>(sum), ctx);
 
     keylen = kSHA1Length;
     key = sum;
@@ -34,8 +34,8 @@ int hmac_sha1_starts(SHA1Context* ctx,
   memset(opad, 0x5C, HASH_BLOCK_SIZE_256);
 
   for (i = 0; i < keylen; i++) {
-    ipad[i] = (unsigned char)(ipad[i] ^ key[i]);
-    opad[i] = (unsigned char)(opad[i] ^ key[i]);
+    ipad[i] = static_cast<unsigned char>(ipad[i] ^ key[i]);
+    opad[i] = static_cast<unsigned char>(opad[i] ^ key[i]);
   }
 
   SHA1Init(ctx);
@@ -51,7 +51,7 @@ int hmac_sha1_update(SHA1Context* ctx,
                      unsigned char* opad,
                      const unsigned char* input,
                      size_t ilen) {
-  if (ctx == NULL || ipad == NULL || opad == NULL)
+  if (ctx == nullptr || ipad == nullptr || opad == nullptr)
     return -1;
 
   SHA1Update(ctx, input, ilen);
@@ -65,15 +65,15 @@ int hmac_sha1_finish(SHA1Context* ctx,
                      unsigned char* output) {
   unsigned char tmp[kSHA1Length];
 
-  if (ctx == NULL || ipad == NULL || opad == NULL)
+  if (ctx == nullptr || ipad == nullptr || opad == nullptr)
     return -1;
 
-  SHA1Final((SHA1Digest*)tmp, ctx);
+  SHA1Final(reinterpret_cast<SHA1Digest*>(tmp), ctx);
 
   SHA1Init(ctx);
   SHA1Update(ctx, opad, HASH_BLOCK_SIZE_256);
   SHA1Update(ctx, tmp, kSHA1Length);
-  SHA1Final((SHA1Digest*)output, ctx);
+  SHA1Final(reinterpret_cast<SHA1Digest*>(output), ctx);
 
   return 0;
 }
@@ -81,7 +81,7 @@ int hmac_sha1_finish(SHA1Context* ctx,
 int hmac_sha1_reset(SHA1Context* ctx,
                     unsigned char* ipad,
                     unsigned char* opad) {
-  if (ctx == NULL || ipad == NULL || opad == NULL)
+  if (ctx == nullptr || ipad == nullptr || opad == nullptr)
     return -1;
 
   SHA1Init(ctx);

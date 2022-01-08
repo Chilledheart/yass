@@ -304,7 +304,7 @@ if (MSVC)
     add_definitions(-DGFLAGS_DLL_DEFINE_FLAG=)
     add_definitions(-DGOOGLE_GLOG_DLL_DECL=)
 
-    include_directories(${VCPKG_INCLUDE_DIRS})
+    include_directories(${VCPKG_INCLUDE_DIRS} SYSTEM)
     set(CMAKE_REQUIRED_INCLUDES
         ${VCPKG_INCLUDE_DIRS}
         ${CMAKE_REQUIRED_INCLUDES})
@@ -370,7 +370,7 @@ if (MSVC)
     check_include_file(openssl/is_boringssl.h BORINGSSL_CRYPTO_INCLUDE)
     if (BORINGSSL AND BORINGSSL_CRYPTO_LIB AND BORINGSSL_CRYPTO_INCLUDE)
       add_definitions(-DHAVE_BORINGSSL)
-      include_directories(BEFORE ${boringssl_DIR}/include)
+      include_directories(BEFORE ${boringssl_DIR}/include SYSTEM)
       set(SYSTEM_LIBS ${SYSTEM_LIBS} ${BORINGSSL_CRYPTO_LIB})
       message(STATUS "Build with boringssl")
     else()
@@ -419,7 +419,7 @@ if (MSVC)
 else()
     # include extra paths
     if (APPLE)
-        include_directories(/opt/local/include /usr/local/include)
+        include_directories(/opt/local/include /usr/local/include SYSTEM)
         set(CMAKE_REQUIRED_INCLUDES
             /opt/local/include
             /usr/local/include
@@ -427,17 +427,17 @@ else()
         link_directories(/opt/local/lib /usr/local/lib)
     endif()
     if (UNIX)
-        include_directories(/opt/local/include)
+        include_directories(/opt/local/include SYSTEM)
         link_directories(/opt/local/lib)
     endif()
     if (CMAKE_FIND_ROOT_PATH)
         foreach(ROOT_PATH ${CMAKE_FIND_ROOT_PATH})
-            include_directories(${ROOT_PATH}/include)
+            include_directories(${ROOT_PATH}/include SYSTEM)
             link_directories(${ROOT_PATH}/lib)
         endforeach()
     endif()
     if (UNIX AND NOT APPLE)
-        include_directories(/usr/include/jsoncpp)
+        include_directories(/usr/include/jsoncpp SYSTEM)
     endif()
 
 # simple socketpair test code
@@ -479,7 +479,7 @@ int main() {
     check_include_file(openssl/is_boringssl.h BORINGSSL_CRYPTO_INCLUDE)
     if (BORINGSSL AND BORINGSSL_CRYPTO_LIB AND BORINGSSL_CRYPTO_INCLUDE)
         add_definitions(-DHAVE_BORINGSSL)
-        include_directories(BEFORE ${boringssl_DIR}/include)
+        include_directories(BEFORE ${boringssl_DIR}/include SYSTEM)
         set(SYSTEM_LIBS ${SYSTEM_LIBS} ${BORINGSSL_CRYPTO_LIB})
     endif()
 endif()
@@ -504,7 +504,7 @@ endif()
 # asio
 add_definitions(-DASIO_STANDALONE)
 add_definitions(-DASIO_NO_TYPEID)
-include_directories(third_party/asio/asio/include)
+include_directories(third_party/asio/asio/include SYSTEM)
 if (HAS_CLANG)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-inconsistent-missing-override -Wno-unused-private-field")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-inconsistent-missing-override -Wno-unused-private-field")
@@ -849,7 +849,9 @@ if (GUI AND wxWidgets_FOUND)
         )
 
     target_include_directories(${APP_NAME} PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+    target_include_directories(${APP_NAME} SYSTEM PRIVATE
         ${wxWidgets_INCLUDE_DIRS})
 
     target_link_libraries(${APP_NAME} PUBLIC
