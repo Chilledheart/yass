@@ -16,6 +16,8 @@ DEFAULT_ARCH = os.getenv('VSCMD_ARG_TGT_ARCH')
 DEFAULT_CRT_LINKAGE = 'static'
 DEFAULT_SIGNING_IDENTITY = os.getenv('CODESIGN_IDENTITY')
 DEFAULT_COMPILER = ''
+DEFAULT_CLANG_TIDY = os.getenv('ENABLE_CLANG_TIDY')
+DEFAULT_CLANG_TIDY_EXECUTABLE = os.getenv('CLANG_TIDY_EXECUTABLE') if os.getenv('CLANG_TIDY_EXECUTABLE') else 'clang-tidy'
 # documented in github actions https://github.com/actions/virtual-environments/blob/main/images/win/Windows2019-Readme.md
 VCPKG_DIR = os.getenv('VCPKG_INSTALLATION_ROOT') if os.getenv('VCPKG_INSTALLATION_ROOT') else os.getenv('VCPKG_ROOT')
 
@@ -277,7 +279,11 @@ def find_source_directory():
 def generate_buildscript(configuration_type):
   print('generate build scripts...(%s)' % configuration_type)
   cmake_args = ['-DGUI=ON', '-DCLI=ON', '-DSERVER=ON']
-  cmake_args.extend(['-DCMAKE_EXPORT_COMPILE_COMMANDS=1'])
+  if DEFAULT_CLANG_TIDY:
+    cmake_args.extend(['-DCMAKE_C_CLANG_TIDY=%s' % DEFAULT_CLANG_TIDY_EXECUTABLE,
+                       '-DCMAKE_CXX_CLANG_TIDY=%s' % DEFAULT_CLANG_TIDY_EXECUTABLE,
+                       '-DCMAKE_OBJC_CLANG_TIDY=%s' % DEFAULT_CLANG_TIDY_EXECUTABLE,
+                       '-DCMAKE_OBJCXX_CLANG_TIDY=%s' % DEFAULT_CLANG_TIDY_EXECUTABLE])
   if sys.platform == 'win32':
     cmake_args.extend(['-G', 'Ninja'])
     if DEFAULT_COMPILER == 'clang-cl':
@@ -317,7 +323,7 @@ def generate_buildscript(configuration_type):
   if sys.platform == 'darwin':
     cmake_args.append('-DCMAKE_OSX_DEPLOYMENT_TARGET=%s' % DEFAULT_OSX_MIN)
     # if we run arm64/arm64e, use universal build
-    if platform.machine() == 'arm64':
+    if platform.machine() == 'arm64' and not DEFAULT_CLANG_TIDY:
       cmake_args.append('-DCMAKE_OSX_ARCHITECTURES=%s' % DEFAULT_OSX_ARCHS)
 
   command = ['cmake', '..'] + cmake_args
@@ -474,6 +480,9 @@ if __name__ == '__main__':
   find_source_directory()
   generate_buildscript(configuration_type)
   execute_buildscript(configuration_type)
+  if DEFAULT_CLANG_TIDY:
+    print('done')
+    sys.exit(0)
   postbuild_copy_libraries()
   postbuild_fix_rpath()
   if sys.platform == 'darwin':

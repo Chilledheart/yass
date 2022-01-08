@@ -51,6 +51,38 @@ jobs:
         with:
           name: ${{ github.job }}-${{ matrix.arch }}-sha256 ${{ env.SHA256SUM }}
           path: sha256sum.txt
+  win-clang-tidy:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, x86, arm64]
+    env:
+      ENABLE_CLANG_TIDY: '1'
+      CLANG_REVISION: 'llvmorg-14-init-12719-gc4b45eeb-2'
+      WITH_CLANG: 'Win'
+      CLANG_TIDY_EXECUTABLE: 'third_party/llvm-build/Release+Asserts/bin/clang-tidy.exe'
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
+      - name: Install clang-tidy
+        run: |
+          mkdir third_party/llvm-build/Release+Asserts
+          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$WITH_CLANG/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$WITH_CLANG/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+      - name: Install dependencies
+        run: vcpkg install glog:${{ matrix.arch }}-windows-static gflags:${{ matrix.arch }}-windows-static libsodium:${{ matrix.arch }}-windows-static jsoncpp:${{ matrix.arch }}-windows-static wxwidgets:${{ matrix.arch }}-windows-static
+      - name: Build
+        run: |
+          set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
+          set "VSCMD_START_DIR=%CD%"
+          call "%vsdevcmd%" -arch=${{ matrix.arch }} -host_arch=amd64
+          set CC=
+          set CXX=
+          set Platform=${{ matrix.arch }}
+          python .\scripts\build.py || exit /b
+        shell: cmd
   mac:
     runs-on: macos-latest
     strategy:
@@ -83,7 +115,36 @@ jobs:
         with:
           name: ${{ github.job }}-${{ matrix.arch }}-sha256 ${{ env.SHA256SUM }}
           path: sha256sum.txt
-  linux-gui:
+  mac-clang-tidy:
+    runs-on: macos-latest
+    env:
+      ENABLE_CLANG_TIDY: '1'
+      CLANG_REVISION: 'llvmorg-14-init-12719-gc4b45eeb-2'
+      CLANG_TIDY_EXECUTABLE: 'third_party/llvm-build/Release+Asserts/bin/clang-tidy'
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, arm64]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
+      - name: Install clang-tidy
+        run: |
+          mkdir third_party/llvm-build/Release+Asserts
+          MACHINE=$(uname -m)
+          if [ "$MACHINE" = "arm64" ]; then
+            WITH_CLANG=Mac_arm64
+          else
+            WITH_CLANG=Mac
+          fi
+          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$WITH_CLANG/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$WITH_CLANG/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+      - name: Install dependencies
+        run: brew install ninja cmake glog gflags libsodium jsoncpp wxwidgets
+      - name: Build
+        run: ./scripts/build.py
+  linux-gcc-gui:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -104,7 +165,7 @@ jobs:
           cmake -G Ninja -DCLI=off -DSERVER=off -DGUI=on ..
           ninja -v
           cd ..
-  linux-server:
+  linux-gcc-server:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -125,26 +186,63 @@ jobs:
           cmake -G Ninja -DCLI=on -DSERVER=on -DGUI=off ..
           ninja -v
           cd ..
-  linux-clang-server:
+  linux-clang:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         arch: [x64, x86, arm64]
     env:
-      BUNDLE_NAME: 'yass-server-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}'
+      BUNDLE_NAME: 'yass-clang-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}'
+      CLANG_REVISION: 'llvmorg-14-init-12719-gc4b45eeb-2'
+      WITH_CLANG: 'Linux_x64'
+      CC: 'third_party/llvm-build/Release+Asserts/bin/clang'
+      CXX: 'third_party/llvm-build/Release+Asserts/bin/clang++'
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
+      - name: Install clang-tidy
+        run: |
+          mkdir third_party/llvm-build/Release+Asserts
+          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$WITH_CLANG/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$WITH_CLANG/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
       - name: Install dependencies
-        run: sudo apt-get install -y cmake ninja-build libgoogle-glog-dev libgflags-dev libsodium-dev libjsoncpp-dev
+        run: sudo apt-get install -y cmake ninja-build libgoogle-glog-dev libgflags-dev libsodium-dev libjsoncpp-dev libwxgtk3.0-gtk3-dev
       - name: Build
         run: |
           mkdir build
           cd build
-          export CC=clang-12
-          export CXX=clang++-12
-          cmake -G Ninja -DCLI=on -DSERVER=on -DGUI=off ..
+          cmake -G Ninja -DCLI=on -DSERVER=on -DGUI=on ..
+          ninja -v
+          cd ..
+  linux-clang-tidy:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, x86, arm64]
+    env:
+      CLANG_REVISION: 'llvmorg-14-init-12719-gc4b45eeb-2'
+      WITH_CLANG: 'Linux_x64'
+      CC: 'third_party/llvm-build/Release+Asserts/bin/clang'
+      CXX: 'third_party/llvm-build/Release+Asserts/bin/clang++'
+      CLANG_TIDY: 'third_party/llvm-build/Release+Asserts/bin/clang-tidy'
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
+      - name: Install clang-tidy
+        run: |
+          mkdir third_party/llvm-build/Release+Asserts
+          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$WITH_CLANG/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$WITH_CLANG/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+      - name: Install dependencies
+        run: sudo apt-get install -y cmake ninja-build libgoogle-glog-dev libgflags-dev libsodium-dev libjsoncpp-dev libwxgtk3.0-gtk3-dev
+      - name: Build
+        run: |
+          mkdir build
+          cd build
+          cmake -G Ninja -DCMAKE_C_CLANG_TIDY="$CLANG_TIDY" -DCMAKE_CXX_CLANG_TIDY="$CLANG_TIDY" -DCLI=on -DSERVER=on -DGUI=on ..
           ninja -v
           cd ..

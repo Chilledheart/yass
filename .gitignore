@@ -9,3 +9,4 @@ sscxx
 /.vscode
 *.exe
 *.zip
+/third_party/llvm-build/Release+Asserts
