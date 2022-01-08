@@ -320,7 +320,7 @@ bool cipher::chunk_decrypt_frame(uint64_t* counter,
   }
   DCHECK_EQ(plen, CHUNK_SIZE_LEN);
 
-  mlen = ntohs(*(uint16_t*)len_buf);
+  mlen = ntohs(*reinterpret_cast<uint16_t*>(len_buf));
   mlen = mlen & CHUNK_SIZE_MASK;
   plaintext->reserve(0, mlen);
 

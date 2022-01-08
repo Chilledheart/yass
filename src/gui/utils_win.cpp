@@ -4,6 +4,7 @@
 #include "gui/utils.hpp"
 
 #include "core/logging.hpp"
+
 #ifdef _WIN32
 
 #define DEFAULT_AUTOSTART_KEY \
@@ -14,7 +15,7 @@
 #include <windows.h>
 
 HANDLE EnsureShcoreLoaded() {
-  return LoadLibraryExW(L"Shcore.dll", 0, 0);
+  return LoadLibraryExW(L"Shcore.dll", nullptr, 0);
 }
 
 typedef HRESULT(__stdcall* PFNSETPROCESSDPIAWARENESS)(PROCESS_DPI_AWARENESS);
@@ -36,7 +37,8 @@ static int add_to_auto_start(const wchar_t* appname_w, const wchar_t* path_w) {
 
   DWORD n = sizeof(wchar_t) * (wcslen(path_w) + 1);
 
-  result = RegSetValueExW(hKey, appname_w, 0, REG_SZ, (const BYTE*)path_w, n);
+  result = RegSetValueExW(hKey, appname_w, 0, REG_SZ,
+                          reinterpret_cast<const BYTE*>(path_w), n);
 
   RegCloseKey(hKey);
   if (result != ERROR_SUCCESS) {
@@ -71,12 +73,12 @@ static int get_yass_auto_start() {
 
   char buf[MAX_PATH] = {0};
   DWORD len = sizeof(buf);
-  result = RegQueryValueExW(hKey,                       /* Key */
-                            _T(DEFAULT_AUTOSTART_NAME), /* value */
-                            nullptr,                    /* reserved */
-                            nullptr,                    /* output type */
-                            (LPBYTE)buf,                /* output data */
-                            &len);                      /* output length */
+  result = RegQueryValueExW(hKey,                         /* Key */
+                            _T(DEFAULT_AUTOSTART_NAME),   /* value */
+                            nullptr,                      /* reserved */
+                            nullptr,                      /* output type */
+                            reinterpret_cast<LPBYTE>(buf),/* output data */
+                            &len);                        /* output length */
 
   RegCloseKey(hKey);
   if (result != ERROR_SUCCESS) {
@@ -117,8 +119,8 @@ void Utils::EnableAutoStart(bool on) {
 bool Utils::SetProcessDpiAwareness() {
   HANDLE hLibrary = EnsureShcoreLoaded();
   PFNSETPROCESSDPIAWARENESS const SetProcessDpiAwareness =
-      (PFNSETPROCESSDPIAWARENESS)GetProcAddress((HMODULE)hLibrary,
-                                                "SetProcessDpiAwareness");
+      reinterpret_cast<PFNSETPROCESSDPIAWARENESS>(
+          GetProcAddress((HMODULE)hLibrary, "SetProcessDpiAwareness"));
   if (SetProcessDpiAwareness == nullptr) {
     return false;
   }
@@ -164,9 +166,10 @@ uint64_t Utils::GetMonotonicTime() {
   //
 
   ElapsedNanoseconds.QuadPart =
-      (double)ElapsedNanoseconds.QuadPart * NS_PER_SECOND / Frequency.QuadPart;
+      static_cast<double>(ElapsedNanoseconds.QuadPart) * NS_PER_SECOND /
+      Frequency.QuadPart;
 
   return ElapsedNanoseconds.QuadPart;
 }
 
-#endif
+#endif // _WIN32
