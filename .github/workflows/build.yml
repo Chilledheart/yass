@@ -10,8 +10,100 @@ on:
 defaults:
   run:
     shell: bash
+env:
+  CACHE_EPOCH: 1
 jobs:
+  cache-toolchain-win:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, x86, arm64]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache clang and nasm
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/nasm
+            third_party/llvm-build/Release+Asserts
+          key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+      - name: Cache vcpkg packages
+        uses: actions/cache@v2
+        with:
+          path: |
+            /c/vcpkg/installed
+          key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('/c/vcpkg/ports/**/vcpkg.json') }}-v${{ env.CACHE_EPOCH }}
+      - name: "Install dependency: nasm"
+        run: |
+          mkdir -p third_party
+          cd third_party
+          curl -O https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win64/nasm-2.15.05-win64.zip
+          "/c/Program Files/7-Zip/7z.exe" x nasm-2.15.05-win64.zip
+          mv -f nasm-2.15.05 nasm
+      - name: "Install dependency: clang-tidy"
+        run: |
+          mkdir -p third_party/llvm-build/Release+Asserts
+          CLANG_REVISION=$(cat CLANG_REVISION)
+          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+      - name: "Install dependency: glog"
+        run: vcpkg install glog:${{ matrix.arch }}-windows-static
+      - name: "Install dependency: gflags"
+        run: vcpkg install gflags:${{ matrix.arch }}-windows-static
+      - name: "Install dependency: libsodium"
+        run: vcpkg install libsodium:${{ matrix.arch }}-windows-static
+      - name: "Install dependency: jsoncpp"
+        run: vcpkg install jsoncpp:${{ matrix.arch }}-windows-static
+      - name: "Install dependency: wxwidgets"
+        run: vcpkg install wxwidgets:${{ matrix.arch }}-windows-static
+  cache-toolchain-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, x86, arm64]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache clang
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/llvm-build/Release+Asserts
+          key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+      - name: "Install dependency: clang and clang-tidy"
+        run: |
+          mkdir -p third_party/llvm-build/Release+Asserts
+          CLANG_REVISION=$(cat CLANG_REVISION)
+          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+  cache-toolchain-mac:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, arm64]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache clang
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/llvm-build/Release+Asserts
+          key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+      - name: "Install dependency: clang and clang-tidy"
+        run: |
+          mkdir -p third_party/llvm-build/Release+Asserts
+          MACHINE=$(uname -m)
+          if [ "$MACHINE" = "arm64" ]; then
+            CLANG_ARCH=Mac_arm64
+          else
+            CLANG_ARCH=Mac
+          fi
+          CLANG_REVISION=$(cat CLANG_REVISION)
+          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
   win:
+    needs: cache-toolchain-win
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -23,23 +115,19 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
-      - name: "Install dependency: nasm"
-        run: |
-          mkdir -p third_party
-          cd third_party
-          curl -O https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win64/nasm-2.15.05-win64.zip
-          "/c/Program Files/7-Zip/7z.exe" x nasm-2.15.05-win64.zip
-          mv nasm-2.15.05 nasm
-      - name: "Install dependency: glog"
-        run: vcpkg install glog:${{ matrix.arch }}-windows-static
-      - name: "Install dependency: gflags"
-        run: vcpkg install gflags:${{ matrix.arch }}-windows-static
-      - name: "Install dependency: libsodium"
-        run: vcpkg install libsodium:${{ matrix.arch }}-windows-static
-      - name: "Install dependency: jsoncpp"
-        run: vcpkg install jsoncpp:${{ matrix.arch }}-windows-static
-      - name: "Install dependency: wxwidgets"
-        run: vcpkg install wxwidgets:${{ matrix.arch }}-windows-static
+      - name: Cache clang and nasm
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/nasm
+            third_party/llvm-build/Release+Asserts
+          key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+      - name: Cache vcpkg
+        uses: actions/cache@v2
+        with:
+          path: |
+            /c/vcpkg/installed
+          key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('/c/vcpkg/ports/**/vcpkg.json') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
@@ -69,6 +157,7 @@ jobs:
           name: ${{ github.job }}-${{ matrix.arch }}-sha256 ${{ env.SHA256SUM }}
           path: sha256sum.txt
   win-clang-tidy:
+    needs: cache-toolchain-win
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -76,34 +165,24 @@ jobs:
         arch: [x64, x86, arm64]
     env:
       ENABLE_CLANG_TIDY: '1'
-      CLANG_REVISION: 'llvmorg-14-init-12719-gc4b45eeb-2'
       CLANG_ARCH: 'Win'
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
-      - name: "Install dependency: clang-tidy"
-        run: |
-          mkdir -p third_party/llvm-build/Release+Asserts
-          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
-          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
-      - name: "Install dependency: nasm"
-        run: |
-          mkdir -p third_party
-          cd third_party
-          curl -O https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win64/nasm-2.15.05-win64.zip
-          "/c/Program Files/7-Zip/7z.exe" x nasm-2.15.05-win64.zip
-          mv nasm-2.15.05 nasm
-      - name: "Install dependency: glog"
-        run: vcpkg install glog:${{ matrix.arch }}-windows-static
-      - name: "Install dependency: gflags"
-        run: vcpkg install gflags:${{ matrix.arch }}-windows-static
-      - name: "Install dependency: libsodium"
-        run: vcpkg install libsodium:${{ matrix.arch }}-windows-static
-      - name: "Install dependency: jsoncpp"
-        run: vcpkg install jsoncpp:${{ matrix.arch }}-windows-static
-      - name: "Install dependency: wxwidgets"
-        run: vcpkg install wxwidgets:${{ matrix.arch }}-windows-static
+      - name: Cache clang and nasm
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/nasm
+            third_party/llvm-build/Release+Asserts
+          key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+      - name: Cache vcpkg
+        uses: actions/cache@v2
+        with:
+          path: |
+            C:/vcpkg/installed
+          key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('/c/vcpkg/ports/**/vcpkg.json') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
@@ -118,6 +197,7 @@ jobs:
           python .\scripts\build.py || exit /b
         shell: cmd
   mac:
+    needs: cache-toolchain-mac
     runs-on: macos-latest
     strategy:
       fail-fast: false
@@ -129,6 +209,12 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
+      - name: Cache clang
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/llvm-build/Release+Asserts
+          key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
         run: brew install ninja cmake glog gflags libsodium jsoncpp wxwidgets
       - name: Build
@@ -150,10 +236,10 @@ jobs:
           name: ${{ github.job }}-${{ matrix.arch }}-sha256 ${{ env.SHA256SUM }}
           path: sha256sum.txt
   mac-clang-tidy:
+    needs: cache-toolchain-mac
     runs-on: macos-latest
     env:
       ENABLE_CLANG_TIDY: '1'
-      CLANG_REVISION: 'llvmorg-14-init-12719-gc4b45eeb-2'
     strategy:
       fail-fast: false
       matrix:
@@ -162,17 +248,12 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
-      - name: "Install dependency: clang-tidy"
-        run: |
-          mkdir -p third_party/llvm-build/Release+Asserts
-          MACHINE=$(uname -m)
-          if [ "$MACHINE" = "arm64" ]; then
-            CLANG_ARCH=Mac_arm64
-          else
-            CLANG_ARCH=Mac
-          fi
-          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
-          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+      - name: Cache clang
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/llvm-build/Release+Asserts
+          key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
         run: brew install ninja cmake glog gflags libsodium jsoncpp wxwidgets
       - name: Build
@@ -180,6 +261,7 @@ jobs:
           export CLANG_TIDY_EXECUTABLE=$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy
           ./scripts/build.py
   linux-gcc-gui:
+    needs: cache-toolchain-linux
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -201,6 +283,7 @@ jobs:
           ninja -v
           cd ..
   linux-gcc-server:
+    needs: cache-toolchain-linux
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -222,6 +305,7 @@ jobs:
           ninja -v
           cd ..
   linux-clang:
+    needs: cache-toolchain-linux
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -229,16 +313,17 @@ jobs:
         arch: [x64, x86, arm64]
     env:
       BUNDLE_NAME: 'yass-clang-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}'
-      CLANG_REVISION: 'llvmorg-14-init-12719-gc4b45eeb-2'
       CLANG_ARCH: 'Linux_x64'
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
-      - name: "Install dependency: clang-tidy"
-        run: |
-          mkdir -p third_party/llvm-build/Release+Asserts
-          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+      - name: Cache clang
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/llvm-build/Release+Asserts
+          key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
         run: sudo apt-get install -y cmake ninja-build libgoogle-glog-dev libgflags-dev libsodium-dev libjsoncpp-dev libwxgtk3.0-gtk3-dev
       - name: Build
@@ -251,23 +336,24 @@ jobs:
           ninja -v
           cd ..
   linux-clang-tidy:
+    needs: cache-toolchain-linux
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         arch: [x64, x86, arm64]
     env:
-      CLANG_REVISION: 'llvmorg-14-init-12719-gc4b45eeb-2'
       CLANG_ARCH: 'Linux_x64'
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
-      - name: "Install dependency: clang-tidy"
-        run: |
-          mkdir -p third_party/llvm-build/Release+Asserts
-          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
-          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+      - name: Cache clang
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/llvm-build/Release+Asserts
+          key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
         run: sudo apt-get install -y cmake ninja-build libgoogle-glog-dev libgflags-dev libsodium-dev libjsoncpp-dev libwxgtk3.0-gtk3-dev
       - name: Build
