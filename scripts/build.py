@@ -36,11 +36,14 @@ def copy_file_with_symlinks(src, dst):
   shutil.copyfile(src, dst)
 
 
-def write_output(command):
+def write_output(command, suppress_error=True):
   print('--- %s' % ' '.join(command))
   proc = subprocess.Popen(command, stdout=sys.stdout, stderr=sys.stdout,
       shell=False, env=os.environ)
   proc.communicate()
+  if not suppress_error and proc.returncode != 0:
+    raise RuntimeError('cmd "%s" failed, exit code %d' % (' '.join(command),
+                                                          proc.returncode))
 
 
 def get_app_name():
@@ -254,13 +257,15 @@ def _postbuild_patchelf():
   for binrary in binaries:
     if os.path.isdir(binrary):
       continue
-    write_output(['patchelf', '--set-rpath', '$ORIGIN/lib', binrary])
+    write_output(['patchelf', '--set-rpath', '$ORIGIN/lib', binrary],
+                 suppress_error=False)
   libs = os.listdir(lib_path)
   for lib_name in libs:
     lib = os.path.join(lib_path, lib_name)
     if os.path.isdir(lib):
       continue
-    write_output(['patchelf', '--set-rpath', '$ORIGIN/lib', lib])
+    write_output(['patchelf', '--set-rpath', '$ORIGIN/lib', lib],
+                 suppress_error=False)
 
 
 def find_source_directory():
@@ -328,14 +333,14 @@ def generate_buildscript(configuration_type):
 
   command = ['cmake', '..'] + cmake_args
 
-  write_output(command)
+  write_output(command, suppress_error=False)
 
 
 def execute_buildscript(configuration_type):
   print('executing build scripts...(%s)' % configuration_type)
 
   command = ['ninja', 'yass']
-  write_output(command)
+  write_output(command, suppress_error=False)
 
 
 def postbuild_copy_libraries():
@@ -365,17 +370,24 @@ def postbuild_fix_rpath():
 def postbuild_fix_retina_display():
   print('fixing retina display...')
   #write_output(['plutil', '-insert', 'LSUIElement', '-bool', 'YES', '%s/Contents/Info.plist' % get_app_name()])
-  write_output(['plutil', '-insert', 'NSPrincipalClass', '-string', 'NSApplication', '%s/Contents/Info.plist' % get_app_name()])
-  write_output(['plutil', '-insert', 'NSHighResolutionCapable', '-bool', 'YES', '%s/Contents/Info.plist' % get_app_name()])
+  write_output(['plutil', '-insert', 'NSPrincipalClass', '-string', 'NSApplication', '%s/Contents/Info.plist' % get_app_name()],
+               suppress_error=False)
+  write_output(['plutil', '-insert', 'NSHighResolutionCapable', '-bool', 'YES', '%s/Contents/Info.plist' % get_app_name()],
+               suppress_error=False)
 
 
 def postbuild_codesign():
   print('fixing codesign...')
   # reference https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/resolving_common_notarization_issues?language=objc
   # Hardened runtime is available in the Capabilities pane of Xcode 10 or later
-  write_output(['codesign', '--timestamp=none', '--preserve-metadata=entitlements', '--options=runtime', '--force', '--deep', '--sign', DEFAULT_SIGNING_IDENTITY, get_app_name()])
-  write_output(['codesign', '-dv', '--deep', '--strict', '--verbose=4', get_app_name()])
-  write_output(['codesign', '-d', '--entitlements', ':-', get_app_name()])
+  write_output(['codesign', '--timestamp=none',
+                '--preserve-metadata=entitlements', '--options=runtime',
+                '--force', '--deep', '--sign', DEFAULT_SIGNING_IDENTITY,
+                get_app_name()], suppress_error=False)
+  write_output(['codesign', '-dv', '--deep', '--strict', '--verbose=4',
+                get_app_name()], suppress_error=False)
+  write_output(['codesign', '-d', '--entitlements', ':-', get_app_name()],
+               suppress_error=False)
 
 
 def _check_universal_build_darwin(path, verbose = False):
