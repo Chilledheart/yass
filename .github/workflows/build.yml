@@ -44,7 +44,7 @@ jobs:
             third_party/vcpkg-installed
           key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Restore vcpkg from local tree
-        run:
+        run: |
           if [ -d third_party/vcpkg-installed ]; then
             cp -rv third_party/vcpkg-installed/* /c/vcpkg/
           fi
