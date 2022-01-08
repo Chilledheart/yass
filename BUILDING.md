@@ -53,15 +53,15 @@ scripts/build.py
 
 2. Run [vcpkg][vcpkg] to install required dependencies.
 ```
-vcpkg install glog:x64-windows-static gflags:x64-windows-static libsodium:x64-windows-static jsoncpp:x64-windows-static wxwidgets:x64-windows-static
+vcpkg install gflags:x64-windows-static glog:x64-windows-static libsodium:x64-windows-static jsoncpp:x64-windows-static wxwidgets:x64-windows-static
 ```
 or
 ```
-vcpkg install expat:arm64-windows-static libjpeg-turbo:arm64-windows-static liblzma:arm64-windows-static libpng:arm64-windows-static tiff:arm64-windows-static zlib:arm64-windows-static glog:arm64-windows-static gflags:arm64-windows-static libsodium:arm64-windows-static jsoncpp:arm64-windows-static wxwidgets:arm64-windows-static
+vcpkg install gflags:arm64-windows-static glog:arm64-windows-static libsodium:arm64-windows-static jsoncpp:arm64-windows-static wxwidgets:arm64-windows-static
 ```
 or
 ```
-vcpkg install expat:x86-windows-static libjpeg-turbo:x86-windows-static liblzma:x86-windows-static libpng:x86-windows-static tiff:x86-windows-static zlib:x86-windows-static glog:x86-windows-static gflags:x86-windows-static libsodium:x86-windows-static jsoncpp:x86-windows-static wxwidgets:x86-windows-static
+vcpkg install gflags:x86-windows-static glog:x86-windows-static libsodium:x86-windows-static jsoncpp:x86-windows-static wxwidgets:x86-windows-static
 ```
 3. use script to build Release App under `build` directory.
 ```
@@ -177,7 +177,7 @@ LIBS="-L/opt/local/lib -ljpeg -ltiff -lexpat -liconv" \
   --with-macosx-version-min=10.10 \
   --with-osx \
   --prefix /opt/wxWidgets
-make -j8
+make -j $(sysctl -n hw.ncpu)
 sudo make install
 cd ..
 ```
@@ -186,6 +186,3 @@ cd ..
 [vcpkg]: https://github.com/microsoft/vcpkg
 [MacPorts]: https://www.macports.org/install.php
 [HomeBrew]: https://brew.sh
-
-
-## asio
