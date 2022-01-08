@@ -61,7 +61,7 @@ jobs:
       ENABLE_CLANG_TIDY: '1'
       CLANG_REVISION: 'llvmorg-14-init-12719-gc4b45eeb-2'
       WITH_CLANG: 'Win'
-      CLANG_TIDY_EXECUTABLE: 'third_party/llvm-build/Release+Asserts/bin/clang-tidy.exe'
+      CLANG_TIDY_EXECUTABLE: '$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy.exe'
     steps:
       - uses: actions/checkout@v2
         with:
@@ -120,7 +120,7 @@ jobs:
     env:
       ENABLE_CLANG_TIDY: '1'
       CLANG_REVISION: 'llvmorg-14-init-12719-gc4b45eeb-2'
-      CLANG_TIDY_EXECUTABLE: 'third_party/llvm-build/Release+Asserts/bin/clang-tidy'
+      CLANG_TIDY_EXECUTABLE: '$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy'
     strategy:
       fail-fast: false
       matrix:
@@ -196,8 +196,8 @@ jobs:
       BUNDLE_NAME: 'yass-clang-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}'
       CLANG_REVISION: 'llvmorg-14-init-12719-gc4b45eeb-2'
       WITH_CLANG: 'Linux_x64'
-      CC: 'third_party/llvm-build/Release+Asserts/bin/clang'
-      CXX: 'third_party/llvm-build/Release+Asserts/bin/clang++'
+      CC: '$PWD/third_party/llvm-build/Release+Asserts/bin/clang'
+      CXX: '$PWD/third_party/llvm-build/Release+Asserts/bin/clang++'
     steps:
       - uses: actions/checkout@v2
         with:
@@ -225,9 +225,9 @@ jobs:
     env:
       CLANG_REVISION: 'llvmorg-14-init-12719-gc4b45eeb-2'
       WITH_CLANG: 'Linux_x64'
-      CC: 'third_party/llvm-build/Release+Asserts/bin/clang'
-      CXX: 'third_party/llvm-build/Release+Asserts/bin/clang++'
-      CLANG_TIDY: 'third_party/llvm-build/Release+Asserts/bin/clang-tidy'
+      CC: '$PWD/third_party/llvm-build/Release+Asserts/bin/clang'
+      CXX: '$PWD/third_party/llvm-build/Release+Asserts/bin/clang++'
+      CLANG_TIDY: '$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy'
     steps:
       - uses: actions/checkout@v2
         with:
