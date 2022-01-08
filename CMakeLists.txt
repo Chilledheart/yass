@@ -101,8 +101,10 @@ if (NOT MSVC)
 
     ## When compiling Objective-C, warns if a method is used whose
     ## availability is newer than the deployment target.
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wunguarded-availability")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wunguarded-availability")
+    if (APPLE)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wunguarded-availability")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wunguarded-availability")
+    endif()
 else()
     ## Set Source and Excutable character sets to UTF-8
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
