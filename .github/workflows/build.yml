@@ -21,7 +21,7 @@ jobs:
         arch: [x64, x86, arm64]
     env:
       CLANG_ARCH: 'Win'
-      VCPKG_DEPS: 'gflags glog libsodium jsoncpp wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
+      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config gflags glog libsodium jsoncpp wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
     steps:
       - uses: actions/checkout@v2
       - name: Cache clang and nasm
@@ -67,7 +67,9 @@ jobs:
       - name: "Install dependency: wxwidgets"
         run: vcpkg install wxwidgets:${{ matrix.arch }}-windows-static
       - name: Copying vcpkg to local tree
-        run: cp -rv /c/vcpkg/installed third_party/vcpkg-installed
+        run: |
+          mkdir -p third_party/vcpkg-installed
+          cp -rv /c/vcpkg/installed /c/vcpkg/packages third_party/vcpkg-installed
   cache-toolchain-linux:
     runs-on: ubuntu-latest
     strategy:
@@ -125,7 +127,7 @@ jobs:
         arch: [x64, x86, arm64]
     env:
       BUNDLE_NAME: 'yass-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}'
-      VCPKG_DEPS: 'gflags glog libsodium jsoncpp wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
+      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config gflags glog libsodium jsoncpp wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
     steps:
       - uses: actions/checkout@v2
         with:
@@ -150,7 +152,7 @@ jobs:
             third_party/vcpkg-installed
           key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Restore vcpkg from local tree
-        run: cp -rv third_party/vcpkg-installed/* /c/vcpkg/installed/
+        run: cp -rv third_party/vcpkg-installed/* /c/vcpkg/
       - name: Build
         run: |
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
@@ -188,7 +190,7 @@ jobs:
         arch: [x64, x86, arm64]
     env:
       ENABLE_CLANG_TIDY: '1'
-      VCPKG_DEPS: 'gflags glog libsodium jsoncpp wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
+      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config gflags glog libsodium jsoncpp wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
     steps:
       - uses: actions/checkout@v2
         with:
@@ -213,7 +215,7 @@ jobs:
             third_party/vcpkg-installed
           key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Restore vcpkg from local tree
-        run: cp -rv third_party/vcpkg-installed/* /c/vcpkg/installed/
+        run: cp -rv third_party/vcpkg-installed/* /c/vcpkg/
       - name: Build
         run: |
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
