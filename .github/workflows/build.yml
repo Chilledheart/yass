@@ -21,7 +21,7 @@ jobs:
         arch: [x64, x86, arm64]
     env:
       CLANG_ARCH: 'Win'
-      VCPKG_DEPS: 'glog gflags libsodium jsoncpp wxwidgets'
+      VCPKG_DEPS: 'gflags glog libsodium jsoncpp wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
     steps:
       - uses: actions/checkout@v2
       - name: Cache clang and nasm
@@ -33,7 +33,8 @@ jobs:
           key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get vcpkg commit
         run: |
-          for VCPKG_DEP in $VCPKG_DEPS; do
+          IFS=" " read -r -a array <<< $VCPKG_DEPS
+          for VCPKG_DEP in ${VCPKG_DEPS[@]}; do
             echo "$(openssl sha256 /c/vcpkg/ports/$VCPKG_PEP/vcpkg.json) $VCPKG_DEP" >> vcpkg.lock
           done
       - name: Cache vcpkg packages
@@ -124,7 +125,7 @@ jobs:
         arch: [x64, x86, arm64]
     env:
       BUNDLE_NAME: 'yass-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}'
-      VCPKG_DEPS: 'glog gflags libsodium jsoncpp wxwidgets'
+      VCPKG_DEPS: 'gflags glog libsodium jsoncpp wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
     steps:
       - uses: actions/checkout@v2
         with:
@@ -138,7 +139,8 @@ jobs:
           key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get vcpkg commit
         run: |
-          for VCPKG_DEP in $VCPKG_DEPS; do
+          IFS=" " read -r -a array <<< $VCPKG_DEPS
+          for VCPKG_DEP in ${VCPKG_DEPS[@]}; do
             echo "$(openssl sha256 /c/vcpkg/ports/$VCPKG_PEP/vcpkg.json) $VCPKG_DEP" >> vcpkg.lock
           done
       - name: Cache vcpkg packages
@@ -186,7 +188,7 @@ jobs:
         arch: [x64, x86, arm64]
     env:
       ENABLE_CLANG_TIDY: '1'
-      VCPKG_DEPS: 'glog gflags libsodium jsoncpp wxwidgets'
+      VCPKG_DEPS: 'gflags glog libsodium jsoncpp wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
     steps:
       - uses: actions/checkout@v2
         with:
@@ -200,7 +202,8 @@ jobs:
           key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get vcpkg commit
         run: |
-          for VCPKG_DEP in $VCPKG_DEPS; do
+          IFS=" " read -r -a array <<< $VCPKG_DEPS
+          for VCPKG_DEP in ${VCPKG_DEPS[@]}; do
             echo "$(openssl sha256 /c/vcpkg/ports/$VCPKG_PEP/vcpkg.json) $VCPKG_DEP" >> vcpkg.lock
           done
       - name: Cache vcpkg packages
