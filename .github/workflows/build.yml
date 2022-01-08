@@ -11,7 +11,7 @@ defaults:
   run:
     shell: bash
 env:
-  CACHE_EPOCH: 1
+  CACHE_EPOCH: 2
 jobs:
   cache-toolchain-win:
     runs-on: windows-latest
@@ -80,6 +80,7 @@ jobs:
           mkdir -p third_party/llvm-build/Release+Asserts
           CLANG_REVISION=$(< CLANG_REVISION)
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
   cache-toolchain-mac:
     runs-on: macos-latest
     strategy:
