@@ -23,22 +23,22 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
-      - name: Install dependency: nasm
+      - name: Install dependency':' nasm
         run: |
           mkdir -p third_party
           cd third_party
           curl -O https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win64/nasm-2.15.05-win64.zip
           7za x nasm-2.15.05-win64.zip
           mv nasm-2.15.05 nasm
-      - name: Install dependency: glog
+      - name: Install dependency':' glog
         run: vcpkg install glog:${{ matrix.arch }}-windows-static
-      - name: Install dependency: gflags
+      - name: Install dependency':' gflags
         run: vcpkg install gflags:${{ matrix.arch }}-windows-static
-      - name: Install dependency: libsodium
+      - name: Install dependency':' libsodium
         run: vcpkg install libsodium:${{ matrix.arch }}-windows-static
-      - name: Install dependency: jsoncpp
+      - name: Install dependency':' jsoncpp
         run: vcpkg install jsoncpp:${{ matrix.arch }}-windows-static
-      - name: Install dependency: wxwidgets
+      - name: Install dependency':' wxwidgets
         run: vcpkg install wxwidgets:${{ matrix.arch }}-windows-static
       - name: Build
         run: |
@@ -82,27 +82,27 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
-      - name: Install dependency: clang-tidy
+      - name: Install dependency':' clang-tidy
         run: |
           mkdir -p third_party/llvm-build/Release+Asserts
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
-      - name: Install dependency: nasm
+      - name: Install dependency':' nasm
         run: |
           mkdir -p third_party
           cd third_party
           curl -O https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win64/nasm-2.15.05-win64.zip
           7za x nasm-2.15.05-win64.zip
           mv nasm-2.15.05 nasm
-      - name: Install dependency: glog
+      - name: Install dependency':' glog
         run: vcpkg install glog:${{ matrix.arch }}-windows-static
-      - name: Install dependency: gflags
+      - name: Install dependency':' gflags
         run: vcpkg install gflags:${{ matrix.arch }}-windows-static
-      - name: Install dependency: libsodium
+      - name: Install dependency':' libsodium
         run: vcpkg install libsodium:${{ matrix.arch }}-windows-static
-      - name: Install dependency: jsoncpp
+      - name: Install dependency':' jsoncpp
         run: vcpkg install jsoncpp:${{ matrix.arch }}-windows-static
-      - name: Install dependency: wxwidgets
+      - name: Install dependency':' wxwidgets
         run: vcpkg install wxwidgets:${{ matrix.arch }}-windows-static
       - name: Build
         run: |
@@ -162,7 +162,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
-      - name: Install dependency: clang-tidy
+      - name: Install dependency':' clang-tidy
         run: |
           mkdir -p third_party/llvm-build/Release+Asserts
           MACHINE=$(uname -m)
@@ -235,7 +235,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
-      - name: Install dependency: clang-tidy
+      - name: Install dependency':' clang-tidy
         run: |
           mkdir -p third_party/llvm-build/Release+Asserts
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
@@ -263,7 +263,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
-      - name: Install dependency: clang-tidy
+      - name: Install dependency':' clang-tidy
         run: |
           mkdir -p third_party/llvm-build/Release+Asserts
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
