@@ -119,8 +119,8 @@ void Utils::EnableAutoStart(bool on) {
 bool Utils::SetProcessDpiAwareness() {
   HANDLE hLibrary = EnsureShcoreLoaded();
   PFNSETPROCESSDPIAWARENESS const SetProcessDpiAwareness =
-      reinterpret_cast<PFNSETPROCESSDPIAWARENESS>(
-          GetProcAddress((HMODULE)hLibrary, "SetProcessDpiAwareness"));
+      reinterpret_cast<PFNSETPROCESSDPIAWARENESS>(GetProcAddress(
+          static_cast<HMODULE>(hLibrary), "SetProcessDpiAwareness"));
   if (SetProcessDpiAwareness == nullptr) {
     return false;
   }
