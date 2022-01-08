@@ -8,6 +8,7 @@
 #include <asio/write.hpp>
 
 #include "config/config.hpp"
+#include "core/asio_throw_exceptions.hpp"
 #include "core/cipher.hpp"
 
 #define MAX_DOWNSTREAM_DEPS 1

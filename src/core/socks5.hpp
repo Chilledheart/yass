@@ -17,6 +17,7 @@
 #include <malloc.h>
 #endif
 
+#include "core/asio_throw_exceptions.hpp"
 #include "core/iobuf.hpp"
 #include "core/ss.hpp"
 

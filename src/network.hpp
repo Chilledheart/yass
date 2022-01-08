@@ -10,6 +10,7 @@
 
 #include <asio/error.hpp>
 #include <asio/ip/tcp.hpp>
+#include "core/asio_throw_exceptions.hpp"
 
 asio::error_code SetTCPCongestion(
     asio::ip::tcp::acceptor::native_handle_type handle);

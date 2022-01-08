@@ -7,6 +7,8 @@
 #include <memory>
 
 #include <asio/error_code.hpp>
+
+#include "core/asio_throw_exceptions.hpp"
 #include "core/iobuf.hpp"
 
 class Channel {

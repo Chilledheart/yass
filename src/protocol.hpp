@@ -17,6 +17,7 @@
 #include <functional>
 #include <utility>
 
+#include "core/asio_throw_exceptions.hpp"
 #include "core/iobuf.hpp"
 #include "core/logging.hpp"
 

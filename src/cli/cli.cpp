@@ -6,8 +6,8 @@
 #include "core/cipher.hpp"
 
 #include <gflags/gflags.h>
-#include <asio.hpp>
 
+#include "core/asio.hpp"
 #include "core/logging.hpp"
 
 using namespace socks5;

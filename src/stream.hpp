@@ -14,6 +14,7 @@
 
 #include "channel.hpp"
 #include "config/config.hpp"
+#include "core/asio_throw_exceptions.hpp"
 #include "core/logging.hpp"
 #include "network.hpp"
 #include "protocol.hpp"

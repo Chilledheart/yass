@@ -95,6 +95,9 @@ if (NOT MSVC)
     ## disable rtti, wxWidgets modal requires this
     # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
 
+    ## disable exceptions
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
+
     ## not omit stack frame pointer for release
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -fno-omit-frame-pointer")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-omit-frame-pointer")
@@ -504,6 +507,7 @@ endif()
 # asio
 add_definitions(-DASIO_STANDALONE)
 add_definitions(-DASIO_NO_TYPEID)
+add_definitions(-DASIO_NO_EXCEPTIONS)
 include_directories(third_party/asio/asio/include SYSTEM)
 if (HAS_CLANG)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-inconsistent-missing-override -Wno-unused-private-field")

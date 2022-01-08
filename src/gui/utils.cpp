@@ -9,13 +9,18 @@
 #endif
 
 int32_t Utils::Stoi(const std::string& value) {
-  int32_t result = 0;
-  try {
-    result = std::stoi(value);
-  } catch (const std::invalid_argument&) {
-    wxLogMessage(wxT("invalid_argument: %s"), value.c_str());
-  } catch (const std::out_of_range&) {
-    wxLogMessage(wxT("out_of_range: %s"), value.c_str());
+  long result = 0;
+  char* endptr = nullptr;
+  result = strtol(value.c_str(), &endptr, 10);
+  if (result > INT32_MAX || (errno == ERANGE && result == LONG_MAX)) {
+    wxLogMessage(wxT("overflow: %s"), value.c_str());
+    result = 0;
+  } else if (result < INT_MIN || (errno == ERANGE && result == LONG_MIN)) {
+    wxLogMessage(wxT("undeflow: %s"), value.c_str());
+    result = 0;
+  } else if (*endptr != '\0') {
+    wxLogMessage(wxT("invalid int value: %s"), value.c_str());
+    result = 0;
   }
   return result;
 }

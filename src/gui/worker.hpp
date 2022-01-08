@@ -6,12 +6,12 @@
 #include "core/cipher.hpp"
 
 #include <gflags/gflags.h>
-#include <asio.hpp>
 #include <memory>
 #include <thread>
 
 #include "cli/socks5_factory.hpp"
 #include "config/config.hpp"
+#include "core/asio.hpp"
 #include "core/logging.hpp"
 
 class Worker {
