@@ -49,10 +49,10 @@ jobs:
           CLANG_REVISION=$(< CLANG_REVISION)
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
-      - name: "Install dependency: glog"
-        run: vcpkg install glog:${{ matrix.arch }}-windows-static
       - name: "Install dependency: gflags"
         run: vcpkg install gflags:${{ matrix.arch }}-windows-static
+      - name: "Install dependency: glog"
+        run: vcpkg install glog:${{ matrix.arch }}-windows-static
       - name: "Install dependency: libsodium"
         run: vcpkg install libsodium:${{ matrix.arch }}-windows-static
       - name: "Install dependency: jsoncpp"
