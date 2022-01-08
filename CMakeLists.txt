@@ -27,6 +27,9 @@ else()
     set(HAS_GCC FALSE)
 endif()
 
+## Export build compilation database if possible
+set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+
 # *****************************************************************************************
 #           Basic Setups
 # *****************************************************************************************
