@@ -21,6 +21,7 @@ jobs:
         arch: [x64, x86, arm64]
     env:
       CLANG_ARCH: 'Win'
+      VCPKG_DEPS: 'glog gflags libsodium jsoncpp wxwidgets'
     steps:
       - uses: actions/checkout@v2
       - name: Cache clang and nasm
@@ -30,12 +31,17 @@ jobs:
             third_party/nasm
             third_party/llvm-build/Release+Asserts
           key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+      - name: Get vcpkg commit
+        run: |
+          for VCPKG_DEP in $VCPKG_DPES; do
+            echo "$(openssl sha256 /c/vcpkg/ports/$VCPKG_PEP/vcpkg.json) $VCPKG_DEP" >> vcpkg.lock
+          done
       - name: Cache vcpkg packages
         uses: actions/cache@v2
         with:
           path: |
             /c/vcpkg/installed
-          key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('/c/vcpkg/ports/**/vcpkg.json') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: "Install dependency: nasm"
         run: |
           mkdir -p third_party
@@ -127,12 +133,17 @@ jobs:
             third_party/nasm
             third_party/llvm-build/Release+Asserts
           key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - name: Cache vcpkg
+      - name: Get vcpkg commit
+        run: |
+          for VCPKG_DEP in $VCPKG_DPES; do
+            echo "$(openssl sha256 /c/vcpkg/ports/$VCPKG_PEP/vcpkg.json) $VCPKG_DEP" >> vcpkg.lock
+          done
+      - name: Cache vcpkg packages
         uses: actions/cache@v2
         with:
           path: |
             /c/vcpkg/installed
-          key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('/c/vcpkg/ports/**/vcpkg.json') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
@@ -181,12 +192,17 @@ jobs:
             third_party/nasm
             third_party/llvm-build/Release+Asserts
           key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - name: Cache vcpkg
+      - name: Get vcpkg commit
+        run: |
+          for VCPKG_DEP in $VCPKG_DPES; do
+            echo "$(openssl sha256 /c/vcpkg/ports/$VCPKG_PEP/vcpkg.json) $VCPKG_DEP" >> vcpkg.lock
+          done
+      - name: Cache vcpkg packages
         uses: actions/cache@v2
         with:
           path: |
-            C:/vcpkg/installed
-          key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('/c/vcpkg/ports/**/vcpkg.json') }}-v${{ env.CACHE_EPOCH }}
+            /c/vcpkg/installed
+          key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
