@@ -33,7 +33,7 @@ jobs:
           key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get vcpkg commit
         run: |
-          for VCPKG_DEP in $VCPKG_DPES; do
+          for VCPKG_DEP in $VCPKG_DEPS; do
             echo "$(openssl sha256 /c/vcpkg/ports/$VCPKG_PEP/vcpkg.json) $VCPKG_DEP" >> vcpkg.lock
           done
       - name: Cache vcpkg packages
@@ -135,7 +135,7 @@ jobs:
           key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get vcpkg commit
         run: |
-          for VCPKG_DEP in $VCPKG_DPES; do
+          for VCPKG_DEP in $VCPKG_DEPS; do
             echo "$(openssl sha256 /c/vcpkg/ports/$VCPKG_PEP/vcpkg.json) $VCPKG_DEP" >> vcpkg.lock
           done
       - name: Cache vcpkg packages
@@ -194,7 +194,7 @@ jobs:
           key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get vcpkg commit
         run: |
-          for VCPKG_DEP in $VCPKG_DPES; do
+          for VCPKG_DEP in $VCPKG_DEPS; do
             echo "$(openssl sha256 /c/vcpkg/ports/$VCPKG_PEP/vcpkg.json) $VCPKG_DEP" >> vcpkg.lock
           done
       - name: Cache vcpkg packages
