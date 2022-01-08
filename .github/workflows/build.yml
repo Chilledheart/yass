@@ -40,7 +40,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            /c/vcpkg/installed
+            third_party/vcpkg-installed
           key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: "Install dependency: nasm"
         run: |
@@ -65,6 +65,8 @@ jobs:
         run: vcpkg install jsoncpp:${{ matrix.arch }}-windows-static
       - name: "Install dependency: wxwidgets"
         run: vcpkg install wxwidgets:${{ matrix.arch }}-windows-static
+      - name: Copying vcpkg to local tree
+        run: cp -rv /c/vcpkg/installed third_party/vcpkg-installed
   cache-toolchain-linux:
     runs-on: ubuntu-latest
     strategy:
@@ -143,8 +145,10 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            /c/vcpkg/installed
+            third_party/vcpkg-installed
           key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
+      - name: Restore vcpkg from local tree
+        run: cp -rv third_party/vcpkg-installed/* /c/vcpkg/installed/
       - name: Build
         run: |
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
@@ -203,8 +207,10 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            /c/vcpkg/installed
+            third_party/vcpkg-installed
           key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
+      - name: Restore vcpkg from local tree
+        run: cp -rv third_party/vcpkg-installed/* /c/vcpkg/installed/
       - name: Build
         run: |
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
