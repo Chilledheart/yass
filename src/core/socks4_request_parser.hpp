@@ -12,7 +12,7 @@
 namespace socks4 {
 class request;
 class request_parser {
-public:
+ public:
   /// Construct ready to parse the request method.
   request_parser();
 
@@ -27,60 +27,61 @@ public:
   /// required. The InputIterator return value indicates how much of the input
   /// has been consumed.
   template <typename InputIterator>
-  std::tuple<result_type, InputIterator>
-  parse(request &req, InputIterator begin, InputIterator end) {
+  std::tuple<result_type, InputIterator> parse(request& req,
+                                               InputIterator begin,
+                                               InputIterator end) {
     InputIterator i = begin;
     switch (state_) {
-    case request_start:
-      if (end - i < (int)sizeof(request_header)) {
-        return std::make_tuple(indeterminate, i);
-      }
-      memcpy(&req.req_, &*i, sizeof(request_header));
-      VLOG(3) << "socks4: anom request:" << std::hex << " ver: 0x"
-              << (int)req.version() << " cmd: 0x" << (int)req.command()
-              << std::dec << " addr: " << req.endpoint()
-              << " is_socks4a: " << std::boolalpha << req.is_socks4a()
-              << std::dec;
-      if (req.version() != version) {
-        return std::make_tuple(bad, i);
-      }
+      case request_start:
+        if (end - i < (int)sizeof(request_header)) {
+          return std::make_tuple(indeterminate, i);
+        }
+        memcpy(&req.req_, &*i, sizeof(request_header));
+        VLOG(3) << "socks4: anom request:" << std::hex << " ver: 0x"
+                << (int)req.version() << " cmd: 0x" << (int)req.command()
+                << std::dec << " addr: " << req.endpoint()
+                << " is_socks4a: " << std::boolalpha << req.is_socks4a()
+                << std::dec;
+        if (req.version() != version) {
+          return std::make_tuple(bad, i);
+        }
 
-      i += sizeof(request_header);
-      state_ = request_userid_start;
-      return parse(req, i, end);
-    case request_userid_start:
-      while (i != end && *i != '\0') {
-        ++i;
-      }
-      if (i == end) {
-        return std::make_tuple(indeterminate, i);
-      }
-      VLOG(3) << "socks4: user id: " << std::hex << (int)*begin;
-      req.user_id_ = std::string(begin, i);
-      ++i;
-      if (req.is_socks4a()) {
-        state_ = request_domain_start;
+        i += sizeof(request_header);
+        state_ = request_userid_start;
         return parse(req, i, end);
-      }
-      break;
-    case request_domain_start:
-      while (i != end && *i != '\0') {
+      case request_userid_start:
+        while (i != end && *i != '\0') {
+          ++i;
+        }
+        if (i == end) {
+          return std::make_tuple(indeterminate, i);
+        }
+        VLOG(3) << "socks4: user id: " << std::hex << (int)*begin;
+        req.user_id_ = std::string(begin, i);
         ++i;
-      }
-      if (i == end) {
-        return std::make_tuple(indeterminate, i);
-      }
-      VLOG(3) << "socks4: domain_name: " << begin;
-      req.domain_name_ = std::string(begin, i);
-      ++i;
-      break;
-    default:
-      return std::make_tuple(bad, i);
+        if (req.is_socks4a()) {
+          state_ = request_domain_start;
+          return parse(req, i, end);
+        }
+        break;
+      case request_domain_start:
+        while (i != end && *i != '\0') {
+          ++i;
+        }
+        if (i == end) {
+          return std::make_tuple(indeterminate, i);
+        }
+        VLOG(3) << "socks4: domain_name: " << begin;
+        req.domain_name_ = std::string(begin, i);
+        ++i;
+        break;
+      default:
+        return std::make_tuple(bad, i);
     }
     return std::make_tuple(good, i);
   }
 
-private:
+ private:
   enum state {
     request_start,
     request_userid_start,
@@ -88,6 +89,6 @@ private:
   } state_;
 };
 
-} // namespace socks4
+}  // namespace socks4
 
-#endif // H_CORE_SOCKS4_REQUEST_PARSER
+#endif  // H_CORE_SOCKS4_REQUEST_PARSER

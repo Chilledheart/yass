@@ -12,9 +12,13 @@
 #define MAX_MD_SIZE 64     /* longest known is SHA512 */
 #define MD_MAX_SIZE_256 32 /* longest known is SHA256 or less */
 
-int crypto_hkdf(const unsigned char *salt, int salt_len,
-                const unsigned char *ikm, int ikm_len,
-                const unsigned char *info, int info_len, unsigned char *okm,
+int crypto_hkdf(const unsigned char* salt,
+                int salt_len,
+                const unsigned char* ikm,
+                int ikm_len,
+                const unsigned char* info,
+                int info_len,
+                unsigned char* okm,
                 int okm_len) {
   unsigned char prk[MD_MAX_SIZE_256];
 
@@ -24,9 +28,11 @@ int crypto_hkdf(const unsigned char *salt, int salt_len,
 }
 
 /* HKDF-Extract(salt, IKM) -> PRK */
-int crypto_hkdf_extract(const unsigned char *salt, int salt_len,
-                        const unsigned char *ikm, int ikm_len,
-                        unsigned char *prk) {
+int crypto_hkdf_extract(const unsigned char* salt,
+                        int salt_len,
+                        const unsigned char* ikm,
+                        int ikm_len,
+                        unsigned char* prk) {
   int hash_len;
   unsigned char null_salt[MD_MAX_SIZE_256] = {'\0'};
 
@@ -45,9 +51,12 @@ int crypto_hkdf_extract(const unsigned char *salt, int salt_len,
 }
 
 /* HKDF-Expand(PRK, info, L) -> OKM */
-int crypto_hkdf_expand(const unsigned char *prk, int prk_len,
-                       const unsigned char *info, int info_len,
-                       unsigned char *okm, int okm_len) {
+int crypto_hkdf_expand(const unsigned char* prk,
+                       int prk_len,
+                       const unsigned char* info,
+                       int info_len,
+                       unsigned char* okm,
+                       int okm_len) {
   int hash_len;
   int N;
   int T_len = 0, where = 0, i, ret;
@@ -66,7 +75,7 @@ int crypto_hkdf_expand(const unsigned char *prk, int prk_len,
   }
 
   if (info == NULL) {
-    info = (const unsigned char *)"";
+    info = (const unsigned char*)"";
   }
 
   N = okm_len / hash_len;

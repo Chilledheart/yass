@@ -24,7 +24,7 @@
 // (This is undocumented but matches what the system C headers do.)
 // For member functions, the implicit this parameter counts as index 1.
 #if defined(__GNUC__) || defined(__clang__)
-#define PRINTF_FORMAT(format_param, dots_param)                                \
+#define PRINTF_FORMAT(format_param, dots_param) \
   __attribute__((format(printf, format_param, dots_param)))
 #else
 #define PRINTF_FORMAT(format_param, dots_param)
@@ -38,40 +38,40 @@
 //   __attribute__((format(wprintf, format_param, dots_param)))
 
 // Return a C++ string given printf-like input.
-std::string StringPrintf(const char *format, ...)
+std::string StringPrintf(const char* format, ...)
     PRINTF_FORMAT(1, 2) WARN_UNUSED_RESULT;
 #if defined(_WIN32)
-std::wstring StringPrintf(const wchar_t *format, ...)
+std::wstring StringPrintf(const wchar_t* format, ...)
     WPRINTF_FORMAT(1, 2) WARN_UNUSED_RESULT;
 #endif
 
 // Return a C++ string given vprintf-like input.
-std::string StringPrintV(const char *format, va_list ap)
+std::string StringPrintV(const char* format, va_list ap)
     PRINTF_FORMAT(1, 0) WARN_UNUSED_RESULT;
 
 // Store result into a supplied string and return it.
-const std::string &SStringPrintf(std::string *dst, const char *format, ...)
+const std::string& SStringPrintf(std::string* dst, const char* format, ...)
     PRINTF_FORMAT(2, 3);
 #if defined(_WIN32)
-const std::wstring &SStringPrintf(std::wstring *dst, const wchar_t *format, ...)
+const std::wstring& SStringPrintf(std::wstring* dst, const wchar_t* format, ...)
     WPRINTF_FORMAT(2, 3);
 #endif
 
 // Append result to a supplied string.
-void StringAppendF(std::string *dst, const char *format, ...)
+void StringAppendF(std::string* dst, const char* format, ...)
     PRINTF_FORMAT(2, 3);
 #if defined(_WIN32)
-void StringAppendF(std::wstring *dst, const wchar_t *format, ...)
+void StringAppendF(std::wstring* dst, const wchar_t* format, ...)
     WPRINTF_FORMAT(2, 3);
 #endif
 
 // Lower-level routine that takes a va_list and appends to a specified
 // string.  All other routines are just convenience wrappers around it.
-void StringAppendV(std::string *dst, const char *format, va_list ap)
+void StringAppendV(std::string* dst, const char* format, va_list ap)
     PRINTF_FORMAT(2, 0);
 #if defined(_WIN32)
-void StringAppendV(std::wstring *dst, const wchar_t *format, va_list ap)
+void StringAppendV(std::wstring* dst, const wchar_t* format, va_list ap)
     WPRINTF_FORMAT(2, 0);
 #endif
 
-#endif // H_STRINGPRINTF
+#endif  // H_STRINGPRINTF

@@ -22,18 +22,27 @@
 
 #define SUBKEY_INFO "ss-subkey"
 
-int crypto_hkdf_extract(const unsigned char *salt, int salt_len,
-                        const unsigned char *ikm, int ikm_len,
-                        unsigned char *prk);
+int crypto_hkdf_extract(const unsigned char* salt,
+                        int salt_len,
+                        const unsigned char* ikm,
+                        int ikm_len,
+                        unsigned char* prk);
 
-int crypto_hkdf_expand(const unsigned char *prk, int prk_len,
-                       const unsigned char *info, int info_len,
-                       unsigned char *okm, int okm_len);
+int crypto_hkdf_expand(const unsigned char* prk,
+                       int prk_len,
+                       const unsigned char* info,
+                       int info_len,
+                       unsigned char* okm,
+                       int okm_len);
 
 /* HKDF-Extract + HKDF-Expand */
-int crypto_hkdf(const unsigned char *salt, int salt_len,
-                const unsigned char *ikm, int ikm_len,
-                const unsigned char *info, int info_len, unsigned char *okm,
+int crypto_hkdf(const unsigned char* salt,
+                int salt_len,
+                const unsigned char* ikm,
+                int ikm_len,
+                const unsigned char* info,
+                int info_len,
+                unsigned char* okm,
                 int okm_len);
 
-#endif // H_HKDF_SHA1
+#endif  // H_HKDF_SHA1

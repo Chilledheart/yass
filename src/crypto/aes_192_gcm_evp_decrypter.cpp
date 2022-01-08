@@ -6,8 +6,8 @@
 #include "core/logging.hpp"
 
 #ifdef HAVE_BORINGSSL
-#include "core/cipher.hpp"
 #include <openssl/aead.h>
+#include "core/cipher.hpp"
 
 static const size_t kKeySize = 24;
 static const size_t kNonceSize = 12;
@@ -15,7 +15,9 @@ static const size_t kNonceSize = 12;
 namespace crypto {
 
 Aes192GcmEvpDecrypter::Aes192GcmEvpDecrypter()
-    : AeadEvpDecrypter(EVP_aead_aes_192_gcm, kKeySize, kAuthTagSize,
+    : AeadEvpDecrypter(EVP_aead_aes_192_gcm,
+                       kKeySize,
+                       kAuthTagSize,
                        kNonceSize) {
   static_assert(kKeySize <= kMaxKeySize, "key size too big");
   static_assert(kNonceSize <= kMaxNonceSize, "nonce size too big");
@@ -27,6 +29,6 @@ uint32_t Aes192GcmEvpDecrypter::cipher_id() const {
   return CRYPTO_AES192GCMSHA256_EVP;
 }
 
-} // namespace crypto
+}  // namespace crypto
 
 #endif

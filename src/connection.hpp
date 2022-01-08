@@ -19,13 +19,14 @@
 #include "protocol.hpp"
 
 class Connection {
-public:
+ public:
   /// Construct the connection with io context
   ///
   /// \param io_context the io context associated with the service
-  Connection(asio::io_context &io_context,
-             const asio::ip::tcp::endpoint &remote_endpoint)
-      : io_context_(io_context), remote_endpoint_(remote_endpoint),
+  Connection(asio::io_context& io_context,
+             const asio::ip::tcp::endpoint& remote_endpoint)
+      : io_context_(io_context),
+        remote_endpoint_(remote_endpoint),
         socket_(io_context_) {}
 
   virtual ~Connection() {}
@@ -35,9 +36,9 @@ public:
   /// \param socket the socket bound to the service
   /// \param endpoint the service socket's endpoint
   /// \param peer_endpoint the peer endpoint
-  void on_accept(asio::ip::tcp::socket &&socket,
-                 const asio::ip::tcp::endpoint &endpoint,
-                 const asio::ip::tcp::endpoint &peer_endpoint) {
+  void on_accept(asio::ip::tcp::socket&& socket,
+                 const asio::ip::tcp::endpoint& endpoint,
+                 const asio::ip::tcp::endpoint& peer_endpoint) {
     socket_ = std::move(socket);
     endpoint_ = endpoint;
     peer_endpoint_ = peer_endpoint;
@@ -52,11 +53,11 @@ public:
   /// set callback
   void set_disconnect_cb(std::function<void()> cb) { disconnect_cb_ = cb; }
 
-  asio::io_context &io_context() { return io_context_; }
+  asio::io_context& io_context() { return io_context_; }
 
-protected:
+ protected:
   /// the io context associated with
-  asio::io_context &io_context_;
+  asio::io_context& io_context_;
   /// the upstream endpoint to be established with
   asio::ip::tcp::endpoint remote_endpoint_;
 
@@ -71,4 +72,4 @@ protected:
   std::function<void()> disconnect_cb_;
 };
 
-#endif // H_CONNECTION
+#endif  // H_CONNECTION

@@ -4,8 +4,12 @@
 
 namespace ss {
 
-request_parser::request_parser() { reset(); }
+request_parser::request_parser() {
+  reset();
+}
 
-void request_parser::reset() { state_ = request_address_start; }
+void request_parser::reset() {
+  state_ = request_address_start;
+}
 
-} // namespace ss
+}  // namespace ss

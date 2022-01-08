@@ -5,8 +5,8 @@
 
 #include "core/cipher.hpp"
 
-#include <asio.hpp>
 #include <gflags/gflags.h>
+#include <asio.hpp>
 #include <memory>
 #include <thread>
 
@@ -15,16 +15,16 @@
 #include "core/logging.hpp"
 
 class Worker {
-public:
+ public:
   Worker();
   ~Worker();
 
   void Start(bool quiet);
   void Stop(bool quiet);
 
-  const asio::ip::tcp::endpoint &GetEndpoint() const { return endpoint_; }
+  const asio::ip::tcp::endpoint& GetEndpoint() const { return endpoint_; }
 
-  const asio::ip::tcp::endpoint &GetRemoteEndpoint() const {
+  const asio::ip::tcp::endpoint& GetRemoteEndpoint() const {
     return remote_endpoint_;
   }
 
@@ -32,7 +32,7 @@ public:
     return socks5_server_ ? socks5_server_->currentConnections() : 0;
   }
 
-private:
+ private:
   void WorkFunc();
 
   asio::io_context io_context_;
@@ -45,4 +45,4 @@ private:
   std::thread thread_;
 };
 
-#endif // YASS_WORKER
+#endif  // YASS_WORKER

@@ -4,15 +4,15 @@
 
 #ifdef HAVE_LIBSODIUM
 
-#include "core/logging.hpp"
 #include <sodium/crypto_aead_chacha20poly1305.h>
+#include "core/logging.hpp"
 
 #include "core/cipher.hpp"
 
 static const size_t kKeySize = crypto_aead_chacha20poly1305_ietf_KEYBYTES;
 static const size_t kNonceSize = crypto_aead_chacha20poly1305_ietf_NPUBBYTES;
 
-static void PacketNumberToNonce(uint8_t *nonce, uint64_t packet_number) {
+static void PacketNumberToNonce(uint8_t* nonce, uint64_t packet_number) {
   uint8_t pn_1 = packet_number & 0xff;
   uint8_t pn_2 = (packet_number & 0xff00) >> 8;
   uint8_t pn_3 = (packet_number & 0xff0000) >> 16;
@@ -30,10 +30,14 @@ ChaCha20Poly1305SodiumEncrypter::ChaCha20Poly1305SodiumEncrypter()
 
 ChaCha20Poly1305SodiumEncrypter::~ChaCha20Poly1305SodiumEncrypter() {}
 
-bool ChaCha20Poly1305SodiumEncrypter::EncryptPacket(
-    uint64_t packet_number, const char *associated_data,
-    size_t associated_data_len, const char *plaintext, size_t plaintext_len,
-    char *output, size_t *output_length, size_t max_output_length) {
+bool ChaCha20Poly1305SodiumEncrypter::EncryptPacket(uint64_t packet_number,
+                                                    const char* associated_data,
+                                                    size_t associated_data_len,
+                                                    const char* plaintext,
+                                                    size_t plaintext_len,
+                                                    char* output,
+                                                    size_t* output_length,
+                                                    size_t max_output_length) {
   unsigned long long ciphertext_size = GetCiphertextSize(plaintext_len);
   if (max_output_length < ciphertext_size) {
     return false;
@@ -45,15 +49,15 @@ bool ChaCha20Poly1305SodiumEncrypter::EncryptPacket(
   memcpy(nonce_buffer, iv_, nonce_size_);
 
   // for libsodium, packet number is written ahead
-  PacketNumberToNonce((uint8_t *)nonce_buffer, packet_number);
+  PacketNumberToNonce((uint8_t*)nonce_buffer, packet_number);
 
   if (::crypto_aead_chacha20poly1305_ietf_encrypt(
-          reinterpret_cast<uint8_t *>(output), &ciphertext_size,
-          reinterpret_cast<const uint8_t *>(plaintext), plaintext_len,
-          reinterpret_cast<const uint8_t *>(associated_data),
+          reinterpret_cast<uint8_t*>(output), &ciphertext_size,
+          reinterpret_cast<const uint8_t*>(plaintext), plaintext_len,
+          reinterpret_cast<const uint8_t*>(associated_data),
           associated_data_len, nullptr,
-          reinterpret_cast<const uint8_t *>(nonce_buffer),
-          reinterpret_cast<const uint8_t *>(key_)) != 0) {
+          reinterpret_cast<const uint8_t*>(nonce_buffer),
+          reinterpret_cast<const uint8_t*>(key_)) != 0) {
     return false;
   }
   *output_length = ciphertext_size;
@@ -64,6 +68,6 @@ uint32_t ChaCha20Poly1305SodiumEncrypter::cipher_id() const {
   return CRYPTO_CHACHA20POLY1305IETF;
 }
 
-} // namespace crypto
+}  // namespace crypto
 
-#endif // HAVE_LIBSODIUM
+#endif  // HAVE_LIBSODIUM

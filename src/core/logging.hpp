@@ -12,4 +12,4 @@
 #include <glog/logging.h>
 #define NOTREACHED() LOG(FATAL)
 
-#endif // H_LOGGING
+#endif  // H_LOGGING

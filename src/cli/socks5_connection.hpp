@@ -29,7 +29,7 @@ class cipher;
 class Socks5Connection : public std::enable_shared_from_this<Socks5Connection>,
                          public Channel,
                          public Connection {
-public:
+ public:
   /// The state of service
   enum state {
     state_error,
@@ -41,20 +41,20 @@ public:
   };
 
   /// Convert the state of service into string
-  static const char *state_to_str(enum state state) {
+  static const char* state_to_str(enum state state) {
     switch (state) {
-    case state_error:
-      return "error";
-    case state_method_select:
-      return "method_select";
-    case state_socks5_handshake:
-      return "s5handshake";
-    case state_socks4_handshake:
-      return "s4handshake";
-    case state_http_handshake:
-      return "hhandshake";
-    case state_stream:
-      return "stream";
+      case state_error:
+        return "error";
+      case state_method_select:
+        return "method_select";
+      case state_socks5_handshake:
+        return "s5handshake";
+      case state_socks4_handshake:
+        return "s4handshake";
+      case state_http_handshake:
+        return "hhandshake";
+      case state_stream:
+        return "stream";
     }
     return "unknown";
   }
@@ -63,8 +63,8 @@ public:
   ///
   /// \param io_context the io context associated with the service
   /// \param remote_endpoint the upstream's endpoint
-  Socks5Connection(asio::io_context &io_context,
-                   const asio::ip::tcp::endpoint &remote_endpoint);
+  Socks5Connection(asio::io_context& io_context,
+                   const asio::ip::tcp::endpoint& remote_endpoint);
 
   /// Destruct the service
   ~Socks5Connection();
@@ -75,11 +75,11 @@ public:
   /// Close the socket and clean up
   void close() override;
 
-private:
+ private:
   /// flag to mark connection is closed
   bool closed_ = true;
 
-private:
+ private:
   /// Get the state machine to the given state
   /// state(Read)            state(Write)
   /// method_select->ReadMethodSelect
@@ -111,15 +111,17 @@ private:
   asio::error_code OnReadHttpRequest(std::shared_ptr<IOBuf> buf);
 
   /// Callback to read http handshake request's URL field
-  static int OnReadHttpRequestURL(http_parser *p, const char *buf, size_t len);
+  static int OnReadHttpRequestURL(http_parser* p, const char* buf, size_t len);
   /// Callback to read http handshake request's URL field
-  static int OnReadHttpRequestHeaderField(http_parser *parser, const char *buf,
+  static int OnReadHttpRequestHeaderField(http_parser* parser,
+                                          const char* buf,
                                           size_t len);
   /// Callback to read http handshake request's headers done
-  static int OnReadHttpRequestHeaderValue(http_parser *parser, const char *buf,
+  static int OnReadHttpRequestHeaderValue(http_parser* parser,
+                                          const char* buf,
                                           size_t len);
   /// Callback to read http handshake request's headers done
-  static int OnReadHttpRequestHeadersDone(http_parser *parser);
+  static int OnReadHttpRequestHeadersDone(http_parser* parser);
 
   /// Start to read stream
   void ReadStream();
@@ -136,14 +138,14 @@ private:
   /// dispatch the command to delegate
   /// \param command command type
   /// \param reply reply to given command type
-  asio::error_code PerformCmdOpsV5(const socks5::request *request,
-                                   socks5::reply *reply);
+  asio::error_code PerformCmdOpsV5(const socks5::request* request,
+                                   socks5::reply* reply);
 
   /// dispatch the command to delegate
   /// \param command command type
   /// \param reply reply to given command type
-  asio::error_code PerformCmdOpsV4(const socks4::request *request,
-                                   socks4::reply *reply);
+  asio::error_code PerformCmdOpsV4(const socks4::request* request,
+                                   socks4::reply* reply);
 
   /// dispatch the command to delegate
   /// \param command command type
@@ -157,7 +159,7 @@ private:
   /// \param bytes_transferred transferred bytes
   static void ProcessReceivedData(std::shared_ptr<Socks5Connection> self,
                                   std::shared_ptr<IOBuf> buf,
-                                  const asio::error_code &error,
+                                  const asio::error_code& error,
                                   size_t bytes_transferred);
   /// Process the sent data
   /// \param self pointer to self
@@ -166,7 +168,7 @@ private:
   /// \param bytes_transferred transferred bytes
   static void ProcessSentData(std::shared_ptr<Socks5Connection> self,
                               std::shared_ptr<IOBuf> buf,
-                              const asio::error_code &error,
+                              const asio::error_code& error,
                               size_t bytes_transferred);
   /// state machine
   state state_;
@@ -215,7 +217,7 @@ private:
   /// copy of upstream request
   std::unique_ptr<ss::request> ss_request_;
 
-private:
+ private:
   /// perform cmd connect request
   void OnCmdConnect(ByteRange req);
 
@@ -256,7 +258,7 @@ private:
   /// the flag to mark current write
   bool downstream_writable_ = false;
 
-private:
+ private:
   /// handle with connnect event (upstream)
   void connected() override;
 
@@ -269,7 +271,7 @@ private:
   /// handle with disconnect event (upstream)
   void disconnected(asio::error_code error) override;
 
-private:
+ private:
   /// decrypt data
   std::shared_ptr<IOBuf> DecryptData(std::shared_ptr<IOBuf> buf);
   /// encrypt data
@@ -286,4 +288,4 @@ private:
   size_t wbytes_transferred_ = 0;
 };
 
-#endif // H_SOCKS5_CONNECTION
+#endif  // H_SOCKS5_CONNECTION

@@ -4,9 +4,9 @@
 #ifndef H_SS
 #define H_SS
 
-#include "core/logging.hpp"
-#include <asio/ip/address.hpp>
 #include <stdint.h>
+#include <asio/ip/address.hpp>
+#include "core/logging.hpp"
 
 namespace ss {
 
@@ -70,6 +70,6 @@ struct address_type_header {
   uint8_t port_low_byte;
 };
 
-} // namespace ss
+}  // namespace ss
 
-#endif // H_SS
+#endif  // H_SS

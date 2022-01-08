@@ -20,14 +20,17 @@
 
 /// the class to describe the traffic between given node (endpoint)
 class stream {
-public:
+ public:
   /// construct a stream object with ss protocol
   /// \param io_context
   /// \param endpoint
   /// \param channel
-  stream(asio::io_context &io_context, asio::ip::tcp::endpoint endpoint,
-         const std::shared_ptr<Channel> &channel)
-      : endpoint_(endpoint), socket_(io_context), connect_timer_(io_context),
+  stream(asio::io_context& io_context,
+         asio::ip::tcp::endpoint endpoint,
+         const std::shared_ptr<Channel>& channel)
+      : endpoint_(endpoint),
+        socket_(io_context),
+        connect_timer_(io_context),
         channel_(channel) {
     assert(channel && "channel must defined to use with stream");
   }
@@ -70,7 +73,7 @@ public:
 
     socket_.async_read_some(
         asio::mutable_buffer(buf->mutable_data(), buf->capacity()),
-        [this, buf, channel](const asio::error_code &error,
+        [this, buf, channel](const asio::error_code& error,
                              std::size_t bytes_transferred) -> std::size_t {
           if (bytes_transferred || error) {
             read_inprogress_ = false;
@@ -96,8 +99,8 @@ public:
     }
   }
 
-private:
-  void on_connect(const std::shared_ptr<Channel> &channel,
+ private:
+  void on_connect(const std::shared_ptr<Channel>& channel,
                   asio::error_code error) {
     connect_timer_.cancel(error);
     if (error) {
@@ -124,8 +127,9 @@ private:
     LOG(WARNING) << "connection timed out with endpoint: " << endpoint_;
   }
 
-  void on_read(const std::shared_ptr<Channel> &channel,
-               std::shared_ptr<IOBuf> buf, asio::error_code error,
+  void on_read(const std::shared_ptr<Channel>& channel,
+               std::shared_ptr<IOBuf> buf,
+               asio::error_code error,
                size_t bytes_transferred) {
     rbytes_transferred_ += bytes_transferred;
     buf->append(bytes_transferred);
@@ -150,8 +154,9 @@ private:
     }
   }
 
-  void on_write(const std::shared_ptr<Channel> &channel,
-                std::shared_ptr<IOBuf> buf, asio::error_code error,
+  void on_write(const std::shared_ptr<Channel>& channel,
+                std::shared_ptr<IOBuf> buf,
+                asio::error_code error,
                 size_t bytes_transferred) {
     wbytes_transferred_ += bytes_transferred;
 
@@ -173,7 +178,7 @@ private:
     }
   }
 
-  void on_disconnect(const std::shared_ptr<Channel> &channel,
+  void on_disconnect(const std::shared_ptr<Channel>& channel,
                      asio::error_code error) {
     if (error) {
       VLOG(2) << "data transfer failed with " << endpoint_ << " due to "
@@ -188,7 +193,7 @@ private:
     channel->disconnected(error);
   }
 
-private:
+ private:
   asio::ip::tcp::endpoint endpoint_;
   asio::ip::tcp::socket socket_;
   asio::steady_timer connect_timer_;
@@ -205,4 +210,4 @@ private:
   size_t wbytes_transferred_ = 0;
 };
 
-#endif // H_STREAM
+#endif  // H_STREAM

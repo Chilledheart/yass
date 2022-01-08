@@ -9,4 +9,4 @@
 
 typedef ServiceFactory<Socks5Connection> Socks5Factory;
 
-#endif // H_SOCKS5_FACTORY
+#endif  // H_SOCKS5_FACTORY

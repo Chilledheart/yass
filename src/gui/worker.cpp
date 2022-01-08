@@ -11,9 +11,10 @@
 using asio::ip::tcp;
 using namespace socks5;
 
-static tcp::endpoint resolveEndpoint(asio::io_context &io_context,
-                                     const std::string &host, uint16_t port,
-                                     asio::error_code &ec) {
+static tcp::endpoint resolveEndpoint(asio::io_context& io_context,
+                                     const std::string& host,
+                                     uint16_t port,
+                                     asio::error_code& ec) {
   asio::ip::tcp::resolver resolver(io_context);
   auto endpoints = resolver.resolve(host, std::to_string(port), ec);
   if (ec) {
@@ -71,7 +72,7 @@ void Worker::Start(bool quiet) {
       return;
     }
 
-    wxCommandEvent *evt =
+    wxCommandEvent* evt =
         new wxCommandEvent(MY_EVENT, successed ? ID_STARTED : ID_START_FAILED);
     evt->SetString(msg.c_str());
     wxTheApp->QueueEvent(evt);
@@ -88,7 +89,7 @@ void Worker::Stop(bool quiet) {
       }
     }
     if (wxTheApp) {
-      wxCommandEvent *evt = new wxCommandEvent(MY_EVENT, ID_STOPPED);
+      wxCommandEvent* evt = new wxCommandEvent(MY_EVENT, ID_STOPPED);
       wxTheApp->QueueEvent(evt);
     }
   });
@@ -97,7 +98,8 @@ void Worker::Stop(bool quiet) {
 void Worker::WorkFunc() {
   asio::error_code ec = asio::error_code();
 #ifdef __APPLE__
-  /// documented in https://developer.apple.com/documentation/apple-silicon/tuning-your-code-s-performance-for-apple-silicon
+  /// documented in
+  /// https://developer.apple.com/documentation/apple-silicon/tuning-your-code-s-performance-for-apple-silicon
   /// see sys/qos.h
   pthread_set_qos_class_self_np(QOS_CLASS_UTILITY, 0);
 #endif

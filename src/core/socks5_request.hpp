@@ -11,7 +11,7 @@
 namespace socks5 {
 
 class method_select_request {
-public:
+ public:
   method_select_request() : req_() {}
 
   uint8_t ver() const { return req_.ver; }
@@ -19,14 +19,14 @@ public:
 
   size_t length() const { return sizeof(req_) + req_.nmethods; }
 
-private:
+ private:
   friend class method_select_request_parser;
   method_select_request_header req_;
   uint8_t methods_[255];
 };
 
 class request {
-public:
+ public:
   request() : req_(), atyp_req_() {}
 
   uint8_t version() const { return req_.version; }
@@ -35,15 +35,15 @@ public:
 
   size_t address_type_size() const {
     switch (address_type()) {
-    case ipv4:
-      return sizeof(asio::ip::address_v4::bytes_type) + sizeof(uint16_t);
-    case domain:
-      return sizeof(uint8_t) + atyp_req_.domain.domain_name_len +
-             sizeof(uint16_t);
-    case ipv6:
-      return sizeof(asio::ip::address_v6::bytes_type) + sizeof(uint16_t);
-    default:
-      return 0;
+      case ipv4:
+        return sizeof(asio::ip::address_v4::bytes_type) + sizeof(uint16_t);
+      case domain:
+        return sizeof(uint8_t) + atyp_req_.domain.domain_name_len +
+               sizeof(uint16_t);
+      case ipv6:
+        return sizeof(asio::ip::address_v6::bytes_type) + sizeof(uint16_t);
+      default:
+        return 0;
     }
   }
 
@@ -63,16 +63,16 @@ public:
     return endpoint;
   }
 
-  const asio::ip::address_v4::bytes_type &address4() const {
+  const asio::ip::address_v4::bytes_type& address4() const {
     return atyp_req_.address4;
   }
 
-  const asio::ip::address_v6::bytes_type &address6() const {
+  const asio::ip::address_v6::bytes_type& address6() const {
     return atyp_req_.address6;
   }
 
   std::string domain_name() const {
-    return std::string((char *)atyp_req_.domain.domain_name,
+    return std::string((char*)atyp_req_.domain.domain_name,
                        atyp_req_.domain.domain_name_len);
   }
 
@@ -83,10 +83,10 @@ public:
     return port;
   }
 
-private:
+ private:
   friend class request_parser;
   request_header req_;
   address_type_header atyp_req_;
 };
-} // namespace socks5
-#endif // H_CORE_SOCKS5_REQUEST
+}  // namespace socks5
+#endif  // H_CORE_SOCKS5_REQUEST

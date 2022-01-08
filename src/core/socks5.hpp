@@ -4,12 +4,12 @@
 #ifndef H_CORE_SOCKS5
 #define H_CORE_SOCKS5
 
+#include <stdint.h>
 #include <array>
 #include <asio/buffers_iterator.hpp>
 #include <asio/ip/address_v4.hpp>
 #include <asio/ip/address_v6.hpp>
 #include <asio/ip/tcp.hpp>
-#include <stdint.h>
 #include <string>
 #include <tuple>
 
@@ -26,12 +26,12 @@ namespace socks5 {
 const uint8_t version = 0x05;
 
 #ifdef __GNUC__
-#define PACK(__Declaration__)                                                  \
+#define PACK(__Declaration__) \
   __Declaration__ __attribute__((packed, aligned(1)))
 #endif
 
 #ifdef _MSC_VER
-#define PACK(__Declaration__)                                                  \
+#define PACK(__Declaration__) \
   __pragma(pack(push, 1)) __Declaration__ __pragma(pack(pop))
 #endif
 
@@ -66,8 +66,8 @@ PACK(struct method_select_response {
   uint8_t method;
 });
 
-inline method_select_response
-method_select_response_stock_reply(uint8_t method = no_auth_required) {
+inline method_select_response method_select_response_stock_reply(
+    uint8_t method = no_auth_required) {
   method_select_response resp;
   resp.ver = version;
   resp.method = method;
@@ -169,7 +169,7 @@ struct address_type_header {
 //   o  RSV    RESERVED
 //   o  ATYP   address type of following address
 class reply {
-public:
+ public:
   enum status_type {
     request_granted = 0x00,
     request_failed = 0x01,
@@ -216,7 +216,7 @@ public:
 
   uint8_t status() const { return status_; }
 
-  uint8_t &mutable_status() { return status_; }
+  uint8_t& mutable_status() { return status_; }
 
   asio::ip::tcp::endpoint endpoint() const {
     unsigned short port = port_high_byte_;
@@ -234,7 +234,7 @@ public:
     }
   }
 
-  void set_endpoint(const asio::ip::tcp::endpoint &endpoint) {
+  void set_endpoint(const asio::ip::tcp::endpoint& endpoint) {
     if (endpoint.protocol() != asio::ip::tcp::v4()) {
       address_type_ = ipv6;
       address6_ = endpoint.address().to_v6().to_bytes();
@@ -249,10 +249,10 @@ public:
     port_low_byte_ = port & 0xff;
   }
 
-public:
+ public:
   static const uint8_t kHeaderLength = 4;
 
-private:
+ private:
   uint8_t version_;
   uint8_t status_;
   uint8_t null_byte_ = 0;
@@ -265,6 +265,6 @@ private:
 
 #undef PACK
 
-} // namespace socks5
+}  // namespace socks5
 
-#endif // H_CORE_SOCKS5
+#endif  // H_CORE_SOCKS5

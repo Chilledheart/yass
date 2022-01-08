@@ -13,7 +13,7 @@
 #include "gui/utils.hpp"
 #include "gui/yass_frame.hpp"
 
-YASSApp *mApp = nullptr;
+YASSApp* mApp = nullptr;
 
 // this is a definition so can't be in a header
 wxDEFINE_EVENT(MY_EVENT, wxCommandEvent);
@@ -43,7 +43,8 @@ bool YASSApp::OnInit() {
   }
 #endif
 #ifdef __APPLE__
-  /// documented in https://developer.apple.com/documentation/apple-silicon/tuning-your-code-s-performance-for-apple-silicon
+  /// documented in
+  /// https://developer.apple.com/documentation/apple-silicon/tuning-your-code-s-performance-for-apple-silicon
   pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
 #endif
 
@@ -106,7 +107,9 @@ std::string YASSApp::GetStatus() const {
   return ss.str();
 };
 
-void YASSApp::LoadConfigFromDisk() { config::ReadConfig(); }
+void YASSApp::LoadConfigFromDisk() {
+  config::ReadConfig();
+}
 
 void YASSApp::SaveConfigToDisk() {
   FLAGS_server_host = frame_->GetServerHost();
@@ -127,12 +130,12 @@ void YASSApp::OnStart(bool quiet) {
   worker_.Start(quiet);
 }
 
-void YASSApp::OnStarted(wxCommandEvent &WXUNUSED(event)) {
+void YASSApp::OnStarted(wxCommandEvent& WXUNUSED(event)) {
   state_ = STARTED;
   frame_->Started();
 }
 
-void YASSApp::OnStartFailed(wxCommandEvent &event) {
+void YASSApp::OnStartFailed(wxCommandEvent& event) {
   state_ = START_FAILED;
   error_msg_ = event.GetString();
   frame_->StartFailed();
@@ -143,17 +146,13 @@ void YASSApp::OnStop(bool quiet) {
   worker_.Stop(quiet);
 }
 
-void YASSApp::OnStopped(wxCommandEvent &WXUNUSED(event)) {
+void YASSApp::OnStopped(wxCommandEvent& WXUNUSED(event)) {
   state_ = STOPPED;
   frame_->Stopped();
 }
-
-// clang-format off
 
 wxBEGIN_EVENT_TABLE(YASSApp, wxApp)
   EVT_COMMAND(ID_STARTED, MY_EVENT, YASSApp::OnStarted)
   EVT_COMMAND(ID_START_FAILED, MY_EVENT, YASSApp::OnStartFailed)
   EVT_COMMAND(ID_STOPPED, MY_EVENT, YASSApp::OnStopped)
 wxEND_EVENT_TABLE()
-
-    // clang-format on

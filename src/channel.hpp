@@ -6,11 +6,11 @@
 
 #include <memory>
 
-#include "core/iobuf.hpp"
 #include <asio/error_code.hpp>
+#include "core/iobuf.hpp"
 
 class Channel {
-public:
+ public:
   /// Construct the channel
   Channel() {}
 
@@ -34,4 +34,4 @@ public:
   virtual void disconnected(asio::error_code error) = 0;
 };
 
-#endif // H_CHANNEL
+#endif  // H_CHANNEL

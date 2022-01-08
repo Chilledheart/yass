@@ -15,7 +15,7 @@
 namespace crypto {
 
 class Aes256GcmEvpDecrypter : public AeadEvpDecrypter {
-public:
+ public:
   enum : size_t {
     kAuthTagSize = 16,
   };
@@ -26,8 +26,8 @@ public:
   uint32_t cipher_id() const override;
 };
 
-} // namespace crypto
+}  // namespace crypto
 
 #endif
 
-#endif // H_CRYPTO_AES256_GCM_EVP_DECRYPTER
+#endif  // H_CRYPTO_AES256_GCM_EVP_DECRYPTER

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2019-2020 Chilledheart  */
 
+#include <stdint.h>
 #include <cinttypes>
 #include <cstddef>
 #include <memory>
-#include <stdint.h>
 
 #include "core/logging.hpp"
 
@@ -12,21 +12,21 @@
 #define H_CORE_IOBUF
 
 class ByteRange {
-public:
-  ByteRange(const uint8_t *data, size_t size) : data_(data), size_(size) {}
-  ByteRange(const uint8_t *start, const uint8_t *end)
+ public:
+  ByteRange(const uint8_t* data, size_t size) : data_(data), size_(size) {}
+  ByteRange(const uint8_t* start, const uint8_t* end)
       : data_(start), size_(end - start) {}
-  const uint8_t *data() { return data_; }
+  const uint8_t* data() { return data_; }
   size_t size() const { return size_; }
 
-private:
-  const uint8_t *data_;
+ private:
+  const uint8_t* data_;
   size_t size_;
 };
 
 // [Headroom] - [Data] - [Tailroom]
 class IOBuf {
-public:
+ public:
   class Iterator;
 
   enum CreateOp { CREATE };
@@ -54,7 +54,8 @@ public:
    * user-supplied buffer, optionally allocating a given amount of
    * headroom and tailroom.
    */
-  static std::unique_ptr<IOBuf> copyBuffer(const void *buf, std::size_t size,
+  static std::unique_ptr<IOBuf> copyBuffer(const void* buf,
+                                           std::size_t size,
                                            std::size_t headroom = 0,
                                            std::size_t minTailroom = 0);
   static std::unique_ptr<IOBuf> copyBuffer(ByteRange br,
@@ -62,9 +63,14 @@ public:
                                            std::size_t minTailroom = 0) {
     return copyBuffer(br.data(), br.size(), headroom, minTailroom);
   }
-  IOBuf(CopyBufferOp op, const void *buf, std::size_t size,
-        std::size_t headroom = 0, std::size_t minTailroom = 0);
-  IOBuf(CopyBufferOp op, ByteRange br, std::size_t headroom = 0,
+  IOBuf(CopyBufferOp op,
+        const void* buf,
+        std::size_t size,
+        std::size_t headroom = 0,
+        std::size_t minTailroom = 0);
+  IOBuf(CopyBufferOp op,
+        ByteRange br,
+        std::size_t headroom = 0,
         std::size_t minTailroom = 0);
 
   /**
@@ -78,18 +84,20 @@ public:
    * the first argument as a const void*, and will invoke the version of
    * copyBuffer() above, with the size argument of 3.
    */
-  static std::unique_ptr<IOBuf> copyBuffer(const std::string &buf,
+  static std::unique_ptr<IOBuf> copyBuffer(const std::string& buf,
                                            std::size_t headroom = 0,
                                            std::size_t minTailroom = 0);
-  IOBuf(CopyBufferOp op, const std::string &buf, std::size_t headroom = 0,
+  IOBuf(CopyBufferOp op,
+        const std::string& buf,
+        std::size_t headroom = 0,
         std::size_t minTailroom = 0)
       : IOBuf(op, buf.data(), buf.size(), headroom, minTailroom) {}
 
   ~IOBuf();
 
   // ref to internal buffer/headroom
-  const uint8_t *buffer() const { return buf_; }
-  uint8_t *mutable_buffer() { return buf_; }
+  const uint8_t* buffer() const { return buf_; }
+  uint8_t* mutable_buffer() { return buf_; }
 
   size_t capacity() const { return capacity_; }
 
@@ -131,23 +139,23 @@ public:
    * the move destination is part of a chain, all other IOBufs in the chain
    * will be deleted.
    */
-  IOBuf(IOBuf &&other) noexcept;
-  IOBuf &operator=(IOBuf &&other) noexcept;
+  IOBuf(IOBuf&& other) noexcept;
+  IOBuf& operator=(IOBuf&& other) noexcept;
 
-  IOBuf(const IOBuf &other);
-  IOBuf &operator=(const IOBuf &other);
+  IOBuf(const IOBuf& other);
+  IOBuf& operator=(const IOBuf& other);
 
   void reserveSlow(std::size_t minHeadroom, std::size_t minTailroom);
 
   // ref to data
-  const uint8_t *data() const { return data_; }
-  uint8_t *mutable_data() { return data_; }
+  const uint8_t* data() const { return data_; }
+  uint8_t* mutable_data() { return data_; }
 
   bool empty() const { return !length(); }
 
   // ref to tailroom
-  const uint8_t *tail() const { return data_ + length_; }
-  uint8_t *mutable_tail() { return data_ + length_; }
+  const uint8_t* tail() const { return data_ + length_; }
+  uint8_t* mutable_tail() { return data_ + length_; }
 
   size_t headroom() const { return size_t(data_ - buf_); }
   size_t tailroom() const {
@@ -302,7 +310,7 @@ public:
    */
   IOBuf cloneAsValue() const;
 
-private:
+ private:
   /**
    * Create a new IOBuf pointing to an external buffer.
    *
@@ -310,18 +318,21 @@ private:
    * IOBuf.  The IOBuf constructor does not automatically increment the
    * reference count.
    */
-  struct InternalConstructor {}; // avoid conflicts
-  IOBuf(InternalConstructor, uint8_t *buf, std::size_t capacity, uint8_t *data,
+  struct InternalConstructor {};  // avoid conflicts
+  IOBuf(InternalConstructor,
+        uint8_t* buf,
+        std::size_t capacity,
+        uint8_t* data,
         std::size_t length) noexcept;
 
-private:
-  uint8_t *buf_;
-  uint8_t *data_;
+ private:
+  uint8_t* buf_;
+  uint8_t* data_;
   size_t length_;
   size_t capacity_;
 };
 
-inline std::unique_ptr<IOBuf> IOBuf::copyBuffer(const void *data,
+inline std::unique_ptr<IOBuf> IOBuf::copyBuffer(const void* data,
                                                 std::size_t size,
                                                 std::size_t headroom,
                                                 std::size_t minTailroom) {
@@ -335,10 +346,10 @@ inline std::unique_ptr<IOBuf> IOBuf::copyBuffer(const void *data,
   return buf;
 }
 
-inline std::unique_ptr<IOBuf> IOBuf::copyBuffer(const std::string &buf,
+inline std::unique_ptr<IOBuf> IOBuf::copyBuffer(const std::string& buf,
                                                 std::size_t headroom,
                                                 std::size_t minTailroom) {
   return copyBuffer(buf.data(), buf.size(), headroom, minTailroom);
 }
 
-#endif // H_CORE_IOBUF
+#endif  // H_CORE_IOBUF

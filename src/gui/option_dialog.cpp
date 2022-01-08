@@ -7,14 +7,20 @@
 
 #include "config/config.hpp"
 
-OptionDialog::OptionDialog(wxFrame *parent, const wxString &title,
-                           const wxPoint &pos, const wxSize &size)
-    : wxDialog(parent, wxID_ANY, title, pos, size,
+OptionDialog::OptionDialog(wxFrame* parent,
+                           const wxString& title,
+                           const wxPoint& pos,
+                           const wxSize& size)
+    : wxDialog(parent,
+               wxID_ANY,
+               title,
+               pos,
+               size,
                wxDEFAULT_DIALOG_STYLE & (~wxCLOSE_BOX) & (~wxMINIMIZE_BOX) &
                    (~wxMAXIMIZE_BOX) & (~wxRESIZE_BORDER)) {
-  wxBoxSizer *vbox = new wxBoxSizer(wxVERTICAL);
+  wxBoxSizer* vbox = new wxBoxSizer(wxVERTICAL);
 
-  wxBoxSizer *hbox = new wxBoxSizer(wxHORIZONTAL);
+  wxBoxSizer* hbox = new wxBoxSizer(wxHORIZONTAL);
 
 #if wxCHECK_VERSION(3, 1, 0)
   int vgap = parent->FromDIP(9);
@@ -23,16 +29,16 @@ OptionDialog::OptionDialog(wxFrame *parent, const wxString &title,
   int vgap = 9;
   int hgap = 25;
 #endif
-  wxFlexGridSizer *fgs = new wxFlexGridSizer(6, 2, vgap, hgap);
+  wxFlexGridSizer* fgs = new wxFlexGridSizer(6, 2, vgap, hgap);
 
-  wxStaticText *connecttimeout =
+  wxStaticText* connecttimeout =
       new wxStaticText(this, -1, wxT("Connect Timeout"));
-  wxStaticText *tcpusertimeout =
+  wxStaticText* tcpusertimeout =
       new wxStaticText(this, -1, wxT("TCP User Timeout"));
-  wxStaticText *lingertimeout =
+  wxStaticText* lingertimeout =
       new wxStaticText(this, -1, wxT("TCP Linger Timeout"));
-  wxStaticText *sendbuffer = new wxStaticText(this, -1, wxT("TCP Send Buffer"));
-  wxStaticText *recvbuffer =
+  wxStaticText* sendbuffer = new wxStaticText(this, -1, wxT("TCP Send Buffer"));
+  wxStaticText* recvbuffer =
       new wxStaticText(this, -1, wxT("TCP Receive Buffer"));
 
   m_connecttimeout_tc = new wxTextCtrl(this, -1);
@@ -59,23 +65,22 @@ OptionDialog::OptionDialog(wxFrame *parent, const wxString &title,
 
   vbox->Add(hbox, 1, wxALL | wxEXPAND, 1);
 
-  wxBoxSizer *hbox_buttons = new wxBoxSizer(wxHORIZONTAL);
+  wxBoxSizer* hbox_buttons = new wxBoxSizer(wxHORIZONTAL);
 
-  m_okay =
-      new wxButton(this, wxOK, wxT("OK"),
+  m_okay = new wxButton(this, wxOK, wxT("OK"),
 #if wxCHECK_VERSION(3, 1, 0)
-                   parent->FromDIP(wxPoint(10, 10))
+                        parent->FromDIP(wxPoint(10, 10))
 #else
-                   wxPoint(10, 10)
+                        wxPoint(10, 10)
 #endif
-                   );
+  );
   m_cancel = new wxButton(this, wxCANCEL, wxT("Cancel"),
 #if wxCHECK_VERSION(3, 1, 0)
                           parent->FromDIP(wxPoint(10, 60))
 #else
                           wxPoint(10, 60)
 #endif
-                          );
+  );
 
   hbox_buttons->Add(m_okay, 1, wxEXPAND, 1);
   hbox_buttons->Add(m_cancel, 1, wxEXPAND, 1);
@@ -97,15 +102,17 @@ OptionDialog::OptionDialog(wxFrame *parent, const wxString &title,
 #endif
 }
 
-void OptionDialog::OnShow(wxShowEvent &WXUNUSED(event)) { OnLoad(); }
+void OptionDialog::OnShow(wxShowEvent& WXUNUSED(event)) {
+  OnLoad();
+}
 
-void OptionDialog::OnOkay(wxCommandEvent &WXUNUSED(event)) {
+void OptionDialog::OnOkay(wxCommandEvent& WXUNUSED(event)) {
   OnSave();
   wxDialog::SetAffirmativeId(wxID_OK);
   wxDialog::AcceptAndClose();
 }
 
-void OptionDialog::OnCancel(wxCommandEvent &WXUNUSED(event)) {
+void OptionDialog::OnCancel(wxCommandEvent& WXUNUSED(event)) {
   wxDialog::SetAffirmativeId(wxID_CANCEL);
   wxDialog::AcceptAndClose();
 }

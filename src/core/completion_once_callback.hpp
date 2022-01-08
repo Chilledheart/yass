@@ -9,4 +9,4 @@
 // is used to report a byte count or network error code.
 using CompletionOnceCallback = std::function<void(int)>;
 
-#endif // H_COMPLETION_ONCE_CALLBACK
+#endif  // H_COMPLETION_ONCE_CALLBACK

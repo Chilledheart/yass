@@ -19,7 +19,7 @@
 // original idea come from growl framework
 // http://growl.info/about
 static bool get_yass_auto_start() {
-  NSURL *itemURL = [[NSBundle mainBundle] bundleURL];
+  NSURL* itemURL = [[NSBundle mainBundle] bundleURL];
   CFURLRef URLToToggle = (__bridge CFURLRef)itemURL;
 
   bool found = false;
@@ -59,7 +59,7 @@ static bool get_yass_auto_start() {
 }
 
 static void set_yass_auto_start(bool enabled) {
-  NSURL *itemURL = [[NSBundle mainBundle] bundleURL];
+  NSURL* itemURL = [[NSBundle mainBundle] bundleURL];
   CFURLRef URLToToggle = (__bridge CFURLRef)itemURL;
 
   LSSharedFileListRef loginItems = LSSharedFileListCreate(
@@ -98,7 +98,7 @@ static void set_yass_auto_start(bool enabled) {
     }
 
     if (enabled && !found) {
-      NSString *displayName = @"" DEFAULT_AUTOSTART_NAME;
+      NSString* displayName = @"" DEFAULT_AUTOSTART_NAME;
 
       LSSharedFileListItemRef newItem = LSSharedFileListInsertItemURL(
           loginItems, kLSSharedFileListItemBeforeFirst,
@@ -118,9 +118,13 @@ static void set_yass_auto_start(bool enabled) {
 
 #pragma GCC diagnostic pop
 
-bool Utils::GetAutoStart() { return get_yass_auto_start(); }
+bool Utils::GetAutoStart() {
+  return get_yass_auto_start();
+}
 
-void Utils::EnableAutoStart(bool on) { set_yass_auto_start(on); }
+void Utils::EnableAutoStart(bool on) {
+  set_yass_auto_start(on);
+}
 
 static uint64_t MachTimeToNanoseconds(uint64_t machTime) {
   uint64_t nanoseconds = 0;
@@ -141,4 +145,4 @@ uint64_t Utils::GetMonotonicTime() {
   return MachTimeToNanoseconds(now);
 }
 
-#endif // __APPLE__
+#endif  // __APPLE__

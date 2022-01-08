@@ -6,4 +6,4 @@ namespace crypto {
 
 Crypter::~Crypter() {}
 
-} // namespace crypto
+}  // namespace crypto

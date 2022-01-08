@@ -11,7 +11,7 @@
 namespace crypto {
 
 class XChaCha20Poly1305SodiumEncrypter : public AeadBaseEncrypter {
-public:
+ public:
   enum : size_t {
     kAuthTagSize = 16,
   };
@@ -19,16 +19,20 @@ public:
   XChaCha20Poly1305SodiumEncrypter();
   ~XChaCha20Poly1305SodiumEncrypter() override;
 
-  bool EncryptPacket(uint64_t packet_number, const char *associated_data,
-                     size_t associated_data_len, const char *plaintext,
-                     size_t plaintext_len, char *output, size_t *output_length,
+  bool EncryptPacket(uint64_t packet_number,
+                     const char* associated_data,
+                     size_t associated_data_len,
+                     const char* plaintext,
+                     size_t plaintext_len,
+                     char* output,
+                     size_t* output_length,
                      size_t max_output_length) override;
 
   uint32_t cipher_id() const override;
 };
 
-} // namespace crypto
+}  // namespace crypto
 
-#endif // HAVE_LIBSODIUM
+#endif  // HAVE_LIBSODIUM
 
-#endif // H_CRYPTO_XCHACHA20_POLY1305_SODIUM_ENCRYPTER
+#endif  // H_CRYPTO_XCHACHA20_POLY1305_SODIUM_ENCRYPTER

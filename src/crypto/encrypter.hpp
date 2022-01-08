@@ -6,19 +6,19 @@
 
 #include "crypto/crypter.hpp"
 
-#include <memory>
 #include <stddef.h>
 #include <stdint.h>
+#include <memory>
 #include <string>
 
 namespace crypto {
 
 class Encrypter : public Crypter {
-public:
+ public:
   virtual ~Encrypter();
 
-  static std::unique_ptr<Encrypter>
-  CreateFromCipherSuite(uint32_t cipher_suite);
+  static std::unique_ptr<Encrypter> CreateFromCipherSuite(
+      uint32_t cipher_suite);
 
   // Writes encrypted |plaintext| and a MAC over |plaintext| and
   // |associated_data| into output. Sets |output_length| to the number of
@@ -28,10 +28,12 @@ public:
   // |associated_data|. If |output| overlaps with |plaintext| then
   // |plaintext| must be <= |output|.
   virtual bool EncryptPacket(uint64_t packet_number,
-                             const char *associated_data,
-                             size_t associated_data_len, const char *plaintext,
-                             size_t plaintext_len, char *output,
-                             size_t *output_length,
+                             const char* associated_data,
+                             size_t associated_data_len,
+                             const char* plaintext,
+                             size_t plaintext_len,
+                             char* output,
+                             size_t* output_length,
                              size_t max_output_length) = 0;
 
 #if 0
@@ -55,10 +57,10 @@ public:
   virtual uint32_t cipher_id() const = 0;
 
   // For use by unit tests only.
-  virtual const uint8_t *GetKey() const = 0;
-  virtual const uint8_t *GetNoncePrefix() const = 0;
+  virtual const uint8_t* GetKey() const = 0;
+  virtual const uint8_t* GetNoncePrefix() const = 0;
 };
 
-} // namespace crypto
+}  // namespace crypto
 
-#endif // H_CRYPTO_ENCRYPTER
+#endif  // H_CRYPTO_ENCRYPTER

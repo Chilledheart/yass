@@ -15,7 +15,7 @@
 namespace crypto {
 
 class ChaCha20Poly1305EvpEncrypter : public EvpAeadEncrypter {
-public:
+ public:
   enum : size_t {
     kAuthTagSize = 12,
   };
@@ -26,8 +26,8 @@ public:
   uint32_t cipher_id() const override;
 };
 
-} // namespace crypto
+}  // namespace crypto
 
 #endif
 
-#endif // H_CRYPTO_CHACHA20_POLY1305_EVP_ENCRYPTER
+#endif  // H_CRYPTO_CHACHA20_POLY1305_EVP_ENCRYPTER

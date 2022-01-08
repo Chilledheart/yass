@@ -12,7 +12,7 @@
 class YASSFrame;
 /// The main Application for Yet-Another-Shadow-Socket
 class YASSApp : public wxApp {
-public:
+ public:
   /// On Program Init
   bool OnInit() override;
   /// On Program Exit
@@ -27,20 +27,20 @@ public:
   enum YASSState { STARTED, STARTING, START_FAILED, STOPPING, STOPPED };
   YASSState GetState() const { return state_; }
 
-private:
-  void OnStarted(wxCommandEvent &event);
-  void OnStartFailed(wxCommandEvent &event);
-  void OnStopped(wxCommandEvent &event);
+ private:
+  void OnStarted(wxCommandEvent& event);
+  void OnStartFailed(wxCommandEvent& event);
+  void OnStopped(wxCommandEvent& event);
 
-private:
+ private:
   void LoadConfigFromDisk();
   void SaveConfigToDisk();
 
-private:
+ private:
   YASSState state_;
 
   friend class YASSFrame;
-  YASSFrame *frame_;
+  YASSFrame* frame_;
 
   Worker worker_;
   wxString error_msg_;
@@ -48,7 +48,7 @@ private:
   wxDECLARE_EVENT_TABLE();
 };
 
-extern YASSApp *mApp;
+extern YASSApp* mApp;
 
 wxDECLARE_APP(YASSApp);
 

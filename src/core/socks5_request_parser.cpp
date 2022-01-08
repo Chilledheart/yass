@@ -4,12 +4,20 @@
 
 namespace socks5 {
 
-method_select_request_parser::method_select_request_parser() { reset(); }
+method_select_request_parser::method_select_request_parser() {
+  reset();
+}
 
-void method_select_request_parser::reset() { state_ = request_start; }
+void method_select_request_parser::reset() {
+  state_ = request_start;
+}
 
-request_parser::request_parser() { reset(); }
+request_parser::request_parser() {
+  reset();
+}
 
-void request_parser::reset() { state_ = request_start; }
+void request_parser::reset() {
+  state_ = request_start;
+}
 
-} // namespace socks5
+}  // namespace socks5

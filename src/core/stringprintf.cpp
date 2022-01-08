@@ -14,13 +14,17 @@
 // large enough to accommodate the formatted string without truncation, they
 // return the number of characters that would be in the fully-formatted string
 // (vsnprintf, and vswprintf on Windows), or -1 (vswprintf on POSIX platforms).
-inline int vsnprintfT(char *buffer, size_t buf_size, const char *format,
+inline int vsnprintfT(char* buffer,
+                      size_t buf_size,
+                      const char* format,
                       va_list argptr) {
   return ::vsnprintf(buffer, buf_size, format, argptr);
 }
 
 #if defined(_WIN32)
-inline int vsnprintfT(wchar_t *buffer, size_t buf_size, const wchar_t *format,
+inline int vsnprintfT(wchar_t* buffer,
+                      size_t buf_size,
+                      const wchar_t* format,
                       va_list argptr) {
   return ::vswprintf(buffer, buf_size, format, argptr);
 }
@@ -29,8 +33,8 @@ inline int vsnprintfT(wchar_t *buffer, size_t buf_size, const wchar_t *format,
 // Templatized backend for StringPrintF/StringAppendF. This does not finalize
 // the va_list, the caller is expected to do that.
 template <class StringType>
-static void StringAppendVT(StringType *dst,
-                           const typename StringType::value_type *format,
+static void StringAppendVT(StringType* dst,
+                           const typename StringType::value_type* format,
                            va_list ap) {
   // First try with a small fixed size buffer.
   // This buffer size should be kept in sync with StringUtilTest.GrowBoundary
@@ -96,7 +100,7 @@ static void StringAppendVT(StringType *dst,
   }
 }
 
-std::string StringPrintf(const char *format, ...) {
+std::string StringPrintf(const char* format, ...) {
   va_list ap;
   va_start(ap, format);
   std::string result;
@@ -106,7 +110,7 @@ std::string StringPrintf(const char *format, ...) {
 }
 
 #if defined(_WIN32)
-std::wstring StringPrintf(const wchar_t *format, ...) {
+std::wstring StringPrintf(const wchar_t* format, ...) {
   va_list ap;
   va_start(ap, format);
   std::wstring result;
@@ -116,13 +120,13 @@ std::wstring StringPrintf(const wchar_t *format, ...) {
 }
 #endif
 
-std::string StringPrintV(const char *format, va_list ap) {
+std::string StringPrintV(const char* format, va_list ap) {
   std::string result;
   StringAppendV(&result, format, ap);
   return result;
 }
 
-const std::string &SStringPrintf(std::string *dst, const char *format, ...) {
+const std::string& SStringPrintf(std::string* dst, const char* format, ...) {
   va_list ap;
   va_start(ap, format);
   dst->clear();
@@ -132,7 +136,8 @@ const std::string &SStringPrintf(std::string *dst, const char *format, ...) {
 }
 
 #if defined(_WIN32)
-const std::wstring &SStringPrintf(std::wstring *dst, const wchar_t *format,
+const std::wstring& SStringPrintf(std::wstring* dst,
+                                  const wchar_t* format,
                                   ...) {
   va_list ap;
   va_start(ap, format);
@@ -143,7 +148,7 @@ const std::wstring &SStringPrintf(std::wstring *dst, const wchar_t *format,
 }
 #endif
 
-void StringAppendF(std::string *dst, const char *format, ...) {
+void StringAppendF(std::string* dst, const char* format, ...) {
   va_list ap;
   va_start(ap, format);
   StringAppendV(dst, format, ap);
@@ -151,7 +156,7 @@ void StringAppendF(std::string *dst, const char *format, ...) {
 }
 
 #if defined(_WIN32)
-void StringAppendF(std::wstring *dst, const wchar_t *format, ...) {
+void StringAppendF(std::wstring* dst, const wchar_t* format, ...) {
   va_list ap;
   va_start(ap, format);
   StringAppendV(dst, format, ap);
@@ -159,12 +164,12 @@ void StringAppendF(std::wstring *dst, const wchar_t *format, ...) {
 }
 #endif
 
-void StringAppendV(std::string *dst, const char *format, va_list ap) {
+void StringAppendV(std::string* dst, const char* format, va_list ap) {
   StringAppendVT(dst, format, ap);
 }
 
 #if defined(_WIN32)
-void StringAppendV(std::wstring *dst, const wchar_t *format, va_list ap) {
+void StringAppendV(std::wstring* dst, const wchar_t* format, va_list ap) {
   StringAppendVT(dst, format, ap);
 }
 #endif

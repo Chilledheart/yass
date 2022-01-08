@@ -25,11 +25,11 @@ namespace socks4 {
 // should resolve the domain name and make connection to the destination
 // host if it can.
 class request {
-public:
+ public:
   uint8_t version() const { return req_.version; }
   uint8_t command() const { return req_.command; }
 
-  const asio::ip::address_v4::bytes_type &address() const {
+  const asio::ip::address_v4::bytes_type& address() const {
     return req_.address;
   }
 
@@ -39,7 +39,7 @@ public:
   }
 
   bool is_socks4a() const {
-    uint32_t ipnum = *(uint32_t *)&req_.address;
+    uint32_t ipnum = *(uint32_t*)&req_.address;
     return (ipnum >> 24) != 0 && (ipnum & ~(255 << 24)) == 0;
   }
 
@@ -59,12 +59,12 @@ public:
            (is_socks4a() ? (domain_name_.size() + sizeof(uint8_t)) : 0);
   }
 
-private:
+ private:
   friend class request_parser;
   request_header req_;
   std::string user_id_;
-  std::string domain_name_; // SOCKS4A specific
+  std::string domain_name_;  // SOCKS4A specific
 };
 
-} // namespace socks4
-#endif // H_CORE_SOCKS4_REQUEST
+}  // namespace socks4
+#endif  // H_CORE_SOCKS4_REQUEST

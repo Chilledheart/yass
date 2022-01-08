@@ -11,26 +11,27 @@
 #include <wx/panel.h>
 
 class OptionDialog : public wxDialog {
-public:
-  OptionDialog(wxFrame *parent, const wxString &title,
-               const wxPoint &pos = wxDefaultPosition,
-               const wxSize &size = wxDefaultSize);
+ public:
+  OptionDialog(wxFrame* parent,
+               const wxString& title,
+               const wxPoint& pos = wxDefaultPosition,
+               const wxSize& size = wxDefaultSize);
 
-  void OnShow(wxShowEvent &event);
-  void OnOkay(wxCommandEvent &event);
-  void OnCancel(wxCommandEvent &event);
+  void OnShow(wxShowEvent& event);
+  void OnOkay(wxCommandEvent& event);
+  void OnCancel(wxCommandEvent& event);
 
-private:
+ private:
   void OnLoad();
   void OnSave();
 
-  wxButton *m_okay;
-  wxButton *m_cancel;
-  wxTextCtrl *m_connecttimeout_tc;
-  wxTextCtrl *m_tcpusertimeout_tc;
-  wxTextCtrl *m_lingertimeout_tc;
-  wxTextCtrl *m_sendbuffer_tc;
-  wxTextCtrl *m_recvbuffer_tc;
-}; // OptionDialog
+  wxButton* m_okay;
+  wxButton* m_cancel;
+  wxTextCtrl* m_connecttimeout_tc;
+  wxTextCtrl* m_tcpusertimeout_tc;
+  wxTextCtrl* m_lingertimeout_tc;
+  wxTextCtrl* m_sendbuffer_tc;
+  wxTextCtrl* m_recvbuffer_tc;
+};  // OptionDialog
 
-#endif // OPTION_DIALOG
+#endif  // OPTION_DIALOG

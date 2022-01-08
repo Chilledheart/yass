@@ -1,0 +1,19 @@
+# Defines the Chromium style for automatic reformatting.
+# http://clang.llvm.org/docs/ClangFormatStyleOptions.html
+BasedOnStyle: Chromium
+# This defaults to 'Auto'. Explicitly set it for a while, so that
+# 'vector<vector<int> >' in existing files gets formatted to
+# 'vector<vector<int>>'. ('Auto' means that clang-format will only use
+# 'int>>' if the file already contains at least one such instance.)
+Standard: Cpp11
+# Make sure code like:
+# IPC_BEGIN_MESSAGE_MAP()
+#   IPC_MESSAGE_HANDLER(WidgetHostViewHost_Update, OnUpdate)
+# IPC_END_MESSAGE_MAP()
+# gets correctly indented.
+MacroBlockBegin: "^\
+BEGIN_EVENT_TABLE|\
+wxBEGIN_EVENT_TABLE"
+MacroBlockEnd: "^\
+END_EVENT_TABLE|\
+wxEND_EVENT_TABLE"

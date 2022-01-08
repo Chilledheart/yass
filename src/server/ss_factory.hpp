@@ -9,4 +9,4 @@
 
 typedef ServiceFactory<ss::SsConnection> SsFactory;
 
-#endif // H_SS_FACTORY
+#endif  // H_SS_FACTORY

@@ -15,9 +15,11 @@
 
 namespace ss {
 
-SsConnection::SsConnection(asio::io_context &io_context,
-                           const asio::ip::tcp::endpoint &remote_endpoint)
-    : Connection(io_context, remote_endpoint), state_(), resolver_(io_context_),
+SsConnection::SsConnection(asio::io_context& io_context,
+                           const asio::ip::tcp::endpoint& remote_endpoint)
+    : Connection(io_context, remote_endpoint),
+      state_(),
+      resolver_(io_context_),
       encoder_(new cipher("", FLAGS_password, cipher_method_in_use, true)),
       decoder_(new cipher("", FLAGS_password, cipher_method_in_use)) {}
 
@@ -87,7 +89,7 @@ void SsConnection::ResolveDns(std::shared_ptr<IOBuf> buf) {
   std::shared_ptr<SsConnection> self = shared_from_this();
   resolver_.async_resolve(
       self->request_.domain_name(), std::to_string(self->request_.port()),
-      [self, buf](const asio::error_code &error,
+      [self, buf](const asio::error_code& error,
                   asio::ip::tcp::resolver::results_type results) {
         // Get a list of endpoints corresponding to the SOCKS 5 domain name.
         if (!error) {
@@ -136,7 +138,7 @@ void SsConnection::WriteStream(std::shared_ptr<IOBuf> buf) {
 
 void SsConnection::ProcessReceivedData(std::shared_ptr<SsConnection> self,
                                        std::shared_ptr<IOBuf> buf,
-                                       const asio::error_code &error,
+                                       const asio::error_code& error,
                                        size_t bytes_transferred) {
   self->rbytes_transferred_ += bytes_transferred;
   if (bytes_transferred) {
@@ -147,26 +149,26 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<SsConnection> self,
 
   if (!ec) {
     switch (self->CurrentState()) {
-    case state_handshake:
-      if (self->request_.address_type() == domain) {
-        self->ResolveDns(buf);
-        return;
-      }
-      self->remote_endpoint_ = self->request_.endpoint();
-      self->SetState(state_stream);
-      self->OnConnect();
-      DCHECK_EQ(buf->length(), bytes_transferred);
-    case state_stream:
-      if (bytes_transferred) {
-        self->OnStreamRead(buf);
-      }
-      if (self->downstream_readable_) {
-        self->ReadStream(); // continously read
-      }
-      break;
-    case state_error:
-      ec = std::make_error_code(std::errc::bad_message);
-      break;
+      case state_handshake:
+        if (self->request_.address_type() == domain) {
+          self->ResolveDns(buf);
+          return;
+        }
+        self->remote_endpoint_ = self->request_.endpoint();
+        self->SetState(state_stream);
+        self->OnConnect();
+        DCHECK_EQ(buf->length(), bytes_transferred);
+      case state_stream:
+        if (bytes_transferred) {
+          self->OnStreamRead(buf);
+        }
+        if (self->downstream_readable_) {
+          self->ReadStream();  // continously read
+        }
+        break;
+      case state_error:
+        ec = std::make_error_code(std::errc::bad_message);
+        break;
     };
   }
   if (ec) {
@@ -177,7 +179,7 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<SsConnection> self,
 
 void SsConnection::ProcessSentData(std::shared_ptr<SsConnection> self,
                                    std::shared_ptr<IOBuf> buf,
-                                   const asio::error_code &error,
+                                   const asio::error_code& error,
                                    size_t bytes_transferred) {
   self->wbytes_transferred_ += bytes_transferred;
 
@@ -189,13 +191,13 @@ void SsConnection::ProcessSentData(std::shared_ptr<SsConnection> self,
 
   if (!ec) {
     switch (self->CurrentState()) {
-    case state_stream:
-      self->OnStreamWrite(buf);
-      break;
-    case state_handshake:
-    case state_error:
-      ec = std::make_error_code(std::errc::bad_message);
-      break;
+      case state_stream:
+        self->OnStreamWrite(buf);
+        break;
+      case state_handshake:
+      case state_error:
+        ec = std::make_error_code(std::errc::bad_message);
+        break;
     }
   }
 
@@ -254,14 +256,18 @@ void SsConnection::EnableStreamRead() {
   }
 }
 
-void SsConnection::DisableStreamRead() { downstream_readable_ = false; }
+void SsConnection::DisableStreamRead() {
+  downstream_readable_ = false;
+}
 
 void SsConnection::OnDisconnect(asio::error_code error) {
   VLOG(2) << "ss: lost connection with: " << endpoint_ << " due to " << error;
   close();
 }
 
-void SsConnection::OnDownstreamWriteFlush() { OnDownstreamWrite(nullptr); }
+void SsConnection::OnDownstreamWriteFlush() {
+  OnDownstreamWrite(nullptr);
+}
 
 void SsConnection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf && !buf->empty()) {
@@ -340,8 +346,8 @@ void SsConnection::disconnected(asio::error_code error) {
   }
 }
 
-std::shared_ptr<IOBuf>
-SsConnection::DecryptData(std::shared_ptr<IOBuf> cipherbuf) {
+std::shared_ptr<IOBuf> SsConnection::DecryptData(
+    std::shared_ptr<IOBuf> cipherbuf) {
   std::unique_ptr<IOBuf> plainbuf = IOBuf::create(cipherbuf->length());
   DumpHex("ERead->", cipherbuf.get());
   decoder_->decrypt(cipherbuf.get(), plainbuf);
@@ -359,4 +365,4 @@ std::shared_ptr<IOBuf> SsConnection::EncryptData(std::shared_ptr<IOBuf> buf) {
   return sharedBuf;
 }
 
-} // namespace ss
+}  // namespace ss

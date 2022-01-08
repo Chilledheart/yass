@@ -5,8 +5,8 @@
 #include "core/cipher.hpp"
 #include "ss_factory.hpp"
 
-#include <asio.hpp>
 #include <gflags/gflags.h>
+#include <asio.hpp>
 
 #include "core/logging.hpp"
 
@@ -16,8 +16,8 @@
 
 using namespace ss;
 
-static asio::ip::tcp::endpoint resolveEndpoint(asio::io_context *io_context,
-                                               const std::string &host,
+static asio::ip::tcp::endpoint resolveEndpoint(asio::io_context* io_context,
+                                               const std::string& host,
                                                uint16_t port) {
   asio::error_code ec;
   asio::ip::tcp::resolver resolver(*io_context);
@@ -25,7 +25,7 @@ static asio::ip::tcp::endpoint resolveEndpoint(asio::io_context *io_context,
   return endpoints->endpoint();
 }
 
-int main(int argc, const char *argv[]) {
+int main(int argc, const char* argv[]) {
   // Major routine
   // - Read config from ss config file
   // - Listen by local address and local port
@@ -41,7 +41,7 @@ int main(int argc, const char *argv[]) {
   ::FLAGS_logbuflevel = 1;
   ::FLAGS_v = 2;
 #endif
-  ::google::ParseCommandLineFlags(&argc, (char ***)&argv, true);
+  ::google::ParseCommandLineFlags(&argc, (char***)&argv, true);
   ::google::InstallFailureSignalHandler();
 
   (void)config::ReadConfig();
@@ -71,7 +71,7 @@ int main(int argc, const char *argv[]) {
 #ifdef SIGQUIT
   signals.add(SIGQUIT, ec);
 #endif
-  signals.async_wait([&](const asio::error_code & /*error*/,
+  signals.async_wait([&](const asio::error_code& /*error*/,
                          int /*signal_number*/) { factory.stop(); });
 
   io_context.run(ec);

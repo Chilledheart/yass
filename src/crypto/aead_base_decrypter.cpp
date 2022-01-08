@@ -9,10 +9,13 @@
 
 namespace crypto {
 
-AeadBaseDecrypter::AeadBaseDecrypter(size_t key_size, size_t auth_tag_size,
+AeadBaseDecrypter::AeadBaseDecrypter(size_t key_size,
+                                     size_t auth_tag_size,
                                      size_t nonce_size)
-    : key_size_(key_size), auth_tag_size_(auth_tag_size),
-      nonce_size_(nonce_size), have_preliminary_key_(false) {
+    : key_size_(key_size),
+      auth_tag_size_(auth_tag_size),
+      nonce_size_(nonce_size),
+      have_preliminary_key_(false) {
   DCHECK_LE(key_size_, sizeof(key_));
   DCHECK_LE(nonce_size_, sizeof(iv_));
   DCHECK_GE(kMaxNonceSize, nonce_size_);
@@ -23,7 +26,7 @@ AeadBaseDecrypter::AeadBaseDecrypter(size_t key_size, size_t auth_tag_size,
 
 AeadBaseDecrypter::~AeadBaseDecrypter() {}
 
-bool AeadBaseDecrypter::SetKey(const char *key, size_t key_len) {
+bool AeadBaseDecrypter::SetKey(const char* key, size_t key_len) {
   DCHECK_EQ(key_len, key_size_);
   if (key_len != key_size_) {
     return false;
@@ -32,7 +35,7 @@ bool AeadBaseDecrypter::SetKey(const char *key, size_t key_len) {
   return true;
 }
 
-bool AeadBaseDecrypter::SetNoncePrefix(const char *nonce_prefix,
+bool AeadBaseDecrypter::SetNoncePrefix(const char* nonce_prefix,
                                        size_t nonce_prefix_len) {
   DCHECK_EQ(nonce_prefix_len, nonce_size_ - sizeof(uint64_t));
   if (nonce_prefix_len != nonce_size_ - sizeof(uint64_t)) {
@@ -42,7 +45,7 @@ bool AeadBaseDecrypter::SetNoncePrefix(const char *nonce_prefix,
   return true;
 }
 
-bool AeadBaseDecrypter::SetIV(const char *iv, size_t iv_len) {
+bool AeadBaseDecrypter::SetIV(const char* iv, size_t iv_len) {
   DCHECK_EQ(iv_len, nonce_size_);
   if (iv_len != nonce_size_) {
     return false;
@@ -51,7 +54,7 @@ bool AeadBaseDecrypter::SetIV(const char *iv, size_t iv_len) {
   return true;
 }
 
-bool AeadBaseDecrypter::SetPreliminaryKey(const char *key, size_t key_len) {
+bool AeadBaseDecrypter::SetPreliminaryKey(const char* key, size_t key_len) {
   DCHECK(!have_preliminary_key_);
   SetKey(key, key_len);
   have_preliminary_key_ = true;
@@ -59,18 +62,28 @@ bool AeadBaseDecrypter::SetPreliminaryKey(const char *key, size_t key_len) {
   return true;
 }
 
-size_t AeadBaseDecrypter::GetKeySize() const { return key_size_; }
+size_t AeadBaseDecrypter::GetKeySize() const {
+  return key_size_;
+}
 
 size_t AeadBaseDecrypter::GetNoncePrefixSize() const {
   return nonce_size_ - sizeof(uint64_t);
 }
 
-size_t AeadBaseDecrypter::GetIVSize() const { return nonce_size_; }
+size_t AeadBaseDecrypter::GetIVSize() const {
+  return nonce_size_;
+}
 
-size_t AeadBaseDecrypter::GetTagSize() const { return auth_tag_size_; }
+size_t AeadBaseDecrypter::GetTagSize() const {
+  return auth_tag_size_;
+}
 
-const uint8_t *AeadBaseDecrypter::GetKey() const { return key_; }
+const uint8_t* AeadBaseDecrypter::GetKey() const {
+  return key_;
+}
 
-const uint8_t *AeadBaseDecrypter::GetNoncePrefix() const { return iv_; }
+const uint8_t* AeadBaseDecrypter::GetNoncePrefix() const {
+  return iv_;
+}
 
-} // namespace crypto
+}  // namespace crypto

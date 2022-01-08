@@ -4,8 +4,8 @@
 #ifndef H_CORE_CIPHER
 #define H_CORE_CIPHER
 
-#include <memory>
 #include <stdint.h>
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -62,32 +62,38 @@ class cipher_impl;
 ///
 ///  NO padding or MAC is added in this protocol.
 class cipher {
-public:
-  cipher(const std::string &key, const std::string &password,
-         enum cipher_method method, bool enc = false);
+ public:
+  cipher(const std::string& key,
+         const std::string& password,
+         enum cipher_method method,
+         bool enc = false);
   ~cipher();
 
-  void decrypt(IOBuf *ciphertext, std::unique_ptr<IOBuf> &plaintext,
+  void decrypt(IOBuf* ciphertext,
+               std::unique_ptr<IOBuf>& plaintext,
                size_t capacity = SOCKET_BUF_SIZE);
 
-  void encrypt(IOBuf *plaintext, std::unique_ptr<IOBuf> &ciphertext,
+  void encrypt(IOBuf* plaintext,
+               std::unique_ptr<IOBuf>& ciphertext,
                size_t capacity = SOCKET_BUF_SIZE);
 
-private:
-  void decrypt_salt(IOBuf *chunk);
+ private:
+  void decrypt_salt(IOBuf* chunk);
 
-  void encrypt_salt(IOBuf *chunk);
+  void encrypt_salt(IOBuf* chunk);
 
-  bool chunk_decrypt_frame(uint64_t *counter, IOBuf *plaintext,
-                           const IOBuf *ciphertext,
-                           size_t *consumed_length) const;
+  bool chunk_decrypt_frame(uint64_t* counter,
+                           IOBuf* plaintext,
+                           const IOBuf* ciphertext,
+                           size_t* consumed_length) const;
 
-  bool chunk_encrypt_frame(uint64_t *counter, const IOBuf *plaintext,
-                           IOBuf *ciphertext) const;
+  bool chunk_encrypt_frame(uint64_t* counter,
+                           const IOBuf* plaintext,
+                           IOBuf* ciphertext) const;
 
-  void set_key_aead(const uint8_t *salt, size_t salt_len);
+  void set_key_aead(const uint8_t* salt, size_t salt_len);
 
-private:
+ private:
   uint8_t salt_[MAX_KEY_LENGTH];
 
   uint8_t key_[MAX_KEY_LENGTH];
@@ -95,7 +101,7 @@ private:
   uint32_t key_len_;
   uint32_t tag_len_;
 
-  cipher_impl *impl_;
+  cipher_impl* impl_;
   uint64_t counter_;
 
   bool init_;
@@ -104,4 +110,4 @@ private:
 
 extern enum cipher_method cipher_method_in_use;
 
-#endif // H_CORE_CIPHER
+#endif  // H_CORE_CIPHER

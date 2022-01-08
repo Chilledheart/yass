@@ -11,4 +11,4 @@ extern std::atomic_uint64_t total_rx_bytes;
 /// statistics of total sent bytes (non-encoded)
 extern std::atomic_uint64_t total_tx_bytes;
 
-#endif // H_SOCKS5_CONNECTION_STATS
+#endif  // H_SOCKS5_CONNECTION_STATS

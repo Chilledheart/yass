@@ -4,8 +4,12 @@
 
 namespace socks4 {
 
-request_parser::request_parser() { reset(); }
+request_parser::request_parser() {
+  reset();
+}
 
-void request_parser::reset() { state_ = request_start; }
+void request_parser::reset() {
+  state_ = request_start;
+}
 
-} // namespace socks4
+}  // namespace socks4

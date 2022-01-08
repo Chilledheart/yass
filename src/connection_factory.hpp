@@ -20,14 +20,16 @@
 #include "core/logging.hpp"
 #include "network.hpp"
 
-template <class T> class ServiceFactory {
-public:
-  ServiceFactory(asio::io_context &io_context,
-                 const asio::ip::tcp::endpoint &remote_endpoint)
+template <class T>
+class ServiceFactory {
+ public:
+  ServiceFactory(asio::io_context& io_context,
+                 const asio::ip::tcp::endpoint& remote_endpoint)
       : io_context_(io_context), remote_endpoint_(remote_endpoint) {}
 
-  asio::error_code listen(const asio::ip::tcp::endpoint &endpoint, int backlog,
-                          asio::error_code &ec) {
+  asio::error_code listen(const asio::ip::tcp::endpoint& endpoint,
+                          int backlog,
+                          asio::error_code& ec) {
     endpoint_ = endpoint;
     acceptor_ = std::make_unique<asio::ip::tcp::acceptor>(io_context_);
 
@@ -70,17 +72,18 @@ public:
 
   size_t currentConnections() const { return connections_.size(); }
 
-private:
+ private:
   void startAccept() {
     std::shared_ptr<T> conn =
         std::make_unique<T>(io_context_, remote_endpoint_);
-    acceptor_->async_accept(peer_endpoint_,
-                            std::bind(&ServiceFactory<T>::handleAccept, this,
-                                      conn, std::placeholders::_1,
-                                      std::placeholders::_2));
+    acceptor_->async_accept(
+        peer_endpoint_,
+        std::bind(&ServiceFactory<T>::handleAccept, this, conn,
+                  std::placeholders::_1, std::placeholders::_2));
   }
 
-  void handleAccept(std::shared_ptr<T> conn, asio::error_code error,
+  void handleAccept(std::shared_ptr<T> conn,
+                    asio::error_code error,
                     asio::ip::tcp::socket socket) {
     if (!error) {
       SetTCPCongestion(socket.native_handle());
@@ -108,8 +111,8 @@ private:
         connections_.end());
   }
 
-private:
-  asio::io_context &io_context_;
+ private:
+  asio::io_context& io_context_;
   const asio::ip::tcp::endpoint remote_endpoint_;
 
   asio::ip::tcp::endpoint endpoint_;
@@ -119,4 +122,4 @@ private:
   std::vector<std::shared_ptr<T>> connections_;
 };
 
-#endif // H_CONNECTION_FACTORY
+#endif  // H_CONNECTION_FACTORY

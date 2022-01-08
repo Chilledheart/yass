@@ -23,7 +23,7 @@ namespace ss {
 class SsConnection : public std::enable_shared_from_this<SsConnection>,
                      public Channel,
                      public Connection {
-public:
+ public:
   /// The state of service
   enum state {
     state_error,
@@ -32,14 +32,14 @@ public:
   };
 
   /// Convert the state of service into string
-  static const char *state_to_str(enum state state) {
+  static const char* state_to_str(enum state state) {
     switch (state) {
-    case state_error:
-      return "error";
-    case state_handshake:
-      return "handshake";
-    case state_stream:
-      return "stream";
+      case state_error:
+        return "error";
+      case state_handshake:
+        return "handshake";
+      case state_stream:
+        return "stream";
     }
     return "unknown";
   }
@@ -48,8 +48,8 @@ public:
   ///
   /// \param io_context the io context associated with the service
   /// \param remote_endpoint the upstream's endpoint
-  SsConnection(asio::io_context &io_context,
-               const asio::ip::tcp::endpoint &remote_endpoint);
+  SsConnection(asio::io_context& io_context,
+               const asio::ip::tcp::endpoint& remote_endpoint);
 
   /// Destruct the service
   ~SsConnection();
@@ -60,11 +60,11 @@ public:
   /// Close the socket and clean up
   void close() override;
 
-private:
+ private:
   /// flag to mark connection is closed
   bool closed_ = true;
 
-private:
+ private:
   /// Get the state machine to the given state
   /// state(Read)            state(Write)
   /// handshake->ReadHandshake
@@ -97,7 +97,7 @@ private:
   /// \param bytes_transferred transferred bytes
   static void ProcessReceivedData(std::shared_ptr<SsConnection> self,
                                   std::shared_ptr<IOBuf> buf,
-                                  const asio::error_code &error,
+                                  const asio::error_code& error,
                                   size_t bytes_transferred);
   /// Process the sent data
   /// \param self pointer to self
@@ -106,7 +106,7 @@ private:
   /// \param bytes_transferred transferred bytes
   static void ProcessSentData(std::shared_ptr<SsConnection> self,
                               std::shared_ptr<IOBuf> buf,
-                              const asio::error_code &error,
+                              const asio::error_code& error,
                               size_t bytes_transferred);
   /// state machine
   state state_;
@@ -118,7 +118,7 @@ private:
   /// DNS resolver
   asio::ip::tcp::resolver resolver_;
 
-private:
+ private:
   /// handle with connnect event (downstream)
   void OnConnect();
 
@@ -168,7 +168,7 @@ private:
   /// the flag to mark current read in progress
   bool downstream_read_inprogress_ = false;
 
-private:
+ private:
   /// handle with connnect event (upstream)
   void connected() override;
 
@@ -181,7 +181,7 @@ private:
   /// handle with disconnect event (upstream)
   void disconnected(asio::error_code error) override;
 
-private:
+ private:
   /// decrypt data
   std::shared_ptr<IOBuf> DecryptData(std::shared_ptr<IOBuf> buf);
   /// encrypt data
@@ -198,6 +198,6 @@ private:
   size_t wbytes_transferred_ = 0;
 };
 
-} // namespace ss
+}  // namespace ss
 
-#endif // H_SS_CONNECTION
+#endif  // H_SS_CONNECTION

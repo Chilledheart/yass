@@ -6,8 +6,8 @@
 
 #include "protocol.hpp"
 
-#include <array>
 #include <stdint.h>
+#include <array>
 #include <string>
 
 namespace socks4 {
@@ -17,12 +17,12 @@ namespace socks4 {
 const uint8_t version = 0x04;
 
 #ifdef __GNUC__
-#define PACK(__Declaration__)                                                  \
+#define PACK(__Declaration__) \
   __Declaration__ __attribute__((packed, aligned(1)))
 #endif
 
 #ifdef _MSC_VER
-#define PACK(__Declaration__)                                                  \
+#define PACK(__Declaration__) \
   __pragma(pack(push, 1)) __Declaration__ __pragma(pack(pop))
 #endif
 
@@ -56,7 +56,7 @@ PACK(struct request_header {
 //  93: request rejected because the client program and identd
 //      report different user-ids
 class reply {
-public:
+ public:
   enum status_type {
     request_granted = 0x5a,
     request_failed = 0x5b,
@@ -75,7 +75,7 @@ public:
   bool success() const { return null_byte_ == 0 && status_ == request_granted; }
 
   uint8_t status() const { return status_; }
-  uint8_t &mutable_status() { return status_; }
+  uint8_t& mutable_status() { return status_; }
 
   asio::ip::tcp::endpoint endpoint() const {
     unsigned short port = port_high_byte_;
@@ -87,7 +87,7 @@ public:
     return asio::ip::tcp::endpoint(address, port);
   }
 
-  void set_endpoint(const asio::ip::tcp::endpoint &endpoint) {
+  void set_endpoint(const asio::ip::tcp::endpoint& endpoint) {
     address_ = endpoint.address().to_v4().to_bytes();
 
     // Convert port number to network byte order.
@@ -96,7 +96,7 @@ public:
     port_low_byte_ = port & 0xff;
   }
 
-  const asio::ip::address_v4::bytes_type &address() const { return address_; }
+  const asio::ip::address_v4::bytes_type& address() const { return address_; }
 
   size_t length() const { return sizeof(uint8_t) * 4 + sizeof(address_); }
 
@@ -107,7 +107,7 @@ public:
     return port;
   }
 
-private:
+ private:
   uint8_t null_byte_;
   uint8_t status_;
   uint8_t port_high_byte_;
@@ -117,6 +117,6 @@ private:
 
 #undef PACK
 
-} // namespace socks4
+}  // namespace socks4
 
-#endif // SOCKS4_HPP
+#endif  // SOCKS4_HPP

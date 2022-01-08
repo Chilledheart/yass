@@ -13,8 +13,8 @@
 #include "config/config.hpp"
 #include "core/logging.hpp"
 
-asio::error_code
-SetTCPCongestion(asio::ip::tcp::acceptor::native_handle_type handle) {
+asio::error_code SetTCPCongestion(
+    asio::ip::tcp::acceptor::native_handle_type handle) {
   (void)handle;
 #if defined(TCP_CONGESTION)
   int fd = handle;
@@ -50,12 +50,12 @@ SetTCPCongestion(asio::ip::tcp::acceptor::native_handle_type handle) {
   }
   VLOG(2) << "Current congestion: " << buf;
 out:
-#endif // TCP_CONGESTION
+#endif  // TCP_CONGESTION
   return asio::error_code();
 }
 
-asio::error_code
-SetTCPFastOpen(asio::ip::tcp::acceptor::native_handle_type handle) {
+asio::error_code SetTCPFastOpen(
+    asio::ip::tcp::acceptor::native_handle_type handle) {
   if (!FLAGS_tcp_fastopen) {
     return asio::error_code();
   }
@@ -66,13 +66,13 @@ SetTCPFastOpen(asio::ip::tcp::acceptor::native_handle_type handle) {
 #if defined(TCP_FASTOPEN) && !defined(_WIN32)
   int fd = handle;
 #ifdef __APPLE__
-  int opt = 1; // Apple's iOS 9 and OS X 10.11 both support TCP Fast Open,
-               // but it is not enabled for individual connections by default.
-               // Public API by using connectx(2)
+  int opt = 1;  // Apple's iOS 9 and OS X 10.11 both support TCP Fast Open,
+                // but it is not enabled for individual connections by default.
+                // Public API by using connectx(2)
 #else
-  int opt = 5; // https://lwn.net/Articles/508865/
-               // Value to be chosen by application
-#endif // __APPLE__
+  int opt = 5;  // https://lwn.net/Articles/508865/
+                // Value to be chosen by application
+#endif  // __APPLE__
   int ret = setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN, &opt, sizeof(opt));
   if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
     VLOG(1) << "TCP Fast Open is not supported on this platform";
@@ -80,12 +80,12 @@ SetTCPFastOpen(asio::ip::tcp::acceptor::native_handle_type handle) {
   } else {
     VLOG(2) << "Applied current tcp_option: tcp_fastopen";
   }
-#endif // TCP_FASTOPEN
+#endif  // TCP_FASTOPEN
   return asio::error_code();
 }
 
-asio::error_code
-SetTCPFastOpenConnect(asio::ip::tcp::socket::native_handle_type handle) {
+asio::error_code SetTCPFastOpenConnect(
+    asio::ip::tcp::socket::native_handle_type handle) {
   if (!FLAGS_tcp_fastopen_connect) {
     return asio::error_code();
   }
@@ -103,12 +103,12 @@ SetTCPFastOpenConnect(asio::ip::tcp::socket::native_handle_type handle) {
   } else {
     VLOG(2) << "Applied current tcp_option: tcp_fastopen_connect";
   }
-#endif // TCP_FASTOPEN_CONNECT
+#endif  // TCP_FASTOPEN_CONNECT
   return asio::error_code();
 }
 
-asio::error_code
-SetTCPUserTimeout(asio::ip::tcp::acceptor::native_handle_type handle) {
+asio::error_code SetTCPUserTimeout(
+    asio::ip::tcp::acceptor::native_handle_type handle) {
   if (!FLAGS_tcp_user_timeout) {
     return asio::error_code();
   }
@@ -124,11 +124,11 @@ SetTCPUserTimeout(asio::ip::tcp::acceptor::native_handle_type handle) {
     VLOG(2) << "Applied current tcp_option: tcp_user_timeout "
             << FLAGS_tcp_user_timeout;
   }
-#endif // TCP_USER_TIMEOUT
+#endif  // TCP_USER_TIMEOUT
   return asio::error_code();
 }
 
-asio::error_code SetSocketLinger(asio::ip::tcp::socket *socket) {
+asio::error_code SetSocketLinger(asio::ip::tcp::socket* socket) {
   if (!FLAGS_so_linger_timeout) {
     return asio::error_code();
   }
@@ -144,7 +144,7 @@ asio::error_code SetSocketLinger(asio::ip::tcp::socket *socket) {
   return ec;
 }
 
-asio::error_code SetSocketSndBuffer(asio::ip::tcp::socket *socket) {
+asio::error_code SetSocketSndBuffer(asio::ip::tcp::socket* socket) {
   if (!FLAGS_so_snd_buffer) {
     return asio::error_code();
   }
@@ -160,7 +160,7 @@ asio::error_code SetSocketSndBuffer(asio::ip::tcp::socket *socket) {
   return ec;
 }
 
-asio::error_code SetSocketRcvBuffer(asio::ip::tcp::socket *socket) {
+asio::error_code SetSocketRcvBuffer(asio::ip::tcp::socket* socket) {
   if (!FLAGS_so_rcv_buffer) {
     return asio::error_code();
   }

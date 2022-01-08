@@ -13,14 +13,14 @@
 namespace crypto {
 
 class AeadBaseEncrypter : public Encrypter {
-public:
+ public:
   AeadBaseEncrypter(size_t key_size, size_t auth_tag_size, size_t nonce_size);
   virtual ~AeadBaseEncrypter();
 
-  bool SetKey(const char *key, size_t key_len) override;
-  bool SetNoncePrefix(const char *nonce_prefix,
+  bool SetKey(const char* key, size_t key_len) override;
+  bool SetNoncePrefix(const char* nonce_prefix,
                       size_t nonce_prefix_len) override;
-  bool SetIV(const char *iv, size_t iv_len) override;
+  bool SetIV(const char* iv, size_t iv_len) override;
 
   size_t GetKeySize() const override;
   size_t GetNoncePrefixSize() const override;
@@ -29,10 +29,10 @@ public:
   size_t GetCiphertextSize(size_t plaintext_size) const override;
   size_t GetTagSize() const override;
 
-  const uint8_t *GetKey() const override;
-  const uint8_t *GetNoncePrefix() const override;
+  const uint8_t* GetKey() const override;
+  const uint8_t* GetNoncePrefix() const override;
 
-protected:
+ protected:
   static const size_t kMaxKeySize = 64;
   enum : size_t { kMaxNonceSize = 32 };
 
@@ -46,6 +46,6 @@ protected:
   uint8_t iv_[kMaxNonceSize];
 };
 
-} // namespace crypto
+}  // namespace crypto
 
-#endif // H_CRYPTO_AEAD_BASE_ENCRYPTER
+#endif  // H_CRYPTO_AEAD_BASE_ENCRYPTER

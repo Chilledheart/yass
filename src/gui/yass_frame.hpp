@@ -12,9 +12,10 @@
 class LeftPanel;
 class RightPanel;
 class YASSFrame : public wxFrame {
-public:
-  YASSFrame(const wxString &title, const wxPoint &pos = wxDefaultPosition,
-            const wxSize &size = wxDefaultSize);
+ public:
+  YASSFrame(const wxString& title,
+            const wxPoint& pos = wxDefaultPosition,
+            const wxSize& size = wxDefaultSize);
 
   std::string GetServerHost();
   std::string GetServerPort();
@@ -30,21 +31,21 @@ public:
 
   void UpdateStatus();
 
-private:
-  void OnAbout(wxCommandEvent &event);
-  void OnOption(wxCommandEvent &event);
+ private:
+  void OnAbout(wxCommandEvent& event);
+  void OnOption(wxCommandEvent& event);
 #if wxCHECK_VERSION(3, 1, 3)
-  void OnDPIChanged(wxDPIChangedEvent &event);
+  void OnDPIChanged(wxDPIChangedEvent& event);
 #endif
 
-  void OnIdle(wxIdleEvent &event);
-  void OnClose(wxCloseEvent &event);
+  void OnIdle(wxIdleEvent& event);
+  void OnClose(wxCloseEvent& event);
 
   friend class YASSApp;
-  LeftPanel *m_leftpanel = nullptr;
-  RightPanel *m_rightpanel = nullptr;
+  LeftPanel* m_leftpanel = nullptr;
+  RightPanel* m_rightpanel = nullptr;
 
-private:
+ private:
   wxDECLARE_EVENT_TABLE();
 
   uint64_t last_sync_time_ = 0;
@@ -58,4 +59,4 @@ enum {
   ID_Option = 1,
 };
 
-#endif // YASS_FRAME
+#endif  // YASS_FRAME

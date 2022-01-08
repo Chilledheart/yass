@@ -6,26 +6,28 @@
 #include "core/logging.hpp"
 #ifdef _WIN32
 
-#define DEFAULT_AUTOSTART_KEY                                                  \
+#define DEFAULT_AUTOSTART_KEY \
   L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"
 
 #include <Tchar.h>
 #include <shellscalingapi.h>
 #include <windows.h>
 
-HANDLE EnsureShcoreLoaded() { return LoadLibraryExW(L"Shcore.dll", 0, 0); }
+HANDLE EnsureShcoreLoaded() {
+  return LoadLibraryExW(L"Shcore.dll", 0, 0);
+}
 
-typedef HRESULT(__stdcall *PFNSETPROCESSDPIAWARENESS)(PROCESS_DPI_AWARENESS);
+typedef HRESULT(__stdcall* PFNSETPROCESSDPIAWARENESS)(PROCESS_DPI_AWARENESS);
 
-static LONG get_win_run_key(HKEY *pKey) {
-  const wchar_t *key_run = DEFAULT_AUTOSTART_KEY;
+static LONG get_win_run_key(HKEY* pKey) {
+  const wchar_t* key_run = DEFAULT_AUTOSTART_KEY;
   LONG result =
       RegOpenKeyExW(HKEY_CURRENT_USER, key_run, 0L, KEY_WRITE | KEY_READ, pKey);
 
   return result;
 }
 
-static int add_to_auto_start(const wchar_t *appname_w, const wchar_t *path_w) {
+static int add_to_auto_start(const wchar_t* appname_w, const wchar_t* path_w) {
   HKEY hKey;
   LONG result = get_win_run_key(&hKey);
   if (result != ERROR_SUCCESS) {
@@ -34,7 +36,7 @@ static int add_to_auto_start(const wchar_t *appname_w, const wchar_t *path_w) {
 
   DWORD n = sizeof(wchar_t) * (wcslen(path_w) + 1);
 
-  result = RegSetValueExW(hKey, appname_w, 0, REG_SZ, (const BYTE *)path_w, n);
+  result = RegSetValueExW(hKey, appname_w, 0, REG_SZ, (const BYTE*)path_w, n);
 
   RegCloseKey(hKey);
   if (result != ERROR_SUCCESS) {
@@ -44,7 +46,7 @@ static int add_to_auto_start(const wchar_t *appname_w, const wchar_t *path_w) {
   return 0;
 }
 
-static int delete_from_auto_start(const wchar_t *appname) {
+static int delete_from_auto_start(const wchar_t* appname) {
   HKEY hKey;
   LONG result = get_win_run_key(&hKey);
   if (result != ERROR_SUCCESS) {
@@ -108,7 +110,9 @@ bool Utils::GetAutoStart() {
   return ret == 1;
 }
 
-void Utils::EnableAutoStart(bool on) { set_yass_auto_start(on); }
+void Utils::EnableAutoStart(bool on) {
+  set_yass_auto_start(on);
+}
 
 bool Utils::SetProcessDpiAwareness() {
   HANDLE hLibrary = EnsureShcoreLoaded();

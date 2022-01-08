@@ -3,30 +3,32 @@
 
 #include "core/iobuf.hpp"
 
-inline size_t goodMallocSize(size_t minSize) noexcept { return minSize; }
+inline size_t goodMallocSize(size_t minSize) noexcept {
+  return minSize;
+}
 
 /**
  * Trivial wrappers around malloc, calloc, realloc that check for allocation
  * failure and throw std::bad_alloc in that case.
  */
-inline void *checkedMalloc(size_t size) {
-  void *p = malloc(size);
+inline void* checkedMalloc(size_t size) {
+  void* p = malloc(size);
   if (!p) {
     std::abort();
   }
   return p;
 }
 
-inline void *checkedCalloc(size_t n, size_t size) {
-  void *p = calloc(n, size);
+inline void* checkedCalloc(size_t n, size_t size) {
+  void* p = calloc(n, size);
   if (!p) {
     std::abort();
   }
   return p;
 }
 
-inline void *checkedRealloc(void *ptr, size_t size) {
-  void *p = realloc(ptr, size);
+inline void* checkedRealloc(void* ptr, size_t size) {
+  void* p = realloc(ptr, size);
   if (!p) {
     std::abort();
   }
@@ -51,12 +53,15 @@ static inline size_t goodExtBufferSize(std::size_t minCapacity) {
 
 IOBuf::IOBuf(CreateOp, std::size_t capacity) : data_(nullptr), length_(0) {
   capacity_ = goodExtBufferSize(capacity);
-  buf_ = static_cast<uint8_t *>(checkedMalloc(capacity));
+  buf_ = static_cast<uint8_t*>(checkedMalloc(capacity));
   data_ = buf_;
 }
 
-IOBuf::IOBuf(CopyBufferOp /* op */, const void *buf, std::size_t size,
-             std::size_t headroom, std::size_t minTailroom)
+IOBuf::IOBuf(CopyBufferOp /* op */,
+             const void* buf,
+             std::size_t size,
+             std::size_t headroom,
+             std::size_t minTailroom)
     : IOBuf(CREATE, headroom + size + minTailroom) {
   advance(headroom);
   if (size > 0) {
@@ -66,7 +71,9 @@ IOBuf::IOBuf(CopyBufferOp /* op */, const void *buf, std::size_t size,
   }
 }
 
-IOBuf::IOBuf(CopyBufferOp op, ByteRange br, std::size_t headroom,
+IOBuf::IOBuf(CopyBufferOp op,
+             ByteRange br,
+             std::size_t headroom,
              std::size_t minTailroom)
     : IOBuf(op, br.data(), br.size(), headroom, minTailroom) {}
 
@@ -90,8 +97,10 @@ IOBuf IOBuf::cloneAsValue() const {
 
 IOBuf::IOBuf() noexcept {}
 
-IOBuf::IOBuf(IOBuf &&other) noexcept
-    : buf_(other.buf_), data_(other.data_), length_(other.length_),
+IOBuf::IOBuf(IOBuf&& other) noexcept
+    : buf_(other.buf_),
+      data_(other.data_),
+      length_(other.length_),
       capacity_(other.capacity_) {
   // Reset other so it is a clean state to be destroyed.
   other.buf_ = nullptr;
@@ -100,16 +109,21 @@ IOBuf::IOBuf(IOBuf &&other) noexcept
   other.capacity_ = 0;
 }
 
-IOBuf::IOBuf(const IOBuf &other) { *this = other.cloneAsValue(); }
+IOBuf::IOBuf(const IOBuf& other) {
+  *this = other.cloneAsValue();
+}
 
-IOBuf::IOBuf(InternalConstructor, uint8_t *buf, std::size_t capacity,
-             uint8_t *data, std::size_t length) noexcept
+IOBuf::IOBuf(InternalConstructor,
+             uint8_t* buf,
+             std::size_t capacity,
+             uint8_t* data,
+             std::size_t length) noexcept
     : buf_(buf), data_(data), length_(length), capacity_(capacity) {
   DCHECK(data >= buf);
   DCHECK(data + length <= buf + capacity);
 }
 
-IOBuf &IOBuf::operator=(IOBuf &&other) noexcept {
+IOBuf& IOBuf::operator=(IOBuf&& other) noexcept {
   if (this == &other) {
     return *this;
   }
@@ -127,7 +141,7 @@ IOBuf &IOBuf::operator=(IOBuf &&other) noexcept {
   return *this;
 }
 
-IOBuf &IOBuf::operator=(const IOBuf &other) {
+IOBuf& IOBuf::operator=(const IOBuf& other) {
   if (this != &other) {
     *this = IOBuf(other);
   }
@@ -153,14 +167,14 @@ void IOBuf::reserveSlow(std::size_t minHeadroom, std::size_t minTailroom) {
   //     headroom + data + tailroom, see smartRealloc in folly/memory/Malloc.h)
   // - Otherwise, bite the bullet and reallocate.
   if (headroom() + tailroom() >= minHeadroom + minTailroom) {
-    uint8_t *newData = mutable_buffer() + minHeadroom;
+    uint8_t* newData = mutable_buffer() + minHeadroom;
     memmove(newData, data_, length_);
     data_ = newData;
     return;
   }
 
   size_t newAllocatedCapacity = 0;
-  uint8_t *newBuffer = nullptr;
+  uint8_t* newBuffer = nullptr;
   std::size_t newHeadroom = 0;
   std::size_t oldHeadroom = headroom();
 
@@ -169,11 +183,11 @@ void IOBuf::reserveSlow(std::size_t minHeadroom, std::size_t minTailroom) {
     newAllocatedCapacity = goodExtBufferSize(newCapacity + headSlack);
     size_t copySlack = capacity() - length_;
     if (copySlack * 2 <= length_) {
-      void *p = realloc(buf_, newAllocatedCapacity);
+      void* p = realloc(buf_, newAllocatedCapacity);
       if (p == nullptr) {
         std::abort();
       }
-      newBuffer = static_cast<uint8_t *>(p);
+      newBuffer = static_cast<uint8_t*>(p);
       newHeadroom = oldHeadroom;
     }
   }
@@ -182,7 +196,7 @@ void IOBuf::reserveSlow(std::size_t minHeadroom, std::size_t minTailroom) {
   // an internal buffer).  malloc/copy/free.
   if (newBuffer == nullptr) {
     newAllocatedCapacity = goodExtBufferSize(newCapacity);
-    newBuffer = static_cast<uint8_t *>(checkedMalloc(newAllocatedCapacity));
+    newBuffer = static_cast<uint8_t*>(checkedMalloc(newAllocatedCapacity));
     if (length_ > 0) {
       DCHECK(data_ != nullptr);
       memcpy(newBuffer + minHeadroom, data_, length_);

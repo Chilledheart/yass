@@ -23,7 +23,7 @@
 #define SOCKET_BUF_SIZE (4096)
 
 #ifndef NDEBUG
-inline void DumpHex(const char *prefix, const uint8_t *data, uint32_t length) {
+inline void DumpHex(const char* prefix, const uint8_t* data, uint32_t length) {
   if (!VLOG_IS_ON(3)) {
     return;
   }
@@ -41,8 +41,8 @@ inline void DumpHex(const char *prefix, const uint8_t *data, uint32_t length) {
   fprintf(stderr, "\n");
 }
 
-inline void DumpHex(const char *prefix, const IOBuf *buf) {
-  const uint8_t *data = buf->data();
+inline void DumpHex(const char* prefix, const IOBuf* buf) {
+  const uint8_t* data = buf->data();
   uint32_t length = buf->length();
   DumpHex(prefix, data, length);
 }
@@ -50,4 +50,4 @@ inline void DumpHex(const char *prefix, const IOBuf *buf) {
 #define DumpHex(...)
 #endif
 
-#endif // H_PROTOCOL
+#endif  // H_PROTOCOL

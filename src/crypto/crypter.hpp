@@ -11,7 +11,7 @@
 namespace crypto {
 
 class Crypter {
-public:
+ public:
   virtual ~Crypter();
 
   // Sets the symmetric encryption/decryption key. Returns true on success,
@@ -19,7 +19,7 @@ public:
   //
   // NOTE: The key is the client_write_key or server_write_key derived from
   // the master secret.
-  virtual bool SetKey(const char *key, size_t key_len) = 0;
+  virtual bool SetKey(const char* key, size_t key_len) = 0;
 
   // Sets the fixed initial bytes of the nonce. Returns true on success,
   // false on failure. This method must only be used with Google QUIC crypters.
@@ -36,7 +36,7 @@ public:
   //
   // The security of the nonce format requires that QUIC never reuse a
   // packet number, even when retransmitting a lost packet.
-  virtual bool SetNoncePrefix(const char *nonce_prefix,
+  virtual bool SetNoncePrefix(const char* nonce_prefix,
                               size_t nonce_prefix_len) = 0;
 
   // Sets |iv| as the initialization vector to use when constructing the nonce.
@@ -64,7 +64,7 @@ public:
   //
   // The security of the nonce format requires that QUIC never reuse a
   // packet number, even when retransmitting a lost packet.
-  virtual bool SetIV(const char *iv, size_t iv_len) = 0;
+  virtual bool SetIV(const char* iv, size_t iv_len) = 0;
 
 #if 0
   // Sets the key to use for header protection.
@@ -84,6 +84,6 @@ public:
   virtual size_t GetTagSize() const = 0;
 };
 
-} // namespace crypto
+}  // namespace crypto
 
-#endif // H_CRYPTO_CRYPTER
+#endif  // H_CRYPTO_CRYPTER

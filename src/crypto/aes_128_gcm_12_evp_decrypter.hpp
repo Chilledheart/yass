@@ -15,7 +15,7 @@
 namespace crypto {
 
 class Aes128Gcm12EvpDecrypter : public AeadEvpDecrypter {
-public:
+ public:
   enum : size_t {
     kAuthTagSize = 12,
   };
@@ -26,8 +26,8 @@ public:
   uint32_t cipher_id() const override;
 };
 
-} // namespace crypto
+}  // namespace crypto
 
 #endif
 
-#endif // H_CRYPTO_AES128_GCM12_EVP_DECRYPTER
+#endif  // H_CRYPTO_AES128_GCM12_EVP_DECRYPTER
