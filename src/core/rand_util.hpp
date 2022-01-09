@@ -53,4 +53,8 @@ class RandomBitGenerator {
   ~RandomBitGenerator() = default;
 };
 
+#ifndef __WIN32__
+int GetUrandomFD();
+#endif  // __WIN32__
+
 #endif  // CORE_RAND_UTIL

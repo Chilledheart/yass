@@ -3,13 +3,6 @@
 
 #include "core/rand_util.hpp"
 
-#ifdef HAVE_BORINGSSL
-#include <openssl/rand.h>
-#else
-#include <sodium/core.h>
-#include <sodium/randombytes.h>
-#endif
-
 #include <limits.h>
 #include <math.h>
 #include <stdint.h>
@@ -18,20 +11,6 @@
 #include <limits>
 
 #include "core/logging.hpp"
-
-/* RAND_bytes() returns 1 on success, 0 otherwise*/
-#ifdef HAVE_BORINGSSL
-#define crypto_RAND_bytes RAND_bytes
-#elif defined(HAVE_LIBSODIUM)
-static int crypto_RAND_bytes(uint8_t* out, size_t out_len) {
-  // Initialize sodium for random generator
-  if (sodium_init() == -1) {
-    return 0;
-  }
-  ::randombytes(out, out_len);
-  return 1;
-}
-#endif
 
 uint64_t RandUint64() {
   uint64_t number;
@@ -96,8 +75,4 @@ std::string RandBytesAsString(size_t length) {
   result.resize(length);
   RandBytes(&result[0], length);
   return result;
-}
-
-void RandBytes(void* output, size_t output_length) {
-  crypto_RAND_bytes(reinterpret_cast<uint8_t*>(output), output_length);
 }

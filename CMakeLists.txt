@@ -617,6 +617,12 @@ set(hfiles
     src/crypto/xchacha20_poly1305_sodium_encrypter.hpp
     )
 
+if (MSVC)
+  list(APPEND files src/core/rand_util_win.cpp)
+else()
+  list(APPEND files src/core/rand_util_posix.cpp)
+endif()
+
 add_library(yass_base OBJECT
     ${files} ${hfiles}
     )
