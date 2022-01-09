@@ -45,9 +45,8 @@ static void http_request_reforge_to_bytes(
     const std::string& url,
     const std::unordered_map<std::string, std::string>& headers) {
   std::stringstream ss;
-  ss << http_method_str((http_method)p->method) << " "
-     << url  // NOLINT(google-*)
-     << " HTTP/1.1\r\n";
+  ss << http_method_str((http_method)p->method) << " "  // NOLINT(google-*)
+     << url << " HTTP/1.1\r\n";
   for (const std::pair<std::string, std::string> pair : headers) {
     if (pair.first == "Proxy-Connection") {
       continue;
