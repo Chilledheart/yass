@@ -4,6 +4,7 @@
 #ifndef H_STREAM
 #define H_STREAM
 
+#include <absl/flags/flag.h>
 #include <asio/error_code.hpp>
 #include <asio/ip/tcp.hpp>
 #include <asio/read.hpp>
@@ -44,7 +45,8 @@ class stream {
     eof_ = false;
     read_enabled_ = true;
     SetTCPFastOpenConnect(socket_.native_handle());
-    connect_timer_.expires_from_now(std::chrono::milliseconds(FLAGS_timeout));
+    connect_timer_.expires_from_now(
+        std::chrono::milliseconds(absl::GetFlag(FLAGS_timeout)));
     connect_timer_.async_wait(
         std::bind(&stream::on_connect_expired, this, std::placeholders::_1));
     socket_.async_connect(endpoint_, std::bind(&stream::on_connect, this,

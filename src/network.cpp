@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #endif
 
+#include <absl/flags/flag.h>
 #include <cerrno>
 
 #include "config/config.hpp"
@@ -26,20 +27,21 @@ asio::error_code SetTCPCongestion(
     VLOG(1) << "TCP_CONGESTION is not supported on this platform";
     goto out;
   }
-  if (buf != FLAGS_congestion_algorithm) {
-    len = FLAGS_congestion_algorithm.size();
+  if (buf != absl::GetFlag(FLAGS_congestion_algorithm)) {
+    len = absl::GetFlag(FLAGS_congestion_algorithm).size();
     ret = setsockopt(fd, IPPROTO_TCP, TCP_CONGESTION,
-                     FLAGS_congestion_algorithm.c_str(), len);
+                     absl::GetFlag(FLAGS_congestion_algorithm).c_str(), len);
     if (ret < 0) {
-      VLOG(1) << "Congestion algorithm \"" << FLAGS_congestion_algorithm
+      VLOG(1) << "Congestion algorithm \""
+              << absl::GetFlag(FLAGS_congestion_algorithm)
               << "\" is not supported on this platform";
       VLOG(1) << "Current congestion: " << buf;
-      FLAGS_congestion_algorithm = buf;
+      absl::SetFlag(&FLAGS_congestion_algorithm, buf);
       goto out;
     } else {
       VLOG(2) << "Previous congestion: " << buf;
       VLOG(2) << "Applied current congestion algorithm: "
-              << FLAGS_congestion_algorithm;
+              << absl::GetFlag(FLAGS_congestion_algorithm);
     }
   }
   len = sizeof(buf);
@@ -56,7 +58,7 @@ out:
 
 asio::error_code SetTCPFastOpen(
     asio::ip::tcp::acceptor::native_handle_type handle) {
-  if (!FLAGS_tcp_fastopen) {
+  if (!absl::GetFlag(FLAGS_tcp_fastopen)) {
     return asio::error_code();
   }
   (void)handle;
@@ -76,7 +78,7 @@ asio::error_code SetTCPFastOpen(
   int ret = setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN, &opt, sizeof(opt));
   if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
     VLOG(1) << "TCP Fast Open is not supported on this platform";
-    FLAGS_tcp_fastopen = false;
+    absl::SetFlag(&FLAGS_tcp_fastopen, false);
   } else {
     VLOG(2) << "Applied current tcp_option: tcp_fastopen";
   }
@@ -86,7 +88,7 @@ asio::error_code SetTCPFastOpen(
 
 asio::error_code SetTCPFastOpenConnect(
     asio::ip::tcp::socket::native_handle_type handle) {
-  if (!FLAGS_tcp_fastopen_connect) {
+  if (!absl::GetFlag(FLAGS_tcp_fastopen_connect)) {
     return asio::error_code();
   }
   (void)handle;
@@ -99,7 +101,7 @@ asio::error_code SetTCPFastOpenConnect(
       setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN_CONNECT, &opt, sizeof(opt));
   if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
     VLOG(2) << "TCP Fast Open Connect is not supported on this platform";
-    FLAGS_tcp_fastopen_connect = false;
+    absl::SetFlag(&FLAGS_tcp_fastopen_connect, false);
   } else {
     VLOG(2) << "Applied current tcp_option: tcp_fastopen_connect";
   }
@@ -109,69 +111,75 @@ asio::error_code SetTCPFastOpenConnect(
 
 asio::error_code SetTCPUserTimeout(
     asio::ip::tcp::acceptor::native_handle_type handle) {
-  if (!FLAGS_tcp_user_timeout) {
+  if (!absl::GetFlag(FLAGS_tcp_user_timeout)) {
     return asio::error_code();
   }
   (void)handle;
 #if defined(TCP_USER_TIMEOUT)
   int fd = handle;
-  unsigned int opt = FLAGS_tcp_user_timeout;
+  unsigned int opt = absl::GetFlag(FLAGS_tcp_user_timeout);
   int ret = setsockopt(fd, IPPROTO_TCP, TCP_USER_TIMEOUT, &opt, sizeof(opt));
   if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
     VLOG(1) << "TCP User Timeout is not supported on this platform";
-    FLAGS_tcp_user_timeout = 0;
+    absl::SetFlag(FLAGS_tcp_user_timeout, 0);
   } else {
     VLOG(2) << "Applied current tcp_option: tcp_user_timeout "
-            << FLAGS_tcp_user_timeout;
+            << absl::GetFlag(FLAGS_tcp_user_timeout);
   }
 #endif  // TCP_USER_TIMEOUT
   return asio::error_code();
 }
 
 asio::error_code SetSocketLinger(asio::ip::tcp::socket* socket) {
-  if (!FLAGS_so_linger_timeout) {
+  if (!absl::GetFlag(FLAGS_so_linger_timeout)) {
     return asio::error_code();
   }
-  asio::socket_base::linger option(true, FLAGS_so_linger_timeout);
+  asio::socket_base::linger option(true,
+                                   absl::GetFlag(FLAGS_so_linger_timeout));
   asio::error_code ec;
   socket->set_option(option, ec);
   if (ec) {
     VLOG(1) << "SO Linger is not supported on this platform: " << ec;
-    FLAGS_so_linger_timeout = 0;
+    absl::SetFlag(&FLAGS_so_linger_timeout, 0);
   } else {
-    VLOG(2) << "Applied SO Linger by " << FLAGS_so_linger_timeout << " seconds";
+    VLOG(2) << "Applied SO Linger by " << absl::GetFlag(FLAGS_so_linger_timeout)
+      << " seconds";
   }
   return ec;
 }
 
 asio::error_code SetSocketSndBuffer(asio::ip::tcp::socket* socket) {
-  if (!FLAGS_so_snd_buffer) {
+  if (!absl::GetFlag(FLAGS_so_snd_buffer)) {
     return asio::error_code();
   }
-  asio::socket_base::send_buffer_size option(FLAGS_so_snd_buffer);
+  asio::socket_base::send_buffer_size option(
+      absl::GetFlag(FLAGS_so_snd_buffer));
   asio::error_code ec;
   socket->set_option(option, ec);
   if (ec) {
     VLOG(1) << "SO_SNDBUF is not supported on this platform: " << ec;
-    FLAGS_so_snd_buffer = 0;
+    absl::SetFlag(&FLAGS_so_snd_buffer, 0);
   } else {
-    VLOG(2) << "Applied SO_SNDBUF by " << FLAGS_so_snd_buffer << " bytes";
+    VLOG(2) << "Applied SO_SNDBUF by " << absl::GetFlag(FLAGS_so_snd_buffer)
+      << " bytes";
   }
   return ec;
 }
 
 asio::error_code SetSocketRcvBuffer(asio::ip::tcp::socket* socket) {
-  if (!FLAGS_so_rcv_buffer) {
+  if (!absl::GetFlag(FLAGS_so_rcv_buffer)) {
     return asio::error_code();
   }
-  asio::socket_base::receive_buffer_size option(FLAGS_so_rcv_buffer);
+  asio::socket_base::receive_buffer_size option(
+      absl::GetFlag(FLAGS_so_rcv_buffer));
   asio::error_code ec;
   socket->set_option(option, ec);
   if (ec) {
     VLOG(1) << "SO_RCVBUF is not supported on this platform: " << ec;
-    FLAGS_so_rcv_buffer = 0;
+    absl::SetFlag(&FLAGS_so_rcv_buffer, 0);
   } else {
-    VLOG(2) << "Applied SO_RCVBUF by " << FLAGS_so_rcv_buffer << " bytes";
+    VLOG(2) << "Applied SO_RCVBUF by " << absl::GetFlag(FLAGS_so_rcv_buffer)
+      << " bytes";
   }
   return ec;
 }

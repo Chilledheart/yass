@@ -2,6 +2,7 @@
 /* Copyright (c) 2019-2020 Chilledheart  */
 #include "gui/yass.hpp"
 
+#include <absl/flags/flag.h>
 #include <stdexcept>
 #include <string>
 #ifdef __APPLE__
@@ -114,14 +115,14 @@ void YASSApp::LoadConfigFromDisk() {
 }
 
 void YASSApp::SaveConfigToDisk() {
-  FLAGS_server_host = frame_->GetServerHost();
-  FLAGS_server_port = Utils::Stoi(frame_->GetServerPort());
-  FLAGS_password = frame_->GetPassword();
-  FLAGS_method = frame_->GetMethod();
-  FLAGS_local_host = frame_->GetLocalHost();
-  FLAGS_local_port = Utils::Stoi(frame_->GetLocalPort());
-  cipher_method_in_use = to_cipher_method(FLAGS_method);
-  FLAGS_timeout = Utils::Stoi(frame_->GetTimeout());
+  absl::SetFlag(&FLAGS_server_host, frame_->GetServerHost());
+  absl::SetFlag(&FLAGS_server_port, Utils::Stoi(frame_->GetServerPort()));
+  absl::SetFlag(&FLAGS_password, frame_->GetPassword());
+  absl::SetFlag(&FLAGS_method, frame_->GetMethod());
+  absl::SetFlag(&FLAGS_local_host, frame_->GetLocalHost());
+  absl::SetFlag(&FLAGS_local_port, Utils::Stoi(frame_->GetLocalPort()));
+  cipher_method_in_use = to_cipher_method(absl::GetFlag(FLAGS_method));
+  absl::SetFlag(&FLAGS_timeout, Utils::Stoi(frame_->GetTimeout()));
 
   config::SaveConfig();
 }

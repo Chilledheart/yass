@@ -5,7 +5,8 @@
 #include "config/config.hpp"
 #include "core/cipher.hpp"
 
-#include <gflags/gflags.h>
+#include <absl/flags/flag.h>
+#include <absl/flags/parse.h>
 
 #include "core/asio.hpp"
 #include "core/logging.hpp"
@@ -37,7 +38,7 @@ int main(int argc, const char* argv[]) {
   ::FLAGS_logbuflevel = 1;
   ::FLAGS_v = 2;
 #endif
-  ::google::ParseCommandLineFlags(&argc, const_cast<char***>(&argv), true);
+  absl::ParseCommandLine(argc, const_cast<char**>(argv));
   ::google::InstallFailureSignalHandler();
 
   (void)config::ReadConfig();
@@ -46,9 +47,11 @@ int main(int argc, const char* argv[]) {
   }
 
   asio::ip::tcp::endpoint endpoint(
-      resolveEndpoint(&io_context, FLAGS_local_host, FLAGS_local_port));
+      resolveEndpoint(&io_context, absl::GetFlag(FLAGS_local_host),
+                      absl::GetFlag(FLAGS_local_port)));
   asio::ip::tcp::endpoint remoteEndpoint(
-      resolveEndpoint(&io_context, FLAGS_server_host, FLAGS_server_port));
+      resolveEndpoint(&io_context, absl::GetFlag(FLAGS_server_host),
+                      absl::GetFlag(FLAGS_server_port)));
 
   LOG(WARNING) << "using " << endpoint << " with upstream " << remoteEndpoint;
 

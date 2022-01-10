@@ -74,7 +74,6 @@ if (NOT MSVC)
         set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto -fwhole-program-vtables")
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto -fwhole-program-vtables")
         set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -flto -fwhole-program-vtables")
-        set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} -flto -fwhole-program-vtables")
         set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -flto -fwhole-program-vtables")
     endif()
 
@@ -308,8 +307,6 @@ if (MSVC)
     set(VCPKG_STATIC_LIB_DEBUG_PATH ${VCPKG_ROOT_DIR}/installed/${VCPKG_TARGET_TRIPLET}/debug/lib)
 
     add_definitions(-DGLOG_STATIC)
-    add_definitions(-DGFLAGS_DLL_DECLARE_FLAG=)
-    add_definitions(-DGFLAGS_DLL_DEFINE_FLAG=)
     add_definitions(-DGOOGLE_GLOG_DLL_DECL=)
 
     include_directories(${VCPKG_INCLUDE_DIRS} SYSTEM)
@@ -324,15 +321,6 @@ if (MSVC)
     set(GLOG_LIB
       debug ${GLOG_DEBUG_LIB}
       optimized ${GLOG_RELEASE_LIB}
-      )
-
-    find_library(GFLAGS_RELEASE_LIB gflags_static
-      PATHS ${VCPKG_STATIC_LIB_PATH} NO_DEFAULT_PATH)
-    find_library(GFLAGS_DEBUG_LIB gflags_static_debug
-      PATHS ${VCPKG_STATIC_LIB_DEBUG_PATH} NO_DEFAULT_PATH)
-    set(GFLAGS_LIB
-      debug ${GFLAGS_DEBUG_LIB}
-      optimized ${GFLAGS_RELEASE_LIB}
       )
 
     # libsodium
@@ -464,7 +452,6 @@ int main() {
     endif()
 
     find_library(GLOG_LIB glog)
-    find_library(GFLAGS_LIB gflags)
 
     find_library(SODIUM_LIB sodium)
     check_include_file(sodium.h SODIUM_INCLUDE)
@@ -494,15 +481,18 @@ endif()
 
 set(SUPPORT_LIBS
     ${GLOG_LIB}
-    ${GFLAGS_LIB}
     ${JSONCPP_LIB}
     ${SYSTEM_LIBS}
     absl::flat_hash_map
     absl::flat_hash_set
+    absl::flags
+    absl::flags_parse
+    absl::synchronization
     absl::stacktrace
     absl::symbolize
     absl::status
     absl::strings
+    absl::raw_logging_internal
     absl::time
     absl::optional
     )

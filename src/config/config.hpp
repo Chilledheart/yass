@@ -4,12 +4,14 @@
 #ifndef H_CONFIG_CONFIG
 #define H_CONFIG_CONFIG
 
+#include <cstdint>
+
 #ifdef _WIN32
 #include <malloc.h>
 #endif
 
-#include <gflags/gflags_declare.h>
-
+#include <absl/flags/declare.h>
+#include <string>
 
 // TBD: read settinsg from json config file
 
@@ -33,26 +35,26 @@
 #define DEFAULT_SO_SND_BUFFER (16 * 1024)
 #define DEFAULT_SO_RCV_BUFFER (128 * 1024)
 
-DECLARE_string(configfile);
-DECLARE_string(server_host);
-DECLARE_int32(server_port);
-DECLARE_string(password);
-DECLARE_string(method);
-DECLARE_string(local_host);
-DECLARE_int32(local_port);
-DECLARE_string(password);
-DECLARE_bool(reuse_port);
-DECLARE_string(congestion_algorithm);
-DECLARE_bool(tcp_fastopen);
-DECLARE_bool(tcp_fastopen_connect);
-DECLARE_bool(auto_start);
+ABSL_DECLARE_FLAG(std::string, configfile);
+ABSL_DECLARE_FLAG(std::string, server_host);
+ABSL_DECLARE_FLAG(int32_t, server_port);
+ABSL_DECLARE_FLAG(std::string, password);
+ABSL_DECLARE_FLAG(std::string, method);
+ABSL_DECLARE_FLAG(std::string, local_host);
+ABSL_DECLARE_FLAG(int32_t, local_port);
+ABSL_DECLARE_FLAG(std::string, password);
+ABSL_DECLARE_FLAG(bool,reuse_port);
+ABSL_DECLARE_FLAG(std::string, congestion_algorithm);
+ABSL_DECLARE_FLAG(bool,tcp_fastopen);
+ABSL_DECLARE_FLAG(bool,tcp_fastopen_connect);
+ABSL_DECLARE_FLAG(bool,auto_start);
 
-DECLARE_int32(timeout);
-DECLARE_int32(tcp_user_timeout);
-DECLARE_int32(so_linger_timeout);
+ABSL_DECLARE_FLAG(int32_t, timeout);
+ABSL_DECLARE_FLAG(int32_t, tcp_user_timeout);
+ABSL_DECLARE_FLAG(int32_t, so_linger_timeout);
 
-DECLARE_int32(so_snd_buffer);
-DECLARE_int32(so_rcv_buffer);
+ABSL_DECLARE_FLAG(int32_t, so_snd_buffer);
+ABSL_DECLARE_FLAG(int32_t, so_rcv_buffer);
 
 namespace config {
 bool ReadConfig();

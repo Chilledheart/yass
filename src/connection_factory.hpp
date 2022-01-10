@@ -4,6 +4,7 @@
 #ifndef H_CONNECTION_FACTORY
 #define H_CONNECTION_FACTORY
 
+#include <absl/flags/flag.h>
 #include <algorithm>
 #include <asio/buffer.hpp>
 #include <asio/error.hpp>
@@ -38,7 +39,7 @@ class ServiceFactory {
     if (ec) {
       return ec;
     }
-    if (FLAGS_reuse_port) {
+    if (absl::GetFlag(FLAGS_reuse_port)) {
       acceptor_->set_option(asio::ip::tcp::acceptor::reuse_address(true), ec);
     }
     SetTCPFastOpen(acceptor_->native_handle());

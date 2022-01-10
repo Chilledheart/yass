@@ -3,6 +3,7 @@
 
 #include "ss_connection.hpp"
 
+#include <absl/flags/flag.h>
 #include <asio/error_code.hpp>
 #include <asio/read.hpp>
 #include <asio/write.hpp>
@@ -21,8 +22,13 @@ SsConnection::SsConnection(asio::io_context& io_context,
     : Connection(io_context, remote_endpoint),
       state_(),
       resolver_(io_context_),
-      encoder_(new cipher("", FLAGS_password, cipher_method_in_use, true)),
-      decoder_(new cipher("", FLAGS_password, cipher_method_in_use)) {}
+      encoder_(new cipher("",
+                          absl::GetFlag(FLAGS_password),
+                          cipher_method_in_use,
+                          true)),
+      decoder_(
+          new cipher("", absl::GetFlag(FLAGS_password), cipher_method_in_use)) {
+}
 
 SsConnection::~SsConnection() = default;
 

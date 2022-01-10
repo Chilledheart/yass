@@ -3,9 +3,11 @@
 
 #include "gui/yass_frame.hpp"
 
-#include <wx/stattext.h>
+#include <absl/flags/flag.h>
 #include <iomanip>
+#include <wx/stattext.h>
 #include <sstream>
+
 #include "cli/socks5_connection_stats.hpp"
 #include "gui/option_dialog.hpp"
 #include "gui/panels.hpp"
@@ -135,13 +137,16 @@ void YASSFrame::Stopped() {
 }
 
 void YASSFrame::UpdateStatus() {
-  m_rightpanel->m_serverhost_tc->SetValue(FLAGS_server_host);
-  m_rightpanel->m_serverport_tc->SetValue(std::to_string(FLAGS_server_port));
-  m_rightpanel->m_password_tc->SetValue(FLAGS_password);
-  m_rightpanel->m_method_tc->SetStringSelection(FLAGS_method);
-  m_rightpanel->m_localhost_tc->SetValue(FLAGS_local_host);
-  m_rightpanel->m_localport_tc->SetValue(std::to_string(FLAGS_local_port));
-  m_rightpanel->m_timeout_tc->SetValue(std::to_string(FLAGS_timeout));
+  m_rightpanel->m_serverhost_tc->SetValue(absl::GetFlag(FLAGS_server_host));
+  m_rightpanel->m_serverport_tc->SetValue(
+      std::to_string(absl::GetFlag(FLAGS_server_port)));
+  m_rightpanel->m_password_tc->SetValue(absl::GetFlag(FLAGS_password));
+  m_rightpanel->m_method_tc->SetStringSelection(absl::GetFlag(FLAGS_method));
+  m_rightpanel->m_localhost_tc->SetValue(absl::GetFlag(FLAGS_local_host));
+  m_rightpanel->m_localport_tc->SetValue(
+      std::to_string(absl::GetFlag(FLAGS_local_port)));
+  m_rightpanel->m_timeout_tc->SetValue(
+      std::to_string(absl::GetFlag(FLAGS_timeout)));
 
   uint64_t sync_time = Utils::GetMonotonicTime();
   uint64_t delta_time = sync_time - last_sync_time_;

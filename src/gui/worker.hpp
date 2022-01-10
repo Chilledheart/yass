@@ -5,7 +5,6 @@
 
 #include "core/cipher.hpp"
 
-#include <gflags/gflags.h>
 #include <memory>
 #include <thread>
 

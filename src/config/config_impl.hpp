@@ -7,6 +7,8 @@
 #include <memory>
 #include <string>
 
+#include <absl/flags/declare.h>
+
 namespace config {
 class ConfigImpl {
 public:
@@ -23,6 +25,13 @@ public:
 
   /// Close the ConfigTree, useful to flush the ConfigTree into persistent media
   virtual bool Close() = 0;
+
+  /// Read the key from ConfigTree
+  ///
+  /// \param key the key value
+  /// \param absl flag
+  template<typename T>
+  bool Read(const std::string &key, absl::Flag<T>* value);
 
   /// Read the key from ConfigTree
   ///
@@ -59,6 +68,13 @@ public:
   /// \param key the key value
   /// \param value the output value (int64_t)
   virtual bool Read(const std::string &key, int64_t *value) = 0;
+
+  /// Write the key,value into ConfigTree
+  ///
+  /// \param key the key value
+  /// \param absl flag
+  template<typename T>
+  bool Write(const std::string &key, const absl::Flag<T> &value);
 
   /// Write the key,value into ConfigTree
   ///

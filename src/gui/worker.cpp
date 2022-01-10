@@ -2,6 +2,7 @@
 /* Copyright (c) 2019-2020 Chilledheart  */
 #include "worker.hpp"
 
+#include <absl/flags/flag.h>
 #ifdef __APPLE__
 #include <pthread.h>
 #endif
@@ -37,10 +38,12 @@ Worker::~Worker() {
 void Worker::Start(bool quiet) {
   asio::error_code ec_old;
   endpoint_ =
-      resolveEndpoint(io_context_, FLAGS_local_host, FLAGS_local_port, ec_old);
+      resolveEndpoint(io_context_, absl::GetFlag(FLAGS_local_host),
+                      absl::GetFlag(FLAGS_local_port), ec_old);
   if (!ec_old) {
-    remote_endpoint_ = resolveEndpoint(io_context_, FLAGS_server_host,
-                                       FLAGS_server_port, ec_old);
+    remote_endpoint_ =
+        resolveEndpoint(io_context_, absl::GetFlag(FLAGS_server_host),
+                        absl::GetFlag(FLAGS_server_port), ec_old);
   }
 
   /// listen in the worker thread

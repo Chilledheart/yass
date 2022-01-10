@@ -3,9 +3,10 @@
 
 #include "gui/option_dialog.hpp"
 
-#include "gui/utils.hpp"
+#include <absl/flags/flag.h>
 
 #include "config/config.hpp"
+#include "gui/utils.hpp"
 
 OptionDialog::OptionDialog(wxFrame* parent,
                            const wxString& title,
@@ -118,21 +119,22 @@ void OptionDialog::OnCancel(wxCommandEvent& WXUNUSED(event)) {
 }
 
 void OptionDialog::OnLoad() {
-  m_connecttimeout_tc->SetValue(std::to_string(FLAGS_timeout));
-  m_tcpusertimeout_tc->SetValue(std::to_string(FLAGS_tcp_user_timeout));
-  m_lingertimeout_tc->SetValue(std::to_string(FLAGS_so_linger_timeout));
-  m_sendbuffer_tc->SetValue(std::to_string(FLAGS_so_snd_buffer));
-  m_recvbuffer_tc->SetValue(std::to_string(FLAGS_so_rcv_buffer));
+  m_connecttimeout_tc->SetValue(std::to_string(absl::GetFlag(FLAGS_timeout)));
+  m_tcpusertimeout_tc->SetValue(std::to_string(absl::GetFlag(FLAGS_tcp_user_timeout)));
+  m_lingertimeout_tc->SetValue(std::to_string(absl::GetFlag(FLAGS_so_linger_timeout)));
+  m_sendbuffer_tc->SetValue(std::to_string(absl::GetFlag(FLAGS_so_snd_buffer)));
+  m_recvbuffer_tc->SetValue(std::to_string(absl::GetFlag(FLAGS_so_rcv_buffer)));
 }
 
 void OptionDialog::OnSave() {
-  FLAGS_timeout = Utils::Stoi(Utils::ToString(m_connecttimeout_tc->GetValue()));
-  FLAGS_tcp_user_timeout =
-      Utils::Stoi(Utils::ToString(m_tcpusertimeout_tc->GetValue()));
-  FLAGS_so_linger_timeout =
-      Utils::Stoi(Utils::ToString(m_lingertimeout_tc->GetValue()));
-  FLAGS_so_snd_buffer =
-      Utils::Stoi(Utils::ToString(m_sendbuffer_tc->GetValue()));
-  FLAGS_so_rcv_buffer =
-      Utils::Stoi(Utils::ToString(m_recvbuffer_tc->GetValue()));
+  absl::SetFlag(&FLAGS_timeout,
+                Utils::Stoi(Utils::ToString(m_connecttimeout_tc->GetValue())));
+  absl::SetFlag(&FLAGS_tcp_user_timeout,
+                Utils::Stoi(Utils::ToString(m_tcpusertimeout_tc->GetValue())));
+  absl::SetFlag(&FLAGS_so_linger_timeout,
+                Utils::Stoi(Utils::ToString(m_lingertimeout_tc->GetValue())));
+  absl::SetFlag(&FLAGS_so_snd_buffer,
+                Utils::Stoi(Utils::ToString(m_sendbuffer_tc->GetValue())));
+  absl::SetFlag(&FLAGS_so_rcv_buffer,
+                Utils::Stoi(Utils::ToString(m_recvbuffer_tc->GetValue())));
 }

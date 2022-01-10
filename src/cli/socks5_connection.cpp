@@ -3,6 +3,7 @@
 
 #include "cli/socks5_connection.hpp"
 
+#include <absl/flags/flag.h>
 #include <asio/error_code.hpp>
 #include <asio/read.hpp>
 #include <asio/write.hpp>
@@ -63,8 +64,13 @@ Socks5Connection::Socks5Connection(
     const asio::ip::tcp::endpoint& remote_endpoint)
     : Connection(io_context, remote_endpoint),
       state_(),
-      encoder_(new cipher("", FLAGS_password, cipher_method_in_use, true)),
-      decoder_(new cipher("", FLAGS_password, cipher_method_in_use)) {}
+      encoder_(new cipher("",
+                          absl::GetFlag(FLAGS_password),
+                          cipher_method_in_use,
+                          true)),
+      decoder_(
+          new cipher("", absl::GetFlag(FLAGS_password), cipher_method_in_use)) {
+}
 
 Socks5Connection::~Socks5Connection() = default;
 

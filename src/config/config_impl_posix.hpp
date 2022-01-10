@@ -13,6 +13,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <absl/flags/flag.h>
 #include <json/json.h>
 #include <memory>
 #include <string>
@@ -22,7 +23,8 @@
 #define DEFAULT_CONFIGDIR "~/.yass"
 #define DEFAULT_CONFIGFILE "~/.yass/config.json"
 
-DEFINE_string(configfile, DEFAULT_CONFIGFILE, "load configs from file");
+ABSL_FLAG(std::string, configfile, DEFAULT_CONFIGFILE,
+          "load configs from file");
 
 std::string ExpandUser(const std::string &file_path) {
   std::string real_path = file_path;
@@ -102,7 +104,7 @@ public:
       return false;
     }
 
-    path_ = ExpandUser(FLAGS_configfile);
+    path_ = ExpandUser(absl::GetFlag(FLAGS_configfile));
 
     if (!dontread) {
       std::string context;
