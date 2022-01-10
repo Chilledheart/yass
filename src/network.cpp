@@ -121,7 +121,7 @@ asio::error_code SetTCPUserTimeout(
   int ret = setsockopt(fd, IPPROTO_TCP, TCP_USER_TIMEOUT, &opt, sizeof(opt));
   if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
     VLOG(1) << "TCP User Timeout is not supported on this platform";
-    absl::SetFlag(FLAGS_tcp_user_timeout, 0);
+    absl::SetFlag(&FLAGS_tcp_user_timeout, 0);
   } else {
     VLOG(2) << "Applied current tcp_option: tcp_user_timeout "
             << absl::GetFlag(FLAGS_tcp_user_timeout);

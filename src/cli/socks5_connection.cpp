@@ -477,6 +477,7 @@ asio::error_code Socks5Connection::PerformCmdOpsV4(
 
       if (request->is_socks4a()) {
         // TBD
+        error = asio::error::invalid_argument;
       }
       endpoint = asio::ip::tcp::endpoint(asio::ip::tcp::v4(), 0);
 

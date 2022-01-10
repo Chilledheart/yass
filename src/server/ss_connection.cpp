@@ -3,6 +3,7 @@
 
 #include "ss_connection.hpp"
 
+#include <absl/base/attributes.h>
 #include <absl/flags/flag.h>
 #include <asio/error_code.hpp>
 #include <asio/read.hpp>
@@ -168,6 +169,8 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<SsConnection> self,
         self->SetState(state_stream);
         self->OnConnect();
         DCHECK_EQ(buf->length(), bytes_transferred);
+        ABSL_FALLTHROUGH_INTENDED;
+        /* fall through */
       case state_stream:
         if (bytes_transferred) {
           self->OnStreamRead(buf);
