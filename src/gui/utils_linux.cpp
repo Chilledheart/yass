@@ -26,7 +26,7 @@ uint64_t Utils::GetMonotonicTime() {
     LOG(WARNING) << "clock_gettime failed";
     return 0;
   }
-  return (double)(ts.tv_sec - start_ts.tv_sec) * NS_PER_SECOND + ts.tv_nsec -
-         start_ts.tv_nsec;
+  return static_cast<double>(ts.tv_sec - start_ts.tv_sec) * NS_PER_SECOND +
+         ts.tv_nsec - start_ts.tv_nsec;
 }
 #endif
