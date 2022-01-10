@@ -55,12 +55,6 @@ ABSL_DECLARE_FLAG(std::string, vmodule);
 
 using absl::LogSeverity;
 
-#ifdef __attribute__
-#define ATTRIBUTE_NORETURN __attribute__((noreturn))
-#else
-#define ATTRIBUTE_NORETURN
-#endif
-
 #define NUM_SEVERITIES (static_cast<int>(absl::LogSeverity::kFatal) + 1)
 
 #if defined(_MSC_VER)
@@ -92,6 +86,12 @@ using absl::LogSeverity;
 #define ABSL_NOLINE_ATTRIBUTE __attribute__((noinline))
 #else
 #define ABSL_NOLINE_ATTRIBUTE
+#endif
+
+#if ABSL_HAVE_ATTRIBUTE(noreturn) || (defined(__GNUC__) && !defined(__clang__))
+#define ATTRIBUTE_NORETURN_ATTRIBUTE __attribute__((noreturn))
+#else
+#define ATTRIBUTE_NORETURN_ATTRIBUTE
 #endif
 
 #if STRIP_LOG == 0
@@ -577,13 +577,7 @@ DECLARE_CHECK_STROP_IMPL(strcasecmp, false)
 #define LOG_OCCURRENCES LOG_EVERY_N_VARNAME(occurrences_, __LINE__)
 #define LOG_OCCURRENCES_MOD_N LOG_EVERY_N_VARNAME(occurrences_mod_n_, __LINE__)
 
-#if defined(__has_feature)
-#define _HAS_FEATURE(...) __has_feature(__VA_ARGS__)
-#else
-#define _HAS_FEATURE(...) 0
-#endif
-
-#if _HAS_FEATURE(thread_sanitizer) || __SANITIZE_THREAD__
+#if ABSL_HAVE_FEATURE(thread_sanitizer) || __SANITIZE_THREAD__
 #define _SANITIZE_THREAD 1
 #endif
 
@@ -937,7 +931,7 @@ class LogMessage {
   void SendToLog();  // Actually dispatch to the logs
 
   // Call abort() or similar to perform LOG(FATAL) crash.
-  static void ATTRIBUTE_NORETURN Fail();
+  static void ATTRIBUTE_NORETURN_ATTRIBUTE Fail();
 
   std::ostream& stream();
 
@@ -987,7 +981,7 @@ class LogMessageFatal : public LogMessage {
  public:
   LogMessageFatal(const char* file, int line);
   LogMessageFatal(const char* file, int line, const CheckOpString& result);
-  __attribute__((noreturn)) ~LogMessageFatal();
+  ATTRIBUTE_NORETURN_ATTRIBUTE ~LogMessageFatal();
 };
 
 // A non-macro interface to the log facility; (useful
@@ -1319,7 +1313,7 @@ class NullStreamFatal : public NullStream {
   NullStreamFatal() {}
   NullStreamFatal(const char* file, int line, const CheckOpString& result)
       : NullStream(file, line, result) {}
-  __attribute__((noreturn)) ~NullStreamFatal() throw() { _exit(1); }
+  ATTRIBUTE_NORETURN_ATTRIBUTE ~NullStreamFatal() throw() { _exit(1); }
 };
 
 // This is similar to LOG(severity) << format... and VLOG(level) << format..,

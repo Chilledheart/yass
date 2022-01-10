@@ -519,7 +519,6 @@ set(SUPPORT_LIBS
 if (NOT MSAN AND NOT ASAN AND NOT TSAN AND NOT UBSAN)
     if (NOT APPLE AND NOT MSVC)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,defs -Wl,--as-needed")
-        set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} -Wl,-z,defs -Wl,--as-needed")
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,defs -Wl,--as-needed")
     endif()
     set(SUPPORT_LIBS
