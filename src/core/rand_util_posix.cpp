@@ -13,7 +13,7 @@
 
 #include "core/logging.hpp"
 
-#if defined(__linux__) && defined(__ANDROID__)
+#if defined(__linux__) || defined(__ANDROID__)
 #include "linux_syscall_support.h"
 #elif defined(__APPLE__)
 // TODO(crbug.com/995996): Waiting for this header to appear in the iOS SDK.
