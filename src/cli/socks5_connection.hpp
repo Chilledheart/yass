@@ -21,7 +21,7 @@
 #include "stream.hpp"
 
 #include <deque>
-#include <unordered_map>
+#include <absl/container/flat_hash_map.h>
 
 class cipher;
 /// The ultimate service class to deliever the network traffic to the remote
@@ -207,7 +207,7 @@ class Socks5Connection : public std::enable_shared_from_this<Socks5Connection>,
   /// copy of parsed header value
   std::string http_value_;
   /// copy of parsed headers
-  std::unordered_map<std::string, std::string> http_headers_;
+  absl::flat_hash_map<std::string, std::string> http_headers_;
   /// copy of connect method
   bool http_is_connect_ = false;
   /// copy of connect response

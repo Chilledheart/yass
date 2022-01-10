@@ -43,7 +43,7 @@ static void http_request_reforge_to_bytes(
     std::string* header,
     ::http_parser* p,
     const std::string& url,
-    const std::unordered_map<std::string, std::string>& headers) {
+    const absl::flat_hash_map<std::string, std::string>& headers) {
   std::stringstream ss;
   ss << http_method_str((http_method)p->method) << " "  // NOLINT(google-*)
      << url << " HTTP/1.1\r\n";

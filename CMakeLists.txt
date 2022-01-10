@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4.6 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
 set(PACKAGE_NAME      "YetAnotherShadowSocket")
 
@@ -30,6 +30,14 @@ endif()
 ## Export build compilation database if possible
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
+## Enfore C/C++ standard
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 14)
+
+if (MSVC)
+  set(CMAKE_CXX_STANDARD 17)
+endif()
+
 # *****************************************************************************************
 #           Basic Setups
 # *****************************************************************************************
@@ -44,10 +52,6 @@ if (NOT MSVC)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-unused-parameter -Wno-inconsistent-missing-override")
     endif()
 
-    ## c/c++ standard
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -std=c99")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
-
     ## optimization flags
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
@@ -55,14 +59,10 @@ if (NOT MSVC)
     ## can gc eliminate any unused functions and data items
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fdata-sections -ffunction-sections")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdata-sections -ffunction-sections")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fdata-sections -ffunction-sections")
-    set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} -fdata-sections -ffunction-sections")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fdata-sections -ffunction-sections")
 
     if (APPLE)
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dead_strip")
-        set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} -Wl,-dead_strip")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-dead_strip")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -dead_strip")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -dead_strip")
     else()
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
         set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} -Wl,--gc-sections")
@@ -130,8 +130,8 @@ else()
       string(REPLACE "/GR" "/GR-" ${CompilerFlag} "${${CompilerFlag}}")
     endforeach()
 
-    ## c/c++ standard, disabled rtti
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 /GR-")
+    ## disabled rtti
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
 
     ## C4530, The code uses C++ exception handling,
     ## but /EHsc wasn't included in the compiler options
@@ -293,6 +293,11 @@ set(boringssl_DIR "${CMAKE_SOURCE_DIR}/../boringssl" CACHE STRING "path to borin
 
 include(CheckIncludeFile)
 include(CheckCSourceCompiles)
+
+# abseil-cpp
+set(ABSL_PROPAGATE_CXX_STD ON)
+add_subdirectory(third_party/abseil-cpp)
+include_directories(third_party/abseil-cpp)
 
 if (MSVC)
     option(VCPKG_ROOT_DIR "" "vcpkg root path")
@@ -492,6 +497,14 @@ set(SUPPORT_LIBS
     ${GFLAGS_LIB}
     ${JSONCPP_LIB}
     ${SYSTEM_LIBS}
+    absl::flat_hash_map
+    absl::flat_hash_set
+    absl::stacktrace
+    absl::symbolize
+    absl::status
+    absl::strings
+    absl::time
+    absl::optional
     )
 
 if (NOT MSAN AND NOT ASAN AND NOT TSAN AND NOT UBSAN)
