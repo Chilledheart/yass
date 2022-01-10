@@ -30,6 +30,7 @@
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <ctime>
 #include <iostream>
 #ifdef HAVE_PWD_H
@@ -43,6 +44,13 @@
 #include "core/windows/dirent.h"
 #else
 #include <dirent.h>  // for automatic removal of old logs
+#endif
+
+#ifdef _MSC_VER
+// we have strncasecmp in mingw
+#define strncasecmp _strnicmp
+#define strcasecmp _stricmp
+#define strerror_r(errno_num, buf, len) strerror_s(buf, len, errno_num)
 #endif
 
 #if defined(_WIN32)
@@ -310,6 +318,12 @@ WallTime WallTime_Now();
 int32_t GetMainThreadPid();
 bool PidHasChanged();
 
+#ifdef _WIN32
+// On Windows, process id and thread id are of the same type according to the
+// return types of GetProcessId() and GetThreadId() are both DWORD, an unsigned
+// 32-bit type.
+using pid_t = uint32_t;
+#endif
 pid_t GetTID();
 
 const std::string& MyUserName();
@@ -1254,7 +1268,7 @@ bool LogFileObject::CreateLogfile(const std::string& time_pid_string) {
 #ifdef _WIN32
   // https://github.com/golang/go/issues/27638 - make sure we seek to the end to
   // append empirically replicated with wine over mingw build
-  if (!FLAGS_tick_counts_in_logfile_name) {
+  if (!absl::GetFlag(FLAGS_tick_counts_in_logfile_name)) {
     if (fseek(file_, 0, SEEK_END) != 0) {
       return false;
     }
@@ -1334,10 +1348,17 @@ void LogFileObject::Write(bool force_flush,
 
     time_t timestamp = WallTime_Now();
     struct ::tm tm_time;
+#ifdef _WIN32
+    if (absl::GetFlag(FLAGS_log_utc_time))
+      gmtime_s(&tm_time, &timestamp);
+    else
+      localtime_s(&tm_time, &timestamp);
+#else
     if (absl::GetFlag(FLAGS_log_utc_time))
       gmtime_r(&timestamp, &tm_time);
     else
       localtime_r(&timestamp, &tm_time);
+#endif
 
     // The logfile's filename will have the date/time & pid in it
     std::ostringstream time_pid_stream;
