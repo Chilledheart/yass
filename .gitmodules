@@ -4,3 +4,6 @@
 [submodule "third_party/abseil-cpp"]
 	path = third_party/abseil-cpp
 	url = https://github.com/abseil/abseil-cpp
+[submodule "third_party/lss"]
+	path = third_party/lss
+	url = https://chromium.googlesource.com/linux-syscall-support

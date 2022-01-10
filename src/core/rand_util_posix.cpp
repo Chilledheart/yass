@@ -13,7 +13,9 @@
 
 #include "core/logging.hpp"
 
-#ifdef __APPLE__
+#if defined(__linux__) && defined(__ANDROID__)
+#include "third_party/lss/linux_syscall_support.h"
+#elif defined(__APPLE__)
 // TODO(crbug.com/995996): Waiting for this header to appear in the iOS SDK.
 // (See below.)
 #include <sys/random.h>
@@ -105,7 +107,7 @@ void RandBytes(void* output, size_t output_length) {
   // We have to call `getrandom` via Linux Syscall Support, rather than through
   // the libc wrapper, because we might not have an up-to-date libc (e.g. on
   // some bots).
-  const ssize_t r = HANDLE_EINTR(getrandom(output, output_length, 0));
+  const ssize_t r = HANDLE_EINTR(sys_getrandom(output, output_length, 0));
 
   // Return success only on total success. In case errno == ENOSYS (or any other
   // error), we'll fall through to reading from urandom below.
