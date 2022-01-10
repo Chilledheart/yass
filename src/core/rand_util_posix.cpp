@@ -3,7 +3,7 @@
 
 #include "core/rand_util.hpp"
 
-#ifndef __WIN32__
+#ifndef _WIN32
 
 #include <errno.h>
 #include <fcntl.h>
@@ -141,4 +141,4 @@ int GetUrandomFD() {
   return urandom_fd.fd();
 }
 
-#endif  // __WIN32__
+#endif  // _WIN32

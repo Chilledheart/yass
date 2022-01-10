@@ -10,7 +10,7 @@
 #include <cassert>
 #include <iomanip>
 #include <string>
-#ifndef __WIN32
+#ifndef _WIN32
 #include <unistd.h>  // For _exit.
 #endif               // _WIN32
 #include <sys/stat.h>
@@ -360,7 +360,7 @@ static void GetHostName(std::string* hostname) {
 // Returns true iff terminal supports using colors in output.
 static bool TerminalSupportsColor() {
   bool term_supports_color = false;
-#ifdef __WIN32
+#ifdef _WIN32
   // on Windows TERM variable is usually not set, but the console does
   // support colors.
   term_supports_color = true;
@@ -2389,7 +2389,7 @@ out_close_fd:
 }
 
 void TruncateStdoutStderr() {
-#ifndef __WIN32
+#ifndef _WIN32
   int64_t limit = MaxLogSize() << 20;
   int64_t keep = 1 << 20;
   TruncateLogFile("/proc/self/fd/1", limit, keep);

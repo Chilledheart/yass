@@ -22,9 +22,12 @@ std::unique_ptr<ConfigImpl> ConfigImpl::Create() {
 
 template <typename T>
 bool ConfigImpl::Read(const std::string& key, absl::Flag<T>* value) {
-  T real_value;
+  // Use an int instead of a bool to guarantee that a non-zero value has
+  // a bit set.
+
+  alignas(T) alignas(8) T real_value;
   if (!Read(key, &real_value)) {
-    return false;
+      return false;
   }
   absl::SetFlag(value, real_value);
   return true;

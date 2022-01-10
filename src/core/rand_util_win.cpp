@@ -3,7 +3,7 @@
 
 #include "core/rand_util.hpp"
 
-#ifdef __WIN32__
+#ifdef _WIN32
 
 #include <stddef.h>
 #include <stdint.h>
@@ -37,4 +37,4 @@ void RandBytes(void* output, size_t output_length) {
   }
 }
 
-#endif  // __WIN32__
+#endif  // _WIN32
