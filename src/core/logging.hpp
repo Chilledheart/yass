@@ -6,6 +6,7 @@
 #include <atomic>
 #include <cerrno>
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <ctime>
 #include <iosfwd>
