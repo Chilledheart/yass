@@ -50,7 +50,6 @@
 // we have strncasecmp in mingw
 #define strncasecmp _strnicmp
 #define strcasecmp _stricmp
-#define strerror_r(errno_num, buf, len) strerror_s(buf, len, errno_num)
 #endif
 
 #if defined(_WIN32)
@@ -1489,7 +1488,8 @@ void LogFileObject::Write(bool force_flush,
     if (absl::GetFlag(FLAGS_drop_log_memory) && file_length_ >= (3 << 20)) {
       // Don't evict the most recent 1-2MiB so as not to impact a tailer
       // of the log file and to avoid page rounding issue on linux < 4.7
-      uint32_t total_drop_length = (file_length_ & ~((1 << 20) - 1)) - (1 << 20);
+      uint32_t total_drop_length =
+          (file_length_ & ~((1 << 20) - 1)) - (1 << 20);
       uint32_t this_drop_length = total_drop_length - dropped_mem_length_;
       if (this_drop_length >= (2 << 20)) {
         // Only advise when >= 2MiB to drop
@@ -2443,6 +2443,29 @@ DEFINE_CHECK_STROP_IMPL(CHECK_STRCASEEQ, strcasecmp, true)
 DEFINE_CHECK_STROP_IMPL(CHECK_STRCASENE, strcasecmp, false)
 #undef DEFINE_CHECK_STROP_IMPL
 
+const char* StrErrorAdaptor(int errnum, char* buf, size_t buflen) {
+#if defined(_WIN32)
+  int rc = strerror_s(buf, buflen, errnum);
+  buf[buflen - 1] = '\0';  // guarantee NUL termination
+  if (rc == 0 && strncmp(buf, "Unknown error", buflen) == 0)
+    *buf = '\0';
+  return buf;
+#else
+  // The type of `ret` is platform-specific; both of these branches must compile
+  // either way but only one will execute on any given platform:
+  auto ret = strerror_r(errnum, buf, buflen);
+  if (std::is_same<decltype(ret), int>::value) {
+    // XSI `strerror_r`; `ret` is `int`:
+    if (ret)
+      *buf = '\0';
+    return buf;
+  } else {
+    // GNU `strerror_r`; `ret` is `char *`:
+    return reinterpret_cast<const char*>(ret);
+  }
+#endif
+}
+
 int posix_strerror_r(int err, char* buf, size_t len) {
   // Sanity check input parameters
   if (buf == nullptr || len <= 0) {
@@ -2455,7 +2478,9 @@ int posix_strerror_r(int err, char* buf, size_t len) {
   buf[0] = '\000';
   int old_errno = errno;
   errno = 0;
-  char* rc = reinterpret_cast<char*>(strerror_r(err, buf, len));
+  // The GNU-specific strerror_r() returns a pointer to a string containing
+  // the error message.
+  const char* rc = StrErrorAdaptor(err, buf, len);
 
   // Both versions set errno on failure
   if (errno) {
