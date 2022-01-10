@@ -36,6 +36,7 @@
 #include <pwd.h>
 #endif
 #include <cerrno>  // for errno
+#include <mutex>
 #include <sstream>
 #include <vector>
 #ifdef _WIN32
@@ -189,6 +190,16 @@ ABSL_FLAG(bool,
           colorlogtostderr,
           false,
           "color messages logged to stderr (if supported by terminal)");
+
+#if defined(__linux__) || defined(__ANDROID__)
+ABSL_FLAG(bool,
+          drop_log_memory,
+          true,
+          "Drop in-memory buffers of log contents. "
+          "Logs can grow very quickly and they are rarely read before they "
+          "need to be evicted from memory. Instead, drop them from memory "
+          "as soon as they are flushed to disk.");
+#endif
 
 // By default, errors (including fatal errors) get logged to stderr as
 // well as the file.
@@ -1452,7 +1463,7 @@ void LogFileObject::Write(bool force_flush,
   if (force_flush || (bytes_since_flush_ >= 1000000) ||
       (CycleClock_Now() >= next_flush_time_)) {
     FlushUnlocked();
-#if defined(__linux__) && !defined(__ANDROID__)
+#if defined(__linux__) || defined(__ANDROID__)
     // Only consider files >= 3MiB
     if (absl::GetFlag(FLAGS_drop_log_memory) && file_length_ >= (3 << 20)) {
       // Don't evict the most recent 1-2MiB so as not to impact a tailer
@@ -2915,14 +2926,14 @@ bool PidHasChanged() {
 // CHECK/DCHECKs.
 thread_local pid_t g_thread_id = -1;
 
-class InitAtFork {
- public:
-  InitAtFork() { pthread_atfork(nullptr, nullptr, internal::ClearTidCache); }
-};
-
 void ClearTidCache() {
   g_thread_id = -1;
 }
+
+class InitAtFork {
+ public:
+  InitAtFork() { pthread_atfork(nullptr, nullptr, ClearTidCache); }
+};
 
 #endif  // defined(__linux__) && !defined(__ANDROID__)
 

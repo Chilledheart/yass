@@ -29,6 +29,9 @@ ABSL_DECLARE_FLAG(bool, tick_counts_in_logfile_name);
 ABSL_DECLARE_FLAG(bool, logtostderr);
 ABSL_DECLARE_FLAG(bool, alsologtostderr);
 ABSL_DECLARE_FLAG(bool, colorlogtostderr);
+#if defined(__linux__) || defined(__ANDROID__)
+ABSL_DECLARE_FLAG(bool, drop_log_memory)
+#endif
 
 ABSL_DECLARE_FLAG(int32_t, stderrthreshold);
 ABSL_DECLARE_FLAG(bool, log_prefix);
