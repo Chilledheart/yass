@@ -5,6 +5,8 @@
 #include "core/cipher.hpp"
 #include "ss_factory.hpp"
 
+#include <absl/debugging/failure_signal_handler.h>
+#include <absl/debugging/symbolize.h>
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
 
@@ -32,18 +34,10 @@ int main(int argc, const char* argv[]) {
   // - Listen by local address and local port
   asio::io_context io_context;
   // Start Io Context
-  ::google::InitGoogleLogging(argv[0]);
-  ::FLAGS_stderrthreshold = true;
-#ifndef NDEBUG
-  ::FLAGS_logtostderr = true;
-  ::FLAGS_logbuflevel = 0;
-  ::FLAGS_v = 1;
-#else
-  ::FLAGS_logbuflevel = 1;
-  ::FLAGS_v = 2;
-#endif
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
-  ::google::InstallFailureSignalHandler();
+  absl::InitializeSymbolizer(argv[0]);
+  absl::FailureSignalHandlerOptions failure_handle_options;
+  absl::InstallFailureSignalHandler(failure_handle_options);
 
   (void)config::ReadConfig();
   if (cipher_method_in_use == CRYPTO_INVALID) {
@@ -70,7 +64,6 @@ int main(int argc, const char* argv[]) {
 
   asio::signal_set signals(io_context);
   signals.add(SIGINT, ec);
-  signals.add(SIGTERM, ec);
 #ifdef SIGQUIT
   signals.add(SIGQUIT, ec);
 #endif
@@ -83,8 +76,6 @@ int main(int argc, const char* argv[]) {
     LOG(ERROR) << "io_context failed due to: " << ec;
     return -1;
   }
-
-  ::google::ShutdownGoogleLogging();
 
   return 0;
 }

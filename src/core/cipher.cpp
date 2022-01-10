@@ -408,7 +408,7 @@ void cipher::set_key_aead(const uint8_t* salt, size_t salt_len) {
                         reinterpret_cast<const uint8_t*>(SUBKEY_INFO),
                         sizeof(SUBKEY_INFO) - 1, skey, key_len_);
   if (err) {
-    NOTREACHED() << "Unable to generate subkey";
+    LOG(FATAL) << "Unable to generate subkey";
   }
 
   counter_ = 0;

@@ -4,8 +4,8 @@
 #include "gui/yass_frame.hpp"
 
 #include <absl/flags/flag.h>
-#include <iomanip>
 #include <wx/stattext.h>
+#include <iomanip>
 #include <sstream>
 
 #include "cli/socks5_connection_stats.hpp"
@@ -218,10 +218,7 @@ void YASSFrame::OnIdle(wxIdleEvent& WXUNUSED(event)) {
 
 void YASSFrame::OnClose(wxCloseEvent& event) {
   LOG(WARNING) << "Frame is closing ";
-  event.Skip();  // Destroy() also works here.
-#ifdef __APPLE__ /* TODO Destroy cannot help in some cases */
-  ::exit(0);
-#endif
+  mApp->Exit();
 }
 
 wxBEGIN_EVENT_TABLE(YASSFrame, wxFrame)

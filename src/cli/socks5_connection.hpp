@@ -20,8 +20,8 @@
 #include "protocol.hpp"
 #include "stream.hpp"
 
-#include <deque>
 #include <absl/container/flat_hash_map.h>
+#include <deque>
 
 class cipher;
 /// The ultimate service class to deliever the network traffic to the remote

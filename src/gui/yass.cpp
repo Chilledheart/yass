@@ -2,17 +2,24 @@
 /* Copyright (c) 2019-2020 Chilledheart  */
 #include "gui/yass.hpp"
 
-#include <absl/flags/flag.h>
 #include <stdexcept>
 #include <string>
 #ifdef __APPLE__
 #include <pthread.h>
 #endif
 
+#include <absl/debugging/failure_signal_handler.h>
+#include <absl/debugging/symbolize.h>
+#include <absl/flags/flag.h>
+#include <absl/flags/parse.h>
+#include <wx/cmdline.h>
+#include <wx/stdpaths.h>
+
 #include "core/logging.hpp"
 #include "gui/panels.hpp"
 #include "gui/utils.hpp"
 #include "gui/yass_frame.hpp"
+#include "gui/yass_logging.hpp"
 
 YASSApp* mApp = nullptr;
 
@@ -23,33 +30,31 @@ wxDEFINE_EVENT(MY_EVENT, wxCommandEvent);
 
 wxIMPLEMENT_APP(YASSApp);
 
-bool YASSApp::OnInit() {
-  ::google::InitGoogleLogging("yass");
-  ::FLAGS_stderrthreshold = true;
-#ifndef NDEBUG
-  ::FLAGS_logtostderr = true;
-  ::FLAGS_logbuflevel = 0;
-  ::FLAGS_v = 1;
-#else
-  ::FLAGS_logbuflevel = 1;
-  ::FLAGS_v = 2;
-#endif
-
-#ifdef _WIN32
-  HWND wnd = FindWindowW(nullptr, kMainFrameName);
-  if (wnd) {
-    wxMessageBox(wxT("Already exists!"), wxT("WndChecker"));
+bool YASSApp::Initialize(int& argc, wxChar** argv) {
+  if (!wxApp::Initialize(argc, argv))
     return false;
-  }
-  if (Utils::SetProcessDpiAwareness()) {
-    LOG(WARNING) << "SetProcessDpiAwareness applied";
-  }
-#endif
+
+  wxString appPath = wxStandardPaths::Get().GetExecutablePath();
+  absl::InitializeSymbolizer(appPath.c_str());
+  absl::FailureSignalHandlerOptions failure_handle_options;
+  absl::InstallFailureSignalHandler(failure_handle_options);
+
 #ifdef __APPLE__
   /// documented in
   /// https://developer.apple.com/documentation/apple-silicon/tuning-your-code-s-performance-for-apple-silicon
   pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
 #endif
+
+  return true;
+}
+
+bool YASSApp::OnInit() {
+  absl::ParseCommandLine(argc, argv.operator char* *());
+  wxLog* logger = new YASSLog;
+  wxLog::SetActiveTarget(logger);
+
+  if (!wxApp::OnInit())
+    return false;
 
   LOG(WARNING) << "Application starting";
 
@@ -63,6 +68,17 @@ bool YASSApp::OnInit() {
   mApp = this;
   state_ = STOPPED;
 
+#ifdef _WIN32
+  HWND wnd = FindWindowW(nullptr, kMainFrameName);
+  if (wnd) {
+    wxMessageBox(wxT("YASS Already exists!"), wxT("WndChecker"));
+    return false;
+  }
+  if (Utils::SetProcessDpiAwareness()) {
+    LOG(WARNING) << "SetProcessDpiAwareness applied";
+  }
+#endif
+
   frame_ = new YASSFrame(kMainFrameName);
 #if wxCHECK_VERSION(3, 1, 0)
   frame_->SetSize(frame_->FromDIP(wxSize(450, 390)));
@@ -74,28 +90,29 @@ bool YASSApp::OnInit() {
   frame_->UpdateStatus();
   SetTopWindow(frame_);
 
+  return true;
+}
+
+void YASSApp::OnLaunched() {
+  wxApp::OnLaunched();
 #if defined(__APPLE__) || defined(_WIN32)
   if (Utils::GetAutoStart()) {
     wxCommandEvent event;
     frame_->m_leftpanel->OnStart(event);
   }
 #endif
-
-  return true;
 }
 
 int YASSApp::OnExit() {
   LOG(WARNING) << "Application exiting";
+  worker_.Stop(true);
   return wxApp::OnExit();
 }
 
-int YASSApp::OnRun() {
-  int exitcode = wxApp::OnRun();
-  LOG(INFO) << "Application is done with exitcode: " << exitcode;
-  if (exitcode != 0) {
-    return exitcode;
-  }
-  return 0;
+void YASSApp::OnInitCmdLine(wxCmdLineParser& parser) {
+  // initial wxWidgets builtin options through, otherwise it crashes
+  parser.SetCmdLine(wxEmptyString);
+  wxApp::OnInitCmdLine(parser);
 }
 
 std::string YASSApp::GetStatus() const {
@@ -109,23 +126,6 @@ std::string YASSApp::GetStatus() const {
   }
   return ss.str();
 };
-
-void YASSApp::LoadConfigFromDisk() {
-  config::ReadConfig();
-}
-
-void YASSApp::SaveConfigToDisk() {
-  absl::SetFlag(&FLAGS_server_host, frame_->GetServerHost());
-  absl::SetFlag(&FLAGS_server_port, Utils::Stoi(frame_->GetServerPort()));
-  absl::SetFlag(&FLAGS_password, frame_->GetPassword());
-  absl::SetFlag(&FLAGS_method, frame_->GetMethod());
-  absl::SetFlag(&FLAGS_local_host, frame_->GetLocalHost());
-  absl::SetFlag(&FLAGS_local_port, Utils::Stoi(frame_->GetLocalPort()));
-  cipher_method_in_use = to_cipher_method(absl::GetFlag(FLAGS_method));
-  absl::SetFlag(&FLAGS_timeout, Utils::Stoi(frame_->GetTimeout()));
-
-  config::SaveConfig();
-}
 
 void YASSApp::OnStart(bool quiet) {
   state_ = STARTING;
@@ -152,6 +152,23 @@ void YASSApp::OnStop(bool quiet) {
 void YASSApp::OnStopped(wxCommandEvent& WXUNUSED(event)) {
   state_ = STOPPED;
   frame_->Stopped();
+}
+
+void YASSApp::LoadConfigFromDisk() {
+  config::ReadConfig();
+}
+
+void YASSApp::SaveConfigToDisk() {
+  absl::SetFlag(&FLAGS_server_host, frame_->GetServerHost());
+  absl::SetFlag(&FLAGS_server_port, Utils::Stoi(frame_->GetServerPort()));
+  absl::SetFlag(&FLAGS_password, frame_->GetPassword());
+  absl::SetFlag(&FLAGS_method, frame_->GetMethod());
+  absl::SetFlag(&FLAGS_local_host, frame_->GetLocalHost());
+  absl::SetFlag(&FLAGS_local_port, Utils::Stoi(frame_->GetLocalPort()));
+  cipher_method_in_use = to_cipher_method(absl::GetFlag(FLAGS_method));
+  absl::SetFlag(&FLAGS_timeout, Utils::Stoi(frame_->GetTimeout()));
+
+  config::SaveConfig();
 }
 
 wxBEGIN_EVENT_TABLE(YASSApp, wxApp)

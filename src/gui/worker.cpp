@@ -37,9 +37,8 @@ Worker::~Worker() {
 
 void Worker::Start(bool quiet) {
   asio::error_code ec_old;
-  endpoint_ =
-      resolveEndpoint(io_context_, absl::GetFlag(FLAGS_local_host),
-                      absl::GetFlag(FLAGS_local_port), ec_old);
+  endpoint_ = resolveEndpoint(io_context_, absl::GetFlag(FLAGS_local_host),
+                              absl::GetFlag(FLAGS_local_port), ec_old);
   if (!ec_old) {
     remote_endpoint_ =
         resolveEndpoint(io_context_, absl::GetFlag(FLAGS_server_host),

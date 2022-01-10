@@ -285,10 +285,8 @@ def generate_buildscript(configuration_type):
   print('generate build scripts...(%s)' % configuration_type)
   cmake_args = ['-DGUI=ON', '-DCLI=ON', '-DSERVER=ON']
   if DEFAULT_CLANG_TIDY:
-    cmake_args.extend(['-DCMAKE_C_CLANG_TIDY=%s' % DEFAULT_CLANG_TIDY_EXECUTABLE,
-                       '-DCMAKE_CXX_CLANG_TIDY=%s' % DEFAULT_CLANG_TIDY_EXECUTABLE,
-                       '-DCMAKE_OBJC_CLANG_TIDY=%s' % DEFAULT_CLANG_TIDY_EXECUTABLE,
-                       '-DCMAKE_OBJCXX_CLANG_TIDY=%s' % DEFAULT_CLANG_TIDY_EXECUTABLE])
+    cmake_args.extend(['-DENABLE_CLANG_TIDY=yes',
+                       '-DCLANG_TIDY_EXECUTABLE=%s' % DEFAULT_CLANG_TIDY_EXECUTABLE])
   if sys.platform == 'win32':
     cmake_args.extend(['-G', 'Ninja'])
     if DEFAULT_COMPILER == 'clang-cl':

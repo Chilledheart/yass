@@ -34,6 +34,7 @@ class YASSFrame : public wxFrame {
  private:
   void OnAbout(wxCommandEvent& event);
   void OnOption(wxCommandEvent& event);
+  // TODO you need to update all details
 #if wxCHECK_VERSION(3, 1, 3)
   void OnDPIChanged(wxDPIChangedEvent& event);
 #endif

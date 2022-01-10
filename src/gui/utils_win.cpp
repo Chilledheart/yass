@@ -73,12 +73,12 @@ static int get_yass_auto_start() {
 
   char buf[MAX_PATH] = {0};
   DWORD len = sizeof(buf);
-  result = RegQueryValueExW(hKey,                         /* Key */
-                            _T(DEFAULT_AUTOSTART_NAME),   /* value */
-                            nullptr,                      /* reserved */
-                            nullptr,                      /* output type */
-                            reinterpret_cast<LPBYTE>(buf),/* output data */
-                            &len);                        /* output length */
+  result = RegQueryValueExW(hKey,                          /* Key */
+                            _T(DEFAULT_AUTOSTART_NAME),    /* value */
+                            nullptr,                       /* reserved */
+                            nullptr,                       /* output type */
+                            reinterpret_cast<LPBYTE>(buf), /* output data */
+                            &len);                         /* output length */
 
   RegCloseKey(hKey);
   if (result != ERROR_SUCCESS) {
@@ -172,4 +172,4 @@ uint64_t Utils::GetMonotonicTime() {
   return ElapsedNanoseconds.QuadPart;
 }
 
-#endif // _WIN32
+#endif  // _WIN32

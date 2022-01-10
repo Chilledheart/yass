@@ -21,7 +21,7 @@ jobs:
         arch: [x64, x86, arm64]
     env:
       CLANG_ARCH: 'Win'
-      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config glog libsodium jsoncpp wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
+      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config libsodium jsoncpp wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
     steps:
       - uses: actions/checkout@v2
       - name: Cache clang and nasm
@@ -61,8 +61,6 @@ jobs:
           CLANG_REVISION=$(< CLANG_REVISION)
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
-      - name: "Install dependency: glog"
-        run: vcpkg install glog:${{ matrix.arch }}-windows-static
       - name: "Install dependency: libsodium"
         run: vcpkg install libsodium:${{ matrix.arch }}-windows-static
       - name: "Install dependency: jsoncpp"
@@ -130,7 +128,7 @@ jobs:
         arch: [x64, x86, arm64]
     env:
       BUNDLE_NAME: 'yass-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}'
-      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config glog libsodium jsoncpp wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
+      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config libsodium jsoncpp wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
     steps:
       - uses: actions/checkout@v2
         with:
@@ -193,7 +191,7 @@ jobs:
 ##      arch: [x64, x86, arm64]
 ##  env:
 ##    ENABLE_CLANG_TIDY: '1'
-##    VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config glog libsodium jsoncpp wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
+##    VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config libsodium jsoncpp wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
 ##  steps:
 ##    - uses: actions/checkout@v2
 ##      with:
@@ -252,7 +250,7 @@ jobs:
             third_party/llvm-build/Release+Asserts
           key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
-        run: brew install ninja cmake glog libsodium jsoncpp wxwidgets
+        run: brew install ninja cmake libsodium jsoncpp wxwidgets
       - name: Build
         run: ./scripts/build.py
       - run: mv -f darwin-yass.app.zip ${{ env.BUNDLE_NAME }}.zip
@@ -291,7 +289,7 @@ jobs:
             third_party/llvm-build/Release+Asserts
           key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
-        run: brew install ninja cmake glog libsodium jsoncpp wxwidgets
+        run: brew install ninja cmake libsodium jsoncpp wxwidgets
       - name: Build
         run: |
           export CLANG_TIDY_EXECUTABLE=$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy
@@ -310,7 +308,7 @@ jobs:
         with:
           submodules: 'true'
       - name: Populate depedencies
-        run: sudo apt-get install -y cmake ninja-build libgoogle-glog-dev libsodium-dev libjsoncpp-dev libwxgtk3.0-gtk3-dev
+        run: sudo apt-get install -y cmake ninja-build libsodium-dev libjsoncpp-dev libwxgtk3.0-gtk3-dev
       - name: Build
         run: |
           mkdir build
@@ -332,7 +330,7 @@ jobs:
         with:
           submodules: 'true'
       - name: Populate depedencies
-        run: sudo apt-get install -y cmake ninja-build libgoogle-glog-dev libsodium-dev libjsoncpp-dev
+        run: sudo apt-get install -y cmake ninja-build libsodium-dev libjsoncpp-dev
       - name: Build
         run: |
           mkdir build
@@ -360,7 +358,7 @@ jobs:
             third_party/llvm-build/Release+Asserts
           key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
-        run: sudo apt-get install -y cmake ninja-build libgoogle-glog-dev libsodium-dev libjsoncpp-dev libwxgtk3.0-gtk3-dev
+        run: sudo apt-get install -y cmake ninja-build libsodium-dev libjsoncpp-dev libwxgtk3.0-gtk3-dev
       - name: Build
         run: |
           export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
@@ -388,7 +386,7 @@ jobs:
             third_party/llvm-build/Release+Asserts
           key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
-        run: sudo apt-get install -y cmake ninja-build libgoogle-glog-dev libsodium-dev libjsoncpp-dev libwxgtk3.0-gtk3-dev
+        run: sudo apt-get install -y cmake ninja-build libsodium-dev libjsoncpp-dev libwxgtk3.0-gtk3-dev
       - name: Build
         run: |
           export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
@@ -396,6 +394,6 @@ jobs:
           export CLANG_TIDY_EXECUTABLE=$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy
           mkdir build
           cd build
-          cmake -G Ninja -DCMAKE_C_CLANG_TIDY="$CLANG_TIDY_EXECUTABLE" -DCMAKE_CXX_CLANG_TIDY="$CLANG_TIDY_EXECUTABLE" -DCLI=on -DSERVER=on -DGUI=on ..
+          cmake -G Ninja -DENABLE_CLANG_TIDY=yes -DCLANG_TIDY_EXECUTABLE="$CLANG_TIDY_EXECUTABLE" -DCLI=on -DSERVER=on -DGUI=on ..
           ninja -v
           cd ..

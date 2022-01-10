@@ -143,7 +143,7 @@ asio::error_code SetSocketLinger(asio::ip::tcp::socket* socket) {
     absl::SetFlag(&FLAGS_so_linger_timeout, 0);
   } else {
     VLOG(2) << "Applied SO Linger by " << absl::GetFlag(FLAGS_so_linger_timeout)
-      << " seconds";
+            << " seconds";
   }
   return ec;
 }
@@ -161,7 +161,7 @@ asio::error_code SetSocketSndBuffer(asio::ip::tcp::socket* socket) {
     absl::SetFlag(&FLAGS_so_snd_buffer, 0);
   } else {
     VLOG(2) << "Applied SO_SNDBUF by " << absl::GetFlag(FLAGS_so_snd_buffer)
-      << " bytes";
+            << " bytes";
   }
   return ec;
 }
@@ -179,7 +179,7 @@ asio::error_code SetSocketRcvBuffer(asio::ip::tcp::socket* socket) {
     absl::SetFlag(&FLAGS_so_rcv_buffer, 0);
   } else {
     VLOG(2) << "Applied SO_RCVBUF by " << absl::GetFlag(FLAGS_so_rcv_buffer)
-      << " bytes";
+            << " bytes";
   }
   return ec;
 }

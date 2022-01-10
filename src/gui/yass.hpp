@@ -13,12 +13,26 @@ class YASSFrame;
 /// The main Application for YetAnotherShadowSocket
 class YASSApp : public wxApp {
  public:
-  /// On Program Init
+  // This is the very first function called for a newly created wxApp object,
+  // it is used by the library to do the global initialization.
+  bool Initialize(int& argc, wxChar** argv) override;
+  // Called before OnRun(), this is a good place to do initialization -- if
+  // anything fails, return false from here to prevent the program from
+  // continuing. The command line is normally parsed here, call the base
+  // class OnInit() to do it.
   bool OnInit() override;
-  /// On Program Exit
+
+  // Called before the first events are handled, called from within MainLoop()
+  void OnLaunched() override;
+
+  // This is only called if OnInit() returned true so it's a good place to do
+  // any cleanup matching the initializations done there.
   int OnExit() override;
-  /// On Program Run
-  int OnRun() override;
+
+  // Used to by-pass wxWidgets' builtin parser by pass an empty argv
+  //
+  // called before wxCmdLineParser::Parse inside wxAppConsoleBase::OnInit
+  void OnInitCmdLine(wxCmdLineParser& parser) override;
 
   void OnStart(bool quiet = false);
   void OnStop(bool quiet = false);

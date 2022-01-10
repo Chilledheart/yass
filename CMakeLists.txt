@@ -279,9 +279,6 @@ if(GCOV)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
 endif()
 
-# add macro GLOG_NO_ABBREVIATED_SEVERITIES
-add_definitions(-DGLOG_NO_ABBREVIATED_SEVERITIES)
-
 # *****************************************************************************************
 #           Support Libraries
 # *****************************************************************************************
@@ -292,11 +289,39 @@ set(boringssl_DIR "${CMAKE_SOURCE_DIR}/../boringssl" CACHE STRING "path to borin
 
 include(CheckIncludeFile)
 include(CheckCSourceCompiles)
+include(CheckCXXSourceCompiles)
 
-# abseil-cpp
-set(ABSL_PROPAGATE_CXX_STD ON)
-add_subdirectory(third_party/abseil-cpp)
-include_directories(third_party/abseil-cpp)
+check_cxx_source_compiles ("
+__thread int tls;
+int main() { }
+" HAVE_GCC_TLS)
+
+check_cxx_source_compiles ("
+__declspec(thread) int tls;
+int main() { }
+" HAVE_MSVC_TLS)
+
+check_cxx_source_compiles ("
+thread_local int tls;
+int main() { }
+" HAVE_CXX11_TLS)
+
+check_cxx_source_compiles ("
+#include <type_traits>
+std::aligned_storage<sizeof(char), alignof(char)>::type data;
+int main() { }
+" HAVE_ALIGNED_STORAGE)
+
+if (WITH_TLS)
+  # Cygwin does not support the thread attribute. Don't bother.
+  if (HAVE_GCC_TLS)
+    set (THREAD_LOCAL_STORAGE "__thread")
+  elseif (HAVE_MSVC_TLS)
+    set (THREAD_LOCAL_STORAGE "__declspec(thread)")
+  elseif (HAVE_CXX11_TLS)
+    set (THREAD_LOCAL_STORAGE thread_local)
+  endif()
+endif()
 
 if (MSVC)
     option(VCPKG_ROOT_DIR "" "vcpkg root path")
@@ -306,22 +331,10 @@ if (MSVC)
     set(VCPKG_STATIC_LIB_PATH ${VCPKG_ROOT_DIR}/installed/${VCPKG_TARGET_TRIPLET}/lib)
     set(VCPKG_STATIC_LIB_DEBUG_PATH ${VCPKG_ROOT_DIR}/installed/${VCPKG_TARGET_TRIPLET}/debug/lib)
 
-    add_definitions(-DGLOG_STATIC)
-    add_definitions(-DGOOGLE_GLOG_DLL_DECL=)
-
     include_directories(${VCPKG_INCLUDE_DIRS} SYSTEM)
     set(CMAKE_REQUIRED_INCLUDES
         ${VCPKG_INCLUDE_DIRS}
         ${CMAKE_REQUIRED_INCLUDES})
-
-    find_library(GLOG_RELEASE_LIB glog
-      PATHS ${VCPKG_STATIC_LIB_PATH} NO_DEFAULT_PATH)
-    find_library(GLOG_DEBUG_LIB glog
-      PATHS ${VCPKG_STATIC_LIB_DEBUG_PATH} NO_DEFAULT_PATH)
-    set(GLOG_LIB
-      debug ${GLOG_DEBUG_LIB}
-      optimized ${GLOG_RELEASE_LIB}
-      )
 
     # libsodium
     find_library(SODIUM_RELEASE_LIB libsodium
@@ -405,13 +418,13 @@ if (MSVC)
       foreach(CompilerFlag ${CompilerFlags})
         string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
       endforeach()
-   endif()
+    endif()
 
-   # disable precompiled head files for clang
-   if (HAS_CLANG)
-     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Y-")
-     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Y-")
-   endif()
+    # disable precompiled head files for clang
+    if (HAS_CLANG)
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Y-")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Y-")
+    endif()
 else()
     # include extra paths
     if (APPLE)
@@ -451,7 +464,10 @@ int main() {
         add_definitions(-DHAVE_SOCKETPAIR)
     endif()
 
-    find_library(GLOG_LIB glog)
+    check_include_file(pwd.h HAVE_PWD_INCLUDE)
+    if (HAVE_PWD_INCLUDE)
+      add_definitions(-DHAVE_PWD_H)
+    endif()
 
     find_library(SODIUM_LIB sodium)
     check_include_file(sodium.h SODIUM_INCLUDE)
@@ -480,19 +496,19 @@ int main() {
 endif()
 
 set(SUPPORT_LIBS
-    ${GLOG_LIB}
     ${JSONCPP_LIB}
     ${SYSTEM_LIBS}
     absl::flat_hash_map
     absl::flat_hash_set
     absl::flags
     absl::flags_parse
+    absl::flags_marshalling
     absl::synchronization
     absl::stacktrace
     absl::symbolize
     absl::status
     absl::strings
-    absl::raw_logging_internal
+    absl::failure_signal_handler
     absl::time
     absl::optional
     )
@@ -507,6 +523,11 @@ if (NOT MSAN AND NOT ASAN AND NOT TSAN AND NOT UBSAN)
         ${SUPPORT_LIBS})
 endif()
 
+# abseil-cpp
+set(ABSL_PROPAGATE_CXX_STD ON)
+add_subdirectory(third_party/abseil-cpp)
+include_directories(third_party/abseil-cpp SYSTEM)
+
 # asio
 add_definitions(-DASIO_STANDALONE)
 add_definitions(-DASIO_NO_TYPEID)
@@ -515,6 +536,19 @@ include_directories(third_party/asio/asio/include SYSTEM)
 if (HAS_CLANG)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-inconsistent-missing-override -Wno-unused-private-field")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-inconsistent-missing-override -Wno-unused-private-field")
+endif()
+
+# *****************************************************************************************
+#           Static Analysis
+# *****************************************************************************************
+
+set(ENABLE_CLANG_TIDY "OFF" CACHE STRING "enable clang tidy build")
+set(CLANG_TIDY_EXECUTABLE "clang-tidy" CACHE STRING "path to clang-tidy executable")
+if (ENABLE_CLANG_TIDY)
+  set(CMAKE_C_CLANG_TIDY "${CLANG_TIDY_EXECUTABLE}")
+  set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_EXECUTABLE}")
+  set(CMAKE_OBJC_CLANG_TIDY "${CLANG_TIDY_EXECUTABLE}")
+  set(CMAKE_OBJCXX_CLANG_TIDY "${CLANG_TIDY_EXECUTABLE}")
 endif()
 
 # *****************************************************************************************
@@ -540,6 +574,7 @@ set(files
     src/core/ss_request_parser.cpp
     src/core/stringprintf.cpp
     src/core/rand_util.cpp
+    src/core/logging.cpp
     src/crypto/aead_base_decrypter.cpp
     src/crypto/aead_base_encrypter.cpp
     src/crypto/aead_evp_decrypter.cpp
@@ -592,6 +627,7 @@ set(hfiles
     src/core/ss_request.hpp
     src/core/ss_request_parser.hpp
     src/core/rand_util.hpp
+    src/core/logging.hpp
     src/crypto/aead_base_decrypter.hpp
     src/crypto/aead_base_encrypter.hpp
     src/crypto/aead_evp_decrypter.hpp
@@ -825,6 +861,7 @@ if (GUI AND wxWidgets_FOUND)
     set(SRC_FILES
         src/gui/yass.cpp
         src/gui/yass_frame.cpp
+        src/gui/yass_logging.cpp
         src/gui/option_dialog.cpp
         src/gui/panels.cpp
         src/gui/worker.cpp

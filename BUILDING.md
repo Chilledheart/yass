@@ -10,8 +10,6 @@ apt-get install -y build-essential
 apt-get install -y \
     cmake \
     ninja-build \
-    libgoogle-glog-dev \
-    libgflags-dev \
     libsodium-dev \
     libjsoncpp-dev \
     libwxgtk3.0-gtk3-dev (optional)
@@ -35,11 +33,11 @@ xcode-select --install
 ```
     ninja cmake python27 go
 
-    google-glog +universal gflags +universal libsodium +universal jsoncpp +universal jpeg +universal tiff +universal libpng +universal zlib +universal libiconv +universal expat +universal
+    libsodium jsoncpp jpeg tiff libpng zlib libiconv expat +universal
 ```
 2. Install [HomeBrew] and dependencies...
 ```
-    ninja    cmake    glog    gflags    libsodium    jsoncpp    wxwidgets
+    ninja    cmake    libsodium    jsoncpp    wxwidgets
 ```
 
 3. use script to build Release App under `build` directory.
@@ -53,15 +51,15 @@ scripts/build.py
 
 2. Run [vcpkg][vcpkg] to install required dependencies.
 ```
-vcpkg install gflags:x64-windows-static glog:x64-windows-static libsodium:x64-windows-static jsoncpp:x64-windows-static wxwidgets:x64-windows-static
+vcpkg install libsodium:x64-windows-static jsoncpp:x64-windows-static wxwidgets:x64-windows-static
 ```
 or
 ```
-vcpkg install gflags:arm64-windows-static glog:arm64-windows-static libsodium:arm64-windows-static jsoncpp:arm64-windows-static wxwidgets:arm64-windows-static
+vcpkg install libsodium:arm64-windows-static jsoncpp:arm64-windows-static wxwidgets:arm64-windows-static
 ```
 or
 ```
-vcpkg install gflags:x86-windows-static glog:x86-windows-static libsodium:x86-windows-static jsoncpp:x86-windows-static wxwidgets:x86-windows-static
+vcpkg install libsodium:x86-windows-static jsoncpp:x86-windows-static wxwidgets:x86-windows-static
 ```
 3. use script to build Release App under `build` directory.
 ```

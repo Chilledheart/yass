@@ -3,8 +3,6 @@
 
 #include "crypto/aes_192_gcm_evp_encrypter.hpp"
 
-#include <glog/logging.h>
-
 #ifdef HAVE_BORINGSSL
 #include <openssl/aead.h>
 #include "core/cipher.hpp"
