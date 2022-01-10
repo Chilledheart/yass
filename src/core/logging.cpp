@@ -1468,8 +1468,8 @@ void LogFileObject::Write(bool force_flush,
     if (absl::GetFlag(FLAGS_drop_log_memory) && file_length_ >= (3 << 20)) {
       // Don't evict the most recent 1-2MiB so as not to impact a tailer
       // of the log file and to avoid page rounding issue on linux < 4.7
-      uint32 total_drop_length = (file_length_ & ~((1 << 20) - 1)) - (1 << 20);
-      uint32 this_drop_length = total_drop_length - dropped_mem_length_;
+      uint32_t total_drop_length = (file_length_ & ~((1 << 20) - 1)) - (1 << 20);
+      uint32_t this_drop_length = total_drop_length - dropped_mem_length_;
       if (this_drop_length >= (2 << 20)) {
         // Only advise when >= 2MiB to drop
 #if defined(__ANDROID__) && defined(__ANDROID_API__) && (__ANDROID_API__ < 21)
@@ -2868,7 +2868,7 @@ static int gettimeofday(struct timeval* tv, void* tz) {
 #define EPOCHFILETIME (116444736000000000ULL)
   FILETIME ft;
   LARGE_INTEGER li;
-  uint64 tt;
+  uint64_t tt;
 
   GetSystemTimeAsFileTime(&ft);
   li.LowPart = ft.dwLowDateTime;

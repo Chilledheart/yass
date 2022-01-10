@@ -18,6 +18,8 @@
 #include <malloc.h>
 #endif
 
+#include <absl/base/attributes.h>
+#include <absl/base/optimization.h>
 #include <absl/flags/declare.h>
 #include <absl/flags/flag.h>
 
@@ -79,28 +81,17 @@ using absl::LogSeverity;
 // Giving it this information can help it optimize for the common case in
 // the absence of better information (ie. -fprofile-arcs).
 //
-#ifndef PREDICT_BRANCH_NOT_TAKEN
-#if 1
-#define PREDICT_BRANCH_NOT_TAKEN(x) (__builtin_expect(x, 0))
+#if ABSL_HAVE_BUILTIN(__builtin_expect) || \
+    (defined(__GNUC__) && !defined(__clang__))
+#define ABSL_PREDICT_BRANCH_NOT_TAKEN(x) (__builtin_expect(x, 0))
 #else
-#define PREDICT_BRANCH_NOT_TAKEN(x) x
-#endif
+#define ABSL_PREDICT_BRANCH_NOT_TAKEN(x) x
 #endif
 
-#ifndef PREDICT_FALSE
-#if 1
-#define PREDICT_FALSE(x) (__builtin_expect(x, 0))
+#if ABSL_HAVE_ATTRIBUTE(noinline) || (defined(__GNUC__) && !defined(__clang__))
+#define ABSL_NOLINE_ATTRIBUTE __attribute__((noinline))
 #else
-#define PREDICT_FALSE(x) x
-#endif
-#endif
-
-#ifndef PREDICT_TRUE
-#if 1
-#define PREDICT_TRUE(x) (__builtin_expect(!!(x), 1))
-#else
-#define PREDICT_TRUE(x) x
-#endif
+#define ABSL_NOLINE_ATTRIBUTE
 #endif
 
 #if STRIP_LOG == 0
@@ -283,7 +274,7 @@ struct CheckOpString {
   CheckOpString(std::string* str) : str_(str) {}
   // No destructor: if str_ is non-NULL, we're about to LOG(FATAL),
   // so there's no point in cleaning up str_.
-  operator bool() const { return PREDICT_BRANCH_NOT_TAKEN(str_ != NULL); }
+  operator bool() const { return ABSL_PREDICT_BRANCH_NOT_TAKEN(str_ != NULL); }
   std::string* str_;
 };
 
@@ -361,8 +352,9 @@ void MakeCheckOpValueString(std::ostream* os, const std::nullptr_t& v);
 
 // Build the error message string. Specify no inlining for code size.
 template <typename T1, typename T2>
-std::string* MakeCheckOpString(const T1& v1, const T2& v2, const char* exprtext)
-    __attribute__((noinline));
+std::string* MakeCheckOpString(const T1& v1,
+                               const T2& v2,
+                               const char* exprtext) ABSL_NOLINE_ATTRIBUTE;
 
 // A helper class for formatting "expr (V1 vs. V2)" in a CHECK_XX
 // statement.  See MakeCheckOpString for sample usage.  Other
@@ -405,7 +397,7 @@ std::string* MakeCheckOpString(const T1& v1,
   template <typename T1, typename T2>                                    \
   inline std::string* name##Impl(const T1& v1, const T2& v2,             \
                                  const char* exprtext) {                 \
-    if (PREDICT_TRUE(static_cast<int>(v1) op static_cast<int>(v2)))      \
+    if (ABSL_PREDICT_TRUE(static_cast<int>(v1) op static_cast<int>(v2))) \
       return NULL;                                                       \
     else                                                                 \
       return MakeCheckOpString(v1, v2, exprtext);                        \
@@ -534,13 +526,13 @@ DECLARE_CHECK_STROP_IMPL(strcasecmp, false)
   do {                                             \
     CHECK_LE((val1), (val2) + 0.000000000000001L); \
     CHECK_GE((val1), (val2)-0.000000000000001L);   \
-  } while (0)
+  } while (false)
 
 #define CHECK_NEAR(val1, val2, margin)   \
   do {                                   \
     CHECK_LE((val1), (val2) + (margin)); \
     CHECK_GE((val1), (val2) - (margin)); \
-  } while (0)
+  } while (false)
 
 // perror()..googly style!
 //
@@ -561,8 +553,8 @@ DECLARE_CHECK_STROP_IMPL(strcasecmp, false)
 // A CHECK() macro that postpends errno if the condition is false. E.g.
 //
 // if (poll(fds, nfds, timeout) == -1) { PCHECK(errno == EINTR); ... }
-#define PCHECK(condition)                                \
-  PLOG_IF(FATAL, PREDICT_BRANCH_NOT_TAKEN(!(condition))) \
+#define PCHECK(condition)                                     \
+  PLOG_IF(FATAL, ABSL_PREDICT_BRANCH_NOT_TAKEN(!(condition))) \
       << "Check failed: " #condition " "
 
 // A CHECK() macro that lets you assert the success of a function that
@@ -573,8 +565,9 @@ DECLARE_CHECK_STROP_IMPL(strcasecmp, false)
 // or
 //
 // int fd = open(filename, flags); CHECK_ERR(fd) << ": open " << filename;
-#define CHECK_ERR(invocation) \
-  PLOG_IF(FATAL, PREDICT_BRANCH_NOT_TAKEN((invocation) == -1)) << #invocation
+#define CHECK_ERR(invocation)                                       \
+  PLOG_IF(FATAL, ABSL_PREDICT_BRANCH_NOT_TAKEN((invocation) == -1)) \
+      << #invocation
 
 // Use macro expansion to create, for each use of LOG_EVERY_N(), static
 // variables with the __LINE__ expansion as part of the variable name.
@@ -1361,7 +1354,7 @@ class NullStreamFatal : public NullStream {
       default:                        \
         break;                        \
     }                                 \
-  } while (0)
+  } while (false)
 
 // The following STRIP_LOG testing is performed in the header file so that it's
 // possible to completely compile out the logging code and the log messages.
@@ -1371,7 +1364,7 @@ class NullStreamFatal : public NullStream {
     if (VLOG_IS_ON(verboselevel)) { \
       RAW_LOG_INFO(__VA_ARGS__);    \
     }                               \
-  } while (0)
+  } while (false)
 #else
 #define RAW_VLOG(verboselevel, ...) RawLogStub__(0, __VA_ARGS__)
 #endif  // STRIP_LOG == 0
@@ -1402,7 +1395,7 @@ class NullStreamFatal : public NullStream {
   do {                            \
     RawLogStub__(0, __VA_ARGS__); \
     exit(1);                      \
-  } while (0)
+  } while (false)
 #endif  // STRIP_LOG <= 3
 
 // Similar to CHECK(condition) << message,
@@ -1415,7 +1408,7 @@ class NullStreamFatal : public NullStream {
     if (!(condition)) {                                           \
       RAW_LOG(FATAL, "Check %s failed: %s", #condition, message); \
     }                                                             \
-  } while (0)
+  } while (false)
 
 // Debug versions of RAW_LOG and RAW_CHECK
 #ifndef NDEBUG
@@ -1446,6 +1439,6 @@ void RawLog__(LogSeverity severity,
               const char* file,
               int line,
               const char* format,
-              ...) __attribute__((__format__(__printf__, 4, 5)));
+              ...) ABSL_PRINTF_ATTRIBUTE(4, 5);
 
 #endif  // H_LOGGING
