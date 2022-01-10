@@ -320,7 +320,7 @@ const char* const_basename(const char* filepath);
 
 void DumpStackTraceToString(std::string* stacktrace);
 
-static void DumpStackTraceAndExit();
+static void ABSL_ATTRIBUTE_NORETURN_ATTRIBUTE DumpStackTraceAndExit();
 
 struct CrashReason {
   const char* filename = nullptr;
