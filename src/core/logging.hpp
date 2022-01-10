@@ -89,9 +89,9 @@ using absl::LogSeverity;
 #endif
 
 #if ABSL_HAVE_ATTRIBUTE(noreturn) || (defined(__GNUC__) && !defined(__clang__))
-#define ATTRIBUTE_NORETURN_ATTRIBUTE __attribute__((noreturn))
+#define ABSL_ATTRIBUTE_NORETURN_ATTRIBUTE __attribute__((noreturn))
 #else
-#define ATTRIBUTE_NORETURN_ATTRIBUTE
+#define ABSL_ATTRIBUTE_NORETURN_ATTRIBUTE
 #endif
 
 #if STRIP_LOG == 0
@@ -931,7 +931,7 @@ class LogMessage {
   void SendToLog();  // Actually dispatch to the logs
 
   // Call abort() or similar to perform LOG(FATAL) crash.
-  static void ATTRIBUTE_NORETURN_ATTRIBUTE Fail();
+  static void ABSL_ATTRIBUTE_NORETURN_ATTRIBUTE Fail();
 
   std::ostream& stream();
 
@@ -981,7 +981,7 @@ class LogMessageFatal : public LogMessage {
  public:
   LogMessageFatal(const char* file, int line);
   LogMessageFatal(const char* file, int line, const CheckOpString& result);
-  ATTRIBUTE_NORETURN_ATTRIBUTE ~LogMessageFatal();
+  ABSL_ATTRIBUTE_NORETURN_ATTRIBUTE ~LogMessageFatal();
 };
 
 // A non-macro interface to the log facility; (useful
@@ -1313,7 +1313,7 @@ class NullStreamFatal : public NullStream {
   NullStreamFatal() {}
   NullStreamFatal(const char* file, int line, const CheckOpString& result)
       : NullStream(file, line, result) {}
-  ATTRIBUTE_NORETURN_ATTRIBUTE ~NullStreamFatal() throw() { _exit(1); }
+  ABSL_ATTRIBUTE_NORETURN_ATTRIBUTE ~NullStreamFatal() throw() { _exit(1); }
 };
 
 // This is similar to LOG(severity) << format... and VLOG(level) << format..,

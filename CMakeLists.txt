@@ -48,8 +48,25 @@ if (NOT MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 
     if (HAS_CLANG)
-        set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -Werror -Wno-unused-parameter")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-unused-parameter -Wno-inconsistent-missing-override")
+      set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -Werror -Wno-unused-parameter")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-unused-parameter -Wno-inconsistent-missing-override")
+    endif()
+
+    # Since we build with -std=c* and not -std=gnu*, _GNU_SOURCE will not be
+    # defined by the compiler.  However, lots of code relies on the
+    # non-standard features that _GNU_SOURCE enables, so define it manually.
+    if (UNIX AND NOT APPLE)
+      add_definitions(-D_GNU_SOURCE)
+    endif()
+
+    # Necessary for clone().
+    if (ANDROID)
+      add_definitions(-D__GNU_SOURCE=1)
+    endif()
+
+    #The system libc++ on Mac doesn't have aligned allocation in C++17.
+    if (APPLE)
+      add_definitions(-D_LIBCPP_HAS_NO_ALIGNED_ALLOCATION)
     endif()
 
     ## optimization flags
@@ -90,7 +107,7 @@ if (NOT MSVC)
     endif()
 
     ## disable rtti, wxWidgets modal requires this
-    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
+    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
 
     ## disable exceptions
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
@@ -148,7 +165,7 @@ else()
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zi")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
 
-    # tell linker to include symbol data
+    #tell linker to include symbol data
     if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
       set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /INCREMENTAL:NO /DEBUG /OPT:ICF")
       set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /INCREMENTAL:NO /DEBUG /OPT:ICF")
