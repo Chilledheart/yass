@@ -264,8 +264,8 @@ class LogSink;  // defined below
 // controlled by DCHECK_IS_ON(), so the check will be executed regardless of
 // compilation mode.  Therefore, it is safe to do things like:
 //    CHECK(fp->Write(x) == 4)
-#define CHECK(condition)                                \
-  LOG_IF(FATAL, PREDICT_BRANCH_NOT_TAKEN(!(condition))) \
+#define CHECK(condition)                                     \
+  LOG_IF(FATAL, ABSL_PREDICT_BRANCH_NOT_TAKEN(!(condition))) \
       << "Check failed: " #condition " "
 
 // A container for a string pointer which can be evaluated to a bool -
