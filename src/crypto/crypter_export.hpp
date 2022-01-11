@@ -45,6 +45,7 @@ enum cipher_method : uint32_t {
 
 enum cipher_method to_cipher_method(const std::string& method);
 const char* to_cipher_method_str(enum cipher_method method);
+bool is_valid_cipher_method(enum cipher_method method);
 
 #define XX(num, name, string) extern const char* CRYPTO_##name##_STR;
 CIPHER_METHOD_MAP(XX)

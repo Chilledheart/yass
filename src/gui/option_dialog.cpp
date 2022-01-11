@@ -120,7 +120,8 @@ void OptionDialog::OnCancel(wxCommandEvent& WXUNUSED(event)) {
 }
 
 void OptionDialog::OnLoad() {
-  m_connecttimeout_tc->SetValue(std::to_string(absl::GetFlag(FLAGS_timeout)));
+  m_connecttimeout_tc->SetValue(
+      std::to_string(absl::GetFlag(FLAGS_connect_timeout)));
   m_tcpusertimeout_tc->SetValue(
       std::to_string(absl::GetFlag(FLAGS_tcp_user_timeout)));
   m_lingertimeout_tc->SetValue(
@@ -147,7 +148,7 @@ void OptionDialog::OnSave() {
     return;
   }
 
-  absl::SetFlag(&FLAGS_timeout, connect_timeout.value());
+  absl::SetFlag(&FLAGS_connect_timeout, connect_timeout.value());
   absl::SetFlag(&FLAGS_tcp_user_timeout, user_timeout.value());
   absl::SetFlag(&FLAGS_so_linger_timeout, so_linger_timeout.value());
   absl::SetFlag(&FLAGS_so_snd_buffer, so_snd_buffer.value());

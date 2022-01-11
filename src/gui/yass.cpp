@@ -17,6 +17,7 @@
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
+#include "crypto/crypter_export.hpp"
 #include "gui/panels.hpp"
 #include "gui/utils.hpp"
 #include "gui/yass_frame.hpp"
@@ -60,11 +61,8 @@ bool YASSApp::OnInit() {
   LOG(WARNING) << "Application starting";
 
   LoadConfigFromDisk();
-  if (cipher_method_in_use == CRYPTO_INVALID) {
-    wxMessageBox(wxT("Bad configuration: cipher method!"),
-                 wxT("CypherChecker"));
-    return false;
-  }
+  DCHECK(is_valid_cipher_method(
+      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
 
   mApp = this;
   state_ = STOPPED;
@@ -167,10 +165,10 @@ void YASSApp::SaveConfigToDisk() {
   auto method = to_cipher_method(method_string);
   auto local_host = frame_->GetLocalHost();
   auto local_port = StringToInteger(frame_->GetLocalPort());
-  auto timeout = StringToInteger(frame_->GetTimeout());
+  auto connect_timeout = StringToInteger(frame_->GetTimeout());
 
   if (!server_port.ok() || method == CRYPTO_INVALID || !local_port.ok() ||
-      !timeout.ok()) {
+      !connect_timeout.ok()) {
     LOG(WARNING) << "invalid options";
     return;
   }
@@ -178,11 +176,10 @@ void YASSApp::SaveConfigToDisk() {
   absl::SetFlag(&FLAGS_server_host, server_host);
   absl::SetFlag(&FLAGS_server_port, server_port.value());
   absl::SetFlag(&FLAGS_password, password);
-  absl::SetFlag(&FLAGS_method, method_string);
-  cipher_method_in_use = method;
+  absl::SetFlag(&FLAGS_cipher_method, method);
   absl::SetFlag(&FLAGS_local_host, local_host);
   absl::SetFlag(&FLAGS_local_port, local_port.value());
-  absl::SetFlag(&FLAGS_timeout, timeout.value());
+  absl::SetFlag(&FLAGS_connect_timeout, connect_timeout.value());
 
   config::SaveConfig();
 }

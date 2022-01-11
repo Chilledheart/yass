@@ -12,6 +12,7 @@
 
 #include "core/asio.hpp"
 #include "core/logging.hpp"
+#include "crypto/crypter_export.hpp"
 
 using namespace socks5;
 
@@ -36,9 +37,8 @@ int main(int argc, const char* argv[]) {
   absl::InstallFailureSignalHandler(failure_handle_options);
 
   (void)config::ReadConfig();
-  if (cipher_method_in_use == CRYPTO_INVALID) {
-    return -1;
-  }
+  DCHECK(is_valid_cipher_method(
+      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
 
   asio::ip::tcp::endpoint endpoint(
       resolveEndpoint(&io_context, absl::GetFlag(FLAGS_local_host),

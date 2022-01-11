@@ -16,4 +16,3 @@ absl::StatusOr<int32_t> StringToInteger(absl::string_view value) {
   }
   return static_cast<int32_t>(result);
 }
-

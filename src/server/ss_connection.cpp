@@ -23,13 +23,15 @@ SsConnection::SsConnection(asio::io_context& io_context,
     : Connection(io_context, remote_endpoint),
       state_(),
       resolver_(io_context_),
-      encoder_(new cipher("",
+      encoder_(new cipher(
+          "",
+          absl::GetFlag(FLAGS_password),
+          static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)),
+          true)),
+      decoder_(new cipher("",
                           absl::GetFlag(FLAGS_password),
-                          cipher_method_in_use,
-                          true)),
-      decoder_(
-          new cipher("", absl::GetFlag(FLAGS_password), cipher_method_in_use)) {
-}
+                          static_cast<enum cipher_method>(
+                              absl::GetFlag(FLAGS_cipher_method)))) {}
 
 SsConnection::~SsConnection() = default;
 

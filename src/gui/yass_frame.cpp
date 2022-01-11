@@ -142,12 +142,13 @@ void YASSFrame::UpdateStatus() {
   m_rightpanel->m_serverport_tc->SetValue(
       std::to_string(absl::GetFlag(FLAGS_server_port)));
   m_rightpanel->m_password_tc->SetValue(absl::GetFlag(FLAGS_password));
-  m_rightpanel->m_method_tc->SetStringSelection(absl::GetFlag(FLAGS_method));
+  m_rightpanel->m_method_tc->SetStringSelection(to_cipher_method_str(
+      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
   m_rightpanel->m_localhost_tc->SetValue(absl::GetFlag(FLAGS_local_host));
   m_rightpanel->m_localport_tc->SetValue(
       std::to_string(absl::GetFlag(FLAGS_local_port)));
   m_rightpanel->m_timeout_tc->SetValue(
-      std::to_string(absl::GetFlag(FLAGS_timeout)));
+      std::to_string(absl::GetFlag(FLAGS_connect_timeout)));
 
   uint64_t sync_time = GetMonotonicTime();
   uint64_t delta_time = sync_time - last_sync_time_;

@@ -46,7 +46,7 @@ class stream {
     read_enabled_ = true;
     SetTCPFastOpenConnect(socket_.native_handle());
     connect_timer_.expires_from_now(
-        std::chrono::milliseconds(absl::GetFlag(FLAGS_timeout)));
+        std::chrono::milliseconds(absl::GetFlag(FLAGS_connect_timeout)));
     connect_timer_.async_wait(
         std::bind(&stream::on_connect_expired, this, std::placeholders::_1));
     socket_.async_connect(endpoint_, std::bind(&stream::on_connect, this,

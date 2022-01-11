@@ -64,13 +64,15 @@ Socks5Connection::Socks5Connection(
     const asio::ip::tcp::endpoint& remote_endpoint)
     : Connection(io_context, remote_endpoint),
       state_(),
-      encoder_(new cipher("",
+      encoder_(new cipher(
+          "",
+          absl::GetFlag(FLAGS_password),
+          static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)),
+          true)),
+      decoder_(new cipher("",
                           absl::GetFlag(FLAGS_password),
-                          cipher_method_in_use,
-                          true)),
-      decoder_(
-          new cipher("", absl::GetFlag(FLAGS_password), cipher_method_in_use)) {
-}
+                          static_cast<enum cipher_method>(
+                              absl::GetFlag(FLAGS_cipher_method)))) {}
 
 Socks5Connection::~Socks5Connection() = default;
 

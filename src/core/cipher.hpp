@@ -108,6 +108,4 @@ class cipher {
   std::unique_ptr<IOBuf> chunk_;
 };
 
-extern enum cipher_method cipher_method_in_use;
-
 #endif  // H_CORE_CIPHER

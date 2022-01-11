@@ -26,3 +26,13 @@ const char* to_cipher_method_str(enum cipher_method method) {
 #undef XX
   return CRYPTO_INVALID_STR;
 }
+
+bool is_valid_cipher_method(enum cipher_method method) {
+#define XX(num, name, string) \
+  if (method == num) {        \
+    return true;              \
+  }
+  CIPHER_METHOD_MAP(XX)
+#undef XX
+  return false;
+}

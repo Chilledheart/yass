@@ -187,6 +187,7 @@ cipher::cipher(const std::string& key,
                enum cipher_method method,
                bool enc)
     : salt_(), key_(), counter_(), init_(false) {
+  DCHECK(is_valid_cipher_method(method));
   impl_ = new cipher_impl(method, enc);
   key_bitlen_ = impl_->GetKeySize() * 8;
   key_len_ = !key.empty()
@@ -423,5 +424,3 @@ void cipher::set_key_aead(const uint8_t* salt, size_t salt_len) {
   DumpHex("NONCE_PREFIX", impl_->GetNoncePrefix(), impl_->GetNoncePrefixSize());
 #endif
 }
-
-enum cipher_method cipher_method_in_use = CRYPTO_AES256GCMSHA256;
