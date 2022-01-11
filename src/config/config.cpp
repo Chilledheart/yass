@@ -116,7 +116,7 @@ bool ReadConfig() {
   VLOG(1) << "loaded option so_rcv_buffer: "
     << absl::GetFlag(FLAGS_so_rcv_buffer);
 
-  VLOG(1) << "initializing ciphers... " << absl::GetFlag(FLAGS_cipher_method);
+  VLOG(1) << "initializing ciphers... " << cipher_method_str;
 
   if (absl::GetFlag(FLAGS_reuse_port)) {
     LOG(WARNING) << "using port reuse";

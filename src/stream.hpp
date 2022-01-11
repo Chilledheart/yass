@@ -48,9 +48,10 @@ class stream {
     connect_timer_.expires_from_now(
         std::chrono::milliseconds(absl::GetFlag(FLAGS_connect_timeout)));
     connect_timer_.async_wait(
-        std::bind(&stream::on_connect_expired, this, std::placeholders::_1));
-    socket_.async_connect(endpoint_, std::bind(&stream::on_connect, this,
-                                               channel, std::placeholders::_1));
+        [this](asio::error_code error) { on_connect_expired(error); });
+    socket_.async_connect(endpoint_, [this, channel](asio::error_code error) {
+      on_connect(channel, error);
+    });
   }
 
   bool connected() const { return connected_; }

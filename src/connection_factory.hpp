@@ -80,8 +80,9 @@ class ServiceFactory {
         std::make_unique<T>(io_context_, remote_endpoint_);
     acceptor_->async_accept(
         peer_endpoint_,
-        std::bind(&ServiceFactory<T>::handleAccept, this, conn,
-                  std::placeholders::_1, std::placeholders::_2));
+        [this, conn](asio::error_code error, asio::ip::tcp::socket socket) {
+          handleAccept(conn, error, std::move(socket));
+        });
   }
 
   void handleAccept(std::shared_ptr<T> conn,
