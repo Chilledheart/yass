@@ -319,14 +319,14 @@ def generate_buildscript(configuration_type):
     # The CMAKE_<LANG>_COMPILER_TARGET can be set to pass a value to those supported compilers when compiling.
     # see https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER_TARGET.html
     if DEFAULT_ARCH == 'x86':
-      triple = 'i686-pc-windows-msvc'
+      llvm_triple = 'i686-pc-windows-msvc'
     elif DEFAULT_ARCH == 'x64':
-      triple = 'x86_64-pc-windows-msvc'
+      llvm_triple = 'x86_64-pc-windows-msvc'
     elif DEFAULT_ARCH == 'arm64':
-      triple = 'arm64-pc-windows-msvc'
-    if 'clang-cl' in os.getenv('CC') and triple:
-      cmake_args.extend(['-DCMAKE_C_COMPILER_TARGET=%s' % triple])
-      cmake_args.extend(['-DCMAKE_CXX_COMPILER_TARGET=%s' % triple])
+      llvm_triple = 'aarch64-pc-windows-msvc'
+    if 'clang-cl' in os.getenv('CC') and llvm_triple:
+      cmake_args.extend(['-DCMAKE_C_COMPILER_TARGET=%s' % llvm_triple])
+      cmake_args.extend(['-DCMAKE_CXX_COMPILER_TARGET=%s' % llvm_triple])
 
   else:
     cmake_args.extend(['-G', 'Ninja'])
