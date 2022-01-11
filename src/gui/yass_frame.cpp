@@ -9,6 +9,7 @@
 #include <sstream>
 
 #include "cli/socks5_connection_stats.hpp"
+#include "core/utils.hpp"
 #include "gui/option_dialog.hpp"
 #include "gui/panels.hpp"
 #include "gui/utils.hpp"
@@ -73,31 +74,31 @@ YASSFrame::YASSFrame(const wxString& title,
 }
 
 std::string YASSFrame::GetServerHost() {
-  return Utils::ToString(m_rightpanel->m_serverhost_tc->GetValue());
+  return m_rightpanel->m_serverhost_tc->GetValue().operator const char*();
 }
 
 std::string YASSFrame::GetServerPort() {
-  return Utils::ToString(m_rightpanel->m_serverport_tc->GetValue());
+  return m_rightpanel->m_serverport_tc->GetValue().operator const char*();
 }
 
 std::string YASSFrame::GetPassword() {
-  return Utils::ToString(m_rightpanel->m_password_tc->GetValue());
+  return m_rightpanel->m_password_tc->GetValue().operator const char*();
 }
 
 std::string YASSFrame::GetMethod() {
-  return Utils::ToString(m_rightpanel->m_method_tc->GetStringSelection());
+  return m_rightpanel->m_method_tc->GetStringSelection().operator const char*();
 }
 
 std::string YASSFrame::GetLocalHost() {
-  return Utils::ToString(m_rightpanel->m_localhost_tc->GetValue());
+  return m_rightpanel->m_localhost_tc->GetValue().operator const char*();
 }
 
 std::string YASSFrame::GetLocalPort() {
-  return Utils::ToString(m_rightpanel->m_localport_tc->GetValue());
+  return m_rightpanel->m_localport_tc->GetValue().operator const char*();
 }
 
 std::string YASSFrame::GetTimeout() {
-  return Utils::ToString(m_rightpanel->m_timeout_tc->GetValue());
+  return m_rightpanel->m_timeout_tc->GetValue().operator const char*();
 }
 
 void YASSFrame::Started() {
@@ -148,7 +149,7 @@ void YASSFrame::UpdateStatus() {
   m_rightpanel->m_timeout_tc->SetValue(
       std::to_string(absl::GetFlag(FLAGS_timeout)));
 
-  uint64_t sync_time = Utils::GetMonotonicTime();
+  uint64_t sync_time = GetMonotonicTime();
   uint64_t delta_time = sync_time - last_sync_time_;
   if (delta_time > NS_PER_SECOND / 10) {
     uint64_t rx_bytes = total_rx_bytes;

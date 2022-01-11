@@ -600,6 +600,7 @@ set(SUPPORT_LIBS
     absl::stacktrace
     absl::symbolize
     absl::status
+    absl::statusor
     absl::strings
     absl::failure_signal_handler
     absl::time
@@ -667,6 +668,7 @@ set(files
     src/core/stringprintf.cpp
     src/core/rand_util.cpp
     src/core/logging.cpp
+    src/core/utils.cpp
     src/crypto/aead_base_decrypter.cpp
     src/crypto/aead_base_encrypter.cpp
     src/crypto/aead_evp_decrypter.cpp
@@ -720,6 +722,7 @@ set(hfiles
     src/core/ss_request_parser.hpp
     src/core/rand_util.hpp
     src/core/logging.hpp
+    src/core/utils.hpp
     src/crypto/aead_base_decrypter.hpp
     src/crypto/aead_base_encrypter.hpp
     src/crypto/aead_evp_decrypter.hpp
@@ -750,8 +753,13 @@ set(hfiles
 
 if (MSVC)
   list(APPEND files src/core/rand_util_win.cpp)
+  list(APPEND files src/core/utils_win.mm)
+elseif (APPLE)
+  list(APPEND files src/core/rand_util_posix.cpp)
+  list(APPEND files src/core/utils_mac.mm)
 else()
   list(APPEND files src/core/rand_util_posix.cpp)
+  list(APPEND files src/core/utils_linux.cpp)
 endif()
 
 add_library(yass_base OBJECT

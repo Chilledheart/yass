@@ -126,23 +126,4 @@ void Utils::EnableAutoStart(bool on) {
   set_yass_auto_start(on);
 }
 
-static uint64_t MachTimeToNanoseconds(uint64_t machTime) {
-  uint64_t nanoseconds = 0;
-  static mach_timebase_info_data_t sTimebase;
-  if (sTimebase.denom == 0) {
-    kern_return_t mtiStatus = mach_timebase_info(&sTimebase);
-    DCHECK_EQ(mtiStatus, KERN_SUCCESS);
-    (void)mtiStatus;
-  }
-
-  nanoseconds = ((machTime * sTimebase.numer) / sTimebase.denom);
-
-  return nanoseconds;
-}
-
-uint64_t Utils::GetMonotonicTime() {
-  uint64_t now = mach_absolute_time();
-  return MachTimeToNanoseconds(now);
-}
-
 #endif  // __APPLE__

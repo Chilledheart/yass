@@ -16,6 +16,7 @@
 #include <wx/stdpaths.h>
 
 #include "core/logging.hpp"
+#include "core/utils.hpp"
 #include "gui/panels.hpp"
 #include "gui/utils.hpp"
 #include "gui/yass_frame.hpp"
@@ -159,14 +160,29 @@ void YASSApp::LoadConfigFromDisk() {
 }
 
 void YASSApp::SaveConfigToDisk() {
-  absl::SetFlag(&FLAGS_server_host, frame_->GetServerHost());
-  absl::SetFlag(&FLAGS_server_port, Utils::Stoi(frame_->GetServerPort()));
-  absl::SetFlag(&FLAGS_password, frame_->GetPassword());
-  absl::SetFlag(&FLAGS_method, frame_->GetMethod());
-  absl::SetFlag(&FLAGS_local_host, frame_->GetLocalHost());
-  absl::SetFlag(&FLAGS_local_port, Utils::Stoi(frame_->GetLocalPort()));
-  cipher_method_in_use = to_cipher_method(absl::GetFlag(FLAGS_method));
-  absl::SetFlag(&FLAGS_timeout, Utils::Stoi(frame_->GetTimeout()));
+  auto server_host = frame_->GetServerHost();
+  auto server_port = StringToInteger(frame_->GetServerPort());
+  auto password = frame_->GetPassword();
+  auto method_string = frame_->GetMethod();
+  auto method = to_cipher_method(method_string);
+  auto local_host = frame_->GetLocalHost();
+  auto local_port = StringToInteger(frame_->GetLocalPort());
+  auto timeout = StringToInteger(frame_->GetTimeout());
+
+  if (!server_port.ok() || method == CRYPTO_INVALID || !local_port.ok() ||
+      !timeout.ok()) {
+    LOG(WARNING) << "invalid options";
+    return;
+  }
+
+  absl::SetFlag(&FLAGS_server_host, server_host);
+  absl::SetFlag(&FLAGS_server_port, server_port.value());
+  absl::SetFlag(&FLAGS_password, password);
+  absl::SetFlag(&FLAGS_method, method_string);
+  cipher_method_in_use = method;
+  absl::SetFlag(&FLAGS_local_host, local_host);
+  absl::SetFlag(&FLAGS_local_port, local_port.value());
+  absl::SetFlag(&FLAGS_timeout, timeout.value());
 
   config::SaveConfig();
 }

@@ -6,7 +6,8 @@
 #include <absl/flags/flag.h>
 
 #include "config/config.hpp"
-#include "gui/utils.hpp"
+#include "core/logging.hpp"
+#include "core/utils.hpp"
 
 OptionDialog::OptionDialog(wxFrame* parent,
                            const wxString& title,
@@ -129,14 +130,26 @@ void OptionDialog::OnLoad() {
 }
 
 void OptionDialog::OnSave() {
-  absl::SetFlag(&FLAGS_timeout,
-                Utils::Stoi(Utils::ToString(m_connecttimeout_tc->GetValue())));
-  absl::SetFlag(&FLAGS_tcp_user_timeout,
-                Utils::Stoi(Utils::ToString(m_tcpusertimeout_tc->GetValue())));
-  absl::SetFlag(&FLAGS_so_linger_timeout,
-                Utils::Stoi(Utils::ToString(m_lingertimeout_tc->GetValue())));
-  absl::SetFlag(&FLAGS_so_snd_buffer,
-                Utils::Stoi(Utils::ToString(m_sendbuffer_tc->GetValue())));
-  absl::SetFlag(&FLAGS_so_rcv_buffer,
-                Utils::Stoi(Utils::ToString(m_recvbuffer_tc->GetValue())));
+  auto connect_timeout =
+      StringToInteger(m_connecttimeout_tc->GetValue().operator const char*());
+  auto user_timeout =
+      StringToInteger(m_tcpusertimeout_tc->GetValue().operator const char*());
+  auto so_linger_timeout =
+      StringToInteger(m_lingertimeout_tc->GetValue().operator const char*());
+  auto so_snd_buffer =
+      StringToInteger(m_sendbuffer_tc->GetValue().operator const char*());
+  auto so_rcv_buffer =
+      StringToInteger(m_recvbuffer_tc->GetValue().operator const char*());
+
+  if (!connect_timeout.ok() || !user_timeout.ok() || !so_linger_timeout.ok() ||
+      !so_snd_buffer.ok() || !so_rcv_buffer.ok()) {
+    LOG(WARNING) << "invalid options";
+    return;
+  }
+
+  absl::SetFlag(&FLAGS_timeout, connect_timeout.value());
+  absl::SetFlag(&FLAGS_tcp_user_timeout, user_timeout.value());
+  absl::SetFlag(&FLAGS_so_linger_timeout, so_linger_timeout.value());
+  absl::SetFlag(&FLAGS_so_snd_buffer, so_snd_buffer.value());
+  absl::SetFlag(&FLAGS_so_rcv_buffer, so_rcv_buffer.value());
 }

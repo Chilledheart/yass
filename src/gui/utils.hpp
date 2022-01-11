@@ -1,21 +1,19 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2021 Chilledheart  */
-#ifndef YASS_UTILS
-#define YASS_UTILS
-#include <stdint.h>
-#include <wx/string.h>
+#ifndef YASS_GUI_UTILS
+#define YASS_GUI_UTILS
+#include <cstdint>
 #include <string>
+
 class Utils {
  public:
   static bool GetAutoStart();
   static void EnableAutoStart(bool on);
+#ifdef _WIN32
   static bool SetProcessDpiAwareness();
-  static uint64_t GetMonotonicTime();
-  static int32_t Stoi(const std::string& value);
-  static std::string ToString(const wxString& value);
+#endif
 };
 
 #define DEFAULT_AUTOSTART_NAME "YASS"
-#define NS_PER_SECOND (1000 * 1000 * 1000)
 
-#endif  // YASS_UTILS
+#endif  // YASS_GUI_UTILS
