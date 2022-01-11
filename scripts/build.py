@@ -9,20 +9,25 @@ from multiprocessing import cpu_count
 from time import sleep
 
 APP_NAME = 'yass'
-DEFAULT_BUILD_TYPE = 'Release'
-DEFAULT_OSX_MIN = '10.10'
-DEFAULT_OSX_ARCHS = 'arm64;x86_64'
-DEFAULT_ARCH = os.getenv('VSCMD_ARG_TGT_ARCH')
+# configurable variable are Debug, Release, RelWithDebInfo and MinSizeRel
+DEFAULT_BUILD_TYPE = os.getenv('BUILD_TYPE', 'Release')
+DEFAULT_OSX_MIN = os.getenv('MACOSX_VERSION_MIN', '10.10')
+# enable by default if macports installed
+DEFAULT_ENABLE_OSX_UNIVERSAL_BUILD = os.getenv('ENABLE_OSX_UNIVERSAL_BUILD', os.path.exists('/opt/local/bin/port'))
+DEFAULT_OSX_UNIVERSAL_ARCHS = 'arm64;x86_64'
+DEFAULT_ARCH = os.getenv('VSCMD_ARG_TGT_ARCH', 'x86')
+# configurable variable are static and dynamic
 DEFAULT_CRT_LINKAGE = 'static'
-DEFAULT_SIGNING_IDENTITY = os.getenv('CODESIGN_IDENTITY')
-DEFAULT_COMPILER = ''
-DEFAULT_CLANG_TIDY = os.getenv('ENABLE_CLANG_TIDY')
-DEFAULT_CLANG_TIDY_EXECUTABLE = os.getenv('CLANG_TIDY_EXECUTABLE') if os.getenv('CLANG_TIDY_EXECUTABLE') else 'clang-tidy'
+DEFAULT_SIGNING_IDENTITY = os.getenv('CODESIGN_IDENTITY', '-')
+DEFAULT_ENABLE_CLANG_TIDY = os.getenv('ENABLE_CLANG_TIDY', False)
+DEFAULT_CLANG_TIDY_EXECUTABLE = os.getenv('CLANG_TIDY_EXECUTABLE', 'clang-tidy')
 # documented in github actions https://github.com/actions/virtual-environments/blob/main/images/win/Windows2019-Readme.md
-VCPKG_DIR = os.getenv('VCPKG_INSTALLATION_ROOT') if os.getenv('VCPKG_INSTALLATION_ROOT') else os.getenv('VCPKG_ROOT')
+# and VCPKG_ROOT is used for compatible mode
+VCPKG_DIR = os.getenv('VCPKG_INSTALLATION_ROOT', os.getenv('VCPKG_ROOT', 'C:\vcpkg'))
 
-if not DEFAULT_SIGNING_IDENTITY:
-  DEFAULT_SIGNING_IDENTITY = '-'
+# clang-tidy complains about parse error
+if DEFAULT_ENABLE_CLANG_TIDY:
+  DEFAULT_ENABLE_OSX_UNIVERSAL_BUILD = False
 
 num_cpus=cpu_count()
 
@@ -284,22 +289,11 @@ def find_source_directory():
 def generate_buildscript(configuration_type):
   print('generate build scripts...(%s)' % configuration_type)
   cmake_args = ['-DGUI=ON', '-DCLI=ON', '-DSERVER=ON']
-  if DEFAULT_CLANG_TIDY:
+  if DEFAULT_ENABLE_CLANG_TIDY:
     cmake_args.extend(['-DENABLE_CLANG_TIDY=yes',
                        '-DCLANG_TIDY_EXECUTABLE=%s' % DEFAULT_CLANG_TIDY_EXECUTABLE])
   if sys.platform == 'win32':
     cmake_args.extend(['-G', 'Ninja'])
-    if DEFAULT_COMPILER == 'clang-cl':
-      os.environ['PATH'] += os.pathsep + 'C:\\Program Files\\LLVM\\bin\\'
-      os.environ['CC'] = DEFAULT_COMPILER
-      os.environ['CXX'] = DEFAULT_COMPILER
-      target_name = os.environ['VSCMD_ARG_TGT_ARCH']
-      if target_name == 'x64':
-        target_name = 'x86_64'
-      elif target_name == 'x86':
-        target_name = 'i386'
-      os.environ['CFLAGS'] = '--target=%s-pc-windows-msvc' % target_name
-      os.environ['CXXFLAGS'] = '--target=%s-pc-windows-msvc' % target_name
     cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])
     cmake_args.extend(['-DCMAKE_TOOLCHAIN_FILE=%s\\scripts\\buildsystems\\vcpkg.cmake' % VCPKG_DIR])
     cmake_args.extend(['-DVCPKG_TARGET_ARCHITECTURE=%s' % DEFAULT_ARCH])
@@ -313,6 +307,7 @@ def generate_buildscript(configuration_type):
       cmake_args.extend(['-DVCPKG_TARGET_TRIPLET=%s-windows' % DEFAULT_ARCH])
     cmake_args.extend(['-DVCPKG_ROOT_DIR=%s' % VCPKG_DIR])
     cmake_args.extend(['-DVCPKG_VERBOSE=ON'])
+    # TODO support boringssl for all arches
     # skip boringssl for platforms except amd64
     if DEFAULT_ARCH == 'x64':
       cmake_args.extend(['-DBORINGSSL=ON'])
@@ -326,8 +321,8 @@ def generate_buildscript(configuration_type):
   if sys.platform == 'darwin':
     cmake_args.append('-DCMAKE_OSX_DEPLOYMENT_TARGET=%s' % DEFAULT_OSX_MIN)
     # if we run arm64/arm64e, use universal build
-    if platform.machine() == 'arm64' and not DEFAULT_CLANG_TIDY:
-      cmake_args.append('-DCMAKE_OSX_ARCHITECTURES=%s' % DEFAULT_OSX_ARCHS)
+    if DEFAULT_ENABLE_OSX_UNIVERSAL_BUILD:
+      cmake_args.append('-DCMAKE_OSX_ARCHITECTURES=%s' % DEFAULT_OSX_UNIVERSAL_ARCHS)
 
   command = ['cmake', '..'] + cmake_args
 
@@ -344,7 +339,8 @@ def execute_buildscript(configuration_type):
 def postbuild_copy_libraries():
   print('copying dependent libraries...')
   if sys.platform == 'win32':
-    # not supported
+    # TODO make windows DLL-vesion build
+    # see https://docs.microsoft.com/en-us/cpp/build/reference/md-mt-ld-use-run-time-library?view=msvc-140
     pass
   elif sys.platform == 'darwin':
     _postbuild_copy_libraries_xcode()
@@ -498,7 +494,8 @@ if __name__ == '__main__':
   if sys.platform == 'darwin':
     postbuild_fix_retina_display()
     postbuild_codesign()
-  #postbuild_check_universal_build()
+  if DEFAULT_ENABLE_OSX_UNIVERSAL_BUILD:
+    postbuild_check_universal_build()
   outputs = postbuild_archive()
   for output in outputs:
     print('------ %s' % output)

@@ -126,8 +126,10 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x64, x86, arm64]
+        build_type: [Debug, RelWithDebInfo]
     env:
-      BUNDLE_NAME: 'yass-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}'
+      BUNDLE_NAME: 'yass-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}'
+      BUILD_TYPE: '${{ matrix.build_type }}'
       VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config libsodium jsoncpp wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
     steps:
       - uses: actions/checkout@v2
@@ -180,7 +182,7 @@ jobs:
       - run: echo "SHA256SUM=$(cut -d' ' -f2 sha256sum.txt)" >>$GITHUB_ENV
       - uses: actions/upload-artifact@v2
         with:
-          name: ${{ github.job }}-${{ matrix.arch }}-sha256 ${{ env.SHA256SUM }}
+          name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}-sha256 ${{ env.SHA256SUM }}
           path: sha256sum.txt
 ##win-clang-tidy:
 ##  needs: cache-toolchain-win
@@ -189,8 +191,10 @@ jobs:
 ##    fail-fast: false
 ##    matrix:
 ##      arch: [x64, x86, arm64]
+##      build_type: [Debug, RelWithDebInfo]
 ##  env:
 ##    ENABLE_CLANG_TIDY: '1'
+##    BUILD_TYPE: '${{ matrix.build_type }}'
 ##    VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config libsodium jsoncpp wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
 ##  steps:
 ##    - uses: actions/checkout@v2
@@ -237,8 +241,10 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x64, arm64]
+        build_type: [Debug, RelWithDebInfo]
     env:
-      BUNDLE_NAME: 'yass-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}'
+      BUNDLE_NAME: 'yass-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}'
+      BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
       - uses: actions/checkout@v2
         with:
@@ -267,17 +273,19 @@ jobs:
       - run: echo "SHA256SUM=$(cut -d' ' -f2 sha256sum.txt)" >>$GITHUB_ENV
       - uses: actions/upload-artifact@v2
         with:
-          name: ${{ github.job }}-${{ matrix.arch }}-sha256 ${{ env.SHA256SUM }}
+          name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}-sha256 ${{ env.SHA256SUM }}
           path: sha256sum.txt
   mac-clang-tidy:
     needs: cache-toolchain-mac
     runs-on: macos-latest
     env:
       ENABLE_CLANG_TIDY: '1'
+      BUILD_TYPE: '${{ matrix.build_type }}'
     strategy:
       fail-fast: false
       matrix:
         arch: [x64, arm64]
+        build_type: [Debug, RelWithDebInfo]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -301,6 +309,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x64, x86, arm64]
+        build_type: [Debug, RelWithDebInfo]
     env:
       BUNDLE_NAME: 'yass-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}'
     steps:
@@ -323,8 +332,10 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x64, x86, arm64]
+        build_type: [Debug, RelWithDebInfo]
     env:
       BUNDLE_NAME: 'yass-server-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}'
+      BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
       - uses: actions/checkout@v2
         with:
@@ -345,8 +356,10 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x64, x86, arm64]
+        build_type: [Debug, RelWithDebInfo]
     env:
       BUNDLE_NAME: 'yass-clang-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}'
+      BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
       - uses: actions/checkout@v2
         with:
@@ -375,6 +388,9 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x64, x86, arm64]
+        build_type: [Debug, RelWithDebInfo]
+    env:
+      BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
       - uses: actions/checkout@v2
         with:
