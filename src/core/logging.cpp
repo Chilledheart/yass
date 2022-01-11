@@ -1570,8 +1570,8 @@ std::vector<std::string> LogCleaner::GetOverdueLogNames(
     log_directory += dir_delim_;
   }
 
-  if ((dir = opendir(log_directory.c_str()))) {
-    while ((ent = readdir(dir))) {
+  if ((dir = opendir(log_directory.c_str())) != nullptr) {
+    while ((ent = readdir(dir)) != nullptr) {
       if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) {
         continue;
       }
