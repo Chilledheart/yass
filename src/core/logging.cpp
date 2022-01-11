@@ -26,9 +26,7 @@
 #if defined(__APPLE__)
 #include <sys/syscall.h>  // For syscall.
 #endif
-#ifdef HAVE_FLOCK
-#include <fcntl.h>
-#endif
+#include <fcntl.h>  // For O_WRONLY, O_CREAT, O_CREAT
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
