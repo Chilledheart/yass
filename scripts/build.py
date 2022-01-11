@@ -324,7 +324,7 @@ def generate_buildscript(configuration_type):
       llvm_triple = 'x86_64-pc-windows-msvc'
     elif DEFAULT_ARCH == 'arm64':
       llvm_triple = 'aarch64-pc-windows-msvc'
-    if 'clang-cl' in os.getenv('CC') and llvm_triple:
+    if 'clang-cl' in os.getenv('CC', '') and llvm_triple:
       cmake_args.extend(['-DCMAKE_C_COMPILER_TARGET=%s' % llvm_triple])
       cmake_args.extend(['-DCMAKE_CXX_COMPILER_TARGET=%s' % llvm_triple])
 
