@@ -20,6 +20,12 @@ if(MSVC)
   # On Windows, prefer cl over gcc if both are available. By default most of
   # the CMake generators prefer gcc, even on Windows.
   set(CMAKE_GENERATOR_CC cl)
+
+  # new in cmake 3.10
+  # https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER_ARCHITECTURE_ID.html
+  # not used in ABI-detection due to the cmake issue https://gitlab.kitware.com/cmake/cmake/-/issues/17702
+  set(CMAKE_C_COMPILER_ARCHITECTURE_ID "${VCPKG_TARGET_ARCHITECTURE}" CACHE STRING "")
+  set(CMAKE_CXX_COMPILER_ARCHITECTURE_ID "${VCPKG_TARGET_ARCHITECTURE}" CACHE STRING "")
 endif()
 
 enable_language(C)

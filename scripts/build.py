@@ -307,12 +307,27 @@ def generate_buildscript(configuration_type):
       cmake_args.extend(['-DVCPKG_TARGET_TRIPLET=%s-windows' % DEFAULT_ARCH])
     cmake_args.extend(['-DVCPKG_ROOT_DIR=%s' % VCPKG_DIR])
     cmake_args.extend(['-DVCPKG_VERBOSE=ON'])
+
     # TODO support boringssl for all arches
     # skip boringssl for platforms except amd64
     if DEFAULT_ARCH == 'x64':
       cmake_args.extend(['-DBORINGSSL=ON'])
     else: #x86, arm64, arm
       cmake_args.extend(['-DBORINGSSL=OFF'])
+
+    # Some compilers are inherently cross compilers, such as Clang and the QNX QCC compiler.
+    # The CMAKE_<LANG>_COMPILER_TARGET can be set to pass a value to those supported compilers when compiling.
+    # see https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER_TARGET.html
+    if DEFAULT_ARCH == 'x86':
+      triple = 'i686-pc-windows-msvc'
+    elif DEFAULT_ARCH == 'x64':
+      triple = 'x86_64-pc-windows-msvc'
+    elif DEFAULT_ARCH == 'arm64':
+      triple = 'arm64-pc-windows-msvc'
+    if 'clang-cl' in os.getenv('CC') and triple:
+      cmake_args.extend(['-DCMAKE_C_COMPILER_TARGET=%s' % triple])
+      cmake_args.extend(['-DCMAKE_CXX_COMPILER_TARGET=%s' % triple])
+
   else:
     cmake_args.extend(['-G', 'Ninja'])
     cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])
