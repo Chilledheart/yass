@@ -12,7 +12,7 @@
 #include <string>
 #ifndef _WIN32
 #include <unistd.h>  // For _exit.
-#endif               // _WIN32
+#endif
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <climits>
@@ -26,7 +26,9 @@
 #if defined(__APPLE__)
 #include <sys/syscall.h>  // For syscall.
 #endif
+#ifdef HAVE_FLOCK
 #include <fcntl.h>
+#endif
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -179,6 +181,27 @@ typedef FILE* FileHandle;
 #define DEFAULT_ALSOLOGTOSTDERR false
 #define DEFAULT_LOGBUFLEVEL 1
 #define DEFAULT_VERBOSE_LEVEL 2
+#endif
+
+#if defined(__APPLE__)
+// Notes:
+// * Xcode's clang did not support `thread_local` until version 8, and
+//   even then not for all iOS < 9.0.
+// * Xcode 9.3 started disallowing `thread_local` for 32-bit iOS simulator
+//   targeting iOS 9.x.
+// * Xcode 10 moves the deployment target check for iOS < 9.0 to link time
+//   making ABSL_HAVE_FEATURE unreliable there.
+//
+#if HAVE_CXX11_TLS && \
+    !(TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0)
+#define THREAD_LOCAL_STORAGE thread_local
+#endif
+#elif defined(HAVE_GCC_TLS)
+#define THREAD_LOCAL_STORAGE __thread
+#elif defined(HAVE_MSVC_TLS)
+#define THREAD_LOCAL_STORAGE __declspec(thread)
+#elif defined(HAVE_CXX11_TLS)
+#define THREAD_LOCAL_STORAGE thread_lock
 #endif
 
 ABSL_FLAG(bool,
@@ -1227,7 +1250,7 @@ bool LogFileObject::CreateLogfile(const std::string& time_pid_string) {
   int fd = open(filename, flags, absl::GetFlag(FLAGS_logfile_mode));
   if (fd == -1)
     return false;
-#ifdef HAVE_FCNTL
+#ifdef HAVE_FLOCK
   // Mark the file close-on-exec. We don't really care if this fails
   fcntl(fd, F_SETFD, FD_CLOEXEC);
 
@@ -2897,7 +2920,7 @@ void DumpStackTraceAndExit() {
   sigaction(SIGABRT, &sig_action, nullptr);
 #elif defined(_WIN32)
   signal(SIGABRT, SIG_DFL);
-#endif  // HAVE_SIGACTION
+#endif  // defined(__linux__) || defined(__APPLE__)
 
   abort();
 }

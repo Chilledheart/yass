@@ -373,21 +373,42 @@ thread_local int tls;
 int main() { }
 " HAVE_CXX11_TLS)
 
+if (WITH_TLS)
+  # Cygwin does not support the thread attribute. Don't bother.
+  if (HAVE_GCC_TLS)
+    add_definitions(-DHAVE_GCC_TLS)
+  elseif (HAVE_MSVC_TLS)
+    add_definitions(-DHAVE_MSVC_TLS)
+  elseif (HAVE_CXX11_TLS)
+    add_definitions(-DHAVE_CXX11_TLS)
+  endif()
+endif()
+
 check_cxx_source_compiles ("
 #include <type_traits>
 std::aligned_storage<sizeof(char), alignof(char)>::type data;
 int main() { }
 " HAVE_ALIGNED_STORAGE)
+if (HAVE_ALIGNED_STORAGE)
+  add_definitions(-DHAVE_ALIGNED_STORAGE)
+endif()
 
-if (WITH_TLS)
-  # Cygwin does not support the thread attribute. Don't bother.
-  if (HAVE_GCC_TLS)
-    set (THREAD_LOCAL_STORAGE "__thread")
-  elseif (HAVE_MSVC_TLS)
-    set (THREAD_LOCAL_STORAGE "__declspec(thread)")
-  elseif (HAVE_CXX11_TLS)
-    set (THREAD_LOCAL_STORAGE thread_local)
-  endif()
+check_c_source_compiles ("
+#define STDOUT_FILENO 1
+#include <fcntl.h>
+int main() {
+  static struct flock w_lock;
+
+  w_lock.l_type = F_WRLCK;
+  w_lock.l_start = 0;
+  w_lock.l_whence = SEEK_SET;
+  w_lock.l_len = 0;
+
+  return fcntl(STDOUT_FILENO, F_SETLK, &w_lock);
+}
+" HAVE_FLOCK)
+if (HAVE_FLOCK)
+  add_definitions(-DHAVE_FLOCK)
 endif()
 
 if (MSVC)
