@@ -2,6 +2,17 @@ cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
 set(PACKAGE_NAME      "YetAnotherShadowSocket")
 
+# Select the MSVC runtime library for use by compilers targeting the MSVC ABI.
+# Use VCPKG_CRT_LINKAGE variable internally, option: dynamic and static
+#
+# Introduced by cmake 3.15
+# https://cmake.org/cmake/help/latest/variable/CMAKE_MSVC_RUNTIME_LIBRARY.html#variable:CMAKE_MSVC_RUNTIME_LIBRARY
+# and https://cmake.org/cmake/help/latest/policy/CMP0091.html
+if(POLICY CMP0091)
+  cmake_policy(SET CMP0091 NEW)
+endif()
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:${VCPKG_CRT_LINKAGE},dynamic>:DLL>" CACHE STRING "")
+
 # Defer enabling C and CXX languages.
 project(${PACKAGE_NAME} NONE)
 
