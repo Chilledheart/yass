@@ -486,7 +486,7 @@ if __name__ == '__main__':
   find_source_directory()
   generate_buildscript(configuration_type)
   execute_buildscript(configuration_type)
-  if DEFAULT_CLANG_TIDY:
+  if DEFAULT_CLANG_TIDY_EXECUTABLE:
     print('done')
     sys.exit(0)
   postbuild_copy_libraries()
