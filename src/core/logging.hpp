@@ -397,7 +397,7 @@ std::string* MakeCheckOpString(const T1& v1,
   template <typename T1, typename T2>                                    \
   inline std::string* name##Impl(const T1& v1, const T2& v2,             \
                                  const char* exprtext) {                 \
-    if (ABSL_PREDICT_TRUE(static_cast<int>(v1) op static_cast<int>(v2))) \
+    if (ABSL_PREDICT_TRUE(v1 op v2))                                     \
       return NULL;                                                       \
     else                                                                 \
       return MakeCheckOpString(v1, v2, exprtext);                        \

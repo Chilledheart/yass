@@ -774,8 +774,8 @@ inline void LogDestination::SetLogDestination(LogSeverity severity,
 
 inline void LogDestination::SetLogSymlink(LogSeverity severity,
                                           const char* symlink_basename) {
-  CHECK_GE(severity, 0);
-  CHECK_LT(severity, NUM_SEVERITIES);
+  CHECK_GE(static_cast<int>(severity), 0);
+  CHECK_LT(static_cast<int>(severity), NUM_SEVERITIES);
   absl::MutexLock l(&log_mutex);
   log_destination(severity)->fileobject_.SetSymlinkBasename(symlink_basename);
 }
