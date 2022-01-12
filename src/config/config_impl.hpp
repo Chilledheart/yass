@@ -8,6 +8,7 @@
 #include <string>
 
 #include <absl/flags/declare.h>
+#include <absl/strings/string_view.h>
 
 namespace config {
 class ConfigImpl {
@@ -80,7 +81,23 @@ public:
   ///
   /// \param key the key value
   /// \param value the value (string)
-  virtual bool Write(const std::string &key, const std::string &value) = 0;
+  bool Write(const std::string &key, const std::string &value) {
+    return Write(key, absl::string_view(value));
+  }
+
+  /// Write the key,value into ConfigTree
+  ///
+  /// \param key the key value
+  /// \param value the value (c-style string)
+  bool Write(const std::string &key, const char *value) {
+    return Write(key, absl::string_view(value));
+  }
+
+  /// Write the key,value into ConfigTree
+  ///
+  /// \param key the key value
+  /// \param value the value (string_view)
+  virtual bool Write(const std::string &key, absl::string_view value) = 0;
 
   /// Write the key,value into ConfigTree
   ///

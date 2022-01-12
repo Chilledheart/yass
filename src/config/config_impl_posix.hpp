@@ -194,8 +194,8 @@ public:
     return false;
   }
 
-  bool Write(const std::string &key, const std::string &value) override {
-    root_[key] = value;
+  bool Write(const std::string &key, absl::string_view value) override {
+    root_[key] = value.data();
     return true;
   }
 
