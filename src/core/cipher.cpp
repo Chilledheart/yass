@@ -188,6 +188,10 @@ cipher::cipher(const std::string& key,
                bool enc)
     : salt_(), key_(), counter_(), init_(false) {
   DCHECK(is_valid_cipher_method(method));
+  VLOG(3) << "cipher: " << (enc ? "encoder" : "decoder")
+          << " create with key \"" << key << "\" password \"" << password
+          << "\" cipher_method: " << to_cipher_method_str(method);
+
   impl_ = new cipher_impl(method, enc);
   key_bitlen_ = impl_->GetKeySize() * 8;
   key_len_ = !key.empty()
@@ -195,7 +199,7 @@ cipher::cipher(const std::string& key,
                  : cipher_impl::derive_key(password, key_, key_bitlen_ / 8);
 
 #ifndef NDEBUG
-  DumpHex("KEY", key_, key_len_);
+  DumpHex("cipher: KEY", key_, key_len_);
 #endif
 
   tag_len_ = impl_->GetTagSize();

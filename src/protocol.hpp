@@ -28,18 +28,49 @@ inline void DumpHex(const char* prefix, const uint8_t* data, uint32_t length) {
   if (!VLOG_IS_ON(3)) {
     return;
   }
-  fprintf(stderr, "%s LEN %u\n", prefix, length);
+  char hex_buffer[4096];
+  char* message = hex_buffer;
+  uint32_t left_size = sizeof(hex_buffer);
+
+  int written = snprintf(message, left_size, "%s LEN %u\n", prefix, length);
+  if (written < 0)
+    goto done;
+  message += written;
+  left_size -= written;
+
   length = std::min(length, 32U);
   for (uint32_t i = 0; i * 2 + 1 < length; ++i) {
     if (i % 8 == 0) {
-      fprintf(stderr, "%s ", prefix);
+      written = snprintf(message, left_size, "%s ", prefix);
+      if (written < 0)
+        goto done;
+      message += written;
+      left_size -= written;
     }
-    fprintf(stderr, "%02x%02x ", data[i * 2], data[i * 2 + 1]);
+
+    written =
+        snprintf(message, left_size, "%02x%02x ", data[i * 2], data[i * 2 + 1]);
+    if (written < 0)
+      goto done;
+    message += written;
+    left_size -= written;
+
     if ((i + 1) % 8 == 0) {
-      fprintf(stderr, "\n");
+      written = snprintf(message, left_size, "\n");
+      if (written < 0)
+        goto done;
+      message += written;
+      left_size -= written;
     }
   }
-  fprintf(stderr, "\n");
+  written = snprintf(message, left_size, "\n");
+  message += written;
+  left_size -= written;
+
+done:
+  // ensure it is null-terminated
+  hex_buffer[sizeof(hex_buffer) - 1] = '\0';
+  VLOG(3) << hex_buffer;
 }
 
 inline void DumpHex(const char* prefix, const IOBuf* buf) {
