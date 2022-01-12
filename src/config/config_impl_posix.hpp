@@ -105,7 +105,7 @@ bool WriteFileWithContent(const std::string& path, const std::string& context) {
   return true;
 }
 
-} // anonymous namespace
+}  // anonymous namespace
 
 namespace config {
 
