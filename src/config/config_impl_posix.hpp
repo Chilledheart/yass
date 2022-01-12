@@ -44,16 +44,41 @@ std::string ExpandUser(const std::string& file_path) {
 // For example:
 //     Dirname("a/b/prog/file.cc")
 // returns "a/b/prog"
+//     Dirname("a/b/prog//")
+// returns "a/b"
 //     Dirname("file.cc")
 // returns "."
 //     Dirname("/file.cc")
 // returns "/"
-inline absl::string_view Dirname(absl::string_view filename) {
-  auto last_slash_pos = filename.find_last_of("/\\");
+//     Dirname("//file.cc")
+// returns "/"
+//     Dirname("/dir//file.cc")
+// returns "/dir"
+inline absl::string_view Dirname(absl::string_view path) {
+  // trim the extra trailing slash
+  auto first_non_slash_at_end_pos = path.find_last_not_of('/');
 
-  return last_slash_pos == absl::string_view::npos
-             ? "."
-             : filename.substr(0, last_slash_pos);
+  // path is in the root directory
+  if (first_non_slash_at_end_pos == absl::string_view::npos) {
+    return "/";
+  }
+
+  auto last_slash_pos = path.find_last_of("/\\", first_non_slash_at_end_pos);
+
+  // path is in the current directory.
+  if (last_slash_pos == absl::string_view::npos) {
+    return ".";
+  }
+
+  // trim the extra trailing slash
+  first_non_slash_at_end_pos = path.find_last_not_of('/', last_slash_pos);
+
+  // path is in the root directory
+  if (first_non_slash_at_end_pos == absl::string_view::npos) {
+    return "/";
+  }
+
+  return path.substr(0, first_non_slash_at_end_pos + 1);
 }
 
 bool IsDirectory(const std::string& path) {
