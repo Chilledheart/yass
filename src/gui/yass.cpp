@@ -32,8 +32,8 @@ wxDEFINE_EVENT(MY_EVENT, wxCommandEvent);
 
 wxIMPLEMENT_APP(YASSApp);
 
-bool YASSApp::Initialize(int& argc, wxChar** argv) {
-  if (!wxApp::Initialize(argc, argv))
+bool YASSApp::Initialize(int& wxapp_argc, wxChar** wxapp_argv) {
+  if (!wxApp::Initialize(wxapp_argc, wxapp_argv))
     return false;
 
   wxString appPath = wxStandardPaths::Get().GetExecutablePath();

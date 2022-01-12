@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "core/logging.hpp"
+#include "core/utils.hpp"
 
 #define DEFAULT_CONFIG_KEY L"SOFTWARE\\YetAnotherShadowSocket"
 
@@ -39,91 +40,6 @@ typedef unsigned __int64 QWORD;
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-dtyp/ac050bbf-a821-4fab-bccf-d95d892f428f
 static_assert(sizeof(QWORD) == sizeof(uint64_t),
               "A QWORD is a 64-bit unsigned integer.");
-
-// borrowed from sys_string_conversions_win.cc
-
-// Converts between 8-bit and wide strings, using the given code page. The
-// code page identifier is one accepted by the Windows function
-// MultiByteToWideChar().
-std::wstring SysMultiByteToWide(absl::string_view mb, uint32_t code_page);
-
-std::string SysWideToMultiByte(const std::wstring& wide, uint32_t code_page);
-
-// Do not assert in this function since it is used by the asssertion code!
-std::string SysWideToUTF8(const std::wstring& wide) {
-  return SysWideToMultiByte(wide, CP_UTF8);
-}
-
-// Do not assert in this function since it is used by the asssertion code!
-std::wstring SysUTF8ToWide(absl::string_view utf8) {
-  return SysMultiByteToWide(utf8, CP_UTF8);
-}
-
-std::string SysWideToNativeMB(const std::wstring& wide) {
-  return SysWideToMultiByte(wide, CP_ACP);
-}
-
-std::wstring SysNativeMBToWide(absl::string_view native_mb) {
-  return SysMultiByteToWide(native_mb, CP_ACP);
-}
-
-// Do not assert in this function since it is used by the asssertion code!
-std::wstring SysMultiByteToWide(absl::string_view mb, uint32_t code_page) {
-  int mb_length = static_cast<int>(mb.length());
-  // Note that, if cbMultiByte is 0, the function fails.
-  if (mb_length == 0)
-    return std::wstring();
-
-  // Compute the length of the buffer.
-  int charcount = MultiByteToWideChar(
-      code_page /* CodePage */, 0 /* dwFlags */, mb.data() /* lpMultiByteStr */,
-      mb_length /* cbMultiByte */, nullptr /* lpWideCharStr */,
-      0 /* cchWideChar */);
-  // The function returns 0 if it does not succeed.
-  if (charcount == 0)
-    return std::wstring();
-
-  // If the function succeeds and cchWideChar is 0,
-  // the return value is the required size, in characters,
-  std::wstring wide;
-  wide.resize(charcount);
-  MultiByteToWideChar(code_page /* CodePage */, 0 /* dwFlags */,
-                      mb.data() /* lpMultiByteStr */,
-                      mb_length /* cbMultiByte */, &wide[0] /* lpWideCharStr */,
-                      charcount /* cchWideChar */);
-
-  return wide;
-}
-
-// Do not assert in this function since it is used by the asssertion code!
-std::string SysWideToMultiByte(const std::wstring& wide, uint32_t code_page) {
-  int wide_length = static_cast<int>(wide.length());
-  // If cchWideChar is set to 0, the function fails.
-  if (wide_length == 0)
-    return std::string();
-
-  // Compute the length of the buffer we'll need.
-  int charcount = WideCharToMultiByte(
-      code_page /* CodePage */, 0 /* dwFlags */,
-      wide.data() /* lpWideCharStr */, wide_length /* cchWideChar */,
-      nullptr /* lpMultiByteStr */, 0 /* cbMultiByte */,
-      nullptr /* lpDefaultChar */, nullptr /* lpUsedDefaultChar */);
-  // The function returns 0 if it does not succeed.
-  if (charcount == 0)
-    return std::string();
-  // If the function succeeds and cbMultiByte is 0, the return value is
-  // the required size, in bytes, for the buffer indicated by lpMultiByteStr.
-  std::string mb;
-  mb.resize(charcount);
-
-  WideCharToMultiByte(
-      code_page /* CodePage */, 0 /* dwFlags */,
-      wide.data() /* lpWideCharStr */, wide_length /* cchWideChar */,
-      &mb[0] /* lpMultiByteStr */, charcount /* cbMultiByte */,
-      nullptr /* lpDefaultChar */, nullptr /* lpUsedDefaultChar */);
-
-  return mb;
-}
 
 std::wstring ExpandUserFromString(const wchar_t* path, size_t path_len) {
   // the return value is the REQUIRED number of TCHARs,
