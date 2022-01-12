@@ -20,13 +20,12 @@
 
 #include "core/logging.hpp"
 
-#define DEFAULT_CONFIGDIR "~/.yass"
-#define DEFAULT_CONFIGFILE "~/.yass/config.json"
-
 ABSL_FLAG(std::string,
           configfile,
-          DEFAULT_CONFIGFILE,
+          "~/.yass/config.json",
           "load configs from file");
+
+namespace {
 
 std::string ExpandUser(const std::string& file_path) {
   std::string real_path = file_path;
@@ -39,7 +38,25 @@ std::string ExpandUser(const std::string& file_path) {
   return real_path;
 }
 
-bool is_directory(const std::string& path) {
+// A portable interface that returns the basename of the filename passed as an
+// argument. It is similar to dirname(3)
+// <https://linux.die.net/man/3/dirname>.
+// For example:
+//     Dirname("a/b/prog/file.cc")
+// returns "a/b/prog"
+//     Dirname("file.cc")
+// returns "."
+//     Dirname("/file.cc")
+// returns "/"
+inline absl::string_view Dirname(absl::string_view filename) {
+  auto last_slash_pos = filename.find_last_of("/\\");
+
+  return last_slash_pos == absl::string_view::npos
+             ? "."
+             : filename.substr(0, last_slash_pos);
+}
+
+bool IsDirectory(const std::string& path) {
   struct stat Stat;
   if (::stat(path.c_str(), &Stat) != 0) {
     return false;
@@ -47,30 +64,26 @@ bool is_directory(const std::string& path) {
   return S_ISDIR(Stat.st_mode);
 }
 
-bool create_directory(const std::string& path) {
+bool CreatePrivateDirectory(const std::string& path) {
   return ::mkdir(path.c_str(), 0700) != 0;
 }
 
-bool CreateConfigDirectory(const std::string& configdir) {
-  std::string real_path = ExpandUser(configdir);
-
-  if (!is_directory(real_path) && !create_directory(real_path)) {
+bool EnsureCreatedDirectory(const std::string& path) {
+  if (!IsDirectory(path) && !CreatePrivateDirectory(path)) {
     return false;
   }
   return true;
 }
 
-bool ReadFile(const std::string& path, std::string* context) {
+bool ReadFileToString(const std::string& path, std::string* context) {
   char buf[4096];
   int fd = ::open(path.c_str(), O_RDONLY);
   if (fd < 0) {
-    LOG(WARNING) << "configure file does not exist: " << path;
     return false;
   }
   ssize_t ret = ::read(fd, buf, sizeof(buf) - 1);
-  close(fd);
-  if (ret <= 0) {
-    LOG(WARNING) << "configure file failed to read: " << path;
+
+  if (ret <= 0 || close(fd) < 0) {
     return false;
   }
   buf[ret] = '\0';
@@ -78,21 +91,21 @@ bool ReadFile(const std::string& path, std::string* context) {
   return true;
 }
 
-bool WriteFile(const std::string& path, const std::string& context) {
+bool WriteFileWithContent(const std::string& path, const std::string& context) {
   int fd = ::open(path.c_str(), O_WRONLY | O_TRUNC | O_CREAT,
                   S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if (fd < 0) {
-    LOG(WARNING) << "configure file does not exist: " << path;
     return false;
   }
   ssize_t ret = ::write(fd, context.c_str(), context.size() + 1);
-  close(fd);
-  if (ret != static_cast<long>(context.size()) + 1) {
-    LOG(WARNING) << "configure file failed to write: " << path;
+
+  if (ret != static_cast<long>(context.size()) + 1 || close(fd) < 0) {
     return false;
   }
   return true;
 }
+
+} // anonymous namespace
 
 namespace config {
 
@@ -103,16 +116,13 @@ class ConfigImplPosix : public ConfigImpl {
  protected:
   bool OpenImpl(bool dontread) override {
     dontread_ = dontread;
-    if (!CreateConfigDirectory(DEFAULT_CONFIGDIR)) {
-      LOG(WARNING) << "configure dir could not create: " << DEFAULT_CONFIGDIR;
-      return false;
-    }
 
     path_ = ExpandUser(absl::GetFlag(FLAGS_configfile));
 
     if (!dontread) {
-      std::string context;
-      if (!ReadFile(path_, &context)) {
+      std::string content;
+      if (!ReadFileToString(path_, &content)) {
+        LOG(WARNING) << "configure file failed to read: " << path_;
         return false;
       }
       Json::CharReaderBuilder builder;
@@ -120,28 +130,43 @@ class ConfigImplPosix : public ConfigImpl {
       JSONCPP_STRING errs;
       const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
 
-      if (!reader->parse(context.c_str(), context.c_str() + context.size() + 1,
+      if (!reader->parse(content.c_str(), content.c_str() + content.size() + 1,
                          &root_, &errs)) {
-        LOG(WARNING) << "bad configuration: " << errs;
+        LOG(WARNING) << "bad configuration: " << errs << " content: \""
+                     << content << "\"";
         return false;
       }
+      VLOG(2) << "read from config file " << path_;
     }
 
     return true;
   }
 
   bool CloseImpl() override {
-    if (!dontread_) {
+    if (path_.empty() || !dontread_) {
       return true;
     }
+
+    auto dir_ref = Dirname(path_);
+    std::string dir(dir_ref.data(), dir_ref.size());
+    if (!EnsureCreatedDirectory(dir)) {
+      LOG(WARNING) << "configure dir could not create: " << dir;
+      return false;
+    }
+
     Json::StreamWriterBuilder builder;
     builder["commentStyle"] = "None";
     builder["indentation"] = "   ";  // or whatever you like
-    const std::string context = Json::writeString(builder, root_);
-    if (!WriteFile(path_, context)) {
-      LOG(WARNING) << "failed to write: " << context;
+    const std::string content = Json::writeString(builder, root_);
+    if (!WriteFileWithContent(path_, content)) {
+      LOG(WARNING) << "failed to write to path: \"" << path_
+                   << " with content \"" << content << "\"";
       return false;
     }
+
+    VLOG(2) << "written from config file " << path_;
+
+    path_.clear();
     return true;
   }
 
