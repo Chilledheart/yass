@@ -52,13 +52,15 @@ bool ReadConfig() {
   if (!config_impl->Open(false) ||
       !config_impl->Read("server", &FLAGS_server_host) ||
       !config_impl->Read("server_port", &FLAGS_server_port) ||
-      !config_impl->Read("method", &cipher_method_str) ||
       !config_impl->Read("password", &FLAGS_password) ||
       !config_impl->Read("local", &FLAGS_local_host) ||
       !config_impl->Read("local_port", &FLAGS_local_port)) {
     return false;
   }
-  /* new version field: ignore non-exist error*/
+
+  /* old version field: ignore non-exist error */
+  config_impl->Read("method", &cipher_method_str);
+  /* new version field: ignore non-exist error and more higher priority */
   config_impl->Read("cipher_method", &cipher_method_str);
 
   auto cipher_method = to_cipher_method(cipher_method_str);
