@@ -32,6 +32,11 @@ static_assert(sizeof(BYTE) == sizeof(uint8_t),
 static_assert(sizeof(DWORD) == sizeof(uint32_t),
               "A DWORD is a 32-bit unsigned integer.");
 
+// depends on Windows SDK
+#ifndef QWORD
+typedef unsigned __int64 QWORD;
+#endif // QWORD
+
 // documented in
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-dtyp/ac050bbf-a821-4fab-bccf-d95d892f428f
 static_assert(sizeof(QWORD) == sizeof(uint64_t),
@@ -84,14 +89,14 @@ bool ReadValue(HKEY hkey,
   // characters. Therefore, even if the function returns ERROR_SUCCESS, the
   // application should ensure that the string is properly terminated before
   // using it; otherwise, it may overwrite a buffer.
-  output.resize(BufferSize);
-  if (::RegQueryValueExW(hkey_ /* HKEY */, wvalue.c_str() /* lpValueName */,
+  output->resize(BufferSize);
+  if (::RegQueryValueExW(hkey /* HKEY */, wvalue.c_str() /* lpValueName */,
                          nullptr /* lpReserved */, type /* lpType */,
-                         &output[0] /* lpData */,
+                         output->data() /* lpData */,
                          &BufferSize /* lpcbData */) != ERROR_SUCCESS) {
     return false;
   }
-  output.resize(BufferSize);
+  output->resize(BufferSize);
 
   return true;
 }
@@ -108,10 +113,18 @@ class ConfigImplWindows : public ConfigImpl {
     dontread_ = dontread;
 
     DWORD disposition;
-    const char *subkey = DEFAULT_CONFIG_KEY; // Allow to override it ?
-    // KEY_WOW64_64KEY: Indicates that an application on 64-bit Windows should
-    // operate on the 64-bit registry view.
-    // No need the reg change notifications or operate on reg subkey
+    const wchar_t *subkey = DEFAULT_CONFIG_KEY; // Allow to override it ?
+    // KEY_WOW64_64KEY: Indicates that an application on 32-bit Windows should:
+    // Access a 64-bit key from either a 32-bit or 64-bit application.
+    // Background: The registry in 64-bit versions of Windows is divided into
+    // 32-bit and 64-bit keys. Many of the 32-bit keys have the same names
+    // as their 64-bit counterparts, and vice versa.
+    // With the opposite flag KEY_WOW64_32KEY, in the 64-bit version of program,
+    // 32-bit keys are mapped under the HKEY_LOCAL_MACHINE\Software\WOW6432Node
+    // registry key.
+    // see https://docs.microsoft.com/en-us/troubleshoot/windows-client/deployment/view-system-registry-with-64-bit-windows
+
+    // And no need the reg change notifications or operate on reg subkey
     REGSAM samDesired =
         KEY_WOW64_64KEY | (dontread ? KEY_SET_VALUE : KEY_QUERY_VALUE);
 
@@ -139,7 +152,7 @@ class ConfigImplWindows : public ConfigImpl {
 
   bool CloseImpl() override {
     bool ret = true;
-    if (kkey_) {
+    if (hkey_) {
        ret = ::RegCloseKey(hkey_) == ERROR_SUCCESS;
        hkey_ = nullptr;
     }
@@ -152,7 +165,7 @@ class ConfigImplWindows : public ConfigImpl {
 
     if (ReadValue(hkey_, key, &type, &output)) {
       std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
-      const wchar_t* raw_value = reinterpret_cast<wchar_t*>(output.data());
+      wchar_t* raw_value = reinterpret_cast<wchar_t*>(output.data());
       size_t raw_len = output.size() / sizeof(wchar_t);
       if (raw_len)
         raw_value[raw_len - 1] = L'\0';
@@ -221,10 +234,10 @@ class ConfigImplWindows : public ConfigImpl {
     return ReadImpl(key, reinterpret_cast<uint64_t*>(value));
   }
 
-  bool WriteImpl(const std::string& key, const std::string& value) override {
+  bool WriteImpl(const std::string& key, absl::string_view value) override {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
     std::wstring wkey = converter.from_bytes(key);
-    std::wstring wvalue = converter.from_bytes(value);
+    std::wstring wvalue = converter.from_bytes(value.data());
 
     if (::RegSetValueExW(
             hkey_ /* hKey*/, wkey.c_str() /*lpValueName*/, 0 /*Reserved*/,
