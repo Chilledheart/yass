@@ -46,33 +46,35 @@ namespace config {
 
 bool ReadConfig() {
   auto config_impl = config::ConfigImpl::Create();
-  std::string cipher_method_str;
+  bool required_fields_loaded;
 
-  /* required fields */
-  if (!config_impl->Open(false) ||
-      !config_impl->Read("server", &FLAGS_server_host) ||
-      !config_impl->Read("server_port", &FLAGS_server_port) ||
-      !config_impl->Read("password", &FLAGS_password) ||
-      !config_impl->Read("local", &FLAGS_local_host) ||
-      !config_impl->Read("local_port", &FLAGS_local_port)) {
+  if (!config_impl->Open(false))
     return false;
-  }
 
-  /* old version field: ignore non-exist error */
-  config_impl->Read("method", &cipher_method_str);
-  /* new version field: ignore non-exist error and more higher priority */
-  config_impl->Read("cipher_method", &cipher_method_str);
+  /* load required fields */
+  std::string cipher_method_str;
+  required_fields_loaded =
+      config_impl->Read("server", &FLAGS_server_host) &&
+      config_impl->Read("server_port", &FLAGS_server_port) &&
+      /* new version field: higher priority */
+      (config_impl->Read("cipher_method", &cipher_method_str) ||
+       /* old version field: lower priority */
+       config_impl->Read("method", &cipher_method_str)) &&
+      config_impl->Read("password", &FLAGS_password) &&
+      config_impl->Read("local", &FLAGS_local_host) &&
+      config_impl->Read("local_port", &FLAGS_local_port);
 
   auto cipher_method = to_cipher_method(cipher_method_str);
   if (cipher_method == CRYPTO_INVALID) {
     LOG(WARNING) << "bad method: " << cipher_method_str;
-    return false;
+    required_fields_loaded = false;
+  } else {
+    absl::SetFlag(&FLAGS_cipher_method, cipher_method);
   }
-  absl::SetFlag(&FLAGS_cipher_method, cipher_method);
 
   VLOG(1) << "loaded option server: " << absl::GetFlag(FLAGS_server_host);
   VLOG(1) << "loaded option server_port: " << absl::GetFlag(FLAGS_server_port);
-  VLOG(1) << "loaded option method: " << absl::GetFlag(FLAGS_cipher_method);
+  VLOG(1) << "loaded option cipher_method: " << cipher_method_str;
   VLOG(1) << "loaded option password: " << absl::GetFlag(FLAGS_password);
   VLOG(1) << "loaded option local: " << absl::GetFlag(FLAGS_local_host);
   VLOG(1) << "loaded option local_port: " << absl::GetFlag(FLAGS_local_port);
@@ -145,7 +147,7 @@ bool ReadConfig() {
   /* close fields */
   config_impl->Close();
 
-  return true;
+  return required_fields_loaded;
 }
 
 bool SaveConfig() {
