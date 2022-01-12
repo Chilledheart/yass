@@ -52,17 +52,23 @@ bool YASSApp::Initialize(int& argc, wxChar** argv) {
 
 bool YASSApp::OnInit() {
   absl::ParseCommandLine(argc, argv.operator char* *());
-  wxLog* logger = new YASSLog;
-  wxLog::SetActiveTarget(logger);
 
   if (!wxApp::OnInit())
     return false;
 
-  LOG(WARNING) << "Application starting";
+  auto cipher_method = to_cipher_method(absl::GetFlag(FLAGS_method));
+  if (cipher_method != CRYPTO_INVALID) {
+    absl::SetFlag(&FLAGS_cipher_method, cipher_method);
+  }
 
   LoadConfigFromDisk();
   DCHECK(is_valid_cipher_method(
       static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
+
+  wxLog* logger = new YASSLog;
+  wxLog::SetActiveTarget(logger);
+
+  LOG(WARNING) << "Application starting";
 
   mApp = this;
   state_ = STOPPED;

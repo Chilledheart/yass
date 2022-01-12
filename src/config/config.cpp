@@ -19,6 +19,7 @@ ABSL_FLAG(int32_t,
           8443,
           "Port number which remote server listens to");
 ABSL_FLAG(std::string, password, "<default-pass>", "Password pharsal");
+ABSL_FLAG(std::string, method, CRYPTO_AES256GCMSHA256_STR, "Method of encrypt (internal)");
 ABSL_FLAG(int32_t, cipher_method, CRYPTO_AES256GCMSHA256, "Method of encrypt");
 ABSL_FLAG(std::string,
           local_host,

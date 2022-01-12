@@ -17,6 +17,7 @@ ABSL_DECLARE_FLAG(std::string, configfile);
 ABSL_DECLARE_FLAG(std::string, server_host);
 ABSL_DECLARE_FLAG(int32_t, server_port);
 ABSL_DECLARE_FLAG(std::string, password);
+ABSL_DECLARE_FLAG(std::string, method);
 ABSL_DECLARE_FLAG(int32_t, cipher_method);
 ABSL_DECLARE_FLAG(std::string, local_host);
 ABSL_DECLARE_FLAG(int32_t, local_port);
