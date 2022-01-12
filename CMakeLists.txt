@@ -753,7 +753,7 @@ set(hfiles
 
 if (MSVC)
   list(APPEND files src/core/rand_util_win.cpp)
-  list(APPEND files src/core/utils_win.mm)
+  list(APPEND files src/core/utils_win.cpp)
 elseif (APPLE)
   list(APPEND files src/core/rand_util_posix.cpp)
   list(APPEND files src/core/utils_mac.mm)
