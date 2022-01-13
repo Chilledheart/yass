@@ -11,7 +11,7 @@ defaults:
   run:
     shell: bash
 env:
-  CACHE_EPOCH: 3
+  CACHE_EPOCH: 4
 jobs:
   cache-toolchain-win:
     runs-on: windows-latest
@@ -86,9 +86,10 @@ jobs:
 
           cd third_party\boringssl
 
-          if "${{ matrix.arch }}" == "arm64" (
-            set CMAKE_EXTRA_OPTIONS=-DOPENSSL_NO_ASM=on
-          )
+          rem You can either use delayed expansion, or simplify your script to
+          rem call an external label which isn't bound to the limitations of
+          rem the current expansion.
+          if "${{ matrix.arch }}" == "arm64" (call :SetNoAsmOptions)
 
           rem check the existing debug lib
           if not exist debug\crypto.lib (
@@ -114,6 +115,10 @@ jobs:
             cd ..
             rmdir build /s /q
           )
+
+          exit
+          :SetNoAsmOptions
+            set CMAKE_EXTRA_OPTIONS=-DOPENSSL_NO_ASM=on
         shell: cmd
       - name: "Install dependency: wxwidgets"
         run: vcpkg install wxwidgets:${{ matrix.arch }}-windows-static
