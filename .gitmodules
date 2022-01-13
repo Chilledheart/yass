@@ -7,3 +7,7 @@
 [submodule "third_party/lss"]
 	path = third_party/lss
 	url = https://chromium.googlesource.com/linux-syscall-support
+[submodule "third_party/boringssl"]
+	path = third_party/boringssl
+	url = https://github.com/Chilledheart/boringssl
+	branch = chromium-stable

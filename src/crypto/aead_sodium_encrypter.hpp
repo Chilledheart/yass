@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
+/* Copyright (c) 2022 Chilledheart  */
 
-#ifndef H_CRYPTO_AEAD_EVP_ENCRYPTER
-#define H_CRYPTO_AEAD_EVP_ENCRYPTER
+#ifndef H_CRYPTO_AEAD_SODIUM_ENCRYPTER
+#define H_CRYPTO_AEAD_SODIUM_ENCRYPTER
 
 #include "aead_base_encrypter.hpp"
 
@@ -12,13 +12,13 @@
 
 namespace crypto {
 
-class EvpAeadEncrypter : public AeadBaseEncrypter {
+class SodiumAeadEncrypter : public AeadBaseEncrypter {
  public:
-  EvpAeadEncrypter(const EVP_AEAD* (*aead_getter)(),
-                   size_t key_size,
-                   size_t auth_tag_size,
-                   size_t nonce_size);
-  ~EvpAeadEncrypter() override;
+  SodiumAeadEncrypter(const EVP_AEAD* (*aead_getter)(),
+                      size_t key_size,
+                      size_t auth_tag_size,
+                      size_t nonce_size);
+  ~SodiumAeadEncrypter() override;
 
   bool SetKey(const char* key, size_t key_len) override;
 
@@ -48,4 +48,4 @@ class EvpAeadEncrypter : public AeadBaseEncrypter {
 
 #endif
 
-#endif  // H_CRYPTO_AEAD_EVP_ENCRYPTER
+#endif  // H_CRYPTO_AEAD_SODIUM_ENCRYPTER

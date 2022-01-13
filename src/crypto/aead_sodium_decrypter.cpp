@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
-#include "crypto/aead_evp_decrypter.hpp"
+/* Copyright (c) 2022 Chilledheart  */
+#include "crypto/aead_sodium_decrypter.hpp"
 
 #include "core/logging.hpp"
 
@@ -31,20 +31,20 @@ static const EVP_AEAD* InitAndCall(const EVP_AEAD* (*aead_getter)()) {
 
 namespace crypto {
 
-AeadEvpDecrypter::AeadEvpDecrypter(const EVP_AEAD* (*aead_getter)(),
-                                   size_t key_size,
-                                   size_t auth_tag_size,
-                                   size_t nonce_size)
+AeadSodiumDecrypter::AeadSodiumDecrypter(const EVP_AEAD* (*aead_getter)(),
+                                         size_t key_size,
+                                         size_t auth_tag_size,
+                                         size_t nonce_size)
     : AeadBaseDecrypter(key_size, auth_tag_size, nonce_size),
       aead_alg_(InitAndCall(aead_getter)) {
-    DCHECK_EQ(EVP_AEAD_key_length(aead_alg_), key_size);
-    DCHECK_EQ(EVP_AEAD_nonce_length(aead_alg_), nonce_size);
-    DCHECK_GE(EVP_AEAD_max_tag_len(aead_alg_), auth_tag_size);
+  DCHECK_EQ(EVP_AEAD_key_length(aead_alg_), key_size);
+  DCHECK_EQ(EVP_AEAD_nonce_length(aead_alg_), nonce_size);
+  DCHECK_GE(EVP_AEAD_max_tag_len(aead_alg_), auth_tag_size);
 }
 
-AeadEvpDecrypter::~AeadEvpDecrypter() = default;
+AeadSodiumDecrypter::~AeadSodiumDecrypter() = default;
 
-bool AeadEvpDecrypter::SetKey(const char* key, size_t key_len) {
+bool AeadSodiumDecrypter::SetKey(const char* key, size_t key_len) {
   if (!AeadBaseDecrypter::SetKey(key, key_len)) {
     return false;
   }
@@ -57,14 +57,14 @@ bool AeadEvpDecrypter::SetKey(const char* key, size_t key_len) {
   return true;
 }
 
-bool AeadEvpDecrypter::DecryptPacket(uint64_t packet_number,
-                                     const char* associated_data,
-                                     size_t associated_data_len,
-                                     const char* ciphertext,
-                                     size_t ciphertext_len,
-                                     char* output,
-                                     size_t* output_length,
-                                     size_t max_output_length) {
+bool AeadSodiumDecrypter::DecryptPacket(uint64_t packet_number,
+                                        const char* associated_data,
+                                        size_t associated_data_len,
+                                        const char* ciphertext,
+                                        size_t ciphertext_len,
+                                        char* output,
+                                        size_t* output_length,
+                                        size_t max_output_length) {
   if (ciphertext_len < auth_tag_size_) {
     return false;
   }
@@ -76,7 +76,9 @@ bool AeadEvpDecrypter::DecryptPacket(uint64_t packet_number,
 
   uint8_t nonce[kMaxNonceSize];
   memcpy(nonce, iv_, nonce_size_);
-  PacketNumberToNonceEvp(nonce, nonce_size_, packet_number);
+
+  // for libsodium, packet number is written ahead
+  PacketNumberToNonceSodium(nonce, nonce_size_, packet_number);
 
   if (!EVP_AEAD_CTX_open(ctx_.get(), reinterpret_cast<uint8_t*>(output),
                          output_length, max_output_length, nonce, nonce_size_,

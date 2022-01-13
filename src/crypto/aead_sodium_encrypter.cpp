@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
-#include "crypto/aead_evp_encrypter.hpp"
+/* Copyright (c) 2022 Chilledheart  */
+#include "crypto/aead_sodium_encrypter.hpp"
 
 #include "core/logging.hpp"
 
@@ -31,10 +31,10 @@ static const EVP_AEAD* InitAndCall(const EVP_AEAD* (*aead_getter)()) {
 
 namespace crypto {
 
-EvpAeadEncrypter::EvpAeadEncrypter(const EVP_AEAD* (*aead_getter)(),
-                                   size_t key_size,
-                                   size_t auth_tag_size,
-                                   size_t nonce_size)
+SodiumAeadEncrypter::SodiumAeadEncrypter(const EVP_AEAD* (*aead_getter)(),
+                                         size_t key_size,
+                                         size_t auth_tag_size,
+                                         size_t nonce_size)
     : AeadBaseEncrypter(key_size, auth_tag_size, nonce_size),
       aead_alg_(InitAndCall(aead_getter)) {
   DCHECK_EQ(EVP_AEAD_key_length(aead_alg_), key_size);
@@ -42,9 +42,9 @@ EvpAeadEncrypter::EvpAeadEncrypter(const EVP_AEAD* (*aead_getter)(),
   DCHECK_GE(EVP_AEAD_max_tag_len(aead_alg_), auth_tag_size);
 }
 
-EvpAeadEncrypter::~EvpAeadEncrypter() = default;
+SodiumAeadEncrypter::~SodiumAeadEncrypter() = default;
 
-bool EvpAeadEncrypter::SetKey(const char* key, size_t key_len) {
+bool SodiumAeadEncrypter::SetKey(const char* key, size_t key_len) {
   if (!AeadBaseEncrypter::SetKey(key, key_len)) {
     return false;
   }
@@ -57,13 +57,13 @@ bool EvpAeadEncrypter::SetKey(const char* key, size_t key_len) {
   return true;
 }
 
-bool EvpAeadEncrypter::Encrypt(const uint8_t* nonce,
-                               size_t nonce_len,
-                               const char* associated_data,
-                               size_t associated_data_len,
-                               const char* plaintext,
-                               size_t plaintext_len,
-                               uint8_t* output) {
+bool SodiumAeadEncrypter::Encrypt(const uint8_t* nonce,
+                                  size_t nonce_len,
+                                  const char* associated_data,
+                                  size_t associated_data_len,
+                                  const char* plaintext,
+                                  size_t plaintext_len,
+                                  uint8_t* output) {
   DCHECK_EQ(nonce_len, nonce_size_);
 
   size_t ciphertext_len;
@@ -79,24 +79,25 @@ bool EvpAeadEncrypter::Encrypt(const uint8_t* nonce,
   return true;
 }
 
-bool EvpAeadEncrypter::EncryptPacket(uint64_t packet_number,
-                                     const char* associated_data,
-                                     size_t associated_data_len,
-                                     const char* plaintext,
-                                     size_t plaintext_len,
-                                     char* output,
-                                     size_t* output_length,
-                                     size_t max_output_length) {
+bool SodiumAeadEncrypter::EncryptPacket(uint64_t packet_number,
+                                        const char* associated_data,
+                                        size_t associated_data_len,
+                                        const char* plaintext,
+                                        size_t plaintext_len,
+                                        char* output,
+                                        size_t* output_length,
+                                        size_t max_output_length) {
   size_t ciphertext_size = GetCiphertextSize(plaintext_len);
   if (max_output_length < ciphertext_size) {
     return false;
   }
+  uint8_t nonce_buffer[kMaxNonceSize];
+  memcpy(nonce_buffer, iv_, nonce_size_);
 
-  uint8_t nonce[kMaxNonceSize];
-  memcpy(nonce, iv_, nonce_size_);
-  PacketNumberToNonceEvp(nonce, nonce_size_, packet_number);
+  // for libsodium, packet number is written ahead
+  PacketNumberToNonceSodium(nonce_buffer, nonce_size_, packet_number);
 
-  if (!Encrypt(nonce, nonce_size_, associated_data, associated_data_len,
+  if (!Encrypt(nonce_buffer, nonce_size_, associated_data, associated_data_len,
                plaintext, plaintext_len, reinterpret_cast<uint8_t*>(output))) {
     return false;
   }

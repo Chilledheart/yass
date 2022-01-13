@@ -10,6 +10,26 @@
 
 namespace crypto {
 
+inline void PacketNumberToNonceSodium(uint8_t* nonce,
+                                      size_t nonce_size,
+                                      uint64_t packet_number) {
+  uint8_t pn_1 = packet_number & 0xff;
+  uint8_t pn_2 = (packet_number & 0xff00) >> 8;
+  uint8_t pn_3 = (packet_number & 0xff0000) >> 16;
+  uint8_t pn_4 = (packet_number & 0xff000000) >> 24;
+  *nonce++ = pn_1;
+  *nonce++ = pn_2;
+  *nonce++ = pn_3;
+  *nonce = pn_4;
+}
+
+inline void PacketNumberToNonceEvp(uint8_t* nonce,
+                                   size_t nonce_size,
+                                   uint64_t packet_number) {
+  size_t prefix_len = nonce_size - sizeof(packet_number);
+  memcpy(nonce + prefix_len, &packet_number, sizeof(packet_number));
+}
+
 class Crypter {
  public:
   virtual ~Crypter();
@@ -83,8 +103,6 @@ class Crypter {
   // Returns the size in bytes of the auth tag size(AEAD).
   virtual size_t GetTagSize() const = 0;
 };
-
-void PacketNumberToNonce(uint8_t* nonce, uint64_t packet_number);
 
 }  // namespace crypto
 

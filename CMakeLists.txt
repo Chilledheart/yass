@@ -350,9 +350,7 @@ endif()
 #           Support Libraries
 # *****************************************************************************************
 
-option(SODIUM "Build against libsodium." ON)
-option(BORINGSSL "Build against boringssl." OFF)
-set(boringssl_DIR "${CMAKE_SOURCE_DIR}/../boringssl" CACHE STRING "path to boringssl root directory")
+set(boringssl_DIR "${CMAKE_SOURCE_DIR}/third_party/boringssl" CACHE STRING "path to boringssl root directory")
 
 include(CheckIncludeFile)
 include(CheckCSourceCompiles)
@@ -424,38 +422,19 @@ if (MSVC)
         ${VCPKG_INCLUDE_DIRS}
         ${CMAKE_REQUIRED_INCLUDES})
 
-    # libsodium
-    find_library(SODIUM_RELEASE_LIB libsodium
-      PATHS ${VCPKG_STATIC_LIB_PATH} NO_DEFAULT_PATH)
-    find_library(SODIUM_DEBUG_LIB libsodium
-      PATHS ${VCPKG_STATIC_LIB_DEBUG_PATH} NO_DEFAULT_PATH)
-    set(SODIUM_LIB
-      debug ${SODIUM_DEBUG_LIB}
-      optimized ${SODIUM_RELEASE_LIB}
-      )
-    check_include_file(sodium.h SODIUM_INCLUDE)
-    if (SODIUM AND SODIUM_LIB AND SODIUM_INCLUDE)
-      add_definitions(-DHAVE_LIBSODIUM)
-      add_definitions(-DSODIUM_STATIC)
-      set(SYSTEM_LIBS ${SYSTEM_LIBS} ${SODIUM_LIB})
-      message(STATUS "Build with libsodium")
-    endif()
-
     # boringssl
-    find_library(BORINGSSL_CRYPTO_LIB crypto
-      PATHS ${boringssl_DIR}
-      NO_DEFAULT_PATH)
-
     find_library(BORINGSSL_CRYPTO_RELEASE_LIB crypto
       PATHS ${boringssl_DIR}
             ${boringssl_DIR}/build/crypto/Release
             ${boringssl_DIR}/build/Release/crypto
-       NO_DEFAULT_PATH)
+      REQUIRED
+      NO_DEFAULT_PATH)
     find_library(BORINGSSL_CRYPTO_DEBUG_LIB crypto
       PATHS ${boringssl_DIR}/debug
             ${boringssl_DIR}/build/crypto/Debug
             ${boringssl_DIR}/build/Debug/crypto
-       NO_DEFAULT_PATH)
+      REQUIRED
+      NO_DEFAULT_PATH)
     set(BORINGSSL_CRYPTO_LIB
       debug ${BORINGSSL_CRYPTO_DEBUG_LIB}
       optimized ${BORINGSSL_CRYPTO_RELEASE_LIB}
@@ -465,23 +444,19 @@ if (MSVC)
       ${boringssl_DIR}/include
       ${CMAKE_REQUIRED_INCLUDES})
     check_include_file(openssl/is_boringssl.h BORINGSSL_CRYPTO_INCLUDE)
-    if (BORINGSSL AND BORINGSSL_CRYPTO_LIB AND BORINGSSL_CRYPTO_INCLUDE)
-      add_definitions(-DHAVE_BORINGSSL)
-      include_directories(BEFORE ${boringssl_DIR}/include SYSTEM)
-      set(SYSTEM_LIBS ${SYSTEM_LIBS} ${BORINGSSL_CRYPTO_LIB})
-      message(STATUS "Build with boringssl")
-    else()
-      message(STATUS "Build without boringssl")
-    endif()
+    add_definitions(-DHAVE_BORINGSSL)
+    include_directories(BEFORE ${boringssl_DIR}/include SYSTEM)
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${BORINGSSL_CRYPTO_LIB})
+    message(STATUS "Build with boringssl")
 
-    find_library(ShLwApi_LIB ShLwApi)
-    find_library(Ws2_32_LIB Ws2_32)
-    find_library(WinMM_LIB WinMM)
-    find_library(Gdi32_LIB Gdi32)
-    find_library(Comdlg32_LIB Comdlg32)
-    find_library(Shell32_LIB Shell32)
-    find_library(Ole32_LIB Ole32)
-    find_library(Winspool_LIB Winspool)
+    find_library(ShLwApi_LIB ShLwApi REQUIRED)
+    find_library(Ws2_32_LIB Ws2_32 REQUIRED)
+    find_library(WinMM_LIB WinMM REQUIRED)
+    find_library(Gdi32_LIB Gdi32 REQUIRED)
+    find_library(Comdlg32_LIB Comdlg32 REQUIRED)
+    find_library(Shell32_LIB Shell32 REQUIRED)
+    find_library(Ole32_LIB Ole32 REQUIRED)
+    find_library(Winspool_LIB Winspool REQUIRED)
 
     set(SYSTEM_LIBS ${SYSTEM_LIBS} ${ShLwApi_LIB})
     set(SYSTEM_LIBS ${SYSTEM_LIBS} ${Ws2_32_LIB})
@@ -557,31 +532,26 @@ int main() {
       add_definitions(-DHAVE_PWD_H)
     endif()
 
-    find_library(SODIUM_LIB sodium)
-    check_include_file(sodium.h SODIUM_INCLUDE)
-    if (SODIUM AND SODIUM_LIB AND SODIUM_INCLUDE)
-      add_definitions(-DHAVE_LIBSODIUM)
-      set(SYSTEM_LIBS ${SYSTEM_LIBS} ${SODIUM_LIB})
-    endif()
-
     find_library(JSONCPP_LIB jsoncpp)
     add_definitions(-DJSON_USE_EXCEPTION=0)
     set(SYSTEM_LIBS ${SYSTEM_LIBS} ${JSONCPP_LIB})
 
     # boringssl
     find_library(BORINGSSL_CRYPTO_LIB crypto
-      PATHS ${boringssl_DIR}/build/crypto
+      PATHS
+        ${boringssl_DIR}
+        ${boringssl_DIR}/build
+        ${boringssl_DIR}/build/crypto
+      REQUIRED
       NO_DEFAULT_PATH)
 
     set(CMAKE_REQUIRED_INCLUDES
         ${boringssl_DIR}/include
         ${CMAKE_REQUIRED_INCLUDES})
     check_include_file(openssl/is_boringssl.h BORINGSSL_CRYPTO_INCLUDE)
-    if (BORINGSSL AND BORINGSSL_CRYPTO_LIB AND BORINGSSL_CRYPTO_INCLUDE)
-        add_definitions(-DHAVE_BORINGSSL)
-        include_directories(BEFORE ${boringssl_DIR}/include SYSTEM)
-        set(SYSTEM_LIBS ${SYSTEM_LIBS} ${BORINGSSL_CRYPTO_LIB})
-    endif()
+    add_definitions(-DHAVE_BORINGSSL)
+    include_directories(BEFORE ${boringssl_DIR}/include SYSTEM)
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${BORINGSSL_CRYPTO_LIB})
 
     # linux-syscall-support
     if (UNIX AND NOT APPLE)
@@ -612,8 +582,6 @@ if (NOT MSAN AND NOT ASAN AND NOT TSAN AND NOT UBSAN)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,defs -Wl,--as-needed")
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,defs -Wl,--as-needed")
     endif()
-    set(SUPPORT_LIBS
-        ${SUPPORT_LIBS})
 endif()
 
 # abseil-cpp
@@ -673,6 +641,8 @@ set(files
     src/crypto/aead_base_encrypter.cpp
     src/crypto/aead_evp_decrypter.cpp
     src/crypto/aead_evp_encrypter.cpp
+    src/crypto/aead_sodium_decrypter.cpp
+    src/crypto/aead_sodium_encrypter.cpp
     src/crypto/aes_128_gcm_12_evp_decrypter.cpp
     src/crypto/aes_128_gcm_12_evp_encrypter.cpp
     src/crypto/aes_128_gcm_evp_decrypter.cpp
@@ -727,6 +697,8 @@ set(hfiles
     src/crypto/aead_base_encrypter.hpp
     src/crypto/aead_evp_decrypter.hpp
     src/crypto/aead_evp_encrypter.hpp
+    src/crypto/aead_sodium_decrypter.hpp
+    src/crypto/aead_sodium_encrypter.hpp
     src/crypto/aes_128_gcm_12_evp_decrypter.hpp
     src/crypto/aes_128_gcm_12_evp_encrypter.hpp
     src/crypto/aes_128_gcm_evp_decrypter.hpp
@@ -840,9 +812,13 @@ if (MSVC)
 
   # find jpeg library
   find_library(JPEG_RELEASE_LIB jpeg
-    PATHS ${wxWidgets_LIB_DIR} NO_DEFAULT_PATH)
+    PATHS ${wxWidgets_LIB_DIR}
+    REQUIRED
+    NO_DEFAULT_PATH)
   find_library(JPEG_DEBUG_LIB jpeg
-    PATHS ${wxWidgets_LIB_DEBUG_DIR} NO_DEFAULT_PATH)
+    PATHS ${wxWidgets_LIB_DEBUG_DIR}
+    REQUIRED
+    NO_DEFAULT_PATH)
   set(JPEG_LIB
     debug ${JPEG_DEBUG_LIB}
     optimized ${JPEG_RELEASE_LIB}
@@ -850,9 +826,13 @@ if (MSVC)
 
   # find libpng16 library
   find_library(PNG16_RELEASE_LIB libpng16
-    PATHS ${wxWidgets_LIB_DIR} NO_DEFAULT_PATH)
+    PATHS ${wxWidgets_LIB_DIR}
+    REQUIRED
+    NO_DEFAULT_PATH)
   find_library(PNG16_DEBUG_LIB libpng16d
-    PATHS ${wxWidgets_LIB_DEBUG_DIR} NO_DEFAULT_PATH)
+    PATHS ${wxWidgets_LIB_DEBUG_DIR}
+    REQUIRED
+    NO_DEFAULT_PATH)
   set(PNG16_LIB
     debug ${PNG16_DEBUG_LIB}
     optimized ${PNG16_RELEASE_LIB}
@@ -860,9 +840,13 @@ if (MSVC)
 
   # find lzma library
   find_library(LZMA_RELEASE_LIB lzma
-    PATHS ${wxWidgets_LIB_DIR} NO_DEFAULT_PATH)
+    PATHS ${wxWidgets_LIB_DIR}
+    REQUIRED
+    NO_DEFAULT_PATH)
   find_library(LZMA_DEBUG_LIB lzmad
-    PATHS ${wxWidgets_LIB_DEBUG_DIR} NO_DEFAULT_PATH)
+    PATHS ${wxWidgets_LIB_DEBUG_DIR}
+    REQUIRED
+    NO_DEFAULT_PATH)
   set(LZMA_LIB
     debug ${LZMA_DEBUG_LIB}
     optimized ${LZMA_RELEASE_LIB}
@@ -870,9 +854,13 @@ if (MSVC)
 
   # find tiff library
   find_library(TIFF_RELEASE_LIB tiff
-    PATHS ${wxWidgets_LIB_DIR} NO_DEFAULT_PATH)
+    PATHS ${wxWidgets_LIB_DIR}
+    REQUIRED
+    NO_DEFAULT_PATH)
   find_library(TIFF_DEBUG_LIB tiffd
-    PATHS ${wxWidgets_LIB_DEBUG_DIR} NO_DEFAULT_PATH)
+    PATHS ${wxWidgets_LIB_DEBUG_DIR}
+    REQUIRED
+    NO_DEFAULT_PATH)
   set(TIFF_LIB
     debug ${TIFF_DEBUG_LIB}
     optimized ${TIFF_RELEASE_LIB}
@@ -880,9 +868,13 @@ if (MSVC)
 
   # find turbojpeg library
   find_library(TURBOJPEG_RELEASE_LIB turbojpeg
-    PATHS ${wxWidgets_LIB_DIR} NO_DEFAULT_PATH)
+    PATHS ${wxWidgets_LIB_DIR}
+    REQUIRED
+    NO_DEFAULT_PATH)
   find_library(TURBOJPEG_DEBUG_LIB turbojpeg
-    PATHS ${wxWidgets_LIB_DEBUG_DIR} NO_DEFAULT_PATH)
+    PATHS ${wxWidgets_LIB_DEBUG_DIR}
+    REQUIRED
+    NO_DEFAULT_PATH)
   set(TURBOJPEG_LIB
     debug ${TURBOJPEG_DEBUG_LIB}
     optimized ${TURBOJPEG_RELEASE_LIB}
@@ -890,9 +882,13 @@ if (MSVC)
 
   # find zlib library
   find_library(ZLIB_RELEASE_LIB zlib
-    PATHS ${wxWidgets_LIB_DIR} NO_DEFAULT_PATH)
+    PATHS ${wxWidgets_LIB_DIR}
+    REQUIRED
+    NO_DEFAULT_PATH)
   find_library(ZLIB_DEBUG_LIB zlibd
-    PATHS ${wxWidgets_LIB_DEBUG_DIR} NO_DEFAULT_PATH)
+    PATHS ${wxWidgets_LIB_DEBUG_DIR}
+    REQUIRED
+    NO_DEFAULT_PATH)
   set(ZLIB_LIB
     debug ${ZLIB_DEBUG_LIB}
     optimized ${ZLIB_RELEASE_LIB}
@@ -900,9 +896,13 @@ if (MSVC)
 
   # find wxregex library
   find_library(WX_REGEX_RELEASE_LIB wxregexu
-    PATHS ${wxWidgets_LIB_DIR} NO_DEFAULT_PATH)
+    PATHS ${wxWidgets_LIB_DIR}
+    REQUIRED
+    NO_DEFAULT_PATH)
   find_library(WX_REGEX_DEBUG_LIB wxregexud
-    PATHS ${wxWidgets_LIB_DEBUG_DIR} NO_DEFAULT_PATH)
+    PATHS ${wxWidgets_LIB_DEBUG_DIR}
+    REQUIRED
+    NO_DEFAULT_PATH)
   set(WX_REGEX_LIB
     debug ${WX_REGEX_DEBUG_LIB}
     optimized ${WX_REGEX_RELEASE_LIB}
@@ -910,9 +910,13 @@ if (MSVC)
 
   # find wxbase library
   find_library(WX_BASE_RELEASE_LIB wxbase31u
-    PATHS ${wxWidgets_LIB_DIR} NO_DEFAULT_PATH)
+    PATHS ${wxWidgets_LIB_DIR}
+    REQUIRED
+    NO_DEFAULT_PATH)
   find_library(WX_BASE_DEBUG_LIB wxbase31ud
-    PATHS ${wxWidgets_LIB_DEBUG_DIR} NO_DEFAULT_PATH)
+    PATHS ${wxWidgets_LIB_DEBUG_DIR}
+    REQUIRED
+    NO_DEFAULT_PATH)
   set(WX_BASE_LIB
     debug ${WX_BASE_DEBUG_LIB}
     optimized ${WX_BASE_RELEASE_LIB}
@@ -920,17 +924,21 @@ if (MSVC)
 
   # find wxcore library
   find_library(WX_CORE_RELEASE_LIB wxmsw31u_core
-    PATHS ${wxWidgets_LIB_DIR} NO_DEFAULT_PATH)
+    PATHS ${wxWidgets_LIB_DIR}
+    REQUIRED
+    NO_DEFAULT_PATH)
   find_library(WX_CORE_DEBUG_LIB wxmsw31ud_core
-    PATHS ${wxWidgets_LIB_DEBUG_DIR} NO_DEFAULT_PATH)
+    PATHS ${wxWidgets_LIB_DEBUG_DIR}
+    REQUIRED
+    NO_DEFAULT_PATH)
   set(WX_CORE_LIB
     debug ${WX_CORE_DEBUG_LIB}
     optimized ${WX_CORE_RELEASE_LIB}
     )
 
-  find_library(COMCTL32_LIB COMCTL32)
-  find_library(RPCRT4_LIB RPCRT4)
-  find_library(UUID_LIB UUID)
+  find_library(COMCTL32_LIB COMCTL32 REQUIRED)
+  find_library(RPCRT4_LIB RPCRT4 REQUIRED)
+  find_library(UUID_LIB UUID REQUIRED)
 
   set(wxWidgets_LIBRARIES
       ${JPEG_LIB}

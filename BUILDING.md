@@ -87,8 +87,7 @@ endforeach()
 ```
 And run:
 ```
-
-git clean -xfd
+cd third_party/boringssl
 mkdir build
 mkdir debug
 cd build
@@ -101,19 +100,19 @@ cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
 ninja crypto
 copy /y crypto\crypto.lib ..\crypto.lib
 cd ..
+rmdir build /s /q
 ```
 
 (for Linux)
 ```
-wget https://golang.org/dl/go1.16.linux-amd64.tar.gz
-sudo tar -C /usr/local -xzf go1.16.linux-amd64.tar.gz
+wget https://go.dev/dl/go1.16.13.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.16.13.linux-amd64.tar.gz
 echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
-sudo apt-get install libunwind-dev nasm
+sudo apt-get install libunwind-dev
 ```
 Relogin and run:
 ```
-go version
-git clean -xfd
+cd third_party/boringssl
 mkdir build
 cd build
 cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
@@ -128,7 +127,7 @@ set(CMAKE_ASM_FLAGS "-mmacosx-version-min=10.10 ${CMAKE_ASM_FLAGS}")
 Run these commands to build crypto target.
 (first x86_64 slice)
 ```
-git clean -xfd
+cd third_party/boringssl
 mkdir build
 cd build
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
@@ -136,20 +135,27 @@ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_OSX_ARCHITECTURES="x86_64" ..
 ninja crypto
 cp -fv crypto/libcrypto.a ../x64-libcrypto.a
+cd ..
 ```
 (and then arm64 slice)
 ```
-git clean -xfd
+cd third_party/boringssl
+mkdir build
+cd build
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
   -DCMAKE_OSX_ARCHITECTURES="arm64" ..
 ninja crypto
 cp -fv crypto/libcrypto.a ../arm64-libcrypto.a
-lipo -create ../arm64-libcrypto.a ../x64-libcrypto.a -output crypto/libcrypto.a
-lipo -info crypto/libcrypto.a
 cd ..
 ```
-Built universal target at ``crypto/libcrypto.a``
+(create fat binary)
+```
+cd third_party/boringssl
+lipo -create arm64-libcrypto.a x64-libcrypto.a -output libcrypto.a
+lipo -info libcrypto.a
+```
+Built universal target at ``libcrypto.a``
 
 ## Updating boringssl
 

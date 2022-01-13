@@ -318,6 +318,7 @@ bool cipher::chunk_decrypt_frame(uint64_t* counter,
   }
 
   uint8_t len_buf[2];
+  plen = sizeof(len_buf);
   err = impl_->DecryptPacket(*counter, len_buf, &plen, ciphertext->data(),
                              CHUNK_SIZE_LEN + tlen);
   if (err) {
@@ -344,6 +345,7 @@ bool cipher::chunk_decrypt_frame(uint64_t* counter,
 
   (*counter)++;
 
+  plen = plaintext->capacity();
   err = impl_->DecryptPacket(*counter, plaintext->mutable_tail(), &plen,
                              ciphertext->data() + CHUNK_SIZE_LEN + tlen,
                              mlen + tlen);

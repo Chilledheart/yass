@@ -21,15 +21,13 @@ Decrypter::~Decrypter() = default;
 std::unique_ptr<Decrypter> Decrypter::CreateFromCipherSuite(
     uint32_t cipher_suite) {
   switch (cipher_suite) {
-#ifdef HAVE_LIBSODIUM
+#ifdef HAVE_BORINGSSL
     case CRYPTO_AES256GCMSHA256:
       return std::make_unique<Aes256GcmSodiumDecrypter>();
     case CRYPTO_CHACHA20POLY1305IETF:
       return std::make_unique<ChaCha20Poly1305SodiumDecrypter>();
     case CRYPTO_XCHACHA20POLY1305IETF:
       return std::make_unique<XChaCha20Poly1305SodiumDecrypter>();
-#endif
-#ifdef HAVE_BORINGSSL
     case CRYPTO_CHACHA20POLY1305IETF_EVP:
       return std::make_unique<ChaCha20Poly1305EvpDecrypter>();
     case CRYPTO_XCHACHA20POLY1305IETF_EVP:

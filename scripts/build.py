@@ -308,13 +308,6 @@ def generate_buildscript(configuration_type):
     cmake_args.extend(['-DVCPKG_ROOT_DIR=%s' % VCPKG_DIR])
     cmake_args.extend(['-DVCPKG_VERBOSE=ON'])
 
-    # TODO support boringssl for all arches
-    # skip boringssl for platforms except amd64
-    if DEFAULT_ARCH == 'x64':
-      cmake_args.extend(['-DBORINGSSL=ON'])
-    else: #x86, arm64, arm
-      cmake_args.extend(['-DBORINGSSL=OFF'])
-
     # Some compilers are inherently cross compilers, such as Clang and the QNX QCC compiler.
     # The CMAKE_<LANG>_COMPILER_TARGET can be set to pass a value to those supported compilers when compiling.
     # see https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER_TARGET.html
@@ -331,7 +324,6 @@ def generate_buildscript(configuration_type):
   else:
     cmake_args.extend(['-G', 'Ninja'])
     cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])
-    cmake_args.extend(['-DBORINGSSL=ON'])
 
   if sys.platform == 'darwin':
     cmake_args.append('-DCMAKE_OSX_DEPLOYMENT_TARGET=%s' % DEFAULT_OSX_MIN)
