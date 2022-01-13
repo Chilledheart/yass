@@ -86,8 +86,8 @@ jobs:
 
           cd third_party\boringssl
 
-          if "${{ matrix.arch }}==arm64" (
-            set "CMAKE_EXTRA_OPTIONS=-DOPENSSL_NO_ASM=on"
+          if ${{ matrix.arch }}==arm64 (
+            set CMAKE_EXTRA_OPTIONS=-DOPENSSL_NO_ASM=on
           )
 
           rem check the existing debug lib
@@ -133,6 +133,8 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
+      - name: Populate depedencies
+        run: sudo apt-get install -y cmake ninja-build
       - name: Cache clang
         uses: actions/cache@v2
         with:
@@ -177,6 +179,8 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
+      - name: Populate depedencies
+        run: brew install ninja cmake
       - name: Cache clang
         uses: actions/cache@v2
         with:
