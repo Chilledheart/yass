@@ -424,13 +424,15 @@ if (MSVC)
 
     # boringssl
     find_library(BORINGSSL_CRYPTO_RELEASE_LIB crypto
-      PATHS ${boringssl_DIR}
+      PATHS ${boringssl_DIR}/${VCPKG_TARGET_ARCHITECTURE}
+            ${boringssl_DIR}/
             ${boringssl_DIR}/build/crypto/Release
             ${boringssl_DIR}/build/Release/crypto
       REQUIRED
       NO_DEFAULT_PATH)
     find_library(BORINGSSL_CRYPTO_DEBUG_LIB crypto
-      PATHS ${boringssl_DIR}/debug
+      PATHS ${boringssl_DIR}/${VCPKG_TARGET_ARCHITECTURE}/debug
+            ${boringssl_DIR}/debug
             ${boringssl_DIR}/build/crypto/Debug
             ${boringssl_DIR}/build/Debug/crypto
       REQUIRED
