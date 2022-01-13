@@ -6,12 +6,13 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 #include <string>
 
 namespace crypto {
 
 inline void PacketNumberToNonceSodium(uint8_t* nonce,
-                                      size_t nonce_size,
+                                      size_t /*nonce_size*/,
                                       uint64_t packet_number) {
   uint8_t pn_1 = packet_number & 0xff;
   uint8_t pn_2 = (packet_number & 0xff00) >> 8;
