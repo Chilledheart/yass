@@ -21,7 +21,7 @@ jobs:
         arch: [x64, x86, arm64]
     env:
       CLANG_ARCH: 'Win'
-      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config libsodium jsoncpp wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
+      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config libsodium wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
     steps:
       - uses: actions/checkout@v2
       - name: Cache clang and nasm
@@ -63,8 +63,6 @@ jobs:
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
       - name: "Install dependency: libsodium"
         run: vcpkg install libsodium:${{ matrix.arch }}-windows-static
-      - name: "Install dependency: jsoncpp"
-        run: vcpkg install jsoncpp:${{ matrix.arch }}-windows-static
       - name: "Install dependency: wxwidgets"
         run: vcpkg install wxwidgets:${{ matrix.arch }}-windows-static
       - name: Copying vcpkg to local tree
@@ -130,7 +128,7 @@ jobs:
     env:
       BUNDLE_NAME: 'yass-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}'
       BUILD_TYPE: '${{ matrix.build_type }}'
-      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config libsodium jsoncpp wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
+      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config libsodium wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
     steps:
       - uses: actions/checkout@v2
         with:
@@ -195,7 +193,7 @@ jobs:
     env:
       BUNDLE_NAME: 'yass-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}'
       BUILD_TYPE: '${{ matrix.build_type }}'
-      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config libsodium jsoncpp wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
+      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config libsodium wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
     steps:
       - uses: actions/checkout@v2
         with:
@@ -260,7 +258,7 @@ jobs:
 ##  env:
 ##    ENABLE_CLANG_TIDY: '1'
 ##    BUILD_TYPE: '${{ matrix.build_type }}'
-##    VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config libsodium jsoncpp wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
+##    VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config libsodium wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
 ##  steps:
 ##    - uses: actions/checkout@v2
 ##      with:

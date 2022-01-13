@@ -566,6 +566,7 @@ int main() {
 
     find_library(JSONCPP_LIB jsoncpp)
     add_definitions(-DJSON_USE_EXCEPTION=0)
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${JSONCPP_LIB})
 
     # boringssl
     find_library(BORINGSSL_CRYPTO_LIB crypto
@@ -589,7 +590,6 @@ int main() {
 endif()
 
 set(SUPPORT_LIBS
-    ${JSONCPP_LIB}
     ${SYSTEM_LIBS}
     absl::flat_hash_map
     absl::flat_hash_set
