@@ -27,8 +27,8 @@ mkdir "%Platform%\debug"
 if not exist "%Platform%\debug\crypto.lib" (
   mkdir build
   cd build
-  cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Debug ..
-  ninja crypto
+  cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Debug .. || exit /b 1
+  ninja crypto || exit /b 1
   copy /y crypto\crypto.lib "..\%Platform%\debug\crypto.lib"
   cd ..
   rmdir build /s /q
@@ -37,8 +37,8 @@ if not exist "%Platform%\debug\crypto.lib" (
 if not exist "%Platform%\crypto.lib" (
   mkdir build
   cd build
-  cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
-  ninja crypto
+  cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release .. || exit /b 1
+  ninja crypto || exit /b 1
   copy /y crypto\crypto.lib "..\%Platform%\crypto.lib"
   cd ..
   rmdir build /s /q
@@ -61,8 +61,8 @@ mkdir "%Platform%\debug"
 if not exist "%Platform%\debug\crypto.lib" (
   mkdir build
   cd build
-  cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Debug ..
-  ninja crypto
+  cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Debug .. || exit /b 1
+  ninja crypto || exit /b 1
   copy /y crypto\crypto.lib "..\%Platform%\debug\crypto.lib"
   cd ..
   rmdir build /s /q
@@ -71,8 +71,8 @@ if not exist "%Platform%\debug\crypto.lib" (
 if not exist "%Platform%\crypto.lib" (
   mkdir build
   cd build
-  cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
-  ninja crypto
+  cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release .. || exit /b 1
+  ninja crypto || exit /b 1
   copy /y crypto\crypto.lib "..\%Platform%\crypto.lib"
   cd ..
   rmdir build /s /q
@@ -95,8 +95,8 @@ mkdir "%Platform%\debug"
 if not exist "%Platform%\debug\crypto.lib" (
   mkdir build
   cd build
-  cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Debug ..
-  ninja crypto
+  cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Debug -DOPENSSL_NO_ASM=on .. || exit /b 1
+  ninja crypto || exit /b 1
   copy /y crypto\crypto.lib "..\%Platform%\debug\crypto.lib"
   cd ..
   rmdir build /s /q
@@ -105,8 +105,8 @@ if not exist "%Platform%\debug\crypto.lib" (
 if not exist "%Platform%\crypto.lib" (
   mkdir build
   cd build
-  cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
-  ninja crypto
+  cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DOPENSSL_NO_ASM=on .. || exit /b 1
+  ninja crypto || exit /b 1
   copy /y crypto\crypto.lib "..\%Platform%\crypto.lib"
   cd ..
   rmdir build /s /q

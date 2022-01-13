@@ -86,14 +86,18 @@ jobs:
 
           cd third_party\boringssl
 
+          if "${{ matrix.arch }}==arm64" (
+            set "CMAKE_EXTRA_OPTIONS=-DOPENSSL_NO_ASM=on"
+          )
+
           rem check the existing debug lib
           if not exist debug\crypto.lib (
             mkdir build
             mkdir debug
             cd build
 
-            cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Debug ..
-            ninja crypto
+            cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Debug %CMAKE_EXTRA_OPTIONS% .. || exit /b 1
+            ninja crypto || exit /b 1
             copy /y crypto\crypto.lib ..\debug\crypto.lib
             cd ..
             rmdir build /s /q
@@ -104,8 +108,8 @@ jobs:
             mkdir build
             cd build
 
-            cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
-            ninja crypto
+            cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release %CMAKE_EXTRA_OPTIONS% .. || exit /b 1
+            ninja crypto || exit /b 1
             copy /y crypto\crypto.lib ..\crypto.lib
             cd ..
             rmdir build /s /q
