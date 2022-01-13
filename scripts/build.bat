@@ -20,7 +20,7 @@ set CC=
 set CXX=
 set Platform=x86
 
-cd third_party\boringssh
+cd third_party\boringssl
 mkdir "%Platform%"
 mkdir "%Platform%\debug"
 
@@ -43,6 +43,8 @@ if not exist "%Platform%\crypto.lib" (
   cd ..
   rmdir build /s /q
 )
+
+cd ..\..
 
 python.exe -u .\scripts\build.py || exit /b
 
@@ -52,7 +54,7 @@ set CC=
 set CXX=
 set Platform=x64
 
-cd third_party\boringssh
+cd third_party\boringssl
 mkdir "%Platform%"
 mkdir "%Platform%\debug"
 
@@ -75,6 +77,8 @@ if not exist "%Platform%\crypto.lib" (
   cd ..
   rmdir build /s /q
 )
+
+cd ..\..
 
 python.exe -u .\scripts\build.py || exit /b
 
@@ -84,7 +88,7 @@ set CC=
 set CXX=
 set Platform=arm64
 
-cd third_party\boringssh
+cd third_party\boringssl
 mkdir "%Platform%"
 mkdir "%Platform%\debug"
 
@@ -107,5 +111,7 @@ if not exist "%Platform%\crypto.lib" (
   cd ..
   rmdir build /s /q
 )
+
+cd ..\..
 
 python.exe -u .\scripts\build.py || exit /b

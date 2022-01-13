@@ -24,6 +24,8 @@ jobs:
       VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
       - name: Cache clang and nasm
         uses: actions/cache@v2
         with:
@@ -125,6 +127,8 @@ jobs:
       CLANG_ARCH: 'Linux_x64'
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
       - name: Cache clang
         uses: actions/cache@v2
         with:
@@ -167,6 +171,8 @@ jobs:
         arch: [x64, arm64]
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
       - name: Cache clang
         uses: actions/cache@v2
         with:
