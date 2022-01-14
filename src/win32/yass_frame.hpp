@@ -51,6 +51,10 @@ class CYassFrame : public CFrameWnd {
 
   afx_msg void OnUpdateStatus(CCmdUI* pCmdUI);
 
+#if 0
+  afx_msg void OnDPIChanged(WPARAM w, LPARAM l);
+#endif
+
  private:
   std::wstring status_bar_message_;
 

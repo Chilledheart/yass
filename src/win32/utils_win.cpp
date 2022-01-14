@@ -116,6 +116,10 @@ void Utils::EnableAutoStart(bool on) {
   set_yass_auto_start(on);
 }
 
+// https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows?redirectedfrom=MSDN
+// https://docs.microsoft.com/en-us/windows/win32/hidpi/setting-the-default-dpi-awareness-for-a-process
+// https://docs.microsoft.com/en-us/windows/win32/api/shellscalingapi/nf-shellscalingapi-getscalefactorformonitor
+// https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setprocessdpiawarenesscontext
 bool Utils::SetProcessDpiAwareness() {
   HANDLE hLibrary = EnsureShcoreLoaded();
   PFNSETPROCESSDPIAWARENESS const SetProcessDpiAwareness =
