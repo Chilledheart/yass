@@ -22,9 +22,9 @@ CYassApp* mApp = nullptr;
 
 // https://docs.microsoft.com/en-us/windows/win32/winmsg/about-messages-and-message-queues
 BEGIN_MESSAGE_MAP(CYassApp, CWinApp)
-  ON_MESSAGE(WM_MYAPP_STARTED, CYassApp::OnStarted)
-  ON_MESSAGE(WM_MYAPP_START_FAILED, CYassApp::OnStartFailed)
-  ON_MESSAGE(WM_MYAPP_STOPPED, CYassApp::OnStopped)
+  ON_MESSAGE(WM_MYAPP_STARTED, &CYassApp::OnStarted)
+  ON_MESSAGE(WM_MYAPP_START_FAILED, &CYassApp::OnStartFailed)
+  ON_MESSAGE(WM_MYAPP_STOPPED, &CYassApp::OnStopped)
 END_MESSAGE_MAP()
 
 CYassApp::CYassApp() = default;
@@ -170,7 +170,10 @@ void CYassApp::OnStop(bool quiet) {
   state_ = STOPPING;
   std::function<void()> callback;
   if (!quiet) {
-    callback = []() { PostMessage(WM_MYAPP_STOPPED, nullptr, nullptr); };
+    callback = []() {
+      PostMessage(AfxGetApp()->GetMainWnd()->GetSafeHwnd(), WM_MYAPP_STOPPED,
+                  nullptr, nullptr);
+    };
   }
   worker_.Stop(callback);
 }
@@ -188,7 +191,7 @@ LRESULT CYassApp::OnStartFailed(WPARAM w, LPARAM l) {
 
   error_msg_ = std::string(message, message_size);
   delete[] message;
-  LOG(ERROR) << "worker failed due to: " << error_message_;
+  LOG(ERROR) << "worker failed due to: " << error_msg_;
   frame_->StartFailed();
 }
 

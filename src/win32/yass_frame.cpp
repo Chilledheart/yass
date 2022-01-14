@@ -230,17 +230,14 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
     return -1;
   }
 
-  LPCTSTR lpszClass =
-      AfxRegisterWndClass(CS_DBLCLKS, ::LoadCursor(nullptr, IDC_ARROW),
-                          (HBRUSH)(COLOR_BTNFACE + 1), nullptr);
-  if (!left_panel_.Create(lpszClass, dwStyle | WS_CLIPSIBLINGS, rect, &panel_,
-                          AFX_IDW_DIALOGBAR + 1)) {
+  if (!left_panel_.Create(_T("Pane"), this, rect, FALSE, IDR_MAINFRAME,
+                          dwStyle | WS_CLIPSIBLINGS)) {
     LOG(WARNING) << "Failed to create left panel";
     return -1;
   }
 
-  if (!right_panel_.Create(lpszClass, dwStyle | WS_CLIPSIBLINGS, rect, &panel_,
-                           AFX_IDW_DIALOGBAR + 1)) {
+  if (!right_panel_.Create(_T("Pane"), this, rect, FALSE, IDR_MAINFRAME,
+                           dwStyle | WS_CLIPSIBLINGS)) {
     LOG(WARNING) << "Failed to create right panel";
     return -1;
   }
@@ -302,7 +299,6 @@ void CYassFrame::OnUpdateStatus(CCmdUI* pCmdUI) {
   int icxWidth = 0;
 
   UpdateStatus();
-  CString csPaneString(SysUTF8ToWide(status_bar_message_).c_str());
 
   CRect rectPane;
   rectPane.SetRectEmpty();
@@ -312,7 +308,7 @@ void CYassFrame::OnUpdateStatus(CCmdUI* pCmdUI) {
   CFont* pFont = status_bar_.GetFont();
   CFont* pOldFont = pDC->SelectObject(pFont);
 
-  pDC->DrawText(csPaneString, rectPane, DT_CALCRECT);
+  pDC->DrawText(status_bar_message_, rectPane, DT_CALCRECT);
 
   pDC->SelectObject(pOldFont);
   ReleaseDC(pDC);
@@ -321,7 +317,7 @@ void CYassFrame::OnUpdateStatus(CCmdUI* pCmdUI) {
   status_bar_.SetPaneInfo(1, pCmdUI->m_nID, uiStyle, rectPane.Width());
 
   pCmdUI->Enable();
-  pCmdUI->SetText(csPaneString);
+  pCmdUI->SetText(status_bar_message_);
 }
 
 #if 0
