@@ -853,7 +853,6 @@ if (GUI)
 
         list(APPEND SRC_FILES
           ${msvc_manifest}
-          src/win32/yass.manifest
           src/win32/yass.rc
           src/win32/yass.cpp
           src/win32/yass_frame.cpp
