@@ -803,7 +803,7 @@ if (APPLE OR UNIX)
     )
 endif()
 
-if (MSVC)
+if (MSVC AND GUI)
   message(STATUS "Build with Platform $ENV{Platform}")
 
   if (VCPKG_CRT_LINKAGE STREQUAL "dynamic")
@@ -820,7 +820,7 @@ if (MSVC)
     message(SEND_ERROR "Required component MFC/AFX is not installed.")
     message(FATAL_ERROR "If you're using VS2013, you'll also need the 'Multibyte MFC Library for Visual Studio 2013': https://www.microsoft.com/en-us/download/details.aspx?id=40770 (VS2015 and 2017 include that in the default MFC package)")
   endif()
-else()
+elseif (GUI)
   find_package(wxWidgets COMPONENTS core base REQUIRED)
 endif()
 

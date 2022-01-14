@@ -122,6 +122,8 @@ jobs:
         shell: cmd
       - name: Copying vcpkg to local tree
         run: |
+          mkdir -p /c/vcpkg/installed
+          mkdir -p /c/vcpkg/packages
           mkdir -p third_party/vcpkg-installed
           cp -rv /c/vcpkg/installed /c/vcpkg/packages third_party/vcpkg-installed
   cache-toolchain-linux:
