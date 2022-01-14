@@ -98,10 +98,6 @@ OptionDialog::OptionDialog(wxFrame* parent,
 
   Connect(wxCANCEL, wxEVT_COMMAND_BUTTON_CLICKED,
           wxCommandEventHandler(OptionDialog::OnCancel));
-
-#ifdef _WIN32
-  SetIcon(wxICON(IDI_ICON1));
-#endif
 }
 
 void OptionDialog::OnShow(wxShowEvent& WXUNUSED(event)) {

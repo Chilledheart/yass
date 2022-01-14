@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2021 Chilledheart  */
 #ifndef OPTION_DIALOG

@@ -7,7 +7,7 @@
 #ifndef WX_PRECOMP
 #include <wx/wx.h>
 #endif
-#include "worker.hpp"
+#include "cli/cli_worker.hpp"
 
 class YASSFrame;
 /// The main Application for YetAnotherShadowSocket

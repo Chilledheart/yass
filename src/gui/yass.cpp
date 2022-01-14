@@ -73,17 +73,6 @@ bool YASSApp::OnInit() {
   mApp = this;
   state_ = STOPPED;
 
-#ifdef _WIN32
-  HWND wnd = FindWindowW(nullptr, kMainFrameName);
-  if (wnd) {
-    wxMessageBox(wxT("YASS Already exists!"), wxT("WndChecker"));
-    return false;
-  }
-  if (Utils::SetProcessDpiAwareness()) {
-    LOG(WARNING) << "SetProcessDpiAwareness applied";
-  }
-#endif
-
   frame_ = new YASSFrame(kMainFrameName);
 #if wxCHECK_VERSION(3, 1, 0)
   frame_->SetSize(frame_->FromDIP(wxSize(450, 390)));
@@ -100,7 +89,7 @@ bool YASSApp::OnInit() {
 
 void YASSApp::OnLaunched() {
   wxApp::OnLaunched();
-#if defined(__APPLE__) || defined(_WIN32)
+#if defined(__APPLE__)
   if (Utils::GetAutoStart()) {
     wxCommandEvent event;
     frame_->m_leftpanel->OnStart(event);
@@ -110,7 +99,7 @@ void YASSApp::OnLaunched() {
 
 int YASSApp::OnExit() {
   LOG(WARNING) << "Application exiting";
-  worker_.Stop(true);
+  OnStop();
   return wxApp::OnExit();
 }
 
@@ -135,7 +124,47 @@ std::string YASSApp::GetStatus() const {
 void YASSApp::OnStart(bool quiet) {
   state_ = STARTING;
   SaveConfigToDisk();
-  worker_.Start(quiet);
+
+  std::function<void(asio::error_code)> callback;
+  if (!quiet) {
+    callback = [](asio::error_code ec) {
+      bool successed = false;
+      std::string msg;
+
+      if (ec) {
+        msg = ec.message();
+        successed = false;
+      } else {
+        successed = true;
+      }
+
+      // if the gui library exits, no more need to handle
+      if (!wxTheApp) {
+        return;
+      }
+
+      wxCommandEvent* evt = new wxCommandEvent(
+          MY_EVENT, successed ? ID_STARTED : ID_START_FAILED);
+      evt->SetString(msg.c_str());
+      wxTheApp->QueueEvent(evt);
+    };
+  }
+  worker_.Start(callback);
+}
+
+void YASSApp::OnStop(bool quiet) {
+  state_ = STOPPING;
+
+  std::function<void()> callback;
+  if (!quiet) {
+    callback = []() {
+      if (wxTheApp) {
+        wxCommandEvent* evt = new wxCommandEvent(MY_EVENT, ID_STOPPED);
+        wxTheApp->QueueEvent(evt);
+      }
+    };
+  }
+  worker_.Stop(callback);
 }
 
 void YASSApp::OnStarted(wxCommandEvent& WXUNUSED(event)) {
@@ -145,13 +174,10 @@ void YASSApp::OnStarted(wxCommandEvent& WXUNUSED(event)) {
 
 void YASSApp::OnStartFailed(wxCommandEvent& event) {
   state_ = START_FAILED;
-  error_msg_ = event.GetString();
-  frame_->StartFailed();
-}
 
-void YASSApp::OnStop(bool quiet) {
-  state_ = STOPPING;
-  worker_.Stop(quiet);
+  error_msg_ = event.GetString();
+  LOG(ERROR) << "worker failed due to: " << error_msg_;
+  frame_->StartFailed();
 }
 
 void YASSApp::OnStopped(wxCommandEvent& WXUNUSED(event)) {

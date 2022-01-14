@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
-#ifndef YASS_WORKER
-#define YASS_WORKER
+/* Copyright (c) 2022 Chilledheart  */
+#ifndef YASS_CLI_WORKER
+#define YASS_CLI_WORKER
 
 #include "core/cipher.hpp"
 
+#include <functional>
 #include <memory>
 #include <thread>
 
@@ -18,8 +19,8 @@ class Worker {
   Worker();
   ~Worker();
 
-  void Start(bool quiet);
-  void Stop(bool quiet);
+  void Start(std::function<void(asio::error_code)> callback);
+  void Stop(std::function<void()> callback);
 
   const asio::ip::tcp::endpoint& GetEndpoint() const { return endpoint_; }
 
@@ -44,4 +45,4 @@ class Worker {
   std::thread thread_;
 };
 
-#endif  // YASS_WORKER
+#endif  // YASS_CLI_WORKER

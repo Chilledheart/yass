@@ -12,8 +12,10 @@ Standard: Cpp11
 # IPC_END_MESSAGE_MAP()
 # gets correctly indented.
 MacroBlockBegin: "^\
+BEGIN_MESSAGE_MAP|\
 BEGIN_EVENT_TABLE|\
 wxBEGIN_EVENT_TABLE"
 MacroBlockEnd: "^\
+END_MESSAGE_MAP|\
 END_EVENT_TABLE|\
 wxEND_EVENT_TABLE"

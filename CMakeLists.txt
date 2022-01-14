@@ -798,184 +798,28 @@ endif()
 if (MSVC)
   message(STATUS "Build with Platform $ENV{Platform}")
 
-  set(wxWidgets_ROOT_DIR ${VCPKG_ROOT_DIR}/installed/${VCPKG_TARGET_TRIPLET})
-  set(wxWidgets_LIB_DIR ${VCPKG_STATIC_LIB_PATH})
-  set(wxWidgets_LIB_DEBUG_DIR ${VCPKG_STATIC_LIB_DEBUG_PATH})
-  set(wxWidgets_INCLUDE_DIRS
-      ${wxWidgets_ROOT_DIR}/include
-      ${wxWidgets_ROOT_DIR}/include/wx/msw)
-
-  if ($ENV{Platform} MATCHES "x64")
-    # find manifest if any
-    file(GLOB wxWidgets_MANIFESTS "${wxWidgets_ROOT_DIR}/include/wx/msw/amd64_dpi_aware_pmv2.manifest")
-  elseif ($ENV{Platform} MATCHES "x86")
-    file(GLOB wxWidgets_MANIFESTS "${wxWidgets_ROOT_DIR}/include/wx/msw/wx_dpi_aware_pmv2.manifest")
+  if (VCPKG_CRT_LINKAGE STREQUAL "dynamic")
+    add_definitions(-D_AFXDLL)
+    # for shared MFC library
+    set(CMAKE_MFC_FLAG 2)
+  else()
+    # for static MFC library
+    set(CMAKE_MFC_FLAG 1)
   endif()
 
-  # find jpeg library
-  find_library(JPEG_RELEASE_LIB jpeg
-    PATHS ${wxWidgets_LIB_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH)
-  find_library(JPEG_DEBUG_LIB jpeg
-    PATHS ${wxWidgets_LIB_DEBUG_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH)
-  set(JPEG_LIB
-    debug ${JPEG_DEBUG_LIB}
-    optimized ${JPEG_RELEASE_LIB}
-    )
-
-  # find libpng16 library
-  find_library(PNG16_RELEASE_LIB libpng16
-    PATHS ${wxWidgets_LIB_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH)
-  find_library(PNG16_DEBUG_LIB libpng16d
-    PATHS ${wxWidgets_LIB_DEBUG_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH)
-  set(PNG16_LIB
-    debug ${PNG16_DEBUG_LIB}
-    optimized ${PNG16_RELEASE_LIB}
-    )
-
-  # find lzma library
-  find_library(LZMA_RELEASE_LIB lzma
-    PATHS ${wxWidgets_LIB_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH)
-  find_library(LZMA_DEBUG_LIB lzmad
-    PATHS ${wxWidgets_LIB_DEBUG_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH)
-  set(LZMA_LIB
-    debug ${LZMA_DEBUG_LIB}
-    optimized ${LZMA_RELEASE_LIB}
-    )
-
-  # find tiff library
-  find_library(TIFF_RELEASE_LIB tiff
-    PATHS ${wxWidgets_LIB_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH)
-  find_library(TIFF_DEBUG_LIB tiffd
-    PATHS ${wxWidgets_LIB_DEBUG_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH)
-  set(TIFF_LIB
-    debug ${TIFF_DEBUG_LIB}
-    optimized ${TIFF_RELEASE_LIB}
-    )
-
-  # find turbojpeg library
-  find_library(TURBOJPEG_RELEASE_LIB turbojpeg
-    PATHS ${wxWidgets_LIB_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH)
-  find_library(TURBOJPEG_DEBUG_LIB turbojpeg
-    PATHS ${wxWidgets_LIB_DEBUG_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH)
-  set(TURBOJPEG_LIB
-    debug ${TURBOJPEG_DEBUG_LIB}
-    optimized ${TURBOJPEG_RELEASE_LIB}
-    )
-
-  # find zlib library
-  find_library(ZLIB_RELEASE_LIB zlib
-    PATHS ${wxWidgets_LIB_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH)
-  find_library(ZLIB_DEBUG_LIB zlibd
-    PATHS ${wxWidgets_LIB_DEBUG_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH)
-  set(ZLIB_LIB
-    debug ${ZLIB_DEBUG_LIB}
-    optimized ${ZLIB_RELEASE_LIB}
-    )
-
-  # find wxregex library
-  find_library(WX_REGEX_RELEASE_LIB wxregexu
-    PATHS ${wxWidgets_LIB_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH)
-  find_library(WX_REGEX_DEBUG_LIB wxregexud
-    PATHS ${wxWidgets_LIB_DEBUG_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH)
-  set(WX_REGEX_LIB
-    debug ${WX_REGEX_DEBUG_LIB}
-    optimized ${WX_REGEX_RELEASE_LIB}
-    )
-
-  # find wxbase library
-  find_library(WX_BASE_RELEASE_LIB wxbase31u
-    PATHS ${wxWidgets_LIB_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH)
-  find_library(WX_BASE_DEBUG_LIB wxbase31ud
-    PATHS ${wxWidgets_LIB_DEBUG_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH)
-  set(WX_BASE_LIB
-    debug ${WX_BASE_DEBUG_LIB}
-    optimized ${WX_BASE_RELEASE_LIB}
-    )
-
-  # find wxcore library
-  find_library(WX_CORE_RELEASE_LIB wxmsw31u_core
-    PATHS ${wxWidgets_LIB_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH)
-  find_library(WX_CORE_DEBUG_LIB wxmsw31ud_core
-    PATHS ${wxWidgets_LIB_DEBUG_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH)
-  set(WX_CORE_LIB
-    debug ${WX_CORE_DEBUG_LIB}
-    optimized ${WX_CORE_RELEASE_LIB}
-    )
-
-  find_library(COMCTL32_LIB COMCTL32 REQUIRED)
-  find_library(RPCRT4_LIB RPCRT4 REQUIRED)
-  find_library(UUID_LIB UUID REQUIRED)
-
-  set(wxWidgets_LIBRARIES
-      ${JPEG_LIB}
-      ${PNG16_LIB}
-      ${LZMA_LIB}
-      ${TIFF_LIB}
-      ${TURBOJPEG_LIB}
-      ${ZLIB_LIB}
-      ${COMCTL32_LIB}
-      ${RPCRT4_LIB}
-      ${UUID_LIB}
-      ${WX_REGEX_LIB}
-      ${WX_BASE_LIB}
-      ${WX_CORE_LIB})
-
-  set(wxWidgets_DEFINITIONS
-      wxUSE_GUI
-      wxUSE_UNICODE
-      __WXMSW__
-      )
-  set(wxWidgets_FOUND TRUE)
+  find_package(MFC REQUIRED)
+  if (NOT MFC_FOUND)
+    message(SEND_ERROR "Required component MFC/AFX is not installed.")
+    message(FATAL_ERROR "If you're using VS2013, you'll also need the 'Multibyte MFC Library for Visual Studio 2013': https://www.microsoft.com/en-us/download/details.aspx?id=40770 (VS2015 and 2017 include that in the default MFC package)")
+  endif()
 else()
-  find_package(wxWidgets COMPONENTS core base)
+  find_package(wxWidgets COMPONENTS core base REQUIRED)
 endif()
 
-if (GUI AND wxWidgets_FOUND)
+if (GUI)
     set(APP_NAME yass)
     set(SRC_FILES
-        src/gui/yass.cpp
-        src/gui/yass_frame.cpp
-        src/gui/yass_logging.cpp
-        src/gui/option_dialog.cpp
-        src/gui/panels.cpp
-        src/gui/worker.cpp
-        src/gui/utils.cpp
+        src/cli/cli_worker.cpp
         src/cli/socks5_connection.cpp
         src/cli/socks5_connection.hpp
         src/cli/socks5_connection_stats.cpp
@@ -984,13 +828,21 @@ if (GUI AND wxWidgets_FOUND)
         )
 
     if (MSVC)
-        list(APPEND SRC_FILES yass.rc)
-        # But wxWidgets looked different.
-        foreach(manifest ${wxWidgets_MANIFESTS})
-          string(REPLACE "\\" "/" manifest_win ${manifest})
-          list(APPEND SRC_FILES ${manifest_win})
-        endforeach()
-        list(APPEND SRC_FILES src/gui/utils_win.cpp)
+        list(APPEND SRC_FILES
+          src/win32/yass.rc
+          src/win32/yass.cpp
+          src/win32/yass_frame.cpp
+          src/win32/option_dialog.cpp
+          src/win32/panels.cpp
+          src/win32/utils_win.cpp)
+    else()
+        list(APPEND SRC_FILES
+          src/gui/yass.cpp
+          src/gui/yass_frame.cpp
+          src/gui/yass_logging.cpp
+          src/gui/option_dialog.cpp
+          src/gui/panels.cpp
+          src/gui/utils.cpp)
     endif()
 
     if (APPLE)
@@ -1011,8 +863,15 @@ if (GUI AND wxWidgets_FOUND)
     target_include_directories(${APP_NAME} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-    target_include_directories(${APP_NAME} SYSTEM PRIVATE
-        ${wxWidgets_INCLUDE_DIRS})
+    if (NOT MSVC)
+      target_include_directories(${APP_NAME} PRIVATE
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/gui)
+      target_include_directories(${APP_NAME} SYSTEM PRIVATE
+          ${wxWidgets_INCLUDE_DIRS})
+    else()
+      target_include_directories(${APP_NAME} PRIVATE
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/win32)
+    endif()
 
     target_link_libraries(${APP_NAME} PUBLIC
         ${SUPPORT_LIBS}

@@ -121,7 +121,7 @@ RightPanel::RightPanel(wxPanel* parent)
 
   Connect(ID_AUTOSTART, wxEVT_CHECKBOX,
           wxCommandEventHandler(RightPanel::OnCheckedAutoStart));
-#if defined(__APPLE__) || defined(_WIN32)
+#if defined(__APPLE__)
   m_autostart_cb->SetValue(Utils::GetAutoStart());
 #else
   m_autostart_cb->Enable(false);
@@ -129,7 +129,7 @@ RightPanel::RightPanel(wxPanel* parent)
 }
 
 void RightPanel::OnCheckedAutoStart(wxCommandEvent& WXUNUSED(event)) {
-#if defined(__APPLE__) || defined(_WIN32)
+#if defined(__APPLE__)
   Utils::EnableAutoStart(m_autostart_cb->IsChecked());
 #endif
 }

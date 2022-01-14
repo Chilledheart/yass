@@ -37,9 +37,9 @@ AeadEvpDecrypter::AeadEvpDecrypter(const EVP_AEAD* (*aead_getter)(),
                                    size_t nonce_size)
     : AeadBaseDecrypter(key_size, auth_tag_size, nonce_size),
       aead_alg_(InitAndCall(aead_getter)) {
-    DCHECK_EQ(EVP_AEAD_key_length(aead_alg_), key_size);
-    DCHECK_EQ(EVP_AEAD_nonce_length(aead_alg_), nonce_size);
-    DCHECK_GE(EVP_AEAD_max_tag_len(aead_alg_), auth_tag_size);
+  DCHECK_EQ(EVP_AEAD_key_length(aead_alg_), key_size);
+  DCHECK_EQ(EVP_AEAD_nonce_length(aead_alg_), nonce_size);
+  DCHECK_GE(EVP_AEAD_max_tag_len(aead_alg_), auth_tag_size);
 }
 
 AeadEvpDecrypter::~AeadEvpDecrypter() = default;

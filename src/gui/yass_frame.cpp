@@ -67,10 +67,6 @@ YASSFrame::YASSFrame(const wxString& title,
   hbox->Add(m_rightpanel, 1, wxEXPAND | wxALL, 5);
 
   panel->SetSizer(hbox);
-
-#ifdef _WIN32
-  SetIcon(wxICON(IDI_ICON1));
-#endif
 }
 
 std::string YASSFrame::GetServerHost() {

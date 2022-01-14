@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
-#include "worker.hpp"
+/* Copyright (c) 2022 Chilledheart  */
+#include "cli/cli_worker.hpp"
 
 #include <absl/flags/flag.h>
 #ifdef __APPLE__
 #include <pthread.h>
 #endif
-
-#include "yass.hpp"
 
 using asio::ip::tcp;
 using namespace socks5;
@@ -30,69 +28,50 @@ Worker::Worker()
       thread_([this] { WorkFunc(); }) {}
 
 Worker::~Worker() {
-  Stop(true);
+  Stop([]() {});
   work_guard_.reset();
   thread_.join();
 }
 
-void Worker::Start(bool quiet) {
-  asio::error_code ec_old;
+void Worker::Start(std::function<void(asio::error_code)> callback) {
+  asio::error_code ec;
   endpoint_ = resolveEndpoint(io_context_, absl::GetFlag(FLAGS_local_host),
-                              absl::GetFlag(FLAGS_local_port), ec_old);
-  if (!ec_old) {
-    remote_endpoint_ =
-        resolveEndpoint(io_context_, absl::GetFlag(FLAGS_server_host),
-                        absl::GetFlag(FLAGS_server_port), ec_old);
+                              absl::GetFlag(FLAGS_local_port), ec);
+  if (ec) {
+    callback(ec);
+  }
+
+  remote_endpoint_ =
+      resolveEndpoint(io_context_, absl::GetFlag(FLAGS_server_host),
+                      absl::GetFlag(FLAGS_server_port), ec);
+
+  if (ec) {
+    callback(ec);
   }
 
   /// listen in the worker thread
-  io_context_.post([this, quiet, ec_old]() {
+  io_context_.post([this, callback]() {
+    asio::error_code ec;
+
     socks5_server_ =
         std::make_unique<Socks5Factory>(io_context_, remote_endpoint_);
 
-    bool successed = false;
-    std::string msg;
-    asio::error_code ec = ec_old;
+    socks5_server_->listen(endpoint_, SOMAXCONN, ec);
 
-    if (!ec) {
-      socks5_server_->listen(endpoint_, SOMAXCONN, ec);
+    if (callback) {
+      callback(ec);
     }
-
-    if (quiet) {
-      return;
-    }
-
-    if (ec) {
-      LOG(ERROR) << "listen failed due to: " << ec;
-      msg = ec.message();
-      successed = false;
-    } else {
-      successed = true;
-    }
-
-    if (!wxTheApp) {
-      return;
-    }
-
-    wxCommandEvent* evt =
-        new wxCommandEvent(MY_EVENT, successed ? ID_STARTED : ID_START_FAILED);
-    evt->SetString(msg.c_str());
-    wxTheApp->QueueEvent(evt);
   });
 }
 
-void Worker::Stop(bool quiet) {
+void Worker::Stop(std::function<void()> callback) {
   /// stop in the worker thread
-  io_context_.post([this, quiet]() {
+  io_context_.post([this, callback]() {
     if (socks5_server_) {
       socks5_server_->stop();
-      if (quiet) {
-        return;
-      }
     }
-    if (wxTheApp) {
-      wxCommandEvent* evt = new wxCommandEvent(MY_EVENT, ID_STOPPED);
-      wxTheApp->QueueEvent(evt);
+    if (callback) {
+      callback();
     }
   });
 }

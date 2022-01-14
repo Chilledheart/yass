@@ -21,7 +21,7 @@ jobs:
         arch: [x64, x86, arm64]
     env:
       CLANG_ARCH: 'Win'
-      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
+      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
     steps:
       - uses: actions/checkout@v2
         with:
@@ -120,8 +120,6 @@ jobs:
           :SetNoAsmOptions
             set CMAKE_EXTRA_OPTIONS=-DOPENSSL_NO_ASM=on
         shell: cmd
-      - name: "Install dependency: wxwidgets"
-        run: vcpkg install wxwidgets:${{ matrix.arch }}-windows-static
       - name: Copying vcpkg to local tree
         run: |
           mkdir -p third_party/vcpkg-installed
@@ -238,7 +236,7 @@ jobs:
     env:
       BUNDLE_NAME: 'yass-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}'
       BUILD_TYPE: '${{ matrix.build_type }}'
-      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
+      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
     steps:
       - uses: actions/checkout@v2
         with:
@@ -312,7 +310,7 @@ jobs:
     env:
       BUNDLE_NAME: 'yass-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}'
       BUILD_TYPE: '${{ matrix.build_type }}'
-      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
+      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
     steps:
       - uses: actions/checkout@v2
         with:
@@ -386,7 +384,7 @@ jobs:
 ##  env:
 ##    ENABLE_CLANG_TIDY: '1'
 ##    BUILD_TYPE: '${{ matrix.build_type }}'
-##    VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config wxwidgets expat libjpeg-turbo liblzma libpng tiff zlib'
+##    VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
 ##  steps:
 ##    - uses: actions/checkout@v2
 ##      with:

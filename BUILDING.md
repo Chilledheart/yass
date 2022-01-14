@@ -51,15 +51,7 @@ scripts/build.py
 
 2. Run [vcpkg][vcpkg] to install required dependencies.
 ```
-vcpkg install libsodium:x64-windows-static wxwidgets:x64-windows-static
-```
-or
-```
-vcpkg install libsodium:arm64-windows-static wxwidgets:arm64-windows-static
-```
-or
-```
-vcpkg install libsodium:x86-windows-static wxwidgets:x86-windows-static
+Not required now
 ```
 3. use script to build Release App under `build` directory.
 ```

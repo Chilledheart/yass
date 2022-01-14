@@ -1,0 +1,28 @@
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright (c) 2021 Chilledheart  */
+// Used by yass.rc
+
+#ifndef YASS_WIN32_RESOURCE_H
+#define YASS_WIN32_RESOURCE_H
+
+#include <afxres.h>
+
+#define IDM_ABOUTBOX 0x0010
+#define IDD_ABOUTBOX 100
+#define IDS_ABOUTBOX 101
+#define IDM_OPTIONBOX 0x0020
+#define IDD_OPTIONBOX 200
+#define IDS_OPTIONBOX 201
+#define IDR_MAINFRAME 300
+
+#define IDC_START 1000
+#define IDC_STOP 1001
+#define IDC_EDIT_CONNECT_TIMEOUT 1002
+#define IDC_EDIT_TCP_USER_TIMEOUT 1003
+#define IDC_EDIT_TCP_SO_LINGER_TIMEOUT 1004
+#define IDC_EDIT_TCP_SO_SEND_BUFFER 1005
+#define IDC_EDIT_TCP_SO_RECEIVE_BUFFER 1006
+
+#define ID_APP_MSG 128
+
+#endif  // YASS_WIN32_RESOURCE_H
