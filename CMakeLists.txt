@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
-set(PACKAGE_NAME      "YetAnotherShadowSocket")
+set(PACKAGE_NAME            "YetAnotherShadowSocket")
+set(PACKAGE_VERSION         1.0.0)
+set(PACKAGE_PATCH_VERSION   0)
 
 # Select the MSVC runtime library for use by compilers targeting the MSVC ABI.
 # Use VCPKG_CRT_LINKAGE variable internally, option: dynamic and static
@@ -15,6 +17,12 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUA
 
 # Defer enabling C and CXX languages.
 project(${PACKAGE_NAME} NONE)
+
+# Set variables used in configure_file
+set(YASS_APP_NAME ${PACKAGE_NAME})
+set(YASS_APP_VERSION ${PACKAGE_VERSION})
+set(YASS_APP_PATCH_VERSION ${PACKAGE_PATCH_VERSION})
+set(YASS_APP_FULL_VERSION ${PACKAGE_VERSION}.${PACKAGE_PATCH_VERSION})
 
 if(MSVC)
   # On Windows, prefer cl over gcc if both are available. By default most of
@@ -828,7 +836,24 @@ if (GUI)
         )
 
     if (MSVC)
+        if("${MSVC_C_ARCHITECTURE_ID}" STREQUAL "X86")
+          set(MSVC_PROCESSOR_ARCHITECTURE "x86")
+        elseif("${MSVC_C_ARCHITECTURE_ID}" STREQUAL "x64")
+          set(MSVC_PROCESSOR_ARCHITECTURE "amd64")
+        elseif("${MSVC_C_ARCHITECTURE_ID}" STREQUAL "ARM")
+          set(MSVC_PROCESSOR_ARCHITECTURE "arm")
+        elseif("${MSVC_C_ARCHITECTURE_ID}" STREQUAL "ARM64")
+          set(MSVC_PROCESSOR_ARCHITECTURE "arm64")
+        else()
+          message(FATAL_ERROR "Failed to determine the MSVC target architecture: ${MSVC_C_ARCHITECTURE_ID}")
+        endif()
+
+        set(msvc_manifest "${CMAKE_CURRENT_BINARY_DIR}/yass.manifest")
+        configure_file("src/win32/yass.manifest.in" "${msvc_manifest}")
+
         list(APPEND SRC_FILES
+          ${msvc_manifest}
+          src/win32/yass.manifest
           src/win32/yass.rc
           src/win32/yass.cpp
           src/win32/yass_frame.cpp
