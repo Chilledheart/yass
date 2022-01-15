@@ -63,7 +63,9 @@ if not exist "%Platform%\debug\crypto.lib" (
   ninja crypto || exit /b 1
   copy /y crypto\crypto.lib "..\%Platform%\debug\crypto.lib"
   copy /y crypto\crypto.pdb "..\%Platform%\debug\crypto.pdb"
+  copy /y crypto\fipsmodule\CMakeFiles\fipsmodule.dir\vc140.pdb "..\%Platform%\debug\vc140.pdb"
   cd ..
+
   rmdir build /s /q
 )
 
@@ -74,6 +76,7 @@ if not exist "%Platform%\crypto.lib" (
   ninja crypto || exit /b 1
   copy /y crypto\crypto.lib "..\%Platform%\crypto.lib"
   copy /y crypto\crypto.pdb "..\%Platform%\crypto.pdb"
+  copy /y crypto\fipsmodule\CMakeFiles\fipsmodule.dir\vc140.pdb "..\%Platform%\vc140.pdb"
   cd ..
   rmdir build /s /q
 )

@@ -11,7 +11,7 @@ defaults:
   run:
     shell: bash
 env:
-  CACHE_EPOCH: 5
+  CACHE_EPOCH: 6
 jobs:
   cache-toolchain-win:
     runs-on: windows-latest
@@ -59,8 +59,10 @@ jobs:
           path: |
             third_party/boringssl/crypto.lib
             third_party/boringssl/crypto.pdb
+            third_party/boringssl/vc140.pdb
             third_party/boringssl/debug/crypto.lib
             third_party/boringssl/debug/crypto.pdb
+            third_party/boringssl/debug/vc140.pdb
           key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: "Install dependency: nasm"
         run: |
@@ -103,6 +105,7 @@ jobs:
             ninja crypto || exit /b 1
             copy /y crypto\crypto.lib ..\debug\crypto.lib
             copy /y crypto\crypto.pdb ..\debug\crypto.pdb
+            copy /y crypto\fipsmodule\CMakeFiles\fipsmodule.dir\vc140.pdb ..\debug\vc140.pdb
             cd ..
             rmdir build /s /q
           )
@@ -116,6 +119,7 @@ jobs:
             ninja crypto || exit /b 1
             copy /y crypto\crypto.lib ..\crypto.lib
             copy /y crypto\crypto.pdb ..\crypto.pdb
+            copy /y crypto\fipsmodule\CMakeFiles\fipsmodule.dir\vc140.pdb ..\vc140.pdb
             cd ..
             rmdir build /s /q
           )
@@ -277,8 +281,10 @@ jobs:
           path: |
             third_party/boringssl/crypto.lib
             third_party/boringssl/crypto.pdb
+            third_party/boringssl/vc140.pdb
             third_party/boringssl/debug/crypto.lib
             third_party/boringssl/debug/crypto.pdb
+            third_party/boringssl/debug/vc140.pdb
           key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
@@ -353,8 +359,10 @@ jobs:
           path: |
             third_party/boringssl/crypto.lib
             third_party/boringssl/crypto.pdb
+            third_party/boringssl/vc140.pdb
             third_party/boringssl/debug/crypto.lib
             third_party/boringssl/debug/crypto.pdb
+            third_party/boringssl/debug/vc140.pdb
           key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
@@ -429,8 +437,10 @@ jobs:
 ##        path: |
 ##          third_party/boringssl/crypto.lib
 ##          third_party/boringssl/crypto.pdb
+##          third_party/boringssl/vc140.pdb
 ##          third_party/boringssl/debug/crypto.lib
 ##          third_party/boringssl/debug/crypto.pdb
+##          third_party/boringssl/debug/vc140.pdb
 ##        key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
 ##    - name: Build
 ##      run: |
