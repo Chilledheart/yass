@@ -31,7 +31,7 @@ if(MFC_UNICODE_ATTEMPT_TRY_COMPILE)
     set(CHECK_INCLUDE_FILE_VAR "afxwin.h")
     configure_file(${CMAKE_ROOT}/Modules/CheckIncludeFile.cxx.in
       ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/CheckIncludeFile.cxx)
-    message(CHECK_START "Looking for MFC")
+    message(CHECK_START "Looking for MFC Unicode")
     # Try both shared and static as the root project may have set the /MT flag
     try_compile(MFC_UNICODE_HAVE_MFC
       ${CMAKE_BINARY_DIR}
@@ -39,7 +39,7 @@ if(MFC_UNICODE_ATTEMPT_TRY_COMPILE)
       CMAKE_FLAGS
       -DCMAKE_MFC_UNICODE_FLAG:STRING=2
       -DCOMPILE_DEFINITIONS:STRING=-D_UNICODE
-      -DCOMPILE_DEFINITIONS:STRING=-D_UNICODE
+      -DCOMPILE_DEFINITIONS:STRING=-DUNICODE
       -DCOMPILE_DEFINITIONS:STRING=-D_AFXDLL
       OUTPUT_VARIABLE OUTPUT)
     if(NOT MFC_UNICODE_HAVE_MFC)
@@ -56,15 +56,15 @@ if(MFC_UNICODE_ATTEMPT_TRY_COMPILE)
     endif()
     if(MFC_UNICODE_HAVE_MFC)
       message(CHECK_PASS "found")
-      set(MFC_UNICODE_HAVE_MFC 1 CACHE INTERNAL "Have MFC?")
+      set(MFC_UNICODE_HAVE_MFC 1 CACHE INTERNAL "Have MFC Unicode?")
       file(APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeOutput.log
-        "Determining if MFC exists passed with the following output:\n"
+        "Determining if MFC Unicode exists passed with the following output:\n"
         "${OUTPUT}\n\n")
     else()
       message(CHECK_FAIL "not found")
-      set(MFC_UNICODE_HAVE_MFC 0 CACHE INTERNAL "Have MFC?")
+      set(MFC_UNICODE_HAVE_MFC 0 CACHE INTERNAL "Have MFC Unicode?")
       file(APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log
-        "Determining if MFC exists failed with the following output:\n"
+        "Determining if MFC Unicode exists failed with the following output:\n"
         "${OUTPUT}\n\n")
     endif()
   endif()

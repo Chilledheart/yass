@@ -53,15 +53,15 @@ void Worker::Start(std::function<void(asio::error_code)> callback) {
 
   /// listen in the worker thread
   io_context_.post([this, callback]() {
-    asio::error_code ec;
+    asio::error_code local_ec;
 
     socks5_server_ =
         std::make_unique<Socks5Factory>(io_context_, remote_endpoint_);
 
-    socks5_server_->listen(endpoint_, SOMAXCONN, ec);
+    socks5_server_->listen(endpoint_, SOMAXCONN, local_ec);
 
     if (callback) {
-      callback(ec);
+      callback(local_ec);
     }
   });
 }
