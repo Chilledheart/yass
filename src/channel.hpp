@@ -12,10 +12,10 @@
 class Channel {
  public:
   /// Construct the channel
-  Channel() {}
+  Channel() = default;
 
   /// Deconstruct the channel
-  virtual ~Channel() {}
+  virtual ~Channel() = default;
 
   /// Called once connection established
   virtual void connected() = 0;

@@ -25,7 +25,7 @@ class Connection {
         remote_endpoint_(remote_endpoint),
         socket_(io_context_) {}
 
-  virtual ~Connection() {}
+  virtual ~Connection() = default;
 
   /// Construct the connection with socket
   ///

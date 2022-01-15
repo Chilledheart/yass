@@ -8,14 +8,14 @@
 #include <malloc.h>  // for _alloca
 #endif               // _WIN32
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(__clang__)
 #pragma push
 // #pragma warning(pop): likely mismatch, popping warning state pushed in
 // different file
 #pragma warning(disable : 5031)
 // pointer to potentially throwing function passed to extern C function
 #pragma warning(disable : 5039)
-#endif  // _MSC_VER
+#endif  // defined(_MSC_VER) && !defined(__clang__)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
@@ -26,8 +26,8 @@
 
 #pragma GCC diagnostic pop
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(__clang__)
 #pragma pop
-#endif  // _MSC_VER
+#endif  // defined(_MSC_VER) && !defined(__clang__)
 
 #endif  // H_CORE_ASIO
