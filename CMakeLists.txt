@@ -422,6 +422,8 @@ if (COMPILER_GCC OR COMPILER_CLANG)
     # googletest suppresses warning C4996 via a pragma, but clang-cl does not
     # honor it. Suppress it here to compensate. See https://crbug.com/772117.
     set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wno-deprecated-declarations")
+  elseif (ENABLE_CLANG_TIDY)
+    set(C_CXX_FLAGS "${C_CXX_FLAGS} -fno-common")
   else()
     set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wall -fno-common")
   endif()
@@ -493,8 +495,8 @@ if (COMPILER_GCC OR COMPILER_CLANG)
 
   # ignore complains from clang-cl and mfc/afx
   if (COMPILER_CLANG)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wunused-local-typedef")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wunused-local-typedef")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-local-typedef")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedef")
   endif()
 elseif (MSVC)
   set(MSVC_DISABLED_WARNINGS_LIST
