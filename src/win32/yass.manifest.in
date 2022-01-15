@@ -9,7 +9,6 @@
         name="${YASS_APP_NAME}"
         version="${YASS_APP_FULL_VERSION}"
         processorArchitecture="${MSVC_PROCESSOR_ARCHITECTURE}"
-        language="*"
     />
     <description>Yet Another Shadow Socket Application</description>
     <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
