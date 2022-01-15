@@ -899,9 +899,6 @@ set(files
     src/core/hkdf_sha1.cpp
     src/core/hmac_sha1.cpp
     src/core/http_parser.c
-    src/core/md5.cc
-    src/core/modp_b64.cc
-    src/core/sha1.cc
     src/core/iobuf.cpp
     src/core/socks4_request_parser.cpp
     src/core/socks5_request_parser.cpp
@@ -949,10 +946,6 @@ set(hfiles
     src/core/hkdf_sha1.hpp
     src/core/hmac_sha1.hpp
     src/core/http_parser.h
-    src/core/md5.h
-    src/core/modp_b64.h
-    src/core/modp_b64_data.h
-    src/core/sha1.h
     src/core/iobuf.hpp
     src/core/socks4.hpp
     src/core/socks4_request.hpp

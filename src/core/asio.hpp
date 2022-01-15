@@ -6,7 +6,7 @@
 
 #ifdef _WIN32
 #include <malloc.h>  // for _alloca
-#endif  // _WIN32
+#endif               // _WIN32
 
 #ifdef _MSC_VER
 #pragma push

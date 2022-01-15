@@ -4,29 +4,28 @@
 #include "core/hmac_sha1.hpp"
 
 #include <cstring>
-#include "core/sha1.h"
 
 #define HASH_BLOCK_SIZE 128
 #define HASH_BLOCK_SIZE_256 64
 
-int hmac_sha1_starts(SHA1Context* ctx,
+int hmac_sha1_starts(SHA_CTX* ctx,
                      unsigned char* ipad,
                      unsigned char* opad,
                      const unsigned char* key,
                      size_t keylen) {
   int ret = 0;
-  unsigned char sum[kSHA1Length];
+  uint8_t sum[SHA_DIGEST_LENGTH];
   size_t i;
 
   if (ctx == nullptr || ipad == nullptr || opad == nullptr)
     return -1;
 
   if (keylen > static_cast<size_t>(HASH_BLOCK_SIZE_256)) {
-    SHA1Init(ctx);
-    SHA1Update(ctx, key, keylen);
-    SHA1Final(reinterpret_cast<SHA1Digest*>(sum), ctx);
+    SHA1_Init(ctx);
+    SHA1_Update(ctx, key, keylen);
+    SHA1_Final(sum, ctx);
 
-    keylen = kSHA1Length;
+    keylen = SHA_DIGEST_LENGTH;
     key = sum;
   }
 
@@ -38,15 +37,15 @@ int hmac_sha1_starts(SHA1Context* ctx,
     opad[i] = static_cast<unsigned char>(opad[i] ^ key[i]);
   }
 
-  SHA1Init(ctx);
-  SHA1Update(ctx, ipad, HASH_BLOCK_SIZE_256);
+  SHA1_Init(ctx);
+  SHA1_Update(ctx, ipad, HASH_BLOCK_SIZE_256);
 
   memset(sum, 0, sizeof(sum));
 
   return ret;
 }
 
-int hmac_sha1_update(SHA1Context* ctx,
+int hmac_sha1_update(SHA_CTX* ctx,
                      unsigned char* ipad,
                      unsigned char* opad,
                      const unsigned char* input,
@@ -54,38 +53,36 @@ int hmac_sha1_update(SHA1Context* ctx,
   if (ctx == nullptr || ipad == nullptr || opad == nullptr)
     return -1;
 
-  SHA1Update(ctx, input, ilen);
+  SHA1_Update(ctx, input, ilen);
 
   return 0;
 }
 
-int hmac_sha1_finish(SHA1Context* ctx,
+int hmac_sha1_finish(SHA_CTX* ctx,
                      unsigned char* ipad,
                      unsigned char* opad,
                      unsigned char* output) {
-  unsigned char tmp[kSHA1Length];
+  uint8_t tmp[SHA_DIGEST_LENGTH];
 
   if (ctx == nullptr || ipad == nullptr || opad == nullptr)
     return -1;
 
-  SHA1Final(reinterpret_cast<SHA1Digest*>(tmp), ctx);
+  SHA1_Final(tmp, ctx);
 
-  SHA1Init(ctx);
-  SHA1Update(ctx, opad, HASH_BLOCK_SIZE_256);
-  SHA1Update(ctx, tmp, kSHA1Length);
-  SHA1Final(reinterpret_cast<SHA1Digest*>(output), ctx);
+  SHA1_Init(ctx);
+  SHA1_Update(ctx, opad, HASH_BLOCK_SIZE_256);
+  SHA1_Update(ctx, tmp, SHA_DIGEST_LENGTH);
+  SHA1_Final(output, ctx);
 
   return 0;
 }
 
-int hmac_sha1_reset(SHA1Context* ctx,
-                    unsigned char* ipad,
-                    unsigned char* opad) {
+int hmac_sha1_reset(SHA_CTX* ctx, unsigned char* ipad, unsigned char* opad) {
   if (ctx == nullptr || ipad == nullptr || opad == nullptr)
     return -1;
 
-  SHA1Init(ctx);
-  SHA1Update(ctx, ipad, HASH_BLOCK_SIZE_256);
+  SHA1_Init(ctx);
+  SHA1_Update(ctx, ipad, HASH_BLOCK_SIZE_256);
 
   return 0;
 }
@@ -95,11 +92,11 @@ int hmac_sha1(const unsigned char* key,
               const unsigned char* input,
               size_t ilen,
               unsigned char* output) {
-  SHA1Context ctx;
+  SHA_CTX ctx;
   unsigned char ipad[HASH_BLOCK_SIZE_256], opad[HASH_BLOCK_SIZE_256];
   int ret;
 
-  SHA1Init(&ctx);
+  SHA1_Init(&ctx);
 
   if ((ret = hmac_sha1_starts(&ctx, ipad, opad, key, keylen)) != 0)
     goto cleanup;

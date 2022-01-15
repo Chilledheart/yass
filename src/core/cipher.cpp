@@ -5,10 +5,11 @@
 
 #include <memory>
 
+#include <openssl/base64.h>
+#include <openssl/md5.h>
+
 #include "core/hkdf_sha1.hpp"
 #include "core/logging.hpp"
-#include "core/md5.h"
-#include "core/modp_b64.h"
 #include "core/rand_util.hpp"
 #include "core/sys_byteorder.h"
 #include "crypto/decrypter.hpp"
@@ -16,8 +17,6 @@
 
 #define CHUNK_SIZE_LEN 2U
 #define CHUNK_SIZE_MASK 0x3FFFU
-
-#define MD_MAX_SIZE_256 32 /* longest known is SHA256 or less */
 
 class cipher_impl {
  public:
@@ -33,10 +32,17 @@ class cipher_impl {
   static int parse_key(const std::string& key, uint8_t* skey, size_t skey_len) {
     const char* base64 = key.c_str();
     const size_t base64_len = key.size();
-    uint32_t out_len = modp_b64_decode_len(base64_len);
-    std::unique_ptr<char[]> out = std::make_unique<char[]>(out_len);
+    size_t out_len;
 
-    out_len = modp_b64_decode(out.get(), base64, out_len);
+    if (!EVP_DecodedLength(&out_len, base64_len)) {
+      LOG(WARNING) << "Invalid base64 len: " << base64_len;
+      return 0;
+    }
+    std::unique_ptr<uint8_t[]> out = std::make_unique<uint8_t[]>(out_len);
+
+    out_len =
+        EVP_DecodeBase64(out.get(), &out_len, out_len,
+                         reinterpret_cast<const uint8_t*>(base64), base64_len);
     if (out_len > 0 && out_len >= skey_len) {
       memcpy(skey, out.get(), skey_len);
       return skey_len;
@@ -52,8 +58,8 @@ class cipher_impl {
                         size_t skey_len) {
     const char* pass = key.c_str();
     size_t datal = key.size();
-    MD5Context c;
-    unsigned char md_buf[MD_MAX_SIZE_256];
+    MD5_CTX c;
+    uint8_t md_buf[MD5_DIGEST_LENGTH];
     int addmd;
     unsigned int i, j, mds;
 
@@ -62,15 +68,15 @@ class cipher_impl {
     }
 
     mds = 16;
-    MD5Init(&c);
+    MD5_Init(&c);
 
     for (j = 0, addmd = 0; j < skey_len; addmd++) {
-      MD5Init(&c);
+      MD5_Init(&c);
       if (addmd) {
-        MD5Update(&c, md_buf, mds);
+        MD5_Update(&c, md_buf, mds);
       }
-      MD5Update(&c, reinterpret_cast<const uint8_t*>(pass), datal);
-      MD5Final(reinterpret_cast<MD5Digest*>(md_buf), &c);
+      MD5_Update(&c, reinterpret_cast<const uint8_t*>(pass), datal);
+      MD5_Final(md_buf, &c);
 
       for (i = 0; i < mds; i++, j++) {
         if (j >= skey_len)

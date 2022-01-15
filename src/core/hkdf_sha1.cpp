@@ -7,10 +7,10 @@
 #include <cstring>
 
 #include "core/hmac_sha1.hpp"
-#include "core/sha1.h"
 
-#define MAX_MD_SIZE 64     /* longest known is SHA512 */
-#define MD_MAX_SIZE_256 32 /* longest known is SHA256 or less */
+#define MAX_MD_SIZE SHA512_DIGEST_LENGTH /* longest known is SHA512 */
+#define MD_MAX_SIZE_256 \
+  SHA256_DIGEST_LENGTH /* longest known is SHA256 or less */
 
 int crypto_hkdf(const unsigned char* salt,
                 int salt_len,
@@ -60,7 +60,7 @@ int crypto_hkdf_expand(const unsigned char* prk,
   int hash_len;
   int N;
   int T_len = 0, where = 0, i, ret;
-  SHA1Context ctx;
+  SHA_CTX ctx;
   unsigned char ipad[HASH_BLOCK_SIZE_256], opad[HASH_BLOCK_SIZE_256];
   unsigned char T[MD_MAX_SIZE_256];
 
@@ -88,7 +88,7 @@ int crypto_hkdf_expand(const unsigned char* prk,
     return -1;
   }
 
-  SHA1Init(&ctx);
+  SHA1_Init(&ctx);
 
   /* Section 2.3. */
   for (i = 1; i <= N; i++) {
