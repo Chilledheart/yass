@@ -90,8 +90,10 @@ using absl::LogSeverity;
 
 #if ABSL_HAVE_ATTRIBUTE(noreturn) || (defined(__GNUC__) && !defined(__clang__))
 #define ABSL_ATTRIBUTE_NORETURN_ATTRIBUTE __attribute__((noreturn))
+#elif defined(_MSC_VER)
+#define ABSL_ATTRIBUTE_NORETURN_ATTRIBUTE __declspec(noreturn)
 #else
-#define ABSL_ATTRIBUTE_NORETURN_ATTRIBUTE
+#define ABSL_ATTRIBUTE_NORETURN_ATTRIBUTE [[noreturn]]
 #endif
 
 #if ABSL_HAVE_ATTRIBUTE(format_arg) || \

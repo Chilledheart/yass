@@ -8,7 +8,7 @@
 void YASSLog::DoLogRecord(wxLogLevel level,
                           const wxString& msg,
                           const wxLogRecordInfo& info) {
-  if (level < 0 || level >= wxLOG_Message) {
+  if (level >= wxLOG_Message) {
     level = wxLOG_Message;
   }
   const char* message = msg.operator const char*();

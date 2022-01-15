@@ -214,7 +214,7 @@ void YASSFrame::OnIdle(wxIdleEvent& WXUNUSED(event)) {
   }
 }
 
-void YASSFrame::OnClose(wxCloseEvent& event) {
+void YASSFrame::OnClose(wxCloseEvent& /*event*/) {
   LOG(WARNING) << "Frame is closing ";
   mApp->Exit();
 }

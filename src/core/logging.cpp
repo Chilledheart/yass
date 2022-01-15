@@ -2557,11 +2557,12 @@ LogMessageFatal::LogMessageFatal(const char* file,
                                  const CheckOpString& result)
     : LogMessage(file, line, result) {}
 
+MSVC_PUSH_DISABLE_WARNING(4722)
 LogMessageFatal::~LogMessageFatal() {
   Flush();
   LogMessage::Fail();
-  abort();
 }
+MSVC_POP_WARNING()
 
 CheckOpMessageBuilder::CheckOpMessageBuilder(const char* exprtext)
     : stream_(new std::ostringstream) {
