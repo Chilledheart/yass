@@ -21,10 +21,11 @@
 CYassApp* mApp = nullptr;
 
 // https://docs.microsoft.com/en-us/windows/win32/winmsg/about-messages-and-message-queues
+// https://docs.microsoft.com/en-us/cpp/mfc/reference/message-map-macros-mfc?view=msvc-170#on_thread_message
 BEGIN_MESSAGE_MAP(CYassApp, CWinApp)
-  ON_MESSAGE(WM_MYAPP_STARTED, &CYassApp::OnStarted)
-  ON_MESSAGE(WM_MYAPP_START_FAILED, &CYassApp::OnStartFailed)
-  ON_MESSAGE(WM_MYAPP_STOPPED, &CYassApp::OnStopped)
+  ON_THREAD_MESSAGE(WM_MYAPP_STARTED, &CYassApp::OnStarted)
+  ON_THREAD_MESSAGE(WM_MYAPP_START_FAILED, &CYassApp::OnStartFailed)
+  ON_THREAD_MESSAGE(WM_MYAPP_STOPPED, &CYassApp::OnStopped)
 END_MESSAGE_MAP()
 
 CYassApp::CYassApp() = default;
@@ -119,7 +120,7 @@ BOOL CYassApp::InitInstance() {
 
 int CYassApp::ExitInstance() {
   LOG(WARNING) << "Application exiting";
-  worker_.Stop(true);
+  worker_.Stop([]() {});
   return CWinApp::ExitInstance();
 }
 
@@ -136,18 +137,20 @@ std::string CYassApp::GetStatus() const {
 };
 
 void CYassApp::OnStart(bool quiet) {
+  DWORD main_thread_id = GetCurrentThreadId();
   state_ = STARTING;
   SaveConfigToDisk();
 
   std::function<void(asio::error_code)> callback;
   if (!quiet) {
-    callback = [](asio::error_code ec) {
+    callback = [= main_thread_id](asio::error_code ec) {
       bool successed = false;
       char* message = nullptr;
       int message_size = 0;
+      bool ret;
 
       if (ec) {
-        std::message_storage = ec.message();
+        std::string message_storage = ec.message();
         message_size = message_storage.size();
         message = new char[message_size + 1];
         memcpy(message, message_storage.c_str(), message_size + 1);
@@ -157,34 +160,42 @@ void CYassApp::OnStart(bool quiet) {
       }
 
       // if the gui library exits, no more need to handle
-      PostMessage(AfxGetApp()->GetMainWnd()->GetSafeHwnd(),
-                  successed ? WM_MYAPP_STARTED : WM_MYAPP_START_FAILED,
-                  static_cast<WPARAM>(message_size),
-                  reinterpret_cast<LPARAM>(message));
+      ret = ::PostThreadMessage(
+          main_thread_id, successed ? WM_MYAPP_STARTED : WM_MYAPP_START_FAILED,
+          static_cast<WPARAM>(message_size), reinterpret_cast<LPARAM>(message));
+      if (!ret) {
+        LOG(WARING) << "Failed to post message to main thread: " << std::hex
+                    << ::GetLastError() << std::dec;
+      }
     };
   }
   worker_.Start(callback);
 }
 
 void CYassApp::OnStop(bool quiet) {
+  DWORD main_thread_id = GetCurrentThreadId();
   state_ = STOPPING;
   std::function<void()> callback;
   if (!quiet) {
-    callback = []() {
-      PostMessage(AfxGetApp()->GetMainWnd()->GetSafeHwnd(), WM_MYAPP_STOPPED,
-                  nullptr, nullptr);
+    callback = [= main_thread_id]() {
+      bool ret;
+      ret = ::PostThreadMessage(main_thread_id, WM_MYAPP_STOPPED, nullptr, 0);
+      if (!ret) {
+        LOG(WARING) << "Failed to post message to main thread: " << std::hex
+                    << ::GetLastError() << std::dec;
+      }
     };
   }
   worker_.Stop(callback);
 }
 
 // https://docs.microsoft.com/en-us/windows/win32/winprog/windows-data-types?redirectedfrom=MSDN
-LRESULT CYassApp::OnStarted(WPARAM w, LPARAM l) {
+void CYassApp::OnStarted(WPARAM w, LPARAM l) {
   state_ = STARTED;
   frame_->Started();
 }
 
-LRESULT CYassApp::OnStartFailed(WPARAM w, LPARAM l) {
+void CYassApp::OnStartFailed(WPARAM w, LPARAM l) {
   state_ = START_FAILED;
   char* message = reinterpret_cast<char*>(l);
   int message_size = static_cast<int>(w);
@@ -195,7 +206,7 @@ LRESULT CYassApp::OnStartFailed(WPARAM w, LPARAM l) {
   frame_->StartFailed();
 }
 
-LRESULT CYassApp::OnStopped(WPARAM w, LPARAM l) {
+void CYassApp::OnStopped(WPARAM w, LPARAM l) {
   state_ = STOPPED;
   frame_->Stopped();
 }

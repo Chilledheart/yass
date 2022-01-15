@@ -259,23 +259,12 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
 
 void CYassFrame::OnClose() {
   LOG(WARNING) << "Frame is closing ";
-#if 0
-  // https://docs.microsoft.com/en-us/cpp/mfc/reference/cwnd-class?view=msvc-170#destroywindow
-  // MFC will react by PostQuitMessage() for you,
-  // hence exit the main message loop and close your app.
+  // Same with CWinApp::OnAppExit
   //
-  // If the specified window is a parent or owner window,
-  // DestroyWindow automatically destroys the associated child or
-  // owned windows when it destroys the parent or owner window.
-  // The function first destroys child or owned windows,
-  // and then it destroys the parent or owner window.
-  AfxGetApp()->GetMainWnd()->DestroyWindow();
-#else
   // https://docs.microsoft.com/en-us/cpp/mfc/reference/application-information-and-management?view=msvc-170#afxgetmainwnd
   // The following line send a WM_CLOSE message to the Application's
   // main window. This will cause the Application to exit.
   AfxGetApp()->GetMainWnd()->PostMessage(WM_CLOSE);
-#endif
 
   CFrameWnd::OnClose();
 }
@@ -299,6 +288,7 @@ void CYassFrame::OnUpdateStatus(CCmdUI* pCmdUI) {
   int icxWidth = 0;
 
   UpdateStatus();
+  CString csPaneString(status_bar_message_.c_str());
 
   CRect rectPane;
   rectPane.SetRectEmpty();
@@ -308,7 +298,7 @@ void CYassFrame::OnUpdateStatus(CCmdUI* pCmdUI) {
   CFont* pFont = status_bar_.GetFont();
   CFont* pOldFont = pDC->SelectObject(pFont);
 
-  pDC->DrawText(status_bar_message_, rectPane, DT_CALCRECT);
+  pDC->DrawText(csPaneString, rectPane, DT_CALCRECT);
 
   pDC->SelectObject(pOldFont);
   ReleaseDC(pDC);
@@ -317,7 +307,7 @@ void CYassFrame::OnUpdateStatus(CCmdUI* pCmdUI) {
   status_bar_.SetPaneInfo(1, pCmdUI->m_nID, uiStyle, rectPane.Width());
 
   pCmdUI->Enable();
-  pCmdUI->SetText(status_bar_message_);
+  pCmdUI->SetText(csPaneString);
 }
 
 #if 0
