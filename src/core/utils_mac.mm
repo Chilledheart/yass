@@ -299,8 +299,11 @@ static OutStringType STLStringToSTLStringWithEncodingsT(
   if (!cfstring)
     return OutStringType();
 
-  return CFStringToSTLStringWithEncodingT<OutStringType>(cfstring,
-                                                         out_encoding);
+  OutStringType outstring =
+      CFStringToSTLStringWithEncodingT<OutStringType>(cfstring, out_encoding);
+  CFRelease(cfstring);
+
+  return outstring;
 }
 
 // Given a std::string_view|in| with an encoding specified by |in_encoding|, return
