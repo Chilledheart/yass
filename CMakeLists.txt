@@ -285,7 +285,7 @@ if(MSAN)
   if(NOT HAS_CLANG)
     # experimental
     # due to the ms document https://docs.microsoft.com/en-us/cpp/sanitizers/asan?view=msvc-160
-    if (MSVC AND NOT VCPKG_TARGET_ARCHITECTURE STREQUAL "arm64")
+    if (MSVC AND NOT MSVC_C_ARCHITECTURE_ID STREQUAL "arm64")
       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=memory")
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=memory")
       set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /fsanitize=memory")
@@ -304,7 +304,7 @@ if(ASAN)
   if(NOT HAS_CLANG)
     # Current support is limited to x86 and x64 on Windows 10
     # due to the ms document https://docs.microsoft.com/en-us/cpp/sanitizers/asan?view=msvc-160
-    if (MSVC AND NOT VCPKG_TARGET_ARCHITECTURE STREQUAL "arm64")
+    if (MSVC AND NOT MSVC_C_ARCHITECTURE_ID STREQUAL "arm64")
       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=address")
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=address")
       set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /fsanitize=address")
@@ -322,7 +322,7 @@ if(TSAN)
   if(NOT HAS_CLANG)
     # experimental
     # due to the ms document https://docs.microsoft.com/en-us/cpp/sanitizers/asan?view=msvc-160
-    if (MSVC AND NOT VCPKG_TARGET_ARCHITECTURE STREQUAL "arm64")
+    if (MSVC AND NOT MSVC_C_ARCHITECTURE_ID STREQUAL "arm64")
       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=thread")
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=thread")
       set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /fsanitize=thread")
@@ -340,7 +340,7 @@ if(UBSAN)
   if(NOT HAS_CLANG)
     # experimental
     # due to the ms document https://docs.microsoft.com/en-us/cpp/sanitizers/asan?view=msvc-160
-    if (MSVC AND NOT VCPKG_TARGET_ARCHITECTURE STREQUAL "arm64")
+    if (MSVC AND NOT MSVC_C_ARCHITECTURE_ID STREQUAL "arm64")
       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=undefined")
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=undefined")
     else()
@@ -436,14 +436,14 @@ if (MSVC)
 
     # boringssl
     find_library(BORINGSSL_CRYPTO_RELEASE_LIB crypto
-      PATHS ${boringssl_DIR}/${VCPKG_TARGET_ARCHITECTURE}
+      PATHS ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}
             ${boringssl_DIR}/
             ${boringssl_DIR}/build/crypto/Release
             ${boringssl_DIR}/build/Release/crypto
       REQUIRED
       NO_DEFAULT_PATH)
     find_library(BORINGSSL_CRYPTO_DEBUG_LIB crypto
-      PATHS ${boringssl_DIR}/${VCPKG_TARGET_ARCHITECTURE}/debug
+      PATHS ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}/debug
             ${boringssl_DIR}/debug
             ${boringssl_DIR}/build/crypto/Debug
             ${boringssl_DIR}/build/Debug/crypto
