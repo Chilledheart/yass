@@ -846,10 +846,13 @@ class LogMessage {
   class LogStream : public std::ostream {
     MSVC_POP_WARNING()
    public:
+    // 'this' : used in base member initializer
+    MSVC_PUSH_DISABLE_WARNING(4355)
     LogStream(char* buf, int len, uint64_t ctr)
         : std::ostream(NULL), streambuf_(buf, len), ctr_(ctr), self_(this) {
       rdbuf(&streambuf_);
     }
+    MSVC_POP_WARNING()
 
     uint64_t ctr() const { return ctr_; }
     void set_ctr(uint64_t ctr) { ctr_ = ctr; }

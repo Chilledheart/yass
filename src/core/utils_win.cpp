@@ -44,7 +44,7 @@ uint64_t GetMonotonicTime() {
 
   ElapsedNanoseconds.QuadPart =
       static_cast<double>(ElapsedNanoseconds.QuadPart) * NS_PER_SECOND /
-      Frequency.QuadPart;
+      static_cast<double>(Frequency.QuadPart);
 
   return ElapsedNanoseconds.QuadPart;
 }

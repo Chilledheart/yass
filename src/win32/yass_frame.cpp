@@ -28,8 +28,8 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
     value >>= 10;
     ++c;
   }
-  *ss << std::fixed << std::setw(5) << std::setprecision(2) << value / 1024.0
-      << " " << *c;
+  *ss << std::fixed << std::setw(5) << std::setprecision(2)
+      << static_cast<double>(value) / 1024.0 << " " << *c;
 }
 
 static UINT BASED_CODE indicators[] = {
@@ -167,10 +167,10 @@ void CYassFrame::UpdateStatus() {
   if (delta_time > NS_PER_SECOND / 10) {
     uint64_t rx_bytes = total_rx_bytes;
     uint64_t tx_bytes = total_tx_bytes;
-    rx_rate_ = static_cast<double>(rx_bytes - last_rx_bytes_) / delta_time *
-               NS_PER_SECOND;
-    tx_rate_ = static_cast<double>(tx_bytes - last_tx_bytes_) / delta_time *
-               NS_PER_SECOND;
+    rx_rate_ = static_cast<double>(rx_bytes - last_rx_bytes_) /
+               static_cast<double>(delta_time) * NS_PER_SECOND;
+    tx_rate_ = static_cast<double>(tx_bytes - last_tx_bytes_) /
+               static_cast<double>(delta_time) * NS_PER_SECOND;
     last_sync_time_ = sync_time;
     last_rx_bytes_ = rx_bytes;
     last_tx_bytes_ = tx_bytes;

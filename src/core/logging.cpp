@@ -2962,7 +2962,7 @@ int64_t UsecToCycles(int64_t usec) {
 
 WallTime WallTime_Now() {
   // Now, cycle clock is retuning microseconds since the epoch.
-  return CycleClock_Now() * 0.000001;
+  return static_cast<double>(CycleClock_Now()) * 0.000001;
 }
 
 static int32_t g_main_thread_pid = getpid();

@@ -73,16 +73,34 @@ else()
   set(COMPILER_MSVC FALSE)
 endif()
 
+if (MSVC)
+  if("${MSVC_C_ARCHITECTURE_ID}" STREQUAL "X86")
+    set(MSVC_PROCESSOR_ARCHITECTURE "x86")
+  elseif("${MSVC_C_ARCHITECTURE_ID}" STREQUAL "x64")
+    set(MSVC_PROCESSOR_ARCHITECTURE "amd64")
+  elseif("${MSVC_C_ARCHITECTURE_ID}" STREQUAL "ARM")
+    set(MSVC_PROCESSOR_ARCHITECTURE "arm")
+  elseif("${MSVC_C_ARCHITECTURE_ID}" STREQUAL "ARM64")
+    set(MSVC_PROCESSOR_ARCHITECTURE "arm64")
+  else()
+    message(FATAL_ERROR "Failed to determine the MSVC target architecture: ${MSVC_C_ARCHITECTURE_ID}")
+  endif()
+endif()
+
 ## Export build compilation database if possible
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
-## Enfore C/C++ standard
+## Enforce C/C++ standard
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 14)
 
 if (MSVC)
   set(CMAKE_CXX_STANDARD 17)
 endif()
+
+option(CLI "Build with cli." ON)
+option(SERVER "Build with server." ON)
+option(GUI "Build against GUI." OFF)
 
 # *****************************************************************************************
 #           Third Party Libraries
@@ -324,6 +342,41 @@ set(SUPPORT_LIBS
     absl::optional
     )
 
+# change wxWidgets_CONFIG_EXECUTABLE
+if (GUI AND (APPLE OR UNIX))
+    find_program(wxWidgets_CONFIG_EXECUTABLE
+      wx-config
+      PATHS /opt/wxWidgets/bin
+            /opt/local/Library/Frameworks/wxWidgets.framework/Versions/wxWidgets/3.1/bin
+            /opt/local/Library/Frameworks/wxWidgets.framework/Versions/wxWidgets/3.0/bin
+    )
+endif()
+
+if (MSVC AND GUI)
+  message(STATUS "Build with Platform $ENV{Platform}")
+  if (VCPKG_CRT_LINKAGE STREQUAL "dynamic")
+    message(STATUS "Build against MFC unicode dll")
+    add_definitions(-D_AFXDLL)
+    # for shared MFC library
+    set(CMAKE_MFC_UNICODE_FLAG 2)
+  else()
+    message(STATUS "Build against MFC unicode static library")
+    # for static MFC library
+    set(CMAKE_MFC_UNICODE_FLAG 1)
+    list(PREPEND SYSTEM_LIBS uafxcw$<$<CONFIG:Debug>:d> libcmt$<$<CONFIG:Debug>:d>)
+  endif()
+
+  # CMake's FindMFC doesn't cooperate with unicode version, use our version instead
+  # https://cmake.org/pipermail/cmake-developers/2014-November/023656.html
+  find_package(MFCUnicode REQUIRED)
+  if (NOT MFC_UNICODE_FOUND)
+    message(FATAL_ERROR "Required component MFC/AFX is not installed.")
+  endif()
+elseif (GUI)
+  find_package(wxWidgets COMPONENTS core base REQUIRED)
+endif()
+
+
 if (NOT MSAN AND NOT ASAN AND NOT TSAN AND NOT UBSAN)
     if (NOT APPLE AND NOT MSVC)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,defs -Wl,--as-needed")
@@ -422,6 +475,10 @@ if (COMPILER_GCC OR COMPILER_CLANG)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
   endif()
+
+  # ignore unknown prgramas, works for both of gcc and clang
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unknown-pragmas")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
 elseif (MSVC)
   set(MSVC_DISABLED_WARNINGS_LIST
       "C4061" # enumerator 'identifier' in switch of enum 'enumeration' is not
@@ -482,6 +539,21 @@ elseif (MSVC)
       "C4838" # conversion from 'type_1' to 'type_2' requires a narrowing conversion
       "C4996" # uses a function, class member, variable, or typedef that's marked deprecated.
       "C4324" # 'struct_name' : structure was padded due to __declspec(align())
+      "C4619" # #pragma warning : there is no warning number 'number'
+      "C4068" # The compiler ignored an unrecognized pragma.
+      "C4355" # STL suppression starts here
+      "C5220"
+      "C5204"
+      "C4355"
+      "C4774"
+      "C4987"
+      "C4582"
+      "C4583" # STL suppression ends here
+      "C5039" # abseil-cpp suppresion starts here
+      "C4946"
+      "C4995"
+      "C4868" # abseil-cpp suppresion ends here
+      "C5246" # ALT/MFC suppresion starts here
       )
   set(MSVC_LEVEL4_WARNINGS_LIST
       # See https://connect.microsoft.com/VisualStudio/feedback/details/1217660/warning-c4265-when-using-functional-header
@@ -493,6 +565,11 @@ elseif (MSVC)
                             ${MSVC_LEVEL4_WARNINGS_LIST})
   set(CMAKE_C_FLAGS   "-utf-8 -Wall -WX ${MSVC_DISABLED_WARNINGS_STR} ${MSVC_LEVEL4_WARNINGS_STR}")
   set(CMAKE_CXX_FLAGS "-utf-8 -Wall -WX ${MSVC_DISABLED_WARNINGS_STR} ${MSVC_LEVEL4_WARNINGS_STR}")
+  # Currently, STL is not cleanly compiled with /Wall
+  # VS 2017 and higher supports STL-only warning suppressions.
+  # https://github.com/microsoft/STL/blob/main/stl/inc/yvals_core.h#L479
+  # https://devblogs.microsoft.com/cppblog/stl-fixes-in-vs-2017-rtm/
+  add_definitions(-D_STL_EXTRA_DISABLED_WARNINGS=5220\ 5204\ 4355\ 4774\ 4987\ 4582\ 4583)
 endif()
 
 # *****************************************************************************************
@@ -592,6 +669,7 @@ else()
 
     ## C4530, The code uses C++ exception handling,
     ## but /EHsc wasn't included in the compiler options
+    ## https://docs.microsoft.com/en-us/cpp/build/reference/eh-exception-handling-model?view=msvc-170
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
 
     ## Optimization flags
@@ -793,8 +871,6 @@ endif()
 # *****************************************************************************************
 #           Source code
 # *****************************************************************************************
-option(CLI "Build with cli." ON)
-option(SERVER "Build with server." ON)
 
 set(files
     src/network.cpp
@@ -955,45 +1031,8 @@ if (SERVER)
 endif()
 
 # *****************************************************************************************
-#           Source code: extra part
+#           Source code: GUI part
 # *****************************************************************************************
-
-option(GUI "Build against GUI." OFF)
-
-# change wxWidgets_CONFIG_EXECUTABLE
-if (APPLE OR UNIX)
-    #set(wxWidgets_CONFIG_EXECUTABLE
-    find_program(wxWidgets_CONFIG_EXECUTABLE
-      wx-config
-      PATHS /opt/wxWidgets/bin
-            /opt/local/Library/Frameworks/wxWidgets.framework/Versions/wxWidgets/3.1/bin
-            /opt/local/Library/Frameworks/wxWidgets.framework/Versions/wxWidgets/3.0/bin
-    )
-endif()
-
-if (MSVC AND GUI)
-  message(STATUS "Build with Platform $ENV{Platform}")
-  if (VCPKG_CRT_LINKAGE STREQUAL "dynamic")
-    message(STATUS "Build against MFC unicode dll")
-    add_definitions(-D_AFXDLL)
-    # for shared MFC library
-    set(CMAKE_MFC_UNICODE_FLAG 2)
-  else()
-    message(STATUS "Build against MFC unicode static library")
-    # for static MFC library
-    set(CMAKE_MFC_UNICODE_FLAG 1)
-    list(PREPEND SYSTEM_LIBS uafxcw$<$<CONFIG:Debug>:d> libcmt$<$<CONFIG:Debug>:d>)
-  endif()
-
-  # CMake's FindMFC doesn't cooperate with unicode version, use our version instead
-  # https://cmake.org/pipermail/cmake-developers/2014-November/023656.html
-  find_package(MFCUnicode REQUIRED)
-  if (NOT MFC_UNICODE_FOUND)
-    message(FATAL_ERROR "Required component MFC/AFX is not installed.")
-  endif()
-elseif (GUI)
-  find_package(wxWidgets COMPONENTS core base REQUIRED)
-endif()
 
 if (GUI)
     set(APP_NAME yass)
@@ -1007,18 +1046,6 @@ if (GUI)
         )
 
     if (MSVC)
-        if("${MSVC_C_ARCHITECTURE_ID}" STREQUAL "X86")
-          set(MSVC_PROCESSOR_ARCHITECTURE "x86")
-        elseif("${MSVC_C_ARCHITECTURE_ID}" STREQUAL "x64")
-          set(MSVC_PROCESSOR_ARCHITECTURE "amd64")
-        elseif("${MSVC_C_ARCHITECTURE_ID}" STREQUAL "ARM")
-          set(MSVC_PROCESSOR_ARCHITECTURE "arm")
-        elseif("${MSVC_C_ARCHITECTURE_ID}" STREQUAL "ARM64")
-          set(MSVC_PROCESSOR_ARCHITECTURE "arm64")
-        else()
-          message(FATAL_ERROR "Failed to determine the MSVC target architecture: ${MSVC_C_ARCHITECTURE_ID}")
-        endif()
-
         set(msvc_manifest "${CMAKE_CURRENT_BINARY_DIR}/yass.manifest")
         configure_file("src/win32/yass.manifest.in" "${msvc_manifest}")
 

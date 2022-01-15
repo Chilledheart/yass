@@ -3,7 +3,18 @@
 #ifndef YASS_UTILS
 #define YASS_UTILS
 
+#ifdef _MSC_VER
+#pragma push
+// constructor is not implicitly called
+#pragma warning(disable : 4582)
+// destructor is not implicitly called
+#pragma warning(disable : 4583)
+#endif  // _MSC_VER
 #include <absl/status/statusor.h>
+#ifdef _MSC_VER
+#pragma pop
+#endif  // _MSC_VER
+
 #include <absl/strings/string_view.h>
 #include <cstdint>
 #include <string>
