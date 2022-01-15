@@ -32,6 +32,10 @@ wxDEFINE_EVENT(MY_EVENT, wxCommandEvent);
 
 wxIMPLEMENT_APP(YASSApp);
 
+YASSApp::~YASSApp() {
+  delete wxLog::SetActiveTarget(nullptr);
+}
+
 bool YASSApp::Initialize(int& wxapp_argc, wxChar** wxapp_argv) {
   if (!wxApp::Initialize(wxapp_argc, wxapp_argv))
     return false;
@@ -65,9 +69,8 @@ bool YASSApp::OnInit() {
   DCHECK(is_valid_cipher_method(
       static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
 
-  wxLog* logger = new YASSLog; // NOLINT
-  logger = wxLog::SetActiveTarget(logger);
-  delete logger;
+  logger_ = new YASSLog;
+  delete wxLog::SetActiveTarget(logger_);
 
   LOG(WARNING) << "Application starting";
 

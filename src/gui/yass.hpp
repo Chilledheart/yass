@@ -7,12 +7,16 @@
 #ifndef WX_PRECOMP
 #include <wx/wx.h>
 #endif
+
 #include "cli/cli_worker.hpp"
 
 class YASSFrame;
+class YASSLog;
 /// The main Application for YetAnotherShadowSocket
 class YASSApp : public wxApp {
  public:
+  ~YASSApp() override;
+
   // This is the very first function called for a newly created wxApp object,
   // it is used by the library to do the global initialization.
   bool Initialize(int& argc, wxChar** argv) override;
@@ -54,7 +58,8 @@ class YASSApp : public wxApp {
   YASSState state_;
 
   friend class YASSFrame;
-  YASSFrame* frame_;
+  YASSFrame* frame_ = nullptr;
+  YASSLog* logger_ = nullptr;
 
   Worker worker_;
   wxString error_msg_;
