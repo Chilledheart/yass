@@ -13,10 +13,14 @@ set(PACKAGE_PATCH_VERSION   0)
 if(POLICY CMP0091)
   cmake_policy(SET CMP0091 NEW)
 endif()
+# https://docs.microsoft.com/en-us/cpp/c-runtime-library/crt-library-features?redirectedfrom=MSDN&view=msvc-170
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:${VCPKG_CRT_LINKAGE},dynamic>:DLL>" CACHE STRING "")
 
 # Defer enabling C and CXX languages.
 project(${PACKAGE_NAME} NONE)
+
+include(cmake)
+list(PREPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 # Set variables used in configure_file
 set(YASS_APP_NAME ${PACKAGE_NAME})
@@ -491,6 +495,9 @@ if (MSVC)
       foreach(CompilerFlag ${CompilerFlags})
         string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
       endforeach()
+      foreach(CompilerFlag ${CompilerFlags})
+        string(REPLACE "/MDd" "/MTd" ${CompilerFlag} "${${CompilerFlag}}")
+      endforeach()
     endif()
 
     # disable precompiled head files for clang
@@ -805,20 +812,23 @@ endif()
 
 if (MSVC AND GUI)
   message(STATUS "Build with Platform $ENV{Platform}")
-
   if (VCPKG_CRT_LINKAGE STREQUAL "dynamic")
+    message(STATUS "Build against MFC unicode dll")
     add_definitions(-D_AFXDLL)
     # for shared MFC library
-    set(CMAKE_MFC_FLAG 2)
+    set(CMAKE_MFC_UNICODE_FLAG 2)
   else()
+    message(STATUS "Build against MFC unicode static library")
     # for static MFC library
-    set(CMAKE_MFC_FLAG 1)
+    set(CMAKE_MFC_UNICODE_FLAG 1)
+    list(PREPEND SYSTEM_LIBS uafxcw$<$<CONFIG:Debug>:d> libcmt$<$<CONFIG:Debug>:d>)
   endif()
 
-  find_package(MFC REQUIRED)
-  if (NOT MFC_FOUND)
-    message(SEND_ERROR "Required component MFC/AFX is not installed.")
-    message(FATAL_ERROR "If you're using VS2013, you'll also need the 'Multibyte MFC Library for Visual Studio 2013': https://www.microsoft.com/en-us/download/details.aspx?id=40770 (VS2015 and 2017 include that in the default MFC package)")
+  # CMake's FindMFC doesn't cooperate with unicode version, use our version instead
+  # https://cmake.org/pipermail/cmake-developers/2014-November/023656.html
+  find_package(MFCUnicode REQUIRED)
+  if (NOT MFC_UNICODE_FOUND)
+    message(FATAL_ERROR "Required component MFC/AFX is not installed.")
   endif()
 elseif (GUI)
   find_package(wxWidgets COMPONENTS core base REQUIRED)
@@ -914,6 +924,21 @@ if (GUI)
             COMPILE_PDB_NAME ${APP_NAME}
             COMPILE_PDB_OUTPUT_DIR ${CMAKE_BINARY_DIR}
         )
+
+        # CMake currently doesn't model the Windows application entry point for Unicode.
+        # It works in the Visual Studio generator only because this code and this code
+        # recognizes the _UNICODE definition and modifies the generated .vcxproj field
+        # for the CharacterSet accordingly.
+        # MSBuild turns this in to the proper link flag for /entry:wWinMainCRTStartup
+        # (or something like that).
+        # https://docs.microsoft.com/en-us/cpp/build/reference/entry-entry-point-symbol?view=msvc-170
+        # https://gitlab.kitware.com/cmake/cmake/-/issues/21202
+        get_target_property(_APP_LINK_FLAGS ${APP_NAME} LINK_FLAGS)
+        if (NOT _APP_LINK_FLAGS)
+          set(_APP_LINK_FLAGS "")
+        endif()
+        set_target_properties(${APP_NAME} PROPERTIES
+            LINK_FLAGS "${_APP_LINK_FLAGS} /ENTRY:wWinMainCRTStartup")
     endif()
 
     if (APPLE)

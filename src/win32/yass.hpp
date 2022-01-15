@@ -14,6 +14,7 @@ class CYassFrame;
 class CYassApp : public CWinApp {
  public:
   CYassApp();
+  ~CYassApp();
   // Application initialization is conceptually divided into two sections:
   // one-time application initialization that is done the first time
   // the program runs, and instance initialization that runs each time

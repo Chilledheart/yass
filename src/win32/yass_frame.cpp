@@ -39,7 +39,8 @@ static UINT BASED_CODE indicators[] = {
 
 IMPLEMENT_DYNCREATE(CYassFrame, CFrameWnd)
 
-CYassFrame::CYassFrame() {}
+CYassFrame::CYassFrame() = default;
+CYassFrame::~CYassFrame() = default;
 
 BEGIN_MESSAGE_MAP(CYassFrame, CFrameWnd)
   ON_WM_CREATE()

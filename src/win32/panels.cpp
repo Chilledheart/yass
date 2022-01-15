@@ -7,6 +7,11 @@
 #include "win32/utils.hpp"
 #include "win32/yass.hpp"
 
+LeftPanel::LeftPanel() = default;
+LeftPanel::~LeftPanel() = default;
+
+IMPLEMENT_DYNCREATE(LeftPanel, CDockablePane)
+
 BEGIN_MESSAGE_MAP(LeftPanel, CPane)
   ON_WM_CREATE()
 END_MESSAGE_MAP()
@@ -37,6 +42,11 @@ void LeftPanel::OnStop() {
   stop_button_.EnableWindow(false);
   mApp->OnStop();
 }
+
+RightPanel::RightPanel() = default;
+RightPanel::~RightPanel() = default;
+
+IMPLEMENT_DYNCREATE(RightPanel, CDockablePane)
 
 BEGIN_MESSAGE_MAP(RightPanel, CPane)
   ON_WM_CREATE()

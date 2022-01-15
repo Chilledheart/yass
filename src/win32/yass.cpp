@@ -18,8 +18,6 @@
 #include "win32/utils.hpp"
 #include "win32/yass_frame.hpp"
 
-CYassApp* mApp = nullptr;
-
 // https://docs.microsoft.com/en-us/windows/win32/winmsg/about-messages-and-message-queues
 // https://docs.microsoft.com/en-us/cpp/mfc/reference/message-map-macros-mfc?view=msvc-170#on_thread_message
 BEGIN_MESSAGE_MAP(CYassApp, CWinApp)
@@ -29,8 +27,11 @@ BEGIN_MESSAGE_MAP(CYassApp, CWinApp)
 END_MESSAGE_MAP()
 
 CYassApp::CYassApp() = default;
+CYassApp::~CYassApp() = default;
 
 CYassApp theApp;
+
+CYassApp* mApp = &theApp;
 
 BOOL CYassApp::InitInstance() {
   if (!CheckFirstInstance())
@@ -41,7 +42,7 @@ BOOL CYassApp::InitInstance() {
 
   // TODO move to utils
   std::wstring appPath(MAX_PATH + 1, L'\0');
-  GetModuleFileNameW(nullptr, appPath.data(), MAX_PATH);
+  ::GetModuleFileNameW(nullptr, &appPath[0], MAX_PATH);
   absl::InitializeSymbolizer(SysWideToUTF8(appPath).c_str());
   absl::FailureSignalHandlerOptions failure_handle_options;
   absl::InstallFailureSignalHandler(failure_handle_options);
@@ -51,12 +52,12 @@ BOOL CYassApp::InitInstance() {
   LPWSTR* warglist;
   int num_arg = 0;
 
-  warglist = CommandLineToArgvW(GetCommandLineW(), &num_arg);
+  warglist = ::CommandLineToArgvW(::GetCommandLineW(), &num_arg);
   auto arglist = std::make_unique<char*[]>(num_arg);
   std::vector<std::string> argv;
   for (int current_arg = 0; current_arg != num_arg; ++current_arg) {
     argv.push_back(SysWideToUTF8(warglist[current_arg]));
-    arglist[current_arg] = argv[current_arg].data();
+    arglist[current_arg] = const_cast<char*>(argv[current_arg].data());
   }
   absl::ParseCommandLine(argv.size(), arglist.get());
 
@@ -77,7 +78,6 @@ BOOL CYassApp::InitInstance() {
 
   LOG(WARNING) << "Application starting";
 
-  mApp = this;
   state_ = STOPPED;
 
   if (Utils::SetProcessDpiAwareness()) {
@@ -143,7 +143,7 @@ void CYassApp::OnStart(bool quiet) {
 
   std::function<void(asio::error_code)> callback;
   if (!quiet) {
-    callback = [= main_thread_id](asio::error_code ec) {
+    callback = [main_thread_id](asio::error_code ec) {
       bool successed = false;
       char* message = nullptr;
       int message_size = 0;
@@ -164,8 +164,8 @@ void CYassApp::OnStart(bool quiet) {
           main_thread_id, successed ? WM_MYAPP_STARTED : WM_MYAPP_START_FAILED,
           static_cast<WPARAM>(message_size), reinterpret_cast<LPARAM>(message));
       if (!ret) {
-        LOG(WARING) << "Failed to post message to main thread: " << std::hex
-                    << ::GetLastError() << std::dec;
+        LOG(WARNING) << "Failed to post message to main thread: " << std::hex
+                     << ::GetLastError() << std::dec;
       }
     };
   }
@@ -177,12 +177,12 @@ void CYassApp::OnStop(bool quiet) {
   state_ = STOPPING;
   std::function<void()> callback;
   if (!quiet) {
-    callback = [= main_thread_id]() {
+    callback = [main_thread_id]() {
       bool ret;
-      ret = ::PostThreadMessage(main_thread_id, WM_MYAPP_STOPPED, nullptr, 0);
+      ret = ::PostThreadMessage(main_thread_id, WM_MYAPP_STOPPED, 0, 0);
       if (!ret) {
-        LOG(WARING) << "Failed to post message to main thread: " << std::hex
-                    << ::GetLastError() << std::dec;
+        LOG(WARNING) << "Failed to post message to main thread: " << std::hex
+                     << ::GetLastError() << std::dec;
       }
     };
   }
