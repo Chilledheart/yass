@@ -14,9 +14,11 @@
 #include <shellscalingapi.h>
 #include <windows.h>
 
+namespace {
 HANDLE EnsureShcoreLoaded() {
   return LoadLibraryExW(L"Shcore.dll", nullptr, 0);
 }
+}  // namespace
 
 typedef HRESULT(__stdcall* PFNSETPROCESSDPIAWARENESS)(PROCESS_DPI_AWARENESS);
 
