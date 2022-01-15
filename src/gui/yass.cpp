@@ -65,8 +65,9 @@ bool YASSApp::OnInit() {
   DCHECK(is_valid_cipher_method(
       static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
 
-  wxLog* logger = new YASSLog;
-  wxLog::SetActiveTarget(logger);
+  wxLog* logger = new YASSLog; // NOLINT
+  logger = wxLog::SetActiveTarget(logger);
+  delete logger;
 
   LOG(WARNING) << "Application starting";
 

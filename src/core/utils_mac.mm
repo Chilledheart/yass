@@ -245,7 +245,7 @@ static StringType CFStringToSTLStringWithEncodingT(CFStringRef cfstring,
                                        encoding,
                                        0,      // lossByte
                                        false,  // isExternalRepresentation
-                                       NULL,   // buffer
+                                       nullptr,// buffer
                                        0,      // maxBufLen
                                        &out_size);
   if (converted == 0 || out_size == 0)
@@ -267,7 +267,7 @@ static StringType CFStringToSTLStringWithEncodingT(CFStringRef cfstring,
                                false,  // isExternalRepresentation
                                reinterpret_cast<UInt8*>(&out_buffer[0]),
                                out_size,
-                               NULL);  // usedBufLen
+                               nullptr);  // usedBufLen
   if (converted == 0)
     return StringType();
 
@@ -290,7 +290,7 @@ static OutStringType STLStringToSTLStringWithEncodingsT(
     return OutStringType();
 
   CFStringRef cfstring(CFStringCreateWithBytesNoCopy(
-      NULL,
+      nullptr,
       reinterpret_cast<const UInt8*>(in.data()),
       in_length * sizeof(typename InStringType::value_type),
       in_encoding,
@@ -607,7 +607,7 @@ CF_CAST_DEFN(CTFont)
 // and rely just on the one CF_CAST_DEFN(CTFont).
 template<> CTFontRef
 CFCast<CTFontRef>(const CFTypeRef& cf_val) {
-  if (cf_val == NULL) {
+  if (cf_val == nullptr) {
     return NULL;
   }
   if (CFGetTypeID(cf_val) == CTFontGetTypeID()) {
@@ -615,19 +615,19 @@ CFCast<CTFontRef>(const CFTypeRef& cf_val) {
   }
 
   if (!_CFIsObjC(CTFontGetTypeID(), cf_val))
-    return NULL;
+    return nullptr;
 
   id<NSObject> ns_val = reinterpret_cast<id>(const_cast<void*>(cf_val));
   if ([ns_val isKindOfClass:[NSFont class]]) {
     return (CTFontRef)(cf_val);
   }
-  return NULL;
+  return nullptr;
 }
 
 template<> CTFontRef
 CFCastStrict<CTFontRef>(const CFTypeRef& cf_val) {
   CTFontRef rv = CFCast<CTFontRef>(cf_val);
-  DCHECK(cf_val == NULL || rv);
+  DCHECK(cf_val == nullptr || rv);
   return rv;
 }
 #endif
