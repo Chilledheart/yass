@@ -8,6 +8,9 @@
 
 #include "core/logging.hpp"
 
+// TODO not working with ABSL_PRINTF_ARG_ATTRIBUTE
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
 // Overloaded wrappers around vsnprintf and vswprintf. The buf_size parameter
 // is the size of the buffer. These return the number of characters in the
 // formatted string excluding the NUL terminator. If the buffer is not
@@ -29,6 +32,7 @@ inline int vsnprintfT(wchar_t* buffer,
   return ::vswprintf(buffer, buf_size, format, argptr);
 }
 #endif
+#pragma GCC diagnostic pop
 
 // Templatized backend for StringPrintF/StringAppendF. This does not finalize
 // the va_list, the caller is expected to do that.

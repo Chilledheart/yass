@@ -8,6 +8,11 @@
 #include <cstdint>
 #include <string>
 
+#ifdef __APPLE__
+#include <AvailabilityMacros.h>
+#include <CoreFoundation/CoreFoundation.h>
+#endif
+
 uint64_t GetMonotonicTime();
 #define NS_PER_SECOND (1000 * 1000 * 1000)
 
@@ -24,6 +29,12 @@ std::wstring SysMultiByteToWide(absl::string_view mb, uint32_t code_page);
 
 std::string SysWideToMultiByte(const std::wstring& wide, uint32_t code_page);
 
+// Converts between wide and the system multi-byte representations of a string.
+// DANGER: This will lose information and can change (on Windows, this can
+// change between reboots).
+std::string SysWideToNativeMB(const std::wstring& wide);
+std::wstring SysNativeMBToWide(absl::string_view native_mb);
+
 // Windows-specific ------------------------------------------------------------
 #ifdef _WIN32
 // Converts between 8-bit and wide strings, using the given code page. The
@@ -33,6 +44,50 @@ std::string SysWideToNativeMB(const std::wstring& wide);
 
 std::wstring SysNativeMBToWide(absl::string_view native_mb);
 #endif
+
+// Mac-specific ----------------------------------------------------------------
+
+#ifdef __APPLE__
+
+#if defined(__OBJC__)
+#import <Foundation/Foundation.h>
+@class NSFont;
+@class UIFont;
+#else  // __OBJC__
+#include <CoreFoundation/CoreFoundation.h>
+class NSBundle;
+class NSFont;
+class NSString;
+class UIFont;
+#endif  // __OBJC__
+
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+#include <CoreText/CoreText.h>
+#else
+#include <ApplicationServices/ApplicationServices.h>
+#endif
+
+// Converts between STL strings and CFStringRefs/NSStrings.
+
+// Creates a string, and returns it with a refcount of 1. You are responsible
+// for releasing it. Returns NULL on failure.
+CFStringRef SysUTF8ToCFStringRef(absl::string_view utf8);
+CFStringRef SysUTF16ToCFStringRef(const std::u16string& utf16);
+
+// Same, but returns an autoreleased NSString.
+NSString* SysUTF8ToNSString(absl::string_view utf8);
+NSString* SysUTF16ToNSString(const std::u16string& utf16);
+
+// Converts a CFStringRef to an STL string. Returns an empty string on failure.
+std::string SysCFStringRefToUTF8(CFStringRef ref);
+std::u16string SysCFStringRefToUTF16(CFStringRef ref);
+
+// Same, but accepts NSString input. Converts nil NSString* to the appropriate
+// string type of length 0.
+std::string SysNSStringToUTF8(NSString* ref);
+std::u16string SysNSStringToUTF16(NSString* ref);
+
+#endif  // __APPLE__
 
 extern const char kSeparators[];
 

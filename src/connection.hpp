@@ -4,17 +4,12 @@
 #ifndef H_CONNECTION
 #define H_CONNECTION
 
-#include <asio/buffer.hpp>
-#include <asio/error.hpp>
-#include <asio/io_context.hpp>
-#include <asio/ip/tcp.hpp>
-#include <asio/ip/udp.hpp>
 #include <deque>
 #include <functional>
 #include <utility>
 
 #include "config/config.hpp"
-#include "core/asio_throw_exceptions.hpp"
+#include "core/asio.hpp"
 #include "core/logging.hpp"
 #include "network.hpp"
 #include "protocol.hpp"

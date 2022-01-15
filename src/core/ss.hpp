@@ -5,9 +5,8 @@
 #define H_SS
 
 #include <stdint.h>
-#include <asio/ip/address.hpp>
 
-#include "core/asio_throw_exceptions.hpp"
+#include "core/asio.hpp"
 #include "core/logging.hpp"
 
 namespace ss {

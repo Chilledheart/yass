@@ -8,16 +8,10 @@
 #include <malloc.h>
 #endif
 
-#include <asio/buffer.hpp>
-#include <asio/error.hpp>
-#include <asio/error_code.hpp>
-#include <asio/io_context.hpp>
-#include <asio/ip/tcp.hpp>
-#include <asio/ip/udp.hpp>
 #include <functional>
 #include <utility>
 
-#include "core/asio_throw_exceptions.hpp"
+#include "core/asio.hpp"
 #include "core/iobuf.hpp"
 #include "core/logging.hpp"
 

@@ -61,6 +61,8 @@
 #endif
 
 // TODO: move to file_utils.cpp
+static bool ReadFromFD(int fd, char* buffer, size_t bytes);
+
 bool ReadFromFD(int fd, char* buffer, size_t bytes) {
   size_t total_read = 0;
   while (total_read < bytes) {

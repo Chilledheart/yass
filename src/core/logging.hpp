@@ -94,6 +94,14 @@ using absl::LogSeverity;
 #define ABSL_ATTRIBUTE_NORETURN_ATTRIBUTE
 #endif
 
+#if ABSL_HAVE_ATTRIBUTE(format_arg) || \
+    (defined(__GNUC__) && !defined(__clang__))
+#define ABSL_PRINTF_ARG_ATTRIBUTE(string_index) \
+  __attribute__((format_arg(string_index)))
+#else
+#define ABSL_PRINTF_ARG_ATTRIBUTE(string_index)
+#endif
+
 #if STRIP_LOG == 0
 #define COMPACT_LOG_INFO LogMessage(__FILE__, __LINE__)
 #define LOG_TO_STRING_INFO(message) \

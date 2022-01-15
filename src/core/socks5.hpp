@@ -6,10 +6,6 @@
 
 #include <stdint.h>
 #include <array>
-#include <asio/buffers_iterator.hpp>
-#include <asio/ip/address_v4.hpp>
-#include <asio/ip/address_v6.hpp>
-#include <asio/ip/tcp.hpp>
 #include <string>
 #include <tuple>
 
@@ -17,7 +13,7 @@
 #include <malloc.h>
 #endif
 
-#include "core/asio_throw_exceptions.hpp"
+#include "core/asio.hpp"
 #include "core/iobuf.hpp"
 #include "core/ss.hpp"
 

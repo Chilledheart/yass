@@ -16,14 +16,20 @@
 
 using namespace socks5;
 
+namespace {
 asio::ip::tcp::endpoint resolveEndpoint(asio::io_context* io_context,
                                         const std::string& host,
                                         uint16_t port) {
   asio::error_code ec = asio::error_code();
   asio::ip::tcp::resolver resolver(*io_context);
   auto endpoints = resolver.resolve(host, std::to_string(port), ec);
+  if (ec) {
+    LOG(WARNING) << "name resolved failed due to: " << ec;
+    return asio::ip::tcp::endpoint();
+  }
   return endpoints->endpoint();
 }
+}  // namespace
 
 int main(int argc, const char* argv[]) {
   // Major routine

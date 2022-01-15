@@ -46,6 +46,8 @@
 #include <dirent.h>  // for automatic removal of old logs
 #endif
 
+#include "core/utils.hpp"
+
 #ifdef _MSC_VER
 // we have strncasecmp in mingw
 #define strncasecmp _strnicmp
@@ -132,13 +134,6 @@ static StringType CFStringToSTLStringWithEncodingT(CFStringRef cfstring,
 
   out_buffer[elements - 1] = '\0';
   return StringType(&out_buffer[0], elements - 1);
-}
-// Specify the byte ordering explicitly, otherwise CFString will be confused
-// when strings don't carry BOMs, as they typically won't.
-static const CFStringEncoding kNarrowStringEncoding = kCFStringEncodingUTF8;
-std::string SysCFStringRefToUTF8(CFStringRef ref) {
-  return CFStringToSTLStringWithEncodingT<std::string>(ref,
-                                                       kNarrowStringEncoding);
 }
 
 #define safe_write(fd, buf, count) write(fd, buf, count)
@@ -312,7 +307,9 @@ ABSL_FLAG(bool, log_utc_time, false, "Use UTC time for logging.");
 #define ARRAYSIZE(a) (sizeof(a) / sizeof(*(a)))
 #endif
 
-uint64_t TickCount() {
+static uint64_t MonotoicTickCount();
+
+uint64_t MonotoicTickCount() {
 #if defined(_WIN32)
   return GetTickCount();
 #elif defined(__APPLE__)
@@ -738,7 +735,7 @@ LogDestination::~LogDestination() {
   }
 }
 
-inline void LogDestination::FlushLogFilesUnsafe(int min_severity) {
+inline void LogDestination::FlushLogFilesUnsafe(int /*min_severity*/) {
   // assume we have the log_mutex or we simply don't care
   // about it
   for (LogDestination* log : LogDestination::log_destinations_) {
@@ -885,6 +882,8 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
                                              const char* message,
                                              size_t message_len,
                                              size_t prefix_len) {
+  (void)prefix_len;
+
   if ((static_cast<int>(severity) >= absl::GetFlag(FLAGS_stderrthreshold)) ||
       absl::GetFlag(FLAGS_alsologtostderr)) {
 #ifdef _WIN32
@@ -1171,7 +1170,7 @@ LogFileObject::LogFileObject(LogSeverity severity, const char* base_filename)
       file_length_(0),
       rollover_attempt_(kRolloverAttemptFrequency - 1),
       next_flush_time_(0),
-      start_time_(TickCount()) {
+      start_time_(MonotoicTickCount()) {
   assert(static_cast<int>(severity) >= 0 &&
          static_cast<int>(severity) < NUM_SEVERITIES);
 }
@@ -1338,7 +1337,7 @@ bool LogFileObject::CreateLogfile(const std::string& time_pid_string) {
 }
 
 void LogFileObject::Write(bool force_flush,
-                          uint64_t tick_counts,
+                          uint64_t /*tick_counts*/,
                           const char* message,
                           int message_len) {
   absl::MutexLock l(&lock_);
@@ -1465,7 +1464,7 @@ void LogFileObject::Write(bool force_flush,
     }
 
     file_header_stream << "Running duration (monotonic time): "
-                       << TickCount() - start_time_ << '\n'
+                       << MonotoicTickCount() - start_time_ << '\n'
                        << "Log line format: monotonic time "
                        << "threadid file:line] msg" << '\n';
     const std::string& file_header_string = file_header_stream.str();
@@ -1843,7 +1842,7 @@ void LogMessage::Init(const char* file,
   data_->send_method_ = send_method;
   data_->outvec_ = nullptr;
   data_->sink_ = nullptr;
-  data_->tick_counts_ = TickCount();
+  data_->tick_counts_ = MonotoicTickCount();
 
   data_->num_chars_to_log_ = 0;
   data_->basename_ = const_basename(file);
@@ -2464,6 +2463,8 @@ DEFINE_CHECK_STROP_IMPL(CHECK_STRCASEEQ, strcasecmp, true)
 DEFINE_CHECK_STROP_IMPL(CHECK_STRCASENE, strcasecmp, false)
 #undef DEFINE_CHECK_STROP_IMPL
 
+static const char* StrErrorAdaptor(int errnum, char* buf, size_t buflen);
+
 const char* StrErrorAdaptor(int errnum, char* buf, size_t buflen) {
 #if defined(_WIN32)
   int rc = strerror_s(buf, buflen, errnum);
@@ -2609,7 +2610,7 @@ void MakeCheckOpValueString(std::ostream* os, const unsigned char& v) {
 }
 
 template <>
-void MakeCheckOpValueString(std::ostream* os, const std::nullptr_t& v) {
+void MakeCheckOpValueString(std::ostream* os, const std::nullptr_t& /*v*/) {
   (*os) << "nullptr";
 }
 
@@ -2993,7 +2994,7 @@ bool PidHasChanged() {
 // CHECK/DCHECKs.
 thread_local pid_t g_thread_id = -1;
 
-void ClearTidCache() {
+static void ClearTidCache() {
   g_thread_id = -1;
 }
 
@@ -3107,6 +3108,10 @@ bool SetCrashReason(const CrashReason* r) {
 // Helper for RawLog__ below.
 // *DoRawLog writes to *buf of *size and move them past the written portion.
 // It returns true iff there was no overflow or error.
+
+static bool DoRawLog(char** buf, int* size, const char* format, ...)
+    ABSL_PRINTF_ATTRIBUTE(3, 4);
+
 static bool DoRawLog(char** buf, int* size, const char* format, ...) {
   va_list ap;
   va_start(ap, format);
@@ -3119,11 +3124,11 @@ static bool DoRawLog(char** buf, int* size, const char* format, ...) {
   return true;
 }
 
+// TODO not working with ABSL_PRINTF_ARG_ATTRIBUTE
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
 // Helper for RawLog__ below.
-inline static bool VADoRawLog(char** buf,
-                              int* size,
-                              const char* format,
-                              va_list ap) {
+static bool VADoRawLog(char** buf, int* size, const char* format, va_list ap) {
   int n = vsnprintf(*buf, *size, format, ap);
   if (n < 0 || n > *size)
     return false;
@@ -3131,6 +3136,7 @@ inline static bool VADoRawLog(char** buf,
   *buf += n;
   return true;
 }
+#pragma GCC diagnostic pop
 
 static const int kLogBufSize = 3000;
 static std::atomic<bool> crashed;
