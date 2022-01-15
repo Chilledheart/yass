@@ -19,32 +19,9 @@ call "%vsdevcmd%" -arch=x86 -host_arch=amd64
 set CC=
 set CXX=
 set Platform=x86
+set CMAKE_EXTRA_OPTIONS=
 
-cd third_party\boringssl
-mkdir "%Platform%"
-mkdir "%Platform%\debug"
-
-if not exist "%Platform%\debug\crypto.lib" (
-  mkdir build
-  cd build
-  cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Debug .. || exit /b 1
-  ninja crypto || exit /b 1
-  copy /y crypto\crypto.lib "..\%Platform%\debug\crypto.lib"
-  cd ..
-  rmdir build /s /q
-)
-
-if not exist "%Platform%\crypto.lib" (
-  mkdir build
-  cd build
-  cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release .. || exit /b 1
-  ninja crypto || exit /b 1
-  copy /y crypto\crypto.lib "..\%Platform%\crypto.lib"
-  cd ..
-  rmdir build /s /q
-)
-
-cd ..\..
+call :BuildBoringSSL %Platform% %CMAKE_EXTRA_OPTIONS%
 
 python.exe -u .\scripts\build.py || exit /b
 
@@ -53,32 +30,9 @@ call "%vsdevcmd%" -arch=amd64 -host_arch=amd64
 set CC=
 set CXX=
 set Platform=x64
+set CMAKE_EXTRA_OPTIONS=
 
-cd third_party\boringssl
-mkdir "%Platform%"
-mkdir "%Platform%\debug"
-
-if not exist "%Platform%\debug\crypto.lib" (
-  mkdir build
-  cd build
-  cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Debug .. || exit /b 1
-  ninja crypto || exit /b 1
-  copy /y crypto\crypto.lib "..\%Platform%\debug\crypto.lib"
-  cd ..
-  rmdir build /s /q
-)
-
-if not exist "%Platform%\crypto.lib" (
-  mkdir build
-  cd build
-  cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release .. || exit /b 1
-  ninja crypto || exit /b 1
-  copy /y crypto\crypto.lib "..\%Platform%\crypto.lib"
-  cd ..
-  rmdir build /s /q
-)
-
-cd ..\..
+call :BuildBoringSSL %Platform% %CMAKE_EXTRA_OPTIONS%
 
 python.exe -u .\scripts\build.py || exit /b
 
@@ -88,6 +42,16 @@ set CC=
 set CXX=
 set Platform=arm64
 
+set CMAKE_EXTRA_OPTIONS=-DOPENSSL_NO_ASM=on
+
+call :BuildBoringSSL %Platform% %CMAKE_EXTRA_OPTIONS%
+
+python.exe -u .\scripts\build.py || exit /b
+
+exit /b 0
+
+:BuildBoringSSL
+
 cd third_party\boringssl
 mkdir "%Platform%"
 mkdir "%Platform%\debug"
@@ -95,9 +59,10 @@ mkdir "%Platform%\debug"
 if not exist "%Platform%\debug\crypto.lib" (
   mkdir build
   cd build
-  cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Debug -DOPENSSL_NO_ASM=on .. || exit /b 1
+  cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Debug %CMAKE_EXTRA_OPTIONS% .. || exit /b 1
   ninja crypto || exit /b 1
   copy /y crypto\crypto.lib "..\%Platform%\debug\crypto.lib"
+  copy /y crypto\crypto.pdb "..\%Platform%\debug\crypto.pdb"
   cd ..
   rmdir build /s /q
 )
@@ -105,13 +70,12 @@ if not exist "%Platform%\debug\crypto.lib" (
 if not exist "%Platform%\crypto.lib" (
   mkdir build
   cd build
-  cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DOPENSSL_NO_ASM=on .. || exit /b 1
+  cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release %CMAKE_EXTRA_OPTIONS% .. || exit /b 1
   ninja crypto || exit /b 1
   copy /y crypto\crypto.lib "..\%Platform%\crypto.lib"
+  copy /y crypto\crypto.pdb "..\%Platform%\crypto.pdb"
   cd ..
   rmdir build /s /q
 )
 
 cd ..\..
-
-python.exe -u .\scripts\build.py || exit /b
