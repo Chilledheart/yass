@@ -482,7 +482,7 @@ if (COMPILER_GCC OR COMPILER_CLANG)
   # TODO not compatible with LTO now
   # https://clang.llvm.org/docs/LTOVisibility.html
   # please note it afffects windows platform as well
-  if (NOT APPLE)
+  if (NOT APPLE AND NOT MSVC)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
   endif()

@@ -23,7 +23,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   uint64_t value = bytes;
   char ci[] = {"KMGTPE"};
   const char* c = ci;
-  for (unsigned i = 40; i >= 0 && bytes > 0xfffccccccccccccLU >> i; i -= 10) {
+  for (int i = 40; i >= 0 && bytes > 0xfffccccccccccccLU >> i; i -= 10) {
     value >>= 10;
     ++c;
   }
