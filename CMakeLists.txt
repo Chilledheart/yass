@@ -363,7 +363,6 @@ if (MSVC AND GUI)
     message(STATUS "Build against MFC unicode static library")
     # for static MFC library
     set(CMAKE_MFC_UNICODE_FLAG 1)
-    list(PREPEND SYSTEM_LIBS uafxcw$<$<CONFIG:Debug>:d> libcmt$<$<CONFIG:Debug>:d>)
   endif()
 
   # CMake's FindMFC doesn't cooperate with unicode version, use our version instead
@@ -372,8 +371,20 @@ if (MSVC AND GUI)
   if (NOT MFC_UNICODE_FOUND)
     message(FATAL_ERROR "Required component MFC/AFX is not installed.")
   endif()
+  set(GUI_USE_FILE "")
+  set(GUI_INCLUDE_DIRS "")
+  set(GUI_LIBRARIES uafxcw$<$<CONFIG:Debug>:d> libcmt$<$<CONFIG:Debug>:d>)
+  set(GUI_CXX_FLAGS "")
+  set(GUI_DEFINITIONS "")
+  set(GUI_LIBRARY "")
 elseif (GUI)
   find_package(wxWidgets COMPONENTS core base REQUIRED)
+  set(GUI_USE_FILE ${wxWidgets_USE_FILE})
+  set(GUI_INCLUDE_DIRS ${wxWidgets_INCLUDE_DIRS})
+  set(GUI_LIBRARIES ${wxWidgets_LIBRARIES})
+  set(GUI_CXX_FLAGS ${wxWidgets_CXX_FLAGS})
+  set(GUI_DEFINITIONS ${wxWidgets_DEFINITIONS})
+  set(GUI_LIBRARY ${wxWidgets_LIBRARY_DIRS})
 endif()
 
 
@@ -1046,11 +1057,11 @@ if (GUI)
         )
 
     if (MSVC)
-        set(msvc_manifest "${CMAKE_CURRENT_BINARY_DIR}/yass.manifest")
-        configure_file("src/win32/yass.manifest.in" "${msvc_manifest}")
+        set(APP_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass.manifest")
+        configure_file("src/win32/yass.manifest.in" "${APP_MSVC_MANIFEST}")
 
         list(APPEND SRC_FILES
-          ${msvc_manifest}
+          ${APP_MSVC_MANIFEST}
           src/win32/yass.rc
           src/win32/yass.cpp
           src/win32/yass_frame.cpp
@@ -1079,7 +1090,7 @@ if (GUI)
 
     add_executable(${APP_NAME} WIN32 MACOSX_BUNDLE
         ${SRC_FILES}
-        ${wxWidgets_USE_FILE}
+        ${GUI_USE_FILE}
         )
 
     target_include_directories(${APP_NAME} PRIVATE
@@ -1089,7 +1100,7 @@ if (GUI)
       target_include_directories(${APP_NAME} PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/src/gui)
       target_include_directories(${APP_NAME} SYSTEM PRIVATE
-          ${wxWidgets_INCLUDE_DIRS})
+          ${GUI_INCLUDE_DIRS})
     else()
       target_include_directories(${APP_NAME} PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/src/win32)
@@ -1097,15 +1108,15 @@ if (GUI)
 
     target_link_libraries(${APP_NAME} PUBLIC
         ${SUPPORT_LIBS}
-        ${wxWidgets_LIBRARIES}
+        ${GUI_LIBRARIES}
         )
 
-    target_compile_options(${APP_NAME} PRIVATE ${wxWidgets_CXX_FLAGS})
-    foreach(DEF IN LISTS wxWidgets_DEFINITIONS)
-        target_compile_definitions(${APP_NAME} PRIVATE ${DEF})
+    target_compile_options(${APP_NAME} PRIVATE ${GUI_CXX_FLAGS})
+    foreach(GUI_DEFINITION IN LISTS GUI_DEFINITIONS)
+        target_compile_definitions(${APP_NAME} PRIVATE ${GUI_DEFINITION})
     endforeach()
 
-    target_link_directories(${APP_NAME} PRIVATE ${wxWidgets_LIBRARY_DIRS})
+    target_link_directories(${APP_NAME} PRIVATE ${GUI_LIBRARY_DIRS})
 
     if (MSVC)
         set_target_properties(${APP_NAME} PROPERTIES
