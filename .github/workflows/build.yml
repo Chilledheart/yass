@@ -391,69 +391,69 @@ jobs:
         with:
           name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}-sha256 ${{ env.SHA256SUM }}
           path: sha256sum.txt
-##win-clang-tidy:
-##  needs: cache-toolchain-win
-##  runs-on: windows-latest
-##  strategy:
-##    fail-fast: false
-##    matrix:
-##      arch: [x64, x86, arm64]
-##      build_type: [Debug, RelWithDebInfo]
-##  env:
-##    ENABLE_CLANG_TIDY: '1'
-##    BUILD_TYPE: '${{ matrix.build_type }}'
-##    VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
-##  steps:
-##    - uses: actions/checkout@v2
-##      with:
-##        submodules: 'true'
-##    - name: Cache clang and nasm
-##      uses: actions/cache@v2
-##      with:
-##        path: |
-##          third_party/nasm
-##          third_party/llvm-build/Release+Asserts
-##        key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-##    - name: Get vcpkg commit
-##      run: |
-##        IFS=" " read -r -a array <<< $VCPKG_DEPS
-##        for VCPKG_DEP in ${VCPKG_DEPS[@]}; do
-##          echo "$(openssl sha256 /c/vcpkg/ports/$VCPKG_DEP/vcpkg.json) $VCPKG_DEP" >> vcpkg.lock
-##        done
-##    - name: Cache vcpkg packages
-##      uses: actions/cache@v2
-##      with:
-##        path: |
-##          third_party/vcpkg-installed
-##        key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
-##    - name: Restore vcpkg from local tree
-##      run: cp -rv third_party/vcpkg-installed/* /c/vcpkg/
-##    - name: Get boringssl commit
-##      run: |
-##        git submodule status third_party/boringssl >> boringssl.lock
-##    - name: Cache boringssl packages
-##      uses: actions/cache@v2
-##      with:
-##        path: |
-##          third_party/boringssl/crypto.lib
-##          third_party/boringssl/crypto.pdb
-##          third_party/boringssl/vc140.pdb
-##          third_party/boringssl/debug/crypto.lib
-##          third_party/boringssl/debug/crypto.pdb
-##          third_party/boringssl/debug/vc140.pdb
-##        key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
-##    - name: Build
-##      run: |
-##        set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
-##        set "VSCMD_START_DIR=%CD%"
-##        call "%vsdevcmd%" -arch=${{ matrix.arch }} -host_arch=amd64
-##        set CC=
-##        set CXX=
-##        set Platform=${{ matrix.arch }}
+  win-clang-tidy:
+    needs: cache-toolchain-win
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, x86, arm64]
+        build_type: [Debug, RelWithDebInfo]
+    env:
+      ENABLE_CLANG_TIDY: '1'
+      BUILD_TYPE: '${{ matrix.build_type }}'
+      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
+      - name: Cache clang and nasm
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/nasm
+            third_party/llvm-build/Release+Asserts
+          key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+      - name: Get vcpkg commit
+        run: |
+          IFS=" " read -r -a array <<< $VCPKG_DEPS
+          for VCPKG_DEP in ${VCPKG_DEPS[@]}; do
+            echo "$(openssl sha256 /c/vcpkg/ports/$VCPKG_DEP/vcpkg.json) $VCPKG_DEP" >> vcpkg.lock
+          done
+      - name: Cache vcpkg packages
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/vcpkg-installed
+          key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
+      - name: Restore vcpkg from local tree
+        run: cp -rv third_party/vcpkg-installed/* /c/vcpkg/
+      - name: Get boringssl commit
+        run: |
+          git submodule status third_party/boringssl >> boringssl.lock
+      - name: Cache boringssl packages
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/boringssl/crypto.lib
+            third_party/boringssl/crypto.pdb
+            third_party/boringssl/vc140.pdb
+            third_party/boringssl/debug/crypto.lib
+            third_party/boringssl/debug/crypto.pdb
+            third_party/boringssl/debug/vc140.pdb
+          key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
+      - name: Build
+        run: |
+          set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
+          set "VSCMD_START_DIR=%CD%"
+          call "%vsdevcmd%" -arch=${{ matrix.arch }} -host_arch=amd64
+          set CC=
+          set CXX=
+          set Platform=${{ matrix.arch }}
 
-##        set "CLANG_TIDY_EXECUTABLE=%CD%/third_party/llvm-build/Release+Asserts/bin/clang-tidy.exe"
-##        python .\scripts\build.py || exit /b
-##      shell: cmd
+          set "CLANG_TIDY_EXECUTABLE=%CD%/third_party/llvm-build/Release+Asserts/bin/clang-tidy.exe"
+          python .\scripts\build.py || exit /b
+        shell: cmd
   mac:
     needs: cache-toolchain-mac
     runs-on: macos-latest
