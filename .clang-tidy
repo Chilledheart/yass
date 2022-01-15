@@ -40,4 +40,6 @@
     # https://groups.google.com/a/chromium.org/g/cxx/c/noMMTNYiM0w .
     - key:          modernize-use-emplace.IgnoreImplicitConstructors
       value:        1
+    # Only include headers directly in src.
+    HeaderFilterRegex: 'src/[^/]*$'
 ...
