@@ -67,7 +67,7 @@ static void set_yass_auto_start(bool enabled) {
       /*options*/ nullptr);
   if (loginItems) {
     UInt32 seed = 0U;
-    Boolean found;
+    Boolean found = FALSE;
     LSSharedFileListItemRef existingItem = nullptr;
 
     CFArrayRef currentLoginItems =
