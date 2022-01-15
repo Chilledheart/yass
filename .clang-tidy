@@ -28,6 +28,8 @@
                     modernize-use-override,
                     modernize-use-transparent-functors,
                     readability-redundant-member-init'
+  # Only include headers directly in src.
+  HeaderFilterRegex: 'src/[^/]*$'
   CheckOptions:
     - key:          bugprone-dangling-handle.HandleClasses
       value:        ::std::basic_string_view;::std::span;::absl::string_view;::base::BasicStringPiece;::base::span
@@ -40,6 +42,4 @@
     # https://groups.google.com/a/chromium.org/g/cxx/c/noMMTNYiM0w .
     - key:          modernize-use-emplace.IgnoreImplicitConstructors
       value:        1
-    # Only include headers directly in src.
-    HeaderFilterRegex: 'src/[^/]*$'
 ...
