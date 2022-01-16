@@ -97,9 +97,8 @@ BOOL CYassApp::InitInstance() {
   frame_name.LoadString(AFX_IDS_APP_TITLE);
   RECT rect{0, 0, 450, 390};
 
-  if (!frame_->Create(lpszClass, frame_name, WS_OVERLAPPEDWINDOW, rect,
-                      GetMainWnd())) {
-    LOG(WARNING) << "Failed to create frame";
+  if (!frame_->Create(lpszClass, frame_name, WS_OVERLAPPEDWINDOW, rect)) {
+    LOG(WARNING) << "Failed to create main frame";
     delete frame_;
     return FALSE;
   }

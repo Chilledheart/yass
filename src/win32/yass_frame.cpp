@@ -229,7 +229,7 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
   rect = CRect{0, 0 + 10, 9, 29 + 10};
   serverport_label_.Create(_T("Server Port"), SS_LEFT, rect, this);
   rect = CRect{0 + 100, 0 + 10, 9 + 100, 29 + 10};
-  serverhost_edit_.Create(ES_LEFT | ES_NUMBER, rect, this, IDR_MAINFRAME);
+  serverport_edit_.Create(ES_LEFT | ES_NUMBER, rect, this, IDR_MAINFRAME);
 
   rect = CRect{0, 0 + 20, 9, 29 + 20};
   password_label_.Create(_T("Password"), SS_LEFT, rect, this);
@@ -263,24 +263,15 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
 
   autostart_button_.SetState(Utils::GetAutoStart() ? BST_CHECKED
                                                    : BST_UNCHECKED);
-#if 0
   if (!status_bar_.Create(this) ||
-      status_bar_.SetIndicators(indicators,
-                                sizeof(indicators) / sizeof(indicators[0]))) {
+      !status_bar_.SetIndicators(indicators,
+                                 sizeof(indicators) / sizeof(indicators[0]))) {
     LOG(WARNING) << "Failed to create status bar";
     return -1;
   }
 
   EnableDocking(CBRS_ALIGN_BOTTOM);
   DockControlBar(&status_bar_);
-#else
-  CStatusBar* status_bar = reinterpret_cast<CStatusBar*>(GetMessageBar());
-  if (status_bar->SetIndicators(indicators,
-                                sizeof(indicators) / sizeof(indicators[0]))) {
-    LOG(WARNING) << "Failed to create status bar";
-    return -1;
-  }
-#endif
 
   if (!menu_bar_.Create(this, AFX_DEFAULT_TOOLBAR_STYLE)) {
     LOG(WARNING) << "Failed to create menu bar";
