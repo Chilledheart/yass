@@ -99,9 +99,11 @@ BOOL CYassApp::InitInstance() {
     delete frame_;
     return FALSE;
   }
-  RECT rect{0, 0, 450, 390};
 
-  if (!frame_->Create(lpszClass, frame_name, WS_OVERLAPPEDWINDOW, rect)) {
+  RECT rect{0, 0, 400 * 2, 300 * 2};
+
+  if (!frame_->Create(lpszClass, frame_name, WS_OVERLAPPED | WS_CAPTION |
+                      WS_SYSMENU, rect)) {
     LOG(WARNING) << "Failed to create main frame";
     delete frame_;
     return FALSE;
@@ -114,7 +116,7 @@ BOOL CYassApp::InitInstance() {
   frame_->UpdateWindow();
 
   if (Utils::GetAutoStart()) {
-    frame_->OnStart();
+    frame_->OnStartButtonClicked();
   }
 
   return TRUE;
@@ -192,9 +194,9 @@ void CYassApp::OnStop(bool quiet) {
 }
 
 // https://docs.microsoft.com/en-us/windows/win32/winprog/windows-data-types?redirectedfrom=MSDN
-void CYassApp::OnStarted(WPARAM w, LPARAM l) {
+void CYassApp::OnStarted(WPARAM /*w*/, LPARAM /*l*/) {
   state_ = STARTED;
-  frame_->Started();
+  frame_->OnStarted();
 }
 
 void CYassApp::OnStartFailed(WPARAM w, LPARAM l) {
@@ -205,12 +207,12 @@ void CYassApp::OnStartFailed(WPARAM w, LPARAM l) {
   error_msg_ = std::string(message, message_size);
   delete[] message;
   LOG(ERROR) << "worker failed due to: " << error_msg_;
-  frame_->StartFailed();
+  frame_->OnStartFailed();
 }
 
-void CYassApp::OnStopped(WPARAM w, LPARAM l) {
+void CYassApp::OnStopped(WPARAM /*w*/, LPARAM /*l*/) {
   state_ = STOPPED;
-  frame_->Stopped();
+  frame_->OnStopped();
 }
 
 BOOL CYassApp::CheckFirstInstance() {

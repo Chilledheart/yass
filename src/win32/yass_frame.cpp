@@ -16,6 +16,22 @@
 #include "win32/utils.hpp"
 #include "win32/yass.hpp"
 
+#define DPI_SCALE_FACTOR 2
+
+#define COLUMN_ONE_LEFT    20
+#define COLUMN_TWO_LEFT    120
+#define COLUMN_THREE_LEFT  250
+
+#define VERTICAL_HEIGHT   20
+
+#define BUTTON_WIDTH     60
+#define BUTTON_HEIGHT    20
+
+#define LABEL_WIDTH      60
+#define LABEL_HEIGHT     20
+#define EDIT_WIDTH       80
+#define EDIT_HEIGHT      15
+
 static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   if (bytes < 1024) {
     *ss << bytes << " B";
@@ -57,6 +73,10 @@ BEGIN_MESSAGE_MAP(CYassFrame, CFrameWnd)
   // https://docs.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged-afterparent
   ON_MESSAGE(WM_DPICHANGED, &CYassFrame::OnDPIChanged).
 #endif
+  ON_BN_CLICKED(IDC_START, &CYassFrame::OnStartButtonClicked)
+  ON_BN_CLICKED(IDC_STOP, &CYassFrame::OnStopButtonClicked)
+  ON_BN_CLICKED(IDC_AUTOSTART_CHECKBOX,
+                &CYassFrame::OnCheckedAutoStartButtonClicked)
 END_MESSAGE_MAP()
 
 std::string CYassFrame::GetServerHost() {
@@ -100,7 +120,7 @@ std::string CYassFrame::GetTimeout() {
   return SysWideToUTF8(timeout.operator const wchar_t*());
 }
 
-void CYassFrame::Started() {
+void CYassFrame::OnStarted() {
   UpdateStatus();
   serverhost_edit_.EnableWindow(false);
   serverport_edit_.EnableWindow(false);
@@ -109,10 +129,11 @@ void CYassFrame::Started() {
   localhost_edit_.EnableWindow(false);
   localport_edit_.EnableWindow(false);
   timeout_edit_.EnableWindow(false);
-  stop_button_.SetButtonStyle(WS_CHILD | WS_VISIBLE | WS_DISABLED);
+  autostart_button_.EnableWindow(false);
+  stop_button_.EnableWindow(true);
 }
 
-void CYassFrame::StartFailed() {
+void CYassFrame::OnStartFailed() {
   UpdateStatus();
   serverhost_edit_.EnableWindow(true);
   serverport_edit_.EnableWindow(true);
@@ -121,10 +142,11 @@ void CYassFrame::StartFailed() {
   localhost_edit_.EnableWindow(true);
   localport_edit_.EnableWindow(true);
   timeout_edit_.EnableWindow(true);
-  start_button_.SetButtonStyle(WS_CHILD | WS_VISIBLE);
+  autostart_button_.EnableWindow(true);
+  start_button_.EnableWindow(true);
 }
 
-void CYassFrame::Stopped() {
+void CYassFrame::OnStopped() {
   UpdateStatus();
   serverhost_edit_.EnableWindow(true);
   serverport_edit_.EnableWindow(true);
@@ -133,7 +155,8 @@ void CYassFrame::Stopped() {
   localhost_edit_.EnableWindow(true);
   localport_edit_.EnableWindow(true);
   timeout_edit_.EnableWindow(true);
-  start_button_.SetButtonStyle(WS_CHILD | WS_VISIBLE);
+  autostart_button_.EnableWindow(true);
+  start_button_.EnableWindow(true);
 }
 
 void CYassFrame::UpdateStatus() {
@@ -202,16 +225,30 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
       "IDM_ABOUTBOX must be in the system command range.");
 
   // Left Panel
-  CRect rect{0, 0, 10, 10};
-  if (!start_button_.Create(_T("START"), BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE, rect,
-                            this, IDC_START)) {
+  CRect rect, client_rect;
+
+  GetClientRect(&client_rect);
+
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_ONE_LEFT * DPI_SCALE_FACTOR,
+                  VERTICAL_HEIGHT * DPI_SCALE_FACTOR);
+  rect.right = rect.left + BUTTON_WIDTH * DPI_SCALE_FACTOR;
+  rect.bottom = rect.top + BUTTON_HEIGHT * DPI_SCALE_FACTOR;
+
+  if (!start_button_.Create(_T("START"), BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE,
+                            rect, this, IDC_START)) {
     LOG(WARNING) << "start button not created";
     return false;
   }
 
-  rect = CRect{0, 0, 10, 60};
-  if (!stop_button_.Create(_T("STOP"), BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE, rect,
-                           this, IDC_STOP)) {
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_ONE_LEFT * DPI_SCALE_FACTOR,
+                  VERTICAL_HEIGHT * 5 * DPI_SCALE_FACTOR);
+  rect.right = rect.left + BUTTON_WIDTH * DPI_SCALE_FACTOR;
+  rect.bottom = rect.top + BUTTON_HEIGHT * DPI_SCALE_FACTOR;
+
+  if (!stop_button_.Create(_T("STOP"), BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE,
+                           rect, this, IDC_STOP)) {
     LOG(WARNING) << "stop button not created";
     return false;
   }
@@ -229,45 +266,85 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
   // https://docs.microsoft.com/en-us/cpp/mfc/reference/styles-used-by-mfc?view=msvc-170#edit-styles
   // https://docs.microsoft.com/en-us/cpp/mfc/reference/styles-used-by-mfc?view=msvc-170#combo-box-styles
   // https://docs.microsoft.com/en-us/cpp/mfc/reference/styles-used-by-mfc?view=msvc-170#button-styles
-  rect = CRect{0, 0, 9, 29};
-  if (!serverhost_label_.Create(_T("Server Host"), SS_LEFT, rect, this)) {
+
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_TWO_LEFT * DPI_SCALE_FACTOR,
+                  VERTICAL_HEIGHT * DPI_SCALE_FACTOR);
+  rect.right = rect.left + LABEL_WIDTH * DPI_SCALE_FACTOR;
+  rect.bottom = rect.top + LABEL_HEIGHT * DPI_SCALE_FACTOR;
+  if (!serverhost_label_.Create(_T("Server Host"), WS_CHILD | WS_VISIBLE |
+                                SS_LEFT, rect, this)) {
     LOG(WARNING) << "serverhost_label not created";
     return FALSE;
   }
-  rect = CRect{0 + 100, 0, 9 + 100, 29};
-  if (!serverhost_edit_.Create(ES_LEFT, rect, this, IDR_MAINFRAME)) {
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_THREE_LEFT * DPI_SCALE_FACTOR,
+                  VERTICAL_HEIGHT * DPI_SCALE_FACTOR);
+  rect.right = rect.left + EDIT_WIDTH * DPI_SCALE_FACTOR;
+  rect.bottom = rect.top + EDIT_HEIGHT * DPI_SCALE_FACTOR;
+  if (!serverhost_edit_.Create(WS_CHILD | WS_VISIBLE | WS_BORDER | WS_BORDER |
+                               ES_LEFT, rect, this, IDR_MAINFRAME)) {
     LOG(WARNING) << "serverhost_edit not created";
     return FALSE;
   }
 
-  rect = CRect{0, 0 + 10, 9, 29 + 10};
-  if (!serverport_label_.Create(_T("Server Port"), SS_LEFT, rect, this)) {
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_TWO_LEFT * DPI_SCALE_FACTOR,
+                  VERTICAL_HEIGHT * 2 * DPI_SCALE_FACTOR);
+  rect.right = rect.left + LABEL_WIDTH * DPI_SCALE_FACTOR;
+  rect.bottom = rect.top + LABEL_HEIGHT * DPI_SCALE_FACTOR;
+  if (!serverport_label_.Create(_T("Server Port"), WS_CHILD | WS_VISIBLE |
+                                SS_LEFT, rect, this)) {
     LOG(WARNING) << "serverport_label not created";
     return FALSE;
   }
-  rect = CRect{0 + 100, 0 + 10, 9 + 100, 29 + 10};
-  if (!serverport_edit_.Create(ES_LEFT | ES_NUMBER, rect, this, IDR_MAINFRAME)) {
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_THREE_LEFT * DPI_SCALE_FACTOR,
+                  VERTICAL_HEIGHT * 2 * DPI_SCALE_FACTOR);
+  rect.right = rect.left + EDIT_WIDTH * DPI_SCALE_FACTOR;
+  rect.bottom = rect.top + EDIT_HEIGHT * DPI_SCALE_FACTOR;
+  if (!serverport_edit_.Create(WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT |
+                               ES_NUMBER, rect, this, IDR_MAINFRAME)) {
     LOG(WARNING) << "serverport_edit not created";
     return FALSE;
   }
 
-  rect = CRect{0, 0 + 20, 9, 29 + 20};
-  if (!password_label_.Create(_T("Password"), SS_LEFT, rect, this)) {
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_TWO_LEFT * DPI_SCALE_FACTOR,
+                  VERTICAL_HEIGHT * 3 * DPI_SCALE_FACTOR);
+  rect.right = rect.left + LABEL_WIDTH * DPI_SCALE_FACTOR;
+  rect.bottom = rect.top + LABEL_HEIGHT * DPI_SCALE_FACTOR;
+  if (!password_label_.Create(_T("Password"), WS_CHILD | WS_VISIBLE | SS_LEFT,
+                              rect, this)) {
     LOG(WARNING) << "password_label not created";
     return FALSE;
   }
-  rect = CRect{0 + 100, 0 + 20, 9 + 100, 29 + 20};
-  if (!password_edit_.Create(ES_LEFT | ES_PASSWORD, rect, this, IDR_MAINFRAME)) {
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_THREE_LEFT * DPI_SCALE_FACTOR,
+                  VERTICAL_HEIGHT * 3 * DPI_SCALE_FACTOR);
+  rect.right = rect.left + EDIT_WIDTH * DPI_SCALE_FACTOR;
+  rect.bottom = rect.top + EDIT_HEIGHT * DPI_SCALE_FACTOR;
+  if (!password_edit_.Create(WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT |
+                             ES_PASSWORD, rect, this, IDR_MAINFRAME)) {
     LOG(WARNING) << "password_edit not created";
     return FALSE;
   }
 
-  rect = CRect{0, 0 + 30, 9, 29 + 30};
-  if (!method_label_.Create(_T("Cipher Method"), SS_LEFT, rect, this)) {
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_TWO_LEFT * DPI_SCALE_FACTOR,
+                  VERTICAL_HEIGHT * 4 * DPI_SCALE_FACTOR);
+  rect.right = rect.left + LABEL_WIDTH * DPI_SCALE_FACTOR;
+  rect.bottom = rect.top + LABEL_HEIGHT * DPI_SCALE_FACTOR;
+  if (!method_label_.Create(_T("Cipher Method"), WS_CHILD | WS_VISIBLE |
+                            SS_LEFT, rect, this)) {
     LOG(WARNING) << "method_label not created";
     return FALSE;
   }
-  rect = CRect{0 + 100, 0 + 30, 9 + 100, 29 + 30};
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_THREE_LEFT * DPI_SCALE_FACTOR,
+                  VERTICAL_HEIGHT * 4 * DPI_SCALE_FACTOR);
+  rect.right = rect.left + EDIT_WIDTH * DPI_SCALE_FACTOR;
+  rect.bottom = rect.top + EDIT_HEIGHT * DPI_SCALE_FACTOR;
   if (!method_combo_box_.Create(
       WS_CHILD | WS_VISIBLE | WS_VSCROLL | CBS_DROPDOWNLIST, rect, this,
       IDR_MAINFRAME)) {
@@ -277,52 +354,93 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
   for (auto& method_string : method_strings)
     method_combo_box_.AddString(std::move(method_string));
 
-  rect = CRect{0, 0 + 40, 9, 29 + 40};
-  if (!localhost_label_.Create(_T("Local Host"), SS_LEFT, rect, this)) {
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_TWO_LEFT * DPI_SCALE_FACTOR,
+                  VERTICAL_HEIGHT * 5 * DPI_SCALE_FACTOR);
+  rect.right = rect.left + LABEL_WIDTH * DPI_SCALE_FACTOR;
+  rect.bottom = rect.top + LABEL_HEIGHT * DPI_SCALE_FACTOR;
+  if (!localhost_label_.Create(_T("Local Host"), WS_CHILD | WS_VISIBLE |
+                               SS_LEFT, rect, this)) {
     LOG(WARNING) << "localhost_label not created";
     return FALSE;
   }
-  rect = CRect{0 + 100, 0 + 40, 9 + 100, 29 + 40};
-  if (!localhost_edit_.Create(ES_LEFT, rect, this, IDR_MAINFRAME)) {
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_THREE_LEFT * DPI_SCALE_FACTOR,
+                  VERTICAL_HEIGHT * 5 * DPI_SCALE_FACTOR);
+  rect.right = rect.left + EDIT_WIDTH * DPI_SCALE_FACTOR;
+  rect.bottom = rect.top + EDIT_HEIGHT * DPI_SCALE_FACTOR;
+  if (!localhost_edit_.Create(WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT, rect,
+                              this, IDR_MAINFRAME)) {
     LOG(WARNING) << "localhost_edit not created";
     return FALSE;
   }
 
-  rect = CRect{0, 0 + 50, 9, 29 + 50};
-  if (!localport_label_.Create(_T("Local Port"), SS_LEFT, rect, this)) {
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_TWO_LEFT * DPI_SCALE_FACTOR,
+                  VERTICAL_HEIGHT * 6 * DPI_SCALE_FACTOR);
+  rect.right = rect.left + LABEL_WIDTH * DPI_SCALE_FACTOR;
+  rect.bottom = rect.top + LABEL_HEIGHT * DPI_SCALE_FACTOR;
+  if (!localport_label_.Create(_T("Local Port"), WS_CHILD | WS_VISIBLE |
+                               SS_LEFT, rect, this)) {
     LOG(WARNING) << "localport_label not created";
     return FALSE;
   }
-  rect = CRect{0 + 100, 0 + 50, 9 + 100, 29 + 50};
-  if (!localport_edit_.Create(ES_LEFT | ES_NUMBER, rect, this, IDR_MAINFRAME)) {
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_THREE_LEFT * DPI_SCALE_FACTOR,
+                  VERTICAL_HEIGHT * 6 * DPI_SCALE_FACTOR);
+  rect.right = rect.left + EDIT_WIDTH * DPI_SCALE_FACTOR;
+  rect.bottom = rect.top + EDIT_HEIGHT * DPI_SCALE_FACTOR;
+  if (!localport_edit_.Create(WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT |
+                              ES_NUMBER, rect, this, IDR_MAINFRAME)) {
     LOG(WARNING) << "localport_edit not created";
     return FALSE;
   }
 
-  rect = CRect{0, 0 + 60, 9, 29 + 60};
-  if (!timeout_label_.Create(_T("Timeout"), SS_LEFT, rect, this)) {
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_TWO_LEFT * DPI_SCALE_FACTOR,
+                  VERTICAL_HEIGHT * 7 * DPI_SCALE_FACTOR);
+  rect.right = rect.left + LABEL_WIDTH * DPI_SCALE_FACTOR;
+  rect.bottom = rect.top + LABEL_HEIGHT * DPI_SCALE_FACTOR;
+  if (!timeout_label_.Create(_T("Timeout"), WS_CHILD | WS_VISIBLE | SS_LEFT,
+                             rect, this)) {
     LOG(WARNING) << "timeout_label not created";
     return FALSE;
   }
-  rect = CRect{0 + 100, 0 + 60, 9 + 100, 29 + 60};
-  if (!timeout_edit_.Create(ES_LEFT | ES_NUMBER, rect, this, IDR_MAINFRAME)) {
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_THREE_LEFT * DPI_SCALE_FACTOR,
+                  VERTICAL_HEIGHT * 7 * DPI_SCALE_FACTOR);
+  rect.right = rect.left + EDIT_WIDTH * DPI_SCALE_FACTOR;
+  rect.bottom = rect.top + EDIT_HEIGHT * DPI_SCALE_FACTOR;
+  if (!timeout_edit_.Create(WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT |
+                            ES_NUMBER, rect, this, IDR_MAINFRAME)) {
     LOG(WARNING) << "timeout_edit not created";
     return FALSE;
   }
 
-  rect = CRect{0, 0 + 70, 9, 29 + 70};
-  if (!autostart_label_.Create(_T("Auto Start"), SS_LEFT, rect, this)) {
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_TWO_LEFT * DPI_SCALE_FACTOR,
+                  VERTICAL_HEIGHT * 8 * DPI_SCALE_FACTOR);
+  rect.right = rect.left + LABEL_WIDTH * DPI_SCALE_FACTOR;
+  rect.bottom = rect.top + LABEL_HEIGHT * DPI_SCALE_FACTOR;
+  if (!autostart_label_.Create(_T("Auto Start"), WS_CHILD | WS_VISIBLE |
+                               SS_LEFT, rect, this)) {
     LOG(WARNING) << "autostart_label not created";
     return FALSE;
   }
-  rect = CRect{0 + 100, 0 + 70, 9 + 100, 29 + 70};
-  if (!autostart_button_.Create(_T("Enable"), BS_CHECKBOX | BS_LEFT, rect, this,
-                                IDR_MAINFRAME)) {
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_THREE_LEFT * DPI_SCALE_FACTOR,
+                  VERTICAL_HEIGHT * 8 * DPI_SCALE_FACTOR);
+  rect.right = rect.left + EDIT_WIDTH * DPI_SCALE_FACTOR;
+  rect.bottom = rect.top + EDIT_HEIGHT * DPI_SCALE_FACTOR;
+  if (!autostart_button_.Create(_T("Enable"), WS_CHILD | WS_VISIBLE |
+                                BS_AUTOCHECKBOX | BS_LEFT, rect, this,
+                                IDC_AUTOSTART_CHECKBOX)) {
     LOG(WARNING) << "autostart_button not created";
     return FALSE;
   }
 
-  autostart_button_.SetState(Utils::GetAutoStart() ? BST_CHECKED
+  LOG(WARNING) << "Auto start: " << std::boolalpha << Utils::GetAutoStart();
+  autostart_button_.SetCheck(Utils::GetAutoStart() ? BST_CHECKED
                                                    : BST_UNCHECKED);
   if (!status_bar_.Create(this) ||
       !status_bar_.SetIndicators(indicators,
@@ -402,20 +520,6 @@ void CYassFrame::OnUpdateStatus(CCmdUI* pCmdUI) {
   pCmdUI->SetText(csPaneString);
 }
 
-void CYassFrame::OnStart() {
-  start_button_.EnableWindow(false);
-  mApp->OnStart();
-}
-
-void CYassFrame::OnStop() {
-  stop_button_.EnableWindow(false);
-  mApp->OnStop();
-}
-
-void CYassFrame::OnCheckedAutoStart() {
-  Utils::EnableAutoStart(autostart_button_.GetState() & BST_CHECKED);
-}
-
 #if 0
 void CYassFrame::OnDPIChanged(WPARAM w, LPARAM l) {
   CSize newSize = GetSize();
@@ -426,3 +530,18 @@ void CYassFrame::OnDPIChanged(WPARAM w, LPARAM l) {
   SetSize(newSize);
 }
 #endif
+
+void CYassFrame::OnStartButtonClicked() {
+  start_button_.EnableWindow(false);
+  mApp->OnStart();
+}
+
+void CYassFrame::OnStopButtonClicked() {
+  stop_button_.EnableWindow(false);
+  mApp->OnStop();
+}
+
+void CYassFrame::OnCheckedAutoStartButtonClicked() {
+  Utils::EnableAutoStart(autostart_button_.GetCheck() & BST_CHECKED);
+}
+

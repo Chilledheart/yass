@@ -32,25 +32,19 @@ class CYassFrame : public CFrameWnd {
   std::string GetLocalPort();
   std::string GetTimeout();
 
-  void Started();
-  void Stopped();
-  void StartFailed();
+  void OnStarted();
+  void OnStopped();
+  void OnStartFailed();
 
   void UpdateStatus();
 
   // Left Panel
- public:
-  void OnStart();
-  void OnStop();
-
  protected:
   CButton start_button_;
   CButton stop_button_;
 
   // Right Panel
  protected:
-  void OnCheckedAutoStart();
-
   CStatic serverhost_label_;
   CStatic serverport_label_;
   CStatic password_label_;
@@ -86,6 +80,11 @@ class CYassFrame : public CFrameWnd {
 #if 0
   afx_msg void OnDPIChanged(WPARAM w, LPARAM l);
 #endif
+
+ public:
+  afx_msg void OnStartButtonClicked();
+  afx_msg void OnStopButtonClicked();
+  afx_msg void OnCheckedAutoStartButtonClicked();
 
  private:
   std::wstring status_bar_message_;
