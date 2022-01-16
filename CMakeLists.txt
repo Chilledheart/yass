@@ -907,6 +907,11 @@ set(files
     src/core/rand_util.cpp
     src/core/logging.cpp
     src/core/utils.cpp
+    src/core/safe_strerror.cpp
+    src/core/debug.cpp
+    src/core/string_util.cpp
+    src/core/check_op.cpp
+    src/core/check.cpp
     src/crypto/aead_base_decrypter.cpp
     src/crypto/aead_base_encrypter.cpp
     src/crypto/aead_evp_decrypter.cpp
@@ -959,6 +964,11 @@ set(hfiles
     src/core/rand_util.hpp
     src/core/logging.hpp
     src/core/utils.hpp
+    src/core/safe_strerror.hpp
+    src/core/debug.hpp
+    src/core/string_util.hpp
+    src/core/check_op.hpp
+    src/core/check.hpp
     src/crypto/aead_base_decrypter.hpp
     src/crypto/aead_base_encrypter.hpp
     src/crypto/aead_evp_decrypter.hpp
@@ -1074,6 +1084,7 @@ if (GUI)
           src/gui/yass_frame.cpp
           src/gui/yass_logging.cpp
           src/gui/option_dialog.cpp
+          src/gui/panels.cpp
           src/gui/utils.cpp)
     endif()
 

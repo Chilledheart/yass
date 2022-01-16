@@ -10,20 +10,20 @@
 #include <cassert>
 #include <iomanip>
 #include <string>
-#ifndef _WIN32
+#ifndef OS_WIN
 #include <unistd.h>  // For _exit.
 #endif
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <climits>
 #include <csignal>
-#if defined(__APPLE__) || defined(__linux__)
+#if defined(OS_APPLE) || defined(OS_LINUX)
 #include <sys/utsname.h>  // For uname.
 #endif
-#if defined(__linux__)
+#if defined(OS_LINUX)
 #include <syscall.h>  // For syscall.
 #endif
-#if defined(__APPLE__)
+#if defined(OS_APPLE)
 #include <sys/syscall.h>  // For syscall.
 #endif
 #include <fcntl.h>  // For O_WRONLY, O_CREAT, O_CREAT
@@ -40,12 +40,18 @@
 #include <mutex>
 #include <sstream>
 #include <vector>
-#ifdef _WIN32
+#ifdef OS_WIN
 #include "core/windows/dirent.h"
 #else
 #include <dirent.h>  // for automatic removal of old logs
 #endif
 
+#include "core/common_posix.hpp"
+#include "core/compiler_specific.hpp"
+#include "core/debug.hpp"
+#include "core/safe_strerror.hpp"
+#include "core/string_util.hpp"
+#include "core/stringprintf.hpp"
 #include "core/utils.hpp"
 
 #ifdef _MSC_VER
@@ -54,7 +60,7 @@
 #define strcasecmp _stricmp
 #endif
 
-#if defined(_WIN32)
+#if defined(OS_WIN)
 #include <io.h>
 #include <windows.h>
 typedef HANDLE FileHandle;
@@ -63,7 +69,7 @@ typedef HANDLE FileHandle;
   _write(fd, buf, static_cast<unsigned int>(count))
 // Windows doesn't define STDERR_FILENO.  Define it here.
 #define STDERR_FILENO 2
-#elif defined(__APPLE__)
+#elif defined(OS_APPLE)
 // Only include TargetConditionals after testing ANDROID as some Android builds
 // on the Mac have this header available and it's not needed unless the target
 // is really an Apple platform.
@@ -138,18 +144,18 @@ static StringType CFStringToSTLStringWithEncodingT(CFStringRef cfstring,
 
 #define safe_write(fd, buf, count) write(fd, buf, count)
 
-#elif defined(__linux__) || defined(__ANDROID__)
+#elif defined(OS_LINUX) || defined(OS_ANDROID)
 #include <time.h>
 #define safe_write(fd, buf, count) syscall(SYS_write, fd, buf, count)
 #else
 #define safe_write(fd, buf, count) write(fd, buf, count)
 #endif
 
-#if defined(__ANDROID__)
+#if defined(OS_ANDROID)
 #include <android/log.h>
 #endif
 
-#if defined(__linux__) || defined(__ANDROID__) || defined(__APPLE__)
+#if defined(OS_POSIX)
 #include <errno.h>
 #include <paths.h>
 #include <stdio.h>
@@ -176,7 +182,16 @@ typedef FILE* FileHandle;
 #define DEFAULT_VERBOSE_LEVEL 2
 #endif
 
-#if defined(__APPLE__)
+namespace {
+// What should be prepended to each message?
+bool g_log_process_id = false;
+bool g_log_thread_id = false;
+bool g_log_timestamp = true;
+bool g_log_tickcount = false;
+const char* g_log_prefix = nullptr;
+}  // namespace
+
+#if defined(OS_APPLE)
 // Notes:
 // * Xcode's clang did not support `thread_local` until version 8, and
 //   even then not for all iOS < 9.0.
@@ -214,7 +229,7 @@ ABSL_FLAG(bool,
           false,
           "color messages logged to stderr (if supported by terminal)");
 
-#if defined(__linux__) || defined(__ANDROID__)
+#if defined(OS_LINUX) || defined(OS_ANDROID)
 ABSL_FLAG(bool,
           drop_log_memory,
           true,
@@ -231,7 +246,7 @@ ABSL_FLAG(bool,
 // when they run a program without having to look in another file.
 ABSL_FLAG(int32_t,
           stderrthreshold,
-          static_cast<int>(absl::LogSeverity::kError),
+          LOGGING_ERROR,
           "log messages at or above this level are copied to stderr in "
           "addition to logfiles.  This flag obsoletes --alsologtostderr.");
 ABSL_FLAG(bool,
@@ -297,8 +312,6 @@ ABSL_FLAG(std::string,
           "",
           "Emit a backtrace when logging at file:linenum.");
 
-ABSL_FLAG(bool, log_utc_time, false, "Use UTC time for logging.");
-
 // TODO(hamaji): consider windows
 #define PATH_SEPARATOR '/'
 
@@ -310,11 +323,11 @@ ABSL_FLAG(bool, log_utc_time, false, "Use UTC time for logging.");
 static uint64_t MonotoicTickCount();
 
 uint64_t MonotoicTickCount() {
-#if defined(_WIN32)
+#if defined(OS_WIN)
   return GetTickCount();
-#elif defined(__APPLE__)
+#elif defined(OS_APPLE)
   return mach_absolute_time();
-#elif defined(__linux__) || defined(__ANDROID__)
+#elif defined(OS_POSIX)
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
 
@@ -335,12 +348,13 @@ WallTime WallTime_Now();
 int32_t GetMainThreadPid();
 bool PidHasChanged();
 
-#ifdef _WIN32
+#ifdef OS_WIN
 // On Windows, process id and thread id are of the same type according to the
 // return types of GetProcessId() and GetThreadId() are both DWORD, an unsigned
 // 32-bit type.
 using pid_t = uint32_t;
 #endif
+pid_t GetPID();
 pid_t GetTID();
 
 const std::string& MyUserName();
@@ -351,7 +365,7 @@ const char* const_basename(const char* filepath);
 
 void DumpStackTraceToString(std::string* stacktrace);
 
-static void ABSL_ATTRIBUTE_NORETURN_ATTRIBUTE DumpStackTraceAndExit();
+static void NORETURN DumpStackTraceAndExit();
 
 struct CrashReason {
   const char* filename = nullptr;
@@ -367,14 +381,14 @@ struct CrashReason {
 bool SetCrashReason(const CrashReason* r);
 
 static void GetHostName(std::string* hostname) {
-#if defined(__APPLE__) || defined(__linux__)
+#if defined(OS_POSIX)
   struct utsname buf;
   if (0 != uname(&buf)) {
     // ensure null termination on failure
     *buf.nodename = '\0';
   }
   *hostname = buf.nodename;
-#elif defined(_WIN32)
+#elif defined(OS_WIN)
   char buf[MAX_COMPUTERNAME_LENGTH + 1];
   DWORD len = MAX_COMPUTERNAME_LENGTH + 1;
   if (GetComputerNameA(buf, &len)) {
@@ -391,7 +405,7 @@ static void GetHostName(std::string* hostname) {
 // Returns true iff terminal supports using colors in output.
 static bool TerminalSupportsColor() {
   bool term_supports_color = false;
-#ifdef _WIN32
+#ifdef OS_WIN
   // on Windows TERM variable is usually not set, but the console does
   // support colors.
   term_supports_color = true;
@@ -413,18 +427,18 @@ static bool TerminalSupportsColor() {
 enum LogColor { COLOR_DEFAULT, COLOR_RED, COLOR_GREEN, COLOR_YELLOW };
 
 static LogColor SeverityToColor(LogSeverity severity) {
-  assert(static_cast<int>(severity) >= 0 &&
-         static_cast<int>(severity) < NUM_SEVERITIES);
+  severity = std::max(severity, LOGGING_INFO);
+  assert(severity >= 0 && severity < LOGGING_NUM_SEVERITIES);
   LogColor color = COLOR_DEFAULT;
   switch (severity) {
-    case absl::LogSeverity::kInfo:
+    case LOGGING_INFO:
       color = COLOR_DEFAULT;
       break;
-    case absl::LogSeverity::kWarning:
+    case LOGGING_WARNING:
       color = COLOR_YELLOW;
       break;
-    case absl::LogSeverity::kError:
-    case absl::LogSeverity::kFatal:
+    case LOGGING_ERROR:
+    case LOGGING_FATAL:
       color = COLOR_RED;
       break;
     default:
@@ -434,7 +448,23 @@ static LogColor SeverityToColor(LogSeverity severity) {
   return color;
 }
 
-#ifdef _WIN32
+// For LOGGING_ERROR and above, always print to stderr.
+const int kAlwaysPrintErrorLevel = static_cast<int>(LOG_ERROR);
+
+namespace {
+const char* const log_severity_names[] = {"INFO", "WARNING", "ERROR", "FATAL"};
+
+const char* log_severity_name(int severity) {
+  if (severity >= 0 && severity < LOGGING_NUM_SEVERITIES)
+    return log_severity_names[severity];
+  if (severity < 0)
+    return "VERBOSE";
+  return "UNKNOWN";
+}
+
+}  // namespace
+
+#ifdef OS_WIN
 
 // Returns the character attribute for the given color.
 static WORD GetColorAttribute(LogColor color) {
@@ -467,7 +497,7 @@ static const char* GetAnsiColorCode(LogColor color) {
   return nullptr;  // stop warning about return type.
 }
 
-#endif  // _WIN32
+#endif  // OS_WIN
 
 // Safely get max_log_size, overriding to 1 if it somehow gets defined as 0
 static uint32_t MaxLogSize() {
@@ -488,8 +518,8 @@ struct LogMessage::LogMessageData {
   // Buffer space; contains complete message text.
   char message_text_[LogMessage::kMaxLogMessageLen + 1];
   LogStream stream_;
-  char severity_;  // What level is this LogMessage logged at?
-  int line_;       // line number where logging call is.
+  int severity_;  // What level is this LogMessage logged at?
+  int line_;      // line number where logging call is.
   void (LogMessage::*send_method_)();  // Call this in destructor to send
   union {  // At most one of these is used: union to keep the size low.
     LogSink* sink_;  // nullptr or sink to send message to
@@ -517,7 +547,7 @@ struct LogMessage::LogMessageData {
 static absl::Mutex log_mutex;
 
 // Number of messages sent at each severity.  Under log_mutex.
-int64_t LogMessage::num_messages_[NUM_SEVERITIES] = {0, 0, 0, 0};
+int64_t LogMessage::num_messages_[LOGGING_NUM_SEVERITIES] = {0, 0, 0, 0};
 
 // Globally disable log writing (if disk is full)
 static bool stop_writing = false;
@@ -612,7 +642,7 @@ class LogCleaner {
   bool enabled_ = false;
   int overdue_days_ = 7;
   char dir_delim_ =  // filepath delimiter ('/' or '\\')
-#ifdef _WIN32
+#ifdef OS_WIN
       '\\';
 #else
       '/';
@@ -647,6 +677,8 @@ class LogDestination {
   }
 
   static void DeleteLogDestinations();
+
+  static bool HasLogDestination(LogSeverity severity);
 
  private:
   LogDestination(LogSeverity severity, const char* base_filename);
@@ -690,7 +722,7 @@ class LogDestination {
   LogFileObject fileobject_;
   Logger* logger_;  // Either &fileobject_, or wrapper around it
 
-  static LogDestination* log_destinations_[NUM_SEVERITIES];
+  static LogDestination* log_destinations_[LOGGING_NUM_SEVERITIES];
   static std::string addresses_;
   static std::string hostname_;
   static bool terminal_supports_color_;
@@ -751,8 +783,8 @@ inline void LogDestination::FlushLogFiles(int min_severity) {
   // Prevent any subtle race conditions by wrapping a mutex lock around
   // all this stuff.
   absl::MutexLock l(&log_mutex);
-  for (int i = min_severity; i < NUM_SEVERITIES; i++) {
-    LogDestination* log = log_destination(static_cast<absl::LogSeverity>(i));
+  for (int i = min_severity; i < LOGGING_NUM_SEVERITIES; i++) {
+    LogDestination* log = log_destination(i);
     if (log != nullptr) {
       log->logger_->Flush();
     }
@@ -761,8 +793,8 @@ inline void LogDestination::FlushLogFiles(int min_severity) {
 
 inline void LogDestination::SetLogDestination(LogSeverity severity,
                                               const char* base_filename) {
-  assert(static_cast<int>(severity) >= 0 &&
-         static_cast<int>(severity) < NUM_SEVERITIES);
+  severity = std::max(severity, LOGGING_INFO);
+  assert(severity >= 0 && severity < LOGGING_NUM_SEVERITIES);
   // Prevent any subtle race conditions by wrapping a mutex lock around
   // all this stuff.
   absl::MutexLock l(&log_mutex);
@@ -771,8 +803,8 @@ inline void LogDestination::SetLogDestination(LogSeverity severity,
 
 inline void LogDestination::SetLogSymlink(LogSeverity severity,
                                           const char* symlink_basename) {
-  CHECK_GE(static_cast<int>(severity), 0);
-  CHECK_LT(static_cast<int>(severity), NUM_SEVERITIES);
+  severity = std::max(severity, LOGGING_INFO);
+  CHECK_LT(severity, LOGGING_NUM_SEVERITIES);
   absl::MutexLock l(&log_mutex);
   log_destination(severity)->fileobject_.SetSymlinkBasename(symlink_basename);
 }
@@ -806,19 +838,17 @@ inline void LogDestination::SetLogFilenameExtension(const char* ext) {
   // Prevent any subtle race conditions by wrapping a mutex lock around
   // all this stuff.
   absl::MutexLock l(&log_mutex);
-  for (int severity = 0; severity < NUM_SEVERITIES; ++severity) {
-    log_destination(static_cast<LogSeverity>(severity))
-        ->fileobject_.SetExtension(ext);
+  for (int severity = 0; severity < LOGGING_NUM_SEVERITIES; ++severity) {
+    log_destination(severity)->fileobject_.SetExtension(ext);
   }
 }
 
 inline void LogDestination::SetStderrLogging(LogSeverity min_severity) {
-  assert(static_cast<int>(min_severity) >= 0 &&
-         static_cast<int>(min_severity) < NUM_SEVERITIES);
+  assert(min_severity >= 0 && min_severity < LOGGING_NUM_SEVERITIES);
   // Prevent any subtle race conditions by wrapping a mutex lock around
   // all this stuff.
   absl::MutexLock l(&log_mutex);
-  absl::SetFlag(&FLAGS_stderrthreshold, static_cast<int>(min_severity));
+  absl::SetFlag(&FLAGS_stderrthreshold, min_severity);
 }
 
 inline void LogDestination::LogToStderr() {
@@ -826,10 +856,10 @@ inline void LogDestination::LogToStderr() {
   // SetLogDestination already do the locking!
 
   // thus everything is "also" logged to stderr
-  SetStderrLogging(absl::LogSeverity::kInfo);
-  for (int i = 0; i < NUM_SEVERITIES; ++i) {
+  SetStderrLogging(LOGGING_INFO);
+  for (int i = 0; i < LOGGING_NUM_SEVERITIES; ++i) {
     // "" turns off logging to a logfile
-    SetLogDestination(static_cast<LogSeverity>(i), "");
+    SetLogDestination(i, "");
   }
 }
 
@@ -847,7 +877,7 @@ static void ColoredWriteToStderr(LogSeverity severity,
     fwrite(message, len, 1, stderr);
     return;
   }
-#ifdef _WIN32
+#ifdef OS_WIN
   const HANDLE stderr_handle = GetStdHandle(STD_ERROR_HANDLE);
 
   // Gets the current text color.
@@ -869,7 +899,7 @@ static void ColoredWriteToStderr(LogSeverity severity,
   fprintf(stderr, "\033[0;3%sm", GetAnsiColorCode(color));
   fwrite(message, len, 1, stderr);
   fprintf(stderr, "\033[m");  // Resets the terminal to default.
-#endif  // _WIN32
+#endif  // OS_WIN
 }
 
 static void WriteToStderr(const char* message, size_t len) {
@@ -884,12 +914,14 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
                                              size_t prefix_len) {
   (void)prefix_len;
 
-  if ((static_cast<int>(severity) >= absl::GetFlag(FLAGS_stderrthreshold)) ||
+  // High-severity logs go to stderr by default
+  if (severity >= kAlwaysPrintErrorLevel ||
+      severity >= absl::GetFlag(FLAGS_stderrthreshold) ||
       absl::GetFlag(FLAGS_alsologtostderr)) {
-#ifdef _WIN32
+#ifdef OS_WIN
     // On Windows, also output to the debugger
     ::OutputDebugStringA(message);
-#elif defined(__APPLE__)
+#elif defined(OS_APPLE)
     // In LOG_TO_SYSTEM_DEBUG_LOG mode, log messages are always written to
     // stderr. If stderr is /dev/null, also log via ASL (Apple System Log) or
     // its successor OS_LOG. If there's something weird about stderr, assume
@@ -992,9 +1024,8 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
           case LOG_FATAL:
             return ASL_LEVEL_STR(ASL_LEVEL_CRIT);
           default:
-            return static_cast<int>(severity) < 0
-                       ? ASL_LEVEL_STR(ASL_LEVEL_DEBUG)
-                       : ASL_LEVEL_STR(ASL_LEVEL_NOTICE);
+            return severity < 0 ? ASL_LEVEL_STR(ASL_LEVEL_DEBUG)
+                                : ASL_LEVEL_STR(ASL_LEVEL_NOTICE);
         }
 #undef ASL_LEVEL_STR
 #undef ASL_LEVEL_STR_X
@@ -1033,17 +1064,15 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
           case LOG_FATAL:
             return OS_LOG_TYPE_FAULT;
           default:
-            return static_cast<int>(severity) < 0 ? OS_LOG_TYPE_DEBUG
-                                                  : OS_LOG_TYPE_DEFAULT;
+            return severity < 0 ? OS_LOG_TYPE_DEBUG : OS_LOG_TYPE_DEFAULT;
         }
       }(severity);
       os_log_with_type(log.get(), os_log_type, "%{public}s", message);
 #endif  // defined(USE_ASL)
     }
-#elif defined(__ANDROID__)
-    android_LogPriority priority = (static_cast<int>(severity) < 0)
-                                       ? ANDROID_LOG_VERBOSE
-                                       : ANDROID_LOG_UNKNOWN;
+#elif defined(OS_ANDROID)
+    android_LogPriority priority =
+        (severity < 0) ? ANDROID_LOG_VERBOSE : ANDROID_LOG_UNKNOWN;
     switch (severity) {
       case LOG_INFO:
         priority = ANDROID_LOG_INFO;
@@ -1071,7 +1100,7 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
     // The Android system may truncate the string if it's too long.
     __android_log_write(priority, kLogTag, message + prefix_len);
 #endif  // DCHECK_IS_ON
-#endif  // __ANDROID__
+#endif  // OS_ANDROID
 
     ColoredWriteToStderr(severity, message, message_len);
   }
@@ -1081,8 +1110,8 @@ inline void LogDestination::MaybeLogToLogfile(LogSeverity severity,
                                               uint64_t tick_counts,
                                               const char* message,
                                               size_t len) {
-  const bool should_flush =
-      static_cast<int>(severity) > absl::GetFlag(FLAGS_logbuflevel);
+  severity = std::max(severity, LOGGING_INFO);
+  const bool should_flush = severity > absl::GetFlag(FLAGS_logbuflevel);
   LogDestination* destination = log_destination(severity);
   destination->logger_->Write(should_flush, tick_counts, message, len);
 }
@@ -1091,12 +1120,12 @@ inline void LogDestination::LogToAllLogfiles(LogSeverity severity,
                                              uint64_t tick_counts,
                                              const char* message,
                                              size_t len) {
+  severity = std::max(severity, LOGGING_INFO);
   if (absl::GetFlag(FLAGS_logtostderr)) {  // global flag: never log to file
     ColoredWriteToStderr(severity, message, len);
   } else {
-    for (int i = static_cast<int>(severity); i >= 0; --i)
-      LogDestination::MaybeLogToLogfile(static_cast<absl::LogSeverity>(i),
-                                        tick_counts, message, len);
+    for (int i = severity; i >= 0; --i)
+      LogDestination::MaybeLogToLogfile(i, tick_counts, message, len);
   }
 }
 
@@ -1108,6 +1137,7 @@ inline void LogDestination::LogToSinks(LogSeverity severity,
                                        size_t message_len,
                                        uint64_t tick_counts) {
   absl::ReaderMutexLock l(&sink_mutex_);
+  severity = std::max(severity, LOGGING_INFO);
   if (sinks_) {
     for (int i = sinks_->size() - 1; i >= 0; i--) {
       (*sinks_)[i]->send(severity, full_filename, base_filename, line, message,
@@ -1131,16 +1161,15 @@ inline void LogDestination::WaitForSinks(LogMessage::LogMessageData* data) {
   }
 }
 
-LogDestination* LogDestination::log_destinations_[NUM_SEVERITIES];
+LogDestination* LogDestination::log_destinations_[LOGGING_NUM_SEVERITIES];
 
 inline LogDestination* LogDestination::log_destination(LogSeverity severity) {
-  assert(static_cast<int>(severity) >= 0 &&
-         static_cast<int>(severity) < NUM_SEVERITIES);
-  if (!log_destinations_[static_cast<int>(severity)]) {
-    log_destinations_[static_cast<int>(severity)] =
-        new LogDestination(severity, nullptr);
+  severity = std::max(severity, LOGGING_INFO);
+  assert(severity >= 0 && severity < LOGGING_NUM_SEVERITIES);
+  if (!log_destinations_[severity]) {
+    log_destinations_[severity] = new LogDestination(severity, nullptr);
   }
-  return log_destinations_[static_cast<int>(severity)];
+  return log_destinations_[severity];
 }
 
 void LogDestination::DeleteLogDestinations() {
@@ -1151,6 +1180,12 @@ void LogDestination::DeleteLogDestinations() {
   absl::MutexLock l(&sink_mutex_);
   delete sinks_;
   sinks_ = nullptr;
+}
+
+bool LogDestination::HasLogDestination(LogSeverity severity) {
+  severity = std::max(severity, LOGGING_INFO);
+  assert(severity >= 0 && severity < LOGGING_NUM_SEVERITIES);
+  return log_destinations_[severity];
 }
 
 std::string g_application_fingerprint;
@@ -1171,8 +1206,7 @@ LogFileObject::LogFileObject(LogSeverity severity, const char* base_filename)
       rollover_attempt_(kRolloverAttemptFrequency - 1),
       next_flush_time_(0),
       start_time_(MonotoicTickCount()) {
-  assert(static_cast<int>(severity) >= 0 &&
-         static_cast<int>(severity) < NUM_SEVERITIES);
+  assert(severity < LOGGING_NUM_SEVERITIES);
 }
 
 LogFileObject::~LogFileObject() {
@@ -1284,7 +1318,7 @@ bool LogFileObject::CreateLogfile(const std::string& time_pid_string) {
     }
     return false;
   }
-#ifdef _WIN32
+#ifdef OS_WIN
   // https://github.com/golang/go/issues/27638 - make sure we seek to the end to
   // append empirically replicated with wine over mingw build
   if (!absl::GetFlag(FLAGS_tick_counts_in_logfile_name)) {
@@ -1302,7 +1336,7 @@ bool LogFileObject::CreateLogfile(const std::string& time_pid_string) {
     // take directory from filename
     const char* slash = strrchr(filename, PATH_SEPARATOR);
     const std::string linkname =
-        symlink_basename_ + '.' + LogSeverityName(severity_);
+        symlink_basename_ + '.' + log_severity_name(severity_);
     std::string linkpath;
     // get dirname
     if (slash)
@@ -1310,7 +1344,7 @@ bool LogFileObject::CreateLogfile(const std::string& time_pid_string) {
     linkpath += linkname;
     unlink(linkpath.c_str());  // delete old one if it exists
 
-#if defined(_WIN32)
+#if defined(OS_WIN)
     // TODO(hamaji): Create lnk file on Windows?
 #else
     // We must have unistd.h.
@@ -1367,16 +1401,10 @@ void LogFileObject::Write(bool force_flush,
 
     time_t timestamp = WallTime_Now();
     struct ::tm tm_time;
-#ifdef _WIN32
-    if (absl::GetFlag(FLAGS_log_utc_time))
-      gmtime_s(&tm_time, &timestamp);
-    else
-      localtime_s(&tm_time, &timestamp);
+#ifdef OS_WIN
+    localtime_s(&tm_time, &timestamp);
 #else
-    if (absl::GetFlag(FLAGS_log_utc_time))
-      gmtime_r(&timestamp, &tm_time);
-    else
-      localtime_r(&timestamp, &tm_time);
+    localtime_r(&timestamp, &tm_time);
 #endif
 
     // The logfile's filename will have the date/time & pid in it
@@ -1422,7 +1450,7 @@ void LogFileObject::Write(bool force_flush,
         uidname = "invalid-user";
 
       stripped_filename = stripped_filename + '.' + hostname + '.' + uidname +
-                          ".log." + LogSeverityName(severity_) + '.';
+                          ".log." + log_severity_name(severity_) + '.';
       // We're going to (potentially) try to put logs in several different dirs
       const std::vector<std::string>& log_dirs = GetLoggingDirectories();
 
@@ -1453,8 +1481,7 @@ void LogFileObject::Write(bool force_flush,
                        << std::setw(2) << tm_time.tm_mday << ' ' << std::setw(2)
                        << tm_time.tm_hour << ':' << std::setw(2)
                        << tm_time.tm_min << ':' << std::setw(2)
-                       << tm_time.tm_sec
-                       << (absl::GetFlag(FLAGS_log_utc_time) ? " UTC\n" : "\n")
+                       << tm_time.tm_sec << "\n"
                        << "Running on machine: " << LogDestination::hostname()
                        << '\n';
 
@@ -1465,8 +1492,21 @@ void LogFileObject::Write(bool force_flush,
 
     file_header_stream << "Running duration (monotonic time): "
                        << MonotoicTickCount() - start_time_ << '\n'
-                       << "Log line format: monotonic time "
-                       << "threadid file:line] msg" << '\n';
+                       << "Log line format: ";
+
+    file_header_stream << '[';
+    if (g_log_prefix)
+      file_header_stream << g_log_prefix << ':';
+    if (g_log_process_id)
+      file_header_stream << "pid" << ':';
+    if (g_log_thread_id)
+      file_header_stream << "tid" << ':';
+    if (g_log_timestamp)
+      file_header_stream << "MMDD/HHMMSS.usec" << ':';
+    if (g_log_tickcount)
+      file_header_stream << "tickcount" << ':';
+    file_header_stream << "L:file(line)] msg\n";
+
     const std::string& file_header_string = file_header_stream.str();
 
     const int header_len = file_header_string.size();
@@ -1503,7 +1543,7 @@ void LogFileObject::Write(bool force_flush,
   if (force_flush || (bytes_since_flush_ >= 1000000) ||
       (CycleClock_Now() >= next_flush_time_)) {
     FlushUnlocked();
-#if defined(__linux__) || defined(__ANDROID__)
+#if defined(OS_LINUX) || defined(OS_ANDROID)
     // Only consider files >= 3MiB
     if (absl::GetFlag(FLAGS_drop_log_memory) && file_length_ >= (3 << 20)) {
       // Don't evict the most recent 1-2MiB so as not to impact a tailer
@@ -1513,7 +1553,7 @@ void LogFileObject::Write(bool force_flush,
       uint32_t this_drop_length = total_drop_length - dropped_mem_length_;
       if (this_drop_length >= (2 << 20)) {
         // Only advise when >= 2MiB to drop
-#if defined(__ANDROID__) && defined(__ANDROID_API__) && (__ANDROID_API__ < 21)
+#if defined(OS_ANDROID) && defined(__ANDROID_API__) && (__ANDROID_API__ < 21)
         // 'posix_fadvise' introduced in API 21:
         // * https://android.googlesource.com/platform/bionic/+/6880f936173081297be0dc12f687d341b86a4cfa/libc/libc.map.txt#732
 #else
@@ -1743,23 +1783,18 @@ LogMessage::LogMessage(const char* file,
                        LogSeverity severity,
                        uint64_t ctr,
                        void (LogMessage::*send_method)())
-    : allocated_(nullptr) {
+    : allocated_(nullptr), severity_(severity) {
   Init(file, line, severity, send_method);
   data_->stream_.set_ctr(ctr);
 }
 
-LogMessage::LogMessage(const char* file, int line, const CheckOpString& result)
-    : allocated_(nullptr) {
-  Init(file, line, absl::LogSeverity::kFatal, &LogMessage::SendToLog);
-  stream() << "Check failed: " << (*result.str_) << " ";
-}
-
-LogMessage::LogMessage(const char* file, int line) : allocated_(nullptr) {
-  Init(file, line, absl::LogSeverity::kInfo, &LogMessage::SendToLog);
+LogMessage::LogMessage(const char* file, int line)
+    : allocated_(nullptr), severity_(LOGGING_INFO) {
+  Init(file, line, LOGGING_INFO, &LogMessage::SendToLog);
 }
 
 LogMessage::LogMessage(const char* file, int line, LogSeverity severity)
-    : allocated_(nullptr) {
+    : allocated_(nullptr), severity_(severity) {
   Init(file, line, severity, &LogMessage::SendToLog);
 }
 
@@ -1768,7 +1803,7 @@ LogMessage::LogMessage(const char* file,
                        LogSeverity severity,
                        LogSink* sink,
                        bool also_send_to_log)
-    : allocated_(nullptr) {
+    : allocated_(nullptr), severity_(severity) {
   Init(file, line, severity,
        also_send_to_log ? &LogMessage::SendToSinkAndLog
                         : &LogMessage::SendToSink);
@@ -1779,7 +1814,7 @@ LogMessage::LogMessage(const char* file,
                        int line,
                        LogSeverity severity,
                        std::vector<std::string>* outvec)
-    : allocated_(nullptr) {
+    : allocated_(nullptr), severity_(severity) {
   Init(file, line, severity, &LogMessage::SaveOrSendToLog);
   data_->outvec_ = outvec;  // override Init()'s setting to nullptr
 }
@@ -1788,7 +1823,7 @@ LogMessage::LogMessage(const char* file,
                        int line,
                        LogSeverity severity,
                        std::string* message)
-    : allocated_(nullptr) {
+    : allocated_(nullptr), severity_(severity) {
   Init(file, line, severity, &LogMessage::WriteToStringAndLog);
   data_->message_ = message;  // override Init()'s setting to nullptr
 }
@@ -1799,7 +1834,7 @@ void LogMessage::Init(const char* file,
                       void (LogMessage::*send_method)()) {
   allocated_ = nullptr;
 
-  if (severity != absl::LogSeverity::kFatal || !exit_on_dfatal) {
+  if (severity != LOGGING_FATAL || !exit_on_dfatal) {
 #ifdef THREAD_LOCAL_STORAGE
     // No need for locking, because this is thread local.
     if (thread_data_available) {
@@ -1837,7 +1872,7 @@ void LogMessage::Init(const char* file,
 
   stream().fill('0');
   data_->preserved_errno_ = errno;
-  data_->severity_ = static_cast<int>(severity);
+  data_->severity_ = severity;
   data_->line_ = line;
   data_->send_method_ = send_method;
   data_->outvec_ = nullptr;
@@ -1854,10 +1889,47 @@ void LogMessage::Init(const char* file,
   //    (log level, GMT year, month, date, time, thread_id, file basename, line)
   // We exclude the thread_id for the default thread.
   if (absl::GetFlag(FLAGS_log_prefix) && (line != kNoLogPrefix)) {
-    stream() << LogSeverityName(severity)[0] << std::setw(6)
-             << data_->tick_counts_ << ' ' << std::setfill(' ') << std::setw(5)
-             << static_cast<unsigned int>(GetTID()) << std::setfill('0') << ' '
-             << data_->basename_ << ':' << data_->line_ << "] ";
+    // TODO(darin): It might be nice if the columns were fixed width.
+    stream() << '[';
+    if (g_log_prefix)
+      stream() << g_log_prefix << ':';
+    if (g_log_process_id)
+      stream() << GetMainThreadPid() << ':';
+    if (g_log_thread_id)
+      stream() << GetTID() << ':';
+    if (g_log_timestamp) {
+#if defined(OS_WIN)
+      SYSTEMTIME local_time;
+      GetLocalTime(&local_time);
+      stream() << std::setfill('0') << std::setw(2) << local_time.wMonth
+               << std::setw(2) << local_time.wDay << '/' << std::setw(2)
+               << local_time.wHour << std::setw(2) << local_time.wMinute
+               << std::setw(2) << local_time.wSecond << '.' << std::setw(3)
+               << local_time.wMilliseconds << ':';
+#elif defined(OS_POSIX) || defined(OS_FUCHSIA)
+      timeval tv;
+      gettimeofday(&tv, nullptr);
+      time_t t = tv.tv_sec;
+      struct tm local_time;
+      localtime_r(&t, &local_time);
+      struct tm* tm_time = &local_time;
+      stream() << std::setfill('0') << std::setw(2) << 1 + tm_time->tm_mon
+               << std::setw(2) << tm_time->tm_mday << '/' << std::setw(2)
+               << tm_time->tm_hour << std::setw(2) << tm_time->tm_min
+               << std::setw(2) << tm_time->tm_sec << '.' << std::setw(6)
+               << tv.tv_usec << ':';
+#else
+#error Unsupported platform
+#endif
+    }
+    if (g_log_tickcount)
+      stream() << data_->tick_counts_ << ':';
+    if (severity_ >= 0) {
+      stream() << log_severity_name(severity_);
+    } else {
+      stream() << "VERBOSE" << -severity_;
+    }
+    stream() << ":" << data_->basename_ << "(" << data_->line_ << ")] ";
   }
   data_->num_prefix_chars_ = data_->stream_.pcount();
 
@@ -1895,7 +1967,7 @@ std::ostream& LogMessage::stream() {
 }
 
 namespace {
-#if defined(__ANDROID__)
+#if defined(OS_ANDROID)
 int AndroidLogLevel(const int severity) {
   switch (severity) {
     case 3:
@@ -1908,7 +1980,7 @@ int AndroidLogLevel(const int severity) {
       return ANDROID_LOG_INFO;
   }
 }
-#endif  // defined(__ANDROID__)
+#endif  // defined(OS_ANDROID)
 }  // namespace
 
 // Flush buffered message, called by the destructor, or any other function
@@ -1941,16 +2013,16 @@ void LogMessage::Flush() {
   {
     absl::MutexLock l(&log_mutex);
     (this->*(data_->send_method_))();
-    ++num_messages_[static_cast<int>(data_->severity_)];
+    ++num_messages_[std::max(data_->severity_, LOGGING_INFO)];
   }
   LogDestination::WaitForSinks(data_);
 
-#if defined(__ANDROID__)
-  const int level = AndroidLogLevel((int)data_->severity_);
+#if defined(OS_ANDROID)
+  const int level = AndroidLogLevel(data_->severity_);
   const std::string text = std::string(data_->message_text_);
   __android_log_write(level, "native",
                       text.substr(0, data_->num_chars_to_log_).c_str());
-#endif  // defined(__ANDROID__)
+#endif  // defined(OS_ANDROID)
 
   if (append_newline) {
     // Fix the ostrstream back how it was before we screwed with it.
@@ -1985,8 +2057,8 @@ void ReprintFatalMessage() {
       // Also write to stderr (don't color to avoid terminal checks)
       WriteToStderr(fatal_message, n);
     }
-    LogDestination::LogToAllLogfiles(absl::LogSeverity::kError, fatal_time,
-                                     fatal_message, n);
+    LogDestination::LogToAllLogfiles(LOGGING_ERROR, fatal_time, fatal_message,
+                                     n);
   }
 }
 
@@ -1994,9 +2066,8 @@ void ReprintFatalMessage() {
 void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
   log_mutex.AssertHeld();
 
-  RAW_DCHECK(data_->num_chars_to_log_ > 0 &&
-                 data_->message_text_[data_->num_chars_to_log_ - 1] == '\n',
-             "");
+  assert(data_->num_chars_to_log_ > 0 &&
+         data_->message_text_[data_->num_chars_to_log_ - 1] == '\n');
 
   // Messages of a given severity get logged to lower severity logs, too
 
@@ -2004,28 +2075,26 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
   // file if we haven't parsed the command line flags to get the
   // program name.
   if (absl::GetFlag(FLAGS_logtostderr)) {
-    ColoredWriteToStderr(static_cast<LogSeverity>(data_->severity_),
-                         data_->message_text_, data_->num_chars_to_log_);
+    ColoredWriteToStderr(data_->severity_, data_->message_text_,
+                         data_->num_chars_to_log_);
 
     // this could be protected by a flag if necessary.
     LogDestination::LogToSinks(
-        static_cast<LogSeverity>(data_->severity_), data_->fullname_,
-        data_->basename_, data_->line_,
+        data_->severity_, data_->fullname_, data_->basename_, data_->line_,
         data_->message_text_ + data_->num_prefix_chars_,
         (data_->num_chars_to_log_ - data_->num_prefix_chars_ - 1),
         data_->tick_counts_);
   } else {
     // log this message to all log files of severity <= severity_
-    LogDestination::LogToAllLogfiles(static_cast<LogSeverity>(data_->severity_),
-                                     data_->tick_counts_, data_->message_text_,
+    LogDestination::LogToAllLogfiles(data_->severity_, data_->tick_counts_,
+                                     data_->message_text_,
                                      data_->num_chars_to_log_);
 
-    LogDestination::MaybeLogToStderr(
-        static_cast<LogSeverity>(data_->severity_), data_->message_text_,
-        data_->num_chars_to_log_, data_->num_prefix_chars_);
+    LogDestination::MaybeLogToStderr(data_->severity_, data_->message_text_,
+                                     data_->num_chars_to_log_,
+                                     data_->num_prefix_chars_);
     LogDestination::LogToSinks(
-        static_cast<LogSeverity>(data_->severity_), data_->fullname_,
-        data_->basename_, data_->line_,
+        data_->severity_, data_->fullname_, data_->basename_, data_->line_,
         data_->message_text_ + data_->num_prefix_chars_,
         (data_->num_chars_to_log_ - data_->num_prefix_chars_ - 1),
         data_->tick_counts_);
@@ -2035,8 +2104,7 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
   // If we log a FATAL message, flush all the log destinations, then toss
   // a signal for others to catch. We leave the logs in a state that
   // someone else can use them (as long as they flush afterwards)
-  if (static_cast<LogSeverity>(data_->severity_) == absl::LogSeverity::kFatal &&
-      exit_on_dfatal) {
+  if (data_->severity_ == LOGGING_FATAL && exit_on_dfatal) {
     if (data_->first_fatal_) {
       // Store crash information so that it is accessible from within signal
       // handlers that may be invoked later.
@@ -2091,12 +2159,10 @@ void LogMessage::Fail() {
 // L >= log_mutex (callers must hold the log_mutex).
 void LogMessage::SendToSink() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
   if (data_->sink_ != nullptr) {
-    RAW_DCHECK(data_->num_chars_to_log_ > 0 &&
-                   data_->message_text_[data_->num_chars_to_log_ - 1] == '\n',
-               "");
+    assert(data_->num_chars_to_log_ > 0 &&
+           data_->message_text_[data_->num_chars_to_log_ - 1] == '\n');
     data_->sink_->send(
-        static_cast<LogSeverity>(data_->severity_), data_->fullname_,
-        data_->basename_, data_->line_,
+        data_->severity_, data_->fullname_, data_->basename_, data_->line_,
         data_->message_text_ + data_->num_prefix_chars_,
         (data_->num_chars_to_log_ - data_->num_prefix_chars_ - 1),
         data_->tick_counts_);
@@ -2112,9 +2178,8 @@ void LogMessage::SendToSinkAndLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
 // L >= log_mutex (callers must hold the log_mutex).
 void LogMessage::SaveOrSendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
   if (data_->outvec_ != nullptr) {
-    RAW_DCHECK(data_->num_chars_to_log_ > 0 &&
-                   data_->message_text_[data_->num_chars_to_log_ - 1] == '\n',
-               "");
+    assert(data_->num_chars_to_log_ > 0 &&
+           data_->message_text_[data_->num_chars_to_log_ - 1] == '\n');
     // Omit prefix of message and trailing newline when recording in outvec_.
     const char* start = data_->message_text_ + data_->num_prefix_chars_;
     int len = data_->num_chars_to_log_ - data_->num_prefix_chars_ - 1;
@@ -2126,9 +2191,8 @@ void LogMessage::SaveOrSendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
 
 void LogMessage::WriteToStringAndLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
   if (data_->message_ != nullptr) {
-    RAW_DCHECK(data_->num_chars_to_log_ > 0 &&
-                   data_->message_text_[data_->num_chars_to_log_ - 1] == '\n',
-               "");
+    assert(data_->num_chars_to_log_ > 0 &&
+           data_->message_text_[data_->num_chars_to_log_ - 1] == '\n');
     // Omit prefix of message and trailing newline when writing to message_.
     const char* start = data_->message_text_ + data_->num_prefix_chars_;
     int len = data_->num_chars_to_log_ - data_->num_prefix_chars_ - 1;
@@ -2153,36 +2217,12 @@ int64_t LogMessage::num_messages(int severity) {
   return num_messages_[severity];
 }
 
-// Output the COUNTER value. This is only valid if ostream is a
-// LogStream.
-std::ostream& operator<<(std::ostream& os, const PRIVATE_Counter&) {
-  LogMessage::LogStream* log = static_cast<LogMessage::LogStream*>(&os);
-  CHECK(log && log == log->self())
-      << "You must not use COUNTER with non-log ostream";
-  os << log->ctr();
-  return os;
-}
-
-ErrnoLogMessage::ErrnoLogMessage(const char* file,
-                                 int line,
-                                 LogSeverity severity,
-                                 uint64_t ctr,
-                                 void (LogMessage::*send_method)())
-    : LogMessage(file, line, severity, ctr, send_method) {}
-
-ErrnoLogMessage::~ErrnoLogMessage() {
-  // Don't access errno directly because it may have been altered
-  // while streaming the message.
-  stream() << ": " << StrError(preserved_errno()) << " [" << preserved_errno()
-           << "]";
-}
-
 void FlushLogFiles(LogSeverity min_severity) {
-  LogDestination::FlushLogFiles(static_cast<int>(min_severity));
+  LogDestination::FlushLogFiles(min_severity);
 }
 
 void FlushLogFilesUnsafe(LogSeverity min_severity) {
-  LogDestination::FlushLogFilesUnsafe(static_cast<int>(min_severity));
+  LogDestination::FlushLogFilesUnsafe(min_severity);
 }
 
 void SetLogDestination(LogSeverity severity, const char* base_filename) {
@@ -2208,7 +2248,7 @@ std::string LogSink::ToString(LogSeverity severity,
   std::ostringstream stream(std::string(message, message_len));
   stream.fill('0');
 
-  stream << LogSeverityName(severity)[0] << std::setw(6) << tick_counts << ' '
+  stream << log_severity_name(severity)[0] << std::setw(6) << tick_counts << ' '
          << std::setfill(' ') << std::setw(5) << GetTID() << std::setfill('0')
          << ' ' << file << ':' << line << "] ";
 
@@ -2260,7 +2300,7 @@ void SetExitOnDFatal(bool value) {
 
 static void GetTempDirectories(std::vector<std::string>* list) {
   list->clear();
-#ifdef _WIN32
+#ifdef OS_WIN
   // On windows we'll try to find a directory in this order:
   //   C:/Documents & Settings/whomever/TEMP (or whatever GetTempPath() is)
   //   C:/TMP/
@@ -2318,7 +2358,7 @@ const std::vector<std::string>& GetLoggingDirectories() {
       logging_directories_list->push_back(absl::GetFlag(FLAGS_log_dir));
     } else {
       GetTempDirectories(logging_directories_list);
-#ifdef _WIN32
+#ifdef OS_WIN
       char tmp[MAX_PATH];
       if (GetWindowsDirectoryA(tmp, MAX_PATH)) {
         logging_directories_list->push_back(tmp);
@@ -2347,7 +2387,7 @@ void GetExistingTempDirectories(std::vector<std::string>* list) {
 }
 
 void TruncateLogFile(const char* path, int64_t limit, int64_t keep) {
-#ifndef _WIN32
+#ifndef OS_WIN
   struct stat statbuf;
   const int kCopyBlockSize = 8 << 10;
   char copybuf[kCopyBlockSize];
@@ -2355,7 +2395,7 @@ void TruncateLogFile(const char* path, int64_t limit, int64_t keep) {
   // Don't follow symlinks unless they're our own fd symlinks in /proc
   int flags = O_RDWR;
   // TODO(hamaji): Support other environments.
-#ifdef __linux__
+#ifdef OS_LINUX
   const char* procfd_prefix = "/proc/self/fd/";
   if (strncmp(procfd_prefix, path, strlen(procfd_prefix)))
     flags |= O_NOFOLLOW;
@@ -2430,7 +2470,7 @@ out_close_fd:
 }
 
 void TruncateStdoutStderr() {
-#ifndef _WIN32
+#ifndef OS_WIN
   int64_t limit = MaxLogSize() << 20;
   int64_t keep = 1 << 20;
   TruncateLogFile("/proc/self/fd/1", limit, keep);
@@ -2440,122 +2480,17 @@ void TruncateStdoutStderr() {
 #endif
 }
 
-// Helper functions for string comparisons.
-#define DEFINE_CHECK_STROP_IMPL(name, func, expected)                         \
-  std::string* Check##func##expected##Impl(const char* s1, const char* s2,    \
-                                           const char* names) {               \
-    bool equal = s1 == s2 || (s1 && s2 && !func(s1, s2));                     \
-    if (equal == expected)                                                    \
-      return nullptr;                                                         \
-    else {                                                                    \
-      std::ostringstream ss;                                                  \
-      if (!s1)                                                                \
-        s1 = "";                                                              \
-      if (!s2)                                                                \
-        s2 = "";                                                              \
-      ss << #name " failed: " << names << " (" << s1 << " vs. " << s2 << ")"; \
-      return new std::string(ss.str());                                       \
-    }                                                                         \
-  }
-DEFINE_CHECK_STROP_IMPL(CHECK_STREQ, strcmp, true)
-DEFINE_CHECK_STROP_IMPL(CHECK_STRNE, strcmp, false)
-DEFINE_CHECK_STROP_IMPL(CHECK_STRCASEEQ, strcasecmp, true)
-DEFINE_CHECK_STROP_IMPL(CHECK_STRCASENE, strcasecmp, false)
-#undef DEFINE_CHECK_STROP_IMPL
-
-static const char* StrErrorAdaptor(int errnum, char* buf, size_t buflen);
-
-const char* StrErrorAdaptor(int errnum, char* buf, size_t buflen) {
-#if defined(_WIN32)
-  int rc = strerror_s(buf, buflen, errnum);
-  buf[buflen - 1] = '\0';  // guarantee NUL termination
-  if (rc == 0 && strncmp(buf, "Unknown error", buflen) == 0)
-    *buf = '\0';
-  return buf;
-#else
-  // The type of `ret` is platform-specific; both of these branches must compile
-  // either way but only one will execute on any given platform:
-  auto ret = strerror_r(errnum, buf, buflen);
-  if (std::is_same<decltype(ret), int>::value) {
-    // XSI `strerror_r`; `ret` is `int`:
-    if (ret)
-      *buf = '\0';
-    return buf;
-  } else {
-    // GNU `strerror_r`; `ret` is `char *`:
-    return reinterpret_cast<const char*>(ret);
-  }
-#endif
-}
-
-int posix_strerror_r(int err, char* buf, size_t len) {
-  // Sanity check input parameters
-  if (buf == nullptr || len <= 0) {
-    errno = EINVAL;
-    return -1;
-  }
-
-  // Reset buf and errno, and try calling whatever version of strerror_r()
-  // is implemented by glibc
-  buf[0] = '\000';
-  int old_errno = errno;
-  errno = 0;
-  // The GNU-specific strerror_r() returns a pointer to a string containing
-  // the error message.
-  const char* rc = StrErrorAdaptor(err, buf, len);
-
-  // Both versions set errno on failure
-  if (errno) {
-    // Should already be there, but better safe than sorry
-    buf[0] = '\000';
-    return -1;
-  }
-  errno = old_errno;
-
-  // POSIX is vague about whether the string will be terminated, although
-  // is indirectly implies that typically ERANGE will be returned, instead
-  // of truncating the string. This is different from the GNU implementation.
-  // We play it safe by always terminating the string explicitly.
-  buf[len - 1] = '\000';
-
-  // If the function succeeded, we can use its exit code to determine the
-  // semantics implemented by glibc
-  if (!rc) {
-    return 0;
-  } else {
-    // GNU semantics detected
-    if (rc == buf) {
-      return 0;
-    } else {
-      buf[0] = '\000';
-#if defined(__APPLE__)
-      if (reinterpret_cast<intptr_t>(rc) < sys_nerr) {
-        // This means an error on MacOSX or FreeBSD.
-        return -1;
-      }
-#endif
-      strncat(buf, rc, len - 1);
-      return 0;
-    }
-  }
-}
-
 std::string StrError(int err) {
   char buf[100];
-  int rc = posix_strerror_r(err, buf, sizeof(buf));
-  if ((rc < 0) || (buf[0] == '\000')) {
+  safe_strerror_r(err, buf, sizeof(buf));
+  if (buf[0] == '\000') {
     snprintf(buf, sizeof(buf), "Error number %d", err);
   }
   return buf;
 }
 
 LogMessageFatal::LogMessageFatal(const char* file, int line)
-    : LogMessage(file, line, absl::LogSeverity::kFatal) {}
-
-LogMessageFatal::LogMessageFatal(const char* file,
-                                 int line,
-                                 const CheckOpString& result)
-    : LogMessage(file, line, result) {}
+    : LogMessage(file, line, LOGGING_FATAL) {}
 
 MSVC_PUSH_DISABLE_WARNING(4722)
 LogMessageFatal::~LogMessageFatal() {
@@ -2563,57 +2498,6 @@ LogMessageFatal::~LogMessageFatal() {
   LogMessage::Fail();
 }
 MSVC_POP_WARNING()
-
-CheckOpMessageBuilder::CheckOpMessageBuilder(const char* exprtext)
-    : stream_(new std::ostringstream) {
-  *stream_ << exprtext << " (";
-}
-
-CheckOpMessageBuilder::~CheckOpMessageBuilder() {
-  delete stream_;
-}
-
-std::ostream* CheckOpMessageBuilder::ForVar2() {
-  *stream_ << " vs. ";
-  return stream_;
-}
-
-std::string* CheckOpMessageBuilder::NewString() {
-  *stream_ << ")";
-  return new std::string(stream_->str());
-}
-
-template <>
-void MakeCheckOpValueString(std::ostream* os, const char& v) {
-  if (v >= 32 && v <= 126) {
-    (*os) << "'" << v << "'";
-  } else {
-    (*os) << "char value " << static_cast<short>(v);
-  }
-}
-
-template <>
-void MakeCheckOpValueString(std::ostream* os, const signed char& v) {
-  if (v >= 32 && v <= 126) {
-    (*os) << "'" << v << "'";
-  } else {
-    (*os) << "signed char value " << static_cast<short>(v);
-  }
-}
-
-template <>
-void MakeCheckOpValueString(std::ostream* os, const unsigned char& v) {
-  if (v >= 32 && v <= 126) {
-    (*os) << "'" << v << "'";
-  } else {
-    (*os) << "unsigned char value " << static_cast<unsigned short>(v);
-  }
-}
-
-template <>
-void MakeCheckOpValueString(std::ostream* os, const std::nullptr_t& /*v*/) {
-  (*os) << "nullptr";
-}
 
 // Broken out from logging.cc by Soren Lassen
 // logging_unittest.cc covers the functionality herein
@@ -2738,7 +2622,7 @@ static void VLOG2Initializer() {
   inited_vmodule = true;
 }
 
-// This can be called very early, so we use SpinLock and RAW_VLOG here.
+// This can be called very early, so we use SpinLock here.
 int SetVLOGLevel(const char* module_pattern, int log_level) {
   int result = absl::GetFlag(FLAGS_v);
   size_t const pattern_len = strlen(module_pattern);
@@ -2768,7 +2652,7 @@ int SetVLOGLevel(const char* module_pattern, int log_level) {
       vmodule_list = info;
     }
   }
-  RAW_LOG(INFO, "Set VLOG level for \"%s\" to %d", module_pattern, log_level);
+  fprintf(stderr, "Set VLOG level for \"%s\" to %d", module_pattern, log_level);
   return result;
 }
 
@@ -2794,7 +2678,7 @@ bool InitVLOG3__(absl::Flag<int32_t>** site_flag,
   // Get basename for file
   const char* base = strrchr(fname, '/');
 
-#ifdef _WIN32
+#ifdef OS_WIN
   if (!base) {
     base = strrchr(fname, '\\');
   }
@@ -2912,20 +2796,20 @@ void DumpStackTraceAndExit() {
   // TODO(hamaji): Use signal instead of sigaction?
   // Set the default signal handler for SIGABRT, to avoid invoking our
   // own signal handler installed by InstallFailureSignalHandler().
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(OS_POSIX)
   struct sigaction sig_action;
   memset(&sig_action, 0, sizeof(sig_action));
   sigemptyset(&sig_action.sa_mask);
   sig_action.sa_handler = SIG_DFL;
   sigaction(SIGABRT, &sig_action, nullptr);
-#elif defined(_WIN32)
+#elif defined(OS_WIN)
   signal(SIGABRT, SIG_DFL);
-#endif  // defined(__linux__) || defined(__APPLE__)
+#endif  // defined(OS_POSIX)
 
   abort();
 }
 
-#ifdef _WIN32
+#ifdef OS_WIN
 struct timeval {
   long tv_sec, tv_usec;
 };
@@ -2966,7 +2850,7 @@ WallTime WallTime_Now() {
   return static_cast<double>(CycleClock_Now()) * 0.000001;
 }
 
-static int32_t g_main_thread_pid = getpid();
+static int32_t g_main_thread_pid = GetPID();
 int32_t GetMainThreadPid() {
   return g_main_thread_pid;
 }
@@ -2982,7 +2866,7 @@ bool PidHasChanged() {
 
 // Keep the same implementation with chromium
 
-#if defined(__linux__) && !defined(__ANDROID__)
+#if defined(OS_LINUX) && !defined(OS_ANDROID)
 
 // Store the thread ids in local storage since calling the SWI can be
 // expensive and PlatformThread::CurrentId is used liberally. Clear
@@ -3004,15 +2888,27 @@ class InitAtFork {
   InitAtFork() { pthread_atfork(nullptr, nullptr, ClearTidCache); }
 };
 
-#endif  // defined(__linux__) && !defined(__ANDROID__)
+#endif  // defined(OS_LINUX) && !defined(OS_ANDROID)
+
+pid_t GetPID() {
+  // Pthreads doesn't have the concept of a thread ID, so we have to reach down
+  // into the kernel.
+#if defined(OS_POSIX)
+  return getpid();
+#elif defined(OS_WIN)
+  return GetCurrentProcessId();
+#else
+#error
+#endif
+}
 
 pid_t GetTID() {
   // Pthreads doesn't have the concept of a thread ID, so we have to reach down
   // into the kernel.
-#if defined(__APPLE__)
+#if defined(OS_APPLE)
   return pthread_mach_thread_np(pthread_self());
   // On Linux and MacOSX, we try to use gettid().
-#elif defined(__linux__) && !defined(__ANDROID__)
+#elif defined(OS_LINUX) && !defined(OS_ANDROID)
   static InitAtFork init_at_fork;
   if (g_thread_id == -1) {
     g_thread_id = syscall(__NR_gettid);
@@ -3023,14 +2919,14 @@ pid_t GetTID() {
            "through fork().";
   }
   return g_thread_id;
-#elif defined(__ANDROID__)
+#elif defined(OS_ANDROID)
   // Note: do not cache the return value inside a thread_local variable on
   // Android (as above). The reasons are:
   // - thread_local is slow on Android (goes through emutls)
   // - gettid() is fast, since its return value is cached in pthread (in the
   //   thread control block of pthread). See gettid.c in bionic.
   return gettid();
-#elif defined(_WIN32)
+#elif defined(OS_WIN)
   return GetCurrentThreadId();
 #else
   // If none of the techniques above worked, we use pthread_self().
@@ -3040,7 +2936,7 @@ pid_t GetTID() {
 
 const char* const_basename(const char* filepath) {
   const char* base = strrchr(filepath, '/');
-#ifdef _WIN32  // Look for either path separator in Windows
+#ifdef OS_WIN  // Look for either path separator in Windows
   if (!base)
     base = strrchr(filepath, '\\');
 #endif
@@ -3058,7 +2954,7 @@ const std::string& MyUserName() {
 
 void MyUserNameInitializer() {
   // TODO(hamaji): Probably this is not portable.
-#if defined(_WIN32)
+#if defined(OS_WIN)
   const char* user = getenv("USERNAME");
 #else
   const char* user = getenv("USER");
@@ -3066,7 +2962,7 @@ void MyUserNameInitializer() {
   if (user != nullptr) {
     g_my_user_name = user;
   } else {
-#if defined(HAVE_PWD_H) && !defined(_WIN32)
+#if defined(HAVE_PWD_H) && !defined(OS_WIN)
     struct passwd pwd;
     struct passwd* result = nullptr;
     char buffer[1024] = {'\0'};
@@ -3098,100 +2994,112 @@ bool SetCrashReason(const CrashReason* r) {
   return g_reason.compare_exchange_strong(empty_reason, r);
 }
 
-// Broken out from raw_logging.cc
-// Author: Maxim Lifantsev
+// logging.h is a widely included header and its size has significant impact on
+// build time. Try not to raise this limit unless absolutely necessary. See
+// https://chromium.googlesource.com/chromium/src/+/HEAD/docs/wmax_tokens.md
 
-// CAVEAT: vsnprintf called from *DoRawLog below has some (exotic) code paths
-// that invoke malloc() and getenv() that might acquire some locks.
-// If this becomes a problem we should reimplement a subset of vsnprintf
-// that does not need locks and malloc.
+// This is never instantiated, it's just used for EAT_STREAM_PARAMETERS to have
+// an object of the correct type on the LHS of the unused part of the ternary
+// operator.
+std::ostream* g_swallow_stream;
 
-// Helper for RawLog__ below.
-// *DoRawLog writes to *buf of *size and move them past the written portion.
-// It returns true iff there was no overflow or error.
-
-static bool DoRawLog(char** buf, int* size, const char* format, ...)
-    ABSL_PRINTF_ATTRIBUTE(3, 4);
-
-static bool DoRawLog(char** buf, int* size, const char* format, ...) {
-  va_list ap;
-  va_start(ap, format);
-  int n = vsnprintf(*buf, *size, format, ap);
-  va_end(ap);
-  if (n < 0 || n > *size)
+bool ShouldCreateLogMessage(LogSeverity severity) {
+  if (severity < absl::GetFlag(FLAGS_minloglevel))
     return false;
-  *size -= n;
-  *buf += n;
+
   return true;
 }
 
-// TODO not working with ABSL_PRINTF_ARG_ATTRIBUTE
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-// Helper for RawLog__ below.
-static bool VADoRawLog(char** buf, int* size, const char* format, va_list ap) {
-  int n = vsnprintf(*buf, *size, format, ap);
-  if (n < 0 || n > *size)
-    return false;
-  *size -= n;
-  *buf += n;
-  return true;
+#if defined(OS_WIN)
+// This has already been defined in the header, but defining it again as DWORD
+// ensures that the type used in the header is equivalent to DWORD. If not,
+// the redefinition is a compile error.
+typedef DWORD SystemErrorCode;
+#endif
+
+SystemErrorCode GetLastSystemErrorCode() {
+#if defined(OS_WIN)
+  return ::GetLastError();
+#elif defined(OS_POSIX)
+  return errno;
+#endif
 }
-#pragma GCC diagnostic pop
 
-static const int kLogBufSize = 3000;
-static std::atomic<bool> crashed;
-static CrashReason raw_crash_reason;
-static char crash_buf[kLogBufSize + 1] = {0};  // Will end in '\0'
-
-void RawLog__(LogSeverity severity,
-              const char* file,
-              int line,
-              const char* format,
-              ...) {
-  if (!(absl::GetFlag(FLAGS_logtostderr) ||
-        static_cast<int>(severity) >= absl::GetFlag(FLAGS_stderrthreshold) ||
-        absl::GetFlag(FLAGS_alsologtostderr))) {
-    return;  // this stderr log message is suppressed
+std::string SystemErrorCodeToString(SystemErrorCode error_code) {
+#if defined(OS_WIN)
+  const int kErrorMessageBufferSize = 256;
+  char msgbuf[kErrorMessageBufferSize];
+  DWORD flags = FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
+  DWORD len = FormatMessageA(flags, nullptr, error_code, 0, msgbuf,
+                             sizeof(msgbuf) / sizeof(msgbug[0]), nullptr);
+  if (len) {
+    // Messages returned by system end with line breaks.
+    return CollapseWhitespaceASCII(msgbuf, true) +
+           StringPrintf(" (0x%lX)", error_code);
   }
-  char buffer[kLogBufSize];
-  char* buf = buffer;
-  int size = sizeof(buffer);
+  return StringPrintf("Error (0x%lX) while retrieving error. (0x%lX)",
+                      GetLastError(), error_code);
+#elif defined(OS_POSIX)
+  return safe_strerror(error_code) + StringPrintf(" (%d)", error_code);
+#endif  // defined(OS_WIN)
+}
 
-  DoRawLog(&buf, &size,
-           "%c00000000  %5u %s:%d] RAW: ", LogSeverityName(severity)[0],
-           static_cast<unsigned int>(GetTID()),
-           const_basename(const_cast<char*>(file)), line);
+#if defined(OS_WIN)
+Win32ErrorLogMessage::Win32ErrorLogMessage(const char* file,
+                                           int line,
+                                           LogSeverity severity,
+                                           SystemErrorCode err)
+    : LogMessage(file, line, severity), err_(err) {}
 
-  // Record the position and size of the buffer after the prefix
-  const char* msg_start = buf;
-  const int msg_size = size;
+Win32ErrorLogMessage::~Win32ErrorLogMessage() {
+  stream() << ": " << SystemErrorCodeToString(err_);
+  // We're about to crash (CHECK). Put |err_| on the stack (by placing it in a
+  // field) and use Alias in hopes that it makes it into crash dumps.
+  DWORD last_error = err_;
+  Alias(&last_error);
+}
+#elif defined(OS_POSIX)
+ErrnoLogMessage::ErrnoLogMessage(const char* file,
+                                 int line,
+                                 LogSeverity severity,
+                                 SystemErrorCode err)
+    : LogMessage(file, line, severity), err_(err) {}
 
-  va_list ap;
-  va_start(ap, format);
-  bool no_chop = VADoRawLog(&buf, &size, format, ap);
-  va_end(ap);
-  if (no_chop) {
-    DoRawLog(&buf, &size, "\n");
-  } else {
-    DoRawLog(&buf, &size, "RAW_LOG ERROR: The Message was too long!\n");
-  }
-  // We make a raw syscall to write directly to the stderr file descriptor,
-  // avoiding FILE buffering (to avoid invoking malloc()), and bypassing
-  // libc (to side-step any libc interception).
-  // We write just once to avoid races with other invocations of RawLog__.
-  safe_write(STDERR_FILENO, buffer, strlen(buffer));
-  if (severity == LOG_FATAL) {
-    bool not_crashed = false;
-    if (!crashed.compare_exchange_strong(not_crashed, true)) {
-      raw_crash_reason.filename = file;
-      raw_crash_reason.line_number = line;
-      memcpy(crash_buf, msg_start, msg_size);  // Don't include prefix
-      raw_crash_reason.message = crash_buf;
-      raw_crash_reason.depth = absl::GetStackTrace(
-          raw_crash_reason.stack, ARRAYSIZE(raw_crash_reason.stack), 1);
-      SetCrashReason(&raw_crash_reason);
+ErrnoLogMessage::~ErrnoLogMessage() {
+  stream() << ": " << SystemErrorCodeToString(err_);
+  // We're about to crash (CHECK). Put |err_| on the stack (by placing it in a
+  // field) and use Alias in hopes that it makes it into crash dumps.
+  int last_error = err_;
+  Alias(&last_error);
+}
+#endif  // defined(OS_WIN)
+
+void RawLog(int level, const char* message) {
+  if (level >= absl::GetFlag(FLAGS_minloglevel) && message) {
+    size_t bytes_written = 0;
+    const size_t message_len = strlen(message);
+    int rv;
+    while (bytes_written < message_len) {
+      rv = HANDLE_EINTR(write(STDERR_FILENO, message + bytes_written,
+                              message_len - bytes_written));
+      if (rv < 0) {
+        // Give up, nothing we can do now.
+        break;
+      }
+      bytes_written += rv;
     }
-    LogMessage::Fail();  // abort()
+
+    if (message_len > 0 && message[message_len - 1] != '\n') {
+      do {
+        rv = HANDLE_EINTR(write(STDERR_FILENO, "\n", 1));
+        if (rv < 0) {
+          // Give up, nothing we can do now.
+          break;
+        }
+      } while (rv != 1);
+    }
   }
+
+  if (level == LOGGING_FATAL)
+    BreakDebuggerAsyncSafe();
 }

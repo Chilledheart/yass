@@ -5,37 +5,7 @@
 
 #include <string>
 
-/* compiler_specific.h */
-// Annotate a function indicating the caller must examine the return value.
-// Use like:
-//   int foo() WARN_UNUSED_RESULT;
-// To explicitly ignore a result, see |ignore_result()| in base/macros.h.
-#undef WARN_UNUSED_RESULT
-#if defined(__GNUC__) || defined(__clang__)
-#define WARN_UNUSED_RESULT __attribute__((warn_unused_result))
-#else
-#define WARN_UNUSED_RESULT
-#endif
-
-// Tell the compiler a function is using a printf-style format string.
-// |format_param| is the one-based index of the format string parameter;
-// |dots_param| is the one-based index of the "..." parameter.
-// For v*printf functions (which take a va_list), pass 0 for dots_param.
-// (This is undocumented but matches what the system C headers do.)
-// For member functions, the implicit this parameter counts as index 1.
-#if defined(__GNUC__) || defined(__clang__)
-#define PRINTF_FORMAT(format_param, dots_param) \
-  __attribute__((format(printf, format_param, dots_param)))
-#else
-#define PRINTF_FORMAT(format_param, dots_param)
-#endif
-
-// WPRINTF_FORMAT is the same, but for wide format strings.
-// This doesn't appear to yet be implemented in any compiler.
-// See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=38308 .
-#define WPRINTF_FORMAT(format_param, dots_param)
-// If available, it would look like:
-//   __attribute__((format(wprintf, format_param, dots_param)))
+#include "core/compiler_specific.hpp"
 
 // Return a C++ string given printf-like input.
 std::string StringPrintf(const char* format, ...)

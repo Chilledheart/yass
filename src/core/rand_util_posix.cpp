@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <unistd.h>
 
+#include "core/common_posix.hpp"
 #include "core/logging.hpp"
 
 #if defined(__linux__) || defined(__ANDROID__)
@@ -25,40 +26,7 @@
 #include <AvailabilityMacros.h>
 #endif
 
-#if defined(NDEBUG)
-
-#define HANDLE_EINTR(x)                                     \
-  ({                                                        \
-    decltype(x) eintr_wrapper_result;                       \
-    do {                                                    \
-      eintr_wrapper_result = (x);                           \
-    } while (eintr_wrapper_result == -1 && errno == EINTR); \
-    eintr_wrapper_result;                                   \
-  })
-
-#else  // NDEBUG
-
-#define HANDLE_EINTR(x)                                      \
-  ({                                                         \
-    int eintr_wrapper_counter = 0;                           \
-    decltype(x) eintr_wrapper_result;                        \
-    do {                                                     \
-      eintr_wrapper_result = (x);                            \
-    } while (eintr_wrapper_result == -1 && errno == EINTR && \
-             eintr_wrapper_counter++ < 100);                 \
-    eintr_wrapper_result;                                    \
-  })
-
-#endif  // NDEBUG
-
-#if defined(__has_feature)
-#if __has_feature(memory_sanitizer)
-#define MSAN_UNPOISON(p, size) __msan_unpoison(p, size)
-#endif
-#endif
-#ifndef MSAN_UNPOISON
-#define MSAN_UNPOISON(p, size)
-#endif
+#include "core/compiler_specific.hpp"
 
 // TODO: move to file_utils.cpp
 static bool ReadFromFD(int fd, char* buffer, size_t bytes);
