@@ -13,7 +13,6 @@
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
-#include "win32/panels.hpp"
 #include "win32/resource.hpp"
 #include "win32/utils.hpp"
 #include "win32/yass_frame.hpp"
@@ -112,7 +111,7 @@ BOOL CYassApp::InitInstance() {
   frame_->UpdateWindow();
 
   if (Utils::GetAutoStart()) {
-    frame_->left_panel_.OnStart();
+    frame_->OnStart();
   }
 
   return TRUE;

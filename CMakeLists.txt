@@ -1067,7 +1067,6 @@ if (GUI)
           src/win32/yass.cpp
           src/win32/yass_frame.cpp
           src/win32/option_dialog.cpp
-          src/win32/panels.cpp
           src/win32/utils_win.cpp)
     else()
         list(APPEND SRC_FILES
@@ -1075,7 +1074,6 @@ if (GUI)
           src/gui/yass_frame.cpp
           src/gui/yass_logging.cpp
           src/gui/option_dialog.cpp
-          src/gui/panels.cpp
           src/gui/utils.cpp)
     endif()
 

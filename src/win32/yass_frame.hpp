@@ -4,7 +4,6 @@
 #ifndef YASS_WIN32_FRAME
 #define YASS_WIN32_FRAME
 
-#include <afxDockablePane.h>  // CDockablePane
 #include <afxext.h>           // MFC extensions (including VB)
 #include <afxmenubar.h>       // CMFCMenuBar
 #include <afxtempl.h>
@@ -15,13 +14,14 @@
 
 #include <string>
 
-class LeftPanel;
-class RightPanel;
 class CYassFrame : public CFrameWnd {
   DECLARE_DYNCREATE(CYassFrame);
 
  protected:
   CYassFrame();
+
+ public:
+  ~CYassFrame() override;
 
  public:
   std::string GetServerHost();
@@ -38,6 +38,37 @@ class CYassFrame : public CFrameWnd {
 
   void UpdateStatus();
 
+  // Left Panel
+ public:
+  void OnStart();
+  void OnStop();
+
+ protected:
+  CButton start_button_;
+  CButton stop_button_;
+
+  // Right Panel
+ protected:
+  void OnCheckedAutoStart();
+
+  CStatic serverhost_label_;
+  CStatic serverport_label_;
+  CStatic password_label_;
+  CStatic method_label_;
+  CStatic localhost_label_;
+  CStatic localport_label_;
+  CStatic timeout_label_;
+  CStatic autostart_label_;
+
+  CEdit serverhost_edit_;
+  CEdit serverport_edit_;
+  CEdit password_edit_;
+  CComboBox method_combo_box_;
+  CEdit localhost_edit_;
+  CEdit localport_edit_;
+  CEdit timeout_edit_;
+  CButton autostart_button_;
+
  protected:
   CStatusBar status_bar_;
 
@@ -51,6 +82,7 @@ class CYassFrame : public CFrameWnd {
 
   afx_msg void OnUpdateStatus(CCmdUI* pCmdUI);
 
+ protected:
 #if 0
   afx_msg void OnDPIChanged(WPARAM w, LPARAM l);
 #endif
@@ -58,18 +90,10 @@ class CYassFrame : public CFrameWnd {
  private:
   std::wstring status_bar_message_;
 
- public:
-  ~CYassFrame() override;
-
  private:
   friend class CYassApp;
 
   CMFCMenuBar menu_bar_;
-  CDockablePane panel_;
-
- public:
-  LeftPanel left_panel_;
-  RightPanel right_panel_;
 
  protected:
   DECLARE_MESSAGE_MAP();

@@ -61,98 +61,98 @@ END_MESSAGE_MAP()
 
 std::string CYassFrame::GetServerHost() {
   CString server_host;
-  right_panel_.serverhost_edit_.GetWindowText(server_host);
+  serverhost_edit_.GetWindowText(server_host);
   return SysWideToUTF8(server_host.operator const wchar_t*());
 }
 
 std::string CYassFrame::GetServerPort() {
   CString server_port;
-  right_panel_.serverport_edit_.GetWindowText(server_port);
+  serverport_edit_.GetWindowText(server_port);
   return SysWideToUTF8(server_port.operator const wchar_t*());
 }
 
 std::string CYassFrame::GetPassword() {
   CString password;
-  right_panel_.password_edit_.GetWindowText(password);
+  password_edit_.GetWindowText(password);
   return SysWideToUTF8(password.operator const wchar_t*());
 }
 
 enum cipher_method CYassFrame::GetMethod() {
-  int method = right_panel_.method_combo_box_.GetCurSel();
+  int method = method_combo_box_.GetCurSel();
   return static_cast<enum cipher_method>(method);
 }
 
 std::string CYassFrame::GetLocalHost() {
   CString local_host;
-  right_panel_.localhost_edit_.GetWindowText(local_host);
+  localhost_edit_.GetWindowText(local_host);
   return SysWideToUTF8(local_host.operator const wchar_t*());
 }
 
 std::string CYassFrame::GetLocalPort() {
   CString local_port;
-  right_panel_.localport_edit_.GetWindowText(local_port);
+  localport_edit_.GetWindowText(local_port);
   return SysWideToUTF8(local_port.operator const wchar_t*());
 }
 
 std::string CYassFrame::GetTimeout() {
   CString timeout;
-  right_panel_.timeout_edit_.GetWindowText(timeout);
+  timeout_edit_.GetWindowText(timeout);
   return SysWideToUTF8(timeout.operator const wchar_t*());
 }
 
 void CYassFrame::Started() {
   UpdateStatus();
-  right_panel_.serverhost_edit_.EnableWindow(false);
-  right_panel_.serverport_edit_.EnableWindow(false);
-  right_panel_.password_edit_.EnableWindow(false);
-  right_panel_.method_combo_box_.EnableWindow(false);
-  right_panel_.localhost_edit_.EnableWindow(false);
-  right_panel_.localport_edit_.EnableWindow(false);
-  right_panel_.timeout_edit_.EnableWindow(false);
-  left_panel_.stop_button_.SetButtonStyle(WS_CHILD | WS_VISIBLE | WS_DISABLED);
+  serverhost_edit_.EnableWindow(false);
+  serverport_edit_.EnableWindow(false);
+  password_edit_.EnableWindow(false);
+  method_combo_box_.EnableWindow(false);
+  localhost_edit_.EnableWindow(false);
+  localport_edit_.EnableWindow(false);
+  timeout_edit_.EnableWindow(false);
+  stop_button_.SetButtonStyle(WS_CHILD | WS_VISIBLE | WS_DISABLED);
 }
 
 void CYassFrame::StartFailed() {
   UpdateStatus();
-  right_panel_.serverhost_edit_.EnableWindow(true);
-  right_panel_.serverport_edit_.EnableWindow(true);
-  right_panel_.password_edit_.EnableWindow(true);
-  right_panel_.method_combo_box_.EnableWindow(true);
-  right_panel_.localhost_edit_.EnableWindow(true);
-  right_panel_.localport_edit_.EnableWindow(true);
-  right_panel_.timeout_edit_.EnableWindow(true);
-  left_panel_.start_button_.SetButtonStyle(WS_CHILD | WS_VISIBLE);
+  serverhost_edit_.EnableWindow(true);
+  serverport_edit_.EnableWindow(true);
+  password_edit_.EnableWindow(true);
+  method_combo_box_.EnableWindow(true);
+  localhost_edit_.EnableWindow(true);
+  localport_edit_.EnableWindow(true);
+  timeout_edit_.EnableWindow(true);
+  start_button_.SetButtonStyle(WS_CHILD | WS_VISIBLE);
 }
 
 void CYassFrame::Stopped() {
   UpdateStatus();
-  right_panel_.serverhost_edit_.EnableWindow(true);
-  right_panel_.serverport_edit_.EnableWindow(true);
-  right_panel_.password_edit_.EnableWindow(true);
-  right_panel_.method_combo_box_.EnableWindow(true);
-  right_panel_.localhost_edit_.EnableWindow(true);
-  right_panel_.localport_edit_.EnableWindow(true);
-  right_panel_.timeout_edit_.EnableWindow(true);
-  left_panel_.start_button_.SetButtonStyle(WS_CHILD | WS_VISIBLE);
+  serverhost_edit_.EnableWindow(true);
+  serverport_edit_.EnableWindow(true);
+  password_edit_.EnableWindow(true);
+  method_combo_box_.EnableWindow(true);
+  localhost_edit_.EnableWindow(true);
+  localport_edit_.EnableWindow(true);
+  timeout_edit_.EnableWindow(true);
+  start_button_.SetButtonStyle(WS_CHILD | WS_VISIBLE);
 }
 
 void CYassFrame::UpdateStatus() {
   CString server_host(SysUTF8ToWide(absl::GetFlag(FLAGS_server_host)).c_str());
-  right_panel_.serverhost_edit_.SetWindowText(server_host);
+  serverhost_edit_.SetWindowText(server_host);
   CString server_port(
       std::to_wstring(absl::GetFlag(FLAGS_server_port)).c_str());
-  right_panel_.serverport_edit_.SetWindowText(server_port);
+  serverport_edit_.SetWindowText(server_port);
   CString password(SysUTF8ToWide(absl::GetFlag(FLAGS_password)).c_str());
-  right_panel_.password_edit_.SetWindowText(password);
+  password_edit_.SetWindowText(password);
   int method = absl::GetFlag(FLAGS_cipher_method);
-  right_panel_.method_combo_box_.SetEditSel(method, method);
+  method_combo_box_.SetEditSel(method, method);
   CString local_host(SysUTF8ToWide(absl::GetFlag(FLAGS_local_host)).c_str());
-  right_panel_.localhost_edit_.SetWindowText(local_host);
+  localhost_edit_.SetWindowText(local_host);
   CString local_port(std::to_wstring(absl::GetFlag(FLAGS_local_port)).c_str());
-  right_panel_.localport_edit_.SetWindowText(local_port);
+  localport_edit_.SetWindowText(local_port);
   CString timeout(
       std::to_wstring(absl::GetFlag(FLAGS_connect_timeout)).c_str());
-  right_panel_.timeout_edit_.SetWindowText(timeout);
+  timeout_edit_.SetWindowText(timeout);
 
   // TODO better?
   if (mApp->GetState() == CYassApp::STOPPED) {
@@ -199,6 +199,70 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
       (IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX && IDM_ABOUTBOX < 0xF000,
       "IDM_ABOUTBOX must be in the system command range.");
 
+  // Left Panel
+  CRect rect{0, 0, 10, 10};
+  start_button_.Create(_T("START"), BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE, rect,
+                       this, IDC_START);
+
+  rect = CRect{0, 0, 10, 60};
+  stop_button_.Create(_T("STOP"), BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE, rect,
+                      this, IDC_STOP);
+
+  stop_button_.EnableWindow(false);
+
+  // Right Panel
+  CString method_strings[] = {
+#define XX(num, name, string) _T(string),
+      CIPHER_METHOD_MAP(XX)
+#undef XX
+  };
+
+  // https://docs.microsoft.com/en-us/cpp/mfc/reference/styles-used-by-mfc?view=msvc-170#static-styles
+  // https://docs.microsoft.com/en-us/cpp/mfc/reference/styles-used-by-mfc?view=msvc-170#edit-styles
+  // https://docs.microsoft.com/en-us/cpp/mfc/reference/styles-used-by-mfc?view=msvc-170#combo-box-styles
+  // https://docs.microsoft.com/en-us/cpp/mfc/reference/styles-used-by-mfc?view=msvc-170#button-styles
+  rect = CRect{0, 0, 9, 29};
+  serverhost_label_.Create(_T("Server Host"), SS_LEFT, rect, this);
+  rect = CRect{0 + 100, 0, 9 + 100, 29};
+  serverhost_edit_.Create(ES_LEFT, rect, this, IDR_MAINFRAME);
+
+  rect = CRect{0, 0 + 10, 9, 29 + 10};
+  serverport_label_.Create(_T("Server Port"), SS_LEFT, rect, this);
+  rect = CRect{0 + 100, 0 + 10, 9 + 100, 29 + 10};
+  serverhost_edit_.Create(ES_LEFT | ES_NUMBER, rect, this, IDR_MAINFRAME);
+
+  rect = CRect{0, 0 + 20, 9, 29 + 20};
+  password_label_.Create(_T("Password"), SS_LEFT, rect, this);
+  rect = CRect{0 + 100, 0 + 20, 9 + 100, 29 + 20};
+  password_edit_.Create(ES_LEFT | ES_PASSWORD, rect, this, IDR_MAINFRAME);
+
+  rect = CRect{0, 0 + 30, 9, 29 + 30};
+  method_label_.Create(_T("Cipher Method"), SS_LEFT, rect, this);
+  rect = CRect{0 + 100, 0 + 30, 9 + 100, 29 + 30};
+  method_combo_box_.Create(
+      WS_CHILD | WS_VISIBLE | WS_VSCROLL | CBS_DROPDOWNLIST, rect, this,
+      IDR_MAINFRAME);
+  for (auto& method_string : method_strings)
+    method_combo_box_.AddString(std::move(method_string));
+
+  rect = CRect{0, 0 + 40, 9, 29 + 40};
+  localhost_label_.Create(_T("Local Host"), SS_LEFT, rect, this);
+  rect = CRect{0 + 100, 0 + 40, 9 + 100, 29 + 40};
+  localhost_edit_.Create(ES_LEFT, rect, this, IDR_MAINFRAME);
+
+  rect = CRect{0, 0 + 50, 9, 29 + 50};
+  localport_label_.Create(_T("Local Port"), SS_LEFT, rect, this);
+  rect = CRect{0 + 100, 0 + 50, 9 + 100, 29 + 50};
+  localport_edit_.Create(ES_LEFT | ES_NUMBER, rect, this, IDR_MAINFRAME);
+
+  rect = CRect{0, 0 + 60, 9, 29 + 60};
+  autostart_label_.Create(_T("Auto Start"), SS_LEFT, rect, this);
+  rect = CRect{0 + 100, 0 + 60, 9 + 100, 29 + 60};
+  autostart_button_.Create(_T("Enable"), BS_CHECKBOX | BS_LEFT, rect, this,
+                           IDR_MAINFRAME);
+
+  autostart_button_.SetState(Utils::GetAutoStart() ? BST_CHECKED
+                                                   : BST_UNCHECKED);
 #if 0
   if (!status_bar_.Create(this) ||
       status_bar_.SetIndicators(indicators,
@@ -217,31 +281,6 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
     return -1;
   }
 #endif
-
-  DWORD dwStyle = WS_VISIBLE | WS_CHILD | CBRS_TOP;
-
-  // save the style
-  panel_.SetPaneAlignment(dwStyle & CBRS_ALL);
-
-  // create the HWND
-  CRect rect(0, 0, 0, 0);
-  if (!panel_.Create(_T("Pane"), this, rect, FALSE, IDR_MAINFRAME,
-                     dwStyle | WS_CLIPSIBLINGS)) {
-    LOG(WARNING) << "Failed to create pane";
-    return -1;
-  }
-
-  if (!left_panel_.Create(_T("Pane"), this, rect, FALSE, IDR_MAINFRAME,
-                          dwStyle | WS_CLIPSIBLINGS)) {
-    LOG(WARNING) << "Failed to create left panel";
-    return -1;
-  }
-
-  if (!right_panel_.Create(_T("Pane"), this, rect, FALSE, IDR_MAINFRAME,
-                           dwStyle | WS_CLIPSIBLINGS)) {
-    LOG(WARNING) << "Failed to create right panel";
-    return -1;
-  }
 
   if (!menu_bar_.Create(this, AFX_DEFAULT_TOOLBAR_STYLE)) {
     LOG(WARNING) << "Failed to create menu bar";
@@ -311,20 +350,27 @@ void CYassFrame::OnUpdateStatus(CCmdUI* pCmdUI) {
   pCmdUI->SetText(csPaneString);
 }
 
+void CYassFrame::OnStart() {
+  start_button_.EnableWindow(false);
+  mApp->OnStart();
+}
+
+void CYassFrame::OnStop() {
+  stop_button_.EnableWindow(false);
+  mApp->OnStop();
+}
+
+void CYassFrame::OnCheckedAutoStart() {
+  Utils::EnableAutoStart(autostart_button_.GetState() & BST_CHECKED);
+}
+
 #if 0
 void CYassFrame::OnDPIChanged(WPARAM w, LPARAM l) {
-  wxSize newSize = GetSize();
+  CSize newSize = GetSize();
   newSize.x *= static_cast<double>(event.GetNewDPI().GetWidth()) /
                event.GetOldDPI().GetWidth();
   newSize.y *= static_cast<double>(event.GetNewDPI().GetHeight()) /
                event.GetOldDPI().GetHeight();
   SetSize(newSize);
-
-  newSize = right_panel_.GetSize();
-  newSize.x *= static_cast<double>(event.GetNewDPI().GetWidth()) /
-               event.GetOldDPI().GetWidth();
-  newSize.y *= static_cast<double>(event.GetNewDPI().GetHeight()) /
-               event.GetOldDPI().GetHeight();
-  right_panel_.SetSize(newSize);
 }
 #endif
