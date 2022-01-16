@@ -95,7 +95,7 @@ void SsConnection::ResolveDns(std::shared_ptr<IOBuf> buf) {
   std::shared_ptr<SsConnection> self = shared_from_this();
   resolver_.async_resolve(
       self->request_.domain_name(), std::to_string(self->request_.port()),
-      [self, buf](const asio::error_code& error,
+      [self, buf](asio::error_code error,
                   asio::ip::tcp::resolver::results_type results) {
         // Get a list of endpoints corresponding to the SOCKS 5 domain name.
         if (!error) {
@@ -137,24 +137,22 @@ void SsConnection::ReadStream() {
 
 void SsConnection::WriteStream(std::shared_ptr<IOBuf> buf) {
   std::shared_ptr<SsConnection> self = shared_from_this();
-  asio::async_write(socket_, asio::buffer(buf->data(), buf->length()),
-                    [self, buf](auto&& PH1, auto&& PH2) {
-                      return SsConnection::ProcessSentData(
-                          self, buf, std::forward<decltype(PH1)>(PH1),
-                          std::forward<decltype(PH2)>(PH2));
-                    });
+  asio::async_write(
+      socket_, asio::buffer(buf->data(), buf->length()),
+      [self, buf](asio::error_code error, size_t bytes_transferred) {
+        return SsConnection::ProcessSentData(self, buf, error,
+                                             bytes_transferred);
+      });
 }
 
 void SsConnection::ProcessReceivedData(std::shared_ptr<SsConnection> self,
                                        std::shared_ptr<IOBuf> buf,
-                                       const asio::error_code& error,
+                                       asio::error_code ec,
                                        size_t bytes_transferred) {
   self->rbytes_transferred_ += bytes_transferred;
   if (bytes_transferred) {
     VLOG(3) << "received request: " << bytes_transferred << " bytes.";
   }
-
-  asio::error_code ec = error;
 
   if (!ec) {
     switch (self->CurrentState()) {
@@ -190,15 +188,13 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<SsConnection> self,
 
 void SsConnection::ProcessSentData(std::shared_ptr<SsConnection> self,
                                    std::shared_ptr<IOBuf> buf,
-                                   const asio::error_code& error,
+                                   asio::error_code ec,
                                    size_t bytes_transferred) {
   self->wbytes_transferred_ += bytes_transferred;
 
   if (bytes_transferred) {
     VLOG(3) << "sent data: " << bytes_transferred << " bytes.";
   }
-
-  asio::error_code ec = error;
 
   if (!ec) {
     switch (self->CurrentState()) {

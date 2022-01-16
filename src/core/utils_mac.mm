@@ -608,7 +608,7 @@ CF_CAST_DEFN(CTFont)
 template<> CTFontRef
 CFCast<CTFontRef>(const CFTypeRef& cf_val) {
   if (cf_val == nullptr) {
-    return NULL;
+    return nullptr;
   }
   if (CFGetTypeID(cf_val) == CTFontGetTypeID()) {
     return (CTFontRef)(cf_val);

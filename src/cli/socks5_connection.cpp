@@ -107,12 +107,11 @@ void Socks5Connection::ReadMethodSelect() {
 
   socket_.async_read_some(
       asio::mutable_buffer(buf->mutable_data(), buf->capacity()),
-      [self, buf](const asio::error_code& error, size_t bytes_transferred) {
-        if (error) {
-          self->OnDisconnect(error);
+      [self, buf](asio::error_code ec, size_t bytes_transferred) {
+        if (ec) {
+          self->OnDisconnect(ec);
           return;
         }
-        asio::error_code ec;
         buf->append(bytes_transferred);
         DumpHex("HANDSHAKE/METHOD_SELECT->", buf.get());
 
@@ -138,12 +137,11 @@ void Socks5Connection::ReadSocks5Handshake() {
 
   socket_.async_read_some(
       asio::mutable_buffer(buf->mutable_data(), buf->capacity()),
-      [self, buf](const asio::error_code& error, size_t bytes_transferred) {
-        if (error) {
-          self->OnDisconnect(error);
+      [self, buf](asio::error_code ec, size_t bytes_transferred) {
+        if (ec) {
+          self->OnDisconnect(ec);
           return;
         }
-        asio::error_code ec;
         buf->append(bytes_transferred);
         DumpHex("HANDSHAKE->", buf.get());
         ec = self->OnReadSocks5Handshake(buf);
@@ -341,11 +339,11 @@ void Socks5Connection::ReadStream() {
 
   socket_.async_read_some(
       asio::mutable_buffer(buf->mutable_data(), buf->capacity()),
-      [self, buf](const asio::error_code& error,
+      [self, buf](asio::error_code ec,
                   std::size_t bytes_transferred) -> std::size_t {
-        if (bytes_transferred || error) {
+        if (bytes_transferred || ec) {
           buf->append(bytes_transferred);
-          ProcessReceivedData(self, buf, error, bytes_transferred);
+          ProcessReceivedData(self, buf, ec, bytes_transferred);
           return 0;
         }
         return SOCKET_BUF_SIZE;
@@ -358,10 +356,9 @@ void Socks5Connection::WriteMethodSelect() {
   asio::async_write(
       socket_,
       asio::buffer(&method_select_reply_, sizeof(method_select_reply_)),
-      [self](auto&& PH1, auto&& PH2) {
-        return Socks5Connection::ProcessSentData(
-            self, nullptr, std::forward<decltype(PH1)>(PH1),
-            std::forward<decltype(PH2)>(PH2));
+      [self](asio::error_code error, size_t bytes_transferred) {
+        return Socks5Connection::ProcessSentData(self, nullptr, error,
+                                                 bytes_transferred);
       });
 }
 
@@ -370,32 +367,32 @@ void Socks5Connection::WriteHandshake() {
   switch (CurrentState()) {
     case state_method_select:  // impossible
     case state_socks5_handshake:
-      asio::async_write(socket_, s5_reply_.buffers(),
-                        [self](auto&& PH1, auto&& PH2) {
-                          return Socks5Connection::ProcessSentData(
-                              self, nullptr, std::forward<decltype(PH1)>(PH1),
-                              std::forward<decltype(PH2)>(PH2));
-                        });
+      asio::async_write(
+          socket_, s5_reply_.buffers(),
+          [self](asio::error_code error, size_t bytes_transferred) {
+            return Socks5Connection::ProcessSentData(self, nullptr, error,
+                                                     bytes_transferred);
+          });
       break;
     case state_socks4_handshake:
-      asio::async_write(socket_, s4_reply_.buffers(),
-                        [self](auto&& PH1, auto&& PH2) {
-                          return Socks5Connection::ProcessSentData(
-                              self, nullptr, std::forward<decltype(PH1)>(PH1),
-                              std::forward<decltype(PH2)>(PH2));
-                        });
+      asio::async_write(
+          socket_, s4_reply_.buffers(),
+          [self](asio::error_code error, size_t bytes_transferred) {
+            return Socks5Connection::ProcessSentData(self, nullptr, error,
+                                                     bytes_transferred);
+          });
       break;
     case state_http_handshake:
       /// reply on CONNECT request
       if (http_is_connect_) {
-        asio::async_write(socket_,
-                          asio::buffer(http_connect_reply_.c_str(),
-                                       http_connect_reply_.size()),
-                          [self](auto&& PH1, auto&& PH2) {
-                            return Socks5Connection::ProcessSentData(
-                                self, nullptr, std::forward<decltype(PH1)>(PH1),
-                                std::forward<decltype(PH2)>(PH2));
-                          });
+        asio::async_write(
+            socket_,
+            asio::buffer(http_connect_reply_.c_str(),
+                         http_connect_reply_.size()),
+            [self](asio::error_code error, size_t bytes_transferred) {
+              return Socks5Connection::ProcessSentData(self, nullptr, error,
+                                                       bytes_transferred);
+            });
       }
       break;
     case state_error:
@@ -410,12 +407,12 @@ void Socks5Connection::WriteHandshake() {
 
 void Socks5Connection::WriteStream(std::shared_ptr<IOBuf> buf) {
   std::shared_ptr<Socks5Connection> self = shared_from_this();
-  asio::async_write(socket_, asio::buffer(buf->data(), buf->length()),
-                    [self, buf](auto&& PH1, auto&& PH2) {
-                      return Socks5Connection::ProcessSentData(
-                          self, buf, std::forward<decltype(PH1)>(PH1),
-                          std::forward<decltype(PH2)>(PH2));
-                    });
+  asio::async_write(
+      socket_, asio::buffer(buf->data(), buf->length()),
+      [self, buf](asio::error_code error, size_t bytes_transferred) {
+        return Socks5Connection::ProcessSentData(self, buf, error,
+                                                 bytes_transferred);
+      });
 }
 
 asio::error_code Socks5Connection::PerformCmdOpsV5(
@@ -519,15 +516,13 @@ asio::error_code Socks5Connection::PerformCmdOpsHttp() {
 void Socks5Connection::ProcessReceivedData(
     std::shared_ptr<Socks5Connection> self,
     std::shared_ptr<IOBuf> buf,
-    const asio::error_code& error,
+    asio::error_code ec,
     size_t bytes_transferred) {
   self->rbytes_transferred_ += bytes_transferred;
   total_rx_bytes += bytes_transferred;
   if (bytes_transferred) {
     VLOG(3) << "client: received request: " << bytes_transferred << " bytes.";
   }
-
-  asio::error_code ec = error;
 
   if (!ec) {
     switch (self->CurrentState()) {
@@ -583,7 +578,7 @@ void Socks5Connection::ProcessReceivedData(
 
 void Socks5Connection::ProcessSentData(std::shared_ptr<Socks5Connection> self,
                                        std::shared_ptr<IOBuf> buf,
-                                       const asio::error_code& error,
+                                       asio::error_code ec,
                                        size_t bytes_transferred) {
   self->wbytes_transferred_ += bytes_transferred;
   total_tx_bytes += bytes_transferred;
@@ -591,8 +586,6 @@ void Socks5Connection::ProcessSentData(std::shared_ptr<Socks5Connection> self,
   if (bytes_transferred) {
     VLOG(3) << "client: sent data: " << bytes_transferred << " bytes.";
   }
-
-  asio::error_code ec = error;
 
   if (!ec) {
     switch (self->CurrentState()) {

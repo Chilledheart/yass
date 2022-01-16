@@ -97,7 +97,7 @@ class SsConnection : public std::enable_shared_from_this<SsConnection>,
   /// \param bytes_transferred transferred bytes
   static void ProcessReceivedData(std::shared_ptr<SsConnection> self,
                                   std::shared_ptr<IOBuf> buf,
-                                  const asio::error_code& error,
+                                  asio::error_code error,
                                   size_t bytes_transferred);
   /// Process the sent data
   /// \param self pointer to self
@@ -106,7 +106,7 @@ class SsConnection : public std::enable_shared_from_this<SsConnection>,
   /// \param bytes_transferred transferred bytes
   static void ProcessSentData(std::shared_ptr<SsConnection> self,
                               std::shared_ptr<IOBuf> buf,
-                              const asio::error_code& error,
+                              asio::error_code error,
                               size_t bytes_transferred);
   /// state machine
   state state_;

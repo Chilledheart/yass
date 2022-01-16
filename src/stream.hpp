@@ -71,7 +71,7 @@ class stream {
 
     socket_.async_read_some(
         asio::mutable_buffer(buf->mutable_data(), buf->capacity()),
-        [this, buf, channel](const asio::error_code& error,
+        [this, buf, channel](asio::error_code error,
                              std::size_t bytes_transferred) -> std::size_t {
           if (bytes_transferred || error) {
             read_inprogress_ = false;
@@ -84,9 +84,11 @@ class stream {
 
   void start_write(std::shared_ptr<IOBuf> buf) {
     std::shared_ptr<Channel> channel = std::shared_ptr<Channel>(channel_);
-    asio::async_write(socket_, asio::const_buffer(buf->data(), buf->length()),
-                      std::bind(&stream::on_write, this, channel, buf,
-                                std::placeholders::_1, std::placeholders::_2));
+    asio::async_write(
+        socket_, asio::const_buffer(buf->data(), buf->length()),
+        [this, channel, buf](asio::error_code error, size_t bytes_transferred) {
+          on_write(channel, buf, error, bytes_transferred);
+        });
   }
 
   void close() {
