@@ -145,7 +145,7 @@ void CYassFrame::UpdateStatus() {
   CString password(SysUTF8ToWide(absl::GetFlag(FLAGS_password)).c_str());
   password_edit_.SetWindowText(password);
   int method = absl::GetFlag(FLAGS_cipher_method);
-  method_combo_box_.SetEditSel(method, method);
+  method_combo_box_.SetCurSel(method);
   CString local_host(SysUTF8ToWide(absl::GetFlag(FLAGS_local_host)).c_str());
   localhost_edit_.SetWindowText(local_host);
   CString local_port(std::to_wstring(absl::GetFlag(FLAGS_local_port)).c_str());
@@ -157,7 +157,9 @@ void CYassFrame::UpdateStatus() {
   // TODO better?
   if (mApp->GetState() == CYassApp::STOPPED) {
     CString idle_message;
-    idle_message.LoadString(AFX_IDS_IDLEMESSAGE);
+    if (!idle_message.LoadString(AFX_IDS_IDLEMESSAGE)) {
+      idle_message = L"IDLE";
+    }
     status_bar_message_ = idle_message.operator const wchar_t*();
     return;
   }
@@ -201,12 +203,18 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
 
   // Left Panel
   CRect rect{0, 0, 10, 10};
-  start_button_.Create(_T("START"), BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE, rect,
-                       this, IDC_START);
+  if (!start_button_.Create(_T("START"), BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE, rect,
+                            this, IDC_START)) {
+    LOG(WARNING) << "start button not created";
+    return false;
+  }
 
   rect = CRect{0, 0, 10, 60};
-  stop_button_.Create(_T("STOP"), BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE, rect,
-                      this, IDC_STOP);
+  if (!stop_button_.Create(_T("STOP"), BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE, rect,
+                           this, IDC_STOP)) {
+    LOG(WARNING) << "stop button not created";
+    return false;
+  }
 
   stop_button_.EnableWindow(false);
 
@@ -222,44 +230,97 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
   // https://docs.microsoft.com/en-us/cpp/mfc/reference/styles-used-by-mfc?view=msvc-170#combo-box-styles
   // https://docs.microsoft.com/en-us/cpp/mfc/reference/styles-used-by-mfc?view=msvc-170#button-styles
   rect = CRect{0, 0, 9, 29};
-  serverhost_label_.Create(_T("Server Host"), SS_LEFT, rect, this);
+  if (!serverhost_label_.Create(_T("Server Host"), SS_LEFT, rect, this)) {
+    LOG(WARNING) << "serverhost_label not created";
+    return FALSE;
+  }
   rect = CRect{0 + 100, 0, 9 + 100, 29};
-  serverhost_edit_.Create(ES_LEFT, rect, this, IDR_MAINFRAME);
+  if (!serverhost_edit_.Create(ES_LEFT, rect, this, IDR_MAINFRAME)) {
+    LOG(WARNING) << "serverhost_edit not created";
+    return FALSE;
+  }
 
   rect = CRect{0, 0 + 10, 9, 29 + 10};
-  serverport_label_.Create(_T("Server Port"), SS_LEFT, rect, this);
+  if (!serverport_label_.Create(_T("Server Port"), SS_LEFT, rect, this)) {
+    LOG(WARNING) << "serverport_label not created";
+    return FALSE;
+  }
   rect = CRect{0 + 100, 0 + 10, 9 + 100, 29 + 10};
-  serverport_edit_.Create(ES_LEFT | ES_NUMBER, rect, this, IDR_MAINFRAME);
+  if (!serverport_edit_.Create(ES_LEFT | ES_NUMBER, rect, this, IDR_MAINFRAME)) {
+    LOG(WARNING) << "serverport_edit not created";
+    return FALSE;
+  }
 
   rect = CRect{0, 0 + 20, 9, 29 + 20};
-  password_label_.Create(_T("Password"), SS_LEFT, rect, this);
+  if (!password_label_.Create(_T("Password"), SS_LEFT, rect, this)) {
+    LOG(WARNING) << "password_label not created";
+    return FALSE;
+  }
   rect = CRect{0 + 100, 0 + 20, 9 + 100, 29 + 20};
-  password_edit_.Create(ES_LEFT | ES_PASSWORD, rect, this, IDR_MAINFRAME);
+  if (!password_edit_.Create(ES_LEFT | ES_PASSWORD, rect, this, IDR_MAINFRAME)) {
+    LOG(WARNING) << "password_edit not created";
+    return FALSE;
+  }
 
   rect = CRect{0, 0 + 30, 9, 29 + 30};
-  method_label_.Create(_T("Cipher Method"), SS_LEFT, rect, this);
+  if (!method_label_.Create(_T("Cipher Method"), SS_LEFT, rect, this)) {
+    LOG(WARNING) << "method_label not created";
+    return FALSE;
+  }
   rect = CRect{0 + 100, 0 + 30, 9 + 100, 29 + 30};
-  method_combo_box_.Create(
+  if (!method_combo_box_.Create(
       WS_CHILD | WS_VISIBLE | WS_VSCROLL | CBS_DROPDOWNLIST, rect, this,
-      IDR_MAINFRAME);
+      IDR_MAINFRAME)) {
+    LOG(WARNING) << "method_combo_box not created";
+    return FALSE;
+  }
   for (auto& method_string : method_strings)
     method_combo_box_.AddString(std::move(method_string));
 
   rect = CRect{0, 0 + 40, 9, 29 + 40};
-  localhost_label_.Create(_T("Local Host"), SS_LEFT, rect, this);
+  if (!localhost_label_.Create(_T("Local Host"), SS_LEFT, rect, this)) {
+    LOG(WARNING) << "localhost_label not created";
+    return FALSE;
+  }
   rect = CRect{0 + 100, 0 + 40, 9 + 100, 29 + 40};
-  localhost_edit_.Create(ES_LEFT, rect, this, IDR_MAINFRAME);
+  if (!localhost_edit_.Create(ES_LEFT, rect, this, IDR_MAINFRAME)) {
+    LOG(WARNING) << "localhost_edit not created";
+    return FALSE;
+  }
 
   rect = CRect{0, 0 + 50, 9, 29 + 50};
-  localport_label_.Create(_T("Local Port"), SS_LEFT, rect, this);
+  if (!localport_label_.Create(_T("Local Port"), SS_LEFT, rect, this)) {
+    LOG(WARNING) << "localport_label not created";
+    return FALSE;
+  }
   rect = CRect{0 + 100, 0 + 50, 9 + 100, 29 + 50};
-  localport_edit_.Create(ES_LEFT | ES_NUMBER, rect, this, IDR_MAINFRAME);
+  if (!localport_edit_.Create(ES_LEFT | ES_NUMBER, rect, this, IDR_MAINFRAME)) {
+    LOG(WARNING) << "localport_edit not created";
+    return FALSE;
+  }
 
   rect = CRect{0, 0 + 60, 9, 29 + 60};
-  autostart_label_.Create(_T("Auto Start"), SS_LEFT, rect, this);
+  if (!timeout_label_.Create(_T("Timeout"), SS_LEFT, rect, this)) {
+    LOG(WARNING) << "timeout_label not created";
+    return FALSE;
+  }
   rect = CRect{0 + 100, 0 + 60, 9 + 100, 29 + 60};
-  autostart_button_.Create(_T("Enable"), BS_CHECKBOX | BS_LEFT, rect, this,
-                           IDR_MAINFRAME);
+  if (!timeout_edit_.Create(ES_LEFT | ES_NUMBER, rect, this, IDR_MAINFRAME)) {
+    LOG(WARNING) << "timeout_edit not created";
+    return FALSE;
+  }
+
+  rect = CRect{0, 0 + 70, 9, 29 + 70};
+  if (!autostart_label_.Create(_T("Auto Start"), SS_LEFT, rect, this)) {
+    LOG(WARNING) << "autostart_label not created";
+    return FALSE;
+  }
+  rect = CRect{0 + 100, 0 + 70, 9 + 100, 29 + 70};
+  if (!autostart_button_.Create(_T("Enable"), BS_CHECKBOX | BS_LEFT, rect, this,
+                                IDR_MAINFRAME)) {
+    LOG(WARNING) << "autostart_button not created";
+    return FALSE;
+  }
 
   autostart_button_.SetState(Utils::GetAutoStart() ? BST_CHECKED
                                                    : BST_UNCHECKED);
@@ -270,8 +331,8 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
     return -1;
   }
 
-  EnableDocking(CBRS_ALIGN_BOTTOM);
-  DockControlBar(&status_bar_);
+  RepositionBars(AFX_IDW_CONTROLBAR_FIRST, AFX_IDW_CONTROLBAR_LAST,
+                 ID_APP_MSG);
 
   if (!menu_bar_.Create(this, AFX_DEFAULT_TOOLBAR_STYLE)) {
     LOG(WARNING) << "Failed to create menu bar";

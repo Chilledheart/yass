@@ -60,9 +60,9 @@ BOOL CYassApp::InitInstance() {
   }
   absl::ParseCommandLine(argv.size(), arglist.get());
 
-  auto cipher_method = to_cipher_method(absl::GetFlag(FLAGS_method));
-  if (cipher_method != CRYPTO_INVALID) {
-    absl::SetFlag(&FLAGS_cipher_method, cipher_method);
+  auto override_cipher_method = to_cipher_method(absl::GetFlag(FLAGS_method));
+  if (override_cipher_method != CRYPTO_INVALID) {
+    absl::SetFlag(&FLAGS_cipher_method, override_cipher_method);
   }
 
   LoadConfigFromDisk();
@@ -83,7 +83,7 @@ BOOL CYassApp::InitInstance() {
     LOG(WARNING) << "SetProcessDpiAwareness applied";
   }
 
-  frame_ = new CYassFrame;
+  m_pMainWnd = frame_ = new CYassFrame;
   if (frame_ == nullptr) {
     return FALSE;
   }
@@ -94,7 +94,11 @@ BOOL CYassApp::InitInstance() {
       AfxRegisterWndClass(CS_DBLCLKS, ::LoadCursor(nullptr, IDC_ARROW),
                           (HBRUSH)(COLOR_BTNFACE + 1), icon);
   CString frame_name;
-  frame_name.LoadString(AFX_IDS_APP_TITLE);
+  if (!frame_name.LoadString(AFX_IDS_APP_TITLE)) {
+    LOG(WARNING) << "frame name not loaded";
+    delete frame_;
+    return FALSE;
+  }
   RECT rect{0, 0, 450, 390};
 
   if (!frame_->Create(lpszClass, frame_name, WS_OVERLAPPEDWINDOW, rect)) {
@@ -211,7 +215,10 @@ void CYassApp::OnStopped(WPARAM w, LPARAM l) {
 
 BOOL CYassApp::CheckFirstInstance() {
   CString app_name;
-  app_name.LoadString(AFX_IDS_APP_TITLE);
+  if (!app_name.LoadString(AFX_IDS_APP_TITLE)) {
+    LOG(WARNING) << "app name not loaded";
+    return FALSE;
+  }
 
   CWnd* first_wnd = CWnd::FindWindow(nullptr, app_name);
 

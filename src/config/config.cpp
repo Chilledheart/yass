@@ -21,7 +21,7 @@ ABSL_FLAG(int32_t,
 ABSL_FLAG(std::string, password, "<default-pass>", "Password pharsal");
 ABSL_FLAG(std::string,
           method,
-          CRYPTO_AES256GCMSHA256_STR,
+          CRYPTO_INVALID_STR,
           "Method of encrypt (internal)");
 ABSL_FLAG(int32_t, cipher_method, CRYPTO_AES256GCMSHA256, "Method of encrypt");
 ABSL_FLAG(std::string,

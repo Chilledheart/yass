@@ -1,4 +1,5 @@
 #include "resource.hpp"
+#include "afxribbon.rc"
 
 /////////////////////////////////////////////////////////////////////////////
 // English (U.S.) resources
@@ -31,6 +32,11 @@ STRINGTABLE PRELOAD DISCARDABLE
 BEGIN
     AFX_IDS_APP_TITLE       "YetAnotherShadowSocket"
     AFX_IDS_IDLEMESSAGE     "READY"
+END
+
+STRINGTABLE PRELOAD DISCARDABLE
+BEGIN
+    ID_APP_MSG             "STATUS BAR"
 END
 
 /////////////////////////////////////////////////////////////////////////////
