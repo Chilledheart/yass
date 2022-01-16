@@ -20,7 +20,7 @@
 
 #define COLUMN_ONE_LEFT    20
 #define COLUMN_TWO_LEFT    120
-#define COLUMN_THREE_LEFT  250
+#define COLUMN_THREE_LEFT  240
 
 #define VERTICAL_HEIGHT   20
 
@@ -29,7 +29,7 @@
 
 #define LABEL_WIDTH      60
 #define LABEL_HEIGHT     20
-#define EDIT_WIDTH       80
+#define EDIT_WIDTH       120
 #define EDIT_HEIGHT      15
 
 static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
@@ -98,7 +98,8 @@ std::string CYassFrame::GetPassword() {
 }
 
 enum cipher_method CYassFrame::GetMethod() {
-  int method = method_combo_box_.GetCurSel();
+  int method = static_cast<int>(method_combo_box_.GetItemData(
+      method_combo_box_.GetCurSel()));
   return static_cast<enum cipher_method>(method);
 }
 
@@ -167,8 +168,13 @@ void CYassFrame::UpdateStatus() {
   serverport_edit_.SetWindowText(server_port);
   CString password(SysUTF8ToWide(absl::GetFlag(FLAGS_password)).c_str());
   password_edit_.SetWindowText(password);
-  int method = absl::GetFlag(FLAGS_cipher_method);
-  method_combo_box_.SetCurSel(method);
+  int32_t method = absl::GetFlag(FLAGS_cipher_method);
+  for (int i = 0; i < method_combo_box_.GetCount(); ++i) {
+    if (method_combo_box_.GetItemData(i) == static_cast<DWORD>(method)) {
+      method_combo_box_.SetCurSel(i);
+      break;
+    }
+  }
   CString local_host(SysUTF8ToWide(absl::GetFlag(FLAGS_local_host)).c_str());
   localhost_edit_.SetWindowText(local_host);
   CString local_port(std::to_wstring(absl::GetFlag(FLAGS_local_port)).c_str());
@@ -258,6 +264,11 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
   // Right Panel
   CString method_strings[] = {
 #define XX(num, name, string) _T(string),
+      CIPHER_METHOD_MAP(XX)
+#undef XX
+  };
+  DWORD method_nums[] = {
+#define XX(num, name, string) static_cast<DWORD>(num),
       CIPHER_METHOD_MAP(XX)
 #undef XX
   };
@@ -352,12 +363,13 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
     return FALSE;
   }
 
-  for (auto& method_string : method_strings) {
-    method_combo_box_.AddString(std::move(method_string));
+  int method_count = sizeof(method_strings) / sizeof(method_strings[0]) - 1;
+  for (int i = 0; i < method_count; ++i) {
+    method_combo_box_.AddString(std::move(method_strings[i + 1]));
+    method_combo_box_.SetItemData(i, method_nums[i + 1]);
   }
 
-  method_combo_box_.SetMinVisibleItems(sizeof(method_strings) /
-                                       sizeof(method_strings[0]));
+  method_combo_box_.SetMinVisibleItems(method_count);
 
   rect = client_rect;
   rect.OffsetRect(COLUMN_TWO_LEFT * DPI_SCALE_FACTOR,
