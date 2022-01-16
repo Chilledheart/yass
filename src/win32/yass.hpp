@@ -2,6 +2,7 @@
 /* Copyright (c) 2022 Chilledheart  */
 #ifndef YASS_WIN32_APP
 #define YASS_WIN32_APP
+
 #include <afxext.h>  // MFC extensions (including VB)
 #include <afxtempl.h>
 #include <afxwin.h>  // MFC core and standard components

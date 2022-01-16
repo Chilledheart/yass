@@ -9,7 +9,6 @@
 #include <afxwin.h>  // MFC core and standard components
 
 #include "crypto/crypter_export.hpp"
-#include "win32/panels.hpp"
 
 #include <string>
 

@@ -9,7 +9,6 @@
 
 #include "cli/socks5_connection_stats.hpp"
 #include "core/utils.hpp"
-#include "win32/panels.hpp"
 #include "win32/resource.hpp"
 #include "win32/utils.hpp"
 #include "win32/yass.hpp"
