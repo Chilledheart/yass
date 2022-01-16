@@ -27,16 +27,17 @@ class CYassFrame : public CFrameWnd {
   std::string GetServerHost();
   std::string GetServerPort();
   std::string GetPassword();
-  enum cipher_method GetMethod();
+  cipher_method GetMethod();
   std::string GetLocalHost();
   std::string GetLocalPort();
   std::string GetTimeout();
+  CString GetStatusMessage();
 
   void OnStarted();
   void OnStopped();
   void OnStartFailed();
 
-  void UpdateStatus();
+  void LoadConfig();
 
   // Left Panel
  protected:
@@ -74,7 +75,7 @@ class CYassFrame : public CFrameWnd {
   afx_msg void OnClose();
   afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
 
-  afx_msg void OnUpdateStatus(CCmdUI* pCmdUI);
+  afx_msg void OnUpdateStatusBar(CCmdUI* pCmdUI);
 
  protected:
 #if 0
@@ -85,9 +86,6 @@ class CYassFrame : public CFrameWnd {
   afx_msg void OnStartButtonClicked();
   afx_msg void OnStopButtonClicked();
   afx_msg void OnCheckedAutoStartButtonClicked();
-
- private:
-  std::wstring status_bar_message_;
 
  private:
   friend class CYassApp;

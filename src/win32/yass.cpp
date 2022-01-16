@@ -112,7 +112,6 @@ BOOL CYassApp::InitInstance() {
   frame_->CenterWindow();
   // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow
   frame_->ShowWindow(SW_SHOW);
-  frame_->UpdateStatus();
   frame_->UpdateWindow();
 
   if (Utils::GetAutoStart()) {

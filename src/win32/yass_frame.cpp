@@ -20,7 +20,7 @@
 
 #define COLUMN_ONE_LEFT    20
 #define COLUMN_TWO_LEFT    120
-#define COLUMN_THREE_LEFT  240
+#define COLUMN_THREE_LEFT  220
 
 #define VERTICAL_HEIGHT   20
 
@@ -29,7 +29,7 @@
 
 #define LABEL_WIDTH      60
 #define LABEL_HEIGHT     20
-#define EDIT_WIDTH       120
+#define EDIT_WIDTH       150
 #define EDIT_HEIGHT      15
 
 static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
@@ -63,7 +63,7 @@ BEGIN_MESSAGE_MAP(CYassFrame, CFrameWnd)
   ON_WM_CLOSE()
   ON_WM_SYSCOMMAND()
   // https://docs.microsoft.com/en-us/cpp/mfc/on-update-command-ui-macro?view=msvc-170
-  ON_UPDATE_COMMAND_UI(ID_APP_MSG, &CYassFrame::OnUpdateStatus)
+  ON_UPDATE_COMMAND_UI(ID_APP_MSG, &CYassFrame::OnUpdateStatusBar)
 #if 0
   // https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows?redirectedfrom=MSDN
   // https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-reference
@@ -97,7 +97,7 @@ std::string CYassFrame::GetPassword() {
   return SysWideToUTF8(password.operator const wchar_t*());
 }
 
-enum cipher_method CYassFrame::GetMethod() {
+cipher_method CYassFrame::GetMethod() {
   int method = static_cast<int>(method_combo_box_.GetItemData(
       method_combo_box_.GetCurSel()));
   return static_cast<enum cipher_method>(method);
@@ -121,76 +121,14 @@ std::string CYassFrame::GetTimeout() {
   return SysWideToUTF8(timeout.operator const wchar_t*());
 }
 
-void CYassFrame::OnStarted() {
-  UpdateStatus();
-  serverhost_edit_.EnableWindow(false);
-  serverport_edit_.EnableWindow(false);
-  password_edit_.EnableWindow(false);
-  method_combo_box_.EnableWindow(false);
-  localhost_edit_.EnableWindow(false);
-  localport_edit_.EnableWindow(false);
-  timeout_edit_.EnableWindow(false);
-  autostart_button_.EnableWindow(false);
-  stop_button_.EnableWindow(true);
-}
-
-void CYassFrame::OnStartFailed() {
-  UpdateStatus();
-  serverhost_edit_.EnableWindow(true);
-  serverport_edit_.EnableWindow(true);
-  password_edit_.EnableWindow(true);
-  method_combo_box_.EnableWindow(true);
-  localhost_edit_.EnableWindow(true);
-  localport_edit_.EnableWindow(true);
-  timeout_edit_.EnableWindow(true);
-  autostart_button_.EnableWindow(true);
-  start_button_.EnableWindow(true);
-}
-
-void CYassFrame::OnStopped() {
-  UpdateStatus();
-  serverhost_edit_.EnableWindow(true);
-  serverport_edit_.EnableWindow(true);
-  password_edit_.EnableWindow(true);
-  method_combo_box_.EnableWindow(true);
-  localhost_edit_.EnableWindow(true);
-  localport_edit_.EnableWindow(true);
-  timeout_edit_.EnableWindow(true);
-  autostart_button_.EnableWindow(true);
-  start_button_.EnableWindow(true);
-}
-
-void CYassFrame::UpdateStatus() {
-  CString server_host(SysUTF8ToWide(absl::GetFlag(FLAGS_server_host)).c_str());
-  serverhost_edit_.SetWindowText(server_host);
-  CString server_port(
-      std::to_wstring(absl::GetFlag(FLAGS_server_port)).c_str());
-  serverport_edit_.SetWindowText(server_port);
-  CString password(SysUTF8ToWide(absl::GetFlag(FLAGS_password)).c_str());
-  password_edit_.SetWindowText(password);
-  int32_t method = absl::GetFlag(FLAGS_cipher_method);
-  for (int i = 0; i < method_combo_box_.GetCount(); ++i) {
-    if (method_combo_box_.GetItemData(i) == static_cast<DWORD>(method)) {
-      method_combo_box_.SetCurSel(i);
-      break;
-    }
-  }
-  CString local_host(SysUTF8ToWide(absl::GetFlag(FLAGS_local_host)).c_str());
-  localhost_edit_.SetWindowText(local_host);
-  CString local_port(std::to_wstring(absl::GetFlag(FLAGS_local_port)).c_str());
-  localport_edit_.SetWindowText(local_port);
-  CString timeout(
-      std::to_wstring(absl::GetFlag(FLAGS_connect_timeout)).c_str());
-  timeout_edit_.SetWindowText(timeout);
-
+CString CYassFrame::GetStatusMessage() {
   // TODO better?
   if (mApp->GetState() == CYassApp::STOPPED) {
     CString idle_message;
     if (!idle_message.LoadString(AFX_IDS_IDLEMESSAGE)) {
       idle_message = L"IDLE";
     }
-    status_bar_message_ = idle_message.operator const wchar_t*();
-    return;
+    return idle_message;
   }
 
   uint64_t sync_time = GetMonotonicTime();
@@ -216,7 +154,70 @@ void CYassFrame::UpdateStatus() {
   humanReadableByteCountBin(&ss, tx_rate_);
   ss << "/s";
 
-  status_bar_message_ = SysUTF8ToWide(ss.str());
+  return SysUTF8ToWide(ss.str()).c_str();
+}
+
+void CYassFrame::OnStarted() {
+  LoadConfig();
+  serverhost_edit_.EnableWindow(false);
+  serverport_edit_.EnableWindow(false);
+  password_edit_.EnableWindow(false);
+  method_combo_box_.EnableWindow(false);
+  localhost_edit_.EnableWindow(false);
+  localport_edit_.EnableWindow(false);
+  timeout_edit_.EnableWindow(false);
+  autostart_button_.EnableWindow(false);
+  stop_button_.EnableWindow(true);
+}
+
+void CYassFrame::OnStartFailed() {
+  LoadConfig();
+  serverhost_edit_.EnableWindow(true);
+  serverport_edit_.EnableWindow(true);
+  password_edit_.EnableWindow(true);
+  method_combo_box_.EnableWindow(true);
+  localhost_edit_.EnableWindow(true);
+  localport_edit_.EnableWindow(true);
+  timeout_edit_.EnableWindow(true);
+  autostart_button_.EnableWindow(true);
+  start_button_.EnableWindow(true);
+}
+
+void CYassFrame::OnStopped() {
+  LoadConfig();
+  serverhost_edit_.EnableWindow(true);
+  serverport_edit_.EnableWindow(true);
+  password_edit_.EnableWindow(true);
+  method_combo_box_.EnableWindow(true);
+  localhost_edit_.EnableWindow(true);
+  localport_edit_.EnableWindow(true);
+  timeout_edit_.EnableWindow(true);
+  autostart_button_.EnableWindow(true);
+  start_button_.EnableWindow(true);
+}
+
+void CYassFrame::LoadConfig() {
+  CString server_host(SysUTF8ToWide(absl::GetFlag(FLAGS_server_host)).c_str());
+  serverhost_edit_.SetWindowText(server_host);
+  CString server_port(
+      std::to_wstring(absl::GetFlag(FLAGS_server_port)).c_str());
+  serverport_edit_.SetWindowText(server_port);
+  CString password(SysUTF8ToWide(absl::GetFlag(FLAGS_password)).c_str());
+  password_edit_.SetWindowText(password);
+  int32_t method = absl::GetFlag(FLAGS_cipher_method);
+  for (int i = 0; i < method_combo_box_.GetCount(); ++i) {
+    if (method_combo_box_.GetItemData(i) == static_cast<DWORD>(method)) {
+      method_combo_box_.SetCurSel(i);
+      break;
+    }
+  }
+  CString local_host(SysUTF8ToWide(absl::GetFlag(FLAGS_local_host)).c_str());
+  localhost_edit_.SetWindowText(local_host);
+  CString local_port(std::to_wstring(absl::GetFlag(FLAGS_local_port)).c_str());
+  localport_edit_.SetWindowText(local_port);
+  CString timeout(
+      std::to_wstring(absl::GetFlag(FLAGS_connect_timeout)).c_str());
+  timeout_edit_.SetWindowText(timeout);
 }
 
 int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
@@ -456,7 +457,6 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
     return FALSE;
   }
 
-  LOG(WARNING) << "Auto start: " << std::boolalpha << Utils::GetAutoStart();
   autostart_button_.SetCheck(Utils::GetAutoStart() ? BST_CHECKED
                                                    : BST_UNCHECKED);
   if (!status_bar_.Create(this) ||
@@ -480,6 +480,8 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
          CBRS_BORDER_LEFT | CBRS_BORDER_RIGHT)) |
       CBRS_SIZE_DYNAMIC);
   menu_bar_.SetBorders();
+
+  LoadConfig();
 
   return 0;
 }
@@ -510,12 +512,11 @@ void CYassFrame::OnSysCommand(UINT nID, LPARAM lParam) {
 }
 
 // https://docs.microsoft.com/en-us/cpp/mfc/updating-the-text-of-a-status-bar-pane?view=msvc-170
-void CYassFrame::OnUpdateStatus(CCmdUI* pCmdUI) {
+void CYassFrame::OnUpdateStatusBar(CCmdUI* pCmdUI) {
   UINT uiStyle = 0;
   int icxWidth = 0;
 
-  UpdateStatus();
-  CString csPaneString(status_bar_message_.c_str());
+  CString csPaneString = GetStatusMessage();
 
   CRect rectPane;
   rectPane.SetRectEmpty();
@@ -535,6 +536,8 @@ void CYassFrame::OnUpdateStatus(CCmdUI* pCmdUI) {
 
   pCmdUI->Enable();
   pCmdUI->SetText(csPaneString);
+
+  // FIXME pCmdUI doens't update the status text
 }
 
 #if 0
