@@ -198,8 +198,17 @@ void CYassApp::OnStop(bool quiet) {
 
 void CYassApp::OnAppOption() {
   COptionDialog dialog(GetMainWnd());
-  if (dialog.DoModal() == IDOK)
+  if (dialog.DoModal() == IDOK) {
+    // For a modal dialog box, you can retrieve any data the user entered
+    // when DoModal returns IDOK but before the dialog object is destroyed.
+    // https://docs.microsoft.com/en-us/cpp/mfc/retrieving-data-from-the-dialog-object?view=msvc-170
+    absl::SetFlag(&FLAGS_connect_timeout, dialog.connect_timeout_);
+    absl::SetFlag(&FLAGS_tcp_user_timeout, dialog.tcp_user_timeout_);
+    absl::SetFlag(&FLAGS_so_linger_timeout, dialog.tcp_so_linger_timeout_);
+    absl::SetFlag(&FLAGS_so_snd_buffer, dialog.tcp_so_snd_buffer_);
+    absl::SetFlag(&FLAGS_so_rcv_buffer, dialog.tcp_so_rcv_buffer_);
     SaveConfigToDisk();
+  }
 }
 
 void CYassApp::OnAppAbout() {

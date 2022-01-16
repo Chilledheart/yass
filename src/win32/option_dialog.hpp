@@ -20,12 +20,7 @@ class COptionDialog : public CDialog {
   BOOL OnInitDialog() override;
   void DoDataExchange(CDataExchange* pDX) override;
 
-  void OnOK() override;
-  void OnCancel() override;
-
- private:
-  void SaveOption();
-
+ public:
   int connect_timeout_;
   int tcp_user_timeout_;
   int tcp_so_linger_timeout_;

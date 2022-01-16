@@ -55,26 +55,3 @@ void COptionDialog::DoDataExchange(CDataExchange* pDX) {
   DDX_Text(pDX, IDC_EDIT_TCP_SO_RECEIVE_BUFFER, tcp_so_rcv_buffer_);
   DDV_MinMaxInt(pDX, tcp_so_rcv_buffer_, 0, INT_MAX);
 }
-
-// Override this method to perform actions when the OK button is activated.
-// If the dialog box includes automatic data validation and exchange,
-// the default implementation of this method validates the dialog box data
-// and updates the appropriate variables in your application.
-void COptionDialog::OnOK() {
-  SaveOption();
-  CDialog::OnOK();
-}
-
-// Override this method to perform actions (such as restoring old data)
-// when a user closes the dialog box by clicking Cancel or hitting the ESC key.
-void COptionDialog::OnCancel() {
-  CDialog::OnCancel();
-}
-
-void COptionDialog::SaveOption() {
-  absl::SetFlag(&FLAGS_connect_timeout, connect_timeout_);
-  absl::SetFlag(&FLAGS_tcp_user_timeout, tcp_user_timeout_);
-  absl::SetFlag(&FLAGS_so_linger_timeout, tcp_so_linger_timeout_);
-  absl::SetFlag(&FLAGS_so_snd_buffer, tcp_so_snd_buffer_);
-  absl::SetFlag(&FLAGS_so_rcv_buffer, tcp_so_rcv_buffer_);
-}
