@@ -4,7 +4,7 @@
 #ifndef YASS_WIN32_FRAME
 #define YASS_WIN32_FRAME
 
-#include <afxext.h>           // MFC extensions (including VB)
+#include <afxext.h>  // MFC extensions (including VB)
 #include <afxtempl.h>
 #include <afxwin.h>  // MFC core and standard components
 
@@ -68,6 +68,9 @@ class CYassFrame : public CFrameWnd {
 
  protected:
   afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
+  void UpdateLayoutForDpi();
+  void UpdateLayoutForDpi(UINT uDpi);
+
   // In the framework, when the user closes the frame window,
   // the window's default OnClose handler calls DestroyWindow.
   // When the main window closes, the application closes.
@@ -76,9 +79,7 @@ class CYassFrame : public CFrameWnd {
   afx_msg void OnUpdateStatusBar(CCmdUI* pCmdUI);
 
  protected:
-#if 0
-  afx_msg void OnDPIChanged(WPARAM w, LPARAM l);
-#endif
+  afx_msg LRESULT OnDPIChanged(WPARAM w, LPARAM l);
 
  public:
   afx_msg void OnStartButtonClicked();

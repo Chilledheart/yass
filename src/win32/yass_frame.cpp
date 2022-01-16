@@ -14,21 +14,33 @@
 #include "win32/utils.hpp"
 #include "win32/yass.hpp"
 
-#define DPI_SCALE_FACTOR 2
+#define INITIAL_COLUMN_ONE_LEFT 20
+#define INITIAL_COLUMN_TWO_LEFT 120
+#define INITIAL_COLUMN_THREE_LEFT 220
 
-#define COLUMN_ONE_LEFT    20
-#define COLUMN_TWO_LEFT    120
-#define COLUMN_THREE_LEFT  220
+#define INITIAL_VERTICAL_HEIGHT 20
 
-#define VERTICAL_HEIGHT   20
+#define INITIAL_BUTTON_WIDTH 60
+#define INITIAL_BUTTON_HEIGHT 20
 
-#define BUTTON_WIDTH     60
-#define BUTTON_HEIGHT    20
+#define INITIAL_LABEL_WIDTH 60
+#define INITIAL_LABEL_HEIGHT 20
+#define INITIAL_EDIT_WIDTH 150
+#define INITIAL_EDIT_HEIGHT 15
 
-#define LABEL_WIDTH      60
-#define LABEL_HEIGHT     20
-#define EDIT_WIDTH       150
-#define EDIT_HEIGHT      15
+#define COLUMN_ONE_LEFT MulDiv(INITIAL_COLUMN_ONE_LEFT, uDpi, 96)
+#define COLUMN_TWO_LEFT MulDiv(INITIAL_COLUMN_TWO_LEFT, uDpi, 96)
+#define COLUMN_THREE_LEFT MulDiv(INITIAL_COLUMN_THREE_LEFT, uDpi, 96)
+
+#define VERTICAL_HEIGHT MulDiv(INITIAL_VERTICAL_HEIGHT, uDpi, 96)
+
+#define BUTTON_WIDTH MulDiv(INITIAL_BUTTON_WIDTH, uDpi, 96)
+#define BUTTON_HEIGHT MulDiv(INITIAL_BUTTON_HEIGHT, uDpi, 96)
+
+#define LABEL_WIDTH MulDiv(INITIAL_LABEL_WIDTH, uDpi, 96)
+#define LABEL_HEIGHT MulDiv(INITIAL_LABEL_HEIGHT, uDpi, 96)
+#define EDIT_WIDTH MulDiv(INITIAL_EDIT_WIDTH, uDpi, 96)
+#define EDIT_HEIGHT MulDiv(INITIAL_EDIT_HEIGHT, uDpi, 96)
 
 static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   if (bytes < 1024) {
@@ -61,15 +73,13 @@ BEGIN_MESSAGE_MAP(CYassFrame, CFrameWnd)
   ON_WM_CLOSE()
   // https://docs.microsoft.com/en-us/cpp/mfc/on-update-command-ui-macro?view=msvc-170
   ON_UPDATE_COMMAND_UI(ID_APP_MSG, &CYassFrame::OnUpdateStatusBar)
-#if 0
   // https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows?redirectedfrom=MSDN
   // https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-reference
   // https://docs.microsoft.com/en-us/windows/win32/hidpi/wm-getdpiscaledsize
   // https://docs.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged
   // https://docs.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged-beforeparent
   // https://docs.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged-afterparent
-  ON_MESSAGE(WM_DPICHANGED, &CYassFrame::OnDPIChanged).
-#endif
+  ON_MESSAGE(WM_DPICHANGED, &CYassFrame::OnDPIChanged)
   ON_BN_CLICKED(IDC_START, &CYassFrame::OnStartButtonClicked)
   ON_BN_CLICKED(IDC_STOP, &CYassFrame::OnStopButtonClicked)
   ON_BN_CLICKED(IDC_AUTOSTART_CHECKBOX,
@@ -95,8 +105,8 @@ std::string CYassFrame::GetPassword() {
 }
 
 cipher_method CYassFrame::GetMethod() {
-  int method = static_cast<int>(method_combo_box_.GetItemData(
-      method_combo_box_.GetCurSel()));
+  int method = static_cast<int>(
+      method_combo_box_.GetItemData(method_combo_box_.GetCurSel()));
   return static_cast<enum cipher_method>(method);
 }
 
@@ -222,27 +232,13 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
     return -1;
 
   // Left Panel
-  CRect rect, client_rect;
-
-  GetClientRect(&client_rect);
-
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_ONE_LEFT * DPI_SCALE_FACTOR,
-                  VERTICAL_HEIGHT * DPI_SCALE_FACTOR);
-  rect.right = rect.left + BUTTON_WIDTH * DPI_SCALE_FACTOR;
-  rect.bottom = rect.top + BUTTON_HEIGHT * DPI_SCALE_FACTOR;
+  CRect rect;
 
   if (!start_button_.Create(_T("START"), BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE,
                             rect, this, IDC_START)) {
     LOG(WARNING) << "start button not created";
     return false;
   }
-
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_ONE_LEFT * DPI_SCALE_FACTOR,
-                  VERTICAL_HEIGHT * 5 * DPI_SCALE_FACTOR);
-  rect.right = rect.left + BUTTON_WIDTH * DPI_SCALE_FACTOR;
-  rect.bottom = rect.top + BUTTON_HEIGHT * DPI_SCALE_FACTOR;
 
   if (!stop_button_.Create(_T("STOP"), BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE,
                            rect, this, IDC_STOP)) {
@@ -269,87 +265,50 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
   // https://docs.microsoft.com/en-us/cpp/mfc/reference/styles-used-by-mfc?view=msvc-170#combo-box-styles
   // https://docs.microsoft.com/en-us/cpp/mfc/reference/styles-used-by-mfc?view=msvc-170#button-styles
 
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_TWO_LEFT * DPI_SCALE_FACTOR,
-                  VERTICAL_HEIGHT * DPI_SCALE_FACTOR);
-  rect.right = rect.left + LABEL_WIDTH * DPI_SCALE_FACTOR;
-  rect.bottom = rect.top + LABEL_HEIGHT * DPI_SCALE_FACTOR;
-  if (!serverhost_label_.Create(_T("Server Host"), WS_CHILD | WS_VISIBLE |
-                                SS_LEFT, rect, this)) {
+  if (!serverhost_label_.Create(_T("Server Host"),
+                                WS_CHILD | WS_VISIBLE | SS_LEFT, rect, this)) {
     LOG(WARNING) << "serverhost_label not created";
     return FALSE;
   }
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_THREE_LEFT * DPI_SCALE_FACTOR,
-                  VERTICAL_HEIGHT * DPI_SCALE_FACTOR);
-  rect.right = rect.left + EDIT_WIDTH * DPI_SCALE_FACTOR;
-  rect.bottom = rect.top + EDIT_HEIGHT * DPI_SCALE_FACTOR;
-  if (!serverhost_edit_.Create(WS_CHILD | WS_VISIBLE | WS_BORDER | WS_BORDER |
-                               ES_LEFT, rect, this, IDC_EDIT_SERVER_HOST)) {
+  if (!serverhost_edit_.Create(
+          WS_CHILD | WS_VISIBLE | WS_BORDER | WS_BORDER | ES_LEFT, rect, this,
+          IDC_EDIT_SERVER_HOST)) {
     LOG(WARNING) << "serverhost_edit not created";
     return FALSE;
   }
 
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_TWO_LEFT * DPI_SCALE_FACTOR,
-                  VERTICAL_HEIGHT * 2 * DPI_SCALE_FACTOR);
-  rect.right = rect.left + LABEL_WIDTH * DPI_SCALE_FACTOR;
-  rect.bottom = rect.top + LABEL_HEIGHT * DPI_SCALE_FACTOR;
-  if (!serverport_label_.Create(_T("Server Port"), WS_CHILD | WS_VISIBLE |
-                                SS_LEFT, rect, this)) {
+  if (!serverport_label_.Create(_T("Server Port"),
+                                WS_CHILD | WS_VISIBLE | SS_LEFT, rect, this)) {
     LOG(WARNING) << "serverport_label not created";
     return FALSE;
   }
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_THREE_LEFT * DPI_SCALE_FACTOR,
-                  VERTICAL_HEIGHT * 2 * DPI_SCALE_FACTOR);
-  rect.right = rect.left + EDIT_WIDTH * DPI_SCALE_FACTOR;
-  rect.bottom = rect.top + EDIT_HEIGHT * DPI_SCALE_FACTOR;
-  if (!serverport_edit_.Create(WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT |
-                               ES_NUMBER, rect, this, IDC_EDIT_SERVER_PORT)) {
+  if (!serverport_edit_.Create(
+          WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT | ES_NUMBER, rect, this,
+          IDC_EDIT_SERVER_PORT)) {
     LOG(WARNING) << "serverport_edit not created";
     return FALSE;
   }
 
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_TWO_LEFT * DPI_SCALE_FACTOR,
-                  VERTICAL_HEIGHT * 3 * DPI_SCALE_FACTOR);
-  rect.right = rect.left + LABEL_WIDTH * DPI_SCALE_FACTOR;
-  rect.bottom = rect.top + LABEL_HEIGHT * DPI_SCALE_FACTOR;
   if (!password_label_.Create(_T("Password"), WS_CHILD | WS_VISIBLE | SS_LEFT,
                               rect, this)) {
     LOG(WARNING) << "password_label not created";
     return FALSE;
   }
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_THREE_LEFT * DPI_SCALE_FACTOR,
-                  VERTICAL_HEIGHT * 3 * DPI_SCALE_FACTOR);
-  rect.right = rect.left + EDIT_WIDTH * DPI_SCALE_FACTOR;
-  rect.bottom = rect.top + EDIT_HEIGHT * DPI_SCALE_FACTOR;
-  if (!password_edit_.Create(WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT |
-                             ES_PASSWORD, rect, this, IDC_EDIT_PASSWORD)) {
+  if (!password_edit_.Create(
+          WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT | ES_PASSWORD, rect, this,
+          IDC_EDIT_PASSWORD)) {
     LOG(WARNING) << "password_edit not created";
     return FALSE;
   }
 
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_TWO_LEFT * DPI_SCALE_FACTOR,
-                  VERTICAL_HEIGHT * 4 * DPI_SCALE_FACTOR);
-  rect.right = rect.left + LABEL_WIDTH * DPI_SCALE_FACTOR;
-  rect.bottom = rect.top + LABEL_HEIGHT * DPI_SCALE_FACTOR;
-  if (!method_label_.Create(_T("Cipher Method"), WS_CHILD | WS_VISIBLE |
-                            SS_LEFT, rect, this)) {
+  if (!method_label_.Create(_T("Cipher Method"),
+                            WS_CHILD | WS_VISIBLE | SS_LEFT, rect, this)) {
     LOG(WARNING) << "method_label not created";
     return FALSE;
   }
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_THREE_LEFT * DPI_SCALE_FACTOR,
-                  VERTICAL_HEIGHT * 4 * DPI_SCALE_FACTOR);
-  rect.right = rect.left + EDIT_WIDTH * DPI_SCALE_FACTOR;
-  rect.bottom = rect.top + EDIT_HEIGHT * DPI_SCALE_FACTOR;
   if (!method_combo_box_.Create(
-      WS_CHILD | WS_VISIBLE | WS_VSCROLL | CBS_DROPDOWNLIST, rect, this,
-      IDC_COMBOBOX_METHOD)) {
+          WS_CHILD | WS_VISIBLE | WS_VSCROLL | CBS_DROPDOWNLIST, rect, this,
+          IDC_COMBOBOX_METHOD)) {
     LOG(WARNING) << "method_combo_box not created";
     return FALSE;
   }
@@ -362,87 +321,49 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
 
   method_combo_box_.SetMinVisibleItems(method_count);
 
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_TWO_LEFT * DPI_SCALE_FACTOR,
-                  VERTICAL_HEIGHT * 5 * DPI_SCALE_FACTOR);
-  rect.right = rect.left + LABEL_WIDTH * DPI_SCALE_FACTOR;
-  rect.bottom = rect.top + LABEL_HEIGHT * DPI_SCALE_FACTOR;
-  if (!localhost_label_.Create(_T("Local Host"), WS_CHILD | WS_VISIBLE |
-                               SS_LEFT, rect, this)) {
+  if (!localhost_label_.Create(_T("Local Host"),
+                               WS_CHILD | WS_VISIBLE | SS_LEFT, rect, this)) {
     LOG(WARNING) << "localhost_label not created";
     return FALSE;
   }
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_THREE_LEFT * DPI_SCALE_FACTOR,
-                  VERTICAL_HEIGHT * 5 * DPI_SCALE_FACTOR);
-  rect.right = rect.left + EDIT_WIDTH * DPI_SCALE_FACTOR;
-  rect.bottom = rect.top + EDIT_HEIGHT * DPI_SCALE_FACTOR;
   if (!localhost_edit_.Create(WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT, rect,
                               this, IDC_EDIT_LOCAL_HOST)) {
     LOG(WARNING) << "localhost_edit not created";
     return FALSE;
   }
 
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_TWO_LEFT * DPI_SCALE_FACTOR,
-                  VERTICAL_HEIGHT * 6 * DPI_SCALE_FACTOR);
-  rect.right = rect.left + LABEL_WIDTH * DPI_SCALE_FACTOR;
-  rect.bottom = rect.top + LABEL_HEIGHT * DPI_SCALE_FACTOR;
-  if (!localport_label_.Create(_T("Local Port"), WS_CHILD | WS_VISIBLE |
-                               SS_LEFT, rect, this)) {
+  if (!localport_label_.Create(_T("Local Port"),
+                               WS_CHILD | WS_VISIBLE | SS_LEFT, rect, this)) {
     LOG(WARNING) << "localport_label not created";
     return FALSE;
   }
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_THREE_LEFT * DPI_SCALE_FACTOR,
-                  VERTICAL_HEIGHT * 6 * DPI_SCALE_FACTOR);
-  rect.right = rect.left + EDIT_WIDTH * DPI_SCALE_FACTOR;
-  rect.bottom = rect.top + EDIT_HEIGHT * DPI_SCALE_FACTOR;
-  if (!localport_edit_.Create(WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT |
-                              ES_NUMBER, rect, this, IDC_EDIT_LOCAL_PORT)) {
+  if (!localport_edit_.Create(
+          WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT | ES_NUMBER, rect, this,
+          IDC_EDIT_LOCAL_PORT)) {
     LOG(WARNING) << "localport_edit not created";
     return FALSE;
   }
 
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_TWO_LEFT * DPI_SCALE_FACTOR,
-                  VERTICAL_HEIGHT * 7 * DPI_SCALE_FACTOR);
-  rect.right = rect.left + LABEL_WIDTH * DPI_SCALE_FACTOR;
-  rect.bottom = rect.top + LABEL_HEIGHT * DPI_SCALE_FACTOR;
   if (!timeout_label_.Create(_T("Timeout"), WS_CHILD | WS_VISIBLE | SS_LEFT,
                              rect, this)) {
     LOG(WARNING) << "timeout_label not created";
     return FALSE;
   }
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_THREE_LEFT * DPI_SCALE_FACTOR,
-                  VERTICAL_HEIGHT * 7 * DPI_SCALE_FACTOR);
-  rect.right = rect.left + EDIT_WIDTH * DPI_SCALE_FACTOR;
-  rect.bottom = rect.top + EDIT_HEIGHT * DPI_SCALE_FACTOR;
-  if (!timeout_edit_.Create(WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT |
-                            ES_NUMBER, rect, this, IDC_EDIT_TIMEOUT)) {
+  if (!timeout_edit_.Create(
+          WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT | ES_NUMBER, rect, this,
+          IDC_EDIT_TIMEOUT)) {
     LOG(WARNING) << "timeout_edit not created";
     return FALSE;
   }
 
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_TWO_LEFT * DPI_SCALE_FACTOR,
-                  VERTICAL_HEIGHT * 8 * DPI_SCALE_FACTOR);
-  rect.right = rect.left + LABEL_WIDTH * DPI_SCALE_FACTOR;
-  rect.bottom = rect.top + LABEL_HEIGHT * DPI_SCALE_FACTOR;
-  if (!autostart_label_.Create(_T("Auto Start"), WS_CHILD | WS_VISIBLE |
-                               SS_LEFT, rect, this)) {
+  if (!autostart_label_.Create(_T("Auto Start"),
+                               WS_CHILD | WS_VISIBLE | SS_LEFT, rect, this)) {
     LOG(WARNING) << "autostart_label not created";
     return FALSE;
   }
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_THREE_LEFT * DPI_SCALE_FACTOR,
-                  VERTICAL_HEIGHT * 8 * DPI_SCALE_FACTOR);
-  rect.right = rect.left + EDIT_WIDTH * DPI_SCALE_FACTOR;
-  rect.bottom = rect.top + EDIT_HEIGHT * DPI_SCALE_FACTOR;
-  if (!autostart_button_.Create(_T("Enable"), WS_CHILD | WS_VISIBLE |
-                                BS_AUTOCHECKBOX | BS_LEFT, rect, this,
-                                IDC_AUTOSTART_CHECKBOX)) {
+  if (!autostart_button_.Create(
+          _T("Enable"), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX | BS_LEFT, rect,
+          this, IDC_AUTOSTART_CHECKBOX)) {
     LOG(WARNING) << "autostart_button not created";
     return FALSE;
   }
@@ -456,8 +377,7 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
     return -1;
   }
 
-  RepositionBars(AFX_IDW_CONTROLBAR_FIRST, AFX_IDW_CONTROLBAR_LAST,
-                 ID_APP_MSG);
+  RepositionBars(AFX_IDW_CONTROLBAR_FIRST, AFX_IDW_CONTROLBAR_LAST, ID_APP_MSG);
 
   // Load the new menu.
   if (!menu_.LoadMenu(IDR_MAINFRAME)) {
@@ -475,9 +395,162 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
   // Assign default menu
   m_hMenuDefault = menu_.GetSafeHmenu();
 
+  UpdateLayoutForDpi();
+
   LoadConfig();
 
   return 0;
+}
+
+void CYassFrame::UpdateLayoutForDpi() {
+  UINT uDPI = Utils::GetDpiForWindowOrSystem(GetSafeHwnd());
+  LOG(WARNING) << "Adjust layout to Dpi: " << uDPI;
+  UpdateLayoutForDpi(uDPI);
+}
+
+void CYassFrame::UpdateLayoutForDpi(UINT uDpi) {
+  // Left Panel
+  CRect rect, client_rect;
+
+  GetClientRect(&client_rect);
+
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_ONE_LEFT, VERTICAL_HEIGHT);
+  rect.right = rect.left + BUTTON_WIDTH;
+  rect.bottom = rect.top + BUTTON_HEIGHT;
+
+  start_button_.SetWindowPos(nullptr, rect.left, rect.top,
+                             rect.right - rect.left, rect.bottom - rect.top,
+                             SWP_NOZORDER | SWP_NOACTIVATE);
+
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_ONE_LEFT, VERTICAL_HEIGHT * 5);
+  rect.right = rect.left + BUTTON_WIDTH;
+  rect.bottom = rect.top + BUTTON_HEIGHT;
+  stop_button_.SetWindowPos(nullptr, rect.left, rect.top,
+                            rect.right - rect.left, rect.bottom - rect.top,
+                            SWP_NOZORDER | SWP_NOACTIVATE);
+
+  // RIGHT Panel
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_TWO_LEFT, VERTICAL_HEIGHT);
+  rect.right = rect.left + LABEL_WIDTH;
+  rect.bottom = rect.top + LABEL_HEIGHT;
+  serverhost_label_.SetWindowPos(nullptr, rect.left, rect.top,
+                                 rect.right - rect.left, rect.bottom - rect.top,
+                                 SWP_NOZORDER | SWP_NOACTIVATE);
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_THREE_LEFT, VERTICAL_HEIGHT);
+  rect.right = rect.left + EDIT_WIDTH;
+  rect.bottom = rect.top + EDIT_HEIGHT;
+  serverhost_edit_.SetWindowPos(nullptr, rect.left, rect.top,
+                                rect.right - rect.left, rect.bottom - rect.top,
+                                SWP_NOZORDER | SWP_NOACTIVATE);
+
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_TWO_LEFT, VERTICAL_HEIGHT * 2);
+  rect.right = rect.left + LABEL_WIDTH;
+  rect.bottom = rect.top + LABEL_HEIGHT;
+  serverport_label_.SetWindowPos(nullptr, rect.left, rect.top,
+                                 rect.right - rect.left, rect.bottom - rect.top,
+                                 SWP_NOZORDER | SWP_NOACTIVATE);
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_THREE_LEFT, VERTICAL_HEIGHT * 2);
+  rect.right = rect.left + EDIT_WIDTH;
+  rect.bottom = rect.top + EDIT_HEIGHT;
+  serverport_edit_.SetWindowPos(nullptr, rect.left, rect.top,
+                                rect.right - rect.left, rect.bottom - rect.top,
+                                SWP_NOZORDER | SWP_NOACTIVATE);
+
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_TWO_LEFT, VERTICAL_HEIGHT * 3);
+  rect.right = rect.left + LABEL_WIDTH;
+  rect.bottom = rect.top + LABEL_HEIGHT;
+  password_label_.SetWindowPos(nullptr, rect.left, rect.top,
+                               rect.right - rect.left, rect.bottom - rect.top,
+                               SWP_NOZORDER | SWP_NOACTIVATE);
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_THREE_LEFT, VERTICAL_HEIGHT * 3);
+  rect.right = rect.left + EDIT_WIDTH;
+  rect.bottom = rect.top + EDIT_HEIGHT;
+  password_edit_.SetWindowPos(nullptr, rect.left, rect.top,
+                              rect.right - rect.left, rect.bottom - rect.top,
+                              SWP_NOZORDER | SWP_NOACTIVATE);
+
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_TWO_LEFT, VERTICAL_HEIGHT * 4);
+  rect.right = rect.left + LABEL_WIDTH;
+  rect.bottom = rect.top + LABEL_HEIGHT;
+  method_label_.SetWindowPos(nullptr, rect.left, rect.top,
+                             rect.right - rect.left, rect.bottom - rect.top,
+                             SWP_NOZORDER | SWP_NOACTIVATE);
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_THREE_LEFT, VERTICAL_HEIGHT * 4);
+  rect.right = rect.left + EDIT_WIDTH;
+  rect.bottom = rect.top + EDIT_HEIGHT;
+  method_combo_box_.SetWindowPos(nullptr, rect.left, rect.top,
+                                 rect.right - rect.left, rect.bottom - rect.top,
+                                 SWP_NOZORDER | SWP_NOACTIVATE);
+
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_TWO_LEFT, VERTICAL_HEIGHT * 5);
+  rect.right = rect.left + LABEL_WIDTH;
+  rect.bottom = rect.top + LABEL_HEIGHT;
+  localhost_label_.SetWindowPos(nullptr, rect.left, rect.top,
+                                rect.right - rect.left, rect.bottom - rect.top,
+                                SWP_NOZORDER | SWP_NOACTIVATE);
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_THREE_LEFT, VERTICAL_HEIGHT * 5);
+  rect.right = rect.left + EDIT_WIDTH;
+  rect.bottom = rect.top + EDIT_HEIGHT;
+  localhost_edit_.SetWindowPos(nullptr, rect.left, rect.top,
+                               rect.right - rect.left, rect.bottom - rect.top,
+                               SWP_NOZORDER | SWP_NOACTIVATE);
+
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_TWO_LEFT, VERTICAL_HEIGHT * 6);
+  rect.right = rect.left + LABEL_WIDTH;
+  rect.bottom = rect.top + LABEL_HEIGHT;
+  localport_label_.SetWindowPos(nullptr, rect.left, rect.top,
+                                rect.right - rect.left, rect.bottom - rect.top,
+                                SWP_NOZORDER | SWP_NOACTIVATE);
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_THREE_LEFT, VERTICAL_HEIGHT * 6);
+  rect.right = rect.left + EDIT_WIDTH;
+  rect.bottom = rect.top + EDIT_HEIGHT;
+  localport_edit_.SetWindowPos(nullptr, rect.left, rect.top,
+                               rect.right - rect.left, rect.bottom - rect.top,
+                               SWP_NOZORDER | SWP_NOACTIVATE);
+
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_TWO_LEFT, VERTICAL_HEIGHT * 7);
+  rect.right = rect.left + LABEL_WIDTH;
+  rect.bottom = rect.top + LABEL_HEIGHT;
+  timeout_label_.SetWindowPos(nullptr, rect.left, rect.top,
+                              rect.right - rect.left, rect.bottom - rect.top,
+                              SWP_NOZORDER | SWP_NOACTIVATE);
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_THREE_LEFT, VERTICAL_HEIGHT * 7);
+  rect.right = rect.left + EDIT_WIDTH;
+  rect.bottom = rect.top + EDIT_HEIGHT;
+  timeout_edit_.SetWindowPos(nullptr, rect.left, rect.top,
+                             rect.right - rect.left, rect.bottom - rect.top,
+                             SWP_NOZORDER | SWP_NOACTIVATE);
+
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_TWO_LEFT, VERTICAL_HEIGHT * 8);
+  rect.right = rect.left + LABEL_WIDTH;
+  rect.bottom = rect.top + LABEL_HEIGHT;
+  autostart_label_.SetWindowPos(nullptr, rect.left, rect.top,
+                                rect.right - rect.left, rect.bottom - rect.top,
+                                SWP_NOZORDER | SWP_NOACTIVATE);
+  rect = client_rect;
+  rect.OffsetRect(COLUMN_THREE_LEFT, VERTICAL_HEIGHT * 8);
+  rect.right = rect.left + EDIT_WIDTH;
+  rect.bottom = rect.top + EDIT_HEIGHT;
+  autostart_button_.SetWindowPos(nullptr, rect.left, rect.top,
+                                 rect.right - rect.left, rect.bottom - rect.top,
+                                 SWP_NOZORDER | SWP_NOACTIVATE);
 }
 
 void CYassFrame::OnClose() {
@@ -521,16 +594,23 @@ void CYassFrame::OnUpdateStatusBar(CCmdUI* pCmdUI) {
   // FIXME pCmdUI doens't update the status text
 }
 
-#if 0
-void CYassFrame::OnDPIChanged(WPARAM w, LPARAM l) {
-  CSize newSize = GetSize();
-  newSize.x *= static_cast<double>(event.GetNewDPI().GetWidth()) /
-               event.GetOldDPI().GetWidth();
-  newSize.y *= static_cast<double>(event.GetNewDPI().GetHeight()) /
-               event.GetOldDPI().GetHeight();
-  SetSize(newSize);
+LRESULT CYassFrame::OnDPIChanged(WPARAM w, LPARAM l) {
+  LOG(WARNING) << "DPI changed";
+
+  // https://github.com/microsoft/Windows-classic-samples/blob/main/Samples/DPIAwarenessPerWindow/client/DpiAwarenessContext.cpp
+  UINT uDpi = HIWORD(w);
+
+  // Resize the window
+  auto lprcNewScale = reinterpret_cast<RECT*>(l);
+
+  SetWindowPos(nullptr, lprcNewScale->left, lprcNewScale->top,
+               lprcNewScale->right - lprcNewScale->left,
+               lprcNewScale->bottom - lprcNewScale->top,
+               SWP_NOZORDER | SWP_NOACTIVATE);
+
+  UpdateLayoutForDpi(uDpi);
+  return 0;
 }
-#endif
 
 void CYassFrame::OnStartButtonClicked() {
   start_button_.EnableWindow(false);
@@ -545,4 +625,3 @@ void CYassFrame::OnStopButtonClicked() {
 void CYassFrame::OnCheckedAutoStartButtonClicked() {
   Utils::EnableAutoStart(autostart_button_.GetCheck() & BST_CHECKED);
 }
-

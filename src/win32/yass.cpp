@@ -13,11 +13,11 @@
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
+#include "win32/about_dialog.hpp"
+#include "win32/option_dialog.hpp"
 #include "win32/resource.hpp"
 #include "win32/utils.hpp"
 #include "win32/yass_frame.hpp"
-#include "win32/about_dialog.hpp"
-#include "win32/option_dialog.hpp"
 
 // https://docs.microsoft.com/en-us/windows/win32/winmsg/about-messages-and-message-queues
 // https://docs.microsoft.com/en-us/cpp/mfc/reference/message-map-macros-mfc?view=msvc-170#on_thread_message
@@ -83,9 +83,7 @@ BOOL CYassApp::InitInstance() {
 
   state_ = STOPPED;
 
-  if (Utils::SetProcessDpiAwareness()) {
-    LOG(WARNING) << "SetProcessDpiAwareness applied";
-  }
+  Utils::SetDpiAwareness();
 
   m_pMainWnd = frame_ = new CYassFrame;
   if (frame_ == nullptr) {
@@ -106,8 +104,8 @@ BOOL CYassApp::InitInstance() {
 
   RECT rect{0, 0, 400 * 2, 300 * 2};
 
-  if (!frame_->Create(lpszClass, frame_name, WS_OVERLAPPED | WS_CAPTION |
-                      WS_SYSMENU, rect)) {
+  if (!frame_->Create(lpszClass, frame_name,
+                      WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU, rect)) {
     LOG(WARNING) << "Failed to create main frame";
     delete frame_;
     return FALSE;
