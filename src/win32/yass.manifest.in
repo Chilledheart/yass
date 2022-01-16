@@ -11,6 +11,20 @@
         processorArchitecture="${MSVC_PROCESSOR_ARCHITECTURE}"
     />
     <description>Yet Another Shadow Socket Application</description>
+    <!-- To enable your application to use visual styles, you must use ComCtl32.dll version 6 or later. -->
+    <!-- reference: https://docs.microsoft.com/en-us/windows/win32/Controls/cookbook-overview -->
+    <dependency>
+        <dependentAssembly>
+            <assemblyIdentity
+                type="win32"
+                name="Microsoft.Windows.Common-Controls"
+                version="6.0.0.0"
+                processorArchitecture="*"
+                publicKeyToken="6595b64144ccf1df"
+                language="*"
+            />
+        </dependentAssembly>
+    </dependency>
     <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
         <application>
             <!-- This tag is required for XAML islands usage in the process for media scenarios. -->

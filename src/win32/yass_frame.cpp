@@ -283,7 +283,7 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
   rect.right = rect.left + EDIT_WIDTH * DPI_SCALE_FACTOR;
   rect.bottom = rect.top + EDIT_HEIGHT * DPI_SCALE_FACTOR;
   if (!serverhost_edit_.Create(WS_CHILD | WS_VISIBLE | WS_BORDER | WS_BORDER |
-                               ES_LEFT, rect, this, IDR_MAINFRAME)) {
+                               ES_LEFT, rect, this, IDC_EDIT_SERVER_HOST)) {
     LOG(WARNING) << "serverhost_edit not created";
     return FALSE;
   }
@@ -304,7 +304,7 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
   rect.right = rect.left + EDIT_WIDTH * DPI_SCALE_FACTOR;
   rect.bottom = rect.top + EDIT_HEIGHT * DPI_SCALE_FACTOR;
   if (!serverport_edit_.Create(WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT |
-                               ES_NUMBER, rect, this, IDR_MAINFRAME)) {
+                               ES_NUMBER, rect, this, IDC_EDIT_SERVER_PORT)) {
     LOG(WARNING) << "serverport_edit not created";
     return FALSE;
   }
@@ -325,7 +325,7 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
   rect.right = rect.left + EDIT_WIDTH * DPI_SCALE_FACTOR;
   rect.bottom = rect.top + EDIT_HEIGHT * DPI_SCALE_FACTOR;
   if (!password_edit_.Create(WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT |
-                             ES_PASSWORD, rect, this, IDR_MAINFRAME)) {
+                             ES_PASSWORD, rect, this, IDC_EDIT_PASSWORD)) {
     LOG(WARNING) << "password_edit not created";
     return FALSE;
   }
@@ -347,12 +347,17 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
   rect.bottom = rect.top + EDIT_HEIGHT * DPI_SCALE_FACTOR;
   if (!method_combo_box_.Create(
       WS_CHILD | WS_VISIBLE | WS_VSCROLL | CBS_DROPDOWNLIST, rect, this,
-      IDR_MAINFRAME)) {
+      IDC_COMBOBOX_METHOD)) {
     LOG(WARNING) << "method_combo_box not created";
     return FALSE;
   }
-  for (auto& method_string : method_strings)
+
+  for (auto& method_string : method_strings) {
     method_combo_box_.AddString(std::move(method_string));
+  }
+
+  method_combo_box_.SetMinVisibleItems(sizeof(method_strings) /
+                                       sizeof(method_strings[0]));
 
   rect = client_rect;
   rect.OffsetRect(COLUMN_TWO_LEFT * DPI_SCALE_FACTOR,
@@ -370,7 +375,7 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
   rect.right = rect.left + EDIT_WIDTH * DPI_SCALE_FACTOR;
   rect.bottom = rect.top + EDIT_HEIGHT * DPI_SCALE_FACTOR;
   if (!localhost_edit_.Create(WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT, rect,
-                              this, IDR_MAINFRAME)) {
+                              this, IDC_EDIT_LOCAL_HOST)) {
     LOG(WARNING) << "localhost_edit not created";
     return FALSE;
   }
@@ -391,7 +396,7 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
   rect.right = rect.left + EDIT_WIDTH * DPI_SCALE_FACTOR;
   rect.bottom = rect.top + EDIT_HEIGHT * DPI_SCALE_FACTOR;
   if (!localport_edit_.Create(WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT |
-                              ES_NUMBER, rect, this, IDR_MAINFRAME)) {
+                              ES_NUMBER, rect, this, IDC_EDIT_LOCAL_PORT)) {
     LOG(WARNING) << "localport_edit not created";
     return FALSE;
   }
@@ -412,7 +417,7 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
   rect.right = rect.left + EDIT_WIDTH * DPI_SCALE_FACTOR;
   rect.bottom = rect.top + EDIT_HEIGHT * DPI_SCALE_FACTOR;
   if (!timeout_edit_.Create(WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT |
-                            ES_NUMBER, rect, this, IDR_MAINFRAME)) {
+                            ES_NUMBER, rect, this, IDC_EDIT_TIMEOUT)) {
     LOG(WARNING) << "timeout_edit not created";
     return FALSE;
   }
