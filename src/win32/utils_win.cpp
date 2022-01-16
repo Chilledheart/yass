@@ -15,6 +15,11 @@
 #include <windows.h>
 
 // https://docs.microsoft.com/en-us/windows/win32/winprog/using-the-windows-headers
+//
+// Windows 10 Unknown                             NTDDI_WIN10_CO (0x0A00000B)
+// Windows 10 Unknown                             NTDDI_WIN10_FE (0x0A00000A)
+// Windows 10 Unknown                             NTDDI_WIN10_MN (0x0A000009)
+// Windows 10 2004                                NTDDI_WIN10_VB (0x0A000008)
 // Windows 10 1903 "19H1"                         NTDDI_WIN10_19H1 (0x0A000007)
 // Windows 10 1809 "Redstone 5"                   NTDDI_WIN10_RS5 (0x0A000006)
 // Windows 10 1803 "Redstone 4"                   NTDDI_WIN10_RS4 (0x0A000005)
