@@ -48,12 +48,13 @@ IDR_MAINFRAME MENU PRELOAD DISCARDABLE
 BEGIN
     POPUP "&File"
     BEGIN
-        MENUITEM "&Options...\tCtrl+O",          IDM_OPTIONBOX
+        MENUITEM "&Options...\tCtrl+O",          ID_APP_OPTION
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit",                        ID_APP_EXIT
     END
-    MENUITEM SEPARATOR
     POPUP "&Help"
     BEGIN
-        MENUITEM "&About YetAnotherShadowsocket" IDM_ABOUTBOX
+        MENUITEM "&About YetAnotherShadowsocket" ID_APP_ABOUT
     END
 END
 

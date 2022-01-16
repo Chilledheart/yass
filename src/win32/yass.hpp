@@ -34,6 +34,10 @@ class CYassApp : public CWinApp {
   YASSState GetState() const { return state_; }
 
  private:
+  afx_msg void OnAppOption();
+  afx_msg void OnAppAbout();
+
+ private:
   afx_msg void OnStarted(WPARAM w, LPARAM l);
   afx_msg void OnStartFailed(WPARAM w, LPARAM l);
   afx_msg void OnStopped(WPARAM w, LPARAM l);

@@ -9,8 +9,6 @@
 
 #include "cli/socks5_connection_stats.hpp"
 #include "core/utils.hpp"
-#include "win32/about_dialog.hpp"
-#include "win32/option_dialog.hpp"
 #include "win32/panels.hpp"
 #include "win32/resource.hpp"
 #include "win32/utils.hpp"
@@ -61,7 +59,6 @@ CYassFrame::~CYassFrame() = default;
 BEGIN_MESSAGE_MAP(CYassFrame, CFrameWnd)
   ON_WM_CREATE()
   ON_WM_CLOSE()
-  ON_WM_SYSCOMMAND()
   // https://docs.microsoft.com/en-us/cpp/mfc/on-update-command-ui-macro?view=msvc-170
   ON_UPDATE_COMMAND_UI(ID_APP_MSG, &CYassFrame::OnUpdateStatusBar)
 #if 0
@@ -223,13 +220,6 @@ void CYassFrame::LoadConfig() {
 int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
   if (CFrameWnd::OnCreate(lpCreateStruct) == -1)
     return -1;
-
-  static_assert(
-      (IDM_OPTIONBOX & 0xFFF0) == IDM_OPTIONBOX && IDM_OPTIONBOX < 0xF000,
-      "IDM_OPTIONBOX must be in the system command range.");
-  static_assert(
-      (IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX && IDM_ABOUTBOX < 0xF000,
-      "IDM_ABOUTBOX must be in the system command range.");
 
   // Left Panel
   CRect rect, client_rect;
@@ -469,17 +459,21 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
   RepositionBars(AFX_IDW_CONTROLBAR_FIRST, AFX_IDW_CONTROLBAR_LAST,
                  ID_APP_MSG);
 
-  if (!menu_bar_.Create(this, AFX_DEFAULT_TOOLBAR_STYLE)) {
-    LOG(WARNING) << "Failed to create menu bar";
+  // Load the new menu.
+  if (!menu_.LoadMenu(IDR_MAINFRAME)) {
+    LOG(WARNING) << "Failed to load menu";
     return -1;
   }
 
-  menu_bar_.SetPaneStyle(
-      (menu_bar_.GetPaneStyle() &
-       ~(CBRS_GRIPPER | CBRS_BORDER_TOP | CBRS_BORDER_BOTTOM |
-         CBRS_BORDER_LEFT | CBRS_BORDER_RIGHT)) |
-      CBRS_SIZE_DYNAMIC);
-  menu_bar_.SetBorders();
+  // Remove and destroy the old menu
+  SetMenu(nullptr);
+  ::DestroyMenu(m_hMenuDefault);
+
+  // Add the new menu
+  SetMenu(&menu_);
+
+  // Assign default menu
+  m_hMenuDefault = menu_.GetSafeHmenu();
 
   LoadConfig();
 
@@ -496,19 +490,6 @@ void CYassFrame::OnClose() {
   AfxGetApp()->GetMainWnd()->PostMessage(WM_CLOSE);
 
   CFrameWnd::OnClose();
-}
-
-void CYassFrame::OnSysCommand(UINT nID, LPARAM lParam) {
-  if ((nID & 0xFFF0) == IDM_OPTIONBOX) {
-    COptionDialog dialog(this);
-    if (dialog.DoModal() == IDOK)
-      mApp->SaveConfigToDisk();
-  } else if ((nID & 0xFFF0) == IDM_ABOUTBOX) {
-    CAboutDlg dlgAbout;
-    dlgAbout.DoModal();
-  } else {
-    CFrameWnd::OnSysCommand(nID, lParam);
-  }
 }
 
 // https://docs.microsoft.com/en-us/cpp/mfc/updating-the-text-of-a-status-bar-pane?view=msvc-170

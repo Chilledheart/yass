@@ -16,10 +16,14 @@
 #include "win32/resource.hpp"
 #include "win32/utils.hpp"
 #include "win32/yass_frame.hpp"
+#include "win32/about_dialog.hpp"
+#include "win32/option_dialog.hpp"
 
 // https://docs.microsoft.com/en-us/windows/win32/winmsg/about-messages-and-message-queues
 // https://docs.microsoft.com/en-us/cpp/mfc/reference/message-map-macros-mfc?view=msvc-170#on_thread_message
 BEGIN_MESSAGE_MAP(CYassApp, CWinApp)
+  ON_COMMAND(ID_APP_OPTION, &CYassApp::OnAppOption)
+  ON_COMMAND(ID_APP_ABOUT, &CYassApp::OnAppAbout)
   ON_THREAD_MESSAGE(WM_MYAPP_STARTED, &CYassApp::OnStarted)
   ON_THREAD_MESSAGE(WM_MYAPP_START_FAILED, &CYassApp::OnStartFailed)
   ON_THREAD_MESSAGE(WM_MYAPP_STOPPED, &CYassApp::OnStopped)
@@ -190,6 +194,17 @@ void CYassApp::OnStop(bool quiet) {
     };
   }
   worker_.Stop(callback);
+}
+
+void CYassApp::OnAppOption() {
+  COptionDialog dialog(GetMainWnd());
+  if (dialog.DoModal() == IDOK)
+    SaveConfigToDisk();
+}
+
+void CYassApp::OnAppAbout() {
+  CAboutDlg dlgAbout;
+  dlgAbout.DoModal();
 }
 
 // https://docs.microsoft.com/en-us/windows/win32/winprog/windows-data-types?redirectedfrom=MSDN

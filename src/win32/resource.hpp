@@ -7,10 +7,9 @@
 
 #include <afxres.h>
 
-#define IDM_ABOUTBOX 0x0010
 #define IDD_ABOUTBOX 100
 #define IDS_ABOUTBOX 101
-#define IDM_OPTIONBOX 0x0020
+#define ID_APP_OPTION 0x0020
 #define IDD_OPTIONBOX 200
 #define IDS_OPTIONBOX 201
 #define IDR_MAINFRAME 300

@@ -5,7 +5,6 @@
 #define YASS_WIN32_FRAME
 
 #include <afxext.h>           // MFC extensions (including VB)
-#include <afxmenubar.h>       // CMFCMenuBar
 #include <afxtempl.h>
 #include <afxwin.h>  // MFC core and standard components
 
@@ -73,7 +72,6 @@ class CYassFrame : public CFrameWnd {
   // the window's default OnClose handler calls DestroyWindow.
   // When the main window closes, the application closes.
   afx_msg void OnClose();
-  afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
 
   afx_msg void OnUpdateStatusBar(CCmdUI* pCmdUI);
 
@@ -90,7 +88,7 @@ class CYassFrame : public CFrameWnd {
  private:
   friend class CYassApp;
 
-  CMFCMenuBar menu_bar_;
+  CMenu menu_;
 
  protected:
   DECLARE_MESSAGE_MAP();
