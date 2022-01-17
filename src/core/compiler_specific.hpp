@@ -208,6 +208,22 @@
 #define BASE_STRING16_ITERATOR_IS_CHAR16_POINTER
 #endif
 
+// HAS_ATTRIBUTE
+//
+// A function-like feature checking macro that is a wrapper around
+// `__has_attribute`, which is defined by GCC 5+ and Clang and evaluates to a
+// nonzero constant integer if the attribute is supported or 0 if not.
+//
+// It evaluates to zero if `__has_attribute` is not defined by the compiler.
+//
+// GCC: https://gcc.gnu.org/gcc-5/changes.html
+// Clang: https://clang.llvm.org/docs/LanguageExtensions.html
+#ifdef __has_attribute
+#define HAS_ATTRIBUTE(x) __has_attribute(x)
+#else
+#define HAS_ATTRIBUTE(x) 0
+#endif
+
 // This is a wrapper around `__has_cpp_attribute`, which can be used to test for
 // the presence of an attribute. In case the compiler does not support this
 // macro it will simply evaluate to 0.
@@ -272,7 +288,7 @@
 // prevent code folding, see NO_CODE_FOLDING() in base/debug/alias.h.
 // Use like:
 //   void NOT_TAIL_CALLED FooBar();
-#if defined(__clang__) && __has_attribute(not_tail_called)
+#if defined(__clang__) && HAS_ATTRIBUTE(not_tail_called)
 #define NOT_TAIL_CALLED __attribute__((not_tail_called))
 #else
 #define NOT_TAIL_CALLED
@@ -314,22 +330,6 @@
 #define WARN_UNUSED_RESULT __attribute__((warn_unused_result))
 #else
 #define WARN_UNUSED_RESULT
-#endif
-
-// HAS_ATTRIBUTE
-//
-// A function-like feature checking macro that is a wrapper around
-// `__has_attribute`, which is defined by GCC 5+ and Clang and evaluates to a
-// nonzero constant integer if the attribute is supported or 0 if not.
-//
-// It evaluates to zero if `__has_attribute` is not defined by the compiler.
-//
-// GCC: https://gcc.gnu.org/gcc-5/changes.html
-// Clang: https://clang.llvm.org/docs/LanguageExtensions.html
-#ifdef __has_attribute
-#define HAS_ATTRIBUTE(x) __has_attribute(x)
-#else
-#define HAS_ATTRIBUTE(x) 0
 #endif
 
 // In case the compiler supports it NO_UNIQUE_ADDRESS evaluates to the C++20
@@ -486,7 +486,7 @@
 #endif
 #endif
 
-#if defined(__clang__) && __has_attribute(uninitialized)
+#if defined(__clang__) && HAS_ATTRIBUTE(uninitialized)
 // Attribute "uninitialized" disables -ftrivial-auto-var-init=pattern for
 // the specified variable.
 // Library-wide alternative is
@@ -578,7 +578,7 @@ inline constexpr bool AnalyzerAssumeTrue(bool arg) {
 #endif  // defined(__clang_analyzer__)
 
 // Use nomerge attribute to disable optimization of merging multiple same calls.
-#if defined(__clang__) && __has_attribute(nomerge)
+#if defined(__clang__) && HAS_ATTRIBUTE(nomerge)
 #define NOMERGE [[clang::nomerge]]
 #else
 #define NOMERGE
@@ -605,7 +605,7 @@ inline constexpr bool AnalyzerAssumeTrue(bool arg) {
 // See also:
 //   https://clang.llvm.org/docs/AttributeReference.html#trivial-abi
 //   https://libcxx.llvm.org/docs/DesignDocs/UniquePtrTrivialAbi.html
-#if defined(__clang__) && __has_attribute(trivial_abi)
+#if defined(__clang__) && HAS_ATTRIBUTE(trivial_abi)
 #define TRIVIAL_ABI [[clang::trivial_abi]]
 #else
 #define TRIVIAL_ABI
@@ -614,7 +614,7 @@ inline constexpr bool AnalyzerAssumeTrue(bool arg) {
 // Marks a member function as reinitializing a moved-from variable.
 // See also
 // https://clang.llvm.org/extra/clang-tidy/checks/bugprone-use-after-move.html#reinitialization
-#if defined(__clang__) && __has_attribute(reinitializes)
+#if defined(__clang__) && HAS_ATTRIBUTE(reinitializes)
 #define REINITIALIZES_AFTER_MOVE [[clang::reinitializes]]
 #else
 #define REINITIALIZES_AFTER_MOVE
@@ -623,10 +623,8 @@ inline constexpr bool AnalyzerAssumeTrue(bool arg) {
 // Requires constant initialization. See constinit in C++20. Allows to rely on a
 // variable being initialized before execution, and not requiring a global
 // constructor.
-#if defined(__has_attribute)
-#if __has_attribute(require_constant_initialization)
+#if HAS_ATTRIBUTE(require_constant_initialization)
 #define CONSTINIT __attribute__((require_constant_initialization))
-#endif
 #endif
 #if !defined(CONSTINIT)
 #define CONSTINIT
