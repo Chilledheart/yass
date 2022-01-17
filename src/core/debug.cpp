@@ -181,7 +181,7 @@ void VerifyDebugger() {}
 // Another option that is common is to try to ptrace yourself, but then we
 // can't detach without forking(), and that's not so great.
 // static
-pid_t GetDebuggerProcess() {
+static pid_t GetDebuggerProcess() {
   // NOTE: This code MUST be async-signal safe (it's used by in-process
   // stack dumping signal handler). NO malloc or stdio is allowed here.
 
@@ -213,7 +213,7 @@ pid_t GetDebuggerProcess() {
     return -1;
 
   absl::string_view pid_str(buf + pid_index, pid_end_index - pid_index);
-  absl::StatusOr<int32_t> pid = Utils::StringToInteger(pid_str);
+  absl::StatusOr<int32_t> pid = StringToInteger(pid_str);
   if (!pid.ok())
     return -1;
 

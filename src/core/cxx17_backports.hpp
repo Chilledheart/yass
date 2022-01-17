@@ -4,6 +4,8 @@
 #ifndef CORE_CXX17_BACKPORT_H
 #define CORE_CXX17_BACKPORT_H
 
+#include <array>
+
 namespace internal {
 
 // C++14 implementation of C++17's std::size():
