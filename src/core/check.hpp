@@ -39,7 +39,7 @@
 class VoidifyStream {
  public:
   VoidifyStream() = default;
-  explicit VoidifyStream(bool ignored) {}
+  explicit VoidifyStream(bool /*ignored*/) {}
 
   // This operator has lower precedence than << but higher than ?:
   void operator&(std::ostream&) {}
