@@ -202,9 +202,13 @@ std::string JoinString(std::initializer_list<absl::string_view> parts,
   return internal::JoinStringT(parts, separator);
 }
 
+namespace internal {
+
 size_t strlcpy(char* dst, const char* src, size_t dst_size) {
-  return internal::lcpyT(dst, src, dst_size);
+  return ::internal::lcpyT(dst, src, dst_size);
 }
 size_t wcslcpy(wchar_t* dst, const wchar_t* src, size_t dst_size) {
-  return internal::lcpyT(dst, src, dst_size);
+  return ::internal::lcpyT(dst, src, dst_size);
 }
+
+} // namespace internal
