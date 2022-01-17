@@ -484,7 +484,7 @@ template <typename list_type,
           typename T,
           typename CharT = typename T::value_type>
 static std::basic_string<CharT> JoinStringT(list_type parts, T sep) {
-  if (empty(parts))
+  if (::internal::empty<T>(parts))
     return std::basic_string<CharT>();
 
   // Pre-allocate the eventual size of the string. Start with the size of all of

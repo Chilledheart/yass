@@ -3031,7 +3031,7 @@ std::string SystemErrorCodeToString(SystemErrorCode error_code) {
   char msgbuf[kErrorMessageBufferSize];
   DWORD flags = FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
   DWORD len = FormatMessageA(flags, nullptr, error_code, 0, msgbuf,
-                             sizeof(msgbuf) / sizeof(msgbug[0]), nullptr);
+                             sizeof(msgbuf) / sizeof(msgbuf[0]), nullptr);
   if (len) {
     // Messages returned by system end with line breaks.
     return CollapseWhitespaceASCII(msgbuf, true) +

@@ -36,6 +36,23 @@
 
 #endif  // NDEBUG
 
+#define IGNORE_EINTR(x)                                   \
+  ({                                                      \
+    decltype(x) eintr_wrapper_result;                     \
+    do {                                                  \
+      eintr_wrapper_result = (x);                         \
+      if (eintr_wrapper_result == -1 && errno == EINTR) { \
+        eintr_wrapper_result = 0;                         \
+      }                                                   \
+    } while (0);                                          \
+    eintr_wrapper_result;                                 \
+  })
+
+#else
+
+#define HANDLE_EINTR(x) (x)
+#define IGNORE_EINTR(x) (x)
+
 #endif  //  defined(OS_POSIX)
 
 #endif  // CORE_COMMON_POSIX_H

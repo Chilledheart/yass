@@ -15,14 +15,14 @@
 #include <sstream>
 #include <string>
 
-#ifdef OS_WIN
-#include <malloc.h>
-#endif
-
 #include <absl/flags/declare.h>
 #include <absl/flags/flag.h>
 
 #include "core/compiler_specific.hpp"
+
+#ifdef OS_WIN
+#include <malloc.h>
+#endif
 
 // ScopedClearLastError stores and resets the value of thread local error codes
 // (errno, GetLastError()), and restores them in the destructor. This is useful

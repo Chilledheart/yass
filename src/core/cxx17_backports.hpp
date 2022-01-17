@@ -4,6 +4,8 @@
 #ifndef CORE_CXX17_BACKPORT_H
 #define CORE_CXX17_BACKPORT_H
 
+namespace internal {
+
 // C++14 implementation of C++17's std::size():
 // http://en.cppreference.com/w/cpp/iterator/size
 template <typename Container>
@@ -115,5 +117,7 @@ constexpr decltype(auto) apply(F&& f, Tuple&& t) {
       std::make_index_sequence<
           std::tuple_size<std::remove_reference_t<Tuple>>::value>{});
 }
+
+}  // namespace internal
 
 #endif  // CORE_CXX17_BACKPORT_H
