@@ -4,18 +4,11 @@
 #include "core/debug.hpp"
 #include "core/check_op.hpp"
 
-#include "core/compiler_specific.hpp"
+#include <absl/strings/string_view.h>
 
-// Annotate a function indicating it should not be inlined.
-// Use like:
-//   NOINLINE void DoStuff() { ... }
-#if defined(__GNUC__) || defined(__clang__)
-#define NOINLINE __attribute__((noinline))
-#elif defined(_MSC_VER)
-#define NOINLINE __declspec(noinline)
-#else
-#define NOINLINE
-#endif
+#include "core/common_posix.hpp"
+#include "core/compiler_specific.hpp"
+#include "core/utils.hpp"
 
 // This is a widely included header and its size has significant impact on
 // build time. Try not to raise this limit unless absolutely necessary. See
@@ -188,13 +181,13 @@ void VerifyDebugger() {}
 // Another option that is common is to try to ptrace yourself, but then we
 // can't detach without forking(), and that's not so great.
 // static
-Process GetDebuggerProcess() {
+pid_t GetDebuggerProcess() {
   // NOTE: This code MUST be async-signal safe (it's used by in-process
   // stack dumping signal handler). NO malloc or stdio is allowed here.
 
   int status_fd = open("/proc/self/status", O_RDONLY);
   if (status_fd == -1)
-    return Process();
+    return -1;
 
   // We assume our line will be in the first 1024 characters and that we can
   // read this much all at once.  In practice this will generally be true.
@@ -203,32 +196,32 @@ Process GetDebuggerProcess() {
 
   ssize_t num_read = HANDLE_EINTR(read(status_fd, buf, sizeof(buf)));
   if (IGNORE_EINTR(close(status_fd)) < 0)
-    return Process();
+    return -1;
 
   if (num_read <= 0)
-    return Process();
+    return -1;
 
-  StringPiece status(buf, num_read);
-  StringPiece tracer("TracerPid:\t");
+  absl::string_view status(buf, num_read);
+  absl::string_view tracer("TracerPid:\t");
 
-  StringPiece::size_type pid_index = status.find(tracer);
-  if (pid_index == StringPiece::npos)
-    return Process();
+  absl::string_view::size_type pid_index = status.find(tracer);
+  if (pid_index == absl::string_view::npos)
+    return -1;
   pid_index += tracer.size();
-  StringPiece::size_type pid_end_index = status.find('\n', pid_index);
-  if (pid_end_index == StringPiece::npos)
-    return Process();
+  absl::string_view::size_type pid_end_index = status.find('\n', pid_index);
+  if (pid_end_index == absl::string_view::npos)
+    return -1;
 
-  StringPiece pid_str(buf + pid_index, pid_end_index - pid_index);
-  int pid = 0;
-  if (!StringToInt(pid_str, &pid))
-    return Process();
+  absl::string_view pid_str(buf + pid_index, pid_end_index - pid_index);
+  absl::StatusOr<int32_t> pid = Utils::StringToInteger(pid_str);
+  if (!pid.ok())
+    return -1;
 
-  return Process(pid);
+  return pid.value();
 }
 
 bool BeingDebugged() {
-  return GetDebuggerProcess().IsValid();
+  return GetDebuggerProcess() != -1;
 }
 
 void VerifyDebugger() {}
