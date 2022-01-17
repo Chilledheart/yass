@@ -130,7 +130,7 @@ constexpr LogSeverity LOGGING_0 = LOGGING_ERROR;
 // As special cases, we can assume that LOG_IS_ON(FATAL) always holds. Also,
 // LOG_IS_ON(DFATAL) always holds in debug mode. In particular, CHECK()s will
 // always fire if they fail.
-#define LOG_IS_ON(severity) (ShouldCreateLogMessage(LOG_##severity))
+#define LOG_IS_ON(severity) (ShouldCreateLogMessage(LOGGING_##severity))
 
 #if defined(__GNUC__)
 // We emit an anonymous static int* variable at every VLOG_IS_ON(n) site.
@@ -347,13 +347,13 @@ class LogSink;  // defined below
 //   LogSink* sink;
 //   LogSeverity severity;
 // The cast is to disambiguate NULL arguments.
-#define LOG_TO_SINK(sink, severity)                                           \
-  LogMessage(__FILE__, __LINE__, LOG_##severity, static_cast<LogSink*>(sink), \
-             true)                                                            \
+#define LOG_TO_SINK(sink, severity)                  \
+  LogMessage(__FILE__, __LINE__, LOGGING_##severity, \
+             static_cast<LogSink*>(sink), true)      \
       .stream()
-#define LOG_TO_SINK_BUT_NOT_TO_LOGFILE(sink, severity)                        \
-  LogMessage(__FILE__, __LINE__, LOG_##severity, static_cast<LogSink*>(sink), \
-             false)                                                           \
+#define LOG_TO_SINK_BUT_NOT_TO_LOGFILE(sink, severity) \
+  LogMessage(__FILE__, __LINE__, LOGGING_##severity,   \
+             static_cast<LogSink*>(sink), false)       \
       .stream()
 
 #if defined(_SANITIZE_THREAD)
