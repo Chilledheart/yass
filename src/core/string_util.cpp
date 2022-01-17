@@ -134,10 +134,6 @@ bool ContainsOnlyChars(absl::string_view input, absl::string_view characters) {
   return input.find_first_not_of(characters) == absl::string_view::npos;
 }
 
-bool IsStringASCII(absl::string_view str) {
-  return internal::DoIsStringASCII(str.data(), str.length());
-}
-
 bool LowerCaseEqualsASCII(absl::string_view str,
                           absl::string_view lowercase_ascii) {
   return internal::DoLowerCaseEqualsASCII(str, lowercase_ascii);
