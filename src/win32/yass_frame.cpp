@@ -25,7 +25,7 @@
 #define INITIAL_LABEL_WIDTH 100
 #define INITIAL_LABEL_HEIGHT 25
 #define INITIAL_EDIT_WIDTH 220
-#define INITIAL_EDIT_HEIGHT 20
+#define INITIAL_EDIT_HEIGHT 25
 
 #define COLUMN_ONE_LEFT MulDiv(INITIAL_COLUMN_ONE_LEFT, uDpi, 96)
 #define COLUMN_TWO_LEFT MulDiv(INITIAL_COLUMN_TWO_LEFT, uDpi, 96)
@@ -58,7 +58,6 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 }
 
 static UINT BASED_CODE indicators[] = {
-    ID_SEPARATOR,  // status line indicator
     ID_APP_MSG,
 };
 
@@ -584,13 +583,12 @@ void CYassFrame::OnUpdateStatusBar(CCmdUI* pCmdUI) {
   pDC->SelectObject(pOldFont);
   ReleaseDC(pDC);
 
-  status_bar_.GetPaneInfo(1, pCmdUI->m_nID, uiStyle, icxWidth);
-  status_bar_.SetPaneInfo(1, pCmdUI->m_nID, uiStyle, rectPane.Width());
+  status_bar_.GetPaneInfo(0, pCmdUI->m_nID, uiStyle, icxWidth);
+  status_bar_.SetPaneInfo(0, pCmdUI->m_nID, uiStyle | SBPS_STRETCH,
+                          rectPane.Width());
 
   pCmdUI->Enable();
   pCmdUI->SetText(csPaneString);
-
-  // FIXME pCmdUI doens't update the status text
 }
 
 LRESULT CYassFrame::OnDPIChanged(WPARAM w, LPARAM l) {
