@@ -158,7 +158,8 @@ bool BeingDebugged() {
   mib[5] = (info_size / sizeof(struct kinfo_proc));
 #endif
 
-  int sysctl_result = sysctl(mib, size(mib), &info, &info_size, nullptr, 0);
+  int sysctl_result =
+      sysctl(mib, internal::size(mib), &info, &info_size, nullptr, 0);
   DCHECK_EQ(sysctl_result, 0);
   if (sysctl_result != 0) {
     is_set = true;
