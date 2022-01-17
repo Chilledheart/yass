@@ -150,6 +150,8 @@ def Settings( **kwargs ):
       if flag == '-arch':
         continue_again = True
         continue
+      if flag == '-Wall':
+        continue
       final_flags.append(flag)
 
     return {
