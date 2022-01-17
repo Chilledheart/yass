@@ -19,6 +19,8 @@
 #include "win32/utils.hpp"
 #include "win32/yass_frame.hpp"
 
+#define MULDIVDPI(x) MulDiv(x, uDpi, 96)
+
 // https://docs.microsoft.com/en-us/windows/win32/winmsg/about-messages-and-message-queues
 // https://docs.microsoft.com/en-us/cpp/mfc/reference/message-map-macros-mfc?view=msvc-170#on_thread_message
 BEGIN_MESSAGE_MAP(CYassApp, CWinApp)
@@ -102,7 +104,8 @@ BOOL CYassApp::InitInstance() {
     return FALSE;
   }
 
-  RECT rect{0, 0, 400 * 2, 300 * 2};
+  UINT uDpi = Utils::GetDpiForWindowOrSystem(nullptr);
+  RECT rect{0, 0, MULDIVDPI(500), MULDIVDPI(400)};
 
   if (!frame_->Create(lpszClass, frame_name,
                       WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU, rect)) {
