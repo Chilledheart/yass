@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2021 Chilledheart  */
 
-#include "gui/utils.hpp"
+#include "mac/utils.hpp"
 
 #include "core/logging.hpp"
-
-#ifdef __APPLE__
 
 #include <AvailabilityMacros.h>
 #import <Cocoa/Cocoa.h>
 
-#include <mach/mach_time.h>
 #include <stdint.h>
+
+#define DEFAULT_AUTOSTART_NAME "YASS"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -125,5 +124,3 @@ bool Utils::GetAutoStart() {
 void Utils::EnableAutoStart(bool on) {
   set_yass_auto_start(on);
 }
-
-#endif  // __APPLE__

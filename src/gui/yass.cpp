@@ -4,9 +4,6 @@
 
 #include <stdexcept>
 #include <string>
-#ifdef __APPLE__
-#include <pthread.h>
-#endif
 
 #include <absl/debugging/failure_signal_handler.h>
 #include <absl/debugging/symbolize.h>
@@ -19,7 +16,6 @@
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
 #include "gui/panels.hpp"
-#include "gui/utils.hpp"
 #include "gui/yass_frame.hpp"
 #include "gui/yass_logging.hpp"
 
@@ -44,12 +40,6 @@ bool YASSApp::Initialize(int& wxapp_argc, wxChar** wxapp_argv) {
   absl::InitializeSymbolizer(appPath.c_str());
   absl::FailureSignalHandlerOptions failure_handle_options;
   absl::InstallFailureSignalHandler(failure_handle_options);
-
-#ifdef __APPLE__
-  /// documented in
-  /// https://developer.apple.com/documentation/apple-silicon/tuning-your-code-s-performance-for-apple-silicon
-  pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
-#endif
 
   return true;
 }
@@ -93,12 +83,6 @@ bool YASSApp::OnInit() {
 
 void YASSApp::OnLaunched() {
   wxApp::OnLaunched();
-#if defined(__APPLE__)
-  if (Utils::GetAutoStart()) {
-    wxCommandEvent event;
-    frame_->m_leftpanel->OnStart(event);
-  }
-#endif
 }
 
 int YASSApp::OnExit() {

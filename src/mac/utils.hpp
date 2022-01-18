@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2021 Chilledheart  */
-#ifndef YASS_GUI_UTILS
-#define YASS_GUI_UTILS
+#ifndef YASS_MAC_UTILS
+#define YASS_MAC_UTILS
 #include <cstdint>
 #include <string>
 
@@ -11,6 +11,4 @@ class Utils {
   static void EnableAutoStart(bool on);
 };
 
-#define DEFAULT_AUTOSTART_NAME "YASS"
-
-#endif  // YASS_GUI_UTILS
+#endif  // YASS_MAC_UTILS

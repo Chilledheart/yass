@@ -4,7 +4,8 @@ if (CMAKE_CURRENT_BINARY_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   message(FATAL_ERROR "In source-tree build not support")
 endif()
 
-set(PACKAGE_NAME            "YetAnotherShadowSocket")
+set(PACKAGE_NAME            "YASS")
+set(PACKAGE_FULL_NAME       "YetAnotherShadowSocket")
 set(PACKAGE_VERSION         1.0.0)
 set(PACKAGE_PATCH_VERSION   0)
 
@@ -52,6 +53,10 @@ if(MSVC)
   # not used in ABI-detection due to the cmake issue https://gitlab.kitware.com/cmake/cmake/-/issues/17702
   set(CMAKE_C_COMPILER_ARCHITECTURE_ID "${VCPKG_TARGET_ARCHITECTURE}" CACHE STRING "")
   set(CMAKE_CXX_COMPILER_ARCHITECTURE_ID "${VCPKG_TARGET_ARCHITECTURE}" CACHE STRING "")
+endif()
+
+if (APPLE AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
+  set(CMAKE_OSX_DEPLOYMENT_TARGET "10.10")
 endif()
 
 enable_language(C)
@@ -105,6 +110,7 @@ endif()
 option(CLI "Build with cli." ON)
 option(SERVER "Build with server." ON)
 option(GUI "Build against GUI." OFF)
+option(GUI_SANDBOX "Build against GUI sandbox (MAC Only)." OFF)
 
 # *****************************************************************************************
 #           Third Party Libraries
@@ -347,13 +353,8 @@ set(SUPPORT_LIBS
     )
 
 # change wxWidgets_CONFIG_EXECUTABLE
-if (GUI AND (APPLE OR UNIX))
-    find_program(wxWidgets_CONFIG_EXECUTABLE
-      wx-config
-      PATHS /opt/wxWidgets/bin
-            /opt/local/Library/Frameworks/wxWidgets.framework/Versions/wxWidgets/3.1/bin
-            /opt/local/Library/Frameworks/wxWidgets.framework/Versions/wxWidgets/3.0/bin
-    )
+if (GUI AND UNIX)
+    find_program(wxWidgets_CONFIG_EXECUTABLE wx-config)
 endif()
 
 if (MSVC AND GUI)
@@ -381,6 +382,15 @@ if (MSVC AND GUI)
   set(GUI_CXX_FLAGS "")
   set(GUI_DEFINITIONS "")
   set(GUI_LIBRARY "")
+elseif (APPLE AND GUI)
+  find_library(COCOA_LIBRARY Cocoa REQUIRED)
+
+  set(GUI_USE_FILE "")
+  set(GUI_INCLUDE_DIRS "")
+  set(GUI_LIBRARIES "${COCOA_LIBRARY}")
+  set(GUI_CXX_FLAGS "")
+  set(GUI_DEFINITIONS "")
+  set(GUI_LIBRARY "")
 elseif (GUI)
   find_package(wxWidgets COMPONENTS core base REQUIRED)
   set(GUI_USE_FILE ${wxWidgets_USE_FILE})
@@ -389,14 +399,6 @@ elseif (GUI)
   set(GUI_CXX_FLAGS ${wxWidgets_CXX_FLAGS})
   set(GUI_DEFINITIONS ${wxWidgets_DEFINITIONS})
   set(GUI_LIBRARY ${wxWidgets_LIBRARY_DIRS})
-endif()
-
-
-if (NOT MSAN AND NOT ASAN AND NOT TSAN AND NOT UBSAN)
-    if (NOT APPLE AND NOT MSVC)
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,defs -Wl,--as-needed")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,defs -Wl,--as-needed")
-    endif()
 endif()
 
 # abseil-cpp
@@ -878,6 +880,13 @@ if(GCOV)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
 endif()
 
+if (NOT MSAN AND NOT ASAN AND NOT TSAN AND NOT UBSAN)
+    if (NOT APPLE AND NOT MSVC)
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,defs -Wl,--as-needed")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,defs -Wl,--as-needed")
+    endif()
+endif()
+
 # *****************************************************************************************
 #           Static Analysis
 # *****************************************************************************************
@@ -1084,24 +1093,40 @@ if (GUI)
           src/win32/yass_frame.cpp
           src/win32/option_dialog.cpp
           src/win32/utils_win.cpp)
+    elseif (APPLE)
+        set(STORYBOARDS src/mac/Base.lproj/Main.storyboard)
+        set(ASSET_CATALOG src/mac/Assets.xcassets)
+        set(ASSET_CATALOG_ASSETS Assets)
+        list(APPEND SRC_FILES
+          ${STORYBOARDS})
+        list(APPEND SRC_FILES
+          ${ASSET_CATALOG})
+        if (GUI_SANDBOX)
+          list(APPEND SRC_FILES
+            src/mac/yass.entitlements)
+        endif()
+
+        list(APPEND SRC_FILES
+          src/mac/YassAppDelegate.mm
+          src/mac/YassAppDelegate.h
+          src/mac/YassViewController.mm
+          src/mac/YassViewController.h
+          src/mac/OptionViewController.mm
+          src/mac/OptionViewController.h
+          src/mac/utils.hpp
+          src/mac/utils_mac.mm
+          src/mac/main.mm)
     else()
         list(APPEND SRC_FILES
           src/gui/yass.cpp
           src/gui/yass_frame.cpp
           src/gui/yass_logging.cpp
           src/gui/option_dialog.cpp
-          src/gui/panels.cpp
-          src/gui/utils.cpp)
+          src/gui/panels.cpp)
     endif()
 
     if (APPLE)
         list(APPEND SRC_FILES wxmac.icns)
-        list(APPEND SRC_FILES src/gui/utils_mac.mm)
-    endif()
-
-    if (UNIX AND NOT APPLE)
-        # for Linux, BSD, Solaris, Minix
-        list(APPEND SRC_FILES src/gui/utils_linux.cpp)
     endif()
 
     add_executable(${APP_NAME} WIN32 MACOSX_BUNDLE
@@ -1112,14 +1137,17 @@ if (GUI)
     target_include_directories(${APP_NAME} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-    if (NOT MSVC)
+    if (MSVC)
+      target_include_directories(${APP_NAME} PRIVATE
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/win32)
+    elseif(APPLE)
+      target_include_directories(${APP_NAME} PRIVATE
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/mac)
+    else()
       target_include_directories(${APP_NAME} PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/src/gui)
       target_include_directories(${APP_NAME} SYSTEM PRIVATE
           ${GUI_INCLUDE_DIRS})
-    else()
-      target_include_directories(${APP_NAME} PRIVATE
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/win32)
     endif()
 
     target_link_libraries(${APP_NAME} PUBLIC
@@ -1157,12 +1185,41 @@ if (GUI)
     endif()
 
     if (APPLE)
+        get_target_property(_APP_COMPILE_FLAGS ${APP_NAME} COMPILE_FLAGS)
+        if (NOT _APP_COMPILE_FLAGS)
+          set(_APP_COMPILE_FLAGS "")
+        endif()
         set_target_properties(${APP_NAME} PROPERTIES
-            RESOURCE "wxmac.icns"
+            COMPILE_FLAGS "${_APP_COMPILE_FLAGS} -fobjc-arc")
+
+        # adds to Copy Bundle Resources build phase
+        set_source_files_properties("wxmac.icns" PROPERTIES
+          MACOSX_PACKAGE_LOCATION "Resources")
+        set_source_files_properties("${STORYBOARDS}" PROPERTIES
+          MACOSX_PACKAGE_LOCATION "Resources")
+        set_source_files_properties("${ASSET_CATALOG}" PROPERTIES
+          MACOSX_PACKAGE_LOCATION "Resources")
+
+        set_target_properties(${APP_NAME} PROPERTIES
+            RESOURCE "wxmac.icns ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/Base.lproj/Main.storyboard"
             MACOSX_BUNDLE_ICON_FILE wxmac.icns
-            MACOSX_BUNDLE_COPYRIGHT "Copyright ${PACKAGE_NAME}"
+            MACOSX_BUNDLE_COPYRIGHT "Copyright ${PACKAGE_FULL_NAME}"
             MACOSX_BUNDLE_GUI_IDENTIFIER "it.yass.gui"
             MACOSX_BUNDLE_BUNDLE_NAME ${PACKAGE_NAME}
+            MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/Info.plist
+            XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
+            XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
+            XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++"
+            XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS "YES"
+            XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
+            #XCODE_ATTRIBUTE_ENABLE_HARDENED_RUNTIME "YES"
+            #XCODE_ATTRIBUTE_CODE_SIGN_INJECT_BASE_ENTITLEMENTS "NO"
+            #XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME ${ASSET_CATALOG_ASSETS}
           )
+        if (GUI_SANDBOX)
+          set_target_properties(${APP_NAME} PROPERTIES
+              XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/yass.entitlements
+          )
+        endif()
     endif()
 endif()

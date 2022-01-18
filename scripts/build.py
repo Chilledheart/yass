@@ -322,7 +322,7 @@ def generate_buildscript(configuration_type):
       cmake_args.extend(['-DCMAKE_CXX_COMPILER_TARGET=%s' % llvm_triple])
 
   else:
-    cmake_args.extend(['-G', 'Ninja'])
+    cmake_args.extend(['-G', 'Xcode'])
     cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])
 
   if sys.platform == 'darwin':
@@ -339,8 +339,12 @@ def generate_buildscript(configuration_type):
 def execute_buildscript(configuration_type):
   print('executing build scripts...(%s)' % configuration_type)
 
-  command = ['ninja', 'yass']
+  command = ['cmake', '--build', '.', '--target', 'yass', '--parallel',
+             '--config', configuration_type]
   write_output(command, suppress_error=False)
+  # FIX ME move to cmake
+  if sys.platform == 'darwin':
+    os.rename(os.path.join(configuration_type, get_app_name()), get_app_name())
 
 
 def postbuild_copy_libraries():
@@ -366,15 +370,6 @@ def postbuild_fix_rpath():
     _postbuild_install_name_tool()
   else:
     print('not supported in platform %s' % sys.platform)
-
-
-def postbuild_fix_retina_display():
-  print('fixing retina display...')
-  #write_output(['plutil', '-insert', 'LSUIElement', '-bool', 'YES', '%s/Contents/Info.plist' % get_app_name()])
-  write_output(['plutil', '-insert', 'NSPrincipalClass', '-string', 'NSApplication', '%s/Contents/Info.plist' % get_app_name()],
-               suppress_error=False)
-  write_output(['plutil', '-insert', 'NSHighResolutionCapable', '-bool', 'YES', '%s/Contents/Info.plist' % get_app_name()],
-               suppress_error=False)
 
 
 def postbuild_codesign():
@@ -499,7 +494,6 @@ if __name__ == '__main__':
   postbuild_copy_libraries()
   postbuild_fix_rpath()
   if sys.platform == 'darwin':
-    postbuild_fix_retina_display()
     postbuild_codesign()
   if DEFAULT_ENABLE_OSX_UNIVERSAL_BUILD:
     postbuild_check_universal_build()

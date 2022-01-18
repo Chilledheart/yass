@@ -211,4 +211,4 @@ size_t wcslcpy(wchar_t* dst, const wchar_t* src, size_t dst_size) {
   return ::internal::lcpyT(dst, src, dst_size);
 }
 
-} // namespace internal
+}  // namespace internal

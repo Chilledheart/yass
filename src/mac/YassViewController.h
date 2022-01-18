@@ -1,0 +1,28 @@
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright (c) 2022 Chilledheart  */
+
+#ifndef YASS_MAC_VIEW_CONTROLLER
+#define YASS_MAC_VIEW_CONTROLLER
+
+#import <Cocoa/Cocoa.h>
+
+@interface YassViewController : NSViewController
+- (void)OnStart;
+- (void)OnStop;
+- (void)Started;
+- (void)StartFailed;
+- (void)Stopped;
+- (void)UpdateStatus;
+@property (weak) IBOutlet NSButton *startButton;
+@property (weak) IBOutlet NSButton *stopButton;
+@property (weak) IBOutlet NSTextField *serverHost;
+@property (weak) IBOutlet NSTextField *serverPort;
+@property (weak) IBOutlet NSSecureTextField *password;
+@property (weak) IBOutlet NSComboBox *cipherMethod;
+@property (weak) IBOutlet NSTextField *localHost;
+@property (weak) IBOutlet NSTextField *localPort;
+@property (weak) IBOutlet NSTextField *timeout;
+@property (weak) IBOutlet NSButton *autoStart;
+@end
+
+#endif // YASS_MAC_VIEW_CONTROLLER

@@ -4,7 +4,6 @@
 #include "gui/panels.hpp"
 
 #include <wx/stattext.h>
-#include "gui/utils.hpp"
 #include "gui/yass.hpp"
 
 LeftPanel::LeftPanel(wxPanel* parent)
@@ -121,15 +120,9 @@ RightPanel::RightPanel(wxPanel* parent)
 
   Connect(ID_AUTOSTART, wxEVT_CHECKBOX,
           wxCommandEventHandler(RightPanel::OnCheckedAutoStart));
-#if defined(__APPLE__)
-  m_autostart_cb->SetValue(Utils::GetAutoStart());
-#else
   m_autostart_cb->Enable(false);
-#endif
 }
 
 void RightPanel::OnCheckedAutoStart(wxCommandEvent& WXUNUSED(event)) {
-#if defined(__APPLE__)
-  Utils::EnableAutoStart(m_autostart_cb->IsChecked());
-#endif
+  // TODO impl
 }

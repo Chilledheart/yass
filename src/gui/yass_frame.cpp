@@ -12,7 +12,6 @@
 #include "core/utils.hpp"
 #include "gui/option_dialog.hpp"
 #include "gui/panels.hpp"
-#include "gui/utils.hpp"
 #include "gui/yass.hpp"
 
 static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
