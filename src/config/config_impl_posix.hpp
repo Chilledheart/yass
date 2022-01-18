@@ -6,7 +6,7 @@
 
 #include "config/config_impl.hpp"
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__APPLE__)
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -244,5 +244,5 @@ class ConfigImplPosix : public ConfigImpl {
 
 }  // namespace config
 
-#endif  // _WIN32
+#endif  // !defined(_WIN32) && !defined(__APPLE__)
 #endif  // H_CONFIG_CONFIG_IMPL_POSIX

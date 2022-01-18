@@ -485,7 +485,7 @@ jobs:
             third_party/boringssl/libcrypto.a
           key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
-        run: brew install ninja cmake jsoncpp
+        run: brew install ninja cmake
       - name: Build
         run: ./scripts/build.py
       - run: mv -f darwin-yass.app.zip ${{ env.BUNDLE_NAME }}.zip
@@ -535,7 +535,7 @@ jobs:
             third_party/boringssl/libcrypto.a
           key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
-        run: brew install ninja cmake jsoncpp
+        run: brew install ninja cmake
       - name: Build
         run: |
           export CLANG_TIDY_EXECUTABLE=$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy

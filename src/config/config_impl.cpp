@@ -5,8 +5,10 @@
 #include <absl/flags/flag.h>
 #include <stdint.h>
 
+#include "config/config_impl_apple.hpp"
 #include "config/config_impl_posix.hpp"
 #include "config/config_impl_windows.hpp"
+#include "core/logging.hpp"
 
 namespace config {
 
@@ -15,6 +17,8 @@ ConfigImpl::~ConfigImpl() = default;
 std::unique_ptr<ConfigImpl> ConfigImpl::Create() {
 #ifdef _WIN32
   return std::make_unique<ConfigImplWindows>();
+#elif defined(__APPLE__)
+  return std::make_unique<ConfigImplApple>();
 #else
   return std::make_unique<ConfigImplPosix>();
 #endif

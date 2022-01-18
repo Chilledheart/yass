@@ -32,12 +32,10 @@ xcode-select --install
 2. Install [MacPorts] and dependencies...
 ```
     ninja cmake python27 go
-
-    libsodium jsoncpp jpeg tiff libpng zlib libiconv expat +universal
 ```
 2. Install [HomeBrew] and dependencies...
 ```
-    ninja    cmake    libsodium    jsoncpp    wxwidgets
+    ninja cmake
 ```
 
 3. use script to build Release App under `build` directory.

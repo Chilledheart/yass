@@ -260,19 +260,6 @@ if (MSVC)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Y-")
     endif()
 else()
-    # include extra paths
-    if (APPLE)
-        include_directories(/opt/local/include /usr/local/include SYSTEM)
-        set(CMAKE_REQUIRED_INCLUDES
-            /opt/local/include
-            /usr/local/include
-            ${CMAKE_REQUIRED_INCLUDES})
-        link_directories(/opt/local/lib /usr/local/lib)
-    endif()
-    if (UNIX)
-        include_directories(/opt/local/include SYSTEM)
-        link_directories(/opt/local/lib)
-    endif()
     if (CMAKE_FIND_ROOT_PATH)
         foreach(ROOT_PATH ${CMAKE_FIND_ROOT_PATH})
             include_directories(${ROOT_PATH}/include SYSTEM)
@@ -303,9 +290,11 @@ int main() {
       add_definitions(-DHAVE_PWD_H)
     endif()
 
-    find_library(JSONCPP_LIB jsoncpp)
-    add_definitions(-DJSON_USE_EXCEPTION=0)
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${JSONCPP_LIB})
+    if (NOT APPLE)
+      find_library(JSONCPP_LIB jsoncpp)
+      add_definitions(-DJSON_USE_EXCEPTION=0)
+      set(SYSTEM_LIBS ${SYSTEM_LIBS} ${JSONCPP_LIB})
+    endif()
 
     # boringssl
     find_library(BORINGSSL_CRYPTO_LIB crypto
@@ -1018,6 +1007,8 @@ if (MSVC)
   list(APPEND files src/core/rand_util_win.cpp)
   list(APPEND files src/core/utils_win.cpp)
 elseif (APPLE)
+  list(APPEND files src/config/config_impl_apple.hpp)
+  list(APPEND files src/config/config_impl_apple.mm)
   list(APPEND files src/core/rand_util_posix.cpp)
   list(APPEND files src/core/utils_mac.mm)
   list(APPEND files src/core/foundation_util.mm)
