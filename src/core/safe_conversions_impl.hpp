@@ -262,7 +262,8 @@ struct NarrowingRange {
 
 template <typename Dst,
           typename Src,
-          template <typename> class Bounds,
+          template <typename>
+          class Bounds,
           IntegerRepresentation DstSign = std::is_signed<Dst>::value
                                               ? INTEGER_REPRESENTATION_SIGNED
                                               : INTEGER_REPRESENTATION_UNSIGNED,
@@ -280,7 +281,8 @@ struct DstRangeRelationToSrcRangeImpl;
 // Same sign narrowing: The range is contained for normal limits.
 template <typename Dst,
           typename Src,
-          template <typename> class Bounds,
+          template <typename>
+          class Bounds,
           IntegerRepresentation DstSign,
           IntegerRepresentation SrcSign>
 struct DstRangeRelationToSrcRangeImpl<Dst,
@@ -686,9 +688,8 @@ constexpr bool IsLessImpl(const L lhs,
                           const RangeCheck l_range,
                           const RangeCheck r_range) {
   return l_range.IsUnderflow() || r_range.IsOverflow() ||
-         (l_range == r_range &&
-          static_cast<decltype(lhs + rhs)>(lhs) <
-              static_cast<decltype(lhs + rhs)>(rhs));
+         (l_range == r_range && static_cast<decltype(lhs + rhs)>(lhs) <
+                                    static_cast<decltype(lhs + rhs)>(rhs));
 }
 
 template <typename L, typename R>
@@ -707,9 +708,8 @@ constexpr bool IsLessOrEqualImpl(const L lhs,
                                  const RangeCheck l_range,
                                  const RangeCheck r_range) {
   return l_range.IsUnderflow() || r_range.IsOverflow() ||
-         (l_range == r_range &&
-          static_cast<decltype(lhs + rhs)>(lhs) <=
-              static_cast<decltype(lhs + rhs)>(rhs));
+         (l_range == r_range && static_cast<decltype(lhs + rhs)>(lhs) <=
+                                    static_cast<decltype(lhs + rhs)>(rhs));
 }
 
 template <typename L, typename R>
@@ -728,9 +728,8 @@ constexpr bool IsGreaterImpl(const L lhs,
                              const RangeCheck l_range,
                              const RangeCheck r_range) {
   return l_range.IsOverflow() || r_range.IsUnderflow() ||
-         (l_range == r_range &&
-          static_cast<decltype(lhs + rhs)>(lhs) >
-              static_cast<decltype(lhs + rhs)>(rhs));
+         (l_range == r_range && static_cast<decltype(lhs + rhs)>(lhs) >
+                                    static_cast<decltype(lhs + rhs)>(rhs));
 }
 
 template <typename L, typename R>
@@ -749,9 +748,8 @@ constexpr bool IsGreaterOrEqualImpl(const L lhs,
                                     const RangeCheck l_range,
                                     const RangeCheck r_range) {
   return l_range.IsOverflow() || r_range.IsUnderflow() ||
-         (l_range == r_range &&
-          static_cast<decltype(lhs + rhs)>(lhs) >=
-              static_cast<decltype(lhs + rhs)>(rhs));
+         (l_range == r_range && static_cast<decltype(lhs + rhs)>(lhs) >=
+                                    static_cast<decltype(lhs + rhs)>(rhs));
 }
 
 template <typename L, typename R>

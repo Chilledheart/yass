@@ -14,18 +14,18 @@
 #include <limits>
 #include <type_traits>
 
-#include "core/safe_conversions.hpp"
 #include "core/compiler_specific.hpp"
+#include "core/safe_conversions.hpp"
 
 #if defined(OS_ASMJS)
 // Optimized safe math instructions are incompatible with asmjs.
 #define BASE_HAS_OPTIMIZED_SAFE_MATH (0)
 // Where available use builtin math overflow support on Clang and GCC.
-#elif !defined(__native_client__) &&                         \
-      ((defined(__clang__) &&                                \
-        ((__clang_major__ > 3) ||                            \
-         (__clang_major__ == 3 && __clang_minor__ >= 4))) || \
-       (defined(__GNUC__) && __GNUC__ >= 5))
+#elif !defined(__native_client__) &&                       \
+    ((defined(__clang__) &&                                \
+      ((__clang_major__ > 3) ||                            \
+       (__clang_major__ == 3 && __clang_minor__ >= 4))) || \
+     (defined(__GNUC__) && __GNUC__ >= 5))
 #include "core/safe_math_clang_gcc_impl.hpp"
 #define BASE_HAS_OPTIMIZED_SAFE_MATH (1)
 #else
@@ -210,4 +210,4 @@ struct MathWrapper {
 
 }  // namespace internal
 
-#endif // CORE_SAFE_MATH_SHARED_IMPL_H
+#endif  // CORE_SAFE_MATH_SHARED_IMPL_H

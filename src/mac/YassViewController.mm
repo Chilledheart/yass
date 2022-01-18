@@ -32,6 +32,8 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 }
 
 @implementation YassViewController {
+  NSStatusItem* status_bar_item_;
+  NSTimer* refresh_timer_;
   uint64_t last_sync_time_;
   uint64_t last_rx_bytes_;
   uint64_t last_tx_bytes_;
@@ -41,6 +43,8 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 
 - (void)viewDidLoad {
   [super viewDidLoad];
+  status_bar_item_ = [[NSStatusBar systemStatusBar]
+      statusItemWithLength:NSVariableStatusItemLength];
 
   [self.cipherMethod removeAllItems];
   NSString* methodStrings[] = {
@@ -52,16 +56,20 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
        ++i) {
     [self.cipherMethod addItemWithObjectValue:methodStrings[i]];
   }
+  self.cipherMethod.numberOfVisibleItems =
+      sizeof(methodStrings) / sizeof(methodStrings[0]) - 1;
 
   [self.autoStart
       setState:(CheckLoginItemStatus(nullptr) ? NSControlStateValueOn
                                               : NSControlStateValueOff)];
-  [self UpdateStatus];
+  [self LoadChanges];
   [self.startButton setEnabled:TRUE];
   [self.stopButton setEnabled:FALSE];
 }
 
 - (void)viewWillAppear {
+  status_bar_item_.button.action = @selector(OnStatusBarClicked:);
+  [self refreshTimerExceeded];
   [self.view.window center];
 }
 
@@ -92,6 +100,32 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   }
 }
 
+- (void)OnStatusBarClicked:(id)sender {
+  if ([NSApp currentEvent].type == NSEventTypeLeftMouseDown) {
+    LOG(WARNING) << "Clicked";
+    NSWindow* window = self.view.window;
+    if ([window isVisible])
+      [window performSelector:@selector(orderFrontRegardless)
+                   withObject:nil
+                   afterDelay:0.05];
+    [window makeKeyWindow];
+  }
+}
+
+- (void)refreshTimerExceeded {
+  if (refresh_timer_) {
+    [refresh_timer_ invalidate];
+    [self UpdateStatusBar];
+  }
+
+  refresh_timer_ =
+      [NSTimer scheduledTimerWithTimeInterval:NSTimeInterval(0.2)
+                                       target:self
+                                     selector:@selector(refreshTimerExceeded)
+                                     userInfo:nil
+                                      repeats:NO];
+}
+
 - (void)OnStart {
   YassAppDelegate* appDelegate =
       (YassAppDelegate*)NSApplication.sharedApplication.delegate;
@@ -107,7 +141,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 }
 
 - (void)Started {
-  [self UpdateStatus];
+  [self UpdateStatusBar];
   [self.serverHost setEditable:FALSE];
   [self.serverPort setEditable:FALSE];
   [self.password setEditable:FALSE];
@@ -119,7 +153,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 }
 
 - (void)StartFailed {
-  [self UpdateStatus];
+  [self UpdateStatusBar];
   [self.serverHost setEditable:TRUE];
   [self.serverPort setEditable:TRUE];
   [self.password setEditable:TRUE];
@@ -131,7 +165,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 }
 
 - (void)Stopped {
-  [self UpdateStatus];
+  [self UpdateStatusBar];
   [self.serverHost setEditable:TRUE];
   [self.serverPort setEditable:TRUE];
   [self.password setEditable:TRUE];
@@ -142,21 +176,13 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   [self.startButton setEnabled:TRUE];
 }
 
-- (void)UpdateStatus {
-  [self.serverHost
-      setStringValue:SysUTF8ToNSString(absl::GetFlag(FLAGS_server_host))];
-  [self.serverPort setIntValue:absl::GetFlag(FLAGS_server_port)];
-  [self.password
-      setStringValue:SysUTF8ToNSString(absl::GetFlag(FLAGS_password))];
-  [self.cipherMethod
-      setStringValue:SysUTF8ToNSString(
-                         to_cipher_method_str(static_cast<enum cipher_method>(
-                             absl::GetFlag(FLAGS_cipher_method))))];
-  [self.localHost
-      setStringValue:SysUTF8ToNSString(absl::GetFlag(FLAGS_local_host))];
-  [self.localPort setIntValue:absl::GetFlag(FLAGS_local_port)];
-  [self.timeout setIntValue:absl::GetFlag(FLAGS_connect_timeout)];
-
+- (void)UpdateStatusBar {
+  YassAppDelegate* appDelegate =
+      (YassAppDelegate*)NSApplication.sharedApplication.delegate;
+  if ([appDelegate getState] != STARTED) {
+    status_bar_item_.title = [appDelegate getStatus];
+    return;
+  }
   uint64_t sync_time = GetMonotonicTime();
   uint64_t delta_time = sync_time - last_sync_time_;
   if (delta_time > NS_PER_SECOND / 10) {
@@ -171,18 +197,31 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
     last_tx_bytes_ = tx_bytes;
   }
 
-  YassAppDelegate* appDelegate =
-      (YassAppDelegate*)NSApplication.sharedApplication.delegate;
   std::stringstream ss;
-  ss << [appDelegate getStatus];
-  ss << " tx rate: ";
+  ss << "Connected: ";
+  ss << "tx: ";
   humanReadableByteCountBin(&ss, rx_rate_);
   ss << "/s";
-  ss << " rx rate: ";
+  ss << " rx: ";
   humanReadableByteCountBin(&ss, tx_rate_);
   ss << "/s";
 
-  // SetStatusText(ss.str());
+  status_bar_item_.title = SysUTF8ToNSString(ss.str());
+}
+
+- (void)LoadChanges {
+  self.serverHost.stringValue =
+      SysUTF8ToNSString(absl::GetFlag(FLAGS_server_host));
+  self.serverPort.intValue = absl::GetFlag(FLAGS_server_port);
+  self.password.stringValue = SysUTF8ToNSString(absl::GetFlag(FLAGS_password));
+  auto cipherMethod =
+      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method));
+  self.cipherMethod.stringValue =
+      SysUTF8ToNSString(to_cipher_method_str(cipherMethod));
+  self.localHost.stringValue =
+      SysUTF8ToNSString(absl::GetFlag(FLAGS_local_host));
+  self.localPort.intValue = absl::GetFlag(FLAGS_local_port);
+  self.timeout.intValue = absl::GetFlag(FLAGS_connect_timeout);
 }
 
 @end

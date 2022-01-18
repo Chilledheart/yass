@@ -12,7 +12,6 @@
 - (void)Started;
 - (void)StartFailed;
 - (void)Stopped;
-- (void)UpdateStatus;
 @property (weak) IBOutlet NSButton *startButton;
 @property (weak) IBOutlet NSButton *stopButton;
 @property (weak) IBOutlet NSTextField *serverHost;

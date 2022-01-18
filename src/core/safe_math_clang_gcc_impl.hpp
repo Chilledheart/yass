@@ -149,5 +149,4 @@ struct ClampedNegFastOp {
 };
 
 }  // namespace internal
-#endif // CORE_SAFE_MATH_CLANG_GCC_IMPL_H_
-
+#endif  // CORE_SAFE_MATH_CLANG_GCC_IMPL_H_
