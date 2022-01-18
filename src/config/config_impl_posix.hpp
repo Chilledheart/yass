@@ -80,9 +80,9 @@ bool WriteFileWithContent(const std::string& path, const std::string& context) {
   if (fd < 0) {
     return false;
   }
-  ssize_t ret = ::write(fd, context.c_str(), context.size() + 1);
+  ssize_t ret = ::write(fd, context.c_str(), context.size());
 
-  if (ret != static_cast<long>(context.size()) + 1 || close(fd) < 0) {
+  if (ret != static_cast<long>(context.size()) || close(fd) < 0) {
     return false;
   }
   return true;
