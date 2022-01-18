@@ -55,7 +55,7 @@ char* CheckOpValueStr(const void* v) {
   return strdup(buf);
 }
 
-char* CheckOpValueStr(std::nullptr_t v) {
+char* CheckOpValueStr(std::nullptr_t /*v*/) {
   return strdup("nullptr");
 }
 
