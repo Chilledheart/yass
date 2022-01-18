@@ -16,7 +16,7 @@
 #include "crypto/crypter_export.hpp"
 #include "mac/OptionViewController.h"
 #include "mac/YassViewController.h"
-#include "mac/utils.hpp"
+#include "mac/utils.h"
 
 @interface YassAppDelegate ()
 - (void)SaveConfigToDisk;
@@ -35,7 +35,8 @@
   YassViewController* viewController =
       (YassViewController*)
           NSApplication.sharedApplication.mainWindow.contentViewController;
-  if (Utils::GetAutoStart()) {
+  bool is_hidden = false;
+  if (CheckLoginItemStatus(&is_hidden) && !is_hidden) {
     [viewController OnStart];
   }
 

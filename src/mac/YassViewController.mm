@@ -13,7 +13,7 @@
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
 #include "mac/YassAppDelegate.h"
-#include "mac/utils.hpp"
+#include "mac/utils.h"
 
 static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   if (bytes < 1024) {
@@ -53,8 +53,9 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
     [self.cipherMethod addItemWithObjectValue:methodStrings[i]];
   }
 
-  [self.autoStart setState:(Utils::GetAutoStart() ? NSControlStateValueOn
-                                                  : NSControlStateValueOff)];
+  [self.autoStart
+      setState:(CheckLoginItemStatus(nullptr) ? NSControlStateValueOn
+                                              : NSControlStateValueOff)];
   [self UpdateStatus];
   [self.startButton setEnabled:TRUE];
   [self.stopButton setEnabled:FALSE];
@@ -84,7 +85,11 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 
 - (IBAction)OnAutoStartChecked:(id)sender {
   bool enable = self.autoStart.state == NSControlStateValueOn;
-  Utils::EnableAutoStart(enable);
+  if (enable && !CheckLoginItemStatus(nullptr)) {
+    AddToLoginItems(false);
+  } else {
+    RemoveFromLoginItems();
+  }
 }
 
 - (void)OnStart {

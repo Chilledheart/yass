@@ -1020,6 +1020,7 @@ if (MSVC)
 elseif (APPLE)
   list(APPEND files src/core/rand_util_posix.cpp)
   list(APPEND files src/core/utils_mac.mm)
+  list(APPEND files src/core/foundation_util.mm)
 else()
   list(APPEND files src/core/rand_util_posix.cpp)
   list(APPEND files src/core/utils_linux.cpp)
@@ -1113,7 +1114,7 @@ if (GUI)
           src/mac/YassViewController.h
           src/mac/OptionViewController.mm
           src/mac/OptionViewController.h
-          src/mac/utils.hpp
+          src/mac/utils.h
           src/mac/utils_mac.mm
           src/mac/main.mm)
     else()
