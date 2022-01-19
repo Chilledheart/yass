@@ -15,7 +15,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 //
 // Icon
 //
-IDR_MAINFRAME       ICON    DISCARDABLE     "MFCApplication1.ico"
+IDR_MAINFRAME       ICON    DISCARDABLE     "network.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
