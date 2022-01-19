@@ -18,7 +18,7 @@ DEFAULT_ENABLE_OSX_UNIVERSAL_BUILD = os.getenv('ENABLE_OSX_UNIVERSAL_BUILD',
 DEFAULT_OSX_UNIVERSAL_ARCHS = 'arm64;x86_64'
 DEFAULT_ARCH = os.getenv('VSCMD_ARG_TGT_ARCH', 'x86')
 # configurable variable are static and dynamic
-DEFAULT_CRT_LINKAGE = 'static'
+DEFAULT_MSVC_CRT_LINKAGE = os.getenv('MSVC_CRT_LINKAGE', 'dynmaic')
 DEFAULT_SIGNING_IDENTITY = os.getenv('CODESIGN_IDENTITY', '-')
 DEFAULT_ENABLE_CLANG_TIDY = os.getenv('ENABLE_CLANG_TIDY', False)
 DEFAULT_CLANG_TIDY_EXECUTABLE = os.getenv('CLANG_TIDY_EXECUTABLE', 'clang-tidy')
@@ -298,11 +298,13 @@ def generate_buildscript(configuration_type):
     cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])
     cmake_args.extend(['-DCMAKE_TOOLCHAIN_FILE=%s\\scripts\\buildsystems\\vcpkg.cmake' % VCPKG_DIR])
     cmake_args.extend(['-DVCPKG_TARGET_ARCHITECTURE=%s' % DEFAULT_ARCH])
-    if DEFAULT_CRT_LINKAGE == 'static':
+    if DEFAULT_MSVC_CRT_LINKAGE == 'static':
+      cmake_args.extend(['-DCMAKE_MSVC_CRT_LINKAGE=static'])
       cmake_args.extend(['-DVCPKG_CRT_LINKAGE=static'])
       cmake_args.extend(['-DVCPKG_LIBRARY_LINKAGE=static'])
       cmake_args.extend(['-DVCPKG_TARGET_TRIPLET=%s-windows-static' % DEFAULT_ARCH])
     else:
+      cmake_args.extend(['-DCMAKE_MSVC_CRT_LINKAGE=dynamic'])
       cmake_args.extend(['-DVCPKG_CRT_LINKAGE=dynamic'])
       cmake_args.extend(['-DVCPKG_LIBRARY_LINKAGE=dynamic'])
       cmake_args.extend(['-DVCPKG_TARGET_TRIPLET=%s-windows' % DEFAULT_ARCH])

@@ -21,7 +21,7 @@ if (POLICY CMP0048)
 endif (POLICY CMP0048)
 
 # Select the MSVC runtime library for use by compilers targeting the MSVC ABI.
-# Use VCPKG_CRT_LINKAGE variable internally, option: dynamic and static
+# Use CMAKE_MSVC_CRT_LINKAGE variable internally, option: dynamic and static
 #
 # Introduced by cmake 3.15
 # https://cmake.org/cmake/help/latest/variable/CMAKE_MSVC_RUNTIME_LIBRARY.html#variable:CMAKE_MSVC_RUNTIME_LIBRARY
@@ -30,7 +30,11 @@ if(POLICY CMP0091)
   cmake_policy(SET CMP0091 NEW)
 endif()
 # https://docs.microsoft.com/en-us/cpp/c-runtime-library/crt-library-features?redirectedfrom=MSDN&view=msvc-170
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:${VCPKG_CRT_LINKAGE},dynamic>:DLL>" CACHE STRING "")
+set(CMAKE_MSVC_CRT_LINKAGE "dynamic" CACHE STRING "")
+if (VCPKG_CRT_LINKAGE AND NOT VCPKG_CRT_LINKAGE STREQUAL CMAKE_MSVC_CRT_LINKAGE)
+  message(FATAL_ERROR "CRT LINKAGE not matched in configuration")
+endif()
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:${CMAKE_MSVC_CRT_LINKAGE},dynamic>:DLL>" CACHE STRING "")
 
 # Defer enabling C and CXX languages.
 project(${PACKAGE_NAME} NONE)
@@ -190,14 +194,16 @@ if (MSVC)
 
     # boringssl
     find_library(BORINGSSL_CRYPTO_RELEASE_LIB crypto
-      PATHS ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}
+      PATHS ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}-${CMAKE_MSVC_CRT_LINKAGE}
+            ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}
             ${boringssl_DIR}/
             ${boringssl_DIR}/build/crypto/Release
             ${boringssl_DIR}/build/Release/crypto
       REQUIRED
       NO_DEFAULT_PATH)
     find_library(BORINGSSL_CRYPTO_DEBUG_LIB crypto
-      PATHS ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}/debug
+      PATHS ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}-${CMAKE_MSVC_CRT_LINKAGE}/debug
+            ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}/debug
             ${boringssl_DIR}/debug
             ${boringssl_DIR}/build/crypto/Debug
             ${boringssl_DIR}/build/Debug/crypto
@@ -235,7 +241,7 @@ if (MSVC)
     set(SYSTEM_LIBS ${SYSTEM_LIBS} ${Ole32_LIB})
     set(SYSTEM_LIBS ${SYSTEM_LIBS} ${Winspool_LIB})
 
-    if (VCPKG_CRT_LINKAGE STREQUAL "static")
+    if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "static")
       message(STATUS "Build against static crt")
       # replace /MD with /MT
       set(CompilerFlags
@@ -348,7 +354,7 @@ endif()
 
 if (MSVC AND GUI)
   message(STATUS "Build with Platform $ENV{Platform}")
-  if (VCPKG_CRT_LINKAGE STREQUAL "dynamic")
+  if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "dynamic")
     message(STATUS "Build against MFC unicode dll")
     add_definitions(-D_AFXDLL)
     # for shared MFC library
