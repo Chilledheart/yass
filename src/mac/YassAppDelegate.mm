@@ -145,6 +145,11 @@
       (YassViewController*)
           NSApplication.sharedApplication.mainWindow.contentViewController;
   [viewController StartFailed];
+  NSAlert *alert = [[NSAlert alloc] init];
+  alert.messageText = @(error_msg.c_str());
+  alert.icon = [NSImage imageNamed:NSImageNameCaution];
+  alert.alertStyle = NSAlertStyleWarning;
+  [alert runModal];
 }
 
 - (void)OnStopped {

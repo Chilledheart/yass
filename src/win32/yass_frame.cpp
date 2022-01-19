@@ -186,6 +186,8 @@ void CYassFrame::OnStartFailed() {
   timeout_edit_.EnableWindow(true);
   autostart_button_.EnableWindow(true);
   start_button_.EnableWindow(true);
+  this->MessageBox(SysUTF8ToWide(mApp->GetStatus()).c_str(), _T("Start Failed"),
+                   MB_ICONEXCLAMATION | MB_OK);
 }
 
 void CYassFrame::OnStopped() {

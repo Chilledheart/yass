@@ -118,6 +118,8 @@ void YASSFrame::StartFailed() {
   m_rightpanel->m_localport_tc->SetEditable(true);
   m_rightpanel->m_timeout_tc->SetEditable(true);
   m_leftpanel->m_start->Enable();
+  wxMessageBox(mApp->GetStatus(), wxT("About YASS"),
+               wxOK | wxICON_ERROR);
 }
 
 void YASSFrame::Stopped() {
