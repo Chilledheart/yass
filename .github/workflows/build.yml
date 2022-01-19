@@ -462,7 +462,9 @@ jobs:
 
           python .\scripts\build.py || exit /b
         shell: cmd
-      - run: mv -f ${{ matrix.arch }}-windows-yass.exe.zip ${{ env.BUNDLE_NAME }}.zip
+      - run: |
+          mv -f ${{ matrix.arch }}-${{ matrix.crt-linkage }}-windows-yass.exe.zip ${{ env.BUNDLE_NAME }}.zip
+          mv -f ${{ matrix.arch }}-${{ matrix.crt-linkage }}-windows-yass.exe-standalone.zip ${{ env.BUNDLE_NAME }}-standalone.zip
       - uses: actions/upload-release-asset@v1
         if: ${{ github.event_name == 'release' }}
         env:
@@ -472,7 +474,17 @@ jobs:
           asset_path: ${{ env.BUNDLE_NAME }}.zip
           asset_name: ${{ env.BUNDLE_NAME }}.zip
           asset_content_type: application/octet-stream
-      - run: openssl sha256 ${{ env.BUNDLE_NAME }}.zip >sha256sum.txt
+      - run: openssl sha256 ${{ env.BUNDLE_NAME }}.zip > sha256sum.txt
+      - uses: actions/upload-release-asset@v1
+        if: ${{ github.event_name == 'release' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ${{ env.BUNDLE_NAME }}-standalone.zip
+          asset_name: ${{ env.BUNDLE_NAME }}-standalone.zip
+          asset_content_type: application/octet-stream
+      - run: openssl sha256 ${{ env.BUNDLE_NAME }}-standalone.zip >> sha256sum.txt
       - run: echo "SHA256SUM=$(cut -d' ' -f2 sha256sum.txt)" >>$GITHUB_ENV
       - uses: actions/upload-artifact@v2
         with:
@@ -555,7 +567,9 @@ jobs:
 
           python .\scripts\build.py || exit /b
         shell: cmd
-      - run: mv -f ${{ matrix.arch }}-windows-yass.exe.zip ${{ env.BUNDLE_NAME }}.zip
+      - run: |
+          mv -f ${{ matrix.arch }}-${{ matrix.crt-linkage }}-windows-yass.exe.zip ${{ env.BUNDLE_NAME }}.zip
+          mv -f ${{ matrix.arch }}-${{ matrix.crt-linkage }}-windows-yass.exe-standalone.zip ${{ env.BUNDLE_NAME }}-standalone.zip
       - uses: actions/upload-release-asset@v1
         if: ${{ github.event_name == 'release' }}
         env:
@@ -565,7 +579,17 @@ jobs:
           asset_path: ${{ env.BUNDLE_NAME }}.zip
           asset_name: ${{ env.BUNDLE_NAME }}.zip
           asset_content_type: application/octet-stream
-      - run: openssl sha256 ${{ env.BUNDLE_NAME }}.zip >sha256sum.txt
+      - run: openssl sha256 ${{ env.BUNDLE_NAME }}.zip > sha256sum.txt
+      - uses: actions/upload-release-asset@v1
+        if: ${{ github.event_name == 'release' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ${{ env.BUNDLE_NAME }}-standalone.zip
+          asset_name: ${{ env.BUNDLE_NAME }}-standalone.zip
+          asset_content_type: application/octet-stream
+      - run: openssl sha256 ${{ env.BUNDLE_NAME }}-standalone.zip >> sha256sum.txt
       - run: echo "SHA256SUM=$(cut -d' ' -f2 sha256sum.txt)" >>$GITHUB_ENV
       - uses: actions/upload-artifact@v2
         with:

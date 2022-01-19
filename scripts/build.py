@@ -42,6 +42,10 @@ def copy_file_with_symlinks(src, dst):
   shutil.copyfile(src, dst)
 
 
+def check_string_output(command):
+    return subprocess.check_output(command, stderr=subprocess.STDOUT).decode().strip()
+
+
 def write_output(command, suppress_error=True):
   print('--- %s' % ' '.join(command))
   proc = subprocess.Popen(command, stdout=sys.stdout, stderr=sys.stdout,
@@ -165,10 +169,54 @@ File Type: EXECUTABLE IMAGE
        71000 .text
 """
 def get_dependencies_by_dumpbin(path):
-  print('todo')
-  #dumpbin /dependents <target.exe>
+  lines = subprocess.check_output(['dumpbin', '/dependents', path]).split('\n')
+  dlls = []
+  system_dlls = ['WS2_32.dll', 'GDI32.dll', 'SHELL32.dll', 'USER32.dll',
+                 'ADVAPI32.dll', 'MSWSOCK.dll', 'dbghelp.dll']
+  vcredist_dir = os.getenv('VCToolsRedistDir')
+  search_dirs = [
+    os.path.join(vcredist_dir, 'debug_nonredist', DEFAULT_ARCH,
+                 'Microsoft.VC142.DebugMFC'),
+    os.path.join(vcredist_dir, 'debug_nonredist', DEFAULT_ARCH,
+                 'Microsoft.VC142.DebugCRT'),
+    os.path.join(vcredist_dir, DEFAULT_ARCH, 'Microsoft.VC142.MFCLOC'),
+    os.path.join(vcredist_dir, DEFAULT_ARCH, 'Microsoft.VC142.MFC'),
+    os.path.join(vcredist_dir, DEFAULT_ARCH, 'Microsoft.VC142.CRT'),
+  ]
+  # remove the trailing slash
+  sdk_version = os.getenv('WindowsSDKVersion')[:-1]
+  sdk_bin_dir = os.getenv('WindowsSdkBinPath')
+  sdk_base_dir= os.getenv('WindowsSdkDir')
+  search_dirs.extend([
+    os.path.join(sdk_bin_dir, sdk_version, DEFAULT_ARCH, 'ucrt')
+    os.path.join(sdk_base_dir, 'Redist', sdk_version, 'ucrt', 'DLLS', DEFAULT_ARCH)
+    os.path.join(sdk_base_dir, 'ExtensionSDKs', 'Microsoft.UniversalCRT.Debug',
+                 sdk_version, 'Redist', 'Debug', DEFAULT_ARCH)
+  ])
 
-  return []
+  print('searching dlls in directories:')
+  for search_dir in search_dirs:
+    print('--- %s' % search_dir)
+
+  p = re.compile(r'    (\S+.dll)', re.IGNORECASE)
+  for line in lines:
+    m = p.match(line):
+    if m and not m[1] in system_dlls:
+      dlls.append(m[1])
+
+  resolved_dlls = []
+  for dll in dlls:
+    resolved = False
+    for search_dir in search_dirs:
+      d = os.path.join(search_dir, dll)
+      if os.path.exists(d):
+        resolved_dlls.append(d)
+        resolved = True
+        break
+    if not resolved:
+      print('dll %s not found in path', dll)
+
+  return resolved_dlls
 
 
 def get_dependencies(path):
@@ -202,10 +250,6 @@ def get_dependencies_recursively(path):
     raise IOError('not supported in platform %s' % sys.platform)
 
 
-def check_string_output(command):
-    return subprocess.check_output(command, stderr=subprocess.STDOUT).decode().strip()
-
-
 def check_universal_build_bundle_darwin(bundle_path):
   # export from NSBundle.h
   NSBundleExecutableArchitectureX86_64    = 0x01000007
@@ -230,13 +274,18 @@ def check_universal_build_dylib_darwin(lib_path):
 
   return False
 
+def _postbuild_copy_libraries_win32():
+  dlls = get_dependencies_recursively(get_app_name())
+  for dll in dlls:
+    print('copying depended dll file: %s' % dll)
+    shutil.copyfile(dll, os.path.basename(dll))
 
 def _postbuild_copy_libraries_posix():
   lib_path = 'lib'
   binaries = [APP_NAME]
   libs = []
-  for binrary in binaries:
-      libs.extend(get_dependencies_recursively(binrary))
+  for binary in binaries:
+      libs.extend(get_dependencies_recursively(binary))
   if not os.path.isdir(lib_path):
       os.makedirs(lib_path)
   for lib in libs:
@@ -249,8 +298,8 @@ def _postbuild_copy_libraries_xcode():
   macos_path = os.path.join(get_app_name(), 'Contents', 'MacOS')
   binaries = [os.path.join(macos_path, APP_NAME)]
   libs = []
-  for binrary in binaries:
-    libs.extend(get_dependencies_recursively(binrary))
+  for binary in binaries:
+    libs.extend(get_dependencies_recursively(binary))
   if not os.path.isdir(frameworks_path):
     os.makedirs(frameworks_path)
   for lib in libs:
@@ -397,9 +446,7 @@ def execute_buildscript(configuration_type):
 def postbuild_copy_libraries():
   print('copying dependent libraries...')
   if sys.platform == 'win32':
-    # TODO make windows DLL-vesion build
-    # see https://docs.microsoft.com/en-us/cpp/build/reference/md-mt-ld-use-run-time-library?view=msvc-140
-    pass
+    _postbuild_copy_libraries_win32()
   elif sys.platform == 'darwin':
     _postbuild_copy_libraries_xcode()
   else:
@@ -490,44 +537,70 @@ def postbuild_check_universal_build():
         _check_universal_build_darwin(get_app_name(), verbose = True)
 
 
+def archive_files(output, paths = []):
+  from zipfile import ZipFile, ZIP_DEFLATED, ZipInfo
+  with ZipFile(output, 'w', compression=ZIP_DEFLATED) as archive:
+    for path in paths:
+      archive.write(path, path, ZIP_DEFLATED)
+      if os.path.isdir(path):
+        for root, dirs, files in os.walk(path):
+          for f in files:
+            fullPath = os.path.join(root, f)
+            if os.path.islink(fullPath):
+              # http://www.mail-archive.com/python-list@python.org/msg34223.html
+              zipInfo = ZipInfo(fullPath)
+              zipInfo.create_system = 3
+              # long type of hex val of '0xA1ED0000L',
+              # say, symlink attr magic...
+              zipInfo.external_attr = 2716663808
+              archive.writestr(zipInfo, os.readlink(fullPath))
+            else:
+              archive.write(fullPath, fullPath, ZIP_DEFLATED)
+
+
+
 def postbuild_archive():
   if sys.platform == 'win32':
     src = get_app_name()
-    dst = '%s-windows-%s' % (DEFAULT_ARCH, get_app_name())
+    dst = '%s-%s-windows-%s' % (DEFAULT_ARCH, DEFAULT_MSVC_CRT_LINKAGE, get_app_name())
   else:
     src = get_app_name()
     dst = '%s-%s' % (sys.platform, get_app_name())
   os.rename(src, dst)
 
-  from zipfile import ZipFile, ZIP_DEFLATED, ZipInfo
-  with ZipFile(dst + '.zip', 'w', compression=ZIP_DEFLATED) as archive:
-    archive.write(dst, dst, ZIP_DEFLATED)
-    if os.path.exists(APP_NAME + '.pdb'):
-      archive.write(APP_NAME + '.pdb', APP_NAME + '.pdb', ZIP_DEFLATED)
-    for root, dirs, files in os.walk(dst):
-      for f in files:
-        fullPath = os.path.join(root, f)
-        if os.path.islink(fullPath):
-          # http://www.mail-archive.com/python-list@python.org/msg34223.html
-          zipInfo = ZipInfo(fullPath)
-          zipInfo.create_system = 3
-          # long type of hex val of '0xA1ED0000L',
-          # say, symlink attr magic...
-          zipInfo.external_attr = 2716663808
-          archive.writestr(zipInfo, os.readlink(fullPath))
-        else:
-          archive.write(fullPath, fullPath, ZIP_DEFLATED)
+  archive = dst + '.zip'
+  full_archive = dst + '-standalone.zip'
+  new_archive = os.path.join('..', archive)
+  new_full_archive = os.path.join('..', full_archive)
 
-  output = dst + '.zip'
-  archive = os.path.join('..', output)
+  paths = [src]
+
+  if os.path.exists(APP_NAME + '.pdb'):
+    paths.append(APP_NAME + '.pdb')
 
   try:
-    os.unlink(archive)
+    os.unlink(new_archive)
   except:
     pass
-  os.rename(output, archive)
 
-  return [ output ]
+  try:
+    os.unlink(new_full_archive)
+  except:
+    pass
+
+  outputs = [ archive ]
+  archive_files(new_archive, paths)
+
+  if sys.platform == 'win32':
+    full_paths = paths
+    files = os.listdir('.')
+    for file in files:
+      if file.endswith('.dll'):
+        full_paths.append(file)
+    archive_files(new_full_archive, full_paths)
+    outputs.append(full_archive)
+
+  return outputs
 
 if __name__ == '__main__':
   configuration_type = DEFAULT_BUILD_TYPE
