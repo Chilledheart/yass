@@ -12,7 +12,7 @@
 
 ## Once upon a time, there are (virtual) Nics, so are (shadow) Sockets.
 
-YASS(YetAnotherShadowSocket) acts as a modern cplusplus port of the existing [shadowsocks](http://github.com/shadowsocks) project.
+YASS(Yet Another Shadow Socket) acts as a modern cplusplus port of the existing [shadowsocks](http://github.com/shadowsocks) project.
 
 For now, it is heavily developed under macOS.
 
@@ -45,7 +45,21 @@ It is licensed with GPLv2.
 - Linux
 - Windows
 
-### Protocols supported
+## Note on Windows
+
+If you run Windows prior to Windows 10, Visual C++ Runtime Files may be [required][latest-supported-vc-redist]:
+
+Architecture | Link | Notes
+-- | -- | --
+ARM64 | https://aka.ms/vs/17/release/vc_redist.arm64.exe | Permalink for latest supported ARM64 version
+X86 | https://aka.ms/vs/17/release/vc_redist.x86.exe | Permalink for latest supported x86 version
+X64 | https://aka.ms/vs/17/release/vc_redist.x64.exe | Permalink for latest supported x64 version. The X64 redistributable package contains both ARM64 and X64 binaries. This package makes it easy to install required Visual C++ ARM64 binaries when the X64 redistributable is installed on an ARM64 device.
+
+To download the universal CRT for central deployment on supported versions of Windows, see [Windows 10 Universal C Runtime][ucrt]:
+
+https://www.microsoft.com/en-us/download/details.aspx?id=48234
+
+### Client Protocols supported
 - Socks4
 - Socks4A
 - Socks5
@@ -63,3 +77,6 @@ It is licensed with GPLv2.
 
 [license-svg]: https://img.shields.io/badge/license-GPL2-lightgrey.svg
 [license-link]: https://github.com/Chilledheart/yass/blob/master/COPYING
+
+[latest-supported-vc-redist]: https://docs.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170
+[ucrt]: https://www.microsoft.com/en-us/download/details.aspx?id=48234
