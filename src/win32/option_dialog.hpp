@@ -11,7 +11,7 @@
 
 class COptionDialog : public CDialog {
  public:
-  explicit COptionDialog(CWnd* pParentWnd = NULL)
+  explicit COptionDialog(CWnd* pParentWnd = nullptr)
       : CDialog(IDD_OPTIONBOX, pParentWnd) {}
 
   ~COptionDialog() override;
