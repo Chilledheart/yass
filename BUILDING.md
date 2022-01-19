@@ -31,11 +31,11 @@ xcode-select --install
 ```
 2. Install [MacPorts] and dependencies...
 ```
-    ninja cmake python27 go
+    ninja cmake go
 ```
 2. Install [HomeBrew] and dependencies...
 ```
-    ninja cmake
+    ninja cmake go
 ```
 
 3. use script to build Release App under `build` directory.
@@ -43,15 +43,11 @@ xcode-select --install
 scripts/build.py
 ```
 
-## Windows/vcpkg
+## Windows
 
-1. Make sure you use Visual Studio 2019 or later to get vcpkg work.
+1. Make sure you use Visual Studio 2019 or later.
 
-2. Run [vcpkg][vcpkg] to install required dependencies.
-```
-Not required now
-```
-3. use script to build Release App under `build` directory.
+2. use script to build Release App under `build` directory.
 ```
 scripts/build.py
 ```
@@ -151,31 +147,6 @@ Built universal target at ``libcrypto.a``
 
 Follow ``https://chromium.googlesource.com/chromium/src/+/HEAD/DEPS``
 Use ``boringssl_revision`` field's value to rebase TOT.
-
-## wxWidgets for macOS
-```
-git submodule update --init --recursive
-mkdir build
-cd build
-CFLAGS="-I/opt/local/include" \
-CXXFLAGS="-I/opt/local/include" \
-LDFLAGS="-L/opt/local/lib" \
-LIBS="-L/opt/local/lib -ljpeg -ltiff -lexpat -liconv" \
-  ../configure --enable-universal_binary=x86_64,arm64 \
-  --with-cxx=14 \
-  --with-libpng \
-  --with-libjpeg \
-  --with-libtiff \
-  --with-zlib \
-  --with-expat \
-  --with-macosx-version-min=10.10 \
-  --with-osx \
-  --prefix /opt/wxWidgets
-make -j $(sysctl -n hw.ncpu)
-sudo make install
-cd ..
-```
-
 
 [vcpkg]: https://github.com/microsoft/vcpkg
 [MacPorts]: https://www.macports.org/install.php
