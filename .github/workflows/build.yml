@@ -509,6 +509,8 @@ jobs:
         with:
           path: |
             third_party/boringssl/libcrypto.a
+            third_party/boringssl/x64-libcrypto.a
+            third_party/boringssl/arm64-libcrypto.a
           key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
         run: brew install ninja cmake
@@ -559,6 +561,8 @@ jobs:
         with:
           path: |
             third_party/boringssl/libcrypto.a
+            third_party/boringssl/x64-libcrypto.a
+            third_party/boringssl/arm64-libcrypto.a
           key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
         run: brew install ninja cmake
@@ -566,7 +570,7 @@ jobs:
         run: |
           export CLANG_TIDY_EXECUTABLE=$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy
           ./scripts/build.py
-  linux-gcc-gui:
+  linux-gcc:
     needs: cache-toolchain-linux
     runs-on: ubuntu-latest
     strategy:
@@ -595,40 +599,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake -G Ninja -DCLI=off -DSERVER=off -DGUI=on ..
-          ninja -v
-          cd ..
-  linux-gcc-server:
-    needs: cache-toolchain-linux
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [x64, x86, arm64]
-        build_type: [Debug, RelWithDebInfo]
-    env:
-      BUNDLE_NAME: 'yass-server-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}'
-      BUILD_TYPE: '${{ matrix.build_type }}'
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: 'true'
-      - name: Get boringssl commit
-        run: |
-          git submodule status third_party/boringssl >> boringssl.lock
-      - name: Cache boringssl packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/boringssl/libcrypto.a
-          key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
-      - name: Populate depedencies
-        run: sudo apt-get install -y cmake ninja-build libjsoncpp-dev
-      - name: Build
-        run: |
-          mkdir build
-          cd build
-          cmake -G Ninja -DCLI=on -DSERVER=on -DGUI=off ..
+          cmake -G Ninja -DCLI=on -DSERVER=on -DGUI=on ..
           ninja -v
           cd ..
   linux-clang:
