@@ -567,17 +567,13 @@ def postbuild_archive():
   else:
     src = get_app_name()
     dst = '%s-%s' % (sys.platform, get_app_name())
-  os.rename(src, dst)
 
   archive = dst + '.zip'
   full_archive = dst + '-standalone.zip'
   new_archive = os.path.join('..', archive)
   new_full_archive = os.path.join('..', full_archive)
 
-  paths = [src]
-
-  if os.path.exists(APP_NAME + '.pdb'):
-    paths.append(APP_NAME + '.pdb')
+  paths = [ src ]
 
   try:
     os.unlink(new_archive)
@@ -589,10 +585,13 @@ def postbuild_archive():
   except:
     pass
 
-  outputs = [ archive ]
   archive_files(new_archive, paths)
 
+  outputs = [ archive ]
+
   if sys.platform == 'win32':
+    if os.path.exists(APP_NAME + '.pdb'):
+      full_paths.append(APP_NAME + '.pdb')
     full_paths = paths
     files = os.listdir('.')
     for file in files:
