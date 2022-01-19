@@ -121,14 +121,59 @@ def get_dependencies_by_objdump(path):
   return []
 
 
-def get_dependencies_by_dependency_walker(path):
+"""
+The output of dumpbin /dependents is like below:
+Microsoft (R) COFF/PE Dumper Version 14.30.30709.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+Dump of file arm64-windows-yass.exe
+
+File Type: EXECUTABLE IMAGE
+
+  Image has the following dependencies:
+
+    WS2_32.dll
+    GDI32.dll
+    SHELL32.dll
+    KERNEL32.dll
+    USER32.dll
+    ADVAPI32.dll
+    MSVCP140.dll
+    MSWSOCK.dll
+    mfc140u.dll
+    dbghelp.dll
+    VCRUNTIME140.dll
+    api-ms-win-crt-runtime-l1-1-0.dll
+    api-ms-win-crt-heap-l1-1-0.dll
+    api-ms-win-crt-stdio-l1-1-0.dll
+    api-ms-win-crt-math-l1-1-0.dll
+    api-ms-win-crt-time-l1-1-0.dll
+    api-ms-win-crt-filesystem-l1-1-0.dll
+    api-ms-win-crt-convert-l1-1-0.dll
+    api-ms-win-crt-environment-l1-1-0.dll
+    api-ms-win-crt-string-l1-1-0.dll
+    api-ms-win-crt-locale-l1-1-0.dll
+
+  Summary
+
+       15000 .data
+        4000 .pdata
+       2C000 .rdata
+        2000 .reloc
+       12000 .rsrc
+       71000 .text
+"""
+def get_dependencies_by_dumpbin(path):
   print('todo')
+  #dumpbin /dependents <target.exe>
+
   return []
 
 
 def get_dependencies(path):
   if sys.platform == 'win32':
-    return get_dependencies_by_objdump(path)
+    return get_dependencies_by_dumpbin(path)
   elif sys.platform == 'darwin':
     return get_dependencies_by_otool(path)
   elif sys.platform in [ 'linux', 'linux2' ]:
