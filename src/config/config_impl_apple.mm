@@ -64,7 +64,6 @@ bool ConfigImplApple::OpenImpl(bool dontread) {
   path_ = ExpandUser(absl::GetFlag(FLAGS_configfile));
 
   if (!dontread) {
-    std::string content;
     NSError* error = nil;
     NSData* data = [NSData dataWithContentsOfFile:@(path_.c_str())
                                           options:NSDataReadingUncached
@@ -97,6 +96,7 @@ bool ConfigImplApple::OpenImpl(bool dontread) {
 
 bool ConfigImplApple::CloseImpl() {
   if (path_.empty() || !dontread_) {
+    CFRelease(root_);
     return true;
   }
 
@@ -126,6 +126,7 @@ bool ConfigImplApple::CloseImpl() {
 
   VLOG(2) << "written from config file " << path_;
 
+  CFRelease(write_root_);
   path_.clear();
   return true;
 }
@@ -209,6 +210,7 @@ bool ConfigImplApple::WriteImpl(const std::string& key,
       value.size(), kCFStringEncodingUTF8, FALSE);
   CFDictionarySetValue(write_root_,
                        (__bridge CFStringRef)SysUTF8ToNSString(key), obj);
+  CFRelease(obj);
   return true;
 }
 
@@ -216,6 +218,7 @@ bool ConfigImplApple::WriteImpl(const std::string& key, bool value) {
   CFBooleanRef obj = value ? kCFBooleanTrue : kCFBooleanFalse;
   CFDictionarySetValue(write_root_,
                        (__bridge CFStringRef)SysUTF8ToNSString(key), obj);
+  CFRelease(obj);
   return true;
 }
 
@@ -224,6 +227,7 @@ bool ConfigImplApple::WriteImpl(const std::string& key, uint32_t value) {
       CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &value);
   CFDictionarySetValue(write_root_,
                        (__bridge CFStringRef)SysUTF8ToNSString(key), obj);
+  CFRelease(obj);
   return true;
 }
 
@@ -232,6 +236,7 @@ bool ConfigImplApple::WriteImpl(const std::string& key, int32_t value) {
       CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &value);
   CFDictionarySetValue(write_root_,
                        (__bridge CFStringRef)SysUTF8ToNSString(key), obj);
+  CFRelease(obj);
   return true;
 }
 
@@ -240,6 +245,7 @@ bool ConfigImplApple::WriteImpl(const std::string& key, uint64_t value) {
       CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt64Type, &value);
   CFDictionarySetValue(write_root_,
                        (__bridge CFStringRef)SysUTF8ToNSString(key), obj);
+  CFRelease(obj);
   return true;
 }
 
@@ -248,6 +254,7 @@ bool ConfigImplApple::WriteImpl(const std::string& key, int64_t value) {
       CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt64Type, &value);
   CFDictionarySetValue(write_root_,
                        (__bridge CFStringRef)SysUTF8ToNSString(key), obj);
+  CFRelease(obj);
   return true;
 }
 
