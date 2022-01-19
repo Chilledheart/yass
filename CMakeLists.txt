@@ -404,7 +404,7 @@ include_directories(third_party/asio/asio/include SYSTEM)
 # *****************************************************************************************
 #           Compiler warning flags
 # *****************************************************************************************
-if (COMPILER_GCC OR COMPILER_CLANG)
+if (COMPILER_GCC OR COMPILER_CLANG OR ENABLE_CLANG_TIDY)
   # Note clang-cl is odd and sets both CLANG and MSVC. We base our configuration
   # primarily on our normal Clang one.
   set(C_CXX_FLAGS "-Werror -Wformat=2 -Wsign-compare -Wmissing-field-initializers -Wwrite-strings -Wvla -Wshadow")
