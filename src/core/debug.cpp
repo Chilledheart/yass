@@ -17,7 +17,7 @@
 
 // This file/function should be excluded from LTO/LTCG to ensure that the
 // compiler can't see this function's implementation when compiling calls to it.
-NOINLINE void Alias(const void* var) {}
+NOINLINE void Alias(const void* /*var*/) {}
 
 static bool is_debug_ui_suppressed = false;
 
