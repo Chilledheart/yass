@@ -13,7 +13,8 @@ APP_NAME = 'yass'
 DEFAULT_BUILD_TYPE = os.getenv('BUILD_TYPE', 'Release')
 DEFAULT_OSX_MIN = os.getenv('MACOSX_VERSION_MIN', '10.10')
 # enable by default if macports installed
-DEFAULT_ENABLE_OSX_UNIVERSAL_BUILD = os.getenv('ENABLE_OSX_UNIVERSAL_BUILD', os.path.exists('/opt/local/bin/port'))
+DEFAULT_ENABLE_OSX_UNIVERSAL_BUILD = os.getenv('ENABLE_OSX_UNIVERSAL_BUILD',
+                                               True)
 DEFAULT_OSX_UNIVERSAL_ARCHS = 'arm64;x86_64'
 DEFAULT_ARCH = os.getenv('VSCMD_ARG_TGT_ARCH', 'x86')
 # configurable variable are static and dynamic
@@ -327,7 +328,6 @@ def generate_buildscript(configuration_type):
 
   if sys.platform == 'darwin':
     cmake_args.append('-DCMAKE_OSX_DEPLOYMENT_TARGET=%s' % DEFAULT_OSX_MIN)
-    # if we run arm64/arm64e, use universal build
     if DEFAULT_ENABLE_OSX_UNIVERSAL_BUILD:
       cmake_args.append('-DCMAKE_OSX_ARCHITECTURES=%s' % DEFAULT_OSX_UNIVERSAL_ARCHS)
 

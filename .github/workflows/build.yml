@@ -187,7 +187,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [x64, arm64]
+        arch: [universal]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -208,6 +208,8 @@ jobs:
         with:
           path: |
             third_party/boringssl/libcrypto.a
+            third_party/boringssl/x64-libcrypto.a
+            third_party/boringssl/arm64-libcrypto.a
           key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: "Install dependency: clang and clang-tidy"
         run: |
@@ -221,20 +223,44 @@ jobs:
           CLANG_REVISION=$(< CLANG_REVISION)
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
-      - name: "Install dependency: boringssl"
+      - name: "Install dependency: boringssl (x64 slice)"
         run: |
           cd third_party/boringssl
 
-          if [ ! -f libcrypto.a ]; then
+          if [ ! -f x64-libcrypto.a ]; then
             mkdir build
             cd build
             cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 ..
+              -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
+              -DCMAKE_OSX_ARCHITECTURES="x86_64" ..
             ninja crypto
-            cp -fv crypto/libcrypto.a ../libcrypto.a
+            cp -fv crypto/libcrypto.a ../x64-libcrypto.a
             cd ..
             rm -rf build
           fi
+      - name: "Install dependency: boringssl (arm64 slice)"
+        run: |
+          cd third_party/boringssl
+
+          if [ ! -f arm64-libcrypto.a ]; then
+            mkdir build
+            cd build
+            cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
+              -DCMAKE_OSX_ARCHITECTURES="arm64" ..
+            ninja crypto
+            cp -fv crypto/libcrypto.a ../arm64-libcrypto.a
+            cd ..
+            rm -rf build
+          fi
+      - name: "Install dependency: boringssl (universal)"
+        run: |
+          cd third_party/boringssl
+          if [ ! -f libcrypto.a ]; then
+            lipo -create arm64-libcrypto.a x64-libcrypto.a -output libcrypto.a
+            lipo -info libcrypto.a
+          fi
+
   win:
     needs: cache-toolchain-win
     runs-on: windows-latest
@@ -460,7 +486,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [x64, arm64]
+        arch: [universal]
         build_type: [Debug, RelWithDebInfo]
     env:
       BUNDLE_NAME: 'yass-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}'
@@ -513,7 +539,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [x64, arm64]
+        arch: [universal]
         build_type: [Debug, RelWithDebInfo]
     steps:
       - uses: actions/checkout@v2
