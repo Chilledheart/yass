@@ -1107,6 +1107,8 @@ if (GUI)
           list(APPEND SRC_FILES
             src/mac/yass.entitlements)
         endif()
+        list(APPEND SRC_FILES
+          src/mac/network.icns)
 
         list(APPEND SRC_FILES
           src/mac/YassAppDelegate.mm
@@ -1125,10 +1127,6 @@ if (GUI)
           src/gui/yass_logging.cpp
           src/gui/option_dialog.cpp
           src/gui/panels.cpp)
-    endif()
-
-    if (APPLE)
-        list(APPEND SRC_FILES wxmac.icns)
     endif()
 
     add_executable(${APP_NAME} WIN32 MACOSX_BUNDLE
@@ -1195,7 +1193,7 @@ if (GUI)
             COMPILE_FLAGS "${_APP_COMPILE_FLAGS} -fobjc-arc")
 
         # adds to Copy Bundle Resources build phase
-        set_source_files_properties("wxmac.icns" PROPERTIES
+        set_source_files_properties("src/mac/network.icns" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")
         set_source_files_properties("${STORYBOARDS}" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")

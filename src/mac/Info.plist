@@ -7,9 +7,9 @@
     <key>CFBundleExecutable</key>
     <string>yass</string>
     <key>CFBundleIconName</key>
-    <string>wxmac</string>
+    <string>network</string>
     <key>CFBundleIconFile</key>
-    <string>wxmac.icns</string>
+    <string>network.icns</string>
     <key>CFBundleIdentifier</key>
     <string>it.yass.gui</string>
     <key>CFBundleInfoDictionaryVersion</key>
