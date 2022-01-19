@@ -475,6 +475,11 @@ jobs:
           asset_name: ${{ env.BUNDLE_NAME }}.zip
           asset_content_type: application/octet-stream
       - run: openssl sha256 ${{ env.BUNDLE_NAME }}.zip > sha256sum.txt
+      - run: echo "SHA256SUM=$(cut -d' ' -f2 sha256sum.txt)" >>$GITHUB_ENV
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-sha256 ${{ env.SHA256SUM }}
+          path: sha256sum.txt
       - uses: actions/upload-release-asset@v1
         if: ${{ github.event_name == 'release' }}
         env:
@@ -484,12 +489,12 @@ jobs:
           asset_path: ${{ env.BUNDLE_NAME }}-standalone.zip
           asset_name: ${{ env.BUNDLE_NAME }}-standalone.zip
           asset_content_type: application/octet-stream
-      - run: openssl sha256 ${{ env.BUNDLE_NAME }}-standalone.zip >> sha256sum.txt
-      - run: echo "SHA256SUM=$(cut -d' ' -f2 sha256sum.txt)" >>$GITHUB_ENV
+      - run: openssl sha256 ${{ env.BUNDLE_NAME }}-standalone.zip > sha256sum-standalone.txt
+      - run: echo "SHA256SUM_STANDLONE=$(cut -d' ' -f2 sha256sum-standalone.txt)" >>$GITHUB_ENV
       - uses: actions/upload-artifact@v2
         with:
-          name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-sha256 ${{ env.SHA256SUM }}
-          path: sha256sum.txt
+          name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-sha256-standalone ${{ env.SHA256SUM_STANDLONE }}
+          path: sha256sum-standalone.txt
   win-clang-cl:
     needs: cache-toolchain-win
     runs-on: windows-2019
@@ -580,6 +585,11 @@ jobs:
           asset_name: ${{ env.BUNDLE_NAME }}.zip
           asset_content_type: application/octet-stream
       - run: openssl sha256 ${{ env.BUNDLE_NAME }}.zip > sha256sum.txt
+      - run: echo "SHA256SUM=$(cut -d' ' -f2 sha256sum.txt)" >>$GITHUB_ENV
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-sha256 ${{ env.SHA256SUM }}
+          path: sha256sum.txt
       - uses: actions/upload-release-asset@v1
         if: ${{ github.event_name == 'release' }}
         env:
@@ -589,12 +599,12 @@ jobs:
           asset_path: ${{ env.BUNDLE_NAME }}-standalone.zip
           asset_name: ${{ env.BUNDLE_NAME }}-standalone.zip
           asset_content_type: application/octet-stream
-      - run: openssl sha256 ${{ env.BUNDLE_NAME }}-standalone.zip >> sha256sum.txt
-      - run: echo "SHA256SUM=$(cut -d' ' -f2 sha256sum.txt)" >>$GITHUB_ENV
+      - run: openssl sha256 ${{ env.BUNDLE_NAME }}-standalone.zip > sha256sum-standalone.txt
+      - run: echo "SHA256SUM_STANDLONE=$(cut -d' ' -f2 sha256sum-standalone.txt)" >>$GITHUB_ENV
       - uses: actions/upload-artifact@v2
         with:
-          name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-sha256 ${{ env.SHA256SUM }}
-          path: sha256sum.txt
+          name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-sha256-standalone ${{ env.SHA256SUM_STANDLONE }}
+          path: sha256sum-standalone.txt
   win-clang-tidy:
     needs: cache-toolchain-win
     runs-on: windows-2019
