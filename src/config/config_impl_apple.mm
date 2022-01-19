@@ -5,9 +5,6 @@
 
 #ifdef __APPLE__
 
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 #include <absl/flags/flag.h>
@@ -20,7 +17,7 @@
 ABSL_FLAG(std::string,
           configfile,
           "~/.yass/config.json",
-          "load configs from file");
+          "load configs from file (legacy)");
 
 namespace {
 
@@ -35,22 +32,45 @@ std::string ExpandUser(const std::string& file_path) {
   return real_path;
 }
 
-bool IsDirectory(const std::string& path) {
-  struct stat Stat;
-  if (::stat(path.c_str(), &Stat) != 0) {
-    return false;
-  }
-  return S_ISDIR(Stat.st_mode);
+void CFMutableContextOverwriteCallback(const void* key,
+                                       const void* value,
+                                       void* context) {
+  CFMutableDictionaryRef mutable_root = (CFMutableDictionaryRef)context;
+  CFDictionarySetValue(mutable_root, key, value);
 }
 
-bool CreatePrivateDirectory(const std::string& path) {
-  return ::mkdir(path.c_str(), 0700) != 0;
+void CFDirectionaryToUserDefaultCallback(const void* key,
+                                         const void* value,
+                                         void* context) {
+  NSUserDefaults* userDefaults = [NSUserDefaults standardUserDefaults];
+  [userDefaults setObject:(id)value forKey:(__bridge NSString*)key];
 }
 
-bool EnsureCreatedDirectory(const std::string& path) {
-  if (!IsDirectory(path) && !CreatePrivateDirectory(path)) {
+bool LoadConfigFromLegacyConfig(const std::string& path,
+                                CFMutableDictionaryRef mutable_root) {
+  NSError* error = nil;
+  NSData* data = [NSData dataWithContentsOfFile:@(path.c_str())
+                                        options:NSDataReadingUncached
+                                          error:&error];
+  CFDictionaryRef root;
+  if (!data || error) {
+    VLOG(1) << "legacy configure file failed to read: " << path
+            << " error: " << error;
     return false;
   }
+  error = nil;
+  root = (__bridge CFDictionaryRef)
+      [NSJSONSerialization JSONObjectWithData:data
+                                      options:NSJSONReadingMutableContainers
+                                        error:&error];
+  if (!root || error) {
+    VLOG(1) << "legacy configure file failed to parse: " << error
+            << " content: \"" << data << "\"";
+    return false;
+  }
+
+  CFDictionaryApplyFunction(root, CFMutableContextOverwriteCallback,
+                            mutable_root);
   return true;
 }
 
@@ -64,27 +84,23 @@ bool ConfigImplApple::OpenImpl(bool dontread) {
   path_ = ExpandUser(absl::GetFlag(FLAGS_configfile));
 
   if (!dontread) {
-    NSError* error = nil;
-    NSData* data = [NSData dataWithContentsOfFile:@(path_.c_str())
-                                          options:NSDataReadingUncached
-                                            error:&error];
-    if (!data || error) {
-      LOG(WARNING) << "configure file failed to read: " << path_
-                   << " error: " << error;
-      return false;
-    }
-    error = nil;
-    root_ = (__bridge CFDictionaryRef)
-        [NSJSONSerialization JSONObjectWithData:data
-                                        options:NSJSONReadingMutableContainers
-                                          error:&error];
-    if (!root_ || error) {
-      LOG(WARNING) << "bad configuration: " << error << " content: \"" << data
-                   << "\"";
-      return false;
+    CFMutableDictionaryRef mutable_root = CFDictionaryCreateMutable(
+        kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks,
+        &kCFTypeDictionaryValueCallBacks);
+
+    if (LoadConfigFromLegacyConfig(path_, mutable_root)) {
+      VLOG(2) << "loaded from config file " << path_;
+      ::unlink(path_.c_str());
     }
 
-    VLOG(2) << "read from config file " << path_;
+    // Overwrite all fields from UserDefaults
+    CFDictionaryRef root = (__bridge CFDictionaryRef)[
+        [NSUserDefaults standardUserDefaults] dictionaryRepresentation];
+    CFDictionaryApplyFunction(root, CFMutableContextOverwriteCallback,
+                              mutable_root);
+    root_ = CFDictionaryCreateCopy(kCFAllocatorDefault, mutable_root);
+    CFRelease(root);
+    CFRelease(mutable_root);
   } else {
     write_root_ = CFDictionaryCreateMutable(kCFAllocatorDefault, 0,
                                             &kCFTypeDictionaryKeyCallBacks,
@@ -100,31 +116,8 @@ bool ConfigImplApple::CloseImpl() {
     return true;
   }
 
-  auto dir_ref = Dirname(path_);
-  std::string dir(dir_ref.data(), dir_ref.size());
-  if (!EnsureCreatedDirectory(dir)) {
-    LOG(WARNING) << "configure dir could not create: " << dir;
-    return false;
-  }
-
-  NSError* error = nil;
-  NSData* data = [NSJSONSerialization
-      dataWithJSONObject:(__bridge NSMutableDictionary*)write_root_
-                 options:NSJSONWritingPrettyPrinted
-                   error:&error];
-  if (!data || error) {
-    LOG(WARNING) << "failed to write to path: \"" << path_ << " with error \""
-                 << error << "\"";
-    return false;
-  }
-
-  if (![data writeToFile:SysUTF8ToNSString(path_) atomically:FALSE]) {
-    LOG(WARNING) << "failed to write to path: \"" << path_ << " with content \""
-                 << data << "\"";
-    return false;
-  }
-
-  VLOG(2) << "written from config file " << path_;
+  CFDictionaryApplyFunction(write_root_, CFDirectionaryToUserDefaultCallback,
+                            nil);
 
   CFRelease(write_root_);
   path_.clear();
