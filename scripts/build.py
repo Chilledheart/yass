@@ -188,10 +188,11 @@ def get_dependencies_by_dumpbin(path):
   sdk_bin_dir = os.getenv('WindowsSdkBinPath')
   sdk_base_dir= os.getenv('WindowsSdkDir')
   search_dirs.extend([
-    os.path.join(sdk_bin_dir, sdk_version, DEFAULT_ARCH, 'ucrt')
-    os.path.join(sdk_base_dir, 'Redist', sdk_version, 'ucrt', 'DLLS', DEFAULT_ARCH)
+    os.path.join(sdk_bin_dir, sdk_version, DEFAULT_ARCH, 'ucrt'),
+    os.path.join(sdk_base_dir, 'Redist', sdk_version, 'ucrt', 'DLLS',
+                 DEFAULT_ARCH),
     os.path.join(sdk_base_dir, 'ExtensionSDKs', 'Microsoft.UniversalCRT.Debug',
-                 sdk_version, 'Redist', 'Debug', DEFAULT_ARCH)
+                 sdk_version, 'Redist', 'Debug', DEFAULT_ARCH),
   ])
 
   print('searching dlls in directories:')
@@ -200,7 +201,7 @@ def get_dependencies_by_dumpbin(path):
 
   p = re.compile(r'    (\S+.dll)', re.IGNORECASE)
   for line in lines:
-    m = p.match(line):
+    m = p.match(line)
     if m and not m[1] in system_dlls:
       dlls.append(m[1])
 
