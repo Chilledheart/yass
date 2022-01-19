@@ -14,7 +14,7 @@ env:
   CACHE_EPOCH: 6
 jobs:
   cache-toolchain-win:
-    runs-on: windows-latest
+    runs-on: windows-2019
     strategy:
       fail-fast: false
       matrix:
@@ -387,7 +387,7 @@ jobs:
 
   win:
     needs: cache-toolchain-win
-    runs-on: windows-latest
+    runs-on: windows-2019
     strategy:
       fail-fast: false
       matrix:
@@ -480,7 +480,7 @@ jobs:
           path: sha256sum.txt
   win-clang-cl:
     needs: cache-toolchain-win
-    runs-on: windows-latest
+    runs-on: windows-2019
     strategy:
       fail-fast: false
       matrix:
@@ -573,7 +573,7 @@ jobs:
           path: sha256sum.txt
   win-clang-tidy:
     needs: cache-toolchain-win
-    runs-on: windows-latest
+    runs-on: windows-2019
     strategy:
       fail-fast: false
       matrix:
