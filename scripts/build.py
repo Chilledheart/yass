@@ -590,9 +590,10 @@ def postbuild_archive():
   outputs = [ archive ]
 
   if sys.platform == 'win32':
+    full_paths = paths
     if os.path.exists(APP_NAME + '.pdb'):
       full_paths.append(APP_NAME + '.pdb')
-    full_paths = paths
+
     files = os.listdir('.')
     for file in files:
       if file.endswith('.dll'):
