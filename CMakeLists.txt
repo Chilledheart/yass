@@ -1201,8 +1201,8 @@ if (GUI)
           MACOSX_PACKAGE_LOCATION "Resources")
 
         set_target_properties(${APP_NAME} PROPERTIES
-            RESOURCE "wxmac.icns ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/Base.lproj/Main.storyboard"
-            MACOSX_BUNDLE_ICON_FILE wxmac.icns
+            RESOURCE "network.icns ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/Base.lproj/Main.storyboard"
+            MACOSX_BUNDLE_ICON_FILE network.icns
             MACOSX_BUNDLE_COPYRIGHT "Copyright ${PACKAGE_FULL_NAME}"
             MACOSX_BUNDLE_GUI_IDENTIFIER "it.yass.gui"
             MACOSX_BUNDLE_BUNDLE_NAME ${PACKAGE_NAME}
