@@ -801,7 +801,7 @@ jobs:
             third_party/boringssl/libcrypto.a
           key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
-        run: sudo apt-get install -y cmake ninja-build libjsoncpp-dev libwxgtk3.0-gtk3-dev
+        run: sudo apt-get install -y cmake ninja-build libjsoncpp-dev libgtk-3-dev libgtkmm-3.0-dev
       - name: Build
         run: |
           mkdir build
@@ -840,7 +840,7 @@ jobs:
             third_party/boringssl/libcrypto.a
           key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
-        run: sudo apt-get install -y cmake ninja-build libjsoncpp-dev libwxgtk3.0-gtk3-dev
+        run: sudo apt-get install -y cmake ninja-build libjsoncpp-dev libgtk-3-dev libgtkmm-3.0-dev
       - name: Build
         run: |
           export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
@@ -880,7 +880,7 @@ jobs:
             third_party/boringssl/libcrypto.a
           key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
-        run: sudo apt-get install -y cmake ninja-build libjsoncpp-dev libwxgtk3.0-gtk3-dev
+        run: sudo apt-get install -y cmake ninja-build libjsoncpp-dev libgtk-3-dev libgtkmm-3.0-dev
       - name: Build
         run: |
           export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang

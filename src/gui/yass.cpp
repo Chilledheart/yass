@@ -9,92 +9,95 @@
 #include <absl/debugging/symbolize.h>
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
-#include <wx/cmdline.h>
-#include <wx/stdpaths.h>
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
-#include "gui/panels.hpp"
-#include "gui/yass_frame.hpp"
-#include "gui/yass_logging.hpp"
+#include "gui/yass_window.hpp"
 
 YASSApp* mApp = nullptr;
 
-static const auto kMainFrameName = wxT("YetAnotherShadowSocket");
+static const char* kAppId = "it.gui.yass";
+static const char* kAppName = "Yet Another Shadow Socket";
 
-// this is a definition so can't be in a header
-wxDEFINE_EVENT(MY_EVENT, wxCommandEvent);
-
-wxIMPLEMENT_APP(YASSApp);
-
-YASSApp::~YASSApp() {
-  delete wxLog::SetActiveTarget(nullptr);
-}
-
-bool YASSApp::Initialize(int& wxapp_argc, wxChar** wxapp_argv) {
-  if (!wxApp::Initialize(wxapp_argc, wxapp_argv))
-    return false;
-
-  wxString appPath = wxStandardPaths::Get().GetExecutablePath();
-  absl::InitializeSymbolizer(appPath.c_str());
+int main(int argc, char** argv) {
+  absl::InitializeSymbolizer(argv[0]);
   absl::FailureSignalHandlerOptions failure_handle_options;
   absl::InstallFailureSignalHandler(failure_handle_options);
 
-  return true;
-}
-
-bool YASSApp::OnInit() {
-  absl::ParseCommandLine(argc, argv.operator char* *());
-
-  if (!wxApp::OnInit())
-    return false;
+  absl::ParseCommandLine(argc, argv);
 
   auto cipher_method = to_cipher_method(absl::GetFlag(FLAGS_method));
   if (cipher_method != CRYPTO_INVALID) {
     absl::SetFlag(&FLAGS_cipher_method, cipher_method);
   }
 
-  LoadConfigFromDisk();
+  config::ReadConfig();
+
   DCHECK(is_valid_cipher_method(
       static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
 
-  logger_ = new YASSLog;
-  delete wxLog::SetActiveTarget(logger_);
+  auto app = YASSApp::create();
 
+  mApp = app.get();
+
+  return app->ApplicationRun();
+}
+
+YASSApp::YASSApp()
+    : Gtk::Application(kAppId),
+      dispatcher_(Glib::MainContext::get_thread_default()) {
+  ::g_set_application_name(kAppName);
+}
+
+YASSApp::~YASSApp() {
+  delete main_window_;
+}
+
+Glib::RefPtr<YASSApp> YASSApp::create() {
+  return Glib::RefPtr<YASSApp>(new YASSApp());
+}
+
+void YASSApp::on_startup() {
   LOG(WARNING) << "Application starting";
 
-  mApp = this;
-  state_ = STOPPED;
+  Gtk::Application::on_startup();
 
-  frame_ = new YASSFrame(kMainFrameName);
-#if wxCHECK_VERSION(3, 1, 0)
-  frame_->SetSize(frame_->FromDIP(wxSize(450, 390)));
-#else
-  frame_->SetSize(wxSize(450, 390));
-#endif
-  frame_->Centre();
-  frame_->Show(true);
-  frame_->UpdateStatus();
-  SetTopWindow(frame_);
+  idle_connection_ = Glib::signal_idle().connect(
+      sigc::mem_fun(*this, &YASSApp::OnIdle), Glib::PRIORITY_LOW);
 
-  return true;
+  dispatcher_.connect(sigc::mem_fun(*this, &YASSApp::OnDispatch));
 }
 
-void YASSApp::OnLaunched() {
-  wxApp::OnLaunched();
+void YASSApp::on_activate() {
+  Gtk::Application::on_activate();
+
+  // main window is created with WINDOW_TOPLEVEL by defaults
+  main_window_ = new YASSWindow();
+  main_window_->show();
+  main_window_->activate_focus();
+  main_window_->present();
 }
 
-int YASSApp::OnExit() {
+int YASSApp::ApplicationRun() {
+  int ret = run(*main_window_);
+  if (ret) {
+    LOG(WARNING) << "app exited with code " << ret;
+  }
   LOG(WARNING) << "Application exiting";
-  OnStop();
-  return wxApp::OnExit();
+  return ret;
 }
 
-void YASSApp::OnInitCmdLine(wxCmdLineParser& parser) {
-  // initial wxWidgets builtin options through, otherwise it crashes
-  parser.SetCmdLine(wxEmptyString);
-  wxApp::OnInitCmdLine(parser);
+void YASSApp::Exit() {
+  idle_connection_.disconnect();
+  quit();
+}
+
+bool YASSApp::OnIdle() {
+  if (GetState() == YASSApp::STARTED) {
+    main_window_->UpdateStatusBar();
+  }
+  return true;
 }
 
 std::string YASSApp::GetStatus() const {
@@ -115,7 +118,7 @@ void YASSApp::OnStart(bool quiet) {
 
   std::function<void(asio::error_code)> callback;
   if (!quiet) {
-    callback = [](asio::error_code ec) {
+    callback = [this](asio::error_code ec) {
       bool successed = false;
       std::string msg;
 
@@ -126,15 +129,13 @@ void YASSApp::OnStart(bool quiet) {
         successed = true;
       }
 
-      // if the gui library exits, no more need to handle
-      if (!wxTheApp) {
-        return;
+      {
+        absl::MutexLock lk(&dispatch_mutex_);
+        dispatch_queue_.push(
+            std::make_pair(successed ? STARTED : START_FAILED, msg));
       }
 
-      wxCommandEvent* evt = new wxCommandEvent(
-          MY_EVENT, successed ? ID_STARTED : ID_START_FAILED);
-      evt->SetString(msg.c_str());
-      wxTheApp->QueueEvent(evt);
+      dispatcher_.emit();
     };
   }
   worker_.Start(callback);
@@ -145,47 +146,60 @@ void YASSApp::OnStop(bool quiet) {
 
   std::function<void()> callback;
   if (!quiet) {
-    callback = []() {
-      if (wxTheApp) {
-        wxCommandEvent* evt = new wxCommandEvent(MY_EVENT, ID_STOPPED);
-        wxTheApp->QueueEvent(evt);
+    callback = [this]() {
+      {
+        absl::MutexLock lk(&dispatch_mutex_);
+        dispatch_queue_.push(std::make_pair(STOPPED, std::string()));
       }
+
+      dispatcher_.emit();
     };
   }
   worker_.Stop(callback);
 }
 
-void YASSApp::OnStarted(wxCommandEvent& WXUNUSED(event)) {
+void YASSApp::OnStarted() {
   state_ = STARTED;
-  frame_->Started();
+  main_window_->Started();
 }
 
-void YASSApp::OnStartFailed(wxCommandEvent& event) {
+void YASSApp::OnStartFailed(const std::string& error_msg) {
   state_ = START_FAILED;
 
-  error_msg_ = event.GetString();
+  error_msg_ = error_msg;
   LOG(ERROR) << "worker failed due to: " << error_msg_;
-  frame_->StartFailed();
+  main_window_->StartFailed();
 }
 
-void YASSApp::OnStopped(wxCommandEvent& WXUNUSED(event)) {
+void YASSApp::OnStopped() {
   state_ = STOPPED;
-  frame_->Stopped();
+  main_window_->Stopped();
 }
 
-void YASSApp::LoadConfigFromDisk() {
-  config::ReadConfig();
+void YASSApp::OnDispatch() {
+  std::pair<YASSState, std::string> event;
+  {
+    absl::MutexLock lk(&dispatch_mutex_);
+    event = dispatch_queue_.front();
+    dispatch_queue_.pop();
+  }
+  if (event.first == STARTED)
+    OnStarted();
+  else if (event.first == START_FAILED)
+    OnStartFailed(event.second);
+  else if (event.first == STOPPED)
+    OnStopped();
 }
 
 void YASSApp::SaveConfigToDisk() {
-  auto server_host = frame_->GetServerHost();
-  auto server_port = StringToInteger(frame_->GetServerPort());
-  auto password = frame_->GetPassword();
-  auto method_string = frame_->GetMethod();
+  auto server_host = main_window_->GetServerHost();
+  auto server_port = StringToInteger(main_window_->GetServerPort());
+  auto password = main_window_->GetPassword();
+  auto method_string = main_window_->GetMethod();
   auto method = to_cipher_method(method_string);
-  auto local_host = frame_->GetLocalHost();
-  auto local_port = StringToInteger(frame_->GetLocalPort());
-  auto connect_timeout = StringToInteger(frame_->GetTimeout());
+  auto local_host = main_window_->GetLocalHost();
+  auto local_port = StringToInteger(main_window_->GetLocalPort());
+  auto connect_timeout = StringToInteger(main_window_->GetTimeout());
 
   if (!server_port.ok() || method == CRYPTO_INVALID || !local_port.ok() ||
       !connect_timeout.ok()) {
@@ -203,9 +217,3 @@ void YASSApp::SaveConfigToDisk() {
 
   config::SaveConfig();
 }
-
-wxBEGIN_EVENT_TABLE(YASSApp, wxApp)
-  EVT_COMMAND(ID_STARTED, MY_EVENT, YASSApp::OnStarted)
-  EVT_COMMAND(ID_START_FAILED, MY_EVENT, YASSApp::OnStartFailed)
-  EVT_COMMAND(ID_STOPPED, MY_EVENT, YASSApp::OnStopped)
-wxEND_EVENT_TABLE()

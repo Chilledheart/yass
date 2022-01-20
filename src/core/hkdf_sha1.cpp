@@ -107,7 +107,7 @@ int crypto_hkdf_expand(const unsigned char* prk,
     }
 
     memcpy(okm + where, T, (i != N) ? hash_len : (okm_len - where));
-        where += hash_len;
+    where += hash_len;
     T_len = hash_len;
   }
 

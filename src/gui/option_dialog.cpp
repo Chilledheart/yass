@@ -33,15 +33,12 @@ OptionDialog::OptionDialog(wxFrame* parent,
 #endif
   wxFlexGridSizer* fgs = new wxFlexGridSizer(6, 2, vgap, hgap);
 
-  wxStaticText* connecttimeout =
-      new wxStaticText(this, -1, wxT("Connect Timeout"));
-  wxStaticText* tcpusertimeout =
-      new wxStaticText(this, -1, wxT("TCP User Timeout"));
+  wxStaticText* connecttimeout = new wxStaticText(this, -1, "Connect Timeout");
+  wxStaticText* tcpusertimeout = new wxStaticText(this, -1, "TCP User Timeout");
   wxStaticText* lingertimeout =
-      new wxStaticText(this, -1, wxT("TCP Linger Timeout"));
-  wxStaticText* sendbuffer = new wxStaticText(this, -1, wxT("TCP Send Buffer"));
-  wxStaticText* recvbuffer =
-      new wxStaticText(this, -1, wxT("TCP Receive Buffer"));
+      new wxStaticText(this, -1, "TCP Linger Timeout");
+  wxStaticText* sendbuffer = new wxStaticText(this, -1, "TCP Send Buffer");
+  wxStaticText* recvbuffer = new wxStaticText(this, -1, "TCP Receive Buffer");
 
   m_connecttimeout_tc = new wxTextCtrl(this, -1);
   m_tcpusertimeout_tc = new wxTextCtrl(this, -1);
@@ -69,14 +66,14 @@ OptionDialog::OptionDialog(wxFrame* parent,
 
   wxBoxSizer* hbox_buttons = new wxBoxSizer(wxHORIZONTAL);
 
-  m_okay = new wxButton(this, wxOK, wxT("OK"),
+  m_okay = new wxButton(this, wxOK, "OK",
 #if wxCHECK_VERSION(3, 1, 0)
                         parent->FromDIP(wxPoint(10, 10))
 #else
                         wxPoint(10, 10)
 #endif
   );
-  m_cancel = new wxButton(this, wxCANCEL, wxT("Cancel"),
+  m_cancel = new wxButton(this, wxCANCEL, "Cancel",
 #if wxCHECK_VERSION(3, 1, 0)
                           parent->FromDIP(wxPoint(10, 60))
 #else

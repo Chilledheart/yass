@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Yet Another Shadow Socket
+GenericName=YASS
+Comment=GTK implementation of Yet Another Shadow Socket
+Icon=network
+StartupNotify=true
+Exec=@bindir@/yass
+Terminal=false
+Encoding=UTF-8
+Categories=Network;GTK;Utility

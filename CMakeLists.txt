@@ -347,11 +347,6 @@ set(SUPPORT_LIBS
     absl::optional
     )
 
-# change wxWidgets_CONFIG_EXECUTABLE
-if (GUI AND UNIX)
-    find_program(wxWidgets_CONFIG_EXECUTABLE wx-config)
-endif()
-
 if (MSVC AND GUI)
   message(STATUS "Build with Platform $ENV{Platform}")
   if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "dynamic")
@@ -373,14 +368,14 @@ if (MSVC AND GUI)
   endif()
   set(GUI_USE_FILE "")
   set(GUI_INCLUDE_DIRS "")
+  set(GUI_DEFINITIONS "")
+  set(GUI_C_CXX_FLAGS "")
+  set(GUI_LIBRARY_DIRS "")
   if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "static")
     set(GUI_LIBRARIES uafxcw$<$<CONFIG:Debug>:d> libcmt$<$<CONFIG:Debug>:d>)
   else()
     set(GUI_LIBRARIES "")
   endif()
-  set(GUI_CXX_FLAGS "")
-  set(GUI_DEFINITIONS "")
-  set(GUI_LIBRARY "")
 elseif (APPLE AND GUI)
   find_library(COCOA_LIBRARY Cocoa REQUIRED)
   # Locate Interface Builder Tool, needed to build things like Storyboards outside of Xcode.
@@ -395,18 +390,19 @@ elseif (APPLE AND GUI)
 
   set(GUI_USE_FILE "")
   set(GUI_INCLUDE_DIRS "")
-  set(GUI_LIBRARIES "${COCOA_LIBRARY}")
-  set(GUI_CXX_FLAGS "")
   set(GUI_DEFINITIONS "")
-  set(GUI_LIBRARY "")
+  set(GUI_C_CXX_FLAGS "")
+  set(GUI_LIBRARY_DIRS "")
+  set(GUI_LIBRARIES "${COCOA_LIBRARY}")
 elseif (GUI)
-  find_package(wxWidgets COMPONENTS core base REQUIRED)
-  set(GUI_USE_FILE ${wxWidgets_USE_FILE})
-  set(GUI_INCLUDE_DIRS ${wxWidgets_INCLUDE_DIRS})
-  set(GUI_LIBRARIES ${wxWidgets_LIBRARIES})
-  set(GUI_CXX_FLAGS ${wxWidgets_CXX_FLAGS})
-  set(GUI_DEFINITIONS ${wxWidgets_DEFINITIONS})
-  set(GUI_LIBRARY ${wxWidgets_LIBRARY_DIRS})
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(GTKMM REQUIRED gtkmm-3.0)
+  set(GUI_USE_FILE "")
+  set(GUI_INCLUDE_DIRS ${GTKMM_INCLUDE_DIRS})
+  set(GUI_DEFINITIONS "-DGTKMM_DISABLE_DEPRECATED=1 -DGIOMM_DISABLE_DEPRECATED=1 ${GTKMM_CFLAGS_OTHER}")
+  set(GUI_C_CXX_FLAGS ${GTKMM_CFLAGS})
+  set(GUI_LIBRARY_DIRS ${GTKMM_LIBRARY_DIRS})
+  set(GUI_LIBRARIES ${GTKMM_LIBRARIES})
 endif()
 
 # abseil-cpp
@@ -1132,10 +1128,7 @@ if (GUI)
     else()
         list(APPEND SRC_FILES
           src/gui/yass.cpp
-          src/gui/yass_frame.cpp
-          src/gui/yass_logging.cpp
-          src/gui/option_dialog.cpp
-          src/gui/panels.cpp)
+          src/gui/yass_window.cpp)
     endif()
 
     add_executable(${APP_NAME} WIN32 MACOSX_BUNDLE
@@ -1146,6 +1139,9 @@ if (GUI)
     target_include_directories(${APP_NAME} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+    target_include_directories(${APP_NAME} SYSTEM PRIVATE
+        ${GUI_INCLUDE_DIRS})
+
     if (MSVC)
       target_include_directories(${APP_NAME} PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/src/win32)
@@ -1155,21 +1151,18 @@ if (GUI)
     else()
       target_include_directories(${APP_NAME} PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/src/gui)
-      target_include_directories(${APP_NAME} SYSTEM PRIVATE
-          ${GUI_INCLUDE_DIRS})
     endif()
 
-    target_link_libraries(${APP_NAME} PUBLIC
-        ${SUPPORT_LIBS}
-        ${GUI_LIBRARIES}
-        )
-
-    target_compile_options(${APP_NAME} PRIVATE ${GUI_CXX_FLAGS})
     foreach(GUI_DEFINITION IN LISTS GUI_DEFINITIONS)
         target_compile_definitions(${APP_NAME} PRIVATE ${GUI_DEFINITION})
     endforeach()
 
+    target_compile_options(${APP_NAME} PRIVATE ${GUI_C_CXX_FLAGS})
+
     target_link_directories(${APP_NAME} PRIVATE ${GUI_LIBRARY_DIRS})
+
+    target_link_libraries(${APP_NAME} PUBLIC ${SUPPORT_LIBS} ${GUI_LIBRARIES}
+        )
 
     if (MSVC)
         set_target_properties(${APP_NAME} PROPERTIES
@@ -1244,5 +1237,10 @@ if (GUI)
               XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/yass.entitlements
           )
         endif()
+    endif()
+
+    ## gtkmm requires it in treeview, oops
+    if (NOT APPLE AND NOT MSVC)
+      string(REPLACE "-fno-exceptions" "-fexceptions" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     endif()
 endif()

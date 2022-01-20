@@ -1,21 +1,29 @@
 # Building Instruments
 
-## GeneralInstallation/Ubuntu
+## GeneralInstallation/Debian/Ubuntu
 1. Install GNU C++ Compiler:
 ```
-apt-get install -y build-essential
+sudo apt-get install -y build-essential
 ```
 2. Install below dependencies:
 ```
-apt-get install -y \
+sudo apt-get install -y \
     cmake \
     ninja-build \
-    libsodium-dev \
+    perl \
+    libunwind-dev \
     libjsoncpp-dev \
-    libwxgtk3.0-gtk3-dev (optional)
+    libgtk-3-dev \
+    libgtkmm-3.0-dev
 
 ```
-3. Compile the program with default configuration.
+3. Install golang:
+```
+wget https://go.dev/dl/go1.16.13.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.16.13.linux-amd64.tar.gz
+echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
+```
+4. Compile the program with default configuration.
 ```
 mkdir build
 cd build
@@ -108,19 +116,14 @@ rmdir build /s /q
 ```
 
 (for Linux)
-```
-wget https://go.dev/dl/go1.16.13.linux-amd64.tar.gz
-sudo tar -C /usr/local -xzf go1.16.13.linux-amd64.tar.gz
-echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
-sudo apt-get install libunwind-dev
-```
-Relogin and run:
+Run:
 ```
 cd third_party/boringssl
 mkdir build
 cd build
 cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
 ninja crypto
+cp -fv crypto/libcrypto.a ../libcrypto.a
 cd ..
 ```
 

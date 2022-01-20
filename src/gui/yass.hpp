@@ -3,80 +3,86 @@
 #ifndef YASS_APP
 #define YASS_APP
 
-#include <wx/wxprec.h>
-#ifndef WX_PRECOMP
-#include <wx/wx.h>
-#endif
+#include <queue>
+
+#include <absl/synchronization/mutex.h>
+#include <glibmm/dispatcher.h>
+#include <gtkmm/application.h>
 
 #include "cli/cli_worker.hpp"
 
-class YASSFrame;
-class YASSLog;
+class YASSWindow;
 /// The main Application for YetAnotherShadowSocket
-class YASSApp : public wxApp {
+class YASSApp : public Gtk::Application {
+ protected:
+  YASSApp();
+
  public:
   ~YASSApp() override;
 
-  // This is the very first function called for a newly created wxApp object,
-  // it is used by the library to do the global initialization.
-  bool Initialize(int& argc, wxChar** argv) override;
-  // Called before OnRun(), this is a good place to do initialization -- if
-  // anything fails, return false from here to prevent the program from
-  // continuing. The command line is normally parsed here, call the base
-  // class OnInit() to do it.
-  bool OnInit() override;
+  static Glib::RefPtr<YASSApp> create();
 
-  // Called before the first events are handled, called from within MainLoop()
-  void OnLaunched() override;
+ protected:
+  // The signal_startup() signal is emitted on the primary instance immediately
+  // after registration. See g_application_register().
+  void on_startup() override;
 
-  // This is only called if OnInit() returned true so it's a good place to do
-  // any cleanup matching the initializations done there.
-  int OnExit() override;
+  // To handle these two cases, we override signal_activate()'s default handler,
+  // which gets called when the application is launched without commandline
+  // arguments, and signal_open()'s default handler, which gets called when the
+  // application is launched with commandline arguments.
+  void on_activate() override;
 
-  // Used to by-pass wxWidgets' builtin parser by pass an empty argv
-  //
-  // called before wxCmdLineParser::Parse inside wxAppConsoleBase::OnInit
-  void OnInitCmdLine(wxCmdLineParser& parser) override;
+  // returning false in the signal handler causes remove the signal handler
+  bool OnIdle();
+
+  sigc::connection idle_connection_;
+
+ public:
+  // Glib event loop
+  int ApplicationRun();
+
+  void Exit();
 
   void OnStart(bool quiet = false);
   void OnStop(bool quiet = false);
 
   std::string GetStatus() const;
-  enum YASSState { STARTED, STARTING, START_FAILED, STOPPING, STOPPED };
+  enum YASSState {
+    STARTED,
+    STARTING,
+    START_FAILED,
+    STOPPING,
+    STOPPED,
+    MAX_STATE
+  };
   YASSState GetState() const { return state_; }
 
  private:
-  void OnStarted(wxCommandEvent& event);
-  void OnStartFailed(wxCommandEvent& event);
-  void OnStopped(wxCommandEvent& event);
+  void OnStarted();
+  void OnStartFailed(const std::string& error_msg);
+  void OnStopped();
+
+  guint worker_signals_[MAX_STATE];
+  absl::Mutex dispatch_mutex_;
+  std::queue<std::pair<YASSState, std::string>> dispatch_queue_;
+  void OnDispatch();
+
+  Glib::Dispatcher dispatcher_;
 
  private:
-  void LoadConfigFromDisk();
   void SaveConfigToDisk();
 
  private:
-  YASSState state_;
+  YASSState state_ = STOPPED;
 
-  friend class YASSFrame;
-  YASSFrame* frame_ = nullptr;
-  YASSLog* logger_ = nullptr;
+  friend class YASSWindow;
+  YASSWindow* main_window_ = nullptr;
 
   Worker worker_;
-  wxString error_msg_;
-
-  wxDECLARE_EVENT_TABLE();
+  std::string error_msg_;
 };
 
 extern YASSApp* mApp;
-
-wxDECLARE_APP(YASSApp);
-
-enum {
-  ID_STARTED = 1,
-  ID_START_FAILED = 2,
-  ID_STOPPED = 3,
-};
-
-wxDECLARE_EVENT(MY_EVENT, wxCommandEvent);
 
 #endif
