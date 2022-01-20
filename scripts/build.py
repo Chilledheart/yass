@@ -172,9 +172,29 @@ def get_dependencies_by_dumpbin(path):
   lines = subprocess.check_output(['dumpbin', '/dependents', path]).decode().split('\n')
   dlls = []
   system_dlls = ['WS2_32.dll', 'GDI32.dll', 'SHELL32.dll', 'USER32.dll',
-                 'ADVAPI32.dll', 'MSWSOCK.dll', 'dbghelp.dll']
+                 'ADVAPI32.dll', 'MSWSOCK.dll', 'dbghelp.dll', 'KERNEL32.dll',
+                 'ole32.dll', 'OLEAUT32.dll', 'SHLWAPI.dll', 'IMM32.dll',
+                 'UxTheme.dll', 'PROPSYS.dll', 'dwmapi.dll', 'WININET.dll',
+                 'OLEACC.dll', 'ODBC32.dll', 'oledlg.dll', 'urlmon.dll',
+                 'MSIMG32.dll', 'WINMM.dll', 'CRYPT32.dll', 'gdiplus.dll', ]
   vcredist_dir = os.getenv('VCToolsRedistDir')
+  ### Search Path
+  ### C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\14.30.30704\debug_nonredist\x86\Microsoft.VC143.DebugMFC
+  ### C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\14.30.30704\debug_nonredist\x86\Microsoft.VC143.DebugCRT
+  ### C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\14.30.30704\x86\Microsoft.VC143.MFCLOC
+  ### C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\14.30.30704\x86\Microsoft.VC143.MFC
+  ### C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\14.30.30704\x86\Microsoft.VC143.CRT
   search_dirs = [
+    ## TODO get vctoolchain set version
+    # for vs2022
+    os.path.join(vcredist_dir, 'debug_nonredist', DEFAULT_ARCH,
+                 'Microsoft.VC143.DebugMFC'),
+    os.path.join(vcredist_dir, 'debug_nonredist', DEFAULT_ARCH,
+                 'Microsoft.VC143.DebugCRT'),
+    os.path.join(vcredist_dir, DEFAULT_ARCH, 'Microsoft.VC143.MFCLOC'),
+    os.path.join(vcredist_dir, DEFAULT_ARCH, 'Microsoft.VC143.MFC'),
+    os.path.join(vcredist_dir, DEFAULT_ARCH, 'Microsoft.VC142.CRT'),
+    # for vs2019
     os.path.join(vcredist_dir, 'debug_nonredist', DEFAULT_ARCH,
                  'Microsoft.VC142.DebugMFC'),
     os.path.join(vcredist_dir, 'debug_nonredist', DEFAULT_ARCH,
@@ -187,6 +207,13 @@ def get_dependencies_by_dumpbin(path):
   sdk_version = os.getenv('WindowsSDKVersion')[:-1]
   sdk_bin_dir = os.getenv('WindowsSdkBinPath')
   sdk_base_dir= os.getenv('WindowsSdkDir')
+
+  ### Search Path
+  ### Please note The UCRT files are not redistributable for ARM64 Win32.
+  ### https://chromium.googlesource.com/chromium/src/+/lkgr/build/win/BUILD.gn
+  ### C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x86\ucrt
+  ### C:\Program Files (x86)\Windows Kits\10\Redist\10.0.19041.0\ucrt\DLLS\x86
+  ### C:\Program Files (x86)\Windows Kits\10\ExtensionSDKs\Microsoft.UniversalCRT.Debug\10.0.19041.0\Redist\Debug\x86
   search_dirs.extend([
     os.path.join(sdk_bin_dir, sdk_version, DEFAULT_ARCH, 'ucrt'),
     os.path.join(sdk_base_dir, 'Redist', sdk_version, 'ucrt', 'DLLS',
@@ -215,7 +242,7 @@ def get_dependencies_by_dumpbin(path):
         resolved = True
         break
     if not resolved:
-      print('dll %s not found in path', dll)
+      print('dll %s not found in path' % dll)
 
   return resolved_dlls
 
