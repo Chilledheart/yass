@@ -383,6 +383,15 @@ if (MSVC AND GUI)
   set(GUI_LIBRARY "")
 elseif (APPLE AND GUI)
   find_library(COCOA_LIBRARY Cocoa REQUIRED)
+  # Locate Interface Builder Tool, needed to build things like Storyboards outside of Xcode.
+  if(NOT ${CMAKE_GENERATOR} MATCHES "^Xcode.*")
+    # Make sure we can find the 'ibtool' program. If we can NOT find it we skip generation of this project.
+    find_program(IBTOOL ibtool HINTS "/usr/bin")
+    if(${IBTOOL} STREQUAL "IBTOOL-NOTFOUND")
+      message(SEND_ERROR "ibtool can not be found and is needed to compile the .xib files. "
+                         "It should have been installed with the Apple developer tools. ")
+    endif()
+  endif()
 
   set(GUI_USE_FILE "")
   set(GUI_INCLUDE_DIRS "")
@@ -1096,11 +1105,11 @@ if (GUI)
           src/win32/option_dialog.cpp
           src/win32/utils_win.cpp)
     elseif (APPLE)
-        set(STORYBOARDS src/mac/Base.lproj/Main.storyboard)
+        set(MAIN_STORYBOARD ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/Base.lproj/Main.storyboard)
         set(ASSET_CATALOG src/mac/Assets.xcassets)
         set(ASSET_CATALOG_ASSETS Assets)
         list(APPEND SRC_FILES
-          ${STORYBOARDS})
+          ${MAIN_STORYBOARD})
         list(APPEND SRC_FILES
           ${ASSET_CATALOG})
         if (GUI_SANDBOX)
@@ -1192,10 +1201,24 @@ if (GUI)
         set_target_properties(${APP_NAME} PROPERTIES
             COMPILE_FLAGS "${_APP_COMPILE_FLAGS} -fobjc-arc")
 
+        # Handle the Storyboard ourselves
+        if(NOT ${CMAKE_GENERATOR} MATCHES "^Xcode.*")
+          # Compile the storyboard file with the ibtool.
+          add_custom_command(TARGET ${APP_NAME} POST_BUILD
+            COMMAND ${IBTOOL}
+            --errors
+            --warnings
+            --notices
+            --output-format human-readable-text
+            --compile ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.app/Contents/Resources/Main.storyboardc
+            ${MAIN_STORYBOARD}
+            COMMENT "Compiling Main storyboard")
+        endif()
+
         # adds to Copy Bundle Resources build phase
         set_source_files_properties("src/mac/network.icns" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")
-        set_source_files_properties("${STORYBOARDS}" PROPERTIES
+        set_source_files_properties("${MAIN_STORYBOARD}" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")
         set_source_files_properties("${ASSET_CATALOG}" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")

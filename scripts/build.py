@@ -477,7 +477,8 @@ def execute_buildscript(configuration_type):
   write_output(command, suppress_error=False)
   # FIX ME move to cmake
   if sys.platform == 'darwin':
-    os.rename(os.path.join(configuration_type, get_app_name()), get_app_name())
+    if os.path.exists(os.path.join(configuration_type, get_app_name())):
+      os.rename(os.path.join(configuration_type, get_app_name()), get_app_name())
 
 
 def postbuild_copy_libraries():
