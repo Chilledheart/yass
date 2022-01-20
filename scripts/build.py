@@ -233,7 +233,7 @@ def get_dependencies(path):
 
 def get_dependencies_recursively(path):
   if sys.platform == 'win32':
-    return get_dependencies_by_objdump(path)
+    return get_dependencies_by_dumpbin(path)
   elif sys.platform == 'darwin':
     deps = get_dependencies_by_otool(path)
     while(True):
