@@ -233,7 +233,16 @@ def get_dependencies(path):
 
 def get_dependencies_recursively(path):
   if sys.platform == 'win32':
-    return get_dependencies_by_dumpbin(path)
+    deps = get_dependencies_by_dumpbin(path)
+    while(True):
+        deps_extened = list(deps)
+        for dep in deps:
+            deps_extened.extend(get_dependencies_by_dumpbin(dep))
+        deps_extened = set(deps_extened)
+        if deps_extened != deps:
+            deps = deps_extened;
+        else:
+            return list(deps_extened)
   elif sys.platform == 'darwin':
     deps = get_dependencies_by_otool(path)
     while(True):
