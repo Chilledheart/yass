@@ -56,22 +56,40 @@ scripts/build.py
 
 For boringssl, you should only need crypto target.
 
+Requirement of building boringssl:
+
+  * [CMake](https://cmake.org/download/) 3.5 or later is required.
+
+  * A recent version of Perl is required. On Windows,
+    [Active State Perl](http://www.activestate.com/activeperl/) has been
+    reported to work, as has MSYS Perl.
+    [Strawberry Perl](http://strawberryperl.com/) also works but it adds GCC
+    to `PATH`, which can confuse some build tools when identifying the compiler
+    (removing `C:\Strawberry\c\bin` from `PATH` should resolve any problems).
+    If Perl is not found by CMake, it may be configured explicitly by setting
+    `PERL_EXECUTABLE`.
+
+  * Building with [Ninja](https://ninja-build.org/) instead of Make is
+    recommended, because it makes builds faster. On Windows, CMake's Visual
+    Studio generator may also work, but it not tested regularly and requires
+    recent versions of CMake for assembly support.
+
+  * On Windows only, [NASM](https://www.nasm.us/) is required. If not found
+    by CMake, it may be configured explicitly by setting
+    `CMAKE_ASM_NASM_COMPILER`.
+
+  * C and C++ compilers with C++11 support are required. On Windows, MSVC 14
+    (Visual Studio 2015) or later with Platform SDK 8.1 or later are supported,
+    but newer versions are recommended. We will drop support for Visual Studio
+    2015 in March 2022, five years after the release of Visual Studio 2017.
+    Recent versions of GCC (6.1+) and Clang should work on non-Windows
+    platforms, and maybe on Windows too.
+
+  * The most recent stable version of [Go](https://golang.org/dl/) is required.
+    Note Go is exempt from the five year support window. If not found by CMake,
+    the go executable may be configured explicitly by setting `GO_EXECUTABLE`.
+
 (for Windows)
-Add these code at CMakeLists.txt to target static build.
-```
-set(CompilerFlags
-        CMAKE_CXX_FLAGS
-        CMAKE_CXX_FLAGS_DEBUG
-        CMAKE_CXX_FLAGS_RELEASE
-        CMAKE_C_FLAGS
-        CMAKE_C_FLAGS_DEBUG
-        CMAKE_C_FLAGS_RELEASE
-        )
-foreach(CompilerFlag ${CompilerFlags})
-  string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
-endforeach()
-```
-And run:
 ```
 cd third_party/boringssl
 mkdir build
