@@ -66,7 +66,7 @@ def get_app_name():
 def get_dependencies_by_otool(path):
   if path.endswith('.app') and os.path.isdir(path):
     path = os.path.join(path, 'Contents', 'MacOS', os.path.basename(path))
-  lines = subprocess.check_output(['otool', '-L', path]).split('\n')[1:]
+  lines = subprocess.check_output(['otool', '-L', path]).decode().split('\n')[1:]
   outputs = []
   if path.endswith('.dylib'):
     outputs.append(path);
@@ -92,7 +92,7 @@ def get_dependencies_by_otool(path):
 
 
 def get_dependencies_by_ldd(path):
-  lines = subprocess.check_output(['ldd', '-v', path]).split('Version information:')[1].split('\n\t')
+  lines = subprocess.check_output(['ldd', '-v', path]).decode().split('Version information:')[1].split('\n\t')
   outputs = []
 
   for line in lines:
@@ -169,7 +169,7 @@ File Type: EXECUTABLE IMAGE
        71000 .text
 """
 def get_dependencies_by_dumpbin(path):
-  lines = subprocess.check_output(['dumpbin', '/dependents', path]).split('\n')
+  lines = subprocess.check_output(['dumpbin', '/dependents', path]).decode().split('\n')
   dlls = []
   system_dlls = ['WS2_32.dll', 'GDI32.dll', 'SHELL32.dll', 'USER32.dll',
                  'ADVAPI32.dll', 'MSWSOCK.dll', 'dbghelp.dll']
