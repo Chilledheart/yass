@@ -152,6 +152,8 @@ YASSWindow::YASSWindow()
 
   autostart_.set_sensitive(false);
 
+  password_.set_visibility(false);
+
   right_panel_grid_.attach(serverhost_, 1, 0);
   right_panel_grid_.attach(serverport_, 1, 1);
   right_panel_grid_.attach(password_, 1, 2);
