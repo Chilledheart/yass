@@ -70,6 +70,7 @@ YASSWindow::YASSWindow()
   GtkWidget* exit_menu_item;
   GtkWidget* help_menu_item;
   GtkWidget* about_menu_item;
+
   menubar = gtk_menu_bar_new();
 
   file_menu = gtk_menu_new();
@@ -84,6 +85,9 @@ YASSWindow::YASSWindow()
   gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), sep);
   gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), exit_menu_item);
   gtk_menu_shell_append(GTK_MENU_SHELL(menubar), file_menu_item);
+
+  // FIXME
+  g_object_set(option_menu_item, "sensitive", false, nullptr);
 
   auto option_callback =
       &GtkHandlerProxy<YASSWindow, &YASSWindow::OnOption>::Handle;
@@ -108,7 +112,6 @@ YASSWindow::YASSWindow()
   g_signal_connect(G_OBJECT(about_menu_item), "activate",
                    G_CALLBACK(about_callback), this);
 
-  ::gtk_widget_show(menubar);
   gtk_box_pack_start(GTK_BOX(vbox_.gobj()), menubar, FALSE, FALSE, 0);
 
   start_button_.signal_clicked().connect(
@@ -118,12 +121,8 @@ YASSWindow::YASSWindow()
 
   stop_button_.set_sensitive(false);
 
-  start_button_.show();
-  stop_button_.show();
-
   left_vbox_.add(start_button_);
   left_vbox_.add(stop_button_);
-  left_vbox_.show();
 
   right_panel_grid_.set_row_homogeneous(true);
   right_panel_grid_.set_column_homogeneous(true);
@@ -139,15 +138,6 @@ YASSWindow::YASSWindow()
     method_.append(method_names[i]);
   }
 
-  serverhost_label_.show();
-  serverport_label_.show();
-  password_label_.show();
-  method_label_.show();
-  localhost_label_.show();
-  localport_label_.show();
-  timeout_label_.show();
-  autostart_label_.show();
-
   right_panel_grid_.attach(serverhost_label_, 0, 0);
   right_panel_grid_.attach(serverport_label_, 0, 1);
   right_panel_grid_.attach(password_label_, 0, 2);
@@ -162,15 +152,6 @@ YASSWindow::YASSWindow()
 
   autostart_.set_sensitive(false);
 
-  serverhost_.show();
-  serverport_.show();
-  password_.show();
-  method_.show();
-  localhost_.show();
-  localport_.show();
-  timeout_.show();
-  autostart_.show();
-
   right_panel_grid_.attach(serverhost_, 1, 0);
   right_panel_grid_.attach(serverport_, 1, 1);
   right_panel_grid_.attach(password_, 1, 2);
@@ -180,24 +161,20 @@ YASSWindow::YASSWindow()
   right_panel_grid_.attach(timeout_, 1, 6);
   right_panel_grid_.attach(autostart_, 1, 7);
 
-  right_panel_grid_.show();
-
   hbox_.add(left_vbox_);
   hbox_.add(right_panel_grid_);
-  hbox_.show();
 
-  vbox_.add(hbox_);
-  vbox_.show();
+  vbox_.pack_start(hbox_, false, false, 4);
 
   status_bar_.remove_all_messages();
   status_bar_.push("READY");
-  status_bar_.show();
-  vbox_.add(status_bar_);
+  vbox_.pack_start(status_bar_, false, false, 5);
 
   LoadChanges();
 
-  vbox_.show();
   add(vbox_);
+
+  show_all_children();
 }
 
 YASSWindow::~YASSWindow() = default;
@@ -336,6 +313,7 @@ void YASSWindow::UpdateStatusBar() {
 }
 
 void YASSWindow::OnOption() {
+  // FIXME
 #if 0
   wxSize size(400, 240);
   OptionDialog dialog(this, "YASS Option", wxDefaultPosition, size);
@@ -346,8 +324,8 @@ void YASSWindow::OnOption() {
 }
 
 void YASSWindow::OnAbout() {
-  Gtk::MessageDialog about_dialog(*this, "This is Yet Another Shadow Socket",
-                                  false, Gtk::MessageType::MESSAGE_INFO,
+  Gtk::MessageDialog about_dialog("This is Yet Another Shadow Socket", false,
+                                  Gtk::MessageType::MESSAGE_INFO,
                                   Gtk::ButtonsType::BUTTONS_OK, true);
   about_dialog.run();
 }
