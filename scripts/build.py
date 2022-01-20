@@ -193,7 +193,7 @@ def get_dependencies_by_dumpbin(path):
                  'Microsoft.VC143.DebugCRT'),
     os.path.join(vcredist_dir, DEFAULT_ARCH, 'Microsoft.VC143.MFCLOC'),
     os.path.join(vcredist_dir, DEFAULT_ARCH, 'Microsoft.VC143.MFC'),
-    os.path.join(vcredist_dir, DEFAULT_ARCH, 'Microsoft.VC142.CRT'),
+    os.path.join(vcredist_dir, DEFAULT_ARCH, 'Microsoft.VC143.CRT'),
     # for vs2019
     os.path.join(vcredist_dir, 'debug_nonredist', DEFAULT_ARCH,
                  'Microsoft.VC142.DebugMFC'),
