@@ -1128,7 +1128,8 @@ if (GUI)
     else()
         list(APPEND SRC_FILES
           src/gui/yass.cpp
-          src/gui/yass_window.cpp)
+          src/gui/yass_window.cpp
+          src/gui/option_dialog.cpp)
     endif()
 
     add_executable(${APP_NAME} WIN32 MACOSX_BUNDLE

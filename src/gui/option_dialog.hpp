@@ -1,36 +1,41 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2021 Chilledheart  */
+/* Copyright (c) 2021-2022 Chilledheart  */
 #ifndef OPTION_DIALOG
 #define OPTION_DIALOG
 
-#include <wx/wxprec.h>
-#ifndef WX_PRECOMP
-#include <wx/wx.h>
-#endif
-#include <wx/panel.h>
+#include <gtkmm/button.h>
+#include <gtkmm/dialog.h>
+#include <gtkmm/entry.h>
+#include <gtkmm/grid.h>
+#include <gtkmm/label.h>
 
-class OptionDialog : public wxDialog {
+class OptionDialog : public Gtk::Dialog {
  public:
-  OptionDialog(wxFrame* parent,
-               const wxString& title,
-               const wxPoint& pos = wxDefaultPosition,
-               const wxSize& size = wxDefaultSize);
+  explicit OptionDialog(const Glib::ustring& title, bool modal = false);
 
-  void OnShow(wxShowEvent& event);
-  void OnOkay(wxCommandEvent& event);
-  void OnCancel(wxCommandEvent& event);
+  void OnOkayButtonClicked();
+  void OnCancelButtonClicked();
 
  private:
-  void OnLoad();
+  void LoadChanges();
   void OnSave();
 
-  wxButton* m_okay;
-  wxButton* m_cancel;
-  wxTextCtrl* m_connecttimeout_tc;
-  wxTextCtrl* m_tcpusertimeout_tc;
-  wxTextCtrl* m_lingertimeout_tc;
-  wxTextCtrl* m_sendbuffer_tc;
-  wxTextCtrl* m_recvbuffer_tc;
+  Gtk::Grid grid_;
+
+  Gtk::Label connecttimeout_label_;
+  Gtk::Label tcpusertimeout_label_;
+  Gtk::Label lingertimeout_label_;
+  Gtk::Label sendbuffer_label_;
+  Gtk::Label recvbuffer_label_;
+
+  Gtk::Entry connecttimeout_;
+  Gtk::Entry tcpusertimeout_;
+  Gtk::Entry lingertimeout_;
+  Gtk::Entry sendbuffer_;
+  Gtk::Entry recvbuffer_;
+
+  Gtk::Button okay_button_;
+  Gtk::Button cancel_button_;
 };  // OptionDialog
 
 #endif  // OPTION_DIALOG

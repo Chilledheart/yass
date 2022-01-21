@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
+/* Copyright (c) 2019-2022 Chilledheart  */
 #include "gui/yass.hpp"
 
 #include <stdexcept>

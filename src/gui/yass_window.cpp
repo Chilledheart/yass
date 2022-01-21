@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
+/* Copyright (c) 2019-2022 Chilledheart  */
 
 #include "gui/yass_window.hpp"
 
@@ -11,6 +11,7 @@
 
 #include "cli/socks5_connection_stats.hpp"
 #include "core/utils.hpp"
+#include "gui/option_dialog.hpp"
 #include "gui/yass.hpp"
 
 static const char* kMainFrameName = "YetAnotherShadowSocket";
@@ -85,9 +86,6 @@ YASSWindow::YASSWindow()
   gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), sep);
   gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), exit_menu_item);
   gtk_menu_shell_append(GTK_MENU_SHELL(menubar), file_menu_item);
-
-  // FIXME
-  g_object_set(option_menu_item, "sensitive", false, nullptr);
 
   auto option_callback =
       &GtkHandlerProxy<YASSWindow, &YASSWindow::OnOption>::Handle;
@@ -172,9 +170,9 @@ YASSWindow::YASSWindow()
   status_bar_.push("READY");
   vbox_.pack_start(status_bar_, false, false, 5);
 
-  LoadChanges();
-
   add(vbox_);
+
+  LoadChanges();
 
   show_all_children();
 }
@@ -315,14 +313,12 @@ void YASSWindow::UpdateStatusBar() {
 }
 
 void YASSWindow::OnOption() {
-  // FIXME
-#if 0
-  wxSize size(400, 240);
-  OptionDialog dialog(this, "YASS Option", wxDefaultPosition, size);
-  if (dialog.ShowModal() == wxID_OK) {
+  OptionDialog option_dialog("YASS Option", true);
+
+  int ret = option_dialog.run();
+  if (ret == Gtk::RESPONSE_ACCEPT) {
     mApp->SaveConfigToDisk();
   }
-#endif
 }
 
 void YASSWindow::OnAbout() {
