@@ -10,6 +10,7 @@ sudo apt-get install -y build-essential
 sudo apt-get install -y \
     cmake \
     ninja-build \
+    pkg-config \
     perl \
     libunwind-dev \
     libjsoncpp-dev \
@@ -31,11 +32,37 @@ cmake -G Ninja..
 ninja
 ```
 
-## Debian
+## Debian/Packaging
 
 ```
 sudo apt-get install build-essential fakeroot devscripts
 ./scripts/build-deb.sh
+```
+
+## GeneralInstallation/Fedora
+1. Install GNU C++ Compiler:
+```
+sudo dnf install gcc make python bash coreutils diffutils patch
+```
+2. Install below dependencies:
+```
+sudo dnf install \
+    cmake \
+    ninja-build \
+    pkg-config \
+    perl \
+    libunwind-devel \
+    jsoncpp-devel \
+    gtk3-devel \
+    gtkmm30-devel \
+    golang
+```
+3. Compile the program with default configuration.
+```
+mkdir build
+cd build
+cmake -G Ninja..
+ninja
 ```
 
 ## macOS

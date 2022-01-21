@@ -55,6 +55,10 @@ ARM64 | https://aka.ms/vs/17/release/vc_redist.arm64.exe | Permalink for latest 
 X86 | https://aka.ms/vs/17/release/vc_redist.x86.exe | Permalink for latest supported x86 version
 X64 | https://aka.ms/vs/17/release/vc_redist.x64.exe | Permalink for latest supported x64 version. The X64 redistributable package contains both ARM64 and X64 binaries. This package makes it easy to install required Visual C++ ARM64 binaries when the X64 redistributable is installed on an ARM64 device.
 
+For Windows 10/11 running ARM64, you might visit this blog as well https://blogs.windows.com/windows-insider/2020/12/10/introducing-x64-emulation-in-preview-for-windows-10-on-arm-pcs-to-the-windows-insider-program/
+
+Additionally, to support running both ARM64 and x64 C++ applications at the same time, please install a preview version of the ARM64 C++ redistributable from https://aka.ms/arm64previewredist. These steps will not be required in future Insider Preview builds.
+
 To download the universal CRT for central deployment on supported versions of Windows, see [Windows 10 Universal C Runtime][ucrt]:
 
 https://www.microsoft.com/en-us/download/details.aspx?id=48234
