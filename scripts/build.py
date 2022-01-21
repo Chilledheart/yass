@@ -177,45 +177,96 @@ def get_dependencies_by_dumpbin(path):
                  'UxTheme.dll', 'PROPSYS.dll', 'dwmapi.dll', 'WININET.dll',
                  'OLEACC.dll', 'ODBC32.dll', 'oledlg.dll', 'urlmon.dll',
                  'MSIMG32.dll', 'WINMM.dll', 'CRYPT32.dll', 'gdiplus.dll', ]
-  vcredist_dir = os.getenv('VCToolsRedistDir')
-  ### Search Path
+
+  # Environment variable VCToolsRedistDir isn't correct
+  # according to microsoft's design issue, don't use it.
+  #
+  # for example:
+  #
+  # VCINSTALLDIR=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\
+  # VCToolsInstallDir=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.16.27023\
+  # VCToolsRedistDir=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\14.30.30704\
+  vcredist_dir = os.path.join(os.getenv('VCINSTALLDIR'), 'Redist', 'MSVC',
+                              os.getenv('VCToolsVersion'))
+
+  # VCToolsVersion:PlatformToolchainversion:VisualStudioVersion
+  #  14.30-14.3?:v143:Visual Studio 2022
+  #  14.20-14.29:v142:Visual Studio 2019
+  #  14.10-14.19:v141:Visual Studio 2017
+  #  14.00-14.09:v140:Visual Studio 2015
+  #
+  #  From wiki: https://en.wikipedia.org/wiki/Microsoft_Visual_C%2B%2B
+  #  https://docs.microsoft.com/en-us/cpp/preprocessor/predefined-macros?view=msvc-170#microsoft-specific-predefined-macros
+  #  6.00    Visual Studio 6.0                          1200
+  #  7.00    Visual Studio .NET 2002 (7.0)              1300
+  #  7.10    Visual Studio .NET 2003 (7.1)              1310
+  #  8.00    Visual Studio 2005 (8.0)                   1400
+  #  9.00    Visual Studio 2008 (9.0)                   1500
+  #  10.00   Visual Studio 2010 (10.0)                  1600
+  #  12.00   Visual Studio 2013 (12.0)                  1800
+  #  14.00   Visual Studio 2015 (14.0)                  1900
+  #  14.10   Visual Studio 2017 RTW (15.0)              1910
+  #  14.11   Visual Studio 2017 version 15.3            1911
+  #  14.12   Visual Studio 2017 version 15.5            1912
+  #  14.13   Visual Studio 2017 version 15.6            1913
+  #  14.14   Visual Studio 2017 version 15.7            1914
+  #  14.15   Visual Studio 2017 version 15.8            1915
+  #  14.16   Visual Studio 2017 version 15.9            1916
+  #  14.20   Visual Studio 2019 RTW (16.0)              1920
+  #  14.21   Visual Studio 2019 version 16.1            1921
+  #  14.22   Visual Studio 2019 version 16.2            1922
+  #  14.23   Visual Studio 2019 version 16.3            1923
+  #  14.24   Visual Studio 2019 version 16.4            1924
+  #  14.25   Visual Studio 2019 version 16.5            1925
+  #  14.26   Visual Studio 2019 version 16.6            1926
+  #  14.27   Visual Studio 2019 version 16.7            1927
+  #  14.28   Visual Studio 2019 version 16.8, 16.9      1928
+  #  14.29   Visual Studio 2019 version 16.10, 16.11    1929
+  #  14.30   Visual Studio 2022 RTW (17.0)              1930
+  #  14.31   Visual Studio 2022 version 17.1            1931
+  #
+  #  Visual Studio 2015 is not supported by this script due to
+  #  the missing environment variable VCToolsVersion
+  vctools_version = float(os.getenv('VCToolsVersion')[:5])
+  if vctools_version >= 14.30 or vs_version == '17.0':
+    platform_toolchain_version = '143'
+  elif vctools_version >= 14.20 and vctools_version < 14.30:
+    platform_toolchain_version = '142'
+  elif vctools_version >= 14.10 and vctools_version < 14.20:
+    platform_toolchain_version = '141'
+  elif vctools_version >= 14.10 and vctools_version < 14.20:
+    platform_toolchain_version = '140'
+  else:
+    raise RuntimeError('unsupported vctoolchain version %s' % vctools_version)
+
+  ### Search Path (VC Runtime and MFC)
   ### C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\14.30.30704\debug_nonredist\x86\Microsoft.VC143.DebugMFC
   ### C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\14.30.30704\debug_nonredist\x86\Microsoft.VC143.DebugCRT
   ### C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\14.30.30704\x86\Microsoft.VC143.MFCLOC
   ### C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\14.30.30704\x86\Microsoft.VC143.MFC
   ### C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\14.30.30704\x86\Microsoft.VC143.CRT
   search_dirs = [
-    ## TODO get vctoolchain set version
-    # for vs2022
     os.path.join(vcredist_dir, 'debug_nonredist', DEFAULT_ARCH,
-                 'Microsoft.VC143.DebugMFC'),
+                 'Microsoft.VC%s.DebugMFC' % platform_toolchain_version),
     os.path.join(vcredist_dir, 'debug_nonredist', DEFAULT_ARCH,
-                 'Microsoft.VC143.DebugCRT'),
-    os.path.join(vcredist_dir, DEFAULT_ARCH, 'Microsoft.VC143.MFCLOC'),
-    os.path.join(vcredist_dir, DEFAULT_ARCH, 'Microsoft.VC143.MFC'),
-    os.path.join(vcredist_dir, DEFAULT_ARCH, 'Microsoft.VC143.CRT'),
-    # for vs2019
-    os.path.join(vcredist_dir, 'debug_nonredist', DEFAULT_ARCH,
-                 'Microsoft.VC142.DebugMFC'),
-    os.path.join(vcredist_dir, 'debug_nonredist', DEFAULT_ARCH,
-                 'Microsoft.VC142.DebugCRT'),
-    os.path.join(vcredist_dir, DEFAULT_ARCH, 'Microsoft.VC142.MFCLOC'),
-    os.path.join(vcredist_dir, DEFAULT_ARCH, 'Microsoft.VC142.MFC'),
-    os.path.join(vcredist_dir, DEFAULT_ARCH, 'Microsoft.VC142.CRT'),
+                 'Microsoft.VC%s.DebugCRT' % platform_toolchain_version),
+    os.path.join(vcredist_dir, DEFAULT_ARCH,
+                 'Microsoft.VC%s.MFCLOC' % platform_toolchain_version),
+    os.path.join(vcredist_dir, DEFAULT_ARCH,
+                 'Microsoft.VC%s.MFC' % platform_toolchain_version),
+    os.path.join(vcredist_dir, DEFAULT_ARCH,
+                 'Microsoft.VC%s.CRT' % platform_toolchain_version),
   ]
   # remove the trailing slash
   sdk_version = os.getenv('WindowsSDKVersion')[:-1]
-  sdk_bin_dir = os.getenv('WindowsSdkBinPath')
   sdk_base_dir= os.getenv('WindowsSdkDir')
 
-  ### Search Path
+  ### Search Path (UCRT)
   ### Please note The UCRT files are not redistributable for ARM64 Win32.
   ### https://chromium.googlesource.com/chromium/src/+/lkgr/build/win/BUILD.gn
-  ### C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x86\ucrt
   ### C:\Program Files (x86)\Windows Kits\10\Redist\10.0.19041.0\ucrt\DLLS\x86
   ### C:\Program Files (x86)\Windows Kits\10\ExtensionSDKs\Microsoft.UniversalCRT.Debug\10.0.19041.0\Redist\Debug\x86
   search_dirs.extend([
-    os.path.join(sdk_bin_dir, sdk_version, DEFAULT_ARCH, 'ucrt'),
     os.path.join(sdk_base_dir, 'Redist', sdk_version, 'ucrt', 'DLLS',
                  DEFAULT_ARCH),
     os.path.join(sdk_base_dir, 'ExtensionSDKs', 'Microsoft.UniversalCRT.Debug',
