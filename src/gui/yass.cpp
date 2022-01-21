@@ -13,6 +13,7 @@
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
+#include "gui/utils.hpp"
 #include "gui/yass_window.hpp"
 
 YASSApp* mApp = nullptr;
@@ -77,6 +78,9 @@ void YASSApp::on_activate() {
   main_window_->show();
   main_window_->activate_focus();
   main_window_->present();
+  if (Utils::GetAutoStart()) {
+    main_window_->OnStartButtonClicked();
+  }
 }
 
 int YASSApp::ApplicationRun() {

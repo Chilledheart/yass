@@ -12,6 +12,7 @@
 #include "cli/socks5_connection_stats.hpp"
 #include "core/utils.hpp"
 #include "gui/option_dialog.hpp"
+#include "gui/utils.hpp"
 #include "gui/yass.hpp"
 
 static const char* kMainFrameName = "YetAnotherShadowSocket";
@@ -148,7 +149,7 @@ YASSWindow::YASSWindow()
   autostart_.signal_clicked().connect(
       sigc::mem_fun(*this, &YASSWindow::OnCheckedAutoStart));
 
-  autostart_.set_sensitive(false);
+  autostart_.set_active(Utils::GetAutoStart());
 
   password_.set_visibility(false);
 
@@ -190,7 +191,7 @@ void YASSWindow::OnStopButtonClicked() {
 }
 
 void YASSWindow::OnCheckedAutoStart() {
-  // TODO impl
+  Utils::EnableAutoStart(autostart_.get_active());
 }
 
 std::string YASSWindow::GetServerHost() {
