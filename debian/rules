@@ -1,0 +1,34 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+# See debhelper(7) (uncomment to enable)
+# output every command that modifies files on the build system.
+#export DH_VERBOSE = 1
+
+# Security Hardening
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+%:
+	dh $@ --builddirectory=build
+
+override_dh_auto_clean:
+	dh_auto_clean
+	rm -rf third_party/boringssl/build
+	rm -f third_party/boringssl/libcrypto.a
+
+third_party/boringssl/build:
+	mkdir -p third_party/boringssl/build
+
+third_party/boringssl/libcrypto.a: third_party/boringssl/build
+	cd third_party/boringssl/build; \
+	cmake -DCMAKE_BUILD_TYPE=Release .. ; \
+	cmake --build . --target crypto --parallel --config Release; \
+	cp -fv crypto/libcrypto.a ../libcrypto.a
+
+override_dh_auto_configure: third_party/boringssl/libcrypto.a
+	dh_auto_configure -- -DCMAKE_BUILD_TYPE=Release -DGUI=on -DCLI=off -DSERVER=off
+
+override_dh_auto_build:
+	dh_auto_build --parallel
+
+override_dh_strip:
+	dh_strip -pyass --dbg-package=yass-dbg

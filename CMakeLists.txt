@@ -4,10 +4,13 @@ if (CMAKE_CURRENT_BINARY_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   message(FATAL_ERROR "In source-tree build not support")
 endif()
 
-set(PACKAGE_NAME            "YASS")
+set(PACKAGE_NAME            "yass")
 set(PACKAGE_FULL_NAME       "YetAnotherShadowSocket")
-set(PACKAGE_VERSION         1.0.0)
-set(PACKAGE_PATCH_VERSION   0)
+set(PACKAGE_VERSION_MAJOR   1)
+set(PACKAGE_VERSION_MINOR   0)
+set(PACKAGE_VERSION_PATCH   0)
+set(PACKAGE_VERSION_TWEAK   0)
+set(PACKAGE_VERSION ${PACKAGE_VERSION_MAJOR}.${PACKAGE_VERSION_MINOR}.${PACKAGE_VERSION_PATCH})
 
 # Compiler id for Apple Clang is now AppleClang.
 # https://cmake.org/cmake/help/latest/policy/CMP0025.html
@@ -44,8 +47,11 @@ list(PREPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 # Set variables used in configure_file
 set(YASS_APP_NAME ${PACKAGE_NAME})
 set(YASS_APP_VERSION ${PACKAGE_VERSION})
-set(YASS_APP_PATCH_VERSION ${PACKAGE_PATCH_VERSION})
-set(YASS_APP_FULL_VERSION ${PACKAGE_VERSION}.${PACKAGE_PATCH_VERSION})
+set(YASS_APP_VERSION_MAJOR ${PACKAGE_VERSION_MAJOR})
+set(YASS_APP_VERSION_MINOR ${PACKAGE_VERSION_MINOR})
+set(YASS_APP_VERSION_PATCH ${PACKAGE_VERSION_PATCH})
+set(YASS_APP_VERSION_TWEAK ${PACKAGE_VERSION_TWEAK})
+set(YASS_APP_FULL_VERSION ${PACKAGE_VERSION}.${PACKAGE_VERSION_TWEAK})
 
 if(MSVC)
   # On Windows, prefer cl over gcc if both are available. By default most of
@@ -1050,6 +1056,8 @@ if (CLI)
       $<TARGET_OBJECTS:yass_base>
       )
 
+  set_target_properties(yass_cli PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
   target_include_directories(yass_cli PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
@@ -1065,6 +1073,8 @@ if (SERVER)
       src/server/ss_connection.hpp
       $<TARGET_OBJECTS:yass_base>
       )
+
+  set_target_properties(yass_server PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
   target_include_directories(yass_server PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -1240,8 +1250,48 @@ if (GUI)
         endif()
     endif()
 
-    ## gtkmm requires it in treeview, oops
     if (NOT APPLE AND NOT MSVC)
+      install(TARGETS ${APP_NAME} DESTINATION bin)
+
+      install(FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/yass.desktop
+        DESTINATION share/applications)
+
+      install(FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/network.png
+        DESTINATION share/pixmaps)
+
+      install(DIRECTORY
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/icons/16x16
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/icons/22x22
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/icons/24x24
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/icons/32x32
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/icons/48x48
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/icons/128x128
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/icons/256x256
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/icons/512x512
+        DESTINATION share/icons/hicolor)
+
+      ## gtkmm requires it in treeview, oops
       string(REPLACE "-fno-exceptions" "-fexceptions" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     endif()
 endif()
+
+## distribute related
+find_program(GIT_EXECUTABLE NAMES git git.exe git.cmd)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git AND NOT (${CMAKE_BUILD_TYPE} MATCHES Release))
+  execute_process(COMMAND
+    ${GIT_EXECUTABLE} rev-list HEAD --count
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    OUTPUT_VARIABLE YASS_APP_REVISION
+    OUTPUT_STRIP_TRAILING_WHITESPACE )
+  add_definitions(-DYASS_APP_REVISION=${YASS_APP_REVISION})
+endif()
+
+## requires gnu tar and sed, oops
+set(ARCHIVE_NAME ${YASS_APP_NAME}-${YASS_APP_VERSION})
+add_custom_target(dist
+  COMMAND ${GIT_EXECUTABLE} ls-files --recurse-submodules |
+        tar caf ${CMAKE_CURRENT_BINARY_DIR}/${ARCHIVE_NAME}.tar.gz
+        --xform='s,^\./,${ARCHIVE_NAME}/,' -T -
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})

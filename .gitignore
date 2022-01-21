@@ -11,3 +11,12 @@ sscxx
 *.zip
 /third_party/llvm-build/Release+Asserts
 *.aps
+*.build
+/debian/.debhelper
+/debian/tmp
+/debian/debhelper-build-stamp
+/debian/yass-dbg.substvars
+/debian/yass-dbg
+/debian/yass.substvars
+/debian/yass
+/debian/files

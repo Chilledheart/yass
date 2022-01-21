@@ -31,6 +31,13 @@ cmake -G Ninja..
 ninja
 ```
 
+## Debian
+
+```
+sudo apt-get install build-essential fakeroot devscripts
+./scripts/build-deb.sh
+```
+
 ## macOS
 
 1. Make sure you have Xcode Command Line Tools installed (Xcode if possible):

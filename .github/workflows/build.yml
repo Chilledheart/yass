@@ -4,7 +4,7 @@ on:
   pull_request:
   push:
     branches: [master]
-    paths-ignore: [README.md]
+    paths-ignore: [README.md, BUILDING.md]
   release:
     types: [published]
 defaults:
@@ -807,7 +807,7 @@ jobs:
           mkdir build
           cd build
           cmake -G Ninja -DCLI=on -DSERVER=on -DGUI=on ..
-          ninja -v
+          ninja -v yass_cli yass_server yass
           cd ..
   linux-clang:
     needs: cache-toolchain-linux
@@ -848,7 +848,7 @@ jobs:
           mkdir build
           cd build
           cmake -G Ninja -DCLI=on -DSERVER=on -DGUI=on ..
-          ninja -v
+          ninja -v yass_cli yass_server yass
           cd ..
   linux-clang-tidy:
     needs: cache-toolchain-linux
@@ -889,5 +889,5 @@ jobs:
           mkdir build
           cd build
           cmake -G Ninja -DENABLE_CLANG_TIDY=yes -DCLANG_TIDY_EXECUTABLE="$CLANG_TIDY_EXECUTABLE" -DCLI=on -DSERVER=on -DGUI=on ..
-          ninja -v
+          ninja -v yass_cli yass_server yass
           cd ..
