@@ -147,14 +147,14 @@ YASSWindow::YASSWindow()
     method_.append(method_names[i]);
   }
 
-  right_panel_grid_.attach(serverhost_label_, 0, 0);
-  right_panel_grid_.attach(serverport_label_, 0, 1);
-  right_panel_grid_.attach(password_label_, 0, 2);
-  right_panel_grid_.attach(method_label_, 0, 3);
-  right_panel_grid_.attach(localhost_label_, 0, 4);
-  right_panel_grid_.attach(localport_label_, 0, 5);
-  right_panel_grid_.attach(timeout_label_, 0, 6);
-  right_panel_grid_.attach(autostart_label_, 0, 7);
+  right_panel_grid_.attach(serverhost_label_, 0, 0, 1, 1);
+  right_panel_grid_.attach(serverport_label_, 0, 1, 1, 1);
+  right_panel_grid_.attach(password_label_, 0, 2, 1, 1);
+  right_panel_grid_.attach(method_label_, 0, 3, 1, 1);
+  right_panel_grid_.attach(localhost_label_, 0, 4, 1, 1);
+  right_panel_grid_.attach(localport_label_, 0, 5, 1, 1);
+  right_panel_grid_.attach(timeout_label_, 0, 6, 1, 1);
+  right_panel_grid_.attach(autostart_label_, 0, 7, 1, 1);
 
   autostart_.signal_clicked().connect(
       sigc::mem_fun(*this, &YASSWindow::OnCheckedAutoStart));
@@ -163,14 +163,14 @@ YASSWindow::YASSWindow()
 
   password_.set_visibility(false);
 
-  right_panel_grid_.attach(serverhost_, 1, 0);
-  right_panel_grid_.attach(serverport_, 1, 1);
-  right_panel_grid_.attach(password_, 1, 2);
-  right_panel_grid_.attach(method_, 1, 3);
-  right_panel_grid_.attach(localhost_, 1, 4);
-  right_panel_grid_.attach(localport_, 1, 5);
-  right_panel_grid_.attach(timeout_, 1, 6);
-  right_panel_grid_.attach(autostart_, 1, 7);
+  right_panel_grid_.attach(serverhost_, 1, 0, 1, 1);
+  right_panel_grid_.attach(serverport_, 1, 1, 1, 1);
+  right_panel_grid_.attach(password_, 1, 2, 1, 1);
+  right_panel_grid_.attach(method_, 1, 3, 1, 1);
+  right_panel_grid_.attach(localhost_, 1, 4, 1, 1);
+  right_panel_grid_.attach(localport_, 1, 5, 1, 1);
+  right_panel_grid_.attach(timeout_, 1, 6, 1, 1);
+  right_panel_grid_.attach(autostart_, 1, 7, 1, 1);
 
   right_panel_grid_.set_margin_top(10);
   right_panel_grid_.set_margin_end(20);
