@@ -30,7 +30,7 @@ OptionDialog::OptionDialog(const Glib::ustring& title, bool modal)
   grid_.attach(recvbuffer_label_, 0, 4, 1, 1);
 
   grid_.attach(connecttimeout_, 1, 0, 1, 1);
-  grid_.attach(tcpusertimeout_, 1, 1);
+  grid_.attach(tcpusertimeout_, 1, 1, 1, 1);
   grid_.attach(lingertimeout_, 1, 2, 1, 1);
   grid_.attach(sendbuffer_, 1, 3, 1, 1);
   grid_.attach(recvbuffer_, 1, 4, 1, 1);
