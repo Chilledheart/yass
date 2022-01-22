@@ -1176,10 +1176,9 @@ if (GUI)
 
     target_compile_options(${APP_NAME} PRIVATE ${GUI_C_CXX_FLAGS})
 
-    target_link_directories(${APP_NAME} PRIVATE ${GUI_LIBRARY_DIRS})
+    link_directories(${GUI_LIBRARY_DIRS})
 
-    target_link_libraries(${APP_NAME} PUBLIC ${SUPPORT_LIBS} ${GUI_LIBRARIES}
-        )
+    target_link_libraries(${APP_NAME} PUBLIC ${SUPPORT_LIBS} ${GUI_LIBRARIES})
 
     if (MSVC)
         set_target_properties(${APP_NAME} PROPERTIES
