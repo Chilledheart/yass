@@ -43,6 +43,9 @@ rm -rf %{buildroot}
 ninja install
 cd ..
 
+%post
+update-desktop-database
+
 %files
 %license GPL-2.0
 %dir /usr/share/icons/hicolor/
