@@ -42,7 +42,7 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUA
 # Defer enabling C and CXX languages.
 project(${PACKAGE_NAME} NONE)
 
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH}")
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # Set variables used in configure_file
 set(YASS_APP_NAME ${PACKAGE_NAME})
