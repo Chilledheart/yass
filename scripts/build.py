@@ -228,7 +228,7 @@ def get_dependencies_by_dumpbin(path):
   #  Visual Studio 2015 is not supported by this script due to
   #  the missing environment variable VCToolsVersion
   vctools_version = float(os.getenv('VCToolsVersion')[:5])
-  if vctools_version >= 14.30 or vs_version == '17.0':
+  if vctools_version >= 14.30:
     platform_toolchain_version = '143'
   elif vctools_version >= 14.20 and vctools_version < 14.30:
     platform_toolchain_version = '142'
