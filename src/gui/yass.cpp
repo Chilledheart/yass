@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
 
 YASSApp::YASSApp()
     : Gtk::Application(kAppId),
-      dispatcher_(Glib::MainContext::get_thread_default()) {
+      dispatcher_(Glib::wrap(::g_main_context_ref_thread_default(), false)) {
   ::g_set_application_name(kAppName);
 }
 
