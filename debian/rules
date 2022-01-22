@@ -6,6 +6,7 @@
 
 # Security Hardening
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+NCPUS = $(shell nproc)
 
 %:
 	dh $@ --builddirectory=build
@@ -21,14 +22,14 @@ third_party/boringssl/build:
 third_party/boringssl/libcrypto.a: third_party/boringssl/build
 	cd third_party/boringssl/build; \
 	cmake -DCMAKE_BUILD_TYPE=Release .. ; \
-	cmake --build . --target crypto --parallel --config Release; \
+	make crypto -j $(NCPUS); \
 	cp -fv crypto/libcrypto.a ../libcrypto.a
 
 override_dh_auto_configure: third_party/boringssl/libcrypto.a
 	dh_auto_configure -- -DCMAKE_BUILD_TYPE=Release -DGUI=on -DCLI=off -DSERVER=off
 
 override_dh_auto_build:
-	dh_auto_build --parallel
+	dh_auto_build -- -j $(NCPUS)
 
 override_dh_strip:
 	dh_strip -pyass --dbg-package=yass-dbg
