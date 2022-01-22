@@ -263,7 +263,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [x64, x86, arm64]
+        arch: [x64]
     env:
       CLANG_ARCH: 'Linux_x64'
     steps:
@@ -804,7 +804,7 @@ jobs:
       - name: Populate depedencies (build)
         run: sudo apt-get install -y build-essential fakeroot devscripts
       - name: Populate depedencies
-        run: sudo apt-get install -y cmake libjsoncpp-dev libgtk-3-dev libgtkmm-3.0-dev
+        run: sudo apt-get install -y cmake golang libunwind-dev libjsoncpp-dev libgtk-3-dev libgtkmm-3.0-dev
       - name: Build Deb Packages
         run: |
           ./scripts/build-deb.sh
@@ -834,7 +834,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [x64, x86, arm64]
+        arch: [x64]
         build_type: [Debug, RelWithDebInfo]
     steps:
       - uses: actions/checkout@v2
@@ -904,7 +904,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [x64, x86, arm64]
+        arch: [x64]
         build_type: [Debug, RelWithDebInfo]
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
