@@ -42,7 +42,7 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUA
 # Defer enabling C and CXX languages.
 project(${PACKAGE_NAME} NONE)
 
-list(PREPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH}")
 
 # Set variables used in configure_file
 set(YASS_APP_NAME ${PACKAGE_NAME})
@@ -126,7 +126,7 @@ option(GUI_SANDBOX "Build against GUI sandbox (MAC Only)." OFF)
 #           Third Party Libraries
 # *****************************************************************************************
 
-set(boringssl_DIR "${CMAKE_SOURCE_DIR}/third_party/boringssl" CACHE STRING "path to boringssl root directory")
+set(boringssl_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/boringssl" CACHE STRING "path to boringssl root directory")
 
 include(CheckIncludeFile)
 include(CheckCSourceCompiles)
@@ -1183,7 +1183,7 @@ if (GUI)
     if (MSVC)
         set_target_properties(${APP_NAME} PROPERTIES
             COMPILE_PDB_NAME ${APP_NAME}
-            COMPILE_PDB_OUTPUT_DIR ${CMAKE_BINARY_DIR}
+            COMPILE_PDB_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}
         )
 
         # CMake currently doesn't model the Windows application entry point for Unicode.
