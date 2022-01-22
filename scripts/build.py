@@ -507,7 +507,7 @@ def generate_buildscript(configuration_type):
       cmake_args.extend(['-DCMAKE_CXX_COMPILER_TARGET=%s' % llvm_triple])
 
   else:
-    cmake_args.extend(['-G', 'Xcode'])
+    cmake_args.extend(['-G', 'Ninja'])
     cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])
 
   if sys.platform == 'darwin':
@@ -523,10 +523,9 @@ def generate_buildscript(configuration_type):
 def execute_buildscript(configuration_type):
   print('executing build scripts...(%s)' % configuration_type)
 
-  command = ['cmake', '--build', '.', '--target', 'yass', '--parallel',
-             '--config', configuration_type]
+  command = ['ninja', 'yass']
   write_output(command, suppress_error=False)
-  # FIX ME move to cmake
+  # FIX ME move to cmake (required by Xcode generator)
   if sys.platform == 'darwin':
     if os.path.exists(os.path.join(configuration_type, get_app_name())):
       os.rename(os.path.join(configuration_type, get_app_name()), get_app_name())
