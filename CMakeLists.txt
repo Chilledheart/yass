@@ -428,7 +428,12 @@ include_directories(third_party/asio/asio/include SYSTEM)
 if (COMPILER_GCC OR COMPILER_CLANG OR ENABLE_CLANG_TIDY)
   # Note clang-cl is odd and sets both CLANG and MSVC. We base our configuration
   # primarily on our normal Clang one.
-  set(C_CXX_FLAGS "-Werror -Wformat=2 -Wsign-compare -Wmissing-field-initializers -Wwrite-strings -Wvla -Wshadow")
+  set(C_CXX_FLAGS "-Wformat=2 -Wsign-compare -Wmissing-field-initializers -Wwrite-strings -Wvla -Wshadow")
+
+  ## doesn't enable clang-tidy's -Werror which is annoying
+  if (NOT ENABLE_CLANG_TIDY)
+    set(C_CXX_FLAGS "${C_CXX_FLAGS} -Werror")
+  endif()
 
   if (MSVC)
     # clang-cl sets different default warnings than clang. It also treats -Wall
