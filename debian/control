@@ -8,6 +8,8 @@ Build-Depends:
  debhelper (>= 9),
  pkg-config,
  perl,
+ gcc (>= 6.1),
+ g++ (>= 6.1),
  golang,
  libunwind-dev,
  libjsoncpp-dev,
