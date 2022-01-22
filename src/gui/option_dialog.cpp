@@ -23,17 +23,17 @@ OptionDialog::OptionDialog(const Glib::ustring& title, bool modal)
   grid_.set_row_homogeneous(true);
   grid_.set_column_homogeneous(true);
 
-  grid_.attach(connecttimeout_label_, 0, 0);
-  grid_.attach(tcpusertimeout_label_, 0, 1);
-  grid_.attach(lingertimeout_label_, 0, 2);
-  grid_.attach(sendbuffer_label_, 0, 3);
-  grid_.attach(recvbuffer_label_, 0, 4);
+  grid_.attach(connecttimeout_label_, 0, 0, 1, 1);
+  grid_.attach(tcpusertimeout_label_, 0, 1, 1, 1);
+  grid_.attach(lingertimeout_label_, 0, 2, 1, 1);
+  grid_.attach(sendbuffer_label_, 0, 3, 1, 1);
+  grid_.attach(recvbuffer_label_, 0, 4, 1, 1);
 
-  grid_.attach(connecttimeout_, 1, 0);
+  grid_.attach(connecttimeout_, 1, 0, 1, 1);
   grid_.attach(tcpusertimeout_, 1, 1);
-  grid_.attach(lingertimeout_, 1, 2);
-  grid_.attach(sendbuffer_, 1, 3);
-  grid_.attach(recvbuffer_, 1, 4);
+  grid_.attach(lingertimeout_, 1, 2, 1, 1);
+  grid_.attach(sendbuffer_, 1, 3, 1, 1);
+  grid_.attach(recvbuffer_, 1, 4, 1, 1);
 
   okay_button_.signal_clicked().connect(
       sigc::mem_fun(*this, &OptionDialog::OnOkayButtonClicked));
@@ -41,8 +41,8 @@ OptionDialog::OptionDialog(const Glib::ustring& title, bool modal)
   cancel_button_.signal_clicked().connect(
       sigc::mem_fun(*this, &OptionDialog::OnCancelButtonClicked));
 
-  grid_.attach(okay_button_, 0, 5);
-  grid_.attach(cancel_button_, 1, 5);
+  grid_.attach(okay_button_, 0, 5, 1, 1);
+  grid_.attach(cancel_button_, 1, 5, 1, 1);
 
   get_content_area()->add(grid_);
 
