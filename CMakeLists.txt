@@ -599,19 +599,19 @@ elseif (MSVC)
   string(REPLACE "C" " -w4" MSVC_LEVEL4_WARNINGS_STR
                             ${MSVC_LEVEL4_WARNINGS_LIST})
 
-  set(CMAKE_C_FLAGS   "-utf-8")
-  set(CMAKE_CXX_FLAGS "-utf-8")
+  set(CMAKE_C_FLAGS   "-utf-8 ${MSVC_DISABLED_WARNINGS_STR} ${MSVC_LEVEL4_WARNINGS_STR}")
+  set(CMAKE_CXX_FLAGS "-utf-8 ${MSVC_DISABLED_WARNINGS_STR} ${MSVC_LEVEL4_WARNINGS_STR}")
+
+  # Currently, STL is not cleanly compiled with /Wall
+  # VS 2017 and higher supports STL-only warning suppressions.
+  # https://github.com/microsoft/STL/blob/main/stl/inc/yvals_core.h#L479
+  # https://devblogs.microsoft.com/cppblog/stl-fixes-in-vs-2017-rtm/
+  add_definitions(-D_STL_EXTRA_DISABLED_WARNINGS=5220\ 5204\ 4355\ 4774\ 4987\ 4582\ 4583)
 
   ## doesn't enable clang-tidy's -Wall and -Wx which is annoying
   if (NOT ENABLE_CLANG_TIDY)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -WX ${MSVC_DISABLED_WARNINGS_STR} ${MSVC_LEVEL4_WARNINGS_STR}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -WX ${MSVC_DISABLED_WARNINGS_STR} ${MSVC_LEVEL4_WARNINGS_STR}")
-
-    # Currently, STL is not cleanly compiled with /Wall
-    # VS 2017 and higher supports STL-only warning suppressions.
-    # https://github.com/microsoft/STL/blob/main/stl/inc/yvals_core.h#L479
-    # https://devblogs.microsoft.com/cppblog/stl-fixes-in-vs-2017-rtm/
-    add_definitions(-D_STL_EXTRA_DISABLED_WARNINGS=5220\ 5204\ 4355\ 4774\ 4987\ 4582\ 4583)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -WX")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -WX")
   endif()
 endif()
 
