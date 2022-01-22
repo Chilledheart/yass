@@ -425,15 +425,10 @@ include_directories(third_party/asio/asio/include SYSTEM)
 # *****************************************************************************************
 #           Compiler warning flags
 # *****************************************************************************************
-if (COMPILER_GCC OR COMPILER_CLANG OR ENABLE_CLANG_TIDY)
+if (COMPILER_GCC OR COMPILER_CLANG)
   # Note clang-cl is odd and sets both CLANG and MSVC. We base our configuration
   # primarily on our normal Clang one.
-  set(C_CXX_FLAGS "-Wsign-compare -Wmissing-field-initializers -Wwrite-strings -Wvla -Wshadow")
-
-  ## doesn't enable clang-tidy's -Werror which is annoying
-  if (NOT ENABLE_CLANG_TIDY)
-    set(C_CXX_FLAGS "-Werror -Wformat=2 ${C_CXX_FLAGS}")
-  endif()
+  set(C_CXX_FLAGS "-Werror -Wformat=2 -Wsign-compare -Wmissing-field-initializers -Wwrite-strings -Wvla -Wshadow")
 
   if (MSVC)
     # clang-cl sets different default warnings than clang. It also treats -Wall
@@ -603,8 +598,15 @@ elseif (MSVC)
                             ${MSVC_DISABLED_WARNINGS_LIST})
   string(REPLACE "C" " -w4" MSVC_LEVEL4_WARNINGS_STR
                             ${MSVC_LEVEL4_WARNINGS_LIST})
-  set(CMAKE_C_FLAGS   "-utf-8 -Wall -WX ${MSVC_DISABLED_WARNINGS_STR} ${MSVC_LEVEL4_WARNINGS_STR}")
-  set(CMAKE_CXX_FLAGS "-utf-8 -Wall -WX ${MSVC_DISABLED_WARNINGS_STR} ${MSVC_LEVEL4_WARNINGS_STR}")
+
+  ## doesn't enable clang-tidy's -Wall and -Wx which is annoying
+  if (NOT ENABLE_CLANG_TIDY)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -WX ${MSVC_DISABLED_WARNINGS_STR} ${MSVC_LEVEL4_WARNINGS_STR}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -WX ${MSVC_DISABLED_WARNINGS_STR} ${MSVC_LEVEL4_WARNINGS_STR}")
+  endif()
+
+  set(CMAKE_C_FLAGS   "-utf-8 ${CMAKE_C_FLAGS}")
+  set(CMAKE_CXX_FLAGS "-utf-8 ${CMAKE_CXX_FLAGS}")
   # Currently, STL is not cleanly compiled with /Wall
   # VS 2017 and higher supports STL-only warning suppressions.
   # https://github.com/microsoft/STL/blob/main/stl/inc/yvals_core.h#L479
