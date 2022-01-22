@@ -41,11 +41,11 @@ struct GtkHandlerProxy {
 }  // namespace
 
 YASSWindow::YASSWindow()
-    : hbox_(4),
-      left_vbox_(2),
+    : vbox_(false, 0),
+      hbox_(false, 20),
+      left_vbox_(false, 0),
       start_button_("Start"),
       stop_button_("Stop"),
-      right_panel_grid_(),
       serverhost_label_("Server Host"),
       serverport_label_("Server Port"),
       password_label_("Password"),
@@ -120,11 +120,21 @@ YASSWindow::YASSWindow()
 
   stop_button_.set_sensitive(false);
 
+  start_button_.set_margin_top(30);
+  start_button_.set_margin_bottom(30);
+  stop_button_.set_margin_top(30);
+  stop_button_.set_margin_bottom(30);
+
   left_vbox_.add(start_button_);
   left_vbox_.add(stop_button_);
 
-  right_panel_grid_.set_row_homogeneous(true);
-  right_panel_grid_.set_column_homogeneous(true);
+  left_vbox_.set_margin_start(15);
+  left_vbox_.set_margin_end(15);
+
+  hbox_.add(left_vbox_);
+
+  // right_panel_grid_.set_row_homogeneous(true);
+  // right_panel_grid_.set_column_homogeneous(true);
 
   static const char* const method_names[] = {
 #define XX(num, name, string) string,
@@ -162,14 +172,16 @@ YASSWindow::YASSWindow()
   right_panel_grid_.attach(timeout_, 1, 6);
   right_panel_grid_.attach(autostart_, 1, 7);
 
-  hbox_.add(left_vbox_);
+  right_panel_grid_.set_margin_top(10);
+  right_panel_grid_.set_margin_end(20);
+
   hbox_.add(right_panel_grid_);
 
-  vbox_.pack_start(hbox_, false, false, 4);
+  vbox_.pack_start(hbox_, true, false, 0);
 
   status_bar_.remove_all_messages();
   status_bar_.push("READY");
-  vbox_.pack_start(status_bar_, false, false, 5);
+  vbox_.pack_start(status_bar_, true, false, 0);
 
   add(vbox_);
 
