@@ -611,8 +611,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [x64, x86, arm64]
-        build_type: [Debug, RelWithDebInfo]
+        arch: [x64]
+        build_type: [Release]
         crt-linkage: [dynamic]
     env:
       ENABLE_CLANG_TIDY: '1'
@@ -747,7 +747,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [universal]
-        build_type: [Debug, RelWithDebInfo]
+        build_type: [Release]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -905,7 +905,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x64]
-        build_type: [Debug, RelWithDebInfo]
+        build_type: [Release]
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
