@@ -63,6 +63,13 @@ cmake -G Ninja..
 ninja
 ```
 
+## Fedora/Packaging
+
+```
+sudo dnf install gcc make python bash coreutils diffutils patch
+./scripts/build-rpm.sh
+```
+
 ## macOS
 
 1. Make sure you have Xcode Command Line Tools installed (Xcode if possible):
