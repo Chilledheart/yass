@@ -22,6 +22,8 @@ jobs:
     env:
       CLANG_ARCH: 'Win'
       VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
+      # Indicates the location of the vcpkg as a Git submodule of the project repository.
+      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
     steps:
       - uses: actions/checkout@v2
         with:
@@ -43,13 +45,11 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            third_party/vcpkg-installed
+            ${{ env.VCPKG_ROOT }}
+            !${{ env.VCPKG_ROOT }}/buildtrees
+            !${{ env.VCPKG_ROOT }}/packages
+            !${{ env.VCPKG_ROOT }}/downloads
           key: toolchain-cache-${{ runner.os }}-${{ matrix.crt-linkage }}-build-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
-      - name: Restore vcpkg from local tree
-        run: |
-          if [ -d third_party/vcpkg-installed ]; then
-            cp -rv third_party/vcpkg-installed/* /c/vcpkg/
-          fi
       - name: Get boringssl commit
         run: |
           git submodule status third_party/boringssl >> boringssl.lock
@@ -252,12 +252,6 @@ jobs:
           :SetNoAsmOptions
             set CMAKE_EXTRA_OPTIONS=-DOPENSSL_NO_ASM=on
         shell: cmd
-      - name: Copying vcpkg to local tree
-        run: |
-          mkdir -p /c/vcpkg/installed
-          mkdir -p /c/vcpkg/packages
-          mkdir -p third_party/vcpkg-installed
-          cp -rv /c/vcpkg/installed /c/vcpkg/packages third_party/vcpkg-installed
   cache-toolchain-linux:
     runs-on: ubuntu-18.04
     strategy:
@@ -399,6 +393,8 @@ jobs:
       BUILD_TYPE: '${{ matrix.build_type }}'
       MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
       VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
+      # Indicates the location of the vcpkg as a Git submodule of the project repository.
+      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
     steps:
       - uses: actions/checkout@v2
         with:
@@ -420,10 +416,11 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            third_party/vcpkg-installed
+            ${{ env.VCPKG_ROOT }}
+            !${{ env.VCPKG_ROOT }}/buildtrees
+            !${{ env.VCPKG_ROOT }}/packages
+            !${{ env.VCPKG_ROOT }}/downloads
           key: toolchain-cache-${{ runner.os }}-${{ matrix.crt-linkage }}-build-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
-      - name: Restore vcpkg from local tree
-        run: cp -rv third_party/vcpkg-installed/* /c/vcpkg/
       - name: Get boringssl commit
         run: |
           git submodule status third_party/boringssl >> boringssl.lock
@@ -509,6 +506,8 @@ jobs:
       BUILD_TYPE: '${{ matrix.build_type }}'
       MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
       VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
+      # Indicates the location of the vcpkg as a Git submodule of the project repository.
+      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
     steps:
       - uses: actions/checkout@v2
         with:
@@ -530,10 +529,11 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            third_party/vcpkg-installed
+            ${{ env.VCPKG_ROOT }}
+            !${{ env.VCPKG_ROOT }}/buildtrees
+            !${{ env.VCPKG_ROOT }}/packages
+            !${{ env.VCPKG_ROOT }}/downloads
           key: toolchain-cache-${{ runner.os }}-${{ matrix.crt-linkage }}-build-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
-      - name: Restore vcpkg from local tree
-        run: cp -rv third_party/vcpkg-installed/* /c/vcpkg/
       - name: Get boringssl commit
         run: |
           git submodule status third_party/boringssl >> boringssl.lock
@@ -619,6 +619,8 @@ jobs:
       BUILD_TYPE: '${{ matrix.build_type }}'
       MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
       VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
+      # Indicates the location of the vcpkg as a Git submodule of the project repository.
+      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
     steps:
       - uses: actions/checkout@v2
         with:
@@ -640,10 +642,11 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            third_party/vcpkg-installed
+            ${{ env.VCPKG_ROOT }}
+            !${{ env.VCPKG_ROOT }}/buildtrees
+            !${{ env.VCPKG_ROOT }}/packages
+            !${{ env.VCPKG_ROOT }}/downloads
           key: toolchain-cache-${{ runner.os }}-${{ matrix.crt-linkage }}-build-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
-      - name: Restore vcpkg from local tree
-        run: cp -rv third_party/vcpkg-installed/* /c/vcpkg/
       - name: Get boringssl commit
         run: |
           git submodule status third_party/boringssl >> boringssl.lock
