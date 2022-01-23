@@ -11,3 +11,7 @@
 	path = third_party/boringssl
 	url = https://github.com/Chilledheart/boringssl
 	branch = chromium-stable
+[submodule "third_party/rapidjson"]
+	path = third_party/rapidjson
+	url = https://github.com/Chilledheart/rapidjson
+	branch = stable

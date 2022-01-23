@@ -13,7 +13,6 @@ sudo apt-get install -y \
     pkg-config \
     perl \
     libunwind-dev \
-    libjsoncpp-dev \
     libgtk-3-dev \
     libgtkmm-3.0-dev
 
@@ -52,7 +51,6 @@ sudo dnf install \
     pkg-config \
     perl \
     libunwind-devel \
-    jsoncpp-devel \
     gtk3-devel \
     gtkmm30-devel \
     golang

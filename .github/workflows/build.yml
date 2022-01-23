@@ -804,7 +804,7 @@ jobs:
       - name: Populate depedencies (build)
         run: sudo apt-get install -y build-essential fakeroot devscripts debhelper
       - name: Populate depedencies
-        run: sudo apt-get install -y cmake golang libunwind-dev libjsoncpp-dev libgtk-3-dev libgtkmm-3.0-dev
+        run: sudo apt-get install -y cmake golang libunwind-dev libgtk-3-dev libgtkmm-3.0-dev
       - name: Build Deb Packages
         run: |
           ./scripts/build-deb.sh
@@ -850,7 +850,7 @@ jobs:
             third_party/boringssl/libcrypto.a
           key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
-        run: sudo apt-get install -y cmake ninja-build libjsoncpp-dev libgtk-3-dev libgtkmm-3.0-dev
+        run: sudo apt-get install -y cmake ninja-build libgtk-3-dev libgtkmm-3.0-dev
       - name: Build
         run: |
           mkdir build
@@ -888,7 +888,7 @@ jobs:
             third_party/boringssl/libcrypto.a
           key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
-        run: sudo apt-get install -y cmake ninja-build libjsoncpp-dev libgtk-3-dev libgtkmm-3.0-dev
+        run: sudo apt-get install -y cmake ninja-build libgtk-3-dev libgtkmm-3.0-dev
       - name: Build
         run: |
           export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
@@ -928,7 +928,7 @@ jobs:
             third_party/boringssl/libcrypto.a
           key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
-        run: sudo apt-get install -y cmake ninja-build libjsoncpp-dev libgtk-3-dev libgtkmm-3.0-dev
+        run: sudo apt-get install -y cmake ninja-build libgtk-3-dev libgtkmm-3.0-dev
       - name: Build
         run: |
           export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang

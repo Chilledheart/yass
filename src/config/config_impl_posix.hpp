@@ -14,7 +14,8 @@
 #include <unistd.h>
 
 #include <absl/flags/flag.h>
-#include <json/json.h>
+#include <rapidjson/document.h>     // rapidjson's DOM-style API
+#include <rapidjson/prettywriter.h> // for stringify JSON
 #include <memory>
 #include <string>
 
@@ -58,34 +59,34 @@ bool EnsureCreatedDirectory(const std::string& path) {
   return true;
 }
 
-bool ReadFileToString(const std::string& path, std::string* context) {
-  char buf[4096];
+ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len) {
   int fd = ::open(path.c_str(), O_RDONLY);
   if (fd < 0) {
-    return false;
+    return -1;
   }
-  ssize_t ret = ::read(fd, buf, sizeof(buf) - 1);
+  ssize_t ret = ::read(fd, buf, buf_len - 1);
 
-  if (ret <= 0 || close(fd) < 0) {
-    return false;
+  if (ret < 0 || close(fd) < 0) {
+    return -1;
   }
   buf[ret] = '\0';
-  *context = buf;
-  return true;
+  return ret;
 }
 
-bool WriteFileWithContent(const std::string& path, const std::string& context) {
+ssize_t WriteFileWithBuffer(const std::string& path,
+                            const char* buf,
+                            size_t buf_len) {
   int fd = ::open(path.c_str(), O_WRONLY | O_TRUNC | O_CREAT,
                   S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if (fd < 0) {
     return false;
   }
-  ssize_t ret = ::write(fd, context.c_str(), context.size());
+  ssize_t ret = ::write(fd, buf, buf_len);
 
-  if (ret != static_cast<long>(context.size()) || close(fd) < 0) {
-    return false;
+  if (ret < 0 || close(fd) < 0) {
+    return -1;
   }
-  return true;
+  return ret;
 }
 
 }  // anonymous namespace
@@ -103,23 +104,20 @@ class ConfigImplPosix : public ConfigImpl {
     path_ = ExpandUser(absl::GetFlag(FLAGS_configfile));
 
     if (!dontread) {
-      std::string content;
-      if (!ReadFileToString(path_, &content)) {
+      ssize_t size = ReadFileToBuffer(path_, read_buffer_, sizeof(read_buffer_));
+      if (size < 0) {
         LOG(WARNING) << "configure file failed to read: " << path_;
         return false;
       }
-      Json::CharReaderBuilder builder;
-      builder["collectComments"] = false;
-      JSONCPP_STRING errs;
-      const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
-
-      if (!reader->parse(content.c_str(), content.c_str() + content.size() + 1,
-                         &root_, &errs)) {
-        LOG(WARNING) << "bad configuration: " << errs << " content: \""
-                     << content << "\"";
+      if (root_.ParseInsitu(read_buffer_).HasParseError() ||
+          !root_.IsObject()) {
+        LOG(WARNING) << "bad configure file: " << root_.GetParseError()
+                     << " content: \"" << read_buffer_ << "\"";
         return false;
       }
-      VLOG(2) << "read from config file " << path_;
+      VLOG(2) << "loaded from config file " << path_;
+    } else {
+      root_.SetObject();
     }
 
     return true;
@@ -137,13 +135,15 @@ class ConfigImplPosix : public ConfigImpl {
       return false;
     }
 
-    Json::StreamWriterBuilder builder;
-    builder["commentStyle"] = "None";
-    builder["indentation"] = "   ";  // or whatever you like
-    const std::string content = Json::writeString(builder, root_);
-    if (!WriteFileWithContent(path_, content)) {
+    rapidjson::StringBuffer sb;
+    rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
+    if (!root_.Accept(writer)) {
+      LOG(WARNING) << "invalid json object";
+    }
+    if (static_cast<ssize_t>(sb.GetSize()) !=
+        WriteFileWithBuffer(path_, sb.GetString(), sb.GetSize())) {
       LOG(WARNING) << "failed to write to path: \"" << path_
-                   << " with content \"" << content << "\"";
+                   << " with content \"" << sb.GetString();
       return false;
     }
 
@@ -154,8 +154,8 @@ class ConfigImplPosix : public ConfigImpl {
   }
 
   bool ReadImpl(const std::string& key, std::string* value) override {
-    if (root_.isMember(key) && root_[key].isString()) {
-      *value = root_[key].asString();
+    if (root_.HasMember(key.c_str()) && root_[key.c_str()].IsString()) {
+      *value = root_[key.c_str()].GetString();
       return true;
     }
     LOG(WARNING) << "bad field: " << key;
@@ -163,8 +163,8 @@ class ConfigImplPosix : public ConfigImpl {
   }
 
   bool ReadImpl(const std::string& key, bool* value) override {
-    if (root_.isMember(key) && root_[key].isBool()) {
-      *value = root_[key].asBool();
+    if (root_.HasMember(key.c_str()) && root_[key.c_str()].IsBool()) {
+      *value = root_[key.c_str()].GetBool();
       return true;
     }
     LOG(WARNING) << "bad field: " << key;
@@ -172,8 +172,8 @@ class ConfigImplPosix : public ConfigImpl {
   }
 
   bool ReadImpl(const std::string& key, uint32_t* value) override {
-    if (root_.isMember(key) && root_[key].isUInt()) {
-      *value = root_[key].asUInt();
+    if (root_.HasMember(key.c_str()) && root_[key.c_str()].IsUint()) {
+      *value = root_[key.c_str()].GetUint();
       return true;
     }
     LOG(WARNING) << "bad field: " << key;
@@ -181,8 +181,8 @@ class ConfigImplPosix : public ConfigImpl {
   }
 
   bool ReadImpl(const std::string& key, int32_t* value) override {
-    if (root_.isMember(key) && root_[key].isInt()) {
-      *value = root_[key].asInt();
+    if (root_.HasMember(key.c_str()) && root_[key.c_str()].IsInt()) {
+      *value = root_[key.c_str()].GetInt();
       return true;
     }
     LOG(WARNING) << "bad field: " << key;
@@ -190,8 +190,8 @@ class ConfigImplPosix : public ConfigImpl {
   }
 
   bool ReadImpl(const std::string& key, uint64_t* value) override {
-    if (root_.isMember(key) && root_[key].isUInt64()) {
-      *value = root_[key].asUInt64();
+    if (root_.HasMember(key.c_str()) && root_[key.c_str()].GetUint64()) {
+      *value = root_[key.c_str()].GetUint64();
       return true;
     }
     LOG(WARNING) << "bad field: " << key;
@@ -199,8 +199,8 @@ class ConfigImplPosix : public ConfigImpl {
   }
 
   bool ReadImpl(const std::string& key, int64_t* value) override {
-    if (root_.isMember(key) && root_[key].isInt64()) {
-      *value = root_[key].asInt64();
+    if (root_.HasMember(key.c_str()) && root_[key.c_str()].GetInt64()) {
+      *value = root_[key.c_str()].GetInt64();
       return true;
     }
     LOG(WARNING) << "bad field: " << key;
@@ -208,38 +208,39 @@ class ConfigImplPosix : public ConfigImpl {
   }
 
   bool WriteImpl(const std::string& key, absl::string_view value) override {
-    root_[key] = value.data();
+    root_[key.c_str()].SetString(value.data(), value.size());
     return true;
   }
 
   bool WriteImpl(const std::string& key, bool value) override {
-    root_[key] = static_cast<bool>(value);
+    root_[key.c_str()].SetBool(value);
     return true;
   }
 
   bool WriteImpl(const std::string& key, uint32_t value) override {
-    root_[key] = static_cast<Json::UInt>(value);
+    root_[key.c_str()].SetUint(value);
     return true;
   }
 
   bool WriteImpl(const std::string& key, int32_t value) override {
-    root_[key] = static_cast<Json::Int>(value);
+    root_[key.c_str()].SetInt(value);
     return true;
   }
 
   bool WriteImpl(const std::string& key, uint64_t value) override {
-    root_[key] = static_cast<Json::UInt64>(value);
+    root_[key.c_str()].SetUint64(value);
     return true;
   }
 
   bool WriteImpl(const std::string& key, int64_t value) override {
-    root_[key] = static_cast<Json::Int64>(value);
+    root_[key.c_str()].SetInt64(value);
     return true;
   }
 
  private:
   std::string path_;
-  Json::Value root_;
+  rapidjson::Document root_;
+  char read_buffer_[4096];
 };
 
 }  // namespace config

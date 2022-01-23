@@ -278,9 +278,6 @@ else()
             link_directories(${ROOT_PATH}/lib)
         endforeach()
     endif()
-    if (UNIX AND NOT APPLE)
-        include_directories(/usr/include/jsoncpp SYSTEM)
-    endif()
 
 # simple socketpair test code
 set(SOCKETPAIR_C_CXX_TEST_SOURCE [====[
@@ -300,12 +297,6 @@ int main() {
     check_include_file(pwd.h HAVE_PWD_INCLUDE)
     if (HAVE_PWD_INCLUDE)
       add_definitions(-DHAVE_PWD_H)
-    endif()
-
-    if (NOT APPLE)
-      find_library(JSONCPP_LIB jsoncpp)
-      add_definitions(-DJSON_USE_EXCEPTION=0)
-      set(SYSTEM_LIBS ${SYSTEM_LIBS} ${JSONCPP_LIB})
     endif()
 
     # boringssl
@@ -421,6 +412,9 @@ add_definitions(-DASIO_STANDALONE)
 add_definitions(-DASIO_NO_TYPEID)
 add_definitions(-DASIO_NO_EXCEPTIONS)
 include_directories(third_party/asio/asio/include SYSTEM)
+
+# rapidjson
+include_directories(third_party/rapidjson/include SYSTEM)
 
 # *****************************************************************************************
 #           Compiler warning flags

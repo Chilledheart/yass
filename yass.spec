@@ -7,8 +7,8 @@ License: GPLv2
 URL: https://github.com/Chilledheart/yass
 Source0: https://github.com/Chilledheart/yass/archive/refs/tags/%{version}.tar.gz
 BuildRequires: cmake >= 3.8, ninja-build, pkg-config, perl, gcc >= 6.1, gcc-c++ >= 6.1, golang >= 1.4
-BuildRequires: libunwind-devel, jsoncpp-devel, gtk3-devel, gtkmm30-devel
-Requires: libunwind jsoncpp gtk3 gtkmm30
+BuildRequires: libunwind-devel, gtk3-devel, gtkmm30-devel
+Requires: libunwind gtk3 gtkmm30
 
 %description
 Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for
