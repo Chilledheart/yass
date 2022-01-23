@@ -13,6 +13,20 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+// Define before rapidjson
+// Optimization is defaulted by gcc/clang
+#ifdef __SSE2__
+#define RAPIDJSON_SSE2 1
+#endif
+
+#ifdef __SSE4_2__
+#define RAPIDJSON_SSE42 1
+#endif
+
+#ifdef __ARM_NEON
+#define RAPIDJSON_NEON 1
+#endif
+
 #include <absl/flags/flag.h>
 #include <rapidjson/document.h>     // rapidjson's DOM-style API
 #include <rapidjson/prettywriter.h> // for stringify JSON
