@@ -52,9 +52,9 @@ call :BuildBoringSSL
 
 python.exe -u .\scripts\build.py || exit /b
 
-REM Use Visual Studio 2022's toolchain for ARM64 target
+REM Use Visual Studio 2019's toolchain for ARM64 target
 
-set VCToolsVersion=
+set VCToolsVersion=14.29
 
 set "VSCMD_START_DIR=%CD%"
 call "%vsdevcmd%" -arch=arm64 -host_arch=amd64

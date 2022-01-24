@@ -587,6 +587,7 @@ elseif (MSVC)
       "C4571" # VC2017 specific: catch(...) semantics changed since Visual C++ 7.1; structured exceptions (SEH) are no longer caught"
       "C4986" # VC2015 specific: exception specification does not match previous declaration"
       "C4814" # VC2015 specific: in C++14 'constexpr' will not imply 'const'; consider explicitly specifying 'const'
+      "C4702" # VC2015 specific: unreachable code
       )
   set(MSVC_LEVEL4_WARNINGS_LIST
       # See https://connect.microsoft.com/VisualStudio/feedback/details/1217660/warning-c4265-when-using-functional-header

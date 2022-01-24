@@ -11,7 +11,7 @@ defaults:
   run:
     shell: bash
 env:
-  CACHE_EPOCH: 8
+  CACHE_EPOCH: 9
 jobs:
   cache-toolchain-win:
     runs-on: windows-2019
@@ -408,7 +408,7 @@ jobs:
             lipo -info libcrypto.a
           fi
 
-  win:
+  win-msvc-release:
     needs: cache-toolchain-win
     runs-on: windows-2019
     strategy:
@@ -528,6 +528,130 @@ jobs:
         with:
           name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-sha256-standalone ${{ env.SHA256SUM_STANDALONE }}
           path: sha256sum-standalone.txt
+  win-msvc-compatible:
+    needs: cache-toolchain-win
+    runs-on: windows-2019
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64]
+        crt-linkage: [dynamic, static]
+        build_type: [Debug, RelWithDebInfo]
+    env:
+      BUILD_TYPE: '${{ matrix.build_type }}'
+      MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
+      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
+      # Indicates the location of the vcpkg as a Git submodule of the project repository.
+      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
+      - name: Cache clang and nasm
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/nasm
+            third_party/llvm-build/Release+Asserts
+          key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+      - name: Get vcpkg commit
+        run: |
+          IFS=" " read -r -a array <<< $VCPKG_DEPS
+          for VCPKG_DEP in ${VCPKG_DEPS[@]}; do
+            echo "$(openssl sha256 /c/vcpkg/ports/$VCPKG_DEP/vcpkg.json) $VCPKG_DEP" >> vcpkg.lock
+          done
+      - name: Cache vcpkg packages
+        uses: actions/cache@v2
+        with:
+          path: |
+            ${{ env.VCPKG_ROOT }}
+            !${{ env.VCPKG_ROOT }}/buildtrees
+            !${{ env.VCPKG_ROOT }}/packages
+            !${{ env.VCPKG_ROOT }}/downloads
+          key: toolchain-cache-${{ runner.os }}-${{ matrix.crt-linkage }}-build-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
+      - name: Get boringssl commit
+        run: |
+          git submodule status third_party/boringssl >> boringssl.lock
+      - name: Cache boringssl packages
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/boringssl/x86-${{ matrix.crt-linkage }}/crypto.lib
+            third_party/boringssl/x86-${{ matrix.crt-linkage }}/crypto.pdb
+            third_party/boringssl/x86-${{ matrix.crt-linkage }}/vc140.pdb
+            third_party/boringssl/x86-${{ matrix.crt-linkage }}/debug/crypto.lib
+            third_party/boringssl/x86-${{ matrix.crt-linkage }}/debug/crypto.pdb
+            third_party/boringssl/x86-${{ matrix.crt-linkage }}/debug/vc140.pdb
+            third_party/boringssl/x64-${{ matrix.crt-linkage }}/crypto.lib
+            third_party/boringssl/x64-${{ matrix.crt-linkage }}/crypto.pdb
+            third_party/boringssl/x64-${{ matrix.crt-linkage }}/vc140.pdb
+            third_party/boringssl/x64-${{ matrix.crt-linkage }}/debug/crypto.lib
+            third_party/boringssl/x64-${{ matrix.crt-linkage }}/debug/crypto.pdb
+            third_party/boringssl/x64-${{ matrix.crt-linkage }}/debug/vc140.pdb
+            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/crypto.lib
+            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/crypto.pdb
+            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/vc140.pdb
+            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/debug/crypto.lib
+            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/debug/crypto.pdb
+            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/debug/vc140.pdb
+          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
+      - name: Build Vistual Studio 2019 (v142)
+        run: |
+          set VCToolsVersion=14.29
+          if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
+          set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
+          set "VSCMD_START_DIR=%CD%"
+          call "%vsdevcmd%" -arch=${{ matrix.arch }} -host_arch=amd64
+          set CC=
+          set CXX=
+          set Platform=${{ matrix.arch }}
+          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
+
+          python .\scripts\build.py || exit /b
+
+          exit /b 0
+
+          :SetNewVCToolsVersion
+          set VCToolsVersion=
+        shell: cmd
+      - name: Build Vistual Studio 2017 (v141)
+        run: |
+          set VCToolsVersion=14.16
+          if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
+          set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
+          set "VSCMD_START_DIR=%CD%"
+          call "%vsdevcmd%" -arch=${{ matrix.arch }} -host_arch=amd64
+          set CC=
+          set CXX=
+          set Platform=${{ matrix.arch }}
+          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
+
+          python .\scripts\build.py || exit /b
+
+          exit /b 0
+
+          :SetNewVCToolsVersion
+          set VCToolsVersion=
+        shell: cmd
+      - name: Build Vistual Studio 2015 (v140)
+        run: |
+          set VCToolsVersion=14.0
+          if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
+          set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
+          set "VSCMD_START_DIR=%CD%"
+          call "%vsdevcmd%" -arch=${{ matrix.arch }} -host_arch=amd64
+          set CC=
+          set CXX=
+          set Platform=${{ matrix.arch }}
+          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
+
+          python .\scripts\build.py || exit /b
+
+          exit /b 0
+
+          :SetNewVCToolsVersion
+          set VCToolsVersion=
+        shell: cmd
   win-clang-cl:
     needs: cache-toolchain-win
     runs-on: windows-2019
@@ -736,7 +860,7 @@ jobs:
           :SetNewVCToolsVersion
           set VCToolsVersion=
         shell: cmd
-  mac:
+  mac-release:
     needs: cache-toolchain-mac
     runs-on: macos-latest
     strategy:
@@ -830,93 +954,13 @@ jobs:
         run: |
           export CLANG_TIDY_EXECUTABLE=$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy
           ./scripts/build.py
-  linux-release:
-    needs: cache-toolchain-linux
-    runs-on: ${{ matrix.env }}
-    strategy:
-      fail-fast: false
-      matrix:
-        env: [ubuntu-18.04, ubuntu-20.04]
-        arch: [x64]
-    env:
-      BUNDLE_NAME: 'yass_${{ github.event.release.tag_name }}-${{ matrix.env }}-${{ matrix.arch }}'
-      DBG_BUNDLE_NAME: 'yass-dbg_${{ github.event.release.tag_name }}-${{ matrix.env }}-${{ matrix.arch }}'
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: 'true'
-      - name: Get boringssl commit
-        run: |
-          git submodule status third_party/boringssl >> boringssl.lock
-      - name: Cache boringssl packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/boringssl/libcrypto.a
-          key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
-      - name: Populate depedencies (build)
-        run: sudo apt-get install -y build-essential fakeroot devscripts debhelper
-      - name: Populate depedencies
-        run: sudo apt-get install -y cmake golang libunwind-dev libgtk-3-dev libgtkmm-3.0-dev
-      - name: Build Deb Packages
-        run: |
-          ./scripts/build-deb.sh
-      - run: mv -f ../yass_1.0.0-1_amd64.deb ${{ env.BUNDLE_NAME }}.deb
-      - uses: actions/upload-release-asset@v1
-        if: ${{ github.event_name == 'release' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${{ env.BUNDLE_NAME }}.deb
-          asset_name: ${{ env.BUNDLE_NAME }}.deb
-          asset_content_type: application/octet-stream
-      - run: mv -f ../yass-dbg_1.0.0-1_amd64.deb ${{ env.DBG_BUNDLE_NAME }}.deb
-      - uses: actions/upload-release-asset@v1
-        if: ${{ github.event_name == 'release' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${{ env.DBG_BUNDLE_NAME }}.deb
-          asset_name: ${{ env.DBG_BUNDLE_NAME }}.deb
-          asset_content_type: application/octet-stream
-  linux-gcc:
+  ubuntu-latest:
     needs: cache-toolchain-linux
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        arch: [x64]
-        build_type: [Debug, RelWithDebInfo]
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: 'true'
-      - name: Get boringssl commit
-        run: |
-          git submodule status third_party/boringssl >> boringssl.lock
-      - name: Cache boringssl packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/boringssl/libcrypto.a
-          key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
-      - name: Populate depedencies
-        run: sudo apt-get install -y cmake ninja-build libgtk-3-dev libgtkmm-3.0-dev
-      - name: Build
-        run: |
-          mkdir build
-          cd build
-          cmake -G Ninja -DCLI=on -DSERVER=on -DGUI=on ..
-          ninja -v yass_cli yass_server yass
-          cd ..
-  linux-clang:
-    needs: cache-toolchain-linux
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
+        compiler: [gcc, clang]
         arch: [x64]
         build_type: [Debug, RelWithDebInfo]
     env:
@@ -944,14 +988,19 @@ jobs:
         run: sudo apt-get install -y cmake ninja-build libgtk-3-dev libgtkmm-3.0-dev
       - name: Build
         run: |
-          export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
-          export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
+          if [ {{ matrix.compiler }} = "clang" ]; then
+            export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
+            export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
+          else
+            export CC=gcc
+            export CXX=g++
+          fi
           mkdir build
           cd build
           cmake -G Ninja -DCLI=on -DSERVER=on -DGUI=on ..
           ninja -v yass_cli yass_server yass
           cd ..
-  linux-clang-tidy:
+  ubuntu-latest-clang-tidy:
     needs: cache-toolchain-linux
     runs-on: ubuntu-latest
     strategy:
@@ -992,3 +1041,44 @@ jobs:
           cmake -G Ninja -DENABLE_CLANG_TIDY=yes -DCLANG_TIDY_EXECUTABLE="$CLANG_TIDY_EXECUTABLE" -DCLI=on -DSERVER=on -DGUI=on ..
           ninja -v yass_cli yass_server yass
           cd ..
+  ubuntu-release:
+    runs-on: ${{ matrix.env }}
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [ubuntu-18.04, ubuntu-20.04]
+        arch: [x64]
+    env:
+      BUNDLE_NAME: 'yass_${{ github.event.release.tag_name }}-${{ matrix.env }}-${{ matrix.arch }}'
+      DBG_BUNDLE_NAME: 'yass-dbg_${{ github.event.release.tag_name }}-${{ matrix.env }}-${{ matrix.arch }}'
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
+      - name: Populate depedencies (build)
+        run: sudo apt-get install -y build-essential fakeroot devscripts debhelper
+      - name: Populate depedencies
+        run: sudo apt-get install -y cmake golang libunwind-dev libgtk-3-dev libgtkmm-3.0-dev
+      - name: Build Deb Packages
+        run: |
+          ./scripts/build-deb.sh
+      - run: mv -f ../yass_1.0.0-1_amd64.deb ${{ env.BUNDLE_NAME }}.deb
+      - uses: actions/upload-release-asset@v1
+        if: ${{ github.event_name == 'release' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ${{ env.BUNDLE_NAME }}.deb
+          asset_name: ${{ env.BUNDLE_NAME }}.deb
+          asset_content_type: application/octet-stream
+      - run: mv -f ../yass-dbg_1.0.0-1_amd64.deb ${{ env.DBG_BUNDLE_NAME }}.deb
+      - uses: actions/upload-release-asset@v1
+        if: ${{ github.event_name == 'release' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ${{ env.DBG_BUNDLE_NAME }}.deb
+          asset_name: ${{ env.DBG_BUNDLE_NAME }}.deb
+          asset_content_type: application/octet-stream
