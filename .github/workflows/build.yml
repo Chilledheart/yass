@@ -882,7 +882,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [x64, x86, arm64]
+        arch: [x64]
         build_type: [Debug, RelWithDebInfo]
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
