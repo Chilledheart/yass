@@ -582,7 +582,11 @@ elseif (MSVC)
       "C4946"
       "C4995"
       "C4868" # abseil-cpp suppresion ends here
-      "C5246" # ALT/MFC suppresion starts here
+      "C5246" # VC2019/2022 specific: 'member': the initialization of a subobject should be wrapped in braces
+      "C4596" # VC2017 specific: illegal qualified name in member declaration
+      "C4571" # VC2017 specific: catch(...) semantics changed since Visual C++ 7.1; structured exceptions (SEH) are no longer caught"
+      "C4986" # VC2015 specific: exception specification does not match previous declaration"
+      "C4814" # VC2015 specific: in C++14 'constexpr' will not imply 'const'; consider explicitly specifying 'const'
       )
   set(MSVC_LEVEL4_WARNINGS_LIST
       # See https://connect.microsoft.com/VisualStudio/feedback/details/1217660/warning-c4265-when-using-functional-header

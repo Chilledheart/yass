@@ -91,6 +91,8 @@ jobs:
           curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
       - name: "Install dependency: boringssl (x86 slice)"
         run: |
+          set VCToolsVersion=14.0
+          if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
           call "%vsdevcmd%" -arch=x86 -host_arch=amd64
@@ -146,10 +148,15 @@ jobs:
 
           cd ..\..
 
-          exit
+          exit /b 0
+
+          :SetNewVCToolsVersion
+          set VCToolsVersion=
         shell: cmd
       - name: "Install dependency: boringssl (x64 slice)"
         run: |
+          set VCToolsVersion=14.0
+          if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
           call "%vsdevcmd%" -arch=amd64 -host_arch=amd64
@@ -205,10 +212,15 @@ jobs:
 
           cd ..\..
 
-          exit
+          exit /b 0
+
+          :SetNewVCToolsVersion
+          set VCToolsVersion=
         shell: cmd
       - name: "Install dependency: boringssl (arm64 slice)"
         run: |
+          set VCToolsVersion=14.0
+          if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
           call "%vsdevcmd%" -arch=arm64 -host_arch=amd64
@@ -264,8 +276,10 @@ jobs:
 
           cd ..\..
 
+          exit /b 0
 
-          exit
+          :SetNewVCToolsVersion
+          set VCToolsVersion=
         shell: cmd
   cache-toolchain-linux:
     runs-on: ubuntu-18.04
@@ -464,6 +478,8 @@ jobs:
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
+          set VCToolsVersion=14.0
+          if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
           call "%vsdevcmd%" -arch=${{ matrix.arch }} -host_arch=amd64
@@ -473,6 +489,11 @@ jobs:
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
 
           python .\scripts\build.py || exit /b
+
+          exit /b 0
+
+          :SetNewVCToolsVersion
+          set VCToolsVersion=
         shell: cmd
       - run: |
           mv -f ${{ matrix.arch }}-${{ matrix.crt-linkage }}-windows-yass.exe.zip ${{ env.BUNDLE_NAME }}.zip
@@ -577,6 +598,8 @@ jobs:
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
+          set VCToolsVersion=14.0
+          if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
           call "%vsdevcmd%" -arch=${{ matrix.arch }} -host_arch=amd64
@@ -586,6 +609,11 @@ jobs:
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
 
           python .\scripts\build.py || exit /b
+
+          exit /b 0
+
+          :SetNewVCToolsVersion
+          set VCToolsVersion=
         shell: cmd
       - run: |
           mv -f ${{ matrix.arch }}-${{ matrix.crt-linkage }}-windows-yass.exe.zip ${{ env.BUNDLE_NAME }}.zip
@@ -690,6 +718,8 @@ jobs:
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
+          set VCToolsVersion=14.0
+          if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
           call "%vsdevcmd%" -arch=${{ matrix.arch }} -host_arch=amd64
@@ -700,6 +730,11 @@ jobs:
 
           set "CLANG_TIDY_EXECUTABLE=%CD%/third_party/llvm-build/Release+Asserts/bin/clang-tidy.exe"
           python .\scripts\build.py || exit /b
+
+          exit /b 0
+
+          :SetNewVCToolsVersion
+          set VCToolsVersion=
         shell: cmd
   mac:
     needs: cache-toolchain-mac

@@ -14,14 +14,14 @@ REM VCToolsVersion:PlatformToolchainversion:VisualStudioVersion
 REM   14.30-14.3?:v143:Visual Studio 2022
 REM   14.20-14.29:v142:Visual Studio 2019
 REM   14.10-14.19:v141:Visual Studio 2017
-REM   14.00-14.09:v140:Visual Studio 2015
+REM   14.00-14.00:v140:Visual Studio 2015
 REM Currently Visual Studio 2017 is not supported
 
 REM You need to modify the paths below:
 
-REM Use Visual Studio 2019's toolchain
+REM Use Visual Studio 2015's toolchain for (x86, x64)
 
-set VCToolsVersion=14.29
+set VCToolsVersion=14.0
 
 set vsdevcmd=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat
 
@@ -51,6 +51,10 @@ set CMAKE_EXTRA_OPTIONS=
 call :BuildBoringSSL
 
 python.exe -u .\scripts\build.py || exit /b
+
+REM Use Visual Studio 2022's toolchain for ARM64 target
+
+set VCToolsVersion=
 
 set "VSCMD_START_DIR=%CD%"
 call "%vsdevcmd%" -arch=arm64 -host_arch=amd64

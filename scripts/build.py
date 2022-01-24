@@ -177,23 +177,11 @@ def get_dependencies_by_dumpbin(path):
                  'UxTheme.dll', 'PROPSYS.dll', 'dwmapi.dll', 'WININET.dll',
                  'OLEACC.dll', 'ODBC32.dll', 'oledlg.dll', 'urlmon.dll',
                  'MSIMG32.dll', 'WINMM.dll', 'CRYPT32.dll', 'gdiplus.dll', ]
-
-  # Environment variable VCToolsRedistDir isn't correct
-  # according to microsoft's design issue, don't use it.
-  #
-  # for example:
-  #
-  # VCINSTALLDIR=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\
-  # VCToolsInstallDir=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.16.27023\
-  # VCToolsRedistDir=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\14.30.30704\
-  vcredist_dir = os.path.join(os.getenv('VCINSTALLDIR'), 'Redist', 'MSVC',
-                              os.getenv('VCToolsVersion'))
-
   # VCToolsVersion:PlatformToolchainversion:VisualStudioVersion
   #  14.30-14.3?:v143:Visual Studio 2022
   #  14.20-14.29:v142:Visual Studio 2019
   #  14.10-14.19:v141:Visual Studio 2017
-  #  14.00-14.09:v140:Visual Studio 2015
+  #  14.00-14.00:v140:Visual Studio 2015
   #
   #  From wiki: https://en.wikipedia.org/wiki/Microsoft_Visual_C%2B%2B
   #  https://docs.microsoft.com/en-us/cpp/preprocessor/predefined-macros?view=msvc-170#microsoft-specific-predefined-macros
@@ -227,19 +215,48 @@ def get_dependencies_by_dumpbin(path):
   #
   #  Visual Studio 2015 is not supported by this script due to
   #  the missing environment variable VCToolsVersion
-  vctools_version = float(os.getenv('VCToolsVersion')[:5])
+  vctools_version_str = os.getenv('VCToolsVersion')
+  if len(vctools_version_str) >= 4:
+    # for vc141 or above, VCToolsVersion=14.??.xxxx
+    vctools_version = float(vctools_version_str[:5])
+  else:
+    # for vc140 or below, VCToolsVersion=14.0
+    vctools_version = float(vctools_version_str)
+
   if vctools_version >= 14.30:
     platform_toolchain_version = '143'
   elif vctools_version >= 14.20 and vctools_version < 14.30:
     platform_toolchain_version = '142'
   elif vctools_version >= 14.10 and vctools_version < 14.20:
     platform_toolchain_version = '141'
-  elif vctools_version >= 14.10 and vctools_version < 14.20:
+  elif vctools_version >= 14.00 and vctools_version < 14.10:
     platform_toolchain_version = '140'
   else:
     raise RuntimeError('unsupported vctoolchain version %s' % vctools_version)
 
-  ### Search Path (VC Runtime and MFC)
+  # Environment variable VCToolsRedistDir isn't correct when it doesn't match
+  # Visual Studio's default toolchain.
+  # according to microsoft's design issue, don't use it.
+  #
+  # for example:
+  #
+  # VCINSTALLDIR=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\
+  # VCToolsInstallDir=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.16.27023\
+  # VCToolsRedistDir=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\14.30.30704\
+  #
+  # for vc140 it's:
+  # C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\redist
+  if vctools_version >= 14.30:
+    vcredist_dir = os.getenv('VCToolsRedistDir')
+  elif vctools_version >= 14.10 and vctools_version < 14.30:
+    vcredist_dir = os.path.join(os.getenv('VCINSTALLDIR'), 'Redist', 'MSVC',
+                                os.getenv('VCToolsVersion'))
+  elif vctools_version >= 14.00 and vctools_version < 14.10:
+    vcredist_dir = os.path.join(os.getenv('VCINSTALLDIR'), 'redist')
+  else:
+    vcredist_dir = ""
+
+  ### Search Path (VC Runtime and MFC) (vctools_version newer than v140)
   ### C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\14.30.30704\debug_nonredist\x86\Microsoft.VC143.DebugMFC
   ### C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\14.30.30704\debug_nonredist\x86\Microsoft.VC143.DebugCRT
   ### C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\14.30.30704\x86\Microsoft.VC143.MFCLOC
@@ -262,6 +279,7 @@ def get_dependencies_by_dumpbin(path):
   sdk_base_dir= os.getenv('WindowsSdkDir')
 
   ### Search Path (UCRT)
+  ### TODO should we support Windows SDK 7.0A or 8.1?
   ### Please note The UCRT files are not redistributable for ARM64 Win32.
   ### https://chromium.googlesource.com/chromium/src/+/lkgr/build/win/BUILD.gn
   ### C:\Program Files (x86)\Windows Kits\10\Redist\10.0.19041.0\ucrt\DLLS\x86

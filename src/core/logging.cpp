@@ -62,6 +62,7 @@
 
 #if defined(OS_WIN)
 #include <io.h>
+#include <process.h>
 #include <windows.h>
 typedef HANDLE FileHandle;
 // Windows warns on using write().  It prefers _write().
