@@ -11,7 +11,7 @@ defaults:
   run:
     shell: bash
 env:
-  CACHE_EPOCH: 9
+  CACHE_EPOCH: 10
 jobs:
   cache-toolchain-win:
     runs-on: windows-2019
@@ -23,7 +23,7 @@ jobs:
       CLANG_ARCH: 'Win'
       VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
       # Indicates the location of the vcpkg as a Git submodule of the project repository.
-      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+      VCPKG_ROOT: ${{ github.workspace }}\vcpkg
     steps:
       - uses: actions/checkout@v2
         with:
@@ -90,312 +90,113 @@ jobs:
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: "Install dependency: nasm"
         run: |
-          mkdir -p third_party
-          cd third_party
-          curl -O https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win64/nasm-2.15.05-win64.zip
-          "/c/Program Files/7-Zip/7z.exe" x nasm-2.15.05-win64.zip
-          mv -f nasm-2.15.05 nasm
+          if [ ! -d third_party/nasm ]; then
+            mkdir -p third_party
+            cd third_party
+            curl -O https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win64/nasm-2.15.05-win64.zip
+            "/c/Program Files/7-Zip/7z.exe" x nasm-2.15.05-win64.zip
+            mv -f nasm-2.15.05 nasm
+          fi
       - name: "Install dependency: clang-tidy"
         run: |
-          mkdir -p third_party/llvm-build/Release+Asserts
-          CLANG_REVISION=$(< CLANG_REVISION)
-          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
-          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+          if [ ! -d third_party/llvm-build/Release+Asserts ]; then
+            mkdir -p third_party/llvm-build/Release+Asserts
+            CLANG_REVISION=$(< CLANG_REVISION)
+            curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+            curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+          fi
       - name: "Install dependency: boringssl (x86 slice)"
+        shell: cmd
         run: |
           set VCToolsVersion=14.0
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
           call "%vsdevcmd%" -arch=x86 -host_arch=amd64
-          set CC=
-          set CXX=
+          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
+          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
           set COMPILER_TARGET=i686-pc-windows-msvc
           set Platform=x86
 
-          set "Path=%CD%/third_party/nasm;%Path%"
+          set "Path=%CD%\third_party\nasm;%Path%"
 
-          REM When you pass -DCMAKE_C_COMPILER= with an absolute path you need to use forward slashes.  That is setting a value directly into CMakeCache.txt so no automatic slash conversion is done.
-          set "CMAKE_CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set "CMAKE_CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-
-          cd third_party\boringssl
-          mkdir "%Platform%-%MSVC_CRT_LINKAGE%"
-          mkdir "%Platform%-%MSVC_CRT_LINKAGE%\debug"
-
-          rem check the existing debug lib
-          if not exist "%Platform%-%MSVC_CRT_LINKAGE%\debug\crypto.lib" (
-            rmdir build /s /q
-            mkdir build
-            cd build
-            set "CC=%CMAKE_CC%"
-            set "CXX=%CMAKE_CXX%"
-            cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MSVC_CRT_LINKAGE=%MSVC_CRT_LINKAGE% -DCMAKE_C_COMPILER_TARGET=%COMPILER_TARGET% -DCMAKE_CXX_COMPILER_TARGET=%COMPILER_TARGET% "-DCMAKE_ASM_FLAGS=--target=%COMPILER_TARGET%" %CMAKE_EXTRA_OPTIONS% .. || exit /b 1
-            set CC=
-            set CXX=
-            ninja crypto || exit /b 1
-            copy /y crypto\crypto.lib "..\%Platform%-%MSVC_CRT_LINKAGE%\debug\crypto.lib"
-            copy /y crypto\crypto.pdb "..\%Platform%-%MSVC_CRT_LINKAGE%\debug\crypto.pdb"
-            copy /y crypto\fipsmodule\CMakeFiles\fipsmodule.dir\vc140.pdb "..\%Platform%-%MSVC_CRT_LINKAGE%\debug\vc140.pdb"
-            cd ..
-          )
-
-          rem check the existing release lib
-          if not exist "%Platform%-%MSVC_CRT_LINKAGE%\crypto.lib" (
-            rmdir build /s /q
-            mkdir build
-            cd build
-            set "CC=%CMAKE_CC%"
-            set "CXX=%CMAKE_CXX%"
-            cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DCMAKE_MSVC_CRT_LINKAGE=%MSVC_CRT_LINKAGE% -DCMAKE_C_COMPILER_TARGET=%COMPILER_TARGET% -DCMAKE_CXX_COMPILER_TARGET=%COMPILER_TARGET% "-DCMAKE_ASM_FLAGS=--target=%COMPILER_TARGET%" %CMAKE_EXTRA_OPTIONS% .. || exit /b 1
-            set CC=
-            set CXX=
-            ninja crypto || exit /b 1
-            copy /y crypto\crypto.lib "..\%Platform%-%MSVC_CRT_LINKAGE%\crypto.lib"
-            copy /y crypto\crypto.pdb "..\%Platform%-%MSVC_CRT_LINKAGE%\crypto.pdb"
-            copy /y crypto\fipsmodule\CMakeFiles\fipsmodule.dir\vc140.pdb "..\%Platform%-%MSVC_CRT_LINKAGE%\vc140.pdb"
-            cd ..
-          )
-
-          cd ..\..
-
-          exit /b 0
-
-          :SetNewVCToolsVersion
-          set VCToolsVersion=
-        shell: cmd
+          call "scripts\build-boringssl.bat"
       - name: "Install dependency: boringssl (x64 slice)"
+        shell: cmd
         run: |
           set VCToolsVersion=14.0
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
           call "%vsdevcmd%" -arch=amd64 -host_arch=amd64
-          set CC=
-          set CXX=
+          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
+          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
           set COMPILER_TARGET=x86_64-pc-windows-msvc
           set Platform=x64
 
-          set "Path=%CD%/third_party/nasm;%Path%"
+          set "Path=%CD%\third_party\nasm;%Path%"
 
-          REM When you pass -DCMAKE_C_COMPILER= with an absolute path you need to use forward slashes.  That is setting a value directly into CMakeCache.txt so no automatic slash conversion is done.
-          set "CMAKE_CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set "CMAKE_CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-
-          cd third_party\boringssl
-          mkdir "%Platform%-%MSVC_CRT_LINKAGE%"
-          mkdir "%Platform%-%MSVC_CRT_LINKAGE%\debug"
-
-          rem check the existing debug lib
-          if not exist "%Platform%-%MSVC_CRT_LINKAGE%\debug\crypto.lib" (
-            rmdir build /s /q
-            mkdir build
-            cd build
-            set "CC=%CMAKE_CC%"
-            set "CXX=%CMAKE_CXX%"
-            cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MSVC_CRT_LINKAGE=%MSVC_CRT_LINKAGE% -DCMAKE_C_COMPILER_TARGET=%COMPILER_TARGET% -DCMAKE_CXX_COMPILER_TARGET=%COMPILER_TARGET% "-DCMAKE_ASM_FLAGS=--target=%COMPILER_TARGET%" %CMAKE_EXTRA_OPTIONS% .. || exit /b 1
-            set CC=
-            set CXX=
-            ninja crypto || exit /b 1
-            copy /y crypto\crypto.lib "..\%Platform%-%MSVC_CRT_LINKAGE%\debug\crypto.lib"
-            copy /y crypto\crypto.pdb "..\%Platform%-%MSVC_CRT_LINKAGE%\debug\crypto.pdb"
-            copy /y crypto\fipsmodule\CMakeFiles\fipsmodule.dir\vc140.pdb "..\%Platform%-%MSVC_CRT_LINKAGE%\debug\vc140.pdb"
-            cd ..
-          )
-
-          rem check the existing release lib
-          if not exist "%Platform%-%MSVC_CRT_LINKAGE%\crypto.lib" (
-            rmdir build /s /q
-            mkdir build
-            cd build
-            set "CC=%CMAKE_CC%"
-            set "CXX=%CMAKE_CXX%"
-            cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DCMAKE_MSVC_CRT_LINKAGE=%MSVC_CRT_LINKAGE% -DCMAKE_C_COMPILER_TARGET=%COMPILER_TARGET% -DCMAKE_CXX_COMPILER_TARGET=%COMPILER_TARGET% "-DCMAKE_ASM_FLAGS=--target=%COMPILER_TARGET%" %CMAKE_EXTRA_OPTIONS% .. || exit /b 1
-            set CC=
-            set CXX=
-            ninja crypto || exit /b 1
-            copy /y crypto\crypto.lib "..\%Platform%-%MSVC_CRT_LINKAGE%\crypto.lib"
-            copy /y crypto\crypto.pdb "..\%Platform%-%MSVC_CRT_LINKAGE%\crypto.pdb"
-            copy /y crypto\fipsmodule\CMakeFiles\fipsmodule.dir\vc140.pdb "..\%Platform%-%MSVC_CRT_LINKAGE%\vc140.pdb"
-            cd ..
-          )
-
-          cd ..\..
-
-          exit /b 0
-
-          :SetNewVCToolsVersion
-          set VCToolsVersion=
-        shell: cmd
+          call "scripts\build-boringssl.bat"
       - name: "Install dependency: boringssl (arm64 slice)"
+        shell: cmd
         run: |
           set VCToolsVersion=14.29
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
           call "%vsdevcmd%" -arch=arm64 -host_arch=amd64
-          set CC=
-          set CXX=
+          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
+          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
           set COMPILER_TARGET=arm64-pc-windows-msvc
           set Platform=arm64
 
-          set "Path=%CD%/third_party/nasm;%Path%"
+          set "Path=%CD%\third_party\nasm;%Path%"
 
-          REM When you pass -DCMAKE_C_COMPILER= with an absolute path you need to use forward slashes.  That is setting a value directly into CMakeCache.txt so no automatic slash conversion is done.
-          set "CMAKE_CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set "CMAKE_CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-
-          cd third_party\boringssl
-          mkdir "%Platform%-%MSVC_CRT_LINKAGE%"
-          mkdir "%Platform%-%MSVC_CRT_LINKAGE%\debug"
-
-          rem check the existing debug lib
-          if not exist "%Platform%-%MSVC_CRT_LINKAGE%\debug\crypto.lib" (
-            rmdir build /s /q
-            mkdir build
-            cd build
-            set "CC=%CMAKE_CC%"
-            set "CXX=%CMAKE_CXX%"
-            cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MSVC_CRT_LINKAGE=%MSVC_CRT_LINKAGE% -DCMAKE_C_COMPILER_TARGET=%COMPILER_TARGET% -DCMAKE_CXX_COMPILER_TARGET=%COMPILER_TARGET% "-DCMAKE_ASM_FLAGS=--target=%COMPILER_TARGET%" %CMAKE_EXTRA_OPTIONS% .. || exit /b 1
-            set CC=
-            set CXX=
-            ninja crypto || exit /b 1
-            copy /y crypto\crypto.lib "..\%Platform%-%MSVC_CRT_LINKAGE%\debug\crypto.lib"
-            copy /y crypto\crypto.pdb "..\%Platform%-%MSVC_CRT_LINKAGE%\debug\crypto.pdb"
-            copy /y crypto\fipsmodule\CMakeFiles\fipsmodule.dir\vc140.pdb "..\%Platform%-%MSVC_CRT_LINKAGE%\debug\vc140.pdb"
-            cd ..
-          )
-
-          rem check the existing release lib
-          if not exist "%Platform%-%MSVC_CRT_LINKAGE%\crypto.lib" (
-            rmdir build /s /q
-            mkdir build
-            cd build
-            set "CC=%CMAKE_CC%"
-            set "CXX=%CMAKE_CXX%"
-            cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DCMAKE_MSVC_CRT_LINKAGE=%MSVC_CRT_LINKAGE% -DCMAKE_C_COMPILER_TARGET=%COMPILER_TARGET% -DCMAKE_CXX_COMPILER_TARGET=%COMPILER_TARGET% "-DCMAKE_ASM_FLAGS=--target=%COMPILER_TARGET%" %CMAKE_EXTRA_OPTIONS% .. || exit /b 1
-            set CC=
-            set CXX=
-            ninja crypto || exit /b 1
-            copy /y crypto\crypto.lib "..\%Platform%-%MSVC_CRT_LINKAGE%\crypto.lib"
-            copy /y crypto\crypto.pdb "..\%Platform%-%MSVC_CRT_LINKAGE%\crypto.pdb"
-            copy /y crypto\fipsmodule\CMakeFiles\fipsmodule.dir\vc140.pdb "..\%Platform%-%MSVC_CRT_LINKAGE%\vc140.pdb"
-            cd ..
-          )
-
-          cd ..\..
-
-          exit /b 0
-
-          :SetNewVCToolsVersion
-          set VCToolsVersion=
-        shell: cmd
+          call "scripts\build-boringssl.bat"
       - name: "Install dependency: boringssl (x86-xp slice)"
+        shell: cmd
         run: |
           set VCToolsVersion=14.0
           set "VCINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC"
           set "WindowsSDKVersion=10.0.10240.0\"
           set "WindowsSdkDir=C:\Program Files (x86)\Windows Kits\10"
+          set "PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;%PATH%"
 
           set CC=
           set CXX=
           set ASM=
           set Platform=x86
-          set VSCMD_ARG_TGT_ARCH=x86
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
           set COMPILER_TARGET=i686-pc-windows-msvc
           set ALLOW_XP=on
-          set CMAKE_EXTRA_OPTIONS=-DALLOW_XP=on
 
-          set "Path=%CD%/third_party/nasm;%Path%"
+          call "scripts\callxp-%Platform%.cmd"
 
-          call "scripts/callxp-%Platform%.cmd"
+          set "Path=%CD%\third_party\nasm;%Path%"
 
-          cd third_party\boringssl
-          mkdir "%Platform%-%MSVC_CRT_LINKAGE%-xp"
-          mkdir "%Platform%-%MSVC_CRT_LINKAGE%-xp\debug"
-
-          rem check the existing debug lib
-          if not exist "%Platform%-%MSVC_CRT_LINKAGE%-xp\debug\crypto.lib" (
-            rmdir build /s /q
-            mkdir build
-            cd build
-            cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MSVC_CRT_LINKAGE=%MSVC_CRT_LINKAGE% -DCMAKE_C_COMPILER_TARGET=%COMPILER_TARGET% -DCMAKE_CXX_COMPILER_TARGET=%COMPILER_TARGET% %CMAKE_EXTRA_OPTIONS% .. || exit /b 1
-            ninja -v crypto || exit /b 1
-            copy /y crypto\crypto.lib "..\%Platform%-%MSVC_CRT_LINKAGE%-xp\debug\crypto.lib"
-            copy /y crypto\crypto.pdb "..\%Platform%-%MSVC_CRT_LINKAGE%-xp\debug\crypto.pdb"
-            copy /y crypto\fipsmodule\CMakeFiles\fipsmodule.dir\vc140.pdb "..\%Platform%-%MSVC_CRT_LINKAGE%-xp\debug\vc140.pdb"
-            cd ..
-          )
-
-          rem check the existing release lib
-          if not exist "%Platform%-%MSVC_CRT_LINKAGE%-xp\crypto.lib" (
-            rmdir build /s /q
-            mkdir build
-            cd build
-            cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DCMAKE_MSVC_CRT_LINKAGE=%MSVC_CRT_LINKAGE% -DCMAKE_C_COMPILER_TARGET=%COMPILER_TARGET% -DCMAKE_CXX_COMPILER_TARGET=%COMPILER_TARGET% %CMAKE_EXTRA_OPTIONS% .. || exit /b 1
-            ninja crypto || exit /b 1
-            copy /y crypto\crypto.lib "..\%Platform%-%MSVC_CRT_LINKAGE%-xp\crypto.lib"
-            copy /y crypto\crypto.pdb "..\%Platform%-%MSVC_CRT_LINKAGE%-xp\crypto.pdb"
-            copy /y crypto\fipsmodule\CMakeFiles\fipsmodule.dir\vc140.pdb "..\%Platform%-%MSVC_CRT_LINKAGE%-xp\vc140.pdb"
-            cd ..
-          )
-
-          cd ..\..
-        shell: cmd
+          call "scripts\build-boringssl.bat"
       - name: "Install dependency: boringssl (x64-xp slice)"
+        shell: cmd
         run: |
           set VCToolsVersion=14.0
           set "VCINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC"
           set "WindowsSDKVersion=10.0.10240.0\"
           set "WindowsSdkDir=C:\Program Files (x86)\Windows Kits\10"
+          set "PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;%PATH%"
 
           set CC=
           set CXX=
           set ASM=
           set Platform=x64
-          set VSCMD_ARG_TGT_ARCH=x64
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
           set COMPILER_TARGET=x86_64-pc-windows-msvc
           set ALLOW_XP=on
-          set CMAKE_EXTRA_OPTIONS=-DALLOW_XP=on
 
-          call "scripts/callxp-%Platform%.cmd"
+          call "scripts\callxp-%Platform%.cmd"
 
-          set "Path=%CD%/third_party/nasm;%Path%"
+          set "Path=%CD%\third_party\nasm;%Path%"
 
-          cd third_party\boringssl
-          mkdir "%Platform%-%MSVC_CRT_LINKAGE%-xp"
-          mkdir "%Platform%-%MSVC_CRT_LINKAGE%-xp\debug"
-
-          rem check the existing debug lib
-          if not exist "%Platform%-%MSVC_CRT_LINKAGE%-xp\debug\crypto.lib" (
-            rmdir build /s /q
-            mkdir build
-            cd build
-            cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MSVC_CRT_LINKAGE=%MSVC_CRT_LINKAGE% -DCMAKE_C_COMPILER_TARGET=%COMPILER_TARGET% -DCMAKE_CXX_COMPILER_TARGET=%COMPILER_TARGET% %CMAKE_EXTRA_OPTIONS% .. || exit /b 1
-            ninja -v crypto || exit /b 1
-            copy /y crypto\crypto.lib "..\%Platform%-%MSVC_CRT_LINKAGE%-xp\debug\crypto.lib"
-            copy /y crypto\crypto.pdb "..\%Platform%-%MSVC_CRT_LINKAGE%-xp\debug\crypto.pdb"
-            copy /y crypto\fipsmodule\CMakeFiles\fipsmodule.dir\vc140.pdb "..\%Platform%-%MSVC_CRT_LINKAGE%-xp\debug\vc140.pdb"
-            cd ..
-          )
-
-          rem check the existing release lib
-          if not exist "%Platform%-%MSVC_CRT_LINKAGE%-xp\crypto.lib" (
-            rmdir build /s /q
-            mkdir build
-            cd build
-            cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DCMAKE_MSVC_CRT_LINKAGE=%MSVC_CRT_LINKAGE% -DCMAKE_C_COMPILER_TARGET=%COMPILER_TARGET% -DCMAKE_CXX_COMPILER_TARGET=%COMPILER_TARGET% %CMAKE_EXTRA_OPTIONS% .. || exit /b 1
-            ninja crypto || exit /b 1
-            copy /y crypto\crypto.lib "..\%Platform%-%MSVC_CRT_LINKAGE%-xp\crypto.lib"
-            copy /y crypto\crypto.pdb "..\%Platform%-%MSVC_CRT_LINKAGE%-xp\crypto.pdb"
-            copy /y crypto\fipsmodule\CMakeFiles\fipsmodule.dir\vc140.pdb "..\%Platform%-%MSVC_CRT_LINKAGE%-xp\vc140.pdb"
-            cd ..
-          )
-
-          cd ..\..
-        shell: cmd
+          call "scripts\build-boringssl.bat"
   win-msvc-release:
     needs: cache-toolchain-win
     runs-on: windows-2019
@@ -411,7 +212,7 @@ jobs:
       MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
       VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
       # Indicates the location of the vcpkg as a Git submodule of the project repository.
-      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+      VCPKG_ROOT: ${{ github.workspace }}\vcpkg
     steps:
       - uses: actions/checkout@v2
         with:
@@ -488,7 +289,7 @@ jobs:
           set Platform=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
 
-          python .\scripts\build.py || exit /b
+          python -u .\scripts\build.py || exit /b
 
           exit /b 0
 
@@ -543,7 +344,7 @@ jobs:
       MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
       VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
       # Indicates the location of the vcpkg as a Git submodule of the project repository.
-      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+      VCPKG_ROOT: ${{ github.workspace }}\vcpkg
     steps:
       - uses: actions/checkout@v2
         with:
@@ -614,6 +415,7 @@ jobs:
           set "VCINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC"
           set "WindowsSDKVersion=10.0.10240.0\"
           set "WindowsSdkDir=C:\Program Files (x86)\Windows Kits\10"
+          set "PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;%PATH%"
 
           set CC=
           set CXX=
@@ -623,12 +425,13 @@ jobs:
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
           set COMPILER_TARGET=i686-pc-windows-msvc
           set ALLOW_XP=on
-          set CMAKE_EXTRA_OPTIONS=-DALLOW_XP=on
 
           if "${{ matrix.arch }}" == "x86" (call :SetX86CompileTriple)
           if "${{ matrix.arch }}" == "amd64" (call :SetX64CompileTriple)
 
-          python .\scripts\build.py || exit /b
+          call "scripts\callxp-%Platform%.cmd"
+
+          python -u .\scripts\build.py || exit /b
 
           goto :eof
 
@@ -687,7 +490,7 @@ jobs:
       MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
       VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
       # Indicates the location of the vcpkg as a Git submodule of the project repository.
-      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+      VCPKG_ROOT: ${{ github.workspace }}\vcpkg
     steps:
       - uses: actions/checkout@v2
         with:
@@ -764,7 +567,7 @@ jobs:
           set Platform=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
 
-          python .\scripts\build.py || exit /b
+          python -u .\scripts\build.py || exit /b
 
           exit /b 0
 
@@ -783,7 +586,7 @@ jobs:
           set Platform=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
 
-          python .\scripts\build.py || exit /b
+          python -u .\scripts\build.py || exit /b
 
           exit /b 0
 
@@ -802,7 +605,7 @@ jobs:
           set Platform=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
 
-          python .\scripts\build.py || exit /b
+          python -u .\scripts\build.py || exit /b
 
           exit /b 0
 
@@ -824,7 +627,7 @@ jobs:
       MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
       VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
       # Indicates the location of the vcpkg as a Git submodule of the project repository.
-      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+      VCPKG_ROOT: ${{ github.workspace }}\vcpkg
     steps:
       - uses: actions/checkout@v2
         with:
@@ -901,7 +704,7 @@ jobs:
           set Platform=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
 
-          python .\scripts\build.py || exit /b
+          python -u .\scripts\build.py || exit /b
 
           exit /b 0
 
@@ -956,7 +759,7 @@ jobs:
       MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
       VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
       # Indicates the location of the vcpkg as a Git submodule of the project repository.
-      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+      VCPKG_ROOT: ${{ github.workspace }}\vcpkg
     steps:
       - uses: actions/checkout@v2
         with:
@@ -1034,7 +837,8 @@ jobs:
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
 
           set "CLANG_TIDY_EXECUTABLE=%CD%/third_party/llvm-build/Release+Asserts/bin/clang-tidy.exe"
-          python .\scripts\build.py || exit /b
+
+          python -u .\scripts\build.py || exit /b
 
           exit /b 0
 

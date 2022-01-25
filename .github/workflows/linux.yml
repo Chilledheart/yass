@@ -44,10 +44,12 @@ jobs:
           key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: "Install dependency: clang and clang-tidy"
         run: |
-          mkdir -p third_party/llvm-build/Release+Asserts
-          CLANG_REVISION=$(< CLANG_REVISION)
-          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
-          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+          if [ ! -d third_party/llvm-build/Release+Asserts ]; then
+            mkdir -p third_party/llvm-build/Release+Asserts
+            CLANG_REVISION=$(< CLANG_REVISION)
+            curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+            curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+          fi
       - name: "Install dependency: boringssl"
         run: |
           cd third_party/boringssl
