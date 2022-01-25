@@ -66,7 +66,7 @@ ninja
 ## Fedora/Packaging
 
 ```
-sudo dnf install gcc make python bash coreutils diffutils patch
+sudo dnf install gcc rpm-build rpm-devel rpmlint make python bash coreutils diffutils patch rpmdevtools
 ./scripts/build-rpm.sh
 ```
 
