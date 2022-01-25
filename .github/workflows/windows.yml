@@ -57,36 +57,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/crypto.lib
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/crypto.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/vc140.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/debug/crypto.lib
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/debug/crypto.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/debug/vc140.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/crypto.lib
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/crypto.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/vc140.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/debug/crypto.lib
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/debug/crypto.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/debug/vc140.pdb
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/crypto.lib
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/crypto.pdb
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/vc140.pdb
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/debug/crypto.lib
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/debug/crypto.pdb
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/debug/vc140.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/crypto.lib
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/crypto.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/vc140.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/debug/crypto.lib
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/debug/crypto.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/debug/vc140.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/crypto.lib
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/crypto.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/vc140.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/debug/crypto.lib
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/debug/crypto.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/debug/vc140.pdb
+            third_party/boringssl/**/crypto.lib
+            third_party/boringssl/**/crypto.pdb
+            third_party/boringssl/**/vc140.pdb
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: "Install dependency: nasm"
         run: |
@@ -207,7 +180,7 @@ jobs:
         crt-linkage: [dynamic, static]
         build_type: [Debug, RelWithDebInfo]
     env:
-      BUNDLE_NAME: 'yass-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}'
+      BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}'
       BUILD_TYPE: '${{ matrix.build_type }}'
       MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
       VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
@@ -246,36 +219,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/crypto.lib
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/crypto.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/vc140.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/debug/crypto.lib
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/debug/crypto.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/debug/vc140.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/crypto.lib
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/crypto.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/vc140.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/debug/crypto.lib
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/debug/crypto.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/debug/vc140.pdb
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/crypto.lib
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/crypto.pdb
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/vc140.pdb
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/debug/crypto.lib
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/debug/crypto.pdb
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/debug/vc140.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/crypto.lib
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/crypto.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/vc140.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/debug/crypto.lib
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/debug/crypto.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/debug/vc140.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/crypto.lib
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/crypto.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/vc140.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/debug/crypto.lib
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/debug/crypto.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/debug/vc140.pdb
+            third_party/boringssl/**/crypto.lib
+            third_party/boringssl/**/crypto.pdb
+            third_party/boringssl/**/vc140.pdb
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
@@ -339,7 +285,7 @@ jobs:
         crt-linkage: [dynamic, static]
         build_type: [Debug, RelWithDebInfo]
     env:
-      BUNDLE_NAME: 'yass-xp-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}'
+      BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}'
       BUILD_TYPE: '${{ matrix.build_type }}'
       MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
       VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
@@ -378,36 +324,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/crypto.lib
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/crypto.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/vc140.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/debug/crypto.lib
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/debug/crypto.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/debug/vc140.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/crypto.lib
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/crypto.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/vc140.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/debug/crypto.lib
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/debug/crypto.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/debug/vc140.pdb
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/crypto.lib
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/crypto.pdb
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/vc140.pdb
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/debug/crypto.lib
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/debug/crypto.pdb
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/debug/vc140.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/crypto.lib
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/crypto.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/vc140.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/debug/crypto.lib
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/debug/crypto.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/debug/vc140.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/crypto.lib
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/crypto.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/vc140.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/debug/crypto.lib
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/debug/crypto.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/debug/vc140.pdb
+            third_party/boringssl/**/crypto.lib
+            third_party/boringssl/**/crypto.pdb
+            third_party/boringssl/**/vc140.pdb
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
@@ -524,36 +443,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/crypto.lib
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/crypto.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/vc140.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/debug/crypto.lib
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/debug/crypto.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/debug/vc140.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/crypto.lib
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/crypto.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/vc140.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/debug/crypto.lib
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/debug/crypto.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/debug/vc140.pdb
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/crypto.lib
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/crypto.pdb
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/vc140.pdb
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/debug/crypto.lib
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/debug/crypto.pdb
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/debug/vc140.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/crypto.lib
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/crypto.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/vc140.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/debug/crypto.lib
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/debug/crypto.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/debug/vc140.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/crypto.lib
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/crypto.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/vc140.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/debug/crypto.lib
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/debug/crypto.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/debug/vc140.pdb
+            third_party/boringssl/**/crypto.lib
+            third_party/boringssl/**/crypto.pdb
+            third_party/boringssl/**/vc140.pdb
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build Vistual Studio 2019 (v142)
         run: |
@@ -622,7 +514,7 @@ jobs:
         build_type: [Debug, RelWithDebInfo]
         crt-linkage: [dynamic]
     env:
-      BUNDLE_NAME: 'yass-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}'
+      BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}'
       BUILD_TYPE: '${{ matrix.build_type }}'
       MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
       VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
@@ -661,36 +553,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/crypto.lib
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/crypto.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/vc140.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/debug/crypto.lib
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/debug/crypto.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/debug/vc140.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/crypto.lib
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/crypto.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/vc140.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/debug/crypto.lib
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/debug/crypto.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/debug/vc140.pdb
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/crypto.lib
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/crypto.pdb
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/vc140.pdb
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/debug/crypto.lib
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/debug/crypto.pdb
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/debug/vc140.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/crypto.lib
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/crypto.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/vc140.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/debug/crypto.lib
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/debug/crypto.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/debug/vc140.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/crypto.lib
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/crypto.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/vc140.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/debug/crypto.lib
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/debug/crypto.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/debug/vc140.pdb
+            third_party/boringssl/**/crypto.lib
+            third_party/boringssl/**/crypto.pdb
+            third_party/boringssl/**/vc140.pdb
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
@@ -793,36 +658,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/crypto.lib
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/crypto.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/vc140.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/debug/crypto.lib
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/debug/crypto.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}/debug/vc140.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/crypto.lib
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/crypto.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/vc140.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/debug/crypto.lib
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/debug/crypto.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}/debug/vc140.pdb
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/crypto.lib
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/crypto.pdb
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/vc140.pdb
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/debug/crypto.lib
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/debug/crypto.pdb
-            third_party/boringssl/arm64-${{ matrix.crt-linkage }}/debug/vc140.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/crypto.lib
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/crypto.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/vc140.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/debug/crypto.lib
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/debug/crypto.pdb
-            third_party/boringssl/x86-${{ matrix.crt-linkage }}-xp/debug/vc140.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/crypto.lib
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/crypto.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/vc140.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/debug/crypto.lib
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/debug/crypto.pdb
-            third_party/boringssl/x64-${{ matrix.crt-linkage }}-xp/debug/vc140.pdb
+            third_party/boringssl/**/crypto.lib
+            third_party/boringssl/**/crypto.pdb
+            third_party/boringssl/**/vc140.pdb
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |

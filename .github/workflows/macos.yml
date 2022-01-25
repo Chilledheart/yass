@@ -103,7 +103,7 @@ jobs:
         arch: [universal]
         build_type: [Debug, RelWithDebInfo]
     env:
-      BUNDLE_NAME: 'yass-${{ github.event.release.tag_name }}-${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}'
+      BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}'
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
       - uses: actions/checkout@v2

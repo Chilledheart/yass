@@ -158,8 +158,8 @@ jobs:
         env: [ubuntu-18.04, ubuntu-20.04]
         arch: [x64]
     env:
-      BUNDLE_NAME: 'yass_${{ github.event.release.tag_name }}-${{ matrix.env }}-${{ matrix.arch }}'
-      DBG_BUNDLE_NAME: 'yass-dbg_${{ github.event.release.tag_name }}-${{ matrix.env }}-${{ matrix.arch }}'
+      BUNDLE_NAME: 'yass_${{ github.job }}-${{ matrix.env }}-${{ matrix.arch }}-${{ github.event.release.tag_name }}'
+      DBG_BUNDLE_NAME: 'yass-dbg_${{ github.job }}-${{ matrix.env }}-${{ matrix.arch }}-${{ github.event.release.tag_name }}'
     steps:
       - uses: actions/checkout@v2
         with:
