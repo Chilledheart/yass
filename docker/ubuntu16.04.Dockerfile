@@ -6,8 +6,8 @@ RUN apt-get update -qq && \
   apt-get install -y software-properties-common apt-transport-https wget && \
   add-apt-repository ppa:ubuntu-toolchain-r/test && \
   add-apt-repository ppa:git-core/ppa && \
-  wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /usr/share/keyrings/kitware-archive-keyring.gpg > /dev/null && \
-  echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ xenial main' | sudo tee /etc/apt/sources.list.d/kitware.list >/dev/null && \
+  wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /usr/share/keyrings/kitware-archive-keyring.gpg > /dev/null && \
+  echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ xenial main' | tee /etc/apt/sources.list.d/kitware.list >/dev/null && \
   apt-get update -qq && \
   rm /usr/share/keyrings/kitware-archive-keyring.gpg && \
   apt-get install -y kitware-archive-keyring && \
