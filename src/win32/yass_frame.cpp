@@ -71,6 +71,7 @@ BEGIN_MESSAGE_MAP(CYassFrame, CFrameWnd)
   ON_WM_CLOSE()
   // https://docs.microsoft.com/en-us/cpp/mfc/on-update-command-ui-macro?view=msvc-170
   ON_UPDATE_COMMAND_UI(ID_APP_MSG, &CYassFrame::OnUpdateStatusBar)
+#if defined(_WIN32_WINNT_WINBLUE) && _WIN32_WINNT >= _WIN32_WINNT_WINBLUE
   // https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows?redirectedfrom=MSDN
   // https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-reference
   // https://docs.microsoft.com/en-us/windows/win32/hidpi/wm-getdpiscaledsize
@@ -78,6 +79,7 @@ BEGIN_MESSAGE_MAP(CYassFrame, CFrameWnd)
   // https://docs.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged-beforeparent
   // https://docs.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged-afterparent
   ON_MESSAGE(WM_DPICHANGED, &CYassFrame::OnDPIChanged)
+#endif
   ON_BN_CLICKED(IDC_START, &CYassFrame::OnStartButtonClicked)
   ON_BN_CLICKED(IDC_STOP, &CYassFrame::OnStopButtonClicked)
   ON_BN_CLICKED(IDC_AUTOSTART_CHECKBOX,

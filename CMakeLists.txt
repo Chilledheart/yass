@@ -123,6 +123,85 @@ option(GUI "Build against GUI." OFF)
 option(GUI_SANDBOX "Build against GUI sandbox (MAC Only)." OFF)
 
 # *****************************************************************************************
+#           Platform-specific
+# *****************************************************************************************
+
+if (MSVC)
+  option(ALLOW_XP "Build with Windows XP support." OFF)
+  ## //
+  ## // _WIN32_WINNT version constants
+  ## //
+  ## #define _WIN32_WINNT_NT4                    0x0400 // Windows NT 4.0
+  ## #define _WIN32_WINNT_WIN2K                  0x0500 // Windows 2000
+  ## #define _WIN32_WINNT_WINXP                  0x0501 // Windows XP
+  ## #define _WIN32_WINNT_WS03                   0x0502 // Windows Server 2003
+  ## #define _WIN32_WINNT_WIN6                   0x0600 // Windows Vista
+  ## #define _WIN32_WINNT_VISTA                  0x0600 // Windows Vista
+  ## #define _WIN32_WINNT_WS08                   0x0600 // Windows Server 2008
+  ## #define _WIN32_WINNT_LONGHORN               0x0600 // Windows Vista
+  ## #define _WIN32_WINNT_WIN7                   0x0601 // Windows 7
+  ## #define _WIN32_WINNT_WIN8                   0x0602 // Windows 8
+  ## #define _WIN32_WINNT_WINBLUE                0x0603 // Windows 8.1
+  ## #define _WIN32_WINNT_WINTHRESHOLD           0x0A00 // Windows 10
+  ## #define _WIN32_WINNT_WIN10                  0x0A00 // Windows 10
+
+  ## definitions FOR CRT
+  add_definitions(-D__STD_C)
+  add_definitions(-D_CRT_RAND_S)
+  add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
+  add_definitions(-D_SCL_SECURE_NO_DEPRECATE)
+
+  ## definitions FOR Windows SDK
+  add_definitions(-D_WIN32)
+  add_definitions(-DWIN32)
+  add_definitions(-D_WINDOWS)
+  add_definitions(-D_ATL_NO_OPENGL)
+  add_definitions(-D_HAS_EXCEPTIONS=0)
+  add_definitions(-DNOMINMAX)
+  add_definitions(-DUNICODE)
+  add_definitions(-DWIN32_LEAN_AND_MEAN)
+  add_definitions(-D_UNICODE)
+  add_definitions(-DXP_OS2)
+  add_definitions(-D_WINSOCK_DEPRECATED_NO_WARNINGS)
+
+  # not targeting Windows Runtime
+  add_definitions(-DWINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP)
+
+  if (ALLOW_XP)
+    add_definitions(-D_USING_V110_SDK71_)
+    add_definitions(-D_WIN32_WINNT=0x0501)
+    add_definitions(-DWINVER=0x0501)
+    # for winapifamily.h
+    include_directories(third_party/xp-compatible SYSTEM)
+  else()
+    add_definitions(-D_WIN32_WINNT=0x0601)
+    add_definitions(-DWINVER=0x0601)
+  endif()
+
+  # set linker option for x86
+  if (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "x86")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SAFESEH /largeaddressaware")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /SAFESEH /largeaddressaware")
+  endif()
+
+  # set linker for subsystem
+  # Windows ARM64 requires Windows 10
+  if (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "arm64")
+    set(SUBSYSTEM_VERSION_SUFFIX ",10.0")
+  elseif (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "amd64")
+    # 5.02 = Windows Server 2003/XP SP2
+    set(SUBSYSTEM_VERSION_SUFFIX ",5.02")
+  elseif (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "x86")
+    # 5.01 = Windows XP
+    set(SUBSYSTEM_VERSION_SUFFIX ",5.01")
+  endif()
+  set(CMAKE_C_CREATE_WIN32_EXE "/subsystem:windows${SUBSYSTEM_VERSION_SUFFIX}")
+  set(CMAKE_CXX_CREATE_WIN32_EXE "/subsystem:windows${SUBSYSTEM_VERSION_SUFFIX}")
+  set(CMAKE_C_CREATE_CONSOLE_EXE "/subsystem:console${SUBSYSTEM_VERSION_SUFFIX}")
+  set(CMAKE_CXX_CREATE_CONSOLE_EXE "/subsystem:console${SUBSYSTEM_VERSION_SUFFIX}")
+endif()
+
+# *****************************************************************************************
 #           Third Party Libraries
 # *****************************************************************************************
 
@@ -199,8 +278,12 @@ if (MSVC)
         ${CMAKE_REQUIRED_INCLUDES})
 
     # boringssl
+    if (ALLOW_XP)
+      set(BORINGSSL_LIB_SUFFIX "-xp")
+    endif()
+
     find_library(BORINGSSL_CRYPTO_RELEASE_LIB crypto
-      PATHS ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}-${CMAKE_MSVC_CRT_LINKAGE}
+      PATHS ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}-${CMAKE_MSVC_CRT_LINKAGE}${BORINGSSL_LIB_SUFFIX}
             ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}
             ${boringssl_DIR}/
             ${boringssl_DIR}/build/crypto/Release
@@ -208,7 +291,7 @@ if (MSVC)
       REQUIRED
       NO_DEFAULT_PATH)
     find_library(BORINGSSL_CRYPTO_DEBUG_LIB crypto
-      PATHS ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}-${CMAKE_MSVC_CRT_LINKAGE}/debug
+      PATHS ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}-${CMAKE_MSVC_CRT_LINKAGE}${BORINGSSL_LIB_SUFFIX}/debug
             ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}/debug
             ${boringssl_DIR}/debug
             ${boringssl_DIR}/build/crypto/Debug
@@ -588,6 +671,7 @@ elseif (MSVC)
       "C4986" # VC2015 specific: exception specification does not match previous declaration"
       "C4814" # VC2015 specific: in C++14 'constexpr' will not imply 'const'; consider explicitly specifying 'const'
       "C4702" # VC2015 specific: unreachable code
+      "C4917" # VC2015,xp specific: a GUID can only be associated with a class, interface or namespace
       )
   set(MSVC_LEVEL4_WARNINGS_LIST
       # See https://connect.microsoft.com/VisualStudio/feedback/details/1217660/warning-c4265-when-using-functional-header
@@ -733,6 +817,12 @@ else()
       set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /INCREMENTAL:NO /DEBUG /OPT:ICF")
     endif()
 
+    # Tell linker to include FIXUP information symbol data
+    if (NOT COMPILER_CLANG)
+      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /PROFILE")
+      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /PROFILE")
+    endif()
+
     ## Disable LTCG for static libraries because this setting introduces ABI incompatibility between minor compiler versions
     if (NOT VCPKG_LIBRARY_LINKAGE STREQUAL "static")
       set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /GL")
@@ -741,40 +831,6 @@ else()
       set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
       set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
     endif()
-
-    ## #define WINVER 0x0A00
-    ## #define _WIN32_WINNT 0x0A00
-    ## //
-    ## // _WIN32_WINNT version constants
-    ## //
-    ## #define _WIN32_WINNT_NT4                    0x0400 // Windows NT 4.0
-    ## #define _WIN32_WINNT_WIN2K                  0x0500 // Windows 2000
-    ## #define _WIN32_WINNT_WINXP                  0x0501 // Windows XP
-    ## #define _WIN32_WINNT_WS03                   0x0502 // Windows Server 2003
-    ## #define _WIN32_WINNT_WIN6                   0x0600 // Windows Vista
-    ## #define _WIN32_WINNT_VISTA                  0x0600 // Windows Vista
-    ## #define _WIN32_WINNT_WS08                   0x0600 // Windows Server 2008
-    ## #define _WIN32_WINNT_LONGHORN               0x0600 // Windows Vista
-    ## #define _WIN32_WINNT_WIN7                   0x0601 // Windows 7
-    ## #define _WIN32_WINNT_WIN8                   0x0602 // Windows 8
-    ## #define _WIN32_WINNT_WINBLUE                0x0603 // Windows 8.1
-    ## #define _WIN32_WINNT_WINTHRESHOLD           0x0A00 // Windows 10
-    ## #define _WIN32_WINNT_WIN10                  0x0A00 // Windows 10
-
-    ## definitions
-    add_definitions(-D_HAS_EXCEPTIONS=0)
-    add_definitions(-DNOMINMAX)
-    add_definitions(-DUNICODE)
-    add_definitions(-DWIN32_LEAN_AND_MEAN)
-    add_definitions(-DWINVER=0x0601)
-    add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
-    add_definitions(-D_SCL_SECURE_NO_DEPRECATE)
-    add_definitions(-D_UNICODE)
-    add_definitions(-D_WIN32_WINNT=0x0601)
-    add_definitions(-DXP_OS2)
-    add_definitions(-D_WIN32)
-    add_definitions(-DWIN32)
-    add_definitions(-D_WINSOCK_DEPRECATED_NO_WARNINGS)
 
     ## not omit stack frame pointer
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Oy-")

@@ -9,8 +9,6 @@
 
 class Utils {
  public:
-  static bool GetAutoStart();
-  static void EnableAutoStart(bool on);
   enum DpiAwarenessType {
     DpiAwarenessUnware,
     DpiAwarenessSystem,
@@ -22,6 +20,8 @@ class Utils {
   static bool SetMixedThreadDpiHostingBehavior();
   // Determine the DPI to use, according to the DPI awareness mode
   static unsigned int GetDpiForWindowOrSystem(HWND hWnd);
+  static bool GetAutoStart();
+  static void EnableAutoStart(bool on);
 };
 
 #define DEFAULT_AUTOSTART_NAME "YASS"

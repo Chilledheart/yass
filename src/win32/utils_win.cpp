@@ -11,8 +11,10 @@
   L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"
 
 #include <Tchar.h>
-#include <shellscalingapi.h>
 #include <windows.h>
+
+#if _WIN32_WINNT >= _WIN32_WINNT_VISTA
+#include <shellscalingapi.h>
 
 // https://docs.microsoft.com/en-us/windows/win32/winprog/using-the-windows-headers
 //
@@ -324,102 +326,6 @@ DPI_HOSTING_BEHAVIOR SetThreadDpiHostingBehavior(DPI_HOSTING_BEHAVIOR value) {
 
 }  // namespace
 
-static LONG get_win_run_key(HKEY* pKey) {
-  const wchar_t* key_run = DEFAULT_AUTOSTART_KEY;
-  LONG result =
-      RegOpenKeyExW(HKEY_CURRENT_USER, key_run, 0L, KEY_WRITE | KEY_READ, pKey);
-
-  return result;
-}
-
-static int add_to_auto_start(const wchar_t* appname_w, const wchar_t* path_w) {
-  HKEY hKey;
-  LONG result = get_win_run_key(&hKey);
-  if (result != ERROR_SUCCESS) {
-    return -1;
-  }
-
-  DWORD n = sizeof(wchar_t) * (wcslen(path_w) + 1);
-
-  result = RegSetValueExW(hKey, appname_w, 0, REG_SZ,
-                          reinterpret_cast<const BYTE*>(path_w), n);
-
-  RegCloseKey(hKey);
-  if (result != ERROR_SUCCESS) {
-    return -1;
-  }
-
-  return 0;
-}
-
-static int delete_from_auto_start(const wchar_t* appname) {
-  HKEY hKey;
-  LONG result = get_win_run_key(&hKey);
-  if (result != ERROR_SUCCESS) {
-    return -1;
-  }
-
-  result = RegDeleteValueW(hKey, appname);
-  RegCloseKey(hKey);
-  if (result != ERROR_SUCCESS) {
-    return -1;
-  }
-
-  return 0;
-}
-
-static int get_yass_auto_start() {
-  HKEY hKey;
-  LONG result = get_win_run_key(&hKey);
-  if (result != ERROR_SUCCESS) {
-    return -1;
-  }
-
-  char buf[MAX_PATH] = {0};
-  DWORD len = sizeof(buf);
-  result = RegQueryValueExW(hKey,                          /* Key */
-                            _T(DEFAULT_AUTOSTART_NAME),    /* value */
-                            nullptr,                       /* reserved */
-                            nullptr,                       /* output type */
-                            reinterpret_cast<LPBYTE>(buf), /* output data */
-                            &len);                         /* output length */
-
-  RegCloseKey(hKey);
-  if (result != ERROR_SUCCESS) {
-    /* yass applet auto start no set  */
-    return 0;
-  }
-
-  return 1;
-}
-
-static int set_yass_auto_start(bool on) {
-  int result = 0;
-  if (on) {
-    /* turn on auto start  */
-    wchar_t applet_path[MAX_PATH];
-    if (GetModuleFileNameW(nullptr, applet_path, MAX_PATH) == 0) {
-      return -1;
-    }
-
-    result = add_to_auto_start(_T(DEFAULT_AUTOSTART_NAME), applet_path);
-
-  } else {
-    /* turn off auto start */
-    result = delete_from_auto_start(_T(DEFAULT_AUTOSTART_NAME));
-  }
-  return result;
-}
-
-bool Utils::GetAutoStart() {
-  int ret = get_yass_auto_start();
-  return ret == 1;
-}
-
-void Utils::EnableAutoStart(bool on) {
-  set_yass_auto_start(on);
-}
-
 // https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows
 // https://docs.microsoft.com/en-us/windows/win32/hidpi/setting-the-default-dpi-awareness-for-a-process
 // https://docs.microsoft.com/en-us/windows/win32/hidpi/dpi-awareness-context
@@ -623,6 +529,119 @@ unsigned int Utils::GetDpiForWindowOrSystem(HWND hWnd) {
   ::ReleaseDC(nullptr, hDC);
 
   return ydpi;
+}
+
+#else
+bool Utils::SetDpiAwareness(DpiAwarenessType /*awareness_type*/) {
+  return false;
+}
+
+bool Utils::SetMixedThreadDpiHostingBehavior() {
+  return false;
+}
+
+unsigned int Utils::GetDpiForWindowOrSystem(HWND /*hWnd*/) {
+  return 96;
+}
+#endif
+
+namespace {
+LONG get_win_run_key(HKEY* pKey) {
+  const wchar_t* key_run = DEFAULT_AUTOSTART_KEY;
+  LONG result =
+      RegOpenKeyExW(HKEY_CURRENT_USER, key_run, 0L, KEY_WRITE | KEY_READ, pKey);
+
+  return result;
+}
+
+int add_to_auto_start(const wchar_t* appname_w, const wchar_t* path_w) {
+  HKEY hKey;
+  LONG result = get_win_run_key(&hKey);
+  if (result != ERROR_SUCCESS) {
+    return -1;
+  }
+
+  DWORD n = sizeof(wchar_t) * (wcslen(path_w) + 1);
+
+  result = RegSetValueExW(hKey, appname_w, 0, REG_SZ,
+                          reinterpret_cast<const BYTE*>(path_w), n);
+
+  RegCloseKey(hKey);
+  if (result != ERROR_SUCCESS) {
+    return -1;
+  }
+
+  return 0;
+}
+
+int delete_from_auto_start(const wchar_t* appname) {
+  HKEY hKey;
+  LONG result = get_win_run_key(&hKey);
+  if (result != ERROR_SUCCESS) {
+    return -1;
+  }
+
+  result = RegDeleteValueW(hKey, appname);
+  RegCloseKey(hKey);
+  if (result != ERROR_SUCCESS) {
+    return -1;
+  }
+
+  return 0;
+}
+
+int get_yass_auto_start() {
+  HKEY hKey;
+  LONG result = get_win_run_key(&hKey);
+  if (result != ERROR_SUCCESS) {
+    return -1;
+  }
+
+  char buf[MAX_PATH] = {0};
+  DWORD len = sizeof(buf);
+  result = RegQueryValueExW(hKey,                          /* Key */
+                            _T(DEFAULT_AUTOSTART_NAME),    /* value */
+                            nullptr,                       /* reserved */
+                            nullptr,                       /* output type */
+                            reinterpret_cast<LPBYTE>(buf), /* output data */
+                            &len);                         /* output length */
+
+  RegCloseKey(hKey);
+  if (result != ERROR_SUCCESS) {
+    /* yass applet auto start no set  */
+    return 0;
+  }
+
+  return 1;
+}
+
+int set_yass_auto_start(bool on) {
+  int result = 0;
+  if (on) {
+    /* turn on auto start  */
+    wchar_t applet_path[MAX_PATH];
+    if (GetModuleFileNameW(nullptr, applet_path, MAX_PATH) == 0) {
+      return -1;
+    }
+
+    result = add_to_auto_start(_T(DEFAULT_AUTOSTART_NAME), applet_path);
+
+  } else {
+    /* turn off auto start */
+    result = delete_from_auto_start(_T(DEFAULT_AUTOSTART_NAME));
+  }
+  return result;
+}
+
+} // namespace
+
+bool Utils::GetAutoStart() {
+  int ret = get_yass_auto_start();
+  return ret == 1;
+}
+
+void Utils::EnableAutoStart(bool on) {
+  set_yass_auto_start(on);
 }
 
 #endif  // _WIN32

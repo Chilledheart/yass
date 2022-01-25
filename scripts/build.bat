@@ -15,7 +15,6 @@ REM   14.30-14.3?:v143:Visual Studio 2022
 REM   14.20-14.29:v142:Visual Studio 2019
 REM   14.10-14.19:v141:Visual Studio 2017
 REM   14.00-14.00:v140:Visual Studio 2015
-REM Currently Visual Studio 2017 is not supported
 
 REM You need to modify the paths below:
 
