@@ -9,13 +9,13 @@ cd $PWD/..
 /usr/bin/git ls-files --recurse-submodules | \
   tar caf 1.0.0.tar.gz --xform='s+^+yass-1.0.0/+' -T -
 
-mkdir -p ../rpmbuild/SOURCES
-cp -fv 1.0.0.tar.gz ../rpmbuild/SOURCES
+mkdir -p $HOME/rpmbuild/SOURCES
+cp -fv 1.0.0.tar.gz $HOME/rpmbuild/SOURCES
 
-mkdir -p ../rpmbuild/SPECS
-cp -fv yass.spec ../rpmbuild/SPECS
+mkdir -p $HOME/rpmbuild/SPECS
+cp -fv yass.spec $HOME/rpmbuild/SPECS
 
-pushd ../rpmbuild/SPECS/
+pushd $HOME/rpmbuild/SPECS/
 rpmbuild -bs yass.spec
 rpmbuild -bb yass.spec
 popd
