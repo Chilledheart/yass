@@ -1,20 +1,8 @@
 # Yet Another Shadow Socket
 
-[![License][license-svg]][license-link]
-
-[![Build Artifacts](https://github.com/Chilledheart/yass/actions/workflows/build.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/build.yml)
-
-## Windows 7
-<img width="484" alt="snapshot-win7" src="https://user-images.githubusercontent.com/54673341/69158208-02fa3600-0b21-11ea-9bf4-c38e26ff38a3.png">
-
-## Windows 10 on ARM64
-<img width="529" alt="Screen Shot 2020-12-05 at 6 49 32 PM" src="https://user-images.githubusercontent.com/54673341/101240623-715d6680-372b-11eb-9124-43817adb96a2.png">
-
 ## Once upon a time, there are (virtual) Nics, so are (shadow) Sockets.
 
 yass, or Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
-
-For now, it is heavily developed under macOS.
 
 ## Benefit
 - Better scale, less memory consumption and CPU cycles, less than 0.1% on my iMac.
@@ -32,10 +20,22 @@ For now, it is heavily developed under macOS.
 - [AEAD_CHACHA20_POLY1305][chacha20]
 - [AEAD_XCHACHA20_POLY1305][chacha20]
 
+[![License][license-svg]][license-link]
+
+[![Windows Build](https://github.com/Chilledheart/yass/actions/workflows/windows.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/windows.yml)
+[![Linux Build](https://github.com/Chilledheart/yass/actions/workflows/linux.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/linux.yml)
+[![macOS Build](https://github.com/Chilledheart/yass/actions/workflows/macos.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/macos.yml)
+
 ### Operating System
 - macOS (MacOS 10.10 or later, macOS 11.0 or later, Apple Silicon supported)
 - Linux (CentOS 8 or later, Debian 9 or later, Ubuntu 16.04 or later)
 - Windows (Windows Vista or later, Windows XP standalone supported)
+
+## Windows 7
+<img width="484" alt="snapshot-win7" src="https://user-images.githubusercontent.com/54673341/69158208-02fa3600-0b21-11ea-9bf4-c38e26ff38a3.png">
+
+## Windows 10 on ARM64
+<img width="529" alt="Screen Shot 2020-12-05 at 6 49 32 PM" src="https://user-images.githubusercontent.com/54673341/101240623-715d6680-372b-11eb-9124-43817adb96a2.png">
 
 ## Notes on Windows 7, Windows 8 and Windows 8.1
 

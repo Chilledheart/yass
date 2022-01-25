@@ -1,0 +1,191 @@
+name: Build Artifacts (Linux)
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [master]
+    paths-ignore: [README.md, BUILDING.md]
+  release:
+    types: [published]
+defaults:
+  run:
+    shell: bash
+env:
+  CACHE_EPOCH: 9
+jobs:
+  cache-toolchain-linux:
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64]
+    env:
+      CLANG_ARCH: 'Linux_x64'
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
+      - name: Populate depedencies
+        run: sudo apt-get install -y cmake ninja-build
+      - name: Cache clang
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/llvm-build/Release+Asserts
+          key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+      - name: Get boringssl commit
+        run: |
+          git submodule status third_party/boringssl >> boringssl.lock
+      - name: Cache boringssl packages
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/boringssl/libcrypto.a
+          key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
+      - name: "Install dependency: clang and clang-tidy"
+        run: |
+          mkdir -p third_party/llvm-build/Release+Asserts
+          CLANG_REVISION=$(< CLANG_REVISION)
+          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+          curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+      - name: "Install dependency: boringssl"
+        run: |
+          cd third_party/boringssl
+
+          if [ ! -f libcrypto.a ]; then
+            mkdir build
+            cd build
+            cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
+            ninja crypto
+            cp -fv crypto/libcrypto.a ../libcrypto.a
+            cd ..
+            rm -rf build
+          fi
+  ubuntu-latest:
+    needs: cache-toolchain-linux
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+        arch: [x64]
+        build_type: [Debug, RelWithDebInfo]
+    env:
+      BUILD_TYPE: '${{ matrix.build_type }}'
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
+      - name: Cache clang
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/llvm-build/Release+Asserts
+          key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+      - name: Get boringssl commit
+        run: |
+          git submodule status third_party/boringssl >> boringssl.lock
+      - name: Cache boringssl packages
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/boringssl/libcrypto.a
+          key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
+      - name: Populate depedencies
+        run: sudo apt-get install -y cmake ninja-build libgtk-3-dev libgtkmm-3.0-dev
+      - name: Build
+        run: |
+          if [ {{ matrix.compiler }} = "clang" ]; then
+            export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
+            export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
+          else
+            export CC=gcc
+            export CXX=g++
+          fi
+          mkdir build
+          cd build
+          cmake -G Ninja -DCLI=on -DSERVER=on -DGUI=on ..
+          ninja -v yass_cli yass_server yass
+          cd ..
+  ubuntu-latest-clang-tidy:
+    needs: cache-toolchain-linux
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64]
+        build_type: [Release]
+    env:
+      BUILD_TYPE: '${{ matrix.build_type }}'
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
+      - name: Cache clang
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/llvm-build/Release+Asserts
+          key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+      - name: Get boringssl commit
+        run: |
+          git submodule status third_party/boringssl >> boringssl.lock
+      - name: Cache boringssl packages
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/boringssl/libcrypto.a
+          key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
+      - name: Populate depedencies
+        run: sudo apt-get install -y cmake ninja-build libgtk-3-dev libgtkmm-3.0-dev
+      - name: Build
+        run: |
+          export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
+          export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
+          export CLANG_TIDY_EXECUTABLE=$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy
+          mkdir build
+          cd build
+          cmake -G Ninja -DENABLE_CLANG_TIDY=yes -DCLANG_TIDY_EXECUTABLE="$CLANG_TIDY_EXECUTABLE" -DCLI=on -DSERVER=on -DGUI=on ..
+          ninja -v yass_cli yass_server yass
+          cd ..
+  ubuntu-release:
+    runs-on: ${{ matrix.env }}
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [ubuntu-18.04, ubuntu-20.04]
+        arch: [x64]
+    env:
+      BUNDLE_NAME: 'yass_${{ github.event.release.tag_name }}-${{ matrix.env }}-${{ matrix.arch }}'
+      DBG_BUNDLE_NAME: 'yass-dbg_${{ github.event.release.tag_name }}-${{ matrix.env }}-${{ matrix.arch }}'
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
+      - name: Populate depedencies (build)
+        run: sudo apt-get install -y build-essential fakeroot devscripts debhelper
+      - name: Populate depedencies
+        run: sudo apt-get install -y cmake golang libunwind-dev libgtk-3-dev libgtkmm-3.0-dev
+      - name: Build Deb Packages
+        run: |
+          ./scripts/build-deb.sh
+      - run: mv -f ../yass_1.0.0-1_amd64.deb ${{ env.BUNDLE_NAME }}.deb
+      - uses: actions/upload-release-asset@v1
+        if: ${{ github.event_name == 'release' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ${{ env.BUNDLE_NAME }}.deb
+          asset_name: ${{ env.BUNDLE_NAME }}.deb
+          asset_content_type: application/octet-stream
+      - run: mv -f ../yass-dbg_1.0.0-1_amd64.deb ${{ env.DBG_BUNDLE_NAME }}.deb
+      - uses: actions/upload-release-asset@v1
+        if: ${{ github.event_name == 'release' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ${{ env.DBG_BUNDLE_NAME }}.deb
+          asset_name: ${{ env.DBG_BUNDLE_NAME }}.deb
+          asset_content_type: application/octet-stream
