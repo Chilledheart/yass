@@ -227,7 +227,7 @@ jobs:
         - 'ubuntu16.04'
         - 'ubuntu18.04'
         - 'ubuntu20.04'
-        - 'debian9'
+        # require a more recent cmake - 'debian9'
         - 'debian10'
         - 'debian11'
     env:
