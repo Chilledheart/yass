@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
 
   auto app = YASSApp::create();
 
-  mApp = app.get();
+  mApp = app.operator->();
 
   return app->ApplicationRun();
 }

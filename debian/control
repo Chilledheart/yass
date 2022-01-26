@@ -13,7 +13,7 @@ Build-Depends:
  golang,
  libunwind-dev,
  libgtk-3-dev,
- libgtkmm-3.0-dev
+ libgtkmm-3.0-dev (>= 3.18)
 Rules-Requires-Root: no
 Homepage: https://github.com/Chilledheart/yass
 Vcs-Git: https://github.com/Chilledheart/yass.git

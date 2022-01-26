@@ -7,7 +7,7 @@ License: GPLv2
 URL: https://github.com/Chilledheart/yass
 Source0: https://github.com/Chilledheart/yass/archive/refs/tags/%{version}.tar.gz
 BuildRequires: cmake >= 3.8, ninja-build, pkg-config, perl, gcc >= 6.1, gcc-c++ >= 6.1, golang >= 1.4
-BuildRequires: libunwind-devel, gtk3-devel, gtkmm30-devel
+BuildRequires: libunwind-devel, gtk3-devel, gtkmm30-devel (>= 3.18)
 Requires: libunwind gtk3 gtkmm30
 
 %description
