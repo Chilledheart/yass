@@ -1,5 +1,7 @@
 # Yet Another Shadow Socket
 
+[![License][license-svg]][license-link]
+
 ## Once upon a time, there are (virtual) Nics, so are (shadow) Sockets.
 
 yass, or Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
@@ -20,8 +22,6 @@ yass, or Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 
 - [AEAD_CHACHA20_POLY1305][chacha20]
 - [AEAD_XCHACHA20_POLY1305][chacha20]
 
-[![License][license-svg]][license-link]
-
 [![Windows Build](https://github.com/Chilledheart/yass/actions/workflows/windows.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/windows.yml)
 [![Linux Build](https://github.com/Chilledheart/yass/actions/workflows/linux.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/linux.yml)
 [![macOS Build](https://github.com/Chilledheart/yass/actions/workflows/macos.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/macos.yml)
@@ -31,11 +31,15 @@ yass, or Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 
 - Linux (CentOS 8 or later, Debian 9 or later, Ubuntu 16.04 or later)
 - Windows (Windows Vista or later, Windows XP standalone supported)
 
-## Windows 7
-<img width="484" alt="snapshot-win7" src="https://user-images.githubusercontent.com/54673341/69158208-02fa3600-0b21-11ea-9bf4-c38e26ff38a3.png">
+## Screenshot on Windows
+### Windows 11:
+<img width="484" alt="snapshot-win11" src="https://user-images.githubusercontent.com/54673341/151115838-4deb128c-4c51-4a3c-9758-4f58da47984e.png">
 
-## Windows 10 on ARM64
-<img width="529" alt="Screen Shot 2020-12-05 at 6 49 32 PM" src="https://user-images.githubusercontent.com/54673341/101240623-715d6680-372b-11eb-9124-43817adb96a2.png">
+### Legacy Windows 7:
+<img width="484" alt="snapshot-win7" src="https://user-images.githubusercontent.com/54673341/151115815-dd8cfdf4-f5b0-4313-956b-125c35a54d6f.png">
+
+### Legacy Windows XP:
+<img width="484" alt="snapshot-winxp" src="https://user-images.githubusercontent.com/54673341/151115871-218610b6-413c-4c00-827b-3fdffc241b65.png">
 
 ## Notes on Windows 7, Windows 8 and Windows 8.1
 
