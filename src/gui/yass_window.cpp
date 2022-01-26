@@ -133,9 +133,6 @@ YASSWindow::YASSWindow()
 
   hbox_.add(left_vbox_);
 
-  // right_panel_grid_.set_row_homogeneous(true);
-  // right_panel_grid_.set_column_homogeneous(true);
-
   static const char* const method_names[] = {
 #define XX(num, name, string) string,
       CIPHER_METHOD_MAP(XX)

@@ -76,7 +76,6 @@ void YASSApp::on_activate() {
   // main window is created with WINDOW_TOPLEVEL by defaults
   main_window_ = new YASSWindow();
   main_window_->show();
-  main_window_->activate_focus();
   main_window_->present();
   if (Utils::GetAutoStart()) {
     main_window_->OnStartButtonClicked();
