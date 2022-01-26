@@ -89,7 +89,10 @@ Reference: AIO Repack for latest Microsoft Visual C++ Redistributable Runtimes, 
 ## License
 It is licensed with GPLv2.
 
-[aead]: https://shadowsocks.org/en/spec/AEAD-Ciphers.html
+[license-svg]: https://img.shields.io/badge/license-GPL2-lightgrey.svg
+[license-link]: https://github.com/Chilledheart/yass/blob/master/COPYING
+
+[aead]: https://shadowsocks.org/en/wiki/AEAD-Ciphers.html
 [asan]: https://github.com/google/sanitizers/wiki/AddressSanitizer
 [vcredist]: https://support.microsoft.com/zh-tw/help/2977003/the-latest-supported-visual-c-downloads
 [aes128gcm]: https://tools.ietf.org/html/rfc5116
@@ -98,9 +101,6 @@ It is licensed with GPLv2.
 [aes256gcm]: https://tools.ietf.org/html/rfc5116
 [chacha20]: https://tools.ietf.org/html/rfc7539
 [tls13]: https://tools.ietf.org/html/rfc7905
-
-[license-svg]: https://img.shields.io/badge/license-GPL2-lightgrey.svg
-[license-link]: https://github.com/Chilledheart/yass/blob/master/COPYING
 
 [latest-supported-vc-redist]: https://docs.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170
 [ucrt]: https://www.microsoft.com/en-us/download/details.aspx?id=48234
