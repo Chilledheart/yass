@@ -156,7 +156,6 @@ if (MSVC)
   add_definitions(-DWIN32)
   add_definitions(-D_WINDOWS)
   add_definitions(-D_ATL_NO_OPENGL)
-  add_definitions(-D_HAS_EXCEPTIONS=0)
   add_definitions(-DNOMINMAX)
   add_definitions(-DUNICODE)
   add_definitions(-DWIN32_LEAN_AND_MEAN)
@@ -487,7 +486,7 @@ endif()
 
 # fix lto warnings on mac
 if (COMPILER_GCC OR COMPILER_CLANG)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility-inlines-hidden -fvisibility=hidden")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden -fvisibility=hidden")
 endif()
 
@@ -539,14 +538,13 @@ if (COMPILER_GCC OR COMPILER_CLANG)
     set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wimplicit-fallthrough")
   endif()
 
+  if (COMPILER_CLANG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unknown-warning-option")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-warning-option")
+  endif()
+
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${C_CXX_FLAGS} -Wmissing-prototypes -Wold-style-definition -Wstrict-prototypes")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${C_CXX_FLAGS} -Wmissing-declarations")
-
-  if(NOT MSVC)
-    if(APPLE)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-    endif()
-  endif()
 
   # In GCC, -Wmissing-declarations is the C++ spelling of -Wmissing-prototypes
   # and using the wrong one is an error. In Clang, -Wmissing-prototypes is the
@@ -574,6 +572,12 @@ if (COMPILER_GCC OR COMPILER_CLANG)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
   endif()
 
+  if (MSVC)
+    ## Set emulated Visual Studio macro _MSC_VER
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fmsc-version=1900")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmsc-version=1900")
+  endif()
+
   # required by asio
   if (COMPILER_CLANG)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-inconsistent-missing-override -Wno-unused-private-field")
@@ -588,6 +592,82 @@ if (COMPILER_GCC OR COMPILER_CLANG)
   if (COMPILER_CLANG)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-local-typedef")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedef")
+  endif()
+
+  # Lots of third-party libraries have unused variables. Instead of
+  # suppressing them individually, we just blanket suppress them here.
+  if (COMPILER_CLANG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-variable")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-variable")
+  endif()
+
+  # Similarly, we're not going to fix all the C++11 narrowing issues in
+  # third-party libraries.
+  if (COMPILER_CLANG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-c++11-narrowing")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-c++11-narrowing")
+  endif()
+
+  # Disabled for similar reasons as -Wunused-variable
+  if (COMPILER_CLANG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-but-set-variable")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-but-set-variable")
+  endif()
+
+  # See comment for -Wno-c++11-narrowing.
+  if (COMPILER_GCC)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-narrowing")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")
+  endif()
+
+  # -Wunused-local-typedefs is broken in gcc,
+  # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=63872
+  if (COMPILER_GCC)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-local-typedefs")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedefs")
+  endif()
+
+  # Don't warn about "maybe" uninitialized. Clang doesn't include this
+  # in -Wall but gcc does, and it gives false positives.
+  if (COMPILER_GCC)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-maybe-uninitialized -Wno-deprecated-declarations")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized -Wno-deprecated-declarations")
+  endif()
+
+  # -Wcomment gives too many false positives in the case a
+  # backslash ended comment line is followed by a new line of
+  # comments
+  # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61638
+  if (COMPILER_GCC)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-comments")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-comments")
+  endif()
+
+  # "struct foo f = {0};"
+  # Unused function parameters.
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-missing-field-initializers -Wno-unused-parameter")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-field-initializers -Wno-unused-parameter")
+
+  # TODO(thakis): This used to be implied by -Wno-unused-function,
+  # which we no longer use. Check if it makes sense to remove
+  # this as well. http://crbug.com/316352
+  if (COMPILER_CLANG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unneeded-internal-declaration")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unneeded-internal-declaration")
+  endif()
+
+  # Thread safety analysis. See base/thread_annotations.h and
+  # https://clang.llvm.org/docs/ThreadSafetyAnalysis.html
+  if (COMPILER_CLANG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wthread-safety")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wthread-safety")
+  endif()
+
+  ## When compiling Objective-C, warns if a method is used whose
+  ## availability is newer than the deployment target.
+  if (APPLE)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wunguarded-availability")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wunguarded-availability")
   endif()
 elseif (MSVC)
   set(MSVC_DISABLED_WARNINGS_LIST
@@ -727,15 +807,27 @@ if (NOT MSVC)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
 
     ## can gc eliminate any unused functions and data items
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fdata-sections -ffunction-sections")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdata-sections -ffunction-sections")
+    if (NOT APPLE)
+        set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fdata-sections -ffunction-sections")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdata-sections -ffunction-sections")
+    endif()
+
+    ## standard C++ library
+    if(APPLE)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+    endif()
 
     if (APPLE)
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -dead_strip")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -dead_strip")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dead_strip")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-dead_strip")
     else()
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
+    endif()
+
+    if (APPLE)
+        set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,-no_data_in_code_info -Wl,-no_function_starts")
+        set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-no_data_in_code_info -Wl,-no_function_starts")
     endif()
 
     ## adopt LTO
@@ -748,11 +840,20 @@ if (NOT MSVC)
 
     ## definitions
     add_definitions(-D_FILE_OFFSET_BITS=64)
+    add_definitions(-D_LARGEFILE_SOURCE)
+    add_definitions(-D_LARGEFILE64_SOURCE)
     add_definitions(-D__STDC_CONSTANT_MACROS)
     add_definitions(-D__STDC_FORMAT_MACROS)
 
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -pthread -pipe")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -pipe")
+    ## pthread
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -pthread")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+
+    ## faster sub-process communiation
+    if (NOT COMPILER_CLANG)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pipe")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pipe")
+    endif()
 
     if (NOT APPLE)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,noexecstack -Wl,-z,relro")
@@ -771,13 +872,52 @@ if (NOT MSVC)
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -fno-omit-frame-pointer")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-omit-frame-pointer")
 
-    ## When compiling Objective-C, warns if a method is used whose
-    ## availability is newer than the deployment target.
+    ## stack protector
     if (APPLE)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wunguarded-availability")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wunguarded-availability")
+        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} -fstack-protector-strong")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -fstack-protector-strong")
+        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -fstack-protector")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -fstack-protector")
+    else()
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector")
+    endif()
+
+    ## update build-id
+    if (NOT APPLE)
+        set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,--build-id=sha1")
+        set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,--build-id=sha1")
+    endif()
+
+    ## unwind-tables
+    if (NOT APPLE)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -funwind-tables")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -funwind-tables")
+    endif()
+
+    ## fortify source code. Also, fortified build may fail when optimizations are
+    ## disabled, so only do that for Release build.
+    if (${CMAKE_BUILD_TYPE} MATCHES Release)
+        add_definitions(-D_FORTIFY_SOURCE=2)
+    endif()
+
+    # clang defaults to DWARF2 on macOS unless mac_deployment_target is
+    # at least 10.11.
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gdwarf-4")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-4")
+
+    # The gcc-based nacl compilers don't support -fdebug-compilation-dir
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g2")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g2")
+
+    # gcc generates dwarf-aranges by default on -g1 and -g2. On clang it has
+    # to be manually enabled
+    if (COMPILER_CLANG)
+       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gdwarf-aranges")
+       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-aranges")
     endif()
 else()
+    ## Disable RTTI
     set(CompilerFlags
         CMAKE_CXX_FLAGS
         CMAKE_CXX_FLAGS_DEBUG
@@ -790,8 +930,11 @@ else()
       string(REPLACE "/GR" "/GR-" ${CompilerFlag} "${${CompilerFlag}}")
     endforeach()
 
-    ## disabled rtti
+    ## Disable RTTI
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
+
+    ## Disable exceptions in the STL
+    add_definitions(-D_HAS_EXCEPTIONS=0)
 
     ## C4530, The code uses C++ exception handling,
     ## but /EHsc wasn't included in the compiler options
@@ -802,19 +945,29 @@ else()
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
 
+    ## Remove unreferenced data
     if (NOT COMPILER_CLANG)
       set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /OPT:REF")
       set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /OPT:REF")
     endif()
 
-    ## Generate debug info
-    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zi")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
+    ## Generate debug info, Debug information in the .obj files for clang.
+    ## Produce PDB file for msvc, no edit and continue.
+    if (COMPILER_CLANG)
+      set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Z7")
+      set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Z7")
+    else()
+      set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zi")
+      set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
+    endif()
 
     # Tell linker to include symbol data
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /DEBUG")
+
     if (NOT COMPILER_CLANG)
-      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /INCREMENTAL:NO /DEBUG /OPT:ICF")
-      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /INCREMENTAL:NO /DEBUG /OPT:ICF")
+      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /INCREMENTAL:NO /OPT:ICF")
+      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /INCREMENTAL:NO /OPT:ICF")
     endif()
 
     # Tell linker to include FIXUP information symbol data
@@ -824,7 +977,7 @@ else()
     endif()
 
     ## Disable LTCG for static libraries because this setting introduces ABI incompatibility between minor compiler versions
-    if (NOT VCPKG_LIBRARY_LINKAGE STREQUAL "static")
+    if (NOT CMAKE_MSVC_CRT_LINKAGE STREQUAL "static")
       set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /GL")
       set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")
       set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG")
