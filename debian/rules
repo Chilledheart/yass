@@ -26,7 +26,7 @@ third_party/boringssl/libcrypto.a: third_party/boringssl/build
 	cp -fv crypto/libcrypto.a ../libcrypto.a
 
 override_dh_auto_configure: third_party/boringssl/libcrypto.a
-	dh_auto_configure -- -DCMAKE_BUILD_TYPE=Release -DGUI=on -DCLI=off -DSERVER=off
+	dh_auto_configure -- -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc" -DGUI=on -DCLI=off -DSERVER=off
 
 override_dh_auto_build:
 	dh_auto_build -- -j $(NCPUS)
