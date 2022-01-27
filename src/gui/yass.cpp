@@ -12,6 +12,7 @@
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
+#include "core/cxx17_backports.hpp"
 #include "crypto/crypter_export.hpp"
 #include "gui/utils.hpp"
 #include "gui/yass_window.hpp"
@@ -20,6 +21,49 @@ YASSApp* mApp = nullptr;
 
 static const char* kAppId = "it.gui.yass";
 static const char* kAppName = "Yet Another Shadow Socket";
+
+static void GLibLogHandler(const gchar* log_domain,
+                           GLogLevelFlags log_level,
+                           const gchar* message,
+                           gpointer /*userdata*/) {
+  if (!log_domain)
+    log_domain = "<unknown>";
+  if (!message)
+    message = "<no message>";
+
+  GLogLevelFlags always_fatal_flags = g_log_set_always_fatal(G_LOG_LEVEL_MASK);
+  g_log_set_always_fatal(always_fatal_flags);
+  GLogLevelFlags fatal_flags =
+      g_log_set_fatal_mask(log_domain, G_LOG_LEVEL_MASK);
+  g_log_set_fatal_mask(log_domain, fatal_flags);
+  if ((always_fatal_flags | fatal_flags) & log_level) {
+    LOG(DFATAL) << log_domain << ": " << message;
+  } else if (log_level & (G_LOG_LEVEL_ERROR | G_LOG_LEVEL_CRITICAL)) {
+    LOG(ERROR) << log_domain << ": " << message;
+  } else if (log_level & (G_LOG_LEVEL_WARNING)) {
+    LOG(WARNING) << log_domain << ": " << message;
+  } else if (log_level &
+             (G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG)) {
+    LOG(INFO) << log_domain << ": " << message;
+  } else {
+    NOTREACHED();
+    LOG(DFATAL) << log_domain << ": " << message;
+  }
+}
+
+static void SetUpGLibLogHandler() {
+  // Register GLib-handled assertions to go through our logging system.
+  const char* const kLogDomains[] = {nullptr, "Gtk", "Gdk", "GLib",
+                                     "GLib-GObject"};
+  for (size_t i = 0; i < ::internal::size(kLogDomains); i++) {
+    g_log_set_handler(
+        kLogDomains[i],
+        static_cast<GLogLevelFlags>(G_LOG_FLAG_RECURSION | G_LOG_FLAG_FATAL |
+                                    G_LOG_LEVEL_ERROR | G_LOG_LEVEL_CRITICAL |
+                                    G_LOG_LEVEL_WARNING),
+        GLibLogHandler, nullptr);
+  }
+}
 
 int main(int argc, char** argv) {
   absl::InitializeSymbolizer(argv[0]);
@@ -37,6 +81,15 @@ int main(int argc, char** argv) {
 
   DCHECK(is_valid_cipher_method(
       static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
+
+#if !GLIB_CHECK_VERSION(2, 35, 0)
+  // GLib type system initialization. It's unclear if it's still required for
+  // any remaining code. Most likely this is superfluous as gtk_init() ought
+  // to do this. It's definitely harmless, so it's retained here.
+  g_type_init();
+#endif  // !GLIB_CHECK_VERSION(2, 35, 0)
+
+  SetUpGLibLogHandler();
 
   auto app = YASSApp::create();
 
