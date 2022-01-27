@@ -485,7 +485,7 @@ elseif (GUI)
 endif()
 
 # fix lto warnings on mac
-if (COMPILER_GCC OR COMPILER_CLANG)
+if ((COMPILER_GCC OR COMPILER_CLANG) AND NOT MSVC)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden -fvisibility=hidden")
 endif()
