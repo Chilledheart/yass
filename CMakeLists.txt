@@ -485,6 +485,12 @@ elseif (GUI)
   set(GUI_LIBRARIES ${GTKMM_LIBRARIES})
 endif()
 
+# fix lto warnings on mac
+if (COMPILER_GCC OR COMPILER_CLANG)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility-inlines-hidden -fvisibility=hidden")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden -fvisibility=hidden")
+endif()
+
 # abseil-cpp
 set(ABSL_PROPAGATE_CXX_STD ON)
 add_subdirectory(third_party/abseil-cpp)
@@ -572,14 +578,6 @@ if (COMPILER_GCC OR COMPILER_CLANG)
   if (COMPILER_CLANG)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-inconsistent-missing-override -Wno-unused-private-field")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-inconsistent-missing-override -Wno-unused-private-field")
-  endif()
-
-  # TODO not compatible with LTO now
-  # https://clang.llvm.org/docs/LTOVisibility.html
-  # please note it afffects windows platform as well
-  if (NOT APPLE AND NOT MSVC)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
   endif()
 
   # ignore unknown prgramas, works for both of gcc and clang
