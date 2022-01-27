@@ -761,7 +761,7 @@ if (NOT MSVC)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,noexecstack -Wl,-z,relro")
     endif()
 
-    ## disable rtti, wxWidgets modal requires this
+    ## disable rtti, gtkmm requires this
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
 
     ## disable exceptions
