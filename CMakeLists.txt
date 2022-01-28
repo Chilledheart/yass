@@ -409,7 +409,6 @@ int main() {
 endif()
 
 set(SUPPORT_LIBS
-    ${SYSTEM_LIBS}
     absl::flat_hash_map
     absl::flat_hash_set
     absl::flags
@@ -424,6 +423,7 @@ set(SUPPORT_LIBS
     absl::failure_signal_handler
     absl::time
     absl::optional
+    ${SYSTEM_LIBS}
     )
 
 if (MSVC AND GUI)
@@ -451,9 +451,9 @@ if (MSVC AND GUI)
   set(GUI_C_CXX_FLAGS "")
   set(GUI_LIBRARY_DIRS "")
   if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "static")
-    set(GUI_LIBRARIES uafxcw$<$<CONFIG:Debug>:d> libcmt$<$<CONFIG:Debug>:d>)
+    set(GUI_LIBRARIES delayimp uafxcw$<$<CONFIG:Debug>:d> libcmt$<$<CONFIG:Debug>:d>)
   else()
-    set(GUI_LIBRARIES "")
+    set(GUI_LIBRARIES delayimp)
   endif()
 elseif (APPLE AND GUI)
   find_library(COCOA_LIBRARY Cocoa REQUIRED)
@@ -993,6 +993,83 @@ else()
     if (COMPILER_CLANG)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-microsoft-exception-spec")
     endif(COMPILER_CLANG)
+
+    # Most of the dlls are simply not required at startup (or at all, depending
+    # on how the browser is used). The following dlls are interconnected and need to
+    # be delayloaded together to ensure user32 does not load too early or at all,
+    # depending on the process type: user32, gdi32, comctl32, comdlg32, cryptui,
+    # d3d9, dwmapi, imm32, msi, ole32, oleacc, rstrtmgr, shell32, shlwapi, and
+    # uxtheme.
+    set (DELAY_LDFLAGS
+      "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll"
+      "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll"
+      "/DELAYLOAD:api-ms-win-core-winrt-string-l1-1-0.dll"
+      "/DELAYLOAD:comctl32.dll"
+      "/DELAYLOAD:comdlg32.dll"
+      "/DELAYLOAD:credui.dll"
+      "/DELAYLOAD:cryptui.dll"
+      "/DELAYLOAD:d3d11.dll"
+      "/DELAYLOAD:d3d9.dll"
+      "/DELAYLOAD:dwmapi.dll"
+      "/DELAYLOAD:dxgi.dll"
+      "/DELAYLOAD:dxva2.dll"
+      "/DELAYLOAD:esent.dll"
+      "/DELAYLOAD:gdi32.dll"
+      "/DELAYLOAD:hid.dll"
+      "/DELAYLOAD:imagehlp.dll"
+      "/DELAYLOAD:imm32.dll"
+      "/DELAYLOAD:msi.dll"
+      "/DELAYLOAD:netapi32.dll"
+      "/DELAYLOAD:ncrypt.dll"
+      "/DELAYLOAD:ole32.dll"
+      "/DELAYLOAD:oleacc.dll"
+      "/DELAYLOAD:propsys.dll"
+      "/DELAYLOAD:psapi.dll"
+      "/DELAYLOAD:rpcrt4.dll"
+      "/DELAYLOAD:rstrtmgr.dll"
+      "/DELAYLOAD:setupapi.dll"
+      "/DELAYLOAD:shell32.dll"
+      "/DELAYLOAD:shlwapi.dll"
+      "/DELAYLOAD:urlmon.dll"
+      "/DELAYLOAD:user32.dll"
+      "/DELAYLOAD:usp10.dll"
+      "/DELAYLOAD:uxtheme.dll"
+      "/DELAYLOAD:wer.dll"
+      "/DELAYLOAD:wevtapi.dll"
+      "/DELAYLOAD:wininet.dll"
+      "/DELAYLOAD:winusb.dll"
+      "/DELAYLOAD:wsock32.dll"
+      "/DELAYLOAD:wtsapi32.dll"
+
+      "/DELAYLOAD:advapi32.dll"
+      "/DELAYLOAD:crypt32.dll"
+      "/DELAYLOAD:dbghelp.dll"
+      "/DELAYLOAD:dhcpcsvc.dll"
+      "/DELAYLOAD:dwrite.dll"
+      "/DELAYLOAD:iphlpapi.dll"
+      "/DELAYLOAD:oleaut32.dll"
+      "/DELAYLOAD:secur32.dll"
+      "/DELAYLOAD:uiautomationcore.dll"
+      "/DELAYLOAD:userenv.dll"
+      "/DELAYLOAD:winhttp.dll"
+      "/DELAYLOAD:winmm.dll"
+      "/DELAYLOAD:winspool.drv"
+      "/DELAYLOAD:wintrust.dll"
+      "/DELAYLOAD:ws2_32.dll"
+      )
+    # TODO implement own delay load helper
+    # https://docs.microsoft.com/en-us/cpp/build/reference/understanding-the-helper-function?view=msvc-170
+    # __pfnDliFailureHook2: Delay load failure hook that generates a crash report. By default a failure
+    # to delay load will trigger an exception handled by the delay load runtime and
+    # this won't generate a crash report.
+    # https://docs.microsoft.com/en-us/cpp/build/reference/failure-hooks?view=vs-2019
+    # __pfnDliNotifyHook2: verify if loaded libraries are allowed
+    # FIXME it seems delay loader's delayimp library isn't be found correctly
+    # when it comes with static CRT build.
+    foreach(DELAY_LDFLAG ${DELAY_LDFLAGS})
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${DELAY_LDFLAG}")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${DELAY_LDFLAG}")
+    endforeach()
 endif()
 
 # *****************************************************************************************
