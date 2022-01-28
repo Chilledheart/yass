@@ -41,6 +41,9 @@ yass, or Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 
 ### Legacy Windows XP:
 <img width="484" alt="snapshot-winxp" src="https://user-images.githubusercontent.com/54673341/151115871-218610b6-413c-4c00-827b-3fdffc241b65.png">
 
+### Legacy Ubuntu 16.04
+<img width="484" alt="snapshot-winxp" src="https://user-images.githubusercontent.com/54673341/151591522-d86248f7-763f-432e-9dd8-fd16317d477b.png">
+
 ## Notes on Windows 7, Windows 8 and Windows 8.1
 
 If you run Windows prior to Windows 10, Visual C++ Runtime Files may be [required][latest-supported-vc-redist]:
