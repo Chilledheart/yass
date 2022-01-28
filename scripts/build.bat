@@ -71,7 +71,10 @@ goto :eof
 :BuildBoringSSL
 
 REM When you pass -DCMAKE_C_COMPILER= with an absolute path you need to use forward slashes.  That is setting a value directly into CMakeCache.txt so no automatic slash conversion is done.
-set "CMAKE_CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-set "CMAKE_CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
+set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
+set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 
 call "%~dp0build-boringssl.bat"
+
+set "CC="
+set "CXX="
