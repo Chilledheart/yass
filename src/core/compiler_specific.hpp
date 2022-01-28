@@ -453,8 +453,11 @@
 #endif
 
 // Macro for telling -Wimplicit-fallthrough that a fallthrough is intentional.
-#if defined(__clang__)
+// See https://developers.redhat.com/blog/2017/03/10/wimplicit-fallthrough-in-gcc-7.
+#if defined(__clang__) && (__clang_major__ >= 12)
 #define FALLTHROUGH [[clang::fallthrough]]
+#elif defined(__GNUC__) && (__GNUC__ >= 7)
+#define FALLTHROUGH __attribute__((fallthrough))
 #else
 #define FALLTHROUGH
 #endif
