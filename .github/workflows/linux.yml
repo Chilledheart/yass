@@ -22,7 +22,7 @@ jobs:
         - 'ubuntu16.04'
         - 'ubuntu18.04'
         - 'ubuntu20.04'
-        # require a more recent cmake - 'debian9'
+        - 'debian9'
         - 'debian10'
         - 'debian11'
     runs-on: ubuntu-latest
@@ -228,7 +228,7 @@ jobs:
         - 'ubuntu16.04'
         - 'ubuntu18.04'
         - 'ubuntu20.04'
-        # require a more recent cmake - 'debian9'
+        - 'debian9'
         - 'debian10'
         - 'debian11'
     env:
