@@ -8,6 +8,7 @@ RUN apt-get update -qq && \
   add-apt-repository ppa:git-core/ppa && \
   wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | apt-key add - && \
   apt-add-repository 'deb https://apt.kitware.com/ubuntu/ xenial main' && \
+  apt-get update -qq && \
   apt-get install -y gcc-7 g++-7 && \
   apt-get install -y git build-essential fakeroot devscripts debhelper && \
   apt-get install -y cmake golang libunwind-dev libgtk-3-dev libgtkmm-3.0-dev && \
