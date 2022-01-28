@@ -41,19 +41,22 @@ int main(int argc, const char* argv[]) {
   // - Listen by local address and local port
   asio::io_context io_context;
   // Start Io Context
-  absl::ParseCommandLine(argc, const_cast<char**>(argv));
   absl::InitializeSymbolizer(argv[0]);
   absl::FailureSignalHandlerOptions failure_handle_options;
   absl::InstallFailureSignalHandler(failure_handle_options);
+
+  absl::ParseCommandLine(argc, const_cast<char**>(argv));
 
   auto cipher_method = to_cipher_method(absl::GetFlag(FLAGS_method));
   if (cipher_method != CRYPTO_INVALID) {
     absl::SetFlag(&FLAGS_cipher_method, cipher_method);
   }
 
-  (void)config::ReadConfig();
+  config::ReadConfig();
   DCHECK(is_valid_cipher_method(
       static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
+
+  LOG(WARNING) << "Application starting";
 
   asio::ip::tcp::endpoint endpoint(
       resolveEndpoint(&io_context, absl::GetFlag(FLAGS_server_host),

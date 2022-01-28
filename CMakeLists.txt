@@ -1447,7 +1447,7 @@ if (GUI)
             RESOURCE "network.icns ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/Base.lproj/Main.storyboard"
             MACOSX_BUNDLE_ICON_FILE network.icns
             MACOSX_BUNDLE_COPYRIGHT "Copyright ${PACKAGE_FULL_NAME}"
-            MACOSX_BUNDLE_GUI_IDENTIFIER "it.yass.gui"
+            MACOSX_BUNDLE_GUI_IDENTIFIER "it.gui.yass"
             MACOSX_BUNDLE_BUNDLE_NAME ${PACKAGE_NAME}
             MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/Info.plist
             XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES

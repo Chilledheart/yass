@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include <absl/flags/flag.h>
+#include <sys/stat.h>
 #include <memory>
 
 #include "core/foundation_util.hpp"
@@ -18,6 +19,11 @@ ABSL_FLAG(std::string,
           configfile,
           "~/.yass/config.json",
           "load configs from file (legacy)");
+
+// Because a suite manages the defaults of a specified app group, a suite name
+// must be distinct from your app’s main bundle identifier.
+static const char* kYassSuiteName = "it.gui.yass.suite";
+static const char* kYassKeyName = "YASSConfiguration";
 
 namespace {
 
@@ -37,13 +43,6 @@ void CFMutableContextOverwriteCallback(const void* key,
                                        void* context) {
   CFMutableDictionaryRef mutable_root = (CFMutableDictionaryRef)context;
   CFDictionarySetValue(mutable_root, key, value);
-}
-
-void CFDirectionaryToUserDefaultCallback(const void* key,
-                                         const void* value,
-                                         void* context) {
-  NSUserDefaults* userDefaults = [NSUserDefaults standardUserDefaults];
-  [userDefaults setObject:(id)value forKey:(__bridge NSString*)key];
 }
 
 bool LoadConfigFromLegacyConfig(const std::string& path,
@@ -89,17 +88,27 @@ bool ConfigImplApple::OpenImpl(bool dontread) {
         &kCFTypeDictionaryValueCallBacks);
 
     if (LoadConfigFromLegacyConfig(path_, mutable_root)) {
-      VLOG(2) << "loaded from config file " << path_;
-      ::unlink(path_.c_str());
+      LOG(WARNING) << "loaded from legacy config file: " << path_;
     }
 
     // Overwrite all fields from UserDefaults
-    CFDictionaryRef root = (__bridge CFDictionaryRef)[
-        [NSUserDefaults standardUserDefaults] dictionaryRepresentation];
-    CFDictionaryApplyFunction(root, CFMutableContextOverwriteCallback,
-                              mutable_root);
+    NSUserDefaults* userDefaults =
+        [[NSUserDefaults alloc] initWithSuiteName:@(kYassSuiteName)];
+    CFDictionaryRef defaults_root =
+        (__bridge CFDictionaryRef)[userDefaults dictionaryRepresentation];
+
+    CFDictionaryRef root;
+    if (CFDictionaryGetValueIfPresent(
+            defaults_root, (const void*)(__bridge CFStringRef) @(kYassKeyName),
+            (const void**)&root) &&
+        CFGetTypeID(root) == CFDictionaryGetTypeID()) {
+      CFDictionaryApplyFunction(root, CFMutableContextOverwriteCallback,
+                                mutable_root);
+    }
+
     root_ = CFDictionaryCreateCopy(kCFAllocatorDefault, mutable_root);
     CFRelease(root);
+    CFRelease(defaults_root);
     CFRelease(mutable_root);
   } else {
     write_root_ = CFDictionaryCreateMutable(kCFAllocatorDefault, 0,
@@ -116,11 +125,21 @@ bool ConfigImplApple::CloseImpl() {
     return true;
   }
 
-  CFDictionaryApplyFunction(write_root_, CFDirectionaryToUserDefaultCallback,
-                            nil);
+  NSUserDefaults* userDefaults =
+      [[NSUserDefaults alloc] initWithSuiteName:@(kYassSuiteName)];
+  [userDefaults setObject:(__bridge NSMutableDictionary*)write_root_
+                   forKey:@(kYassKeyName)];
 
   CFRelease(write_root_);
+
+  struct stat s;
+  if (!path_.empty() && stat(path_.c_str(), &s) == 0 &&
+      ::unlink(path_.c_str()) == 0) {
+    LOG(WARNING) << "removed legacy config file: " << path_;
+  }
+
   path_.clear();
+
   return true;
 }
 
@@ -128,7 +147,8 @@ bool ConfigImplApple::ReadImpl(const std::string& key, std::string* value) {
   CFStringRef obj;
   if (CFDictionaryGetValueIfPresent(
           root_, (const void*)(__bridge CFStringRef)SysUTF8ToNSString(key),
-          (const void**)&obj)) {
+          (const void**)&obj) &&
+      CFGetTypeID(obj) == CFStringGetTypeID()) {
     *value = SysNSStringToUTF8((__bridge NSString*)obj);
     return true;
   }
@@ -140,7 +160,8 @@ bool ConfigImplApple::ReadImpl(const std::string& key, bool* value) {
   CFBooleanRef obj;
   if (CFDictionaryGetValueIfPresent(
           root_, (const void*)(__bridge CFStringRef)SysUTF8ToNSString(key),
-          (const void**)&obj)) {
+          (const void**)&obj) &&
+      CFGetTypeID(obj) == CFBooleanGetTypeID()) {
     *value = CFBooleanGetValue(obj);
     return true;
   }
@@ -153,6 +174,7 @@ bool ConfigImplApple::ReadImpl(const std::string& key, uint32_t* value) {
   if (CFDictionaryGetValueIfPresent(
           root_, (const void*)(__bridge CFStringRef)SysUTF8ToNSString(key),
           (const void**)&obj) &&
+      CFGetTypeID(obj) == CFNumberGetTypeID() &&
       CFNumberGetValue(obj, kCFNumberSInt32Type, value)) {
     return true;
   }
@@ -165,6 +187,7 @@ bool ConfigImplApple::ReadImpl(const std::string& key, int32_t* value) {
   if (CFDictionaryGetValueIfPresent(
           root_, (const void*)(__bridge CFStringRef)SysUTF8ToNSString(key),
           (const void**)&obj) &&
+      CFGetTypeID(obj) == CFNumberGetTypeID() &&
       CFNumberGetValue(obj, kCFNumberSInt32Type, value)) {
     return true;
   }
@@ -177,6 +200,7 @@ bool ConfigImplApple::ReadImpl(const std::string& key, uint64_t* value) {
   if (CFDictionaryGetValueIfPresent(
           root_, (const void*)(__bridge CFStringRef)SysUTF8ToNSString(key),
           (const void**)&obj) &&
+      CFGetTypeID(obj) == CFNumberGetTypeID() &&
       CFNumberGetValue(obj, kCFNumberSInt64Type, value)) {
     return true;
   }
@@ -189,6 +213,7 @@ bool ConfigImplApple::ReadImpl(const std::string& key, int64_t* value) {
   if (CFDictionaryGetValueIfPresent(
           root_, (const void*)(__bridge CFStringRef)SysUTF8ToNSString(key),
           (const void**)&obj) &&
+      CFGetTypeID(obj) == CFNumberGetTypeID() &&
       CFNumberGetValue(obj, kCFNumberSInt64Type, value)) {
     return true;
   }
