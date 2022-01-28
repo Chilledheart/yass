@@ -323,16 +323,19 @@ bool cipher::chunk_decrypt_frame(uint64_t* counter,
     return false;
   }
 
-  uint8_t len_buf[2];
-  plen = sizeof(len_buf);
-  err = impl_->DecryptPacket(*counter, len_buf, &plen, ciphertext->data(),
+  union {
+    uint8_t buf[2];
+    uint16_t cover;
+  } len;
+  plen = sizeof(len.cover);
+  err = impl_->DecryptPacket(*counter, len.buf, &plen, ciphertext->data(),
                              CHUNK_SIZE_LEN + tlen);
   if (err) {
     return false;
   }
   DCHECK_EQ(plen, CHUNK_SIZE_LEN);
 
-  mlen = ntohs(*reinterpret_cast<uint16_t*>(len_buf));
+  mlen = ntohs(len.cover);
   mlen = mlen & CHUNK_SIZE_MASK;
   plaintext->reserve(0, mlen);
 
