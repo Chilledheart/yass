@@ -53,15 +53,15 @@ update-desktop-database
 %dir /usr/share/pixmaps/
 %{_bindir}/yass
 %{_datadir}/applications/yass.desktop
-%{_datadir}/pixmaps/network.png
-%{_datadir}/icons/hicolor/16x16/apps/network.png
-%{_datadir}/icons/hicolor/22x22/apps/network.png
-%{_datadir}/icons/hicolor/24x24/apps/network.png
-%{_datadir}/icons/hicolor/32x32/apps/network.png
-%{_datadir}/icons/hicolor/48x48/apps/network.png
-%{_datadir}/icons/hicolor/128x128/apps/network.png
-%{_datadir}/icons/hicolor/256x256/apps/network.png
-%{_datadir}/icons/hicolor/512x512/apps/network.png
+%{_datadir}/pixmaps/yass.png
+%{_datadir}/icons/hicolor/16x16/apps/yass.png
+%{_datadir}/icons/hicolor/22x22/apps/yass.png
+%{_datadir}/icons/hicolor/24x24/apps/yass.png
+%{_datadir}/icons/hicolor/32x32/apps/yass.png
+%{_datadir}/icons/hicolor/48x48/apps/yass.png
+%{_datadir}/icons/hicolor/128x128/apps/yass.png
+%{_datadir}/icons/hicolor/256x256/apps/yass.png
+%{_datadir}/icons/hicolor/512x512/apps/yass.png
 
 %changelog
 * Sat Jan 22 2022 Chilledheart <rwindz0@gmail.com> - 1.0.0-1

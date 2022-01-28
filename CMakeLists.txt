@@ -1353,10 +1353,10 @@ if (GUI)
           src/mac/main.mm)
     else()
         list(APPEND SRC_FILES
-          src/gui/yass.cpp
-          src/gui/yass_window.cpp
-          src/gui/option_dialog.cpp
-          src/gui/utils_gui.cpp)
+          src/gtk/yass.cpp
+          src/gtk/yass_window.cpp
+          src/gtk/option_dialog.cpp
+          src/gtk/utils_gui.cpp)
     endif()
 
     add_executable(${APP_NAME} WIN32 MACOSX_BUNDLE
@@ -1470,22 +1470,22 @@ if (GUI)
       install(TARGETS ${APP_NAME} DESTINATION bin)
 
       install(FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/yass.desktop
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/yass.desktop
         DESTINATION share/applications)
 
       install(FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/network.png
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/yass.png
         DESTINATION share/pixmaps)
 
       install(DIRECTORY
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/icons/16x16
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/icons/22x22
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/icons/24x24
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/icons/32x32
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/icons/48x48
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/icons/128x128
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/icons/256x256
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gui/icons/512x512
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/16x16
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/22x22
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/24x24
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/32x32
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/48x48
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/128x128
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/256x256
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/512x512
         DESTINATION share/icons/hicolor)
 
       ## gtkmm requires it in treeview, oops
