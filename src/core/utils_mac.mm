@@ -97,60 +97,48 @@ static OutStringType STLStringToSTLStringWithEncodingsT(
   if (in_length == 0)
     return OutStringType();
 
-  CFStringRef cfstring(CFStringCreateWithBytesNoCopy(
-      nullptr,
-      reinterpret_cast<const UInt8*>(in.data()),
-      in_length * sizeof(typename InStringType::value_type),
-      in_encoding,
-      false,
+  ScopedCFTypeRef<CFStringRef> cfstring(CFStringCreateWithBytesNoCopy(
+      NULL, reinterpret_cast<const UInt8*>(in.data()),
+      in_length * sizeof(typename InStringType::value_type), in_encoding, false,
       kCFAllocatorNull));
   if (!cfstring)
     return OutStringType();
 
-  OutStringType outstring =
-      CFStringToSTLStringWithEncodingT<OutStringType>(cfstring, out_encoding);
-  CFRelease(cfstring);
-
-  return outstring;
+  return CFStringToSTLStringWithEncodingT<OutStringType>(cfstring,
+                                                         out_encoding);
 }
 
 // Given a std::string_view|in| with an encoding specified by |in_encoding|, return
 // it as a CFStringRef.  Returns NULL on failure.
 template <typename CharT>
-static CFStringRef StringToCFStringWithEncodingsT(
+static ScopedCFTypeRef<CFStringRef> StringToCFStringWithEncodingsT(
     const std::basic_string<CharT> &in,
     CFStringEncoding in_encoding) {
   const auto in_length = in.length();
-  CFStringRef ret;
-  if (in_length == 0) {
-    ret = CFSTR("");
-  } else {
-    ret = CFStringCreateWithBytes(
-      kCFAllocatorDefault, reinterpret_cast<const uint8_t*>(in.data()),
-      in_length * sizeof(CharT), in_encoding, false);
-  }
+  ScopedCFTypeRef<CFStringRef> ret;
 
-  CFRetain(ret);
-  return ret;
+  if (in_length == 0)
+    return ScopedCFTypeRef<CFStringRef>(CFSTR(""), scoped_policy::RETAIN);
+
+  return ScopedCFTypeRef<CFStringRef>(CFStringCreateWithBytes(
+      kCFAllocatorDefault, reinterpret_cast<const UInt8*>(in.data()),
+      in_length * sizeof(CharT), in_encoding, false));
 }
 
 // Given a std::string_view|in| with an encoding specified by |in_encoding|, return
 // it as a CFStringRef.  Returns NULL on failure.
-static CFStringRef StringViewToCFStringWithEncodingsT(
+static ScopedCFTypeRef<CFStringRef> StringViewToCFStringWithEncodingsT(
     absl::string_view in,
     CFStringEncoding in_encoding) {
   const auto in_length = in.length();
-  CFStringRef ret;
-  if (in_length == 0) {
-    ret = CFSTR("");
-  } else {
-    ret = CFStringCreateWithBytes(
-      kCFAllocatorDefault, reinterpret_cast<const uint8_t*>(in.data()),
-      in_length * sizeof(char), in_encoding, false);
-  }
+  ScopedCFTypeRef<CFStringRef> ret;
 
-  CFRetain(ret);
-  return ret;
+  if (in_length == 0)
+    return ScopedCFTypeRef<CFStringRef>(CFSTR(""), scoped_policy::RETAIN);
+
+  return ScopedCFTypeRef<CFStringRef>(CFStringCreateWithBytes(
+      kCFAllocatorDefault, reinterpret_cast<const UInt8*>(in.data()),
+      in_length * sizeof(char), in_encoding, false));
 }
 
 // Specify the byte ordering explicitly, otherwise CFString will be confused
@@ -186,20 +174,20 @@ std::wstring SysNativeMBToWide(absl::string_view native_mb) {
   return SysUTF8ToWide(native_mb);
 }
 
-CFStringRef SysUTF8ToCFStringRef(absl::string_view utf8) {
+ScopedCFTypeRef<CFStringRef> SysUTF8ToCFStringRef(absl::string_view utf8) {
   return StringViewToCFStringWithEncodingsT(utf8, kNarrowStringEncoding);
 }
 
-CFStringRef SysUTF16ToCFStringRef(const std::u16string& utf16) {
+ScopedCFTypeRef<CFStringRef> SysUTF16ToCFStringRef(const std::u16string& utf16) {
   return StringToCFStringWithEncodingsT(utf16, kMediumStringEncoding);
 }
 
 NSString* SysUTF8ToNSString(absl::string_view utf8) {
-  return [CFToNSCast(SysUTF8ToCFStringRef(utf8)) autorelease];
+  return CFBridgingRelease(CFRetain(SysUTF8ToCFStringRef(utf8)));
 }
 
 NSString* SysUTF16ToNSString(const std::u16string& utf16) {
-  return [CFToNSCast(SysUTF16ToCFStringRef(utf16)) autorelease];
+  return CFBridgingRelease(CFRetain(SysUTF16ToCFStringRef(utf16)));
 }
 
 std::string SysCFStringRefToUTF8(CFStringRef ref) {

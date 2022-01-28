@@ -12,6 +12,7 @@
 #include <string>
 
 #include <CoreFoundation/CoreFoundation.h>
+#include "core/scoped_cftyperef.hpp"
 
 namespace config {
 
@@ -40,8 +41,8 @@ class ConfigImplApple : public ConfigImpl {
 
  private:
   std::string path_;
-  CFDictionaryRef root_;
-  CFMutableDictionaryRef write_root_;
+  ScopedCFTypeRef<CFDictionaryRef> root_;
+  ScopedCFTypeRef<CFMutableDictionaryRef> write_root_;
 };
 
 }  // namespace config

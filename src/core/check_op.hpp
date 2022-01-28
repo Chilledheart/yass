@@ -159,24 +159,28 @@ class CheckOpResult {
 
 // The second overload avoids address-taking of static members for
 // fundamental types.
-#define DEFINE_CHECK_OP_IMPL(name, op)                                        \
-  template <typename T, typename U,                                           \
-            std::enable_if_t<!std::is_fundamental<T>::value ||                \
-                                 !std::is_fundamental<U>::value,              \
-                             int> = 0>                                        \
-  constexpr CheckOpResult Check##name##Impl(const T& v1, const U& v2,         \
-                                            const char* expr_str) {           \
-    return ANALYZER_ASSUME_TRUE(v1 op v2) ? CheckOpResult() :                 \
-      CheckOpResult(expr_str, CheckOpValueStr(v1), CheckOpValueStr(v2));      \
-  }                                                                           \
-  template <typename T, typename U,                                           \
-            std::enable_if_t<std::is_fundamental<T>::value &&                 \
-                                 std::is_fundamental<U>::value,               \
-                             int> = 0>                                        \
-  constexpr CheckOpResult Check##name##Impl(T v1, U v2,                       \
-                                            const char* expr_str) {           \
-    return ANALYZER_ASSUME_TRUE(v1 op v2) ? CheckOpResult() :                 \
-      CheckOpResult(expr_str, CheckOpValueStr(v1), CheckOpValueStr(v2));      \
+#define DEFINE_CHECK_OP_IMPL(name, op)                                \
+  template <typename T, typename U,                                   \
+            std::enable_if_t<!std::is_fundamental<T>::value ||        \
+                                 !std::is_fundamental<U>::value,      \
+                             int> = 0>                                \
+  constexpr CheckOpResult Check##name##Impl(const T& v1, const U& v2, \
+                                            const char* expr_str) {   \
+    return ANALYZER_ASSUME_TRUE(v1 op v2)                             \
+               ? CheckOpResult()                                      \
+               : CheckOpResult(expr_str, CheckOpValueStr(v1),         \
+                               CheckOpValueStr(v2));                  \
+  }                                                                   \
+  template <typename T, typename U,                                   \
+            std::enable_if_t<std::is_fundamental<T>::value &&         \
+                                 std::is_fundamental<U>::value,       \
+                             int> = 0>                                \
+  constexpr CheckOpResult Check##name##Impl(T v1, U v2,               \
+                                            const char* expr_str) {   \
+    return ANALYZER_ASSUME_TRUE(v1 op v2)                             \
+               ? CheckOpResult()                                      \
+               : CheckOpResult(expr_str, CheckOpValueStr(v1),         \
+                               CheckOpValueStr(v2));                  \
   }
 
 // clang-format off

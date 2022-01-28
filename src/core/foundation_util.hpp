@@ -38,24 +38,6 @@ typedef struct CF_BRIDGED_TYPE(id) __SecCertificate* SecCertificateRef;
 typedef struct CF_BRIDGED_TYPE(id) __SecKey* SecKeyRef;
 typedef struct CF_BRIDGED_TYPE(id) __SecPolicy* SecPolicyRef;
 
-#if !(defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE)
-#import <AppKit/AppKit.h>
-#endif
-
-extern "C" {
-CFTypeID SecKeyGetTypeID();
-#if !(defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE)
-CFTypeID SecACLGetTypeID();
-CFTypeID SecTrustedApplicationGetTypeID();
-// The NSFont/CTFont toll-free bridging is broken before 10.15.
-// http://www.openradar.me/15341349 rdar://15341349
-//
-// TODO(https://crbug.com/1076527): This is fixed in 10.15. When 10.15 is the
-// minimum OS for Chromium, remove this SPI declaration.
-Boolean _CFIsObjC(CFTypeID typeID, CFTypeRef obj);
-#endif
-}  // extern "C"
-
 #define TYPE_NAME_FOR_CF_TYPE_DECL(TypeCF) \
   std::string TypeNameForCFType(TypeCF##Ref)
 
@@ -85,10 +67,6 @@ TYPE_NAME_FOR_CF_TYPE_DECL(SecPolicy);
 // Retain/release calls for memory management in C++.
 void NSObjectRetain(void* obj);
 void NSObjectRelease(void* obj);
-
-// These casting functions cannot be implemented in a way that will work with
-// ARC. Use the casting functions in base/mac/bridging.h instead.
-#if !defined(__has_feature) || !__has_feature(objc_arc)
 
 #if !defined(__OBJC__)
 #define OBJC_CPP_CLASS_DECL(x) class x;
@@ -143,7 +121,7 @@ CF_TO_NS_CAST_DECL(CFWriteStream, NSOutputStream)
 CF_TO_NS_MUTABLE_CAST_DECL(String)
 CF_TO_NS_CAST_DECL(CFURL, NSURL)
 
-#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+#if defined(OS_IOS)
 CF_TO_NS_CAST_DECL(CTFont, UIFont)
 #else
 CF_TO_NS_CAST_DECL(CTFont, NSFont)
@@ -152,8 +130,6 @@ CF_TO_NS_CAST_DECL(CTFont, NSFont)
 #undef CF_TO_NS_CAST_DECL
 #undef CF_TO_NS_MUTABLE_CAST_DECL
 #undef OBJC_CPP_CLASS_DECL
-
-#endif  // !defined(__has_feature) || !__has_feature(objc_arc)
 
 // CFCast<>() and CFCastStrict<>() cast a basic CFTypeRef to a more
 // specific CoreFoundation type. The compatibility of the passed

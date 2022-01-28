@@ -22,6 +22,8 @@
 #ifdef __APPLE__
 #include <AvailabilityMacros.h>
 #include <CoreFoundation/CoreFoundation.h>
+
+#include "core/scoped_cftyperef.hpp"
 #endif
 
 uint64_t GetMonotonicTime();
@@ -82,8 +84,8 @@ class UIFont;
 
 // Creates a string, and returns it with a refcount of 1. You are responsible
 // for releasing it. Returns NULL on failure.
-CFStringRef SysUTF8ToCFStringRef(absl::string_view utf8);
-CFStringRef SysUTF16ToCFStringRef(const std::u16string& utf16);
+ScopedCFTypeRef<CFStringRef> SysUTF8ToCFStringRef(absl::string_view utf8);
+ScopedCFTypeRef<CFStringRef> SysUTF16ToCFStringRef(const std::u16string& utf16);
 
 // Same, but returns an autoreleased NSString.
 NSString* SysUTF8ToNSString(absl::string_view utf8);

@@ -60,12 +60,12 @@ class LoginItemsFileList {
 #pragma clang diagnostic push  // https://crbug.com/1154377
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     NSArray* login_items_array(
-        (__bridge NSArray*)LSSharedFileListCopySnapshot(login_items_, nullptr));
+        CFBridgingRelease(LSSharedFileListCopySnapshot(login_items_, nullptr)));
 #pragma clang diagnostic pop
 
     for (id login_item in login_items_array) {
       LSSharedFileListItemRef item =
-          (__bridge LSSharedFileListItemRef)login_item;
+          (LSSharedFileListItemRef)CFBridgingRetain(login_item);
 #pragma clang diagnostic push  // https://crbug.com/1154377
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
       // kLSSharedFileListDoNotMountVolumes is used so that we don't trigger
@@ -75,7 +75,7 @@ class LoginItemsFileList {
           item, kLSSharedFileListDoNotMountVolumes, nullptr));
 #pragma clang diagnostic pop
 
-      if (item_url && CFEqual(item_url.get(), (__bridge CFURLRef)url)) {
+      if (item_url && CFEqual(item_url.get(), NSToCFCast(url))) {
         return ScopedCFTypeRef<LSSharedFileListItemRef>(item,
                                                         scoped_policy::RETAIN);
       }
@@ -155,13 +155,13 @@ void AddToLoginItems(const std::string& app_bundle_file_path,
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
   BOOL hide = hide_on_startup ? YES : NO;
   NSDictionary* properties =
-      @{(__bridge NSString*)kLSSharedFileListLoginItemHidden : @(hide)};
+      @{CFBridgingRelease(CFRetain(kLSSharedFileListLoginItemHidden)) : @(hide)};
 
   ScopedCFTypeRef<LSSharedFileListItemRef> new_item(
-      LSSharedFileListInsertItemURL(
-          login_items.GetLoginFileList(), kLSSharedFileListItemLast, nullptr,
-          nullptr, (__bridge CFURLRef)app_bundle_url,
-          (__bridge CFDictionaryRef)properties, nullptr));
+      LSSharedFileListInsertItemURL(login_items.GetLoginFileList(),
+                                    kLSSharedFileListItemLast, nullptr, nullptr,
+                                    NSToCFCast(app_bundle_url),
+                                    NSToCFCast(properties), nullptr));
 #pragma clang diagnostic pop
 
   if (!new_item.get()) {
@@ -299,7 +299,7 @@ int DarwinMajorVersionInternal() {
         absl::string_view(uname_info.release, dot - uname_info.release));
 
     if (!ver.ok()) {
-      dot = NULL;
+      dot = nullptr;
     } else {
       darwin_major_version = ver.value();
     }

@@ -5,15 +5,31 @@
 
 #ifdef __APPLE__
 
-#include <AvailabilityMacros.h>
-#include <CoreFoundation/CoreFoundation.h>
-
 #include <stdint.h>
 #include "core/checked_math.hpp"
+#include "core/cxx17_backports.hpp"
 #include "core/logging.hpp"
 #include "core/safe_conversions.hpp"
 #include "core/scoped_cftyperef.hpp"
 #include "core/utils.hpp"
+
+#if !defined(OS_IOS)
+#import <AppKit/AppKit.h>
+#endif
+
+extern "C" {
+CFTypeID SecKeyGetTypeID();
+#if !defined(OS_IOS)
+CFTypeID SecACLGetTypeID();
+CFTypeID SecTrustedApplicationGetTypeID();
+// The NSFont/CTFont toll-free bridging is broken before 10.15.
+// http://www.openradar.me/15341349 rdar://15341349
+//
+// TODO(https://crbug.com/1076527): This is fixed in 10.15. When 10.15 is the
+// minimum OS for Chromium, remove this SPI declaration.
+Boolean _CFIsObjC(CFTypeID typeID, CFTypeRef obj);
+#endif
+}  // extern "C"
 
 #define TYPE_NAME_FOR_CF_TYPE_DEFN(TypeCF) \
 std::string TypeNameForCFType(TypeCF##Ref) { \
@@ -38,7 +54,7 @@ TYPE_NAME_FOR_CF_TYPE_DEFN(CGColor)
 TYPE_NAME_FOR_CF_TYPE_DEFN(CTFont)
 TYPE_NAME_FOR_CF_TYPE_DEFN(CTRun)
 
-#if !(defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE)
+#if !defined(OS_IOS)
 TYPE_NAME_FOR_CF_TYPE_DEFN(SecCertificate)
 TYPE_NAME_FOR_CF_TYPE_DEFN(SecKey)
 TYPE_NAME_FOR_CF_TYPE_DEFN(SecPolicy)
@@ -144,19 +160,19 @@ CTFontRef NSToCFCast(NSFont* ns_val) {
 #define CF_CAST_DEFN(TypeCF) \
 template<> TypeCF##Ref \
 CFCast<TypeCF##Ref>(const CFTypeRef& cf_val) { \
-  if (cf_val == NULL) { \
-    return NULL; \
+  if (cf_val == nullptr) { \
+    return nullptr; \
   } \
   if (CFGetTypeID(cf_val) == TypeCF##GetTypeID()) { \
     return (TypeCF##Ref)(cf_val); \
   } \
-  return NULL; \
+  return nullptr; \
 } \
 \
 template<> TypeCF##Ref \
 CFCastStrict<TypeCF##Ref>(const CFTypeRef& cf_val) { \
   TypeCF##Ref rv = CFCast<TypeCF##Ref>(cf_val); \
-  DCHECK(cf_val == NULL || rv); \
+  DCHECK(cf_val == nullptr || rv); \
   return rv; \
 }
 
@@ -178,7 +194,7 @@ CF_CAST_DEFN(CGColor)
 CF_CAST_DEFN(CTFontDescriptor)
 CF_CAST_DEFN(CTRun)
 
-#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+#if defined(OS_IOS)
 CF_CAST_DEFN(CTFont)
 #else
 // The NSFont/CTFont toll-free bridging is broken before 10.15.
@@ -214,7 +230,7 @@ CFCastStrict<CTFontRef>(const CFTypeRef& cf_val) {
 }
 #endif
 
-#if !(defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE)
+#if !defined(OS_IOS)
 CF_CAST_DEFN(SecACL)
 CF_CAST_DEFN(SecCertificate)
 CF_CAST_DEFN(SecKey)
@@ -224,18 +240,17 @@ CF_CAST_DEFN(SecTrustedApplication)
 
 #undef CF_CAST_DEFN
 
-bool CFRangeToNSRange(CFRange range, NSRange* range_out) {
-  decltype(range_out->location) end;
-  if (IsValueInRangeForNumericType<decltype(range_out->location)>(
-          range.location) &&
-      IsValueInRangeForNumericType<decltype(range_out->length)>(
-          range.length) &&
-      CheckAdd(range.location, range.length).AssignIfValid(&end) &&
-      IsValueInRangeForNumericType<decltype(range_out->location)>(end)) {
-    *range_out = NSMakeRange(range.location, range.length);
-    return true;
-  }
-  return false;
+std::string GetValueFromDictionaryErrorMessage(
+    CFStringRef key, const std::string& expected_type, CFTypeRef value) {
+  ScopedCFTypeRef<CFStringRef> actual_type_ref(
+      CFCopyTypeIDDescription(CFGetTypeID(value)));
+  return "Expected value for key " +
+      SysCFStringRefToUTF8(key) +
+      " to be " +
+      expected_type +
+      " but it was " +
+      SysCFStringRefToUTF8(actual_type_ref) +
+      " instead";
 }
 
 std::ostream& operator<<(std::ostream& o, const CFStringRef string) {
@@ -245,13 +260,12 @@ std::ostream& operator<<(std::ostream& o, const CFStringRef string) {
 std::ostream& operator<<(std::ostream& o, const CFErrorRef err) {
   ScopedCFTypeRef<CFStringRef> desc(CFErrorCopyDescription(err));
   ScopedCFTypeRef<CFDictionaryRef> user_info(CFErrorCopyUserInfo(err));
-  CFStringRef errorDesc = NULL;
+  CFStringRef errorDesc = nullptr;
   if (user_info.get()) {
     errorDesc = reinterpret_cast<CFStringRef>(
         CFDictionaryGetValue(user_info.get(), kCFErrorDescriptionKey));
   }
-  o << "Code: " << CFErrorGetCode(err)
-    << " Domain: " << CFErrorGetDomain(err)
+  o << "Code: " << CFErrorGetCode(err) << " Domain: " << CFErrorGetDomain(err)
     << " Desc: " << desc.get();
   if(errorDesc) {
     o << "(" << errorDesc << ")";

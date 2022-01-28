@@ -38,38 +38,31 @@ std::string ExpandUser(const std::string& file_path) {
   return real_path;
 }
 
-void CFMutableContextOverwriteCallback(const void* key,
-                                       const void* value,
-                                       void* context) {
-  CFMutableDictionaryRef mutable_root = (CFMutableDictionaryRef)context;
-  CFDictionarySetValue(mutable_root, key, value);
-}
-
 bool LoadConfigFromLegacyConfig(const std::string& path,
                                 CFMutableDictionaryRef mutable_root) {
   NSError* error = nil;
   NSData* data = [NSData dataWithContentsOfFile:@(path.c_str())
                                         options:NSDataReadingUncached
                                           error:&error];
-  CFDictionaryRef root;
   if (!data || error) {
     VLOG(1) << "legacy configure file failed to read: " << path
             << " error: " << error;
     return false;
   }
   error = nil;
-  root = (__bridge CFDictionaryRef)
+  ScopedCFTypeRef<CFDictionaryRef> root;
+  NSDictionary* dictionary =
       [NSJSONSerialization JSONObjectWithData:data
                                       options:NSJSONReadingMutableContainers
                                         error:&error];
+  root.reset((CFDictionaryRef)CFBridgingRetain(dictionary));
   if (!root || error) {
     VLOG(1) << "legacy configure file failed to parse: " << error
             << " content: \"" << data << "\"";
     return false;
   }
 
-  CFDictionaryApplyFunction(root, CFMutableContextOverwriteCallback,
-                            mutable_root);
+  [CFBridgingRelease(CFRetain(mutable_root)) addEntriesFromDictionary:dictionary];
   return true;
 }
 
@@ -83,37 +76,33 @@ bool ConfigImplApple::OpenImpl(bool dontread) {
   path_ = ExpandUser(absl::GetFlag(FLAGS_configfile));
 
   if (!dontread) {
-    CFMutableDictionaryRef mutable_root = CFDictionaryCreateMutable(
-        kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks,
-        &kCFTypeDictionaryValueCallBacks);
+    ScopedCFTypeRef<CFMutableDictionaryRef> mutable_root(
+        CFDictionaryCreateMutable(kCFAllocatorDefault, 0,
+                                  &kCFTypeDictionaryKeyCallBacks,
+                                  &kCFTypeDictionaryValueCallBacks));
 
     if (LoadConfigFromLegacyConfig(path_, mutable_root)) {
       LOG(WARNING) << "loaded from legacy config file: " << path_;
     }
 
     // Overwrite all fields from UserDefaults
-    NSUserDefaults* userDefaults =
+    NSUserDefaults* defaults_root =
         [[NSUserDefaults alloc] initWithSuiteName:@(kYassSuiteName)];
-    CFDictionaryRef defaults_root =
-        (__bridge CFDictionaryRef)[userDefaults dictionaryRepresentation];
 
-    CFDictionaryRef root;
-    if (CFDictionaryGetValueIfPresent(
-            defaults_root, (const void*)(__bridge CFStringRef) @(kYassKeyName),
-            (const void**)&root) &&
-        CFGetTypeID(root) == CFDictionaryGetTypeID()) {
-      CFDictionaryApplyFunction(root, CFMutableContextOverwriteCallback,
-                                mutable_root);
+    NSDictionary *root = [defaults_root dictionaryForKey:@(kYassKeyName)];
+
+    if (root) {
+      for (NSString* key in root) {
+        id value = root[key];
+        CFDictionarySetValue(mutable_root, NSToCFCast(key), value);
+      }
     }
 
-    root_ = CFDictionaryCreateCopy(kCFAllocatorDefault, mutable_root);
-    CFRelease(root);
-    CFRelease(defaults_root);
-    CFRelease(mutable_root);
+    root_.reset(CFDictionaryCreateCopy(kCFAllocatorDefault, mutable_root));
   } else {
-    write_root_ = CFDictionaryCreateMutable(kCFAllocatorDefault, 0,
-                                            &kCFTypeDictionaryKeyCallBacks,
-                                            &kCFTypeDictionaryValueCallBacks);
+    write_root_.reset(CFDictionaryCreateMutable(
+        kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks,
+        &kCFTypeDictionaryValueCallBacks));
   }
 
   return true;
@@ -121,16 +110,15 @@ bool ConfigImplApple::OpenImpl(bool dontread) {
 
 bool ConfigImplApple::CloseImpl() {
   if (path_.empty() || !dontread_) {
-    CFRelease(root_);
+    root_.reset();
     return true;
   }
 
   NSUserDefaults* userDefaults =
       [[NSUserDefaults alloc] initWithSuiteName:@(kYassSuiteName)];
-  [userDefaults setObject:(__bridge NSMutableDictionary*)write_root_
-                   forKey:@(kYassKeyName)];
+  [userDefaults setObject:CFBridgingRelease(CFRetain(write_root_)) forKey:@(kYassKeyName)];
 
-  CFRelease(write_root_);
+  write_root_.reset();
 
   struct stat s;
   if (!path_.empty() && stat(path_.c_str(), &s) == 0 &&
@@ -146,10 +134,10 @@ bool ConfigImplApple::CloseImpl() {
 bool ConfigImplApple::ReadImpl(const std::string& key, std::string* value) {
   CFStringRef obj;
   if (CFDictionaryGetValueIfPresent(
-          root_, (const void*)(__bridge CFStringRef)SysUTF8ToNSString(key),
+          root_, ScopedCFTypeRef<CFStringRef>(SysUTF8ToCFStringRef(key)).get(),
           (const void**)&obj) &&
       CFGetTypeID(obj) == CFStringGetTypeID()) {
-    *value = SysNSStringToUTF8((__bridge NSString*)obj);
+    *value = SysCFStringRefToUTF8(obj);
     return true;
   }
   LOG(WARNING) << "bad field: " << key;
@@ -159,7 +147,7 @@ bool ConfigImplApple::ReadImpl(const std::string& key, std::string* value) {
 bool ConfigImplApple::ReadImpl(const std::string& key, bool* value) {
   CFBooleanRef obj;
   if (CFDictionaryGetValueIfPresent(
-          root_, (const void*)(__bridge CFStringRef)SysUTF8ToNSString(key),
+          root_, ScopedCFTypeRef<CFStringRef>(SysUTF8ToCFStringRef(key)).get(),
           (const void**)&obj) &&
       CFGetTypeID(obj) == CFBooleanGetTypeID()) {
     *value = CFBooleanGetValue(obj);
@@ -172,7 +160,7 @@ bool ConfigImplApple::ReadImpl(const std::string& key, bool* value) {
 bool ConfigImplApple::ReadImpl(const std::string& key, uint32_t* value) {
   CFNumberRef obj;
   if (CFDictionaryGetValueIfPresent(
-          root_, (const void*)(__bridge CFStringRef)SysUTF8ToNSString(key),
+          root_, ScopedCFTypeRef<CFStringRef>(SysUTF8ToCFStringRef(key)).get(),
           (const void**)&obj) &&
       CFGetTypeID(obj) == CFNumberGetTypeID() &&
       CFNumberGetValue(obj, kCFNumberSInt32Type, value)) {
@@ -185,7 +173,7 @@ bool ConfigImplApple::ReadImpl(const std::string& key, uint32_t* value) {
 bool ConfigImplApple::ReadImpl(const std::string& key, int32_t* value) {
   CFNumberRef obj;
   if (CFDictionaryGetValueIfPresent(
-          root_, (const void*)(__bridge CFStringRef)SysUTF8ToNSString(key),
+          root_, ScopedCFTypeRef<CFStringRef>(SysUTF8ToCFStringRef(key)).get(),
           (const void**)&obj) &&
       CFGetTypeID(obj) == CFNumberGetTypeID() &&
       CFNumberGetValue(obj, kCFNumberSInt32Type, value)) {
@@ -198,7 +186,7 @@ bool ConfigImplApple::ReadImpl(const std::string& key, int32_t* value) {
 bool ConfigImplApple::ReadImpl(const std::string& key, uint64_t* value) {
   CFNumberRef obj;
   if (CFDictionaryGetValueIfPresent(
-          root_, (const void*)(__bridge CFStringRef)SysUTF8ToNSString(key),
+          root_, ScopedCFTypeRef<CFStringRef>(SysUTF8ToCFStringRef(key)).get(),
           (const void**)&obj) &&
       CFGetTypeID(obj) == CFNumberGetTypeID() &&
       CFNumberGetValue(obj, kCFNumberSInt64Type, value)) {
@@ -211,7 +199,7 @@ bool ConfigImplApple::ReadImpl(const std::string& key, uint64_t* value) {
 bool ConfigImplApple::ReadImpl(const std::string& key, int64_t* value) {
   CFNumberRef obj;
   if (CFDictionaryGetValueIfPresent(
-          root_, (const void*)(__bridge CFStringRef)SysUTF8ToNSString(key),
+          root_, ScopedCFTypeRef<CFStringRef>(SysUTF8ToCFStringRef(key)).get(),
           (const void**)&obj) &&
       CFGetTypeID(obj) == CFNumberGetTypeID() &&
       CFNumberGetValue(obj, kCFNumberSInt64Type, value)) {
@@ -223,56 +211,56 @@ bool ConfigImplApple::ReadImpl(const std::string& key, int64_t* value) {
 
 bool ConfigImplApple::WriteImpl(const std::string& key,
                                 absl::string_view value) {
-  CFStringRef obj = CFStringCreateWithBytes(
+  ScopedCFTypeRef<CFStringRef> obj(CFStringCreateWithBytes(
       kCFAllocatorDefault, reinterpret_cast<const UInt8*>(value.data()),
-      value.size(), kCFStringEncodingUTF8, FALSE);
-  CFDictionarySetValue(write_root_,
-                       (__bridge CFStringRef)SysUTF8ToNSString(key), obj);
-  CFRelease(obj);
+      value.size(), kCFStringEncodingUTF8, FALSE));
+  CFDictionarySetValue(
+      write_root_,
+      ScopedCFTypeRef<CFStringRef>(SysUTF8ToCFStringRef(key)).get(), obj);
   return true;
 }
 
 bool ConfigImplApple::WriteImpl(const std::string& key, bool value) {
-  CFBooleanRef obj = value ? kCFBooleanTrue : kCFBooleanFalse;
-  CFDictionarySetValue(write_root_,
-                       (__bridge CFStringRef)SysUTF8ToNSString(key), obj);
-  CFRelease(obj);
+  ScopedCFTypeRef<CFBooleanRef> obj(value ? kCFBooleanTrue : kCFBooleanFalse);
+  CFDictionarySetValue(
+      write_root_,
+      ScopedCFTypeRef<CFStringRef>(SysUTF8ToCFStringRef(key)).get(), obj);
   return true;
 }
 
 bool ConfigImplApple::WriteImpl(const std::string& key, uint32_t value) {
-  CFNumberRef obj =
-      CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &value);
-  CFDictionarySetValue(write_root_,
-                       (__bridge CFStringRef)SysUTF8ToNSString(key), obj);
-  CFRelease(obj);
+  ScopedCFTypeRef<CFNumberRef> obj(
+      CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &value));
+  CFDictionarySetValue(
+      write_root_,
+      ScopedCFTypeRef<CFStringRef>(SysUTF8ToCFStringRef(key)).get(), obj);
   return true;
 }
 
 bool ConfigImplApple::WriteImpl(const std::string& key, int32_t value) {
-  CFNumberRef obj =
-      CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &value);
-  CFDictionarySetValue(write_root_,
-                       (__bridge CFStringRef)SysUTF8ToNSString(key), obj);
-  CFRelease(obj);
+  ScopedCFTypeRef<CFNumberRef> obj(
+      CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &value));
+  CFDictionarySetValue(
+      write_root_,
+      ScopedCFTypeRef<CFStringRef>(SysUTF8ToCFStringRef(key)).get(), obj);
   return true;
 }
 
 bool ConfigImplApple::WriteImpl(const std::string& key, uint64_t value) {
-  CFNumberRef obj =
-      CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt64Type, &value);
-  CFDictionarySetValue(write_root_,
-                       (__bridge CFStringRef)SysUTF8ToNSString(key), obj);
-  CFRelease(obj);
+  ScopedCFTypeRef<CFNumberRef> obj(
+      CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt64Type, &value));
+  CFDictionarySetValue(
+      write_root_,
+      ScopedCFTypeRef<CFStringRef>(SysUTF8ToCFStringRef(key)).get(), obj);
   return true;
 }
 
 bool ConfigImplApple::WriteImpl(const std::string& key, int64_t value) {
-  CFNumberRef obj =
-      CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt64Type, &value);
-  CFDictionarySetValue(write_root_,
-                       (__bridge CFStringRef)SysUTF8ToNSString(key), obj);
-  CFRelease(obj);
+  ScopedCFTypeRef<CFNumberRef> obj(
+      CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt64Type, &value));
+  CFDictionarySetValue(
+      write_root_,
+      ScopedCFTypeRef<CFStringRef>(SysUTF8ToCFStringRef(key)).get(), obj);
   return true;
 }
 

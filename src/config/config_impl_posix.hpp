@@ -30,8 +30,8 @@
 #define RAPIDJSON_HAS_STDSTRING 1
 
 #include <absl/flags/flag.h>
-#include <rapidjson/document.h>     // rapidjson's DOM-style API
-#include <rapidjson/prettywriter.h> // for stringify JSON
+#include <rapidjson/document.h>      // rapidjson's DOM-style API
+#include <rapidjson/prettywriter.h>  // for stringify JSON
 #include <memory>
 #include <string>
 
