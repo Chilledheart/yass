@@ -3,6 +3,6 @@
 
 #include "cli/socks5_connection_stats.hpp"
 
-std::atomic_uint64_t total_rx_bytes;
+std::atomic<uint64_t> total_rx_bytes;
 
-std::atomic_uint64_t total_tx_bytes;
+std::atomic<uint64_t> total_tx_bytes;
