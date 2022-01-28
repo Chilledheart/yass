@@ -70,10 +70,14 @@ do {                                                                 \
 #if defined(__GNUC__) || defined(__clang__)
 # define LIKELY(X) __builtin_expect(!!(X), 1)
 # define UNLIKELY(X) __builtin_expect(!!(X), 0)
-# define FALLTHROUGH __attribute__((fallthrough));
 #else
 # define LIKELY(X) (X)
 # define UNLIKELY(X) (X)
+#endif
+
+#if (defined(__GNUC__) && (__GNUC__ >= 7)) || defined(__clang__)
+# define FALLTHROUGH __attribute__((fallthrough));
+#else
 # define FALLTHROUGH
 #endif
 
