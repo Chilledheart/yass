@@ -17,7 +17,7 @@
 // https://docs.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged
 #if _WIN32_WINNT < 0x0601
 #define WM_DPICHANGED 0x02E0
-#endif // _WIN32_WINNT < 0x0601
+#endif  // _WIN32_WINNT < 0x0601
 
 #define INITIAL_COLUMN_ONE_LEFT 20
 #define INITIAL_COLUMN_TWO_LEFT 120

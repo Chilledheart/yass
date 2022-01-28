@@ -47,12 +47,12 @@
 #include <SDKDDKVer.h>
 
 // from wingdi.h, starting from Windows 2000
-typedef int (__stdcall* PFNGETDEVICECAPS)(HDC, int);
+typedef int(__stdcall* PFNGETDEVICECAPS)(HDC, int);
 
 // from Winuser.h, starting from Windows Vista
 #ifndef USER_DEFAULT_SCREEN_DPI
 #define USER_DEFAULT_SCREEN_DPI 96
-#endif // USER_DEFAULT_SCREEN_DPI
+#endif  // USER_DEFAULT_SCREEN_DPI
 
 // from winuser.h, starting from Windows Vista
 typedef BOOL(__stdcall* PFNSETPROCESSDPIAWARE)(void);
@@ -60,7 +60,7 @@ typedef BOOL(__stdcall* PFNSETPROCESSDPIAWARE)(void);
 // from shellscalingapi.h, starting from Windows 8.1
 #ifdef NTDDI_WINBLUE
 #include <shellscalingapi.h>
-#else  // NTDDI_WINBLUE
+#else   // NTDDI_WINBLUE
 typedef enum PROCESS_DPI_AWARENESS {
   PROCESS_DPI_UNAWARE = 0,
   PROCESS_SYSTEM_DPI_AWARE = 1,
@@ -86,9 +86,9 @@ typedef HRESULT(__stdcall* PFNGETDPIFORMONITOR)(HMONITOR,
 // from windef.h, starting from Windows 10, version 1607
 #ifndef NTDDI_WIN10_RS1
 typedef enum DPI_AWARENESS {
-  DPI_AWARENESS_INVALID           = -1,
-  DPI_AWARENESS_UNAWARE           = 0,
-  DPI_AWARENESS_SYSTEM_AWARE      = 1,
+  DPI_AWARENESS_INVALID = -1,
+  DPI_AWARENESS_UNAWARE = 0,
+  DPI_AWARENESS_SYSTEM_AWARE = 1,
   DPI_AWARENESS_PER_MONITOR_AWARE = 2
 } DPI_AWARENESS;
 #endif  // NTDDI_WIN10_RS1
@@ -106,9 +106,9 @@ DECLARE_HANDLE(DPI_AWARENESS_CONTEXT);
 // from windef.h, starting from Windows 10, version 1803
 #ifndef NTDDI_WIN10_RS4
 typedef enum DPI_HOSTING_BEHAVIOR {
-  DPI_HOSTING_BEHAVIOR_INVALID     = -1,
-  DPI_HOSTING_BEHAVIOR_DEFAULT     = 0,
-  DPI_HOSTING_BEHAVIOR_MIXED       = 1
+  DPI_HOSTING_BEHAVIOR_INVALID = -1,
+  DPI_HOSTING_BEHAVIOR_DEFAULT = 0,
+  DPI_HOSTING_BEHAVIOR_MIXED = 1
 } DPI_HOSTING_BEHAVIOR;
 #endif
 
@@ -161,9 +161,9 @@ HANDLE EnsureShcoreLoaded() {
 // https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-getdevicecaps
 int GetDeviceCaps(HDC hdc, int index) {
   HANDLE hLibrary = EnsureGdi32Loaded();
-  const auto fPointer = reinterpret_cast<PFNGETDEVICECAPS>(
-      reinterpret_cast<void*>(::GetProcAddress(static_cast<HMODULE>(hLibrary),
-                                               "GetDeviceCaps")));
+  const auto fPointer =
+      reinterpret_cast<PFNGETDEVICECAPS>(reinterpret_cast<void*>(
+          ::GetProcAddress(static_cast<HMODULE>(hLibrary), "GetDeviceCaps")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return USER_DEFAULT_SCREEN_DPI;
@@ -668,7 +668,7 @@ int set_yass_auto_start(bool on) {
   return result;
 }
 
-} // namespace
+}  // namespace
 
 bool Utils::GetAutoStart() {
   int ret = get_yass_auto_start();
