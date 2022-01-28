@@ -148,6 +148,21 @@ jobs:
         with:
           name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}-sha256 ${{ env.SHA256SUM }}
           path: sha256sum.txt
+      - uses: actions/upload-release-asset@v1
+        if: ${{ github.event_name == 'release' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ${{ env.BUNDLE_NAME }}-standalone.zip
+          asset_name: ${{ env.BUNDLE_NAME }}-standalone.zip
+          asset_content_type: application/octet-stream
+      - run: openssl sha256 ${{ env.BUNDLE_NAME }}-standalone.zip > sha256sum-standalone.txt
+      - run: echo "SHA256SUM_STANDALONE=$(cut -d' ' -f2 sha256sum-standalone.txt)" >>$GITHUB_ENV
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}-sha256-standalone ${{ env.SHA256SUM_STANDALONE }}
+          path: sha256sum-standalone.txt
   mac-clang-tidy:
     needs: cache-toolchain-mac
     runs-on: macos-latest

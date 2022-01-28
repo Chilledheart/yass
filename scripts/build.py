@@ -575,6 +575,25 @@ def postbuild_fix_rpath():
     print('not supported in platform %s' % sys.platform)
 
 
+def postbuild_strip_binaries():
+  print('strip binaries...')
+  if sys.platform == 'win32':
+    # no need to strip?
+    pass
+  elif sys.platform in [ 'linux', 'linux2' ]:
+    # TODO refer to deb/rpm routine
+    pass
+  elif sys.platform == 'darwin':
+    write_output(['dsymutil',
+                  os.path.join(get_app_name(), 'Contents', 'MacOS', APP_NAME),
+                  '--statistics',
+                  '--papertrail',
+                  '-o', get_app_name() + '.dSYM'])
+    write_output(['strip', '-S', '-x', '-v', os.path.join(get_app_name(), 'Contents', 'MacOS', APP_NAME)])
+  else:
+    print('not supported in platform %s' % sys.platform)
+
+
 def postbuild_codesign():
   print('fixing codesign...')
   # reference https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/resolving_common_notarization_issues?language=objc
@@ -708,6 +727,13 @@ def postbuild_archive():
         full_paths.append(file)
     archive_files(new_full_archive, full_paths)
     outputs.append(full_archive)
+  elif sys.platform == 'darwin':
+    full_paths = paths
+    if os.path.exists(get_app_name() + '.dSYM'):
+      full_paths.append(get_app_name() + '.dSYM')
+
+    archive_files(new_full_archive, full_paths)
+    outputs.append(full_archive)
 
   return outputs
 
@@ -722,6 +748,7 @@ if __name__ == '__main__':
     sys.exit(0)
   postbuild_copy_libraries()
   postbuild_fix_rpath()
+  postbuild_strip_binaries()
   if sys.platform == 'darwin':
     postbuild_codesign()
   if DEFAULT_ENABLE_OSX_UNIVERSAL_BUILD:
