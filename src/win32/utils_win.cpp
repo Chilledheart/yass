@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2021 Chilledheart  */
 
+// We use dynamic loading for below functions
+#define GetDeviceCaps GetDeviceCapsHidden
+#define SetProcessDPIAware SetProcessDPIAwareHidden
+
 #include "win32/utils.hpp"
 
 #include "core/logging.hpp"
@@ -12,9 +16,6 @@
 
 #include <Tchar.h>
 #include <windows.h>
-
-#if _WIN32_WINNT >= _WIN32_WINNT_VISTA
-#include <shellscalingapi.h>
 
 // https://docs.microsoft.com/en-us/windows/win32/winprog/using-the-windows-headers
 //
@@ -45,23 +46,35 @@
 // Windows XP                                     NTDDI_WINXP (0x05010000)
 #include <SDKDDKVer.h>
 
+// from wingdi.h, starting from Windows 2000
+typedef int (__stdcall* PFNGETDEVICECAPS)(HDC, int);
+
+// from Winuser.h, starting from Windows Vista
+#ifndef USER_DEFAULT_SCREEN_DPI
+#define USER_DEFAULT_SCREEN_DPI 96
+#endif // USER_DEFAULT_SCREEN_DPI
+
 // from winuser.h, starting from Windows Vista
-/* BOOL SetProcessDPIAware(); */
+typedef BOOL(__stdcall* PFNSETPROCESSDPIAWARE)(void);
 
 // from shellscalingapi.h, starting from Windows 8.1
-#ifndef NTDDI_WINBLUE
+#ifdef NTDDI_WINBLUE
+#include <shellscalingapi.h>
+#else  // NTDDI_WINBLUE
 typedef enum PROCESS_DPI_AWARENESS {
-  PROCESS_DPI_UNAWARE,
-  PROCESS_SYSTEM_DPI_AWARE,
-  PROCESS_PER_MONITOR_DPI_AWARE
-};
+  PROCESS_DPI_UNAWARE = 0,
+  PROCESS_SYSTEM_DPI_AWARE = 1,
+  PROCESS_PER_MONITOR_DPI_AWARE = 2
+} PROCESS_DPI_AWARENESS;
+
 typedef enum MONITOR_DPI_TYPE {
-  MDT_EFFECTIVE_DPI,
-  MDT_ANGULAR_DPI,
-  MDT_RAW_DPI,
-  MDT_DEFAULT
-};
+  MDT_EFFECTIVE_DPI = 0,
+  MDT_ANGULAR_DPI = 1,
+  MDT_RAW_DPI = 2,
+  MDT_DEFAULT = MDT_EFFECTIVE_DPI
+} MONITOR_DPI_TYPE;
 #endif  // NTDDI_WINBLUE
+
 // from shellscalingapi.h, starting from Windows 8.1
 typedef HRESULT(__stdcall* PFNSETPROCESSDPIAWARENESS)(PROCESS_DPI_AWARENESS);
 // from shellscalingapi.h, starting from Windows 8.1
@@ -73,11 +86,11 @@ typedef HRESULT(__stdcall* PFNGETDPIFORMONITOR)(HMONITOR,
 // from windef.h, starting from Windows 10, version 1607
 #ifndef NTDDI_WIN10_RS1
 typedef enum DPI_AWARENESS {
-  DPI_AWARENESS_INVALID,
-  DPI_AWARENESS_UNAWARE,
-  DPI_AWARENESS_SYSTEM_AWARE,
-  DPI_AWARENESS_PER_MONITOR_AWARE
-};
+  DPI_AWARENESS_INVALID           = -1,
+  DPI_AWARENESS_UNAWARE           = 0,
+  DPI_AWARENESS_SYSTEM_AWARE      = 1,
+  DPI_AWARENESS_PER_MONITOR_AWARE = 2
+} DPI_AWARENESS;
 #endif  // NTDDI_WIN10_RS1
 
 // from windef.h, starting from Windows 10, version 1607
@@ -93,14 +106,14 @@ DECLARE_HANDLE(DPI_AWARENESS_CONTEXT);
 // from windef.h, starting from Windows 10, version 1803
 #ifndef NTDDI_WIN10_RS4
 typedef enum DPI_HOSTING_BEHAVIOR {
-  DPI_HOSTING_BEHAVIOR_INVALID,
-  DPI_HOSTING_BEHAVIOR_DEFAULT,
-  DPI_HOSTING_BEHAVIOR_MIXED
-};
+  DPI_HOSTING_BEHAVIOR_INVALID     = -1,
+  DPI_HOSTING_BEHAVIOR_DEFAULT     = 0,
+  DPI_HOSTING_BEHAVIOR_MIXED       = 1
+} DPI_HOSTING_BEHAVIOR;
 #endif
 
 // from winuser.h, starting from Windows 10, version 1607
-typedef DPI_AWARENESS_CONTEXT(__stdcall* PFNGETTHREADDPIAWARENESSCONTEXT)();
+typedef DPI_AWARENESS_CONTEXT(__stdcall* PFNGETTHREADDPIAWARENESSCONTEXT)(void);
 // from winuser.h, starting from Windows 10, version 1607
 typedef DPI_AWARENESS_CONTEXT(__stdcall* PFNGETWINDOWDPIAWARENESSCONTEXT)(HWND);
 // from winuser.h, starting from Windows 10, version 1607
@@ -117,7 +130,7 @@ typedef BOOL(__stdcall* PFNISVALIDDPIAWARENESScONTEXT)(DPI_AWARENESS_CONTEXT);
 typedef BOOL(__stdcall* PFNAREDPIAWARENESSCONTEXTSEQUAL)(DPI_AWARENESS_CONTEXT,
                                                          DPI_AWARENESS_CONTEXT);
 // from winuser.h, starting from Windows 10, version 1607
-typedef UINT(__stdcall* PFNGETDPIFORSYSTEM)();
+typedef UINT(__stdcall* PFNGETDPIFORSYSTEM)(void);
 // from winuser.h, starting from Windows 10, version 1607
 typedef UINT(__stdcall* PFNGETDPIFORWINDOW)(HWND);
 // from winuser.h, starting from Windows 10, version 1803
@@ -127,14 +140,50 @@ typedef UINT(__stdcall* PFNGETDPIFROMDPIAWARENESSCONTEXT)(
 typedef DPI_HOSTING_BEHAVIOR(__stdcall* PFNSETTHREADDPIHOSTINGBEHAVIOR)(
     DPI_HOSTING_BEHAVIOR);
 
+// We use dynamic loading for below functions
+#undef GetDeviceCaps
+#undef SetProcessDPIAware
+
 namespace {
+
+HANDLE EnsureUser32Loaded() {
+  return LoadLibraryExW(L"User32.dll", nullptr, 0);
+}
+
+HANDLE EnsureGdi32Loaded() {
+  return LoadLibraryExW(L"Gdi32.dll", nullptr, 0);
+}
 
 HANDLE EnsureShcoreLoaded() {
   return LoadLibraryExW(L"Shcore.dll", nullptr, 0);
 }
 
-HANDLE EnsureUser32Loaded() {
-  return LoadLibraryExW(L"User32.dll", nullptr, 0);
+// https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-getdevicecaps
+int GetDeviceCaps(HDC hdc, int index) {
+  HANDLE hLibrary = EnsureGdi32Loaded();
+  const auto fPointer = reinterpret_cast<PFNGETDEVICECAPS>(
+      reinterpret_cast<void*>(::GetProcAddress(static_cast<HMODULE>(hLibrary),
+                                               "GetDeviceCaps")));
+  if (fPointer == nullptr) {
+    ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
+    return USER_DEFAULT_SCREEN_DPI;
+  }
+
+  return fPointer(hdc, index);
+}
+
+// https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setprocessdpiaware
+BOOL SetProcessDPIAware() {
+  HANDLE hLibrary = EnsureUser32Loaded();
+  const auto fPointer = reinterpret_cast<PFNSETPROCESSDPIAWARE>(
+      reinterpret_cast<void*>(::GetProcAddress(static_cast<HMODULE>(hLibrary),
+                                               "SetProcessDPIAware")));
+  if (fPointer == nullptr) {
+    ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
+    return FALSE;
+  }
+
+  return fPointer();
 }
 
 HRESULT SetProcessDpiAwareness(PROCESS_DPI_AWARENESS value) {
@@ -278,7 +327,7 @@ UINT GetDpiForSystem() {
 // The DPI for the window which depends on the DPI_AWARENESS of the window.
 // An invalid hwnd value will result in a return value of 0.
 // DPI_AWARENESS                   Return value
-// DPI_AWARENESS_UNAWARE           96
+// DPI_AWARENESS_UNAWARE           USER_DEFAULT_SCREEN_DPI
 // DPI_AWARENESS_SYSTEM_AWARE      The system DPI.
 // DPI_AWARENESS_PER_MONITOR_AWARE The DPI of the monitor where the window is located.
 // clang-format on
@@ -424,7 +473,7 @@ bool Utils::SetDpiAwareness(DpiAwarenessType awareness_type) {
 
   VLOG(2) << "SetProcessDpiAwareness failed, falling back...";
 
-  if (::SetProcessDPIAware()) {
+  if (SetProcessDPIAware()) {
     VLOG(2) << "Vista style's ProcessDPIAware is set up";
     return true;
   }
@@ -502,7 +551,7 @@ unsigned int Utils::GetDpiForWindowOrSystem(HWND hWnd) {
         break;
       case DPI_AWARENESS_UNAWARE:
         VLOG(2) << "DPI: Use Dpi in Unware";
-        return 96;
+        return USER_DEFAULT_SCREEN_DPI;
         break;
       case DPI_AWARENESS_INVALID:
         VLOG(2) << "DPI: Dpi in Invalid";
@@ -525,25 +574,11 @@ unsigned int Utils::GetDpiForWindowOrSystem(HWND hWnd) {
   VLOG(2) << "DpiAwarenessMonitor is not found, falling back...";
 
   HDC hDC = ::GetDC(hWnd);
-  ydpi = ::GetDeviceCaps(hDC, LOGPIXELSY);
+  ydpi = GetDeviceCaps(hDC, LOGPIXELSY);
   ::ReleaseDC(nullptr, hDC);
 
   return ydpi;
 }
-
-#else
-bool Utils::SetDpiAwareness(DpiAwarenessType /*awareness_type*/) {
-  return false;
-}
-
-bool Utils::SetMixedThreadDpiHostingBehavior() {
-  return false;
-}
-
-unsigned int Utils::GetDpiForWindowOrSystem(HWND /*hWnd*/) {
-  return 96;
-}
-#endif
 
 namespace {
 LONG get_win_run_key(HKEY* pKey) {
