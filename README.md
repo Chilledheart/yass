@@ -44,7 +44,21 @@ yass, or Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 
 ### Legacy Ubuntu 16.04
 <img width="484" alt="snapshot-winxp" src="https://user-images.githubusercontent.com/54673341/151591522-d86248f7-763f-432e-9dd8-fd16317d477b.png">
 
-## Notes on Windows 7, Windows 8 and Windows 8.1
+## Running on Windows
+
+TLDR' if you running `yass.exe` ends with missing dlls error, please download
+standalone packages (slightly larger) or install Visual C++ Redistributable Package
+below. The required UCRT (Universal C Runtime) is bundled as well.
+
+Also the packages named "static" are also runnable except you are probably
+running without the updated VCRuntime/CRT (hotfixes or upgrade etc).
+
+### Notes on Windows 10
+
+Visual C++ Redistributable Package is part of Operating System. You should run
+yass.exe without problems.
+
+### Notes on Windows 7, Windows 8 and Windows 8.1
 
 If you run Windows prior to Windows 10, Visual C++ Runtime Files may be [required][latest-supported-vc-redist]:
 
@@ -55,7 +69,10 @@ ARM64 | https://aka.ms/vs/17/release/vc_redist.arm64.exe | Permalink for latest 
 X86 | https://aka.ms/vs/17/release/vc_redist.x86.exe | Permalink for latest supported x86 version
 X64 | https://aka.ms/vs/17/release/vc_redist.x64.exe | Permalink for latest supported x64 version. The X64 redistributable package contains both ARM64 and X64 binaries. This package makes it easy to install required Visual C++ ARM64 binaries when the X64 redistributable is installed on an ARM64 device.
 
-## Notes on Windows XP
+### Notes on Windows XP
+
+There is no standalone UCRT with Windows XP, so you should stick to the one
+bundled inside Visual C++ Redistributable Package.
 
 According to [Microsoft][latest-supported-vc-redist], the last version of the Visual C++ Redistributable that
 works on Windows XP shipped in Visual Studio 2019 version 16.7 (file versions starting with 14.27).
