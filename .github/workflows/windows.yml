@@ -243,8 +243,8 @@ jobs:
           set VCToolsVersion=
         shell: cmd
       - run: |
-          mv -f ${{ matrix.arch }}-${{ matrix.crt-linkage }}-windows-yass.exe.zip ${{ env.BUNDLE_NAME }}.zip
-          mv -f ${{ matrix.arch }}-${{ matrix.crt-linkage }}-windows-yass.exe-standalone.zip ${{ env.BUNDLE_NAME }}-standalone.zip
+          mv -f yass.zip ${{ env.BUNDLE_NAME }}.zip
+          mv -f yass-standalone.zip ${{ env.BUNDLE_NAME }}-standalone.zip
       - uses: actions/upload-release-asset@v1
         if: ${{ github.event_name == 'release' }}
         env:
@@ -363,8 +363,8 @@ jobs:
           goto :eof
         shell: cmd
       - run: |
-          mv -f ${{ matrix.arch }}-${{ matrix.crt-linkage }}-windows-yass.exe.zip ${{ env.BUNDLE_NAME }}.zip
-          mv -f ${{ matrix.arch }}-${{ matrix.crt-linkage }}-windows-yass.exe-standalone.zip ${{ env.BUNDLE_NAME }}-standalone.zip
+          mv -f yass.zip ${{ env.BUNDLE_NAME }}.zip
+          mv -f yass-standalone.zip ${{ env.BUNDLE_NAME }}-standalone.zip
       - uses: actions/upload-release-asset@v1
         if: ${{ github.event_name == 'release' }}
         env:
@@ -577,8 +577,8 @@ jobs:
           set VCToolsVersion=
         shell: cmd
       - run: |
-          mv -f ${{ matrix.arch }}-${{ matrix.crt-linkage }}-windows-yass.exe.zip ${{ env.BUNDLE_NAME }}.zip
-          mv -f ${{ matrix.arch }}-${{ matrix.crt-linkage }}-windows-yass.exe-standalone.zip ${{ env.BUNDLE_NAME }}-standalone.zip
+          mv -f yass.zip ${{ env.BUNDLE_NAME }}.zip
+          mv -f yass-standalone.zip ${{ env.BUNDLE_NAME }}-standalone.zip
       - uses: actions/upload-release-asset@v1
         if: ${{ github.event_name == 'release' }}
         env:

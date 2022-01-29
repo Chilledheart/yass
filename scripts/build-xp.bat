@@ -30,6 +30,9 @@ call :BuildBoringSSL
 
 python.exe -u .\scripts\build.py || exit /b
 
+move "yass.zip" "yass-msvc-xp-release-%Platform%-%MSVC_CRT_LINKAGE%.zip"
+move "yass-standalone.zip" "yass-msvc-xp-release-%Platform%-%MSVC_CRT_LINKAGE%-standalone.zip"
+
 set CC=
 set CXX=
 set Platform=x64
@@ -43,6 +46,9 @@ call "%~dp0callxp-%Platform%.cmd"
 call :BuildBoringSSL
 
 python.exe -u .\scripts\build.py || exit /b
+
+move "yass.zip" "yass-msvc-xp-release-%Platform%-%MSVC_CRT_LINKAGE%.zip"
+move "yass-standalone.zip" "yass-msvc-xp-release-%Platform%-%MSVC_CRT_LINKAGE%-standalone.zip"
 
 set CC=
 set CXX=
@@ -58,6 +64,9 @@ call :BuildBoringSSL
 
 python.exe -u .\scripts\build.py || exit /b
 
+move "yass.zip" "yass-msvc-xp-release-%Platform%-%MSVC_CRT_LINKAGE%.zip"
+move "yass-standalone.zip" "yass-msvc-xp-release-%Platform%-%MSVC_CRT_LINKAGE%-standalone.zip"
+
 set CC=
 set CXX=
 set Platform=x64
@@ -71,6 +80,9 @@ call "%~dp0callxp-%Platform%.cmd"
 call :BuildBoringSSL
 
 python.exe -u .\scripts\build.py || exit /b
+
+move "yass.zip" "yass-msvc-xp-release-%Platform%-%MSVC_CRT_LINKAGE%.zip"
+move "yass-standalone.zip" "yass-msvc-xp-release-%Platform%-%MSVC_CRT_LINKAGE%-standalone.zip"
 
 goto :eof
 

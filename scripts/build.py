@@ -688,12 +688,8 @@ def archive_files(output, paths = []):
 
 
 def postbuild_archive():
-  if sys.platform == 'win32':
-    src = get_app_name()
-    dst = '%s-%s-windows-%s' % (DEFAULT_ARCH, DEFAULT_MSVC_CRT_LINKAGE, get_app_name())
-  else:
-    src = get_app_name()
-    dst = '%s-%s' % (sys.platform, get_app_name())
+  src = get_app_name()
+  dst = APP_NAME
 
   archive = dst + '.zip'
   full_archive = dst + '-standalone.zip'
