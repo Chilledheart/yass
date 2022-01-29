@@ -6,9 +6,9 @@
     <!-- reference: https://docs.microsoft.com/en-us/dotnet/framework/configure-apps/file-schema/runtime/assemblyidentity-element-for-runtime -->
     <assemblyIdentity
         type="win32"
-        name="${YASS_APP_NAME}"
-        version="${YASS_APP_FULL_VERSION}"
-        processorArchitecture="${MSVC_PROCESSOR_ARCHITECTURE}"
+        name="@YASS_APP_NAME@"
+        version="@YASS_APP_FULL_VERSION@"
+        processorArchitecture="@MSVC_PROCESSOR_ARCHITECTURE@"
     />
     <description>Yet Another Shadow Socket Application</description>
     <!-- To enable your application to use visual styles, you must use ComCtl32.dll version 6 or later. -->

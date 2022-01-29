@@ -82,18 +82,4 @@ BEGIN
     PUSHBUTTON      "&Cancel",IDCANCEL,110,95,66,15
 END
 
-IDD_ABOUTBOX DIALOGEX 0, 0, 240, 75
-STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "About YetAnotherShadowsocket"
-FONT 8, "MS Sans Serif", 0, 0, 0x0
-BEGIN
-    ICON            IDR_MAINFRAME,IDC_STATIC,11,17,21,20
-    LTEXT           "YASS Version 1.0",IDC_STATIC,40,10,119,8,SS_NOPREFIX
-    LTEXT           "(C) 2019-2022 Chilledheart.  All rights reserved.",
-                    IDC_STATIC,40,37,122,21
-    DEFPUSHBUTTON   "OK",IDOK,183,7,32,14,WS_GROUP
-    LTEXT           "Author: Chilledheart",IDC_STATIC,40,24,119,8
-END
-
 #endif    // Unicode (UTF-8) resources
-/////////////////////////////////////////////////////////////////////////////

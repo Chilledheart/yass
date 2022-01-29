@@ -5,7 +5,7 @@ if (CMAKE_CURRENT_BINARY_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 endif()
 
 set(PACKAGE_NAME            "yass")
-set(PACKAGE_FULL_NAME       "YetAnotherShadowSocket")
+set(PACKAGE_FULL_NAME       "Yet Another Shadow Socket")
 set(PACKAGE_VERSION_MAJOR   1)
 set(PACKAGE_VERSION_MINOR   0)
 set(PACKAGE_VERSION_PATCH   0)
@@ -46,12 +46,43 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # Set variables used in configure_file
 set(YASS_APP_NAME ${PACKAGE_NAME})
+set(YASS_APP_FULL_NAME ${PACKAGE_FULL_NAME})
+set(YASS_APP_INTERNAL_NAME ${PACKAGE_NAME}_gui)
+set(YASS_APP_WEBSITE "https://github.com/Chilledheart/yass")
 set(YASS_APP_VERSION ${PACKAGE_VERSION})
 set(YASS_APP_VERSION_MAJOR ${PACKAGE_VERSION_MAJOR})
 set(YASS_APP_VERSION_MINOR ${PACKAGE_VERSION_MINOR})
 set(YASS_APP_VERSION_PATCH ${PACKAGE_VERSION_PATCH})
 set(YASS_APP_VERSION_TWEAK ${PACKAGE_VERSION_TWEAK})
 set(YASS_APP_FULL_VERSION ${PACKAGE_VERSION}.${PACKAGE_VERSION_TWEAK})
+
+# update LAST_CHANGE file
+# format d740da257583289dbebd2eb37e8668928fac5ead-refs/branch-heads/4692
+find_program(GIT_EXECUTABLE NAMES git git.exe git.cmd)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
+  execute_process(COMMAND
+    ${GIT_EXECUTABLE} rev-parse HEAD
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    OUTPUT_VARIABLE LAST_CHANGE_REF
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+  execute_process(COMMAND
+    ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    OUTPUT_VARIABLE ABBREV_REF
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+  set(YASS_APP_LAST_CHANGE "${LAST_CHANGE_REF}-refs/branch-heads/${ABBREV_REF}")
+  file(WRITE ${CMAKE_CURRENT_SOURCE_DIR}/LAST_CHANGE ${YASS_APP_LAST_CHANGE})
+else()
+  # read if running from tarball
+  file(READ ${CMAKE_CURRENT_SOURCE_DIR}/LAST_CHANGE YASS_APP_LAST_CHANGE)
+endif()
+
+set(APP_VERSION_HEADER "${CMAKE_CURRENT_BINARY_DIR}/version.h")
+configure_file("src/version.h.in" "${APP_VERSION_HEADER}" @ONLY)
+# for version.h
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 if(MSVC)
   # On Windows, prefer cl over gcc if both are available. By default most of
@@ -1394,10 +1425,17 @@ if (GUI)
 
     if (MSVC)
         set(APP_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass.manifest")
-        configure_file("src/win32/yass.manifest.in" "${APP_MSVC_MANIFEST}")
+        configure_file("src/win32/yass.manifest.in" "${APP_MSVC_MANIFEST}" @ONLY)
+
+        set(APP_MSVC_VERSION_RC "${CMAKE_CURRENT_BINARY_DIR}/yass_version.rc")
+        configure_file("src/win32/yass_version.rc.in" "${APP_MSVC_VERSION_RC}" @ONLY)
+        set(APP_MSVC_ABOUT_DIALOG_RC "${CMAKE_CURRENT_BINARY_DIR}/yass_about.rc")
+        configure_file("src/win32/yass_about.rc.in" "${APP_MSVC_ABOUT_DIALOG_RC}" @ONLY)
 
         list(APPEND SRC_FILES
           ${APP_MSVC_MANIFEST}
+          ${APP_MSVC_VERSION_RC}
+          ${APP_MSVC_ABOUT_DIALOG_RC}
           src/win32/yass.rc
           src/win32/yass.cpp
           src/win32/yass_frame.cpp
@@ -1520,13 +1558,16 @@ if (GUI)
         set_source_files_properties("${ASSET_CATALOG}" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")
 
+        set(APP_MACOSX_BUNDLE_INFO "${CMAKE_CURRENT_BINARY_DIR}/Info.plist")
+        configure_file("src/mac/Info.plist.in" "${APP_MACOSX_BUNDLE_INFO}" @ONLY)
+
         set_target_properties(${APP_NAME} PROPERTIES
             RESOURCE "network.icns ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/Base.lproj/Main.storyboard"
             MACOSX_BUNDLE_ICON_FILE network.icns
-            MACOSX_BUNDLE_COPYRIGHT "Copyright ${PACKAGE_FULL_NAME}"
+            MACOSX_BUNDLE_COPYRIGHT "Copyright ${YASS_APP_FULL_NAME}"
             MACOSX_BUNDLE_GUI_IDENTIFIER "it.gui.yass"
             MACOSX_BUNDLE_BUNDLE_NAME ${PACKAGE_NAME}
-            MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/Info.plist
+            MACOSX_BUNDLE_INFO_PLIST ${APP_MACOSX_BUNDLE_INFO}
             XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
             XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
             XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++"
@@ -1569,22 +1610,3 @@ if (GUI)
       string(REPLACE "-fno-exceptions" "-fexceptions" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     endif()
 endif()
-
-## distribute related
-find_program(GIT_EXECUTABLE NAMES git git.exe git.cmd)
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git AND NOT (${CMAKE_BUILD_TYPE} MATCHES Release))
-  execute_process(COMMAND
-    ${GIT_EXECUTABLE} rev-list HEAD --count
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    OUTPUT_VARIABLE YASS_APP_REVISION
-    OUTPUT_STRIP_TRAILING_WHITESPACE )
-  add_definitions(-DYASS_APP_REVISION=${YASS_APP_REVISION})
-endif()
-
-## requires gnu tar and sed, oops
-set(ARCHIVE_NAME ${YASS_APP_NAME}-${YASS_APP_VERSION})
-add_custom_target(dist
-  COMMAND ${GIT_EXECUTABLE} ls-files --recurse-submodules |
-        tar caf ${CMAKE_CURRENT_BINARY_DIR}/${ARCHIVE_NAME}.tar.gz
-        --xform='s,^\./,${ARCHIVE_NAME}/,' -T -
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})

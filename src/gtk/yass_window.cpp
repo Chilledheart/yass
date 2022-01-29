@@ -15,6 +15,7 @@
 #include "gtk/option_dialog.hpp"
 #include "gtk/utils.hpp"
 #include "gtk/yass.hpp"
+#include "version.h"
 
 static const char* kMainFrameName = "YetAnotherShadowSocket";
 
@@ -334,14 +335,14 @@ void YASSWindow::OnOption() {
 
 void YASSWindow::OnAbout() {
   Gtk::AboutDialog about_dialog;
-  about_dialog.set_program_name("Yet Another Shadow Socket");
-  about_dialog.set_version("1.0.0");
-  about_dialog.set_copyright(
-      "Copyright 2022 Chilledheart. All rights reserved.");
+  about_dialog.set_authors({YASS_APP_COMPANY_NAME});
+  about_dialog.set_comments("Last Change: " YASS_APP_LAST_CHANGE);
+  about_dialog.set_copyright(YASS_APP_COPYRIGHT);
   about_dialog.set_license_type(Gtk::LICENSE_GPL_2_0);
-  about_dialog.set_website("https://github.com/Chilledheart/yass");
-  about_dialog.set_authors({"Chilledheart"});
   about_dialog.set_logo_icon_name("yass");
+  about_dialog.set_program_name(YASS_APP_PRODUCT_NAME);
+  about_dialog.set_version(YASS_APP_PRODUCT_VERSION);
+  about_dialog.set_website(YASS_APP_WEBSITE);
   about_dialog.run();
 }
 

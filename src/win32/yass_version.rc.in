@@ -1,0 +1,119 @@
+/////////////////////////////////////////////////////////////////////////////
+//
+// VERSIONINFO
+//
+/////////////////////////////////////////////////////////////////////////////
+
+// Microsoft Visual C++ resource script for embedding version information.
+// The format is described at:
+//   http://msdn.microsoft.com/en-gb/library/windows/desktop/aa380599(v=vs.85).aspx
+// The VERSIONINFO resource is described at:
+//   https://msdn.microsoft.com/en-gb/library/windows/desktop/aa381058(v=vs.85).aspx
+
+// Default values for required fields.
+
+#ifndef RC_VERSION_FIELD_1
+#define RC_VERSION_FIELD_1 @YASS_APP_VERSION_MAJOR@
+#endif
+
+#ifndef RC_VERSION_FIELD_2
+#define RC_VERSION_FIELD_2 @YASS_APP_VERSION_MINOR@
+#endif
+
+#ifndef RC_VERSION_FIELD_3
+#define RC_VERSION_FIELD_3 @YASS_APP_VERSION_PATCH@
+#endif
+
+#ifndef RC_VERSION_FIELD_4
+#define RC_VERSION_FIELD_4 @YASS_APP_VERSION_TWEAK@
+#endif
+
+#ifndef RC_COMPANY_NAME
+#define RC_COMPANY_NAME "Chilledheart"
+#endif
+
+#ifndef RC_FILE_DESCRIPTION
+#define RC_FILE_DESCRIPTION "lightweight and secure http/socks4/socks5 proxy"
+#endif
+
+#ifndef RC_FILE_VERSION
+#define RC_FILE_VERSION @YASS_APP_VERSION_MAJOR@,@YASS_APP_VERSION_MINOR@,@YASS_APP_VERSION_PATCH@,@YASS_APP_VERSION_TWEAK@
+#endif
+
+#ifndef RC_INTERNAL_NAME
+#define RC_INTERNAL_NAME "@YASS_APP_INTERNAL_NAME@"
+#endif
+
+#ifndef RC_ORIGINAL_FILENAME
+#define RC_ORIGINAL_FILENAME "@YASS_APP_NAME@.exe"
+#endif
+
+#ifndef RC_PRODUCT_NAME
+#define RC_PRODUCT_NAME "@YASS_APP_FULL_NAME@"
+#endif
+
+#ifndef RC_COMPANY_SHORT_NAME
+#define RC_COMPANY_SHORT_NAME "Chilledheart"
+#endif
+
+#ifndef RC_PRODUCT_SHORT_NAME
+#define RC_PRODUCT_SHORT_NAME "@YASS_APP_NAME@"
+#endif
+
+#ifndef RC_PRODUCT_VERSION
+#define RC_PRODUCT_VERSION "@YASS_APP_VERSION@"
+#endif
+
+#ifndef RC_LAST_CHANGE
+#define RC_LAST_CHANGE "@YASS_APP_LAST_CHANGE@"
+#endif
+
+#ifndef RC_COPYRIGHT
+#define RC_COPYRIGHT "@YASS_APP_COPYRIGHT@"
+#endif
+
+1 VERSIONINFO
+ FILEVERSION RC_VERSION_FIELD_1,RC_VERSION_FIELD_2,RC_VERSION_FIELD_3,RC_VERSION_FIELD_4
+ PRODUCTVERSION RC_VERSION_FIELD_1,RC_VERSION_FIELD_2,RC_VERSION_FIELD_3,RC_VERSION_FIELD_4
+ FILEFLAGSMASK 0x17L
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904B0"
+    BEGIN
+      // Required strings
+      VALUE "CompanyName", RC_COMPANY_NAME
+      VALUE "FileDescription", RC_FILE_DESCRIPTION
+      VALUE "FileVersion", RC_FILE_VERSION
+      VALUE "InternalName", RC_INTERNAL_NAME
+      VALUE "LegalCopyright", RC_COPYRIGHT
+      VALUE "OriginalFilename", RC_ORIGINAL_FILENAME
+      VALUE "ProductName", RC_PRODUCT_NAME
+      VALUE "ProductVersion", RC_PRODUCT_VERSION
+      VALUE "CompanyShortName", RC_COMPANY_SHORT_NAME
+      VALUE "ProductShortName", RC_PRODUCT_SHORT_NAME
+      VALUE "LastChange", RC_LAST_CHANGE
+
+      // Optional strings
+#ifdef RC_COMMENTS
+        VALUE "Comments", RC_COMMENTS
+#endif
+    END
+  END
+
+  BLOCK "VarFileInfo"
+  BEGIN
+    // The translation must correspond to the above BLOCK inside StringFileInfo
+    // langID     0x0409  U.S. English
+    // charsetID  1200    Unicode
+    VALUE "Translation", 0x0409, 1200
+  END
+END
