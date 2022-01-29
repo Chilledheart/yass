@@ -248,8 +248,7 @@ def _get_win32_search_paths():
   ### $project_root\third_party\vcredist\x86
   if vctools_version >= 14.00 and vctools_version < 14.10:
     search_dirs.extend([
-      os.path.join(os.path.dirname(os.path.realpath(__file__)), '..',
-                   'third_party', 'vcredist', DEFAULT_ARCH)
+      os.path.join('..', 'third_party', 'vcredist', DEFAULT_ARCH)
     ])
   return search_dirs
 
