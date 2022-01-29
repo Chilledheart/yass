@@ -55,12 +55,13 @@ running without the updated VCRuntime/CRT (hotfixes or upgrade etc).
 
 ### Notes on Windows 10
 
-Visual C++ Redistributable Package is part of Operating System. You should run
-yass.exe without problems.
+Visual C++ Redistributable Package along with UCRT is part of Operating System.
+You should run yass.exe without problems.
 
 ### Notes on Windows 7, Windows 8 and Windows 8.1
 
 If you run Windows prior to Windows 10, Visual C++ Runtime Files may be [required][latest-supported-vc-redist]:
+Or you can install [KB2999226][KB2999226] to get it.
 
 Below is a matrix support officially:
 Architecture | Link | Notes
@@ -123,6 +124,7 @@ It is licensed with GPLv2.
 [tls13]: https://tools.ietf.org/html/rfc7905
 
 [latest-supported-vc-redist]: https://docs.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170
+[KB2999226]: http://support.microsoft.com/kb/2999226
 [ucrt]: https://www.microsoft.com/en-us/download/details.aspx?id=48234
 
 [14.28.VC_redist.x64.exe]: https://download.visualstudio.microsoft.com/download/pr/566435ac-4e1c-434b-b93f-aecc71e8cffc/B75590149FA14B37997C35724BC93776F67E08BFF9BD5A69FACBF41B3846D084/VC_redist.x64.exe
