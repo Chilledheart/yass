@@ -11,7 +11,7 @@ defaults:
   run:
     shell: bash
 env:
-  CACHE_EPOCH: 11
+  CACHE_EPOCH: 12
 jobs:
   cache-toolchain-win:
     runs-on: windows-2019
@@ -28,12 +28,13 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
-      - name: Cache clang and nasm
+      - name: Cache clang, nasm and extracted vcredist files
         uses: actions/cache@v2
         with:
           path: |
             third_party/nasm
             third_party/llvm-build/Release+Asserts
+            third_party/vcredist
           key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get vcpkg commit
         run: |
@@ -77,6 +78,20 @@ jobs:
             CLANG_REVISION=$(< CLANG_REVISION)
             curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
             curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+          fi
+      - name: "Install dependency: extracted vcredist runtime (v140)"
+        run: |
+          if [ ! -d third_party/vcredist ]; then
+            mkdir -p third_party/vcredist
+            curl -L -O https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311-binaries.zip
+            "/c/Program Files/7-Zip/7z.exe" x -owix311 wix311-binaries.zip
+            wix311/dark.exe "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\redist\1033\vcredist_x86.exe" -x tmp
+            "/c/Program Files/7-Zip/7z.exe" x "-othird_party\vcredist\x86" "tmp\AttachedContainer\packages\vcRuntimeMinimum_x86\cab1.cab"
+            python -c "import os; os.chdir('third_party/vcredist/x86'); dlls = os.listdir('.'); [ os.rename(dll, dll.replace('_', '-')) for dll in dlls ];"
+            wix311/dark.exe "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\redist\1033\vcredist_x64.exe" -x tmp
+            "/c/Program Files/7-Zip/7z.exe" x "-othird_party\vcredist\x64" "tmp\AttachedContainer\packages\vcRuntimeMinimum_amd64\cab1.cab"
+            python -c "import os; os.chdir('third_party/vcredist/x64'); dlls = os.listdir('.'); [ os.rename(dll, dll.replace('_', '-')) for dll in dlls ];"
+            rm -rf wix311* tmp
           fi
       - name: "Install dependency: boringssl (x86 slice)"
         shell: cmd
@@ -197,12 +212,13 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
-      - name: Cache clang and nasm
+      - name: Cache clang, nasm and extracted vcredist files
         uses: actions/cache@v2
         with:
           path: |
             third_party/nasm
             third_party/llvm-build/Release+Asserts
+            third_party/vcredist
           key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get vcpkg commit
         run: |
@@ -305,12 +321,13 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
-      - name: Cache clang and nasm
+      - name: Cache clang, nasm and extracted vcredist files
         uses: actions/cache@v2
         with:
           path: |
             third_party/nasm
             third_party/llvm-build/Release+Asserts
+            third_party/vcredist
           key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get vcpkg commit
         run: |
@@ -424,12 +441,13 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
-      - name: Cache clang and nasm
+      - name: Cache clang, nasm and extracted vcredist files
         uses: actions/cache@v2
         with:
           path: |
             third_party/nasm
             third_party/llvm-build/Release+Asserts
+            third_party/vcredist
           key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get vcpkg commit
         run: |
@@ -543,12 +561,13 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
-      - name: Cache clang and nasm
+      - name: Cache clang, nasm and extracted vcredist files
         uses: actions/cache@v2
         with:
           path: |
             third_party/nasm
             third_party/llvm-build/Release+Asserts
+            third_party/vcredist
           key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get vcpkg commit
         run: |
@@ -651,12 +670,13 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
-      - name: Cache clang and nasm
+      - name: Cache clang, nasm and extracted vcredist files
         uses: actions/cache@v2
         with:
           path: |
             third_party/nasm
             third_party/llvm-build/Release+Asserts
+            third_party/vcredist
           key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get vcpkg commit
         run: |

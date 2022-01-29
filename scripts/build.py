@@ -229,7 +229,7 @@ def _get_win32_search_paths():
   sdk_base_dir= os.getenv('WindowsSdkDir')
 
   ### Search Path (UCRT)
-  ### TODO should we support Windows SDK 7.0A or 8.1?
+  ###
   ### Please note The UCRT files are not redistributable for ARM64 Win32.
   ### https://chromium.googlesource.com/chromium/src/+/lkgr/build/win/BUILD.gn
   ### C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x86\ucrt
@@ -242,6 +242,15 @@ def _get_win32_search_paths():
     os.path.join(sdk_base_dir, 'ExtensionSDKs', 'Microsoft.UniversalCRT.Debug',
                  sdk_version, 'Redist', 'Debug', DEFAULT_ARCH),
   ])
+
+  ### Fallback search path for XP (v140)
+  ### Refer to #27, https://github.com/Chilledheart/yass/issues/27
+  ### $project_root\third_party\vcredist\x86
+  if vctools_version >= 14.00 and vctools_version < 14.10:
+    search_dirs.extend([
+      os.path.join(os.path.dirname(os.path.realpath(__file__)), '..',
+                   'third_party', 'vcredist', DEFAULT_ARCH)
+    ])
   return search_dirs
 
 """
