@@ -126,58 +126,7 @@ def get_dependencies_by_objdump(path):
   return []
 
 
-"""
-The output of dumpbin /dependents is like below:
-Microsoft (R) COFF/PE Dumper Version 14.30.30709.0
-Copyright (C) Microsoft Corporation.  All rights reserved.
-
-
-Dump of file arm64-windows-yass.exe
-
-File Type: EXECUTABLE IMAGE
-
-  Image has the following dependencies:
-
-    WS2_32.dll
-    GDI32.dll
-    SHELL32.dll
-    KERNEL32.dll
-    USER32.dll
-    ADVAPI32.dll
-    MSVCP140.dll
-    MSWSOCK.dll
-    mfc140u.dll
-    dbghelp.dll
-    VCRUNTIME140.dll
-    api-ms-win-crt-runtime-l1-1-0.dll
-    api-ms-win-crt-heap-l1-1-0.dll
-    api-ms-win-crt-stdio-l1-1-0.dll
-    api-ms-win-crt-math-l1-1-0.dll
-    api-ms-win-crt-time-l1-1-0.dll
-    api-ms-win-crt-filesystem-l1-1-0.dll
-    api-ms-win-crt-convert-l1-1-0.dll
-    api-ms-win-crt-environment-l1-1-0.dll
-    api-ms-win-crt-string-l1-1-0.dll
-    api-ms-win-crt-locale-l1-1-0.dll
-
-  Summary
-
-       15000 .data
-        4000 .pdata
-       2C000 .rdata
-        2000 .reloc
-       12000 .rsrc
-       71000 .text
-"""
-def get_dependencies_by_dumpbin(path):
-  lines = subprocess.check_output(['dumpbin', '/dependents', path]).decode().split('\n')
-  dlls = []
-  system_dlls = ['WS2_32.dll', 'GDI32.dll', 'SHELL32.dll', 'USER32.dll',
-                 'ADVAPI32.dll', 'MSWSOCK.dll', 'dbghelp.dll', 'KERNEL32.dll',
-                 'ole32.dll', 'OLEAUT32.dll', 'SHLWAPI.dll', 'IMM32.dll',
-                 'UxTheme.dll', 'PROPSYS.dll', 'dwmapi.dll', 'WININET.dll',
-                 'OLEACC.dll', 'ODBC32.dll', 'oledlg.dll', 'urlmon.dll',
-                 'MSIMG32.dll', 'WINMM.dll', 'CRYPT32.dll', 'gdiplus.dll', ]
+def _get_win32_search_paths():
   # VCToolsVersion:PlatformToolchainversion:VisualStudioVersion
   #  14.30-14.3?:v143:Visual Studio 2022
   #  14.20-14.29:v142:Visual Studio 2019
@@ -293,10 +242,60 @@ def get_dependencies_by_dumpbin(path):
     os.path.join(sdk_base_dir, 'ExtensionSDKs', 'Microsoft.UniversalCRT.Debug',
                  sdk_version, 'Redist', 'Debug', DEFAULT_ARCH),
   ])
+  return search_dirs
 
-  print('searching dlls in directories:')
-  for search_dir in search_dirs:
-    print('--- %s' % search_dir)
+"""
+The output of dumpbin /dependents is like below:
+Microsoft (R) COFF/PE Dumper Version 14.30.30709.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+Dump of file arm64-windows-yass.exe
+
+File Type: EXECUTABLE IMAGE
+
+  Image has the following dependencies:
+
+    WS2_32.dll
+    GDI32.dll
+    SHELL32.dll
+    KERNEL32.dll
+    USER32.dll
+    ADVAPI32.dll
+    MSVCP140.dll
+    MSWSOCK.dll
+    mfc140u.dll
+    dbghelp.dll
+    VCRUNTIME140.dll
+    api-ms-win-crt-runtime-l1-1-0.dll
+    api-ms-win-crt-heap-l1-1-0.dll
+    api-ms-win-crt-stdio-l1-1-0.dll
+    api-ms-win-crt-math-l1-1-0.dll
+    api-ms-win-crt-time-l1-1-0.dll
+    api-ms-win-crt-filesystem-l1-1-0.dll
+    api-ms-win-crt-convert-l1-1-0.dll
+    api-ms-win-crt-environment-l1-1-0.dll
+    api-ms-win-crt-string-l1-1-0.dll
+    api-ms-win-crt-locale-l1-1-0.dll
+
+  Summary
+
+       15000 .data
+        4000 .pdata
+       2C000 .rdata
+        2000 .reloc
+       12000 .rsrc
+       71000 .text
+"""
+def get_dependencies_by_dumpbin(path, search_dirs):
+  lines = subprocess.check_output(['dumpbin', '/dependents', path]).decode().split('\n')
+  dlls = []
+  system_dlls = ['WS2_32.dll', 'GDI32.dll', 'SHELL32.dll', 'USER32.dll',
+                 'ADVAPI32.dll', 'MSWSOCK.dll', 'dbghelp.dll', 'KERNEL32.dll',
+                 'ole32.dll', 'OLEAUT32.dll', 'SHLWAPI.dll', 'IMM32.dll',
+                 'UxTheme.dll', 'PROPSYS.dll', 'dwmapi.dll', 'WININET.dll',
+                 'OLEACC.dll', 'ODBC32.dll', 'oledlg.dll', 'urlmon.dll',
+                 'MSIMG32.dll', 'WINMM.dll', 'CRYPT32.dll', 'gdiplus.dll', ]
 
   p = re.compile(r'    (\S+.dll)', re.IGNORECASE)
   for line in lines:
@@ -305,6 +304,7 @@ def get_dependencies_by_dumpbin(path):
       dlls.append(m[1])
 
   resolved_dlls = []
+  unresolved_dlls = []
   for dll in dlls:
     resolved = False
     for search_dir in search_dirs:
@@ -314,14 +314,14 @@ def get_dependencies_by_dumpbin(path):
         resolved = True
         break
     if not resolved:
-      print('dll %s not found in path' % dll)
+      unresolved_dlls.append(dll)
 
-  return resolved_dlls
+  return resolved_dlls, unresolved_dlls
 
 
 def get_dependencies(path):
   if sys.platform == 'win32':
-    return get_dependencies_by_dumpbin(path)
+    return get_dependencies_by_dumpbin(path, _get_win32_search_paths())[0]
   elif sys.platform == 'darwin':
     return get_dependencies_by_otool(path)
   elif sys.platform in [ 'linux', 'linux2' ]:
@@ -332,27 +332,40 @@ def get_dependencies(path):
 
 def get_dependencies_recursively(path):
   if sys.platform == 'win32':
-    deps = get_dependencies_by_dumpbin(path)
+    search_dirs = _get_win32_search_paths()
+    print('searching dlls in directories:')
+    for search_dir in search_dirs:
+      print('--- %s' % search_dir)
+    deps, unresolved_deps = get_dependencies_by_dumpbin(path, search_dirs)
     while(True):
-        deps_extened = list(deps)
+        deps_extended = list(deps)
         for dep in deps:
-            deps_extened.extend(get_dependencies_by_dumpbin(dep))
-        deps_extened = set(deps_extened)
-        if deps_extened != deps:
-            deps = deps_extened;
+            deps_deps, deps_unresolved_deps = get_dependencies_by_dumpbin(dep, search_dirs)
+            deps_extended.extend(deps_deps)
+            unresolved_deps.extend(deps_unresolved_deps)
+        deps_extended = set(deps_extended)
+        if deps_extended != deps:
+            deps = deps_extended;
         else:
-            return list(deps_extened)
+            break
+    unresolved_deps = list(set(unresolved_deps))
+    unresolved_deps.sort()
+    print('missing depended dlls:')
+    for unresolved_dep in unresolved_deps:
+      print('--- %s' % unresolved_dep)
+    return list(deps)
+
   elif sys.platform == 'darwin':
     deps = get_dependencies_by_otool(path)
     while(True):
-        deps_extened = list(deps)
+        deps_extended = list(deps)
         for dep in deps:
-            deps_extened.extend(get_dependencies_by_otool(dep))
-        deps_extened = set(deps_extened)
-        if deps_extened != deps:
-            deps = deps_extened;
+            deps_extended.extend(get_dependencies_by_otool(dep))
+        deps_extended = set(deps_extended)
+        if deps_extended != deps:
+            deps = deps_extended;
         else:
-            return list(deps_extened)
+            return list(deps_extended)
   elif sys.platform in [ 'linux', 'linux2' ]:
     return get_dependencies_by_ldd(path)
   else:
@@ -387,8 +400,9 @@ def _postbuild_copy_libraries_win32():
   dlls = get_dependencies_recursively(get_app_name())
   # for pretty output
   dlls.sort()
+  print('copying depended dll file:')
   for dll in dlls:
-    print('copying depended dll file: %s' % dll)
+    print('--- %s' % dll)
     shutil.copyfile(dll, os.path.basename(dll))
 
 def _postbuild_copy_libraries_posix():
