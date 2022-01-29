@@ -283,9 +283,11 @@ def get_dependencies_by_dumpbin(path):
   ### TODO should we support Windows SDK 7.0A or 8.1?
   ### Please note The UCRT files are not redistributable for ARM64 Win32.
   ### https://chromium.googlesource.com/chromium/src/+/lkgr/build/win/BUILD.gn
+  ### C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x86\ucrt
   ### C:\Program Files (x86)\Windows Kits\10\Redist\10.0.19041.0\ucrt\DLLS\x86
   ### C:\Program Files (x86)\Windows Kits\10\ExtensionSDKs\Microsoft.UniversalCRT.Debug\10.0.19041.0\Redist\Debug\x86
   search_dirs.extend([
+    os.path.join(sdk_base_dir, 'bin', sdk_version, DEFAULT_ARCH, 'ucrt'),
     os.path.join(sdk_base_dir, 'Redist', sdk_version, 'ucrt', 'DLLS',
                  DEFAULT_ARCH),
     os.path.join(sdk_base_dir, 'ExtensionSDKs', 'Microsoft.UniversalCRT.Debug',
