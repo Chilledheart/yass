@@ -11,7 +11,7 @@ defaults:
   run:
     shell: bash
 env:
-  CACHE_EPOCH: 10
+  CACHE_EPOCH: 11
 jobs:
   cache-toolchain-win:
     runs-on: windows-2019
