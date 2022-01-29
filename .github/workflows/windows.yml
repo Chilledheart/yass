@@ -82,9 +82,10 @@ jobs:
         shell: cmd
         run: |
           set VCToolsVersion=14.0
+          set Winsdk=10.0.19041.0
+          set "WindowsSDKVersion=%Winsdk%\"
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
-          call "%vsdevcmd%" -arch=x86 -host_arch=amd64
           set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
@@ -93,14 +94,16 @@ jobs:
 
           set "Path=%CD%\third_party\nasm;%Path%"
 
+          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
+
           call "scripts\build-boringssl.bat"
       - name: "Install dependency: boringssl (x64 slice)"
         shell: cmd
         run: |
           set VCToolsVersion=14.0
+          set Winsdk=10.0.19041.0
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
-          call "%vsdevcmd%" -arch=amd64 -host_arch=amd64
           set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
@@ -109,14 +112,16 @@ jobs:
 
           set "Path=%CD%\third_party\nasm;%Path%"
 
+          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
+
           call "scripts\build-boringssl.bat"
       - name: "Install dependency: boringssl (arm64 slice)"
         shell: cmd
         run: |
           set VCToolsVersion=14.29
+          set Winsdk=10.0.19041.0
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
-          call "%vsdevcmd%" -arch=arm64 -host_arch=amd64
           set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
@@ -124,6 +129,8 @@ jobs:
           set Platform=arm64
 
           set "Path=%CD%\third_party\nasm;%Path%"
+
+          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
 
           call "scripts\build-boringssl.bat"
       - name: "Install dependency: boringssl (x86-xp slice)"
@@ -143,9 +150,9 @@ jobs:
           set COMPILER_TARGET=i686-pc-windows-msvc
           set ALLOW_XP=on
 
-          call "scripts\callxp-%Platform%.cmd"
-
           set "Path=%CD%\third_party\nasm;%Path%"
+
+          call "scripts\callxp-%Platform%.cmd"
 
           call "scripts\build-boringssl.bat"
       - name: "Install dependency: boringssl (x64-xp slice)"
@@ -165,9 +172,9 @@ jobs:
           set COMPILER_TARGET=x86_64-pc-windows-msvc
           set ALLOW_XP=on
 
-          call "scripts\callxp-%Platform%.cmd"
-
           set "Path=%CD%\third_party\nasm;%Path%"
+
+          call "scripts\callxp-%Platform%.cmd"
 
           call "scripts\build-boringssl.bat"
   win-msvc-release:
@@ -226,14 +233,17 @@ jobs:
       - name: Build
         run: |
           set VCToolsVersion=14.0
+          set Winsdk=10.0.19041.0
+          set "WindowsSDKVersion=%Winsdk%\"
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
-          call "%vsdevcmd%" -arch=${{ matrix.arch }} -host_arch=amd64
           set CC=
           set CXX=
           set Platform=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
+
+          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
 
           python -u .\scripts\build.py || exit /b
 
@@ -450,14 +460,17 @@ jobs:
       - name: Build Vistual Studio 2019 (v142)
         run: |
           set VCToolsVersion=14.29
+          set Winsdk=10.0.19041.0
+          set "WindowsSDKVersion=%Winsdk%\"
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
-          call "%vsdevcmd%" -arch=${{ matrix.arch }} -host_arch=amd64
           set CC=
           set CXX=
           set Platform=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
+
+          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
 
           python -u .\scripts\build.py || exit /b
 
@@ -469,14 +482,17 @@ jobs:
       - name: Build Vistual Studio 2017 (v141)
         run: |
           set VCToolsVersion=14.16
+          set Winsdk=10.0.19041.0
+          set "WindowsSDKVersion=%Winsdk%\"
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
-          call "%vsdevcmd%" -arch=${{ matrix.arch }} -host_arch=amd64
           set CC=
           set CXX=
           set Platform=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
+
+          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
 
           python -u .\scripts\build.py || exit /b
 
@@ -488,14 +504,17 @@ jobs:
       - name: Build Vistual Studio 2015 (v140)
         run: |
           set VCToolsVersion=14.0
+          set Winsdk=10.0.19041.0
+          set "WindowsSDKVersion=%Winsdk%\"
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
-          call "%vsdevcmd%" -arch=${{ matrix.arch }} -host_arch=amd64
           set CC=
           set CXX=
           set Platform=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
+
+          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
 
           python -u .\scripts\build.py || exit /b
 
@@ -560,14 +579,17 @@ jobs:
       - name: Build
         run: |
           set VCToolsVersion=14.29
+          set Winsdk=10.0.19041.0
+          set "WindowsSDKVersion=%Winsdk%\"
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
-          call "%vsdevcmd%" -arch=${{ matrix.arch }} -host_arch=amd64
           set "CC=%CD%/third_party/llvm-build/Release+Asserts/bin/clang-cl.exe"
           set "CXX=%CD%/third_party/llvm-build/Release+Asserts/bin/clang-cl.exe"
           set Platform=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
+
+          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
 
           python -u .\scripts\build.py || exit /b
 
@@ -665,16 +687,19 @@ jobs:
       - name: Build
         run: |
           set VCToolsVersion=14.29
+          set Winsdk=10.0.19041.0
+          set "WindowsSDKVersion=%Winsdk%\"
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
-          call "%vsdevcmd%" -arch=${{ matrix.arch }} -host_arch=amd64
           set CC=
           set CXX=
           set Platform=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
 
           set "CLANG_TIDY_EXECUTABLE=%CD%/third_party/llvm-build/Release+Asserts/bin/clang-tidy.exe"
+
+          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
 
           python -u .\scripts\build.py || exit /b
 
