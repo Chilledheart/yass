@@ -93,6 +93,7 @@ jobs:
             python -c "import os; os.chdir('third_party/vcredist/x64'); dlls = os.listdir('.'); [ os.rename(dll, dll.replace('_', '-')) for dll in dlls ];"
             rm -rf wix311* tmp
           fi
+          find third_party/vcredist
       - name: "Install dependency: boringssl (x86 slice)"
         shell: cmd
         run: |
