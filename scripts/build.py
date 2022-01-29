@@ -385,6 +385,8 @@ def check_universal_build_dylib_darwin(lib_path):
 
 def _postbuild_copy_libraries_win32():
   dlls = get_dependencies_recursively(get_app_name())
+  # for pretty output
+  dlls.sort()
   for dll in dlls:
     print('copying depended dll file: %s' % dll)
     shutil.copyfile(dll, os.path.basename(dll))
