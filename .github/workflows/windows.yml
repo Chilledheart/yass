@@ -35,7 +35,7 @@ jobs:
             third_party/nasm
             third_party/llvm-build/Release+Asserts
             third_party/vcredist
-          key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ matrix.crt-linkage }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get vcpkg commit
         run: |
           IFS=" " read -r -a array <<< $VCPKG_DEPS
@@ -50,7 +50,7 @@ jobs:
             !${{ env.VCPKG_ROOT }}/buildtrees
             !${{ env.VCPKG_ROOT }}/packages
             !${{ env.VCPKG_ROOT }}/downloads
-          key: toolchain-cache-${{ runner.os }}-${{ matrix.crt-linkage }}-build-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-vcpkg-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Get boringssl commit
         run: |
           git submodule status third_party/boringssl >> boringssl.lock
@@ -219,7 +219,7 @@ jobs:
             third_party/nasm
             third_party/llvm-build/Release+Asserts
             third_party/vcredist
-          key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ matrix.crt-linkage }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get vcpkg commit
         run: |
           IFS=" " read -r -a array <<< $VCPKG_DEPS
@@ -234,7 +234,7 @@ jobs:
             !${{ env.VCPKG_ROOT }}/buildtrees
             !${{ env.VCPKG_ROOT }}/packages
             !${{ env.VCPKG_ROOT }}/downloads
-          key: toolchain-cache-${{ runner.os }}-${{ matrix.crt-linkage }}-build-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-vcpkg-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Get boringssl commit
         run: |
           git submodule status third_party/boringssl >> boringssl.lock
@@ -328,7 +328,7 @@ jobs:
             third_party/nasm
             third_party/llvm-build/Release+Asserts
             third_party/vcredist
-          key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ matrix.crt-linkage }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get vcpkg commit
         run: |
           IFS=" " read -r -a array <<< $VCPKG_DEPS
@@ -343,7 +343,7 @@ jobs:
             !${{ env.VCPKG_ROOT }}/buildtrees
             !${{ env.VCPKG_ROOT }}/packages
             !${{ env.VCPKG_ROOT }}/downloads
-          key: toolchain-cache-${{ runner.os }}-${{ matrix.crt-linkage }}-build-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-vcpkg-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Get boringssl commit
         run: |
           git submodule status third_party/boringssl >> boringssl.lock
@@ -448,7 +448,7 @@ jobs:
             third_party/nasm
             third_party/llvm-build/Release+Asserts
             third_party/vcredist
-          key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ matrix.crt-linkage }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get vcpkg commit
         run: |
           IFS=" " read -r -a array <<< $VCPKG_DEPS
@@ -463,7 +463,7 @@ jobs:
             !${{ env.VCPKG_ROOT }}/buildtrees
             !${{ env.VCPKG_ROOT }}/packages
             !${{ env.VCPKG_ROOT }}/downloads
-          key: toolchain-cache-${{ runner.os }}-${{ matrix.crt-linkage }}-build-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-vcpkg-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Get boringssl commit
         run: |
           git submodule status third_party/boringssl >> boringssl.lock
@@ -568,7 +568,7 @@ jobs:
             third_party/nasm
             third_party/llvm-build/Release+Asserts
             third_party/vcredist
-          key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ matrix.crt-linkage }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get vcpkg commit
         run: |
           IFS=" " read -r -a array <<< $VCPKG_DEPS
@@ -583,7 +583,7 @@ jobs:
             !${{ env.VCPKG_ROOT }}/buildtrees
             !${{ env.VCPKG_ROOT }}/packages
             !${{ env.VCPKG_ROOT }}/downloads
-          key: toolchain-cache-${{ runner.os }}-${{ matrix.crt-linkage }}-build-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-vcpkg-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Get boringssl commit
         run: |
           git submodule status third_party/boringssl >> boringssl.lock
@@ -677,7 +677,7 @@ jobs:
             third_party/nasm
             third_party/llvm-build/Release+Asserts
             third_party/vcredist
-          key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ matrix.crt-linkage }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get vcpkg commit
         run: |
           IFS=" " read -r -a array <<< $VCPKG_DEPS
@@ -692,7 +692,7 @@ jobs:
             !${{ env.VCPKG_ROOT }}/buildtrees
             !${{ env.VCPKG_ROOT }}/packages
             !${{ env.VCPKG_ROOT }}/downloads
-          key: toolchain-cache-${{ runner.os }}-${{ matrix.crt-linkage }}-build-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-vcpkg-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Get boringssl commit
         run: |
           git submodule status third_party/boringssl >> boringssl.lock

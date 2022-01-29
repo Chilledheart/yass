@@ -30,7 +30,7 @@ jobs:
         with:
           path: |
             third_party/llvm-build/Release+Asserts
-          key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get boringssl commit
         run: |
           git submodule status third_party/boringssl >> boringssl.lock
@@ -41,7 +41,7 @@ jobs:
             third_party/boringssl/libcrypto.a
             third_party/boringssl/x64-libcrypto.a
             third_party/boringssl/arm64-libcrypto.a
-          key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.arch }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: "Install dependency: clang and clang-tidy"
         run: |
           if [ ! -d third_party/llvm-build/Release+Asserts ]; then
@@ -114,7 +114,7 @@ jobs:
         with:
           path: |
             third_party/llvm-build/Release+Asserts
-          key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get boringssl commit
         run: |
           git submodule status third_party/boringssl >> boringssl.lock
@@ -125,7 +125,7 @@ jobs:
             third_party/boringssl/libcrypto.a
             third_party/boringssl/x64-libcrypto.a
             third_party/boringssl/arm64-libcrypto.a
-          key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.arch }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
         run: brew install ninja cmake
       - name: Populate depedencies (PyObjc)
@@ -185,7 +185,7 @@ jobs:
         with:
           path: |
             third_party/llvm-build/Release+Asserts
-          key: toolchain-cache-${{ runner.os }}-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get boringssl commit
         run: |
           git submodule status third_party/boringssl >> boringssl.lock
@@ -196,7 +196,7 @@ jobs:
             third_party/boringssl/libcrypto.a
             third_party/boringssl/x64-libcrypto.a
             third_party/boringssl/arm64-libcrypto.a
-          key: toolchain-cache-${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.arch }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
         run: brew install ninja cmake
       - name: Populate depedencies (PyObjc)
