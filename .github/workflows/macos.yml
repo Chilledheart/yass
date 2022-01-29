@@ -134,7 +134,7 @@ jobs:
         run: ./scripts/build.py
       - run: |
           mv -f yass.zip ${{ env.BUNDLE_NAME }}.zip
-          mv -f yass-standlone.zip ${{ env.BUNDLE_NAME }}-standalone.zip
+          mv -f yass-standalone.zip ${{ env.BUNDLE_NAME }}-standalone.zip
       - uses: actions/upload-release-asset@v1
         if: ${{ github.event_name == 'release' }}
         env:
