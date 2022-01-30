@@ -51,7 +51,7 @@ int main(int argc, const char* argv[]) {
   DCHECK(is_valid_cipher_method(
       static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
 
-  LOG(WARNING) << "Application starting: " << YASS_APP_LAST_CHANGE;
+  LOG(WARNING) << "Application starting: " << YASS_APP_TAG;
 
   // Start Io Context
   asio::io_context io_context;
