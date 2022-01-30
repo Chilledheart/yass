@@ -11,12 +11,43 @@
 #include <absl/flags/flag.h>
 #include <cerrno>
 
-#include "config/config.hpp"
 #include "core/logging.hpp"
 
-asio::error_code SetTCPCongestion(
-    asio::ip::tcp::acceptor::native_handle_type handle) {
+ABSL_FLAG(bool, reuse_port, true, "Reuse the listening port");
+ABSL_FLAG(std::string, congestion_algorithm, "bbr", "TCP Congestion Algorithm");
+ABSL_FLAG(bool, tcp_fastopen, false, "TCP fastopen");
+ABSL_FLAG(bool, tcp_fastopen_connect, false, "TCP fastopen connect");
+ABSL_FLAG(int32_t, connect_timeout, 60, "Connect timeout (Linux only)");
+ABSL_FLAG(int32_t, tcp_user_timeout, 300, "TCP user timeout (Linux only)");
+ABSL_FLAG(int32_t, so_linger_timeout, 30, "SO Linger timeout");
+
+ABSL_FLAG(int32_t, so_snd_buffer, 16 * 1024, "Socket Send Buffer");
+ABSL_FLAG(int32_t, so_rcv_buffer, 128 * 1024, "Socket Receive Buffer");
+
+void SetSOReusePort(asio::ip::tcp::acceptor::native_handle_type handle,
+                    asio::error_code& ec) {
   (void)handle;
+  ec = asio::error_code();
+  // https://lwn.net/Articles/542629/
+  // Please note SO_REUSEADDR is platform-dependent
+  // https://stackoverflow.com/questions/14388706/how-do-so-reuseaddr-and-so-reuseport-differ
+#if defined(SO_REUSEPORT)
+  int fd = handle;
+  int opt = 1;
+  int ret = setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt));
+  if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
+    ec = asio::error_code(errno, asio::error::get_system_category());
+    VLOG(1) << "SO_REUSEPORT is not supported on this platform";
+  } else {
+    VLOG(2) << "Applied current so_option: so_reuseport";
+  }
+#endif  // SO_REUSEPORT
+}
+
+void SetTCPCongestion(asio::ip::tcp::acceptor::native_handle_type handle,
+                      asio::error_code& ec) {
+  (void)handle;
+  ec = asio::error_code();
 #if defined(TCP_CONGESTION)
   int fd = handle;
   /* manually enable congestion algorithm */
@@ -25,7 +56,8 @@ asio::error_code SetTCPCongestion(
   int ret = getsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, buf, &len);
   if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
     VLOG(1) << "TCP_CONGESTION is not supported on this platform";
-    goto out;
+    ec = asio::error_code(errno, asio::error::get_system_category());
+    return;
   }
   if (buf != absl::GetFlag(FLAGS_congestion_algorithm)) {
     len = absl::GetFlag(FLAGS_congestion_algorithm).size();
@@ -37,7 +69,8 @@ asio::error_code SetTCPCongestion(
               << "\" is not supported on this platform";
       VLOG(1) << "Current congestion: " << buf;
       absl::SetFlag(&FLAGS_congestion_algorithm, buf);
-      goto out;
+      ec = asio::error_code(errno, asio::error::get_system_category());
+      return;
     } else {
       VLOG(2) << "Previous congestion: " << buf;
       VLOG(2) << "Applied current congestion algorithm: "
@@ -48,20 +81,20 @@ asio::error_code SetTCPCongestion(
   ret = getsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, buf, &len);
   if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
     VLOG(1) << "TCP_CONGESTION is not supported on this platform";
-    goto out;
+    ec = asio::error_code(errno, asio::error::get_system_category());
+    return;
   }
   VLOG(2) << "Current congestion: " << buf;
-out:
 #endif  // TCP_CONGESTION
-  return asio::error_code();
 }
 
-asio::error_code SetTCPFastOpen(
-    asio::ip::tcp::acceptor::native_handle_type handle) {
-  if (!absl::GetFlag(FLAGS_tcp_fastopen)) {
-    return asio::error_code();
-  }
+void SetTCPFastOpen(asio::ip::tcp::acceptor::native_handle_type handle,
+                    asio::error_code& ec) {
   (void)handle;
+  ec = asio::error_code();
+  if (!absl::GetFlag(FLAGS_tcp_fastopen)) {
+    return;
+  }
   // https://docs.microsoft.com/zh-cn/windows/win32/winsock/ipproto-tcp-socket-options?redirectedfrom=MSDN
   // Note that to make use of fast opens, you should use ConnectEx to make the
   // initial connection
@@ -77,21 +110,22 @@ asio::error_code SetTCPFastOpen(
 #endif  // __APPLE__
   int ret = setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN, &opt, sizeof(opt));
   if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
+    ec = asio::error_code(errno, asio::error::get_system_category());
     VLOG(1) << "TCP Fast Open is not supported on this platform";
     absl::SetFlag(&FLAGS_tcp_fastopen, false);
   } else {
     VLOG(2) << "Applied current tcp_option: tcp_fastopen";
   }
 #endif  // TCP_FASTOPEN
-  return asio::error_code();
 }
 
-asio::error_code SetTCPFastOpenConnect(
-    asio::ip::tcp::socket::native_handle_type handle) {
-  if (!absl::GetFlag(FLAGS_tcp_fastopen_connect)) {
-    return asio::error_code();
-  }
+void SetTCPFastOpenConnect(asio::ip::tcp::socket::native_handle_type handle,
+                           asio::error_code& ec) {
   (void)handle;
+  ec = asio::error_code();
+  if (!absl::GetFlag(FLAGS_tcp_fastopen_connect)) {
+    return;
+  }
 #if defined(TCP_FASTOPEN_CONNECT) && !defined(_WIN32)
   // https://android.googlesource.com/kernel/tests/+/master/net/test/tcp_fastopen_test.py
   // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=19f6d3f3c8422d65b5e3d2162e30ef07c6e21ea2
@@ -100,26 +134,28 @@ asio::error_code SetTCPFastOpenConnect(
   int ret =
       setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN_CONNECT, &opt, sizeof(opt));
   if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
+    ec = asio::error_code(errno, asio::error::get_system_category());
     VLOG(2) << "TCP Fast Open Connect is not supported on this platform";
     absl::SetFlag(&FLAGS_tcp_fastopen_connect, false);
   } else {
     VLOG(2) << "Applied current tcp_option: tcp_fastopen_connect";
   }
 #endif  // TCP_FASTOPEN_CONNECT
-  return asio::error_code();
 }
 
-asio::error_code SetTCPUserTimeout(
-    asio::ip::tcp::acceptor::native_handle_type handle) {
-  if (!absl::GetFlag(FLAGS_tcp_user_timeout)) {
-    return asio::error_code();
-  }
+void SetTCPUserTimeout(asio::ip::tcp::acceptor::native_handle_type handle,
+                       asio::error_code& ec) {
   (void)handle;
+  ec = asio::error_code();
+  if (!absl::GetFlag(FLAGS_tcp_user_timeout)) {
+    return;
+  }
 #if defined(TCP_USER_TIMEOUT)
   int fd = handle;
   unsigned int opt = absl::GetFlag(FLAGS_tcp_user_timeout);
   int ret = setsockopt(fd, IPPROTO_TCP, TCP_USER_TIMEOUT, &opt, sizeof(opt));
   if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
+    ec = asio::error_code(errno, asio::error::get_system_category());
     VLOG(1) << "TCP User Timeout is not supported on this platform";
     absl::SetFlag(&FLAGS_tcp_user_timeout, 0);
   } else {
@@ -127,16 +163,15 @@ asio::error_code SetTCPUserTimeout(
             << absl::GetFlag(FLAGS_tcp_user_timeout);
   }
 #endif  // TCP_USER_TIMEOUT
-  return asio::error_code();
 }
 
-asio::error_code SetSocketLinger(asio::ip::tcp::socket* socket) {
+void SetSocketLinger(asio::ip::tcp::socket* socket, asio::error_code& ec) {
   if (!absl::GetFlag(FLAGS_so_linger_timeout)) {
-    return asio::error_code();
+    ec = asio::error_code();
+    return;
   }
   asio::socket_base::linger option(true,
                                    absl::GetFlag(FLAGS_so_linger_timeout));
-  asio::error_code ec;
   socket->set_option(option, ec);
   if (ec) {
     VLOG(1) << "SO Linger is not supported on this platform: " << ec;
@@ -145,16 +180,15 @@ asio::error_code SetSocketLinger(asio::ip::tcp::socket* socket) {
     VLOG(2) << "Applied SO Linger by " << absl::GetFlag(FLAGS_so_linger_timeout)
             << " seconds";
   }
-  return ec;
 }
 
-asio::error_code SetSocketSndBuffer(asio::ip::tcp::socket* socket) {
+void SetSocketSndBuffer(asio::ip::tcp::socket* socket, asio::error_code& ec) {
+  ec = asio::error_code();
   if (!absl::GetFlag(FLAGS_so_snd_buffer)) {
-    return asio::error_code();
+    return;
   }
   asio::socket_base::send_buffer_size option(
       absl::GetFlag(FLAGS_so_snd_buffer));
-  asio::error_code ec;
   socket->set_option(option, ec);
   if (ec) {
     VLOG(1) << "SO_SNDBUF is not supported on this platform: " << ec;
@@ -163,16 +197,15 @@ asio::error_code SetSocketSndBuffer(asio::ip::tcp::socket* socket) {
     VLOG(2) << "Applied SO_SNDBUF by " << absl::GetFlag(FLAGS_so_snd_buffer)
             << " bytes";
   }
-  return ec;
 }
 
-asio::error_code SetSocketRcvBuffer(asio::ip::tcp::socket* socket) {
+void SetSocketRcvBuffer(asio::ip::tcp::socket* socket, asio::error_code& ec) {
+  ec = asio::error_code();
   if (!absl::GetFlag(FLAGS_so_rcv_buffer)) {
-    return asio::error_code();
+    return;
   }
   asio::socket_base::receive_buffer_size option(
       absl::GetFlag(FLAGS_so_rcv_buffer));
-  asio::error_code ec;
   socket->set_option(option, ec);
   if (ec) {
     VLOG(1) << "SO_RCVBUF is not supported on this platform: " << ec;
@@ -181,5 +214,4 @@ asio::error_code SetSocketRcvBuffer(asio::ip::tcp::socket* socket) {
     VLOG(2) << "Applied SO_RCVBUF by " << absl::GetFlag(FLAGS_so_rcv_buffer)
             << " bytes";
   }
-  return ec;
 }

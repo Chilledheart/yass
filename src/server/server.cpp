@@ -13,6 +13,7 @@
 #include "core/asio.hpp"
 #include "core/logging.hpp"
 #include "crypto/crypter_export.hpp"
+#include "version.h"
 
 #ifndef SSMAXCONN
 #define SSMAXCONN 1024
@@ -39,8 +40,6 @@ int main(int argc, const char* argv[]) {
   // Major routine
   // - Read config from ss config file
   // - Listen by local address and local port
-  asio::io_context io_context;
-  // Start Io Context
   absl::InitializeSymbolizer(argv[0]);
   absl::FailureSignalHandlerOptions failure_handle_options;
   absl::InstallFailureSignalHandler(failure_handle_options);
@@ -56,7 +55,12 @@ int main(int argc, const char* argv[]) {
   DCHECK(is_valid_cipher_method(
       static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
 
-  LOG(WARNING) << "Application starting";
+  LOG(WARNING) << "Application starting: " << YASS_APP_LAST_CHANGE;
+
+  // Start Io Context
+  asio::io_context io_context;
+  asio::executor_work_guard<asio::io_context::executor_type> work_guard(
+      asio::make_work_guard(io_context));
 
   asio::ip::tcp::endpoint endpoint(
       resolveEndpoint(&io_context, absl::GetFlag(FLAGS_server_host),
@@ -68,11 +72,14 @@ int main(int argc, const char* argv[]) {
 
   LOG(WARNING) << "tcp server listening at " << endpoint;
 
-  SsFactory factory(io_context, remoteEndpoint);
+  SsFactory factory(remoteEndpoint);
   asio::error_code ec;
   factory.listen(endpoint, SSMAXCONN, ec);
   if (ec) {
     LOG(ERROR) << "listen failed due to: " << ec;
+    factory.stop();
+    factory.join();
+    work_guard.reset();
     return -1;
   }
 
@@ -83,6 +90,8 @@ int main(int argc, const char* argv[]) {
 #endif
   signals.async_wait([&](asio::error_code /*error*/, int /*signal_number*/) {
     factory.stop();
+    factory.join();
+    work_guard.reset();
   });
 
   io_context.run(ec);

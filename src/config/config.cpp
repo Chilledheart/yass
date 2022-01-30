@@ -5,6 +5,7 @@
 #include "config/config_impl.hpp"
 
 #include <absl/flags/flag.h>
+#include <thread>
 
 #include "core/cipher.hpp"
 
@@ -32,18 +33,11 @@ ABSL_FLAG(int32_t,
           local_port,
           8000,
           "Port number which local server listens to");
-ABSL_FLAG(bool, reuse_port, true, "Reuse the listening port");
-ABSL_FLAG(std::string, congestion_algorithm, "bbr", "TCP Congestion Algorithm");
-ABSL_FLAG(bool, tcp_fastopen, false, "TCP fastopen");
-ABSL_FLAG(bool, tcp_fastopen_connect, false, "TCP fastopen connect");
-ABSL_FLAG(bool, auto_start, true, "Auto Start");
 
-ABSL_FLAG(int32_t, connect_timeout, 60, "Connect timeout (Linux only)");
-ABSL_FLAG(int32_t, tcp_user_timeout, 300, "TCP user timeout (Linux only)");
-ABSL_FLAG(int32_t, so_linger_timeout, 30, "SO Linger timeout");
-
-ABSL_FLAG(int32_t, so_snd_buffer, 16 * 1024, "Socket Send Buffer");
-ABSL_FLAG(int32_t, so_rcv_buffer, 128 * 1024, "Socket Receive Buffer");
+ABSL_FLAG(int32_t,
+          threads,
+          std::thread::hardware_concurrency(),
+          "Number of worker threads");
 
 namespace config {
 
@@ -82,7 +76,8 @@ bool ReadConfig() {
   /* optional fields */
   config_impl->Read("fast_open", &FLAGS_tcp_fastopen);
   config_impl->Read("fast_open_connect", &FLAGS_tcp_fastopen_connect);
-  config_impl->Read("auto_start", &FLAGS_auto_start);
+  config_impl->Read("threads", &FLAGS_threads);
+
   config_impl->Read("congestion_algorithm", &FLAGS_congestion_algorithm);
   config_impl->Read("timeout", &FLAGS_connect_timeout);
   config_impl->Read("connect_timeout", &FLAGS_connect_timeout);
@@ -131,12 +126,13 @@ bool SaveConfig() {
   all_fields_written &= config_impl->Write("password", FLAGS_password);
   all_fields_written &= config_impl->Write("local", FLAGS_local_host);
   all_fields_written &= config_impl->Write("local_port", FLAGS_local_port);
-  all_fields_written &=
-      config_impl->Write("congestion_algorithm", FLAGS_congestion_algorithm);
+
   all_fields_written &= config_impl->Write("fast_open", FLAGS_tcp_fastopen);
   all_fields_written &=
       config_impl->Write("fast_open_connect", FLAGS_tcp_fastopen_connect);
-  all_fields_written &= config_impl->Write("auto_start", FLAGS_auto_start);
+  all_fields_written &= config_impl->Write("threads", FLAGS_threads);
+  all_fields_written &=
+      config_impl->Write("congestion_algorithm", FLAGS_congestion_algorithm);
   all_fields_written &= config_impl->Write("timeout", FLAGS_connect_timeout);
   all_fields_written &=
       config_impl->Write("connect_timeout", FLAGS_connect_timeout);

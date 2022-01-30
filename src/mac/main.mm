@@ -16,6 +16,7 @@
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
+#include "version.h"
 
 static std::string GetMainExecutablePath() {
   char exe_path[PATH_MAX];
@@ -49,7 +50,7 @@ int main(int argc, const char* argv[]) {
   DCHECK(is_valid_cipher_method(
       static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
 
-  LOG(WARNING) << "Application starting";
+  LOG(WARNING) << "Application starting: " << YASS_APP_LAST_CHANGE;
 
   return NSApplicationMain(argc, argv);
 }

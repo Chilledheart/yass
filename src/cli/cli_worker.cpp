@@ -55,10 +55,14 @@ void Worker::Start(std::function<void(asio::error_code)> callback) {
   io_context_.post([this, callback]() {
     asio::error_code local_ec;
 
-    socks5_server_ =
-        std::make_unique<Socks5Factory>(io_context_, remote_endpoint_);
+    socks5_server_ = std::make_unique<Socks5Factory>(remote_endpoint_);
 
     socks5_server_->listen(endpoint_, SOMAXCONN, local_ec);
+
+    if (local_ec) {
+      socks5_server_->stop();
+      socks5_server_->join();
+    }
 
     if (callback) {
       callback(local_ec);
@@ -71,6 +75,7 @@ void Worker::Stop(std::function<void()> callback) {
   io_context_.post([this, callback]() {
     if (socks5_server_) {
       socks5_server_->stop();
+      socks5_server_->join();
     }
     if (callback) {
       callback();

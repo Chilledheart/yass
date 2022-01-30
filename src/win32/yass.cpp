@@ -18,6 +18,7 @@
 #include "win32/resource.hpp"
 #include "win32/utils.hpp"
 #include "win32/yass_frame.hpp"
+#include "version.h"
 
 #define MULDIVDPI(x) MulDiv(x, uDpi, 96)
 
@@ -76,12 +77,8 @@ BOOL CYassApp::InitInstance() {
       static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
 
   // TODO: transfer OutputDebugString to internal logging
-#if 0
-  wxLog* logger = new YASSLog;
-  wxLog::SetActiveTarget(logger);
-#endif
 
-  LOG(WARNING) << "Application starting";
+  LOG(WARNING) << "Application starting: " << YASS_APP_LAST_CHANGE;
 
   state_ = STOPPED;
 

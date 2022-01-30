@@ -35,10 +35,11 @@ class stream {
 
   void connect() {
     std::shared_ptr<Channel> channel = std::shared_ptr<Channel>(channel_);
+    asio::error_code ec;
     connected_ = false;
     eof_ = false;
     read_enabled_ = true;
-    SetTCPFastOpenConnect(socket_.native_handle());
+    SetTCPFastOpenConnect(socket_.native_handle(), ec);
     connect_timer_.expires_from_now(
         std::chrono::milliseconds(absl::GetFlag(FLAGS_connect_timeout)));
     connect_timer_.async_wait(
@@ -101,17 +102,18 @@ class stream {
 
  private:
   void on_connect(const std::shared_ptr<Channel>& channel,
-                  asio::error_code error) {
-    connect_timer_.cancel(error);
-    if (error) {
-      channel->disconnected(error);
+                  asio::error_code ec) {
+    if (ec) {
+      connect_timer_.cancel(ec);
+      channel->disconnected(ec);
       return;
     }
-    SetTCPCongestion(socket_.native_handle());
-    SetTCPUserTimeout(socket_.native_handle());
-    SetSocketLinger(&socket_);
-    SetSocketSndBuffer(&socket_);
-    SetSocketRcvBuffer(&socket_);
+    connect_timer_.cancel(ec);
+    SetTCPCongestion(socket_.native_handle(), ec);
+    SetTCPUserTimeout(socket_.native_handle(), ec);
+    SetSocketLinger(&socket_, ec);
+    SetSocketSndBuffer(&socket_, ec);
+    SetSocketRcvBuffer(&socket_, ec);
     connected_ = true;
     channel->connected();
   }
