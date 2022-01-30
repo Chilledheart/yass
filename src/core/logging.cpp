@@ -184,13 +184,40 @@ typedef FILE* FileHandle;
 #endif
 
 namespace {
+// simple init once flag
+std::atomic<bool> g_log_init;
 // What should be prepended to each message?
 bool g_log_process_id = false;
 bool g_log_thread_id = false;
 bool g_log_timestamp = true;
 bool g_log_tickcount = false;
-const char* g_log_prefix = nullptr;
+std::string g_log_prefix;
 }  // namespace
+
+ABSL_FLAG(bool,
+          log_process_id,
+          false,
+          "Prepend the process id to the start of each log line");
+
+ABSL_FLAG(bool,
+          log_thread_id,
+          false,
+          "Prepend the thread id to the start of each log line");
+
+ABSL_FLAG(bool,
+          log_timestamp,
+          true,
+          "Prepend the timestamp to the start of each log line");
+
+ABSL_FLAG(bool,
+          log_tickcount,
+          false,
+          "Prepend the monotonic time to the start of each log line");
+
+ABSL_FLAG(std::string,
+          log_prefix,
+          std::string(),
+          "Prepend the log prefix to the start of each log line");
 
 #if defined(OS_APPLE)
 // Notes:
@@ -250,10 +277,6 @@ ABSL_FLAG(int32_t,
           LOGGING_ERROR,
           "log messages at or above this level are copied to stderr in "
           "addition to logfiles.  This flag obsoletes --alsologtostderr.");
-ABSL_FLAG(bool,
-          log_prefix,
-          true,
-          "Prepend the log prefix to the start of each log line");
 ABSL_FLAG(int32_t,
           minloglevel,
           0,
@@ -1377,6 +1400,22 @@ void LogFileObject::Write(bool force_flush,
                           int message_len) {
   absl::MutexLock l(&lock_);
 
+  auto log_process_id = g_log_process_id;
+  auto log_thread_id = g_log_thread_id;
+  auto log_timestamp = g_log_timestamp;
+  auto log_tickcount = g_log_tickcount;
+  auto log_prefix = g_log_prefix;
+  // https://en.cppreference.com/w/cpp/atomic/atomic_thread_fence
+  std::atomic_thread_fence(std::memory_order_release);
+  if (!g_log_init.load(std::memory_order_acquire)) {
+    g_log_process_id = absl::GetFlag(FLAGS_log_process_id);
+    g_log_thread_id = absl::GetFlag(FLAGS_log_thread_id);
+    g_log_timestamp = absl::GetFlag(FLAGS_log_timestamp);
+    g_log_tickcount = absl::GetFlag(FLAGS_log_tickcount);
+    g_log_prefix = absl::GetFlag(FLAGS_log_prefix);
+    g_log_init.store(true, std::memory_order_relaxed);
+  }
+
   // We don't log if the base_name_ is "" (which means "don't write")
   if (base_filename_selected_ && base_filename_.empty()) {
     return;
@@ -1496,15 +1535,15 @@ void LogFileObject::Write(bool force_flush,
                        << "Log line format: ";
 
     file_header_stream << '[';
-    if (g_log_prefix)
-      file_header_stream << g_log_prefix << ':';
-    if (g_log_process_id)
+    if (!log_prefix.empty())
+      file_header_stream << log_prefix << ':';
+    if (log_process_id)
       file_header_stream << "pid" << ':';
-    if (g_log_thread_id)
+    if (log_thread_id)
       file_header_stream << "tid" << ':';
-    if (g_log_timestamp)
+    if (log_timestamp)
       file_header_stream << "MMDD/HHMMSS.usec" << ':';
-    if (g_log_tickcount)
+    if (log_tickcount)
       file_header_stream << "tickcount" << ':';
     file_header_stream << "L:file(line)] msg\n";
 
@@ -1835,6 +1874,22 @@ void LogMessage::Init(const char* file,
                       void (LogMessage::*send_method)()) {
   allocated_ = nullptr;
 
+  auto log_process_id = g_log_process_id;
+  auto log_thread_id = g_log_thread_id;
+  auto log_timestamp = g_log_timestamp;
+  auto log_tickcount = g_log_tickcount;
+  auto log_prefix = g_log_prefix;
+  // https://en.cppreference.com/w/cpp/atomic/atomic_thread_fence
+  std::atomic_thread_fence(std::memory_order_release);
+  if (!g_log_init.load(std::memory_order_acquire)) {
+    g_log_process_id = absl::GetFlag(FLAGS_log_process_id);
+    g_log_thread_id = absl::GetFlag(FLAGS_log_thread_id);
+    g_log_timestamp = absl::GetFlag(FLAGS_log_timestamp);
+    g_log_tickcount = absl::GetFlag(FLAGS_log_tickcount);
+    g_log_prefix = absl::GetFlag(FLAGS_log_prefix);
+    g_log_init.store(true, std::memory_order_relaxed);
+  }
+
   if (severity != LOGGING_FATAL || !exit_on_dfatal) {
 #ifdef THREAD_LOCAL_STORAGE
     // No need for locking, because this is thread local.
@@ -1889,16 +1944,16 @@ void LogMessage::Init(const char* file,
   //    I20201018 160715 f5d4fbb0 logging.cc:1153]
   //    (log level, GMT year, month, date, time, thread_id, file basename, line)
   // We exclude the thread_id for the default thread.
-  if (absl::GetFlag(FLAGS_log_prefix) && (line != kNoLogPrefix)) {
+  if (line != kNoLogPrefix) {
     // TODO(darin): It might be nice if the columns were fixed width.
     stream() << '[';
-    if (g_log_prefix)
-      stream() << g_log_prefix << ':';
-    if (g_log_process_id)
+    if (!log_prefix.empty())
+      stream() << log_prefix << ':';
+    if (log_process_id)
       stream() << GetMainThreadPid() << ':';
-    if (g_log_thread_id)
+    if (log_thread_id)
       stream() << GetTID() << ':';
-    if (g_log_timestamp) {
+    if (log_timestamp) {
 #if defined(OS_WIN)
       SYSTEMTIME local_time;
       GetLocalTime(&local_time);
@@ -1923,12 +1978,12 @@ void LogMessage::Init(const char* file,
 #error Unsupported platform
 #endif
     }
-    if (g_log_tickcount)
+    if (log_tickcount)
       stream() << data_->tick_counts_ << ':';
     if (severity_ >= 0) {
       stream() << log_severity_name(severity_);
     } else {
-      stream() << "VERBOSE" << -severity_;
+      stream() << "I" << -severity_;
     }
     stream() << ":" << data_->basename_ << "(" << data_->line_ << ")] ";
   }
@@ -1988,7 +2043,8 @@ int AndroidLogLevel(const int severity) {
 // that needs to synchronize the log.
 void LogMessage::Flush() {
   if (data_->has_been_flushed_ ||
-      data_->severity_ < absl::GetFlag(FLAGS_minloglevel))
+      (data_->severity_ >= 0 &&
+       data_->severity_ < absl::GetFlag(FLAGS_minloglevel)))
     return;
 
   data_->num_chars_to_log_ = data_->stream_.pcount();

@@ -292,7 +292,6 @@ ABSL_DECLARE_FLAG(bool, drop_log_memory);
 #endif
 
 ABSL_DECLARE_FLAG(int32_t, stderrthreshold);
-ABSL_DECLARE_FLAG(bool, log_prefix);
 ABSL_DECLARE_FLAG(int32_t, minloglevel);
 ABSL_DECLARE_FLAG(int32_t, logbuflevel);
 ABSL_DECLARE_FLAG(int32_t, logbufsecs);
@@ -306,6 +305,12 @@ ABSL_DECLARE_FLAG(std::string, log_backtrace_at);
 
 ABSL_DECLARE_FLAG(int32_t, v);
 ABSL_DECLARE_FLAG(std::string, vmodule);
+
+ABSL_DECLARE_FLAG(bool, log_process_id);
+ABSL_DECLARE_FLAG(bool, log_thread_id);
+ABSL_DECLARE_FLAG(bool, log_timestamp);
+ABSL_DECLARE_FLAG(bool, log_tickcount);
+ABSL_DECLARE_FLAG(std::string, log_prefix);
 
 // Set VLOG(_IS_ON) level for module_pattern to log_level.
 // This lets us dynamically control what is normally set by the --vmodule flag.
