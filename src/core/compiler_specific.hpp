@@ -391,9 +391,13 @@
 // passing data to another process via shared memory.
 #define MSAN_CHECK_MEM_IS_INITIALIZED(p, size) \
   __msan_check_mem_is_initialized(p, size)
+
+#define NO_SANITIZE_MEMORY NO_SANITIZE("memory")
 #else  // MEMORY_SANITIZER
 #define MSAN_UNPOISON(p, size)
 #define MSAN_CHECK_MEM_IS_INITIALIZED(p, size)
+
+#define NO_SANITIZE_MEMORY
 #endif  // MEMORY_SANITIZER
 
 // DISABLE_CFI_PERF -- Disable Control Flow Integrity for perf reasons.

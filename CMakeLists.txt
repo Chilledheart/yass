@@ -254,41 +254,6 @@ include(CheckIncludeFile)
 include(CheckCSourceCompiles)
 include(CheckCXXSourceCompiles)
 
-check_cxx_source_compiles ("
-__thread int tls;
-int main() { }
-" HAVE_GCC_TLS)
-
-check_cxx_source_compiles ("
-__declspec(thread) int tls;
-int main() { }
-" HAVE_MSVC_TLS)
-
-check_cxx_source_compiles ("
-thread_local int tls;
-int main() { }
-" HAVE_CXX11_TLS)
-
-if (WITH_TLS)
-  # Cygwin does not support the thread attribute. Don't bother.
-  if (HAVE_GCC_TLS)
-    add_definitions(-DHAVE_GCC_TLS)
-  elseif (HAVE_MSVC_TLS)
-    add_definitions(-DHAVE_MSVC_TLS)
-  elseif (HAVE_CXX11_TLS)
-    add_definitions(-DHAVE_CXX11_TLS)
-  endif()
-endif()
-
-check_cxx_source_compiles ("
-#include <type_traits>
-std::aligned_storage<sizeof(char), alignof(char)>::type data;
-int main() { }
-" HAVE_ALIGNED_STORAGE)
-if (HAVE_ALIGNED_STORAGE)
-  add_definitions(-DHAVE_ALIGNED_STORAGE)
-endif()
-
 check_c_source_compiles ("
 #define STDOUT_FILENO 1
 #include <fcntl.h>

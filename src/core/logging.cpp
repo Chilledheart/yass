@@ -228,16 +228,28 @@ ABSL_FLAG(std::string,
 // * Xcode 10 moves the deployment target check for iOS < 9.0 to link time
 //   making ABSL_HAVE_FEATURE unreliable there.
 //
-#if HAVE_CXX11_TLS && \
-    !(TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0)
+#if !(TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0)
 #define THREAD_LOCAL_STORAGE thread_local
 #endif
-#elif defined(HAVE_GCC_TLS)
+#elif defined(__GNUC__)
 #define THREAD_LOCAL_STORAGE __thread
-#elif defined(HAVE_MSVC_TLS)
+#elif defined(_MSC_VER)
+// On Windows operating systems before Windows Vista, __declspec( thread ) has some limitations.
+// https://docs.microsoft.com/en-us/previous-versions/6yh4a9k1(v=vs.140)
+// Not affected if built use outside dll.
 #define THREAD_LOCAL_STORAGE __declspec(thread)
-#elif defined(HAVE_CXX11_TLS)
-#define THREAD_LOCAL_STORAGE thread_lock
+#else
+#define THREAD_LOCAL_STORAGE thread_local
+#endif
+
+#if defined(_MSC_VER)
+#define ALIGN_AS(alignment) __declspec(align(alignment))
+#define ALIGN_OF(type) __alignof(type)
+#define HAVE_ALIGNED
+#elif defined(__GNUC__)
+#define ALIGN_AS(alignment) __attribute__((aligned(alignment)))
+#define ALIGN_OF(type) __alignof__(type)
+#define HAVE_ALIGNED
 #endif
 
 ABSL_FLAG(bool,
@@ -1805,14 +1817,41 @@ static LogMessage::LogMessageData fatal_msg_data_shared;
 // allocations).
 static THREAD_LOCAL_STORAGE bool thread_data_available = true;
 
-#ifdef HAVE_ALIGNED_STORAGE
-static THREAD_LOCAL_STORAGE std::aligned_storage<
-    sizeof(LogMessage::LogMessageData),
-    alignof(LogMessage::LogMessageData)>::type thread_msg_data;
+#ifdef HAVE_ALIGNED
+namespace {
+// This allows for the allocation of memory that is of the same size and
+// alignment as a required by a non-POD, but is represented as a POD type (char).
+// The allows for the memory to be correctly allocated without invoking the
+// constructor.
+template <size_t N, size_t A>
+class AlignedStorage;
+#define ALIGNED_STORAGE(Alignment)                                   \
+  template <size_t N>                                                \
+  class AlignedStorage<N, Alignment> {                               \
+   public:                                                           \
+    NO_SANITIZE_MEMORY void* address() { return data_; }             \
+    NO_SANITIZE_MEMORY const void* address() const { return data_; } \
+                                                                     \
+   private:                                                          \
+    ALIGN_AS(Alignment) char data_[N];                               \
+  }
+ALIGNED_STORAGE(1);
+ALIGNED_STORAGE(2);
+ALIGNED_STORAGE(4);
+ALIGNED_STORAGE(8);
+ALIGNED_STORAGE(16);
+ALIGNED_STORAGE(32);
+ALIGNED_STORAGE(64);
+#undef ALIGNED_STORAGE
+}  // namespace
+
+static THREAD_LOCAL_STORAGE AlignedStorage<sizeof(LogMessage::LogMessageData),
+                                           ALIGN_OF(LogMessage::LogMessageData)>
+    thread_msg_data;
 #else
 static THREAD_LOCAL_STORAGE char
     thread_msg_data[sizeof(void*) + sizeof(LogMessage::LogMessageData)];
-#endif  // HAVE_ALIGNED_STORAGE
+#endif  // HAVE_ALIGNED
 #endif  // defined(THREAD_LOCAL_STORAGE)
 
 LogMessage::LogMessageData::LogMessageData()
@@ -1895,8 +1934,8 @@ void LogMessage::Init(const char* file,
     // No need for locking, because this is thread local.
     if (thread_data_available) {
       thread_data_available = false;
-#ifdef HAVE_ALIGNED_STORAGE
-      data_ = new (&thread_msg_data) LogMessageData;
+#ifdef HAVE_ALIGNED
+      data_ = new (thread_msg_data.address()) LogMessageData;
 #else
       const uintptr_t kAlign = sizeof(void*) - 1;
 
