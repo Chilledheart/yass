@@ -9,7 +9,9 @@ cd $PWD/..
 if [ -d '.git' ]; then
   LAST_CHANGE_REF=$(/usr/bin/git rev-parse HEAD)
   ABBREV_REF=$(/usr/bin/git rev-parse --abbrev-ref HEAD)
+  TAG=$(/usr/bin/git describe --abbrev=40 --tags HEAD || cat TAG)
   echo -n "${LAST_CHANGE_REF}-refs/branch-heads/${ABBREV_REF}" > LAST_CHANGE
+  echo -n "${TAG}" > TAG
 fi
 
 # TODO use correct build number dynamically

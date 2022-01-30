@@ -114,7 +114,7 @@ Glib::RefPtr<YASSApp> YASSApp::create() {
 }
 
 void YASSApp::on_startup() {
-  LOG(WARNING) << "Application starting: " << YASS_APP_LAST_CHANGE;
+  LOG(WARNING) << "Application starting: " << YASS_APP_TAG;
 
   Gtk::Application::on_startup();
 

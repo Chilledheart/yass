@@ -212,6 +212,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
+          fetch-depth: '0'
       - name: Cache clang, nasm and extracted vcredist files
         uses: actions/cache@v2
         with:
@@ -321,6 +322,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
+          fetch-depth: '0'
       - name: Cache clang, nasm and extracted vcredist files
         uses: actions/cache@v2
         with:

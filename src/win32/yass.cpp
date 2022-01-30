@@ -78,7 +78,7 @@ BOOL CYassApp::InitInstance() {
 
   // TODO: transfer OutputDebugString to internal logging
 
-  LOG(WARNING) << "Application starting: " << YASS_APP_LAST_CHANGE;
+  LOG(WARNING) << "Application starting: " << YASS_APP_TAG;
 
   state_ = STOPPED;
 
