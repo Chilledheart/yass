@@ -6,9 +6,13 @@
 
 #include <absl/flags/flag.h>
 #include <algorithm>
-#include <deque>
+#include <vector>
 #include <functional>
 #include <utility>
+
+#ifdef __APPLE__
+#include <pthread.h>
+#endif
 
 #include "config/config.hpp"
 #include "connection.hpp"
@@ -18,105 +22,201 @@
 
 template <class T>
 class ServiceFactory {
- public:
-  ServiceFactory(asio::io_context& io_context,
+  class SlaveContext {
+   public:
+    SlaveContext(size_t slave_index,
                  const asio::ip::tcp::endpoint& remote_endpoint)
-      : io_context_(io_context), remote_endpoint_(remote_endpoint) {}
+        : index_(slave_index),
+          work_guard_(asio::make_work_guard(io_context_)),
+          thread_([this]() { WorkFunc(); }),
+          remote_endpoint_(remote_endpoint) {}
 
-  asio::error_code listen(const asio::ip::tcp::endpoint& endpoint,
-                          int backlog,
-                          asio::error_code& ec) {
-    endpoint_ = endpoint;
-    acceptor_ = std::make_unique<asio::ip::tcp::acceptor>(io_context_);
+    // Allow called from different threads
+    ~SlaveContext() noexcept {
+      work_guard_.reset();
+      thread_.join();
+    }
 
-    acceptor_->open(endpoint.protocol(), ec);
-    if (ec) {
-      return ec;
+    SlaveContext(const SlaveContext&) noexcept = delete;
+    SlaveContext(SlaveContext&&) noexcept = default;
+
+    void listen(const asio::ip::tcp::endpoint& endpoint,
+                int backlog,
+                asio::error_code& ec) {
+      if (acceptor_) {
+        ec = asio::error::already_started;
+        return;
+      }
+      endpoint_ = endpoint;
+      acceptor_ = std::make_unique<asio::ip::tcp::acceptor>(io_context_);
+
+      acceptor_->open(endpoint.protocol(), ec);
+      if (ec) {
+        return;
+      }
+      if (absl::GetFlag(FLAGS_reuse_port)) {
+        acceptor_->set_option(asio::ip::tcp::acceptor::reuse_address(true), ec);
+      }
+      SetSOReusePort(acceptor_->native_handle(), ec);
+      if (ec) {
+        return;
+      }
+      SetTCPFastOpen(acceptor_->native_handle(), ec);
+      if (ec) {
+        return;
+      }
+      acceptor_->bind(endpoint, ec);
+      if (ec) {
+        return;
+      }
+      acceptor_->listen(backlog, ec);
+      if (ec) {
+        return;
+      }
+      LOG(WARNING) << "slave " << index_ << " listen to " << endpoint_
+                   << " with upstream " << remote_endpoint_;
+      io_context_.post([this]() { startAccept(); });
     }
-    if (absl::GetFlag(FLAGS_reuse_port)) {
-      acceptor_->set_option(asio::ip::tcp::acceptor::reuse_address(true), ec);
+
+    // Allow called from different threads
+    void stop() {
+      io_context_.post([this]() {
+        if (acceptor_) {
+          asio::error_code ec;
+          acceptor_->close(ec);
+        }
+
+        std::vector<std::shared_ptr<T>> conns = std::move(connections_);
+        for (auto conn : conns) {
+          conn->close();
+        }
+
+        acceptor_.reset();
+      });
     }
-    SetTCPFastOpen(acceptor_->native_handle());
-    if (ec) {
-      return ec;
+
+    // Allow called from different threads
+    size_t currentConnections() const {
+      return connections_.size();
     }
-    acceptor_->bind(endpoint, ec);
-    if (ec) {
-      return ec;
+
+   private:
+    void WorkFunc() {
+      asio::error_code ec;
+#ifdef __APPLE__
+      /// documented in
+      /// https://developer.apple.com/documentation/apple-silicon/tuning-your-code-s-performance-for-apple-silicon
+      /// see sys/qos.h
+      pthread_set_qos_class_self_np(QOS_CLASS_UTILITY, 0);
+#endif
+      io_context_.run(ec);
+
+      if (ec) {
+        LOG(ERROR) << "slave " << index_ << " io_context failed due to: " << ec;
+      }
     }
-    acceptor_->listen(backlog, ec);
-    if (ec) {
-      return ec;
+
+    void startAccept() {
+      std::shared_ptr<T> conn =
+          std::make_unique<T>(io_context_, remote_endpoint_);
+      acceptor_->async_accept(
+          peer_endpoint_,
+          [this, conn](asio::error_code error, asio::ip::tcp::socket socket) {
+            handleAccept(conn, error, std::move(socket));
+          });
     }
-    LOG(WARNING) << "listen to " << endpoint_ << " with upstream "
-                 << remote_endpoint_;
-    startAccept();
-    return ec;
+
+    void handleAccept(std::shared_ptr<T> conn,
+                      asio::error_code ec,
+                      asio::ip::tcp::socket socket) {
+      if (!ec) {
+        SetTCPCongestion(socket.native_handle(), ec);
+        SetTCPUserTimeout(socket.native_handle(), ec);
+        SetSocketLinger(&socket, ec);
+        SetSocketSndBuffer(&socket, ec);
+        SetSocketRcvBuffer(&socket, ec);
+        conn->on_accept(std::move(socket), endpoint_, peer_endpoint_);
+        conn->set_disconnect_cb(
+            [this, conn]() mutable { handleDisconnect(conn); });
+        connections_.push_back(conn);
+        conn->start();
+        VLOG(2) << "slave " << index_
+                << " connection established with remaining: "
+                << connections_.size();
+        startAccept();
+      } else {
+        LOG(WARNING) << "slave " << index_ << " stopping accept due to " << ec;
+      }
+    }
+
+    void handleDisconnect(std::shared_ptr<T> conn) {
+      VLOG(2) << "slave " << index_
+              << " connection closed with remaining: " << connections_.size();
+      conn->set_disconnect_cb(std::function<void()>());
+      conn->close();
+      connections_.erase(
+          std::remove(connections_.begin(), connections_.end(), conn),
+          connections_.end());
+    }
+
+   private:
+    size_t index_;
+    asio::io_context io_context_;
+    /// stopping the io_context from running out of work
+    asio::executor_work_guard<asio::io_context::executor_type> work_guard_;
+    std::thread thread_;
+
+    const asio::ip::tcp::endpoint remote_endpoint_;
+
+    asio::ip::tcp::endpoint endpoint_;
+    asio::ip::tcp::endpoint peer_endpoint_;
+
+    std::unique_ptr<asio::ip::tcp::acceptor> acceptor_;
+
+    std::vector<std::shared_ptr<T>> connections_;
+  };
+
+ public:
+  ServiceFactory(const asio::ip::tcp::endpoint& remote_endpoint) {
+    size_t num_of_threads = absl::GetFlag(FLAGS_threads);
+    slaves_.reserve(num_of_threads);
+    for (size_t i = 0; i < num_of_threads; ++i) {
+      slaves_.emplace_back(std::make_unique<SlaveContext>(i, remote_endpoint));
+    }
+  }
+
+  ~ServiceFactory() { join(); }
+
+  void listen(const asio::ip::tcp::endpoint& endpoint,
+              int backlog,
+              asio::error_code& ec) {
+    for (auto& slave : slaves_) {
+      slave->listen(endpoint, backlog, ec);
+      if (ec)
+        break;
+    }
   }
 
   void stop() {
-    if (acceptor_) {
-      asio::error_code ec = asio::error_code();
-      acceptor_->close(ec);
-    }
-    std::vector<std::shared_ptr<T>> conns = std::move(connections_);
-    for (auto conn : conns) {
-      conn->close();
-    }
-    acceptor_.reset();
-  }
-
-  size_t currentConnections() const { return connections_.size(); }
-
- private:
-  void startAccept() {
-    std::shared_ptr<T> conn =
-        std::make_unique<T>(io_context_, remote_endpoint_);
-    acceptor_->async_accept(
-        peer_endpoint_,
-        [this, conn](asio::error_code error, asio::ip::tcp::socket socket) {
-          handleAccept(conn, error, std::move(socket));
-        });
-  }
-
-  void handleAccept(std::shared_ptr<T> conn,
-                    asio::error_code error,
-                    asio::ip::tcp::socket socket) {
-    if (!error) {
-      SetTCPCongestion(socket.native_handle());
-      SetTCPUserTimeout(socket.native_handle());
-      SetSocketLinger(&socket);
-      SetSocketSndBuffer(&socket);
-      SetSocketRcvBuffer(&socket);
-      conn->on_accept(std::move(socket), endpoint_, peer_endpoint_);
-      conn->set_disconnect_cb(
-          [this, conn]() mutable { handleDisconnect(conn); });
-      connections_.push_back(conn);
-      conn->start();
-      VLOG(2) << "connection established with remaining: "
-              << connections_.size();
-      startAccept();
+    for (auto& slave : slaves_) {
+      slave->stop();
     }
   }
 
-  void handleDisconnect(std::shared_ptr<T> conn) {
-    VLOG(2) << "connection closed with remaining: " << connections_.size();
-    conn->set_disconnect_cb(std::function<void()>());
-    conn->close();
-    connections_.erase(
-        std::remove(connections_.begin(), connections_.end(), conn),
-        connections_.end());
+  void join() {
+    slaves_.clear();
+  }
+
+  size_t currentConnections() const {
+    size_t count = 0;
+    for (const auto& slave : slaves_) {
+      count += slave->currentConnections();
+    }
+    return count;
   }
 
  private:
-  asio::io_context& io_context_;
-  const asio::ip::tcp::endpoint remote_endpoint_;
-
-  asio::ip::tcp::endpoint endpoint_;
-  asio::ip::tcp::endpoint peer_endpoint_;
-
-  std::unique_ptr<asio::ip::tcp::acceptor> acceptor_;
-  std::vector<std::shared_ptr<T>> connections_;
+  std::vector<std::unique_ptr<SlaveContext>> slaves_;
 };
 
 #endif  // H_CONNECTION_FACTORY

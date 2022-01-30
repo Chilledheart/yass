@@ -34,4 +34,6 @@
 #pragma pop
 #endif  // defined(_MSC_VER) && !defined(__clang__)
 
+extern std::ostream& operator<<(std::ostream& o, asio::error_code);
+
 #endif  // H_CORE_ASIO

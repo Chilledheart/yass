@@ -1259,6 +1259,7 @@ set(files
     src/core/string_util.cpp
     src/core/check_op.cpp
     src/core/check.cpp
+    src/core/asio.cpp
     src/core/scoped_clear_last_error_win.cpp
     src/core/string_util_constants.cpp
     src/crypto/aead_base_decrypter.cpp
@@ -1318,6 +1319,7 @@ set(hfiles
     src/core/string_util.hpp
     src/core/check_op.hpp
     src/core/check.hpp
+    src/core/asio.hpp
     src/crypto/aead_base_decrypter.hpp
     src/crypto/aead_base_encrypter.hpp
     src/crypto/aead_evp_decrypter.hpp

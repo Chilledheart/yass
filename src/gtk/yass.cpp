@@ -16,6 +16,7 @@
 #include "crypto/crypter_export.hpp"
 #include "gtk/utils.hpp"
 #include "gtk/yass_window.hpp"
+#include "version.h"
 
 YASSApp* mApp = nullptr;
 
@@ -113,7 +114,7 @@ Glib::RefPtr<YASSApp> YASSApp::create() {
 }
 
 void YASSApp::on_startup() {
-  LOG(WARNING) << "Application starting";
+  LOG(WARNING) << "Application starting: " << YASS_APP_LAST_CHANGE;
 
   Gtk::Application::on_startup();
 
