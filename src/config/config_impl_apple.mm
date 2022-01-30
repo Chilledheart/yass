@@ -38,12 +38,24 @@ std::string ExpandUser(const std::string& file_path) {
   return real_path;
 }
 
+bool IsFile(const std::string& path) {
+  struct stat s;
+  return stat(path.c_str(), &s) == 0;
+}
+
 bool LoadConfigFromLegacyConfig(const std::string& path,
                                 CFMutableDictionaryRef mutable_root) {
   NSError* error = nil;
-  NSData* data = [NSData dataWithContentsOfFile:@(path.c_str())
-                                        options:NSDataReadingUncached
-                                          error:&error];
+  NSData* data;
+
+  if (!IsFile(path)) {
+    VLOG(2) << "legacy configure file not exists";
+    return false;
+  }
+
+  data = [NSData dataWithContentsOfFile:@(path.c_str())
+                                options:NSDataReadingUncached
+                                  error:&error];
   if (!data || error) {
     VLOG(1) << "legacy configure file failed to read: " << path
             << " error: " << error;
@@ -120,9 +132,7 @@ bool ConfigImplApple::CloseImpl() {
 
   write_root_.reset();
 
-  struct stat s;
-  if (!path_.empty() && stat(path_.c_str(), &s) == 0 &&
-      ::unlink(path_.c_str()) == 0) {
+  if (!path_.empty() && IsFile(path_) && ::unlink(path_.c_str()) == 0) {
     LOG(WARNING) << "removed legacy config file: " << path_;
   }
 

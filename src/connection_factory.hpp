@@ -56,8 +56,8 @@ class ServiceFactory {
       }
       if (absl::GetFlag(FLAGS_reuse_port)) {
         acceptor_->set_option(asio::ip::tcp::acceptor::reuse_address(true), ec);
+        SetSOReusePort(acceptor_->native_handle(), ec);
       }
-      SetSOReusePort(acceptor_->native_handle(), ec);
       if (ec) {
         return;
       }
