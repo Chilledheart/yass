@@ -5,19 +5,18 @@
 #define H_CONNECTION_FACTORY
 
 #include <absl/flags/flag.h>
+#include <absl/strings/str_cat.h>
 #include <algorithm>
 #include <vector>
 #include <functional>
 #include <utility>
 
-#ifdef __APPLE__
-#include <pthread.h>
-#endif
-
 #include "config/config.hpp"
 #include "connection.hpp"
 #include "core/asio.hpp"
+#include "core/compiler_specific.hpp"
 #include "core/logging.hpp"
+#include "core/utils.hpp"
 #include "network.hpp"
 
 template <class T>
@@ -103,12 +102,14 @@ class ServiceFactory {
    private:
     void WorkFunc() {
       asio::error_code ec;
-#ifdef __APPLE__
-      /// documented in
-      /// https://developer.apple.com/documentation/apple-silicon/tuning-your-code-s-performance-for-apple-silicon
-      /// see sys/qos.h
-      pthread_set_qos_class_self_np(QOS_CLASS_UTILITY, 0);
-#endif
+      std::string slave_name = absl::StrCat("slave-", std::to_string(index_));
+      if (!SetThreadName(thread_.native_handle(), slave_name)) {
+        PLOG(WARNING) << "slave " << index_ << " failed to set thread name";
+      }
+      if (!SetThreadPriority(thread_.native_handle(),
+                             ThreadPriority::ABOVE_NORMAL)) {
+        PLOG(WARNING) << "slave " << index_ << " failed to set thread priority";
+      }
       io_context_.run(ec);
 
       if (ec) {

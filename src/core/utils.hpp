@@ -18,6 +18,7 @@
 #include <absl/strings/string_view.h>
 #include <cstdint>
 #include <string>
+#include <thread>
 
 #ifdef __APPLE__
 #include <AvailabilityMacros.h>
@@ -25,6 +26,25 @@
 
 #include "core/scoped_cftyperef.hpp"
 #endif
+
+// Valid values for priority of Thread::Options and SimpleThread::Options, and
+// SetCurrentThreadPriority(), listed in increasing order of importance.
+enum class ThreadPriority : int {
+  // Suitable for threads that shouldn't disrupt high priority work.
+  BACKGROUND,
+  // Default priority level.
+  NORMAL,
+  // Suitable for threads which generate data for the display (at ~60Hz).
+  ABOVE_NORMAL,
+  // Suitable for low-latency, glitch-resistant audio.
+  TIME_CRITICAL,
+};
+
+bool SetThreadPriority(std::thread::native_handle_type handle,
+                       ThreadPriority priority);
+
+bool SetThreadName(std::thread::native_handle_type handle,
+                   const std::string& name);
 
 uint64_t GetMonotonicTime();
 #define NS_PER_SECOND (1000 * 1000 * 1000)

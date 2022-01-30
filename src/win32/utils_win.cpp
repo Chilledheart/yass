@@ -160,10 +160,9 @@ HANDLE EnsureShcoreLoaded() {
 
 // https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-getdevicecaps
 int GetDeviceCaps(HDC hdc, int index) {
-  HANDLE hLibrary = EnsureGdi32Loaded();
-  const auto fPointer =
-      reinterpret_cast<PFNGETDEVICECAPS>(reinterpret_cast<void*>(
-          ::GetProcAddress(static_cast<HMODULE>(hLibrary), "GetDeviceCaps")));
+  static const auto fPointer = reinterpret_cast<PFNGETDEVICECAPS>(
+      reinterpret_cast<void*>(::GetProcAddress(
+          static_cast<HMODULE>(EnsureGdi32Loaded()), "GetDeviceCaps")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return USER_DEFAULT_SCREEN_DPI;
@@ -174,10 +173,9 @@ int GetDeviceCaps(HDC hdc, int index) {
 
 // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setprocessdpiaware
 BOOL SetProcessDPIAware() {
-  HANDLE hLibrary = EnsureUser32Loaded();
-  const auto fPointer = reinterpret_cast<PFNSETPROCESSDPIAWARE>(
-      reinterpret_cast<void*>(::GetProcAddress(static_cast<HMODULE>(hLibrary),
-                                               "SetProcessDPIAware")));
+  static const auto fPointer = reinterpret_cast<PFNSETPROCESSDPIAWARE>(
+      reinterpret_cast<void*>(::GetProcAddress(
+          static_cast<HMODULE>(EnsureUser32Loaded()), "SetProcessDPIAware")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return FALSE;
@@ -187,13 +185,13 @@ BOOL SetProcessDPIAware() {
 }
 
 HRESULT SetProcessDpiAwareness(PROCESS_DPI_AWARENESS value) {
-  HANDLE hLibrary = EnsureShcoreLoaded();
-  const auto fPointer = reinterpret_cast<PFNSETPROCESSDPIAWARENESS>(
-      reinterpret_cast<void*>(::GetProcAddress(static_cast<HMODULE>(hLibrary),
-                                               "SetProcessDpiAwareness")));
+  static const auto fPointer =
+      reinterpret_cast<PFNSETPROCESSDPIAWARENESS>(reinterpret_cast<void*>(
+          ::GetProcAddress(static_cast<HMODULE>(EnsureShcoreLoaded()),
+                           "SetProcessDpiAwareness")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
-    return E_INVALIDARG;
+    return E_NOTIMPL;
   }
 
   return fPointer(value);
@@ -203,23 +201,22 @@ HRESULT GetDpiForMonitor(HMONITOR hmonitor,
                          MONITOR_DPI_TYPE dpiType,
                          UINT* dpiX,
                          UINT* dpiY) {
-  HANDLE hLibrary = EnsureShcoreLoaded();
-  const auto fPointer = reinterpret_cast<PFNGETDPIFORMONITOR>(
-      reinterpret_cast<void*>(::GetProcAddress(static_cast<HMODULE>(hLibrary),
-                                               "GetDpiForMonitor")));
+  static const auto fPointer = reinterpret_cast<PFNGETDPIFORMONITOR>(
+      reinterpret_cast<void*>(::GetProcAddress(
+          static_cast<HMODULE>(EnsureShcoreLoaded()), "GetDpiForMonitor")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
-    return E_INVALIDARG;
+    return E_NOTIMPL;
   }
 
   return fPointer(hmonitor, dpiType, dpiX, dpiY);
 }
 
 DPI_AWARENESS_CONTEXT GetThreadDpiAwarenessContext() {
-  HANDLE hLibrary = EnsureUser32Loaded();
-  const auto fPointer = reinterpret_cast<PFNGETTHREADDPIAWARENESSCONTEXT>(
-      reinterpret_cast<void*>(::GetProcAddress(
-          static_cast<HMODULE>(hLibrary), "GetThreadDpiAwarenessContext")));
+  static const auto fPointer =
+      reinterpret_cast<PFNGETTHREADDPIAWARENESSCONTEXT>(reinterpret_cast<void*>(
+          ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()),
+                           "GetThreadDpiAwarenessContext")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return DPI_AWARENESS_CONTEXT_UNAWARE;
@@ -228,10 +225,10 @@ DPI_AWARENESS_CONTEXT GetThreadDpiAwarenessContext() {
 }
 
 DPI_AWARENESS_CONTEXT GetWindowDpiAwarenessContext(HWND hwnd) {
-  HANDLE hLibrary = EnsureUser32Loaded();
-  const auto fPointer = reinterpret_cast<PFNGETWINDOWDPIAWARENESSCONTEXT>(
-      reinterpret_cast<void*>(::GetProcAddress(
-          static_cast<HMODULE>(hLibrary), "GetWindowDpiAwarenessContext")));
+  static const auto fPointer =
+      reinterpret_cast<PFNGETWINDOWDPIAWARENESSCONTEXT>(reinterpret_cast<void*>(
+          ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()),
+                           "GetWindowDpiAwarenessContext")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return DPI_AWARENESS_CONTEXT_UNAWARE;
@@ -240,11 +237,10 @@ DPI_AWARENESS_CONTEXT GetWindowDpiAwarenessContext(HWND hwnd) {
 }
 
 DPI_AWARENESS GetAwarenessFromDpiAwarenessContext(DPI_AWARENESS_CONTEXT value) {
-  HANDLE hLibrary = EnsureUser32Loaded();
-  const auto fPointer =
+  static const auto fPointer =
       reinterpret_cast<PFNGETAWARENESSFROMDPIAWARENESSCONTEXT>(
           reinterpret_cast<void*>(
-              ::GetProcAddress(static_cast<HMODULE>(hLibrary),
+              ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()),
                                "GetAwarenessFromDpiAwarenessContext")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
@@ -254,10 +250,11 @@ DPI_AWARENESS GetAwarenessFromDpiAwarenessContext(DPI_AWARENESS_CONTEXT value) {
 }
 
 BOOL SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT value) {
-  HANDLE hLibrary = EnsureUser32Loaded();
-  const auto fPointer = reinterpret_cast<PFNSETPROCESSDPIAWARENESSCONTEXT>(
-      reinterpret_cast<void*>(::GetProcAddress(
-          static_cast<HMODULE>(hLibrary), "SetProcessDpiAwarenessContext")));
+  static const auto fPointer =
+      reinterpret_cast<PFNSETPROCESSDPIAWARENESSCONTEXT>(
+          reinterpret_cast<void*>(
+              ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()),
+                               "SetProcessDpiAwarenessContext")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return FALSE;
@@ -266,10 +263,10 @@ BOOL SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT value) {
 }
 
 BOOL SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT value) {
-  HANDLE hLibrary = EnsureUser32Loaded();
-  const auto fPointer = reinterpret_cast<PFNSETTHREADDPIAWARENESSCONTEXT>(
-      reinterpret_cast<void*>(::GetProcAddress(
-          static_cast<HMODULE>(hLibrary), "SetThreadDpiAwarenessContext")));
+  static const auto fPointer =
+      reinterpret_cast<PFNSETTHREADDPIAWARENESSCONTEXT>(reinterpret_cast<void*>(
+          ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()),
+                           "SetThreadDpiAwarenessContext")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return FALSE;
@@ -280,10 +277,10 @@ BOOL SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT value) {
 // Determines if a specified DPI_AWARENESS_CONTEXT is valid and supported
 // by the current system.
 BOOL IsValidDpiAwarenessContext(DPI_AWARENESS_CONTEXT value) {
-  HANDLE hLibrary = EnsureUser32Loaded();
-  const auto fPointer = reinterpret_cast<PFNISVALIDDPIAWARENESScONTEXT>(
-      reinterpret_cast<void*>(::GetProcAddress(static_cast<HMODULE>(hLibrary),
-                                               "IsValidDpiAwarenessContext")));
+  static const auto fPointer =
+      reinterpret_cast<PFNISVALIDDPIAWARENESScONTEXT>(reinterpret_cast<void*>(
+          ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()),
+                           "IsValidDpiAwarenessContext")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return FALSE;
@@ -295,10 +292,10 @@ BOOL IsValidDpiAwarenessContext(DPI_AWARENESS_CONTEXT value) {
 // by the current system.
 BOOL AreDpiAwarenessContextsEqual(DPI_AWARENESS_CONTEXT dpiContextA,
                                   DPI_AWARENESS_CONTEXT dpiContextB) {
-  HANDLE hLibrary = EnsureUser32Loaded();
-  const auto fPointer = reinterpret_cast<PFNAREDPIAWARENESSCONTEXTSEQUAL>(
-      reinterpret_cast<void*>(::GetProcAddress(
-          static_cast<HMODULE>(hLibrary), "AreDpiAwarenessContextsEqual")));
+  static const auto fPointer =
+      reinterpret_cast<PFNAREDPIAWARENESSCONTEXTSEQUAL>(reinterpret_cast<void*>(
+          ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()),
+                           "AreDpiAwarenessContextsEqual")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return FALSE;
@@ -312,10 +309,9 @@ BOOL AreDpiAwarenessContextsEqual(DPI_AWARENESS_CONTEXT dpiContextA,
 // assumes a DPI of 96. For any other DPI_AWARENESS value,
 // the return value will be the actual system DPI.
 UINT GetDpiForSystem() {
-  HANDLE hLibrary = EnsureUser32Loaded();
-  const auto fPointer =
-      reinterpret_cast<PFNGETDPIFORSYSTEM>(reinterpret_cast<void*>(
-          ::GetProcAddress(static_cast<HMODULE>(hLibrary), "GetDpiForSystem")));
+  static const auto fPointer = reinterpret_cast<PFNGETDPIFORSYSTEM>(
+      reinterpret_cast<void*>(::GetProcAddress(
+          static_cast<HMODULE>(EnsureUser32Loaded()), "GetDpiForSystem")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return 0;
@@ -332,10 +328,9 @@ UINT GetDpiForSystem() {
 // DPI_AWARENESS_PER_MONITOR_AWARE The DPI of the monitor where the window is located.
 // clang-format on
 UINT GetDpiForWindow(HWND hwnd) {
-  HANDLE hLibrary = EnsureUser32Loaded();
-  const auto fPointer =
-      reinterpret_cast<PFNGETDPIFORWINDOW>(reinterpret_cast<void*>(
-          ::GetProcAddress(static_cast<HMODULE>(hLibrary), "GetDpiForWindow")));
+  static const auto fPointer = reinterpret_cast<PFNGETDPIFORWINDOW>(
+      reinterpret_cast<void*>(::GetProcAddress(
+          static_cast<HMODULE>(EnsureUser32Loaded()), "GetDpiForWindow")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return 0;
@@ -348,10 +343,11 @@ UINT GetDpiForWindow(HWND hwnd) {
 // DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 will return a value of 0 for
 // their DPI.
 UINT GetDpiFromDpiAwarenessContext(DPI_AWARENESS_CONTEXT value) {
-  HANDLE hLibrary = EnsureUser32Loaded();
-  const auto fPointer = reinterpret_cast<PFNGETDPIFROMDPIAWARENESSCONTEXT>(
-      reinterpret_cast<void*>(::GetProcAddress(
-          static_cast<HMODULE>(hLibrary), "GetDpiFromDpiAwarenessContext")));
+  static const auto fPointer =
+      reinterpret_cast<PFNGETDPIFROMDPIAWARENESSCONTEXT>(
+          reinterpret_cast<void*>(
+              ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()),
+                               "GetDpiFromDpiAwarenessContext")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return 0;
@@ -362,10 +358,10 @@ UINT GetDpiFromDpiAwarenessContext(DPI_AWARENESS_CONTEXT value) {
 // Sets the thread's DPI_HOSTING_BEHAVIOR. This behavior allows windows created
 // in the thread to host child windows with a different DPI_AWARENESS_CONTEXT.
 DPI_HOSTING_BEHAVIOR SetThreadDpiHostingBehavior(DPI_HOSTING_BEHAVIOR value) {
-  HANDLE hLibrary = EnsureUser32Loaded();
-  const auto fPointer = reinterpret_cast<PFNSETTHREADDPIHOSTINGBEHAVIOR>(
-      reinterpret_cast<void*>(::GetProcAddress(static_cast<HMODULE>(hLibrary),
-                                               "SetThreadDpiHostingBehavior")));
+  static const auto fPointer =
+      reinterpret_cast<PFNSETTHREADDPIHOSTINGBEHAVIOR>(reinterpret_cast<void*>(
+          ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()),
+                           "SetThreadDpiHostingBehavior")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return DPI_HOSTING_BEHAVIOR_INVALID;

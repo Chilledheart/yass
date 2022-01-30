@@ -80,6 +80,15 @@ BOOL CYassApp::InitInstance() {
 
   LOG(WARNING) << "Application starting: " << YASS_APP_TAG;
 
+  // https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-setpriorityclass
+  // While the system is starting, the SetThreadPriority function returns a
+  // success return value but does not change thread priority for applications
+  // that are started from the system Startup folder or listed in the
+  // HKLM\...\Run key
+  if (!::SetPriorityClass(::GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS)) {
+    PLOG(WARNING) << "Failed to set PriorityClass";
+  }
+
   state_ = STOPPED;
 
   Utils::SetDpiAwareness();

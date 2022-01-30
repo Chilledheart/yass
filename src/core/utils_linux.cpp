@@ -7,6 +7,19 @@
 
 #ifdef __linux__
 #include <time.h>
+#include <pthread.h>
+
+bool SetThreadPriority(std::thread::native_handle_type /*handle*/,
+                       ThreadPriority /*priority*/) {
+  // TBD: can be implemented with cgroup
+  return true;
+}
+
+bool SetThreadName(std::thread::native_handle_type handle,
+                   const std::string& name) {
+  return pthread_setname_np(handle, name.c_str()) == 0;
+}
+
 uint64_t GetMonotonicTime() {
   static struct timespec start_ts;
   static bool started;

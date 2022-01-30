@@ -3,9 +3,8 @@
 #include "cli/cli_worker.hpp"
 
 #include <absl/flags/flag.h>
-#ifdef __APPLE__
-#include <pthread.h>
-#endif
+
+#include "core/compiler_specific.hpp"
 
 using asio::ip::tcp;
 using namespace socks5;
@@ -85,12 +84,13 @@ void Worker::Stop(std::function<void()> callback) {
 
 void Worker::WorkFunc() {
   asio::error_code ec = asio::error_code();
-#ifdef __APPLE__
-  /// documented in
-  /// https://developer.apple.com/documentation/apple-silicon/tuning-your-code-s-performance-for-apple-silicon
-  /// see sys/qos.h
-  pthread_set_qos_class_self_np(QOS_CLASS_UTILITY, 0);
-#endif
+  if (!SetThreadName(thread_.native_handle(), "background")) {
+    PLOG(WARNING) << "failed to set thread name";
+  }
+  if (!SetThreadPriority(thread_.native_handle(),
+                         ThreadPriority::BACKGROUND)) {
+    PLOG(WARNING) << "failed to set thread priority";
+  }
   io_context_.run(ec);
 
   if (ec) {
