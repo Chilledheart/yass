@@ -75,6 +75,7 @@ CYassFrame::~CYassFrame() = default;
 BEGIN_MESSAGE_MAP(CYassFrame, CFrameWnd)
   ON_WM_CREATE()
   ON_WM_CLOSE()
+  ON_WM_QUERYENDSESSION()
   // https://docs.microsoft.com/en-us/cpp/mfc/on-update-command-ui-macro?view=msvc-170
   ON_UPDATE_COMMAND_UI(ID_APP_MSG, &CYassFrame::OnUpdateStatusBar)
   // https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows?redirectedfrom=MSDN
@@ -569,6 +570,25 @@ void CYassFrame::OnClose() {
   AfxGetApp()->GetMainWnd()->PostMessage(WM_CLOSE);
 
   CFrameWnd::OnClose();
+}
+
+BOOL CYassFrame::OnQueryEndSession() {
+  LOG(WARNING) << "Frame is closing ";
+  if (mApp->GetState() == CYassApp::STARTED) {
+    OnStopButtonClicked();
+  }
+  // If we are sure to block shutdown in Windows Vista or later:
+  // When your application needs to block shutdown, it should call
+  // ShutdownBlockReasonCreate() to register a reason string, and pass in a
+  // handle to the window it uses to handle WM_QUERYENDSESSION.
+  // When your application no longer needs to block shutdown, it should call
+  // ShutdownBlockReasonDestroy() to unregister its reason string.
+  // If your application needs to determine what reason string it registered
+  // earlier, it should call ShutdownBlockReasonQuery() to retrieve it.
+
+  // Applications that return TRUE to WM_QUERYENDSESSION will be closed at
+  // shutdown
+  return TRUE;
 }
 
 // https://docs.microsoft.com/en-us/cpp/mfc/updating-the-text-of-a-status-bar-pane?view=msvc-170

@@ -75,6 +75,10 @@ class CYassFrame : public CFrameWnd {
   // When the main window closes, the application closes.
   afx_msg void OnClose();
 
+  // Implement Application shutdown
+  // http://msdn.microsoft.com/en-us/library/ms700677(v=vs.85).aspx
+  afx_msg BOOL OnQueryEndSession();
+
   afx_msg void OnUpdateStatusBar(CCmdUI* pCmdUI);
 
  protected:
