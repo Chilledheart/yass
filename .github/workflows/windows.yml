@@ -61,6 +61,8 @@ jobs:
             third_party/boringssl/**/crypto.lib
             third_party/boringssl/**/crypto.pdb
             third_party/boringssl/**/vc140.pdb
+            third_party/boringssl/**/ssl.lib
+            third_party/boringssl/**/ssl.pdb
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: "Install dependency: nasm"
         run: |
@@ -246,6 +248,8 @@ jobs:
             third_party/boringssl/**/crypto.lib
             third_party/boringssl/**/crypto.pdb
             third_party/boringssl/**/vc140.pdb
+            third_party/boringssl/**/ssl.lib
+            third_party/boringssl/**/ssl.pdb
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
@@ -356,6 +360,8 @@ jobs:
             third_party/boringssl/**/crypto.lib
             third_party/boringssl/**/crypto.pdb
             third_party/boringssl/**/vc140.pdb
+            third_party/boringssl/**/ssl.lib
+            third_party/boringssl/**/ssl.pdb
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
@@ -476,6 +482,8 @@ jobs:
             third_party/boringssl/**/crypto.lib
             third_party/boringssl/**/crypto.pdb
             third_party/boringssl/**/vc140.pdb
+            third_party/boringssl/**/ssl.lib
+            third_party/boringssl/**/ssl.pdb
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build Vistual Studio 2019 (v142)
         run: |
@@ -596,6 +604,8 @@ jobs:
             third_party/boringssl/**/crypto.lib
             third_party/boringssl/**/crypto.pdb
             third_party/boringssl/**/vc140.pdb
+            third_party/boringssl/**/ssl.lib
+            third_party/boringssl/**/ssl.pdb
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
@@ -705,6 +715,8 @@ jobs:
             third_party/boringssl/**/crypto.lib
             third_party/boringssl/**/crypto.pdb
             third_party/boringssl/**/vc140.pdb
+            third_party/boringssl/**/ssl.lib
+            third_party/boringssl/**/ssl.pdb
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |

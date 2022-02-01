@@ -311,13 +311,34 @@ if (MSVC)
       optimized ${BORINGSSL_CRYPTO_RELEASE_LIB}
       )
 
+    find_library(BORINGSSL_SSL_RELEASE_LIB ssl
+      PATHS ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}-${CMAKE_MSVC_CRT_LINKAGE}${BORINGSSL_LIB_SUFFIX}
+            ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}
+            ${boringssl_DIR}/
+            ${boringssl_DIR}/build/ssl/Release
+            ${boringssl_DIR}/build/Release/ssl
+      REQUIRED
+      NO_DEFAULT_PATH)
+    find_library(BORINGSSL_SSL_DEBUG_LIB ssl
+      PATHS ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}-${CMAKE_MSVC_CRT_LINKAGE}${BORINGSSL_LIB_SUFFIX}/debug
+            ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}/debug
+            ${boringssl_DIR}/debug
+            ${boringssl_DIR}/build/ssl/Debug
+            ${boringssl_DIR}/build/Debug/ssl
+      REQUIRED
+      NO_DEFAULT_PATH)
+    set(BORINGSSL_SSL_LIB
+      debug ${BORINGSSL_SSL_DEBUG_LIB}
+      optimized ${BORINGSSL_SSL_RELEASE_LIB}
+      )
+
     set(CMAKE_REQUIRED_INCLUDES
       ${boringssl_DIR}/include
       ${CMAKE_REQUIRED_INCLUDES})
     check_include_file(openssl/is_boringssl.h BORINGSSL_CRYPTO_INCLUDE)
     add_definitions(-DHAVE_BORINGSSL)
     include_directories(BEFORE ${boringssl_DIR}/include SYSTEM)
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${BORINGSSL_CRYPTO_LIB})
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${BORINGSSL_SSL_LIB} ${BORINGSSL_CRYPTO_LIB})
     message(STATUS "Build with boringssl")
 
     find_library(ShLwApi_LIB ShLwApi REQUIRED)
@@ -399,13 +420,21 @@ int main() {
       REQUIRED
       NO_DEFAULT_PATH)
 
+    find_library(BORINGSSL_SSL_LIB ssl
+      PATHS
+        ${boringssl_DIR}
+        ${boringssl_DIR}/build
+        ${boringssl_DIR}/build/ssl
+      REQUIRED
+      NO_DEFAULT_PATH)
+
     set(CMAKE_REQUIRED_INCLUDES
         ${boringssl_DIR}/include
         ${CMAKE_REQUIRED_INCLUDES})
     check_include_file(openssl/is_boringssl.h BORINGSSL_CRYPTO_INCLUDE)
     add_definitions(-DHAVE_BORINGSSL)
     include_directories(BEFORE ${boringssl_DIR}/include SYSTEM)
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${BORINGSSL_CRYPTO_LIB})
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${BORINGSSL_SSL_LIB} ${BORINGSSL_CRYPTO_LIB})
 
     # linux-syscall-support
     if (UNIX AND NOT APPLE)
