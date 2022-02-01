@@ -137,7 +137,7 @@ bool SetThreadName(std::thread::native_handle_type handle,
   // The debugger needs to be around to catch the name in the exception.  If
   // there isn't a debugger, we are just needlessly throwing an exception.
   if (!::IsDebuggerPresent())
-    return SUCCEEDED(ret);
+    return ret == S_OK;
 
   // https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getcurrentthreadid
   // https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getthreadid
@@ -146,7 +146,7 @@ bool SetThreadName(std::thread::native_handle_type handle,
 #else
   SetNameInternal(::GetThreadId(handle), name.c_str());
 #endif
-  return SUCCEEDED(ret);
+  return ret == S_OK;
 }
 
 uint64_t GetMonotonicTime() {

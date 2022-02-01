@@ -35,18 +35,9 @@ class Worker {
  private:
   void WorkFunc();
 
-  void on_resolve_local(asio::error_code ec,
-                        asio::ip::tcp::resolver::results_type results,
-                        std::function<void(asio::error_code)> callback);
-  void on_resolve_remote(asio::error_code ec,
-                         asio::ip::tcp::resolver::results_type results,
-                         std::function<void(asio::error_code)> callback);
-
   asio::io_context io_context_;
   /// stopping the io_context from running out of work
   asio::executor_work_guard<asio::io_context::executor_type> work_guard_;
-  /// used to resolve local and remote endpoint
-  asio::ip::tcp::resolver resolver_;
 
   std::unique_ptr<Socks5Factory> socks5_server_;
   asio::ip::tcp::endpoint endpoint_;
