@@ -41,6 +41,9 @@ jobs:
             third_party/boringssl/libcrypto.a
             third_party/boringssl/x64-libcrypto.a
             third_party/boringssl/arm64-libcrypto.a
+            third_party/boringssl/libssl.a
+            third_party/boringssl/x64-libssl.a
+            third_party/boringssl/arm64-libssl.a
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.arch }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: "Install dependency: clang and clang-tidy"
         run: |
@@ -60,14 +63,15 @@ jobs:
         run: |
           cd third_party/boringssl
 
-          if [ ! -f x64-libcrypto.a ]; then
+          if [ ! -f x64-libssl.a ]; then
             mkdir build
             cd build
             cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
               -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
               -DCMAKE_OSX_ARCHITECTURES="x86_64" ..
-            ninja crypto
+            ninja crypto ssl
             cp -fv crypto/libcrypto.a ../x64-libcrypto.a
+            cp -fv ssl/libssl.a ../x64-libssl.a
             cd ..
             rm -rf build
           fi
@@ -75,23 +79,26 @@ jobs:
         run: |
           cd third_party/boringssl
 
-          if [ ! -f arm64-libcrypto.a ]; then
+          if [ ! -f arm64-libssl.a ]; then
             mkdir build
             cd build
             cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
               -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
               -DCMAKE_OSX_ARCHITECTURES="arm64" ..
-            ninja crypto
+            ninja crypto ssl
             cp -fv crypto/libcrypto.a ../arm64-libcrypto.a
+            cp -fv ssl/libssl.a ../arm64-libssl.a
             cd ..
             rm -rf build
           fi
       - name: "Install dependency: boringssl (universal)"
         run: |
           cd third_party/boringssl
-          if [ ! -f libcrypto.a ]; then
+          if [ ! -f libssl.a ]; then
             lipo -create arm64-libcrypto.a x64-libcrypto.a -output libcrypto.a
+            lipo -create arm64-libssl.a x64-libssl.a -output libssl.a
             lipo -info libcrypto.a
+            lipo -info libssl.a
           fi
 
   mac-release:
@@ -126,6 +133,9 @@ jobs:
             third_party/boringssl/libcrypto.a
             third_party/boringssl/x64-libcrypto.a
             third_party/boringssl/arm64-libcrypto.a
+            third_party/boringssl/libssl.a
+            third_party/boringssl/x64-libssl.a
+            third_party/boringssl/arm64-libssl.a
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.arch }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
         run: brew install ninja cmake
@@ -197,6 +207,9 @@ jobs:
             third_party/boringssl/libcrypto.a
             third_party/boringssl/x64-libcrypto.a
             third_party/boringssl/arm64-libcrypto.a
+            third_party/boringssl/libssl.a
+            third_party/boringssl/x64-libssl.a
+            third_party/boringssl/arm64-libssl.a
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.arch }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
         run: brew install ninja cmake

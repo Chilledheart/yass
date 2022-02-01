@@ -22,8 +22,9 @@ cd third_party/boringssl
 mkdir build
 cd build
 cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
-ninja crypto
+ninja crypto ssl
 cp -fv crypto/libcrypto.a ../libcrypto.a
+cp -fv ssl/libssl.a ../libssl.a
 cd ..
 cd ../..
 
