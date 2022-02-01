@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os
 import re
 import shutil
@@ -557,7 +557,7 @@ def generate_buildscript(configuration_type):
     cmake_args.extend(['-G', 'Ninja'])
     cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])
 
-  if sys.platform == 'darwin':
+  if platform.system() == 'Darwin':
     cmake_args.append('-DCMAKE_OSX_DEPLOYMENT_TARGET=%s' % DEFAULT_OSX_MIN)
     if DEFAULT_ENABLE_OSX_UNIVERSAL_BUILD:
       cmake_args.append('-DCMAKE_OSX_ARCHITECTURES=%s' % DEFAULT_OSX_UNIVERSAL_ARCHS)
@@ -573,16 +573,16 @@ def execute_buildscript(configuration_type):
   command = ['ninja', 'yass']
   write_output(command, suppress_error=False)
   # FIX ME move to cmake (required by Xcode generator)
-  if sys.platform == 'darwin':
+  if platform.system() == 'Darwin':
     if os.path.exists(os.path.join(configuration_type, get_app_name())):
       os.rename(os.path.join(configuration_type, get_app_name()), get_app_name())
 
 
 def postbuild_copy_libraries():
   print('copying dependent libraries...')
-  if sys.platform == 'win32':
+  if platform.system() == 'Windows':
     _postbuild_copy_libraries_win32()
-  elif sys.platform == 'darwin':
+  elif platform.system() == 'Darwin':
     _postbuild_copy_libraries_xcode()
   else:
     _postbuild_copy_libraries_posix()
@@ -590,26 +590,26 @@ def postbuild_copy_libraries():
 
 def postbuild_fix_rpath():
   print('fixing rpath...')
-  if sys.platform == 'win32':
+  if platform.system() == 'Windows':
     # 'no need to fix rpath'
     pass
-  elif sys.platform in [ 'linux', 'linux2' ]:
+  elif platform.system() == 'Linux':
     _postbuild_patchelf()
-  elif sys.platform == 'darwin':
+  elif platform.system() == 'Darwin':
     _postbuild_install_name_tool()
   else:
-    print('not supported in platform %s' % sys.platform)
+    print('not supported in platform %s' % platform.system())
 
 
 def postbuild_strip_binaries():
   print('strip binaries...')
-  if sys.platform == 'win32':
+  if platform.system() == 'Windows':
     # no need to strip?
     pass
-  elif sys.platform in [ 'linux', 'linux2' ]:
+  elif platform.system() == 'Linux':
     # TODO refer to deb/rpm routine
     pass
-  elif sys.platform == 'darwin':
+  elif platform.system() == 'Darwin':
     write_output(['dsymutil',
                   os.path.join(get_app_name(), 'Contents', 'MacOS', APP_NAME),
                   '--statistics',
@@ -617,7 +617,7 @@ def postbuild_strip_binaries():
                   '-o', get_app_name() + '.dSYM'])
     write_output(['strip', '-S', '-x', '-v', os.path.join(get_app_name(), 'Contents', 'MacOS', APP_NAME)])
   else:
-    print('not supported in platform %s' % sys.platform)
+    print('not supported in platform %s' % platform.system())
 
 
 def postbuild_codesign():
@@ -687,8 +687,7 @@ def _check_universal_build_darwin(path, verbose = False):
 def postbuild_check_universal_build():
     print('check universal build...')
     # check if binary is built universally
-    if sys.platform == 'darwin':
-        _check_universal_build_darwin(get_app_name(), verbose = True)
+    _check_universal_build_darwin(get_app_name(), verbose = True)
 
 
 def archive_files(output, paths = []):
@@ -735,7 +734,7 @@ def postbuild_archive():
     pass
 
   # dependent dlls
-  if sys.platform == 'win32':
+  if platform.system() == 'Windows':
     files = os.listdir('.')
     for file in files:
       if file.endswith('.dll'):
@@ -765,7 +764,7 @@ def postbuild_archive():
   archives = {}
   archives[archive] = paths
 
-  if sys.platform == 'win32':
+  if platform.system() == 'Windows':
     debuginfo_paths = []
 
     if os.path.exists(APP_NAME + '.pdb'):
@@ -773,7 +772,7 @@ def postbuild_archive():
 
     archive_files(new_debuginfo_archive, debuginfo_paths)
     archives[debuginfo_archive] = debuginfo_paths
-  elif sys.platform == 'darwin':
+  elif platform.system() == 'Darwin':
     debuginfo_paths = []
     if os.path.exists(get_app_name() + '.dSYM'):
       debuginfo_paths.append(get_app_name() + '.dSYM')
@@ -793,12 +792,12 @@ if __name__ == '__main__':
     print('done')
     sys.exit(0)
   postbuild_copy_libraries()
-  if sys.platform != 'win32':
+  if platform.system() != 'Windows':
     postbuild_fix_rpath()
   postbuild_strip_binaries()
-  if sys.platform == 'darwin':
+  if platform.system() == 'Darwin':
     postbuild_codesign()
-  if DEFAULT_ENABLE_OSX_UNIVERSAL_BUILD:
+  if DEFAULT_ENABLE_OSX_UNIVERSAL_BUILD and platform.system() == 'Darwin':
     postbuild_check_universal_build()
   archives = postbuild_archive()
   for archive in archives:

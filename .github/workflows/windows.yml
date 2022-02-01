@@ -11,7 +11,7 @@ defaults:
   run:
     shell: cmd
 env:
-  CACHE_EPOCH: 12
+  CACHE_EPOCH: 13
 jobs:
   cache-toolchain-win:
     runs-on: windows-2019
@@ -20,7 +20,6 @@ jobs:
       matrix:
         crt-linkage: [dynamic, static]
     env:
-      CLANG_ARCH: 'Win'
       VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
       # Indicates the location of the vcpkg as a Git submodule of the project repository.
       VCPKG_ROOT: ${{ github.workspace }}\vcpkg
@@ -73,15 +72,10 @@ jobs:
             "C:\Program Files\7-Zip\7z.exe" x nasm-2.15.05-win64.zip
             rename nasm-2.15.05 nasm
           )
-      - name: "Install dependency: clang-tidy"
-        shell: bash
+      - name: "Install dependency: prebuilt clang and clang-tidy binaries"
         run: |
-          if [ ! -d third_party/llvm-build/Release+Asserts ]; then
-            mkdir -p third_party/llvm-build/Release+Asserts
-            CLANG_REVISION=$(< CLANG_REVISION)
-            curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
-            curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
-          fi
+          python -u scripts\download-clang-prebuilt-binaries.py
+          del /s /q third_party\llvm-build\Release+Asserts\*.tgz
       - name: "Install dependency: extracted vcredist runtime (v140)"
         run: |
           if not exist "third_party\vcredist\x86\ucrtbase.dll" (

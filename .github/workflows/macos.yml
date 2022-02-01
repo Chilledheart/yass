@@ -11,7 +11,7 @@ defaults:
   run:
     shell: bash
 env:
-  CACHE_EPOCH: 9
+  CACHE_EPOCH: 10
 jobs:
   cache-toolchain-mac:
     runs-on: macos-latest
@@ -44,20 +44,10 @@ jobs:
             third_party/boringssl/x64-libssl.a
             third_party/boringssl/arm64-libssl.a
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.arch }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
-      - name: "Install dependency: clang and clang-tidy"
+      - name: "Install dependency: prebuilt clang and clang-tidy binaries"
         run: |
-          if [ ! -d third_party/llvm-build/Release+Asserts ]; then
-            mkdir -p third_party/llvm-build/Release+Asserts
-            MACHINE=$(uname -m)
-            if [ "$MACHINE" = "arm64" ]; then
-              CLANG_ARCH=Mac_arm64
-            else
-              CLANG_ARCH=Mac
-            fi
-            CLANG_REVISION=$(< CLANG_REVISION)
-            curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
-            curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
-          fi
+          ./scripts/download-clang-prebuilt-binaries.py
+          rm -f third_party/llvm-build/Release+Asserts/*.tgz
       - name: "Install dependency: boringssl (universal)"
         run: |
           ./scripts/build-boringssl.sh
@@ -101,7 +91,7 @@ jobs:
       - name: Populate depedencies
         run: brew install ninja cmake
       - name: Populate depedencies (PyObjc)
-        run: pip install pyobjc-core pyobjc
+        run: pip3 install pyobjc-core pyobjc
       - name: Build
         run: ./scripts/build.py
       - run: |
@@ -174,7 +164,7 @@ jobs:
       - name: Populate depedencies
         run: brew install ninja cmake
       - name: Populate depedencies (PyObjc)
-        run: pip install pyobjc-core pyobjc
+        run: pip3 install pyobjc-core pyobjc
       - name: Build
         run: |
           export CLANG_TIDY_EXECUTABLE=$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy
