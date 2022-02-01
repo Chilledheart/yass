@@ -40,7 +40,7 @@ call :BuildBoringSSL
 python.exe -u .\scripts\build.py || exit /b
 
 move "yass.zip" "yass-msvc-release-%Platform%-%MSVC_CRT_LINKAGE%.zip"
-move "yass-standalone.zip" "yass-msvc-release-%Platform%-%MSVC_CRT_LINKAGE%-standalone.zip"
+move "yass-debuginfo.zip" "yass-msvc-release-%Platform%-%MSVC_CRT_LINKAGE%-debuginfo.zip"
 
 set "VSCMD_START_DIR=%CD%"
 set CC=
@@ -56,7 +56,7 @@ call :BuildBoringSSL
 python.exe -u .\scripts\build.py || exit /b
 
 move "yass.zip" "yass-msvc-release-%Platform%-%MSVC_CRT_LINKAGE%.zip"
-move "yass-standalone.zip" "yass-msvc-release-%Platform%-%MSVC_CRT_LINKAGE%-standalone.zip"
+move "yass-debuginfo.zip" "yass-msvc-release-%Platform%-%MSVC_CRT_LINKAGE%-debuginfo.zip"
 
 REM Use Visual Studio 2019's toolchain for ARM64 target
 
@@ -76,7 +76,7 @@ call :BuildBoringSSL
 python.exe -u .\scripts\build.py || exit /b
 
 move "yass.zip" "yass-msvc-release-%Platform%-%MSVC_CRT_LINKAGE%.zip"
-move "yass-standalone.zip" "yass-msvc-release-%Platform%-%MSVC_CRT_LINKAGE%-standalone.zip"
+move "yass-debuginfo.zip" "yass-msvc-release-%Platform%-%MSVC_CRT_LINKAGE%-debuginfo.zip"
 
 goto :eof
 
@@ -89,7 +89,7 @@ set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 call "%~dp0build-boringssl.bat"
 
 move "yass.zip" "yass-msvc-release-%Platform%-%MSVC_CRT_LINKAGE%.zip"
-move "yass-standalone.zip" "yass-msvc-release-%Platform%-%MSVC_CRT_LINKAGE%-standalone.zip"
+move "yass-debuginfo.zip" "yass-msvc-release-%Platform%-%MSVC_CRT_LINKAGE%-debuginfo.zip"
 
 set "CC="
 set "CXX="
