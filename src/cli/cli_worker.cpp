@@ -6,23 +6,7 @@
 
 #include "core/compiler_specific.hpp"
 
-using asio::ip::tcp;
 using namespace socks5;
-
-namespace {
-asio::ip::tcp::endpoint resolveEndpoint(asio::io_context* io_context,
-                                        const std::string& host,
-                                        uint16_t port,
-                                        asio::error_code& ec) {
-  asio::ip::tcp::resolver resolver(*io_context);
-  auto endpoints = resolver.resolve(host, std::to_string(port), ec);
-  if (ec) {
-    LOG(WARNING) << "name resolved failed due to: " << ec;
-    return asio::ip::tcp::endpoint();
-  }
-  return endpoints->endpoint();
-}
-}  // namespace
 
 Worker::Worker()
     : work_guard_(asio::make_work_guard(io_context_)),
@@ -35,20 +19,27 @@ Worker::~Worker() {
 }
 
 void Worker::Start(std::function<void(asio::error_code)> callback) {
+  asio::ip::tcp::resolver resolver(io_context_);
   asio::error_code ec;
-  endpoint_ = resolveEndpoint(&io_context_, absl::GetFlag(FLAGS_local_host),
-                              absl::GetFlag(FLAGS_local_port), ec);
-  if (ec) {
-    callback(ec);
-  }
 
-  remote_endpoint_ =
-      resolveEndpoint(&io_context_, absl::GetFlag(FLAGS_server_host),
-                      absl::GetFlag(FLAGS_server_port), ec);
+  auto endpoints = resolver.resolve(absl::GetFlag(FLAGS_local_host),
+      std::to_string(absl::GetFlag(FLAGS_local_port)), ec);
+  if (ec) {
+    LOG(WARNING) << "local resolved failed due to: " << ec;
+    callback(ec);
+    return;
+  }
+  endpoint_ = endpoints->endpoint();
+
+  endpoints = resolver.resolve(absl::GetFlag(FLAGS_server_host),
+      std::to_string(absl::GetFlag(FLAGS_server_port)), ec);
 
   if (ec) {
+    LOG(WARNING) << "remote resolved failed due to: " << ec;
     callback(ec);
+    return;
   }
+  remote_endpoint_ = endpoints->endpoint();
 
   /// listen in the worker thread
   io_context_.post([this, callback]() {

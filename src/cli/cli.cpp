@@ -17,21 +17,6 @@
 
 using namespace socks5;
 
-namespace {
-asio::ip::tcp::endpoint resolveEndpoint(asio::io_context* io_context,
-                                        const std::string& host,
-                                        uint16_t port) {
-  asio::error_code ec = asio::error_code();
-  asio::ip::tcp::resolver resolver(*io_context);
-  auto endpoints = resolver.resolve(host, std::to_string(port), ec);
-  if (ec) {
-    LOG(WARNING) << "name resolved failed due to: " << ec;
-    return asio::ip::tcp::endpoint();
-  }
-  return endpoints->endpoint();
-}
-}  // namespace
-
 int main(int argc, const char* argv[]) {
   // Major routine
   // - Read config from ss config file
@@ -58,17 +43,28 @@ int main(int argc, const char* argv[]) {
   asio::executor_work_guard<asio::io_context::executor_type> work_guard(
       asio::make_work_guard(io_context));
 
-  asio::ip::tcp::endpoint endpoint(
-      resolveEndpoint(&io_context, absl::GetFlag(FLAGS_local_host),
-                      absl::GetFlag(FLAGS_local_port)));
-  asio::ip::tcp::endpoint remoteEndpoint(
-      resolveEndpoint(&io_context, absl::GetFlag(FLAGS_server_host),
-                      absl::GetFlag(FLAGS_server_port)));
-
-  LOG(WARNING) << "using " << endpoint << " with upstream " << remoteEndpoint;
-
-  Socks5Factory factory(remoteEndpoint);
+  asio::ip::tcp::resolver resolver(io_context);
   asio::error_code ec;
+
+  auto endpoints = resolver.resolve(absl::GetFlag(FLAGS_local_host),
+      std::to_string(absl::GetFlag(FLAGS_local_port)), ec);
+  if (ec) {
+    LOG(WARNING) << "local resolved failed due to: " << ec;
+    return -1;
+  }
+  asio::ip::tcp::endpoint endpoint = endpoints->endpoint();
+
+  endpoints = resolver.resolve(absl::GetFlag(FLAGS_server_host),
+      std::to_string(absl::GetFlag(FLAGS_server_port)), ec);
+  if (ec) {
+    LOG(WARNING) << "remote resolved failed due to: " << ec;
+    return -1;
+  }
+  asio::ip::tcp::endpoint remote_endpoint = endpoints->endpoint();
+
+  LOG(WARNING) << "using " << endpoint << " with upstream " << remote_endpoint;
+
+  Socks5Factory factory(remote_endpoint);
   factory.listen(endpoint, SOMAXCONN, ec);
   if (ec) {
     LOG(ERROR) << "listen failed due to: " << ec;
