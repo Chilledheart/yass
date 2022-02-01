@@ -21,10 +21,13 @@ third_party/boringssl/libssl.a:
 	./scripts/build-boringssl.sh
 
 override_dh_auto_configure: third_party/boringssl/libssl.a
-	dh_auto_configure -- -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc" -DGUI=on -DCLI=off -DSERVER=off
+	dh_auto_configure ${DEB_BUILD_SYSTEM_OPTIONS} -- -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc" -DGUI=on -DCLI=off -DSERVER=off
 
 override_dh_auto_build:
 	dh_auto_build -- -j $(NCPUS)
+
+override_dh_auto_test:
+	echo 'no test'
 
 override_dh_strip:
 	dh_strip -pyass --dbg-package=yass-dbg
