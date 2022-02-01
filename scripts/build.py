@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os
 import re
 import shutil
@@ -248,7 +248,7 @@ def _get_win32_search_paths():
   ### $project_root\third_party\vcredist\x86
   if vctools_version >= 14.00 and vctools_version < 14.10:
     search_dirs.extend([
-      os.path.join('..', 'third_party', 'vcredist', DEFAULT_ARCH)
+      os.path.abspath(os.path.join('..', 'third_party', 'vcredist', DEFAULT_ARCH))
     ])
   return search_dirs
 
@@ -380,24 +380,14 @@ def get_dependencies_recursively(path):
     raise IOError('not supported in platform %s' % sys.platform)
 
 
-def check_universal_build_bundle_darwin(bundle_path):
-  # export from NSBundle.h
-  NSBundleExecutableArchitectureX86_64    = 0x01000007
-  NSBundleExecutableArchitectureARM64     = 0x0100000c
-  from Foundation import NSBundle
-
-  bundle = NSBundle.bundleWithPath_(bundle_path)
-  if not bundle:
-    return False
-
-  arches = bundle.executableArchitectures()
-  if NSBundleExecutableArchitectureX86_64 in arches and NSBundleExecutableArchitectureARM64 in arches:
-    return True
-
-  return False
+def check_universal_fat_bundle_darwin(bundle_path):
+  main_file = os.path.join(bundle_path, 'Contents', 'MacOS',
+                           os.path.splitext(os.path.basename(bundle_path))[0])
+  # TODO should we check recursilvely?
+  return check_universal_fat_file_darwin(main_file)
 
 
-def check_universal_build_dylib_darwin(lib_path):
+def check_universal_fat_file_darwin(lib_path):
   arches = check_string_output(['lipo', '-archs', lib_path])
   if 'x86_64' in arches and 'arm64' in arches:
     return True
@@ -557,7 +547,7 @@ def generate_buildscript(configuration_type):
     cmake_args.extend(['-G', 'Ninja'])
     cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])
 
-  if sys.platform == 'darwin':
+  if platform.system() == 'Darwin':
     cmake_args.append('-DCMAKE_OSX_DEPLOYMENT_TARGET=%s' % DEFAULT_OSX_MIN)
     if DEFAULT_ENABLE_OSX_UNIVERSAL_BUILD:
       cmake_args.append('-DCMAKE_OSX_ARCHITECTURES=%s' % DEFAULT_OSX_UNIVERSAL_ARCHS)
@@ -573,16 +563,16 @@ def execute_buildscript(configuration_type):
   command = ['ninja', 'yass']
   write_output(command, suppress_error=False)
   # FIX ME move to cmake (required by Xcode generator)
-  if sys.platform == 'darwin':
+  if platform.system() == 'Darwin':
     if os.path.exists(os.path.join(configuration_type, get_app_name())):
       os.rename(os.path.join(configuration_type, get_app_name()), get_app_name())
 
 
 def postbuild_copy_libraries():
   print('copying dependent libraries...')
-  if sys.platform == 'win32':
+  if platform.system() == 'Windows':
     _postbuild_copy_libraries_win32()
-  elif sys.platform == 'darwin':
+  elif platform.system() == 'Darwin':
     _postbuild_copy_libraries_xcode()
   else:
     _postbuild_copy_libraries_posix()
@@ -590,26 +580,26 @@ def postbuild_copy_libraries():
 
 def postbuild_fix_rpath():
   print('fixing rpath...')
-  if sys.platform == 'win32':
+  if platform.system() == 'Windows':
     # 'no need to fix rpath'
     pass
-  elif sys.platform in [ 'linux', 'linux2' ]:
+  elif platform.system() == 'Linux':
     _postbuild_patchelf()
-  elif sys.platform == 'darwin':
+  elif platform.system() == 'Darwin':
     _postbuild_install_name_tool()
   else:
-    print('not supported in platform %s' % sys.platform)
+    print('not supported in platform %s' % platform.system())
 
 
 def postbuild_strip_binaries():
   print('strip binaries...')
-  if sys.platform == 'win32':
+  if platform.system() == 'Windows':
     # no need to strip?
     pass
-  elif sys.platform in [ 'linux', 'linux2' ]:
+  elif platform.system() == 'Linux':
     # TODO refer to deb/rpm routine
     pass
-  elif sys.platform == 'darwin':
+  elif platform.system() == 'Darwin':
     write_output(['dsymutil',
                   os.path.join(get_app_name(), 'Contents', 'MacOS', APP_NAME),
                   '--statistics',
@@ -617,7 +607,7 @@ def postbuild_strip_binaries():
                   '-o', get_app_name() + '.dSYM'])
     write_output(['strip', '-S', '-x', '-v', os.path.join(get_app_name(), 'Contents', 'MacOS', APP_NAME)])
   else:
-    print('not supported in platform %s' % sys.platform)
+    print('not supported in platform %s' % platform.system())
 
 
 def postbuild_codesign():
@@ -640,7 +630,7 @@ def _check_universal_build_darwin(path, verbose = False):
   error_msg = ''
 
   if path.endswith('.framework') or path.endswith('.app') or path.endswith('.appex'):
-    if not check_universal_build_bundle_darwin(path):
+    if not check_universal_fat_bundle_darwin(path):
       status_msg += 'bundle "%s" is not universal built\n' % path
       error_msg += 'bundle "%s" is not universal built\n' % path
       checked = False
@@ -651,7 +641,7 @@ def _check_universal_build_darwin(path, verbose = False):
       for d in dirs:
         full_path = os.path.join(root, d)
         if full_path.endswith('.framework') or full_path.endswith('.app') or full_path.endswith('.appex'):
-          if not check_universal_build_bundle_darwin(full_path):
+          if not check_universal_fat_bundle_darwin(full_path):
             error_msg += 'bundle "%s" is not universal built\n' % full_path
             status_msg += 'bundle "%s" is not universal built\n' % full_path
             checked = False
@@ -661,7 +651,7 @@ def _check_universal_build_darwin(path, verbose = False):
       for f in files:
         full_path = os.path.join(root, f)
         if full_path.endswith('.dylib') or full_path.endswith('.so'):
-          if not check_universal_build_dylib_darwin(full_path):
+          if not check_universal_fat_file_darwin(full_path):
             error_msg += 'dylib "%s" is not universal built\n' % full_path
             status_msg += 'dylib "%s" is not universal built\n' % full_path
             checked = False
@@ -669,7 +659,7 @@ def _check_universal_build_darwin(path, verbose = False):
             status_msg += 'dylib "%s" is universal built\n' % full_path
 
   if path.endswith('.dylib') or path.endswith('.so'):
-    if not check_universal_build_dylib_darwin(path):
+    if not check_universal_fat_file_darwin(path):
       error_msg += 'dylib "%s" is not universal built\n' % path
       status_msg += 'dylib "%s" is not universal built\n' % path
       checked = False
@@ -687,8 +677,7 @@ def _check_universal_build_darwin(path, verbose = False):
 def postbuild_check_universal_build():
     print('check universal build...')
     # check if binary is built universally
-    if sys.platform == 'darwin':
-        _check_universal_build_darwin(get_app_name(), verbose = True)
+    _check_universal_build_darwin(get_app_name(), verbose = True)
 
 
 def archive_files(output, paths = []):
@@ -735,7 +724,7 @@ def postbuild_archive():
     pass
 
   # dependent dlls
-  if sys.platform == 'win32':
+  if platform.system() == 'Windows':
     files = os.listdir('.')
     for file in files:
       if file.endswith('.dll'):
@@ -765,7 +754,7 @@ def postbuild_archive():
   archives = {}
   archives[archive] = paths
 
-  if sys.platform == 'win32':
+  if platform.system() == 'Windows':
     debuginfo_paths = []
 
     if os.path.exists(APP_NAME + '.pdb'):
@@ -773,7 +762,7 @@ def postbuild_archive():
 
     archive_files(new_debuginfo_archive, debuginfo_paths)
     archives[debuginfo_archive] = debuginfo_paths
-  elif sys.platform == 'darwin':
+  elif platform.system() == 'Darwin':
     debuginfo_paths = []
     if os.path.exists(get_app_name() + '.dSYM'):
       debuginfo_paths.append(get_app_name() + '.dSYM')
@@ -793,12 +782,12 @@ if __name__ == '__main__':
     print('done')
     sys.exit(0)
   postbuild_copy_libraries()
-  if sys.platform != 'win32':
+  if platform.system() != 'Windows':
     postbuild_fix_rpath()
   postbuild_strip_binaries()
-  if sys.platform == 'darwin':
+  if platform.system() == 'Darwin':
     postbuild_codesign()
-  if DEFAULT_ENABLE_OSX_UNIVERSAL_BUILD:
+  if DEFAULT_ENABLE_OSX_UNIVERSAL_BUILD and platform.system() == 'Darwin':
     postbuild_check_universal_build()
   archives = postbuild_archive()
   for archive in archives:

@@ -11,14 +11,12 @@ defaults:
   run:
     shell: bash
 env:
-  CACHE_EPOCH: 9
+  CACHE_EPOCH: 10
 jobs:
   cache-toolchain-mac:
     runs-on: macos-latest
     strategy:
       fail-fast: false
-      matrix:
-        arch: [universal]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -32,8 +30,7 @@ jobs:
             third_party/llvm-build/Release+Asserts
           key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get boringssl commit
-        run: |
-          git submodule status third_party/boringssl >> boringssl.lock
+        run: git submodule status --cached third_party/boringssl >> boringssl.lock
       - name: Cache boringssl packages
         uses: actions/cache@v2
         with:
@@ -44,21 +41,11 @@ jobs:
             third_party/boringssl/libssl.a
             third_party/boringssl/x64-libssl.a
             third_party/boringssl/arm64-libssl.a
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.arch }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
-      - name: "Install dependency: clang and clang-tidy"
+          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
+      - name: "Install dependency: prebuilt clang and clang-tidy binaries"
         run: |
-          if [ ! -d third_party/llvm-build/Release+Asserts ]; then
-            mkdir -p third_party/llvm-build/Release+Asserts
-            MACHINE=$(uname -m)
-            if [ "$MACHINE" = "arm64" ]; then
-              CLANG_ARCH=Mac_arm64
-            else
-              CLANG_ARCH=Mac
-            fi
-            CLANG_REVISION=$(< CLANG_REVISION)
-            curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
-            curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
-          fi
+          ./scripts/download-clang-prebuilt-binaries.py
+          rm -f third_party/llvm-build/Release+Asserts/*.tgz
       - name: "Install dependency: boringssl (universal)"
         run: |
           ./scripts/build-boringssl.sh
@@ -69,11 +56,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [universal]
         build_type: [Debug, RelWithDebInfo]
     env:
-      BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}'
-      DBG_BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}-debuginfo'
+      BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}'
+      DBG_BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}-debuginfo'
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
       - uses: actions/checkout@v2
@@ -87,8 +73,7 @@ jobs:
             third_party/llvm-build/Release+Asserts
           key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get boringssl commit
-        run: |
-          git submodule status third_party/boringssl >> boringssl.lock
+        run: git submodule status --cached third_party/boringssl >> boringssl.lock
       - name: Cache boringssl packages
         uses: actions/cache@v2
         with:
@@ -99,11 +84,9 @@ jobs:
             third_party/boringssl/libssl.a
             third_party/boringssl/x64-libssl.a
             third_party/boringssl/arm64-libssl.a
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.arch }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
         run: brew install ninja cmake
-      - name: Populate depedencies (PyObjc)
-        run: pip install pyobjc-core pyobjc
       - name: Build
         run: ./scripts/build.py
       - run: |
@@ -122,7 +105,7 @@ jobs:
       - run: echo "SHA256SUM=$(cut -d' ' -f2 sha256sum.txt)" >>$GITHUB_ENV
       - uses: actions/upload-artifact@v2
         with:
-          name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}-sha256 ${{ env.SHA256SUM }}
+          name: ${{ github.job }}-${{ matrix.build_type }}-sha256 ${{ env.SHA256SUM }}
           path: sha256sum.txt
       - uses: actions/upload-release-asset@v1
         if: ${{ github.event_name == 'release' }}
@@ -137,7 +120,7 @@ jobs:
       - run: echo "SHA256SUM_DEBUGINFO=$(cut -d' ' -f2 sha256sum-debuginfo.txt)" >>$GITHUB_ENV
       - uses: actions/upload-artifact@v2
         with:
-          name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}-sha256-debuginfo ${{ env.SHA256SUM_DEBUGINFO }}
+          name: ${{ github.job }}-${{ matrix.build_type }}-sha256-debuginfo ${{ env.SHA256SUM_DEBUGINFO }}
           path: sha256sum-debuginfo.txt
   mac-clang-tidy:
     needs: cache-toolchain-mac
@@ -148,7 +131,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [universal]
         build_type: [Release]
     steps:
       - uses: actions/checkout@v2
@@ -161,8 +143,7 @@ jobs:
             third_party/llvm-build/Release+Asserts
           key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get boringssl commit
-        run: |
-          git submodule status third_party/boringssl >> boringssl.lock
+        run: git submodule status --cached third_party/boringssl >> boringssl.lock
       - name: Cache boringssl packages
         uses: actions/cache@v2
         with:
@@ -173,11 +154,9 @@ jobs:
             third_party/boringssl/libssl.a
             third_party/boringssl/x64-libssl.a
             third_party/boringssl/arm64-libssl.a
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.arch }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
         run: brew install ninja cmake
-      - name: Populate depedencies (PyObjc)
-        run: pip install pyobjc-core pyobjc
       - name: Build
         run: |
           export CLANG_TIDY_EXECUTABLE=$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy
