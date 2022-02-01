@@ -9,6 +9,7 @@
 #include <absl/debugging/symbolize.h>
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
+#include <locale.h>
 
 #include "core/asio.hpp"
 #include "core/logging.hpp"
@@ -21,22 +22,10 @@
 
 using namespace ss;
 
-namespace {
-asio::ip::tcp::endpoint resolveEndpoint(asio::io_context* io_context,
-                                        const std::string& host,
-                                        uint16_t port) {
-  asio::error_code ec = asio::error_code();
-  asio::ip::tcp::resolver resolver(*io_context);
-  auto endpoints = resolver.resolve(host, std::to_string(port), ec);
-  if (ec) {
-    LOG(WARNING) << "name resolved failed due to: " << ec;
-    return asio::ip::tcp::endpoint();
-  }
-  return endpoints->endpoint();
-}
-}  // namespace
-
 int main(int argc, const char* argv[]) {
+  // For minimal locale
+  // the C locale will be UTF-8 enabled English;
+  setlocale(LC_ALL, "C");
   // Major routine
   // - Read config from ss config file
   // - Listen by local address and local port
@@ -62,18 +51,23 @@ int main(int argc, const char* argv[]) {
   asio::executor_work_guard<asio::io_context::executor_type> work_guard(
       asio::make_work_guard(io_context));
 
-  asio::ip::tcp::endpoint endpoint(
-      resolveEndpoint(&io_context, absl::GetFlag(FLAGS_server_host),
-                      absl::GetFlag(FLAGS_server_port)));
+  asio::ip::tcp::resolver resolver(io_context);
+  asio::error_code ec;
+
+  auto endpoints = resolver.resolve(absl::GetFlag(FLAGS_server_host),
+      std::to_string(absl::GetFlag(FLAGS_server_port)), ec);
+  if (ec) {
+    LOG(WARNING) << "local resolved failed due to: " << ec;
+    return -1;
+  }
+  asio::ip::tcp::endpoint endpoint = endpoints->endpoint();
+
   // not used
-  asio::ip::tcp::endpoint remoteEndpoint(
-      resolveEndpoint(&io_context, absl::GetFlag(FLAGS_local_host),
-                      absl::GetFlag(FLAGS_local_port)));
+  asio::ip::tcp::endpoint remote_endpoint = endpoints->endpoint();
 
   LOG(WARNING) << "tcp server listening at " << endpoint;
 
-  SsFactory factory(remoteEndpoint);
-  asio::error_code ec;
+  SsFactory factory(remote_endpoint);
   factory.listen(endpoint, SSMAXCONN, ec);
   if (ec) {
     LOG(ERROR) << "listen failed due to: " << ec;

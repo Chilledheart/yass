@@ -9,6 +9,7 @@
 #include <absl/debugging/symbolize.h>
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
+#include <locale.h>
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
@@ -47,6 +48,13 @@ BOOL CYassApp::InitInstance() {
     return FALSE;
 
   // TODO move to utils
+  // Starting in Windows 10 version 1803 (10.0.17134.0), the Universal C Runtime
+  // supports using a UTF-8 code page.
+  // https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/setlocale-wsetlocale?view=msvc-170
+  // For minimal locale
+  // the C locale will be UTF-8 enabled English;
+  setlocale(LC_ALL, "C");
+
   std::wstring appPath(MAX_PATH + 1, L'\0');
   ::GetModuleFileNameW(nullptr, &appPath[0], MAX_PATH);
   absl::InitializeSymbolizer(SysWideToUTF8(appPath).c_str());
