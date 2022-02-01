@@ -311,7 +311,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [x64, x86]
+        arch: [x86]
         crt-linkage: [dynamic, static]
         build_type: [Debug, RelWithDebInfo]
     env:
