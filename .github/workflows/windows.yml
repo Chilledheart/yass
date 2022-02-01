@@ -549,6 +549,82 @@ jobs:
 
           :SetNewVCToolsVersion
           set VCToolsVersion=
+  win-msvc-compatible-2022:
+    needs: cache-toolchain-win
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64]
+        crt-linkage: [dynamic, static]
+        build_type: [Debug, RelWithDebInfo]
+    env:
+      BUILD_TYPE: '${{ matrix.build_type }}'
+      MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
+      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
+      # Indicates the location of the vcpkg as a Git submodule of the project repository.
+      VCPKG_ROOT: ${{ github.workspace }}\vcpkg
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'true'
+      - name: Cache clang, nasm and extracted vcredist files
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/nasm
+            third_party/llvm-build/Release+Asserts
+            third_party/vcredist
+          key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ matrix.crt-linkage }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+      - name: Get vcpkg commit
+        shell: bash
+        run: |
+          IFS=" " read -r -a array <<< $VCPKG_DEPS
+          for VCPKG_DEP in ${VCPKG_DEPS[@]}; do
+            echo "$(openssl sha256 /c/vcpkg/ports/$VCPKG_DEP/vcpkg.json) $VCPKG_DEP" >> vcpkg.lock
+          done
+      - name: Cache vcpkg packages
+        uses: actions/cache@v2
+        with:
+          path: |
+            ${{ env.VCPKG_ROOT }}
+            !${{ env.VCPKG_ROOT }}/buildtrees
+            !${{ env.VCPKG_ROOT }}/packages
+            !${{ env.VCPKG_ROOT }}/downloads
+          key: toolchain-cache-${{ runner.os }}-vcpkg-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
+      - name: Get boringssl commit
+        run: git submodule status --cached third_party/boringssl >> boringssl.lock
+      - name: Cache boringssl packages
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/boringssl/**/crypto.lib
+            third_party/boringssl/**/crypto.pdb
+            third_party/boringssl/**/vc140.pdb
+            third_party/boringssl/**/ssl.lib
+            third_party/boringssl/**/ssl.pdb
+          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
+      - name: Build Vistual Studio 2022 (v143)
+        run: |
+          set VCToolsVersion=
+          set Winsdk=10.0.19041.0
+          set "WindowsSDKVersion=%Winsdk%\"
+          if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
+          set vsdevcmd=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat
+          set "VSCMD_START_DIR=%CD%"
+          set CC=
+          set CXX=
+          set Platform=${{ matrix.arch }}
+          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
+
+          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
+
+          python -u .\scripts\build.py || exit /b
+
+          exit /b 0
+
+          :SetNewVCToolsVersion
+          set VCToolsVersion=
   win-clang-cl:
     needs: cache-toolchain-win
     runs-on: windows-2019
