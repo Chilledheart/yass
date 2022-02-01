@@ -562,7 +562,7 @@ unsigned int Utils::GetDpiForWindowOrSystem(HWND hWnd) {
   UINT xdpi, ydpi;
   HMONITOR hMonitor = ::MonitorFromWindow(hWnd, MONITOR_DEFAULTTONULL);
   if (hMonitor &&
-      SUCCEEDED(GetDpiForMonitor(hMonitor, MDT_EFFECTIVE_DPI, &xdpi, &ydpi))) {
+      GetDpiForMonitor(hMonitor, MDT_EFFECTIVE_DPI, &xdpi, &ydpi) == S_OK) {
     VLOG(2) << "DPI: Use Dpi in Monitor";
     return static_cast<unsigned int>(ydpi);
   }
@@ -640,10 +640,10 @@ int get_yass_auto_start() {
   RegCloseKey(hKey);
   if (result != ERROR_SUCCESS) {
     /* yass applet auto start no set  */
-    return -1;
+    return 0;
   }
 
-  return 0;
+  return 1;
 }
 
 int set_yass_auto_start(bool on) {
@@ -667,7 +667,8 @@ int set_yass_auto_start(bool on) {
 }  // namespace
 
 bool Utils::GetAutoStart() {
-  return get_yass_auto_start() == 0;
+  int ret = get_yass_auto_start();
+  return ret == 1;
 }
 
 void Utils::EnableAutoStart(bool on) {

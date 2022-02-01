@@ -9,7 +9,6 @@
 #include <absl/debugging/symbolize.h>
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
-#include <locale.h>
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
@@ -68,10 +67,6 @@ static void SetUpGLibLogHandler() {
 }
 
 int main(int argc, char** argv) {
-  // For minimal locale
-  // the C locale will be UTF-8 enabled English;
-  setlocale(LC_ALL, "C");
-
   absl::InitializeSymbolizer(argv[0]);
   absl::FailureSignalHandlerOptions failure_handle_options;
   absl::InstallFailureSignalHandler(failure_handle_options);

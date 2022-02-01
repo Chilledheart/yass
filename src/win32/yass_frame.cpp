@@ -170,6 +170,7 @@ CString CYassFrame::GetStatusMessage() {
 }
 
 void CYassFrame::OnStarted() {
+  LoadConfig();
   serverhost_edit_.EnableWindow(false);
   serverport_edit_.EnableWindow(false);
   password_edit_.EnableWindow(false);
@@ -182,6 +183,7 @@ void CYassFrame::OnStarted() {
 }
 
 void CYassFrame::OnStartFailed() {
+  LoadConfig();
   serverhost_edit_.EnableWindow(true);
   serverport_edit_.EnableWindow(true);
   password_edit_.EnableWindow(true);
@@ -196,6 +198,7 @@ void CYassFrame::OnStartFailed() {
 }
 
 void CYassFrame::OnStopped() {
+  LoadConfig();
   serverhost_edit_.EnableWindow(true);
   serverport_edit_.EnableWindow(true);
   password_edit_.EnableWindow(true);

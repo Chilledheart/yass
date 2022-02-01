@@ -25,7 +25,7 @@ mkdir "%OUTPUT_DIR%"
 mkdir "%OUTPUT_DIR%\debug"
 
 rem check the existing debug lib
-if not exist "%OUTPUT_DIR%\debug\ssl.lib" (
+if not exist "%OUTPUT_DIR%\debug\crypto.lib" (
   rmdir build /s /q
   mkdir build
   cd build
@@ -34,17 +34,15 @@ if not exist "%OUTPUT_DIR%\debug\ssl.lib" (
   cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MSVC_CRT_LINKAGE=%MSVC_CRT_LINKAGE% -DCMAKE_C_COMPILER_TARGET=%COMPILER_TARGET% -DCMAKE_CXX_COMPILER_TARGET=%COMPILER_TARGET% "-DCMAKE_ASM_FLAGS=--target=%COMPILER_TARGET%" %CMAKE_EXTRA_OPTIONS% .. || exit /b 1
   set CC=
   set CXX=
-  ninja crypto ssl || exit /b 1
+  ninja crypto || exit /b 1
   copy /y crypto\crypto.lib "..\%OUTPUT_DIR%\debug\crypto.lib"
   copy /y crypto\crypto.pdb "..\%OUTPUT_DIR%\debug\crypto.pdb"
   copy /y crypto\fipsmodule\CMakeFiles\fipsmodule.dir\vc140.pdb "..\%OUTPUT_DIR%\debug\vc140.pdb"
-  copy /y ssl\ssl.lib "..\%OUTPUT_DIR%\debug\ssl.lib"
-  copy /y ssl\ssl.pdb "..\%OUTPUT_DIR%\debug\ssl.pdb"
   cd ..
 )
 
 rem check the existing release lib
-if not exist "%OUTPUT_DIR%\ssl.lib" (
+if not exist "%OUTPUT_DIR%\crypto.lib" (
   rmdir build /s /q
   mkdir build
   cd build
@@ -53,12 +51,10 @@ if not exist "%OUTPUT_DIR%\ssl.lib" (
   cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DCMAKE_MSVC_CRT_LINKAGE=%MSVC_CRT_LINKAGE% -DCMAKE_C_COMPILER_TARGET=%COMPILER_TARGET% -DCMAKE_CXX_COMPILER_TARGET=%COMPILER_TARGET% "-DCMAKE_ASM_FLAGS=--target=%COMPILER_TARGET%" %CMAKE_EXTRA_OPTIONS% .. || exit /b 1
   set CC=
   set CXX=
-  ninja crypto ssl || exit /b 1
+  ninja crypto || exit /b 1
   copy /y crypto\crypto.lib "..\%OUTPUT_DIR%\crypto.lib"
   copy /y crypto\crypto.pdb "..\%OUTPUT_DIR%\crypto.pdb"
   copy /y crypto\fipsmodule\CMakeFiles\fipsmodule.dir\vc140.pdb "..\%OUTPUT_DIR%\vc140.pdb"
-  copy /y ssl\ssl.lib "..\%OUTPUT_DIR%\ssl.lib"
-  copy /y ssl\ssl.pdb "..\%OUTPUT_DIR%\ssl.pdb"
   cd ..
 )
 
