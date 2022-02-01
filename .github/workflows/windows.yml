@@ -425,14 +425,14 @@ jobs:
         with:
           name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-sha256-debuginfo ${{ env.SHA256SUM_DEBUGINFO }}
           path: sha256sum-debuginfo.txt
-  win-msvc-compatible:
+  win-msvc-compatible-2019:
     needs: cache-toolchain-win
     runs-on: windows-2019
     strategy:
       fail-fast: false
       matrix:
         arch: [x64]
-        crt-linkage: [dynamic, static]
+        crt-linkage: [dynamic]
         build_type: [Debug, RelWithDebInfo]
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
@@ -550,7 +550,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x64]
-        crt-linkage: [dynamic, static]
+        crt-linkage: [dynamic]
         build_type: [Debug, RelWithDebInfo]
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
