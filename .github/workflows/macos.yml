@@ -17,8 +17,6 @@ jobs:
     runs-on: macos-latest
     strategy:
       fail-fast: false
-      matrix:
-        arch: [universal]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -43,7 +41,7 @@ jobs:
             third_party/boringssl/libssl.a
             third_party/boringssl/x64-libssl.a
             third_party/boringssl/arm64-libssl.a
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.arch }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
@@ -58,11 +56,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [universal]
         build_type: [Debug, RelWithDebInfo]
     env:
-      BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}'
-      DBG_BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}-debuginfo'
+      BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}'
+      DBG_BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}-debuginfo'
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
       - uses: actions/checkout@v2
@@ -87,7 +84,7 @@ jobs:
             third_party/boringssl/libssl.a
             third_party/boringssl/x64-libssl.a
             third_party/boringssl/arm64-libssl.a
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.arch }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
         run: brew install ninja cmake
       - name: Populate depedencies (PyObjc)
@@ -110,7 +107,7 @@ jobs:
       - run: echo "SHA256SUM=$(cut -d' ' -f2 sha256sum.txt)" >>$GITHUB_ENV
       - uses: actions/upload-artifact@v2
         with:
-          name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}-sha256 ${{ env.SHA256SUM }}
+          name: ${{ github.job }}-${{ matrix.build_type }}-sha256 ${{ env.SHA256SUM }}
           path: sha256sum.txt
       - uses: actions/upload-release-asset@v1
         if: ${{ github.event_name == 'release' }}
@@ -125,7 +122,7 @@ jobs:
       - run: echo "SHA256SUM_DEBUGINFO=$(cut -d' ' -f2 sha256sum-debuginfo.txt)" >>$GITHUB_ENV
       - uses: actions/upload-artifact@v2
         with:
-          name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}-sha256-debuginfo ${{ env.SHA256SUM_DEBUGINFO }}
+          name: ${{ github.job }}-${{ matrix.build_type }}-sha256-debuginfo ${{ env.SHA256SUM_DEBUGINFO }}
           path: sha256sum-debuginfo.txt
   mac-clang-tidy:
     needs: cache-toolchain-mac
@@ -136,7 +133,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [universal]
         build_type: [Release]
     steps:
       - uses: actions/checkout@v2
@@ -160,7 +156,7 @@ jobs:
             third_party/boringssl/libssl.a
             third_party/boringssl/x64-libssl.a
             third_party/boringssl/arm64-libssl.a
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.arch }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
         run: brew install ninja cmake
       - name: Populate depedencies (PyObjc)
