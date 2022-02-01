@@ -101,7 +101,7 @@ scripts/build.py
 
 ## boringssl
 
-For boringssl, you should only need crypto target.
+For boringssl, you should only need ssl and crypto targets.
 
 Requirement of building boringssl:
 
@@ -144,12 +144,14 @@ mkdir debug
 cd build
 
 cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Debug ..
-ninja crypto
+ninja crypto ssl
 copy /y crypto\crypto.lib ..\debug\crypto.lib
+copy /y ssl\ssl.lib ..\debug\ssl.lib
 
 cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
 ninja crypto
 copy /y crypto\crypto.lib ..\crypto.lib
+copy /y ssl\ssl.lib ..\ssl.lib
 cd ..
 rmdir build /s /q
 ```
@@ -161,8 +163,9 @@ cd third_party/boringssl
 mkdir build
 cd build
 cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
-ninja crypto
+ninja crypto ssl
 cp -fv crypto/libcrypto.a ../libcrypto.a
+cp -fv ssl/libssl.a ../libssl.a
 cd ..
 ```
 
@@ -170,7 +173,7 @@ cd ..
 ```
 set(CMAKE_ASM_FLAGS "-mmacosx-version-min=10.10 ${CMAKE_ASM_FLAGS}")
 ```
-Run these commands to build crypto target.
+Run these commands to build ssl and crypto targets.
 (first x86_64 slice)
 ```
 cd third_party/boringssl
@@ -179,8 +182,9 @@ cd build
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
   -DCMAKE_OSX_ARCHITECTURES="x86_64" ..
-ninja crypto
+ninja crypto ssl
 cp -fv crypto/libcrypto.a ../x64-libcrypto.a
+cp -fv ssl/libssl.a ../x64-libssl.a
 cd ..
 ```
 (and then arm64 slice)
@@ -191,17 +195,20 @@ cd build
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
   -DCMAKE_OSX_ARCHITECTURES="arm64" ..
-ninja crypto
+ninja crypto ssl
 cp -fv crypto/libcrypto.a ../arm64-libcrypto.a
+cp -fv ssl/libssl.a ../arm64-libssl.a
 cd ..
 ```
 (create fat binary)
 ```
 cd third_party/boringssl
 lipo -create arm64-libcrypto.a x64-libcrypto.a -output libcrypto.a
+lipo -create arm64-libssl.a x64-libssl.a -output libssl.a
 lipo -info libcrypto.a
+lipo -info libssl.a
 ```
-Built universal target at ``libcrypto.a``
+Built universal target at ``libcrypto.a`` and ``libssl.a``
 
 ## Updating boringssl
 

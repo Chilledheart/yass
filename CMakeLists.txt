@@ -150,6 +150,13 @@ if (MSVC)
   endif()
 endif()
 
+if (MSVC)
+  message(STATUS "Build with MSVC target architecture: ${MSVC_PROCESSOR_ARCHITECTURE}")
+  message(STATUS "Build with MSVC ${CMAKE_MSVC_CRT_LINKAGE} CRT library")
+else()
+  message(STATUS "Build with target architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+endif()
+
 ## Export build compilation database if possible
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
@@ -311,14 +318,34 @@ if (MSVC)
       optimized ${BORINGSSL_CRYPTO_RELEASE_LIB}
       )
 
+    find_library(BORINGSSL_SSL_RELEASE_LIB ssl
+      PATHS ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}-${CMAKE_MSVC_CRT_LINKAGE}${BORINGSSL_LIB_SUFFIX}
+            ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}
+            ${boringssl_DIR}/
+            ${boringssl_DIR}/build/ssl/Release
+            ${boringssl_DIR}/build/Release/ssl
+      REQUIRED
+      NO_DEFAULT_PATH)
+    find_library(BORINGSSL_SSL_DEBUG_LIB ssl
+      PATHS ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}-${CMAKE_MSVC_CRT_LINKAGE}${BORINGSSL_LIB_SUFFIX}/debug
+            ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}/debug
+            ${boringssl_DIR}/debug
+            ${boringssl_DIR}/build/ssl/Debug
+            ${boringssl_DIR}/build/Debug/ssl
+      REQUIRED
+      NO_DEFAULT_PATH)
+    set(BORINGSSL_SSL_LIB
+      debug ${BORINGSSL_SSL_DEBUG_LIB}
+      optimized ${BORINGSSL_SSL_RELEASE_LIB}
+      )
+
     set(CMAKE_REQUIRED_INCLUDES
       ${boringssl_DIR}/include
       ${CMAKE_REQUIRED_INCLUDES})
     check_include_file(openssl/is_boringssl.h BORINGSSL_CRYPTO_INCLUDE)
     add_definitions(-DHAVE_BORINGSSL)
     include_directories(BEFORE ${boringssl_DIR}/include SYSTEM)
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${BORINGSSL_CRYPTO_LIB})
-    message(STATUS "Build with boringssl")
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${BORINGSSL_SSL_LIB} ${BORINGSSL_CRYPTO_LIB})
 
     find_library(ShLwApi_LIB ShLwApi REQUIRED)
     find_library(Ws2_32_LIB Ws2_32 REQUIRED)
@@ -339,15 +366,19 @@ if (MSVC)
     set(SYSTEM_LIBS ${SYSTEM_LIBS} ${Winspool_LIB})
 
     if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "static")
-      message(STATUS "Build against static crt")
       # replace /MD with /MT
       set(CompilerFlags
         CMAKE_CXX_FLAGS
         CMAKE_CXX_FLAGS_DEBUG
+        CMAKE_CXX_FLAGS_MINSIZEREL
         CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_CXX_FLAGS_RELWITHDEBINFO
         CMAKE_C_FLAGS
         CMAKE_C_FLAGS_DEBUG
         CMAKE_C_FLAGS_RELEASE
+        CMAKE_C_FLAGS_MINSIZEREL
+        CMAKE_C_FLAGS_RELEASE
+        CMAKE_C_FLAGS_RELWITHDEBINFO
         )
       foreach(CompilerFlag ${CompilerFlags})
         string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
@@ -361,6 +392,14 @@ if (MSVC)
     if (COMPILER_CLANG)
       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Y-")
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Y-")
+    endif()
+
+    # enforce default delayload implementation
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} delayimp)
+
+    # this must come at last
+    if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "static")
+      set(SYSTEM_LIBS ${SYSTEM_LIBS} uafxcw$<$<CONFIG:Debug>:d> libcmt$<$<CONFIG:Debug>:d>)
     endif()
 else()
     if (CMAKE_FIND_ROOT_PATH)
@@ -399,13 +438,21 @@ int main() {
       REQUIRED
       NO_DEFAULT_PATH)
 
+    find_library(BORINGSSL_SSL_LIB ssl
+      PATHS
+        ${boringssl_DIR}
+        ${boringssl_DIR}/build
+        ${boringssl_DIR}/build/ssl
+      REQUIRED
+      NO_DEFAULT_PATH)
+
     set(CMAKE_REQUIRED_INCLUDES
         ${boringssl_DIR}/include
         ${CMAKE_REQUIRED_INCLUDES})
     check_include_file(openssl/is_boringssl.h BORINGSSL_CRYPTO_INCLUDE)
     add_definitions(-DHAVE_BORINGSSL)
     include_directories(BEFORE ${boringssl_DIR}/include SYSTEM)
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${BORINGSSL_CRYPTO_LIB})
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${BORINGSSL_SSL_LIB} ${BORINGSSL_CRYPTO_LIB})
 
     # linux-syscall-support
     if (UNIX AND NOT APPLE)
@@ -436,14 +483,12 @@ set(SUPPORT_LIBS
     )
 
 if (MSVC AND GUI)
-  message(STATUS "Build with Platform $ENV{Platform}")
+  message(STATUS "Build with MFC unicode ${CMAKE_MSVC_CRT_LINKAGE} library")
   if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "dynamic")
-    message(STATUS "Build against MFC unicode dll")
     add_definitions(-D_AFXDLL)
     # for shared MFC library
     set(CMAKE_MFC_UNICODE_FLAG 2)
   else()
-    message(STATUS "Build against MFC unicode static library")
     # for static MFC library
     set(CMAKE_MFC_UNICODE_FLAG 1)
   endif()
@@ -459,11 +504,7 @@ if (MSVC AND GUI)
   set(GUI_DEFINITIONS "")
   set(GUI_C_CXX_FLAGS "")
   set(GUI_LIBRARY_DIRS "")
-  if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "static")
-    set(GUI_LIBRARIES delayimp uafxcw$<$<CONFIG:Debug>:d> libcmt$<$<CONFIG:Debug>:d>)
-  else()
-    set(GUI_LIBRARIES delayimp)
-  endif()
+  set(GUI_LIBRARIES "")
 elseif (APPLE AND GUI)
   find_library(COCOA_LIBRARY Cocoa REQUIRED)
   # Locate Interface Builder Tool, needed to build things like Storyboards outside of Xcode.
@@ -1484,7 +1525,7 @@ if (GUI)
 
     link_directories(${GUI_LIBRARY_DIRS})
 
-    target_link_libraries(${APP_NAME} PUBLIC ${SUPPORT_LIBS} ${GUI_LIBRARIES})
+    target_link_libraries(${APP_NAME} PUBLIC ${GUI_LIBRARIES} ${SUPPORT_LIBS})
 
     if (MSVC)
         set_target_properties(${APP_NAME} PROPERTIES

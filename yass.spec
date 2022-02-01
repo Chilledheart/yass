@@ -18,14 +18,7 @@ embedded devices and low end boxes.
 %setup -q -n %{name}-%{version}
 
 %build
-cd third_party/boringssl
-mkdir build
-cd build
-cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
-ninja crypto
-cp -fv crypto/libcrypto.a ../libcrypto.a
-cd ..
-cd ../..
+./scripts/build-boringssl.sh
 
 mkdir build
 cd build
