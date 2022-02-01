@@ -64,8 +64,7 @@ jobs:
             third_party/llvm-build/Release+Asserts
           key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get boringssl commit
-        run: |
-          git submodule status third_party/boringssl >> boringssl.lock
+        run: git submodule status --cached third_party/boringssl >> boringssl.lock
       - name: Cache boringssl packages
         uses: actions/cache@v2
         with:
@@ -108,8 +107,7 @@ jobs:
             third_party/llvm-build/Release+Asserts
           key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get boringssl commit
-        run: |
-          git submodule status third_party/boringssl >> boringssl.lock
+        run: git submodule status --cached third_party/boringssl >> boringssl.lock
       - name: Cache boringssl packages
         uses: actions/cache@v2
         with:
@@ -154,8 +152,7 @@ jobs:
             third_party/llvm-build/Release+Asserts
           key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Get boringssl commit
-        run: |
-          git submodule status third_party/boringssl >> boringssl.lock
+        run: git submodule status --cached third_party/boringssl >> boringssl.lock
       - name: Cache boringssl packages
         uses: actions/cache@v2
         with:
