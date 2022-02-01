@@ -193,7 +193,7 @@ jobs:
         - 'centos8'
     env:
       BUNDLE_NAME: 'yass-${{ matrix.container }}-${{ github.event.release.tag_name }}.el8.x86_64'
-      DBG_BUNDLE_NAME: 'yass-debuginfo-${{ matrix.container }}-${{ github.event.release.tag_name }}.el8.x86_64'
+      DBG_BUNDLE_NAME: 'yass-${{ matrix.container }}-${{ github.event.release.tag_name }}-debuginfo.el8.x86_64'
     runs-on: ubuntu-latest
     needs: docker_publish
     container: 'ghcr.io/chilledheart/${{ matrix.container }}'
@@ -238,7 +238,7 @@ jobs:
         - 'debian11'
     env:
       BUNDLE_NAME: 'yass-${{ matrix.container }}-${{ github.event.release.tag_name }}_amd64'
-      DBG_BUNDLE_NAME: 'yass-dbg-${{ matrix.container }}-${{ github.event.release.tag_name }}_amd64'
+      DBG_BUNDLE_NAME: 'yass-${{ matrix.container }}-${{ github.event.release.tag_name }}-dbg_amd64'
     runs-on: ubuntu-latest
     needs: docker_publish
     container: 'ghcr.io/chilledheart/${{ matrix.container }}'

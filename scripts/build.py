@@ -718,9 +718,9 @@ def postbuild_archive():
   dst = APP_NAME
 
   archive = dst + '.zip'
-  full_archive = dst + '-standalone.zip'
+  debuginfo_archive = dst + '-debuginfo.zip'
   new_archive = os.path.join('..', archive)
-  new_full_archive = os.path.join('..', full_archive)
+  new_debuginfo_archive = os.path.join('..', debuginfo_archive)
 
   paths = [ src ]
 
@@ -730,34 +730,58 @@ def postbuild_archive():
     pass
 
   try:
-    os.unlink(new_full_archive)
+    os.unlink(new_debuginfo_archive)
   except:
     pass
 
-  archive_files(new_archive, paths)
-
-  outputs = [ archive ]
-
+  # dependent dlls
   if sys.platform == 'win32':
-    full_paths = paths
-    if os.path.exists(APP_NAME + '.pdb'):
-      full_paths.append(APP_NAME + '.pdb')
-
     files = os.listdir('.')
     for file in files:
       if file.endswith('.dll'):
-        full_paths.append(file)
-    archive_files(new_full_archive, full_paths)
-    outputs.append(full_archive)
+        paths.append(file)
+
+  # LICENSEs
+  shutil.copyfile(os.path.join('..', 'GPL-2.0'), 'LICENSE')
+  shutil.copyfile(os.path.join('..', 'third_party', 'abseil-cpp', 'LICENSE'),
+                  'LICENSE.abseil-cpp')
+  shutil.copyfile(os.path.join('..', 'third_party', 'asio', 'asio', 'LICENSE_1_0.txt'),
+                  'LICENSE.asio')
+  shutil.copyfile(os.path.join('..', 'third_party', 'boringssl', 'LICENSE'),
+                  'LICENSE.boringssl')
+  shutil.copyfile(os.path.join('..', 'third_party', 'lss', 'LICENSE'),
+                  'LICENSE.lss')
+  shutil.copyfile(os.path.join('..', 'third_party', 'rapidjson', 'license.txt'),
+                  'LICENSE.rapidjson')
+  paths.append('LICENSE')
+  paths.append('LICENSE.abseil-cpp')
+  paths.append('LICENSE.asio')
+  paths.append('LICENSE.boringssl')
+  paths.append('LICENSE.lss')
+  paths.append('LICENSE.rapidjson')
+
+  archive_files(new_archive, paths)
+
+  archives = {}
+  archives[archive] = paths
+
+  if sys.platform == 'win32':
+    debuginfo_paths = []
+
+    if os.path.exists(APP_NAME + '.pdb'):
+      debuginfo_paths.append(APP_NAME + '.pdb')
+
+    archive_files(new_debuginfo_archive, debuginfo_paths)
+    archives[debuginfo_archive] = debuginfo_paths
   elif sys.platform == 'darwin':
-    full_paths = paths
+    debuginfo_paths = []
     if os.path.exists(get_app_name() + '.dSYM'):
-      full_paths.append(get_app_name() + '.dSYM')
+      debuginfo_paths.append(get_app_name() + '.dSYM')
 
-    archive_files(new_full_archive, full_paths)
-    outputs.append(full_archive)
+    archive_files(new_debuginfo_archive, debuginfo_paths)
+    archives[debuginfo_archive] = debuginfo_paths
 
-  return outputs
+  return archives
 
 if __name__ == '__main__':
   configuration_type = DEFAULT_BUILD_TYPE
@@ -769,13 +793,17 @@ if __name__ == '__main__':
     print('done')
     sys.exit(0)
   postbuild_copy_libraries()
-  postbuild_fix_rpath()
+  if sys.platform != 'win32':
+    postbuild_fix_rpath()
   postbuild_strip_binaries()
   if sys.platform == 'darwin':
     postbuild_codesign()
   if DEFAULT_ENABLE_OSX_UNIVERSAL_BUILD:
     postbuild_check_universal_build()
-  outputs = postbuild_archive()
-  for output in outputs:
-    print('------ %s' % output)
+  archives = postbuild_archive()
+  for archive in archives:
+    print('------ %s:' % archive)
+    files = archives[archive]
+    for file in files:
+      print('------------ %s' % file)
   print('done')

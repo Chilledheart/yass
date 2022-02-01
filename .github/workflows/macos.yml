@@ -111,6 +111,7 @@ jobs:
         build_type: [Debug, RelWithDebInfo]
     env:
       BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}'
+      DBG_BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}-debuginfo'
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
       - uses: actions/checkout@v2
@@ -145,7 +146,7 @@ jobs:
         run: ./scripts/build.py
       - run: |
           mv -f yass.zip ${{ env.BUNDLE_NAME }}.zip
-          mv -f yass-standalone.zip ${{ env.BUNDLE_NAME }}-standalone.zip
+          mv -f yass-debuginfo.zip ${{ env.DBG_BUNDLE_NAME }}.zip
       - uses: actions/upload-release-asset@v1
         if: ${{ github.event_name == 'release' }}
         env:
@@ -167,15 +168,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${{ env.BUNDLE_NAME }}-standalone.zip
-          asset_name: ${{ env.BUNDLE_NAME }}-standalone.zip
+          asset_path: ${{ env.DBG_BUNDLE_NAME }}.zip
+          asset_name: ${{ env.DBG_BUNDLE_NAME }}.zip
           asset_content_type: application/octet-stream
-      - run: openssl sha256 ${{ env.BUNDLE_NAME }}-standalone.zip > sha256sum-standalone.txt
-      - run: echo "SHA256SUM_STANDALONE=$(cut -d' ' -f2 sha256sum-standalone.txt)" >>$GITHUB_ENV
+      - run: openssl sha256 ${{ env.DBG_BUNDLE_NAME }}.zip > sha256sum-debuginfo.txt
+      - run: echo "SHA256SUM_DEBUGINFO=$(cut -d' ' -f2 sha256sum-debuginfo.txt)" >>$GITHUB_ENV
       - uses: actions/upload-artifact@v2
         with:
-          name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}-sha256-standalone ${{ env.SHA256SUM_STANDALONE }}
-          path: sha256sum-standalone.txt
+          name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.build_type }}-sha256-debuginfo ${{ env.SHA256SUM_DEBUGINFO }}
+          path: sha256sum-debuginfo.txt
   mac-clang-tidy:
     needs: cache-toolchain-mac
     runs-on: macos-latest
