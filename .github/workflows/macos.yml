@@ -87,8 +87,6 @@ jobs:
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
         run: brew install ninja cmake
-      - name: Populate depedencies (PyObjc)
-        run: pip3 install pyobjc-core pyobjc
       - name: Build
         run: ./scripts/build.py
       - run: |
@@ -159,8 +157,6 @@ jobs:
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
         run: brew install ninja cmake
-      - name: Populate depedencies (PyObjc)
-        run: pip3 install pyobjc-core pyobjc
       - name: Build
         run: |
           export CLANG_TIDY_EXECUTABLE=$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy
