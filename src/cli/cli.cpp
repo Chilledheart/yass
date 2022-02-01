@@ -9,6 +9,7 @@
 #include <absl/debugging/symbolize.h>
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
+#include <locale.h>
 
 #include "core/asio.hpp"
 #include "core/logging.hpp"
@@ -18,6 +19,9 @@
 using namespace socks5;
 
 int main(int argc, const char* argv[]) {
+  // For minimal locale
+  // the C locale will be UTF-8 enabled English;
+  setlocale(LC_ALL, "C");
   // Major routine
   // - Read config from ss config file
   // - Listen by local address and local port

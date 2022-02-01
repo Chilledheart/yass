@@ -6,6 +6,7 @@
 #include <mach-o/dyld.h>
 #include <stdexcept>
 #include <string>
+#include <locale.h>
 
 #include <absl/debugging/failure_signal_handler.h>
 #include <absl/debugging/symbolize.h>
@@ -30,9 +31,9 @@ static std::string GetMainExecutablePath() {
 }
 
 int main(int argc, const char* argv[]) {
-  @autoreleasepool {
-    // Setup code that might create autoreleased objects goes here.
-  }
+  // For minimal locale
+  // the C locale will be UTF-8 enabled English;
+  setlocale(LC_ALL, "C");
 
   absl::InitializeSymbolizer(GetMainExecutablePath().c_str());
   absl::FailureSignalHandlerOptions failure_handle_options;
