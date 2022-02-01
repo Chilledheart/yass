@@ -59,47 +59,9 @@ jobs:
             curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
             curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
           fi
-      - name: "Install dependency: boringssl (x64 slice)"
-        run: |
-          cd third_party/boringssl
-
-          if [ ! -f x64-libssl.a ]; then
-            mkdir build
-            cd build
-            cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
-              -DCMAKE_OSX_ARCHITECTURES="x86_64" ..
-            ninja crypto ssl
-            cp -fv crypto/libcrypto.a ../x64-libcrypto.a
-            cp -fv ssl/libssl.a ../x64-libssl.a
-            cd ..
-            rm -rf build
-          fi
-      - name: "Install dependency: boringssl (arm64 slice)"
-        run: |
-          cd third_party/boringssl
-
-          if [ ! -f arm64-libssl.a ]; then
-            mkdir build
-            cd build
-            cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
-              -DCMAKE_OSX_ARCHITECTURES="arm64" ..
-            ninja crypto ssl
-            cp -fv crypto/libcrypto.a ../arm64-libcrypto.a
-            cp -fv ssl/libssl.a ../arm64-libssl.a
-            cd ..
-            rm -rf build
-          fi
       - name: "Install dependency: boringssl (universal)"
         run: |
-          cd third_party/boringssl
-          if [ ! -f libssl.a ]; then
-            lipo -create arm64-libcrypto.a x64-libcrypto.a -output libcrypto.a
-            lipo -create arm64-libssl.a x64-libssl.a -output libssl.a
-            lipo -info libcrypto.a
-            lipo -info libssl.a
-          fi
+          ./scripts/build-boringssl.sh
 
   mac-release:
     needs: cache-toolchain-mac

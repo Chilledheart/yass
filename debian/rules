@@ -17,15 +17,8 @@ override_dh_auto_clean:
 	rm -f third_party/boringssl/libcrypto.a
 	rm -f third_party/boringssl/libssl.a
 
-third_party/boringssl/build:
-	mkdir -p third_party/boringssl/build
-
-third_party/boringssl/libssl.a: third_party/boringssl/build
-	cd third_party/boringssl/build; \
-	cmake -DCMAKE_BUILD_TYPE=Release .. ; \
-	make crypto ssl -j $(NCPUS); \
-	cp -fv crypto/libcrypto.a ../libcrypto.a; \
-	cp -fv ssl/libssl.a ../libssl.a
+third_party/boringssl/libssl.a:
+	./scripts/build-boringssl.sh
 
 override_dh_auto_configure: third_party/boringssl/libssl.a
 	dh_auto_configure -- -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc" -DGUI=on -DCLI=off -DSERVER=off

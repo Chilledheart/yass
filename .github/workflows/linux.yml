@@ -83,18 +83,8 @@ jobs:
           fi
       - name: "Install dependency: boringssl"
         run: |
-          cd third_party/boringssl
+          ./scripts/build-boringssl.sh
 
-          if [ ! -f libssl.a ]; then
-            mkdir build
-            cd build
-            cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
-            ninja crypto ssl
-            cp -fv crypto/libcrypto.a ../libcrypto.a
-            cp -fv ssl/libssl.a ../libssl.a
-            cd ..
-            rm -rf build
-          fi
   ubuntu-latest:
     needs: cache-toolchain-linux
     runs-on: ubuntu-latest
