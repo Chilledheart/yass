@@ -55,6 +55,7 @@ set(YASS_APP_VERSION_MINOR ${PACKAGE_VERSION_MINOR})
 set(YASS_APP_VERSION_PATCH ${PACKAGE_VERSION_PATCH})
 set(YASS_APP_VERSION_TWEAK ${PACKAGE_VERSION_TWEAK})
 set(YASS_APP_FULL_VERSION ${PACKAGE_VERSION}.${PACKAGE_VERSION_TWEAK})
+set(YASS_APP_COPYRIGHT "Copyright 2022 Chilledheart. All rights reserved.")
 
 # update LAST_CHANGE file
 # format d740da257583289dbebd2eb37e8668928fac5ead-refs/branch-heads/4692{32}
@@ -1602,7 +1603,7 @@ if (GUI)
         set_target_properties(${APP_NAME} PROPERTIES
             RESOURCE "network.icns ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/Base.lproj/Main.storyboard"
             MACOSX_BUNDLE_ICON_FILE network.icns
-            MACOSX_BUNDLE_COPYRIGHT "Copyright ${YASS_APP_FULL_NAME}"
+            MACOSX_BUNDLE_COPYRIGHT "${YASS_APP_COPYRIGHT}"
             MACOSX_BUNDLE_GUI_IDENTIFIER "it.gui.yass"
             MACOSX_BUNDLE_BUNDLE_NAME ${PACKAGE_NAME}
             MACOSX_BUNDLE_INFO_PLIST ${APP_MACOSX_BUNDLE_INFO}
