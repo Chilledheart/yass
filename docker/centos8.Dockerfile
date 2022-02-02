@@ -7,9 +7,10 @@ RUN yum clean all && \
   sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-Linux-* && \
   yum update -y && \
   yum install -y dnf-plugins-core epel-release && \
+  dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo && \
   dnf config-manager --set-enabled powertools && \
   yum install -y --allowerasing gcc gcc-c++ libstdc++-static \
-    git make python39 bash coreutils \
+    git make python39 bash coreutils gh \
     rpm-build rpm-devel rpmlint diffutils patch rpmdevtools \
     cmake ninja-build pkg-config perl golang \
     libunwind-devel gtk3-devel gtkmm30-devel && \
