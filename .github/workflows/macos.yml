@@ -58,8 +58,8 @@ jobs:
       matrix:
         build_type: [Debug, RelWithDebInfo]
     env:
-      BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}'
-      DBG_BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}-debuginfo'
+      BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}.zip'
+      DBG_BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}-debuginfo.zip'
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
       - uses: actions/checkout@v2
@@ -90,38 +90,26 @@ jobs:
       - name: Build
         run: ./scripts/build.py
       - run: |
-          mv -f yass.zip ${{ env.BUNDLE_NAME }}.zip
-          mv -f yass-debuginfo.zip ${{ env.DBG_BUNDLE_NAME }}.zip
-      - uses: actions/upload-release-asset@v1
-        if: ${{ github.event_name == 'release' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${{ env.BUNDLE_NAME }}.zip
-          asset_name: ${{ env.BUNDLE_NAME }}.zip
-          asset_content_type: application/octet-stream
-      - run: openssl sha256 ${{ env.BUNDLE_NAME }}.zip >sha256sum.txt
+          mv -f yass.zip ${{ env.BUNDLE_NAME }}
+          mv -f yass-debuginfo.zip ${{ env.DBG_BUNDLE_NAME }}
+      - run: openssl sha256 ${{ env.BUNDLE_NAME }} > sha256sum.txt
       - run: echo "SHA256SUM=$(cut -d' ' -f2 sha256sum.txt)" >>$GITHUB_ENV
       - uses: actions/upload-artifact@v2
         with:
           name: ${{ github.job }}-${{ matrix.build_type }}-sha256 ${{ env.SHA256SUM }}
           path: sha256sum.txt
-      - uses: actions/upload-release-asset@v1
-        if: ${{ github.event_name == 'release' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${{ env.DBG_BUNDLE_NAME }}.zip
-          asset_name: ${{ env.DBG_BUNDLE_NAME }}.zip
-          asset_content_type: application/octet-stream
-      - run: openssl sha256 ${{ env.DBG_BUNDLE_NAME }}.zip > sha256sum-debuginfo.txt
+      - run: openssl sha256 ${{ env.DBG_BUNDLE_NAME }} > sha256sum-debuginfo.txt
       - run: echo "SHA256SUM_DEBUGINFO=$(cut -d' ' -f2 sha256sum-debuginfo.txt)" >>$GITHUB_ENV
       - uses: actions/upload-artifact@v2
         with:
           name: ${{ github.job }}-${{ matrix.build_type }}-sha256-debuginfo ${{ env.SHA256SUM_DEBUGINFO }}
           path: sha256sum-debuginfo.txt
+      - name: Upload dist tarball (including debuginfo)
+        if: ${{ github.event_name == 'release' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} ${{ env.BUNDLE_NAME }} ${{ env.DBG_BUNDLE_NAME }}
   mac-clang-tidy:
     needs: cache-toolchain-mac
     runs-on: macos-latest
