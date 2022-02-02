@@ -10,6 +10,7 @@ sscxx
 *.exe
 *.zip
 /third_party/llvm-build/Release+Asserts
+/third_party/vcredist
 *.aps
 *.build
 /debian/.debhelper
