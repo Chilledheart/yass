@@ -26,6 +26,9 @@ set "WindowsSDKVersion=%Winsdk%\"
 
 set vsdevcmd=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat
 
+REM
+REM Generate dynamic x86 binary
+REM
 set "VSCMD_START_DIR=%CD%"
 set CC=
 set CXX=
@@ -38,10 +41,11 @@ call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
 
 call :BuildBoringSSL
 python.exe -u .\scripts\build.py || exit /b
+call :RenameTarball
 
-move "yass.zip" "yass-msvc-release-%Platform%-%MSVC_CRT_LINKAGE%.zip"
-move "yass-debuginfo.zip" "yass-msvc-release-%Platform%-%MSVC_CRT_LINKAGE%-debuginfo.zip"
-
+REM
+REM Generate dynamic x64 binary
+REM
 set "VSCMD_START_DIR=%CD%"
 set CC=
 set CXX=
@@ -54,10 +58,11 @@ call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
 
 call :BuildBoringSSL
 python.exe -u .\scripts\build.py || exit /b
+call :RenameTarball
 
-move "yass.zip" "yass-msvc-release-%Platform%-%MSVC_CRT_LINKAGE%.zip"
-move "yass-debuginfo.zip" "yass-msvc-release-%Platform%-%MSVC_CRT_LINKAGE%-debuginfo.zip"
-
+REM
+REM Generate dynamic arm64 binary
+REM
 REM Use Visual Studio 2019's toolchain for ARM64 target
 
 set VCToolsVersion=14.29
@@ -74,9 +79,7 @@ call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
 
 call :BuildBoringSSL
 python.exe -u .\scripts\build.py || exit /b
-
-move "yass.zip" "yass-msvc-release-%Platform%-%MSVC_CRT_LINKAGE%.zip"
-move "yass-debuginfo.zip" "yass-msvc-release-%Platform%-%MSVC_CRT_LINKAGE%-debuginfo.zip"
+call :RenameTarball
 
 goto :eof
 
@@ -88,8 +91,10 @@ set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 
 call "%~dp0build-boringssl.bat"
 
-move "yass.zip" "yass-msvc-release-%Platform%-%MSVC_CRT_LINKAGE%.zip"
-move "yass-debuginfo.zip" "yass-msvc-release-%Platform%-%MSVC_CRT_LINKAGE%-debuginfo.zip"
-
 set "CC="
 set "CXX="
+
+goto :eof
+
+:RenameTarball
+python.exe -c "import subprocess, os; check_string_output = lambda command: subprocess.check_output(command, stderr=subprocess.STDOUT).decode().strip(); p = os.getenv('Platform'); l = os.getenv('MSVC_CRT_LINKAGE'); t = check_string_output(['git', 'describe', '--tags', 'HEAD']); os.rename('yass.zip', f'yass-msvc-release-{p}-{l}-{t}.zip'); os.rename('yass-debuginfo.zip', f'yass-msvc-release-{p}-{l}-{t}-debuginfo.zip');"
