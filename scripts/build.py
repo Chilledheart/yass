@@ -736,18 +736,29 @@ def postbuild_archive():
                   'LICENSE.abseil-cpp')
   shutil.copyfile(os.path.join('..', 'third_party', 'asio', 'asio', 'LICENSE_1_0.txt'),
                   'LICENSE.asio')
-  shutil.copyfile(os.path.join('..', 'third_party', 'boringssl', 'LICENSE'),
+  shutil.copyfile(os.path.join('..', 'third_party', 'boringssl', 'src', 'LICENSE'),
                   'LICENSE.boringssl')
   shutil.copyfile(os.path.join('..', 'third_party', 'lss', 'LICENSE'),
                   'LICENSE.lss')
   shutil.copyfile(os.path.join('..', 'third_party', 'rapidjson', 'license.txt'),
                   'LICENSE.rapidjson')
+  shutil.copyfile(os.path.join('..', 'third_party', 'zlib', 'LICENSE'),
+                  'LICENSE.zlib')
+  shutil.copyfile(os.path.join('..', 'third_party', 'protobuf', 'LICENSE'),
+                  'LICENSE.protobuf')
+  shutil.copyfile(os.path.join('..', 'third_party', 'xxhash', 'LICENSE'),
+                  'LICENSE.xxhash')
+  shutil.copyfile(os.path.join('..', 'LICENSE.chromium'), 'LICENSE.chromium')
   paths.append('LICENSE')
   paths.append('LICENSE.abseil-cpp')
   paths.append('LICENSE.asio')
   paths.append('LICENSE.boringssl')
   paths.append('LICENSE.lss')
   paths.append('LICENSE.rapidjson')
+  paths.append('LICENSE.zlib')
+  paths.append('LICENSE.protobuf')
+  paths.append('LICENSE.xxhash')
+  paths.append('LICENSE.chromium')
 
   archive_files(new_archive, paths)
 

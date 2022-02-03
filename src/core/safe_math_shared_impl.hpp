@@ -19,7 +19,7 @@
 
 #if defined(OS_ASMJS)
 // Optimized safe math instructions are incompatible with asmjs.
-#define BASE_HAS_OPTIMIZED_SAFE_MATH (0)
+#define HAS_OPTIMIZED_SAFE_MATH (0)
 // Where available use builtin math overflow support on Clang and GCC.
 #elif !defined(__native_client__) &&                       \
     ((defined(__clang__) &&                                \
@@ -27,16 +27,16 @@
        (__clang_major__ == 3 && __clang_minor__ >= 4))) || \
      (defined(__GNUC__) && __GNUC__ >= 5))
 #include "core/safe_math_clang_gcc_impl.hpp"
-#define BASE_HAS_OPTIMIZED_SAFE_MATH (1)
+#define HAS_OPTIMIZED_SAFE_MATH (1)
 #else
-#define BASE_HAS_OPTIMIZED_SAFE_MATH (0)
+#define HAS_OPTIMIZED_SAFE_MATH (0)
 #endif
 
 namespace internal {
 
 // These are the non-functioning boilerplate implementations of the optimized
 // safe math routines.
-#if !BASE_HAS_OPTIMIZED_SAFE_MATH
+#if !HAS_OPTIMIZED_SAFE_MATH
 template <typename T, typename U>
 struct CheckedAddFastOp {
   static const bool is_supported = false;
@@ -105,8 +105,8 @@ struct ClampedNegFastOp {
     return CheckOnFailure::template HandleFailure<T>();
   }
 };
-#endif  // BASE_HAS_OPTIMIZED_SAFE_MATH
-#undef BASE_HAS_OPTIMIZED_SAFE_MATH
+#endif  // HAS_OPTIMIZED_SAFE_MATH
+#undef HAS_OPTIMIZED_SAFE_MATH
 
 // This is used for UnsignedAbs, where we need to support floating-point
 // template instantiations even though we don't actually support the operations.
@@ -179,7 +179,7 @@ struct MathWrapper {
 // The following macros are just boilerplate for the standard arithmetic
 // operator overloads and variadic function templates. A macro isn't the nicest
 // solution, but it beats rewriting these over and over again.
-#define BASE_NUMERIC_ARITHMETIC_VARIADIC(CLASS, CL_ABBR, OP_NAME)       \
+#define NUMERIC_ARITHMETIC_VARIADIC(CLASS, CL_ABBR, OP_NAME)       \
   template <typename L, typename R, typename... Args>                   \
   constexpr auto CL_ABBR##OP_NAME(const L lhs, const R rhs,             \
                                   const Args... args) {                 \
@@ -187,7 +187,7 @@ struct MathWrapper {
                                                               args...); \
   }
 
-#define BASE_NUMERIC_ARITHMETIC_OPERATORS(CLASS, CL_ABBR, OP_NAME, OP, CMP_OP) \
+#define NUMERIC_ARITHMETIC_OPERATORS(CLASS, CL_ABBR, OP_NAME, OP, CMP_OP) \
   /* Binary arithmetic operator for all CLASS##Numeric operations. */          \
   template <typename L, typename R,                                            \
             typename std::enable_if<Is##CLASS##Op<L, R>::value>::type* =       \
@@ -206,7 +206,7 @@ struct MathWrapper {
     return MathOp<CLASS##OP_NAME##Op>(rhs);                                    \
   }                                                                            \
   /* Variadic arithmetic functions that return CLASS##Numeric. */              \
-  BASE_NUMERIC_ARITHMETIC_VARIADIC(CLASS, CL_ABBR, OP_NAME)
+  NUMERIC_ARITHMETIC_VARIADIC(CLASS, CL_ABBR, OP_NAME)
 
 }  // namespace internal
 

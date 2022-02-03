@@ -22,6 +22,8 @@
 
 #include "core/string_util_internal.hpp"
 #include "core/template_util.hpp"
+#include "core/utf_string_conversion_utils.hpp"
+#include "icu/icu_utf.h"
 
 bool IsWprintfFormatPortable(const wchar_t* format) {
   for (const wchar_t* position = format; *position != '\0'; ++position) {
@@ -132,6 +134,18 @@ std::string CollapseWhitespaceASCII(absl::string_view text,
 
 bool ContainsOnlyChars(absl::string_view input, absl::string_view characters) {
   return input.find_first_not_of(characters) == absl::string_view::npos;
+}
+
+bool IsStringASCII(absl::string_view str) {
+  return internal::DoIsStringASCII(str.data(), str.length());
+}
+
+bool IsStringUTF8(absl::string_view str) {
+  return internal::DoIsStringUTF8<IsValidCharacter>(str);
+}
+
+bool IsStringUTF8AllowingNoncharacters(absl::string_view str) {
+  return internal::DoIsStringUTF8<IsValidCodepoint>(str);
 }
 
 bool LowerCaseEqualsASCII(absl::string_view str,

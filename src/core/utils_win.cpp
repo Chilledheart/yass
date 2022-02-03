@@ -130,6 +130,11 @@ bool SetThreadName(std::thread::native_handle_type handle,
       reinterpret_cast<void*>(::GetProcAddress(
           ::GetModuleHandle(L"Kernel32.dll"), "SetThreadDescription")));
   HRESULT ret = E_NOTIMPL;
+
+  if (handle == 0) {
+    handle = ::GetCurrentThread();
+  }
+
   if (fPointer) {
     ret = fPointer(handle, SysUTF8ToWide(name).c_str());
   }

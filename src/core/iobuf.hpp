@@ -93,7 +93,7 @@ class IOBuf {
         std::size_t minTailroom = 0)
       : IOBuf(op, buf.data(), buf.size(), headroom, minTailroom) {}
 
-  ~IOBuf();
+  virtual ~IOBuf();
 
   // ref to internal buffer/headroom
   const uint8_t* buffer() const { return buf_; }
@@ -325,7 +325,7 @@ class IOBuf {
         uint8_t* data,
         std::size_t length) noexcept;
 
- private:
+ protected:
   uint8_t* buf_;
   uint8_t* data_;
   size_t length_;

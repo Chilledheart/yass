@@ -24,7 +24,7 @@ else
   NPROC=1
 fi
 
-cd third_party/boringssl
+cd third_party/boringssl/src
 
 if [ $(uname -s) = "Darwin" ]; then
 
@@ -76,4 +76,4 @@ if [ $(uname -s) = "Linux" ]; then
   fi
 fi
 
-cd ../..
+cd ../../..

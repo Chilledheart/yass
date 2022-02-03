@@ -1,0 +1,10 @@
+// Copyright 2020 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#include "net/quiche/common/platform/impl/quiche_flags_impl.h"
+#include <absl/flags/flag.h>
+
+#define QUIC_FLAG(flag, value) ABSL_FLAG(bool, flag, value, #flag);
+#include "quic/core/quic_flags_list.h"
+#undef QUIC_FLAG

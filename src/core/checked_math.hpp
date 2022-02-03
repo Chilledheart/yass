@@ -66,7 +66,7 @@ class CheckedNumeric {
 #endif
   constexpr bool
   AssignIfValid(Dst* result) const {
-    return BASE_NUMERICS_LIKELY(IsValid<Dst>())
+    return NUMERICS_LIKELY(IsValid<Dst>())
                ? ((*result = static_cast<Dst>(state_.value())), true)
                : false;
   }
@@ -81,7 +81,7 @@ class CheckedNumeric {
   // the underlying value, and it is not available through other means.
   template <typename Dst = T, class CheckHandler = CheckOnFailure>
   constexpr StrictNumeric<Dst> ValueOrDie() const {
-    return BASE_NUMERICS_LIKELY(IsValid<Dst>())
+    return NUMERICS_LIKELY(IsValid<Dst>())
                ? static_cast<Dst>(state_.value())
                : CheckHandler::template HandleFailure<Dst>();
   }
@@ -94,7 +94,7 @@ class CheckedNumeric {
   // if the supplied default_value is not within range of the destination type.
   template <typename Dst = T, typename Src>
   constexpr StrictNumeric<Dst> ValueOrDefault(const Src default_value) const {
-    return BASE_NUMERICS_LIKELY(IsValid<Dst>())
+    return NUMERICS_LIKELY(IsValid<Dst>())
                ? static_cast<Dst>(state_.value())
                : checked_cast<Dst>(default_value);
   }
@@ -316,18 +316,18 @@ constexpr auto CheckMathOp(const L lhs, const R rhs, const Args... args) {
   return CheckMathOp<M>(CheckMathOp<M>(lhs, rhs), args...);
 }
 
-BASE_NUMERIC_ARITHMETIC_OPERATORS(Checked, Check, Add, +, +=)
-BASE_NUMERIC_ARITHMETIC_OPERATORS(Checked, Check, Sub, -, -=)
-BASE_NUMERIC_ARITHMETIC_OPERATORS(Checked, Check, Mul, *, *=)
-BASE_NUMERIC_ARITHMETIC_OPERATORS(Checked, Check, Div, /, /=)
-BASE_NUMERIC_ARITHMETIC_OPERATORS(Checked, Check, Mod, %, %=)
-BASE_NUMERIC_ARITHMETIC_OPERATORS(Checked, Check, Lsh, <<, <<=)
-BASE_NUMERIC_ARITHMETIC_OPERATORS(Checked, Check, Rsh, >>, >>=)
-BASE_NUMERIC_ARITHMETIC_OPERATORS(Checked, Check, And, &, &=)
-BASE_NUMERIC_ARITHMETIC_OPERATORS(Checked, Check, Or, |, |=)
-BASE_NUMERIC_ARITHMETIC_OPERATORS(Checked, Check, Xor, ^, ^=)
-BASE_NUMERIC_ARITHMETIC_VARIADIC(Checked, Check, Max)
-BASE_NUMERIC_ARITHMETIC_VARIADIC(Checked, Check, Min)
+NUMERIC_ARITHMETIC_OPERATORS(Checked, Check, Add, +, +=)
+NUMERIC_ARITHMETIC_OPERATORS(Checked, Check, Sub, -, -=)
+NUMERIC_ARITHMETIC_OPERATORS(Checked, Check, Mul, *, *=)
+NUMERIC_ARITHMETIC_OPERATORS(Checked, Check, Div, /, /=)
+NUMERIC_ARITHMETIC_OPERATORS(Checked, Check, Mod, %, %=)
+NUMERIC_ARITHMETIC_OPERATORS(Checked, Check, Lsh, <<, <<=)
+NUMERIC_ARITHMETIC_OPERATORS(Checked, Check, Rsh, >>, >>=)
+NUMERIC_ARITHMETIC_OPERATORS(Checked, Check, And, &, &=)
+NUMERIC_ARITHMETIC_OPERATORS(Checked, Check, Or, |, |=)
+NUMERIC_ARITHMETIC_OPERATORS(Checked, Check, Xor, ^, ^=)
+NUMERIC_ARITHMETIC_VARIADIC(Checked, Check, Max)
+NUMERIC_ARITHMETIC_VARIADIC(Checked, Check, Min)
 
 // These are some extra StrictNumeric operators to support simple pointer
 // arithmetic with our result types. Since wrapping on a pointer is always

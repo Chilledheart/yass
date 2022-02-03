@@ -1,6 +1,5 @@
-// Copyright (c) 2012 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright (c) 2022 Chilledheart  */
 
 // This header defines cross-platform ByteSwap() implementations for 16, 32 and
 // 64-bit values, and NetToHostXX() / HostToNextXX() functions equivalent to

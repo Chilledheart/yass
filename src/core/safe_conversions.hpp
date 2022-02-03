@@ -95,7 +95,7 @@ constexpr Dst checked_cast(Src value) {
   // This throws a compile-time error on evaluating the constexpr if it can be
   // determined at compile-time as failing, otherwise it will CHECK at runtime.
   using SrcType = typename internal::UnderlyingType<Src>::type;
-  return BASE_NUMERICS_LIKELY((IsValueInRangeForNumericType<Dst>(value)))
+  return NUMERICS_LIKELY((IsValueInRangeForNumericType<Dst>(value)))
              ? static_cast<Dst>(static_cast<SrcType>(value))
              : CheckHandler::template HandleFailure<Dst>();
 }
@@ -177,7 +177,7 @@ struct SaturateFastOp<
     const Dst saturated = CommonMaxOrMin<Dst, Src>(
         IsMaxInRangeForNumericType<Dst, Src>() ||
         (!IsMinInRangeForNumericType<Dst, Src>() && IsValueNegative(value)));
-    return BASE_NUMERICS_LIKELY(IsValueInRangeForNumericType<Dst>(value))
+    return NUMERICS_LIKELY(IsValueInRangeForNumericType<Dst>(value))
                ? static_cast<Dst>(value)
                : saturated;
   }
@@ -300,7 +300,7 @@ constexpr StrictNumeric<typename UnderlyingType<T>::type> MakeStrictNum(
   return value;
 }
 
-#define BASE_NUMERIC_COMPARISON_OPERATORS(CLASS, NAME, OP)              \
+#define NUMERIC_COMPARISON_OPERATORS(CLASS, NAME, OP)              \
   template <typename L, typename R,                                     \
             typename std::enable_if<                                    \
                 internal::Is##CLASS##Op<L, R>::value>::type* = nullptr> \
@@ -309,12 +309,12 @@ constexpr StrictNumeric<typename UnderlyingType<T>::type> MakeStrictNum(
                        typename UnderlyingType<R>::type>(lhs, rhs);     \
   }
 
-BASE_NUMERIC_COMPARISON_OPERATORS(Strict, IsLess, <)
-BASE_NUMERIC_COMPARISON_OPERATORS(Strict, IsLessOrEqual, <=)
-BASE_NUMERIC_COMPARISON_OPERATORS(Strict, IsGreater, >)
-BASE_NUMERIC_COMPARISON_OPERATORS(Strict, IsGreaterOrEqual, >=)
-BASE_NUMERIC_COMPARISON_OPERATORS(Strict, IsEqual, ==)
-BASE_NUMERIC_COMPARISON_OPERATORS(Strict, IsNotEqual, !=)
+NUMERIC_COMPARISON_OPERATORS(Strict, IsLess, <)
+NUMERIC_COMPARISON_OPERATORS(Strict, IsLessOrEqual, <=)
+NUMERIC_COMPARISON_OPERATORS(Strict, IsGreater, >)
+NUMERIC_COMPARISON_OPERATORS(Strict, IsGreaterOrEqual, >=)
+NUMERIC_COMPARISON_OPERATORS(Strict, IsEqual, ==)
+NUMERIC_COMPARISON_OPERATORS(Strict, IsNotEqual, !=)
 
 }  // namespace internal
 

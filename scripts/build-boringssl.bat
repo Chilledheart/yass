@@ -1,7 +1,7 @@
 @echo off
 setlocal
 
-cd "%~dp0..\third_party\boringssl"
+cd "%~dp0..\third_party\boringssl\src"
 
 echo "CC: %CC%"
 echo "CXX: %CXX%"
@@ -62,7 +62,7 @@ if not exist "%OUTPUT_DIR%\ssl.lib" (
   cd ..
 )
 
-cd ..\..
+cd ..\..\..
 
 cd "%~dp0..\"
 
