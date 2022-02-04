@@ -30,8 +30,8 @@ REM
 REM Generate dynamic x86 binary
 REM
 set "VSCMD_START_DIR=%CD%"
-set CC=
-set CXX=
+set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
+set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set ASM=
 set Platform=x86
 set MSVC_CRT_LINKAGE=dynamic
@@ -47,8 +47,8 @@ REM
 REM Generate dynamic x64 binary
 REM
 set "VSCMD_START_DIR=%CD%"
-set CC=
-set CXX=
+set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
+set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set ASM=
 set Platform=x64
 set MSVC_CRT_LINKAGE=dynamic
@@ -68,8 +68,8 @@ REM Use Visual Studio 2019's toolchain for ARM64 target
 set VCToolsVersion=14.29
 
 set "VSCMD_START_DIR=%CD%"
-set CC=
-set CXX=
+set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
+set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set ASM=
 set Platform=arm64
 set MSVC_CRT_LINKAGE=dynamic
@@ -86,13 +86,8 @@ goto :eof
 :BuildBoringSSL
 
 REM When you pass -DCMAKE_C_COMPILER= with an absolute path you need to use forward slashes.  That is setting a value directly into CMakeCache.txt so no automatic slash conversion is done.
-set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 
 call "%~dp0build-boringssl.bat"
-
-set "CC="
-set "CXX="
 
 goto :eof
 

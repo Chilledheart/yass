@@ -19,8 +19,8 @@ set "WindowsSdkDir=C:\Program Files (x86)\Windows Kits\10"
 REM
 REM Generate static x86 binary
 REM
-set CC=
-set CXX=
+set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
+set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set Platform=x86
 set VSCMD_ARG_TGT_ARCH=x86
 set MSVC_CRT_LINKAGE=static
@@ -36,8 +36,8 @@ call :RenameTarball
 REM
 REM Generate dynamic x86 binary
 REM
-set CC=
-set CXX=
+set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
+set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set Platform=x86
 set VSCMD_ARG_TGT_ARCH=x86
 set MSVC_CRT_LINKAGE=dynamic
