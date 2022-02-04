@@ -1,4 +1,8 @@
 #include "resource.hpp"
+
+#include <winuser.rh>
+#include <winres.h>
+
 /////////////////////////////////////////////////////////////////////////////
 // Unicode (UTF-8) resources
 

@@ -5,7 +5,30 @@
 #ifndef YASS_WIN32_RESOURCE_H
 #define YASS_WIN32_RESOURCE_H
 
-#include <afxres.h>
+// (from ntdef.h)
+#define LANG_ENGLISH                     0x09
+#define SUBLANG_ENGLISH_US               0x01    // English (USA)
+
+/////////////////////////////////////////////////////////////////////////////
+// Standard app configurable strings (from afxres.h)
+
+// for application title (defaults to EXE name or name in constructor)
+#define AFX_IDS_APP_TITLE               0xE000
+// idle message bar line
+#define AFX_IDS_IDLEMESSAGE             0xE001
+// message bar line when in shift-F1 help mode
+#define AFX_IDS_HELPMODEMESSAGE         0xE002
+// document title when editing OLE embedding
+#define AFX_IDS_APP_TITLE_EMBEDDING     0xE003
+// company name
+#define AFX_IDS_COMPANY_NAME            0xE004
+// object name when server is inplace
+#define AFX_IDS_OBJ_TITLE_INPLACE       0xE005
+// Application User Model ID
+#define AFX_IDS_APP_ID                  0xE006
+// Help and App commands
+#define ID_APP_ABOUT                    0xE140
+#define ID_APP_EXIT                     0xE141
 
 #define IDD_ABOUTBOX 100
 #define IDS_ABOUTBOX 101
