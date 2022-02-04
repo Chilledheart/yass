@@ -1528,59 +1528,59 @@ endif()
 # *****************************************************************************************
 
 set(quiche_SRCS
-  src/icu/icu_utf.h
-  src/mozilla/url_parse.cc
-  src/mozilla/url_parse.h
-  src/net/base/escape.cc
-  src/net/base/escape.h
-  src/net/base/ip_address.cc
-  src/net/base/ip_address.h
-  src/net/base/parse_number.cc
-  src/net/base/parse_number.h
-  src/net/base/url_util.cc
-  src/net/base/url_util.h
-  src/net/base/net_errors.cc
-  src/net/base/net_errors.h
-  src/net/base/net_error_list.h
-  src/net/quic/platform/impl/quic_hostname_utils_impl.cc
-  src/net/quic/platform/impl/quic_hostname_utils_impl.h
-  src/net/quic/platform/impl/quic_flags_impl.cc
-  src/net/quic/platform/impl/quic_mem_slice_impl.cc
-  src/net/quic/platform/impl/quic_mutex_impl.cc
-  src/net/quic/platform/impl/quic_mutex_impl.h
-  src/net/quiche/common/platform/impl/quiche_flags_impl.cc
-  src/net/quiche/common/platform/impl/quiche_time_utils_impl.cc
-  src/url/gurl.cc
-  src/url/gurl.h
-  src/url/scheme_host_port.cc
-  src/url/scheme_host_port.h
-  src/url/url_canon_etc.cc
-  src/url/url_canon_filesystemurl.cc
-  src/url/url_canon_fileurl.cc
-  src/url/url_canon_mailtourl.cc
-  src/url/url_canon_pathurl.cc
-  src/url/url_canon_relative.cc
-  src/url/url_canon_stdurl.cc
-  src/url/url_canon_host.cc
-  src/url/url_canon_path.cc
-  src/url/url_canon_query.cc
-  src/url/url_canon.cc
-  src/url/url_canon.h
-  src/url/url_canon_internal.cc
-  src/url/url_canon_internal.h
-  src/url/url_canon_ip.cc
-  src/url/url_canon_ip.h
-  src/url/url_canon_stdstring.cc
-  src/url/url_canon_stdstring.h
-  src/url/url_constants.cc
-  src/url/url_constants.h
-  src/url/url_util.cc
-  src/url/url_util.h
-  src/url/url_util_internal.h
-  src/url/url_parse_file.cc
-  src/url/url_idna_icu.cc
-  src/url/origin.cc
-  src/url/origin.h
+  third_party/icu/icu_utf.h
+  third_party/mozilla/url_parse.cc
+  third_party/mozilla/url_parse.h
+  third_party/chromium/net/base/escape.cc
+  third_party/chromium/net/base/escape.h
+  third_party/chromium/net/base/ip_address.cc
+  third_party/chromium/net/base/ip_address.h
+  third_party/chromium/net/base/parse_number.cc
+  third_party/chromium/net/base/parse_number.h
+  third_party/chromium/net/base/url_util.cc
+  third_party/chromium/net/base/url_util.h
+  third_party/chromium/net/base/net_errors.cc
+  third_party/chromium/net/base/net_errors.h
+  third_party/chromium/net/base/net_error_list.h
+  third_party/chromium/net/quic/platform/impl/quic_hostname_utils_impl.cc
+  third_party/chromium/net/quic/platform/impl/quic_hostname_utils_impl.h
+  third_party/chromium/net/quic/platform/impl/quic_flags_impl.cc
+  third_party/chromium/net/quic/platform/impl/quic_mem_slice_impl.cc
+  third_party/chromium/net/quic/platform/impl/quic_mutex_impl.cc
+  third_party/chromium/net/quic/platform/impl/quic_mutex_impl.h
+  third_party/chromium/net/quiche/common/platform/impl/quiche_flags_impl.cc
+  third_party/chromium/net/quiche/common/platform/impl/quiche_time_utils_impl.cc
+  third_party/chromium/url/gurl.cc
+  third_party/chromium/url/gurl.h
+  third_party/chromium/url/scheme_host_port.cc
+  third_party/chromium/url/scheme_host_port.h
+  third_party/chromium/url/url_canon_etc.cc
+  third_party/chromium/url/url_canon_filesystemurl.cc
+  third_party/chromium/url/url_canon_fileurl.cc
+  third_party/chromium/url/url_canon_mailtourl.cc
+  third_party/chromium/url/url_canon_pathurl.cc
+  third_party/chromium/url/url_canon_relative.cc
+  third_party/chromium/url/url_canon_stdurl.cc
+  third_party/chromium/url/url_canon_host.cc
+  third_party/chromium/url/url_canon_path.cc
+  third_party/chromium/url/url_canon_query.cc
+  third_party/chromium/url/url_canon.cc
+  third_party/chromium/url/url_canon.h
+  third_party/chromium/url/url_canon_internal.cc
+  third_party/chromium/url/url_canon_internal.h
+  third_party/chromium/url/url_canon_ip.cc
+  third_party/chromium/url/url_canon_ip.h
+  third_party/chromium/url/url_canon_stdstring.cc
+  third_party/chromium/url/url_canon_stdstring.h
+  third_party/chromium/url/url_constants.cc
+  third_party/chromium/url/url_constants.h
+  third_party/chromium/url/url_util.cc
+  third_party/chromium/url/url_util.h
+  third_party/chromium/url/url_util_internal.h
+  third_party/chromium/url/url_parse_file.cc
+  third_party/chromium/url/url_idna_icu.cc
+  third_party/chromium/url/origin.cc
+  third_party/chromium/url/origin.h
   third_party/quiche/src/common/platform/api/quiche_bug_tracker.h
   third_party/quiche/src/common/platform/api/quiche_export.h
   third_party/quiche/src/common/platform/api/quiche_flag_utils.h
@@ -2222,8 +2222,10 @@ add_library(quiche OBJECT
 
 target_include_directories(quiche PUBLIC
   ${CMAKE_CURRENT_BINARY_DIR}/third_party/quiche/src
-  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/third_party/chromium
+  ${CMAKE_CURRENT_SOURCE_DIR}/third_party
   ${CMAKE_CURRENT_SOURCE_DIR}/src
+  ${CMAKE_CURRENT_SOURCE_DIR}
   third_party/quiche/src/common/platform/default
   third_party/quiche/src
   )
@@ -2421,7 +2423,8 @@ add_library(yass_base OBJECT
 
 set_target_properties(yass_base PROPERTIES POSITION_INDEPENDENT_CODE True)
 target_include_directories(yass_base PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src)
+  ${CMAKE_CURRENT_SOURCE_DIR}/third_party
+  ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 target_link_libraries(quiche PUBLIC
   yass_base)

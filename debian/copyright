@@ -7,11 +7,11 @@ Files: *
 Copyright: 2019-2022, Chilledheart <rwindz0@gmail.com>
 License: GPL-2
 
-Files: src/net/*
+Files: third_party/net/*
 Copyright: 2015 The Chromium Authors
 License: BSD-3-clause
 
-Files: src/url/*
+Files: third_party/url/*
 Copyright: 2015 The Chromium Authors
 License: BSD-3-clause
 

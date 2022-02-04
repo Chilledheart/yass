@@ -742,34 +742,24 @@ def postbuild_archive():
         paths.append(file)
 
   # LICENSEs
-  shutil.copyfile(os.path.join('..', 'GPL-2.0'), 'LICENSE')
-  shutil.copyfile(os.path.join('..', 'third_party', 'abseil-cpp', 'LICENSE'),
-                  'LICENSE.abseil-cpp')
-  shutil.copyfile(os.path.join('..', 'third_party', 'asio', 'asio', 'LICENSE_1_0.txt'),
-                  'LICENSE.asio')
-  shutil.copyfile(os.path.join('..', 'third_party', 'boringssl', 'src', 'LICENSE'),
-                  'LICENSE.boringssl')
-  shutil.copyfile(os.path.join('..', 'third_party', 'lss', 'LICENSE'),
-                  'LICENSE.lss')
-  shutil.copyfile(os.path.join('..', 'third_party', 'rapidjson', 'license.txt'),
-                  'LICENSE.rapidjson')
-  shutil.copyfile(os.path.join('..', 'third_party', 'zlib', 'LICENSE'),
-                  'LICENSE.zlib')
-  shutil.copyfile(os.path.join('..', 'third_party', 'protobuf', 'LICENSE'),
-                  'LICENSE.protobuf')
-  shutil.copyfile(os.path.join('..', 'third_party', 'xxhash', 'LICENSE'),
-                  'LICENSE.xxhash')
-  shutil.copyfile(os.path.join('..', 'LICENSE.chromium'), 'LICENSE.chromium')
-  paths.append('LICENSE')
-  paths.append('LICENSE.abseil-cpp')
-  paths.append('LICENSE.asio')
-  paths.append('LICENSE.boringssl')
-  paths.append('LICENSE.lss')
-  paths.append('LICENSE.rapidjson')
-  paths.append('LICENSE.zlib')
-  paths.append('LICENSE.protobuf')
-  paths.append('LICENSE.xxhash')
-  paths.append('LICENSE.chromium')
+  license_maps = {
+    'LICENSE': os.path.join('..', 'GPL-2.0'),
+    'LICENSE.abseil-cpp': os.path.join('..', 'third_party', 'abseil-cpp', 'LICENSE'),
+    'LICENSE.asio': os.path.join('..', 'third_party', 'asio', 'asio', 'LICENSE_1_0.txt'),
+    'LICENSE.boringssl': os.path.join('..', 'third_party', 'boringssl', 'src', 'LICENSE'),
+    'LICENSE.chromium': os.path.join('..', 'third_party', 'chromium', 'LICENSE'),
+    'LICENSE.icu': os.path.join('..', 'third_party', 'icu', 'LICENSE'),
+    'LICENSE.lss': os.path.join('..', 'third_party', 'lss', 'LICENSE'),
+    'LICENSE.mozilla': os.path.join('..', 'third_party', 'mozilla', 'LICENSE.txt'),
+    'LICENSE.protobuf': os.path.join('..', 'third_party', 'protobuf', 'LICENSE'),
+    'LICENSE.quiche': os.path.join('..', 'third_party', 'quiche', 'src', 'LICENSE'),
+    'LICENSE.rapidjson': os.path.join('..', 'third_party', 'rapidjson', 'license.txt'),
+    'LICENSE.xxhash': os.path.join('..', 'third_party', 'xxhash', 'LICENSE'),
+    'LICENSE.zlib': os.path.join('..', 'third_party', 'zlib', 'LICENSE'),
+  }
+  for license in license_maps:
+    shutil.copyfile(license_maps[license], license)
+    paths.append(license)
 
   archive_files(new_archive, paths)
 

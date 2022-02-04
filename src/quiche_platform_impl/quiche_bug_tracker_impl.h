@@ -1,8 +1,8 @@
-// Copyright (c) 2016 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-#ifndef NET_THIRD_PARTY_QUICHE_OVERRIDES_QUICHE_PLATFORM_IMPL_QUICHE_BUG_TRACKER_IMPL_H_
-#define NET_THIRD_PARTY_QUICHE_OVERRIDES_QUICHE_PLATFORM_IMPL_QUICHE_BUG_TRACKER_IMPL_H_
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright (c) 2022 Chilledheart  */
+
+#ifndef QUICHE_OVERRIDES_QUICHE_PLATFORM_IMPL_QUICHE_BUG_TRACKER_IMPL_H_
+#define QUICHE_OVERRIDES_QUICHE_PLATFORM_IMPL_QUICHE_BUG_TRACKER_IMPL_H_
 
 #include "quic/platform/api/quic_logging.h"
 
@@ -17,4 +17,4 @@
 #define QUICHE_PEER_BUG_IF_V2_IMPL(bug_id, condition) \
   QUIC_LOG_IF(ERROR, condition)
 
-#endif  // NET_THIRD_PARTY_QUICHE_OVERRIDES_QUICHE_PLATFORM_IMPL_QUICHE_BUG_TRACKER_IMPL_H_
+#endif  // QUICHE_OVERRIDES_QUICHE_PLATFORM_IMPL_QUICHE_BUG_TRACKER_IMPL_H_
