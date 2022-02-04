@@ -238,6 +238,7 @@ void ParsePathURL(const char* url,
 // FileURL is for file URLs. There are some special rules for interpreting
 // these.
 void ParseFileURL(const char* url, int url_len, Parsed* parsed);
+void ParseFileURL(const char16_t* url, int url_len, Parsed* parsed);
 
 // Filesystem URLs are structured differently than other URLs.
 void ParseFileSystemURL(const char* url, int url_len, Parsed* parsed);
@@ -268,6 +269,7 @@ void ParseMailtoURL(const char* url, int url_len, Parsed* parsed);
 //
 // The 8-bit version requires UTF-8 encoding.
 bool ExtractScheme(const char* url, int url_len, Component* scheme);
+bool ExtractScheme(const char16_t* url, int url_len, Component* scheme);
 
 // Returns true if ch is a character that terminates the authority segment
 // of a URL.
@@ -290,6 +292,7 @@ void ParseAuthority(const char* spec,
 // the two special values below.
 enum SpecialPort { PORT_UNSPECIFIED = -1, PORT_INVALID = -2 };
 int ParsePort(const char* url, const Component& port);
+int ParsePort(const char16_t* url, const Component& port);
 
 // Extracts the range of the file name in the given url. The path must
 // already have been computed by the parse function, and the matching URL

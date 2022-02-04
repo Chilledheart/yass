@@ -137,6 +137,9 @@ template<typename CHAR> struct CharToStringPiece {
 template<> struct CharToStringPiece<char> {
   typedef absl::string_view Piece;
 };
+template<> struct CharToStringPiece<char16_t> {
+  typedef std::u16string Piece;
+};
 
 // Given a string and a range inside the string, compares it to the given
 // lower-case |compare_to| buffer.
@@ -651,6 +654,12 @@ bool GetStandardSchemeType(const char* spec,
   return DoIsStandard(spec, scheme, type);
 }
 
+bool GetStandardSchemeType(const char16_t* spec,
+                           const Component& scheme,
+                           SchemeType* type) {
+  return DoIsStandard(spec, scheme, type);
+}
+
 bool IsReferrerScheme(const char* spec, const Component& scheme) {
   SchemeType unused_scheme_type;
   return DoIsInSchemes(spec, scheme, &unused_scheme_type,
@@ -809,6 +818,12 @@ void EncodeURIComponent(const char* input, int length, CanonOutput* output) {
 }
 
 bool CompareSchemeComponent(const char* spec,
+                            const Component& component,
+                            const char* compare_to) {
+  return DoCompareSchemeComponent(spec, component, compare_to);
+}
+
+bool CompareSchemeComponent(const char16_t* spec,
                             const Component& component,
                             const char* compare_to) {
   return DoCompareSchemeComponent(spec, component, compare_to);

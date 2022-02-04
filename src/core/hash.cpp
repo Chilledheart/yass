@@ -17,7 +17,7 @@ size_t FastHashImpl(const uint8_t* data, size_t length) {
 #if defined(ARCH_CPU_64_BITS)
   return ::XXH3_64bits(reinterpret_cast<const char*>(data), length);
 #else
-  return ::XXH3_32bits(reinterpret_cast<const char*>(data), length);
+  return ::XXH32(reinterpret_cast<const char*>(data), length, 0);
 #endif
 }
 

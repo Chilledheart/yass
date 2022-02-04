@@ -198,21 +198,27 @@ ALWAYS_INLINE constexpr uint64_t CountLeadingZeroBits64(uint64_t x) {
 
 #endif
 
-ALWAYS_INLINE constexpr size_t CountLeadingZeroBitsSizeT(size_t x) {
+#if defined(COMPILER_MSVC) && !defined(__clang__)
+#define MSVC_CONSTEXPR static
+#else
+#define MSVC_CONSTEXPR constexpr
+#endif
+
+ALWAYS_INLINE MSVC_CONSTEXPR size_t CountLeadingZeroBitsSizeT(size_t x) {
   return CountLeadingZeroBits(x);
 }
 
-ALWAYS_INLINE constexpr size_t CountTrailingZeroBitsSizeT(size_t x) {
+ALWAYS_INLINE MSVC_CONSTEXPR size_t CountTrailingZeroBitsSizeT(size_t x) {
   return CountTrailingZeroBits(x);
 }
 
 // Returns the integer i such as 2^i <= n < 2^(i+1)
-constexpr int Log2Floor(uint32_t n) {
+MSVC_CONSTEXPR int Log2Floor(uint32_t n) {
   return 31 - CountLeadingZeroBits(n);
 }
 
 // Returns the integer i such as 2^(i-1) < n <= 2^i
-constexpr int Log2Ceiling(uint32_t n) {
+MSVC_CONSTEXPR int Log2Ceiling(uint32_t n) {
   // When n == 0, we want the function to return -1.
   // When n == 0, (n - 1) will underflow to 0xFFFFFFFF, which is
   // why the statement below starts with (n ? 32 : -1).
@@ -222,12 +228,14 @@ constexpr int Log2Ceiling(uint32_t n) {
 // Returns a value of type T with a single bit set in the left-most position.
 // Can be used instead of manually shifting a 1 to the left.
 template <typename T>
-constexpr T LeftmostBit() {
+MSVC_CONSTEXPR T LeftmostBit() {
   static_assert(std::is_integral<T>::value,
                 "This function can only be used with integral types.");
   T one(1u);
   return one << ((CHAR_BIT * sizeof(T) - 1));
 }
+
+#undef MSVC_CONSTEXPR
 
 }  // namespace bits
 

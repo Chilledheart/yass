@@ -256,6 +256,8 @@ bool IsStringASCII(absl::string_view str);
 // previously-lower-cased ASCII string (typically a constant).
 bool LowerCaseEqualsASCII(absl::string_view str,
                           absl::string_view lowercase_ascii);
+bool LowerCaseEqualsASCII(const std::u16string& str,
+                          absl::string_view lowercase_ascii);
 
 // Indicates case sensitivity of comparisons. Only ASCII case insensitivity
 // is supported. Full Unicode case-insensitive conversions would need to go in

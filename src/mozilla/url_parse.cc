@@ -814,6 +814,11 @@ bool ExtractScheme(const char* url, int url_len, Component* scheme) {
   return DoExtractScheme(url, url_len, scheme);
 }
 
+bool ExtractScheme(const char16_t* url, int url_len, Component* scheme) {
+  return DoExtractScheme(url, url_len, scheme);
+}
+
+
 // This handles everything that may be an authority terminator, including
 // backslash. For special backslash handling see DoParseAfterScheme.
 bool IsAuthorityTerminator(char16_t ch) {
@@ -846,6 +851,10 @@ int ParsePort(const char* url, const Component& port) {
   return DoParsePort(url, port);
 }
 
+int ParsePort(const char16_t* url, const Component& port) {
+  return DoParsePort(url, port);
+}
+
 void ParseStandardURL(const char* url, int url_len, Parsed* parsed) {
   DoParseStandardURL(url, url_len, parsed);
 }
@@ -873,7 +882,22 @@ void ParsePathInternal(const char* spec,
   ParsePath(spec, path, filepath, query, ref);
 }
 
+void ParsePathInternal(const char16_t* spec,
+                       const Component& path,
+                       Component* filepath,
+                       Component* query,
+                       Component* ref) {
+  ParsePath(spec, path, filepath, query, ref);
+}
+
 void ParseAfterScheme(const char* spec,
+                      int spec_len,
+                      int after_scheme,
+                      Parsed* parsed) {
+  DoParseAfterScheme(spec, spec_len, after_scheme, parsed);
+}
+
+void ParseAfterScheme(const char16_t* spec,
                       int spec_len,
                       int after_scheme,
                       Parsed* parsed) {

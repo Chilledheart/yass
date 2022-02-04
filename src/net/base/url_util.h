@@ -143,12 +143,12 @@ std::string GetSuperdomain(absl::string_view domain);
 // function is nonsensical). Does not consider the Public Suffix List.
 // Returns true if both input strings are empty.
 bool IsSubdomainOf(absl::string_view subdomain,
-                              absl::string_view superdomain);
+                   absl::string_view superdomain);
 
 // Canonicalizes |host| and returns it.  Also fills |host_info| with
 // IP address information.  |host_info| must not be NULL.
 std::string CanonicalizeHost(absl::string_view host,
-                                        url::CanonHostInfo* host_info);
+                             url::CanonHostInfo* host_info);
 
 // Returns true if |host| is not an IP address and is compliant with a set of
 // rules based on RFC 1738 and tweaked to be compatible with the real world.

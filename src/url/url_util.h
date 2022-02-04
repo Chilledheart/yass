@@ -157,6 +157,9 @@ bool IsReferrerScheme(const char* spec, const Component& scheme);
 bool GetStandardSchemeType(const char* spec,
                            const Component& scheme,
                            SchemeType* type);
+bool GetStandardSchemeType(const char16_t* spec,
+                           const Component& scheme,
+                           SchemeType* type);
 
 // Hosts  ----------------------------------------------------------------------
 

@@ -153,6 +153,11 @@ bool LowerCaseEqualsASCII(absl::string_view str,
   return internal::DoLowerCaseEqualsASCII(str, lowercase_ascii);
 }
 
+bool LowerCaseEqualsASCII(const std::u16string& str,
+                          absl::string_view lowercase_ascii) {
+  return internal::DoLowerCaseEqualsASCII(str, lowercase_ascii);
+}
+
 bool StartsWith(absl::string_view str,
                 absl::string_view search_for,
                 CompareCase case_sensitivity) {

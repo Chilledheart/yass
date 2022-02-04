@@ -234,8 +234,11 @@ StringT ToString(const CharT* data, size_t size) {
   return StringT(data, data + size);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+
 template <typename StringT>
-StringT DoubleToStringT(double value);
+static StringT DoubleToStringT(double value);
 
 template <>
 std::string DoubleToStringT(double value) {
@@ -247,8 +250,8 @@ std::wstring DoubleToStringT(double value) {
   return std::to_wstring(value);
 }
 
-template <typename STRING>
-bool StringToDoubleImpl(STRING input, const char* data, double& output) {
+static bool StringToDoubleImpl(absl::string_view input, const char* data,
+                               double& output) {
   char* endptr;
   output = strtod(data, &endptr);
   // Cases to return false:
@@ -263,8 +266,8 @@ bool StringToDoubleImpl(STRING input, const char* data, double& output) {
          !IsUnicodeWhitespace(input[0]);
 }
 
-template <typename STRING>
-bool StringToDoubleImpl(STRING input, const wchar_t* data, double& output) {
+static bool StringToDoubleImpl(const std::wstring& input, const wchar_t* data,
+                               double& output) {
   wchar_t* endptr;
   output = wcstod(data, &endptr);
   // Cases to return false:
@@ -278,6 +281,8 @@ bool StringToDoubleImpl(STRING input, const wchar_t* data, double& output) {
          endptr == data + input.size() &&
          !IsUnicodeWhitespace(input[0]);
 }
+
+#pragma GCC diagnostic pop
 
 template <typename OutIter>
 static bool HexStringToByteContainer(absl::string_view input, OutIter output) {

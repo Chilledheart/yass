@@ -577,10 +577,19 @@ include_directories(third_party/googletest/googletest/include SYSTEM)
 
 # xxhash
 include_directories(third_party/xxhash SYSTEM)
-add_library(xxhash OBJECT
-  third_party/xxhash/xxhash.c)
+add_library(xxhash STATIC third_party/xxhash/xxhash.c)
+
+if (COMPILER_MSVC)
+  set_target_properties(xxhash PROPERTIES
+    COMPILE_FLAGS "/wd4255")
+endif()
 
 # protobuf
+if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "dynamic")
+  set(protobuf_MSVC_STATIC_RUNTIME "OFF" CACHE STRING "")
+else()
+  set(protobuf_MSVC_STATIC_RUNTIME "ON" CACHE STRING "")
+endif()
 set(protobuf_BUILD_TESTS "OFF" CACHE STRING "")
 set(protobuf_WITH_ZLIB "OFF" CACHE STRING "")
 add_subdirectory(third_party/protobuf/cmake)
@@ -1236,7 +1245,7 @@ else()
     endif()
 
     ## Disable LTCG for static libraries because this setting introduces ABI incompatibility between minor compiler versions
-    if (NOT CMAKE_MSVC_CRT_LINKAGE STREQUAL "static")
+    if (NOT CMAKE_MSVC_CRT_LINKAGE STREQUAL "static" AND NOT COMPILER_CLANG)
       set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /GL")
       set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")
       set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG")
@@ -1499,7 +1508,7 @@ set (zlib_SRCS
   third_party/zlib/inflate.c
   )
 
-add_library(zlib OBJECT
+add_library(zlib STATIC
   ${zlib_SRCS}
   )
 target_include_directories(zlib PUBLIC
@@ -1511,7 +1520,7 @@ if (COMPILER_GCC OR COMPILER_CLANG)
     COMPILE_FLAGS "-Wno-shadow -Wno-missing-prototypes -Wno-implicit-fallthrough -Wno-format-nonliteral -Wno-sign-compare -Wno-strict-prototypes")
 elseif (COMPILER_MSVC)
   set_target_properties(zlib PROPERTIES
-    COMPILE_FLAGS "/wd4244 /wd4100 /wd4702 /wd4127")
+    COMPILE_FLAGS "/wd4131 /wd4255 /wd4245 /wd4244 /wd4100 /wd4702 /wd4127")
 endif()
 
 # *****************************************************************************************
@@ -1537,11 +1546,24 @@ set(quiche_SRCS
   src/net/quic/platform/impl/quic_hostname_utils_impl.h
   src/net/quic/platform/impl/quic_flags_impl.cc
   src/net/quic/platform/impl/quic_mem_slice_impl.cc
+  src/net/quic/platform/impl/quic_mutex_impl.cc
+  src/net/quic/platform/impl/quic_mutex_impl.h
   src/net/quiche/common/platform/impl/quiche_flags_impl.cc
+  src/net/quiche/common/platform/impl/quiche_time_utils_impl.cc
   src/url/gurl.cc
   src/url/gurl.h
   src/url/scheme_host_port.cc
   src/url/scheme_host_port.h
+  src/url/url_canon_etc.cc
+  src/url/url_canon_filesystemurl.cc
+  src/url/url_canon_fileurl.cc
+  src/url/url_canon_mailtourl.cc
+  src/url/url_canon_pathurl.cc
+  src/url/url_canon_relative.cc
+  src/url/url_canon_stdurl.cc
+  src/url/url_canon_host.cc
+  src/url/url_canon_path.cc
+  src/url/url_canon_query.cc
   src/url/url_canon.cc
   src/url/url_canon.h
   src/url/url_canon_internal.cc
@@ -1555,6 +1577,8 @@ set(quiche_SRCS
   src/url/url_util.cc
   src/url/url_util.h
   src/url/url_util_internal.h
+  src/url/url_parse_file.cc
+  src/url/url_idna_icu.cc
   src/url/origin.cc
   src/url/origin.h
   third_party/quiche/src/common/platform/api/quiche_bug_tracker.h
@@ -2207,7 +2231,6 @@ target_include_directories(quiche PUBLIC
 target_link_libraries(quiche PUBLIC
   libprotobuf-lite
   zlib
-  xxhash
   absl::synchronization
   absl::stacktrace
   absl::symbolize
@@ -2259,6 +2282,7 @@ set(files
     src/core/hash.cpp
     src/core/unguessable_token.cpp
     src/core/pickle.cpp
+    src/core/token.cpp
     src/crypto/aead_base_decrypter.cpp
     src/crypto/aead_base_encrypter.cpp
     src/crypto/aead_evp_decrypter.cpp
@@ -2346,6 +2370,7 @@ set(hfiles
     src/core/cxx20_to_address.hpp
     src/core/pickle.hpp
     src/core/span.hpp
+    src/core/token.hpp
     src/crypto/aead_base_decrypter.hpp
     src/crypto/aead_base_encrypter.hpp
     src/crypto/aead_evp_decrypter.hpp
@@ -2401,6 +2426,7 @@ target_include_directories(yass_base PRIVATE
 target_link_libraries(quiche PUBLIC
   yass_base)
 
+set(SUPPORT_LIBS xxhash ${SUPPORT_LIBS})
 set(SUPPORT_LIBS quiche ${SUPPORT_LIBS})
 
 if (CLI)

@@ -416,7 +416,7 @@ constexpr auto find(InputIterator first,
                     const T& value,
                     Proj proj = {}) {
   for (; first != last; ++first) {
-    if (invoke(proj, *first) == value)
+    if (::invoke(proj, *first) == value)
       break;
   }
 
