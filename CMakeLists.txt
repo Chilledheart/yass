@@ -171,6 +171,8 @@ endif()
 if (MSVC)
   message(STATUS "Build with MSVC target architecture: ${MSVC_PROCESSOR_ARCHITECTURE}")
   message(STATUS "Build with MSVC ${CMAKE_MSVC_CRT_LINKAGE} CRT library")
+elseif(APPLE)
+  message(STATUS "Build with target architecture: ${CMAKE_OSX_ARCHITECTURES}")
 else()
   message(STATUS "Build with target architecture: ${CMAKE_SYSTEM_PROCESSOR}")
 endif()
@@ -190,6 +192,7 @@ option(CLI "Build with cli." ON)
 option(SERVER "Build with server." ON)
 option(GUI "Build against GUI." OFF)
 option(GUI_SANDBOX "Build against GUI sandbox (MAC Only)." OFF)
+option(BUILD_TESTS "Build with test." OFF)
 
 # *****************************************************************************************
 #           Platform-specific
@@ -2671,4 +2674,16 @@ if (GUI)
       ## gtkmm requires it in treeview, oops
       string(REPLACE "-fno-exceptions" "-fexceptions" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     endif()
+endif()
+
+# *****************************************************************************************
+#           Source code: Unit Tests part
+# *****************************************************************************************
+
+if (BUILD_TESTS)
+  add_subdirectory(third_party/googletest)
+  set_target_properties(gtest PROPERTIES
+    COMPILE_FLAGS "-Wno-error")
+  set_target_properties(gmock PROPERTIES
+    COMPILE_FLAGS "-Wno-error")
 endif()
