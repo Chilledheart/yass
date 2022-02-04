@@ -16,7 +16,8 @@
 	branch = stable
 [submodule "third_party/quiche"]
 	path = third_party/quiche/src
-	url = https://quiche.googlesource.com/quiche
+	url = https://github.com/Chilledheart/quiche
+	branch = main
 [submodule "third_party/googletest"]
 	path = third_party/googletest
 	url = https://github.com/google/googletest
