@@ -663,7 +663,7 @@ struct IsStrictOp {
 // I.e. it's mostly an alias for: static_cast<std::make_signed<T>::type>(t)
 template <typename Src>
 constexpr typename std::make_signed<
-    typename internal::UnderlyingType<Src>::type>::type
+    typename UnderlyingType<Src>::type>::type
 as_signed(const Src value) {
   static_assert(std::is_integral<decltype(as_signed(value))>::value,
                 "Argument must be a signed or unsigned integer type.");
@@ -675,7 +675,7 @@ as_signed(const Src value) {
 // I.e. it's mostly an alias for: static_cast<std::make_unsigned<T>::type>(t)
 template <typename Src>
 constexpr typename std::make_unsigned<
-    typename internal::UnderlyingType<Src>::type>::type
+    typename UnderlyingType<Src>::type>::type
 as_unsigned(const Src value) {
   static_assert(std::is_integral<decltype(as_unsigned(value))>::value,
                 "Argument must be a signed or unsigned integer type.");

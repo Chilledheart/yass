@@ -21,7 +21,7 @@ struct SaturateFastAsmOp {
   static constexpr bool is_supported = false;
   static constexpr Dst Do(Src) {
     // Force a compile failure if instantiated.
-    return internal::CheckOnFailure::template HandleFailure<Dst>();
+    return CheckOnFailure::template HandleFailure<Dst>();
   }
 };
 
@@ -32,7 +32,7 @@ struct IsValueInRangeFastOp {
   static constexpr bool is_supported = false;
   static constexpr bool Do(Src value) {
     // Force a compile failure if instantiated.
-    return internal::CheckOnFailure::template HandleFailure<bool>();
+    return CheckOnFailure::template HandleFailure<bool>();
   }
 };
 
@@ -44,7 +44,7 @@ struct IsValueInRangeFastOp<
     typename std::enable_if<
         std::is_integral<Dst>::value && std::is_integral<Src>::value &&
         std::is_signed<Dst>::value && std::is_signed<Src>::value &&
-        !internal::IsTypeInRangeForNumericType<Dst, Src>::value>::type> {
+        !IsTypeInRangeForNumericType<Dst, Src>::value>::type> {
   static constexpr bool is_supported = true;
 
   static constexpr bool Do(Src value) {
@@ -62,7 +62,7 @@ struct IsValueInRangeFastOp<
     typename std::enable_if<
         std::is_integral<Dst>::value && std::is_integral<Src>::value &&
         !std::is_signed<Dst>::value && std::is_signed<Src>::value &&
-        !internal::IsTypeInRangeForNumericType<Dst, Src>::value>::type> {
+        !IsTypeInRangeForNumericType<Dst, Src>::value>::type> {
   static constexpr bool is_supported = true;
 
   static constexpr bool Do(Src value) {
@@ -76,11 +76,11 @@ struct IsValueInRangeFastOp<
 // for the destination type.
 template <typename Dst, typename Src>
 constexpr bool IsValueInRangeForNumericType(Src value) {
-  using SrcType = typename internal::UnderlyingType<Src>::type;
-  return internal::IsValueInRangeFastOp<Dst, SrcType>::is_supported
-             ? internal::IsValueInRangeFastOp<Dst, SrcType>::Do(
+  using SrcType = typename UnderlyingType<Src>::type;
+  return IsValueInRangeFastOp<Dst, SrcType>::is_supported
+             ? IsValueInRangeFastOp<Dst, SrcType>::Do(
                    static_cast<SrcType>(value))
-             : internal::DstRangeRelationToSrcRange<Dst>(
+             : DstRangeRelationToSrcRange<Dst>(
                    static_cast<SrcType>(value))
                    .IsValid();
 }
@@ -89,12 +89,12 @@ constexpr bool IsValueInRangeForNumericType(Src value) {
 // except that it CHECKs that the specified numeric conversion will not
 // overflow or underflow. NaN source will always trigger a CHECK.
 template <typename Dst,
-          class CheckHandler = internal::CheckOnFailure,
+          class CheckHandler = CheckOnFailure,
           typename Src>
 constexpr Dst checked_cast(Src value) {
   // This throws a compile-time error on evaluating the constexpr if it can be
   // determined at compile-time as failing, otherwise it will CHECK at runtime.
-  using SrcType = typename internal::UnderlyingType<Src>::type;
+  using SrcType = typename UnderlyingType<Src>::type;
   return NUMERICS_LIKELY((IsValueInRangeForNumericType<Dst>(value)))
              ? static_cast<Dst>(static_cast<SrcType>(value))
              : CheckHandler::template HandleFailure<Dst>();
@@ -303,7 +303,7 @@ constexpr StrictNumeric<typename UnderlyingType<T>::type> MakeStrictNum(
 #define NUMERIC_COMPARISON_OPERATORS(CLASS, NAME, OP)              \
   template <typename L, typename R,                                     \
             typename std::enable_if<                                    \
-                internal::Is##CLASS##Op<L, R>::value>::type* = nullptr> \
+                Is##CLASS##Op<L, R>::value>::type* = nullptr> \
   constexpr bool operator OP(const L lhs, const R rhs) {                \
     return SafeCompare<NAME, typename UnderlyingType<L>::type,          \
                        typename UnderlyingType<R>::type>(lhs, rhs);     \
@@ -318,17 +318,17 @@ NUMERIC_COMPARISON_OPERATORS(Strict, IsNotEqual, !=)
 
 }  // namespace internal
 
-using internal::as_signed;
-using internal::as_unsigned;
-using internal::checked_cast;
-using internal::IsTypeInRangeForNumericType;
-using internal::IsValueInRangeForNumericType;
-using internal::IsValueNegative;
-using internal::MakeStrictNum;
-using internal::SafeUnsignedAbs;
-using internal::saturated_cast;
-using internal::strict_cast;
-using internal::StrictNumeric;
+using ::internal::as_signed;
+using ::internal::as_unsigned;
+using ::internal::checked_cast;
+using ::internal::IsTypeInRangeForNumericType;
+using ::internal::IsValueInRangeForNumericType;
+using ::internal::IsValueNegative;
+using ::internal::MakeStrictNum;
+using ::internal::SafeUnsignedAbs;
+using ::internal::saturated_cast;
+using ::internal::strict_cast;
+using ::internal::StrictNumeric;
 
 // Explicitly make a shorter size_t alias for convenience.
 using SizeT = StrictNumeric<size_t>;

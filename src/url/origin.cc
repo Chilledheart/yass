@@ -13,7 +13,7 @@
 #include "core/base64.hpp"
 #include "core/check_op.hpp"
 #include "core/contains.hpp"
-#include "base/pickle.h"
+#include "core/pickle.hpp"
 #include "core/string_number_conversions.hpp"
 #include "core/string_util.hpp"
 #include "url/gurl.h"
@@ -319,7 +319,7 @@ absl::optional<std::string> Origin::SerializeWithNonceImpl() const {
   if (!opaque() && !tuple_.IsValid())
     return absl::nullopt;
 
-  base::Pickle pickle;
+  Pickle pickle;
   pickle.WriteString(tuple_.Serialize());
   if (opaque() && !nonce_->raw_token().is_empty()) {
     pickle.WriteUInt64(nonce_->token().GetHighForSerialization());
@@ -331,7 +331,8 @@ absl::optional<std::string> Origin::SerializeWithNonceImpl() const {
   }
 
   // Base64 encode the data to make it nicer to play with.
-  return Base64Encode(pickle.data(), pickle.size());
+  return Base64Encode(reinterpret_cast<const uint8_t*>(pickle.data()),
+                      pickle.size());
 }
 
 // static
@@ -339,8 +340,8 @@ absl::optional<Origin> Origin::Deserialize(const std::string& value) {
   std::string data;
   if (!Base64Decode(value, &data))
     return absl::nullopt;
-  base::Pickle pickle(reinterpret_cast<char*>(&data[0]), data.size());
-  base::PickleIterator reader(pickle);
+  Pickle pickle(reinterpret_cast<char*>(&data[0]), data.size());
+  PickleIterator reader(pickle);
 
   std::string pickled_url;
   if (!reader.ReadString(&pickled_url))

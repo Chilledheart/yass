@@ -2216,8 +2216,6 @@ target_link_libraries(quiche PUBLIC
   absl::flags_marshalling
   )
 
-set_target_properties(quiche PROPERTIES EXCLUDE_FROM_ALL TRUE)
-
 if (COMPILER_GCC OR COMPILER_CLANG)
   set_target_properties(quiche PROPERTIES
     COMPILE_FLAGS "-Wno-shadow -Wno-missing-prototypes -Wno-implicit-fallthrough -Wno-format-nonliteral")
@@ -2260,6 +2258,7 @@ set(files
     src/core/base64.cpp
     src/core/hash.cpp
     src/core/unguessable_token.cpp
+    src/core/pickle.cpp
     src/crypto/aead_base_decrypter.cpp
     src/crypto/aead_base_encrypter.cpp
     src/crypto/aead_evp_decrypter.cpp
@@ -2342,6 +2341,11 @@ set(hfiles
     src/core/base64.hpp
     src/core/token.hpp
     src/core/unguessable_token.hpp
+    src/core/checked_iterators.hpp
+    src/core/contiguous_iterator.hpp
+    src/core/cxx20_to_address.hpp
+    src/core/pickle.hpp
+    src/core/span.hpp
     src/crypto/aead_base_decrypter.hpp
     src/crypto/aead_base_encrypter.hpp
     src/crypto/aead_evp_decrypter.hpp
@@ -2393,6 +2397,11 @@ add_library(yass_base OBJECT
 set_target_properties(yass_base PROPERTIES POSITION_INDEPENDENT_CODE True)
 target_include_directories(yass_base PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+target_link_libraries(quiche PUBLIC
+  yass_base)
+
+set(SUPPORT_LIBS quiche ${SUPPORT_LIBS})
 
 if (CLI)
   add_executable(yass_cli

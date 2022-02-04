@@ -232,19 +232,19 @@ NUMERIC_COMPARISON_OPERATORS(Clamped, IsNotEqual, !=)
 
 }  // namespace internal
 
-using internal::ClampedNumeric;
-using internal::MakeClampedNum;
-using internal::ClampMax;
-using internal::ClampMin;
-using internal::ClampAdd;
-using internal::ClampSub;
-using internal::ClampMul;
-using internal::ClampDiv;
-using internal::ClampMod;
-using internal::ClampLsh;
-using internal::ClampRsh;
-using internal::ClampAnd;
-using internal::ClampOr;
-using internal::ClampXor;
+using ::internal::ClampedNumeric;
+using ::internal::MakeClampedNum;
+using ::internal::ClampMax;
+using ::internal::ClampMin;
+using ::internal::ClampAdd;
+using ::internal::ClampSub;
+using ::internal::ClampMul;
+using ::internal::ClampDiv;
+using ::internal::ClampMod;
+using ::internal::ClampLsh;
+using ::internal::ClampRsh;
+using ::internal::ClampAnd;
+using ::internal::ClampOr;
+using ::internal::ClampXor;
 
 #endif  // NUMERICS_CLAMPED_MATH_H_

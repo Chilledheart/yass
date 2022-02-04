@@ -86,7 +86,7 @@ struct ClampedAddOp<T,
                   "provided types.");
     const V saturated = CommonMaxOrMin<V>(IsValueNegative(y));
     V result = {};
-    return CORE_NUMERICS_LIKELY((CheckedAddOp<T, U>::Do(x, y, &result)))
+    return NUMERICS_LIKELY((CheckedAddOp<T, U>::Do(x, y, &result)))
                ? result
                : saturated;
   }
@@ -112,7 +112,7 @@ struct ClampedSubOp<T,
                   "provided types.");
     const V saturated = CommonMaxOrMin<V>(!IsValueNegative(y));
     V result = {};
-    return CORE_NUMERICS_LIKELY((CheckedSubOp<T, U>::Do(x, y, &result)))
+    return NUMERICS_LIKELY((CheckedSubOp<T, U>::Do(x, y, &result)))
                ? result
                : saturated;
   }
@@ -135,7 +135,7 @@ struct ClampedMulOp<T,
     V result = {};
     const V saturated =
         CommonMaxOrMin<V>(IsValueNegative(x) ^ IsValueNegative(y));
-    return CORE_NUMERICS_LIKELY((CheckedMulOp<T, U>::Do(x, y, &result)))
+    return NUMERICS_LIKELY((CheckedMulOp<T, U>::Do(x, y, &result)))
                ? result
                : saturated;
   }
@@ -153,7 +153,7 @@ struct ClampedDivOp<T,
   template <typename V = result_type>
   static constexpr V Do(T x, U y) {
     V result = {};
-    if (CORE_NUMERICS_LIKELY((CheckedDivOp<T, U>::Do(x, y, &result))))
+    if (NUMERICS_LIKELY((CheckedDivOp<T, U>::Do(x, y, &result))))
       return result;
     // Saturation goes to max, min, or NaN (if x is zero).
     return x ? CommonMaxOrMin<V>(IsValueNegative(x) ^ IsValueNegative(y))
@@ -173,7 +173,7 @@ struct ClampedModOp<T,
   template <typename V = result_type>
   static constexpr V Do(T x, U y) {
     V result = {};
-    return CORE_NUMERICS_LIKELY((CheckedModOp<T, U>::Do(x, y, &result)))
+    return NUMERICS_LIKELY((CheckedModOp<T, U>::Do(x, y, &result)))
                ? result
                : x;
   }
@@ -193,11 +193,11 @@ struct ClampedLshOp<T,
   template <typename V = result_type>
   static constexpr V Do(T x, U shift) {
     static_assert(!std::is_signed<U>::value, "Shift value must be unsigned.");
-    if (CORE_NUMERICS_LIKELY(shift < std::numeric_limits<T>::digits)) {
+    if (NUMERICS_LIKELY(shift < std::numeric_limits<T>::digits)) {
       // Shift as unsigned to avoid undefined behavior.
       V result = static_cast<V>(as_unsigned(x) << shift);
       // If the shift can be reversed, we know it was valid.
-      if (CORE_NUMERICS_LIKELY(result >> shift == x))
+      if (NUMERICS_LIKELY(result >> shift == x))
         return result;
     }
     return x ? CommonMaxOrMin<V>(IsValueNegative(x)) : 0;
@@ -219,7 +219,7 @@ struct ClampedRshOp<T,
     static_assert(!std::is_signed<U>::value, "Shift value must be unsigned.");
     // Signed right shift is odd, because it saturates to -1 or 0.
     const V saturated = as_unsigned(V(0)) - IsValueNegative(x);
-    return CORE_NUMERICS_LIKELY(shift < IntegerBitsPlusSign<T>::value)
+    return NUMERICS_LIKELY(shift < IntegerBitsPlusSign<T>::value)
                ? saturated_cast<V>(x >> shift)
                : saturated;
   }
@@ -311,7 +311,7 @@ struct ClampedMinOp<
 
 // This is just boilerplate that wraps the standard floating point arithmetic.
 // A macro isn't the nicest solution, but it beats rewriting these repeatedly.
-#define CORE_FLOAT_ARITHMETIC_OPS(NAME, OP)                              \
+#define FLOAT_ARITHMETIC_OPS(NAME, OP)                              \
   template <typename T, typename U>                                      \
   struct Clamped##NAME##Op<                                              \
       T, U,                                                              \
@@ -324,12 +324,12 @@ struct ClampedMinOp<
     }                                                                    \
   };
 
-CORE_FLOAT_ARITHMETIC_OPS(Add, +)
-CORE_FLOAT_ARITHMETIC_OPS(Sub, -)
-CORE_FLOAT_ARITHMETIC_OPS(Mul, *)
-CORE_FLOAT_ARITHMETIC_OPS(Div, /)
+FLOAT_ARITHMETIC_OPS(Add, +)
+FLOAT_ARITHMETIC_OPS(Sub, -)
+FLOAT_ARITHMETIC_OPS(Mul, *)
+FLOAT_ARITHMETIC_OPS(Div, /)
 
-#undef CORE_FLOAT_ARITHMETIC_OPS
+#undef FLOAT_ARITHMETIC_OPS
 
 }  // namespace internal
 
