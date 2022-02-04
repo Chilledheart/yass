@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2022 Chilledheart  */
 
+#ifdef _WIN32
+
 #include "core/string_number_conversions_win.hpp"
 
 #include <string>
@@ -68,3 +70,5 @@ bool StringToSizeT(const std::wstring& input, size_t* output) {
 bool StringToDouble(const std::wstring& input, double* output) {
   return internal::StringToDoubleImpl(input, input.data(), *output);
 }
+
+#endif

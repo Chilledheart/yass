@@ -7,6 +7,8 @@
 
 #include <absl/strings/string_view.h>
 
+#include "core/compiler_specific.hpp"
+
 // This file contains utility functions for parsing numbers, in the context of
 // network protocols.
 //
@@ -80,13 +82,13 @@ enum class ParseIntError {
 // On failure, it is guaranteed that |*output| was not modified. If
 // |optional_error| was non-null, then it is filled with the reason for the
 // failure.
-[[nodiscard]] bool ParseInt32(
+WARN_UNUSED_RESULT bool ParseInt32(
     const absl::string_view& input,
     ParseIntFormat format,
     int32_t* output,
     ParseIntError* optional_error = nullptr);
 
-[[nodiscard]] bool ParseInt64(
+WARN_UNUSED_RESULT bool ParseInt64(
     const absl::string_view& input,
     ParseIntFormat format,
     int64_t* output,
@@ -96,12 +98,12 @@ enum class ParseIntError {
 //
 // These are equivalent to calling ParseInt*() with a format string of
 // ParseIntFormat::NON_NEGATIVE and unsigned output types.
-[[nodiscard]] bool ParseUint32(
+WARN_UNUSED_RESULT bool ParseUint32(
     const absl::string_view& input,
     uint32_t* output,
     ParseIntError* optional_error = nullptr);
 
-[[nodiscard]] bool ParseUint64(
+WARN_UNUSED_RESULT bool ParseUint64(
     const absl::string_view& input,
     uint64_t* output,
     ParseIntError* optional_error = nullptr);

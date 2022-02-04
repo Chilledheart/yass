@@ -252,7 +252,7 @@ T GetValueFromDictionary(CFDictionaryRef dict, CFStringRef key) {
 // Converts |range| to an NSRange, returning the new range in |range_out|.
 // Returns true if conversion was successful, false if the values of |range|
 // could not be converted to NSUIntegers.
-[[nodiscard]] bool CFRangeToNSRange(CFRange range, NSRange* range_out);
+WARN_UNUSED_RESULT bool CFRangeToNSRange(CFRange range, NSRange* range_out);
 #endif  // defined(__OBJC__)
 
 // Stream operations for CFTypes. They can be used with NSTypes as well

@@ -14,6 +14,7 @@
 
 #include <absl/strings/string_view.h>
 #include "core/check_op.hpp"
+#include "core/compiler_specific.hpp"
 
 namespace net {
 
@@ -189,7 +190,7 @@ class IPAddress {
   //
   // When parsing fails, the original value of |this| will be overwritten such
   // that |this->empty()| and |!this->IsValid()|.
-  [[nodiscard]] bool AssignFromIPLiteral(const absl::string_view& ip_literal);
+  WARN_UNUSED_RESULT bool AssignFromIPLiteral(const absl::string_view& ip_literal);
 
   // Returns the underlying bytes.
   const IPAddressBytes& bytes() const { return ip_address_; }
@@ -277,7 +278,7 @@ bool ParseCIDRBlock(absl::string_view cidr_literal,
 // In other words, |hostname| must be an IPv4 literal, or an IPv6 literal
 // surrounded by brackets as in [::1]. On failure |ip_address| may have been
 // overwritten and could contain an invalid IPAddress.
-[[nodiscard]] bool ParseURLHostnameToAddress(
+WARN_UNUSED_RESULT bool ParseURLHostnameToAddress(
     const absl::string_view& hostname,
     IPAddress* ip_address);
 

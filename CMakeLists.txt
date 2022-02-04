@@ -781,7 +781,7 @@ endfunction()
 if (COMPILER_GCC OR COMPILER_CLANG)
   # Note clang-cl is odd and sets both CLANG and MSVC. We base our configuration
   # primarily on our normal Clang one.
-  set(C_CXX_FLAGS "-Werror -Wformat=2 -Wsign-compare -Wmissing-field-initializers -Wwrite-strings -Wvla -Wshadow")
+  set(C_CXX_FLAGS "-Werror -Wformat=2 -Wsign-compare -Wmissing-field-initializers -Wwrite-strings -Wvla -Wno-shadow")
 
   if (MSVC)
     # clang-cl sets different default warnings than clang. It also treats -Wall
@@ -1518,9 +1518,12 @@ target_include_directories(zlib PUBLIC
   third_party/zlib
   )
 target_compile_definitions(zlib PRIVATE "-DCPU_NO_SIMD")
-if (COMPILER_GCC OR COMPILER_CLANG)
+if (COMPILER_CLANG)
   set_target_properties(zlib PROPERTIES
-    COMPILE_FLAGS "-Wno-shadow -Wno-missing-prototypes -Wno-implicit-fallthrough -Wno-format-nonliteral -Wno-sign-compare -Wno-strict-prototypes")
+    COMPILE_FLAGS "-Wno-missing-prototypes -Wno-implicit-fallthrough -Wno-format-nonliteral -Wno-sign-compare -Wno-strict-prototypes")
+elseif (COMPILER_GCC)
+  set_target_properties(zlib PROPERTIES
+    COMPILE_FLAGS "-Wno-missing-prototypes -Wno-implicit-fallthrough -Wno-format-nonliteral -Wno-sign-compare -Wno-strict-prototypes -Wno-old-style-definition -Wno-unused-variable")
 elseif (COMPILER_MSVC)
   set_target_properties(zlib PROPERTIES
     COMPILE_FLAGS "/wd4131 /wd4255 /wd4245 /wd4244 /wd4100 /wd4702 /wd4127")
@@ -2244,9 +2247,12 @@ target_link_libraries(quiche PUBLIC
   absl::flags_marshalling
   )
 
-if (COMPILER_GCC OR COMPILER_CLANG)
+if (COMPILER_CLANG)
   set_target_properties(quiche PROPERTIES
-    COMPILE_FLAGS "-Wno-shadow -Wno-missing-prototypes -Wno-implicit-fallthrough -Wno-format-nonliteral")
+    COMPILE_FLAGS "-Wno-missing-prototypes -Wno-implicit-fallthrough -Wno-format-nonliteral")
+elseif (COMPILER_GCC)
+  set_target_properties(quiche PROPERTIES
+    COMPILE_FLAGS "-Wno-missing-declarations -Wno-implicit-fallthrough -Wno-format-nonliteral -Wno-ignored-qualifiers -Wno-unused-variable -Wno-deprecated-copy -Wno-unused-but-set-variable -Wno-strict-overflow")
 endif()
 
 # *****************************************************************************************

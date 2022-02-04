@@ -5,6 +5,7 @@
 #define CORE_SCOPED_TYPEREF_H
 
 #include "core/check.hpp"
+#include "core/compiler_specific.hpp"
 #include "core/scoped_policy.hpp"
 
 // ScopedTypeRef<> is patterned after std::unique_ptr<>, but maintains ownership
@@ -87,7 +88,7 @@ class ScopedTypeRef {
   // This is to be used only to take ownership of objects that are created
   // by pass-by-pointer create functions. To enforce this, require that the
   // object be reset to NULL before this may be used.
-  [[nodiscard]] element_type* InitializeInto() {
+  WARN_UNUSED_RESULT element_type* InitializeInto() {
     DCHECK(!object_);
     return &object_;
   }
@@ -122,7 +123,7 @@ class ScopedTypeRef {
   // ScopedTypeRef<>::release() is like std::unique_ptr<>::release.  It is NOT
   // a wrapper for Release().  To force a ScopedTypeRef<> object to call
   // Release(), use ScopedTypeRef<>::reset().
-  [[nodiscard]] element_type release() {
+  WARN_UNUSED_RESULT element_type release() {
     element_type temp = object_;
     object_ = Traits::InvalidValue();
     return temp;
