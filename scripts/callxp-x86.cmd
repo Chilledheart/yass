@@ -5,27 +5,22 @@ REM Targeting from the Command Line
 REM https://devblogs.microsoft.com/cppblog/windows-xp-targeting-with-c-in-visual-studio-2012/
 
 set _path=
-call :set_path "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin"
+call :set_path "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Tools\MSVC\14.16.27023\bin\HostX86\x86"
 call :set_path "C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\bin"
 call :set_path "C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6.1 Tools"
-call :set_path "C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\Tools\bin"
-call :set_path "C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\Tools"
-call :set_path "C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\IDE"
-call :set_path "C:\Program Files (x86)\HTML Help Workshop"
-call :set_path "C:\Program Files (x86)\MSBuild\14.0\bin"
-call :set_path "C:\Windows\Microsoft.NET\Framework\v4.0.30319"
+call :set_path "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\CommonExtensions\Microsoft\TeamFoundation\Team Explorer"
+call :set_path "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin"
 call :set_path "C:\Windows\SysWow64"
-call :set_path "C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\IDE\CommonExtensions\Microsoft\TeamFoundation\Team Explorer\NativeBinaries\x86"
 
 set _include=
-call :set_include "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include"
-call :set_include "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\atlmfc\include"
+call :set_include "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Tools\MSVC\14.16.27023\include"
+call :set_include "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Tools\MSVC\14.16.27023\atlmfc\include"
 call :set_include "C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt"
 call :set_include "C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\include"
 
 set _lib=
-call :set_lib "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\lib"
-call :set_lib "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\atlmfc\lib"
+call :set_lib "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Tools\MSVC\14.16.27023\lib\x86"
+call :set_lib "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Tools\MSVC\14.16.27023\atlmfc\lib\x86"
 call :set_lib "C:\Program Files (x86)\Windows Kits\10\lib\10.0.10240.0\ucrt\x86"
 call :set_lib "C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\lib"
 

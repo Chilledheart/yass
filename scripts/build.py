@@ -198,9 +198,20 @@ def _get_win32_search_paths():
   # C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\redist
   if vctools_version >= 14.30:
     vcredist_dir = os.getenv('VCToolsRedistDir')
-  elif vctools_version >= 14.10 and vctools_version < 14.30:
+  elif vctools_version >= 14.20 and vctools_version < 14.30:
     vcredist_dir = os.path.join(os.getenv('VCINSTALLDIR'), 'Redist', 'MSVC',
                                 os.getenv('VCToolsVersion'))
+    # fallback
+    if not os.path.exists(vcredist_dir):
+      vcredist_dir = os.path.join(os.getenv('VCINSTALLDIR'), 'Redist', 'MSVC',
+                                  '14.29.30133')
+  elif vctools_version >= 14.10 and vctools_version < 14.20:
+    vcredist_dir = os.path.join(os.getenv('VCINSTALLDIR'), 'Redist', 'MSVC',
+                                os.getenv('VCToolsVersion'))
+    # fallback
+    if not os.path.exists(vcredist_dir):
+      vcredist_dir = os.path.join(os.getenv('VCINSTALLDIR'), 'Redist', 'MSVC',
+                                  '14.16.27012')
   elif vctools_version >= 14.00 and vctools_version < 14.10:
     vcredist_dir = os.path.join(os.getenv('VCINSTALLDIR'), 'redist')
   else:
@@ -243,10 +254,10 @@ def _get_win32_search_paths():
                  sdk_version, 'Redist', 'Debug', DEFAULT_ARCH),
   ])
 
-  ### Fallback search path for XP (v140)
+  ### Fallback search path for XP (v140_xp, v141_xp)
   ### Refer to #27, https://github.com/Chilledheart/yass/issues/27
   ### $project_root\third_party\vcredist\x86
-  if vctools_version >= 14.00 and vctools_version < 14.10:
+  if vctools_version >= 14.00 and vctools_version < 14.20:
     search_dirs.extend([
       os.path.abspath(os.path.join('..', 'third_party', 'vcredist', DEFAULT_ARCH))
     ])

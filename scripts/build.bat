@@ -20,7 +20,7 @@ REM You need to modify the paths below:
 
 REM Use Visual Studio 2015's toolchain for (x86, x64)
 
-set VCToolsVersion=14.0
+set VCToolsVersion=14.16
 set Winsdk=10.0.19041.0
 set "WindowsSDKVersion=%Winsdk%\"
 

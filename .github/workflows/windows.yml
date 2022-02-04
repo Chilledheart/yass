@@ -83,17 +83,19 @@ jobs:
             mkdir third_party\vcredist
             curl -L -O https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311-binaries.zip
             "C:\Program Files\7-Zip\7z.exe" x -owix311 wix311-binaries.zip
-            wix311\dark.exe "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\redist\1033\vcredist_x86.exe" -x tmp
+            curl -L -O https://aka.ms/vs/15/release/vc_redist.x86.exe
+            wix311\dark.exe "vc_redist.x86.exe" -x tmp
             "C:\Program Files\7-Zip\7z.exe" x "-othird_party\vcredist\x86" "tmp\AttachedContainer\packages\vcRuntimeMinimum_x86\cab1.cab"
-            python -c "import os; os.chdir('third_party/vcredist/x86'); dlls = os.listdir('.'); [ os.rename(dll, dll.replace('_', '-')) for dll in dlls ];"
-            wix311\dark.exe "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\redist\1033\vcredist_x64.exe" -x tmp
+            python -c "import os; os.chdir('third_party/vcredist/x86'); dlls = os.listdir('.'); [ os.rename(dll, dll.replace('_', '-')) for dll in dlls if dll.startswith('api') ];"
+            curl -L -O https://aka.ms/vs/15/release/vc_redist.x64.exe
+            wix311\dark.exe "vc_redist.x64.exe" -x tmp
             "C:\Program Files\7-Zip\7z.exe" x "-othird_party\vcredist\x64" "tmp\AttachedContainer\packages\vcRuntimeMinimum_amd64\cab1.cab"
-            python -c "import os; os.chdir('third_party/vcredist/x64'); dlls = os.listdir('.'); [ os.rename(dll, dll.replace('_', '-')) for dll in dlls ];"
+            python -c "import os; os.chdir('third_party/vcredist/x64'); dlls = os.listdir('.'); [ os.rename(dll, dll.replace('_', '-')) for dll in dlls if dll.startswith('api') ];"
             del /s /q wix311* tmp
           )
       - name: "Install dependency: boringssl (x86 slice)"
         run: |
-          set VCToolsVersion=14.0
+          set VCToolsVersion=14.16
           set Winsdk=10.0.19041.0
           set "WindowsSDKVersion=%Winsdk%\"
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
@@ -111,7 +113,7 @@ jobs:
           call "scripts\build-boringssl.bat"
       - name: "Install dependency: boringssl (x64 slice)"
         run: |
-          set VCToolsVersion=14.0
+          set VCToolsVersion=14.16
           set Winsdk=10.0.19041.0
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
@@ -145,8 +147,8 @@ jobs:
           call "scripts\build-boringssl.bat"
       - name: "Install dependency: boringssl (x86-xp slice)"
         run: |
-          set VCToolsVersion=14.0
-          set "VCINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC"
+          set VCToolsVersion=14.16.27012
+          set "VCINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC"
           set "WindowsSDKVersion=10.0.10240.0\"
           set "WindowsSdkDir=C:\Program Files (x86)\Windows Kits\10"
           set "PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;%PATH%"
@@ -166,8 +168,8 @@ jobs:
           call "scripts\build-boringssl.bat"
       - name: "Install dependency: boringssl (x64-xp slice)"
         run: |
-          set VCToolsVersion=14.0
-          set "VCINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC"
+          set VCToolsVersion=14.16.27012
+          set "VCINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC"
           set "WindowsSDKVersion=10.0.10240.0\"
           set "WindowsSdkDir=C:\Program Files (x86)\Windows Kits\10"
           set "PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;%PATH%"
@@ -245,7 +247,7 @@ jobs:
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
-          set VCToolsVersion=14.0
+          set VCToolsVersion=14.16
           set Winsdk=10.0.19041.0
           set "WindowsSDKVersion=%Winsdk%\"
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
@@ -347,8 +349,8 @@ jobs:
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
-          set VCToolsVersion=14.0
-          set "VCINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC"
+          set VCToolsVersion=14.16.27012
+          set "VCINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC"
           set "WindowsSDKVersion=10.0.10240.0\"
           set "WindowsSdkDir=C:\Program Files (x86)\Windows Kits\10"
           set "PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;%PATH%"
@@ -480,27 +482,6 @@ jobs:
       - name: Build Vistual Studio 2017 (v141)
         run: |
           set VCToolsVersion=14.16
-          set Winsdk=10.0.19041.0
-          set "WindowsSDKVersion=%Winsdk%\"
-          if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
-          set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
-          set "VSCMD_START_DIR=%CD%"
-          set CC=
-          set CXX=
-          set Platform=${{ matrix.arch }}
-          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
-
-          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
-
-          python -u .\scripts\build.py || exit /b
-
-          exit /b 0
-
-          :SetNewVCToolsVersion
-          set VCToolsVersion=
-      - name: Build Vistual Studio 2015 (v140)
-        run: |
-          set VCToolsVersion=14.0
           set Winsdk=10.0.19041.0
           set "WindowsSDKVersion=%Winsdk%\"
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
@@ -654,7 +635,7 @@ jobs:
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
-          set VCToolsVersion=14.29
+          set VCToolsVersion=14.16
           set Winsdk=10.0.19041.0
           set "WindowsSDKVersion=%Winsdk%\"
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
@@ -752,7 +733,7 @@ jobs:
           key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
-          set VCToolsVersion=14.29
+          set VCToolsVersion=14.16
           set Winsdk=10.0.19041.0
           set "WindowsSDKVersion=%Winsdk%\"
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
