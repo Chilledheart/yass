@@ -29,26 +29,10 @@ jobs:
           path: |
             third_party/llvm-build/Release+Asserts
           key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get boringssl commit
-        run: git submodule status --cached third_party/boringssl >> boringssl.lock
-      - name: Cache boringssl packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/boringssl/libcrypto.a
-            third_party/boringssl/x64-libcrypto.a
-            third_party/boringssl/arm64-libcrypto.a
-            third_party/boringssl/libssl.a
-            third_party/boringssl/x64-libssl.a
-            third_party/boringssl/arm64-libssl.a
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
-      - name: "Install dependency: boringssl (universal)"
-        run: |
-          ./scripts/build-boringssl.sh
 
   mac-release:
     needs: cache-toolchain-mac
@@ -72,19 +56,6 @@ jobs:
           path: |
             third_party/llvm-build/Release+Asserts
           key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get boringssl commit
-        run: git submodule status --cached third_party/boringssl >> boringssl.lock
-      - name: Cache boringssl packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/boringssl/libcrypto.a
-            third_party/boringssl/x64-libcrypto.a
-            third_party/boringssl/arm64-libcrypto.a
-            third_party/boringssl/libssl.a
-            third_party/boringssl/x64-libssl.a
-            third_party/boringssl/arm64-libssl.a
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
         run: brew install ninja cmake
       - name: Build
@@ -130,19 +101,6 @@ jobs:
           path: |
             third_party/llvm-build/Release+Asserts
           key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get boringssl commit
-        run: git submodule status --cached third_party/boringssl >> boringssl.lock
-      - name: Cache boringssl packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/boringssl/libcrypto.a
-            third_party/boringssl/x64-libcrypto.a
-            third_party/boringssl/arm64-libcrypto.a
-            third_party/boringssl/libssl.a
-            third_party/boringssl/x64-libssl.a
-            third_party/boringssl/arm64-libssl.a
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
         run: brew install ninja cmake
       - name: Build

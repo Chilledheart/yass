@@ -61,22 +61,10 @@ jobs:
           path: |
             third_party/llvm-build/Release+Asserts
           key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get boringssl commit
-        run: git submodule status --cached third_party/boringssl >> boringssl.lock
-      - name: Cache boringssl packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/boringssl/libcrypto.a
-            third_party/boringssl/libssl.a
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.arch }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
-      - name: "Install dependency: boringssl"
-        run: |
-          ./scripts/build-boringssl.sh
 
   ubuntu-latest:
     needs: cache-toolchain-linux
@@ -100,15 +88,6 @@ jobs:
           path: |
             third_party/llvm-build/Release+Asserts
           key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get boringssl commit
-        run: git submodule status --cached third_party/boringssl >> boringssl.lock
-      - name: Cache boringssl packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/boringssl/libcrypto.a
-            third_party/boringssl/libssl.a
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.arch }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
         run: sudo apt-get install -y cmake ninja-build libgtk-3-dev libgtkmm-3.0-dev
       - name: Build
@@ -145,15 +124,6 @@ jobs:
           path: |
             third_party/llvm-build/Release+Asserts
           key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get boringssl commit
-        run: git submodule status --cached third_party/boringssl >> boringssl.lock
-      - name: Cache boringssl packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/boringssl/libcrypto.a
-            third_party/boringssl/libssl.a
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.arch }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
         run: sudo apt-get install -y cmake ninja-build libgtk-3-dev libgtkmm-3.0-dev
       - name: Build

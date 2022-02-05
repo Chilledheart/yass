@@ -18,8 +18,6 @@ embedded devices and low end boxes.
 %setup -q -n %{name}-%{version}
 
 %build
-./scripts/build-boringssl.sh
-
 mkdir build
 cd build
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc" -DGUI=on -DCLI=off -DSERVER=off ..

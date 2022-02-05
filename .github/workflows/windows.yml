@@ -51,18 +51,6 @@ jobs:
             !${{ env.VCPKG_ROOT }}/packages
             !${{ env.VCPKG_ROOT }}/downloads
           key: toolchain-cache-${{ runner.os }}-vcpkg-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get boringssl commit
-        run: git submodule status --cached third_party/boringssl >> boringssl.lock
-      - name: Cache boringssl packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/boringssl/**/crypto.lib
-            third_party/boringssl/**/crypto.pdb
-            third_party/boringssl/**/vc140.pdb
-            third_party/boringssl/**/ssl.lib
-            third_party/boringssl/**/ssl.pdb
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: "Install dependency: nasm"
         run: |
           if not exist "third_party\nasm\nasm.exe" (
@@ -139,18 +127,6 @@ jobs:
             !${{ env.VCPKG_ROOT }}/packages
             !${{ env.VCPKG_ROOT }}/downloads
           key: toolchain-cache-${{ runner.os }}-vcpkg-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get boringssl commit
-        run: git submodule status --cached third_party/boringssl >> boringssl.lock
-      - name: Cache boringssl packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/boringssl/**/crypto.lib
-            third_party/boringssl/**/crypto.pdb
-            third_party/boringssl/**/vc140.pdb
-            third_party/boringssl/**/ssl.lib
-            third_party/boringssl/**/ssl.pdb
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
           set VCToolsVersion=14.16
@@ -163,6 +139,8 @@ jobs:
           set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set Platform=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
+
+          set "Path=%CD%\third_party\nasm;%Path%"
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
 
@@ -241,18 +219,6 @@ jobs:
             !${{ env.VCPKG_ROOT }}/packages
             !${{ env.VCPKG_ROOT }}/downloads
           key: toolchain-cache-${{ runner.os }}-vcpkg-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get boringssl commit
-        run: git submodule status --cached third_party/boringssl >> boringssl.lock
-      - name: Cache boringssl packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/boringssl/**/crypto.lib
-            third_party/boringssl/**/crypto.pdb
-            third_party/boringssl/**/vc140.pdb
-            third_party/boringssl/**/ssl.lib
-            third_party/boringssl/**/ssl.pdb
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
           set VCToolsVersion=14.16.27012
@@ -272,6 +238,8 @@ jobs:
 
           if "${{ matrix.arch }}" == "x86" (call :SetX86CompileTriple)
           if "${{ matrix.arch }}" == "amd64" (call :SetX64CompileTriple)
+
+          set "Path=%CD%\third_party\nasm;%Path%"
 
           call "scripts\callxp-%Platform%.cmd"
 
@@ -352,18 +320,6 @@ jobs:
             !${{ env.VCPKG_ROOT }}/packages
             !${{ env.VCPKG_ROOT }}/downloads
           key: toolchain-cache-${{ runner.os }}-vcpkg-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get boringssl commit
-        run: git submodule status --cached third_party/boringssl >> boringssl.lock
-      - name: Cache boringssl packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/boringssl/**/crypto.lib
-            third_party/boringssl/**/crypto.pdb
-            third_party/boringssl/**/vc140.pdb
-            third_party/boringssl/**/ssl.lib
-            third_party/boringssl/**/ssl.pdb
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build Vistual Studio 2019 (v142)
         run: |
           set VCToolsVersion=14.29
@@ -376,6 +332,8 @@ jobs:
           set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set Platform=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
+
+          set "Path=%CD%\third_party\nasm;%Path%"
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
 
@@ -397,6 +355,8 @@ jobs:
           set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set Platform=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
+
+          set "Path=%CD%\third_party\nasm;%Path%"
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
 
@@ -449,18 +409,6 @@ jobs:
             !${{ env.VCPKG_ROOT }}/packages
             !${{ env.VCPKG_ROOT }}/downloads
           key: toolchain-cache-${{ runner.os }}-vcpkg-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get boringssl commit
-        run: git submodule status --cached third_party/boringssl >> boringssl.lock
-      - name: Cache boringssl packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/boringssl/**/crypto.lib
-            third_party/boringssl/**/crypto.pdb
-            third_party/boringssl/**/vc140.pdb
-            third_party/boringssl/**/ssl.lib
-            third_party/boringssl/**/ssl.pdb
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build Vistual Studio 2022 (v143)
         run: |
           set VCToolsVersion=
@@ -473,6 +421,8 @@ jobs:
           set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set Platform=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
+
+          set "Path=%CD%\third_party\nasm;%Path%"
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
 
@@ -526,18 +476,6 @@ jobs:
             !${{ env.VCPKG_ROOT }}/packages
             !${{ env.VCPKG_ROOT }}/downloads
           key: toolchain-cache-${{ runner.os }}-vcpkg-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get boringssl commit
-        run: git submodule status --cached third_party/boringssl >> boringssl.lock
-      - name: Cache boringssl packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/boringssl/**/crypto.lib
-            third_party/boringssl/**/crypto.pdb
-            third_party/boringssl/**/vc140.pdb
-            third_party/boringssl/**/ssl.lib
-            third_party/boringssl/**/ssl.pdb
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
           set VCToolsVersion=14.16
@@ -552,6 +490,8 @@ jobs:
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
 
           set "CLANG_TIDY_EXECUTABLE=%CD%/third_party/llvm-build/Release+Asserts/bin/clang-tidy.exe"
+
+          set "Path=%CD%\third_party\nasm;%Path%"
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
 

@@ -32,6 +32,17 @@ endif (POLICY CMP0048)
 if(POLICY CMP0091)
   cmake_policy(SET CMP0091 NEW)
 endif()
+
+# The OLD behavior of this policy is to only allow GENERATED to be
+# visible from the directory scope for which it was set.  The NEW
+# behavior on the other hand allows it to be visible from any scope.
+#
+# Turn on Fix on https://gitlab.kitware.com/cmake/cmake/-/issues/18399
+# Introduced by cmake 3.20
+if(POLICY CMP0118)
+  cmake_policy(SET CMP0118 NEW)
+endif()
+
 # https://docs.microsoft.com/en-us/cpp/c-runtime-library/crt-library-features?redirectedfrom=MSDN&view=msvc-170
 set(CMAKE_MSVC_CRT_LINKAGE "dynamic" CACHE STRING "")
 if (VCPKG_CRT_LINKAGE AND NOT VCPKG_CRT_LINKAGE STREQUAL CMAKE_MSVC_CRT_LINKAGE)
@@ -293,8 +304,6 @@ endif()
 #           Third Party Libraries
 # *****************************************************************************************
 
-set(boringssl_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/boringssl/src" CACHE STRING "path to boringssl root directory")
-
 include(CheckIncludeFile)
 include(CheckCSourceCompiles)
 include(CheckCXXSourceCompiles)
@@ -330,82 +339,7 @@ if (MSVC)
         ${VCPKG_INCLUDE_DIRS}
         ${CMAKE_REQUIRED_INCLUDES})
 
-    # boringssl
-    if (ALLOW_XP)
-      set(BORINGSSL_LIB_SUFFIX "-xp")
-    endif()
-
-    find_library(BORINGSSL_CRYPTO_RELEASE_LIB crypto
-      PATHS ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}-${CMAKE_MSVC_CRT_LINKAGE}${BORINGSSL_LIB_SUFFIX}
-            ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}
-            ${boringssl_DIR}/
-            ${boringssl_DIR}/build/crypto/Release
-            ${boringssl_DIR}/build/Release/crypto
-      REQUIRED
-      NO_CMAKE_FIND_ROOT_PATH
-      NO_DEFAULT_PATH)
-    find_library(BORINGSSL_CRYPTO_DEBUG_LIB crypto
-      PATHS ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}-${CMAKE_MSVC_CRT_LINKAGE}${BORINGSSL_LIB_SUFFIX}/debug
-            ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}/debug
-            ${boringssl_DIR}/debug
-            ${boringssl_DIR}/build/crypto/Debug
-            ${boringssl_DIR}/build/Debug/crypto
-      REQUIRED
-      NO_CMAKE_FIND_ROOT_PATH
-      NO_DEFAULT_PATH)
-    set(BORINGSSL_CRYPTO_LIB
-      debug ${BORINGSSL_CRYPTO_DEBUG_LIB}
-      optimized ${BORINGSSL_CRYPTO_RELEASE_LIB}
-      )
-
-    find_library(BORINGSSL_SSL_RELEASE_LIB ssl
-      PATHS ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}-${CMAKE_MSVC_CRT_LINKAGE}${BORINGSSL_LIB_SUFFIX}
-            ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}
-            ${boringssl_DIR}/
-            ${boringssl_DIR}/build/ssl/Release
-            ${boringssl_DIR}/build/Release/ssl
-      REQUIRED
-      NO_CMAKE_FIND_ROOT_PATH
-      NO_DEFAULT_PATH)
-    find_library(BORINGSSL_SSL_DEBUG_LIB ssl
-      PATHS ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}-${CMAKE_MSVC_CRT_LINKAGE}${BORINGSSL_LIB_SUFFIX}/debug
-            ${boringssl_DIR}/${MSVC_C_ARCHITECTURE_ID}/debug
-            ${boringssl_DIR}/debug
-            ${boringssl_DIR}/build/ssl/Debug
-            ${boringssl_DIR}/build/Debug/ssl
-      REQUIRED
-      NO_CMAKE_FIND_ROOT_PATH
-      NO_DEFAULT_PATH)
-    set(BORINGSSL_SSL_LIB
-      debug ${BORINGSSL_SSL_DEBUG_LIB}
-      optimized ${BORINGSSL_SSL_RELEASE_LIB}
-      )
-
-    set(CMAKE_REQUIRED_INCLUDES
-      ${boringssl_DIR}/include
-      ${CMAKE_REQUIRED_INCLUDES})
-    check_include_file(openssl/is_boringssl.h BORINGSSL_CRYPTO_INCLUDE)
-    add_definitions(-DHAVE_BORINGSSL)
-    include_directories(BEFORE ${boringssl_DIR}/include SYSTEM)
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${BORINGSSL_SSL_LIB} ${BORINGSSL_CRYPTO_LIB})
-
-    find_library(ShLwApi_LIB ShLwApi REQUIRED)
-    find_library(Ws2_32_LIB Ws2_32 REQUIRED)
-    find_library(WinMM_LIB WinMM REQUIRED)
-    find_library(Gdi32_LIB Gdi32 REQUIRED)
-    find_library(Comdlg32_LIB Comdlg32 REQUIRED)
-    find_library(Shell32_LIB Shell32 REQUIRED)
-    find_library(Ole32_LIB Ole32 REQUIRED)
-    find_library(Winspool_LIB Winspool REQUIRED)
-
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${ShLwApi_LIB})
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${Ws2_32_LIB})
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${WinMM_LIB})
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${Gdi32_LIB})
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${Comdlg32_LIB})
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${Shell32_LIB})
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${Ole32_LIB})
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${Winspool_LIB})
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} ShLwApi WS2_32 WinMM Gdi32 ComDlg32 shell32 Ole32 WinSpool)
 
     if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "static")
       # replace /MD with /MT
@@ -471,31 +405,6 @@ int main() {
       add_definitions(-DHAVE_PWD_H)
     endif()
 
-    # boringssl
-    find_library(BORINGSSL_CRYPTO_LIB crypto
-      PATHS
-        ${boringssl_DIR}
-        ${boringssl_DIR}/build
-        ${boringssl_DIR}/build/crypto
-      REQUIRED
-      NO_DEFAULT_PATH)
-
-    find_library(BORINGSSL_SSL_LIB ssl
-      PATHS
-        ${boringssl_DIR}
-        ${boringssl_DIR}/build
-        ${boringssl_DIR}/build/ssl
-      REQUIRED
-      NO_DEFAULT_PATH)
-
-    set(CMAKE_REQUIRED_INCLUDES
-        ${boringssl_DIR}/include
-        ${CMAKE_REQUIRED_INCLUDES})
-    check_include_file(openssl/is_boringssl.h BORINGSSL_CRYPTO_INCLUDE)
-    add_definitions(-DHAVE_BORINGSSL)
-    include_directories(BEFORE ${boringssl_DIR}/include SYSTEM)
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} ${BORINGSSL_SSL_LIB} ${BORINGSSL_CRYPTO_LIB})
-
     # linux-syscall-support
     if (UNIX AND NOT APPLE)
       include_directories(third_party/lss)
@@ -506,23 +415,7 @@ int main() {
     endif()
 endif()
 
-set(SUPPORT_LIBS
-    absl::flat_hash_map
-    absl::flat_hash_set
-    absl::flags
-    absl::flags_parse
-    absl::flags_marshalling
-    absl::synchronization
-    absl::stacktrace
-    absl::symbolize
-    absl::status
-    absl::statusor
-    absl::strings
-    absl::failure_signal_handler
-    absl::time
-    absl::optional
-    ${SYSTEM_LIBS}
-    )
+set(SUPPORT_LIBS ${SUPPORT_LIBS} ${SYSTEM_LIBS})
 
 if (MSVC AND GUI)
   message(STATUS "Build with MFC unicode ${CMAKE_MSVC_CRT_LINKAGE} library")
@@ -587,11 +480,38 @@ set(ABSL_PROPAGATE_CXX_STD ON)
 add_subdirectory(third_party/abseil-cpp)
 include_directories(third_party/abseil-cpp SYSTEM)
 
+set(SUPPORT_LIBS
+  ${SUPPORT_LIBS}
+  absl::flat_hash_map
+  absl::flat_hash_set
+  absl::flags
+  absl::flags_parse
+  absl::flags_marshalling
+  absl::synchronization
+  absl::stacktrace
+  absl::symbolize
+  absl::status
+  absl::statusor
+  absl::strings
+  absl::time
+  absl::optional
+  absl::failure_signal_handler
+  )
+
 # asio
 add_definitions(-DASIO_STANDALONE)
 add_definitions(-DASIO_NO_TYPEID)
 add_definitions(-DASIO_NO_EXCEPTIONS)
 include_directories(third_party/asio/asio/include SYSTEM)
+
+# boringssl
+add_subdirectory(third_party/boringssl/src)
+add_definitions(-DHAVE_BORINGSSL)
+include_directories(BEFORE third_party/boringssl/src/include SYSTEM)
+set(SUPPORT_LIBS ${SUPPORT_LIBS} crypto ssl)
+foreach(source ${BCM_ASM_SOURCES})
+  set_source_files_properties(${source} PROPERTIES GENERATED true)
+endforeach()
 
 # rapidjson
 include_directories(third_party/rapidjson/include SYSTEM)
@@ -607,6 +527,8 @@ if (COMPILER_MSVC)
   set_target_properties(xxhash PROPERTIES
     COMPILE_FLAGS "/wd4255")
 endif()
+
+set(SUPPORT_LIBS xxhash ${SUPPORT_LIBS})
 
 # protobuf
 if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "dynamic")
@@ -1375,6 +1297,8 @@ elseif (COMPILER_MSVC)
     COMPILE_FLAGS "/wd4131 /wd4255 /wd4245 /wd4244 /wd4100 /wd4702 /wd4127")
 endif()
 
+set(SUPPORT_LIBS zlib ${SUPPORT_LIBS})
+
 # *****************************************************************************************
 #           QUICHE Library
 # *****************************************************************************************
@@ -2093,6 +2017,8 @@ target_link_libraries(quiche PUBLIC
   absl::flags_marshalling
   )
 
+set(SUPPORT_LIBS quiche ${SUPPORT_LIBS})
+
 if (COMPILER_CLANG)
   set_target_properties(quiche PROPERTIES
     COMPILE_FLAGS "-Wno-missing-prototypes -Wno-implicit-fallthrough -Wno-format-nonliteral")
@@ -2280,12 +2206,6 @@ set_target_properties(yass_base PROPERTIES POSITION_INDEPENDENT_CODE True)
 target_include_directories(yass_base PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/third_party
   ${CMAKE_CURRENT_SOURCE_DIR}/src)
-
-target_link_libraries(quiche PUBLIC
-  yass_base)
-
-set(SUPPORT_LIBS xxhash ${SUPPORT_LIBS})
-set(SUPPORT_LIBS quiche ${SUPPORT_LIBS})
 
 if (CLI)
   add_executable(yass_cli

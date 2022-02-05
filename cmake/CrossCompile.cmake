@@ -30,6 +30,10 @@ function(create_cross_target project_name target_name toolchain buildtype)
     set(build_type_flags "-DCMAKE_BUILD_TYPE=${buildtype}")
   endif()
 
+  if (ALLOW_XP)
+    set(allow_xp_flags "-DALLOW_XP=on")
+  endif()
+
   add_custom_command(OUTPUT ${${project_name}_${target_name}_BUILD}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${${project_name}_${target_name}_BUILD}
     COMMENT "Creating ${${project_name}_${target_name}_BUILD}...")
@@ -38,13 +42,12 @@ function(create_cross_target project_name target_name toolchain buildtype)
     DEPENDS ${${project_name}_${target_name}_BUILD})
 
   add_custom_command(OUTPUT ${${project_name}_${target_name}_BUILD}/CMakeCache.txt
-    COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}"
+    COMMAND ${CMAKE_COMMAND} -E env "LIB=${CROSS_TOOLCHAIN_FLAGS_${target_name}_LIB}" ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}"
         -DYASS_TARGET_IS_CROSSCOMPILE_HOST=TRUE
         -DCMAKE_MAKE_PROGRAM="${CMAKE_MAKE_PROGRAM}"
         ${CROSS_TOOLCHAIN_FLAGS_${target_name}} ${CMAKE_CURRENT_SOURCE_DIR}
         ${CROSS_TOOLCHAIN_FLAGS_${project_name}_${target_name}}
-        ${external_project_source_dirs}
-        ${build_type_flags} ${linker_flag} ${external_clang_dir}
+        ${build_type_flags} ${linker_flag} ${allow_xp_flags}
         ${ARGN}
     WORKING_DIRECTORY ${${project_name}_${target_name}_BUILD}
     DEPENDS CREATE_${project_name}_${target_name}
@@ -73,7 +76,7 @@ function(build_native_tool target output_path_var)
   yass_ExternalProject_BuildCmd(build_cmd ${target} ${${PROJECT_NAME}_NATIVE_BUILD}
                                 CONFIGURATION Release)
   add_custom_command(OUTPUT "${output_path}"
-                     COMMAND ${build_cmd}
+                     COMMAND ${CMAKE_COMMAND} -E env "LIB=${CROSS_TOOLCHAIN_FLAGS_NATIVE_LIB}" ${build_cmd}
                      DEPENDS CONFIGURE_${PROJECT_NAME}_NATIVE ${ARG_DEPENDS}
                      WORKING_DIRECTORY "${${PROJECT_NAME}_NATIVE_BUILD}"
                      COMMENT "Building native ${target}..."

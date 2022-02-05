@@ -39,7 +39,6 @@ set COMPILER_TARGET=i686-pc-windows-msvc
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
 
-call :BuildBoringSSL
 python.exe -u .\scripts\build.py || exit /b
 call :RenameTarball
 
@@ -56,7 +55,6 @@ set COMPILER_TARGET=x86_64-pc-windows-msvc
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
 
-call :BuildBoringSSL
 python.exe -u .\scripts\build.py || exit /b
 call :RenameTarball
 
@@ -77,19 +75,10 @@ set COMPILER_TARGET=arm64-pc-windows-msvc
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
 
-call :BuildBoringSSL
 python.exe -u .\scripts\build.py || exit /b
 call :RenameTarball
 
 goto :eof
 
-:BuildBoringSSL
-
-REM When you pass -DCMAKE_C_COMPILER= with an absolute path you need to use forward slashes.  That is setting a value directly into CMakeCache.txt so no automatic slash conversion is done.
-
-call "%~dp0build-boringssl.bat"
-
-goto :eof
-
 :RenameTarball
-python.exe -c "import subprocess, os; check_string_output = lambda command: subprocess.check_output(command, stderr=subprocess.STDOUT).decode().strip(); p = os.getenv('Platform'); l = os.getenv('MSVC_CRT_LINKAGE'); t = check_string_output(['git', 'describe', '--tags', 'HEAD']); os.rename('yass.zip', f'yass-msvc-release-{p}-{l}-{t}.zip'); os.rename('yass-debuginfo.zip', f'yass-msvc-release-{p}-{l}-{t}-debuginfo.zip');"
+python.exe -c "import subprocess, os; check_string_output = lambda command: subprocess.check_output(command, stderr=subprocess.STDOUT).decode().strip(); p = os.getenv('Platform'); l = os.getenv('MSVC_CRT_LINKAGE'); t = check_string_output(['git', 'describe', '--tags', 'HEAD']); os.rename('yass.zip', f'yass-win-release-{p}-{l}-{t}.zip'); os.rename('yass-debuginfo.zip', f'yass-win-release-{p}-{l}-{t}-debuginfo.zip');"
