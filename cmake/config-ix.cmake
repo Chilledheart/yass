@@ -1,0 +1,26 @@
+function(yass_get_host_prefixes_and_suffixes)
+  # Not all platform files will set these variables (relying on them being
+  # implicitly empty if they're unset), so unset the variables before including
+  # the platform file, to prevent any values from the target system leaking.
+  unset(CMAKE_STATIC_LIBRARY_PREFIX)
+  unset(CMAKE_STATIC_LIBRARY_SUFFIX)
+  unset(CMAKE_SHARED_LIBRARY_PREFIX)
+  unset(CMAKE_SHARED_LIBRARY_SUFFIX)
+  unset(CMAKE_IMPORT_LIBRARY_PREFIX)
+  unset(CMAKE_IMPORT_LIBRARY_SUFFIX)
+  unset(CMAKE_EXECUTABLE_SUFFIX)
+  unset(CMAKE_LINK_LIBRARY_SUFFIX)
+  include(Platform/${CMAKE_HOST_SYSTEM_NAME} OPTIONAL RESULT_VARIABLE _includedFile)
+  if (_includedFile)
+    set(YASS_HOST_STATIC_LIBRARY_PREFIX ${CMAKE_STATIC_LIBRARY_PREFIX} PARENT_SCOPE)
+    set(YASS_HOST_STATIC_LIBRARY_SUFFIX ${CMAKE_STATIC_LIBRARY_SUFFIX} PARENT_SCOPE)
+    set(YASS_HOST_SHARED_LIBRARY_PREFIX ${CMAKE_SHARED_LIBRARY_PREFIX} PARENT_SCOPE)
+    set(YASS_HOST_SHARED_LIBRARY_SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX} PARENT_SCOPE)
+    set(YASS_HOST_IMPORT_LIBRARY_PREFIX ${CMAKE_IMPORT_LIBRARY_PREFIX} PARENT_SCOPE)
+    set(YASS_HOST_IMPORT_LIBRARY_SUFFIX ${CMAKE_IMPORT_LIBRARY_SUFFIX} PARENT_SCOPE)
+    set(YASS_HOST_EXECUTABLE_SUFFIX ${CMAKE_EXECUTABLE_SUFFIX} PARENT_SCOPE)
+    set(YASS_HOST_LINK_LIBRARY_SUFFIX ${CMAKE_LINK_LIBRARY_SUFFIX} PARENT_SCOPE)
+  endif()
+endfunction()
+
+yass_get_host_prefixes_and_suffixes()
