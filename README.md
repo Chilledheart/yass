@@ -122,7 +122,7 @@ Take a look at [BUILDING.md] for more instructions.
 It is licensed with GPLv2.
 
 [license-svg]: https://img.shields.io/badge/license-GPL2-lightgrey.svg
-[license-link]: https://github.com/Chilledheart/yass/blob/master/COPYING
+[license-link]: COPYING
 
 [aead]: https://shadowsocks.org/en/wiki/AEAD-Ciphers.html
 [asan]: https://github.com/google/sanitizers/wiki/AddressSanitizer
@@ -149,4 +149,4 @@ It is licensed with GPLv2.
 [14.10.VC_redist.x86.exe]: http://download.microsoft.com/download/0/5/2/05271FE6-CBA8-4A4D-9E95-00CFC60C1639/VC_redist.x86.exe
 [visual-cpp-redist-aio-xp]: https://github.com/abbodi1406/vcredist/releases/tag/v0.35.0
 
-[BUILDING.md]: https://github.com/Chilledheart/yass/blob/master/BUILDING.md
+[BUILDING.md]: BUILDING.md
