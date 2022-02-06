@@ -114,11 +114,15 @@ Reference: AIO Repack for latest Microsoft Visual C++ Redistributable Runtimes, 
 - Socks5
 - HTTP/HTTPS
 
+## Build from source
+Looking for how to build from source?
+Take a look at [BUILDING.md] for more instructions.
+
 ## License
 It is licensed with GPLv2.
 
 [license-svg]: https://img.shields.io/badge/license-GPL2-lightgrey.svg
-[license-link]: https://github.com/Chilledheart/yass/blob/master/COPYING
+[license-link]: COPYING
 
 [aead]: https://shadowsocks.org/en/wiki/AEAD-Ciphers.html
 [asan]: https://github.com/google/sanitizers/wiki/AddressSanitizer
@@ -144,3 +148,5 @@ It is licensed with GPLv2.
 [14.10.VC_redist.x64.exe]: http://download.microsoft.com/download/8/C/4/8C46752E-F6FD-43E4-AF10-E046A128CC0A/VC_redist.x64.exe
 [14.10.VC_redist.x86.exe]: http://download.microsoft.com/download/0/5/2/05271FE6-CBA8-4A4D-9E95-00CFC60C1639/VC_redist.x86.exe
 [visual-cpp-redist-aio-xp]: https://github.com/abbodi1406/vcredist/releases/tag/v0.35.0
+
+[BUILDING.md]: BUILDING.md

@@ -10,11 +10,11 @@
 #include <type_traits>
 
 #if defined(__GNUC__) || defined(__clang__)
-#define BASE_NUMERICS_LIKELY(x) __builtin_expect(!!(x), 1)
-#define BASE_NUMERICS_UNLIKELY(x) __builtin_expect(!!(x), 0)
+#define NUMERICS_LIKELY(x) __builtin_expect(!!(x), 1)
+#define NUMERICS_UNLIKELY(x) __builtin_expect(!!(x), 0)
 #else
-#define BASE_NUMERICS_LIKELY(x) (x)
-#define BASE_NUMERICS_UNLIKELY(x) (x)
+#define NUMERICS_LIKELY(x) (x)
+#define NUMERICS_UNLIKELY(x) (x)
 #endif
 
 namespace internal {
@@ -85,7 +85,13 @@ constexpr typename std::make_unsigned<T>::type SafeUnsignedAbs(T value) {
 
 // TODO(jschuh): Switch to std::is_constant_evaluated() once C++20 is supported.
 // Alternately, the usage could be restructured for "consteval if" in C++23.
+// GCC requires version 9.1 to have this builtin, see commit e40826112369.
+#if defined(__clang__) || (defined(__GNUC__) && defined(__GNUC_MINOR__) && \
+                           (__GNUC__ * 10 + __GNUC_MINOR__ >= 91))
 #define IsConstantEvaluated() (__builtin_is_constant_evaluated())
+#else
+#define IsConstantEvaluated() (0)
+#endif
 
 // TODO(jschuh): Debug builds don't reliably propagate constants, so we restrict
 // some accelerated runtime paths to release builds until this can be forced
@@ -663,7 +669,7 @@ struct IsStrictOp {
 // I.e. it's mostly an alias for: static_cast<std::make_signed<T>::type>(t)
 template <typename Src>
 constexpr typename std::make_signed<
-    typename internal::UnderlyingType<Src>::type>::type
+    typename UnderlyingType<Src>::type>::type
 as_signed(const Src value) {
   static_assert(std::is_integral<decltype(as_signed(value))>::value,
                 "Argument must be a signed or unsigned integer type.");
@@ -675,7 +681,7 @@ as_signed(const Src value) {
 // I.e. it's mostly an alias for: static_cast<std::make_unsigned<T>::type>(t)
 template <typename Src>
 constexpr typename std::make_unsigned<
-    typename internal::UnderlyingType<Src>::type>::type
+    typename UnderlyingType<Src>::type>::type
 as_unsigned(const Src value) {
   static_assert(std::is_integral<decltype(as_unsigned(value))>::value,
                 "Argument must be a signed or unsigned integer type.");

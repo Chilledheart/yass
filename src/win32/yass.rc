@@ -1,5 +1,8 @@
 #include "resource.hpp"
 
+#include <winuser.rh>
+#include <winres.h>
+
 // https://docs.microsoft.com/en-us/windows/win32/intl/code-page-identifiers
 
 /////////////////////////////////////////////////////////////////////////////
@@ -54,7 +57,7 @@ BEGIN
     END
     POPUP "&Help"
     BEGIN
-        MENUITEM "&About YetAnotherShadowsocket" ID_APP_ABOUT
+        MENUITEM "&About YetAnotherShadowsocket",ID_APP_ABOUT
     END
 END
 

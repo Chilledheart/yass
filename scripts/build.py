@@ -198,9 +198,20 @@ def _get_win32_search_paths():
   # C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\redist
   if vctools_version >= 14.30:
     vcredist_dir = os.getenv('VCToolsRedistDir')
-  elif vctools_version >= 14.10 and vctools_version < 14.30:
+  elif vctools_version >= 14.20 and vctools_version < 14.30:
     vcredist_dir = os.path.join(os.getenv('VCINSTALLDIR'), 'Redist', 'MSVC',
                                 os.getenv('VCToolsVersion'))
+    # fallback
+    if not os.path.exists(vcredist_dir):
+      vcredist_dir = os.path.join(os.getenv('VCINSTALLDIR'), 'Redist', 'MSVC',
+                                  '14.29.30133')
+  elif vctools_version >= 14.10 and vctools_version < 14.20:
+    vcredist_dir = os.path.join(os.getenv('VCINSTALLDIR'), 'Redist', 'MSVC',
+                                os.getenv('VCToolsVersion'))
+    # fallback
+    if not os.path.exists(vcredist_dir):
+      vcredist_dir = os.path.join(os.getenv('VCINSTALLDIR'), 'Redist', 'MSVC',
+                                  '14.16.27012')
   elif vctools_version >= 14.00 and vctools_version < 14.10:
     vcredist_dir = os.path.join(os.getenv('VCINSTALLDIR'), 'redist')
   else:
@@ -243,10 +254,10 @@ def _get_win32_search_paths():
                  sdk_version, 'Redist', 'Debug', DEFAULT_ARCH),
   ])
 
-  ### Fallback search path for XP (v140)
+  ### Fallback search path for XP (v140_xp, v141_xp)
   ### Refer to #27, https://github.com/Chilledheart/yass/issues/27
   ### $project_root\third_party\vcredist\x86
-  if vctools_version >= 14.00 and vctools_version < 14.10:
+  if vctools_version >= 14.00 and vctools_version < 14.20:
     search_dirs.extend([
       os.path.abspath(os.path.join('..', 'third_party', 'vcredist', DEFAULT_ARCH))
     ])
@@ -512,6 +523,31 @@ def generate_buildscript(configuration_type):
                        '-DCLANG_TIDY_EXECUTABLE=%s' % DEFAULT_CLANG_TIDY_EXECUTABLE])
   if sys.platform == 'win32':
     cmake_args.extend(['-G', 'Ninja'])
+    cmake_args.extend(['-DUSE_HOST_TOOLS=on'])
+    cmake_args.extend(['-DCROSS_TOOLCHAIN_FLAGS_NATIVE="-DCMAKE_TOOLCHAIN_FILE=%s\\Native.cmake"' % os.getcwd()])
+    native_libs = []
+    for native_lib in os.getenv('LIB').split(';'):
+      # Old Windows SDK looks like:
+      # C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\Lib
+      # C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\Lib\x64
+      if 'v7.1a' in native_lib.lower():
+        if native_lib.lower().endswith('lib'):
+          p = os.path.join(native_lib, 'x64')
+        else:
+          p = native_lib
+      else:
+        p = os.path.join(os.path.dirname(native_lib), 'x64')
+      native_libs.append(p.replace('\\', '/'))
+    NATIVE_LIB = ';'.join(native_libs)
+    # override link's LIBS in parent scope
+    cmake_args.extend([f'-DCROSS_TOOLCHAIN_FLAGS_NATIVE_LIB="{NATIVE_LIB}"'])
+    with open('Native.cmake', 'w') as f:
+      CC = os.getenv('CC', 'cl')
+      CXX = os.getenv('CXX', 'cl')
+      f.write(f'set(CMAKE_C_COMPILER "{CC}")\n'.replace('\\', '/'))
+      f.write(f'set(CMAKE_CXX_COMPILER "{CXX}")\n'.replace('\\', '/'))
+      f.write('set(CMAKE_C_COMPILER_TARGET "x86_64-pc-windows-msvc")\n')
+      f.write('set(CMAKE_CXX_COMPILER_TARGET "x86_64-pc-windows-msvc")\n')
     cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])
     cmake_args.extend(['-DCMAKE_TOOLCHAIN_FILE=%s\\scripts\\buildsystems\\vcpkg.cmake' % VCPKG_DIR])
     cmake_args.extend(['-DVCPKG_TARGET_ARCHITECTURE=%s' % DEFAULT_ARCH])
@@ -538,16 +574,19 @@ def generate_buildscript(configuration_type):
     elif DEFAULT_ARCH == 'x64':
       llvm_triple = 'x86_64-pc-windows-msvc'
     elif DEFAULT_ARCH == 'arm64':
-      llvm_triple = 'aarch64-pc-windows-msvc'
+      llvm_triple = 'arm64-pc-windows-msvc'
     if 'clang-cl' in os.getenv('CC', '') and llvm_triple:
       cmake_args.extend(['-DCMAKE_C_COMPILER_TARGET=%s' % llvm_triple])
       cmake_args.extend(['-DCMAKE_CXX_COMPILER_TARGET=%s' % llvm_triple])
+    if DEFAULT_ARCH == 'arm64':
+      cmake_args.extend(['-DCMAKE_ASM_FLAGS=--target=%s' % llvm_triple])
 
   else:
     cmake_args.extend(['-G', 'Ninja'])
     cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])
 
   if platform.system() == 'Darwin':
+    cmake_args.append('-DUSE_HOST_TOOLS=on')
     cmake_args.append('-DCMAKE_OSX_DEPLOYMENT_TARGET=%s' % DEFAULT_OSX_MIN)
     if DEFAULT_ENABLE_OSX_UNIVERSAL_BUILD:
       cmake_args.append('-DCMAKE_OSX_ARCHITECTURES=%s' % DEFAULT_OSX_UNIVERSAL_ARCHS)
@@ -731,23 +770,24 @@ def postbuild_archive():
         paths.append(file)
 
   # LICENSEs
-  shutil.copyfile(os.path.join('..', 'GPL-2.0'), 'LICENSE')
-  shutil.copyfile(os.path.join('..', 'third_party', 'abseil-cpp', 'LICENSE'),
-                  'LICENSE.abseil-cpp')
-  shutil.copyfile(os.path.join('..', 'third_party', 'asio', 'asio', 'LICENSE_1_0.txt'),
-                  'LICENSE.asio')
-  shutil.copyfile(os.path.join('..', 'third_party', 'boringssl', 'LICENSE'),
-                  'LICENSE.boringssl')
-  shutil.copyfile(os.path.join('..', 'third_party', 'lss', 'LICENSE'),
-                  'LICENSE.lss')
-  shutil.copyfile(os.path.join('..', 'third_party', 'rapidjson', 'license.txt'),
-                  'LICENSE.rapidjson')
-  paths.append('LICENSE')
-  paths.append('LICENSE.abseil-cpp')
-  paths.append('LICENSE.asio')
-  paths.append('LICENSE.boringssl')
-  paths.append('LICENSE.lss')
-  paths.append('LICENSE.rapidjson')
+  license_maps = {
+    'LICENSE': os.path.join('..', 'GPL-2.0'),
+    'LICENSE.abseil-cpp': os.path.join('..', 'third_party', 'abseil-cpp', 'LICENSE'),
+    'LICENSE.asio': os.path.join('..', 'third_party', 'asio', 'asio', 'LICENSE_1_0.txt'),
+    'LICENSE.boringssl': os.path.join('..', 'third_party', 'boringssl', 'src', 'LICENSE'),
+    'LICENSE.chromium': os.path.join('..', 'third_party', 'chromium', 'LICENSE'),
+    'LICENSE.icu': os.path.join('..', 'third_party', 'icu', 'LICENSE'),
+    'LICENSE.lss': os.path.join('..', 'third_party', 'lss', 'LICENSE'),
+    'LICENSE.mozilla': os.path.join('..', 'third_party', 'mozilla', 'LICENSE.txt'),
+    'LICENSE.protobuf': os.path.join('..', 'third_party', 'protobuf', 'LICENSE'),
+    'LICENSE.quiche': os.path.join('..', 'third_party', 'quiche', 'src', 'LICENSE'),
+    'LICENSE.rapidjson': os.path.join('..', 'third_party', 'rapidjson', 'license.txt'),
+    'LICENSE.xxhash': os.path.join('..', 'third_party', 'xxhash', 'LICENSE'),
+    'LICENSE.zlib': os.path.join('..', 'third_party', 'zlib', 'LICENSE'),
+  }
+  for license in license_maps:
+    shutil.copyfile(license_maps[license], license)
+    paths.append(license)
 
   archive_files(new_archive, paths)
 

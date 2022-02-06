@@ -328,6 +328,9 @@
 #undef WARN_UNUSED_RESULT
 #if defined(COMPILER_GCC) || defined(__clang__)
 #define WARN_UNUSED_RESULT __attribute__((warn_unused_result))
+#elif (defined(_MSVC_LANG) && _MSVC_LANG > 201703) || \
+  (defined(__cplusplus) && __cplusplus >= 201703L)
+#define WARN_UNUSED_RESULT [[nodiscard]]
 #else
 #define WARN_UNUSED_RESULT
 #endif

@@ -8,10 +8,22 @@
 	path = third_party/lss
 	url = https://chromium.googlesource.com/linux-syscall-support
 [submodule "third_party/boringssl"]
-	path = third_party/boringssl
+	path = third_party/boringssl/src
 	url = https://github.com/Chilledheart/boringssl
-	branch = chromium-stable
 [submodule "third_party/rapidjson"]
 	path = third_party/rapidjson
 	url = https://github.com/Chilledheart/rapidjson
 	branch = stable
+[submodule "third_party/quiche"]
+	path = third_party/quiche/src
+	url = https://github.com/Chilledheart/quiche
+	branch = main
+[submodule "third_party/googletest"]
+	path = third_party/googletest
+	url = https://github.com/google/googletest
+[submodule "third_party/protobuf"]
+	path = third_party/protobuf
+	url = https://github.com/protocolbuffers/protobuf
+[submodule "third_party/xxhash"]
+	path = third_party/xxhash
+	url = https://github.com/Cyan4973/xxHash

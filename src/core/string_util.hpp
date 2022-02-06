@@ -244,9 +244,19 @@ bool IsStringUTF8(absl::string_view str);
 // code points.
 bool IsStringUTF8AllowingNoncharacters(absl::string_view str);
 
+// Returns true if |str| contains only valid ASCII character values.
+// Note 1: IsStringASCII executes in time determined solely by the
+// length of the string, not by its contents, so it is robust against
+// timing attacks for all strings of equal length.
+// Note 2: IsStringASCII assumes the input is likely all ASCII, and
+// does not leave early if it is not the case.
+bool IsStringASCII(absl::string_view str);
+
 // Compare the lower-case form of the given string against the given
 // previously-lower-cased ASCII string (typically a constant).
 bool LowerCaseEqualsASCII(absl::string_view str,
+                          absl::string_view lowercase_ascii);
+bool LowerCaseEqualsASCII(const std::u16string& str,
                           absl::string_view lowercase_ascii);
 
 // Indicates case sensitivity of comparisons. Only ASCII case insensitivity

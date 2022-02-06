@@ -8,6 +8,8 @@
 #ifdef __linux__
 #include <time.h>
 #include <pthread.h>
+#include <unistd.h>
+#include <syscall.h>  // For syscall.
 
 bool SetThreadPriority(std::thread::native_handle_type /*handle*/,
                        ThreadPriority /*priority*/) {
@@ -17,6 +19,9 @@ bool SetThreadPriority(std::thread::native_handle_type /*handle*/,
 
 bool SetThreadName(std::thread::native_handle_type handle,
                    const std::string& name) {
+  if (handle == 0) {
+    handle = syscall(__NR_gettid);
+  }
   return pthread_setname_np(handle, name.c_str()) == 0;
 }
 

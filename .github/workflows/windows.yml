@@ -11,7 +11,7 @@ defaults:
   run:
     shell: cmd
 env:
-  CACHE_EPOCH: 13
+  CACHE_EPOCH: 14
 jobs:
   cache-toolchain-win:
     runs-on: windows-2019
@@ -51,18 +51,6 @@ jobs:
             !${{ env.VCPKG_ROOT }}/packages
             !${{ env.VCPKG_ROOT }}/downloads
           key: toolchain-cache-${{ runner.os }}-vcpkg-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get boringssl commit
-        run: git submodule status --cached third_party/boringssl >> boringssl.lock
-      - name: Cache boringssl packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/boringssl/**/crypto.lib
-            third_party/boringssl/**/crypto.pdb
-            third_party/boringssl/**/vc140.pdb
-            third_party/boringssl/**/ssl.lib
-            third_party/boringssl/**/ssl.pdb
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: "Install dependency: nasm"
         run: |
           if not exist "third_party\nasm\nasm.exe" (
@@ -83,109 +71,17 @@ jobs:
             mkdir third_party\vcredist
             curl -L -O https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311-binaries.zip
             "C:\Program Files\7-Zip\7z.exe" x -owix311 wix311-binaries.zip
-            wix311\dark.exe "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\redist\1033\vcredist_x86.exe" -x tmp
+            curl -L -O https://aka.ms/vs/15/release/vc_redist.x86.exe
+            wix311\dark.exe "vc_redist.x86.exe" -x tmp
             "C:\Program Files\7-Zip\7z.exe" x "-othird_party\vcredist\x86" "tmp\AttachedContainer\packages\vcRuntimeMinimum_x86\cab1.cab"
-            python -c "import os; os.chdir('third_party/vcredist/x86'); dlls = os.listdir('.'); [ os.rename(dll, dll.replace('_', '-')) for dll in dlls ];"
-            wix311\dark.exe "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\redist\1033\vcredist_x64.exe" -x tmp
+            python -c "import os; os.chdir('third_party/vcredist/x86'); dlls = os.listdir('.'); [ os.rename(dll, dll.replace('_', '-')) for dll in dlls if dll.startswith('api') ];"
+            curl -L -O https://aka.ms/vs/15/release/vc_redist.x64.exe
+            wix311\dark.exe "vc_redist.x64.exe" -x tmp
             "C:\Program Files\7-Zip\7z.exe" x "-othird_party\vcredist\x64" "tmp\AttachedContainer\packages\vcRuntimeMinimum_amd64\cab1.cab"
-            python -c "import os; os.chdir('third_party/vcredist/x64'); dlls = os.listdir('.'); [ os.rename(dll, dll.replace('_', '-')) for dll in dlls ];"
+            python -c "import os; os.chdir('third_party/vcredist/x64'); dlls = os.listdir('.'); [ os.rename(dll, dll.replace('_', '-')) for dll in dlls if dll.startswith('api') ];"
             del /s /q wix311* tmp
           )
-      - name: "Install dependency: boringssl (x86 slice)"
-        run: |
-          set VCToolsVersion=14.0
-          set Winsdk=10.0.19041.0
-          set "WindowsSDKVersion=%Winsdk%\"
-          set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
-          set "VSCMD_START_DIR=%CD%"
-          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
-          set COMPILER_TARGET=i686-pc-windows-msvc
-          set Platform=x86
-
-          set "Path=%CD%\third_party\nasm;%Path%"
-
-          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
-
-          call "scripts\build-boringssl.bat"
-      - name: "Install dependency: boringssl (x64 slice)"
-        run: |
-          set VCToolsVersion=14.0
-          set Winsdk=10.0.19041.0
-          set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
-          set "VSCMD_START_DIR=%CD%"
-          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
-          set COMPILER_TARGET=x86_64-pc-windows-msvc
-          set Platform=x64
-
-          set "Path=%CD%\third_party\nasm;%Path%"
-
-          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
-
-          call "scripts\build-boringssl.bat"
-      - name: "Install dependency: boringssl (arm64 slice)"
-        run: |
-          set VCToolsVersion=14.29
-          set Winsdk=10.0.19041.0
-          set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
-          set "VSCMD_START_DIR=%CD%"
-          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
-          set COMPILER_TARGET=arm64-pc-windows-msvc
-          set Platform=arm64
-
-          set "Path=%CD%\third_party\nasm;%Path%"
-
-          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
-
-          call "scripts\build-boringssl.bat"
-      - name: "Install dependency: boringssl (x86-xp slice)"
-        run: |
-          set VCToolsVersion=14.0
-          set "VCINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC"
-          set "WindowsSDKVersion=10.0.10240.0\"
-          set "WindowsSdkDir=C:\Program Files (x86)\Windows Kits\10"
-          set "PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;%PATH%"
-
-          set CC=
-          set CXX=
-          set ASM=
-          set Platform=x86
-          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
-          set COMPILER_TARGET=i686-pc-windows-msvc
-          set ALLOW_XP=on
-
-          set "Path=%CD%\third_party\nasm;%Path%"
-
-          call "scripts\callxp-%Platform%.cmd"
-
-          call "scripts\build-boringssl.bat"
-      - name: "Install dependency: boringssl (x64-xp slice)"
-        run: |
-          set VCToolsVersion=14.0
-          set "VCINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC"
-          set "WindowsSDKVersion=10.0.10240.0\"
-          set "WindowsSdkDir=C:\Program Files (x86)\Windows Kits\10"
-          set "PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;%PATH%"
-
-          set CC=
-          set CXX=
-          set ASM=
-          set Platform=x64
-          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
-          set COMPILER_TARGET=x86_64-pc-windows-msvc
-          set ALLOW_XP=on
-
-          set "Path=%CD%\third_party\nasm;%Path%"
-
-          call "scripts\callxp-%Platform%.cmd"
-
-          call "scripts\build-boringssl.bat"
-  win-msvc-release:
+  win-release:
     needs: cache-toolchain-win
     runs-on: windows-2019
     strategy:
@@ -231,30 +127,20 @@ jobs:
             !${{ env.VCPKG_ROOT }}/packages
             !${{ env.VCPKG_ROOT }}/downloads
           key: toolchain-cache-${{ runner.os }}-vcpkg-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get boringssl commit
-        run: git submodule status --cached third_party/boringssl >> boringssl.lock
-      - name: Cache boringssl packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/boringssl/**/crypto.lib
-            third_party/boringssl/**/crypto.pdb
-            third_party/boringssl/**/vc140.pdb
-            third_party/boringssl/**/ssl.lib
-            third_party/boringssl/**/ssl.pdb
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
-          set VCToolsVersion=14.0
+          set VCToolsVersion=14.16
           set Winsdk=10.0.19041.0
           set "WindowsSDKVersion=%Winsdk%\"
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
-          set CC=
-          set CXX=
+          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
+          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set Platform=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
+
+          set "Path=%CD%\third_party\nasm;%Path%"
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
 
@@ -287,7 +173,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload ${{ github.event.release.tag_name }} ${{ env.BUNDLE_NAME }} ${{ env.DBG_BUNDLE_NAME }}
-  win-msvc-xp-release:
+  win-xp-release:
     needs: cache-toolchain-win
     runs-on: windows-2019
     strategy:
@@ -333,28 +219,16 @@ jobs:
             !${{ env.VCPKG_ROOT }}/packages
             !${{ env.VCPKG_ROOT }}/downloads
           key: toolchain-cache-${{ runner.os }}-vcpkg-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get boringssl commit
-        run: git submodule status --cached third_party/boringssl >> boringssl.lock
-      - name: Cache boringssl packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/boringssl/**/crypto.lib
-            third_party/boringssl/**/crypto.pdb
-            third_party/boringssl/**/vc140.pdb
-            third_party/boringssl/**/ssl.lib
-            third_party/boringssl/**/ssl.pdb
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
-          set VCToolsVersion=14.0
-          set "VCINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC"
+          set VCToolsVersion=14.16.27012
+          set "VCINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC"
           set "WindowsSDKVersion=10.0.10240.0\"
           set "WindowsSdkDir=C:\Program Files (x86)\Windows Kits\10"
           set "PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;%PATH%"
 
-          set CC=
-          set CXX=
+          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
+          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set ASM=
           set Platform=${{ matrix.arch }}
           set VSCMD_ARG_TGT_ARCH=${{ matrix.arch }}
@@ -364,6 +238,8 @@ jobs:
 
           if "${{ matrix.arch }}" == "x86" (call :SetX86CompileTriple)
           if "${{ matrix.arch }}" == "amd64" (call :SetX64CompileTriple)
+
+          set "Path=%CD%\third_party\nasm;%Path%"
 
           call "scripts\callxp-%Platform%.cmd"
 
@@ -401,7 +277,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload ${{ github.event.release.tag_name }} ${{ env.BUNDLE_NAME }} ${{ env.DBG_BUNDLE_NAME }}
-  win-msvc-compatible-2019:
+  win-compatible-2019:
     needs: cache-toolchain-win
     runs-on: windows-2019
     strategy:
@@ -444,18 +320,6 @@ jobs:
             !${{ env.VCPKG_ROOT }}/packages
             !${{ env.VCPKG_ROOT }}/downloads
           key: toolchain-cache-${{ runner.os }}-vcpkg-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get boringssl commit
-        run: git submodule status --cached third_party/boringssl >> boringssl.lock
-      - name: Cache boringssl packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/boringssl/**/crypto.lib
-            third_party/boringssl/**/crypto.pdb
-            third_party/boringssl/**/vc140.pdb
-            third_party/boringssl/**/ssl.lib
-            third_party/boringssl/**/ssl.pdb
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build Vistual Studio 2019 (v142)
         run: |
           set VCToolsVersion=14.29
@@ -464,10 +328,12 @@ jobs:
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
-          set CC=
-          set CXX=
+          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
+          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set Platform=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
+
+          set "Path=%CD%\third_party\nasm;%Path%"
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
 
@@ -485,10 +351,12 @@ jobs:
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
-          set CC=
-          set CXX=
+          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
+          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set Platform=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
+
+          set "Path=%CD%\third_party\nasm;%Path%"
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
 
@@ -498,28 +366,7 @@ jobs:
 
           :SetNewVCToolsVersion
           set VCToolsVersion=
-      - name: Build Vistual Studio 2015 (v140)
-        run: |
-          set VCToolsVersion=14.0
-          set Winsdk=10.0.19041.0
-          set "WindowsSDKVersion=%Winsdk%\"
-          if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
-          set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
-          set "VSCMD_START_DIR=%CD%"
-          set CC=
-          set CXX=
-          set Platform=${{ matrix.arch }}
-          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
-
-          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
-
-          python -u .\scripts\build.py || exit /b
-
-          exit /b 0
-
-          :SetNewVCToolsVersion
-          set VCToolsVersion=
-  win-msvc-compatible-2022:
+  win-compatible-2022:
     needs: cache-toolchain-win
     runs-on: windows-2022
     strategy:
@@ -562,18 +409,6 @@ jobs:
             !${{ env.VCPKG_ROOT }}/packages
             !${{ env.VCPKG_ROOT }}/downloads
           key: toolchain-cache-${{ runner.os }}-vcpkg-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get boringssl commit
-        run: git submodule status --cached third_party/boringssl >> boringssl.lock
-      - name: Cache boringssl packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/boringssl/**/crypto.lib
-            third_party/boringssl/**/crypto.pdb
-            third_party/boringssl/**/vc140.pdb
-            third_party/boringssl/**/ssl.lib
-            third_party/boringssl/**/ssl.pdb
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build Vistual Studio 2022 (v143)
         run: |
           set VCToolsVersion=
@@ -582,10 +417,12 @@ jobs:
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
           set vsdevcmd=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
-          set CC=
-          set CXX=
+          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
+          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set Platform=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
+
+          set "Path=%CD%\third_party\nasm;%Path%"
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
 
@@ -595,105 +432,6 @@ jobs:
 
           :SetNewVCToolsVersion
           set VCToolsVersion=
-  win-clang-cl:
-    needs: cache-toolchain-win
-    runs-on: windows-2019
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [x64, x86, arm64]
-        build_type: [Debug, RelWithDebInfo]
-        crt-linkage: [dynamic]
-    env:
-      BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}.zip'
-      DBG_BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}-debuginfo.zip'
-      BUILD_TYPE: '${{ matrix.build_type }}'
-      MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
-      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
-      # Indicates the location of the vcpkg as a Git submodule of the project repository.
-      VCPKG_ROOT: ${{ github.workspace }}\vcpkg
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: 'true'
-      - name: Cache clang, nasm and extracted vcredist files
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/nasm
-            third_party/llvm-build/Release+Asserts
-            third_party/vcredist
-          key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ matrix.crt-linkage }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get vcpkg commit
-        shell: bash
-        run: |
-          IFS=" " read -r -a array <<< $VCPKG_DEPS
-          for VCPKG_DEP in ${VCPKG_DEPS[@]}; do
-            echo "$(openssl sha256 /c/vcpkg/ports/$VCPKG_DEP/vcpkg.json) $VCPKG_DEP" >> vcpkg.lock
-          done
-      - name: Cache vcpkg packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            ${{ env.VCPKG_ROOT }}
-            !${{ env.VCPKG_ROOT }}/buildtrees
-            !${{ env.VCPKG_ROOT }}/packages
-            !${{ env.VCPKG_ROOT }}/downloads
-          key: toolchain-cache-${{ runner.os }}-vcpkg-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get boringssl commit
-        run: git submodule status --cached third_party/boringssl >> boringssl.lock
-      - name: Cache boringssl packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/boringssl/**/crypto.lib
-            third_party/boringssl/**/crypto.pdb
-            third_party/boringssl/**/vc140.pdb
-            third_party/boringssl/**/ssl.lib
-            third_party/boringssl/**/ssl.pdb
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
-      - name: Build
-        run: |
-          set VCToolsVersion=14.29
-          set Winsdk=10.0.19041.0
-          set "WindowsSDKVersion=%Winsdk%\"
-          if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
-          set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
-          set "VSCMD_START_DIR=%CD%"
-          set "CC=%CD%/third_party/llvm-build/Release+Asserts/bin/clang-cl.exe"
-          set "CXX=%CD%/third_party/llvm-build/Release+Asserts/bin/clang-cl.exe"
-          set Platform=${{ matrix.arch }}
-          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
-
-          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
-
-          python -u .\scripts\build.py || exit /b
-
-          exit /b 0
-
-          :SetNewVCToolsVersion
-          set VCToolsVersion=
-      - run: |
-          rename yass.zip ${{ env.BUNDLE_NAME }}
-          rename yass-debuginfo.zip ${{ env.DBG_BUNDLE_NAME }}
-      - run: openssl sha256 ${{ env.BUNDLE_NAME }} > sha256sum.txt
-      - run: echo "SHA256SUM=$(cut -d' ' -f2 sha256sum.txt)" >>$GITHUB_ENV
-      - uses: actions/upload-artifact@v2
-        with:
-          name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-sha256 ${{ env.SHA256SUM }}
-          path: sha256sum.txt
-      - run: openssl sha256 ${{ env.DBG_BUNDLE_NAME }} > sha256sum-debuginfo.txt
-      - run: echo "SHA256SUM_DEBUGINFO=$(cut -d' ' -f2 sha256sum-debuginfo.txt)" >>$GITHUB_ENV
-      - uses: actions/upload-artifact@v2
-        with:
-          name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-sha256-debuginfo ${{ env.SHA256SUM_DEBUGINFO }}
-          path: sha256sum-debuginfo.txt
-      - name: Upload dist tarball (including debuginfo)
-        if: ${{ github.event_name == 'release' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload ${{ github.event.release.tag_name }} ${{ env.BUNDLE_NAME }} ${{ env.DBG_BUNDLE_NAME }}
   win-clang-tidy:
     needs: cache-toolchain-win
     runs-on: windows-2019
@@ -738,32 +476,22 @@ jobs:
             !${{ env.VCPKG_ROOT }}/packages
             !${{ env.VCPKG_ROOT }}/downloads
           key: toolchain-cache-${{ runner.os }}-vcpkg-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get boringssl commit
-        run: git submodule status --cached third_party/boringssl >> boringssl.lock
-      - name: Cache boringssl packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/boringssl/**/crypto.lib
-            third_party/boringssl/**/crypto.pdb
-            third_party/boringssl/**/vc140.pdb
-            third_party/boringssl/**/ssl.lib
-            third_party/boringssl/**/ssl.pdb
-          key: toolchain-cache-${{ runner.os }}-boringssl-build-${{ matrix.crt-linkage }}-${{ hashFiles('**\boringssl.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
-          set VCToolsVersion=14.29
+          set VCToolsVersion=14.16
           set Winsdk=10.0.19041.0
           set "WindowsSDKVersion=%Winsdk%\"
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
-          set CC=
-          set CXX=
+          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
+          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set Platform=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
 
           set "CLANG_TIDY_EXECUTABLE=%CD%/third_party/llvm-build/Release+Asserts/bin/clang-tidy.exe"
+
+          set "Path=%CD%\third_party\nasm;%Path%"
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
 

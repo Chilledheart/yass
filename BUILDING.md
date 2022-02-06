@@ -1,6 +1,54 @@
 # Building Instruments
 
-## GeneralInstallation/Debian/Ubuntu
+## Windows
+
+1. Make sure you use [Visual Studio][vs] 2017 or later.
+Make sure you have `Visual Studio with C++` selected from download page.
+
+2. Make sure you have [Perl], [CMake] (3.8 or later), [Ninja], [Golang] and [NASM] installed.
+
+  * A recent version of Perl is required.
+    On Windows, [Active State Perl](http://www.activestate.com/activeperl/) has been reported to work, as has MSYS Perl.
+    [Strawberry Perl](http://strawberryperl.com/) also works but it adds GCC to `PATH`,
+    which can confuse some build tools when identifying the compiler
+    (removing `C:\Strawberry\c\bin` from `PATH` should resolve any problems).
+
+3. Run Developer Command Line from Visual Studio subdirectory in Start Menu.
+
+4. Compile the program with default configuration.
+```
+mkdir build
+cd build
+cmake -G Ninja -DGUI=on ..
+ninja yass
+```
+
+## macOS/MacOS X
+
+1. Make sure you have [Xcode Command Line Tools][xcode-commandline] installed ([Xcode] if possible):
+```
+xcode-select --install
+```
+2. Install the rest build tools...
+(for [MacPorts])
+```
+    sudo port install ninja cmake go
+```
+(for [Homebrew])
+```
+    brew install ninja cmake go
+```
+
+3. Compile the program with default configuration.
+```
+mkdir build
+cd build
+cmake -G Ninja -DGUI=on ..
+ninja yass
+```
+
+
+## Debian/Ubuntu
 1. Install GNU C++ Compiler:
 ```
 sudo apt-get install -y build-essential
@@ -17,35 +65,34 @@ sudo apt-get install -y \
     libgtkmm-3.0-dev
 
 ```
-3. Install golang:
+3. Install golang manually:
 ```
 wget https://go.dev/dl/go1.16.13.linux-amd64.tar.gz
 sudo tar -C /usr/local -xzf go1.16.13.linux-amd64.tar.gz
 echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
 ```
-4. Compile the program with default configuration.
+4. Logout and login
+5. Compile the program with default configuration.
 ```
 mkdir build
 cd build
-cmake -G Ninja..
-ninja
+cmake -G Ninja -DGUI=on ..
+ninja yass
 ```
 
-## Debian/Packaging
+Notes: please make sure you have GCC (6.1 or above) and CMake (3.8 or above).
+You might want to give these APT/PPA sites a look if the requirements are not meet:
+- PPA for Ubuntu Toolchain: https://launchpad.net/~ubuntu-toolchain-r/+archive/ubuntu/test
+- Kitware CMake: https://apt.kitware.com/
 
-```
-sudo apt-get install build-essential fakeroot devscripts
-./scripts/build-deb.sh
-```
-
-## GeneralInstallation/Fedora
+## Fedora/RHEL/CentOS
 1. Install GNU C++ Compiler:
 ```
 sudo dnf install gcc make python bash coreutils diffutils patch
 ```
 2. Install below dependencies:
 ```
-sudo dnf install \
+sudo yum install -y \
     cmake \
     ninja-build \
     pkg-config \
@@ -59,162 +106,71 @@ sudo dnf install \
 ```
 mkdir build
 cd build
-cmake -G Ninja..
-ninja
+cmake -G Ninja -DGUI=on ..
+ninja yass
+```
+
+Notes: please make sure you have GCC (6.1 or above) and CMake (3.8 or above).
+You might want to enable CodeReady (for RHEL), PowerTools (for CentOS) and EPEL repo for your distribution:
+- CodeReady (for RHEL): `subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms`
+- PowerTools (for CentOS): `yum install -y dnf-plugins-core && dnf config-manager --set-enabled PowerTools`
+- EPEL: `yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm`
+
+
+## General/Packaging
+
+There are scripts to Windows and macOS/MacOS X packages.
+
+Make sure you have [Python 3][py3] installed on your system.
+
+On Windows:
+```
+python ./scripts/build.py
+```
+
+On Mac
+```
+./scripts/build.py
+```
+
+## Debian/Packaging
+
+There are scripts to packaging debs.
+
+1. Install Packaging Tools
+```
+sudo apt-get install build-essential fakeroot devscripts
+```
+
+2. Generate Packages
+```
+sudo apt-get install build-essential fakeroot devscripts
+./scripts/build-deb.sh
 ```
 
 ## Fedora/Packaging
 
+There are scripts to packaging rpms.
+
+1. Install Packaging Tools
 ```
 sudo dnf install gcc rpm-build rpm-devel rpmlint make python bash coreutils diffutils patch rpmdevtools
+```
+
+2. Generate Packages
+```
 ./scripts/build-rpm.sh
 ```
 
-## macOS
-
-1. Make sure you have Xcode Command Line Tools installed (Xcode if possible):
-```
-xcode-select --install
-```
-2. Install [MacPorts] and dependencies...
-```
-    ninja cmake go
-```
-2. Install [HomeBrew] and dependencies...
-```
-    ninja cmake go
-```
-
-3. use script to build Release App under `build` directory.
-```
-scripts/build.py
-```
-
-## Windows
-
-1. Make sure you use Visual Studio 2019 or later.
-
-2. use script to build Release App under `build` directory.
-```
-scripts/build.py
-```
-
-## boringssl
-
-For boringssl, you should only need ssl and crypto targets.
-
-Requirement of building boringssl:
-
-  * [CMake](https://cmake.org/download/) 3.5 or later is required.
-
-  * A recent version of Perl is required. On Windows,
-    [Active State Perl](http://www.activestate.com/activeperl/) has been
-    reported to work, as has MSYS Perl.
-    [Strawberry Perl](http://strawberryperl.com/) also works but it adds GCC
-    to `PATH`, which can confuse some build tools when identifying the compiler
-    (removing `C:\Strawberry\c\bin` from `PATH` should resolve any problems).
-    If Perl is not found by CMake, it may be configured explicitly by setting
-    `PERL_EXECUTABLE`.
-
-  * Building with [Ninja](https://ninja-build.org/) instead of Make is
-    recommended, because it makes builds faster. On Windows, CMake's Visual
-    Studio generator may also work, but it not tested regularly and requires
-    recent versions of CMake for assembly support.
-
-  * On Windows only, [NASM](https://www.nasm.us/) is required. If not found
-    by CMake, it may be configured explicitly by setting
-    `CMAKE_ASM_NASM_COMPILER`.
-
-  * C and C++ compilers with C++11 support are required. On Windows, MSVC 14
-    (Visual Studio 2015) or later with Platform SDK 8.1 or later are supported,
-    but newer versions are recommended. We will drop support for Visual Studio
-    2015 in March 2022, five years after the release of Visual Studio 2017.
-    Recent versions of GCC (6.1+) and Clang should work on non-Windows
-    platforms, and maybe on Windows too.
-
-  * The most recent stable version of [Go](https://golang.org/dl/) is required.
-    Note Go is exempt from the five year support window. If not found by CMake,
-    the go executable may be configured explicitly by setting `GO_EXECUTABLE`.
-
-(for Windows)
-```
-cd third_party/boringssl
-mkdir build
-mkdir debug
-cd build
-
-cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Debug ..
-ninja crypto ssl
-copy /y crypto\crypto.lib ..\debug\crypto.lib
-copy /y ssl\ssl.lib ..\debug\ssl.lib
-
-cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
-ninja crypto
-copy /y crypto\crypto.lib ..\crypto.lib
-copy /y ssl\ssl.lib ..\ssl.lib
-cd ..
-rmdir build /s /q
-```
-
-(for Linux)
-Run:
-```
-cd third_party/boringssl
-mkdir build
-cd build
-cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
-ninja crypto ssl
-cp -fv crypto/libcrypto.a ../libcrypto.a
-cp -fv ssl/libssl.a ../libssl.a
-cd ..
-```
-
-(for macOS)
-```
-set(CMAKE_ASM_FLAGS "-mmacosx-version-min=10.10 ${CMAKE_ASM_FLAGS}")
-```
-Run these commands to build ssl and crypto targets.
-(first x86_64 slice)
-```
-cd third_party/boringssl
-mkdir build
-cd build
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
-  -DCMAKE_OSX_ARCHITECTURES="x86_64" ..
-ninja crypto ssl
-cp -fv crypto/libcrypto.a ../x64-libcrypto.a
-cp -fv ssl/libssl.a ../x64-libssl.a
-cd ..
-```
-(and then arm64 slice)
-```
-cd third_party/boringssl
-mkdir build
-cd build
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
-  -DCMAKE_OSX_ARCHITECTURES="arm64" ..
-ninja crypto ssl
-cp -fv crypto/libcrypto.a ../arm64-libcrypto.a
-cp -fv ssl/libssl.a ../arm64-libssl.a
-cd ..
-```
-(create fat binary)
-```
-cd third_party/boringssl
-lipo -create arm64-libcrypto.a x64-libcrypto.a -output libcrypto.a
-lipo -create arm64-libssl.a x64-libssl.a -output libssl.a
-lipo -info libcrypto.a
-lipo -info libssl.a
-```
-Built universal target at ``libcrypto.a`` and ``libssl.a``
-
-## Updating boringssl
-
-Follow ``https://chromium.googlesource.com/chromium/src/+/HEAD/DEPS``
-Use ``boringssl_revision`` field's value to rebase TOT.
-
+[vs]: https://visualstudio.microsoft.com/downloads/
+[Perl]: https://www.perl.org/get.html
+[CMake]: https://cmake.org/download/
+[Ninja]: https://ninja-build.org/
+[Golang]: https://go.dev/dl/
+[NASM]: https://www.nasm.us/
+[xcode-commandline]: https://developer.apple.com/download/more/
+[Xcode]: https://apps.apple.com/us/app/xcode/id497799835?mt=12
 [vcpkg]: https://github.com/microsoft/vcpkg
 [MacPorts]: https://www.macports.org/install.php
 [HomeBrew]: https://brew.sh
+[py3]: https://www.python.org/downloads/

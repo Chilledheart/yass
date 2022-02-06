@@ -4,7 +4,7 @@ Section: net
 Priority: optional
 Standards-Version: 3.9.2
 Build-Depends:
- cmake (>= 3.8),
+ cmake (>= 3.12),
  debhelper (>= 9),
  pkg-config,
  perl,

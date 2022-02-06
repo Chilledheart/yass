@@ -62,7 +62,7 @@ struct CheckedAddOp<T,
                                   FastPromotion>::type;
     // Fail if either operand is out of range for the promoted type.
     // TODO(jschuh): This could be made to work for a broader range of values.
-    if (BASE_NUMERICS_UNLIKELY(!IsValueInRangeForNumericType<Promotion>(x) ||
+    if (NUMERICS_UNLIKELY(!IsValueInRangeForNumericType<Promotion>(x) ||
                                !IsValueInRangeForNumericType<Promotion>(y))) {
       return false;
     }
@@ -126,7 +126,7 @@ struct CheckedSubOp<T,
                                   FastPromotion>::type;
     // Fail if either operand is out of range for the promoted type.
     // TODO(jschuh): This could be made to work for a broader range of values.
-    if (BASE_NUMERICS_UNLIKELY(!IsValueInRangeForNumericType<Promotion>(x) ||
+    if (NUMERICS_UNLIKELY(!IsValueInRangeForNumericType<Promotion>(x) ||
                                !IsValueInRangeForNumericType<Promotion>(y))) {
       return false;
     }
@@ -185,7 +185,7 @@ struct CheckedMulOp<T,
 
     using Promotion = typename FastIntegerArithmeticPromotion<T, U>::type;
     // Verify the destination type can hold the result (always true for 0).
-    if (BASE_NUMERICS_UNLIKELY((!IsValueInRangeForNumericType<Promotion>(x) ||
+    if (NUMERICS_UNLIKELY((!IsValueInRangeForNumericType<Promotion>(x) ||
                                 !IsValueInRangeForNumericType<Promotion>(y)) &&
                                x && y)) {
       return false;
@@ -222,13 +222,13 @@ struct CheckedDivOp<T,
   using result_type = typename MaxExponentPromotion<T, U>::type;
   template <typename V>
   static constexpr bool Do(T x, U y, V* result) {
-    if (BASE_NUMERICS_UNLIKELY(!y))
+    if (NUMERICS_UNLIKELY(!y))
       return false;
 
     // The overflow check can be compiled away if we don't have the exact
     // combination of types needed to trigger this case.
     using Promotion = typename BigEnoughPromotion<T, U>::type;
-    if (BASE_NUMERICS_UNLIKELY(
+    if (NUMERICS_UNLIKELY(
             (std::is_signed<T>::value && std::is_signed<U>::value &&
              IsTypeInRangeForNumericType<T, Promotion>::value &&
              static_cast<Promotion>(x) ==
@@ -238,7 +238,7 @@ struct CheckedDivOp<T,
     }
 
     // This branch always compiles away if the above branch wasn't removed.
-    if (BASE_NUMERICS_UNLIKELY((!IsValueInRangeForNumericType<Promotion>(x) ||
+    if (NUMERICS_UNLIKELY((!IsValueInRangeForNumericType<Promotion>(x) ||
                                 !IsValueInRangeForNumericType<Promotion>(y)) &&
                                x)) {
       return false;
@@ -263,11 +263,11 @@ struct CheckedModOp<T,
   using result_type = typename MaxExponentPromotion<T, U>::type;
   template <typename V>
   static constexpr bool Do(T x, U y, V* result) {
-    if (BASE_NUMERICS_UNLIKELY(!y))
+    if (NUMERICS_UNLIKELY(!y))
       return false;
 
     using Promotion = typename BigEnoughPromotion<T, U>::type;
-    if (BASE_NUMERICS_UNLIKELY(
+    if (NUMERICS_UNLIKELY(
             (std::is_signed<T>::value && std::is_signed<U>::value &&
              IsTypeInRangeForNumericType<T, Promotion>::value &&
              static_cast<Promotion>(x) ==
@@ -334,7 +334,7 @@ struct CheckedRshOp<T,
   template <typename V>
   static constexpr bool Do(T x, U shift, V* result) {
     // Use sign conversion to push negative values out of range.
-    if (BASE_NUMERICS_UNLIKELY(as_unsigned(shift) >=
+    if (NUMERICS_UNLIKELY(as_unsigned(shift) >=
                                IntegerBitsPlusSign<T>::value)) {
       return false;
     }
@@ -463,7 +463,7 @@ struct CheckedMinOp<
 
 // This is just boilerplate that wraps the standard floating point arithmetic.
 // A macro isn't the nicest solution, but it beats rewriting these repeatedly.
-#define BASE_FLOAT_ARITHMETIC_OPS(NAME, OP)                              \
+#define FLOAT_ARITHMETIC_OPS(NAME, OP)                              \
   template <typename T, typename U>                                      \
   struct Checked##NAME##Op<                                              \
       T, U,                                                              \
@@ -481,12 +481,12 @@ struct CheckedMinOp<
     }                                                                    \
   };
 
-BASE_FLOAT_ARITHMETIC_OPS(Add, +)
-BASE_FLOAT_ARITHMETIC_OPS(Sub, -)
-BASE_FLOAT_ARITHMETIC_OPS(Mul, *)
-BASE_FLOAT_ARITHMETIC_OPS(Div, /)
+FLOAT_ARITHMETIC_OPS(Add, +)
+FLOAT_ARITHMETIC_OPS(Sub, -)
+FLOAT_ARITHMETIC_OPS(Mul, *)
+FLOAT_ARITHMETIC_OPS(Div, /)
 
-#undef BASE_FLOAT_ARITHMETIC_OPS
+#undef FLOAT_ARITHMETIC_OPS
 
 // Floats carry around their validity state with them, but integers do not. So,
 // we wrap the underlying value in a specialization in order to hide that detail
@@ -533,7 +533,7 @@ class CheckedNumericState<T, NUMERIC_INTEGER> {
   // Ensures that a type conversion does not trigger undefined behavior.
   template <typename Src>
   static constexpr T WellDefinedConversionOrZero(Src value, bool is_valid) {
-    using SrcType = typename internal::UnderlyingType<Src>::type;
+    using SrcType = typename UnderlyingType<Src>::type;
     return (std::is_integral<SrcType>::value || is_valid)
                ? static_cast<T>(value)
                : 0;
@@ -574,7 +574,7 @@ class CheckedNumericState<T, NUMERIC_FLOATING> {
   // Ensures that a type conversion does not trigger undefined behavior.
   template <typename Src>
   static constexpr T WellDefinedConversionOrNaN(Src value, bool is_valid) {
-    using SrcType = typename internal::UnderlyingType<Src>::type;
+    using SrcType = typename UnderlyingType<Src>::type;
     return (StaticDstRangeRelationToSrcRange<T, SrcType>::value ==
                 NUMERIC_RANGE_CONTAINED ||
             is_valid)
