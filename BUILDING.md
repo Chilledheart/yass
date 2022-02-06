@@ -15,9 +15,7 @@ Make sure you have `Visual Studio with C++` selected from download page.
 
 3. Run Developer Command Line from Visual Studio subdirectory in Start Menu.
 
-4. Compile Boringssl libraries, see [Boringssl] section.
-
-5. Compile the program with default configuration.
+4. Compile the program with default configuration.
 ```
 mkdir build
 cd build
@@ -41,9 +39,7 @@ xcode-select --install
     brew install ninja cmake go
 ```
 
-3. Compile Boringssl libraries, see [Boringssl] section.
-
-4. Compile the program with default configuration.
+3. Compile the program with default configuration.
 ```
 mkdir build
 cd build
@@ -76,8 +72,7 @@ sudo tar -C /usr/local -xzf go1.16.13.linux-amd64.tar.gz
 echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
 ```
 4. Logout and login
-5. Compile Boringssl libraries, see [Boringssl] section.
-6. Compile the program with default configuration.
+5. Compile the program with default configuration.
 ```
 mkdir build
 cd build
@@ -107,8 +102,7 @@ sudo yum install -y \
     gtkmm30-devel \
     golang
 ```
-3. Compile Boringssl libraries, see [Boringssl] section.
-4. Compile the program with default configuration.
+3. Compile the program with default configuration.
 ```
 mkdir build
 cd build
@@ -122,81 +116,6 @@ You might want to enable CodeReady (for RHEL), PowerTools (for CentOS) and EPEL 
 - PowerTools (for CentOS): `yum install -y dnf-plugins-core && dnf config-manager --set-enabled PowerTools`
 - EPEL: `yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm`
 
-
-## Boringssl
-
-The required Boringssl component, aka ssl and crypto libraries, is not included in cmake file, so you might
-need to compile it yourself.
-
-(for Windows)
-```
-cd third_party/boringssl
-mkdir build
-mkdir debug
-cd build
-
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug ..
-ninja crypto ssl
-copy /y crypto\crypto.lib ..\debug\crypto.lib
-copy /y ssl\ssl.lib ..\debug\ssl.lib
-
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
-ninja crypto
-copy /y crypto\crypto.lib ..\crypto.lib
-copy /y ssl\ssl.lib ..\ssl.lib
-cd ..
-```
-
-(for Linux)
-Run:
-```
-cd third_party/boringssl
-mkdir build
-cd build
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
-ninja crypto ssl
-cp -fv crypto/libcrypto.a ../libcrypto.a
-cp -fv ssl/libssl.a ../libssl.a
-cd ..
-```
-
-(for macOS)
-Run these commands to build ssl and crypto targets.
-(first x86_64 slice)
-```
-cd third_party/boringssl
-mkdir build
-cd build
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
-  -DCMAKE_OSX_ARCHITECTURES="x86_64" ..
-ninja crypto ssl
-cp -fv crypto/libcrypto.a ../x64-libcrypto.a
-cp -fv ssl/libssl.a ../x64-libssl.a
-cd ..
-```
-(and then arm64 slice)
-```
-cd third_party/boringssl
-mkdir build
-cd build
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
-  -DCMAKE_OSX_ARCHITECTURES="arm64" ..
-ninja crypto ssl
-cp -fv crypto/libcrypto.a ../arm64-libcrypto.a
-cp -fv ssl/libssl.a ../arm64-libssl.a
-cd ..
-```
-(create fat binary)
-```
-cd third_party/boringssl
-lipo -create arm64-libcrypto.a x64-libcrypto.a -output libcrypto.a
-lipo -create arm64-libssl.a x64-libssl.a -output libssl.a
-lipo -info libcrypto.a
-lipo -info libssl.a
-```
-Built universal target at ``libcrypto.a`` and ``libssl.a``
 
 ## General/Packaging
 
@@ -254,5 +173,4 @@ sudo dnf install gcc rpm-build rpm-devel rpmlint make python bash coreutils diff
 [vcpkg]: https://github.com/microsoft/vcpkg
 [MacPorts]: https://www.macports.org/install.php
 [HomeBrew]: https://brew.sh
-[Boringssl]: BUILDING.md#Boringssl
 [py3]: https://www.python.org/downloads/
