@@ -12,7 +12,7 @@ REM   Visual Studio 2022 SDK and python.exe -u.
 REM
 
 set VCToolsVersion=14.16.27012
-set "VCINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC"
+set "VCINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\VC"
 set "WindowsSDKVersion=10.0.10240.0\"
 set "WindowsSdkDir=C:\Program Files (x86)\Windows Kits\10"
 
