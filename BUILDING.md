@@ -42,7 +42,7 @@ Run in Terminal:
 ```
 xcode-select --install
 ```
-2. Install the rest build tools...
+2. Install the required build tools...
 
 (for people who don't use [MacPorts] or [Homebrew])
 
@@ -64,16 +64,16 @@ Run in Terminal:
 cd $TMPDIR
 curl -L -O https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-mac.zip
 unzip ninja-mac.zip
-install -m 755 ninja /usr/local/bin/ninja
+sudo install -m 755 ninja /usr/local/bin/ninja
 ```
 3. [Golang]
 
 Run in Terminal:
 ```
 cd $TMPDIR
-# Change to https://go.dev/dl/go1.16.13.darwin-arm64.tar.gz if you are using Apple Silicon-based Mac
+# Change to https://go.dev/dl/go1.16.13.darwin-arm64.tar.gz if you are using Apple Silicon
 curl -L -O https://go.dev/dl/go1.16.13.darwin-amd64.tar.gz
-tar -C /usr/local -xf go1.16.13.darwin-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.16.13.darwin-amd64.tar.gz
 echo 'export PATH="/usr/local/go/bin:${PATH}"' >> .zprofile
 export PATH="/usr/local/go/bin:${PATH}"
 ```
@@ -173,8 +173,6 @@ ninja yass
 
 ## Windows/Packaging
 
-There are scripts to Windows packages.
-
 Make sure you have [Python 3][python-windows] installed on your system.
 
 Run in Developer Command Line from Visual Studio:
@@ -184,8 +182,6 @@ python ./scripts/build.py
 
 ## macOS/Packaging
 
-There are scripts to macOS/MacOS X packages.
-
 Make sure you have [Python 3][python-macos] installed on your system.
 
 Run in Terminal:
@@ -194,8 +190,6 @@ Run in Terminal:
 ```
 
 ## Debian/Packaging
-
-There are scripts to packaging debs.
 
 1. Install Packaging Tools
 ```
@@ -208,8 +202,6 @@ sudo apt-get install -y git build-essential fakeroot devscripts debhelper
 ```
 
 ## Fedora/Packaging
-
-There are scripts to packaging rpms.
 
 1. Install Packaging Tools
 ```
