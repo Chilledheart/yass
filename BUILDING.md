@@ -71,6 +71,7 @@ curl -L -O https://go.dev/dl/go1.16.13.darwin-amd64.tar.gz
 tar -C /usr/local -xf go1.16.13.darwin-amd64.tar.gz
 echo 'export PATH="/usr/local/go/bin:${PATH}"' >> .zprofile
 export PATH="/usr/local/go/bin:${PATH}"
+```
 
 (for [Homebrew] users)
 
