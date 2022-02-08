@@ -50,6 +50,7 @@ xcode-select --install
 
 Run in Terminal:
 ```
+cd $TMPDIR
 curl -L -O https://github.com/Kitware/CMake/releases/download/v3.22.2/cmake-3.22.2-macos-universal.dmg
 hdiutil attach cmake-3.22.2-macos-universal.dmg
 ditto /Volumes/cmake-3.22.2-macos-universal/CMake.app /Applications/CMake.app
@@ -120,6 +121,7 @@ Notes: please make sure you have [GCC] (6.1 or above) and [CMake] (3.12 or above
 
 3. Install Golang manually:
 ```
+cd /tmp
 wget https://go.dev/dl/go1.16.13.linux-amd64.tar.gz
 sudo tar -C /usr/local -xzf go1.16.13.linux-amd64.tar.gz
 echo 'export PATH="/usr/local/go/bin:${PATH}"' >> ~/.bashrc
