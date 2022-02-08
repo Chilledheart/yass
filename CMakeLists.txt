@@ -945,9 +945,15 @@ if (NOT MSVC)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gdwarf-4")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-4")
 
-    # The gcc-based nacl compilers don't support -fdebug-compilation-dir
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g2")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g2")
+
+    # generate a complete set of debugging symbols for your code.
+    # The linker uses this extra debugging information to dead strip the executable.
+    if (APPLE)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gfull")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gfull")
+    endif()
 
     # gcc generates dwarf-aranges by default on -g1 and -g2. On clang it has
     # to be manually enabled
