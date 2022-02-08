@@ -5,7 +5,7 @@
 1. Make sure you use [Visual Studio][vs] 2017 or later.
 Make sure you have `Visual Studio with C++` selected from download page.
 
-2. Make sure you have [Perl], [CMake] (3.8 or later), [Ninja], [Golang] and [NASM] installed.
+2. Make sure you have [Perl], [CMake] (3.8 or later), [Ninja], [Golang] and [NASM] installed and put them in `PATH`.
 
   * A recent version of Perl is required.
     On Windows, [Active State Perl](http://www.activestate.com/activeperl/) has been reported to work, as has MSYS Perl.
@@ -15,10 +15,20 @@ Make sure you have `Visual Studio with C++` selected from download page.
 
 3. Run Developer Command Line from Visual Studio subdirectory in Start Menu.
 
-4. Compile the program with default configuration.
+4. Make sure you have clang-cl in PATH:
+
+Download and run LLVM installer from GitHub Binary download page.
+- https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.0/LLVM-13.0.0-win64.exe
+
+Make sure you choose "Add LLVM to System Path".
+
+5. Compile the program with default configuration.
+Run in Console:
 ```
 mkdir build
 cd build
+set CC=clang-cl
+set CXX=clang-cl
 cmake -G Ninja -DGUI=on ..
 ninja yass
 ```
@@ -26,17 +36,52 @@ ninja yass
 ## macOS/MacOS X
 
 1. Make sure you have [Xcode Command Line Tools][xcode-commandline] installed ([Xcode] if possible):
+Run in Terminal:
 ```
 xcode-select --install
 ```
 2. Install the rest build tools...
-(for [MacPorts])
+
+(for people who don't use [MacPorts] or [Homebrew])
+
+1. [CMake]
+Run in Terminal:
 ```
-    sudo port install ninja cmake go
+curl -L -O https://github.com/Kitware/CMake/releases/download/v3.22.2/cmake-3.22.2-macos-universal.dmg
+hdiutil attach cmake-3.22.2-macos-universal.dmg
+ditto /Volumes/cmake-3.22.2-macos-universal/CMake.app /Applications/CMake.app
+hdiutil detach /Volumes/cmake-3.22.2-macos-universal
+echo 'export PATH="/Applications/CMake.app/Contents/bin:${PATH}"' >> .zprofile
+export PATH="/Applications/CMake.app/Contents/bin:${PATH}"
 ```
-(for [Homebrew])
+2. [Ninja]
+Run in Terminal:
+```
+cd $TMPDIR
+curl -L -O https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-mac.zip
+unzip ninja-mac.zip
+install -m 755 ninja /usr/local/bin/ninja
+```
+3. Golang
+Run in Terminal:
+```
+cd $TMPDIR
+# Change to https://go.dev/dl/go1.16.13.darwin-arm64.tar.gz if you are using Apple Silicon-based Mac
+curl -L -O https://go.dev/dl/go1.16.13.darwin-amd64.tar.gz
+tar -C /usr/local -xf go1.16.13.darwin-amd64.tar.gz
+echo 'export PATH="/usr/local/go/bin:${PATH}"' >> .zprofile
+export PATH="/usr/local/go/bin:${PATH}"
+
+(for [Homebrew] users)
+
 ```
     brew install ninja cmake go
+```
+
+(for [MacPorts] users)
+
+```
+    sudo port install ninja cmake go
 ```
 
 3. Compile the program with default configuration.
@@ -69,10 +114,10 @@ sudo apt-get install -y \
 ```
 wget https://go.dev/dl/go1.16.13.linux-amd64.tar.gz
 sudo tar -C /usr/local -xzf go1.16.13.linux-amd64.tar.gz
-echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
+echo 'export PATH="/usr/local/go/bin:${PATH}"' >> ~/.bashrc
+export PATH="/usr/local/go/bin:${PATH}"
 ```
-4. Logout and login
-5. Compile the program with default configuration.
+4. Compile the program with default configuration.
 ```
 mkdir build
 cd build
