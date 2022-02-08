@@ -7,24 +7,24 @@ REM Usage: build.bat
 
 REM Prerequisites:
 REM
-REM   Visual Studio 2022, CMake, Ninja,
-REM   Visual Studio 2022 SDK and python.exe -u.
+REM   Visual Studio 2019, CMake, Ninja,
+REM   Visual Studio 2019 SDK and Python 3.
 REM
 REM VCToolsVersion:PlatformToolchainversion:VisualStudioVersion
-REM   14.30-14.3?:v143:Visual Studio 2022
+REM   14.30-14.3?:v143:Visual Studio 2019
 REM   14.20-14.29:v142:Visual Studio 2019
 REM   14.10-14.19:v141:Visual Studio 2017
 REM   14.00-14.00:v140:Visual Studio 2015
 
 REM You need to modify the paths below:
 
-REM Use Visual Studio 2015's toolchain for (x86, x64)
+REM Use Visual Studio 2017's toolchain for (x86, x64)
 
 set VCToolsVersion=14.16
 set Winsdk=10.0.19041.0
 set "WindowsSDKVersion=%Winsdk%\"
 
-set vsdevcmd=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat
+set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\Common7\Tools\VsDevCmd.bat
 
 REM
 REM Generate dynamic x86 binary
@@ -59,7 +59,7 @@ python.exe -u .\scripts\build.py || exit /b
 call :RenameTarball
 
 REM
-REM Generate dynamic arm64 binary
+REM Generate dynamic Arm64 binary
 REM
 REM Use Visual Studio 2019's toolchain for ARM64 target
 
