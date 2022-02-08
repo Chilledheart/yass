@@ -3,7 +3,8 @@
 ## Windows
 
 1. Make sure you use [Visual Studio][visualstudio] 2017 or later.
-Make sure you have `Visual Studio with C++` selected from download page.
+
+  * Make sure you have `Visual Studio with C++` selected from download page.
 
 2. Make sure you have Perl, [CMake] (3.8 or later), [Ninja], [Golang] and [NASM] installed and put them in `PATH`.
 
@@ -17,13 +18,13 @@ Make sure you have `Visual Studio with C++` selected from download page.
 
 4. Make sure you have clang-cl in `PATH`:
 
-* Download and Run [LLVM installer][llvm-win64] from GitHub Binary download page.
+  * Download and Run [LLVM installer][llvm-win64] from GitHub Binary download page.
 
-* Make sure you choose "Add LLVM to System Path".
+  * Make sure you choose "Add LLVM to System Path".
 
 5. Compile the program with default configuration.
 
-Run in Console:
+Run in Developer Command Line from Visual Studio:
 ```
 mkdir build
 cd build
@@ -36,6 +37,7 @@ ninja yass
 ## macOS/MacOS X
 
 1. Make sure you have [Xcode Command Line Tools][xcode-commandline] installed ([Xcode] if possible):
+
 Run in Terminal:
 ```
 xcode-select --install
@@ -102,7 +104,7 @@ ninja yass
 ```
 sudo apt-get install -y build-essential
 ```
-2. Install below dependencies:
+2. Install required dependencies:
 ```
 sudo apt-get install -y \
     cmake \
@@ -112,10 +114,9 @@ sudo apt-get install -y \
     libunwind-dev \
     libgtk-3-dev \
     libgtkmm-3.0-dev
-
 ```
 
-Notes: please make sure you have GCC (6.1 or above) and CMake (3.8 or above).
+Notes: please make sure you have [GCC] (6.1 or above) and [CMake] (3.12 or above).
   You might want to give these APT/PPA sites a look if the requirements are not meet:
 
 * [PPA for Ubuntu Toolchain](https://launchpad.net/~ubuntu-toolchain-r/+archive/ubuntu/test)
@@ -141,7 +142,7 @@ ninja yass
 ```
 sudo yum install -y gcc make python bash coreutils diffutils patch
 ```
-2. Install below dependencies:
+2. Install required dependencies:
 ```
 sudo yum install -y \
     cmake \
@@ -154,7 +155,7 @@ sudo yum install -y \
     golang
 ```
 
-Notes: please make sure you have GCC (6.1 or above) and CMake (3.8 or above).
+Notes: please make sure you have [GCC] (6.1 or above) and [CMake] (3.12 or above).
   You might want to enable CodeReady (for RHEL), PowerTools (for CentOS) and EPEL repo before above commands:
 
 * CodeReady (for RHEL): `subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms`
@@ -174,7 +175,7 @@ ninja yass
 
 There are scripts to Windows packages.
 
-Make sure you have [Python 3][python] installed on your system.
+Make sure you have [Python 3][python-windows] installed on your system.
 
 Run in Developer Command Line from Visual Studio:
 ```
@@ -185,7 +186,7 @@ python ./scripts/build.py
 
 There are scripts to macOS/MacOS X packages.
 
-Make sure you have [Python 3][python] installed on your system.
+Make sure you have [Python 3][python-macos] installed on your system.
 
 Run in Terminal:
 ```
@@ -225,6 +226,7 @@ sudo yum install -y gcc rpm-build rpm-devel rpmlint make python bash coreutils d
 [CMake]: https://cmake.org/download/
 [Ninja]: https://ninja-build.org/
 [Golang]: https://go.dev/dl/
+[GCC]: https://gcc.gnu.org/
 [NASM]: https://www.nasm.us/
 [xcode-commandline]: https://developer.apple.com/download/more/
 [Xcode]: https://apps.apple.com/us/app/xcode/id497799835?mt=12
@@ -232,4 +234,6 @@ sudo yum install -y gcc rpm-build rpm-devel rpmlint make python bash coreutils d
 [MacPorts]: https://www.macports.org/install.php
 [HomeBrew]: https://brew.sh
 [python]: https://www.python.org/downloads/
+[python-windows]: https://www.python.org/downloads/windows/
+[python-macos]: https://www.python.org/downloads/macos/
 [llvm-win64]: https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/LLVM-13.0.1-win64.exe
