@@ -714,13 +714,15 @@ def _check_universal_build_darwin(path, verbose = False):
 
 
 def postbuild_check_universal_build():
-    print('check universal build...')
-    # check if binary is built universally
-    _check_universal_build_darwin(get_app_name(), verbose = True)
+  print('check universal build...')
+  # check if binary is built universally
+  _check_universal_build_darwin(get_app_name(), verbose = True)
 
 
 def archive_files(output, paths = []):
   from zipfile import ZipFile, ZIP_DEFLATED, ZipInfo
+
+  print(f'generating zip file {output}')
   with ZipFile(output, 'w', compression=ZIP_DEFLATED) as archive:
     for path in paths:
       archive.write(path, path, ZIP_DEFLATED)
@@ -740,35 +742,17 @@ def archive_files(output, paths = []):
               archive.write(fullPath, fullPath, ZIP_DEFLATED)
 
 
-
-def postbuild_archive():
-  src = get_app_name()
-  dst = APP_NAME
-
-  archive = dst + '.zip'
-  debuginfo_archive = dst + '-debuginfo.zip'
-  new_archive = os.path.join('..', archive)
-  new_debuginfo_archive = os.path.join('..', debuginfo_archive)
-
-  paths = [ src ]
-
-  try:
-    os.unlink(new_archive)
-  except:
-    pass
-
-  try:
-    os.unlink(new_debuginfo_archive)
-  except:
-    pass
-
-  # dependent dlls
+def _archive_files_dll_files():
+  dll_paths = []
   if platform.system() == 'Windows':
     files = os.listdir('.')
     for file in files:
       if file.endswith('.dll'):
-        paths.append(file)
+        dll_paths.append(file)
+  return dll_paths
 
+
+def _archive_files_license_files():
   # LICENSEs
   license_maps = {
     'LICENSE': os.path.join('..', 'GPL-2.0'),
@@ -785,30 +769,129 @@ def postbuild_archive():
     'LICENSE.xxhash': os.path.join('..', 'third_party', 'xxhash', 'LICENSE'),
     'LICENSE.zlib': os.path.join('..', 'third_party', 'zlib', 'LICENSE'),
   }
+  licenses = []
   for license in license_maps:
     shutil.copyfile(license_maps[license], license)
-    paths.append(license)
+    licenses.append(license)
+  return licenses
 
-  archive_files(new_archive, paths)
+
+def _get_guid():
+  from uuid import uuid4
+  return str(uuid4()).upper()
+
+
+def _archive_files_generate_msi(msi_archive, paths, dll_paths, license_paths):
+  from xml.dom import minidom, Node
+
+  print('Generating WiX source file...')
+  wxs_content = minidom.parse('../yass.wxs')
+
+  # update product id
+  wxs_content.getElementsByTagName('Product')[0].setAttribute('Id', _get_guid())
+
+  # update dll components and licenses components
+  components = wxs_content.getElementsByTagName('Component')
+  for comp in components:
+    if comp.getAttribute('Id') == 'SupportLibrary':
+      keyPath = True
+      for dll in dll_paths:
+        for subcomp in comp.childNodes:
+          if subcomp.nodeType == Node.COMMENT_NODE:
+            comp.removeChild(subcomp)
+        new_dll = wxs_content.createElement('File')
+        new_dll.setAttribute('Name', os.path.basename(dll))
+        new_dll.setAttribute('Source', dll)
+        new_dll.setAttribute('KeyPath', 'yes' if keyPath else 'no')
+        keyPath = False
+        comp.appendChild(new_dll)
+    elif comp.getAttribute('Id') == 'License':
+      keyPath = True
+      for license in license_paths:
+        for subcomp in comp.childNodes:
+          if subcomp.nodeType == Node.COMMENT_NODE:
+            comp.removeChild(subcomp)
+        new_license = wxs_content.createElement('File')
+        new_license.setAttribute('Name', os.path.basename(license))
+        new_license.setAttribute('Source', license)
+        new_license.setAttribute('KeyPath', 'yes' if keyPath else 'no')
+        keyPath = False
+        comp.appendChild(new_license)
+
+  with open('yass.wxs', 'w') as f:
+    f.write(wxs_content.toxml())
+
+  print('Feeding WiX compiler...')
+  write_output(['candle.exe', 'yass.wxs'], suppress_error=False)
+
+  print('Generating MSI file...')
+  write_output(['light.exe', '-ext', 'WixUIExtension', '-out', msi_archive,
+                '-cultures:en-US', '-sice:ICE03', '-sice:ICE57', '-sice:ICE61', 'yass.wixobj'], suppress_error=False)
+
+
+def postbuild_archive():
+  src = get_app_name()
+  dst = APP_NAME
+
+  archive = dst + '.zip'
+  msi_archive = 'yass.msi'
+  debuginfo_archive = dst + '-debuginfo.zip'
 
   archives = {}
+
+  new_archive = os.path.join('..', archive)
+  new_debuginfo_archive = os.path.join('..', debuginfo_archive)
+  new_msi_archive = os.path.join('..', msi_archive)
+
+  paths = [ src ]
+  dll_paths = []
+  license_paths = []
+  debuginfo_paths = []
+
+  try:
+    os.unlink(new_archive)
+  except FileNotFoundError:
+    pass
+
+  try:
+    os.unlink(new_debuginfo_archive)
+  except FileNotFoundError:
+    pass
+
+  try:
+    os.unlink(new_msi_archive)
+  except FileNotFoundError:
+    pass
+
+  # copying dependent dlls
+  dll_paths = _archive_files_dll_files()
+
+  # copying dependent LICENSEs
+  license_paths = _archive_files_license_files()
+
+  paths.extend(dll_paths)
+  paths.extend(license_paths)
+
+  # main bundle
+  archive_files(new_archive, paths)
   archives[archive] = paths
 
+  # msi installer
   if platform.system() == 'Windows':
-    debuginfo_paths = []
+    _archive_files_generate_msi(new_msi_archive, paths, dll_paths, license_paths)
+    archives[msi_archive] = [msi_archive]
 
+  # debuginfo file
+  if platform.system() == 'Windows':
     if os.path.exists(APP_NAME + '.pdb'):
       debuginfo_paths.append(APP_NAME + '.pdb')
-
-    archive_files(new_debuginfo_archive, debuginfo_paths)
-    archives[debuginfo_archive] = debuginfo_paths
+      archive_files(new_debuginfo_archive, debuginfo_paths)
+      archives[debuginfo_archive] = debuginfo_paths
   elif platform.system() == 'Darwin':
-    debuginfo_paths = []
     if os.path.exists(get_app_name() + '.dSYM'):
       debuginfo_paths.append(get_app_name() + '.dSYM')
-
-    archive_files(new_debuginfo_archive, debuginfo_paths)
-    archives[debuginfo_archive] = debuginfo_paths
+      archive_files(new_debuginfo_archive, debuginfo_paths)
+      archives[debuginfo_archive] = debuginfo_paths
 
   return archives
 

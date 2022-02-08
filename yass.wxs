@@ -1,0 +1,101 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+    <Product Name='Yet Another Shadow Socket 1.0' Id='YOURGUID' UpgradeCode='83F393F8-069C-4FF2-94D5-A40ACFDCF603'
+      Language='1033' Codepage='1252' Version='1.0.0' Manufacturer='Chilledheart.'>
+
+        <Package InstallerVersion='100' Compressed='yes' InstallScope='perMachine' />
+
+        <Upgrade Id='83F393F8-069C-4FF2-94D5-A40ACFDCF603'>
+            <UpgradeVersion OnlyDetect='yes' Property='NEWERFOUND' Minimum='1.0.0' IncludeMinimum='no' />
+        </Upgrade>
+
+        <CustomAction Id='NoDowngrade' Error='A later version of [ProductName] is already installed.' />
+
+        <InstallExecuteSequence>
+            <Custom Action='NoDowngrade' After='FindRelatedProducts'>NEWERFOUND</Custom>
+            <RemoveExistingProducts After='InstallInitialize' Overridable='yes'>UPGRADE</RemoveExistingProducts>
+        </InstallExecuteSequence>
+
+        <Condition Message='Yass requires Windows XP or above'>
+            VersionNT >= 501
+        </Condition>
+
+        <MediaTemplate EmbedCab='yes' CompressionLevel='high' />
+
+        <Property Id='DiskPrompt' Value="Chilledheart's Yass 1.0 Installation [1]" />
+        <Property Id='WIXUI_INSTALLDIR' Value='INSTALLDIR' />
+        <Icon Id='ARPIcon' SourceFile='yass.exe' />
+        <Property Id='ARPPRODUCTICON' Value='ARPIcon' />
+        <Property Id='DISABLEADVTSHORTCUTS' Value='1' />
+
+        <Property Id='REGISTRYKEY' Value='Software\YetAnotherShadowSocket' />
+
+        <Directory Id='TARGETDIR' Name='SourceDir'>
+            <Directory Id='ProgramFilesFolder'>
+                <Directory Id='INSTALLDIR' Name='Yass'/>
+            </Directory>
+            <Directory Id='ProgramMenuFolder'>
+                <Directory Id='MenuDir' Name='Yass 1.0' />
+            </Directory>
+        </Directory>
+
+        <ComponentGroup Id='exe_yass'>
+            <Component Id='yass.exe' Directory='INSTALLDIR' Guid='3E5E8F97-4E9A-4B11-B334-611CE0AFFC54'>
+                <File Name='yass.exe' Source='yass.exe' KeyPath='yes'/>
+
+                <RegistryKey Root='HKMU' Key='[REGISTRYKEY]'>
+                    <RegistryValue Key='InstallPath' Type='string' Value='[INSTALLDIR]' KeyPath='no' />
+                    <RegistryValue Key='InstallPath' Name='ExecutablePath' Type='string' Value='[#yass.exe]' KeyPath='no' />
+                </RegistryKey>
+            </Component>
+        </ComponentGroup>
+
+        <ComponentGroup Id='exe_dll'>
+            <Component Id='SupportLibrary' Directory='INSTALLDIR' Guid='3BEB0AD7-044F-4FB6-9CF1-C53D45600722'>
+                <CreateFolder/>
+                <!--
+                <File Name='Support.dll' Source='Support.dll' KeyPath='yes' />
+                -->
+            </Component>
+        </ComponentGroup>
+
+        <ComponentGroup Id='exe_license'>
+            <Component Id='License' Directory='INSTALLDIR' Guid='CD8DB265-5EC1-4631-8CDB-8E935F1AFDFA'>
+                <!--
+                <File Name='LICENSE' Source='LICENSE' KeyPath='yes' />
+                -->
+            </Component>
+        </ComponentGroup>
+
+        <ComponentGroup Id='exe_shortcut'>
+             <Component Id='Shortcut' Directory='MenuDir' Guid='E9D83A2A-7F75-4558-A718-795DAA3021E4'>
+                 <Shortcut Id='yass.exe'
+                           Name='Yass 1.0'
+                           Target='[#yass.exe]'
+                           Description='Launch Yass 1.0'
+                           WorkingDirectory='INSTALLDIR' />
+                 <RemoveFolder Id='Remove_MenuDir' Directory='MenuDir' On='uninstall' />
+                 <RegistryKey Root='HKMU' Key='[REGISTRYKEY]'>
+                     <RegistryValue Key='InstalledFeatures' Name='Shortcuts' Type='string' Value='1.0.0' />
+                 </RegistryKey>
+             </Component>
+        </ComponentGroup>
+
+        <Feature Id='DefaultFeature' Title='Yass 1.0' Description='The Yass 1.0 package.' ConfigurableDirectory='INSTALLDIR'>
+            <Feature Id='DefaultFeatures' AllowAdvertise='no' Title='Program' Description='The main executable.' Level='1'>
+                <ComponentGroupRef Id='exe_yass' Primary='yes' />
+                <ComponentGroupRef Id='exe_dll' Primary='yes' />
+                <ComponentGroupRef Id='exe_license' />
+            </Feature>
+
+            <Feature Id='Shortcuts' AllowAdvertise='no' Title='Shortcuts' Description='Add shortcuts to yass'>
+                <ComponentGroupRef Id='exe_yass' />
+                <ComponentGroupRef Id='exe_shortcut' Primary='yes'/>
+            </Feature>
+        </Feature>
+
+        <UIRef Id='WixUI_InstallDir' />
+        <UIRef Id='WixUI_ErrorProgressText' />
+        <WixVariable Id='WixUILicenseRtf' Value='..\GPL-2.0.rtf' />
+    </Product>
+</Wix>

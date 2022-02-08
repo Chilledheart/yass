@@ -21,3 +21,5 @@ sscxx
 /debian/yass.substvars
 /debian/yass
 /debian/files
+*.msi
+*.wixpdb
