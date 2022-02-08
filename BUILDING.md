@@ -14,7 +14,7 @@
     which can confuse some build tools when identifying the compiler
     (removing `C:\Strawberry\c\bin` from `PATH` should resolve any problems).
 
-3. Run Developer Command Line from Visual Studio subdirectory in Start Menu.
+3. Run Developer Command Line from Visual Studio in Start Menu.
 
 4. Make sure you have clang-cl in `PATH`:
 
@@ -24,7 +24,7 @@
 
 5. Compile the program with default configuration.
 
-Run in Developer Command Line from Visual Studio:
+Run in Developer Command Line from Visual Studio in Start Menu:
 ```
 mkdir build
 cd build
@@ -80,15 +80,11 @@ export PATH="/usr/local/go/bin:${PATH}"
 
 (for [Homebrew] users)
 
-```
-    brew install ninja cmake go
-```
+Run in Terminal: ``brew install ninja cmake go``
 
 (for [MacPorts] users)
 
-```
-    sudo port install ninja cmake go
-```
+Run in Terminal: ``sudo port install ninja cmake go``
 
 3. Compile the program with default configuration.
 ```
@@ -175,7 +171,7 @@ ninja yass
 
 Make sure you have [Python 3][python-windows] installed on your system.
 
-Run in Developer Command Line from Visual Studio:
+Run in Developer Command Line from Visual Studio in Start Menu:
 ```
 python ./scripts/build.py
 ```
@@ -224,7 +220,7 @@ sudo yum install -y gcc rpm-build rpm-devel rpmlint make python bash coreutils d
 [Xcode]: https://apps.apple.com/us/app/xcode/id497799835?mt=12
 [vcpkg]: https://github.com/microsoft/vcpkg
 [MacPorts]: https://www.macports.org/install.php
-[HomeBrew]: https://brew.sh
+[HomeBrew]: https://docs.brew.sh/Installation
 [python]: https://www.python.org/downloads/
 [python-windows]: https://www.python.org/downloads/windows/
 [python-macos]: https://www.python.org/downloads/macos/
