@@ -7,20 +7,24 @@ REM https://devblogs.microsoft.com/cppblog/windows-xp-targeting-with-c-in-visual
 set _path=
 call :set_path "%VCINSTALLDIR%\Tools\MSVC\14.16.27023\bin\HostX86\x86"
 call :set_path "C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\bin"
-call :set_path "C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6.1 Tools"
-call :set_path "%VCINSTALLDIR%\..\Common7\IDE\CommonExtensions\Microsoft\TeamFoundation\Team Explorer"
+call :set_path "%VCINSTALLDIR%\..\Common7\Tools"
+call :set_path "%VCINSTALLDIR%\..\Common7\IDE"
 call :set_path "%VCINSTALLDIR%\..\MSBuild\Current\Bin"
+call :set_path "C:\Program Files (x86)\HTML Help Workshop"
+call :set_path "C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319"
 call :set_path "C:\Windows\SysWow64"
 
 set _include=
 call :set_include "%VCINSTALLDIR%\Tools\MSVC\14.16.27023\include"
 call :set_include "%VCINSTALLDIR%\Tools\MSVC\14.16.27023\atlmfc\include"
+call :set_include "%VCINSTALLDIR%\Auxiliary\VS\include"
 call :set_include "C:\Program Files (x86)\Windows Kits\10\Include\10.0.10240.0\ucrt"
 call :set_include "C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\include"
 
 set _lib=
 call :set_lib "%VCINSTALLDIR%\Tools\MSVC\14.16.27023\lib\x86"
 call :set_lib "%VCINSTALLDIR%\Tools\MSVC\14.16.27023\atlmfc\lib\x86"
+call :set_lib "%VCINSTALLDIR%\Auxiliary\VS\lib\x86"
 call :set_lib "C:\Program Files (x86)\Windows Kits\10\lib\10.0.10240.0\ucrt\x86"
 call :set_lib "C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\lib"
 

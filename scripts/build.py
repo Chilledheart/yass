@@ -563,6 +563,9 @@ def generate_buildscript(configuration_type):
       cmake_args.extend(['-DVCPKG_TARGET_TRIPLET=%s-windows' % DEFAULT_ARCH])
     if DEFAULT_ALLOW_XP:
       cmake_args.extend(['-DALLOW_XP=ON'])
+      # Currently, lld-link has issues generating tls section which is not
+      # recognized by Windows XP Operation System
+      cmake_args.extend(['-DCMAKE_LINKER=link'])
     cmake_args.extend(['-DVCPKG_ROOT_DIR=%s' % VCPKG_DIR])
     cmake_args.extend(['-DVCPKG_VERBOSE=ON'])
 

@@ -80,7 +80,7 @@ jobs:
             third_party\wix311\dark.exe "vc_redist.x64.exe" -x tmp
             "C:\Program Files\7-Zip\7z.exe" x "-othird_party\vcredist\x64" "tmp\AttachedContainer\packages\vcRuntimeMinimum_amd64\cab1.cab"
             python -c "import os; os.chdir('third_party/vcredist/x64'); dlls = os.listdir('.'); [ os.rename(dll, dll.replace('_', '-')) for dll in dlls if dll.startswith('api') ];"
-            del /s /q *.zip tmp
+            del /s /q *.exe *.zip tmp
           )
   win-release:
     needs: cache-toolchain-win
