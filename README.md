@@ -14,9 +14,9 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 
 - [Features](#features)
 - [Ciphers](#ciphers)
-  * [Ciphers for FIPS modules](#ciphers-for-fips-modules)
-  * [More mobile-friendly ciphers in TLS 1.3](#more-mobile-friendly-ciphers--tls-13--tls13-)
-- [Operating System](#operating-system)
+  * [FIPS Ciphers](#fips-ciphers)
+  * [Mobile-friendly Ciphers](#mobile-friendly-ciphers)
+- [Supported Operating System](#supported-operating-system)
   * [Screenshot on Windows 11](#screenshot-on-windows-11-)
   * [Screenshot on Windows 7](#screenshot-on-windows-7-)
   * [Screenshot on Windows XP](#screenshot-on-windows-xp-)
@@ -38,20 +38,22 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 - Safe memory layout, tested against [Address Sanitizer][asan].
 
 ## Ciphers
-### Ciphers for FIPS modules
+### FIPS Ciphers
 - [AEAD_AES_128_GCM][aes128gcm]
 - [AEAD_AES_256_GCM][aes256gcm]
 - [AEAD_AES_128_GCM_12][aes128gcm12]
 - [AEAD_AES_192_GCM][aes192gcm]
 
-### More mobile-friendly ciphers [TLS 1.3][tls13]
+### Mobile-friendly Ciphers
 - [AEAD_CHACHA20_POLY1305][chacha20]
 - [AEAD_XCHACHA20_POLY1305][chacha20]
 
-## Operating System
+Defined in [TLS 1.3][tls13]
+
+## Supported Operating System
 - macOS (MacOS 10.10 or later, macOS 11.0 or later, Apple Silicon supported)
 - Linux (CentOS 8 or later, Debian 9 or later, Ubuntu 16.04 or later)
-- Windows (Windows Vista or later, Windows XP standalone supported)
+- Windows (Windows Vista or later, Windows XP package also supported)
 
 ### Screenshot on Windows 11
 <img width="484" alt="snapshot-win11" src="https://user-images.githubusercontent.com/54673341/151115838-4deb128c-4c51-4a3c-9758-4f58da47984e.png">
