@@ -1,6 +1,20 @@
 name: Build Artifacts (Linux)
 on:
   workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+        type: choice
+        options:
+        - info
+        - warning
+        - debug
+      tags:
+        description: 'Test scenario tags'
+        required: false
+        type: boolean
   pull_request:
   push:
     branches: [master]
@@ -27,22 +41,22 @@ jobs:
         - 'debian11'
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
-    - name: Login to GitHub Container Registry
-      uses: docker/login-action@v1
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Build Docker Image
-      run: |
-        docker build --cache-from ghcr.io/chilledheart/${{ matrix.container }} \
-          -f docker/${{ matrix.container }}.Dockerfile \
-          -t ghcr.io/chilledheart/${{ matrix.container }} \
-          docker
-    - name: Push Docker Image
-      run: |
-        docker push ghcr.io/chilledheart/${{ matrix.container }}
+      - uses: actions/checkout@master
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Docker Image
+        run: |
+          docker build --cache-from ghcr.io/chilledheart/${{ matrix.container }} \
+            -f docker/${{ matrix.container }}.Dockerfile \
+            -t ghcr.io/chilledheart/${{ matrix.container }} \
+            docker
+      - name: Push Docker Image
+        run: |
+          docker push ghcr.io/chilledheart/${{ matrix.container }}
   cache-toolchain-linux:
     runs-on: ubuntu-18.04
     strategy:

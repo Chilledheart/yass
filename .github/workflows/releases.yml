@@ -1,0 +1,41 @@
+name: Publish Releases Checksum
+on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+        type: choice
+        options:
+        - info
+        - warning
+        - debug
+      tags:
+        description: 'Test scenario tags'
+        required: false
+        type: boolean
+  workflow_run:
+    workflows: ['Build Artifacts (Windows)', 'Build Artifacts (macOS)', 'Build Artifacts (Linux)']
+    types:
+      - completed
+jobs:
+  publish-checksum:
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'release' }} && ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Download all dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download ${{ github.event.release.tag_name }} -p '*.zip' -p '*.rpm' -p '*.deb' -p '*.dmg' -p '*.msi'
+      - name: Generate sha256 checksum
+        run: |
+          sha256sum *.zip *.rpm *.deb *.dmg *.msi > yass-${{ github.event.release.tag_name }}-sha256sum.txt
+      - name: Upload sha256 checksum
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} yass-${{ github.event.release.tag_name }}-sha256sum.txt

@@ -1,6 +1,20 @@
 name: Build Artifacts (macOS)
 on:
   workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+        type: choice
+        options:
+        - info
+        - warning
+        - debug
+      tags:
+        description: 'Test scenario tags'
+        required: false
+        type: boolean
   pull_request:
   push:
     branches: [master]
@@ -63,18 +77,6 @@ jobs:
       - run: |
           mv -f yass.dmg ${{ env.BUNDLE_NAME }}
           mv -f yass-debuginfo.zip ${{ env.DBG_BUNDLE_NAME }}
-      - run: openssl sha256 ${{ env.BUNDLE_NAME }} > sha256sum.txt
-      - run: echo "SHA256SUM=$(cut -d' ' -f2 sha256sum.txt)" >>$GITHUB_ENV
-      - uses: actions/upload-artifact@v2
-        with:
-          name: ${{ github.job }}-${{ matrix.build_type }}-sha256 ${{ env.SHA256SUM }}
-          path: sha256sum.txt
-      - run: openssl sha256 ${{ env.DBG_BUNDLE_NAME }} > sha256sum-debuginfo.txt
-      - run: echo "SHA256SUM_DEBUGINFO=$(cut -d' ' -f2 sha256sum-debuginfo.txt)" >>$GITHUB_ENV
-      - uses: actions/upload-artifact@v2
-        with:
-          name: ${{ github.job }}-${{ matrix.build_type }}-sha256-debuginfo ${{ env.SHA256SUM_DEBUGINFO }}
-          path: sha256sum-debuginfo.txt
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:

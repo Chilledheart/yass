@@ -1,6 +1,20 @@
 name: Build Artifacts (Windows)
 on:
   workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+        type: choice
+        options:
+        - info
+        - warning
+        - debug
+      tags:
+        description: 'Test scenario tags'
+        required: false
+        type: boolean
   pull_request:
   push:
     branches: [master]
@@ -159,33 +173,12 @@ jobs:
           rename yass.zip ${{ env.BUNDLE_NAME }}
           rename yass.msi ${{ env.MSI_BUNDLE_NAME }}
           rename yass-debuginfo.zip ${{ env.DBG_BUNDLE_NAME }}
-      - run: openssl sha256 ${{ env.BUNDLE_NAME }} > sha256sum.txt
-      - run: echo "SHA256SUM=$(cut -d' ' -f2 sha256sum.txt)" >>$GITHUB_ENV
-        shell: bash
-      - uses: actions/upload-artifact@v2
-        with:
-          name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-sha256 ${{ env.SHA256SUM }}
-          path: sha256sum.txt
-      - run: openssl sha256 ${{ env.MSI_BUNDLE_NAME }} > sha256sum-msi.txt
-      - run: echo "SHA256SUM_MSI=$(cut -d' ' -f2 sha256sum-msi.txt)" >>$GITHUB_ENV
-        shell: bash
-      - uses: actions/upload-artifact@v2
-        with:
-          name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-sha256-msi ${{ env.SHA256SUM_MSI }}
-          path: sha256sum-msi.txt
-      - run: openssl sha256 ${{ env.DBG_BUNDLE_NAME }} > sha256sum-debuginfo.txt
-      - run: echo "SHA256SUM_DEBUGINFO=$(cut -d' ' -f2 sha256sum-debuginfo.txt)" >>$GITHUB_ENV
-        shell: bash
-      - uses: actions/upload-artifact@v2
-        with:
-          name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-sha256-debuginfo ${{ env.SHA256SUM_DEBUGINFO }}
-          path: sha256sum-debuginfo.txt
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} ${{ env.BUNDLE_NAME }} ${{ env.DBG_BUNDLE_NAME }}
+          gh release upload ${{ github.event.release.tag_name }} ${{ env.BUNDLE_NAME }} ${{ env.MSI_BUNDLE_NAME }} ${{ env.DBG_BUNDLE_NAME }}
   win-xp-release:
     needs: cache-toolchain-win
     runs-on: windows-2019
@@ -274,33 +267,12 @@ jobs:
           rename yass.zip ${{ env.BUNDLE_NAME }}
           rename yass.msi ${{ env.MSI_BUNDLE_NAME }}
           rename yass-debuginfo.zip ${{ env.DBG_BUNDLE_NAME }}
-      - run: openssl sha256 ${{ env.BUNDLE_NAME }} > sha256sum.txt
-      - run: echo "SHA256SUM=$(cut -d' ' -f2 sha256sum.txt)" >>$GITHUB_ENV
-        shell: bash
-      - uses: actions/upload-artifact@v2
-        with:
-          name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-sha256 ${{ env.SHA256SUM }}
-          path: sha256sum.txt
-      - run: openssl sha256 ${{ env.MSI_BUNDLE_NAME }} > sha256sum-msi.txt
-      - run: echo "SHA256SUM_MSI=$(cut -d' ' -f2 sha256sum-msi.txt)" >>$GITHUB_ENV
-        shell: bash
-      - uses: actions/upload-artifact@v2
-        with:
-          name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-sha256-msi ${{ env.SHA256SUM }}
-          path: sha256sum-msi.txt
-      - run: openssl sha256 ${{ env.DBG_BUNDLE_NAME }} > sha256sum-debuginfo.txt
-      - run: echo "SHA256SUM_DEBUGINFO=$(cut -d' ' -f2 sha256sum-debuginfo.txt)" >>$GITHUB_ENV
-        shell: bash
-      - uses: actions/upload-artifact@v2
-        with:
-          name: ${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-sha256-debuginfo ${{ env.SHA256SUM_DEBUGINFO }}
-          path: sha256sum-debuginfo.txt
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} ${{ env.BUNDLE_NAME }} ${{ env.DBG_BUNDLE_NAME }}
+          gh release upload ${{ github.event.release.tag_name }} ${{ env.BUNDLE_NAME }} ${{ env.MSI_BUNDLE_NAME }} ${{ env.DBG_BUNDLE_NAME }}
   win-compatible-2019:
     needs: cache-toolchain-win
     runs-on: windows-2019
@@ -348,30 +320,6 @@ jobs:
       - name: Build Vistual Studio 2019 (v142)
         run: |
           set VCToolsVersion=14.29
-          set Winsdk=10.0.19041.0
-          set "WindowsSDKVersion=%Winsdk%\"
-          if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
-          set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
-          set "VSCMD_START_DIR=%CD%"
-          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set Platform=${{ matrix.arch }}
-          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
-
-          set "Path=%CD%\third_party\nasm;%Path%"
-          set "Path=%CD%\third_party\wix311;%Path%"
-
-          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
-
-          python -u .\scripts\build.py || exit /b
-
-          exit /b 0
-
-          :SetNewVCToolsVersion
-          set VCToolsVersion=
-      - name: Build Vistual Studio 2017 (v141)
-        run: |
-          set VCToolsVersion=14.16
           set Winsdk=10.0.19041.0
           set "WindowsSDKVersion=%Winsdk%\"
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
