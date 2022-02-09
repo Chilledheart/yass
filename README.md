@@ -1,12 +1,12 @@
 # Yet Another Shadow Socket
 
 [![License][license-svg]][license-link]
-
+[![GitHub all releases](https://img.shields.io/github/downloads/Chilledheart/yass/total)](https://github.com/Chilledheart/yass/releases)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Chilledheart/yass)](https://github.com/Chilledheart/yass/releases)
+
 [![Windows Build](https://github.com/Chilledheart/yass/actions/workflows/windows.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/windows.yml)
 [![Linux Build](https://github.com/Chilledheart/yass/actions/workflows/linux.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/linux.yml)
 [![macOS Build](https://github.com/Chilledheart/yass/actions/workflows/macos.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/macos.yml)
-[![GitHub all releases](https://img.shields.io/github/downloads/Chilledheart/yass/total)](https://github.com/Chilledheart/yass/releases)
 
 Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 
@@ -76,7 +76,7 @@ Looking for how to build from source?
 Take a look at [BUILDING.md] for more instructions.
 
 ## License
-It is licensed with GPLv2.
+It is licensed with [GPLv2][license-link].
 
 ## Running on Windows
 
@@ -143,7 +143,7 @@ Reference: AIO Repack for latest Microsoft Visual C++ Redistributable Runtimes, 
 - VC++ 2019 version 14.28.29213.0 = [VisualCppRedist_AIO v0.35.0][visual-cpp-redist-aio-xp] is the last version compatible with Windows XP
 
 [license-svg]: https://img.shields.io/badge/license-GPL2-lightgrey.svg
-[license-link]: COPYING
+[license-link]: LICENSE
 
 [aead]: https://shadowsocks.org/en/wiki/AEAD-Ciphers.html
 [asan]: https://github.com/google/sanitizers/wiki/AddressSanitizer
