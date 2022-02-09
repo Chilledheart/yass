@@ -2,11 +2,16 @@
 
 [![License][license-svg]][license-link]
 
-## Once upon a time, there are (virtual) Nics, so are (shadow) Sockets.
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Chilledheart/yass)](https://github.com/Chilledheart/yass/releases)
+[![Windows Build](https://github.com/Chilledheart/yass/actions/workflows/windows.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/windows.yml)
+[![Linux Build](https://github.com/Chilledheart/yass/actions/workflows/linux.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/linux.yml)
+[![macOS Build](https://github.com/Chilledheart/yass/actions/workflows/macos.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/macos.yml)
+[![GitHub all releases](https://img.shields.io/github/downloads/Chilledheart/yass/total)](https://github.com/Chilledheart/yass/releases)
 
-yass, or Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
+## Features
 
-## Benefit
+Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
+
 - Better scale, less memory consumption and CPU cycles, less than 0.1% on my iMac.
 - Easier to maintain and adopt new features, so far [aead][aead] ciphers supported.
 - Safe memory layout, tested against [Address Sanitizer][asan].
@@ -21,10 +26,6 @@ yass, or Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 
 ### More mobile-friendly ciphers [TLS 1.3][tls13]
 - [AEAD_CHACHA20_POLY1305][chacha20]
 - [AEAD_XCHACHA20_POLY1305][chacha20]
-
-[![Windows Build](https://github.com/Chilledheart/yass/actions/workflows/windows.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/windows.yml)
-[![Linux Build](https://github.com/Chilledheart/yass/actions/workflows/linux.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/linux.yml)
-[![macOS Build](https://github.com/Chilledheart/yass/actions/workflows/macos.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/macos.yml)
 
 ### Operating System
 - macOS (MacOS 10.10 or later, macOS 11.0 or later, Apple Silicon supported)
