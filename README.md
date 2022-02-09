@@ -8,6 +8,28 @@
 [![macOS Build](https://github.com/Chilledheart/yass/actions/workflows/macos.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/macos.yml)
 [![GitHub all releases](https://img.shields.io/github/downloads/Chilledheart/yass/total)](https://github.com/Chilledheart/yass/releases)
 
+
+<!-- TOC -->
+
+- [Features](#features)
+- [Ciphers](#ciphers)
+  * [Ciphers for FIPS modules](#ciphers-for-fips-modules)
+  * [More mobile-friendly ciphers [TLS 1.3][tls13]](#more-mobile-friendly-ciphers--tls-13--tls13-)
+- [Operating System](#operating-system)
+  * [Screenshot on Windows 11:](#screenshot-on-windows-11-)
+  * [Screenshot on Windows 7:](#screenshot-on-windows-7-)
+  * [Screenshot on Windows XP:](#screenshot-on-windows-xp-)
+  * [Screenshot on Ubuntu 16.04](#screenshot-on-ubuntu-1604)
+- [Running on Windows](#running-on-windows)
+  * [Notes on Windows 10 or above](#notes-on-windows-10-or-above)
+  * [Notes on Vista, Windows 7, Windows 8 and Windows 8.1](#notes-on-vista--windows-7--windows-8-and-windows-81)
+  * [Notes on Windows XP](#notes-on-windows-xp)
+  * [Client Protocols supported](#client-protocols-supported)
+- [Build from source](#build-from-source)
+- [License](#license)
+
+<!-- /TOC -->
+
 ## Features
 
 Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
@@ -16,7 +38,7 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 - Easier to maintain and adopt new features, so far [aead][aead] ciphers supported.
 - Safe memory layout, tested against [Address Sanitizer][asan].
 
-## Supported Crypto Ciphers
+## Ciphers
 ### Ciphers for FIPS modules
 - [AEAD_AES_128_GCM][aes128gcm]
 - [AEAD_AES_256_GCM][aes256gcm]
@@ -27,22 +49,21 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 - [AEAD_CHACHA20_POLY1305][chacha20]
 - [AEAD_XCHACHA20_POLY1305][chacha20]
 
-### Operating System
+## Operating System
 - macOS (MacOS 10.10 or later, macOS 11.0 or later, Apple Silicon supported)
 - Linux (CentOS 8 or later, Debian 9 or later, Ubuntu 16.04 or later)
 - Windows (Windows Vista or later, Windows XP standalone supported)
 
-## Screenshot on Windows
-### Windows 11:
+### Screenshot on Windows 11:
 <img width="484" alt="snapshot-win11" src="https://user-images.githubusercontent.com/54673341/151115838-4deb128c-4c51-4a3c-9758-4f58da47984e.png">
 
-### Legacy Windows 7:
+### Screenshot on Windows 7:
 <img width="484" alt="snapshot-win7" src="https://user-images.githubusercontent.com/54673341/151115815-dd8cfdf4-f5b0-4313-956b-125c35a54d6f.png">
 
-### Legacy Windows XP:
+### Screenshot on Windows XP:
 <img width="484" alt="snapshot-winxp" src="https://user-images.githubusercontent.com/54673341/151115871-218610b6-413c-4c00-827b-3fdffc241b65.png">
 
-### Legacy Ubuntu 16.04
+### Screenshot on Ubuntu 16.04
 <img width="484" alt="snapshot-winxp" src="https://user-images.githubusercontent.com/54673341/151591522-d86248f7-763f-432e-9dd8-fd16317d477b.png">
 
 ## Running on Windows
