@@ -39,7 +39,7 @@ cd ..
 update-desktop-database
 
 %files
-%license GPL-2.0
+%license LICENSE
 %dir /usr/share/icons/hicolor/
 %dir /usr/share/applications/
 %dir /usr/share/pixmaps/

@@ -758,7 +758,7 @@ def _archive_files_dll_files():
 def _archive_files_license_files():
   # LICENSEs
   license_maps = {
-    'LICENSE': os.path.join('..', 'GPL-2.0'),
+    'LICENSE': os.path.join('..', 'LICENSE'),
     'LICENSE.abseil-cpp': os.path.join('..', 'third_party', 'abseil-cpp', 'LICENSE'),
     'LICENSE.asio': os.path.join('..', 'third_party', 'asio', 'asio', 'LICENSE_1_0.txt'),
     'LICENSE.boringssl': os.path.join('..', 'third_party', 'boringssl', 'src', 'LICENSE'),
