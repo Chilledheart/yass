@@ -42,7 +42,7 @@ jobs:
       matrix:
         build_type: [Debug, RelWithDebInfo]
     env:
-      BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}.zip'
+      BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}.dmg'
       DBG_BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}-debuginfo.zip'
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
@@ -61,7 +61,7 @@ jobs:
       - name: Build
         run: ./scripts/build.py
       - run: |
-          mv -f yass.zip ${{ env.BUNDLE_NAME }}
+          mv -f yass.dmg ${{ env.BUNDLE_NAME }}
           mv -f yass-debuginfo.zip ${{ env.DBG_BUNDLE_NAME }}
       - run: openssl sha256 ${{ env.BUNDLE_NAME }} > sha256sum.txt
       - run: echo "SHA256SUM=$(cut -d' ' -f2 sha256sum.txt)" >>$GITHUB_ENV

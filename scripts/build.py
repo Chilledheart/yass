@@ -508,10 +508,10 @@ def find_source_directory():
   if not os.path.exists('CMakeLists.txt'):
     print('Please execute this frome the top dir of the source')
     sys.exit(-1)
-  if os.path.exists('build'):
-    shutil.rmtree('build')
-    sleep(1)
-  os.mkdir('build')
+  #if os.path.exists('build'):
+  #  shutil.rmtree('build')
+  #  sleep(1)
+  #os.mkdir('build')
   os.chdir('build')
 
 
@@ -745,6 +745,28 @@ def archive_files(output, paths = []):
               archive.write(fullPath, fullPath, ZIP_DEFLATED)
 
 
+def _archive_files_main_files(output, paths):
+  if platform.system() == 'Darwin':
+    from base64 import b64encode
+    with open('../src/mac/eula.xml', 'r') as f:
+      eula_template = f.read()
+    with open('../GPL-2.0.rtf', 'r') as f:
+      eula_rtf = f.read()
+
+    eula_xml = eula_template.replace('%PLACEHOLDER%', b64encode(eula_rtf.encode('utf-8')).decode())
+
+    with open('eula.xml', 'w') as f:
+      f.write(eula_xml)
+
+    write_output(['../scripts/pkg-dmg', '--source', paths[0], '--target', output,
+                  '--sourcefile', '--volname', 'Yet Another Shadow Socket',
+                  '--resource', 'eula.xml', '--icon', '../src/mac/network.icns',
+                  '--symlink', '/Applications:/Drag to here'],
+                 suppress_error=False)
+  else:
+    archive_files(output, paths)
+
+
 def _archive_files_dll_files():
   dll_paths = []
   if platform.system() == 'Windows':
@@ -836,15 +858,15 @@ def postbuild_archive():
   src = get_app_name()
   dst = APP_NAME
 
-  archive = dst + '.zip'
+  archive = dst + '.zip' if platform.system() != 'Darwin' else dst + '.dmg'
   msi_archive = 'yass.msi'
   debuginfo_archive = dst + '-debuginfo.zip'
 
   archives = {}
 
-  new_archive = os.path.join('..', archive)
-  new_debuginfo_archive = os.path.join('..', debuginfo_archive)
-  new_msi_archive = os.path.join('..', msi_archive)
+  dest_archive = os.path.join('..', archive)
+  dest_debuginfo_archive = os.path.join('..', debuginfo_archive)
+  dest_msi_archive = os.path.join('..', msi_archive)
 
   paths = [ src ]
   dll_paths = []
@@ -852,17 +874,17 @@ def postbuild_archive():
   debuginfo_paths = []
 
   try:
-    os.unlink(new_archive)
+    os.unlink(dest_archive)
   except FileNotFoundError:
     pass
 
   try:
-    os.unlink(new_debuginfo_archive)
+    os.unlink(dest_debuginfo_archive)
   except FileNotFoundError:
     pass
 
   try:
-    os.unlink(new_msi_archive)
+    os.unlink(dest_msi_archive)
   except FileNotFoundError:
     pass
 
@@ -876,24 +898,24 @@ def postbuild_archive():
   paths.extend(license_paths)
 
   # main bundle
-  archive_files(new_archive, paths)
+  _archive_files_main_files(dest_archive, paths)
   archives[archive] = paths
 
   # msi installer
   if platform.system() == 'Windows':
-    _archive_files_generate_msi(new_msi_archive, paths, dll_paths, license_paths)
+    _archive_files_generate_msi(dest_msi_archive, paths, dll_paths, license_paths)
     archives[msi_archive] = [msi_archive]
 
   # debuginfo file
   if platform.system() == 'Windows':
     if os.path.exists(APP_NAME + '.pdb'):
       debuginfo_paths.append(APP_NAME + '.pdb')
-      archive_files(new_debuginfo_archive, debuginfo_paths)
+      archive_files(dest_debuginfo_archive, debuginfo_paths)
       archives[debuginfo_archive] = debuginfo_paths
   elif platform.system() == 'Darwin':
     if os.path.exists(get_app_name() + '.dSYM'):
       debuginfo_paths.append(get_app_name() + '.dSYM')
-      archive_files(new_debuginfo_archive, debuginfo_paths)
+      archive_files(dest_debuginfo_archive, debuginfo_paths)
       archives[debuginfo_archive] = debuginfo_paths
 
   return archives
