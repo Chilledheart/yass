@@ -14,7 +14,7 @@
 - [Features](#features)
 - [Ciphers](#ciphers)
   * [Ciphers for FIPS modules](#ciphers-for-fips-modules)
-  * [More mobile-friendly ciphers [TLS 1.3][tls13]](#more-mobile-friendly-ciphers--tls-13--tls13-)
+  * [More mobile-friendly ciphers in TLS 1.3](#more-mobile-friendly-ciphers--tls-13--tls13-)
 - [Operating System](#operating-system)
   * [Screenshot on Windows 11:](#screenshot-on-windows-11-)
   * [Screenshot on Windows 7:](#screenshot-on-windows-7-)
