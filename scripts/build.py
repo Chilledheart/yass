@@ -508,10 +508,10 @@ def find_source_directory():
   if not os.path.exists('CMakeLists.txt'):
     print('Please execute this frome the top dir of the source')
     sys.exit(-1)
-  #if os.path.exists('build'):
-  #  shutil.rmtree('build')
-  #  sleep(1)
-  #os.mkdir('build')
+  if os.path.exists('build'):
+    shutil.rmtree('build')
+    sleep(1)
+  os.mkdir('build')
   os.chdir('build')
 
 
