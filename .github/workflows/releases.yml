@@ -26,6 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'release' }} && ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
+      - uses: actions/checkout@v2
       - name: Download all dist
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
