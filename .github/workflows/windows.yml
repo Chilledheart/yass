@@ -105,7 +105,7 @@ jobs:
       matrix:
         arch: [x64, x86, arm64]
         crt-linkage: [dynamic, static]
-        build_type: [Debug, RelWithDebInfo]
+        build_type: [Release]
     env:
       BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}.zip'
       MSI_BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}.msi'
@@ -187,7 +187,7 @@ jobs:
       matrix:
         arch: [x86]
         crt-linkage: [dynamic, static]
-        build_type: [Debug, RelWithDebInfo]
+        build_type: [Release]
     env:
       BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}.zip'
       MSI_BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}.msi'
@@ -281,7 +281,7 @@ jobs:
       matrix:
         arch: [x64]
         crt-linkage: [dynamic]
-        build_type: [Debug, RelWithDebInfo]
+        build_type: [Debug, Release]
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
       MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
@@ -349,7 +349,7 @@ jobs:
       matrix:
         arch: [x64]
         crt-linkage: [dynamic]
-        build_type: [Debug, RelWithDebInfo]
+        build_type: [Debug, Release]
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
       MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'

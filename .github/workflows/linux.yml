@@ -88,7 +88,7 @@ jobs:
       matrix:
         compiler: [gcc, clang]
         arch: [x64]
-        build_type: [Debug, RelWithDebInfo]
+        build_type: [Debug, Release]
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
       COMPILER: '${{ matrix.compiler }}'
