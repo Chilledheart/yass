@@ -39,8 +39,6 @@ jobs:
       VCPKG_ROOT: ${{ github.workspace }}\vcpkg
     steps:
       - uses: actions/checkout@v2
-        with:
-          submodules: 'true'
       - name: Cache clang, nasm and extracted vcredist files
         uses: actions/cache@v2
         with:

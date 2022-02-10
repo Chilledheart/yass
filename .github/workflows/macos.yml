@@ -33,10 +33,6 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v2
-        with:
-          submodules: 'true'
-      - name: Populate depedencies
-        run: brew install ninja cmake
       - name: Cache clang
         uses: actions/cache@v2
         with:
