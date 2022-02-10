@@ -43,21 +43,18 @@ jobs:
             echo "all_dists_uploaded=0" >> $GITHUB_ENV
           fi
       - name: Download all dist
+        if: ${{ env.all_dists_uploaded == '1' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ "${{ env.all_dists_uploaded }}" = "1" ]; then
-            gh release download ${{ env.tag_name }} -p '*.zip' -p '*.rpm' -p '*.deb' -p '*.dmg' -p '*.msi'
-          fi
+          gh release download ${{ env.tag_name }} -p '*.zip' -p '*.rpm' -p '*.deb' -p '*.dmg' -p '*.msi'
       - name: Generate sha256 checksum
+        if: ${{ env.all_dists_uploaded == '1' }}
         run: |
-          if [ "${{ env.all_dists_uploaded }}" = "1" ]; then
-            sha256sum *.zip *.rpm *.deb *.dmg *.msi > yass-${{ env.tag_name }}-sha256sum.txt
-          fi
+          sha256sum *.zip *.rpm *.deb *.dmg *.msi > yass-${{ env.tag_name }}-sha256sum.txt
       - name: Upload sha256 checksum
+        if: ${{ env.all_dists_uploaded == '1' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ "${{ env.all_dists_uploaded }}" = "1" ]; then
-            gh release upload ${{ env.tag_name }} yass-${{ env.tag_name }}-sha256sum.txt
-          fi
+          gh release upload ${{ env.tag_name }} yass-${{ env.tag_name }}-sha256sum.txt
