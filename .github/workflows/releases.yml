@@ -37,7 +37,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release view ${{ env.tag_name }} --json assets -q '.["assets"] | .[] |= .name' > DISTS
-          if [ "x$(<DISTS | grep '.zip' | grep '.rpm' | grep '.deb' | grep '.msi' | grep '.dmg' | head -n 1)" != "x" ]; then
+          if [ "x$(cat DISTS | grep '.zip' | grep '.rpm' | grep '.deb' | grep '.msi' | grep '.dmg' | head -n 1)" != "x" ]; then
             echo "all_dists_uploaded=1" >> $GITHUB_ENV
           else
             echo "all_dists_uploaded=0" >> $GITHUB_ENV
