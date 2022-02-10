@@ -1,0 +1,3 @@
+#!/bin/bash
+PWD=$(dirname "${BASH_SOURCE[0]}")
+$PWD/lld-link /lib $@

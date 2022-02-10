@@ -4,6 +4,7 @@ import subprocess
 import platform
 import errno
 import sys
+import shutil
 
 # mkdir -p third_party/llvm-build/Release+Asserts
 # CLANG_REVISION=$(< CLANG_REVISION)
@@ -61,6 +62,17 @@ def main():
                 f'https://commondatastorage.googleapis.com/chromium-browser-clang/{clang_arch}/clang-tidy-{clang_revision}.tgz'])
   write_output(['tar', '-xzf', f'clang-{clang_revision}-{clang_arch}.tgz'])
   write_output(['tar', '-xzf', f'clang-tidy-{clang_revision}-{clang_arch}.tgz'])
+
+  # create a shim to lld-link
+  os.chdir('bin')
+  if platform.machine() == 'Windows':
+    write_output(['clang-cl.exe', '..\..\..\..\scripts\llvm-lib.c', '/DWIN32',
+                  '/DWIN32_LEAN_AND_MEAN', '/D_UNICODE', '/DUNICODE', '/MT',
+                  '/O2', '/Ob2', '/DNDEBUG', 'shell32.lib'])
+  else:
+    shutil.copyfile('../../../../scripts/llvm-lib', 'llvm-lib')
+    shutil.copymode('../../../../scripts/llvm-lib', 'llvm-lib')
+    # still missing llvm-rc
 
 if __name__ == '__main__':
   main()
