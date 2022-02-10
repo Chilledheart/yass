@@ -27,6 +27,8 @@ jobs:
     if: ${{ github.event_name == 'release' }} && ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: '0'
       - name: Get tag name
         run: |
           echo "tag_name=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
