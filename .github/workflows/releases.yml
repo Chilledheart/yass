@@ -27,16 +27,32 @@ jobs:
     if: ${{ github.event_name == 'release' }} && ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v2
+      - name: Get tag name
+        run: |
+          echo "tag_name=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
+      - name: List all dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view ${{ env.tag_name }} --json assets -q '.["assets"] | .[] |= .name' > DISTS
+          if [ "x$(<DISTS | grep '.zip' | grep '.rpm' | grep '.deb' | grep '.msi' | grep '.dmg' | head -n 1)" != "x" ]; then
+            echo "all_dists_uploaded=1" >> $GITHUB_ENV
+          else
+            echo "all_dists_uploaded=0" >> $GITHUB_ENV
+          fi
       - name: Download all dist
+        if: ${{ env.all_dists_uploaded == '1' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release download ${{ github.event.release.tag_name }} -p '*.zip' -p '*.rpm' -p '*.deb' -p '*.dmg' -p '*.msi'
+          gh release download ${{ env.tag_name }} -p '*.zip' -p '*.rpm' -p '*.deb' -p '*.dmg' -p '*.msi'
       - name: Generate sha256 checksum
+        if: ${{ env.all_dists_uploaded == '1' }}
         run: |
-          sha256sum *.zip *.rpm *.deb *.dmg *.msi > yass-${{ github.event.release.tag_name }}-sha256sum.txt
+          sha256sum *.zip *.rpm *.deb *.dmg *.msi > yass-${{ env.tag_name }}-sha256sum.txt
       - name: Upload sha256 checksum
+        if: ${{ env.all_dists_uploaded == '1' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} yass-${{ github.event.release.tag_name }}-sha256sum.txt
+          gh release upload ${{ env.tag_name }} yass-${{ env.tag_name }}-sha256sum.txt
