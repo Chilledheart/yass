@@ -2330,7 +2330,7 @@ if (GUI)
             src/mac/yass.entitlements)
         endif()
         list(APPEND SRC_FILES
-          src/mac/network.icns)
+          src/mac/yass.icns)
 
         list(APPEND SRC_FILES
           src/mac/YassAppDelegate.mm
@@ -2427,7 +2427,7 @@ if (GUI)
         endif()
 
         # adds to Copy Bundle Resources build phase
-        set_source_files_properties("src/mac/network.icns" PROPERTIES
+        set_source_files_properties("src/mac/yass.icns" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")
         set_source_files_properties("${MAIN_STORYBOARD}" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")
@@ -2438,8 +2438,8 @@ if (GUI)
         configure_file("src/mac/Info.plist.in" "${APP_MACOSX_BUNDLE_INFO}" @ONLY)
 
         set_target_properties(${APP_NAME} PROPERTIES
-            RESOURCE "network.icns ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/Base.lproj/Main.storyboard"
-            MACOSX_BUNDLE_ICON_FILE network.icns
+            RESOURCE "yass.icns ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/Base.lproj/Main.storyboard"
+            MACOSX_BUNDLE_ICON_FILE yass.icns
             MACOSX_BUNDLE_COPYRIGHT "${YASS_APP_COPYRIGHT}"
             MACOSX_BUNDLE_GUI_IDENTIFIER "it.gui.yass"
             MACOSX_BUNDLE_BUNDLE_NAME ${PACKAGE_NAME}

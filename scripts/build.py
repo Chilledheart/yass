@@ -757,7 +757,7 @@ def _archive_files_main_files(output, paths):
 
     write_output(['../scripts/pkg-dmg', '--source', paths[0], '--target', output,
                   '--sourcefile', '--volname', 'Yet Another Shadow Socket',
-                  '--resource', 'eula.xml', '--icon', '../src/mac/network.icns',
+                  '--resource', 'eula.xml', '--icon', '../src/mac/yass.icns',
                   '--symlink', '/Applications:/Drag to here'],
                  suppress_error=False)
   else:

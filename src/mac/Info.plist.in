@@ -9,7 +9,7 @@
     <key>CFBundleExecutable</key>
     <string>yass</string>
     <key>CFBundleIconFile</key>
-    <string>network</string>
+    <string>yass</string>
     <key>CFBundleIdentifier</key>
     <string>it.gui.yass</string>
     <key>CFBundleInfoDictionaryVersion</key>
