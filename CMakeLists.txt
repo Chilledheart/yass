@@ -490,7 +490,7 @@ if ((COMPILER_GCC OR COMPILER_CLANG) AND NOT MSVC)
 endif()
 
 # abseil-cpp
-set(ABSL_PROPAGATE_CXX_STD ON)
+set(ABSL_PROPAGATE_CXX_STD "ON" CACHE STRING "")
 add_subdirectory(third_party/abseil-cpp)
 include_directories(third_party/abseil-cpp SYSTEM)
 
