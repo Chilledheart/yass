@@ -25,7 +25,7 @@ defaults:
   run:
     shell: cmd
 env:
-  CACHE_EPOCH: 18
+  CACHE_EPOCH: 19
 jobs:
   cache-toolchain-win:
     runs-on: windows-2019
