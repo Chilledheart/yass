@@ -49,8 +49,9 @@ def main():
   else:
     raise RuntimeError('no prebuilt binaries exist for this platform: %s' % platform.system())
 
-  if os.path.exists(f'third_party/llvm-build/Release+Asserts/bin/clang{exe_suffix}') and \
-    os.path.exists(f'third_party/llvm-build/Release+Asserts/bin/clang-tidy{exe_suffix}'):
+  if (os.path.exists(f'third_party/llvm-build/Release+Asserts/bin/clang{exe_suffix}') or \
+      os.path.exists(f'third_party/llvm-build/Release+Asserts/bin/clang-cl{exe_suffix}')) and \
+     os.path.exists(f'third_party/llvm-build/Release+Asserts/bin/clang-tidy{exe_suffix}'):
     return
 
   mkdir_p('third_party/llvm-build/Release+Asserts')
