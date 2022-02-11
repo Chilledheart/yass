@@ -38,3 +38,43 @@ Depends:
     ${misc:Depends},
 Description: Debugging symbols for the yass package.
  This package contains the debugging symbols for the yass package.
+
+Package: yass-server
+Architecture: any
+Pre-Depends: ${misc:Pre-Depends}
+Depends:
+ lsb-base (>= 3.0-6),
+ ${misc:Depends},
+ ${shlibs:Depends}
+Description: lightweight and secure http/socks4/socks5 proxy
+ Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for
+ embedded devices and low end boxes.
+
+Package: yass-server-dbg
+Section: debug
+Architecture: any
+Depends:
+    yass-server (= ${binary:Version}),
+    ${misc:Depends},
+Description: Debugging symbols for the yass-server package.
+ This package contains the debugging symbols for the yass-server package.
+
+Package: yass-client
+Architecture: any
+Pre-Depends: ${misc:Pre-Depends}
+Depends:
+ lsb-base (>= 3.0-6),
+ ${misc:Depends},
+ ${shlibs:Depends}
+Description: lightweight and secure http/socks4/socks5 proxy
+ Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for
+ embedded devices and low end boxes.
+
+Package: yass-client-dbg
+Section: debug
+Architecture: any
+Depends:
+    yass-client (= ${binary:Version}),
+    ${misc:Depends},
+Description: Debugging symbols for the yass-client package.
+ This package contains the debugging symbols for the yass-client package.

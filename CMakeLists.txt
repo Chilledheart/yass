@@ -2255,14 +2255,16 @@ if (CLI)
       $<TARGET_OBJECTS:yass_base>
       )
 
-  set_target_properties(yass_cli PROPERTIES EXCLUDE_FROM_ALL TRUE)
-
   target_include_directories(yass_cli PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
   target_link_libraries(yass_cli PUBLIC
       ${SUPPORT_LIBS}
       )
+
+  if (NOT APPLE AND NOT MSVC)
+    install(TARGETS yass_cli DESTINATION bin)
+  endif()
 endif()
 
 if (SERVER)
@@ -2273,14 +2275,16 @@ if (SERVER)
       $<TARGET_OBJECTS:yass_base>
       )
 
-  set_target_properties(yass_server PROPERTIES EXCLUDE_FROM_ALL TRUE)
-
   target_include_directories(yass_server PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
   target_link_libraries(yass_server PUBLIC
       ${SUPPORT_LIBS}
       )
+
+  if (NOT APPLE AND NOT MSVC)
+    install(TARGETS yass_server DESTINATION bin)
+  endif()
 endif()
 
 # *****************************************************************************************
