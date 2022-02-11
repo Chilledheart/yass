@@ -94,32 +94,32 @@
         </asmv3:windowsSettings>
     </asmv3:application>
     -->
-    <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
-        <security>
-            <requestedPrivileges>
+    <asmv3:trustInfo xmlns:asmv3="urn:schemas-microsoft-com:asm.v3">
+        <asmv3:security>
+            <asmv3:requestedPrivileges>
                 <!--
                   UAC settings:
                   - app should run at same integrity level as calling process
                   - app does not need to manipulate windows belonging to
                     higher-integrity-level processes
                   -->
-                <requestedExecutionLevel
+                <asmv3:requestedExecutionLevel
                     level="asInvoker"
                     uiAccess="false"
                 />
                 <!--
-                <requestedExecutionLevel
+                <asmv3:requestedExecutionLevel
                     level="highestAvailable"
                     uiAccess="false"
                 />
                   -->
                 <!--
-                <requestedExecutionLevel
+                <asmv3:requestedExecutionLevel
                     level="requireAdministrator"
                     uiAccess="false"
                 />
                   -->
-            </requestedPrivileges>
-        </security>
-    </trustInfo>
+            </asmv3:requestedPrivileges>
+        </asmv3:security>
+    </asmv3:trustInfo>
 </assembly>
