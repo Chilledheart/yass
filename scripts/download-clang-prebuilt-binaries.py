@@ -65,7 +65,7 @@ def main():
 
   # create a shim to lld-link
   os.chdir('bin')
-  if platform.machine() == 'Windows':
+  if platform.system() == 'Windows':
     write_output(['clang-cl.exe', '..\..\..\..\scripts\llvm-lib.c', '/DWIN32',
                   '/DWIN32_LEAN_AND_MEAN', '/D_UNICODE', '/DUNICODE', '/MT',
                   '/O2', '/Ob2', '/DNDEBUG', 'shell32.lib'])
