@@ -551,6 +551,7 @@ def generate_buildscript(configuration_type):
     cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])
     cmake_args.extend(['-DCMAKE_TOOLCHAIN_FILE=%s\\scripts\\buildsystems\\vcpkg.cmake' % VCPKG_DIR])
     cmake_args.extend(['-DVCPKG_TARGET_ARCHITECTURE=%s' % DEFAULT_ARCH])
+    cmake_args.extend(['-DVCPKG_APPLOCAL_DEPS=off'])
     if DEFAULT_MSVC_CRT_LINKAGE == 'static':
       cmake_args.extend(['-DCMAKE_MSVC_CRT_LINKAGE=static'])
       cmake_args.extend(['-DVCPKG_CRT_LINKAGE=static'])
