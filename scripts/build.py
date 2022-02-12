@@ -25,7 +25,7 @@ DEFAULT_ENABLE_CLANG_TIDY = os.getenv('ENABLE_CLANG_TIDY', False)
 DEFAULT_CLANG_TIDY_EXECUTABLE = os.getenv('CLANG_TIDY_EXECUTABLE', 'clang-tidy')
 # documented in github actions https://github.com/actions/virtual-environments/blob/main/images/win/Windows2019-Readme.md
 # and VCPKG_ROOT is used for compatible mode
-VCPKG_DIR = os.getenv('VCPKG_INSTALLATION_ROOT', os.getenv('VCPKG_ROOT', 'C:\vcpkg'))
+VCPKG_DIR = os.getenv('VCPKG_INSTALLATION_ROOT', os.getenv('VCPKG_ROOT', 'C:\\vcpkg'))
 
 # clang-tidy complains about parse error
 if DEFAULT_ENABLE_CLANG_TIDY:
