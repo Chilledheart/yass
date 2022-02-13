@@ -241,8 +241,6 @@ jobs:
           submodules: 'true'
       - name: Populate depedencies (sbuild)
         run: sudo apt-get update -qq && sudo apt-get install -y debhelper sbuild schroot ubuntu-dev-tools sendmail
-      - name: Add sudo user (sbuild)
-        run: sudo sbuild-adduser ko
       - name: Populate sysroot
         run: |
           mk-sbuild ${{ env.HOST_DISTRO }} --target=${{ env.HOST_ARCH }}
