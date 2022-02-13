@@ -22,7 +22,7 @@ fi
 
 # TODO use correct build number dynamically
 /usr/bin/git ls-files --recurse-submodules | \
-  tar caf yass_1.0.0.orig.tar.gz --xform='s,^./,yass-1.0.0/,' -T -
+  tar caf ../yass_1.0.0.orig.tar.gz --xform='s,^./,yass-1.0.0/,' -T -
 
 # require for a more recent debhelper, like 11.2
 # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=895044
@@ -39,6 +39,13 @@ if [ "x$DEB_HAS_CMAKE_NINIA_BUILD_SUPPORT" != "xno" ]; then
   export DEB_BUILD_SYSTEM_OPTIONS="--buildsystem=cmake+ninja"
 fi
 
-debuild -b -uc -us
+if [ "x$HOST_ARCH" != "x" ]; then
+  if [ "x$SOURCE_ONLY" != "x" ]; then
+    dpkg-buildpackage -d --host-arch $HOST_ARCH -S -uc -us
+    exit 0
+  fi
 
-
+  sbuild --host $HOST_ARCH -d "${HOST_DISTRO}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${HOST_ARCH}" -j $(nproc) --no-apt-update --no-apt-upgrade --no-apt-distupgrade --debbuildopts="-d"
+else
+  dpkg-buildpackage -b -d -uc -us
+fi

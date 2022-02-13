@@ -4,13 +4,13 @@ Section: net
 Priority: optional
 Standards-Version: 3.9.2
 Build-Depends:
- cmake (>= 3.12),
+ cmake:native (>= 3.12),
+ perl:native,
+ gcc:native (>= 6.1),
+ g++:native (>= 6.1),
+ golang:native,
  debhelper (>= 9),
  pkg-config,
- perl,
- gcc (>= 6.1),
- g++ (>= 6.1),
- golang,
  libunwind-dev,
  libgtk-3-dev,
  libgtkmm-3.0-dev (>= 3.18)
