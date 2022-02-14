@@ -254,7 +254,7 @@ jobs:
           sudo sed -i '/profile/d' /etc/schroot/chroot.d/*
       - name: Build deb
         run: |
-          sudo su "$USER" -c "./scripts/build-deb.sh"
+          sudo -E su "$USER" -c "./scripts/build-deb.sh"
       - run: mv -f ../yass_1.0.0-1_${{ env.HOST_ARCH }}.deb ${{ env.BUNDLE_NAME }}
       - run: mv -f ../yass-dbg_1.0.0-1_${{ env.HOST_ARCH }}.deb ${{ env.DBG_BUNDLE_NAME }}
       - run: mv -f ../yass-server_1.0.0-1_${{ env.HOST_ARCH }}.deb ${{ env.SERVER_BUNDLE_NAME }}
