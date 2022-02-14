@@ -255,6 +255,9 @@ jobs:
       - name: Build deb (source)
         run: |
           SOURCE_ONLY=1 ./scripts/build-deb.sh
+      - name: Populate depedencie (ca-certificates)
+        run: |
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- apt-get install -y ca-certificates
       - name: Populate depedencie
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- apt-get build-dep -y --host-architecture=${{ env.HOST_ARCH }} ../yass
