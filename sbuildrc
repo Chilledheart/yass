@@ -1,0 +1,17 @@
+# *** VERIFY AND UPDATE $mailto and $maintainer_name BELOW ***
+
+# Mail address where logs are sent to (mandatory, no default!)
+#$mailto = 'ubuntu';
+
+# Name to use as override in .changes files for the Maintainer: field
+#$maintainer_name='ubuntu <ubuntu@localhost>';
+
+# Directory for chroot symlinks and sbuild logs.  Defaults to the
+# current directory if unspecified.
+#$build_dir='/home/ubuntu/ubuntu/build';
+
+# Directory for writing build logs to
+#$log_dir="/home/ubuntu/ubuntu/logs";
+
+# don't remove this, Perl needs it:
+1;
