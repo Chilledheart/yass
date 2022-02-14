@@ -263,7 +263,10 @@ jobs:
           sudo schroot --end-session --all-sessions
       - name: Build deb
         run: |
-          sudo -E -u "$USER" -g sbuild ./scripts/build-deb.sh
+          sudo -E -u "$USER" -g sbuild ./scripts/build-deb.sh || exit 0
+      - name: Output build log
+        run: |
+          cat /tmp/yass*.build
       - run: mv -f ../yass_1.0.0-1_${{ env.HOST_ARCH }}.deb ${{ env.BUNDLE_NAME }}
       - run: mv -f ../yass-dbg_1.0.0-1_${{ env.HOST_ARCH }}.deb ${{ env.DBG_BUNDLE_NAME }}
       - run: mv -f ../yass-server_1.0.0-1_${{ env.HOST_ARCH }}.deb ${{ env.SERVER_BUNDLE_NAME }}

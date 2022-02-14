@@ -11,7 +11,7 @@
 #$build_dir='/home/ubuntu/ubuntu/build';
 
 # Directory for writing build logs to
-#$log_dir="/home/ubuntu/ubuntu/logs";
+$log_dir="/tmp";
 
 # don't remove this, Perl needs it:
 1;
