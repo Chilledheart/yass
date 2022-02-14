@@ -258,6 +258,9 @@ jobs:
       - name: Populate depedencie
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- apt-get build-dep -y --host-architecture=${{ env.HOST_ARCH }} ../yass
+      - name: Shutdown schroot sessions
+        run: |
+          sudo schroot --end-session --all-sessions
       - name: Build deb
         run: |
           sudo -E -u "$USER" -g sbuild ./scripts/build-deb.sh
