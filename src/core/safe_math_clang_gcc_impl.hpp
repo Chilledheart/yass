@@ -10,7 +10,7 @@
 #include "core/safe_conversions.hpp"
 
 #if defined(__ARMEL__) || defined(__arch64__)
-#include "core/safe_math_arm_impl.h"
+#include "core/safe_math_arm_impl.hpp"
 #define BASE_HAS_ASSEMBLER_SAFE_MATH (1)
 #else
 #define BASE_HAS_ASSEMBLER_SAFE_MATH (0)
