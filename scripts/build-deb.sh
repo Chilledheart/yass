@@ -45,7 +45,7 @@ if [ "x$HOST_ARCH" != "x" ]; then
     exit 0
   fi
 
-  sbuild --host $HOST_ARCH -d "${HOST_DISTRO}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${HOST_ARCH}" -j $(nproc) --no-apt-update --no-apt-upgrade --no-apt-distupgrade --debbuildopts="-d"
+  sbuild --host $HOST_ARCH -d "${HOST_DISTRO}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${HOST_ARCH}" -j $(nproc) --no-apt-update --no-apt-upgrade --no-apt-distupgrade --debbuildopts="-d" --build-dep-resolver=null
 else
   dpkg-buildpackage -b -d -uc -us
 fi

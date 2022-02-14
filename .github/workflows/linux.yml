@@ -250,11 +250,17 @@ jobs:
           sudo chmod g+rws /var/lib/sbuild/
       - name: Populate sysroot
         run: |
-          sudo su "$USER" -c "mk-sbuild ${{ env.HOST_DISTRO }} --target=${{ env.HOST_ARCH }}"
+          sudo -u "$USER" -g sbuild mk-sbuild ${{ env.HOST_DISTRO }} --target=${{ env.HOST_ARCH }}
           sudo sed -i '/profile/d' /etc/schroot/chroot.d/*
+      - name: Build deb (source)
+        run: |
+          SOURCE_ONLY=1 ./scripts/build-deb.sh
+      - name: Populate depedencie
+        run: |
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- apt-get build-dep -y --host-architecture=${{ env.HOST_ARCH }} ../yass
       - name: Build deb
         run: |
-          sudo -E su "$USER" -c "./scripts/build-deb.sh"
+          sudo -E -u "$USER" -g sbuild ./scripts/build-deb.sh
       - run: mv -f ../yass_1.0.0-1_${{ env.HOST_ARCH }}.deb ${{ env.BUNDLE_NAME }}
       - run: mv -f ../yass-dbg_1.0.0-1_${{ env.HOST_ARCH }}.deb ${{ env.DBG_BUNDLE_NAME }}
       - run: mv -f ../yass-server_1.0.0-1_${{ env.HOST_ARCH }}.deb ${{ env.SERVER_BUNDLE_NAME }}
