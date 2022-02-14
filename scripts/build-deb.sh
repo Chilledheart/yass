@@ -45,6 +45,11 @@ if [ "x$HOST_ARCH" != "x" ]; then
     exit 0
   fi
 
+  export CMAKE_CROSS_TOOLCHAIN_FLAGS_NATIVE="-DCROSS_TOOLCHAIN_FLAGS_NATIVE=-DCMAKE_TOOLCHAIN_FILE=$PWD/../Native.cmake"
+cat > ../Native.cmake << EOF
+set(CMAKE_C_COMPILER ${CC:-gcc})
+set(CMAKE_CXX_COMPILER ${CXX:-g++})
+EOF
   sbuild --host $HOST_ARCH -d "${HOST_DISTRO}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${HOST_ARCH}" -j $(nproc) --no-apt-update --no-apt-upgrade --no-apt-distupgrade --debbuildopts="-d" --build-dep-resolver=null
 else
   dpkg-buildpackage -b -d -uc -us

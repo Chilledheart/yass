@@ -15,7 +15,7 @@ override_dh_auto_clean:
 	dh_auto_clean
 
 override_dh_auto_configure:
-	dh_auto_configure ${DEB_BUILD_SYSTEM_OPTIONS} -- -DCMAKE_BUILD_TYPE=Release -DUSE_HOST_TOOLS=on -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc" -DGUI=on -DCLI=on -DSERVER=on
+	dh_auto_configure ${DEB_BUILD_SYSTEM_OPTIONS} -- -DCMAKE_BUILD_TYPE=Release -DUSE_HOST_TOOLS=on -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc" -DGUI=on -DCLI=on -DSERVER=on ${CMAKE_CROSS_TOOLCHAIN_FLAGS_NATIVE}
 
 override_dh_auto_build:
 	dh_auto_build -- -j $(NCPUS)
