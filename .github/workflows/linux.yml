@@ -225,7 +225,7 @@ jobs:
       fail-fast: false
       matrix:
         distro: [focal]
-        arch: [i386, armhf, arm64]
+        arch: [armhf, arm64]
     env:
       DEBIAN_FRONTEND: 'noninteractive'
       HOST_ARCH: '${{ matrix.arch }}'
