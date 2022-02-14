@@ -8,6 +8,8 @@
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 NCPUS = $(shell nproc)
 
+export GOPROXY
+
 %:
 	dh $@ --builddirectory=build
 

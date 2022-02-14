@@ -45,6 +45,7 @@ if [ "x$HOST_ARCH" != "x" ]; then
     exit 0
   fi
 
+  export GOPROXY="${GOPROXY:-direct}"
   export CMAKE_CROSS_TOOLCHAIN_FLAGS_NATIVE="-DCROSS_TOOLCHAIN_FLAGS_NATIVE=-DCMAKE_TOOLCHAIN_FILE=$PWD/../Native.cmake"
 cat > ../Native.cmake << EOF
 set(CMAKE_C_COMPILER ${CC:-gcc})

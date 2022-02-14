@@ -15,3 +15,15 @@ $log_dir="/tmp";
 
 # don't remove this, Perl needs it:
 1;
+
+$environment_filter = ['^PATH$',
+			'^DEB(IAN|SIGN)?_[A-Z_]+$',
+			'^(C(PP|XX)?|LD|F)FLAGS(_APPEND)?$',
+			'^USER(NAME)?$',
+			'^LOGNAME$',
+			'^HOME$',
+			'^TERM$',
+			'^SHELL$',
+			'^GOPROXY$',
+			'^CMAKE_CROSS_TOOLCHAIN_FLAGS_NATIVE$',
+			'^DEB_BUILD_SYSTEM_OPTIONS$' ];
