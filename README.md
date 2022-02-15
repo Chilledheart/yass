@@ -28,6 +28,7 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
   * [Notes on Windows 10 or above](#notes-on-windows-10-or-above)
   * [Notes on Vista, Windows 7, Windows 8 and Windows 8.1](#notes-on-vista--windows-7--windows-8-and-windows-81)
   * [Notes on Windows XP](#notes-on-windows-xp)
+- [Running on Ubuntu](#running-on-ubuntu)
 
 <!-- /TOC -->
 
@@ -144,6 +145,14 @@ X64 | [14.10.VC_redist.x64.exe] | 14.10.24516.0 - last version of vc2015
 Reference: AIO Repack for latest Microsoft Visual C++ Redistributable Runtimes, without the original setup bloat payload.
 - VC++ 2019 version 14.28.29213.0 = [VisualCppRedist_AIO v0.35.0][visual-cpp-redist-aio-xp] is the last version compatible with Windows XP
 
+## Running on Ubuntu
+
+Somehow if you manage to run Ubuntu 20.04 i386 (aka 32-bit) version, you might be
+required by broken dependency libgtkmm-3.0. You might want to do either of the following:
+- Build [gtkmm-3.0] from source
+- Download and install prebuilt gtkmm-3.0 from [here][libgtkmm-3.0-1v5_3.24.2]
+- Download and install prebuilt gtkmm-3.0 from previous distribution [here][libgtkmm-3.0-1v5_3.22.2]
+
 [license-svg]: https://img.shields.io/badge/license-GPL2-lightgrey.svg
 [license-link]: LICENSE
 
@@ -173,3 +182,7 @@ Reference: AIO Repack for latest Microsoft Visual C++ Redistributable Runtimes, 
 [visual-cpp-redist-aio-xp]: https://github.com/abbodi1406/vcredist/releases/tag/v0.35.0
 
 [BUILDING.md]: BUILDING.md
+
+[gtkmm-3.0]: https://packages.ubuntu.com/source/bionic/gtkmm3.0
+[libgtkmm-3.0-1v5_3.24.2]: https://github.com/Chilledheart/yass/releases/download/r692/libgtkmm-3.0-1v5_3.24.2-1build1_i386.deb
+[libgtkmm-3.0-1v5_3.22.2]: http://archive.ubuntu.com/ubuntu/pool/main/g/gtkmm3.0/libgtkmm-3.0-dev_3.22.2-2_i386.deb
