@@ -19,7 +19,7 @@ embedded devices and low end boxes.
 %build
 mkdir build
 cd build
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc" -DGUI=on -DCLI=on -DSERVER=on ..
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_HOST_TOOLS=on -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc" -DGUI=on -DCLI=on -DSERVER=on ..
 ninja yass yass_cli yass_server
 cd ..
 
