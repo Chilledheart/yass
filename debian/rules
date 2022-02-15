@@ -10,6 +10,9 @@ NCPUS = $(shell nproc)
 
 export GOPROXY
 
+# In compat 13 and later, The variables HOME will be set to a writable directory
+export HOME=/tmp
+
 %:
 	dh $@ --builddirectory=build
 
