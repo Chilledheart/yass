@@ -262,6 +262,7 @@ jobs:
       - name: Populate depedencie (gtkmm)
         if: ${{ env.HOST_ARCH == 'i386' && env.HOST_DISTRO == 'focal' }}
         run: |
+          cd /tmp
           # Build from source is not required, reusing the package from old distro
           # ./scripts/build-deb-gtkmm.sh
           # sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- apt-get install -y libgtkmm-3.0-1v5_3.24.2*_i386.deb libgtkmm-3.0-dev_3.24.2*_i386.deb
@@ -272,12 +273,13 @@ jobs:
       - name: Populate depedencie (cmake)
         if: ${{ env.HOST_DISTRO != 'focal' }}
         run: |
+          cd /tmp
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y software-properties-common apt-transport-https wget
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
-            wget -O /tmp/kitware-archive-latest.asc https://apt.kitware.com/keys/kitware-archive-latest.asc
+            wget -O $PWD/kitware-archive-latest.asc https://apt.kitware.com/keys/kitware-archive-latest.asc
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
-            apt-key add /tmp/kitware-archive-latest.asc
+            apt-key add $PWD/kitware-archive-latest.asc
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
             apt-add-repository 'deb https://apt.kitware.com/ubuntu/ ${{ env.HOST_DISTRO }} main'
       - name: Populate depedencie
