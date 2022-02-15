@@ -224,7 +224,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        distro: [focal]
+        distro: [bionic, focal]
         arch: [i386, armhf, arm64]
     env:
       DEBIAN_FRONTEND: 'noninteractive'
@@ -269,6 +269,17 @@ jobs:
           wget http://archive.ubuntu.com/ubuntu/pool/main/g/gtkmm3.0/libgtkmm-3.0-1v5_3.22.2-2_i386.deb
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y -f $PWD/libgtkmm-3.0-dev_3.22.2-2_i386.deb $PWD/libgtkmm-3.0-1v5_3.22.2-2_i386.deb
+      - name: Populate depedencie (cmake)
+        if: ${{ env.HOST_DISTRO != 'focal' }}
+        run: |
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get install -y software-properties-common apt-transport-https wget
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
+            wget -O /tmp/kitware-archive-latest.asc https://apt.kitware.com/keys/kitware-archive-latest.asc
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
+            apt-key add /tmp/kitware-archive-latest.asc
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
+            apt-add-repository 'deb https://apt.kitware.com/ubuntu/ ${{ env.HOST_DISTRO }} main'
       - name: Populate depedencie
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
