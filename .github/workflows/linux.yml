@@ -239,6 +239,18 @@ jobs:
         include:
           - distro: xenial
             arch: i386
+          - distro: stretch
+            arch: mipsel
+          - distro: stretch
+            arch: mips64el
+          - distro: buster
+            arch: mipsel
+          - distro: buster
+            arch: mips64el
+          - distro: bullseye
+            arch: mipsel
+          - distro: bullseye
+            arch: mips64el
     env:
       DEBIAN_FRONTEND: 'noninteractive'
       HOST_ARCH: '${{ matrix.arch }}'
@@ -290,15 +302,21 @@ jobs:
           # https://wiki.debian.org/NewInBullseye
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             sed -i 's/security.debian.org\/ ${{ env.HOST_DISTRO }}\/updates/security.debian.org\/debian-security ${{ env.HOST_DISTRO }}-security/g' /etc/apt/sources.list
+      - name: Set nogui build profile (mipsel/mips64el only)
+        if: ${{ env.HOST_ARCH == 'mipsel' || env.HOST_ARCH == 'mips64el' }}
+        run: |
+          echo "DEB_BUILD_PROFILES=nogui" >> $GITHUB_ENV
+          echo "APT_DEB_BUILD_PROFILES=-o Apt::Build-Profiles=nogui" >> $GITHUB_ENV
       - name: Build deb (source)
         run: |
+          export DEB_BUILD_PROFILES
           SOURCE_ONLY=1 ./scripts/build-deb.sh
       - name: Populate depedencie (standard toolchain)
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y fakeroot build-essential pkg-config debhelper
       - name: Populate depedencie (crosscompile toolchain)
-        if: ${{ env.BUILD_ARCH != 'i386' }}
+        if: ${{ env.HOST_ARCH != 'i386' && env.HOST_ARCH != 'amd64' }}
         run: |
           export HOST_GNU_TYPE=$(dpkg-architecture -a ${{ env.HOST_ARCH }} -q DEB_HOST_GNU_TYPE)
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
@@ -394,12 +412,13 @@ jobs:
       - name: Populate depedencie
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get build-dep -y --host-architecture=${{ env.HOST_ARCH }} ../yass
+            apt-get ${{ env.APT_DEB_BUILD_PROFILES }} build-dep -y --host-architecture=${{ env.HOST_ARCH }} ../yass
       - name: Shutdown schroot sessions
         run: |
           sudo schroot --end-session --all-sessions
       - name: Build deb
         run: |
+          export DEB_BUILD_PROFILES
           sudo -E -u "$USER" -g sbuild ./scripts/build-deb.sh || true
       - name: Output build log
         run: |
@@ -410,6 +429,14 @@ jobs:
       - run: mv -f ../yass-server-dbg_1.0.0-1_${{ env.HOST_ARCH }}.deb ${{ env.DBG_SERVER_BUNDLE_NAME }}
       - run: mv -f ../yass-client_1.0.0-1_${{ env.HOST_ARCH }}.deb ${{ env.CLIENT_BUNDLE_NAME }}
       - run: mv -f ../yass-client-dbg_1.0.0-1_${{ env.HOST_ARCH }}.deb ${{ env.DBG_CLIENT_BUNDLE_NAME }}
+      - name: Check deb output
+        run: |
+          if compgen -G "yass*.deb" > /dev/null; then
+            echo "Debian packages found"
+          else
+            echo "No debian packages generated"
+            exit -1
+          fi
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
