@@ -33,9 +33,10 @@ fi
 # Ubuntu 16.04 | 10.2.2    | 10.2.2
 # Ubuntu 18.04 | 11.1.6    | 13.5.2
 # Ubuntu 20.04 | 12.10     | 13.5.2
+BUILD_ARCH=${BUILD_ARCH:-$(dpkg-architecture -q DEB_BUILD_ARCH)}
 if [ "x$HOST_ARCH" != "x" ]; then
-  DEB_VERSION=$(sudo schroot --chroot "source:$HOST_DISTRO-$(dpkg-architecture -q DEB_BUILD_ARCH)-$HOST_ARCH" --user root -- dpkg -s debhelper|grep Version|sed -s 's/^Version: //g')
-  DEB_HAS_CMAKE_NINIA_BUILD_SUPPORT=$(sudo schroot --chroot "source:$HOST_DISTRO-$(dpkg-architecture -q DEB_BUILD_ARCH)-$HOST_ARCH" --user root -- dpkg --compare-versions $DEB_VERSION ge 11.2 || echo no)
+  DEB_VERSION=$(sudo schroot --chroot "source:$HOST_DISTRO-$BUILD_ARCH-$HOST_ARCH" --user root -- dpkg -s debhelper|grep Version|sed -s 's/^Version: //g')
+  DEB_HAS_CMAKE_NINIA_BUILD_SUPPORT=$(sudo schroot --chroot "source:$HOST_DISTRO-$BUILD_ARCH-$HOST_ARCH" --user root -- dpkg --compare-versions $DEB_VERSION ge 11.2 || echo no)
 else
   DEB_VERSION=$(dpkg -s debhelper|grep Version|sed -s 's/^Version: //g')
   DEB_HAS_CMAKE_NINIA_BUILD_SUPPORT=$(dpkg --compare-versions $DEB_VERSION ge 11.2 || echo no)
@@ -57,7 +58,7 @@ cat > ../Native.cmake << EOF
 set(CMAKE_C_COMPILER ${CC:-gcc})
 set(CMAKE_CXX_COMPILER ${CXX:-g++})
 EOF
-  sbuild --host $HOST_ARCH -d "${HOST_DISTRO}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${HOST_ARCH}" -j $(nproc) --no-apt-update --no-apt-upgrade --no-apt-distupgrade --debbuildopts="-d" --build-dep-resolver=null
+  sbuild --build $BUILD_ARCH --host $HOST_ARCH -d "${HOST_DISTRO}-$BUILD_ARCH-${HOST_ARCH}" -j $(nproc) --no-apt-update --no-apt-upgrade --no-apt-distupgrade --debbuildopts="-d" --build-dep-resolver=null
 else
   dpkg-buildpackage -b -d -uc -us
 fi
