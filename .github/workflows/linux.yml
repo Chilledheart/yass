@@ -226,6 +226,9 @@ jobs:
       matrix:
         distro: [bionic, focal, stretch, buster, bullseye]
         arch: [i386, armhf, arm64]
+        include:
+          - distro: xenial
+            arch: i386
     env:
       DEBIAN_FRONTEND: 'noninteractive'
       HOST_ARCH: '${{ matrix.arch }}'
@@ -289,7 +292,28 @@ jobs:
             apt-get install -y gcc-$HOST_GNU_TYPE g++-$HOST_GNU_TYPE
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             ln -sf /usr/share/pkg-config-crosswrapper /usr/bin/${HOST_GNU_TYPE}-pkg-config
-
+      - name: Populate depedencie (xenial only, ubuntu test toolchain)
+        if: ${{ env.HOST_DISTRO == 'xenial' }}
+        run: |
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get install -y software-properties-common apt-transport-https
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            add-apt-repository ppa:ubuntu-toolchain-r/test
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            bash -c 'echo "deb http://archive.ubuntu.com/ubuntu xenial-backports main" >> /etc/apt/sources.list'
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get update -qq
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get install -y gcc-7 g++-7
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get install -y -t xenial-backports debhelper
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            update-alternatives \
+              --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 \
+              --slave /usr/bin/g++ g++ /usr/bin/g++-7  \
+              --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-7 \
+              --slave /usr/bin/gcc-nm gcc-nm /usr/bin/gcc-nm-7 \
+              --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-7
       - name: Populate depedencie (ca-certificates)
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
@@ -304,19 +328,19 @@ jobs:
           wget http://archive.ubuntu.com/ubuntu/pool/main/g/gtkmm3.0/libgtkmm-3.0-dev_3.22.2-2_i386.deb
           wget http://archive.ubuntu.com/ubuntu/pool/main/g/gtkmm3.0/libgtkmm-3.0-1v5_3.22.2-2_i386.deb
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get install -y -f $PWD/libgtkmm-3.0-dev_3.22.2-2_i386.deb $PWD/libgtkmm-3.0-1v5_3.22.2-2_i386.deb
-      - name: Populate depedencie (openssl)
+            apt-get install -y -f $PWD/libgtkmm-3.0*.deb
+      - name: Populate depedencie (openssl, required by xenial cmake)
         if: ${{ env.HOST_DISTRO == 'stretch' || env.HOST_DISTRO == 'buster' }}
         run: |
           cd /tmp
-          wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.0.0_1.0.2g-1ubuntu4_${{ env.BUILD_ARCH }}.deb
+          curl -O http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.0.0_1.0.2g-1ubuntu4_${{ env.BUILD_ARCH }}.deb
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y $PWD/libssl1.0.0_1.0.2g-1ubuntu4_${{ env.BUILD_ARCH }}.deb
-      - name: Populate depedencie (cmake)
-        if: ${{ env.HOST_DISTRO == 'bionic' || env.HOST_DISTRO == 'stretch' || env.HOST_DISTRO == 'buster' }}
+      - name: Populate depedencie (xenial cmake)
+        if: ${{ env.HOST_DISTRO == 'xenial' || env.HOST_DISTRO == 'bionic' || env.HOST_DISTRO == 'stretch' || env.HOST_DISTRO == 'buster' }}
         run: |
           cd /tmp
-          wget https://apt.kitware.com/keys/kitware-archive-latest.asc
+          curl -O https://apt.kitware.com/keys/kitware-archive-latest.asc
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y software-properties-common apt-transport-https
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
