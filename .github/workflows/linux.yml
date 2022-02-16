@@ -299,7 +299,7 @@ jobs:
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y $PWD/libssl1.0.0_1.0.2g-1ubuntu4_amd64.deb
       - name: Populate depedencie (cmake)
-        if: ${{ env.HOST_DISTRO != 'focal' }}
+        if: ${{ env.HOST_DISTRO == 'bionic' || env.HOST_DISTRO == 'stretch' || env.HOST_DISTRO == 'buster' }}
         run: |
           cd /tmp
           wget https://apt.kitware.com/keys/kitware-archive-latest.asc
