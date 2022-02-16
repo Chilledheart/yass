@@ -254,11 +254,21 @@ jobs:
           echo "mksbuild_opts=--distro=debian" >> $GITHUB_ENV
       - name: Populate sysroot
         run: |
-          sudo -E -u "$USER" -g sbuild mk-sbuild ${{ env.HOST_DISTRO }} --target=${{ env.HOST_ARCH }} ${{ env.mksbuild_opts }}
+          # mk-sbuild may fail due to the missing pkg-config-<gnu-type>, but it
+          # should be fine, will create pkg-config shim in next step
+          sudo -E -u "$USER" -g sbuild mk-sbuild ${{ env.HOST_DISTRO }} --target=${{ env.HOST_ARCH }} ${{ env.mksbuild_opts }} || true
           sudo sed -i '/profile/d' /etc/schroot/chroot.d/*
       - name: Build deb (source)
         run: |
           SOURCE_ONLY=1 ./scripts/build-deb.sh
+      - name: Populate depedencie (crosscompile toolchain)
+        run: |
+          export HOST_GNU_TYPE=$(dpkg-architecture -a ${{ env.HOST_ARCH }} -q DEB_HOST_GNU_TYPE)
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get install -y build-essential gcc-$HOST_GNU_TYPE g++-$HOST_GNU_TYPE
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
+            ln -sf /usr/share/pkg-config-crosswrapper /usr/bin/${HOST_GNU_TYPE}-pkg-config
+
       - name: Populate depedencie (ca-certificates)
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
@@ -301,7 +311,7 @@ jobs:
           sudo schroot --end-session --all-sessions
       - name: Build deb
         run: |
-          sudo -E -u "$USER" -g sbuild ./scripts/build-deb.sh || exit 0
+          sudo -E -u "$USER" -g sbuild ./scripts/build-deb.sh || true
       - name: Output build log
         run: |
           cat /tmp/yass*.build
