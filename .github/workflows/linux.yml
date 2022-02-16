@@ -254,7 +254,7 @@ jobs:
           echo "mksbuild_opts=--distro=debian" >> $GITHUB_ENV
       - name: Populate sysroot
         run: |
-          sudo -u "$USER" -g sbuild mk-sbuild ${{ env.HOST_DISTRO }} --target=${{ env.HOST_ARCH }} ${{ env.mksbuild_opts }}
+          sudo -E -u "$USER" -g sbuild mk-sbuild ${{ env.HOST_DISTRO }} --target=${{ env.HOST_ARCH }} ${{ env.mksbuild_opts }}
           sudo sed -i '/profile/d' /etc/schroot/chroot.d/*
       - name: Build deb (source)
         run: |
