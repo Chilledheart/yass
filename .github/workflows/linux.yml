@@ -226,6 +226,9 @@ jobs:
       matrix:
         distro: [bionic, focal, stretch, buster, bullseye]
         arch: [i386, armhf, arm64]
+        exclude:
+          - distro: stretch
+            arch: i386
     env:
       DEBIAN_FRONTEND: 'noninteractive'
       HOST_ARCH: '${{ matrix.arch }}'
