@@ -33,8 +33,14 @@ fi
 # Ubuntu 16.04 | 10.2.2    | 10.2.2
 # Ubuntu 18.04 | 11.1.6    | 13.5.2
 # Ubuntu 20.04 | 12.10     | 13.5.2
-DEB_VERSION=$(dpkg -s debhelper|grep Version|sed -s 's/^Version: //g')
-DEB_HAS_CMAKE_NINIA_BUILD_SUPPORT=$(dpkg --compare-versions $DEB_VERSION ge 11.2 || echo no)
+if [ "x$HOST_ARCH" != "x" ]; then
+  DEB_VERSION=$(sudo schroot --chroot "source:$HOST_DISTRO-$(dpkg-architecture -q DEB_BUILD_ARCH)-$HOST_ARCH" --user root -- dpkg -s debhelper|grep Version|sed -s 's/^Version: //g')
+  DEB_HAS_CMAKE_NINIA_BUILD_SUPPORT=$(sudo schroot --chroot "source:$HOST_DISTRO-$(dpkg-architecture -q DEB_BUILD_ARCH)-$HOST_ARCH" --user root -- dpkg --compare-versions $DEB_VERSION ge 11.2 || echo no)
+else
+  DEB_VERSION=$(dpkg -s debhelper|grep Version|sed -s 's/^Version: //g')
+  DEB_HAS_CMAKE_NINIA_BUILD_SUPPORT=$(dpkg --compare-versions $DEB_VERSION ge 11.2 || echo no)
+fi
+
 if [ "x$DEB_HAS_CMAKE_NINIA_BUILD_SUPPORT" != "xno" ]; then
   export DEB_BUILD_SYSTEM_OPTIONS="--buildsystem=cmake+ninja"
 fi
