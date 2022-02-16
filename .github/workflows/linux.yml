@@ -265,7 +265,7 @@ jobs:
         run: |
           export HOST_GNU_TYPE=$(dpkg-architecture -a ${{ env.HOST_ARCH }} -q DEB_HOST_GNU_TYPE)
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get install -y build-essential gcc-$HOST_GNU_TYPE g++-$HOST_GNU_TYPE
+            apt-get install -y fakeroot build-essential gcc-$HOST_GNU_TYPE g++-$HOST_GNU_TYPE
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
             ln -sf /usr/share/pkg-config-crosswrapper /usr/bin/${HOST_GNU_TYPE}-pkg-config
 
