@@ -301,7 +301,7 @@ jobs:
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
             apt-key add $PWD/kitware-archive-latest.asc
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
-            apt-add-repository 'deb https://apt.kitware.com/ubuntu/ xenial main'
+            apt-add-repository 'deb [arch=amd64] https://apt.kitware.com/ubuntu/ xenial main'
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
             apt-get update -qq
       - name: Populate depedencie
