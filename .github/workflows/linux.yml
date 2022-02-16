@@ -224,8 +224,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        distro: [bionic, focal]
+        distro: [bionic, focal, stretch, buster, bullseye]
         arch: [i386, armhf, arm64]
+        exclude:
+          - distro: stretch
+            arch: i386
     env:
       DEBIAN_FRONTEND: 'noninteractive'
       HOST_ARCH: '${{ matrix.arch }}'
@@ -248,13 +251,34 @@ jobs:
           sudo adduser "$USER" sbuild
           sudo chown -R sbuild:sbuild /var/lib/sbuild/
           sudo chmod g+rws /var/lib/sbuild/
+      - name: Populate sysroot (distro option)
+        if: ${{ env.HOST_DISTRO == 'stretch' || env.HOST_DISTRO == 'buster' || env.HOST_DISTRO == 'bullseye' }}
+        run: |
+          echo "mksbuild_opts=--distro=debian" >> $GITHUB_ENV
       - name: Populate sysroot
         run: |
-          sudo -u "$USER" -g sbuild mk-sbuild ${{ env.HOST_DISTRO }} --target=${{ env.HOST_ARCH }}
+          # mk-sbuild may fail due to the missing pkg-config-<gnu-type>, but it
+          # should be fine, will create pkg-config shim in next step
+          sudo -E -u "$USER" -g sbuild mk-sbuild ${{ env.HOST_DISTRO }} --target=${{ env.HOST_ARCH }} ${{ env.mksbuild_opts }} || true
           sudo sed -i '/profile/d' /etc/schroot/chroot.d/*
+      - name: Populate sysroot (fix security repo)
+        if: ${{ env.HOST_DISTRO == 'bullseye' }}
+        run: |
+          # The format of the /etc/apt/sources.list line for the security repository has changed.
+          # https://wiki.debian.org/NewInBullseye
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
+            sed -i 's/security.debian.org\/ ${{ env.HOST_DISTRO }}\/updates/security.debian.org\/debian-security ${{ env.HOST_DISTRO }}-security/g' /etc/apt/sources.list
       - name: Build deb (source)
         run: |
           SOURCE_ONLY=1 ./scripts/build-deb.sh
+      - name: Populate depedencie (crosscompile toolchain)
+        run: |
+          export HOST_GNU_TYPE=$(dpkg-architecture -a ${{ env.HOST_ARCH }} -q DEB_HOST_GNU_TYPE)
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get install -y fakeroot build-essential gcc-$HOST_GNU_TYPE g++-$HOST_GNU_TYPE
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
+            ln -sf /usr/share/pkg-config-crosswrapper /usr/bin/${HOST_GNU_TYPE}-pkg-config
+
       - name: Populate depedencie (ca-certificates)
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
@@ -270,18 +294,28 @@ jobs:
           wget http://archive.ubuntu.com/ubuntu/pool/main/g/gtkmm3.0/libgtkmm-3.0-1v5_3.22.2-2_i386.deb
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y -f $PWD/libgtkmm-3.0-dev_3.22.2-2_i386.deb $PWD/libgtkmm-3.0-1v5_3.22.2-2_i386.deb
-      - name: Populate depedencie (cmake)
-        if: ${{ env.HOST_DISTRO != 'focal' }}
+      - name: Populate depedencie (openssl)
+        if: ${{ env.HOST_DISTRO == 'stretch' || env.HOST_DISTRO == 'buster' }}
         run: |
           cd /tmp
+          wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.0.0_1.0.2g-1ubuntu4_amd64.deb
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get install -y software-properties-common apt-transport-https wget
+            apt-get install -y $PWD/libssl1.0.0_1.0.2g-1ubuntu4_amd64.deb
+      - name: Populate depedencie (cmake)
+        if: ${{ env.HOST_DISTRO == 'bionic' || env.HOST_DISTRO == 'stretch' || env.HOST_DISTRO == 'buster' }}
+        run: |
+          cd /tmp
+          wget https://apt.kitware.com/keys/kitware-archive-latest.asc
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
-            wget -O $PWD/kitware-archive-latest.asc https://apt.kitware.com/keys/kitware-archive-latest.asc
+            apt-get install -y software-properties-common apt-transport-https
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
             apt-key add $PWD/kitware-archive-latest.asc
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
-            apt-add-repository 'deb https://apt.kitware.com/ubuntu/ ${{ env.HOST_DISTRO }} main'
+            apt-add-repository 'deb [arch=amd64] https://apt.kitware.com/ubuntu/ xenial main'
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get update -qq
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get install -y cmake
       - name: Populate depedencie
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
@@ -291,7 +325,7 @@ jobs:
           sudo schroot --end-session --all-sessions
       - name: Build deb
         run: |
-          sudo -E -u "$USER" -g sbuild ./scripts/build-deb.sh || exit 0
+          sudo -E -u "$USER" -g sbuild ./scripts/build-deb.sh || true
       - name: Output build log
         run: |
           cat /tmp/yass*.build
