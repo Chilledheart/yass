@@ -318,15 +318,42 @@ jobs:
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y ca-certificates git
-      - name: Populate depedencie (gtkmm)
-        if: ${{ env.HOST_ARCH == 'i386' && env.HOST_DISTRO == 'focal' }}
+      - name: Populate depedencie (focal only, golang toolchain)
+        if: ${{ env.HOST_DISTRO == 'focal' }}
+        run: |
+          cd /tmp
+          curl -O http://deb.debian.org/debian/pool/main/g/golang-defaults/golang_1.17~1~bpo11+2_${{ env.BUILD_ARCH }}.deb
+          curl -O http://deb.debian.org/debian/pool/main/g/golang-defaults/golang-go_1.17~1~bpo11+2_${{ env.BUILD_ARCH }}.deb
+          curl -O http://deb.debian.org/debian/pool/main/g/golang-defaults/golang-src_1.17~1~bpo11+2_all.deb
+          curl -O http://deb.debian.org/debian/pool/main/g/golang-defaults/golang-doc_1.17~1~bpo11+2_all.deb
+          curl -O http://deb.debian.org/debian/pool/main/g/golang-1.17/golang-1.17_1.17.7-1~bpo11+1_all.deb
+          curl -O http://deb.debian.org/debian/pool/main/g/golang-1.17/golang-1.17-go_1.17.7-1~bpo11+1_${{ env.BUILD_ARCH }}.deb
+          curl -O http://deb.debian.org/debian/pool/main/g/golang-1.17/golang-1.17-src_1.17.7-1~bpo11+1_all.deb
+          curl -O http://deb.debian.org/debian/pool/main/g/golang-1.17/golang-1.17-doc_1.17.7-1~bpo11+1_all.deb
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get install -f -y $PWD/golang*.deb
+      - name: Populate depedencie (focal only, software-properties-common)
+        if: ${{ env.HOST_DISTRO == 'focal' && env.HOST_ARCH == 'i386' }}
+        run: |
+          # missing for software-properties-common
+          # not required by focal, but let's install them any way...
+          cd /tmp
+          curl -O http://deb.debian.org/debian/pool/main/p/packagekit/gir1.2-packagekitglib-1.0_1.2.2-2_i386.deb
+          curl -O http://deb.debian.org/debian/pool/main/p/packagekit/libpackagekit-glib2-18_1.2.2-2_i386.deb
+          curl -O http://deb.debian.org/debian/pool/main/p/packagekit/packagekit_1.2.2-2_i386.deb
+          curl -O http://deb.debian.org/debian/pool/main/a/appstream/libappstream4_0.14.4-1_i386.deb
+          curl -O http://deb.debian.org/debian/pool/main/a/apt/libapt-pkg6.0_2.2.4_i386.deb
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get install -f -y $PWD/gir*.deb $PWD/lib*.deb $PWD/packagekit*.deb
+      - name: Populate depedencie (focal only, gtkmm)
+        if: ${{ env.HOST_DISTRO == 'focal' && env.HOST_ARCH == 'i386' }}
         run: |
           cd /tmp
           # Build from source is not required, reusing the package from old distro
           # ./scripts/build-deb-gtkmm.sh
           # sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- apt-get install -y libgtkmm-3.0-1v5_3.24.2*_i386.deb libgtkmm-3.0-dev_3.24.2*_i386.deb
-          wget http://archive.ubuntu.com/ubuntu/pool/main/g/gtkmm3.0/libgtkmm-3.0-dev_3.22.2-2_i386.deb
-          wget http://archive.ubuntu.com/ubuntu/pool/main/g/gtkmm3.0/libgtkmm-3.0-1v5_3.22.2-2_i386.deb
+          curl -O http://archive.ubuntu.com/ubuntu/pool/main/g/gtkmm3.0/libgtkmm-3.0-dev_3.22.2-2_i386.deb
+          curl -O http://archive.ubuntu.com/ubuntu/pool/main/g/gtkmm3.0/libgtkmm-3.0-1v5_3.22.2-2_i386.deb
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y -f $PWD/libgtkmm-3.0*.deb
       - name: Populate depedencie (openssl, required by xenial cmake)
