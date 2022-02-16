@@ -258,6 +258,13 @@ jobs:
           # should be fine, will create pkg-config shim in next step
           sudo -E -u "$USER" -g sbuild mk-sbuild ${{ env.HOST_DISTRO }} --target=${{ env.HOST_ARCH }} ${{ env.mksbuild_opts }} || true
           sudo sed -i '/profile/d' /etc/schroot/chroot.d/*
+      - name: Populate sysroot (fix security repo)
+        if: ${{ env.HOST_DISTRO == 'bullseye' }}
+        run: |
+          # The format of the /etc/apt/sources.list line for the security repository has changed.
+          # https://wiki.debian.org/NewInBullseye
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-$(dpkg-architecture -q DEB_BUILD_ARCH)-${{ env.HOST_ARCH }}" --user root -- \
+            sed -i 's/security.debian.org\/ ${{ env.HOST_DISTRO }}\/updates/security.debian.org\/debian-security ${{ env.HOST_DISTRO }}-security/g' /etc/apt/sources.list
       - name: Build deb (source)
         run: |
           SOURCE_ONLY=1 ./scripts/build-deb.sh
