@@ -58,7 +58,27 @@ cat > ../Native.cmake << EOF
 set(CMAKE_C_COMPILER ${CC:-gcc})
 set(CMAKE_CXX_COMPILER ${CXX:-g++})
 EOF
-  sbuild --build $BUILD_ARCH --host $HOST_ARCH -d "${HOST_DISTRO}-$BUILD_ARCH-${HOST_ARCH}" -j $(nproc) --no-apt-update --no-apt-upgrade --no-apt-distupgrade --debbuildopts="-d" --build-dep-resolver=null
+  sbuild --build $BUILD_ARCH --host $HOST_ARCH \
+    -d "${HOST_DISTRO}-$BUILD_ARCH-${HOST_ARCH}" -j $(nproc) \
+    --no-apt-update --no-apt-upgrade --no-apt-distupgrade \
+      --debbuildopts="-d" --build-dep-resolver=null
 else
   dpkg-buildpackage -b -d -uc -us
 fi
+
+# Rename debs
+ARCH=${HOST_ARCH:-$BUILD_ARCH}
+DISTRO=${HOST_DISTRO:-$(lsb_release -sc)}
+
+if [ -f ../yass_1.0.0-1_$ARCH.deb ]; then
+  mv -f ../yass_1.0.0-1_${ARCH}.deb "yass-${DISTRO}_${ARCH}.${TAG}.deb"
+  mv -f ../yass-dbg_1.0.0-1_${ARCH}.deb "yass-${DISTRO}-dbg_${ARCH}.${TAG}.deb"
+fi
+
+mv -f ../yass-server_1.0.0-1_${ARCH}.deb "yass-server-${DISTRO}_${ARCH}.${TAG}.deb"
+mv -f ../yass-server-dbg_1.0.0-1_${ARCH}.deb "yass-server-${DISTRO}-dbg_${ARCH}.${TAG}.deb"
+mv -f ../yass-client_1.0.0-1_${ARCH}.deb "yass-client-${DISTRO}_${ARCH}.${TAG}.deb"
+mv -f ../yass-client-dbg_1.0.0-1_${ARCH}.deb "yass-client-${DISTRO}-dbg_${ARCH}.${TAG}.deb"
+
+echo "Generated debs: "
+ls -alh yass*.deb

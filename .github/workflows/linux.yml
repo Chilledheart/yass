@@ -154,16 +154,11 @@ jobs:
       matrix:
         container:
         - 'centos8'
-    env:
-      BUNDLE_NAME: 'yass-${{ matrix.container }}-${{ github.event.release.tag_name }}.el8.x86_64.rpm'
-      DBG_BUNDLE_NAME: 'yass-${{ matrix.container }}-${{ github.event.release.tag_name }}-debuginfo.el8.x86_64.rpm'
-      SERVER_BUNDLE_NAME: 'yass-server-${{ matrix.container }}-${{ github.event.release.tag_name }}.el8.x86_64.rpm'
-      DBG_SERVER_BUNDLE_NAME: 'yass-server-${{ matrix.container }}-${{ github.event.release.tag_name }}-debuginfo.el8.x86_64.rpm'
-      CLIENT_BUNDLE_NAME: 'yass-client-${{ matrix.container }}-${{ github.event.release.tag_name }}.el8.x86_64.rpm'
-      DBG_CLIENT_BUNDLE_NAME: 'yass-client-${{ matrix.container }}-${{ github.event.release.tag_name }}-debuginfo.el8.x86_64.rpm'
     runs-on: ubuntu-latest
     needs: docker_publish
     container: 'ghcr.io/chilledheart/${{ matrix.container }}'
+    env:
+      DISTRO: ${{ matrix.container }}
     steps:
       - uses: actions/checkout@v2
       - name: Checkout with shallow submodules
@@ -174,18 +169,12 @@ jobs:
       - name: Build RPM packages
         run: |
           ./scripts/build-rpm.sh
-      - run: mv -f $HOME/rpmbuild/RPMS/x86_64/yass-1.0.0-1.el8.x86_64.rpm ${{ env.BUNDLE_NAME }}
-      - run: mv -f $HOME/rpmbuild/RPMS/x86_64/yass-debuginfo-1.0.0-1.el8.x86_64.rpm ${{ env.DBG_BUNDLE_NAME }}
-      - run: mv -f $HOME/rpmbuild/RPMS/x86_64/yass-server-1.0.0-1.el8.x86_64.rpm ${{ env.SERVER_BUNDLE_NAME }}
-      - run: mv -f $HOME/rpmbuild/RPMS/x86_64/yass-server-debuginfo-1.0.0-1.el8.x86_64.rpm ${{ env.DBG_SERVER_BUNDLE_NAME }}
-      - run: mv -f $HOME/rpmbuild/RPMS/x86_64/yass-client-1.0.0-1.el8.x86_64.rpm ${{ env.CLIENT_BUNDLE_NAME }}
-      - run: mv -f $HOME/rpmbuild/RPMS/x86_64/yass-client-debuginfo-1.0.0-1.el8.x86_64.rpm ${{ env.DBG_CLIENT_BUNDLE_NAME }}
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} ${{ env.BUNDLE_NAME }} ${{ env.DBG_BUNDLE_NAME }} ${{ env.SERVER_BUNDLE_NAME }} ${{ env.DBG_SERVER_BUNDLE_NAME }} ${{ env.CLIENT_BUNDLE_NAME }} ${{ env.DBG_CLIENT_BUNDLE_NAME }}
+          gh release upload ${{ github.event.release.tag_name }} yass*.rpm
   debian-release:
     strategy:
       fail-fast: false
@@ -197,13 +186,6 @@ jobs:
         - 'debian9'
         - 'debian10'
         - 'debian11'
-    env:
-      BUNDLE_NAME: 'yass-${{ matrix.container }}-${{ github.event.release.tag_name }}_amd64.deb'
-      DBG_BUNDLE_NAME: 'yass-${{ matrix.container }}-${{ github.event.release.tag_name }}-dbg_amd64.deb'
-      SERVER_BUNDLE_NAME: 'yass-server-${{ matrix.container }}-${{ github.event.release.tag_name }}_amd64.deb'
-      DBG_SERVER_BUNDLE_NAME: 'yass-server-${{ matrix.container }}-${{ github.event.release.tag_name }}-dbg_amd64.deb'
-      CLIENT_BUNDLE_NAME: 'yass-client-${{ matrix.container }}-${{ github.event.release.tag_name }}_amd64.deb'
-      DBG_CLIENT_BUNDLE_NAME: 'yass-client-${{ matrix.container }}-${{ github.event.release.tag_name }}-dbg_amd64.deb'
     runs-on: ubuntu-latest
     needs: docker_publish
     container: 'ghcr.io/chilledheart/${{ matrix.container }}'
@@ -217,18 +199,12 @@ jobs:
       - name: Build Deb Packages
         run: |
           ./scripts/build-deb.sh
-      - run: mv -f ../yass_1.0.0-1_amd64.deb ${{ env.BUNDLE_NAME }}
-      - run: mv -f ../yass-dbg_1.0.0-1_amd64.deb ${{ env.DBG_BUNDLE_NAME }}
-      - run: mv -f ../yass-server_1.0.0-1_amd64.deb ${{ env.SERVER_BUNDLE_NAME }}
-      - run: mv -f ../yass-server-dbg_1.0.0-1_amd64.deb ${{ env.DBG_SERVER_BUNDLE_NAME }}
-      - run: mv -f ../yass-client_1.0.0-1_amd64.deb ${{ env.CLIENT_BUNDLE_NAME }}
-      - run: mv -f ../yass-client-dbg_1.0.0-1_amd64.deb ${{ env.DBG_CLIENT_BUNDLE_NAME }}
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} ${{ env.BUNDLE_NAME }} ${{ env.DBG_BUNDLE_NAME }} ${{ env.SERVER_BUNDLE_NAME }} ${{ env.DBG_SERVER_BUNDLE_NAME }} ${{ env.CLIENT_BUNDLE_NAME }} ${{ env.DBG_CLIENT_BUNDLE_NAME }}
+          gh release upload ${{ github.event.release.tag_name }} yass*.deb
   ubuntu-release:
     runs-on: ubuntu-latest
     strategy:
@@ -255,12 +231,6 @@ jobs:
       DEBIAN_FRONTEND: 'noninteractive'
       HOST_ARCH: '${{ matrix.arch }}'
       HOST_DISTRO: '${{ matrix.distro }}'
-      BUNDLE_NAME: 'yass-ubuntu-${{ matrix.distro }}-${{ github.event.release.tag_name }}_${{ matrix.arch }}.deb'
-      DBG_BUNDLE_NAME: 'yass-ubuntu-${{ matrix.distro }}-${{ github.event.release.tag_name }}-dbg_${{ matrix.arch }}.deb'
-      SERVER_BUNDLE_NAME: 'yass-ubuntu-server-${{ matrix.distro }}-${{ github.event.release.tag_name }}_${{ matrix.arch }}.deb'
-      DBG_SERVER_BUNDLE_NAME: 'yass-ubuntu-server-${{ matrix.distro }}-${{ github.event.release.tag_name }}-dbg_${{ matrix.arch }}.deb'
-      CLIENT_BUNDLE_NAME: 'yass-ubuntu-client-${{ matrix.distro }}-${{ github.event.release.tag_name }}_${{ matrix.arch }}.deb'
-      DBG_CLIENT_BUNDLE_NAME: 'yass-ubuntu-client-${{ matrix.distro }}-${{ github.event.release.tag_name }}-dbg_${{ matrix.arch }}.deb'
     steps:
       - uses: actions/checkout@v2
       - name: Checkout with shallow submodules
@@ -423,12 +393,6 @@ jobs:
       - name: Output build log
         run: |
           cat /tmp/yass*.build
-      - run: mv -f ../yass_1.0.0-1_${{ env.HOST_ARCH }}.deb ${{ env.BUNDLE_NAME }}
-      - run: mv -f ../yass-dbg_1.0.0-1_${{ env.HOST_ARCH }}.deb ${{ env.DBG_BUNDLE_NAME }}
-      - run: mv -f ../yass-server_1.0.0-1_${{ env.HOST_ARCH }}.deb ${{ env.SERVER_BUNDLE_NAME }}
-      - run: mv -f ../yass-server-dbg_1.0.0-1_${{ env.HOST_ARCH }}.deb ${{ env.DBG_SERVER_BUNDLE_NAME }}
-      - run: mv -f ../yass-client_1.0.0-1_${{ env.HOST_ARCH }}.deb ${{ env.CLIENT_BUNDLE_NAME }}
-      - run: mv -f ../yass-client-dbg_1.0.0-1_${{ env.HOST_ARCH }}.deb ${{ env.DBG_CLIENT_BUNDLE_NAME }}
       - name: Check deb output
         run: |
           if compgen -G "yass*.deb" > /dev/null; then
@@ -442,4 +406,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} ${{ env.BUNDLE_NAME }} ${{ env.DBG_BUNDLE_NAME }} ${{ env.SERVER_BUNDLE_NAME }} ${{ env.DBG_SERVER_BUNDLE_NAME }} ${{ env.CLIENT_BUNDLE_NAME }} ${{ env.DBG_CLIENT_BUNDLE_NAME }}
+          gh release upload ${{ github.event.release.tag_name }} yass*.deb
