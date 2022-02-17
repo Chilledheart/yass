@@ -228,6 +228,10 @@ if(YASS_TARGET_IS_CROSSCOMPILE_HOST)
 # (this is a variable that CrossCompile sets on recursive invocations)
 endif()
 
+if (NOT MSVC AND NOT APPLE)
+  include(GNUInstallDirs)
+endif()
+
 # *****************************************************************************************
 #           Platform-specific
 # *****************************************************************************************
