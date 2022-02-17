@@ -243,6 +243,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'true'
+          fetch-depth: '0'
       - name: Populate depedencies (sbuild)
         run: sudo apt-get update -qq && sudo apt-get install -y debhelper sbuild schroot debootstrap ubuntu-dev-tools qemu-user-static
       - name: Copy sbuilrc
