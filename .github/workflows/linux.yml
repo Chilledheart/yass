@@ -33,12 +33,6 @@ jobs:
       matrix:
         container:
         - 'centos8'
-        - 'ubuntu16.04'
-        - 'ubuntu18.04'
-        - 'ubuntu20.04'
-        - 'debian9'
-        - 'debian10'
-        - 'debian11'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
@@ -175,46 +169,18 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload ${{ github.event.release.tag_name }} yass*.rpm
-  debian-release:
-    strategy:
-      fail-fast: false
-      matrix:
-        container:
-        - 'ubuntu16.04'
-        - 'ubuntu18.04'
-        - 'ubuntu20.04'
-        - 'debian9'
-        - 'debian10'
-        - 'debian11'
-    runs-on: ubuntu-latest
-    needs: docker_publish
-    container: 'ghcr.io/chilledheart/${{ matrix.container }}'
-    steps:
-      - uses: actions/checkout@v2
-      - name: Checkout with shallow submodules
-        run: |
-          # unshallow must come first otherwise submodule may be get unshallowed
-          git fetch --tags --unshallow
-          git submodule update --init --depth 1
-      - name: Build Deb Packages
-        run: |
-          ./scripts/build-deb.sh
-      - name: Upload dist tarball (including debuginfo)
-        if: ${{ github.event_name == 'release' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload ${{ github.event.release.tag_name }} yass*.deb
   ubuntu-release:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         distro: [bionic, focal, stretch, buster, bullseye]
-        arch: [i386, armhf, arm64]
+        arch: [i386, amd64, armhf, arm64]
         include:
           - distro: xenial
             arch: i386
+          - distro: xenial
+            arch: amd64
           - distro: stretch
             arch: mipsel
           - distro: stretch
@@ -258,6 +224,7 @@ jobs:
       - name: Populate BUILD_ARCH (amd64)
         if: ${{ env.HOST_ARCH != 'i386' }}
         run: |
+          echo "mksbuild_arch_opts=--arch=amd64" >> $GITHUB_ENV
           echo "BUILD_ARCH=$(dpkg-architecture -q DEB_BUILD_ARCH)" >> $GITHUB_ENV
       - name: Populate sysroot
         run: |
