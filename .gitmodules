@@ -23,7 +23,7 @@
 	url = https://github.com/google/googletest
 [submodule "third_party/protobuf"]
 	path = third_party/protobuf
-	url = https://github.com/protocolbuffers/protobuf
+	url = https://github.com/Chilledheart/protobuf
 [submodule "third_party/xxhash"]
 	path = third_party/xxhash
 	url = https://github.com/Cyan4973/xxHash

@@ -87,8 +87,11 @@ jobs:
       COMPILER: '${{ matrix.compiler }}'
     steps:
       - uses: actions/checkout@v2
-        with:
-          submodules: 'true'
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
       - name: Cache clang
         uses: actions/cache@v2
         with:
@@ -122,8 +125,11 @@ jobs:
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
       - uses: actions/checkout@v2
-        with:
-          submodules: 'true'
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
       - name: Cache clang
         uses: actions/cache@v2
         with:
@@ -148,36 +154,27 @@ jobs:
       matrix:
         container:
         - 'centos8'
-    env:
-      BUNDLE_NAME: 'yass-${{ matrix.container }}-${{ github.event.release.tag_name }}.el8.x86_64.rpm'
-      DBG_BUNDLE_NAME: 'yass-${{ matrix.container }}-${{ github.event.release.tag_name }}-debuginfo.el8.x86_64.rpm'
-      SERVER_BUNDLE_NAME: 'yass-server-${{ matrix.container }}-${{ github.event.release.tag_name }}.el8.x86_64.rpm'
-      DBG_SERVER_BUNDLE_NAME: 'yass-server-${{ matrix.container }}-${{ github.event.release.tag_name }}-debuginfo.el8.x86_64.rpm'
-      CLIENT_BUNDLE_NAME: 'yass-client-${{ matrix.container }}-${{ github.event.release.tag_name }}.el8.x86_64.rpm'
-      DBG_CLIENT_BUNDLE_NAME: 'yass-client-${{ matrix.container }}-${{ github.event.release.tag_name }}-debuginfo.el8.x86_64.rpm'
     runs-on: ubuntu-latest
     needs: docker_publish
     container: 'ghcr.io/chilledheart/${{ matrix.container }}'
+    env:
+      DISTRO: ${{ matrix.container }}
     steps:
       - uses: actions/checkout@v2
-        with:
-          submodules: 'true'
-          fetch-depth: '0'
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
       - name: Build RPM packages
         run: |
           ./scripts/build-rpm.sh
-      - run: mv -f $HOME/rpmbuild/RPMS/x86_64/yass-1.0.0-1.el8.x86_64.rpm ${{ env.BUNDLE_NAME }}
-      - run: mv -f $HOME/rpmbuild/RPMS/x86_64/yass-debuginfo-1.0.0-1.el8.x86_64.rpm ${{ env.DBG_BUNDLE_NAME }}
-      - run: mv -f $HOME/rpmbuild/RPMS/x86_64/yass-server-1.0.0-1.el8.x86_64.rpm ${{ env.SERVER_BUNDLE_NAME }}
-      - run: mv -f $HOME/rpmbuild/RPMS/x86_64/yass-server-debuginfo-1.0.0-1.el8.x86_64.rpm ${{ env.DBG_SERVER_BUNDLE_NAME }}
-      - run: mv -f $HOME/rpmbuild/RPMS/x86_64/yass-client-1.0.0-1.el8.x86_64.rpm ${{ env.CLIENT_BUNDLE_NAME }}
-      - run: mv -f $HOME/rpmbuild/RPMS/x86_64/yass-client-debuginfo-1.0.0-1.el8.x86_64.rpm ${{ env.DBG_CLIENT_BUNDLE_NAME }}
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} ${{ env.BUNDLE_NAME }} ${{ env.DBG_BUNDLE_NAME }} ${{ env.SERVER_BUNDLE_NAME }} ${{ env.DBG_SERVER_BUNDLE_NAME }} ${{ env.CLIENT_BUNDLE_NAME }} ${{ env.DBG_CLIENT_BUNDLE_NAME }}
+          gh release upload ${{ github.event.release.tag_name }} yass*.rpm
   debian-release:
     strategy:
       fail-fast: false
@@ -189,36 +186,25 @@ jobs:
         - 'debian9'
         - 'debian10'
         - 'debian11'
-    env:
-      BUNDLE_NAME: 'yass-${{ matrix.container }}-${{ github.event.release.tag_name }}_amd64.deb'
-      DBG_BUNDLE_NAME: 'yass-${{ matrix.container }}-${{ github.event.release.tag_name }}-dbg_amd64.deb'
-      SERVER_BUNDLE_NAME: 'yass-server-${{ matrix.container }}-${{ github.event.release.tag_name }}_amd64.deb'
-      DBG_SERVER_BUNDLE_NAME: 'yass-server-${{ matrix.container }}-${{ github.event.release.tag_name }}-dbg_amd64.deb'
-      CLIENT_BUNDLE_NAME: 'yass-client-${{ matrix.container }}-${{ github.event.release.tag_name }}_amd64.deb'
-      DBG_CLIENT_BUNDLE_NAME: 'yass-client-${{ matrix.container }}-${{ github.event.release.tag_name }}-dbg_amd64.deb'
     runs-on: ubuntu-latest
     needs: docker_publish
     container: 'ghcr.io/chilledheart/${{ matrix.container }}'
     steps:
       - uses: actions/checkout@v2
-        with:
-          submodules: 'true'
-          fetch-depth: '0'
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
       - name: Build Deb Packages
         run: |
           ./scripts/build-deb.sh
-      - run: mv -f ../yass_1.0.0-1_amd64.deb ${{ env.BUNDLE_NAME }}
-      - run: mv -f ../yass-dbg_1.0.0-1_amd64.deb ${{ env.DBG_BUNDLE_NAME }}
-      - run: mv -f ../yass-server_1.0.0-1_amd64.deb ${{ env.SERVER_BUNDLE_NAME }}
-      - run: mv -f ../yass-server-dbg_1.0.0-1_amd64.deb ${{ env.DBG_SERVER_BUNDLE_NAME }}
-      - run: mv -f ../yass-client_1.0.0-1_amd64.deb ${{ env.CLIENT_BUNDLE_NAME }}
-      - run: mv -f ../yass-client-dbg_1.0.0-1_amd64.deb ${{ env.DBG_CLIENT_BUNDLE_NAME }}
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} ${{ env.BUNDLE_NAME }} ${{ env.DBG_BUNDLE_NAME }} ${{ env.SERVER_BUNDLE_NAME }} ${{ env.DBG_SERVER_BUNDLE_NAME }} ${{ env.CLIENT_BUNDLE_NAME }} ${{ env.DBG_CLIENT_BUNDLE_NAME }}
+          gh release upload ${{ github.event.release.tag_name }} yass*.deb
   ubuntu-release:
     runs-on: ubuntu-latest
     strategy:
@@ -229,20 +215,29 @@ jobs:
         include:
           - distro: xenial
             arch: i386
+          - distro: stretch
+            arch: mipsel
+          - distro: stretch
+            arch: mips64el
+          - distro: buster
+            arch: mipsel
+          - distro: buster
+            arch: mips64el
+          - distro: bullseye
+            arch: mipsel
+          - distro: bullseye
+            arch: mips64el
     env:
       DEBIAN_FRONTEND: 'noninteractive'
       HOST_ARCH: '${{ matrix.arch }}'
       HOST_DISTRO: '${{ matrix.distro }}'
-      BUNDLE_NAME: 'yass-ubuntu-${{ matrix.distro }}-${{ github.event.release.tag_name }}_${{ matrix.arch }}.deb'
-      DBG_BUNDLE_NAME: 'yass-ubuntu-${{ matrix.distro }}-${{ github.event.release.tag_name }}-dbg_${{ matrix.arch }}.deb'
-      SERVER_BUNDLE_NAME: 'yass-ubuntu-server-${{ matrix.distro }}-${{ github.event.release.tag_name }}_${{ matrix.arch }}.deb'
-      DBG_SERVER_BUNDLE_NAME: 'yass-ubuntu-server-${{ matrix.distro }}-${{ github.event.release.tag_name }}-dbg_${{ matrix.arch }}.deb'
-      CLIENT_BUNDLE_NAME: 'yass-ubuntu-client-${{ matrix.distro }}-${{ github.event.release.tag_name }}_${{ matrix.arch }}.deb'
-      DBG_CLIENT_BUNDLE_NAME: 'yass-ubuntu-client-${{ matrix.distro }}-${{ github.event.release.tag_name }}-dbg_${{ matrix.arch }}.deb'
     steps:
       - uses: actions/checkout@v2
-        with:
-          submodules: 'true'
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
       - name: Populate depedencies (sbuild)
         run: sudo apt-get update -qq && sudo apt-get install -y debhelper sbuild schroot debootstrap ubuntu-dev-tools qemu-user-static
       - name: Copy sbuilrc
@@ -277,15 +272,21 @@ jobs:
           # https://wiki.debian.org/NewInBullseye
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             sed -i 's/security.debian.org\/ ${{ env.HOST_DISTRO }}\/updates/security.debian.org\/debian-security ${{ env.HOST_DISTRO }}-security/g' /etc/apt/sources.list
+      - name: Set nogui build profile (mipsel/mips64el only)
+        if: ${{ env.HOST_ARCH == 'mipsel' || env.HOST_ARCH == 'mips64el' }}
+        run: |
+          echo "DEB_BUILD_PROFILES=nogui" >> $GITHUB_ENV
+          echo "APT_DEB_BUILD_PROFILES=-o Apt::Build-Profiles=nogui" >> $GITHUB_ENV
       - name: Build deb (source)
         run: |
+          export DEB_BUILD_PROFILES
           SOURCE_ONLY=1 ./scripts/build-deb.sh
       - name: Populate depedencie (standard toolchain)
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y fakeroot build-essential pkg-config debhelper
       - name: Populate depedencie (crosscompile toolchain)
-        if: ${{ env.BUILD_ARCH != 'i386' }}
+        if: ${{ env.HOST_ARCH != 'i386' && env.HOST_ARCH != 'amd64' }}
         run: |
           export HOST_GNU_TYPE=$(dpkg-architecture -a ${{ env.HOST_ARCH }} -q DEB_HOST_GNU_TYPE)
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
@@ -381,25 +382,28 @@ jobs:
       - name: Populate depedencie
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get build-dep -y --host-architecture=${{ env.HOST_ARCH }} ../yass
+            apt-get ${{ env.APT_DEB_BUILD_PROFILES }} build-dep -y --host-architecture=${{ env.HOST_ARCH }} ../yass
       - name: Shutdown schroot sessions
         run: |
           sudo schroot --end-session --all-sessions
       - name: Build deb
         run: |
+          export DEB_BUILD_PROFILES
           sudo -E -u "$USER" -g sbuild ./scripts/build-deb.sh || true
       - name: Output build log
         run: |
           cat /tmp/yass*.build
-      - run: mv -f ../yass_1.0.0-1_${{ env.HOST_ARCH }}.deb ${{ env.BUNDLE_NAME }}
-      - run: mv -f ../yass-dbg_1.0.0-1_${{ env.HOST_ARCH }}.deb ${{ env.DBG_BUNDLE_NAME }}
-      - run: mv -f ../yass-server_1.0.0-1_${{ env.HOST_ARCH }}.deb ${{ env.SERVER_BUNDLE_NAME }}
-      - run: mv -f ../yass-server-dbg_1.0.0-1_${{ env.HOST_ARCH }}.deb ${{ env.DBG_SERVER_BUNDLE_NAME }}
-      - run: mv -f ../yass-client_1.0.0-1_${{ env.HOST_ARCH }}.deb ${{ env.CLIENT_BUNDLE_NAME }}
-      - run: mv -f ../yass-client-dbg_1.0.0-1_${{ env.HOST_ARCH }}.deb ${{ env.DBG_CLIENT_BUNDLE_NAME }}
+      - name: Check deb output
+        run: |
+          if compgen -G "yass*.deb" > /dev/null; then
+            echo "Debian packages found"
+          else
+            echo "No debian packages generated"
+            exit -1
+          fi
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} ${{ env.BUNDLE_NAME }} ${{ env.DBG_BUNDLE_NAME }} ${{ env.SERVER_BUNDLE_NAME }} ${{ env.DBG_SERVER_BUNDLE_NAME }} ${{ env.CLIENT_BUNDLE_NAME }} ${{ env.DBG_CLIENT_BUNDLE_NAME }}
+          gh release upload ${{ github.event.release.tag_name }} yass*.deb
