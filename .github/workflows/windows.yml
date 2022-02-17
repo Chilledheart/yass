@@ -115,9 +115,11 @@ jobs:
       VCPKG_ROOT: ${{ github.workspace }}\vcpkg
     steps:
       - uses: actions/checkout@v2
-        with:
-          submodules: 'true'
-          fetch-depth: '0'
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
       - name: Cache clang, nasm and extracted vcredist files
         uses: actions/cache@v2
         with:
@@ -197,9 +199,11 @@ jobs:
       VCPKG_ROOT: ${{ github.workspace }}\vcpkg
     steps:
       - uses: actions/checkout@v2
-        with:
-          submodules: 'true'
-          fetch-depth: '0'
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
       - name: Cache clang, nasm and extracted vcredist files
         uses: actions/cache@v2
         with:
@@ -288,8 +292,11 @@ jobs:
       VCPKG_ROOT: ${{ github.workspace }}\vcpkg
     steps:
       - uses: actions/checkout@v2
-        with:
-          submodules: 'true'
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
       - name: Cache clang, nasm and extracted vcredist files
         uses: actions/cache@v2
         with:
@@ -356,8 +363,11 @@ jobs:
       VCPKG_ROOT: ${{ github.workspace }}\vcpkg
     steps:
       - uses: actions/checkout@v2
-        with:
-          submodules: 'true'
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
       - name: Cache clang, nasm and extracted vcredist files
         uses: actions/cache@v2
         with:
@@ -425,8 +435,11 @@ jobs:
       VCPKG_ROOT: ${{ github.workspace }}\vcpkg
     steps:
       - uses: actions/checkout@v2
-        with:
-          submodules: 'true'
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
       - name: Cache clang, nasm and extracted vcredist files
         uses: actions/cache@v2
         with:

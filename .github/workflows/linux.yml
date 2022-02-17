@@ -87,8 +87,11 @@ jobs:
       COMPILER: '${{ matrix.compiler }}'
     steps:
       - uses: actions/checkout@v2
-        with:
-          submodules: 'true'
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
       - name: Cache clang
         uses: actions/cache@v2
         with:
@@ -122,8 +125,11 @@ jobs:
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
       - uses: actions/checkout@v2
-        with:
-          submodules: 'true'
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
       - name: Cache clang
         uses: actions/cache@v2
         with:
@@ -160,9 +166,11 @@ jobs:
     container: 'ghcr.io/chilledheart/${{ matrix.container }}'
     steps:
       - uses: actions/checkout@v2
-        with:
-          submodules: 'true'
-          fetch-depth: '0'
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
       - name: Build RPM packages
         run: |
           ./scripts/build-rpm.sh
@@ -201,9 +209,11 @@ jobs:
     container: 'ghcr.io/chilledheart/${{ matrix.container }}'
     steps:
       - uses: actions/checkout@v2
-        with:
-          submodules: 'true'
-          fetch-depth: '0'
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
       - name: Build Deb Packages
         run: |
           ./scripts/build-deb.sh
@@ -241,9 +251,11 @@ jobs:
       DBG_CLIENT_BUNDLE_NAME: 'yass-ubuntu-client-${{ matrix.distro }}-${{ github.event.release.tag_name }}-dbg_${{ matrix.arch }}.deb'
     steps:
       - uses: actions/checkout@v2
-        with:
-          submodules: 'true'
-          fetch-depth: '0'
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
       - name: Populate depedencies (sbuild)
         run: sudo apt-get update -qq && sudo apt-get install -y debhelper sbuild schroot debootstrap ubuntu-dev-tools qemu-user-static
       - name: Copy sbuilrc
