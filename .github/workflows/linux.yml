@@ -33,7 +33,7 @@ jobs:
       matrix:
         container:
         - 'centos8'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@master
       - name: Login to GitHub Container Registry
@@ -70,7 +70,7 @@ jobs:
 
   ubuntu-latest:
     needs: cache-toolchain-linux
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     strategy:
       fail-fast: false
       matrix:
@@ -110,7 +110,7 @@ jobs:
           cd ..
   ubuntu-latest-clang-tidy:
     needs: cache-toolchain-linux
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     strategy:
       fail-fast: false
       matrix:
@@ -148,7 +148,7 @@ jobs:
       matrix:
         container:
         - 'centos8'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     needs: docker_publish
     container: 'ghcr.io/chilledheart/${{ matrix.container }}'
     env:
@@ -170,7 +170,7 @@ jobs:
         run: |
           gh release upload ${{ github.event.release.tag_name }} yass*.rpm
   ubuntu-release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     strategy:
       fail-fast: false
       matrix:
