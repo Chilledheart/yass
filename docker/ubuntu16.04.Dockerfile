@@ -17,7 +17,7 @@ RUN apt-get update -qq && \
   apt-get update -qq && \
   apt-get install -y gcc-7 g++-7 && \
   apt-get install -y git build-essential fakeroot devscripts debhelper gh && \
-  apt-get install -y cmake ninja-build golang libunwind-dev libgtk-3-dev libgtkmm-3.0-dev && \
+  apt-get install -y cmake ninja-build golang libgtk-3-dev libgtkmm-3.0-dev && \
   apt-get install -y -t xenial-backports debhelper && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*

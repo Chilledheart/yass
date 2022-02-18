@@ -12,7 +12,6 @@ Build-Depends:
  ninja-build:native,
  debhelper (>= 9),
  pkg-config,
- libunwind-dev,
  libgtk-3-dev <!nogui>,
  libgtkmm-3.0-dev (>= 3.18) <!nogui>
 Rules-Requires-Root: no

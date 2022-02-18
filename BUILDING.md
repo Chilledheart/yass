@@ -108,7 +108,6 @@ sudo apt-get install -y \
     ninja-build \
     pkg-config \
     perl \
-    libunwind-dev \
     libgtk-3-dev \
     libgtkmm-3.0-dev
 ```
@@ -147,7 +146,6 @@ sudo yum install -y \
     ninja-build \
     pkg-config \
     perl \
-    libunwind-devel \
     gtk3-devel \
     gtkmm30-devel \
     golang
