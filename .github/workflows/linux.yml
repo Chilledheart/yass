@@ -26,6 +26,7 @@ defaults:
     shell: bash
 env:
   CACHE_EPOCH: 11
+  GOPROXY: direct
 jobs:
   docker_publish:
     strategy:

@@ -26,6 +26,7 @@ defaults:
     shell: cmd
 env:
   CACHE_EPOCH: 20
+  GOPROXY: direct
 jobs:
   cache-toolchain-win:
     runs-on: windows-2019
