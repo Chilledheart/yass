@@ -175,7 +175,7 @@ jobs:
       fail-fast: false
       matrix:
         distro: [bionic, focal, stretch, buster, bullseye]
-        arch: [i386, amd64, armhf, arm64]
+        arch: [i386, amd64, armel, armhf, arm64]
         include:
           - distro: xenial
             arch: i386
