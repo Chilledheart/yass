@@ -109,11 +109,8 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
     ERROR_QUIET)
 
   set(YASS_APP_LAST_CHANGE "${LAST_CHANGE_REF}-refs/branch-heads/${ABBREV_REF}")
-  file(WRITE ${CMAKE_CURRENT_SOURCE_DIR}/LAST_CHANGE ${YASS_APP_LAST_CHANGE})
   if (NOT YASS_APP_TAG)
     set(YASS_APP_TAG "${YASS_APP_LAST_CHANGE}")
-  else()
-    file(WRITE ${CMAKE_CURRENT_SOURCE_DIR}/TAG ${YASS_APP_TAG})
   endif()
 else()
   # read if running from tarball
