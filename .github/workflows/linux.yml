@@ -205,8 +205,22 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Populate depedencies (sbuild)
-        run: sudo apt-get update -qq && sudo apt-get install -y debhelper sbuild schroot debootstrap ubuntu-dev-tools qemu-user-static
+      - name: Populate depedencies (sbuild, upgrade for null-resolver)
+        run: |
+          cd /tmp
+          curl -O http://archive.ubuntu.com/ubuntu/pool/main/s/sbuild/sbuild_0.79.0-1ubuntu1_all.deb
+          curl -O http://archive.ubuntu.com/ubuntu/pool/main/s/sbuild/libsbuild-perl_0.79.0-1ubuntu1_all.deb
+          sudo apt-get install -f -y $PWD/sbuild*.deb $PWD/libsbuild*.deb
+          rm -f *.deb
+      - name: Populate depedencies (debian keyring, for debian distributions)
+        run: |
+          cd /tmp
+          curl -O http://archive.ubuntu.com/ubuntu/pool/universe/d/debian-keyring/debian-keyring_2020.03.24_all.deb
+          curl -O http://archive.ubuntu.com/ubuntu/pool/universe/d/debian-archive-keyring/debian-archive-keyring_2019.1ubuntu2_all.deb
+          sudo apt-get install -f -y $PWD/debian*.deb
+          rm -f *.deb
+      - name: Populate depedencies (schroot, debootstrap and ubuntu-dev-tools)
+        run: sudo apt-get update -qq && sudo apt-get install -y debhelper schroot debootstrap ubuntu-dev-tools qemu-user-static
       - name: Copy sbuilrc
         run: |
           cp -fv sbuildrc ~/.sbuildrc
