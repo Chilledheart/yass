@@ -209,7 +209,8 @@ jobs:
       - name: Copy sbuilrc
         run: |
           cp -fv sbuildrc ~/.sbuildrc
-          sudo adduser "$USER" sbuild
+          sudo usermod -aG sudo "$USER"
+          sudo usermod -aG sbuild "$USER"
           sudo chown -R sbuild:sbuild /var/lib/sbuild/
           sudo chmod g+rws /var/lib/sbuild/
       - name: Pre-Populate sysroot (distro option)
@@ -230,7 +231,7 @@ jobs:
         run: |
           # mk-sbuild may fail due to the missing pkg-config-<gnu-type>, but it
           # should be fine, will create pkg-config shim in next step
-          sudo -E -u "$USER" -g sbuild mk-sbuild ${{ env.mksbuild_arch_opts }} ${{ env.HOST_DISTRO }} --target=${{ env.HOST_ARCH }} --skip-proposed ${{ env.mksbuild_distro_opts }} || true
+          sudo -n sudo -u "$USER" -g sbuild mk-sbuild ${{ env.mksbuild_arch_opts }} ${{ env.HOST_DISTRO }} --target=${{ env.HOST_ARCH }} --skip-proposed ${{ env.mksbuild_distro_opts }} || true
           sudo sed -i '/profile/d' /etc/schroot/chroot.d/*
       - name: Populate sysroot (bullseye only, fix security repo)
         if: ${{ env.HOST_DISTRO == 'bullseye' }}
@@ -357,7 +358,7 @@ jobs:
       - name: Build deb
         run: |
           export DEB_BUILD_PROFILES
-          sudo -E -u "$USER" -g sbuild ./scripts/build-deb.sh || true
+          sudo -E sudo -E -u "$USER" -g sbuild ./scripts/build-deb.sh || true
       - name: Output build log
         run: |
           cat /tmp/yass*.build
