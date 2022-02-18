@@ -47,4 +47,9 @@ mv -f $HOME/rpmbuild/RPMS/x86_64/yass-client-1.0.0-1.el8.x86_64.rpm "yass-client
 mv -f $HOME/rpmbuild/RPMS/x86_64/yass-client-debuginfo-1.0.0-1.el8.x86_64.rpm "yass-client-${DISTRO}-debuginfo.el8.x86_64.${TAG}.rpm"
 
 echo "Generated rpms: "
-ls -alh yass*.rpm
+for rpm in *.rpm; do
+  echo
+  echo $rpm :
+  echo "======================================================================"
+  rpm -qi $rpm
+done

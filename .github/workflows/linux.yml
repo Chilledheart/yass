@@ -219,8 +219,15 @@ jobs:
           curl -O http://archive.ubuntu.com/ubuntu/pool/universe/d/debian-archive-keyring/debian-archive-keyring_2019.1ubuntu2_all.deb
           sudo apt-get install -f -y $PWD/debian*.deb
           rm -f *.deb
+      - name: Populate depedencies (debhelper, for correct dh_shlibdeps path)
+        run: |
+          cd /tmp
+          curl -O http://archive.ubuntu.com/ubuntu/pool/main/d/debhelper/debhelper_12.10ubuntu1_all.deb
+          curl -O http://archive.ubuntu.com/ubuntu/pool/main/d/debhelper/libdebhelper-perl_12.10ubuntu1_all.deb
+          sudo apt-get install -f -y $PWD/*.deb
+          rm -f *.deb
       - name: Populate depedencies (schroot, debootstrap and ubuntu-dev-tools)
-        run: sudo apt-get update -qq && sudo apt-get install -y debhelper schroot debootstrap ubuntu-dev-tools qemu-user-static
+        run: sudo apt-get update -qq && sudo apt-get install -y schroot debootstrap ubuntu-dev-tools qemu-user-static
       - name: Copy sbuilrc
         run: |
           cp -fv sbuildrc ~/.sbuildrc
@@ -257,18 +264,22 @@ jobs:
             sed -i 's/security.debian.org\/ ${{ env.HOST_DISTRO }}\/updates/security.debian.org\/debian-security ${{ env.HOST_DISTRO }}-security/g' /etc/apt/sources.list
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get update -qq
-      - name: Populate sysroot (standard toolchain)
-        run: |
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get install -y fakeroot build-essential pkg-config debhelper
       - name: Populate sysroot (crosscompile toolchain)
         if: ${{ env.HOST_ARCH != 'i386' && env.HOST_ARCH != 'amd64' }}
         run: |
           export HOST_GNU_TYPE=$(dpkg-architecture -a ${{ env.HOST_ARCH }} -q DEB_HOST_GNU_TYPE)
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get install -y gcc-$HOST_GNU_TYPE g++-$HOST_GNU_TYPE
+            dpkg --add-architecture ${{ env.HOST_ARCH }}
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get update -qq
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get install -y dpkg-cross pkg-config gcc-$HOST_GNU_TYPE g++-$HOST_GNU_TYPE libc6:${{ env.HOST_ARCH }} linux-libc-dev:${{ env.HOST_ARCH }}
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             ln -sf /usr/share/pkg-config-crosswrapper /usr/bin/${HOST_GNU_TYPE}-pkg-config
+      - name: Populate sysroot (standard toolchain)
+        run: |
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get install -y fakeroot advancecomp apt-utils file build-essential pkg-config debhelper lockfile-progs optipng pkg-config tzdata ucf
       - name: Populate sysroot (xenial only, ubuntu test toolchain)
         if: ${{ env.HOST_DISTRO == 'xenial' }}
         run: |

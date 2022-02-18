@@ -80,4 +80,9 @@ mv -f ../yass-client_1.0.0-1_${ARCH}.deb "yass-client-${DISTRO}_${ARCH}.${TAG}.d
 mv -f ../yass-client-dbg_1.0.0-1_${ARCH}.deb "yass-client-${DISTRO}-dbg_${ARCH}.${TAG}.deb"
 
 echo "Generated debs: "
-ls -alh yass*.deb
+for deb in *.deb; do
+  echo
+  echo $deb :
+  echo "======================================================================"
+  dpkg -I $deb
+done
