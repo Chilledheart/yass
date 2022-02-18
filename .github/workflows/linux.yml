@@ -212,16 +212,16 @@ jobs:
           sudo adduser "$USER" sbuild
           sudo chown -R sbuild:sbuild /var/lib/sbuild/
           sudo chmod g+rws /var/lib/sbuild/
-      - name: Populate sysroot (distro option)
+      - name: Pre-Populate sysroot (distro option)
         if: ${{ env.HOST_DISTRO == 'stretch' || env.HOST_DISTRO == 'buster' || env.HOST_DISTRO == 'bullseye' }}
         run: |
           echo "mksbuild_distro_opts=--distro=debian" >> $GITHUB_ENV
-      - name: Populate BUILD_ARCH (i386)
+      - name: Pre-Populate BUILD_ARCH (i386)
         if: ${{ env.HOST_ARCH == 'i386' }}
         run: |
           echo "mksbuild_arch_opts=--arch=i386" >> $GITHUB_ENV
           echo "BUILD_ARCH=i386" >> $GITHUB_ENV
-      - name: Populate BUILD_ARCH (amd64)
+      - name: Pre-Populate BUILD_ARCH (amd64)
         if: ${{ env.HOST_ARCH != 'i386' }}
         run: |
           echo "mksbuild_arch_opts=--arch=amd64" >> $GITHUB_ENV
@@ -239,20 +239,13 @@ jobs:
           # https://wiki.debian.org/NewInBullseye
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             sed -i 's/security.debian.org\/ ${{ env.HOST_DISTRO }}\/updates/security.debian.org\/debian-security ${{ env.HOST_DISTRO }}-security/g' /etc/apt/sources.list
-      - name: Set nogui build profile (mipsel/mips64el only)
-        if: ${{ env.HOST_ARCH == 'mipsel' || env.HOST_ARCH == 'mips64el' }}
-        run: |
-          echo "DEB_BUILD_PROFILES=nogui" >> $GITHUB_ENV
-          echo "APT_DEB_BUILD_PROFILES=-o Apt::Build-Profiles=nogui" >> $GITHUB_ENV
-      - name: Build deb (source)
-        run: |
-          export DEB_BUILD_PROFILES
-          SOURCE_ONLY=1 ./scripts/build-deb.sh
-      - name: Populate depedencie (standard toolchain)
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get update -qq
+      - name: Populate sysroot (standard toolchain)
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y fakeroot build-essential pkg-config debhelper
-      - name: Populate depedencie (crosscompile toolchain)
+      - name: Populate sysroot (crosscompile toolchain)
         if: ${{ env.HOST_ARCH != 'i386' && env.HOST_ARCH != 'amd64' }}
         run: |
           export HOST_GNU_TYPE=$(dpkg-architecture -a ${{ env.HOST_ARCH }} -q DEB_HOST_GNU_TYPE)
@@ -260,7 +253,7 @@ jobs:
             apt-get install -y gcc-$HOST_GNU_TYPE g++-$HOST_GNU_TYPE
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             ln -sf /usr/share/pkg-config-crosswrapper /usr/bin/${HOST_GNU_TYPE}-pkg-config
-      - name: Populate depedencie (xenial only, ubuntu test toolchain)
+      - name: Populate sysroot (xenial only, ubuntu test toolchain)
         if: ${{ env.HOST_DISTRO == 'xenial' }}
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
@@ -282,12 +275,11 @@ jobs:
               --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-7 \
               --slave /usr/bin/gcc-nm gcc-nm /usr/bin/gcc-nm-7 \
               --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-7
-      - name: Populate depedencie (ca-certificates)
+      - name: Populate sysroot (ca-certificates, git)
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y ca-certificates git
-      - name: Populate depedencie (focal only, golang toolchain)
-        if: ${{ env.HOST_DISTRO == 'focal' }}
+      - name: Populate sysroot (golang toolchain)
         run: |
           cd /tmp
           curl -O http://deb.debian.org/debian/pool/main/g/golang-defaults/golang_1.17~1~bpo11+2_${{ env.BUILD_ARCH }}.deb
@@ -300,7 +292,16 @@ jobs:
           curl -O http://deb.debian.org/debian/pool/main/g/golang-1.17/golang-1.17-doc_1.17.7-1~bpo11+1_all.deb
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -f -y $PWD/golang*.deb
-      - name: Populate depedencie (focal only, software-properties-common)
+      - name: Set nogui build profile (armel/mipsel/mips64el only)
+        if: ${{env.HOST_ARCH == 'armel' ||  env.HOST_ARCH == 'mipsel' || env.HOST_ARCH == 'mips64el' }}
+        run: |
+          echo "DEB_BUILD_PROFILES=nogui" >> $GITHUB_ENV
+          echo "APT_DEB_BUILD_PROFILES=-o Apt::Build-Profiles=nogui" >> $GITHUB_ENV
+      - name: Build deb (source)
+        run: |
+          export DEB_BUILD_PROFILES
+          SOURCE_ONLY=1 ./scripts/build-deb.sh
+      - name: Populate depedencie (focal i386 only, software-properties-common)
         if: ${{ env.HOST_DISTRO == 'focal' && env.HOST_ARCH == 'i386' }}
         run: |
           # missing for software-properties-common
@@ -313,7 +314,7 @@ jobs:
           curl -O http://deb.debian.org/debian/pool/main/a/apt/libapt-pkg6.0_2.2.4_i386.deb
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -f -y $PWD/gir*.deb $PWD/lib*.deb $PWD/packagekit*.deb
-      - name: Populate depedencie (focal only, gtkmm)
+      - name: Populate depedencie (focal i386 only, gtkmm)
         if: ${{ env.HOST_DISTRO == 'focal' && env.HOST_ARCH == 'i386' }}
         run: |
           cd /tmp

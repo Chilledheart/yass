@@ -36,11 +36,10 @@ fi
 BUILD_ARCH=${BUILD_ARCH:-$(dpkg-architecture -q DEB_BUILD_ARCH)}
 if [ "x$HOST_ARCH" != "x" ]; then
   DEB_VERSION=$(sudo schroot --chroot "source:$HOST_DISTRO-$BUILD_ARCH-$HOST_ARCH" --user root -- dpkg -s debhelper|grep Version|sed -s 's/^Version: //g')
-  DEB_HAS_CMAKE_NINIA_BUILD_SUPPORT=$(sudo schroot --chroot "source:$HOST_DISTRO-$BUILD_ARCH-$HOST_ARCH" --user root -- dpkg --compare-versions $DEB_VERSION ge 11.2 || echo no)
 else
   DEB_VERSION=$(dpkg -s debhelper|grep Version|sed -s 's/^Version: //g')
-  DEB_HAS_CMAKE_NINIA_BUILD_SUPPORT=$(dpkg --compare-versions $DEB_VERSION ge 11.2 || echo no)
 fi
+DEB_HAS_CMAKE_NINIA_BUILD_SUPPORT=$(dpkg --compare-versions $DEB_VERSION ge 11.2 || echo no)
 
 if [ "x$DEB_HAS_CMAKE_NINIA_BUILD_SUPPORT" != "xno" ]; then
   export DEB_BUILD_SYSTEM_OPTIONS="--buildsystem=cmake+ninja"
