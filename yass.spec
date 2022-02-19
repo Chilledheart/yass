@@ -31,7 +31,6 @@ cd build
 cmake -DCMAKE_INSTALL_PREFIX=%{buildroot}/usr ..
 rm -rf %{buildroot}
 ninja install
-rm -rf %{buildroot}/usr/lib64 %{buildroot}/usr/include %{buildroot}/usr/bin/protoc*
 cd ..
 
 %post

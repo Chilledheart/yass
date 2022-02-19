@@ -43,7 +43,3 @@ ifneq (,$(filter yass,$(DOPACKAGES)))
 endif
 	dh_strip -pyass-server --dbg-package=yass-server-dbg
 	dh_strip -pyass-client --dbg-package=yass-client-dbg
-
-override_dh_auto_install:
-	dh_auto_install
-	rm -rf $(CURDIR)/debian/tmp/usr/lib $(CURDIR)/debian/tmp/usr/include $(CURDIR)/debian/tmp/usr/bin/protoc*
