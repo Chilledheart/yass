@@ -110,6 +110,7 @@ jobs:
       - name: "Install dependency: vcpkg requirements"
         if: ${{ steps.vcpkg-cache.outputs.cache-hit != 'true' }}
         run: |
+          mkdir ${{ env.VCPKG_ROOT }}
           vcpkg install vcpkg-cmake vcpkg-cmake-config
   win-release:
     needs: [cache-toolchain-win, cache-vcpkg-win]
