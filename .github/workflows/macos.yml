@@ -35,12 +35,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Cache clang
+        id: clang-cache
         uses: actions/cache@v2
         with:
           path: |
             third_party/llvm-build/Release+Asserts
-          key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
+        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
@@ -68,7 +70,7 @@ jobs:
         with:
           path: |
             third_party/llvm-build/Release+Asserts
-          key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
         run: brew install ninja cmake
       - name: Build
@@ -104,7 +106,7 @@ jobs:
         with:
           path: |
             third_party/llvm-build/Release+Asserts
-          key: toolchain-cache-${{ runner.os }}-toolchain-build-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: toolchain-cache-${{ runner.os }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Populate depedencies
         run: brew install ninja cmake
       - name: Build
