@@ -574,12 +574,16 @@ def generate_buildscript(configuration_type):
       llvm_triple = 'i686-pc-windows-msvc'
     elif DEFAULT_ARCH == 'x64':
       llvm_triple = 'x86_64-pc-windows-msvc'
+    elif DEFAULT_ARCH == 'arm':
+      llvm_triple = 'arm-pc-windows-msvc'
+      # lld-link doesn't accept this triple
+      cmake_args.extend(['-DCMAKE_LINKER=link'])
     elif DEFAULT_ARCH == 'arm64':
       llvm_triple = 'arm64-pc-windows-msvc'
     if 'clang-cl' in os.getenv('CC', '') and llvm_triple:
       cmake_args.extend(['-DCMAKE_C_COMPILER_TARGET=%s' % llvm_triple])
       cmake_args.extend(['-DCMAKE_CXX_COMPILER_TARGET=%s' % llvm_triple])
-    if DEFAULT_ARCH == 'arm64':
+    if DEFAULT_ARCH == 'arm' or DEFAULT_ARCH == 'arm64':
       cmake_args.extend(['-DCMAKE_ASM_FLAGS=--target=%s' % llvm_triple])
 
   else:
