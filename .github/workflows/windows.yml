@@ -78,42 +78,8 @@ jobs:
             python -c "import os; os.chdir('third_party/vcredist/x64'); dlls = os.listdir('.'); [ os.rename(dll, dll.replace('_', '-')) for dll in dlls if dll.startswith('api') ];"
             del /s /q vc_redist*.exe wix311*.zip tmp
           )
-  cache-vcpkg-win:
-    runs-on: windows-2019
-    strategy:
-      fail-fast: false
-      matrix:
-        crt-linkage: [dynamic, static]
-    env:
-      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
-      # Indicates the location of the vcpkg as a Git submodule of the project repository.
-      VCPKG_ROOT: ${{ github.workspace }}\vcpkg
-    steps:
-      - uses: actions/checkout@v2
-      - name: Get vcpkg commit
-        shell: bash
-        run: |
-          IFS=" " read -r -a array <<< $VCPKG_DEPS
-          for VCPKG_DEP in ${VCPKG_DEPS[@]}; do
-            echo "$(openssl sha256 /c/vcpkg/ports/$VCPKG_DEP/vcpkg.json) $VCPKG_DEP" >> vcpkg.lock
-          done
-      - name: Cache vcpkg packages
-        id: vcpkg-cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            ${{ env.VCPKG_ROOT }}
-            !${{ env.VCPKG_ROOT }}/buildtrees
-            !${{ env.VCPKG_ROOT }}/packages
-            !${{ env.VCPKG_ROOT }}/downloads
-          key: vcpkg-cache-${{ runner.os }}-${{ matrix.crt-linkage }}-${{ hashFiles('vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
-      - name: "Install dependency: vcpkg requirements"
-        if: ${{ steps.vcpkg-cache.outputs.cache-hit != 'true' }}
-        run: |
-          mkdir ${{ env.VCPKG_ROOT }}
-          vcpkg install vcpkg-cmake vcpkg-cmake-config
   win-release:
-    needs: [cache-toolchain-win, cache-vcpkg-win]
+    needs: [cache-toolchain-win]
     runs-on: windows-2019
     strategy:
       fail-fast: false
@@ -127,9 +93,6 @@ jobs:
       DBG_BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}-debuginfo.zip'
       BUILD_TYPE: '${{ matrix.build_type }}'
       MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
-      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
-      # Indicates the location of the vcpkg as a Git submodule of the project repository.
-      VCPKG_ROOT: ${{ github.workspace }}\vcpkg
     steps:
       - uses: actions/checkout@v2
       - name: Checkout with shallow submodules
@@ -146,22 +109,6 @@ jobs:
             third_party/wix311
             third_party/vcredist
           key: toolchain-cache-${{ runner.os }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get vcpkg commit
-        shell: bash
-        run: |
-          IFS=" " read -r -a array <<< $VCPKG_DEPS
-          for VCPKG_DEP in ${VCPKG_DEPS[@]}; do
-            echo "$(openssl sha256 /c/vcpkg/ports/$VCPKG_DEP/vcpkg.json) $VCPKG_DEP" >> vcpkg.lock
-          done
-      - name: Cache vcpkg packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            ${{ env.VCPKG_ROOT }}
-            !${{ env.VCPKG_ROOT }}/buildtrees
-            !${{ env.VCPKG_ROOT }}/packages
-            !${{ env.VCPKG_ROOT }}/downloads
-          key: vcpkg-cache-${{ runner.os }}-${{ matrix.crt-linkage }}-${{ hashFiles('vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
           set VCToolsVersion=14.16
@@ -197,7 +144,7 @@ jobs:
         run: |
           gh release upload ${{ github.event.release.tag_name }} ${{ env.BUNDLE_NAME }} ${{ env.MSI_BUNDLE_NAME }} ${{ env.DBG_BUNDLE_NAME }}
   win-xp-release:
-    needs: [cache-toolchain-win, cache-vcpkg-win]
+    needs: [cache-toolchain-win]
     runs-on: windows-2019
     strategy:
       fail-fast: false
@@ -211,9 +158,6 @@ jobs:
       DBG_BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}-debuginfo.zip'
       BUILD_TYPE: '${{ matrix.build_type }}'
       MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
-      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
-      # Indicates the location of the vcpkg as a Git submodule of the project repository.
-      VCPKG_ROOT: ${{ github.workspace }}\vcpkg
     steps:
       - uses: actions/checkout@v2
       - name: Checkout with shallow submodules
@@ -230,22 +174,6 @@ jobs:
             third_party/wix311
             third_party/vcredist
           key: toolchain-cache-${{ runner.os }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get vcpkg commit
-        shell: bash
-        run: |
-          IFS=" " read -r -a array <<< $VCPKG_DEPS
-          for VCPKG_DEP in ${VCPKG_DEPS[@]}; do
-            echo "$(openssl sha256 /c/vcpkg/ports/$VCPKG_DEP/vcpkg.json) $VCPKG_DEP" >> vcpkg.lock
-          done
-      - name: Cache vcpkg packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            ${{ env.VCPKG_ROOT }}
-            !${{ env.VCPKG_ROOT }}/buildtrees
-            !${{ env.VCPKG_ROOT }}/packages
-            !${{ env.VCPKG_ROOT }}/downloads
-          key: vcpkg-cache-${{ runner.os }}-${{ matrix.crt-linkage }}-${{ hashFiles('vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
           set VCToolsVersion=14.16.27012
@@ -293,7 +221,7 @@ jobs:
         run: |
           gh release upload ${{ github.event.release.tag_name }} ${{ env.BUNDLE_NAME }} ${{ env.MSI_BUNDLE_NAME }} ${{ env.DBG_BUNDLE_NAME }}
   win-compatible-2019:
-    needs: [cache-toolchain-win, cache-vcpkg-win]
+    needs: [cache-toolchain-win]
     runs-on: windows-2019
     strategy:
       fail-fast: false
@@ -304,9 +232,6 @@ jobs:
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
       MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
-      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
-      # Indicates the location of the vcpkg as a Git submodule of the project repository.
-      VCPKG_ROOT: ${{ github.workspace }}\vcpkg
     steps:
       - uses: actions/checkout@v2
       - name: Checkout with shallow submodules
@@ -323,22 +248,6 @@ jobs:
             third_party/wix311
             third_party/vcredist
           key: toolchain-cache-${{ runner.os }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get vcpkg commit
-        shell: bash
-        run: |
-          IFS=" " read -r -a array <<< $VCPKG_DEPS
-          for VCPKG_DEP in ${VCPKG_DEPS[@]}; do
-            echo "$(openssl sha256 /c/vcpkg/ports/$VCPKG_DEP/vcpkg.json) $VCPKG_DEP" >> vcpkg.lock
-          done
-      - name: Cache vcpkg packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            ${{ env.VCPKG_ROOT }}
-            !${{ env.VCPKG_ROOT }}/buildtrees
-            !${{ env.VCPKG_ROOT }}/packages
-            !${{ env.VCPKG_ROOT }}/downloads
-          key: vcpkg-cache-${{ runner.os }}-${{ matrix.crt-linkage }}-${{ hashFiles('vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build Vistual Studio 2019 (v142)
         run: |
           set VCToolsVersion=14.29
@@ -364,7 +273,7 @@ jobs:
           :SetNewVCToolsVersion
           set VCToolsVersion=
   win-compatible-2022:
-    needs: [cache-toolchain-win, cache-vcpkg-win]
+    needs: [cache-toolchain-win]
     runs-on: windows-2022
     strategy:
       fail-fast: false
@@ -375,9 +284,6 @@ jobs:
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
       MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
-      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
-      # Indicates the location of the vcpkg as a Git submodule of the project repository.
-      VCPKG_ROOT: ${{ github.workspace }}\vcpkg
     steps:
       - uses: actions/checkout@v2
       - name: Checkout with shallow submodules
@@ -394,22 +300,6 @@ jobs:
             third_party/wix311
             third_party/vcredist
           key: toolchain-cache-${{ runner.os }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get vcpkg commit
-        shell: bash
-        run: |
-          IFS=" " read -r -a array <<< $VCPKG_DEPS
-          for VCPKG_DEP in ${VCPKG_DEPS[@]}; do
-            echo "$(openssl sha256 /c/vcpkg/ports/$VCPKG_DEP/vcpkg.json) $VCPKG_DEP" >> vcpkg.lock
-          done
-      - name: Cache vcpkg packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            ${{ env.VCPKG_ROOT }}
-            !${{ env.VCPKG_ROOT }}/buildtrees
-            !${{ env.VCPKG_ROOT }}/packages
-            !${{ env.VCPKG_ROOT }}/downloads
-          key: vcpkg-cache-${{ runner.os }}-${{ matrix.crt-linkage }}-${{ hashFiles('vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build Vistual Studio 2022 (v143)
         run: |
           set VCToolsVersion=
@@ -435,7 +325,7 @@ jobs:
           :SetNewVCToolsVersion
           set VCToolsVersion=
   win-clang-tidy:
-    needs: [cache-toolchain-win, cache-vcpkg-win]
+    needs: [cache-toolchain-win]
     runs-on: windows-2019
     strategy:
       fail-fast: false
@@ -447,9 +337,6 @@ jobs:
       ENABLE_CLANG_TIDY: '1'
       BUILD_TYPE: '${{ matrix.build_type }}'
       MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
-      VCPKG_DEPS: 'vcpkg-cmake vcpkg-cmake-config'
-      # Indicates the location of the vcpkg as a Git submodule of the project repository.
-      VCPKG_ROOT: ${{ github.workspace }}\vcpkg
     steps:
       - uses: actions/checkout@v2
       - name: Checkout with shallow submodules
@@ -466,22 +353,6 @@ jobs:
             third_party/wix311
             third_party/vcredist
           key: toolchain-cache-${{ runner.os }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - name: Get vcpkg commit
-        shell: bash
-        run: |
-          IFS=" " read -r -a array <<< $VCPKG_DEPS
-          for VCPKG_DEP in ${VCPKG_DEPS[@]}; do
-            echo "$(openssl sha256 /c/vcpkg/ports/$VCPKG_DEP/vcpkg.json) $VCPKG_DEP" >> vcpkg.lock
-          done
-      - name: Cache vcpkg packages
-        uses: actions/cache@v2
-        with:
-          path: |
-            ${{ env.VCPKG_ROOT }}
-            !${{ env.VCPKG_ROOT }}/buildtrees
-            !${{ env.VCPKG_ROOT }}/packages
-            !${{ env.VCPKG_ROOT }}/downloads
-          key: vcpkg-cache-${{ runner.os }}-${{ matrix.crt-linkage }}-${{ hashFiles('vcpkg.lock') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
           set VCToolsVersion=14.16
