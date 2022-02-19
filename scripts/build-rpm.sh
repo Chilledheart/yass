@@ -37,14 +37,25 @@ popd
 
 # Rename rpms
 
-DISTRO=${DISTRO:-centos8}
+# from rpm --querytags
+ARCH=$(rpm -q --queryformat '%{ARCH}' glibc)
 
-mv -f $HOME/rpmbuild/RPMS/x86_64/yass-1.0.0-1.el8.x86_64.rpm "yass-${DISTRO}.el8.x86_64.${TAG}.rpm"
-mv -f $HOME/rpmbuild/RPMS/x86_64/yass-debuginfo-1.0.0-1.el8.x86_64.rpm "yass-${DISTRO}-debuginfo.el8.x86_64.${TAG}.rpm"
-mv -f $HOME/rpmbuild/RPMS/x86_64/yass-server-1.0.0-1.el8.x86_64.rpm "yass-server-${DISTRO}.el8.x86_64.${TAG}.rpm"
-mv -f $HOME/rpmbuild/RPMS/x86_64/yass-server-debuginfo-1.0.0-1.el8.x86_64.rpm "yass-server-${DISTRO}-debuginfo.el8.x86_64.${TAG}.rpm"
-mv -f $HOME/rpmbuild/RPMS/x86_64/yass-client-1.0.0-1.el8.x86_64.rpm "yass-client-${DISTRO}.el8.x86_64.${TAG}.rpm"
-mv -f $HOME/rpmbuild/RPMS/x86_64/yass-client-debuginfo-1.0.0-1.el8.x86_64.rpm "yass-client-${DISTRO}-debuginfo.el8.x86_64.${TAG}.rpm"
+source /etc/os-release
+
+DISTRO=${ID}${VERSION_ID}
+
+if [ ${ID} = "centos" -o ${ID} = "rhel" ]; then
+  SUFFIX=el${VERSION_ID}
+elif [ ${ID} = "fedora" ]; then
+  SUFFIX=fc${VERSION_ID}
+fi
+
+mv -f $HOME/rpmbuild/RPMS/${ARCH}/yass-1.0.0-1.${SUFFIX}.${ARCH}.rpm "yass-${DISTRO}.${SUFFIX}.${ARCH}.${TAG}.rpm"
+mv -f $HOME/rpmbuild/RPMS/${ARCH}/yass-debuginfo-1.0.0-1.${SUFFIX}.${ARCH}.rpm "yass-${DISTRO}-debuginfo.${SUFFIX}.${ARCH}.${TAG}.rpm"
+mv -f $HOME/rpmbuild/RPMS/${ARCH}/yass-server-1.0.0-1.${SUFFIX}.${ARCH}.rpm "yass-server-${DISTRO}.${SUFFIX}.${ARCH}.${TAG}.rpm"
+mv -f $HOME/rpmbuild/RPMS/${ARCH}/yass-server-debuginfo-1.0.0-1.${SUFFIX}.${ARCH}.rpm "yass-server-${DISTRO}-debuginfo.${SUFFIX}.${ARCH}.${TAG}.rpm"
+mv -f $HOME/rpmbuild/RPMS/${ARCH}/yass-client-1.0.0-1.${SUFFIX}.${ARCH}.rpm "yass-client-${DISTRO}.${SUFFIX}.${ARCH}.${TAG}.rpm"
+mv -f $HOME/rpmbuild/RPMS/${ARCH}/yass-client-debuginfo-1.0.0-1.${SUFFIX}.${ARCH}.rpm "yass-client-${DISTRO}-debuginfo.${SUFFIX}.${ARCH}.${TAG}.rpm"
 
 echo "Generated rpms: "
 for rpm in *.rpm; do
