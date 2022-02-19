@@ -37,7 +37,7 @@ set Platform=x86
 set MSVC_CRT_LINKAGE=dynamic
 set COMPILER_TARGET=i686-pc-windows-msvc
 
-call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
+call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
 python.exe -u .\scripts\build.py || exit /b
 call :RenameTarball
@@ -53,7 +53,7 @@ set Platform=x64
 set MSVC_CRT_LINKAGE=dynamic
 set COMPILER_TARGET=x86_64-pc-windows-msvc
 
-call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
+call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
 python.exe -u .\scripts\build.py || exit /b
 call :RenameTarball
@@ -73,7 +73,7 @@ set Platform=arm64
 set MSVC_CRT_LINKAGE=dynamic
 set COMPILER_TARGET=arm64-pc-windows-msvc
 
-call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
+call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
 python.exe -u .\scripts\build.py || exit /b
 call :RenameTarball

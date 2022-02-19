@@ -109,11 +109,8 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
     ERROR_QUIET)
 
   set(YASS_APP_LAST_CHANGE "${LAST_CHANGE_REF}-refs/branch-heads/${ABBREV_REF}")
-  file(WRITE ${CMAKE_CURRENT_SOURCE_DIR}/LAST_CHANGE ${YASS_APP_LAST_CHANGE})
   if (NOT YASS_APP_TAG)
     set(YASS_APP_TAG "${YASS_APP_LAST_CHANGE}")
-  else()
-    file(WRITE ${CMAKE_CURRENT_SOURCE_DIR}/TAG ${YASS_APP_TAG})
   endif()
 else()
   # read if running from tarball
@@ -549,6 +546,8 @@ endif()
 set(SUPPORT_LIBS xxhash ${SUPPORT_LIBS})
 
 # protobuf
+set(protobuf_INSTALL "OFF" CACHE STRING "")
+set(protobuf_DISABLE_RTTI "ON" CACHE STRING "")
 if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "dynamic")
   set(protobuf_MSVC_STATIC_RUNTIME "OFF" CACHE STRING "")
 else()
@@ -558,6 +557,8 @@ set(protobuf_BUILD_TESTS "OFF" CACHE STRING "")
 set(protobuf_WITH_ZLIB "OFF" CACHE STRING "")
 add_subdirectory(third_party/protobuf/cmake)
 include_directories(third_party/protobuf/src SYSTEM)
+# required because it is not bound with libproto/libproto-lite targets
+add_definitions(-DGOOGLE_PROTOBUF_NO_RTTI=1)
 
 # fix protoc's path
 set_target_properties(protoc PROPERTIES

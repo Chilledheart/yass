@@ -15,6 +15,6 @@ RUN apt-get update -qq && \
   apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main' && \
   apt-get update -qq && \
   apt-get install -y git build-essential fakeroot devscripts debhelper gh && \
-  apt-get install -y cmake ninja-build golang libunwind-dev libgtk-3-dev libgtkmm-3.0-dev && \
+  apt-get install -y cmake ninja-build golang libgtk-3-dev libgtkmm-3.0-dev && \
   apt-get install -y -t bionic-backports debhelper && \
   rm -rf /var/lib/apt/lists/*

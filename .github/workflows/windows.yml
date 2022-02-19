@@ -26,6 +26,7 @@ defaults:
     shell: cmd
 env:
   CACHE_EPOCH: 20
+  GOPROXY: direct
 jobs:
   cache-toolchain-win:
     runs-on: windows-2019
@@ -161,7 +162,7 @@ jobs:
           set "Path=%CD%\third_party\nasm;%Path%"
           set "Path=%CD%\third_party\wix311;%Path%"
 
-          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
+          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
           python -u .\scripts\build.py || exit /b
 
@@ -338,7 +339,7 @@ jobs:
           set "Path=%CD%\third_party\nasm;%Path%"
           set "Path=%CD%\third_party\wix311;%Path%"
 
-          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
+          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
           python -u .\scripts\build.py || exit /b
 
@@ -409,7 +410,7 @@ jobs:
           set "Path=%CD%\third_party\nasm;%Path%"
           set "Path=%CD%\third_party\wix311;%Path%"
 
-          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
+          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
           python -u .\scripts\build.py || exit /b
 
@@ -483,7 +484,7 @@ jobs:
           set "Path=%CD%\third_party\nasm;%Path%"
           set "Path=%CD%\third_party\wix311;%Path%"
 
-          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk%
+          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
           python -u .\scripts\build.py || exit /b
 

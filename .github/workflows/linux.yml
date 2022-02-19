@@ -26,6 +26,7 @@ defaults:
     shell: bash
 env:
   CACHE_EPOCH: 11
+  GOPROXY: direct
 jobs:
   docker_publish:
     strategy:
@@ -33,13 +34,7 @@ jobs:
       matrix:
         container:
         - 'centos8'
-        - 'ubuntu16.04'
-        - 'ubuntu18.04'
-        - 'ubuntu20.04'
-        - 'debian9'
-        - 'debian10'
-        - 'debian11'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@master
       - name: Login to GitHub Container Registry
@@ -76,7 +71,7 @@ jobs:
 
   ubuntu-latest:
     needs: cache-toolchain-linux
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     strategy:
       fail-fast: false
       matrix:
@@ -116,7 +111,7 @@ jobs:
           cd ..
   ubuntu-latest-clang-tidy:
     needs: cache-toolchain-linux
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     strategy:
       fail-fast: false
       matrix:
@@ -154,7 +149,7 @@ jobs:
       matrix:
         container:
         - 'centos8'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     needs: docker_publish
     container: 'ghcr.io/chilledheart/${{ matrix.container }}'
     env:
@@ -175,46 +170,18 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload ${{ github.event.release.tag_name }} yass*.rpm
-  debian-release:
-    strategy:
-      fail-fast: false
-      matrix:
-        container:
-        - 'ubuntu16.04'
-        - 'ubuntu18.04'
-        - 'ubuntu20.04'
-        - 'debian9'
-        - 'debian10'
-        - 'debian11'
-    runs-on: ubuntu-latest
-    needs: docker_publish
-    container: 'ghcr.io/chilledheart/${{ matrix.container }}'
-    steps:
-      - uses: actions/checkout@v2
-      - name: Checkout with shallow submodules
-        run: |
-          # unshallow must come first otherwise submodule may be get unshallowed
-          git fetch --tags --unshallow
-          git submodule update --init --depth 1
-      - name: Build Deb Packages
-        run: |
-          ./scripts/build-deb.sh
-      - name: Upload dist tarball (including debuginfo)
-        if: ${{ github.event_name == 'release' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload ${{ github.event.release.tag_name }} yass*.deb
   ubuntu-release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     strategy:
       fail-fast: false
       matrix:
         distro: [bionic, focal, stretch, buster, bullseye]
-        arch: [i386, armhf, arm64]
+        arch: [i386, amd64, armhf, arm64]
         include:
           - distro: xenial
             arch: i386
+          - distro: xenial
+            arch: amd64
           - distro: stretch
             arch: mipsel
           - distro: stretch
@@ -227,6 +194,12 @@ jobs:
             arch: mipsel
           - distro: bullseye
             arch: mips64el
+          - distro: stretch
+            arch: armel
+          - distro: buster
+            arch: armel
+          - distro: bullseye
+            arch: armel
     env:
       DEBIAN_FRONTEND: 'noninteractive'
       HOST_ARCH: '${{ matrix.arch }}'
@@ -238,32 +211,55 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Populate depedencies (sbuild)
-        run: sudo apt-get update -qq && sudo apt-get install -y debhelper sbuild schroot debootstrap ubuntu-dev-tools qemu-user-static
+      - name: Populate depedencies (sbuild, upgrade for null-resolver)
+        run: |
+          cd /tmp
+          curl -O http://archive.ubuntu.com/ubuntu/pool/main/s/sbuild/sbuild_0.79.0-1ubuntu1_all.deb
+          curl -O http://archive.ubuntu.com/ubuntu/pool/main/s/sbuild/libsbuild-perl_0.79.0-1ubuntu1_all.deb
+          sudo apt-get install -f -y $PWD/sbuild*.deb $PWD/libsbuild*.deb
+          rm -f *.deb
+      - name: Populate depedencies (debian keyring, for debian distributions)
+        run: |
+          cd /tmp
+          curl -O http://archive.ubuntu.com/ubuntu/pool/universe/d/debian-keyring/debian-keyring_2020.03.24_all.deb
+          curl -O http://archive.ubuntu.com/ubuntu/pool/universe/d/debian-archive-keyring/debian-archive-keyring_2019.1ubuntu2_all.deb
+          sudo apt-get install -f -y $PWD/debian*.deb
+          rm -f *.deb
+      - name: Populate depedencies (debhelper, for correct dh_shlibdeps path)
+        run: |
+          cd /tmp
+          curl -O http://archive.ubuntu.com/ubuntu/pool/main/d/debhelper/debhelper_12.10ubuntu1_all.deb
+          curl -O http://archive.ubuntu.com/ubuntu/pool/main/d/debhelper/libdebhelper-perl_12.10ubuntu1_all.deb
+          sudo apt-get install -f -y $PWD/*.deb
+          rm -f *.deb
+      - name: Populate depedencies (schroot, debootstrap and ubuntu-dev-tools)
+        run: sudo apt-get update -qq && sudo apt-get install -y schroot debootstrap ubuntu-dev-tools qemu-user-static
       - name: Copy sbuilrc
         run: |
           cp -fv sbuildrc ~/.sbuildrc
-          sudo adduser "$USER" sbuild
+          sudo usermod -aG sudo "$USER"
+          sudo usermod -aG sbuild "$USER"
           sudo chown -R sbuild:sbuild /var/lib/sbuild/
           sudo chmod g+rws /var/lib/sbuild/
-      - name: Populate sysroot (distro option)
+      - name: Pre-Populate sysroot (distro option)
         if: ${{ env.HOST_DISTRO == 'stretch' || env.HOST_DISTRO == 'buster' || env.HOST_DISTRO == 'bullseye' }}
         run: |
           echo "mksbuild_distro_opts=--distro=debian" >> $GITHUB_ENV
-      - name: Populate BUILD_ARCH (i386)
+      - name: Pre-Populate BUILD_ARCH (i386)
         if: ${{ env.HOST_ARCH == 'i386' }}
         run: |
           echo "mksbuild_arch_opts=--arch=i386" >> $GITHUB_ENV
           echo "BUILD_ARCH=i386" >> $GITHUB_ENV
-      - name: Populate BUILD_ARCH (amd64)
+      - name: Pre-Populate BUILD_ARCH (amd64)
         if: ${{ env.HOST_ARCH != 'i386' }}
         run: |
+          echo "mksbuild_arch_opts=--arch=amd64" >> $GITHUB_ENV
           echo "BUILD_ARCH=$(dpkg-architecture -q DEB_BUILD_ARCH)" >> $GITHUB_ENV
       - name: Populate sysroot
         run: |
           # mk-sbuild may fail due to the missing pkg-config-<gnu-type>, but it
           # should be fine, will create pkg-config shim in next step
-          sudo -E -u "$USER" -g sbuild mk-sbuild ${{ env.mksbuild_arch_opts }} ${{ env.HOST_DISTRO }} --target=${{ env.HOST_ARCH }} --skip-proposed ${{ env.mksbuild_distro_opts }} || true
+          sudo -n sudo -u "$USER" -g sbuild mk-sbuild ${{ env.mksbuild_arch_opts }} ${{ env.HOST_DISTRO }} --target=${{ env.HOST_ARCH }} --skip-proposed ${{ env.mksbuild_distro_opts }} || true
           sudo sed -i '/profile/d' /etc/schroot/chroot.d/*
       - name: Populate sysroot (bullseye only, fix security repo)
         if: ${{ env.HOST_DISTRO == 'bullseye' }}
@@ -272,28 +268,25 @@ jobs:
           # https://wiki.debian.org/NewInBullseye
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             sed -i 's/security.debian.org\/ ${{ env.HOST_DISTRO }}\/updates/security.debian.org\/debian-security ${{ env.HOST_DISTRO }}-security/g' /etc/apt/sources.list
-      - name: Set nogui build profile (mipsel/mips64el only)
-        if: ${{ env.HOST_ARCH == 'mipsel' || env.HOST_ARCH == 'mips64el' }}
-        run: |
-          echo "DEB_BUILD_PROFILES=nogui" >> $GITHUB_ENV
-          echo "APT_DEB_BUILD_PROFILES=-o Apt::Build-Profiles=nogui" >> $GITHUB_ENV
-      - name: Build deb (source)
-        run: |
-          export DEB_BUILD_PROFILES
-          SOURCE_ONLY=1 ./scripts/build-deb.sh
-      - name: Populate depedencie (standard toolchain)
-        run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get install -y fakeroot build-essential pkg-config debhelper
-      - name: Populate depedencie (crosscompile toolchain)
+            apt-get update -qq
+      - name: Populate sysroot (crosscompile toolchain)
         if: ${{ env.HOST_ARCH != 'i386' && env.HOST_ARCH != 'amd64' }}
         run: |
           export HOST_GNU_TYPE=$(dpkg-architecture -a ${{ env.HOST_ARCH }} -q DEB_HOST_GNU_TYPE)
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get install -y gcc-$HOST_GNU_TYPE g++-$HOST_GNU_TYPE
+            dpkg --add-architecture ${{ env.HOST_ARCH }}
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get update -qq
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get install -y dpkg-cross pkg-config gcc-$HOST_GNU_TYPE g++-$HOST_GNU_TYPE libc6:${{ env.HOST_ARCH }} linux-libc-dev:${{ env.HOST_ARCH }}
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             ln -sf /usr/share/pkg-config-crosswrapper /usr/bin/${HOST_GNU_TYPE}-pkg-config
-      - name: Populate depedencie (xenial only, ubuntu test toolchain)
+      - name: Populate sysroot (standard toolchain)
+        run: |
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get install -y fakeroot advancecomp apt-utils file build-essential pkg-config debhelper lockfile-progs optipng pkg-config tzdata ucf
+      - name: Populate sysroot (xenial only, ubuntu test toolchain)
         if: ${{ env.HOST_DISTRO == 'xenial' }}
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
@@ -315,12 +308,11 @@ jobs:
               --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-7 \
               --slave /usr/bin/gcc-nm gcc-nm /usr/bin/gcc-nm-7 \
               --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-7
-      - name: Populate depedencie (ca-certificates)
+      - name: Populate sysroot (ca-certificates, git)
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y ca-certificates git
-      - name: Populate depedencie (focal only, golang toolchain)
-        if: ${{ env.HOST_DISTRO == 'focal' }}
+      - name: Populate sysroot (golang toolchain)
         run: |
           cd /tmp
           curl -O http://deb.debian.org/debian/pool/main/g/golang-defaults/golang_1.17~1~bpo11+2_${{ env.BUILD_ARCH }}.deb
@@ -333,7 +325,16 @@ jobs:
           curl -O http://deb.debian.org/debian/pool/main/g/golang-1.17/golang-1.17-doc_1.17.7-1~bpo11+1_all.deb
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -f -y $PWD/golang*.deb
-      - name: Populate depedencie (focal only, software-properties-common)
+      - name: Set nogui build profile (armel/mipsel/mips64el only)
+        if: ${{env.HOST_ARCH == 'armel' ||  env.HOST_ARCH == 'mipsel' || env.HOST_ARCH == 'mips64el' }}
+        run: |
+          echo "DEB_BUILD_PROFILES=nogui" >> $GITHUB_ENV
+          echo "APT_DEB_BUILD_PROFILES=-o Apt::Build-Profiles=nogui" >> $GITHUB_ENV
+      - name: Build deb (source)
+        run: |
+          export DEB_BUILD_PROFILES
+          SOURCE_ONLY=1 ./scripts/build-deb.sh
+      - name: Populate depedencie (focal i386 only, software-properties-common)
         if: ${{ env.HOST_DISTRO == 'focal' && env.HOST_ARCH == 'i386' }}
         run: |
           # missing for software-properties-common
@@ -346,7 +347,7 @@ jobs:
           curl -O http://deb.debian.org/debian/pool/main/a/apt/libapt-pkg6.0_2.2.4_i386.deb
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -f -y $PWD/gir*.deb $PWD/lib*.deb $PWD/packagekit*.deb
-      - name: Populate depedencie (focal only, gtkmm)
+      - name: Populate depedencie (focal i386 only, gtkmm)
         if: ${{ env.HOST_DISTRO == 'focal' && env.HOST_ARCH == 'i386' }}
         run: |
           cd /tmp
@@ -389,7 +390,7 @@ jobs:
       - name: Build deb
         run: |
           export DEB_BUILD_PROFILES
-          sudo -E -u "$USER" -g sbuild ./scripts/build-deb.sh || true
+          sudo -E sudo -E -u "$USER" -g sbuild ./scripts/build-deb.sh || true
       - name: Output build log
         run: |
           cat /tmp/yass*.build
