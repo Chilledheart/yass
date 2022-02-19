@@ -47,15 +47,20 @@ def check_string_output(command):
     return subprocess.check_output(command, stderr=subprocess.STDOUT).decode().strip()
 
 
-def write_output(command, suppress_error=True):
+def write_output(command, check=False):
   print('--- %s' % ' '.join(command))
   proc = subprocess.Popen(command, stdout=sys.stdout, stderr=sys.stdout,
       shell=False, env=os.environ)
-  proc.communicate()
-  if not suppress_error and proc.returncode != 0:
-    raise RuntimeError('cmd "%s" failed, exit code %d' % (' '.join(command),
-                                                          proc.returncode))
-
+  try:
+    proc.communicate()
+  except:  # Including KeyboardInterrupt, communicate handled that.
+    proc.kill()
+    # We don't call process.wait() as .__exit__ does that for us.
+    raise
+  retcode = proc.poll()
+  if check and retcode:
+    raise subprocess.CalledProcessError(retcode, proc.args,
+                                        output=sys.stdout, stderr=sys.stderr)
 
 def get_app_name():
   if sys.platform == 'win32':
@@ -491,15 +496,13 @@ def _postbuild_patchelf():
   for binrary in binaries:
     if os.path.isdir(binrary):
       continue
-    write_output(['patchelf', '--set-rpath', '$ORIGIN/lib', binrary],
-                 suppress_error=False)
+    write_output(['patchelf', '--set-rpath', '$ORIGIN/lib', binrary], check=True)
   libs = os.listdir(lib_path)
   for lib_name in libs:
     lib = os.path.join(lib_path, lib_name)
     if os.path.isdir(lib):
       continue
-    write_output(['patchelf', '--set-rpath', '$ORIGIN/lib', lib],
-                 suppress_error=False)
+    write_output(['patchelf', '--set-rpath', '$ORIGIN/lib', lib], check=True)
 
 
 def find_source_directory():
@@ -598,14 +601,14 @@ def generate_buildscript(configuration_type):
 
   command = ['cmake', '..'] + cmake_args
 
-  write_output(command, suppress_error=False)
+  write_output(command, check=True)
 
 
 def execute_buildscript(configuration_type):
   print('executing build scripts...(%s)' % configuration_type)
 
   command = ['ninja', 'yass']
-  write_output(command, suppress_error=False)
+  write_output(command, check=True)
   # FIX ME move to cmake (required by Xcode generator)
   if platform.system() == 'Darwin':
     if os.path.exists(os.path.join(configuration_type, get_app_name())):
@@ -661,11 +664,11 @@ def postbuild_codesign():
   write_output(['codesign', '--timestamp=none',
                 '--preserve-metadata=entitlements', '--options=runtime',
                 '--force', '--deep', '--sign', DEFAULT_SIGNING_IDENTITY,
-                get_app_name()], suppress_error=False)
+                get_app_name()], check=True)
   write_output(['codesign', '-dv', '--deep', '--strict', '--verbose=4',
-                get_app_name()], suppress_error=False)
+                get_app_name()], check=True)
   write_output(['codesign', '-d', '--entitlements', ':-', get_app_name()],
-               suppress_error=False)
+               check=True)
 
 
 def _check_universal_build_darwin(path, verbose = False):
@@ -764,7 +767,7 @@ def _archive_files_main_files(output, paths):
                   '--sourcefile', '--volname', 'Yet Another Shadow Socket',
                   '--resource', 'eula.xml', '--icon', '../src/mac/yass.icns',
                   '--symlink', '/Applications:/Drag to here'],
-                 suppress_error=False)
+                 check=True)
   else:
     archive_files(output, paths)
 
@@ -849,11 +852,11 @@ def _archive_files_generate_msi(msi_archive, paths, dll_paths, license_paths):
     f.write(wxs_content.toxml())
 
   print('Feeding WiX compiler...')
-  write_output(['candle.exe', 'yass.wxs'], suppress_error=False)
+  write_output(['candle.exe', 'yass.wxs'], check=True)
 
   print('Generating MSI file...')
   write_output(['light.exe', '-ext', 'WixUIExtension', '-out', msi_archive,
-                '-cultures:en-US', '-sice:ICE03', '-sice:ICE57', '-sice:ICE61', 'yass.wixobj'], suppress_error=False)
+                '-cultures:en-US', '-sice:ICE03', '-sice:ICE57', '-sice:ICE61', 'yass.wixobj'], check=True)
 
 
 def postbuild_archive():
