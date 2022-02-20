@@ -3,6 +3,7 @@
 
 #include "core/utils.hpp"
 
+#include "core/compiler_specific.hpp"
 #include "core/logging.hpp"
 
 #ifdef _WIN32
@@ -152,6 +153,141 @@ bool SetThreadName(std::thread::native_handle_type handle,
   SetNameInternal(::GetThreadId(handle), name.c_str());
 #endif
   return SUCCEEDED(ret);
+}
+
+static std::string protect_str(DWORD protect) {
+  std::string ret;
+  switch (protect & 0xf) {
+    case PAGE_NOACCESS:
+      ret += "noaccess";
+      break;
+    case PAGE_READONLY:
+      ret += "readonly";
+      break;
+    case PAGE_READWRITE:
+      ret += "readwrite";
+      break;
+    case PAGE_WRITECOPY:
+      ret += "writecopy";
+      break;
+    case PAGE_TARGETS_INVALID:
+      ret += "targets-invalid";
+      break;
+    // case PAGE_TARGETS_NO_UPDATE:
+    default:
+      ret += "?";
+  }
+  if (protect & 0xf0) {
+    ret += ",";
+    switch (protect & 0xf0) {
+      case PAGE_EXECUTE:
+        ret += "execute";
+        break;
+      case PAGE_EXECUTE_READ:
+        ret += "execute-read";
+        break;
+      case PAGE_EXECUTE_READWRITE:
+        ret += "execute-readwrite";
+        break;
+      case PAGE_EXECUTE_WRITECOPY:
+        ret += "execute-writecopy";
+        break;
+      default:
+        ret += "execute-?";
+    }
+  }
+  if (protect & 0xf00) {
+    ret += ",";
+    switch (protect & 0xf00) {
+      case PAGE_GUARD:
+        ret += "guard";
+        break;
+      case PAGE_NOCACHE:
+        ret += "nocache";
+        break;
+      case PAGE_WRITECOMBINE:
+        ret += "write-combine";
+        break;
+      default:
+        ret += "protect-?";
+    }
+  }
+  return ret;
+}
+
+static const char* state_str(DWORD state) {
+  switch (state) {
+    case 0:
+      return "none";
+    case MEM_COMMIT:
+      return "commit";
+    case MEM_FREE:
+      return "free";
+    case MEM_RESERVE:
+      return "reserve";
+    default:
+      return "?";
+  }
+}
+
+
+static const char* type_str(DWORD type) {
+  switch (type) {
+    case 0:
+      return "none";
+    case MEM_IMAGE:
+      return "image";
+    case MEM_MAPPED:
+      return "mapped";
+    case MEM_PRIVATE:
+      return "private";
+    default:
+      return "?";
+  }
+}
+
+bool MemoryLockAll() {
+#ifdef ARCH_CPU_64_BITS
+  DWORD size = 15 * 1024 * 1024; /* 15MB */
+#else
+  DWORD size = 5 * 1024 * 1024; /* 5MB */
+#endif
+  HANDLE process = ::GetCurrentProcess();
+  if (!::SetProcessWorkingSetSize(process, size, size)) {
+    PLOG(WARNING) << "Failed to set working set";
+    return false;
+  }
+  MEMORY_BASIC_INFORMATION memInfo {};
+  uintptr_t *address = nullptr;
+  bool failed = false;
+  while (::VirtualQueryEx(process, address, &memInfo, sizeof(memInfo))) {
+    bool lockable = memInfo.State == MEM_COMMIT &&
+      !(memInfo.Protect & PAGE_NOACCESS) &&
+      !(memInfo.Protect & PAGE_GUARD);
+
+    VLOG(4) << "Calling VirtualLock on address: " << memInfo.BaseAddress
+            << " AllocationBase: " << memInfo.AllocationBase
+            << " AllocationProtect: " << protect_str(memInfo.AllocationProtect)
+#ifdef _WIN64
+            << " PartitionId: " << memInfo.PartitionId
+#endif
+            << " RegionSize: " << memInfo.RegionSize
+            << " State: " << state_str(memInfo.State)
+            << " Protect: " << protect_str(memInfo.Protect)
+            << " Type: " << type_str(memInfo.Type);
+
+    if (lockable && !::VirtualLock(memInfo.BaseAddress, memInfo.RegionSize)) {
+      PLOG(WARNING) << "Failed to call VirtualLock on address: "
+                    << memInfo.BaseAddress
+                    << " State:" << state_str(memInfo.State)
+                    << " Protect: " << protect_str(memInfo.Protect)
+                    << " Type: " << type_str(memInfo.Type);
+      failed = true;
+    }
+    // Move to the next region
+    address += memInfo.RegionSize;
+  }
+  return !failed;
 }
 
 uint64_t GetMonotonicTime() {

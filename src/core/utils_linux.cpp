@@ -6,10 +6,14 @@
 #include "core/logging.hpp"
 
 #ifdef __linux__
+#include <errno.h>
 #include <time.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <syscall.h>  // For syscall.
+#include <sys/mman.h> // For mlockall.
+#include <sys/time.h>
+#include <sys/resource.h>
 
 bool SetThreadPriority(std::thread::native_handle_type /*handle*/,
                        ThreadPriority /*priority*/) {
@@ -23,6 +27,18 @@ bool SetThreadName(std::thread::native_handle_type handle,
     handle = syscall(__NR_gettid);
   }
   return pthread_setname_np(handle, name.c_str()) == 0;
+}
+
+bool MemoryLockAll() {
+  if (mlockall(MCL_CURRENT) == 0)
+    return true;
+  PLOG(WARNING) << "Failed to call mlockall";
+  struct rlimit rlim;
+  if (errno == ENOMEM && ::getrlimit(RLIMIT_MEMLOCK, &rlim) == 0) {
+    LOG(WARNING) << "Please Increase RLIMIT_MEMLOCK, soft limit: "
+      << rlim.rlim_cur << ", hard limit: " << rlim.rlim_max;
+  }
+  return false;
 }
 
 uint64_t GetMonotonicTime() {

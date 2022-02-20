@@ -46,6 +46,9 @@ bool SetThreadPriority(std::thread::native_handle_type handle,
 bool SetThreadName(std::thread::native_handle_type handle,
                    const std::string& name);
 
+// Lock memory to avoid page fault
+bool MemoryLockAll();
+
 uint64_t GetMonotonicTime();
 #define NS_PER_SECOND (1000 * 1000 * 1000)
 

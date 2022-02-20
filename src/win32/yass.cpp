@@ -86,8 +86,6 @@ BOOL CYassApp::InitInstance() {
 
   // TODO: transfer OutputDebugString to internal logging
 
-  LOG(WARNING) << "Application starting: " << YASS_APP_TAG;
-
   // https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-setpriorityclass
   // While the system is starting, the SetThreadPriority function returns a
   // success return value but does not change thread priority for applications
@@ -136,6 +134,12 @@ BOOL CYassApp::InitInstance() {
   if (Utils::GetAutoStart()) {
     frame_->OnStartButtonClicked();
   }
+
+  if (!MemoryLockAll()) {
+    LOG(WARNING) << "Failed to set memory lock";
+  }
+
+  LOG(WARNING) << "Application starting: " << YASS_APP_TAG;
 
   return TRUE;
 }
