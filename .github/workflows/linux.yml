@@ -25,7 +25,7 @@ defaults:
   run:
     shell: bash
 env:
-  CACHE_EPOCH: 11
+  CACHE_EPOCH: 0
   GOPROXY: direct
 jobs:
   docker_publish:
@@ -72,6 +72,15 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
+      - name: Cache golang
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-docker-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-docker-
       - name: Build RPM packages
         run: |
           ./scripts/build-rpm.sh

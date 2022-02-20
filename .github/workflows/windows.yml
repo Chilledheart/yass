@@ -25,7 +25,7 @@ defaults:
   run:
     shell: cmd
 env:
-  CACHE_EPOCH: 20
+  CACHE_EPOCH: 0
   GOPROXY: direct
 jobs:
   cache-toolchain-win:
@@ -43,7 +43,7 @@ jobs:
             third_party/llvm-build/Release+Asserts
             third_party/wix311
             third_party/vcredist
-          key: toolchain-cache-${{ runner.os }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: "Install dependency: prebuilt nasm"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -108,7 +108,7 @@ jobs:
             third_party/llvm-build/Release+Asserts
             third_party/wix311
             third_party/vcredist
-          key: toolchain-cache-${{ runner.os }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
         uses: actions/cache@v2
         with:
@@ -182,7 +182,7 @@ jobs:
             third_party/llvm-build/Release+Asserts
             third_party/wix311
             third_party/vcredist
-          key: toolchain-cache-${{ runner.os }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
         uses: actions/cache@v2
         with:
@@ -265,7 +265,7 @@ jobs:
             third_party/llvm-build/Release+Asserts
             third_party/wix311
             third_party/vcredist
-          key: toolchain-cache-${{ runner.os }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
         uses: actions/cache@v2
         with:
@@ -326,7 +326,7 @@ jobs:
             third_party/llvm-build/Release+Asserts
             third_party/wix311
             third_party/vcredist
-          key: toolchain-cache-${{ runner.os }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
         uses: actions/cache@v2
         with:
@@ -388,7 +388,7 @@ jobs:
             third_party/llvm-build/Release+Asserts
             third_party/wix311
             third_party/vcredist
-          key: toolchain-cache-${{ runner.os }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Build
         run: |
           set VCToolsVersion=14.16

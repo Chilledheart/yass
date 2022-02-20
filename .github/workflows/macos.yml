@@ -25,7 +25,7 @@ defaults:
   run:
     shell: bash
 env:
-  CACHE_EPOCH: 11
+  CACHE_EPOCH: 0
   GOPROXY: direct
 jobs:
   cache-toolchain-mac:
@@ -40,7 +40,7 @@ jobs:
         with:
           path: |
             third_party/llvm-build/Release+Asserts
-          key: toolchain-cache-${{ runner.os }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -70,7 +70,7 @@ jobs:
         with:
           path: |
             third_party/llvm-build/Release+Asserts
-          key: toolchain-cache-${{ runner.os }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
         uses: actions/cache@v2
         with:
@@ -115,7 +115,7 @@ jobs:
         with:
           path: |
             third_party/llvm-build/Release+Asserts
-          key: toolchain-cache-${{ runner.os }}-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
         uses: actions/cache@v2
         with:
