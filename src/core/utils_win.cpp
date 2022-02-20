@@ -170,10 +170,12 @@ static std::string protect_str(DWORD protect) {
     case PAGE_WRITECOPY:
       ret += "writecopy";
       break;
+#ifdef PAGE_TARGETS_INVALID
     case PAGE_TARGETS_INVALID:
       ret += "targets-invalid";
       break;
     // case PAGE_TARGETS_NO_UPDATE:
+#endif
     default:
       ret += "?";
   }
