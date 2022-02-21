@@ -10,6 +10,10 @@
 #include <gtkmm/aboutdialog.h>
 #include <gtkmm/messagedialog.h>
 
+#include <gtk/gtkmenu.h>
+#include <gtk/gtkmenubar.h>
+#include <gtk/gtkmenuitem.h>
+
 #include "cli/socks5_connection_stats.hpp"
 #include "core/utils.hpp"
 #include "gtk/option_dialog.hpp"
@@ -141,9 +145,11 @@ YASSWindow::YASSWindow()
 #undef XX
   };
 
+  method_ = GTK_COMBO_BOX_TEXT(gtk_combo_box_text_new());
+
   for (uint32_t i = 1; i < sizeof(method_names) / sizeof(method_names[0]);
        ++i) {
-    method_.append(method_names[i]);
+    gtk_combo_box_text_append_text(method_, method_names[i]);
   }
 
   right_panel_grid_.attach(serverhost_label_, 0, 0, 1, 1);
@@ -165,7 +171,7 @@ YASSWindow::YASSWindow()
   right_panel_grid_.attach(serverhost_, 1, 0, 1, 1);
   right_panel_grid_.attach(serverport_, 1, 1, 1, 1);
   right_panel_grid_.attach(password_, 1, 2, 1, 1);
-  right_panel_grid_.attach(method_, 1, 3, 1, 1);
+  gtk_grid_attach(right_panel_grid_.gobj(), GTK_WIDGET(method_), 1, 3, 1, 1);
   right_panel_grid_.attach(localhost_, 1, 4, 1, 1);
   right_panel_grid_.attach(localport_, 1, 5, 1, 1);
   right_panel_grid_.attach(timeout_, 1, 6, 1, 1);
@@ -218,7 +224,8 @@ std::string YASSWindow::GetPassword() {
 }
 
 std::string YASSWindow::GetMethod() {
-  return method_.get_active_text();
+  gchar* active_method = gtk_combo_box_text_get_active_text(method_);
+  return Glib::make_unique_ptr_gfree(active_method).get();
 }
 
 std::string YASSWindow::GetLocalHost() {
@@ -238,7 +245,7 @@ void YASSWindow::Started() {
   serverhost_.set_sensitive(false);
   serverport_.set_sensitive(false);
   password_.set_sensitive(false);
-  method_.set_sensitive(false);
+  gtk_widget_set_sensitive(GTK_WIDGET(method_), false);
   localhost_.set_sensitive(false);
   localport_.set_sensitive(false);
   timeout_.set_sensitive(false);
@@ -250,7 +257,7 @@ void YASSWindow::StartFailed() {
   serverhost_.set_sensitive(true);
   serverport_.set_sensitive(true);
   password_.set_sensitive(true);
-  method_.set_sensitive(true);
+  gtk_widget_set_sensitive(GTK_WIDGET(method_), true);
   localhost_.set_sensitive(true);
   localport_.set_sensitive(true);
   timeout_.set_sensitive(true);
@@ -267,7 +274,7 @@ void YASSWindow::Stopped() {
   serverhost_.set_sensitive(true);
   serverport_.set_sensitive(true);
   password_.set_sensitive(true);
-  method_.set_sensitive(true);
+  gtk_widget_set_sensitive(GTK_WIDGET(method_), true);
   localhost_.set_sensitive(true);
   localport_.set_sensitive(true);
   timeout_.set_sensitive(true);
@@ -290,7 +297,9 @@ void YASSWindow::LoadChanges() {
     if (cipher_method == method_ids[i])
       break;
   }
-  method_.set_active(i - 1);
+
+  gtk_combo_box_set_active(GTK_COMBO_BOX(method_), i - 1);
+
   localhost_.set_text(absl::GetFlag(FLAGS_local_host));
   localport_.set_text(std::to_string(absl::GetFlag(FLAGS_local_port)));
   timeout_.set_text(std::to_string(absl::GetFlag(FLAGS_connect_timeout)));

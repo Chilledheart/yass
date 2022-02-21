@@ -927,7 +927,7 @@ if (NOT MSVC)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,noexecstack -Wl,-z,relro")
     endif()
 
-    ## disable rtti on linux, gtkmm requires this
+    ## cann't disable rtti on linux, gtkmm requires this
     if (APPLE)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
     endif()
@@ -2382,7 +2382,8 @@ if (GUI)
         )
 
     target_include_directories(${APP_NAME} PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src)
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
 
     target_include_directories(${APP_NAME} SYSTEM PRIVATE
         ${GUI_INCLUDE_DIRS})

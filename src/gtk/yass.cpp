@@ -10,6 +10,7 @@
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
 #include <locale.h>
+#include <giomm/init.h>
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
@@ -95,11 +96,38 @@ int main(int argc, char** argv) {
   g_type_init();
 #endif  // !GLIB_CHECK_VERSION(2, 35, 0)
 
+  Gio::init();
+
   SetUpGLibLogHandler();
 
   auto app = YASSApp::create();
 
   mApp = app.operator->();
+
+  G_APPLICATION_GET_CLASS(app->gobj())->local_command_line =
+      [](GApplication* application, gchar*** arguments,
+         int* exit_status) -> gboolean {
+    return mApp->local_command_line_vfunc(*(arguments), *(exit_status));
+  };
+#if 0
+  G_APPLICATION_GET_CLASS(app->gobj())->handle_local_options =
+      [](GApplication* application, GVariantDict* options) -> gboolean {
+    return false;
+  };
+#endif
+  G_APPLICATION_GET_CLASS(app->gobj())->startup =
+      [](GApplication* application) {
+    mApp->on_startup();
+  };
+  G_APPLICATION_GET_CLASS(app->gobj())->activate =
+      [](GApplication* application) {
+    mApp->on_activate();
+  };
+  G_APPLICATION_GET_CLASS(app->gobj())->command_line =
+      [](GApplication* application,
+         GApplicationCommandLine* command_line) -> int {
+    return mApp->on_command_line(Glib::wrap(command_line, true));
+  };
 
   return app->ApplicationRun();
 }

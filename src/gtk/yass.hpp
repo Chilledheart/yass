@@ -3,9 +3,12 @@
 #ifndef YASS_APP
 #define YASS_APP
 
+#include "glibmm/fake_typeid.hpp"
+
 #include <queue>
 
 #include <absl/synchronization/mutex.h>
+#include <giomm/application.h>
 #include <glibmm/dispatcher.h>
 #include <gtkmm/application.h>
 
@@ -22,7 +25,12 @@ class YASSApp : public Gtk::Application {
 
   static Glib::RefPtr<YASSApp> create();
 
- protected:
+ public:
+  /// This is a default handler for the signal signal_local_command_line().
+  bool local_command_line_vfunc(char**& arguments, int& exit_status) override {
+    return Gtk::Application::local_command_line_vfunc(arguments, exit_status);
+  }
+
   // The signal_startup() signal is emitted on the primary instance immediately
   // after registration. See g_application_register().
   void on_startup() override;
@@ -32,6 +40,12 @@ class YASSApp : public Gtk::Application {
   // arguments, and signal_open()'s default handler, which gets called when the
   // application is launched with commandline arguments.
   void on_activate() override;
+
+  /// This is a default handler for the signal signal_command_line().
+  int on_command_line(
+      const Glib::RefPtr<Gio::ApplicationCommandLine>& command_line) override {
+    return Gtk::Application::on_command_line(command_line);
+  }
 
   // returning false in the signal handler causes remove the signal handler
   bool OnIdle();

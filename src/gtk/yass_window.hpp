@@ -4,17 +4,19 @@
 #ifndef YASS_WINDOW_H
 #define YASS_WINDOW_H
 
+#include "glibmm/fake_typeid.hpp"
+
 #include <gtkmm/applicationwindow.h>
 #include <gtkmm/button.h>
 #include <gtkmm/checkbutton.h>
-#include <gtkmm/comboboxtext.h>
 #include <gtkmm/entry.h>
 #include <gtkmm/grid.h>
 #include <gtkmm/hvbox.h>
 #include <gtkmm/label.h>
-#include <gtkmm/menu.h>
-#include <gtkmm/menubar.h>
 #include <gtkmm/statusbar.h>
+
+#include <gtk/gtkcombobox.h>
+#include <gtk/gtkcomboboxtext.h>
 
 class YASSWindow : public Gtk::Window {
  public:
@@ -47,7 +49,7 @@ class YASSWindow : public Gtk::Window {
   Gtk::Entry serverhost_;
   Gtk::Entry serverport_;
   Gtk::Entry password_;
-  Gtk::ComboBoxText method_;
+  GtkComboBoxText* method_;
   Gtk::Entry localhost_;
   Gtk::Entry localport_;
   Gtk::Entry timeout_;

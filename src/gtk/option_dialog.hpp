@@ -3,6 +3,8 @@
 #ifndef OPTION_DIALOG
 #define OPTION_DIALOG
 
+#include "glibmm/fake_typeid.hpp"
+
 #include <gtkmm/button.h>
 #include <gtkmm/dialog.h>
 #include <gtkmm/entry.h>
