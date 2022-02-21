@@ -8,6 +8,7 @@
 #include "config/config.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
+#include "gtk/utils.hpp"
 
 OptionDialog::OptionDialog(const Glib::ustring& title, bool modal)
     : Gtk::Dialog(title, modal),
@@ -49,6 +50,24 @@ OptionDialog::OptionDialog(const Glib::ustring& title, bool modal)
   LoadChanges();
 
   get_content_area()->show_all_children();
+
+  Utils::DisableGtkRTTI(this);
+
+  GTK_DIALOG_GET_CLASS(gobj())->response =
+      [](GtkDialog* dialog, gint p0) {
+        const auto base = static_cast<GtkDialogClass*>(
+            g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(dialog))));
+        if (base && base->response)
+          base->response(dialog, p0);
+      };
+
+  GTK_DIALOG_GET_CLASS(gobj())->close =
+      [](GtkDialog* dialog) {
+        const auto base = static_cast<GtkDialogClass*>(
+            g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(dialog))));
+        if (base && base->close)
+          base->close(dialog);
+      };
 }
 
 void OptionDialog::OnOkayButtonClicked() {

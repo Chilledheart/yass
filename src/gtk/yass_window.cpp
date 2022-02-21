@@ -188,7 +188,9 @@ YASSWindow::YASSWindow()
   status_bar_.push("READY");
   vbox_.pack_start(status_bar_, true, false, 0);
 
-  add(vbox_);
+  Utils::DisableGtkRTTI(this);
+
+  gtk_container_add(Gtk::Container::gobj(), GTK_WIDGET(vbox_.gobj()));
 
   LoadChanges();
 
@@ -249,6 +251,7 @@ void YASSWindow::Started() {
   localhost_.set_sensitive(false);
   localport_.set_sensitive(false);
   timeout_.set_sensitive(false);
+  autostart_.set_sensitive(false);
   stop_button_.set_sensitive(true);
 }
 
@@ -261,6 +264,7 @@ void YASSWindow::StartFailed() {
   localhost_.set_sensitive(true);
   localport_.set_sensitive(true);
   timeout_.set_sensitive(true);
+  autostart_.set_sensitive(true);
   start_button_.set_sensitive(true);
 
   Gtk::MessageDialog alert_dialog(*this, mApp->GetStatus(), false,
@@ -278,6 +282,7 @@ void YASSWindow::Stopped() {
   localhost_.set_sensitive(true);
   localport_.set_sensitive(true);
   timeout_.set_sensitive(true);
+  autostart_.set_sensitive(true);
   start_button_.set_sensitive(true);
 }
 

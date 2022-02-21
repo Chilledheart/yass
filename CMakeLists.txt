@@ -478,7 +478,7 @@ elseif (GUI)
   pkg_check_modules(GTKMM REQUIRED gtkmm-3.0)
   set(GUI_USE_FILE "")
   set(GUI_INCLUDE_DIRS ${GTKMM_INCLUDE_DIRS})
-  set(GUI_DEFINITIONS -DGTKMM_DISABLE_DEPRECATED=1 -DGIOMM_DISABLE_DEPRECATED=1)
+  set(GUI_DEFINITIONS "")
   set(GUI_C_CXX_FLAGS ${GTKMM_CFLAGS} ${GTKMM_CFLAGS_OTHER})
   set(GUI_LIBRARY_DIRS ${GTKMM_LIBRARY_DIRS})
   set(GUI_LIBRARIES ${GTKMM_LIBRARIES})
@@ -927,10 +927,8 @@ if (NOT MSVC)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,noexecstack -Wl,-z,relro")
     endif()
 
-    ## cann't disable rtti on linux, gtkmm requires this
-    if (APPLE)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
-    endif()
+    ## disable rtti
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
 
     ## disable exceptions
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")

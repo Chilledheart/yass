@@ -5,10 +5,15 @@
 #include <cstdint>
 #include <string>
 
+namespace Gtk {
+class Window;
+} // namespace Gtk
+
 class Utils {
  public:
   static bool GetAutoStart();
   static void EnableAutoStart(bool on);
+  static void DisableGtkRTTI(Gtk::Window *window);
 };
 
 #define DEFAULT_AUTOSTART_NAME "yass"

@@ -12,6 +12,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "glibmm/fake_typeid.hpp"
+
+#include <gtkmm/window.h>
+
 namespace {
 
 std::string ExpandUser(const std::string& file_path) {
@@ -137,3 +141,365 @@ void Utils::EnableAutoStart(bool on) {
   }
 }
 
+void Utils::DisableGtkRTTI(Gtk::Window *window) {
+
+  auto cobj = (Gtk::Container*)(window->gobj());
+
+  GTK_CONTAINER_GET_CLASS(cobj)->add =
+      [](GtkContainer* container, GtkWidget* widget) {
+        const auto base = static_cast<GtkContainerClass*>(
+            g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(container))));
+        if (base && base->add)
+          base->add(container, widget);
+      };
+  GTK_CONTAINER_GET_CLASS(cobj)->remove =
+      [](GtkContainer* container, GtkWidget* widget) {
+        const auto base = static_cast<GtkContainerClass*>(
+            g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(container))));
+        if (base && base->remove)
+          base->remove(container, widget);
+      };
+  GTK_CONTAINER_GET_CLASS(cobj)->forall =
+      [](GtkContainer* container, gboolean include_internals,
+         GtkCallback callback, gpointer callback_data) {
+        const auto base = static_cast<GtkContainerClass*>(
+            g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(container))));
+        if (base && base->forall)
+          base->forall(container, include_internals, callback, callback_data);
+      };
+  GTK_CONTAINER_GET_CLASS(cobj)->check_resize =
+      [](GtkContainer* container) {
+        const auto base = static_cast<GtkContainerClass*>(
+            g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(container))));
+        if (base && base->check_resize)
+          base->check_resize(container);
+      };
+  GTK_CONTAINER_GET_CLASS(cobj)->set_focus_child =
+      [](GtkContainer* container, GtkWidget *p0) {
+        const auto base = static_cast<GtkContainerClass*>(
+            g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(container))));
+        if (base && base->set_focus_child)
+          base->set_focus_child(container, p0);
+      };
+
+  auto wobj = (Gtk::Container*)(window->gobj());
+
+  GTK_WIDGET_GET_CLASS(wobj)->show = [](GtkWidget* widget) {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->show)
+      base->show(widget);
+  };
+  GTK_WIDGET_GET_CLASS(wobj)->hide = [](GtkWidget* widget) {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->hide)
+      base->hide(widget);
+  };
+#ifdef GTKMM_ATKMM_ENABLED
+  GTK_WIDGET_GET_CLASS(wobj)->get_accessible =
+      [](GtkWidget* widget) -> AtkObject* {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->get_accessible)
+      return base->get_accessible(widget);
+    return nullptr;
+  };
+#endif
+  GTK_WIDGET_GET_CLASS(wobj)->style_updated = [](GtkWidget* widget) {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->style_updated)
+      base->style_updated(widget);
+  };
+  GTK_WIDGET_GET_CLASS(wobj)->realize = [](GtkWidget* widget) {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->realize)
+      base->realize(widget);
+  };
+  GTK_WIDGET_GET_CLASS(wobj)->unrealize = [](GtkWidget* widget) {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->unrealize)
+      base->unrealize(widget);
+  };
+  GTK_WIDGET_GET_CLASS(wobj)->get_request_mode =
+      [](GtkWidget* widget) -> GtkSizeRequestMode {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->get_request_mode)
+      return base->get_request_mode(widget);
+    return GtkSizeRequestMode();
+  };
+  GTK_WIDGET_GET_CLASS(wobj)->get_preferred_width =
+      [](GtkWidget* widget, int* minimum_width, int* natural_width) {
+        const auto base = static_cast<GtkWidgetClass*>(
+            g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+        if (base && base->get_preferred_width)
+          base->get_preferred_width(widget, minimum_width, natural_width);
+      };
+  GTK_WIDGET_GET_CLASS(wobj)->get_preferred_height =
+      [](GtkWidget* widget, int* minimum_height, int* natural_height) {
+        const auto base = static_cast<GtkWidgetClass*>(
+            g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+        if (base && base->get_preferred_height)
+          base->get_preferred_height(widget, minimum_height, natural_height);
+      };
+  GTK_WIDGET_GET_CLASS(wobj)->get_preferred_height_for_width =
+      [](GtkWidget* widget, int width, int* minimum_height,
+         int* natural_height) {
+        const auto base = static_cast<GtkWidgetClass*>(
+            g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+        if (base && base->get_preferred_height_for_width)
+          base->get_preferred_height_for_width(widget, width, minimum_height,
+                                               natural_height);
+      };
+  GTK_WIDGET_GET_CLASS(wobj)->get_preferred_width_for_height =
+      [](GtkWidget* widget, int height, int* minimum_width,
+         int* natural_width) {
+        const auto base = static_cast<GtkWidgetClass*>(
+            g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+        if (base && base->get_preferred_width_for_height)
+          base->get_preferred_width_for_height(widget, height, minimum_width,
+                                               natural_width);
+      };
+  GTK_WIDGET_GET_CLASS(wobj)->size_allocate =
+      [](GtkWidget* widget, GdkRectangle* rect) {
+        const auto base = static_cast<GtkWidgetClass*>(
+            g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+        if (base && base->size_allocate)
+          base->size_allocate(widget, rect);
+      };
+  GTK_WIDGET_GET_CLASS(wobj)->map =
+      [](GtkWidget* widget) {
+        const auto base = static_cast<GtkWidgetClass*>(
+            g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+        if (base && base->map)
+          base->map(widget);
+      };
+  GTK_WIDGET_GET_CLASS(wobj)->unmap =
+      [](GtkWidget* widget) {
+        const auto base = static_cast<GtkWidgetClass*>(
+            g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+        if (base && base->unmap)
+          base->unmap(widget);
+      };
+  GTK_WIDGET_GET_CLASS(wobj)->map_event =
+      [](GtkWidget* widget, GdkEventAny *p0) -> int {
+        const auto base = static_cast<GtkWidgetClass*>(
+            g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+        if (base && base->map_event)
+          return base->map_event(widget, p0);
+        return int();
+      };
+  GTK_WIDGET_GET_CLASS(wobj)->focus =
+      [](GtkWidget* widget, GtkDirectionType p0) -> gboolean {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->focus)
+      return base->focus(widget, p0);
+    return gboolean();
+  };
+  GTK_WIDGET_GET_CLASS(wobj)->event =
+      [](GtkWidget* widget, GdkEvent* p0) -> gboolean {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->event)
+      return base->event(widget, p0);
+    return gboolean();
+  };
+  GTK_WIDGET_GET_CLASS(wobj)->delete_event =
+      [](GtkWidget* widget, GdkEventAny* p0) -> gboolean {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->delete_event)
+      return base->delete_event(widget, p0);
+    return gboolean();
+  };
+  GTK_WIDGET_GET_CLASS(wobj)->destroy_event =
+      [](GtkWidget* widget, GdkEventAny* p0) -> gboolean {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->destroy_event)
+      return base->destroy_event(widget, p0);
+    return gboolean();
+  };
+  GTK_WIDGET_GET_CLASS(wobj)->window_state_event =
+      [](GtkWidget* widget, GdkEventWindowState* p0) -> gboolean {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->window_state_event)
+      return base->window_state_event(widget, p0);
+    return gboolean();
+  };
+  GTK_WIDGET_GET_CLASS(wobj)->configure_event =
+      [](GtkWidget* widget, GdkEventConfigure* p0) -> gboolean {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->configure_event)
+      return base->configure_event(widget, p0);
+    return gboolean();
+  };
+  GTK_WIDGET_GET_CLASS(wobj)->state_changed =
+      [](GtkWidget* widget, GtkStateType p0) {
+        const auto base = static_cast<GtkWidgetClass*>(
+            g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+        if (base && base->state_changed)
+          base->state_changed(widget, p0);
+      };
+  GTK_WIDGET_GET_CLASS(wobj)->visibility_notify_event =
+      [](GtkWidget* widget, GdkEventVisibility* p0) -> gboolean {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->visibility_notify_event)
+      return base->visibility_notify_event(widget, p0);
+    return gboolean();
+  };
+  GTK_WIDGET_GET_CLASS(wobj)->enter_notify_event =
+      [](GtkWidget* widget, GdkEventCrossing* p0) -> gboolean {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->enter_notify_event)
+      return base->enter_notify_event(widget, p0);
+    return gboolean();
+  };
+  GTK_WIDGET_GET_CLASS(wobj)->leave_notify_event =
+      [](GtkWidget* widget, GdkEventCrossing* p0) -> gboolean {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->leave_notify_event)
+      return base->leave_notify_event(widget, p0);
+    return gboolean();
+  };
+  GTK_WIDGET_GET_CLASS(wobj)->focus_in_event =
+      [](GtkWidget* widget, GdkEventFocus* p0) -> gboolean {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->focus_in_event)
+      return base->focus_in_event(widget, p0);
+    return gboolean();
+  };
+  GTK_WIDGET_GET_CLASS(wobj)->draw =
+      [](GtkWidget* widget, cairo_t* p0) -> gboolean {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->draw)
+      return base->draw(widget, p0);
+    return gboolean();
+  };
+  GTK_WIDGET_GET_CLASS(wobj)->button_press_event =
+      [](GtkWidget* widget, GdkEventButton* p0) -> gboolean {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->button_press_event)
+      return base->button_press_event(widget, p0);
+    return gboolean();
+  };
+  GTK_WIDGET_GET_CLASS(wobj)->button_release_event =
+      [](GtkWidget* widget, GdkEventButton* p0) -> gboolean {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->button_release_event)
+      return base->button_release_event(widget, p0);
+    return gboolean();
+  };
+  GTK_WIDGET_GET_CLASS(wobj)->motion_notify_event =
+      [](GtkWidget* widget, GdkEventMotion* p0) -> gboolean {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->motion_notify_event)
+      return base->motion_notify_event(widget, p0);
+    return gboolean();
+  };
+  GTK_WIDGET_GET_CLASS(wobj)->focus_in_event =
+      [](GtkWidget* widget, GdkEventFocus* p0) -> gboolean {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->focus_in_event)
+      return base->focus_in_event(widget, p0);
+    return gboolean();
+  };
+  GTK_WIDGET_GET_CLASS(wobj)->focus_out_event =
+      [](GtkWidget* widget, GdkEventFocus* p0) -> gboolean {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->focus_out_event)
+      return base->focus_out_event(widget, p0);
+    return gboolean();
+  };
+  GTK_WIDGET_GET_CLASS(wobj)->key_press_event =
+      [](GtkWidget* widget, GdkEventKey* p0) -> gboolean {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->key_press_event)
+      return base->key_press_event(widget, p0);
+    return gboolean();
+  };
+  GTK_WIDGET_GET_CLASS(wobj)->key_release_event =
+      [](GtkWidget* widget, GdkEventKey* p0) -> gboolean {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->key_release_event)
+      return base->key_release_event(widget, p0);
+    return gboolean();
+  };
+  GTK_WIDGET_GET_CLASS(wobj)->grab_notify =
+      [](GtkWidget* widget, gboolean p0) {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->grab_notify)
+      base->grab_notify(widget, p0);
+  };
+  GTK_WIDGET_GET_CLASS(wobj)->child_notify =
+      [](GtkWidget* widget, GParamSpec *p0) {
+    const auto base = static_cast<GtkWidgetClass*>(
+        g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(widget))));
+    if (base && base->child_notify)
+      base->child_notify(widget, p0);
+  };
+
+  G_OBJECT_GET_CLASS(window->gobj())->dispose =
+      [](GObject *obj) {
+        const auto base = static_cast<GObjectClass*>(
+            g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(obj))));
+        if (base && base->dispose)
+          base->dispose(obj);
+      };
+  GTK_WINDOW_GET_CLASS(window->gobj())->set_focus =
+      [](GtkWindow* window, GtkWidget* p0) {
+        const auto base = static_cast<GtkWindowClass*>(
+            g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(window))));
+        if (base && base->set_focus)
+          base->set_focus(window, p0);
+      };
+  GTK_WINDOW_GET_CLASS(window->gobj())->activate_focus =
+      [](GtkWindow* window) {
+        const auto base = static_cast<GtkWindowClass*>(
+            g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(window))));
+        if (base && base->activate_focus)
+          base->activate_focus(window);
+      };
+  GTK_WINDOW_GET_CLASS(window->gobj())->activate_default =
+      [](GtkWindow* window) {
+        const auto base = static_cast<GtkWindowClass*>(
+            g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(window))));
+        if (base && base->activate_default)
+          base->activate_default(window);
+      };
+  GTK_WINDOW_GET_CLASS(window->gobj())->keys_changed =
+      [](GtkWindow* window) {
+        const auto base = static_cast<GtkWindowClass*>(
+            g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(window))));
+        if (base && base->keys_changed)
+          base->keys_changed(window);
+      };
+  GTK_WINDOW_GET_CLASS(window->gobj())->enable_debugging =
+      [](GtkWindow* window, gboolean p0) -> gboolean {
+        const auto base = static_cast<GtkWindowClass*>(
+            g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(window))));
+        if (base && base->enable_debugging)
+          return base->enable_debugging(window, p0);
+        return gboolean();
+      };
+}

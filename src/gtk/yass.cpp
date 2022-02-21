@@ -138,9 +138,7 @@ YASSApp::YASSApp()
   ::g_set_application_name(kAppName);
 }
 
-YASSApp::~YASSApp() {
-  delete main_window_;
-}
+YASSApp::~YASSApp() = default;
 
 Glib::RefPtr<YASSApp> YASSApp::create() {
   return Glib::RefPtr<YASSApp>(new YASSApp());
