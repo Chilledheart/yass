@@ -10,8 +10,6 @@
 #include <gtkmm/button.h>
 #include <gtkmm/checkbutton.h>
 #include <gtkmm/entry.h>
-#include <gtkmm/grid.h>
-#include <gtkmm/hvbox.h>
 #include <gtkmm/label.h>
 #include <gtkmm/statusbar.h>
 
@@ -23,11 +21,7 @@ class YASSWindow : public Gtk::Window {
   YASSWindow();
   ~YASSWindow() override;
 
-  Gtk::VBox vbox_;
-
-  Gtk::HBox hbox_;
   // Left Panel
-  Gtk::VBox left_vbox_;
   Gtk::Button start_button_;
   Gtk::Button stop_button_;
 
@@ -35,8 +29,6 @@ class YASSWindow : public Gtk::Window {
   void OnStopButtonClicked();
 
   // Right Panel
-  Gtk::Grid right_panel_grid_;
-
   Gtk::Label serverhost_label_;
   Gtk::Label serverport_label_;
   Gtk::Label password_label_;

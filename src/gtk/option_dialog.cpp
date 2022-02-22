@@ -5,6 +5,9 @@
 
 #include <absl/flags/flag.h>
 
+#include <gtk/gtkbox.h>
+#include <gtk/gtkgrid.h>
+
 #include "config/config.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
@@ -21,20 +24,21 @@ OptionDialog::OptionDialog(const Glib::ustring& title, bool modal)
       cancel_button_("Cancel") {
   set_default_size(400, 240);
 
-  grid_.set_row_homogeneous(true);
-  grid_.set_column_homogeneous(true);
+  GtkGrid *grid = GTK_GRID(gtk_grid_new());
+  gtk_grid_set_row_homogeneous(grid, true);
+  gtk_grid_set_column_homogeneous(grid, true);
 
-  grid_.attach(connecttimeout_label_, 0, 0, 1, 1);
-  grid_.attach(tcpusertimeout_label_, 0, 1, 1, 1);
-  grid_.attach(lingertimeout_label_, 0, 2, 1, 1);
-  grid_.attach(sendbuffer_label_, 0, 3, 1, 1);
-  grid_.attach(recvbuffer_label_, 0, 4, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(connecttimeout_label_.gobj()), 0, 0, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(tcpusertimeout_label_.gobj()), 0, 1, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(lingertimeout_label_.gobj()), 0, 2, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(sendbuffer_label_.gobj()), 0, 3, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(recvbuffer_label_.gobj()), 0, 4, 1, 1);
 
-  grid_.attach(connecttimeout_, 1, 0, 1, 1);
-  grid_.attach(tcpusertimeout_, 1, 1, 1, 1);
-  grid_.attach(lingertimeout_, 1, 2, 1, 1);
-  grid_.attach(sendbuffer_, 1, 3, 1, 1);
-  grid_.attach(recvbuffer_, 1, 4, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(connecttimeout_.gobj()), 1, 0, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(tcpusertimeout_.gobj()), 1, 1, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(lingertimeout_.gobj()), 1, 2, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(sendbuffer_.gobj()), 1, 3, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(recvbuffer_.gobj()), 1, 4, 1, 1);
 
   okay_button_.signal_clicked().connect(
       sigc::mem_fun(*this, &OptionDialog::OnOkayButtonClicked));
@@ -42,10 +46,10 @@ OptionDialog::OptionDialog(const Glib::ustring& title, bool modal)
   cancel_button_.signal_clicked().connect(
       sigc::mem_fun(*this, &OptionDialog::OnCancelButtonClicked));
 
-  grid_.attach(okay_button_, 0, 5, 1, 1);
-  grid_.attach(cancel_button_, 1, 5, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(okay_button_.gobj()), 0, 5, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(cancel_button_.gobj()), 1, 5, 1, 1);
 
-  get_content_area()->add(grid_);
+  gtk_container_add(get_content_area()->Gtk::Container::gobj(), GTK_WIDGET(grid));
 
   LoadChanges();
 

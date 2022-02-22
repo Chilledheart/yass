@@ -8,7 +8,6 @@
 #include <gtkmm/button.h>
 #include <gtkmm/dialog.h>
 #include <gtkmm/entry.h>
-#include <gtkmm/grid.h>
 #include <gtkmm/label.h>
 
 class OptionDialog : public Gtk::Dialog {
@@ -21,8 +20,6 @@ class OptionDialog : public Gtk::Dialog {
  private:
   void LoadChanges();
   void OnSave();
-
-  Gtk::Grid grid_;
 
   Gtk::Label connecttimeout_label_;
   Gtk::Label tcpusertimeout_label_;

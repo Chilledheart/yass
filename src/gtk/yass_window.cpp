@@ -7,9 +7,12 @@
 #include <sstream>
 
 #include <absl/flags/flag.h>
+
 #include <gtkmm/aboutdialog.h>
 #include <gtkmm/messagedialog.h>
 
+#include <gtk/gtkgrid.h>
+#include <gtk/gtkbox.h>
 #include <gtk/gtkmenu.h>
 #include <gtk/gtkmenubar.h>
 #include <gtk/gtkmenuitem.h>
@@ -52,10 +55,7 @@ std::unique_ptr<T[], decltype(&g_free)> make_unique_ptr_gfree(T* p) {
 }  // namespace
 
 YASSWindow::YASSWindow()
-    : vbox_(false, 0),
-      hbox_(false, 20),
-      left_vbox_(false, 0),
-      start_button_("Start"),
+    : start_button_("Start"),
       stop_button_("Stop"),
       serverhost_label_("Server Host"),
       serverport_label_("Server Port"),
@@ -72,6 +72,11 @@ YASSWindow::YASSWindow()
   set_icon_name("yass");
 
   signal_hide().connect(sigc::mem_fun(*this, &YASSWindow::OnClose));
+
+  GtkBox *vbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
+  GtkBox *hbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 20));
+  GtkBox *left_box = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
+  GtkGrid* right_panel_grid = GTK_GRID(gtk_grid_new());
 
   // gtkmm's MenuBar/Menu/MenuItem is binded to model
   GtkWidget* menubar;
@@ -122,7 +127,7 @@ YASSWindow::YASSWindow()
   g_signal_connect(G_OBJECT(about_menu_item), "activate",
                    G_CALLBACK(about_callback), this);
 
-  gtk_box_pack_start(GTK_BOX(vbox_.gobj()), menubar, FALSE, FALSE, 0);
+  gtk_box_pack_start(vbox, menubar, FALSE, FALSE, 0);
 
   start_button_.signal_clicked().connect(
       sigc::mem_fun(*this, &YASSWindow::OnStartButtonClicked));
@@ -136,13 +141,13 @@ YASSWindow::YASSWindow()
   stop_button_.set_margin_top(30);
   stop_button_.set_margin_bottom(30);
 
-  left_vbox_.add(start_button_);
-  left_vbox_.add(stop_button_);
+  gtk_container_add(GTK_CONTAINER(left_box), GTK_WIDGET(start_button_.gobj()));
+  gtk_container_add(GTK_CONTAINER(left_box), GTK_WIDGET(stop_button_.gobj()));
 
-  left_vbox_.set_margin_start(15);
-  left_vbox_.set_margin_end(15);
+  gtk_widget_set_margin_start(GTK_WIDGET(left_box), 15);
+  gtk_widget_set_margin_end(GTK_WIDGET(left_box), 15);
 
-  hbox_.add(left_vbox_);
+  gtk_container_add(GTK_CONTAINER(hbox), GTK_WIDGET(left_box));
 
   static const char* const method_names[] = {
 #define XX(num, name, string) string,
@@ -157,14 +162,14 @@ YASSWindow::YASSWindow()
     gtk_combo_box_text_append_text(method_, method_names[i]);
   }
 
-  right_panel_grid_.attach(serverhost_label_, 0, 0, 1, 1);
-  right_panel_grid_.attach(serverport_label_, 0, 1, 1, 1);
-  right_panel_grid_.attach(password_label_, 0, 2, 1, 1);
-  right_panel_grid_.attach(method_label_, 0, 3, 1, 1);
-  right_panel_grid_.attach(localhost_label_, 0, 4, 1, 1);
-  right_panel_grid_.attach(localport_label_, 0, 5, 1, 1);
-  right_panel_grid_.attach(timeout_label_, 0, 6, 1, 1);
-  right_panel_grid_.attach(autostart_label_, 0, 7, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(serverhost_label_.gobj()), 0, 0, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(serverport_label_.gobj()), 0, 1, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(password_label_.gobj()), 0, 2, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(method_label_.gobj()), 0, 3, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(localhost_label_.gobj()), 0, 4, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(localport_label_.gobj()), 0, 5, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_label_.gobj()), 0, 6, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_label_.gobj()), 0, 7, 1, 1);
 
   autostart_.signal_clicked().connect(
       sigc::mem_fun(*this, &YASSWindow::OnCheckedAutoStart));
@@ -173,29 +178,30 @@ YASSWindow::YASSWindow()
 
   password_.set_visibility(false);
 
-  right_panel_grid_.attach(serverhost_, 1, 0, 1, 1);
-  right_panel_grid_.attach(serverport_, 1, 1, 1, 1);
-  right_panel_grid_.attach(password_, 1, 2, 1, 1);
-  gtk_grid_attach(right_panel_grid_.gobj(), GTK_WIDGET(method_), 1, 3, 1, 1);
-  right_panel_grid_.attach(localhost_, 1, 4, 1, 1);
-  right_panel_grid_.attach(localport_, 1, 5, 1, 1);
-  right_panel_grid_.attach(timeout_, 1, 6, 1, 1);
-  right_panel_grid_.attach(autostart_, 1, 7, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(serverhost_.gobj()), 1, 0, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(serverport_.gobj()), 1, 1, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(password_.gobj()), 1, 2, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(method_), 1, 3, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(localhost_.gobj()), 1, 4, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(localport_.gobj()), 1, 5, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_.gobj()), 1, 6, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_.gobj()), 1, 7, 1, 1);
 
-  right_panel_grid_.set_margin_top(10);
-  right_panel_grid_.set_margin_end(20);
+  gtk_widget_set_margin_start(GTK_WIDGET(right_panel_grid), 10);
+  gtk_widget_set_margin_end(GTK_WIDGET(right_panel_grid), 20);
 
-  hbox_.add(right_panel_grid_);
+  gtk_container_add(GTK_CONTAINER(hbox), GTK_WIDGET(right_panel_grid));
 
-  vbox_.pack_start(hbox_, true, false, 0);
+  gtk_box_pack_start(vbox, GTK_WIDGET(hbox), true, false, 0);
 
   status_bar_.remove_all_messages();
   status_bar_.push("READY");
-  vbox_.pack_start(status_bar_, true, false, 0);
+
+  gtk_box_pack_start(vbox, status_bar_.Gtk::Widget::gobj(), true, false, 0);
 
   Utils::DisableGtkRTTI(this);
 
-  gtk_container_add(Gtk::Container::gobj(), GTK_WIDGET(vbox_.gobj()));
+  gtk_container_add(Gtk::Container::gobj(), GTK_WIDGET(vbox));
 
   LoadChanges();
 
