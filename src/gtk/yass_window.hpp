@@ -7,13 +7,12 @@
 #include "glibmm/fake_typeid.hpp"
 
 #include <gtkmm/applicationwindow.h>
-#include <gtkmm/entry.h>
-#include <gtkmm/label.h>
 
 #include <gtk/gtkbutton.h>
 #include <gtk/gtkcheckbutton.h>
 #include <gtk/gtkcombobox.h>
 #include <gtk/gtkcomboboxtext.h>
+#include <gtk/gtkentry.h>
 #include <gtk/gtkstatusbar.h>
 
 class YASSWindow : public Gtk::Window {
@@ -29,22 +28,13 @@ class YASSWindow : public Gtk::Window {
   void OnStopButtonClicked();
 
   // Right Panel
-  Gtk::Label serverhost_label_;
-  Gtk::Label serverport_label_;
-  Gtk::Label password_label_;
-  Gtk::Label method_label_;
-  Gtk::Label localhost_label_;
-  Gtk::Label localport_label_;
-  Gtk::Label timeout_label_;
-  Gtk::Label autostart_label_;
-
-  Gtk::Entry serverhost_;
-  Gtk::Entry serverport_;
-  Gtk::Entry password_;
+  GtkEntry* server_host_;
+  GtkEntry* server_port_;
+  GtkEntry* password_;
   GtkComboBoxText* method_;
-  Gtk::Entry localhost_;
-  Gtk::Entry localport_;
-  Gtk::Entry timeout_;
+  GtkEntry* local_host_;
+  GtkEntry* local_port_;
+  GtkEntry* timeout_;
   GtkCheckButton* autostart_;
 
   void OnCheckedAutoStart();

@@ -6,10 +6,9 @@
 #include "glibmm/fake_typeid.hpp"
 
 #include <gtkmm/dialog.h>
-#include <gtkmm/entry.h>
-#include <gtkmm/label.h>
 
 #include <gtk/gtkbutton.h>
+#include <gtk/gtkentry.h>
 
 class OptionDialog : public Gtk::Dialog {
  public:
@@ -22,17 +21,11 @@ class OptionDialog : public Gtk::Dialog {
   void LoadChanges();
   void OnSave();
 
-  Gtk::Label connecttimeout_label_;
-  Gtk::Label tcpusertimeout_label_;
-  Gtk::Label lingertimeout_label_;
-  Gtk::Label sendbuffer_label_;
-  Gtk::Label recvbuffer_label_;
-
-  Gtk::Entry connecttimeout_;
-  Gtk::Entry tcpusertimeout_;
-  Gtk::Entry lingertimeout_;
-  Gtk::Entry sendbuffer_;
-  Gtk::Entry recvbuffer_;
+  GtkEntry* connect_timeout_;
+  GtkEntry* tcp_user_timeout_;
+  GtkEntry* so_linger_timeout_;
+  GtkEntry* so_snd_buffer_;
+  GtkEntry* so_rcv_buffer_;
 
   GtkButton* okay_button_;
   GtkButton* cancel_button_;

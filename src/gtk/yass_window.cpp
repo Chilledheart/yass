@@ -12,6 +12,7 @@
 #include <gtk/gtkbox.h>
 #include <gtk/gtkdialog.h>
 #include <gtk/gtkgrid.h>
+#include <gtk/gtklabel.h>
 #include <gtk/gtkmenu.h>
 #include <gtk/gtkmenubar.h>
 #include <gtk/gtkmenuitem.h>
@@ -40,27 +41,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
       << " " << *c;
 }
 
-namespace {
-template <typename Handler, void (Handler::*HandlerFunc)()>
-struct GtkHandlerProxy {
-  static void Handle(gpointer p) { (static_cast<Handler*>(p)->*HandlerFunc)(); }
-};
-
-template <typename T>
-std::unique_ptr<T[], decltype(&g_free)> make_unique_ptr_gfree(T* p) {
-  return std::unique_ptr<T[], decltype(&g_free)>(p, &g_free);
-}
-}  // namespace
-
-YASSWindow::YASSWindow()
-    : serverhost_label_("Server Host"),
-      serverport_label_("Server Port"),
-      password_label_("Password"),
-      method_label_("Cipher/Method"),
-      localhost_label_("Local Host"),
-      localport_label_("Local Port"),
-      timeout_label_("Timeout"),
-      autostart_label_("Auto Start") {
+YASSWindow::YASSWindow() {
   set_title(YASS_APP_PRODUCT_NAME);
   set_default_size(450, 390);
   set_position(Gtk::WIN_POS_CENTER);
@@ -103,13 +84,11 @@ YASSWindow::YASSWindow()
   gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), exit_menu_item);
   gtk_menu_shell_append(GTK_MENU_SHELL(menubar), file_menu_item);
 
-  auto option_callback =
-      &GtkHandlerProxy<YASSWindow, &YASSWindow::OnOption>::Handle;
+  auto option_callback = []() { window->OnOption(); };
   g_signal_connect(G_OBJECT(option_menu_item), "activate",
                    G_CALLBACK(option_callback), nullptr);
 
-  auto exit_callback =
-      &GtkHandlerProxy<YASSWindow, &YASSWindow::OnClose>::Handle;
+  auto exit_callback = []() { window->OnClose(); };
   g_signal_connect(G_OBJECT(exit_menu_item), "activate",
                    G_CALLBACK(exit_callback), nullptr);
 
@@ -121,8 +100,7 @@ YASSWindow::YASSWindow()
   gtk_menu_shell_append(GTK_MENU_SHELL(help_menu), about_menu_item);
   gtk_menu_shell_append(GTK_MENU_SHELL(menubar), help_menu_item);
 
-  auto about_callback =
-      &GtkHandlerProxy<YASSWindow, &YASSWindow::OnAbout>::Handle;
+  auto about_callback = []() { window->OnAbout(); };
   g_signal_connect(G_OBJECT(about_menu_item), "activate",
                    G_CALLBACK(about_callback), this);
 
@@ -158,6 +136,27 @@ YASSWindow::YASSWindow()
 
   gtk_container_add(GTK_CONTAINER(hbox), GTK_WIDGET(left_box));
 
+  auto server_host_label_ = gtk_label_new("Server Host");
+  auto server_port_label_ = gtk_label_new("Server Port");
+  auto password_label_ = gtk_label_new("Password");
+  auto method_label_ = gtk_label_new("Cipher/Method");
+  auto local_host_label_ = gtk_label_new("Local Host");
+  auto local_port_label_ = gtk_label_new("Local Port");
+  auto timeout_label_ = gtk_label_new("Timeout");
+  auto autostart_label_ = gtk_label_new("Auto Start");
+
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_host_label_), 0, 0, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_port_label_), 0, 1, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(password_label_), 0, 2, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(method_label_), 0, 3, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_host_label_), 0, 4, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_port_label_), 0, 5, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_label_), 0, 6, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_label_), 0, 7, 1, 1);
+
+  server_host_ = GTK_ENTRY(gtk_entry_new());
+  server_port_ = GTK_ENTRY(gtk_entry_new());
+  password_ = GTK_ENTRY(gtk_entry_new());
   static const char* const method_names[] = {
 #define XX(num, name, string) string,
       CIPHER_METHOD_MAP(XX)
@@ -170,15 +169,9 @@ YASSWindow::YASSWindow()
        ++i) {
     gtk_combo_box_text_append_text(method_, method_names[i]);
   }
-
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(serverhost_label_.gobj()), 0, 0, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(serverport_label_.gobj()), 0, 1, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(password_label_.gobj()), 0, 2, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(method_label_.gobj()), 0, 3, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(localhost_label_.gobj()), 0, 4, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(localport_label_.gobj()), 0, 5, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_label_.gobj()), 0, 6, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_label_.gobj()), 0, 7, 1, 1);
+  local_host_ = GTK_ENTRY(gtk_entry_new());
+  local_port_ = GTK_ENTRY(gtk_entry_new());
+  timeout_ = GTK_ENTRY(gtk_entry_new());
 
   autostart_ = GTK_CHECK_BUTTON(gtk_check_button_new());
 
@@ -190,15 +183,16 @@ YASSWindow::YASSWindow()
   g_signal_connect(G_OBJECT(autostart_), "clicked",
                    G_CALLBACK(checked_auto_start_callback), nullptr);
 
-  password_.set_visibility(false);
 
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(serverhost_.gobj()), 1, 0, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(serverport_.gobj()), 1, 1, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(password_.gobj()), 1, 2, 1, 1);
+  gtk_entry_set_visibility(password_, false);
+
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_host_), 1, 0, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_port_), 1, 1, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(password_), 1, 2, 1, 1);
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(method_), 1, 3, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(localhost_.gobj()), 1, 4, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(localport_.gobj()), 1, 5, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_.gobj()), 1, 6, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_host_), 1, 4, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_port_), 1, 5, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_), 1, 6, 1, 1);
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_), 1, 7, 1, 1);
 
   gtk_widget_set_margin_start(GTK_WIDGET(right_panel_grid), 10);
@@ -241,15 +235,15 @@ void YASSWindow::OnCheckedAutoStart() {
 }
 
 std::string YASSWindow::GetServerHost() {
-  return serverhost_.get_text();
+  return gtk_entry_get_text(server_host_);
 }
 
 std::string YASSWindow::GetServerPort() {
-  return serverport_.get_text();
+  return gtk_entry_get_text(server_port_);
 }
 
 std::string YASSWindow::GetPassword() {
-  return password_.get_text();
+  return gtk_entry_get_text(password_);
 }
 
 std::string YASSWindow::GetMethod() {
@@ -259,40 +253,41 @@ std::string YASSWindow::GetMethod() {
 }
 
 std::string YASSWindow::GetLocalHost() {
-  return localhost_.get_text();
+  return gtk_entry_get_text(local_host_);
 }
 
 std::string YASSWindow::GetLocalPort() {
-  return localport_.get_text();
+  return gtk_entry_get_text(local_port_);
 }
 
 std::string YASSWindow::GetTimeout() {
-  return timeout_.get_text();
+  return gtk_entry_get_text(timeout_);
 }
 
 void YASSWindow::Started() {
   UpdateStatusBar();
-  serverhost_.set_sensitive(false);
-  serverport_.set_sensitive(false);
-  password_.set_sensitive(false);
+  gtk_widget_set_sensitive(GTK_WIDGET(server_host_), false);
+  gtk_widget_set_sensitive(GTK_WIDGET(server_port_), false);
+  gtk_widget_set_sensitive(GTK_WIDGET(password_), false);
   gtk_widget_set_sensitive(GTK_WIDGET(method_), false);
-  localhost_.set_sensitive(false);
-  localport_.set_sensitive(false);
-  timeout_.set_sensitive(false);
+  gtk_widget_set_sensitive(GTK_WIDGET(local_host_), false);
+  gtk_widget_set_sensitive(GTK_WIDGET(local_port_), false);
+  gtk_widget_set_sensitive(GTK_WIDGET(timeout_), false);
   gtk_widget_set_sensitive(GTK_WIDGET(autostart_), false);
   gtk_widget_set_sensitive(GTK_WIDGET(stop_button_), true);
 }
 
 void YASSWindow::StartFailed() {
   UpdateStatusBar();
-  serverhost_.set_sensitive(true);
-  serverport_.set_sensitive(true);
-  password_.set_sensitive(true);
+  gtk_widget_set_sensitive(GTK_WIDGET(server_host_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(server_port_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(password_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(method_), true);
-  localhost_.set_sensitive(true);
-  localport_.set_sensitive(true);
-  timeout_.set_sensitive(true);
+  gtk_widget_set_sensitive(GTK_WIDGET(local_host_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(local_port_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(timeout_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(autostart_), true);
+
   gtk_widget_set_sensitive(GTK_WIDGET(start_button_), true);
 
   GtkDialog* alert_dialog = GTK_DIALOG(gtk_message_dialog_new(
@@ -305,28 +300,36 @@ void YASSWindow::StartFailed() {
 
 void YASSWindow::Stopped() {
   UpdateStatusBar();
-  serverhost_.set_sensitive(true);
-  serverport_.set_sensitive(true);
-  password_.set_sensitive(true);
+  gtk_widget_set_sensitive(GTK_WIDGET(server_host_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(server_port_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(password_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(method_), true);
-  localhost_.set_sensitive(true);
-  localport_.set_sensitive(true);
-  timeout_.set_sensitive(true);
+  gtk_widget_set_sensitive(GTK_WIDGET(local_host_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(local_port_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(timeout_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(autostart_), true);
+
   gtk_widget_set_sensitive(GTK_WIDGET(start_button_), true);
 }
 
 void YASSWindow::LoadChanges() {
-  serverhost_.set_text(absl::GetFlag(FLAGS_server_host));
-  serverport_.set_text(std::to_string(absl::GetFlag(FLAGS_server_port)));
-  password_.set_text(absl::GetFlag(FLAGS_password));
+  auto server_host_str = absl::GetFlag(FLAGS_server_host);
+  auto server_port_str = std::to_string(absl::GetFlag(FLAGS_server_port));
+  auto password_str = absl::GetFlag(FLAGS_password);
+  int32_t cipher_method = absl::GetFlag(FLAGS_cipher_method);
+  auto local_host_str = absl::GetFlag(FLAGS_local_host);
+  auto local_port_str = std::to_string(absl::GetFlag(FLAGS_local_port));
+  auto timeout_str = std::to_string(absl::GetFlag(FLAGS_connect_timeout));
+
+  gtk_entry_set_text(server_host_, server_host_str.c_str());
+  gtk_entry_set_text(server_port_, server_port_str.c_str());
+  gtk_entry_set_text(password_, password_str.c_str());
 
   static const int method_ids[] = {
 #define XX(num, name, string) num,
       CIPHER_METHOD_MAP(XX)
 #undef XX
   };
-  int32_t cipher_method = absl::GetFlag(FLAGS_cipher_method);
   uint32_t i;
   for (i = 1; i < sizeof(method_ids) / sizeof(method_ids[0]); ++i) {
     if (cipher_method == method_ids[i])
@@ -335,9 +338,9 @@ void YASSWindow::LoadChanges() {
 
   gtk_combo_box_set_active(GTK_COMBO_BOX(method_), i - 1);
 
-  localhost_.set_text(absl::GetFlag(FLAGS_local_host));
-  localport_.set_text(std::to_string(absl::GetFlag(FLAGS_local_port)));
-  timeout_.set_text(std::to_string(absl::GetFlag(FLAGS_connect_timeout)));
+  gtk_entry_set_text(local_host_, local_host_str.c_str());
+  gtk_entry_set_text(local_port_, local_port_str.c_str());
+  gtk_entry_set_text(timeout_, timeout_str.c_str());
 }
 
 void YASSWindow::UpdateStatusBar() {
