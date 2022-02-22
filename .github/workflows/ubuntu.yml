@@ -269,7 +269,7 @@ jobs:
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get update -qq
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get install -y dpkg-cross pkg-config gcc-$HOST_GNU_TYPE g++-$HOST_GNU_TYPE libc6:${{ env.HOST_ARCH }} linux-libc-dev:${{ env.HOST_ARCH }}
+            apt-get install -y dpkg-cross pkg-config gcc-$HOST_GNU_TYPE g++-$HOST_GNU_TYPE libc6:${{ env.HOST_ARCH }} libstdc++6:${{ env.HOST_ARCH }} linux-libc-dev:${{ env.HOST_ARCH }}
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             ln -sf /usr/share/pkg-config-crosswrapper /usr/bin/${HOST_GNU_TYPE}-pkg-config
       - name: Populate sysroot (standard toolchain)
@@ -316,10 +316,14 @@ jobs:
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -f -y $PWD/golang*.deb
       - name: Set nogui build profile (armel/mipsel/mips64el only)
-        if: ${{env.HOST_ARCH == 'armel' ||  env.HOST_ARCH == 'mipsel' || env.HOST_ARCH == 'mips64el' }}
+        if: ${{ env.HOST_ARCH == 'armel' ||  env.HOST_ARCH == 'mipsel' || env.HOST_ARCH == 'mips64el' }}
         run: |
-          echo "DEB_BUILD_PROFILES=nogui" >> $GITHUB_ENV
+          echo "DEB_BUILD_PROFILES=nogui ${{ env.DEB_BUILD_PROFILES}}" >> $GITHUB_ENV
           echo "APT_DEB_BUILD_PROFILES=-o Apt::Build-Profiles=nogui" >> $GITHUB_ENV
+      - name: Set nocxxruntime build profile (xenial only)
+        if: ${{ env.HOST_DISTRO == 'xenial' }}
+        run: |
+          echo "DEB_BUILD_PROFILES=nocxxruntime ${{ env.DEB_BUILD_PROFILES}}" >> $GITHUB_ENV
       - name: Build deb (source)
         run: |
           export DEB_BUILD_PROFILES
