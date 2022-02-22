@@ -5,10 +5,11 @@
 
 #include "glibmm/fake_typeid.hpp"
 
-#include <gtkmm/button.h>
 #include <gtkmm/dialog.h>
 #include <gtkmm/entry.h>
 #include <gtkmm/label.h>
+
+#include <gtk/gtkbutton.h>
 
 class OptionDialog : public Gtk::Dialog {
  public:
@@ -33,8 +34,8 @@ class OptionDialog : public Gtk::Dialog {
   Gtk::Entry sendbuffer_;
   Gtk::Entry recvbuffer_;
 
-  Gtk::Button okay_button_;
-  Gtk::Button cancel_button_;
+  GtkButton* okay_button_;
+  GtkButton* cancel_button_;
 };  // OptionDialog
 
 #endif  // OPTION_DIALOG

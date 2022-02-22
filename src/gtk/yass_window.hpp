@@ -7,14 +7,14 @@
 #include "glibmm/fake_typeid.hpp"
 
 #include <gtkmm/applicationwindow.h>
-#include <gtkmm/button.h>
-#include <gtkmm/checkbutton.h>
 #include <gtkmm/entry.h>
 #include <gtkmm/label.h>
-#include <gtkmm/statusbar.h>
 
+#include <gtk/gtkbutton.h>
+#include <gtk/gtkcheckbutton.h>
 #include <gtk/gtkcombobox.h>
 #include <gtk/gtkcomboboxtext.h>
+#include <gtk/gtkstatusbar.h>
 
 class YASSWindow : public Gtk::Window {
  public:
@@ -22,8 +22,8 @@ class YASSWindow : public Gtk::Window {
   ~YASSWindow() override;
 
   // Left Panel
-  Gtk::Button start_button_;
-  Gtk::Button stop_button_;
+  GtkButton* start_button_;
+  GtkButton* stop_button_;
 
   void OnStartButtonClicked();
   void OnStopButtonClicked();
@@ -45,11 +45,11 @@ class YASSWindow : public Gtk::Window {
   Gtk::Entry localhost_;
   Gtk::Entry localport_;
   Gtk::Entry timeout_;
-  Gtk::CheckButton autostart_;
+  GtkCheckButton* autostart_;
 
   void OnCheckedAutoStart();
 
-  Gtk::Statusbar status_bar_;
+  GtkStatusbar* status_bar_;
 
  public:
   std::string GetServerHost();

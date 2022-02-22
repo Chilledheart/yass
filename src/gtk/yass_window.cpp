@@ -24,8 +24,6 @@
 #include "gtk/yass.hpp"
 #include "version.h"
 
-static const char* kMainFrameName = "YetAnotherShadowSocket";
-
 static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   if (bytes < 1024) {
     *ss << bytes << " B";
@@ -55,9 +53,7 @@ std::unique_ptr<T[], decltype(&g_free)> make_unique_ptr_gfree(T* p) {
 }  // namespace
 
 YASSWindow::YASSWindow()
-    : start_button_("Start"),
-      stop_button_("Stop"),
-      serverhost_label_("Server Host"),
+    : serverhost_label_("Server Host"),
       serverport_label_("Server Port"),
       password_label_("Password"),
       method_label_("Cipher/Method"),
@@ -65,7 +61,7 @@ YASSWindow::YASSWindow()
       localport_label_("Local Port"),
       timeout_label_("Timeout"),
       autostart_label_("Auto Start") {
-  set_title(kMainFrameName);
+  set_title(YASS_APP_PRODUCT_NAME);
   set_default_size(450, 390);
   set_position(Gtk::WIN_POS_CENTER);
   set_resizable(false);
@@ -73,6 +69,9 @@ YASSWindow::YASSWindow()
 
   signal_hide().connect(sigc::mem_fun(*this, &YASSWindow::OnClose));
 
+  static YASSWindow* window = this;
+
+  // vbox, hbox
   GtkBox *vbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
   GtkBox *hbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 20));
   GtkBox *left_box = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
@@ -129,20 +128,30 @@ YASSWindow::YASSWindow()
 
   gtk_box_pack_start(vbox, menubar, FALSE, FALSE, 0);
 
-  start_button_.signal_clicked().connect(
-      sigc::mem_fun(*this, &YASSWindow::OnStartButtonClicked));
-  stop_button_.signal_clicked().connect(
-      sigc::mem_fun(*this, &YASSWindow::OnStopButtonClicked));
+  start_button_ = GTK_BUTTON(gtk_button_new());
+  gtk_button_set_label(start_button_, "Start");
+  gtk_widget_set_margin_top(GTK_WIDGET(start_button_), 30);
+  gtk_widget_set_margin_bottom(GTK_WIDGET(start_button_), 30);
 
-  stop_button_.set_sensitive(false);
+  stop_button_ = GTK_BUTTON(gtk_button_new());
+  gtk_button_set_label(stop_button_, "Stop");
+  gtk_widget_set_margin_top(GTK_WIDGET(stop_button_), 30);
+  gtk_widget_set_margin_bottom(GTK_WIDGET(stop_button_), 30);
 
-  start_button_.set_margin_top(30);
-  start_button_.set_margin_bottom(30);
-  stop_button_.set_margin_top(30);
-  stop_button_.set_margin_bottom(30);
+  auto start_callback = []() { window->OnStartButtonClicked(); };
 
-  gtk_container_add(GTK_CONTAINER(left_box), GTK_WIDGET(start_button_.gobj()));
-  gtk_container_add(GTK_CONTAINER(left_box), GTK_WIDGET(stop_button_.gobj()));
+  g_signal_connect(G_OBJECT(start_button_), "clicked",
+                   G_CALLBACK(start_callback), nullptr);
+
+  auto stop_callback = []() { window->OnStopButtonClicked(); };
+
+  g_signal_connect(G_OBJECT(stop_button_), "clicked",
+                   G_CALLBACK(stop_callback), nullptr);
+
+  gtk_widget_set_sensitive(GTK_WIDGET(stop_button_), false);
+
+  gtk_container_add(GTK_CONTAINER(left_box), GTK_WIDGET(start_button_));
+  gtk_container_add(GTK_CONTAINER(left_box), GTK_WIDGET(stop_button_));
 
   gtk_widget_set_margin_start(GTK_WIDGET(left_box), 15);
   gtk_widget_set_margin_end(GTK_WIDGET(left_box), 15);
@@ -171,10 +180,15 @@ YASSWindow::YASSWindow()
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_label_.gobj()), 0, 6, 1, 1);
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_label_.gobj()), 0, 7, 1, 1);
 
-  autostart_.signal_clicked().connect(
-      sigc::mem_fun(*this, &YASSWindow::OnCheckedAutoStart));
+  autostart_ = GTK_CHECK_BUTTON(gtk_check_button_new());
 
-  autostart_.set_active(Utils::GetAutoStart());
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(autostart_),
+                               Utils::GetAutoStart());
+
+  auto checked_auto_start_callback = []() { window->OnCheckedAutoStart(); };
+
+  g_signal_connect(G_OBJECT(autostart_), "clicked",
+                   G_CALLBACK(checked_auto_start_callback), nullptr);
 
   password_.set_visibility(false);
 
@@ -185,7 +199,7 @@ YASSWindow::YASSWindow()
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(localhost_.gobj()), 1, 4, 1, 1);
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(localport_.gobj()), 1, 5, 1, 1);
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_.gobj()), 1, 6, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_.gobj()), 1, 7, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_), 1, 7, 1, 1);
 
   gtk_widget_set_margin_start(GTK_WIDGET(right_panel_grid), 10);
   gtk_widget_set_margin_end(GTK_WIDGET(right_panel_grid), 20);
@@ -194,10 +208,11 @@ YASSWindow::YASSWindow()
 
   gtk_box_pack_start(vbox, GTK_WIDGET(hbox), true, false, 0);
 
-  status_bar_.remove_all_messages();
-  status_bar_.push("READY");
+  status_bar_ = GTK_STATUSBAR(gtk_statusbar_new());
+  gtk_statusbar_remove_all(status_bar_, 0);
+  gtk_statusbar_push(status_bar_, 0, "READY");
 
-  gtk_box_pack_start(vbox, status_bar_.Gtk::Widget::gobj(), true, false, 0);
+  gtk_box_pack_start(vbox, GTK_WIDGET(status_bar_), true, false, 0);
 
   Utils::DisableGtkRTTI(this);
 
@@ -211,17 +226,18 @@ YASSWindow::YASSWindow()
 YASSWindow::~YASSWindow() = default;
 
 void YASSWindow::OnStartButtonClicked() {
-  start_button_.set_sensitive(false);
+  gtk_widget_set_sensitive(GTK_WIDGET(start_button_), false);
   mApp->OnStart();
 }
 
 void YASSWindow::OnStopButtonClicked() {
-  stop_button_.set_sensitive(false);
+  gtk_widget_set_sensitive(GTK_WIDGET(stop_button_), false);
   mApp->OnStop();
 }
 
 void YASSWindow::OnCheckedAutoStart() {
-  Utils::EnableAutoStart(autostart_.get_active());
+  Utils::EnableAutoStart(
+      gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(autostart_)));
 }
 
 std::string YASSWindow::GetServerHost() {
@@ -263,8 +279,8 @@ void YASSWindow::Started() {
   localhost_.set_sensitive(false);
   localport_.set_sensitive(false);
   timeout_.set_sensitive(false);
-  autostart_.set_sensitive(false);
-  stop_button_.set_sensitive(true);
+  gtk_widget_set_sensitive(GTK_WIDGET(autostart_), false);
+  gtk_widget_set_sensitive(GTK_WIDGET(stop_button_), true);
 }
 
 void YASSWindow::StartFailed() {
@@ -276,8 +292,8 @@ void YASSWindow::StartFailed() {
   localhost_.set_sensitive(true);
   localport_.set_sensitive(true);
   timeout_.set_sensitive(true);
-  autostart_.set_sensitive(true);
-  start_button_.set_sensitive(true);
+  gtk_widget_set_sensitive(GTK_WIDGET(autostart_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(start_button_), true);
 
   GtkDialog* alert_dialog = GTK_DIALOG(gtk_message_dialog_new(
       Gtk::Window::gobj(), GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING,
@@ -296,8 +312,8 @@ void YASSWindow::Stopped() {
   localhost_.set_sensitive(true);
   localport_.set_sensitive(true);
   timeout_.set_sensitive(true);
-  autostart_.set_sensitive(true);
-  start_button_.set_sensitive(true);
+  gtk_widget_set_sensitive(GTK_WIDGET(autostart_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(start_button_), true);
 }
 
 void YASSWindow::LoadChanges() {
@@ -348,8 +364,8 @@ void YASSWindow::UpdateStatusBar() {
   humanReadableByteCountBin(&ss, tx_rate_);
   ss << "/s";
 
-  status_bar_.remove_all_messages();
-  status_bar_.push(ss.str());
+  gtk_statusbar_remove_all(status_bar_, 0);
+  gtk_statusbar_push(status_bar_, 0, ss.str().c_str());
 }
 
 void YASSWindow::OnOption() {

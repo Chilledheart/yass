@@ -19,10 +19,10 @@ OptionDialog::OptionDialog(const Glib::ustring& title, bool modal)
       tcpusertimeout_label_("TCP User Timeout"),
       lingertimeout_label_("TCP Linger Timeout"),
       sendbuffer_label_("TCP Send Buffer"),
-      recvbuffer_label_("TCP Receive Buffer"),
-      okay_button_("Okay"),
-      cancel_button_("Cancel") {
+      recvbuffer_label_("TCP Receive Buffer") {
   set_default_size(400, 240);
+
+  static OptionDialog* window = this;
 
   GtkGrid *grid = GTK_GRID(gtk_grid_new());
   gtk_grid_set_row_homogeneous(grid, true);
@@ -40,14 +40,24 @@ OptionDialog::OptionDialog(const Glib::ustring& title, bool modal)
   gtk_grid_attach(grid, GTK_WIDGET(sendbuffer_.gobj()), 1, 3, 1, 1);
   gtk_grid_attach(grid, GTK_WIDGET(recvbuffer_.gobj()), 1, 4, 1, 1);
 
-  okay_button_.signal_clicked().connect(
-      sigc::mem_fun(*this, &OptionDialog::OnOkayButtonClicked));
+  okay_button_ = GTK_BUTTON(gtk_button_new());
+  gtk_button_set_label(okay_button_, "Okay");
 
-  cancel_button_.signal_clicked().connect(
-      sigc::mem_fun(*this, &OptionDialog::OnCancelButtonClicked));
+  cancel_button_ = GTK_BUTTON(gtk_button_new());
+  gtk_button_set_label(cancel_button_, "Cancel");
 
-  gtk_grid_attach(grid, GTK_WIDGET(okay_button_.gobj()), 0, 5, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(cancel_button_.gobj()), 1, 5, 1, 1);
+  auto okay_callback = []() { window->OnOkayButtonClicked(); };
+
+  g_signal_connect(G_OBJECT(okay_button_), "clicked",
+                   G_CALLBACK(okay_callback), nullptr);
+
+  auto cancel_callback = []() { window->OnCancelButtonClicked(); };
+
+  g_signal_connect(G_OBJECT(cancel_button_), "clicked",
+                   G_CALLBACK(cancel_callback), nullptr);
+
+  gtk_grid_attach(grid, GTK_WIDGET(okay_button_), 0, 5, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(cancel_button_), 1, 5, 1, 1);
 
   gtk_container_add(get_content_area()->Gtk::Container::gobj(), GTK_WIDGET(grid));
 
