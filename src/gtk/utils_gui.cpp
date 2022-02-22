@@ -248,6 +248,11 @@ bool Dispatcher::ReadCallback() {
   return G_SOURCE_CONTINUE;
 }
 
+#if GLIB_VERSION_MIN_REQUIRED >= (G_ENCODE_VERSION(2, 50))
+#define GLIB_HAS_STRUCTURE_LOG
+#endif
+
+#ifdef GLIB_HAS_STRUCTURE_LOG
 // A few definitions of macros that don't generate much code. These are used
 // by LOG() and LOG_IF, etc. Since these are used all over our code, it's
 // better to have compact code for these operations.
@@ -318,6 +323,8 @@ static GLogWriterOutput GLibLogWriter(GLogLevelFlags log_level,
   return G_LOG_WRITER_HANDLED;
 }
 
+#endif // GLIB_HAS_STRUCTURE_LOG
+
 static void GLibLogHandler(const gchar* log_domain,
                            GLogLevelFlags log_level,
                            const gchar* message,
@@ -360,6 +367,8 @@ void SetUpGLibLogHandler() {
         GLibLogHandler, nullptr);
   }
 
+#ifdef GLIB_HAS_STRUCTURE_LOG
   // Register GLib-handled structure logging to go through our logging system.
   g_log_set_writer_func(GLibLogWriter, nullptr, nullptr);
+#endif // GLIB_HAS_STRUCTURE_LOG
 }
