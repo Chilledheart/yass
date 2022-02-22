@@ -3,8 +3,6 @@
 #ifndef YASS_APP
 #define YASS_APP
 
-#include "glibmm/fake_typeid.hpp"
-
 #include <memory>
 #include <queue>
 

@@ -16,7 +16,6 @@ class Utils {
  public:
   static bool GetAutoStart();
   static void EnableAutoStart(bool on);
-  static void DisableGtkRTTI(Gtk::Window *window);
 };
 
 template <typename T>
