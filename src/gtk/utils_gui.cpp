@@ -15,6 +15,11 @@
 
 #include "core/cxx17_backports.hpp"
 
+// Available in 2.58
+#ifndef G_SOURCE_FUNC
+#define G_SOURCE_FUNC(f) ((GSourceFunc) (void (*)(void)) (f))
+#endif
+
 namespace {
 
 std::string ExpandUser(const std::string& file_path) {

@@ -76,22 +76,6 @@ OptionDialog::OptionDialog(const std::string& title,
   LoadChanges();
 
   gtk_widget_show_all(GTK_WIDGET(gtk_dialog_get_content_area(impl_)));
-
-  GTK_DIALOG_GET_CLASS(impl_)->response =
-      [](GtkDialog* dialog, gint p0) {
-        const auto base = static_cast<GtkDialogClass*>(
-            g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(dialog))));
-        if (base && base->response)
-          base->response(dialog, p0);
-      };
-
-  GTK_DIALOG_GET_CLASS(impl_)->close =
-      [](GtkDialog* dialog) {
-        const auto base = static_cast<GtkDialogClass*>(
-            g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(dialog))));
-        if (base && base->close)
-          base->close(dialog);
-      };
 }
 
 OptionDialog::~OptionDialog() {

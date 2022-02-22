@@ -8,10 +8,6 @@
 #include <memory>
 #include <string>
 
-namespace Gtk {
-class Window;
-} // namespace Gtk
-
 class Utils {
  public:
   static bool GetAutoStart();
