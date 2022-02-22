@@ -13,6 +13,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "core/cxx17_backports.hpp"
+
 #include "glibmm/fake_typeid.hpp"
 
 #include <gtkmm/window.h>
@@ -773,7 +775,7 @@ bool Dispatcher::Init(std::function<void()> callback) {
     return self->ReadCallback();
   };
 
-  g_source_set_callback(source_, (GSourceFunc)(GIOFunc)read_callback, this,
+  g_source_set_callback(source_, G_SOURCE_FUNC((GIOFunc)read_callback), this,
                         nullptr);
   g_source_set_name(source_, "Dispatcher");
   g_source_attach(source_, nullptr);
@@ -844,4 +846,120 @@ bool Dispatcher::ReadCallback() {
   callback_();
 
   return G_SOURCE_CONTINUE;
+}
+
+// A few definitions of macros that don't generate much code. These are used
+// by LOG() and LOG_IF, etc. Since these are used all over our code, it's
+// better to have compact code for these operations.
+#define GLIB_LOGGING_EX_INFO(ClassName, ...) \
+  ClassName(file, atoi(line), LOGGING_INFO, ##__VA_ARGS__)
+#define GLIB_LOGGING_EX_WARNING(ClassName, ...) \
+  ClassName(file, atoi(line), LOGGING_WARNING, ##__VA_ARGS__)
+#define GLIB_LOGGING_EX_ERROR(ClassName, ...) \
+  ClassName(file, atoi(line), LOGGING_ERROR, ##__VA_ARGS__)
+#define GLIB_LOGGING_EX_FATAL(ClassName, ...) \
+  ClassName(file, atoi(line), LOGGING_FATAL, ##__VA_ARGS__)
+#define GLIB_LOGGING_EX_DFATAL(ClassName, ...) \
+  ClassName(file, atoi(line), LOGGING_DFATAL, ##__VA_ARGS__)
+#define GLIB_LOGGING_EX_DCHECK(ClassName, ...) \
+  ClassName(file, atoi(line), LOGGING_DCHECK, ##__VA_ARGS__)
+
+#define GLIB_LOGGING_INFO GLIB_LOGGING_EX_INFO(LogMessage)
+#define GLIB_LOGGING_WARNING GLIB_LOGGING_EX_WARNING(LogMessage)
+#define GLIB_LOGGING_ERROR GLIB_LOGGING_EX_ERROR(LogMessage)
+#define GLIB_LOGGING_FATAL GLIB_LOGGING_EX_FATAL(LogMessage)
+#define GLIB_LOGGING_DFATAL GLIB_LOGGING_EX_DFATAL(LogMessage)
+#define GLIB_LOGGING_DCHECK GLIB_LOGGING_EX_DCHECK(LogMessage)
+
+#define GLIB_LOG_STREAM(severity) GLIB_LOGGING_##severity.stream()
+
+#define GLIB_LOG(severity) LAZY_STREAM(GLIB_LOG_STREAM(severity), LOG_IS_ON(severity))
+
+static GLogWriterOutput GLibLogWriter(GLogLevelFlags log_level,
+                                      const GLogField* fields,
+                                      gsize n_fields,
+                                      gpointer userdata) {
+  const char *key, *value;
+  gsize i;
+  char *message;
+  const char *file = "(?)", *line = "0", *func = "(?)";
+
+  // Follow the freedesktop spec
+  // https://www.freedesktop.org/software/systemd/man/systemd.journal-fields.html
+  for (i = 0, key = fields[i].key, value = (const char*)fields[i].value; i < n_fields; ++i) {
+    if (strcmp(key, "CODE_FILE") == 0)
+      file = (const char*)value;
+    else if (strcmp(key, "CODE_LINE") == 0)
+      line = (const char*)value;
+    else if (strcmp(key, "CODE_FUNC") == 0)
+      func = (const char*)value;
+  }
+
+  message = g_log_writer_format_fields(log_level, fields, n_fields, false);
+
+  GLogLevelFlags always_fatal_flags = g_log_set_always_fatal(G_LOG_LEVEL_MASK);
+  g_log_set_always_fatal(always_fatal_flags);
+  if (always_fatal_flags & log_level) {
+    GLIB_LOG(DFATAL) << func << " " << message;
+  } else if (log_level & (G_LOG_LEVEL_ERROR | G_LOG_LEVEL_CRITICAL)) {
+    GLIB_LOG(ERROR) << func << " " << message;
+  } else if (log_level & (G_LOG_LEVEL_WARNING)) {
+    GLIB_LOG(WARNING) << func << " " << message;
+  } else if (log_level &
+             (G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG)) {
+    GLIB_LOG(INFO) << func << " " << message;
+  } else {
+    NOTREACHED();
+    GLIB_LOG(DFATAL) << func << " " << message;
+  }
+
+  g_free(message);
+
+  return G_LOG_WRITER_HANDLED;
+}
+
+static void GLibLogHandler(const gchar* log_domain,
+                           GLogLevelFlags log_level,
+                           const gchar* message,
+                           gpointer /*userdata*/) {
+  if (!log_domain)
+    log_domain = "<unknown>";
+  if (!message)
+    message = "<no message>";
+
+  GLogLevelFlags always_fatal_flags = g_log_set_always_fatal(G_LOG_LEVEL_MASK);
+  g_log_set_always_fatal(always_fatal_flags);
+  GLogLevelFlags fatal_flags =
+      g_log_set_fatal_mask(log_domain, G_LOG_LEVEL_MASK);
+  g_log_set_fatal_mask(log_domain, fatal_flags);
+  if ((always_fatal_flags | fatal_flags) & log_level) {
+    LOG(DFATAL) << log_domain << ": " << message;
+  } else if (log_level & (G_LOG_LEVEL_ERROR | G_LOG_LEVEL_CRITICAL)) {
+    LOG(ERROR) << log_domain << ": " << message;
+  } else if (log_level & (G_LOG_LEVEL_WARNING)) {
+    LOG(WARNING) << log_domain << ": " << message;
+  } else if (log_level &
+             (G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG)) {
+    LOG(INFO) << log_domain << ": " << message;
+  } else {
+    NOTREACHED();
+    LOG(DFATAL) << log_domain << ": " << message;
+  }
+}
+
+void SetUpGLibLogHandler() {
+  // Register GLib-handled assertions to go through our logging system.
+  const char* const kLogDomains[] = {nullptr, "Gtk", "Gdk", "GLib",
+                                     "GLib-GObject"};
+  for (size_t i = 0; i < ::internal::size(kLogDomains); i++) {
+    g_log_set_handler(
+        kLogDomains[i],
+        static_cast<GLogLevelFlags>(G_LOG_FLAG_RECURSION | G_LOG_FLAG_FATAL |
+                                    G_LOG_LEVEL_ERROR | G_LOG_LEVEL_CRITICAL |
+                                    G_LOG_LEVEL_WARNING),
+        GLibLogHandler, nullptr);
+  }
+
+  // Register GLib-handled structure logging to go through our logging system.
+  g_log_set_writer_func(GLibLogWriter, nullptr, nullptr);
 }

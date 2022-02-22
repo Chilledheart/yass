@@ -11,6 +11,7 @@
 #include <absl/flags/parse.h>
 #include <fontconfig/fontconfig.h>
 #include <locale.h>
+#include <stdarg.h>
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
@@ -24,49 +25,6 @@ YASSApp* mApp = nullptr;
 
 static const char* kAppId = "it.gui.yass";
 static const char* kAppName = YASS_APP_PRODUCT_NAME;
-
-static void GLibLogHandler(const gchar* log_domain,
-                           GLogLevelFlags log_level,
-                           const gchar* message,
-                           gpointer /*userdata*/) {
-  if (!log_domain)
-    log_domain = "<unknown>";
-  if (!message)
-    message = "<no message>";
-
-  GLogLevelFlags always_fatal_flags = g_log_set_always_fatal(G_LOG_LEVEL_MASK);
-  g_log_set_always_fatal(always_fatal_flags);
-  GLogLevelFlags fatal_flags =
-      g_log_set_fatal_mask(log_domain, G_LOG_LEVEL_MASK);
-  g_log_set_fatal_mask(log_domain, fatal_flags);
-  if ((always_fatal_flags | fatal_flags) & log_level) {
-    LOG(DFATAL) << log_domain << ": " << message;
-  } else if (log_level & (G_LOG_LEVEL_ERROR | G_LOG_LEVEL_CRITICAL)) {
-    LOG(ERROR) << log_domain << ": " << message;
-  } else if (log_level & (G_LOG_LEVEL_WARNING)) {
-    LOG(WARNING) << log_domain << ": " << message;
-  } else if (log_level &
-             (G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG)) {
-    LOG(INFO) << log_domain << ": " << message;
-  } else {
-    NOTREACHED();
-    LOG(DFATAL) << log_domain << ": " << message;
-  }
-}
-
-static void SetUpGLibLogHandler() {
-  // Register GLib-handled assertions to go through our logging system.
-  const char* const kLogDomains[] = {nullptr, "Gtk", "Gdk", "GLib",
-                                     "GLib-GObject"};
-  for (size_t i = 0; i < ::internal::size(kLogDomains); i++) {
-    g_log_set_handler(
-        kLogDomains[i],
-        static_cast<GLogLevelFlags>(G_LOG_FLAG_RECURSION | G_LOG_FLAG_FATAL |
-                                    G_LOG_LEVEL_ERROR | G_LOG_LEVEL_CRITICAL |
-                                    G_LOG_LEVEL_WARNING),
-        GLibLogHandler, nullptr);
-  }
-}
 
 int main(int argc, char** argv) {
   // For minimal locale

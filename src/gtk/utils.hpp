@@ -42,6 +42,8 @@ private:
  std::function<void()> callback_;
 };
 
+void SetUpGLibLogHandler();
+
 #define DEFAULT_AUTOSTART_NAME "yass"
 
 #endif  // YASS_GUI_UTILS
