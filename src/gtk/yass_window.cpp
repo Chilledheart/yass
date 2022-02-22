@@ -44,6 +44,11 @@ template <typename Handler, void (Handler::*HandlerFunc)()>
 struct GtkHandlerProxy {
   static void Handle(gpointer p) { (static_cast<Handler*>(p)->*HandlerFunc)(); }
 };
+
+template <typename T>
+std::unique_ptr<T[], decltype(&g_free)> make_unique_ptr_gfree(T* p) {
+  return std::unique_ptr<T[], decltype(&g_free)>(p, &g_free);
+}
 }  // namespace
 
 YASSWindow::YASSWindow()
@@ -227,7 +232,8 @@ std::string YASSWindow::GetPassword() {
 
 std::string YASSWindow::GetMethod() {
   gchar* active_method = gtk_combo_box_text_get_active_text(method_);
-  return Glib::make_unique_ptr_gfree(active_method).get();
+
+  return make_unique_ptr_gfree(active_method).get();
 }
 
 std::string YASSWindow::GetLocalHost() {
