@@ -5,15 +5,14 @@
 
 #include "glibmm/fake_typeid.hpp"
 
+#include <memory>
 #include <queue>
 
 #include <absl/synchronization/mutex.h>
-#include <glibmm/dispatcher.h>
 #include <gtk/gtk.h>
 
-#include <memory>
-
 #include "cli/cli_worker.hpp"
+#include "gtk/utils.hpp"
 
 class YASSWindow;
 /// The main Application for YetAnotherShadowSocket
@@ -28,15 +27,13 @@ class YASSApp {
 
  private:
   GtkApplication *impl_;
+  GSource *idle_source_;
 
  public:
-  void on_startup();
-  void on_activate();
+  void OnActivate();
 
-  // returning false in the signal handler causes remove the signal handler
-  bool OnIdle();
-
-  sigc::connection idle_connection_;
+  Dispatcher dispatcher_;
+  void OnIdle();
 
  public:
   // Glib event loop
@@ -66,8 +63,6 @@ class YASSApp {
   absl::Mutex dispatch_mutex_;
   std::queue<std::pair<YASSState, std::string>> dispatch_queue_;
   void OnDispatch();
-
-  Glib::Dispatcher dispatcher_;
 
  private:
   void SaveConfigToDisk();

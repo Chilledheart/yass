@@ -10,8 +10,6 @@
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
 #include <fontconfig/fontconfig.h>
-#include <glibmm/init.h>
-#include <giomm/init.h>
 #include <locale.h>
 
 #include "core/logging.hpp"
@@ -25,7 +23,7 @@
 YASSApp* mApp = nullptr;
 
 static const char* kAppId = "it.gui.yass";
-static const char* kAppName = "Yet Another Shadow Socket";
+static const char* kAppName = YASS_APP_PRODUCT_NAME;
 
 static void GLibLogHandler(const gchar* log_domain,
                            GLogLevelFlags log_level,
@@ -98,31 +96,35 @@ int main(int argc, char** argv) {
   g_type_init();
 #endif  // !GLIB_CHECK_VERSION(2, 35, 0)
 
-  Glib::init();
-  Gio::init();
-
   SetUpGLibLogHandler();
 
   auto app = YASSApp::create();
 
   mApp = app.operator->();
 
-  return app->ApplicationRun(argc, argv);
+  return app->ApplicationRun(1, argv);
 }
 
 YASSApp::YASSApp()
     : impl_(gtk_application_new(kAppId, G_APPLICATION_FLAGS_NONE)),
-      dispatcher_(Glib::wrap(::g_main_context_ref_thread_default(), false)) {
+      idle_source_(g_idle_source_new()) {
   g_set_application_name(kAppName);
 
   gdk_init(nullptr, nullptr);
   gtk_init(nullptr, nullptr);
 
-  auto startup = []() { mApp->on_startup(); };
-  g_signal_connect(impl_, "startup", G_CALLBACK(startup), NULL);
-
-  auto activate = []() { mApp->on_activate(); };
+  auto activate = []() { mApp->OnActivate(); };
   g_signal_connect(impl_, "activate", G_CALLBACK(activate), NULL);
+
+  auto idle = [](gpointer user_data) -> gboolean {
+    mApp->OnIdle();
+    return G_SOURCE_CONTINUE;
+  };
+  g_source_set_priority(idle_source_, G_PRIORITY_LOW);
+  g_source_set_callback(idle_source_, (GSourceFunc)idle, this, nullptr);
+  g_source_set_name(idle_source_, "Idle Source");
+  g_source_attach(idle_source_, nullptr);
+  g_source_unref(idle_source_);
 }
 
 YASSApp::~YASSApp() = default;
@@ -131,25 +133,17 @@ std::unique_ptr<YASSApp> YASSApp::create() {
   return std::unique_ptr<YASSApp>(new YASSApp);
 }
 
-void YASSApp::on_startup() {
+void YASSApp::OnActivate() {
   if (!MemoryLockAll()) {
     LOG(WARNING) << "Failed to set memory lock";
   }
 
+  if (!dispatcher_.Init([this]() { OnDispatch(); })) {
+    LOG(WARNING) << "Failed to init dispatcher";
+  }
+
   LOG(WARNING) << "Application starting: " << YASS_APP_TAG;
 
-  const auto base = static_cast<GApplicationClass*>(
-      g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(impl_))));
-  if (base && base->startup)
-    return base->startup(G_APPLICATION(impl_));
-
-  idle_connection_ = Glib::signal_idle().connect(
-      sigc::mem_fun(*this, &YASSApp::OnIdle), Glib::PRIORITY_LOW);
-
-  dispatcher_.connect(sigc::mem_fun(*this, &YASSApp::OnDispatch));
-}
-
-void YASSApp::on_activate() {
   main_window_ = new YASSWindow();
   main_window_->show();
   main_window_->present();
@@ -178,14 +172,13 @@ int YASSApp::ApplicationRun(int argc, char** argv) {
 }
 
 void YASSApp::Exit() {
-  idle_connection_.disconnect();
+  g_source_destroy(idle_source_);
 }
 
-bool YASSApp::OnIdle() {
+void YASSApp::OnIdle() {
   if (GetState() == YASSApp::STARTED) {
     main_window_->UpdateStatusBar();
   }
-  return true;
 }
 
 std::string YASSApp::GetStatus() const {
@@ -223,7 +216,7 @@ void YASSApp::OnStart(bool quiet) {
             std::make_pair(successed ? STARTED : START_FAILED, msg));
       }
 
-      dispatcher_.emit();
+      dispatcher_.Emit();
     };
   }
   worker_.Start(callback);
@@ -240,7 +233,7 @@ void YASSApp::OnStop(bool quiet) {
         dispatch_queue_.push(std::make_pair(STOPPED, std::string()));
       }
 
-      dispatcher_.emit();
+      dispatcher_.Emit();
     };
   }
   worker_.Stop(callback);

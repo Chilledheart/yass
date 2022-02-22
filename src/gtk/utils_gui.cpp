@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -740,4 +741,107 @@ void Utils::DisableGtkRTTI(Gtk::Window *window) {
           return base->enable_debugging(window, p0);
         return gboolean();
       };
+}
+
+Dispatcher::Dispatcher() = default;
+Dispatcher::~Dispatcher() {
+  Destroy();
+}
+
+bool Dispatcher::Init(std::function<void()> callback) {
+  if (!callback)
+    return false;
+  if (socketpair(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0,
+                 fds_) != 0) {
+    PLOG(WARNING) << "Dispatcher: socketpair failure";
+    return false;
+  }
+  GIOChannel* channel = g_io_channel_unix_new(fds_[0]);
+  source_ =
+      g_io_create_watch(channel, (GIOCondition)(G_IO_IN | G_IO_HUP | G_IO_ERR));
+  g_io_channel_unref(channel);
+
+  g_source_set_priority(source_, G_PRIORITY_LOW);
+  auto read_callback = [](GIOChannel* source, GIOCondition condition,
+                          gpointer user_data) -> gboolean {
+    auto self = reinterpret_cast<Dispatcher*>(user_data);
+    if (condition & G_IO_ERR || condition & G_IO_HUP) {
+      VLOG(2) << "Dispatcher: " << self << " pipe hup";
+      self->Destroy();
+      return G_SOURCE_REMOVE;
+    }
+    return self->ReadCallback();
+  };
+
+  g_source_set_callback(source_, (GSourceFunc)(GIOFunc)read_callback, this,
+                        nullptr);
+  g_source_set_name(source_, "Dispatcher");
+  g_source_attach(source_, nullptr);
+  g_source_unref(source_);
+
+  callback_ = callback;
+  VLOG(2) << "Dispatcher: " << this << " Inited";
+  return true;
+}
+
+bool Dispatcher::Destroy() {
+  if (!source_)
+    return true;
+  g_source_destroy(source_);
+  source_ = nullptr;
+  if (close(fds_[0]) != 0 || close(fds_[1]) != 0) {
+    PLOG(WARNING) << "Dispatcher: close failure";
+    return false;
+  }
+  fds_[0] = -1;
+  fds_[1] = -1;
+  VLOG(2) << "Dispatcher: " << this << " Destroyed";
+  return true;
+}
+
+bool Dispatcher::Emit() {
+  DCHECK(source_);
+  DCHECK_NE(fds_[1], -1);
+  VLOG(2) << "Dispatcher: " << this << " Emiting";
+  int32_t data = 0;
+  const char* ptr = reinterpret_cast<char*>(&data);
+  uint32_t size = sizeof(data);
+  while (size) {
+    int ret = write(fds_[1], ptr, size);
+    if (ret < 0 && (errno == EINTR || errno == EAGAIN))
+      continue;
+    if (ret < 0) {
+      PLOG(WARNING) << "Dispatcher: write failure";
+      return false;
+    }
+    ptr += ret;
+    size -= ret;
+  }
+  return true;
+}
+
+bool Dispatcher::ReadCallback() {
+  DCHECK(source_);
+  DCHECK_NE(fds_[0], -1);
+
+  VLOG(2) << "Dispatcher: " << this << " Reading";
+
+  int32_t data = 0;
+  char* ptr = reinterpret_cast<char*>(&data);
+  uint32_t size = sizeof(data);
+  while (size) {
+    int ret = read(fds_[0], ptr, size);
+    if (ret < 0 && (errno == EINTR || errno == EAGAIN))
+      continue;
+    if (ret < 0) {
+      PLOG(WARNING) << "Dispatcher: read failure";
+      return G_SOURCE_REMOVE;
+    }
+    ptr += ret;
+    size -= ret;
+  }
+
+  callback_();
+
+  return G_SOURCE_CONTINUE;
 }
