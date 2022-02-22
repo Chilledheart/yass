@@ -8,14 +8,14 @@
 
 #include <absl/flags/flag.h>
 
-#include <gtkmm/aboutdialog.h>
-#include <gtkmm/messagedialog.h>
-
-#include <gtk/gtkgrid.h>
+#include <gtk/gtkaboutdialog.h>
 #include <gtk/gtkbox.h>
+#include <gtk/gtkdialog.h>
+#include <gtk/gtkgrid.h>
 #include <gtk/gtkmenu.h>
 #include <gtk/gtkmenubar.h>
 #include <gtk/gtkmenuitem.h>
+#include <gtk/gtkmessagedialog.h>
 
 #include "cli/socks5_connection_stats.hpp"
 #include "core/utils.hpp"
@@ -279,10 +279,12 @@ void YASSWindow::StartFailed() {
   autostart_.set_sensitive(true);
   start_button_.set_sensitive(true);
 
-  Gtk::MessageDialog alert_dialog(*this, mApp->GetStatus(), false,
-                                  Gtk::MessageType::MESSAGE_WARNING,
-                                  Gtk::ButtonsType::BUTTONS_OK, true);
-  alert_dialog.run();
+  GtkDialog* alert_dialog = GTK_DIALOG(gtk_message_dialog_new(
+      Gtk::Window::gobj(), GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING,
+      GTK_BUTTONS_OK, "%s", mApp->GetStatus().c_str()));
+
+  gtk_dialog_run(GTK_DIALOG(alert_dialog));
+  gtk_widget_destroy(GTK_WIDGET(alert_dialog));
 }
 
 void YASSWindow::Stopped() {
@@ -360,16 +362,21 @@ void YASSWindow::OnOption() {
 }
 
 void YASSWindow::OnAbout() {
-  Gtk::AboutDialog about_dialog;
-  about_dialog.set_authors({YASS_APP_COMPANY_NAME});
-  about_dialog.set_comments("Last Change: " YASS_APP_LAST_CHANGE);
-  about_dialog.set_copyright(YASS_APP_COPYRIGHT);
-  about_dialog.set_license_type(Gtk::LICENSE_GPL_2_0);
-  about_dialog.set_logo_icon_name("yass");
-  about_dialog.set_program_name(YASS_APP_PRODUCT_NAME);
-  about_dialog.set_version(YASS_APP_PRODUCT_VERSION);
-  about_dialog.set_website(YASS_APP_WEBSITE);
-  about_dialog.run();
+  GtkAboutDialog* about_dialog = GTK_ABOUT_DIALOG(gtk_about_dialog_new());
+  const char* artists[] = {"macosicons.com", nullptr};
+  gtk_about_dialog_set_artists(about_dialog, artists);
+  const char* authors[] = {YASS_APP_COMPANY_NAME, nullptr};
+  gtk_about_dialog_set_authors(about_dialog, authors);
+  gtk_about_dialog_set_comments(about_dialog, "Last Change: " YASS_APP_LAST_CHANGE);
+  gtk_about_dialog_set_copyright(about_dialog, YASS_APP_COPYRIGHT);
+  gtk_about_dialog_set_license_type(about_dialog, GTK_LICENSE_GPL_2_0);
+  gtk_about_dialog_set_logo_icon_name(about_dialog, "yass");
+  gtk_about_dialog_set_program_name(about_dialog, YASS_APP_PRODUCT_NAME);
+  gtk_about_dialog_set_version(about_dialog, YASS_APP_PRODUCT_VERSION);
+  gtk_about_dialog_set_website(about_dialog, YASS_APP_WEBSITE);
+  gtk_about_dialog_set_website_label(about_dialog, "official-site");
+  gtk_dialog_run(GTK_DIALOG(about_dialog));
+  gtk_widget_destroy(GTK_WIDGET(about_dialog));
 }
 
 void YASSWindow::OnClose() {
