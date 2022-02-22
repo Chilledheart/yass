@@ -7,7 +7,7 @@ License: GPLv2
 URL: https://github.com/Chilledheart/yass
 Source0: https://github.com/Chilledheart/yass/archive/refs/tags/%{version}.tar.gz
 BuildRequires: cmake >= 3.12, ninja-build, pkg-config, perl, gcc >= 6.1, gcc-c++ >= 6.1, libstdc++-static >= 6.1, libatomic-static, golang >= 1.4
-BuildRequires: gtk3-devel, gtkmm30-devel >= 3.18
+BuildRequires: gtk3-devel
 
 %description
 Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for

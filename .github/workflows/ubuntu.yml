@@ -85,7 +85,7 @@ jobs:
           sudo sed -i 's/azure.archive.ubuntu.com/archive.ubuntu.com/g' /etc/apt/sources.list
           sudo apt-get update -qq
       - name: Populate depedencies
-        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build libgtk-3-dev libgtkmm-3.0-dev
+        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build libgtk-3-dev
       - name: Build
         run: |
           if [ "$COMPILER" = "clang" ]; then
@@ -136,7 +136,7 @@ jobs:
           sudo sed -i 's/azure.archive.ubuntu.com/archive.ubuntu.com/g' /etc/apt/sources.list
           sudo apt-get update -qq
       - name: Populate depedencies
-        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build libgtk-3-dev libgtkmm-3.0-dev
+        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build libgtk-3-dev
       - name: Build
         run: |
           export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
@@ -337,17 +337,6 @@ jobs:
           curl -O http://deb.debian.org/debian/pool/main/a/apt/libapt-pkg6.0_2.2.4_i386.deb
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -f -y $PWD/gir*.deb $PWD/lib*.deb $PWD/packagekit*.deb
-      - name: Populate depedencie (focal i386 only, gtkmm)
-        if: ${{ env.HOST_DISTRO == 'focal' && env.HOST_ARCH == 'i386' }}
-        run: |
-          cd /tmp
-          # Build from source is not required, reusing the package from old distro
-          # ./scripts/build-deb-gtkmm.sh
-          # sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- apt-get install -y libgtkmm-3.0-1v5_3.24.2*_i386.deb libgtkmm-3.0-dev_3.24.2*_i386.deb
-          curl -O http://archive.ubuntu.com/ubuntu/pool/main/g/gtkmm3.0/libgtkmm-3.0-dev_3.22.2-2_i386.deb
-          curl -O http://archive.ubuntu.com/ubuntu/pool/main/g/gtkmm3.0/libgtkmm-3.0-1v5_3.22.2-2_i386.deb
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get install -y -f $PWD/libgtkmm-3.0*.deb
       - name: Populate depedencie (openssl, required by xenial cmake)
         if: ${{ env.HOST_DISTRO == 'stretch' || env.HOST_DISTRO == 'buster' }}
         run: |
