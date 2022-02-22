@@ -373,18 +373,7 @@ jobs:
       - name: Build deb
         run: |
           export DEB_BUILD_PROFILES
-          sudo -E sudo -E -u "$USER" -g sbuild ./scripts/build-deb.sh || true
-      - name: Output build log
-        run: |
-          cat /tmp/yass*.build
-      - name: Check deb output
-        run: |
-          if compgen -G "yass*.deb" > /dev/null; then
-            echo "Debian packages found"
-          else
-            echo "No debian packages generated"
-            exit -1
-          fi
+          sudo -E sudo -E -u "$USER" -g sbuild ./scripts/build-deb.sh
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
