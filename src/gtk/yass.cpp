@@ -173,16 +173,23 @@ void YASSApp::on_activate() {
 
 int YASSApp::ApplicationRun() {
   int ret = run(*main_window_);
+
   if (ret) {
     LOG(WARNING) << "app exited with code " << ret;
   }
+
   LOG(WARNING) << "Application exiting";
+
+  // Memory leak clean up path
+  pango_cairo_font_map_set_default(NULL);
+  cairo_debug_reset_static_data();
+  FcFini();
+
   return ret;
 }
 
 void YASSApp::Exit() {
   idle_connection_.disconnect();
-  quit();
 }
 
 bool YASSApp::OnIdle() {

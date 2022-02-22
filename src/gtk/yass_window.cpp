@@ -69,7 +69,7 @@ YASSWindow::YASSWindow()
   set_default_size(450, 390);
   set_position(Gtk::WIN_POS_CENTER);
   set_resizable(false);
-  this->set_icon_name("yass");
+  set_icon_name("yass");
 
   signal_hide().connect(sigc::mem_fun(*this, &YASSWindow::OnClose));
 
@@ -368,5 +368,8 @@ void YASSWindow::OnAbout() {
 
 void YASSWindow::OnClose() {
   LOG(WARNING) << "Frame is closing ";
+
   mApp->Exit();
+
+  close();
 }

@@ -80,7 +80,6 @@ class YASSWindow : public Gtk::Window {
   void OnOption();
 
  private:
-  // TODO exit when main window close
   void OnClose();
 
   friend class YASSApp;
