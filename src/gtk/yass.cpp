@@ -9,8 +9,10 @@
 #include <absl/debugging/symbolize.h>
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
-#include <locale.h>
+#include <fontconfig/fontconfig.h>
+#include <glibmm/init.h>
 #include <giomm/init.h>
+#include <locale.h>
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
@@ -96,6 +98,7 @@ int main(int argc, char** argv) {
   g_type_init();
 #endif  // !GLIB_CHECK_VERSION(2, 35, 0)
 
+  Glib::init();
   Gio::init();
 
   SetUpGLibLogHandler();
@@ -104,44 +107,28 @@ int main(int argc, char** argv) {
 
   mApp = app.operator->();
 
-  G_APPLICATION_GET_CLASS(app->gobj())->local_command_line =
-      [](GApplication* application, gchar*** arguments,
-         int* exit_status) -> gboolean {
-    return mApp->local_command_line_vfunc(*(arguments), *(exit_status));
-  };
-#if 0
-  G_APPLICATION_GET_CLASS(app->gobj())->handle_local_options =
-      [](GApplication* application, GVariantDict* options) -> gboolean {
-    return false;
-  };
-#endif
-  G_APPLICATION_GET_CLASS(app->gobj())->startup =
-      [](GApplication* application) {
-    mApp->on_startup();
-  };
-  G_APPLICATION_GET_CLASS(app->gobj())->activate =
-      [](GApplication* application) {
-    mApp->on_activate();
-  };
-  G_APPLICATION_GET_CLASS(app->gobj())->command_line =
-      [](GApplication* application,
-         GApplicationCommandLine* command_line) -> int {
-    return mApp->on_command_line(Glib::wrap(command_line, true));
-  };
-
-  return app->ApplicationRun();
+  return app->ApplicationRun(argc, argv);
 }
 
 YASSApp::YASSApp()
-    : Gtk::Application(kAppId),
+    : impl_(gtk_application_new(kAppId, G_APPLICATION_FLAGS_NONE)),
       dispatcher_(Glib::wrap(::g_main_context_ref_thread_default(), false)) {
-  ::g_set_application_name(kAppName);
+  g_set_application_name(kAppName);
+
+  gdk_init(nullptr, nullptr);
+  gtk_init(nullptr, nullptr);
+
+  auto startup = []() { mApp->on_startup(); };
+  g_signal_connect(impl_, "startup", G_CALLBACK(startup), NULL);
+
+  auto activate = []() { mApp->on_activate(); };
+  g_signal_connect(impl_, "activate", G_CALLBACK(activate), NULL);
 }
 
 YASSApp::~YASSApp() = default;
 
-Glib::RefPtr<YASSApp> YASSApp::create() {
-  return Glib::RefPtr<YASSApp>(new YASSApp());
+std::unique_ptr<YASSApp> YASSApp::create() {
+  return std::unique_ptr<YASSApp>(new YASSApp);
 }
 
 void YASSApp::on_startup() {
@@ -151,7 +138,10 @@ void YASSApp::on_startup() {
 
   LOG(WARNING) << "Application starting: " << YASS_APP_TAG;
 
-  Gtk::Application::on_startup();
+  const auto base = static_cast<GApplicationClass*>(
+      g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(impl_))));
+  if (base && base->startup)
+    return base->startup(G_APPLICATION(impl_));
 
   idle_connection_ = Glib::signal_idle().connect(
       sigc::mem_fun(*this, &YASSApp::OnIdle), Glib::PRIORITY_LOW);
@@ -160,19 +150,18 @@ void YASSApp::on_startup() {
 }
 
 void YASSApp::on_activate() {
-  Gtk::Application::on_activate();
-
-  // main window is created with WINDOW_TOPLEVEL by defaults
   main_window_ = new YASSWindow();
   main_window_->show();
   main_window_->present();
+  gtk_application_add_window(impl_, main_window_->impl_);
+
   if (Utils::GetAutoStart()) {
     main_window_->OnStartButtonClicked();
   }
 }
 
-int YASSApp::ApplicationRun() {
-  int ret = run(*main_window_);
+int YASSApp::ApplicationRun(int argc, char** argv) {
+  int ret = g_application_run(G_APPLICATION(impl_), argc, argv);
 
   if (ret) {
     LOG(WARNING) << "app exited with code " << ret;

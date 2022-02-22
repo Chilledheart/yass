@@ -3,19 +3,21 @@
 #ifndef OPTION_DIALOG
 #define OPTION_DIALOG
 
-#include "glibmm/fake_typeid.hpp"
+#include <gtk/gtk.h>
 
-#include <gtkmm/dialog.h>
+#include <string>
 
-#include <gtk/gtkbutton.h>
-#include <gtk/gtkentry.h>
-
-class OptionDialog : public Gtk::Dialog {
+class OptionDialog {
  public:
-  explicit OptionDialog(const Glib::ustring& title, bool modal = false);
+  explicit OptionDialog(const std::string& title,
+                        GtkWindow* parent,
+                        bool modal = false);
+  ~OptionDialog();
 
   void OnOkayButtonClicked();
   void OnCancelButtonClicked();
+
+  gint run();
 
  private:
   void LoadChanges();
@@ -29,6 +31,9 @@ class OptionDialog : public Gtk::Dialog {
 
   GtkButton* okay_button_;
   GtkButton* cancel_button_;
+
+ private:
+  GtkDialog* impl_;
 };  // OptionDialog
 
 #endif  // OPTION_DIALOG

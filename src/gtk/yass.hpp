@@ -8,44 +8,30 @@
 #include <queue>
 
 #include <absl/synchronization/mutex.h>
-#include <giomm/application.h>
 #include <glibmm/dispatcher.h>
-#include <gtkmm/application.h>
+#include <gtk/gtk.h>
+
+#include <memory>
 
 #include "cli/cli_worker.hpp"
 
 class YASSWindow;
 /// The main Application for YetAnotherShadowSocket
-class YASSApp : public Gtk::Application {
+class YASSApp {
  protected:
   YASSApp();
 
  public:
-  ~YASSApp() override;
+  ~YASSApp();
 
-  static Glib::RefPtr<YASSApp> create();
+  static std::unique_ptr<YASSApp> create();
+
+ private:
+  GtkApplication *impl_;
 
  public:
-  /// This is a default handler for the signal signal_local_command_line().
-  bool local_command_line_vfunc(char**& arguments, int& exit_status) override {
-    return Gtk::Application::local_command_line_vfunc(arguments, exit_status);
-  }
-
-  // The signal_startup() signal is emitted on the primary instance immediately
-  // after registration. See g_application_register().
-  void on_startup() override;
-
-  // To handle these two cases, we override signal_activate()'s default handler,
-  // which gets called when the application is launched without commandline
-  // arguments, and signal_open()'s default handler, which gets called when the
-  // application is launched with commandline arguments.
-  void on_activate() override;
-
-  /// This is a default handler for the signal signal_command_line().
-  int on_command_line(
-      const Glib::RefPtr<Gio::ApplicationCommandLine>& command_line) override {
-    return Gtk::Application::on_command_line(command_line);
-  }
+  void on_startup();
+  void on_activate();
 
   // returning false in the signal handler causes remove the signal handler
   bool OnIdle();
@@ -54,7 +40,7 @@ class YASSApp : public Gtk::Application {
 
  public:
   // Glib event loop
-  int ApplicationRun();
+  int ApplicationRun(int argc, char** argv);
 
   void Exit();
 

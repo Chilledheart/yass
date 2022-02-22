@@ -4,21 +4,21 @@
 #ifndef YASS_WINDOW_H
 #define YASS_WINDOW_H
 
-#include "glibmm/fake_typeid.hpp"
+#include <gtk/gtk.h>
 
-#include <gtkmm/applicationwindow.h>
+#include <string>
 
-#include <gtk/gtkbutton.h>
-#include <gtk/gtkcheckbutton.h>
-#include <gtk/gtkcombobox.h>
-#include <gtk/gtkcomboboxtext.h>
-#include <gtk/gtkentry.h>
-#include <gtk/gtkstatusbar.h>
-
-class YASSWindow : public Gtk::Window {
+class YASSWindow {
  public:
   YASSWindow();
-  ~YASSWindow() override;
+  ~YASSWindow();
+
+ private:
+  GtkWindow* impl_;
+
+ public:
+  void show();
+  void present();
 
   // Left Panel
   GtkButton* start_button_;

@@ -8,16 +8,6 @@
 
 #include <absl/flags/flag.h>
 
-#include <gtk/gtkaboutdialog.h>
-#include <gtk/gtkbox.h>
-#include <gtk/gtkdialog.h>
-#include <gtk/gtkgrid.h>
-#include <gtk/gtklabel.h>
-#include <gtk/gtkmenu.h>
-#include <gtk/gtkmenubar.h>
-#include <gtk/gtkmenuitem.h>
-#include <gtk/gtkmessagedialog.h>
-
 #include "cli/socks5_connection_stats.hpp"
 #include "core/utils.hpp"
 #include "gtk/option_dialog.hpp"
@@ -41,16 +31,20 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
       << " " << *c;
 }
 
-YASSWindow::YASSWindow() {
-  set_title(YASS_APP_PRODUCT_NAME);
-  set_default_size(450, 390);
-  set_position(Gtk::WIN_POS_CENTER);
-  set_resizable(false);
-  set_icon_name("yass");
+YASSWindow::YASSWindow()
+    : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))) {
 
-  signal_hide().connect(sigc::mem_fun(*this, &YASSWindow::OnClose));
+  gtk_window_set_title(GTK_WINDOW(impl_), YASS_APP_PRODUCT_NAME);
+  gtk_window_set_default_size(GTK_WINDOW(impl_), 450, 390);
+  gtk_window_set_position(GTK_WINDOW(impl_), GTK_WIN_POS_CENTER);
+  gtk_window_set_resizable(GTK_WINDOW(impl_), false);
+  gtk_window_set_icon_name(GTK_WINDOW(impl_), "yass");
 
   static YASSWindow* window = this;
+
+  auto hide_callback = []() { window->OnClose(); };
+  g_signal_connect(G_OBJECT(impl_), "hide",
+                   G_CALLBACK(hide_callback), this);
 
   // vbox, hbox
   GtkBox *vbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
@@ -208,16 +202,22 @@ YASSWindow::YASSWindow() {
 
   gtk_box_pack_start(vbox, GTK_WIDGET(status_bar_), true, false, 0);
 
-  Utils::DisableGtkRTTI(this);
-
-  gtk_container_add(Gtk::Container::gobj(), GTK_WIDGET(vbox));
+  gtk_container_add(GTK_CONTAINER(impl_), GTK_WIDGET(vbox));
 
   LoadChanges();
 
-  show_all_children();
+  gtk_widget_show_all(GTK_WIDGET(impl_));
 }
 
 YASSWindow::~YASSWindow() = default;
+
+void YASSWindow::show() {
+  gtk_widget_show(GTK_WIDGET(impl_));
+}
+
+void YASSWindow::present() {
+  gtk_window_present(GTK_WINDOW(impl_));
+}
 
 void YASSWindow::OnStartButtonClicked() {
   gtk_widget_set_sensitive(GTK_WIDGET(start_button_), false);
@@ -290,9 +290,9 @@ void YASSWindow::StartFailed() {
 
   gtk_widget_set_sensitive(GTK_WIDGET(start_button_), true);
 
-  GtkDialog* alert_dialog = GTK_DIALOG(gtk_message_dialog_new(
-      Gtk::Window::gobj(), GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING,
-      GTK_BUTTONS_OK, "%s", mApp->GetStatus().c_str()));
+  GtkDialog* alert_dialog = GTK_DIALOG(
+      gtk_message_dialog_new(impl_, GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING,
+                             GTK_BUTTONS_OK, "%s", mApp->GetStatus().c_str()));
 
   gtk_dialog_run(GTK_DIALOG(alert_dialog));
   gtk_widget_destroy(GTK_WIDGET(alert_dialog));
@@ -372,10 +372,10 @@ void YASSWindow::UpdateStatusBar() {
 }
 
 void YASSWindow::OnOption() {
-  OptionDialog option_dialog("YASS Option", true);
+  OptionDialog option_dialog("YASS Option", nullptr, true);
 
   int ret = option_dialog.run();
-  if (ret == Gtk::RESPONSE_ACCEPT) {
+  if (ret == GTK_RESPONSE_ACCEPT) {
     mApp->SaveConfigToDisk();
   }
 }
@@ -403,5 +403,5 @@ void YASSWindow::OnClose() {
 
   mApp->Exit();
 
-  close();
+  gtk_window_close(impl_);
 }

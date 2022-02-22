@@ -5,18 +5,21 @@
 
 #include <absl/flags/flag.h>
 
-#include <gtk/gtkbox.h>
-#include <gtk/gtkgrid.h>
-#include <gtk/gtklabel.h>
-
 #include "config/config.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "gtk/utils.hpp"
 
-OptionDialog::OptionDialog(const Glib::ustring& title, bool modal)
-   : Gtk::Dialog(title, modal) {
-  set_default_size(400, 240);
+OptionDialog::OptionDialog(const std::string& title,
+                           GtkWindow* parent,
+                           bool modal)
+    : impl_(GTK_DIALOG(gtk_dialog_new_with_buttons(
+          title.c_str(),
+          parent,
+          (modal ? GTK_DIALOG_MODAL : GTK_DIALOG_DESTROY_WITH_PARENT),
+          nullptr,
+          nullptr))) {
+  gtk_window_set_default_size(GTK_WINDOW(impl_), 400, 200);
 
   static OptionDialog* window = this;
 
@@ -67,15 +70,14 @@ OptionDialog::OptionDialog(const Glib::ustring& title, bool modal)
   gtk_grid_attach(grid, GTK_WIDGET(okay_button_), 0, 5, 1, 1);
   gtk_grid_attach(grid, GTK_WIDGET(cancel_button_), 1, 5, 1, 1);
 
-  gtk_container_add(get_content_area()->Gtk::Container::gobj(), GTK_WIDGET(grid));
+  gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(impl_)),
+                    GTK_WIDGET(grid));
 
   LoadChanges();
 
-  get_content_area()->show_all_children();
+  gtk_widget_show_all(GTK_WIDGET(gtk_dialog_get_content_area(impl_)));
 
-  Utils::DisableGtkRTTI(this);
-
-  GTK_DIALOG_GET_CLASS(gobj())->response =
+  GTK_DIALOG_GET_CLASS(impl_)->response =
       [](GtkDialog* dialog, gint p0) {
         const auto base = static_cast<GtkDialogClass*>(
             g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(dialog))));
@@ -83,7 +85,7 @@ OptionDialog::OptionDialog(const Glib::ustring& title, bool modal)
           base->response(dialog, p0);
       };
 
-  GTK_DIALOG_GET_CLASS(gobj())->close =
+  GTK_DIALOG_GET_CLASS(impl_)->close =
       [](GtkDialog* dialog) {
         const auto base = static_cast<GtkDialogClass*>(
             g_type_class_peek_parent(G_OBJECT_GET_CLASS(G_OBJECT(dialog))));
@@ -92,13 +94,21 @@ OptionDialog::OptionDialog(const Glib::ustring& title, bool modal)
       };
 }
 
+OptionDialog::~OptionDialog() {
+  gtk_widget_destroy(GTK_WIDGET(impl_));
+}
+
 void OptionDialog::OnOkayButtonClicked() {
   OnSave();
-  response(Gtk::RESPONSE_ACCEPT);
+  gtk_dialog_response(impl_, GTK_RESPONSE_ACCEPT);
 }
 
 void OptionDialog::OnCancelButtonClicked() {
-  response(Gtk::RESPONSE_CANCEL);
+  gtk_dialog_response(impl_, GTK_RESPONSE_CANCEL);
+}
+
+gint OptionDialog::run() {
+  return gtk_dialog_run(impl_);
 }
 
 void OptionDialog::LoadChanges() {
