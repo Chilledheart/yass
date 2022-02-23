@@ -851,10 +851,17 @@ def _archive_files_main_files(output, paths):
     with open('eula.xml', 'w') as f:
       f.write(eula_xml)
 
+    # Use this command line to update .DS_Store
+    # hdiutil convert -format UDRW -o yass.dmg yass-macos-release-universal-*.dmg
+    # hdiutil resize -size 1G yass.dmg
     write_output(['../scripts/pkg-dmg', '--source', paths[0], '--target', output,
-                  '--sourcefile', '--volname', 'Yet Another Shadow Socket',
-                  '--resource', 'eula.xml', '--icon', '../src/mac/yass.icns',
-                  '--symlink', '/Applications:/Drag to here'],
+                  '--sourcefile',
+                  '--volname', 'Yet Another Shadow Socket',
+                  '--resource', 'eula.xml',
+                  '--icon', '../src/mac/yass.icns',
+                  '--copy', '../macos/.DS_Store:/.DS_Store',
+                  '--copy', '../macos/.background:/',
+                  '--symlink', '/Applications:/Applications'],
                  check=True)
   else:
     archive_files(output, paths)
