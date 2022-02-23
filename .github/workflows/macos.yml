@@ -79,7 +79,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - name: Populate depedencies
-        run: brew install ninja cmake
+        run: brew install ninja cmake p7zip
       - name: Build
         run: ./scripts/build.py
       - name: Upload dist tarball (including debuginfo)
@@ -121,7 +121,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - name: Populate depedencies
-        run: brew install ninja cmake
+        run: brew install ninja cmake p7zip
       - name: Build
         run: |
           export CLANG_TIDY_EXECUTABLE=$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy

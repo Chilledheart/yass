@@ -81,11 +81,11 @@ export PATH="/usr/local/go/bin:${PATH}"
 
 (for [Homebrew] users)
 
-Run in Terminal: ``brew install ninja cmake go``
+Run in Terminal: ``brew install ninja cmake go p7zip``
 
 (for [MacPorts] users)
 
-Run in Terminal: ``sudo port install ninja cmake go``
+Run in Terminal: ``sudo port install ninja cmake go p7zip``
 
 3. Compile the program with default configuration.
 ```

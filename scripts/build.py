@@ -66,10 +66,29 @@ def rename_by_unlink(src, dst):
     os.unlink(dst)
   os.rename(src, dst)
 
+
+def get_7z_path():
+  if platform.system() == 'Windows':
+    return 'C:\Program Files\\7-Zip\\7z.exe'
+  else:
+    return '7z'
+
+
+def inspect_file(file, files):
+  if file.endswith('.dmg'):
+    write_output(['hdiutil', 'imageinfo', archive])
+  elif file.endswith('.zip') or  file.endswith('.msi'):
+    p7z = get_7z_path()
+    write_output([p7z, 'l', file])
+  else:
+    for file in files:
+      print('------------ %s' % file)
+
+
 def get_app_name():
-  if sys.platform == 'win32':
+  if platform.system() == 'Windows':
     return '%s.exe' % APP_NAME
-  elif sys.platform == 'darwin':
+  elif platform.system() == 'Darwin':
     return '%s.app' % APP_NAME
   return APP_NAME
 
@@ -424,18 +443,18 @@ def get_dependencies_by_dumpbin(path, search_dirs):
 
 
 def get_dependencies(path):
-  if sys.platform == 'win32':
+  if platform.system() == 'Windows':
     return get_dependencies_by_dumpbin(path, _get_win32_search_paths())[0]
-  elif sys.platform == 'darwin':
+  elif platform.system() == 'Darwin':
     return get_dependencies_by_otool(path)
-  elif sys.platform in [ 'linux', 'linux2' ]:
+  elif platform.system() == 'Linux':
     return get_dependencies_by_ldd(path)
   else:
-    raise IOError('not supported in platform %s' % sys.platform)
+    raise IOError('not supported in platform %s' % platform.system())
 
 
 def get_dependencies_recursively(path):
-  if sys.platform == 'win32':
+  if platform.system() == 'Windows':
     search_dirs = _get_win32_search_paths()
     print('searching dlls in directories:')
     for search_dir in search_dirs:
@@ -459,7 +478,7 @@ def get_dependencies_recursively(path):
       print('--- %s' % unresolved_dep)
     return list(deps)
 
-  elif sys.platform == 'darwin':
+  elif platform.system() == 'Darwin':
     deps = get_dependencies_by_otool(path)
     while(True):
         deps_extended = list(deps)
@@ -470,10 +489,10 @@ def get_dependencies_recursively(path):
             deps = deps_extended;
         else:
             return list(deps_extended)
-  elif sys.platform in [ 'linux', 'linux2' ]:
+  elif platform.system() == 'Linux':
     return get_dependencies_by_ldd(path)
   else:
-    raise IOError('not supported in platform %s' % sys.platform)
+    raise IOError('not supported in platform %s' % platform.system())
 
 
 def check_universal_fat_bundle_darwin(bundle_path):
@@ -604,7 +623,7 @@ def generate_buildscript(configuration_type):
   if DEFAULT_ENABLE_CLANG_TIDY:
     cmake_args.extend(['-DENABLE_CLANG_TIDY=yes',
                        '-DCLANG_TIDY_EXECUTABLE=%s' % DEFAULT_CLANG_TIDY_EXECUTABLE])
-  if sys.platform == 'win32':
+  if platform.system() == 'Windows':
     cmake_args.extend(['-G', 'Ninja'])
     cmake_args.extend(['-DUSE_HOST_TOOLS=on'])
     cmake_args.extend(['-DCROSS_TOOLCHAIN_FLAGS_NATIVE="-DCMAKE_TOOLCHAIN_FILE=%s\\Native.cmake"' % os.getcwd()])
@@ -800,7 +819,7 @@ def archive_files(output, paths = []):
   from zipfile import ZipFile, ZIP_DEFLATED, ZipInfo
 
   print(f'generating zip file {output}')
-  with ZipFile(output, 'w', compression=ZIP_DEFLATED) as archive:
+  with ZipFile(output, 'w', compression=ZIP_DEFLATED, compresslevel=9) as archive:
     for path in paths:
       archive.write(path, path, ZIP_DEFLATED)
       if os.path.isdir(path):
@@ -1021,7 +1040,6 @@ if __name__ == '__main__':
   archives = postbuild_rename_archive(archives)
   for archive in archives:
     print('------ %s:' % os.path.basename(archive))
-    files = archives[archive]
-    for file in files:
-      print('------------ %s' % file)
+    print('======================================================================')
+    inspect_file(archive, archives[archive])
   print('done')
