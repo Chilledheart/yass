@@ -41,19 +41,15 @@ CYassApp theApp;
 CYassApp* mApp = &theApp;
 
 BOOL CYassApp::InitInstance() {
+  if (!SetUTF8Locale()) {
+    LOG(WARNING) << "Failed to set up utf-8 locale";
+  }
+
   if (!CheckFirstInstance())
     return FALSE;
 
   if (!CWinApp::InitInstance())
     return FALSE;
-
-  // TODO move to utils
-  // Starting in Windows 10 version 1803 (10.0.17134.0), the Universal C Runtime
-  // supports using a UTF-8 code page.
-  // https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/setlocale-wsetlocale?view=msvc-170
-  // For minimal locale
-  // the C locale will be UTF-8 enabled English;
-  setlocale(LC_ALL, "C");
 
   std::wstring appPath(MAX_PATH + 1, L'\0');
   ::GetModuleFileNameW(nullptr, &appPath[0], MAX_PATH);

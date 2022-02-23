@@ -915,20 +915,39 @@ static void ColoredWriteToStderr(LogSeverity severity,
   }
 #ifdef OS_WIN
   const HANDLE stderr_handle = GetStdHandle(STD_ERROR_HANDLE);
+  if (stderr_handle == NULL || stderr_handle == INVALID_HANDLE_VALUE) {
+    // Can't print anything, so just die
+    return;
+  }
+
+  std::wstring wmessage = SysUTF8ToWide(absl::string_view(message, len));
+  const wchar_t *text = wmessage.c_str();
+  uint32_t remaining = wmessage.size();
 
   // Gets the current text color.
   CONSOLE_SCREEN_BUFFER_INFO buffer_info;
   GetConsoleScreenBufferInfo(stderr_handle, &buffer_info);
   const WORD old_color_attrs = buffer_info.wAttributes;
 
-  // We need to flush the stream buffers into the console before each
-  // SetConsoleTextAttribute call lest it affect the text that is already
-  // printed but has not yet reached the console.
-  fflush(stderr);
   SetConsoleTextAttribute(stderr_handle,
                           GetColorAttribute(color) | FOREGROUND_INTENSITY);
-  fwrite(message, len, 1, stderr);
-  fflush(stderr);
+  while (remaining > 0) {
+    DWORD written;
+    // There is a shorter-than-documented limitation on the length of the
+    // string passed to WriteConsoleW. See
+    // <http://tahoe-lafs.org/trac/tahoe-lafs/ticket/1232>.
+    if (!WriteConsoleW(stderr_handle, text, std::min(remaining, 10000U),
+                       &written, nullptr) ||
+        written == 0) {
+      const char *message = "Failed to write on stderr console\n";
+      fwrite(message, strlen(message), 1, stderr);
+      fflush(stderr);
+      break;
+    }
+    remaining -= written;
+    text += written;
+  }
+
   // Restores the text color.
   SetConsoleTextAttribute(stderr_handle, old_color_attrs);
 #else

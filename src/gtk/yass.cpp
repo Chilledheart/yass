@@ -27,9 +27,9 @@ static const char* kAppId = "it.gui.yass";
 static const char* kAppName = YASS_APP_PRODUCT_NAME;
 
 int main(int argc, char** argv) {
-  // For minimal locale
-  // the C locale will be UTF-8 enabled English;
-  setlocale(LC_ALL, "C");
+  if (!SetUTF8Locale()) {
+    LOG(WARNING) << "Failed to set up utf-8 locale";
+  }
 
   absl::InitializeSymbolizer(argv[0]);
   absl::FailureSignalHandlerOptions failure_handle_options;

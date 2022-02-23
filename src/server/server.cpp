@@ -23,9 +23,10 @@
 using namespace ss;
 
 int main(int argc, const char* argv[]) {
-  // For minimal locale
-  // the C locale will be UTF-8 enabled English;
-  setlocale(LC_ALL, "C");
+  if (!SetUTF8Locale()) {
+    LOG(WARNING) << "Failed to set up utf-8 locale";
+  }
+
   // Major routine
   // - Read config from ss config file
   // - Listen by local address and local port

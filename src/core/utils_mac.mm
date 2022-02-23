@@ -9,6 +9,7 @@
 #include <CoreFoundation/CoreFoundation.h>
 
 #include <errno.h>
+#include <locale.h>
 #include <mach/mach_time.h>
 #include <mach/vm_map.h>
 #include <stdint.h>
@@ -468,6 +469,15 @@ bool MemoryLockAll() {
 uint64_t GetMonotonicTime() {
   uint64_t now = mach_absolute_time();
   return MachTimeToNanoseconds(now);
+}
+
+bool SetUTF8Locale() {
+  // C.UTF-8 doesn't exists on macOS
+  if (setlocale(LC_ALL, "en_US.UTF-8") == nullptr)
+    return false;
+  if (strcmp(setlocale(LC_ALL, nullptr), "en_US.UTF-8") != 0)
+    return false;
+  return true;
 }
 
 namespace {

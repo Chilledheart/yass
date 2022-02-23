@@ -2265,6 +2265,10 @@ if (CLI)
       $<TARGET_OBJECTS:yass_base>
       )
 
+  if (MSVC)
+    target_sources(yass_cli PRIVATE src/core/win32.manifest)
+  endif()
+
   target_include_directories(yass_cli PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
@@ -2284,6 +2288,10 @@ if (SERVER)
       src/server/ss_connection.hpp
       $<TARGET_OBJECTS:yass_base>
       )
+
+  if (MSVC)
+    target_sources(yass_server PRIVATE src/core/win32.manifest)
+  endif()
 
   target_include_directories(yass_server PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src)

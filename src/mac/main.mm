@@ -31,9 +31,9 @@ static std::string GetMainExecutablePath() {
 }
 
 int main(int argc, const char* argv[]) {
-  // For minimal locale
-  // the C locale will be UTF-8 enabled English;
-  setlocale(LC_ALL, "C");
+  if (!SetUTF8Locale()) {
+    LOG(WARNING) << "Failed to set up utf-8 locale";
+  }
 
   absl::InitializeSymbolizer(GetMainExecutablePath().c_str());
   absl::FailureSignalHandlerOptions failure_handle_options;

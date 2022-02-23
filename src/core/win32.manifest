@@ -1,30 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<!-- yass.exe.manifest -->
+<!-- common.exe.manifest -->
 <!-- reference: https://docs.microsoft.com/en-us/windows/win32/sbscs/application-manifests -->
 <!-- reference: https://docs.microsoft.com/en-us/windows/win32/sysinfo/targeting-your-application-at-windows-8-1 -->
 <assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1" xmlns:asmv3="urn:schemas-microsoft-com:asm.v3">
-    <!-- reference: https://docs.microsoft.com/en-us/dotnet/framework/configure-apps/file-schema/runtime/assemblyidentity-element-for-runtime -->
-    <assemblyIdentity
-        type="win32"
-        name="@YASS_APP_NAME@"
-        version="@YASS_APP_FULL_VERSION@"
-        processorArchitecture="@MSVC_PROCESSOR_ARCHITECTURE@"
-    />
-    <description>Yet Another Shadow Socket Application</description>
-    <!-- To enable your application to use visual styles, you must use ComCtl32.dll version 6 or later. -->
-    <!-- reference: https://docs.microsoft.com/en-us/windows/win32/Controls/cookbook-overview -->
-    <dependency>
-        <dependentAssembly>
-            <assemblyIdentity
-                type="win32"
-                name="Microsoft.Windows.Common-Controls"
-                version="6.0.0.0"
-                processorArchitecture="*"
-                publicKeyToken="6595b64144ccf1df"
-                language="*"
-            />
-        </dependentAssembly>
-    </dependency>
     <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
         <application>
             <!-- This tag is required for XAML islands usage in the process for media scenarios. -->
@@ -48,23 +26,6 @@
     <asmv3:application>
         <asmv3:windowsSettings xmlns="http://schemas.microsoft.com/SMI/2019/WindowsSettings">
             <activeCodePage>UTF-8</activeCodePage>
-        </asmv3:windowsSettings>
-    </asmv3:application>
-    <!-- Specifies whether the current process is dots per inch (dpi) aware. -->
-    <!-- Windows 10, version 1607: The dpiAware element is ignored if the dpiAwareness element is present. -->
-    <!-- And the minimum version of the operating system that supports the dpiAwareness element is Windows 10, version 1607.  -->
-    <!-- reference: https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows?redirectedfrom=MSDN -->
-    <asmv3:application>
-        <asmv3:windowsSettings>
-            <!-- The dpiAwareness element can contain a single item or a list of comma-separated items.-->
-            <!-- In the latter case, the first (leftmost) item in the list recognized by the operating system is used. -->
-            <!-- In this way, you can specify different behaviors supported in future Windows operating system versions. -->
-            <!-- system: The current process is system dpi aware. -->
-            <!-- permonitor: The current process is per-monitor dpi aware. -->
-            <!-- permonitorv2: The current process uses the per-monitor-v2 dpi awareness context. This item will only be recognized on Windows 10 version 1703 or later. -->
-            <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2, PerMonitor, system</dpiAwareness>
-            <!-- The current process is system dpi aware. -->
-            <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true</dpiAware>
         </asmv3:windowsSettings>
     </asmv3:application>
     <!-- Enables long paths that exceed MAX_PATH in length. This element is supported in Windows 10, version 1607, and later. -->

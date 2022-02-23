@@ -50,7 +50,10 @@ bool SetThreadName(std::thread::native_handle_type handle,
 bool MemoryLockAll();
 
 uint64_t GetMonotonicTime();
+
 #define NS_PER_SECOND (1000 * 1000 * 1000)
+
+bool SetUTF8Locale();
 
 absl::StatusOr<int32_t> StringToInteger(absl::string_view value);
 

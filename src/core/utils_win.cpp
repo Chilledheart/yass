@@ -332,6 +332,112 @@ uint64_t GetMonotonicTime() {
   return ElapsedNanoseconds.QuadPart;
 }
 
+static void GetWindowsVersion(int *major, int *minor, int *build_number,
+                              DWORD *os_type) {
+  OSVERSIONINFOW version_info {};
+  version_info.dwOSVersionInfoSize = sizeof(version_info);
+  // GetVersionEx() is deprecated, and the suggested replacement are
+  // the IsWindows*OrGreater() functions in VersionHelpers.h. We can't
+  // use that because:
+  // - For Windows 10, there's IsWindows10OrGreater(), but nothing more
+  //   granular. We need to be able to detect different Windows 10 releases
+  //   since they sometimes change behavior in ways that matter.
+  // - There is no IsWindows11OrGreater() function yet.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+  if (!GetVersionExW(&version_info)) {
+    PLOG(WARNING) << "Interal error: GetVersionExW failed";
+  }
+#pragma clang diagnostic pop
+
+  *major = version_info.dwMajorVersion;
+  *minor = version_info.dwMinorVersion;
+  *build_number = version_info.dwBuildNumber;
+  *os_type = 0;
+
+  // FIXME use dynamic load on Kernel32.dll
+  // https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getproductinfo
+#if _WIN32_WINNT >= 0x0601
+  if (!GetProductInfo(version_info.dwMajorVersion, version_info.dwMinorVersion,
+                      0, 0, os_type)) {
+    PLOG(WARNING) << "Interal error: GetProductInfo failed";
+  }
+#endif
+}
+
+static bool IsHandleConsole(HANDLE handle) {
+  DWORD mode;
+  return handle != 0 && handle != INVALID_HANDLE_VALUE &&
+         (GetFileType(handle) & ~FILE_TYPE_REMOTE) == FILE_TYPE_CHAR &&
+         GetConsoleMode(handle, &mode);
+}
+
+#ifndef CP_UTF8
+#define CP_UTF8 65001
+#endif // CP_UTF8
+
+#define MAKE_VER(major, minor, build) \
+    (((major) << 24) | ((minor) << 16) | (build))
+
+bool SetUTF8Locale() {
+  bool success = false;
+
+  int major, minor, build_number;
+  DWORD os_type;
+  uint32_t version;
+  DWORD processes[2];
+
+  GetWindowsVersion(&major, &minor, &build_number, &os_type);
+
+  bool is_console = IsHandleConsole(GetStdHandle(STD_INPUT_HANDLE)) ||
+                    IsHandleConsole(GetStdHandle(STD_OUTPUT_HANDLE)) ||
+                    IsHandleConsole(GetStdHandle(STD_ERROR_HANDLE));
+
+  if (is_console) {
+    // Calling SetConsoleCP
+    // this setting is permanent and we need to restore CP value after exit,
+    // otherwise it might affects the all programs in the same console
+    //
+    // anyway using WriteConsoleW should be sufficient to handle with UTF-8
+    // characters in console, better to leave this code path aside.
+#if 0
+    // Use UTF-8 mode on Windows 10 1903 or later.
+    if (MAKE_VER(major, minor, build_number) >= MAKE_VER(10, 0, 18362)) {
+      static UINT previous_cp, previous_output_cp;
+      previous_cp = GetConsoleCP();
+      previous_output_cp = GetConsoleOutputCP();
+      if (SetConsoleCP(CP_UTF8) && SetConsoleOutputCP(CP_UTF8)) {
+        success = true;
+      } else {
+        PLOG(WARNING) << "Interal error: setup utf-8 console cp failed";
+      }
+      std::atexit([]() {
+        if (!SetConsoleCP(previous_cp) ||
+            !SetConsoleOutputCP(previous_output_cp)) {
+          PLOG(WARNING) << "Interal error: restore console cp failed";
+        }
+      });
+    }
+#else
+    success = true;
+#endif
+  } else {
+    success = true;
+  }
+
+  // Starting in Windows 10 version 1803 (10.0.17134.0), the Universal C Runtime
+  // supports using a UTF-8 code page.
+  // https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/setlocale-wsetlocale?view=msvc-170
+  if (MAKE_VER(major, minor, build_number) >= MAKE_VER(10, 0, 17134)) {
+    setlocale(LC_ALL, ".UTF8");
+  } else if (!is_console) {
+    success = false;
+  }
+  return success;
+}
+
+#undef MAKE_VER
+
 // borrowed from sys_string_conversions_win.cc
 
 // Do not assert in this function since it is used by the asssertion code!
