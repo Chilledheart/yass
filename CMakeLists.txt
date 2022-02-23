@@ -2126,6 +2126,7 @@ set(files
     src/core/unguessable_token.cpp
     src/core/pickle.cpp
     src/core/token.cpp
+    src/core/atl_throw.cpp
     src/crypto/aead_base_decrypter.cpp
     src/crypto/aead_base_encrypter.cpp
     src/crypto/aead_evp_decrypter.cpp
@@ -2214,6 +2215,8 @@ set(hfiles
     src/core/pickle.hpp
     src/core/span.hpp
     src/core/token.hpp
+    src/core/atl_throw.hpp
+    src/core/atl.hpp
     src/crypto/aead_base_decrypter.hpp
     src/crypto/aead_base_encrypter.hpp
     src/crypto/aead_evp_decrypter.hpp

@@ -4,6 +4,8 @@
 #ifndef H_CORE_ASIO_THROW_EXCEPTIONS
 #define H_CORE_ASIO_THROW_EXCEPTIONS
 
+#include "core/debug.hpp"
+#include "core/immediate_crash.hpp"
 #include "core/logging.hpp"
 
 namespace asio {
@@ -13,7 +15,8 @@ namespace detail {
 #if defined(ASIO_NO_EXCEPTIONS)
 template <typename Exception>
 void throw_exception(const Exception& e) {
-  LOG(FATAL) << "ASIO Error Msg: " << e.what();
+  Alias(&e);
+  IMMEDIATE_CRASH();
 }
 #endif  // ASIO_NO_EXCEPTIONS
 
