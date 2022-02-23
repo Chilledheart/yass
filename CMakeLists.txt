@@ -45,9 +45,6 @@ endif()
 
 # https://docs.microsoft.com/en-us/cpp/c-runtime-library/crt-library-features?redirectedfrom=MSDN&view=msvc-170
 set(CMAKE_MSVC_CRT_LINKAGE "dynamic" CACHE STRING "")
-if (VCPKG_CRT_LINKAGE AND NOT VCPKG_CRT_LINKAGE STREQUAL CMAKE_MSVC_CRT_LINKAGE)
-  message(FATAL_ERROR "CRT LINKAGE not matched in configuration")
-endif()
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:${CMAKE_MSVC_CRT_LINKAGE},dynamic>:DLL>" CACHE STRING "")
 
 # Defer enabling C and CXX languages.
@@ -342,18 +339,6 @@ if (HAVE_FLOCK)
 endif()
 
 if (MSVC)
-    option(VCPKG_ROOT_DIR "" "vcpkg root path")
-    set(VCPKG_INCLUDE_DIRS
-      ${VCPKG_ROOT_DIR}/installed/${VCPKG_TARGET_TRIPLET}/include)
-    set(VCPKG_BIN_PATH ${VCPKG_ROOT_DIR}/installed/x86-windows/bin)
-    set(VCPKG_STATIC_LIB_PATH ${VCPKG_ROOT_DIR}/installed/${VCPKG_TARGET_TRIPLET}/lib)
-    set(VCPKG_STATIC_LIB_DEBUG_PATH ${VCPKG_ROOT_DIR}/installed/${VCPKG_TARGET_TRIPLET}/debug/lib)
-
-    include_directories(${VCPKG_INCLUDE_DIRS} SYSTEM)
-    set(CMAKE_REQUIRED_INCLUDES
-        ${VCPKG_INCLUDE_DIRS}
-        ${CMAKE_REQUIRED_INCLUDES})
-
     set(SYSTEM_LIBS ${SYSTEM_LIBS} ShLwApi WS2_32 WinMM Gdi32 ComDlg32 shell32 Ole32 WinSpool)
 
     if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "static")

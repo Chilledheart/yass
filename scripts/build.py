@@ -23,9 +23,6 @@ DEFAULT_ALLOW_XP = os.getenv('ALLOW_XP', False)
 DEFAULT_SIGNING_IDENTITY = os.getenv('CODESIGN_IDENTITY', '-')
 DEFAULT_ENABLE_CLANG_TIDY = os.getenv('ENABLE_CLANG_TIDY', False)
 DEFAULT_CLANG_TIDY_EXECUTABLE = os.getenv('CLANG_TIDY_EXECUTABLE', 'clang-tidy')
-# documented in github actions https://github.com/actions/virtual-environments/blob/main/images/win/Windows2019-Readme.md
-# and VCPKG_ROOT is used for compatible mode
-VCPKG_DIR = os.getenv('VCPKG_INSTALLATION_ROOT', os.getenv('VCPKG_ROOT', 'C:\\vcpkg'))
 
 # clang-tidy complains about parse error
 if DEFAULT_ENABLE_CLANG_TIDY:
@@ -635,23 +632,12 @@ def generate_buildscript(configuration_type):
       f.write('set(CMAKE_C_COMPILER_TARGET "x86_64-pc-windows-msvc")\n')
       f.write('set(CMAKE_CXX_COMPILER_TARGET "x86_64-pc-windows-msvc")\n')
     cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])
-    cmake_args.extend(['-DCMAKE_TOOLCHAIN_FILE=%s\\scripts\\buildsystems\\vcpkg.cmake' % VCPKG_DIR])
-    cmake_args.extend(['-DVCPKG_TARGET_ARCHITECTURE=%s' % DEFAULT_ARCH])
-    cmake_args.extend(['-DVCPKG_APPLOCAL_DEPS=off'])
     if DEFAULT_MSVC_CRT_LINKAGE == 'static':
       cmake_args.extend(['-DCMAKE_MSVC_CRT_LINKAGE=static'])
-      cmake_args.extend(['-DVCPKG_CRT_LINKAGE=static'])
-      cmake_args.extend(['-DVCPKG_LIBRARY_LINKAGE=static'])
-      cmake_args.extend(['-DVCPKG_TARGET_TRIPLET=%s-windows-static' % DEFAULT_ARCH])
     else:
       cmake_args.extend(['-DCMAKE_MSVC_CRT_LINKAGE=dynamic'])
-      cmake_args.extend(['-DVCPKG_CRT_LINKAGE=dynamic'])
-      cmake_args.extend(['-DVCPKG_LIBRARY_LINKAGE=dynamic'])
-      cmake_args.extend(['-DVCPKG_TARGET_TRIPLET=%s-windows' % DEFAULT_ARCH])
     if DEFAULT_ALLOW_XP:
       cmake_args.extend(['-DALLOW_XP=ON'])
-    cmake_args.extend(['-DVCPKG_ROOT_DIR=%s' % VCPKG_DIR])
-    cmake_args.extend(['-DVCPKG_VERBOSE=ON'])
 
     # Some compilers are inherently cross compilers, such as Clang and the QNX QCC compiler.
     # The CMAKE_<LANG>_COMPILER_TARGET can be set to pass a value to those supported compilers when compiling.
