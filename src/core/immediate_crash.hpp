@@ -61,7 +61,7 @@
 #define TRAP_SEQUENCE2_() asm volatile("ud2")
 #endif  // defined(OS_APPLE)
 
-#elif defined(ARCH_CPU_ARMEL)
+#elif defined(ARCH_CPU_ARMEL) && (__ARM_ARCH >= 5)
 
 // bkpt will generate a SIGBUS when running on armv7 and a SIGTRAP when running
 // as a 32 bit userspace app on arm64. There doesn't seem to be any way to
