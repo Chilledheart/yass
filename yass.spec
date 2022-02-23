@@ -6,8 +6,8 @@ Summary: lightweight and secure http/socks4/socks5 proxy
 License: GPLv2
 URL: https://github.com/Chilledheart/yass
 Source0: https://github.com/Chilledheart/yass/archive/refs/tags/%{version}.tar.gz
-BuildRequires: cmake >= 3.12, ninja-build, pkg-config, perl, gcc >= 6.1, gcc-c++ >= 6.1, libstdc++-static >= 6.1, libatomic-static, golang >= 1.4
-BuildRequires: gtk3-devel, gtkmm30-devel >= 3.18
+BuildRequires: cmake >= 3.12, ninja-build, pkg-config, perl, gcc >= 6.1, gcc-c++ >= 6.1, golang >= 1.4
+BuildRequires: glib2-devel, gtk3-devel
 
 %description
 Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for
@@ -19,7 +19,7 @@ embedded devices and low end boxes.
 %build
 mkdir build
 cd build
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_HOST_TOOLS=on -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc" -DGUI=on -DCLI=on -DSERVER=on ..
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_HOST_TOOLS=on -DGUI=on -DCLI=on -DSERVER=on ..
 ninja yass yass_cli yass_server
 cd ..
 

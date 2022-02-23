@@ -7,8 +7,6 @@
 #include <sstream>
 
 #include <absl/flags/flag.h>
-#include <gtkmm/aboutdialog.h>
-#include <gtkmm/messagedialog.h>
 
 #include "cli/socks5_connection_stats.hpp"
 #include "core/utils.hpp"
@@ -16,8 +14,6 @@
 #include "gtk/utils.hpp"
 #include "gtk/yass.hpp"
 #include "version.h"
-
-static const char* kMainFrameName = "YetAnotherShadowSocket";
 
 static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   if (bytes < 1024) {
@@ -35,34 +31,26 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
       << " " << *c;
 }
 
-namespace {
-template <typename Handler, void (Handler::*HandlerFunc)()>
-struct GtkHandlerProxy {
-  static void Handle(gpointer p) { (static_cast<Handler*>(p)->*HandlerFunc)(); }
-};
-}  // namespace
-
 YASSWindow::YASSWindow()
-    : vbox_(false, 0),
-      hbox_(false, 20),
-      left_vbox_(false, 0),
-      start_button_("Start"),
-      stop_button_("Stop"),
-      serverhost_label_("Server Host"),
-      serverport_label_("Server Port"),
-      password_label_("Password"),
-      method_label_("Cipher/Method"),
-      localhost_label_("Local Host"),
-      localport_label_("Local Port"),
-      timeout_label_("Timeout"),
-      autostart_label_("Auto Start") {
-  set_title(kMainFrameName);
-  set_default_size(450, 390);
-  set_position(Gtk::WIN_POS_CENTER);
-  set_resizable(false);
-  this->set_icon_name("yass");
+    : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))) {
 
-  signal_hide().connect(sigc::mem_fun(*this, &YASSWindow::OnClose));
+  gtk_window_set_title(GTK_WINDOW(impl_), YASS_APP_PRODUCT_NAME);
+  gtk_window_set_default_size(GTK_WINDOW(impl_), 450, 390);
+  gtk_window_set_position(GTK_WINDOW(impl_), GTK_WIN_POS_CENTER);
+  gtk_window_set_resizable(GTK_WINDOW(impl_), false);
+  gtk_window_set_icon_name(GTK_WINDOW(impl_), "yass");
+
+  static YASSWindow* window = this;
+
+  auto hide_callback = []() { window->OnClose(); };
+  g_signal_connect(G_OBJECT(impl_), "hide",
+                   G_CALLBACK(hide_callback), this);
+
+  // vbox, hbox
+  GtkBox *vbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
+  GtkBox *hbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 20));
+  GtkBox *left_box = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
+  GtkGrid* right_panel_grid = GTK_GRID(gtk_grid_new());
 
   // gtkmm's MenuBar/Menu/MenuItem is binded to model
   GtkWidget* menubar;
@@ -90,13 +78,11 @@ YASSWindow::YASSWindow()
   gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), exit_menu_item);
   gtk_menu_shell_append(GTK_MENU_SHELL(menubar), file_menu_item);
 
-  auto option_callback =
-      &GtkHandlerProxy<YASSWindow, &YASSWindow::OnOption>::Handle;
+  auto option_callback = []() { window->OnOption(); };
   g_signal_connect(G_OBJECT(option_menu_item), "activate",
                    G_CALLBACK(option_callback), nullptr);
 
-  auto exit_callback =
-      &GtkHandlerProxy<YASSWindow, &YASSWindow::OnClose>::Handle;
+  auto exit_callback = []() { window->OnClose(); };
   g_signal_connect(G_OBJECT(exit_menu_item), "activate",
                    G_CALLBACK(exit_callback), nullptr);
 
@@ -108,192 +94,253 @@ YASSWindow::YASSWindow()
   gtk_menu_shell_append(GTK_MENU_SHELL(help_menu), about_menu_item);
   gtk_menu_shell_append(GTK_MENU_SHELL(menubar), help_menu_item);
 
-  auto about_callback =
-      &GtkHandlerProxy<YASSWindow, &YASSWindow::OnAbout>::Handle;
+  auto about_callback = []() { window->OnAbout(); };
   g_signal_connect(G_OBJECT(about_menu_item), "activate",
                    G_CALLBACK(about_callback), this);
 
-  gtk_box_pack_start(GTK_BOX(vbox_.gobj()), menubar, FALSE, FALSE, 0);
+  gtk_box_pack_start(vbox, menubar, FALSE, FALSE, 0);
 
-  start_button_.signal_clicked().connect(
-      sigc::mem_fun(*this, &YASSWindow::OnStartButtonClicked));
-  stop_button_.signal_clicked().connect(
-      sigc::mem_fun(*this, &YASSWindow::OnStopButtonClicked));
+  start_button_ = GTK_BUTTON(gtk_button_new());
+  gtk_button_set_label(start_button_, "Start");
+  gtk_widget_set_margin_top(GTK_WIDGET(start_button_), 30);
+  gtk_widget_set_margin_bottom(GTK_WIDGET(start_button_), 30);
 
-  stop_button_.set_sensitive(false);
+  stop_button_ = GTK_BUTTON(gtk_button_new());
+  gtk_button_set_label(stop_button_, "Stop");
+  gtk_widget_set_margin_top(GTK_WIDGET(stop_button_), 30);
+  gtk_widget_set_margin_bottom(GTK_WIDGET(stop_button_), 30);
 
-  start_button_.set_margin_top(30);
-  start_button_.set_margin_bottom(30);
-  stop_button_.set_margin_top(30);
-  stop_button_.set_margin_bottom(30);
+  auto start_callback = []() { window->OnStartButtonClicked(); };
 
-  left_vbox_.add(start_button_);
-  left_vbox_.add(stop_button_);
+  g_signal_connect(G_OBJECT(start_button_), "clicked",
+                   G_CALLBACK(start_callback), nullptr);
 
-  left_vbox_.set_margin_start(15);
-  left_vbox_.set_margin_end(15);
+  auto stop_callback = []() { window->OnStopButtonClicked(); };
 
-  hbox_.add(left_vbox_);
+  g_signal_connect(G_OBJECT(stop_button_), "clicked",
+                   G_CALLBACK(stop_callback), nullptr);
 
+  gtk_widget_set_sensitive(GTK_WIDGET(stop_button_), false);
+
+  gtk_container_add(GTK_CONTAINER(left_box), GTK_WIDGET(start_button_));
+  gtk_container_add(GTK_CONTAINER(left_box), GTK_WIDGET(stop_button_));
+
+  gtk_widget_set_margin_start(GTK_WIDGET(left_box), 15);
+  gtk_widget_set_margin_end(GTK_WIDGET(left_box), 15);
+
+  gtk_container_add(GTK_CONTAINER(hbox), GTK_WIDGET(left_box));
+
+  auto server_host_label_ = gtk_label_new("Server Host");
+  auto server_port_label_ = gtk_label_new("Server Port");
+  auto password_label_ = gtk_label_new("Password");
+  auto method_label_ = gtk_label_new("Cipher/Method");
+  auto local_host_label_ = gtk_label_new("Local Host");
+  auto local_port_label_ = gtk_label_new("Local Port");
+  auto timeout_label_ = gtk_label_new("Timeout");
+  auto autostart_label_ = gtk_label_new("Auto Start");
+
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_host_label_), 0, 0, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_port_label_), 0, 1, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(password_label_), 0, 2, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(method_label_), 0, 3, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_host_label_), 0, 4, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_port_label_), 0, 5, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_label_), 0, 6, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_label_), 0, 7, 1, 1);
+
+  server_host_ = GTK_ENTRY(gtk_entry_new());
+  server_port_ = GTK_ENTRY(gtk_entry_new());
+  password_ = GTK_ENTRY(gtk_entry_new());
   static const char* const method_names[] = {
 #define XX(num, name, string) string,
       CIPHER_METHOD_MAP(XX)
 #undef XX
   };
 
+  method_ = GTK_COMBO_BOX_TEXT(gtk_combo_box_text_new());
+
   for (uint32_t i = 1; i < sizeof(method_names) / sizeof(method_names[0]);
        ++i) {
-    method_.append(method_names[i]);
+    gtk_combo_box_text_append_text(method_, method_names[i]);
   }
+  local_host_ = GTK_ENTRY(gtk_entry_new());
+  local_port_ = GTK_ENTRY(gtk_entry_new());
+  timeout_ = GTK_ENTRY(gtk_entry_new());
 
-  right_panel_grid_.attach(serverhost_label_, 0, 0, 1, 1);
-  right_panel_grid_.attach(serverport_label_, 0, 1, 1, 1);
-  right_panel_grid_.attach(password_label_, 0, 2, 1, 1);
-  right_panel_grid_.attach(method_label_, 0, 3, 1, 1);
-  right_panel_grid_.attach(localhost_label_, 0, 4, 1, 1);
-  right_panel_grid_.attach(localport_label_, 0, 5, 1, 1);
-  right_panel_grid_.attach(timeout_label_, 0, 6, 1, 1);
-  right_panel_grid_.attach(autostart_label_, 0, 7, 1, 1);
+  autostart_ = GTK_CHECK_BUTTON(gtk_check_button_new());
 
-  autostart_.signal_clicked().connect(
-      sigc::mem_fun(*this, &YASSWindow::OnCheckedAutoStart));
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(autostart_),
+                               Utils::GetAutoStart());
 
-  autostart_.set_active(Utils::GetAutoStart());
+  auto checked_auto_start_callback = []() { window->OnCheckedAutoStart(); };
 
-  password_.set_visibility(false);
+  g_signal_connect(G_OBJECT(autostart_), "clicked",
+                   G_CALLBACK(checked_auto_start_callback), nullptr);
 
-  right_panel_grid_.attach(serverhost_, 1, 0, 1, 1);
-  right_panel_grid_.attach(serverport_, 1, 1, 1, 1);
-  right_panel_grid_.attach(password_, 1, 2, 1, 1);
-  right_panel_grid_.attach(method_, 1, 3, 1, 1);
-  right_panel_grid_.attach(localhost_, 1, 4, 1, 1);
-  right_panel_grid_.attach(localport_, 1, 5, 1, 1);
-  right_panel_grid_.attach(timeout_, 1, 6, 1, 1);
-  right_panel_grid_.attach(autostart_, 1, 7, 1, 1);
 
-  right_panel_grid_.set_margin_top(10);
-  right_panel_grid_.set_margin_end(20);
+  gtk_entry_set_visibility(password_, false);
 
-  hbox_.add(right_panel_grid_);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_host_), 1, 0, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_port_), 1, 1, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(password_), 1, 2, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(method_), 1, 3, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_host_), 1, 4, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_port_), 1, 5, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_), 1, 6, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_), 1, 7, 1, 1);
 
-  vbox_.pack_start(hbox_, true, false, 0);
+  gtk_widget_set_margin_start(GTK_WIDGET(right_panel_grid), 10);
+  gtk_widget_set_margin_end(GTK_WIDGET(right_panel_grid), 20);
 
-  status_bar_.remove_all_messages();
-  status_bar_.push("READY");
-  vbox_.pack_start(status_bar_, true, false, 0);
+  gtk_container_add(GTK_CONTAINER(hbox), GTK_WIDGET(right_panel_grid));
 
-  add(vbox_);
+  gtk_box_pack_start(vbox, GTK_WIDGET(hbox), true, false, 0);
+
+  status_bar_ = GTK_STATUSBAR(gtk_statusbar_new());
+  gtk_statusbar_remove_all(status_bar_, 0);
+  gtk_statusbar_push(status_bar_, 0, "READY");
+
+  gtk_box_pack_start(vbox, GTK_WIDGET(status_bar_), true, false, 0);
+
+  gtk_container_add(GTK_CONTAINER(impl_), GTK_WIDGET(vbox));
 
   LoadChanges();
 
-  show_all_children();
+  gtk_widget_show_all(GTK_WIDGET(impl_));
 }
 
 YASSWindow::~YASSWindow() = default;
 
+void YASSWindow::show() {
+  gtk_widget_show(GTK_WIDGET(impl_));
+}
+
+void YASSWindow::present() {
+  gtk_window_present(GTK_WINDOW(impl_));
+}
+
 void YASSWindow::OnStartButtonClicked() {
-  start_button_.set_sensitive(false);
+  gtk_widget_set_sensitive(GTK_WIDGET(start_button_), false);
   mApp->OnStart();
 }
 
 void YASSWindow::OnStopButtonClicked() {
-  stop_button_.set_sensitive(false);
+  gtk_widget_set_sensitive(GTK_WIDGET(stop_button_), false);
   mApp->OnStop();
 }
 
 void YASSWindow::OnCheckedAutoStart() {
-  Utils::EnableAutoStart(autostart_.get_active());
+  Utils::EnableAutoStart(
+      gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(autostart_)));
 }
 
 std::string YASSWindow::GetServerHost() {
-  return serverhost_.get_text();
+  return gtk_entry_get_text(server_host_);
 }
 
 std::string YASSWindow::GetServerPort() {
-  return serverport_.get_text();
+  return gtk_entry_get_text(server_port_);
 }
 
 std::string YASSWindow::GetPassword() {
-  return password_.get_text();
+  return gtk_entry_get_text(password_);
 }
 
 std::string YASSWindow::GetMethod() {
-  return method_.get_active_text();
+  gchar* active_method = gtk_combo_box_text_get_active_text(method_);
+
+  return make_unique_ptr_gfree(active_method).get();
 }
 
 std::string YASSWindow::GetLocalHost() {
-  return localhost_.get_text();
+  return gtk_entry_get_text(local_host_);
 }
 
 std::string YASSWindow::GetLocalPort() {
-  return localport_.get_text();
+  return gtk_entry_get_text(local_port_);
 }
 
 std::string YASSWindow::GetTimeout() {
-  return timeout_.get_text();
+  return gtk_entry_get_text(timeout_);
 }
 
 void YASSWindow::Started() {
   UpdateStatusBar();
-  serverhost_.set_sensitive(false);
-  serverport_.set_sensitive(false);
-  password_.set_sensitive(false);
-  method_.set_sensitive(false);
-  localhost_.set_sensitive(false);
-  localport_.set_sensitive(false);
-  timeout_.set_sensitive(false);
-  stop_button_.set_sensitive(true);
+  gtk_widget_set_sensitive(GTK_WIDGET(server_host_), false);
+  gtk_widget_set_sensitive(GTK_WIDGET(server_port_), false);
+  gtk_widget_set_sensitive(GTK_WIDGET(password_), false);
+  gtk_widget_set_sensitive(GTK_WIDGET(method_), false);
+  gtk_widget_set_sensitive(GTK_WIDGET(local_host_), false);
+  gtk_widget_set_sensitive(GTK_WIDGET(local_port_), false);
+  gtk_widget_set_sensitive(GTK_WIDGET(timeout_), false);
+  gtk_widget_set_sensitive(GTK_WIDGET(autostart_), false);
+  gtk_widget_set_sensitive(GTK_WIDGET(stop_button_), true);
 }
 
 void YASSWindow::StartFailed() {
   UpdateStatusBar();
-  serverhost_.set_sensitive(true);
-  serverport_.set_sensitive(true);
-  password_.set_sensitive(true);
-  method_.set_sensitive(true);
-  localhost_.set_sensitive(true);
-  localport_.set_sensitive(true);
-  timeout_.set_sensitive(true);
-  start_button_.set_sensitive(true);
+  gtk_widget_set_sensitive(GTK_WIDGET(server_host_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(server_port_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(password_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(method_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(local_host_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(local_port_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(timeout_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(autostart_), true);
 
-  Gtk::MessageDialog alert_dialog(*this, mApp->GetStatus(), false,
-                                  Gtk::MessageType::MESSAGE_WARNING,
-                                  Gtk::ButtonsType::BUTTONS_OK, true);
-  alert_dialog.run();
+  gtk_widget_set_sensitive(GTK_WIDGET(start_button_), true);
+
+  GtkDialog* alert_dialog = GTK_DIALOG(
+      gtk_message_dialog_new(impl_, GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING,
+                             GTK_BUTTONS_OK, "%s", mApp->GetStatus().c_str()));
+
+  gtk_dialog_run(GTK_DIALOG(alert_dialog));
+  gtk_widget_destroy(GTK_WIDGET(alert_dialog));
 }
 
 void YASSWindow::Stopped() {
   UpdateStatusBar();
-  serverhost_.set_sensitive(true);
-  serverport_.set_sensitive(true);
-  password_.set_sensitive(true);
-  method_.set_sensitive(true);
-  localhost_.set_sensitive(true);
-  localport_.set_sensitive(true);
-  timeout_.set_sensitive(true);
-  start_button_.set_sensitive(true);
+  gtk_widget_set_sensitive(GTK_WIDGET(server_host_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(server_port_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(password_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(method_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(local_host_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(local_port_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(timeout_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(autostart_), true);
+
+  gtk_widget_set_sensitive(GTK_WIDGET(start_button_), true);
 }
 
 void YASSWindow::LoadChanges() {
-  serverhost_.set_text(absl::GetFlag(FLAGS_server_host));
-  serverport_.set_text(std::to_string(absl::GetFlag(FLAGS_server_port)));
-  password_.set_text(absl::GetFlag(FLAGS_password));
+  auto server_host_str = absl::GetFlag(FLAGS_server_host);
+  auto server_port_str = std::to_string(absl::GetFlag(FLAGS_server_port));
+  auto password_str = absl::GetFlag(FLAGS_password);
+  int32_t cipher_method = absl::GetFlag(FLAGS_cipher_method);
+  auto local_host_str = absl::GetFlag(FLAGS_local_host);
+  auto local_port_str = std::to_string(absl::GetFlag(FLAGS_local_port));
+  auto timeout_str = std::to_string(absl::GetFlag(FLAGS_connect_timeout));
+
+  gtk_entry_set_text(server_host_, server_host_str.c_str());
+  gtk_entry_set_text(server_port_, server_port_str.c_str());
+  gtk_entry_set_text(password_, password_str.c_str());
 
   static const int method_ids[] = {
 #define XX(num, name, string) num,
       CIPHER_METHOD_MAP(XX)
 #undef XX
   };
-  int32_t cipher_method = absl::GetFlag(FLAGS_cipher_method);
   uint32_t i;
   for (i = 1; i < sizeof(method_ids) / sizeof(method_ids[0]); ++i) {
     if (cipher_method == method_ids[i])
       break;
   }
-  method_.set_active(i - 1);
-  localhost_.set_text(absl::GetFlag(FLAGS_local_host));
-  localport_.set_text(std::to_string(absl::GetFlag(FLAGS_local_port)));
-  timeout_.set_text(std::to_string(absl::GetFlag(FLAGS_connect_timeout)));
+
+  gtk_combo_box_set_active(GTK_COMBO_BOX(method_), i - 1);
+
+  gtk_entry_set_text(local_host_, local_host_str.c_str());
+  gtk_entry_set_text(local_port_, local_port_str.c_str());
+  gtk_entry_set_text(timeout_, timeout_str.c_str());
 }
 
 void YASSWindow::UpdateStatusBar() {
@@ -320,33 +367,41 @@ void YASSWindow::UpdateStatusBar() {
   humanReadableByteCountBin(&ss, tx_rate_);
   ss << "/s";
 
-  status_bar_.remove_all_messages();
-  status_bar_.push(ss.str());
+  gtk_statusbar_remove_all(status_bar_, 0);
+  gtk_statusbar_push(status_bar_, 0, ss.str().c_str());
 }
 
 void YASSWindow::OnOption() {
-  OptionDialog option_dialog("YASS Option", true);
+  OptionDialog option_dialog("YASS Option", nullptr, true);
 
   int ret = option_dialog.run();
-  if (ret == Gtk::RESPONSE_ACCEPT) {
+  if (ret == GTK_RESPONSE_ACCEPT) {
     mApp->SaveConfigToDisk();
   }
 }
 
 void YASSWindow::OnAbout() {
-  Gtk::AboutDialog about_dialog;
-  about_dialog.set_authors({YASS_APP_COMPANY_NAME});
-  about_dialog.set_comments("Last Change: " YASS_APP_LAST_CHANGE);
-  about_dialog.set_copyright(YASS_APP_COPYRIGHT);
-  about_dialog.set_license_type(Gtk::LICENSE_GPL_2_0);
-  about_dialog.set_logo_icon_name("yass");
-  about_dialog.set_program_name(YASS_APP_PRODUCT_NAME);
-  about_dialog.set_version(YASS_APP_PRODUCT_VERSION);
-  about_dialog.set_website(YASS_APP_WEBSITE);
-  about_dialog.run();
+  GtkAboutDialog* about_dialog = GTK_ABOUT_DIALOG(gtk_about_dialog_new());
+  const char* artists[] = {"macosicons.com", nullptr};
+  gtk_about_dialog_set_artists(about_dialog, artists);
+  const char* authors[] = {YASS_APP_COMPANY_NAME, nullptr};
+  gtk_about_dialog_set_authors(about_dialog, authors);
+  gtk_about_dialog_set_comments(about_dialog, "Last Change: " YASS_APP_LAST_CHANGE);
+  gtk_about_dialog_set_copyright(about_dialog, YASS_APP_COPYRIGHT);
+  gtk_about_dialog_set_license_type(about_dialog, GTK_LICENSE_GPL_2_0);
+  gtk_about_dialog_set_logo_icon_name(about_dialog, "yass");
+  gtk_about_dialog_set_program_name(about_dialog, YASS_APP_PRODUCT_NAME);
+  gtk_about_dialog_set_version(about_dialog, YASS_APP_PRODUCT_VERSION);
+  gtk_about_dialog_set_website(about_dialog, YASS_APP_WEBSITE);
+  gtk_about_dialog_set_website_label(about_dialog, "official-site");
+  gtk_dialog_run(GTK_DIALOG(about_dialog));
+  gtk_widget_destroy(GTK_WIDGET(about_dialog));
 }
 
 void YASSWindow::OnClose() {
   LOG(WARNING) << "Frame is closing ";
+
   mApp->Exit();
+
+  gtk_window_close(impl_);
 }

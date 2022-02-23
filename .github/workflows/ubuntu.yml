@@ -85,7 +85,7 @@ jobs:
           sudo sed -i 's/azure.archive.ubuntu.com/archive.ubuntu.com/g' /etc/apt/sources.list
           sudo apt-get update -qq
       - name: Populate depedencies
-        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build libgtk-3-dev libgtkmm-3.0-dev
+        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build libgtk-3-dev
       - name: Build
         run: |
           if [ "$COMPILER" = "clang" ]; then
@@ -136,7 +136,7 @@ jobs:
           sudo sed -i 's/azure.archive.ubuntu.com/archive.ubuntu.com/g' /etc/apt/sources.list
           sudo apt-get update -qq
       - name: Populate depedencies
-        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build libgtk-3-dev libgtkmm-3.0-dev
+        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build libgtk-3-dev
       - name: Build
         run: |
           export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
@@ -269,7 +269,7 @@ jobs:
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get update -qq
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get install -y dpkg-cross pkg-config gcc-$HOST_GNU_TYPE g++-$HOST_GNU_TYPE libc6:${{ env.HOST_ARCH }} linux-libc-dev:${{ env.HOST_ARCH }}
+            apt-get install -y dpkg-cross pkg-config gcc-$HOST_GNU_TYPE g++-$HOST_GNU_TYPE libc6:${{ env.HOST_ARCH }} libstdc++6:${{ env.HOST_ARCH }} linux-libc-dev:${{ env.HOST_ARCH }}
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             ln -sf /usr/share/pkg-config-crosswrapper /usr/bin/${HOST_GNU_TYPE}-pkg-config
       - name: Populate sysroot (standard toolchain)
@@ -316,10 +316,14 @@ jobs:
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -f -y $PWD/golang*.deb
       - name: Set nogui build profile (armel/mipsel/mips64el only)
-        if: ${{env.HOST_ARCH == 'armel' ||  env.HOST_ARCH == 'mipsel' || env.HOST_ARCH == 'mips64el' }}
+        if: ${{ env.HOST_ARCH == 'armel' ||  env.HOST_ARCH == 'mipsel' || env.HOST_ARCH == 'mips64el' }}
         run: |
-          echo "DEB_BUILD_PROFILES=nogui" >> $GITHUB_ENV
+          echo "DEB_BUILD_PROFILES=nogui ${{ env.DEB_BUILD_PROFILES}}" >> $GITHUB_ENV
           echo "APT_DEB_BUILD_PROFILES=-o Apt::Build-Profiles=nogui" >> $GITHUB_ENV
+      - name: Set nocxxruntime build profile (xenial only)
+        if: ${{ env.HOST_DISTRO == 'xenial' }}
+        run: |
+          echo "DEB_BUILD_PROFILES=nocxxruntime ${{ env.DEB_BUILD_PROFILES}}" >> $GITHUB_ENV
       - name: Build deb (source)
         run: |
           export DEB_BUILD_PROFILES
@@ -337,17 +341,6 @@ jobs:
           curl -O http://deb.debian.org/debian/pool/main/a/apt/libapt-pkg6.0_2.2.4_i386.deb
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -f -y $PWD/gir*.deb $PWD/lib*.deb $PWD/packagekit*.deb
-      - name: Populate depedencie (focal i386 only, gtkmm)
-        if: ${{ env.HOST_DISTRO == 'focal' && env.HOST_ARCH == 'i386' }}
-        run: |
-          cd /tmp
-          # Build from source is not required, reusing the package from old distro
-          # ./scripts/build-deb-gtkmm.sh
-          # sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- apt-get install -y libgtkmm-3.0-1v5_3.24.2*_i386.deb libgtkmm-3.0-dev_3.24.2*_i386.deb
-          curl -O http://archive.ubuntu.com/ubuntu/pool/main/g/gtkmm3.0/libgtkmm-3.0-dev_3.22.2-2_i386.deb
-          curl -O http://archive.ubuntu.com/ubuntu/pool/main/g/gtkmm3.0/libgtkmm-3.0-1v5_3.22.2-2_i386.deb
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get install -y -f $PWD/libgtkmm-3.0*.deb
       - name: Populate depedencie (openssl, required by xenial cmake)
         if: ${{ env.HOST_DISTRO == 'stretch' || env.HOST_DISTRO == 'buster' }}
         run: |
@@ -380,18 +373,7 @@ jobs:
       - name: Build deb
         run: |
           export DEB_BUILD_PROFILES
-          sudo -E sudo -E -u "$USER" -g sbuild ./scripts/build-deb.sh || true
-      - name: Output build log
-        run: |
-          cat /tmp/yass*.build
-      - name: Check deb output
-        run: |
-          if compgen -G "yass*.deb" > /dev/null; then
-            echo "Debian packages found"
-          else
-            echo "No debian packages generated"
-            exit -1
-          fi
+          sudo -E sudo -E -u "$USER" -g sbuild ./scripts/build-deb.sh
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:

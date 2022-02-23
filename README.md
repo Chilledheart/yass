@@ -146,14 +146,6 @@ X64 | [14.10.VC_redist.x64.exe] | 14.10.24516.0 - last version of vc2015
 Reference: AIO Repack for latest Microsoft Visual C++ Redistributable Runtimes, without the original setup bloat payload.
 - VC++ 2019 version 14.28.29213.0 = [VisualCppRedist_AIO v0.35.0][visual-cpp-redist-aio-xp] is the last version compatible with Windows XP
 
-## Running on Ubuntu
-
-Somehow if you manage to run Ubuntu 20.04 i386 (aka 32-bit) version, you might be
-required by broken dependency libgtkmm-3.0. You might want to do either of the following:
-- Build [gtkmm-3.0] from source
-- Download and install prebuilt gtkmm-3.0 from [here][libgtkmm-3.0-1v5_3.24.2]
-- Download and install prebuilt gtkmm-3.0 from previous distribution [here][libgtkmm-3.0-1v5_3.22.2]
-
 [license-svg]: https://img.shields.io/badge/license-GPL2-lightgrey.svg
 [license-link]: LICENSE
 

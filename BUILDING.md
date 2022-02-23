@@ -108,8 +108,7 @@ sudo apt-get install -y \
     ninja-build \
     pkg-config \
     perl \
-    libgtk-3-dev \
-    libgtkmm-3.0-dev
+    libgtk-3-dev
 ```
 
 Notes: please make sure you have [GCC] (6.1 or above) and [CMake] (3.12 or above).
@@ -147,7 +146,6 @@ sudo yum install -y \
     pkg-config \
     perl \
     gtk3-devel \
-    gtkmm30-devel \
     golang
 ```
 

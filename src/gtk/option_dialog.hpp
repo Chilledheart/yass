@@ -3,39 +3,37 @@
 #ifndef OPTION_DIALOG
 #define OPTION_DIALOG
 
-#include <gtkmm/button.h>
-#include <gtkmm/dialog.h>
-#include <gtkmm/entry.h>
-#include <gtkmm/grid.h>
-#include <gtkmm/label.h>
+#include <gtk/gtk.h>
 
-class OptionDialog : public Gtk::Dialog {
+#include <string>
+
+class OptionDialog {
  public:
-  explicit OptionDialog(const Glib::ustring& title, bool modal = false);
+  explicit OptionDialog(const std::string& title,
+                        GtkWindow* parent,
+                        bool modal = false);
+  ~OptionDialog();
 
   void OnOkayButtonClicked();
   void OnCancelButtonClicked();
+
+  gint run();
 
  private:
   void LoadChanges();
   void OnSave();
 
-  Gtk::Grid grid_;
+  GtkEntry* connect_timeout_;
+  GtkEntry* tcp_user_timeout_;
+  GtkEntry* so_linger_timeout_;
+  GtkEntry* so_snd_buffer_;
+  GtkEntry* so_rcv_buffer_;
 
-  Gtk::Label connecttimeout_label_;
-  Gtk::Label tcpusertimeout_label_;
-  Gtk::Label lingertimeout_label_;
-  Gtk::Label sendbuffer_label_;
-  Gtk::Label recvbuffer_label_;
+  GtkButton* okay_button_;
+  GtkButton* cancel_button_;
 
-  Gtk::Entry connecttimeout_;
-  Gtk::Entry tcpusertimeout_;
-  Gtk::Entry lingertimeout_;
-  Gtk::Entry sendbuffer_;
-  Gtk::Entry recvbuffer_;
-
-  Gtk::Button okay_button_;
-  Gtk::Button cancel_button_;
+ private:
+  GtkDialog* impl_;
 };  // OptionDialog
 
 #endif  // OPTION_DIALOG

@@ -9,7 +9,9 @@
 #include <absl/debugging/symbolize.h>
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
+#include <fontconfig/fontconfig.h>
 #include <locale.h>
+#include <stdarg.h>
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
@@ -22,50 +24,7 @@
 YASSApp* mApp = nullptr;
 
 static const char* kAppId = "it.gui.yass";
-static const char* kAppName = "Yet Another Shadow Socket";
-
-static void GLibLogHandler(const gchar* log_domain,
-                           GLogLevelFlags log_level,
-                           const gchar* message,
-                           gpointer /*userdata*/) {
-  if (!log_domain)
-    log_domain = "<unknown>";
-  if (!message)
-    message = "<no message>";
-
-  GLogLevelFlags always_fatal_flags = g_log_set_always_fatal(G_LOG_LEVEL_MASK);
-  g_log_set_always_fatal(always_fatal_flags);
-  GLogLevelFlags fatal_flags =
-      g_log_set_fatal_mask(log_domain, G_LOG_LEVEL_MASK);
-  g_log_set_fatal_mask(log_domain, fatal_flags);
-  if ((always_fatal_flags | fatal_flags) & log_level) {
-    LOG(DFATAL) << log_domain << ": " << message;
-  } else if (log_level & (G_LOG_LEVEL_ERROR | G_LOG_LEVEL_CRITICAL)) {
-    LOG(ERROR) << log_domain << ": " << message;
-  } else if (log_level & (G_LOG_LEVEL_WARNING)) {
-    LOG(WARNING) << log_domain << ": " << message;
-  } else if (log_level &
-             (G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG)) {
-    LOG(INFO) << log_domain << ": " << message;
-  } else {
-    NOTREACHED();
-    LOG(DFATAL) << log_domain << ": " << message;
-  }
-}
-
-static void SetUpGLibLogHandler() {
-  // Register GLib-handled assertions to go through our logging system.
-  const char* const kLogDomains[] = {nullptr, "Gtk", "Gdk", "GLib",
-                                     "GLib-GObject"};
-  for (size_t i = 0; i < ::internal::size(kLogDomains); i++) {
-    g_log_set_handler(
-        kLogDomains[i],
-        static_cast<GLogLevelFlags>(G_LOG_FLAG_RECURSION | G_LOG_FLAG_FATAL |
-                                    G_LOG_LEVEL_ERROR | G_LOG_LEVEL_CRITICAL |
-                                    G_LOG_LEVEL_WARNING),
-        GLibLogHandler, nullptr);
-  }
-}
+static const char* kAppName = YASS_APP_PRODUCT_NAME;
 
 int main(int argc, char** argv) {
   // For minimal locale
@@ -101,69 +60,83 @@ int main(int argc, char** argv) {
 
   mApp = app.operator->();
 
-  return app->ApplicationRun();
+  return app->ApplicationRun(1, argv);
 }
 
 YASSApp::YASSApp()
-    : Gtk::Application(kAppId),
-      dispatcher_(Glib::wrap(::g_main_context_ref_thread_default(), false)) {
-  ::g_set_application_name(kAppName);
+    : impl_(gtk_application_new(kAppId, G_APPLICATION_FLAGS_NONE)),
+      idle_source_(g_idle_source_new()) {
+  g_set_application_name(kAppName);
+
+  gdk_init(nullptr, nullptr);
+  gtk_init(nullptr, nullptr);
+
+  auto activate = []() { mApp->OnActivate(); };
+  g_signal_connect(impl_, "activate", G_CALLBACK(activate), NULL);
+
+  auto idle = [](gpointer user_data) -> gboolean {
+    mApp->OnIdle();
+    return G_SOURCE_CONTINUE;
+  };
+  g_source_set_priority(idle_source_, G_PRIORITY_LOW);
+  g_source_set_callback(idle_source_, (GSourceFunc)idle, this, nullptr);
+  g_source_set_name(idle_source_, "Idle Source");
+  g_source_attach(idle_source_, nullptr);
+  g_source_unref(idle_source_);
 }
 
-YASSApp::~YASSApp() {
-  delete main_window_;
+YASSApp::~YASSApp() = default;
+
+std::unique_ptr<YASSApp> YASSApp::create() {
+  return std::unique_ptr<YASSApp>(new YASSApp);
 }
 
-Glib::RefPtr<YASSApp> YASSApp::create() {
-  return Glib::RefPtr<YASSApp>(new YASSApp());
-}
-
-void YASSApp::on_startup() {
+void YASSApp::OnActivate() {
   if (!MemoryLockAll()) {
     LOG(WARNING) << "Failed to set memory lock";
   }
 
+  if (!dispatcher_.Init([this]() { OnDispatch(); })) {
+    LOG(WARNING) << "Failed to init dispatcher";
+  }
+
   LOG(WARNING) << "Application starting: " << YASS_APP_TAG;
 
-  Gtk::Application::on_startup();
-
-  idle_connection_ = Glib::signal_idle().connect(
-      sigc::mem_fun(*this, &YASSApp::OnIdle), Glib::PRIORITY_LOW);
-
-  dispatcher_.connect(sigc::mem_fun(*this, &YASSApp::OnDispatch));
-}
-
-void YASSApp::on_activate() {
-  Gtk::Application::on_activate();
-
-  // main window is created with WINDOW_TOPLEVEL by defaults
   main_window_ = new YASSWindow();
   main_window_->show();
   main_window_->present();
+  gtk_application_add_window(impl_, main_window_->impl_);
+
   if (Utils::GetAutoStart()) {
     main_window_->OnStartButtonClicked();
   }
 }
 
-int YASSApp::ApplicationRun() {
-  int ret = run(*main_window_);
+int YASSApp::ApplicationRun(int argc, char** argv) {
+  int ret = g_application_run(G_APPLICATION(impl_), argc, argv);
+
   if (ret) {
     LOG(WARNING) << "app exited with code " << ret;
   }
+
   LOG(WARNING) << "Application exiting";
+
+  // Memory leak clean up path
+  pango_cairo_font_map_set_default(NULL);
+  cairo_debug_reset_static_data();
+  FcFini();
+
   return ret;
 }
 
 void YASSApp::Exit() {
-  idle_connection_.disconnect();
-  quit();
+  g_source_destroy(idle_source_);
 }
 
-bool YASSApp::OnIdle() {
+void YASSApp::OnIdle() {
   if (GetState() == YASSApp::STARTED) {
     main_window_->UpdateStatusBar();
   }
-  return true;
 }
 
 std::string YASSApp::GetStatus() const {
@@ -201,7 +174,7 @@ void YASSApp::OnStart(bool quiet) {
             std::make_pair(successed ? STARTED : START_FAILED, msg));
       }
 
-      dispatcher_.emit();
+      dispatcher_.Emit();
     };
   }
   worker_.Start(callback);
@@ -218,7 +191,7 @@ void YASSApp::OnStop(bool quiet) {
         dispatch_queue_.push(std::make_pair(STOPPED, std::string()));
       }
 
-      dispatcher_.emit();
+      dispatcher_.Emit();
     };
   }
   worker_.Stop(callback);

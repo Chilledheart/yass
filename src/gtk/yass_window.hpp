@@ -4,58 +4,42 @@
 #ifndef YASS_WINDOW_H
 #define YASS_WINDOW_H
 
-#include <gtkmm/applicationwindow.h>
-#include <gtkmm/button.h>
-#include <gtkmm/checkbutton.h>
-#include <gtkmm/comboboxtext.h>
-#include <gtkmm/entry.h>
-#include <gtkmm/grid.h>
-#include <gtkmm/hvbox.h>
-#include <gtkmm/label.h>
-#include <gtkmm/menu.h>
-#include <gtkmm/menubar.h>
-#include <gtkmm/statusbar.h>
+#include <gtk/gtk.h>
 
-class YASSWindow : public Gtk::Window {
+#include <string>
+
+class YASSWindow {
  public:
   YASSWindow();
-  ~YASSWindow() override;
+  ~YASSWindow();
 
-  Gtk::VBox vbox_;
+ private:
+  GtkWindow* impl_;
 
-  Gtk::HBox hbox_;
+ public:
+  void show();
+  void present();
+
   // Left Panel
-  Gtk::VBox left_vbox_;
-  Gtk::Button start_button_;
-  Gtk::Button stop_button_;
+  GtkButton* start_button_;
+  GtkButton* stop_button_;
 
   void OnStartButtonClicked();
   void OnStopButtonClicked();
 
   // Right Panel
-  Gtk::Grid right_panel_grid_;
-
-  Gtk::Label serverhost_label_;
-  Gtk::Label serverport_label_;
-  Gtk::Label password_label_;
-  Gtk::Label method_label_;
-  Gtk::Label localhost_label_;
-  Gtk::Label localport_label_;
-  Gtk::Label timeout_label_;
-  Gtk::Label autostart_label_;
-
-  Gtk::Entry serverhost_;
-  Gtk::Entry serverport_;
-  Gtk::Entry password_;
-  Gtk::ComboBoxText method_;
-  Gtk::Entry localhost_;
-  Gtk::Entry localport_;
-  Gtk::Entry timeout_;
-  Gtk::CheckButton autostart_;
+  GtkEntry* server_host_;
+  GtkEntry* server_port_;
+  GtkEntry* password_;
+  GtkComboBoxText* method_;
+  GtkEntry* local_host_;
+  GtkEntry* local_port_;
+  GtkEntry* timeout_;
+  GtkCheckButton* autostart_;
 
   void OnCheckedAutoStart();
 
-  Gtk::Statusbar status_bar_;
+  GtkStatusbar* status_bar_;
 
  public:
   std::string GetServerHost();
@@ -78,7 +62,6 @@ class YASSWindow : public Gtk::Window {
   void OnOption();
 
  private:
-  // TODO exit when main window close
   void OnClose();
 
   friend class YASSApp;

@@ -3,44 +3,39 @@
 #ifndef YASS_APP
 #define YASS_APP
 
+#include <memory>
 #include <queue>
 
 #include <absl/synchronization/mutex.h>
-#include <glibmm/dispatcher.h>
-#include <gtkmm/application.h>
+#include <gtk/gtk.h>
 
 #include "cli/cli_worker.hpp"
+#include "gtk/utils.hpp"
 
 class YASSWindow;
 /// The main Application for YetAnotherShadowSocket
-class YASSApp : public Gtk::Application {
+class YASSApp {
  protected:
   YASSApp();
 
  public:
-  ~YASSApp() override;
+  ~YASSApp();
 
-  static Glib::RefPtr<YASSApp> create();
+  static std::unique_ptr<YASSApp> create();
 
- protected:
-  // The signal_startup() signal is emitted on the primary instance immediately
-  // after registration. See g_application_register().
-  void on_startup() override;
+ private:
+  GtkApplication *impl_;
+  GSource *idle_source_;
 
-  // To handle these two cases, we override signal_activate()'s default handler,
-  // which gets called when the application is launched without commandline
-  // arguments, and signal_open()'s default handler, which gets called when the
-  // application is launched with commandline arguments.
-  void on_activate() override;
+ public:
+  void OnActivate();
 
-  // returning false in the signal handler causes remove the signal handler
-  bool OnIdle();
-
-  sigc::connection idle_connection_;
+  Dispatcher dispatcher_;
+  void OnIdle();
 
  public:
   // Glib event loop
-  int ApplicationRun();
+  int ApplicationRun(int argc, char** argv);
 
   void Exit();
 
@@ -66,8 +61,6 @@ class YASSApp : public Gtk::Application {
   absl::Mutex dispatch_mutex_;
   std::queue<std::pair<YASSState, std::string>> dispatch_queue_;
   void OnDispatch();
-
-  Glib::Dispatcher dispatcher_;
 
  private:
   void SaveConfigToDisk();

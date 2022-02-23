@@ -58,9 +58,11 @@ set(CMAKE_C_COMPILER ${CC:-gcc})
 set(CMAKE_CXX_COMPILER ${CXX:-g++})
 EOF
   sbuild --build $BUILD_ARCH --host $HOST_ARCH \
-    -d "${HOST_DISTRO}-$BUILD_ARCH-${HOST_ARCH}" -j $(nproc) \
+    --dist "${HOST_DISTRO}-$BUILD_ARCH-${HOST_ARCH}" -j $(nproc) \
     --no-apt-update --no-apt-upgrade --no-apt-distupgrade \
-      --debbuildopts="-d" --build-dep-resolver=null
+    --no-run-lintian --no-run-piuparts --no-run-autopkgtest \
+    --nolog --verbose \
+    --debbuildopts="-d" --build-dep-resolver=null
 else
   dpkg-buildpackage -b -d -uc -us
 fi

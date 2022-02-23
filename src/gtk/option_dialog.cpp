@@ -8,75 +8,118 @@
 #include "config/config.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
+#include "gtk/utils.hpp"
 
-OptionDialog::OptionDialog(const Glib::ustring& title, bool modal)
-    : Gtk::Dialog(title, modal),
-      connecttimeout_label_("Connect Timeout"),
-      tcpusertimeout_label_("TCP User Timeout"),
-      lingertimeout_label_("TCP Linger Timeout"),
-      sendbuffer_label_("TCP Send Buffer"),
-      recvbuffer_label_("TCP Receive Buffer"),
-      okay_button_("Okay"),
-      cancel_button_("Cancel") {
-  set_default_size(400, 240);
+OptionDialog::OptionDialog(const std::string& title,
+                           GtkWindow* parent,
+                           bool modal)
+    : impl_(GTK_DIALOG(gtk_dialog_new_with_buttons(
+          title.c_str(),
+          parent,
+          (modal ? GTK_DIALOG_MODAL : GTK_DIALOG_DESTROY_WITH_PARENT),
+          nullptr,
+          nullptr))) {
+  gtk_window_set_default_size(GTK_WINDOW(impl_), 400, 200);
 
-  grid_.set_row_homogeneous(true);
-  grid_.set_column_homogeneous(true);
+  static OptionDialog* window = this;
 
-  grid_.attach(connecttimeout_label_, 0, 0, 1, 1);
-  grid_.attach(tcpusertimeout_label_, 0, 1, 1, 1);
-  grid_.attach(lingertimeout_label_, 0, 2, 1, 1);
-  grid_.attach(sendbuffer_label_, 0, 3, 1, 1);
-  grid_.attach(recvbuffer_label_, 0, 4, 1, 1);
+  GtkGrid *grid = GTK_GRID(gtk_grid_new());
+  gtk_grid_set_row_homogeneous(grid, true);
+  gtk_grid_set_column_homogeneous(grid, true);
 
-  grid_.attach(connecttimeout_, 1, 0, 1, 1);
-  grid_.attach(tcpusertimeout_, 1, 1, 1, 1);
-  grid_.attach(lingertimeout_, 1, 2, 1, 1);
-  grid_.attach(sendbuffer_, 1, 3, 1, 1);
-  grid_.attach(recvbuffer_, 1, 4, 1, 1);
+  auto connect_timeout_label = gtk_label_new("Connect Timeout");
+  auto tcp_user_timeout_label = gtk_label_new("TCP User Timeout");
+  auto so_linger_timeout_label = gtk_label_new("TCP Linger Timeout");
+  auto so_snd_buffer_label = gtk_label_new("TCP Send Buffer");
+  auto so_rcv_buffer_label = gtk_label_new("TCP Receive Buffer");
 
-  okay_button_.signal_clicked().connect(
-      sigc::mem_fun(*this, &OptionDialog::OnOkayButtonClicked));
+  gtk_grid_attach(grid, GTK_WIDGET(connect_timeout_label), 0, 0, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(tcp_user_timeout_label), 0, 1, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(so_linger_timeout_label), 0, 2, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(so_snd_buffer_label), 0, 3, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(so_rcv_buffer_label), 0, 4, 1, 1);
 
-  cancel_button_.signal_clicked().connect(
-      sigc::mem_fun(*this, &OptionDialog::OnCancelButtonClicked));
+  connect_timeout_ = GTK_ENTRY(gtk_entry_new());
+  tcp_user_timeout_ = GTK_ENTRY(gtk_entry_new());
+  so_linger_timeout_ = GTK_ENTRY(gtk_entry_new());
+  so_snd_buffer_ = GTK_ENTRY(gtk_entry_new());
+  so_rcv_buffer_ = GTK_ENTRY(gtk_entry_new());
 
-  grid_.attach(okay_button_, 0, 5, 1, 1);
-  grid_.attach(cancel_button_, 1, 5, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(connect_timeout_), 1, 0, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(tcp_user_timeout_), 1, 1, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(so_linger_timeout_), 1, 2, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(so_snd_buffer_), 1, 3, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(so_rcv_buffer_), 1, 4, 1, 1);
 
-  get_content_area()->add(grid_);
+  okay_button_ = GTK_BUTTON(gtk_button_new());
+  gtk_button_set_label(okay_button_, "Okay");
+
+  cancel_button_ = GTK_BUTTON(gtk_button_new());
+  gtk_button_set_label(cancel_button_, "Cancel");
+
+  auto okay_callback = []() { window->OnOkayButtonClicked(); };
+
+  g_signal_connect(G_OBJECT(okay_button_), "clicked",
+                   G_CALLBACK(okay_callback), nullptr);
+
+  auto cancel_callback = []() { window->OnCancelButtonClicked(); };
+
+  g_signal_connect(G_OBJECT(cancel_button_), "clicked",
+                   G_CALLBACK(cancel_callback), nullptr);
+
+  gtk_grid_attach(grid, GTK_WIDGET(okay_button_), 0, 5, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(cancel_button_), 1, 5, 1, 1);
+
+  gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(impl_)),
+                    GTK_WIDGET(grid));
 
   LoadChanges();
 
-  get_content_area()->show_all_children();
+  gtk_widget_show_all(GTK_WIDGET(gtk_dialog_get_content_area(impl_)));
+}
+
+OptionDialog::~OptionDialog() {
+  gtk_widget_destroy(GTK_WIDGET(impl_));
 }
 
 void OptionDialog::OnOkayButtonClicked() {
   OnSave();
-  response(Gtk::RESPONSE_ACCEPT);
+  gtk_dialog_response(impl_, GTK_RESPONSE_ACCEPT);
 }
 
 void OptionDialog::OnCancelButtonClicked() {
-  response(Gtk::RESPONSE_CANCEL);
+  gtk_dialog_response(impl_, GTK_RESPONSE_CANCEL);
+}
+
+gint OptionDialog::run() {
+  return gtk_dialog_run(impl_);
 }
 
 void OptionDialog::LoadChanges() {
-  connecttimeout_.set_text(
-      std::to_string(absl::GetFlag(FLAGS_connect_timeout)));
-  tcpusertimeout_.set_text(
-      std::to_string(absl::GetFlag(FLAGS_tcp_user_timeout)));
-  lingertimeout_.set_text(
-      std::to_string(absl::GetFlag(FLAGS_so_linger_timeout)));
-  sendbuffer_.set_text(std::to_string(absl::GetFlag(FLAGS_so_snd_buffer)));
-  recvbuffer_.set_text(std::to_string(absl::GetFlag(FLAGS_so_rcv_buffer)));
+  auto connect_timeout_str =
+      std::to_string(absl::GetFlag(FLAGS_connect_timeout));
+  gtk_entry_set_text(connect_timeout_, connect_timeout_str.c_str());
+  auto tcp_user_timeout_str =
+      std::to_string(absl::GetFlag(FLAGS_tcp_user_timeout));
+  gtk_entry_set_text(tcp_user_timeout_, tcp_user_timeout_str.c_str());
+  auto so_linger_timeout_str =
+      std::to_string(absl::GetFlag(FLAGS_so_linger_timeout));
+  gtk_entry_set_text(so_linger_timeout_, so_linger_timeout_str.c_str());
+  auto so_snd_buffer_str =
+      std::to_string(absl::GetFlag(FLAGS_so_snd_buffer));
+  gtk_entry_set_text(so_snd_buffer_, so_snd_buffer_str.c_str());
+  auto so_rcv_buffer_str =
+      std::to_string(absl::GetFlag(FLAGS_so_rcv_buffer));
+  gtk_entry_set_text(so_rcv_buffer_, so_rcv_buffer_str.c_str());
 }
 
 void OptionDialog::OnSave() {
-  auto connect_timeout = StringToInteger(connecttimeout_.get_text().data());
-  auto user_timeout = StringToInteger(tcpusertimeout_.get_text().data());
-  auto so_linger_timeout = StringToInteger(lingertimeout_.get_text().data());
-  auto so_snd_buffer = StringToInteger(sendbuffer_.get_text().data());
-  auto so_rcv_buffer = StringToInteger(recvbuffer_.get_text().data());
+  auto connect_timeout = StringToInteger(gtk_entry_get_text(connect_timeout_));
+  auto user_timeout = StringToInteger(gtk_entry_get_text(tcp_user_timeout_));
+  auto so_linger_timeout =
+      StringToInteger(gtk_entry_get_text(so_linger_timeout_));
+  auto so_snd_buffer = StringToInteger(gtk_entry_get_text(so_snd_buffer_));
+  auto so_rcv_buffer = StringToInteger(gtk_entry_get_text(so_rcv_buffer_));
 
   if (!connect_timeout.ok() || !user_timeout.ok() || !so_linger_timeout.ok() ||
       !so_snd_buffer.ok() || !so_rcv_buffer.ok()) {

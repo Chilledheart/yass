@@ -475,13 +475,14 @@ elseif (APPLE AND GUI)
   set(GUI_LIBRARIES "${COCOA_LIBRARY}")
 elseif (GUI)
   find_package(PkgConfig REQUIRED)
-  pkg_check_modules(GTKMM REQUIRED gtkmm-3.0)
+  pkg_check_modules(GTK REQUIRED gtk+-3.0)
+  pkg_check_modules(FONTCONFIG REQUIRED fontconfig)
   set(GUI_USE_FILE "")
-  set(GUI_INCLUDE_DIRS ${GTKMM_INCLUDE_DIRS})
-  set(GUI_DEFINITIONS -DGTKMM_DISABLE_DEPRECATED=1 -DGIOMM_DISABLE_DEPRECATED=1)
-  set(GUI_C_CXX_FLAGS ${GTKMM_CFLAGS} ${GTKMM_CFLAGS_OTHER})
-  set(GUI_LIBRARY_DIRS ${GTKMM_LIBRARY_DIRS})
-  set(GUI_LIBRARIES ${GTKMM_LIBRARIES})
+  set(GUI_INCLUDE_DIRS ${GTK_INCLUDE_DIRS})
+  set(GUI_DEFINITIONS "")
+  set(GUI_C_CXX_FLAGS ${GTK_CFLAGS} ${GTK_CFLAGS_OTHER})
+  set(GUI_LIBRARY_DIRS ${GTK_LIBRARY_DIRS})
+  set(GUI_LIBRARIES ${GTK_LIBRARIES} ${FONTCONFIG_LIBRARIES})
 endif()
 
 # fix lto warnings on mac
@@ -927,10 +928,8 @@ if (NOT MSVC)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,noexecstack -Wl,-z,relro")
     endif()
 
-    ## disable rtti on linux, gtkmm requires this
-    if (APPLE)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
-    endif()
+    ## disable rtti
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
 
     ## disable exceptions
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
@@ -2382,7 +2381,8 @@ if (GUI)
         )
 
     target_include_directories(${APP_NAME} PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src)
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
 
     target_include_directories(${APP_NAME} SYSTEM PRIVATE
         ${GUI_INCLUDE_DIRS})
@@ -2507,9 +2507,6 @@ if (GUI)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/256x256
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/512x512
         DESTINATION share/icons/hicolor)
-
-      ## gtkmm requires it in treeview, oops
-      string(REPLACE "-fno-exceptions" "-fexceptions" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     endif()
 endif()
 
