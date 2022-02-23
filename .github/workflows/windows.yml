@@ -88,9 +88,6 @@ jobs:
         crt-linkage: [dynamic, static]
         build_type: [Release]
     env:
-      BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}.zip'
-      MSI_BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}.msi'
-      DBG_BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}-debuginfo.zip'
       BUILD_TYPE: '${{ matrix.build_type }}'
       MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
     steps:
@@ -142,16 +139,12 @@ jobs:
 
           :SetNewVCToolsVersion
           set VCToolsVersion=
-      - run: |
-          rename yass.zip ${{ env.BUNDLE_NAME }}
-          rename yass.msi ${{ env.MSI_BUNDLE_NAME }}
-          rename yass-debuginfo.zip ${{ env.DBG_BUNDLE_NAME }}
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} ${{ env.BUNDLE_NAME }} ${{ env.MSI_BUNDLE_NAME }} ${{ env.DBG_BUNDLE_NAME }}
+          gh release upload ${{ github.event.release.tag_name }} *.msi *.zip
   win-xp-release:
     needs: [cache-toolchain-win]
     runs-on: windows-2019
@@ -162,9 +155,6 @@ jobs:
         crt-linkage: [dynamic, static]
         build_type: [Release]
     env:
-      BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}.zip'
-      MSI_BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}.msi'
-      DBG_BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.arch }}-${{ matrix.crt-linkage }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}-debuginfo.zip'
       BUILD_TYPE: '${{ matrix.build_type }}'
       MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
     steps:
@@ -228,16 +218,12 @@ jobs:
           :SetX64CompileTriple
           set COMPILER_TARGET=x86_64-pc-windows-msvc
           goto :eof
-      - run: |
-          rename yass.zip ${{ env.BUNDLE_NAME }}
-          rename yass.msi ${{ env.MSI_BUNDLE_NAME }}
-          rename yass-debuginfo.zip ${{ env.DBG_BUNDLE_NAME }}
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} ${{ env.BUNDLE_NAME }} ${{ env.MSI_BUNDLE_NAME }} ${{ env.DBG_BUNDLE_NAME }}
+          gh release upload ${{ github.event.release.tag_name }} *.msi *.zip
   win-compatible-2019:
     needs: [cache-toolchain-win]
     runs-on: windows-2019

@@ -40,7 +40,6 @@ set COMPILER_TARGET=i686-pc-windows-msvc
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
 python.exe -u .\scripts\build.py || exit /b
-call :RenameTarball
 
 REM
 REM Generate dynamic x64 binary
@@ -56,7 +55,6 @@ set COMPILER_TARGET=x86_64-pc-windows-msvc
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
 python.exe -u .\scripts\build.py || exit /b
-call :RenameTarball
 
 REM skip ARM build
 goto :BuildARM64
@@ -76,7 +74,6 @@ set COMPILER_TARGET=arm-pc-windows-msvc
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
 python.exe -u .\scripts\build.py || exit /b
-call :RenameTarball
 
 :BuildARM64
 
@@ -98,9 +95,5 @@ set COMPILER_TARGET=arm64-pc-windows-msvc
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
 python.exe -u .\scripts\build.py || exit /b
-call :RenameTarball
 
 goto :eof
-
-:RenameTarball
-python.exe -c "import subprocess, os; check_string_output = lambda command: subprocess.check_output(command, stderr=subprocess.STDOUT).decode().strip(); p = os.getenv('Platform'); l = os.getenv('MSVC_CRT_LINKAGE'); t = check_string_output(['git', 'describe', '--tags', 'HEAD']); os.rename('yass.zip', f'yass-win-release-{p}-{l}-{t}.zip'); os.rename('yass.msi', f'yass-win-release-{p}-{l}-{t}.msi'); os.rename('yass-debuginfo.zip', f'yass-win-release-{p}-{l}-{t}-debuginfo.zip');"

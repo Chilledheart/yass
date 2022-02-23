@@ -55,8 +55,6 @@ jobs:
       matrix:
         build_type: [Release]
     env:
-      BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}.dmg'
-      DBG_BUNDLE_NAME: 'yass-${{ github.job }}-${{ matrix.build_type }}-${{ github.event.release.tag_name }}-debuginfo.zip'
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
       - uses: actions/checkout@v2
@@ -84,15 +82,12 @@ jobs:
         run: brew install ninja cmake
       - name: Build
         run: ./scripts/build.py
-      - run: |
-          mv -f yass.dmg ${{ env.BUNDLE_NAME }}
-          mv -f yass-debuginfo.zip ${{ env.DBG_BUNDLE_NAME }}
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} ${{ env.BUNDLE_NAME }} ${{ env.DBG_BUNDLE_NAME }}
+          gh release upload ${{ github.event.release.tag_name }} *.dmg *.zip
   mac-clang-tidy:
     needs: cache-toolchain-mac
     runs-on: macos-latest

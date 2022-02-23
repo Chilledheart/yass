@@ -44,7 +44,7 @@ def copy_file_with_symlinks(src, dst):
 
 
 def check_string_output(command):
-    return subprocess.check_output(command, stderr=subprocess.STDOUT).decode().strip()
+  return subprocess.check_output(command, stderr=subprocess.STDOUT).decode().strip()
 
 
 def write_output(command, check=False):
@@ -61,6 +61,13 @@ def write_output(command, check=False):
   if check and retcode:
     raise subprocess.CalledProcessError(retcode, proc.args,
                                         output=sys.stdout, stderr=sys.stderr)
+
+def rename_by_unlink(src, dst):
+  if os.path.isdir(dst):
+    shutil.rmtree(dst)
+  elif os.path.isfile(dst):
+    os.unlink(dst)
+  os.rename(src, dst)
 
 def get_app_name():
   if sys.platform == 'win32':
@@ -688,7 +695,7 @@ def execute_buildscript(configuration_type):
   # FIX ME move to cmake (required by Xcode generator)
   if platform.system() == 'Darwin':
     if os.path.exists(os.path.join(configuration_type, get_app_name())):
-      os.rename(os.path.join(configuration_type, get_app_name()), get_app_name())
+      rename_by_unlink(os.path.join(configuration_type, get_app_name()), get_app_name())
 
 
 def postbuild_copy_libraries():
@@ -945,29 +952,10 @@ def postbuild_archive():
 
   archives = {}
 
-  dest_archive = os.path.join('..', archive)
-  dest_debuginfo_archive = os.path.join('..', debuginfo_archive)
-  dest_msi_archive = os.path.join('..', msi_archive)
-
   paths = [ src ]
   dll_paths = []
   license_paths = []
   debuginfo_paths = []
-
-  try:
-    os.unlink(dest_archive)
-  except FileNotFoundError:
-    pass
-
-  try:
-    os.unlink(dest_debuginfo_archive)
-  except FileNotFoundError:
-    pass
-
-  try:
-    os.unlink(dest_msi_archive)
-  except FileNotFoundError:
-    pass
 
   # copying dependent dlls
   dll_paths = _archive_files_dll_files()
@@ -979,27 +967,52 @@ def postbuild_archive():
   paths.extend(license_paths)
 
   # main bundle
-  _archive_files_main_files(dest_archive, paths)
+  _archive_files_main_files(archive, paths)
   archives[archive] = paths
 
   # msi installer
   if platform.system() == 'Windows':
-    _archive_files_generate_msi(dest_msi_archive, paths, dll_paths, license_paths)
+    _archive_files_generate_msi(msi_archive, paths, dll_paths, license_paths)
     archives[msi_archive] = [msi_archive]
 
   # debuginfo file
   if platform.system() == 'Windows':
     if os.path.exists(APP_NAME + '.pdb'):
       debuginfo_paths.append(APP_NAME + '.pdb')
-      archive_files(dest_debuginfo_archive, debuginfo_paths)
+      archive_files(debuginfo_archive, debuginfo_paths)
       archives[debuginfo_archive] = debuginfo_paths
   elif platform.system() == 'Darwin':
     if os.path.exists(get_app_name() + '.dSYM'):
       debuginfo_paths.append(get_app_name() + '.dSYM')
-      archive_files(dest_debuginfo_archive, debuginfo_paths)
+      archive_files(debuginfo_archive, debuginfo_paths)
       archives[debuginfo_archive] = debuginfo_paths
 
   return archives
+
+def postbuild_rename_archive(archives):
+  renamed_archives = {}
+  t = check_string_output(['git', 'describe', '--tags', 'HEAD']);
+  for archive in archives:
+    main, ext = os.path.splitext(archive)
+    suffix = main[len(APP_NAME):]
+    main = APP_NAME
+
+    if platform.system() == 'Windows':
+      a = DEFAULT_ARCH
+      l = DEFAULT_MSVC_CRT_LINKAGE
+      xp = 'xp' if DEFAULT_ALLOW_XP else ''
+      renamed_archive = f'{main}-win{xp}-release-{a}-{l}-{t}{suffix}{ext}'
+    elif platform.system() == 'Darwin':
+      a = 'universal'
+      renamed_archive = f'{main}-macos-release-{a}-{t}{suffix}{ext}'
+    else:
+      renamed_archive = f'{main}-release-{t}{suffix}{ext}'
+
+    renamed_archive = os.path.join('..', renamed_archive)
+
+    rename_by_unlink(archive, renamed_archive)
+    renamed_archives[renamed_archive] = archives[archive]
+  return renamed_archives
 
 if __name__ == '__main__':
   configuration_type = DEFAULT_BUILD_TYPE
@@ -1019,8 +1032,9 @@ if __name__ == '__main__':
   if DEFAULT_ENABLE_OSX_UNIVERSAL_BUILD and platform.system() == 'Darwin':
     postbuild_check_universal_build()
   archives = postbuild_archive()
+  archives = postbuild_rename_archive(archives)
   for archive in archives:
-    print('------ %s:' % archive)
+    print('------ %s:' % os.path.basename(archive))
     files = archives[archive]
     for file in files:
       print('------------ %s' % file)
