@@ -329,6 +329,82 @@ def get_dependencies_by_dumpbin(path, search_dirs):
 
   resolved_dlls = []
   unresolved_dlls = []
+
+  # handle MSVC Runtime and UCRT
+  if DEFAULT_MSVC_CRT_LINKAGE == 'dynamic':
+    # this library is not included directly but required
+    # ideas comes from https://source.chromium.org/chromium/chromium/src/+/main:build/win/BUILD.gn?q=ucrtbase.dll
+    if DEFAULT_BUILD_TYPE == 'Debug':
+      vcrt_suffix = 'd'
+    else:
+      vcrt_suffix = ''
+    dlls.append(f'msvcp140{vcrt_suffix}.dll')
+    dlls.append(f'msvcp140_1{vcrt_suffix}.dll')
+    dlls.append(f'msvcp140_2{vcrt_suffix}.dll')
+    dlls.append(f'vcruntime140{vcrt_suffix}.dll')
+
+    # Fix for visual studio 2019 redist
+    vctools_version_str = os.getenv('VCToolsVersion')
+    if len(vctools_version_str) >= 4:
+      # for vc141 or above, VCToolsVersion=14.??.xxxx
+      vctools_version = float(vctools_version_str[:5])
+    else:
+      # for vc140 or below, VCToolsVersion=14.0
+      vctools_version = float(vctools_version_str)
+
+    if vctools_version >= 14.20:
+      dlls.append(f'msvcp140{vcrt_suffix}_atomic_wait.dll')
+      dlls.append(f'msvcp140{vcrt_suffix}_codecvt_ids.dll')
+      # In x64 builds there is an extra C runtime DLL called vcruntime140_1.dll (and it's debug equivalent).
+      if DEFAULT_ARCH == 'x64' or DEFAULT_ARCH == 'arm64':
+        dlls.append(f'vcruntime140_1{vcrt_suffix}.dll')
+
+    if DEFAULT_ARCH != 'arm64':
+      dlls.extend([
+        # Universal Windows 10 CRT files
+        "api-ms-win-core-console-l1-1-0.dll",
+        "api-ms-win-core-datetime-l1-1-0.dll",
+        "api-ms-win-core-debug-l1-1-0.dll",
+        "api-ms-win-core-errorhandling-l1-1-0.dll",
+        "api-ms-win-core-file-l1-1-0.dll",
+        "api-ms-win-core-file-l1-2-0.dll",
+        "api-ms-win-core-file-l2-1-0.dll",
+        "api-ms-win-core-handle-l1-1-0.dll",
+        "api-ms-win-core-heap-l1-1-0.dll",
+        "api-ms-win-core-interlocked-l1-1-0.dll",
+        "api-ms-win-core-libraryloader-l1-1-0.dll",
+        "api-ms-win-core-localization-l1-2-0.dll",
+        "api-ms-win-core-memory-l1-1-0.dll",
+        "api-ms-win-core-namedpipe-l1-1-0.dll",
+        "api-ms-win-core-processenvironment-l1-1-0.dll",
+        "api-ms-win-core-processthreads-l1-1-0.dll",
+        "api-ms-win-core-processthreads-l1-1-1.dll",
+        "api-ms-win-core-profile-l1-1-0.dll",
+        "api-ms-win-core-rtlsupport-l1-1-0.dll",
+        "api-ms-win-core-string-l1-1-0.dll",
+        "api-ms-win-core-synch-l1-1-0.dll",
+        "api-ms-win-core-synch-l1-2-0.dll",
+        "api-ms-win-core-sysinfo-l1-1-0.dll",
+        "api-ms-win-core-timezone-l1-1-0.dll",
+        "api-ms-win-core-util-l1-1-0.dll",
+        "api-ms-win-crt-conio-l1-1-0.dll",
+        "api-ms-win-crt-convert-l1-1-0.dll",
+        "api-ms-win-crt-environment-l1-1-0.dll",
+        "api-ms-win-crt-filesystem-l1-1-0.dll",
+        "api-ms-win-crt-heap-l1-1-0.dll",
+        "api-ms-win-crt-locale-l1-1-0.dll",
+        "api-ms-win-crt-math-l1-1-0.dll",
+        "api-ms-win-crt-multibyte-l1-1-0.dll",
+        "api-ms-win-crt-private-l1-1-0.dll",
+        "api-ms-win-crt-process-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+        "api-ms-win-crt-stdio-l1-1-0.dll",
+        "api-ms-win-crt-string-l1-1-0.dll",
+        "api-ms-win-crt-time-l1-1-0.dll",
+        "api-ms-win-crt-utility-l1-1-0.dll",
+        "ucrtbase.dll",
+      ])
+
   for dll in dlls:
     resolved = False
     for search_dir in search_dirs:
