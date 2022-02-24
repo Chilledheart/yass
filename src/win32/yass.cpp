@@ -59,17 +59,21 @@ BOOL CYassApp::InitInstance() {
 
   // TODO move to standalone function
   // Parse command line for internal options
-  LPWSTR* warglist;
-  int num_arg = 0;
+  // https://docs.microsoft.com/en-us/windows/win32/api/processenv/nf-processenv-getcommandlinew
+  // The lifetime of the returned value is managed by the system, applications should not free or modify this value.
+  const wchar_t *cmdline = GetCommandLineW();
+  int argc = 0;
 
-  warglist = ::CommandLineToArgvW(::GetCommandLineW(), &num_arg);
-  auto arglist = std::make_unique<char*[]>(num_arg);
-  std::vector<std::string> argv;
-  for (int current_arg = 0; current_arg != num_arg; ++current_arg) {
-    argv.push_back(SysWideToUTF8(warglist[current_arg]));
-    arglist[current_arg] = const_cast<char*>(argv[current_arg].data());
+  std::unique_ptr<wchar_t*[], decltype(&LocalFree)> wargv(
+      CommandLineToArgvW(cmdline, &argc), &LocalFree);
+  std::vector<std::string> argv_store(argc);
+  std::vector<char*> argv(argc, nullptr);
+  for (int i = 0; i != argc; ++i) {
+    argv_store[i] = SysWideToUTF8(wargv[i]);
+    argv[i] = const_cast<char*>(argv_store[i].data());
   }
-  absl::ParseCommandLine(argv.size(), arglist.get());
+  absl::SetFlag(&FLAGS_logtostderr, false);
+  absl::ParseCommandLine(argv_store.size(), &argv[0]);
 
   auto override_cipher_method = to_cipher_method(absl::GetFlag(FLAGS_method));
   if (override_cipher_method != CRYPTO_INVALID) {
