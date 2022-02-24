@@ -5,6 +5,7 @@
 
 #include "core/logging.hpp"
 
+#include <absl/strings/string_view.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -19,6 +20,16 @@
 #ifndef G_SOURCE_FUNC
 #define G_SOURCE_FUNC(f) ((GSourceFunc) (void (*)(void)) (f))
 #endif
+
+static const char* kAutoStartFileContent =
+"[Desktop Entry]\n"
+"Type=Application\n"
+"Name=yass\n"
+"Comment=Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for embedded devices and low end boxes.\n"
+"Icon=yass\n"
+"Exec=yass --background\n"
+"Terminal=false\n"
+"Categories=Network;GTK;Utility\n";
 
 namespace {
 
@@ -64,7 +75,7 @@ bool IsDirectory(const std::string& path) {
 }
 
 bool CreatePrivateDirectory(const std::string& path) {
-  return ::mkdir(path.c_str(), 0700) != 0;
+  return mkdir(path.c_str(), S_IRUSR | S_IWUSR | S_IXUSR) != 0;
 }
 
 bool EnsureCreatedDirectory(const std::string& path) {
@@ -74,29 +85,12 @@ bool EnsureCreatedDirectory(const std::string& path) {
   return true;
 }
 
-bool ReadFileToString(const std::string& path, std::string* context) {
-  char buf[4096];
-  int fd = ::open(path.c_str(), O_RDONLY);
+bool WriteFileWithContent(const std::string& path, absl::string_view context) {
+  int fd = open(path.c_str(), O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
   if (fd < 0) {
     return false;
   }
-  ssize_t ret = ::read(fd, buf, sizeof(buf) - 1);
-
-  if (ret <= 0 || close(fd) < 0) {
-    return false;
-  }
-  buf[ret] = '\0';
-  *context = buf;
-  return true;
-}
-
-bool WriteFileWithContent(const std::string& path, const std::string& context) {
-  int fd = ::open(path.c_str(), O_WRONLY | O_TRUNC | O_CREAT,
-                  S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-  if (fd < 0) {
-    return false;
-  }
-  ssize_t ret = ::write(fd, context.c_str(), context.size());
+  ssize_t ret = write(fd, context.data(), context.size());
 
   if (ret != static_cast<long>(context.size()) || close(fd) < 0) {
     return false;
@@ -111,6 +105,7 @@ std::string GetAutostartDirectory() {
   return ExpandUser(XdgConfigHome) + "/" + "autostart";
 }
 }  // namespace
+
 bool Utils::GetAutoStart() {
   std::string autostart_desktop =
     GetAutostartDirectory() + "/" + DEFAULT_AUTOSTART_NAME + ".desktop";
@@ -122,25 +117,21 @@ void Utils::EnableAutoStart(bool on) {
     GetAutostartDirectory() + "/" + DEFAULT_AUTOSTART_NAME + ".desktop";
   if (!on) {
     if (::unlink(autostart_desktop.c_str()) != 0) {
-      LOG(WARNING) << "(Unexpected behavior): failed to unset autostart";
+      PLOG(WARNING)
+          << "Internal error: unable to remove autostart file";
     }
   } else {
-    // TODO: search XDG_DATA_DIRS instead of hard-coding which is like below
-    // XDG_DATA_DIRS=/usr/share/gnome:/usr/local/share/:/usr/share/
-    const char* origin_desktop =
-        "/usr/share/applications/" DEFAULT_AUTOSTART_NAME ".desktop";
-    std::string content;
 
     EnsureCreatedDirectory(GetAutostartDirectory());
     // force update, delete first
-    if (IsFile(autostart_desktop)) {
-      ::unlink(autostart_desktop.c_str());
+    if (IsFile(autostart_desktop) && ::unlink(autostart_desktop.c_str()) != 0) {
+      PLOG(WARNING)
+          << "Internal error: unable to remove previous autostart file";
     }
 
     // write to target
-    if (!ReadFileToString(origin_desktop, &content) ||
-        !WriteFileWithContent(autostart_desktop, content))  {
-      LOG(WARNING) << "(Unexpected behavior): failed to set autostart";
+    if (!WriteFileWithContent(autostart_desktop, kAutoStartFileContent))  {
+      PLOG(WARNING) << "Internal error: unable to create autostart file";
     }
   }
 }

@@ -21,6 +21,8 @@
 #include "win32/yass_frame.hpp"
 #include "version.h"
 
+ABSL_FLAG(bool, background, false, "start up backgroundd");
+
 #define MULDIVDPI(x) MulDiv(x, uDpi, 96)
 
 // https://docs.microsoft.com/en-us/windows/win32/winmsg/about-messages-and-message-queues
@@ -128,7 +130,9 @@ BOOL CYassApp::InitInstance() {
 
   frame_->CenterWindow();
   // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow
-  frame_->ShowWindow(SW_SHOW);
+  if (!absl::GetFlag(FLAGS_background)) {
+    frame_->ShowWindow(SW_SHOW);
+  }
   frame_->UpdateWindow();
 
   if (Utils::GetAutoStart()) {
