@@ -1,10 +1,12 @@
 FROM centos:8
 
+# centos 8 is eol, replacing vault mirrors
+RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-Linux-* && \
+    sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://d36uatko69830t.cloudfront.net|g' /etc/yum.repos.d/CentOS-Linux-* && \
+
 # Install requirements : update repo and install all requirements
 RUN yum clean all && \
   rm -rf /var/cache/yum && rm -rf /var/cache/dnf && \
-  sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-Linux-* && \
-  sed -i 's|#baseurl=http://mirror.centos.org|baseurl=https://vault.centos.org|g' /etc/yum.repos.d/CentOS-Linux-* && \
   yum update -y && \
   yum install -y dnf-plugins-core epel-release && \
   dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo && \
