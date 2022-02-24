@@ -152,6 +152,8 @@ def Settings( **kwargs ):
         continue
       if flag == '-Wall':
         continue
+      if flag == '-TP':
+        continue
       final_flags.append(flag)
 
     return {
