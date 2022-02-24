@@ -143,9 +143,9 @@ jobs:
         if: ${{ github.event_name == 'release' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
         run: |
           gh release upload ${{ github.event.release.tag_name }} *.msi *.zip
-          shell: bash
   win-xp-release:
     needs: [cache-toolchain-win]
     runs-on: windows-2019
@@ -223,9 +223,9 @@ jobs:
         if: ${{ github.event_name == 'release' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
         run: |
           gh release upload ${{ github.event.release.tag_name }} *.msi *.zip
-          shell: bash
   win-compatible-2019:
     needs: [cache-toolchain-win]
     runs-on: windows-2019

@@ -21,9 +21,6 @@ on:
     paths-ignore: [README.md, BUILDING.md]
   release:
     types: [published]
-defaults:
-  run:
-    shell: bash
 env:
   CACHE_EPOCH: 0
   GOPROXY: direct
