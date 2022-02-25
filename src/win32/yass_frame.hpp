@@ -21,6 +21,21 @@ class CYassFrame : public CFrameWnd {
  public:
   ~CYassFrame() override;
 
+ protected:
+  afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
+
+  BOOL ShowWindow(int nCmdShow) {
+    return ::ShowWindow(m_hWnd, nCmdShow);
+  }
+
+  BOOL SetForegroundWindow() {
+    return ::SetForegroundWindow(m_hWnd);
+  }
+
+  BOOL UpdateWindow() {
+    return ::UpdateWindow(m_hWnd);
+  }
+
  public:
   std::string GetServerHost();
   std::string GetServerPort();
@@ -29,7 +44,7 @@ class CYassFrame : public CFrameWnd {
   std::string GetLocalHost();
   std::string GetLocalPort();
   std::string GetTimeout();
-  CString GetStatusMessage();
+  std::string GetStatusMessage();
 
   void OnStarted();
   void OnStopped();
@@ -39,34 +54,126 @@ class CYassFrame : public CFrameWnd {
 
   // Left Panel
  protected:
-  CButton start_button_;
-  CButton stop_button_;
+  HWND start_button_;
+  HWND stop_button_;
 
   // Right Panel
  protected:
-  CStatic serverhost_label_;
-  CStatic serverport_label_;
-  CStatic password_label_;
-  CStatic method_label_;
-  CStatic localhost_label_;
-  CStatic localport_label_;
-  CStatic timeout_label_;
-  CStatic autostart_label_;
+  HWND CreateStatic(const wchar_t* label,
+                    const CRect& rect,
+                    HWND pParentWnd,
+                    UINT nID) {
+    HINSTANCE instance = (HINSTANCE)GetWindowLongPtrW(m_hWnd, GWLP_HINSTANCE);
 
-  CEdit serverhost_edit_;
-  CEdit serverport_edit_;
-  CEdit password_edit_;
-  CComboBox method_combo_box_;
-  CEdit localhost_edit_;
-  CEdit localport_edit_;
-  CEdit timeout_edit_;
-  CButton autostart_button_;
+    return CreateWindowExW(0, WC_STATICW, label,
+                           WS_CHILD | WS_VISIBLE | SS_LEFT, rect.left,
+                           rect.right, rect.Width(), rect.Height(), m_hWnd,
+                           (HMENU)(UINT_PTR)nID, instance, nullptr);
+  }
+
+  HWND CreateEdit(DWORD dwStyle,
+                  const CRect& rect,
+                  HWND pParentWnd,
+                  UINT nID) {
+    HINSTANCE instance = (HINSTANCE)GetWindowLongPtrW(m_hWnd, GWLP_HINSTANCE);
+
+    return CreateWindowExW(
+        0, WC_EDITW, nullptr,
+        WS_CHILD | WS_VISIBLE | WS_BORDER | WS_BORDER | ES_LEFT | dwStyle,
+        rect.left, rect.right, rect.Width(), rect.Height(), pParentWnd,
+        (HMENU)(UINT_PTR)nID, instance, nullptr);
+  }
+
+  HWND CreateComboBox(DWORD dwStyle,
+                      const CRect& rect,
+                      HWND pParentWnd,
+                      UINT nID) {
+    HINSTANCE instance = (HINSTANCE)GetWindowLongPtrW(m_hWnd, GWLP_HINSTANCE);
+
+    return CreateWindowExW(0, WC_COMBOBOXW, nullptr,
+                           WS_CHILD | WS_VISIBLE | WS_VSCROLL | dwStyle,
+                           rect.left, rect.right, rect.Width(), rect.Height(),
+                           pParentWnd, (HMENU)(UINT_PTR)nID, instance, nullptr);
+  }
+
+  HWND CreateButton(const wchar_t* label,
+                    DWORD dwStyle,
+                    const CRect& rect,
+                    HWND pParentWnd,
+                    UINT nID) {
+    HINSTANCE instance = (HINSTANCE)GetWindowLongPtrW(m_hWnd, GWLP_HINSTANCE);
+
+    return CreateWindowExW(0, WC_BUTTONW, label, WS_CHILD | WS_VISIBLE | dwStyle,
+                           rect.left, rect.right, rect.Width(), rect.Height(),
+                           pParentWnd, (HMENU)(UINT_PTR)nID, instance, nullptr);
+  }
+
+  HWND server_host_label_;
+  HWND server_port_label_;
+  HWND password_label_;
+  HWND method_label_;
+  HWND local_host_label_;
+  HWND local_port_label_;
+  HWND timeout_label_;
+  HWND autostart_label_;
+
+  HWND server_host_edit_;
+  HWND server_port_edit_;
+  HWND password_edit_;
+  HWND method_combo_box_;
+  HWND local_host_edit_;
+  HWND local_port_edit_;
+  HWND timeout_edit_;
+  HWND autostart_button_;
 
  protected:
-  CStatusBar status_bar_;
+  HWND CreateStatusBar(HWND pParentWnd, int idStatus,
+                       HINSTANCE hInstance, int cParts) {
+    HWND hwndStatus;
+    RECT rcClient;
+    HLOCAL hloc;
+    PINT paParts;
+    int i, nWidth;
+
+    // Create the status bar.
+    hwndStatus =
+        CreateWindowEx(0,                      // no extended styles
+                       STATUSCLASSNAME,        // name of status bar class
+                       nullptr,                // no text when first created
+                       WS_CHILD | WS_VISIBLE,  // creates a visible child window
+                       0, 0, 0, 0,             // ignores size and position
+                       pParentWnd,             // handle to parent window
+                       (HMENU)(INT_PTR)idStatus,  // child window identifier
+                       hInstance,  // handle to application instance
+                       nullptr);      // no window creation data
+
+    // Get the coordinates of the parent window's client area.
+    ::GetClientRect(pParentWnd, &rcClient);
+
+    // Allocate an array for holding the right edge coordinates.
+    hloc = LocalAlloc(LHND, sizeof(int) * cParts);
+    paParts = (PINT) LocalLock(hloc);
+
+    // Calculate the right edge coordinate for each part, and
+    // copy the coordinates to the array.
+    nWidth = rcClient.right / cParts;
+    int rightEdge = nWidth;
+    for (i = 0; i < cParts; i++) {
+      paParts[i] = rightEdge;
+      rightEdge += nWidth;
+    }
+
+    // Tell the status bar to create the window parts.
+    ::SendMessage(hwndStatus, SB_SETPARTS, (WPARAM)cParts, (LPARAM)paParts);
+
+    // Free the array, and return.
+    LocalUnlock(hloc);
+    LocalFree(hloc);
+    return hwndStatus;
+  }
+  HWND status_bar_;
 
  protected:
-  afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
   void UpdateLayoutForDpi();
   void UpdateLayoutForDpi(UINT uDpi);
 
@@ -91,8 +198,6 @@ class CYassFrame : public CFrameWnd {
 
  private:
   friend class CYassApp;
-
-  CMenu menu_;
 
  protected:
   DECLARE_MESSAGE_MAP();

@@ -24,7 +24,6 @@ ABSL_FLAG(bool, background, false, "start up backgroundd");
 #define MULDIVDPI(x) MulDiv(x, uDpi, 96)
 
 // https://docs.microsoft.com/en-us/windows/win32/winmsg/about-messages-and-message-queues
-// https://docs.microsoft.com/en-us/cpp/mfc/reference/message-map-macros-mfc?view=msvc-170#on_thread_message
 BEGIN_MESSAGE_MAP(CYassApp, CWinApp)
   ON_COMMAND(ID_APP_OPTION, &CYassApp::OnAppOption)
   ON_COMMAND(ID_APP_ABOUT, &CYassApp::OnAppAbout)
@@ -102,27 +101,40 @@ BOOL CYassApp::InitInstance() {
 
   Utils::SetDpiAwareness();
 
+  // Ensure that the common control DLL is loaded.
+  InitCommonControls();
+
   m_pMainWnd = frame_ = new CYassFrame;
   if (frame_ == nullptr) {
     return FALSE;
   }
 
-  HICON icon = LoadIcon(IDR_MAINFRAME);
+  SetWindowLongPtrW(frame_->m_hWnd, GWLP_HINSTANCE, (LPARAM)m_hInstance);
 
-  LPCTSTR lpszClass =
-      AfxRegisterWndClass(CS_DBLCLKS, ::LoadCursor(nullptr, IDC_ARROW),
-                          (HBRUSH)(COLOR_BTNFACE + 1), icon);
-  CString frame_name;
-  if (!frame_name.LoadString(AFX_IDS_APP_TITLE)) {
-    LOG(WARNING) << "frame name not loaded";
-    delete frame_;
-    return FALSE;
-  }
+  // https://docs.microsoft.com/en-us/windows/win32/menurc/using-menus
+  const wchar_t* className = L"yassMainWnd";
+
+  WNDCLASS wndcls;
+
+  // otherwise we need to register a new class
+  wndcls.style = CS_DBLCLKS;
+  wndcls.lpfnWndProc = DefWindowProc;
+  wndcls.cbClsExtra = wndcls.cbWndExtra = 0;
+  wndcls.hInstance = m_hInstance;
+  wndcls.hIcon = LoadIcon(IDR_MAINFRAME);
+  wndcls.hCursor = ::LoadCursor(nullptr, IDC_ARROW);
+  wndcls.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
+  wndcls.lpszMenuName = MAKEINTRESOURCE(IDR_MAINFRAME);
+  wndcls.lpszClassName = className;
+
+  ::RegisterClassW(&wndcls);
+
+  std::wstring frame_name = LoadStringStdW(m_hInstance, AFX_IDS_APP_TITLE);
 
   UINT uDpi = Utils::GetDpiForWindowOrSystem(nullptr);
   RECT rect{0, 0, MULDIVDPI(500), MULDIVDPI(400)};
 
-  if (!frame_->Create(lpszClass, frame_name,
+  if (!frame_->Create(className, frame_name.c_str(),
                       WS_MINIMIZEBOX | WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
                       rect)) {
     LOG(WARNING) << "Failed to create main frame";
@@ -130,7 +142,6 @@ BOOL CYassApp::InitInstance() {
     return FALSE;
   }
 
-  frame_->CenterWindow();
   // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow
   if (!absl::GetFlag(FLAGS_background)) {
     frame_->ShowWindow(SW_SHOW);
@@ -180,15 +191,11 @@ void CYassApp::OnStart(bool quiet) {
   if (!quiet) {
     callback = [main_thread_id](asio::error_code ec) {
       bool successed = false;
-      char* message = nullptr;
-      int message_size = 0;
+      std::string* message = nullptr;
       bool ret;
 
       if (ec) {
-        std::string message_storage = ec.message();
-        message_size = message_storage.size();
-        message = new char[message_size + 1];
-        memcpy(message, message_storage.c_str(), message_size + 1);
+        *message = ec.message();
         successed = false;
       } else {
         successed = true;
@@ -197,7 +204,7 @@ void CYassApp::OnStart(bool quiet) {
       // if the gui library exits, no more need to handle
       ret = ::PostThreadMessage(
           main_thread_id, successed ? WM_MYAPP_STARTED : WM_MYAPP_START_FAILED,
-          static_cast<WPARAM>(message_size), reinterpret_cast<LPARAM>(message));
+          0, reinterpret_cast<LPARAM>(message));
       if (!ret) {
         LOG(WARNING) << "Failed to post message to main thread: " << std::hex
                      << ::GetLastError() << std::dec;
@@ -225,8 +232,6 @@ void CYassApp::OnStop(bool quiet) {
 }
 
 void CYassApp::OnAppOption() {
-
-        LOG(WARNING) << this;
   DialogBoxParamW(m_hInstance, MAKEINTRESOURCE(IDD_OPTIONBOX),
                   frame_->m_hWnd, &CYassApp::OnAppOptionMessage,
                   reinterpret_cast<LPARAM>(this));
@@ -238,11 +243,11 @@ INT_PTR CALLBACK CYassApp::OnAppOptionMessage(HWND hDlg, UINT message,
                                               WPARAM wParam, LPARAM lParam) {
   UNREFERENCED_PARAMETER(lParam);
   auto self =
-    reinterpret_cast<CYassApp*>(GetWindowLongPtr(hDlg, GWLP_USERDATA));
+    reinterpret_cast<CYassApp*>(GetWindowLongPtrW(hDlg, GWLP_USERDATA));
 
   switch (message) {
     case WM_INITDIALOG: {
-      SetWindowLongPtr(hDlg, GWLP_USERDATA, lParam);
+      SetWindowLongPtrW(hDlg, GWLP_USERDATA, lParam);
       // extra initialization to all fields
       auto connect_timeout = absl::GetFlag(FLAGS_connect_timeout);
       auto tcp_user_timeout = absl::GetFlag(FLAGS_tcp_user_timeout);
@@ -325,11 +330,10 @@ void CYassApp::OnStarted(WPARAM /*w*/, LPARAM /*l*/) {
 
 void CYassApp::OnStartFailed(WPARAM w, LPARAM l) {
   state_ = START_FAILED;
-  char* message = reinterpret_cast<char*>(l);
-  int message_size = static_cast<int>(w);
+  std::unique_ptr<std::string> message_ptr(reinterpret_cast<std::string*>(l));
 
-  error_msg_ = std::string(message, message_size);
-  delete[] message;
+  error_msg_ = std::move(message_ptr.operator*());
+
   LOG(ERROR) << "worker failed due to: " << error_msg_;
   frame_->OnStartFailed();
 }
@@ -340,22 +344,18 @@ void CYassApp::OnStopped(WPARAM /*w*/, LPARAM /*l*/) {
 }
 
 BOOL CYassApp::CheckFirstInstance() {
-  CString app_name;
-  if (!app_name.LoadString(AFX_IDS_APP_TITLE)) {
-    LOG(WARNING) << "app name not loaded";
-    return FALSE;
-  }
+  std::wstring app_name = LoadStringStdW(m_hInstance, AFX_IDS_APP_TITLE);
 
-  CWnd* first_wnd = CWnd::FindWindow(nullptr, app_name);
+  HWND first_wnd = FindWindow(nullptr, app_name.c_str());
 
   // another instance is already running - activate it
   if (first_wnd) {
-    CWnd* popup_wnd = first_wnd->GetLastActivePopup();
-    popup_wnd->SetForegroundWindow();
-    if (popup_wnd->IsIconic())
-      popup_wnd->ShowWindow(SW_SHOWNORMAL);
+    HWND popup_wnd = GetLastActivePopup(first_wnd);
+    SetForegroundWindow(popup_wnd);
+    if (IsIconic(popup_wnd))
+      ShowWindow(popup_wnd, SW_SHOWNORMAL);
     if (first_wnd != popup_wnd)
-      popup_wnd->SetForegroundWindow();
+      SetForegroundWindow(popup_wnd);
     return FALSE;
   }
 
