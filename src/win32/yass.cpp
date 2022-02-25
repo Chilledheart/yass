@@ -135,6 +135,9 @@ BOOL CYassApp::InitInstance() {
   // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow
   if (!absl::GetFlag(FLAGS_background)) {
     frame_->ShowWindow(SW_SHOW);
+    frame_->SetForegroundWindow();
+  } else {
+    frame_->ShowWindow(SW_SHOWMINNOACTIVE);
   }
   frame_->UpdateWindow();
 
