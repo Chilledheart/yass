@@ -585,17 +585,17 @@ LONG get_win_run_key(HKEY* pKey) {
   return result;
 }
 
-int add_to_auto_start(const wchar_t* appname_w, const wchar_t* path_w) {
+int add_to_auto_start(const wchar_t* appname_w, const std::wstring& cmdline) {
   HKEY hKey;
   LONG result = get_win_run_key(&hKey);
   if (result != ERROR_SUCCESS) {
     return -1;
   }
 
-  DWORD n = sizeof(wchar_t) * (wcslen(path_w) + 1);
+  DWORD n = sizeof(wchar_t) * (cmdline.size() + 1);
 
   result = RegSetValueExW(hKey, appname_w, 0, REG_SZ,
-                          reinterpret_cast<const BYTE*>(path_w), n);
+                          reinterpret_cast<const BYTE*>(cmdline.c_str()), n);
 
   RegCloseKey(hKey);
   if (result != ERROR_SUCCESS) {
@@ -649,13 +649,15 @@ int get_yass_auto_start() {
 int set_yass_auto_start(bool on) {
   int result = 0;
   if (on) {
+    std::wstring cmdline(MAX_PATH + 1, L'\0');
     /* turn on auto start  */
-    wchar_t applet_path[MAX_PATH];
-    if (GetModuleFileNameW(nullptr, applet_path, MAX_PATH) == 0) {
+    if (GetModuleFileNameW(nullptr, &cmdline[0], MAX_PATH) == 0) {
+      PLOG(WARNING) << "Internal error: GetModuleFileNameW failed";
       return -1;
     }
+    cmdline = L"\"" + cmdline + L"\" --background";
 
-    result = add_to_auto_start(_T(DEFAULT_AUTOSTART_NAME), applet_path);
+    result = add_to_auto_start(_T(DEFAULT_AUTOSTART_NAME), cmdline);
 
   } else {
     /* turn off auto start */

@@ -94,7 +94,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 - (IBAction)OnAutoStartChecked:(id)sender {
   bool enable = self.autoStart.state == NSControlStateValueOn;
   if (enable && !CheckLoginItemStatus(nullptr)) {
-    AddToLoginItems(false);
+    AddToLoginItems(true);
   } else {
     RemoveFromLoginItems();
   }

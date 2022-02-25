@@ -21,6 +21,8 @@
 #include "gtk/yass_window.hpp"
 #include "version.h"
 
+ABSL_FLAG(bool, background, false, "start up backgroundd");
+
 YASSApp* mApp = nullptr;
 
 static const char* kAppId = "it.gui.yass";
@@ -104,7 +106,10 @@ void YASSApp::OnActivate() {
 
   main_window_ = new YASSWindow();
   main_window_->show();
-  main_window_->present();
+  // https://docs.gtk.org/gtk3/method.Window.present.html
+  if (!absl::GetFlag(FLAGS_background)) {
+    main_window_->present();
+  }
   gtk_application_add_window(impl_, main_window_->impl_);
 
   if (Utils::GetAutoStart()) {
