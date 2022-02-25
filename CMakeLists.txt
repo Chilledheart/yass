@@ -339,7 +339,7 @@ if (HAVE_FLOCK)
 endif()
 
 if (MSVC)
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} ShLwApi WS2_32 WinMM Gdi32 ComDlg32 shell32 Ole32 WinSpool)
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} WS2_32)
 
     if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "static")
       # replace /MD with /MT
@@ -372,11 +372,6 @@ if (MSVC)
 
     # enforce default delayload implementation
     set(SYSTEM_LIBS ${SYSTEM_LIBS} delayimp)
-
-    # this must come at last
-    if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "static")
-      set(SYSTEM_LIBS ${SYSTEM_LIBS} uafxcw$<$<CONFIG:Debug>:d> libcmt$<$<CONFIG:Debug>:d>)
-    endif()
 else()
     if (CMAKE_FIND_ROOT_PATH)
         foreach(ROOT_PATH ${CMAKE_FIND_ROOT_PATH})
@@ -418,28 +413,12 @@ endif()
 set(SUPPORT_LIBS ${SUPPORT_LIBS} ${SYSTEM_LIBS})
 
 if (MSVC AND GUI)
-  message(STATUS "Build with MFC unicode ${CMAKE_MSVC_CRT_LINKAGE} library")
-  if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "dynamic")
-    add_definitions(-D_AFXDLL)
-    # for shared MFC library
-    set(CMAKE_MFC_UNICODE_FLAG 2)
-  else()
-    # for static MFC library
-    set(CMAKE_MFC_UNICODE_FLAG 1)
-  endif()
-
-  # CMake's FindMFC doesn't cooperate with unicode version, use our version instead
-  # https://cmake.org/pipermail/cmake-developers/2014-November/023656.html
-  find_package(MFCUnicode REQUIRED)
-  if (NOT MFC_UNICODE_FOUND)
-    message(FATAL_ERROR "Required component MFC/AFX is not installed.")
-  endif()
   set(GUI_USE_FILE "")
   set(GUI_INCLUDE_DIRS "")
   set(GUI_DEFINITIONS "")
   set(GUI_C_CXX_FLAGS "")
   set(GUI_LIBRARY_DIRS "")
-  set(GUI_LIBRARIES "")
+  set(GUI_LIBRARIES ShLwApi WinMM Gdi32 ComDlg32 Ole32 ComCtl32 User32 shell32)
 elseif (APPLE AND GUI)
   find_library(COCOA_LIBRARY Cocoa REQUIRED)
   # Locate Interface Builder Tool, needed to build things like Storyboards outside of Xcode.

@@ -6,7 +6,6 @@
 /////////////////////////////////////////////////////////////////////////////
 // Unicode (UTF-8) resources
 
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
 /////////////////////////////////////////////////////////////////////////////
 //
 // About Dialog
@@ -26,5 +25,3 @@ BEGIN
     DEFPUSHBUTTON   "OK",IDOK,273,7,32,14,WS_GROUP
     LTEXT           "Author: Chilledheart",IDC_STATIC,40,50,120,8
 END
-
-#endif    // Unicode (UTF-8) resources

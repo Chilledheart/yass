@@ -4,37 +4,33 @@
 #ifndef YASS_WIN32_FRAME
 #define YASS_WIN32_FRAME
 
-#include <afxext.h>  // MFC extensions (including VB)
-#include <afxtempl.h>
-#include <afxwin.h>  // MFC core and standard components
-
 #include "crypto/crypter_export.hpp"
 
 #include <string>
+#include <windows.h>
 
-class CYassFrame : public CFrameWnd {
-  DECLARE_DYNCREATE(CYassFrame);
+#include <CommCtrl.h>
 
- protected:
+class CYassFrame {
+ public:
   CYassFrame();
+  ~CYassFrame();
+
+  BOOL Create(const wchar_t* className,
+              const wchar_t* title,
+              DWORD dwStyle,
+              RECT rect,
+              HINSTANCE hInstance);
+
+ private:
+  HWND m_hWnd;
 
  public:
-  ~CYassFrame() override;
+  BOOL ShowWindow(int nCmdShow) { return ::ShowWindow(m_hWnd, nCmdShow); }
 
- protected:
-  afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
+  BOOL SetForegroundWindow() { return ::SetForegroundWindow(m_hWnd); }
 
-  BOOL ShowWindow(int nCmdShow) {
-    return ::ShowWindow(m_hWnd, nCmdShow);
-  }
-
-  BOOL SetForegroundWindow() {
-    return ::SetForegroundWindow(m_hWnd);
-  }
-
-  BOOL UpdateWindow() {
-    return ::UpdateWindow(m_hWnd);
-  }
+  BOOL UpdateWindow() { return ::UpdateWindow(m_hWnd); }
 
  public:
   std::string GetServerHost();
@@ -60,52 +56,49 @@ class CYassFrame : public CFrameWnd {
   // Right Panel
  protected:
   HWND CreateStatic(const wchar_t* label,
-                    const CRect& rect,
+                    const RECT& rect,
                     HWND pParentWnd,
-                    UINT nID) {
-    HINSTANCE instance = (HINSTANCE)GetWindowLongPtrW(m_hWnd, GWLP_HINSTANCE);
-
-    return CreateWindowExW(0, WC_STATICW, label,
-                           WS_CHILD | WS_VISIBLE | SS_LEFT, rect.left,
-                           rect.right, rect.Width(), rect.Height(), m_hWnd,
-                           (HMENU)(UINT_PTR)nID, instance, nullptr);
+                    UINT nID,
+                    HINSTANCE hInstance) {
+    return CreateWindowExW(
+        0, WC_STATICW, label, WS_CHILD | WS_VISIBLE | SS_LEFT, rect.left,
+        rect.top, rect.right - rect.left, rect.bottom - rect.top, pParentWnd,
+        (HMENU)(UINT_PTR)nID, hInstance, nullptr);
   }
 
   HWND CreateEdit(DWORD dwStyle,
-                  const CRect& rect,
+                  const RECT& rect,
                   HWND pParentWnd,
-                  UINT nID) {
-    HINSTANCE instance = (HINSTANCE)GetWindowLongPtrW(m_hWnd, GWLP_HINSTANCE);
-
+                  UINT nID,
+                  HINSTANCE hInstance) {
     return CreateWindowExW(
         0, WC_EDITW, nullptr,
         WS_CHILD | WS_VISIBLE | WS_BORDER | WS_BORDER | ES_LEFT | dwStyle,
-        rect.left, rect.right, rect.Width(), rect.Height(), pParentWnd,
-        (HMENU)(UINT_PTR)nID, instance, nullptr);
+        rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
+        pParentWnd, (HMENU)(UINT_PTR)nID, hInstance, nullptr);
   }
 
   HWND CreateComboBox(DWORD dwStyle,
-                      const CRect& rect,
+                      const RECT& rect,
                       HWND pParentWnd,
-                      UINT nID) {
-    HINSTANCE instance = (HINSTANCE)GetWindowLongPtrW(m_hWnd, GWLP_HINSTANCE);
-
-    return CreateWindowExW(0, WC_COMBOBOXW, nullptr,
-                           WS_CHILD | WS_VISIBLE | WS_VSCROLL | dwStyle,
-                           rect.left, rect.right, rect.Width(), rect.Height(),
-                           pParentWnd, (HMENU)(UINT_PTR)nID, instance, nullptr);
+                      UINT nID,
+                      HINSTANCE hInstance) {
+    return CreateWindowExW(
+        0, WC_COMBOBOXW, nullptr, WS_CHILD | WS_VISIBLE | WS_VSCROLL | dwStyle,
+        rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
+        pParentWnd, (HMENU)(UINT_PTR)nID, hInstance, nullptr);
   }
 
   HWND CreateButton(const wchar_t* label,
                     DWORD dwStyle,
-                    const CRect& rect,
+                    const RECT& rect,
                     HWND pParentWnd,
-                    UINT nID) {
-    HINSTANCE instance = (HINSTANCE)GetWindowLongPtrW(m_hWnd, GWLP_HINSTANCE);
-
-    return CreateWindowExW(0, WC_BUTTONW, label, WS_CHILD | WS_VISIBLE | dwStyle,
-                           rect.left, rect.right, rect.Width(), rect.Height(),
-                           pParentWnd, (HMENU)(UINT_PTR)nID, instance, nullptr);
+                    UINT nID,
+                    HINSTANCE hInstance) {
+    return CreateWindowExW(
+        0, WC_BUTTONW, label, WS_CHILD | WS_VISIBLE | dwStyle, rect.left,
+        rect.top, rect.right - rect.left, rect.bottom - rect.top, pParentWnd,
+        (HMENU)(UINT_PTR)nID, hInstance, nullptr);
   }
 
   HWND server_host_label_;
@@ -127,8 +120,10 @@ class CYassFrame : public CFrameWnd {
   HWND autostart_button_;
 
  protected:
-  HWND CreateStatusBar(HWND pParentWnd, int idStatus,
-                       HINSTANCE hInstance, int cParts) {
+  HWND CreateStatusBar(HWND pParentWnd,
+                       int idStatus,
+                       HINSTANCE hInstance,
+                       int cParts) {
     HWND hwndStatus;
     RECT rcClient;
     HLOCAL hloc;
@@ -145,14 +140,14 @@ class CYassFrame : public CFrameWnd {
                        pParentWnd,             // handle to parent window
                        (HMENU)(INT_PTR)idStatus,  // child window identifier
                        hInstance,  // handle to application instance
-                       nullptr);      // no window creation data
+                       nullptr);   // no window creation data
 
     // Get the coordinates of the parent window's client area.
     ::GetClientRect(pParentWnd, &rcClient);
 
     // Allocate an array for holding the right edge coordinates.
     hloc = LocalAlloc(LHND, sizeof(int) * cParts);
-    paParts = (PINT) LocalLock(hloc);
+    paParts = (PINT)LocalLock(hloc);
 
     // Calculate the right edge coordinate for each part, and
     // copy the coordinates to the array.
@@ -180,27 +175,24 @@ class CYassFrame : public CFrameWnd {
   // In the framework, when the user closes the frame window,
   // the window's default OnClose handler calls DestroyWindow.
   // When the main window closes, the application closes.
-  afx_msg void OnClose();
+  void OnClose();
 
   // Implement Application shutdown
   // http://msdn.microsoft.com/en-us/library/ms700677(v=vs.85).aspx
-  afx_msg BOOL OnQueryEndSession();
+  BOOL OnQueryEndSession();
 
-  afx_msg void OnUpdateStatusBar(CCmdUI* pCmdUI);
+  void OnUpdateStatusBar();
 
  protected:
-  afx_msg LRESULT OnDPIChanged(WPARAM w, LPARAM l);
+  LRESULT OnDPIChanged(WPARAM w, LPARAM l);
 
  public:
-  afx_msg void OnStartButtonClicked();
-  afx_msg void OnStopButtonClicked();
-  afx_msg void OnCheckedAutoStartButtonClicked();
+  void OnStartButtonClicked();
+  void OnStopButtonClicked();
+  void OnCheckedAutoStartButtonClicked();
 
  private:
   friend class CYassApp;
-
- protected:
-  DECLARE_MESSAGE_MAP();
 
  private:
   uint64_t last_sync_time_ = 0;

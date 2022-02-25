@@ -67,21 +67,20 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 
 static std::string GetWindowTextStd(HWND hWnd) {
   std::wstring text;
-  int len = ::GetWindowTextLengthW(hWnd);
+  int len = GetWindowTextLengthW(hWnd);
   text.resize(len);
-  ::GetWindowTextW(hWnd, const_cast<wchar_t*>(text.c_str()), len + 1);
+  GetWindowTextW(hWnd, const_cast<wchar_t*>(text.c_str()), len + 1);
   return SysWideToUTF8(text);
 }
 
 static void SetWindowTextStd(HWND hWnd, const std::string& text) {
-  ::SetWindowTextW(hWnd, SysUTF8ToWide(text).c_str());
+  SetWindowTextW(hWnd, SysUTF8ToWide(text).c_str());
 }
-
-IMPLEMENT_DYNCREATE(CYassFrame, CFrameWnd)
 
 CYassFrame::CYassFrame() = default;
 CYassFrame::~CYassFrame() = default;
 
+#if 0
 BEGIN_MESSAGE_MAP(CYassFrame, CFrameWnd)
   ON_WM_CREATE()
   ON_WM_CLOSE()
@@ -98,24 +97,33 @@ BEGIN_MESSAGE_MAP(CYassFrame, CFrameWnd)
   ON_BN_CLICKED(IDC_AUTOSTART_CHECKBOX,
                 &CYassFrame::OnCheckedAutoStartButtonClicked)
 END_MESSAGE_MAP()
+#endif
 
-int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
-  if (CFrameWnd::OnCreate(lpCreateStruct) == -1)
-    return -1;
+int CYassFrame::Create(const wchar_t* className,
+                       const wchar_t* title,
+                       DWORD dwStyle,
+                       RECT rect,
+                       HINSTANCE hInstance) {
+  m_hWnd = CreateWindowExW(0, className, title, dwStyle, rect.left, rect.top,
+                           rect.right - rect.left, rect.bottom - rect.top,
+                           nullptr, nullptr, hInstance, nullptr);
 
-  CRect rect;
+  SetWindowLongPtrW(m_hWnd, GWLP_HINSTANCE, (LPARAM)hInstance);
+
+  rect = RECT{};
 
   // Left Panel
   start_button_ =
-      CreateButton(L"START", BS_PUSHBUTTON, rect, m_hWnd, IDC_START);
+      CreateButton(L"START", BS_PUSHBUTTON, rect, m_hWnd, IDC_START, hInstance);
 
-  stop_button_ = CreateButton(L"STOP", BS_PUSHBUTTON, rect, m_hWnd, IDC_START);
+  stop_button_ =
+      CreateButton(L"STOP", BS_PUSHBUTTON, rect, m_hWnd, IDC_START, hInstance);
 
-  ::EnableWindow(stop_button_, FALSE);
+  EnableWindow(stop_button_, FALSE);
 
   // Right Panel
   const wchar_t* method_strings[] = {
-#define XX(num, name, string) _T(string),
+#define XX(num, name, string) L##string,
       CIPHER_METHOD_MAP(XX)
 #undef XX
   };
@@ -129,21 +137,24 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
   // https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles
   // https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
   // https://docs.microsoft.com/en-us/windows/win32/winmsg/about-window-classes
-  server_host_label_ = CreateStatic(L"Server Host", rect, m_hWnd, 0);
-  server_port_label_ = CreateStatic(L"Server Port", rect, m_hWnd, 0);
-  password_label_ = CreateStatic(L"Password", rect, m_hWnd, 0);
-  method_label_ = CreateStatic(L"Cipher Method", rect, m_hWnd, 0);
-  local_host_label_ = CreateStatic(L"Local Host", rect, m_hWnd, 0);
-  local_port_label_ = CreateStatic(L"Local Port", rect, m_hWnd, 0);
-  timeout_label_ = CreateStatic(L"Timeout", rect, m_hWnd, 0);
-  autostart_label_ = CreateStatic(L"Auto Start", rect, m_hWnd, 0);
+  server_host_label_ = CreateStatic(L"Server Host", rect, m_hWnd, 0, hInstance);
+  server_port_label_ = CreateStatic(L"Server Port", rect, m_hWnd, 0, hInstance);
+  password_label_ = CreateStatic(L"Password", rect, m_hWnd, 0, hInstance);
+  method_label_ = CreateStatic(L"Cipher Method", rect, m_hWnd, 0, hInstance);
+  local_host_label_ = CreateStatic(L"Local Host", rect, m_hWnd, 0, hInstance);
+  local_port_label_ = CreateStatic(L"Local Port", rect, m_hWnd, 0, hInstance);
+  timeout_label_ = CreateStatic(L"Timeout", rect, m_hWnd, 0, hInstance);
+  autostart_label_ = CreateStatic(L"Auto Start", rect, m_hWnd, 0, hInstance);
 
-  server_host_edit_ = CreateEdit(0, rect, m_hWnd, IDC_EDIT_SERVER_HOST);
-  server_port_edit_ = CreateEdit(ES_NUMBER, rect, m_hWnd, IDC_EDIT_SERVER_PORT);
-  password_edit_ = CreateEdit(ES_PASSWORD, rect, m_hWnd, IDC_EDIT_SERVER_PORT);
+  server_host_edit_ =
+      CreateEdit(0, rect, m_hWnd, IDC_EDIT_SERVER_HOST, hInstance);
+  server_port_edit_ =
+      CreateEdit(ES_NUMBER, rect, m_hWnd, IDC_EDIT_SERVER_PORT, hInstance);
+  password_edit_ =
+      CreateEdit(ES_PASSWORD, rect, m_hWnd, IDC_EDIT_SERVER_PORT, hInstance);
 
-  method_combo_box_ =
-      CreateComboBox(CBS_DROPDOWNLIST, rect, m_hWnd, IDC_COMBOBOX_METHOD);
+  method_combo_box_ = CreateComboBox(CBS_DROPDOWNLIST, rect, m_hWnd,
+                                     IDC_COMBOBOX_METHOD, hInstance);
 
   int method_count = sizeof(method_strings) / sizeof(method_strings[0]) - 1;
   for (int i = 0; i < method_count; ++i) {
@@ -153,19 +164,20 @@ int CYassFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
 
   ComboBox_SetMinVisible(method_combo_box_, method_count);
 
-  local_host_edit_ = CreateEdit(0, rect, m_hWnd, IDC_EDIT_SERVER_HOST);
-  local_port_edit_ = CreateEdit(ES_NUMBER, rect, m_hWnd, IDC_EDIT_SERVER_PORT);
-  timeout_edit_ = CreateEdit(ES_NUMBER, rect, m_hWnd, IDC_EDIT_SERVER_PORT);
+  local_host_edit_ =
+      CreateEdit(0, rect, m_hWnd, IDC_EDIT_SERVER_HOST, hInstance);
+  local_port_edit_ =
+      CreateEdit(ES_NUMBER, rect, m_hWnd, IDC_EDIT_SERVER_PORT, hInstance);
+  timeout_edit_ =
+      CreateEdit(ES_NUMBER, rect, m_hWnd, IDC_EDIT_SERVER_PORT, hInstance);
 
-  autostart_button_ = CreateButton(_T("Enable"), BS_AUTOCHECKBOX | BS_LEFT,
-                                   rect, m_hWnd, IDC_AUTOSTART_CHECKBOX);
+  autostart_button_ = CreateButton(L"Enable", BS_AUTOCHECKBOX | BS_LEFT, rect,
+                                   m_hWnd, IDC_AUTOSTART_CHECKBOX, hInstance);
 
   Button_SetCheck(autostart_button_,
                   Utils::GetAutoStart() ? BST_CHECKED : BST_UNCHECKED);
 
-  status_bar_ =
-      CreateStatusBar(m_hWnd, ID_APP_MSG,
-                      (HINSTANCE)GetWindowLongPtrW(m_hWnd, GWLP_HINSTANCE), 1);
+  status_bar_ = CreateStatusBar(m_hWnd, ID_APP_MSG, hInstance, 1);
 
   UpdateLayoutForDpi();
 
@@ -237,41 +249,41 @@ std::string CYassFrame::GetStatusMessage() {
 }
 
 void CYassFrame::OnStarted() {
-  ::EnableWindow(server_host_edit_, FALSE);
-  ::EnableWindow(server_port_edit_, FALSE);
-  ::EnableWindow(password_edit_, FALSE);
-  ::EnableWindow(method_combo_box_, FALSE);
-  ::EnableWindow(local_host_edit_, FALSE);
-  ::EnableWindow(local_port_edit_, FALSE);
-  ::EnableWindow(timeout_edit_, FALSE);
-  ::EnableWindow(autostart_button_, FALSE);
-  ::EnableWindow(stop_button_, TRUE);
+  EnableWindow(server_host_edit_, FALSE);
+  EnableWindow(server_port_edit_, FALSE);
+  EnableWindow(password_edit_, FALSE);
+  EnableWindow(method_combo_box_, FALSE);
+  EnableWindow(local_host_edit_, FALSE);
+  EnableWindow(local_port_edit_, FALSE);
+  EnableWindow(timeout_edit_, FALSE);
+  EnableWindow(autostart_button_, FALSE);
+  EnableWindow(stop_button_, TRUE);
 }
 
 void CYassFrame::OnStartFailed() {
-  ::EnableWindow(server_host_edit_, TRUE);
-  ::EnableWindow(server_port_edit_, TRUE);
-  ::EnableWindow(password_edit_, TRUE);
-  ::EnableWindow(method_combo_box_, TRUE);
-  ::EnableWindow(local_host_edit_, TRUE);
-  ::EnableWindow(local_port_edit_, TRUE);
-  ::EnableWindow(timeout_edit_, TRUE);
-  ::EnableWindow(autostart_button_, TRUE);
-  ::EnableWindow(start_button_, TRUE);
-  ::MessageBoxW(m_hWnd, SysUTF8ToWide(mApp->GetStatus()).c_str(),
-                L"Start Failed", MB_ICONEXCLAMATION | MB_OK);
+  EnableWindow(server_host_edit_, TRUE);
+  EnableWindow(server_port_edit_, TRUE);
+  EnableWindow(password_edit_, TRUE);
+  EnableWindow(method_combo_box_, TRUE);
+  EnableWindow(local_host_edit_, TRUE);
+  EnableWindow(local_port_edit_, TRUE);
+  EnableWindow(timeout_edit_, TRUE);
+  EnableWindow(autostart_button_, TRUE);
+  EnableWindow(start_button_, TRUE);
+  MessageBoxW(m_hWnd, SysUTF8ToWide(mApp->GetStatus()).c_str(), L"Start Failed",
+              MB_ICONEXCLAMATION | MB_OK);
 }
 
 void CYassFrame::OnStopped() {
-  ::EnableWindow(server_host_edit_, TRUE);
-  ::EnableWindow(server_port_edit_, TRUE);
-  ::EnableWindow(password_edit_, TRUE);
-  ::EnableWindow(method_combo_box_, TRUE);
-  ::EnableWindow(local_host_edit_, TRUE);
-  ::EnableWindow(local_port_edit_, TRUE);
-  ::EnableWindow(timeout_edit_, TRUE);
-  ::EnableWindow(autostart_button_, TRUE);
-  ::EnableWindow(start_button_, TRUE);
+  EnableWindow(server_host_edit_, TRUE);
+  EnableWindow(server_port_edit_, TRUE);
+  EnableWindow(password_edit_, TRUE);
+  EnableWindow(method_combo_box_, TRUE);
+  EnableWindow(local_host_edit_, TRUE);
+  EnableWindow(local_port_edit_, TRUE);
+  EnableWindow(timeout_edit_, TRUE);
+  EnableWindow(autostart_button_, TRUE);
+  EnableWindow(start_button_, TRUE);
 }
 
 void CYassFrame::LoadConfig() {
@@ -288,7 +300,8 @@ void CYassFrame::LoadConfig() {
 
   int32_t method = absl::GetFlag(FLAGS_cipher_method);
   for (int i = 0, cnt = ComboBox_GetCount(method_combo_box_); i < cnt; ++i) {
-    if (ComboBox_GetItemData(method_combo_box_, i) == static_cast<DWORD>(method)) {
+    if (ComboBox_GetItemData(method_combo_box_, i) ==
+        static_cast<DWORD>(method)) {
       ComboBox_SetCurSel(method_combo_box_, i);
       break;
     }
@@ -300,120 +313,119 @@ void CYassFrame::LoadConfig() {
 }
 
 void CYassFrame::UpdateLayoutForDpi() {
-  UINT uDPI = Utils::GetDpiForWindowOrSystem(GetSafeHwnd());
+  UINT uDPI = Utils::GetDpiForWindowOrSystem(m_hWnd);
   LOG(WARNING) << "Adjust layout to Dpi: " << uDPI;
   UpdateLayoutForDpi(uDPI);
 }
 
 void CYassFrame::UpdateLayoutForDpi(UINT uDpi) {
   // Left Panel
-  CRect rect, client_rect;
+  RECT rect, client_rect;
 
-  GetClientRect(&client_rect);
+  GetClientRect(m_hWnd, &client_rect);
+
+  rect.left = client_rect.left + COLUMN_ONE_LEFT;
+  rect.top = client_rect.top + VERTICAL_HEIGHT;
+
+  SetWindowPos(start_button_, nullptr, rect.left, rect.top, BUTTON_WIDTH,
+               BUTTON_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect = client_rect;
-  rect.OffsetRect(COLUMN_ONE_LEFT, VERTICAL_HEIGHT);
 
-  ::SetWindowPos(start_button_, nullptr, rect.left, rect.top, BUTTON_WIDTH,
-                 BUTTON_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
-
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_ONE_LEFT, VERTICAL_HEIGHT * 5);
-  ::SetWindowPos(stop_button_, nullptr, rect.left, rect.top, BUTTON_WIDTH,
-                 BUTTON_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  rect.left = client_rect.left + COLUMN_ONE_LEFT;
+  rect.top = client_rect.top + VERTICAL_HEIGHT * 5;
+  SetWindowPos(stop_button_, nullptr, rect.left, rect.top, BUTTON_WIDTH,
+               BUTTON_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   // RIGHT Panel
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_TWO_LEFT, VERTICAL_HEIGHT);
-  ::SetWindowPos(server_host_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
-                 LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  // Column 2
+  rect.left = client_rect.left + COLUMN_TWO_LEFT;
+  rect.top = client_rect.top + VERTICAL_HEIGHT;
+  SetWindowPos(server_host_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
+               LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_TWO_LEFT, VERTICAL_HEIGHT * 2);
-  ::SetWindowPos(server_port_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
-                 LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  rect.left = client_rect.left + COLUMN_TWO_LEFT;
+  rect.top = client_rect.top + VERTICAL_HEIGHT * 2;
+  SetWindowPos(server_port_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
+               LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_TWO_LEFT, VERTICAL_HEIGHT * 3);
-  ::SetWindowPos(password_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
-                 LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  rect.left = client_rect.left + COLUMN_TWO_LEFT;
+  rect.top = client_rect.top + VERTICAL_HEIGHT * 3;
+  SetWindowPos(password_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
+               LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_TWO_LEFT, VERTICAL_HEIGHT * 4);
-  ::SetWindowPos(method_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
-                 LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  rect.left = client_rect.left + COLUMN_TWO_LEFT;
+  rect.top = client_rect.top + VERTICAL_HEIGHT * 4;
+  SetWindowPos(method_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
+               LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_TWO_LEFT, VERTICAL_HEIGHT * 5);
-  ::SetWindowPos(local_host_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
-                 LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  rect.left = client_rect.left + COLUMN_TWO_LEFT;
+  rect.top = client_rect.top + VERTICAL_HEIGHT * 5;
+  SetWindowPos(local_host_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
+               LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_TWO_LEFT, VERTICAL_HEIGHT * 6);
-  ::SetWindowPos(local_port_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
-                 LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  rect.left = client_rect.left + COLUMN_TWO_LEFT;
+  rect.top = client_rect.top + VERTICAL_HEIGHT * 6;
+  SetWindowPos(local_port_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
+               LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_TWO_LEFT, VERTICAL_HEIGHT * 7);
-  ::SetWindowPos(timeout_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
-                 LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  rect.left = client_rect.left + COLUMN_TWO_LEFT;
+  rect.top = client_rect.top + VERTICAL_HEIGHT * 7;
+  SetWindowPos(timeout_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
+               LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_TWO_LEFT, VERTICAL_HEIGHT * 8);
-  ::SetWindowPos(autostart_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
-                 LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  rect.left = client_rect.left + COLUMN_TWO_LEFT;
+  rect.top = client_rect.top + VERTICAL_HEIGHT * 8;
+  SetWindowPos(autostart_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
+               LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_THREE_LEFT, VERTICAL_HEIGHT);
-  ::SetWindowPos(server_host_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
-                 EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  // Column 3
+  rect.left = client_rect.left + COLUMN_THREE_LEFT;
+  rect.top = client_rect.top + VERTICAL_HEIGHT;
+  SetWindowPos(server_host_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
+               EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_THREE_LEFT, VERTICAL_HEIGHT * 2);
-  ::SetWindowPos(server_port_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
-                 EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  rect.left = client_rect.left + COLUMN_THREE_LEFT;
+  rect.top = client_rect.top + VERTICAL_HEIGHT * 2;
+  SetWindowPos(server_port_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
+               EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_THREE_LEFT, VERTICAL_HEIGHT * 3);
-  ::SetWindowPos(password_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
-                 EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  rect.left = client_rect.left + COLUMN_THREE_LEFT;
+  rect.top = client_rect.top + VERTICAL_HEIGHT * 3;
+  SetWindowPos(password_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
+               EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_THREE_LEFT, VERTICAL_HEIGHT * 4);
-  ::SetWindowPos(method_combo_box_, nullptr, rect.left, rect.top, EDIT_WIDTH,
-                 EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  rect.left = client_rect.left + COLUMN_THREE_LEFT;
+  rect.top = client_rect.top + VERTICAL_HEIGHT * 4;
+  SetWindowPos(method_combo_box_, nullptr, rect.left, rect.top, EDIT_WIDTH,
+               EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_THREE_LEFT, VERTICAL_HEIGHT * 5);
-  ::SetWindowPos(local_host_label_, nullptr, rect.left, rect.top, EDIT_WIDTH,
-                 EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  rect.left = client_rect.left + COLUMN_THREE_LEFT;
+  rect.top = client_rect.top + VERTICAL_HEIGHT * 5;
+  SetWindowPos(local_host_label_, nullptr, rect.left, rect.top, EDIT_WIDTH,
+               EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_THREE_LEFT, VERTICAL_HEIGHT * 6);
-  ::SetWindowPos(local_port_label_, nullptr, rect.left, rect.top, EDIT_WIDTH,
-                 EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  rect.left = client_rect.left + COLUMN_THREE_LEFT;
+  rect.top = client_rect.top + VERTICAL_HEIGHT * 6;
+  SetWindowPos(local_port_label_, nullptr, rect.left, rect.top, EDIT_WIDTH,
+               EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_THREE_LEFT, VERTICAL_HEIGHT * 7);
-  ::SetWindowPos(timeout_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
-                 EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  rect.left = client_rect.left + COLUMN_THREE_LEFT;
+  rect.top = client_rect.top + VERTICAL_HEIGHT * 7;
+  SetWindowPos(timeout_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
+               EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
-  rect = client_rect;
-  rect.OffsetRect(COLUMN_THREE_LEFT, VERTICAL_HEIGHT * 8);
-  ::SetWindowPos(autostart_button_, nullptr, rect.left, rect.top, EDIT_WIDTH,
-                 EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  rect.left = client_rect.left + COLUMN_THREE_LEFT;
+  rect.top = client_rect.top + VERTICAL_HEIGHT * 8;
+  SetWindowPos(autostart_button_, nullptr, rect.left, rect.top, EDIT_WIDTH,
+               EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 }
 
 void CYassFrame::OnClose() {
   LOG(WARNING) << "Frame is closing ";
-  // Same with CWinApp::OnAppExit
-  //
-  // https://docs.microsoft.com/en-us/cpp/mfc/reference/application-information-and-management?view=msvc-170#afxgetmainwnd
   // The following line send a WM_CLOSE message to the Application's
   // main window. This will cause the Application to exit.
-  ::PostMessageW(m_hWnd, WM_CLOSE, 0, 0);
-
-  CFrameWnd::OnClose();
+  PostMessageW(m_hWnd, WM_CLOSE, 0, 0);
 }
 
 BOOL CYassFrame::OnQueryEndSession() {
@@ -436,11 +448,10 @@ BOOL CYassFrame::OnQueryEndSession() {
 }
 
 // https://docs.microsoft.com/en-us/windows/win32/controls/bumper-status-bars-reference-messages
-void CYassFrame::OnUpdateStatusBar(CCmdUI* pCmdUI) {
+void CYassFrame::OnUpdateStatusBar() {
   std::wstring status_text = SysUTF8ToWide(GetStatusMessage());
 
-  ::SendMessage(status_bar_, SB_SETTEXT, (WPARAM)0,
-                (LPARAM)status_text.c_str());
+  SendMessage(status_bar_, SB_SETTEXT, (WPARAM)0, (LPARAM)status_text.c_str());
 }
 
 LRESULT CYassFrame::OnDPIChanged(WPARAM w, LPARAM l) {
@@ -452,7 +463,7 @@ LRESULT CYassFrame::OnDPIChanged(WPARAM w, LPARAM l) {
   // Resize the window
   auto lprcNewScale = reinterpret_cast<RECT*>(l);
 
-  SetWindowPos(nullptr, lprcNewScale->left, lprcNewScale->top,
+  SetWindowPos(m_hWnd, nullptr, lprcNewScale->left, lprcNewScale->top,
                lprcNewScale->right - lprcNewScale->left,
                lprcNewScale->bottom - lprcNewScale->top,
                SWP_NOZORDER | SWP_NOACTIVATE);
@@ -462,12 +473,12 @@ LRESULT CYassFrame::OnDPIChanged(WPARAM w, LPARAM l) {
 }
 
 void CYassFrame::OnStartButtonClicked() {
-  ::EnableWindow(start_button_, FALSE);
+  EnableWindow(start_button_, FALSE);
   mApp->OnStart();
 }
 
 void CYassFrame::OnStopButtonClicked() {
-  ::EnableWindow(stop_button_, FALSE);
+  EnableWindow(stop_button_, FALSE);
   mApp->OnStop();
 }
 
