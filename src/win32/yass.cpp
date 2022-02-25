@@ -125,7 +125,8 @@ BOOL CYassApp::InitInstance() {
   RECT rect{0, 0, MULDIVDPI(500), MULDIVDPI(400)};
 
   if (!frame_->Create(lpszClass, frame_name,
-                      WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU, rect)) {
+                      WS_MINIMIZEBOX | WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
+                      rect)) {
     LOG(WARNING) << "Failed to create main frame";
     delete frame_;
     return FALSE;
