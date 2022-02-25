@@ -53,9 +53,12 @@ BOOL CYassApp::InitInstance() {
   if (!CWinApp::InitInstance())
     return FALSE;
 
-  std::wstring appPath(MAX_PATH + 1, L'\0');
-  ::GetModuleFileNameW(nullptr, &appPath[0], MAX_PATH);
-  absl::InitializeSymbolizer(SysWideToUTF8(appPath).c_str());
+  std::wstring executable_path;
+  if (!Utils::GetExecutablePath(&executable_path)) {
+    return FALSE;
+  }
+
+  absl::InitializeSymbolizer(SysWideToUTF8(executable_path).c_str());
   absl::FailureSignalHandlerOptions failure_handle_options;
   absl::InstallFailureSignalHandler(failure_handle_options);
 

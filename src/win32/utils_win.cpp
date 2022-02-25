@@ -628,7 +628,7 @@ int get_yass_auto_start() {
     return -1;
   }
 
-  char buf[MAX_PATH] = {0};
+  char buf[MAX_PATH + 1] = {0};
   DWORD len = sizeof(buf);
   result = RegQueryValueExW(hKey,                          /* Key */
                             _T(DEFAULT_AUTOSTART_NAME),    /* value */
@@ -649,12 +649,13 @@ int get_yass_auto_start() {
 int set_yass_auto_start(bool on) {
   int result = 0;
   if (on) {
-    std::wstring cmdline(MAX_PATH + 1, L'\0');
+    std::wstring cmdline;
+
     /* turn on auto start  */
-    if (GetModuleFileNameW(nullptr, &cmdline[0], MAX_PATH) == 0) {
-      PLOG(WARNING) << "Internal error: GetModuleFileNameW failed";
+    if (!Utils::GetExecutablePath(&cmdline)) {
       return -1;
     }
+
     cmdline = L"\"" + cmdline + L"\" --background";
 
     result = add_to_auto_start(_T(DEFAULT_AUTOSTART_NAME), cmdline);
@@ -674,6 +675,29 @@ bool Utils::GetAutoStart() {
 
 void Utils::EnableAutoStart(bool on) {
   set_yass_auto_start(on);
+}
+
+// static
+bool Utils::GetExecutablePath(std::wstring* exe_path) {
+  DWORD len;
+  exe_path->clear();
+  // Windows XP:  The string is truncated to nSize characters and is not
+  // null-terminated.
+  exe_path->resize(MAX_PATH + 1, L'\0');
+  len = GetModuleFileNameW(nullptr, const_cast<wchar_t*>(exe_path->data()),
+                           MAX_PATH);
+  exe_path->resize(len);
+
+  // A zero return value indicates a failure other than insufficient space.
+
+  // Insufficient space is determined by a return value equal to the size of
+  // the buffer passed in.
+  if (len == 0 || len == MAX_PATH) {
+    PLOG(WARNING) << "Internal error: GetModuleFileNameW failed";
+    return false;
+  }
+
+  return true;
 }
 
 #endif  // _WIN32

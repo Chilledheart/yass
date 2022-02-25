@@ -22,6 +22,7 @@ class Utils {
   static unsigned int GetDpiForWindowOrSystem(HWND hWnd);
   static bool GetAutoStart();
   static void EnableAutoStart(bool on);
+  static bool GetExecutablePath(std::wstring* executable_path);
 };
 
 #define DEFAULT_AUTOSTART_NAME "YASS"
