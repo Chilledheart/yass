@@ -14,8 +14,6 @@
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
-#include "win32/about_dialog.hpp"
-#include "win32/option_dialog.hpp"
 #include "win32/resource.hpp"
 #include "win32/utils.hpp"
 #include "win32/yass_frame.hpp"
@@ -227,23 +225,96 @@ void CYassApp::OnStop(bool quiet) {
 }
 
 void CYassApp::OnAppOption() {
-  COptionDialog dialog(GetMainWnd());
-  if (dialog.DoModal() == IDOK) {
-    // For a modal dialog box, you can retrieve any data the user entered
-    // when DoModal returns IDOK but before the dialog object is destroyed.
-    // https://docs.microsoft.com/en-us/cpp/mfc/retrieving-data-from-the-dialog-object?view=msvc-170
-    absl::SetFlag(&FLAGS_connect_timeout, dialog.connect_timeout_);
-    absl::SetFlag(&FLAGS_tcp_user_timeout, dialog.tcp_user_timeout_);
-    absl::SetFlag(&FLAGS_so_linger_timeout, dialog.tcp_so_linger_timeout_);
-    absl::SetFlag(&FLAGS_so_snd_buffer, dialog.tcp_so_snd_buffer_);
-    absl::SetFlag(&FLAGS_so_rcv_buffer, dialog.tcp_so_rcv_buffer_);
-    SaveConfigToDisk();
+
+        LOG(WARNING) << this;
+  DialogBoxParamW(m_hInstance, MAKEINTRESOURCE(IDD_OPTIONBOX),
+                  frame_->m_hWnd, &CYassApp::OnAppOptionMessage,
+                  reinterpret_cast<LPARAM>(this));
+}
+
+// static
+// https://docs.microsoft.com/en-us/windows/win32/api/winuser/nc-winuser-dlgproc
+INT_PTR CALLBACK CYassApp::OnAppOptionMessage(HWND hDlg, UINT message,
+                                              WPARAM wParam, LPARAM lParam) {
+  UNREFERENCED_PARAMETER(lParam);
+  auto self =
+    reinterpret_cast<CYassApp*>(GetWindowLongPtr(hDlg, GWLP_USERDATA));
+
+  switch (message) {
+    case WM_INITDIALOG: {
+      SetWindowLongPtr(hDlg, GWLP_USERDATA, lParam);
+      // extra initialization to all fields
+      auto connect_timeout = absl::GetFlag(FLAGS_connect_timeout);
+      auto tcp_user_timeout = absl::GetFlag(FLAGS_tcp_user_timeout);
+      auto tcp_so_linger_timeout = absl::GetFlag(FLAGS_so_linger_timeout);
+      auto tcp_so_snd_buffer = absl::GetFlag(FLAGS_so_snd_buffer);
+      auto tcp_so_rcv_buffer = absl::GetFlag(FLAGS_so_rcv_buffer);
+      SetDlgItemInt(hDlg, IDC_EDIT_CONNECT_TIMEOUT, connect_timeout, FALSE);
+      SetDlgItemInt(hDlg, IDC_EDIT_TCP_USER_TIMEOUT, tcp_user_timeout, FALSE);
+      SetDlgItemInt(hDlg, IDC_EDIT_TCP_SO_LINGER_TIMEOUT, tcp_so_linger_timeout, FALSE);
+      SetDlgItemInt(hDlg, IDC_EDIT_TCP_SO_SEND_BUFFER, tcp_so_snd_buffer, FALSE);
+      SetDlgItemInt(hDlg, IDC_EDIT_TCP_SO_RECEIVE_BUFFER, tcp_so_rcv_buffer, FALSE);
+      return (INT_PTR)TRUE;
+    }
+    case WM_COMMAND:
+      if (LOWORD(wParam) == IDOK) {
+        BOOL translated;
+        // TODO prompt a fix-me tip
+        auto connect_timeout = GetDlgItemInt(hDlg, IDC_EDIT_CONNECT_TIMEOUT, &translated, FALSE);
+        if (translated == FALSE)
+          return (INT_PTR)FALSE;
+        auto tcp_user_timeout = GetDlgItemInt(hDlg, IDC_EDIT_TCP_USER_TIMEOUT, &translated, FALSE);
+        if (translated == FALSE)
+          return (INT_PTR)FALSE;
+        auto tcp_so_linger_timeout = GetDlgItemInt(hDlg, IDC_EDIT_TCP_SO_LINGER_TIMEOUT, &translated, FALSE);
+        if (translated == FALSE)
+          return (INT_PTR)FALSE;
+        auto tcp_so_snd_buffer = GetDlgItemInt(hDlg, IDC_EDIT_TCP_SO_SEND_BUFFER, &translated, FALSE);
+        if (translated == FALSE)
+          return (INT_PTR)FALSE;
+        auto tcp_so_rcv_buffer = GetDlgItemInt(hDlg, IDC_EDIT_TCP_SO_RECEIVE_BUFFER, &translated, FALSE);
+        if (translated == FALSE)
+          return (INT_PTR)FALSE;
+        absl::SetFlag(&FLAGS_connect_timeout, connect_timeout);
+        absl::SetFlag(&FLAGS_tcp_user_timeout, tcp_user_timeout);
+        absl::SetFlag(&FLAGS_so_linger_timeout, tcp_so_linger_timeout);
+        absl::SetFlag(&FLAGS_so_snd_buffer, tcp_so_snd_buffer);
+        absl::SetFlag(&FLAGS_so_rcv_buffer, tcp_so_rcv_buffer);
+        self->SaveConfigToDisk();
+      }
+      if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) {
+        EndDialog(hDlg, LOWORD(wParam));
+        return (INT_PTR)TRUE;
+      }
+      break;
+    default:
+      break;
   }
+  return (INT_PTR)FALSE;
 }
 
 void CYassApp::OnAppAbout() {
-  CAboutDlg dlgAbout;
-  dlgAbout.DoModal();
+  DialogBoxParamW(m_hInstance, MAKEINTRESOURCE(IDD_ABOUTBOX),
+                  frame_->m_hWnd, &CYassApp::OnAppAboutMessage, 0L);
+}
+
+// static
+INT_PTR CALLBACK CYassApp::OnAppAboutMessage(HWND hDlg, UINT message,
+                                             WPARAM wParam, LPARAM lParam) {
+  UNREFERENCED_PARAMETER(lParam);
+  switch (message) {
+    case WM_INITDIALOG:
+      return (INT_PTR)TRUE;
+    case WM_COMMAND:
+      if (LOWORD(wParam) == IDOK) {
+        EndDialog(hDlg, LOWORD(wParam));
+        return (INT_PTR)TRUE;
+      }
+      break;
+    default:
+      break;
+  }
+  return (INT_PTR)FALSE;
 }
 
 // https://docs.microsoft.com/en-us/windows/win32/winprog/windows-data-types?redirectedfrom=MSDN

@@ -36,7 +36,11 @@ class CYassApp : public CWinApp {
 
  private:
   afx_msg void OnAppOption();
+  static INT_PTR CALLBACK OnAppOptionMessage(HWND hDlg, UINT message,
+                                             WPARAM wParam, LPARAM lParam);
   afx_msg void OnAppAbout();
+  static INT_PTR CALLBACK OnAppAboutMessage(HWND hDlg, UINT message,
+                                            WPARAM wParam, LPARAM lParam);
 
  private:
   afx_msg void OnStarted(WPARAM w, LPARAM l);

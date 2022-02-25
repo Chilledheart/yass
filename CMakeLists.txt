@@ -2336,7 +2336,6 @@ if (GUI)
           src/win32/yass.rc
           src/win32/yass.cpp
           src/win32/yass_frame.cpp
-          src/win32/option_dialog.cpp
           src/win32/utils_win.cpp)
     elseif (APPLE)
         set(MAIN_STORYBOARD ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/Base.lproj/Main.storyboard)
