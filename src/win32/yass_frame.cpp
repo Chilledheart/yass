@@ -34,6 +34,7 @@
 #define INITIAL_LABEL_HEIGHT 25
 #define INITIAL_EDIT_WIDTH 220
 #define INITIAL_EDIT_HEIGHT 25
+#define INITIAL_STATUS_BAR_HEIGHT 20
 
 #define COLUMN_ONE_LEFT MulDiv(INITIAL_COLUMN_ONE_LEFT, uDpi, 96)
 #define COLUMN_TWO_LEFT MulDiv(INITIAL_COLUMN_TWO_LEFT, uDpi, 96)
@@ -48,6 +49,8 @@
 #define LABEL_HEIGHT MulDiv(INITIAL_LABEL_HEIGHT, uDpi, 96)
 #define EDIT_WIDTH MulDiv(INITIAL_EDIT_WIDTH, uDpi, 96)
 #define EDIT_HEIGHT MulDiv(INITIAL_EDIT_HEIGHT, uDpi, 96)
+
+#define STATUS_BAR_HEIGHT MulDiv(INITIAL_STATUS_BAR_HEIGHT, uDpi, 96)
 
 static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   if (bytes < 1024) {
@@ -331,6 +334,21 @@ void CYassFrame::CentreWindow() {
 LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam,
                                      LPARAM lParam) {
   switch (msg) {
+    case WM_NCCREATE: {
+      // Enable per-monitor DPI scaling for caption, menu, and top-level
+      // scroll bars.
+      //
+      // Non-client area (scroll bars, caption bar, etc.) does not DPI scale
+      // automatically on Windows 8.1. In Windows 10 (1607) support was added
+      // for this via a call to EnableNonClientDpiScaling. Windows 10 (1703)
+      // supports this automatically when the DPI_AWARENESS_CONTEXT is
+      // DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2.
+      if (!Utils::EnableNonClientDpiScaling(hWnd)) {
+        PLOG(WARNING) << "Internal error: EnableNonClientDpiScaling failed";
+      }
+
+      return DefWindowProc(hWnd, msg, wParam, lParam);
+    }
     case WM_CLOSE:
       mFrame->OnClose();
       break;
@@ -608,6 +626,18 @@ void CYassFrame::UpdateLayoutForDpi(UINT uDpi) {
   rect.top = client_rect.top + VERTICAL_HEIGHT * 8;
   SetWindowPos(autostart_button_, nullptr, rect.left, rect.top, EDIT_WIDTH,
                EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+
+  // Status Bar
+  RECT rcClient, status_bar_rect;
+  GetClientRect(m_hWnd, &rcClient);
+  GetClientRect(status_bar_, &status_bar_rect);
+  status_bar_rect.top = rcClient.top - STATUS_BAR_HEIGHT;
+  status_bar_rect.bottom = rcClient.bottom;
+  SetWindowPos(status_bar_, nullptr,
+               status_bar_rect.left, status_bar_rect.top,
+               status_bar_rect.right - status_bar_rect.left,
+               status_bar_rect.bottom - status_bar_rect.top,
+               SWP_NOZORDER | SWP_NOACTIVATE);
 }
 
 void CYassFrame::OnClose() {
