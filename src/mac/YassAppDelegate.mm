@@ -160,7 +160,7 @@
   [viewController Stopped];
 }
 
-- (void)SaveConfigToDisk {
+- (void)SaveConfig {
   YassViewController* viewController =
       (YassViewController*)
           NSApplication.sharedApplication.mainWindow.contentViewController;
