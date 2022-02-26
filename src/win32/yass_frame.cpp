@@ -424,11 +424,6 @@ std::string CYassFrame::GetTimeout() {
 }
 
 std::wstring CYassFrame::GetStatusMessage() {
-  // TODO better?
-  if (mApp->GetState() == CYassApp::STOPPED) {
-    return LoadStringStdW(m_hInstance, IDS_IDLEMESSAGE);
-  }
-
   uint64_t sync_time = GetMonotonicTime();
   uint64_t delta_time = sync_time - last_sync_time_;
   if (delta_time > NS_PER_SECOND / 10) {
