@@ -158,7 +158,7 @@ std::string YASSApp::GetStatus() const {
 
 void YASSApp::OnStart(bool quiet) {
   state_ = STARTING;
-  SaveConfigToDisk();
+  SaveConfig();
 
   std::function<void(asio::error_code)> callback;
   if (!quiet) {
@@ -204,6 +204,7 @@ void YASSApp::OnStop(bool quiet) {
 
 void YASSApp::OnStarted() {
   state_ = STARTED;
+  config::SaveConfig();
   main_window_->Started();
 }
 
@@ -235,7 +236,7 @@ void YASSApp::OnDispatch() {
     OnStopped();
 }
 
-void YASSApp::SaveConfigToDisk() {
+void YASSApp::SaveConfig() {
   auto server_host = main_window_->GetServerHost();
   auto server_port = StringToInteger(main_window_->GetServerPort());
   auto password = main_window_->GetPassword();
@@ -258,6 +259,4 @@ void YASSApp::SaveConfigToDisk() {
   absl::SetFlag(&FLAGS_local_host, local_host);
   absl::SetFlag(&FLAGS_local_port, local_port.value());
   absl::SetFlag(&FLAGS_connect_timeout, connect_timeout.value());
-
-  config::SaveConfig();
 }

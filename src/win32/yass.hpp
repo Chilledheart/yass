@@ -16,10 +16,13 @@ class CYassApp {
 
  private:
   const HINSTANCE m_hInstance;
-
- public:
   BOOL InitInstance();
   int ExitInstance();
+
+ public:
+  int RunMainLoop();
+
+  BOOL HandleThreadMessage(UINT message, WPARAM w, LPARAM l);
 
   void OnStart(bool quiet = false);
   void OnStop(bool quiet = false);
@@ -29,26 +32,15 @@ class CYassApp {
   YASSState GetState() const { return state_; }
 
  private:
-  void OnAppOption();
-  static INT_PTR CALLBACK OnAppOptionMessage(HWND hDlg,
-                                             UINT message,
-                                             WPARAM wParam,
-                                             LPARAM lParam);
-  void OnAppAbout();
-  static INT_PTR CALLBACK OnAppAboutMessage(HWND hDlg,
-                                            UINT message,
-                                            WPARAM wParam,
-                                            LPARAM lParam);
-
- private:
   void OnStarted(WPARAM w, LPARAM l);
   void OnStartFailed(WPARAM w, LPARAM l);
   void OnStopped(WPARAM w, LPARAM l);
 
+  BOOL OnIdle();
+
  private:
   BOOL CheckFirstInstance();
-  void LoadConfigFromDisk();
-  void SaveConfigToDisk();
+  void SaveConfig();
 
  private:
   YASSState state_;

@@ -19,7 +19,7 @@
 #include "mac/utils.h"
 
 @interface YassAppDelegate ()
-- (void)SaveConfigToDisk;
+- (void)SaveConfig;
 - (void)OnStarted;
 - (void)OnStartFailed:(std::string)error_msg;
 - (void)OnStopped;
@@ -64,7 +64,6 @@
       (YassViewController*)
           NSApplication.sharedApplication.mainWindow.contentViewController;
   [viewController presentViewControllerAsModalWindow:optionViewController];
-  [self SaveConfigToDisk];
 }
 
 - (enum YASSState)getState {
@@ -86,7 +85,7 @@
 
 - (void)OnStart:(BOOL)quiet {
   state_ = STARTING;
-  [self SaveConfigToDisk];
+  [self SaveConfig];
 
   std::function<void(asio::error_code)> callback;
   if (!quiet) {
@@ -129,6 +128,7 @@
 
 - (void)OnStarted {
   state_ = STARTED;
+  config::SaveConfig();
 
   YassViewController* viewController =
       (YassViewController*)
@@ -186,8 +186,6 @@
   absl::SetFlag(&FLAGS_local_host, local_host);
   absl::SetFlag(&FLAGS_local_port, local_port);
   absl::SetFlag(&FLAGS_connect_timeout, connect_timeout);
-
-  config::SaveConfig();
 }
 
 @end

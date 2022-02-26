@@ -25,17 +25,6 @@ ABSL_FLAG(bool, background, false, "start up backgroundd");
 
 #define MULDIVDPI(x) MulDiv(x, uDpi, 96)
 
-#if 0
-// https://docs.microsoft.com/en-us/windows/win32/winmsg/about-messages-and-message-queues
-BEGIN_MESSAGE_MAP(CYassApp, CWinApp)
-  ON_COMMAND(ID_APP_OPTION, &CYassApp::OnAppOption)
-  ON_COMMAND(ID_APP_ABOUT, &CYassApp::OnAppAbout)
-  ON_THREAD_MESSAGE(WM_MYAPP_STARTED, &CYassApp::OnStarted)
-  ON_THREAD_MESSAGE(WM_MYAPP_START_FAILED, &CYassApp::OnStartFailed)
-  ON_THREAD_MESSAGE(WM_MYAPP_STOPPED, &CYassApp::OnStopped)
-END_MESSAGE_MAP()
-#endif
-
 CYassApp::CYassApp(HINSTANCE hInstance) : m_hInstance(hInstance) {}
 CYassApp::~CYassApp() = default;
 
@@ -94,30 +83,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   CYassApp app(hInstance);
   mApp = &app;
 
-  if (!app.InitInstance()) {
-    return -1;
-  }
-
-  HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_YASS));
-
-  MSG msg;
-
-  // Main message loop:
-  while (GetMessage(&msg, nullptr, 0, 0)) {
-    if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg)) {
-      TranslateMessage(&msg);
-      DispatchMessage(&msg);
-    }
-  }
-
-  return (int)msg.wParam;
+  return app.RunMainLoop();
 }
 
 BOOL CYassApp::InitInstance() {
   if (!CheckFirstInstance())
     return FALSE;
 
-  LoadConfigFromDisk();
+  config::ReadConfig();
 
   DCHECK(is_valid_cipher_method(
       static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
@@ -146,11 +119,12 @@ BOOL CYassApp::InitInstance() {
   // https://docs.microsoft.com/en-us/windows/win32/menurc/using-menus
   const wchar_t* className = L"yassMainWnd";
 
-  WNDCLASS wndcls;
+  WNDCLASSEXW wndcls;
 
   // otherwise we need to register a new class
+  wndcls.cbSize = sizeof(wndcls);
   wndcls.style = CS_DBLCLKS;
-  wndcls.lpfnWndProc = DefWindowProc;
+  wndcls.lpfnWndProc = &CYassFrame::WndProc;
   wndcls.cbClsExtra = wndcls.cbWndExtra = 0;
   wndcls.hInstance = m_hInstance;
   wndcls.hIcon = LoadIconW(m_hInstance, MAKEINTRESOURCE(IDR_MAINFRAME));
@@ -158,30 +132,24 @@ BOOL CYassApp::InitInstance() {
   wndcls.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
   wndcls.lpszMenuName = MAKEINTRESOURCE(IDR_MAINFRAME);
   wndcls.lpszClassName = className;
+  wndcls.hIconSm = nullptr;
 
-  ::RegisterClassW(&wndcls);
+  RegisterClassExW(&wndcls);
 
   std::wstring frame_name = LoadStringStdW(m_hInstance, IDS_APP_TITLE);
 
   UINT uDpi = Utils::GetDpiForWindowOrSystem(nullptr);
   RECT rect{0, 0, MULDIVDPI(500), MULDIVDPI(400)};
 
+  // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow
+  int nCmdShow = absl::GetFlag(FLAGS_background) ? SW_SHOWMINIMIZED : SW_SHOW;
   if (!frame_->Create(className, frame_name.c_str(),
                       WS_MINIMIZEBOX | WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
-                      rect, m_hInstance)) {
+                      rect, m_hInstance, nCmdShow)) {
     LOG(WARNING) << "Failed to create main frame";
     delete frame_;
     return FALSE;
   }
-
-  // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow
-  if (!absl::GetFlag(FLAGS_background)) {
-    frame_->ShowWindow(SW_SHOW);
-    frame_->SetForegroundWindow();
-  } else {
-    frame_->ShowWindow(SW_SHOWMINNOACTIVE);
-  }
-  frame_->UpdateWindow();
 
   if (Utils::GetAutoStart()) {
     frame_->OnStartButtonClicked();
@@ -202,6 +170,64 @@ int CYassApp::ExitInstance() {
   return 0;
 }
 
+int CYassApp::RunMainLoop() {
+  MSG msg;
+
+  HACCEL hAccelTable = LoadAcceleratorsW(m_hInstance,
+                                         MAKEINTRESOURCE(IDC_YASS));
+
+  if (!InitInstance()) {
+    return -1;
+  }
+
+  // Main message loop:
+  // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getmessage
+  // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-peekmessagea
+  // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-postthreadmessagea
+  BOOL bDoingBackgroundProcessing = TRUE;
+  while (bDoingBackgroundProcessing) {
+    // Note that PeekMessage always retrieves WM_QUIT messages
+    while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)) {
+      if (msg.message == WM_QUIT) {
+        bDoingBackgroundProcessing = FALSE;
+        continue;
+      }
+      // The hwnd member of the returned MSG structure is NULL.
+      if (msg.hwnd == nullptr)
+        HandleThreadMessage(msg.message, msg.wParam, msg.lParam);
+      if (!TranslateAcceleratorW(msg.hwnd, hAccelTable, &msg)) {
+        TranslateMessage(&msg);
+        DispatchMessageW(&msg);
+      }
+    }
+    while (OnIdle())
+      ;
+  }
+
+
+  if (auto ret = ExitInstance()) {
+    return ret;
+  }
+
+  return (int)msg.wParam;
+}
+
+// https://docs.microsoft.com/en-us/windows/win32/winmsg/about-messages-and-message-queues
+BOOL CYassApp::HandleThreadMessage(UINT message, WPARAM w, LPARAM l) {
+  switch (message) {
+    case WM_MYAPP_STARTED:
+      OnStarted(w, l);
+      return TRUE;
+    case WM_MYAPP_START_FAILED:
+      OnStartFailed(w, l);
+      return TRUE;
+    case WM_MYAPP_STOPPED:
+      OnStopped(w, l);
+      return TRUE;
+  }
+  return FALSE;
+}
+
 std::string CYassApp::GetStatus() const {
   std::stringstream ss;
   if (state_ == STARTED) {
@@ -217,7 +243,7 @@ std::string CYassApp::GetStatus() const {
 void CYassApp::OnStart(bool quiet) {
   DWORD main_thread_id = GetCurrentThreadId();
   state_ = STARTING;
-  SaveConfigToDisk();
+  SaveConfig();
 
   std::function<void(asio::error_code)> callback;
   if (!quiet) {
@@ -227,6 +253,7 @@ void CYassApp::OnStart(bool quiet) {
       bool ret;
 
       if (ec) {
+        message = new std::string;
         *message = ec.message();
         successed = false;
       } else {
@@ -234,12 +261,11 @@ void CYassApp::OnStart(bool quiet) {
       }
 
       // if the gui library exits, no more need to handle
-      ret = ::PostThreadMessage(
+      ret = PostThreadMessageW(
           main_thread_id, successed ? WM_MYAPP_STARTED : WM_MYAPP_START_FAILED,
           0, reinterpret_cast<LPARAM>(message));
       if (!ret) {
-        LOG(WARNING) << "Failed to post message to main thread: " << std::hex
-                     << ::GetLastError() << std::dec;
+        PLOG(WARNING) << "Internal error: PostThreadMessage";
       }
     };
   }
@@ -253,122 +279,19 @@ void CYassApp::OnStop(bool quiet) {
   if (!quiet) {
     callback = [main_thread_id]() {
       bool ret;
-      ret = ::PostThreadMessage(main_thread_id, WM_MYAPP_STOPPED, 0, 0);
+      ret = PostThreadMessageW(main_thread_id, WM_MYAPP_STOPPED, 0, 0);
       if (!ret) {
-        LOG(WARNING) << "Failed to post message to main thread: " << std::hex
-                     << ::GetLastError() << std::dec;
+        PLOG(WARNING) << "Internal error: PostThreadMessage";
       }
     };
   }
   worker_.Stop(callback);
 }
 
-void CYassApp::OnAppOption() {
-  DialogBoxParamW(m_hInstance, MAKEINTRESOURCE(IDD_OPTIONBOX), frame_->m_hWnd,
-                  &CYassApp::OnAppOptionMessage,
-                  reinterpret_cast<LPARAM>(this));
-}
-
-// static
-// https://docs.microsoft.com/en-us/windows/win32/api/winuser/nc-winuser-dlgproc
-INT_PTR CALLBACK CYassApp::OnAppOptionMessage(HWND hDlg,
-                                              UINT message,
-                                              WPARAM wParam,
-                                              LPARAM lParam) {
-  UNREFERENCED_PARAMETER(lParam);
-  auto self =
-      reinterpret_cast<CYassApp*>(GetWindowLongPtrW(hDlg, GWLP_USERDATA));
-
-  switch (message) {
-    case WM_INITDIALOG: {
-      SetWindowLongPtrW(hDlg, GWLP_USERDATA, lParam);
-      // extra initialization to all fields
-      auto connect_timeout = absl::GetFlag(FLAGS_connect_timeout);
-      auto tcp_user_timeout = absl::GetFlag(FLAGS_tcp_user_timeout);
-      auto tcp_so_linger_timeout = absl::GetFlag(FLAGS_so_linger_timeout);
-      auto tcp_so_snd_buffer = absl::GetFlag(FLAGS_so_snd_buffer);
-      auto tcp_so_rcv_buffer = absl::GetFlag(FLAGS_so_rcv_buffer);
-      SetDlgItemInt(hDlg, IDC_EDIT_CONNECT_TIMEOUT, connect_timeout, FALSE);
-      SetDlgItemInt(hDlg, IDC_EDIT_TCP_USER_TIMEOUT, tcp_user_timeout, FALSE);
-      SetDlgItemInt(hDlg, IDC_EDIT_TCP_SO_LINGER_TIMEOUT, tcp_so_linger_timeout,
-                    FALSE);
-      SetDlgItemInt(hDlg, IDC_EDIT_TCP_SO_SEND_BUFFER, tcp_so_snd_buffer,
-                    FALSE);
-      SetDlgItemInt(hDlg, IDC_EDIT_TCP_SO_RECEIVE_BUFFER, tcp_so_rcv_buffer,
-                    FALSE);
-      return (INT_PTR)TRUE;
-    }
-    case WM_COMMAND:
-      if (LOWORD(wParam) == IDOK) {
-        BOOL translated;
-        // TODO prompt a fix-me tip
-        auto connect_timeout =
-            GetDlgItemInt(hDlg, IDC_EDIT_CONNECT_TIMEOUT, &translated, FALSE);
-        if (translated == FALSE)
-          return (INT_PTR)FALSE;
-        auto tcp_user_timeout =
-            GetDlgItemInt(hDlg, IDC_EDIT_TCP_USER_TIMEOUT, &translated, FALSE);
-        if (translated == FALSE)
-          return (INT_PTR)FALSE;
-        auto tcp_so_linger_timeout = GetDlgItemInt(
-            hDlg, IDC_EDIT_TCP_SO_LINGER_TIMEOUT, &translated, FALSE);
-        if (translated == FALSE)
-          return (INT_PTR)FALSE;
-        auto tcp_so_snd_buffer = GetDlgItemInt(
-            hDlg, IDC_EDIT_TCP_SO_SEND_BUFFER, &translated, FALSE);
-        if (translated == FALSE)
-          return (INT_PTR)FALSE;
-        auto tcp_so_rcv_buffer = GetDlgItemInt(
-            hDlg, IDC_EDIT_TCP_SO_RECEIVE_BUFFER, &translated, FALSE);
-        if (translated == FALSE)
-          return (INT_PTR)FALSE;
-        absl::SetFlag(&FLAGS_connect_timeout, connect_timeout);
-        absl::SetFlag(&FLAGS_tcp_user_timeout, tcp_user_timeout);
-        absl::SetFlag(&FLAGS_so_linger_timeout, tcp_so_linger_timeout);
-        absl::SetFlag(&FLAGS_so_snd_buffer, tcp_so_snd_buffer);
-        absl::SetFlag(&FLAGS_so_rcv_buffer, tcp_so_rcv_buffer);
-        self->SaveConfigToDisk();
-      }
-      if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) {
-        EndDialog(hDlg, LOWORD(wParam));
-        return (INT_PTR)TRUE;
-      }
-      break;
-    default:
-      break;
-  }
-  return (INT_PTR)FALSE;
-}
-
-void CYassApp::OnAppAbout() {
-  DialogBoxParamW(m_hInstance, MAKEINTRESOURCE(IDD_ABOUTBOX), frame_->m_hWnd,
-                  &CYassApp::OnAppAboutMessage, 0L);
-}
-
-// static
-INT_PTR CALLBACK CYassApp::OnAppAboutMessage(HWND hDlg,
-                                             UINT message,
-                                             WPARAM wParam,
-                                             LPARAM lParam) {
-  UNREFERENCED_PARAMETER(lParam);
-  switch (message) {
-    case WM_INITDIALOG:
-      return (INT_PTR)TRUE;
-    case WM_COMMAND:
-      if (LOWORD(wParam) == IDOK) {
-        EndDialog(hDlg, LOWORD(wParam));
-        return (INT_PTR)TRUE;
-      }
-      break;
-    default:
-      break;
-  }
-  return (INT_PTR)FALSE;
-}
-
 // https://docs.microsoft.com/en-us/windows/win32/winprog/windows-data-types?redirectedfrom=MSDN
 void CYassApp::OnStarted(WPARAM /*w*/, LPARAM /*l*/) {
   state_ = STARTED;
+  config::SaveConfig();
   frame_->OnStarted();
 }
 
@@ -387,10 +310,15 @@ void CYassApp::OnStopped(WPARAM /*w*/, LPARAM /*l*/) {
   frame_->OnStopped();
 }
 
+BOOL CYassApp::OnIdle() {
+  frame_->OnUpdateStatusBar();
+  return FALSE;
+}
+
 BOOL CYassApp::CheckFirstInstance() {
   std::wstring app_name = LoadStringStdW(m_hInstance, IDS_APP_TITLE);
 
-  HWND first_wnd = FindWindow(nullptr, app_name.c_str());
+  HWND first_wnd = FindWindowW(nullptr, app_name.c_str());
 
   // another instance is already running - activate it
   if (first_wnd) {
@@ -407,11 +335,7 @@ BOOL CYassApp::CheckFirstInstance() {
   return TRUE;
 }
 
-void CYassApp::LoadConfigFromDisk() {
-  config::ReadConfig();
-}
-
-void CYassApp::SaveConfigToDisk() {
+void CYassApp::SaveConfig() {
   auto server_host = frame_->GetServerHost();
   auto server_port = StringToInteger(frame_->GetServerPort());
   auto password = frame_->GetPassword();
@@ -433,6 +357,4 @@ void CYassApp::SaveConfigToDisk() {
   absl::SetFlag(&FLAGS_local_host, local_host);
   absl::SetFlag(&FLAGS_local_port, local_port.value());
   absl::SetFlag(&FLAGS_connect_timeout, connect_timeout.value());
-
-  config::SaveConfig();
 }

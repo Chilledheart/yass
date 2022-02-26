@@ -77,36 +77,118 @@ static void SetWindowTextStd(HWND hWnd, const std::string& text) {
   SetWindowTextW(hWnd, SysUTF8ToWide(text).c_str());
 }
 
+namespace {
+HWND CreateStatic(const wchar_t* label,
+                  const RECT& rect,
+                  HWND pParentWnd,
+                  UINT nID,
+                  HINSTANCE hInstance) {
+  return CreateWindowExW(
+      0, WC_STATICW, label, WS_CHILD | WS_VISIBLE | SS_LEFT, rect.left,
+      rect.top, rect.right - rect.left, rect.bottom - rect.top, pParentWnd,
+      (HMENU)(UINT_PTR)nID, hInstance, nullptr);
+}
+
+HWND CreateEdit(DWORD dwStyle,
+                const RECT& rect,
+                HWND pParentWnd,
+                UINT nID,
+                HINSTANCE hInstance) {
+  return CreateWindowExW(
+      0, WC_EDITW, nullptr,
+      WS_CHILD | WS_VISIBLE | WS_BORDER | WS_BORDER | ES_LEFT | dwStyle,
+      rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
+      pParentWnd, (HMENU)(UINT_PTR)nID, hInstance, nullptr);
+}
+
+HWND CreateComboBox(DWORD dwStyle,
+                    const RECT& rect,
+                    HWND pParentWnd,
+                    UINT nID,
+                    HINSTANCE hInstance) {
+  return CreateWindowExW(
+      0, WC_COMBOBOXW, nullptr, WS_CHILD | WS_VISIBLE | WS_VSCROLL | dwStyle,
+      rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
+      pParentWnd, (HMENU)(UINT_PTR)nID, hInstance, nullptr);
+}
+
+HWND CreateButton(const wchar_t* label,
+                  DWORD dwStyle,
+                  const RECT& rect,
+                  HWND pParentWnd,
+                  UINT nID,
+                  HINSTANCE hInstance) {
+  return CreateWindowExW(
+      0, WC_BUTTONW, label, WS_CHILD | WS_VISIBLE | dwStyle, rect.left,
+      rect.top, rect.right - rect.left, rect.bottom - rect.top, pParentWnd,
+      (HMENU)(UINT_PTR)nID, hInstance, nullptr);
+}
+
+HWND CreateStatusBar(HWND pParentWnd,
+                     int idStatus,
+                     HINSTANCE hInstance,
+                     int cParts) {
+  HWND hWnd;
+  RECT rcClient;
+  HLOCAL hloc;
+  PINT paParts;
+  int i, nWidth;
+
+  // Create the status bar.
+  hWnd = CreateWindowEx(0,                      // no extended styles
+                        STATUSCLASSNAME,        // name of status bar class
+                        nullptr,                // no text when first created
+                        WS_CHILD | WS_VISIBLE,  // creates a visible child window
+                        0, 0, 0, 0,             // ignores size and position
+                        pParentWnd,             // handle to parent window
+                        (HMENU)(INT_PTR)idStatus,  // child window identifier
+                        hInstance,  // handle to application instance
+                        nullptr);   // no window creation data
+
+  // Get the coordinates of the parent window's client area.
+  GetClientRect(pParentWnd, &rcClient);
+
+  // Allocate an array for holding the right edge coordinates.
+  hloc = LocalAlloc(LHND, sizeof(int) * cParts);
+  paParts = (PINT)LocalLock(hloc);
+
+  // Calculate the right edge coordinate for each part, and
+  // copy the coordinates to the array.
+  nWidth = rcClient.right / cParts;
+  int rightEdge = nWidth;
+  for (i = 0; i < cParts; i++) {
+    paParts[i] = rightEdge;
+    rightEdge += nWidth;
+  }
+
+  // Tell the status bar to create the window parts.
+  SendMessage(hWnd, SB_SETPARTS, (WPARAM)cParts, (LPARAM)paParts);
+
+  // Free the array, and return.
+  LocalUnlock(hloc);
+  LocalFree(hloc);
+  return hWnd;
+}
+} // namespace
+
+static CYassFrame* mFrame;
+
 CYassFrame::CYassFrame() = default;
 CYassFrame::~CYassFrame() = default;
-
-#if 0
-BEGIN_MESSAGE_MAP(CYassFrame, CFrameWnd)
-  ON_WM_CREATE()
-  ON_WM_CLOSE()
-  ON_WM_QUERYENDSESSION()
-  // https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows?redirectedfrom=MSDN
-  // https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-reference
-  // https://docs.microsoft.com/en-us/windows/win32/hidpi/wm-getdpiscaledsize
-  // https://docs.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged
-  // https://docs.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged-beforeparent
-  // https://docs.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged-afterparent
-  ON_MESSAGE(WM_DPICHANGED, &CYassFrame::OnDPIChanged)
-  ON_BN_CLICKED(IDC_START, &CYassFrame::OnStartButtonClicked)
-  ON_BN_CLICKED(IDC_STOP, &CYassFrame::OnStopButtonClicked)
-  ON_BN_CLICKED(IDC_AUTOSTART_CHECKBOX,
-                &CYassFrame::OnCheckedAutoStartButtonClicked)
-END_MESSAGE_MAP()
-#endif
 
 int CYassFrame::Create(const wchar_t* className,
                        const wchar_t* title,
                        DWORD dwStyle,
                        RECT rect,
-                       HINSTANCE hInstance) {
+                       HINSTANCE hInstance,
+                       int nCmdShow) {
+  // FIXME
+  mFrame = this;
+
   m_hWnd = CreateWindowExW(0, className, title, dwStyle, rect.left, rect.top,
                            rect.right - rect.left, rect.bottom - rect.top,
                            nullptr, nullptr, hInstance, nullptr);
+  m_hInstance = hInstance;
 
   SetWindowLongPtrW(m_hWnd, GWLP_HINSTANCE, (LPARAM)hInstance);
 
@@ -117,7 +199,7 @@ int CYassFrame::Create(const wchar_t* className,
       CreateButton(L"START", BS_PUSHBUTTON, rect, m_hWnd, IDC_START, hInstance);
 
   stop_button_ =
-      CreateButton(L"STOP", BS_PUSHBUTTON, rect, m_hWnd, IDC_START, hInstance);
+      CreateButton(L"STOP", BS_PUSHBUTTON, rect, m_hWnd, IDC_STOP, hInstance);
 
   EnableWindow(stop_button_, FALSE);
 
@@ -137,6 +219,8 @@ int CYassFrame::Create(const wchar_t* className,
   // https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles
   // https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
   // https://docs.microsoft.com/en-us/windows/win32/winmsg/about-window-classes
+  // Right Panel
+  // Column 2
   server_host_label_ = CreateStatic(L"Server Host", rect, m_hWnd, 0, hInstance);
   server_port_label_ = CreateStatic(L"Server Port", rect, m_hWnd, 0, hInstance);
   password_label_ = CreateStatic(L"Password", rect, m_hWnd, 0, hInstance);
@@ -146,6 +230,7 @@ int CYassFrame::Create(const wchar_t* className,
   timeout_label_ = CreateStatic(L"Timeout", rect, m_hWnd, 0, hInstance);
   autostart_label_ = CreateStatic(L"Auto Start", rect, m_hWnd, 0, hInstance);
 
+  // Column 3
   server_host_edit_ =
       CreateEdit(0, rect, m_hWnd, IDC_EDIT_SERVER_HOST, hInstance);
   server_port_edit_ =
@@ -177,12 +262,116 @@ int CYassFrame::Create(const wchar_t* className,
   Button_SetCheck(autostart_button_,
                   Utils::GetAutoStart() ? BST_CHECKED : BST_UNCHECKED);
 
+  // Status Bar
+  // https://docs.microsoft.com/en-us/windows/win32/controls/status-bars
   status_bar_ = CreateStatusBar(m_hWnd, ID_APP_MSG, hInstance, 1);
+
+  if (!start_button_ || !stop_button_ || !server_host_label_||
+      !server_port_label_|| !password_label_|| !method_label_||
+      !local_host_label_|| !local_port_label_|| !timeout_label_||
+      !autostart_label_|| !server_host_edit_|| !server_port_edit_||
+      !password_edit_|| !method_combo_box_|| !local_host_edit_||
+      !local_port_edit_|| !timeout_edit_|| !autostart_button_|| !status_bar_)
+    return FALSE;
 
   UpdateLayoutForDpi();
 
   LoadConfig();
 
+  CentreWindow();
+  ShowWindow(m_hWnd, nCmdShow);
+  UpdateWindow(m_hWnd);
+
+  return TRUE;
+}
+
+void CYassFrame::CentreWindow() {
+  MONITORINFO mi;
+  mi.cbSize = sizeof(mi);
+  RECT rcDlg, rcCentre, rcArea;
+
+  // get coordinates of the window relative to its parent
+  GetWindowRect(m_hWnd, &rcDlg);
+
+  // center within appropriate monitor coordinates
+  GetMonitorInfo(MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTOPRIMARY), &mi);
+  rcCentre = mi.rcWork;
+  rcArea = mi.rcWork;
+
+  // find dialog's upper left based on rcCenter
+  int xLeft = (rcCentre.left + rcCentre.right) / 2 - (rcDlg.right - rcDlg.left) / 2;
+  int yTop = (rcCentre.top + rcCentre.bottom) / 2 - (rcDlg.bottom - rcDlg.top) / 2;
+
+  // if the dialog is outside the screen, move it inside
+  if (xLeft + (rcDlg.right - rcDlg.left) > rcArea.right)
+    xLeft = rcArea.right - (rcDlg.right - rcDlg.left);
+  if (xLeft < rcArea.left)
+    xLeft = rcArea.left;
+
+  if (yTop + (rcDlg.bottom - rcDlg.top) > rcArea.bottom)
+    yTop = rcArea.bottom - (rcDlg.bottom - rcDlg.top);
+  if (yTop < rcArea.top)
+    yTop = rcArea.top;
+
+  // map screen coordinates to child coordinates
+  SetWindowPos(m_hWnd, nullptr, xLeft, yTop, -1, -1,
+               SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+}
+
+// https://docs.microsoft.com/en-us/windows/win32/winmsg/window-notifications
+// http://msdn.microsoft.com/en-us/library/ms700677(v=vs.85).aspx
+//
+// https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows?redirectedfrom=MSDN
+// https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-reference
+// https://docs.microsoft.com/en-us/windows/win32/hidpi/wm-getdpiscaledsize
+// https://docs.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged
+// https://docs.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged-beforeparent
+// https://docs.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged-afterparent
+// static
+LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam,
+                                     LPARAM lParam) {
+  switch (msg) {
+    case WM_CLOSE:
+      mFrame->OnClose();
+      break;
+    case WM_QUERYENDSESSION:
+      return (INT_PTR)mFrame->OnQueryEndSession();
+    case WM_DESTROY:
+      PostQuitMessage(0);
+      break;
+    case WM_DPICHANGED:
+      return mFrame->OnDPIChanged(wParam, lParam);
+    case WM_COMMAND: {
+      int wmId = LOWORD(wParam);
+      // Parse the menu selections:
+      switch (wmId) {
+      case ID_APP_OPTION:
+        mFrame->OnAppOption();
+        break;
+      case ID_APP_ABOUT:
+        mFrame->OnAppAbout();
+        break;
+      case ID_APP_EXIT:
+        mFrame->OnClose();
+        break;
+      // https://docs.microsoft.com/en-us/windows/win32/controls/bn-clicked
+      case IDC_START:
+        mFrame->OnStartButtonClicked();
+        break;
+      case IDC_STOP:
+        mFrame->OnStopButtonClicked();
+        break;
+      case IDC_AUTOSTART_CHECKBOX:
+        mFrame->OnCheckedAutoStartButtonClicked();
+        break;
+      default:
+        return DefWindowProc(hWnd, msg, wParam, lParam);
+      }
+      break;
+    }
+    default:
+      return DefWindowProc(hWnd, msg, wParam, lParam);
+  }
   return 0;
 }
 
@@ -216,10 +405,10 @@ std::string CYassFrame::GetTimeout() {
   return GetWindowTextStd(timeout_edit_);
 }
 
-std::string CYassFrame::GetStatusMessage() {
+std::wstring CYassFrame::GetStatusMessage() {
   // TODO better?
   if (mApp->GetState() == CYassApp::STOPPED) {
-    return "IDLE";
+    return LoadStringStdW(m_hInstance, IDS_IDLEMESSAGE);
   }
 
   uint64_t sync_time = GetMonotonicTime();
@@ -245,7 +434,7 @@ std::string CYassFrame::GetStatusMessage() {
   humanReadableByteCountBin(&ss, tx_rate_);
   ss << "/s";
 
-  return ss.str();
+  return SysUTF8ToWide(ss.str());
 }
 
 void CYassFrame::OnStarted() {
@@ -301,7 +490,7 @@ void CYassFrame::LoadConfig() {
   int32_t method = absl::GetFlag(FLAGS_cipher_method);
   for (int i = 0, cnt = ComboBox_GetCount(method_combo_box_); i < cnt; ++i) {
     if (ComboBox_GetItemData(method_combo_box_, i) ==
-        static_cast<DWORD>(method)) {
+        static_cast<LRESULT>(method)) {
       ComboBox_SetCurSel(method_combo_box_, i);
       break;
     }
@@ -402,12 +591,12 @@ void CYassFrame::UpdateLayoutForDpi(UINT uDpi) {
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 5;
-  SetWindowPos(local_host_label_, nullptr, rect.left, rect.top, EDIT_WIDTH,
+  SetWindowPos(local_host_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
                EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 6;
-  SetWindowPos(local_port_label_, nullptr, rect.left, rect.top, EDIT_WIDTH,
+  SetWindowPos(local_port_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
                EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
@@ -423,9 +612,7 @@ void CYassFrame::UpdateLayoutForDpi(UINT uDpi) {
 
 void CYassFrame::OnClose() {
   LOG(WARNING) << "Frame is closing ";
-  // The following line send a WM_CLOSE message to the Application's
-  // main window. This will cause the Application to exit.
-  PostMessageW(m_hWnd, WM_CLOSE, 0, 0);
+  DestroyWindow(m_hWnd);
 }
 
 BOOL CYassFrame::OnQueryEndSession() {
@@ -449,9 +636,14 @@ BOOL CYassFrame::OnQueryEndSession() {
 
 // https://docs.microsoft.com/en-us/windows/win32/controls/bumper-status-bars-reference-messages
 void CYassFrame::OnUpdateStatusBar() {
-  std::wstring status_text = SysUTF8ToWide(GetStatusMessage());
+  std::wstring status_text = GetStatusMessage();
 
-  SendMessage(status_bar_, SB_SETTEXT, (WPARAM)0, (LPARAM)status_text.c_str());
+  if (previous_status_bar_text_ != status_text) {
+    previous_status_bar_text_ = status_text;
+    SendMessage(status_bar_, SB_SETTEXT,
+                (WPARAM)0, (LPARAM)status_text.c_str());
+    UpdateWindow(status_bar_);
+  }
 }
 
 LRESULT CYassFrame::OnDPIChanged(WPARAM w, LPARAM l) {
@@ -485,3 +677,102 @@ void CYassFrame::OnStopButtonClicked() {
 void CYassFrame::OnCheckedAutoStartButtonClicked() {
   Utils::EnableAutoStart(Button_GetCheck(autostart_button_) & BST_CHECKED);
 }
+
+void CYassFrame::OnAppOption() {
+  DialogBoxParamW(m_hInstance, MAKEINTRESOURCE(IDD_OPTIONBOX), m_hWnd,
+                  &CYassFrame::OnAppOptionMessage,
+                  reinterpret_cast<LPARAM>(this));
+}
+
+// static
+// https://docs.microsoft.com/en-us/windows/win32/api/winuser/nc-winuser-dlgproc
+INT_PTR CALLBACK CYassFrame::OnAppOptionMessage(HWND hDlg, UINT message,
+                                                WPARAM wParam, LPARAM lParam) {
+  UNREFERENCED_PARAMETER(lParam);
+  auto self =
+      reinterpret_cast<CYassFrame*>(GetWindowLongPtrW(hDlg, GWLP_USERDATA));
+
+  switch (message) {
+    case WM_INITDIALOG: {
+      SetWindowLongPtrW(hDlg, GWLP_USERDATA, lParam);
+      // extra initialization to all fields
+      auto connect_timeout = absl::GetFlag(FLAGS_connect_timeout);
+      auto tcp_user_timeout = absl::GetFlag(FLAGS_tcp_user_timeout);
+      auto tcp_so_linger_timeout = absl::GetFlag(FLAGS_so_linger_timeout);
+      auto tcp_so_snd_buffer = absl::GetFlag(FLAGS_so_snd_buffer);
+      auto tcp_so_rcv_buffer = absl::GetFlag(FLAGS_so_rcv_buffer);
+      SetDlgItemInt(hDlg, IDC_EDIT_CONNECT_TIMEOUT, connect_timeout, FALSE);
+      SetDlgItemInt(hDlg, IDC_EDIT_TCP_USER_TIMEOUT, tcp_user_timeout, FALSE);
+      SetDlgItemInt(hDlg, IDC_EDIT_TCP_SO_LINGER_TIMEOUT, tcp_so_linger_timeout,
+                    FALSE);
+      SetDlgItemInt(hDlg, IDC_EDIT_TCP_SO_SEND_BUFFER, tcp_so_snd_buffer,
+                    FALSE);
+      SetDlgItemInt(hDlg, IDC_EDIT_TCP_SO_RECEIVE_BUFFER, tcp_so_rcv_buffer,
+                    FALSE);
+      return (INT_PTR)TRUE;
+    }
+    case WM_COMMAND:
+      if (LOWORD(wParam) == IDOK) {
+        BOOL translated;
+        // TODO prompt a fix-me tip
+        auto connect_timeout =
+            GetDlgItemInt(hDlg, IDC_EDIT_CONNECT_TIMEOUT, &translated, FALSE);
+        if (translated == FALSE)
+          return (INT_PTR)FALSE;
+        auto tcp_user_timeout =
+            GetDlgItemInt(hDlg, IDC_EDIT_TCP_USER_TIMEOUT, &translated, FALSE);
+        if (translated == FALSE)
+          return (INT_PTR)FALSE;
+        auto tcp_so_linger_timeout = GetDlgItemInt(
+            hDlg, IDC_EDIT_TCP_SO_LINGER_TIMEOUT, &translated, FALSE);
+        if (translated == FALSE)
+          return (INT_PTR)FALSE;
+        auto tcp_so_snd_buffer = GetDlgItemInt(
+            hDlg, IDC_EDIT_TCP_SO_SEND_BUFFER, &translated, FALSE);
+        if (translated == FALSE)
+          return (INT_PTR)FALSE;
+        auto tcp_so_rcv_buffer = GetDlgItemInt(
+            hDlg, IDC_EDIT_TCP_SO_RECEIVE_BUFFER, &translated, FALSE);
+        if (translated == FALSE)
+          return (INT_PTR)FALSE;
+        absl::SetFlag(&FLAGS_connect_timeout, connect_timeout);
+        absl::SetFlag(&FLAGS_tcp_user_timeout, tcp_user_timeout);
+        absl::SetFlag(&FLAGS_so_linger_timeout, tcp_so_linger_timeout);
+        absl::SetFlag(&FLAGS_so_snd_buffer, tcp_so_snd_buffer);
+        absl::SetFlag(&FLAGS_so_rcv_buffer, tcp_so_rcv_buffer);
+      }
+      if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) {
+        EndDialog(hDlg, LOWORD(wParam));
+        return (INT_PTR)TRUE;
+      }
+      break;
+    default:
+      break;
+  }
+  return (INT_PTR)FALSE;
+}
+
+void CYassFrame::OnAppAbout() {
+  DialogBoxParamW(m_hInstance, MAKEINTRESOURCE(IDD_ABOUTBOX), m_hWnd,
+                  &CYassFrame::OnAppAboutMessage, 0L);
+}
+
+// static
+INT_PTR CALLBACK CYassFrame::OnAppAboutMessage(HWND hDlg, UINT message,
+                                               WPARAM wParam, LPARAM lParam) {
+  UNREFERENCED_PARAMETER(lParam);
+  switch (message) {
+    case WM_INITDIALOG:
+      return (INT_PTR)TRUE;
+    case WM_COMMAND:
+      if (LOWORD(wParam) == IDOK) {
+        EndDialog(hDlg, LOWORD(wParam));
+        return (INT_PTR)TRUE;
+      }
+      break;
+    default:
+      break;
+  }
+  return (INT_PTR)FALSE;
+}
+
