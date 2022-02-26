@@ -139,6 +139,8 @@ typedef UINT(__stdcall* PFNGETDPIFROMDPIAWARENESSCONTEXT)(
 // from winuser.h, starting from Windows 10, version 1803
 typedef DPI_HOSTING_BEHAVIOR(__stdcall* PFNSETTHREADDPIHOSTINGBEHAVIOR)(
     DPI_HOSTING_BEHAVIOR);
+// from winuser.h, starting from Windows 10, version 1607
+typedef BOOL(__stdcall* PFNENABLENONCLIENTDPISCALING)(HWND);
 
 // We use dynamic loading for below functions
 #undef GetDeviceCaps
@@ -369,6 +371,23 @@ DPI_HOSTING_BEHAVIOR SetThreadDpiHostingBehavior(DPI_HOSTING_BEHAVIOR value) {
   return fPointer(value);
 }
 
+// https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-enablenonclientdpiscaling
+//
+// In high-DPI displays, enables automatic display scaling of the non-client
+// area portions of the specified top-level window.
+// Must be called during the initialization of that window.
+BOOL EnableNonClientDpiScaling(HWND hwnd) {
+  static const auto fPointer = reinterpret_cast<PFNENABLENONCLIENTDPISCALING>(
+      reinterpret_cast<void*>(::GetProcAddress(
+          static_cast<HMODULE>(EnsureUser32Loaded()),
+          "EnableNonClientDpiScaling")));
+  if (fPointer == nullptr) {
+    ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
+    return FALSE;
+  }
+  return fPointer(hwnd);
+}
+
 }  // namespace
 
 // https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows
@@ -574,6 +593,10 @@ unsigned int Utils::GetDpiForWindowOrSystem(HWND hWnd) {
   ::ReleaseDC(nullptr, hDC);
 
   return ydpi;
+}
+
+bool Utils::EnableNonClientDpiScaling(HWND hWnd) {
+  return ::EnableNonClientDpiScaling(hWnd) == TRUE;
 }
 
 namespace {

@@ -4,22 +4,33 @@
 #ifndef YASS_WIN32_FRAME
 #define YASS_WIN32_FRAME
 
-#include <afxext.h>  // MFC extensions (including VB)
-#include <afxtempl.h>
-#include <afxwin.h>  // MFC core and standard components
-
 #include "crypto/crypter_export.hpp"
 
 #include <string>
+#include <windows.h>
 
-class CYassFrame : public CFrameWnd {
-  DECLARE_DYNCREATE(CYassFrame);
+#include <CommCtrl.h>
 
- protected:
-  CYassFrame();
-
+class CYassFrame {
  public:
-  ~CYassFrame() override;
+  CYassFrame();
+  ~CYassFrame();
+
+  BOOL Create(const wchar_t* className,
+              const wchar_t* title,
+              DWORD dwStyle,
+              RECT rect,
+              HINSTANCE hInstance,
+              int nCmdShow);
+
+  void CentreWindow();
+
+  static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam,
+                                  LPARAM lParam);
+
+ private:
+  HWND m_hWnd;
+  HINSTANCE m_hInstance;
 
  public:
   std::string GetServerHost();
@@ -29,7 +40,7 @@ class CYassFrame : public CFrameWnd {
   std::string GetLocalHost();
   std::string GetLocalPort();
   std::string GetTimeout();
-  CString GetStatusMessage();
+  std::wstring GetStatusMessage();
 
   void OnStarted();
   void OnStopped();
@@ -39,63 +50,65 @@ class CYassFrame : public CFrameWnd {
 
   // Left Panel
  protected:
-  CButton start_button_;
-  CButton stop_button_;
+  HWND start_button_;
+  HWND stop_button_;
 
   // Right Panel
  protected:
-  CStatic serverhost_label_;
-  CStatic serverport_label_;
-  CStatic password_label_;
-  CStatic method_label_;
-  CStatic localhost_label_;
-  CStatic localport_label_;
-  CStatic timeout_label_;
-  CStatic autostart_label_;
 
-  CEdit serverhost_edit_;
-  CEdit serverport_edit_;
-  CEdit password_edit_;
-  CComboBox method_combo_box_;
-  CEdit localhost_edit_;
-  CEdit localport_edit_;
-  CEdit timeout_edit_;
-  CButton autostart_button_;
+  HWND server_host_label_;
+  HWND server_port_label_;
+  HWND password_label_;
+  HWND method_label_;
+  HWND local_host_label_;
+  HWND local_port_label_;
+  HWND timeout_label_;
+  HWND autostart_label_;
 
- protected:
-  CStatusBar status_bar_;
+  HWND server_host_edit_;
+  HWND server_port_edit_;
+  HWND password_edit_;
+  HWND method_combo_box_;
+  HWND local_host_edit_;
+  HWND local_port_edit_;
+  HWND timeout_edit_;
+  HWND autostart_button_;
 
  protected:
-  afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
+  HWND status_bar_;
+  std::wstring previous_status_bar_text_;
+
+ protected:
   void UpdateLayoutForDpi();
   void UpdateLayoutForDpi(UINT uDpi);
 
-  // In the framework, when the user closes the frame window,
-  // the window's default OnClose handler calls DestroyWindow.
-  // When the main window closes, the application closes.
-  afx_msg void OnClose();
+  void OnClose();
+  BOOL OnQueryEndSession();
 
-  // Implement Application shutdown
-  // http://msdn.microsoft.com/en-us/library/ms700677(v=vs.85).aspx
-  afx_msg BOOL OnQueryEndSession();
-
-  afx_msg void OnUpdateStatusBar(CCmdUI* pCmdUI);
+  void OnUpdateStatusBar();
 
  protected:
-  afx_msg LRESULT OnDPIChanged(WPARAM w, LPARAM l);
+  LRESULT OnDPIChanged(WPARAM w, LPARAM l);
 
  public:
-  afx_msg void OnStartButtonClicked();
-  afx_msg void OnStopButtonClicked();
-  afx_msg void OnCheckedAutoStartButtonClicked();
+  void OnStartButtonClicked();
+  void OnStopButtonClicked();
+  void OnCheckedAutoStartButtonClicked();
+
+ public:
+  void OnAppOption();
+  static INT_PTR CALLBACK OnAppOptionMessage(HWND hDlg,
+                                             UINT message,
+                                             WPARAM wParam,
+                                             LPARAM lParam);
+  void OnAppAbout();
+  static INT_PTR CALLBACK OnAppAboutMessage(HWND hDlg,
+                                            UINT message,
+                                            WPARAM wParam,
+                                            LPARAM lParam);
 
  private:
   friend class CYassApp;
-
-  CMenu menu_;
-
- protected:
-  DECLARE_MESSAGE_MAP();
 
  private:
   uint64_t last_sync_time_ = 0;

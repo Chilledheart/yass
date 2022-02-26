@@ -374,10 +374,7 @@ void YASSWindow::UpdateStatusBar() {
 void YASSWindow::OnOption() {
   OptionDialog option_dialog("YASS Option", nullptr, true);
 
-  int ret = option_dialog.run();
-  if (ret == GTK_RESPONSE_ACCEPT) {
-    mApp->SaveConfigToDisk();
-  }
+  option_dialog.run();
 }
 
 void YASSWindow::OnAbout() {

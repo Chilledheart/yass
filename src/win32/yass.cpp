@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include <string>
 
+#include <shellapi.h>
+
 #include <absl/debugging/failure_signal_handler.h>
 #include <absl/debugging/symbolize.h>
 #include <absl/flags/flag.h>
@@ -14,59 +16,48 @@
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
-#include "win32/about_dialog.hpp"
-#include "win32/option_dialog.hpp"
+#include "version.h"
 #include "win32/resource.hpp"
 #include "win32/utils.hpp"
 #include "win32/yass_frame.hpp"
-#include "version.h"
 
 ABSL_FLAG(bool, background, false, "start up backgroundd");
 
 #define MULDIVDPI(x) MulDiv(x, uDpi, 96)
 
-// https://docs.microsoft.com/en-us/windows/win32/winmsg/about-messages-and-message-queues
-// https://docs.microsoft.com/en-us/cpp/mfc/reference/message-map-macros-mfc?view=msvc-170#on_thread_message
-BEGIN_MESSAGE_MAP(CYassApp, CWinApp)
-  ON_COMMAND(ID_APP_OPTION, &CYassApp::OnAppOption)
-  ON_COMMAND(ID_APP_ABOUT, &CYassApp::OnAppAbout)
-  ON_THREAD_MESSAGE(WM_MYAPP_STARTED, &CYassApp::OnStarted)
-  ON_THREAD_MESSAGE(WM_MYAPP_START_FAILED, &CYassApp::OnStartFailed)
-  ON_THREAD_MESSAGE(WM_MYAPP_STOPPED, &CYassApp::OnStopped)
-END_MESSAGE_MAP()
-
-CYassApp::CYassApp() = default;
+CYassApp::CYassApp(HINSTANCE hInstance) : m_hInstance(hInstance) {}
 CYassApp::~CYassApp() = default;
 
-CYassApp theApp;
+CYassApp* mApp;
 
-CYassApp* mApp = &theApp;
+int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
+                      _In_opt_ HINSTANCE hPrevInstance,
+                      _In_ LPWSTR lpCmdLine,
+                      _In_ int nCmdShow) {
+  UNREFERENCED_PARAMETER(hPrevInstance);
+  UNREFERENCED_PARAMETER(lpCmdLine);
+  bool ok = true;
 
-BOOL CYassApp::InitInstance() {
   if (!SetUTF8Locale()) {
     LOG(WARNING) << "Failed to set up utf-8 locale";
   }
 
-  if (!CheckFirstInstance())
-    return FALSE;
-
-  if (!CWinApp::InitInstance())
-    return FALSE;
-
-  std::wstring executable_path;
-  if (!Utils::GetExecutablePath(&executable_path)) {
-    return FALSE;
+  std::wstring wexec_path;
+  if (!Utils::GetExecutablePath(&wexec_path)) {
+    return -1;
   }
+  std::string exec_path = SysWideToUTF8(wexec_path);
 
-  absl::InitializeSymbolizer(SysWideToUTF8(executable_path).c_str());
+  absl::InitializeSymbolizer(exec_path.c_str());
   absl::FailureSignalHandlerOptions failure_handle_options;
   absl::InstallFailureSignalHandler(failure_handle_options);
 
   // TODO move to standalone function
   // Parse command line for internal options
   // https://docs.microsoft.com/en-us/windows/win32/api/processenv/nf-processenv-getcommandlinew
-  // The lifetime of the returned value is managed by the system, applications should not free or modify this value.
-  const wchar_t *cmdline = GetCommandLineW();
+  // The lifetime of the returned value is managed by the system, applications
+  // should not free or modify this value.
+  const wchar_t* cmdline = GetCommandLineW();
   int argc = 0;
 
   std::unique_ptr<wchar_t*[], decltype(&LocalFree)> wargv(
@@ -78,18 +69,31 @@ BOOL CYassApp::InitInstance() {
     argv[i] = const_cast<char*>(argv_store[i].data());
   }
   absl::SetFlag(&FLAGS_logtostderr, false);
-  absl::ParseCommandLine(argv_store.size(), &argv[0]);
+  // Fix log output name
+  argv[0] = const_cast<char*>(exec_path.c_str());
+  absl::ParseCommandLine(argv.size(), &argv[0]);
 
   auto override_cipher_method = to_cipher_method(absl::GetFlag(FLAGS_method));
   if (override_cipher_method != CRYPTO_INVALID) {
     absl::SetFlag(&FLAGS_cipher_method, override_cipher_method);
   }
 
-  LoadConfigFromDisk();
+  // TODO: transfer OutputDebugString to internal logging
+
+  CYassApp app(hInstance);
+  mApp = &app;
+
+  return app.RunMainLoop();
+}
+
+BOOL CYassApp::InitInstance() {
+  if (!CheckFirstInstance())
+    return FALSE;
+
+  config::ReadConfig();
+
   DCHECK(is_valid_cipher_method(
       static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
-
-  // TODO: transfer OutputDebugString to internal logging
 
   // https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-setpriorityclass
   // While the system is starting, the SetThreadPriority function returns a
@@ -104,51 +108,60 @@ BOOL CYassApp::InitInstance() {
 
   Utils::SetDpiAwareness();
 
-  m_pMainWnd = frame_ = new CYassFrame;
+  // Ensure that the common control DLL is loaded.
+  InitCommonControls();
+
+  frame_ = new CYassFrame;
   if (frame_ == nullptr) {
     return FALSE;
   }
 
-  HICON icon = LoadIcon(IDR_MAINFRAME);
+  // https://docs.microsoft.com/en-us/windows/win32/menurc/using-menus
+  const wchar_t* className = L"yassMainWnd";
 
-  LPCTSTR lpszClass =
-      AfxRegisterWndClass(CS_DBLCLKS, ::LoadCursor(nullptr, IDC_ARROW),
-                          (HBRUSH)(COLOR_BTNFACE + 1), icon);
-  CString frame_name;
-  if (!frame_name.LoadString(AFX_IDS_APP_TITLE)) {
-    LOG(WARNING) << "frame name not loaded";
-    delete frame_;
-    return FALSE;
-  }
+  WNDCLASSEXW wndcls;
+
+  // otherwise we need to register a new class
+  wndcls.cbSize = sizeof(wndcls);
+  wndcls.style = CS_DBLCLKS;
+  wndcls.lpfnWndProc = &CYassFrame::WndProc;
+  wndcls.cbClsExtra = wndcls.cbWndExtra = 0;
+  wndcls.hInstance = m_hInstance;
+  wndcls.hIcon = LoadIconW(m_hInstance, MAKEINTRESOURCE(IDR_MAINFRAME));
+  wndcls.hCursor = LoadCursor(nullptr, IDC_ARROW);
+  wndcls.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
+  wndcls.lpszMenuName = MAKEINTRESOURCE(IDR_MAINFRAME);
+  wndcls.lpszClassName = className;
+  wndcls.hIconSm = nullptr;
+
+  RegisterClassExW(&wndcls);
+
+  std::wstring frame_name = LoadStringStdW(m_hInstance, IDS_APP_TITLE);
 
   UINT uDpi = Utils::GetDpiForWindowOrSystem(nullptr);
   RECT rect{0, 0, MULDIVDPI(500), MULDIVDPI(400)};
 
-  if (!frame_->Create(lpszClass, frame_name,
+  // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow
+  int nCmdShow = absl::GetFlag(FLAGS_background) ? SW_SHOWMINIMIZED : SW_SHOW;
+  if (!frame_->Create(className, frame_name.c_str(),
                       WS_MINIMIZEBOX | WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
-                      rect)) {
+                      rect, m_hInstance, nCmdShow)) {
     LOG(WARNING) << "Failed to create main frame";
     delete frame_;
     return FALSE;
   }
 
-  frame_->CenterWindow();
-  // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow
-  if (!absl::GetFlag(FLAGS_background)) {
-    frame_->ShowWindow(SW_SHOW);
-    frame_->SetForegroundWindow();
-  } else {
-    frame_->ShowWindow(SW_SHOWMINNOACTIVE);
-  }
-  frame_->UpdateWindow();
-
   if (Utils::GetAutoStart()) {
     frame_->OnStartButtonClicked();
   }
 
+  // FIXME problem with static build
+  // in dynamic build, it may be scanned as virus ???
+#if 0
   if (!MemoryLockAll()) {
     LOG(WARNING) << "Failed to set memory lock";
   }
+#endif
 
   LOG(WARNING) << "Application starting: " << YASS_APP_TAG;
 
@@ -158,7 +171,65 @@ BOOL CYassApp::InitInstance() {
 int CYassApp::ExitInstance() {
   LOG(WARNING) << "Application exiting";
   worker_.Stop([]() {});
-  return CWinApp::ExitInstance();
+  return 0;
+}
+
+int CYassApp::RunMainLoop() {
+  MSG msg;
+
+  HACCEL hAccelTable = LoadAcceleratorsW(m_hInstance,
+                                         MAKEINTRESOURCE(IDC_YASS));
+
+  if (!InitInstance()) {
+    return -1;
+  }
+
+  // Main message loop:
+  // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getmessage
+  // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-peekmessagea
+  // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-postthreadmessagea
+  BOOL bDoingBackgroundProcessing = TRUE;
+  while (bDoingBackgroundProcessing) {
+    // Note that PeekMessage always retrieves WM_QUIT messages
+    while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)) {
+      if (msg.message == WM_QUIT) {
+        bDoingBackgroundProcessing = FALSE;
+        continue;
+      }
+      // The hwnd member of the returned MSG structure is NULL.
+      if (msg.hwnd == nullptr)
+        HandleThreadMessage(msg.message, msg.wParam, msg.lParam);
+      if (!TranslateAcceleratorW(msg.hwnd, hAccelTable, &msg)) {
+        TranslateMessage(&msg);
+        DispatchMessageW(&msg);
+      }
+    }
+    while (OnIdle())
+      ;
+  }
+
+
+  if (auto ret = ExitInstance()) {
+    return ret;
+  }
+
+  return (int)msg.wParam;
+}
+
+// https://docs.microsoft.com/en-us/windows/win32/winmsg/about-messages-and-message-queues
+BOOL CYassApp::HandleThreadMessage(UINT message, WPARAM w, LPARAM l) {
+  switch (message) {
+    case WM_MYAPP_STARTED:
+      OnStarted(w, l);
+      return TRUE;
+    case WM_MYAPP_START_FAILED:
+      OnStartFailed(w, l);
+      return TRUE;
+    case WM_MYAPP_STOPPED:
+      OnStopped(w, l);
+      return TRUE;
+  }
+  return FALSE;
 }
 
 std::string CYassApp::GetStatus() const {
@@ -176,33 +247,29 @@ std::string CYassApp::GetStatus() const {
 void CYassApp::OnStart(bool quiet) {
   DWORD main_thread_id = GetCurrentThreadId();
   state_ = STARTING;
-  SaveConfigToDisk();
+  SaveConfig();
 
   std::function<void(asio::error_code)> callback;
   if (!quiet) {
     callback = [main_thread_id](asio::error_code ec) {
       bool successed = false;
-      char* message = nullptr;
-      int message_size = 0;
+      std::string* message = nullptr;
       bool ret;
 
       if (ec) {
-        std::string message_storage = ec.message();
-        message_size = message_storage.size();
-        message = new char[message_size + 1];
-        memcpy(message, message_storage.c_str(), message_size + 1);
+        message = new std::string;
+        *message = ec.message();
         successed = false;
       } else {
         successed = true;
       }
 
       // if the gui library exits, no more need to handle
-      ret = ::PostThreadMessage(
+      ret = PostThreadMessageW(
           main_thread_id, successed ? WM_MYAPP_STARTED : WM_MYAPP_START_FAILED,
-          static_cast<WPARAM>(message_size), reinterpret_cast<LPARAM>(message));
+          0, reinterpret_cast<LPARAM>(message));
       if (!ret) {
-        LOG(WARNING) << "Failed to post message to main thread: " << std::hex
-                     << ::GetLastError() << std::dec;
+        PLOG(WARNING) << "Internal error: PostThreadMessage";
       }
     };
   }
@@ -216,49 +283,28 @@ void CYassApp::OnStop(bool quiet) {
   if (!quiet) {
     callback = [main_thread_id]() {
       bool ret;
-      ret = ::PostThreadMessage(main_thread_id, WM_MYAPP_STOPPED, 0, 0);
+      ret = PostThreadMessageW(main_thread_id, WM_MYAPP_STOPPED, 0, 0);
       if (!ret) {
-        LOG(WARNING) << "Failed to post message to main thread: " << std::hex
-                     << ::GetLastError() << std::dec;
+        PLOG(WARNING) << "Internal error: PostThreadMessage";
       }
     };
   }
   worker_.Stop(callback);
 }
 
-void CYassApp::OnAppOption() {
-  COptionDialog dialog(GetMainWnd());
-  if (dialog.DoModal() == IDOK) {
-    // For a modal dialog box, you can retrieve any data the user entered
-    // when DoModal returns IDOK but before the dialog object is destroyed.
-    // https://docs.microsoft.com/en-us/cpp/mfc/retrieving-data-from-the-dialog-object?view=msvc-170
-    absl::SetFlag(&FLAGS_connect_timeout, dialog.connect_timeout_);
-    absl::SetFlag(&FLAGS_tcp_user_timeout, dialog.tcp_user_timeout_);
-    absl::SetFlag(&FLAGS_so_linger_timeout, dialog.tcp_so_linger_timeout_);
-    absl::SetFlag(&FLAGS_so_snd_buffer, dialog.tcp_so_snd_buffer_);
-    absl::SetFlag(&FLAGS_so_rcv_buffer, dialog.tcp_so_rcv_buffer_);
-    SaveConfigToDisk();
-  }
-}
-
-void CYassApp::OnAppAbout() {
-  CAboutDlg dlgAbout;
-  dlgAbout.DoModal();
-}
-
 // https://docs.microsoft.com/en-us/windows/win32/winprog/windows-data-types?redirectedfrom=MSDN
 void CYassApp::OnStarted(WPARAM /*w*/, LPARAM /*l*/) {
   state_ = STARTED;
+  config::SaveConfig();
   frame_->OnStarted();
 }
 
 void CYassApp::OnStartFailed(WPARAM w, LPARAM l) {
   state_ = START_FAILED;
-  char* message = reinterpret_cast<char*>(l);
-  int message_size = static_cast<int>(w);
+  std::unique_ptr<std::string> message_ptr(reinterpret_cast<std::string*>(l));
 
-  error_msg_ = std::string(message, message_size);
-  delete[] message;
+  error_msg_ = std::move(message_ptr.operator*());
+
   LOG(ERROR) << "worker failed due to: " << error_msg_;
   frame_->OnStartFailed();
 }
@@ -268,23 +314,24 @@ void CYassApp::OnStopped(WPARAM /*w*/, LPARAM /*l*/) {
   frame_->OnStopped();
 }
 
-BOOL CYassApp::CheckFirstInstance() {
-  CString app_name;
-  if (!app_name.LoadString(AFX_IDS_APP_TITLE)) {
-    LOG(WARNING) << "app name not loaded";
-    return FALSE;
-  }
+BOOL CYassApp::OnIdle() {
+  frame_->OnUpdateStatusBar();
+  return FALSE;
+}
 
-  CWnd* first_wnd = CWnd::FindWindow(nullptr, app_name);
+BOOL CYassApp::CheckFirstInstance() {
+  std::wstring app_name = LoadStringStdW(m_hInstance, IDS_APP_TITLE);
+
+  HWND first_wnd = FindWindowW(nullptr, app_name.c_str());
 
   // another instance is already running - activate it
   if (first_wnd) {
-    CWnd* popup_wnd = first_wnd->GetLastActivePopup();
-    popup_wnd->SetForegroundWindow();
-    if (popup_wnd->IsIconic())
-      popup_wnd->ShowWindow(SW_SHOWNORMAL);
+    HWND popup_wnd = GetLastActivePopup(first_wnd);
+    SetForegroundWindow(popup_wnd);
+    if (IsIconic(popup_wnd))
+      ShowWindow(popup_wnd, SW_SHOWNORMAL);
     if (first_wnd != popup_wnd)
-      popup_wnd->SetForegroundWindow();
+      SetForegroundWindow(popup_wnd);
     return FALSE;
   }
 
@@ -292,11 +339,7 @@ BOOL CYassApp::CheckFirstInstance() {
   return TRUE;
 }
 
-void CYassApp::LoadConfigFromDisk() {
-  config::ReadConfig();
-}
-
-void CYassApp::SaveConfigToDisk() {
+void CYassApp::SaveConfig() {
   auto server_host = frame_->GetServerHost();
   auto server_port = StringToInteger(frame_->GetServerPort());
   auto password = frame_->GetPassword();
@@ -318,6 +361,4 @@ void CYassApp::SaveConfigToDisk() {
   absl::SetFlag(&FLAGS_local_host, local_host);
   absl::SetFlag(&FLAGS_local_port, local_port.value());
   absl::SetFlag(&FLAGS_connect_timeout, connect_timeout.value());
-
-  config::SaveConfig();
 }

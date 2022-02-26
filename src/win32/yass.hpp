@@ -3,29 +3,26 @@
 #ifndef YASS_WIN32_APP
 #define YASS_WIN32_APP
 
-#include <afxext.h>  // MFC extensions (including VB)
-#include <afxtempl.h>
-#include <afxwin.h>  // MFC core and standard components
-
 #include "cli/cli_worker.hpp"
+
+#include <windows.h>
 
 class CYassFrame;
 /// The main Application for YetAnotherShadowSocket
-/// https://docs.microsoft.com/en-us/cpp/mfc/reference/cwinapp-class?view=msvc-170
-class CYassApp : public CWinApp {
+class CYassApp {
  public:
-  CYassApp();
+  CYassApp(HINSTANCE hInstance);
   ~CYassApp();
-  // Application initialization is conceptually divided into two sections:
-  // one-time application initialization that is done the first time
-  // the program runs, and instance initialization that runs each time
-  // a copy of the program runs, including the first time.
-  // The framework's implementation of WinMain calls this function.
-  BOOL InitInstance() override;
 
-  // Called by the framework from within the Run member function
-  // to exit this instance of the application.
-  int ExitInstance() override;
+ private:
+  const HINSTANCE m_hInstance;
+  BOOL InitInstance();
+  int ExitInstance();
+
+ public:
+  int RunMainLoop();
+
+  BOOL HandleThreadMessage(UINT message, WPARAM w, LPARAM l);
 
   void OnStart(bool quiet = false);
   void OnStop(bool quiet = false);
@@ -35,18 +32,15 @@ class CYassApp : public CWinApp {
   YASSState GetState() const { return state_; }
 
  private:
-  afx_msg void OnAppOption();
-  afx_msg void OnAppAbout();
+  void OnStarted(WPARAM w, LPARAM l);
+  void OnStartFailed(WPARAM w, LPARAM l);
+  void OnStopped(WPARAM w, LPARAM l);
 
- private:
-  afx_msg void OnStarted(WPARAM w, LPARAM l);
-  afx_msg void OnStartFailed(WPARAM w, LPARAM l);
-  afx_msg void OnStopped(WPARAM w, LPARAM l);
+  BOOL OnIdle();
 
  private:
   BOOL CheckFirstInstance();
-  void LoadConfigFromDisk();
-  void SaveConfigToDisk();
+  void SaveConfig();
 
  private:
   YASSState state_;
@@ -56,8 +50,6 @@ class CYassApp : public CWinApp {
 
   Worker worker_;
   std::string error_msg_;
-
-  DECLARE_MESSAGE_MAP();
 };
 
 extern CYassApp* mApp;
