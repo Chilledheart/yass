@@ -155,9 +155,13 @@ BOOL CYassApp::InitInstance() {
     frame_->OnStartButtonClicked();
   }
 
+  // FIXME problem with static build
+  // in dynamic build, it may be scanned as virus ???
+#if 0
   if (!MemoryLockAll()) {
     LOG(WARNING) << "Failed to set memory lock";
   }
+#endif
 
   LOG(WARNING) << "Application starting: " << YASS_APP_TAG;
 

@@ -342,7 +342,8 @@ def get_dependencies_by_dumpbin(path, search_dirs):
                  'ole32.dll', 'OLEAUT32.dll', 'SHLWAPI.dll', 'IMM32.dll',
                  'UxTheme.dll', 'PROPSYS.dll', 'dwmapi.dll', 'WININET.dll',
                  'OLEACC.dll', 'ODBC32.dll', 'oledlg.dll', 'urlmon.dll',
-                 'MSIMG32.dll', 'WINMM.dll', 'CRYPT32.dll', 'gdiplus.dll', ]
+                 'MSIMG32.dll', 'WINMM.dll', 'CRYPT32.dll', 'gdiplus.dll',
+                 'COMCTL32.dll']
 
   p = re.compile(r'    (\S+.dll)', re.IGNORECASE)
   for line in lines:
