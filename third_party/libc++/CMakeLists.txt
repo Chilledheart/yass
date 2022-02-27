@@ -373,7 +373,7 @@ target_include_directories(cxx PRIVATE
 target_compile_options(cxx PRIVATE ${libcxx_CFLAGS})
 
 if (NOT MSVC AND NOT APPLE AND NOT COMPILER_CLANG)
-  target_link_libraries(cxx PRIVATE atomic)
+  target_link_libraries(cxx -Wl,'-Bstatic,-latomic,-Bdynamic')
 endif()
 
 if (MSVC)

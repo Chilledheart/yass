@@ -317,10 +317,6 @@ jobs:
         run: |
           echo "DEB_BUILD_PROFILES=nogui ${{ env.DEB_BUILD_PROFILES}}" >> $GITHUB_ENV
           echo "APT_DEB_BUILD_PROFILES=-o Apt::Build-Profiles=nogui" >> $GITHUB_ENV
-      - name: Set nocxxruntime build profile (xenial only)
-        if: ${{ env.HOST_DISTRO == 'xenial' }}
-        run: |
-          echo "DEB_BUILD_PROFILES=nocxxruntime ${{ env.DEB_BUILD_PROFILES}}" >> $GITHUB_ENV
       - name: Build deb (source)
         run: |
           export DEB_BUILD_PROFILES

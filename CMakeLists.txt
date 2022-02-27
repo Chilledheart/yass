@@ -23,6 +23,12 @@ if (POLICY CMP0048)
   cmake_policy(SET CMP0048 NEW)
 endif (POLICY CMP0048)
 
+# Include file check macros honor CMAKE_REQUIRED_LIBRARIES.
+set(CMAKE_POLICY_DEFAULT_CMP0075 NEW)
+if (POLICY CMP0075)
+  cmake_policy(SET CMP0075 NEW)
+endif (POLICY CMP0075)
+
 # Select the MSVC runtime library for use by compilers targeting the MSVC ABI.
 # Use CMAKE_MSVC_CRT_LINKAGE variable internally, option: dynamic and static
 #
@@ -478,15 +484,16 @@ elseif (USE_GOLD)
     # https://groups.google.com/a/chromium.org/group/chromium-dev/browse_thread/thread/281527606915bb36
     # Only apply this to the target linker, since the host
     # linker might not be gold, but isn't used much anyway.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--threads -Wl,--thread-count=4")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--threads -Wl,--thread-count=4")
+    # FIXME crashing on aarch64 build machine
+    if (FALSE)
+      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--threads -Wl,--thread-count=4")
+      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--threads -Wl,--thread-count=4")
+    endif()
   endif()
 
   # TODO(thestig): Make this flag work with GN.
-  #if (!is_official_build && !is_chromeos && !(is_asan || is_lsan || is_tsan || is_msan)) {
-  #  ldflags += [
+  #if (NOT ASAN AND NOT TSAN AND NOT MSAN AND NOT LSAN) {
   #    "-Wl,--detect-odr-violations",
-  #  ]
   #}
 endif()
 
@@ -747,8 +754,11 @@ if (USE_LIBCXX)
   include_directories(${libcxx_PUBLIC_INCLUDES})
   # fix cmake check
   set(CMAKE_REQUIRED_INCLUDES
-       ${libcxx_PUBLIC_INCLUDES}
-       ${CMAKE_REQUIRED_INCLUDES})
+    ${libcxx_PUBLIC_INCLUDES}
+    ${CMAKE_REQUIRED_INCLUDES})
+  set(CMAKE_REQUIRED_LIBRARIES
+    ${libcxx_PUBLIC_LIBRARIES}
+    ${CMAKE_REQUIRED_LIBRARIES})
   foreach(Definition ${libcxx_PUBLIC_DEFINITIONS})
     add_definitions(-D${Definition})
   endforeach()
@@ -922,6 +932,8 @@ set(SUPPORT_LIBS
 add_definitions(-DASIO_STANDALONE)
 add_definitions(-DASIO_NO_TYPEID)
 add_definitions(-DASIO_NO_EXCEPTIONS)
+# forward libcxx present
+add_definitions(-DASIO_DISABLE_STD_EXPERIMENTAL_STRING_VIEW)
 include_directories(third_party/asio/asio/include SYSTEM)
 
 # boringssl
