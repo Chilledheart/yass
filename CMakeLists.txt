@@ -607,10 +607,13 @@ endif()
 # For now, explicitly disable this feature though to keep the C++14 aligned
 # allocation behavior (and do that on all platforms so that we have
 # consistent behavior across platforms), to make the change more incremental.
-if (MSVC)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:alignedNew-")
-else()
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-aligned-new")
+# GCC 6 series on Debian Stretch doesn't support it
+if (NOT COMPILER_GCC OR (COMPILER_GCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.0))
+  if (MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:alignedNew-")
+  else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-aligned-new")
+  endif()
 endif()
 
 if (APPLE)
