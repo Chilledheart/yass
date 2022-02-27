@@ -317,6 +317,11 @@ jobs:
         run: |
           echo "DEB_BUILD_PROFILES=nogui ${{ env.DEB_BUILD_PROFILES}}" >> $GITHUB_ENV
           echo "APT_DEB_BUILD_PROFILES=-o Apt::Build-Profiles=nogui" >> $GITHUB_ENV
+      - name: Patch libcxx for armel
+        if: ${{ env.HOST_ARCH == 'armel' }}
+        run: |
+          cd third_party/libc++
+          patch -p1 < libcxx-armhf-ftbfs.diff
       - name: Build deb (source)
         run: |
           export DEB_BUILD_PROFILES
