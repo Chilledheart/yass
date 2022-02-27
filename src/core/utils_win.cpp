@@ -636,6 +636,10 @@ static void CheckDynamicLibraries() {
   FindClose(findHandle);
 }
 
+#ifndef LOAD_LIBRARY_SEARCH_SYSTEM32
+#define LOAD_LIBRARY_SEARCH_SYSTEM32 0x00000800
+#endif //  LOAD_LIBRARY_SEARCH_SYSTEM32
+
 bool EnableSecureDllLoading() {
   typedef BOOL(WINAPI * SetDefaultDllDirectoriesFunction)(DWORD flags);
   SetDefaultDllDirectoriesFunction set_default_dll_directories =
