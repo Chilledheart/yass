@@ -2249,6 +2249,14 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
     log_mutex.Unlock();
     LogDestination::WaitForSinks(data_);
 
+#ifdef OS_WIN
+    if (!IsProgramConsole()) {
+      std::wstring message = SysUTF8ToWide(data_->message_text_);
+      MessageBoxW(nullptr, message.c_str(), L"Fatal Error", MB_ICONERROR);
+      // Ignore errors.
+    }
+#endif
+
     const char* message = "*** Check failure stack trace: ***\n";
     if (write(STDERR_FILENO, message, strlen(message)) < 0) {
       // Ignore errors.

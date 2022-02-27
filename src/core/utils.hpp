@@ -53,6 +53,8 @@ uint64_t GetMonotonicTime();
 
 #define NS_PER_SECOND (1000 * 1000 * 1000)
 
+bool IsProgramConsole();
+
 bool SetUTF8Locale();
 
 absl::StatusOr<int32_t> StringToInteger(absl::string_view value);
@@ -82,6 +84,9 @@ std::wstring SysNativeMBToWide(absl::string_view native_mb);
 std::string SysWideToNativeMB(const std::wstring& wide);
 
 std::wstring SysNativeMBToWide(absl::string_view native_mb);
+
+bool EnableSecureDllLoading();
+
 #endif
 
 // Mac-specific ----------------------------------------------------------------

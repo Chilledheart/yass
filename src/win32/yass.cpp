@@ -38,6 +38,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   UNREFERENCED_PARAMETER(lpCmdLine);
   bool ok = true;
 
+  if (!EnableSecureDllLoading()) {
+    return -1;
+  }
+
   if (!SetUTF8Locale()) {
     LOG(WARNING) << "Failed to set up utf-8 locale";
   }

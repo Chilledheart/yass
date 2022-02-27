@@ -19,6 +19,11 @@
 using namespace socks5;
 
 int main(int argc, const char* argv[]) {
+#ifdef OS_WIN
+  if (!EnableSecureDllLoading()) {
+    return -1;
+  }
+#endif
   if (!SetUTF8Locale()) {
     LOG(WARNING) << "Failed to set up utf-8 locale";
   }

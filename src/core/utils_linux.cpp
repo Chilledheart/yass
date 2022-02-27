@@ -66,6 +66,11 @@ uint64_t GetMonotonicTime() {
          ts.tv_nsec - start_ts.tv_nsec;
 }
 
+// TBD
+bool IsProgramConsole() {
+  return true;
+}
+
 bool SetUTF8Locale() {
   if (setlocale(LC_ALL, "C.UTF-8") == nullptr)
     return false;

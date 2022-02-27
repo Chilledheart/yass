@@ -332,6 +332,19 @@ uint64_t GetMonotonicTime() {
   return ElapsedNanoseconds.QuadPart;
 }
 
+static bool IsHandleConsole(HANDLE handle) {
+  DWORD mode;
+  return handle != 0 && handle != INVALID_HANDLE_VALUE &&
+         (GetFileType(handle) & ~FILE_TYPE_REMOTE) == FILE_TYPE_CHAR &&
+         GetConsoleMode(handle, &mode);
+}
+
+bool IsProgramConsole() {
+  return IsHandleConsole(GetStdHandle(STD_INPUT_HANDLE)) ||
+    IsHandleConsole(GetStdHandle(STD_OUTPUT_HANDLE)) ||
+    IsHandleConsole(GetStdHandle(STD_ERROR_HANDLE));
+}
+
 static void GetWindowsVersion(int *major, int *minor, int *build_number,
                               DWORD *os_type) {
   OSVERSIONINFOW version_info {};
@@ -365,13 +378,6 @@ static void GetWindowsVersion(int *major, int *minor, int *build_number,
 #endif
 }
 
-static bool IsHandleConsole(HANDLE handle) {
-  DWORD mode;
-  return handle != 0 && handle != INVALID_HANDLE_VALUE &&
-         (GetFileType(handle) & ~FILE_TYPE_REMOTE) == FILE_TYPE_CHAR &&
-         GetConsoleMode(handle, &mode);
-}
-
 #ifndef CP_UTF8
 #define CP_UTF8 65001
 #endif // CP_UTF8
@@ -389,9 +395,7 @@ bool SetUTF8Locale() {
 
   GetWindowsVersion(&major, &minor, &build_number, &os_type);
 
-  bool is_console = IsHandleConsole(GetStdHandle(STD_INPUT_HANDLE)) ||
-                    IsHandleConsole(GetStdHandle(STD_OUTPUT_HANDLE)) ||
-                    IsHandleConsole(GetStdHandle(STD_ERROR_HANDLE));
+  bool is_console = IsProgramConsole();
 
   if (is_console) {
     // Calling SetConsoleCP
@@ -514,6 +518,144 @@ std::string SysWideToMultiByte(const std::wstring& wide, uint32_t code_page) {
       nullptr /* lpDefaultChar */, nullptr /* lpUsedDefaultChar */);
 
   return mb;
+}
+
+static const wchar_t *kDllWhiteList [] = {
+// msvc runtime, still searched current directory
+// under dll search security mode
+  L"MSVCP140.dll",
+  L"msvcp140_1.dll",
+  L"msvcp140_2.dll",
+  L"msvcp140_atomic_wait.dll",
+  L"msvcp140_codecvt_ids.dll",
+  L"VCRUNTIME140.dll",
+  L"VCRUNTIME140_1.dll",
+  L"CONCRT140.dll",
+// ucrt
+  L"api-ms-win-core-console-l1-1-0.dll",
+  L"api-ms-win-core-datetime-l1-1-0.dll",
+  L"api-ms-win-core-debug-l1-1-0.dll",
+  L"api-ms-win-core-errorhandling-l1-1-0.dll",
+  L"api-ms-win-core-file-l1-1-0.dll",
+  L"api-ms-win-core-file-l1-2-0.dll",
+  L"api-ms-win-core-file-l2-1-0.dll",
+  L"api-ms-win-core-handle-l1-1-0.dll",
+  L"api-ms-win-core-heap-l1-1-0.dll",
+  L"api-ms-win-core-interlocked-l1-1-0.dll",
+  L"api-ms-win-core-libraryloader-l1-1-0.dll",
+  L"api-ms-win-core-localization-l1-2-0.dll",
+  L"api-ms-win-core-memory-l1-1-0.dll",
+  L"api-ms-win-core-namedpipe-l1-1-0.dll",
+  L"api-ms-win-core-processenvironment-l1-1-0.dll",
+  L"api-ms-win-core-processthreads-l1-1-0.dll",
+  L"api-ms-win-core-processthreads-l1-1-1.dll",
+  L"api-ms-win-core-profile-l1-1-0.dll",
+  L"api-ms-win-core-rtlsupport-l1-1-0.dll",
+  L"api-ms-win-core-string-l1-1-0.dll",
+  L"api-ms-win-core-synch-l1-1-0.dll",
+  L"api-ms-win-core-synch-l1-2-0.dll",
+  L"api-ms-win-core-sysinfo-l1-1-0.dll",
+  L"api-ms-win-core-timezone-l1-1-0.dll",
+  L"api-ms-win-core-util-l1-1-0.dll",
+  L"api-ms-win-crt-conio-l1-1-0.dll",
+  L"api-ms-win-crt-convert-l1-1-0.dll",
+  L"api-ms-win-crt-environment-l1-1-0.dll",
+  L"api-ms-win-crt-filesystem-l1-1-0.dll",
+  L"api-ms-win-crt-heap-l1-1-0.dll",
+  L"api-ms-win-crt-locale-l1-1-0.dll",
+  L"api-ms-win-crt-math-l1-1-0.dll",
+  L"api-ms-win-crt-multibyte-l1-1-0.dll",
+  L"api-ms-win-crt-private-l1-1-0.dll",
+  L"api-ms-win-crt-process-l1-1-0.dll",
+  L"api-ms-win-crt-runtime-l1-1-0.dll",
+  L"api-ms-win-crt-stdio-l1-1-0.dll",
+  L"api-ms-win-crt-string-l1-1-0.dll",
+  L"api-ms-win-crt-time-l1-1-0.dll",
+  L"api-ms-win-crt-utility-l1-1-0.dll",
+  L"ucrtbase.dll",
+};
+
+static void CheckDynamicLibraries() {
+  std::wstring exe(MAX_PATH, L'\0');
+  const auto exeLength = GetModuleFileNameW(
+    nullptr,
+    const_cast<wchar_t*>(exe.c_str()),
+    exe.size() + 1);
+  if (!exeLength || exeLength >= exe.size() + 1) {
+    PLOG(FATAL) << L"Could not get executable path!";
+  }
+  exe.resize(exeLength);
+  const auto last1 = exe.find_last_of('\\');
+  const auto last2 = exe.find_last_of('/');
+  const auto last = std::max(
+    (last1 == std::wstring::npos) ? -1 : int(last1),
+    (last2 == std::wstring::npos) ? -1 : int(last2));
+  if (last < 0) {
+    LOG(FATAL) << L"Could not get executable directory!";
+  }
+  // In the ANSI version of this function,
+  // the name is limited to MAX_PATH characters.
+  // To extend this limit to approximately 32,000 wide characters,
+  // call the Unicode version of the function (FindFirstFileExW),
+  // and prepend "\\?\" to the path. For more information, see Naming a File.
+  const auto search = L"\\\\?\\" + exe.substr(0, last + 1) + L"*.dll";
+
+  WIN32_FIND_DATAW findData{};
+  HANDLE findHandle = FindFirstFileExW(search.c_str(), FindExInfoBasic,
+                                       &findData, FindExSearchNameMatch,
+                                       nullptr, 0);
+  if (findHandle == INVALID_HANDLE_VALUE) {
+    DWORD error = GetLastError();
+    if (error == ERROR_FILE_NOT_FOUND) {
+      return;
+    }
+    PLOG(FATAL) << L"Could not enumerate executable path!";
+  }
+
+  do {
+    if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+      continue;
+    }
+    const auto me = exe.substr(last + 1);
+    if (std::end(kDllWhiteList) != std::find_if(
+      std::begin(kDllWhiteList), std::end(kDllWhiteList),
+      [&findData](const wchar_t* dll) {
+        return wcsicmp(dll, findData.cFileName) == 0;
+      })) {
+      continue;
+    }
+    std::wstringstream os;
+    os << L"\nUnknown DLL library \""<< findData.cFileName
+      << L"\" found in the directory with " << me << L".\n\n"
+      << L"This may be a virus or a malicious program. \n\n"
+      << L"Please remove all DLL libraries from this directory:\n\n"
+      << exe.substr(0, last) << L"\n\n"
+      << "Alternatively, you can move " << me << L" to a new directory.";
+    LOG(FATAL) << SysWideToUTF8(os.str());
+  } while (FindNextFileW(findHandle, &findData));
+  FindClose(findHandle);
+}
+
+bool EnableSecureDllLoading() {
+  typedef BOOL(WINAPI * SetDefaultDllDirectoriesFunction)(DWORD flags);
+  SetDefaultDllDirectoriesFunction set_default_dll_directories =
+      reinterpret_cast<SetDefaultDllDirectoriesFunction>(::GetProcAddress(
+          ::GetModuleHandleW(L"kernel32.dll"), "SetDefaultDllDirectories"));
+  if (!set_default_dll_directories) {
+    // Don't assert because this is known to be missing on Windows 7 without
+    // KB2533623.
+    PLOG(WARNING) << "SetDefaultDllDirectories unavailable";
+    CheckDynamicLibraries();
+    return true;
+  }
+
+  if (!set_default_dll_directories(LOAD_LIBRARY_SEARCH_SYSTEM32)) {
+    PLOG(WARNING) << "Encountered error calling SetDefaultDllDirectories!";
+    CheckDynamicLibraries();
+    return true;
+  }
+
+  return true;
 }
 
 #endif  // _WIN32
