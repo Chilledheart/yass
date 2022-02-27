@@ -44,7 +44,7 @@ if(POLICY CMP0118)
 endif()
 
 # https://docs.microsoft.com/en-us/cpp/c-runtime-library/crt-library-features?redirectedfrom=MSDN&view=msvc-170
-set(CMAKE_MSVC_CRT_LINKAGE "dynamic" CACHE STRING "")
+set(CMAKE_MSVC_CRT_LINKAGE "static" CACHE STRING "")
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:${CMAKE_MSVC_CRT_LINKAGE},dynamic>:DLL>" CACHE STRING "")
 
 # Defer enabling C and CXX languages.
@@ -191,20 +191,28 @@ endif()
 ## Export build compilation database if possible
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
-## Enforce C/C++ standard
-set(CMAKE_C_STANDARD 99)
-set(CMAKE_CXX_STANDARD 14)
-
-if (MSVC AND NOT COMPILER_CLANG)
-  set(CMAKE_CXX_STANDARD 17)
-endif()
-
 option(CLI "Build with cli." ON)
 option(SERVER "Build with server." ON)
 option(GUI "Build against GUI." OFF)
 option(GUI_SANDBOX "Build against GUI sandbox (MAC Only)." OFF)
 option(BUILD_TESTS "Build with test." OFF)
 option(OPTIMIZED_PROTOC "Force protobuf compiler to be built with optimization" OFF)
+option(USE_LIBCXX "Build with libc++" ON)
+option(USE_LLD "Build with lld linker" OFF)
+option(USE_GOLD "Build with gold linker" OFF)
+option(USE_ICF "Build with icf" OFF)
+option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
+
+# skipping apple clang
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR LINKER_LLD)
+  set(USE_LLD ON)
+elseif (COMPILER_GCC)
+  set(USE_GOLD ON)
+endif()
+
+if (USE_LLD OR USE_GOLD)
+  set(USE_ICF ON)
+endif()
 
 include(config-ix)
 
@@ -227,8 +235,423 @@ if (NOT MSVC AND NOT APPLE)
 endif()
 
 # *****************************************************************************************
+#           Debug facilities
+# *****************************************************************************************
+
+if(MSAN)
+  if(ASAN)
+    message(FATAL_ERROR "ASAN and MSAN are mutually exclusive")
+  endif()
+
+  if(NOT COMPILER_CLANG)
+    # experimental
+    # due to the ms document https://docs.microsoft.com/en-us/cpp/sanitizers/asan?view=msvc-160
+    if (MSVC AND NOT MSVC_C_ARCHITECTURE_ID STREQUAL "arm64")
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=memory")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=memory")
+      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /fsanitize=memory")
+    else()
+      message(FATAL_ERROR "Cannot enable MSAN unless using Clang or Vistual Studio 2019 version 16.9")
+    endif()
+  else()
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer")
+    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer")
+  endif()
+endif()
+
+if(ASAN)
+  if(NOT COMPILER_CLANG)
+    # Current support is limited to x86 and x64 on Windows 10
+    # due to the ms document https://docs.microsoft.com/en-us/cpp/sanitizers/asan?view=msvc-160
+    if (MSVC AND NOT MSVC_C_ARCHITECTURE_ID STREQUAL "arm64")
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=address")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=address")
+      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /fsanitize=address")
+    else()
+      message(FATAL_ERROR "Cannot enable ASAN unless using Clang or Vistual Studio 2019 version 16.9")
+    endif()
+  else()
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer")
+  endif()
+endif()
+
+if(CFI)
+  if(NOT COMPILER_CLANG)
+    message(FATAL_ERROR "Cannot enable CFI unless using Clang")
+  endif()
+
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=cfi -fno-sanitize-trap=cfi -flto=thin")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=cfi -fno-sanitize-trap=cfi -flto=thin")
+  # We use Chromium's copy of clang, which requires -fuse-ld=lld if building
+  # with -flto. That, in turn, can't handle -ggdb.
+  string(REPLACE "-ggdb" "-g" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+  string(REPLACE "-ggdb" "-g" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+endif()
+
+if(TSAN)
+  if(NOT COMPILER_CLANG)
+    # experimental
+    # due to the ms document https://docs.microsoft.com/en-us/cpp/sanitizers/asan?view=msvc-160
+    if (MSVC AND NOT MSVC_C_ARCHITECTURE_ID STREQUAL "arm64")
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=thread")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=thread")
+      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /fsanitize=thread")
+    else()
+      message(FATAL_ERROR "Cannot enable TSAN unless using Clang or Vistual Studio 2019 version 16.9")
+    endif()
+  else()
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=thread")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=thread")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=thread")
+  endif()
+endif()
+
+if(UBSAN)
+  if(NOT COMPILER_CLANG)
+    # experimental
+    # due to the ms document https://docs.microsoft.com/en-us/cpp/sanitizers/asan?view=msvc-160
+    if (MSVC AND NOT MSVC_C_ARCHITECTURE_ID STREQUAL "arm64")
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=undefined")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=undefined")
+    else()
+      message(FATAL_ERROR "Cannot enable UBSAN unless using Clang or Vistual Studio 2019 version 16.9")
+    endif()
+  else()
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=undefined")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined")
+  endif()
+endif()
+
+if(GCOV)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-arcs -ftest-coverage")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
+endif()
+
+if (NOT MSAN AND NOT ASAN AND NOT TSAN AND NOT UBSAN)
+  if (NOT APPLE AND NOT MSVC)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,defs -Wl,--as-needed")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,defs -Wl,--as-needed")
+  endif()
+endif()
+
+# *****************************************************************************************
 #           Platform-specific
 # *****************************************************************************************
+# Here we enable -fno-delete-null-pointer-checks, which makes various nullptr
+# operations (e.g. dereferencing) into defined behavior. This avoids deletion
+# of some security-critical code: see https://crbug.com/1139129.
+# Nacl does not support the flag. And, we still want UBSAN to catch undefined
+# behavior related to nullptrs, so do not add this flag if UBSAN is enabled.
+# GCC seems to have some bugs compiling constexpr code when this is defined,
+# so only enable it if using_clang. See: https://gcc.gnu.org/PR97913
+# TODO(mpdenton): remove is_clang once GCC bug is fixed.
+if (NOT UBSAN AND COMPILER_CLANG)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-delete-null-pointer-checks")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-delete-null-pointer-checks")
+endif()
+
+# Don't emit the GCC version ident directives, they just end up in the
+# .comment section or debug info taking up binary size, and makes comparing
+# .o files built with different compiler versions harder.
+if (NOT MSVC AND COMPILER_CLANG)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-ident")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-ident")
+endif()
+
+# In general, Windows is totally different, but all the other builds share
+# some common compiler and linker configuration.
+if (NOT MSVC)
+  # Common POSIX compiler flags setup.
+  # --------------------------------
+  # See http://crbug.com/32204
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-strict-aliasing")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")
+
+  # Stack protection.
+  if (APPLE)
+    # The strong variant of the stack protector significantly increases
+    # binary size, so only enable it in debug mode.
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} -fstack-protector-strong")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -fstack-protector-strong")
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -fstack-protector")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -fstack-protector")
+  elseif (UNIX)
+    # TODO(phajdan.jr): Use -fstack-protector-strong when our gcc supports it.
+    # See also https://crbug.com/533294
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --param=ssp-buffer-size=4")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param=ssp-buffer-size=4")
+
+    # FIXME The ANDROID x86 toolchain currently has problems with stack-protector.
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector")
+  endif()
+
+  if (LINKER_LLD OR USE_LLD)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
+  endif()
+
+  # Linker warnings.
+  if (FALSE)
+    if (NOT APPLE)
+      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--fatal-warnings")
+      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--fatal-warnings")
+    else ()
+      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-fatal_warnings")
+      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-fatal_warnings")
+    endif()
+  endif()
+endif()
+
+# Non-Mac Posix compiler flags setup.
+# -----------------------------------
+if (UNIX AND NOT APPLE)
+  # Explicitly pass --build-id to ld. Compilers used to always pass this
+  # implicitly but don't any more (in particular clang when built without
+  # ENABLE_LINKER_BUILD_ID=ON).
+  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,--build-id=sha1")
+  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,--build-id=sha1")
+  set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -Wl,--build-id")
+  set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -Wl,--build-id")
+
+  # _FILE_OFFSET_BITS=64 should not be set on Android in order to maintain
+  # the behavior of the Android NDK from earlier versions.
+  # See https://android-developers.googleblog.com/2017/09/introducing-android-native-development.html
+  if (NOT ANDROID)
+    add_definitions(-D_FILE_OFFSET_BITS=64)
+    add_definitions(-D_LARGEFILE_SOURCE)
+    add_definitions(-D_LARGEFILE64_SOURCE)
+  endif()
+
+
+  # unwind-tables
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -funwind-tables")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -funwind-tables")
+endif()
+
+# Linux/Android/Fuchsia common flags setup.
+# ---------------------------------
+if ((UNIX AND NOT APPLE) OR ANDROID)
+  # Enable position-independent code globally. This is needed because
+  # some library targets are OBJECT libraries.
+  set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+
+  # Use pipes for communicating between sub-processes. Faster.
+  # (This flag doesn't do anything with Clang.)
+  if (NOT COMPILER_CLANG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pipe")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pipe")
+  endif()
+
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,noexecstack -Wl,-z,relro")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,noexecstack -Wl,-z,relro")
+
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,now")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,now")
+endif()
+
+# Linux-specific compiler flags setup.
+# ------------------------------------
+if ((UNIX AND NOT APPLE) AND (LINKER_LLD OR USE_LLD))
+  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+    # Reduce the page size from 65536 in order to reduce binary size slightly
+    # by shrinking the alignment gap between segments. This also causes all
+    # segments to be mapped adjacently, which breakpad relies on.
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,max-page-size=4096")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,max-page-size=4096")
+  endif()
+elseif (USE_GOLD)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=gold")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=gold")
+  if (NOT ANDROID)
+    # On Android, this isn't needed.  gcc in the NDK knows to look next to
+    # it with -fuse-ld=gold, and clang gets a --gcc-toolchain flag passed
+    # above.
+
+    # Experimentation found that using four linking threads
+    # saved ~20% of link time.
+    # https://groups.google.com/a/chromium.org/group/chromium-dev/browse_thread/thread/281527606915bb36
+    # Only apply this to the target linker, since the host
+    # linker might not be gold, but isn't used much anyway.
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--threads -Wl,--thread-count=4")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--threads -Wl,--thread-count=4")
+  endif()
+
+  # TODO(thestig): Make this flag work with GN.
+  #if (!is_official_build && !is_chromeos && !(is_asan || is_lsan || is_tsan || is_msan)) {
+  #  ldflags += [
+  #    "-Wl,--detect-odr-violations",
+  #  ]
+  #}
+endif()
+
+if (USE_ICF AND (NOT APPLE OR COMPILER_CLANG))
+  # Gold doesn't respect section alignment and breaks gcc builds with icf
+  # https://sourceware.org/bugzilla/show_bug.cgi?id=17704
+  # Landed upstream Fri, 21 Oct 2016 - is in 2.28, such as CentOS 7
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--icf=all")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--icf=all")
+endif()
+
+if (UNIX AND NOT APPLE)
+  # Do not use the -pthread ldflag here since it becomes a no-op
+  # when using -nodefaultlibs, which would cause an unused argument
+  # error.  "-lpthread" is added in //build/config:default_libs.
+  set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -pthread")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+endif()
+
+# Clang-specific compiler flags setup.
+# ------------------------------------
+if (COMPILER_CLANG)
+  set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fcolor-diagnostics")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcolor-diagnostics")
+  # Enable -fmerge-all-constants. This used to be the default in clang
+  # for over a decade. It makes clang non-conforming, but is fairly safe
+  # in practice and saves some binary size. We might want to consider
+  # disabling this (https://bugs.llvm.org/show_bug.cgi?id=18538#c13),
+  # but for now it looks like our build might rely on it
+  # (https://crbug.com/829795).
+  set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fmerge-all-constants")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmerge-all-constants")
+endif()
+
+if (LINKER_LLD OR USE_LLD)
+  # TODO(thakis): Make the driver pass --color-diagnostics to the linker
+  # if -fcolor-diagnostics is passed to it, and pass -fcolor-diagnostics
+  # in ldflags instead.
+  if (MSVC)
+    # On Windows, we call the linker directly, instead of calling it through
+    # the driver.
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --color-diagnostics")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --color-diagnostics")
+  else()
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--color-diagnostics")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}  -Wl,--color-diagnostics")
+  endif()
+endif()
+
+# Enable text section splitting only on linux when using lld for now. Other
+# platforms can be added later if needed.
+if ((UNIX AND NOT APPLE) AND USE_LLD)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,keep-text-section-prefix")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,keep-text-section-prefix")
+endif()
+
+if (COMPILER_CLANG)
+  # TODO(hans): Remove this once Clang generates better optimized debug info
+  # by default. https://crbug.com/765793
+  set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -mllvm -instcombine-lower-dbg-declare=0")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mllvm -instcombine-lower-dbg-declare=0")
+
+  # TODO(crbug.com/1235145): Investigate why/if this should be needed.
+  if (MSVC)
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /clang:-ffp-contract=off")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /clang:-ffp-contract=off")
+  else()
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -ffp-contract=off")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffp-contract=off")
+  endif()
+endif()
+
+# GCC-specific compiler flags setup.
+# ------------------------------------
+if (COMPILER_GCC)
+  set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fdiagnostics-color=always")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
+endif()
+
+# C11/C++11 compiler flags setup.
+# --------------------------
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 14)
+
+if (UNIX AND NOT APPLE)
+  # Since we build with -std=c* and not -std=gnu*, _GNU_SOURCE will not be
+  # defined by the compiler.  However, lots of code relies on the
+  # non-standard features that _GNU_SOURCE enables, so define it manually.
+  if (COMPILER_CLANG)
+    add_definitions(-D_GNU_SOURCE)
+  endif()
+endif()
+
+if (COMPILER_CLANG)
+  # C++17 removes trigraph support, but clang still warns that it ignores
+  # them when seeing them.  Don't.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-trigraphs")
+endif()
+
+# Before C++17, an `alignas(N)` type would be N-aligned on the stack,
+# but heap allocation would just return something aligned to whatever the
+# default allocator happens to return. Starting with C++17, operator new
+# called on aligned types with N > __STDCPP_DEFAULT_NEW_ALIGNMENT__ will
+# call a special overload that hands in the desired alignment, and that will
+# honor the alignas even for memory on the heap.
+# However, that requires that operator new overload to exist. At least on
+# macOS and iOS, they are in libc++abi, and system libc++abi has them as of
+# "macOS 10.12, iOS 10.0" (https://reviews.llvm.org/D112921#3128089).
+# However, we do statically link libc++abi, so maybe just explicitly passing
+# -faligned-allocation is enough to make things work.
+# For now, explicitly disable this feature though to keep the C++14 aligned
+# allocation behavior (and do that on all platforms so that we have
+# consistent behavior across platforms), to make the change more incremental.
+if (MSVC)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:alignedNew-")
+else()
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-aligned-new")
+endif()
+
+if (APPLE)
+  add_definitions(-D_LIBCPP_HAS_NO_ALIGNED_ALLOCATION)
+endif()
+
+# Pass flag to LLD so Android builds can allow debuggerd to properly symbolize
+# stack crashes (http://crbug.com/919499).
+if (USE_LLD AND ANDROID)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-rosegment")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-rosegment")
+endif()
+
+# LLD does call-graph-sorted binary layout by default when profile data is
+# present. On Android this increases binary size due to more thinks for long
+# jumps. Turn it off by default and enable selectively for targets where it's
+# beneficial.
+if (USE_LLD)
+  if (MSVC)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /call-graph-profile-sort:no")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /call-graph-profile-sort:no")
+  elseif (NOT APPLE)
+    # TODO(thakis): Once LLD's Mach-O port basically works, implement call
+    # graph profile sorting for it, add an opt-out flag, and pass it here.
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-call-graph-profile-sort")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-call-graph-profile-sort")
+  endif()
+endif()
+
+if (COMPILER_CLANG AND SHOW_INCLUDES)
+  if (MSVC)
+    # TODO(crbug.com/1223741): Goma mixes the -H and /showIncludes output.
+    # assert(!use_goma, "show_includes on Windows is not reliable with goma")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /clang:-H /clang:-fshow-skipped-includes")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /clang:-H /clang:-fshow-skipped-includes")
+  else()
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -H -fshow-skipped-includes")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -H -fshow-skipped-includes")
+  endif()
+endif()
+
+# This flag enforces that member pointer base types are complete. It helps
+# prevent us from running into problems in the Microsoft C++ ABI (see
+# https://crbug.com/847724).
+if (COMPILER_CLANG AND (MSVC OR USE_LIBCXX))
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fcomplete-member-pointers")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcomplete-member-pointers")
+endif()
 
 if (MSVC)
   option(ALLOW_XP "Build with Windows XP support." OFF)
@@ -271,6 +694,10 @@ if (MSVC)
   add_definitions(-DWINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP)
 
   if (ALLOW_XP)
+    if (USE_LIBCXX)
+      message(WARNING "Windows XP mode doesn't support libc++, disabling...")
+      set(USE_LIBCXX OFF)
+    endif()
     add_definitions(-D_USING_V110_SDK71_)
     add_definitions(-D_WIN32_WINNT=0x0501)
     add_definitions(-DWINVER=0x0501)
@@ -313,6 +740,22 @@ if (MSVC)
 endif()
 
 # *****************************************************************************************
+#           Libc++ Library
+# *****************************************************************************************
+if (USE_LIBCXX)
+  add_subdirectory(third_party/libc++)
+  include_directories(${libcxx_PUBLIC_INCLUDES})
+  # fix cmake check
+  set(CMAKE_REQUIRED_INCLUDES
+       ${libcxx_PUBLIC_INCLUDES}
+       ${CMAKE_REQUIRED_INCLUDES})
+  foreach(Definition ${libcxx_PUBLIC_DEFINITIONS})
+    add_definitions(-D${Definition})
+  endforeach()
+  link_libraries(cxx ${libcxx_PUBLIC_LIBRARIES})
+endif()
+
+# *****************************************************************************************
 #           Third Party Libraries
 # *****************************************************************************************
 
@@ -339,46 +782,43 @@ if (HAVE_FLOCK)
 endif()
 
 if (MSVC)
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} WS2_32)
+  set(SYSTEM_LIBS ${SYSTEM_LIBS} WS2_32)
 
-    if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "static")
-      # replace /MD with /MT
-      set(CompilerFlags
-        CMAKE_CXX_FLAGS
-        CMAKE_CXX_FLAGS_DEBUG
-        CMAKE_CXX_FLAGS_MINSIZEREL
-        CMAKE_CXX_FLAGS_RELEASE
-        CMAKE_CXX_FLAGS_RELWITHDEBINFO
-        CMAKE_C_FLAGS
-        CMAKE_C_FLAGS_DEBUG
-        CMAKE_C_FLAGS_RELEASE
-        CMAKE_C_FLAGS_MINSIZEREL
-        CMAKE_C_FLAGS_RELEASE
-        CMAKE_C_FLAGS_RELWITHDEBINFO
-        )
-      foreach(CompilerFlag ${CompilerFlags})
-        string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
-      endforeach()
-      foreach(CompilerFlag ${CompilerFlags})
-        string(REPLACE "/MDd" "/MTd" ${CompilerFlag} "${${CompilerFlag}}")
-      endforeach()
-    endif()
+  if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "static")
+    # replace /MD with /MT
+    set(CompilerFlags
+      CMAKE_CXX_FLAGS
+      CMAKE_CXX_FLAGS_DEBUG
+      CMAKE_CXX_FLAGS_MINSIZEREL
+      CMAKE_CXX_FLAGS_RELEASE
+      CMAKE_CXX_FLAGS_RELWITHDEBINFO
+      CMAKE_C_FLAGS
+      CMAKE_C_FLAGS_DEBUG
+      CMAKE_C_FLAGS_RELEASE
+      CMAKE_C_FLAGS_MINSIZEREL
+      CMAKE_C_FLAGS_RELEASE
+      CMAKE_C_FLAGS_RELWITHDEBINFO
+      )
+    foreach(CompilerFlag ${CompilerFlags})
+      string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
+    endforeach()
+    foreach(CompilerFlag ${CompilerFlags})
+      string(REPLACE "/MDd" "/MTd" ${CompilerFlag} "${${CompilerFlag}}")
+    endforeach()
+  endif()
 
-    # disable precompiled head files for clang
-    if (COMPILER_CLANG)
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Y-")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Y-")
-    endif()
-
-    # enforce default delayload implementation
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} delayimp)
+  # disable precompiled head files for clang
+  if (COMPILER_CLANG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Y-")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Y-")
+  endif()
 else()
-    if (CMAKE_FIND_ROOT_PATH)
-        foreach(ROOT_PATH ${CMAKE_FIND_ROOT_PATH})
-            include_directories(${ROOT_PATH}/include SYSTEM)
-            link_directories(${ROOT_PATH}/lib)
-        endforeach()
-    endif()
+  if (CMAKE_FIND_ROOT_PATH)
+    foreach(ROOT_PATH ${CMAKE_FIND_ROOT_PATH})
+      include_directories(${ROOT_PATH}/include SYSTEM)
+      link_directories(${ROOT_PATH}/lib)
+    endforeach()
+  endif()
 
 # simple socketpair test code
 set(SOCKETPAIR_C_CXX_TEST_SOURCE [====[
@@ -389,25 +829,25 @@ int main() {
     socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
 }
 ]====])
-    check_c_source_compiles("${SOCKETPAIR_C_CXX_TEST_SOURCE}"
-        HAVE_SOCKETPAIR)
-    if (HAVE_SOCKETPAIR)
-        add_definitions(-DHAVE_SOCKETPAIR)
-    endif()
+  check_c_source_compiles("${SOCKETPAIR_C_CXX_TEST_SOURCE}"
+      HAVE_SOCKETPAIR)
+  if (HAVE_SOCKETPAIR)
+      add_definitions(-DHAVE_SOCKETPAIR)
+  endif()
 
-    check_include_file(pwd.h HAVE_PWD_INCLUDE)
-    if (HAVE_PWD_INCLUDE)
-      add_definitions(-DHAVE_PWD_H)
-    endif()
+  check_include_file(pwd.h HAVE_PWD_INCLUDE)
+  if (HAVE_PWD_INCLUDE)
+    add_definitions(-DHAVE_PWD_H)
+  endif()
 
-    # linux-syscall-support
-    if (UNIX AND NOT APPLE)
-      include_directories(third_party/lss)
-    endif()
-    if (APPLE)
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -weak_framework AppKit")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -weak_framework AppKit")
-    endif()
+  # linux-syscall-support
+  if (UNIX AND NOT APPLE)
+    include_directories(third_party/lss)
+  endif()
+  if (APPLE)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -weak_framework AppKit")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -weak_framework AppKit")
+  endif()
 endif()
 
 set(SUPPORT_LIBS ${SUPPORT_LIBS} ${SYSTEM_LIBS})
@@ -493,6 +933,12 @@ foreach(source ${BCM_ASM_SOURCES})
   set_source_files_properties(${source} PROPERTIES GENERATED true)
 endforeach()
 
+# fix use_custom_libcxx
+if (MSVC AND USE_LIBCXX)
+  target_compile_definitions(ssl PRIVATE _HAS_EXCEPTIONS=1)
+  target_compile_options(ssl PRIVATE -Wno-macro-redefined)
+endif()
+
 set_target_properties(bssl PROPERTIES EXCLUDE_FROM_ALL TRUE)
 set_target_properties(decrepit PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
@@ -527,6 +973,7 @@ add_subdirectory(third_party/protobuf/cmake)
 include_directories(third_party/protobuf/src SYSTEM)
 # required because it is not bound with libproto/libproto-lite targets
 add_definitions(-DGOOGLE_PROTOBUF_NO_RTTI=1)
+add_definitions(-DPROTOBUF_USE_EXCEPTIONS=0)
 
 # fix protoc's path
 set_target_properties(protoc PROPERTIES
@@ -700,6 +1147,12 @@ if (COMPILER_GCC OR COMPILER_CLANG)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wunguarded-availability")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wunguarded-availability")
   endif()
+
+  # this may happens
+  if (COMPILER_CLANG)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wno-unused-command-line-argument")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wno-unused-command-line-argument")
+  endif()
 elseif (MSVC)
   set(MSVC_DISABLED_WARNINGS_LIST
       "C4061" # enumerator 'identifier' in switch of enum 'enumeration' is not
@@ -791,8 +1244,8 @@ elseif (MSVC)
   string(REPLACE "C" " -w4" MSVC_LEVEL4_WARNINGS_STR
                             ${MSVC_LEVEL4_WARNINGS_LIST})
 
-  set(CMAKE_C_FLAGS   "-utf-8 ${MSVC_DISABLED_WARNINGS_STR} ${MSVC_LEVEL4_WARNINGS_STR}")
-  set(CMAKE_CXX_FLAGS "-utf-8 ${MSVC_DISABLED_WARNINGS_STR} ${MSVC_LEVEL4_WARNINGS_STR}")
+  set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -utf-8 ${MSVC_DISABLED_WARNINGS_STR} ${MSVC_LEVEL4_WARNINGS_STR}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -utf-8 ${MSVC_DISABLED_WARNINGS_STR} ${MSVC_LEVEL4_WARNINGS_STR}")
 
   # Currently, STL is not cleanly compiled with /Wall
   # VS 2017 and higher supports STL-only warning suppressions.
@@ -804,6 +1257,8 @@ elseif (MSVC)
   if (NOT ENABLE_CLANG_TIDY)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -WX")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -WX")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wall -WX")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wall -WX")
   endif()
 endif()
 
@@ -811,445 +1266,194 @@ endif()
 #           Compiler compiler and link flags
 # *****************************************************************************************
 
-# Enable position-independent code globally. This is needed because
-# some library targets are OBJECT libraries.
-set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
-
 if (NOT MSVC)
-    # Since we build with -std=c* and not -std=gnu*, _GNU_SOURCE will not be
-    # defined by the compiler.  However, lots of code relies on the
-    # non-standard features that _GNU_SOURCE enables, so define it manually.
-    if (UNIX AND NOT APPLE)
-      add_definitions(-D_GNU_SOURCE)
-    endif()
+  # Necessary for clone().
+  if (ANDROID)
+    add_definitions(-D__GNU_SOURCE=1)
+  endif()
 
-    # Necessary for clone().
-    if (ANDROID)
-      add_definitions(-D__GNU_SOURCE=1)
-    endif()
+  ## optimization flags
+  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
 
-    #The system libc++ on Mac doesn't have aligned allocation in C++17.
-    if (APPLE)
-      add_definitions(-D_LIBCPP_HAS_NO_ALIGNED_ALLOCATION)
-    endif()
+  ## can gc eliminate any unused functions and data items
+  if (NOT APPLE)
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fdata-sections -ffunction-sections")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdata-sections -ffunction-sections")
+  endif()
 
-    ## optimization flags
-    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
+  ## standard C++ library
+  if(APPLE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+  endif()
 
-    ## can gc eliminate any unused functions and data items
-    if (NOT APPLE)
-        set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fdata-sections -ffunction-sections")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdata-sections -ffunction-sections")
-    endif()
+  if (APPLE)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dead_strip")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-dead_strip")
+  else()
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
+  endif()
 
-    ## standard C++ library
-    if(APPLE)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-    endif()
+  if (APPLE)
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,-no_data_in_code_info -Wl,-no_function_starts")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-no_data_in_code_info -Wl,-no_function_starts")
+  endif()
 
-    if (APPLE)
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dead_strip")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-dead_strip")
-    else()
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
-    endif()
-
-    if (APPLE)
-        set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,-no_data_in_code_info -Wl,-no_function_starts")
-        set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-no_data_in_code_info -Wl,-no_function_starts")
-    endif()
-
-    ## adopt LTO
-    if (APPLE)
-        message(STATUS "Compiling with LTO")
-        set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto -fwhole-program-vtables")
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto -fwhole-program-vtables")
-        set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -flto -fwhole-program-vtables")
-        set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -flto -fwhole-program-vtables")
-    endif()
-
-    ## definitions
-    add_definitions(-D_FILE_OFFSET_BITS=64)
-    add_definitions(-D_LARGEFILE_SOURCE)
-    add_definitions(-D_LARGEFILE64_SOURCE)
-    add_definitions(-D__STDC_CONSTANT_MACROS)
-    add_definitions(-D__STDC_FORMAT_MACROS)
-
-    ## pthread
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -pthread")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
-
-    ## faster sub-process communiation
-    if (NOT COMPILER_CLANG)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pipe")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pipe")
-    endif()
-
-    if (NOT APPLE)
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,noexecstack -Wl,-z,relro")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,noexecstack -Wl,-z,relro")
-    endif()
-
-    ## disable rtti
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
-
-    ## disable exceptions
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
-
-    ## not omit stack frame pointer for release
-    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -fno-omit-frame-pointer")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-omit-frame-pointer")
-
-    ## stack protector
-    if (APPLE)
-        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} -fstack-protector-strong")
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -fstack-protector-strong")
-        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -fstack-protector")
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -fstack-protector")
-    else()
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector")
-    endif()
-
-    ## update build-id
-    if (NOT APPLE)
-        set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,--build-id=sha1")
-        set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,--build-id=sha1")
-    endif()
-
-    ## unwind-tables
-    if (NOT APPLE)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -funwind-tables")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -funwind-tables")
-    endif()
-
-    ## fortify source code. Also, fortified build may fail when optimizations are
-    ## disabled, so only do that for Release build.
+  ## adopt LTO
+  if (APPLE)
     if (${CMAKE_BUILD_TYPE} MATCHES Release)
-        add_definitions(-D_FORTIFY_SOURCE=2)
-    endif()
-
-    # clang defaults to DWARF2 on macOS unless mac_deployment_target is
-    # at least 10.11.
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gdwarf-4")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-4")
-
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g2")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g2")
-
-    # generate a complete set of debugging symbols for your code.
-    # The linker uses this extra debugging information to dead strip the executable.
-    if (APPLE)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gfull")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gfull")
-    endif()
-
-    # gcc generates dwarf-aranges by default on -g1 and -g2. On clang it has
-    # to be manually enabled
-    if (COMPILER_CLANG)
-       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gdwarf-aranges")
-       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-aranges")
-    endif()
-else()
-    ## Disable RTTI
-    set(CompilerFlags
-        CMAKE_CXX_FLAGS
-        CMAKE_CXX_FLAGS_DEBUG
-        CMAKE_CXX_FLAGS_MINSIZEREL
-        CMAKE_CXX_FLAGS_RELEASE
-        CMAKE_CXX_FLAGS_RELWITHDEBINFO
-        CMAKE_C_FLAGS
-        CMAKE_C_FLAGS_DEBUG
-        CMAKE_C_FLAGS_RELEASE
-        CMAKE_C_FLAGS_MINSIZEREL
-        CMAKE_C_FLAGS_RELEASE
-        CMAKE_C_FLAGS_RELWITHDEBINFO
-        )
-    foreach(CompilerFlag ${CompilerFlags})
-      string(REPLACE "/GR" "/GR-" ${CompilerFlag} "${${CompilerFlag}}")
-    endforeach()
-
-    ## Disable RTTI
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
-
-    ## Disable exceptions in the STL
-    add_definitions(-D_HAS_EXCEPTIONS=0)
-
-    ## C4530, The code uses C++ exception handling,
-    ## but /EHsc wasn't included in the compiler options
-    ## https://docs.microsoft.com/en-us/cpp/build/reference/eh-exception-handling-model?view=msvc-170
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
-
-    ## Optimization flags
-    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
-
-    ## Generate debug info, Debug information in the .obj files for clang.
-    ## Produce PDB file for msvc, no edit and continue.
-    if (COMPILER_CLANG)
-      set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Z7")
-      set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Z7")
-    else()
-      set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zi")
-      set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
-    endif()
-
-    # Tell linker to include symbol data
-    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG")
-    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /DEBUG")
-
-    ## Remove unreferenced data
-    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /OPT:REF")
-    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /OPT:REF")
-
-    if (NOT COMPILER_CLANG)
-      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /INCREMENTAL:NO /OPT:ICF")
-      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /INCREMENTAL:NO /OPT:ICF")
-    endif()
-
-    # Tell linker to include FIXUP information symbol data
-    if (NOT COMPILER_CLANG)
-      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /PROFILE")
-      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /PROFILE")
-    endif()
-
-    ## Disable LTCG for static libraries because this setting introduces ABI incompatibility between minor compiler versions
-    if (NOT CMAKE_MSVC_CRT_LINKAGE STREQUAL "static" AND NOT COMPILER_CLANG)
-      set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /GL")
-      set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")
-      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG")
-      set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
-      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
-    endif()
-
-    if (COMPILER_CLANG AND LINKER_LLD)
       message(STATUS "Compiling with LTO")
-      set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto")
-      set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto")
-      # When using lld-link, the -flto option need only be added to the compile step
     endif()
+    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto -fwhole-program-vtables")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto -fwhole-program-vtables")
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -flto -fwhole-program-vtables")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -flto -fwhole-program-vtables")
+  endif()
 
-    # lld's uac manifest is outdated and incompatible with windows xp
-    if (LINKER_LLD)
-      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFESTUAC:NO")
-      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /MANIFESTUAC:NO")
-    endif()
+  ## definitions
+  add_definitions(-D__STDC_CONSTANT_MACROS)
+  add_definitions(-D__STDC_FORMAT_MACROS)
 
-    ## not omit stack frame pointer
-    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Oy-")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Oy-")
+  ## disable rtti
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
 
-    ## supress some warnings
-    if (COMPILER_CLANG)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-microsoft-exception-spec")
-    endif(COMPILER_CLANG)
+  ## disable exceptions
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
 
-    # Most of the dlls are simply not required at startup (or at all, depending
-    # on how the browser is used). The following dlls are interconnected and need to
-    # be delayloaded together to ensure user32 does not load too early or at all,
-    # depending on the process type: user32, gdi32, comctl32, comdlg32, cryptui,
-    # d3d9, dwmapi, imm32, msi, ole32, oleacc, rstrtmgr, shell32, shlwapi, and
-    # uxtheme.
-    set (DELAY_LDFLAGS
-      "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll"
-      "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll"
-      "/DELAYLOAD:api-ms-win-core-winrt-string-l1-1-0.dll"
-      "/DELAYLOAD:comctl32.dll"
-      "/DELAYLOAD:comdlg32.dll"
-      "/DELAYLOAD:credui.dll"
-      "/DELAYLOAD:cryptui.dll"
-      "/DELAYLOAD:d3d11.dll"
-      "/DELAYLOAD:d3d9.dll"
-      "/DELAYLOAD:dwmapi.dll"
-      "/DELAYLOAD:dxgi.dll"
-      "/DELAYLOAD:dxva2.dll"
-      "/DELAYLOAD:esent.dll"
-      "/DELAYLOAD:gdi32.dll"
-      "/DELAYLOAD:hid.dll"
-      "/DELAYLOAD:imagehlp.dll"
-      "/DELAYLOAD:imm32.dll"
-      "/DELAYLOAD:msi.dll"
-      "/DELAYLOAD:netapi32.dll"
-      "/DELAYLOAD:ncrypt.dll"
-      "/DELAYLOAD:ole32.dll"
-      "/DELAYLOAD:oleacc.dll"
-      "/DELAYLOAD:propsys.dll"
-      "/DELAYLOAD:psapi.dll"
-      "/DELAYLOAD:rpcrt4.dll"
-      "/DELAYLOAD:rstrtmgr.dll"
-      "/DELAYLOAD:setupapi.dll"
-      "/DELAYLOAD:shell32.dll"
-      "/DELAYLOAD:shlwapi.dll"
-      "/DELAYLOAD:urlmon.dll"
-      "/DELAYLOAD:user32.dll"
-      "/DELAYLOAD:usp10.dll"
-      "/DELAYLOAD:uxtheme.dll"
-      "/DELAYLOAD:wer.dll"
-      "/DELAYLOAD:wevtapi.dll"
-      "/DELAYLOAD:wininet.dll"
-      "/DELAYLOAD:winusb.dll"
-      "/DELAYLOAD:wsock32.dll"
-      "/DELAYLOAD:wtsapi32.dll"
+  ## not omit stack frame pointer for release
+  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -fno-omit-frame-pointer")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-omit-frame-pointer")
 
-      "/DELAYLOAD:advapi32.dll"
-      "/DELAYLOAD:crypt32.dll"
-      "/DELAYLOAD:dbghelp.dll"
-      "/DELAYLOAD:dhcpcsvc.dll"
-      "/DELAYLOAD:dwrite.dll"
-      "/DELAYLOAD:iphlpapi.dll"
-      "/DELAYLOAD:oleaut32.dll"
-      "/DELAYLOAD:secur32.dll"
-      "/DELAYLOAD:uiautomationcore.dll"
-      "/DELAYLOAD:userenv.dll"
-      "/DELAYLOAD:winhttp.dll"
-      "/DELAYLOAD:winmm.dll"
-      "/DELAYLOAD:winspool.drv"
-      "/DELAYLOAD:wintrust.dll"
-      "/DELAYLOAD:ws2_32.dll"
+  ## fortify source code. Also, fortified build may fail when optimizations are
+  ## disabled, so only do that for Release build.
+  if (${CMAKE_BUILD_TYPE} MATCHES Release)
+    add_definitions(-D_FORTIFY_SOURCE=2)
+  endif()
+
+  # clang defaults to DWARF2 on macOS unless mac_deployment_target is
+  # at least 10.11.
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gdwarf-4")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-4")
+
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g2")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g2")
+
+  # generate a complete set of debugging symbols for your code.
+  # The linker uses this extra debugging information to dead strip the executable.
+  if (APPLE)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gfull")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gfull")
+  endif()
+
+  # gcc generates dwarf-aranges by default on -g1 and -g2. On clang it has
+  # to be manually enabled
+  if (COMPILER_CLANG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gdwarf-aranges")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-aranges")
+  endif()
+else()
+  ## Disable RTTI
+  set(CompilerFlags
+      CMAKE_CXX_FLAGS
+      CMAKE_CXX_FLAGS_DEBUG
+      CMAKE_CXX_FLAGS_MINSIZEREL
+      CMAKE_CXX_FLAGS_RELEASE
+      CMAKE_CXX_FLAGS_RELWITHDEBINFO
+      CMAKE_C_FLAGS
+      CMAKE_C_FLAGS_DEBUG
+      CMAKE_C_FLAGS_RELEASE
+      CMAKE_C_FLAGS_MINSIZEREL
+      CMAKE_C_FLAGS_RELEASE
+      CMAKE_C_FLAGS_RELWITHDEBINFO
       )
-    # TODO implement own delay load helper
-    # https://docs.microsoft.com/en-us/cpp/build/reference/understanding-the-helper-function?view=msvc-170
-    # __pfnDliFailureHook2: Delay load failure hook that generates a crash report. By default a failure
-    # to delay load will trigger an exception handled by the delay load runtime and
-    # this won't generate a crash report.
-    # https://docs.microsoft.com/en-us/cpp/build/reference/failure-hooks?view=vs-2019
-    # __pfnDliNotifyHook2: verify if loaded libraries are allowed
-    # FIXME it seems delay loader's delayimp library isn't be found correctly
-    # when it comes with static CRT build.
-    foreach(DELAY_LDFLAG ${DELAY_LDFLAGS})
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${DELAY_LDFLAG}")
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${DELAY_LDFLAG}")
-    endforeach()
-endif()
+  foreach(CompilerFlag ${CompilerFlags})
+    string(REPLACE "/GR" "/GR-" ${CompilerFlag} "${${CompilerFlag}}")
+  endforeach()
 
-# *****************************************************************************************
-#           Debug facilities
-# *****************************************************************************************
+  ## Disable RTTI
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
 
-if (UNIX AND ${COMPILER_CLANG} AND
-    CMAKE_GENERATOR STREQUAL "Ninja")
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fcolor-diagnostics")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcolor-diagnostics")
-endif()
-
-if (UNIX AND ${COMPILER_GCC} AND
-    CMAKE_GENERATOR STREQUAL "Ninja")
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fdiagnostics-color=always")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
-endif()
-
-if(MSAN)
-  if(ASAN)
-    message(FATAL_ERROR "ASAN and MSAN are mutually exclusive")
+  # Disables exceptions in the STL.
+  # libc++ uses the __has_feature macro to control whether to use exceptions,
+  # so defining this macro is unnecessary. Defining _HAS_EXCEPTIONS to 0 also
+  # breaks libc++ because it depends on MSVC headers that only provide certain
+  # declarations if _HAS_EXCEPTIONS is 1. Those MSVC headers do not use
+  # exceptions, despite being conditional on _HAS_EXCEPTIONS.
+  if (NOT USE_LIBCXX)
+    add_definitions(-D_HAS_EXCEPTIONS=0)
   endif()
 
-  if(NOT COMPILER_CLANG)
-    # experimental
-    # due to the ms document https://docs.microsoft.com/en-us/cpp/sanitizers/asan?view=msvc-160
-    if (MSVC AND NOT MSVC_C_ARCHITECTURE_ID STREQUAL "arm64")
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=memory")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=memory")
-      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /fsanitize=memory")
-    else()
-      message(FATAL_ERROR "Cannot enable MSAN unless using Clang or Vistual Studio 2019 version 16.9")
-    endif()
+  ## C4530, The code uses C++ exception handling,
+  ## but /EHsc wasn't included in the compiler options
+  ## https://docs.microsoft.com/en-us/cpp/build/reference/eh-exception-handling-model?view=msvc-170
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
+
+  ## Optimization flags
+  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
+
+  ## Generate debug info, Debug information in the .obj files for clang.
+  ## Produce PDB file for msvc, no edit and continue.
+  if (COMPILER_CLANG)
+    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Z7")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Z7")
   else()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer")
-    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer")
+    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zi")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
   endif()
-endif()
 
-if(ASAN)
-  if(NOT COMPILER_CLANG)
-    # Current support is limited to x86 and x64 on Windows 10
-    # due to the ms document https://docs.microsoft.com/en-us/cpp/sanitizers/asan?view=msvc-160
-    if (MSVC AND NOT MSVC_C_ARCHITECTURE_ID STREQUAL "arm64")
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=address")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=address")
-      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /fsanitize=address")
-    else()
-      message(FATAL_ERROR "Cannot enable ASAN unless using Clang or Vistual Studio 2019 version 16.9")
+  # Tell linker to include symbol data
+  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG")
+  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /DEBUG")
+
+  ## Remove unreferenced data
+  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /OPT:REF")
+  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /OPT:REF")
+
+  if (NOT COMPILER_CLANG)
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /INCREMENTAL:NO /OPT:ICF")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /INCREMENTAL:NO /OPT:ICF")
+  endif()
+
+  # Tell linker to include FIXUP information symbol data
+  if (NOT COMPILER_CLANG)
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /PROFILE")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /PROFILE")
+  endif()
+
+  ## Disable LTCG for static libraries because this setting introduces ABI incompatibility between minor compiler versions
+  if (NOT CMAKE_MSVC_CRT_LINKAGE STREQUAL "static" AND NOT COMPILER_CLANG)
+    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /GL")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG")
+    set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
+  endif()
+
+  if (COMPILER_CLANG AND LINKER_LLD)
+    if (${CMAKE_BUILD_TYPE} MATCHES Release)
+      message(STATUS "Compiling with LTO")
     endif()
-  else()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer")
-  endif()
-endif()
-
-if(CFI)
-  if(NOT COMPILER_CLANG)
-    message(FATAL_ERROR "Cannot enable CFI unless using Clang")
+    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto -fwhole-program-vtables")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto -fwhole-program-vtables")
+    # When using lld-link, the -flto option need only be added to the compile step
   endif()
 
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=cfi -fno-sanitize-trap=cfi -flto=thin")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=cfi -fno-sanitize-trap=cfi -flto=thin")
-  # We use Chromium's copy of clang, which requires -fuse-ld=lld if building
-  # with -flto. That, in turn, can't handle -ggdb.
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
-  string(REPLACE "-ggdb" "-g" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-  string(REPLACE "-ggdb" "-g" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-endif()
-
-if(TSAN)
-  if(NOT COMPILER_CLANG)
-    # experimental
-    # due to the ms document https://docs.microsoft.com/en-us/cpp/sanitizers/asan?view=msvc-160
-    if (MSVC AND NOT MSVC_C_ARCHITECTURE_ID STREQUAL "arm64")
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=thread")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=thread")
-      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /fsanitize=thread")
-    else()
-      message(FATAL_ERROR "Cannot enable TSAN unless using Clang or Vistual Studio 2019 version 16.9")
-    endif()
-  else()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=thread")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=thread")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=thread")
+  # lld's uac manifest is outdated and incompatible with windows xp
+  if (LINKER_LLD)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFESTUAC:NO")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /MANIFESTUAC:NO")
   endif()
-endif()
 
-if(UBSAN)
-  if(NOT COMPILER_CLANG)
-    # experimental
-    # due to the ms document https://docs.microsoft.com/en-us/cpp/sanitizers/asan?view=msvc-160
-    if (MSVC AND NOT MSVC_C_ARCHITECTURE_ID STREQUAL "arm64")
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=undefined")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=undefined")
-    else()
-      message(FATAL_ERROR "Cannot enable UBSAN unless using Clang or Vistual Studio 2019 version 16.9")
-    endif()
-  else()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=undefined")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined")
-  endif()
-endif()
+  ## not omit stack frame pointer
+  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Oy-")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Oy-")
 
-if(GCOV)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-arcs -ftest-coverage")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
-endif()
-
-if (NOT MSAN AND NOT ASAN AND NOT TSAN AND NOT UBSAN)
-  if (NOT APPLE AND NOT MSVC)
-    if (COMPILER_CLANG)
-      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld -Wl,--icf=all")
-      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld -Wl,--icf=all")
-    elseif ()
-      # Gold doesn't respect section alignment and breaks gcc builds with icf
-      # https://sourceware.org/bugzilla/show_bug.cgi?id=17704
-      # Landed upstream Fri, 21 Oct 2016 - is in 2.28, such as CentOS 7
-      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=gold -Wl,--icf=all")
-      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=gold -Wl,--icf=all")
-    endif()
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,defs -Wl,--as-needed")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,defs -Wl,--as-needed")
-  endif()
+  ## supress some warnings
+  if (COMPILER_CLANG)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-microsoft-exception-spec")
+  endif(COMPILER_CLANG)
 endif()
 
 # *****************************************************************************************
@@ -2228,7 +2432,8 @@ add_library(yass_base OBJECT
     ${files} ${hfiles}
     )
 
-set_target_properties(yass_base PROPERTIES POSITION_INDEPENDENT_CODE True)
+set(SUPPORT_LIBS yass_base ${SUPPORT_LIBS})
+
 target_include_directories(yass_base PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/third_party
   ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -2240,7 +2445,6 @@ if (CLI)
       src/cli/socks5_connection.hpp
       src/cli/socks5_connection_stats.cpp
       src/cli/socks5_connection_stats.hpp
-      $<TARGET_OBJECTS:yass_base>
       )
 
   if (MSVC)
@@ -2264,7 +2468,6 @@ if (SERVER)
       src/server/server.cpp
       src/server/ss_connection.cpp
       src/server/ss_connection.hpp
-      $<TARGET_OBJECTS:yass_base>
       )
 
   if (MSVC)
@@ -2295,7 +2498,6 @@ if (GUI)
         src/cli/socks5_connection.hpp
         src/cli/socks5_connection_stats.cpp
         src/cli/socks5_connection_stats.hpp
-        $<TARGET_OBJECTS:yass_base>
         )
 
     if (MSVC)
@@ -2380,6 +2582,87 @@ if (GUI)
     link_directories(${GUI_LIBRARY_DIRS})
 
     target_link_libraries(${APP_NAME} PUBLIC ${GUI_LIBRARIES} ${SUPPORT_LIBS})
+
+    if (MSVC)
+      # Most of the dlls are simply not required at startup (or at all, depending
+      # on how the browser is used). The following dlls are interconnected and need to
+      # be delayloaded together to ensure user32 does not load too early or at all,
+      # depending on the process type: user32, gdi32, comctl32, comdlg32, cryptui,
+      # d3d9, dwmapi, imm32, msi, ole32, oleacc, rstrtmgr, shell32, shlwapi, and
+      # uxtheme.
+      set (DELAY_LDFLAGS
+        "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll"
+        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll"
+        "/DELAYLOAD:api-ms-win-core-winrt-string-l1-1-0.dll"
+        "/DELAYLOAD:comctl32.dll"
+        "/DELAYLOAD:comdlg32.dll"
+        "/DELAYLOAD:credui.dll"
+        "/DELAYLOAD:cryptui.dll"
+        "/DELAYLOAD:d3d11.dll"
+        "/DELAYLOAD:d3d9.dll"
+        "/DELAYLOAD:dwmapi.dll"
+        "/DELAYLOAD:dxgi.dll"
+        "/DELAYLOAD:dxva2.dll"
+        "/DELAYLOAD:esent.dll"
+        "/DELAYLOAD:gdi32.dll"
+        "/DELAYLOAD:hid.dll"
+        "/DELAYLOAD:imagehlp.dll"
+        "/DELAYLOAD:imm32.dll"
+        "/DELAYLOAD:msi.dll"
+        "/DELAYLOAD:netapi32.dll"
+        "/DELAYLOAD:ncrypt.dll"
+        "/DELAYLOAD:ole32.dll"
+        "/DELAYLOAD:oleacc.dll"
+        "/DELAYLOAD:propsys.dll"
+        "/DELAYLOAD:psapi.dll"
+        "/DELAYLOAD:rpcrt4.dll"
+        "/DELAYLOAD:rstrtmgr.dll"
+        "/DELAYLOAD:setupapi.dll"
+        "/DELAYLOAD:shell32.dll"
+        "/DELAYLOAD:shlwapi.dll"
+        "/DELAYLOAD:urlmon.dll"
+        "/DELAYLOAD:user32.dll"
+        "/DELAYLOAD:usp10.dll"
+        "/DELAYLOAD:uxtheme.dll"
+        "/DELAYLOAD:wer.dll"
+        "/DELAYLOAD:wevtapi.dll"
+        "/DELAYLOAD:wininet.dll"
+        "/DELAYLOAD:winusb.dll"
+        "/DELAYLOAD:wsock32.dll"
+        "/DELAYLOAD:wtsapi32.dll"
+
+        "/DELAYLOAD:advapi32.dll"
+        "/DELAYLOAD:crypt32.dll"
+        "/DELAYLOAD:dbghelp.dll"
+        "/DELAYLOAD:dhcpcsvc.dll"
+        "/DELAYLOAD:dwrite.dll"
+        "/DELAYLOAD:iphlpapi.dll"
+        "/DELAYLOAD:oleaut32.dll"
+        "/DELAYLOAD:secur32.dll"
+        "/DELAYLOAD:uiautomationcore.dll"
+        "/DELAYLOAD:userenv.dll"
+        "/DELAYLOAD:winhttp.dll"
+        "/DELAYLOAD:winmm.dll"
+        "/DELAYLOAD:winspool.drv"
+        "/DELAYLOAD:wintrust.dll"
+        "/DELAYLOAD:ws2_32.dll"
+        )
+      # TODO implement own delay load helper
+      # https://docs.microsoft.com/en-us/cpp/build/reference/understanding-the-helper-function?view=msvc-170
+      # __pfnDliFailureHook2: Delay load failure hook that generates a crash report. By default a failure
+      # to delay load will trigger an exception handled by the delay load runtime and
+      # this won't generate a crash report.
+      # https://docs.microsoft.com/en-us/cpp/build/reference/failure-hooks?view=vs-2019
+      # __pfnDliNotifyHook2: verify if loaded libraries are allowed
+      # FIXME it seems delay loader's delayimp library isn't be found correctly
+      # when it comes with static CRT build.
+      string(REPLACE ";" " " DELAY_LDFLAGS "${DELAY_LDFLAGS}")
+      set_target_properties(${APP_NAME} PROPERTIES
+        LINK_FLAGS "${DELAY_LDFLAGS}")
+
+      # enforce default delayload implementation
+      target_link_libraries(${APP_NAME} PUBLIC delayimp)
+    endif()
 
     if (MSVC)
         set_target_properties(${APP_NAME} PROPERTIES
