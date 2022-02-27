@@ -26,8 +26,6 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 - [Build from Source](#build-from-source)
 - [License](#license)
 - [Running on Windows](#running-on-windows)
-  * [Notes on Windows 10 or above](#notes-on-windows-10-or-above)
-  * [Notes on Vista, Windows 7, Windows 8 and Windows 8.1](#notes-on-vista--windows-7--windows-8-and-windows-81)
   * [Notes on Windows XP](#notes-on-windows-xp)
 - [Running on Ubuntu](#running-on-ubuntu)
 
@@ -91,29 +89,6 @@ below. The required UCRT (Universal C Runtime) is bundled as well.
 Also the packages named "static" are also runnable except you are probably
 running without the updated [Visual C++ Redistributable Package][latest-supported-vc-redist]
 and UCRT (via hotfixes or upgrade etc).
-
-### Notes on Windows 10 or above
-
-[Visual C++ Redistributable Package][latest-supported-vc-redist] is required while
-UCRT is part of Windows 10 Operating System. You should run yass.exe without problems.
-
-Below is a matrix support officially:
-Architecture | Link | Notes
--- | -- | --
-ARM64 | https://aka.ms/vs/17/release/vc_redist.arm64.exe | Permalink for latest supported ARM64 version
-X86 | https://aka.ms/vs/17/release/vc_redist.x86.exe | Permalink for latest supported x86 version
-X64 | https://aka.ms/vs/17/release/vc_redist.x64.exe | Permalink for latest supported x64 version. The X64 redistributable package contains both ARM64 and X64 binaries. This package makes it easy to install required Visual C++ ARM64 binaries when the X64 redistributable is installed on an ARM64 device.
-
-### Notes on Vista, Windows 7, Windows 8 and Windows 8.1
-
-If you run Windows prior to Windows 10, UCRT along with [Visual C++ Redistributable Package][latest-supported-vc-redist] is required:
-Or you can install it via any of Monthly Quality Rollup, [KB3118401][KB3118401], or [KB2999226][KB2999226].
-
-Below is a matrix support officially:
-Architecture | Link | Notes
--- | -- | --
-X86 | https://aka.ms/vs/17/release/vc_redist.x86.exe | Permalink for latest supported x86 version
-X64 | https://aka.ms/vs/17/release/vc_redist.x64.exe | Permalink for latest supported x64 version. The X64 redistributable package contains both ARM64 and X64 binaries. This package makes it easy to install required Visual C++ ARM64 binaries when the X64 redistributable is installed on an ARM64 device.
 
 ### Notes on Windows XP
 
