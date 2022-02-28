@@ -25,27 +25,7 @@ env:
   CACHE_EPOCH: 0
   GOPROXY: direct
 jobs:
-  cache-toolchain-ubuntu:
-    runs-on: ubuntu-18.04
-    strategy:
-      fail-fast: false
-    steps:
-      - uses: actions/checkout@v2
-      - name: Cache clang
-        id: clang-cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/llvm-build/Release+Asserts
-          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - name: "Install dependency: prebuilt clang and clang-tidy binaries"
-        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
-        run: |
-          ./scripts/download-clang-prebuilt-binaries.py
-          rm -f third_party/llvm-build/Release+Asserts/*.tgz
-
   ubuntu-latest:
-    needs: cache-toolchain-ubuntu
     runs-on: ubuntu-18.04
     strategy:
       fail-fast: false
@@ -63,6 +43,7 @@ jobs:
           git fetch --tags --unshallow
           git submodule update --init --depth 1
       - name: Cache clang
+        id: clang-cache
         uses: actions/cache@v2
         with:
           path: |
@@ -77,6 +58,11 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      - name: "Install dependency: prebuilt clang and clang-tidy binaries"
+        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        run: |
+          ./scripts/download-clang-prebuilt-binaries.py
+          rm -f third_party/llvm-build/Release+Asserts/*.tgz
       - name: Change ubuntu mirror
         run: |
           sudo sed -i 's/azure.archive.ubuntu.com/archive.ubuntu.com/g' /etc/apt/sources.list
@@ -98,7 +84,6 @@ jobs:
           ninja -v yass_cli yass_server yass
           cd ..
   ubuntu-latest-clang-tidy:
-    needs: cache-toolchain-ubuntu
     runs-on: ubuntu-18.04
     strategy:
       fail-fast: false
@@ -114,6 +99,7 @@ jobs:
           git fetch --tags --unshallow
           git submodule update --init --depth 1
       - name: Cache clang
+        id: clang-cache
         uses: actions/cache@v2
         with:
           path: |
@@ -128,6 +114,11 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      - name: "Install dependency: prebuilt clang and clang-tidy binaries"
+        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        run: |
+          ./scripts/download-clang-prebuilt-binaries.py
+          rm -f third_party/llvm-build/Release+Asserts/*.tgz
       - name: Change ubuntu mirror
         run: |
           sudo sed -i 's/azure.archive.ubuntu.com/archive.ubuntu.com/g' /etc/apt/sources.list

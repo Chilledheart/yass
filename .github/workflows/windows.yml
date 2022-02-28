@@ -28,58 +28,7 @@ env:
   CACHE_EPOCH: 0
   GOPROXY: direct
 jobs:
-  cache-toolchain-win:
-    runs-on: windows-2019
-    strategy:
-      fail-fast: false
-    steps:
-      - uses: actions/checkout@v2
-      - name: Cache clang, nasm and extracted vcredist files
-        id: clang-cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            third_party/nasm
-            third_party/llvm-build/Release+Asserts
-            third_party/wix311
-            third_party/vcredist
-          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - name: "Install dependency: prebuilt nasm"
-        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
-        run: |
-          if not exist "third_party\nasm\nasm.exe" (
-            mkdir third_party
-            cd third_party
-            curl -O https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win64/nasm-2.15.05-win64.zip
-            "C:\Program Files\7-Zip\7z.exe" x nasm-2.15.05-win64.zip
-            rename nasm-2.15.05 nasm
-            del /s /q nasm-2.15*.zip
-          )
-      - name: "Install dependency: prebuilt clang and clang-tidy binaries"
-        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
-        run: |
-          python -u scripts\download-clang-prebuilt-binaries.py
-          del /s /q third_party\llvm-build\Release+Asserts\*.tgz
-      - name: "Install dependency: wixtoolset 3 and extracted vcredist runtime (v141)"
-        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
-        run: |
-          if not exist "third_party\vcredist\x86\ucrtbase.dll" (
-            mkdir third_party
-            mkdir third_party\vcredist
-            curl -L -O https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311-binaries.zip
-            "C:\Program Files\7-Zip\7z.exe" x "-othird_party\wix311" wix311-binaries.zip
-            curl -L -O https://aka.ms/vs/15/release/vc_redist.x86.exe
-            third_party\wix311\dark.exe "vc_redist.x86.exe" -x tmp
-            "C:\Program Files\7-Zip\7z.exe" x "-othird_party\vcredist\x86" "tmp\AttachedContainer\packages\vcRuntimeMinimum_x86\cab1.cab"
-            python -c "import os; os.chdir('third_party/vcredist/x86'); dlls = os.listdir('.'); [ os.rename(dll, dll.replace('_', '-')) for dll in dlls if dll.startswith('api') ];"
-            curl -L -O https://aka.ms/vs/15/release/vc_redist.x64.exe
-            third_party\wix311\dark.exe "vc_redist.x64.exe" -x tmp
-            "C:\Program Files\7-Zip\7z.exe" x "-othird_party\vcredist\x64" "tmp\AttachedContainer\packages\vcRuntimeMinimum_amd64\cab1.cab"
-            python -c "import os; os.chdir('third_party/vcredist/x64'); dlls = os.listdir('.'); [ os.rename(dll, dll.replace('_', '-')) for dll in dlls if dll.startswith('api') ];"
-            del /s /q vc_redist*.exe wix311*.zip tmp
-          )
   win-release:
-    needs: [cache-toolchain-win]
     runs-on: windows-2019
     strategy:
       fail-fast: false
@@ -97,14 +46,14 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache clang, nasm and extracted vcredist files
+      - name: Cache clang, nasm and wixtoolset 3
+        id: clang-cache
         uses: actions/cache@v2
         with:
           path: |
             third_party/nasm
             third_party/llvm-build/Release+Asserts
             third_party/wix311
-            third_party/vcredist
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
         uses: actions/cache@v2
@@ -115,6 +64,13 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      - name: "Download dependency: clang, nasm and wixtoolset 3"
+        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        run: |
+          scripts\download-toolchain.bat
+          del /s /q nasm-2.15*.zip
+          del /s /q third_party\llvm-build\Release+Asserts\*.tgz
+          del /s /q wix311*.zip
       - name: Build
         run: |
           set VCToolsVersion=14.16
@@ -147,7 +103,6 @@ jobs:
         run: |
           gh release upload ${{ github.event.release.tag_name }} *.msi *.zip
   win-xp-release:
-    needs: [cache-toolchain-win]
     runs-on: windows-2019
     strategy:
       fail-fast: false
@@ -165,14 +120,14 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache clang, nasm and extracted vcredist files
+      - name: Cache clang, nasm and wixtoolset 3
+        id: clang-cache
         uses: actions/cache@v2
         with:
           path: |
             third_party/nasm
             third_party/llvm-build/Release+Asserts
             third_party/wix311
-            third_party/vcredist
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
         uses: actions/cache@v2
@@ -183,6 +138,13 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      - name: "Download dependency: clang, nasm and wixtoolset 3"
+        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        run: |
+          scripts\download-toolchain.bat
+          del /s /q nasm-2.15*.zip
+          del /s /q third_party\llvm-build\Release+Asserts\*.tgz
+          del /s /q wix311*.zip
       - name: Patch libcxx for windows xp
         shell: bash
         run: |
@@ -232,7 +194,6 @@ jobs:
         run: |
           gh release upload ${{ github.event.release.tag_name }} *.msi *.zip
   win-compatible-2019:
-    needs: [cache-toolchain-win]
     runs-on: windows-2019
     strategy:
       fail-fast: false
@@ -250,14 +211,14 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache clang, nasm and extracted vcredist files
+      - name: Cache clang, nasm and wixtoolset 3
+        id: clang-cache
         uses: actions/cache@v2
         with:
           path: |
             third_party/nasm
             third_party/llvm-build/Release+Asserts
             third_party/wix311
-            third_party/vcredist
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
         uses: actions/cache@v2
@@ -268,6 +229,13 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      - name: "Download dependency: clang, nasm and wixtoolset 3"
+        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        run: |
+          scripts\download-toolchain.bat
+          del /s /q nasm-2.15*.zip
+          del /s /q third_party\llvm-build\Release+Asserts\*.tgz
+          del /s /q wix311*.zip
       - name: Build Vistual Studio 2019 (v142)
         run: |
           set VCToolsVersion=14.29
@@ -293,7 +261,6 @@ jobs:
           :SetNewVCToolsVersion
           set VCToolsVersion=
   win-compatible-2022:
-    needs: [cache-toolchain-win]
     runs-on: windows-2022
     strategy:
       fail-fast: false
@@ -311,14 +278,14 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache clang, nasm and extracted vcredist files
+      - name: Cache clang, nasm and wixtoolset 3
+        id: clang-cache
         uses: actions/cache@v2
         with:
           path: |
             third_party/nasm
             third_party/llvm-build/Release+Asserts
             third_party/wix311
-            third_party/vcredist
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
         uses: actions/cache@v2
@@ -329,6 +296,13 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      - name: "Download dependency: clang, nasm and wixtoolset 3"
+        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        run: |
+          scripts\download-toolchain.bat
+          del /s /q nasm-2.15*.zip
+          del /s /q third_party\llvm-build\Release+Asserts\*.tgz
+          del /s /q wix311*.zip
       - name: Build Vistual Studio 2022 (v143)
         run: |
           set VCToolsVersion=
@@ -354,7 +328,6 @@ jobs:
           :SetNewVCToolsVersion
           set VCToolsVersion=
   win-clang-tidy:
-    needs: [cache-toolchain-win]
     runs-on: windows-2019
     strategy:
       fail-fast: false
@@ -373,15 +346,31 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache clang, nasm and extracted vcredist files
+      - name: Cache clang, nasm and wixtoolset 3
+        id: clang-cache
         uses: actions/cache@v2
         with:
           path: |
             third_party/nasm
             third_party/llvm-build/Release+Asserts
             third_party/wix311
-            third_party/vcredist
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+      - name: Cache golang
+        uses: actions/cache@v2
+        with:
+          path: |
+            %LocalAppData%\go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: "Download dependency: clang, nasm and wixtoolset 3"
+        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        run: |
+          scripts\download-toolchain.bat
+          del /s /q nasm-2.15*.zip
+          del /s /q third_party\llvm-build\Release+Asserts\*.tgz
+          del /s /q wix311*.zip
       - name: Build
         run: |
           set VCToolsVersion=14.16
