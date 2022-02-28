@@ -30,6 +30,10 @@ endif()
 
 set(libcxx_ABI_UNSTABLE OFF)
 
+if (MSVC)
+  option(ALLOW_XP "Build with Windows XP support." OFF)
+endif()
+
 ## Setup compiler informations
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
     CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
@@ -238,12 +242,33 @@ if (MSVC)
   # Explicitly set version macros to Windows 7 to prevent libc++ from adding a
   # hard dependency on GetSystemTimePreciseAsFileTime, which was introduced in
   # Windows 8.
-  set(libcxx_DEFINITIONS
-    ${libcxx_DEFINITIONS}
-    "NTDDI_VERSION=NTDDI_WIN7"
-    "_WIN32_WINNT=_WIN32_WINNT_WIN7"
-    "WINVER=_WIN32_WINNT_WIN7"
-  )
+  if (ALLOW_XP)
+    set(libcxx_DEFINITIONS
+      ${libcxx_DEFINITIONS}
+      "NTDDI_VERSION=NTDDI_WINXP"
+      "_WIN32_WINNT=_WIN32_WINNT_WINXP"
+      "WINVER=_WIN32_WINNT_WINXP"
+      "_WIN32_WINNT_LONGHORN=0x0600"
+      "_WIN32_WINNT_WIN7=0x0601"
+      "_WIN32_WINNT_WIN8=0x0602"
+      "_WIN32_WINNT_WINBLUE=0x0603"
+      "_WIN32_WINNT_WINTHRESHOLD=0x0A00"
+      "_WIN32_WINNT_WIN10=0x0A00"
+    )
+  else()
+    set(libcxx_DEFINITIONS
+      ${libcxx_DEFINITIONS}
+      "NTDDI_VERSION=NTDDI_WIN7"
+      "_WIN32_WINNT=_WIN32_WINNT_WIN7"
+      "WINVER=_WIN32_WINNT_WIN7"
+      "_WIN32_WINNT_LONGHORN=0x0600"
+      "_WIN32_WINNT_WIN7=0x0601"
+      "_WIN32_WINNT_WIN8=0x0602"
+      "_WIN32_WINNT_WINBLUE=0x0603"
+      "_WIN32_WINNT_WINTHRESHOLD=0x0A00"
+      "_WIN32_WINNT_WIN10=0x0A00"
+    )
+  endif()
 endif()
 
 set(libcxx_CFLAGS "-fstrict-aliasing")

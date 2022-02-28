@@ -25,9 +25,6 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 - [Client Protocols Supported](#client-protocols-supported)
 - [Build from Source](#build-from-source)
 - [License](#license)
-- [Running on Windows](#running-on-windows)
-  * [Notes on Windows XP](#notes-on-windows-xp)
-- [Running on Ubuntu](#running-on-ubuntu)
 
 <!-- /TOC -->
 
@@ -79,47 +76,6 @@ Take a look at [BUILDING.md] for more instructions.
 
 ## License
 It is licensed with [GPLv2][license-link].
-
-## Running on Windows
-
-TLDR' if you running `yass.exe` ends with missing dlls error, please download
-standalone packages (slightly larger) or install [Visual C++ Redistributable Package][latest-supported-vc-redist]
-below. The required UCRT (Universal C Runtime) is bundled as well.
-
-Also the packages named "static" are also runnable except you are probably
-running without the updated [Visual C++ Redistributable Package][latest-supported-vc-redist]
-and UCRT (via hotfixes or upgrade etc).
-
-### Notes on Windows XP
-
-There is no standalone UCRT with Windows XP, so you should stick to the one
-bundled inside Visual C++ Redistributable Package.
-
-According to [Microsoft][latest-supported-vc-redist], the last version of the Visual C++ Redistributable that
-works on Windows XP shipped in Visual Studio 2019 version 16.7 (file versions starting with 14.27).
-
-You might want to download 14.28:
-Architecture | Link | Notes
--- | -- | --
-ARM64 | [14.28.VC_redist.arm64.exe] | 14.28.29213.0 - last version compatible with Windows XP
-X86 | [14.28.VC_redist.x86.exe] | 14.28.29213.0 - last version compatible with Windows XP
-X64 | [14.28.VC_redist.x64.exe] | 14.28.29213.0 - last version compatible with Windows XP. The X64 redistributable package contains both ARM64 and X64 binaries. This package makes it easy to install required Visual C++ ARM64 binaries when the X64 redistributable is installed on an ARM64 device.
-
-Or more official 14.27:
-Architecture | Link | Notes
--- | -- | --
-ARM64 | [14.27.VC_redist.arm64.exe] | 14.27.29016.0 - last version officially compatible with Windows XP
-X86 | [14.27.VC_redist.x86.exe] | 14.27.29016.0 - last version officially compatible with Windows XP
-X64 | [14.27.VC_redist.x64.exe] | 14.27.29016.0 - last version officially compatible with Windows XP. The X64 redistributable package contains both ARM64 and X64 binaries. This package makes it easy to install required Visual C++ ARM64 binaries when the X64 redistributable is installed on an ARM64 device.
-
-If you are looking for Visual Studio 2015 Runtime instead, here is the latest one (14.10.24516.0):
-Architecture | Link | Notes
--- | -- | --
-X86 | [14.10.VC_redist.x86.exe] | 14.10.24516.0 - last version of vc2015
-X64 | [14.10.VC_redist.x64.exe] | 14.10.24516.0 - last version of vc2015
-
-Reference: AIO Repack for latest Microsoft Visual C++ Redistributable Runtimes, without the original setup bloat payload.
-- VC++ 2019 version 14.28.29213.0 = [VisualCppRedist_AIO v0.35.0][visual-cpp-redist-aio-xp] is the last version compatible with Windows XP
 
 [license-svg]: https://img.shields.io/badge/license-GPL2-lightgrey.svg
 [license-link]: LICENSE

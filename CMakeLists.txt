@@ -704,10 +704,6 @@ if (MSVC)
   add_definitions(-DWINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP)
 
   if (ALLOW_XP)
-    if (USE_LIBCXX)
-      message(WARNING "Windows XP mode doesn't support libc++, disabling...")
-      set(USE_LIBCXX OFF)
-    endif()
     add_definitions(-D_USING_V110_SDK71_)
     add_definitions(-D_WIN32_WINNT=0x0501)
     add_definitions(-DWINVER=0x0501)
@@ -795,7 +791,12 @@ if (HAVE_FLOCK)
 endif()
 
 if (MSVC)
-  set(SYSTEM_LIBS ${SYSTEM_LIBS} WS2_32)
+  # ignore default set of libraries
+  # aka KERNEL32 USER32 GDI32 WINSPOOL SHELL32 OLE32 OLEAUT32 UUID COMDLG32 ADVAPI32
+  set(CMAKE_C_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
+  set(CMAKE_CXX_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
+
+  set(SYSTEM_LIBS ${SYSTEM_LIBS} WS2_32 User32)
 
   if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "static")
     # replace /MD with /MT
@@ -871,7 +872,7 @@ if (MSVC AND GUI)
   set(GUI_DEFINITIONS "")
   set(GUI_C_CXX_FLAGS "")
   set(GUI_LIBRARY_DIRS "")
-  set(GUI_LIBRARIES ShLwApi WinMM Gdi32 ComDlg32 Ole32 ComCtl32 User32 shell32)
+  set(GUI_LIBRARIES ShLwApi WinMM Gdi32 ComDlg32 Ole32 ComCtl32 shell32)
 elseif (APPLE AND GUI)
   find_library(COCOA_LIBRARY Cocoa REQUIRED)
   # Locate Interface Builder Tool, needed to build things like Storyboards outside of Xcode.

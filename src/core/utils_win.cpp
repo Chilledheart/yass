@@ -601,9 +601,17 @@ static void CheckDynamicLibraries() {
   const auto search = L"\\\\?\\" + exe.substr(0, last + 1) + L"*.dll";
 
   WIN32_FIND_DATAW findData{};
+#if _WIN32_WINNT >= 0x0601
+  // FindExInfoBasic:
+  // This value is not supported until Windows Server 2008 R2 and Windows 7.
   HANDLE findHandle = FindFirstFileExW(search.c_str(), FindExInfoBasic,
                                        &findData, FindExSearchNameMatch,
                                        nullptr, 0);
+#else
+  HANDLE findHandle = FindFirstFileExW(search.c_str(), FindExInfoStandard,
+                                       &findData, FindExSearchNameMatch,
+                                       nullptr, 0);
+#endif
   if (findHandle == INVALID_HANDLE_VALUE) {
     DWORD error = GetLastError();
     if (error == ERROR_FILE_NOT_FOUND) {
