@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2022 Chilledheart  */
 
+
+// We use dynamic loading for below functions
+#define GetProductInfo GetProductInfoHidden
+
 #include "core/utils.hpp"
 
 #include "core/compiler_specific.hpp"
@@ -13,6 +17,9 @@
 #if _WIN32_WINNT > 0x0601
 #include <processthreadsapi.h>
 #endif
+
+// use our dynamic version of GetProductInfo
+#undef GetProductInfo
 
 // The most common value returned by ::GetThreadPriority() after background
 // thread mode is enabled on Windows 7.
@@ -345,55 +352,12 @@ bool IsProgramConsole() {
     IsHandleConsole(GetStdHandle(STD_ERROR_HANDLE));
 }
 
-static void GetWindowsVersion(int *major, int *minor, int *build_number,
-                              DWORD *os_type) {
-  OSVERSIONINFOW version_info {};
-  version_info.dwOSVersionInfoSize = sizeof(version_info);
-  // GetVersionEx() is deprecated, and the suggested replacement are
-  // the IsWindows*OrGreater() functions in VersionHelpers.h. We can't
-  // use that because:
-  // - For Windows 10, there's IsWindows10OrGreater(), but nothing more
-  //   granular. We need to be able to detect different Windows 10 releases
-  //   since they sometimes change behavior in ways that matter.
-  // - There is no IsWindows11OrGreater() function yet.
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-  if (!GetVersionExW(&version_info)) {
-    PLOG(WARNING) << "Interal error: GetVersionExW failed";
-  }
-#pragma clang diagnostic pop
-
-  *major = version_info.dwMajorVersion;
-  *minor = version_info.dwMinorVersion;
-  *build_number = version_info.dwBuildNumber;
-  *os_type = 0;
-
-  // FIXME use dynamic load on Kernel32.dll
-  // https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getproductinfo
-#if _WIN32_WINNT >= 0x0601
-  if (!GetProductInfo(version_info.dwMajorVersion, version_info.dwMinorVersion,
-                      0, 0, os_type)) {
-    PLOG(WARNING) << "Interal error: GetProductInfo failed";
-  }
-#endif
-}
-
 #ifndef CP_UTF8
 #define CP_UTF8 65001
 #endif // CP_UTF8
 
-#define MAKE_VER(major, minor, build) \
-    (((major) << 24) | ((minor) << 16) | (build))
-
 bool SetUTF8Locale() {
   bool success = false;
-
-  int major, minor, build_number;
-  DWORD os_type;
-  uint32_t version;
-  DWORD processes[2];
-
-  GetWindowsVersion(&major, &minor, &build_number, &os_type);
 
   bool is_console = IsProgramConsole();
 
@@ -406,7 +370,7 @@ bool SetUTF8Locale() {
     // characters in console, better to leave this code path aside.
 #if 0
     // Use UTF-8 mode on Windows 10 1903 or later.
-    if (MAKE_VER(major, minor, build_number) >= MAKE_VER(10, 0, 18362)) {
+    if (IsWindowsVersionBNOrGreater(10, 0, 18362)) {
       static UINT previous_cp, previous_output_cp;
       previous_cp = GetConsoleCP();
       previous_output_cp = GetConsoleOutputCP();
@@ -432,7 +396,7 @@ bool SetUTF8Locale() {
   // Starting in Windows 10 version 1803 (10.0.17134.0), the Universal C Runtime
   // supports using a UTF-8 code page.
   // https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/setlocale-wsetlocale?view=msvc-170
-  if (MAKE_VER(major, minor, build_number) >= MAKE_VER(10, 0, 17134)) {
+  if (IsWindowsVersionBNOrGreater(10, 0, 17134)) {
     setlocale(LC_ALL, ".UTF8");
   } else if (!is_console) {
     success = false;
@@ -601,17 +565,19 @@ static void CheckDynamicLibraries() {
   const auto search = L"\\\\?\\" + exe.substr(0, last + 1) + L"*.dll";
 
   WIN32_FIND_DATAW findData{};
-#if _WIN32_WINNT >= 0x0601
+
+  FINDEX_INFO_LEVELS fInfoLevel = FindExInfoStandard;
   // FindExInfoBasic:
   // This value is not supported until Windows Server 2008 R2 and Windows 7.
-  HANDLE findHandle = FindFirstFileExW(search.c_str(), FindExInfoBasic,
+  if (IsWindowsVersionBNOrGreater(HIBYTE(_WIN32_WINNT_WIN7),
+                                  LOBYTE(_WIN32_WINNT_WIN7), 0)) {
+    fInfoLevel = FindExInfoBasic;
+  }
+
+  HANDLE findHandle = FindFirstFileExW(search.c_str(), fInfoLevel,
                                        &findData, FindExSearchNameMatch,
                                        nullptr, 0);
-#else
-  HANDLE findHandle = FindFirstFileExW(search.c_str(), FindExInfoStandard,
-                                       &findData, FindExSearchNameMatch,
-                                       nullptr, 0);
-#endif
+
   if (findHandle == INVALID_HANDLE_VALUE) {
     DWORD error = GetLastError();
     if (error == ERROR_FILE_NOT_FOUND) {
@@ -668,6 +634,70 @@ bool EnableSecureDllLoading() {
   }
 
   return true;
+}
+
+static bool GetProductInfo(DWORD dwOSMajorVersion,
+                           DWORD dwOSMinorVersion,
+                           DWORD dwSpMajorVersion,
+                           DWORD dwSpMinorVersion,
+                           PDWORD pdwReturnedProductType) {
+  typedef BOOL(WINAPI * GetProductInfoFunction)(
+      DWORD dwOSMajorVersion, DWORD dwOSMinorVersion, DWORD dwSpMajorVersion,
+      DWORD dwSpMinorVersion, PDWORD pdwReturnedProductType);
+  GetProductInfoFunction get_product_info =
+      reinterpret_cast<GetProductInfoFunction>(::GetProcAddress(
+          ::GetModuleHandleW(L"kernel32.dll"), "GetProductInfoFunction"));
+  if (!get_product_info) {
+    *pdwReturnedProductType = 0;
+    return false;
+  }
+  return get_product_info(dwOSMajorVersion, dwOSMinorVersion, dwSpMajorVersion,
+                          dwSpMinorVersion, pdwReturnedProductType) != 0;
+}
+
+void GetWindowsVersion(int* major,
+                       int* minor,
+                       int* build_number,
+                       int* os_type) {
+  OSVERSIONINFOW version_info {};
+  version_info.dwOSVersionInfoSize = sizeof(version_info);
+  // GetVersionEx() is deprecated, and the suggested replacement are
+  // the IsWindows*OrGreater() functions in VersionHelpers.h. We can't
+  // use that because:
+  // - For Windows 10, there's IsWindows10OrGreater(), but nothing more
+  //   granular. We need to be able to detect different Windows 10 releases
+  //   since they sometimes change behavior in ways that matter.
+  // - There is no IsWindows11OrGreater() function yet.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+  if (!GetVersionExW(&version_info)) {
+    PLOG(WARNING) << "Interal error: GetVersionExW failed";
+  }
+#pragma clang diagnostic pop
+
+  *major = version_info.dwMajorVersion;
+  *minor = version_info.dwMinorVersion;
+  *build_number = version_info.dwBuildNumber;
+  *os_type = 0;
+
+  DWORD dwOsType;
+  // https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getproductinfo
+  if (!GetProductInfo(version_info.dwMajorVersion, version_info.dwMinorVersion,
+                      0, 0, &dwOsType)) {
+    PLOG(WARNING) << "Interal error: GetProductInfo failed";
+  }
+
+  *os_type = dwOsType;
+}
+
+bool IsWindowsVersionBNOrGreater(int wMajorVersion,
+                                 int wMinorVersion,
+                                 int wBuildNumber) {
+  int current_major, current_minor, current_build_number, os_type;
+  GetWindowsVersion(&current_major, &current_minor, &current_build_number,
+                    &os_type);
+  return MAKE_WIN_VER(current_major, current_minor, current_build_number) >=
+         MAKE_WIN_VER(wMajorVersion, wMinorVersion, wBuildNumber);
 }
 
 #endif  // _WIN32
