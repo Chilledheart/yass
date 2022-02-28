@@ -30,6 +30,25 @@ endif()
 
 set(libcxx_ABI_UNSTABLE OFF)
 
+## Setup compiler informations
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
+    CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+  set(COMPILER_CLANG TRUE)
+else()
+  set(COMPILER_CLANG FALSE)
+endif()
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  set(COMPILER_GCC TRUE)
+else()
+  set(COMPILER_GCC FALSE)
+endif()
+
+if (MSVC AND NOT COMPILER_CLANG)
+  set(COMPILER_MSVC TRUE)
+else()
+  set(COMPILER_MSVC FALSE)
+endif()
 
 #The system libc++ on Mac doesn't have aligned allocation in C++17.
 if (APPLE)
@@ -188,9 +207,17 @@ set(libcxx_SOURCES
   trunk/src/typeinfo.cpp
   trunk/src/utility.cpp
   trunk/src/valarray.cpp
-  trunk/src/variant.cpp
   trunk/src/vector.cpp
 )
+
+# FIXME GCC 6 series on Debian Stretch doesn't compile
+# Use clang on it
+if (NOT COMPILER_GCC OR (COMPILER_GCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.0))
+  set(libcxx_SOURCES
+    ${libcxx_SOURCES}
+    trunk/src/variant.cpp
+    )
+endif()
 
 set(libcxx_DEFINITIONS "_LIBCPP_BUILDING_LIBRARY")
 
@@ -219,7 +246,13 @@ if (MSVC)
   )
 endif()
 
-set(libcxx_CFLAGS "-fstrict-aliasing" "-Wno-missing-prototypes")
+set(libcxx_CFLAGS "-fstrict-aliasing")
+
+if (COMPILER_CLANG)
+  set(libcxx_CFLAGS ${libcxx_CFLAGS} "-Wno-missing-prototypes")
+elseif (COMPILER_GCC)
+  set(libcxx_CFLAGS ${libcxx_CFLAGS} "-Wno-missing-declarations")
+endif()
 
 if (MSVC)
   set(libcxx_CFLAGS ${libcxx_CFLAGS}
