@@ -24,7 +24,7 @@
 
         <Property Id='DiskPrompt' Value="Chilledheart's Yass 1.0 Installation [1]" />
         <Property Id='WIXUI_INSTALLDIR' Value='INSTALLDIR' />
-        <Icon Id='ARPIcon' SourceFile='yass.exe' />
+        <Icon Id='ARPIcon' SourceFile='..\src\win32\yass.ico' />
         <Property Id='ARPPRODUCTICON' Value='ARPIcon' />
         <Property Id='DISABLEADVTSHORTCUTS' Value='1' />
 
