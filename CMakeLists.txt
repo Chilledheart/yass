@@ -518,6 +518,10 @@ endif()
 if (COMPILER_CLANG)
   set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fcolor-diagnostics")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcolor-diagnostics")
+  if (MSVC AND ${CMAKE_GENERATOR} MATCHES "Ninja")
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fansi-escape-codes")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fansi-escape-codes")
+  endif()
   # Enable -fmerge-all-constants. This used to be the default in clang
   # for over a decade. It makes clang non-conforming, but is fairly safe
   # in practice and saves some binary size. We might want to consider
