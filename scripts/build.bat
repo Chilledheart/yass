@@ -32,10 +32,10 @@ REM
 set "VSCMD_START_DIR=%CD%"
 set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-set ASM=
 set Platform=x86
 set MSVC_CRT_LINKAGE=static
-set COMPILER_TARGET=i686-pc-windows-msvc
+set CFLAGS=-m32
+set CXXFLAGS=-m32
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
@@ -47,10 +47,10 @@ REM
 set "VSCMD_START_DIR=%CD%"
 set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-set ASM=
 set Platform=x64
 set MSVC_CRT_LINKAGE=static
-set COMPILER_TARGET=x86_64-pc-windows-msvc
+set CFLAGS=-m64
+set CXXFLAGS=-m64
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
@@ -66,10 +66,10 @@ set VCToolsVersion=14.29
 set "VSCMD_START_DIR=%CD%"
 set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-set ASM=
 set Platform=arm
 set MSVC_CRT_LINKAGE=static
-set COMPILER_TARGET=arm-pc-windows-msvc
+set CFLAGS=--target=arm-pc-windows-msvc
+set CXXFLAGS=--target=arm-pc-windows-msvc
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
@@ -87,10 +87,10 @@ set VCToolsVersion=14.29
 set "VSCMD_START_DIR=%CD%"
 set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-set ASM=
 set Platform=arm64
 set MSVC_CRT_LINKAGE=static
-set COMPILER_TARGET=arm64-pc-windows-msvc
+set CFLAGS=--target=arm64-pc-windows-msvc
+set CXXFLAGS=--target=arm64-pc-windows-msvc
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 

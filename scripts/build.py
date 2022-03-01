@@ -9,27 +9,23 @@ from multiprocessing import cpu_count
 from time import sleep
 
 APP_NAME = 'yass'
-# configurable variable are Debug, Release, RelWithDebInfo and MinSizeRel
-DEFAULT_BUILD_TYPE = os.getenv('BUILD_TYPE', 'Release')
-DEFAULT_OSX_MIN = os.getenv('MACOSX_VERSION_MIN', '10.10')
-# enable by default if macports installed
-DEFAULT_ENABLE_OSX_UNIVERSAL_BUILD = os.getenv('ENABLE_OSX_UNIVERSAL_BUILD',
-                                               True)
-DEFAULT_OSX_UNIVERSAL_ARCHS = 'arm64;x86_64'
-DEFAULT_ARCH = os.getenv('VSCMD_ARG_TGT_ARCH', 'x86')
-# configurable variable are static and dynamic
-DEFAULT_MSVC_CRT_LINKAGE = os.getenv('MSVC_CRT_LINKAGE', 'static')
-DEFAULT_ALLOW_XP = os.getenv('ALLOW_XP', False)
-DEFAULT_SIGNING_IDENTITY = os.getenv('CODESIGN_IDENTITY', '-')
-DEFAULT_ENABLE_CLANG_TIDY = os.getenv('ENABLE_CLANG_TIDY', False)
-DEFAULT_CLANG_TIDY_EXECUTABLE = os.getenv('CLANG_TIDY_EXECUTABLE', 'clang-tidy')
-DEFAULT_USE_LIBCXX = os.getenv('USE_LIBCXX', True if not DEFAULT_ALLOW_XP else False)
 
-# clang-tidy complains about parse error
-if DEFAULT_ENABLE_CLANG_TIDY:
-  DEFAULT_ENABLE_OSX_UNIVERSAL_BUILD = False
+cmake_build_type = None
+cmake_build_concurrency = None
 
-num_cpus=cpu_count()
+use_libcxx = None
+
+clang_tidy_mode = None
+clang_tidy_executable_path = None
+
+macosx_version_min = None
+macosx_universal_build = None
+macosx_codesign_identity = None
+
+msvc_tgt_arch = None
+msvc_crt_linkage = None
+msvc_allow_xp = None
+
 
 def copy_file_with_symlinks(src, dst):
   if os.path.lexists(dst):
@@ -77,7 +73,7 @@ def get_7z_path():
 
 def inspect_file(file, files):
   if file.endswith('.dmg'):
-    write_output(['hdiutil', 'imageinfo', archive])
+    write_output(['hdiutil', 'imageinfo', file])
   elif file.endswith('.zip') or  file.endswith('.msi'):
     p7z = get_7z_path()
     write_output([p7z, 'l', file])
@@ -92,6 +88,7 @@ def get_app_name():
   elif platform.system() == 'Darwin':
     return '%s.app' % APP_NAME
   return APP_NAME
+
 
 def get_dependencies_by_otool(path):
   if path.endswith('.app') and os.path.isdir(path):
@@ -150,12 +147,12 @@ def get_dependencies_by_ldd(path):
   return list(set(outputs))
 
 
-def get_dependencies_by_objdump(path):
-  print('todo')
-  return []
-
-
 def _get_win32_search_paths():
+  # no search when using libc++,
+  # TODO test under shaded libc++
+  if use_libcxx:
+    return []
+
   # VCToolsVersion:PlatformToolchainversion:VisualStudioVersion
   #  14.30-14.3?:v143:Visual Studio 2022
   #  14.20-14.29:v142:Visual Studio 2019
@@ -253,15 +250,15 @@ def _get_win32_search_paths():
   ### C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\14.30.30704\x86\Microsoft.VC143.MFC
   ### C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\14.30.30704\x86\Microsoft.VC143.CRT
   search_dirs = [
-    os.path.join(vcredist_dir, 'debug_nonredist', DEFAULT_ARCH,
+    os.path.join(vcredist_dir, 'debug_nonredist', msvc_tgt_arch,
                  'Microsoft.VC%s.DebugMFC' % platform_toolchain_version),
-    os.path.join(vcredist_dir, 'debug_nonredist', DEFAULT_ARCH,
+    os.path.join(vcredist_dir, 'debug_nonredist', msvc_tgt_arch,
                  'Microsoft.VC%s.DebugCRT' % platform_toolchain_version),
-    os.path.join(vcredist_dir, DEFAULT_ARCH,
+    os.path.join(vcredist_dir, msvc_tgt_arch,
                  'Microsoft.VC%s.MFCLOC' % platform_toolchain_version),
-    os.path.join(vcredist_dir, DEFAULT_ARCH,
+    os.path.join(vcredist_dir, msvc_tgt_arch,
                  'Microsoft.VC%s.MFC' % platform_toolchain_version),
-    os.path.join(vcredist_dir, DEFAULT_ARCH,
+    os.path.join(vcredist_dir, msvc_tgt_arch,
                  'Microsoft.VC%s.CRT' % platform_toolchain_version),
   ]
   # remove the trailing slash
@@ -276,11 +273,11 @@ def _get_win32_search_paths():
   ### C:\Program Files (x86)\Windows Kits\10\Redist\10.0.19041.0\ucrt\DLLS\x86
   ### C:\Program Files (x86)\Windows Kits\10\ExtensionSDKs\Microsoft.UniversalCRT.Debug\10.0.19041.0\Redist\Debug\x86
   search_dirs.extend([
-    os.path.join(sdk_base_dir, 'bin', sdk_version, DEFAULT_ARCH, 'ucrt'),
+    os.path.join(sdk_base_dir, 'bin', sdk_version, msvc_tgt_arch, 'ucrt'),
     os.path.join(sdk_base_dir, 'Redist', sdk_version, 'ucrt', 'DLLS',
-                 DEFAULT_ARCH),
+                 msvc_tgt_arch),
     os.path.join(sdk_base_dir, 'ExtensionSDKs', 'Microsoft.UniversalCRT.Debug',
-                 sdk_version, 'Redist', 'Debug', DEFAULT_ARCH),
+                 sdk_version, 'Redist', 'Debug', msvc_tgt_arch),
   ])
 
   ### Fallback search path for XP (v140_xp, v141_xp)
@@ -288,7 +285,7 @@ def _get_win32_search_paths():
   ### $project_root\third_party\vcredist\x86
   if vctools_version >= 14.00 and vctools_version < 14.20:
     search_dirs.extend([
-      os.path.abspath(os.path.join('..', 'third_party', 'vcredist', DEFAULT_ARCH))
+      os.path.abspath(os.path.join('..', 'third_party', 'vcredist', msvc_tgt_arch))
     ])
   return search_dirs
 
@@ -356,10 +353,10 @@ def get_dependencies_by_dumpbin(path, search_dirs):
   unresolved_dlls = []
 
   # handle MSVC Runtime and UCRT
-  if DEFAULT_MSVC_CRT_LINKAGE == 'dynamic' and not DEFAULT_USE_LIBCXX:
+  if msvc_crt_linkage == 'dynamic' and not use_libcxx:
     # this library is not included directly but required
     # ideas comes from https://source.chromium.org/chromium/chromium/src/+/main:build/win/BUILD.gn?q=ucrtbase.dll
-    if DEFAULT_BUILD_TYPE == 'Debug':
+    if cmake_build_type == 'Debug':
       vcrt_suffix = 'd'
     else:
       vcrt_suffix = ''
@@ -381,10 +378,10 @@ def get_dependencies_by_dumpbin(path, search_dirs):
       dlls.append(f'msvcp140{vcrt_suffix}_atomic_wait.dll')
       dlls.append(f'msvcp140{vcrt_suffix}_codecvt_ids.dll')
       # In x64 builds there is an extra C runtime DLL called vcruntime140_1.dll (and it's debug equivalent).
-      if DEFAULT_ARCH == 'x64' or DEFAULT_ARCH == 'arm64':
+      if msvc_tgt_arch == 'x64' or msvc_tgt_arch == 'arm64':
         dlls.append(f'vcruntime140_1{vcrt_suffix}.dll')
 
-    if DEFAULT_ARCH != 'arm64':
+    if msvc_tgt_arch != 'arm64':
       dlls.extend([
         # Universal Windows 10 CRT files
         "api-ms-win-core-console-l1-1-0.dll",
@@ -606,28 +603,30 @@ def _postbuild_patchelf():
     write_output(['patchelf', '--set-rpath', '$ORIGIN/lib', lib], check=True)
 
 
-def find_source_directory():
+def prebuild_find_source_directory(pre_clean):
   print('find source directory...')
   os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
   if not os.path.exists('CMakeLists.txt'):
-    print('Please execute this frome the top dir of the source')
+    print('Please execute this script under the top dir of the source tree')
     sys.exit(-1)
   if os.path.exists('build'):
-    shutil.rmtree('build')
-    sleep(1)
-  os.mkdir('build')
+    if pre_clean:
+      shutil.rmtree('build')
+      sleep(1)
+  if not os.path.exists('build'):
+    os.mkdir('build')
   os.chdir('build')
 
 
-def generate_buildscript(configuration_type):
-  print('generate build scripts...(%s)' % configuration_type)
+def build_stage_generate_build_script():
+  print('generate build scripts...(%s)' % cmake_build_type)
   cmake_args = ['-DGUI=ON', '-DCLI=ON', '-DSERVER=ON']
-  if DEFAULT_ENABLE_CLANG_TIDY:
+  cmake_args.extend(['-DUSE_HOST_TOOLS=on'])
+  if clang_tidy_mode:
     cmake_args.extend(['-DENABLE_CLANG_TIDY=yes',
-                       '-DCLANG_TIDY_EXECUTABLE=%s' % DEFAULT_CLANG_TIDY_EXECUTABLE])
+                       '-DCLANG_TIDY_EXECUTABLE=%s' % clang_tidy_executable_path])
   if platform.system() == 'Windows':
     cmake_args.extend(['-G', 'Ninja'])
-    cmake_args.extend(['-DUSE_HOST_TOOLS=on'])
     cmake_args.extend(['-DCROSS_TOOLCHAIN_FLAGS_NATIVE="-DCMAKE_TOOLCHAIN_FILE=%s\\Native.cmake"' % os.getcwd()])
     native_libs = []
     for native_lib in os.getenv('LIB').split(';'):
@@ -652,61 +651,60 @@ def generate_buildscript(configuration_type):
       f.write(f'set(CMAKE_CXX_COMPILER "{CXX}")\n'.replace('\\', '/'))
       f.write('set(CMAKE_C_COMPILER_TARGET "x86_64-pc-windows-msvc")\n')
       f.write('set(CMAKE_CXX_COMPILER_TARGET "x86_64-pc-windows-msvc")\n')
-    cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])
-    if DEFAULT_USE_LIBCXX:
+    cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % cmake_build_type])
+    if use_libcxx:
       cmake_args.extend(['-DUSE_LIBCXX=on'])
     else:
       cmake_args.extend(['-DUSE_LIBCXX=off'])
-    if DEFAULT_MSVC_CRT_LINKAGE == 'static':
+    if msvc_crt_linkage == 'static':
       cmake_args.extend(['-DCMAKE_MSVC_CRT_LINKAGE=static'])
     else:
       cmake_args.extend(['-DCMAKE_MSVC_CRT_LINKAGE=dynamic'])
-    if DEFAULT_ALLOW_XP:
+    if msvc_allow_xp:
       cmake_args.extend(['-DALLOW_XP=ON'])
 
     # Some compilers are inherently cross compilers, such as Clang and the QNX QCC compiler.
     # The CMAKE_<LANG>_COMPILER_TARGET can be set to pass a value to those supported compilers when compiling.
     # see https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER_TARGET.html
-    if DEFAULT_ARCH == 'x86':
+    if msvc_tgt_arch == 'x86':
       llvm_triple = 'i686-pc-windows-msvc'
-    elif DEFAULT_ARCH == 'x64':
+    elif msvc_tgt_arch == 'x64':
       llvm_triple = 'x86_64-pc-windows-msvc'
-    elif DEFAULT_ARCH == 'arm':
+    elif msvc_tgt_arch == 'arm':
       llvm_triple = 'arm-pc-windows-msvc'
       # lld-link doesn't accept this triple
       cmake_args.extend(['-DCMAKE_LINKER=link'])
-    elif DEFAULT_ARCH == 'arm64':
+    elif msvc_tgt_arch == 'arm64':
       llvm_triple = 'arm64-pc-windows-msvc'
     if 'clang-cl' in os.getenv('CC', '') and llvm_triple:
       cmake_args.extend(['-DCMAKE_C_COMPILER_TARGET=%s' % llvm_triple])
       cmake_args.extend(['-DCMAKE_CXX_COMPILER_TARGET=%s' % llvm_triple])
-    if DEFAULT_ARCH == 'arm' or DEFAULT_ARCH == 'arm64':
+    if msvc_tgt_arch == 'arm' or msvc_tgt_arch == 'arm64':
       cmake_args.extend(['-DCMAKE_ASM_FLAGS=--target=%s' % llvm_triple])
 
   else:
     cmake_args.extend(['-G', 'Ninja'])
-    cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])
+    cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % cmake_build_type])
 
   if platform.system() == 'Darwin':
-    cmake_args.append('-DUSE_HOST_TOOLS=on')
-    cmake_args.append('-DCMAKE_OSX_DEPLOYMENT_TARGET=%s' % DEFAULT_OSX_MIN)
-    if DEFAULT_ENABLE_OSX_UNIVERSAL_BUILD:
-      cmake_args.append('-DCMAKE_OSX_ARCHITECTURES=%s' % DEFAULT_OSX_UNIVERSAL_ARCHS)
+    cmake_args.append('-DCMAKE_OSX_DEPLOYMENT_TARGET=%s' % macosx_version_min)
+    if macosx_universal_build:
+      cmake_args.append('-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64')
 
   command = ['cmake', '..'] + cmake_args
 
   write_output(command, check=True)
 
 
-def execute_buildscript(configuration_type):
-  print('executing build scripts...(%s)' % configuration_type)
+def build_stage_execute_buildscript():
+  print('executing build scripts...(%s)' % cmake_build_type)
 
-  command = ['ninja', 'yass']
+  command = ['ninja', 'yass', '-j', cmake_build_concurrency]
   write_output(command, check=True)
   # FIX ME move to cmake (required by Xcode generator)
   if platform.system() == 'Darwin':
-    if os.path.exists(os.path.join(configuration_type, get_app_name())):
-      rename_by_unlink(os.path.join(configuration_type, get_app_name()), get_app_name())
+    if os.path.exists(os.path.join(cmake_build_type, get_app_name())):
+      rename_by_unlink(os.path.join(cmake_build_type, get_app_name()), get_app_name())
 
 
 def postbuild_copy_libraries():
@@ -757,7 +755,7 @@ def postbuild_codesign():
   # Hardened runtime is available in the Capabilities pane of Xcode 10 or later
   write_output(['codesign', '--timestamp=none',
                 '--preserve-metadata=entitlements', '--options=runtime',
-                '--force', '--deep', '--sign', DEFAULT_SIGNING_IDENTITY,
+                '--force', '--deep', '--sign', macosx_codesign_identity,
                 get_app_name()], check=True)
   write_output(['codesign', '-dv', '--deep', '--strict', '--verbose=4',
                 get_app_name()], check=True)
@@ -1016,9 +1014,9 @@ def postbuild_rename_archive(archives):
     main = APP_NAME
 
     if platform.system() == 'Windows':
-      a = DEFAULT_ARCH
-      l = DEFAULT_MSVC_CRT_LINKAGE
-      xp = 'xp' if DEFAULT_ALLOW_XP else ''
+      a = msvc_tgt_arch
+      l = msvc_crt_linkage
+      xp = 'xp' if msvc_allow_xp else ''
       renamed_archive = f'{main}-win{xp}-release-{a}-{l}-{t}{suffix}{ext}'
     elif platform.system() == 'Darwin':
       a = 'universal'
@@ -1032,27 +1030,143 @@ def postbuild_rename_archive(archives):
     renamed_archives[renamed_archive] = archives[archive]
   return renamed_archives
 
-if __name__ == '__main__':
-  configuration_type = DEFAULT_BUILD_TYPE
+def main():
+  import argparse
 
-  find_source_directory()
-  generate_buildscript(configuration_type)
-  execute_buildscript(configuration_type)
-  if DEFAULT_ENABLE_CLANG_TIDY:
+  global cmake_build_type
+  global cmake_build_concurrency
+
+  global use_libcxx
+
+  global macosx_version_min
+  global macosx_universal_build
+  global macosx_codesign_identity
+
+  global msvc_tgt_arch
+  global msvc_crt_linkage
+  global msvc_allow_xp
+
+  global clang_tidy_mode
+  global clang_tidy_executable_path
+
+  parser = argparse.ArgumentParser()
+
+  group = parser.add_mutually_exclusive_group()
+  group.add_argument('-nc', '--no-pre-clean', help='Don\'t Clean the source tree before building',
+                     action='store_true')
+  group.add_argument('--pre-clean', help='Clean the source tree before building',
+                     default=True, action='store_true')
+
+  parser.add_argument('-np', '--no-packaging', help='Don\'t do packaging',
+                      default=False, action='store_true')
+
+  parser.add_argument('--cmake-build-type', help='Set cmake build configuration',
+                      choices=['Debug', 'Release'],
+                      default=os.getenv('BUILD_TYPE', 'Release'))
+  parser.add_argument('--cmake-build-concurrency', help='Set cmake build concurrency',
+                      type=int, default=os.getenv('NCPUS', cpu_count()))
+
+  parser.add_argument('--use-libcxx', help='Use Custom libc++',
+                      default=os.getenv('USE_LIBCXX', True),
+                      action='store_true')
+
+  parser.add_argument('--macosx-version-min', help='Set Mac OS X deployment target, such as 10.9',
+                      default=os.getenv('MACOSX_VERSION_MIN', '10.10'))
+  parser.add_argument('--macosx-universal-build', help='Mac OS X Universal Build',
+                      default=os.getenv('ENABLE_OSX_UNIVERSAL_BUILD', True),
+                      action='store_true')
+  parser.add_argument('--macosx-codesign-identity', help='Set Mac OS X CodeSign Identity',
+                      default=os.getenv('CODESIGN_IDENTITY', '-'))
+
+  parser.add_argument('--msvc-tgt-arch', help='Set Visual C++ Target Achitecture',
+                      choices=['x86', 'arm', 'x64', 'arm64'],
+                      default=os.getenv('VSCMD_ARG_TGT_ARCH', 'x86'))
+  parser.add_argument('--msvc-crt-linkage', help='Set Visual C++ CRT Linkage',
+                      choices=['dynamic', 'static'],
+                      default=os.getenv('MSVC_CRT_LINKAGE', 'static'))
+  parser.add_argument('--msvc-allow-xp', help='Windows XP Build',
+                      default=os.getenv('MSVC_ALLOW_XP', False),
+                      action='store_true')
+
+  parser.add_argument('--clang-tidy-mode', help='Enable Clang Tidy Build',
+                      default=os.getenv('ENABLE_CLANG_TIDY', False),
+                      action='store_true')
+  parser.add_argument('--clang-tidy-executable-path', help='Path to clang-tidy, only used by Clang Tidy Build',
+                      default=os.getenv('CLANG_TIDY_EXECUTABLE', 'clang-tidy'))
+
+  args = parser.parse_args()
+
+  cmake_build_type = args.cmake_build_type
+  cmake_build_concurrency = str(args.cmake_build_concurrency)
+
+  use_libcxx = args.use_libcxx
+
+  macosx_version_min = args.macosx_version_min
+  macosx_universal_build = args.macosx_universal_build
+  macosx_codesign_identity = args.macosx_codesign_identity
+
+  msvc_tgt_arch = args.msvc_tgt_arch
+  msvc_crt_linkage = args.msvc_crt_linkage
+  msvc_allow_xp = args.msvc_allow_xp
+
+  clang_tidy_mode = args.clang_tidy_mode
+  clang_tidy_executable_path = args.clang_tidy_executable_path
+
+  # clang-tidy complains about parse error
+  if clang_tidy_mode:
+    macosx_universal_build = False
+
+  pre_clean = False if args.no_pre_clean else args.pre_clean
+  skip_packaging = True if args.clang_tidy_mode else args.no_packaging
+
+  prebuild_find_source_directory(pre_clean)
+
+  print('======================================================================')
+
+  build_stage_generate_build_script()
+
+  print('======================================================================')
+
+  build_stage_execute_buildscript()
+
+  print('======================================================================')
+
+  if skip_packaging:
     print('done')
     sys.exit(0)
+
   postbuild_copy_libraries()
+
+  print('======================================================================')
+
   if platform.system() != 'Windows':
     postbuild_fix_rpath()
+    print('======================================================================')
+
   postbuild_strip_binaries()
+
+  print('======================================================================')
+
   if platform.system() == 'Darwin':
     postbuild_codesign()
-  if DEFAULT_ENABLE_OSX_UNIVERSAL_BUILD and platform.system() == 'Darwin':
+    print('======================================================================')
+
+  if macosx_universal_build and platform.system() == 'Darwin':
     postbuild_check_universal_build()
+    print('======================================================================')
+
   archives = postbuild_archive()
+  print('======================================================================')
+
   archives = postbuild_rename_archive(archives)
+  print('======================================================================')
+
   for archive in archives:
     print('------ %s:' % os.path.basename(archive))
     print('======================================================================')
     inspect_file(archive, archives[archive])
+
   print('done')
+
+if __name__ == '__main__':
+  main()

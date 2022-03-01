@@ -164,8 +164,7 @@ jobs:
           set Platform=${{ matrix.arch }}
           set VSCMD_ARG_TGT_ARCH=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
-          set COMPILER_TARGET=i686-pc-windows-msvc
-          set ALLOW_XP=on
+          set MSVC_ALLOW_XP=on
 
           if "${{ matrix.arch }}" == "x86" (call :SetX86CompileTriple)
           if "${{ matrix.arch }}" == "amd64" (call :SetX64CompileTriple)
@@ -180,11 +179,13 @@ jobs:
           goto :eof
 
           :SetX86CompileTriple
-          set COMPILER_TARGET=i686-pc-windows-msvc
+          set CFLAGS=-m32
+          set CXXFLAGS=-m32
           goto :eof
 
           :SetX64CompileTriple
-          set COMPILER_TARGET=x86_64-pc-windows-msvc
+          set CFLAGS=-m64
+          set CXXFLAGS=-m64
           goto :eof
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}

@@ -24,8 +24,9 @@ set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set Platform=x86
 set VSCMD_ARG_TGT_ARCH=x86
 set MSVC_CRT_LINKAGE=static
-set COMPILER_TARGET=i686-pc-windows-msvc
-set ALLOW_XP=on
+set CFLAGS=-m32
+set CXXFLAGS=-m32
+set MSVC_ALLOW_XP=on
 
 call "%~dp0callxp-%Platform%.cmd"
 
