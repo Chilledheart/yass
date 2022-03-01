@@ -1071,9 +1071,32 @@ if (COMPILER_GCC OR COMPILER_CLANG)
   endif()
 
   if (MSVC)
+    # Enable function-level linking.
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gy")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gy")
+    # Preserve previous PDB behavior.
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /FS")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FS")
+    # Some of our files are bigger than the regular limits.
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /bigobj")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
     ## Set Source and Excutable character sets to UTF-8
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
+
+    if (COMPILER_CLANG)
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Zc:twoPhase")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:twoPhase")
+    endif()
+
+    # Work around crbug.com/526851, bug in VS 2015 RTM compiler.
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Zc:sizedDealloc-")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:sizedDealloc-")
+
+    # Do not export inline member functions. This makes component builds
+    # faster. This is similar to -fvisibility-inlines-hidden.
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zc:dllexportInlines-")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zc:dllexportInlines-")
   endif()
 
   # required by asio
@@ -1428,19 +1451,12 @@ else()
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /DEBUG")
 
   ## Remove unreferenced data
-  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /OPT:REF")
-  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /OPT:REF")
-
-  if (NOT COMPILER_CLANG)
-    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /INCREMENTAL:NO /OPT:ICF")
-    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /INCREMENTAL:NO /OPT:ICF")
-  endif()
+  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /OPT:REF /OPT:ICF /INCREMENTAL:NO /FIXED:NO")
+  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /OPT:REF /OPT:ICF /INCREMENTAL:NO /FIXED:NO")
 
   # Tell linker to include FIXUP information symbol data
-  if (NOT COMPILER_CLANG)
-    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /PROFILE")
-    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /PROFILE")
-  endif()
+  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /PROFILE")
+  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /PROFILE")
 
   ## Disable LTCG for static libraries because this setting introduces ABI incompatibility between minor compiler versions
   if (NOT CMAKE_MSVC_CRT_LINKAGE STREQUAL "static" AND NOT COMPILER_CLANG)
