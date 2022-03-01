@@ -264,6 +264,36 @@ std::string YASSWindow::GetTimeout() {
   return gtk_entry_get_text(timeout_);
 }
 
+std::string YASSWindow::GetStatusMessage() {
+  if (mApp->GetState() != YASSApp::STARTED) {
+    return mApp->GetStatus();
+  }
+  uint64_t sync_time = GetMonotonicTime();
+  uint64_t delta_time = sync_time - last_sync_time_;
+  if (delta_time > NS_PER_SECOND / 10) {
+    uint64_t rx_bytes = total_rx_bytes;
+    uint64_t tx_bytes = total_tx_bytes;
+    rx_rate_ = static_cast<double>(rx_bytes - last_rx_bytes_) / delta_time *
+               NS_PER_SECOND;
+    tx_rate_ = static_cast<double>(tx_bytes - last_tx_bytes_) / delta_time *
+               NS_PER_SECOND;
+    last_sync_time_ = sync_time;
+    last_rx_bytes_ = rx_bytes;
+    last_tx_bytes_ = tx_bytes;
+  }
+
+  std::stringstream ss;
+  ss << mApp->GetStatus();
+  ss << " tx rate: ";
+  humanReadableByteCountBin(&ss, rx_rate_);
+  ss << "/s";
+  ss << " rx rate: ";
+  humanReadableByteCountBin(&ss, tx_rate_);
+  ss << "/s";
+
+  return ss.str();
+}
+
 void YASSWindow::Started() {
   UpdateStatusBar();
   gtk_widget_set_sensitive(GTK_WIDGET(server_host_), false);
@@ -344,31 +374,8 @@ void YASSWindow::LoadChanges() {
 }
 
 void YASSWindow::UpdateStatusBar() {
-  uint64_t sync_time = GetMonotonicTime();
-  uint64_t delta_time = sync_time - last_sync_time_;
-  if (delta_time > NS_PER_SECOND / 10) {
-    uint64_t rx_bytes = total_rx_bytes;
-    uint64_t tx_bytes = total_tx_bytes;
-    rx_rate_ = static_cast<double>(rx_bytes - last_rx_bytes_) / delta_time *
-               NS_PER_SECOND;
-    tx_rate_ = static_cast<double>(tx_bytes - last_tx_bytes_) / delta_time *
-               NS_PER_SECOND;
-    last_sync_time_ = sync_time;
-    last_rx_bytes_ = rx_bytes;
-    last_tx_bytes_ = tx_bytes;
-  }
-
-  std::stringstream ss;
-  ss << mApp->GetStatus();
-  ss << " tx rate: ";
-  humanReadableByteCountBin(&ss, rx_rate_);
-  ss << "/s";
-  ss << " rx rate: ";
-  humanReadableByteCountBin(&ss, tx_rate_);
-  ss << "/s";
-
   gtk_statusbar_remove_all(status_bar_, 0);
-  gtk_statusbar_push(status_bar_, 0, ss.str().c_str());
+  gtk_statusbar_push(status_bar_, 0, GetStatusMessage().c_str());
 }
 
 void YASSWindow::OnOption() {

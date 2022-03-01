@@ -285,6 +285,8 @@ int CYassFrame::Create(const wchar_t* className,
   ShowWindow(m_hWnd, nCmdShow);
   UpdateWindow(m_hWnd);
 
+  SetTimer(m_hWnd, IDT_UPDATE_STATUS_BAR, 200, (TIMERPROC)nullptr);
+
   return TRUE;
 }
 
@@ -387,6 +389,15 @@ LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam,
       }
       break;
     }
+    case WM_TIMER:
+      switch (wParam) {
+        case IDT_UPDATE_STATUS_BAR:
+          mFrame->OnUpdateStatusBar();
+          break;
+        default:
+          return DefWindowProc(hWnd, msg, wParam, lParam);
+      }
+      break;
     default:
       return DefWindowProc(hWnd, msg, wParam, lParam);
   }
@@ -424,6 +435,9 @@ std::string CYassFrame::GetTimeout() {
 }
 
 std::wstring CYassFrame::GetStatusMessage() {
+  if (mApp->GetState() != CYassApp::STARTED) {
+    return SysUTF8ToWide(mApp->GetStatus());
+  }
   uint64_t sync_time = GetMonotonicTime();
   uint64_t delta_time = sync_time - last_sync_time_;
   if (delta_time > NS_PER_SECOND / 10) {
@@ -636,12 +650,13 @@ void CYassFrame::UpdateLayoutForDpi(UINT uDpi) {
 }
 
 void CYassFrame::OnClose() {
-  LOG(WARNING) << "Frame is closing ";
+  LOG(WARNING) << "Frame is closing";
+  KillTimer(m_hWnd, IDT_UPDATE_STATUS_BAR);
   DestroyWindow(m_hWnd);
 }
 
 BOOL CYassFrame::OnQueryEndSession() {
-  LOG(WARNING) << "Frame is closing ";
+  LOG(WARNING) << "Frame is closing";
   if (mApp->GetState() == CYassApp::STARTED) {
     OnStopButtonClicked();
   }
@@ -663,12 +678,9 @@ BOOL CYassFrame::OnQueryEndSession() {
 void CYassFrame::OnUpdateStatusBar() {
   std::wstring status_text = GetStatusMessage();
 
-  if (previous_status_bar_text_ != status_text) {
-    previous_status_bar_text_ = status_text;
-    SendMessage(status_bar_, SB_SETTEXT,
-                (WPARAM)0, (LPARAM)status_text.c_str());
-    UpdateWindow(status_bar_);
-  }
+  SendMessage(status_bar_, SB_SETTEXT,
+              (WPARAM)0, (LPARAM)status_text.c_str());
+  UpdateWindow(status_bar_);
 }
 
 LRESULT CYassFrame::OnDPIChanged(WPARAM w, LPARAM l) {

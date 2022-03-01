@@ -58,4 +58,6 @@
 
 #define ID_APP_MSG 128
 
+#define IDT_UPDATE_STATUS_BAR 3000
+
 #endif  // YASS_WIN32_RESOURCE_H

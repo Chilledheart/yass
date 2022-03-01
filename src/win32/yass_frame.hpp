@@ -76,7 +76,6 @@ class CYassFrame {
 
  protected:
   HWND status_bar_;
-  std::wstring previous_status_bar_text_;
 
  protected:
   void UpdateLayoutForDpi();

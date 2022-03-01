@@ -190,26 +190,15 @@ int CYassApp::RunMainLoop() {
 
   // Main message loop:
   // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getmessage
-  // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-peekmessagea
   // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-postthreadmessagea
-  BOOL bDoingBackgroundProcessing = TRUE;
-  while (bDoingBackgroundProcessing) {
-    // Note that PeekMessage always retrieves WM_QUIT messages
-    while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)) {
-      if (msg.message == WM_QUIT) {
-        bDoingBackgroundProcessing = FALSE;
-        continue;
-      }
-      // The hwnd member of the returned MSG structure is NULL.
-      if (msg.hwnd == nullptr)
-        HandleThreadMessage(msg.message, msg.wParam, msg.lParam);
-      if (!TranslateAcceleratorW(msg.hwnd, hAccelTable, &msg)) {
-        TranslateMessage(&msg);
-        DispatchMessageW(&msg);
-      }
+  while (GetMessageW(&msg, NULL, 0, 0)) {
+    // The hwnd member of the returned MSG structure is NULL.
+    if (msg.hwnd == nullptr)
+      HandleThreadMessage(msg.message, msg.wParam, msg.lParam);
+    if (!TranslateAcceleratorW(msg.hwnd, hAccelTable, &msg)) {
+      TranslateMessage(&msg);
+      DispatchMessageW(&msg);
     }
-    while (OnIdle())
-      ;
   }
 
 
@@ -319,7 +308,6 @@ void CYassApp::OnStopped(WPARAM /*w*/, LPARAM /*l*/) {
 }
 
 BOOL CYassApp::OnIdle() {
-  frame_->OnUpdateStatusBar();
   return FALSE;
 }
 

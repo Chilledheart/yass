@@ -31,6 +31,10 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
       << " " << *c;
 }
 
+@interface YassViewController ()
+- (NSString*)getStatusMessage;
+@end
+
 @implementation YassViewController {
   NSStatusItem* status_bar_item_;
   NSTimer* refresh_timer_;
@@ -176,12 +180,11 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   [self.startButton setEnabled:TRUE];
 }
 
-- (void)UpdateStatusBar {
+- (NSString*)getStatusMessage {
   YassAppDelegate* appDelegate =
       (YassAppDelegate*)NSApplication.sharedApplication.delegate;
   if ([appDelegate getState] != STARTED) {
-    status_bar_item_.title = [appDelegate getStatus];
-    return;
+    return [appDelegate getStatus];
   }
   uint64_t sync_time = GetMonotonicTime();
   uint64_t delta_time = sync_time - last_sync_time_;
@@ -206,7 +209,11 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   humanReadableByteCountBin(&ss, tx_rate_);
   ss << "/s";
 
-  status_bar_item_.title = SysUTF8ToNSString(ss.str());
+  return SysUTF8ToNSString(ss.str());
+}
+
+- (void)UpdateStatusBar {
+  status_bar_item_.title = [self getStatusMessage];
 }
 
 - (void)LoadChanges {

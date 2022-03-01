@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
 
 YASSApp::YASSApp()
     : impl_(gtk_application_new(kAppId, G_APPLICATION_FLAGS_NONE)),
-      idle_source_(g_idle_source_new()) {
+      idle_source_(g_timeout_source_new(200)) {
   g_set_application_name(kAppName);
 
   gdk_init(nullptr, nullptr);
@@ -139,9 +139,7 @@ void YASSApp::Exit() {
 }
 
 void YASSApp::OnIdle() {
-  if (GetState() == YASSApp::STARTED) {
-    main_window_->UpdateStatusBar();
-  }
+  main_window_->UpdateStatusBar();
 }
 
 std::string YASSApp::GetStatus() const {

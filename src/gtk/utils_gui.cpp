@@ -243,6 +243,9 @@ bool Dispatcher::ReadCallback() {
 #define GLIB_HAS_STRUCTURE_LOG
 #endif
 
+// FIXME current implementation causes gnome-shell high cpu usage
+#undef GLIB_HAS_STRUCTURE_LOG
+
 #ifdef GLIB_HAS_STRUCTURE_LOG
 // A few definitions of macros that don't generate much code. These are used
 // by LOG() and LOG_IF, etc. Since these are used all over our code, it's
@@ -301,9 +304,15 @@ static GLogWriterOutput GLibLogWriter(GLogLevelFlags log_level,
     GLIB_LOG(ERROR) << func << " " << message;
   } else if (log_level & (G_LOG_LEVEL_WARNING)) {
     GLIB_LOG(WARNING) << func << " " << message;
-  } else if (log_level &
-             (G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG)) {
+  } else if (log_level & (G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO)) {
     GLIB_LOG(INFO) << func << " " << message;
+  } else if (log_level & (G_LOG_LEVEL_DEBUG)) {
+#if DCHECK_IS_ON()
+    GLIB_LOG(INFO) << func << " " << message;
+#else
+    g_free(message);
+    return G_LOG_WRITER_UNHANDLED;
+#endif
   } else {
     NOTREACHED();
     GLIB_LOG(DFATAL) << func << " " << message;
@@ -336,9 +345,12 @@ static void GLibLogHandler(const gchar* log_domain,
     LOG(ERROR) << log_domain << ": " << message;
   } else if (log_level & (G_LOG_LEVEL_WARNING)) {
     LOG(WARNING) << log_domain << ": " << message;
-  } else if (log_level &
-             (G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO | G_LOG_LEVEL_DEBUG)) {
+  } else if (log_level & (G_LOG_LEVEL_MESSAGE | G_LOG_LEVEL_INFO)) {
     LOG(INFO) << log_domain << ": " << message;
+  } else if (log_level & G_LOG_LEVEL_DEBUG) {
+#if DCHECK_IS_ON()
+    LOG(INFO) << log_domain << ": " << message;
+#endif
   } else {
     NOTREACHED();
     LOG(DFATAL) << log_domain << ": " << message;
