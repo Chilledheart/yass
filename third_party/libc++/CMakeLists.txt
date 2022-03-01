@@ -214,8 +214,7 @@ set(libcxx_SOURCES
   trunk/src/vector.cpp
 )
 
-# FIXME GCC 6 series on Debian Stretch doesn't compile
-# Use clang on it
+# GCC 6 series on Debian Stretch doesn't compile
 if (NOT COMPILER_GCC OR (COMPILER_GCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.0))
   set(libcxx_SOURCES
     ${libcxx_SOURCES}

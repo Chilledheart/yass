@@ -26,4 +26,6 @@ $environment_filter = ['^PATH$',
 			'^SHELL$',
 			'^GOPROXY$',
 			'^CMAKE_CROSS_TOOLCHAIN_FLAGS_NATIVE$',
+			'^CC$',
+			'^CXX$',
 			'^DEB_BUILD_SYSTEM_OPTIONS$' ];

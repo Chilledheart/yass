@@ -47,7 +47,7 @@ fi
 
 if [ "x$HOST_ARCH" != "x" ]; then
   if [ "x$SOURCE_ONLY" != "x" ]; then
-    dpkg-buildpackage -d --host-arch $HOST_ARCH -S -uc -us
+    dpkg-buildpackage -d --host-arch $HOST_ARCH --source-option="-i.*" -S -uc -us
     exit 0
   fi
 
@@ -61,7 +61,7 @@ EOF
     --dist "${HOST_DISTRO}-$BUILD_ARCH-${HOST_ARCH}" -j $(nproc) \
     --no-apt-update --no-apt-upgrade --no-apt-distupgrade \
     --no-run-lintian --no-run-piuparts --no-run-autopkgtest \
-    --nolog --verbose \
+    --nolog --verbose --dpkg-source-opts="-i.*" \
     --debbuildopts="-d" --build-dep-resolver=null
 else
   dpkg-buildpackage -b -d -uc -us
