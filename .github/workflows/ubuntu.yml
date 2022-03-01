@@ -258,7 +258,11 @@ jobs:
           echo "DEB_BUILD_PROFILES=nogui ${{ env.DEB_BUILD_PROFILES}}" >> $GITHUB_ENV
           echo "APT_DEB_BUILD_PROFILES=-o Apt::Build-Profiles=nogui" >> $GITHUB_ENV
       - name: Set clang build profile
+        if: ${{ env.HOST_ARCH != 'mipsel' || env.HOST_ARCH != 'mips64el' }}
         run: |
+          # FIXME exclude mipsel and mips64el from clang build
+          # due to bug: MIPS DAG->DAG Pattern Instruction Selection
+          # on third_party/protobuf/src/google/protobuf/generated_message_tctable_lite.cc
           echo "DEB_BUILD_PROFILES=clang ${{ env.DEB_BUILD_PROFILES}}" >> $GITHUB_ENV
       - name: Populate sysroot
         run: |
