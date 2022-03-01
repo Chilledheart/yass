@@ -36,8 +36,7 @@
       (YassViewController*)
           NSApplication.sharedApplication.mainWindow.contentViewController;
   state_ = STOPPED;
-  bool is_hidden = false;
-  if (CheckLoginItemStatus(&is_hidden) && !is_hidden) {
+  if (CheckLoginItemStatus(nullptr)) {
     [viewController OnStart];
   }
 
