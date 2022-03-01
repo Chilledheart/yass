@@ -485,6 +485,7 @@ std::string SysWideToMultiByte(const std::wstring& wide, uint32_t code_page) {
 }
 
 static const wchar_t *kDllWhiteList [] = {
+#ifndef _LIBCPP_MSVCRT
 // msvc runtime, still searched current directory
 // under dll search security mode
   L"MSVCP140.dll",
@@ -537,6 +538,8 @@ static const wchar_t *kDllWhiteList [] = {
   L"api-ms-win-crt-time-l1-1-0.dll",
   L"api-ms-win-crt-utility-l1-1-0.dll",
   L"ucrtbase.dll",
+#endif
+  nullptr,
 };
 
 static void CheckDynamicLibraries() {
