@@ -34,6 +34,13 @@ fi
 # Ubuntu 18.04 | 11.1.6    | 13.5.2
 # Ubuntu 20.04 | 12.10     | 13.5.2
 BUILD_ARCH=${BUILD_ARCH:-$(dpkg-architecture -q DEB_BUILD_ARCH)}
+BUILD_GNU_TYPE=$(dpkg-architecture -q DEB_HOST_GNU_TYPE --host-arch $BUILD_ARCH)
+# required by clang because it is amd64 execuable and running under i386 sysroot
+if [ "x$CC" != "x" -a "x$($CC --version | grep clang)" != "x" ]; then
+  NATIVE_CFLAGS="-target $BUILD_GNU_TYPE"
+  NATIVE_CXXFLAGS="-target $BUILD_GNU_TYPE"
+fi
+
 if [ "x$HOST_ARCH" != "x" ]; then
   DEB_VERSION=$(sudo schroot --chroot "source:$HOST_DISTRO-$BUILD_ARCH-$HOST_ARCH" --user root -- dpkg -s debhelper|grep Version|sed -s 's/^Version: //g')
 else
@@ -54,15 +61,18 @@ if [ "x$HOST_ARCH" != "x" ]; then
   export GOPROXY="${GOPROXY:-direct}"
   export CMAKE_CROSS_TOOLCHAIN_FLAGS_NATIVE="-DCROSS_TOOLCHAIN_FLAGS_NATIVE=-DCMAKE_TOOLCHAIN_FILE=$PWD/../Native.cmake"
 cat > ../Native.cmake << EOF
-set(CMAKE_C_COMPILER ${CC:-gcc})
-set(CMAKE_CXX_COMPILER ${CXX:-g++})
+set(CMAKE_C_COMPILER "${CC:-gcc}")
+set(CMAKE_CXX_COMPILER "${CXX:-g++}")
+set(CMAKE_C_FLAGS "${CFLAGS} ${NATIVE_CFLAGS}")
+set(CMAKE_CXX_FLAGS "${CXXFLAGS} ${NATIVE_CXXFLAGS}")
 EOF
   sbuild --build $BUILD_ARCH --host $HOST_ARCH \
     --dist "${HOST_DISTRO}-$BUILD_ARCH-${HOST_ARCH}" -j $(nproc) \
     --no-apt-update --no-apt-upgrade --no-apt-distupgrade \
     --no-run-lintian --no-run-piuparts --no-run-autopkgtest \
-    --nolog --verbose --dpkg-source-opts="-i.*" \
-    --debbuildopts="-d" --build-dep-resolver=null
+    --nolog --verbose --build-dep-resolver=null \
+    --dpkg-source-opts="-i.*" \
+    --debbuildopts="-d --host-arch $HOST_ARCH"
 else
   dpkg-buildpackage -b -d -uc -us
 fi

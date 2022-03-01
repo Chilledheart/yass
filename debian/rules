@@ -29,12 +29,10 @@ export ASMFLAGS
 override_dh_auto_clean:
 	dh_auto_clean
 
-ifneq ($(filter cross,$(DEB_BUILD_PROFILES)),)
 ifneq ($(filter clang,$(DEB_BUILD_PROFILES)),)
-override_dh_auto_configure: ASMFLAGS += -target ${DEB_HOST_GNU_TYPE}
+override_dh_auto_configure: ASMFLAGS += -target ${DEB_HOST_GNU_TYPE} -ccc-gcc-name ${DEB_HOST_GNU_TYPE}-gcc
 override_dh_auto_configure: CFLAGS += -target ${DEB_HOST_GNU_TYPE} -ccc-gcc-name ${DEB_HOST_GNU_TYPE}-gcc
 override_dh_auto_configure: CXXFLAGS += -target ${DEB_HOST_GNU_TYPE} -ccc-gcc-name ${DEB_HOST_GNU_TYPE}-g++
-endif
 endif
 
 override_dh_auto_configure:
