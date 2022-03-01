@@ -27,14 +27,14 @@ set "WindowsSDKVersion=%Winsdk%\"
 set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\Common7\Tools\VsDevCmd.bat
 
 REM
-REM Generate dynamic x86 binary
+REM Generate static x86 binary
 REM
 set "VSCMD_START_DIR=%CD%"
 set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set ASM=
 set Platform=x86
-set MSVC_CRT_LINKAGE=dynamic
+set MSVC_CRT_LINKAGE=static
 set COMPILER_TARGET=i686-pc-windows-msvc
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
@@ -42,14 +42,14 @@ call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -v
 python.exe -u .\scripts\build.py || exit /b
 
 REM
-REM Generate dynamic x64 binary
+REM Generate static x64 binary
 REM
 set "VSCMD_START_DIR=%CD%"
 set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set ASM=
 set Platform=x64
-set MSVC_CRT_LINKAGE=dynamic
+set MSVC_CRT_LINKAGE=static
 set COMPILER_TARGET=x86_64-pc-windows-msvc
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
@@ -60,7 +60,7 @@ REM skip ARM build
 goto :BuildARM64
 
 REM
-REM Generate dynamic arm binary
+REM Generate static arm binary
 REM
 set VCToolsVersion=14.29
 set "VSCMD_START_DIR=%CD%"
@@ -68,7 +68,7 @@ set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set ASM=
 set Platform=arm
-set MSVC_CRT_LINKAGE=dynamic
+set MSVC_CRT_LINKAGE=static
 set COMPILER_TARGET=arm-pc-windows-msvc
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
@@ -78,7 +78,7 @@ python.exe -u .\scripts\build.py || exit /b
 :BuildARM64
 
 REM
-REM Generate dynamic Arm64 binary
+REM Generate static Arm64 binary
 REM
 REM Use Visual Studio 2019's toolchain for ARM64 target
 
@@ -89,7 +89,7 @@ set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set ASM=
 set Platform=arm64
-set MSVC_CRT_LINKAGE=dynamic
+set MSVC_CRT_LINKAGE=static
 set COMPILER_TARGET=arm64-pc-windows-msvc
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%

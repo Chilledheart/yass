@@ -18,11 +18,12 @@ DEFAULT_ENABLE_OSX_UNIVERSAL_BUILD = os.getenv('ENABLE_OSX_UNIVERSAL_BUILD',
 DEFAULT_OSX_UNIVERSAL_ARCHS = 'arm64;x86_64'
 DEFAULT_ARCH = os.getenv('VSCMD_ARG_TGT_ARCH', 'x86')
 # configurable variable are static and dynamic
-DEFAULT_MSVC_CRT_LINKAGE = os.getenv('MSVC_CRT_LINKAGE', 'dynmaic')
+DEFAULT_MSVC_CRT_LINKAGE = os.getenv('MSVC_CRT_LINKAGE', 'static')
 DEFAULT_ALLOW_XP = os.getenv('ALLOW_XP', False)
 DEFAULT_SIGNING_IDENTITY = os.getenv('CODESIGN_IDENTITY', '-')
 DEFAULT_ENABLE_CLANG_TIDY = os.getenv('ENABLE_CLANG_TIDY', False)
 DEFAULT_CLANG_TIDY_EXECUTABLE = os.getenv('CLANG_TIDY_EXECUTABLE', 'clang-tidy')
+DEFAULT_USE_LIBCXX = os.getenv('USE_LIBCXX', True if not DEFAULT_ALLOW_XP else False)
 
 # clang-tidy complains about parse error
 if DEFAULT_ENABLE_CLANG_TIDY:
@@ -355,7 +356,7 @@ def get_dependencies_by_dumpbin(path, search_dirs):
   unresolved_dlls = []
 
   # handle MSVC Runtime and UCRT
-  if DEFAULT_MSVC_CRT_LINKAGE == 'dynamic':
+  if DEFAULT_MSVC_CRT_LINKAGE == 'dynamic' and not DEFAULT_USE_LIBCXX:
     # this library is not included directly but required
     # ideas comes from https://source.chromium.org/chromium/chromium/src/+/main:build/win/BUILD.gn?q=ucrtbase.dll
     if DEFAULT_BUILD_TYPE == 'Debug':
@@ -652,6 +653,10 @@ def generate_buildscript(configuration_type):
       f.write('set(CMAKE_C_COMPILER_TARGET "x86_64-pc-windows-msvc")\n')
       f.write('set(CMAKE_CXX_COMPILER_TARGET "x86_64-pc-windows-msvc")\n')
     cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % configuration_type])
+    if DEFAULT_USE_LIBCXX:
+      cmake_args.extend(['-DUSE_LIBCXX=on'])
+    else:
+      cmake_args.extend(['-DUSE_LIBCXX=off'])
     if DEFAULT_MSVC_CRT_LINKAGE == 'static':
       cmake_args.extend(['-DCMAKE_MSVC_CRT_LINKAGE=static'])
     else:

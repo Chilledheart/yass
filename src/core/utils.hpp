@@ -87,6 +87,15 @@ std::wstring SysNativeMBToWide(absl::string_view native_mb);
 
 bool EnableSecureDllLoading();
 
+void GetWindowsVersion(int* major, int* minor, int* build_number, int* os_type);
+
+#define MAKE_WIN_VER(major, minor, build_number) \
+    (((major) << 24) | ((minor) << 16) | (build_number))
+
+bool IsWindowsVersionBNOrGreater(int wMajorVersion,
+                                 int wMinorVersion,
+                                 int wBuildNumber);
+
 #endif
 
 // Mac-specific ----------------------------------------------------------------

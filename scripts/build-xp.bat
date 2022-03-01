@@ -31,19 +31,4 @@ call "%~dp0callxp-%Platform%.cmd"
 
 python.exe -u .\scripts\build.py || exit /b
 
-REM
-REM Generate dynamic x86 binary
-REM
-set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-set Platform=x86
-set VSCMD_ARG_TGT_ARCH=x86
-set MSVC_CRT_LINKAGE=dynamic
-set COMPILER_TARGET=i686-pc-windows-msvc
-set ALLOW_XP=on
-
-call "%~dp0callxp-%Platform%.cmd"
-
-python.exe -u .\scripts\build.py || exit /b
-
 goto :eof

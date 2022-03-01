@@ -21,11 +21,6 @@ else
 	CMAKE_OPTIONS += -DGUI=on
 endif
 
-ifneq ($(filter nocxxruntime,$(DEB_BUILD_PROFILES)),)
-	CMAKE_OPTIONS += -DCMAKE_EXE_LINKER_FLAGS="-static-libstdc++ -static-libgcc"
-	CMAKE_OPTIONS += -DCMAKE_SHARED_LINKER_FLAGS="-static-libstdc++ -static-libgcc"
-endif
-
 %:
 	dh $@ --builddirectory=build
 

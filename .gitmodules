@@ -27,3 +27,9 @@
 [submodule "third_party/xxhash"]
 	path = third_party/xxhash
 	url = https://github.com/Cyan4973/xxHash
+[submodule "third_party/libc++abi"]
+	path = third_party/libc++abi/trunk
+	url = https://chromium.googlesource.com/external/github.com/llvm/llvm-project/libcxxabi
+[submodule "third_party/libc++"]
+	path = third_party/libc++/trunk
+	url = https://chromium.googlesource.com/external/github.com/llvm/llvm-project/libcxx

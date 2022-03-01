@@ -10,7 +10,7 @@ RUN yum clean all && \
   yum install -y dnf-plugins-core epel-release && \
   dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo && \
   dnf config-manager --set-enabled powertools && \
-  yum install -y --allowerasing gcc gcc-c++ \
+  yum install -y --allowerasing gcc gcc-c++ libatomic-static \
     git make python39 bash coreutils gh \
     rpm-build rpm-devel rpmlint diffutils patch rpmdevtools \
     cmake ninja-build pkg-config perl golang \

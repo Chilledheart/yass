@@ -110,6 +110,14 @@ bool UnescapeBinaryURLComponentSafe(absl::string_view escaped_text,
                                     bool fail_on_path_separators,
                                     std::string* unescaped_text);
 
+// Returns true if |escaped_text| contains any element of |bytes| in
+// percent-encoded form.
+//
+// For example, if |bytes| is {'%', '/'}, returns true if |escaped_text|
+// contains "%25" or "%2F", but not if it just contains bare '%' or '/'
+// characters.
+bool ContainsEncodedBytes(absl::string_view escaped_text,
+                          const std::set<unsigned char>& bytes);
 }  // namespace net
 
 #endif  // NET_BASE_ESCAPE_H_

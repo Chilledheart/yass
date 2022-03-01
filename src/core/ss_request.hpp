@@ -50,6 +50,7 @@ class request {
   }
 
   uint8_t* data() { return reinterpret_cast<uint8_t*>(&atyp_req_); }
+
   const uint8_t* data() const {
     return reinterpret_cast<const uint8_t*>(&atyp_req_);
   }
@@ -101,20 +102,16 @@ class request {
 
   uint16_t port() const {
     const uint16_t* port =
-        reinterpret_cast<const uint16_t*>(data() + length() - sizeof(uint16_t));
+        reinterpret_cast<const uint16_t*>(&atyp_req_.port_high_byte);
     return ntohs(*port);
   }
 
   uint8_t& port_high_byte() {
-    uint8_t* port =
-        reinterpret_cast<uint8_t*>(data() + length() - sizeof(uint16_t));
-    return *port;
+    return atyp_req_.port_high_byte;
   }
 
   uint8_t& port_low_byte() {
-    uint8_t* port = reinterpret_cast<uint8_t*>(
-        data() + length() - sizeof(uint16_t) + sizeof(uint8_t));
-    return *port;
+    return atyp_req_.port_low_byte;
   }
 
  private:
