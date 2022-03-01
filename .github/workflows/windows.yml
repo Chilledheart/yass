@@ -160,14 +160,10 @@ jobs:
 
           set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set ASM=
           set Platform=${{ matrix.arch }}
           set VSCMD_ARG_TGT_ARCH=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
           set MSVC_ALLOW_XP=on
-
-          if "${{ matrix.arch }}" == "x86" (call :SetX86CompileTriple)
-          if "${{ matrix.arch }}" == "amd64" (call :SetX64CompileTriple)
 
           set "Path=%CD%\third_party\nasm;%Path%"
           set "Path=%CD%\third_party\wix311;%Path%"
@@ -176,16 +172,6 @@ jobs:
 
           python -u .\scripts\build.py || exit /b
 
-          goto :eof
-
-          :SetX86CompileTriple
-          set CFLAGS=-m32
-          set CXXFLAGS=-m32
-          goto :eof
-
-          :SetX64CompileTriple
-          set CFLAGS=-m64
-          set CXXFLAGS=-m64
           goto :eof
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
