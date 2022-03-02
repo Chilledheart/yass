@@ -379,6 +379,14 @@ jobs:
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get ${{ env.APT_DEB_BUILD_PROFILES }} build-dep -y --host-architecture=${{ env.HOST_ARCH }} ../yass
+      - name: Populate depedencie (list upgradable packages)
+        run: |
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            dpkg-query -l || true
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            apt list --upgradeable || true
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get --simulate upgrade || true
       - name: Build deb
         run: |
           export DEB_BUILD_PROFILES
