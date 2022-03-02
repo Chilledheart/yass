@@ -55,6 +55,8 @@ jobs:
             third_party/llvm-build/Release+Asserts
             third_party/wix311
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          restore-keys: |
+            ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
       - name: Cache golang
         uses: actions/cache@v2
         with:
@@ -129,6 +131,8 @@ jobs:
             third_party/llvm-build/Release+Asserts
             third_party/wix311
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          restore-keys: |
+            ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
       - name: Cache golang
         uses: actions/cache@v2
         with:
@@ -207,6 +211,8 @@ jobs:
             third_party/llvm-build/Release+Asserts
             third_party/wix311
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          restore-keys: |
+            ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
       - name: Cache golang
         uses: actions/cache@v2
         with:
@@ -274,6 +280,8 @@ jobs:
             third_party/llvm-build/Release+Asserts
             third_party/wix311
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          restore-keys: |
+            ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
       - name: Cache golang
         uses: actions/cache@v2
         with:
@@ -342,6 +350,8 @@ jobs:
             third_party/llvm-build/Release+Asserts
             third_party/wix311
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          restore-keys: |
+            ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
       - name: Cache golang
         uses: actions/cache@v2
         with:

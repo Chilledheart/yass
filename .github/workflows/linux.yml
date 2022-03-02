@@ -77,7 +77,10 @@ jobs:
         with:
           path: |
             third_party/llvm-build/Release+Asserts
-          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-toolchain-el7-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          restore-keys: |
+            ${{ runner.os }}-toolchain-el7-${{ hashFiles('CLANG_REVISION') }}-
+            ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
       - name: Cache golang
         uses: actions/cache@v2
         with:
@@ -92,10 +95,7 @@ jobs:
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
-      - name: Populate depedencie (list upgradable packages)
-        run: |
-          yum list installed || true
-          yum list updates || true
+          ./scripts/libstdc++-el7.sh
       - name: Build RPM packages
         run: |
           export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang

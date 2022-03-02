@@ -50,17 +50,27 @@ elif [ ${ID} = "fedora" ]; then
   SUFFIX=fc${VERSION_ID}
 fi
 
-mv -f $HOME/rpmbuild/RPMS/${ARCH}/yass-1.0.0-1.${SUFFIX}.${ARCH}.rpm "yass-${DISTRO}.${SUFFIX}.${ARCH}.${TAG}.rpm"
-mv -f $HOME/rpmbuild/RPMS/${ARCH}/yass-debuginfo-1.0.0-1.${SUFFIX}.${ARCH}.rpm "yass-${DISTRO}-debuginfo.${SUFFIX}.${ARCH}.${TAG}.rpm"
-mv -f $HOME/rpmbuild/RPMS/${ARCH}/yass-server-1.0.0-1.${SUFFIX}.${ARCH}.rpm "yass-server-${DISTRO}.${SUFFIX}.${ARCH}.${TAG}.rpm"
-mv -f $HOME/rpmbuild/RPMS/${ARCH}/yass-server-debuginfo-1.0.0-1.${SUFFIX}.${ARCH}.rpm "yass-server-${DISTRO}-debuginfo.${SUFFIX}.${ARCH}.${TAG}.rpm"
-mv -f $HOME/rpmbuild/RPMS/${ARCH}/yass-client-1.0.0-1.${SUFFIX}.${ARCH}.rpm "yass-client-${DISTRO}.${SUFFIX}.${ARCH}.${TAG}.rpm"
-mv -f $HOME/rpmbuild/RPMS/${ARCH}/yass-client-debuginfo-1.0.0-1.${SUFFIX}.${ARCH}.rpm "yass-client-${DISTRO}-debuginfo.${SUFFIX}.${ARCH}.${TAG}.rpm"
+# under centos 7, some commands might fail because it doesn't separate debuginfo
+# for sub package: https://fedoraproject.org/wiki/Changes/SubpackageAndSourceDebuginfo
+mv -f $HOME/rpmbuild/RPMS/${ARCH}/yass-1.0.0-1.${SUFFIX}.${ARCH}.rpm \
+  "yass-${DISTRO}.${SUFFIX}.${ARCH}.${TAG}.rpm"
+mv -f $HOME/rpmbuild/RPMS/${ARCH}/yass-debuginfo-1.0.0-1.${SUFFIX}.${ARCH}.rpm \
+  "yass-${DISTRO}-debuginfo.${SUFFIX}.${ARCH}.${TAG}.rpm" || true
+mv -f $HOME/rpmbuild/RPMS/${ARCH}/yass-server-1.0.0-1.${SUFFIX}.${ARCH}.rpm \
+  "yass-server-${DISTRO}.${SUFFIX}.${ARCH}.${TAG}.rpm"
+mv -f
+$HOME/rpmbuild/RPMS/${ARCH}/yass-server-debuginfo-1.0.0-1.${SUFFIX}.${ARCH}.rpm \
+  "yass-server-${DISTRO}-debuginfo.${SUFFIX}.${ARCH}.${TAG}.rpm" || true
+mv -f $HOME/rpmbuild/RPMS/${ARCH}/yass-client-1.0.0-1.${SUFFIX}.${ARCH}.rpm \
+  "yass-client-${DISTRO}.${SUFFIX}.${ARCH}.${TAG}.rpm"
+mv -f
+$HOME/rpmbuild/RPMS/${ARCH}/yass-client-debuginfo-1.0.0-1.${SUFFIX}.${ARCH}.rpm \
+  "yass-client-${DISTRO}-debuginfo.${SUFFIX}.${ARCH}.${TAG}.rpm" || true
 
 echo "Generated rpms: "
 for rpm in *.rpm; do
   echo
   echo $rpm :
   echo "======================================================================"
-  rpm -qi $rpm
+  rpm -qip $rpm
 done

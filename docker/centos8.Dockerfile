@@ -6,7 +6,6 @@ RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-Linux-* && \
 # Install requirements : update repo and install all requirements
 RUN yum clean all && \
   rm -rf /var/cache/yum && rm -rf /var/cache/dnf && \
-  yum update -y && \
   yum install -y dnf-plugins-core epel-release && \
   dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo && \
   dnf config-manager --set-enabled powertools && \

@@ -6,7 +6,13 @@ Summary: lightweight and secure http/socks4/socks5 proxy
 License: GPLv2
 URL: https://github.com/Chilledheart/yass
 Source0: https://github.com/Chilledheart/yass/archive/refs/tags/%{version}.tar.gz
-BuildRequires: cmake >= 3.12, ninja-build, pkg-config, perl, gcc >= 6.1, gcc-c++ >= 6.1, golang >= 1.4, libatomic-static
+%if 0%{?rhel} >= 8 ||  0%{?fedora}
+BuildRequires: cmake >= 3.12, pkg-config
+%endif
+%if 0%{?rhel} == 7
+BuildRequires: cmake3 >= 3.12, pkgconfig
+%endif
+BuildRequires: ninja-build, perl, gcc, gcc-c++, golang >= 1.4, libatomic-static
 BuildRequires: glib2-devel, gtk3-devel, libatomic-static
 
 %description
@@ -19,7 +25,7 @@ embedded devices and low end boxes.
 %build
 mkdir build
 cd build
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_HOST_TOOLS=on -DGUI=on -DCLI=on -DSERVER=on ..
+cmake3 -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_HOST_TOOLS=on -DGUI=on -DCLI=on -DSERVER=on ..
 ninja yass yass_cli yass_server
 cd ..
 
@@ -28,7 +34,7 @@ cd ..
 
 %install
 cd build
-cmake -DCMAKE_INSTALL_PREFIX=%{buildroot}/usr ..
+cmake3 -DCMAKE_INSTALL_PREFIX=%{buildroot}/usr ..
 rm -rf %{buildroot}
 ninja install
 cd ..
