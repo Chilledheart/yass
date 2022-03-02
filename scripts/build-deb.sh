@@ -79,7 +79,7 @@ fi
 
 # Rename debs
 ARCH=${HOST_ARCH:-$BUILD_ARCH}
-DISTRO=${HOST_DISTRO:-$(lsb_release -sc)}
+DISTRO=$(scripts/get-debian-name.py $HOST_DISTRO)
 
 if [ -f ../yass_1.0.0-1_$ARCH.deb ]; then
   mv -f ../yass_1.0.0-1_${ARCH}.deb "yass-${DISTRO}_${ARCH}.${TAG}.deb"
