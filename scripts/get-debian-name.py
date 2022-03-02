@@ -3,7 +3,7 @@
 import subprocess
 
 def check_string_output(command):
-  subprocess.check_output(command, stderr=subprocess.STDOUT).decode().strip()
+  return subprocess.check_output(command, stderr=subprocess.STDOUT).decode().strip()
 
 # https://wiki.debian.org/DebianReleases
 # https://wiki.ubuntu.com/Releases
@@ -23,18 +23,20 @@ codenames = {
 def main():
   import argparse
   parser = argparse.ArgumentParser()
-  parser.add_argument('codename', help='Debian Distribution Name',
-                     default=check_string_output(['lsb_release', '-sc']))
-  parser.add_argument('--id', help='Debian Distribution ID',
-                     default=check_string_output(['lsb_release', '-si']))
+  parser.add_argument('codename', nargs='?', help='Debian Distribution Name')
+  parser.add_argument('--id', help='Debian Distribution ID')
   args = parser.parse_args()
 
   codename = args.codename
-  id = args.id
+  if not codename:
+    codename = check_string_output(['lsb_release', '-sc'])
 
   if codename in codenames:
     print(codenames[codename])
   else:
+    id = args.id
+    if not id:
+      id = check_string_output(['lsb_release', '-si'])
     print("%s-unknown-%s" % (id, codename))
 
 if __name__ == '__main__':
