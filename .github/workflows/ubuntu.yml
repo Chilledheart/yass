@@ -312,7 +312,7 @@ jobs:
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y fakeroot advancecomp apt-utils file build-essential pkg-config debhelper lockfile-progs optipng pkg-config tzdata ucf
       - name: Populate sysroot (amd64 runtime for clang)
-        if: ${{ env.HOST_ARCH == 'i386' }}
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_ARCH == 'i386' }}
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             cp -f /etc/apt/sources.list /etc/apt/sources.list.amd64
@@ -353,14 +353,14 @@ jobs:
           export DEB_BUILD_PROFILES
           SOURCE_ONLY=1 ./scripts/build-deb.sh
       - name: Populate depedencie (openssl, required by xenial cmake)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_DISTRO == 'stretch' || env.HOST_DISTRO == 'buster' }}
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && (env.HOST_DISTRO == 'stretch' || env.HOST_DISTRO == 'buster') }}
         run: |
           cd /tmp
           curl -O http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.0.0_1.0.2g-1ubuntu4_${{ env.BUILD_ARCH }}.deb
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y $PWD/libssl1.0.0_1.0.2g-1ubuntu4_${{ env.BUILD_ARCH }}.deb
       - name: Populate depedencie (xenial cmake)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_DISTRO == 'xenial' || env.HOST_DISTRO == 'bionic' || env.HOST_DISTRO == 'stretch' || env.HOST_DISTRO == 'buster' }}
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && (env.HOST_DISTRO == 'xenial' || env.HOST_DISTRO == 'bionic' || env.HOST_DISTRO == 'stretch' || env.HOST_DISTRO == 'buster') }}
         run: |
           cd /tmp
           curl -O https://apt.kitware.com/keys/kitware-archive-latest.asc
