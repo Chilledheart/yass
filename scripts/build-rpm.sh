@@ -42,7 +42,7 @@ ARCH=$(rpm -q --queryformat '%{ARCH}' glibc)
 
 source /etc/os-release
 
-DISTRO=${ID}${VERSION_ID}
+DISTRO=${ID}-${VERSION_ID}
 
 if [ ${ID} = "centos" -o ${ID} = "rhel" ]; then
   SUFFIX=el${VERSION_ID}

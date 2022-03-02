@@ -11,7 +11,7 @@ RUN yum clean all && \
   dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo && \
   dnf config-manager --set-enabled powertools && \
   yum install -y --allowerasing gcc gcc-c++ libatomic-static \
-    git make python39 bash coreutils gh \
+    git make python39 bash coreutils gh ncurses-compat-libs \
     rpm-build rpm-devel rpmlint diffutils patch rpmdevtools \
     cmake ninja-build pkg-config perl golang \
     gtk3-devel && \
