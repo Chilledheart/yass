@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -x
 set -e
 
@@ -13,7 +13,7 @@ cp -f scripts/libstdc++-symbols.ver /tmp
 
 pushd /tmp
 
-curl -L -O http://mirror.centos.org/centos/7/sclo/x86_64/rh/Packages/d/devtoolset-11-libstdc++-devel-11.2.1-1.2.el7.x86_64.rpm
+curl -L -O -4 --retry 30  http://mirror.centos.org/centos/7/sclo/x86_64/rh/Packages/d/devtoolset-11-libstdc++-devel-11.2.1-1.2.el7.x86_64.rpm
 
 rpm2cpio devtoolset-11-libstdc++-devel-11.2.1-1.2.el7.x86_64.rpm | cpio -idvm
 
