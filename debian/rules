@@ -22,6 +22,7 @@ else
 endif
 
 export ASMFLAGS
+export PKG_CONFIG
 
 %:
 	dh $@ --builddirectory=build
@@ -34,6 +35,8 @@ override_dh_auto_configure: ASMFLAGS += -target ${DEB_HOST_GNU_TYPE} -ccc-gcc-na
 override_dh_auto_configure: CFLAGS += -target ${DEB_HOST_GNU_TYPE} -ccc-gcc-name ${DEB_HOST_GNU_TYPE}-gcc
 override_dh_auto_configure: CXXFLAGS += -target ${DEB_HOST_GNU_TYPE} -ccc-gcc-name ${DEB_HOST_GNU_TYPE}-g++
 endif
+
+override_dh_auto_configure: PKG_CONFIG = ${DEB_HOST_GNU_TYPE}-pkg-config
 
 override_dh_auto_configure:
 	dh_auto_configure ${DEB_BUILD_SYSTEM_OPTIONS} -- -DCMAKE_BUILD_TYPE=Release -DUSE_HOST_TOOLS=on $(CMAKE_OPTIONS) -DCLI=on -DSERVER=on
