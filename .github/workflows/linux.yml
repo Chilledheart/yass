@@ -76,6 +76,17 @@ jobs:
       - name: Cache clang
         id: clang-cache
         uses: actions/cache@v2
+        if: ${{ env.DISTRO != 'centos7' }}
+        with:
+          path: |
+            third_party/llvm-build/Release+Asserts
+          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          restore-keys: |
+            ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
+      - name: Cache clang (el7)
+        id: clang-cache-el7
+        uses: actions/cache@v2
+        if: ${{ env.DISTRO == 'centos7' }}
         with:
           path: |
             third_party/llvm-build/Release+Asserts
@@ -94,6 +105,11 @@ jobs:
             ${{ runner.os }}-go-docker-
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        run: |
+          ./scripts/download-clang-prebuilt-binaries.py
+          rm -f third_party/llvm-build/Release+Asserts/*.tgz
+      - name: "Install dependency: prebuilt clang and clang-tidy binaries (el7 patch)"
+        if: ${{ steps.clang-cache-el7.outputs.cache-hit != 'true' && env.DISTRO == 'centos7' }}
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
