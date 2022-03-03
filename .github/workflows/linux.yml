@@ -104,7 +104,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-docker-
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
-        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' && env.DISTRO != 'centos7' }}
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
