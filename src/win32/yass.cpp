@@ -13,6 +13,7 @@
 #include <absl/flags/parse.h>
 #include <locale.h>
 
+#include "core/debug.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
@@ -189,18 +190,47 @@ int CYassApp::RunMainLoop() {
   }
 
   // Main message loop:
-  // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getmessage
+  // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-msgwaitformultipleobjectsex
+  // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-peekmessagew
   // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-postthreadmessagea
-  while (GetMessageW(&msg, NULL, 0, 0)) {
-    // The hwnd member of the returned MSG structure is NULL.
-    if (msg.hwnd == nullptr)
-      HandleThreadMessage(msg.message, msg.wParam, msg.lParam);
-    if (!TranslateAcceleratorW(msg.hwnd, hAccelTable, &msg)) {
-      TranslateMessage(&msg);
-      DispatchMessageW(&msg);
-    }
-  }
+  for (;;) {
+    for (;;) {
+      // Wait until a message is available, up to the time needed by the timer
+      // manager to fire the next set of timers.
+      DWORD wait_flags = MWMO_INPUTAVAILABLE;
+      // Tell the optimizer to retain these values to simplify analyzing hangs.
+      Alias(&wait_flags);
+      DWORD result = MsgWaitForMultipleObjectsEx(0, nullptr, INFINITE,
+                                                 QS_ALLINPUT, wait_flags);
 
+      if (result == WAIT_OBJECT_0) {
+        // A WM_* message is available.
+        if (PeekMessage(&msg, nullptr, 0, 0, PM_NOREMOVE) != FALSE)
+          break;
+
+        // We know there are no more messages for this thread because PeekMessage
+        // has returned false. Reset |wait_flags| so that we wait for a *new*
+        // message.
+        wait_flags = 0;
+      }
+
+      DCHECK_NE(WAIT_FAILED, result) << GetLastError();
+    }
+    // ProcessNextWindowsMessage
+    while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE) != FALSE) {
+      if (msg.message == WM_QUIT)
+        break;
+      // The hwnd member of the returned MSG structure is NULL.
+      if (msg.hwnd == nullptr)
+        HandleThreadMessage(msg.message, msg.wParam, msg.lParam);
+      if (!TranslateAcceleratorW(msg.hwnd, hAccelTable, &msg)) {
+        TranslateMessage(&msg);
+        DispatchMessageW(&msg);
+      }
+    }
+    if (msg.message == WM_QUIT)
+      break;
+  }
 
   if (auto ret = ExitInstance()) {
     return ret;

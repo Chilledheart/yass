@@ -85,6 +85,7 @@ class CYassFrame {
   BOOL OnQueryEndSession();
 
   void OnUpdateStatusBar();
+  std::wstring previous_status_message_;
 
  protected:
   LRESULT OnDPIChanged(WPARAM w, LPARAM l);

@@ -676,8 +676,12 @@ BOOL CYassFrame::OnQueryEndSession() {
 
 // https://docs.microsoft.com/en-us/windows/win32/controls/bumper-status-bars-reference-messages
 void CYassFrame::OnUpdateStatusBar() {
+  if (IsIconic(m_hWnd))
+    return;
   std::wstring status_text = GetStatusMessage();
-
+  if (previous_status_message_ == status_text)
+    return;
+  previous_status_message_ = status_text;
   SendMessage(status_bar_, SB_SETTEXT,
               (WPARAM)0, (LPARAM)status_text.c_str());
   UpdateWindow(status_bar_);
