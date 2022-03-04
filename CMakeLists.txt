@@ -447,7 +447,7 @@ if (NOT MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-aranges")
   endif()
 
-  if (COMPILER_CLANG)
+  if (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
     if (APPLE)
       # TODO(https://crbug.com/1050118): Investigate missing debug info on mac.
       # Make sure we don't use constructor homing on mac.
@@ -2582,6 +2582,7 @@ elseif (APPLE)
 else()
   list(APPEND files src/core/rand_util_posix.cpp)
   list(APPEND files src/core/utils_linux.cpp)
+  list(APPEND files src/core/utils_freebsd.cpp)
 endif()
 
 add_library(yass_base OBJECT
@@ -2706,6 +2707,9 @@ if (GUI)
           src/gtk/utils_gui.cpp)
     endif()
 
+    # target_link_directories requires cmake 3.13
+    link_directories(${GUI_LIBRARY_DIRS})
+
     add_executable(${APP_NAME} WIN32 MACOSX_BUNDLE
         ${SRC_FILES}
         ${GUI_USE_FILE}
@@ -2734,8 +2738,6 @@ if (GUI)
     endforeach()
 
     target_compile_options(${APP_NAME} PRIVATE ${GUI_C_CXX_FLAGS})
-
-    link_directories(${GUI_LIBRARY_DIRS})
 
     target_link_libraries(${APP_NAME} PUBLIC ${GUI_LIBRARIES} ${SUPPORT_LIBS})
 

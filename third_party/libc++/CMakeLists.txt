@@ -407,6 +407,13 @@ if (NOT MSVC)
     ../libc++/trunk/src
     ../libc++abi/trunk/include)
 
+  # unwind.h under /usr/include is outdated
+  # there are four unwind.h under freebsd actually.. pick up llvm's libunwind header in priority
+  # https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=261397
+  if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+    target_include_directories(cxxabi PRIVATE /usr/src/contrib/llvm-project/libunwind/include)
+  endif()
+
   # libc++abi depends on libc++ internals.
   target_include_directories(cxxabi PRIVATE
     ../libc++/trunk/include)

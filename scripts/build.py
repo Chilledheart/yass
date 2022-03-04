@@ -119,11 +119,13 @@ def get_dependencies_by_otool(path):
 
 
 def get_dependencies_by_ldd(path):
-  lines = subprocess.check_output(['ldd', '-v', path]).decode().split('Version information:')[1].split('\n\t')
+  lines = subprocess.check_output(['ldd', path]).decode().split('\n')
   outputs = []
 
   for line in lines:
     if not line.startswith('\t'):
+        continue
+    if not '=>' in line:
         continue
     name = line.strip().split('=>')[1].strip()
     # todo: search rpath
@@ -137,6 +139,9 @@ def get_dependencies_by_ldd(path):
         continue
     # skip system libraries, part3
     if name.startswith('/lib') or name.startswith('/lib64'):
+        continue
+    # skip system libraries, part4
+    if name.startswith('/usr/local/lib'):
         continue
     # if file not found
     if not os.path.exists(name):
@@ -446,7 +451,7 @@ def get_dependencies(path):
     return get_dependencies_by_dumpbin(path, _get_win32_search_paths())[0]
   elif platform.system() == 'Darwin':
     return get_dependencies_by_otool(path)
-  elif platform.system() == 'Linux':
+  elif platform.system() == 'Linux' or platform.system() == 'FreeBSD':
     return get_dependencies_by_ldd(path)
   else:
     raise IOError('not supported in platform %s' % platform.system())
@@ -488,7 +493,7 @@ def get_dependencies_recursively(path):
             deps = deps_extended;
         else:
             return list(deps_extended)
-  elif platform.system() == 'Linux':
+  elif platform.system() == 'Linux' or platform.system() == 'FreeBSD':
     return get_dependencies_by_ldd(path)
   else:
     raise IOError('not supported in platform %s' % platform.system())
@@ -737,7 +742,7 @@ def postbuild_strip_binaries():
   if platform.system() == 'Windows':
     # no need to strip?
     pass
-  elif platform.system() == 'Linux':
+  elif platform.system() == 'Linux' or platform.system() == 'FreeBSD':
     # create a file containing the debugging info.
     write_output(['objcopy', '--only-keep-debug', APP_NAME, APP_NAME + '.dbg'])
     # stripped executable.
@@ -1003,7 +1008,7 @@ def postbuild_archive():
       debuginfo_paths.append(APP_NAME + '.pdb')
       archive_files(debuginfo_archive, debuginfo_paths)
       archives[debuginfo_archive] = debuginfo_paths
-  elif platform.system() == 'Linux':
+  elif platform.system() == 'Linux' or platform.system() == 'FreeBSD':
     if os.path.exists(APP_NAME + '.dbg'):
       debuginfo_paths.append(APP_NAME + '.dbg')
       archive_files(debuginfo_archive, debuginfo_paths)

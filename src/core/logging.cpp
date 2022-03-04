@@ -26,6 +26,9 @@
 #if defined(OS_APPLE)
 #include <sys/syscall.h>  // For syscall.
 #endif
+#if defined(OS_FREEBSD)
+#include <sys/utsname.h>  // For utsname.
+#endif
 #include <fcntl.h>  // For O_WRONLY, O_CREAT, O_CREAT
 #include <cstdarg>
 #include <cstdio>

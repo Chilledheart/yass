@@ -164,6 +164,39 @@ cmake -G Ninja -DGUI=on ..
 ninja yass
 ```
 
+## FreeBSD
+1. Install Clang Compiler (Optional):
+Use system compiler otherwise you might need to install it by manually:
+```
+pkg install llvm13
+```
+Notes: please make sure you have [Clang] (5.0 or above) and [CMake] (3.12 or above).
+
+2. Install required dependencies:
+```
+pkg install -y \
+    cmake \
+    ninja \
+    pkgconf \
+    perl5 \
+    gtk3 \
+    go
+```
+
+Notes: please install src.txz package of system otherwise you might need to create symbolics of unwind.h like below:
+```
+ln -sf /usr/include/c++/v1/unwind.h /usr/include/unwind.h
+ln -sf /usr/include/c++/v1/unwind-arm.h /usr/include/unwind-arm.h
+ln -sf /usr/include/c++/v1/unwind-itanium.h /usr/include/unwind-itanium.h
+```
+
+3. Compile the program with default configuration.
+```
+mkdir build
+cd build
+cmake -G Ninja -DGUI=on ..
+ninja yass
+```
 
 ## Windows/Packaging
 
@@ -209,6 +242,7 @@ sudo yum install -y gcc rpm-build rpm-devel rpmlint make python bash coreutils d
 
 [visualstudio]: https://visualstudio.microsoft.com/downloads/
 [Perl]: https://www.perl.org/get.html
+[Clang]: https://clang.llvm.org/
 [CMake]: https://cmake.org/download/
 [Ninja]: https://ninja-build.org/
 [Golang]: https://go.dev/dl/

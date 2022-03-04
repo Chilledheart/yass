@@ -25,8 +25,16 @@
 #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
 #endif  // (defined(__GNUC__) && (__GNUC__ >= 7)) || defined(__clang__)
 
+#if defined(__clang__)
+#pragma clang diagnostic ignored "-Wthread-safety-analysis"
+#endif  // defined(__clang__)
+
 #include <asio.hpp>
 #include "core/asio_throw_exceptions.hpp"
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif  // defined(__clang__)
 
 #pragma GCC diagnostic pop
 
