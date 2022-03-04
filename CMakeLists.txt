@@ -1553,6 +1553,14 @@ if (NOT MSVC)
   ## disabled, so only do that for Release build.
   set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -D_FORTIFY_SOURCE=2")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -D_FORTIFY_SOURCE=2")
+
+  ## set rpath origin
+  if (NOT APPLE)
+    # Setting this to true makes sure that libraries we build will have our
+    # rpath set even without having to do "make install"
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+    set(CMAKE_INSTALL_RPATH "\$ORIGIN/lib")
+  endif()
 else()
   ## Disable RTTI
   set(CompilerFlags

@@ -723,7 +723,9 @@ def postbuild_fix_rpath():
     # 'no need to fix rpath'
     pass
   elif platform.system() == 'Linux':
-    _postbuild_patchelf()
+    # Skip for now as we don't have depedents libraries
+    #_postbuild_patchelf()
+    pass
   elif platform.system() == 'Darwin':
     _postbuild_install_name_tool()
   else:
@@ -736,8 +738,12 @@ def postbuild_strip_binaries():
     # no need to strip?
     pass
   elif platform.system() == 'Linux':
-    # TODO refer to deb/rpm routine
-    pass
+    # create a file containing the debugging info.
+    write_output(['objcopy', '--only-keep-debug', APP_NAME, APP_NAME + '.dbg'])
+    # stripped executable.
+    write_output(['objcopy', '--strip-debug', APP_NAME])
+    # to add a link to the debugging info into the stripped executable.
+    write_output(['objcopy', '--add-gnu-debuglink=' + APP_NAME + '.dbg', APP_NAME])
   elif platform.system() == 'Darwin':
     write_output(['dsymutil',
                   os.path.join(get_app_name(), 'Contents', 'MacOS', APP_NAME),
@@ -997,6 +1003,11 @@ def postbuild_archive():
       debuginfo_paths.append(APP_NAME + '.pdb')
       archive_files(debuginfo_archive, debuginfo_paths)
       archives[debuginfo_archive] = debuginfo_paths
+  elif platform.system() == 'Linux':
+    if os.path.exists(APP_NAME + '.dbg'):
+      debuginfo_paths.append(APP_NAME + '.dbg')
+      archive_files(debuginfo_archive, debuginfo_paths)
+      archives[debuginfo_archive] = debuginfo_paths
   elif platform.system() == 'Darwin':
     if os.path.exists(get_app_name() + '.dSYM'):
       debuginfo_paths.append(get_app_name() + '.dSYM')
@@ -1021,8 +1032,13 @@ def postbuild_rename_archive(archives):
     elif platform.system() == 'Darwin':
       a = 'universal'
       renamed_archive = f'{main}-macos-release-{a}-{t}{suffix}{ext}'
+    elif platform.system() == 'Linux':
+      a = platform.machine().lower()
+      renamed_archive = f'{main}-linux-release-{a}-{t}{suffix}{ext}'
     else:
-      renamed_archive = f'{main}-release-{t}{suffix}{ext}'
+      s = platform.system().lower()
+      a = platform.machine().lower()
+      renamed_archive = f'{main}-{s}-release-{t}{suffix}{ext}'
 
     renamed_archive = os.path.join('..', renamed_archive)
 
