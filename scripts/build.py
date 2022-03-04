@@ -626,12 +626,17 @@ def prebuild_find_source_directory(pre_clean):
 def build_stage_generate_build_script():
   print('generate build scripts...(%s)' % cmake_build_type)
   cmake_args = ['-DGUI=ON', '-DCLI=ON', '-DSERVER=ON']
+  cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % cmake_build_type])
+  cmake_args.extend(['-G', 'Ninja'])
   cmake_args.extend(['-DUSE_HOST_TOOLS=on'])
+  if use_libcxx:
+    cmake_args.extend(['-DUSE_LIBCXX=on'])
+  else:
+    cmake_args.extend(['-DUSE_LIBCXX=off'])
   if clang_tidy_mode:
     cmake_args.extend(['-DENABLE_CLANG_TIDY=yes',
                        '-DCLANG_TIDY_EXECUTABLE=%s' % clang_tidy_executable_path])
   if platform.system() == 'Windows':
-    cmake_args.extend(['-G', 'Ninja'])
     cmake_args.extend(['-DCROSS_TOOLCHAIN_FLAGS_NATIVE="-DCMAKE_TOOLCHAIN_FILE=%s\\Native.cmake"' % os.getcwd()])
     native_libs = []
     for native_lib in os.getenv('LIB').split(';'):
@@ -656,11 +661,6 @@ def build_stage_generate_build_script():
       f.write(f'set(CMAKE_CXX_COMPILER "{CXX}")\n'.replace('\\', '/'))
       f.write('set(CMAKE_C_COMPILER_TARGET "x86_64-pc-windows-msvc")\n')
       f.write('set(CMAKE_CXX_COMPILER_TARGET "x86_64-pc-windows-msvc")\n')
-    cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % cmake_build_type])
-    if use_libcxx:
-      cmake_args.extend(['-DUSE_LIBCXX=on'])
-    else:
-      cmake_args.extend(['-DUSE_LIBCXX=off'])
     if msvc_crt_linkage == 'static':
       cmake_args.extend(['-DCMAKE_MSVC_CRT_LINKAGE=static'])
     else:
@@ -686,10 +686,6 @@ def build_stage_generate_build_script():
       cmake_args.extend(['-DCMAKE_CXX_COMPILER_TARGET=%s' % llvm_triple])
     if msvc_tgt_arch == 'arm' or msvc_tgt_arch == 'arm64':
       cmake_args.extend(['-DCMAKE_ASM_FLAGS=--target=%s' % llvm_triple])
-
-  else:
-    cmake_args.extend(['-G', 'Ninja'])
-    cmake_args.extend(['-DCMAKE_BUILD_TYPE=%s' % cmake_build_type])
 
   if platform.system() == 'Darwin':
     cmake_args.append('-DCMAKE_OSX_DEPLOYMENT_TARGET=%s' % macosx_version_min)
@@ -761,7 +757,7 @@ def postbuild_strip_binaries():
 
 
 def postbuild_codesign():
-  print('fixing codesign...')
+  print('codesign...')
   # reference https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/resolving_common_notarization_issues?language=objc
   # Hardened runtime is available in the Capabilities pane of Xcode 10 or later
   write_output(['codesign', '--timestamp=none',
@@ -1087,9 +1083,12 @@ def main():
   parser.add_argument('--cmake-build-concurrency', help='Set cmake build concurrency',
                       type=int, default=os.getenv('NCPUS', cpu_count()))
 
-  parser.add_argument('--use-libcxx', help='Use Custom libc++',
-                      default=os.getenv('USE_LIBCXX', True),
-                      action='store_true')
+  group = parser.add_mutually_exclusive_group()
+  group.add_argument('--use-libcxx', help='Use Custom libc++',
+                     default=os.getenv('USE_LIBCXX', True),
+                     action='store_true')
+  group.add_argument('--no-use-libcxx', help='Don\'t use custom libcxx',
+                     action='store_true')
 
   parser.add_argument('--macosx-version-min', help='Set Mac OS X deployment target, such as 10.9',
                       default=os.getenv('MACOSX_VERSION_MIN', '10.10'))
@@ -1120,7 +1119,7 @@ def main():
   cmake_build_type = args.cmake_build_type
   cmake_build_concurrency = str(args.cmake_build_concurrency)
 
-  use_libcxx = args.use_libcxx
+  use_libcxx = False if args.no_use_libcxx else args.use_libcxx
 
   macosx_version_min = args.macosx_version_min
   macosx_universal_build = args.macosx_universal_build
@@ -1168,7 +1167,7 @@ def main():
 
   print('======================================================================')
 
-  if platform.system() == 'Darwin':
+  if cmake_build_type == 'Release' and platform.system() == 'Darwin':
     postbuild_codesign()
     print('======================================================================')
 
