@@ -28,7 +28,11 @@ else()
   set(libcxx_SHARED OFF)
 endif()
 
-set(libcxx_ABI_UNSTABLE OFF)
+# Old versions of lldb weren't able to pretty-print std:: types with libc++'s
+# unstable API. But that was fixed over 2 years ago in
+# https://reviews.llvm.org/rL352899, and as far as I can tell Xcode's
+# lldb has picked up that fix (I'm using Xcode 13.2.1's lldb).
+set(libcxx_ABI_UNSTABLE ON)
 
 if (MSVC)
   option(ALLOW_XP "Build with Windows XP support." OFF)
