@@ -1145,6 +1145,20 @@ elseif (GUI)
   set(GUI_LIBRARIES ${GTK_LIBRARIES} ${FONTCONFIG_LIBRARIES})
 endif()
 
+# Fix path passed by pkg-config
+if (CMAKE_SYSROOT)
+  set(_GUI_INCLUDE_DIRS)
+  foreach (INC_DIR ${GUI_INCLUDE_DIRS})
+    list(APPEND _GUI_INCLUDE_DIRS ${CMAKE_SYSROOT}/${INC_DIR})
+  endforeach()
+  set(GUI_INCLUDE_DIRS ${_GUI_INCLUDE_DIRS})
+  set(_GUI_LIBRARY_DIRS)
+  foreach (LIB_DIR ${GUI_LIBRARY_DIRS})
+    list(APPEND _GUI_LIBRARY_DIRS ${CMAKE_SYSROOT}/${LIB_DIR})
+  endforeach()
+  set(GUI_LIBRARY_DIRS ${_GUI_LIBRARY_DIRS})
+endif()
+
 # fix lto warnings on mac
 if ((COMPILER_GCC OR COMPILER_CLANG) AND NOT MSVC)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")

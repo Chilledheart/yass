@@ -23,3 +23,4 @@ sscxx
 /debian/files
 *.msi
 *.wixpdb
+/debian_sid_*

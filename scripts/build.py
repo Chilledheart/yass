@@ -26,6 +26,9 @@ msvc_tgt_arch = None
 msvc_crt_linkage = None
 msvc_allow_xp = None
 
+system_name = None
+sysroot = None
+arch = None
 
 def copy_file_with_symlinks(src, dst):
   if os.path.lexists(dst):
@@ -65,7 +68,7 @@ def rename_by_unlink(src, dst):
 
 
 def get_7z_path():
-  if platform.system() == 'Windows':
+  if system_name == 'Windows':
     return 'C:\Program Files\\7-Zip\\7z.exe'
   else:
     return '7z'
@@ -83,9 +86,9 @@ def inspect_file(file, files):
 
 
 def get_app_name():
-  if platform.system() == 'Windows':
+  if system_name == 'Windows':
     return '%s.exe' % APP_NAME
-  elif platform.system() == 'Darwin':
+  elif system_name == 'Darwin':
     return '%s.app' % APP_NAME
   return APP_NAME
 
@@ -119,6 +122,9 @@ def get_dependencies_by_otool(path):
 
 
 def get_dependencies_by_ldd(path):
+  # FIXME skip for now
+  if sysroot:
+    return []
   lines = subprocess.check_output(['ldd', path]).decode().split('\n')
   outputs = []
 
@@ -447,18 +453,18 @@ def get_dependencies_by_dumpbin(path, search_dirs):
 
 
 def get_dependencies(path):
-  if platform.system() == 'Windows':
+  if system_name == 'Windows':
     return get_dependencies_by_dumpbin(path, _get_win32_search_paths())[0]
-  elif platform.system() == 'Darwin':
+  elif system_name == 'Darwin':
     return get_dependencies_by_otool(path)
-  elif platform.system() == 'Linux' or platform.system() == 'FreeBSD':
+  elif system_name == 'Linux' or system_name == 'FreeBSD':
     return get_dependencies_by_ldd(path)
   else:
-    raise IOError('not supported in platform %s' % platform.system())
+    raise IOError('not supported in platform %s' % system_name)
 
 
 def get_dependencies_recursively(path):
-  if platform.system() == 'Windows':
+  if system_name == 'Windows':
     search_dirs = _get_win32_search_paths()
     print('searching dlls in directories:')
     for search_dir in search_dirs:
@@ -482,7 +488,7 @@ def get_dependencies_recursively(path):
       print('--- %s' % unresolved_dep)
     return list(deps)
 
-  elif platform.system() == 'Darwin':
+  elif system_name == 'Darwin':
     deps = get_dependencies_by_otool(path)
     while(True):
         deps_extended = list(deps)
@@ -493,10 +499,10 @@ def get_dependencies_recursively(path):
             deps = deps_extended;
         else:
             return list(deps_extended)
-  elif platform.system() == 'Linux' or platform.system() == 'FreeBSD':
+  elif system_name == 'Linux' or system_name == 'FreeBSD':
     return get_dependencies_by_ldd(path)
   else:
-    raise IOError('not supported in platform %s' % platform.system())
+    raise IOError('not supported in platform %s' % system_name)
 
 
 def check_universal_fat_bundle_darwin(bundle_path):
@@ -636,7 +642,7 @@ def build_stage_generate_build_script():
   if clang_tidy_mode:
     cmake_args.extend(['-DENABLE_CLANG_TIDY=yes',
                        '-DCLANG_TIDY_EXECUTABLE=%s' % clang_tidy_executable_path])
-  if platform.system() == 'Windows':
+  if system_name == 'Windows':
     cmake_args.extend(['-DCROSS_TOOLCHAIN_FLAGS_NATIVE="-DCMAKE_TOOLCHAIN_FILE=%s\\Native.cmake"' % os.getcwd()])
     native_libs = []
     for native_lib in os.getenv('LIB').split(';'):
@@ -687,10 +693,44 @@ def build_stage_generate_build_script():
     if msvc_tgt_arch == 'arm' or msvc_tgt_arch == 'arm64':
       cmake_args.extend(['-DCMAKE_ASM_FLAGS=--target=%s' % llvm_triple])
 
-  if platform.system() == 'Darwin':
+  if system_name == 'Darwin':
     cmake_args.append('-DCMAKE_OSX_DEPLOYMENT_TARGET=%s' % macosx_version_min)
     if macosx_universal_build:
       cmake_args.append('-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64')
+
+  if system_name == 'Linux' and sysroot:
+    if arch == 'amd64' or arch == 'x86_64':
+      target = 'x86_64-linux-gnu'
+      processor = 'x86_64'
+    elif arch == 'x86' or arch == 'i386':
+      target = 'i386-linux-gnu'
+      processor = 'x86'
+    elif arch == 'arm64' or arch == 'aarch64':
+      target = 'aarch64-linux-gnu'
+      processor = 'aarch64'
+    elif arch == 'arm':
+      target = 'arm-linux-gnu'
+      processor = 'arm'
+    elif arch == 'arm':
+      target = 'arm-linux-gnueabi'
+      processor = 'arm'
+    elif arch == 'mips':
+      target = 'mips-linux-gnu'
+      processor = 'mips'
+    elif arch == 'mips64el':
+      target = 'mips64el-linux-gnueabi'
+      processor = 'mips64el'
+    else:
+      raise Exception('Unsupported arch %s' % arch)
+
+    toolchain_file = os.path.realpath('%s/../cmake/platforms/Linux.cmake' % os.getcwd())
+    cmake_args.extend(['-DCMAKE_TOOLCHAIN_FILE=%s' % toolchain_file])
+    os.environ['PKG_CONFIG_PATH'] = os.path.join(sysroot, 'usr', 'lib', 'pkgconfig')
+    os.environ['PKG_CONFIG_PATH'] += ';' + os.path.join(sysroot, 'usr', 'share', 'pkgconfig')
+    cmake_args.extend(['-DLLVM_SYSROOT=%s/../third_party/llvm-build/Release+Asserts' % os.getcwd()])
+    cmake_args.extend(['-DGCC_SYSROOT=%s' % sysroot])
+    cmake_args.extend(['-DGCC_SYSTEM_PROCESSOR=%s' % processor])
+    cmake_args.extend(['-DGCC_TARGET=%s' % target])
 
   command = ['cmake', '..'] + cmake_args
 
@@ -703,16 +743,16 @@ def build_stage_execute_buildscript():
   command = ['ninja', 'yass', '-j', cmake_build_concurrency]
   write_output(command, check=True)
   # FIX ME move to cmake (required by Xcode generator)
-  if platform.system() == 'Darwin':
+  if system_name == 'Darwin':
     if os.path.exists(os.path.join(cmake_build_type, get_app_name())):
       rename_by_unlink(os.path.join(cmake_build_type, get_app_name()), get_app_name())
 
 
 def postbuild_copy_libraries():
   print('copying dependent libraries...')
-  if platform.system() == 'Windows':
+  if system_name == 'Windows':
     _postbuild_copy_libraries_win32()
-  elif platform.system() == 'Darwin':
+  elif system_name == 'Darwin':
     _postbuild_copy_libraries_xcode()
   else:
     _postbuild_copy_libraries_posix()
@@ -720,32 +760,35 @@ def postbuild_copy_libraries():
 
 def postbuild_fix_rpath():
   print('fixing rpath...')
-  if platform.system() == 'Windows':
+  if system_name == 'Windows':
     # 'no need to fix rpath'
     pass
-  elif platform.system() == 'Linux':
+  elif system_name == 'Linux':
     # Skip for now as we don't have depedents libraries
     #_postbuild_patchelf()
     pass
-  elif platform.system() == 'Darwin':
+  elif system_name == 'Darwin':
     _postbuild_install_name_tool()
   else:
-    print('not supported in platform %s' % platform.system())
+    print('not supported in platform %s' % system_name)
 
 
 def postbuild_strip_binaries():
   print('strip binaries...')
-  if platform.system() == 'Windows':
+  if system_name == 'Windows':
     # no need to strip?
     pass
-  elif platform.system() == 'Linux' or platform.system() == 'FreeBSD':
+  elif system_name == 'Linux' or system_name == 'FreeBSD':
+    objcopy = os.path.join('..', 'third_party', 'llvm-build', 'Release+Asserts', 'bin', 'llvm-objcopy')
+    if not os.path.exists(objcopy):
+      objcopy = 'objcopy'
     # create a file containing the debugging info.
-    write_output(['objcopy', '--only-keep-debug', APP_NAME, APP_NAME + '.dbg'])
+    write_output([objcopy, '--only-keep-debug', APP_NAME, APP_NAME + '.dbg'])
     # stripped executable.
-    write_output(['objcopy', '--strip-debug', APP_NAME])
+    write_output([objcopy, '--strip-debug', APP_NAME])
     # to add a link to the debugging info into the stripped executable.
-    write_output(['objcopy', '--add-gnu-debuglink=' + APP_NAME + '.dbg', APP_NAME])
-  elif platform.system() == 'Darwin':
+    write_output([objcopy, '--add-gnu-debuglink=' + APP_NAME + '.dbg', APP_NAME])
+  elif system_name == 'Darwin':
     write_output(['dsymutil',
                   os.path.join(get_app_name(), 'Contents', 'MacOS', APP_NAME),
                   '--statistics',
@@ -753,7 +796,7 @@ def postbuild_strip_binaries():
                   '-o', get_app_name() + '.dSYM'])
     write_output(['strip', '-S', '-x', '-v', os.path.join(get_app_name(), 'Contents', 'MacOS', APP_NAME)])
   else:
-    print('not supported in platform %s' % platform.system())
+    print('not supported in platform %s' % system_name)
 
 
 def postbuild_codesign():
@@ -827,6 +870,7 @@ def postbuild_check_universal_build():
 
 
 def archive_files(output, paths = []):
+  # FIXME use tgz for linux binaries
   from zipfile import ZipFile, ZIP_DEFLATED, ZipInfo
 
   print(f'generating zip file {output}')
@@ -850,7 +894,7 @@ def archive_files(output, paths = []):
 
 
 def _archive_files_main_files(output, paths):
-  if platform.system() == 'Darwin':
+  if system_name == 'Darwin':
     from base64 import b64encode
     with open('../src/mac/eula.xml', 'r') as f:
       eula_template = f.read()
@@ -880,7 +924,7 @@ def _archive_files_main_files(output, paths):
 
 def _archive_files_dll_files():
   dll_paths = []
-  if platform.system() == 'Windows':
+  if system_name == 'Windows':
     files = os.listdir('.')
     for file in files:
       if file.endswith('.dll'):
@@ -969,7 +1013,7 @@ def postbuild_archive():
   src = get_app_name()
   dst = APP_NAME
 
-  archive = dst + '.zip' if platform.system() != 'Darwin' else dst + '.dmg'
+  archive = dst + '.zip' if system_name != 'Darwin' else dst + '.dmg'
   msi_archive = 'yass.msi'
   debuginfo_archive = dst + '-debuginfo.zip'
 
@@ -994,22 +1038,22 @@ def postbuild_archive():
   archives[archive] = paths
 
   # msi installer
-  if platform.system() == 'Windows':
+  if system_name == 'Windows':
     _archive_files_generate_msi(msi_archive, paths, dll_paths, license_paths)
     archives[msi_archive] = [msi_archive]
 
   # debuginfo file
-  if platform.system() == 'Windows':
+  if system_name == 'Windows':
     if os.path.exists(APP_NAME + '.pdb'):
       debuginfo_paths.append(APP_NAME + '.pdb')
       archive_files(debuginfo_archive, debuginfo_paths)
       archives[debuginfo_archive] = debuginfo_paths
-  elif platform.system() == 'Linux' or platform.system() == 'FreeBSD':
+  elif system_name == 'Linux' or system_name == 'FreeBSD':
     if os.path.exists(APP_NAME + '.dbg'):
       debuginfo_paths.append(APP_NAME + '.dbg')
       archive_files(debuginfo_archive, debuginfo_paths)
       archives[debuginfo_archive] = debuginfo_paths
-  elif platform.system() == 'Darwin':
+  elif system_name == 'Darwin':
     if os.path.exists(get_app_name() + '.dSYM'):
       debuginfo_paths.append(get_app_name() + '.dSYM')
       archive_files(debuginfo_archive, debuginfo_paths)
@@ -1025,20 +1069,20 @@ def postbuild_rename_archive(archives):
     suffix = main[len(APP_NAME):]
     main = APP_NAME
 
-    if platform.system() == 'Windows':
+    if system_name == 'Windows':
       a = msvc_tgt_arch
       l = msvc_crt_linkage
       xp = 'xp' if msvc_allow_xp else ''
       renamed_archive = f'{main}-win{xp}-release-{a}-{l}-{t}{suffix}{ext}'
-    elif platform.system() == 'Darwin':
+    elif system_name == 'Darwin':
       a = 'universal'
       renamed_archive = f'{main}-macos-release-{a}-{t}{suffix}{ext}'
-    elif platform.system() == 'Linux':
-      a = platform.machine().lower()
+    elif system_name == 'Linux':
+      a = arch.lower()
       renamed_archive = f'{main}-linux-release-{a}-{t}{suffix}{ext}'
     else:
-      s = platform.system().lower()
-      a = platform.machine().lower()
+      s = system_name.lower()
+      a = arch.lower()
       renamed_archive = f'{main}-{s}-release-{t}{suffix}{ext}'
 
     renamed_archive = os.path.join('..', renamed_archive)
@@ -1065,6 +1109,10 @@ def main():
 
   global clang_tidy_mode
   global clang_tidy_executable_path
+
+  global system_name
+  global sysroot
+  global arch
 
   parser = argparse.ArgumentParser()
 
@@ -1114,6 +1162,15 @@ def main():
   parser.add_argument('--clang-tidy-executable-path', help='Path to clang-tidy, only used by Clang Tidy Build',
                       default=os.getenv('CLANG_TIDY_EXECUTABLE', 'clang-tidy'))
 
+  parser.add_argument('--system', help='Specify host name',
+                      choices=['Windows', 'FreeBSD', 'Linux', 'Darwin'], default=platform.system())
+  parser.add_argument('--sysroot', help='Specify host sysroot, used in cross-compiling',
+                      default='')
+  parser.add_argument('--arch', help='Specify host arch',
+                      choices=['x86', 'x86_64', 'amd64', 'arm', 'arm64',
+                               'armel', 'i386', 'mips', 'mips64el', 'aarch64'],
+                      default=platform.machine())
+
   args = parser.parse_args()
 
   cmake_build_type = args.cmake_build_type
@@ -1131,6 +1188,10 @@ def main():
 
   clang_tidy_mode = args.clang_tidy_mode
   clang_tidy_executable_path = args.clang_tidy_executable_path
+
+  system_name = args.system
+  sysroot = args.sysroot
+  arch = args.arch
 
   # clang-tidy complains about parse error
   if clang_tidy_mode:
@@ -1159,7 +1220,7 @@ def main():
 
   print('======================================================================')
 
-  if platform.system() != 'Windows':
+  if system_name != 'Windows':
     postbuild_fix_rpath()
     print('======================================================================')
 
@@ -1167,11 +1228,11 @@ def main():
 
   print('======================================================================')
 
-  if cmake_build_type == 'Release' and platform.system() == 'Darwin':
+  if cmake_build_type == 'Release' and system_name == 'Darwin':
     postbuild_codesign()
     print('======================================================================')
 
-  if macosx_universal_build and platform.system() == 'Darwin':
+  if macosx_universal_build and system_name == 'Darwin':
     postbuild_check_universal_build()
     print('======================================================================')
 
