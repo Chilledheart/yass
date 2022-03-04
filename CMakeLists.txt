@@ -178,7 +178,7 @@ endif()
 
 if (COMPILER_MSVC)
   # TODO maybe we should support MSVC 2019 16.0 at least...
-  messag(FATAL_ERROR "Microsoft Visual C++ is no longer supported.")
+  message(FATAL_ERROR "Microsoft Visual C++ is no longer supported.")
 endif()
 
 if((${CMAKE_LINKER} MATCHES "lld") AND (${CMAKE_AR} MATCHES "llvm-lib"))
