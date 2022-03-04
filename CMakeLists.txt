@@ -197,6 +197,11 @@ else()
   message(STATUS "Build with target architecture: ${CMAKE_SYSTEM_PROCESSOR}")
 endif()
 
+## postpone ASM enabling after C/CXX LANG DIALECT otherwise it might fails
+if (NOT (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "x86" OR MSVC_PROCESSOR_ARCHITECTURE STREQUAL "amd64"))
+  enable_language(ASM)
+endif()
+
 ## Export build compilation database if possible
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
@@ -444,7 +449,6 @@ if (NOT MSVC)
   # -ffile-compilation-dir is an alias for both -fdebug-compilation-dir=
   # and -fcoverage-compilation-dir=.
   if (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14.0)
-    # We don't use clang -cc1as on Windows (yet? https://crbug.com/762167)
     set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wa,-fdebug-compilation-dir,.")
     set(CMAKE_CC_FLAGS "${CMAKE_CC_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
@@ -529,7 +533,8 @@ else()
 
   # -ffile-compilation-dir is an alias for both -fdebug-compilation-dir=
   # and -fcoverage-compilation-dir=.
-  if (COMPILER_CLANG)
+  if (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14.0)
+    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wa,-fdebug-compilation-dir,.")
     set(CMAKE_CC_FLAGS "${CMAKE_CC_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
   endif()
