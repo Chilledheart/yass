@@ -156,16 +156,29 @@ else()
   set(COMPILER_CLANG FALSE)
 endif()
 
+if (COMPILER_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5.0)
+  messag(FATAL_ERROR "Requires Clang 5.0 or newer to compile")
+endif()
+
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   set(COMPILER_GCC TRUE)
 else()
   set(COMPILER_GCC FALSE)
 endif()
 
+if (COMPILER_GCC AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.1)
+  messag(FATAL_ERROR "Requires GCC 7.1 or newer to compile")
+endif()
+
 if (MSVC AND NOT COMPILER_CLANG)
   set(COMPILER_MSVC TRUE)
 else()
   set(COMPILER_MSVC FALSE)
+endif()
+
+if (COMPILER_MSVC)
+  # TODO maybe we should support MSVC 2019 16.0 at least...
+  messag(FATAL_ERROR "Microsoft Visual C++ is no longer supported.")
 endif()
 
 if((${CMAKE_LINKER} MATCHES "lld") AND (${CMAKE_AR} MATCHES "llvm-lib"))

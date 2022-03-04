@@ -111,7 +111,7 @@ sudo apt-get install -y \
     libgtk-3-dev
 ```
 
-Notes: please make sure you have [GCC] (6.1 or above) and [CMake] (3.12 or above).
+Notes: please make sure you have [GCC] (7.1 or above) and [CMake] (3.12 or above).
   You might want to give these APT/PPA sites a look if the requirements are not meet:
 
 * [PPA for Ubuntu Toolchain](https://launchpad.net/~ubuntu-toolchain-r/+archive/ubuntu/test)
@@ -149,7 +149,7 @@ sudo yum install -y \
     golang
 ```
 
-Notes: please make sure you have [GCC] (6.1 or above) and [CMake] (3.12 or above).
+Notes: please make sure you have [GCC] (7.1 or above) and [CMake] (3.12 or above).
   You might want to enable CodeReady (for RHEL), PowerTools (for CentOS) and EPEL repo before above commands:
 
 * CodeReady (for RHEL): `subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms`
