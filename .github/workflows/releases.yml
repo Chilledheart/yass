@@ -37,7 +37,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release view ${{ env.tag_name }} --json assets -q '.["assets"] | .[] |= .name' > DISTS
-          if [ "x$(cat DISTS | grep '.zip' | grep '.rpm' | grep '.deb' | grep '.msi' | grep '.dmg' | head -n 1)" != "x" ]; then
+          if [ "x$(cat DISTS | grep '.zip' | grep '.rpm' | grep '.deb' | grep '.msi' | grep '.dmg' | grep '.tgz' | head -n 1)" != "x" ]; then
             echo "all_dists_uploaded=1" >> $GITHUB_ENV
           else
             echo "all_dists_uploaded=0" >> $GITHUB_ENV
@@ -52,11 +52,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release download ${{ env.tag_name }} -p '*.zip' -p '*.rpm' -p '*.deb' -p '*.dmg' -p '*.msi'
+          gh release download ${{ env.tag_name }} -p '*.zip' -p '*.rpm' -p '*.deb' -p '*.dmg' -p '*.msi' -p '*.tgz'
       - name: Generate sha256 checksum
         if: ${{ env.all_dists_uploaded == '1' && env.sha256sum_uploaded == '0' }}
         run: |
-          sha256sum *.zip *.rpm *.deb *.dmg *.msi > yass-${{ env.tag_name }}-sha256sum.txt
+          sha256sum *.zip *.rpm *.deb *.dmg *.msi *.tgz > yass-${{ env.tag_name }}-sha256sum.txt
       - name: Upload sha256 checksum
         if: ${{ env.all_dists_uploaded == '1' && env.sha256sum_uploaded == '0' }}
         env:

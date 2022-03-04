@@ -732,6 +732,30 @@ def build_stage_generate_build_script():
     cmake_args.extend(['-DGCC_SYSTEM_PROCESSOR=%s' % processor])
     cmake_args.extend(['-DGCC_TARGET=%s' % target])
 
+  if system_name == 'FreeBSD' and sysroot:
+    if arch == 'amd64' or arch == 'x86_64':
+      target = 'x86_64-freebsd'
+      processor = 'x86_64'
+    elif arch == 'x86' or arch == 'i386':
+      target = 'i386-freebsd'
+      processor = 'x86'
+    elif arch == 'arm64' or arch == 'aarch64':
+      target = 'aarch64-freebsd'
+      processor = 'aarch64'
+    else:
+      raise Exception('Unsupported arch %s' % arch)
+
+    toolchain_file = os.path.realpath('%s/../cmake/platforms/FreeBSD.cmake' % os.getcwd())
+    cmake_args.extend(['-DCMAKE_TOOLCHAIN_FILE=%s' % toolchain_file])
+    os.environ['PKG_CONFIG_PATH'] = os.path.join(sysroot, 'usr', 'libdata', 'pkgconfig')
+    os.environ['PKG_CONFIG_PATH'] += ';' + os.path.join(sysroot, 'usr', 'local', 'libdata', 'pkgconfig')
+    cmake_args.extend(['-DLLVM_SYSROOT=%s/../third_party/llvm-build/Release+Asserts' % os.getcwd()])
+    cmake_args.extend(['-DGCC_SYSROOT=%s' % sysroot])
+    cmake_args.extend(['-DGCC_SYSTEM_PROCESSOR=%s' % processor])
+    cmake_args.extend(['-DGCC_TARGET=%s' % target])
+    # FIXME extract pkg into sysroot
+    cmake_args.extend(['-DGUI=OFF'])
+
   command = ['cmake', '..'] + cmake_args
 
   write_output(command, check=True)
@@ -740,7 +764,7 @@ def build_stage_generate_build_script():
 def build_stage_execute_buildscript():
   print('executing build scripts...(%s)' % cmake_build_type)
 
-  command = ['ninja', 'yass', '-j', cmake_build_concurrency]
+  command = ['ninja', APP_NAME, '-j', cmake_build_concurrency]
   write_output(command, check=True)
   # FIX ME move to cmake (required by Xcode generator)
   if system_name == 'Darwin':
@@ -869,8 +893,15 @@ def postbuild_check_universal_build():
   _check_universal_build_darwin(get_app_name(), verbose = True)
 
 
+# generate tgz (posix) or zip file
 def archive_files(output, paths = []):
-  # FIXME use tgz for linux binaries
+  if output.endswith('.tgz'):
+    print(f'generating tgz file {output}')
+    cmd = ['tar', 'cvfz', output]
+    cmd.extend(paths)
+    write_output(cmd, check=True)
+    return
+
   from zipfile import ZipFile, ZIP_DEFLATED, ZipInfo
 
   print(f'generating zip file {output}')
@@ -1017,6 +1048,10 @@ def postbuild_archive():
   msi_archive = 'yass.msi'
   debuginfo_archive = dst + '-debuginfo.zip'
 
+  if system_name == 'Linux' or system_name == 'FreeBSD':
+    archive = archive.replace('.zip', '.tgz')
+    debuginfo_archive = debuginfo_archive.replace('.zip', '.tgz')
+
   archives = {}
 
   paths = [ src ]
@@ -1093,6 +1128,8 @@ def postbuild_rename_archive(archives):
 
 def main():
   import argparse
+
+  global APP_NAME
 
   global cmake_build_type
   global cmake_build_concurrency
@@ -1192,6 +1229,10 @@ def main():
   system_name = args.system
   sysroot = args.sysroot
   arch = args.arch
+
+  # FIXME, turn on gui
+  if system_name == 'FreeBSD' and sysroot:
+    APP_NAME = 'yass_cli'
 
   # clang-tidy complains about parse error
   if clang_tidy_mode:

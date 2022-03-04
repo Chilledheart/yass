@@ -149,24 +149,31 @@ else()
     "CR_LIBCXX_REVISION=${libcxx_CR}")
 
   # Make sure we don't link against the system libstdc++ or libc++.
-  if (COMPILER_CLANG)
-    set(CMAKE_EXE_LINKER_FLAGS
-      "${CMAKE_EXE_LINKER_FLAGS} -nostdlib++")
-    set(CMAKE_SHARED_LINKER_FLAGS
-      "${CMAKE_SHARED_LINKER_FLAGS} -nostdlib++")
+  if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" AND COMPILER_CLANG)
+    # Some bugs about -notstdlib++ on FreeBSD port...
+    # still linking to libgcc
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-builtin-abs")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-builtin-abs")
+
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nodefaultlibs")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -nodefaultlibs")
+
+    set(libcxx_PUBLIC_LIBRARIES
+      ${libcxx_PUBLIC_LIBRARIES}
+      c thr gcc_s m rt
+      )
+  elseif (COMPILER_CLANG)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nostdlib++")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -nostdlib++")
   else()
     # Gcc has a built-in abs() definition with default visibility.
     # If it was not disabled, it would conflict with libc++'s abs()
     # with hidden visibility.
-    set(CMAKE_C_FLAGS
-      "${CMAKE_C_FLAGS} -fno-builtin-abs")
-    set(CMAKE_CXX_FLAGS
-      "${CMAKE_CXX_FLAGS} -fno-builtin-abs")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-builtin-abs")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-builtin-abs")
 
-    set(CMAKE_EXE_LINKER_FLAGS
-      "${CMAKE_EXE_LINKER_FLAGS} -nodefaultlibs")
-    set(CMAKE_SHARED_LINKER_FLAGS
-      "${CMAKE_SHARED_LINKER_FLAGS} -nodefaultlibs")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nodefaultlibs")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -nodefaultlibs")
 
     # Unfortunately, there's no way to disable linking against just libc++
     # (gcc doesn't have -notstdlib++:
