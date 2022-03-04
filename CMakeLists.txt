@@ -53,6 +53,9 @@ endif()
 set(CMAKE_MSVC_CRT_LINKAGE "static" CACHE STRING "")
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:${CMAKE_MSVC_CRT_LINKAGE},dynamic>:DLL>" CACHE STRING "")
 
+# Use relative paths (May not work!).
+set(CMAKE_USE_RELATIVE_PATHS TRUE)
+
 # Defer enabling C and CXX languages.
 project(${PACKAGE_NAME} NONE)
 
@@ -346,8 +349,217 @@ if (NOT MSAN AND NOT ASAN AND NOT TSAN AND NOT UBSAN)
 endif()
 
 # *****************************************************************************************
+#           Compiler compiler and link flags (base)
+# *****************************************************************************************
+
+if (NOT MSVC)
+  # Necessary for clone().
+  if (ANDROID)
+    add_definitions(-D__GNU_SOURCE=1)
+  endif()
+
+  ## optimization flags
+  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
+
+  ## can gc eliminate any unused functions and data items
+  if (NOT APPLE)
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fdata-sections -ffunction-sections")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdata-sections -ffunction-sections")
+  endif()
+
+  ## standard C++ library
+  if(APPLE AND NOT USE_LIBCXX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+  endif()
+
+  if (APPLE)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dead_strip")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-dead_strip")
+  else()
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
+  endif()
+
+  if (APPLE)
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,-no_data_in_code_info -Wl,-no_function_starts")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-no_data_in_code_info -Wl,-no_function_starts")
+  endif()
+
+  ## adopt LTO
+  if (APPLE)
+    if (${CMAKE_BUILD_TYPE} MATCHES Release)
+      message(STATUS "Compiling with LTO")
+    endif()
+    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto -fwhole-program-vtables")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto -fwhole-program-vtables")
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -flto -fwhole-program-vtables")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -flto -fwhole-program-vtables")
+  endif()
+
+  if (APPLE)
+    # If generating dSYMs, specify -fno-standalone-debug. This was
+    # originally specified for https://crbug.com/479841 because dsymutil
+    # could not handle a 4GB dSYM file. But dsymutil from Xcodes prior to
+    # version 7 also produces debug data that is incompatible with Breakpad
+    # dump_syms, so this is still required (https://crbug.com/622406).
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-standalone-debug")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-standalone-debug")
+  endif()
+
+  # clang defaults to DWARF2 on macOS unless mac_deployment_target is
+  # at least 10.11.
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gdwarf-4")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-4")
+
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g2")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g2")
+
+  # generate a complete set of debugging symbols for your code.
+  # The linker uses this extra debugging information to dead strip the executable.
+  if (APPLE)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gfull")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gfull")
+  endif()
+
+  # gcc generates dwarf-aranges by default on -g1 and -g2. On clang it has
+  # to be manually enabled
+  if (COMPILER_CLANG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gdwarf-aranges")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-aranges")
+  endif()
+
+  if (COMPILER_CLANG)
+    if (APPLE)
+      # TODO(https://crbug.com/1050118): Investigate missing debug info on mac.
+      # Make sure we don't use constructor homing on mac.
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xclang -debug-info-kind=limited")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -debug-info-kind=limited")
+    else()
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xclang -fuse-ctor-homing")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -fuse-ctor-homing")
+    endif()
+  endif()
+
+  # -ffile-compilation-dir is an alias for both -fdebug-compilation-dir=
+  # and -fcoverage-compilation-dir=.
+  if (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14.0)
+    # We don't use clang -cc1as on Windows (yet? https://crbug.com/762167)
+    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wa,-fdebug-compilation-dir,.")
+    set(CMAKE_CC_FLAGS "${CMAKE_CC_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
+  endif()
+
+  # Tells the compiler not to use absolute paths when passing the default
+  # paths to the tools it invokes. We don't want this because we don't
+  # really need it and it can mess up the goma cache entries.
+  if (COMPILER_CLANG)
+    set(CMAKE_CC_FLAGS "${CMAKE_CC_FLAGS} -no-canonical-prefixes")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-canonical-prefixes")
+
+    # Same for links: Let the compiler driver invoke the linker
+    # with a relative path and pass relative paths to built-in
+    # libraries. Not needed on Windows because we call the linker
+    # directly there, not through the compiler driver.
+    # We don't link on goma, so this change is just for cleaner
+    # internal linker invocations, for people who work on the build.
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -no-canonical-prefixes")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -no-canonical-prefixes")
+  endif()
+else()
+  ## Optimization flags
+  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
+
+  ## Disable LTCG for static libraries because this setting introduces ABI incompatibility between minor compiler versions
+  if (NOT CMAKE_MSVC_CRT_LINKAGE STREQUAL "static" AND NOT COMPILER_CLANG)
+    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /GL")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG")
+    set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
+  endif()
+
+  if (COMPILER_CLANG AND LINKER_LLD)
+    if (${CMAKE_BUILD_TYPE} MATCHES Release)
+      message(STATUS "Compiling with LTO")
+    endif()
+    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto -fwhole-program-vtables")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto -fwhole-program-vtables")
+    # When using lld-link, the -flto option need only be added to the compile step
+  endif()
+
+  # lld's uac manifest is outdated and incompatible with windows xp
+  if (LINKER_LLD)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFESTUAC:NO")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /MANIFESTUAC:NO")
+  endif()
+
+  ## not omit stack frame pointer
+  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Oy-")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Oy-")
+
+  ## supress some warnings
+  if (COMPILER_CLANG)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-microsoft-exception-spec")
+  endif()
+
+  ## Generate debug info, Debug information in the .obj files for clang.
+  ## Produce PDB file for msvc, no edit and continue.
+  if (COMPILER_CLANG)
+    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Z7")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Z7")
+  else()
+    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zi")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
+  endif()
+
+  # Tell linker to include symbol data
+  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG")
+  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /DEBUG")
+
+  ## Remove unreferenced data
+  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /OPT:REF /OPT:ICF /INCREMENTAL:NO /FIXED:NO")
+  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /OPT:REF /OPT:ICF /INCREMENTAL:NO /FIXED:NO")
+
+  # Tell linker to include FIXUP information symbol data
+  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /PROFILE")
+  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /PROFILE")
+
+
+  # -ffile-compilation-dir is an alias for both -fdebug-compilation-dir=
+  # and -fcoverage-compilation-dir=.
+  if (COMPILER_CLANG)
+    set(CMAKE_CC_FLAGS "${CMAKE_CC_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
+  endif()
+
+  if (LINKER_LLD)
+    # Use a fake fixed base directory for paths in the pdb to make the pdb
+    # output fully deterministic and independent of the build directory.
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /PDBSourcePath:o:\\fake\\prefix")
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /PDBSourcePath:o:\\fake\\prefix")
+
+    # Absolutize source file paths for PDB. Pass the real build directory
+    # if the pdb contains source-level debug information and if linker
+    # reproducibility is not critical.
+    set(CMAKE_EXE_LINKER_FLAGS_DEBUG   "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /PDBSourcePath:${CMAKE_CURRENT_BINARY_DIR}")
+    set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /PDBSourcePath:${CMAKE_CURRENT_BINARY_DIR}")
+  endif()
+
+  # Tells the compiler not to use absolute paths when passing the default
+  # paths to the tools it invokes. We don't want this because we don't
+  # really need it and it can mess up the goma cache entries.
+  if (COMPILER_CLANG)
+    set(CMAKE_CC_FLAGS "${CMAKE_CC_FLAGS} -no-canonical-prefixes")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-canonical-prefixes")
+  endif()
+endif()
+
+# *****************************************************************************************
 #           Platform-specific
 # *****************************************************************************************
+
 # Here we enable -fno-delete-null-pointer-checks, which makes various nullptr
 # operations (e.g. dereferencing) into defined behavior. This avoids deletion
 # of some security-critical code: see https://crbug.com/1139129.
@@ -1306,54 +1518,10 @@ elseif (MSVC)
 endif()
 
 # *****************************************************************************************
-#           Compiler compiler and link flags
+#           Compiler compiler and link flags (yass-only)
 # *****************************************************************************************
 
 if (NOT MSVC)
-  # Necessary for clone().
-  if (ANDROID)
-    add_definitions(-D__GNU_SOURCE=1)
-  endif()
-
-  ## optimization flags
-  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
-
-  ## can gc eliminate any unused functions and data items
-  if (NOT APPLE)
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fdata-sections -ffunction-sections")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdata-sections -ffunction-sections")
-  endif()
-
-  ## standard C++ library
-  if(APPLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-  endif()
-
-  if (APPLE)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-dead_strip")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-dead_strip")
-  else()
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
-  endif()
-
-  if (APPLE)
-    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,-no_data_in_code_info -Wl,-no_function_starts")
-    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-no_data_in_code_info -Wl,-no_function_starts")
-  endif()
-
-  ## adopt LTO
-  if (APPLE)
-    if (${CMAKE_BUILD_TYPE} MATCHES Release)
-      message(STATUS "Compiling with LTO")
-    endif()
-    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto -fwhole-program-vtables")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto -fwhole-program-vtables")
-    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -flto -fwhole-program-vtables")
-    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -flto -fwhole-program-vtables")
-  endif()
-
   ## definitions
   add_definitions(-D__STDC_CONSTANT_MACROS)
   add_definitions(-D__STDC_FORMAT_MACROS)
@@ -1370,31 +1538,8 @@ if (NOT MSVC)
 
   ## fortify source code. Also, fortified build may fail when optimizations are
   ## disabled, so only do that for Release build.
-  if (${CMAKE_BUILD_TYPE} MATCHES Release)
-    add_definitions(-D_FORTIFY_SOURCE=2)
-  endif()
-
-  # clang defaults to DWARF2 on macOS unless mac_deployment_target is
-  # at least 10.11.
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gdwarf-4")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-4")
-
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g2")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g2")
-
-  # generate a complete set of debugging symbols for your code.
-  # The linker uses this extra debugging information to dead strip the executable.
-  if (APPLE)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gfull")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gfull")
-  endif()
-
-  # gcc generates dwarf-aranges by default on -g1 and -g2. On clang it has
-  # to be manually enabled
-  if (COMPILER_CLANG)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gdwarf-aranges")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-aranges")
-  endif()
+  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -D_FORTIFY_SOURCE=2")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -D_FORTIFY_SOURCE=2")
 else()
   ## Disable RTTI
   set(CompilerFlags
@@ -1431,65 +1576,6 @@ else()
   ## but /EHsc wasn't included in the compiler options
   ## https://docs.microsoft.com/en-us/cpp/build/reference/eh-exception-handling-model?view=msvc-170
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
-
-  ## Optimization flags
-  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
-
-  ## Generate debug info, Debug information in the .obj files for clang.
-  ## Produce PDB file for msvc, no edit and continue.
-  if (COMPILER_CLANG)
-    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Z7")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Z7")
-  else()
-    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zi")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
-  endif()
-
-  # Tell linker to include symbol data
-  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG")
-  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /DEBUG")
-
-  ## Remove unreferenced data
-  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /OPT:REF /OPT:ICF /INCREMENTAL:NO /FIXED:NO")
-  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /OPT:REF /OPT:ICF /INCREMENTAL:NO /FIXED:NO")
-
-  # Tell linker to include FIXUP information symbol data
-  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /PROFILE")
-  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /PROFILE")
-
-  ## Disable LTCG for static libraries because this setting introduces ABI incompatibility between minor compiler versions
-  if (NOT CMAKE_MSVC_CRT_LINKAGE STREQUAL "static" AND NOT COMPILER_CLANG)
-    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /GL")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")
-    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG")
-    set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
-    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
-  endif()
-
-  if (COMPILER_CLANG AND LINKER_LLD)
-    if (${CMAKE_BUILD_TYPE} MATCHES Release)
-      message(STATUS "Compiling with LTO")
-    endif()
-    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto -fwhole-program-vtables")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto -fwhole-program-vtables")
-    # When using lld-link, the -flto option need only be added to the compile step
-  endif()
-
-  # lld's uac manifest is outdated and incompatible with windows xp
-  if (LINKER_LLD)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFESTUAC:NO")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /MANIFESTUAC:NO")
-  endif()
-
-  ## not omit stack frame pointer
-  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Oy-")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Oy-")
-
-  ## supress some warnings
-  if (COMPILER_CLANG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-microsoft-exception-spec")
-  endif(COMPILER_CLANG)
 endif()
 
 # *****************************************************************************************
