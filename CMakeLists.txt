@@ -441,6 +441,8 @@ if (NOT MSVC)
       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xclang -debug-info-kind=limited")
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -debug-info-kind=limited")
     else()
+      # Use constructor homing for debug info. This option reduces debug info
+      # by emitting class type info only when constructors are emitted
       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xclang -fuse-ctor-homing")
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -fuse-ctor-homing")
     endif()
@@ -530,11 +532,17 @@ else()
   set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /PROFILE")
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /PROFILE")
 
+  # Use constructor homing for debug info. This option reduces debug info
+  # by emitting class type info only when constructors are emitted
+  if (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xclang -fuse-ctor-homing")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -fuse-ctor-homing")
+  endif()
 
   # -ffile-compilation-dir is an alias for both -fdebug-compilation-dir=
   # and -fcoverage-compilation-dir=.
   if (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14.0)
-    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wa,-fdebug-compilation-dir,.")
+    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Xclang -fdebug-compilation-dir -Xclang .")
     set(CMAKE_CC_FLAGS "${CMAKE_CC_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
   endif()
