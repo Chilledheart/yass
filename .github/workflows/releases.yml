@@ -16,7 +16,7 @@ on:
         required: false
         type: boolean
   workflow_run:
-    workflows: ['Build Artifacts (Windows)', 'Build Artifacts (macOS)', 'Build Artifacts (Linux)', 'Build Artifacts (Ubuntu)']
+    workflows: ['Build Artifacts (Windows)', 'Build Artifacts (macOS)', 'Build Artifacts (Linux)', 'Build Artifacts (Ubuntu)', 'Build Artifacts (Binary)']
     types:
       - completed
 jobs:

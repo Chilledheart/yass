@@ -8,6 +8,7 @@
 [![macOS Build](https://github.com/Chilledheart/yass/actions/workflows/macos.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/macos.yml)
 [![Linux Build](https://github.com/Chilledheart/yass/actions/workflows/linux.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/linux.yml)
 [![Ubuntu Build](https://github.com/Chilledheart/yass/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/ubuntu.yml)
+[![Binary Build](https://github.com/Chilledheart/yass/actions/workflows/binary.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/binary.yml)
 
 Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 
