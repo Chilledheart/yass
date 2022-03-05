@@ -10,6 +10,8 @@ from time import sleep
 
 APP_NAME = 'yass'
 
+dry_run = None
+
 cmake_build_type = None
 cmake_build_concurrency = None
 
@@ -46,6 +48,8 @@ def check_string_output(command):
 
 def write_output(command, check=False):
   print('--- %s' % ' '.join(command))
+  if dry_run:
+    return
   proc = subprocess.Popen(command, stdout=sys.stdout, stderr=sys.stdout,
       shell=False, env=os.environ)
   try:
@@ -60,6 +64,9 @@ def write_output(command, check=False):
                                         output=sys.stdout, stderr=sys.stderr)
 
 def rename_by_unlink(src, dst):
+  if dry_run:
+    print(f'rename {src} -> {dst}')
+    return
   if os.path.isdir(dst):
     shutil.rmtree(dst)
   elif os.path.isfile(dst):
@@ -77,9 +84,11 @@ def get_7z_path():
 def inspect_file(file, files):
   if file.endswith('.dmg'):
     write_output(['hdiutil', 'imageinfo', file])
-  elif file.endswith('.zip') or  file.endswith('.msi'):
+  elif file.endswith('.zip') or file.endswith('.msi'):
     p7z = get_7z_path()
     write_output([p7z, 'l', file])
+  elif file.endswith('.tgz'):
+    write_output(['tar', 'tvf', file])
   else:
     for file in files:
       print('------------ %s' % file)
@@ -1131,6 +1140,8 @@ def main():
 
   global APP_NAME
 
+  global dry_run
+
   global cmake_build_type
   global cmake_build_concurrency
 
@@ -1152,6 +1163,9 @@ def main():
   global arch
 
   parser = argparse.ArgumentParser()
+
+  parser.add_argument('--dry-run', help='Generate build script but without actually running it',
+                      action='store_true', default=False)
 
   group = parser.add_mutually_exclusive_group()
   group.add_argument('-nc', '--no-pre-clean', help='Don\'t Clean the source tree before building',
@@ -1209,6 +1223,8 @@ def main():
                       default=platform.machine())
 
   args = parser.parse_args()
+
+  dry_run = args.dry_run
 
   cmake_build_type = args.cmake_build_type
   cmake_build_concurrency = str(args.cmake_build_concurrency)
