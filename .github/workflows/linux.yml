@@ -53,7 +53,7 @@ jobs:
       - name: Push Docker Image
         run: |
           docker push --all-tags ghcr.io/chilledheart/${{ matrix.container }}
-  centos-release:
+  rpm-release:
     strategy:
       fail-fast: false
       matrix:
