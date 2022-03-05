@@ -708,17 +708,17 @@ def build_stage_generate_build_script():
     elif arch == 'arm64' or arch == 'aarch64':
       target = 'aarch64-linux-gnu'
       processor = 'aarch64'
-    elif arch == 'arm':
-      target = 'arm-linux-gnu'
-      processor = 'arm'
-    elif arch == 'arm':
+    elif arch == 'armel':
       target = 'arm-linux-gnueabi'
-      processor = 'arm'
+      processor = 'armel'
+    elif arch == 'arm':
+      target = 'arm-linux-gnueabihf'
+      processor = 'armhf'
     elif arch == 'mips':
-      target = 'mips-linux-gnu'
-      processor = 'mips'
+      target = 'mipsel-linux-gnu'
+      processor = 'mipsel'
     elif arch == 'mips64el':
-      target = 'mips64el-linux-gnueabi'
+      target = 'mips64el-linux-gnuabi64'
       processor = 'mips64el'
     else:
       raise Exception('Unsupported arch %s' % arch)
