@@ -447,7 +447,28 @@ target_include_directories(cxx PRIVATE
 
 target_compile_options(cxx PRIVATE ${libcxx_CFLAGS})
 
-if (NOT MSVC AND NOT APPLE AND NOT COMPILER_CLANG)
+# We need to link with libatomic on systems that do not have builtin atomics, or
+# don't have builtin support for 8 byte atomics
+set(libcxx_LINK_LIBATOMIC FALSE)
+if (NOT MSVC)
+  include(CheckCSourceCompiles)
+  set(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
+  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror=atomic-alignment")
+  check_c_source_compiles("
+    #include <stdint.h>
+    int main() {
+      int64_t val;
+      __atomic_store_n(&val, 0LL, __ATOMIC_RELEASE);
+      return __atomic_load_n(&val, __ATOMIC_ACQUIRE);
+    }
+  " libcxx_HAVE_BUILTIN_ATOMICS)
+  if (NOT libcxx_HAVE_BUILTIN_ATOMICS)
+    set(libcxx_LINK_LIBATOMIC TRUE)
+  endif()
+  set(CMAKE_REQUIRED_FLAGS ${OLD_CMAKE_REQUIRED_FLAGS})
+endif()
+
+if (libcxx_LINK_LIBATOMIC)
   target_link_libraries(cxx -Wl,'-Bstatic,-latomic,-Bdynamic')
 endif()
 

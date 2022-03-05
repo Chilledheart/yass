@@ -641,13 +641,14 @@ def prebuild_find_source_directory(pre_clean):
   if not os.path.exists('CMakeLists.txt'):
     print('Please execute this script under the top dir of the source tree')
     sys.exit(-1)
-  if os.path.exists('build'):
+  build_dir = f'build-msvc-{msvc_tgt_arch}-{msvc_crt_linkage}' if msvc_tgt_arch else f'build-{system_name}-{arch}'
+  if os.path.exists(build_dir):
     if pre_clean:
-      shutil.rmtree('build')
+      shutil.rmtree(build_dir)
       sleep(1)
-  if not os.path.exists('build'):
-    os.mkdir('build')
-  os.chdir('build')
+  if not os.path.exists(build_dir):
+    os.mkdir(build_dir)
+  os.chdir(build_dir)
 
 
 def build_stage_generate_build_script():
@@ -1209,7 +1210,7 @@ def main():
 
   parser.add_argument('--msvc-tgt-arch', help='Set Visual C++ Target Achitecture',
                       choices=['x86', 'arm', 'x64', 'arm64'],
-                      default=os.getenv('VSCMD_ARG_TGT_ARCH', 'x86'))
+                      default=os.getenv('VSCMD_ARG_TGT_ARCH'))
   parser.add_argument('--msvc-crt-linkage', help='Set Visual C++ CRT Linkage',
                       choices=['dynamic', 'static'],
                       default=os.getenv('MSVC_CRT_LINKAGE', 'static'))

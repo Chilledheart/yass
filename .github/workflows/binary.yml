@@ -47,6 +47,16 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
+      - name: Patch libcxx for both of armel and armhf
+        if: ${{ matrix.arch == 'armel' || matrix.arch == 'arm' }}
+        run: |
+          cd third_party/libc++
+          patch -p1 < libcxx-armhf-ftbfs.diff
+      - name: Patch libcxxabi for both of armel and armhf
+        if: ${{ matrix.arch == 'armel' || matrix.arch == 'arm' }}
+        run: |
+          cd third_party/libc++abi
+          patch -p1 < v8-6.7.17-fix-gcc-unwind-header.patch
       - name: Cache clang
         id: clang-cache
         uses: actions/cache@v2
