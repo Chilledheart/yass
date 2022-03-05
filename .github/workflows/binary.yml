@@ -42,10 +42,6 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Build build tool
-        run: |
-          cd tools
-          go build
       - name: Cache clang
         id: clang-cache
         uses: actions/cache@v2
@@ -64,6 +60,10 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      - name: Build build tool
+        run: |
+          cd tools
+          go build
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -104,10 +104,6 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Build build tool
-        run: |
-          cd tools
-          go build
       - name: Cache clang
         id: clang-cache
         uses: actions/cache@v2
@@ -126,6 +122,10 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      - name: Build build tool
+        run: |
+          cd tools
+          go build
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -169,10 +169,6 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Build build tool
-        run: |
-          cd tools
-          go build
       - name: Patch libcxx for both of armel and armhf
         if: ${{ matrix.arch == 'armel' || matrix.arch == 'arm' }}
         run: |
@@ -210,6 +206,10 @@ jobs:
           key: ${{ runner.os }}-sysroot-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-v${{ env.CACHE_EPOCH }}
           restore-keys: |
             ${{ runner.os }}-sysroot-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-
+      - name: Build build tool
+        run: |
+          cd tools
+          go build
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -248,10 +248,6 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Build build tool
-        run: |
-          cd tools
-          go build
       - name: Cache clang
         id: clang-cache
         uses: actions/cache@v2
@@ -279,6 +275,10 @@ jobs:
           key: ${{ runner.os }}-freebsd-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-v${{ env.CACHE_EPOCH }}
           restore-keys: |
             ${{ runner.os }}-freebsd-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-
+      - name: Build build tool
+        run: |
+          cd tools
+          go build
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |

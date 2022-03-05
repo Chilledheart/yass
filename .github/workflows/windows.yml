@@ -46,10 +46,6 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Build build tool
-        run: |
-          cd tools
-          go build
       - name: Cache clang, nasm and wixtoolset 3
         id: clang-cache
         uses: actions/cache@v2
@@ -70,6 +66,10 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      - name: Build build tool
+        run: |
+          cd tools
+          go build
       - name: "Download dependency: clang, nasm and wixtoolset 3"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -126,10 +126,6 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Build build tool
-        run: |
-          cd tools
-          go build
       - name: Cache clang, nasm and wixtoolset 3
         id: clang-cache
         uses: actions/cache@v2
@@ -150,6 +146,10 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      - name: Build build tool
+        run: |
+          cd tools
+          go build
       - name: "Download dependency: clang, nasm and wixtoolset 3"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -210,10 +210,6 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Build build tool
-        run: |
-          cd tools
-          go build
       - name: Cache clang, nasm and wixtoolset 3
         id: clang-cache
         uses: actions/cache@v2
@@ -234,6 +230,10 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      - name: Build build tool
+        run: |
+          cd tools
+          go build
       - name: "Download dependency: clang, nasm and wixtoolset 3"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -283,10 +283,6 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Build build tool
-        run: |
-          cd tools
-          go build
       - name: Cache clang, nasm and wixtoolset 3
         id: clang-cache
         uses: actions/cache@v2
@@ -307,6 +303,10 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      - name: Build build tool
+        run: |
+          cd tools
+          go build
       - name: "Download dependency: clang, nasm and wixtoolset 3"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -357,10 +357,6 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Build build tool
-        run: |
-          cd tools
-          go build
       - name: Cache clang, nasm and wixtoolset 3
         id: clang-cache
         uses: actions/cache@v2
@@ -381,6 +377,10 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      - name: Build build tool
+        run: |
+          cd tools
+          go build
       - name: "Download dependency: clang, nasm and wixtoolset 3"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
