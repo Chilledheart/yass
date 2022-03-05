@@ -28,3 +28,4 @@ sscxx
 *.txz
 *.xz
 *.tgz
+/tools/build

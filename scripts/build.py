@@ -1314,4 +1314,9 @@ def main():
   print('done')
 
 if __name__ == '__main__':
+  print("")
+  print("  *******************************************************")
+  print("  Deprecated: please use build tool under tools directory")
+  print("  *******************************************************")
+  print("")
   main()

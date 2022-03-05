@@ -759,7 +759,6 @@ func postStateArchives() map[string][]string {
 
 	ext := ".zip"
 
-	glog.Info(systemNameFlag)
 	if systemNameFlag == "linux" || systemNameFlag == "freebsd" {
 		ext = ".tgz"
 	}
