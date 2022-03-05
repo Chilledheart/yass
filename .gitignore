@@ -25,3 +25,6 @@ sscxx
 *.wixpdb
 /debian_sid_*
 /freebsd-11.3-toolchain
+*.txz
+*.xz
+*.tgz

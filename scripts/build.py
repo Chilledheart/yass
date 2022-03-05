@@ -50,14 +50,26 @@ def write_output(command, check=False):
   print('--- %s' % ' '.join(command))
   if dry_run:
     return
-  proc = subprocess.Popen(command, stdout=sys.stdout, stderr=sys.stdout,
-      shell=False, env=os.environ)
+  proc = None
+  try:
+    proc = subprocess.Popen(command, stdout=sys.stdout, stderr=sys.stderr,
+        shell=False, env=os.environ)
+  except:
+    if check:
+      raise
+    else:
+      return
   try:
     proc.communicate()
-  except:  # Including KeyboardInterrupt, communicate handled that.
+  except KeyboardInterrupt:
     proc.kill()
     # We don't call process.wait() as .__exit__ does that for us.
     raise
+  except:
+    proc.kill()
+    # We don't call process.wait() as .__exit__ does that for us.
+    if check:
+      raise
   retcode = proc.poll()
   if check and retcode:
     raise subprocess.CalledProcessError(retcode, proc.args,
@@ -762,8 +774,6 @@ def build_stage_generate_build_script():
     cmake_args.extend(['-DGCC_SYSROOT=%s' % sysroot])
     cmake_args.extend(['-DGCC_SYSTEM_PROCESSOR=%s' % processor])
     cmake_args.extend(['-DGCC_TARGET=%s' % target])
-    # FIXME extract pkg into sysroot
-    cmake_args.extend(['-DGUI=OFF'])
 
   command = ['cmake', '..'] + cmake_args
 
@@ -796,7 +806,7 @@ def postbuild_fix_rpath():
   if system_name == 'Windows':
     # 'no need to fix rpath'
     pass
-  elif system_name == 'Linux':
+  elif system_name == 'Linux' or system_name == 'FreeBSD':
     # Skip for now as we don't have depedents libraries
     #_postbuild_patchelf()
     pass
@@ -1245,10 +1255,6 @@ def main():
   system_name = args.system
   sysroot = args.sysroot
   arch = args.arch
-
-  # FIXME, turn on gui
-  if system_name == 'FreeBSD' and sysroot:
-    APP_NAME = 'yass_cli'
 
   # clang-tidy complains about parse error
   if clang_tidy_mode:

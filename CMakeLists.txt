@@ -1586,7 +1586,7 @@ if (NOT MSVC)
     # Setting this to true makes sure that libraries we build will have our
     # rpath set even without having to do "make install"
     set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-    set(CMAKE_INSTALL_RPATH "\$ORIGIN/lib")
+    set(CMAKE_INSTALL_RPATH "\$ORIGIN/../lib")
   endif()
 else()
   ## Disable RTTI
