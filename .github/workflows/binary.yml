@@ -42,6 +42,10 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
+      - name: Build build tool
+        run: |
+          cd tools
+          go build
       - name: Cache clang
         id: clang-cache
         uses: actions/cache@v2
@@ -100,6 +104,10 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
+      - name: Build build tool
+        run: |
+          cd tools
+          go build
       - name: Cache clang
         id: clang-cache
         uses: actions/cache@v2
@@ -161,6 +169,10 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
+      - name: Build build tool
+        run: |
+          cd tools
+          go build
       - name: Patch libcxx for both of armel and armhf
         if: ${{ matrix.arch == 'armel' || matrix.arch == 'arm' }}
         run: |
@@ -213,7 +225,7 @@ jobs:
         run: |
           export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
           export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
-          ./scripts/build.py --arch ${{ matrix.arch }} --system Linux --sysroot $PWD/debian_sid_${{ matrix.arch }}-sysroot
+          ./tools/build -alsologtostderr -v 2 --arch ${{ matrix.arch }} --system linux --sysroot $PWD/debian_sid_${{ matrix.arch }}-sysroot
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
@@ -236,6 +248,10 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
+      - name: Build build tool
+        run: |
+          cd tools
+          go build
       - name: Cache clang
         id: clang-cache
         uses: actions/cache@v2
@@ -279,7 +295,7 @@ jobs:
         run: |
           export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
           export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
-          ./scripts/build.py --arch ${{ matrix.arch }} --system FreeBSD --sysroot $PWD/freebsd-11.3-toolchain
+          ./tools/build -alsologtostderr -v 2 --arch ${{ matrix.arch }} --system freebsd --sysroot $PWD/freebsd-11.3-toolchain
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
