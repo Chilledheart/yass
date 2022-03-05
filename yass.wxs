@@ -53,6 +53,7 @@
         <ComponentGroup Id='exe_dll'>
             <Component Id='SupportLibrary' Directory='INSTALLDIR' Guid='3BEB0AD7-044F-4FB6-9CF1-C53D45600722'>
                 <CreateFolder/>
+                <!-- %DLLPLACEHOLDER% -->
                 <!--
                 <File Name='Support.dll' Source='Support.dll' KeyPath='yes' />
                 -->
@@ -61,6 +62,7 @@
 
         <ComponentGroup Id='exe_license'>
             <Component Id='License' Directory='INSTALLDIR' Guid='CD8DB265-5EC1-4631-8CDB-8E935F1AFDFA'>
+                <!-- %LICENSEPLACEHOLDER% -->
                 <!--
                 <File Name='LICENSE' Source='LICENSE' KeyPath='yes' />
                 -->

@@ -731,8 +731,33 @@ func archiveMainFile(output string, paths []string) {
 	}
 }
 
-// TBD
 func generateMsi(output string, paths []string, dllPaths []string, licensePaths []string) {
+	wxsTemplate, err := ioutil.ReadFile(filepath.Join("..", "yass.wxs"))
+	if err != nil {
+		panic(err)
+	}
+	wxsXml := string(wxsTemplate)
+	dllReplacement := ""
+	for _, dllPath := range dllPaths {
+		dllReplacement += fmt.Sprintf("<File Name='%s' Source='%s' KeyPath='no' />\n", filepath.Base(dllPath), dllPath)
+	}
+	wxsXml = strings.Replace(wxsXml, "<!-- %DLLPLACEHOLDER% -->", dllReplacement, 1)
+	licenseReplacement := ""
+	for _, licensePath := range licensePaths {
+		licenseReplacement += fmt.Sprintf("<File Name='%s' Source='%s' KeyPath='no' />\n", filepath.Base(licensePath), licensePath)
+	}
+	wxsXml = strings.Replace(wxsXml, "<!-- %LICENSEPLACEHOLDER% -->", licenseReplacement, 1)
+
+	err = ioutil.WriteFile("yass.wxs", []byte(wxsXml), 0666)
+	if err != nil {
+		panic(err)
+	}
+
+	glog.Info("Feeding WiX compiler...")
+	cmdRun([]string{"candle.exe", "yass.wxs"}, true)
+
+	glog.Info("Generating MSI file...")
+	cmdRun([]string{"light.exe", "-ext", "WixUIExtension", "-out", output, "-cultures:en-US", "-sice:ICE03", "-sice:ICE57", "-sice:ICE61", "yass.wixobj"}, true)
 }
 
 func postStateArchives() map[string][]string {
@@ -793,13 +818,13 @@ func postStateArchives() map[string][]string {
 	// debuginfo file
 	if systemNameFlag == "windows" {
 		archiveFiles(debugArchive, []string{APPNAME + ".pdb"})
-		dbgPaths = append(dbgPaths, APPNAME + ".pdb")
+		dbgPaths = append(dbgPaths, APPNAME+".pdb")
 	} else if systemNameFlag == "linux" || systemNameFlag == "freebsd" {
 		archiveFiles(debugArchive, []string{APPNAME + ".dbg"})
-		dbgPaths = append(dbgPaths, APPNAME + ".dbg")
+		dbgPaths = append(dbgPaths, APPNAME+".dbg")
 	} else if systemNameFlag == "darwin" {
 		archiveFiles(debugArchive, []string{getAppName() + ".dSYM"})
-		dbgPaths = append(dbgPaths, getAppName() + ".dSYM")
+		dbgPaths = append(dbgPaths, getAppName()+".dSYM")
 	}
 	archives[debugArchive] = dbgPaths
 	return archives
