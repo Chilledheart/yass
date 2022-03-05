@@ -8,7 +8,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/fs"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -499,7 +498,7 @@ func checkUniveralBuild(path string) error {
 			statusMsg += fmt.Sprintf("bundle %s is universal built\n", path)
 		}
 
-		walkFunc := func(path string, info fs.FileInfo, err error) error {
+		walkFunc := func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
@@ -606,7 +605,7 @@ func postStateArchiveLicenses() []string {
 }
 
 // add to zip writer
-func archiveFileToZip(zipWriter *zip.Writer, info fs.FileInfo, path string) error {
+func archiveFileToZip(zipWriter *zip.Writer, info os.FileInfo, path string) error {
 	if info.Mode()&os.ModeSymlink == os.ModeSymlink {
 		symlinksTarget, err := os.Readlink(path)
 		if err != nil {
@@ -677,7 +676,7 @@ func archiveFiles(output string, paths []string) {
 			continue
 		}
 
-		walkFunc := func(path string, info fs.FileInfo, err error) error {
+		walkFunc := func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
