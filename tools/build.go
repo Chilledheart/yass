@@ -46,6 +46,8 @@ var msvcTargetArchFlag string
 var msvcCrtLinkageFlag string
 var msvcAllowXpFlag bool
 
+var freebsdAbiFlag int
+
 var systemNameFlag string
 var sysrootFlag string
 var archFlag string
@@ -112,9 +114,12 @@ func InitFlag() {
 	flag.StringVar(&msvcCrtLinkageFlag, "msvc-crt-linkage", getEnv("MSVC_CRT_LINKAGE", ""), "Set Visual C++ CRT Linkage")
 	flag.BoolVar(&msvcAllowXpFlag, "msvc-allow-xp", getEnvBool("MSVC_ALLOW_XP", false), "Enable Windows XP Build")
 
+	flag.IntVar(&freebsdAbiFlag, "freebsd-abi", 11, "Select FreeBSD ABI")
+
 	flag.StringVar(&systemNameFlag, "system", runtime.GOOS, "Specify host system name")
 	flag.StringVar(&sysrootFlag, "sysroot", "", "Specify host sysroot, used in cross-compiling")
 	flag.StringVar(&archFlag, "arch", runtime.GOARCH, "Specify host architecture")
+
 	flag.Parse()
 
 	if flagNoPreClean {
@@ -378,6 +383,7 @@ func buildStageGenerateBuildScript() {
 		} else {
 			glog.Fatalf("Invalid arch: %s", archFlag)
 		}
+		llvmTarget = fmt.Sprintf("%s%d", llvmTarget, freebsdAbiFlag)
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/FreeBSD.cmake", buildDir))
 		var pkgConfigPath = filepath.Join(sysrootFlag, "usr", "libdata", "pkgconfig")
 		pkgConfigPath += ";" + filepath.Join(sysrootFlag, "usr", "local", "libdata", "pkgconfig")
@@ -789,8 +795,7 @@ func postStateArchives() map[string][]string {
 		}
 		archiveFormat = fmt.Sprintf("%%s-%s-release-%s-%s%%s%%s", os, arch, tag)
 	} else if systemNameFlag == "freebsd" {
-		abi := "11"
-		archiveFormat = fmt.Sprintf("%%s-%s%s-release-%s-%s%%s%%s", systemNameFlag, abi, archFlag, tag)
+		archiveFormat = fmt.Sprintf("%%s-%s%d-release-%s-%s%%s%%s", systemNameFlag, freebsdAbiFlag, archFlag, tag)
 	} else {
 		archiveFormat = fmt.Sprintf("%%s-%s-release-%s-%s%%s%%s", systemNameFlag, archFlag, tag)
 	}

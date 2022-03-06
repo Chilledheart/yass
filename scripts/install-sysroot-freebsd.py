@@ -67,26 +67,44 @@ def extract_pkg(pkg_url, pkg_sum, dst):
   print(f'extracting pkg {pkg_url}...')
   write_output(['curl', '-C', '-', '-L', '-O', pkg_url])
   if GetSha256(os.path.basename(pkg_url)) != pkg_sum:
-    raise Exception(f'{pkg_url} checksum mismatched!')
-  write_output(['tar', '-C', dst, '-xvf', os.path.basename(pkg_url), '/usr'])
+    print(f'{pkg_url} checksum mismatched, expected: {pkg_sum}!')
+    return
+  write_output(['tar', '-C', dst, '-xvf', os.path.basename(pkg_url), '/usr/local/include', '/usr/local/libdata', '/usr/local/lib'])
 
 def main(args):
+  if not args:
+    print("no abi specified, setting to freebsd11")
+    abi = '11'
+  else:
+    abi = args[0]
+
+  # not all tarbars exist in public sever
+  if abi == '11':
+    release = '3'
+  elif abi == '12':
+    release = '3'
+  elif abi == '13':
+    release = '0'
+  else:
+    release = '0'
+  version = f'{abi}{release}'
+
+  sysroot = f'freebsd-{abi}-toolchain'
+
   print('extracting sysroot...')
-  write_output(['curl', '-C', '-', '-L', '-O', 'https://clickhouse-datasets.s3.yandex.net/toolchains/toolchains/freebsd-11.3-toolchain.tar.xz'])
-  write_output(['tar', '-xvf', 'freebsd-11.3-toolchain.tar.xz'])
 
-  sysroot = 'freebsd-11.3-toolchain'
+  if not os.path.isdir(sysroot):
+    os.mkdir(sysroot)
 
-  print('extracting sysroot...(libthr.so and libgcc_s.so)')
-  # FIXME extract libthr.so and libgcc_s.so only
-  # we might want to repack it ...
-  write_output(['curl', '-C', '-', '-L', '-O', 'http://ftp.freebsd.org/pub/FreeBSD/releases/amd64/11.3-RELEASE/base.txz'])
-  write_output(['tar', '-C', sysroot, '-xvf', 'base.txz', './lib/libgcc_s.so.1', './lib/libthr.so.3'])
-  write_output(['ln', '-sf', 'libthr.so.3', f'{sysroot}/lib/libthr.so'])
-  write_output(['ln', '-sf', 'libgcc_s.so.1', f'{sysroot}/lib/libgcc_s.so'])
+  # extract include and so only
+  write_output(['curl', '-C', '-', '-L', '-O', f'http://ftp.freebsd.org/pub/FreeBSD/releases/amd64/{version}-RELEASE/base.txz'])
+  write_output(['tar', '-C', sysroot, '-xvf', 'base.txz', './usr/include', './lib', './usr/libdata/pkgconfig'])
+  write_output(['ln', '-sf', '../lib', f'{sysroot}/usr/lib'])
 
   print(f'extract sysroot (gtk3)...')
-  write_output(['curl', '-C', '-', '-L', '-O', 'http://pkg.freebsd.org/FreeBSD%3A11%3Aamd64/release_3/packagesite.txz'])
+
+  base_url = f'http://pkg.freebsd.org/FreeBSD%3A{abi}%3Aamd64/release_{release}'
+  write_output(['curl', '-C', '-', '-L', '-O', f'{base_url}/packagesite.txz'])
 
   write_output(['tar', '-xvf', 'packagesite.txz', 'packagesite.yaml'])
 
@@ -104,22 +122,19 @@ def main(args):
   deps = resolve_deps(pkg_db, ['gtk3'])
   for dep in deps:
     pkg = pkg_db[dep]
-    base_url = 'http://pkg.freebsd.org/FreeBSD%3A11%3Aamd64/release_3'
     extract_pkg(base_url + '/' + pkg['path'], pkg['sum'], sysroot)
 
   print(f'clean up sysroot...')
-  # exclude: include, lib, libdata
-  for subdir in ['bin', 'etc', 'lib', 'libexec', 'man', 'openssl', 'sbin', 'share', 'var']:
-    if subdir == 'lib':
-      import glob
-      cmd = ['rm', '-rf']
-      for f in glob.glob(f'{sysroot}/usr/local/{subdir}/*.a'):
-        cmd.append(f)
-      for f in glob.glob(f'{sysroot}/usr/local/{subdir}/python*'):
-        cmd.append(f)
-      write_output(cmd)
-      continue
-    write_output(['rm', '-rf', f'{sysroot}/usr/local/{subdir}'])
+  # remove remaining files in lib
+  import glob
+  cmd = ['rm', '-rf']
+  for f in glob.glob(f'{sysroot}/usr/local/lib/*.a'):
+    cmd.append(f)
+  for f in glob.glob(f'{sysroot}/usr/local/lib/*.a'):
+    cmd.append(f)
+  for f in glob.glob(f'{sysroot}/usr/local/lib/python*'):
+    cmd.append(f)
+  write_output(cmd)
 
   return 0
 
