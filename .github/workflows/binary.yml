@@ -299,7 +299,7 @@ jobs:
         run: |
           export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
           export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
-          ./tools/build -alsologtostderr -v 2 --arch ${{ matrix.arch }} --system freebsd --freebsd-abi ${{ matrix.abi }} --sysroot $PWD/freebsd-11.3-toolchain
+          ./tools/build -alsologtostderr -v 2 --arch ${{ matrix.arch }} --system freebsd --freebsd-abi ${{ matrix.abi }} --sysroot $PWD/freebsd-${{ matrix.abi }}-toolchain
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
