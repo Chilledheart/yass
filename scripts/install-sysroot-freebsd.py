@@ -98,8 +98,7 @@ def main(args):
 
   # extract include and so only
   write_output(['curl', '-C', '-', '-L', '-O', f'http://ftp.freebsd.org/pub/FreeBSD/releases/amd64/{version}-RELEASE/base.txz'])
-  write_output(['tar', '-C', sysroot, '-xvf', 'base.txz', './usr/include', './lib', './usr/libdata/pkgconfig'])
-  write_output(['ln', '-sf', '../lib', f'{sysroot}/usr/lib'])
+  write_output(['tar', '-C', sysroot, '-xvf', 'base.txz', './usr/include', './usr/lib', './lib', './usr/libdata/pkgconfig'])
 
   print(f'extract sysroot (gtk3)...')
 
@@ -128,6 +127,9 @@ def main(args):
   # remove remaining files in lib
   import glob
   cmd = ['rm', '-rf']
+  cmd.append(f'{sysroot}/usr/lib/clang')
+  for f in glob.glob(f'{sysroot}/usr/lib/*.a'):
+    cmd.append(f)
   for f in glob.glob(f'{sysroot}/usr/local/lib/*.a'):
     cmd.append(f)
   for f in glob.glob(f'{sysroot}/usr/local/lib/*.a'):
