@@ -85,6 +85,10 @@ func InitFlag() {
 	toolDir = filepath.Dir(filename)
 	projectDir = filepath.Dir(toolDir)
 
+	// override defaults
+	flag.Set("v", "2")
+	flag.Set("alsologtostderr", "true")
+
 	var flagNoPreClean bool
 
 	flag.BoolVar(&dryRunFlag, "dry-run", false, "Generate build script but without actually running it")
@@ -122,6 +126,9 @@ func InitFlag() {
 		macosxUniversalBuildFlag = false
 		noPackagingFlag = true
 	}
+
+	// For compatiblity
+	systemNameFlag = strings.ToLower(systemNameFlag)
 }
 
 func prebuildFindSourceDirectory() {
@@ -132,11 +139,14 @@ func prebuildFindSourceDirectory() {
 		glog.Fatalf("Cannot find top dir of the source tree")
 	}
 
-	if msvcTargetArchFlag != "" {
+	if systemNameFlag == "windows" && msvcTargetArchFlag != "" {
 		buildDir = fmt.Sprintf("build-msvc-%s-%s", msvcTargetArchFlag, msvcCrtLinkageFlag)
-	} else {
-
-		buildDir = fmt.Sprintf("build-%s-%s", systemNameFlag, archFlag)
+	} else  {
+		arch := archFlag
+		if  systemNameFlag == "darwin" && macosxUniversalBuildFlag {
+			arch = "universal"
+		}
+		buildDir = fmt.Sprintf("build-%s-%s", systemNameFlag, arch)
 	}
 	var err error
 	buildDir, err = filepath.Abs(buildDir)
@@ -240,7 +250,7 @@ func cmdRun(args []string, check bool) {
 	scanner := bufio.NewScanner(stdouterr)
 	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
-		fmt.Println(scanner.Text())
+		glog.Info(scanner.Text())
 	}
 	err = cmd.Wait()
 	if err != nil {
@@ -430,7 +440,6 @@ func postStateStripBinaries() {
 		if _, err := os.Stat(objcopy); err == os.ErrNotExist {
 			objcopy = "objcopy"
 		}
-		cmdRun([]string{objcopy}, false)
 		// create a file containing the debugging info.
 		cmdRun([]string{objcopy, "--only-keep-debug", APPNAME, APPNAME + ".dbg"}, false)
 		// stripped executable.
@@ -797,6 +806,10 @@ func postStateArchives() map[string][]string {
 	msiArchive := fmt.Sprintf(archiveFormat, APPNAME, "", ".msi")
 	debugArchive := fmt.Sprintf(archiveFormat, APPNAME, "-debuginfo", ext)
 
+	archive = filepath.Join("..", archive)
+	msiArchive = filepath.Join("..", msiArchive)
+	debugArchive = filepath.Join("..", debugArchive)
+
 	archives := map[string][]string{}
 
 	paths := []string{getAppName()}
@@ -866,7 +879,6 @@ func postStateInspectArchives(archives map[string][]string) {
 
 func main() {
 	InitFlag()
-	glog.Infof("Hello, World! %s-%s", systemNameFlag, archFlag)
 	// PreStage Find Source Directory
 	prebuildFindSourceDirectory()
 	// BuildStage Generate Build Script
