@@ -223,7 +223,7 @@ Run in Terminal:
 sudo apt-get install -y git build-essential fakeroot devscripts debhelper
 ```
 
-2. Generate Packages under `$HOME/rpmbuild/RPMS`
+2. Generate Packages
 ```
 ./scripts/build-deb.sh
 ```
@@ -238,6 +238,15 @@ sudo yum install -y gcc rpm-build rpm-devel rpmlint make python bash coreutils d
 2. Generate Packages under current parent directory
 ```
 ./scripts/build-rpm.sh
+```
+
+## FreeBSD/Packaging
+
+Make sure you have [Python 3][python-macos] installed on your system.
+
+Run in Terminal:
+```
+./scripts/build.py
 ```
 
 [visualstudio]: https://visualstudio.microsoft.com/downloads/
