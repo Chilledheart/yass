@@ -788,6 +788,9 @@ func postStateArchives() map[string][]string {
 			arch = "universal"
 		}
 		archiveFormat = fmt.Sprintf("%%s-%s-release-%s-%s%%s%%s", os, arch, tag)
+	} else if systemNameFlag == "freebsd" {
+		abi := "11"
+		archiveFormat = fmt.Sprintf("%%s-%s%s-release-%s-%s%%s%%s", systemNameFlag, abi, archFlag, tag)
 	} else {
 		archiveFormat = fmt.Sprintf("%%s-%s-release-%s-%s%%s%%s", systemNameFlag, archFlag, tag)
 	}

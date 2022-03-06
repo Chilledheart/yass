@@ -231,7 +231,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} yass*.zip
+          gh release upload ${{ github.event.release.tag_name }} yass*.tgz
   freebsd-binary-release:
     strategy:
       fail-fast: false
@@ -301,4 +301,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} yass*.zip
+          gh release upload ${{ github.event.release.tag_name }} yass*.tgz
