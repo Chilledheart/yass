@@ -348,7 +348,7 @@ func buildStageGenerateBuildScript() {
 		}
 	}
 
-	if systemNameFlag == "linux" {
+	if systemNameFlag == "linux" && sysrootFlag != "" {
 		gnuType, gnuArch := getGNUTargetTypeAndArch(archFlag)
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/Linux.cmake", buildDir))
 		var pkgConfigPath = filepath.Join(sysrootFlag, "usr", "lib", "pkgconfig")
@@ -362,7 +362,7 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_TARGET=%s", gnuType))
 	}
 
-	if systemNameFlag == "freebsd" {
+	if systemNameFlag == "freebsd" && sysrootFlag != "" {
 		var llvmTarget string
 		var llvmArch string
 
