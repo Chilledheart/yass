@@ -1,21 +1,3 @@
-project(cxx CXX)
-
-# The OLD behavior of this policy is to only allow GENERATED to be
-# visible from the directory scope for which it was set.  The NEW
-# behavior on the other hand allows it to be visible from any scope.
-#
-# Turn on Fix on https://gitlab.kitware.com/cmake/cmake/-/issues/18399
-# Introduced by cmake 3.20
-if(POLICY CMP0118)
-  cmake_policy(SET CMP0118 NEW)
-endif()
-
-option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
-
-# https://docs.microsoft.com/en-us/cpp/c-runtime-library/crt-library-features?redirectedfrom=MSDN&view=msvc-170
-set(CMAKE_MSVC_CRT_LINKAGE "static" CACHE STRING "")
-
-## Enforce C/C++ standard
 set(CMAKE_CXX_STANDARD 17)
 
 # This is included by reference in the //build/config/compiler:runtime_library
@@ -34,36 +16,13 @@ endif()
 # lldb has picked up that fix (I'm using Xcode 13.2.1's lldb).
 set(libcxx_ABI_UNSTABLE ON)
 
-if (MSVC)
-  option(ALLOW_XP "Build with Windows XP support." OFF)
-endif()
-
-## Setup compiler informations
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
-    CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-  set(COMPILER_CLANG TRUE)
-else()
-  set(COMPILER_CLANG FALSE)
-endif()
-
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  set(COMPILER_GCC TRUE)
-else()
-  set(COMPILER_GCC FALSE)
-endif()
-
-if (MSVC AND NOT COMPILER_CLANG)
-  set(COMPILER_MSVC TRUE)
-else()
-  set(COMPILER_MSVC FALSE)
-endif()
-
 #The system libc++ on Mac doesn't have aligned allocation in C++17.
 if (APPLE)
   add_definitions(-D_LIBCPP_HAS_NO_ALIGNED_ALLOCATION)
 endif()
 
 message(STATUS "Build with libc++")
+
 if (libcxx_ABI_UNSTABLE)
   set(libcxx_PUBLIC_DEFINITIONS
     ${libcxx_PUBLIC_DEFINITIONS}

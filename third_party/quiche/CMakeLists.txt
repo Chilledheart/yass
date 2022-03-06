@@ -1,7 +1,3 @@
-project(quiche CXX)
-
-option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
-
 set(quiche_SRCS
   ../icu/icu_utf.h
   ../mozilla/url_parse.cc

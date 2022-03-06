@@ -1419,13 +1419,11 @@ set_target_properties(protoc PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 
 # exclude non-native protoc from being build
-set_target_properties(protoc PROPERTIES EXCLUDE_FROM_ALL TRUE)
 set_target_properties(libprotoc PROPERTIES EXCLUDE_FROM_ALL TRUE)
 set_target_properties(libprotobuf PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
-include(NativeTool)
-add_native_protoc(protoc yass)
 include(Protobuf)
+add_protoc(protoc yass)
 
 # *****************************************************************************************
 #           Zlib Library

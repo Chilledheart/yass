@@ -1,5 +1,3 @@
-project(zlib C)
-
 set (zlib_SRCS
   adler32.c
   chromeconf.h

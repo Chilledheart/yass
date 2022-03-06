@@ -110,10 +110,13 @@ function(protobuf_generate)
       OUTPUT ${_generated_srcs}
       COMMAND  ${yass_PROTOC_EXE}
       ARGS --${protobuf_generate_LANGUAGE}_out ${_dll_export_decl}${protobuf_generate_PROTOC_OUT_DIR} ${_plugin} ${_dll_desc_out} ${_protobuf_include_path} ${_abs_file}
-      DEPENDS ${_abs_file} ${yass_PROTOC_EXE}
+      DEPENDS ${_abs_file} ${yass_PROTOC_EXE} ${yass_PROTOC_TARGET}
       COMMENT "Running ${protobuf_generate_LANGUAGE} protocol buffer compiler on ${_proto}"
       VERBATIM )
   endforeach()
+
+  # `make clean' must remove all those generated files:
+  set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES ${_generated_srcs_all})
 
   set_source_files_properties(${_generated_srcs_all} PROPERTIES GENERATED TRUE)
   if(protobuf_generate_OUT_VAR)
@@ -174,3 +177,39 @@ function(PROTOBUF_GENERATE_CPP SRCS HDRS)
   endif()
 endfunction()
 
+macro(add_protoc target project)
+  # CMake doesn't let compilation units depend on their dependent libraries on some generators.
+
+  set(${project}_PROTOC "${target}" CACHE
+      STRING "Native Tool executable. Saves building one when cross-compiling.")
+
+  # Effective native tool executable to be used:
+  set(${project}_PROTOC_EXE ${${project}_PROTOC})
+  set(${project}_PROTOC_TARGET ${${project}_PROTOC})
+
+  if (USE_HOST_TOOLS)
+    if (${${project}_PROTOC} STREQUAL "${target}")
+      # The NATIVE protoc executable *must* depend on the current target one
+      # otherwise the native one won't get rebuilt when the tablgen sources
+      # change, and we end up with incorrect builds.
+      # build_native_tool(${target} ${project}_PROTOC_EXE DEPENDS ${target})
+      build_native_tool(${target} ${project}_PROTOC_EXE)
+      set(${project}_PROTOC_EXE ${${project}_PROTOC_EXE})
+
+      add_custom_target(${project}-protoc-host DEPENDS ${${project}_PROTOC_EXE})
+      set(${project}_PROTOC_TARGET ${project}-protoc-host)
+
+      # Create an artificial dependency between protoc projects, because they
+      # compile the same dependencies, thus using the same build folders.
+      # FIXME: A proper fix requires sequentially chaining protocs.
+      if (NOT ${project} STREQUAL yass AND TARGET ${project}-protoc-host AND
+          TARGET yass-protoc-host)
+        add_dependencies(${project}-protoc-host yass-protoc-host)
+      endif()
+
+      # If we're using the host protoc, and utils were not requested, we have no
+      # need to build this protoc.
+      set_target_properties(${target} PROPERTIES EXCLUDE_FROM_ALL ON)
+    endif()
+  endif()
+endmacro()
