@@ -42,7 +42,7 @@ override_dh_auto_configure:
 	dh_auto_configure ${DEB_BUILD_SYSTEM_OPTIONS} -- -DCMAKE_BUILD_TYPE=Release -DUSE_HOST_TOOLS=on $(CMAKE_OPTIONS) -DCLI=on -DSERVER=on
 
 override_dh_auto_build:
-	dh_auto_build -- -j $(NCPUS)
+	dh_auto_build ${DEB_BUILD_SYSTEM_OPTIONS} -- -j $(NCPUS)
 
 override_dh_auto_test:
 	echo 'no test'
