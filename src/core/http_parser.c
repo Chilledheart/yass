@@ -75,7 +75,7 @@ do {                                                                 \
 # define UNLIKELY(X) (X)
 #endif
 
-#if (defined(__GNUC__) && (__GNUC__ >= 7)) || defined(__clang__)
+#if (defined(__GNUC__) && (__GNUC__ >= 7)) || defined(__clang__) && defined(__clang_major__) && (__clang_major__ >= 10)
 # define FALLTHROUGH __attribute__((fallthrough));
 #else
 # define FALLTHROUGH

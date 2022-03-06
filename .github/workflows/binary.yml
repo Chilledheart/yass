@@ -25,8 +25,8 @@ env:
   CACHE_EPOCH: 3
   GOPROXY: direct
 jobs:
-  linux-binary-compatible:
-    runs-on: ubuntu-20.04
+  linux-compiler-compatible:
+    runs-on: ubuntu-18.04
     strategy:
       fail-fast: false
       matrix:
@@ -42,15 +42,15 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache clang
-        id: clang-cache
+      - name: Cache clang (v5.0)
+        id: clang5-cache
         uses: actions/cache@v2
         with:
           path: |
-            third_party/llvm-build/Release+Asserts
-          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+            third_party/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04
+          key: ${{ runner.os }}-toolchain-clang5-v${{ env.CACHE_EPOCH }}
           restore-keys: |
-            ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
+            ${{ runner.os }}-toolchain-clang5-
       - name: Cache golang
         uses: actions/cache@v2
         with:
@@ -64,11 +64,13 @@ jobs:
         run: |
           cd tools
           go build
-      - name: "Install dependency: prebuilt clang and clang-tidy binaries"
-        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+      - name: "Install dependency: clang 5"
+        if: ${{ steps.clang5-cache.outputs.cache-hit != 'true' }}
         run: |
-          ./scripts/download-clang-prebuilt-binaries.py
-          rm -f third_party/llvm-build/Release+Asserts/*.tgz
+          curl -L -O https://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz
+          tar -C third_party -xvf clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz
+          rm -f clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/lib/*.a
+          rm -f *.xz
       - name: Change ubuntu mirror
         run: |
           sudo sed -i 's/azure.archive.ubuntu.com/archive.ubuntu.com/g' /etc/apt/sources.list
@@ -78,8 +80,8 @@ jobs:
       - name: Build
         run: |
           if [ "$COMPILER" = "clang" ]; then
-            export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
-            export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
+            export CC=$PWD/third_party/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clang
+            export CXX=$PWD/third_party/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clang++
           else
             export CC=gcc
             export CXX=g++
@@ -87,9 +89,10 @@ jobs:
           mkdir build
           cd build
           cmake -G Ninja -DCLI=on -DSERVER=on -DGUI=on ..
+          cmake -G Ninja -DCLI=on -DSERVER=on -DGUI=off ..
           ninja -v yass_cli yass_server yass
           cd ..
-  linux-binary-clang-tidy:
+  linux-clang-tidy:
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false

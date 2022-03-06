@@ -710,7 +710,7 @@ endif()
 # GCC seems to have some bugs compiling constexpr code when this is defined,
 # so only enable it if using_clang. See: https://gcc.gnu.org/PR97913
 # TODO(mpdenton): remove is_clang once GCC bug is fixed.
-if (NOT UBSAN AND COMPILER_CLANG)
+if (NOT UBSAN AND COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.0)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-delete-null-pointer-checks")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-delete-null-pointer-checks")
 endif()
@@ -908,7 +908,7 @@ if ((UNIX AND NOT APPLE) AND USE_LLD)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,keep-text-section-prefix")
 endif()
 
-if (COMPILER_CLANG)
+if (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6.0)
   # TODO(hans): Remove this once Clang generates better optimized debug info
   # by default. https://crbug.com/765793
   set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -mllvm -instcombine-lower-dbg-declare=0")
@@ -999,10 +999,10 @@ endif()
 # jumps. Turn it off by default and enable selectively for targets where it's
 # beneficial.
 if (USE_LLD)
-  if (MSVC)
+  if (MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /call-graph-profile-sort:no")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /call-graph-profile-sort:no")
-  elseif (NOT APPLE)
+  elseif (NOT APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
     # TODO(thakis): Once LLD's Mach-O port basically works, implement call
     # graph profile sorting for it, add an opt-out flag, and pass it here.
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-call-graph-profile-sort")
@@ -1025,7 +1025,7 @@ endif()
 # This flag enforces that member pointer base types are complete. It helps
 # prevent us from running into problems in the Microsoft C++ ABI (see
 # https://crbug.com/847724).
-if (COMPILER_CLANG AND (MSVC OR USE_LIBCXX))
+if (COMPILER_CLANG AND (MSVC OR USE_LIBCXX) AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.0)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fcomplete-member-pointers")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcomplete-member-pointers")
 endif()

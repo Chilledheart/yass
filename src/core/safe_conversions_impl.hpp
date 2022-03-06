@@ -86,8 +86,8 @@ constexpr typename std::make_unsigned<T>::type SafeUnsignedAbs(T value) {
 // TODO(jschuh): Switch to std::is_constant_evaluated() once C++20 is supported.
 // Alternately, the usage could be restructured for "consteval if" in C++23.
 // GCC requires version 9.1 to have this builtin, see commit e40826112369.
-#if defined(__clang__) || (defined(__GNUC__) && defined(__GNUC_MINOR__) && \
-                           (__GNUC__ * 10 + __GNUC_MINOR__ >= 91))
+#if defined(__clang__) && defined(__clang_major__) && (__clang_major__ >= 9) || \
+  (defined(__GNUC__) && defined(__GNUC_MINOR__) && (__GNUC__ * 10 + __GNUC_MINOR__ >= 91))
 #define IsConstantEvaluated() (__builtin_is_constant_evaluated())
 #else
 #define IsConstantEvaluated() (0)
