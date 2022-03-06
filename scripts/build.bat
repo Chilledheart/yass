@@ -27,6 +27,13 @@ set "WindowsSDKVersion=%Winsdk%\"
 set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\Common7\Tools\VsDevCmd.bat
 
 REM
+REM Generate build helper
+REM
+cd tools
+go build
+cd ..
+
+REM
 REM Generate static x86 binary
 REM
 set "VSCMD_START_DIR=%CD%"
@@ -50,7 +57,7 @@ set MSVC_CRT_LINKAGE=static
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-python.exe -u .\scripts\build.py || exit /b
+tools\build -alsologtostderr -v 2 || exit /b
 
 REM skip ARM build
 goto :BuildARM64
@@ -67,7 +74,7 @@ set MSVC_CRT_LINKAGE=static
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-python.exe -u .\scripts\build.py || exit /b
+tools\build -alsologtostderr -v 2 || exit /b
 
 :BuildARM64
 
@@ -86,6 +93,6 @@ set MSVC_CRT_LINKAGE=static
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-python.exe -u .\scripts\build.py || exit /b
+tools\build -alsologtostderr -v 2 || exit /b
 
 goto :eof

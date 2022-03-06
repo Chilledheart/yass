@@ -17,6 +17,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/google/uuid"
 )
 
 var APPNAME string = "yass"
@@ -97,7 +98,7 @@ func InitFlag() {
 	flag.BoolVar(&useLibCxxFlag, "use-libcxx", true, "Use Custom libc++")
 
 	flag.BoolVar(&clangTidyModeFlag, "clang-tidy-mode", getEnvBool("ENABLE_CLANG_TIDY", false), "Enable Clang Tidy Build")
-	flag.StringVar(&clangTidyExecutablePathFlag, "clang-tidy-executable-path", getEnv("ENABLE_CLANG_TIDY", ""), "Path to clang-tidy, only used by Clang Tidy Build")
+	flag.StringVar(&clangTidyExecutablePathFlag, "clang-tidy-executable-path", getEnv("CLANG_TIDY_EXECUTABLE", ""), "Path to clang-tidy, only used by Clang Tidy Build")
 
 	flag.StringVar(&macosxVersionMinFlag, "macosx-version-min", getEnv("MACOSX_VERSION_MIN", "10.10"), "Set Mac OS X deployment target, such as 10.9")
 	flag.BoolVar(&macosxUniversalBuildFlag, "macosx-universal-build", getEnvBool("ENABLE_OSX_UNIVERSAL_BUILD", true), "Enable Mac OS X Universal Build")
@@ -110,7 +111,6 @@ func InitFlag() {
 	flag.StringVar(&systemNameFlag, "system", runtime.GOOS, "Specify host system name")
 	flag.StringVar(&sysrootFlag, "sysroot", "", "Specify host sysroot, used in cross-compiling")
 	flag.StringVar(&archFlag, "arch", runtime.GOARCH, "Specify host architecture")
-
 	flag.Parse()
 
 	if flagNoPreClean {
@@ -736,6 +736,8 @@ func generateMsi(output string, paths []string, dllPaths []string, licensePaths 
 		panic(err)
 	}
 	wxsXml := string(wxsTemplate)
+	guidReplacement := strings.ToUpper(uuid.New().String())
+	wxsXml = strings.Replace(wxsXml, "YOURGUID", guidReplacement, 1)
 	dllReplacement := ""
 	for _, dllPath := range dllPaths {
 		dllReplacement += fmt.Sprintf("<File Name='%s' Source='%s' KeyPath='no' />\n", filepath.Base(dllPath), dllPath)
