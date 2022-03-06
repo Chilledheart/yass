@@ -160,6 +160,20 @@ if (COMPILER_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5.0)
   messag(FATAL_ERROR "Requires Clang 5.0 or newer to compile")
 endif()
 
+# it seems llvm-ar doesn't support fat binary, skipping for macho or coff binaries
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT APPLE AND NOT MSVC)
+  # althrough newer version of binutils' ar accepts lto objects, overriding it for compatiblity
+  set(CMAKE_AR "${CMAKE_CXX_COMPILER_AR}")
+  # binutils's ranlib doesn't support lto objects, overriding it
+  if (EXISTS "/bin/true")
+    set(CMAKE_RANLIB "/bin/true")
+  elseif (EXISTS "/usr/bin/true")
+    set(CMAKE_RANLIB "/usr/bin/true")
+  else ()
+    set(CMAKE_RANLIB "/bin/echo")
+  endif()
+endif()
+
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   set(COMPILER_GCC TRUE)
 else()
