@@ -175,7 +175,7 @@ jobs:
           set Platform=${{ matrix.arch }}
           set VSCMD_ARG_TGT_ARCH=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
-          set MSVC_ALLOW_XP=on
+          set MSVC_ALLOW_XP=1
 
           set "Path=%CD%\third_party\nasm;%Path%"
           set "Path=%CD%\third_party\wix311;%Path%"
