@@ -87,7 +87,7 @@ def main(args):
     release = '0'
   else:
     release = '0'
-  version = f'{abi}{release}'
+  version = f'{abi}.{release}'
 
   sysroot = f'freebsd-{abi}-toolchain'
 
