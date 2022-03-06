@@ -68,6 +68,7 @@ CF_CAST_DEFN(CGColor)
 CF_CAST_DEFN(CTFontDescriptor)
 CF_CAST_DEFN(CTRun)
 
+#if 0
 #if defined(OS_IOS)
 CF_CAST_DEFN(CTFont)
 #else
@@ -102,6 +103,7 @@ CFCastStrict<CTFontRef>(const CFTypeRef& cf_val) {
   DCHECK(cf_val == nullptr || rv);
   return rv;
 }
+#endif
 #endif
 
 #if !defined(OS_IOS)
