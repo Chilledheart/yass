@@ -307,7 +307,7 @@ func buildStageGenerateBuildScript() {
 		nativeToolChainContent += strings.Replace(fmt.Sprintf("set(CMAKE_CXX_COMPILER \"%s\")\n", getEnv("CXX", "cl")), "\\", "/", -1)
 		nativeToolChainContent += "set(CMAKE_C_COMPILER_TARGET \"x86_64-pc-windows-msvc\")\n"
 		nativeToolChainContent += "set(CMAKE_CXX_COMPILER_TARGET \"x86_64-pc-windows-msvc\")\n"
-		err := os.WriteFile("Native.cmake", []byte(nativeToolChainContent), 0666)
+		err := ioutil.WriteFile("Native.cmake", []byte(nativeToolChainContent), 0666)
 		if err != nil {
 			glog.Fatalf("%v", err)
 		}
