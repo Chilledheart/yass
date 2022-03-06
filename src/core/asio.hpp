@@ -26,6 +26,7 @@
 #endif  // (defined(__GNUC__) && (__GNUC__ >= 7)) || defined(__clang__)
 
 #if defined(__clang__)
+#pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wthread-safety-analysis"
 #endif  // defined(__clang__)
 

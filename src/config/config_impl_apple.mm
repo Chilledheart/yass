@@ -106,7 +106,8 @@ bool ConfigImplApple::OpenImpl(bool dontread) {
     if (root) {
       for (NSString* key in root) {
         id value = root[key];
-        CFDictionarySetValue(mutable_root, NSToCFCast(key), value);
+        ScopedCFTypeRef<CFStringRef> cf_key((CFStringRef)CFBridgingRetain(key));
+        CFDictionarySetValue(mutable_root, cf_key, value);
       }
     }
 

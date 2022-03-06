@@ -58,6 +58,8 @@ class LoginItemsFileList {
   ScopedCFTypeRef<LSSharedFileListItemRef> GetLoginItemForApp(NSURL* url) {
     DCHECK(login_items_.get()) << "Initialize() failed or not called.";
 
+  ScopedCFTypeRef<CFURLRef> cfurl((CFURLRef)(CFBridgingRetain(url)));
+
 #pragma clang diagnostic push  // https://crbug.com/1154377
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     NSArray* login_items_array(
@@ -76,7 +78,7 @@ class LoginItemsFileList {
           item, kLSSharedFileListDoNotMountVolumes, nullptr));
 #pragma clang diagnostic pop
 
-      if (item_url && CFEqual(item_url.get(), NSToCFCast(url))) {
+      if (item_url && CFEqual(item_url.get(), cfurl.get())) {
         return ScopedCFTypeRef<LSSharedFileListItemRef>(item,
                                                         scoped_policy::RETAIN);
       }
@@ -135,10 +137,11 @@ void AddToLoginItems(const std::string& app_bundle_file_path,
   if (!login_items.Initialize())
     return;
 
-  NSURL* app_bundle_url =
-      [NSURL fileURLWithPath:@(app_bundle_file_path.c_str())];
-  ScopedCFTypeRef<LSSharedFileListItemRef> item(
-      login_items.GetLoginItemForApp(app_bundle_url));
+  NSURL* app_bundle_url = [NSURL fileURLWithPath:@(app_bundle_file_path.c_str()) isDirectory:TRUE];
+
+  ScopedCFTypeRef<CFURLRef> cf_app_bundle_url((CFURLRef)CFBridgingRetain(app_bundle_url));
+
+  ScopedCFTypeRef<LSSharedFileListItemRef> item(login_items.GetLoginItemForApp(app_bundle_url));
 
   if (item.get() && (IsHiddenLoginItem(item) == hide_on_startup)) {
     return;  // Already is a login item with required hide flag.
@@ -157,12 +160,12 @@ void AddToLoginItems(const std::string& app_bundle_file_path,
   BOOL hide = hide_on_startup ? YES : NO;
   NSDictionary* properties =
       @{CFBridgingRelease(CFRetain(kLSSharedFileListLoginItemHidden)) : @(hide)};
+  ScopedCFTypeRef<CFDictionaryRef> cfproperties((CFDictionaryRef)CFBridgingRetain(properties));
 
   ScopedCFTypeRef<LSSharedFileListItemRef> new_item(
       LSSharedFileListInsertItemURL(login_items.GetLoginFileList(),
                                     kLSSharedFileListItemLast, nullptr, nullptr,
-                                    NSToCFCast(app_bundle_url),
-                                    NSToCFCast(properties), nullptr));
+                                    cf_app_bundle_url, cfproperties, nullptr));
 #pragma clang diagnostic pop
 
   if (!new_item.get()) {

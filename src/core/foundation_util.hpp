@@ -9,14 +9,10 @@
 
 #if defined(__OBJC__)
 #import <Foundation/Foundation.h>
-@class NSFont;
-@class UIFont;
 #else  // __OBJC__
 #include <CoreFoundation/CoreFoundation.h>
 class NSBundle;
-class NSFont;
 class NSString;
-class UIFont;
 #endif  // __OBJC__
 
 #if defined(OS_IOS)
@@ -37,99 +33,6 @@ typedef unsigned int NSSearchPathDomainMask;
 typedef struct CF_BRIDGED_TYPE(id) __SecCertificate* SecCertificateRef;
 typedef struct CF_BRIDGED_TYPE(id) __SecKey* SecKeyRef;
 typedef struct CF_BRIDGED_TYPE(id) __SecPolicy* SecPolicyRef;
-
-#define TYPE_NAME_FOR_CF_TYPE_DECL(TypeCF) \
-  std::string TypeNameForCFType(TypeCF##Ref)
-
-TYPE_NAME_FOR_CF_TYPE_DECL(CFArray);
-TYPE_NAME_FOR_CF_TYPE_DECL(CFBag);
-TYPE_NAME_FOR_CF_TYPE_DECL(CFBoolean);
-TYPE_NAME_FOR_CF_TYPE_DECL(CFData);
-TYPE_NAME_FOR_CF_TYPE_DECL(CFDate);
-TYPE_NAME_FOR_CF_TYPE_DECL(CFDictionary);
-TYPE_NAME_FOR_CF_TYPE_DECL(CFNull);
-TYPE_NAME_FOR_CF_TYPE_DECL(CFNumber);
-TYPE_NAME_FOR_CF_TYPE_DECL(CFSet);
-TYPE_NAME_FOR_CF_TYPE_DECL(CFString);
-TYPE_NAME_FOR_CF_TYPE_DECL(CFURL);
-TYPE_NAME_FOR_CF_TYPE_DECL(CFUUID);
-
-TYPE_NAME_FOR_CF_TYPE_DECL(CGColor);
-
-TYPE_NAME_FOR_CF_TYPE_DECL(CTFont);
-TYPE_NAME_FOR_CF_TYPE_DECL(CTRun);
-
-TYPE_NAME_FOR_CF_TYPE_DECL(SecCertificate);
-TYPE_NAME_FOR_CF_TYPE_DECL(SecKey);
-TYPE_NAME_FOR_CF_TYPE_DECL(SecPolicy);
-
-#undef TYPE_NAME_FOR_CF_TYPE_DECL
-// Retain/release calls for memory management in C++.
-void NSObjectRetain(void* obj);
-void NSObjectRelease(void* obj);
-
-#if !defined(__OBJC__)
-#define OBJC_CPP_CLASS_DECL(x) class x;
-#else  // __OBJC__
-#define OBJC_CPP_CLASS_DECL(x)
-#endif  // __OBJC__
-
-// Convert toll-free bridged CFTypes to NSTypes and vice-versa. This does not
-// autorelease |cf_val|. This is useful for the case where there is a CFType in
-// a call that expects an NSType and the compiler is complaining about const
-// casting problems.
-// The calls are used like this:
-// NSString *foo = CFToNSCast(CFSTR("Hello"));
-// CFStringRef foo2 = NSToCFCast(@"Hello");
-// The macro magic below is to enforce safe casting. It could possibly have
-// been done using template function specialization, but template function
-// specialization doesn't always work intuitively,
-// (http://www.gotw.ca/publications/mill17.htm) so the trusty combination
-// of macros and function overloading is used instead.
-
-#define CF_TO_NS_CAST_DECL(TypeCF, TypeNS) \
-  OBJC_CPP_CLASS_DECL(TypeNS)              \
-                                           \
-  TypeNS* CFToNSCast(TypeCF##Ref cf_val);  \
-  TypeCF##Ref NSToCFCast(TypeNS* ns_val);
-
-#define CF_TO_NS_MUTABLE_CAST_DECL(name)                    \
-  CF_TO_NS_CAST_DECL(CF##name, NS##name)                    \
-  OBJC_CPP_CLASS_DECL(NSMutable##name)                      \
-                                                            \
-  NSMutable##name* CFToNSCast(CFMutable##name##Ref cf_val); \
-  CFMutable##name##Ref NSToCFCast(NSMutable##name* ns_val);
-
-// List of toll-free bridged types taken from:
-// http://www.cocoadev.com/index.pl?TollFreeBridged
-
-CF_TO_NS_MUTABLE_CAST_DECL(Array)
-CF_TO_NS_MUTABLE_CAST_DECL(AttributedString)
-CF_TO_NS_CAST_DECL(CFCalendar, NSCalendar)
-CF_TO_NS_MUTABLE_CAST_DECL(CharacterSet)
-CF_TO_NS_MUTABLE_CAST_DECL(Data)
-CF_TO_NS_CAST_DECL(CFDate, NSDate)
-CF_TO_NS_MUTABLE_CAST_DECL(Dictionary)
-CF_TO_NS_CAST_DECL(CFError, NSError)
-CF_TO_NS_CAST_DECL(CFLocale, NSLocale)
-CF_TO_NS_CAST_DECL(CFNumber, NSNumber)
-CF_TO_NS_CAST_DECL(CFRunLoopTimer, NSTimer)
-CF_TO_NS_CAST_DECL(CFTimeZone, NSTimeZone)
-CF_TO_NS_MUTABLE_CAST_DECL(Set)
-CF_TO_NS_CAST_DECL(CFReadStream, NSInputStream)
-CF_TO_NS_CAST_DECL(CFWriteStream, NSOutputStream)
-CF_TO_NS_MUTABLE_CAST_DECL(String)
-CF_TO_NS_CAST_DECL(CFURL, NSURL)
-
-#if defined(OS_IOS)
-CF_TO_NS_CAST_DECL(CTFont, UIFont)
-#else
-CF_TO_NS_CAST_DECL(CTFont, NSFont)
-#endif
-
-#undef CF_TO_NS_CAST_DECL
-#undef CF_TO_NS_MUTABLE_CAST_DECL
-#undef OBJC_CPP_CLASS_DECL
 
 // CFCast<>() and CFCastStrict<>() cast a basic CFTypeRef to a more
 // specific CoreFoundation type. The compatibility of the passed
