@@ -129,7 +129,7 @@ def main(args):
   cmd = ['rm', '-rf']
   cmd.append(f'{sysroot}/usr/lib/clang')
   for f in glob.glob(f'{sysroot}/usr/lib/*.a'):
-    if f.endswith('libc_nonshared.a'):
+    if f.endswith('libc_nonshared.a') or f.endswith('libssp_nonshared.a'):
       continue
     cmd.append(f)
   for f in glob.glob(f'{sysroot}/usr/local/lib/*.a'):
