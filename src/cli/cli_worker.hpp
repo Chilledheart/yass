@@ -44,7 +44,7 @@ class Worker {
 
   asio::io_context io_context_;
   /// stopping the io_context from running out of work
-  asio::executor_work_guard<asio::io_context::executor_type> work_guard_;
+  std::unique_ptr<asio::io_context::work> work_guard_;
   /// used to resolve local and remote endpoint
   asio::ip::tcp::resolver resolver_;
 

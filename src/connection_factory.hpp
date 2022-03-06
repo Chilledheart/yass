@@ -26,7 +26,7 @@ class ServiceFactory {
     SlaveContext(size_t slave_index,
                  const asio::ip::tcp::endpoint& remote_endpoint)
         : index_(slave_index),
-          work_guard_(asio::make_work_guard(io_context_)),
+          work_guard_(std::make_unique<asio::io_context::work>(io_context_)),
           thread_([this]() { WorkFunc(); }),
           remote_endpoint_(remote_endpoint) {}
 
@@ -164,7 +164,7 @@ class ServiceFactory {
     size_t index_;
     asio::io_context io_context_;
     /// stopping the io_context from running out of work
-    asio::executor_work_guard<asio::io_context::executor_type> work_guard_;
+    std::unique_ptr<asio::io_context::work> work_guard_;
     std::thread thread_;
 
     const asio::ip::tcp::endpoint remote_endpoint_;

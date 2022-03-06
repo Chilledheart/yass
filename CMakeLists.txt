@@ -1344,6 +1344,7 @@ set(SUPPORT_LIBS
 add_definitions(-DASIO_STANDALONE)
 add_definitions(-DASIO_NO_TYPEID)
 add_definitions(-DASIO_NO_EXCEPTIONS)
+add_definitions(-DASIO_NO_TS_EXECUTORS)
 # forward libcxx present
 add_definitions(-DASIO_DISABLE_STD_EXPERIMENTAL_STRING_VIEW)
 include_directories(third_party/asio/asio/include SYSTEM)

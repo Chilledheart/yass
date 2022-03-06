@@ -9,7 +9,7 @@
 using namespace socks5;
 
 Worker::Worker()
-    : work_guard_(asio::make_work_guard(io_context_)),
+    : work_guard_(std::make_unique<asio::io_context::work>(io_context_)),
       resolver_(io_context_),
       thread_([this] { WorkFunc(); }) {}
 

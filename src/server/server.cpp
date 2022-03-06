@@ -54,8 +54,7 @@ int main(int argc, const char* argv[]) {
 
   // Start Io Context
   asio::io_context io_context;
-  asio::executor_work_guard<asio::io_context::executor_type> work_guard(
-      asio::make_work_guard(io_context));
+  auto work_guard = std::make_unique<asio::io_context::work>(io_context);
 
   asio::ip::tcp::resolver resolver(io_context);
   asio::error_code ec;
