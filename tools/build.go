@@ -437,7 +437,7 @@ func postStateStripBinaries() {
 	}
 	if systemNameFlag == "linux" || systemNameFlag == "freebsd" {
 		objcopy := filepath.Join("..", "third_party", "llvm-build", "Release+Asserts", "bin", "llvm-objcopy")
-		if _, err := os.Stat(objcopy); err == os.ErrNotExist {
+		if _, err := os.Stat(objcopy); errors.Is(err, os.ErrNotExist) {
 			objcopy = "objcopy"
 		}
 		// create a file containing the debugging info.
