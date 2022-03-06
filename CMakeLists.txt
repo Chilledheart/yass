@@ -181,7 +181,7 @@ if (COMPILER_MSVC)
   message(FATAL_ERROR "Microsoft Visual C++ is no longer supported.")
 endif()
 
-if((${CMAKE_LINKER} MATCHES "lld") AND (${CMAKE_AR} MATCHES "llvm-lib"))
+if((${CMAKE_LINKER} MATCHES "lld") AND (${CMAKE_AR} MATCHES "llvm-lib" OR ${CMAKE_AR} MATCHES "llvm-ar"))
   set(LINKER_LLD TRUE)
 else()
   set(LINKER_LLD FALSE)
@@ -404,17 +404,6 @@ if (NOT MSVC)
     set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-no_data_in_code_info -Wl,-no_function_starts")
   endif()
 
-  ## adopt LTO
-  if (APPLE)
-    if (${CMAKE_BUILD_TYPE} MATCHES Release)
-      message(STATUS "Compiling with LTO")
-    endif()
-    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto -fwhole-program-vtables")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto -fwhole-program-vtables")
-    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -flto -fwhole-program-vtables")
-    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -flto -fwhole-program-vtables")
-  endif()
-
   if (APPLE)
     # If generating dSYMs, specify -fno-standalone-debug. This was
     # originally specified for https://crbug.com/479841 because dsymutil
@@ -499,17 +488,8 @@ else()
     set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
   endif()
 
-  if (COMPILER_CLANG AND LINKER_LLD)
-    if (${CMAKE_BUILD_TYPE} MATCHES Release)
-      message(STATUS "Compiling with LTO")
-    endif()
-    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto -fwhole-program-vtables")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto -fwhole-program-vtables")
-    # When using lld-link, the -flto option need only be added to the compile step
-  endif()
-
   # lld's uac manifest is outdated and incompatible with windows xp
-  if (LINKER_LLD)
+  if (USE_LLD)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFESTUAC:NO")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /MANIFESTUAC:NO")
   endif()
@@ -560,7 +540,7 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
   endif()
 
-  if (LINKER_LLD)
+  if (USE_LLD)
     # Use a fake fixed base directory for paths in the pdb to make the pdb
     # output fully deterministic and independent of the build directory.
     set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /PDBSourcePath:o:\\fake\\prefix")
@@ -580,6 +560,124 @@ else()
     set(CMAKE_CC_FLAGS "${CMAKE_CC_FLAGS} -no-canonical-prefixes")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-canonical-prefixes")
   endif()
+endif()
+
+## adopt Thin LTO
+if (COMPILER_CLANG AND USE_LLD)
+  if (${CMAKE_BUILD_TYPE} MATCHES Release)
+    message(STATUS "Compiling with Thin LTO")
+  endif()
+  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto=thin")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto=thin")
+
+  if (NOT APPLE)
+    # TODO(lgrey): Enable unit splitting for Mac when supported.
+    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -fsplit-lto-unit")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fsplit-lto-unit")
+  endif()
+
+  # Limit the size of the ThinLTO cache to the lesser of 10% of
+  # available disk space, 40GB and 100000 files.
+  if (MSVC)
+    set(cache_policy "cache_size=10%:cache_size_bytes=40g:cache_size_files=100000")
+  else()
+    set(cache_policy "cache_size=10\\%:cache_size_bytes=40g:cache_size_files=100000")
+  endif()
+
+  # TODO(gbiv): We ideally shouldn't need to specify this; ThinLTO
+  # should be able to better manage binary size increases on its own.
+  set(import_instr_limit 5)
+
+  if (MSVC)
+    # When using lld-link, the -flto option need only be added to the compile step
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /opt:lldltojobs=all -mllvm:-import-instr-limit=${import_instr_limit} /lldltocache:thinlto-cache /lldltocachepolicy:${cache_policy}")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /opt:lldltojobs=all -mllvm:-import-instr-limit=${import_instr_limit} /lldltocache:thinlto-cache /lldltocachepolicy:${cache_policy}")
+  else()
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -flto=thin")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -flto=thin")
+    # In ThinLTO builds, we run at most one link process at a time,
+    # and let it use all cores.
+    # TODO(thakis): Check if '=0' (that is, number of cores, instead
+    # of "all" which means number of hardware threads) is faster.
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,--thinlto-jobs=all")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,--thinlto-jobs=all")
+    if (APPLE)
+      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,-cache_path_lto,thinlto-cache")
+      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-cache_path_lto,thinlto-cache")
+    else()
+      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,--thinlto-cache-dir=thinlto-cache")
+      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,--thinlto-cache-dir=thinlto-cache")
+    endif()
+
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,--thinlto-cache-policy=${cache_policy}")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,--thinlto-cache-policy=${cache_policy}")
+
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,-mllvm,-import-instr-limit=${import_instr_limit}")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-mllvm,-import-instr-limit=${import_instr_limit}")
+  endif()
+
+  if (NOT ANDROID AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR APPLE))
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fwhole-program-vtables")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fwhole-program-vtables")
+    if (NOT MSVC)
+      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -fwhole-program-vtables")
+      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -fwhole-program-vtables")
+    endif()
+  endif()
+endif()
+
+if (COMPILER_CLANG AND USE_GOLD)
+  if (${CMAKE_BUILD_TYPE} MATCHES Release)
+    message(STATUS "Compiling with Thin LTO")
+  endif()
+  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto=thin")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto=thin")
+
+  # Limit the size of the ThinLTO cache to the lesser of 10% of
+  # available disk space, 40GB and 100000 files.
+  set(cache_policy "cache_size=10\\%:cache_size_bytes=40g:cache_size_files=100000")
+
+  # TODO(gbiv): We ideally shouldn't need to specify this; ThinLTO
+  # should be able to better manage binary size increases on its own.
+  set(import_instr_limit 5)
+
+  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -flto=thin")
+  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -flto=thin")
+  # In ThinLTO builds, we run at most one link process at a time,
+  # and let it use all cores.
+  # TODO(thakis): Check if '=0' (that is, number of cores, instead
+  # of "all" which means number of hardware threads) is faster.
+  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,-plugin-opt,jobs=all")
+  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-plugin-opt,jobs=all")
+
+  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,-plugin-opt,cache-dir=thinlto-cache")
+  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-plugin-opt,cache-dir=thinlto-cache")
+
+  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,-plugin-opt,cache-policy=${cache_policy}")
+  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-plugin-opt,cache-policy=${cache_policy}")
+
+  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,-mllvm,-import-instr-limit=${import_instr_limit}")
+  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-mllvm,-import-instr-limit=${import_instr_limit}")
+
+  if (NOT ANDROID AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR APPLE))
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fwhole-program-vtables")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fwhole-program-vtables")
+    if (NOT MSVC)
+      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -fwhole-program-vtables")
+      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -fwhole-program-vtables")
+    endif()
+  endif()
+endif()
+
+## adopt LTO
+if (COMPILER_GCC)
+  if (${CMAKE_BUILD_TYPE} MATCHES Release)
+    message(STATUS "Compiling with LTO")
+  endif()
+  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto=auto")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto=auto")
+  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -flto=auto")
+  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -flto=auto")
 endif()
 
 # *****************************************************************************************
@@ -635,7 +733,7 @@ if (NOT MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector")
   endif()
 
-  if (LINKER_LLD OR USE_LLD)
+  if (USE_LLD)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
   endif()
@@ -701,7 +799,7 @@ endif()
 
 # Linux-specific compiler flags setup.
 # ------------------------------------
-if ((UNIX AND NOT APPLE) AND (LINKER_LLD OR USE_LLD))
+if ((UNIX AND NOT APPLE) AND USE_LLD)
   if (CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
     # Reduce the page size from 65536 in order to reduce binary size slightly
     # by shrinking the alignment gap between segments. This also causes all
@@ -770,7 +868,7 @@ if (COMPILER_CLANG)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmerge-all-constants")
 endif()
 
-if (LINKER_LLD OR USE_LLD)
+if (USE_LLD)
   # TODO(thakis): Make the driver pass --color-diagnostics to the linker
   # if -fcolor-diagnostics is passed to it, and pass -fcolor-diagnostics
   # in ldflags instead.
@@ -797,6 +895,15 @@ if (COMPILER_CLANG)
   # by default. https://crbug.com/765793
   set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -mllvm -instcombine-lower-dbg-declare=0")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mllvm -instcombine-lower-dbg-declare=0")
+  if (USE_LLD)
+    if (MSVC)
+      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -mllvm:-instcombine-lower-dbg-declare=0")
+      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -mllvm:-instcombine-lower-dbg-declare=0")
+    else()
+      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,-mllvm,-instcombine-lower-dbg-declare=0")
+      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-mllvm,-instcombine-lower-dbg-declare=0")
+    endif()
+  endif()
 
   # TODO(crbug.com/1235145): Investigate why/if this should be needed.
   if (MSVC)
