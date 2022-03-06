@@ -22,7 +22,7 @@ on:
   release:
     types: [published]
 env:
-  CACHE_EPOCH: 3
+  CACHE_EPOCH: 0
   GOPROXY: direct
 jobs:
   linux-compiler-compatible:
@@ -279,9 +279,9 @@ jobs:
         with:
           path: |
             freebsd-${{ matrix.abi }}-toolchain
-          key: ${{ runner.os }}-freebsd-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-v${{ env.CACHE_EPOCH }}
+          key: freebsd-${{ matrix.arch }}-${{ matrix.abi }}-v${{ env.CACHE_EPOCH }}
           restore-keys: |
-            ${{ runner.os }}-freebsd-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-
+            freebsd-${{ matrix.arch }}-${{ matrix.abi }}-
       - name: Build build tool
         run: |
           cd tools
