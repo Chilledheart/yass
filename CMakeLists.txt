@@ -588,7 +588,7 @@ if (COMPILER_CLANG AND USE_LLD)
   set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto=thin")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto=thin")
 
-  if (NOT APPLE)
+  if (NOT APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
     # TODO(lgrey): Enable unit splitting for Mac when supported.
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -fsplit-lto-unit")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fsplit-lto-unit")
@@ -597,9 +597,13 @@ if (COMPILER_CLANG AND USE_LLD)
   # Limit the size of the ThinLTO cache to the lesser of 10% of
   # available disk space, 40GB and 100000 files.
   if (MSVC)
-    set(cache_policy "cache_size=10%:cache_size_bytes=40g:cache_size_files=100000")
+    set(cache_policy "cache_size=10%:cache_size_bytes=40g")
   else()
-    set(cache_policy "cache_size=10\\%:cache_size_bytes=40g:cache_size_files=100000")
+    set(cache_policy "cache_size=10\\%:cache_size_bytes=40g")
+  endif()
+
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6.0)
+    set(cache_policy "${cache_policy}:cache_size_files=100000")
   endif()
 
   # TODO(gbiv): We ideally shouldn't need to specify this; ThinLTO
@@ -617,18 +621,26 @@ if (COMPILER_CLANG AND USE_LLD)
     # and let it use all cores.
     # TODO(thakis): Check if '=0' (that is, number of cores, instead
     # of "all" which means number of hardware threads) is faster.
-    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,--thinlto-jobs=all")
-    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,--thinlto-jobs=all")
-    if (APPLE)
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 11.0)
+      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,--thinlto-jobs=all")
+      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,--thinlto-jobs=all")
+    else()
+      include(ProcessorCount)
+      ProcessorCount(CPU_NUMBER)
+      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,--thinlto-jobs=${CPU_NUMBER}")
+      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,--thinlto-jobs=${CPU_NUMBER}")
+    endif()
+    if (APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13.0)
       set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,-cache_path_lto,thinlto-cache")
       set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-cache_path_lto,thinlto-cache")
-    else()
+      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,--thinlto-cache-policy=${cache_policy}")
+      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,--thinlto-cache-policy=${cache_policy}")
+    elseif (NOT APPLE)
       set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,--thinlto-cache-dir=thinlto-cache")
       set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,--thinlto-cache-dir=thinlto-cache")
+      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,--thinlto-cache-policy,${cache_policy}")
+      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,--thinlto-cache-policy,${cache_policy}")
     endif()
-
-    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,--thinlto-cache-policy=${cache_policy}")
-    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,--thinlto-cache-policy=${cache_policy}")
 
     set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,-mllvm,-import-instr-limit=${import_instr_limit}")
     set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-mllvm,-import-instr-limit=${import_instr_limit}")

@@ -68,8 +68,9 @@ jobs:
         if: ${{ steps.clang5-cache.outputs.cache-hit != 'true' }}
         run: |
           curl -L -O https://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz
-          tar -C third_party -xvf clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz
-          rm -f clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/lib/*.a
+          tar -C third_party -xvf clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz \
+            clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/lib/clang/5.0.2/include \
+            clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/{clang,clang++,clang-5.0,ld.lld,lld,llvm-ar,llvm-ranlib}
           rm -f *.xz
       - name: Change ubuntu mirror
         run: |
@@ -89,7 +90,6 @@ jobs:
           mkdir build
           cd build
           cmake -G Ninja -DCLI=on -DSERVER=on -DGUI=on ..
-          cmake -G Ninja -DCLI=on -DSERVER=on -DGUI=off ..
           ninja -v yass_cli yass_server yass
           cd ..
   linux-clang-tidy:
