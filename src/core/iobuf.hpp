@@ -326,10 +326,10 @@ class IOBuf {
         std::size_t length) noexcept;
 
  protected:
-  uint8_t* buf_;
-  uint8_t* data_;
-  size_t length_;
-  size_t capacity_;
+  uint8_t* buf_ = nullptr;
+  uint8_t* data_ = nullptr;
+  size_t length_ = 0;
+  size_t capacity_ = 0;
 };
 
 inline std::unique_ptr<IOBuf> IOBuf::copyBuffer(const void* data,

@@ -1,3 +1,38 @@
+if (NOT MSVC)
+  ## disable rtti
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
+
+  ## disable exceptions
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
+else()
+  ## Disable RTTI
+  set(CompilerFlags
+      CMAKE_CXX_FLAGS
+      CMAKE_CXX_FLAGS_DEBUG
+      CMAKE_CXX_FLAGS_MINSIZEREL
+      CMAKE_CXX_FLAGS_RELEASE
+      CMAKE_CXX_FLAGS_RELWITHDEBINFO
+      CMAKE_C_FLAGS
+      CMAKE_C_FLAGS_DEBUG
+      CMAKE_C_FLAGS_RELEASE
+      CMAKE_C_FLAGS_MINSIZEREL
+      CMAKE_C_FLAGS_RELEASE
+      CMAKE_C_FLAGS_RELWITHDEBINFO
+      )
+  foreach(CompilerFlag ${CompilerFlags})
+    string(REPLACE "/GR" "/GR-" ${CompilerFlag} "${${CompilerFlag}}")
+  endforeach()
+
+  ## Disable RTTI
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
+
+  if (NOT USE_LIBCXX)
+    add_definitions(-D_HAS_EXCEPTIONS=0)
+  endif()
+
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
+endif()
+
 set(quiche_SRCS
   ../icu/icu_utf.h
   ../mozilla/url_parse.cc

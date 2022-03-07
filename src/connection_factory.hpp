@@ -72,8 +72,8 @@ class ServiceFactory {
       if (ec) {
         return;
       }
-      LOG(WARNING) << "slave " << index_ << " listen to " << endpoint_
-                   << " with upstream " << remote_endpoint_;
+      VLOG(2) << "slave " << index_ << " listen to " << endpoint_
+              << " with upstream " << remote_endpoint_;
       io_context_.post([this]() { startAccept(); });
     }
 
@@ -83,6 +83,9 @@ class ServiceFactory {
         if (acceptor_) {
           asio::error_code ec;
           acceptor_->close(ec);
+          if (ec) {
+            VLOG(2) << "Acceptor close failed: " << ec;
+          }
         }
 
         std::vector<std::shared_ptr<T>> conns = std::move(connections_);
@@ -118,11 +121,11 @@ class ServiceFactory {
     }
 
     void startAccept() {
-      std::shared_ptr<T> conn =
-          std::make_unique<T>(io_context_, remote_endpoint_);
       acceptor_->async_accept(
           peer_endpoint_,
-          [this, conn](asio::error_code error, asio::ip::tcp::socket socket) {
+          [this](asio::error_code error, asio::ip::tcp::socket socket) {
+            std::shared_ptr<T> conn =
+                std::make_unique<T>(io_context_, remote_endpoint_);
             handleAccept(conn, error, std::move(socket));
           });
     }
@@ -146,15 +149,13 @@ class ServiceFactory {
                 << connections_.size();
         startAccept();
       } else {
-        LOG(WARNING) << "slave " << index_ << " stopping accept due to " << ec;
+        VLOG(2) << "slave " << index_ << " stopping accept due to " << ec;
       }
     }
 
     void handleDisconnect(std::shared_ptr<T> conn) {
       VLOG(2) << "slave " << index_
               << " connection closed with remaining: " << connections_.size();
-      conn->set_disconnect_cb(std::function<void()>());
-      conn->close();
       connections_.erase(
           std::remove(connections_.begin(), connections_.end(), conn),
           connections_.end());

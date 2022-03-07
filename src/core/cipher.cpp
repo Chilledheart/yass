@@ -127,35 +127,38 @@ class cipher_impl {
     return err;
   }
 
-  void SetKey(const uint8_t* key, size_t key_len) {
+  bool SetKey(const uint8_t* key, size_t key_len) {
     if (encrypter) {
-      encrypter->SetKey(reinterpret_cast<const char*>(key), key_len);
+      return encrypter->SetKey(reinterpret_cast<const char*>(key), key_len);
     }
     if (decrypter) {
-      decrypter->SetKey(reinterpret_cast<const char*>(key), key_len);
+      return decrypter->SetKey(reinterpret_cast<const char*>(key), key_len);
     }
+    return false;
   }
 
-  void SetNoncePrefix(const uint8_t* nonce_prefix, size_t nonce_prefix_len) {
+  bool SetNoncePrefix(const uint8_t* nonce_prefix, size_t nonce_prefix_len) {
     if (encrypter) {
-      encrypter->SetNoncePrefix(
+      return encrypter->SetNoncePrefix(
           reinterpret_cast<const char*>(nonce_prefix),
           std::min(nonce_prefix_len, encrypter->GetNoncePrefixSize()));
     }
     if (decrypter) {
-      decrypter->SetNoncePrefix(
+      return decrypter->SetNoncePrefix(
           reinterpret_cast<const char*>(nonce_prefix),
           std::min(nonce_prefix_len, decrypter->GetNoncePrefixSize()));
     }
+    return false;
   }
 
-  void SetIV(const uint8_t* iv, size_t iv_len) {
+  bool SetIV(const uint8_t* iv, size_t iv_len) {
     if (encrypter) {
-      encrypter->SetIV(reinterpret_cast<const char*>(iv), iv_len);
+      return encrypter->SetIV(reinterpret_cast<const char*>(iv), iv_len);
     }
     if (decrypter) {
-      decrypter->SetIV(reinterpret_cast<const char*>(iv), iv_len);
+      return decrypter->SetIV(reinterpret_cast<const char*>(iv), iv_len);
     }
+    return false;
   }
 
   size_t GetKeySize() const {
@@ -237,17 +240,14 @@ void cipher::decrypt(IOBuf* ciphertext,
   plaintext = IOBuf::create(capacity);
   while (!chunk_->empty()) {
     uint64_t counter = counter_;
-    size_t chunk_len = 0;
 
     counter = counter_;
 
-    if (!chunk_decrypt_frame(&counter, plaintext.get(), chunk_.get(),
-                             &chunk_len)) {
+    if (!chunk_decrypt_frame(&counter, plaintext.get(), chunk_.get())) {
       break;
     }
 
     counter_ = counter;
-    chunk_->trimStart(chunk_len);
   }
   chunk_->retreat(chunk_->headroom());
 }
@@ -271,7 +271,9 @@ void cipher::encrypt(IOBuf* plaintext,
   counter = counter_;
 
   // TBD better to apply MTU-like things
-  chunk_encrypt_frame(&counter, plaintext, ciphertext.get());
+  if (!chunk_encrypt_frame(&counter, plaintext, ciphertext.get())) {
+    return;
+  }
 
   counter_ = counter;
 }
@@ -309,17 +311,18 @@ void cipher::encrypt_salt(IOBuf* chunk) {
 
 bool cipher::chunk_decrypt_frame(uint64_t* counter,
                                  IOBuf* plaintext,
-                                 const IOBuf* ciphertext,
-                                 size_t* consumed_len) const {
+                                 IOBuf* ciphertext) const {
   int err;
   size_t mlen;
   size_t tlen = tag_len_;
   size_t plen = 0;
+  size_t clen = CHUNK_SIZE_LEN + tlen;
 
-  VLOG(4) << "decrypt: current chunk: " << ciphertext->length()
-          << " expected: " << (2 * tlen + CHUNK_SIZE_LEN);
+  VLOG(4) << "decrypt: 1st chunk: origin: " << CHUNK_SIZE_LEN
+          << " encrypted: " << clen
+          << " actual: " << ciphertext->length();
 
-  if (ciphertext->length() <= 2 * tlen + CHUNK_SIZE_LEN) {
+  if (ciphertext->length() < tlen + CHUNK_SIZE_LEN + tlen) {
     return false;
   }
 
@@ -327,28 +330,38 @@ bool cipher::chunk_decrypt_frame(uint64_t* counter,
     uint8_t buf[2];
     uint16_t cover;
   } len;
+
+  static_assert(sizeof(len) == CHUNK_SIZE_LEN, "Chunk Size not matched");
+
   plen = sizeof(len.cover);
+
   err = impl_->DecryptPacket(*counter, len.buf, &plen, ciphertext->data(),
-                             CHUNK_SIZE_LEN + tlen);
+                             clen);
+
   if (err) {
     return false;
   }
+
   DCHECK_EQ(plen, CHUNK_SIZE_LEN);
 
   mlen = ntohs(len.cover);
   mlen = mlen & CHUNK_SIZE_MASK;
-  plaintext->reserve(0, mlen);
 
   if (mlen == 0) {
     return false;
   }
 
-  size_t chunk_len = 2 * tlen + CHUNK_SIZE_LEN + mlen;
+  ciphertext->trimStart(clen);
+  plaintext->reserve(0, mlen);
 
-  VLOG(4) << "decrypt: current chunk: " << ciphertext->length()
-          << " expected: " << chunk_len;
+  clen = tlen + mlen;
 
-  if (ciphertext->length() < chunk_len) {
+  VLOG(4) << "decrypt: 2nd chunk: origin: " << mlen
+          << " encrypted: " << clen
+          << " actual: " << ciphertext->length();
+
+  if (ciphertext->length() < clen) {
+    ciphertext->prepend(CHUNK_SIZE_LEN + tlen);
     return false;
   }
 
@@ -356,16 +369,17 @@ bool cipher::chunk_decrypt_frame(uint64_t* counter,
 
   plen = plaintext->capacity();
   err = impl_->DecryptPacket(*counter, plaintext->mutable_tail(), &plen,
-                             ciphertext->data() + CHUNK_SIZE_LEN + tlen,
-                             mlen + tlen);
+                             ciphertext->data(), clen);
   if (err) {
+    ciphertext->prepend(CHUNK_SIZE_LEN + tlen);
     return false;
   }
+
   DCHECK_EQ(plen, mlen);
 
   (*counter)++;
 
-  *consumed_len = chunk_len;
+  ciphertext->trimStart(clen);
 
   plaintext->append(plen);
 
@@ -380,46 +394,60 @@ bool cipher::chunk_encrypt_frame(uint64_t* counter,
   DCHECK_LE(plaintext->length(), CHUNK_SIZE_MASK);
 
   int err;
-  size_t clen;
-  uint8_t len_buf[CHUNK_SIZE_LEN] = {};
-  uint16_t t = htons(plaintext->length() & CHUNK_SIZE_MASK);
-  memcpy(len_buf, &t, CHUNK_SIZE_LEN);
+  size_t clen = CHUNK_SIZE_LEN + tlen;
 
-  clen = CHUNK_SIZE_LEN + tlen;
-  VLOG(4) << "encrypt: current chunk: " << clen
-          << " original: " << sizeof(len_buf);
+  union {
+    uint8_t buf[2];
+    uint16_t cover;
+  } len;
+
+  static_assert(sizeof(len) == CHUNK_SIZE_LEN, "Chunk Size not matched");
+
+  len.cover = htons(plaintext->length() & CHUNK_SIZE_MASK);
+
+  VLOG(4) << "encrypt: 1st chunk: origin: " << CHUNK_SIZE_LEN
+          << " encrypted: " << clen;
+
+  ciphertext->reserve(0, clen);
+
   err = impl_->EncryptPacket(*counter, ciphertext->mutable_tail(), &clen,
-                             len_buf, CHUNK_SIZE_LEN);
+                             len.buf, CHUNK_SIZE_LEN);
   if (err) {
     return false;
   }
 
   DCHECK_EQ(clen, CHUNK_SIZE_LEN + tlen);
+
   ciphertext->append(clen);
 
   (*counter)++;
 
   clen = plaintext->length() + tlen;
-  VLOG(4) << "encrypt: current chunk: " << clen
-          << " original: " << plaintext->length();
+
+  VLOG(4) << "encrypt: 2nd chunk: origin: " << plaintext->length()
+          << " encrypted: " << clen;
+
+  ciphertext->reserve(0, clen);
+
   err = impl_->EncryptPacket(*counter, ciphertext->mutable_tail(), &clen,
                              plaintext->data(), plaintext->length());
   if (err) {
+    ciphertext->trimEnd(CHUNK_SIZE_LEN + tlen);
     return false;
   }
 
   DCHECK_EQ(clen, plaintext->length() + tlen);
 
-  (*counter)++;
-
   ciphertext->append(clen);
+
+  (*counter)++;
 
   return true;
 }
 
 void cipher::set_key_aead(const uint8_t* salt, size_t salt_len) {
   DCHECK_EQ(salt_len, key_len_);
-  uint8_t skey[MAX_KEY_LENGTH];
+  uint8_t skey[MAX_KEY_LENGTH] = {};
   int err = crypto_hkdf(salt, salt_len, key_, key_len_,
                         reinterpret_cast<const uint8_t*>(SUBKEY_INFO),
                         sizeof(SUBKEY_INFO) - 1, skey, key_len_);
@@ -428,11 +456,15 @@ void cipher::set_key_aead(const uint8_t* salt, size_t salt_len) {
   }
 
   counter_ = 0;
-  uint8_t nonce[MAX_NONCE_LENGTH];
-  memset(nonce, 0, impl_->GetIVSize());
+  uint8_t nonce[MAX_NONCE_LENGTH] = {};
 
-  impl_->SetKey(skey, key_len_);
-  impl_->SetIV(nonce, impl_->GetIVSize());
+  if (!impl_->SetKey(skey, key_len_)) {
+    LOG(WARNING) << "SetKey Failed";
+  }
+
+  if (!impl_->SetNoncePrefix(nonce, impl_->GetNoncePrefixSize())) {
+    LOG(WARNING) << "SetNoncePrefix Failed";
+  }
 
 #ifndef NDEBUG
   DumpHex("SKEY", impl_->GetKey(), impl_->GetKeySize());

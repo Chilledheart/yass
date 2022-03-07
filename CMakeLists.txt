@@ -1381,6 +1381,21 @@ include_directories(third_party/rapidjson/include SYSTEM)
 # *****************************************************************************************
 
 include_directories(third_party/googletest/googletest/include SYSTEM)
+if (BUILD_TESTS)
+  # Add minimal googletest targets. The provided one has many side-effects, and
+  # googletest has a very straightforward build.
+  add_library(yass_gtest STATIC
+    third_party/googletest/googletest/src/gtest-all.cc
+    third_party/googletest/googlemock/src/gmock-all.cc)
+  target_include_directories(yass_gtest PRIVATE
+    third_party/googletest/googletest
+    third_party/googletest/googlemock)
+  target_include_directories(yass_gtest PUBLIC
+    third_party/googletest/googletest/include
+    third_party/googletest/googlemock/include SYSTEM)
+
+  target_compile_options(yass_gtest PRIVATE "-Wno-error")
+endif()
 
 # *****************************************************************************************
 #           xxhash Library
@@ -2008,12 +2023,18 @@ target_include_directories(yass_base PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 if (CLI)
-  add_executable(yass_cli
-      src/cli/cli.cpp
+  add_library(yass_cli_lib OBJECT
+      src/cli/cli_worker.cpp
       src/cli/socks5_connection.cpp
       src/cli/socks5_connection.hpp
       src/cli/socks5_connection_stats.cpp
       src/cli/socks5_connection_stats.hpp
+    )
+  target_include_directories(yass_cli_lib PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+  add_executable(yass_cli
+      src/cli/cli.cpp
       )
 
   if (MSVC)
@@ -2024,6 +2045,7 @@ if (CLI)
       ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
   target_link_libraries(yass_cli PUBLIC
+      yass_cli_lib
       ${SUPPORT_LIBS}
       )
 
@@ -2033,10 +2055,15 @@ if (CLI)
 endif()
 
 if (SERVER)
-  add_executable(yass_server
-      src/server/server.cpp
+  add_library(yass_server_lib OBJECT
       src/server/ss_connection.cpp
       src/server/ss_connection.hpp
+    )
+  target_include_directories(yass_server_lib PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+  add_executable(yass_server
+      src/server/server.cpp
       )
 
   if (MSVC)
@@ -2047,6 +2074,7 @@ if (SERVER)
       ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
   target_link_libraries(yass_server PUBLIC
+      yass_server_lib
       ${SUPPORT_LIBS}
       )
 
@@ -2061,13 +2089,7 @@ endif()
 
 if (GUI)
     set(APP_NAME yass)
-    set(SRC_FILES
-        src/cli/cli_worker.cpp
-        src/cli/socks5_connection.cpp
-        src/cli/socks5_connection.hpp
-        src/cli/socks5_connection_stats.cpp
-        src/cli/socks5_connection_stats.hpp
-        )
+    set(SRC_FILES)
 
     if (MSVC)
         set(APP_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass.manifest")
@@ -2151,7 +2173,9 @@ if (GUI)
 
     target_compile_options(${APP_NAME} PRIVATE ${GUI_C_CXX_FLAGS})
 
-    target_link_libraries(${APP_NAME} PUBLIC ${GUI_LIBRARIES} ${SUPPORT_LIBS})
+    target_link_libraries(${APP_NAME} PUBLIC
+      yass_cli_lib
+      ${GUI_LIBRARIES} ${SUPPORT_LIBS})
 
     if (MSVC)
       # Most of the dlls are simply not required at startup (or at all, depending
@@ -2341,9 +2365,24 @@ endif()
 # *****************************************************************************************
 
 if (BUILD_TESTS)
-  add_subdirectory(third_party/googletest)
-  set_target_properties(gtest PROPERTIES
-    COMPILE_FLAGS "-Wno-error")
-  set_target_properties(gmock PROPERTIES
-    COMPILE_FLAGS "-Wno-error")
+  add_executable(yass_test
+    src/test_util.cpp
+    src/ss_test.cpp)
+  target_include_directories(yass_test PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/src
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/cli
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/server
+      )
+  target_link_libraries(yass_test PUBLIC
+      ${SUPPORT_LIBS}
+      yass_base
+      yass_cli_lib
+      yass_server_lib
+      yass_gtest
+      )
+  add_custom_target(check
+    COMMAND yass_test
+    COMMENT "yass unittests"
+    USES_TERMINAL
+    )
 endif()

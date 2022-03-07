@@ -367,18 +367,6 @@ class LogSink;  // defined below
 #define _IFDEF_THREAD_SANITIZER(X)
 #endif
 
-#if defined(_SANITIZE_THREAD)
-
-// We need to identify the static variables as "benign" races
-// to avoid noisy reports from TSAN.
-extern "C" void AnnotateBenignRaceSized(const char* file,
-                                        int line,
-                                        const volatile void* mem,
-                                        long size,
-                                        const char* description);
-
-#endif  // _SANITIZE_THREAD
-
 struct CrashReason;
 
 // LogMessage::LogStream is a std::ostream backed by this streambuf.

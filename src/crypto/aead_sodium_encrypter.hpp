@@ -37,7 +37,9 @@ class SodiumAeadEncrypter : public AeadBaseEncrypter {
                size_t associated_data_len,
                const char* plaintext,
                size_t plaintext_len,
-               uint8_t* output);
+               uint8_t* output,
+               size_t* output_length,
+               size_t max_output_length);
 
  private:
   const EVP_AEAD* const aead_alg_;

@@ -32,7 +32,7 @@ inline void DumpHex(const char* prefix, const uint8_t* data, uint32_t length) {
   message += written;
   left_size -= written;
 
-  length = std::min(length, 32U);
+  length = std::min<uint32_t>(length, sizeof(hex_buffer) / 4);
   for (uint32_t i = 0; i * 2 + 1 < length; ++i) {
     if (i % 8 == 0) {
       written = snprintf(message, left_size, "%s ", prefix);

@@ -3,6 +3,7 @@
 #include "crypto/aead_evp_decrypter.hpp"
 
 #include "core/logging.hpp"
+#include "protocol.hpp"
 
 #ifdef HAVE_BORINGSSL
 #include <openssl/crypto.h>
@@ -12,8 +13,7 @@
 // stack.
 static void DLogOpenSslErrors() {
 #ifdef NDEBUG
-  while (ERR_get_error()) {
-  }
+  ERR_clear_error();
 #else
   while (uint32_t error = ERR_get_error()) {
     char buf[120];
@@ -77,6 +77,8 @@ bool AeadEvpDecrypter::DecryptPacket(uint64_t packet_number,
   uint8_t nonce[kMaxNonceSize];
   memcpy(nonce, iv_, nonce_size_);
   PacketNumberToNonceEvp(nonce, nonce_size_, packet_number);
+
+  DumpHex("DE-NONCE", nonce, nonce_size_);
 
   if (!EVP_AEAD_CTX_open(ctx_.get(), reinterpret_cast<uint8_t*>(output),
                          output_length, max_output_length, nonce, nonce_size_,

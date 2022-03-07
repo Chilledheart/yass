@@ -20,7 +20,7 @@ AeadBaseDecrypter::AeadBaseDecrypter(size_t key_size,
   DCHECK_LE(nonce_size_, sizeof(iv_));
   DCHECK_GE(kMaxNonceSize, nonce_size_);
 
-  memset(key_, 0, key_size_);
+  memset(key_, 0, kMaxKeySize);
   memset(iv_, 0, kMaxNonceSize);
 }
 
