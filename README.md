@@ -19,9 +19,9 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
   * [FIPS Ciphers](#fips-ciphers)
   * [Mobile-friendly Ciphers](#mobile-friendly-ciphers)
 - [Supported Operating System](#supported-operating-system)
-  * [Screenshot on Windows 11](#screenshot-on-windows-11-)
-  * [Screenshot on Windows 7](#screenshot-on-windows-7-)
-  * [Screenshot on Windows XP](#screenshot-on-windows-xp-)
+  * [Screenshot on Windows 11](#screenshot-on-windows-11)
+  * [Screenshot on Windows 7](#screenshot-on-windows-7)
+  * [Screenshot on Windows XP](#screenshot-on-windows-xp)
   * [Screenshot on Ubuntu 16.04](#screenshot-on-ubuntu-1604)
 - [Client Protocols Supported](#client-protocols-supported)
 - [Build from Source](#build-from-source)
@@ -50,7 +50,7 @@ Defined in [TLS 1.3][tls13]
 
 ## Supported Operating System
 - macOS (MacOS 10.10 or later, macOS 11.0 or later, Apple Silicon supported)
-- Linux (CentOS 8 or later, Debian 9 or later, Ubuntu 16.04 or later)
+- Linux (CentOS 7 or later, Debian 9 or later, Ubuntu 16.04 or later)
 - Windows (Windows Vista or later, Windows XP package also supported)
 
 ### Screenshot on Windows 11
