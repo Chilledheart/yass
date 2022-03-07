@@ -27,6 +27,7 @@ env:
 jobs:
   linux-compiler-compatible:
     runs-on: ubuntu-18.04
+    if: ${{ github.event_name != 'release' }}
     strategy:
       fail-fast: false
       matrix:
@@ -89,8 +90,9 @@ jobs:
           fi
           mkdir build
           cd build
-          cmake -G Ninja -DCLI=on -DSERVER=on -DGUI=on ..
+          cmake -G Ninja -DBUILD_TESTS=on -DCLI=on -DSERVER=on -DGUI=on ..
           ninja -v yass_cli yass_server yass
+          ninja -v check
           cd ..
   linux-clang-tidy:
     runs-on: ubuntu-20.04
@@ -228,7 +230,7 @@ jobs:
         run: |
           export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
           export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
-          ./tools/build -alsologtostderr -v 2 --arch ${{ matrix.arch }} --system linux --sysroot $PWD/debian_sid_${{ matrix.arch }}-sysroot
+          ./tools/build --arch ${{ matrix.arch }} --system linux --sysroot $PWD/debian_sid_${{ matrix.arch }}-sysroot
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
@@ -302,7 +304,7 @@ jobs:
         run: |
           export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
           export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
-          ./tools/build -alsologtostderr -v 2 --arch ${{ matrix.arch }} --system freebsd --freebsd-abi ${{ matrix.abi }} --sysroot $PWD/freebsd-${{ matrix.abi }}-toolchain
+          ./tools/build --arch ${{ matrix.arch }} --system freebsd --freebsd-abi ${{ matrix.abi }} --sysroot $PWD/freebsd-${{ matrix.abi }}-toolchain
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:

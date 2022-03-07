@@ -132,21 +132,22 @@ jobs:
         run: |
           echo "mksbuild_arch_opts=--arch=amd64" >> $GITHUB_ENV
           echo "BUILD_ARCH=$(dpkg-architecture -q DEB_BUILD_ARCH)" >> $GITHUB_ENV
-      - name: Set nocheck build profile
+      - name: Set check build profile
+        if: ${{ env.HOST_ARCH == 'i386' || env.HOST_ARCH == 'amd64' }}
         run: |
-          echo "DEB_BUILD_PROFILES=nocheck ${{ env.DEB_BUILD_PROFILES}}" >> $GITHUB_ENV
+          echo "DEB_BUILD_PROFILES=check ${{ env.DEB_BUILD_PROFILES }}" >> $GITHUB_ENV
       - name: Set cross build profile
         if: ${{ env.HOST_ARCH != 'i386' && env.HOST_ARCH != 'amd64' }}
         run: |
-          echo "DEB_BUILD_PROFILES=nocheck ${{ env.DEB_BUILD_PROFILES}}" >> $GITHUB_ENV
+          echo "DEB_BUILD_PROFILES=nocheck cross ${{ env.DEB_BUILD_PROFILES }}" >> $GITHUB_ENV
       - name: Set nogui build profile (armel/mipsel/mips64el only)
         if: ${{ env.HOST_ARCH == 'armel' ||  env.HOST_ARCH == 'mipsel' || env.HOST_ARCH == 'mips64el' }}
         run: |
-          echo "DEB_BUILD_PROFILES=nogui ${{ env.DEB_BUILD_PROFILES}}" >> $GITHUB_ENV
+          echo "DEB_BUILD_PROFILES=nogui ${{ env.DEB_BUILD_PROFILES }}" >> $GITHUB_ENV
           echo "APT_DEB_BUILD_PROFILES=-o Apt::Build-Profiles=nogui" >> $GITHUB_ENV
       - name: Set clang build profile
         run: |
-          echo "DEB_BUILD_PROFILES=clang ${{ env.DEB_BUILD_PROFILES}}" >> $GITHUB_ENV
+          echo "DEB_BUILD_PROFILES=clang ${{ env.DEB_BUILD_PROFILES }}" >> $GITHUB_ENV
           echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
           echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
       - name: Fix schroot permissions (set store permissions for restore)
