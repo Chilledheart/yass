@@ -70,8 +70,7 @@ class stream {
     buf->reserve(0, SOCKET_BUF_SIZE);
     read_inprogress_ = true;
 
-    socket_.async_read_some(
-        asio::mutable_buffer(buf->mutable_data(), buf->capacity()),
+    socket_.async_read_some(mutable_buffer(*buf),
         [this, buf, channel](asio::error_code error,
                              std::size_t bytes_transferred) -> std::size_t {
           if (bytes_transferred || error) {
@@ -85,8 +84,7 @@ class stream {
 
   void start_write(std::shared_ptr<IOBuf> buf) {
     std::shared_ptr<Channel> channel = std::shared_ptr<Channel>(channel_);
-    asio::async_write(
-        socket_, asio::const_buffer(buf->data(), buf->length()),
+    asio::async_write(socket_, const_buffer(*buf),
         [this, channel, buf](asio::error_code error, size_t bytes_transferred) {
           on_write(channel, buf, error, bytes_transferred);
         });
@@ -96,8 +94,9 @@ class stream {
     asio::error_code ec;
     socket_.close(ec);
     if (ec) {
-      LOG(WARNING) << "close() error: " << ec;
+      VLOG(2) << "close() error: " << ec;
     }
+    eof_ = true;
   }
 
  private:
@@ -126,7 +125,7 @@ class stream {
       close();
       return;
     }
-    LOG(WARNING) << "connection timed out with endpoint: " << endpoint_;
+    VLOG(1) << "connection timed out with endpoint: " << endpoint_;
   }
 
   void on_read(const std::shared_ptr<Channel>& channel,
@@ -189,7 +188,7 @@ class stream {
         eof_ = true;
       }
     }
-    VLOG(1) << "data transfer closed with: " << endpoint_ << " stats: readed "
+    VLOG(2) << "data transfer closed with: " << endpoint_ << " stats: readed "
             << rbytes_transferred_ << " written: " << wbytes_transferred_;
     connected_ = false;
     channel->disconnected(error);

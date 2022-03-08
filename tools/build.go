@@ -29,6 +29,7 @@ var buildDir string
 var dryRunFlag bool
 var preCleanFlag bool
 var noPackagingFlag bool
+var runTestFlag bool
 
 var cmakeBuildTypeFlag string
 var cmakeBuildConcurrencyFlag int
@@ -97,6 +98,7 @@ func InitFlag() {
 	flag.BoolVar(&preCleanFlag, "pre-clean", true, "Clean the source tree before building")
 	flag.BoolVar(&flagNoPreClean, "nc", false, "Don't Clean the source tree before building")
 	flag.BoolVar(&noPackagingFlag, "no-packaging", false, "Skip packaging step")
+	flag.BoolVar(&runTestFlag, "run-test", false, "Build and run unittests")
 
 	flag.StringVar(&cmakeBuildTypeFlag, "cmake-build-type", getEnv("BUILD_TYPE", "Release"), "Set cmake build configuration")
 	flag.IntVar(&cmakeBuildConcurrencyFlag, "cmake-build-concurrency", runtime.NumCPU(), "Set cmake build concurrency")
@@ -286,6 +288,9 @@ func buildStageGenerateBuildScript() {
 	cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_BUILD_TYPE=%s", cmakeBuildTypeFlag))
 	cmakeArgs = append(cmakeArgs, "-G", "Ninja")
 	cmakeArgs = append(cmakeArgs, "-DUSE_HOST_TOOLS=on")
+	if runTestFlag {
+		cmakeArgs = append(cmakeArgs, "-DBUILD_TESTS=on")
+	}
 	if useLibCxxFlag {
 		cmakeArgs = append(cmakeArgs, "-DUSE_LIBCXX=on")
 	} else {
@@ -415,6 +420,10 @@ func buildStageExecuteBuildScript() {
 	glog.Info("======================================================================")
 	ninjaCmd := []string{"ninja", APPNAME, "-j", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag)}
 	cmdRun(ninjaCmd, true)
+	if runTestFlag {
+		checkCmd := []string{"ninja", "check"}
+		cmdRun(checkCmd, true)
+	}
 	// FIXME move to cmake (required by Xcode generator)
 	if systemNameFlag == "darwin" {
 		if _, err := os.Stat(filepath.Join(cmakeBuildTypeFlag, getAppName())); err == nil {

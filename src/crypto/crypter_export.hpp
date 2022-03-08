@@ -32,10 +32,13 @@
 #define CIPHER_METHOD_MAP_BORINGSSL(XX)
 #endif
 
+#define CIPHER_METHOD_VALID_MAP(XX) \
+  CIPHER_METHOD_MAP_SODIUM(XX)      \
+  CIPHER_METHOD_MAP_BORINGSSL(XX)
+
 #define CIPHER_METHOD_MAP(XX)  \
   XX(0x0U, INVALID, "invalid") \
-  CIPHER_METHOD_MAP_SODIUM(XX) \
-  CIPHER_METHOD_MAP_BORINGSSL(XX)
+  CIPHER_METHOD_VALID_MAP(XX)
 
 enum cipher_method : uint32_t {
 #define XX(num, name, string) CRYPTO_##name = num,

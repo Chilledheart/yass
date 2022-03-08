@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2022 Chilledheart  */
 
+#if defined(__SANITIZE_THREAD__)
+#define DYNAMIC_ANNOTATIONS_ENABLED 1
+#include <absl/base/dynamic_annotations.h>
+#include <absl/base/config.h>
+#endif
+
 #include "core/logging.hpp"
 
 #define _GNU_SOURCE 1  // needed for O_NOFOLLOW and pread()/pwrite()
@@ -2638,8 +2644,6 @@ ABSL_FLAG(std::string,
           " <module name> is a glob pattern, matched against the filename base"
           " (that is, name ignoring .cc/.h./-inl.h)."
           " <log level> overrides any value given by --v.");
-
-#define ANNOTATE_BENIGN_RACE(address, description)
 
 bool SafeFNMatch_(const char* pattern,
                   size_t patt_len,

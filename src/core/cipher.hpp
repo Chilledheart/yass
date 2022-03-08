@@ -84,8 +84,7 @@ class cipher {
 
   bool chunk_decrypt_frame(uint64_t* counter,
                            IOBuf* plaintext,
-                           const IOBuf* ciphertext,
-                           size_t* consumed_length) const;
+                           IOBuf* ciphertext) const;
 
   bool chunk_encrypt_frame(uint64_t* counter,
                            const IOBuf* plaintext,

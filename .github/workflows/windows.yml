@@ -95,7 +95,7 @@ jobs:
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-          tools\build -alsologtostderr -v 2  || exit /b
+          tools\build || exit /b
 
           exit /b 0
 
@@ -182,7 +182,7 @@ jobs:
 
           call "scripts\callxp-%Platform%.cmd"
 
-          tools\build -alsologtostderr -v 2  || exit /b
+          tools\build || exit /b
 
           goto :eof
       - name: Upload dist tarball (including debuginfo)
@@ -194,6 +194,7 @@ jobs:
           gh release upload ${{ github.event.release.tag_name }} *.msi *.zip
   win-compatible-2019:
     runs-on: windows-2019
+    if: ${{ github.event_name != 'release' }}
     strategy:
       fail-fast: false
       matrix:
@@ -259,7 +260,7 @@ jobs:
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-          tools\build -alsologtostderr -v 2 || exit /b
+          tools\build -run-test || exit /b
 
           exit /b 0
 
@@ -267,6 +268,7 @@ jobs:
           set VCToolsVersion=
   win-compatible-2022:
     runs-on: windows-2022
+    if: ${{ github.event_name != 'release' }}
     strategy:
       fail-fast: false
       matrix:
@@ -332,7 +334,7 @@ jobs:
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-          tools\build -alsologtostderr -v 2 || exit /b
+          tools\build -run-test || exit /b
 
           exit /b 0
 
@@ -408,7 +410,7 @@ jobs:
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-          tools\build -alsologtostderr -v 2  || exit /b
+          tools\build || exit /b
 
           exit /b 0
 

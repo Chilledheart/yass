@@ -3,6 +3,7 @@
 #include "crypto/aead_sodium_encrypter.hpp"
 
 #include "core/logging.hpp"
+#include "protocol.hpp"
 
 #ifdef HAVE_BORINGSSL
 #include <openssl/crypto.h>
@@ -12,8 +13,7 @@
 // stack.
 static void DLogOpenSslErrors() {
 #ifdef NDEBUG
-  while (ERR_get_error()) {
-  }
+  ERR_clear_error();
 #else
   while (uint32_t error = ERR_get_error()) {
     char buf[120];
@@ -63,12 +63,13 @@ bool SodiumAeadEncrypter::Encrypt(const uint8_t* nonce,
                                   size_t associated_data_len,
                                   const char* plaintext,
                                   size_t plaintext_len,
-                                  uint8_t* output) {
+                                  uint8_t* output,
+                                  size_t* output_length,
+                                  size_t max_output_length) {
   DCHECK_EQ(nonce_len, nonce_size_);
 
-  size_t ciphertext_len;
   if (!EVP_AEAD_CTX_seal(
-          ctx_.get(), output, &ciphertext_len, plaintext_len + auth_tag_size_,
+          ctx_.get(), output, output_length, max_output_length,
           nonce, nonce_len, reinterpret_cast<const uint8_t*>(plaintext),
           plaintext_len, reinterpret_cast<const uint8_t*>(associated_data),
           associated_data_len)) {
@@ -91,17 +92,23 @@ bool SodiumAeadEncrypter::EncryptPacket(uint64_t packet_number,
   if (max_output_length < ciphertext_size) {
     return false;
   }
-  uint8_t nonce_buffer[kMaxNonceSize];
-  memcpy(nonce_buffer, iv_, nonce_size_);
+  uint8_t nonce[kMaxNonceSize];
+  memcpy(nonce, iv_, nonce_size_);
 
   // for libsodium, packet number is written ahead
-  PacketNumberToNonceSodium(nonce_buffer, nonce_size_, packet_number);
+  PacketNumberToNonceSodium(nonce, nonce_size_, packet_number);
 
-  if (!Encrypt(nonce_buffer, nonce_size_, associated_data, associated_data_len,
-               plaintext, plaintext_len, reinterpret_cast<uint8_t*>(output))) {
+  DumpHex("EN-NONCE", nonce, nonce_size_);
+
+  *output_length = max_output_length;
+
+  if (!Encrypt(nonce, nonce_size_, associated_data, associated_data_len,
+               plaintext, plaintext_len, reinterpret_cast<uint8_t*>(output),
+               output_length, max_output_length)) {
     return false;
   }
-  *output_length = ciphertext_size;
+
+  DCHECK_EQ(*output_length, ciphertext_size);
   return true;
 }
 

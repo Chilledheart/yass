@@ -45,7 +45,8 @@ void SsConnection::close() {
     return;
   }
   VLOG(2) << "disconnected with client at stage: "
-          << SsConnection::state_to_str(CurrentState());
+          << SsConnection::state_to_str(CurrentState())
+          << " and data to write: " << downstream_.size();
   asio::error_code ec;
   closed_ = true;
   socket_.close(ec);
@@ -64,8 +65,7 @@ void SsConnection::ReadHandshake() {
   std::shared_ptr<IOBuf> cipherbuf{IOBuf::create(SOCKET_BUF_SIZE).release()};
   cipherbuf->reserve(0, SOCKET_BUF_SIZE);
 
-  socket_.async_read_some(
-      asio::mutable_buffer(cipherbuf->mutable_data(), cipherbuf->capacity()),
+  socket_.async_read_some(mutable_buffer(*cipherbuf),
       [self, cipherbuf](asio::error_code error, size_t bytes_transferred) {
         if (error) {
           self->OnDisconnect(error);
@@ -86,6 +86,8 @@ void SsConnection::ReadHandshake() {
           DCHECK_LE(self->request_.length(), bytes_transferred);
           ProcessReceivedData(self, buf, error, buf->length());
         } else {
+          // FIXME better error code?
+          error = asio::error::connection_refused;
           self->OnDisconnect(error);
         }
       });
@@ -116,8 +118,7 @@ void SsConnection::ReadStream() {
   cipherbuf->reserve(0, SOCKET_BUF_SIZE);
   downstream_read_inprogress_ = true;
 
-  socket_.async_read_some(
-      asio::mutable_buffer(cipherbuf->mutable_data(), cipherbuf->capacity()),
+  socket_.async_read_some(mutable_buffer(*cipherbuf),
       [self, cipherbuf](asio::error_code error,
                         std::size_t bytes_transferred) -> std::size_t {
         if (bytes_transferred || error) {
@@ -137,8 +138,7 @@ void SsConnection::ReadStream() {
 
 void SsConnection::WriteStream(std::shared_ptr<IOBuf> buf) {
   std::shared_ptr<SsConnection> self = shared_from_this();
-  asio::async_write(
-      socket_, asio::buffer(buf->data(), buf->length()),
+  asio::async_write(socket_, const_buffer(*buf),
       [self, buf](asio::error_code error, size_t bytes_transferred) {
         return SsConnection::ProcessSentData(self, buf, error,
                                              bytes_transferred);
@@ -179,6 +179,10 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<SsConnection> self,
         ec = std::make_error_code(std::errc::bad_message);
         break;
     };
+  }
+  // Slience Read EOF error triggered by upstream disconnection
+  if (ec == asio::error::eof && self->channel_->eof()) {
+    return;
   }
   if (ec) {
     self->SetState(state_error);
@@ -267,8 +271,9 @@ void SsConnection::DisableStreamRead() {
   downstream_readable_ = false;
 }
 
-void SsConnection::OnDisconnect(asio::error_code error) {
-  VLOG(2) << "ss: lost connection with: " << endpoint_ << " due to " << error;
+void SsConnection::OnDisconnect(asio::error_code ec) {
+  VLOG(2) << "ss: lost connection with: " << endpoint_ << " due to " << ec
+          << " and data to write: " << downstream_.size();
   close();
 }
 
@@ -337,19 +342,22 @@ void SsConnection::sent(std::shared_ptr<IOBuf> buf) {
   }
 }
 
-void SsConnection::disconnected(asio::error_code error) {
+void SsConnection::disconnected(asio::error_code ec) {
   VLOG(2) << "upstream: lost connection with: " << remote_endpoint_
-          << " due to " << error
+          << " due to " << ec
           << " and data to write: " << downstream_.size();
   upstream_writable_ = false;
   /* close socket directly when it is not eof */
   if (!channel_->eof()) {
-    close();
+    socket_.shutdown(asio::ip::tcp::socket::shutdown_receive, ec);
+    channel_->close();
     return;
   }
   /* delay the socket's close because downstream is buffered */
   if (downstream_.empty()) {
-    close();
+    socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
+  } else {
+    socket_.shutdown(asio::ip::tcp::socket::shutdown_receive, ec);
   }
 }
 

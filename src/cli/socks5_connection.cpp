@@ -74,9 +74,6 @@ Socks5Connection::Socks5Connection(
 Socks5Connection::~Socks5Connection() = default;
 
 void Socks5Connection::start() {
-  channel_ = std::make_unique<stream>(
-      io_context_, remote_endpoint_,
-      std::static_pointer_cast<Channel>(shared_from_this()));
   SetState(state_method_select);
   closed_ = false;
   upstream_writable_ = false;
@@ -89,11 +86,14 @@ void Socks5Connection::close() {
     return;
   }
   VLOG(2) << "disconnected with client at stage: "
-          << Socks5Connection::state_to_str(CurrentState());
+          << Socks5Connection::state_to_str(CurrentState())
+          << " and data to write: " << downstream_.size();
   asio::error_code ec;
   closed_ = true;
   socket_.close(ec);
-  channel_->close();
+  if (channel_) {
+    channel_->close();
+  }
   auto cb = std::move(disconnect_cb_);
   if (cb) {
     cb();
@@ -105,8 +105,7 @@ void Socks5Connection::ReadMethodSelect() {
   std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
   buf->reserve(0, SOCKET_BUF_SIZE);
 
-  socket_.async_read_some(
-      asio::mutable_buffer(buf->mutable_data(), buf->capacity()),
+  socket_.async_read_some(mutable_buffer(*buf),
       [self, buf](asio::error_code ec, size_t bytes_transferred) {
         if (ec) {
           self->OnDisconnect(ec);
@@ -135,8 +134,7 @@ void Socks5Connection::ReadSocks5Handshake() {
   std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
   buf->reserve(0, SOCKET_BUF_SIZE);
 
-  socket_.async_read_some(
-      asio::mutable_buffer(buf->mutable_data(), buf->capacity()),
+  socket_.async_read_some(mutable_buffer(*buf),
       [self, buf](asio::error_code ec, size_t bytes_transferred) {
         if (ec) {
           self->OnDisconnect(ec);
@@ -337,8 +335,7 @@ void Socks5Connection::ReadStream() {
   std::shared_ptr<IOBuf> buf{IOBuf::create(SOCKET_BUF_SIZE).release()};
   buf->reserve(0, SOCKET_BUF_SIZE);
 
-  socket_.async_read_some(
-      asio::mutable_buffer(buf->mutable_data(), buf->capacity()),
+  socket_.async_read_some(mutable_buffer(*buf),
       [self, buf](asio::error_code ec,
                   std::size_t bytes_transferred) -> std::size_t {
         if (bytes_transferred || ec) {
@@ -407,8 +404,7 @@ void Socks5Connection::WriteHandshake() {
 
 void Socks5Connection::WriteStream(std::shared_ptr<IOBuf> buf) {
   std::shared_ptr<Socks5Connection> self = shared_from_this();
-  asio::async_write(
-      socket_, asio::buffer(buf->data(), buf->length()),
+  asio::async_write(socket_, const_buffer(*buf),
       [self, buf](asio::error_code error, size_t bytes_transferred) {
         return Socks5Connection::ProcessSentData(self, buf, error,
                                                  bytes_transferred);
@@ -570,6 +566,10 @@ void Socks5Connection::ProcessReceivedData(
                    << static_cast<int>(self->CurrentState()) << std::dec;
     };
   }
+  // Slience Read EOF error triggered by upstream disconnection
+  if (ec == asio::error::eof && self->channel_->eof()) {
+    return;
+  }
   if (ec) {
     self->SetState(state_error);
     self->OnDisconnect(ec);
@@ -595,8 +595,6 @@ void Socks5Connection::ProcessSentData(std::shared_ptr<Socks5Connection> self,
       case state_stream:
         if (buf) {
           self->OnStreamWrite(buf);
-        } else {
-          self->ReadStream();  // read next state info
         }
         break;
       case state_socks5_handshake:
@@ -620,6 +618,10 @@ void Socks5Connection::ProcessSentData(std::shared_ptr<Socks5Connection> self,
 void Socks5Connection::OnCmdConnect(ByteRange req) {
   OnConnect();
 
+  // create lazy
+  channel_ = std::make_unique<stream>(
+      io_context_, remote_endpoint_,
+      std::static_pointer_cast<Channel>(shared_from_this()));
   // ensure the remote is connected prior to header write
   channel_->connect();
   // write variable address directly as ss header
@@ -650,9 +652,9 @@ void Socks5Connection::OnStreamWrite(std::shared_ptr<IOBuf> buf) {
   }
 }
 
-void Socks5Connection::OnDisconnect(asio::error_code error) {
+void Socks5Connection::OnDisconnect(asio::error_code ec) {
   VLOG(2) << "client: lost connection with: " << endpoint_ << " due to "
-          << error;
+          << ec << " and data to write: " << downstream_.size();
   close();
 }
 
@@ -710,18 +712,21 @@ void Socks5Connection::sent(std::shared_ptr<IOBuf> buf) {
   OnUpstreamWriteFlush();
 }
 
-void Socks5Connection::disconnected(asio::error_code error) {
+void Socks5Connection::disconnected(asio::error_code ec) {
   VLOG(2) << "upstream: lost connection with: " << remote_endpoint_
-          << " due to " << error
+          << " due to " << ec
           << " and data to write: " << downstream_.size();
   /* close socket directly when it is not eof */
   if (!channel_->eof()) {
-    close();
+    socket_.shutdown(asio::ip::tcp::socket::shutdown_receive, ec);
+    channel_->close();
     return;
   }
   /* delay the socket's close because downstream is buffered */
   if (downstream_.empty()) {
-    close();
+    socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
+  } else {
+    socket_.shutdown(asio::ip::tcp::socket::shutdown_receive, ec);
   }
 }
 

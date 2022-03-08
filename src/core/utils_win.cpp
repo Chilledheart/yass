@@ -133,6 +133,9 @@ bool SetThreadPriority(std::thread::native_handle_type handle,
 
 bool SetThreadName(std::thread::native_handle_type handle,
                    const std::string& name) {
+  if (!IsWindowsVersionBNOrGreater(10, 0, 14393)) {
+    return true;
+  }
   // The SetThreadDescription API works even if no debugger is attached.
   static const auto fPointer = reinterpret_cast<PFNSETTHREADDESCRIPTION>(
       reinterpret_cast<void*>(::GetProcAddress(
@@ -649,7 +652,7 @@ static bool GetProductInfo(DWORD dwOSMajorVersion,
       DWORD dwSpMinorVersion, PDWORD pdwReturnedProductType);
   GetProductInfoFunction get_product_info =
       reinterpret_cast<GetProductInfoFunction>(::GetProcAddress(
-          ::GetModuleHandleW(L"kernel32.dll"), "GetProductInfoFunction"));
+          ::GetModuleHandleW(L"kernel32.dll"), "GetProductInfo"));
   if (!get_product_info) {
     *pdwReturnedProductType = 0;
     return false;
@@ -682,6 +685,10 @@ void GetWindowsVersion(int* major,
   *minor = version_info.dwMinorVersion;
   *build_number = version_info.dwBuildNumber;
   *os_type = 0;
+
+  if (MAKE_WIN_VER(*major, *minor, *build_number) < MAKE_WIN_VER(6, 0, 0)) {
+    return;
+  }
 
   DWORD dwOsType;
   // https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getproductinfo
