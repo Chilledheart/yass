@@ -131,8 +131,8 @@ jobs:
           export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
           export CLANG_TIDY_EXECUTABLE=$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy
           ./tools/build
-  mac-compatible-10-15:
-    runs-on: macos-l0.15
+  mac-compatible-latest:
+    runs-on: macos-latest
     if: ${{ github.event_name != 'release' }}
     strategy:
       fail-fast: false
