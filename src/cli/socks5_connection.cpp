@@ -532,6 +532,8 @@ void Socks5Connection::ProcessReceivedData(
         self->SetState(state_stream);
         if (buf->length()) {
           self->ProcessReceivedData(self, buf, ec, buf->length());
+        } else {
+          self->ReadStream();  // continously read
         }
         break;
       case state_socks4_handshake:
@@ -541,6 +543,8 @@ void Socks5Connection::ProcessReceivedData(
         self->SetState(state_stream);
         if (buf->length()) {
           self->ProcessReceivedData(self, buf, ec, buf->length());
+        } else {
+          self->ReadStream();  // continously read
         }
         break;
       case state_http_handshake:
@@ -550,6 +554,8 @@ void Socks5Connection::ProcessReceivedData(
         self->SetState(state_stream);
         if (buf->length()) {
           self->ProcessReceivedData(self, buf, ec, buf->length());
+        } else {
+          self->ReadStream();  // continously read
         }
         break;
       case state_stream:
@@ -617,11 +623,6 @@ void Socks5Connection::ProcessSentData(std::shared_ptr<Socks5Connection> self,
 
 void Socks5Connection::OnCmdConnect(ByteRange req) {
   OnConnect();
-
-  // create lazy
-  channel_ = std::make_unique<stream>(
-      io_context_, remote_endpoint_,
-      std::static_pointer_cast<Channel>(shared_from_this()));
   // ensure the remote is connected prior to header write
   channel_->connect();
   // write variable address directly as ss header
@@ -631,6 +632,10 @@ void Socks5Connection::OnCmdConnect(ByteRange req) {
 
 void Socks5Connection::OnConnect() {
   VLOG(2) << "client: established connection with: " << endpoint_;
+  // create lazy
+  channel_ = std::make_unique<stream>(
+      io_context_, remote_endpoint_,
+      std::static_pointer_cast<Channel>(shared_from_this()));
 }
 
 void Socks5Connection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
@@ -673,8 +678,7 @@ void Socks5Connection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
 }
 
 void Socks5Connection::OnUpstreamWriteFlush() {
-  std::shared_ptr<IOBuf> buf{IOBuf::create(0).release()};
-  OnUpstreamWrite(buf);
+  OnUpstreamWrite(nullptr);
 }
 
 void Socks5Connection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
