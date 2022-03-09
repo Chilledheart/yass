@@ -66,8 +66,8 @@ def main():
                   '/DWIN32_LEAN_AND_MEAN', '/D_UNICODE', '/DUNICODE', '/MT',
                   '/O2', '/Ob2', '/DNDEBUG', 'shell32.lib'])
   else:
-    shutil.copyfile('../../../../scripts/llvm-lib', 'llvm-lib')
-    shutil.copymode('../../../../scripts/llvm-lib', 'llvm-lib')
+    write_output(['ln', '-sf', 'llvm-ar', 'llvm-lib'])
+    write_output(['ln', '-sf', 'llvm-ar', 'llvm-ranlib'])
     # still missing llvm-rc
 
 if __name__ == '__main__':

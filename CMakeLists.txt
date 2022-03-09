@@ -695,24 +695,20 @@ if (COMPILER_GCC AND NOT APPLE)
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -flto=auto")
 endif()
 
-# skipping for coff binaries
-if (UNIX)
-  if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    # althrough newer version of binutils' ar accepts lto objects, overriding it for compatiblity
-    set(CMAKE_AR "${CMAKE_CXX_COMPILER_AR}")
-  endif()
+# skipping for coff binaries on ar fix
+if (NOT MSVC AND LTO_FLAVOUR AND COMPILER_CLANG)
+  # althrough newer version of binutils' ar accepts lto objects, overriding it for compatiblity
+  set(CMAKE_AR "${CMAKE_CXX_COMPILER_AR}")
+endif()
 
-  # for macho, it needs llvm-ranlib or stock ranlib to run on fat binary after ar qc
-  # but llvm-ranlib is not present on some binaries...
-  if (NOT APPLE OR LTO_FLAVOUR)
-    # mac/binutils's ranlib doesn't support lto objects, overriding it
-    if (EXISTS "/bin/true")
-      set(CMAKE_RANLIB "/bin/true")
-    elseif (EXISTS "/usr/bin/true")
-      set(CMAKE_RANLIB "/usr/bin/true")
-    else ()
-      set(CMAKE_RANLIB "/bin/echo")
-    endif()
+# binutils's ranlib doesn't support lto objects, overriding it
+if (UNIX AND NOT APPLE)
+  if (EXISTS "/bin/true")
+    set(CMAKE_RANLIB "/bin/true")
+  elseif (EXISTS "/usr/bin/true")
+    set(CMAKE_RANLIB "/usr/bin/true")
+  else ()
+    set(CMAKE_RANLIB "/bin/echo")
   endif()
 endif()
 
