@@ -985,7 +985,7 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
 #ifdef OS_WIN
     // On Windows, also output to the debugger
     ::OutputDebugStringA(message);
-#elif defined(OS_APPLE)
+#elif defined(OS_APPLE) && defined(__clang__)
     // In LOG_TO_SYSTEM_DEBUG_LOG mode, log messages are always written to
     // stderr. If stderr is /dev/null, also log via ASL (Apple System Log) or
     // its successor OS_LOG. If there's something weird about stderr, assume

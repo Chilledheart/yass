@@ -17,7 +17,7 @@ ConfigImpl::~ConfigImpl() = default;
 std::unique_ptr<ConfigImpl> ConfigImpl::Create() {
 #ifdef _WIN32
   return std::make_unique<ConfigImplWindows>();
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) && defined(__clang__)
   return std::make_unique<ConfigImplApple>();
 #else
   return std::make_unique<ConfigImplPosix>();

@@ -1,0 +1,28 @@
+From 55a08eed4ab3b6ca6b784c5b0b3cecec8a6d9bb4 Mon Sep 17 00:00:00 2001
+From: Chilledheart <rwindz0@gmail.com>
+Date: Wed, 9 Mar 2022 15:35:19 +0800
+Subject: [PATCH] fix gcc compiling under mac
+
+---
+ include/__config | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/include/__config b/include/__config
+index 30a4f4a95..78948680d 100644
+--- a/include/__config
++++ b/include/__config
+@@ -1454,6 +1454,11 @@ extern "C" _LIBCPP_FUNC_VIS void __sanitizer_annotate_contiguous_container(
+ # define _LIBCPP_INIT_PRIORITY_MAX
+ #endif
+ 
++#if defined(__GNUC__) && !defined(__clang__) && defined(__APPLE__)
++# undef _LIBCPP_INIT_PRIORITY_MAX
++# define _LIBCPP_INIT_PRIORITY_MAX
++#endif
++
+ #if defined(__GNUC__) || defined(__clang__)
+ #define _LIBCPP_FORMAT_PRINTF(a, b)                                            \
+   __attribute__((__format__(__printf__, a, b)))
+-- 
+2.35.1
+

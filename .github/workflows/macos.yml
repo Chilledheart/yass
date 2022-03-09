@@ -138,6 +138,7 @@ jobs:
       fail-fast: false
       matrix:
         build_type: [Debug, Release]
+        compiler: [gcc, clang]
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
@@ -160,8 +161,16 @@ jobs:
         run: |
           cd tools
           go build
+      - name: Patch libcxx for gcc
+        run: |
+          cd third_party/libc++/trunk
+          patch -p1 < ../gcc-mac.patch
       - name: Populate depedencies
-        run: brew install ninja cmake p7zip
+        run: brew install ninja cmake p7zip gcc@9 gtk+3
       - name: Build
         run: |
-          ./tools/build -run-test
+          if [ "${{ matrix.compiler }}" = "gcc" ]; then
+            export CC=gcc-9
+            export CXX=g++-9
+          fi
+          ./tools/build -run-test -macosx-universal-build=false -no-packaging

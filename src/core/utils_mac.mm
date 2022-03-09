@@ -5,16 +5,22 @@
 
 #ifdef __APPLE__
 
+#if defined(OS_APPLE) && defined(__clang__)
+
 #include <AvailabilityMacros.h>
 #include <CoreFoundation/CoreFoundation.h>
 
+#endif  // defined(OS_APPLE) && defined(__clang__)
+
 #include <errno.h>
 #include <locale.h>
+#include <mach/mach_init.h>
+#include <mach/mach_port.h>
 #include <mach/mach_time.h>
 #include <mach/vm_map.h>
-#include <stdint.h>
 #include <pthread.h>
-#include <sys/mman.h> // For mlock.
+#include <stdint.h>
+#include <sys/mman.h>  // For mlock.
 #include <sys/resource.h>
 
 #include "core/logging.hpp"
@@ -411,9 +417,8 @@ bool MemoryLockAll() {
       mach_msg_type_number_t count = VM_REGION_BASIC_INFO_COUNT_64;
       vm_region_basic_info_data_64_t vm_basic_info {};
       mach_port_t object_name;
-      kern_return_t kr;
-      kr = vm_region_64(task, &address, &vm_region_size, VM_REGION_BASIC_INFO_64,
-                        (vm_region_info_t)&vm_basic_info, &count, &object_name);
+      vm_region_64(task, &address, &vm_region_size, VM_REGION_BASIC_INFO_64,
+                   (vm_region_info_t)&vm_basic_info, &count, &object_name);
       VLOG(4) << "Calling mlock on address: " << (void*)address
               << " protection: " << protection_str(vm_region_info.protection)
               << " max_protection: "
@@ -484,6 +489,8 @@ bool SetUTF8Locale() {
     return false;
   return true;
 }
+
+#if defined(OS_APPLE) && defined(__clang__)
 
 namespace {
 
@@ -664,6 +671,6 @@ std::u16string SysNSStringToUTF16(NSString* nsstring) {
   return SysCFStringRefToUTF16(reinterpret_cast<CFStringRef>(nsstring));
 }
 
-
+#endif  // defined(OS_APPLE) && defined(__clang__)
 
 #endif  // __APPLE__

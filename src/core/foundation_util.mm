@@ -5,6 +5,8 @@
 
 #ifdef __APPLE__
 
+#ifdef __clang__
+
 #include <stdint.h>
 #include "core/checked_math.hpp"
 #include "core/cxx17_backports.hpp"
@@ -177,5 +179,7 @@ std::ostream& operator<<(std::ostream& o, NSSize size) {
   return o << NSStringFromSize(size);
 }
 #endif
+
+#endif  // __clang__
 
 #endif // __APPLE__

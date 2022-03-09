@@ -7,7 +7,7 @@
 
 #include <unistd.h>
 
-#include <absl/flags/flag.h>
+#include <absl/flags/declare.h>
 #include <sys/stat.h>
 #include <memory>
 
@@ -15,10 +15,7 @@
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 
-ABSL_FLAG(std::string,
-          configfile,
-          "~/.yass/config.json",
-          "load configs from file (legacy)");
+ABSL_DECLARE_FLAG(std::string, configfile);
 
 // Because a suite manages the defaults of a specified app group, a suite name
 // must be distinct from your app’s main bundle identifier.

@@ -144,11 +144,25 @@ Dispatcher::~Dispatcher() {
 bool Dispatcher::Init(std::function<void()> callback) {
   if (!callback)
     return false;
+#ifdef SOCK_NONBLOCK
   if (socketpair(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0,
                  fds_) != 0) {
     PLOG(WARNING) << "Dispatcher: socketpair failure";
     return false;
   }
+#else
+  if (socketpair(AF_UNIX, SOCK_STREAM, 0, fds_) != 0) {
+    PLOG(WARNING) << "Dispatcher: socketpair failure";
+    return false;
+  }
+  if (fcntl(fds_[0], F_SETFL, fcntl(fds_[0], F_GETFL) | O_NONBLOCK | O_CLOEXEC) != 0 ||
+      fcntl(fds_[1], F_SETFL, fcntl(fds_[1], F_GETFL) | O_NONBLOCK | O_CLOEXEC) != 0) {
+    close(fds_[0]);
+    close(fds_[1]);
+    PLOG(WARNING) << "Dispatcher: set non-block failure";
+    return false;
+  }
+#endif
   GIOChannel* channel = g_io_channel_unix_new(fds_[0]);
   source_ =
       g_io_create_watch(channel, (GIOCondition)(G_IO_IN | G_IO_HUP | G_IO_ERR));

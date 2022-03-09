@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2022 Chilledheart  */
+
 #include "core/span.hpp"
+
+#include <cstring>
 
 // hexdump writes |msg| to |fp| followed by the hex encoding of |len| bytes
 // from |in|.

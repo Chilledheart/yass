@@ -23,6 +23,10 @@ endif()
 
 message(STATUS "Build with libc++")
 
+# *****************************************************************************************
+#           Public-specific
+# *****************************************************************************************
+
 if (libcxx_ABI_UNSTABLE)
   set(libcxx_PUBLIC_DEFINITIONS
     ${libcxx_PUBLIC_DEFINITIONS}
@@ -140,10 +144,25 @@ else()
     # removes all of the default libraries, so add back the ones that we need.
     set(libcxx_PUBLIC_LIBRARIES
       ${libcxx_PUBLIC_LIBRARIES}
-      c gcc_s m rt
+      c m
       )
+    if (APPLE)
+      set(libcxx_PUBLIC_LIBRARIES
+        ${libcxx_PUBLIC_LIBRARIES}
+        gcc_eh gcc System
+        )
+    else()
+      set(libcxx_PUBLIC_LIBRARIES
+        ${libcxx_PUBLIC_LIBRARIES}
+        gcc_s rt
+        )
+    endif()
   endif()
 endif()
+
+# *****************************************************************************************
+#           Private-specific
+# *****************************************************************************************
 
 set(libcxx_SOURCES
   trunk/src/algorithm.cpp
@@ -412,7 +431,12 @@ set(libcxx_LINK_LIBATOMIC FALSE)
 if (NOT MSVC)
   include(CheckCSourceCompiles)
   set(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
-  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror=atomic-alignment")
+  foreach(lib ${libcxx_PUBLIC_LIBRARIES})
+    set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Wl,-l${lib}")
+  endforeach()
+  if (COMPILER_CLANG)
+    set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror=atomic-alignment")
+  endif()
   check_c_source_compiles("
     #include <stdint.h>
     int main() {
