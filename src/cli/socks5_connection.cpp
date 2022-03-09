@@ -172,6 +172,7 @@ asio::error_code Socks5Connection::OnReadSocks5MethodSelect(
 
 asio::error_code Socks5Connection::OnReadSocks5Handshake(
     std::shared_ptr<IOBuf> buf) {
+  VLOG(3) << "client: try socks5 handshake";
   std::shared_ptr<Socks5Connection> self = shared_from_this();
   socks5::request_parser::result_type result;
   std::tie(result, std::ignore) = request_parser_.parse(
@@ -185,8 +186,6 @@ asio::error_code Socks5Connection::OnReadSocks5Handshake(
 
     VLOG(3) << "client: socks5 handshake began";
     return asio::error_code();
-  } else {
-    VLOG(3) << "client: socks5 bad handshake";
   }
   return std::make_error_code(std::errc::bad_message);
 }
@@ -194,6 +193,7 @@ asio::error_code Socks5Connection::OnReadSocks5Handshake(
 asio::error_code Socks5Connection::OnReadSocks4Handshake(
     std::shared_ptr<IOBuf> buf) {
   std::shared_ptr<Socks5Connection> self = shared_from_this();
+  VLOG(3) << "client: try socks4 handshake";
 
   socks4::request_parser::result_type result;
   std::tie(result, std::ignore) = s4_request_parser_.parse(
@@ -206,14 +206,13 @@ asio::error_code Socks5Connection::OnReadSocks4Handshake(
 
     VLOG(3) << "client: socks4 handshake began";
     return asio::error_code();
-  } else {
-    VLOG(3) << "client: socks4 bad handshake";
   }
   return std::make_error_code(std::errc::bad_message);
 }
 
 asio::error_code Socks5Connection::OnReadHttpRequest(
     std::shared_ptr<IOBuf> buf) {
+  VLOG(3) << "client: try http handshake";
   static struct http_parser_settings settings_connect = {
       //.on_message_begin
       nullptr,
@@ -269,7 +268,6 @@ asio::error_code Socks5Connection::OnReadHttpRequest(
   LOG(WARNING) << http_errno_description(HTTP_PARSER_ERRNO(&parser)) << ": "
                << std::string(reinterpret_cast<const char*>(buf->data()),
                               nparsed);
-  VLOG(3) << "client: http bad handshake";
   return std::make_error_code(std::errc::bad_message);
 }
 
@@ -364,6 +362,7 @@ void Socks5Connection::WriteHandshake() {
   switch (CurrentState()) {
     case state_method_select:  // impossible
     case state_socks5_handshake:
+      self->SetState(state_stream);
       asio::async_write(
           socket_, s5_reply_.buffers(),
           [self](asio::error_code error, size_t bytes_transferred) {
@@ -372,6 +371,7 @@ void Socks5Connection::WriteHandshake() {
           });
       break;
     case state_socks4_handshake:
+      self->SetState(state_stream);
       asio::async_write(
           socket_, s4_reply_.buffers(),
           [self](asio::error_code error, size_t bytes_transferred) {
@@ -380,16 +380,12 @@ void Socks5Connection::WriteHandshake() {
           });
       break;
     case state_http_handshake:
+      self->SetState(state_stream);
       /// reply on CONNECT request
       if (http_is_connect_) {
-        asio::async_write(
-            socket_,
-            asio::buffer(http_connect_reply_.c_str(),
-                         http_connect_reply_.size()),
-            [self](asio::error_code error, size_t bytes_transferred) {
-              return Socks5Connection::ProcessSentData(self, nullptr, error,
-                                                       bytes_transferred);
-            });
+        std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(
+            http_connect_reply_.c_str(), http_connect_reply_.size());
+        OnDownstreamWrite(buf);
       }
       break;
     case state_error:
@@ -403,7 +399,11 @@ void Socks5Connection::WriteHandshake() {
 }
 
 void Socks5Connection::WriteStream(std::shared_ptr<IOBuf> buf) {
+  DCHECK(downstream_writable_);
+  downstream_writable_ = false;
   std::shared_ptr<Socks5Connection> self = shared_from_this();
+  DCHECK_EQ(CurrentState(), state_stream);
+  DCHECK(buf);
   asio::async_write(socket_, const_buffer(*buf),
       [self, buf](asio::error_code error, size_t bytes_transferred) {
         return Socks5Connection::ProcessSentData(self, buf, error,
@@ -514,11 +514,15 @@ void Socks5Connection::ProcessReceivedData(
     std::shared_ptr<IOBuf> buf,
     asio::error_code ec,
     size_t bytes_transferred) {
+  VLOG(3) << "client: received data: " << bytes_transferred << " bytes"
+          << " ec: " << ec;
+
   self->rbytes_transferred_ += bytes_transferred;
   total_rx_bytes += bytes_transferred;
 
-  VLOG(3) << "client: received data: " << bytes_transferred << " bytes"
-          << " ec: " << ec;
+  if (buf) {
+    DCHECK_LE(bytes_transferred, buf->length());
+  }
 
   if (!ec) {
     switch (self->CurrentState()) {
@@ -529,7 +533,6 @@ void Socks5Connection::ProcessReceivedData(
         ec = self->PerformCmdOpsV5(&self->s5_request_, &self->s5_reply_);
         self->WriteHandshake();
         VLOG(3) << "client: socks5 handshake finished";
-        self->SetState(state_stream);
         if (buf->length()) {
           self->ProcessReceivedData(self, buf, ec, buf->length());
         } else {
@@ -540,7 +543,6 @@ void Socks5Connection::ProcessReceivedData(
         ec = self->PerformCmdOpsV4(&self->s4_request_, &self->s4_reply_);
         self->WriteHandshake();
         VLOG(3) << "client: socks4 handshake finished";
-        self->SetState(state_stream);
         if (buf->length()) {
           self->ProcessReceivedData(self, buf, ec, buf->length());
         } else {
@@ -551,7 +553,6 @@ void Socks5Connection::ProcessReceivedData(
         ec = self->PerformCmdOpsHttp();
         self->WriteHandshake();
         VLOG(3) << "client: http handshake finished";
-        self->SetState(state_stream);
         if (buf->length()) {
           self->ProcessReceivedData(self, buf, ec, buf->length());
         } else {
@@ -586,25 +587,29 @@ void Socks5Connection::ProcessSentData(std::shared_ptr<Socks5Connection> self,
                                        std::shared_ptr<IOBuf> buf,
                                        asio::error_code ec,
                                        size_t bytes_transferred) {
+  VLOG(3) << "client: sent data: " << bytes_transferred << " bytes"
+          << " ec: " << ec << " and data to write: " << self->downstream_.size();
+
   self->wbytes_transferred_ += bytes_transferred;
   total_tx_bytes += bytes_transferred;
 
-  VLOG(3) << "client: sent data: " << bytes_transferred << " bytes"
-          << " ec: " << ec;
+  if (buf) {
+    DCHECK_LE(bytes_transferred, buf->length());
+  }
 
   if (!ec) {
     switch (self->CurrentState()) {
       case state_method_select:
         self->ReadSocks5Handshake();  // read next state info
         break;
-      case state_stream:
-        if (buf) {
-          self->OnStreamWrite(buf);
-        }
-        break;
       case state_socks5_handshake:
       case state_socks4_handshake:
       case state_http_handshake:
+        ec = std::make_error_code(std::errc::bad_message);
+        break;
+      case state_stream:
+        self->OnStreamWrite(buf);
+        break;
       case state_error:
         ec = std::make_error_code(std::errc::bad_message);
         break;
@@ -650,10 +655,11 @@ void Socks5Connection::OnStreamWrite(std::shared_ptr<IOBuf> buf) {
   /* recursively send the remainings */
   OnDownstreamWriteFlush();
 
-  /* shutdown the socket if upstream is eof */
+  /* shutdown the socket if upstream is eof and all remaining data sent */
   if (channel_->eof() && downstream_.empty()) {
+    VLOG(3) << "client: last data sent: shutting down";
     asio::error_code ec;
-    socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
+    socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
     return;
   }
 }
@@ -665,16 +671,21 @@ void Socks5Connection::OnDisconnect(asio::error_code ec) {
 }
 
 void Socks5Connection::OnDownstreamWriteFlush() {
-  OnDownstreamWrite(nullptr);
+  if (!downstream_.empty()) {
+    OnDownstreamWrite(nullptr);
+  }
 }
 
 void Socks5Connection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
-  if (buf && !buf->empty()) {
+  if (buf) {
+    DCHECK(!buf->empty());
     downstream_.push_back(buf);
   }
   if (!downstream_.empty() && downstream_writable_) {
-    downstream_writable_ = false;
     WriteStream(downstream_[0]);
+  } else {
+    VLOG(3) << "client: waiting for downstream writable in-progress: "
+            << downstream_.size();
   }
 }
 
@@ -704,7 +715,9 @@ void Socks5Connection::connected() {
 void Socks5Connection::received(std::shared_ptr<IOBuf> buf) {
   VLOG(3) << "upstream: received reply: " << buf->length() << " bytes.";
   buf = DecryptData(buf);
-  OnDownstreamWrite(buf);
+  if (!buf->empty()) {
+    OnDownstreamWrite(buf);
+  }
 }
 
 void Socks5Connection::sent(std::shared_ptr<IOBuf> buf) {
@@ -724,6 +737,7 @@ void Socks5Connection::disconnected(asio::error_code ec) {
   channel_->close();
   /* delay the socket's close because downstream is buffered */
   if (downstream_.empty()) {
+    VLOG(3) << "client: last data sent: shutting down";
     socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
   } else {
     socket_.shutdown(asio::ip::tcp::socket::shutdown_receive, ec);

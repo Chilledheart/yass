@@ -31,7 +31,11 @@ class stream {
     assert(channel && "channel must defined to use with stream");
   }
 
-  ~stream() { close(); }
+  ~stream() {
+    if (!eof_) {
+      close();
+    }
+  }
 
   void connect() {
     std::shared_ptr<Channel> channel = std::shared_ptr<Channel>(channel_);
@@ -42,10 +46,11 @@ class stream {
     SetTCPFastOpenConnect(socket_.native_handle(), ec);
     connect_timer_.expires_from_now(
         std::chrono::milliseconds(absl::GetFlag(FLAGS_connect_timeout)));
-    connect_timer_.async_wait(
-        [this](asio::error_code error) { on_connect_expired(error); });
-    socket_.async_connect(endpoint_, [this, channel](asio::error_code error) {
-      on_connect(channel, error);
+    connect_timer_.async_wait([this, channel](asio::error_code ec) {
+      on_connect_expired(channel, ec);
+    });
+    socket_.async_connect(endpoint_, [this, channel](asio::error_code ec) {
+      on_connect(channel, ec);
     });
   }
 
@@ -91,41 +96,43 @@ class stream {
   }
 
   void close() {
+    eof_ = true;
     asio::error_code ec;
     socket_.close(ec);
     if (ec) {
       VLOG(2) << "close() error: " << ec;
     }
-    eof_ = true;
   }
 
  private:
   void on_connect(const std::shared_ptr<Channel>& channel,
                   asio::error_code ec) {
+    connect_timer_.cancel();
     if (ec) {
-      connect_timer_.cancel(ec);
       channel->disconnected(ec);
       return;
     }
-    connect_timer_.cancel(ec);
+    connected_ = true;
     SetTCPCongestion(socket_.native_handle(), ec);
     SetTCPUserTimeout(socket_.native_handle(), ec);
     SetSocketLinger(&socket_, ec);
     SetSocketSndBuffer(&socket_, ec);
     SetSocketRcvBuffer(&socket_, ec);
-    connected_ = true;
     channel->connected();
   }
 
-  void on_connect_expired(asio::error_code error) {
-    if (connected_) {
-      return;
-    }
-    if (error) {
-      close();
+  void on_connect_expired(const std::shared_ptr<Channel>& channel,
+                          asio::error_code ec) {
+    // Cancelled, safe to ignore
+    if (ec == asio::error::operation_aborted) {
       return;
     }
     VLOG(1) << "connection timed out with endpoint: " << endpoint_;
+    eof_ = true;
+    if (!ec) {
+      ec = asio::error::timed_out;
+    }
+    channel->disconnected(ec);
   }
 
   void on_read(const std::shared_ptr<Channel>& channel,
@@ -135,7 +142,7 @@ class stream {
     rbytes_transferred_ += bytes_transferred;
     buf->append(bytes_transferred);
 
-    if (error == asio::error::eof) {
+    if (error || bytes_transferred == 0) {
       eof_ = true;
     }
 
@@ -165,7 +172,7 @@ class stream {
                 size_t bytes_transferred) {
     wbytes_transferred_ += bytes_transferred;
 
-    if (error == asio::error::eof) {
+    if (error || bytes_transferred == 0) {
       eof_ = true;
     }
 

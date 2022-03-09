@@ -53,7 +53,7 @@ class ContentProviderConnection : public Connection {
     asio::async_write(socket_, const_buffer(content_buffer),
       [this](asio::error_code ec, size_t bytes_transferred) {
         if (ec || bytes_transferred != content_buffer.length()) {
-          LOG(WARNING) << "Failed to transfer data: " << ec;
+          LOG(WARNING) << "Failed to transfer data: " << ec.message();
           socket_.close(ec);
         } else {
           VLOG(2) << "content provider: written: " << bytes_transferred << " bytes";
@@ -82,36 +82,17 @@ void GenerateConnectRequest(std::string host, int port_num, IOBuf *buf) {
   buf->prepend(request_header.size());
 }
 
-asio::error_code ReadUntilEof(asio::ip::tcp::socket *s, IOBuf* buf) {
-  asio::error_code ec;
-  buf->reserve(0, kContentMaxSize + 1024);
-  while (buf->tailroom()) {
-    size_t read = s->read_some(tail_buffer(*buf), ec);
-    if (ec == asio::error::eof) {
-      VLOG(2) << "content consumer: eof";
-      ec = asio::error_code();
-      break;
-    }
-    if (ec) {
-      break;
-    }
-    VLOG(3) << "content consumer: read: " << read << " bytes";
-    buf->append(read);
-  }
-  return ec;
-}
-
 // [content provider] <== [ss server] <== [ss local] <== [content consumer]
 class SsEndToEndTest : public ::testing::Test {
  public:
   void SetUp() override {
     absl::SetFlag(&FLAGS_password, "<dummy-password>");
     auto ec = StartContentProvider(GetContentProviderEndpoint(), 1);
-    ASSERT_FALSE(ec) << ec;
+    ASSERT_FALSE(ec) << ec.message();
     ec = StartServer(GetServerEndpoint(), 1);
-    ASSERT_FALSE(ec) << ec;
+    ASSERT_FALSE(ec) << ec.message();
     ec = StartLocal(GetServerEndpoint(), GetLocalEndpoint(), 1);
-    ASSERT_FALSE(ec) << ec;
+    ASSERT_FALSE(ec) << ec.message();
   }
 
   void TearDown() override {
@@ -136,7 +117,7 @@ class SsEndToEndTest : public ::testing::Test {
   asio::ip::tcp::endpoint GetEndpoint(int port_num) const {
     asio::error_code ec;
     auto addr = asio::ip::make_address("127.0.0.1", ec);
-    // ASSERT_FALSE(ec) << ec;
+    // ASSERT_FALSE(ec) << ec.message();
     asio::ip::tcp::endpoint endpoint;
     endpoint.address(addr);
     endpoint.port(port_num);
@@ -149,7 +130,7 @@ class SsEndToEndTest : public ::testing::Test {
       asio::error_code ec;
       content_provider_io_context_.run(ec);
       if (ec) {
-        LOG(ERROR) << "content provider failed due to: " << ec;
+        LOG(ERROR) << "content provider failed due to: " << ec.message();
       }
       VLOG(2) << "content provider thread ended";
     });
@@ -158,7 +139,7 @@ class SsEndToEndTest : public ::testing::Test {
       asio::error_code ec;
       server_io_context_.run(ec);
       if (ec) {
-        LOG(ERROR) << "remote server failed due to: " << ec;
+        LOG(ERROR) << "remote server failed due to: " << ec.message();
       }
       VLOG(2) << "server thread ended";
     });
@@ -167,7 +148,7 @@ class SsEndToEndTest : public ::testing::Test {
       asio::error_code ec;
       local_io_context_.run(ec);
       if (ec) {
-        LOG(ERROR) << "local server failed due to: " << ec;
+        LOG(ERROR) << "local server failed due to: " << ec.message();
       }
       VLOG(2) << "local thread ended";
     });
@@ -183,19 +164,21 @@ class SsEndToEndTest : public ::testing::Test {
 
     asio::error_code ec;
     s.connect(endpoint, ec);
-    ASSERT_FALSE(ec) << ec;
+    ASSERT_FALSE(ec) << ec.message();
     auto request_buf = IOBuf::copyBuffer(request_data, request_data_size);
     GenerateConnectRequest("127.0.0.1", GetContentProviderEndpoint().port(),
                            request_buf.get());
 
     size_t written = asio::write(s, const_buffer(*request_buf), ec);
     VLOG(2) << "content consumer: written: " << written << " bytes";
-    EXPECT_FALSE(ec) << ec;
+    EXPECT_FALSE(ec) << ec.message();
     EXPECT_EQ(written, request_buf->length());
 
     IOBuf response_buf;
-    ec = ReadUntilEof(&s, &response_buf);
-    EXPECT_FALSE(ec) << ec;
+    response_buf.reserve(0, kContentMaxSize + 1024);
+    size_t read = asio::read(s, tail_buffer(response_buf), ec);
+    response_buf.append(read);
+    EXPECT_EQ(ec, asio::error::eof) << ec.message();
 
     const char* buffer = reinterpret_cast<const char*>(response_buf.data());
     size_t buffer_length = response_buf.length();
@@ -220,7 +203,7 @@ class SsEndToEndTest : public ::testing::Test {
     content_provider_factory_ = std::make_unique<CpFactory>(remote_endpoint);
     content_provider_factory_->listen(endpoint, backlog, ec);
     if (ec) {
-      LOG(ERROR) << "listen failed due to: " << ec;
+      LOG(ERROR) << "listen failed due to: " << ec.message();
       return ec;
     }
     return ec;
@@ -251,7 +234,7 @@ class SsEndToEndTest : public ::testing::Test {
     server_factory_->listen(endpoint, backlog, ec);
 
     if (ec) {
-      LOG(ERROR) << "listen failed due to: " << ec;
+      LOG(ERROR) << "listen failed due to: " << ec.message();
       return ec;
     }
 
@@ -283,7 +266,7 @@ class SsEndToEndTest : public ::testing::Test {
     local_factory_->listen(endpoint, backlog, ec);
 
     if (ec) {
-      LOG(ERROR) << "listen failed due to: " << ec;
+      LOG(ERROR) << "listen failed due to: " << ec.message();
       local_factory_->stop();
       local_factory_->join();
       local_work_guard_.reset();

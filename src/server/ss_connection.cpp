@@ -137,6 +137,8 @@ void SsConnection::ReadStream() {
 }
 
 void SsConnection::WriteStream(std::shared_ptr<IOBuf> buf) {
+  DCHECK(downstream_writable_);
+  downstream_writable_ = false;
   std::shared_ptr<SsConnection> self = shared_from_this();
   asio::async_write(socket_, const_buffer(*buf),
       [self, buf](asio::error_code error, size_t bytes_transferred) {
@@ -149,10 +151,14 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<SsConnection> self,
                                        std::shared_ptr<IOBuf> buf,
                                        asio::error_code ec,
                                        size_t bytes_transferred) {
-  self->rbytes_transferred_ += bytes_transferred;
-
   VLOG(3) << "ss: received data: " << bytes_transferred << " bytes"
           << " ec: " << ec;
+
+  self->rbytes_transferred_ += bytes_transferred;
+
+  if (buf) {
+    DCHECK_LE(bytes_transferred, buf->length());
+  }
 
   if (!ec) {
     switch (self->CurrentState()) {
@@ -194,10 +200,14 @@ void SsConnection::ProcessSentData(std::shared_ptr<SsConnection> self,
                                    std::shared_ptr<IOBuf> buf,
                                    asio::error_code ec,
                                    size_t bytes_transferred) {
+  VLOG(3) << "ss: sent data: " << bytes_transferred << " bytes"
+          << " ec: " << ec << " and data to write: " << self->downstream_.size();
+
   self->wbytes_transferred_ += bytes_transferred;
 
-  VLOG(3) << "ss: sent data: " << bytes_transferred << " bytes"
-          << " ec: " << ec;
+  if (buf) {
+    DCHECK_LE(bytes_transferred, buf->length());
+  }
 
   if (!ec) {
     switch (self->CurrentState()) {
@@ -244,10 +254,11 @@ void SsConnection::OnStreamWrite(std::shared_ptr<IOBuf> buf) {
   /* recursively send the remainings */
   OnDownstreamWriteFlush();
 
-  /* shutdown the socket if upstream is eof */
+  /* shutdown the socket if upstream is eof and all remaining data sent */
   if (channel_->eof() && downstream_.empty()) {
+    VLOG(3) << "ss: last data sent: shutting down";
     asio::error_code ec;
-    socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
+    socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
     return;
   }
 
@@ -278,7 +289,9 @@ void SsConnection::OnDisconnect(asio::error_code ec) {
 }
 
 void SsConnection::OnDownstreamWriteFlush() {
-  OnDownstreamWrite(nullptr);
+  if (!downstream_.empty()) {
+    OnDownstreamWrite(nullptr);
+  }
 }
 
 void SsConnection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
@@ -288,7 +301,6 @@ void SsConnection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
   }
 
   if (!downstream_.empty() && downstream_writable_) {
-    downstream_writable_ = false;
     WriteStream(downstream_[0]);
   }
 }
@@ -350,6 +362,7 @@ void SsConnection::disconnected(asio::error_code ec) {
   channel_->close();
   /* delay the socket's close because downstream is buffered */
   if (downstream_.empty()) {
+    VLOG(3) << "ss: last data sent: shutting down";
     socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
   } else {
     socket_.shutdown(asio::ip::tcp::socket::shutdown_receive, ec);

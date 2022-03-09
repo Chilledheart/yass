@@ -148,7 +148,8 @@ class ServiceFactory {
                 << " connection established with remaining: "
                 << connections_.size();
         startAccept();
-      } else {
+      }
+      if (ec != asio::error::operation_aborted) {
         VLOG(2) << "slave " << index_ << " stopping accept due to " << ec;
       }
     }
