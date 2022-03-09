@@ -135,6 +135,10 @@ class stream {
     rbytes_transferred_ += bytes_transferred;
     buf->append(bytes_transferred);
 
+    if (error == asio::error::eof) {
+      eof_ = true;
+    }
+
     if (!connected_) {
       return;
     }
@@ -161,6 +165,10 @@ class stream {
                 size_t bytes_transferred) {
     wbytes_transferred_ += bytes_transferred;
 
+    if (error == asio::error::eof) {
+      eof_ = true;
+    }
+
     if (!connected_) {
       return;
     }
@@ -184,9 +192,6 @@ class stream {
     if (error) {
       VLOG(2) << "data transfer failed with " << endpoint_ << " due to "
               << error;
-      if (error == asio::error::eof) {
-        eof_ = true;
-      }
     }
     VLOG(2) << "data transfer closed with: " << endpoint_ << " stats: readed "
             << rbytes_transferred_ << " written: " << wbytes_transferred_;
