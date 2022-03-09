@@ -516,9 +516,9 @@ void Socks5Connection::ProcessReceivedData(
     size_t bytes_transferred) {
   self->rbytes_transferred_ += bytes_transferred;
   total_rx_bytes += bytes_transferred;
-  if (bytes_transferred) {
-    VLOG(3) << "client: received request: " << bytes_transferred << " bytes.";
-  }
+
+  VLOG(3) << "client: received data: " << bytes_transferred << " bytes"
+          << " ec: " << ec;
 
   if (!ec) {
     switch (self->CurrentState()) {
@@ -589,9 +589,8 @@ void Socks5Connection::ProcessSentData(std::shared_ptr<Socks5Connection> self,
   self->wbytes_transferred_ += bytes_transferred;
   total_tx_bytes += bytes_transferred;
 
-  if (bytes_transferred) {
-    VLOG(3) << "client: sent data: " << bytes_transferred << " bytes.";
-  }
+  VLOG(3) << "client: sent data: " << bytes_transferred << " bytes"
+          << " ec: " << ec;
 
   if (!ec) {
     switch (self->CurrentState()) {
@@ -651,8 +650,10 @@ void Socks5Connection::OnStreamWrite(std::shared_ptr<IOBuf> buf) {
   /* recursively send the remainings */
   OnDownstreamWriteFlush();
 
+  /* shutdown the socket if upstream is eof */
   if (channel_->eof() && downstream_.empty()) {
-    close();
+    asio::error_code ec;
+    socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
     return;
   }
 }
@@ -720,12 +721,7 @@ void Socks5Connection::disconnected(asio::error_code ec) {
   VLOG(2) << "upstream: lost connection with: " << remote_endpoint_
           << " due to " << ec
           << " and data to write: " << downstream_.size();
-  /* close socket directly when it is not eof */
-  if (!channel_->eof()) {
-    socket_.shutdown(asio::ip::tcp::socket::shutdown_receive, ec);
-    channel_->close();
-    return;
-  }
+  channel_->close();
   /* delay the socket's close because downstream is buffered */
   if (downstream_.empty()) {
     socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);

@@ -19,7 +19,7 @@
 
 #ifndef NDEBUG
 inline void DumpHex(const char* prefix, const uint8_t* data, uint32_t length) {
-  if (!VLOG_IS_ON(3)) {
+  if (!VLOG_IS_ON(4)) {
     return;
   }
   char hex_buffer[4096];
@@ -64,7 +64,7 @@ inline void DumpHex(const char* prefix, const uint8_t* data, uint32_t length) {
 done:
   // ensure it is null-terminated
   hex_buffer[sizeof(hex_buffer) - 1] = '\0';
-  VLOG(3) << hex_buffer;
+  VLOG(4) << hex_buffer;
 }
 
 inline void DumpHex(const char* prefix, const IOBuf* buf) {

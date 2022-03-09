@@ -84,7 +84,7 @@ void GenerateConnectRequest(std::string host, int port_num, IOBuf *buf) {
 
 asio::error_code ReadUntilEof(asio::ip::tcp::socket *s, IOBuf* buf) {
   asio::error_code ec;
-  buf->reserve(0, kContentMaxSize * 1024);
+  buf->reserve(0, kContentMaxSize + 1024);
   while (buf->tailroom()) {
     size_t read = s->read_some(tail_buffer(*buf), ec);
     if (ec == asio::error::eof) {
