@@ -34,6 +34,8 @@ function(create_cross_target project_name target_name toolchain buildtype)
     set(allow_xp_flags "-DALLOW_XP=on")
   endif()
 
+  set(use_libcxx_flags "-DUSE_LIBCXX=${USE_LIBCXX}")
+
   add_custom_command(OUTPUT ${${project_name}_${target_name}_BUILD}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${${project_name}_${target_name}_BUILD}
     COMMENT "Creating ${${project_name}_${target_name}_BUILD}...")
@@ -47,7 +49,7 @@ function(create_cross_target project_name target_name toolchain buildtype)
         -DCMAKE_MAKE_PROGRAM="${CMAKE_MAKE_PROGRAM}"
         ${CROSS_TOOLCHAIN_FLAGS_${target_name}} ${CMAKE_CURRENT_SOURCE_DIR}
         ${CROSS_TOOLCHAIN_FLAGS_${project_name}_${target_name}}
-        ${build_type_flags} ${linker_flag} ${allow_xp_flags}
+        ${build_type_flags} ${linker_flag} ${allow_xp_flags} ${use_libcxx_flags}
         ${ARGN}
     WORKING_DIRECTORY ${${project_name}_${target_name}_BUILD}
     DEPENDS CREATE_${project_name}_${target_name}
