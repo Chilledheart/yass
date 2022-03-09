@@ -325,6 +325,11 @@ class SsEndToEndTest : public ::testing::Test {
 }
 
 #define XX(num, name, string) \
+  TEST_F(SsEndToEndTest, name##_CONNECT) { \
+    absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name); \
+    GenerateRandContent(256); \
+    SendRequestAndCheckResponse(nullptr, 0); \
+  } \
   TEST_F(SsEndToEndTest, name##_256B) { \
     absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name); \
     GenerateRandContent(256); \

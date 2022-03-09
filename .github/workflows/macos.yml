@@ -173,4 +173,7 @@ jobs:
             export CC=gcc-9
             export CXX=g++-9
           fi
-          ./tools/build -run-test -macosx-universal-build=false -no-packaging
+          ./tools/build -no-packaging -macosx-universal-build=false
+      - name: Run tests
+        run: |
+          ./tools/build -nc -no-packaging -macosx-universal-build=false -run-test

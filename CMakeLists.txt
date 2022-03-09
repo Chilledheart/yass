@@ -495,7 +495,7 @@ if (NOT MSVC)
 else()
   ## Optimization flags
   set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
 
   ## Disable LTCG for static libraries because this setting introduces ABI incompatibility between minor compiler versions
   if (NOT CMAKE_MSVC_CRT_LINKAGE STREQUAL "static" AND NOT COMPILER_CLANG)
@@ -525,10 +525,10 @@ else()
   ## Produce PDB file for msvc, no edit and continue.
   if (COMPILER_CLANG)
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Z7")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Z7")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Z7")
   else()
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zi")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
   endif()
 
   # Tell linker to include symbol data
@@ -748,10 +748,10 @@ if (NOT MSVC)
   if (APPLE AND COMPILER_CLANG)
     # The strong variant of the stack protector significantly increases
     # binary size, so only enable it in debug mode.
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} -fstack-protector-strong")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -fstack-protector-strong")
-    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -fstack-protector")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -fstack-protector")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fstack-protector-strong")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fstack-protector-strong")
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fstack-protector")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fstack-protector")
   elseif (UNIX AND NOT APPLE)
     # TODO(phajdan.jr): Use -fstack-protector-strong when our gcc supports it.
     # See also https://crbug.com/533294
@@ -1311,10 +1311,79 @@ if (CMAKE_SYSROOT)
   set(GUI_LIBRARY_DIRS ${_GUI_LIBRARY_DIRS})
 endif()
 
-# fix lto warnings on mac
-if ((COMPILER_GCC OR COMPILER_CLANG) AND NOT MSVC)
+# *****************************************************************************************
+#           Compiler compiler and link flags (common)
+# *****************************************************************************************
+
+# symbol hiddens
+if (UNIX)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden -fvisibility=hidden")
+endif()
+
+if (NOT MSVC)
+  ## definitions
+  add_definitions(-D__STDC_CONSTANT_MACROS)
+  add_definitions(-D__STDC_FORMAT_MACROS)
+
+  ## disable rtti
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
+
+  ## disable exceptions
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
+
+  ## not omit stack frame pointer for release
+  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -fno-omit-frame-pointer")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-omit-frame-pointer")
+
+  ## fortify source code. Also, fortified build may fail when optimizations are
+  ## disabled, so only do that for Release build.
+  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -D_FORTIFY_SOURCE=2")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -D_FORTIFY_SOURCE=2")
+
+  ## set rpath origin
+  if (NOT APPLE)
+    # Setting this to true makes sure that libraries we build will have our
+    # rpath set even without having to do "make install"
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+    set(CMAKE_INSTALL_RPATH "\$ORIGIN/../lib")
+  endif()
+else()
+  ## Disable RTTI
+  set(CompilerFlags
+      CMAKE_CXX_FLAGS
+      CMAKE_CXX_FLAGS_DEBUG
+      CMAKE_CXX_FLAGS_MINSIZEREL
+      CMAKE_CXX_FLAGS_RELEASE
+      CMAKE_CXX_FLAGS_RELWITHDEBINFO
+      CMAKE_C_FLAGS
+      CMAKE_C_FLAGS_DEBUG
+      CMAKE_C_FLAGS_RELEASE
+      CMAKE_C_FLAGS_MINSIZEREL
+      CMAKE_C_FLAGS_RELEASE
+      CMAKE_C_FLAGS_RELWITHDEBINFO
+      )
+  foreach(CompilerFlag ${CompilerFlags})
+    string(REPLACE "/GR" "/GR-" ${CompilerFlag} "${${CompilerFlag}}")
+  endforeach()
+
+  ## Disable RTTI
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
+
+  # Disables exceptions in the STL.
+  # libc++ uses the __has_feature macro to control whether to use exceptions,
+  # so defining this macro is unnecessary. Defining _HAS_EXCEPTIONS to 0 also
+  # breaks libc++ because it depends on MSVC headers that only provide certain
+  # declarations if _HAS_EXCEPTIONS is 1. Those MSVC headers do not use
+  # exceptions, despite being conditional on _HAS_EXCEPTIONS.
+  if (NOT USE_LIBCXX)
+    add_definitions(-D_HAS_EXCEPTIONS=0)
+  endif()
+
+  ## C4530, The code uses C++ exception handling,
+  ## but /EHsc wasn't included in the compiler options
+  ## https://docs.microsoft.com/en-us/cpp/build/reference/eh-exception-handling-model?view=msvc-170
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
 endif()
 
 # *****************************************************************************************
@@ -1351,9 +1420,18 @@ add_definitions(-DASIO_STANDALONE)
 add_definitions(-DASIO_NO_TYPEID)
 add_definitions(-DASIO_NO_EXCEPTIONS)
 add_definitions(-DASIO_NO_TS_EXECUTORS)
+add_definitions(-DASIO_SEPARATE_COMPILATION)
 # forward libcxx present
+# TODO remove this once enable c++ 17 mode
 add_definitions(-DASIO_DISABLE_STD_EXPERIMENTAL_STRING_VIEW)
+# we control the visiblity
+add_definitions(-DASIO_DISABLE_VISIBILITY)
 include_directories(third_party/asio/asio/include SYSTEM)
+add_library(asio OBJECT
+  src/core/asio.hpp
+  src/core/asio.cpp)
+target_include_directories(asio PRIVATE
+  src)
 
 # *****************************************************************************************
 #           boringssl Library
@@ -1762,75 +1840,6 @@ elseif (MSVC)
 endif()
 
 # *****************************************************************************************
-#           Compiler compiler and link flags (yass-only)
-# *****************************************************************************************
-
-if (NOT MSVC)
-  ## definitions
-  add_definitions(-D__STDC_CONSTANT_MACROS)
-  add_definitions(-D__STDC_FORMAT_MACROS)
-
-  ## disable rtti
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
-
-  ## disable exceptions
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
-
-  ## not omit stack frame pointer for release
-  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -fno-omit-frame-pointer")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-omit-frame-pointer")
-
-  ## fortify source code. Also, fortified build may fail when optimizations are
-  ## disabled, so only do that for Release build.
-  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -D_FORTIFY_SOURCE=2")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -D_FORTIFY_SOURCE=2")
-
-  ## set rpath origin
-  if (NOT APPLE)
-    # Setting this to true makes sure that libraries we build will have our
-    # rpath set even without having to do "make install"
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-    set(CMAKE_INSTALL_RPATH "\$ORIGIN/../lib")
-  endif()
-else()
-  ## Disable RTTI
-  set(CompilerFlags
-      CMAKE_CXX_FLAGS
-      CMAKE_CXX_FLAGS_DEBUG
-      CMAKE_CXX_FLAGS_MINSIZEREL
-      CMAKE_CXX_FLAGS_RELEASE
-      CMAKE_CXX_FLAGS_RELWITHDEBINFO
-      CMAKE_C_FLAGS
-      CMAKE_C_FLAGS_DEBUG
-      CMAKE_C_FLAGS_RELEASE
-      CMAKE_C_FLAGS_MINSIZEREL
-      CMAKE_C_FLAGS_RELEASE
-      CMAKE_C_FLAGS_RELWITHDEBINFO
-      )
-  foreach(CompilerFlag ${CompilerFlags})
-    string(REPLACE "/GR" "/GR-" ${CompilerFlag} "${${CompilerFlag}}")
-  endforeach()
-
-  ## Disable RTTI
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
-
-  # Disables exceptions in the STL.
-  # libc++ uses the __has_feature macro to control whether to use exceptions,
-  # so defining this macro is unnecessary. Defining _HAS_EXCEPTIONS to 0 also
-  # breaks libc++ because it depends on MSVC headers that only provide certain
-  # declarations if _HAS_EXCEPTIONS is 1. Those MSVC headers do not use
-  # exceptions, despite being conditional on _HAS_EXCEPTIONS.
-  if (NOT USE_LIBCXX)
-    add_definitions(-D_HAS_EXCEPTIONS=0)
-  endif()
-
-  ## C4530, The code uses C++ exception handling,
-  ## but /EHsc wasn't included in the compiler options
-  ## https://docs.microsoft.com/en-us/cpp/build/reference/eh-exception-handling-model?view=msvc-170
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
-endif()
-
-# *****************************************************************************************
 #           Static Analysis
 # *****************************************************************************************
 
@@ -1868,7 +1877,6 @@ set(files
     src/core/string_util.cpp
     src/core/check_op.cpp
     src/core/check.cpp
-    src/core/asio.cpp
     src/core/scoped_clear_last_error_win.cpp
     src/core/string_util_constants.cpp
     src/core/ref_counted.cpp
@@ -1940,7 +1948,6 @@ set(hfiles
     src/core/string_util.hpp
     src/core/check_op.hpp
     src/core/check.hpp
-    src/core/asio.hpp
     src/core/atomic_ref_count.hpp
     src/core/gtest_prod_util.hpp
     src/core/ref_counted.hpp
@@ -2025,7 +2032,7 @@ add_library(yass_base OBJECT
     ${files} ${hfiles}
     )
 
-set(SUPPORT_LIBS yass_base ${SUPPORT_LIBS})
+set(SUPPORT_LIBS yass_base asio ${SUPPORT_LIBS})
 
 target_include_directories(yass_base PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/third_party
@@ -2047,7 +2054,9 @@ if (CLI)
       )
 
   if (MSVC)
-    target_sources(yass_cli PRIVATE src/core/win32.manifest)
+    set(CLI_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass_cli.manifest")
+    configure_file("src/core/win32.manifest" "${CLI_MSVC_MANIFEST}" @ONLY)
+    target_sources(yass_cli PRIVATE ${CLI_MSVC_MANIFESTi})
   endif()
 
   target_include_directories(yass_cli PRIVATE
@@ -2076,7 +2085,9 @@ if (SERVER)
       )
 
   if (MSVC)
-    target_sources(yass_server PRIVATE src/core/win32.manifest)
+    set(SERVER_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass_server.manifest")
+    configure_file("src/core/win32.manifest" "${SERVER_MSVC_MANIFEST}" @ONLY)
+    target_sources(yass_server PRIVATE ${SERVER_MSVC_MANIFEST})
   endif()
 
   target_include_directories(yass_server PRIVATE

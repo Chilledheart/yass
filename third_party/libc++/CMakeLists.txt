@@ -391,6 +391,8 @@ if (NOT MSVC)
     target_compile_definitions(cxxabi PRIVATE ${Definition})
   endforeach()
 
+  target_compile_options(cxxabi PRIVATE ${libcxx_CFLAGS})
+
   target_include_directories(cxxabi PRIVATE
     ../libc++
     ../libc++/trunk/src
