@@ -3,7 +3,13 @@
 
 #include "core/span.hpp"
 
+#ifndef _TEST_UTIL_H
+#define _TEST_UTIL_H
+
 #include <cstring>
+#include <ostream>
+
+namespace testing {
 
 // hexdump writes |msg| to |fp| followed by the hex encoding of |len| bytes
 // from |in|.
@@ -27,15 +33,6 @@ struct Bytes {
   span<const uint8_t> span_;
 };
 
-inline bool operator==(const Bytes &a, const Bytes &b) {
-  return a.span_.size_bytes() == b.span_.size_bytes() &&
-    memcmp(a.span_.data(), b.span_.data(), a.span_.size_bytes()) == 0;
-}
-
-inline bool operator!=(const Bytes &a, const Bytes &b) { return !(a == b); }
-
-std::ostream &operator<<(std::ostream &os, const Bytes &in);
-
 // DecodeHex decodes |in| from hexadecimal and writes the output to |out|. It
 // returns true on success and false if |in| is not a valid hexadecimal byte
 // string.
@@ -43,3 +40,18 @@ bool DecodeHex(std::vector<uint8_t> *out, const std::string &in);
 
 // EncodeHex returns |in| encoded in hexadecimal.
 std::string EncodeHex(span<const uint8_t> in);
+
+inline bool operator==(const ::testing::Bytes &a, const ::testing::Bytes &b) {
+  return a.span_.size_bytes() == b.span_.size_bytes() &&
+    memcmp(a.span_.data(), b.span_.data(), a.span_.size_bytes()) == 0;
+}
+
+inline bool operator!=(const ::testing::Bytes& a, const ::testing::Bytes& b) {
+  return !(a == b);
+}
+
+}  // namespace testing
+
+extern std::ostream &operator<<(std::ostream &os, const ::testing::Bytes &in);
+
+#endif  // _TEST_UTIL_H

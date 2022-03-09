@@ -187,8 +187,8 @@ class SsEndToEndTest : public ::testing::Test {
     buffer += sizeof(kConnectResponse) - 1;
     buffer_length -= sizeof(kConnectResponse) - 1;
     ASSERT_EQ(buffer_length, content_buffer.length());
-    ASSERT_EQ(Bytes(buffer, buffer_length),
-              Bytes(content_buffer.data(), content_buffer.length()));
+    ASSERT_EQ(::testing::Bytes(buffer, buffer_length),
+              ::testing::Bytes(content_buffer.data(), content_buffer.length()));
   }
 
  private:

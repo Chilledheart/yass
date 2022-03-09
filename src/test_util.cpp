@@ -5,6 +5,8 @@
 
 #include <ostream>
 
+namespace testing {
+
 void hexdump(FILE *fp, const char *msg, const void *in, size_t len) {
   const uint8_t *data = reinterpret_cast<const uint8_t*>(in);
 
@@ -13,16 +15,6 @@ void hexdump(FILE *fp, const char *msg, const void *in, size_t len) {
     fprintf(fp, "%02x", data[i]);
   }
   fputs("\n", fp);
-}
-
-std::ostream &operator<<(std::ostream &os, const Bytes &in) {
-  if (in.span_.empty()) {
-    return os << "<empty Bytes>";
-  }
-
-  // Print a byte slice as hex.
-  os << EncodeHex(in.span_);
-  return os;
 }
 
 static bool FromHexDigit(uint8_t *out, char c) {
@@ -67,5 +59,17 @@ std::string EncodeHex(span<const uint8_t> in) {
     ret += kHexDigits[b & 0xf];
   }
   return ret;
+}
+
+}  // namespace testing
+
+std::ostream &operator<<(std::ostream &os, const ::testing::Bytes &in) {
+  if (in.span_.empty()) {
+    return os << "<empty Bytes>";
+  }
+
+  // Print a byte slice as hex.
+  os << ::testing::EncodeHex(in.span_);
+  return os;
 }
 

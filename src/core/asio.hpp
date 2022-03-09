@@ -10,8 +10,17 @@
 
 #include "core/iobuf.hpp"
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wthread-safety-analysis"
+#endif  // defined(__clang__)
+
 #include <asio.hpp>
 #include "core/asio_throw_exceptions.hpp"
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif  // defined(__clang__)
 
 extern std::ostream& operator<<(std::ostream& o, asio::error_code);
 

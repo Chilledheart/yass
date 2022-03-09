@@ -160,24 +160,6 @@ if (COMPILER_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5.0)
   messag(FATAL_ERROR "Requires Clang 5.0 or newer to compile")
 endif()
 
-# skipping for coff binaries
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT MSVC)
-  # althrough newer version of binutils' ar accepts lto objects, overriding it for compatiblity
-  set(CMAKE_AR "${CMAKE_CXX_COMPILER_AR}")
-  # for macho, it needs llvm-ranlib or stock ranlib to run on fat binary after ar qc
-  # but llvm-ranlib is not present on some binaries...
-  if (NOT APPLE)
-    # binutils's ranlib doesn't support lto objects, overriding it
-    if (EXISTS "/bin/true")
-      set(CMAKE_RANLIB "/bin/true")
-    elseif (EXISTS "/usr/bin/true")
-      set(CMAKE_RANLIB "/usr/bin/true")
-    else ()
-      set(CMAKE_RANLIB "/bin/echo")
-    endif()
-  endif()
-endif()
-
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   set(COMPILER_GCC TRUE)
 else()
@@ -581,9 +563,10 @@ else()
 endif()
 
 ## adopt Thin LTO
-if (COMPILER_CLANG AND USE_LLD)
+if (COMPILER_CLANG AND USE_LLD AND NOT ENABLE_CLANG_TIDY)
   if (${CMAKE_BUILD_TYPE} MATCHES Release)
     message(STATUS "Compiling with Thin LTO")
+    set(LTO_FLAVOUR "thin")
   endif()
   set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto=thin")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto=thin")
@@ -656,9 +639,10 @@ if (COMPILER_CLANG AND USE_LLD)
   endif()
 endif()
 
-if (COMPILER_CLANG AND USE_GOLD)
+if (COMPILER_CLANG AND USE_GOLD AND NOT ENABLE_CLANG_TIDY)
   if (${CMAKE_BUILD_TYPE} MATCHES Release)
     message(STATUS "Compiling with Thin LTO")
+    set(LTO_FLAVOUR "thin")
   endif()
   set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto=thin")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto=thin")
@@ -703,11 +687,33 @@ endif()
 if (COMPILER_GCC AND NOT APPLE)
   if (${CMAKE_BUILD_TYPE} MATCHES Release)
     message(STATUS "Compiling with LTO")
+    set(LTO_FLAVOUR "full")
   endif()
   set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto=auto")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto=auto")
   set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -flto=auto")
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -flto=auto")
+endif()
+
+# skipping for coff binaries
+if (UNIX)
+  if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # althrough newer version of binutils' ar accepts lto objects, overriding it for compatiblity
+    set(CMAKE_AR "${CMAKE_CXX_COMPILER_AR}")
+  endif()
+
+  # for macho, it needs llvm-ranlib or stock ranlib to run on fat binary after ar qc
+  # but llvm-ranlib is not present on some binaries...
+  if (NOT APPLE OR LTO_FLAVOUR)
+    # mac/binutils's ranlib doesn't support lto objects, overriding it
+    if (EXISTS "/bin/true")
+      set(CMAKE_RANLIB "/bin/true")
+    elseif (EXISTS "/usr/bin/true")
+      set(CMAKE_RANLIB "/usr/bin/true")
+    else ()
+      set(CMAKE_RANLIB "/bin/echo")
+    endif()
+  endif()
 endif()
 
 # *****************************************************************************************
@@ -2399,7 +2405,6 @@ if (BUILD_TESTS)
       )
   target_link_libraries(yass_test PUBLIC
       ${SUPPORT_LIBS}
-      yass_base
       yass_cli_lib
       yass_server_lib
       yass_gtest
