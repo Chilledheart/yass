@@ -42,6 +42,14 @@ YASSWindow::YASSWindow()
 
   static YASSWindow* window = this;
 
+  auto show_callback = []() {
+    gdk_window_set_functions(
+        gtk_widget_get_window(GTK_WIDGET(window->impl_)),
+        (GdkWMFunction)(GDK_FUNC_MOVE | GDK_FUNC_MINIMIZE | GDK_FUNC_CLOSE));
+  };
+  g_signal_connect(G_OBJECT(impl_), "show",
+                   G_CALLBACK(show_callback), this);
+
   auto hide_callback = []() { window->OnClose(); };
   g_signal_connect(G_OBJECT(impl_), "hide",
                    G_CALLBACK(hide_callback), this);
@@ -82,7 +90,7 @@ YASSWindow::YASSWindow()
   g_signal_connect(G_OBJECT(option_menu_item), "activate",
                    G_CALLBACK(option_callback), nullptr);
 
-  auto exit_callback = []() { window->OnClose(); };
+  auto exit_callback = []() { gtk_window_close(window->impl_); };
   g_signal_connect(G_OBJECT(exit_menu_item), "activate",
                    G_CALLBACK(exit_callback), nullptr);
 
@@ -398,14 +406,12 @@ void YASSWindow::OnAbout() {
   gtk_about_dialog_set_version(about_dialog, YASS_APP_PRODUCT_VERSION);
   gtk_about_dialog_set_website(about_dialog, YASS_APP_WEBSITE);
   gtk_about_dialog_set_website_label(about_dialog, "official-site");
+  gtk_window_set_position(GTK_WINDOW(about_dialog), GTK_WIN_POS_CENTER);
   gtk_dialog_run(GTK_DIALOG(about_dialog));
   gtk_widget_destroy(GTK_WIDGET(about_dialog));
 }
 
 void YASSWindow::OnClose() {
   LOG(WARNING) << "Frame is closing ";
-
   mApp->Exit();
-
-  gtk_window_close(impl_);
 }

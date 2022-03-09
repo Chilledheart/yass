@@ -2875,7 +2875,8 @@ static void DebugWriteToStderr(const char* data, void*) {
 }
 
 static void DebugWriteToString(const char* data, void* arg) {
-  reinterpret_cast<std::string*>(arg)->append(data);
+  auto ss = reinterpret_cast<std::stringstream*>(arg);
+  *ss << data;
 }
 
 // Print a program counter and its symbol name.
@@ -3112,7 +3113,9 @@ void MyUserNameInitializer() {
 }
 
 void DumpStackTraceToString(std::string* stacktrace) {
-  DumpStackTrace(1, DebugWriteToString, stacktrace);
+  std::stringstream ss;
+  DumpStackTrace(1, DebugWriteToString, &ss);
+  *stacktrace = ss.str();
 }
 
 // We use an atomic operation to prevent problems with calling CrashReason
