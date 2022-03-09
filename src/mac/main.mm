@@ -30,6 +30,21 @@ static std::string GetMainExecutablePath() {
   return "UNKNOWN";
 }
 
+#if defined(ARCH_CPU_X86_64)
+// This is for https://crbug.com/1300598, and more generally,
+// https://crbug.com/1297588 (and all of the associated bugs). It's horrible!
+//
+// When the main executable is updated on disk while the application is running,
+// and the offset of the Mach-O image at the main executable's path changes from
+// the offset that was determined when the executable was loaded, SecCode ceases
+// to be able to work with the executable. This may be triggered when the
+// product is updated on disk but the application has not yet relaunched. This
+// affects SecCodeCopySelf and SecCodeCopyGuestWithAttributes. Bugs are evident
+// even when validation (SecCodeCheckValidity) is not attempted.
+//
+__attribute__((used)) const char kGrossPaddingForCrbug1300598[68 * 1024] = {};
+#endif
+
 int main(int argc, const char* argv[]) {
   if (!SetUTF8Locale()) {
     LOG(WARNING) << "Failed to set up utf-8 locale";
