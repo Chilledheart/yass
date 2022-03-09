@@ -985,7 +985,7 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
 #ifdef OS_WIN
     // On Windows, also output to the debugger
     ::OutputDebugStringA(message);
-#elif defined(OS_APPLE)
+#elif defined(OS_APPLE) && defined(__clang__)
     // In LOG_TO_SYSTEM_DEBUG_LOG mode, log messages are always written to
     // stderr. If stderr is /dev/null, also log via ASL (Apple System Log) or
     // its successor OS_LOG. If there's something weird about stderr, assume
@@ -2875,7 +2875,8 @@ static void DebugWriteToStderr(const char* data, void*) {
 }
 
 static void DebugWriteToString(const char* data, void* arg) {
-  reinterpret_cast<std::string*>(arg)->append(data);
+  auto ss = reinterpret_cast<std::stringstream*>(arg);
+  *ss << data;
 }
 
 // Print a program counter and its symbol name.
@@ -3112,7 +3113,9 @@ void MyUserNameInitializer() {
 }
 
 void DumpStackTraceToString(std::string* stacktrace) {
-  DumpStackTrace(1, DebugWriteToString, stacktrace);
+  std::stringstream ss;
+  DumpStackTrace(1, DebugWriteToString, &ss);
+  *stacktrace = ss.str();
 }
 
 // We use an atomic operation to prevent problems with calling CrashReason

@@ -5,6 +5,9 @@
 
 #include "core/compiler_specific.hpp"
 #include "core/logging.hpp"
+
+#ifdef __clang__
+
 #include "core/scoped_cftyperef.hpp"
 
 #if defined(__OBJC__)
@@ -179,5 +182,7 @@ extern std::ostream& operator<<(std::ostream& o, NSSize);
 #endif
 
 #endif  // __OBJC__
+
+#endif  // __clang__
 
 #endif  // CORE_FOUNDATION_UTIL_H

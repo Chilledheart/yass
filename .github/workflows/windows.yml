@@ -260,7 +260,7 @@ jobs:
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-          tools\build -run-test || exit /b
+          tools\build -run-test -no-packaging || exit /b
 
           exit /b 0
 
@@ -334,7 +334,7 @@ jobs:
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-          tools\build -run-test || exit /b
+          tools\build -run-test -no-packaging || exit /b
 
           exit /b 0
 

@@ -20,12 +20,14 @@
 #include <string>
 #include <thread>
 
-#ifdef __APPLE__
+#include "core/compiler_specific.hpp"
+
+#if defined(OS_APPLE) && defined(__clang__)
 #include <AvailabilityMacros.h>
 #include <CoreFoundation/CoreFoundation.h>
 
 #include "core/scoped_cftyperef.hpp"
-#endif
+#endif  // defined(OS_APPLE) && defined(__clang__)
 
 // Valid values for priority of Thread::Options and SimpleThread::Options, and
 // SetCurrentThreadPriority(), listed in increasing order of importance.
@@ -100,7 +102,7 @@ bool IsWindowsVersionBNOrGreater(int wMajorVersion,
 
 // Mac-specific ----------------------------------------------------------------
 
-#ifdef __APPLE__
+#if defined(OS_APPLE) && defined(__clang__)
 
 #if defined(__OBJC__)
 #import <Foundation/Foundation.h>
@@ -140,7 +142,7 @@ std::u16string SysCFStringRefToUTF16(CFStringRef ref);
 std::string SysNSStringToUTF8(NSString* ref);
 std::u16string SysNSStringToUTF16(NSString* ref);
 
-#endif  // __APPLE__
+#endif  // defined(OS_APPLE) && defined(__clang__)
 
 extern const char kSeparators[];
 

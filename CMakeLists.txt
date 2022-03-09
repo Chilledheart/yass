@@ -396,7 +396,7 @@ if (NOT MSVC)
 
   ## optimization flags
   set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG")
 
   ## can gc eliminate any unused functions and data items
   if (NOT APPLE)
@@ -405,7 +405,7 @@ if (NOT MSVC)
   endif()
 
   ## standard C++ library
-  if(APPLE AND NOT USE_LIBCXX)
+  if(APPLE AND NOT USE_LIBCXX AND COMPILER_CLANG)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
   endif()
 
@@ -422,7 +422,7 @@ if (NOT MSVC)
     set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-no_data_in_code_info -Wl,-no_function_starts")
   endif()
 
-  if (APPLE)
+  if (APPLE AND COMPILER_CLANG)
     # If generating dSYMs, specify -fno-standalone-debug. This was
     # originally specified for https://crbug.com/479841 because dsymutil
     # could not handle a 4GB dSYM file. But dsymutil from Xcodes prior to
@@ -700,7 +700,7 @@ if (COMPILER_CLANG AND USE_GOLD)
 endif()
 
 ## adopt LTO
-if (COMPILER_GCC)
+if (COMPILER_GCC AND NOT APPLE)
   if (${CMAKE_BUILD_TYPE} MATCHES Release)
     message(STATUS "Compiling with LTO")
   endif()
@@ -745,14 +745,14 @@ if (NOT MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")
 
   # Stack protection.
-  if (APPLE)
+  if (APPLE AND COMPILER_CLANG)
     # The strong variant of the stack protector significantly increases
     # binary size, so only enable it in debug mode.
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} -fstack-protector-strong")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -fstack-protector-strong")
     set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -fstack-protector")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -fstack-protector")
-  elseif (UNIX)
+  elseif (UNIX AND NOT APPLE)
     # TODO(phajdan.jr): Use -fstack-protector-strong when our gcc supports it.
     # See also https://crbug.com/533294
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --param=ssp-buffer-size=4")
@@ -1242,7 +1242,7 @@ int main() {
   if (UNIX AND NOT APPLE)
     include_directories(third_party/lss)
   endif()
-  if (APPLE)
+  if (APPLE AND COMPILER_CLANG)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -framework Foundation")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -framework Foundation")
   endif()
@@ -1255,13 +1255,17 @@ set(SUPPORT_LIBS ${SUPPORT_LIBS} ${SYSTEM_LIBS})
 # *****************************************************************************************
 
 if (MSVC AND GUI)
+  message(STATUS "Compiling with GUI support: Windows")
+  set(GUI_FLAVOUR "windows")
   set(GUI_USE_FILE "")
   set(GUI_INCLUDE_DIRS "")
   set(GUI_DEFINITIONS "")
   set(GUI_C_CXX_FLAGS "")
   set(GUI_LIBRARY_DIRS "")
   set(GUI_LIBRARIES ShLwApi WinMM Gdi32 ComDlg32 Ole32 ComCtl32 shell32)
-elseif (APPLE AND GUI)
+elseif (APPLE AND GUI AND COMPILER_CLANG)
+  message(STATUS "Compiling with GUI support: Cocoa")
+  set(GUI_FLAVOUR "cocoa")
   find_library(COCOA_LIBRARY Cocoa REQUIRED)
   # Locate Interface Builder Tool, needed to build things like Storyboards outside of Xcode.
   if(NOT ${CMAKE_GENERATOR} MATCHES "^Xcode.*")
@@ -1280,14 +1284,16 @@ elseif (APPLE AND GUI)
   set(GUI_LIBRARY_DIRS "")
   set(GUI_LIBRARIES "${COCOA_LIBRARY}")
 elseif (GUI)
+  message(STATUS "Compiling with GUI support: GTK+")
+  set(GUI_FLAVOUR "gtk+")
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(GTK REQUIRED gtk+-3.0)
   pkg_check_modules(FONTCONFIG REQUIRED fontconfig)
   set(GUI_USE_FILE "")
   set(GUI_INCLUDE_DIRS ${GTK_INCLUDE_DIRS})
   set(GUI_DEFINITIONS "")
-  set(GUI_C_CXX_FLAGS ${GTK_CFLAGS} ${GTK_CFLAGS_OTHER})
-  set(GUI_LIBRARY_DIRS ${GTK_LIBRARY_DIRS})
+  set(GUI_C_CXX_FLAGS ${GTK_CFLAGS} ${GTK_CFLAGS_OTHER} ${FONTCONFIG_CFLAGS})
+  set(GUI_LIBRARY_DIRS ${GTK_LIBRARY_DIRS} ${FONTCONFIG_LIBRARY_DIRS})
   set(GUI_LIBRARIES ${GTK_LIBRARIES} ${FONTCONFIG_LIBRARIES})
 endif()
 
@@ -1636,7 +1642,7 @@ if (COMPILER_GCC OR COMPILER_CLANG)
 
   ## When compiling Objective-C, warns if a method is used whose
   ## availability is newer than the deployment target.
-  if (APPLE)
+  if (APPLE AND COMPILER_CLANG)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wunguarded-availability")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wunguarded-availability")
   endif()
@@ -2000,13 +2006,16 @@ set(hfiles
 if (MSVC)
   list(APPEND files src/core/rand_util_win.cpp)
   list(APPEND files src/core/utils_win.cpp)
-elseif (APPLE)
+elseif (APPLE AND COMPILER_CLANG)
   list(APPEND files src/config/config_impl_apple.hpp)
   list(APPEND files src/config/config_impl_apple.mm)
   list(APPEND files src/core/rand_util_posix.cpp)
   list(APPEND files src/core/utils_mac.mm)
   list(APPEND files src/core/foundation_util.mm)
 else()
+  if (APPLE)
+    list(APPEND files src/core/utils_mac.mm)
+  endif()
   list(APPEND files src/core/rand_util_posix.cpp)
   list(APPEND files src/core/utils_linux.cpp)
   list(APPEND files src/core/utils_freebsd.cpp)
@@ -2091,7 +2100,7 @@ if (GUI)
     set(APP_NAME yass)
     set(SRC_FILES)
 
-    if (MSVC)
+    if (GUI_FLAVOUR STREQUAL "windows")
         set(APP_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass.manifest")
         configure_file("src/win32/yass.manifest.in" "${APP_MSVC_MANIFEST}" @ONLY)
 
@@ -2108,7 +2117,7 @@ if (GUI)
           src/win32/yass.cpp
           src/win32/yass_frame.cpp
           src/win32/utils_win.cpp)
-    elseif (APPLE)
+    elseif (GUI_FLAVOUR STREQUAL "cocoa")
         set(MAIN_STORYBOARD ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/Base.lproj/Main.storyboard)
         set(ASSET_CATALOG src/mac/Assets.xcassets)
         set(ASSET_CATALOG_ASSETS Assets)
@@ -2133,7 +2142,7 @@ if (GUI)
           src/mac/utils.h
           src/mac/utils_mac.mm
           src/mac/main.mm)
-    else()
+    elseif(GUI_FLAVOUR STREQUAL "gtk+")
         list(APPEND SRC_FILES
           src/gtk/yass.cpp
           src/gtk/yass_window.cpp
@@ -2144,7 +2153,11 @@ if (GUI)
     # target_link_directories requires cmake 3.13
     link_directories(${GUI_LIBRARY_DIRS})
 
-    add_executable(${APP_NAME} WIN32 MACOSX_BUNDLE
+    if (GUI_FLAVOUR STREQUAL "cocoa")
+      set(GUI_OPTIONS MACOSX_BUNDLE)
+    endif()
+
+    add_executable(${APP_NAME} WIN32 ${GUI_OPTIONS}
         ${SRC_FILES}
         ${GUI_USE_FILE}
         )
@@ -2156,13 +2169,13 @@ if (GUI)
     target_include_directories(${APP_NAME} SYSTEM PRIVATE
         ${GUI_INCLUDE_DIRS})
 
-    if (MSVC)
+    if (GUI_FLAVOUR STREQUAL "windows")
       target_include_directories(${APP_NAME} PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/src/win32)
-    elseif(APPLE)
+    elseif(GUI_FLAVOUR STREQUAL "cocoa")
       target_include_directories(${APP_NAME} PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/src/mac)
-    else()
+    elseif(GUI_FLAVOUR STREQUAL "gtk+")
       target_include_directories(${APP_NAME} PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/src/gui)
     endif()
@@ -2177,7 +2190,7 @@ if (GUI)
       yass_cli_lib
       ${GUI_LIBRARIES} ${SUPPORT_LIBS})
 
-    if (MSVC)
+    if (GUI_FLAVOUR STREQUAL "windows")
       # Most of the dlls are simply not required at startup (or at all, depending
       # on how the browser is used). The following dlls are interconnected and need to
       # be delayloaded together to ensure user32 does not load too early or at all,
@@ -2258,7 +2271,7 @@ if (GUI)
       target_link_libraries(${APP_NAME} PUBLIC delayimp)
     endif()
 
-    if (MSVC)
+    if (GUI_FLAVOUR STREQUAL "windows")
         set_target_properties(${APP_NAME} PROPERTIES
             COMPILE_PDB_NAME ${APP_NAME}
             COMPILE_PDB_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}
@@ -2280,7 +2293,7 @@ if (GUI)
             LINK_FLAGS "${_APP_LINK_FLAGS} /ENTRY:wWinMainCRTStartup")
     endif()
 
-    if (APPLE)
+    if (GUI_FLAVOUR STREQUAL "cocoa")
         get_target_property(_APP_COMPILE_FLAGS ${APP_NAME} COMPILE_FLAGS)
         if (NOT _APP_COMPILE_FLAGS)
           set(_APP_COMPILE_FLAGS "")
@@ -2336,7 +2349,7 @@ if (GUI)
         endif()
     endif()
 
-    if (NOT APPLE AND NOT MSVC)
+    if (GUI_FLAVOUR STREQUAL "gtk+")
       install(TARGETS ${APP_NAME} DESTINATION bin)
 
       install(FILES
