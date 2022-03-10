@@ -1,13 +1,12 @@
 include(ExternalProjectUtils)
 
 function(create_cross_target project_name target_name toolchain buildtype)
-
   if(NOT DEFINED ${project_name}_${target_name}_BUILD)
     set(${project_name}_${target_name}_BUILD
       "${CMAKE_CURRENT_BINARY_DIR}/${target_name}")
     set(${project_name}_${target_name}_BUILD
       ${${project_name}_${target_name}_BUILD} PARENT_SCOPE)
-    message(STATUS "Setting native build dir to " ${${project_name}_${target_name}_BUILD})
+    message(STATUS "Setting cross build dir to " ${${project_name}_${target_name}_BUILD})
   endif(NOT DEFINED ${project_name}_${target_name}_BUILD)
 
   if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/cmake/${toolchain}.cmake)
@@ -35,6 +34,10 @@ function(create_cross_target project_name target_name toolchain buildtype)
   endif()
 
   set(use_libcxx_flags "-DUSE_LIBCXX=${USE_LIBCXX}")
+  set(use_cli_flags "-DCLI=${CLI}")
+  set(use_server_flags "-DSERVER=${SERVER}")
+  set(use_gui_flags "-DGUI=${GUI}")
+  set(use_build_tests_flags "-DBUILD_TESTS=${BUILD_TESTS}")
 
   add_custom_command(OUTPUT ${${project_name}_${target_name}_BUILD}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${${project_name}_${target_name}_BUILD}
@@ -50,6 +53,7 @@ function(create_cross_target project_name target_name toolchain buildtype)
         ${CROSS_TOOLCHAIN_FLAGS_${target_name}} ${CMAKE_CURRENT_SOURCE_DIR}
         ${CROSS_TOOLCHAIN_FLAGS_${project_name}_${target_name}}
         ${build_type_flags} ${linker_flag} ${allow_xp_flags} ${use_libcxx_flags}
+        ${use_cli_flags} ${use_server_flags} ${use_gui_flags} ${use_build_tests_flags}
         ${ARGN}
     WORKING_DIRECTORY ${${project_name}_${target_name}_BUILD}
     DEPENDS CREATE_${project_name}_${target_name}
@@ -82,6 +86,34 @@ function(build_native_tool target output_path_var)
                      DEPENDS CONFIGURE_${PROJECT_NAME}_NATIVE ${ARG_DEPENDS}
                      WORKING_DIRECTORY "${${PROJECT_NAME}_NATIVE_BUILD}"
                      COMMENT "Building native ${target}..."
+                     USES_TERMINAL)
+  set(${output_path_var} "${output_path}" PARENT_SCOPE)
+endfunction()
+
+# Sets up a sub build for multi arch builds
+# - target: The target to build
+# - arch: The arch to build
+# - output_path_var: A variable name which receives the path to the built target
+# - DEPENDS: Any additional dependencies for the target
+function(build_osx_arch target arch output_path_var)
+  cmake_parse_arguments(ARG "" "" "DEPENDS" ${ARGN})
+
+  if(CMAKE_CONFIGURATION_TYPES)
+    set(output_path "${${PROJECT_NAME}_OSX_${arch}_BUILD}/${CMAKE_CONFIGURATION_TYPES}/${target}")
+  else()
+    set(output_path "${${PROJECT_NAME}_OSX_${arch}_BUILD}/${target}")
+  endif()
+
+  set(output_path ${output_path}${YASS_HOST_EXECUTABLE_SUFFIX})
+
+  yass_ExternalProject_BuildCmd(build_cmd ${target} ${${PROJECT_NAME}_OSX_${arch}_BUILD}
+                                CONFIGURATION ${CMAKE_CONFIGURATION_TYPES})
+
+  add_custom_command(OUTPUT "${output_path}"
+                     COMMAND ${build_cmd}
+                     DEPENDS CONFIGURE_${PROJECT_NAME}_OSX_${arch} ${ARG_DEPENDS}
+                     WORKING_DIRECTORY "${${PROJECT_NAME}_OSX_${arch}_BUILD}"
+                     COMMENT "Building osx ${target} arch ${arch} ..."
                      USES_TERMINAL)
   set(${output_path_var} "${output_path}" PARENT_SCOPE)
 endfunction()
