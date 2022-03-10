@@ -23,6 +23,9 @@ struct Bytes {
   Bytes(const char *data_arg, size_t len_arg)
       : span_(reinterpret_cast<const uint8_t *>(data_arg), len_arg) {}
 
+  Bytes(const Bytes&) = default;
+  Bytes& operator=(const Bytes&) = default;
+
   explicit Bytes(const char *str)
       : span_(reinterpret_cast<const uint8_t *>(str), strlen(str)) {}
   explicit Bytes(const std::string &str)
@@ -52,6 +55,6 @@ inline bool operator!=(const ::testing::Bytes& a, const ::testing::Bytes& b) {
 
 }  // namespace testing
 
-extern std::ostream &operator<<(std::ostream &os, const ::testing::Bytes &in);
+extern std::ostream &operator<<(std::ostream &os, ::testing::Bytes in);
 
 #endif  // _TEST_UTIL_H

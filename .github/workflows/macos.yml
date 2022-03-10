@@ -176,4 +176,8 @@ jobs:
           ./tools/build -no-packaging -macosx-universal-build=false
       - name: Run tests
         run: |
+          if [ "${{ matrix.compiler }}" = "gcc" ]; then
+            export CC=gcc-9
+            export CXX=g++-9
+          fi
           ./tools/build -nc -no-packaging -macosx-universal-build=false -run-test

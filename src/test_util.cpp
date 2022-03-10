@@ -63,7 +63,7 @@ std::string EncodeHex(span<const uint8_t> in) {
 
 }  // namespace testing
 
-std::ostream &operator<<(std::ostream &os, const ::testing::Bytes &in) {
+std::ostream &operator<<(std::ostream &os, ::testing::Bytes in) {
   if (in.span_.empty()) {
     return os << "<empty Bytes>";
   }
