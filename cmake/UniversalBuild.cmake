@@ -57,22 +57,20 @@ endmacro()
 macro(add_osx_univeral_bundle target arches project)
   foreach (arch ${arches})
     add_osx_univeral_arch(${target} ${arch} ${project})
-    set(${target}_universal_EXE ${${target}_universal_EXE} "${${project}_${target}_${arch}_EXE}")
-    set(${target}_universal_EXE_OUTPUT ${${target}_universal_EXE_OUTPUT} "${${project}_${target}_${arch}_EXE}.app/Contents/MacOS/${target}")
+    set(${target}_universal_BUNDLE ${${target}_universal_BUNDLE} "${${project}_${target}_${arch}_EXE}")
+    set(${target}_universal_BINARY ${${target}_universal_BINARY} "${${project}_${target}_${arch}_EXE}.app/Contents/MacOS/${target}")
     set(${target}_universal_TARGET ${${target}_universal_TARGET} ${${project}_${target}_${arch}_TARGET})
   endforeach()
-  set(${target}_native_EXE "${${project}_${target}_${CMAKE_SYSTEM_PROCESSOR}_EXE}.app")
-  set(${target}_universal_EXE_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/universal/${target}.app/Contents/MacOS/${target}")
-  set(${target}_universal_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/universal/${target}.app")
-  add_custom_command(OUTPUT "${${target}_universal_OUTPUT}"
-                     COMMAND ${CMAKE_COMMAND} -E make_directory universal
-                     COMMAND ${CMAKE_COMMAND} -E copy_directory ${${target}_native_EXE} ${${target}_universal_OUTPUT}
-                     COMMAND lipo -create ${${target}_universal_EXE_OUTPUT} -output ${${target}_universal_EXE_OUTPUT}
-                     COMMAND ${CMAKE_COMMAND} -E copy_directory ${${target}_universal_OUTPUT} ${target}.app
-                     DEPENDS ${${target}_universal_EXE} ${${target}_universal_TARGET}
+  set(${target}_native_BUNDLE "${${project}_${target}_${CMAKE_SYSTEM_PROCESSOR}_EXE}.app")
+  set(${target}_universal_OUTPUT_BINARY "${CMAKE_CURRENT_BINARY_DIR}/${target}.app/Contents/MacOS/${target}")
+  set(${target}_universal_OUTPUT_BUNDLE "${CMAKE_CURRENT_BINARY_DIR}/${target}.app")
+  add_custom_command(OUTPUT "${${target}_universal_OUTPUT_BUNDLE}"
+                     COMMAND ${CMAKE_COMMAND} -E copy_directory ${${target}_native_BUNDLE} ${${target}_universal_OUTPUT_BUNDLE}
+                     COMMAND lipo -create ${${target}_universal_BINARY} -output ${${target}_universal_OUTPUT_BINARY}
+                     DEPENDS ${${target}_universal_BUNDLE} ${${target}_universal_TARGET}
                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                      COMMENT "Creating universal bundle ${target}..."
                      USES_TERMINAL)
-  set_source_files_properties("${${target}_universal_OUTPUT}" PROPERTIES GENERATED TRUE)
-  add_custom_target(${target} DEPENDS "${${target}_universal_OUTPUT}")
+  set_source_files_properties("${${target}_universal_OUTPUT_BUNDLE}" PROPERTIES GENERATED TRUE)
+  add_custom_target(${target} DEPENDS "${${target}_universal_OUTPUT_BUNDLE}")
 endmacro()
