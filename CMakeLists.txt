@@ -243,6 +243,12 @@ endif()
 
 include(config-ix)
 
+if (CMAKE_OSX_ARCHITECTURES)
+  if (NOT "${CMAKE_OSX_ARCHITECTURES}" STREQUAL ${CMAKE_SYSTEM_PROCESSOR})
+    set(USE_HOST_TOOLS ON)
+  endif()
+endif()
+
 if (CMAKE_CROSSCOMPILING OR (OPTIMIZED_PROTOC AND CMAKE_CONFIGURATION_TYPES))
   set(USE_HOST_TOOLS ON)
 endif()
@@ -250,7 +256,10 @@ endif()
 include(CrossCompile)
 # when crosscompiling import the executable targets from a file
 if (USE_HOST_TOOLS)
-  create_cross_target(yass NATIVE "" Release)
+  if (CMAKE_OSX_ARCHITECTURES)
+    set(OSX_NATIVE_ARCH_OPTION "-DCMAKE_OSX_ARCHITECTURES=${CMAKE_SYSTEM_PROCESSOR}")
+  endif()
+  create_cross_target(yass NATIVE "" Release ${OSX_NATIVE_ARCH_OPTION})
 endif()
 
 if (CMAKE_OSX_ARCHITECTURES)
