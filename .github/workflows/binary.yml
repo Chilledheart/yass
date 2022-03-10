@@ -22,7 +22,7 @@ on:
   release:
     types: [published]
 env:
-  CACHE_EPOCH: 0
+  CACHE_EPOCH: 1
   GOPROXY: direct
 jobs:
   linux-compiler-compatible:
