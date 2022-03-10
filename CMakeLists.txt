@@ -733,7 +733,11 @@ if (COMPILER_CLANG AND USE_GOLD AND NOT ENABLE_CLANG_TIDY)
 endif()
 
 ## adopt LTO
-if (COMPILER_GCC AND NOT APPLE)
+## Old gcc doesn't works well with "-flto" and "-g" options until GCC 8.0
+## And it doesn't play well on other file formats other than ELF
+## Checked with https://gcc.gnu.org/onlinedocs/gcc-8.1.0/gcc/Optimize-Options.html#Optimize-Options
+## and https://gcc.gnu.org/onlinedocs/gcc-7.5.0/gcc/Optimize-Options.html#Optimize-Options
+if (COMPILER_GCC AND NOT APPLE AND NOT MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
   if (${CMAKE_BUILD_TYPE} MATCHES Release)
     message(STATUS "Compiling with LTO")
     set(LTO_FLAVOUR "full")
@@ -748,17 +752,7 @@ endif()
 if (NOT MSVC AND LTO_FLAVOUR)
   # althrough newer version of binutils' ar accepts lto objects, overriding it for compatiblity
   set(CMAKE_AR "${CMAKE_CXX_COMPILER_AR}")
-endif()
-
-# binutils's ranlib doesn't support lto objects, overriding it
-if (UNIX AND NOT APPLE)
-  if (EXISTS "/bin/true")
-    set(CMAKE_RANLIB "/bin/true")
-  elseif (EXISTS "/usr/bin/true")
-    set(CMAKE_RANLIB "/usr/bin/true")
-  else ()
-    set(CMAKE_RANLIB "/bin/echo")
-  endif()
+  set(CMAKE_RANLIB "${CMAKE_CXX_COMPILER_RANLIB}")
 endif()
 
 # *****************************************************************************************
