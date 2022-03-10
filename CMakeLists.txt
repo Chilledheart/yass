@@ -745,7 +745,7 @@ if (COMPILER_GCC AND NOT APPLE)
 endif()
 
 # skipping for coff binaries on ar fix
-if (NOT MSVC AND LTO_FLAVOUR AND COMPILER_CLANG)
+if (NOT MSVC AND LTO_FLAVOUR)
   # althrough newer version of binutils' ar accepts lto objects, overriding it for compatiblity
   set(CMAKE_AR "${CMAKE_CXX_COMPILER_AR}")
 endif()

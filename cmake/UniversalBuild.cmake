@@ -57,7 +57,8 @@ endmacro()
 macro(add_osx_univeral_bundle target arches project)
   foreach (arch ${arches})
     add_osx_univeral_arch(${target} ${arch} ${project})
-    set(${target}_universal_EXE ${${target}_universal_EXE} "${${project}_${target}_${arch}_EXE}.app/Contents/MacOS/${target}")
+    set(${target}_universal_EXE ${${target}_universal_EXE} "${${project}_${target}_${arch}_EXE}")
+    set(${target}_universal_EXE_OUTPUT ${${target}_universal_EXE_OUTPUT} "${${project}_${target}_${arch}_EXE}.app/Contents/MacOS/${target}")
     set(${target}_universal_TARGET ${${target}_universal_TARGET} ${${project}_${target}_${arch}_TARGET})
   endforeach()
   set(${target}_native_EXE "${${project}_${target}_${CMAKE_SYSTEM_PROCESSOR}_EXE}.app")
@@ -66,7 +67,7 @@ macro(add_osx_univeral_bundle target arches project)
   add_custom_command(OUTPUT "${${target}_universal_OUTPUT}"
                      COMMAND ${CMAKE_COMMAND} -E make_directory universal
                      COMMAND ${CMAKE_COMMAND} -E copy_directory ${${target}_native_EXE} ${${target}_universal_OUTPUT}
-                     COMMAND lipo -create ${${target}_universal_EXE} -output ${${target}_universal_EXE_OUTPUT}
+                     COMMAND lipo -create ${${target}_universal_EXE_OUTPUT} -output ${${target}_universal_EXE_OUTPUT}
                      COMMAND ${CMAKE_COMMAND} -E copy_directory ${${target}_universal_OUTPUT} ${target}.app
                      DEPENDS ${${target}_universal_EXE} ${${target}_universal_TARGET}
                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
