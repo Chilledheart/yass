@@ -53,8 +53,8 @@ inline bool operator!=(const ::testing::Bytes& a, const ::testing::Bytes& b) {
   return !(a == b);
 }
 
-}  // namespace testing
-
 extern std::ostream &operator<<(std::ostream &os, ::testing::Bytes in);
+
+}  // namespace testing
 
 #endif  // _TEST_UTIL_H
