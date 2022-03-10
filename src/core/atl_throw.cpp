@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2022 Chilledheart  */
 
-#ifdef _WIN32
+#ifdef COMPILER_MSVC
 
 #include "core/atl_throw.hpp"
 
@@ -42,4 +42,4 @@ NOINLINE void __stdcall AtlThrowImpl(HRESULT hr) {
   IMMEDIATE_CRASH();
 }
 
-#endif // _WIN32
+#endif  // COMPILER_MSVC

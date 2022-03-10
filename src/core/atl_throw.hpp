@@ -8,6 +8,8 @@
 #include "core/immediate_crash.hpp"
 #include "core/logging.hpp"
 
+#ifdef COMPILER_MSVC
+
 typedef _Return_type_success_(return >= 0) long HRESULT;
 
 #ifdef __ATLDEF_H__
@@ -35,5 +37,7 @@ typedef _Return_type_success_(return >= 0) long HRESULT;
 namespace ATL {
 ATL_NOINLINE __declspec(noreturn) inline void WINAPI AtlThrowLastWin32();
 }
+
+#endif  // COMPILER_MSVC
 
 #endif  // H_CORE_ATL_THROW

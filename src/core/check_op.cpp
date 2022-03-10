@@ -8,6 +8,7 @@
 // https://chromium.googlesource.com/chromium/src/+/HEAD/docs/wmax_tokens.md
 #pragma clang max_tokens_here 244000
 
+#include <inttypes.h>
 #include <string.h>
 
 #include <cstdio>
@@ -39,13 +40,21 @@ char* CheckOpValueStr(unsigned long v) {
 
 char* CheckOpValueStr(long long v) {
   char buf[50];
+#ifdef _WIN32
+  snprintf(buf, sizeof(buf), "%" PRId64, v);
+#else
   snprintf(buf, sizeof(buf), "%lld", v);
+#endif
   return strdup(buf);
 }
 
 char* CheckOpValueStr(unsigned long long v) {
   char buf[50];
+#ifdef _WIN32
+  snprintf(buf, sizeof(buf), "%" PRIu64, v);
+#else
   snprintf(buf, sizeof(buf), "%llu", v);
+#endif
   return strdup(buf);
 }
 

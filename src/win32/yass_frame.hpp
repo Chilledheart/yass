@@ -5,11 +5,16 @@
 #define YASS_WIN32_FRAME
 
 #include "crypto/crypter_export.hpp"
+#include "core/compiler_specific.hpp"
 
 #include <string>
 #include <windows.h>
 
+#ifdef COMPILER_MSVC
 #include <CommCtrl.h>
+#else
+#include <commctrl.h>
+#endif  // COMPILER_MSVC
 
 class CYassFrame {
  public:

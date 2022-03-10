@@ -60,7 +60,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   uint64_t value = bytes;
   char ci[] = {"KMGTPE"};
   const char* c = ci;
-  for (unsigned i = 40; i >= 0 && bytes > 0xfffccccccccccccLU >> i; i -= 10) {
+  for (int i = 40; i >= 0 && bytes > 0xfffccccccccccccLU >> i; i -= 10) {
     value >>= 10;
     ++c;
   }
@@ -730,8 +730,6 @@ void CYassFrame::OnAppOption() {
 INT_PTR CALLBACK CYassFrame::OnAppOptionMessage(HWND hDlg, UINT message,
                                                 WPARAM wParam, LPARAM lParam) {
   UNREFERENCED_PARAMETER(lParam);
-  auto self =
-      reinterpret_cast<CYassFrame*>(GetWindowLongPtrW(hDlg, GWLP_USERDATA));
 
   switch (message) {
     case WM_INITDIALOG: {

@@ -393,7 +393,7 @@ WallTime WallTime_Now();
 int32_t GetMainThreadPid();
 bool PidHasChanged();
 
-#ifdef OS_WIN
+#ifdef COMPILER_MSVC
 // On Windows, process id and thread id are of the same type according to the
 // return types of GetProcessId() and GetThreadId() are both DWORD, an unsigned
 // 32-bit type.
@@ -2940,7 +2940,7 @@ void DumpStackTraceAndExit() {
   abort();
 }
 
-#ifdef OS_WIN
+#ifdef COMPILER_MSVC
 struct timeval {
   long tv_sec, tv_usec;
 };

@@ -14,7 +14,11 @@
 #define DEFAULT_AUTOSTART_KEY \
   L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"
 
+#ifdef COMPILER_MSVC
 #include <Tchar.h>
+#else
+#include <tchar.h>
+#endif  // COMPILER_MSVC
 #include <windows.h>
 
 // https://docs.microsoft.com/en-us/windows/win32/winprog/using-the-windows-headers
@@ -44,7 +48,11 @@
 // Windows XP with Service Pack 2 (SP2)           NTDDI_WINXPSP2 (0x05010200)
 // Windows XP with Service Pack 1 (SP1)           NTDDI_WINXPSP1 (0x05010100)
 // Windows XP                                     NTDDI_WINXP (0x05010000)
+#ifdef COMPILER_MSVC
 #include <SDKDDKVer.h>
+#else
+#include <sdkddkver.h>
+#endif  //  COMPILER_MSVC
 
 // from wingdi.h, starting from Windows 2000
 typedef int(__stdcall* PFNGETDEVICECAPS)(HDC, int);
