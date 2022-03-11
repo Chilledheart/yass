@@ -16,6 +16,9 @@ endif()
 # lldb has picked up that fix (I'm using Xcode 13.2.1's lldb).
 set(libcxx_ABI_UNSTABLE ON)
 
+# experimental, turn off to build libc++ without exceptions
+set(libcxx_USE_EXCEPTIONS ON)
+
 #The system libc++ on Mac doesn't have aligned allocation in C++17.
 if (APPLE)
   add_definitions(-D_LIBCPP_HAS_NO_ALIGNED_ALLOCATION)
@@ -235,6 +238,16 @@ if (WIN32)
     trunk/src/support/win32/support.cpp
     trunk/src/support/win32/thread_win32.cpp
   )
+  # hacks, override posix thread model tls implementation
+  if (MINGW AND COMPILER_GCC)
+    set(libcxx_SOURCES
+      ${libcxx_SOURCES}
+      emutls.cpp
+      )
+    set_source_files_properties(emutls.cpp
+      PROPERTIES
+      COMPILE_FLAGS "-fno-builtin")
+  endif()
 
   # turn on win32 thread model manually
   if (MINGW)
@@ -355,24 +368,37 @@ if (NOT MSVC)
     ${libcxx_DEFINITIONS}
     "LIBCXX_BUILDING_LIBCXXABI")
   set(libcxxabi_SOURCES
+    # C++ABI files
     ../libc++abi/trunk/src/abort_message.cpp
     ../libc++abi/trunk/src/cxa_aux_runtime.cpp
     ../libc++abi/trunk/src/cxa_default_handlers.cpp
-    ../libc++abi/trunk/src/cxa_exception.cpp
     ../libc++abi/trunk/src/cxa_exception_storage.cpp
     ../libc++abi/trunk/src/cxa_handlers.cpp
-    # This file is supposed to be used in fno-exception builds of
-    # libc++abi.  We build lib++/libc++abi with exceptions enabled.
-    #trunk/src/cxa_noexception.cpp
-    ../libc++abi/trunk/src/cxa_personality.cpp
     ../libc++abi/trunk/src/cxa_vector.cpp
     ../libc++abi/trunk/src/cxa_virtual.cpp
-    ../libc++abi/trunk/src/fallback_malloc.cpp
-    ../libc++abi/trunk/src/private_typeinfo.cpp
+    # C++ STL files
     ../libc++abi/trunk/src/stdlib_exception.cpp
     ../libc++abi/trunk/src/stdlib_stdexcept.cpp
     ../libc++abi/trunk/src/stdlib_typeinfo.cpp
+    # Internal files
+    ../libc++abi/trunk/src/abort_message.cpp
+    ../libc++abi/trunk/src/fallback_malloc.cpp
+    ../libc++abi/trunk/src/private_typeinfo.cpp
     )
+  if (libcxx_USE_EXCEPTIONS)
+    set(libcxxabi_SOURCES
+      ${libcxxabi_SOURCES}
+      ../libc++abi/trunk/src/cxa_exception.cpp
+      ../libc++abi/trunk/src/cxa_personality.cpp
+      )
+  else()
+    set(libcxxabi_SOURCES
+      ${libcxxabi_SOURCES}
+      # This file is supposed to be used in fno-exception builds of
+      # libc++abi.  We build lib++/libc++abi with exceptions enabled.
+      ../libc++abi/trunk/src/cxa_noexception.cpp
+      )
+  endif()
   if (NOT TSAN)
     set(libcxxabi_SOURCES
       ${libcxxabi_SOURCES}
@@ -403,10 +429,8 @@ if (NOT MSVC)
     add_library(cxxabi SHARED ${libcxxabi_SOURCES})
   endif()
 
-  foreach(Definition ${libcxxabi_DEFINITIONS})
-    target_compile_definitions(cxxabi PRIVATE ${Definition})
-  endforeach()
-
+  target_compile_definitions(cxxabi PRIVATE ${libcxxabi_DEFINITIONS})
+  target_compile_definitions(cxxabi PRIVATE ${libcxx_DEFINITIONS})
   target_compile_options(cxxabi PRIVATE ${libcxx_CFLAGS})
 
   target_include_directories(cxxabi PRIVATE
@@ -430,7 +454,11 @@ if (NOT MSVC)
   endif()
 
   target_compile_options(cxxabi PRIVATE "-frtti")
-  target_compile_options(cxxabi PRIVATE "-fexceptions")
+  if (libcxx_USE_EXCEPTIONS)
+    target_compile_options(cxxabi PRIVATE "-fexceptions")
+  else()
+    target_compile_options(cxxabi PRIVATE "-fno-exceptions")
+  endif()
 
   target_link_libraries(cxx cxxabi)
 endif()
@@ -485,7 +513,11 @@ if (MSVC)
   endif()
 else()
   target_compile_options(cxx PRIVATE "-frtti")
-  target_compile_options(cxx PRIVATE "-fexceptions")
+  if (libcxx_USE_EXCEPTIONS)
+    target_compile_options(cxx PRIVATE "-fexceptions")
+  else()
+    target_compile_options(cxx PRIVATE "-fno-exceptions")
+  endif()
 endif()
 
 include_directories(trunk/include)
