@@ -105,7 +105,8 @@ jobs:
       - name: Packaging
         run: |
           cd build-mingw
-          x86_64-w64-mingw32-strip -x -S yass.exe
+          # https://www.systutorials.com/docs/linux/man/1-x86_64-w64-mingw32-strip/
+          x86_64-w64-mingw32-strip -x -s yass.exe
           cp /usr/x86_64-w64-mingw32/lib/libwinpthread-1.dll .
           tar cfz ../yass-mingw64-${{ github.event.release.tag_name }}.tgz yass.exe libwinpthread-1.dll
       - name: Upload dist tarball
