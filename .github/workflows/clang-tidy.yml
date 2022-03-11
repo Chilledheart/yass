@@ -21,11 +21,8 @@ on:
     paths-ignore: [README.md, BUILDING.md]
   release:
     types: [published]
-defaults:
-  run:
-    shell: cmd
 env:
-  CACHE_EPOCH: 0
+  CACHE_EPOCH: 5
   GOPROXY: direct
 jobs:
   win-clang-tidy:

@@ -22,7 +22,7 @@ on:
   release:
     types: [published]
 env:
-  CACHE_EPOCH: 1
+  CACHE_EPOCH: 5
   GOPROXY: direct
 jobs:
   mac-release:
