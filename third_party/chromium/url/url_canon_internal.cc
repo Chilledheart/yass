@@ -394,7 +394,7 @@ bool SetupUTF16OverrideComponents(const char* base,
   return success;
 }
 
-#ifndef WIN32
+#if !defined(WIN32) || !defined(_itow_s)
 
 int _itoa_s(int value, char* buffer, size_t size_in_chars, int radix) {
   const char* format_str;
@@ -433,7 +433,7 @@ int _itow_s(int value, char16_t* buffer, size_t size_in_chars, int radix) {
   return 0;
 }
 
-#endif  // !WIN32
+#endif  // !defined(WIN32) || !defined(_itow_s)
 
 EscapedHostChar EscapedHostCharToEnum(char c) {
   switch (c) {

@@ -422,8 +422,9 @@ bool CanonicalizePartialPathInternal(const char16_t* spec,
 int FindWindowsDriveLetter(const char* spec, int begin, int end);
 int FindWindowsDriveLetter(const char16_t* spec, int begin, int end);
 
-#ifndef WIN32
+#if !defined(WIN32) || !defined(_itow_s)
 
+// MinGW API doesn't contain this
 // Implementations of Windows' int-to-string conversions
 int _itoa_s(int value, char* buffer, size_t size_in_chars, int radix);
 int _itow_s(int value, char16_t* buffer, size_t size_in_chars, int radix);
@@ -445,7 +446,7 @@ inline unsigned long long _strtoui64(const char* nptr,
   return strtoull(nptr, endptr, base);
 }
 
-#endif  // WIN32
+#endif  // !defined(WIN32) || !defined(_itow_s)
 
 // These values are logged to UMA. Entries should not be renumbered and
 // numeric values should never be reused. Please keep in sync with
