@@ -30,7 +30,7 @@ mkdir build
 cd build
 set CC=clang-cl
 set CXX=clang-cl
-cmake -G Ninja -DGUI=on ..
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
 ninja yass
 ```
 
@@ -57,7 +57,7 @@ package by running `export GOROOT=/c/msys64/mingw64/lib/go`
 ```
 mkdir build
 cd build
-cmake -G Ninja -DGUI=on ..
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
 ninja yass
 ```
 5. Copy `libwinphread.dll` to current directory.
@@ -122,7 +122,7 @@ Run in Terminal: ``sudo port install ninja cmake go p7zip``
 ```
 mkdir build
 cd build
-cmake -G Ninja -DGUI=on ..
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
 ninja yass
 ```
 
@@ -160,7 +160,7 @@ export PATH="/usr/local/go/bin:${PATH}"
 ```
 mkdir build
 cd build
-cmake -G Ninja -DGUI=on ..
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
 ninja yass
 ```
 
@@ -191,7 +191,7 @@ Notes: please make sure you have [GCC] (7.1 or above) and [CMake] (3.12 or above
 ```
 mkdir build
 cd build
-cmake -G Ninja -DGUI=on ..
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
 ninja yass
 ```
 
@@ -225,7 +225,7 @@ ln -sf /usr/include/c++/v1/unwind-itanium.h /usr/include/unwind-itanium.h
 ```
 mkdir build
 cd build
-cmake -G Ninja -DGUI=on ..
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
 ninja yass
 ```
 
