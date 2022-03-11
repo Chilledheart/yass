@@ -64,6 +64,8 @@ ninja yass
 ```
 cp /mingw64/bin/libwinpthread-1.dll .
 ```
+Notes: depending on your GCC thread model, this step is optional.
+6. Enjoy
 
 ## macOS/MacOS X
 

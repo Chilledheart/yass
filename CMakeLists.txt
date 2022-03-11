@@ -1493,6 +1493,13 @@ endif()
 # *****************************************************************************************
 
 set(ABSL_PROPAGATE_CXX_STD "ON" CACHE STRING "")
+# force win32 thread model for libc++ usage
+if (MINGW AND USE_LIBCXX)
+  # force non-inline emulated-tls
+  add_definitions(-DABSL_CONSUME_DLL)
+  # force c++11 thread model
+  add_definitions(-DABSL_FORCE_THREAD_IDENTITY_MODE=ABSL_THREAD_IDENTITY_MODE_USE_CPP11)
+endif()
 add_subdirectory(third_party/abseil-cpp)
 include_directories(third_party/abseil-cpp SYSTEM)
 
@@ -1539,7 +1546,19 @@ target_include_directories(asio PRIVATE
 #           boringssl Library
 # *****************************************************************************************
 
+# hacks to force win32 thread usage
+if (MINGW AND USE_LIBCXX)
+  set(PREVIOUS_CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+  set(PREVIOUS_CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -U__MINGW32__")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -U__MINGW32__")
+endif()
 add_subdirectory(third_party/boringssl/src)
+# restore hacks
+if (MINGW AND USE_LIBCXX)
+  set(CMAKE_C_FLAGS "${PREVIOUS_CMAKE_C_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${PREVIOUS_CMAKE_CXX_FLAGS}")
+endif()
 add_definitions(-DHAVE_BORINGSSL)
 include_directories(BEFORE third_party/boringssl/src/include SYSTEM)
 set(SUPPORT_LIBS crypto ssl ${SUPPORT_LIBS})

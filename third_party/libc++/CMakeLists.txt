@@ -233,11 +233,14 @@ if (WIN32)
     ${libcxx_SOURCES}
     trunk/src/support/win32/locale_win32.cpp
     trunk/src/support/win32/support.cpp
+    trunk/src/support/win32/thread_win32.cpp
   )
-  if (MSVC)
-    set(libcxx_SOURCES
-      ${libcxx_SOURCES}
-      trunk/src/support/win32/thread_win32.cpp
+
+  # turn on win32 thread model manually
+  if (MINGW)
+    set(libcxx_PUBLIC_DEFINITIONS
+      ${libcxx_PUBLIC_DEFINITIONS}
+      "_LIBCPP_HAS_THREAD_API_WIN32"
     )
   endif()
 
@@ -317,6 +320,7 @@ if (NOT libcxx_SHARED)
       set(libcxx_DEFINITIONS
         ${libcxx_DEFINITIONS}
         "_LIBCPP_WEAK=_LIBCPP_OVERRIDABLE_FUNC_VIS"
+        "_LIBCXXABI_WEAK=_LIBCPP_OVERRIDABLE_FUNC_VIS"
       )
     endif()
   endif()
