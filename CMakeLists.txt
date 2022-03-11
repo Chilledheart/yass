@@ -1147,6 +1147,18 @@ if (WIN32)
     add_definitions(-DWINVER=0x0601)
   endif()
 
+  # add missing definitions in some sdks
+  # from sdkddkver.h
+  add_definitions(-D_WIN32_WINNT_WINXP=0x0501)
+  add_definitions(-D_WIN32_WINNT_WS03=0x0502)
+  add_definitions(-D_WIN32_WINNT_WIN6=0x0600)
+  add_definitions(-D_WIN32_WINNT_LONGHORN=0x0600)
+  add_definitions(-D_WIN32_WINNT_WIN7=0x0601)
+  add_definitions(-D_WIN32_WINNT_WIN8=0x0602)
+  add_definitions(-D_WIN32_WINNT_WINBLUE=0x0603)
+  add_definitions(-D_WIN32_WINNT_WINTHRESHOLD=0x0A00)
+  add_definitions(-D_WIN32_WINNT_WIN10=0x0A00)
+
   # set linker option for x86
   if (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "x86")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SAFESEH /largeaddressaware")
