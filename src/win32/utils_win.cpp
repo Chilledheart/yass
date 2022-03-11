@@ -66,9 +66,6 @@ typedef int(__stdcall* PFNGETDEVICECAPS)(HDC, int);
 typedef BOOL(__stdcall* PFNSETPROCESSDPIAWARE)(void);
 
 // from shellscalingapi.h, starting from Windows 8.1
-#ifdef NTDDI_WINBLUE
-#include <shellscalingapi.h>
-#else   // NTDDI_WINBLUE
 typedef enum PROCESS_DPI_AWARENESS {
   PROCESS_DPI_UNAWARE = 0,
   PROCESS_SYSTEM_DPI_AWARE = 1,
@@ -81,7 +78,6 @@ typedef enum MONITOR_DPI_TYPE {
   MDT_RAW_DPI = 2,
   MDT_DEFAULT = MDT_EFFECTIVE_DPI
 } MONITOR_DPI_TYPE;
-#endif  // NTDDI_WINBLUE
 
 // from shellscalingapi.h, starting from Windows 8.1
 typedef HRESULT(__stdcall* PFNSETPROCESSDPIAWARENESS)(PROCESS_DPI_AWARENESS);

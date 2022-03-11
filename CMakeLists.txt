@@ -746,7 +746,7 @@ endif()
 ## And it doesn't play well on other file formats other than ELF
 ## Checked with https://gcc.gnu.org/onlinedocs/gcc-8.1.0/gcc/Optimize-Options.html#Optimize-Options
 ## and https://gcc.gnu.org/onlinedocs/gcc-7.5.0/gcc/Optimize-Options.html#Optimize-Options
-if (COMPILER_GCC AND NOT APPLE AND NOT MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
+if (COMPILER_GCC AND NOT APPLE AND NOT WIN32 AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
   if (${CMAKE_BUILD_TYPE} MATCHES Release)
     message(STATUS "Compiling with LTO")
     set(LTO_FLAVOUR "full")
@@ -1426,8 +1426,10 @@ if (NOT MSVC)
 
   ## fortify source code. Also, fortified build may fail when optimizations are
   ## disabled, so only do that for Release build.
-  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -D_FORTIFY_SOURCE=2")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -D_FORTIFY_SOURCE=2")
+  if (NOT WIN32)
+    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -D_FORTIFY_SOURCE=2")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -D_FORTIFY_SOURCE=2")
+  endif()
 
   ## set rpath origin
   if (NOT APPLE)
@@ -2208,7 +2210,7 @@ if (GUI)
           set(APP_MINGW_MANIFEST_RC "${CMAKE_CURRENT_BINARY_DIR}/yass_manifest.rc")
           file(WRITE "${APP_MINGW_MANIFEST_RC}"
             "#include <winuser.h>\n"
-            "2 RT_MANIFEST yass.manifest\n"
+            "1 RT_MANIFEST yass.manifest\n"
           )
         endif()
 
