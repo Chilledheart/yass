@@ -1,4 +1,4 @@
-name: Build Artifacts (Linux)
+name: Build Artifacts (RPM)
 on:
   workflow_dispatch:
     inputs:

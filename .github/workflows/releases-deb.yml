@@ -1,4 +1,4 @@
-name: Build Artifacts (Ubuntu)
+name: Build Artifacts (DEB)
 on:
   workflow_dispatch:
     inputs:

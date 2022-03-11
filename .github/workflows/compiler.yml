@@ -1,0 +1,303 @@
+name: Compiler Compatbility
+on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+        type: choice
+        options:
+        - info
+        - warning
+        - debug
+      tags:
+        description: 'Test scenario tags'
+        required: false
+        type: boolean
+  pull_request:
+  push:
+    branches: [master]
+    paths-ignore: [README.md, BUILDING.md]
+  release:
+    types: [published]
+env:
+  CACHE_EPOCH: 5
+  GOPROXY: direct
+jobs:
+  win-compiler-compatible-2019:
+    runs-on: windows-2019
+    if: ${{ github.event_name != 'release' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64]
+        crt-linkage: [static]
+        build_type: [Debug, Release]
+    env:
+      BUILD_TYPE: '${{ matrix.build_type }}'
+      MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - uses: actions/checkout@v2
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
+      - name: Cache clang, nasm and wixtoolset 3
+        id: clang-cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/nasm
+            third_party/llvm-build/Release+Asserts
+            third_party/wix311
+          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          restore-keys: |
+            ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
+      - name: Cache golang
+        uses: actions/cache@v2
+        with:
+          path: |
+            %LocalAppData%\go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Build build tool
+        run: |
+          cd tools
+          go build
+      - name: "Download dependency: clang, nasm and wixtoolset 3"
+        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        run: |
+          scripts\download-toolchain.bat
+          del /s /q nasm-2.15*.zip
+          del /s /q third_party\llvm-build\Release+Asserts\*.tgz
+          del /s /q wix311*.zip
+      - name: Build Vistual Studio 2019 (v142)
+        run: |
+          set VCToolsVersion=14.29
+          set Winsdk=10.0.19041.0
+          set "WindowsSDKVersion=%Winsdk%\"
+          if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
+          set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
+          set "VSCMD_START_DIR=%CD%"
+          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
+          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
+          set Platform=${{ matrix.arch }}
+          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
+
+          set "Path=%CD%\third_party\nasm;%Path%"
+          set "Path=%CD%\third_party\wix311;%Path%"
+
+          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
+
+          tools\build -run-test -no-packaging || exit /b
+
+          exit /b 0
+
+          :SetNewVCToolsVersion
+          set VCToolsVersion=
+  win-compiler-compatible-2022:
+    runs-on: windows-2022
+    if: ${{ github.event_name != 'release' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64]
+        crt-linkage: [static]
+        build_type: [Debug, Release]
+    env:
+      BUILD_TYPE: '${{ matrix.build_type }}'
+      MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - uses: actions/checkout@v2
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
+      - name: Cache clang, nasm and wixtoolset 3
+        id: clang-cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/nasm
+            third_party/llvm-build/Release+Asserts
+            third_party/wix311
+          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          restore-keys: |
+            ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
+      - name: Cache golang
+        uses: actions/cache@v2
+        with:
+          path: |
+            %LocalAppData%\go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Build build tool
+        run: |
+          cd tools
+          go build
+      - name: "Download dependency: clang, nasm and wixtoolset 3"
+        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        run: |
+          scripts\download-toolchain.bat
+          del /s /q nasm-2.15*.zip
+          del /s /q third_party\llvm-build\Release+Asserts\*.tgz
+          del /s /q wix311*.zip
+      - name: Build Vistual Studio 2022 (v143)
+        run: |
+          set VCToolsVersion=
+          set Winsdk=10.0.19041.0
+          set "WindowsSDKVersion=%Winsdk%\"
+          if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
+          set vsdevcmd=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat
+          set "VSCMD_START_DIR=%CD%"
+          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
+          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
+          set Platform=${{ matrix.arch }}
+          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
+
+          set "Path=%CD%\third_party\nasm;%Path%"
+          set "Path=%CD%\third_party\wix311;%Path%"
+
+          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
+
+          tools\build -run-test -no-packaging || exit /b
+
+          exit /b 0
+
+          :SetNewVCToolsVersion
+          set VCToolsVersion=
+  linux-compiler-compatible:
+    runs-on: ubuntu-18.04
+    if: ${{ github.event_name != 'release' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+        build_type: [Debug, Release]
+        cxxruntime: [libstdc++ lib++]
+    env:
+      BUILD_TYPE: '${{ matrix.build_type }}'
+    steps:
+      - uses: actions/checkout@v2
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
+      - name: Cache clang (v5.0)
+        id: clang5-cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04
+          key: ${{ runner.os }}-toolchain-clang5-v${{ env.CACHE_EPOCH }}
+          restore-keys: |
+            ${{ runner.os }}-toolchain-clang5-
+      - name: Cache golang
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Build build tool
+        run: |
+          cd tools
+          go build
+      - name: "Install dependency: clang 5"
+        if: ${{ steps.clang5-cache.outputs.cache-hit != 'true' }}
+        run: |
+          curl -L -O https://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz
+          tar -C third_party -xvf clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz \
+            clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/lib/clang/5.0.2/include \
+            clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/{clang,clang++,clang-5.0,ld.lld,lld,llvm-ar,llvm-ranlib}
+          rm -f *.xz
+      - name: Change ubuntu mirror
+        run: |
+          sudo sed -i 's/azure.archive.ubuntu.com/archive.ubuntu.com/g' /etc/apt/sources.list
+          sudo apt-get update -qq
+      - name: Populate depedencies
+        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build libgtk-3-dev
+      - name: Build
+        run: |
+          if [ "${{ matrix.compiler }}" = "clang" ]; then
+            export CC=$PWD/third_party/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clang
+            export CXX=$PWD/third_party/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clang++
+          else
+            export CC=gcc
+            export CXX=g++
+          fi
+          if [ "${{ matrix.cxxruntime }}" = "libc++" ]; then
+            export build_opts="${build_opts} -use-libcxx=1"
+          else
+            export build_opts="${build_opts} -use-libcxx=0"
+          fi
+          ./tools/build -no-packaging $build_opts
+      - name: Run tests
+        run: |
+          ./tools/build -nc -no-packaging $build_opts -run-test
+  mac-compiler-compatible:
+    runs-on: macos-latest
+    if: ${{ github.event_name != 'release' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release]
+        compiler: [gcc, clang]
+    env:
+      BUILD_TYPE: '${{ matrix.build_type }}'
+    steps:
+      - uses: actions/checkout@v2
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
+      - name: Cache golang
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/Library/Caches/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Build build tool
+        run: |
+          cd tools
+          go build
+      - name: Patch libcxx for gcc
+        run: |
+          cd third_party/libc++/trunk
+          patch -p1 < ../gcc-mac.patch
+      - name: Populate depedencies
+        run: brew install ninja cmake p7zip gcc@9 gtk+3
+      - name: Build
+        run: |
+          if [ "${{ matrix.compiler }}" = "gcc" ]; then
+            export CC=gcc-9
+            export CXX=g++-9
+          fi
+          ./tools/build -no-packaging -macosx-universal-build=false
+      - name: Run tests
+        run: |
+          if [ "${{ matrix.compiler }}" = "gcc" ]; then
+            export CC=gcc-9
+            export CXX=g++-9
+          fi
+          ./tools/build -nc -no-packaging -macosx-universal-build=false -run-test

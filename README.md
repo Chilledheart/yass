@@ -4,11 +4,16 @@
 [![GitHub all releases](https://img.shields.io/github/downloads/Chilledheart/yass/total)](https://github.com/Chilledheart/yass/releases)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Chilledheart/yass)](https://github.com/Chilledheart/yass/releases)
 
-[![Windows Build](https://github.com/Chilledheart/yass/actions/workflows/windows.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/windows.yml)
-[![macOS Build](https://github.com/Chilledheart/yass/actions/workflows/macos.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/macos.yml)
-[![Linux Build](https://github.com/Chilledheart/yass/actions/workflows/linux.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/linux.yml)
-[![Ubuntu Build](https://github.com/Chilledheart/yass/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/ubuntu.yml)
-[![Binary Build](https://github.com/Chilledheart/yass/actions/workflows/binary.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/binary.yml)
+[![Compiler Compability](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml)
+[![Clang Tidy Results](https://github.com/Chilledheart/yass/actions/workflows/clang-tidy.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/clang-tidy.yml)
+
+[![Windows Build](https://github.com/Chilledheart/yass/actions/workflows/releases-windows.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/releases-windows.yml)
+[![macOS Build](https://github.com/Chilledheart/yass/actions/workflows/releases-macos.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/releases-macos.yml)
+[![Linux Build](https://github.com/Chilledheart/yass/actions/workflows/releases-linux-binary.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/releases-linux-binary.yml)
+[![FreeBSD Build](https://github.com/Chilledheart/yass/actions/workflows/releases-freebsd-binary.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/releases-freebsd-binary.yml)
+[![RPM Build](https://github.com/Chilledheart/yass/actions/workflows/releases-rpm.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/releases-rpm.yml)
+[![DEB Build](https://github.com/Chilledheart/yass/actions/workflows/releases-deb.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/releases-deb.yml)
+[![MinGW Build](https://github.com/Chilledheart/yass/actions/workflows/releases-mingw.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/releases-mingw.yml)
 
 Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 

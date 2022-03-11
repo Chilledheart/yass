@@ -1,0 +1,82 @@
+name: Build Artifacts (macOS)
+on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+        type: choice
+        options:
+        - info
+        - warning
+        - debug
+      tags:
+        description: 'Test scenario tags'
+        required: false
+        type: boolean
+  pull_request:
+  push:
+    branches: [master]
+    paths-ignore: [README.md, BUILDING.md]
+  release:
+    types: [published]
+env:
+  CACHE_EPOCH: 1
+  GOPROXY: direct
+jobs:
+  mac-release:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Release]
+    env:
+      BUILD_TYPE: '${{ matrix.build_type }}'
+    steps:
+      - uses: actions/checkout@v2
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
+      - name: Cache clang
+        id: clang-cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/llvm-build/Release+Asserts
+          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          restore-keys: |
+            ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
+      - name: Cache golang
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/Library/Caches/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Build build tool
+        run: |
+          cd tools
+          go build
+      - name: "Install dependency: prebuilt clang and clang-tidy binaries"
+        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        run: |
+          ./scripts/download-clang-prebuilt-binaries.py
+          rm -f third_party/llvm-build/Release+Asserts/*.tgz
+      - name: Populate depedencies
+        run: brew install ninja cmake p7zip
+      - name: Build
+        run: |
+          export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
+          export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
+          ./tools/build
+      - name: Upload dist tarball (including debuginfo)
+        if: ${{ github.event_name == 'release' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} *.dmg *.zip

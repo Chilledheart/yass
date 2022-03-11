@@ -16,7 +16,14 @@ on:
         required: false
         type: boolean
   workflow_run:
-    workflows: ['Build Artifacts (Windows)', 'Build Artifacts (macOS)', 'Build Artifacts (Linux)', 'Build Artifacts (Ubuntu)', 'Build Artifacts (Binary)']
+    workflows:
+      - 'Build Artifacts (Windows)'
+      - 'Build Artifacts (macOS)'
+      - 'Build Artifacts (RPM)'
+      - 'Build Artifacts (DEB)'
+      - 'Build Artifacts (Linux Binary)'
+      - 'Build Artifacts (FreeBSD Binary)'
+      - 'Build Artifacts (MinGW)'
     types:
       - completed
 jobs:

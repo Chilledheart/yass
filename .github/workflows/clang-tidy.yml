@@ -1,4 +1,4 @@
-name: Build Artifacts (macOS)
+name: Clang Tidy
 on:
   workflow_dispatch:
     inputs:
@@ -21,18 +21,28 @@ on:
     paths-ignore: [README.md, BUILDING.md]
   release:
     types: [published]
+defaults:
+  run:
+    shell: cmd
 env:
-  CACHE_EPOCH: 1
+  CACHE_EPOCH: 0
   GOPROXY: direct
 jobs:
-  mac-release:
-    runs-on: macos-latest
+  win-clang-tidy:
+    runs-on: windows-2019
     strategy:
       fail-fast: false
       matrix:
+        arch: [x64]
         build_type: [Release]
+        crt-linkage: [static]
     env:
+      ENABLE_CLANG_TIDY: '1'
       BUILD_TYPE: '${{ matrix.build_type }}'
+      MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
+    defaults:
+      run:
+        shell: cmd
     steps:
       - uses: actions/checkout@v2
       - name: Checkout with shallow submodules
@@ -40,12 +50,14 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache clang
+      - name: Cache clang, nasm and wixtoolset 3
         id: clang-cache
         uses: actions/cache@v2
         with:
           path: |
+            third_party/nasm
             third_party/llvm-build/Release+Asserts
+            third_party/wix311
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
           restore-keys: |
             ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
@@ -53,7 +65,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            ~/Library/Caches/go-build
+            %LocalAppData%\go-build
             ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
@@ -62,24 +74,39 @@ jobs:
         run: |
           cd tools
           go build
-      - name: "Install dependency: prebuilt clang and clang-tidy binaries"
+      - name: "Download dependency: clang, nasm and wixtoolset 3"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
-          ./scripts/download-clang-prebuilt-binaries.py
-          rm -f third_party/llvm-build/Release+Asserts/*.tgz
-      - name: Populate depedencies
-        run: brew install ninja cmake p7zip
+          scripts\download-toolchain.bat
+          del /s /q nasm-2.15*.zip
+          del /s /q third_party\llvm-build\Release+Asserts\*.tgz
+          del /s /q wix311*.zip
       - name: Build
         run: |
-          export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
-          export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
-          ./tools/build
-      - name: Upload dist tarball (including debuginfo)
-        if: ${{ github.event_name == 'release' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload ${{ github.event.release.tag_name }} *.dmg *.zip
+          set VCToolsVersion=14.16
+          set Winsdk=10.0.19041.0
+          set "WindowsSDKVersion=%Winsdk%\"
+          if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
+          set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
+          set "VSCMD_START_DIR=%CD%"
+          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
+          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
+          set Platform=${{ matrix.arch }}
+          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
+
+          set "CLANG_TIDY_EXECUTABLE=%CD%/third_party/llvm-build/Release+Asserts/bin/clang-tidy.exe"
+
+          set "Path=%CD%\third_party\nasm;%Path%"
+          set "Path=%CD%\third_party\wix311;%Path%"
+
+          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
+
+          tools\build -run-test || exit /b
+
+          exit /b 0
+
+          :SetNewVCToolsVersion
+          set VCToolsVersion=
   mac-clang-tidy:
     runs-on: macos-latest
     env:
@@ -130,16 +157,15 @@ jobs:
           export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
           export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
           export CLANG_TIDY_EXECUTABLE=$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy
-          ./tools/build
-  mac-compatible-latest:
-    runs-on: macos-latest
-    if: ${{ github.event_name != 'release' }}
+          ./tools/build -run-test
+  linux-clang-tidy:
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
-        build_type: [Debug, Release]
-        compiler: [gcc, clang]
+        build_type: [Release]
     env:
+      ENABLE_CLANG_TIDY: '1'
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
       - uses: actions/checkout@v2
@@ -148,11 +174,20 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
+      - name: Cache clang
+        id: clang-cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            third_party/llvm-build/Release+Asserts
+          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          restore-keys: |
+            ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
       - name: Cache golang
         uses: actions/cache@v2
         with:
           path: |
-            ~/Library/Caches/go-build
+            ~/.cache/go-build
             ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
@@ -161,23 +196,20 @@ jobs:
         run: |
           cd tools
           go build
-      - name: Patch libcxx for gcc
+      - name: "Install dependency: prebuilt clang and clang-tidy binaries"
+        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
-          cd third_party/libc++/trunk
-          patch -p1 < ../gcc-mac.patch
+          ./scripts/download-clang-prebuilt-binaries.py
+          rm -f third_party/llvm-build/Release+Asserts/*.tgz
+      - name: Change ubuntu mirror
+        run: |
+          sudo sed -i 's/azure.archive.ubuntu.com/archive.ubuntu.com/g' /etc/apt/sources.list
+          sudo apt-get update -qq
       - name: Populate depedencies
-        run: brew install ninja cmake p7zip gcc@9 gtk+3
+        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build libgtk-3-dev
       - name: Build
         run: |
-          if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            export CC=gcc-9
-            export CXX=g++-9
-          fi
-          ./tools/build -no-packaging -macosx-universal-build=false
-      - name: Run tests
-        run: |
-          if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            export CC=gcc-9
-            export CXX=g++-9
-          fi
-          ./tools/build -nc -no-packaging -macosx-universal-build=false -run-test
+          export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
+          export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
+          export CLANG_TIDY_EXECUTABLE=$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy
+          ./tools/build -run-test
