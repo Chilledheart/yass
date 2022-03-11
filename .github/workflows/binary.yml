@@ -33,6 +33,7 @@ jobs:
       matrix:
         compiler: [gcc, clang]
         build_type: [Debug, Release]
+        cxxruntime: [libstdc++ lib++]
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
@@ -87,10 +88,15 @@ jobs:
             export CC=gcc
             export CXX=g++
           fi
-          ./tools/build -no-packaging
+          if [ "${{ matrix.cxxruntime }}" = "libc++" ]; then
+            export build_opts="${build_opts} -use-libcxx=1"
+          else
+            export build_opts="${build_opts} -use-libcxx=0"
+          fi
+          ./tools/build -no-packaging $build_opts
       - name: Run tests
         run: |
-          ./tools/build -nc -no-packaging -run-test
+          ./tools/build -nc -no-packaging $build_opts -run-test
   linux-compiler-compatible-mingw64:
     runs-on: ubuntu-18.04
     if: ${{ github.event_name != 'release' }}
