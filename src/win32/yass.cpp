@@ -37,7 +37,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                       _In_ int nCmdShow) {
   UNREFERENCED_PARAMETER(hPrevInstance);
   UNREFERENCED_PARAMETER(lpCmdLine);
-  bool ok = true;
 
   if (!EnableSecureDllLoading()) {
     return -1;

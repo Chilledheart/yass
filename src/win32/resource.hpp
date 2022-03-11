@@ -9,6 +9,12 @@
 #define LANG_ENGLISH 0x09
 #define SUBLANG_ENGLISH_US 0x01  // English (USA)
 
+// (from winres.h)
+#ifdef IDC_STATIC
+#undef IDC_STATIC
+#endif
+#define IDC_STATIC      (-1)
+
 /////////////////////////////////////////////////////////////////////////////
 // Standard app configurable strings
 

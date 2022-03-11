@@ -12,6 +12,9 @@
 
 #ifdef _WIN32
 
+#define MAKE_WIN_VER(major, minor, build_number) \
+    (((major) << 24) | ((minor) << 16) | (build_number))
+
 #include <windows.h>
 
 #if _WIN32_WINNT > 0x0601
@@ -52,6 +55,7 @@ typedef struct tagTHREADNAME_INFO {
 typedef HRESULT(WINAPI* PFNSETTHREADDESCRIPTION)(HANDLE hThread,
                                                  PCWSTR lpThreadDescription);
 
+#ifdef COMPILER_MSVC
 namespace {
 // This function has try handling, so it is separated out of its caller.
 void SetNameInternal(DWORD thread_id, const char* name) {
@@ -73,9 +77,16 @@ void SetNameInternal(DWORD thread_id, const char* name) {
 }
 
 } // namespace
+#endif  // COMPILER_MSVC
 
+#ifdef COMPILER_MSVC
 bool SetThreadPriority(std::thread::native_handle_type handle,
                        ThreadPriority priority) {
+#else
+bool SetThreadPriority(std::thread::native_handle_type,
+                       ThreadPriority priority) {
+  HANDLE handle = ::GetCurrentThread();
+#endif  // COMPILER_MSVC
   int desired_priority = THREAD_PRIORITY_ERROR_RETURN;
   switch (priority) {
     case ThreadPriority::BACKGROUND:
@@ -131,8 +142,14 @@ bool SetThreadPriority(std::thread::native_handle_type handle,
   return ret;
 }
 
+#ifdef COMPILER_MSVC
 bool SetThreadName(std::thread::native_handle_type handle,
                    const std::string& name) {
+#else
+bool SetThreadName(std::thread::native_handle_type,
+                   const std::string& name) {
+  HANDLE handle = ::GetCurrentThread();
+#endif  // COMPILER_MSVC
   if (!IsWindowsVersionBNOrGreater(10, 0, 14393)) {
     return true;
   }
@@ -155,6 +172,7 @@ bool SetThreadName(std::thread::native_handle_type handle,
   if (!::IsDebuggerPresent())
     return SUCCEEDED(ret);
 
+#ifdef COMPILER_MSVC
   // https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getcurrentthreadid
   // https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getthreadid
 #if _WIN32_WINNT < 0x0600
@@ -162,6 +180,7 @@ bool SetThreadName(std::thread::native_handle_type handle,
 #else
   SetNameInternal(::GetThreadId(handle), name.c_str());
 #endif
+#endif  // COMPILER_MSVC
   return SUCCEEDED(ret);
 }
 
@@ -280,7 +299,7 @@ bool MemoryLockAll() {
     VLOG(4) << "Calling VirtualLock on address: " << memInfo.BaseAddress
             << " AllocationBase: " << memInfo.AllocationBase
             << " AllocationProtect: " << protect_str(memInfo.AllocationProtect)
-#ifdef _WIN64
+#if defined(_WIN64) && defined(COMPILER_MSVC)
             << " PartitionId: " << memInfo.PartitionId
 #endif
             << " RegionSize: " << memInfo.RegionSize
@@ -406,8 +425,6 @@ bool SetUTF8Locale() {
   }
   return success;
 }
-
-#undef MAKE_VER
 
 // borrowed from sys_string_conversions_win.cc
 
@@ -623,8 +640,10 @@ static void CheckDynamicLibraries() {
 bool EnableSecureDllLoading() {
   typedef BOOL(WINAPI * SetDefaultDllDirectoriesFunction)(DWORD flags);
   SetDefaultDllDirectoriesFunction set_default_dll_directories =
-      reinterpret_cast<SetDefaultDllDirectoriesFunction>(::GetProcAddress(
-          ::GetModuleHandleW(L"kernel32.dll"), "SetDefaultDllDirectories"));
+      reinterpret_cast<SetDefaultDllDirectoriesFunction>(
+          reinterpret_cast<void*>(::GetProcAddress(
+                  ::GetModuleHandleW(L"kernel32.dll"),
+                  "SetDefaultDllDirectories")));
   if (!set_default_dll_directories) {
     // Don't assert because this is known to be missing on Windows 7 without
     // KB2533623.
@@ -651,8 +670,9 @@ static bool GetProductInfo(DWORD dwOSMajorVersion,
       DWORD dwOSMajorVersion, DWORD dwOSMinorVersion, DWORD dwSpMajorVersion,
       DWORD dwSpMinorVersion, PDWORD pdwReturnedProductType);
   GetProductInfoFunction get_product_info =
-      reinterpret_cast<GetProductInfoFunction>(::GetProcAddress(
-          ::GetModuleHandleW(L"kernel32.dll"), "GetProductInfo"));
+      reinterpret_cast<GetProductInfoFunction>(
+          reinterpret_cast<void*>(::GetProcAddress(
+                  ::GetModuleHandleW(L"kernel32.dll"), "GetProductInfo")));
   if (!get_product_info) {
     *pdwReturnedProductType = 0;
     return false;

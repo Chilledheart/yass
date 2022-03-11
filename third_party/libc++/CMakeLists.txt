@@ -142,19 +142,28 @@ else()
     # (gcc doesn't have -notstdlib++:
     # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=83931); -nodefaultlibs
     # removes all of the default libraries, so add back the ones that we need.
-    set(libcxx_PUBLIC_LIBRARIES
-      ${libcxx_PUBLIC_LIBRARIES}
-      c m
-      )
-    if (APPLE)
+    if (UNIX)
       set(libcxx_PUBLIC_LIBRARIES
         ${libcxx_PUBLIC_LIBRARIES}
-        gcc_eh gcc System
+        c m
         )
-    else()
+      if (APPLE)
+        set(libcxx_PUBLIC_LIBRARIES
+          ${libcxx_PUBLIC_LIBRARIES}
+          gcc_eh gcc System
+          )
+      else()
+        set(libcxx_PUBLIC_LIBRARIES
+          ${libcxx_PUBLIC_LIBRARIES}
+          gcc_s rt
+          )
+      endif()
+    elseif (MINGW)
       set(libcxx_PUBLIC_LIBRARIES
         ${libcxx_PUBLIC_LIBRARIES}
-        gcc_s rt
+         mingw32 gcc_eh gcc moldname mingwex msvcrt msvcrt advapi32
+         shell32 user32 kernel32 mingw32 gcc_eh gcc
+         moldname mingwex
         )
     endif()
   endif()
@@ -219,13 +228,18 @@ if (MSVC)
     "_HAS_EXCEPTIONS=1")
 endif()
 
-if (MSVC)
+if (WIN32)
   set(libcxx_SOURCES
     ${libcxx_SOURCES}
     trunk/src/support/win32/locale_win32.cpp
     trunk/src/support/win32/support.cpp
-    trunk/src/support/win32/thread_win32.cpp
   )
+  if (MSVC)
+    set(libcxx_SOURCES
+      ${libcxx_SOURCES}
+      trunk/src/support/win32/thread_win32.cpp
+    )
+  endif()
 
   # Explicitly set version macros to Windows 7 to prevent libc++ from adding a
   # hard dependency on GetSystemTimePreciseAsFileTime, which was introduced in
@@ -294,7 +308,7 @@ if (NOT libcxx_SHARED)
     set(libcxx_CFLAGS ${libcxx_CFLAGS}
       "-fvisibility-global-new-delete-hidden"
     )
-  else()
+  else ()
     # This resets the visibility to default only for the various
     # flavors of operator new and operator delete.  These symbols
     # are weak and get overriden by Chromium-provided ones, but if
@@ -313,6 +327,14 @@ if (NOT libcxx_SHARED)
       ${libcxx_DEFINITIONS}
       "_LIBCPP_OVERRIDABLE_FUNC_VIS=__attribute__((__visibility__(\"default\")))"
     )
+    # mingw's ld linker cannot find weak symbols
+    # https://sourceware.org/bugzilla/show_bug.cgi?id=9687
+    if (MINGW)
+      set(libcxx_DEFINITIONS
+        ${libcxx_DEFINITIONS}
+        "_LIBCPP_WEAK=_LIBCPP_OVERRIDABLE_FUNC_VIS"
+      )
+    endif()
   endif()
 
   if (NOT MSVC)
@@ -369,7 +391,13 @@ if (NOT MSVC)
       ../libc++abi/trunk/src/cxa_guard.cpp
     )
   endif()
-  if (NOT MSVC AND NOT APPLE)
+  if (NOT ANDROID)
+    set(libcxxabi_SOURCES
+      ${libcxxabi_SOURCES}
+      ../libc++abi/trunk/src/cxa_demangle.cpp
+    )
+  endif()
+  if (UNIX AND NOT APPLE)
     set(libcxxabi_SOURCES
       ${libcxxabi_SOURCES}
       ../libc++abi/trunk/src/cxa_thread_atexit.cpp
@@ -433,15 +461,13 @@ set(libcxx_LINK_LIBATOMIC FALSE)
 if (NOT MSVC)
   include(CheckCSourceCompiles)
   set(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
-  foreach(lib ${libcxx_PUBLIC_LIBRARIES})
-    set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Wl,-l${lib}")
-  endforeach()
+  set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} ${libcxx_PUBLIC_LIBRARIES}")
   if (COMPILER_CLANG)
     set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror=atomic-alignment")
   endif()
   check_c_source_compiles("
     #include <stdint.h>
-    int main() {
+    int main(int argc, char** argv) {
       int64_t val;
       __atomic_store_n(&val, 0LL, __ATOMIC_RELEASE);
       return __atomic_load_n(&val, __ATOMIC_ACQUIRE);

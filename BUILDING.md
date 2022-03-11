@@ -34,6 +34,37 @@ cmake -G Ninja -DGUI=on ..
 ninja yass
 ```
 
+## Mingw-w64
+
+1. Install MSYS2 Package from [official site][msys2].
+2. Launch MSYS2 MinGW x64 Shortcut from Start Menu.
+3. Install required toolchain
+```
+pacman -S mingw-w64-x86_64-gcc \
+          mingw-w64-x86_64-pkgconf \
+          mingw-w64-x86_64-perl \
+          mingw-w64-x86_64-go \
+          mingw-w64-x86_64-cmake \
+          mingw-w64-x86_64-ninja \
+          mingw-w64-x86_64-nasm \
+          git
+```
+
+Notes: you might need to get GOROOT manually after install `mingw-w64-x86_64-go`
+package by running `export GOROOT=/c/msys64/mingw64/lib/go`
+
+4. Compiling the program.
+```
+mkdir build
+cd build
+cmake -G Ninja -DGUI=on ..
+ninja yass
+```
+5. Copy `libwinphread.dll` to current directory.
+```
+cp /mingw64/bin/libwinpthread-1.dll .
+```
+
 ## macOS/MacOS X
 
 1. Make sure you have [Xcode Command Line Tools][xcode-commandline] installed ([Xcode] if possible):
@@ -266,3 +297,4 @@ Run in Terminal:
 [python-windows]: https://www.python.org/downloads/windows/
 [python-macos]: https://www.python.org/downloads/macos/
 [llvm-win64]: https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/LLVM-13.0.1-win64.exe
+[msys2]: https://www.msys2.org/

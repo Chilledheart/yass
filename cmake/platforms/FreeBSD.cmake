@@ -7,13 +7,6 @@ set(CMAKE_CXX_COMPILER_TARGET "${GCC_TARGET}" CACHE STRING "")
 set(CMAKE_ASM_COMPILER_TARGET "${GCC_TARGET}" CACHE STRING "")
 
 set(CMAKE_AR "${LLVM_SYSROOT}/bin/llvm-ar" CACHE FILEPATH "")
-# skip for ranlib
-if (EXISTS "/bin/true")
-  set(CMAKE_RANLIB "/bin/true" CACHE FILEPATH "")
-elseif (EXISTS "/usr/bin/true")
-  set(CMAKE_RANLIB "/usr/bin/true" CACHE FILEPATH "")
-else()
-  set(CMAKE_RANLIB "/bin/echo" CACHE FILEPATH "")
-endif()
+set(CMAKE_RANLIB "${LLVM_SYSROOT}/bin/llvm-ranlib" CACHE FILEPATH "")
 
 set(CMAKE_SYSROOT "${GCC_SYSROOT}" CACHE STRING "")

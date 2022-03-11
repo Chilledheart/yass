@@ -40,7 +40,7 @@ std::wstring NumberToWString(double value) {
 namespace internal {
 
 template <>
-class internal::WhitespaceHelper<wchar_t> {
+class WhitespaceHelper<wchar_t> {
  public:
   static bool Invoke(wchar_t c) { return 0 != iswspace(c); }
 };

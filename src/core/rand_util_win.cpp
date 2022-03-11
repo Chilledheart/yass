@@ -13,7 +13,11 @@
 // "Community Additions" comment on MSDN here:
 // http://msdn.microsoft.com/en-us/library/windows/desktop/aa387694.aspx
 #define SystemFunction036 NTAPI SystemFunction036
+#ifdef COMPILER_MSVC
 #include <NTSecAPI.h>
+#else
+#include <ntsecapi.h>
+#endif
 #undef SystemFunction036
 
 // TODO: another alternative is BCryptGenRandom introduced in Windows Vista

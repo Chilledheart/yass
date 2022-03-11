@@ -211,7 +211,7 @@ else()
 endif()
 
 ## postpone ASM enabling after C/CXX LANG DIALECT otherwise it might fails
-if (NOT (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "x86" OR MSVC_PROCESSOR_ARCHITECTURE STREQUAL "amd64"))
+if (NOT (WIN32 AND (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "x86" OR MSVC_PROCESSOR_ARCHITECTURE STREQUAL "amd64")))
   enable_language(ASM)
 endif()
 
@@ -233,7 +233,7 @@ option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
 # skipping apple clang
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR LINKER_LLD)
   set(USE_LLD ON)
-elseif (COMPILER_GCC)
+elseif (COMPILER_GCC AND NOT WIN32)
   set(USE_GOLD ON)
 endif()
 
@@ -418,7 +418,7 @@ if(GCOV)
 endif()
 
 if (NOT MSAN AND NOT ASAN AND NOT TSAN AND NOT UBSAN)
-  if (NOT APPLE AND NOT MSVC)
+  if (NOT APPLE AND NOT MSVC AND NOT MINGW)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,defs -Wl,--as-needed")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,defs -Wl,--as-needed")
   endif()
@@ -1096,7 +1096,7 @@ if (COMPILER_CLANG AND (MSVC OR USE_LIBCXX) AND CMAKE_CXX_COMPILER_VERSION VERSI
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcomplete-member-pointers")
 endif()
 
-if (MSVC)
+if (WIN32)
   option(ALLOW_XP "Build with Windows XP support." OFF)
   ## //
   ## // _WIN32_WINNT version constants
@@ -1153,10 +1153,12 @@ if (MSVC)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /SAFESEH /largeaddressaware")
   endif()
 
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DYNAMICBASE /NXCOMPAT")
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DYNAMICBASE /NXCOMPAT")
+  if (MSVC)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DYNAMICBASE /NXCOMPAT")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DYNAMICBASE /NXCOMPAT")
+  endif()
 
-  if (ALLOW_XP)
+  if (MSVC AND ALLOW_XP)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Zc:threadSafeInit-")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:threadSafeInit-")
   endif()
@@ -1172,10 +1174,17 @@ if (MSVC)
     # 5.01 = Windows XP
     set(SUBSYSTEM_VERSION_SUFFIX ",5.01")
   endif()
-  set(CMAKE_C_CREATE_WIN32_EXE "/subsystem:windows${SUBSYSTEM_VERSION_SUFFIX}")
-  set(CMAKE_CXX_CREATE_WIN32_EXE "/subsystem:windows${SUBSYSTEM_VERSION_SUFFIX}")
-  set(CMAKE_C_CREATE_CONSOLE_EXE "/subsystem:console${SUBSYSTEM_VERSION_SUFFIX}")
-  set(CMAKE_CXX_CREATE_CONSOLE_EXE "/subsystem:console${SUBSYSTEM_VERSION_SUFFIX}")
+  if (MSVC)
+    set(CMAKE_C_CREATE_WIN32_EXE "/subsystem:windows${SUBSYSTEM_VERSION_SUFFIX}")
+    set(CMAKE_CXX_CREATE_WIN32_EXE "/subsystem:windows${SUBSYSTEM_VERSION_SUFFIX}")
+    set(CMAKE_C_CREATE_CONSOLE_EXE "/subsystem:console${SUBSYSTEM_VERSION_SUFFIX}")
+    set(CMAKE_CXX_CREATE_CONSOLE_EXE "/subsystem:console${SUBSYSTEM_VERSION_SUFFIX}")
+  else()
+    set(CMAKE_C_CREATE_WIN32_EXE "-mwindows -Wl,--subsystem,windows${SUBSYSTEM_VERSION_SUFFIX}")
+    set(CMAKE_CXX_CREATE_WIN32_EXE "-mwindows -Wl,--subsystem,windows${SUBSYSTEM_VERSION_SUFFIX}")
+    set(CMAKE_C_CREATE_CONSOLE_EXE "-mconsole -Wl,--subsystem,console${SUBSYSTEM_VERSION_SUFFIX}")
+    set(CMAKE_CXX_CREATE_CONSOLE_EXE "-mconsole -Wl,--subsystem,console${SUBSYSTEM_VERSION_SUFFIX}")
+  endif()
 endif()
 
 # *****************************************************************************************
@@ -1228,13 +1237,22 @@ endif()
 #           Core Support Libraries
 # *****************************************************************************************
 
-if (MSVC)
+if (WIN32)
   # ignore default set of libraries
   # aka KERNEL32 USER32 GDI32 WINSPOOL SHELL32 OLE32 OLEAUT32 UUID COMDLG32 ADVAPI32
   set(CMAKE_C_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
   set(CMAKE_CXX_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
 
-  set(SYSTEM_LIBS ${SYSTEM_LIBS} WS2_32 User32)
+  if (MSVC)
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} WS2_32 User32 kernel32)
+  else()
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} ws2_32 mswsock user32 kernel32)
+  endif()
+
+  # Don't use it even if we are compiling with gnu extensions
+  if (MINGW)
+    add_definitions(-D__USE_MINGW_ANSI_STDIO=0)
+  endif()
 
   if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "static")
     # replace /MD with /MT
@@ -1260,7 +1278,7 @@ if (MSVC)
   endif()
 
   # disable precompiled head files for clang
-  if (COMPILER_CLANG)
+  if (MSVC AND COMPILER_CLANG)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Y-")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Y-")
   endif()
@@ -1302,13 +1320,13 @@ int main() {
   endif()
 endif()
 
-set(SUPPORT_LIBS ${SUPPORT_LIBS} ${SYSTEM_LIBS})
+link_libraries(${SYSTEM_LIBS})
 
 # *****************************************************************************************
 #           GUI Support Libraries
 # *****************************************************************************************
 
-if (MSVC AND GUI)
+if (WIN32 AND GUI)
   message(STATUS "Compiling with GUI support: Windows")
   set(GUI_FLAVOUR "windows")
   set(GUI_USE_FILE "")
@@ -1316,7 +1334,11 @@ if (MSVC AND GUI)
   set(GUI_DEFINITIONS "")
   set(GUI_C_CXX_FLAGS "")
   set(GUI_LIBRARY_DIRS "")
-  set(GUI_LIBRARIES ShLwApi WinMM Gdi32 ComDlg32 Ole32 ComCtl32 shell32)
+  if (MSVC)
+    set(GUI_LIBRARIES ShLwApi WinMM Gdi32 ComDlg32 Ole32 ComCtl32 shell32)
+  else()
+    set(GUI_LIBRARIES shlwapi winmm gdi32 comdlg32 ole32 comctl32 shell32)
+  endif()
 elseif (APPLE AND GUI AND COMPILER_CLANG)
   message(STATUS "Compiling with GUI support: Cocoa")
   find_library(COCOA_LIBRARY Cocoa REQUIRED)
@@ -1382,7 +1404,7 @@ endif()
 # *****************************************************************************************
 
 # symbol hiddens
-if (UNIX)
+if (NOT MSVC)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden -fvisibility=hidden")
 endif()
@@ -1461,7 +1483,6 @@ add_subdirectory(third_party/abseil-cpp)
 include_directories(third_party/abseil-cpp SYSTEM)
 
 set(SUPPORT_LIBS
-  ${SUPPORT_LIBS}
   absl::flat_hash_map
   absl::flat_hash_set
   absl::flags
@@ -1476,6 +1497,7 @@ set(SUPPORT_LIBS
   absl::time
   absl::optional
   absl::failure_signal_handler
+  ${SUPPORT_LIBS}
   )
 
 # *****************************************************************************************
@@ -1506,7 +1528,7 @@ target_include_directories(asio PRIVATE
 add_subdirectory(third_party/boringssl/src)
 add_definitions(-DHAVE_BORINGSSL)
 include_directories(BEFORE third_party/boringssl/src/include SYSTEM)
-set(SUPPORT_LIBS ${SUPPORT_LIBS} crypto ssl)
+set(SUPPORT_LIBS crypto ssl ${SUPPORT_LIBS})
 foreach(source ${BCM_ASM_SOURCES})
   set_source_files_properties(${source} PROPERTIES GENERATED true)
 endforeach()
@@ -2076,7 +2098,7 @@ set(hfiles
     src/crypto/xchacha20_poly1305_sodium_encrypter.hpp
     )
 
-if (MSVC)
+if (WIN32)
   list(APPEND files src/core/rand_util_win.cpp)
   list(APPEND files src/core/utils_win.cpp)
 elseif (APPLE AND COMPILER_CLANG)
@@ -2104,6 +2126,7 @@ target_include_directories(yass_base PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/third_party
   ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+
 if (CLI)
   add_library(yass_cli_lib OBJECT
       src/cli/cli_worker.cpp
@@ -2119,7 +2142,7 @@ if (CLI)
       src/cli/cli.cpp
       )
 
-  if (MSVC)
+  if (WIN32)
     set(CLI_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass_cli.manifest")
     configure_file("src/core/win32.manifest" "${CLI_MSVC_MANIFEST}" @ONLY)
     target_sources(yass_cli PRIVATE ${CLI_MSVC_MANIFESTi})
@@ -2150,7 +2173,7 @@ if (SERVER)
       src/server/server.cpp
       )
 
-  if (MSVC)
+  if (WIN32)
     set(SERVER_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass_server.manifest")
     configure_file("src/core/win32.manifest" "${SERVER_MSVC_MANIFEST}" @ONLY)
     target_sources(yass_server PRIVATE ${SERVER_MSVC_MANIFEST})
@@ -2181,6 +2204,14 @@ if (GUI)
         set(APP_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass.manifest")
         configure_file("src/win32/yass.manifest.in" "${APP_MSVC_MANIFEST}" @ONLY)
 
+        if (MINGW)
+          set(APP_MINGW_MANIFEST_RC "${CMAKE_CURRENT_BINARY_DIR}/yass_manifest.rc")
+          file(WRITE "${APP_MINGW_MANIFEST_RC}"
+            "#include <winuser.h>\n"
+            "2 RT_MANIFEST yass.manifest\n"
+          )
+        endif()
+
         set(APP_MSVC_VERSION_RC "${CMAKE_CURRENT_BINARY_DIR}/yass_version.rc")
         configure_file("src/win32/yass_version.rc.in" "${APP_MSVC_VERSION_RC}" @ONLY)
         set(APP_MSVC_ABOUT_DIALOG_RC "${CMAKE_CURRENT_BINARY_DIR}/yass_about.rc")
@@ -2188,6 +2219,7 @@ if (GUI)
 
         list(APPEND SRC_FILES
           ${APP_MSVC_MANIFEST}
+          ${APP_MINGW_MANIFEST_RC}
           ${APP_MSVC_VERSION_RC}
           ${APP_MSVC_ABOUT_DIALOG_RC}
           src/win32/yass.rc
@@ -2267,7 +2299,7 @@ if (GUI)
       yass_cli_lib
       ${GUI_LIBRARIES} ${SUPPORT_LIBS})
 
-    if (GUI_FLAVOUR STREQUAL "windows")
+    if (GUI_FLAVOUR STREQUAL "windows" AND MSVC)
       # Most of the dlls are simply not required at startup (or at all, depending
       # on how the browser is used). The following dlls are interconnected and need to
       # be delayloaded together to ensure user32 does not load too early or at all,
@@ -2348,7 +2380,7 @@ if (GUI)
       target_link_libraries(${APP_NAME} PUBLIC delayimp)
     endif()
 
-    if (GUI_FLAVOUR STREQUAL "windows")
+    if (GUI_FLAVOUR STREQUAL "windows" AND MSVC)
         set_target_properties(${APP_NAME} PROPERTIES
             COMPILE_PDB_NAME ${APP_NAME}
             COMPILE_PDB_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}
@@ -2368,6 +2400,12 @@ if (GUI)
         endif()
         set_target_properties(${APP_NAME} PROPERTIES
             LINK_FLAGS "${_APP_LINK_FLAGS} /ENTRY:wWinMainCRTStartup")
+    endif()
+
+    # necessary for GCC
+    if (GUI_FLAVOUR STREQUAL "windows" AND NOT MSVC)
+      set_target_properties(${APP_NAME} PROPERTIES
+        LINK_FLAGS "-municode")
     endif()
 
     if (GUI_FLAVOUR STREQUAL "cocoa")
