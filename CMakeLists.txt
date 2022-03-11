@@ -1567,6 +1567,7 @@ include_directories(third_party/rapidjson/include SYSTEM)
 # *****************************************************************************************
 
 include_directories(third_party/googletest/googletest/include SYSTEM)
+include_directories(third_party/googletest/googlemock/include SYSTEM)
 if (BUILD_TESTS)
   # Add minimal googletest targets. The provided one has many side-effects, and
   # googletest has a very straightforward build.
@@ -1576,9 +1577,6 @@ if (BUILD_TESTS)
   target_include_directories(yass_gtest PRIVATE
     third_party/googletest/googletest
     third_party/googletest/googlemock)
-  target_include_directories(yass_gtest SYSTEM PUBLIC
-    third_party/googletest/googletest/include
-    third_party/googletest/googlemock/include)
 
   target_compile_options(yass_gtest PRIVATE "-Wno-error")
 endif()
