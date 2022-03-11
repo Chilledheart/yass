@@ -1,7 +1,7 @@
 #include "resource.hpp"
 
 #include <winuser.rh>
-#include <winres.h>
+#include <winresrc.h>
 
 // https://docs.microsoft.com/en-us/windows/win32/intl/code-page-identifiers
 
