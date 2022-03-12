@@ -60,10 +60,7 @@ cd build
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
 ninja yass
 ```
-5. Copy `libwinphread.dll` to current directory.
-```
-cp /mingw64/bin/libwinpthread-1.dll .
-```
+5. Enjoy
 
 ## macOS/MacOS X
 

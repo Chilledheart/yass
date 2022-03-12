@@ -16,6 +16,9 @@ endif()
 # lldb has picked up that fix (I'm using Xcode 13.2.1's lldb).
 set(libcxx_ABI_UNSTABLE ON)
 
+# experimental, turn off to build libc++ without exceptions
+set(libcxx_USE_EXCEPTIONS ON)
+
 #The system libc++ on Mac doesn't have aligned allocation in C++17.
 if (APPLE)
   add_definitions(-D_LIBCPP_HAS_NO_ALIGNED_ALLOCATION)
@@ -233,11 +236,24 @@ if (WIN32)
     ${libcxx_SOURCES}
     trunk/src/support/win32/locale_win32.cpp
     trunk/src/support/win32/support.cpp
+    trunk/src/support/win32/thread_win32.cpp
   )
-  if (MSVC)
+  # hacks, override posix thread model tls implementation
+  if (MINGW AND COMPILER_GCC)
     set(libcxx_SOURCES
       ${libcxx_SOURCES}
-      trunk/src/support/win32/thread_win32.cpp
+      emutls.cpp
+      )
+    set_source_files_properties(emutls.cpp
+      PROPERTIES
+      COMPILE_FLAGS "-fno-builtin")
+  endif()
+
+  # turn on win32 thread model manually
+  if (MINGW)
+    set(libcxx_PUBLIC_DEFINITIONS
+      ${libcxx_PUBLIC_DEFINITIONS}
+      "_LIBCPP_HAS_THREAD_API_WIN32"
     )
   endif()
 
@@ -317,6 +333,7 @@ if (NOT libcxx_SHARED)
       set(libcxx_DEFINITIONS
         ${libcxx_DEFINITIONS}
         "_LIBCPP_WEAK=_LIBCPP_OVERRIDABLE_FUNC_VIS"
+        "_LIBCXXABI_WEAK=_LIBCPP_OVERRIDABLE_FUNC_VIS"
       )
     endif()
   endif()
@@ -351,24 +368,37 @@ if (NOT MSVC)
     ${libcxx_DEFINITIONS}
     "LIBCXX_BUILDING_LIBCXXABI")
   set(libcxxabi_SOURCES
+    # C++ABI files
     ../libc++abi/trunk/src/abort_message.cpp
     ../libc++abi/trunk/src/cxa_aux_runtime.cpp
     ../libc++abi/trunk/src/cxa_default_handlers.cpp
-    ../libc++abi/trunk/src/cxa_exception.cpp
     ../libc++abi/trunk/src/cxa_exception_storage.cpp
     ../libc++abi/trunk/src/cxa_handlers.cpp
-    # This file is supposed to be used in fno-exception builds of
-    # libc++abi.  We build lib++/libc++abi with exceptions enabled.
-    #trunk/src/cxa_noexception.cpp
-    ../libc++abi/trunk/src/cxa_personality.cpp
     ../libc++abi/trunk/src/cxa_vector.cpp
     ../libc++abi/trunk/src/cxa_virtual.cpp
-    ../libc++abi/trunk/src/fallback_malloc.cpp
-    ../libc++abi/trunk/src/private_typeinfo.cpp
+    # C++ STL files
     ../libc++abi/trunk/src/stdlib_exception.cpp
     ../libc++abi/trunk/src/stdlib_stdexcept.cpp
     ../libc++abi/trunk/src/stdlib_typeinfo.cpp
+    # Internal files
+    ../libc++abi/trunk/src/abort_message.cpp
+    ../libc++abi/trunk/src/fallback_malloc.cpp
+    ../libc++abi/trunk/src/private_typeinfo.cpp
     )
+  if (libcxx_USE_EXCEPTIONS)
+    set(libcxxabi_SOURCES
+      ${libcxxabi_SOURCES}
+      ../libc++abi/trunk/src/cxa_exception.cpp
+      ../libc++abi/trunk/src/cxa_personality.cpp
+      )
+  else()
+    set(libcxxabi_SOURCES
+      ${libcxxabi_SOURCES}
+      # This file is supposed to be used in fno-exception builds of
+      # libc++abi.  We build lib++/libc++abi with exceptions enabled.
+      ../libc++abi/trunk/src/cxa_noexception.cpp
+      )
+  endif()
   if (NOT TSAN)
     set(libcxxabi_SOURCES
       ${libcxxabi_SOURCES}
@@ -386,6 +416,13 @@ if (NOT MSVC)
       ${libcxxabi_SOURCES}
       ../libc++abi/trunk/src/cxa_thread_atexit.cpp
     )
+  elseif(MINGW)
+    # mingw doesn't support weak symbol usage in above source code
+    # and triggers SIGSEGV/access violence in running
+    set(libcxxabi_SOURCES
+      ${libcxxabi_SOURCES}
+      mingw_cxa_thread_atexit.cpp
+    )
   endif()
   set(libcxxabi_DEFINITIONS
     ${libcxxabi_DEFINITIONS}
@@ -399,16 +436,15 @@ if (NOT MSVC)
     add_library(cxxabi SHARED ${libcxxabi_SOURCES})
   endif()
 
-  foreach(Definition ${libcxxabi_DEFINITIONS})
-    target_compile_definitions(cxxabi PRIVATE ${Definition})
-  endforeach()
-
+  target_compile_definitions(cxxabi PRIVATE ${libcxxabi_DEFINITIONS})
+  target_compile_definitions(cxxabi PRIVATE ${libcxx_DEFINITIONS})
   target_compile_options(cxxabi PRIVATE ${libcxx_CFLAGS})
 
   target_include_directories(cxxabi PRIVATE
     ../libc++
     ../libc++/trunk/src
-    ../libc++abi/trunk/include)
+    ../libc++abi/trunk/include
+    ../libc++abi/trunk/src)
 
   # unwind.h under /usr/include is outdated
   # there are four unwind.h under freebsd actually.. pick up llvm's libunwind header in priority
@@ -426,7 +462,11 @@ if (NOT MSVC)
   endif()
 
   target_compile_options(cxxabi PRIVATE "-frtti")
-  target_compile_options(cxxabi PRIVATE "-fexceptions")
+  if (libcxx_USE_EXCEPTIONS)
+    target_compile_options(cxxabi PRIVATE "-fexceptions")
+  else()
+    target_compile_options(cxxabi PRIVATE "-fno-exceptions")
+  endif()
 
   target_link_libraries(cxx cxxabi)
 endif()
@@ -481,7 +521,11 @@ if (MSVC)
   endif()
 else()
   target_compile_options(cxx PRIVATE "-frtti")
-  target_compile_options(cxx PRIVATE "-fexceptions")
+  if (libcxx_USE_EXCEPTIONS)
+    target_compile_options(cxx PRIVATE "-fexceptions")
+  else()
+    target_compile_options(cxx PRIVATE "-fno-exceptions")
+  endif()
 endif()
 
 include_directories(trunk/include)
