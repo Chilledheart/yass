@@ -250,6 +250,11 @@ jobs:
           ./tools/build -no-packaging $build_opts
       - name: Run tests
         run: |
+          if [ "${{ matrix.cxxruntime }}" = "libc++" ]; then
+            export build_opts="${build_opts} -use-libcxx=1"
+          else
+            export build_opts="${build_opts} -use-libcxx=0"
+          fi
           ./tools/build -nc -no-packaging $build_opts -run-test
   mac-compiler-compatible:
     runs-on: macos-latest
