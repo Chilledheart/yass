@@ -416,6 +416,13 @@ if (NOT MSVC)
       ${libcxxabi_SOURCES}
       ../libc++abi/trunk/src/cxa_thread_atexit.cpp
     )
+  elseif(MINGW)
+    # mingw doesn't support weak symbol usage in above source code
+    # and triggers SIGSEGV/access violence in running
+    set(libcxxabi_SOURCES
+      ${libcxxabi_SOURCES}
+      mingw_cxa_thread_atexit.cpp
+    )
   endif()
   set(libcxxabi_DEFINITIONS
     ${libcxxabi_DEFINITIONS}
@@ -436,7 +443,8 @@ if (NOT MSVC)
   target_include_directories(cxxabi PRIVATE
     ../libc++
     ../libc++/trunk/src
-    ../libc++abi/trunk/include)
+    ../libc++abi/trunk/include
+    ../libc++abi/trunk/src)
 
   # unwind.h under /usr/include is outdated
   # there are four unwind.h under freebsd actually.. pick up llvm's libunwind header in priority
