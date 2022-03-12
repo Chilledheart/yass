@@ -50,8 +50,12 @@ pacman -S mingw-w64-x86_64-gcc \
           git
 ```
 
-Notes: you might need to get GOROOT manually after install `mingw-w64-x86_64-go`
-package by running `export GOROOT=/c/msys64/mingw64/lib/go`
+Notes: you might need to get `GOROOT` manually after install `mingw-w64-x86_64-go`
+package by running:
+```
+export GOROOT=/mingw64/lib/go
+export GOPATH=/mingw64
+```
 
 4. Compiling the program.
 ```

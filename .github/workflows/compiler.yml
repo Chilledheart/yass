@@ -179,6 +179,50 @@ jobs:
 
           :SetNewVCToolsVersion
           set VCToolsVersion=
+  mingw64-compiler-compatible-msys2:
+    runs-on: windows-2019
+    if: ${{ github.event_name != 'release' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
+      - name: Populate build depedencies
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: mingw64
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-pkgconf
+            mingw-w64-x86_64-perl
+            mingw-w64-x86_64-go
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-nasm
+      - name: Build
+        shell: msys2 {0}
+        run: |
+          export GOROOT=/mingw64/lib/go
+          export GOPATH=/mingw64
+          export GOOS=windows
+          # this path comes from Install-Git.ps1
+          export PATH="/c/Program Files/Git/bin:${PATH}"
+          mkdir build
+          cd build
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_TESTS=on -DGUI=on ..
+          ninja -v yass yass_cli yass_server
+          ninja -v yass_test
+      - name: Run unittests
+        shell: msys2 {0}
+        run: |
+          cd build
+          ninja check
   linux-compiler-compatible:
     runs-on: ubuntu-18.04
     if: ${{ github.event_name != 'release' }}
