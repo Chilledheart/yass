@@ -166,8 +166,8 @@ else()
   set(COMPILER_GCC FALSE)
 endif()
 
-if (COMPILER_GCC AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6.1)
-  message(FATAL_ERROR "Requires GCC 6.1 or newer to compile")
+if (COMPILER_GCC AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.1)
+  message(FATAL_ERROR "Requires GCC 7.1 or newer to compile")
 endif()
 
 if (MSVC AND NOT COMPILER_CLANG)
@@ -1009,7 +1009,7 @@ endif()
 # C11/C++11 compiler flags setup.
 # --------------------------
 set(CMAKE_C_STANDARD 99)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 if (UNIX AND NOT APPLE)
   # Since we build with -std=c* and not -std=gnu*, _GNU_SOURCE will not be
@@ -1493,6 +1493,8 @@ endif()
 # *****************************************************************************************
 
 set(ABSL_PROPAGATE_CXX_STD "ON" CACHE STRING "")
+# override abseil-cpp options
+include_directories(third_party/abseil-cpp-override)
 # force win32 thread model for libc++ usage
 if (MINGW AND USE_LIBCXX)
   # force non-inline emulated-tls
