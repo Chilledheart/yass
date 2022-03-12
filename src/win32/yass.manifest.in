@@ -8,7 +8,7 @@
         type="win32"
         name="@YASS_APP_NAME@"
         version="@YASS_APP_FULL_VERSION@"
-        processorArchitecture="@CMAKE_SYSTEM_PROCESSOR@"
+        processorArchitecture="*"
     />
     <description>Yet Another Shadow Socket Application</description>
     <!-- To enable your application to use visual styles, you must use ComCtl32.dll version 6 or later. -->
