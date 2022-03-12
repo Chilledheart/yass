@@ -27,7 +27,6 @@ env:
 jobs:
   mingw64-release:
     runs-on: ubuntu-18.04
-    if: ${{ github.event_name != 'release' }}
     strategy:
       fail-fast: false
       matrix:
