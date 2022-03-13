@@ -246,7 +246,8 @@ struct negation : bool_constant<!static_cast<bool>(B::value)> {};
 // [1] https://en.cppreference.com/w/cpp/types/result_of
 // [2] https://wg21.link/meta.trans.other#lib:invoke_result
 template <typename Functor, typename... Args>
-using invoke_result = std::result_of<Functor && (Args && ...)>;
+// result_of is deprecated in c++17, so don't use it there.
+using invoke_result = std::invoke_result<Functor, Args...>;
 
 // Implementation of C++17's std::invoke_result_t.
 //

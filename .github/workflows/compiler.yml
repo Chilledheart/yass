@@ -86,8 +86,6 @@ jobs:
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
-          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set Platform=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
 
@@ -96,7 +94,7 @@ jobs:
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-          tools\build -run-test -no-packaging || exit /b
+          tools\build -use-libcxx=false -run-test -no-packaging || exit /b
 
           exit /b 0
 
@@ -163,8 +161,6 @@ jobs:
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
           set vsdevcmd=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
-          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set Platform=${{ matrix.arch }}
           set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
 
@@ -173,7 +169,7 @@ jobs:
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-          tools\build -run-test -no-packaging || exit /b
+          tools\build -use-libcxx=false -run-test -no-packaging || exit /b
 
           exit /b 0
 

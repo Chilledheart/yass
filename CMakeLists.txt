@@ -157,7 +157,7 @@ else()
 endif()
 
 if (COMPILER_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5.0)
-  messag(FATAL_ERROR "Requires Clang 5.0 or newer to compile")
+  message(FATAL_ERROR "Requires Clang 5.0 or newer to compile")
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -176,9 +176,8 @@ else()
   set(COMPILER_MSVC FALSE)
 endif()
 
-if (COMPILER_MSVC)
-  # TODO maybe we should support MSVC 2019 16.0 at least...
-  message(FATAL_ERROR "Microsoft Visual C++ is no longer supported.")
+if (COMPILER_MSVC AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16.0)
+  message(FATAL_ERROR "Microsoft Visual C++ beblow 2019 is no longer supported.")
 endif()
 
 if((${CMAKE_LINKER} MATCHES "lld") AND (${CMAKE_AR} MATCHES "llvm-lib" OR ${CMAKE_AR} MATCHES "llvm-ar"))
@@ -239,6 +238,10 @@ endif()
 
 if (USE_LLD OR USE_GOLD)
   set(USE_ICF ON)
+endif()
+
+if (COMPILER_MSVC AND USE_LIBCXX)
+  message(SEND_ERROR "Microsoft Visual C++ Compiler with libc++ support is not supported, please disabling it with -DUSE_LIBCXX=off")
 endif()
 
 include(config-ix)
@@ -533,6 +536,38 @@ if (NOT MSVC)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -no-canonical-prefixes")
   endif()
 else()
+  # Enable function-level linking.
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gy")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gy")
+
+  # Preserve previous PDB behavior.
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /FS")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FS")
+
+  # Some of our files are bigger than the regular limits.
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /bigobj")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
+
+  ## Set Source and Excutable character sets to UTF-8
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
+
+  if (COMPILER_CLANG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Zc:twoPhase")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:twoPhase")
+  endif()
+
+  # Work around crbug.com/526851, bug in VS 2015 RTM compiler.
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Zc:sizedDealloc-")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:sizedDealloc-")
+
+  # Do not export inline member functions. This makes component builds
+  # faster. This is similar to -fvisibility-inlines-hidden.
+  if (COMPILER_CLANG)
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zc:dllexportInlines-")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zc:dllexportInlines-")
+  endif()
+
   ## Optimization flags
   set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
@@ -1533,11 +1568,14 @@ add_definitions(-DASIO_NO_EXCEPTIONS)
 add_definitions(-DASIO_NO_TS_EXECUTORS)
 add_definitions(-DASIO_SEPARATE_COMPILATION)
 # forward libcxx present
-# TODO remove this once enable c++ 17 mode
-add_definitions(-DASIO_DISABLE_STD_EXPERIMENTAL_STRING_VIEW)
 # we control the visiblity
 add_definitions(-DASIO_DISABLE_VISIBILITY)
 include_directories(third_party/asio/asio/include SYSTEM)
+# both of asio and quiche use std::allocator<void>
+if (MSVC AND NOT USE_LIBCXX)
+  add_definitions(-D_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
+  add_definitions(-D_SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING)
+endif()
 add_library(asio OBJECT
   src/core/asio.hpp
   src/core/asio.cpp)
@@ -1599,7 +1637,9 @@ if (BUILD_TESTS)
     third_party/googletest/googletest
     third_party/googletest/googlemock)
 
-  target_compile_options(yass_gtest PRIVATE "-Wno-error")
+  if (NOT COMPILER_MSVC)
+    target_compile_options(yass_gtest PRIVATE "-Wno-error")
+  endif()
 endif()
 
 # *****************************************************************************************
@@ -1723,35 +1763,6 @@ if (COMPILER_GCC OR COMPILER_CLANG)
   if (COMPILER_CLANG)
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -Wno-unused-parameter")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter -Wno-inconsistent-missing-override")
-  endif()
-
-  if (MSVC)
-    # Enable function-level linking.
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gy")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gy")
-    # Preserve previous PDB behavior.
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /FS")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FS")
-    # Some of our files are bigger than the regular limits.
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /bigobj")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
-    ## Set Source and Excutable character sets to UTF-8
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
-
-    if (COMPILER_CLANG)
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Zc:twoPhase")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:twoPhase")
-    endif()
-
-    # Work around crbug.com/526851, bug in VS 2015 RTM compiler.
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Zc:sizedDealloc-")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:sizedDealloc-")
-
-    # Do not export inline member functions. This makes component builds
-    # faster. This is similar to -fvisibility-inlines-hidden.
-    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zc:dllexportInlines-")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zc:dllexportInlines-")
   endif()
 
   # required by asio
@@ -1932,6 +1943,8 @@ elseif (MSVC)
       "C4814" # VC2015 specific: in C++14 'constexpr' will not imply 'const'; consider explicitly specifying 'const'
       "C4702" # VC2015 specific: unreachable code
       "C4917" # VC2015,xp specific: a GUID can only be associated with a class, interface or namespace
+      "C4457" # VS2019 specific: declaration of 'message' hides function parameter
+      "C5039" # VS2019 specific: pointer or reference to potentially throwing function passed to extern C function under -EHc
       )
   set(MSVC_LEVEL4_WARNINGS_LIST
       # See https://connect.microsoft.com/VisualStudio/feedback/details/1217660/warning-c4265-when-using-functional-header
@@ -1942,8 +1955,8 @@ elseif (MSVC)
   string(REPLACE "C" " -w4" MSVC_LEVEL4_WARNINGS_STR
                             ${MSVC_LEVEL4_WARNINGS_LIST})
 
-  set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -utf-8 ${MSVC_DISABLED_WARNINGS_STR} ${MSVC_LEVEL4_WARNINGS_STR}")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -utf-8 ${MSVC_DISABLED_WARNINGS_STR} ${MSVC_LEVEL4_WARNINGS_STR}")
+  set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${MSVC_DISABLED_WARNINGS_STR} ${MSVC_LEVEL4_WARNINGS_STR}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MSVC_DISABLED_WARNINGS_STR} ${MSVC_LEVEL4_WARNINGS_STR}")
 
   # Currently, STL is not cleanly compiled with /Wall
   # VS 2017 and higher supports STL-only warning suppressions.
@@ -1955,8 +1968,6 @@ elseif (MSVC)
   if (NOT ENABLE_CLANG_TIDY)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -WX")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -WX")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wall -WX")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wall -WX")
   endif()
 endif()
 
