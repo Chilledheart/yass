@@ -276,6 +276,7 @@ jobs:
       - name: Build deb
         run: |
           export DEB_BUILD_PROFILES
+          export DH_QUIET
           sudo -E sudo -E -u "$USER" -g sbuild ./scripts/build-deb.sh
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
