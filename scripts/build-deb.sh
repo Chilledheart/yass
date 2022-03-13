@@ -70,7 +70,7 @@ EOF
     --dist "${HOST_DISTRO}-$BUILD_ARCH-${HOST_ARCH}" -j $(nproc) \
     --no-apt-update --no-apt-upgrade --no-apt-distupgrade \
     --no-run-lintian --no-run-piuparts --no-run-autopkgtest \
-    --nolog --verbose --build-dep-resolver=null \
+    --nolog --build-dep-resolver=null \
     --dpkg-source-opts="-i.*" \
     --debbuildopts="-d --host-arch $HOST_ARCH"
 else

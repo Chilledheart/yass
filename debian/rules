@@ -15,6 +15,12 @@ export HOME=/tmp
 
 CMAKE_OPTIONS += ${CMAKE_CROSS_TOOLCHAIN_FLAGS_NATIVE}
 
+# this fix is required before debhelper 11.4
+# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=907738
+ifneq ($(DH_QUIET),)
+CMAKE_OPTIONS += -DCMAKE_VERBOSE_MAKEFILE=OFF
+endif
+
 ifneq ($(filter nogui,$(DEB_BUILD_PROFILES)),)
 	CMAKE_OPTIONS += -DGUI=off
 else
