@@ -218,6 +218,7 @@ jobs:
       - name: Run unittests
         shell: msys2 {0}
         run: |
+          export "PATH=/c/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja:${PATH}"
           cd build
           ninja check
   linux-compiler-compatible:
