@@ -195,6 +195,9 @@ jobs:
           path: |
             %LocalAppData%\go-build
             ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
       - name: Populate build depedencies
         uses: msys2/setup-msys2@v2
         with:
