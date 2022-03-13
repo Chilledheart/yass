@@ -44,5 +44,5 @@ elseif (COMPILER_GCC)
     COMPILE_FLAGS "-Wno-missing-prototypes -Wno-implicit-fallthrough -Wno-format-nonliteral -Wno-sign-compare -Wno-strict-prototypes -Wno-old-style-definition -Wno-unused-variable")
 elseif (COMPILER_MSVC)
   set_target_properties(zlib PROPERTIES
-    COMPILE_FLAGS "/wd4131 /wd4255 /wd4245 /wd4244 /wd4100 /wd4702 /wd4127")
+    COMPILE_FLAGS "/wd4131 /wd4255 /wd4245 /wd4244 /wd4100 /wd4702 /wd4127 /wd4267")
 endif()

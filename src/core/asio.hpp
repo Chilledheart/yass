@@ -13,6 +13,15 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
+#if defined(_MSC_VER) && !defined(__clang__)
+#pragma push
+// #pragma warning(pop): likely mismatch, popping warning state pushed in
+// different file
+#pragma warning(disable : 5031)
+// pointer to potentially throwing function passed to extern C function
+#pragma warning(disable : 5039)
+#endif  // defined(_MSC_VER) && !defined(__clang__)
+
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wthread-safety-analysis"
@@ -26,6 +35,10 @@
 #endif  // defined(__clang__)
 
 #pragma GCC diagnostic pop
+
+#if defined(_MSC_VER) && !defined(__clang__)
+#pragma pop
+#endif  // defined(_MSC_VER) && !defined(__clang__)
 
 extern std::ostream& operator<<(std::ostream& o, asio::error_code);
 

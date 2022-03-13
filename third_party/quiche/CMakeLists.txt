@@ -1,4 +1,5 @@
 set(quiche_SRCS
+  ../quiche_platform_impl/quiche_containers_impl.h
   ../icu/icu_utf.h
   ../mozilla/url_parse.cc
   ../mozilla/url_parse.h
@@ -719,4 +720,7 @@ if (COMPILER_CLANG)
 elseif (COMPILER_GCC)
   set_target_properties(quiche PROPERTIES
     COMPILE_FLAGS "-Wno-missing-declarations -Wno-implicit-fallthrough -Wno-format-nonliteral -Wno-ignored-qualifiers -Wno-unused-variable -Wno-deprecated-copy -Wno-unused-but-set-variable -Wno-strict-overflow")
+elseif (COMPILER_MSVC)
+  set_target_properties(quiche PROPERTIES
+    COMPILE_FLAGS "/wd4267 /wd4244 /wd4068 /wd4305 /wd4309 /wd4334 /DQUIC_FRAME_DEBUG=0")
 endif()
