@@ -231,7 +231,7 @@ jobs:
       matrix:
         compiler: [gcc, clang]
         build_type: [Debug, Release]
-        cxxruntime: [libstdc++ lib++]
+        cxxruntime: [libstdc++, lib++]
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
