@@ -26,17 +26,17 @@ embedded devices and low end boxes.
 mkdir build
 cd build
 cmake3 -G Ninja -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DUSE_HOST_TOOLS=on -DGUI=on -DCLI=on -DSERVER=on ..
-ninja -v yass yass_cli yass_server
+ninja yass yass_cli yass_server
 cd ..
 
 %check
-ninja -C build -v check
+ninja -C build check
 
 %install
 cd build
 cmake3 -DCMAKE_INSTALL_PREFIX=%{buildroot}/usr ..
 rm -rf %{buildroot}
-ninja -v install
+ninja install
 cd ..
 
 %post

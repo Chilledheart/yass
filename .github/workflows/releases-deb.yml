@@ -24,6 +24,7 @@ on:
 env:
   CACHE_EPOCH: 5
   GOPROXY: direct
+  DH_QUIET: 1
 jobs:
   deb-release:
     runs-on: ubuntu-18.04

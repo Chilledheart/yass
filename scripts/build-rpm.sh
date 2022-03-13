@@ -31,8 +31,8 @@ mkdir -p $HOME/rpmbuild/SPECS
 cp -fv yass.spec $HOME/rpmbuild/SPECS
 
 pushd $HOME/rpmbuild/SPECS/
-rpmbuild -bs yass.spec
-rpmbuild -bb yass.spec
+rpmbuild -v -bs yass.spec
+rpmbuild -v -bb yass.spec
 popd
 
 # Rename rpms

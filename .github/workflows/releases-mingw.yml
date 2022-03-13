@@ -100,7 +100,7 @@ jobs:
           cmake -G Ninja -DGUI=on -DBUILD_TESTS=on .. \
             -DCMAKE_TOOLCHAIN_FILE="$PWD/../MinGW.cmake" -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DCROSS_TOOLCHAIN_FLAGS_NATIVE=\"-DCMAKE_TOOLCHAIN_FILE=$PWD/../Native.cmake\"
-          ninja -v yass_cli yass_server yass yass_test
+          ninja yass_cli yass_server yass yass_test
       - name: Packaging
         run: |
           cd build-mingw
