@@ -1733,8 +1733,10 @@ if (BUILD_TESTS)
     third_party/googletest/googletest
     third_party/googletest/googlemock)
 
-  if (NOT COMPILER_MSVC)
-    target_compile_options(yass_gtest PRIVATE "-Wno-error")
+  if (COMPILER_GCC)
+    target_compile_options(yass_gtest PRIVATE "-Wno-missing-declarations")
+  elseif(COMPILER_CLANG)
+    target_compile_options(yass_gtest PRIVATE "-Wno-missing-prototypes")
   endif()
 endif()
 
