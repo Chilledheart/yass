@@ -224,6 +224,7 @@ option(GUI_SANDBOX "Build against GUI sandbox (MAC Only)." OFF)
 option(BUILD_TESTS "Build with test." OFF)
 option(OPTIMIZED_PROTOC "Force protobuf compiler to be built with optimization" OFF)
 option(USE_LIBCXX "Build with libc++" ON)
+option(USE_MOLD "Build with mold linker" OFF)
 option(USE_LLD "Build with lld linker" OFF)
 option(USE_GOLD "Build with gold linker" OFF)
 option(USE_ICF "Build with icf" OFF)
@@ -238,6 +239,11 @@ endif()
 
 if (USE_LLD OR USE_GOLD)
   set(USE_ICF ON)
+endif()
+
+if (USE_MOLD)
+  set(USE_LLD OFF)
+  set(USE_GOLD OFF)
 endif()
 
 if (COMPILER_MSVC AND USE_LIBCXX)
@@ -460,7 +466,7 @@ if (NOT MSVC)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
   endif()
 
-  if (APPLE)
+  if (APPLE AND NOT USE_MOLD)
     set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,-no_data_in_code_info -Wl,-no_function_starts")
     set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-no_data_in_code_info -Wl,-no_function_starts")
   endif()
@@ -656,6 +662,59 @@ else()
 endif()
 
 ## adopt Thin LTO
+if (COMPILER_CLANG AND USE_MOLD AND UNIX AND NOT APPLE AND NOT ENABLE_CLANG_TIDY)
+  if (${CMAKE_BUILD_TYPE} MATCHES Release)
+    message(STATUS "Compiling with Thin LTO")
+    set(LTO_FLAVOUR "thin")
+  endif()
+  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto=thin")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto=thin")
+
+  if (NOT APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
+    # TODO(lgrey): Enable unit splitting for Mac when supported.
+    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -fsplit-lto-unit")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fsplit-lto-unit")
+  endif()
+
+  # TODO(gbiv): We ideally shouldn't need to specify this; ThinLTO
+  # should be able to better manage binary size increases on its own.
+  set(import_instr_limit 5)
+
+  if (MSVC)
+    # When using lld-link, the -flto option need only be added to the compile step
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -mllvm:-import-instr-limit=${import_instr_limit}")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -mllvm:-import-instr-limit=${import_instr_limit}")
+  else()
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -flto=thin")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -flto=thin")
+    # In ThinLTO builds, we run at most one link process at a time,
+    # and let it use all cores.
+    # TODO(thakis): Check if '=0' (that is, number of cores, instead
+    # of "all" which means number of hardware threads) is faster.
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 11.0)
+      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,--thinlto-jobs=all")
+      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,--thinlto-jobs=all")
+    else()
+      include(ProcessorCount)
+      ProcessorCount(CPU_NUMBER)
+      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,--thinlto-jobs=${CPU_NUMBER}")
+      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,--thinlto-jobs=${CPU_NUMBER}")
+    endif()
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,-mllvm,-import-instr-limit=${import_instr_limit}")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-mllvm,-import-instr-limit=${import_instr_limit}")
+  endif()
+
+  if (NOT ANDROID AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR APPLE))
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fwhole-program-vtables")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fwhole-program-vtables")
+    if (NOT MSVC)
+      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -fwhole-program-vtables")
+      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -fwhole-program-vtables")
+    endif()
+  endif()
+endif()
+
+## adopt Thin LTO
 if (COMPILER_CLANG AND USE_LLD AND NOT ENABLE_CLANG_TIDY)
   if (${CMAKE_BUILD_TYPE} MATCHES Release)
     message(STATUS "Compiling with Thin LTO")
@@ -707,8 +766,13 @@ if (COMPILER_CLANG AND USE_LLD AND NOT ENABLE_CLANG_TIDY)
       set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,--thinlto-jobs=${CPU_NUMBER}")
     endif()
     if (APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13.0)
-      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,-cache_path_lto,thinlto-cache")
-      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-cache_path_lto,thinlto-cache")
+      if (YASS_TARGET_IS_CROSSCOMPILE_HOST)
+        set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,-cache_path_lto,${CMAKE_CURRENT_BINARY_DIR}/../thinlto-cache")
+        set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-cache_path_lto,${CMAKE_CURRENT_BINARY_DIR}/../thinlto-cache")
+      else()
+        set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,-cache_path_lto,thinlto-cache")
+        set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-cache_path_lto,thinlto-cache")
+      endif()
       set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,--thinlto-cache-policy=${cache_policy}")
       set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,--thinlto-cache-policy=${cache_policy}")
     elseif (NOT APPLE)
@@ -850,6 +914,11 @@ if (NOT MSVC)
     # FIXME The ANDROID x86 toolchain currently has problems with stack-protector.
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector")
+  endif()
+
+  if (USE_MOLD)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=mold")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=mold")
   endif()
 
   if (USE_LLD)
