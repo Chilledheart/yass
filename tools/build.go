@@ -211,6 +211,21 @@ func getGNUTargetTypeAndArch(arch string) (string, string) {
 	return "", ""
 }
 
+func cmdStdinPipe(c *exec.Cmd) (*os.File, *os.File, error) {
+	if c.Stdin != nil {
+		return nil, nil, errors.New("exec: Stdin already set")
+	}
+	if c.Process != nil {
+		return nil, nil, errors.New("exec: cmdStdinPipe after process started")
+	}
+	pr, pw, err := os.Pipe()
+	if err != nil {
+		return nil, nil, err
+	}
+	c.Stdin = pr
+	return pw, pr, nil
+}
+
 func cmdStdoutStderrPipe(c *exec.Cmd) (*os.File, *os.File, error) {
 	if c.Stdout != nil {
 		return nil, nil, errors.New("exec: Stdout already set")
@@ -236,8 +251,15 @@ func cmdRun(args []string, check bool) {
 	if dryRunFlag {
 		return
 	}
-	var stdouterr, stdouterrPipe *os.File
+	var stdin, stdinPipe, stdouterr, stdouterrPipe *os.File
 	var err error
+	stdin, stdinPipe, err = cmdStdinPipe(cmd)
+	if err != nil {
+		if !check {
+			return
+		}
+		glog.Fatalf("%v", err)
+	}
 	stdouterr, stdouterrPipe, err = cmdStdoutStderrPipe(cmd)
 	if err != nil {
 		if !check {
@@ -246,6 +268,7 @@ func cmdRun(args []string, check bool) {
 		glog.Fatalf("%v", err)
 	}
 	err = cmd.Start()
+	stdinPipe.Close()
 	stdouterrPipe.Close()
 	if err != nil {
 		glog.Warningf("Command \"%v\" failed with %v", args, err)
@@ -267,6 +290,7 @@ func cmdRun(args []string, check bool) {
 		}
 		glog.Fatalf("%v", err)
 	}
+	stdin.Close()
 	stdouterr.Close()
 }
 
@@ -418,7 +442,7 @@ func renameByUnlink(src string, dst string) error {
 func buildStageExecuteBuildScript() {
 	glog.Info("BuildStage -- Execute Build Script")
 	glog.Info("======================================================================")
-	ninjaCmd := []string{"ninja", APPNAME, "-j", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag)}
+	ninjaCmd := []string{"ninja", "-j", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), APPNAME}
 	cmdRun(ninjaCmd, true)
 	if runTestFlag {
 		checkCmd := []string{"ninja", "check"}
