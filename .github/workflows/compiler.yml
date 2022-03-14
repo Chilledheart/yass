@@ -329,14 +329,15 @@ jobs:
         run: |
           cd third_party/libc++/trunk
           patch -p1 < ../gcc-mac.patch
-      - name: Populate depedencies
-        run: brew update && brew install ninja cmake p7zip gcc@9 gtk+3
       - name: Set build options
         run: |
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             echo "CC=gcc-9" >> $GITHUB_ENV
             echo "CXX=g++-9" >> $GITHUB_ENV
+            echo "GNU_DEPS=gcc@9 gtk+3" >> $GITHUB_ENV
           fi
+      - name: Populate depedencies
+        run: brew update && brew install ninja cmake p7zip ${{ env.GNU_DEPS }}
       - name: Build
         run: |
           # required by gcc lto
