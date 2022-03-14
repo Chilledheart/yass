@@ -229,7 +229,7 @@ jobs:
       matrix:
         compiler: [gcc, clang]
         build_type: [Debug, Release]
-        cxxruntime: [libstdc++, lib++]
+        cxxruntime: [libstdc++, libc++]
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
@@ -275,29 +275,26 @@ jobs:
           sudo apt-get update -qq
       - name: Populate depedencies
         run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build libgtk-3-dev
-      - name: Build
+      - name: Set build options
         run: |
           if [ "${{ matrix.compiler }}" = "clang" ]; then
-            export CC=$PWD/third_party/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clang
-            export CXX=$PWD/third_party/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clang++
+            echo "CC=${{ github.workspace }}/third_party/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clang" >> $GITHUB_ENV
+            echo "CXX=${{ github.workspace }}/third_party/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clang++" >> $GITHUB_ENV
           else
-            export CC=gcc
-            export CXX=g++
-          fi
+            echo CC=gcc >> $GITHUB_ENV
+            echo CXX=g++ >> $GITHUB_ENV
+          endif
           if [ "${{ matrix.cxxruntime }}" = "libc++" ]; then
-            export build_opts="${build_opts} -use-libcxx=1"
+            echo build_opts="${{ env.build_opts }} -use-libcxx=1" >> $GITHUB_ENV
           else
-            export build_opts="${build_opts} -use-libcxx=0"
+            echo build_opts="${{ env.build_opts }} -use-libcxx=0" >> $GITHUB_ENV
           fi
-          ./tools/build -no-packaging $build_opts
+      - name: Build
+        run: |
+          ./tools/build -no-packaging ${{ env.build_opts }}
       - name: Run tests
         run: |
-          if [ "${{ matrix.cxxruntime }}" = "libc++" ]; then
-            export build_opts="${build_opts} -use-libcxx=1"
-          else
-            export build_opts="${build_opts} -use-libcxx=0"
-          fi
-          ./tools/build -nc -no-packaging $build_opts -run-test
+          ./tools/build -nc -no-packaging ${{ env.build_opts }} -run-test
   mac-compiler-compatible:
     runs-on: macos-latest
     if: ${{ github.event_name != 'release' }}
@@ -333,22 +330,20 @@ jobs:
           cd third_party/libc++/trunk
           patch -p1 < ../gcc-mac.patch
       - name: Populate depedencies
-        run: brew install ninja cmake p7zip gcc@9 gtk+3
-      - name: Build
+        run: brew update && brew install ninja cmake p7zip gcc@9 gtk+3
+      - name: Set build options
         run: |
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            export CC=gcc-9
-            export CXX=g++-9
-          fi
+            echo "CC=gcc-9" >> $GITHUB_ENV
+            echo "CXX=g++-9" >> $GITHUB_ENV
+          endif
+      - name: Build
+        run: |
           # required by gcc lto
           ulimit -n 4096
           ./tools/build -no-packaging -macosx-universal-build=false
       - name: Run tests
         run: |
-          if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            export CC=gcc-9
-            export CXX=g++-9
-          fi
           # required by gcc lto
           ulimit -n 4096
           ./tools/build -nc -no-packaging -macosx-universal-build=false -run-test

@@ -99,10 +99,12 @@ jobs:
           ./scripts/install-sysroot.py --arch ${{ env.ARCH }}
       - name: Populate depedencies
         run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build
+      - name: Set clang environment
+        run: |
+          echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
+          echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
       - name: Build TGZ packages
         run: |
-          export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
-          export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
           ./tools/build --arch ${{ matrix.arch }} --system linux --sysroot $PWD/debian_sid_${{ matrix.arch }}-sysroot
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
