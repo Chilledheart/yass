@@ -2558,8 +2558,7 @@ if (GUI)
             --output-format human-readable-text
             --compile ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.app/Contents/Resources/Main.storyboardc
             ${MAIN_STORYBOARD}
-            COMMENT "Compiling Main storyboard"
-            USES_TERMINAL)
+            COMMENT "Compiling Main storyboard")
         endif()
 
         # adds to Copy Bundle Resources build phase
@@ -2641,7 +2640,6 @@ if (BUILD_TESTS)
       )
   add_custom_target(check
     COMMAND yass_test
-    COMMENT "yass unittests"
-    USES_TERMINAL
-    )
+    DEPENDS yass_test
+    COMMENT "yass unittests")
 endif()

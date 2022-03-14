@@ -268,6 +268,7 @@ func cmdRun(args []string, check bool) {
 		glog.Fatalf("%v", err)
 	}
 	err = cmd.Start()
+	stdin.Close()
 	stdinPipe.Close()
 	stdouterrPipe.Close()
 	if err != nil {
@@ -290,7 +291,6 @@ func cmdRun(args []string, check bool) {
 		}
 		glog.Fatalf("%v", err)
 	}
-	stdin.Close()
 	stdouterr.Close()
 }
 

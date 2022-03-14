@@ -90,8 +90,7 @@ function(build_native_tool target output_path_var)
                      COMMAND ${CMAKE_COMMAND} -E env "LIB=${CROSS_TOOLCHAIN_FLAGS_NATIVE_LIB}" ${build_cmd}
                      DEPENDS CONFIGURE_${PROJECT_NAME}_NATIVE ${ARG_DEPENDS}
                      WORKING_DIRECTORY "${${PROJECT_NAME}_NATIVE_BUILD}"
-                     COMMENT "Building native ${target}..."
-                     USES_TERMINAL)
+                     COMMENT "Building native ${target}...")
   set(${output_path_var} "${output_path}" PARENT_SCOPE)
 endfunction()
 
@@ -118,7 +117,6 @@ function(build_osx_arch target arch output_path_var)
                      COMMAND ${build_cmd}
                      DEPENDS CONFIGURE_${PROJECT_NAME}_OSX_${arch} ${ARG_DEPENDS}
                      WORKING_DIRECTORY "${${PROJECT_NAME}_OSX_${arch}_BUILD}"
-                     COMMENT "Building osx ${target} arch ${arch} ..."
-                     USES_TERMINAL)
+                     COMMENT "Building osx ${target} arch ${arch} ...")
   set(${output_path_var} "${output_path}" PARENT_SCOPE)
 endfunction()
