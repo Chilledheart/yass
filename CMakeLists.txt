@@ -872,6 +872,13 @@ if (COMPILER_GCC AND NOT WIN32 AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQ
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto=auto")
   set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -flto=auto")
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -flto=auto")
+  # gcc is known to fails at combining -std=c++14 and -std=c++17 objects (fixed in gcc 8.4)
+  # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=89358
+  # and another https://gcc.gnu.org/bugzilla/show_bug.cgi?id=84044 (fixed in gcc 9.1)
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.1)
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wno-error=odr")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wno-error=odr")
+  endif()
 endif()
 
 # skipping for coff binaries on ar fix
