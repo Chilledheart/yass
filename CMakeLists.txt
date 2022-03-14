@@ -2532,7 +2532,8 @@ if (GUI)
             --output-format human-readable-text
             --compile ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.app/Contents/Resources/Main.storyboardc
             ${MAIN_STORYBOARD}
-            COMMENT "Compiling Main storyboard")
+            COMMENT "Compiling Main storyboard"
+            USES_TERMINAL)
         endif()
 
         # adds to Copy Bundle Resources build phase

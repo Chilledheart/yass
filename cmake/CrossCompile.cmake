@@ -52,6 +52,7 @@ function(create_cross_target project_name target_name toolchain buildtype)
   add_custom_command(OUTPUT ${${project_name}_${target_name}_BUILD}/CMakeCache.txt
     COMMAND ${CMAKE_COMMAND} -E env "LIB=${CROSS_TOOLCHAIN_FLAGS_${target_name}_LIB}" ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}"
         -DYASS_TARGET_IS_CROSSCOMPILE_HOST=TRUE
+        -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
         -DCMAKE_MAKE_PROGRAM="${CMAKE_MAKE_PROGRAM}"
         ${CROSS_TOOLCHAIN_FLAGS_${target_name}} ${CMAKE_CURRENT_SOURCE_DIR}
         ${CROSS_TOOLCHAIN_FLAGS_${project_name}_${target_name}}
