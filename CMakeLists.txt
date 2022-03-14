@@ -237,11 +237,13 @@ elseif (COMPILER_GCC AND NOT WIN32)
   set(USE_GOLD ON)
 endif()
 
-if (USE_LLD OR USE_GOLD)
+if (USE_MOLD OR USE_LLD OR USE_GOLD)
   set(USE_ICF ON)
 endif()
 
 if (USE_MOLD)
+  # seems incompatible with mold, filed bug issue at rui314/mold#398
+  set(USE_ICF OFF)
   set(USE_LLD OFF)
   set(USE_GOLD OFF)
 endif()
@@ -676,15 +678,7 @@ if (COMPILER_CLANG AND USE_MOLD AND UNIX AND NOT APPLE AND NOT ENABLE_CLANG_TIDY
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fsplit-lto-unit")
   endif()
 
-  # TODO(gbiv): We ideally shouldn't need to specify this; ThinLTO
-  # should be able to better manage binary size increases on its own.
-  set(import_instr_limit 5)
-
-  if (MSVC)
-    # When using lld-link, the -flto option need only be added to the compile step
-    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -mllvm:-import-instr-limit=${import_instr_limit}")
-    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -mllvm:-import-instr-limit=${import_instr_limit}")
-  else()
+  if (NOT MSVC)
     set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -flto=thin")
     set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -flto=thin")
     # In ThinLTO builds, we run at most one link process at a time,
@@ -700,8 +694,6 @@ if (COMPILER_CLANG AND USE_MOLD AND UNIX AND NOT APPLE AND NOT ENABLE_CLANG_TIDY
       set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,--thinlto-jobs=${CPU_NUMBER}")
       set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,--thinlto-jobs=${CPU_NUMBER}")
     endif()
-    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,-mllvm,-import-instr-limit=${import_instr_limit}")
-    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-mllvm,-import-instr-limit=${import_instr_limit}")
   endif()
 
   if (NOT ANDROID AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR APPLE))
