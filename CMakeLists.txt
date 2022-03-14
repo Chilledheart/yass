@@ -228,6 +228,7 @@ option(USE_MOLD "Build with mold linker" OFF)
 option(USE_LLD "Build with lld linker" OFF)
 option(USE_GOLD "Build with gold linker" OFF)
 option(USE_ICF "Build with icf" OFF)
+option(USE_LTO "Build with LTO" OFF)
 option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
 
 # skipping apple clang
@@ -246,6 +247,41 @@ if (USE_MOLD)
   set(USE_ICF OFF)
   set(USE_LLD OFF)
   set(USE_GOLD OFF)
+endif()
+
+if (COMPILER_CLANG AND USE_MOLD AND UNIX AND NOT APPLE AND NOT ENABLE_CLANG_TIDY)
+  if (${CMAKE_BUILD_TYPE} MATCHES Release)
+    message(STATUS "Compiling with Thin LTO")
+    set(LTO ON)
+    set(LTO_FLAVOUR "thin")
+  endif()
+endif()
+
+if (COMPILER_CLANG AND USE_LLD AND NOT ENABLE_CLANG_TIDY)
+  if (${CMAKE_BUILD_TYPE} MATCHES Release)
+    message(STATUS "Compiling with Thin LTO")
+    set(LTO ON)
+    set(LTO_FLAVOUR "thin")
+  endif()
+endif()
+
+if (COMPILER_CLANG AND USE_GOLD AND NOT ENABLE_CLANG_TIDY)
+  if (${CMAKE_BUILD_TYPE} MATCHES Release)
+    message(STATUS "Compiling with Thin LTO")
+    set(LTO ON)
+    set(LTO_FLAVOUR "thin")
+  endif()
+endif()
+
+## adopt Full LTO
+## old gcc has regression on c++17 mode
+## https://gcc.gnu.org/bugzilla/show_bug.cgi?id=81004
+if (COMPILER_GCC AND NOT WIN32 AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.3.1)
+  if (${CMAKE_BUILD_TYPE} MATCHES Release)
+    message(STATUS "Compiling with Thin LTO")
+    set(LTO ON)
+    set(LTO_FLAVOUR "full")
+  endif()
 endif()
 
 if (COMPILER_MSVC AND USE_LIBCXX)
@@ -483,26 +519,33 @@ if (NOT MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-standalone-debug")
   endif()
 
-  # clang defaults to DWARF2 on macOS unless mac_deployment_target is
-  # at least 10.11.
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gdwarf-4")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-4")
+  # gcc lto doesn't like coff/macho with debuginfo
+  #
+  # And old gcc doesn't works well with "-flto" and "-g" options until GCC 8.0
+  # And it doesn't play well on other file formats other than ELF
+  # Checked with https://gcc.gnu.org/onlinedocs/gcc-8.1.0/gcc/Optimize-Options.html#Optimize-Options
+  if (NOT (COMPILER_GCC AND LTO_FLAVOUR AND (APPLE OR WIN32 OR CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0)))
+    # clang defaults to DWARF2 on macOS unless mac_deployment_target is
+    # at least 10.11.
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gdwarf-4")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-4")
 
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g2")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g2")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g2")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g2")
 
-  # generate a complete set of debugging symbols for your code.
-  # The linker uses this extra debugging information to dead strip the executable.
-  if (APPLE)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gfull")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gfull")
-  endif()
+    # generate a complete set of debugging symbols for your code.
+    # The linker uses this extra debugging information to dead strip the executable.
+    if (APPLE)
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gfull")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gfull")
+    endif()
 
-  # gcc generates dwarf-aranges by default on -g1 and -g2. On clang it has
-  # to be manually enabled
-  if (COMPILER_CLANG)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gdwarf-aranges")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-aranges")
+    # gcc generates dwarf-aranges by default on -g1 and -g2. On clang it has
+    # to be manually enabled
+    if (COMPILER_CLANG)
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gdwarf-aranges")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-aranges")
+    endif()
   endif()
 
   if (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
@@ -665,10 +708,6 @@ endif()
 
 ## adopt Thin LTO
 if (COMPILER_CLANG AND USE_MOLD AND UNIX AND NOT APPLE AND NOT ENABLE_CLANG_TIDY)
-  if (${CMAKE_BUILD_TYPE} MATCHES Release)
-    message(STATUS "Compiling with Thin LTO")
-    set(LTO_FLAVOUR "thin")
-  endif()
   set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto=thin")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto=thin")
 
@@ -708,10 +747,6 @@ endif()
 
 ## adopt Thin LTO
 if (COMPILER_CLANG AND USE_LLD AND NOT ENABLE_CLANG_TIDY)
-  if (${CMAKE_BUILD_TYPE} MATCHES Release)
-    message(STATUS "Compiling with Thin LTO")
-    set(LTO_FLAVOUR "thin")
-  endif()
   set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto=thin")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto=thin")
 
@@ -788,11 +823,8 @@ if (COMPILER_CLANG AND USE_LLD AND NOT ENABLE_CLANG_TIDY)
   endif()
 endif()
 
+## adopt Thin LTO
 if (COMPILER_CLANG AND USE_GOLD AND NOT ENABLE_CLANG_TIDY)
-  if (${CMAKE_BUILD_TYPE} MATCHES Release)
-    message(STATUS "Compiling with Thin LTO")
-    set(LTO_FLAVOUR "thin")
-  endif()
   set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto=thin")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto=thin")
 
@@ -832,16 +864,10 @@ if (COMPILER_CLANG AND USE_GOLD AND NOT ENABLE_CLANG_TIDY)
   endif()
 endif()
 
-## adopt LTO
-## Old gcc doesn't works well with "-flto" and "-g" options until GCC 8.0
-## And it doesn't play well on other file formats other than ELF
-## Checked with https://gcc.gnu.org/onlinedocs/gcc-8.1.0/gcc/Optimize-Options.html#Optimize-Options
-## and https://gcc.gnu.org/onlinedocs/gcc-7.5.0/gcc/Optimize-Options.html#Optimize-Options
-if (COMPILER_GCC AND NOT APPLE AND NOT WIN32 AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
-  if (${CMAKE_BUILD_TYPE} MATCHES Release)
-    message(STATUS "Compiling with LTO")
-    set(LTO_FLAVOUR "full")
-  endif()
+## adopt Full LTO
+## old gcc has regression on c++17 mode
+## https://gcc.gnu.org/bugzilla/show_bug.cgi?id=81004
+if (COMPILER_GCC AND NOT WIN32 AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.3.1)
   set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto=auto")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto=auto")
   set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -flto=auto")
@@ -1484,7 +1510,7 @@ elseif (GUI)
     else()
       set(GUI_FLAVOUR "gtk+")
       set(GUI_USE_FILE "")
-      set(GUI_INCLUDE_DIRS ${GTK_INCLUDE_DIRS})
+      set(GUI_INCLUDE_DIRS ${GTK_INCLUDE_DIRS} ${FONTCONFIG_INCLUDE_DIRS})
       set(GUI_DEFINITIONS "")
       set(GUI_C_CXX_FLAGS ${GTK_CFLAGS} ${GTK_CFLAGS_OTHER} ${FONTCONFIG_CFLAGS})
       set(GUI_LIBRARY_DIRS ${GTK_LIBRARY_DIRS} ${FONTCONFIG_LIBRARY_DIRS})

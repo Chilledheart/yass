@@ -340,6 +340,8 @@ jobs:
             export CC=gcc-9
             export CXX=g++-9
           fi
+          # required by gcc lto
+          ulimit -n 4096
           ./tools/build -no-packaging -macosx-universal-build=false
       - name: Run tests
         run: |
@@ -347,4 +349,6 @@ jobs:
             export CC=gcc-9
             export CXX=g++-9
           fi
+          # required by gcc lto
+          ulimit -n 4096
           ./tools/build -nc -no-packaging -macosx-universal-build=false -run-test
