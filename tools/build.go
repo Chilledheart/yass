@@ -108,7 +108,7 @@ func InitFlag() {
 	flag.BoolVar(&clangTidyModeFlag, "clang-tidy-mode", getEnvBool("ENABLE_CLANG_TIDY", false), "Enable Clang Tidy Build")
 	flag.StringVar(&clangTidyExecutablePathFlag, "clang-tidy-executable-path", getEnv("CLANG_TIDY_EXECUTABLE", ""), "Path to clang-tidy, only used by Clang Tidy Build")
 
-	flag.StringVar(&macosxVersionMinFlag, "macosx-version-min", getEnv("MACOSX_VERSION_MIN", "10.10"), "Set Mac OS X deployment target, such as 10.9")
+	flag.StringVar(&macosxVersionMinFlag, "macosx-version-min", getEnv("MACOSX_DEPLOYMENT_TARGET", "10.10"), "Set Mac OS X deployment target, such as 10.9")
 	flag.BoolVar(&macosxUniversalBuildFlag, "macosx-universal-build", getEnvBool("ENABLE_OSX_UNIVERSAL_BUILD", true), "Enable Mac OS X Universal Build")
 	flag.StringVar(&macosxCodeSignIdentityFlag, "macosx-codesign-identity", getEnv("CODESIGN_IDENTITY", "-"), "Set Mac OS X CodeSign Identity")
 
