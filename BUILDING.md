@@ -2,11 +2,11 @@
 
 ## Windows
 
-1. Make sure you use [Visual Studio][visualstudio] 2017 or later.
+1. Make sure you use [Visual Studio][visualstudio] 2019 or later.
 
   * Make sure you have `Visual Studio with C++` selected from download page.
 
-2. Make sure you have Perl, [CMake] (3.8 or later), [Ninja], [Golang] and [NASM] installed and put them in `PATH`.
+2. Make sure you have Perl, [CMake] (3.12 or later), [Ninja], [Golang] and [NASM] installed and put them in `PATH`.
 
   * A recent version of Perl is required.
     On Windows, [Active State Perl](http://www.activestate.com/activeperl/) has been reported to work, as has MSYS Perl.
