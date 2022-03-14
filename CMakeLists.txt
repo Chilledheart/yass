@@ -1128,10 +1128,12 @@ if (COMPILER_GCC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
 endif()
 
-# C11/C++11 compiler flags setup.
+# C11/C++17 compiler flags setup.
 # --------------------------
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 if (UNIX AND NOT APPLE)
   # Since we build with -std=c* and not -std=gnu*, _GNU_SOURCE will not be
