@@ -19,6 +19,12 @@ set(libcxx_ABI_UNSTABLE ON)
 # experimental, turn off to build libc++ without exceptions
 set(libcxx_USE_EXCEPTIONS ON)
 
+# gcc's lto implementation is buggy and cannot find std::terminate if libc++ built with -fexceptions while used with
+# -fno-exceptions, setting to OFF
+if (COMPILER_GCC AND LTO_FLAVOUR)
+  set(libcxx_USE_EXCEPTIONS OFF)
+endif()
+
 #The system libc++ on Mac doesn't have aligned allocation in C++17.
 if (APPLE)
   add_definitions(-D_LIBCPP_HAS_NO_ALIGNED_ALLOCATION)
