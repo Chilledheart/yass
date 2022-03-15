@@ -18,6 +18,7 @@ ABSL_FLAG(std::string, congestion_algorithm, "bbr", "TCP Congestion Algorithm");
 ABSL_FLAG(bool, tcp_fastopen, false, "TCP fastopen");
 ABSL_FLAG(bool, tcp_fastopen_connect, false, "TCP fastopen connect");
 ABSL_FLAG(int32_t, connect_timeout, 60, "Connect timeout (Linux only)");
+ABSL_FLAG(int32_t, tcp_connection_timeout, 75000, "TCP connection timeout (BSD-like only)");
 ABSL_FLAG(int32_t, tcp_user_timeout, 300, "TCP user timeout (Linux only)");
 ABSL_FLAG(int32_t, so_linger_timeout, 30, "SO Linger timeout");
 
@@ -141,6 +142,28 @@ void SetTCPFastOpenConnect(asio::ip::tcp::socket::native_handle_type handle,
     VLOG(3) << "Applied current tcp_option: tcp_fastopen_connect";
   }
 #endif  // TCP_FASTOPEN_CONNECT
+}
+
+void SetTCPConnectionTimeout(asio::ip::tcp::acceptor::native_handle_type handle,
+                             asio::error_code& ec) {
+  (void)handle;
+  ec = asio::error_code();
+  if (!absl::GetFlag(FLAGS_tcp_connection_timeout)) {
+    return;
+  }
+#if defined(TCP_CONNECTIONTIMEOUT)
+  int fd = handle;
+  unsigned int opt = absl::GetFlag(FLAGS_tcp_connection_timeout);
+  int ret = setsockopt(fd, IPPROTO_TCP, TCP_CONNECTIONTIMEOUT, &opt, sizeof(opt));
+  if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
+    ec = asio::error_code(errno, asio::error::get_system_category());
+    VLOG(2) << "TCP Connection Timeout is not supported on this platform";
+    absl::SetFlag(&FLAGS_tcp_connection_timeout, 0);
+  } else {
+    VLOG(3) << "Applied current tcp_option: tcp_connection_timeout "
+            << absl::GetFlag(FLAGS_tcp_connection_timeout);
+  }
+#endif  // TCP_CONNECTIONTIMEOUT
 }
 
 void SetTCPUserTimeout(asio::ip::tcp::acceptor::native_handle_type handle,

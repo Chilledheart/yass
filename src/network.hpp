@@ -17,6 +17,7 @@ ABSL_DECLARE_FLAG(std::string, congestion_algorithm);
 ABSL_DECLARE_FLAG(bool, tcp_fastopen);
 ABSL_DECLARE_FLAG(bool, tcp_fastopen_connect);
 ABSL_DECLARE_FLAG(int32_t, connect_timeout);
+ABSL_DECLARE_FLAG(int32_t, tcp_connection_timeout);
 ABSL_DECLARE_FLAG(int32_t, tcp_user_timeout);
 ABSL_DECLARE_FLAG(int32_t, so_linger_timeout);
 ABSL_DECLARE_FLAG(int32_t, so_snd_buffer);
@@ -33,6 +34,9 @@ void SetTCPFastOpen(asio::ip::tcp::acceptor::native_handle_type handle,
 
 void SetTCPFastOpenConnect(asio::ip::tcp::socket::native_handle_type handle,
                            asio::error_code&);
+
+void SetTCPConnectionTimeout(asio::ip::tcp::socket::native_handle_type handle,
+                             asio::error_code&);
 
 void SetTCPUserTimeout(asio::ip::tcp::socket::native_handle_type handle,
                        asio::error_code&);

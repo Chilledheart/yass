@@ -114,6 +114,7 @@ class stream {
     }
     connected_ = true;
     SetTCPCongestion(socket_.native_handle(), ec);
+    SetTCPConnectionTimeout(socket_.native_handle(), ec);
     SetTCPUserTimeout(socket_.native_handle(), ec);
     SetSocketLinger(&socket_, ec);
     SetSocketSndBuffer(&socket_, ec);

@@ -135,6 +135,7 @@ class ServiceFactory {
                       asio::ip::tcp::socket socket) {
       if (!ec) {
         SetTCPCongestion(socket.native_handle(), ec);
+        SetTCPConnectionTimeout(socket.native_handle(), ec);
         SetTCPUserTimeout(socket.native_handle(), ec);
         SetSocketLinger(&socket, ec);
         SetSocketSndBuffer(&socket, ec);
