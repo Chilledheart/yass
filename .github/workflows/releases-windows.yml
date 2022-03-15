@@ -82,6 +82,7 @@ jobs:
           set VCToolsVersion=14.16
           set Winsdk=10.0.19041.0
           set "WindowsSDKVersion=%Winsdk%\"
+          set "BuildOps=-run-test"
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
@@ -95,12 +96,13 @@ jobs:
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-          tools\build || exit /b
+          tools\build %BuildOps% || exit /b
 
           exit /b 0
 
           :SetNewVCToolsVersion
           set VCToolsVersion=
+          set BuildOps=
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
@@ -182,7 +184,7 @@ jobs:
 
           call "scripts\callxp-%Platform%.cmd"
 
-          tools\build || exit /b
+          tools\build -run-test || exit /b
 
           goto :eof
       - name: Upload dist tarball (including debuginfo)
