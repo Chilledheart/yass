@@ -216,6 +216,7 @@ pkg install -y \
 ```
 
 Notes: please install src.txz package of system otherwise you might need to create symbolics of unwind.h like below:
+Notes2: not required since FreeBSD 13.1
 ```
 ln -sf /usr/include/c++/v1/unwind.h /usr/include/unwind.h
 ln -sf /usr/include/c++/v1/unwind-arm.h /usr/include/unwind-arm.h
