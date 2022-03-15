@@ -983,7 +983,6 @@ if (UNIX AND NOT APPLE)
     add_definitions(-D_LARGEFILE64_SOURCE)
   endif()
 
-
   # unwind-tables
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -funwind-tables")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -funwind-tables")
@@ -1944,7 +1943,7 @@ if (COMPILER_GCC OR COMPILER_CLANG)
 
   # Thread safety analysis. See base/thread_annotations.h and
   # https://clang.llvm.org/docs/ThreadSafetyAnalysis.html
-  if (COMPILER_CLANG)
+  if (COMPILER_CLANG AND NOT CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wthread-safety")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wthread-safety")
   endif()
