@@ -1,5 +1,18 @@
 set(quiche_SRCS
-  ../quiche_platform_impl/quiche_containers_impl.h
+  overrides/quiche_platform_impl/quiche_containers_impl.h
+  overrides/quiche_platform_impl/quiche_mem_slice_impl.h
+  overrides/quiche_platform_impl/quic_flags_impl.h
+  overrides/quiche_platform_impl/quic_flags_impl.cc
+  overrides/quiche_platform_impl/quiche_flags_impl.h
+  overrides/quiche_platform_impl/quiche_flags_impl.cc
+  overrides/quiche_platform_impl/quiche_mutex_impl.h
+  overrides/quiche_platform_impl/quiche_mutex_impl.cc
+  overrides/quiche_platform_impl/quiche_time_utils_impl.h
+  overrides/quiche_platform_impl/quiche_time_utils_impl.cc
+  overrides/quiche_platform_impl/quiche_logging_impl.h
+  overrides/quiche_platform_impl/quiche_bug_tracker_impl.h
+  ../chromium/net/quic/platform/impl/quic_hostname_utils_impl.cc
+  ../chromium/net/quic/platform/impl/quic_hostname_utils_impl.h
   ../icu/icu_utf.h
   ../mozilla/url_parse.cc
   ../mozilla/url_parse.h
@@ -14,14 +27,6 @@ set(quiche_SRCS
   ../chromium/net/base/net_errors.cc
   ../chromium/net/base/net_errors.h
   ../chromium/net/base/net_error_list.h
-  ../chromium/net/quic/platform/impl/quic_hostname_utils_impl.cc
-  ../chromium/net/quic/platform/impl/quic_hostname_utils_impl.h
-  ../chromium/net/quic/platform/impl/quic_flags_impl.cc
-  ../chromium/net/quic/platform/impl/quic_mem_slice_impl.cc
-  ../chromium/net/quic/platform/impl/quic_mutex_impl.cc
-  ../chromium/net/quic/platform/impl/quic_mutex_impl.h
-  ../chromium/net/quiche/common/platform/impl/quiche_flags_impl.cc
-  ../chromium/net/quiche/common/platform/impl/quiche_time_utils_impl.cc
   ../chromium/url/gurl.cc
   ../chromium/url/gurl.h
   ../chromium/url/scheme_host_port.cc
@@ -58,12 +63,19 @@ set(quiche_SRCS
   src/common/platform/api/quiche_flag_utils.h
   src/common/platform/api/quiche_flags.h
   src/common/platform/api/quiche_logging.h
+  src/common/platform/api/quiche_mem_slice.h
   src/common/platform/api/quiche_prefetch.h
   src/common/platform/api/quiche_thread_local.h
   src/common/platform/api/quiche_time_utils.h
   src/common/platform/api/quiche_url_utils.h
+  src/common/platform/api/quiche_iovec.h
+  src/common/platform/api/quiche_mutex.cc
+  src/common/platform/api/quiche_mutex.h
+  src/common/platform/api/quiche_reference_counted.h
   src/common/platform/default/quiche_platform_impl/quiche_prefetch_impl.h
   src/common/print_elements.h
+  src/common/quiche_buffer_allocator.cc
+  src/common/quiche_buffer_allocator.h
   src/common/quiche_circular_deque.h
   src/common/quiche_data_reader.cc
   src/common/quiche_data_reader.h
@@ -71,8 +83,12 @@ set(quiche_SRCS
   src/common/quiche_data_writer.h
   src/common/quiche_endian.h
   src/common/quiche_linked_hash_map.h
+  src/common/quiche_mem_slice_storage.cc
+  src/common/quiche_mem_slice_storage.h
   src/common/quiche_text_utils.cc
   src/common/quiche_text_utils.h
+  src/common/simple_buffer_allocator.cc
+  src/common/simple_buffer_allocator.h
   src/http2/adapter/data_source.h
   src/http2/adapter/event_forwarder.cc
   src/http2/adapter/event_forwarder.h
@@ -263,8 +279,6 @@ set(quiche_SRCS
   src/quic/core/crypto/channel_id.h
   src/quic/core/crypto/client_proof_source.cc
   src/quic/core/crypto/client_proof_source.h
-  src/quic/core/crypto/common_cert_set.cc
-  src/quic/core/crypto/common_cert_set.h
   src/quic/core/crypto/crypto_framer.cc
   src/quic/core/crypto/crypto_framer.h
   src/quic/core/crypto/crypto_handshake.cc
@@ -320,6 +334,8 @@ set(quiche_SRCS
   src/quic/core/crypto/tls_server_connection.h
   src/quic/core/crypto/transport_parameters.cc
   src/quic/core/crypto/transport_parameters.h
+  src/quic/core/crypto/web_transport_fingerprint_proof_verifier.cc
+  src/quic/core/crypto/web_transport_fingerprint_proof_verifier.h
   src/quic/core/frames/quic_ack_frame.cc
   src/quic/core/frames/quic_ack_frame.h
   src/quic/core/frames/quic_ack_frequency_frame.cc
@@ -469,8 +485,6 @@ set(quiche_SRCS
   src/quic/core/quic_bandwidth.cc
   src/quic/core/quic_bandwidth.h
   src/quic/core/quic_blocked_writer_interface.h
-  src/quic/core/quic_buffer_allocator.cc
-  src/quic/core/quic_buffer_allocator.h
   src/quic/core/quic_chaos_protector.cc
   src/quic/core/quic_chaos_protector.h
   src/quic/core/quic_clock.cc
@@ -549,8 +563,6 @@ set(quiche_SRCS
   src/quic/core/quic_server_id.h
   src/quic/core/quic_session.cc
   src/quic/core/quic_session.h
-  src/quic/core/quic_simple_buffer_allocator.cc
-  src/quic/core/quic_simple_buffer_allocator.h
   src/quic/core/quic_socket_address_coder.cc
   src/quic/core/quic_socket_address_coder.h
   src/quic/core/quic_stream.cc
@@ -607,33 +619,15 @@ set(quiche_SRCS
   src/quic/platform/api/quic_flags.h
   src/quic/platform/api/quic_hostname_utils.cc
   src/quic/platform/api/quic_hostname_utils.h
-  src/quic/platform/api/quic_iovec.h
   src/quic/platform/api/quic_ip_address.cc
   src/quic/platform/api/quic_ip_address.h
   src/quic/platform/api/quic_ip_address_family.h
   src/quic/platform/api/quic_logging.h
-  src/quic/platform/api/quic_mem_slice.h
-  src/quic/platform/api/quic_mem_slice_storage.cc
-  src/quic/platform/api/quic_mem_slice_storage.h
-  src/quic/platform/api/quic_mutex.cc
-  src/quic/platform/api/quic_mutex.h
-  src/quic/platform/api/quic_reference_counted.h
   src/quic/platform/api/quic_server_stats.h
-  src/quic/platform/api/quic_sleep.h
   src/quic/platform/api/quic_socket_address.cc
   src/quic/platform/api/quic_socket_address.h
   src/quic/platform/api/quic_stack_trace.h
   src/quic/platform/api/quic_thread.h
-  src/quic/quic_transport/quic_transport_client_session.cc
-  src/quic/quic_transport/quic_transport_client_session.h
-  src/quic/quic_transport/quic_transport_protocol.h
-  src/quic/quic_transport/quic_transport_server_session.cc
-  src/quic/quic_transport/quic_transport_server_session.h
-  src/quic/quic_transport/quic_transport_session_interface.h
-  src/quic/quic_transport/quic_transport_stream.cc
-  src/quic/quic_transport/quic_transport_stream.h
-  src/quic/quic_transport/web_transport_fingerprint_proof_verifier.cc
-  src/quic/quic_transport/web_transport_fingerprint_proof_verifier.h
   src/spdy/core/hpack/hpack_constants.cc
   src/spdy/core/hpack/hpack_constants.h
   src/spdy/core/hpack/hpack_decoder_adapter.cc
@@ -695,6 +689,7 @@ add_library(quiche OBJECT
 target_include_directories(quiche PUBLIC
   ${CMAKE_CURRENT_BINARY_DIR}/src
   ${CMAKE_CURRENT_BINARY_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/overrides
   ${CMAKE_CURRENT_SOURCE_DIR}/../chromium
   ${CMAKE_CURRENT_SOURCE_DIR}/..
   ${CMAKE_CURRENT_SOURCE_DIR}/../../src
