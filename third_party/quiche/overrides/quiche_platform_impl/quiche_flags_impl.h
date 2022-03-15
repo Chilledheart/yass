@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef NET_QUICHE_COMMON_PLATFORM_IMPL_QUICHE_FLAGS_IMPL_H_
-#define NET_QUICHE_COMMON_PLATFORM_IMPL_QUICHE_FLAGS_IMPL_H_
+#ifndef NET_QUICHE_OVERRIDES_QUICHE_PLATFORM_IMPL_QUICHE_FLAGS_IMPL_H_
+#define NET_QUICHE_OVERRIDES_QUICHE_PLATFORM_IMPL_QUICHE_FLAGS_IMPL_H_
 
 #include <cstdint>
 #include <map>
@@ -39,4 +39,4 @@
 #define SetQuicheRestartFlagImpl(module, flag, value) \
   SetQuicheFlag(RESTART_FLAG(flag), value)
 
-#endif  // NET_QUICHE_COMMON_PLATFORM_IMPL_QUICHE_FLAGS_IMPL_H_
+#endif  // NET_QUICHE_OVERRIDES_QUICHE_PLATFORM_IMPL_QUICHE_FLAGS_IMPL_H_

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "net/quic/platform/impl/quic_flags_impl.h"
+#include "quiche_platform_impl/quic_flags_impl.h"
 
 #include <stdio.h>
 #include <algorithm>
@@ -51,21 +51,3 @@
 #undef MSVC_BUG
 #undef DEFINE_QUIC_PROTOCOL_FLAG_TWO_VALUES
 #undef DEFINE_QUIC_PROTOCOL_FLAG_SINGLE_VALUE
-
-std::vector<std::string> QuicParseCommandLineFlagsImpl(
-    const char* usage,
-    int argc,
-    const char* const* argv) {
-  auto args = absl::ParseCommandLine(argc, const_cast<char**>(argv));
-  std::vector<std::string> result;
-  result.reserve(args.size());
-  for (char* arg : args) {
-    result.emplace_back(arg);
-  }
-
-  return result;
-}
-
-void QuicPrintCommandLineFlagHelpImpl(const char* usage) {
-  fprintf(stderr, "%s", usage);
-}
