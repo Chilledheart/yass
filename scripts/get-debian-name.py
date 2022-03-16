@@ -8,6 +8,7 @@ def check_string_output(command):
 # https://wiki.debian.org/DebianReleases
 # https://wiki.ubuntu.com/Releases
 codenames = {
+  "trusty" : "ubuntu-14.04-trusty",
   "xenial" : "ubuntu-16.04-xenial",
   "bionic" : "ubuntu-18.04-bionic",
   "focal" : "ubuntu-20.04-focal",
