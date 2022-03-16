@@ -29,6 +29,7 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
   * [Screenshot on Windows 7](#screenshot-on-windows-7)
   * [Screenshot on Windows XP](#screenshot-on-windows-xp)
   * [Screenshot on Ubuntu 16.04](#screenshot-on-ubuntu-1604)
+  * [Screenshot on FreeBSD](#screenshot-on-freebsd)
 - [Client Protocols Supported](#client-protocols-supported)
 - [Build from Source](#build-from-source)
 - [License](#license)
@@ -70,6 +71,9 @@ Defined in [TLS 1.3][tls13]
 
 ### Screenshot on Ubuntu 16.04
 <img width="484" alt="snapshot-winxp" src="https://user-images.githubusercontent.com/54673341/151591522-d86248f7-763f-432e-9dd8-fd16317d477b.png">
+
+### Screenshot on FreeBSD
+<img width="484" alt="snapshot-freebsd" src="https://user-images.githubusercontent.com/54673341/158511519-493f1a40-97c5-4748-a530-fe8e4b3c2ce1.jpg">
 
 ## Client Protocols Supported
 - Socks4 Proxy
