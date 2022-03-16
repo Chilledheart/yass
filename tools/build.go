@@ -634,6 +634,8 @@ func postStateArchiveLicenses() []string {
 		"LICENSE.boringssl":  filepath.Join("..", "third_party", "boringssl", "src", "LICENSE"),
 		"LICENSE.chromium":   filepath.Join("..", "third_party", "chromium", "LICENSE"),
 		"LICENSE.icu":        filepath.Join("..", "third_party", "icu", "LICENSE"),
+		"LICENSE.libc++":     filepath.Join("..", "third_party", "libc++", "trunk","LICENSE.TXT"),
+		"LICENSE.libc++abi":  filepath.Join("..", "third_party", "libc++abi", "trunk","LICENSE.TXT"),
 		"LICENSE.lss":        filepath.Join("..", "third_party", "lss", "LICENSE"),
 		"LICENSE.mozilla":    filepath.Join("..", "third_party", "mozilla", "LICENSE.txt"),
 		"LICENSE.protobuf":   filepath.Join("..", "third_party", "protobuf", "LICENSE"),
