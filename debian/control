@@ -11,7 +11,7 @@ Build-Depends:
  golang:native,
  ninja-build:native,
  debhelper (>= 9),
- pkg-config,
+ pkg-config <!nogui>,
  libglib2.0-dev <!nogui>,
  libgtk-3-dev <!nogui>
 Rules-Requires-Root: no

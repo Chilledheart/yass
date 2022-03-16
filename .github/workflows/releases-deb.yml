@@ -22,7 +22,7 @@ on:
   release:
     types: [published]
 env:
-  CACHE_EPOCH: 5
+  CACHE_EPOCH: 6
   GOPROXY: direct
   DH_QUIET: 1
 jobs:
@@ -31,8 +31,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # full distro: [xenial, bionic, focal, stretch, buster, bullseye]
-        distro: [xenial]
+        # full distro: [trusty, xenial, bionic, focal, stretch, buster, bullseye]
+        distro: [trusty]
         arch: [i386, amd64, armhf, arm64]
         include:
           - distro: stretch
@@ -142,7 +142,7 @@ jobs:
         run: |
           echo "DEB_BUILD_PROFILES=nocheck cross ${{ env.DEB_BUILD_PROFILES }}" >> $GITHUB_ENV
       - name: Set nogui build profile (armel/mipsel/mips64el only)
-        if: ${{ env.HOST_ARCH == 'armel' ||  env.HOST_ARCH == 'mipsel' || env.HOST_ARCH == 'mips64el' }}
+        if: ${{ env.HOST_ARCH == 'armel' || env.HOST_ARCH == 'mipsel' || env.HOST_ARCH == 'mips64el' }}
         run: |
           echo "DEB_BUILD_PROFILES=nogui ${{ env.DEB_BUILD_PROFILES }}" >> $GITHUB_ENV
           echo "APT_DEB_BUILD_PROFILES=-o Apt::Build-Profiles=nogui" >> $GITHUB_ENV
@@ -223,7 +223,7 @@ jobs:
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y ca-certificates git
-      - name: Populate sysroot (golang toolchain)
+      - name: Populate sysroot (golang)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
           cd /tmp
@@ -237,38 +237,24 @@ jobs:
           curl -O http://deb.debian.org/debian/pool/main/g/golang-1.17/golang-1.17-doc_1.17.7-1~bpo11+1_all.deb
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -f -y $PWD/golang*.deb
-      - name: Build deb (source)
+      - name: Populate depedencie (cmake)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
-          export DEB_BUILD_PROFILES
-          SOURCE_ONLY=1 ./scripts/build-deb.sh
-      - name: Populate depedencie (openssl, required by xenial cmake)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && (env.HOST_DISTRO == 'stretch' || env.HOST_DISTRO == 'buster') }}
-        run: |
           cd /tmp
-          curl -O http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.0.0_1.0.2g-1ubuntu4_${{ env.BUILD_ARCH }}.deb
+          # TODO use latest cmake: https://github.com/Kitware/CMake/releases/download/v3.22.3/cmake-3.22.3-linux-x86_64.tar.gz
+          curl -O https://cmake.org/files/v3.12/cmake-3.12.4-Linux-x86_64.tar.gz
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get install -y $PWD/libssl1.0.0_1.0.2g-1ubuntu4_${{ env.BUILD_ARCH }}.deb
-      - name: Populate depedencie (xenial cmake)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && (env.HOST_DISTRO == 'xenial' || env.HOST_DISTRO == 'bionic' || env.HOST_DISTRO == 'stretch' || env.HOST_DISTRO == 'buster') }}
-        run: |
-          cd /tmp
-          curl -O https://apt.kitware.com/keys/kitware-archive-latest.asc
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get install -y apt-transport-https
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-key add $PWD/kitware-archive-latest.asc
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            bash -c 'echo "deb [arch=${{ env.BUILD_ARCH }}] https://apt.kitware.com/ubuntu/ xenial main" >> /etc/apt/sources.list'
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get update -qq
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get install -y cmake
-      - name: Populate depedencie
+            tar -C / --strip-components=1 -xvf cmake-3.12.4-Linux-x86_64.tar.gz
+      - name: Populate depedencie (base)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get ${{ env.APT_DEB_BUILD_PROFILES }} build-dep -y --host-architecture=${{ env.HOST_ARCH }} ../yass
+            apt-get install -y perl gcc g++ ninja-build debhelper
+      - name: Populate depedencie (gui)
+        if: ${{ env.HOST_ARCH != 'armel' && env.HOST_ARCH != 'mipsel' && env.HOST_ARCH != 'mips64el' }}
+        run: |
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get install -y pkg-config libglib2.0-dev libgtk-3-dev
       - name: Populate depedencie (list upgradable packages)
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
