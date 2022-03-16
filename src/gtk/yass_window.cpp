@@ -110,13 +110,18 @@ YASSWindow::YASSWindow()
 
   start_button_ = GTK_BUTTON(gtk_button_new());
   gtk_button_set_label(start_button_, "Start");
+
+#if GTK_CHECK_VERSION(3, 12, 0)
   gtk_widget_set_margin_top(GTK_WIDGET(start_button_), 30);
   gtk_widget_set_margin_bottom(GTK_WIDGET(start_button_), 30);
+#endif
 
   stop_button_ = GTK_BUTTON(gtk_button_new());
   gtk_button_set_label(stop_button_, "Stop");
+#if GTK_CHECK_VERSION(3, 12, 0)
   gtk_widget_set_margin_top(GTK_WIDGET(stop_button_), 30);
   gtk_widget_set_margin_bottom(GTK_WIDGET(stop_button_), 30);
+#endif
 
   auto start_callback = []() { window->OnStartButtonClicked(); };
 
@@ -133,8 +138,10 @@ YASSWindow::YASSWindow()
   gtk_container_add(GTK_CONTAINER(left_box), GTK_WIDGET(start_button_));
   gtk_container_add(GTK_CONTAINER(left_box), GTK_WIDGET(stop_button_));
 
+#if GTK_CHECK_VERSION(3, 12, 0)
   gtk_widget_set_margin_start(GTK_WIDGET(left_box), 15);
   gtk_widget_set_margin_end(GTK_WIDGET(left_box), 15);
+#endif
 
   gtk_container_add(GTK_CONTAINER(hbox), GTK_WIDGET(left_box));
 
@@ -197,8 +204,10 @@ YASSWindow::YASSWindow()
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_), 1, 6, 1, 1);
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_), 1, 7, 1, 1);
 
+#if GTK_CHECK_VERSION(3, 12, 0)
   gtk_widget_set_margin_start(GTK_WIDGET(right_panel_grid), 10);
   gtk_widget_set_margin_end(GTK_WIDGET(right_panel_grid), 20);
+#endif
 
   gtk_container_add(GTK_CONTAINER(hbox), GTK_WIDGET(right_panel_grid));
 
