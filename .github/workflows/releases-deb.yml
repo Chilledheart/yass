@@ -236,7 +236,7 @@ jobs:
           curl -O http://deb.debian.org/debian/pool/main/g/golang-1.17/golang-1.17-src_1.17.7-1~bpo11+1_all.deb
           curl -O http://deb.debian.org/debian/pool/main/g/golang-1.17/golang-1.17-doc_1.17.7-1~bpo11+1_all.deb
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get install -f -y $PWD/golang*.deb
+            apt-get install -f -y $(eval ls $PWD/golang*.deb)
       - name: Populate depedencie (cmake)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
