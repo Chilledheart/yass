@@ -33,8 +33,8 @@ fi
 # Ubuntu 16.04 | 10.2.2    | 10.2.2
 # Ubuntu 18.04 | 11.1.6    | 13.5.2
 # Ubuntu 20.04 | 12.10     | 13.5.2
-BUILD_ARCH=${BUILD_ARCH:-$(dpkg-architecture -q DEB_BUILD_ARCH)}
-BUILD_GNU_TYPE=${BUILD_GNU_TYPE:-$(dpkg-architecture -q DEB_HOST_GNU_TYPE --host-arch $BUILD_ARCH)}
+BUILD_ARCH=${BUILD_ARCH:-$(dpkg-architecture -qDEB_BUILD_ARCH)}
+BUILD_GNU_TYPE=${BUILD_GNU_TYPE:-$(dpkg-architecture -qDEB_HOST_GNU_TYPE -a$BUILD_ARCH)}
 # required by clang because it is amd64 execuable and running under i386 sysroot
 if [ "x$CC" != "x" -a "x$($CC --version | grep clang)" != "x" ]; then
   NATIVE_CFLAGS="-target $BUILD_GNU_TYPE -ccc-gcc-name ${BUILD_GNU_TYPE}-gcc"
