@@ -248,10 +248,10 @@ jobs:
       - name: Populate depedencie (cmake)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
-          # TODO use latest cmake: https://github.com/Kitware/CMake/releases/download/v3.22.3/cmake-3.22.3-linux-x86_64.tar.gz
-          curl -O https://cmake.org/files/v3.12/cmake-3.12.4-Linux-x86_64.tar.gz
+          # fallback cmake: https://cmake.org/files/v3.12/cmake-3.12.4-Linux-x86_64.tar.gz
+          curl -O https://github.com/Kitware/CMake/releases/download/v3.22.3/cmake-3.22.3-linux-x86_64.tar.gz
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            tar -C / --strip-components=1 -xvf cmake-3.12.4-Linux-x86_64.tar.gz
+            tar -C / --strip-components=1 -xvf cmake-3.22.3-linux-x86_64.tar.gz
           rm -f *.tar.gz
       - name: Populate depedencie (base)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
