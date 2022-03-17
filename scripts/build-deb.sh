@@ -37,8 +37,8 @@ BUILD_ARCH=${BUILD_ARCH:-$(dpkg-architecture -q DEB_BUILD_ARCH)}
 BUILD_GNU_TYPE=${BUILD_GNU_TYPE:-$(dpkg-architecture -q DEB_HOST_GNU_TYPE --host-arch $BUILD_ARCH)}
 # required by clang because it is amd64 execuable and running under i386 sysroot
 if [ "x$CC" != "x" -a "x$($CC --version | grep clang)" != "x" ]; then
-  NATIVE_CFLAGS="-target $BUILD_GNU_TYPE"
-  NATIVE_CXXFLAGS="-target $BUILD_GNU_TYPE"
+  NATIVE_CFLAGS="-target $BUILD_GNU_TYPE -ccc-gcc-name ${BUILD_GNU_TYPE}-gcc"
+  NATIVE_CXXFLAGS="-target $BUILD_GNU_TYPE -ccc-gcc-name ${BUILD_GNU_TYPE}-g++"
 fi
 
 if [ "x$HOST_ARCH" != "x" ]; then
@@ -63,8 +63,8 @@ if [ "x$HOST_ARCH" != "x" ]; then
 cat > ../Native.cmake << EOF
 set(CMAKE_C_COMPILER "${CC:-gcc}")
 set(CMAKE_CXX_COMPILER "${CXX:-g++}")
-set(CMAKE_C_FLAGS "${CFLAGS} ${NATIVE_CFLAGS}")
-set(CMAKE_CXX_FLAGS "${CXXFLAGS} ${NATIVE_CXXFLAGS}")
+set(CMAKE_C_FLAGS "${CFLAGS} ${NATIVE_CFLAGS} -fPIC")
+set(CMAKE_CXX_FLAGS "${CXXFLAGS} ${NATIVE_CXXFLAGS} -fPIC")
 EOF
   sbuild --build $BUILD_ARCH --host $HOST_ARCH \
     --dist "${HOST_DISTRO}-$BUILD_ARCH-${HOST_ARCH}" -j $(nproc) \
@@ -72,7 +72,7 @@ EOF
     --no-run-lintian --no-run-piuparts --no-run-autopkgtest \
     --nolog --build-dep-resolver=null \
     --dpkg-source-opts="-i.*" \
-    --debbuildopts="-d --host-arch $HOST_ARCH"
+    --debbuildopts="-d -a$HOST_ARCH"
 else
   dpkg-buildpackage -b -d -uc -us
 fi

@@ -39,8 +39,13 @@ function(create_cross_target project_name target_name toolchain buildtype)
   set(use_gui_flags "-DGUI=${GUI}")
   set(use_build_tests_flags "-DBUILD_TESTS=${BUILD_TESTS}")
 
-  set(osx_deployment_flags "-DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET}")
-  set(osx_architectures_flags "-DCMAKE_OSX_ARCHITECTURES=\"${CMAKE_OSX_ARCHITECTURES}\"")
+  if (CMAKE_OSX_DEPLOYMENT_TARGET)
+    set(osx_deployment_flags "-DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET}")
+  endif()
+
+  if (CMAKE_OSX_ARCHITECTURES)
+    set(osx_architectures_flags "-DCMAKE_OSX_ARCHITECTURES=\"${CMAKE_OSX_ARCHITECTURES}\"")
+  endif()
 
   add_custom_command(OUTPUT ${${project_name}_${target_name}_BUILD}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${${project_name}_${target_name}_BUILD}

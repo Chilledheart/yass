@@ -91,21 +91,18 @@ jobs:
           sudo apt-get update -qq
       - name: Populate depedencies (sbuild, upgrade for null-resolver)
         run: |
-          cd /tmp
           curl -O http://archive.ubuntu.com/ubuntu/pool/main/s/sbuild/sbuild_0.79.0-1ubuntu1_all.deb
           curl -O http://archive.ubuntu.com/ubuntu/pool/main/s/sbuild/libsbuild-perl_0.79.0-1ubuntu1_all.deb
           sudo apt-get update -qq && sudo apt-get install -f -y $PWD/sbuild*.deb $PWD/libsbuild*.deb
           rm -f *.deb
       - name: Populate depedencies (debian keyring, for debian distributions)
         run: |
-          cd /tmp
           curl -O http://archive.ubuntu.com/ubuntu/pool/universe/d/debian-keyring/debian-keyring_2020.03.24_all.deb
           curl -O http://archive.ubuntu.com/ubuntu/pool/universe/d/debian-archive-keyring/debian-archive-keyring_2019.1ubuntu2_all.deb
           sudo apt-get update -qq && sudo apt-get install -f -y $PWD/debian*.deb
           rm -f *.deb
       - name: Populate depedencies (debhelper, for correct dh_shlibdeps path)
         run: |
-          cd /tmp
           curl -O http://archive.ubuntu.com/ubuntu/pool/main/d/debhelper/debhelper_12.10ubuntu1_all.deb
           curl -O http://archive.ubuntu.com/ubuntu/pool/main/d/debhelper/libdebhelper-perl_12.10ubuntu1_all.deb
           sudo apt-get update -qq && sudo apt-get install -f -y $PWD/*.deb
@@ -223,10 +220,18 @@ jobs:
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y ca-certificates git
+      - name: Populate sysroot (dpkg fix)
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
+        run: |
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get clean
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get update -qq
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get install -y dpkg
       - name: Populate sysroot (golang)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
-          cd /tmp
           curl -O http://deb.debian.org/debian/pool/main/g/golang-defaults/golang_1.17~1~bpo11+2_${{ env.BUILD_ARCH }}.deb
           curl -O http://deb.debian.org/debian/pool/main/g/golang-defaults/golang-go_1.17~1~bpo11+2_${{ env.BUILD_ARCH }}.deb
           curl -O http://deb.debian.org/debian/pool/main/g/golang-defaults/golang-src_1.17~1~bpo11+2_all.deb
@@ -236,15 +241,18 @@ jobs:
           curl -O http://deb.debian.org/debian/pool/main/g/golang-1.17/golang-1.17-src_1.17.7-1~bpo11+1_all.deb
           curl -O http://deb.debian.org/debian/pool/main/g/golang-1.17/golang-1.17-doc_1.17.7-1~bpo11+1_all.deb
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get install -f -y $(eval ls /tmp/golang*.deb)
+            dpkg --force-depends -i $PWD/*.deb || true
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get install -y -f
+          rm -f *.deb
       - name: Populate depedencie (cmake)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
-          cd /tmp
           # TODO use latest cmake: https://github.com/Kitware/CMake/releases/download/v3.22.3/cmake-3.22.3-linux-x86_64.tar.gz
           curl -O https://cmake.org/files/v3.12/cmake-3.12.4-Linux-x86_64.tar.gz
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             tar -C / --strip-components=1 -xvf cmake-3.12.4-Linux-x86_64.tar.gz
+          rm -f *.tar.gz
       - name: Populate depedencie (base)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
