@@ -2650,7 +2650,7 @@ if (BUILD_TESTS)
       yass_gtest
       )
   add_custom_target(check
-    COMMAND yass_test
+    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/yass_test
     DEPENDS yass_test
     COMMENT "yass unittests")
 endif()
