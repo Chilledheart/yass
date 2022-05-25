@@ -1,4 +1,4 @@
-FROM centos:8
+FROM centos:8.1.1911
 
 # centos 8 is eol, replacing vault mirrors
 RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-Linux-* && \

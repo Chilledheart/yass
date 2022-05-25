@@ -1,4 +1,4 @@
-FROM centos:7
+FROM centos:7.0.1406
 
 # replacing vault mirrors
 RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-* && \
