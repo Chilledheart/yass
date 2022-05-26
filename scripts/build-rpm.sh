@@ -44,7 +44,7 @@ source /etc/os-release
 
 DISTRO=${ID}-${VERSION_ID}
 
-if [ ${ID} = "centos" -o ${ID} = "rhel" ]; then
+if [ ${ID} = "rocky" -o ${ID} = "centos" -o ${ID} = "rhel" ]; then
   SUFFIX=el${VERSION_ID}
 elif [ ${ID} = "fedora" ]; then
   SUFFIX=fc${VERSION_ID}
