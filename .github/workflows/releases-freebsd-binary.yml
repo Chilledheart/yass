@@ -32,7 +32,6 @@ jobs:
         arch:
         - 'amd64'
         abi:
-        - '11'
         - '12'
         - '13'
     runs-on: ubuntu-20.04
