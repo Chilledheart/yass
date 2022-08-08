@@ -30,3 +30,4 @@ sscxx
 *.tgz
 /tools/build
 /build-*
+/doxygen

@@ -30,7 +30,7 @@ class ServiceFactory {
           thread_([this]() { WorkFunc(); }),
           remote_endpoint_(remote_endpoint) {}
 
-    // Allow called from different threads
+    /// Disconstructor allow called from different threads
     ~SlaveContext() noexcept {
       work_guard_.reset();
       thread_.join();

@@ -19,6 +19,7 @@ class Connection {
   /// Construct the connection with io context
   ///
   /// \param io_context the io context associated with the service
+  /// \param remote_endpoint the remote endpoint of the service socket
   Connection(asio::io_context& io_context,
              const asio::ip::tcp::endpoint& remote_endpoint)
       : io_context_(io_context),
@@ -47,6 +48,8 @@ class Connection {
   virtual void close() {}
 
   /// set callback
+  ///
+  /// \param cb the callback function pointer when disconnect happens
   void set_disconnect_cb(std::function<void()> cb) { disconnect_cb_ = cb; }
 
   asio::io_context& io_context() { return io_context_; }

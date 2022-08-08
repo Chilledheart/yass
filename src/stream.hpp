@@ -18,9 +18,10 @@
 class stream {
  public:
   /// construct a stream object with ss protocol
-  /// \param io_context
-  /// \param endpoint
-  /// \param channel
+  ///
+  /// \param io_context the io context associated with the service
+  /// \param endpoint the endpoint of the service socket
+  /// \param channel the underlying data channel used in stream
   stream(asio::io_context& io_context,
          asio::ip::tcp::endpoint endpoint,
          const std::shared_ptr<Channel>& channel)
@@ -87,6 +88,9 @@ class stream {
         });
   }
 
+  /// start write routine
+  ///
+  /// \param buf the shared buffer used in write routine
   void start_write(std::shared_ptr<IOBuf> buf) {
     std::shared_ptr<Channel> channel = std::shared_ptr<Channel>(channel_);
     asio::async_write(socket_, const_buffer(*buf),
