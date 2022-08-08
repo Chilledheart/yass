@@ -50,6 +50,12 @@ elif [ ${ID} = "fedora" ]; then
   SUFFIX=fc${VERSION_ID}
 fi
 
+# Under rockylinux, VERSION_ID means major_version.minor_version
+if [ ! -z "${ROCKY_SUPPORT_PRODUCT_VERSION}" ]; then
+  DISTRO=${ID}-${ROCKY_SUPPORT_PRODUCT_VERSION}
+  SUFFIX=el${ROCKY_SUPPORT_PRODUCT_VERSION}
+fi
+
 # under centos 7, some commands might fail because it doesn't separate debuginfo
 # for sub package: https://fedoraproject.org/wiki/Changes/SubpackageAndSourceDebuginfo
 mv -f $HOME/rpmbuild/RPMS/${ARCH}/yass-1.0.0-1.${SUFFIX}.${ARCH}.rpm "yass-${DISTRO}.${SUFFIX}.${ARCH}.${TAG}.rpm"
