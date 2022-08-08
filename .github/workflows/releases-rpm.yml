@@ -80,6 +80,8 @@ jobs:
       - uses: actions/checkout@v2
       - name: Checkout with shallow submodules
         run: |
+          # ignore annoying failures
+          git config --global --add safe.directory "$PWD"
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
