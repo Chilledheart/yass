@@ -243,8 +243,6 @@ if (USE_MOLD OR USE_LLD OR USE_GOLD)
 endif()
 
 if (USE_MOLD)
-  # seems incompatible with mold, filed bug issue at rui314/mold#398
-  set(USE_ICF OFF)
   set(USE_LLD OFF)
   set(USE_GOLD OFF)
 endif()
