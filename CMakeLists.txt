@@ -286,6 +286,11 @@ if (COMPILER_MSVC AND USE_LIBCXX)
   message(SEND_ERROR "Microsoft Visual C++ Compiler with libc++ support is not supported, please disabling it with -DUSE_LIBCXX=off")
 endif()
 
+if (MINGW AND USE_LIBCXX AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0.0)
+  message(STATUS "Diabling libc++ on mingw gcc 12 or above")
+  set(USE_LIBCXX OFF)
+endif()
+
 include(config-ix)
 
 if (CMAKE_OSX_ARCHITECTURES)
