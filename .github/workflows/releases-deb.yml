@@ -170,7 +170,7 @@ jobs:
       - name: Populate sysroot
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
-          sudo -n sudo -u "$USER" -g sbuild mk-sbuild ${{ env.mksbuild_arch_opts }} ${{ env.HOST_DISTRO }} --target=${{ env.HOST_ARCH }} --skip-proposed ${{ env.mksbuild_distro_opts }} || true
+          sudo -n sudo -u "$USER" -g sbuild mk-sbuild ${{ env.mksbuild_arch_opts }} ${{ env.HOST_DISTRO }} --target=${{ env.HOST_ARCH }} ${{ env.mksbuild_distro_opts }} || true
           sudo sed -i '/profile/d' /etc/schroot/chroot.d/*
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get clean
