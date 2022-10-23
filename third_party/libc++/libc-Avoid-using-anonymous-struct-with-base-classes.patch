@@ -1,0 +1,59 @@
+From c3d0205ee771edbee287b389699eab70b3670ecf Mon Sep 17 00:00:00 2001
+From: Azat Khuzhin <a3at.mail@gmail.com>
+Date: Fri, 8 Apr 2022 16:13:46 -0400
+Subject: [PATCH] [libc++] Avoid using anonymous struct with base classes
+ (fixes GCC 12)
+
+GCC 12 reports:
+
+     libcxx/include/string:727:13: error: anonymous struct with base classes
+     727 |             : __padding<value_type>
+
+Differential Revision: https://reviews.llvm.org/D122598
+---
+ libcxx/include/string | 22 ++--------------------
+ 1 file changed, 2 insertions(+), 20 deletions(-)
+
+diff --git a/include/string b/include/string
+index 60b40c369b69..a0056745f549 100644
+--- a/include/string
++++ b/include/string
+@@ -614,21 +614,6 @@ struct __can_be_converted_to_string_view : public _BoolConstant<
+      !is_convertible<const _Tp&, const _CharT*>::value
+     > {};
+
+-#ifdef _LIBCPP_ABI_ALTERNATE_STRING_LAYOUT
+-
+-template <class _CharT, size_t = sizeof(_CharT)>
+-struct __padding
+-{
+-    unsigned char __xx[sizeof(_CharT)-1];
+-};
+-
+-template <class _CharT>
+-struct __padding<_CharT, 1>
+-{
+-};
+-
+-#endif // _LIBCPP_ABI_ALTERNATE_STRING_LAYOUT
+-
+ #ifndef _LIBCPP_HAS_NO_CHAR8_T
+ typedef basic_string<char8_t> u8string;
+ #endif
+@@ -702,11 +687,8 @@ private:
+     struct __short
+     {
+         value_type __data_[__min_cap];
+-        struct
+-            : __padding<value_type>
+-        {
+-            unsigned char __size_;
+-        };
++        unsigned char __padding[sizeof(value_type) - 1];
++        unsigned char __size_;
+     };
+
+ #else
+--
+2.37.0 (Apple Git-136)
+
