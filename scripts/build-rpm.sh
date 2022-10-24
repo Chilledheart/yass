@@ -41,19 +41,13 @@ popd
 ARCH=$(rpm -q --queryformat '%{ARCH}' glibc)
 
 source /etc/os-release
-
+VERSION_ID=$(sed -E 's/[^0-9]+([0-9]+)(\.[0-9]+)?[^0-9]+$/\1/' /etc/redhat-release)
 DISTRO=${ID}-${VERSION_ID}
 
 if [ ${ID} = "rocky" -o ${ID} = "centos" -o ${ID} = "rhel" ]; then
   SUFFIX=el${VERSION_ID}
 elif [ ${ID} = "fedora" ]; then
   SUFFIX=fc${VERSION_ID}
-fi
-
-# Under rockylinux, VERSION_ID means major_version.minor_version
-if [ ! -z "${ROCKY_SUPPORT_PRODUCT_VERSION}" ]; then
-  DISTRO=${ID}-${ROCKY_SUPPORT_PRODUCT_VERSION}
-  SUFFIX=el${ROCKY_SUPPORT_PRODUCT_VERSION}
 fi
 
 # under centos 7, some commands might fail because it doesn't separate debuginfo
