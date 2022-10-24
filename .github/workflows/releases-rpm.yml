@@ -32,6 +32,7 @@ jobs:
         container:
         - 'centos7'
         - 'centos8'
+        - 'centos9'
         - 'fedora35'
     runs-on: ubuntu-18.04
     steps:
@@ -70,6 +71,7 @@ jobs:
         container:
         - 'centos7'
         - 'centos8'
+        - 'centos9'
         - 'fedora35'
     runs-on: ubuntu-18.04
     needs: docker_publish
