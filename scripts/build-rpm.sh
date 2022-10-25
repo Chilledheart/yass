@@ -41,7 +41,7 @@ popd
 ARCH=$(rpm -q --queryformat '%{ARCH}' glibc)
 
 source /etc/os-release
-VERSION_ID=$(sed -E 's/[^0-9]+([0-9]+)(\.[0-9]+)?[^0-9]*$/\1/' /etc/redhat-release)
+VERSION_ID=$(sed -E 's/[^0-9]+([0-9]+)(\.[0-9]+)*[^0-9]*$/\1/' /etc/redhat-release)
 DISTRO=${ID}-${VERSION_ID}
 
 if [ ${ID} = "rocky" -o ${ID} = "centos" -o ${ID} = "rhel" ]; then
