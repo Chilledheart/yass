@@ -88,7 +88,7 @@ typedef HRESULT(__stdcall* PFNGETDPIFORMONITOR)(HMONITOR,
                                                 UINT*);
 
 // from windef.h, starting from Windows 10, version 1607
-#ifndef NTDDI_WIN10_RS1
+#if !defined(NTDDI_WIN10_RS1) || (defined(__MINGW64_VERSION_MAJOR) && __MINGW64_VERSION_MAJOR < 8)
 typedef enum DPI_AWARENESS {
   DPI_AWARENESS_INVALID = -1,
   DPI_AWARENESS_UNAWARE = 0,
@@ -98,7 +98,7 @@ typedef enum DPI_AWARENESS {
 #endif  // NTDDI_WIN10_RS1
 
 // from windef.h, starting from Windows 10, version 1607
-#ifndef NTDDI_WIN10_RS1
+#if !defined(NTDDI_WIN10_RS1) || (defined(__MINGW64_VERSION_MAJOR) && __MINGW64_VERSION_MAJOR < 8)
 DECLARE_HANDLE(DPI_AWARENESS_CONTEXT);
 #define DPI_AWARENESS_CONTEXT_UNAWARE ((DPI_AWARENESS_CONTEXT)-1)
 #define DPI_AWARENESS_CONTEXT_SYSTEM_AWARE ((DPI_AWARENESS_CONTEXT)-2)
@@ -108,13 +108,13 @@ DECLARE_HANDLE(DPI_AWARENESS_CONTEXT);
 #endif  // NTDDI_WIN10_RS1
 
 // from windef.h, starting from Windows 10, version 1803
-#ifndef NTDDI_WIN10_RS4
+#if !defined(NTDDI_WIN10_RS4) || (defined(__MINGW64_VERSION_MAJOR) && __MINGW64_VERSION_MAJOR < 8)
 typedef enum DPI_HOSTING_BEHAVIOR {
   DPI_HOSTING_BEHAVIOR_INVALID = -1,
   DPI_HOSTING_BEHAVIOR_DEFAULT = 0,
   DPI_HOSTING_BEHAVIOR_MIXED = 1
 } DPI_HOSTING_BEHAVIOR;
-#endif
+#endif  // NTDDI_WIN10_RS4
 
 // from winuser.h, starting from Windows 10, version 1607
 typedef DPI_AWARENESS_CONTEXT(__stdcall* PFNGETTHREADDPIAWARENESSCONTEXT)(void);
