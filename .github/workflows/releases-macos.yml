@@ -26,7 +26,7 @@ env:
   GOPROXY: direct
 jobs:
   mac-release:
-    runs-on: macos-latest
+    runs-on: macos-11
     strategy:
       fail-fast: false
       matrix:

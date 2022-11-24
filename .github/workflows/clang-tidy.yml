@@ -105,7 +105,7 @@ jobs:
           :SetNewVCToolsVersion
           set VCToolsVersion=
   mac-clang-tidy:
-    runs-on: macos-latest
+    runs-on: macos-11
     env:
       ENABLE_CLANG_TIDY: '1'
       BUILD_TYPE: '${{ matrix.build_type }}'

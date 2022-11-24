@@ -227,7 +227,7 @@ jobs:
           cd build
           ninja check
   linux-compiler-compatible:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     if: ${{ github.event_name != 'release' }}
     strategy:
       fail-fast: false
@@ -305,7 +305,7 @@ jobs:
         run: |
           ./tools/build -nc -no-packaging ${{ env.build_opts }} -run-test
   mac-compiler-compatible:
-    runs-on: macos-latest
+    runs-on: macos-11
     if: ${{ github.event_name != 'release' }}
     strategy:
       fail-fast: false
