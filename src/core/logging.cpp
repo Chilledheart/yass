@@ -6,6 +6,7 @@
 #include <absl/base/dynamic_annotations.h>
 #include <absl/base/config.h>
 #endif
+#include <absl/base/thread_annotations.h>
 
 #include "core/logging.hpp"
 
@@ -2187,7 +2188,7 @@ void ReprintFatalMessage() {
 }
 
 // L >= log_mutex (callers must hold the log_mutex).
-void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
+void LogMessage::SendToLog() ABSL_EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
   log_mutex.AssertHeld();
 
   assert(data_->num_chars_to_log_ > 0 &&
@@ -2289,7 +2290,7 @@ void LogMessage::Fail() {
 }
 
 // L >= log_mutex (callers must hold the log_mutex).
-void LogMessage::SendToSink() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
+void LogMessage::SendToSink() ABSL_EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
   if (data_->sink_ != nullptr) {
     assert(data_->num_chars_to_log_ > 0 &&
            data_->message_text_[data_->num_chars_to_log_ - 1] == '\n');
@@ -2302,13 +2303,13 @@ void LogMessage::SendToSink() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
 }
 
 // L >= log_mutex (callers must hold the log_mutex).
-void LogMessage::SendToSinkAndLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
+void LogMessage::SendToSinkAndLog() ABSL_EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
   SendToSink();
   SendToLog();
 }
 
 // L >= log_mutex (callers must hold the log_mutex).
-void LogMessage::SaveOrSendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
+void LogMessage::SaveOrSendToLog() ABSL_EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
   if (data_->outvec_ != nullptr) {
     assert(data_->num_chars_to_log_ > 0 &&
            data_->message_text_[data_->num_chars_to_log_ - 1] == '\n');
@@ -2321,7 +2322,7 @@ void LogMessage::SaveOrSendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
   }
 }
 
-void LogMessage::WriteToStringAndLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
+void LogMessage::WriteToStringAndLog() ABSL_EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
   if (data_->message_ != nullptr) {
     assert(data_->num_chars_to_log_ > 0 &&
            data_->message_text_[data_->num_chars_to_log_ - 1] == '\n');
