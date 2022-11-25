@@ -103,9 +103,14 @@ jobs:
         run: |
           echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
           echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
+      - name: Set LTO environment
+        if: ${{ matrix.arch == 'mips' || matrix.arch == 'mips64el' }}
+        run: |
+          # ld.lld: error: relocation R_MIPS_32 cannot be used against local symbol; recompile with -fPIC
+          echo "LTO_OPTIONS=--enable-lto=false" >> $GITHUB_ENV
       - name: Build TGZ packages
         run: |
-          ./tools/build --arch ${{ matrix.arch }} --system linux --sysroot $PWD/debian_sid_${{ matrix.arch }}-sysroot
+          ./tools/build --arch ${{ matrix.arch }} --system linux --sysroot $PWD/debian_sid_${{ matrix.arch }}-sysroot $LTO_OPTIONS
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:

@@ -34,6 +34,9 @@ function(create_cross_target project_name target_name toolchain buildtype)
   endif()
 
   set(use_libcxx_flags "-DUSE_LIBCXX=${USE_LIBCXX}")
+  set(enable_lto_flags "-DENABLE_LTO=${ENABLE_LTO}")
+  set(enable_lld_flags "-DENABLE_LLD=${ENABLE_LLD}")
+  set(enable_gold_flags "-DENABLE_GOLD=${ENABLE_GOLD}")
   set(use_cli_flags "-DCLI=${CLI}")
   set(use_server_flags "-DSERVER=${SERVER}")
   set(use_gui_flags "-DGUI=${GUI}")
@@ -62,6 +65,7 @@ function(create_cross_target project_name target_name toolchain buildtype)
         ${CROSS_TOOLCHAIN_FLAGS_${target_name}} ${CMAKE_CURRENT_SOURCE_DIR}
         ${CROSS_TOOLCHAIN_FLAGS_${project_name}_${target_name}}
         ${build_type_flags} ${linker_flag} ${allow_xp_flags} ${use_libcxx_flags}
+        ${enable_lto_flags} ${enable_lld_flags} ${enable_gold_flags}
         ${use_cli_flags} ${use_server_flags} ${use_gui_flags} ${use_build_tests_flags}
         ${osx_deployment_flags} ${osx_architectures_flags}
         ${ARGN}

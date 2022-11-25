@@ -227,19 +227,31 @@ option(USE_LIBCXX "Build with libc++" ON)
 option(USE_MOLD "Build with mold linker" OFF)
 option(USE_LLD "Build with lld linker" OFF)
 option(USE_GOLD "Build with gold linker" OFF)
-option(USE_ICF "Build with icf" OFF)
+option(USE_ICF "Build with ICF" OFF)
 option(USE_LTO "Build with LTO" OFF)
 option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
 
-# skipping apple clang
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR LINKER_LLD)
+option(ENABLE_LTO "Enable build with LTO" ON)
+option(ENABLE_LLD "Enable build with LLD" ON)
+option(ENABLE_GOLD "Enable build with GOLD" ON)
+
+if (ENABLE_LLD AND (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR LINKER_LLD))
+  # skipping apple clang
   set(USE_LLD ON)
-elseif (COMPILER_GCC AND NOT WIN32)
+  set(USE_GOLD OFF)
+elseif (ENABLE_GOLD AND COMPILER_GCC AND NOT WIN32)
+  set(USE_LLD OFF)
   set(USE_GOLD ON)
 endif()
 
 if (USE_MOLD OR USE_LLD OR USE_GOLD)
   set(USE_ICF ON)
+else()
+  set(ENABLE_LTO OFF)
+endif()
+
+if (ENABLE_CLANG_TIDY)
+  set(ENABLE_LTO OFF)
 endif()
 
 if (USE_MOLD)
@@ -247,38 +259,34 @@ if (USE_MOLD)
   set(USE_GOLD OFF)
 endif()
 
-if (COMPILER_CLANG AND USE_MOLD AND UNIX AND NOT APPLE AND NOT ENABLE_CLANG_TIDY)
-  if (${CMAKE_BUILD_TYPE} MATCHES Release)
-    message(STATUS "Compiling with Thin LTO")
-    set(LTO ON)
-    set(LTO_FLAVOUR "thin")
-  endif()
-endif()
+if (ENABLE_LTO AND ${CMAKE_BUILD_TYPE} MATCHES Release)
+  if (COMPILER_CLANG)
+    if (USE_MOLD AND UNIX AND NOT APPLE)
+      set(LTO ON)
+      set(LTO_FLAVOUR "thin")
+    endif()
 
-if (COMPILER_CLANG AND USE_LLD AND NOT ENABLE_CLANG_TIDY)
-  if (${CMAKE_BUILD_TYPE} MATCHES Release)
-    message(STATUS "Compiling with Thin LTO")
-    set(LTO ON)
-    set(LTO_FLAVOUR "thin")
-  endif()
-endif()
+    if (USE_LLD)
+      set(LTO ON)
+      set(LTO_FLAVOUR "thin")
+    endif()
 
-if (COMPILER_CLANG AND USE_GOLD AND NOT ENABLE_CLANG_TIDY)
-  if (${CMAKE_BUILD_TYPE} MATCHES Release)
-    message(STATUS "Compiling with Thin LTO")
-    set(LTO ON)
-    set(LTO_FLAVOUR "thin")
+    if (USE_GOLD)
+      set(LTO ON)
+      set(LTO_FLAVOUR "thin")
+    endif()
   endif()
-endif()
 
-## adopt Full LTO
-## old gcc has regression on c++17 mode
-## https://gcc.gnu.org/bugzilla/show_bug.cgi?id=81004
-if (COMPILER_GCC AND NOT WIN32 AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.3.1)
-  if (${CMAKE_BUILD_TYPE} MATCHES Release)
-    message(STATUS "Compiling with Thin LTO")
+  ## adopt Full LTO
+  ## old gcc has regression on c++17 mode
+  ## https://gcc.gnu.org/bugzilla/show_bug.cgi?id=81004
+  if (COMPILER_GCC AND NOT WIN32 AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.3.1)
     set(LTO ON)
     set(LTO_FLAVOUR "full")
+  endif()
+
+  if (LTO)
+    message(STATUS "Compiling with ${LTO_FLAVOUR} LTO")
   endif()
 endif()
 

@@ -132,6 +132,11 @@ jobs:
         run: |
           echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
           echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
+      - name: Set LTO environment
+        if: ${{ env.DISTRO == 'centos7' }}
+        run: |
+          # newer ld.lld doesn't work on glibc 2.17
+          echo "DISABLE_LLD=1" >> $GITHUB_ENV
       - name: Build RPM packages
         run: |
           ./scripts/build-rpm.sh
