@@ -31,16 +31,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # full distro: [trusty, xenial, bionic, focal, stretch, buster, bullseye]
         distro: [trusty]
-        arch: [i386, amd64, armhf, arm64]
-        include:
-          - distro: stretch
-            arch: armel
-          - distro: stretch
-            arch: mipsel
-          - distro: stretch
-            arch: mips64el
+        arch: [i386, amd64]
+        # distro: [trusty, xenial, bionic, focal, stretch, buster, bullseye]
+        # arch: [i386, amd64, armhf, arm64]
+        # include:
+        #   - distro: stretch
+        #     arch: armel
+        #   - distro: stretch
+        #     arch: mipsel
+        #   - distro: stretch
+        #     arch: mips64el
     env:
       DEBIAN_FRONTEND: 'noninteractive'
       HOST_ARCH: '${{ matrix.arch }}'
