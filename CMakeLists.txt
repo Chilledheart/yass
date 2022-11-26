@@ -1968,6 +1968,11 @@ if (COMPILER_GCC OR COMPILER_CLANG)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wno-unused-command-line-argument")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wno-unused-command-line-argument")
   endif()
+
+  if (COMPILER_GCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-alloc-size-larger-than")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-alloc-size-larger-than")
+  endif()
 elseif (MSVC)
   set(MSVC_DISABLED_WARNINGS_LIST
       "C4061" # enumerator 'identifier' in switch of enum 'enumeration' is not
