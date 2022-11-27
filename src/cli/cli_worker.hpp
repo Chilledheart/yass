@@ -9,11 +9,11 @@
 #include <memory>
 #include <thread>
 
-#include "cli/socks5_factory.hpp"
 #include "config/config.hpp"
 #include "core/asio.hpp"
 #include "core/logging.hpp"
 
+class WorkerPrivate;
 class Worker {
  public:
   Worker();
@@ -28,9 +28,7 @@ class Worker {
     return remote_endpoint_;
   }
 
-  size_t currentConnections() const {
-    return socks5_server_ ? socks5_server_->currentConnections() : 0;
-  }
+  size_t currentConnections() const;
 
  private:
   void WorkFunc();
@@ -48,7 +46,7 @@ class Worker {
   /// used to resolve local and remote endpoint
   asio::ip::tcp::resolver resolver_;
 
-  std::unique_ptr<Socks5Factory> socks5_server_;
+  WorkerPrivate *private_;
   asio::ip::tcp::endpoint endpoint_;
   asio::ip::tcp::endpoint remote_endpoint_;
   std::thread thread_;

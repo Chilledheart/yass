@@ -17,7 +17,16 @@ endif()
 set(libcxx_ABI_UNSTABLE ON)
 
 # experimental, turn off to build libc++ without exceptions
-set(libcxx_USE_EXCEPTIONS ON)
+if (MSVC OR APPLE)
+  set(libcxx_USE_EXCEPTIONS ON)
+else()
+  # FIXME workaround with newer lld linkage issue with different exception frames
+  # ld.lld: error: relocation R_MIPS_32 cannot be used against local symbol; recompile with -fPIC
+  # >>> defined in thinlto-cache/llvmcache-C577B9C572ACF510A97E7F74D80906652031E64C
+  # >>> referenced by chrono.cpp
+  # >>>               thinlto-cache/llvmcache-C577B9C572ACF510A97E7F74D80906652031E64C:(.eh_frame+0xAC69)
+  set(libcxx_USE_EXCEPTIONS OFF)
+endif()
 
 # gcc's lto implementation is buggy and cannot find std::terminate if libc++ built with -fexceptions while used with
 # -fno-exceptions, setting to OFF

@@ -1661,10 +1661,13 @@ set(SUPPORT_LIBS
 
 # workaround with libatomic linkage
 if (UNIX AND NOT APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
-  set(SUPPORT_LIBS
-    ${SUPPORT_LIBS}
-    -Wl,'-Bstatic,-latomic,-Bdynamic'
-  )
+  find_library(LIBATOMIC atomic)
+  if(NOT ${LIBATOMIC} STREQUAL "LIBATOMIC-NOTFOUND")
+    set(SUPPORT_LIBS
+      ${SUPPORT_LIBS}
+      -Wl,'-Bstatic,-latomic,-Bdynamic'
+    )
+  endif()
 endif()
 
 # *****************************************************************************************
@@ -1978,6 +1981,11 @@ if (COMPILER_GCC OR COMPILER_CLANG)
   if (COMPILER_GCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-alloc-size-larger-than")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-alloc-size-larger-than")
+  endif()
+
+  if (APPLE AND COMPILER_CLANG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-error=deprecated-declarations")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=deprecated-declarations")
   endif()
 elseif (MSVC)
   set(MSVC_DISABLED_WARNINGS_LIST
