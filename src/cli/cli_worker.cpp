@@ -4,23 +4,31 @@
 
 #include <absl/flags/flag.h>
 
+#include "cli/socks5_factory.hpp"
 #include "core/compiler_specific.hpp"
 
 using namespace socks5;
 
+class WorkerPrivate {
+ public:
+  std::unique_ptr<Socks5Factory> socks5_server;
+};
+
 Worker::Worker()
     : work_guard_(std::make_unique<asio::io_context::work>(io_context_)),
       resolver_(io_context_),
+      private_(new WorkerPrivate),
       thread_([this] { WorkFunc(); }) {}
 
 Worker::~Worker() {
   Stop(std::function<void()>());
   work_guard_.reset();
   thread_.join();
+  delete private_;
 }
 
 void Worker::Start(std::function<void(asio::error_code)> callback) {
-  DCHECK_EQ(socks5_server_.get(), nullptr);
+  DCHECK_EQ(private_->socks5_server.get(), nullptr);
   /// listen in the worker thread
   io_context_.post([this, callback]() {
     resolver_.async_resolve(
@@ -37,15 +45,19 @@ void Worker::Stop(std::function<void()> callback) {
   /// stop in the worker thread
   io_context_.post([this, callback]() {
     resolver_.cancel();
-    if (socks5_server_) {
-      socks5_server_->stop();
-      socks5_server_->join();
-      socks5_server_.reset();
+    if (private_->socks5_server) {
+      private_->socks5_server->stop();
+      private_->socks5_server->join();
+      private_->socks5_server.reset();
     }
     if (callback) {
       callback();
     }
   });
+}
+
+size_t Worker::currentConnections() const {
+  return private_->socks5_server ? private_->socks5_server->currentConnections() : 0;
 }
 
 void Worker::WorkFunc() {
@@ -96,14 +108,14 @@ void Worker::on_resolve_remote(asio::error_code ec,
   }
   remote_endpoint_ = results->endpoint();
 
-  socks5_server_ = std::make_unique<Socks5Factory>(remote_endpoint_);
+  private_->socks5_server = std::make_unique<Socks5Factory>(remote_endpoint_);
 
-  socks5_server_->listen(endpoint_, SOMAXCONN, ec);
+  private_->socks5_server->listen(endpoint_, SOMAXCONN, ec);
 
   if (ec) {
-    socks5_server_->stop();
-    socks5_server_->join();
-    socks5_server_.reset();
+    private_->socks5_server->stop();
+    private_->socks5_server->join();
+    private_->socks5_server.reset();
   }
 
   if (callback) {
