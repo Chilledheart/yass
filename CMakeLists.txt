@@ -1661,13 +1661,10 @@ set(SUPPORT_LIBS
 
 # workaround with libatomic linkage
 if (UNIX AND NOT APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
-  find_library(LIBATOMIC atomic)
-  if(NOT ${LIBATOMIC} STREQUAL "LIBATOMIC-NOTFOUND")
-    set(SUPPORT_LIBS
-      ${SUPPORT_LIBS}
-      -Wl,'-Bstatic,-latomic,-Bdynamic'
-    )
-  endif()
+  set(SUPPORT_LIBS
+    ${SUPPORT_LIBS}
+    -Wl,'-Bstatic,-latomic,-Bdynamic'
+  )
 endif()
 
 # *****************************************************************************************
