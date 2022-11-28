@@ -1659,14 +1659,6 @@ set(SUPPORT_LIBS
   ${SUPPORT_LIBS}
   )
 
-# workaround with libatomic linkage
-if (UNIX AND NOT APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
-  set(SUPPORT_LIBS
-    ${SUPPORT_LIBS}
-    -Wl,'-Bstatic,-latomic,-Bdynamic'
-  )
-endif()
-
 # *****************************************************************************************
 #           asio Library
 # *****************************************************************************************
