@@ -103,14 +103,9 @@ jobs:
         run: |
           echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
           echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
-      - name: Set LIBCXX environment
-        if: ${{ matrix.arch == 'mips' || matrix.arch == 'mips64el' }}
-        run: |
-          # ld.lld: error: relocation R_MIPS_32 cannot be used against local symbol; recompile with -fPIC
-          echo "LIBCXX_OPTIONS=--use-libcxx=false" >> $GITHUB_ENV
       - name: Build TGZ packages
         run: |
-          ./tools/build --arch ${{ matrix.arch }} --system linux --sysroot $PWD/debian_sid_${{ matrix.arch }}-sysroot $LIBCXX_OPTIONS
+          ./tools/build --arch ${{ matrix.arch }} --system linux --sysroot $PWD/debian_sid_${{ matrix.arch }}-sysroot
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
