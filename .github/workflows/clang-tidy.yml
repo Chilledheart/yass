@@ -41,7 +41,7 @@ jobs:
       run:
         shell: cmd
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Checkout with shallow submodules
         run: |
           # unshallow must come first otherwise submodule may be get unshallowed
@@ -49,7 +49,7 @@ jobs:
           git submodule update --init --depth 1
       - name: Cache clang, nasm and wixtoolset 3
         id: clang-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             third_party/nasm
@@ -59,7 +59,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
       - name: Cache golang
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             %LocalAppData%\go-build
@@ -114,7 +114,7 @@ jobs:
       matrix:
         build_type: [Release]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Checkout with shallow submodules
         run: |
           # unshallow must come first otherwise submodule may be get unshallowed
@@ -122,7 +122,7 @@ jobs:
           git submodule update --init --depth 1
       - name: Cache clang
         id: clang-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             third_party/llvm-build/Release+Asserts
@@ -130,7 +130,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
       - name: Cache golang
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ~/Library/Caches/go-build
@@ -165,7 +165,7 @@ jobs:
       ENABLE_CLANG_TIDY: '1'
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Checkout with shallow submodules
         run: |
           # unshallow must come first otherwise submodule may be get unshallowed
@@ -173,7 +173,7 @@ jobs:
           git submodule update --init --depth 1
       - name: Cache clang
         id: clang-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             third_party/llvm-build/Release+Asserts
@@ -181,7 +181,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
       - name: Cache golang
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ~/.cache/go-build

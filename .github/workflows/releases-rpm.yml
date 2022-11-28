@@ -36,10 +36,10 @@ jobs:
         - 'fedora35'
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Cache docker files (dummy)
         id: docker-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             docker/dummy
@@ -79,7 +79,7 @@ jobs:
     env:
       DISTRO: ${{ matrix.container }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Checkout with shallow submodules
         run: |
           # ignore annoying failures
@@ -89,7 +89,7 @@ jobs:
           git submodule update --init --depth 1
       - name: Cache clang
         id: clang-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: ${{ env.DISTRO != 'centos7' }}
         with:
           path: |
@@ -99,7 +99,7 @@ jobs:
             ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
       - name: Cache clang (el7)
         id: clang-cache-el7
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: ${{ env.DISTRO == 'centos7' }}
         with:
           path: |
@@ -109,7 +109,7 @@ jobs:
             ${{ runner.os }}-toolchain-el7-${{ hashFiles('CLANG_REVISION') }}-
             ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
       - name: Cache golang
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ~/.cache/go-build

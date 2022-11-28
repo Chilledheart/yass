@@ -34,7 +34,7 @@ jobs:
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Checkout with shallow submodules
         run: |
           # unshallow must come first otherwise submodule may be get unshallowed
@@ -42,7 +42,7 @@ jobs:
           git submodule update --init --depth 1
       - name: Cache clang
         id: clang-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             third_party/llvm-build/Release+Asserts
@@ -50,7 +50,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
       - name: Cache golang
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ~/Library/Caches/go-build
