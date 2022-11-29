@@ -14,7 +14,7 @@
 #include "core/compiler_specific.hpp"
 #include "core/unguessable_token.hpp"
 #include "url/scheme_host_port.h"
-#include "mozilla/url_parse.h"
+#include "url/third_party/mozilla/url_parse.h"
 #include "url/url_canon.h"
 #include "url/url_constants.h"
 

@@ -3,7 +3,7 @@
 
 #include "absl/synchronization/mutex.h"
 #include "absl/synchronization/notification.h"
-#include "common/platform/api/quiche_export.h"
+#include "quiche/common/platform/api/quiche_export.h"
 
 #define QUICHE_EXCLUSIVE_LOCKS_REQUIRED_IMPL ABSL_EXCLUSIVE_LOCKS_REQUIRED
 #define QUICHE_GUARDED_BY_IMPL ABSL_GUARDED_BY
@@ -16,10 +16,46 @@
 #define QUICHE_SCOPED_LOCKABLE_IMPL ABSL_SCOPED_LOCKABLE
 #define QUICHE_ASSERT_SHARED_LOCK_IMPL ABSL_ASSERT_SHARED_LOCK
 
+#ifndef EXCLUSIVE_LOCK_FUNCTION
+#define EXCLUSIVE_LOCK_FUNCTION(...)
+#endif
+
+#ifndef UNLOCK_FUNCTION
+#define UNLOCK_FUNCTION(...)
+#endif
+
+#ifndef SHARED_LOCK_FUNCTION
+#define SHARED_LOCK_FUNCTION(...)
+#endif
+
+#ifndef ASSERT_SHARED_LOCK
+#define ASSERT_SHARED_LOCK(...)
+#endif
+
+#ifndef LOCKABLE
+#define LOCKABLE
+#endif
+
+#ifndef SCOPED_LOCKABLE
+#define SCOPED_LOCKABLE
+#endif
+
+#ifndef GUARDED_BY
+#define GUARDED_BY(x)
+#endif
+
+#ifndef SHARED_LOCKS_REQUIRED
+#define SHARED_LOCKS_REQUIRED(...)
+#endif
+
+#ifndef EXCLUSIVE_LOCKS_REQUIRED
+#define EXCLUSIVE_LOCKS_REQUIRED(...)
+#endif
+
 namespace quiche {
 
 // A class wrapping a non-reentrant mutex.
-class ABSL_LOCKABLE QUICHE_EXPORT_PRIVATE QuicheLockImpl {
+class ABSL_LOCKABLE QUICHE_EXPORT QuicheLockImpl {
  public:
   QuicheLockImpl() = default;
   QuicheLockImpl(const QuicheLockImpl&) = delete;
@@ -47,7 +83,7 @@ class ABSL_LOCKABLE QUICHE_EXPORT_PRIVATE QuicheLockImpl {
 
 // A Notification allows threads to receive notification of a single occurrence
 // of a single event.
-class QUICHE_EXPORT_PRIVATE QuicheNotificationImpl {
+class QUICHE_EXPORT QuicheNotificationImpl {
  public:
   QuicheNotificationImpl() = default;
   QuicheNotificationImpl(const QuicheNotificationImpl&) = delete;

@@ -16,7 +16,7 @@
 #include "core/safe_conversions.hpp"
 #include "core/string_number_conversions.hpp"
 #include "url/gurl.h"
-#include "mozilla/url_parse.h"
+#include "url/third_party/mozilla/url_parse.h"
 #include "url/url_canon.h"
 #include "url/url_canon_stdstring.h"
 #include "url/url_constants.h"

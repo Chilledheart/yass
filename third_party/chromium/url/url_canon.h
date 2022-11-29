@@ -10,7 +10,7 @@
 
 #include <string>
 
-#include "mozilla/url_parse.h"
+#include "url/third_party/mozilla/url_parse.h"
 
 namespace url {
 

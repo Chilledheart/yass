@@ -4,7 +4,7 @@
 #ifndef NET_QUICHE_OVERRIDES_QUICHE_PLATFORM_IMPL_QUICHE_BUG_TRACKER_IMPL_H_
 #define NET_QUICHE_OVERRIDES_QUICHE_PLATFORM_IMPL_QUICHE_BUG_TRACKER_IMPL_H_
 
-#include "quic/platform/api/quic_logging.h"
+#include "quiche/quic/platform/api/quic_logging.h"
 
 #define QUICHE_BUG_IMPL(bug_id) QUIC_LOG(DFATAL)
 #define QUICHE_BUG_IF_IMPL(bug_id, condition) QUIC_LOG_IF(DFATAL, condition)

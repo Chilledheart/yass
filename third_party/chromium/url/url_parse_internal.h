@@ -7,7 +7,7 @@
 
 // Contains common inline helper functions used by the URL parsing routines.
 
-#include "mozilla/url_parse.h"
+#include "url/third_party/mozilla/url_parse.h"
 
 namespace url {
 

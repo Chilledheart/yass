@@ -5,7 +5,7 @@
 #ifndef URL_URL_CANON_IP_H_
 #define URL_URL_CANON_IP_H_
 
-#include "mozilla/url_parse.h"
+#include "url/third_party/mozilla/url_parse.h"
 #include "url/url_canon.h"
 
 namespace url {
