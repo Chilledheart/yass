@@ -993,7 +993,7 @@ def _archive_files_license_files():
     'LICENSE.chromium': os.path.join('..', 'third_party', 'chromium', 'LICENSE'),
     'LICENSE.icu': os.path.join('..', 'third_party', 'icu', 'LICENSE'),
     'LICENSE.lss': os.path.join('..', 'third_party', 'lss', 'LICENSE'),
-    'LICENSE.mozilla': os.path.join('..', 'third_party', 'mozilla', 'LICENSE.txt'),
+    'LICENSE.mozilla': os.path.join('..', 'third_party', 'url', 'third_party', 'mozilla', 'LICENSE.txt'),
     'LICENSE.protobuf': os.path.join('..', 'third_party', 'protobuf', 'LICENSE'),
     'LICENSE.quiche': os.path.join('..', 'third_party', 'quiche', 'src', 'LICENSE'),
     'LICENSE.rapidjson': os.path.join('..', 'third_party', 'rapidjson', 'license.txt'),
