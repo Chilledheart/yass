@@ -66,7 +66,11 @@ int main(int argc, char** argv) {
 }
 
 YASSApp::YASSApp()
+#if GLIB_CHECK_VERSION(2, 74, 0)
+    : impl_(gtk_application_new(kAppId, G_APPLICATION_DEFAULT_FLAGS)),
+#else
     : impl_(gtk_application_new(kAppId, G_APPLICATION_FLAGS_NONE)),
+#endif
       idle_source_(g_timeout_source_new(200)) {
   g_set_application_name(kAppName);
 
