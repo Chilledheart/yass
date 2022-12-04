@@ -2059,6 +2059,8 @@ elseif (MSVC)
       "C4917" # VC2015,xp specific: a GUID can only be associated with a class, interface or namespace
       "C4457" # VS2019 specific: declaration of 'message' hides function parameter
       "C5039" # VS2019 specific: pointer or reference to potentially throwing function passed to extern C function under -EHc
+      "C5262" # VS2022 specific: Use [[fallthrough]] when a break statement is intentionally omitted between cases
+      "C5264" # VS2022 specific: 'const' variable is not used
       )
   set(MSVC_LEVEL4_WARNINGS_LIST
       # See https://connect.microsoft.com/VisualStudio/feedback/details/1217660/warning-c4265-when-using-functional-header
