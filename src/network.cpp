@@ -22,8 +22,8 @@ ABSL_FLAG(int32_t, tcp_connection_timeout, 75000, "TCP connection timeout (BSD-l
 ABSL_FLAG(int32_t, tcp_user_timeout, 300, "TCP user timeout (Linux only)");
 ABSL_FLAG(int32_t, so_linger_timeout, 30, "SO Linger timeout");
 
-ABSL_FLAG(int32_t, so_snd_buffer, 16 * 1024, "Socket Send Buffer");
-ABSL_FLAG(int32_t, so_rcv_buffer, 128 * 1024, "Socket Receive Buffer");
+ABSL_FLAG(int32_t, so_snd_buffer, 2048 * 1024, "Socket Send Buffer");
+ABSL_FLAG(int32_t, so_rcv_buffer, 2048 * 1024, "Socket Receive Buffer");
 
 void SetSOReusePort(asio::ip::tcp::acceptor::native_handle_type handle,
                     asio::error_code& ec) {
