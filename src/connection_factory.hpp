@@ -36,8 +36,11 @@ class ServiceFactory {
       thread_.join();
     }
 
-    SlaveContext(const SlaveContext&) noexcept = delete;
+    SlaveContext(const SlaveContext&) = delete;
+    SlaveContext& operator=(const SlaveContext&) = delete;
+
     SlaveContext(SlaveContext&&) noexcept = default;
+    SlaveContext& operator=(SlaveContext&&) noexcept = default;
 
     void listen(const asio::ip::tcp::endpoint& endpoint,
                 int backlog,
