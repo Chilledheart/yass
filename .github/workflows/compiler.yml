@@ -94,7 +94,29 @@ jobs:
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-          tools\build -use-libcxx=false -run-test -no-packaging || exit /b
+          tools\build -use-libcxx=false -build-test -no-packaging || exit /b
+
+          exit /b 0
+
+          :SetNewVCToolsVersion
+          set VCToolsVersion=
+      - name: Run tests
+        run: |
+          set VCToolsVersion=14.29
+          set Winsdk=10.0.19041.0
+          set "WindowsSDKVersion=%Winsdk%\"
+          if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
+          set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
+          set "VSCMD_START_DIR=%CD%"
+          set Platform=${{ matrix.arch }}
+          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
+
+          set "Path=%CD%\third_party\nasm;%Path%"
+          set "Path=%CD%\third_party\wix311;%Path%"
+
+          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
+
+          tools\build -nc -use-libcxx=false -run-test -no-packaging || exit /b
 
           exit /b 0
 
@@ -169,7 +191,29 @@ jobs:
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-          tools\build -use-libcxx=false -run-test -no-packaging || exit /b
+          tools\build -use-libcxx=false -build-test -no-packaging || exit /b
+
+          exit /b 0
+
+          :SetNewVCToolsVersion
+          set VCToolsVersion=
+      - name: Run tests
+        run: |
+          set VCToolsVersion=
+          set Winsdk=10.0.19041.0
+          set "WindowsSDKVersion=%Winsdk%\"
+          if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
+          set vsdevcmd=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat
+          set "VSCMD_START_DIR=%CD%"
+          set Platform=${{ matrix.arch }}
+          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
+
+          set "Path=%CD%\third_party\nasm;%Path%"
+          set "Path=%CD%\third_party\wix311;%Path%"
+
+          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
+
+          tools\build -nc -use-libcxx=false -run-test -no-packaging || exit /b
 
           exit /b 0
 
@@ -218,8 +262,7 @@ jobs:
           mkdir build
           cd build
           cmake -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_TESTS=on -DGUI=on ..
-          ninja yass yass_cli yass_server
-          ninja yass_test
+          ninja yass yass_cli yass_server yass_test
       - name: Run unittests
         shell: msys2 {0}
         run: |
@@ -300,7 +343,7 @@ jobs:
           fi
       - name: Build
         run: |
-          ./tools/build -no-packaging ${{ env.build_opts }}
+          ./tools/build -no-packaging ${{ env.build_opts }} -build-test
       - name: Run tests
         run: |
           ./tools/build -nc -no-packaging ${{ env.build_opts }} -run-test
@@ -355,7 +398,7 @@ jobs:
         run: |
           # required by gcc lto
           ulimit -n 4096
-          ./tools/build -no-packaging -macosx-universal-build=false
+          ./tools/build -no-packaging -macosx-universal-build=false -build-test
       - name: Run tests
         run: |
           # required by gcc lto
