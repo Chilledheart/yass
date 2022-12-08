@@ -91,7 +91,7 @@ class ServiceFactory {
           }
         }
 
-        std::vector<std::shared_ptr<T>> conns = std::move(connections_);
+        std::vector<std::shared_ptr<Connection>> conns = std::move(connections_);
         for (auto conn : conns) {
           conn->close();
         }
@@ -180,7 +180,7 @@ class ServiceFactory {
 
     std::unique_ptr<asio::ip::tcp::acceptor> acceptor_;
 
-    std::vector<std::shared_ptr<T>> connections_;
+    std::vector<std::shared_ptr<Connection>> connections_;
   };
 
  public:

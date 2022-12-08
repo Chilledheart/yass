@@ -67,7 +67,7 @@ class Socks5Connection : public std::enable_shared_from_this<Socks5Connection>,
                    const asio::ip::tcp::endpoint& remote_endpoint);
 
   /// Destruct the service
-  ~Socks5Connection();
+  ~Socks5Connection() override;
 
   /// Enter the start phase, begin to read requests
   void start() override;

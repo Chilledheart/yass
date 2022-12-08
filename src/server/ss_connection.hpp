@@ -52,7 +52,7 @@ class SsConnection : public std::enable_shared_from_this<SsConnection>,
                const asio::ip::tcp::endpoint& remote_endpoint);
 
   /// Destruct the service
-  ~SsConnection();
+  ~SsConnection() override;
 
   /// Enter the start phase, begin to read requests
   void start() override;

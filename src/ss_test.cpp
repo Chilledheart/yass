@@ -44,7 +44,7 @@ class ContentProviderConnection : public Connection {
                             const asio::ip::tcp::endpoint& remote_endpoint)
       : Connection(io_context, remote_endpoint) {}
 
-  ~ContentProviderConnection() {
+  ~ContentProviderConnection() override {
     asio::error_code ec;
     socket_.close(ec);
   }
@@ -54,11 +54,10 @@ class ContentProviderConnection : public Connection {
       [this](asio::error_code ec, size_t bytes_transferred) {
         if (ec || bytes_transferred != content_buffer.length()) {
           LOG(WARNING) << "Failed to transfer data: " << ec.message();
-          socket_.close(ec);
         } else {
           VLOG(2) << "content provider: written: " << bytes_transferred << " bytes";
-          socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
         }
+        socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
     });
   }
 
