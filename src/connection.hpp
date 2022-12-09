@@ -6,6 +6,7 @@
 
 #include <deque>
 #include <functional>
+#include <memory>
 #include <utility>
 
 #include "config/config.hpp"
@@ -87,6 +88,12 @@ class Connection {
 
   /// the callback invoked when disconnect event happens
   std::function<void()> disconnect_cb_;
+};
+
+class ConnectionFactory {
+ public:
+   virtual const char* Name() = 0;
+   virtual const char* ShortName() = 0;
 };
 
 #endif  // H_CONNECTION

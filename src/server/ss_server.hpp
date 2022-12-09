@@ -7,6 +7,6 @@
 #include "content_server.hpp"
 #include "ss_connection.hpp"
 
-typedef ContentServer<ss::SsConnection> SsServer;
+typedef ContentServer<ss::SsConnectionFactory> SsServer;
 
 #endif  // H_SS_SERVER

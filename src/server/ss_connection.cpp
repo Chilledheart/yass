@@ -44,7 +44,8 @@ void SsConnection::close() {
   if (closed_) {
     return;
   }
-  VLOG(2) << "disconnected with client at stage: "
+  VLOG(2) << "Connection (server) " << connection_id()
+          << " disconnected with client at stage: "
           << SsConnection::state_to_str(CurrentState())
           << " and data to write: " << downstream_.size();
   asio::error_code ec;
@@ -102,7 +103,8 @@ void SsConnection::ResolveDns(std::shared_ptr<IOBuf> buf) {
         // Get a list of endpoints corresponding to the SOCKS 5 domain name.
         if (!error) {
           self->remote_endpoint_ = results->endpoint();
-          VLOG(2) << "found address name: " << self->request_.domain_name();
+          VLOG(3) << "Connection (server) " << self->connection_id()
+                  << " resolved address: " << self->request_.domain_name();
           self->SetState(state_stream);
           self->OnConnect();
           ProcessReceivedData(self, buf, error, buf->length());
@@ -151,7 +153,8 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<SsConnection> self,
                                        std::shared_ptr<IOBuf> buf,
                                        asio::error_code ec,
                                        size_t bytes_transferred) {
-  VLOG(3) << "ss: received data: " << bytes_transferred << " bytes"
+  VLOG(3) << "Connection (server) " << self->connection_id()
+          << " received data: " << bytes_transferred << " bytes"
           << " ec: " << ec;
 
   self->rbytes_transferred_ += bytes_transferred;
@@ -200,7 +203,8 @@ void SsConnection::ProcessSentData(std::shared_ptr<SsConnection> self,
                                    std::shared_ptr<IOBuf> buf,
                                    asio::error_code ec,
                                    size_t bytes_transferred) {
-  VLOG(3) << "ss: sent data: " << bytes_transferred << " bytes"
+  VLOG(3) << "Connection (server) " << self->connection_id()
+          << " sent data: " << bytes_transferred << " bytes"
           << " ec: " << ec << " and data to write: " << self->downstream_.size();
 
   self->wbytes_transferred_ += bytes_transferred;
@@ -228,7 +232,8 @@ void SsConnection::ProcessSentData(std::shared_ptr<SsConnection> self,
 };
 
 void SsConnection::OnConnect() {
-  VLOG(2) << "ss: established connection with: " << endpoint_
+  VLOG(2) << "Connection (server) " << connection_id()
+          << " established connection with: " << endpoint_
           << " remote: " << remote_endpoint_;
   channel_ = std::make_unique<stream>(
       io_context_, remote_endpoint_,
@@ -256,7 +261,8 @@ void SsConnection::OnStreamWrite(std::shared_ptr<IOBuf> buf) {
 
   /* shutdown the socket if upstream is eof and all remaining data sent */
   if (channel_->eof() && downstream_.empty()) {
-    VLOG(3) << "ss: last data sent: shutting down";
+    VLOG(3) << "Connection (server) " << connection_id()
+            << " last data sent: shutting down";
     asio::error_code ec;
     socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
     return;
@@ -283,7 +289,8 @@ void SsConnection::DisableStreamRead() {
 }
 
 void SsConnection::OnDisconnect(asio::error_code ec) {
-  VLOG(2) << "ss: lost connection with: " << endpoint_ << " due to " << ec
+  VLOG(2) << "Connection (server) " << connection_id()
+          << " lost connection with: " << endpoint_ << " due to " << ec
           << " and data to write: " << downstream_.size();
   close();
 }
@@ -321,7 +328,8 @@ void SsConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
 }
 
 void SsConnection::connected() {
-  VLOG(2) << "remote: established connection with: " << remote_endpoint_;
+  VLOG(2) << "Connection (server) " << connection_id()
+          << " remote: established upstream connection with: " << remote_endpoint_;
   upstream_readable_ = true;
   upstream_writable_ = true;
   channel_->start_read();
@@ -329,7 +337,8 @@ void SsConnection::connected() {
 }
 
 void SsConnection::received(std::shared_ptr<IOBuf> buf) {
-  VLOG(3) << "upstream: received reply: " << buf->length() << " bytes.";
+  VLOG(3) << "Connection (server) " << connection_id()
+          << " upstream: received reply: " << buf->length() << " bytes.";
 
   // queue limit to upstream read
   if (downstream_.size() >= MAX_DOWNSTREAM_DEPS && upstream_readable_) {
@@ -341,7 +350,8 @@ void SsConnection::received(std::shared_ptr<IOBuf> buf) {
 }
 
 void SsConnection::sent(std::shared_ptr<IOBuf> buf) {
-  VLOG(3) << "upstream: sent request: " << buf->length() << " bytes.";
+  VLOG(3) << "Connection (server) " << connection_id()
+          << " upstream: sent request: " << buf->length() << " bytes.";
   DCHECK(!upstream_.empty() && upstream_[0] == buf);
   upstream_.pop_front();
 
@@ -355,14 +365,16 @@ void SsConnection::sent(std::shared_ptr<IOBuf> buf) {
 }
 
 void SsConnection::disconnected(asio::error_code ec) {
-  VLOG(2) << "upstream: lost connection with: " << remote_endpoint_
+  VLOG(2) << "Connection (server) " << connection_id()
+          << " upstream: lost connection with: " << remote_endpoint_
           << " due to " << ec
           << " and data to write: " << downstream_.size();
   upstream_writable_ = false;
   channel_->close();
   /* delay the socket's close because downstream is buffered */
   if (downstream_.empty()) {
-    VLOG(3) << "ss: last data sent: shutting down";
+    VLOG(3) << "Connection (server) " << connection_id()
+            << " last data sent: shutting down";
     socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
   } else {
     socket_.shutdown(asio::ip::tcp::socket::shutdown_receive, ec);

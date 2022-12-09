@@ -24,6 +24,7 @@
 template <typename T>
 class ContentServer {
  public:
+  using ConnectionType = typename T::ConnectionType;
   class Delegate {
    public:
     virtual ~Delegate() = default;
@@ -87,8 +88,8 @@ class ContentServer {
       if (ec) {
         return;
       }
-      LOG(INFO) << "Listening on " << endpoint_ << " with "
-        << "thread " << index_;
+      LOG(INFO) << "Thread " << index_ << " Listening (" << factory_.Name() << ") on "
+                << endpoint_;
       io_context_.post([this]() { accept(); });
     }
 
@@ -99,11 +100,12 @@ class ContentServer {
           asio::error_code ec;
           acceptor_->close(ec);
           if (ec) {
-            VLOG(2) << "Acceptor close failed: " << ec;
+            LOG(ERROR) << "Thread " << index_ << " (" << factory_.Name() << ")"
+                       << " acceptor close failed: " << ec;
           }
         }
 
-        std::vector<std::shared_ptr<Connection>> conns = std::move(connections_);
+        std::vector<std::shared_ptr<ConnectionType>> conns = std::move(connections_);
         for (auto conn : conns) {
           conn->close();
         }
@@ -115,18 +117,22 @@ class ContentServer {
    private:
     void do_accept_loop() {
       asio::error_code ec;
-      std::string threaded_context_name = absl::StrFormat("threaded-context-%d", index_);
+      std::string threaded_context_name = absl::StrFormat("%s-thread-%d",
+        factory_.ShortName(), index_);
       if (!SetThreadName(thread_.native_handle(), threaded_context_name)) {
-        PLOG(WARNING) << "thread " << index_ << " failed to set thread name";
+        PLOG(WARNING) << "Thread " << index_ << " (" << factory_.Name() << ")"
+                      << " failed to set thread name";
       }
       if (!SetThreadPriority(thread_.native_handle(),
                              ThreadPriority::ABOVE_NORMAL)) {
-        PLOG(WARNING) << "thread " << index_ << " failed to set thread priority";
+        PLOG(WARNING) << "Thread " << index_ << " (" << factory_.Name() << ")"
+                      << " failed to set thread priority";
       }
       io_context_.run(ec);
 
       if (ec) {
-        LOG(ERROR) << "thread " << index_ << " failed to accept more due to: " << ec;
+        LOG(ERROR) << "Thread " << index_ << " (" << factory_.Name() << ")"
+                   << " failed to accept more due to: " << ec;
       }
     }
 
@@ -134,13 +140,13 @@ class ContentServer {
       acceptor_->async_accept(
           peer_endpoint_,
           [this](asio::error_code error, asio::ip::tcp::socket socket) {
-            std::shared_ptr<T> conn =
-                std::make_unique<T>(io_context_, remote_endpoint_);
+            std::shared_ptr<ConnectionType> conn =
+                factory_.Create(io_context_, remote_endpoint_);
             on_accept(conn, error, std::move(socket));
           });
     }
 
-    void on_accept(std::shared_ptr<T> conn,
+    void on_accept(std::shared_ptr<ConnectionType> conn,
                    asio::error_code ec,
                    asio::ip::tcp::socket socket) {
       if (!ec) {
@@ -159,18 +165,21 @@ class ContentServer {
         if (delegate_) {
           delegate_->OnConnect(connection_id);
         }
-        LOG(INFO) << "Connection " << connection_id << " with "
-          << conn->peer_endpoint() << " connected";
+        LOG(INFO) << "Connection (" << factory_.Name() << ") "
+                  << connection_id << " with " << conn->peer_endpoint()
+                  << " connected";
         conn->start();
         accept();
       } if (ec != asio::error::operation_aborted) {
-        LOG(ERROR) << "thread " << index_ << " failed to accept more due to: " << ec;
+        LOG(ERROR) << "Thread " << index_ << " (" << factory_.Name() << ")"
+                   << " failed to accept more due to: " << ec;
       }
     }
 
-    void on_disconnect(std::shared_ptr<T> conn) {
+    void on_disconnect(std::shared_ptr<typename T::ConnectionType> conn) {
       int connection_id = conn->connection_id();
-      LOG(INFO) << "Connection " << connection_id << " disconnected";
+      LOG(INFO) << "Connection (" << factory_.Name() << ") "
+                << connection_id << " disconnected";
       connections_.erase(
           std::remove(connections_.begin(), connections_.end(), conn),
           connections_.end());
@@ -195,7 +204,9 @@ class ContentServer {
 
     std::unique_ptr<asio::ip::tcp::acceptor> acceptor_;
 
-    std::vector<std::shared_ptr<Connection>> connections_;
+    std::vector<std::shared_ptr<typename T::ConnectionType>> connections_;
+
+    T factory_;
   };
 
  public:

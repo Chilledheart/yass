@@ -85,7 +85,8 @@ void Socks5Connection::close() {
   if (closed_) {
     return;
   }
-  VLOG(2) << "disconnected with client at stage: "
+  VLOG(2) << "Connection (client) " << connection_id()
+          << " disconnected with client at stage: "
           << Socks5Connection::state_to_str(CurrentState())
           << " and data to write: " << downstream_.size();
   asio::error_code ec;
@@ -164,7 +165,8 @@ asio::error_code Socks5Connection::OnReadSocks5MethodSelect(
     buf->retreat(method_select_request_.length());
     SetState(state_method_select);
 
-    VLOG(3) << "client: socks5 method select";
+    VLOG(3) << "Connection (client) " << connection_id()
+            << " socks5 method select";
     return asio::error_code();
   }
   return std::make_error_code(std::errc::bad_message);
@@ -172,7 +174,8 @@ asio::error_code Socks5Connection::OnReadSocks5MethodSelect(
 
 asio::error_code Socks5Connection::OnReadSocks5Handshake(
     std::shared_ptr<IOBuf> buf) {
-  VLOG(3) << "client: try socks5 handshake";
+  VLOG(3) << "Connection (client) " << connection_id()
+          << " try socks5 handshake";
   std::shared_ptr<Socks5Connection> self = shared_from_this();
   socks5::request_parser::result_type result;
   std::tie(result, std::ignore) = request_parser_.parse(
@@ -184,7 +187,8 @@ asio::error_code Socks5Connection::OnReadSocks5Handshake(
     buf->retreat(s5_request_.length());
     SetState(state_socks5_handshake);
 
-    VLOG(3) << "client: socks5 handshake began";
+    VLOG(3) << "Connection (client) " << connection_id()
+            << " socks5 handshake began";
     return asio::error_code();
   }
   return std::make_error_code(std::errc::bad_message);
@@ -193,7 +197,8 @@ asio::error_code Socks5Connection::OnReadSocks5Handshake(
 asio::error_code Socks5Connection::OnReadSocks4Handshake(
     std::shared_ptr<IOBuf> buf) {
   std::shared_ptr<Socks5Connection> self = shared_from_this();
-  VLOG(3) << "client: try socks4 handshake";
+  VLOG(3) << "Connection (client) " << connection_id()
+          << " try socks4 handshake";
 
   socks4::request_parser::result_type result;
   std::tie(result, std::ignore) = s4_request_parser_.parse(
@@ -204,7 +209,8 @@ asio::error_code Socks5Connection::OnReadSocks4Handshake(
     buf->retreat(s4_request_.length());
     SetState(state_socks4_handshake);
 
-    VLOG(3) << "client: socks4 handshake began";
+    VLOG(3) << "Connection (client) " << connection_id()
+            << " socks4 handshake began";
     return asio::error_code();
   }
   return std::make_error_code(std::errc::bad_message);
@@ -212,7 +218,9 @@ asio::error_code Socks5Connection::OnReadSocks4Handshake(
 
 asio::error_code Socks5Connection::OnReadHttpRequest(
     std::shared_ptr<IOBuf> buf) {
-  VLOG(3) << "client: try http handshake";
+  VLOG(3) << "Connection (client) " << connection_id()
+          << " try http handshake";
+
   static struct http_parser_settings settings_connect = {
       //.on_message_begin
       nullptr,
@@ -244,7 +252,8 @@ asio::error_code Socks5Connection::OnReadHttpRequest(
                                 reinterpret_cast<const char*>(buf->data()),
                                 buf->length());
   if (nparsed) {
-    VLOG(3) << "http: "
+    VLOG(4) << "Connection (client) " << connection_id()
+            << " http: "
             << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
   }
 
@@ -261,11 +270,13 @@ asio::error_code Socks5Connection::OnReadHttpRequest(
     }
 
     SetState(state_http_handshake);
-    VLOG(3) << "client: http handshake began";
+    VLOG(3) << "Connection (client) " << connection_id()
+            << " http handshake began";
     return asio::error_code();
   }
 
-  LOG(WARNING) << http_errno_description(HTTP_PARSER_ERRNO(&parser)) << ": "
+  LOG(WARNING) << "Connection (client) " << connection_id()
+               << http_errno_description(HTTP_PARSER_ERRNO(&parser)) << ": "
                << std::string(reinterpret_cast<const char*>(buf->data()),
                               nparsed);
   return std::make_error_code(std::errc::bad_message);
@@ -393,7 +404,8 @@ void Socks5Connection::WriteHandshake() {
     case state_stream:
       break;
     default:
-      LOG(FATAL) << "bad state 0x" << std::hex
+      LOG(FATAL) << "Connection (client) " << connection_id()
+                 << "bad state 0x" << std::hex
                  << static_cast<int>(self->CurrentState()) << std::dec;
   }
 }
@@ -442,8 +454,9 @@ asio::error_code Socks5Connection::PerformCmdOpsV5(
     case socks5::cmd_udp_associate:
     default:
       // NOT IMPLETMENTED
-      VLOG(2) << "not supported command 0x" << std::hex
-              << static_cast<int>(request->command()) << std::dec;
+      LOG(WARNING) << "Connection (client) " << connection_id()
+                   << "not supported command 0x" << std::hex
+                   << static_cast<int>(request->command()) << std::dec;
       reply->mutable_status() = socks5::reply::request_failed_cmd_not_supported;
       break;
   }
@@ -514,7 +527,9 @@ void Socks5Connection::ProcessReceivedData(
     std::shared_ptr<IOBuf> buf,
     asio::error_code ec,
     size_t bytes_transferred) {
-  VLOG(3) << "client: received data: " << bytes_transferred << " bytes"
+
+  VLOG(3) << "Connection (client) " << self->connection_id()
+          << " received data: " << bytes_transferred << " bytes"
           << " ec: " << ec;
 
   self->rbytes_transferred_ += bytes_transferred;
@@ -532,7 +547,8 @@ void Socks5Connection::ProcessReceivedData(
       case state_socks5_handshake:
         ec = self->PerformCmdOpsV5(&self->s5_request_, &self->s5_reply_);
         self->WriteHandshake();
-        VLOG(3) << "client: socks5 handshake finished";
+        VLOG(3) << "Connection (client) " << self->connection_id()
+                << " socks5 handshake finished";
         if (buf->length()) {
           self->ProcessReceivedData(self, buf, ec, buf->length());
         } else {
@@ -542,7 +558,8 @@ void Socks5Connection::ProcessReceivedData(
       case state_socks4_handshake:
         ec = self->PerformCmdOpsV4(&self->s4_request_, &self->s4_reply_);
         self->WriteHandshake();
-        VLOG(3) << "client: socks4 handshake finished";
+        VLOG(3) << "Connection (client) " << self->connection_id()
+                << " socks4 handshake finished";
         if (buf->length()) {
           self->ProcessReceivedData(self, buf, ec, buf->length());
         } else {
@@ -552,7 +569,8 @@ void Socks5Connection::ProcessReceivedData(
       case state_http_handshake:
         ec = self->PerformCmdOpsHttp();
         self->WriteHandshake();
-        VLOG(3) << "client: http handshake finished";
+        VLOG(3) << "Connection (client) " << self->connection_id()
+                << " http handshake finished";
         if (buf->length()) {
           self->ProcessReceivedData(self, buf, ec, buf->length());
         } else {
@@ -569,7 +587,8 @@ void Socks5Connection::ProcessReceivedData(
         ec = std::make_error_code(std::errc::bad_message);
         break;
       default:
-        LOG(FATAL) << "bad state 0x" << std::hex
+        LOG(FATAL) << "Connection (client) " << self->connection_id()
+                   << " bad state 0x" << std::hex
                    << static_cast<int>(self->CurrentState()) << std::dec;
     };
   }
@@ -587,7 +606,9 @@ void Socks5Connection::ProcessSentData(std::shared_ptr<Socks5Connection> self,
                                        std::shared_ptr<IOBuf> buf,
                                        asio::error_code ec,
                                        size_t bytes_transferred) {
-  VLOG(3) << "client: sent data: " << bytes_transferred << " bytes"
+
+  VLOG(3) << "Connection (client) " << self->connection_id()
+          << " sent data: " << bytes_transferred << " bytes"
           << " ec: " << ec << " and data to write: " << self->downstream_.size();
 
   self->wbytes_transferred_ += bytes_transferred;
@@ -614,7 +635,8 @@ void Socks5Connection::ProcessSentData(std::shared_ptr<Socks5Connection> self,
         ec = std::make_error_code(std::errc::bad_message);
         break;
       default:
-        LOG(FATAL) << "bad state 0x" << std::hex
+        LOG(FATAL) << "Connection (client) " << self->connection_id()
+                   << " bad state 0x" << std::hex
                    << static_cast<int>(self->CurrentState()) << std::dec;
     }
   }
@@ -635,7 +657,8 @@ void Socks5Connection::OnCmdConnect(ByteRange req) {
 }
 
 void Socks5Connection::OnConnect() {
-  VLOG(2) << "client: established connection with: " << endpoint_;
+  VLOG(2) << "Connection (client) " << connection_id()
+          << "client: established connection with: " << endpoint_;
   // create lazy
   channel_ = std::make_unique<stream>(
       io_context_, remote_endpoint_,
@@ -657,7 +680,8 @@ void Socks5Connection::OnStreamWrite(std::shared_ptr<IOBuf> buf) {
 
   /* shutdown the socket if upstream is eof and all remaining data sent */
   if (channel_->eof() && downstream_.empty()) {
-    VLOG(3) << "client: last data sent: shutting down";
+    VLOG(3) << "Connection (client) " << connection_id()
+            << " last data sent: shutting down";
     asio::error_code ec;
     socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
     return;
@@ -665,7 +689,8 @@ void Socks5Connection::OnStreamWrite(std::shared_ptr<IOBuf> buf) {
 }
 
 void Socks5Connection::OnDisconnect(asio::error_code ec) {
-  VLOG(2) << "client: lost connection with: " << endpoint_ << " due to "
+  VLOG(2) << "Connection (client) " << connection_id()
+          << " lost connection with: " << endpoint_ << " due to "
           << ec << " and data to write: " << downstream_.size();
   close();
 }
@@ -684,7 +709,8 @@ void Socks5Connection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (!downstream_.empty() && downstream_writable_) {
     WriteStream(downstream_[0]);
   } else {
-    VLOG(3) << "client: waiting for downstream writable in-progress: "
+    VLOG(3) << "Connection (client) " << connection_id()
+            << " waiting for downstream writable in-progress: "
             << downstream_.size();
   }
 }
@@ -705,7 +731,8 @@ void Socks5Connection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
 }
 
 void Socks5Connection::connected() {
-  VLOG(2) << "remote: established connection with: " << remote_endpoint_;
+  VLOG(3) << "Connection (client) " << connection_id()
+          << " remote: established connection with: " << remote_endpoint_;
   upstream_writable_ = true;
   channel_->start_read();
   OnDownstreamWriteFlush();
@@ -713,7 +740,8 @@ void Socks5Connection::connected() {
 }
 
 void Socks5Connection::received(std::shared_ptr<IOBuf> buf) {
-  VLOG(3) << "upstream: received reply: " << buf->length() << " bytes.";
+  VLOG(3) << "Connection (client) " << connection_id()
+          << " upstream: received reply: " << buf->length() << " bytes.";
   buf = DecryptData(buf);
   if (!buf->empty()) {
     OnDownstreamWrite(buf);
@@ -721,7 +749,8 @@ void Socks5Connection::received(std::shared_ptr<IOBuf> buf) {
 }
 
 void Socks5Connection::sent(std::shared_ptr<IOBuf> buf) {
-  VLOG(3) << "upstream: sent request: " << buf->length() << " bytes.";
+  VLOG(3) << "Connection (client) " << connection_id()
+          << " upstream: sent request: " << buf->length() << " bytes.";
   DCHECK(!upstream_.empty() && upstream_[0] == buf);
   upstream_.pop_front();
 
@@ -731,13 +760,15 @@ void Socks5Connection::sent(std::shared_ptr<IOBuf> buf) {
 }
 
 void Socks5Connection::disconnected(asio::error_code ec) {
-  VLOG(2) << "upstream: lost connection with: " << remote_endpoint_
+  VLOG(2) << "Connection (client) " << connection_id()
+          << " upstream: lost connection with: " << remote_endpoint_
           << " due to " << ec
           << " and data to write: " << downstream_.size();
   channel_->close();
   /* delay the socket's close because downstream is buffered */
   if (downstream_.empty()) {
-    VLOG(3) << "client: last data sent: shutting down";
+    VLOG(3) << "Connection (client) " << connection_id()
+            << "last data sent: shutting down";
     socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
   } else {
     socket_.shutdown(asio::ip::tcp::socket::shutdown_receive, ec);

@@ -288,4 +288,15 @@ class Socks5Connection : public std::enable_shared_from_this<Socks5Connection>,
   size_t wbytes_transferred_ = 0;
 };
 
+class Socks5ConnectionFactory : public ConnectionFactory {
+ public:
+   using ConnectionType = Socks5Connection;
+   std::unique_ptr<ConnectionType> Create(asio::io_context& io_context,
+                                      const asio::ip::tcp::endpoint& remote_endpoint) {
+     return std::make_unique<Socks5Connection>(io_context, remote_endpoint);
+   }
+   const char* Name() override { return "client"; };
+   const char* ShortName() override { return "client"; };
+};
+
 #endif  // H_SOCKS5_CONNECTION

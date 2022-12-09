@@ -198,6 +198,17 @@ class SsConnection : public std::enable_shared_from_this<SsConnection>,
   size_t wbytes_transferred_ = 0;
 };
 
+class SsConnectionFactory : public ConnectionFactory {
+ public:
+   using ConnectionType = SsConnection;
+   std::unique_ptr<ConnectionType> Create(asio::io_context& io_context,
+                                      const asio::ip::tcp::endpoint& remote_endpoint) {
+     return std::make_unique<SsConnection>(io_context, remote_endpoint);
+   }
+   const char* Name() override { return "server"; };
+   const char* ShortName() override { return "server"; };
+};
+
 }  // namespace ss
 
 #endif  // H_SS_CONNECTION

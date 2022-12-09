@@ -7,6 +7,6 @@
 #include "cli/socks5_connection.hpp"
 #include "content_server.hpp"
 
-typedef ContentServer<Socks5Connection> Socks5Server;
+typedef ContentServer<Socks5ConnectionFactory> Socks5Server;
 
 #endif  // H_SOCKS5_SERVER

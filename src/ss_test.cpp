@@ -66,7 +66,18 @@ class ContentProviderConnection : public Connection {
   }
 };
 
-typedef ContentServer<ContentProviderConnection> ContentProviderServer;
+class ContentProviderConnectionFactory : public ConnectionFactory {
+ public:
+   using ConnectionType = ContentProviderConnection;
+   std::unique_ptr<ConnectionType> Create(asio::io_context& io_context,
+                                      const asio::ip::tcp::endpoint& remote_endpoint) {
+     return std::make_unique<ContentProviderConnection>(io_context, remote_endpoint);
+   }
+   const char* Name() override { return "content-provider"; };
+   const char* ShortName() override { return "cp"; };
+};
+
+typedef ContentServer<ContentProviderConnectionFactory> ContentProviderServer;
 
 void GenerateConnectRequest(std::string host, int port_num, IOBuf *buf) {
   std::string request_header = StringPrintf(
