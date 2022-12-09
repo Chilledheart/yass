@@ -1,4 +1,4 @@
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 # This is included by reference in the //build/config/compiler:runtime_library
 # config that is applied to all targets. It is here to separate out the logic
@@ -202,13 +202,16 @@ set(libcxx_SOURCES
   trunk/src/condition_variable.cpp
   trunk/src/condition_variable_destructor.cpp
   trunk/src/debug.cpp
+  trunk/src/legacy_debug_handler.cpp
   trunk/src/exception.cpp
+  trunk/src/format.cpp
   trunk/src/functional.cpp
   trunk/src/future.cpp
   trunk/src/hash.cpp
   trunk/src/ios.cpp
   trunk/src/ios.instantiations.cpp
   trunk/src/iostream.cpp
+  trunk/src/legacy_pointer_safety.cpp
   trunk/src/locale.cpp
   trunk/src/memory.cpp
   trunk/src/mutex.cpp
@@ -218,6 +221,9 @@ set(libcxx_SOURCES
   trunk/src/random.cpp
   trunk/src/random_shuffle.cpp
   trunk/src/regex.cpp
+  trunk/src/ryu/d2fixed.cpp
+  trunk/src/ryu/d2s.cpp
+  trunk/src/ryu/f2s.cpp
   trunk/src/shared_mutex.cpp
   trunk/src/stdexcept.cpp
   trunk/src/string.cpp
@@ -228,6 +234,7 @@ set(libcxx_SOURCES
   trunk/src/utility.cpp
   trunk/src/valarray.cpp
   trunk/src/vector.cpp
+  trunk/src/verbose_abort.cpp
 )
 
 # GCC 6 series on Debian Stretch doesn't compile
@@ -303,12 +310,12 @@ if (MSVC)
     "-Wno-macro-redefined"
     # We want to use a uniform C++ version across all of chromium, but
     # upstream libc++ requires C++17 so we have to make an exception here.
-    "-std:c++17"
+    "-std:c++20"
     )
 else()
   set(libcxx_CFLAGS ${libcxx_CFLAGS}
     "-fPIC"
-    "-std=c++17"
+    "-std=c++20"
     )
 endif()
 
@@ -396,7 +403,6 @@ if (NOT MSVC)
     ../libc++abi/trunk/src/stdlib_stdexcept.cpp
     ../libc++abi/trunk/src/stdlib_typeinfo.cpp
     # Internal files
-    ../libc++abi/trunk/src/abort_message.cpp
     ../libc++abi/trunk/src/fallback_malloc.cpp
     ../libc++abi/trunk/src/private_typeinfo.cpp
     )
@@ -442,7 +448,9 @@ if (NOT MSVC)
   set(libcxxabi_DEFINITIONS
     ${libcxxabi_DEFINITIONS}
     "LIBCXXABI_SILENT_TERMINATE"
-    "_LIBCPP_ENABLE_CXX17_REMOVED_UNEXPECTED_FUNCTIONS"
+    # TODO(crbug.com/1298070) _LIBCPP_CONSTINIT is defined in a libc++ revision
+    # more recent than the one currently used in Chromium.
+    "_LIBCPP_CONSTINIT=constinit"
     )
 
   if (NOT libcxx_SHARED)
@@ -490,6 +498,7 @@ target_compile_definitions(cxx PRIVATE ${libcxx_DEFINITIONS})
 
 target_include_directories(cxx PRIVATE
   ../libc++
+  ../libc++/trunk/src
   ../libc++/trunk/include)
 
 target_compile_options(cxx PRIVATE ${libcxx_CFLAGS})
