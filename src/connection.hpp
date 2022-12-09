@@ -36,12 +36,15 @@ class Connection {
   /// \param socket the socket bound to the service
   /// \param endpoint the service socket's endpoint
   /// \param peer_endpoint the peer endpoint
+  /// \param the number of connection id
   void on_accept(asio::ip::tcp::socket&& socket,
                  const asio::ip::tcp::endpoint& endpoint,
-                 const asio::ip::tcp::endpoint& peer_endpoint) {
+                 const asio::ip::tcp::endpoint& peer_endpoint,
+                 int connection_id) {
     socket_ = std::move(socket);
     endpoint_ = endpoint;
     peer_endpoint_ = peer_endpoint;
+    connection_id_ = connection_id;
   }
 
   /// Enter the start phase, begin to read requests
@@ -57,6 +60,16 @@ class Connection {
 
   asio::io_context& io_context() { return io_context_; }
 
+  const asio::ip::tcp::endpoint& endpoint() const { return endpoint_; }
+
+  const asio::ip::tcp::endpoint& peer_endpoint() const {
+    return peer_endpoint_;
+  }
+
+  int connection_id() const {
+    return connection_id_;
+  }
+
  protected:
   /// the io context associated with
   asio::io_context& io_context_;
@@ -69,6 +82,8 @@ class Connection {
   asio::ip::tcp::endpoint endpoint_;
   /// the peer endpoint the connection connects
   asio::ip::tcp::endpoint peer_endpoint_;
+  /// the number of connection id
+  int connection_id_;
 
   /// the callback invoked when disconnect event happens
   std::function<void()> disconnect_cb_;

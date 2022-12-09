@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2022 Chilledheart  */
 #include "cli/cli_worker.hpp"
+#include "cli/socks5_server.hpp"
 
 #include <absl/flags/flag.h>
 
-#include "cli/socks5_factory.hpp"
 #include "core/compiler_specific.hpp"
 
 using namespace socks5;
 
 class WorkerPrivate {
  public:
-  std::unique_ptr<Socks5Factory> socks5_server;
+  std::unique_ptr<Socks5Server> socks5_server;
 };
 
 Worker::Worker()
@@ -57,7 +57,7 @@ void Worker::Stop(std::function<void()> callback) {
 }
 
 size_t Worker::currentConnections() const {
-  return private_->socks5_server ? private_->socks5_server->currentConnections() : 0;
+  return private_->socks5_server ? private_->socks5_server->num_of_connections() : 0;
 }
 
 void Worker::WorkFunc() {
@@ -108,7 +108,7 @@ void Worker::on_resolve_remote(asio::error_code ec,
   }
   remote_endpoint_ = results->endpoint();
 
-  private_->socks5_server = std::make_unique<Socks5Factory>(remote_endpoint_);
+  private_->socks5_server = std::make_unique<Socks5Server>(remote_endpoint_);
 
   private_->socks5_server->listen(endpoint_, SOMAXCONN, ec);
 

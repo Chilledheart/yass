@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2019-2020 Chilledheart  */
 
-#include "cli/socks5_factory.hpp"
 #include "config/config.hpp"
 #include "core/cipher.hpp"
+#include "cli/socks5_server.hpp"
 
 #include <absl/debugging/failure_signal_handler.h>
 #include <absl/debugging/symbolize.h>
@@ -73,12 +73,12 @@ int main(int argc, const char* argv[]) {
 
   LOG(WARNING) << "using " << endpoint << " with upstream " << remote_endpoint;
 
-  Socks5Factory factory(remote_endpoint);
-  factory.listen(endpoint, SOMAXCONN, ec);
+  Socks5Server server(remote_endpoint);
+  server.listen(endpoint, SOMAXCONN, ec);
   if (ec) {
     LOG(ERROR) << "listen failed due to: " << ec;
-    factory.stop();
-    factory.join();
+    server.stop();
+    server.join();
     work_guard.reset();
     return -1;
   }
@@ -89,8 +89,8 @@ int main(int argc, const char* argv[]) {
   signals.add(SIGQUIT, ec);
 #endif
   signals.async_wait([&](asio::error_code /*error*/, int /*signal_number*/) {
-    factory.stop();
-    factory.join();
+    server.stop();
+    server.join();
     work_guard.reset();
   });
 

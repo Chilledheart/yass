@@ -3,7 +3,7 @@
 
 #include "config/config.hpp"
 #include "core/cipher.hpp"
-#include "ss_factory.hpp"
+#include "server/ss_server.hpp"
 
 #include <absl/debugging/failure_signal_handler.h>
 #include <absl/debugging/symbolize.h>
@@ -72,12 +72,12 @@ int main(int argc, const char* argv[]) {
 
   LOG(WARNING) << "tcp server listening at " << endpoint;
 
-  SsFactory factory(remote_endpoint);
-  factory.listen(endpoint, SSMAXCONN, ec);
+  SsServer server(remote_endpoint);
+  server.listen(endpoint, SSMAXCONN, ec);
   if (ec) {
     LOG(ERROR) << "listen failed due to: " << ec;
-    factory.stop();
-    factory.join();
+    server.stop();
+    server.join();
     work_guard.reset();
     return -1;
   }
@@ -88,8 +88,8 @@ int main(int argc, const char* argv[]) {
   signals.add(SIGQUIT, ec);
 #endif
   signals.async_wait([&](asio::error_code /*error*/, int /*signal_number*/) {
-    factory.stop();
-    factory.join();
+    server.stop();
+    server.join();
     work_guard.reset();
   });
 

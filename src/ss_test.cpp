@@ -11,14 +11,13 @@
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
 #include <openssl/crypto.h>
-
-#include "cli/socks5_factory.hpp"
+#include "cli/socks5_server.hpp"
 #include "config/config.hpp"
 #include "core/cipher.hpp"
 #include "core/iobuf.hpp"
 #include "core/rand_util.hpp"
 #include "core/stringprintf.hpp"
-#include "server/ss_factory.hpp"
+#include "server/ss_server.hpp"
 
 #include "test_util.hpp"
 
@@ -28,7 +27,7 @@ namespace {
 
 static IOBuf content_buffer;
 static const char kConnectResponse[] = "HTTP/1.1 200 Connection established\r\n\r\n";
-static int kContentMaxSize = 1024 * 1024;
+static int kContentMaxSize = 10 * 1024 * 1024;
 
 void GenerateRandContent(int max = kContentMaxSize) {
   int content_size = max;
@@ -67,7 +66,7 @@ class ContentProviderConnection : public Connection {
   }
 };
 
-typedef ServiceFactory<ContentProviderConnection> CpFactory;
+typedef ContentServer<ContentProviderConnection> ContentProviderServer;
 
 void GenerateConnectRequest(std::string host, int port_num, IOBuf *buf) {
   std::string request_header = StringPrintf(
@@ -199,8 +198,8 @@ class SsEndToEndTest : public ::testing::Test {
     // not used
     asio::ip::tcp::endpoint remote_endpoint;
     content_provider_work_guard_ = std::make_unique<asio::io_context::work>(content_provider_io_context_);
-    content_provider_factory_ = std::make_unique<CpFactory>(remote_endpoint);
-    content_provider_factory_->listen(endpoint, backlog, ec);
+    content_provider_server_ = std::make_unique<ContentProviderServer>(remote_endpoint);
+    content_provider_server_->listen(endpoint, backlog, ec);
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec.message();
       return ec;
@@ -209,16 +208,16 @@ class SsEndToEndTest : public ::testing::Test {
   }
 
   void StopContentProvider() {
-    if (content_provider_factory_) {
-      content_provider_factory_->stop();
-      content_provider_factory_->join();
+    if (content_provider_server_) {
+      content_provider_server_->stop();
+      content_provider_server_->join();
     }
     content_provider_work_guard_.reset();
     if (content_provider_io_thread_) {
       content_provider_io_thread_->join();
       content_provider_io_thread_.reset();
     }
-    content_provider_factory_.reset();
+    content_provider_server_.reset();
   }
 
   asio::error_code StartServer(asio::ip::tcp::endpoint endpoint, int backlog) {
@@ -229,8 +228,8 @@ class SsEndToEndTest : public ::testing::Test {
     // not used
     asio::ip::tcp::endpoint remote_endpoint;
     server_work_guard_ = std::make_unique<asio::io_context::work>(server_io_context_);
-    server_factory_ = std::make_unique<SsFactory>(remote_endpoint);
-    server_factory_->listen(endpoint, backlog, ec);
+    server_server_ = std::make_unique<SsServer>(remote_endpoint);
+    server_server_->listen(endpoint, backlog, ec);
 
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec.message();
@@ -241,16 +240,16 @@ class SsEndToEndTest : public ::testing::Test {
   }
 
   void StopServer() {
-    if (server_factory_) {
-      server_factory_->stop();
-      server_factory_->join();
+    if (server_server_) {
+      server_server_->stop();
+      server_server_->join();
     }
     server_work_guard_.reset();
     if (server_io_thread_) {
       server_io_thread_->join();
       server_io_thread_.reset();
     }
-    server_factory_.reset();
+    server_server_.reset();
   }
 
   asio::error_code StartLocal(asio::ip::tcp::endpoint remote_endpoint,
@@ -261,13 +260,13 @@ class SsEndToEndTest : public ::testing::Test {
     VLOG(2) << "local server listening at " << endpoint << " with upstream " << remote_endpoint;
 
     local_work_guard_ = std::make_unique<asio::io_context::work>(local_io_context_);
-    local_factory_ = std::make_unique<Socks5Factory>(remote_endpoint);
-    local_factory_->listen(endpoint, backlog, ec);
+    local_server_ = std::make_unique<Socks5Server>(remote_endpoint);
+    local_server_->listen(endpoint, backlog, ec);
 
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec.message();
-      local_factory_->stop();
-      local_factory_->join();
+      local_server_->stop();
+      local_server_->join();
       local_work_guard_.reset();
       return ec;
     }
@@ -276,33 +275,33 @@ class SsEndToEndTest : public ::testing::Test {
   }
 
   void StopClient() {
-    if (local_factory_) {
-      local_factory_->stop();
-      local_factory_->join();
+    if (local_server_) {
+      local_server_->stop();
+      local_server_->join();
     }
     local_work_guard_.reset();
     if (local_io_thread_) {
       local_io_thread_->join();
       local_io_thread_.reset();
     }
-    local_factory_.reset();
+    local_server_.reset();
   }
 
  private:
   asio::io_context content_provider_io_context_;
   std::unique_ptr<asio::io_context::work> content_provider_work_guard_;
   std::unique_ptr<std::thread> content_provider_io_thread_;
-  std::unique_ptr<CpFactory> content_provider_factory_;
+  std::unique_ptr<ContentProviderServer> content_provider_server_;
 
   asio::io_context server_io_context_;
   std::unique_ptr<asio::io_context::work> server_work_guard_;
   std::unique_ptr<std::thread> server_io_thread_;
-  std::unique_ptr<SsFactory> server_factory_;
+  std::unique_ptr<SsServer> server_server_;
 
   asio::io_context local_io_context_;
   std::unique_ptr<asio::io_context::work> local_work_guard_;
   std::unique_ptr<std::thread> local_io_thread_;
-  std::unique_ptr<Socks5Factory> local_factory_;
+  std::unique_ptr<Socks5Server> local_server_;
 };
 }
 

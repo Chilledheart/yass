@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
+/* Copyright (c) 2019-2022 Chilledheart  */
 
-#ifndef H_CONNECTION_FACTORY
-#define H_CONNECTION_FACTORY
+#ifndef H_CONTENT_SERVER
+#define H_CONTENT_SERVER
 
 #include <absl/flags/flag.h>
-#include <absl/strings/str_cat.h>
+#include <absl/strings/str_format.h>
 #include <algorithm>
+#include <atomic>
 #include <vector>
 #include <functional>
 #include <utility>
@@ -19,28 +20,39 @@
 #include "core/utils.hpp"
 #include "network.hpp"
 
-template <class T>
-class ServiceFactory {
-  class SlaveContext {
+/// An interface used to provide service
+template <typename T>
+class ContentServer {
+ public:
+  class Delegate {
    public:
-    SlaveContext(size_t slave_index,
-                 const asio::ip::tcp::endpoint& remote_endpoint)
-        : index_(slave_index),
+    virtual ~Delegate() = default;
+    virtual void OnConnect(int connection_id) = 0;
+    virtual void OnDisconnect(int connection_id) = 0;
+  };
+
+ private:
+  class ThreadedContext {
+   public:
+    ThreadedContext(size_t threaded_context_index,
+                    const asio::ip::tcp::endpoint& remote_endpoint,
+                    std::atomic<int> *next_connection_id,
+                    ContentServer::Delegate *delegate)
+        : index_(threaded_context_index),
           work_guard_(std::make_unique<asio::io_context::work>(io_context_)),
-          thread_([this]() { WorkFunc(); }),
-          remote_endpoint_(remote_endpoint) {}
+          thread_([this]() { do_accept_loop(); }),
+          remote_endpoint_(remote_endpoint),
+          next_connection_id_(next_connection_id),
+          delegate_(delegate) {}
 
     /// Disconstructor allow called from different threads
-    ~SlaveContext() noexcept {
+    ~ThreadedContext() noexcept {
       work_guard_.reset();
       thread_.join();
     }
 
-    SlaveContext(const SlaveContext&) = delete;
-    SlaveContext& operator=(const SlaveContext&) = delete;
-
-    SlaveContext(SlaveContext&&) noexcept = default;
-    SlaveContext& operator=(SlaveContext&&) noexcept = default;
+    ThreadedContext(const ThreadedContext&) = delete;
+    ThreadedContext& operator=(const ThreadedContext&) = delete;
 
     void listen(const asio::ip::tcp::endpoint& endpoint,
                 int backlog,
@@ -75,9 +87,9 @@ class ServiceFactory {
       if (ec) {
         return;
       }
-      VLOG(2) << "slave " << index_ << " listen to " << endpoint_
-              << " with upstream " << remote_endpoint_;
-      io_context_.post([this]() { startAccept(); });
+      LOG(INFO) << "Listening on " << endpoint_ << " with "
+        << "thread " << index_;
+      io_context_.post([this]() { accept(); });
     }
 
     // Allow called from different threads
@@ -100,70 +112,71 @@ class ServiceFactory {
       });
     }
 
-    // Allow called from different threads
-    size_t currentConnections() const {
-      return connections_.size();
-    }
-
    private:
-    void WorkFunc() {
+    void do_accept_loop() {
       asio::error_code ec;
-      std::string slave_name = absl::StrCat("slave-", std::to_string(index_));
-      if (!SetThreadName(thread_.native_handle(), slave_name)) {
-        PLOG(WARNING) << "slave " << index_ << " failed to set thread name";
+      std::string threaded_context_name = absl::StrFormat("threaded-context-%d", index_);
+      if (!SetThreadName(thread_.native_handle(), threaded_context_name)) {
+        PLOG(WARNING) << "thread " << index_ << " failed to set thread name";
       }
       if (!SetThreadPriority(thread_.native_handle(),
                              ThreadPriority::ABOVE_NORMAL)) {
-        PLOG(WARNING) << "slave " << index_ << " failed to set thread priority";
+        PLOG(WARNING) << "thread " << index_ << " failed to set thread priority";
       }
       io_context_.run(ec);
 
       if (ec) {
-        LOG(ERROR) << "slave " << index_ << " io_context failed due to: " << ec;
+        LOG(ERROR) << "thread " << index_ << " failed to accept more due to: " << ec;
       }
     }
 
-    void startAccept() {
+    void accept() {
       acceptor_->async_accept(
           peer_endpoint_,
           [this](asio::error_code error, asio::ip::tcp::socket socket) {
             std::shared_ptr<T> conn =
                 std::make_unique<T>(io_context_, remote_endpoint_);
-            handleAccept(conn, error, std::move(socket));
+            on_accept(conn, error, std::move(socket));
           });
     }
 
-    void handleAccept(std::shared_ptr<T> conn,
-                      asio::error_code ec,
-                      asio::ip::tcp::socket socket) {
+    void on_accept(std::shared_ptr<T> conn,
+                   asio::error_code ec,
+                   asio::ip::tcp::socket socket) {
       if (!ec) {
+        int connection_id = *next_connection_id_++;
         SetTCPCongestion(socket.native_handle(), ec);
         SetTCPConnectionTimeout(socket.native_handle(), ec);
         SetTCPUserTimeout(socket.native_handle(), ec);
         SetSocketLinger(&socket, ec);
         SetSocketSndBuffer(&socket, ec);
         SetSocketRcvBuffer(&socket, ec);
-        conn->on_accept(std::move(socket), endpoint_, peer_endpoint_);
+        conn->on_accept(std::move(socket), endpoint_, peer_endpoint_,
+                        connection_id);
         conn->set_disconnect_cb(
-            [this, conn]() mutable { handleDisconnect(conn); });
+            [this, conn]() mutable { on_disconnect(conn); });
         connections_.push_back(conn);
+        if (delegate_) {
+          delegate_->OnConnect(connection_id);
+        }
+        LOG(INFO) << "Connection " << connection_id << " with "
+          << conn->peer_endpoint() << " connected";
         conn->start();
-        VLOG(2) << "slave " << index_
-                << " connection established with remaining: "
-                << connections_.size();
-        startAccept();
-      }
-      if (ec != asio::error::operation_aborted) {
-        VLOG(2) << "slave " << index_ << " stopping accept due to " << ec;
+        accept();
+      } if (ec != asio::error::operation_aborted) {
+        LOG(ERROR) << "thread " << index_ << " failed to accept more due to: " << ec;
       }
     }
 
-    void handleDisconnect(std::shared_ptr<T> conn) {
-      VLOG(2) << "slave " << index_
-              << " connection closed with remaining: " << connections_.size();
+    void on_disconnect(std::shared_ptr<T> conn) {
+      int connection_id = conn->connection_id();
+      LOG(INFO) << "Connection " << connection_id << " disconnected";
       connections_.erase(
           std::remove(connections_.begin(), connections_.end(), conn),
           connections_.end());
+      if (delegate_) {
+        delegate_->OnDisconnect(connection_id);
+      }
     }
 
    private:
@@ -174,6 +187,8 @@ class ServiceFactory {
     std::thread thread_;
 
     const asio::ip::tcp::endpoint remote_endpoint_;
+    std::atomic<int> *next_connection_id_;
+    ContentServer::Delegate *delegate_;
 
     asio::ip::tcp::endpoint endpoint_;
     asio::ip::tcp::endpoint peer_endpoint_;
@@ -184,46 +199,49 @@ class ServiceFactory {
   };
 
  public:
-  ServiceFactory(const asio::ip::tcp::endpoint& remote_endpoint) {
+  ContentServer(const asio::ip::tcp::endpoint& remote_endpoint,
+                ContentServer::Delegate *delegate = nullptr) {
     size_t num_of_threads = absl::GetFlag(FLAGS_threads);
-    slaves_.reserve(num_of_threads);
+    threaded_contexts_.reserve(num_of_threads);
     for (size_t i = 0; i < num_of_threads; ++i) {
-      slaves_.emplace_back(std::make_unique<SlaveContext>(i, remote_endpoint));
+      threaded_contexts_.emplace_back(
+          std::make_unique<ThreadedContext>(i, remote_endpoint,
+                                            &next_connection_id_, delegate));
     }
   }
 
-  ~ServiceFactory() { join(); }
+  ~ContentServer() { join(); }
+
+  ContentServer(const ContentServer&) = delete;
+  ContentServer& operator=(const ContentServer&) = delete;
 
   void listen(const asio::ip::tcp::endpoint& endpoint,
               int backlog,
               asio::error_code& ec) {
-    for (auto& slave : slaves_) {
-      slave->listen(endpoint, backlog, ec);
+    for (auto& threaded_context : threaded_contexts_) {
+      threaded_context->listen(endpoint, backlog, ec);
       if (ec)
         break;
     }
   }
 
   void stop() {
-    for (auto& slave : slaves_) {
-      slave->stop();
+    for (auto& threaded_context : threaded_contexts_) {
+      threaded_context->stop();
     }
   }
 
   void join() {
-    slaves_.clear();
+    threaded_contexts_.clear();
   }
 
-  size_t currentConnections() const {
-    size_t count = 0;
-    for (const auto& slave : slaves_) {
-      count += slave->currentConnections();
-    }
-    return count;
+  size_t num_of_connections() const {
+    return next_connection_id_ - 1;
   }
 
  private:
-  std::vector<std::unique_ptr<SlaveContext>> slaves_;
+  std::vector<std::unique_ptr<ThreadedContext>> threaded_contexts_;
+  std::atomic<int> next_connection_id_ = 1;
 };
 
-#endif  // H_CONNECTION_FACTORY
+#endif  // H_CONTENT_SERVER
