@@ -250,11 +250,6 @@ jobs:
           install: >-
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-nasm
-      - name: Patch libcxx for gcc 12
-        shell: msys2 {0}
-        run: |
-          cd third_party/libc++/trunk
-          patch -p1 < ../libc-Avoid-using-anonymous-struct-with-base-classes.patch
       - name: Build
         shell: msys2 {0}
         run: |
@@ -309,10 +304,6 @@ jobs:
         run: |
           cd tools
           go build
-      - name: Patch libcxx for gcc 12
-        run: |
-          cd third_party/libc++/trunk
-          patch -p1 < ../libc-Avoid-using-anonymous-struct-with-base-classes.patch
       - name: "Install dependency: clang 5"
         if: ${{ steps.clang5-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -381,10 +372,6 @@ jobs:
         run: |
           cd third_party/libc++/trunk
           patch -p1 < ../gcc-mac.patch
-      - name: Patch libcxx for gcc 12
-        run: |
-          cd third_party/libc++/trunk
-          patch -p1 < ../libc-Avoid-using-anonymous-struct-with-base-classes.patch
       - name: Set build options
         run: |
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
