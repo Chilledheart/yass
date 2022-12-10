@@ -250,6 +250,11 @@ jobs:
           install: >-
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-nasm
+      - name: Patch libcxx for gcc
+        shell: msys2 {0}
+        run: |
+          cd third_party/libc++/trunk
+          patch -p1 < ../gcc-using-if-exist.patch
       - name: Build
         shell: msys2 {0}
         run: |
@@ -335,6 +340,10 @@ jobs:
           else
             echo build_opts="${{ env.build_opts }} -use-libcxx=0" >> $GITHUB_ENV
           fi
+      - name: Patch libcxx for gcc
+        run: |
+          cd third_party/libc++/trunk
+          patch -p1 < ../gcc-using-if-exist.patch
       - name: Build
         run: |
           ./tools/build -no-packaging ${{ env.build_opts }} -build-test
@@ -371,6 +380,10 @@ jobs:
         run: |
           cd tools
           go build
+      - name: Patch libcxx for gcc
+        run: |
+          cd third_party/libc++/trunk
+          patch -p1 < ../gcc-using-if-exist.patch
       - name: Patch libcxx for gcc
         run: |
           cd third_party/libc++/trunk
