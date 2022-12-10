@@ -30,10 +30,14 @@
 #define RAPIDJSON_HAS_STDSTRING 1
 
 #include <absl/flags/flag.h>
-#include <rapidjson/document.h>      // rapidjson's DOM-style API
-#include <rapidjson/prettywriter.h>  // for stringify JSON
 #include <memory>
 #include <string>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#include <rapidjson/document.h>      // rapidjson's DOM-style API
+#include <rapidjson/prettywriter.h>  // for stringify JSON
+#pragma GCC diagnostic pop
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
