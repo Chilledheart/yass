@@ -47,11 +47,6 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Patch libcxx for both of armel and armhf
-        if: ${{ matrix.arch == 'armel' || matrix.arch == 'arm' }}
-        run: |
-          cd third_party/libc++
-          patch -p1 < libcxx-armhf-ftbfs.diff
       - name: Patch libcxxabi for both of armel and armhf
         if: ${{ matrix.arch == 'armel' || matrix.arch == 'arm' }}
         run: |
