@@ -287,15 +287,15 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache clang (v10.0)
-        id: clang10-cache
+      - name: Cache clang (v12.0)
+        id: clang12-cache
         uses: actions/cache@v3
         with:
           path: |
-            third_party/clang+llvm-10.0.0-x86_64-linux-gnu-ubuntu-18.04
-          key: ${{ runner.os }}-toolchain-clang10-v${{ env.CACHE_EPOCH }}
+            third_party/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04
+          key: ${{ runner.os }}-toolchain-clang12-v${{ env.CACHE_EPOCH }}
           restore-keys: |
-            ${{ runner.os }}-toolchain-clang10-
+            ${{ runner.os }}-toolchain-clang12-
       - name: Cache golang
         uses: actions/cache@v3
         with:
@@ -309,13 +309,13 @@ jobs:
         run: |
           cd tools
           go build
-      - name: "Install dependency: clang 10"
-        if: ${{ steps.clang10-cache.outputs.cache-hit != 'true' }}
+      - name: "Install dependency: clang 12"
+        if: ${{ steps.clang12-cache.outputs.cache-hit != 'true' }}
         run: |
-          curl -L -O https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/clang+llvm-10.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz
-          tar -C third_party -xvf clang+llvm-10.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz \
-            clang+llvm-10.0.0-x86_64-linux-gnu-ubuntu-18.04/lib/clang/10.0.0/include \
-            clang+llvm-10.0.0-x86_64-linux-gnu-ubuntu-18.04/bin/{clang,clang++,clang-10,ld.lld,lld,llvm-ar,llvm-ranlib}
+          curl -L -O https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
+          tar -C third_party -xvf clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz \
+            clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/lib/clang/12.0.1/include \
+            clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/{clang,clang++,clang-12,ld.lld,lld,llvm-ar,llvm-ranlib}
           rm -f *.xz
       - name: "Install dependency: gcc 11"
         if: ${{ matrix.compiler == 'gcc' }}
@@ -329,8 +329,8 @@ jobs:
       - name: Set build options
         run: |
           if [ "${{ matrix.compiler }}" = "clang" ]; then
-            echo "CC=${{ github.workspace }}/third_party/clang+llvm-10.0.0-x86_64-linux-gnu-ubuntu-18.04/bin/clang" >> $GITHUB_ENV
-            echo "CXX=${{ github.workspace }}/third_party/clang+llvm-10.0.0-x86_64-linux-gnu-ubuntu-18.04/bin/clang++" >> $GITHUB_ENV
+            echo "CC=${{ github.workspace }}/third_party/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/clang" >> $GITHUB_ENV
+            echo "CXX=${{ github.workspace }}/third_party/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/clang++" >> $GITHUB_ENV
           else
             echo CC=gcc-11 >> $GITHUB_ENV
             echo CXX=g++-11 >> $GITHUB_ENV
