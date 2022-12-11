@@ -782,7 +782,7 @@ if (LTO AND COMPILER_CLANG AND USE_LLD)
     # When using lld-link, the -flto option need only be added to the compile step
     set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /opt:lldltojobs=all -mllvm:-import-instr-limit=${import_instr_limit} /lldltocache:thinlto-cache /lldltocachepolicy:${cache_policy}")
     set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /opt:lldltojobs=all -mllvm:-import-instr-limit=${import_instr_limit} /lldltocache:thinlto-cache /lldltocachepolicy:${cache_policy}")
-  else()
+  elseif (NOT MINGW)
     set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -flto=thin")
     set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -flto=thin")
     # In ThinLTO builds, we run at most one link process at a time,
@@ -1095,7 +1095,7 @@ if (USE_LLD)
     # the driver.
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --color-diagnostics")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --color-diagnostics")
-  else()
+  elseif (NOT MINGW)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--color-diagnostics")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}  -Wl,--color-diagnostics")
   endif()
@@ -1204,7 +1204,7 @@ if (USE_LLD)
   if (MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /call-graph-profile-sort:no")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /call-graph-profile-sort:no")
-  elseif (NOT APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
+  elseif (NOT APPLE AND NOT MINGW AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
     # TODO(thakis): Once LLD's Mach-O port basically works, implement call
     # graph profile sorting for it, add an opt-out flag, and pass it here.
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-call-graph-profile-sort")

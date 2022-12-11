@@ -26,7 +26,7 @@ env:
   GOPROXY: direct
 jobs:
   mingw64-release:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -38,6 +38,15 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
+      - name: Cache clang
+        id: clang-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            third_party/llvm-build/Release+Asserts
+          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          restore-keys: |
+            ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
       - name: Cache golang
         uses: actions/cache@v3
         with:
@@ -55,6 +64,11 @@ jobs:
         run: |
           sudo sed -i 's/azure.archive.ubuntu.com/archive.ubuntu.com/g' /etc/apt/sources.list
           sudo apt-get update -qq
+      - name: "Install dependency: prebuilt clang and clang-tidy binaries"
+        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        run: |
+          ./scripts/download-clang-prebuilt-binaries.py
+          rm -f third_party/llvm-build/Release+Asserts/*.tgz
       - name: Populate depedencies
         run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build mingw-w64 nasm
       - name: Set toolchain cmake files
@@ -71,15 +85,27 @@ jobs:
           set(CMAKE_SYSTEM_PROCESSOR x86_64)
           set(GNU_TARGET x86_64-w64-mingw32)
 
-          # cross compilers to use for C, C++ and Fortran
-          set(CMAKE_C_COMPILER \${GNU_TARGET}-gcc)
-          set(CMAKE_CXX_COMPILER \${GNU_TARGET}-g++)
-          set(CMAKE_Fortran_COMPILER \${GNU_TARGET}-gfortran)
-          set(CMAKE_LINKER \${GNU_TARGET}-ld)
-          set(CMAKE_AR \${GNU_TARGET}-ar)
-          set(CMAKE_AS \${GNU_TARGET}-as)
-          set(CMAKE_RANLIB \${GNU_TARGET}-ranlib)
-          set(CMAKE_RC_COMPILER \${GNU_TARGET}-windres)
+          set(CMAKE_C_COMPILER_TARGET \${GNU_TARGET} CACHE STRING "")
+          set(CMAKE_CXX_COMPILER_TARGET \${GNU_TARGET} CACHE STRING "")
+          set(CMAKE_ASM_COMPILER_TARGET \${GNU_TARGET} CACHE STRING "")
+
+          set(CMAKE_ASM_FLAGS "-target \${GNU_TARGET} -ccc-gcc-name \${GNU_TARGET}-gcc -Wl,-L/usr/lib/gcc/x86_64-w64-mingw32/9.3-win32 -Wno-unused-command-line-argument")
+          set(CMAKE_C_FLAGS "-target \${GNU_TARGET} -ccc-gcc-name \${GNU_TARGET}-gcc -Wl,-L/usr/lib/gcc/x86_64-w64-mingw32/9.3-win32 -Wno-unused-command-line-argument")
+          set(CMAKE_CXX_FLAGS "-target \${GNU_TARGET} -ccc-gcc-name \${GNU_TARGET}-gcc -Wl,-L/usr/lib/gcc/x86_64-w64-mingw32/9.3-win32 -Wno-unused-command-line-argument")
+
+          # cross compilers to use for C and C++
+          set(CMAKE_C_COMPILER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang")
+          set(CMAKE_CXX_COMPILER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++")
+          set(CMAKE_LINKER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/ld.lld")
+          set(CMAKE_AR "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/llvm-ar")
+          set(CMAKE_CXX_COMPILER_AR "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/llvm-ar")
+          set(CMAKE_RANLIB "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/llvm-ranlib")
+          set(CMAKE_CXX_COMPILER_RANLIB "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/llvm-ranlib")
+          # disabled because it is missing from binary
+          # set(CMAKE_RC_COMPILER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/llvm-rc")
+          set(CMAKE_RC_COMPILER "\${GNU_TARGET}-windres")
+
+          set(CMAKE_SYSROOT "/usr/\${GNU_TARGET}" CACHE STRING "")
 
           # target environment on the build host system
           set(CMAKE_FIND_ROOT_PATH /usr/\${GNU_TARGET})
@@ -90,8 +116,8 @@ jobs:
           set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
           EOF
           cat > Native.cmake << EOF
-          set(CMAKE_C_COMPILER gcc)
-          set(CMAKE_CXX_COMPILER g++)
+          set(CMAKE_C_COMPILER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang")
+          set(CMAKE_CXX_COMPILER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++")
           EOF
       - name: Build
         run: |

@@ -437,8 +437,8 @@ if (NOT MSVC)
       ${libcxxabi_SOURCES}
       ../libc++abi/trunk/src/cxa_thread_atexit.cpp
     )
-  elseif(MINGW)
-    # mingw doesn't support weak symbol usage in above source code
+  elseif (MINGW AND COMPILER_GCC)
+    # mingw gcc doesn't support weak symbol usage in above source code
     # and triggers SIGSEGV/access violence in running
     set(libcxxabi_SOURCES
       ${libcxxabi_SOURCES}
