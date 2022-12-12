@@ -101,6 +101,10 @@ jobs:
       - name: Build TGZ packages
         run: |
           ./tools/build --arch ${{ matrix.arch }} --system linux --sysroot $PWD/debian_sid_${{ matrix.arch }}-sysroot
+      - name: Run tests
+        if: ${{ matrix.arch == 'i386' || matrix.arch == 'amd64' }}
+        run: |
+          ./tools/build -nc -run-test --arch ${{ matrix.arch }} --system linux --sysroot $PWD/debian_sid_${{ matrix.arch }}-sysroot
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
