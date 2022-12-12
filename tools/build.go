@@ -356,8 +356,22 @@ func buildStageGenerateBuildScript() {
 		}
 		nativeLIB := strings.Join(nativeLibPaths, ";")
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCROSS_TOOLCHAIN_FLAGS_NATIVE_LIB=%s", nativeLIB))
-		nativeToolChainContent := strings.Replace(fmt.Sprintf("set(CMAKE_C_COMPILER \"%s\")\n", getEnv("CC", "cl")), "\\", "/", -1)
-		nativeToolChainContent += strings.Replace(fmt.Sprintf("set(CMAKE_CXX_COMPILER \"%s\")\n", getEnv("CXX", "cl")), "\\", "/", -1)
+
+		useMsvcCl := getEnv("CC", "cl") == "cl"
+		ccCompiler := getEnv("CC", "cl")
+		cxxCompiler := getEnv("CXX", "cl")
+		// Retarget cl based on current path
+		if useMsvcCl {
+			path, err := exec.LookPath(ccCompiler)
+			if err != nil {
+				fmt.Println("Could not find path of cl")
+				panic(err)
+			}
+			ccCompiler = filepath.Join(filepath.Dir(path), "..", "x64", "cl.exe")
+			cxxCompiler = filepath.Join(filepath.Dir(path), "..", "x64", "cl.exe")
+		}
+		nativeToolChainContent := strings.Replace(fmt.Sprintf("set(CMAKE_C_COMPILER \"%s\")\n", ccCompiler), "\\", "/", -1)
+		nativeToolChainContent += strings.Replace(fmt.Sprintf("set(CMAKE_CXX_COMPILER \"%s\")\n", cxxCompiler), "\\", "/", -1)
 		nativeToolChainContent += "set(CMAKE_C_COMPILER_TARGET \"x86_64-pc-windows-msvc\")\n"
 		nativeToolChainContent += "set(CMAKE_CXX_COMPILER_TARGET \"x86_64-pc-windows-msvc\")\n"
 		err := ioutil.WriteFile("Native.cmake", []byte(nativeToolChainContent), 0666)
