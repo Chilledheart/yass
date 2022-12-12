@@ -466,10 +466,12 @@ func buildStageExecuteBuildScript() {
 	glog.Info("BuildStage -- Execute Build Script")
 	glog.Info("======================================================================")
 	ninjaCmd := []string{"ninja", "-j", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), APPNAME}
-	if buildTestFlag || runTestFlag {
-		ninjaCmd = append(ninjaCmd, "yass_test")
-	}
 	cmdRun(ninjaCmd, true)
+	if buildTestFlag || runTestFlag {
+		ninjaCmd := []string{"ninja", "-j", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "yass_test"}
+		ninjaCmd = append(ninjaCmd, )
+		cmdRun(ninjaCmd, true)
+	}
 	if runTestFlag {
 		checkCmd := []string{"ninja", "check"}
 		cmdRun(checkCmd, true)
