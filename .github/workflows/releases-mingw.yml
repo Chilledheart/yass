@@ -30,6 +30,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        arch: [x86_64, i686]
         build_type: [Release]
     steps:
       - uses: actions/checkout@v3
@@ -70,7 +71,7 @@ jobs:
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
       - name: Populate depedencies
-        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build mingw-w64 nasm
+        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build mingw-w64 nasm zip
       - name: Set toolchain cmake files
         run: |
           cat > MinGW.cmake << EOF
@@ -82,16 +83,16 @@ jobs:
           #    *) cmake -DCMAKE_TOOLCHAIN_FILE=~/mingw-w64-x86_64.cmake ..
 
           set(CMAKE_SYSTEM_NAME Windows)
-          set(CMAKE_SYSTEM_PROCESSOR x86_64)
-          set(GNU_TARGET x86_64-w64-mingw32)
+          set(CMAKE_SYSTEM_PROCESSOR ${{ matrix.arch }})
+          set(GNU_TARGET ${{ matrix.arch }}-w64-mingw32)
 
           set(CMAKE_C_COMPILER_TARGET \${GNU_TARGET} CACHE STRING "")
           set(CMAKE_CXX_COMPILER_TARGET \${GNU_TARGET} CACHE STRING "")
           set(CMAKE_ASM_COMPILER_TARGET \${GNU_TARGET} CACHE STRING "")
 
-          set(CMAKE_ASM_FLAGS "-target \${GNU_TARGET} -ccc-gcc-name \${GNU_TARGET}-gcc -Wl,-L/usr/lib/gcc/x86_64-w64-mingw32/9.3-win32 -Wno-unused-command-line-argument")
-          set(CMAKE_C_FLAGS "-target \${GNU_TARGET} -ccc-gcc-name \${GNU_TARGET}-gcc -Wl,-L/usr/lib/gcc/x86_64-w64-mingw32/9.3-win32 -Wno-unused-command-line-argument")
-          set(CMAKE_CXX_FLAGS "-target \${GNU_TARGET} -ccc-gcc-name \${GNU_TARGET}-gcc -Wl,-L/usr/lib/gcc/x86_64-w64-mingw32/9.3-win32 -Wno-unused-command-line-argument")
+          set(CMAKE_ASM_FLAGS "-target \${GNU_TARGET} -ccc-gcc-name \${GNU_TARGET}-gcc -Wl,-L/usr/lib/gcc/\${GNU_TARGET}/9.3-win32 -Wno-unused-command-line-argument")
+          set(CMAKE_C_FLAGS "-target \${GNU_TARGET} -ccc-gcc-name \${GNU_TARGET}-gcc -Wl,-L/usr/lib/gcc/\${GNU_TARGET}/9.3-win32 -Wno-unused-command-line-argument")
+          set(CMAKE_CXX_FLAGS "-target \${GNU_TARGET} -ccc-gcc-name \${GNU_TARGET}-gcc -Wl,-L/usr/lib/gcc/\${GNU_TARGET}/9.3-win32 -Wno-unused-command-line-argument")
 
           # cross compilers to use for C and C++
           set(CMAKE_C_COMPILER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang")
@@ -131,11 +132,11 @@ jobs:
         run: |
           cd build-mingw
           # https://www.systutorials.com/docs/linux/man/1-x86_64-w64-mingw32-strip/
-          x86_64-w64-mingw32-strip -x -s yass.exe
-          tar cfz ../yass-mingw64-${{ github.event.release.tag_name }}.tgz yass.exe
+          ${{ matrix.arch }}-w64-mingw32-strip -x -s yass.exe
+          zip -9 ../yass-win-mingw64-${{ matrix.arch }}-${{ github.event.release.tag_name }}.zip yass.exe
       - name: Upload dist tarball
         if: ${{ github.event_name == 'release' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} *.tgz
+          gh release upload ${{ github.event.release.tag_name }} *.zip
