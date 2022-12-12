@@ -170,7 +170,7 @@ class ContentServer {
                   << " connected";
         conn->start();
         accept();
-      } if (ec != asio::error::operation_aborted) {
+      } if (ec && ec != asio::error::operation_aborted) {
         LOG(ERROR) << "Thread " << index_ << " (" << factory_.Name() << ")"
                    << " failed to accept more due to: " << ec;
       }
