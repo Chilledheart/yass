@@ -22,7 +22,7 @@ on:
   release:
     types: [published]
 env:
-  CACHE_EPOCH: 8
+  CACHE_EPOCH: 9
   GOPROXY: direct
   DH_QUIET: 1
 jobs:
@@ -235,14 +235,15 @@ jobs:
       - name: Populate sysroot (golang)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
-          curl -O http://deb.debian.org/debian/pool/main/g/golang-defaults/golang_1.15~1_${{ env.BUILD_ARCH }}.deb
-          curl -O http://deb.debian.org/debian/pool/main/g/golang-defaults/golang-go_1.15~1_${{ env.BUILD_ARCH }}.deb
-          curl -O http://deb.debian.org/debian/pool/main/g/golang-defaults/golang-src_1.15~1_${{ env.BUILD_ARCH }}.deb
-          curl -O http://deb.debian.org/debian/pool/main/g/golang-defaults/golang-doc_1.15~1_all.deb
-          curl -O http://deb.debian.org/debian/pool/main/g/golang-1.15/golang-1.15_1.15.15-1~deb11u4_all.deb
-          curl -O http://deb.debian.org/debian/pool/main/g/golang-1.15/golang-1.15-go_1.15.15-1~deb11u4_${{ env.BUILD_ARCH }}.deb
-          curl -O http://deb.debian.org/debian/pool/main/g/golang-1.15/golang-1.15-src_1.15.15-1~deb11u4_${{ env.BUILD_ARCH }}.deb
-          curl -O http://deb.debian.org/debian/pool/main/g/golang-1.15/golang-1.15-doc_1.15.15-1~deb11u4_all.deb
+          # shipped with debian bulleye
+          curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-defaults/golang_1.15~1_${{ env.BUILD_ARCH }}.deb
+          curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-defaults/golang-go_1.15~1_${{ env.BUILD_ARCH }}.deb
+          curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-defaults/golang-src_1.15~1_${{ env.BUILD_ARCH }}.deb
+          curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-defaults/golang-doc_1.15~1_all.deb
+          curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-1.15/golang-1.15_1.15.15-1~deb11u4_all.deb
+          curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-1.15/golang-1.15-go_1.15.15-1~deb11u4_${{ env.BUILD_ARCH }}.deb
+          curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-1.15/golang-1.15-src_1.15.15-1~deb11u4_${{ env.BUILD_ARCH }}.deb
+          curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-1.15/golang-1.15-doc_1.15.15-1~deb11u4_all.deb
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             dpkg --force-depends -i $PWD/*.deb || true
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
