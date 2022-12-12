@@ -2067,6 +2067,7 @@ elseif (MSVC)
       "C5039" # VS2019 specific: pointer or reference to potentially throwing function passed to extern C function under -EHc
       "C5262" # VS2022 specific: Use [[fallthrough]] when a break statement is intentionally omitted between cases
       "C5264" # VS2022 specific: 'const' variable is not used
+      "C4310" # VS2019 specific: cast truncates constant value
       )
   set(MSVC_LEVEL4_WARNINGS_LIST
       # See https://connect.microsoft.com/VisualStudio/feedback/details/1217660/warning-c4265-when-using-functional-header
