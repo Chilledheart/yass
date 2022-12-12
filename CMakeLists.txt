@@ -229,6 +229,7 @@ option(USE_LLD "Build with lld linker" OFF)
 option(USE_GOLD "Build with gold linker" OFF)
 option(USE_ICF "Build with ICF" OFF)
 option(USE_LTO "Build with LTO" OFF)
+option(USE_MINGW_CXA_THREAD_ATEXIT "Build with mingw cxa thread atexit" OFF)
 option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
 
 option(ENABLE_LTO "Enable build with LTO" ON)

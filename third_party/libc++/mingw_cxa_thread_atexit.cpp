@@ -58,7 +58,7 @@ namespace {
   // Used to trigger destructors on thread exit; value is ignored
   std::__libcpp_tls_key dtors_key;
 
-  void run_dtors(void*) {
+  void _LIBCPP_TLS_DESTRUCTOR_CC run_dtors(void*) {
     while (auto head = dtors) {
       dtors = head->next;
       head->dtor(head->obj);
