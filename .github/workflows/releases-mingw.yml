@@ -30,8 +30,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [x86_64, i686]
         build_type: [Release]
+        arch: [x86_64, i686]
     steps:
       - uses: actions/checkout@v3
       - name: Checkout with shallow submodules
@@ -127,13 +127,29 @@ jobs:
           cmake -G Ninja -DGUI=on -DBUILD_TESTS=on .. \
             -DCMAKE_TOOLCHAIN_FILE="$PWD/../MinGW.cmake" -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DCROSS_TOOLCHAIN_FLAGS_NATIVE=\"-DCMAKE_TOOLCHAIN_FILE=$PWD/../Native.cmake\"
-          ninja yass_cli yass_server yass yass_test
+          ninja
       - name: Packaging
         run: |
           cd build-mingw
           # https://www.systutorials.com/docs/linux/man/1-x86_64-w64-mingw32-strip/
           ${{ matrix.arch }}-w64-mingw32-strip -x -s yass.exe
-          zip -9 ../yass-win-mingw64-${{ matrix.arch }}-${{ github.event.release.tag_name }}.zip yass.exe
+          cp -v -f /usr/lib/gcc/${{ matrix.arch }}-w64-mingw32/9.3-win32/libgcc_s_*-1.dll .
+          zip -9 ../yass-win-mingw64-${{ matrix.arch }}-${{ github.event.release.tag_name }}.zip yass.exe libgcc_s_*-1.dll
+      - name: Populate depedencies (Tests-i686)
+        if: ${{ matrix.arch == 'i686' }}
+        run: |
+          # fix for missing i386 deb packages from deb.sury.org repository
+          sudo add-apt-repository ppa:ondrej/php
+          # alternative fix is to downgrade overloaded libpcre2 versions with five locally installed packages which are PHP-related and came from deb.sury.org repository.
+          # sudo apt-get install -y --allow-downgrades libpcre2-8-0=10.34-7ubuntu0.1 libpcre2-16-0=10.34-7ubuntu0.1 libpcre2-32-0=10.34-7ubuntu0.1 libpcre2-dev=10.34-7ubuntu0.1 libgd3=2.2.5-5.2ubuntu2.1
+          sudo dpkg --add-architecture i386 && sudo apt-get update -qq && sudo apt-get install -y wine wine32
+      - name: Populate depedencies (Tests-x86_64)
+        if: ${{ matrix.arch == 'x86_64' }}
+        run: sudo apt-get update -qq && sudo apt-get install -y wine wine64
+      - name: Run tests
+        run: |
+          cd build-mingw
+          wine yass_test.exe
       - name: Upload dist tarball
         if: ${{ github.event_name == 'release' }}
         env:
