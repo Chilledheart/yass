@@ -1978,8 +1978,8 @@ if (COMPILER_GCC OR COMPILER_CLANG)
   endif()
 
   if (COMPILER_GCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 11.0)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-error=stringop-overread -Wno-error=array-bounds")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=stringop-overread -Wno-error=array-bounds")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-stringop-overread -Wno-array-bounds")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-stringop-overread -Wno-array-bounds")
   endif()
 elseif (MSVC)
   set(MSVC_DISABLED_WARNINGS_LIST
