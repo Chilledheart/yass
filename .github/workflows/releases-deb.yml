@@ -32,7 +32,10 @@ jobs:
       fail-fast: false
       matrix:
         distro: [trusty]
-        arch: [i386, amd64, arm64]
+        arch: [i386, amd64]
+        include:
+          - distro: xenial
+            arch: arm64
         # distro: [trusty, xenial, bionic, focal, stretch, buster, bullseye]
         # arch: [i386, amd64, armhf, arm64]
         # include:
