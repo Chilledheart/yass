@@ -261,7 +261,7 @@ if (WIN32)
     trunk/src/support/win32/thread_win32.cpp
   )
   # hacks, override posix thread model tls implementation
-  if (MINGW AND COMPILER_GCC)
+  if (MINGW)
     set(libcxx_SOURCES
       ${libcxx_SOURCES}
       emutls.cpp
@@ -349,9 +349,9 @@ if (NOT libcxx_SHARED)
       ${libcxx_DEFINITIONS}
       "_LIBCPP_OVERRIDABLE_FUNC_VIS=__attribute__((__visibility__(\"default\")))"
     )
-    # mingw's ld linker cannot find weak symbols
+    # mingw's binutils ld linker cannot find weak symbols
     # https://sourceware.org/bugzilla/show_bug.cgi?id=9687
-    if (MINGW)
+    if (MINGW AND COMPILER_GCC)
       set(libcxx_DEFINITIONS
         ${libcxx_DEFINITIONS}
         "_LIBCPP_WEAK=_LIBCPP_OVERRIDABLE_FUNC_VIS"
