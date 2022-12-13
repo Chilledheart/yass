@@ -269,6 +269,12 @@ if (WIN32)
     set_source_files_properties(emutls.cpp
       PROPERTIES
       COMPILE_FLAGS "-fno-builtin")
+    if (CMAKE_SIZEOF_VOID_P EQUAL 4)
+      set(libcxx_SOURCES
+        ${libcxx_SOURCES}
+        libgcc2.c
+        )
+    endif()
   endif()
 
   # turn on win32 thread model manually
