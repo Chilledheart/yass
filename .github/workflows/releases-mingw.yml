@@ -133,8 +133,7 @@ jobs:
           cd build-mingw
           # https://www.systutorials.com/docs/linux/man/1-x86_64-w64-mingw32-strip/
           ${{ matrix.arch }}-w64-mingw32-strip -x -s yass.exe
-          cp -v -f /usr/lib/gcc/${{ matrix.arch }}-w64-mingw32/9.3-win32/libgcc_s_*-1.dll .
-          zip -9 ../yass-win-mingw64-${{ matrix.arch }}-${{ github.event.release.tag_name }}.zip yass.exe libgcc_s_*-1.dll
+          zip -9 ../yass-win-mingw64-${{ matrix.arch }}-${{ github.event.release.tag_name }}.zip yass.exe
       - name: Populate depedencies (Tests-i686)
         if: ${{ matrix.arch == 'i686' }}
         run: |
