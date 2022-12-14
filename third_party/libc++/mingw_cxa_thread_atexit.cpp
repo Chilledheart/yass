@@ -14,7 +14,9 @@
 
 namespace __cxxabiv1 {
 
-  using Dtor = void(*)(void*);
+  // Match the definition of dtor:
+  // https://github.com/mirror/mingw-w64/blob/master/mingw-w64-crt/crt/cxa_thread_atexit.c
+  using Dtor = void(__thiscall *)(void*);
 
 namespace {
   // This implementation is used if the C library does not provide
@@ -51,21 +53,17 @@ namespace {
     DtorList* next;
   };
 
-  // The linked list of thread-local destructors to run
-  __thread DtorList* dtors = nullptr;
-  // True if the destructors are currently scheduled to run on this thread
-  __thread bool dtors_alive = false;
   // Used to trigger destructors on thread exit; value is ignored
   std::__libcpp_tls_key dtors_key;
 
   void _LIBCPP_TLS_DESTRUCTOR_CC run_dtors(void*) {
+    auto dtors = reinterpret_cast<DtorList*>(std::__libcpp_tls_get(dtors_key));
     while (auto head = dtors) {
       dtors = head->next;
       head->dtor(head->obj);
       ::free(head);
     }
-
-    dtors_alive = false;
+    std::__libcpp_tls_set(dtors_key, dtors);
   }
 
   struct DtorsManager {
@@ -96,13 +94,11 @@ extern "C" {
    // one-time initialization and __cxa_atexit() for destruction)
    static DtorsManager manager;
 
-   if (!dtors_alive) {
-     if (std::__libcpp_tls_set(dtors_key, &dtors_key) != 0) {
-       return -1;
-     }
-     dtors_alive = true;
+   if (dtor == nullptr) {
+     return -1;
    }
 
+   auto dtors = reinterpret_cast<DtorList*>(std::__libcpp_tls_get(dtors_key));
    auto head = static_cast<DtorList*>(::malloc(sizeof(DtorList)));
    if (!head) {
      return -1;
@@ -112,9 +108,15 @@ extern "C" {
    head->obj = obj;
    head->next = dtors;
    dtors = head;
+   if (std::__libcpp_tls_set(dtors_key, dtors) != 0) {
+     return -1;
+   }
 
    return 0;
   }
 
 } // extern "C"
+
+static int cxa_thread_atexit_init_v = __cxa_thread_atexit(nullptr, nullptr, nullptr);
+
 } // namespace __cxxabiv1
