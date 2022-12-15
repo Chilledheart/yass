@@ -1815,7 +1815,7 @@ set(SUPPORT_LIBS zlib ${SUPPORT_LIBS})
 
 add_subdirectory(third_party/quiche)
 include_directories(third_party/quiche SYSTEM)
-#set(SUPPORT_LIBS quiche ${SUPPORT_LIBS})
+set(SUPPORT_LIBS quiche ${SUPPORT_LIBS})
 
 # *****************************************************************************************
 #           Compiler warning flags
