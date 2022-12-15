@@ -309,6 +309,20 @@ elseif (COMPILER_GCC)
   set(libcxx_CFLAGS ${libcxx_CFLAGS} "-Wno-missing-declarations")
 endif()
 
+if (COMPILER_GCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-alloc-size-larger-than")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-alloc-size-larger-than")
+endif()
+
+if (COMPILER_GCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 11.0)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-stringop-overread -Wno-array-bounds")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-stringop-overread -Wno-array-bounds")
+endif()
+
+if (COMPILER_GCC)
+  set(libcxx_CFLAGS ${libcxx_CFLAGS} "-Wno-attributes")
+endif()
+
 if (MSVC)
   set(libcxx_CFLAGS ${libcxx_CFLAGS}
     # libc++ wants to redefine the macros WIN32_LEAN_AND_MEAN and _CRT_RAND_S in
