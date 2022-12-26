@@ -101,6 +101,8 @@ class Socks5Connection : public std::enable_shared_from_this<Socks5Connection>,
   /// Start to read socks5 handshake request
   void ReadSocks5Handshake();
 
+  /// Start to read redir request
+  asio::error_code OnReadRedirHandshake(std::shared_ptr<IOBuf> buf);
   /// Start to read socks5 method_select request
   asio::error_code OnReadSocks5MethodSelect(std::shared_ptr<IOBuf> buf);
   /// Start to read socks5 handshake request
