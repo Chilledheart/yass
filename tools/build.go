@@ -31,6 +31,7 @@ var preCleanFlag bool
 var noPackagingFlag bool
 var buildTestFlag bool
 var runTestFlag bool
+var verboseFlag int
 
 var cmakeBuildTypeFlag string
 var cmakeBuildConcurrencyFlag int
@@ -102,6 +103,7 @@ func InitFlag() {
 	flag.BoolVar(&noPackagingFlag, "no-packaging", false, "Skip packaging step")
 	flag.BoolVar(&buildTestFlag, "build-test", false, "Build unittests")
 	flag.BoolVar(&runTestFlag, "run-test", false, "Build and run unittests")
+	flag.IntVar(&verboseFlag, "verbose", 0, "Run unittests with verbose level")
 
 	flag.StringVar(&cmakeBuildTypeFlag, "cmake-build-type", getEnv("BUILD_TYPE", "Release"), "Set cmake build configuration")
 	flag.IntVar(&cmakeBuildConcurrencyFlag, "cmake-build-concurrency", runtime.NumCPU(), "Set cmake build concurrency")
@@ -474,6 +476,9 @@ func buildStageExecuteBuildScript() {
 	}
 	if runTestFlag {
 		checkCmd := []string{"ninja", "check"}
+		if verboseFlag > 0 {
+			checkCmd = []string{"./yass_test", "-v", fmt.Sprintf("%d", verboseFlag), "-alsologtostderr"}
+		}
 		cmdRun(checkCmd, true)
 	}
 	// FIXME move to cmake (required by Xcode generator)
