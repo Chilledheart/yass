@@ -9,6 +9,61 @@
 #include "core/asio.hpp"
 #include "core/cipher.hpp"
 
+#ifdef __linux__
+#include <linux/netfilter_ipv4.h>
+#endif
+
+#ifdef __linux__
+namespace {
+
+bool IsIPv4MappedIPv6(const asio::ip::tcp::endpoint& address) {
+  return address.address().is_v6() && address.address().to_v6().is_v4_mapped();
+}
+
+bool IsIPUnspecified(const asio::ip::tcp::endpoint& address) {
+  return (address.address().is_v4() && address.address().to_v4().is_unspecified()) ||
+    (address.address().is_v6() && address.address().to_v6().is_unspecified());
+}
+
+asio::ip::tcp::endpoint IPaddressFromSockAddr(struct sockaddr_storage* ss,
+                                              socklen_t ss_len) {
+  asio::ip::tcp::endpoint endpoint;
+
+  if (ss_len == sizeof(sockaddr_in)) {
+    auto socket = reinterpret_cast<struct sockaddr_in*>(ss);
+    auto addr = asio::ip::address_v4(ntohl(socket->sin_addr.s_addr));
+    endpoint.address(addr);
+    endpoint.port(ntohs(socket->sin_port));
+  } else {
+    auto socket = reinterpret_cast<struct sockaddr_in6*>(ss);
+    std::array<unsigned char, 16> bytes = {
+      socket->sin6_addr.s6_addr[0],
+      socket->sin6_addr.s6_addr[1],
+      socket->sin6_addr.s6_addr[2],
+      socket->sin6_addr.s6_addr[3],
+      socket->sin6_addr.s6_addr[4],
+      socket->sin6_addr.s6_addr[5],
+      socket->sin6_addr.s6_addr[6],
+      socket->sin6_addr.s6_addr[7],
+      socket->sin6_addr.s6_addr[8],
+      socket->sin6_addr.s6_addr[9],
+      socket->sin6_addr.s6_addr[10],
+      socket->sin6_addr.s6_addr[11],
+      socket->sin6_addr.s6_addr[12],
+      socket->sin6_addr.s6_addr[13],
+      socket->sin6_addr.s6_addr[14],
+      socket->sin6_addr.s6_addr[15]
+    };
+    auto addr = asio::ip::address_v6(bytes, socket->sin6_scope_id);
+    endpoint.address(addr);
+    endpoint.port(ntohs(socket->sin6_port));
+  }
+  return endpoint;
+}
+
+} // anonymous namespace
+#endif
+
 static int http_request_url_parse(const char* buf,
                                   size_t len,
                                   std::string* host,
@@ -115,7 +170,10 @@ void Socks5Connection::ReadMethodSelect() {
         buf->append(bytes_transferred);
         DumpHex("HANDSHAKE/METHOD_SELECT->", buf.get());
 
-        ec = self->OnReadSocks5MethodSelect(buf);
+        ec = self->OnReadRedirHandshake(buf);
+        if (ec) {
+          ec = self->OnReadSocks5MethodSelect(buf);
+        }
         if (ec) {
           ec = self->OnReadSocks4Handshake(buf);
         }
@@ -150,6 +208,48 @@ void Socks5Connection::ReadSocks5Handshake() {
           self->ProcessReceivedData(self, buf, ec, buf->length());
         }
       });
+}
+
+asio::error_code Socks5Connection::OnReadRedirHandshake(
+    std::shared_ptr<IOBuf> buf) {
+#ifdef __linux__
+  VLOG(3) << "Connection (client) " << connection_id()
+          << " try redir handshake";
+  auto peer_address = socket_.remote_endpoint();
+  struct sockaddr_storage ss = {};
+  socklen_t ss_len = sizeof(ss);
+  asio::ip::tcp::endpoint endpoint;
+  int ret;
+  if (peer_address.address().is_v4() || IsIPv4MappedIPv6(peer_address))
+    ret = getsockopt(socket_.native_handle(), SOL_IP, SO_ORIGINAL_DST, &ss,
+                     &ss_len);
+  else
+    ret = getsockopt(socket_.native_handle(), SOL_IPV6, SO_ORIGINAL_DST, &ss,
+                     &ss_len);
+  if (ret == 0) {
+    endpoint = IPaddressFromSockAddr(&ss, ss_len);
+  }
+  if (ret == 0 && !IsIPUnspecified(endpoint)) {
+    VLOG(3) << "Connection (client) " << connection_id()
+            << " redir stream from " << endpoint_ << " to " << endpoint;
+
+    // no handshake required to be written
+    SetState(state_stream);
+
+    ss_request_ = std::make_unique<ss::request>(endpoint);
+    ByteRange req(ss_request_->data(), ss_request_->length());
+    OnCmdConnect(req);
+
+    if (buf->length()) {
+      ProcessReceivedData(shared_from_this(), buf,
+                          asio::error_code(), buf->length());
+    } else {
+      ReadStream();  // continously read
+    }
+    return asio::error_code();
+  }
+#endif
+  return std::make_error_code(std::errc::network_unreachable);
 }
 
 asio::error_code Socks5Connection::OnReadSocks5MethodSelect(
