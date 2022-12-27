@@ -399,10 +399,18 @@ jobs:
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             echo "CC=gcc-11" >> $GITHUB_ENV
             echo "CXX=g++-11" >> $GITHUB_ENV
-            echo "GNU_DEPS=gcc@11 gtk+3" >> $GITHUB_ENV
+            echo "GNU_DEPS=gtk+3" >> $GITHUB_ENV
+          fi
+      - name: Remove homebrew conflicts
+        run: |
+          if [ "${{ matrix.compiler }}" = "gcc" ]; then
+            rm -f /usr/local/bin/2to3 /usr/local/bin/idle3 /usr/local/bin/pydoc3 /usr/local/bin/python3 /usr/local/bin/python3-config
           fi
       - name: Populate depedencies
-        run: brew update && brew install ninja cmake p7zip ${{ env.GNU_DEPS }}
+        run: |
+          # brew update
+          # brew install ninja cmake p7zip ${{ env.GNU_DEPS }}
+          brew install ninja ${{ env.GNU_DEPS }}
       - name: Build
         run: |
           # required by gcc lto
