@@ -575,8 +575,8 @@ static void CheckDynamicLibraries() {
   const auto last1 = exe.find_last_of('\\');
   const auto last2 = exe.find_last_of('/');
   const auto last = std::max(
-    (last1 == std::wstring::npos) ? -1 : int(last1),
-    (last2 == std::wstring::npos) ? -1 : int(last2));
+    (last1 == std::wstring::npos) ? -1 : static_cast<int>(last1),
+    (last2 == std::wstring::npos) ? -1 : static_cast<int>(last2));
   if (last < 0) {
     LOG(FATAL) << L"Could not get executable directory!";
   }

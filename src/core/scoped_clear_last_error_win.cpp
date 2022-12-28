@@ -7,7 +7,7 @@
 #include <windows.h>
 
 ScopedClearLastError::ScopedClearLastError()
-    : ScopedClearLastErrorBase(), last_system_error_(GetLastError()) {
+    : last_system_error_(GetLastError()) {
   SetLastError(0);
 }
 

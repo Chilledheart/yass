@@ -87,9 +87,9 @@ HWND CreateStatic(const wchar_t* label,
                   UINT nID,
                   HINSTANCE hInstance) {
   return CreateWindowExW(
-      0, WC_STATICW, label, WS_CHILD | WS_VISIBLE | SS_LEFT, rect.left,
-      rect.top, rect.right - rect.left, rect.bottom - rect.top, pParentWnd,
-      (HMENU)(UINT_PTR)nID, hInstance, nullptr);
+      0, WC_STATICW, label, WS_CHILD | WS_VISIBLE | SS_LEFT,
+      rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
+      pParentWnd, (HMENU)static_cast<UINT_PTR>(nID), hInstance, nullptr);
 }
 
 HWND CreateEdit(DWORD dwStyle,
@@ -101,7 +101,7 @@ HWND CreateEdit(DWORD dwStyle,
       0, WC_EDITW, nullptr,
       WS_CHILD | WS_VISIBLE | WS_BORDER | WS_BORDER | ES_LEFT | dwStyle,
       rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
-      pParentWnd, (HMENU)(UINT_PTR)nID, hInstance, nullptr);
+      pParentWnd, (HMENU)static_cast<UINT_PTR>(nID), hInstance, nullptr);
 }
 
 HWND CreateComboBox(DWORD dwStyle,
@@ -112,7 +112,7 @@ HWND CreateComboBox(DWORD dwStyle,
   return CreateWindowExW(
       0, WC_COMBOBOXW, nullptr, WS_CHILD | WS_VISIBLE | WS_VSCROLL | dwStyle,
       rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
-      pParentWnd, (HMENU)(UINT_PTR)nID, hInstance, nullptr);
+      pParentWnd, (HMENU)static_cast<UINT_PTR>(nID), hInstance, nullptr);
 }
 
 HWND CreateButton(const wchar_t* label,
@@ -122,9 +122,9 @@ HWND CreateButton(const wchar_t* label,
                   UINT nID,
                   HINSTANCE hInstance) {
   return CreateWindowExW(
-      0, WC_BUTTONW, label, WS_CHILD | WS_VISIBLE | dwStyle, rect.left,
-      rect.top, rect.right - rect.left, rect.bottom - rect.top, pParentWnd,
-      (HMENU)(UINT_PTR)nID, hInstance, nullptr);
+      0, WC_BUTTONW, label, WS_CHILD | WS_VISIBLE | dwStyle,
+      rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
+      pParentWnd, (HMENU)static_cast<UINT_PTR>(nID), hInstance, nullptr);
 }
 
 HWND CreateStatusBar(HWND pParentWnd,
@@ -144,7 +144,7 @@ HWND CreateStatusBar(HWND pParentWnd,
                         WS_CHILD | WS_VISIBLE,  // creates a visible child window
                         0, 0, 0, 0,             // ignores size and position
                         pParentWnd,             // handle to parent window
-                        (HMENU)(INT_PTR)idStatus,  // child window identifier
+                        (HMENU)static_cast<INT_PTR>(idStatus),  // child window identifier
                         hInstance,  // handle to application instance
                         nullptr);   // no window creation data
 
@@ -153,7 +153,7 @@ HWND CreateStatusBar(HWND pParentWnd,
 
   // Allocate an array for holding the right edge coordinates.
   hloc = LocalAlloc(LHND, sizeof(int) * cParts);
-  paParts = (PINT)LocalLock(hloc);
+  paParts = static_cast<PINT>(LocalLock(hloc));
 
   // Calculate the right edge coordinate for each part, and
   // copy the coordinates to the array.
@@ -165,7 +165,7 @@ HWND CreateStatusBar(HWND pParentWnd,
   }
 
   // Tell the status bar to create the window parts.
-  SendMessage(hWnd, SB_SETPARTS, (WPARAM)cParts, (LPARAM)paParts);
+  SendMessage(hWnd, SB_SETPARTS, static_cast<WPARAM>(cParts), reinterpret_cast<LPARAM>(paParts));
 
   // Free the array, and return.
   LocalUnlock(hloc);
@@ -193,7 +193,7 @@ int CYassFrame::Create(const wchar_t* className,
                            nullptr, nullptr, hInstance, nullptr);
   m_hInstance = hInstance;
 
-  SetWindowLongPtrW(m_hWnd, GWLP_HINSTANCE, (LPARAM)hInstance);
+  SetWindowLongPtrW(m_hWnd, GWLP_HINSTANCE, reinterpret_cast<LPARAM>(hInstance));
 
   rect = RECT{};
 
@@ -285,7 +285,7 @@ int CYassFrame::Create(const wchar_t* className,
   ShowWindow(m_hWnd, nCmdShow);
   UpdateWindow(m_hWnd);
 
-  SetTimer(m_hWnd, IDT_UPDATE_STATUS_BAR, 200, (TIMERPROC)nullptr);
+  SetTimer(m_hWnd, IDT_UPDATE_STATUS_BAR, 200, nullptr);
 
   return TRUE;
 }
@@ -355,7 +355,7 @@ LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam,
       mFrame->OnClose();
       break;
     case WM_QUERYENDSESSION:
-      return (INT_PTR)mFrame->OnQueryEndSession();
+      return static_cast<INT_PTR>(mFrame->OnQueryEndSession());
     case WM_DESTROY:
       PostQuitMessage(0);
       break;
@@ -683,7 +683,7 @@ void CYassFrame::OnUpdateStatusBar() {
     return;
   previous_status_message_ = status_text;
   SendMessage(status_bar_, SB_SETTEXT,
-              (WPARAM)0, (LPARAM)status_text.c_str());
+              /* WPARAM */0, reinterpret_cast<LPARAM>(status_text.c_str()));
   UpdateWindow(status_bar_);
 }
 
@@ -748,7 +748,7 @@ INT_PTR CALLBACK CYassFrame::OnAppOptionMessage(HWND hDlg, UINT message,
                     FALSE);
       SetDlgItemInt(hDlg, IDC_EDIT_TCP_SO_RECEIVE_BUFFER, tcp_so_rcv_buffer,
                     FALSE);
-      return (INT_PTR)TRUE;
+      return static_cast<INT_PTR>(TRUE);
     }
     case WM_COMMAND:
       if (LOWORD(wParam) == IDOK) {
@@ -757,23 +757,23 @@ INT_PTR CALLBACK CYassFrame::OnAppOptionMessage(HWND hDlg, UINT message,
         auto connect_timeout =
             GetDlgItemInt(hDlg, IDC_EDIT_CONNECT_TIMEOUT, &translated, FALSE);
         if (translated == FALSE)
-          return (INT_PTR)FALSE;
+          return static_cast<INT_PTR>(FALSE);
         auto tcp_user_timeout =
             GetDlgItemInt(hDlg, IDC_EDIT_TCP_USER_TIMEOUT, &translated, FALSE);
         if (translated == FALSE)
-          return (INT_PTR)FALSE;
+          return static_cast<INT_PTR>(FALSE);
         auto tcp_so_linger_timeout = GetDlgItemInt(
             hDlg, IDC_EDIT_TCP_SO_LINGER_TIMEOUT, &translated, FALSE);
         if (translated == FALSE)
-          return (INT_PTR)FALSE;
+          return static_cast<INT_PTR>(FALSE);
         auto tcp_so_snd_buffer = GetDlgItemInt(
             hDlg, IDC_EDIT_TCP_SO_SEND_BUFFER, &translated, FALSE);
         if (translated == FALSE)
-          return (INT_PTR)FALSE;
+          return static_cast<INT_PTR>(FALSE);
         auto tcp_so_rcv_buffer = GetDlgItemInt(
             hDlg, IDC_EDIT_TCP_SO_RECEIVE_BUFFER, &translated, FALSE);
         if (translated == FALSE)
-          return (INT_PTR)FALSE;
+          return static_cast<INT_PTR>(FALSE);
         absl::SetFlag(&FLAGS_connect_timeout, connect_timeout);
         absl::SetFlag(&FLAGS_tcp_user_timeout, tcp_user_timeout);
         absl::SetFlag(&FLAGS_so_linger_timeout, tcp_so_linger_timeout);
@@ -782,13 +782,13 @@ INT_PTR CALLBACK CYassFrame::OnAppOptionMessage(HWND hDlg, UINT message,
       }
       if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) {
         EndDialog(hDlg, LOWORD(wParam));
-        return (INT_PTR)TRUE;
+        return static_cast<INT_PTR>(TRUE);
       }
       break;
     default:
       break;
   }
-  return (INT_PTR)FALSE;
+  return static_cast<INT_PTR>(FALSE);
 }
 
 void CYassFrame::OnAppAbout() {
@@ -802,16 +802,16 @@ INT_PTR CALLBACK CYassFrame::OnAppAboutMessage(HWND hDlg, UINT message,
   UNREFERENCED_PARAMETER(lParam);
   switch (message) {
     case WM_INITDIALOG:
-      return (INT_PTR)TRUE;
+      return static_cast<INT_PTR>(TRUE);
     case WM_COMMAND:
       if (LOWORD(wParam) == IDOK) {
         EndDialog(hDlg, LOWORD(wParam));
-        return (INT_PTR)TRUE;
+        return static_cast<INT_PTR>(TRUE);
       }
       break;
     default:
       break;
   }
-  return (INT_PTR)FALSE;
+  return static_cast<INT_PTR>(FALSE);
 }
 

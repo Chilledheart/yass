@@ -165,7 +165,7 @@ bool Dispatcher::Init(std::function<void()> callback) {
 #endif
   GIOChannel* channel = g_io_channel_unix_new(fds_[0]);
   source_ =
-      g_io_create_watch(channel, (GIOCondition)(G_IO_IN | G_IO_HUP | G_IO_ERR));
+      g_io_create_watch(channel, static_cast<GIOCondition>(G_IO_IN | G_IO_HUP | G_IO_ERR));
   g_io_channel_unref(channel);
 
   g_source_set_priority(source_, G_PRIORITY_LOW);
@@ -375,9 +375,9 @@ void SetUpGLibLogHandler() {
   // Register GLib-handled assertions to go through our logging system.
   const char* const kLogDomains[] = {nullptr, "Gtk", "Gdk", "GLib",
                                      "GLib-GObject"};
-  for (size_t i = 0; i < ::internal::size(kLogDomains); i++) {
+  for (auto logDomain : kLogDomains) {
     g_log_set_handler(
-        kLogDomains[i],
+        logDomain,
         static_cast<GLogLevelFlags>(G_LOG_FLAG_RECURSION | G_LOG_FLAG_FATAL |
                                     G_LOG_LEVEL_ERROR | G_LOG_LEVEL_CRITICAL |
                                     G_LOG_LEVEL_WARNING),

@@ -643,13 +643,13 @@ class LogFileObject : public Logger {
   std::string symlink_basename_;
   std::string
       filename_extension_;  // option users can specify (eg to add port#)
-  FILE* file_;
+  FILE* file_ = nullptr;
   LogSeverity severity_;
-  uint32_t bytes_since_flush_;
-  uint32_t dropped_mem_length_;
-  uint32_t file_length_;
+  uint32_t bytes_since_flush_ = 0;
+  uint32_t dropped_mem_length_ = 0;
+  uint32_t file_length_ = 0;
   unsigned int rollover_attempt_;
-  int64_t next_flush_time_;  // cycle count at which to flush log
+  int64_t next_flush_time_ = 0;  // cycle count at which to flush log
   uint64_t start_time_;
 
   // Actually create a logfile using the value of base_filename_ and the
@@ -925,7 +925,7 @@ static void ColoredWriteToStderr(LogSeverity severity,
   }
 #ifdef OS_WIN
   const HANDLE stderr_handle = GetStdHandle(STD_ERROR_HANDLE);
-  if (stderr_handle == NULL || stderr_handle == INVALID_HANDLE_VALUE) {
+  if (stderr_handle == nullptr || stderr_handle == INVALID_HANDLE_VALUE) {
     // Can't print anything, so just die
     return;
   }

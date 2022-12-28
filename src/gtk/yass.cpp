@@ -85,7 +85,7 @@ YASSApp::YASSApp()
     return G_SOURCE_CONTINUE;
   };
   g_source_set_priority(idle_source_, G_PRIORITY_LOW);
-  g_source_set_callback(idle_source_, (GSourceFunc)idle, this, nullptr);
+  g_source_set_callback(idle_source_, idle, this, nullptr);
   g_source_set_name(idle_source_, "Idle Source");
   g_source_attach(idle_source_, nullptr);
   g_source_unref(idle_source_);
@@ -131,7 +131,7 @@ int YASSApp::ApplicationRun(int argc, char** argv) {
   LOG(WARNING) << "Application exiting";
 
   // Memory leak clean up path
-  pango_cairo_font_map_set_default(NULL);
+  pango_cairo_font_map_set_default(nullptr);
   cairo_debug_reset_static_data();
   FcFini();
 
@@ -177,8 +177,7 @@ void YASSApp::OnStart(bool quiet) {
 
       {
         absl::MutexLock lk(&dispatch_mutex_);
-        dispatch_queue_.push(
-            std::make_pair(successed ? STARTED : START_FAILED, msg));
+        dispatch_queue_.emplace(successed ? STARTED : START_FAILED, msg);
       }
 
       dispatcher_.Emit();
@@ -195,7 +194,7 @@ void YASSApp::OnStop(bool quiet) {
     callback = [this]() {
       {
         absl::MutexLock lk(&dispatch_mutex_);
-        dispatch_queue_.push(std::make_pair(STOPPED, std::string()));
+        dispatch_queue_.emplace(STOPPED, std::string());
       }
 
       dispatcher_.Emit();

@@ -133,7 +133,7 @@ BOOL CYassApp::InitInstance() {
   wndcls.hInstance = m_hInstance;
   wndcls.hIcon = LoadIconW(m_hInstance, MAKEINTRESOURCE(IDR_MAINFRAME));
   wndcls.hCursor = LoadCursor(nullptr, IDC_ARROW);
-  wndcls.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
+  wndcls.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_BTNFACE + 1);
   wndcls.lpszMenuName = MAKEINTRESOURCE(IDR_MAINFRAME);
   wndcls.lpszClassName = className;
   wndcls.hIconSm = nullptr;
@@ -235,7 +235,7 @@ int CYassApp::RunMainLoop() {
     return ret;
   }
 
-  return (int)msg.wParam;
+  return static_cast<int>(msg.wParam);
 }
 
 // https://docs.microsoft.com/en-us/windows/win32/winmsg/about-messages-and-message-queues

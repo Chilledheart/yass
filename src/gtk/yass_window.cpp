@@ -45,7 +45,7 @@ YASSWindow::YASSWindow()
   auto show_callback = []() {
     gdk_window_set_functions(
         gtk_widget_get_window(GTK_WIDGET(window->impl_)),
-        (GdkWMFunction)(GDK_FUNC_MOVE | GDK_FUNC_MINIMIZE | GDK_FUNC_CLOSE));
+        static_cast<GdkWMFunction>(GDK_FUNC_MOVE | GDK_FUNC_MINIMIZE | GDK_FUNC_CLOSE));
   };
   g_signal_connect(G_OBJECT(impl_), "show",
                    G_CALLBACK(show_callback), this);

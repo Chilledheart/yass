@@ -210,8 +210,8 @@ class ContentServer {
   };
 
  public:
-  ContentServer(const asio::ip::tcp::endpoint& remote_endpoint,
-                ContentServer::Delegate *delegate = nullptr) {
+  explicit ContentServer(const asio::ip::tcp::endpoint& remote_endpoint,
+                         ContentServer::Delegate *delegate = nullptr) {
     size_t num_of_threads = absl::GetFlag(FLAGS_threads);
     threaded_contexts_.reserve(num_of_threads);
     for (size_t i = 0; i < num_of_threads; ++i) {
