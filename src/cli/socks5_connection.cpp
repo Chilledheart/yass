@@ -34,7 +34,7 @@ asio::ip::tcp::endpoint IPaddressFromSockAddr(struct sockaddr_storage* ss,
     auto addr = asio::ip::address_v4(ntohl(socket->sin_addr.s_addr));
     endpoint.address(addr);
     endpoint.port(ntohs(socket->sin_port));
-  } else {
+  } else if (ss_len == sizeof(sockaddr_in6)) {
     auto socket = reinterpret_cast<struct sockaddr_in6*>(ss);
     std::array<unsigned char, 16> bytes = {
       socket->sin6_addr.s6_addr[0],
