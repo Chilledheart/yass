@@ -89,7 +89,7 @@ HWND CreateStatic(const wchar_t* label,
   return CreateWindowExW(
       0, WC_STATICW, label, WS_CHILD | WS_VISIBLE | SS_LEFT,
       rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
-      pParentWnd, (HMENU)static_cast<UINT_PTR>(nID), hInstance, nullptr);
+      pParentWnd, reinterpret_cast<HMENU>(static_cast<UINT_PTR>(nID)), hInstance, nullptr);
 }
 
 HWND CreateEdit(DWORD dwStyle,
@@ -101,7 +101,7 @@ HWND CreateEdit(DWORD dwStyle,
       0, WC_EDITW, nullptr,
       WS_CHILD | WS_VISIBLE | WS_BORDER | WS_BORDER | ES_LEFT | dwStyle,
       rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
-      pParentWnd, (HMENU)static_cast<UINT_PTR>(nID), hInstance, nullptr);
+      pParentWnd, reinterpret_cast<HMENU>(static_cast<UINT_PTR>(nID)), hInstance, nullptr);
 }
 
 HWND CreateComboBox(DWORD dwStyle,
@@ -112,7 +112,7 @@ HWND CreateComboBox(DWORD dwStyle,
   return CreateWindowExW(
       0, WC_COMBOBOXW, nullptr, WS_CHILD | WS_VISIBLE | WS_VSCROLL | dwStyle,
       rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
-      pParentWnd, (HMENU)static_cast<UINT_PTR>(nID), hInstance, nullptr);
+      pParentWnd, reinterpret_cast<HMENU>(static_cast<UINT_PTR>(nID)), hInstance, nullptr);
 }
 
 HWND CreateButton(const wchar_t* label,
@@ -124,7 +124,7 @@ HWND CreateButton(const wchar_t* label,
   return CreateWindowExW(
       0, WC_BUTTONW, label, WS_CHILD | WS_VISIBLE | dwStyle,
       rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
-      pParentWnd, (HMENU)static_cast<UINT_PTR>(nID), hInstance, nullptr);
+      pParentWnd, reinterpret_cast<HMENU>(static_cast<UINT_PTR>(nID)), hInstance, nullptr);
 }
 
 HWND CreateStatusBar(HWND pParentWnd,
@@ -144,7 +144,7 @@ HWND CreateStatusBar(HWND pParentWnd,
                         WS_CHILD | WS_VISIBLE,  // creates a visible child window
                         0, 0, 0, 0,             // ignores size and position
                         pParentWnd,             // handle to parent window
-                        (HMENU)static_cast<INT_PTR>(idStatus),  // child window identifier
+                        reinterpret_cast<HMENU>(static_cast<INT_PTR>(idStatus)),  // child window identifier
                         hInstance,  // handle to application instance
                         nullptr);   // no window creation data
 

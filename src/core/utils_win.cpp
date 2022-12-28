@@ -159,7 +159,7 @@ bool SetThreadName(std::thread::native_handle_type,
           ::GetModuleHandle(L"Kernel32.dll"), "SetThreadDescription")));
   HRESULT ret = E_NOTIMPL;
 
-  if (handle == 0) {
+  if (handle == HANDLE() || handle == INVALID_HANDLE_VALUE) {
     handle = ::GetCurrentThread();
   }
 
@@ -363,7 +363,7 @@ uint64_t GetMonotonicTime() {
 
 static bool IsHandleConsole(HANDLE handle) {
   DWORD mode;
-  return handle != 0 && handle != INVALID_HANDLE_VALUE &&
+  return handle != HANDLE() && handle != INVALID_HANDLE_VALUE &&
          (GetFileType(handle) & ~FILE_TYPE_REMOTE) == FILE_TYPE_CHAR &&
          GetConsoleMode(handle, &mode);
 }

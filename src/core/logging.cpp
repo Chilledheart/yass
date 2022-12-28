@@ -1263,13 +1263,8 @@ LogFileObject::LogFileObject(LogSeverity severity, const char* base_filename)
     : base_filename_selected_(base_filename != nullptr),
       base_filename_((base_filename != nullptr) ? base_filename : ""),
       symlink_basename_(absl::flags_internal::ShortProgramInvocationName()),
-      file_(nullptr),
       severity_(severity),
-      bytes_since_flush_(0),
-      dropped_mem_length_(0),
-      file_length_(0),
       rollover_attempt_(kRolloverAttemptFrequency - 1),
-      next_flush_time_(0),
       start_time_(MonotoicTickCount()) {
   assert(severity < LOGGING_NUM_SEVERITIES);
 }
