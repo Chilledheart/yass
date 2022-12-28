@@ -21,8 +21,7 @@ bool IsIPv4MappedIPv6(const asio::ip::tcp::endpoint& address) {
 }
 
 bool IsIPUnspecified(const asio::ip::tcp::endpoint& address) {
-  return (address.address().is_v4() && address.address().to_v4().is_unspecified()) ||
-    (address.address().is_v6() && address.address().to_v6().is_unspecified());
+  return address.address().is_unspecified();
 }
 
 asio::ip::tcp::endpoint IPaddressFromSockAddr(struct sockaddr_storage* ss,
