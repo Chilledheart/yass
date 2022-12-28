@@ -268,7 +268,7 @@ jobs:
           mkdir build
           cd build
           cmake -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_TESTS=on -DGUI=on ..
-          ninja
+          ninja yass yass_test
       - name: Run unittests
         shell: msys2 {0}
         run: |
