@@ -30,7 +30,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [x64]
+        arch: [x64, x86]
         build_type: [Release]
         crt-linkage: [static]
     env:
