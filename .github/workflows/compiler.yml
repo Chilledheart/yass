@@ -248,26 +248,31 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      - name: Re-add msys2 into PATH
+        shell: bash
+        run: |
+          python -c "import os; print(os.getenv('PATH'))"
+          PATH1=$(python -c "import os; print(os.getenv('PATH'), end ='')")
+          echo "PATH=C:\msys64\${{ matrix.distro }}\bin;C:\msys64\usr\bin;$PATH1" >> $GITHUB_ENV
       - name: Populate build depedencies
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: ${{ matrix.distro }}
-          path-type: inherit
-          update: true
-          install: >-
-            mingw-w64-clang-${{ matrix.arch }}-clang
-            mingw-w64-clang-${{ matrix.arch }}-gcc
-            mingw-w64-clang-${{ matrix.arch }}-nasm
+        shell: cmd
+        run: |
+          pacman -S --noconfirm --needed --noprogressbar ^
+            mingw-w64-clang-${{ matrix.arch }}-clang ^
+            mingw-w64-clang-${{ matrix.arch }}-gcc ^
+            mingw-w64-clang-${{ matrix.arch }}-nasm ^
             mingw-w64-clang-${{ matrix.arch }}-ninja
       - name: Build
-        shell: msys2 {0}
+        shell: cmd
         run: |
+          set CC=cc
+          set CXX=c++
           mkdir build
           cd build
           cmake -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_TESTS=on -DGUI=on ..
           ninja yass yass_test
       - name: Run unittests
-        shell: msys2 {0}
+        shell: cmd
         run: |
           cd build
           ninja check
