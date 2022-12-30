@@ -256,6 +256,7 @@ jobs:
           update: true
           install: >-
             mingw-w64-clang-${{ matrix.arch }}-clang
+            mingw-w64-clang-${{ matrix.arch }}-gcc
             mingw-w64-clang-${{ matrix.arch }}-nasm
             mingw-w64-clang-${{ matrix.arch }}-ninja
       - name: Build
