@@ -257,10 +257,10 @@ jobs:
           install: >-
             mingw-w64-clang-${{ matrix.arch }}-clang
             mingw-w64-clang-${{ matrix.arch }}-nasm
+            mingw-w64-clang-${{ matrix.arch }}-ninja
       - name: Build
         shell: msys2 {0}
         run: |
-          export "PATH=/c/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja:${PATH}"
           mkdir build
           cd build
           cmake -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_TESTS=on -DGUI=on ..
@@ -268,7 +268,6 @@ jobs:
       - name: Run unittests
         shell: msys2 {0}
         run: |
-          export "PATH=/c/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja:${PATH}"
           cd build
           ninja check
   linux-compiler-compatible:
