@@ -226,11 +226,11 @@ jobs:
       fail-fast: false
       matrix:
         build_type: [Release]
-        distro: [mingw64]
+        distro: [clang64]
         arch: [x86_64]
         include:
           - build_type: Release
-            distro: mingw32
+            distro: clang32
             arch: i686
     steps:
       - uses: actions/checkout@v3
@@ -253,18 +253,15 @@ jobs:
         with:
           msystem: ${{ matrix.distro }}
           path-type: inherit
+          update: true
           install: >-
-            mingw-w64-${{ matrix.arch }}-gcc
-            mingw-w64-${{ matrix.arch }}-nasm
-      - name: Patch libcxx for gcc
-        shell: msys2 {0}
-        run: |
-          cd third_party/libc++/trunk
-          patch -p1 < ../gcc-using-if-exist.patch
+            mingw-w64-clang-${{ matrix.arch }}-clang
+            mingw-w64-clang-${{ matrix.arch }}-gcc
+            mingw-w64-clang-${{ matrix.arch }}-nasm
+            mingw-w64-clang-${{ matrix.arch }}-ninja
       - name: Build
         shell: msys2 {0}
         run: |
-          export "PATH=/c/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja:${PATH}"
           mkdir build
           cd build
           cmake -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_TESTS=on -DGUI=on ..
@@ -272,7 +269,6 @@ jobs:
       - name: Run unittests
         shell: msys2 {0}
         run: |
-          export "PATH=/c/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja:${PATH}"
           cd build
           ninja check
   linux-compiler-compatible:
