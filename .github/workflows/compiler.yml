@@ -226,11 +226,11 @@ jobs:
       fail-fast: false
       matrix:
         build_type: [Release]
-        distro: [mingw64]
+        distro: [clang64]
         arch: [x86_64]
         include:
           - build_type: Release
-            distro: mingw32
+            distro: clang32
             arch: i686
     steps:
       - uses: actions/checkout@v3
@@ -253,14 +253,10 @@ jobs:
         with:
           msystem: ${{ matrix.distro }}
           path-type: inherit
+          update: true
           install: >-
-            mingw-w64-${{ matrix.arch }}-gcc
-            mingw-w64-${{ matrix.arch }}-nasm
-      - name: Patch libcxx for gcc
-        shell: msys2 {0}
-        run: |
-          cd third_party/libc++/trunk
-          patch -p1 < ../gcc-using-if-exist.patch
+            mingw-w64-clang-${{ matrix.arch }}-clang
+            mingw-w64-clang-${{ matrix.arch }}-nasm
       - name: Build
         shell: msys2 {0}
         run: |
