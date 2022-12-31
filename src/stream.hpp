@@ -41,9 +41,6 @@ class stream {
   void connect() {
     std::shared_ptr<Channel> channel = std::shared_ptr<Channel>(channel_);
     asio::error_code ec;
-    connected_ = false;
-    eof_ = false;
-    read_enabled_ = true;
     SetTCPFastOpenConnect(socket_.native_handle(), ec);
     connect_timer_.expires_from_now(
         std::chrono::milliseconds(absl::GetFlag(FLAGS_connect_timeout)));
@@ -100,8 +97,16 @@ class stream {
   }
 
   void close() {
+    if (closed_) {
+      return;
+    }
     eof_ = true;
+    closed_ = true;
     asio::error_code ec;
+    socket_.cancel(ec);
+    if (ec) {
+      VLOG(2) << "cancel() error: " << ec;
+    }
     socket_.close(ec);
     if (ec) {
       VLOG(2) << "close() error: " << ec;
@@ -217,10 +222,11 @@ class stream {
   asio::steady_timer connect_timer_;
 
   std::weak_ptr<Channel> channel_;
-  bool connected_;
-  bool eof_;
+  bool connected_ = false;
+  bool eof_ = false;
+  bool closed_ = false;
 
-  bool read_enabled_;
+  bool read_enabled_ = true;
   bool read_inprogress_ = false;
 
   // statistics

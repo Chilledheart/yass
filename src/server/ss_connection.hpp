@@ -54,6 +54,12 @@ class SsConnection : public std::enable_shared_from_this<SsConnection>,
   /// Destruct the service
   ~SsConnection() override;
 
+  SsConnection(const SsConnection&) = delete;
+  SsConnection& operator=(const SsConnection&) = delete;
+
+  SsConnection(SsConnection&&) = default;
+  SsConnection& operator=(SsConnection&&) = default;
+
   /// Enter the start phase, begin to read requests
   void start() override;
 

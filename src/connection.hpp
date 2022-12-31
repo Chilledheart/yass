@@ -23,12 +23,15 @@ class Connection {
   /// \param remote_endpoint the remote endpoint of the service socket
   Connection(asio::io_context& io_context,
              const asio::ip::tcp::endpoint& remote_endpoint)
-      : io_context_(io_context),
+      : io_context_(&io_context),
         remote_endpoint_(remote_endpoint),
-        socket_(io_context_) {}
+        socket_(*io_context_) {}
 
   Connection(const Connection&) = delete;
   Connection& operator=(const Connection&) = delete;
+
+  Connection(Connection&&) = default;
+  Connection& operator=(Connection&&) = default;
 
   virtual ~Connection() = default;
 
@@ -59,7 +62,7 @@ class Connection {
   /// \param cb the callback function pointer when disconnect happens
   void set_disconnect_cb(std::function<void()> cb) { disconnect_cb_ = cb; }
 
-  asio::io_context& io_context() { return io_context_; }
+  asio::io_context& io_context() { return *io_context_; }
 
   const asio::ip::tcp::endpoint& endpoint() const { return endpoint_; }
 
@@ -73,7 +76,7 @@ class Connection {
 
  protected:
   /// the io context associated with
-  asio::io_context& io_context_;
+  asio::io_context* io_context_;
   /// the upstream endpoint to be established with
   asio::ip::tcp::endpoint remote_endpoint_;
 
@@ -84,7 +87,7 @@ class Connection {
   /// the peer endpoint the connection connects
   asio::ip::tcp::endpoint peer_endpoint_;
   /// the number of connection id
-  int connection_id_;
+  int connection_id_ = -1;
 
   /// the callback invoked when disconnect event happens
   std::function<void()> disconnect_cb_;
