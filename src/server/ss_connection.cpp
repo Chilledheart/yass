@@ -18,7 +18,7 @@ SsConnection::SsConnection(asio::io_context& io_context,
                            const asio::ip::tcp::endpoint& remote_endpoint)
     : Connection(io_context, remote_endpoint),
       state_(),
-      resolver_(io_context_),
+      resolver_(*io_context_),
       encoder_(new cipher(
           "",
           absl::GetFlag(FLAGS_password),
@@ -29,7 +29,9 @@ SsConnection::SsConnection(asio::io_context& io_context,
                           static_cast<enum cipher_method>(
                               absl::GetFlag(FLAGS_cipher_method)))) {}
 
-SsConnection::~SsConnection() = default;
+SsConnection::~SsConnection() {
+  VLOG(2) << "Connection (server) " << connection_id() << " freed memory";
+}
 
 void SsConnection::start() {
   SetState(state_handshake);
@@ -50,7 +52,14 @@ void SsConnection::close() {
           << " and data to write: " << downstream_.size();
   asio::error_code ec;
   closed_ = true;
+  socket_.cancel(ec);
+  if (ec) {
+    VLOG(2) << "cancel() error: " << ec;
+  }
   socket_.close(ec);
+  if (ec) {
+    VLOG(2) << "close() error: " << ec;
+  }
   if (channel_) {
     channel_->close();
   }
@@ -139,9 +148,9 @@ void SsConnection::ReadStream() {
 }
 
 void SsConnection::WriteStream(std::shared_ptr<IOBuf> buf) {
+  std::shared_ptr<SsConnection> self = shared_from_this();
   DCHECK(downstream_writable_);
   downstream_writable_ = false;
-  std::shared_ptr<SsConnection> self = shared_from_this();
   asio::async_write(socket_, const_buffer(*buf),
       [self, buf](asio::error_code error, size_t bytes_transferred) {
         return SsConnection::ProcessSentData(self, buf, error,
@@ -189,10 +198,12 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<SsConnection> self,
         break;
     };
   }
+#if 1
   // Slience Read EOF error triggered by upstream disconnection
-  if (ec == asio::error::eof && self->channel_->eof()) {
+  if (ec == asio::error::eof && self->channel_ && self->channel_->eof()) {
     return;
   }
+#endif
   if (ec) {
     self->SetState(state_error);
     self->OnDisconnect(ec);
@@ -235,9 +246,9 @@ void SsConnection::OnConnect() {
   VLOG(2) << "Connection (server) " << connection_id()
           << " established connection with: " << endpoint_
           << " remote: " << remote_endpoint_;
-  channel_ = std::make_unique<stream>(
-      io_context_, remote_endpoint_,
-      std::static_pointer_cast<Channel>(shared_from_this()));
+  std::shared_ptr<SsConnection> self = shared_from_this();
+  channel_ = std::make_unique<stream>(*io_context_, remote_endpoint_,
+                                      std::static_pointer_cast<Channel>(self));
   channel_->connect();
 }
 
@@ -303,8 +314,7 @@ void SsConnection::OnDownstreamWriteFlush() {
 
 void SsConnection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf && !buf->empty()) {
-    buf = EncryptData(buf);
-    downstream_.push_back(buf);
+    downstream_.push_back(EncryptData(buf));
   }
 
   if (!downstream_.empty() && downstream_writable_) {
@@ -374,7 +384,7 @@ void SsConnection::disconnected(asio::error_code ec) {
   /* delay the socket's close because downstream is buffered */
   if (downstream_.empty()) {
     VLOG(3) << "Connection (server) " << connection_id()
-            << " last data sent: shutting down";
+            << " upstream: last data sent: shutting down";
     socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
   } else {
     socket_.shutdown(asio::ip::tcp::socket::shutdown_receive, ec);
@@ -384,6 +394,8 @@ void SsConnection::disconnected(asio::error_code ec) {
 std::shared_ptr<IOBuf> SsConnection::DecryptData(
     std::shared_ptr<IOBuf> cipherbuf) {
   std::unique_ptr<IOBuf> plainbuf = IOBuf::create(cipherbuf->length());
+  plainbuf->reserve(0, cipherbuf->length());
+
   DumpHex("ERead->", cipherbuf.get());
   decoder_->decrypt(cipherbuf.get(), plainbuf);
   DumpHex("PRead->", plainbuf.get());
@@ -391,10 +403,12 @@ std::shared_ptr<IOBuf> SsConnection::DecryptData(
   return buf;
 }
 
-std::shared_ptr<IOBuf> SsConnection::EncryptData(std::shared_ptr<IOBuf> buf) {
-  std::unique_ptr<IOBuf> cipherbuf = IOBuf::create(buf->length());
-  DumpHex("PWrite->", buf.get());
-  encoder_->encrypt(buf.get(), cipherbuf);
+std::shared_ptr<IOBuf> SsConnection::EncryptData(std::shared_ptr<IOBuf> plainbuf) {
+  std::unique_ptr<IOBuf> cipherbuf = IOBuf::create(plainbuf->length() + 100);
+  cipherbuf->reserve(0, plainbuf->length() + 100);
+
+  DumpHex("PWrite->", plainbuf.get());
+  encoder_->encrypt(plainbuf.get(), cipherbuf);
   DumpHex("EWrite->", cipherbuf.get());
   std::shared_ptr<IOBuf> sharedBuf{cipherbuf.release()};
   return sharedBuf;

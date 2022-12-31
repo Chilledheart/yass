@@ -69,6 +69,12 @@ class Socks5Connection : public std::enable_shared_from_this<Socks5Connection>,
   /// Destruct the service
   ~Socks5Connection() override;
 
+  Socks5Connection(const Socks5Connection&) = delete;
+  Socks5Connection& operator=(const Socks5Connection&) = delete;
+
+  Socks5Connection(Socks5Connection&&) = default;
+  Socks5Connection& operator=(Socks5Connection&&) = default;
+
   /// Enter the start phase, begin to read requests
   void start() override;
 
@@ -213,15 +219,14 @@ class Socks5Connection : public std::enable_shared_from_this<Socks5Connection>,
   /// copy of connect method
   bool http_is_connect_ = false;
   /// copy of connect response
-  const std::string http_connect_reply_ =
-      "HTTP/1.1 200 Connection established\r\n\r\n";
+  static const char http_connect_reply_[];
 
   /// copy of upstream request
   std::unique_ptr<ss::request> ss_request_;
 
  private:
   /// perform cmd connect request
-  void OnCmdConnect(ByteRange req);
+  void OnCmdConnect(std::shared_ptr<IOBuf> buf);
 
   /// handle with connnect event (downstream)
   void OnConnect();

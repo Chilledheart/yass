@@ -139,47 +139,50 @@ class ContentServer {
     void accept() {
       acceptor_->async_accept(
           peer_endpoint_,
-          [this](asio::error_code error, asio::ip::tcp::socket socket) {
-            std::shared_ptr<ConnectionType> conn =
-                factory_.Create(io_context_, remote_endpoint_);
-            on_accept(conn, error, std::move(socket));
+          [this](asio::error_code ec, asio::ip::tcp::socket socket) {
+            if (!ec) {
+              std::shared_ptr<ConnectionType> conn =
+                  factory_.Create(io_context_, remote_endpoint_);
+              on_accept(conn, std::move(socket));
+              accept();
+            } if (ec && ec != asio::error::operation_aborted) {
+              LOG(ERROR) << "Thread " << index_ << " (" << factory_.Name() << ")"
+                         << " failed to accept more due to: " << ec;
+              work_guard_.reset();
+            }
           });
     }
 
     void on_accept(std::shared_ptr<ConnectionType> conn,
-                   asio::error_code ec,
-                   asio::ip::tcp::socket socket) {
-      if (!ec) {
-        int connection_id = *next_connection_id_++;
-        SetTCPCongestion(socket.native_handle(), ec);
-        SetTCPConnectionTimeout(socket.native_handle(), ec);
-        SetTCPUserTimeout(socket.native_handle(), ec);
-        SetSocketLinger(&socket, ec);
-        SetSocketSndBuffer(&socket, ec);
-        SetSocketRcvBuffer(&socket, ec);
-        conn->on_accept(std::move(socket), endpoint_, peer_endpoint_,
-                        connection_id);
-        conn->set_disconnect_cb(
-            [this, conn]() mutable { on_disconnect(conn); });
-        connections_.push_back(conn);
-        if (delegate_) {
-          delegate_->OnConnect(connection_id);
-        }
-        LOG(INFO) << "Connection (" << factory_.Name() << ") "
-                  << connection_id << " with " << conn->peer_endpoint()
-                  << " connected";
-        conn->start();
-        accept();
-      } if (ec && ec != asio::error::operation_aborted) {
-        LOG(ERROR) << "Thread " << index_ << " (" << factory_.Name() << ")"
-                   << " failed to accept more due to: " << ec;
+                   asio::ip::tcp::socket &&socket) {
+      asio::error_code ec;
+
+      int connection_id = (*next_connection_id_)++;
+      SetTCPCongestion(socket.native_handle(), ec);
+      SetTCPConnectionTimeout(socket.native_handle(), ec);
+      SetTCPUserTimeout(socket.native_handle(), ec);
+      SetSocketLinger(&socket, ec);
+      SetSocketSndBuffer(&socket, ec);
+      SetSocketRcvBuffer(&socket, ec);
+      conn->on_accept(std::move(socket), endpoint_, peer_endpoint_,
+                      connection_id);
+      conn->set_disconnect_cb(
+          [this, conn]() mutable { on_disconnect(conn); });
+      connections_.push_back(conn);
+      if (delegate_) {
+        delegate_->OnConnect(connection_id);
       }
+      LOG(INFO) << "Connection (" << factory_.Name() << ") "
+                << connection_id << " with " << conn->peer_endpoint()
+                << " connected";
+      conn->start();
     }
 
     void on_disconnect(std::shared_ptr<typename T::ConnectionType> conn) {
       int connection_id = conn->connection_id();
       LOG(INFO) << "Connection (" << factory_.Name() << ") "
-                << connection_id << " disconnected";
+                << connection_id << " disconnected (refcount "
+                << conn.use_count() << ")";
       connections_.erase(
           std::remove(connections_.begin(), connections_.end(), conn),
           connections_.end());

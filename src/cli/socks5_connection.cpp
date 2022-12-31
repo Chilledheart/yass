@@ -9,6 +9,9 @@
 #include "core/asio.hpp"
 #include "core/cipher.hpp"
 
+const char Socks5Connection::http_connect_reply_[] =
+    "HTTP/1.1 200 Connection established\r\n\r\n";
+
 #ifdef __linux__
 #include <linux/netfilter_ipv4.h>
 #endif
@@ -125,7 +128,9 @@ Socks5Connection::Socks5Connection(
                           static_cast<enum cipher_method>(
                               absl::GetFlag(FLAGS_cipher_method)))) {}
 
-Socks5Connection::~Socks5Connection() = default;
+Socks5Connection::~Socks5Connection() {
+  VLOG(2) << "Connection (client) " << connection_id() << " freed memory";
+};
 
 void Socks5Connection::start() {
   SetState(state_method_select);
@@ -145,7 +150,14 @@ void Socks5Connection::close() {
           << " and data to write: " << downstream_.size();
   asio::error_code ec;
   closed_ = true;
+  socket_.cancel(ec);
+  if (ec) {
+    VLOG(2) << "cancel() error: " << ec;
+  }
   socket_.close(ec);
+  if (ec) {
+    VLOG(2) << "close() error: " << ec;
+  }
   if (channel_) {
     channel_->close();
   }
@@ -214,6 +226,7 @@ asio::error_code Socks5Connection::OnReadRedirHandshake(
 #ifdef __linux__
   VLOG(3) << "Connection (client) " << connection_id()
           << " try redir handshake";
+  std::shared_ptr<Socks5Connection> self = shared_from_this();
   auto peer_address = socket_.remote_endpoint();
   struct sockaddr_storage ss = {};
   socklen_t ss_len = sizeof(ss);
@@ -237,11 +250,10 @@ asio::error_code Socks5Connection::OnReadRedirHandshake(
 
     ss_request_ = std::make_unique<ss::request>(endpoint);
     ByteRange req(ss_request_->data(), ss_request_->length());
-    OnCmdConnect(req);
+    OnCmdConnect(IOBuf::copyBuffer(req));
 
     if (buf->length()) {
-      ProcessReceivedData(shared_from_this(), buf,
-                          asio::error_code(), buf->length());
+      ProcessReceivedData(self, buf, asio::error_code(), buf->length());
     } else {
       ReadStream();  // continously read
     }
@@ -275,7 +287,6 @@ asio::error_code Socks5Connection::OnReadSocks5Handshake(
     std::shared_ptr<IOBuf> buf) {
   VLOG(3) << "Connection (client) " << connection_id()
           << " try socks5 handshake";
-  std::shared_ptr<Socks5Connection> self = shared_from_this();
   socks5::request_parser::result_type result;
   std::tie(result, std::ignore) = request_parser_.parse(
       s5_request_, buf->data(), buf->data() + buf->length());
@@ -295,7 +306,6 @@ asio::error_code Socks5Connection::OnReadSocks5Handshake(
 
 asio::error_code Socks5Connection::OnReadSocks4Handshake(
     std::shared_ptr<IOBuf> buf) {
-  std::shared_ptr<Socks5Connection> self = shared_from_this();
   VLOG(3) << "Connection (client) " << connection_id()
           << " try socks4 handshake";
 
@@ -494,7 +504,7 @@ void Socks5Connection::WriteHandshake() {
       /// reply on CONNECT request
       if (http_is_connect_) {
         std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(
-            http_connect_reply_.c_str(), http_connect_reply_.size());
+            http_connect_reply_, sizeof(http_connect_reply_) - 1);
         OnDownstreamWrite(buf);
       }
       break;
@@ -510,9 +520,9 @@ void Socks5Connection::WriteHandshake() {
 }
 
 void Socks5Connection::WriteStream(std::shared_ptr<IOBuf> buf) {
+  std::shared_ptr<Socks5Connection> self = shared_from_this();
   DCHECK(downstream_writable_);
   downstream_writable_ = false;
-  std::shared_ptr<Socks5Connection> self = shared_from_this();
   DCHECK_EQ(CurrentState(), state_stream);
   DCHECK(buf);
   asio::async_write(socket_, const_buffer(*buf),
@@ -547,7 +557,7 @@ asio::error_code Socks5Connection::PerformCmdOpsV5(
       reply->mutable_status() = socks5::reply::request_granted;
 
       ByteRange req(ss_request_->data(), ss_request_->length());
-      OnCmdConnect(req);
+      OnCmdConnect(IOBuf::copyBuffer(req));
     } break;
     case socks5::cmd_bind:
     case socks5::cmd_udp_associate:
@@ -594,7 +604,7 @@ asio::error_code Socks5Connection::PerformCmdOpsV4(
       }
 
       ByteRange req(ss_request_->data(), ss_request_->length());
-      OnCmdConnect(req);
+      OnCmdConnect(IOBuf::copyBuffer(req));
     } break;
     case socks4::cmd_bind:
     default:
@@ -611,12 +621,8 @@ asio::error_code Socks5Connection::PerformCmdOpsHttp() {
   asio::error_code error;
   error = asio::error_code();
 
-  asio::ip::tcp::endpoint endpoint;
-
-  endpoint = asio::ip::tcp::endpoint(asio::ip::tcp::v4(), 0);
-
   ByteRange req(ss_request_->data(), ss_request_->length());
-  OnCmdConnect(req);
+  OnCmdConnect(IOBuf::copyBuffer(req));
 
   return asio::error_code();
 }
@@ -677,6 +683,7 @@ void Socks5Connection::ProcessReceivedData(
         }
         break;
       case state_stream:
+        /* if not eof */
         if (bytes_transferred) {
           self->OnStreamRead(buf);
         }
@@ -691,10 +698,12 @@ void Socks5Connection::ProcessReceivedData(
                    << static_cast<int>(self->CurrentState()) << std::dec;
     };
   }
+#if 1
   // Slience Read EOF error triggered by upstream disconnection
-  if (ec == asio::error::eof && self->channel_->eof()) {
+  if (ec == asio::error::eof && self->channel_ && self->channel_->eof()) {
     return;
   }
+#endif
   if (ec) {
     self->SetState(state_error);
     self->OnDisconnect(ec);
@@ -746,22 +755,22 @@ void Socks5Connection::ProcessSentData(std::shared_ptr<Socks5Connection> self,
   }
 };
 
-void Socks5Connection::OnCmdConnect(ByteRange req) {
+void Socks5Connection::OnCmdConnect(std::shared_ptr<IOBuf> buf) {
   OnConnect();
   // ensure the remote is connected prior to header write
   channel_->connect();
   // write variable address directly as ss header
-  std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);
   OnUpstreamWrite(buf);
 }
 
 void Socks5Connection::OnConnect() {
   VLOG(2) << "Connection (client) " << connection_id()
-          << "client: established connection with: " << endpoint_;
+          << " client: established connection with: " << endpoint_;
+  std::shared_ptr<Socks5Connection> self = shared_from_this();
   // create lazy
-  channel_ = std::make_unique<stream>(
-      io_context_, remote_endpoint_,
-      std::static_pointer_cast<Channel>(shared_from_this()));
+  channel_ = std::make_unique<stream>(*io_context_, remote_endpoint_,
+                                      std::static_pointer_cast<Channel>(self));
+  upstream_writable_ = false;
 }
 
 void Socks5Connection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
@@ -820,8 +829,9 @@ void Socks5Connection::OnUpstreamWriteFlush() {
 
 void Socks5Connection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf && !buf->empty()) {
-    buf = EncryptData(buf);
-    upstream_.push_back(buf);
+    VLOG(3) << "Connection (client) " << connection_id()
+            << " upstream: ready to send request: " << buf->length() << " bytes.";
+    upstream_.push_back(EncryptData(buf));
   }
   if (!upstream_.empty() && upstream_writable_) {
     upstream_writable_ = false;
@@ -867,7 +877,7 @@ void Socks5Connection::disconnected(asio::error_code ec) {
   /* delay the socket's close because downstream is buffered */
   if (downstream_.empty()) {
     VLOG(3) << "Connection (client) " << connection_id()
-            << "last data sent: shutting down";
+            << " upstream: last data sent: shutting down";
     socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
   } else {
     socket_.shutdown(asio::ip::tcp::socket::shutdown_receive, ec);
@@ -877,6 +887,8 @@ void Socks5Connection::disconnected(asio::error_code ec) {
 std::shared_ptr<IOBuf> Socks5Connection::DecryptData(
     std::shared_ptr<IOBuf> cipherbuf) {
   std::unique_ptr<IOBuf> plainbuf = IOBuf::create(cipherbuf->length());
+  plainbuf->reserve(0, cipherbuf->length());
+
   DumpHex("ERead->", cipherbuf.get());
   decoder_->decrypt(cipherbuf.get(), plainbuf);
   DumpHex("PRead->", plainbuf.get());
@@ -885,10 +897,12 @@ std::shared_ptr<IOBuf> Socks5Connection::DecryptData(
 }
 
 std::shared_ptr<IOBuf> Socks5Connection::EncryptData(
-    std::shared_ptr<IOBuf> buf) {
-  std::unique_ptr<IOBuf> cipherbuf = IOBuf::create(buf->length());
-  DumpHex("PWrite->", buf.get());
-  encoder_->encrypt(buf.get(), cipherbuf);
+    std::shared_ptr<IOBuf> plainbuf) {
+  std::unique_ptr<IOBuf> cipherbuf = IOBuf::create(plainbuf->length() + 100);
+  cipherbuf->reserve(0, plainbuf->length() + 100);
+
+  DumpHex("PWrite->", plainbuf.get());
+  encoder_->encrypt(plainbuf.get(), cipherbuf);
   DumpHex("EWrite->", cipherbuf.get());
   std::shared_ptr<IOBuf> sharedBuf{cipherbuf.release()};
   return sharedBuf;
