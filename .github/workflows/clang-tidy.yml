@@ -27,6 +27,7 @@ env:
 jobs:
   win-clang-tidy:
     runs-on: windows-2019
+    if: ${{ github.event_name != 'release' }}
     strategy:
       fail-fast: false
       matrix:
@@ -106,13 +107,14 @@ jobs:
           set VCToolsVersion=
   mac-clang-tidy:
     runs-on: macos-11
-    env:
-      ENABLE_CLANG_TIDY: '1'
-      BUILD_TYPE: '${{ matrix.build_type }}'
+    if: ${{ github.event_name != 'release' }}
     strategy:
       fail-fast: false
       matrix:
         build_type: [Release]
+    env:
+      ENABLE_CLANG_TIDY: '1'
+      BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
       - uses: actions/checkout@v3
       - name: Checkout with shallow submodules
@@ -157,6 +159,7 @@ jobs:
           ./tools/build -run-test
   linux-clang-tidy:
     runs-on: ubuntu-20.04
+    if: ${{ github.event_name != 'release' }}
     strategy:
       fail-fast: false
       matrix:
