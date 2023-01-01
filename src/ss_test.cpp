@@ -48,8 +48,6 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
 
   ~ContentProviderConnection() override {
     VLOG(2) << "Connection (content-provider) " << connection_id() << " freed memory";
-    asio::error_code ec;
-    socket_.close(ec);
   }
 
   ContentProviderConnection(const ContentProviderConnection&) = delete;
@@ -76,9 +74,13 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
 
   void close() override {
     VLOG(2) << "Connection (content-provider) " << connection_id()
-            << " closed";
+            << " disconnected";
     asio::error_code ec;
-    socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
+    socket_.close(ec);
+    auto cb = std::move(disconnect_cb_);
+    if (cb) {
+      cb();
+    }
   }
 };
 
