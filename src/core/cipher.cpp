@@ -219,7 +219,7 @@ cipher::~cipher() {
 }
 
 void cipher::decrypt(IOBuf* ciphertext,
-                     std::unique_ptr<IOBuf>& plaintext,
+                     std::shared_ptr<IOBuf>* plaintext,
                      size_t capacity) {
   if (!chunk_) {
     chunk_ = IOBuf::create(capacity);
@@ -237,13 +237,13 @@ void cipher::decrypt(IOBuf* ciphertext,
     init_ = true;
   }
 
-  plaintext = IOBuf::create(capacity);
+  *plaintext = std::shared_ptr<IOBuf>(IOBuf::create(capacity).release());
   while (!chunk_->empty()) {
     uint64_t counter = counter_;
 
     counter = counter_;
 
-    if (!chunk_decrypt_frame(&counter, plaintext.get(), chunk_.get())) {
+    if (!chunk_decrypt_frame(&counter, plaintext->get(), chunk_.get())) {
       break;
     }
 
@@ -253,25 +253,25 @@ void cipher::decrypt(IOBuf* ciphertext,
 }
 
 void cipher::encrypt(IOBuf* plaintext,
-                     std::unique_ptr<IOBuf>& ciphertext,
+                     std::shared_ptr<IOBuf>* ciphertext,
                      size_t capacity) {
-  ciphertext = IOBuf::create(capacity);
+  *ciphertext = std::shared_ptr<IOBuf>(IOBuf::create(capacity).release());
 
   if (!init_) {
-    encrypt_salt(ciphertext.get());
+    encrypt_salt(ciphertext->get());
     init_ = true;
   }
 
   size_t clen = 2 * tag_len_ + CHUNK_SIZE_LEN + plaintext->length();
 
-  ciphertext->reserve(0, clen);
+  (*ciphertext)->reserve(0, clen);
 
   uint64_t counter = counter_;
 
   counter = counter_;
 
   // TBD better to apply MTU-like things
-  if (!chunk_encrypt_frame(&counter, plaintext, ciphertext.get())) {
+  if (!chunk_encrypt_frame(&counter, plaintext, ciphertext->get())) {
     return;
   }
 

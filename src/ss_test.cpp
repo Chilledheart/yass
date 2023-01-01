@@ -16,6 +16,8 @@
 #include "core/cipher.hpp"
 #include "core/iobuf.hpp"
 #include "core/rand_util.hpp"
+#include "core/ref_counted.hpp"
+#include "core/scoped_refptr.hpp"
 #include "core/stringprintf.hpp"
 #include "server/ss_server.hpp"
 
@@ -37,30 +39,44 @@ void GenerateRandContent(int max = kContentMaxSize) {
   content_buffer.append(content_size);
 }
 
-class ContentProviderConnection : public Connection {
+class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderConnection>,
+                                   public Connection {
  public:
   ContentProviderConnection(asio::io_context& io_context,
                             const asio::ip::tcp::endpoint& remote_endpoint)
       : Connection(io_context, remote_endpoint) {}
 
   ~ContentProviderConnection() override {
+    VLOG(2) << "Connection (content-provider) " << connection_id() << " freed memory";
     asio::error_code ec;
     socket_.close(ec);
   }
 
+  ContentProviderConnection(const ContentProviderConnection&) = delete;
+  ContentProviderConnection& operator=(const ContentProviderConnection&) = delete;
+
+  ContentProviderConnection(ContentProviderConnection&&) = delete;
+  ContentProviderConnection& operator=(ContentProviderConnection&&) = delete;
+
   void start() override {
+    VLOG(2) << "Connection (content-provider) " << connection_id() << " start to write";
+    scoped_refptr<ContentProviderConnection> self(this);
     asio::async_write(socket_, const_buffer(content_buffer),
-      [this](asio::error_code ec, size_t bytes_transferred) {
+      [self](asio::error_code ec, size_t bytes_transferred) {
         if (ec || bytes_transferred != content_buffer.length()) {
-          LOG(WARNING) << "Failed to transfer data: " << ec.message();
+          LOG(WARNING) << "Connection (content-provider) " << self->connection_id()
+                       << " Failed to transfer data: " << ec.message();
         } else {
-          VLOG(2) << "content provider: written: " << bytes_transferred << " bytes";
+          VLOG(2) << "Connection (content-provider) " << self->connection_id()
+                  << " written: " << bytes_transferred << " bytes";
         }
-        socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+        self->socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
     });
   }
 
   void close() override {
+    VLOG(2) << "Connection (content-provider) " << connection_id()
+            << " closed";
     asio::error_code ec;
     socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
   }
@@ -69,9 +85,9 @@ class ContentProviderConnection : public Connection {
 class ContentProviderConnectionFactory : public ConnectionFactory {
  public:
    using ConnectionType = ContentProviderConnection;
-   std::unique_ptr<ConnectionType> Create(asio::io_context& io_context,
-                                      const asio::ip::tcp::endpoint& remote_endpoint) {
-     return std::make_unique<ContentProviderConnection>(io_context, remote_endpoint);
+   scoped_refptr<ConnectionType> Create(asio::io_context& io_context,
+                                        const asio::ip::tcp::endpoint& remote_endpoint) {
+     return MakeRefCounted<ConnectionType>(io_context, remote_endpoint);
    }
    const char* Name() override { return "content-provider"; };
    const char* ShortName() override { return "cp"; };

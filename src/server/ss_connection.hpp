@@ -8,6 +8,8 @@
 #include "connection.hpp"
 #include "core/iobuf.hpp"
 #include "core/logging.hpp"
+#include "core/ref_counted.hpp"
+#include "core/scoped_refptr.hpp"
 #include "core/ss.hpp"
 #include "core/ss_request.hpp"
 #include "core/ss_request_parser.hpp"
@@ -20,7 +22,7 @@ class cipher;
 namespace ss {
 /// The ultimate service class to deliever the network traffic to the remote
 /// endpoint
-class SsConnection : public std::enable_shared_from_this<SsConnection>,
+class SsConnection : public RefCountedThreadSafe<SsConnection>,
                      public Channel,
                      public Connection {
  public:
@@ -57,8 +59,8 @@ class SsConnection : public std::enable_shared_from_this<SsConnection>,
   SsConnection(const SsConnection&) = delete;
   SsConnection& operator=(const SsConnection&) = delete;
 
-  SsConnection(SsConnection&&) = default;
-  SsConnection& operator=(SsConnection&&) = default;
+  SsConnection(SsConnection&&) = delete;
+  SsConnection& operator=(SsConnection&&) = delete;
 
   /// Enter the start phase, begin to read requests
   void start() override;
@@ -101,7 +103,7 @@ class SsConnection : public std::enable_shared_from_this<SsConnection>,
   /// \param buf pointer to received buffer
   /// \param error the error state
   /// \param bytes_transferred transferred bytes
-  static void ProcessReceivedData(std::shared_ptr<SsConnection> self,
+  static void ProcessReceivedData(scoped_refptr<SsConnection> self,
                                   std::shared_ptr<IOBuf> buf,
                                   asio::error_code error,
                                   size_t bytes_transferred);
@@ -110,7 +112,7 @@ class SsConnection : public std::enable_shared_from_this<SsConnection>,
   /// \param buf pointer to sent buffer
   /// \param error the error state
   /// \param bytes_transferred transferred bytes
-  static void ProcessSentData(std::shared_ptr<SsConnection> self,
+  static void ProcessSentData(scoped_refptr<SsConnection> self,
                               std::shared_ptr<IOBuf> buf,
                               asio::error_code error,
                               size_t bytes_transferred);
@@ -207,9 +209,9 @@ class SsConnection : public std::enable_shared_from_this<SsConnection>,
 class SsConnectionFactory : public ConnectionFactory {
  public:
    using ConnectionType = SsConnection;
-   std::unique_ptr<ConnectionType> Create(asio::io_context& io_context,
-                                      const asio::ip::tcp::endpoint& remote_endpoint) {
-     return std::make_unique<SsConnection>(io_context, remote_endpoint);
+   scoped_refptr<ConnectionType> Create(asio::io_context& io_context,
+                                        const asio::ip::tcp::endpoint& remote_endpoint) {
+     return MakeRefCounted<ConnectionType>(io_context, remote_endpoint);
    }
    const char* Name() override { return "server"; };
    const char* ShortName() override { return "server"; };

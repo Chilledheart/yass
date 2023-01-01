@@ -168,7 +168,7 @@ void Socks5Connection::close() {
 }
 
 void Socks5Connection::ReadMethodSelect() {
-  std::shared_ptr<Socks5Connection> self = shared_from_this();
+  scoped_refptr<Socks5Connection> self(this);
   std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
   buf->reserve(0, SOCKET_BUF_SIZE);
 
@@ -200,7 +200,7 @@ void Socks5Connection::ReadMethodSelect() {
 }
 
 void Socks5Connection::ReadSocks5Handshake() {
-  std::shared_ptr<Socks5Connection> self = shared_from_this();
+  scoped_refptr<Socks5Connection> self(this);
   std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
   buf->reserve(0, SOCKET_BUF_SIZE);
 
@@ -226,7 +226,7 @@ asio::error_code Socks5Connection::OnReadRedirHandshake(
 #ifdef __linux__
   VLOG(3) << "Connection (client) " << connection_id()
           << " try redir handshake";
-  std::shared_ptr<Socks5Connection> self = shared_from_this();
+  scoped_refptr<Socks5Connection> self(this);
   auto peer_address = socket_.remote_endpoint();
   struct sockaddr_storage ss = {};
   socklen_t ss_len = sizeof(ss);
@@ -265,7 +265,7 @@ asio::error_code Socks5Connection::OnReadRedirHandshake(
 
 asio::error_code Socks5Connection::OnReadSocks5MethodSelect(
     std::shared_ptr<IOBuf> buf) {
-  std::shared_ptr<Socks5Connection> self = shared_from_this();
+  scoped_refptr<Socks5Connection> self(this);
   socks5::method_select_request_parser::result_type result;
   std::tie(result, std::ignore) = method_select_request_parser_.parse(
       method_select_request_, buf->data(), buf->data() + buf->length());
@@ -449,7 +449,7 @@ int Socks5Connection::OnReadHttpRequestHeadersDone(http_parser*) {
 }
 
 void Socks5Connection::ReadStream() {
-  std::shared_ptr<Socks5Connection> self = shared_from_this();
+  scoped_refptr<Socks5Connection> self(this);
   std::shared_ptr<IOBuf> buf{IOBuf::create(SOCKET_BUF_SIZE).release()};
   buf->reserve(0, SOCKET_BUF_SIZE);
 
@@ -466,7 +466,7 @@ void Socks5Connection::ReadStream() {
 }
 
 void Socks5Connection::WriteMethodSelect() {
-  std::shared_ptr<Socks5Connection> self = shared_from_this();
+  scoped_refptr<Socks5Connection> self(this);
   method_select_reply_ = socks5::method_select_response_stock_reply();
   asio::async_write(
       socket_,
@@ -478,7 +478,7 @@ void Socks5Connection::WriteMethodSelect() {
 }
 
 void Socks5Connection::WriteHandshake() {
-  std::shared_ptr<Socks5Connection> self = shared_from_this();
+  scoped_refptr<Socks5Connection> self(this);
   switch (CurrentState()) {
     case state_method_select:  // impossible
     case state_socks5_handshake:
@@ -520,7 +520,7 @@ void Socks5Connection::WriteHandshake() {
 }
 
 void Socks5Connection::WriteStream(std::shared_ptr<IOBuf> buf) {
-  std::shared_ptr<Socks5Connection> self = shared_from_this();
+  scoped_refptr<Socks5Connection> self(this);
   DCHECK(downstream_writable_);
   downstream_writable_ = false;
   DCHECK_EQ(CurrentState(), state_stream);
@@ -632,7 +632,7 @@ asio::error_code Socks5Connection::PerformCmdOpsHttp() {
 }
 
 void Socks5Connection::ProcessReceivedData(
-    std::shared_ptr<Socks5Connection> self,
+    scoped_refptr<Socks5Connection> self,
     std::shared_ptr<IOBuf> buf,
     asio::error_code ec,
     size_t bytes_transferred) {
@@ -712,7 +712,7 @@ void Socks5Connection::ProcessReceivedData(
   }
 };
 
-void Socks5Connection::ProcessSentData(std::shared_ptr<Socks5Connection> self,
+void Socks5Connection::ProcessSentData(scoped_refptr<Socks5Connection> self,
                                        std::shared_ptr<IOBuf> buf,
                                        asio::error_code ec,
                                        size_t bytes_transferred) {
@@ -768,10 +768,8 @@ void Socks5Connection::OnCmdConnect(std::shared_ptr<IOBuf> buf) {
 void Socks5Connection::OnConnect() {
   VLOG(2) << "Connection (client) " << connection_id()
           << " client: established connection with: " << endpoint_;
-  std::shared_ptr<Socks5Connection> self = shared_from_this();
   // create lazy
-  channel_ = std::make_unique<stream>(*io_context_, remote_endpoint_,
-                                      std::static_pointer_cast<Channel>(self));
+  channel_ = std::make_unique<stream>(*io_context_, remote_endpoint_, this);
   upstream_writable_ = false;
 }
 
@@ -888,24 +886,22 @@ void Socks5Connection::disconnected(asio::error_code ec) {
 
 std::shared_ptr<IOBuf> Socks5Connection::DecryptData(
     std::shared_ptr<IOBuf> cipherbuf) {
-  std::unique_ptr<IOBuf> plainbuf = IOBuf::create(cipherbuf->length());
+  std::shared_ptr<IOBuf> plainbuf = IOBuf::create(cipherbuf->length());
   plainbuf->reserve(0, cipherbuf->length());
 
   DumpHex("ERead->", cipherbuf.get());
-  decoder_->decrypt(cipherbuf.get(), plainbuf);
+  decoder_->decrypt(cipherbuf.get(), &plainbuf);
   DumpHex("PRead->", plainbuf.get());
-  std::shared_ptr<IOBuf> buf{plainbuf.release()};
-  return buf;
+  return plainbuf;
 }
 
 std::shared_ptr<IOBuf> Socks5Connection::EncryptData(
     std::shared_ptr<IOBuf> plainbuf) {
-  std::unique_ptr<IOBuf> cipherbuf = IOBuf::create(plainbuf->length() + 100);
+  std::shared_ptr<IOBuf> cipherbuf = IOBuf::create(plainbuf->length() + 100);
   cipherbuf->reserve(0, plainbuf->length() + 100);
 
   DumpHex("PWrite->", plainbuf.get());
-  encoder_->encrypt(plainbuf.get(), cipherbuf);
+  encoder_->encrypt(plainbuf.get(), &cipherbuf);
   DumpHex("EWrite->", cipherbuf.get());
-  std::shared_ptr<IOBuf> sharedBuf{cipherbuf.release()};
-  return sharedBuf;
+  return cipherbuf;
 }

@@ -10,6 +10,8 @@
 #include "core/http_parser.h"
 #include "core/iobuf.hpp"
 #include "core/logging.hpp"
+#include "core/ref_counted.hpp"
+#include "core/scoped_refptr.hpp"
 #include "core/socks4.hpp"
 #include "core/socks4_request.hpp"
 #include "core/socks4_request_parser.hpp"
@@ -26,7 +28,7 @@
 class cipher;
 /// The ultimate service class to deliever the network traffic to the remote
 /// endpoint
-class Socks5Connection : public std::enable_shared_from_this<Socks5Connection>,
+class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
                          public Channel,
                          public Connection {
  public:
@@ -72,8 +74,8 @@ class Socks5Connection : public std::enable_shared_from_this<Socks5Connection>,
   Socks5Connection(const Socks5Connection&) = delete;
   Socks5Connection& operator=(const Socks5Connection&) = delete;
 
-  Socks5Connection(Socks5Connection&&) = default;
-  Socks5Connection& operator=(Socks5Connection&&) = default;
+  Socks5Connection(Socks5Connection&&) = delete;
+  Socks5Connection& operator=(Socks5Connection&&) = delete;
 
   /// Enter the start phase, begin to read requests
   void start() override;
@@ -165,7 +167,7 @@ class Socks5Connection : public std::enable_shared_from_this<Socks5Connection>,
   /// \param buf pointer to received buffer
   /// \param error the error state
   /// \param bytes_transferred transferred bytes
-  static void ProcessReceivedData(std::shared_ptr<Socks5Connection> self,
+  static void ProcessReceivedData(scoped_refptr<Socks5Connection> self,
                                   std::shared_ptr<IOBuf> buf,
                                   asio::error_code error,
                                   size_t bytes_transferred);
@@ -174,7 +176,7 @@ class Socks5Connection : public std::enable_shared_from_this<Socks5Connection>,
   /// \param buf pointer to sent buffer
   /// \param error the error state
   /// \param bytes_transferred transferred bytes
-  static void ProcessSentData(std::shared_ptr<Socks5Connection> self,
+  static void ProcessSentData(scoped_refptr<Socks5Connection> self,
                               std::shared_ptr<IOBuf> buf,
                               asio::error_code error,
                               size_t bytes_transferred);
@@ -298,9 +300,9 @@ class Socks5Connection : public std::enable_shared_from_this<Socks5Connection>,
 class Socks5ConnectionFactory : public ConnectionFactory {
  public:
    using ConnectionType = Socks5Connection;
-   std::unique_ptr<ConnectionType> Create(asio::io_context& io_context,
-                                      const asio::ip::tcp::endpoint& remote_endpoint) {
-     return std::make_unique<Socks5Connection>(io_context, remote_endpoint);
+   scoped_refptr<ConnectionType> Create(asio::io_context& io_context,
+                                        const asio::ip::tcp::endpoint& remote_endpoint) {
+     return MakeRefCounted<ConnectionType>(io_context, remote_endpoint);
    }
    const char* Name() override { return "client"; };
    const char* ShortName() override { return "client"; };
