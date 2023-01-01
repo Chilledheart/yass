@@ -543,7 +543,6 @@ asio::error_code Socks5Connection::PerformCmdOpsV5(
   }
 
   asio::error_code error;
-  error = asio::error_code();
 
   switch (request->command()) {
     case socks5::cmd_connect: {
@@ -564,9 +563,10 @@ asio::error_code Socks5Connection::PerformCmdOpsV5(
     default:
       // NOT IMPLETMENTED
       LOG(WARNING) << "Connection (client) " << connection_id()
-                   << "not supported command 0x" << std::hex
+                   << " not supported command 0x" << std::hex
                    << static_cast<int>(request->command()) << std::dec;
       reply->mutable_status() = socks5::reply::request_failed_cmd_not_supported;
+      error = asio::error::invalid_argument;
       break;
   }
   return error;
@@ -583,7 +583,6 @@ asio::error_code Socks5Connection::PerformCmdOpsV4(
   }
 
   asio::error_code error;
-  error = asio::error_code();
 
   switch (request->command()) {
     case socks4::cmd_connect: {
@@ -591,6 +590,8 @@ asio::error_code Socks5Connection::PerformCmdOpsV4(
 
       if (request->is_socks4a()) {
         // TBD
+        LOG(WARNING) << "Connection (client) " << connection_id()
+                     << " not supported protocol socks4a";
         error = asio::error::invalid_argument;
       }
       endpoint = asio::ip::tcp::endpoint(asio::ip::tcp::v4(), 0);
@@ -609,17 +610,20 @@ asio::error_code Socks5Connection::PerformCmdOpsV4(
     case socks4::cmd_bind:
     default:
       // NOT IMPLETMENTED
+      LOG(WARNING) << "Connection (client) " << connection_id()
+                   << " not supported command 0x" << std::hex
+                   << static_cast<int>(request->command()) << std::dec;
       reply->mutable_status() = socks4::reply::request_failed;
+      error = asio::error::invalid_argument;
       break;
   }
-  return asio::error_code();
+  return error;
 }
 
 asio::error_code Socks5Connection::PerformCmdOpsHttp() {
   ss_request_ = std::make_unique<ss::request>(http_host_, http_port_);
 
   asio::error_code error;
-  error = asio::error_code();
 
   ByteRange req(ss_request_->data(), ss_request_->length());
   OnCmdConnect(IOBuf::copyBuffer(req));
@@ -683,10 +687,8 @@ void Socks5Connection::ProcessReceivedData(
         }
         break;
       case state_stream:
-        /* if not eof */
-        if (bytes_transferred) {
-          self->OnStreamRead(buf);
-        }
+        DCHECK_NE(bytes_transferred, 0u);
+        self->OnStreamRead(buf);
         self->ReadStream();  // continously read
         break;
       case state_error:
@@ -699,7 +701,7 @@ void Socks5Connection::ProcessReceivedData(
     };
   }
 #if 1
-  // Slience Read EOF error triggered by upstream disconnection
+  // Silence Read EOF error triggered by upstream disconnection
   if (ec == asio::error::eof && self->channel_ && self->channel_->eof()) {
     return;
   }

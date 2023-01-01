@@ -116,7 +116,7 @@ jobs:
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-          tools\build -nc -use-libcxx=false -run-test -no-packaging || exit /b
+          tools\build -nc -use-libcxx=false -run-test -no-packaging -verbose 2 || exit /b
 
           exit /b 0
 
@@ -213,7 +213,7 @@ jobs:
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-          tools\build -nc -use-libcxx=false -run-test -no-packaging || exit /b
+          tools\build -nc -use-libcxx=false -run-test -no-packaging -verbose 2 || exit /b
 
           exit /b 0
 
@@ -356,7 +356,7 @@ jobs:
           ./tools/build -no-packaging ${{ env.build_opts }} -build-test
       - name: Run tests
         run: |
-          ./tools/build -nc -no-packaging ${{ env.build_opts }} -run-test
+          ./tools/build -nc -no-packaging ${{ env.build_opts }} -run-test -verbose 2
   mac-compiler-compatible:
     runs-on: macos-11
     if: ${{ github.event_name != 'release' }}
@@ -421,4 +421,4 @@ jobs:
         run: |
           # required by gcc lto
           ulimit -n 4096
-          ./tools/build -nc -no-packaging -macosx-universal-build=false -run-test
+          ./tools/build -nc -no-packaging -macosx-universal-build=false -run-test -verbose 2
