@@ -107,18 +107,18 @@ void SsConnection::ResolveDns(std::shared_ptr<IOBuf> buf) {
   std::shared_ptr<SsConnection> self = shared_from_this();
   resolver_.async_resolve(
       self->request_.domain_name(), std::to_string(self->request_.port()),
-      [self, buf](asio::error_code error,
+      [self, buf](asio::error_code ec,
                   asio::ip::tcp::resolver::results_type results) {
         // Get a list of endpoints corresponding to the SOCKS 5 domain name.
-        if (!error) {
+        if (!ec) {
           self->remote_endpoint_ = results->endpoint();
           VLOG(3) << "Connection (server) " << self->connection_id()
                   << " resolved address: " << self->request_.domain_name();
           self->SetState(state_stream);
           self->OnConnect();
-          ProcessReceivedData(self, buf, error, buf->length());
+          ProcessReceivedData(self, buf, ec, buf->length());
         } else {
-          self->OnDisconnect(error);
+          self->OnDisconnect(ec);
         }
       });
 }
@@ -199,7 +199,7 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<SsConnection> self,
     };
   }
 #if 1
-  // Slience Read EOF error triggered by upstream disconnection
+  // Silence Read EOF error triggered by upstream disconnection
   if (ec == asio::error::eof && self->channel_ && self->channel_->eof()) {
     return;
   }
