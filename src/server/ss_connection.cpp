@@ -71,7 +71,7 @@ void SsConnection::close() {
 }
 
 void SsConnection::ReadHandshake() {
-  std::shared_ptr<SsConnection> self = shared_from_this();
+  scoped_refptr<SsConnection> self(this);
   std::shared_ptr<IOBuf> cipherbuf{IOBuf::create(SOCKET_BUF_SIZE).release()};
   cipherbuf->reserve(0, SOCKET_BUF_SIZE);
 
@@ -104,7 +104,7 @@ void SsConnection::ReadHandshake() {
 }
 
 void SsConnection::ResolveDns(std::shared_ptr<IOBuf> buf) {
-  std::shared_ptr<SsConnection> self = shared_from_this();
+  scoped_refptr<SsConnection> self(this);
   resolver_.async_resolve(
       self->request_.domain_name(), std::to_string(self->request_.port()),
       [self, buf](asio::error_code ec,
@@ -124,7 +124,7 @@ void SsConnection::ResolveDns(std::shared_ptr<IOBuf> buf) {
 }
 
 void SsConnection::ReadStream() {
-  std::shared_ptr<SsConnection> self = shared_from_this();
+  scoped_refptr<SsConnection> self(this);
   std::shared_ptr<IOBuf> cipherbuf{IOBuf::create(SOCKET_BUF_SIZE).release()};
   cipherbuf->reserve(0, SOCKET_BUF_SIZE);
   downstream_read_inprogress_ = true;
@@ -148,7 +148,7 @@ void SsConnection::ReadStream() {
 }
 
 void SsConnection::WriteStream(std::shared_ptr<IOBuf> buf) {
-  std::shared_ptr<SsConnection> self = shared_from_this();
+  scoped_refptr<SsConnection> self(this);
   DCHECK(downstream_writable_);
   downstream_writable_ = false;
   asio::async_write(socket_, const_buffer(*buf),
@@ -158,7 +158,7 @@ void SsConnection::WriteStream(std::shared_ptr<IOBuf> buf) {
       });
 }
 
-void SsConnection::ProcessReceivedData(std::shared_ptr<SsConnection> self,
+void SsConnection::ProcessReceivedData(scoped_refptr<SsConnection> self,
                                        std::shared_ptr<IOBuf> buf,
                                        asio::error_code ec,
                                        size_t bytes_transferred) {
@@ -210,7 +210,7 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<SsConnection> self,
   }
 };
 
-void SsConnection::ProcessSentData(std::shared_ptr<SsConnection> self,
+void SsConnection::ProcessSentData(scoped_refptr<SsConnection> self,
                                    std::shared_ptr<IOBuf> buf,
                                    asio::error_code ec,
                                    size_t bytes_transferred) {
@@ -246,9 +246,7 @@ void SsConnection::OnConnect() {
   VLOG(2) << "Connection (server) " << connection_id()
           << " established connection with: " << endpoint_
           << " remote: " << remote_endpoint_;
-  std::shared_ptr<SsConnection> self = shared_from_this();
-  channel_ = std::make_unique<stream>(*io_context_, remote_endpoint_,
-                                      std::static_pointer_cast<Channel>(self));
+  channel_ = std::make_unique<stream>(*io_context_, remote_endpoint_, this);
   channel_->connect();
 }
 
@@ -393,25 +391,23 @@ void SsConnection::disconnected(asio::error_code ec) {
 
 std::shared_ptr<IOBuf> SsConnection::DecryptData(
     std::shared_ptr<IOBuf> cipherbuf) {
-  std::unique_ptr<IOBuf> plainbuf = IOBuf::create(cipherbuf->length());
+  std::shared_ptr<IOBuf> plainbuf = IOBuf::create(cipherbuf->length());
   plainbuf->reserve(0, cipherbuf->length());
 
   DumpHex("ERead->", cipherbuf.get());
-  decoder_->decrypt(cipherbuf.get(), plainbuf);
+  decoder_->decrypt(cipherbuf.get(), &plainbuf);
   DumpHex("PRead->", plainbuf.get());
-  std::shared_ptr<IOBuf> buf{plainbuf.release()};
-  return buf;
+  return plainbuf;
 }
 
 std::shared_ptr<IOBuf> SsConnection::EncryptData(std::shared_ptr<IOBuf> plainbuf) {
-  std::unique_ptr<IOBuf> cipherbuf = IOBuf::create(plainbuf->length() + 100);
+  std::shared_ptr<IOBuf> cipherbuf = IOBuf::create(plainbuf->length() + 100);
   cipherbuf->reserve(0, plainbuf->length() + 100);
 
   DumpHex("PWrite->", plainbuf.get());
-  encoder_->encrypt(plainbuf.get(), cipherbuf);
+  encoder_->encrypt(plainbuf.get(), &cipherbuf);
   DumpHex("EWrite->", cipherbuf.get());
-  std::shared_ptr<IOBuf> sharedBuf{cipherbuf.release()};
-  return sharedBuf;
+  return cipherbuf;
 }
 
 }  // namespace ss

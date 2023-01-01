@@ -11,6 +11,7 @@
 #include "config/config.hpp"
 #include "core/asio.hpp"
 #include "core/logging.hpp"
+#include "core/scoped_refptr.hpp"
 #include "network.hpp"
 #include "protocol.hpp"
 
@@ -24,7 +25,7 @@ class stream {
   /// \param channel the underlying data channel used in stream
   stream(asio::io_context& io_context,
          asio::ip::tcp::endpoint endpoint,
-         const std::shared_ptr<Channel>& channel)
+         Channel* channel)
       : endpoint_(endpoint),
         socket_(io_context),
         connect_timer_(io_context),
@@ -39,7 +40,7 @@ class stream {
   }
 
   void connect() {
-    std::shared_ptr<Channel> channel = std::shared_ptr<Channel>(channel_);
+    Channel* channel = channel_;
     asio::error_code ec;
     SetTCPFastOpenConnect(socket_.native_handle(), ec);
     connect_timer_.expires_from_now(
@@ -68,7 +69,7 @@ class stream {
   }
 
   void start_read() {
-    std::shared_ptr<Channel> channel = std::shared_ptr<Channel>(channel_);
+    Channel* channel = channel_;
     std::shared_ptr<IOBuf> buf{IOBuf::create(SOCKET_BUF_SIZE).release()};
     buf->reserve(0, SOCKET_BUF_SIZE);
     read_inprogress_ = true;
@@ -89,7 +90,7 @@ class stream {
   ///
   /// \param buf the shared buffer used in write routine
   void start_write(std::shared_ptr<IOBuf> buf) {
-    std::shared_ptr<Channel> channel = std::shared_ptr<Channel>(channel_);
+    Channel* channel = channel_;
     asio::async_write(socket_, const_buffer(*buf),
         [this, channel, buf](asio::error_code error, size_t bytes_transferred) {
           on_write(channel, buf, error, bytes_transferred);
@@ -114,7 +115,7 @@ class stream {
   }
 
  private:
-  void on_connect(const std::shared_ptr<Channel>& channel,
+  void on_connect(Channel* channel,
                   asio::error_code ec) {
     connect_timer_.cancel();
     if (ec) {
@@ -131,7 +132,7 @@ class stream {
     channel->connected();
   }
 
-  void on_connect_expired(const std::shared_ptr<Channel>& channel,
+  void on_connect_expired(Channel* channel,
                           asio::error_code ec) {
     // Cancelled, safe to ignore
     if (ec == asio::error::operation_aborted) {
@@ -145,7 +146,7 @@ class stream {
     channel->disconnected(ec);
   }
 
-  void on_read(const std::shared_ptr<Channel>& channel,
+  void on_read(Channel* channel,
                std::shared_ptr<IOBuf> buf,
                asio::error_code error,
                size_t bytes_transferred) {
@@ -176,7 +177,7 @@ class stream {
     }
   }
 
-  void on_write(const std::shared_ptr<Channel>& channel,
+  void on_write(Channel* channel,
                 std::shared_ptr<IOBuf> buf,
                 asio::error_code error,
                 size_t bytes_transferred) {
@@ -204,7 +205,7 @@ class stream {
     }
   }
 
-  void on_disconnect(const std::shared_ptr<Channel>& channel,
+  void on_disconnect(Channel* channel,
                      asio::error_code error) {
     if (error) {
       VLOG(2) << "data transfer failed with " << endpoint_ << " due to "
@@ -221,7 +222,7 @@ class stream {
   asio::ip::tcp::socket socket_;
   asio::steady_timer connect_timer_;
 
-  std::weak_ptr<Channel> channel_;
+  Channel* channel_;
   bool connected_ = false;
   bool eof_ = false;
   bool closed_ = false;

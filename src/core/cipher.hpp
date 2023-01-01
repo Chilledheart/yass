@@ -4,8 +4,8 @@
 #ifndef H_CORE_CIPHER
 #define H_CORE_CIPHER
 
-#include <stdint.h>
 #include <memory>
+#include <stdint.h>
 #include <string>
 #include <utility>
 
@@ -70,11 +70,11 @@ class cipher {
   ~cipher();
 
   void decrypt(IOBuf* ciphertext,
-               std::unique_ptr<IOBuf>& plaintext,
+               std::shared_ptr<IOBuf>* plaintext,
                size_t capacity = SOCKET_BUF_SIZE);
 
   void encrypt(IOBuf* plaintext,
-               std::unique_ptr<IOBuf>& ciphertext,
+               std::shared_ptr<IOBuf>* ciphertext,
                size_t capacity = SOCKET_BUF_SIZE);
 
  private:

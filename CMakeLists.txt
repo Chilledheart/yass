@@ -2156,6 +2156,8 @@ set(files
     src/core/pickle.cpp
     src/core/token.cpp
     src/core/atl_throw.cpp
+    src/core/thread_collision_warner.hpp
+    src/core/thread_collision_warner.cpp
     src/crypto/aead_base_decrypter.cpp
     src/crypto/aead_base_encrypter.cpp
     src/crypto/aead_evp_decrypter.cpp

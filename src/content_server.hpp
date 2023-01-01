@@ -17,6 +17,7 @@
 #include "core/asio.hpp"
 #include "core/compiler_specific.hpp"
 #include "core/logging.hpp"
+#include "core/scoped_refptr.hpp"
 #include "core/utils.hpp"
 #include "network.hpp"
 
@@ -105,8 +106,10 @@ class ContentServer {
           }
         }
 
-        std::vector<std::shared_ptr<ConnectionType>> conns = std::move(connections_);
+        auto conns = std::move(connections_);
         for (auto conn : conns) {
+          LOG(WARNING) << "Thread " << index_ << " (" << factory_.Name() << ")"
+                       << " closing remaining connection " << conn->connection_id();
           conn->close();
         }
 
@@ -141,8 +144,7 @@ class ContentServer {
           peer_endpoint_,
           [this](asio::error_code ec, asio::ip::tcp::socket socket) {
             if (!ec) {
-              std::shared_ptr<ConnectionType> conn =
-                  factory_.Create(io_context_, remote_endpoint_);
+              scoped_refptr<ConnectionType> conn = factory_.Create(io_context_, remote_endpoint_);
               on_accept(conn, std::move(socket));
               accept();
             } if (ec && ec != asio::error::operation_aborted) {
@@ -153,7 +155,7 @@ class ContentServer {
           });
     }
 
-    void on_accept(std::shared_ptr<ConnectionType> conn,
+    void on_accept(scoped_refptr<ConnectionType> conn,
                    asio::ip::tcp::socket &&socket) {
       asio::error_code ec;
 
@@ -178,11 +180,12 @@ class ContentServer {
       conn->start();
     }
 
-    void on_disconnect(std::shared_ptr<typename T::ConnectionType> conn) {
+    void on_disconnect(scoped_refptr<ConnectionType> conn) {
       int connection_id = conn->connection_id();
       LOG(INFO) << "Connection (" << factory_.Name() << ") "
-                << connection_id << " disconnected (refcount "
-                << conn.use_count() << ")";
+                << connection_id << " disconnected (has ref "
+                << std::boolalpha << conn->HasAtLeastOneRef()
+                << std::noboolalpha << ")";
       connections_.erase(
           std::remove(connections_.begin(), connections_.end(), conn),
           connections_.end());
@@ -207,7 +210,7 @@ class ContentServer {
 
     std::unique_ptr<asio::ip::tcp::acceptor> acceptor_;
 
-    std::vector<std::shared_ptr<typename T::ConnectionType>> connections_;
+    std::vector<scoped_refptr<ConnectionType>> connections_;
 
     T factory_;
   };
