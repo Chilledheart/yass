@@ -231,6 +231,7 @@ class SsEndToEndTest : public ::testing::Test {
     content_provider_server_->listen(endpoint, backlog, ec);
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec.message();
+      content_provider_work_guard_.reset();
       return ec;
     }
     return ec;

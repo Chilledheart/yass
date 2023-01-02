@@ -51,6 +51,7 @@ class stream {
     socket_.async_connect(endpoint_, [this, channel](asio::error_code ec) {
       on_connect(channel, ec);
     });
+    socket_.non_blocking(true, ec);
   }
 
   bool connected() const { return connected_; }
@@ -86,6 +87,10 @@ class stream {
         });
   }
 
+  size_t read_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
+    return socket_.read_some(mutable_buffer(*buf), ec);
+  }
+
   /// start write routine
   ///
   /// \param buf the shared buffer used in write routine
@@ -95,6 +100,10 @@ class stream {
         [this, channel, buf](asio::error_code error, size_t bytes_transferred) {
           on_write(channel, buf, error, bytes_transferred);
         });
+  }
+
+  size_t write_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
+    return socket_.write_some(const_buffer(*buf), ec);
   }
 
   void close() {
