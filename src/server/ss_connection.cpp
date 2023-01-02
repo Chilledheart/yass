@@ -262,12 +262,14 @@ void SsConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
 }
 
 void SsConnection::OnStreamWrite(std::shared_ptr<IOBuf> buf) {
+  DCHECK(!downstream_writable_);
   DCHECK(!downstream_.empty() && downstream_[0] == buf);
   downstream_.pop_front();
   downstream_writable_ = true;
 
   /* recursively send the remainings */
   while (downstream_.size()) {
+    DCHECK(downstream_writable_);
     asio::error_code ec;
     std::shared_ptr<IOBuf> buf = downstream_.front();
     size_t written = socket_.write_some(const_buffer(*buf), ec);
@@ -298,15 +300,17 @@ void SsConnection::OnStreamWrite(std::shared_ptr<IOBuf> buf) {
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
       eof = true;
     } else if (ec) {
-      channel_->close();
+      /* safe to return, channel will handle this error */
       return;
     }
     if (!read) {
       break;
     }
+    DCHECK(downstream_writable_);
     VLOG(3) << "Connection (server) " << connection_id()
             << " upstream: received reply (pipe): " << buf->length() << " bytes.";
     buf = EncryptData(buf);
+    ec = asio::error_code();
     size_t written = socket_.write_some(const_buffer(*buf), ec);
     VLOG(3) << "Connection (server) " << connection_id()
             << " sent data (pipe): " << written << " bytes"
@@ -463,7 +467,7 @@ void SsConnection::sent(std::shared_ptr<IOBuf> buf) {
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
       eof = true;
     } else if (ec) {
-      channel_->close();
+      /* safe to return, socket will handle this error */
       return;
     }
     if (!read) {
@@ -472,6 +476,7 @@ void SsConnection::sent(std::shared_ptr<IOBuf> buf) {
     VLOG(3) << "Connection (server) " << connection_id()
             << " received data (pipe): " << buf->length() << " bytes.";
     buf = DecryptData(buf);
+    ec = asio::error_code();
     size_t written = channel_->write_some(buf, ec);
     VLOG(3) << "Connection (server) " << connection_id()
             << " upstream: sent request (pipe): " << written << " bytes"
