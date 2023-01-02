@@ -13,31 +13,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-// Define before rapidjson
-// Optimization is defaulted by gcc/clang
-#ifdef __SSE2__
-#define RAPIDJSON_SSE2 1
-#endif
-
-#ifdef __SSE4_2__
-#define RAPIDJSON_SSE42 1
-#endif
-
-#ifdef __ARM_NEON
-#define RAPIDJSON_NEON 1
-#endif
-
-#define RAPIDJSON_HAS_STDSTRING 1
-
 #include <absl/flags/flag.h>
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <string>
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#include <rapidjson/document.h>      // rapidjson's DOM-style API
-#include <rapidjson/prettywriter.h>  // for stringify JSON
-#pragma GCC diagnostic pop
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
@@ -46,6 +25,8 @@ ABSL_FLAG(std::string,
           configfile,
           "~/.yass/config.json",
           "load configs from file");
+
+using json = nlohmann::json;
 
 namespace {
 
@@ -130,15 +111,15 @@ class ConfigImplPosix : public ConfigImpl {
         LOG(WARNING) << "configure file failed to read: " << path_;
         return false;
       }
-      if (root_.ParseInsitu(read_buffer_).HasParseError() ||
-          !root_.IsObject()) {
-        LOG(WARNING) << "bad configure file: " << root_.GetParseError()
+      root_ = json::parse(read_buffer_, nullptr, false);
+      if (root_.is_discarded() || !root_.is_object()) {
+        LOG(WARNING) << "bad config file: " << path_
                      << " content: \"" << read_buffer_ << "\"";
         return false;
       }
-      VLOG(2) << "loaded from config file " << path_;
+      VLOG(2) << "loaded from config file: " << path_;
     } else {
-      root_.SetObject();
+      root_ = json::object();
     }
 
     return true;
@@ -156,16 +137,11 @@ class ConfigImplPosix : public ConfigImpl {
       return false;
     }
 
-    rapidjson::StringBuffer sb;
-    rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(sb);
-    if (!root_.Accept(writer)) {
-      LOG(WARNING) << "invalid json object";
-      return false;
-    }
-    if (static_cast<ssize_t>(sb.GetSize()) !=
-        WriteFileWithBuffer(path_, sb.GetString(), sb.GetSize())) {
+    std::string json_content = root_.dump();
+    if (static_cast<ssize_t>(json_content.size()) !=
+        WriteFileWithBuffer(path_, json_content.c_str(), json_content.size())) {
       LOG(WARNING) << "failed to write to path: \"" << path_
-                   << " with content \"" << sb.GetString();
+                   << " with content \"" << json_content;
       return false;
     }
 
@@ -176,8 +152,8 @@ class ConfigImplPosix : public ConfigImpl {
   }
 
   bool ReadImpl(const std::string& key, std::string* value) override {
-    if (root_.HasMember(key) && root_[key].IsString()) {
-      *value = root_[key].GetString();
+    if (root_.contains(key) && root_[key].is_string()) {
+      *value = root_[key].get<std::string>();
       return true;
     }
     LOG(WARNING) << "bad field: " << key;
@@ -185,8 +161,8 @@ class ConfigImplPosix : public ConfigImpl {
   }
 
   bool ReadImpl(const std::string& key, bool* value) override {
-    if (root_.HasMember(key) && root_[key].IsBool()) {
-      *value = root_[key].GetBool();
+    if (root_.contains(key) && root_[key].is_boolean()) {
+      *value = root_[key].get<bool>();
       return true;
     }
     LOG(WARNING) << "bad field: " << key;
@@ -194,8 +170,9 @@ class ConfigImplPosix : public ConfigImpl {
   }
 
   bool ReadImpl(const std::string& key, uint32_t* value) override {
-    if (root_.HasMember(key) && root_[key].IsUint()) {
-      *value = root_[key].GetUint();
+    if (root_.contains(key) && root_[key].is_number_unsigned() &&
+        root_[key].is_number_integer()) {
+      *value = root_[key].get<uint32_t>();
       return true;
     }
     LOG(WARNING) << "bad field: " << key;
@@ -203,8 +180,8 @@ class ConfigImplPosix : public ConfigImpl {
   }
 
   bool ReadImpl(const std::string& key, int32_t* value) override {
-    if (root_.HasMember(key) && root_[key].IsInt()) {
-      *value = root_[key].GetInt();
+    if (root_.contains(key) && root_[key].is_number_integer()) {
+      *value = root_[key].get<int32_t>();
       return true;
     }
     LOG(WARNING) << "bad field: " << key;
@@ -212,8 +189,9 @@ class ConfigImplPosix : public ConfigImpl {
   }
 
   bool ReadImpl(const std::string& key, uint64_t* value) override {
-    if (root_.HasMember(key) && root_[key].GetUint64()) {
-      *value = root_[key].GetUint64();
+    if (root_.contains(key) && root_[key].is_number_unsigned() &&
+        root_[key].is_number_integer()) {
+      *value = root_[key].get<uint64_t>();
       return true;
     }
     LOG(WARNING) << "bad field: " << key;
@@ -221,8 +199,8 @@ class ConfigImplPosix : public ConfigImpl {
   }
 
   bool ReadImpl(const std::string& key, int64_t* value) override {
-    if (root_.HasMember(key) && root_[key].GetInt64()) {
-      *value = root_[key].GetInt64();
+    if (root_.contains(key) && root_[key].is_number_integer()) {
+      *value = root_[key].get<int64_t>();
       return true;
     }
     LOG(WARNING) << "bad field: " << key;
@@ -230,70 +208,38 @@ class ConfigImplPosix : public ConfigImpl {
   }
 
   bool WriteImpl(const std::string& key, absl::string_view value) override {
-    if (root_.HasMember(key))
-      root_[key].SetString(value.data(), value.size());
-    else {
-      rapidjson::Value k(key, root_.GetAllocator());
-      // TODO why do we still make a copy if we use string_view
-      rapidjson::Value v(value.data(), value.size(), root_.GetAllocator());
-      root_.AddMember(k, v, root_.GetAllocator());
-    }
+    root_[key] = std::string(value.data(), value.size());
     return true;
   }
 
   bool WriteImpl(const std::string& key, bool value) override {
-    if (root_.HasMember(key))
-      root_[key].SetBool(value);
-    else {
-      rapidjson::Value k(key, root_.GetAllocator());
-      root_.AddMember(k, value, root_.GetAllocator());
-    }
+    root_[key] = value;
     return true;
   }
 
   bool WriteImpl(const std::string& key, uint32_t value) override {
-    if (root_.HasMember(key))
-      root_[key].SetUint(value);
-    else {
-      rapidjson::Value k(key, root_.GetAllocator());
-      root_.AddMember(k, value, root_.GetAllocator());
-    }
+    root_[key] = value;
     return true;
   }
 
   bool WriteImpl(const std::string& key, int32_t value) override {
-    if (root_.HasMember(key))
-      root_[key].SetInt(value);
-    else {
-      rapidjson::Value k(key, root_.GetAllocator());
-      root_.AddMember(k, value, root_.GetAllocator());
-    }
+    root_[key] = value;
     return true;
   }
 
   bool WriteImpl(const std::string& key, uint64_t value) override {
-    if (root_.HasMember(key))
-      root_[key].SetUint64(value);
-    else {
-      rapidjson::Value k(key, root_.GetAllocator());
-      root_.AddMember(k, value, root_.GetAllocator());
-    }
+    root_[key] = value;
     return true;
   }
 
   bool WriteImpl(const std::string& key, int64_t value) override {
-    if (root_.HasMember(key))
-      root_[key].SetInt64(value);
-    else {
-      rapidjson::Value k(key, root_.GetAllocator());
-      root_.AddMember(k, value, root_.GetAllocator());
-    }
+    root_[key] = value;
     return true;
   }
 
  private:
   std::string path_;
-  rapidjson::Document root_;
+  json root_;
   char read_buffer_[4096];
 };
 

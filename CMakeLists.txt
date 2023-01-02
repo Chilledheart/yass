@@ -1728,10 +1728,10 @@ set_target_properties(bssl PROPERTIES EXCLUDE_FROM_ALL TRUE)
 set_target_properties(decrepit PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 # *****************************************************************************************
-#           rapidjson Library
+#           json Library
 # *****************************************************************************************
 
-include_directories(third_party/rapidjson/include SYSTEM)
+include_directories(third_party/json/include SYSTEM)
 
 # *****************************************************************************************
 #           googletest Library
