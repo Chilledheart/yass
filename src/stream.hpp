@@ -77,10 +77,10 @@ class stream {
 
     socket_.async_read_some(asio::null_buffers(),
         [this, channel](asio::error_code ec,
-                             std::size_t bytes_transferred) -> std::size_t {
+                        std::size_t bytes_transferred) {
           read_inprogress_ = false;
           if (!read_enabled_) {
-            return 0;
+            return;
           }
           std::shared_ptr<IOBuf> buf{IOBuf::create(SOCKET_BUF_SIZE).release()};
           buf->reserve(0, SOCKET_BUF_SIZE);
@@ -89,13 +89,13 @@ class stream {
           }
           if (ec == asio::error::try_again || ec == asio::error::would_block) {
             start_read();
-            return 0;
+            return;
           }
           if (bytes_transferred || ec) {
             on_read(channel, buf, ec, bytes_transferred);
-            return 0;
+            return;
           }
-          return 0;
+          LOG(FATAL) << "bytes_transferred is zero when ec is success";
         });
   }
 

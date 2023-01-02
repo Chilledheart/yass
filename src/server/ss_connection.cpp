@@ -74,13 +74,20 @@ void SsConnection::close() {
 
 void SsConnection::ReadHandshake() {
   scoped_refptr<SsConnection> self(this);
-  std::shared_ptr<IOBuf> cipherbuf{IOBuf::create(SOCKET_BUF_SIZE).release()};
-  cipherbuf->reserve(0, SOCKET_BUF_SIZE);
 
-  socket_.async_read_some(mutable_buffer(*cipherbuf),
-      [self, cipherbuf](asio::error_code error, size_t bytes_transferred) {
-        if (error) {
-          self->OnDisconnect(error);
+  socket_.async_read_some(asio::null_buffers(),
+      [self](asio::error_code ec, size_t bytes_transferred) {
+        std::shared_ptr<IOBuf> cipherbuf{IOBuf::create(SOCKET_BUF_SIZE).release()};
+        cipherbuf->reserve(0, SOCKET_BUF_SIZE);
+        if (!ec) {
+          bytes_transferred = self->socket_.read_some(mutable_buffer(*cipherbuf), ec);
+        }
+        if (ec == asio::error::try_again || ec == asio::error::would_block) {
+          self->ReadHandshake();
+          return;
+        }
+        if (ec) {
+          self->OnDisconnect(ec);
           return;
         }
         cipherbuf->append(bytes_transferred);
@@ -96,11 +103,11 @@ void SsConnection::ReadHandshake() {
           buf->trimStart(self->request_.length());
           buf->retreat(self->request_.length());
           DCHECK_LE(self->request_.length(), bytes_transferred);
-          ProcessReceivedData(self, buf, error, buf->length());
+          ProcessReceivedData(self, buf, ec, buf->length());
         } else {
           // FIXME better error code?
-          error = asio::error::connection_refused;
-          self->OnDisconnect(error);
+          ec = asio::error::connection_refused;
+          self->OnDisconnect(ec);
         }
       });
 }
@@ -127,25 +134,32 @@ void SsConnection::ResolveDns(std::shared_ptr<IOBuf> buf) {
 
 void SsConnection::ReadStream() {
   scoped_refptr<SsConnection> self(this);
-  std::shared_ptr<IOBuf> cipherbuf{IOBuf::create(SOCKET_BUF_SIZE).release()};
-  cipherbuf->reserve(0, SOCKET_BUF_SIZE);
   downstream_read_inprogress_ = true;
 
-  socket_.async_read_some(mutable_buffer(*cipherbuf),
-      [self, cipherbuf](asio::error_code error,
-                        std::size_t bytes_transferred) -> std::size_t {
-        if (bytes_transferred || error) {
+  socket_.async_read_some(asio::null_buffers(),
+      [self](asio::error_code ec,
+             std::size_t bytes_transferred) {
+        self->downstream_read_inprogress_ = false;
+        std::shared_ptr<IOBuf> cipherbuf{IOBuf::create(SOCKET_BUF_SIZE).release()};
+        cipherbuf->reserve(0, SOCKET_BUF_SIZE);
+        if (!ec) {
+          bytes_transferred = self->socket_.read_some(mutable_buffer(*cipherbuf), ec);
+        }
+        if (ec == asio::error::try_again || ec == asio::error::would_block) {
+          self->ReadStream();
+          return;
+        }
+        if (bytes_transferred || ec) {
           cipherbuf->append(bytes_transferred);
           std::shared_ptr<IOBuf> buf;
-          if (!error) {
+          if (!ec) {
             buf = self->DecryptData(cipherbuf);
             bytes_transferred = buf->length();
           }
-          self->downstream_read_inprogress_ = false;
-          ProcessReceivedData(self, buf, error, bytes_transferred);
-          return 0;
+          ProcessReceivedData(self, buf, ec, bytes_transferred);
+          return;
         }
-        return SOCKET_BUF_SIZE;
+        LOG(FATAL) << "bytes_transferred is zero when ec is success";
       });
 }
 
