@@ -6,7 +6,7 @@
 
 #include "config/config_impl.hpp"
 
-#ifdef __APPLE__
+#if defined(__APPLE__) && defined(__clang__)
 
 #include <absl/strings/string_view.h>
 #include <string>
@@ -47,5 +47,5 @@ class ConfigImplApple : public ConfigImpl {
 
 }  // namespace config
 
-#endif  // __APPLE__
+#endif  // defined(__APPLE__) && defined(__clang__)
 #endif  // H_CONFIG_CONFIG_IMPL_POSIX
