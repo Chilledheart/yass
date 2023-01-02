@@ -10,10 +10,6 @@
 [submodule "third_party/boringssl"]
 	path = third_party/boringssl/src
 	url = https://github.com/Chilledheart/boringssl
-[submodule "third_party/rapidjson"]
-	path = third_party/rapidjson
-	url = https://github.com/Chilledheart/rapidjson
-	branch = stable
 [submodule "third_party/quiche"]
 	path = third_party/quiche/src
 	url = https://github.com/Chilledheart/quiche
@@ -33,3 +29,6 @@
 [submodule "third_party/libc++"]
 	path = third_party/libc++/trunk
 	url = https://chromium.googlesource.com/external/github.com/llvm/llvm-project/libcxx
+[submodule "third_party/json"]
+	path = third_party/json
+	url = https://github.com/nlohmann/json
