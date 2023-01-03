@@ -528,6 +528,7 @@ void SsConnection::disconnected(asio::error_code ec) {
           << " upstream: lost connection with: " << remote_endpoint_
           << " due to " << ec
           << " and data to write: " << downstream_.size();
+  upstream_readable_ = false;
   upstream_writable_ = false;
   channel_->close();
   /* delay the socket's close because downstream is buffered */
