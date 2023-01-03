@@ -334,8 +334,8 @@ void SsConnection::OnStreamWrite(std::shared_ptr<IOBuf> buf) {
     wbytes_transferred_ += written;
     // continue to resume
     if (!buf->empty()) {
-      LOG(INFO) << "Connection (server) " << connection_id()
-                << " partially sent data (pipe): " << written << " bytes";
+      VLOG(3) << "Connection (server) " << connection_id()
+              << " partially sent data (pipe): " << written << " bytes";
       downstream_.push_back(buf);
       WriteStream(downstream_[0]);
     }
@@ -499,8 +499,8 @@ void SsConnection::sent(std::shared_ptr<IOBuf> buf) {
     buf->trimStart(written);
     wbytes_transferred_ += written;
     if (!buf->empty()) {
-      LOG(INFO) << "Connection (server) " << connection_id()
-                << " upstream: partially sent data (pipe): " << written << " bytes";
+      VLOG(3) << "Connection (server) " << connection_id()
+              << " upstream: partially sent data (pipe): " << written << " bytes";
       upstream_.push_back(buf);
       upstream_writable_ = false;
       channel_->start_write(upstream_[0]);
