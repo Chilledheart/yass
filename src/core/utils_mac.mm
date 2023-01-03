@@ -306,8 +306,14 @@ static const char* user_tag_str(unsigned int user_tag) {
       return "ear-decoder";
     case VM_MEMORY_COREUI_CACHED_IMAGE_DATA:
       return "coreui-cached-image-data";
+#ifdef VM_MEMORY_COLORSYNC
     case VM_MEMORY_COLORSYNC:
       return "colorsync";
+#endif
+#ifdef VM_MEMORY_BTINFO
+    case VM_MEMORY_BTINFO:
+      return "backtrace-info";
+#endif
     case VM_MEMORY_ROSETTA:
       return "rosetta";
     case VM_MEMORY_ROSETTA_THREAD_CONTEXT:

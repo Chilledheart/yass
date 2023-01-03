@@ -358,13 +358,18 @@ jobs:
         run: |
           ./tools/build -nc -no-packaging ${{ env.build_opts }} -run-test -verbose 2
   mac-compiler-compatible:
-    runs-on: macos-11
     if: ${{ github.event_name != 'release' }}
     strategy:
       fail-fast: false
       matrix:
+        os: [macos-11]
         build_type: [Release]
         compiler: [gcc, clang]
+        include:
+          - os: macos-12
+            build_type: Release
+            compiler: clang
+    runs-on: ${{ matrix.os }}
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
@@ -412,6 +417,10 @@ jobs:
           # brew update
           # brew install ninja cmake p7zip ${{ env.GNU_DEPS }}
           brew install ninja ${{ env.GNU_DEPS }}
+      - name: Set up Xcode to 14.2 (macos 12)
+        if: ${{ matrix.os == 'macos-12' }}
+        run: |
+          sudo xcode-select -s /Applications/Xcode_14.2.app
       - name: Build
         run: |
           # required by gcc lto
