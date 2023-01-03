@@ -36,6 +36,9 @@ void GenerateRandContent(int max = kContentMaxSize) {
   content_buffer.clear();
   content_buffer.reserve(0, content_size);
   RandBytes(content_buffer.mutable_data(), std::min(256, content_size));
+  for (int i = 1; i < content_size / 256; ++i) {
+    memcpy(content_buffer.mutable_data() + 256 * i, content_buffer.data(), 256);
+  }
   content_buffer.append(content_size);
 }
 
@@ -231,6 +234,7 @@ class SsEndToEndTest : public ::testing::Test {
     content_provider_server_->listen(endpoint, backlog, ec);
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec.message();
+      content_provider_work_guard_.reset();
       return ec;
     }
     return ec;
