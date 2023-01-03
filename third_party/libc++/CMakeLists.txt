@@ -51,7 +51,7 @@ if (libcxx_ABI_UNSTABLE)
     "_LIBCPP_ABI_UNSTABLE")
 endif()
 
-set(libcxx_CR "79a2e924d96e2fc1e4b937c42efd08898fa472d7")
+set(libcxx_CR "4218f3525ad438b22b0e173d963515a09d143398")
 if (libcxx_SHARED)
   # When libcxx_is_shared is true, symbols from libc++.so are exported for
   # all DSOs to use.  If the system libc++ gets loaded (indirectly through
