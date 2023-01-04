@@ -34,7 +34,6 @@ jobs:
         - 'arm'
         - 'arm64'
         - 'armel'
-        - 'i386'
         - 'mips'
         - 'mips64el'
     runs-on: ubuntu-20.04
