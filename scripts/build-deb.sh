@@ -2,6 +2,8 @@
 set -x
 set -e
 PWD=$(dirname "${BASH_SOURCE[0]}")
+VERSION=1.0.0
+SUBVERSION=1
 
 cd $PWD/..
 
@@ -22,7 +24,7 @@ fi
 
 # TODO use correct build number dynamically
 /usr/bin/git ls-files --recurse-submodules | \
-  tar caf ../yass_1.0.0.orig.tar.gz --xform='s,^./,yass-1.0.0/,' -T -
+  tar caf ../yass_${VERSION}.orig.tar.gz --xform="s,^,yass-${VERSION}/," -T -
 
 # require for a more recent debhelper, like 11.2
 # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=895044
@@ -81,15 +83,15 @@ fi
 ARCH=${HOST_ARCH:-$BUILD_ARCH}
 DISTRO=$(scripts/get-debian-name.py $HOST_DISTRO)
 
-if [ -f ../yass_1.0.0-1_$ARCH.deb ]; then
-  mv -f ../yass_1.0.0-1_${ARCH}.deb "yass-${DISTRO}_${ARCH}.${TAG}.deb"
-  mv -f ../yass-dbg_1.0.0-1_${ARCH}.deb "yass-${DISTRO}-dbg_${ARCH}.${TAG}.deb"
+if [ -f ../"yass_${VERSION}-${SUBVERSION}_${ARCH}.deb" ]; then
+  mv -f ../"yass_${VERSION}-${SUBVERSION}_${ARCH}.deb" "yass-${DISTRO}_${ARCH}.${TAG}.deb"
+  mv -f ../"yass-dbg_${VERSION}-${SUBVERSION}_${ARCH}.deb" "yass-${DISTRO}-dbg_${ARCH}.${TAG}.deb"
 fi
 
-mv -f ../yass-server_1.0.0-1_${ARCH}.deb "yass-server-${DISTRO}_${ARCH}.${TAG}.deb"
-mv -f ../yass-server-dbg_1.0.0-1_${ARCH}.deb "yass-server-${DISTRO}-dbg_${ARCH}.${TAG}.deb"
-mv -f ../yass-client_1.0.0-1_${ARCH}.deb "yass-client-${DISTRO}_${ARCH}.${TAG}.deb"
-mv -f ../yass-client-dbg_1.0.0-1_${ARCH}.deb "yass-client-${DISTRO}-dbg_${ARCH}.${TAG}.deb"
+mv -f ../"yass-server_${VERSION}-${SUBVERSION}_${ARCH}.deb" "yass-server-${DISTRO}_${ARCH}.${TAG}.deb"
+mv -f ../"yass-server-dbg_${VERSION}-${SUBVERSION}_${ARCH}.deb" "yass-server-${DISTRO}-dbg_${ARCH}.${TAG}.deb"
+mv -f ../"yass-client_${VERSION}-${SUBVERSION}_${ARCH}.deb" "yass-client-${DISTRO}_${ARCH}.${TAG}.deb"
+mv -f ../"yass-client-dbg_${VERSION}-${SUBVERSION}_${ARCH}.deb" "yass-client-${DISTRO}-dbg_${ARCH}.${TAG}.deb"
 
 echo "Generated debs: "
 for deb in *.deb; do
