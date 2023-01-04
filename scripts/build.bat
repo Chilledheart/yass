@@ -18,13 +18,21 @@ REM   14.00-14.00:v140:Visual Studio 2015
 
 REM You need to modify the paths below:
 
-REM Use Visual Studio 2017's toolchain for (x86, x64)
+REM Use Visual Studio 2019's toolchain for (x86, x64, arm64)
 
-set VCToolsVersion=14.16
+set VisualStudioInstallerFolder="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer"
+if %PROCESSOR_ARCHITECTURE%==x86 set VisualStudioInstallerFolder="%ProgramFiles%\Microsoft Visual Studio\Installer"
+
+pushd %VisualStudioInstallerFolder%
+for /f "usebackq tokens=*" %%i in (`vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do (
+  set VisualStudioInstallDir=%%i
+)
+popd
+
+set VCToolsVersion=
 set Winsdk=10.0.19041.0
 set "WindowsSDKVersion=%Winsdk%\"
-
-set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\Common7\Tools\VsDevCmd.bat
+set "vsdevcmd=%VisualStudioInstallDir%\Common7\Tools\VsDevCmd.bat"
 
 REM
 REM Generate build helper
@@ -44,7 +52,8 @@ set MSVC_CRT_LINKAGE=static
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-python.exe -u .\scripts\build.py || exit /b
+tools\build -alsologtostderr -v 2
+if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 
 REM
 REM Generate static x64 binary
@@ -57,7 +66,8 @@ set MSVC_CRT_LINKAGE=static
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-tools\build -alsologtostderr -v 2 || exit /b
+tools\build -alsologtostderr -v 2
+if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 
 REM skip ARM build
 goto :BuildARM64
@@ -65,7 +75,7 @@ goto :BuildARM64
 REM
 REM Generate static arm binary
 REM
-set VCToolsVersion=14.29
+set VCToolsVersion=
 set "VSCMD_START_DIR=%CD%"
 set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
@@ -74,7 +84,8 @@ set MSVC_CRT_LINKAGE=static
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-tools\build -alsologtostderr -v 2 || exit /b
+tools\build -alsologtostderr -v 2
+if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 
 :BuildARM64
 
@@ -83,7 +94,7 @@ REM Generate static Arm64 binary
 REM
 REM Use Visual Studio 2019's toolchain for ARM64 target
 
-set VCToolsVersion=14.29
+set VCToolsVersion=
 
 set "VSCMD_START_DIR=%CD%"
 set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
@@ -93,6 +104,7 @@ set MSVC_CRT_LINKAGE=static
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-tools\build -alsologtostderr -v 2 || exit /b
+tools\build -alsologtostderr -v 2
+if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 
 goto :eof

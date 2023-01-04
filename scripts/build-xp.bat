@@ -11,10 +11,19 @@ REM   Visual Studio 2022, CMake, Ninja,
 REM   Visual Studio 2022 SDK and python.exe -u.
 REM
 
+set VisualStudioInstallerFolder="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer"
+if %PROCESSOR_ARCHITECTURE%==x86 set VisualStudioInstallerFolder="%ProgramFiles%\Microsoft Visual Studio\Installer"
+
+pushd %VisualStudioInstallerFolder%
+for /f "usebackq tokens=*" %%i in (`vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do (
+  set VisualStudioInstallDir=%%i
+)
+popd
+
 set VCToolsVersion=14.16.27012
-set "VCINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\VC"
 set "WindowsSDKVersion=10.0.10240.0\"
 set "WindowsSdkDir=C:\Program Files (x86)\Windows Kits\10"
+set "VCINSTALLDIR=%VisualStudioInstallDir%\VC"
 
 REM
 REM Generate build helper
@@ -35,6 +44,7 @@ set MSVC_ALLOW_XP=1
 
 call "%~dp0callxp-%Platform%.cmd"
 
-tools\build -alsologtostderr -v 2 || exit /b
+tools\build -alsologtostderr -v 2
+if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 
 goto :eof
