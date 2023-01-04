@@ -2,8 +2,8 @@
 set -x
 set -e
 PWD=$(dirname "${BASH_SOURCE[0]}")
-VERSION=1.0.0
-SUBVERSION=1
+RPM_VERSION=1.0.0
+RPM_SUBVERSION=1
 
 cd $PWD/..
 
@@ -24,10 +24,10 @@ fi
 
 # TODO use correct build number dynamically
 /usr/bin/git ls-files --recurse-submodules | \
-  tar caf ${VERSION}.tar.gz --xform="s,^,yass-${VERSION}/," -T -
+  tar caf ${RPM_VERSION}.tar.gz --xform="s,^,yass-${RPM_VERSION}/," -T -
 
 mkdir -p $HOME/rpmbuild/SOURCES
-cp -fv ${VERSION}.tar.gz $HOME/rpmbuild/SOURCES
+cp -fv ${RPM_VERSION}.tar.gz $HOME/rpmbuild/SOURCES
 
 mkdir -p $HOME/rpmbuild/SPECS
 cp -fv yass.spec $HOME/rpmbuild/SPECS
@@ -54,12 +54,12 @@ fi
 
 # under centos 7, some commands might fail because it doesn't separate debuginfo
 # for sub package: https://fedoraproject.org/wiki/Changes/SubpackageAndSourceDebuginfo
-mv -f "$HOME/rpmbuild/RPMS/${ARCH}/yass-${VERSION}-${SUBVERSION}.${SUFFIX}.${ARCH}.rpm" "yass-${DISTRO}.${SUFFIX}.${ARCH}.${TAG}.rpm"
-mv -f "$HOME/rpmbuild/RPMS/${ARCH}/yass-debuginfo-${VERSION}-${SUBVERSION}.${SUFFIX}.${ARCH}.rpm" "yass-${DISTRO}-debuginfo.${SUFFIX}.${ARCH}.${TAG}.rpm" || true
-mv -f "$HOME/rpmbuild/RPMS/${ARCH}/yass-server-${VERSION}-${SUBVERSION}.${SUFFIX}.${ARCH}.rpm" "yass-server-${DISTRO}.${SUFFIX}.${ARCH}.${TAG}.rpm"
-mv -f "$HOME/rpmbuild/RPMS/${ARCH}/yass-server-debuginfo-${VERSION}-${SUBVERSION}.${SUFFIX}.${ARCH}.rpm" "yass-server-${DISTRO}-debuginfo.${SUFFIX}.${ARCH}.${TAG}.rpm" || true
-mv -f "$HOME/rpmbuild/RPMS/${ARCH}/yass-client-${VERSION}-${SUBVERSION}.${SUFFIX}.${ARCH}.rpm" "yass-client-${DISTRO}.${SUFFIX}.${ARCH}.${TAG}.rpm"
-mv -f "$HOME/rpmbuild/RPMS/${ARCH}/yass-client-debuginfo-${VERSION}-${SUBVERSION}.${SUFFIX}.${ARCH}.rpm" "yass-client-${DISTRO}-debuginfo.${SUFFIX}.${ARCH}.${TAG}.rpm" || true
+mv -f "$HOME/rpmbuild/RPMS/${ARCH}/yass-${RPM_VERSION}-${RPM_SUBVERSION}.${SUFFIX}.${ARCH}.rpm" "yass-${DISTRO}.${SUFFIX}.${ARCH}.${TAG}.rpm"
+mv -f "$HOME/rpmbuild/RPMS/${ARCH}/yass-debuginfo-${RPM_VERSION}-${RPM_SUBVERSION}.${SUFFIX}.${ARCH}.rpm" "yass-${DISTRO}-debuginfo.${SUFFIX}.${ARCH}.${TAG}.rpm" || true
+mv -f "$HOME/rpmbuild/RPMS/${ARCH}/yass-server-${RPM_VERSION}-${RPM_SUBVERSION}.${SUFFIX}.${ARCH}.rpm" "yass-server-${DISTRO}.${SUFFIX}.${ARCH}.${TAG}.rpm"
+mv -f "$HOME/rpmbuild/RPMS/${ARCH}/yass-server-debuginfo-${RPM_VERSION}-${RPM_SUBVERSION}.${SUFFIX}.${ARCH}.rpm" "yass-server-${DISTRO}-debuginfo.${SUFFIX}.${ARCH}.${TAG}.rpm" || true
+mv -f "$HOME/rpmbuild/RPMS/${ARCH}/yass-client-${RPM_VERSION}-${RPM_SUBVERSION}.${SUFFIX}.${ARCH}.rpm" "yass-client-${DISTRO}.${SUFFIX}.${ARCH}.${TAG}.rpm"
+mv -f "$HOME/rpmbuild/RPMS/${ARCH}/yass-client-debuginfo-${RPM_VERSION}-${RPM_SUBVERSION}.${SUFFIX}.${ARCH}.rpm" "yass-client-${DISTRO}-debuginfo.${SUFFIX}.${ARCH}.${TAG}.rpm" || true
 
 echo "Generated rpms: "
 for rpm in *.rpm; do
