@@ -130,13 +130,32 @@ jobs:
           ninja yass yass_test
       - name: Packaging
         run: |
+          export OBJCOPY="$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-objcopy"
+          if [ ! -x $OBJCOPY ]; then
+            echo "llvm-objcopy not found, using stock one"
+            OBJCOPY=${{ matrix.arch }}-w64-mingw32-objcopy
+          fi
           cd build-mingw
-          # https://www.systutorials.com/docs/linux/man/1-x86_64-w64-mingw32-strip/
+          # https://www.systutorials.com/docs/linux/man/1-x86_64-w64-mingw32-objcopy/
+          # create a file containing the debugging info.
+          $OBJCOPY --only-keep-debug yass.exe yass.dbg
+          # stripped executable.
+          $OBJCOPY --strip-debug yass.exe
+          # to add a link to the debugging info into the stripped executable.
+          $OBJCOPY --add-gnu-debuglink=yass.exe.dbg yass.exe
+
           export PREFIX=yass-win-mingw64-${{ matrix.arch }}-${{ github.event.release.tag_name }}
+          # generate archive
           mkdir $PREFIX
           cp -f yass.exe $PREFIX/
-          ${{ matrix.arch }}-w64-mingw32-strip -x -s $PREFIX/yass.exe
           zip -9 -r ../$PREFIX.zip $PREFIX
+          rm -rf $PREFIX
+
+          # generate debuginfo archive
+          mkdir $PREFIX
+          cp -f yass.dbg $PREFIX/
+          zip -9 -r ../$PREFIX-debuginfo.zip $PREFIX
+          rm -rf $PREFIX
       - name: Populate depedencies (Tests-i686)
         if: ${{ matrix.arch == 'i686' }}
         run: |
