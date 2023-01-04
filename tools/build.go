@@ -147,21 +147,23 @@ func InitFlag() {
 func prebuildFindSourceDirectory() {
 	glog.Info("PreStage -- Find Source Directory")
 	glog.Info("======================================================================")
-	os.Chdir(projectDir)
-	if _, err := os.Stat("CMakeLists.txt"); errors.Is(err, os.ErrNotExist) {
+	err := os.Chdir(projectDir)
+	if err != nil {
+		glog.Fatalf("%v", err)
+	}
+	if _, err = os.Stat("CMakeLists.txt"); errors.Is(err, os.ErrNotExist) {
 		glog.Fatalf("Cannot find top dir of the source tree")
 	}
 
 	if systemNameFlag == "windows" && msvcTargetArchFlag != "" {
 		buildDir = fmt.Sprintf("build-msvc-%s-%s", msvcTargetArchFlag, msvcCrtLinkageFlag)
-	} else  {
+	} else {
 		arch := archFlag
-		if  systemNameFlag == "darwin" && macosxUniversalBuildFlag {
+		if systemNameFlag == "darwin" && macosxUniversalBuildFlag {
 			arch = "universal"
 		}
 		buildDir = fmt.Sprintf("build-%s-%s", systemNameFlag, arch)
 	}
-	var err error
 	buildDir, err = filepath.Abs(buildDir)
 	if err != nil {
 		glog.Fatalf("%v", err)
@@ -170,15 +172,24 @@ func prebuildFindSourceDirectory() {
 	glog.V(2).Infof("Set build directory %s", buildDir)
 	if _, err := os.Stat(buildDir); err == nil {
 		if preCleanFlag {
-			os.RemoveAll(buildDir)
+			err := os.RemoveAll(buildDir)
+			if err != nil {
+				glog.Fatalf("%v", err)
+			}
 			glog.V(2).Infof("Removed previous build directory %s", buildDir)
 		}
 	}
 	if _, err := os.Stat(buildDir); errors.Is(err, os.ErrNotExist) {
-		os.Mkdir(buildDir, 0777)
+		err := os.Mkdir(buildDir, 0777)
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
 	}
 	glog.V(1).Infof("Changed to build directory %s", buildDir)
-	os.Chdir(buildDir)
+	err = os.Chdir(buildDir)
+	if err != nil {
+		glog.Fatalf("%v", err)
+	}
 }
 
 func getLLVMTargetTripleMSVC(msvcTargetArch string) string {
@@ -187,7 +198,7 @@ func getLLVMTargetTripleMSVC(msvcTargetArch string) string {
 	} else if msvcTargetArch == "x64" {
 		return "x86_64-pc-windows-msvc"
 	} else if msvcTargetArch == "arm" {
-		// lld-link doesn"t accept this triple
+		// lld-link doesn't accept this triple
 		// cmake_args.extend(["-DCMAKE_LINKER=link"])
 		return "arm-pc-windows-msvc"
 	} else if msvcTargetArch == "arm64" {
@@ -274,9 +285,27 @@ func cmdRun(args []string, check bool) {
 		glog.Fatalf("%v", err)
 	}
 	err = cmd.Start()
-	stdin.Close()
-	stdinPipe.Close()
-	stdouterrPipe.Close()
+	err = stdin.Close()
+	if err != nil {
+		if !check {
+			return
+		}
+		glog.Fatalf("%v", err)
+	}
+	err = stdinPipe.Close()
+	if err != nil {
+		if !check {
+			return
+		}
+		glog.Fatalf("%v", err)
+	}
+	err = stdouterrPipe.Close()
+	if err != nil {
+		if !check {
+			return
+		}
+		glog.Fatalf("%v", err)
+	}
 	if err != nil {
 		glog.Warningf("Command \"%v\" failed with %v", args, err)
 		if !check {
@@ -297,7 +326,13 @@ func cmdRun(args []string, check bool) {
 		}
 		glog.Fatalf("%v", err)
 	}
-	stdouterr.Close()
+	err = stdouterr.Close()
+	if err != nil {
+		if !check {
+			return
+		}
+		glog.Fatalf("%v", err)
+	}
 }
 
 func cmdCheckoutput(args []string) string {
@@ -471,7 +506,7 @@ func buildStageExecuteBuildScript() {
 	cmdRun(ninjaCmd, true)
 	if buildTestFlag || runTestFlag {
 		ninjaCmd := []string{"ninja", "-j", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "yass_test"}
-		ninjaCmd = append(ninjaCmd, )
+		ninjaCmd = append(ninjaCmd)
 		cmdRun(ninjaCmd, true)
 	}
 	if runTestFlag {
@@ -484,7 +519,8 @@ func buildStageExecuteBuildScript() {
 	// FIXME move to cmake (required by Xcode generator)
 	if systemNameFlag == "darwin" {
 		if _, err := os.Stat(filepath.Join(cmakeBuildTypeFlag, getAppName())); err == nil {
-			renameByUnlink(filepath.Join(cmakeBuildTypeFlag, getAppName()), getAppName())
+			err := renameByUnlink(filepath.Join(cmakeBuildTypeFlag, getAppName()), getAppName())
+			glog.Fatalf("%v", err)
 		}
 	}
 }
@@ -606,7 +642,10 @@ func checkUniveralBuild(path string) error {
 			}
 			return nil
 		}
-		filepath.Walk(path, walkFunc)
+		err := filepath.Walk(path, walkFunc)
+		if err != nil {
+			return err
+		}
 		glog.V(2).Info(statusMsg)
 	}
 	if checked {
@@ -619,7 +658,10 @@ func postCheckUniversalBuild() {
 	glog.Info("PostState -- Check Universal Build")
 	glog.Info("======================================================================")
 	if systemNameFlag == "darwin" && macosxUniversalBuildFlag {
-		checkUniveralBuild(getAppName())
+		err := checkUniveralBuild(getAppName())
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
 	}
 }
 
@@ -631,14 +673,24 @@ func copyFile(src string, dst string) error {
 		return err
 	}
 
-	defer fin.Close()
+	defer func(fin *os.File) {
+		err := fin.Close()
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
+	}(fin)
 
 	fout, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
 
-	defer fout.Close()
+	defer func(fout *os.File) {
+		err := fout.Close()
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
+	}(fout)
 
 	for {
 
@@ -660,15 +712,15 @@ func copyFile(src string, dst string) error {
 
 // LICENSEs
 func postStateArchiveLicenses() []string {
-	license_maps := map[string]string{
+	licenseMaps := map[string]string{
 		"LICENSE":            filepath.Join("..", "LICENSE"),
 		"LICENSE.abseil-cpp": filepath.Join("..", "third_party", "abseil-cpp", "LICENSE"),
 		"LICENSE.asio":       filepath.Join("..", "third_party", "asio", "asio", "LICENSE_1_0.txt"),
 		"LICENSE.boringssl":  filepath.Join("..", "third_party", "boringssl", "src", "LICENSE"),
 		"LICENSE.chromium":   filepath.Join("..", "third_party", "chromium", "LICENSE"),
 		"LICENSE.icu":        filepath.Join("..", "third_party", "icu", "LICENSE"),
-		"LICENSE.libc++":     filepath.Join("..", "third_party", "libc++", "trunk","LICENSE.TXT"),
-		"LICENSE.libc++abi":  filepath.Join("..", "third_party", "libc++abi", "trunk","LICENSE.TXT"),
+		"LICENSE.libc++":     filepath.Join("..", "third_party", "libc++", "trunk", "LICENSE.TXT"),
+		"LICENSE.libc++abi":  filepath.Join("..", "third_party", "libc++abi", "trunk", "LICENSE.TXT"),
 		"LICENSE.lss":        filepath.Join("..", "third_party", "lss", "LICENSE"),
 		"LICENSE.mozilla":    filepath.Join("..", "third_party", "url", "third_party", "mozilla", "LICENSE.txt"),
 		"LICENSE.protobuf":   filepath.Join("..", "third_party", "protobuf", "LICENSE"),
@@ -678,8 +730,8 @@ func postStateArchiveLicenses() []string {
 		"LICENSE.zlib":       filepath.Join("..", "third_party", "zlib", "LICENSE"),
 	}
 	licenses := []string{}
-	for license := range license_maps {
-		if err := copyFile(license_maps[license], license); err != nil {
+	for license := range licenseMaps {
+		if err := copyFile(licenseMaps[license], license); err != nil {
 			panic(err)
 		}
 		licenses = append(licenses, license)
@@ -688,7 +740,7 @@ func postStateArchiveLicenses() []string {
 }
 
 // add to zip writer
-func archiveFileToZip(zipWriter *zip.Writer, info os.FileInfo, path string) error {
+func archiveFileToZip(zipWriter *zip.Writer, info os.FileInfo, prefix string, path string) error {
 	if info.Mode()&os.ModeSymlink == os.ModeSymlink {
 		symlinksTarget, err := os.Readlink(path)
 		if err != nil {
@@ -702,6 +754,8 @@ func archiveFileToZip(zipWriter *zip.Writer, info os.FileInfo, path string) erro
 		if err != nil {
 			return err
 		}
+		symlinksTarget = filepath.Join(prefix, symlinksTarget)
+		header.Name = filepath.Join(prefix, header.Name)
 		header.Method = zip.Deflate
 		writer, err := zipWriter.CreateHeader(header)
 		if err != nil {
@@ -719,8 +773,13 @@ func archiveFileToZip(zipWriter *zip.Writer, info os.FileInfo, path string) erro
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	w, err := zipWriter.Create(path)
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
+	}(f)
+	w, err := zipWriter.Create(filepath.Join(prefix, path))
 	if err != nil {
 		return err
 	}
@@ -731,11 +790,20 @@ func archiveFileToZip(zipWriter *zip.Writer, info os.FileInfo, path string) erro
 }
 
 // generate tgz (posix) or zip file
-func archiveFiles(output string, paths []string) {
+func archiveFiles(output string, prefix string, paths []string) {
 	if strings.HasSuffix(output, ".tgz") {
 		glog.Infof("generating tgz file %s", output)
-		cmd := []string{"tar", "cfz", output}
+		// use below if tar supports gnu style
+		// cmd := []string{"tar", "caf", output, "--xform", fmt.Sprintf("s,^,%s/,", prefix)}
+		cmd := []string{"mkdir", prefix}
+		cmdRun(cmd, true)
+		cmd = []string{"cp", "-rf"}
 		cmd = append(cmd, paths...)
+		cmd = append(cmd, prefix)
+		cmdRun(cmd, true)
+		cmd = []string{"tar", "cfz", output, prefix}
+		cmdRun(cmd, true)
+		cmd = []string{"rm", "-rf", prefix}
 		cmdRun(cmd, true)
 		return
 	}
@@ -744,7 +812,12 @@ func archiveFiles(output string, paths []string) {
 	if err != nil {
 		panic(err)
 	}
-	defer archive.Close()
+	defer func(archive *os.File) {
+		err := archive.Close()
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
+	}(archive)
 	zipWriter := zip.NewWriter(archive)
 	for _, path := range paths {
 		info, err := os.Stat(path)
@@ -752,7 +825,7 @@ func archiveFiles(output string, paths []string) {
 			panic(err)
 		}
 		if !info.IsDir() {
-			err := archiveFileToZip(zipWriter, info, path)
+			err := archiveFileToZip(zipWriter, info, prefix, path)
 			if err != nil {
 				panic(err)
 			}
@@ -764,19 +837,25 @@ func archiveFiles(output string, paths []string) {
 				return err
 			}
 			if !info.IsDir() {
-				err := archiveFileToZip(zipWriter, info, path)
+				err := archiveFileToZip(zipWriter, info, prefix, path)
 				if err != nil {
 					return err
 				}
 			}
 			return nil
 		}
-		filepath.Walk(path, walkFunc)
+		err = filepath.Walk(path, walkFunc)
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
 	}
-	zipWriter.Close()
+	err = zipWriter.Close()
+	if err != nil {
+		glog.Fatalf("%v", err)
+	}
 }
 
-func archiveMainFile(output string, paths []string) {
+func archiveMainFile(output string, prefix string, paths []string) {
 	if systemNameFlag == "darwin" {
 		var eulaRtf []byte
 		eulaTemplate, err := ioutil.ReadFile("../src/mac/eula.xml")
@@ -809,11 +888,11 @@ func archiveMainFile(output string, paths []string) {
 			"--copy", "../macos/.background:/",
 			"--symlink", "/Applications:/Applications"})
 	} else {
-		archiveFiles(output, paths)
+		archiveFiles(output, prefix, paths)
 	}
 }
 
-func generateMsi(output string, paths []string, dllPaths []string, licensePaths []string) {
+func generateMsi(output string, dllPaths []string, licensePaths []string) {
 	wxsTemplate, err := ioutil.ReadFile(filepath.Join("..", "yass.wxs"))
 	if err != nil {
 		panic(err)
@@ -850,18 +929,18 @@ func postStateArchives() map[string][]string {
 	tag := strings.TrimSpace(cmdCheckoutput([]string{"git", "describe", "--tags", "HEAD"}))
 	var archiveFormat string
 	if systemNameFlag == "windows" {
-		os := "win"
+		osName := "win"
 		if msvcAllowXpFlag {
-			os = "winxp"
+			osName = "winxp"
 		}
-		archiveFormat = fmt.Sprintf("%%s-%s-release-%s-%s-%s%%s%%s", os, msvcTargetArchFlag, msvcCrtLinkageFlag, tag)
+		archiveFormat = fmt.Sprintf("%%s-%s-release-%s-%s-%s%%s%%s", osName, msvcTargetArchFlag, msvcCrtLinkageFlag, tag)
 	} else if systemNameFlag == "darwin" {
-		os := "macos"
+		osName := "macos"
 		arch := archFlag
 		if macosxUniversalBuildFlag {
 			arch = "universal"
 		}
-		archiveFormat = fmt.Sprintf("%%s-%s-release-%s-%s%%s%%s", os, arch, tag)
+		archiveFormat = fmt.Sprintf("%%s-%s-release-%s-%s%%s%%s", osName, arch, tag)
 	} else if systemNameFlag == "freebsd" {
 		archiveFormat = fmt.Sprintf("%%s-%s%d-release-%s-%s%%s%%s", systemNameFlag, freebsdAbiFlag, archFlag, tag)
 	} else {
@@ -875,6 +954,7 @@ func postStateArchives() map[string][]string {
 	}
 
 	archive := fmt.Sprintf(archiveFormat, APPNAME, "", ext)
+	archivePrefix := fmt.Sprintf(archiveFormat, APPNAME, "", "")
 	if systemNameFlag == "darwin" {
 		archive = fmt.Sprintf(archiveFormat, APPNAME, "", ".dmg")
 	}
@@ -897,23 +977,23 @@ func postStateArchives() map[string][]string {
 	paths = append(paths, licensePaths...)
 
 	// main bundle
-	archiveMainFile(archive, paths)
+	archiveMainFile(archive, archivePrefix, paths)
 	archives[archive] = paths
 
 	// msi installer
 	if systemNameFlag == "windows" {
-		generateMsi(msiArchive, paths, dllPaths, licensePaths)
+		generateMsi(msiArchive, dllPaths, licensePaths)
 		archives[msiArchive] = []string{msiArchive}
 	}
 	// debuginfo file
 	if systemNameFlag == "windows" {
-		archiveFiles(debugArchive, []string{APPNAME + ".pdb"})
+		archiveFiles(debugArchive, archivePrefix, []string{APPNAME + ".pdb"})
 		dbgPaths = append(dbgPaths, APPNAME+".pdb")
 	} else if systemNameFlag == "linux" || systemNameFlag == "freebsd" {
-		archiveFiles(debugArchive, []string{APPNAME + ".dbg"})
+		archiveFiles(debugArchive, archivePrefix, []string{APPNAME + ".dbg"})
 		dbgPaths = append(dbgPaths, APPNAME+".dbg")
 	} else if systemNameFlag == "darwin" {
-		archiveFiles(debugArchive, []string{getAppName() + ".dSYM"})
+		archiveFiles(debugArchive, archivePrefix, []string{getAppName() + ".dSYM"})
 		dbgPaths = append(dbgPaths, getAppName()+".dSYM")
 	}
 	archives[debugArchive] = dbgPaths
