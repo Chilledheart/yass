@@ -20,7 +20,7 @@ import (
 	"github.com/google/uuid"
 )
 
-var APPNAME string = "yass"
+var APPNAME = "yass"
 
 var toolDir string
 var projectDir string
@@ -335,12 +335,12 @@ func cmdRun(args []string, check bool) {
 	}
 }
 
-func cmdCheckoutput(args []string) string {
+func cmdCheckOutput(args []string) string {
 	var cmd = exec.Command(args[0], args[1:]...)
 	glog.V(2).Infof("Running command \"%v\"", args)
 	output, err := cmd.Output()
 	if err != nil {
-		panic(err)
+		glog.Fatalf("%v", err)
 	}
 	return string(output)
 }
@@ -348,7 +348,7 @@ func cmdCheckoutput(args []string) string {
 func buildStageGenerateBuildScript() {
 	glog.Info("BuildStage -- Generate Build Script")
 	glog.Info("======================================================================")
-	cmakeArgs := []string{}
+	var cmakeArgs []string
 	cmakeArgs = append(cmakeArgs, "-DGUI=ON", "-DCLI=ON", "-DSERVER=ON")
 	cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_BUILD_TYPE=%s", cmakeBuildTypeFlag))
 	cmakeArgs = append(cmakeArgs, "-G", "Ninja")
@@ -372,7 +372,7 @@ func buildStageGenerateBuildScript() {
 	if systemNameFlag == "windows" {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCROSS_TOOLCHAIN_FLAGS_NATIVE=\"-DCMAKE_TOOLCHAIN_FILE=%s\\Native.cmake\"", buildDir))
 		// Guesting native LIB paths from host LIB paths
-		nativeLibPaths := []string{}
+		var nativeLibPaths []string
 		hostLibPaths := strings.Split(os.Getenv("LIB"), ";")
 		for _, hostLibPath := range hostLibPaths {
 			var nativeLibPath string
@@ -402,7 +402,7 @@ func buildStageGenerateBuildScript() {
 			path, err := exec.LookPath(ccCompiler)
 			if err != nil {
 				fmt.Println("Could not find path of cl")
-				panic(err)
+				glog.Fatalf("%v", err)
 			}
 			ccCompiler = filepath.Join(filepath.Dir(path), "..", "x64", "cl.exe")
 			cxxCompiler = filepath.Join(filepath.Dir(path), "..", "x64", "cl.exe")
@@ -422,7 +422,7 @@ func buildStageGenerateBuildScript() {
 		} else {
 			cmakeArgs = append(cmakeArgs, "-DALLOW_XP=OFF")
 		}
-		// Some compilers are inherently cross compilers, such as Clang and the QNX QCC compiler.
+		// Some compilers are inherently cross-compilers, such as Clang and the QNX QCC compiler.
 		// The CMAKE_<LANG>_COMPILER_TARGET can be set to pass a value to those supported compilers when compiling.
 		// see https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER_TARGET.html
 		targetTriple := getLLVMTargetTripleMSVC(msvcTargetArchFlag)
@@ -598,7 +598,7 @@ func checkUniversalBuildFatBundle(bundlePath string) bool {
 }
 
 func checkUniversalBuildFatBinary(binaryFile string) bool {
-	output := cmdCheckoutput([]string{"lipo", "-archs", binaryFile})
+	output := cmdCheckOutput([]string{"lipo", "-archs", binaryFile})
 	return strings.Contains(output, "x86_64") && strings.Contains(output, "arm64")
 }
 
@@ -729,10 +729,10 @@ func postStateArchiveLicenses() []string {
 		"LICENSE.xxhash":     filepath.Join("..", "third_party", "xxhash", "LICENSE"),
 		"LICENSE.zlib":       filepath.Join("..", "third_party", "zlib", "LICENSE"),
 	}
-	licenses := []string{}
+	var licenses []string
 	for license := range licenseMaps {
 		if err := copyFile(licenseMaps[license], license); err != nil {
-			panic(err)
+			glog.Fatalf("%v", err)
 		}
 		licenses = append(licenses, license)
 	}
@@ -810,7 +810,7 @@ func archiveFiles(output string, prefix string, paths []string) {
 	glog.Infof("generating zip file %s", output)
 	archive, err := os.Create(output)
 	if err != nil {
-		panic(err)
+		glog.Fatalf("%v", err)
 	}
 	defer func(archive *os.File) {
 		err := archive.Close()
@@ -822,12 +822,12 @@ func archiveFiles(output string, prefix string, paths []string) {
 	for _, path := range paths {
 		info, err := os.Stat(path)
 		if err != nil {
-			panic(err)
+			glog.Fatalf("%v", err)
 		}
 		if !info.IsDir() {
 			err := archiveFileToZip(zipWriter, info, prefix, path)
 			if err != nil {
-				panic(err)
+				glog.Fatalf("%v", err)
 			}
 			continue
 		}
@@ -860,24 +860,24 @@ func archiveMainFile(output string, prefix string, paths []string) {
 		var eulaRtf []byte
 		eulaTemplate, err := ioutil.ReadFile("../src/mac/eula.xml")
 		if err != nil {
-			panic(err)
+			glog.Fatalf("%v", err)
 		}
 		eulaRtf, err = ioutil.ReadFile("../GPL-2.0.rtf")
 		if err != nil {
-			panic(err)
+			glog.Fatalf("%v", err)
 		}
 
 		eulaXml := strings.Replace(string(eulaTemplate), "%PLACEHOLDER%", base64.StdEncoding.EncodeToString([]byte(eulaRtf)), -1)
 
 		err = ioutil.WriteFile("eula.xml", []byte(eulaXml), 0666)
 		if err != nil {
-			panic(err)
+			glog.Fatalf("%v", err)
 		}
 
 		// Use this command line to update .DS_Store
 		// hdiutil convert -format UDRW -o yass.dmg yass-macos-release-universal-*.dmg
 		// hdiutil resize -size 1G yass.dmg
-		cmdCheckoutput([]string{"../scripts/pkg-dmg",
+		cmdCheckOutput([]string{"../scripts/pkg-dmg",
 			"--source", paths[0],
 			"--target", output,
 			"--sourcefile",
@@ -895,7 +895,7 @@ func archiveMainFile(output string, prefix string, paths []string) {
 func generateMsi(output string, dllPaths []string, licensePaths []string) {
 	wxsTemplate, err := ioutil.ReadFile(filepath.Join("..", "yass.wxs"))
 	if err != nil {
-		panic(err)
+		glog.Fatalf("%v", err)
 	}
 	wxsXml := string(wxsTemplate)
 	guidReplacement := strings.ToUpper(uuid.New().String())
@@ -913,7 +913,7 @@ func generateMsi(output string, dllPaths []string, licensePaths []string) {
 
 	err = ioutil.WriteFile("yass.wxs", []byte(wxsXml), 0666)
 	if err != nil {
-		panic(err)
+		glog.Fatalf("%v", err)
 	}
 
 	glog.Info("Feeding WiX compiler...")
@@ -926,7 +926,7 @@ func generateMsi(output string, dllPaths []string, licensePaths []string) {
 func postStateArchives() map[string][]string {
 	glog.Info("PostState -- Archives")
 	glog.Info("======================================================================")
-	tag := strings.TrimSpace(cmdCheckoutput([]string{"git", "describe", "--tags", "HEAD"}))
+	tag := strings.TrimSpace(cmdCheckOutput([]string{"git", "describe", "--tags", "HEAD"}))
 	var archiveFormat string
 	if systemNameFlag == "windows" {
 		osName := "win"
@@ -969,8 +969,8 @@ func postStateArchives() map[string][]string {
 	archives := map[string][]string{}
 
 	paths := []string{getAppName()}
-	dllPaths := []string{}
-	dbgPaths := []string{}
+	var dllPaths []string
+	var dbgPaths []string
 
 	// copying dependent LICENSEs
 	licensePaths := postStateArchiveLicenses()
