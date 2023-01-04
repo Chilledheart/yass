@@ -132,8 +132,11 @@ jobs:
         run: |
           cd build-mingw
           # https://www.systutorials.com/docs/linux/man/1-x86_64-w64-mingw32-strip/
-          ${{ matrix.arch }}-w64-mingw32-strip -x -s yass.exe
-          zip -9 ../yass-win-mingw64-${{ matrix.arch }}-${{ github.event.release.tag_name }}.zip yass.exe
+          export PREFIX=yass-win-mingw64-${{ matrix.arch }}-${{ github.event.release.tag_name }}
+          mkdir $PREFIX
+          cp -f yass.exe $PREFIX/
+          ${{ matrix.arch }}-w64-mingw32-strip -x -s $PREFIX/yass.exe
+          zip -9 -r ../$PREFIX.zip $PREFIX
       - name: Populate depedencies (Tests-i686)
         if: ${{ matrix.arch == 'i686' }}
         run: |
