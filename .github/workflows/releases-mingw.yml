@@ -138,7 +138,7 @@ jobs:
           cd build-mingw
           # https://www.systutorials.com/docs/linux/man/1-x86_64-w64-mingw32-objcopy/
           # create a file containing the debugging info.
-          $OBJCOPY --only-keep-debug yass.exe yass.dbg
+          $OBJCOPY --only-keep-debug yass.exe yass.exe.dbg
           # stripped executable.
           $OBJCOPY --strip-debug yass.exe
           # to add a link to the debugging info into the stripped executable.
@@ -153,7 +153,7 @@ jobs:
 
           # generate debuginfo archive
           mkdir $PREFIX
-          cp -f yass.dbg $PREFIX/
+          cp -f yass.exe.dbg $PREFIX/
           zip -9 -r ../$PREFIX-debuginfo.zip $PREFIX
           rm -rf $PREFIX
       - name: Populate depedencies (Tests-i686)
