@@ -177,7 +177,7 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
   bool downstream_read_inprogress_ = false;
 
  private:
-  /// handle with connnect event (upstream)
+  /// handle with connect event (upstream)
   void connected() override;
 
   /// handle read data for data read event (upstream)
