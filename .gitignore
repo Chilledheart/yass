@@ -28,6 +28,9 @@ sscxx
 *.txz
 *.xz
 *.tgz
+*.gz
+*.rpm
 /tools/build
 /build-*
+/cmake-build-*
 /doxygen
