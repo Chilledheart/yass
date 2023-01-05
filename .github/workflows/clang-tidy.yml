@@ -99,7 +99,33 @@ jobs:
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-          tools\build -run-test || exit /b
+          tools\build -build-test -no-packaging || exit /b
+
+          exit /b 0
+
+          :SetNewVCToolsVersion
+          set VCToolsVersion=
+      - name: Run tests
+        run: |
+          set VCToolsVersion=14.16
+          set Winsdk=10.0.19041.0
+          set "WindowsSDKVersion=%Winsdk%\"
+          if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
+          set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
+          set "VSCMD_START_DIR=%CD%"
+          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
+          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
+          set Platform=${{ matrix.arch }}
+          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
+
+          set "CLANG_TIDY_EXECUTABLE=%CD%/third_party/llvm-build/Release+Asserts/bin/clang-tidy.exe"
+
+          set "Path=%CD%\third_party\nasm;%Path%"
+          set "Path=%CD%\third_party\wix311;%Path%"
+
+          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
+
+          tools\build -nc -run-test -no-packaging || exit /b
 
           exit /b 0
 
@@ -156,7 +182,13 @@ jobs:
           export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
           export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
           export CLANG_TIDY_EXECUTABLE=$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy
-          ./tools/build -run-test
+          ./tools/build -build-test -no-packaging
+      - name: Run tests
+        run: |
+          export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
+          export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
+          export CLANG_TIDY_EXECUTABLE=$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy
+          ./tools/build -nc -run-test -no-packaging
   linux-clang-tidy:
     runs-on: ubuntu-20.04
     if: ${{ github.event_name != 'release' }}
@@ -212,4 +244,10 @@ jobs:
           export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
           export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
           export CLANG_TIDY_EXECUTABLE=$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy
-          ./tools/build -run-test
+          ./tools/build -build-test -no-packaging
+      - name: Run tests
+        run: |
+          export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
+          export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
+          export CLANG_TIDY_EXECUTABLE=$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy
+          ./tools/build -nc -run-test -no-packaging

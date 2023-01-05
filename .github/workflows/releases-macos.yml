@@ -68,14 +68,20 @@ jobs:
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
       - name: Populate depedencies
-        run: brew update && brew install ninja cmake p7zip
+        run: |
+          # brew update
+          # brew install ninja cmake p7zip
+          brew install ninja
       - name: Set clang environment
         run: |
           echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
           echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
       - name: Build
         run: |
-          ./tools/build -run-test
+          ./tools/build -build-test
+      - name: Run tests
+        run: |
+          ./tools/build -nc -run-test
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
