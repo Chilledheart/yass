@@ -79,6 +79,10 @@ class stream {
         [this, channel](asio::error_code ec,
                         std::size_t bytes_transferred) {
           read_inprogress_ = false;
+          if (ec) {
+            on_read(channel, nullptr, ec, bytes_transferred);
+            return;
+          }
           if (!read_enabled_) {
             return;
           }
@@ -96,16 +100,17 @@ class stream {
             start_read();
             return;
           }
-          if (bytes_transferred || ec) {
-            on_read(channel, buf, ec, bytes_transferred);
-            return;
-          }
-          LOG(FATAL) << "bytes_transferred is zero when ec is success";
+          on_read(channel, buf, ec, bytes_transferred);
         });
   }
 
   size_t read_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
-    return socket_.read_some(mutable_buffer(*buf), ec);
+    size_t read = socket_.read_some(mutable_buffer(*buf), ec);
+    rbytes_transferred_ += read;
+    if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
+      on_disconnect(channel_, ec);
+    }
+    return read;
   }
 
   /// start write routine
@@ -120,7 +125,12 @@ class stream {
   }
 
   size_t write_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
-    return socket_.write_some(const_buffer(*buf), ec);
+    size_t written = socket_.write_some(const_buffer(*buf), ec);
+    wbytes_transferred_ += written;
+    if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
+      on_disconnect(channel_, ec);
+    }
+    return written;
   }
 
   void close() {
@@ -173,7 +183,9 @@ class stream {
                asio::error_code ec,
                size_t bytes_transferred) {
     rbytes_transferred_ += bytes_transferred;
-    buf->append(bytes_transferred);
+    if (buf) {
+      buf->append(bytes_transferred);
+    }
 
     if (ec || bytes_transferred == 0) {
       eof_ = true;
@@ -191,21 +203,19 @@ class stream {
     }
 
     if (ec) {
-      if (bytes_transferred) {
-        VLOG(1) << "data receiving failed with data " << endpoint_ << " due to "
-                << ec;
-      }
+      DCHECK(!bytes_transferred) << "data receiving failed with data "
+        << endpoint_ << " due to " << ec;
       on_disconnect(channel, ec);
     }
   }
 
   void on_write(Channel* channel,
                 std::shared_ptr<IOBuf> buf,
-                asio::error_code error,
+                asio::error_code ec,
                 size_t bytes_transferred) {
     wbytes_transferred_ += bytes_transferred;
 
-    if (error || bytes_transferred == 0) {
+    if (ec || bytes_transferred == 0) {
       eof_ = true;
     }
 
@@ -218,25 +228,25 @@ class stream {
       channel->sent(buf);
     }
 
-    if (error) {
-      if (bytes_transferred) {
-        VLOG(1) << "data sending failed with data " << endpoint_ << " due to "
-                << error;
-      }
-      on_disconnect(channel, error);
+    if (ec) {
+      DCHECK(!bytes_transferred) << "data sending failed with data "
+        << endpoint_ << " due to " << ec;
+      on_disconnect(channel, ec);
     }
   }
 
   void on_disconnect(Channel* channel,
-                     asio::error_code error) {
-    if (error) {
+                     asio::error_code ec) {
+    if (ec) {
       VLOG(2) << "data transfer failed with " << endpoint_ << " due to "
-              << error;
+              << ec << " stats: readed "
+              << rbytes_transferred_ << " written: " << wbytes_transferred_;
+    } else {
+      VLOG(2) << "data transfer closed with: " << endpoint_ << " stats: readed "
+              << rbytes_transferred_ << " written: " << wbytes_transferred_;
     }
-    VLOG(2) << "data transfer closed with: " << endpoint_ << " stats: readed "
-            << rbytes_transferred_ << " written: " << wbytes_transferred_;
     connected_ = false;
-    channel->disconnected(error);
+    channel->disconnected(ec);
   }
 
  private:

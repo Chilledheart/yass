@@ -94,28 +94,30 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
 
   /// Start to read stream
   void ReadStream();
-  /// Write to stream
-  /// \param buf the buffer used to write to socket
-  void WriteStream(std::shared_ptr<IOBuf> buf);
+  /// Write remaining buffers to stream
+  void WriteStream();
+  /// Write remaining buffers to stream
+  void WriteStreamInPipe();
+  /// Get next remaining buffer to stream
+  std::shared_ptr<IOBuf> GetNextDownstreamBuf(asio::error_code &ec);
+
+  /// Write remaining buffers to channel
+  void WriteUpstreamInPipe();
+  /// Get next remaining buffer to channel
+  std::shared_ptr<IOBuf> GetNextUpstreamBuf(asio::error_code &ec);
 
   /// Process the recevied data
-  /// \param self pointer to self
   /// \param buf pointer to received buffer
   /// \param error the error state
   /// \param bytes_transferred transferred bytes
-  static void ProcessReceivedData(scoped_refptr<SsConnection> self,
-                                  std::shared_ptr<IOBuf> buf,
-                                  asio::error_code error,
-                                  size_t bytes_transferred);
+  void ProcessReceivedData(std::shared_ptr<IOBuf> buf,
+                           asio::error_code ec,
+                           size_t bytes_transferred);
   /// Process the sent data
-  /// \param self pointer to self
-  /// \param buf pointer to sent buffer
   /// \param error the error state
   /// \param bytes_transferred transferred bytes
-  static void ProcessSentData(scoped_refptr<SsConnection> self,
-                              std::shared_ptr<IOBuf> buf,
-                              asio::error_code error,
-                              size_t bytes_transferred);
+  void ProcessSentData(asio::error_code ec,
+                       size_t bytes_transferred);
   /// state machine
   state state_;
 
@@ -126,6 +128,16 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
   /// DNS resolver
   asio::ip::tcp::resolver resolver_;
 
+  std::string remote_domain() const {
+    std::stringstream ss;
+    if (request_.address_type() == domain) {
+      ss << request_.domain_name() << ":" << request_.port();
+    } else {
+      ss << request_.endpoint();
+    }
+    return ss.str();
+  }
+
  private:
   /// handle with connnect event (downstream)
   void OnConnect();
@@ -134,7 +146,7 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
   void OnStreamRead(std::shared_ptr<IOBuf> buf);
 
   /// handle the written data from stream write event (downstream)
-  void OnStreamWrite(std::shared_ptr<IOBuf> buf);
+  void OnStreamWrite();
 
   /// enable stream read
   void EnableStreamRead();
@@ -169,8 +181,6 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
 
   /// the queue to write downstream
   std::deque<std::shared_ptr<IOBuf>> downstream_;
-  /// the flag to mark current write
-  bool downstream_writable_ = false;
   /// the flag to mark current read
   bool downstream_readable_ = false;
   /// the flag to mark current read in progress
