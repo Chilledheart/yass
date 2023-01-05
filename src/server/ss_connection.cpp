@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
+/* Copyright (c) 2019-2023 Chilledheart  */
 
 #include "ss_connection.hpp"
 
@@ -54,10 +54,6 @@ void SsConnection::close() {
           << " and data to write: " << downstream_.size();
   asio::error_code ec;
   closed_ = true;
-  socket_.cancel(ec);
-  if (ec) {
-    VLOG(2) << "cancel() error: " << ec;
-  }
   socket_.close(ec);
   if (ec) {
     VLOG(2) << "close() error: " << ec;
@@ -80,7 +76,12 @@ void SsConnection::ReadHandshake() {
         std::shared_ptr<IOBuf> cipherbuf{IOBuf::create(SOCKET_BUF_SIZE).release()};
         cipherbuf->reserve(0, SOCKET_BUF_SIZE);
         if (!ec) {
-          bytes_transferred = self->socket_.read_some(mutable_buffer(*cipherbuf), ec);
+          do {
+            bytes_transferred = self->socket_.read_some(mutable_buffer(*cipherbuf), ec);
+            if (ec == asio::error::interrupted) {
+              continue;
+            }
+          } while(false);
         }
         if (ec == asio::error::try_again || ec == asio::error::would_block) {
           self->ReadHandshake();
@@ -143,7 +144,12 @@ void SsConnection::ReadStream() {
         std::shared_ptr<IOBuf> cipherbuf{IOBuf::create(SOCKET_BUF_SIZE).release()};
         cipherbuf->reserve(0, SOCKET_BUF_SIZE);
         if (!ec) {
-          bytes_transferred = self->socket_.read_some(mutable_buffer(*cipherbuf), ec);
+          do {
+            bytes_transferred = self->socket_.read_some(mutable_buffer(*cipherbuf), ec);
+            if (ec == asio::error::interrupted) {
+              continue;
+            }
+          } while(false);
         }
         if (ec == asio::error::try_again || ec == asio::error::would_block) {
           self->ReadStream();
@@ -286,7 +292,13 @@ void SsConnection::OnStreamWrite(std::shared_ptr<IOBuf> buf) {
     DCHECK(downstream_writable_);
     asio::error_code ec;
     std::shared_ptr<IOBuf> buf = downstream_.front();
-    size_t written = socket_.write_some(const_buffer(*buf), ec);
+    size_t written;
+    do {
+      written = socket_.write_some(const_buffer(*buf), ec);
+      if (ec == asio::error::interrupted) {
+        continue;
+      }
+    } while(false);
     VLOG(3) << "Connection (server) " << connection_id()
             << " sent data (pipe): " << written << " bytes"
             << " ec: " << ec << " and data to write: " << downstream_.size();
@@ -309,7 +321,13 @@ void SsConnection::OnStreamWrite(std::shared_ptr<IOBuf> buf) {
     bool eof = false;
     std::shared_ptr<IOBuf> buf{IOBuf::create(SOCKET_BUF_SIZE).release()};
     buf->reserve(0, SOCKET_BUF_SIZE);
-    size_t read = channel_->read_some(buf, ec);
+    size_t read;
+    do {
+      read = channel_->read_some(buf, ec);
+      if (ec == asio::error::interrupted) {
+        continue;
+      }
+    } while(false);
     buf->append(read);
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
       eof = true;
@@ -325,7 +343,13 @@ void SsConnection::OnStreamWrite(std::shared_ptr<IOBuf> buf) {
             << " upstream: received reply (pipe): " << buf->length() << " bytes.";
     buf = EncryptData(buf);
     ec = asio::error_code();
-    size_t written = socket_.write_some(const_buffer(*buf), ec);
+    size_t written;
+    do {
+      written = socket_.write_some(const_buffer(*buf), ec);
+      if (ec == asio::error::interrupted) {
+        continue;
+      }
+    } while(false);
     VLOG(3) << "Connection (server) " << connection_id()
             << " sent data (pipe): " << written << " bytes"
             << " ec: " << ec << " and bytes to write: "
@@ -454,7 +478,13 @@ void SsConnection::sent(std::shared_ptr<IOBuf> buf) {
   while (upstream_.size()) {
     asio::error_code ec;
     std::shared_ptr<IOBuf> buf = upstream_.front();
-    size_t written = channel_->write_some(buf, ec);
+    size_t written;
+    do {
+      written = channel_->write_some(buf, ec);
+      if (ec == asio::error::interrupted) {
+        continue;
+      }
+    } while(false);
     VLOG(3) << "Connection (server) " << connection_id()
             << " upstream: sent request (pipe): " << written << " bytes"
             << " ec: " << ec << " and data to write: " << upstream_.size();
@@ -476,7 +506,13 @@ void SsConnection::sent(std::shared_ptr<IOBuf> buf) {
     bool eof = false;
     std::shared_ptr<IOBuf> buf{IOBuf::create(SOCKET_BUF_SIZE).release()};
     buf->reserve(0, SOCKET_BUF_SIZE);
-    size_t read = socket_.read_some(mutable_buffer(*buf), ec);
+    size_t read;
+    do {
+      read = socket_.read_some(mutable_buffer(*buf), ec);
+      if (ec == asio::error::interrupted) {
+        continue;
+      }
+    } while(false);
     buf->append(read);
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
       eof = true;
@@ -491,7 +527,13 @@ void SsConnection::sent(std::shared_ptr<IOBuf> buf) {
             << " received data (pipe): " << buf->length() << " bytes.";
     buf = DecryptData(buf);
     ec = asio::error_code();
-    size_t written = channel_->write_some(buf, ec);
+    size_t written;
+    do {
+      written = channel_->write_some(buf, ec);
+      if (ec == asio::error::interrupted) {
+        continue;
+      }
+    } while(false);
     VLOG(3) << "Connection (server) " << connection_id()
             << " upstream: sent request (pipe): " << written << " bytes"
             << " ec: " << ec << " and data to write: "

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
+/* Copyright (c) 2019-2023 Chilledheart  */
 
 #ifndef H_STREAM
 #define H_STREAM
@@ -85,7 +85,12 @@ class stream {
           std::shared_ptr<IOBuf> buf{IOBuf::create(SOCKET_BUF_SIZE).release()};
           buf->reserve(0, SOCKET_BUF_SIZE);
           if (!ec) {
-            bytes_transferred = socket_.read_some(mutable_buffer(*buf), ec);
+            do {
+              bytes_transferred = socket_.read_some(mutable_buffer(*buf), ec);
+              if (ec == asio::error::interrupted) {
+                continue;
+              }
+            } while(false);
           }
           if (ec == asio::error::try_again || ec == asio::error::would_block) {
             start_read();
@@ -125,10 +130,6 @@ class stream {
     eof_ = true;
     closed_ = true;
     asio::error_code ec;
-    socket_.cancel(ec);
-    if (ec) {
-      VLOG(2) << "cancel() error: " << ec;
-    }
     socket_.close(ec);
     if (ec) {
       VLOG(2) << "close() error: " << ec;
