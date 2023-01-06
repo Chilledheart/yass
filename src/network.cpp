@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2020 Chilledheart  */
+/* Copyright (c) 2020-2023 Chilledheart  */
 
 #include "network.hpp"
 
@@ -8,6 +8,10 @@
 #include <sys/types.h>
 #else
 #include <mstcpip.h>
+#endif
+
+#if !defined(TCP_KEEPIDLE) && defined(TCP_KEEPALIVE)
+#define TCP_KEEPIDLE TCP_KEEPALIVE
 #endif
 
 #include <absl/flags/flag.h>
