@@ -6,6 +6,8 @@
 #ifndef _WIN32
 #include <sys/socket.h>
 #include <sys/types.h>
+#else
+#include <mstcpip.h>
 #endif
 
 #include <absl/flags/flag.h>
@@ -21,6 +23,10 @@ ABSL_FLAG(int32_t, connect_timeout, 60, "Connect timeout (Linux only)");
 ABSL_FLAG(int32_t, tcp_connection_timeout, 75000, "TCP connection timeout (BSD-like only)");
 ABSL_FLAG(int32_t, tcp_user_timeout, 300, "TCP user timeout (Linux only)");
 ABSL_FLAG(int32_t, so_linger_timeout, 30, "SO Linger timeout");
+ABSL_FLAG(bool, tcp_keep_alive, true, "TCP keep alive option");
+ABSL_FLAG(int32_t, tcp_keep_alive_cnt, 9, "The number of TCP keep-alive probes to send before give up");
+ABSL_FLAG(int32_t, tcp_keep_alive_idle_timeout, 7200, "The number of seconds a connection needs to be idle before TCP begins sending out keep-alive probes.");
+ABSL_FLAG(int32_t, tcp_keep_alive_interval, 75, "The number of seconds between TCP keep-alive probes.");
 
 ABSL_FLAG(int32_t, so_snd_buffer, 2048 * 1024, "Socket Send Buffer");
 ABSL_FLAG(int32_t, so_rcv_buffer, 2048 * 1024, "Socket Receive Buffer");
@@ -186,6 +192,78 @@ void SetTCPUserTimeout(asio::ip::tcp::acceptor::native_handle_type handle,
             << absl::GetFlag(FLAGS_tcp_user_timeout);
   }
 #endif  // TCP_USER_TIMEOUT
+}
+
+void SetTCPKeepAlive(asio::ip::tcp::acceptor::native_handle_type handle,
+                     asio::error_code& ec) {
+  (void)handle;
+  ec = asio::error_code();
+  int fd = handle;
+#ifdef _WIN32
+  char opt = absl::GetFlag(FLAGS_tcp_keep_alive) ? 1 : 0;
+#else
+  unsigned int opt = absl::GetFlag(FLAGS_tcp_keep_alive) ? 1 : 0;
+#endif
+  int ret = setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &opt, sizeof(opt));
+#ifdef _WIN32
+  if (ret < 0) {
+    ec = asio::error_code(WSAGetLastError(), asio::error::get_system_category());
+#else
+  if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
+    ec = asio::error_code(errno, asio::error::get_system_category());
+#endif
+    VLOG(2) << "TCP Keep Alive is not supported on this platform " << ec;
+    return;
+  } else {
+    VLOG(3) << "Applied SO socket_option: so_keepalive "
+            << absl::GetFlag(FLAGS_tcp_keep_alive);
+  }
+  if (!absl::GetFlag(FLAGS_tcp_keep_alive)) {
+    return;
+  }
+#ifdef _WIN32
+  struct tcp_keepalive {
+      u_long  onoff;
+      u_long  keepalivetime;
+      u_long  keepaliveinterval;
+  };
+  tcp_keepalive optVals;
+  DWORD cbBytesReturned = 0;
+  WSAOVERLAPPED overlapped {};
+  optVals.onoff = opt;
+  optVals.keepalivetime = 1000 * absl::GetFlag(FLAGS_tcp_keep_alive_idle_timeout);
+  optVals.keepaliveinterval = 1000 * absl::GetFlag(FLAGS_tcp_keep_alive_interval);
+  ret = WSAIoctl(handle, SIO_KEEPALIVE_VALS, &optVals, sizeof(optVals),
+                 nullptr, 0, &cbBytesReturned, &overlapped, nullptr);
+  if (ret < 0) {
+    ec = asio::error_code(WSAGetLastError(), asio::error::get_system_category());
+    VLOG(2) << "TCP Keep Alive Vals is not supported on this platform: " << ec;
+  } else {
+    VLOG(3) << "Applied current tcp_option: tcp_keep_alive_idle_timeout "
+            << absl::GetFlag(FLAGS_tcp_keep_alive_idle_timeout);
+    VLOG(3) << "Applied current tcp_option: tcp_keep_alive_interval "
+            << absl::GetFlag(FLAGS_tcp_keep_alive_interval);
+  }
+#else
+  fd = handle;
+  opt = absl::GetFlag(FLAGS_tcp_keep_alive_cnt);
+  ret += setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT, &opt, sizeof(opt));
+  opt = absl::GetFlag(FLAGS_tcp_keep_alive_idle_timeout);
+  ret += setsockopt(fd, IPPROTO_TCP, TCP_KEEPIDLE, &opt, sizeof(opt));
+  opt = absl::GetFlag(FLAGS_tcp_keep_alive_interval);
+  ret += setsockopt(fd, IPPROTO_TCP, TCP_KEEPINTVL, &opt, sizeof(opt));
+  if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
+    ec = asio::error_code(errno, asio::error::get_system_category());
+    VLOG(2) << "TCP Keep Alive is not supported on this platform";
+  } else {
+    VLOG(3) << "Applied current tcp_option: tcp_keep_alive_cnt "
+            << absl::GetFlag(FLAGS_tcp_keep_alive_cnt);
+    VLOG(3) << "Applied current tcp_option: tcp_keep_alive_idle_timeout "
+            << absl::GetFlag(FLAGS_tcp_keep_alive_idle_timeout);
+    VLOG(3) << "Applied current tcp_option: tcp_keep_alive_interval "
+            << absl::GetFlag(FLAGS_tcp_keep_alive_interval);
+  }
+#endif
 }
 
 void SetSocketLinger(asio::ip::tcp::socket* socket, asio::error_code& ec) {

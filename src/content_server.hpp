@@ -163,6 +163,7 @@ class ContentServer {
       SetTCPCongestion(socket.native_handle(), ec);
       SetTCPConnectionTimeout(socket.native_handle(), ec);
       SetTCPUserTimeout(socket.native_handle(), ec);
+      SetTCPKeepAlive(socket.native_handle(), ec);
       SetSocketLinger(&socket, ec);
       SetSocketSndBuffer(&socket, ec);
       SetSocketRcvBuffer(&socket, ec);

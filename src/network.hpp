@@ -23,6 +23,11 @@ ABSL_DECLARE_FLAG(int32_t, so_linger_timeout);
 ABSL_DECLARE_FLAG(int32_t, so_snd_buffer);
 ABSL_DECLARE_FLAG(int32_t, so_rcv_buffer);
 
+ABSL_DECLARE_FLAG(bool, tcp_keep_alive);
+ABSL_DECLARE_FLAG(int32_t, tcp_keep_alive_cnt);
+ABSL_DECLARE_FLAG(int32_t, tcp_keep_alive_idle_timeout);
+ABSL_DECLARE_FLAG(int32_t, tcp_keep_alive_interval);
+
 void SetSOReusePort(asio::ip::tcp::acceptor::native_handle_type handle,
                     asio::error_code&);
 
@@ -40,6 +45,9 @@ void SetTCPConnectionTimeout(asio::ip::tcp::socket::native_handle_type handle,
 
 void SetTCPUserTimeout(asio::ip::tcp::socket::native_handle_type handle,
                        asio::error_code&);
+
+void SetTCPKeepAlive(asio::ip::tcp::acceptor::native_handle_type handle,
+                     asio::error_code& ec);
 
 void SetSocketLinger(asio::ip::tcp::socket* socket, asio::error_code&);
 
