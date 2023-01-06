@@ -1,4 +1,4 @@
-name: Compiler Compatbility
+name: Compiler Compatibility
 on:
   workflow_dispatch:
     inputs:
