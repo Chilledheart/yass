@@ -4,7 +4,7 @@
 [![GitHub all releases](https://img.shields.io/github/downloads/Chilledheart/yass/total)](https://github.com/Chilledheart/yass/releases)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Chilledheart/yass)](https://github.com/Chilledheart/yass/releases)
 
-[![Compiler Compability](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml)
+[![Compiler Compatibility](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml)
 [![Clang Tidy Results](https://github.com/Chilledheart/yass/actions/workflows/clang-tidy.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/clang-tidy.yml)
 
 [![Windows Build](https://github.com/Chilledheart/yass/actions/workflows/releases-windows.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/releases-windows.yml)
@@ -56,7 +56,7 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 Defined in [TLS 1.3][tls13]
 
 ## Supported Operating System
-- macOS (MacOS 10.10 or later, macOS 11.0 or later, Apple Silicon supported)
+- macOS (Mac OS X 10.10 or later, macOS 11.0 or later, Apple Silicon supported)
 - Linux (CentOS 7 or later, Debian 9 or later, Ubuntu 16.04 or later)
 - Windows (Windows Vista or later, Windows XP package also supported)
 
