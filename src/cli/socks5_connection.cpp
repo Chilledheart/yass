@@ -150,10 +150,6 @@ void Socks5Connection::close() {
           << " and data to write: " << downstream_.size();
   asio::error_code ec;
   closed_ = true;
-  socket_.cancel(ec);
-  if (ec) {
-    VLOG(2) << "cancel() error: " << ec;
-  }
   socket_.close(ec);
   if (ec) {
     VLOG(2) << "close() error: " << ec;

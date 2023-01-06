@@ -425,7 +425,7 @@ void SsConnection::ProcessSentData(asio::error_code ec,
 
 void SsConnection::OnConnect() {
   LOG(INFO) << "Connection (server) " << connection_id()
-            << " to: " << remote_domain();
+            << " to " << remote_domain();
   channel_ = std::make_unique<stream>(*io_context_, remote_endpoint_, this);
   channel_->connect();
 }

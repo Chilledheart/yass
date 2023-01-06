@@ -101,15 +101,15 @@ class ContentServer {
           asio::error_code ec;
           acceptor_->close(ec);
           if (ec) {
-            LOG(ERROR) << "Thread " << index_ << " (" << factory_.Name() << ")"
-                       << " acceptor close failed: " << ec;
+            LOG(WARNING) << "Thread " << index_ << " (" << factory_.Name() << ")"
+                         << " acceptor close failed: " << ec;
           }
         }
 
         auto conns = std::move(connections_);
         for (auto conn : conns) {
-          LOG(WARNING) << "Thread " << index_ << " (" << factory_.Name() << ")"
-                       << " closing remaining connection " << conn->connection_id();
+          VLOG(2) << "Thread " << index_ << " (" << factory_.Name() << ")"
+                  << " closing remaining connection " << conn->connection_id();
           conn->close();
         }
 
@@ -134,8 +134,8 @@ class ContentServer {
       io_context_.run(ec);
 
       if (ec) {
-        LOG(ERROR) << "Thread " << index_ << " (" << factory_.Name() << ")"
-                   << " failed to accept more due to: " << ec;
+        LOG(WARNING) << "Thread " << index_ << " (" << factory_.Name() << ")"
+                     << " exited due to: " << ec;
       }
     }
 
@@ -148,8 +148,8 @@ class ContentServer {
               on_accept(conn, std::move(socket));
               accept();
             } if (ec && ec != asio::error::operation_aborted) {
-              LOG(ERROR) << "Thread " << index_ << " (" << factory_.Name() << ")"
-                         << " failed to accept more due to: " << ec;
+              LOG(WARNING) << "Thread " << index_ << " (" << factory_.Name() << ")"
+                           << " failed to accept more due to: " << ec;
               work_guard_.reset();
             }
           });
@@ -174,18 +174,18 @@ class ContentServer {
       if (delegate_) {
         delegate_->OnConnect(connection_id);
       }
-      LOG(INFO) << "Connection (" << factory_.Name() << ") "
-                << connection_id << " with " << conn->peer_endpoint()
-                << " connected";
+      VLOG(2) << "Connection (" << factory_.Name() << ") "
+              << connection_id << " with " << conn->peer_endpoint()
+              << " connected";
       conn->start();
     }
 
     void on_disconnect(scoped_refptr<ConnectionType> conn) {
       int connection_id = conn->connection_id();
-      LOG(INFO) << "Connection (" << factory_.Name() << ") "
-                << connection_id << " disconnected (has ref "
-                << std::boolalpha << conn->HasAtLeastOneRef()
-                << std::noboolalpha << ")";
+      VLOG(2) << "Connection (" << factory_.Name() << ") "
+              << connection_id << " disconnected (has ref "
+              << std::boolalpha << conn->HasAtLeastOneRef()
+              << std::noboolalpha << ")";
       connections_.erase(
           std::remove(connections_.begin(), connections_.end(), conn),
           connections_.end());
