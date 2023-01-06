@@ -51,6 +51,7 @@ class stream {
     socket_.async_connect(endpoint_, [this, channel](asio::error_code ec) {
       on_connect(channel, ec);
     });
+    socket_.native_non_blocking(true, ec);
     socket_.non_blocking(true, ec);
   }
 
