@@ -28,6 +28,10 @@ class OptionDialog {
   GtkEntry* so_linger_timeout_;
   GtkEntry* so_snd_buffer_;
   GtkEntry* so_rcv_buffer_;
+  GtkCheckButton* tcp_keep_alive_;
+  GtkEntry* tcp_keep_alive_cnt_;
+  GtkEntry* tcp_keep_alive_idle_timeout_;
+  GtkEntry* tcp_keep_alive_interval_;
 
   GtkButton* okay_button_;
   GtkButton* cancel_button_;
