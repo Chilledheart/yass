@@ -28,7 +28,7 @@ ABSL_FLAG(int32_t, tcp_connection_timeout, 75000, "TCP connection timeout (BSD-l
 ABSL_FLAG(int32_t, tcp_user_timeout, 300, "TCP user timeout (Linux only)");
 ABSL_FLAG(int32_t, so_linger_timeout, 30, "SO Linger timeout");
 ABSL_FLAG(bool, tcp_keep_alive, true, "TCP keep alive option");
-ABSL_FLAG(int32_t, tcp_keep_alive_cnt, 9, "The number of TCP keep-alive probes to send before give up");
+ABSL_FLAG(int32_t, tcp_keep_alive_cnt, 9, "The number of TCP keep-alive probes to send before give up.");
 ABSL_FLAG(int32_t, tcp_keep_alive_idle_timeout, 7200, "The number of seconds a connection needs to be idle before TCP begins sending out keep-alive probes.");
 ABSL_FLAG(int32_t, tcp_keep_alive_interval, 75, "The number of seconds between TCP keep-alive probes.");
 
@@ -251,7 +251,7 @@ void SetTCPKeepAlive(asio::ip::tcp::acceptor::native_handle_type handle,
 #else
   fd = handle;
   opt = absl::GetFlag(FLAGS_tcp_keep_alive_cnt);
-  ret += setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT, &opt, sizeof(opt));
+  ret = setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT, &opt, sizeof(opt));
   opt = absl::GetFlag(FLAGS_tcp_keep_alive_idle_timeout);
   ret += setsockopt(fd, IPPROTO_TCP, TCP_KEEPIDLE, &opt, sizeof(opt));
   opt = absl::GetFlag(FLAGS_tcp_keep_alive_interval);

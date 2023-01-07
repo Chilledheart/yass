@@ -14,6 +14,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (weak) IBOutlet NSTextField *tcpSoLingerTimeout;
 @property (weak) IBOutlet NSTextField *tcpSendBuffer;
 @property (weak) IBOutlet NSTextField *tcpRecevieBuffer;
+@property (weak) IBOutlet NSButton *tcpKeepAlive;
+@property (weak) IBOutlet NSTextField *tcpKeepAliveCnt;
+@property (weak) IBOutlet NSTextField *tcpKeepAliveIdleTimeout;
+@property (weak) IBOutlet NSTextField *tcpKeepAliveInterval;
 
 @end
 

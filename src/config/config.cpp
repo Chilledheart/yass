@@ -86,6 +86,11 @@ bool ReadConfig() {
   config_impl->Read("so_snd_buffer", &FLAGS_so_snd_buffer);
   config_impl->Read("so_rcv_buffer", &FLAGS_so_rcv_buffer);
 
+  config_impl->Read("tcp_keep_alive", &FLAGS_tcp_keep_alive);
+  config_impl->Read("tcp_keep_alive_cnt", &FLAGS_tcp_keep_alive_cnt);
+  config_impl->Read("tcp_keep_alive_idle_timeout", &FLAGS_tcp_keep_alive_idle_timeout);
+  config_impl->Read("tcp_keep_alive_interval", &FLAGS_tcp_keep_alive_interval);
+
   /* close fields */
   config_impl->Close();
 
@@ -101,6 +106,13 @@ bool ReadConfig() {
                 std::max(0, absl::GetFlag(FLAGS_so_snd_buffer)));
   absl::SetFlag(&FLAGS_so_rcv_buffer,
                 std::max(0, absl::GetFlag(FLAGS_so_rcv_buffer)));
+
+  absl::SetFlag(&FLAGS_tcp_keep_alive_cnt,
+                std::max(0, absl::GetFlag(FLAGS_tcp_keep_alive_cnt)));
+  absl::SetFlag(&FLAGS_tcp_keep_alive_idle_timeout,
+                std::max(0, absl::GetFlag(FLAGS_tcp_keep_alive_idle_timeout)));
+  absl::SetFlag(&FLAGS_tcp_keep_alive_interval,
+                std::max(0, absl::GetFlag(FLAGS_tcp_keep_alive_interval)));
 
   return required_fields_loaded;
 }
@@ -144,6 +156,15 @@ bool SaveConfig() {
       config_impl->Write("so_snd_buffer", FLAGS_so_snd_buffer);
   all_fields_written &=
       config_impl->Write("so_rcv_buffer", FLAGS_so_rcv_buffer);
+
+  all_fields_written &=
+      config_impl->Write("tcp_keep_alive", FLAGS_tcp_keep_alive);
+  all_fields_written &=
+      config_impl->Write("tcp_keep_alive_cnt", FLAGS_tcp_keep_alive_cnt);
+  all_fields_written &=
+      config_impl->Write("tcp_keep_alive_idle_timeout", FLAGS_tcp_keep_alive_idle_timeout);
+  all_fields_written &=
+      config_impl->Write("tcp_keep_alive_interval", FLAGS_tcp_keep_alive_interval);
 
   all_fields_written &= config_impl->Close();
 

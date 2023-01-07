@@ -34,11 +34,21 @@ OptionDialog::OptionDialog(const std::string& title,
   auto so_snd_buffer_label = gtk_label_new("TCP Send Buffer");
   auto so_rcv_buffer_label = gtk_label_new("TCP Receive Buffer");
 
+  auto tcp_keep_alive_label = gtk_label_new("TCP keep alive");
+  auto tcp_keep_alive_cnt_label = gtk_label_new("The number of TCP keep-alive probes");
+  auto tcp_keep_alive_idle_timeout_label = gtk_label_new("TCP keep alive after idle");
+  auto tcp_keep_alive_interval_label = gtk_label_new("TCP keep alive interval");
+
   gtk_grid_attach(grid, GTK_WIDGET(connect_timeout_label), 0, 0, 1, 1);
   gtk_grid_attach(grid, GTK_WIDGET(tcp_user_timeout_label), 0, 1, 1, 1);
   gtk_grid_attach(grid, GTK_WIDGET(so_linger_timeout_label), 0, 2, 1, 1);
   gtk_grid_attach(grid, GTK_WIDGET(so_snd_buffer_label), 0, 3, 1, 1);
   gtk_grid_attach(grid, GTK_WIDGET(so_rcv_buffer_label), 0, 4, 1, 1);
+
+  gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_label), 0, 5, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_cnt_label), 0, 6, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_idle_timeout_label), 0, 7, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_interval_label), 0, 8, 1, 1);
 
   connect_timeout_ = GTK_ENTRY(gtk_entry_new());
   tcp_user_timeout_ = GTK_ENTRY(gtk_entry_new());
@@ -46,11 +56,21 @@ OptionDialog::OptionDialog(const std::string& title,
   so_snd_buffer_ = GTK_ENTRY(gtk_entry_new());
   so_rcv_buffer_ = GTK_ENTRY(gtk_entry_new());
 
+  tcp_keep_alive_ = GTK_CHECK_BUTTON(gtk_check_button_new());
+  tcp_keep_alive_cnt_ = GTK_ENTRY(gtk_entry_new());
+  tcp_keep_alive_idle_timeout_ = GTK_ENTRY(gtk_entry_new());
+  tcp_keep_alive_interval_ = GTK_ENTRY(gtk_entry_new());
+
   gtk_grid_attach(grid, GTK_WIDGET(connect_timeout_), 1, 0, 1, 1);
   gtk_grid_attach(grid, GTK_WIDGET(tcp_user_timeout_), 1, 1, 1, 1);
   gtk_grid_attach(grid, GTK_WIDGET(so_linger_timeout_), 1, 2, 1, 1);
   gtk_grid_attach(grid, GTK_WIDGET(so_snd_buffer_), 1, 3, 1, 1);
   gtk_grid_attach(grid, GTK_WIDGET(so_rcv_buffer_), 1, 4, 1, 1);
+
+  gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_), 1, 5, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_cnt_), 1, 6, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_idle_timeout_), 1, 7, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_interval_), 1, 8, 1, 1);
 
   okay_button_ = GTK_BUTTON(gtk_button_new());
   gtk_button_set_label(okay_button_, "Okay");
@@ -112,6 +132,18 @@ void OptionDialog::LoadChanges() {
   auto so_rcv_buffer_str =
       std::to_string(absl::GetFlag(FLAGS_so_rcv_buffer));
   gtk_entry_set_text(so_rcv_buffer_, so_rcv_buffer_str.c_str());
+
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(tcp_keep_alive_),
+                               absl::GetFlag(FLAGS_tcp_keep_alive));
+  auto tcp_keep_alive_cnt_str =
+      std::to_string(absl::GetFlag(FLAGS_tcp_keep_alive_cnt));
+  gtk_entry_set_text(tcp_keep_alive_cnt_, tcp_keep_alive_cnt_str.c_str());
+  auto tcp_keep_alive_idle_timeout_str =
+      std::to_string(absl::GetFlag(FLAGS_tcp_keep_alive_idle_timeout));
+  gtk_entry_set_text(tcp_keep_alive_idle_timeout_, tcp_keep_alive_idle_timeout_str.c_str());
+  auto tcp_keep_alive_interval_str =
+      std::to_string(absl::GetFlag(FLAGS_tcp_keep_alive_interval));
+  gtk_entry_set_text(tcp_keep_alive_interval_, tcp_keep_alive_interval_str.c_str());
 }
 
 void OptionDialog::OnSave() {
@@ -122,8 +154,19 @@ void OptionDialog::OnSave() {
   auto so_snd_buffer = StringToInteger(gtk_entry_get_text(so_snd_buffer_));
   auto so_rcv_buffer = StringToInteger(gtk_entry_get_text(so_rcv_buffer_));
 
+  auto tcp_keep_alive = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(tcp_keep_alive_));
+  auto tcp_keep_alive_cnt =
+      StringToInteger(gtk_entry_get_text(tcp_keep_alive_cnt_));
+  auto tcp_keep_alive_idle_timeout =
+      StringToInteger(gtk_entry_get_text(tcp_keep_alive_idle_timeout_));
+  auto tcp_keep_alive_interval =
+      StringToInteger(gtk_entry_get_text(tcp_keep_alive_interval_));
+
   if (!connect_timeout.ok() || !user_timeout.ok() || !so_linger_timeout.ok() ||
-      !so_snd_buffer.ok() || !so_rcv_buffer.ok()) {
+      !so_snd_buffer.ok() || !so_rcv_buffer.ok() ||
+      !tcp_keep_alive_cnt.ok() ||
+      !tcp_keep_alive_idle_timeout.ok() ||
+      !tcp_keep_alive_interval.ok()) {
     LOG(WARNING) << "invalid options";
     return;
   }
@@ -133,4 +176,9 @@ void OptionDialog::OnSave() {
   absl::SetFlag(&FLAGS_so_linger_timeout, so_linger_timeout.value());
   absl::SetFlag(&FLAGS_so_snd_buffer, so_snd_buffer.value());
   absl::SetFlag(&FLAGS_so_rcv_buffer, so_rcv_buffer.value());
+
+  absl::SetFlag(&FLAGS_tcp_keep_alive, tcp_keep_alive);
+  absl::SetFlag(&FLAGS_tcp_keep_alive_cnt, tcp_keep_alive_cnt.value());
+  absl::SetFlag(&FLAGS_tcp_keep_alive_idle_timeout, tcp_keep_alive_idle_timeout.value());
+  absl::SetFlag(&FLAGS_tcp_keep_alive_interval, tcp_keep_alive_interval.value());
 }
