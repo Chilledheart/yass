@@ -203,12 +203,12 @@ void SetTCPKeepAlive(asio::ip::tcp::acceptor::native_handle_type handle,
   (void)handle;
   ec = asio::error_code();
   int fd = handle;
-#ifdef _WIN32
-  char opt = absl::GetFlag(FLAGS_tcp_keep_alive) ? 1 : 0;
-#else
   unsigned int opt = absl::GetFlag(FLAGS_tcp_keep_alive) ? 1 : 0;
-#endif
+#ifdef _WIN32
+  int ret = setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, reinterpret_cast<const char*>(&opt), sizeof(opt));
+#else
   int ret = setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &opt, sizeof(opt));
+#endif
 #ifdef _WIN32
   if (ret < 0) {
     ec = asio::error_code(WSAGetLastError(), asio::error::get_system_category());
@@ -233,12 +233,11 @@ void SetTCPKeepAlive(asio::ip::tcp::acceptor::native_handle_type handle,
   };
   tcp_keepalive optVals;
   DWORD cbBytesReturned = 0;
-  WSAOVERLAPPED overlapped {};
   optVals.onoff = opt;
   optVals.keepalivetime = 1000 * absl::GetFlag(FLAGS_tcp_keep_alive_idle_timeout);
   optVals.keepaliveinterval = 1000 * absl::GetFlag(FLAGS_tcp_keep_alive_interval);
   ret = WSAIoctl(handle, SIO_KEEPALIVE_VALS, &optVals, sizeof(optVals),
-                 nullptr, 0, &cbBytesReturned, &overlapped, nullptr);
+                 nullptr, 0, &cbBytesReturned, nullptr, nullptr);
   if (ret < 0) {
     ec = asio::error_code(WSAGetLastError(), asio::error::get_system_category());
     VLOG(2) << "TCP Keep Alive Vals is not supported on this platform: " << ec;
