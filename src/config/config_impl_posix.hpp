@@ -50,7 +50,7 @@ bool IsDirectory(const std::string& path) {
 }
 
 bool CreatePrivateDirectory(const std::string& path) {
-  return ::mkdir(path.c_str(), 0700) != 0;
+  return ::mkdir(path.c_str(), 0700) == 0;
 }
 
 bool EnsureCreatedDirectory(const std::string& path) {
