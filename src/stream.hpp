@@ -119,10 +119,36 @@ class stream {
   /// \param buf the shared buffer used in write routine
   void start_write(std::shared_ptr<IOBuf> buf) {
     Channel* channel = channel_;
-    asio::async_write(socket_, const_buffer(*buf),
-        [this, channel, buf](asio::error_code error, size_t bytes_transferred) {
-          on_write(channel, buf, error, bytes_transferred);
-        });
+    socket_.async_write_some(asio::null_buffers(),
+        [this, channel, buf](asio::error_code ec, size_t /*bytes_transferred*/) {
+          if (ec) {
+            on_write(channel, nullptr, ec, 0);
+            return;
+          }
+
+          size_t bytes_transferred;
+          do {
+            bytes_transferred = socket_.write_some(const_buffer(*buf), ec);
+            if (ec == asio::error::interrupted) {
+              continue;
+            }
+          } while(false);
+          buf->trimStart(bytes_transferred);
+
+          if (ec == asio::error::try_again || ec == asio::error::would_block) {
+            start_write(buf);
+            return;
+          }
+          if (ec) {
+            on_write(channel, buf, ec, bytes_transferred);
+            return;
+          }
+          if (!buf->empty()) {
+            start_write(buf);
+            return;
+          }
+          on_write(channel, buf, ec, bytes_transferred);
+    });
   }
 
   size_t write_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
@@ -225,7 +251,7 @@ class stream {
     }
 
     if (bytes_transferred) {
-      DCHECK_LE(bytes_transferred, buf->length());
+      DCHECK_EQ(buf->length(), 0u);
       channel->sent(buf);
     }
 
