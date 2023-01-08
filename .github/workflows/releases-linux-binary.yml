@@ -103,7 +103,7 @@ jobs:
       - name: Run tests
         if: ${{ matrix.arch == 'i386' || matrix.arch == 'amd64' }}
         run: |
-          ./tools/build -nc --arch ${{ matrix.arch }} --system linux --sysroot $PWD/debian_sid_${{ matrix.arch }}-sysroot -run-test
+          ./tools/build -nc --arch ${{ matrix.arch }} --system linux --sysroot $PWD/debian_sid_${{ matrix.arch }}-sysroot -run-test -no-packaging
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:

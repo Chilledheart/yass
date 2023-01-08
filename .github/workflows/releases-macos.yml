@@ -81,7 +81,7 @@ jobs:
           ./tools/build -build-test
       - name: Run tests
         run: |
-          ./tools/build -nc -run-test
+          ./tools/build -nc -run-test -no-packaging
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:

@@ -117,7 +117,7 @@ jobs:
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-          tools\build -nc -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -run-test || exit /b
+          tools\build -nc -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -run-test -no-packaging || exit /b
 
           exit /b 0
 
@@ -222,7 +222,7 @@ jobs:
 
           call "scripts\callxp-%Platform%.cmd"
 
-          tools\build -nc -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -msvc-allow-xp -run-test || exit /b
+          tools\build -nc -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -msvc-allow-xp -run-test -no-packaging || exit /b
 
           goto :eof
       - name: Upload dist tarball (including debuginfo)
