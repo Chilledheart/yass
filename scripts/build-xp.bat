@@ -40,11 +40,10 @@ set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set Platform=x86
 set VSCMD_ARG_TGT_ARCH=x86
 set MSVC_CRT_LINKAGE=static
-set MSVC_ALLOW_XP=1
 
 call "%~dp0callxp-%Platform%.cmd"
 
-tools\build -alsologtostderr -v 2
+tools\build -alsologtostderr -v 2 "-msvc-tgt-arch=%Platform%" "-msvc-crt-linkage=%MSVC_CRT_LINKAGE%" -msvc-allow-xp
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 
 goto :eof

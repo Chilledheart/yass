@@ -52,7 +52,7 @@ set MSVC_CRT_LINKAGE=static
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-tools\build -alsologtostderr -v 2
+tools\build -alsologtostderr -v 2 "-msvc-tgt-arch=%Platform%" "-msvc-crt-linkage=%MSVC_CRT_LINKAGE%"
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 
 REM
@@ -66,7 +66,7 @@ set MSVC_CRT_LINKAGE=static
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-tools\build -alsologtostderr -v 2
+tools\build -alsologtostderr -v 2 "-msvc-tgt-arch=%Platform%" "-msvc-crt-linkage=%MSVC_CRT_LINKAGE%"
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 
 REM skip ARM build
@@ -84,7 +84,7 @@ set MSVC_CRT_LINKAGE=static
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-tools\build -alsologtostderr -v 2
+tools\build -alsologtostderr -v 2 "-msvc-tgt-arch=%Platform%" "-msvc-crt-linkage=%MSVC_CRT_LINKAGE%"
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 
 :BuildARM64
@@ -104,7 +104,7 @@ set MSVC_CRT_LINKAGE=static
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-tools\build -alsologtostderr -v 2
+tools\build -alsologtostderr -v 2 "-msvc-tgt-arch=%Platform%" "-msvc-crt-linkage=%MSVC_CRT_LINKAGE%"
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 
 goto :eof

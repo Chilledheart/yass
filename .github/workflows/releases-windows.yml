@@ -38,7 +38,6 @@ jobs:
         build_type: [Release]
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
-      MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
     steps:
       - uses: actions/checkout@v3
       - name: Checkout with shallow submodules
@@ -88,14 +87,13 @@ jobs:
           set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set Platform=${{ matrix.arch }}
-          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
 
           set "Path=%CD%\third_party\nasm;%Path%"
           set "Path=%CD%\third_party\wix311;%Path%"
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-          tools\build -build-test || exit /b
+          tools\build -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -build-test || exit /b
 
           exit /b 0
 
@@ -113,14 +111,13 @@ jobs:
           set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set Platform=${{ matrix.arch }}
-          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
 
           set "Path=%CD%\third_party\nasm;%Path%"
           set "Path=%CD%\third_party\wix311;%Path%"
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-          tools\build -nc -run-test || exit /b
+          tools\build -nc -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -run-test || exit /b
 
           exit /b 0
 
@@ -143,7 +140,6 @@ jobs:
         build_type: [Release]
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
-      MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
     steps:
       - uses: actions/checkout@v3
       - name: Checkout with shallow submodules
@@ -199,15 +195,13 @@ jobs:
           set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set Platform=${{ matrix.arch }}
           set VSCMD_ARG_TGT_ARCH=${{ matrix.arch }}
-          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
-          set MSVC_ALLOW_XP=1
 
           set "Path=%CD%\third_party\nasm;%Path%"
           set "Path=%CD%\third_party\wix311;%Path%"
 
           call "scripts\callxp-%Platform%.cmd"
 
-          tools\build -build-test || exit /b
+          tools\build -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -msvc-allow-xp -build-test || exit /b
 
           goto :eof
       - name: Run tests
@@ -222,15 +216,13 @@ jobs:
           set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set Platform=${{ matrix.arch }}
           set VSCMD_ARG_TGT_ARCH=${{ matrix.arch }}
-          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
-          set MSVC_ALLOW_XP=1
 
           set "Path=%CD%\third_party\nasm;%Path%"
           set "Path=%CD%\third_party\wix311;%Path%"
 
           call "scripts\callxp-%Platform%.cmd"
 
-          tools\build -nc -run-test || exit /b
+          tools\build -nc -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -msvc-allow-xp -run-test || exit /b
 
           goto :eof
       - name: Upload dist tarball (including debuginfo)

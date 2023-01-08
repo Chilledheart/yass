@@ -35,9 +35,7 @@ jobs:
         build_type: [Release]
         crt-linkage: [static]
     env:
-      ENABLE_CLANG_TIDY: '1'
       BUILD_TYPE: '${{ matrix.build_type }}'
-      MSVC_CRT_LINKAGE: '{{ matrix.crt-linkage }}'
     defaults:
       run:
         shell: cmd
@@ -90,16 +88,13 @@ jobs:
           set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set Platform=${{ matrix.arch }}
-          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
-
-          set "CLANG_TIDY_EXECUTABLE=%CD%/third_party/llvm-build/Release+Asserts/bin/clang-tidy.exe"
 
           set "Path=%CD%\third_party\nasm;%Path%"
           set "Path=%CD%\third_party\wix311;%Path%"
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-          tools\build -build-test -no-packaging || exit /b
+          tools\build -clang-tidy-mode "-clang-tidy-executable-path=%CD%/third_party/llvm-build/Release+Asserts/bin/clang-tidy.exe" -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -build-test -no-packaging || exit /b
 
           exit /b 0
 
@@ -116,16 +111,13 @@ jobs:
           set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set Platform=${{ matrix.arch }}
-          set MSVC_CRT_LINKAGE=${{ matrix.crt-linkage }}
-
-          set "CLANG_TIDY_EXECUTABLE=%CD%/third_party/llvm-build/Release+Asserts/bin/clang-tidy.exe"
 
           set "Path=%CD%\third_party\nasm;%Path%"
           set "Path=%CD%\third_party\wix311;%Path%"
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-          tools\build -nc -run-test -no-packaging || exit /b
+          tools\build -clang-tidy-mode "-clang-tidy-executable-path=%CD%/third_party/llvm-build/Release+Asserts/bin/clang-tidy.exe" -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -nc -run-test -no-packaging || exit /b
 
           exit /b 0
 
@@ -139,7 +131,6 @@ jobs:
       matrix:
         build_type: [Release]
     env:
-      ENABLE_CLANG_TIDY: '1'
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
       - uses: actions/checkout@v3
@@ -181,14 +172,12 @@ jobs:
         run: |
           export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
           export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
-          export CLANG_TIDY_EXECUTABLE=$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy
-          ./tools/build -build-test -no-packaging
+          ./tools/build -clang-tidy-mode -clang-tidy-executable-path="$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy" -build-test -no-packaging
       - name: Run tests
         run: |
           export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
           export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
-          export CLANG_TIDY_EXECUTABLE=$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy
-          ./tools/build -nc -run-test -no-packaging
+          ./tools/build -nc -clang-tidy-mode -clang-tidy-executable-path="$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy" -run-test -no-packaging
   linux-clang-tidy:
     runs-on: ubuntu-20.04
     if: ${{ github.event_name != 'release' }}
@@ -197,7 +186,6 @@ jobs:
       matrix:
         build_type: [Release]
     env:
-      ENABLE_CLANG_TIDY: '1'
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
       - uses: actions/checkout@v3
@@ -243,11 +231,9 @@ jobs:
         run: |
           export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
           export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
-          export CLANG_TIDY_EXECUTABLE=$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy
-          ./tools/build -build-test -no-packaging
+          ./tools/build -clang-tidy-mode -clang-tidy-executable-path="$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy" -build-test -no-packaging
       - name: Run tests
         run: |
           export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
           export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
-          export CLANG_TIDY_EXECUTABLE=$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy
-          ./tools/build -nc -run-test -no-packaging
+          ./tools/build -nc -clang-tidy-mode -clang-tidy-executable-path="$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy" -run-test -no-packaging
