@@ -41,6 +41,11 @@ class ConfigImpl {
   template <typename T>
   bool Write(const std::string& key, const absl::Flag<T>& value);
 
+  /// Dlete the key
+  ///
+  /// \param key the key value
+  bool Delete(const std::string& key);
+
  protected:
   /// Open the ConfigTree
   ///
@@ -137,6 +142,11 @@ class ConfigImpl {
   /// \param key the key value
   /// \param value the value (int64_t)
   virtual bool WriteImpl(const std::string& key, int64_t value) = 0;
+
+  /// Write the key,value into ConfigTree
+  ///
+  /// \param key the key value
+  virtual bool DeleteImpl(const std::string& key) = 0;
 
  protected:
   /// dontread don't load from config tree, useful for write-only object

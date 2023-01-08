@@ -281,6 +281,15 @@ class ConfigImplWindows : public ConfigImpl {
     return WriteImpl(key, static_cast<uint64_t>(value));
   }
 
+  bool DeleteImpl(const std::string& key) override {
+    std::wstring wkey = SysUTF8ToWide(key);
+    if (::RegDeleteValueW(hkey_ /*hKey*/, wkey.c_str() /*lpValueName*/)
+        == ERROR_SUCCESS) {
+      return true;
+    }
+    return false;
+  }
+
  private:
   HKEY hkey_;
 };

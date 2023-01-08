@@ -105,4 +105,12 @@ template bool ConfigImpl::Write(const std::string& key,
 template bool ConfigImpl::Write(const std::string& key,
                                 const absl::Flag<int64_t>& value);
 
+bool ConfigImpl::Delete(const std::string& key) {
+  if (DeleteImpl(key)) {
+    VLOG(1) << "deleted option " << key;
+    return true;
+  }
+  return false;
+}
+
 }  // namespace config
