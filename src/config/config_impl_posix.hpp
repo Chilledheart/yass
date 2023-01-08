@@ -104,23 +104,28 @@ class ConfigImplPosix : public ConfigImpl {
 
     path_ = ExpandUser(absl::GetFlag(FLAGS_configfile));
 
-    if (!dontread) {
+    do {
       ssize_t size =
           ReadFileToBuffer(path_, read_buffer_, sizeof(read_buffer_));
       if (size < 0) {
         LOG(WARNING) << "configure file failed to read: " << path_;
-        return false;
+        break;
       }
       root_ = json::parse(read_buffer_, nullptr, false);
       if (root_.is_discarded() || !root_.is_object()) {
         LOG(WARNING) << "bad config file: " << path_
                      << " content: \"" << read_buffer_ << "\"";
-        return false;
+        break;
       }
       VLOG(2) << "loaded from config file: " << path_;
-    } else {
-      root_ = json::object();
+      return true;
+    } while (false);
+
+    if (!dontread) {
+      return false;
     }
+
+    root_ = json::object();
 
     return true;
   }
@@ -235,6 +240,15 @@ class ConfigImplPosix : public ConfigImpl {
   bool WriteImpl(const std::string& key, int64_t value) override {
     root_[key] = value;
     return true;
+  }
+
+  bool DeleteImpl(const std::string& key) override {
+    auto iter = root_.find(key);
+    if (iter != root_.end()) {
+      root_.erase(iter);
+      return true;
+    }
+    return false;
   }
 
  private:

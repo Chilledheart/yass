@@ -84,35 +84,33 @@ bool ConfigImplApple::OpenImpl(bool dontread) {
 
   path_ = ExpandUser(absl::GetFlag(FLAGS_configfile));
 
+  ScopedCFTypeRef<CFMutableDictionaryRef> mutable_root(
+      CFDictionaryCreateMutable(kCFAllocatorDefault, 0,
+                                &kCFTypeDictionaryKeyCallBacks,
+                                &kCFTypeDictionaryValueCallBacks));
+
+  if (LoadConfigFromLegacyConfig(path_, mutable_root)) {
+    LOG(WARNING) << "loaded from legacy config file: " << path_;
+  }
+
+  // Overwrite all fields from UserDefaults
+  NSUserDefaults* defaultsRoot =
+      [[NSUserDefaults alloc] initWithSuiteName:@(kYassSuiteName)];
+
+  NSDictionary *root = [defaultsRoot dictionaryForKey:@(kYassKeyName)];
+
+  if (root) {
+    for (NSString* key in root) {
+      id value = root[key];
+      ScopedCFTypeRef<CFStringRef> cf_key((CFStringRef)CFBridgingRetain(key));
+      CFDictionarySetValue(mutable_root, cf_key, value);
+    }
+  }
+
   if (!dontread) {
-    ScopedCFTypeRef<CFMutableDictionaryRef> mutable_root(
-        CFDictionaryCreateMutable(kCFAllocatorDefault, 0,
-                                  &kCFTypeDictionaryKeyCallBacks,
-                                  &kCFTypeDictionaryValueCallBacks));
-
-    if (LoadConfigFromLegacyConfig(path_, mutable_root)) {
-      LOG(WARNING) << "loaded from legacy config file: " << path_;
-    }
-
-    // Overwrite all fields from UserDefaults
-    NSUserDefaults* defaults_root =
-        [[NSUserDefaults alloc] initWithSuiteName:@(kYassSuiteName)];
-
-    NSDictionary *root = [defaults_root dictionaryForKey:@(kYassKeyName)];
-
-    if (root) {
-      for (NSString* key in root) {
-        id value = root[key];
-        ScopedCFTypeRef<CFStringRef> cf_key((CFStringRef)CFBridgingRetain(key));
-        CFDictionarySetValue(mutable_root, cf_key, value);
-      }
-    }
-
     root_.reset(CFDictionaryCreateCopy(kCFAllocatorDefault, mutable_root));
   } else {
-    write_root_.reset(CFDictionaryCreateMutable(
-        kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks,
-        &kCFTypeDictionaryValueCallBacks));
+    write_root_.reset(CFDictionaryCreateMutableCopy(kCFAllocatorDefault, 0, mutable_root));
   }
 
   return true;
@@ -270,6 +268,18 @@ bool ConfigImplApple::WriteImpl(const std::string& key, int64_t value) {
       write_root_,
       ScopedCFTypeRef<CFStringRef>(SysUTF8ToCFStringRef(key)).get(), obj);
   return true;
+}
+
+bool ConfigImplApple::DeleteImpl(const std::string& key) {
+  if (CFDictionaryGetValueIfPresent(write_root_,
+                                    ScopedCFTypeRef<CFStringRef>(SysUTF8ToCFStringRef(key)).get(),
+                                    nullptr)) {
+    CFDictionaryRemoveValue(
+        write_root_,
+        ScopedCFTypeRef<CFStringRef>(SysUTF8ToCFStringRef(key)).get());
+    return true;
+  }
+  return false;
 }
 
 }  // namespace config

@@ -39,6 +39,8 @@ class ConfigImplApple : public ConfigImpl {
   bool WriteImpl(const std::string& key, uint64_t value) override;
   bool WriteImpl(const std::string& key, int64_t value) override;
 
+  bool DeleteImpl(const std::string& key) override;
+
  private:
   std::string path_;
   ScopedCFTypeRef<CFDictionaryRef> root_;

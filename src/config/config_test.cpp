@@ -79,6 +79,16 @@ TEST(ConfigTest, ReadAfterWrite) {
   EXPECT_EQ(absl::GetFlag(FLAGS_test_unsigned_64val), test_unsigned_64val);
   EXPECT_EQ(absl::GetFlag(FLAGS_test_string), test_string);
 
+  config_impl = config::ConfigImpl::Create();
+  ASSERT_TRUE(config_impl->Open(true));
+  EXPECT_TRUE(config_impl->Delete("test_bool"));
+  EXPECT_TRUE(config_impl->Delete("test_signed_val"));
+  EXPECT_TRUE(config_impl->Delete("test_unsigned_val"));
+  EXPECT_TRUE(config_impl->Delete("test_signed_64val"));
+  EXPECT_TRUE(config_impl->Delete("test_unsigned_64val"));
+  EXPECT_TRUE(config_impl->Delete("test_string"));
+  ASSERT_TRUE(config_impl->Close());
+
 #if !(defined(_WIN32) || (defined(__APPLE__) && defined(__clang__)))
   absl::SetFlag(&FLAGS_configfile, original_configfile);
 #endif
