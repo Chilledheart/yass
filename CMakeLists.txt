@@ -1753,6 +1753,9 @@ if (BUILD_TESTS)
     target_compile_options(yass_gtest PRIVATE "-Wno-missing-declarations")
   elseif(COMPILER_CLANG)
     target_compile_options(yass_gtest PRIVATE "-Wno-missing-prototypes")
+  elseif(COMPILER_MSVC)
+    # VS2019,VS2022 specific: storing 32-bit float result in memory, possible loss of performance
+    target_compile_options(yass_gtest PRIVATE "/wd4738")
   endif()
 endif()
 
@@ -1764,8 +1767,7 @@ include_directories(third_party/xxhash SYSTEM)
 add_library(xxhash STATIC third_party/xxhash/xxhash.c)
 
 if (COMPILER_MSVC)
-  set_target_properties(xxhash PROPERTIES
-    COMPILE_FLAGS "/wd4255")
+  target_compile_options(xxhash PRIVATE "/wd4255")
 endif()
 
 set(SUPPORT_LIBS xxhash ${SUPPORT_LIBS})
