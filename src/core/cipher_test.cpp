@@ -58,8 +58,6 @@ CIPHER_METHOD_VALID_MAP(XX)
 INSTANTIATE_TEST_SUITE_P(SizedCipherTest,
                          CipherTest,
                          ::testing::Values(16, 256, 512, 1024, 2048, 4096, 16 * 1024 -1),
-                         [](const ::testing::TestParamInfo<CipherTest::ParamType>& info) {
-                           return std::to_string(info.param);
-                         }
+                         ::testing::PrintToStringParamName()
 );
 
