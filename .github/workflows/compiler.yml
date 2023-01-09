@@ -310,6 +310,10 @@ jobs:
         run: |
           cd tools
           go build
+      - name: Change ubuntu mirror
+        run: |
+          sudo sed -i 's/azure.archive.ubuntu.com/archive.ubuntu.com/g' /etc/apt/sources.list
+          sudo apt-get update -qq
       - name: "Install dependency: clang 12"
         if: ${{ steps.clang12-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -321,10 +325,6 @@ jobs:
       - name: "Install dependency: gcc 11"
         if: ${{ matrix.compiler == 'gcc' }}
         run: sudo add-apt-repository ppa:ubuntu-toolchain-r/test && sudo apt-get update -qq && sudo apt-get install -y gcc-11 g++-11
-      - name: Change ubuntu mirror
-        run: |
-          sudo sed -i 's/azure.archive.ubuntu.com/archive.ubuntu.com/g' /etc/apt/sources.list
-          sudo apt-get update -qq
       - name: Populate depedencies
         run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build libgtk-3-dev libncurses5
       - name: Set build options
