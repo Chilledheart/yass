@@ -2676,6 +2676,7 @@ if (BUILD_TESTS)
     src/test_util.cpp
     src/ss_test.cpp
     src/config/config_test.cpp
+    src/core/cipher_test.cpp
     )
   target_include_directories(yass_test PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src
