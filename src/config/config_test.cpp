@@ -25,7 +25,7 @@ class ConfigTest : public ::testing::Test {
  public:
   void SetUp() override {
 #if !(defined(_WIN32) || (defined(__APPLE__) && defined(__clang__)))
-    std::string original_configfile = absl::GetFlag(FLAGS_configfile);
+    original_configfile_ = absl::GetFlag(FLAGS_configfile);
     const char* tmpdir = getenv("TMPDIR");
     if (!tmpdir || *tmpdir == '\0')
       tmpdir = "/tmp";
@@ -35,9 +35,14 @@ class ConfigTest : public ::testing::Test {
   }
   void TearDown() override {
 #if !(defined(_WIN32) || (defined(__APPLE__) && defined(__clang__)))
-    absl::SetFlag(&FLAGS_configfile, original_configfile);
+    absl::SetFlag(&FLAGS_configfile, original_configfile_);
 #endif
   }
+
+ private:
+#if !(defined(_WIN32) || (defined(__APPLE__) && defined(__clang__)))
+  std::string original_configfile_;
+#endif
 };
 
 TEST_F(ConfigTest, RWBool) {
