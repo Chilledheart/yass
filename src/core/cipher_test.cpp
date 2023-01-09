@@ -23,7 +23,7 @@ std::unique_ptr<IOBuf> GenerateRandContent(int size) {
 }
 } // anonymous namespace
 
-class CipherTest : public ::testing::Test {
+class CipherTest : public ::testing::TestWithParam<size_t> {
  public:
   void SetUp() override {}
   void TearDown() override {}
@@ -48,22 +48,18 @@ class CipherTest : public ::testing::Test {
 };
 
 #define XX(num, name, string) \
-  TEST_F(CipherTest, name##_PASSWORD_16B) { \
-    EncodeAndDecode("", "<dummy-password>", CRYPTO_##name, 16); \
-  } \
-  TEST_F(CipherTest, name##_PASSWORD_256B) { \
-    EncodeAndDecode("", "<dummy-password>", CRYPTO_##name, 256); \
-  } \
-  TEST_F(CipherTest, name##_PASSWORD_1024B) { \
-    EncodeAndDecode("", "<dummy-password>", CRYPTO_##name, 1024); \
-  } \
-  TEST_F(CipherTest, name##_PASSWORD_4096B) { \
-    EncodeAndDecode("", "<dummy-password>", CRYPTO_##name, 4096); \
-  } \
-  TEST_F(CipherTest, name##_PASSWORD_16K) { \
-    EncodeAndDecode("", "<dummy-password>", CRYPTO_##name, 16 * 1024 - 1); \
+  TEST_P(CipherTest, name) { \
+    EncodeAndDecode("", "<dummy-password>", CRYPTO_##name, GetParam()); \
   }
 
 CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
+
+INSTANTIATE_TEST_SUITE_P(SizedCipherTest,
+                         CipherTest,
+                         ::testing::Values(16, 256, 512, 1024, 2048, 4096, 16 * 1024 -1),
+                         [](const ::testing::TestParamInfo<CipherTest::ParamType>& info) {
+                           return std::to_string(info.param);
+                         }
+);
 
