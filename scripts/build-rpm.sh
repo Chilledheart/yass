@@ -2,7 +2,7 @@
 set -x
 set -e
 PWD=$(dirname "${BASH_SOURCE[0]}")
-RPM_VERSION=1.0.0
+RPM_VERSION=1.1.0
 RPM_SUBVERSION=1
 
 cd $PWD/..

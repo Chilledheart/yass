@@ -1,3 +1,8 @@
+yass (1.1.0-1) UNRELEASED; urgency=low
+
+  * New bug-fix release.
+
+ -- Chilledheart <hukeyue@hotmail.com>  Tue, 10 Jan 2023 12:52:07 +0800
 yass (1.0.0-1) UNRELEASED; urgency=medium
 
   * Initial release. (Closes: #4)
