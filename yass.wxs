@@ -1,5 +1,13 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+    <?if $(var.Platform) = arm64 ?>
+      <?define MinimumInstallerVersion = '500' ?>
+    <?elseif $(var.Platform) = x64 ?>
+      <?define MinimumInstallerVersion = '200' ?>
+    <?else ?>
+      <?define MinimumInstallerVersion = '100' ?>
+    <?endif ?>
+
     <?if $(var.Platform) = x64 or $(var.Platform) = arm64 ?>
       <?define ProductName = 'Yet Another Shadow Socket (64 bit)' ?>
       <?define Win64 = 'yes' ?>
@@ -13,7 +21,7 @@
     <Product Name='$(var.ProductName)' Id='YOURGUID' UpgradeCode='83F393F8-069C-4FF2-94D5-A40ACFDCF603'
       Language='1033' Codepage='1252' Version='1.1.0' Manufacturer='Chilledheart.'>
 
-        <Package InstallerVersion='100' Compressed='yes' InstallScope='perMachine' Platform='$(var.Platform)' />
+        <Package InstallerVersion='$(var.MinimumInstallerVersion)' Compressed='yes' InstallScope='perMachine' Platform='$(var.Platform)' />
 
         <Upgrade Id='83F393F8-069C-4FF2-94D5-A40ACFDCF603'>
             <UpgradeVersion OnlyDetect='yes' Property='NEWERFOUND' Minimum='1.0.0' IncludeMinimum='no' />
