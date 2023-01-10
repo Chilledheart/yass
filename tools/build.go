@@ -917,7 +917,7 @@ func generateMsi(output string, dllPaths []string, licensePaths []string) {
 	}
 
 	glog.Info("Feeding WiX compiler...")
-	cmdRun([]string{"candle.exe", "yass.wxs"}, true)
+	cmdRun([]string{"candle.exe", "yass.wxs", "-dPlatform=" + msvcTargetArchFlag}, true)
 
 	glog.Info("Generating MSI file...")
 	cmdRun([]string{"light.exe", "-ext", "WixUIExtension", "-out", output, "-cultures:en-US", "-sice:ICE03", "-sice:ICE57", "-sice:ICE61", "yass.wixobj"}, true)

@@ -1,9 +1,19 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-    <Product Name='Yet Another Shadow Socket' Id='YOURGUID' UpgradeCode='83F393F8-069C-4FF2-94D5-A40ACFDCF603'
+    <?if $(var.Platform) = x64 or $(var.Platform) = arm64 ?>
+      <?define ProductName = 'Yet Another Shadow Socket (64 bit)' ?>
+      <?define Win64 = 'yes' ?>
+      <?define PlatformProgramFilesFolder = 'ProgramFiles64Folder' ?>
+    <?else ?>
+      <?define ProductName = 'Yet Another Shadow Socket' ?>
+      <?define Win64 = 'no' ?>
+      <?define PlatformProgramFilesFolder = 'ProgramFilesFolder' ?>
+    <?endif ?>
+
+    <Product Name='$(var.ProductName)' Id='YOURGUID' UpgradeCode='83F393F8-069C-4FF2-94D5-A40ACFDCF603'
       Language='1033' Codepage='1252' Version='1.1.0' Manufacturer='Chilledheart.'>
 
-        <Package InstallerVersion='100' Compressed='yes' InstallScope='perMachine' />
+        <Package InstallerVersion='100' Compressed='yes' InstallScope='perMachine' Platform='$(var.Platform)' />
 
         <Upgrade Id='83F393F8-069C-4FF2-94D5-A40ACFDCF603'>
             <UpgradeVersion OnlyDetect='yes' Property='NEWERFOUND' Minimum='1.0.0' IncludeMinimum='no' />
@@ -31,7 +41,7 @@
         <Property Id='REGISTRYKEY' Value='Software\YetAnotherShadowSocket' />
 
         <Directory Id='TARGETDIR' Name='SourceDir'>
-            <Directory Id='ProgramFilesFolder'>
+            <Directory Id='$(var.PlatformProgramFilesFolder)'>
                 <Directory Id='INSTALLDIR' Name='Yass'/>
             </Directory>
             <Directory Id='ProgramMenuFolder'>
@@ -40,7 +50,7 @@
         </Directory>
 
         <ComponentGroup Id='exe_yass'>
-            <Component Id='yass.exe' Directory='INSTALLDIR' Guid='3E5E8F97-4E9A-4B11-B334-611CE0AFFC54'>
+            <Component Id='yass.exe' Directory='INSTALLDIR' Win64='$(var.Win64)' Guid='3E5E8F97-4E9A-4B11-B334-611CE0AFFC54'>
                 <File Name='yass.exe' Source='yass.exe' KeyPath='yes'/>
 
                 <RegistryKey Root='HKMU' Key='[REGISTRYKEY]'>
@@ -51,7 +61,7 @@
         </ComponentGroup>
 
         <ComponentGroup Id='exe_dll'>
-            <Component Id='SupportLibrary' Directory='INSTALLDIR' Guid='3BEB0AD7-044F-4FB6-9CF1-C53D45600722'>
+            <Component Id='SupportLibrary' Directory='INSTALLDIR' Win64='$(var.Win64)' Guid='3BEB0AD7-044F-4FB6-9CF1-C53D45600722'>
                 <CreateFolder/>
                 <!-- %DLLPLACEHOLDER% -->
                 <!--
@@ -61,7 +71,7 @@
         </ComponentGroup>
 
         <ComponentGroup Id='exe_license'>
-            <Component Id='License' Directory='INSTALLDIR' Guid='CD8DB265-5EC1-4631-8CDB-8E935F1AFDFA'>
+            <Component Id='License' Directory='INSTALLDIR' Win64='$(var.Win64)' Guid='CD8DB265-5EC1-4631-8CDB-8E935F1AFDFA'>
                 <!-- %LICENSEPLACEHOLDER% -->
                 <!--
                 <File Name='LICENSE' Source='LICENSE' KeyPath='yes' />
@@ -71,7 +81,7 @@
 
         <ComponentGroup Id='exe_shortcut'>
              <Component Id='Shortcut' Directory='MenuDir' Guid='E9D83A2A-7F75-4558-A718-795DAA3021E4'>
-                 <Shortcut Id='yass.exe'
+                 <Shortcut Id='ApplicationStartMenuShortCut'
                            Name='Yass'
                            Target='[#yass.exe]'
                            Description='Launch Yass'
