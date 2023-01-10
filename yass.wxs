@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-    <Product Name='Yet Another Shadow Socket 1.0' Id='YOURGUID' UpgradeCode='83F393F8-069C-4FF2-94D5-A40ACFDCF603'
-      Language='1033' Codepage='1252' Version='1.0.0' Manufacturer='Chilledheart.'>
+    <Product Name='Yet Another Shadow Socket' Id='YOURGUID' UpgradeCode='83F393F8-069C-4FF2-94D5-A40ACFDCF603'
+      Language='1033' Codepage='1252' Version='1.1.0' Manufacturer='Chilledheart.'>
 
         <Package InstallerVersion='100' Compressed='yes' InstallScope='perMachine' />
 
@@ -22,7 +22,7 @@
 
         <MediaTemplate EmbedCab='yes' CompressionLevel='high' />
 
-        <Property Id='DiskPrompt' Value="Chilledheart's Yass 1.0 Installation [1]" />
+        <Property Id='DiskPrompt' Value="Chilledheart's Yass Installation [1]" />
         <Property Id='WIXUI_INSTALLDIR' Value='INSTALLDIR' />
         <Icon Id='ARPIcon' SourceFile='..\src\win32\yass.ico' />
         <Property Id='ARPPRODUCTICON' Value='ARPIcon' />
@@ -35,7 +35,7 @@
                 <Directory Id='INSTALLDIR' Name='Yass'/>
             </Directory>
             <Directory Id='ProgramMenuFolder'>
-                <Directory Id='MenuDir' Name='Yass 1.0' />
+                <Directory Id='MenuDir' Name='Yass' />
             </Directory>
         </Directory>
 
@@ -72,18 +72,18 @@
         <ComponentGroup Id='exe_shortcut'>
              <Component Id='Shortcut' Directory='MenuDir' Guid='E9D83A2A-7F75-4558-A718-795DAA3021E4'>
                  <Shortcut Id='yass.exe'
-                           Name='Yass 1.0'
+                           Name='Yass'
                            Target='[#yass.exe]'
-                           Description='Launch Yass 1.0'
+                           Description='Launch Yass'
                            WorkingDirectory='INSTALLDIR' />
                  <RemoveFolder Id='Remove_MenuDir' Directory='MenuDir' On='uninstall' />
                  <RegistryKey Root='HKMU' Key='[REGISTRYKEY]'>
-                     <RegistryValue Key='InstalledFeatures' Name='Shortcuts' Type='string' Value='1.0.0' />
+                     <RegistryValue Key='InstalledFeatures' Name='Shortcuts' Type='string' Value='1.1.0' />
                  </RegistryKey>
              </Component>
         </ComponentGroup>
 
-        <Feature Id='DefaultFeature' Title='Yass 1.0' Description='The Yass 1.0 package.' ConfigurableDirectory='INSTALLDIR'>
+        <Feature Id='DefaultFeature' Title='Yass' Description='The Yass package.' ConfigurableDirectory='INSTALLDIR'>
             <Feature Id='DefaultFeatures' AllowAdvertise='no' Title='Program' Description='The main executable.' Level='1'>
                 <ComponentGroupRef Id='exe_yass' Primary='yes' />
                 <ComponentGroupRef Id='exe_dll' Primary='yes' />
