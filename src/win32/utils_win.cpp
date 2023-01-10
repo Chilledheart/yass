@@ -727,4 +727,18 @@ bool Utils::GetExecutablePath(std::wstring* exe_path) {
   return true;
 }
 
+std::wstring LoadStringStdW(HINSTANCE hInstance, UINT uID) {
+  // The buffer to receive a read-only pointer to the string resource itself (if
+  // cchBufferMax is zero).
+  void* ptr;
+  int len = ::LoadStringW(hInstance, uID, reinterpret_cast<wchar_t*>(&ptr), 0);
+  // The string resource is not guaranteed to be null-terminated in the
+  // module's resource table,
+  std::wstring str(len, L'\0');
+  // The number of characters copied into the buffer (if cchBufferMax is non-zero),
+  // not including the terminating null character.
+  ::LoadStringW(hInstance, uID, str.data(), len + 1);
+  return str;
+}
+
 #endif  // _WIN32
