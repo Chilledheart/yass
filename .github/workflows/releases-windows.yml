@@ -129,7 +129,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          gh release upload ${{ github.event.release.tag_name }} *.msi *.zip
+          gh release upload ${{ github.event.release.tag_name }} *.zip
+      - name: Upload dist msi
+        if: ${{ github.event_name == 'release' && matrix.arch != 'arm64' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} *.msi
   windows-xp-release:
     runs-on: windows-2019
     strategy:
