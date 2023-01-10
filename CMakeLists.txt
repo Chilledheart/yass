@@ -2437,7 +2437,7 @@ if (GUI)
           src/gtk/yass.cpp
           src/gtk/yass_window.cpp
           src/gtk/option_dialog.cpp
-          src/gtk/utils_gui.cpp)
+          src/gtk/utils_gtk.cpp)
     endif()
 
     # target_link_directories requires cmake 3.13
