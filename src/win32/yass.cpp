@@ -70,11 +70,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   std::vector<char*> argv(argc, nullptr);
   for (int i = 0; i != argc; ++i) {
     argv_store[i] = SysWideToUTF8(wargv[i]);
-    argv[i] = const_cast<char*>(argv_store[i].data());
+    argv[i] = argv_store[i].data();
   }
   absl::SetFlag(&FLAGS_logtostderr, false);
   // Fix log output name
-  argv[0] = const_cast<char*>(exec_path.c_str());
+  argv[0] = exec_path.data();
   absl::ParseCommandLine(argv.size(), &argv[0]);
 
   auto override_cipher_method = to_cipher_method(absl::GetFlag(FLAGS_method));
