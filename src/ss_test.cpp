@@ -116,32 +116,42 @@ void GenerateConnectRequest(std::string host, int port_num, IOBuf *buf) {
 class SsEndToEndTest : public ::testing::Test {
  public:
   void SetUp() override {
+    StartWorkThread();
     absl::SetFlag(&FLAGS_password, "<dummy-password>");
-    auto ec = StartContentProvider(GetContentProviderEndpoint(), 1);
-    ASSERT_FALSE(ec) << ec.message();
-    ec = StartServer(GetServerEndpoint(), 1);
-    ASSERT_FALSE(ec) << ec.message();
-    ec = StartLocal(GetServerEndpoint(), GetLocalEndpoint(), 1);
-    ASSERT_FALSE(ec) << ec.message();
+    std::mutex m;
+    bool done = 0;
+    io_context_.post([this, &m, &done]() {
+      std::lock_guard<std::mutex> lk(m);
+      auto ec = StartContentProvider(GetReusableEndpoint(), 1);
+      ASSERT_FALSE(ec) << ec.message();
+      ec = StartServer(GetReusableEndpoint(), 1);
+      ASSERT_FALSE(ec) << ec.message();
+      ec = StartLocal(server_endpoint_, GetReusableEndpoint(), 1);
+      ASSERT_FALSE(ec) << ec.message();
+      done = true;
+    });
+    while (true) {
+      std::lock_guard<std::mutex> lk(m);
+      if (done)
+        break;
+    }
   }
 
   void TearDown() override {
     StopClient();
     StopServer();
     StopContentProvider();
+    work_guard_.reset();
+    thread_->join();
+    thread_.reset();
+    local_server_.reset();
+    server_server_.reset();
+    content_provider_server_.reset();
   }
 
  protected:
-  asio::ip::tcp::endpoint GetContentProviderEndpoint() const {
-    return GetEndpoint(9001);
-  }
-
-  asio::ip::tcp::endpoint GetServerEndpoint() const {
-    return GetEndpoint(9002);
-  }
-
-  asio::ip::tcp::endpoint GetLocalEndpoint() const {
-    return GetEndpoint(9003);
+  asio::ip::tcp::endpoint GetReusableEndpoint() const {
+    return GetEndpoint(0);
   }
 
   asio::ip::tcp::endpoint GetEndpoint(int port_num) const {
@@ -155,48 +165,42 @@ class SsEndToEndTest : public ::testing::Test {
   }
 
   void StartWorkThread() {
-    content_provider_io_thread_ = std::make_unique<std::thread>([this]() {
-      VLOG(2) << "content provider thread started";
+    thread_ = std::make_unique<std::thread>([this]() {
       asio::error_code ec;
-      content_provider_io_context_.run(ec);
+      VLOG(2) << "background thread started";
+
+      work_guard_ = std::make_unique<asio::io_context::work>(io_context_);
+      io_context_.run(ec);
       if (ec) {
-        LOG(ERROR) << "content provider failed due to: " << ec.message();
+        LOG(ERROR) << "io_context failed due to: " << ec.message();
       }
-      VLOG(2) << "content provider thread ended";
+      io_context_.reset();
+
+      VLOG(2) << "background thread stopped";
     });
-    server_io_thread_ = std::make_unique<std::thread>([this]() {
-      VLOG(2) << "server thread started";
-      asio::error_code ec;
-      server_io_context_.run(ec);
-      if (ec) {
-        LOG(ERROR) << "remote server failed due to: " << ec.message();
+
+    io_context_.post([this]() {
+      if (!SetThreadName(thread_->native_handle(), "background")) {
+        PLOG(WARNING) << "failed to set thread name";
       }
-      VLOG(2) << "server thread ended";
-    });
-    local_io_thread_ = std::make_unique<std::thread>([this]() {
-      VLOG(2) << "local thread started";
-      asio::error_code ec;
-      local_io_context_.run(ec);
-      if (ec) {
-        LOG(ERROR) << "local server failed due to: " << ec.message();
+      if (!SetThreadPriority(thread_->native_handle(), ThreadPriority::ABOVE_NORMAL)) {
+        PLOG(WARNING) << "failed to set thread priority";
       }
-      VLOG(2) << "local thread ended";
     });
   }
 
   void SendRequestAndCheckResponse(const char* request_data,
                                    size_t request_data_size) {
-    StartWorkThread();
     asio::io_context io_context;
     asio::ip::tcp::socket s(io_context);
 
-    auto endpoint = GetLocalEndpoint();
+    auto endpoint = local_endpoint_;
 
     asio::error_code ec;
     s.connect(endpoint, ec);
     ASSERT_FALSE(ec) << ec.message();
     auto request_buf = IOBuf::copyBuffer(request_data, request_data_size);
-    GenerateConnectRequest("127.0.0.1", GetContentProviderEndpoint().port(),
+    GenerateConnectRequest("127.0.0.1", content_provider_endpoint_.port(),
                            request_buf.get());
 
     size_t written = asio::write(s, const_buffer(*request_buf), ec);
@@ -225,43 +229,29 @@ class SsEndToEndTest : public ::testing::Test {
   asio::error_code StartContentProvider(asio::ip::tcp::endpoint endpoint, int backlog) {
     asio::error_code ec;
 
-    VLOG(2) << "content provider listening at " << endpoint;
-
-    // not used
-    asio::ip::tcp::endpoint remote_endpoint;
-    content_provider_work_guard_ = std::make_unique<asio::io_context::work>(content_provider_io_context_);
-    content_provider_server_ = std::make_unique<ContentProviderServer>(remote_endpoint);
+    content_provider_server_ = std::make_unique<ContentProviderServer>(io_context_);
     content_provider_server_->listen(endpoint, backlog, ec);
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec.message();
-      content_provider_work_guard_.reset();
       return ec;
     }
+
+    content_provider_endpoint_ = content_provider_server_->endpoint();
+    VLOG(2) << "content provider listening at " << content_provider_endpoint_;
+
     return ec;
   }
 
   void StopContentProvider() {
     if (content_provider_server_) {
       content_provider_server_->stop();
-      content_provider_server_->join();
     }
-    content_provider_work_guard_.reset();
-    if (content_provider_io_thread_) {
-      content_provider_io_thread_->join();
-      content_provider_io_thread_.reset();
-    }
-    content_provider_server_.reset();
   }
 
   asio::error_code StartServer(asio::ip::tcp::endpoint endpoint, int backlog) {
     asio::error_code ec;
 
-    VLOG(2) << "tcp server listening at " << endpoint;
-
-    // not used
-    asio::ip::tcp::endpoint remote_endpoint;
-    server_work_guard_ = std::make_unique<asio::io_context::work>(server_io_context_);
-    server_server_ = std::make_unique<SsServer>(remote_endpoint);
+    server_server_ = std::make_unique<SsServer>(io_context_);
     server_server_->listen(endpoint, backlog, ec);
 
     if (ec) {
@@ -269,20 +259,16 @@ class SsEndToEndTest : public ::testing::Test {
       return ec;
     }
 
+    server_endpoint_ = server_server_->endpoint();
+    VLOG(2) << "tcp server listening at " << server_endpoint_;
+
     return ec;
   }
 
   void StopServer() {
     if (server_server_) {
       server_server_->stop();
-      server_server_->join();
     }
-    server_work_guard_.reset();
-    if (server_io_thread_) {
-      server_io_thread_->join();
-      server_io_thread_.reset();
-    }
-    server_server_.reset();
   }
 
   asio::error_code StartLocal(asio::ip::tcp::endpoint remote_endpoint,
@@ -290,19 +276,17 @@ class SsEndToEndTest : public ::testing::Test {
                               int backlog) {
     asio::error_code ec;
 
-    VLOG(2) << "local server listening at " << endpoint << " with upstream " << remote_endpoint;
-
-    local_work_guard_ = std::make_unique<asio::io_context::work>(local_io_context_);
-    local_server_ = std::make_unique<Socks5Server>(remote_endpoint);
+    local_server_ = std::make_unique<Socks5Server>(io_context_, remote_endpoint);
     local_server_->listen(endpoint, backlog, ec);
 
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec.message();
       local_server_->stop();
-      local_server_->join();
-      local_work_guard_.reset();
       return ec;
     }
+
+    local_endpoint_ = local_server_->endpoint();
+    VLOG(2) << "local server listening at " << local_endpoint_ << " with upstream " << remote_endpoint;
 
     return ec;
   }
@@ -310,31 +294,20 @@ class SsEndToEndTest : public ::testing::Test {
   void StopClient() {
     if (local_server_) {
       local_server_->stop();
-      local_server_->join();
     }
-    local_work_guard_.reset();
-    if (local_io_thread_) {
-      local_io_thread_->join();
-      local_io_thread_.reset();
-    }
-    local_server_.reset();
   }
 
  private:
-  asio::io_context content_provider_io_context_;
-  std::unique_ptr<asio::io_context::work> content_provider_work_guard_;
-  std::unique_ptr<std::thread> content_provider_io_thread_;
+  asio::io_context io_context_;
+  std::unique_ptr<asio::io_context::work> work_guard_;
+  std::unique_ptr<std::thread> thread_;
+
   std::unique_ptr<ContentProviderServer> content_provider_server_;
-
-  asio::io_context server_io_context_;
-  std::unique_ptr<asio::io_context::work> server_work_guard_;
-  std::unique_ptr<std::thread> server_io_thread_;
+  asio::ip::tcp::endpoint content_provider_endpoint_;
   std::unique_ptr<SsServer> server_server_;
-
-  asio::io_context local_io_context_;
-  std::unique_ptr<asio::io_context::work> local_work_guard_;
-  std::unique_ptr<std::thread> local_io_thread_;
+  asio::ip::tcp::endpoint server_endpoint_;
   std::unique_ptr<Socks5Server> local_server_;
+  asio::ip::tcp::endpoint local_endpoint_;
 };
 }
 
@@ -373,7 +346,6 @@ int main(int argc, char **argv) {
   absl::InstallFailureSignalHandler(failure_handle_options);
 
   absl::SetFlag(&FLAGS_log_thread_id, 1);
-  absl::SetFlag(&FLAGS_threads, 1);
   ::CRYPTO_library_init();
 
   ::testing::InitGoogleTest(&argc, argv);

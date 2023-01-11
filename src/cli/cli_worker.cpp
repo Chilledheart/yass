@@ -15,21 +15,30 @@ class WorkerPrivate {
 };
 
 Worker::Worker()
-    : work_guard_(std::make_unique<asio::io_context::work>(io_context_)),
-      resolver_(io_context_),
-      private_(new WorkerPrivate),
-      thread_([this] { WorkFunc(); }) {}
+    : resolver_(io_context_),
+      private_(new WorkerPrivate) {}
 
 Worker::~Worker() {
   Stop(std::function<void()>());
   work_guard_.reset();
-  thread_.join();
   delete private_;
 }
 
 void Worker::Start(std::function<void(asio::error_code)> callback) {
   DCHECK_EQ(private_->socks5_server.get(), nullptr);
+  if (thread_ && thread_->joinable())
+    thread_->join();
+
   /// listen in the worker thread
+  thread_ = std::make_unique<std::thread>([this] { WorkFunc(); });
+  io_context_.post([this]() {
+    if (!SetThreadName(thread_->native_handle(), "background")) {
+      PLOG(WARNING) << "failed to set thread name";
+    }
+    if (!SetThreadPriority(thread_->native_handle(), ThreadPriority::ABOVE_NORMAL)) {
+      PLOG(WARNING) << "failed to set thread priority";
+    }
+  });
   io_context_.post([this, callback]() {
     resolver_.async_resolve(
         absl::GetFlag(FLAGS_local_host),
@@ -43,17 +52,22 @@ void Worker::Start(std::function<void(asio::error_code)> callback) {
 
 void Worker::Stop(std::function<void()> callback) {
   /// stop in the worker thread
+  if (!thread_) {
+    return;
+  }
   io_context_.post([this, callback]() {
     resolver_.cancel();
     if (private_->socks5_server) {
       private_->socks5_server->stop();
-      private_->socks5_server->join();
-      private_->socks5_server.reset();
     }
+    work_guard_.reset();
     if (callback) {
       callback();
     }
   });
+  thread_->join();
+  private_->socks5_server.reset();
+  thread_.reset();
 }
 
 size_t Worker::currentConnections() const {
@@ -62,17 +76,16 @@ size_t Worker::currentConnections() const {
 
 void Worker::WorkFunc() {
   asio::error_code ec;
-  if (!SetThreadName(thread_.native_handle(), "background")) {
-    PLOG(WARNING) << "failed to set thread name";
-  }
-  if (!SetThreadPriority(thread_.native_handle(), ThreadPriority::BACKGROUND)) {
-    PLOG(WARNING) << "failed to set thread priority";
-  }
-  io_context_.run(ec);
+  VLOG(2) << "background thread started";
 
+  work_guard_ = std::make_unique<asio::io_context::work>(io_context_);
+  io_context_.run(ec);
   if (ec) {
     LOG(ERROR) << "io_context failed due to: " << ec;
   }
+  io_context_.reset();
+
+  VLOG(2) << "background thread stopped";
 }
 
 void Worker::on_resolve_local(asio::error_code ec,
@@ -83,6 +96,7 @@ void Worker::on_resolve_local(asio::error_code ec,
     if (callback) {
       callback(ec);
     }
+    work_guard_.reset();
     return;
   }
   endpoint_ = results->endpoint();
@@ -101,6 +115,7 @@ void Worker::on_resolve_remote(asio::error_code ec,
                                std::function<void(asio::error_code)> callback) {
   if (ec) {
     LOG(WARNING) << "remote resolved failed due to: " << ec;
+    work_guard_.reset();
     if (callback) {
       callback(ec);
     }
@@ -108,16 +123,17 @@ void Worker::on_resolve_remote(asio::error_code ec,
   }
   remote_endpoint_ = results->endpoint();
 
-  private_->socks5_server = std::make_unique<Socks5Server>(remote_endpoint_);
+  private_->socks5_server = std::make_unique<Socks5Server>(io_context_,
+                                                           remote_endpoint_);
 
   private_->socks5_server->listen(endpoint_, SOMAXCONN, ec);
+  endpoint_ = private_->socks5_server->endpoint();
 
   if (ec) {
     private_->socks5_server->stop();
-    private_->socks5_server->join();
-    private_->socks5_server.reset();
   }
 
+  work_guard_.reset();
   if (callback) {
     callback(ec);
   }

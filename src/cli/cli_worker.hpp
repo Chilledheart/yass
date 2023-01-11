@@ -45,11 +45,12 @@ class Worker {
   std::unique_ptr<asio::io_context::work> work_guard_;
   /// used to resolve local and remote endpoint
   asio::ip::tcp::resolver resolver_;
+  /// used to do io in another thread
+  std::unique_ptr<std::thread> thread_;
 
   WorkerPrivate *private_;
   asio::ip::tcp::endpoint endpoint_;
   asio::ip::tcp::endpoint remote_endpoint_;
-  std::thread thread_;
 };
 
 #endif  // YASS_CLI_WORKER

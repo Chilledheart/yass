@@ -24,8 +24,6 @@ ABSL_DECLARE_FLAG(std::string, local_host);
 ABSL_DECLARE_FLAG(int32_t, local_port);
 ABSL_DECLARE_FLAG(std::string, password);
 
-ABSL_DECLARE_FLAG(int32_t, threads);
-
 namespace config {
 bool ReadConfig();
 bool SaveConfig();
