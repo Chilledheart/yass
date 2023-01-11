@@ -8,9 +8,17 @@
 #include "config/config.hpp"
 #include "core/asio.hpp"
 #include "core/cipher.hpp"
+#include "core/utils.hpp"
 
-#define MAX_DOWNSTREAM_DEPS 1
-#define MAX_UPSTREAM_DEPS 1
+// from spdy_session.h
+// If more than this many bytes have been read or more than that many
+// milliseconds have passed, return ERR_IO_PENDING from ReadLoop.
+const int kYieldAfterBytesRead = 32 * 1024;
+const int kYieldAfterDurationMilliseconds = 20;
+
+// 32K / 4k = 8
+#define MAX_DOWNSTREAM_DEPS 8
+#define MAX_UPSTREAM_DEPS 8
 
 namespace ss {
 
@@ -181,11 +189,20 @@ void SsConnection::WriteStream() {
 }
 
 void SsConnection::WriteStreamInPipe() {
-  size_t bytes_transferred = 0;
   asio::error_code ec;
+  size_t bytes_transferred = 0;
+  uint64_t next_ticks = GetMonotonicTime() +
+    kYieldAfterDurationMilliseconds * 1000 * 1000;
 
   /* recursively send the remainings */
   while (!closed_) {
+    if (GetMonotonicTime() > next_ticks) {
+      break;
+    }
+    if (bytes_transferred > kYieldAfterBytesRead) {
+      break;
+    }
+
     bool eof = false;
     auto buf = GetNextDownstreamBuf(ec);
     size_t read = buf ? buf->length() : 0;
@@ -264,9 +281,18 @@ std::shared_ptr<IOBuf> SsConnection::GetNextDownstreamBuf(asio::error_code &ec) 
 
 void SsConnection::WriteUpstreamInPipe() {
   asio::error_code ec;
+  size_t bytes_transferred = 0U;
+  uint64_t next_ticks = GetMonotonicTime() +
+    kYieldAfterDurationMilliseconds * 1000 * 1000;
 
   /* recursively send the remainings */
   while (!channel_->eof()) {
+    if (bytes_transferred > kYieldAfterBytesRead) {
+      break;
+    }
+    if (GetMonotonicTime() > next_ticks) {
+      break;
+    }
     bool eof = false;
     size_t read;
     std::shared_ptr<IOBuf> buf = GetNextUpstreamBuf(ec);
@@ -290,6 +316,7 @@ void SsConnection::WriteUpstreamInPipe() {
       }
     } while(false);
     buf->trimStart(written);
+    bytes_transferred += written;
     VLOG(3) << "Connection (server) " << connection_id()
             << " upstream: sent request (pipe): " << written << " bytes"
             << " ec: " << ec << " and data to write: "

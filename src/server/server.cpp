@@ -67,20 +67,17 @@ int main(int argc, const char* argv[]) {
   }
   asio::ip::tcp::endpoint endpoint = endpoints->endpoint();
 
-  // not used
-  asio::ip::tcp::endpoint remote_endpoint = endpoints->endpoint();
-
   LOG(WARNING) << "tcp server listening at " << endpoint;
 
-  SsServer server(remote_endpoint);
+  SsServer server(io_context);
   server.listen(endpoint, SSMAXCONN, ec);
   if (ec) {
     LOG(ERROR) << "listen failed due to: " << ec;
     server.stop();
-    server.join();
     work_guard.reset();
     return -1;
   }
+  endpoint = server.endpoint();
 
   asio::signal_set signals(io_context);
   signals.add(SIGINT, ec);
@@ -89,7 +86,6 @@ int main(int argc, const char* argv[]) {
 #endif
   signals.async_wait([&](asio::error_code /*error*/, int /*signal_number*/) {
     server.stop();
-    server.join();
     work_guard.reset();
   });
 
