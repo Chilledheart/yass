@@ -467,8 +467,8 @@ void Socks5Connection::WriteMethodSelect() {
   asio::async_write(
       socket_,
       asio::buffer(&method_select_reply_, sizeof(method_select_reply_)),
-      [self](asio::error_code error, size_t bytes_transferred) {
-        return Socks5Connection::ProcessSentData(self, nullptr, error,
+      [self](asio::error_code ec, size_t bytes_transferred) {
+        return Socks5Connection::ProcessSentData(self, nullptr, ec,
                                                  bytes_transferred);
       });
 }
@@ -481,8 +481,8 @@ void Socks5Connection::WriteHandshake() {
       self->SetState(state_stream);
       asio::async_write(
           socket_, s5_reply_.buffers(),
-          [self](asio::error_code error, size_t bytes_transferred) {
-            return Socks5Connection::ProcessSentData(self, nullptr, error,
+          [self](asio::error_code ec, size_t bytes_transferred) {
+            return Socks5Connection::ProcessSentData(self, nullptr, ec,
                                                      bytes_transferred);
           });
       break;
@@ -490,8 +490,8 @@ void Socks5Connection::WriteHandshake() {
       self->SetState(state_stream);
       asio::async_write(
           socket_, s4_reply_.buffers(),
-          [self](asio::error_code error, size_t bytes_transferred) {
-            return Socks5Connection::ProcessSentData(self, nullptr, error,
+          [self](asio::error_code ec, size_t bytes_transferred) {
+            return Socks5Connection::ProcessSentData(self, nullptr, ec,
                                                      bytes_transferred);
           });
       break;
@@ -522,8 +522,8 @@ void Socks5Connection::WriteStream(std::shared_ptr<IOBuf> buf) {
   DCHECK_EQ(CurrentState(), state_stream);
   DCHECK(buf);
   asio::async_write(socket_, const_buffer(*buf),
-      [self, buf](asio::error_code error, size_t bytes_transferred) {
-        return Socks5Connection::ProcessSentData(self, buf, error,
+      [self, buf](asio::error_code ec, size_t bytes_transferred) {
+        return Socks5Connection::ProcessSentData(self, buf, ec,
                                                  bytes_transferred);
       });
 }
@@ -538,7 +538,7 @@ asio::error_code Socks5Connection::PerformCmdOpsV5(
     ss_request_ = std::make_unique<ss::request>(request->endpoint());
   }
 
-  asio::error_code error;
+  asio::error_code ec;
 
   switch (request->command()) {
     case socks5::cmd_connect: {
@@ -562,10 +562,10 @@ asio::error_code Socks5Connection::PerformCmdOpsV5(
                    << " not supported command 0x" << std::hex
                    << static_cast<int>(request->command()) << std::dec;
       reply->mutable_status() = socks5::reply::request_failed_cmd_not_supported;
-      error = asio::error::invalid_argument;
+      ec = asio::error::invalid_argument;
       break;
   }
-  return error;
+  return ec;
 }
 
 asio::error_code Socks5Connection::PerformCmdOpsV4(
@@ -578,7 +578,7 @@ asio::error_code Socks5Connection::PerformCmdOpsV4(
     ss_request_ = std::make_unique<ss::request>(request->endpoint());
   }
 
-  asio::error_code error;
+  asio::error_code ec;
 
   switch (request->command()) {
     case socks4::cmd_connect: {
@@ -588,11 +588,11 @@ asio::error_code Socks5Connection::PerformCmdOpsV4(
         // TBD
         LOG(WARNING) << "Connection (client) " << connection_id()
                      << " not supported protocol socks4a";
-        error = asio::error::invalid_argument;
+        ec = asio::error::invalid_argument;
       }
       endpoint = asio::ip::tcp::endpoint(asio::ip::tcp::v4(), 0);
 
-      if (error) {
+      if (ec) {
         reply->mutable_status() = socks4::reply::request_failed;
       } else {
         reply->set_endpoint(endpoint);
@@ -610,16 +610,14 @@ asio::error_code Socks5Connection::PerformCmdOpsV4(
                    << " not supported command 0x" << std::hex
                    << static_cast<int>(request->command()) << std::dec;
       reply->mutable_status() = socks4::reply::request_failed;
-      error = asio::error::invalid_argument;
+      ec = asio::error::invalid_argument;
       break;
   }
-  return error;
+  return ec;
 }
 
 asio::error_code Socks5Connection::PerformCmdOpsHttp() {
   ss_request_ = std::make_unique<ss::request>(http_host_, http_port_);
-
-  asio::error_code error;
 
   ByteRange req(ss_request_->data(), ss_request_->length());
   OnCmdConnect(IOBuf::copyBuffer(req));
