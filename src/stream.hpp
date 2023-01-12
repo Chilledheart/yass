@@ -34,9 +34,7 @@ class stream {
   }
 
   ~stream() {
-    if (!eof_) {
-      close();
-    }
+    close();
   }
 
   void connect() {
@@ -44,6 +42,7 @@ class stream {
     asio::error_code ec;
     socket_.open(endpoint_.protocol(), ec);
     if (ec) {
+      closed_ = true;
       channel->disconnected(ec);
       return;
     }
