@@ -495,6 +495,13 @@ void Socks5Connection::ReadStream() {
   socket_.async_read_some(asio::null_buffers(),
       [self](asio::error_code ec, size_t bytes_transferred) {
         self->downstream_read_inprogress_ = false;
+        if (ec) {
+          self->ProcessReceivedData(nullptr, ec, bytes_transferred);
+          return;
+        }
+        if (!self->downstream_readable_) {
+          return;
+        }
         std::shared_ptr<IOBuf> plainbuf = IOBuf::create(SOCKET_BUF_SIZE);
         plainbuf->reserve(0, SOCKET_BUF_SIZE);
         if (!ec) {

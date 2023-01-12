@@ -136,7 +136,8 @@ void SsConnection::ResolveDns(std::shared_ptr<IOBuf> buf) {
         if (!ec) {
           self->remote_endpoint_ = results->endpoint();
           VLOG(3) << "Connection (server) " << self->connection_id()
-                  << " resolved address: " << self->request_.domain_name();
+                  << " resolved address: " << self->request_.domain_name()
+                  << " to: " << self->remote_endpoint_;
           self->SetState(state_stream);
           self->OnConnect();
           self->ProcessReceivedData(buf, ec, buf->length());
@@ -154,6 +155,13 @@ void SsConnection::ReadStream() {
       [self](asio::error_code ec,
              std::size_t bytes_transferred) {
         self->downstream_read_inprogress_ = false;
+        if (ec) {
+          self->ProcessReceivedData(nullptr, ec, bytes_transferred);
+          return;
+        }
+        if (!self->downstream_readable_) {
+          return;
+        }
         std::shared_ptr<IOBuf> buf{IOBuf::create(SOCKET_BUF_SIZE).release()};
         buf->reserve(0, SOCKET_BUF_SIZE);
         if (!ec) {
