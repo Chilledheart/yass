@@ -425,6 +425,10 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf,
       case state_error:
         ec = std::make_error_code(std::errc::bad_message);
         break;
+      default:
+        LOG(FATAL) << "Connection (client) " << connection_id()
+                   << " bad state 0x" << std::hex
+                   << static_cast<int>(CurrentState()) << std::dec;
     };
   }
 #if 1
@@ -456,6 +460,10 @@ void SsConnection::ProcessSentData(asio::error_code ec,
       case state_error:
         ec = std::make_error_code(std::errc::bad_message);
         break;
+      default:
+        LOG(FATAL) << "Connection (client) " << connection_id()
+                   << " bad state 0x" << std::hex
+                   << static_cast<int>(CurrentState()) << std::dec;
     }
   }
 
