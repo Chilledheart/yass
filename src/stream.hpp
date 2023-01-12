@@ -42,7 +42,14 @@ class stream {
   void connect() {
     Channel* channel = channel_;
     asio::error_code ec;
+    socket_.open(endpoint_.protocol(), ec);
+    if (ec) {
+      channel->disconnected(ec);
+      return;
+    }
     SetTCPFastOpenConnect(socket_.native_handle(), ec);
+    socket_.native_non_blocking(true, ec);
+    socket_.non_blocking(true, ec);
     connect_timer_.expires_from_now(
         std::chrono::milliseconds(absl::GetFlag(FLAGS_connect_timeout)));
     connect_timer_.async_wait([this, channel](asio::error_code ec) {
@@ -51,8 +58,6 @@ class stream {
     socket_.async_connect(endpoint_, [this, channel](asio::error_code ec) {
       on_connect(channel, ec);
     });
-    socket_.native_non_blocking(true, ec);
-    socket_.non_blocking(true, ec);
   }
 
   bool connected() const { return connected_; }
@@ -185,6 +190,7 @@ class stream {
     SetTCPCongestion(socket_.native_handle(), ec);
     SetTCPConnectionTimeout(socket_.native_handle(), ec);
     SetTCPUserTimeout(socket_.native_handle(), ec);
+    SetTCPKeepAlive(socket_.native_handle(), ec);
     SetSocketLinger(&socket_, ec);
     SetSocketSndBuffer(&socket_, ec);
     SetSocketRcvBuffer(&socket_, ec);

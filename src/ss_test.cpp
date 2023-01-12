@@ -23,8 +23,6 @@
 
 #include "test_util.hpp"
 
-using ::testing::StartsWith;
-
 namespace {
 
 static IOBuf content_buffer;
@@ -66,7 +64,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
       [self](asio::error_code ec, size_t bytes_transferred) {
         if (ec || bytes_transferred != content_buffer.length()) {
           LOG(WARNING) << "Connection (content-provider) " << self->connection_id()
-                       << " Failed to transfer data: " << ec.message();
+                       << " Failed to transfer data: " << ec;
         } else {
           VLOG(2) << "Connection (content-provider) " << self->connection_id()
                   << " written: " << bytes_transferred << " bytes";
@@ -217,7 +215,7 @@ class SsEndToEndTest : public ::testing::Test {
     const char* buffer = reinterpret_cast<const char*>(response_buf.data());
     size_t buffer_length = response_buf.length();
     ASSERT_GE(buffer_length, sizeof(kConnectResponse) - 1);
-    ASSERT_THAT(buffer, StartsWith(kConnectResponse));
+    ASSERT_THAT(buffer, ::testing::StartsWith(kConnectResponse));
     buffer += sizeof(kConnectResponse) - 1;
     buffer_length -= sizeof(kConnectResponse) - 1;
     ASSERT_EQ(buffer_length, content_buffer.length());
