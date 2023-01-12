@@ -177,7 +177,10 @@ void SsConnection::ReadStream() {
           return;
         }
         buf->append(bytes_transferred);
-        self->ProcessReceivedData(buf, ec, bytes_transferred);
+        auto plainbuf = self->DecryptData(buf);
+        if (!plainbuf->empty()) {
+          self->ProcessReceivedData(plainbuf, ec, plainbuf->length());
+        }
       });
 }
 
@@ -232,10 +235,6 @@ void SsConnection::WriteStreamInPipe() {
     } while(false);
     buf->trimStart(written);
     bytes_transferred += written;
-    VLOG(3) << "Connection (server) " << connection_id()
-            << " sent data (pipe): " << written << " bytes"
-            << " ec: " << ec << " and bytes to write: "
-            << buf->length();
     // continue to resume
     if (buf->empty()) {
       downstream_.pop_front();
@@ -413,10 +412,7 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf,
         /* fall through */
       case state_stream:
         if (bytes_transferred) {
-          std::shared_ptr<IOBuf> plainbuf = DecryptData(buf);
-          if (!plainbuf->empty()) {
-            OnStreamRead(plainbuf);
-          }
+          OnStreamRead(buf);
         }
         if (downstream_readable_) {
           ReadStream();  // continously read
@@ -502,7 +498,7 @@ void SsConnection::OnStreamWrite() {
   }
 
   /* disable queue limit to re-enable upstream read */
-  if (downstream_.size() < MAX_DOWNSTREAM_DEPS && !upstream_readable_) {
+  if (channel_->connected() && downstream_.size() < MAX_DOWNSTREAM_DEPS && !upstream_readable_) {
     VLOG(2) << "Connection (server) " << connection_id()
             << " re-enabling reading from upstream";
     upstream_readable_ = true;

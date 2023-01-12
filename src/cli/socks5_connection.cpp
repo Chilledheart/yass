@@ -502,11 +502,11 @@ void Socks5Connection::ReadStream() {
         if (!self->downstream_readable_) {
           return;
         }
-        std::shared_ptr<IOBuf> plainbuf = IOBuf::create(SOCKET_BUF_SIZE);
-        plainbuf->reserve(0, SOCKET_BUF_SIZE);
+        std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
+        buf->reserve(0, SOCKET_BUF_SIZE);
         if (!ec) {
           do {
-            bytes_transferred = self->socket_.read_some(mutable_buffer(*plainbuf), ec);
+            bytes_transferred = self->socket_.read_some(mutable_buffer(*buf), ec);
             if (ec == asio::error::interrupted) {
               continue;
             }
@@ -516,7 +516,8 @@ void Socks5Connection::ReadStream() {
           self->ReadStream();
           return;
         }
-        self->ProcessReceivedData(plainbuf, ec, bytes_transferred);
+        buf->append(bytes_transferred);
+        self->ProcessReceivedData(buf, ec, bytes_transferred);
       });
 }
 
@@ -623,10 +624,6 @@ void Socks5Connection::WriteStreamInPipe() {
     } while(false);
     buf->trimStart(written);
     bytes_transferred += written;
-    VLOG(3) << "Connection (client) " << connection_id()
-            << " sent data (pipe): " << written << " bytes"
-            << " ec: " << ec << " and bytes to write: "
-            << buf->length();
     // continue to resume
     if (buf->empty()) {
       downstream_.pop_front();
@@ -900,10 +897,8 @@ void Socks5Connection::ProcessReceivedData(
         WriteHandshake();
         VLOG(3) << "Connection (client) " << connection_id()
                 << " socks5 handshake finished";
-        if (buf->length()) {
-          ProcessReceivedData(buf, ec, buf->length());
-        } else {
-          ReadStream();  // continously read
+        if (CurrentState() == state_stream) {
+          goto handle_stream;
         }
         break;
       case state_socks4_handshake:
@@ -911,10 +906,8 @@ void Socks5Connection::ProcessReceivedData(
         WriteHandshake();
         VLOG(3) << "Connection (client) " << connection_id()
                 << " socks4 handshake finished";
-        if (buf->length()) {
-          ProcessReceivedData(buf, ec, buf->length());
-        } else {
-          ReadStream();  // continously read
+        if (CurrentState() == state_stream) {
+          goto handle_stream;
         }
         break;
       case state_http_handshake:
@@ -922,15 +915,15 @@ void Socks5Connection::ProcessReceivedData(
         WriteHandshake();
         VLOG(3) << "Connection (client) " << connection_id()
                 << " http handshake finished";
-        if (buf->length()) {
-          ProcessReceivedData(buf, ec, buf->length());
-        } else {
-          ReadStream();  // continously read
+        if (CurrentState() == state_stream) {
+          goto handle_stream;
         }
         break;
       case state_stream:
-        DCHECK_NE(bytes_transferred, 0u);
-        OnStreamRead(buf);
+      handle_stream:
+        if (buf->length()) {
+          OnStreamRead(buf);
+        }
         ReadStream();  // continously read
         break;
       case state_error:
@@ -1005,7 +998,6 @@ void Socks5Connection::OnConnect() {
   // create lazy
   channel_ = std::make_unique<stream>(*io_context_, remote_endpoint_, this);
   channel_->connect();
-  upstream_writable_ = false;
 }
 
 void Socks5Connection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
@@ -1030,7 +1022,7 @@ void Socks5Connection::OnStreamWrite() {
   }
 
   /* disable queue limit to re-enable upstream read */
-  if (downstream_.size() < MAX_DOWNSTREAM_DEPS && !upstream_readable_) {
+  if (channel_->connected() && downstream_.size() < MAX_DOWNSTREAM_DEPS && !upstream_readable_) {
     VLOG(2) << "Connection (client) " << connection_id()
             << " re-enabling reading from upstream";
     upstream_readable_ = true;
