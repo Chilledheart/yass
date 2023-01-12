@@ -143,7 +143,17 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
   void WriteHandshake();
   /// write to stream
   /// \param buf the buffer used to write to socket
-  void WriteStream(std::shared_ptr<IOBuf> buf);
+  void WriteStream();
+
+  /// Write remaining buffers to stream
+  void WriteStreamInPipe();
+  /// Get next remaining buffer to stream
+  std::shared_ptr<IOBuf> GetNextDownstreamBuf(asio::error_code &ec);
+
+  /// Write remaining buffers to channel
+  void WriteUpstreamInPipe();
+  /// Get next remaining buffer to channel
+  std::shared_ptr<IOBuf> GetNextUpstreamBuf(asio::error_code &ec);
 
   /// dispatch the command to delegate
   /// \param command command type
@@ -163,23 +173,17 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
   asio::error_code PerformCmdOpsHttp();
 
   /// Process the recevied data
-  /// \param self pointer to self
   /// \param buf pointer to received buffer
   /// \param error the error state
   /// \param bytes_transferred transferred bytes
-  static void ProcessReceivedData(scoped_refptr<Socks5Connection> self,
-                                  std::shared_ptr<IOBuf> buf,
-                                  asio::error_code error,
-                                  size_t bytes_transferred);
+  void ProcessReceivedData(std::shared_ptr<IOBuf> buf,
+                           asio::error_code error,
+                           size_t bytes_transferred);
   /// Process the sent data
-  /// \param self pointer to self
-  /// \param buf pointer to sent buffer
   /// \param error the error state
   /// \param bytes_transferred transferred bytes
-  static void ProcessSentData(scoped_refptr<Socks5Connection> self,
-                              std::shared_ptr<IOBuf> buf,
-                              asio::error_code error,
-                              size_t bytes_transferred);
+  void ProcessSentData(asio::error_code error,
+                       size_t bytes_transferred);
   /// state machine
   state state_;
 
@@ -226,6 +230,16 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
   /// copy of upstream request
   std::unique_ptr<ss::request> ss_request_;
 
+  std::string remote_domain() const {
+    std::stringstream ss;
+    if (ss_request_->address_type() == ss::domain) {
+      ss << ss_request_->domain_name() << ":" << ss_request_->port();
+    } else {
+      ss << ss_request_->endpoint();
+    }
+    return ss.str();
+  }
+
  private:
   /// perform cmd connect request
   void OnCmdConnect(std::shared_ptr<IOBuf> buf);
@@ -237,7 +251,13 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
   void OnStreamRead(std::shared_ptr<IOBuf> buf);
 
   /// handle the written data from stream write event (downstream)
-  void OnStreamWrite(std::shared_ptr<IOBuf> buf);
+  void OnStreamWrite();
+
+  /// enable stream read
+  void EnableStreamRead();
+
+  /// disable stream read
+  void DisableStreamRead();
 
   /// handle with disconnect event (downstream)
   void OnDisconnect(asio::error_code error);
@@ -258,14 +278,18 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
   std::deque<std::shared_ptr<IOBuf>> upstream_;
   /// the flag to mark current write
   bool upstream_writable_ = false;
+  /// the flag to mark current read
+  bool upstream_readable_ = false;
 
   /// the upstream the service bound with
   std::unique_ptr<stream> channel_;
 
   /// the queue to write downstream
   std::deque<std::shared_ptr<IOBuf>> downstream_;
-  /// the flag to mark current write
-  bool downstream_writable_ = false;
+  /// the flag to mark current read
+  bool downstream_readable_ = false;
+  /// the flag to mark current read in progress
+  bool downstream_read_inprogress_ = false;
 
  private:
   /// handle with connnect event (upstream)

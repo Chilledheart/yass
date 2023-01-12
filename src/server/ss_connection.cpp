@@ -10,11 +10,13 @@
 #include "core/cipher.hpp"
 #include "core/utils.hpp"
 
+namespace {
 // from spdy_session.h
 // If more than this many bytes have been read or more than that many
 // milliseconds have passed, return ERR_IO_PENDING from ReadLoop.
 const int kYieldAfterBytesRead = 32 * 1024;
 const int kYieldAfterDurationMilliseconds = 20;
+} // namespace
 
 // 32K / 4k = 8
 #define MAX_DOWNSTREAM_DEPS 8
@@ -152,11 +154,11 @@ void SsConnection::ReadStream() {
       [self](asio::error_code ec,
              std::size_t bytes_transferred) {
         self->downstream_read_inprogress_ = false;
-        std::shared_ptr<IOBuf> cipherbuf{IOBuf::create(SOCKET_BUF_SIZE).release()};
-        cipherbuf->reserve(0, SOCKET_BUF_SIZE);
+        std::shared_ptr<IOBuf> buf{IOBuf::create(SOCKET_BUF_SIZE).release()};
+        buf->reserve(0, SOCKET_BUF_SIZE);
         if (!ec) {
           do {
-            bytes_transferred = self->socket_.read_some(mutable_buffer(*cipherbuf), ec);
+            bytes_transferred = self->socket_.read_some(mutable_buffer(*buf), ec);
             if (ec == asio::error::interrupted) {
               continue;
             }
@@ -166,12 +168,7 @@ void SsConnection::ReadStream() {
           self->ReadStream();
           return;
         }
-        cipherbuf->append(bytes_transferred);
-        std::shared_ptr<IOBuf> buf;
-        if (!ec) {
-          buf = self->DecryptData(cipherbuf);
-          bytes_transferred = buf->length();
-        }
+        buf->append(bytes_transferred);
         self->ProcessReceivedData(buf, ec, bytes_transferred);
       });
 }
@@ -370,7 +367,14 @@ std::shared_ptr<IOBuf> SsConnection::GetNextUpstreamBuf(asio::error_code &ec) {
     return nullptr;
   }
   rbytes_transferred_ += read;
-  upstream_.push_back(DecryptData(buf));
+  auto plainbuf = DecryptData(buf);
+  if (!plainbuf->empty()) {
+    upstream_.push_back(plainbuf);
+  }
+  if (upstream_.empty()) {
+    ec = asio::error::try_again;
+    return nullptr;
+  }
   return upstream_.front();
 }
 
@@ -402,7 +406,10 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf,
         /* fall through */
       case state_stream:
         if (bytes_transferred) {
-          OnStreamRead(buf);
+          std::shared_ptr<IOBuf> plainbuf = DecryptData(buf);
+          if (!plainbuf->empty()) {
+            OnStreamRead(plainbuf);
+          }
         }
         if (downstream_readable_) {
           ReadStream();  // continously read
@@ -505,6 +512,11 @@ void SsConnection::OnDisconnect(asio::error_code ec) {
   size_t bytes = 0;
   for (auto buf : downstream_)
     bytes += buf->length();
+#ifdef WIN32
+  if (ec.value() == WSAESHUTDOWN) {
+    ec = asio::error_code();
+  }
+#endif
   LOG(INFO) << "Connection (server) " << connection_id()
             << " closed: " << ec << " remaining: " << bytes << " bytes";
   close();
