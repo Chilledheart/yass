@@ -232,10 +232,6 @@ void SsConnection::WriteStreamInPipe() {
     } while(false);
     buf->trimStart(written);
     bytes_transferred += written;
-    VLOG(3) << "Connection (server) " << connection_id()
-            << " sent data (pipe): " << written << " bytes"
-            << " ec: " << ec << " and bytes to write: "
-            << buf->length();
     // continue to resume
     if (buf->empty()) {
       downstream_.pop_front();
@@ -502,7 +498,7 @@ void SsConnection::OnStreamWrite() {
   }
 
   /* disable queue limit to re-enable upstream read */
-  if (downstream_.size() < MAX_DOWNSTREAM_DEPS && !upstream_readable_) {
+  if (channel_->connected() && downstream_.size() < MAX_DOWNSTREAM_DEPS && !upstream_readable_) {
     VLOG(2) << "Connection (server) " << connection_id()
             << " re-enabling reading from upstream";
     upstream_readable_ = true;

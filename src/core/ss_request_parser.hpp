@@ -91,7 +91,8 @@ class request_parser {
 
         if (req.address_type() == domain) {
           VLOG(3) << "ss: adt: 0x" << std::hex << (int)req.address_type()
-                  << std::dec << " addr: " << req.domain_name();
+                  << std::dec << " addr: " << req.domain_name()
+                  << " port: " << req.port();;
         } else {
           VLOG(3) << "ss: adt: 0x" << std::hex << (int)req.address_type()
                   << std::dec << " addr: " << req.endpoint();

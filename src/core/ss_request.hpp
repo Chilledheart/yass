@@ -102,16 +102,19 @@ class request {
 
   uint16_t port() const {
     const uint16_t* port =
-        reinterpret_cast<const uint16_t*>(&atyp_req_.port_high_byte);
+        reinterpret_cast<const uint16_t*>(&atyp_req_.address_type +
+                                          address_type_size() -
+                                          sizeof(uint16_t));
     return ntohs(*port);
   }
 
   uint8_t& port_high_byte() {
-    return atyp_req_.port_high_byte;
+    return *(&atyp_req_.address_type + address_type_size() - sizeof(uint16_t));
   }
 
   uint8_t& port_low_byte() {
-    return atyp_req_.port_low_byte;
+    return *(&atyp_req_.address_type + address_type_size()
+             - sizeof(uint16_t) + sizeof(uint8_t));
   }
 
  private:
