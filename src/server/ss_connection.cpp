@@ -177,7 +177,10 @@ void SsConnection::ReadStream() {
           return;
         }
         buf->append(bytes_transferred);
-        self->ProcessReceivedData(buf, ec, bytes_transferred);
+        auto plainbuf = self->DecryptData(buf);
+        if (!plainbuf->empty()) {
+          self->ProcessReceivedData(plainbuf, ec, plainbuf->length());
+        }
       });
 }
 
@@ -409,10 +412,7 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf,
         /* fall through */
       case state_stream:
         if (bytes_transferred) {
-          std::shared_ptr<IOBuf> plainbuf = DecryptData(buf);
-          if (!plainbuf->empty()) {
-            OnStreamRead(plainbuf);
-          }
+          OnStreamRead(buf);
         }
         if (downstream_readable_) {
           ReadStream();  // continously read
