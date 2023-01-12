@@ -362,7 +362,6 @@ std::shared_ptr<IOBuf> SsConnection::GetNextUpstreamBuf(asio::error_code &ec) {
     }
   } while(false);
   buf->append(read);
-  rbytes_transferred_ += read;
   if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
     /* safe to return, socket will handle this error later */
     ProcessReceivedData(nullptr, ec, read);

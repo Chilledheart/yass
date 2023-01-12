@@ -760,7 +760,6 @@ std::shared_ptr<IOBuf> Socks5Connection::GetNextUpstreamBuf(asio::error_code &ec
     }
   } while(false);
   buf->append(read);
-  rbytes_transferred_ += read;
   if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
     /* safe to return, socket will handle this error later */
     ProcessReceivedData(nullptr, ec, read);
@@ -773,6 +772,7 @@ std::shared_ptr<IOBuf> Socks5Connection::GetNextUpstreamBuf(asio::error_code &ec
     return nullptr;
   }
   rbytes_transferred_ += read;
+  total_rx_bytes += read;
   upstream_.push_back(EncryptData(buf));
   return upstream_.front();
 }
