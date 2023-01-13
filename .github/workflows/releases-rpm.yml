@@ -145,4 +145,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} yass*.rpm
+          gh release upload --clobber ${{ github.event.release.tag_name }} yass*.rpm
