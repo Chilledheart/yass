@@ -304,8 +304,7 @@ void SsConnection::WriteUpstreamInPipe() {
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
       eof = true;
     } else if (ec) {
-      /* safe to return, socket will handle this error later */
-      ProcessReceivedData(nullptr, ec, read);
+      /* safe to return, channel will handle this error */
       return;
     }
     if (!read) {
@@ -502,7 +501,8 @@ void SsConnection::OnStreamWrite() {
     VLOG(2) << "Connection (server) " << connection_id()
             << " re-enabling reading from upstream";
     upstream_readable_ = true;
-    channel_->enable_read();
+    scoped_refptr<SsConnection> self(this);
+    channel_->enable_read([self]() {});
   }
 }
 
@@ -559,7 +559,8 @@ void SsConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
   }
   if (!upstream_.empty() && upstream_writable_) {
     upstream_writable_ = false;
-    channel_->start_write(upstream_.front());
+    scoped_refptr<SsConnection> self(this);
+    channel_->start_write(upstream_.front(), [self](){});
   }
 }
 
@@ -567,9 +568,10 @@ void SsConnection::connected() {
   VLOG(2) << "Connection (server) " << connection_id()
           << " remote: established upstream connection with: "
           << remote_domain();
+  scoped_refptr<SsConnection> self(this);
   upstream_readable_ = true;
   upstream_writable_ = true;
-  channel_->start_read();
+  channel_->start_read([self](){});
   OnUpstreamWriteFlush();
 }
 

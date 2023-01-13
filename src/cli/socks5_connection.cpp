@@ -701,7 +701,6 @@ void Socks5Connection::WriteUpstreamInPipe() {
       eof = true;
     } else if (ec) {
       /* safe to return, socket will handle this error later */
-      ProcessReceivedData(nullptr, ec, read);
       return;
     }
     if (!read) {
@@ -1026,7 +1025,8 @@ void Socks5Connection::OnStreamWrite() {
     VLOG(2) << "Connection (client) " << connection_id()
             << " re-enabling reading from upstream";
     upstream_readable_ = true;
-    channel_->enable_read();
+    scoped_refptr<Socks5Connection> self(this);
+    channel_->enable_read([self]() {});
   }
 }
 
@@ -1085,7 +1085,8 @@ void Socks5Connection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
   }
   if (!upstream_.empty() && upstream_writable_) {
     upstream_writable_ = false;
-    channel_->start_write(upstream_.front());
+    scoped_refptr<Socks5Connection> self(this);
+    channel_->start_write(upstream_.front(), [self](){});
   }
 }
 
@@ -1093,9 +1094,10 @@ void Socks5Connection::connected() {
   VLOG(3) << "Connection (client) " << connection_id()
           << " remote: established upstream connection with: "
           << remote_domain();
+  scoped_refptr<Socks5Connection> self(this);
   upstream_readable_ = true;
   upstream_writable_ = true;
-  channel_->start_read();
+  channel_->start_read([self]() {});
   OnUpstreamWriteFlush();
 }
 

@@ -65,30 +65,36 @@ class stream {
 
   void disable_read() { read_enabled_ = false; }
 
-  void enable_read() {
+  void enable_read(std::function<void()> callback) {
     if (!read_enabled_) {
       read_enabled_ = true;
       if (!read_inprogress_) {
-        start_read();
+        start_read(callback);
       }
     }
   }
 
-  void start_read() {
+  void start_read(std::function<void()> callback) {
     DCHECK(read_enabled_);
     DCHECK(!read_inprogress_);
     Channel* channel = channel_;
     read_inprogress_ = true;
 
     socket_.async_read_some(asio::null_buffers(),
-        [this, channel](asio::error_code ec,
+        [this, channel, callback](asio::error_code ec,
                         std::size_t bytes_transferred) {
+          // Cancelled, safe to ignore
+          if (ec == asio::error::operation_aborted) {
+            callback();
+            return;
+          }
           read_inprogress_ = false;
           if (ec) {
-            on_read(channel, nullptr, ec, bytes_transferred);
+            on_read(channel, nullptr, ec, bytes_transferred, callback);
             return;
           }
           if (!read_enabled_) {
+            callback();
             return;
           }
           std::shared_ptr<IOBuf> buf{IOBuf::create(SOCKET_BUF_SIZE).release()};
@@ -102,10 +108,10 @@ class stream {
             } while(false);
           }
           if (ec == asio::error::try_again || ec == asio::error::would_block) {
-            start_read();
+            start_read(callback);
             return;
           }
-          on_read(channel, buf, ec, bytes_transferred);
+          on_read(channel, buf, ec, bytes_transferred, callback);
         });
   }
 
@@ -121,12 +127,17 @@ class stream {
   /// start write routine
   ///
   /// \param buf the shared buffer used in write routine
-  void start_write(std::shared_ptr<IOBuf> buf) {
+  void start_write(std::shared_ptr<IOBuf> buf, std::function<void()> callback) {
     Channel* channel = channel_;
     socket_.async_write_some(asio::null_buffers(),
-        [this, channel, buf](asio::error_code ec, size_t /*bytes_transferred*/) {
+        [this, channel, buf, callback](asio::error_code ec, size_t /*bytes_transferred*/) {
+          // Cancelled, safe to ignore
+          if (ec == asio::error::operation_aborted) {
+            callback();
+            return;
+          }
           if (ec) {
-            on_write(channel, nullptr, ec, 0);
+            on_write(channel, nullptr, ec, 0, callback);
             return;
           }
 
@@ -140,18 +151,18 @@ class stream {
           buf->trimStart(bytes_transferred);
 
           if (ec == asio::error::try_again || ec == asio::error::would_block) {
-            start_write(buf);
+            start_write(buf, callback);
             return;
           }
           if (ec) {
-            on_write(channel, buf, ec, bytes_transferred);
+            on_write(channel, buf, ec, bytes_transferred, callback);
             return;
           }
           if (!buf->empty()) {
-            start_write(buf);
+            start_write(buf, callback);
             return;
           }
-          on_write(channel, buf, ec, bytes_transferred);
+          on_write(channel, buf, ec, bytes_transferred, callback);
     });
   }
 
@@ -213,7 +224,8 @@ class stream {
   void on_read(Channel* channel,
                std::shared_ptr<IOBuf> buf,
                asio::error_code ec,
-               size_t bytes_transferred) {
+               size_t bytes_transferred,
+               std::function<void()> callback) {
     rbytes_transferred_ += bytes_transferred;
     if (buf) {
       buf->append(bytes_transferred);
@@ -224,13 +236,15 @@ class stream {
     }
 
     if (!connected_) {
+      callback();
       return;
     }
 
     if (bytes_transferred) {
       channel->received(buf);
       if (read_enabled_) {
-        start_read();
+        start_read(callback);
+        return;
       }
     }
 
@@ -239,12 +253,14 @@ class stream {
         << endpoint_ << " due to " << ec;
       on_disconnect(channel, ec);
     }
+    callback();
   }
 
   void on_write(Channel* channel,
                 std::shared_ptr<IOBuf> buf,
                 asio::error_code ec,
-                size_t bytes_transferred) {
+                size_t bytes_transferred,
+                std::function<void()> callback) {
     wbytes_transferred_ += bytes_transferred;
 
     if (ec || bytes_transferred == 0) {
@@ -252,6 +268,7 @@ class stream {
     }
 
     if (!connected_) {
+      callback();
       return;
     }
 
@@ -265,6 +282,7 @@ class stream {
         << endpoint_ << " due to " << ec;
       on_disconnect(channel, ec);
     }
+    callback();
   }
 
   void on_disconnect(Channel* channel,
