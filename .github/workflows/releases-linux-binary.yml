@@ -93,7 +93,7 @@ jobs:
           ./scripts/install-sysroot.py --arch ${{ env.ARCH }}
       - name: Change ubuntu mirror
         run: |
-          sudo sed -i 's/azure.archive.ubuntu.com/archive.ubuntu.com/g' /etc/apt/sources.list
+          sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
           sudo apt-get update -qq
       - name: Populate depedencies
         run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build

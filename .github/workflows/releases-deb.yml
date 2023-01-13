@@ -86,24 +86,24 @@ jobs:
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
       - name: Change ubuntu mirror
         run: |
-          sudo sed -i 's/azure.archive.ubuntu.com/archive.ubuntu.com/g' /etc/apt/sources.list
+          sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
           sudo apt-get update -qq
       - name: Populate depedencies (sbuild, upgrade for null-resolver)
         run: |
-          curl -O http://archive.ubuntu.com/ubuntu/pool/main/s/sbuild/sbuild_0.79.0-1ubuntu1_all.deb
-          curl -O http://archive.ubuntu.com/ubuntu/pool/main/s/sbuild/libsbuild-perl_0.79.0-1ubuntu1_all.deb
+          curl -O http://azure.archive.ubuntu.com/ubuntu/pool/main/s/sbuild/sbuild_0.79.0-1ubuntu1_all.deb
+          curl -O http://azure.archive.ubuntu.com/ubuntu/pool/main/s/sbuild/libsbuild-perl_0.79.0-1ubuntu1_all.deb
           sudo apt-get update -qq && sudo apt-get install -f -y $PWD/sbuild*.deb $PWD/libsbuild*.deb
           rm -f *.deb
       - name: Populate depedencies (debian keyring, for debian distributions)
         run: |
-          curl -O http://archive.ubuntu.com/ubuntu/pool/universe/d/debian-keyring/debian-keyring_2020.03.24_all.deb
-          curl -O http://archive.ubuntu.com/ubuntu/pool/universe/d/debian-archive-keyring/debian-archive-keyring_2019.1ubuntu2_all.deb
+          curl -O http://azure.archive.ubuntu.com/ubuntu/pool/universe/d/debian-keyring/debian-keyring_2020.03.24_all.deb
+          curl -O http://azure.archive.ubuntu.com/ubuntu/pool/universe/d/debian-archive-keyring/debian-archive-keyring_2019.1ubuntu2_all.deb
           sudo apt-get update -qq && sudo apt-get install -f -y $PWD/debian*.deb
           rm -f *.deb
       - name: Populate depedencies (debhelper, for correct dh_shlibdeps path)
         run: |
-          curl -O http://archive.ubuntu.com/ubuntu/pool/main/d/debhelper/debhelper_12.10ubuntu1_all.deb
-          curl -O http://archive.ubuntu.com/ubuntu/pool/main/d/debhelper/libdebhelper-perl_12.10ubuntu1_all.deb
+          curl -O http://azure.archive.ubuntu.com/ubuntu/pool/main/d/debhelper/debhelper_12.10ubuntu1_all.deb
+          curl -O http://azure.archive.ubuntu.com/ubuntu/pool/main/d/debhelper/libdebhelper-perl_12.10ubuntu1_all.deb
           sudo apt-get update -qq && sudo apt-get install -f -y $PWD/*.deb
           rm -f *.deb
       - name: Populate depedencies (schroot, debootstrap and ubuntu-dev-tools)
