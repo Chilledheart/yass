@@ -180,6 +180,8 @@ void SsConnection::ReadStream() {
         auto plainbuf = self->DecryptData(buf);
         if (!plainbuf->empty()) {
           self->ProcessReceivedData(plainbuf, ec, plainbuf->length());
+        } else if (self->downstream_readable_) {
+          self->ReadStream();
         }
       });
 }
