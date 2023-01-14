@@ -1002,6 +1002,8 @@ void Socks5Connection::OnConnect() {
 void Socks5Connection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
   // queue limit to downstream read
   if (upstream_.size() >= MAX_UPSTREAM_DEPS && downstream_readable_) {
+    VLOG(2) << "Connection (client) " << connection_id()
+            << " disabling reading";
     DisableStreamRead();
   }
 
@@ -1131,6 +1133,8 @@ void Socks5Connection::sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred
   OnUpstreamWriteFlush();
 
   if (upstream_.size() < MAX_UPSTREAM_DEPS && !downstream_readable_) {
+    VLOG(2) << "Connection (client) " << connection_id()
+            << " re-enabling reading";
     EnableStreamRead();
   }
 }
