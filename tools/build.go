@@ -122,7 +122,7 @@ func InitFlag() {
 	flag.StringVar(&msvcCrtLinkageFlag, "msvc-crt-linkage", getEnv("MSVC_CRT_LINKAGE", "static"), "Set Visual C++ CRT Linkage")
 	flag.BoolVar(&msvcAllowXpFlag, "msvc-allow-xp", getEnvBool("MSVC_ALLOW_XP", false), "Enable Windows XP Build")
 
-	flag.IntVar(&freebsdAbiFlag, "freebsd-abi", 11, "Select FreeBSD ABI")
+	flag.IntVar(&freebsdAbiFlag, "freebsd-abi", getFreebsdABI(11), "Select FreeBSD ABI")
 
 	flag.StringVar(&systemNameFlag, "system", runtime.GOOS, "Specify host system name")
 	flag.StringVar(&sysrootFlag, "sysroot", "", "Specify host sysroot, used in cross-compiling")
