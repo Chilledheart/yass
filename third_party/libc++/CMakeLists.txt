@@ -457,12 +457,17 @@ if (NOT MSVC)
       ${libcxxabi_SOURCES}
       ../libc++abi/trunk/src/cxa_thread_atexit.cpp
     )
-  elseif (MINGW AND COMPILER_GCC)
+  elseif (MINGW AND (COMPILER_GCC OR MINGW_WORKAROUND))
     # mingw gcc doesn't support weak symbol usage in above source code
     # and triggers SIGSEGV/access violence in running
     set(libcxxabi_SOURCES
       ${libcxxabi_SOURCES}
       mingw_cxa_thread_atexit.cpp
+    )
+
+    set(libcxxabi_SOURCES
+      ${libcxxabi_SOURCES}
+      mingw_dso_handle.cpp
     )
   endif()
   set(libcxxabi_DEFINITIONS
