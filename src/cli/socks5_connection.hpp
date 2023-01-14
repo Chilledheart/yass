@@ -299,7 +299,7 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
   void received(std::shared_ptr<IOBuf> buf) override;
 
   /// handle written data for data sent event (upstream)
-  void sent(std::shared_ptr<IOBuf> buf) override;
+  void sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred) override;
 
   /// handle with disconnect event (upstream)
   void disconnected(asio::error_code error) override;

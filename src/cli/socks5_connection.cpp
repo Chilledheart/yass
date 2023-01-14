@@ -1119,9 +1119,9 @@ void Socks5Connection::received(std::shared_ptr<IOBuf> buf) {
   }
 }
 
-void Socks5Connection::sent(std::shared_ptr<IOBuf> buf) {
+void Socks5Connection::sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred) {
   VLOG(3) << "Connection (client) " << connection_id()
-          << " upstream: sent request: " << buf->length() << " bytes.";
+          << " upstream: sent request: " << bytes_transferred << " bytes.";
   DCHECK(!upstream_.empty() && upstream_[0] == buf);
   upstream_.pop_front();
 

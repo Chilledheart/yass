@@ -412,6 +412,7 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf,
         ABSL_FALLTHROUGH_INTENDED;
         /* fall through */
       case state_stream:
+        DCHECK_EQ(bytes_transferred, buf->length());
         if (bytes_transferred) {
           OnStreamRead(buf);
         }
@@ -480,6 +481,8 @@ void SsConnection::OnConnect() {
 void SsConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
   // queue limit to downstream read
   if (upstream_.size() >= MAX_UPSTREAM_DEPS && downstream_readable_) {
+    VLOG(2) << "Connection (server) " << connection_id()
+            << " disabling reading";
     DisableStreamRead();
   }
 
@@ -592,9 +595,9 @@ void SsConnection::received(std::shared_ptr<IOBuf> buf) {
   OnDownstreamWrite(EncryptData(buf));
 }
 
-void SsConnection::sent(std::shared_ptr<IOBuf> buf) {
+void SsConnection::sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred) {
   VLOG(3) << "Connection (server) " << connection_id()
-          << " upstream: sent request: " << buf->length() << " bytes.";
+          << " upstream: sent request: " << bytes_transferred << " bytes.";
   DCHECK(!upstream_.empty() && upstream_[0] == buf);
   upstream_.pop_front();
 
@@ -604,6 +607,8 @@ void SsConnection::sent(std::shared_ptr<IOBuf> buf) {
   OnUpstreamWriteFlush();
 
   if (upstream_.size() < MAX_UPSTREAM_DEPS && !downstream_readable_) {
+    VLOG(2) << "Connection (server) " << connection_id()
+            << " re-enabling reading";
     EnableStreamRead();
   }
 }

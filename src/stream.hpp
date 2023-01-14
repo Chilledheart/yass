@@ -274,7 +274,7 @@ class stream {
 
     if (bytes_transferred) {
       DCHECK_EQ(buf->length(), 0u);
-      channel->sent(buf);
+      channel->sent(buf, bytes_transferred);
     }
 
     if (ec) {
@@ -298,6 +298,10 @@ class stream {
     connected_ = false;
     channel->disconnected(ec);
   }
+
+ public:
+  size_t rbytes_transferred() const { return rbytes_transferred_; }
+  size_t wbytes_transferred() const { return wbytes_transferred_; }
 
  private:
   asio::ip::tcp::endpoint endpoint_;
