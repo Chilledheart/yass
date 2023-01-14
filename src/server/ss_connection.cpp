@@ -533,7 +533,7 @@ void SsConnection::OnDisconnect(asio::error_code ec) {
     ec = asio::error_code();
   }
 #else
-  if (ec.value() == asio::error::operation_abort) {
+  if (ec.value() == asio::error::operation_aborted) {
     ec = asio::error_code();
   }
 #endif
