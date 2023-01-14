@@ -26,14 +26,18 @@
 namespace {
 
 static IOBuf content_buffer;
+static std::unique_ptr<IOBuf> recv_content_buffer;
 static const char kConnectResponse[] = "HTTP/1.1 200 Connection established\r\n\r\n";
 static int kContentMaxSize = 10 * 1024 * 1024;
 
-void GenerateRandContent(int max = kContentMaxSize) {
-  int content_size = max;
+void GenerateRandContent(int max_size = kContentMaxSize) {
+  int content_size = max_size;
   content_buffer.clear();
   content_buffer.reserve(0, content_size);
-  RandBytes(content_buffer.mutable_data(), std::min(256, content_size));
+  recv_content_buffer = IOBuf::create(content_size);
+  for (int i = 0; i < 256; ++i) {
+    *reinterpret_cast<char*>(content_buffer.mutable_data() + i) = RandInt(32, 127);
+  }
   for (int i = 1; i < content_size / 256; ++i) {
     memcpy(content_buffer.mutable_data() + 256 * i, content_buffer.data(), 256);
   }
@@ -58,7 +62,8 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
   ContentProviderConnection& operator=(ContentProviderConnection&&) = delete;
 
   void start() override {
-    VLOG(2) << "Connection (content-provider) " << connection_id() << " start to write";
+    VLOG(2) << "Connection (content-provider) " << connection_id() << " start to do IO";
+
     scoped_refptr<ContentProviderConnection> self(this);
     asio::async_write(socket_, const_buffer(content_buffer),
       [self](asio::error_code ec, size_t bytes_transferred) {
@@ -69,6 +74,19 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
           VLOG(2) << "Connection (content-provider) " << self->connection_id()
                   << " written: " << bytes_transferred << " bytes";
         }
+    });
+
+    asio::async_read(socket_, mutable_buffer(*recv_content_buffer),
+      [self](asio::error_code ec, size_t bytes_transferred) {
+        if (ec || bytes_transferred != content_buffer.length()) {
+          LOG(WARNING) << "Connection (content-provider) " << self->connection_id()
+                       << " Failed to transfer data: " << ec;
+        } else {
+          VLOG(2) << "Connection (content-provider) " << self->connection_id()
+                  << " read: " << bytes_transferred << " bytes";
+        }
+        recv_content_buffer->append(bytes_transferred);
+        DCHECK_EQ(self->socket_.available(), 0u);
         self->socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
     });
   }
@@ -121,11 +139,11 @@ class SsEndToEndTest : public ::testing::Test {
     io_context_.post([this, &m, &done]() {
       std::lock_guard<std::mutex> lk(m);
       auto ec = StartContentProvider(GetReusableEndpoint(), 1);
-      ASSERT_FALSE(ec) << ec.message();
+      ASSERT_FALSE(ec) << ec;
       ec = StartServer(GetReusableEndpoint(), 1);
-      ASSERT_FALSE(ec) << ec.message();
+      ASSERT_FALSE(ec) << ec;
       ec = StartLocal(server_endpoint_, GetReusableEndpoint(), 1);
-      ASSERT_FALSE(ec) << ec.message();
+      ASSERT_FALSE(ec) << ec;
       done = true;
     });
     while (true) {
@@ -155,7 +173,7 @@ class SsEndToEndTest : public ::testing::Test {
   asio::ip::tcp::endpoint GetEndpoint(int port_num) const {
     asio::error_code ec;
     auto addr = asio::ip::make_address("127.0.0.1", ec);
-    // ASSERT_FALSE(ec) << ec.message();
+    // ASSERT_FALSE(ec) << ec;
     asio::ip::tcp::endpoint endpoint;
     endpoint.address(addr);
     endpoint.port(port_num);
@@ -170,7 +188,7 @@ class SsEndToEndTest : public ::testing::Test {
       work_guard_ = std::make_unique<asio::io_context::work>(io_context_);
       io_context_.run(ec);
       if (ec) {
-        LOG(ERROR) << "io_context failed due to: " << ec.message();
+        LOG(ERROR) << "io_context failed due to: " << ec;
       }
       io_context_.reset();
 
@@ -187,8 +205,7 @@ class SsEndToEndTest : public ::testing::Test {
     });
   }
 
-  void SendRequestAndCheckResponse(const char* request_data,
-                                   size_t request_data_size) {
+  void SendRequestAndCheckResponse() {
     asio::io_context io_context;
     asio::ip::tcp::socket s(io_context);
 
@@ -196,21 +213,27 @@ class SsEndToEndTest : public ::testing::Test {
 
     asio::error_code ec;
     s.connect(endpoint, ec);
-    ASSERT_FALSE(ec) << ec.message();
-    auto request_buf = IOBuf::copyBuffer(request_data, request_data_size);
+    ASSERT_FALSE(ec) << ec;
+    auto request_buf = IOBuf::create(SOCKET_BUF_SIZE);
     GenerateConnectRequest("127.0.0.1", content_provider_endpoint_.port(),
                            request_buf.get());
 
     size_t written = asio::write(s, const_buffer(*request_buf), ec);
-    VLOG(2) << "content consumer: written: " << written << " bytes";
-    EXPECT_FALSE(ec) << ec.message();
+    VLOG(2) << "Connection (content-consumer) written: " << written << " bytes";
+    EXPECT_FALSE(ec) << ec;
     EXPECT_EQ(written, request_buf->length());
+
+    written = asio::write(s, const_buffer(content_buffer), ec);
+    VLOG(2) << "Connection (content-consumer) written: " << written << " bytes";
+    EXPECT_FALSE(ec) << ec;
+    EXPECT_EQ(written, content_buffer.length());
 
     IOBuf response_buf;
     response_buf.reserve(0, kContentMaxSize + 1024);
     size_t read = asio::read(s, tail_buffer(response_buf), ec);
+    VLOG(2) << "Connection (content-consumer) read: " << read << " bytes";
     response_buf.append(read);
-    EXPECT_EQ(ec, asio::error::eof) << ec.message();
+    EXPECT_EQ(ec, asio::error::eof) << ec;
 
     const char* buffer = reinterpret_cast<const char*>(response_buf.data());
     size_t buffer_length = response_buf.length();
@@ -221,6 +244,13 @@ class SsEndToEndTest : public ::testing::Test {
     ASSERT_EQ(buffer_length, content_buffer.length());
     ASSERT_EQ(::testing::Bytes(buffer, buffer_length),
               ::testing::Bytes(content_buffer.data(), content_buffer.length()));
+
+    ASSERT_EQ(recv_content_buffer->length(), content_buffer.length());
+    ASSERT_EQ(::testing::Bytes(recv_content_buffer->data(), recv_content_buffer->length()),
+              ::testing::Bytes(content_buffer.data(), content_buffer.length()));
+
+    s.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+    EXPECT_FALSE(ec) << ec;
   }
 
  private:
@@ -230,7 +260,7 @@ class SsEndToEndTest : public ::testing::Test {
     content_provider_server_ = std::make_unique<ContentProviderServer>(io_context_);
     content_provider_server_->listen(endpoint, backlog, ec);
     if (ec) {
-      LOG(ERROR) << "listen failed due to: " << ec.message();
+      LOG(ERROR) << "listen failed due to: " << ec;
       return ec;
     }
 
@@ -253,7 +283,7 @@ class SsEndToEndTest : public ::testing::Test {
     server_server_->listen(endpoint, backlog, ec);
 
     if (ec) {
-      LOG(ERROR) << "listen failed due to: " << ec.message();
+      LOG(ERROR) << "listen failed due to: " << ec;
       return ec;
     }
 
@@ -278,7 +308,7 @@ class SsEndToEndTest : public ::testing::Test {
     local_server_->listen(endpoint, backlog, ec);
 
     if (ec) {
-      LOG(ERROR) << "listen failed due to: " << ec.message();
+      LOG(ERROR) << "listen failed due to: " << ec;
       local_server_->stop();
       return ec;
     }
@@ -313,27 +343,27 @@ class SsEndToEndTest : public ::testing::Test {
   TEST_F(SsEndToEndTest, name##_CONNECT) { \
     absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name); \
     GenerateRandContent(256); \
-    SendRequestAndCheckResponse(nullptr, 0); \
+    SendRequestAndCheckResponse(); \
   } \
   TEST_F(SsEndToEndTest, name##_256B) { \
     absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name); \
     GenerateRandContent(256); \
-    SendRequestAndCheckResponse("DUMMY REQUEST", sizeof("DUMMY REQUEST")); \
+    SendRequestAndCheckResponse(); \
   } \
   TEST_F(SsEndToEndTest, name##_4K) { \
     absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name); \
     GenerateRandContent(4096); \
-    SendRequestAndCheckResponse("DUMMY REQUEST", sizeof("DUMMY REQUEST")); \
+    SendRequestAndCheckResponse(); \
   } \
   TEST_F(SsEndToEndTest, name##_256K) { \
     absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name); \
     GenerateRandContent(256 * 1024); \
-    SendRequestAndCheckResponse("DUMMY REQUEST", sizeof("DUMMY REQUEST")); \
+    SendRequestAndCheckResponse(); \
   } \
   TEST_F(SsEndToEndTest, name##_1M) { \
     absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name); \
     GenerateRandContent(1024 * 1024); \
-    SendRequestAndCheckResponse("DUMMY REQUEST", sizeof("DUMMY REQUEST")); \
+    SendRequestAndCheckResponse(); \
   }
 CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
