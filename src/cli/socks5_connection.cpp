@@ -1053,6 +1053,10 @@ void Socks5Connection::OnDisconnect(asio::error_code ec) {
   if (ec.value() == WSAESHUTDOWN) {
     ec = asio::error_code();
   }
+#else
+  if (ec.value() == asio::error::operation_abort) {
+    ec = asio::error_code();
+  }
 #endif
   LOG(INFO) << "Connection (client) " << connection_id()
             << " closed: " << ec << " remaining: " << bytes << " bytes";
