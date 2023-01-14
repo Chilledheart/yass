@@ -35,9 +35,7 @@ void GenerateRandContent(int max_size = kContentMaxSize) {
   content_buffer.clear();
   content_buffer.reserve(0, content_size);
   recv_content_buffer = IOBuf::create(content_size);
-  for (int i = 0; i < 256; ++i) {
-    *reinterpret_cast<char*>(content_buffer.mutable_data() + i) = RandInt(32, 127);
-  }
+  RandBytes(content_buffer.mutable_data(), std::min(256, content_size));
   for (int i = 1; i < content_size / 256; ++i) {
     memcpy(content_buffer.mutable_data() + 256 * i, content_buffer.data(), 256);
   }
