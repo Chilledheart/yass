@@ -49,7 +49,7 @@ pacman -S mingw-w64-clang-x86_64-clang \
           git
 ```
 
-Notes: you might need to get `GOROOT` manually after install `mingw-w64-x86_64-go`
+Notes: you might need to get `GOROOT` manually after install `mingw-w64-clang-x86_64-go`
 package by running:
 ```
 export GOROOT=/clang64/lib/go
@@ -70,7 +70,7 @@ ninja yass
 
 1. Make sure you have [Xcode Command Line Tools][xcode-commandline] installed ([Xcode] if possible):
 
-Run in Terminal:
+Run in `Terminal`:
 ```
 xcode-select --install
 ```
@@ -78,11 +78,17 @@ xcode-select --install
 
 (for [Homebrew] users)
 
-Run in Terminal: ``brew install ninja cmake go p7zip``
+Run in `Terminal`:
+```
+brew install ninja cmake go p7zip
+```
 
 (for [MacPorts] users)
 
-Run in Terminal: ``sudo port install ninja cmake go p7zip``
+Run in `Terminal`:
+```
+sudo port install ninja cmake go p7zip
+```
 
 (for people who don't use [MacPorts] or [Homebrew])
 
@@ -165,7 +171,7 @@ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
 ninja yass
 ```
 
-## Fedora/RHEL/CentOS
+## Fedora/RHEL/CentOS/AlmaLinux/Rocky Linux
 1. Install GNU C++ Compiler:
 ```
 sudo yum install -y gcc gcc-c++ libatomic-static \
@@ -185,9 +191,20 @@ sudo yum install -y \
 Notes: please make sure you have [GCC] (11.0 or above) or [Clang] (12.0 or above) and [CMake] (3.12 or above).
   You might want to enable CodeReady (for RHEL), PowerTools (for CentOS) and EPEL repo before above commands:
 
-* CodeReady (for RHEL): `subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms`
-* PowerTools (for CentOS): `yum install -y dnf-plugins-core && dnf config-manager --set-enabled PowerTools`
-* EPEL: `yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm`
+* CodeReady (for RHEL 7):
+```
+subscription-manager repos --enable rhel-*-optional-rpms \
+                           --enable rhel-*-extras-rpms \
+                           --enable rhel-ha-for-rhel-*-server-rpms
+```
+
+* CodeReady (for RHEL 8): `subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms`
+* PowerTools (for CentOS 8): `yum-config-manager --enable powertools`
+* [EPEL] 8: `yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm`
+
+* CodeReady (for RHEL 9): `subscription-manager repos --enable codeready-builder-for-rhel-9-x86_64-rpms`
+* CRB (for CentOS 9): `yum-config-manager --enable crb`
+* [EPEL] 9: `yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm`
 
 3. Compile the program with Release configuration.
 ```
@@ -199,9 +216,10 @@ ninja yass
 
 ## FreeBSD
 1. Install Clang Compiler (Optional):
-Use system compiler otherwise you might need to install it by manually:
+
+Use system compiler otherwise you might need to install laste [Clang]:
 ```
-pkg install llvm13
+pkg install llvm15
 ```
 Notes: please make sure you have [Clang] (12.0 or above) and [CMake] (3.12 or above).
 
@@ -216,7 +234,7 @@ pkg install -y \
     go
 ```
 
-Notes: please install src.txz package of system otherwise you might need to create symbolics of unwind.h like below:
+Notes: please install `src.txz` package of system otherwise you might need to create symbolics of unwind.h like below:
 Notes 2: not required since FreeBSD 13.1
 ```
 ln -sf /usr/include/c++/v1/unwind.h /usr/include/unwind.h
@@ -226,9 +244,11 @@ ln -sf /usr/include/c++/v1/unwind-itanium.h /usr/include/unwind-itanium.h
 
 3. Compile the program with Release configuration.
 ```
+export CC=clang15
+export CXX=clang++15
 mkdir build
 cd build
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on -DENALBE_LLD=off ..
 ninja yass
 ```
 
@@ -265,14 +285,14 @@ sudo apt-get install -y git build-essential fakeroot devscripts debhelper
 
 2. Install [Clang] and put its binaries in `PATH`
 
-3. Generate Packages
+3. Generate Packages under parent directory
 ```
 export CC=clang
 export CXX=clang++
 ./scripts/build-deb.sh
 ```
 
-## Fedora/Packaging
+## Fedora/RHEL/CentOS/AlmaLinux/Rocky Linux Packaging
 
 1. Install Packaging Tools
 ```
@@ -282,7 +302,7 @@ sudo yum install -y gcc gcc-c++ libatomic-static \
 
 2. Install [Clang] and put its binaries in `PATH`
 
-3. Generate Packages under current parent directory
+3. Generate Packages under current directory
 ```
 export CC=clang
 export CXX=clang++
@@ -316,3 +336,4 @@ cd ..
 [python]: https://www.python.org/downloads/
 [llvm-win64]: https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.6/LLVM-15.0.6-win64.exe
 [msys2]: https://www.msys2.org/
+[EPEL]: https://docs.fedoraproject.org/en-US/epel
