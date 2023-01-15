@@ -219,13 +219,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_type: [Release]
-        distro: [clang64]
         arch: [x86_64]
-        include:
-          - build_type: Release
-            distro: clang32
-            arch: i686
+        build_type: [Debug, Release]
     steps:
       - uses: actions/checkout@v3
       - name: Checkout with shallow submodules
@@ -233,37 +228,48 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache golang
+      - name: Cache clang, nasm and wixtoolset 3
+        id: clang-cache
         uses: actions/cache@v3
         with:
           path: |
-            %LocalAppData%\go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+            third_party/nasm
+            third_party/llvm-build/Release+Asserts
+            third_party/wix311
+          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
           restore-keys: |
-            ${{ runner.os }}-go-
-      - name: Re-add msys2 into PATH
-        shell: bash
+            ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
+      - name: "Download dependency: clang, nasm and wixtoolset 3"
+        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
-          python -c "import os; print(os.getenv('PATH'))"
-          PATH1=$(python -c "import os; print(os.getenv('PATH'), end ='')")
-          echo "PATH=C:\msys64\${{ matrix.distro }}\bin;C:\msys64\usr\bin;$PATH1" >> $GITHUB_ENV
-      - name: Populate build depedencies
-        shell: cmd
-        run: |
-          pacman -S --noconfirm --needed --noprogressbar ^
-            mingw-w64-clang-${{ matrix.arch }}-clang ^
-            mingw-w64-clang-${{ matrix.arch }}-gcc ^
-            mingw-w64-clang-${{ matrix.arch }}-nasm ^
-            mingw-w64-clang-${{ matrix.arch }}-ninja
+          scripts\download-toolchain.bat
+          del /s /q nasm-2.15*.zip
+          del /s /q third_party\llvm-build\Release+Asserts\*.tgz
+          del /s /q wix311*.zip
       - name: Build
         shell: cmd
         run: |
-          set CC=cc
-          set CXX=c++
+          set CC=clang
+          set CXX=clang++
+          set "CFLAGS=-target x86_64-pc-windows-gnu --sysroot C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw64\x86_64-w64-mingw32 -I C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw64\lib\gcc\x86_64-w64-mingw32\8.1.0\include"
+          set "CXXFLAGS=-target x86_64-pc-windows-gnu --sysroot C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw64\x86_64-w64-mingw32 -I C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw64\lib\gcc\x86_64-w64-mingw32\8.1.0\include"
+          set "LDFLAGS=-target x86_64-pc-windows-gnu --sysroot C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw64\x86_64-w64-mingw32 -Wl,-LC:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw64\lib\gcc\x86_64-w64-mingw32\8.1.0"
+          set "Path=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;%Path%"
+          REM for crtbegin.o, crt2.o and crtend.o
+          set "Path=C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw64\x86_64-w64-mingw32\lib;%Path%"
+          set "Path=%CD%\third_party\nasm;%Path%"
+          REM for clang.exe and clang++.exe
+          REM set "Path=C:\Program Files\LLVM\bin;%Path%"
+
+          REM remove conflicting heaaders
+          del "C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw64\lib\gcc\x86_64-w64-mingw32\8.1.0\include\std*.h"
+          del "C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw64\lib\gcc\x86_64-w64-mingw32\8.1.0\include\*intrin.h"
+          del "C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw64\lib\gcc\x86_64-w64-mingw32\8.1.0\include\mm3dnow.h"
+
+          REM start to build with workaround
           mkdir build
           cd build
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_TESTS=on -DGUI=on ..
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_TESTS=on -DGUI=on -DMINGW_WORKAROUND=on ..
           ninja yass yass_test
       - name: Run unittests
         shell: cmd
