@@ -22,8 +22,8 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 
 - [Features](#features)
 - [Ciphers](#ciphers)
-  * [FIPS Ciphers](#fips-ciphers)
-  * [Mobile-friendly Ciphers](#mobile-friendly-ciphers)
+  * [PC-friendly Ciphers](#pc-friendly-ciphers)
+  * [More mobile-friendly Ciphers](#more-mobile-friendly-ciphers)
 - [Supported Operating System](#supported-operating-system)
   * [Screenshot on Windows 11](#screenshot-on-windows-11)
   * [Screenshot on Windows 7](#screenshot-on-windows-7)
@@ -69,7 +69,7 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 <img width="484" alt="snapshot-winxp" src="https://user-images.githubusercontent.com/54673341/151115871-218610b6-413c-4c00-827b-3fdffc241b65.png">
 
 ### Screenshot on Ubuntu 16.04
-<img width="484" alt="snapshot-winxp" src="https://user-images.githubusercontent.com/54673341/151591522-d86248f7-763f-432e-9dd8-fd16317d477b.png">
+<img width="484" alt="snapshot-ubuntu" src="https://user-images.githubusercontent.com/54673341/151591522-d86248f7-763f-432e-9dd8-fd16317d477b.png">
 
 ### Screenshot on FreeBSD
 <img width="484" alt="snapshot-freebsd" src="https://user-images.githubusercontent.com/54673341/158511519-493f1a40-97c5-4748-a530-fe8e4b3c2ce1.jpg">
