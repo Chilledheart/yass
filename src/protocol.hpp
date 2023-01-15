@@ -25,7 +25,7 @@ inline void DumpHex(const char* prefix, const uint8_t* data, uint32_t length) {
   }
   char hex_buffer[4096];
   char* message = hex_buffer;
-  uint32_t left_size = sizeof(hex_buffer);
+  uint32_t left_size = sizeof(hex_buffer) - 1;
 
   int written = snprintf(message, left_size, "%s LEN %u\n", prefix, length);
   if (written < 0)
