@@ -1,0 +1,88 @@
+name: Sanitizers Bots
+on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+        type: choice
+        options:
+        - info
+        - warning
+        - debug
+      tags:
+        description: 'Test scenario tags'
+        required: false
+        type: boolean
+  pull_request:
+  push:
+    branches: [master]
+    paths-ignore: [README.md, BUILDING.md]
+env:
+  CACHE_EPOCH: 5
+  GOPROXY: direct
+jobs:
+  sanitizer-linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64]
+        build_type: [Debug, Release]
+        sanitizer:
+          - name: address
+            cmake_options: -DASAN=on
+          - name: thread
+            cmake_options: -DTSAN=on
+          - name: memory
+            cmake_options: -DMSAN=on
+          - name: undefined behavior
+            cmake_options: -DUBSAN=on
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
+      - name: Cache clang
+        id: clang-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            third_party/llvm-build/Release+Asserts
+          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          restore-keys: |
+            ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
+      - name: "Install dependency: prebuilt clang and clang-tidy binaries"
+        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        run: |
+          ./scripts/download-clang-prebuilt-binaries.py
+          rm -f third_party/llvm-build/Release+Asserts/*.tgz
+      - name: Change ubuntu mirror
+        run: |
+          sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
+          sudo apt-get update -qq
+      - name: Populate depedencies
+        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build
+      - name: Set clang environment
+        run: |
+          echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
+          echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
+      - name: Build Unittests
+        run: |
+          mkdir build
+          cd build
+          # FIXME support libc++ build
+          cmake -G Ninja -DBUILD_TESTS=on -DGUI=on \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DUSE_LIBCXX=off \
+            ${{ matrix.sanitizer.cmake_options }} ..
+          ninja yass_test
+          cd ..
+      - name: Run tests
+        run: |
+          cd build
+          ./yass_test -alsologtostderr -v 2
+          cd ..
