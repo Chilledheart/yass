@@ -217,7 +217,8 @@ ninja yass
 ## FreeBSD
 1. Install Clang Compiler (Optional):
 
-Use system compiler otherwise you might need to install laste [Clang]:
+It is impossible to upgrade system compiler without upgrading OS,
+so you can install latest [Clang]:
 ```
 pkg install llvm15
 ```
@@ -235,12 +236,14 @@ pkg install -y \
 ```
 
 Notes: please install `src.txz` package of system otherwise you might need to create symbolics of unwind.h like below:
-Notes 2: not required since FreeBSD 13.1
+
 ```
 ln -sf /usr/include/c++/v1/unwind.h /usr/include/unwind.h
 ln -sf /usr/include/c++/v1/unwind-arm.h /usr/include/unwind-arm.h
 ln -sf /usr/include/c++/v1/unwind-itanium.h /usr/include/unwind-itanium.h
 ```
+
+Notes: Not required since FreeBSD 13.1
 
 3. Compile the program with Release configuration.
 ```
