@@ -34,8 +34,8 @@ jobs:
             cmake_options: -DASAN=on
           - name: undefined behavior
             cmake_options: -DUBSAN=on
-         #- name: thread
-         #  cmake_options: -DTSAN=on
+          - name: thread
+            cmake_options: -DTSAN=on
          #- name: memory
          #  cmake_options: -DMSAN=on
     runs-on: ubuntu-20.04

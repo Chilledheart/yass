@@ -26,6 +26,7 @@
 namespace {
 
 static IOBuf content_buffer;
+static std::mutex recv_mutex;
 static std::unique_ptr<IOBuf> recv_content_buffer;
 static const char kConnectResponse[] = "HTTP/1.1 200 Connection established\r\n\r\n";
 static int kContentMaxSize = 10 * 1024 * 1024;
@@ -74,6 +75,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
         }
     });
 
+    recv_mutex.lock();
     asio::async_read(socket_, mutable_buffer(*recv_content_buffer),
       [self](asio::error_code ec, size_t bytes_transferred) {
         if (ec || bytes_transferred != content_buffer.length()) {
@@ -84,6 +86,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
                   << " read: " << bytes_transferred << " bytes";
         }
         recv_content_buffer->append(bytes_transferred);
+        recv_mutex.unlock();
         DCHECK_EQ(self->socket_.available(), 0u);
         self->socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
     });
@@ -243,6 +246,7 @@ class SsEndToEndTest : public ::testing::Test {
     ASSERT_EQ(::testing::Bytes(buffer, buffer_length),
               ::testing::Bytes(content_buffer.data(), content_buffer.length()));
 
+    std::lock_guard<std::mutex> lk(recv_mutex);
     ASSERT_EQ(recv_content_buffer->length(), content_buffer.length());
     ASSERT_EQ(::testing::Bytes(recv_content_buffer->data(), recv_content_buffer->length()),
               ::testing::Bytes(content_buffer.data(), content_buffer.length()));
