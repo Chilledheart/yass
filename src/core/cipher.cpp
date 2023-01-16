@@ -58,7 +58,7 @@ class cipher_impl {
                         size_t skey_len) {
     const char* pass = key.c_str();
     size_t datal = key.size();
-    MD5_CTX c;
+    MD5_CTX c = {};
     uint8_t md_buf[MD5_DIGEST_LENGTH];
     int addmd;
     unsigned int i, j, mds;
@@ -237,7 +237,8 @@ void cipher::decrypt(IOBuf* ciphertext,
     init_ = true;
   }
 
-  *plaintext = std::shared_ptr<IOBuf>(IOBuf::create(capacity).release());
+  *plaintext = IOBuf::create(capacity);
+
   while (!chunk_->empty()) {
     uint64_t counter = counter_;
 
@@ -381,6 +382,7 @@ bool cipher::chunk_decrypt_frame(uint64_t* counter,
 
   ciphertext->trimStart(clen);
 
+  MSAN_UNPOISON(plaintext->tail(), plen);
   plaintext->append(plen);
 
   return true;
@@ -418,6 +420,7 @@ bool cipher::chunk_encrypt_frame(uint64_t* counter,
 
   DCHECK_EQ(clen, CHUNK_SIZE_LEN + tlen);
 
+  MSAN_UNPOISON(ciphertext->tail(), clen);
   ciphertext->append(clen);
 
   (*counter)++;
@@ -428,6 +431,8 @@ bool cipher::chunk_encrypt_frame(uint64_t* counter,
           << " encrypted: " << clen;
 
   ciphertext->reserve(0, clen);
+  // FIXME it is a bug with crypto layer
+  memset(ciphertext->mutable_tail(), 0, clen);
 
   err = impl_->EncryptPacket(*counter, ciphertext->mutable_tail(), &clen,
                              plaintext->data(), plaintext->length());

@@ -34,7 +34,7 @@ int crypto_hkdf_extract(const unsigned char* salt,
                         int ikm_len,
                         unsigned char* prk) {
   int hash_len;
-  unsigned char null_salt[MD_MAX_SIZE_256] = {'\0'};
+  unsigned char null_salt[MD_MAX_SIZE_256] = {};
 
   if (salt_len < 0) {
     return -1;
@@ -60,7 +60,7 @@ int crypto_hkdf_expand(const unsigned char* prk,
   int hash_len;
   int N;
   int T_len = 0, where = 0, i, ret;
-  SHA_CTX ctx;
+  SHA_CTX ctx = {};
   unsigned char ipad[HASH_BLOCK_SIZE_256], opad[HASH_BLOCK_SIZE_256];
   unsigned char T[MD_MAX_SIZE_256];
 

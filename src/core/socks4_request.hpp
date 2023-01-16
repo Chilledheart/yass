@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
+/* Copyright (c) 2019-2023 Chilledheart  */
 
 #ifndef H_CORE_SOCKS4_REQUEST
 #define H_CORE_SOCKS4_REQUEST
@@ -26,6 +26,8 @@ namespace socks4 {
 // host if it can.
 class request {
  public:
+  request() : req_() {}
+
   uint8_t version() const { return req_.version; }
   uint8_t command() const { return req_.command; }
 

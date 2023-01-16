@@ -31,16 +31,17 @@ static std::unique_ptr<IOBuf> recv_content_buffer;
 static const char kConnectResponse[] = "HTTP/1.1 200 Connection established\r\n\r\n";
 static int kContentMaxSize = 10 * 1024 * 1024;
 
-void GenerateRandContent(int max_size = kContentMaxSize) {
-  int content_size = max_size;
+void GenerateRandContent(int size) {
   content_buffer.clear();
-  content_buffer.reserve(0, content_size);
-  recv_content_buffer = IOBuf::create(content_size);
-  RandBytes(content_buffer.mutable_data(), std::min(256, content_size));
-  for (int i = 1; i < content_size / 256; ++i) {
+  content_buffer.reserve(0, size);
+
+  RandBytes(content_buffer.mutable_data(), std::min(256, size));
+  for (int i = 1; i < size / 256; ++i) {
     memcpy(content_buffer.mutable_data() + 256 * i, content_buffer.data(), 256);
   }
-  content_buffer.append(content_size);
+  content_buffer.append(size);
+
+  recv_content_buffer = IOBuf::create(size);
 }
 
 class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderConnection>,
@@ -234,6 +235,7 @@ class SsEndToEndTest : public ::testing::Test {
     size_t read = asio::read(s, tail_buffer(response_buf), ec);
     VLOG(2) << "Connection (content-consumer) read: " << read << " bytes";
     response_buf.append(read);
+    *response_buf.mutable_tail() = '\0';
     EXPECT_EQ(ec, asio::error::eof) << ec;
 
     const char* buffer = reinterpret_cast<const char*>(response_buf.data());

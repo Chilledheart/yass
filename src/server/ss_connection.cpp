@@ -637,11 +637,11 @@ void SsConnection::disconnected(asio::error_code ec) {
 
 std::shared_ptr<IOBuf> SsConnection::DecryptData(
     std::shared_ptr<IOBuf> cipherbuf) {
-  std::shared_ptr<IOBuf> plainbuf = IOBuf::create(cipherbuf->length());
-  plainbuf->reserve(0, cipherbuf->length());
+  std::shared_ptr<IOBuf> plainbuf = IOBuf::create(SOCKET_BUF_SIZE);
 
   DumpHex("ERead->", cipherbuf.get());
   decoder_->decrypt(cipherbuf.get(), &plainbuf);
+  MSAN_CHECK_MEM_IS_INITIALIZED(plainbuf->data(), plainbuf->length());
   DumpHex("PRead->", plainbuf.get());
   return plainbuf;
 }
@@ -652,6 +652,7 @@ std::shared_ptr<IOBuf> SsConnection::EncryptData(std::shared_ptr<IOBuf> plainbuf
 
   DumpHex("PWrite->", plainbuf.get());
   encoder_->encrypt(plainbuf.get(), &cipherbuf);
+  MSAN_CHECK_MEM_IS_INITIALIZED(cipherbuf->data(), cipherbuf->length());
   DumpHex("EWrite->", cipherbuf.get());
   return cipherbuf;
 }

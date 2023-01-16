@@ -53,7 +53,7 @@ static inline size_t goodExtBufferSize(std::size_t minCapacity) {
 
 IOBuf::IOBuf(CreateOp, std::size_t capacity) : data_(nullptr), length_(0) {
   capacity_ = goodExtBufferSize(capacity);
-  buf_ = static_cast<uint8_t*>(checkedMalloc(capacity));
+  buf_ = static_cast<uint8_t*>(checkedMalloc(capacity_));
   data_ = buf_;
 }
 

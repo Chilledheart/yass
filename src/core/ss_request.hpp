@@ -13,7 +13,8 @@ namespace ss {
 class request {
  public:
   request() : atyp_req_() {}
-  request(const std::string& domain_name, uint16_t port) {
+  request(const std::string& domain_name, uint16_t port)
+    : atyp_req_() {
     uint8_t* i = data();
     *i++ = domain;
     DCHECK_LE(domain_name.size(), uint8_t(~0));
@@ -28,7 +29,8 @@ class request {
     i += sizeof(port);
   }
 
-  request(const asio::ip::tcp::endpoint& endpoint) {
+  request(const asio::ip::tcp::endpoint& endpoint)
+    : atyp_req_() {
     asio::ip::address addr = endpoint.address();
     uint16_t port = endpoint.port();
     uint8_t* i = data();
