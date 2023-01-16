@@ -14,11 +14,17 @@
 namespace {
 std::unique_ptr<IOBuf> GenerateRandContent(int size) {
   auto buf = IOBuf::create(size);
+
   RandBytes(buf->mutable_data(), std::min(256, size));
   for (int i = 1; i < size / 256; ++i) {
     memcpy(buf->mutable_data() + 256 * i, buf->data(), 256);
   }
+  if (size % 256) {
+    memcpy(buf->mutable_data() + 256 * (size / 256),
+           buf->data(), std::min(256, size % 256));
+  }
   buf->append(size);
+
   return buf;
 }
 } // anonymous namespace

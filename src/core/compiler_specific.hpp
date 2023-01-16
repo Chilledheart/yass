@@ -380,6 +380,11 @@
 #endif
 
 // MemorySanitizer annotations.
+#if defined(__has_feature)
+#  if __has_feature(memory_sanitizer)
+#    define MEMORY_SANITIZER 1
+#  endif
+#endif
 #if defined(MEMORY_SANITIZER) && !defined(OS_NACL)
 #include <sanitizer/msan_interface.h>
 

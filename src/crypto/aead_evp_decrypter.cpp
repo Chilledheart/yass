@@ -74,7 +74,7 @@ bool AeadEvpDecrypter::DecryptPacket(uint64_t packet_number,
     return false;
   }
 
-  uint8_t nonce[kMaxNonceSize];
+  uint8_t nonce[kMaxNonceSize] = {};
   memcpy(nonce, iv_, nonce_size_);
   PacketNumberToNonceEvp(nonce, nonce_size_, packet_number);
 

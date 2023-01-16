@@ -590,7 +590,7 @@ struct LogMessage::LogMessageData {
 // changing the destination file for log messages of a given severity) also
 // lock this mutex.  Please be sure that anybody who might possibly need to
 // lock it does so.
-static absl::Mutex log_mutex;
+ABSL_CONST_INIT static absl::Mutex log_mutex(absl::kConstInit);
 
 // Number of messages sent at each severity.  Under log_mutex.
 int64_t LogMessage::num_messages_[LOGGING_NUM_SEVERITIES] = {0, 0, 0, 0};

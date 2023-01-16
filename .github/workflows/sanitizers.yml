@@ -33,11 +33,11 @@ jobs:
           - name: address
             cmake_options: -DASAN=on
           - name: undefined behavior
-            cmake_options: -DUBSAN=on
-         #- name: thread
-         #  cmake_options: -DTSAN=on
-         #- name: memory
-         #  cmake_options: -DMSAN=on
+            cmake_options: -DUBSAN=on -DUSE_LIBCXX=off
+          - name: thread
+            cmake_options: -DTSAN=on
+          - name: memory
+            cmake_options: -DMSAN=on
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
@@ -65,7 +65,7 @@ jobs:
           sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
           sudo apt-get update -qq
       - name: Populate depedencies
-        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build
+        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build llvm
       - name: Set clang environment
         run: |
           echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
@@ -74,10 +74,9 @@ jobs:
         run: |
           mkdir build
           cd build
-          # FIXME support libc++ build
           cmake -G Ninja -DBUILD_TESTS=on -DGUI=on \
+            -DUSE_HOST_TOOLS=on \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DUSE_LIBCXX=off \
             ${{ matrix.sanitizer.cmake_options }} ..
           ninja yass_test
           cd ..

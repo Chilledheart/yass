@@ -74,7 +74,7 @@ bool AeadSodiumDecrypter::DecryptPacket(uint64_t packet_number,
     return false;
   }
 
-  uint8_t nonce[kMaxNonceSize];
+  uint8_t nonce[kMaxNonceSize] = {};
   memcpy(nonce, iv_, nonce_size_);
 
   // for libsodium, packet number is written ahead

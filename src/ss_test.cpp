@@ -26,20 +26,22 @@
 namespace {
 
 static IOBuf content_buffer;
+static std::mutex recv_mutex;
 static std::unique_ptr<IOBuf> recv_content_buffer;
 static const char kConnectResponse[] = "HTTP/1.1 200 Connection established\r\n\r\n";
 static int kContentMaxSize = 10 * 1024 * 1024;
 
-void GenerateRandContent(int max_size = kContentMaxSize) {
-  int content_size = max_size;
+void GenerateRandContent(int size) {
   content_buffer.clear();
-  content_buffer.reserve(0, content_size);
-  recv_content_buffer = IOBuf::create(content_size);
-  RandBytes(content_buffer.mutable_data(), std::min(256, content_size));
-  for (int i = 1; i < content_size / 256; ++i) {
+  content_buffer.reserve(0, size);
+
+  RandBytes(content_buffer.mutable_data(), std::min(256, size));
+  for (int i = 1; i < size / 256; ++i) {
     memcpy(content_buffer.mutable_data() + 256 * i, content_buffer.data(), 256);
   }
-  content_buffer.append(content_size);
+  content_buffer.append(size);
+
+  recv_content_buffer = IOBuf::create(size);
 }
 
 class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderConnection>,
@@ -74,6 +76,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
         }
     });
 
+    recv_mutex.lock();
     asio::async_read(socket_, mutable_buffer(*recv_content_buffer),
       [self](asio::error_code ec, size_t bytes_transferred) {
         if (ec || bytes_transferred != content_buffer.length()) {
@@ -84,6 +87,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
                   << " read: " << bytes_transferred << " bytes";
         }
         recv_content_buffer->append(bytes_transferred);
+        recv_mutex.unlock();
         DCHECK_EQ(self->socket_.available(), 0u);
         self->socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
     });
@@ -231,6 +235,7 @@ class SsEndToEndTest : public ::testing::Test {
     size_t read = asio::read(s, tail_buffer(response_buf), ec);
     VLOG(2) << "Connection (content-consumer) read: " << read << " bytes";
     response_buf.append(read);
+    *response_buf.mutable_tail() = '\0';
     EXPECT_EQ(ec, asio::error::eof) << ec;
 
     const char* buffer = reinterpret_cast<const char*>(response_buf.data());
@@ -243,6 +248,7 @@ class SsEndToEndTest : public ::testing::Test {
     ASSERT_EQ(::testing::Bytes(buffer, buffer_length),
               ::testing::Bytes(content_buffer.data(), content_buffer.length()));
 
+    std::lock_guard<std::mutex> lk(recv_mutex);
     ASSERT_EQ(recv_content_buffer->length(), content_buffer.length());
     ASSERT_EQ(::testing::Bytes(recv_content_buffer->data(), recv_content_buffer->length()),
               ::testing::Bytes(content_buffer.data(), content_buffer.length()));
@@ -372,6 +378,8 @@ int main(int argc, char **argv) {
   absl::InstallFailureSignalHandler(failure_handle_options);
 
   absl::SetFlag(&FLAGS_log_thread_id, 1);
+  absl::SetFlag(&FLAGS_tcp_user_timeout, 1000);
+
   ::CRYPTO_library_init();
 
   ::testing::InitGoogleTest(&argc, argv);

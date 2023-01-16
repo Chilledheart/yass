@@ -92,7 +92,7 @@ int hmac_sha1(const unsigned char* key,
               const unsigned char* input,
               size_t ilen,
               unsigned char* output) {
-  SHA_CTX ctx;
+  SHA_CTX ctx = {};
   unsigned char ipad[HASH_BLOCK_SIZE_256], opad[HASH_BLOCK_SIZE_256];
   int ret;
 
