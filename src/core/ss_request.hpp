@@ -101,18 +101,23 @@ class request {
   }
 
   uint16_t port() const {
-    const uint16_t* port =
-        reinterpret_cast<const uint16_t*>(&atyp_req_.address_type +
-                                          address_type_size() -
-                                          sizeof(uint16_t));
-    return ntohs(*port);
+    return (port_high_byte() << 8) | port_low_byte();
   }
 
   uint8_t& port_high_byte() {
     return *(&atyp_req_.address_type + address_type_size() - sizeof(uint16_t));
   }
 
+  uint8_t port_high_byte() const {
+    return *(&atyp_req_.address_type + address_type_size() - sizeof(uint16_t));
+  }
+
   uint8_t& port_low_byte() {
+    return *(&atyp_req_.address_type + address_type_size()
+             - sizeof(uint16_t) + sizeof(uint8_t));
+  }
+
+  uint8_t port_low_byte() const {
     return *(&atyp_req_.address_type + address_type_size()
              - sizeof(uint16_t) + sizeof(uint8_t));
   }
