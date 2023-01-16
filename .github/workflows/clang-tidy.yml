@@ -1,4 +1,4 @@
-name: Clang Tidy
+name: Clang Tidy (On Demand)
 on:
   workflow_dispatch:
     inputs:
@@ -15,12 +15,6 @@ on:
         description: 'Test scenario tags'
         required: false
         type: boolean
-  pull_request:
-  push:
-    branches: [master]
-    paths-ignore: [README.md, BUILDING.md]
-  release:
-    types: [published]
 env:
   CACHE_EPOCH: 5
   GOPROXY: direct
