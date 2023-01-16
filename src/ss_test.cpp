@@ -378,6 +378,8 @@ int main(int argc, char **argv) {
   absl::InstallFailureSignalHandler(failure_handle_options);
 
   absl::SetFlag(&FLAGS_log_thread_id, 1);
+  absl::SetFlag(&FLAGS_tcp_user_timeout, 1000);
+
   ::CRYPTO_library_init();
 
   ::testing::InitGoogleTest(&argc, argv);
