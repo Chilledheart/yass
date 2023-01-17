@@ -25,10 +25,10 @@ inline void DumpHex(const char* prefix, const uint8_t* data, uint32_t length) {
   }
   char hex_buffer[4096];
   char* message = hex_buffer;
-  uint32_t left_size = sizeof(hex_buffer) - 1;
+  int left_size = sizeof(hex_buffer) - 1;
 
   int written = snprintf(message, left_size, "%s LEN %u\n", prefix, length);
-  if (written < 0)
+  if (written < 0 || written > left_size)
     goto done;
   message += written;
   left_size -= written;
@@ -37,7 +37,7 @@ inline void DumpHex(const char* prefix, const uint8_t* data, uint32_t length) {
   for (uint32_t i = 0; i * 2 + 1 < length; ++i) {
     if (i % 8 == 0) {
       written = snprintf(message, left_size, "%s ", prefix);
-      if (written < 0)
+      if (written < 0 || written > left_size)
         goto done;
       message += written;
       left_size -= written;
@@ -45,20 +45,22 @@ inline void DumpHex(const char* prefix, const uint8_t* data, uint32_t length) {
 
     written =
         snprintf(message, left_size, "%02x%02x ", data[i * 2], data[i * 2 + 1]);
-    if (written < 0)
+    if (written < 0 || written > left_size)
       goto done;
     message += written;
     left_size -= written;
 
     if ((i + 1) % 8 == 0) {
       written = snprintf(message, left_size, "\n");
-      if (written < 0)
+      if (written < 0 || written > left_size)
         goto done;
       message += written;
       left_size -= written;
     }
   }
   written = snprintf(message, left_size, "\n");
+  if (written < 0 || written > left_size)
+    goto done;
   message += written;
   left_size -= written;
 
