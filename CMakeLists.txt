@@ -1815,6 +1815,9 @@ set(SUPPORT_LIBS zlib ${SUPPORT_LIBS})
 #           QUICHE Library
 # *****************************************************************************************
 
+# include both of googleurl and quiche
+# TODO:Uncomment the below line out
+# add_definitions(-DHAVE_QUICHE)
 add_subdirectory(third_party/quiche)
 include_directories(third_party/quiche SYSTEM)
 set(SUPPORT_LIBS quiche ${SUPPORT_LIBS})

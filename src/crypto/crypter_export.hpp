@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
+/* Copyright (c) 2019-2023 Chilledheart  */
 
 #ifndef H_CRYPTO_CRYPTER_EXPORT
 #define H_CRYPTO_CRYPTER_EXPORT
@@ -32,9 +32,22 @@
 #define CIPHER_METHOD_MAP_BORINGSSL(XX)
 #endif
 
+#ifdef HAVE_QUICHE
+#define CIPHER_METHOD_MAP_HTTP2(XX)                                   \
+  XX(0x20U, HTTP2, "http2-protocol")                                  \
+  XX(0x21U, HTTP2_INPLACE_1, "http2-1-protocol")                      \
+  XX(0x22U, HTTP2_INPLACE_2, "http2-2-protocol")                      \
+  XX(0x23U, HTTP2_INPLACE_3, "http2-3-protocol")                      \
+  XX(0x24U, HTTP2_INPLACE_4, "http2-4-protocol")                      \
+  XX(0x25U, HTTP2_INPLACE_5, "http2-5-protocol")
+#else
+#define CIPHER_METHOD_MAP_HTTP2(XX)
+#endif
+
 #define CIPHER_METHOD_VALID_MAP(XX) \
   CIPHER_METHOD_MAP_SODIUM(XX)      \
-  CIPHER_METHOD_MAP_BORINGSSL(XX)
+  CIPHER_METHOD_MAP_BORINGSSL(XX)   \
+  CIPHER_METHOD_MAP_HTTP2(XX)
 
 #define CIPHER_METHOD_MAP(XX)  \
   XX(0x0U, INVALID, "invalid") \

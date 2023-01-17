@@ -442,7 +442,8 @@ int Socks5Connection::OnReadHttpRequestURL(http_parser* p,
       return 1;
     }
     conn->http_is_connect_ = true;
-    VLOG(4) << "CONNECT: " << conn->http_host_ << " PORT: " << conn->http_port_;
+    VLOG(4) << "Connection (client) " << conn->connection_id()
+            << " CONNECT: " << conn->http_host_ << " PORT: " << conn->http_port_;
   }
   return 0;
 }
@@ -477,7 +478,8 @@ int Socks5Connection::OnReadHttpRequestHeaderValue(http_parser* parser,
       conn->http_port_ = 80;
     }
 
-    VLOG(4) << "Host: " << conn->http_host_ << " PORT: " << conn->http_port_;
+    VLOG(4) << "Connection (client) " << conn->connection_id()
+            << " Host: " << conn->http_host_ << " PORT: " << conn->http_port_;
   }
   return 0;
 }
