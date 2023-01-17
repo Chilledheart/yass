@@ -1814,11 +1814,12 @@ set(SUPPORT_LIBS zlib ${SUPPORT_LIBS})
 # *****************************************************************************************
 #           c-ares Library
 # *****************************************************************************************
-set(CARES_BUILD_TOOLS off)
-set(CARES_SHARED off)
-set(CARES_STATIC on)
-set(CARES_INSTALL off)
-set(CARES_BUILD_TESTS off)
+set(CARES_BUILD_TOOLS OFF CACHE BOOL "")
+set(CARES_SHARED OFF CACHE BOOL "")
+set(CARES_STATIC ON CACHE BOOL "")
+set(CARES_STATIC_PIC ON CACHE BOOL "")
+set(CARES_BUILD_TESTS OFF CACHE BOOL "")
+set(CARES_INSTALL OFF CACHE BOOL "")
 add_subdirectory(third_party/c-ares)
 include_directories(third_party/c-ares/include SYSTEM)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/third_party/c-ares SYSTEM)
@@ -1828,9 +1829,9 @@ set(SUPPORT_LIBS c-ares ${SUPPORT_LIBS})
 # *****************************************************************************************
 #           Nghttp2 Library
 # *****************************************************************************************
-set(ENABLE_LIB_ONLY on)
-set(ENABLE_SHARED_LIB off)
-set(ENABLE_STATIC_LIB on)
+set(ENABLE_LIB_ONLY ON CACHE BOOL "")
+set(ENABLE_SHARED_LIB OFF CACHE BOOL "")
+set(ENABLE_STATIC_LIB ON CACHE BOOL "")
 include_directories(third_party/nghttp2/lib/includes SYSTEM)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/third_party/nghttp2/lib/includes SYSTEM)
 add_subdirectory(third_party/nghttp2)
