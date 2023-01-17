@@ -6,6 +6,8 @@ set(quiche_SRCS
 
   overrides/quiche_platform_impl/quiche_bug_tracker_impl.h
   #overrides/quiche_platform_impl/quiche_client_stats_impl.h
+  overrides/quiche_platform_impl/quiche_command_line_flags_impl.h
+  overrides/quiche_platform_impl/quiche_command_line_flags_impl.cc
   overrides/quiche_platform_impl/quiche_containers_impl.h
   overrides/quiche_platform_impl/quiche_export_impl.h
   overrides/quiche_platform_impl/quiche_iovec_impl.h
