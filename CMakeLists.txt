@@ -176,8 +176,8 @@ else()
   set(COMPILER_MSVC FALSE)
 endif()
 
-if (COMPILER_MSVC AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16.0)
-  message(FATAL_ERROR "Microsoft Visual C++ beblow 2019 is no longer supported.")
+if (COMPILER_MSVC)
+  message(FATAL_ERROR "Only clang-cl is supported on Windows, see https://crbug.com/988071")
 endif()
 
 if((${CMAKE_LINKER} MATCHES "lld") AND (${CMAKE_AR} MATCHES "llvm-lib" OR ${CMAKE_AR} MATCHES "llvm-ar"))
