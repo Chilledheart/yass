@@ -1,19 +1,19 @@
 add_library(url STATIC
-  # polyfiles
-  #../googleurl/base/allocator/buildflags.h
-  #../googleurl/base/base_export.h
-  #../googleurl/base/check.h
-  #../googleurl/base/check_op.h
-  #../googleurl/base/component_export.h
-  #../googleurl/base/cpu_reduction_experiment.h
-  #../googleurl/base/dcheck_is_on.h
-  #../googleurl/base/debug/alias.h
-  #../googleurl/base/export_template.h
-  #../googleurl/base/feature_list.h
-  #../googleurl/base/logging.h
-  #../googleurl/base/memory/raw_ptr.h
-  #../googleurl/base/metrics/histogram_macros.h
-  #../googleurl/base/notreached.h
+  # polyfills
+  ../googleurl/polyfills/base/allocator/buildflags.h
+  ../googleurl/polyfills/base/base_export.h
+  ../googleurl/polyfills/base/check.h
+  ../googleurl/polyfills/base/check_op.h
+  ../googleurl/polyfills/base/component_export.h
+  ../googleurl/polyfills/base/cpu_reduction_experiment.h
+  ../googleurl/polyfills/base/dcheck_is_on.h
+  ../googleurl/polyfills/base/debug/alias.h
+  ../googleurl/polyfills/base/export_template.h
+  ../googleurl/polyfills/base/feature_list.h
+  ../googleurl/polyfills/base/logging.h
+  ../googleurl/polyfills/base/memory/raw_ptr.h
+  ../googleurl/polyfills/base/metrics/histogram_macros.h
+  ../googleurl/polyfills/base/notreached.h
   ../googleurl/polyfills/base/trace_event/memory_usage_estimator.h
   # base
   ../googleurl/base/bits.h
