@@ -1812,6 +1812,30 @@ include_directories(third_party/zlib SYSTEM)
 set(SUPPORT_LIBS zlib ${SUPPORT_LIBS})
 
 # *****************************************************************************************
+#           c-ares Library
+# *****************************************************************************************
+set(CARES_BUILD_TOOLS off)
+set(CARES_SHARED off)
+set(CARES_STATIC on)
+set(CARES_INSTALL off)
+set(CARES_BUILD_TESTS off)
+add_subdirectory(third_party/c-ares)
+include_directories(third_party/c-ares/include SYSTEM)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/third_party/c-ares SYSTEM)
+
+set(SUPPORT_LIBS c-ares ${SUPPORT_LIBS})
+
+# *****************************************************************************************
+#           Nghttp2 Library
+# *****************************************************************************************
+set(ENABLE_LIB_ONLY on)
+set(ENABLE_SHARED_LIB off)
+set(ENABLE_STATIC_LIB on)
+include_directories(third_party/nghttp2/lib/includes SYSTEM)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/third_party/nghttp2/lib/includes SYSTEM)
+add_subdirectory(third_party/nghttp2)
+
+# *****************************************************************************************
 #           QUICHE Library
 # *****************************************************************************************
 

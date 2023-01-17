@@ -205,6 +205,17 @@ set(quiche_SRCS
   src/quiche/http2/adapter/http2_visitor_interface.h
   src/quiche/http2/adapter/noop_header_validator.cc
   src/quiche/http2/adapter/noop_header_validator.h
+  src/quiche/http2/adapter/nghttp2.h
+  src/quiche/http2/adapter/nghttp2_adapter.cc
+  src/quiche/http2/adapter/nghttp2_adapter.h
+  src/quiche/http2/adapter/nghttp2_callbacks.cc
+  src/quiche/http2/adapter/nghttp2_callbacks.h
+  src/quiche/http2/adapter/nghttp2_data_provider.cc
+  src/quiche/http2/adapter/nghttp2_data_provider.h
+  src/quiche/http2/adapter/nghttp2_session.cc
+  src/quiche/http2/adapter/nghttp2_session.h
+  src/quiche/http2/adapter/nghttp2_util.cc
+  src/quiche/http2/adapter/nghttp2_util.h
   src/quiche/http2/adapter/oghttp2_adapter.cc
   src/quiche/http2/adapter/oghttp2_adapter.h
   src/quiche/http2/adapter/oghttp2_session.cc
@@ -813,6 +824,7 @@ target_include_directories(quiche PUBLIC
 target_link_libraries(quiche PRIVATE
   libprotobuf-lite
   zlib
+  nghttp2_static
   crypto
   ssl
   url
