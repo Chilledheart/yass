@@ -990,7 +990,7 @@ def _archive_files_license_files():
     'LICENSE.abseil-cpp': os.path.join('..', 'third_party', 'abseil-cpp', 'LICENSE'),
     'LICENSE.asio': os.path.join('..', 'third_party', 'asio', 'asio', 'LICENSE_1_0.txt'),
     'LICENSE.boringssl': os.path.join('..', 'third_party', 'boringssl', 'src', 'LICENSE'),
-    'LICENSE.chromium': os.path.join('..', 'third_party', 'chromium', 'LICENSE'),
+    'LICENSE.googleurl': os.path.join('..', 'third_party', 'googleurl', 'LICENSE'),
     'LICENSE.icu': os.path.join('..', 'third_party', 'icu', 'LICENSE'),
     'LICENSE.lss': os.path.join('..', 'third_party', 'lss', 'LICENSE'),
     'LICENSE.mozilla': os.path.join('..', 'third_party', 'url', 'third_party', 'mozilla', 'LICENSE.txt'),

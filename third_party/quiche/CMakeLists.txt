@@ -1,3 +1,112 @@
+add_library(url STATIC
+  # polyfiles
+  #../googleurl/base/allocator/buildflags.h
+  #../googleurl/base/base_export.h
+  #../googleurl/base/check.h
+  #../googleurl/base/check_op.h
+  #../googleurl/base/component_export.h
+  #../googleurl/base/cpu_reduction_experiment.h
+  #../googleurl/base/dcheck_is_on.h
+  #../googleurl/base/debug/alias.h
+  #../googleurl/base/export_template.h
+  #../googleurl/base/feature_list.h
+  #../googleurl/base/logging.h
+  #../googleurl/base/memory/raw_ptr.h
+  #../googleurl/base/metrics/histogram_macros.h
+  #../googleurl/base/notreached.h
+  ../googleurl/polyfills/base/trace_event/memory_usage_estimator.h
+  # base
+  ../googleurl/base/bits.h
+  ../googleurl/base/compiler_specific.h
+  ../googleurl/base/containers/checked_iterators.h
+  ../googleurl/base/containers/contains.h
+  ../googleurl/base/containers/contiguous_iterator.h
+  ../googleurl/base/containers/span.h
+  ../googleurl/base/containers/util.h
+  ../googleurl/base/cxx17_backports.h
+  ../googleurl/base/cxx20_is_constant_evaluated.h
+  ../googleurl/base/cxx20_to_address.h
+  ../googleurl/base/debug/crash_logging.h
+  ../googleurl/base/debug/leak_annotations.h
+  ../googleurl/base/functional/identity.h
+  ../googleurl/base/functional/invoke.h
+  ../googleurl/base/functional/not_fn.h
+  ../googleurl/base/memory/raw_ptr_exclusion.h
+  ../googleurl/base/no_destructor.h
+  ../googleurl/base/numerics/checked_math.h
+  ../googleurl/base/numerics/checked_math_impl.h
+  ../googleurl/base/numerics/clamped_math.h
+  ../googleurl/base/numerics/clamped_math_impl.h
+  ../googleurl/base/numerics/safe_conversions.h
+  ../googleurl/base/numerics/safe_conversions_arm_impl.h
+  ../googleurl/base/numerics/safe_conversions_impl.h
+  ../googleurl/base/numerics/safe_math.h
+  ../googleurl/base/numerics/safe_math_arm_impl.h
+  ../googleurl/base/numerics/safe_math_clang_gcc_impl.h
+  ../googleurl/base/numerics/safe_math_shared_impl.h
+  ../googleurl/base/ranges/algorithm.h
+  ../googleurl/base/ranges/functional.h
+  ../googleurl/base/ranges/ranges.h
+  ../googleurl/base/stl_util.h
+  ../googleurl/base/template_util.h
+  ../googleurl/base/strings/string_piece_forward.h
+  ../googleurl/base/strings/string_piece.h
+  ../googleurl/base/strings/string_util.h
+  ../googleurl/base/strings/string_util_impl_helpers.h
+  ../googleurl/base/strings/string_util_internal.h
+  ../googleurl/base/strings/string_number_conversions.h
+  ../googleurl/base/strings/utf_string_conversions.h
+  ../googleurl/base/strings/utf_string_conversion_utils.h
+  ../googleurl/base/win/win_handle_types.h
+  ../googleurl/base/debug/crash_logging.cc
+  ../googleurl/base/strings/string_piece.cc
+  ../googleurl/base/strings/string_util.cc
+  ../googleurl/base/strings/string_util_constants.cc
+  ../googleurl/base/strings/utf_string_conversion_utils.cc
+  ../googleurl/base/strings/utf_string_conversions.cc
+  # icu
+  ../googleurl/base/third_party/icu/icu_utf.h
+  # url
+  ../googleurl/url/gurl.cc
+  ../googleurl/url/third_party/mozilla/url_parse.cc
+  ../googleurl/url/url_canon.cc
+  ../googleurl/url/url_canon_etc.cc
+  ../googleurl/url/url_canon_filesystemurl.cc
+  ../googleurl/url/url_canon_fileurl.cc
+  ../googleurl/url/url_canon_host.cc
+  ../googleurl/url/url_canon_internal.cc
+  ../googleurl/url/url_canon_internal.h
+  ../googleurl/url/url_canon_internal_file.h
+  ../googleurl/url/url_canon_ip.cc
+  ../googleurl/url/url_canon_mailtourl.cc
+  ../googleurl/url/url_canon_path.cc
+  ../googleurl/url/url_canon_pathurl.cc
+  ../googleurl/url/url_canon_query.cc
+  ../googleurl/url/url_canon_relative.cc
+  ../googleurl/url/url_canon_stdstring.cc
+  ../googleurl/url/url_canon_stdurl.cc
+  ../googleurl/url/url_constants.cc
+  ../googleurl/url/url_features.cc
+  ../googleurl/url/url_parse_file.cc
+  ../googleurl/url/url_parse_internal.h
+  ../googleurl/url/url_util.cc
+  ../googleurl/url/url_util_internal.h
+  # ../googleurl/url/scheme_host_port.cc
+  # ../googleurl/url/scheme_host_port.h
+  # ../googleurl/url/origin.cc
+  # ../googleurl/url/origin.h
+  # IDNA: if with system icu ../googleurl/url/url_idna_icu.cc
+  ../googleurl/url/url_idna_ascii_only.cc
+  )
+
+target_include_directories(url PUBLIC
+  ../googleurl
+  ../googleurl/polyfills
+  )
+
+target_link_libraries(url PUBLIC
+  absl::optional)
+
 set(quiche_SRCS
   overrides/quiche_platform_impl/quiche_stack_trace_impl.h
   overrides/quiche_platform_impl/quiche_stack_trace_impl.cc
@@ -26,51 +135,7 @@ set(quiche_SRCS
   #overrides/quiche_platform_impl/quiche_default_proof_providers_impl.cc
   #overrides/quiche_platform_impl/quiche_default_proof_providers_impl.h
   overrides/quiche_platform_impl/quiche_system_event_loop_impl.h
-  ../icu/icu_utf.h
-  ../url/third_party/mozilla/url_parse.cc
-  ../url/third_party/mozilla/url_parse.h
-  ../chromium/net/base/escape.cc
-  ../chromium/net/base/escape.h
-  ../chromium/net/base/ip_address.cc
-  ../chromium/net/base/ip_address.h
-  ../chromium/net/base/parse_number.cc
-  ../chromium/net/base/parse_number.h
-  ../chromium/net/base/url_util.cc
-  ../chromium/net/base/url_util.h
-  ../chromium/net/base/net_errors.cc
-  ../chromium/net/base/net_errors.h
-  ../chromium/net/base/net_error_list.h
-  ../chromium/url/gurl.cc
-  ../chromium/url/gurl.h
-  ../chromium/url/scheme_host_port.cc
-  ../chromium/url/scheme_host_port.h
-  ../chromium/url/url_canon_etc.cc
-  ../chromium/url/url_canon_filesystemurl.cc
-  ../chromium/url/url_canon_fileurl.cc
-  ../chromium/url/url_canon_mailtourl.cc
-  ../chromium/url/url_canon_pathurl.cc
-  ../chromium/url/url_canon_relative.cc
-  ../chromium/url/url_canon_stdurl.cc
-  ../chromium/url/url_canon_host.cc
-  ../chromium/url/url_canon_path.cc
-  ../chromium/url/url_canon_query.cc
-  ../chromium/url/url_canon.cc
-  ../chromium/url/url_canon.h
-  ../chromium/url/url_canon_internal.cc
-  ../chromium/url/url_canon_internal.h
-  ../chromium/url/url_canon_ip.cc
-  ../chromium/url/url_canon_ip.h
-  ../chromium/url/url_canon_stdstring.cc
-  ../chromium/url/url_canon_stdstring.h
-  ../chromium/url/url_constants.cc
-  ../chromium/url/url_constants.h
-  ../chromium/url/url_util.cc
-  ../chromium/url/url_util.h
-  ../chromium/url/url_util_internal.h
-  ../chromium/url/url_parse_file.cc
-  ../chromium/url/url_idna_icu.cc
-  ../chromium/url/origin.cc
-  ../chromium/url/origin.h
+
   src/quiche/binary_http/binary_http_message.cc
   src/quiche/binary_http/binary_http_message.h
   src/quiche/common/platform/api/quiche_bug_tracker.h
@@ -728,7 +793,7 @@ set(quiche_protos
 set(PROTOBUF_IMPORT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src)
 protobuf_generate_cpp(quiche_protos_SRCS quiche_protos_HDRS ${quiche_protos})
 
-add_library(quiche OBJECT
+add_library(quiche STATIC
   ${quiche_SRCS}
   ${quiche_protos_SRCS}
   )
@@ -737,7 +802,7 @@ target_include_directories(quiche PUBLIC
   ${CMAKE_CURRENT_BINARY_DIR}/src
   ${CMAKE_CURRENT_BINARY_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/overrides
-  ${CMAKE_CURRENT_SOURCE_DIR}/../chromium
+  ${CMAKE_CURRENT_SOURCE_DIR}/../googleurl
   ${CMAKE_CURRENT_SOURCE_DIR}/..
   ${CMAKE_CURRENT_SOURCE_DIR}/../../src
   ${CMAKE_CURRENT_SOURCE_DIR}/../../
@@ -748,6 +813,26 @@ target_include_directories(quiche PUBLIC
 target_link_libraries(quiche PRIVATE
   libprotobuf-lite
   zlib
+  crypto
+  ssl
+  url
+  absl::container_common
+  absl::btree
+  absl::flat_hash_map
+  absl::flat_hash_set
+  absl::inlined_vector
+  absl::node_hash_map
+  absl::hash
+  absl::memory
+  absl::int128
+  absl::status
+  absl::statusor
+  absl::strings
+  absl::str_format
+  absl::time
+  absl::optional
+  absl::span
+
   absl::synchronization
   absl::stacktrace
   absl::symbolize
