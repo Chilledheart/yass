@@ -43,6 +43,9 @@ cmake3 -DCMAKE_INSTALL_PREFIX=%{buildroot}/usr ..
 rm -rf %{buildroot}
 ninja install
 cd ..
+rm -rf %{buildroot}/usr/include
+rm -rf %{buildroot}/usr/lib64
+rm -rf %{buildroot}/usr/share
 
 %post
 update-desktop-database

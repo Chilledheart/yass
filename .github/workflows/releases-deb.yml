@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        distro: [trusty]
+        distro: [xenial]
         arch: [amd64]
         include:
           - distro: bionic
