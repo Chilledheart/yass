@@ -45,7 +45,9 @@ ninja install
 cd ..
 rm -rf %{buildroot}/usr/include
 rm -rf %{buildroot}/usr/lib64
-rm -rf %{buildroot}/usr/share
+rm -rf %{buildroot}/usr/share/doc
+rm -rf %{buildroot}/usr/share/man
+rm -rf %{buildroot}/usr/share/yass/fetch-ocsp-response
 
 %post
 update-desktop-database
