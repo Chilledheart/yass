@@ -812,16 +812,16 @@ add_library(quiche STATIC
 target_include_directories(quiche PUBLIC
   ${CMAKE_CURRENT_BINARY_DIR}/src
   ${CMAKE_CURRENT_BINARY_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/overrides
   ${CMAKE_CURRENT_SOURCE_DIR}/../googleurl
   ${CMAKE_CURRENT_SOURCE_DIR}/..
   ${CMAKE_CURRENT_SOURCE_DIR}/../../src
   ${CMAKE_CURRENT_SOURCE_DIR}/../../
+  ${CMAKE_CURRENT_SOURCE_DIR}/overrides
   src/quiche/common/platform/default
   src
   )
 
-target_link_libraries(quiche PRIVATE
+target_link_libraries(quiche PUBLIC
   libprotobuf-lite
   zlib
   nghttp2_static

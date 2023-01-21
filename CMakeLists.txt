@@ -1842,10 +1842,15 @@ add_subdirectory(third_party/nghttp2)
 
 # include both of googleurl and quiche
 # TODO:Uncomment the below line out
-# add_definitions(-DHAVE_QUICHE)
+add_definitions(-DHAVE_QUICHE)
 add_subdirectory(third_party/quiche)
-include_directories(third_party/quiche SYSTEM)
-set(SUPPORT_LIBS quiche ${SUPPORT_LIBS})
+include_directories(
+  third_party/googleurl
+  third_party/googleurl/polyfills
+  third_party/quiche/overrides
+  third_party/quiche/src
+  SYSTEM)
+set(SUPPORT_LIBS url quiche ${SUPPORT_LIBS})
 
 # *****************************************************************************************
 #           Compiler warning flags
@@ -2506,7 +2511,9 @@ if (GUI)
 
     target_link_libraries(${APP_NAME} PUBLIC
       yass_cli_lib
-      ${GUI_LIBRARIES} ${SUPPORT_LIBS})
+      ${GUI_LIBRARIES}
+      ${SUPPORT_LIBS}
+    )
 
     if (GUI_FLAVOUR STREQUAL "windows" AND MSVC)
       # Most of the dlls are simply not required at startup (or at all, depending

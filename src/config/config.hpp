@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
+/* Copyright (c) 2019-2023 Chilledheart  */
 
 #ifndef H_CONFIG_CONFIG
 #define H_CONFIG_CONFIG
@@ -17,6 +17,7 @@
 
 ABSL_DECLARE_FLAG(std::string, server_host);
 ABSL_DECLARE_FLAG(int32_t, server_port);
+ABSL_DECLARE_FLAG(std::string, username);
 ABSL_DECLARE_FLAG(std::string, password);
 ABSL_DECLARE_FLAG(std::string, method);
 ABSL_DECLARE_FLAG(int32_t, cipher_method);

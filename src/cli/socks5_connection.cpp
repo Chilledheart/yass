@@ -16,7 +16,27 @@ namespace {
 // milliseconds have passed, return ERR_IO_PENDING from ReadLoop.
 const int kYieldAfterBytesRead = 32 * 1024;
 const int kYieldAfterDurationMilliseconds = 20;
-} // namespace
+
+std::vector<http2::adapter::Header> GenerateHeaders(int status,
+                                                    std::vector<std::pair<std::string, std::string>> headers) {
+  std::vector<http2::adapter::Header> response_vector;
+  response_vector.emplace_back(
+      http2::adapter::HeaderRep(std::string(":status")),
+      http2::adapter::HeaderRep(std::to_string(status)));
+  for (const auto& header : headers) {
+    // Connection (and related) headers are considered malformed and will
+    // result in a client error
+    if (header.first == "Connection")
+      continue;
+    response_vector.emplace_back(
+        http2::adapter::HeaderRep(header.first),
+        http2::adapter::HeaderRep(header.second));
+  }
+
+  return response_vector;
+}
+
+} // anonymous namespace
 
 // 32K / 4k = 8
 #define MAX_DOWNSTREAM_DEPS 8
@@ -126,6 +146,45 @@ static void http_request_reforge_to_bytes(
   *header = ss.str();
 }
 
+bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length)  {
+  absl::string_view payload(
+      reinterpret_cast<const char*>(chunks_.front()->data()), payload_length);
+  std::string concatenated = absl::StrCat(frame_header, payload);
+  const int64_t result = connection_->OnReadyToSend(concatenated);
+  // Write encountered error.
+  if (result < 0) {
+    connection_->OnConnectionError(http2::adapter::Http2VisitorInterface::ConnectionError::kSendError);
+    return false;
+  }
+
+  // Write blocked.
+  if (result == 0) {
+#if 0
+    connection_->blocked_streams_.insert(*stream_id_);
+#endif
+    return false;
+  }
+
+  if (static_cast<const size_t>(result) < concatenated.size()) {
+    // Probably need to handle this better within this test class.
+    QUICHE_LOG(DFATAL)
+        << "DATA frame not fully flushed. Connection will be corrupt!";
+    connection_->OnConnectionError(http2::adapter::Http2VisitorInterface::ConnectionError::kSendError);
+    return false;
+  }
+
+  chunks_.front()->trimStart(payload_length);
+
+  if (chunks_.front()->empty())
+    chunks_.pop_front();
+
+  if (chunks_.empty() && send_completion_callback_) {
+    std::move(send_completion_callback_).operator()();
+  }
+
+  return true;
+}
+
 Socks5Connection::Socks5Connection(
     asio::io_context& io_context,
     const asio::ip::tcp::endpoint& remote_endpoint)
@@ -180,6 +239,114 @@ void Socks5Connection::close() {
   if (cb) {
     cb();
   }
+}
+
+void Socks5Connection::SendIfNotProcessing() {
+  if (!processing_responses_) {
+    processing_responses_ = true;
+    adapter_->Send();
+    processing_responses_ = false;
+  }
+}
+
+//
+// http2::adapter::Http2VisitorInterface
+//
+
+int64_t Socks5Connection::OnReadyToSend(absl::string_view serialized) {
+  if (upstream_.size() >= MAX_UPSTREAM_DEPS && downstream_readable_) {
+    return kSendBlocked;
+  }
+
+  std::shared_ptr<IOBuf> buf =
+    IOBuf::copyBuffer(serialized.data(), serialized.size());
+  OnUpstreamWrite(buf);
+  return serialized.size();
+}
+
+http2::adapter::Http2VisitorInterface::OnHeaderResult
+Socks5Connection::OnHeaderForStream(StreamId stream_id,
+                                    absl::string_view key,
+                                    absl::string_view value) {
+  stream_id_ = stream_id;
+
+  return http2::adapter::Http2VisitorInterface::HEADER_OK;
+}
+
+bool Socks5Connection::OnEndStream(StreamId stream_id) {
+  return true;
+}
+
+bool Socks5Connection::OnFrameHeader(StreamId /*stream_id*/,
+                                     size_t /*length*/,
+                                     uint8_t /*type*/,
+                                     uint8_t /*flags*/) {
+  return true;
+}
+
+bool Socks5Connection::OnBeginHeadersForStream(StreamId stream_id) {
+  return true;
+}
+
+bool Socks5Connection::OnBeginDataForStream(StreamId stream_id,
+                                            size_t payload_length) {
+  return true;
+}
+
+bool Socks5Connection::OnDataForStream(StreamId stream_id,
+                                       absl::string_view data) {
+#if 0
+  auto request = request_map_.find(stream_id);
+  if (request == request_map_.end()) {
+    // We should not receive data before receiving headers.
+    return false;
+  }
+#endif
+  std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(data.data(), data.size());
+  OnDownstreamWrite(buf);
+  adapter_->MarkDataConsumedForStream(stream_id, data.size());
+  return true;
+}
+
+bool Socks5Connection::OnDataPaddingLength(StreamId stream_id,
+                                           size_t padding_length) {
+  adapter_->MarkDataConsumedForStream(stream_id, padding_length);
+  return true;
+}
+
+bool Socks5Connection::OnGoAway(StreamId last_accepted_stream_id,
+                                http2::adapter::Http2ErrorCode error_code,
+                                absl::string_view opaque_data) {
+  return true;
+}
+
+int Socks5Connection::OnBeforeFrameSent(uint8_t frame_type,
+                                        StreamId stream_id,
+                                        size_t length,
+                                        uint8_t flags) {
+  return 0;
+}
+
+int Socks5Connection::OnFrameSent(uint8_t frame_type,
+                                  StreamId stream_id,
+                                  size_t length,
+                                  uint8_t flags,
+                                  uint32_t error_code) {
+  return 0;
+}
+
+bool Socks5Connection::OnInvalidFrame(StreamId stream_id,
+                                      InvalidFrameError error) {
+  return true;
+}
+
+bool Socks5Connection::OnMetadataForStream(StreamId stream_id,
+                                           absl::string_view metadata) {
+  return true;
+}
+
+bool Socks5Connection::OnMetadataEndForStream(StreamId stream_id) {
+  return true;
 }
 
 void Socks5Connection::ReadMethodSelect() {
@@ -287,9 +454,7 @@ asio::error_code Socks5Connection::OnReadRedirHandshake(
     // no handshake required to be written
     SetState(state_stream);
 
-    ss_request_ = std::make_unique<ss::request>(endpoint);
-    ByteRange req(ss_request_->data(), ss_request_->length());
-    OnCmdConnect(IOBuf::copyBuffer(req));
+    OnCmdConnect(endpoint);
     asio::error_code ec;
 
     if (buf->length()) {
@@ -649,36 +814,7 @@ std::shared_ptr<IOBuf> Socks5Connection::GetNextDownstreamBuf(asio::error_code &
     ec = asio::error_code();
     return downstream_.front();
   }
-  if (!upstream_readable_) {
-    ec = asio::error::try_again;
-    return nullptr;
-  }
-  std::shared_ptr<IOBuf> buf{IOBuf::create(SOCKET_BUF_SIZE).release()};
-  buf->reserve(0, SOCKET_BUF_SIZE);
-  size_t read;
-  do {
-    ec = asio::error_code();
-    read = channel_->read_some(buf, ec);
-    if (ec == asio::error::interrupted) {
-      continue;
-    }
-  } while(false);
-  buf->append(read);
-  if (read) {
-    VLOG(3) << "Connection (client) " << connection_id()
-            << " upstream: received reply (pipe): " << read << " bytes.";
-  } else {
-    return nullptr;
-  }
-  auto plainbuf = DecryptData(buf);
-  if (!plainbuf->empty()) {
-    downstream_.push_back(plainbuf);
-  }
-  if (downstream_.empty()) {
-    ec = asio::error::try_again;
-    return nullptr;
-  }
-  return downstream_.front();
+  return nullptr;
 }
 
 void Socks5Connection::WriteUpstreamInPipe() {
@@ -778,13 +914,6 @@ std::shared_ptr<IOBuf> Socks5Connection::GetNextUpstreamBuf(asio::error_code &ec
 asio::error_code Socks5Connection::PerformCmdOpsV5(
     const socks5::request* request,
     socks5::reply* reply) {
-  if (request->address_type() == socks5::domain) {
-    ss_request_ =
-        std::make_unique<ss::request>(request->domain_name(), request->port());
-  } else {
-    ss_request_ = std::make_unique<ss::request>(request->endpoint());
-  }
-
   asio::error_code ec;
 
   switch (request->command()) {
@@ -798,8 +927,11 @@ asio::error_code Socks5Connection::PerformCmdOpsV5(
       reply->set_endpoint(endpoint);
       reply->mutable_status() = socks5::reply::request_granted;
 
-      ByteRange req(ss_request_->data(), ss_request_->length());
-      OnCmdConnect(IOBuf::copyBuffer(req));
+      if (request->address_type() == socks5::domain) {
+        OnCmdConnect(request->domain_name(), request->port());
+      } else {
+        OnCmdConnect(request->endpoint());
+      }
     } break;
     case socks5::cmd_bind:
     case socks5::cmd_udp_associate:
@@ -818,13 +950,6 @@ asio::error_code Socks5Connection::PerformCmdOpsV5(
 asio::error_code Socks5Connection::PerformCmdOpsV4(
     const socks4::request* request,
     socks4::reply* reply) {
-  if (request->is_socks4a()) {
-    ss_request_ =
-        std::make_unique<ss::request>(request->domain_name(), request->port());
-  } else {
-    ss_request_ = std::make_unique<ss::request>(request->endpoint());
-  }
-
   asio::error_code ec;
 
   switch (request->command()) {
@@ -847,8 +972,11 @@ asio::error_code Socks5Connection::PerformCmdOpsV4(
         reply->mutable_status() = socks4::reply::request_granted;
       }
 
-      ByteRange req(ss_request_->data(), ss_request_->length());
-      OnCmdConnect(IOBuf::copyBuffer(req));
+      if (request->is_socks4a()) {
+        OnCmdConnect(request->domain_name(), request->port());
+      } else {
+        OnCmdConnect(request->endpoint());
+      }
     } break;
     case socks4::cmd_bind:
     default:
@@ -864,10 +992,7 @@ asio::error_code Socks5Connection::PerformCmdOpsV4(
 }
 
 asio::error_code Socks5Connection::PerformCmdOpsHttp() {
-  ss_request_ = std::make_unique<ss::request>(http_host_, http_port_);
-
-  ByteRange req(ss_request_->data(), ss_request_->length());
-  OnCmdConnect(IOBuf::copyBuffer(req));
+  OnCmdConnect(http_host_, http_port_);
 
   return asio::error_code();
 }
@@ -987,7 +1112,57 @@ void Socks5Connection::ProcessSentData(asio::error_code ec,
   }
 };
 
-void Socks5Connection::OnCmdConnect(std::shared_ptr<IOBuf> buf) {
+void Socks5Connection::OnCmdConnect(const asio::ip::tcp::endpoint& endpoint) {
+  if (adapter_) {
+    std::unique_ptr<DataFrameSource> data_frame =
+      std::make_unique<DataFrameSource>(this, stream_id_);
+    data_frame_ = data_frame.get();
+    std::vector<std::pair<std::string, std::string>> headers;
+    headers.push_back({":method", "CONNECT"});
+    //    URI         = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
+    // headers.push_back({":scheme", "https"});
+    //    authority   = [ userinfo "@" ] host [ ":" port ]
+    headers.push_back({":authority", endpoint.address().to_string() + ":" + std::to_string(endpoint.port())});
+    headers.push_back({":path", "/"});
+    headers.push_back({"Accept", "*/*"});
+    headers.push_back({"User-Agent", "curl/7.38.1"});
+    headers.push_back({"Host", endpoint.address().to_string()});
+    adapter_->SubmitRequest(
+      GenerateHeaders(200, headers), std::move(data_frame), nullptr);
+    SendIfNotProcessing();
+    return;
+  }
+  ss_request_ = std::make_unique<ss::request>(endpoint);
+  ByteRange req(ss_request_->data(), ss_request_->length());
+  std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);
+  OnConnect();
+  // write variable address directly as ss header
+  OnUpstreamWrite(EncryptData(buf));
+}
+
+void Socks5Connection::OnCmdConnect(const std::string& domain_name, uint16_t port) {
+  if (adapter_) {
+    std::unique_ptr<DataFrameSource> data_frame =
+      std::make_unique<DataFrameSource>(this, stream_id_);
+    data_frame_ = data_frame.get();
+    std::vector<std::pair<std::string, std::string>> headers;
+    headers.push_back({":method", "CONNECT"});
+    //    URI         = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
+    // headers.push_back({":scheme", "https"});
+    //    authority   = [ userinfo "@" ] host [ ":" port ]
+    headers.push_back({":authority", domain_name + ":" + std::to_string(port)});
+    headers.push_back({":path", "/"});
+    headers.push_back({"Accept", "*/*"});
+    headers.push_back({"User-Agent", "curl/7.38.1"});
+    headers.push_back({"Host", domain_name});
+    adapter_->SubmitRequest(
+      GenerateHeaders(200, headers), std::move(data_frame), nullptr);
+    SendIfNotProcessing();
+    return;
+  }
+  ss_request_ = std::make_unique<ss::request>(domain_name, port);
+  ByteRange req(ss_request_->data(), ss_request_->length());
+  std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);
   OnConnect();
   // write variable address directly as ss header
   OnUpstreamWrite(EncryptData(buf));
@@ -999,6 +1174,12 @@ void Socks5Connection::OnConnect() {
   // create lazy
   channel_ = std::make_unique<stream>(*io_context_, remote_endpoint_, this);
   channel_->connect();
+
+  if (absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2) {
+    http2::adapter::OgHttp2Adapter::Options options;
+    options.perspective = http2::adapter::Perspective::kClient;
+    adapter_ = http2::adapter::OgHttp2Adapter::Create(*this, options);
+  }
 }
 
 void Socks5Connection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
@@ -1009,6 +1190,14 @@ void Socks5Connection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
     DisableStreamRead();
   }
 
+  // SendContents
+  if (adapter_) {
+    data_frame_->AddChunk(buf);
+    data_frame_->SetSendCompletionCallback(std::function<void()>());
+    adapter()->ResumeStream(stream_id_);
+    SendIfNotProcessing();
+    return;
+  }
   OnUpstreamWrite(EncryptData(buf));
 }
 
@@ -1121,6 +1310,19 @@ void Socks5Connection::received(std::shared_ptr<IOBuf> buf) {
     channel_->disable_read();
   }
 
+  if (adapter_) {
+    absl::string_view remaining_buffer(
+        reinterpret_cast<const char*>(buf->data()), buf->length());
+    while (!remaining_buffer.empty()) {
+      int result = adapter_->ProcessBytes(remaining_buffer);
+      if (result < 0) {
+        OnDisconnect(asio::error::invalid_argument);
+        return;
+      }
+      remaining_buffer = remaining_buffer.substr(result);
+    }
+    return;
+  }
   auto plainbuf = DecryptData(buf);
   if (!plainbuf->empty()) {
     OnDownstreamWrite(plainbuf);
