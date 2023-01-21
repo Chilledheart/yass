@@ -9,6 +9,7 @@
 #include "core/asio.hpp"
 #include "core/cipher.hpp"
 #include "core/utils.hpp"
+#include "core/base64.hpp"
 
 namespace {
 // from spdy_session.h
@@ -17,12 +18,14 @@ namespace {
 const int kYieldAfterBytesRead = 32 * 1024;
 const int kYieldAfterDurationMilliseconds = 20;
 
-std::vector<http2::adapter::Header> GenerateHeaders(int status,
-                                                    std::vector<std::pair<std::string, std::string>> headers) {
+std::vector<http2::adapter::Header> GenerateHeaders(std::vector<std::pair<std::string, std::string>> headers,
+                                                    int status = 0) {
   std::vector<http2::adapter::Header> response_vector;
-  response_vector.emplace_back(
-      http2::adapter::HeaderRep(std::string(":status")),
-      http2::adapter::HeaderRep(std::to_string(status)));
+  if (status) {
+    response_vector.emplace_back(
+        http2::adapter::HeaderRep(std::string(":status")),
+        http2::adapter::HeaderRep(std::to_string(status)));
+  }
   for (const auto& header : headers) {
     // Connection (and related) headers are considered malformed and will
     // result in a client error
@@ -34,6 +37,13 @@ std::vector<http2::adapter::Header> GenerateHeaders(int status,
   }
 
   return response_vector;
+}
+
+std::string GetProxyAuthorizationIdentity() {
+  std::string result, user_pass = absl::GetFlag(FLAGS_username) + ":" +
+    absl::GetFlag(FLAGS_password);
+  Base64Encode(user_pass, &result);
+  return result;
 }
 
 } // anonymous namespace
@@ -1123,12 +1133,12 @@ void Socks5Connection::OnCmdConnect(const asio::ip::tcp::endpoint& endpoint) {
     // headers.push_back({":scheme", "https"});
     //    authority   = [ userinfo "@" ] host [ ":" port ]
     headers.push_back({":authority", endpoint.address().to_string() + ":" + std::to_string(endpoint.port())});
-    headers.push_back({":path", "/"});
     headers.push_back({"Accept", "*/*"});
     headers.push_back({"User-Agent", "curl/7.38.1"});
-    headers.push_back({"Host", endpoint.address().to_string()});
+    headers.push_back({"Host", endpoint.address().to_string() + ":" + std::to_string(endpoint.port())});
+    headers.push_back({"Proxy-Authorization", "basic " + GetProxyAuthorizationIdentity()});
     adapter_->SubmitRequest(
-      GenerateHeaders(200, headers), std::move(data_frame), nullptr);
+      GenerateHeaders(headers), std::move(data_frame), nullptr);
     SendIfNotProcessing();
     return;
   }
@@ -1151,12 +1161,12 @@ void Socks5Connection::OnCmdConnect(const std::string& domain_name, uint16_t por
     // headers.push_back({":scheme", "https"});
     //    authority   = [ userinfo "@" ] host [ ":" port ]
     headers.push_back({":authority", domain_name + ":" + std::to_string(port)});
-    headers.push_back({":path", "/"});
     headers.push_back({"Accept", "*/*"});
     headers.push_back({"User-Agent", "curl/7.38.1"});
-    headers.push_back({"Host", domain_name});
+    headers.push_back({"Host", domain_name + ":" + std::to_string(port)});
+    headers.push_back({"Proxy-Authorization", "basic " + GetProxyAuthorizationIdentity()});
     adapter_->SubmitRequest(
-      GenerateHeaders(200, headers), std::move(data_frame), nullptr);
+      GenerateHeaders(headers), std::move(data_frame), nullptr);
     SendIfNotProcessing();
     return;
   }
