@@ -824,7 +824,50 @@ std::shared_ptr<IOBuf> Socks5Connection::GetNextDownstreamBuf(asio::error_code &
     ec = asio::error_code();
     return downstream_.front();
   }
-  return nullptr;
+  if (!upstream_readable_) {
+    ec = asio::error::try_again;
+    return nullptr;
+  }
+  std::shared_ptr<IOBuf> buf{IOBuf::create(SOCKET_BUF_SIZE).release()};
+  buf->reserve(0, SOCKET_BUF_SIZE);
+  size_t read;
+  do {
+    ec = asio::error_code();
+    read = channel_->read_some(buf, ec);
+    if (ec == asio::error::interrupted) {
+      continue;
+    }
+  } while(false);
+  buf->append(read);
+  if (read) {
+    VLOG(3) << "Connection (client) " << connection_id()
+            << " upstream: received reply (pipe): " << read << " bytes.";
+  } else {
+    return nullptr;
+  }
+  if (adapter_) {
+    absl::string_view remaining_buffer(
+        reinterpret_cast<const char*>(buf->data()), buf->length());
+    while (!remaining_buffer.empty()) {
+      int result = adapter_->ProcessBytes(remaining_buffer);
+      if (result < 0) {
+        ec = asio::error::invalid_argument;
+        disconnected(asio::error::invalid_argument);
+        return nullptr;
+      }
+      remaining_buffer = remaining_buffer.substr(result);
+    }
+  } else {
+    auto plainbuf = DecryptData(buf);
+    if (!plainbuf->empty()) {
+      downstream_.push_back(plainbuf);
+    }
+  }
+  if (downstream_.empty()) {
+    ec = asio::error::try_again;
+    return nullptr;
+  }
+  return downstream_.front();
 }
 
 void Socks5Connection::WriteUpstreamInPipe() {
