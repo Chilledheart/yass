@@ -7,7 +7,6 @@
 
 #include "config/config.hpp"
 #include "core/asio.hpp"
-#include "core/cipher.hpp"
 #include "core/utils.hpp"
 #include "core/base64.hpp"
 
@@ -199,16 +198,7 @@ Socks5Connection::Socks5Connection(
     asio::io_context& io_context,
     const asio::ip::tcp::endpoint& remote_endpoint)
     : Connection(io_context, remote_endpoint),
-      state_(),
-      encoder_(new cipher(
-          "",
-          absl::GetFlag(FLAGS_password),
-          static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)),
-          true)),
-      decoder_(new cipher("",
-                          absl::GetFlag(FLAGS_password),
-                          static_cast<enum cipher_method>(
-                              absl::GetFlag(FLAGS_cipher_method)))) {}
+      state_() {}
 
 Socks5Connection::~Socks5Connection() {
   VLOG(2) << "Connection (client) " << connection_id() << " freed memory";
@@ -257,6 +247,21 @@ void Socks5Connection::SendIfNotProcessing() {
     adapter_->Send();
     processing_responses_ = false;
   }
+}
+
+//
+// cipher_visitor_interface
+//
+bool Socks5Connection::on_received_data(std::shared_ptr<IOBuf> buf) {
+  MSAN_CHECK_MEM_IS_INITIALIZED(buf->data(), buf->length());
+  downstream_.push_back(buf);
+  return true;
+}
+
+void Socks5Connection::on_protocol_error() {
+  LOG(WARNING) << "Connection (client) " << connection_id()
+    << " Protocol error";
+  disconnected(asio::error::connection_aborted);
 }
 
 //
@@ -313,7 +318,7 @@ bool Socks5Connection::OnDataForStream(StreamId stream_id,
   }
 #endif
   std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(data.data(), data.size());
-  OnDownstreamWrite(buf);
+  downstream_.push_back(buf);
   adapter_->MarkDataConsumedForStream(stream_id, data.size());
   return true;
 }
@@ -858,10 +863,7 @@ std::shared_ptr<IOBuf> Socks5Connection::GetNextDownstreamBuf(asio::error_code &
       remaining_buffer = remaining_buffer.substr(result);
     }
   } else {
-    auto plainbuf = DecryptData(buf);
-    if (!plainbuf->empty()) {
-      downstream_.push_back(plainbuf);
-    }
+    decoder_->process_bytes(buf);
   }
   if (downstream_.empty()) {
     ec = asio::error::try_again;
@@ -1224,15 +1226,21 @@ void Socks5Connection::OnCmdConnect(const std::string& domain_name, uint16_t por
 void Socks5Connection::OnConnect() {
   LOG(INFO) << "Connection (client) " << connection_id()
             << " to " << remote_domain();
-  // create lazy
-  channel_ = std::make_unique<stream>(*io_context_, remote_endpoint_, this);
-  channel_->connect();
-
   if (absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2) {
     http2::adapter::OgHttp2Adapter::Options options;
     options.perspective = http2::adapter::Perspective::kClient;
     adapter_ = http2::adapter::OgHttp2Adapter::Create(*this, options);
+  } else {
+    encoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
+      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)),
+      this, true);
+    decoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
+      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)),
+      this);
   }
+  // create lazy
+  channel_ = std::make_unique<stream>(*io_context_, remote_endpoint_, this);
+  channel_->connect();
 }
 
 void Socks5Connection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
@@ -1374,12 +1382,11 @@ void Socks5Connection::received(std::shared_ptr<IOBuf> buf) {
       }
       remaining_buffer = remaining_buffer.substr(result);
     }
+    OnDownstreamWriteFlush();
     return;
   }
-  auto plainbuf = DecryptData(buf);
-  if (!plainbuf->empty()) {
-    OnDownstreamWrite(plainbuf);
-  }
+  decoder_->process_bytes(buf);
+  OnDownstreamWriteFlush();
 }
 
 void Socks5Connection::sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred) {
@@ -1418,25 +1425,13 @@ void Socks5Connection::disconnected(asio::error_code ec) {
   }
 }
 
-std::shared_ptr<IOBuf> Socks5Connection::DecryptData(
-    std::shared_ptr<IOBuf> cipherbuf) {
-  std::shared_ptr<IOBuf> plainbuf = IOBuf::create(SOCKET_BUF_SIZE);
-
-  DumpHex("ERead->", cipherbuf.get());
-  decoder_->decrypt(cipherbuf.get(), &plainbuf);
-  MSAN_CHECK_MEM_IS_INITIALIZED(plainbuf->data(), plainbuf->length());
-  DumpHex("PRead->", plainbuf.get());
-  return plainbuf;
-}
-
 std::shared_ptr<IOBuf> Socks5Connection::EncryptData(
     std::shared_ptr<IOBuf> plainbuf) {
   std::shared_ptr<IOBuf> cipherbuf = IOBuf::create(plainbuf->length() + 100);
   cipherbuf->reserve(0, plainbuf->length() + 100);
 
-  DumpHex("PWrite->", plainbuf.get());
   encoder_->encrypt(plainbuf.get(), &cipherbuf);
   MSAN_CHECK_MEM_IS_INITIALIZED(cipherbuf->data(), cipherbuf->length());
-  DumpHex("EWrite->", cipherbuf.get());
+
   return cipherbuf;
 }

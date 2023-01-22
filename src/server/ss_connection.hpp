@@ -6,6 +6,7 @@
 
 #include "channel.hpp"
 #include "connection.hpp"
+#include "core/cipher.hpp"
 #include "core/iobuf.hpp"
 #include "core/logging.hpp"
 #include "core/ref_counted.hpp"
@@ -24,7 +25,8 @@ namespace ss {
 /// endpoint
 class SsConnection : public RefCountedThreadSafe<SsConnection>,
                      public Channel,
-                     public Connection {
+                     public Connection,
+                     public cipher_visitor_interface {
  public:
   /// The state of service
   enum state {
@@ -67,6 +69,11 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
 
   /// Close the socket and clean up
   void close() override;
+
+ public:
+  // cipher_visitor_interface
+  bool on_received_data(std::shared_ptr<IOBuf> buf) override;
+  void on_protocol_error() override;
 
  private:
   /// flag to mark connection is closed
@@ -169,6 +176,8 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
   /// write the given data to upstream
   void OnUpstreamWrite(std::shared_ptr<IOBuf> buf);
 
+  /// buffer of handshake header
+  std::shared_ptr<IOBuf> handshake_;
   /// the queue to write upstream
   std::deque<std::shared_ptr<IOBuf>> upstream_;
   /// the flag to mark current write
@@ -200,8 +209,6 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
   void disconnected(asio::error_code error) override;
 
  private:
-  /// decrypt data
-  std::shared_ptr<IOBuf> DecryptData(std::shared_ptr<IOBuf> buf);
   /// encrypt data
   std::shared_ptr<IOBuf> EncryptData(std::shared_ptr<IOBuf> buf);
 

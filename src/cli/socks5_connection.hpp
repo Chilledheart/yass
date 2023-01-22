@@ -7,6 +7,7 @@
 #include "channel.hpp"
 #include "cli/socks5_connection_stats.hpp"
 #include "connection.hpp"
+#include "core/cipher.hpp"
 #include "core/http_parser.h"
 #include "core/iobuf.hpp"
 #include "core/logging.hpp"
@@ -71,13 +72,13 @@ class DataFrameSource
   std::function<void()> send_completion_callback_;
 };
 
-class cipher;
 /// The ultimate service class to deliever the network traffic to the remote
 /// endpoint
 class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
                          public Channel,
                          public Connection,
-                         http2::adapter::Http2VisitorInterface {
+                         public cipher_visitor_interface,
+                         public http2::adapter::Http2VisitorInterface {
  public:
   /// The state of service
   enum state {
@@ -139,6 +140,11 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
   bool processing_responses_ = false;
   StreamId stream_id_;
   DataFrameSource* data_frame_;
+
+ public:
+  // cipher_visitor_interface
+  bool on_received_data(std::shared_ptr<IOBuf> buf) override;
+  void on_protocol_error() override;
 
  public:
   // http2::adapter::Http2VisitorInterface
@@ -418,8 +424,6 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
   void disconnected(asio::error_code error) override;
 
  private:
-  /// decrypt data
-  std::shared_ptr<IOBuf> DecryptData(std::shared_ptr<IOBuf> buf);
   /// encrypt data
   std::shared_ptr<IOBuf> EncryptData(std::shared_ptr<IOBuf> buf);
 
