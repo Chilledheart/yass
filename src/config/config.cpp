@@ -18,6 +18,8 @@ ABSL_FLAG(int32_t,
           server_port,
           8443,
           "Port number which remote server listens to");
+
+ABSL_FLAG(std::string, username, "<default-user>", "Username");
 ABSL_FLAG(std::string, password, "<default-pass>", "Password pharsal");
 ABSL_FLAG(std::string,
           method,

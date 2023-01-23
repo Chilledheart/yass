@@ -250,11 +250,12 @@ void cipher::process_bytes(std::shared_ptr<IOBuf> ciphertext) {
       break;
     }
 
+    counter_ = counter;
+
+    // DISCARD
     if (!visitor_->on_received_data(plaintext)) {
       break;
     }
-
-    counter_ = counter;
   }
   chunk_->retreat(chunk_->headroom());
 }

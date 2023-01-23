@@ -172,7 +172,7 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
     return false;
   }
 
-  if (static_cast<const size_t>(result) < concatenated.size()) {
+  if (static_cast<size_t>(result) < concatenated.size()) {
     // Probably need to handle this better within this test class.
     QUICHE_LOG(DFATAL)
         << "DATA frame not fully flushed. Connection will be corrupt!";
@@ -284,7 +284,18 @@ Socks5Connection::OnHeaderForStream(StreamId stream_id,
   return http2::adapter::Http2VisitorInterface::HEADER_OK;
 }
 
+bool Socks5Connection::OnEndHeadersForStream(
+  http2::adapter::Http2StreamId stream_id) {
+  return true;
+}
+
 bool Socks5Connection::OnEndStream(StreamId stream_id) {
+  return true;
+}
+
+bool Socks5Connection::OnCloseStream(StreamId stream_id,
+                                     http2::adapter::Http2ErrorCode error_code) {
+  OnDisconnect(asio::error_code());
   return true;
 }
 

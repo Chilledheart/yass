@@ -92,8 +92,13 @@ bool SsConnection::on_received_data(std::shared_ptr<IOBuf> buf) {
   if (state_ == state_stream) {
     upstream_.push_back(buf);
   } else if (state_ == state_handshake) {
-    DCHECK_EQ(handshake_, nullptr);
-    handshake_ = buf;
+    if (handshake_) {
+      handshake_->reserve(0, buf->length());
+      memcpy(handshake_->mutable_tail(), buf->data(), buf->length());
+      handshake_->append(buf->length());
+    } else {
+      handshake_ = buf;
+    }
   } else {
     return false;
   }
@@ -208,9 +213,8 @@ void SsConnection::ReadStream() {
         }
         buf->append(bytes_transferred);
         self->decoder_->process_bytes(buf);
-        if (!self->upstream_.empty()) {
-          self->OnUpstreamWriteFlush();
-        } else if (self->downstream_readable_) {
+        self->OnUpstreamWriteFlush();
+        if (self->downstream_readable_) {
           self->ReadStream();
         }
       });
