@@ -17,6 +17,11 @@
 #include "crypto/crypter_export.hpp"
 #include "protocol.hpp"
 
+class cipher_visitor_interface {
+ public:
+  virtual bool on_received_data(std::shared_ptr<IOBuf> buf) = 0;
+  virtual void on_protocol_error() = 0;
+};
 class cipher_impl;
 ///
 /// The authenticated encryption used in yass program.
@@ -66,29 +71,27 @@ class cipher {
   cipher(const std::string& key,
          const std::string& password,
          enum cipher_method method,
+         cipher_visitor_interface *visitor,
          bool enc = false);
   ~cipher();
 
-  void decrypt(IOBuf* ciphertext,
-               std::shared_ptr<IOBuf>* plaintext,
-               size_t capacity = SOCKET_BUF_SIZE);
+  void process_bytes(std::shared_ptr<IOBuf> ciphertext);
 
   void encrypt(IOBuf* plaintext,
-               std::shared_ptr<IOBuf>* ciphertext,
-               size_t capacity = SOCKET_BUF_SIZE);
+               std::shared_ptr<IOBuf>* ciphertext);
 
  private:
   void decrypt_salt(IOBuf* chunk);
 
   void encrypt_salt(IOBuf* chunk);
 
-  bool chunk_decrypt_frame(uint64_t* counter,
-                           IOBuf* plaintext,
-                           IOBuf* ciphertext) const;
+  int chunk_decrypt_frame(uint64_t* counter,
+                          IOBuf* plaintext,
+                          IOBuf* ciphertext) const;
 
-  bool chunk_encrypt_frame(uint64_t* counter,
-                           const IOBuf* plaintext,
-                           IOBuf* ciphertext) const;
+  int chunk_encrypt_frame(uint64_t* counter,
+                          const IOBuf* plaintext,
+                          IOBuf* ciphertext) const;
 
   void set_key_aead(const uint8_t* salt, size_t salt_len);
 
@@ -100,11 +103,13 @@ class cipher {
   uint32_t key_len_;
   uint32_t tag_len_;
 
-  cipher_impl* impl_;
+  std::unique_ptr<cipher_impl> impl_;
   uint64_t counter_;
 
   bool init_;
   std::unique_ptr<IOBuf> chunk_;
+
+  cipher_visitor_interface *visitor_;
 };
 
 #endif  // H_CORE_CIPHER

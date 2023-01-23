@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
+/* Copyright (c) 2019-2023 Chilledheart  */
 
 #ifndef H_SOCKS5_CONNECTION
 #define H_SOCKS5_CONNECTION
@@ -7,6 +7,7 @@
 #include "channel.hpp"
 #include "cli/socks5_connection_stats.hpp"
 #include "connection.hpp"
+#include "core/cipher.hpp"
 #include "core/http_parser.h"
 #include "core/iobuf.hpp"
 #include "core/logging.hpp"
@@ -21,16 +22,63 @@
 #include "core/ss_request.hpp"
 #include "protocol.hpp"
 #include "stream.hpp"
+#include "quiche/http2/adapter/oghttp2_adapter.h"
 
 #include <absl/container/flat_hash_map.h>
+#include <absl/strings/string_view.h>
+#include <absl/strings/str_cat.h>
 #include <deque>
 
-class cipher;
+using StreamId = http2::adapter::Http2StreamId;
+template <typename T>
+using StreamMap = absl::flat_hash_map<StreamId, T>;
+
+class Socks5Connection;
+class DataFrameSource
+    : public http2::adapter::DataFrameSource {
+ public:
+  explicit DataFrameSource(Socks5Connection* connection,
+                           const StreamId& stream_id)
+      : connection_(connection), stream_id_(stream_id) {}
+  ~DataFrameSource() override = default;
+  DataFrameSource(const DataFrameSource&) = delete;
+  DataFrameSource& operator=(const DataFrameSource&) = delete;
+
+  std::pair<int64_t, bool> SelectPayloadLength(size_t max_length) override {
+    if (chunks_.empty())
+      return {kBlocked, last_frame_};
+
+    bool finished = (chunks_.size() <= 1) &&
+                    (chunks_.front()->length() <= max_length) && last_frame_;
+
+    return {std::min(chunks_.front()->length(), max_length), finished};
+  }
+
+  bool Send(absl::string_view frame_header, size_t payload_length) override;
+
+  bool send_fin() const override { return true; }
+
+  void AddChunk(std::shared_ptr<IOBuf> chunk) { chunks_.push_back(std::move(chunk)); }
+  void set_last_frame(bool last_frame) { last_frame_ = last_frame; }
+  void SetSendCompletionCallback(std::function<void()> callback) {
+    send_completion_callback_ = std::move(callback);
+  }
+
+ private:
+  Socks5Connection* const connection_;
+  const StreamId stream_id_;
+  std::deque<std::shared_ptr<IOBuf>> chunks_;
+  bool last_frame_ = false;
+  std::function<void()> send_completion_callback_;
+};
+
 /// The ultimate service class to deliever the network traffic to the remote
 /// endpoint
 class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
                          public Channel,
-                         public Connection {
+                         public Connection,
+                         public cipher_visitor_interface,
+                         public http2::adapter::Http2VisitorInterface {
  public:
   /// The state of service
   enum state {
@@ -86,6 +134,76 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
  private:
   /// flag to mark connection is closed
   bool closed_ = true;
+
+ private:
+  void SendIfNotProcessing();
+  bool processing_responses_ = false;
+  StreamId stream_id_ = 0;
+  DataFrameSource* data_frame_;
+
+ public:
+  StreamId blocked_stream_ = 0;
+
+ public:
+  // cipher_visitor_interface
+  bool on_received_data(std::shared_ptr<IOBuf> buf) override;
+  void on_protocol_error() override;
+
+ public:
+  // http2::adapter::Http2VisitorInterface
+  int64_t OnReadyToSend(absl::string_view serialized) override;
+  OnHeaderResult OnHeaderForStream(StreamId stream_id,
+                                   absl::string_view key,
+                                   absl::string_view value) override;
+  bool OnEndHeadersForStream(StreamId stream_id) override;
+  bool OnEndStream(StreamId stream_id) override;
+  bool OnCloseStream(StreamId stream_id,
+                     http2::adapter::Http2ErrorCode error_code) override;
+  // Unused functions
+  void OnConnectionError(ConnectionError /*error*/) override {}
+  bool OnFrameHeader(StreamId /*stream_id*/,
+                     size_t /*length*/,
+                     uint8_t /*type*/,
+                     uint8_t /*flags*/) override;
+  void OnSettingsStart() override {}
+  void OnSetting(http2::adapter::Http2Setting setting) override {}
+  void OnSettingsEnd() override {}
+  void OnSettingsAck() override {}
+  bool OnBeginHeadersForStream(StreamId stream_id) override;
+  bool OnBeginDataForStream(StreamId stream_id, size_t payload_length) override;
+  bool OnDataForStream(StreamId stream_id, absl::string_view data) override;
+  bool OnDataPaddingLength(StreamId stream_id, size_t padding_length) override;
+  void OnRstStream(StreamId stream_id,
+                   http2::adapter::Http2ErrorCode error_code) override {}
+  void OnPriorityForStream(StreamId stream_id,
+                           StreamId parent_stream_id,
+                           int weight,
+                           bool exclusive) override {}
+  void OnPing(http2::adapter::Http2PingId ping_id, bool is_ack) override {}
+  void OnPushPromiseForStream(StreamId stream_id,
+                              StreamId promised_stream_id) override {}
+  bool OnGoAway(StreamId last_accepted_stream_id,
+                http2::adapter::Http2ErrorCode error_code,
+                absl::string_view opaque_data) override;
+  void OnWindowUpdate(StreamId stream_id, int window_increment) override {}
+  int OnBeforeFrameSent(uint8_t frame_type,
+                        StreamId stream_id,
+                        size_t length,
+                        uint8_t flags) override;
+  int OnFrameSent(uint8_t frame_type,
+                  StreamId stream_id,
+                  size_t length,
+                  uint8_t flags,
+                  uint32_t error_code) override;
+  bool OnInvalidFrame(StreamId stream_id, InvalidFrameError error) override;
+  void OnBeginMetadataForStream(StreamId stream_id,
+                                size_t payload_length) override {}
+  bool OnMetadataForStream(StreamId stream_id,
+                           absl::string_view metadata) override;
+  bool OnMetadataEndForStream(StreamId stream_id) override;
+  void OnErrorDebug(absl::string_view message) override {}
+
+  http2::adapter::OgHttp2Adapter* adapter() { return adapter_.get(); }
 
  private:
   /// Get the state machine to the given state
@@ -242,7 +360,8 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
 
  private:
   /// perform cmd connect request
-  void OnCmdConnect(std::shared_ptr<IOBuf> buf);
+  void OnCmdConnect(const asio::ip::tcp::endpoint& endpoint);
+  void OnCmdConnect(const std::string& domain_name, uint16_t port);
 
   /// handle with connnect event (downstream)
   void OnConnect();
@@ -284,6 +403,9 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
   /// the upstream the service bound with
   std::unique_ptr<stream> channel_;
 
+  /// the http2 upstream adapter
+  std::unique_ptr<http2::adapter::OgHttp2Adapter> adapter_;
+
   /// the queue to write downstream
   std::deque<std::shared_ptr<IOBuf>> downstream_;
   /// the flag to mark current read
@@ -305,8 +427,6 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
   void disconnected(asio::error_code error) override;
 
  private:
-  /// decrypt data
-  std::shared_ptr<IOBuf> DecryptData(std::shared_ptr<IOBuf> buf);
   /// encrypt data
   std::shared_ptr<IOBuf> EncryptData(std::shared_ptr<IOBuf> buf);
 

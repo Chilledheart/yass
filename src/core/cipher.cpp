@@ -194,14 +194,15 @@ class cipher_impl {
 cipher::cipher(const std::string& key,
                const std::string& password,
                enum cipher_method method,
+               cipher_visitor_interface *visitor,
                bool enc)
-    : salt_(), key_(), counter_(), init_(false) {
+    : salt_(), key_(), counter_(), init_(false), visitor_(visitor) {
   DCHECK(is_valid_cipher_method(method));
   VLOG(3) << "cipher: " << (enc ? "encoder" : "decoder")
           << " create with key \"" << key << "\" password \"" << password
           << "\" cipher_method: " << to_cipher_method_str(method);
 
-  impl_ = new cipher_impl(method, enc);
+  impl_ = std::make_unique<cipher_impl>(method, enc);
   key_bitlen_ = impl_->GetKeySize() * 8;
   key_len_ = !key.empty()
                  ? cipher_impl::parse_key(key, key_, key_bitlen_ / 8)
@@ -214,15 +215,11 @@ cipher::cipher(const std::string& key,
   tag_len_ = impl_->GetTagSize();
 }
 
-cipher::~cipher() {
-  delete impl_;
-}
+cipher::~cipher() {}
 
-void cipher::decrypt(IOBuf* ciphertext,
-                     std::shared_ptr<IOBuf>* plaintext,
-                     size_t capacity) {
+void cipher::process_bytes(std::shared_ptr<IOBuf> ciphertext) {
   if (!chunk_) {
-    chunk_ = IOBuf::create(capacity);
+    chunk_ = IOBuf::create(SOCKET_BUF_SIZE);
   }
   chunk_->reserve(0, ciphertext->length());
   memcpy(chunk_->mutable_tail(), ciphertext->data(), ciphertext->length());
@@ -237,26 +234,35 @@ void cipher::decrypt(IOBuf* ciphertext,
     init_ = true;
   }
 
-  *plaintext = IOBuf::create(capacity);
-
   while (!chunk_->empty()) {
+    std::shared_ptr<IOBuf> plaintext = IOBuf::create(SOCKET_BUF_SIZE);
+
     uint64_t counter = counter_;
 
-    counter = counter_;
+    int ret = chunk_decrypt_frame(&counter, plaintext.get(), chunk_.get());
 
-    if (!chunk_decrypt_frame(&counter, plaintext->get(), chunk_.get())) {
+    if (ret == -EAGAIN) {
+      break;
+    }
+
+    if (ret < 0) {
+      visitor_->on_protocol_error();
       break;
     }
 
     counter_ = counter;
+
+    // DISCARD
+    if (!visitor_->on_received_data(plaintext)) {
+      break;
+    }
   }
   chunk_->retreat(chunk_->headroom());
 }
 
 void cipher::encrypt(IOBuf* plaintext,
-                     std::shared_ptr<IOBuf>* ciphertext,
-                     size_t capacity) {
-  *ciphertext = std::shared_ptr<IOBuf>(IOBuf::create(capacity).release());
+                     std::shared_ptr<IOBuf>* ciphertext) {
+  *ciphertext = IOBuf::create(SOCKET_BUF_SIZE);
 
   if (!init_) {
     encrypt_salt(ciphertext->get());
@@ -272,7 +278,9 @@ void cipher::encrypt(IOBuf* plaintext,
   counter = counter_;
 
   // TBD better to apply MTU-like things
-  if (!chunk_encrypt_frame(&counter, plaintext, ciphertext->get())) {
+  int ret = chunk_encrypt_frame(&counter, plaintext, ciphertext->get());
+  if (ret < 0) {
+    visitor_->on_protocol_error();
     return;
   }
 
@@ -310,9 +318,9 @@ void cipher::encrypt_salt(IOBuf* chunk) {
 #endif
 }
 
-bool cipher::chunk_decrypt_frame(uint64_t* counter,
-                                 IOBuf* plaintext,
-                                 IOBuf* ciphertext) const {
+int cipher::chunk_decrypt_frame(uint64_t* counter,
+                                IOBuf* plaintext,
+                                IOBuf* ciphertext) const {
   int err;
   size_t mlen;
   size_t tlen = tag_len_;
@@ -324,7 +332,7 @@ bool cipher::chunk_decrypt_frame(uint64_t* counter,
           << " actual: " << ciphertext->length();
 
   if (ciphertext->length() < tlen + CHUNK_SIZE_LEN + tlen) {
-    return false;
+    return -EAGAIN;
   }
 
   union {
@@ -340,7 +348,7 @@ bool cipher::chunk_decrypt_frame(uint64_t* counter,
                              clen);
 
   if (err) {
-    return false;
+    return -EBADMSG;
   }
 
   DCHECK_EQ(plen, CHUNK_SIZE_LEN);
@@ -349,7 +357,7 @@ bool cipher::chunk_decrypt_frame(uint64_t* counter,
   mlen = mlen & CHUNK_SIZE_MASK;
 
   if (mlen == 0) {
-    return false;
+    return -EBADMSG;
   }
 
   ciphertext->trimStart(clen);
@@ -363,7 +371,7 @@ bool cipher::chunk_decrypt_frame(uint64_t* counter,
 
   if (ciphertext->length() < clen) {
     ciphertext->prepend(CHUNK_SIZE_LEN + tlen);
-    return false;
+    return -EAGAIN;
   }
 
   (*counter)++;
@@ -373,7 +381,7 @@ bool cipher::chunk_decrypt_frame(uint64_t* counter,
                              ciphertext->data(), clen);
   if (err) {
     ciphertext->prepend(CHUNK_SIZE_LEN + tlen);
-    return false;
+    return -EBADMSG;
   }
 
   DCHECK_EQ(plen, mlen);
@@ -385,12 +393,12 @@ bool cipher::chunk_decrypt_frame(uint64_t* counter,
   MSAN_UNPOISON(plaintext->tail(), plen);
   plaintext->append(plen);
 
-  return true;
+  return 0;
 }
 
-bool cipher::chunk_encrypt_frame(uint64_t* counter,
-                                 const IOBuf* plaintext,
-                                 IOBuf* ciphertext) const {
+int cipher::chunk_encrypt_frame(uint64_t* counter,
+                                const IOBuf* plaintext,
+                                IOBuf* ciphertext) const {
   size_t tlen = tag_len_;
 
   DCHECK_LE(plaintext->length(), CHUNK_SIZE_MASK);
@@ -415,7 +423,7 @@ bool cipher::chunk_encrypt_frame(uint64_t* counter,
   err = impl_->EncryptPacket(*counter, ciphertext->mutable_tail(), &clen,
                              len.buf, CHUNK_SIZE_LEN);
   if (err) {
-    return false;
+    return -EBADMSG;
   }
 
   DCHECK_EQ(clen, CHUNK_SIZE_LEN + tlen);
@@ -438,7 +446,7 @@ bool cipher::chunk_encrypt_frame(uint64_t* counter,
                              plaintext->data(), plaintext->length());
   if (err) {
     ciphertext->trimEnd(CHUNK_SIZE_LEN + tlen);
-    return false;
+    return -EBADMSG;
   }
 
   DCHECK_EQ(clen, plaintext->length() + tlen);
@@ -447,7 +455,7 @@ bool cipher::chunk_encrypt_frame(uint64_t* counter,
 
   (*counter)++;
 
-  return true;
+  return 0;
 }
 
 void cipher::set_key_aead(const uint8_t* salt, size_t salt_len) {

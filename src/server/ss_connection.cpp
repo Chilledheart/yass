@@ -33,11 +33,13 @@ SsConnection::SsConnection(asio::io_context& io_context,
           "",
           absl::GetFlag(FLAGS_password),
           static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)),
+          this,
           true)),
       decoder_(new cipher("",
                           absl::GetFlag(FLAGS_password),
                           static_cast<enum cipher_method>(
-                              absl::GetFlag(FLAGS_cipher_method)))) {}
+                              absl::GetFlag(FLAGS_cipher_method)),
+                          this)) {}
 
 SsConnection::~SsConnection() {
   VLOG(2) << "Connection (server) " << connection_id() << " freed memory";
@@ -81,6 +83,34 @@ void SsConnection::close() {
   }
 }
 
+//
+// cipher_visitor_interface
+//
+bool SsConnection::on_received_data(std::shared_ptr<IOBuf> buf) {
+  MSAN_CHECK_MEM_IS_INITIALIZED(buf->data(), buf->length());
+  rbytes_transferred_ += buf->length();
+  if (state_ == state_stream) {
+    upstream_.push_back(buf);
+  } else if (state_ == state_handshake) {
+    if (handshake_) {
+      handshake_->reserve(0, buf->length());
+      memcpy(handshake_->mutable_tail(), buf->data(), buf->length());
+      handshake_->append(buf->length());
+    } else {
+      handshake_ = buf;
+    }
+  } else {
+    return false;
+  }
+  return true;
+}
+
+void SsConnection::on_protocol_error() {
+  LOG(WARNING) << "Connection (server) " << connection_id()
+    << " Protocol error";
+  OnDisconnect(asio::error::connection_aborted);
+}
+
 void SsConnection::ReadHandshake() {
   scoped_refptr<SsConnection> self(this);
 
@@ -105,7 +135,12 @@ void SsConnection::ReadHandshake() {
           return;
         }
         cipherbuf->append(bytes_transferred);
-        std::shared_ptr<IOBuf> buf = self->DecryptData(cipherbuf);
+        self->decoder_->process_bytes(cipherbuf);
+        if (!self->handshake_) {
+          self->ReadHandshake();
+          return;
+        }
+        auto buf = self->handshake_;
 
         DumpHex("HANDSHAKE->", buf.get());
 
@@ -177,10 +212,9 @@ void SsConnection::ReadStream() {
           return;
         }
         buf->append(bytes_transferred);
-        auto plainbuf = self->DecryptData(buf);
-        if (!plainbuf->empty()) {
-          self->ProcessReceivedData(plainbuf, ec, plainbuf->length());
-        } else if (self->downstream_readable_) {
+        self->decoder_->process_bytes(buf);
+        self->OnUpstreamWriteFlush();
+        if (self->downstream_readable_) {
           self->ReadStream();
         }
       });
@@ -373,11 +407,7 @@ std::shared_ptr<IOBuf> SsConnection::GetNextUpstreamBuf(asio::error_code &ec) {
   } else {
     return nullptr;
   }
-  rbytes_transferred_ += read;
-  auto plainbuf = DecryptData(buf);
-  if (!plainbuf->empty()) {
-    upstream_.push_back(plainbuf);
-  }
+  decoder_->process_bytes(buf);
   if (upstream_.empty()) {
     ec = asio::error::try_again;
     return nullptr;
@@ -391,8 +421,6 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf,
   VLOG(3) << "Connection (server) " << connection_id()
           << " received data: " << bytes_transferred << " bytes"
           << " ec: " << ec;
-
-  rbytes_transferred_ += bytes_transferred;
 
   if (buf) {
     DCHECK_LE(bytes_transferred, buf->length());
@@ -635,25 +663,12 @@ void SsConnection::disconnected(asio::error_code ec) {
   }
 }
 
-std::shared_ptr<IOBuf> SsConnection::DecryptData(
-    std::shared_ptr<IOBuf> cipherbuf) {
-  std::shared_ptr<IOBuf> plainbuf = IOBuf::create(SOCKET_BUF_SIZE);
-
-  DumpHex("ERead->", cipherbuf.get());
-  decoder_->decrypt(cipherbuf.get(), &plainbuf);
-  MSAN_CHECK_MEM_IS_INITIALIZED(plainbuf->data(), plainbuf->length());
-  DumpHex("PRead->", plainbuf.get());
-  return plainbuf;
-}
-
 std::shared_ptr<IOBuf> SsConnection::EncryptData(std::shared_ptr<IOBuf> plainbuf) {
   std::shared_ptr<IOBuf> cipherbuf = IOBuf::create(plainbuf->length() + 100);
   cipherbuf->reserve(0, plainbuf->length() + 100);
 
-  DumpHex("PWrite->", plainbuf.get());
   encoder_->encrypt(plainbuf.get(), &cipherbuf);
   MSAN_CHECK_MEM_IS_INITIALIZED(cipherbuf->data(), cipherbuf->length());
-  DumpHex("EWrite->", cipherbuf.get());
   return cipherbuf;
 }
 

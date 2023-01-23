@@ -29,28 +29,44 @@ std::unique_ptr<IOBuf> GenerateRandContent(int size) {
 }
 } // anonymous namespace
 
-class CipherTest : public ::testing::TestWithParam<size_t> {
+class CipherTest : public ::testing::TestWithParam<size_t>,
+                   public cipher_visitor_interface {
  public:
   void SetUp() override {}
   void TearDown() override {}
+
+  bool on_received_data(std::shared_ptr<IOBuf> buf) override {
+    if (!recv_buf_) {
+      recv_buf_ = IOBuf::create(SOCKET_BUF_SIZE);
+    }
+    recv_buf_->reserve(0, buf->length());
+    memcpy(recv_buf_->mutable_tail(), buf->data(), buf->length());
+    recv_buf_->append(buf->length());
+    return true;
+  }
+
+  void on_protocol_error() override { ec_ = asio::error::connection_aborted; }
 
  protected:
   void EncodeAndDecode(const std::string& key,
                        const std::string& password,
                        cipher_method crypto_method,
                        size_t size) {
-    auto encoder = std::make_unique<cipher>(key, password, crypto_method, true);
-    auto decoder = std::make_unique<cipher>(key, password, crypto_method, false);
+    auto encoder = std::make_unique<cipher>(key, password, crypto_method, this, true);
+    auto decoder = std::make_unique<cipher>(key, password, crypto_method, this, false);
     auto send_buf = GenerateRandContent(size);
     std::shared_ptr<IOBuf> cipherbuf = IOBuf::create(size + 100);
     encoder->encrypt(send_buf.get(), &cipherbuf);
-    std::shared_ptr<IOBuf> recv_buf = IOBuf::create(size);
-    decoder->decrypt(cipherbuf.get(), &recv_buf);
+    decoder->process_bytes(cipherbuf);
+    ASSERT_EQ(ec_, asio::error_code());
 
-    ASSERT_EQ(send_buf->length(), recv_buf->length());
+    ASSERT_EQ(send_buf->length(), recv_buf_->length());
     ASSERT_EQ(::testing::Bytes(send_buf->data(), size),
-              ::testing::Bytes(recv_buf->data(), size));
+              ::testing::Bytes(recv_buf_->data(), size));
   }
+
+  asio::error_code ec_;
+  std::shared_ptr<IOBuf> recv_buf_;
 };
 
 #define XX(num, name, string) \
@@ -58,7 +74,7 @@ class CipherTest : public ::testing::TestWithParam<size_t> {
     EncodeAndDecode("", "<dummy-password>", CRYPTO_##name, GetParam()); \
   }
 
-CIPHER_METHOD_VALID_MAP(XX)
+CIPHER_METHOD_OLD_MAP(XX)
 #undef XX
 
 INSTANTIATE_TEST_SUITE_P(SizedCipherTest,
