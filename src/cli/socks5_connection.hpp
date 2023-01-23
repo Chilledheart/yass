@@ -142,6 +142,9 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
   DataFrameSource* data_frame_;
 
  public:
+  StreamId blocked_stream_ = 0;
+
+ public:
   // cipher_visitor_interface
   bool on_received_data(std::shared_ptr<IOBuf> buf) override;
   void on_protocol_error() override;

@@ -168,9 +168,7 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
 
   // Write blocked.
   if (result == 0) {
-#if 0
-    connection_->blocked_streams_.insert(*stream_id_);
-#endif
+    connection_->blocked_stream_ = stream_id_;
     return false;
   }
 
@@ -1395,6 +1393,9 @@ void Socks5Connection::sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred
   WriteUpstreamInPipe();
   OnUpstreamWriteFlush();
 
+  if (blocked_stream_) {
+    adapter_->ResumeStream(blocked_stream_);
+  }
   if (upstream_.size() < MAX_UPSTREAM_DEPS && !downstream_readable_) {
     VLOG(2) << "Connection (client) " << connection_id()
             << " re-enabling reading";
