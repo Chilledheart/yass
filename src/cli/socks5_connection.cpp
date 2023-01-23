@@ -283,8 +283,6 @@ http2::adapter::Http2VisitorInterface::OnHeaderResult
 Socks5Connection::OnHeaderForStream(StreamId stream_id,
                                     absl::string_view key,
                                     absl::string_view value) {
-  stream_id_ = stream_id;
-
   return http2::adapter::Http2VisitorInterface::HEADER_OK;
 }
 
@@ -310,13 +308,10 @@ bool Socks5Connection::OnBeginDataForStream(StreamId stream_id,
 
 bool Socks5Connection::OnDataForStream(StreamId stream_id,
                                        absl::string_view data) {
-#if 0
-  auto request = request_map_.find(stream_id);
-  if (request == request_map_.end()) {
-    // We should not receive data before receiving headers.
-    return false;
+  if (!stream_id_) {
+    DCHECK_EQ(stream_id, stream_id_) << "Client only support one stream";
+    stream_id_ = stream_id;
   }
-#endif
   std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(data.data(), data.size());
   downstream_.push_back(buf);
   adapter_->MarkDataConsumedForStream(stream_id, data.size());

@@ -138,7 +138,7 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
  private:
   void SendIfNotProcessing();
   bool processing_responses_ = false;
-  StreamId stream_id_;
+  StreamId stream_id_ = 0;
   DataFrameSource* data_frame_;
 
  public:
