@@ -151,6 +151,16 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
 
  public:
   // http2::adapter::Http2VisitorInterface
+  //
+  // OnFrameHeader(0, 0, SETTINGS, 0)
+  // OnSettingsStart()
+  // OnSettingsEnd()
+  // // Stream 1
+  // OnFrameHeader(1, _, HEADERS, 0x5)
+  // OnBeginHeadersForStream(1)
+  // OnHeaderForStream(1, _, _) x 4
+  // OnEndHeadersForStream(1)
+  // OnEndStream(1)
   int64_t OnReadyToSend(absl::string_view serialized) override;
   OnHeaderResult OnHeaderForStream(StreamId stream_id,
                                    absl::string_view key,
@@ -160,7 +170,7 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
   bool OnCloseStream(StreamId stream_id,
                      http2::adapter::Http2ErrorCode error_code) override;
   // Unused functions
-  void OnConnectionError(ConnectionError /*error*/) override {}
+  void OnConnectionError(ConnectionError /*error*/) override;
   bool OnFrameHeader(StreamId /*stream_id*/,
                      size_t /*length*/,
                      uint8_t /*type*/,

@@ -7,8 +7,8 @@
 
 #include "config/config.hpp"
 #include "core/asio.hpp"
-#include "core/utils.hpp"
 #include "core/base64.hpp"
+#include "core/utils.hpp"
 
 namespace {
 // from spdy_session.h
@@ -295,14 +295,22 @@ bool Socks5Connection::OnEndStream(StreamId stream_id) {
 
 bool Socks5Connection::OnCloseStream(StreamId stream_id,
                                      http2::adapter::Http2ErrorCode error_code) {
-  OnDisconnect(asio::error_code());
+  disconnected(asio::error_code());
   return true;
 }
 
-bool Socks5Connection::OnFrameHeader(StreamId /*stream_id*/,
+void Socks5Connection::OnConnectionError(ConnectionError /*error*/) {
+  disconnected(asio::error::connection_aborted);
+}
+
+bool Socks5Connection::OnFrameHeader(StreamId stream_id,
                                      size_t /*length*/,
                                      uint8_t /*type*/,
                                      uint8_t /*flags*/) {
+  if (!stream_id_) {
+    DCHECK_EQ(stream_id, stream_id_) << "Client only support one stream";
+    stream_id_ = stream_id;
+  }
   return true;
 }
 
@@ -317,10 +325,6 @@ bool Socks5Connection::OnBeginDataForStream(StreamId stream_id,
 
 bool Socks5Connection::OnDataForStream(StreamId stream_id,
                                        absl::string_view data) {
-  if (!stream_id_) {
-    DCHECK_EQ(stream_id, stream_id_) << "Client only support one stream";
-    stream_id_ = stream_id;
-  }
   std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(data.data(), data.size());
   downstream_.push_back(buf);
   adapter_->MarkDataConsumedForStream(stream_id, data.size());
