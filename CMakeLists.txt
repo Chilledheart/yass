@@ -1688,7 +1688,7 @@ if (MSVC AND NOT USE_LIBCXX)
   add_definitions(-D_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
   add_definitions(-D_SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING)
 endif()
-add_library(asio OBJECT
+add_library(asio STATIC
   src/core/asio.hpp
   src/core/asio.cpp)
 target_include_directories(asio PRIVATE
@@ -2331,10 +2331,17 @@ else()
 endif()
 
 add_library(yass_base STATIC
-    ${files} ${hfiles}
-    )
+  ${files} ${hfiles}
+  )
 
-set(SUPPORT_LIBS yass_base asio ${SUPPORT_LIBS})
+target_link_libraries(yass_base PUBLIC
+  asio
+  ${SUPPORT_LIBS})
+
+if (USE_LIBCXX)
+  target_link_libraries(yass_base PUBLIC
+    cxx ${libcxx_PUBLIC_LIBRARIES})
+endif()
 
 target_include_directories(yass_base PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/third_party
@@ -2367,7 +2374,7 @@ if (CLI)
 
   target_link_libraries(yass_cli PUBLIC
       yass_cli_lib
-      ${SUPPORT_LIBS}
+      yass_base
       )
 
   if (NOT APPLE AND NOT MSVC)
@@ -2398,7 +2405,7 @@ if (SERVER)
 
   target_link_libraries(yass_server PUBLIC
       yass_server_lib
-      ${SUPPORT_LIBS}
+      yass_base
       )
 
   if (NOT APPLE AND NOT MSVC)
@@ -2512,7 +2519,7 @@ if (GUI)
     target_link_libraries(${APP_NAME} PUBLIC
       yass_cli_lib
       ${GUI_LIBRARIES}
-      ${SUPPORT_LIBS}
+      yass_base
     )
 
     if (GUI_FLAVOUR STREQUAL "windows" AND MSVC)
