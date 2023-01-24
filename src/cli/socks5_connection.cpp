@@ -307,9 +307,6 @@ bool Socks5Connection::OnFrameHeader(StreamId stream_id,
                                      size_t /*length*/,
                                      uint8_t /*type*/,
                                      uint8_t /*flags*/) {
-  if (!stream_id_) {
-    stream_id_ = stream_id;
-  }
   if (stream_id) {
     DCHECK_EQ(stream_id, stream_id_) << "Client only support one stream";
   }
@@ -1202,7 +1199,7 @@ void Socks5Connection::OnCmdConnect(const asio::ip::tcp::endpoint& endpoint) {
     headers.push_back({":authority", endpoint.address().to_string() + ":" + std::to_string(endpoint.port())});
     headers.push_back({"host", endpoint.address().to_string() + ":" + std::to_string(endpoint.port())});
     headers.push_back({"proxy-authorization", "basic " + GetProxyAuthorizationIdentity()});
-    adapter_->SubmitRequest(
+    stream_id_ = adapter_->SubmitRequest(
       GenerateHeaders(headers), std::move(data_frame), nullptr);
     SendIfNotProcessing();
     return;
@@ -1226,7 +1223,7 @@ void Socks5Connection::OnCmdConnect(const std::string& domain_name, uint16_t por
     headers.push_back({":authority", domain_name + ":" + std::to_string(port)});
     headers.push_back({"host", domain_name + ":" + std::to_string(port)});
     headers.push_back({"proxy-authorization", "basic " + GetProxyAuthorizationIdentity()});
-    adapter_->SubmitRequest(
+    stream_id_ = adapter_->SubmitRequest(
       GenerateHeaders(headers), std::move(data_frame), nullptr);
     SendIfNotProcessing();
     return;

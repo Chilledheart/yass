@@ -765,9 +765,12 @@ void SsConnection::OnConnect() {
       std::make_unique<DataFrameSource>(this, stream_id_);
     data_frame_ = data_frame.get();
     std::vector<std::pair<std::string, std::string>> headers;
-    adapter_->SubmitResponse(
+    int submit_result = adapter_->SubmitResponse(
       stream_id_, GenerateHeaders(headers, 200), std::move(data_frame));
     SendIfNotProcessing();
+    if (submit_result != 0) {
+      OnDisconnect(asio::error::connection_aborted);
+    }
   }
 }
 
