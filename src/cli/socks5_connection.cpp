@@ -972,7 +972,19 @@ std::shared_ptr<IOBuf> Socks5Connection::GetNextUpstreamBuf(asio::error_code &ec
   }
   rbytes_transferred_ += read;
   total_rx_bytes += read;
-  upstream_.push_back(EncryptData(buf));
+
+  if (adapter_) {
+    data_frame_->AddChunk(buf);
+    data_frame_->SetSendCompletionCallback(std::function<void()>());
+    adapter()->ResumeStream(stream_id_);
+    SendIfNotProcessing();
+  } else {
+    upstream_.push_back(EncryptData(buf));
+  }
+  if (upstream_.empty()) {
+    ec = asio::error::try_again;
+    return nullptr;
+  }
   return upstream_.front();
 }
 
