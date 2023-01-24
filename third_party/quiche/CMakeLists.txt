@@ -828,6 +828,7 @@ target_link_libraries(quiche PUBLIC
   crypto
   ssl
   url
+  yass_base
   absl::container_common
   absl::btree
   absl::flat_hash_map

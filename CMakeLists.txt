@@ -2330,7 +2330,7 @@ else()
   list(APPEND files src/core/utils_freebsd.cpp)
 endif()
 
-add_library(yass_base OBJECT
+add_library(yass_base STATIC
     ${files} ${hfiles}
     )
 
