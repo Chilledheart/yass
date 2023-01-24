@@ -1850,7 +1850,7 @@ include_directories(
   third_party/quiche/overrides
   third_party/quiche/src
   SYSTEM)
-set(SUPPORT_LIBS url quiche yass_base ${SUPPORT_LIBS})
+set(SUPPORT_LIBS url quiche ${SUPPORT_LIBS})
 
 # *****************************************************************************************
 #           Compiler warning flags
