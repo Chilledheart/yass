@@ -308,8 +308,10 @@ bool Socks5Connection::OnFrameHeader(StreamId stream_id,
                                      uint8_t /*type*/,
                                      uint8_t /*flags*/) {
   if (!stream_id_) {
-    DCHECK_EQ(stream_id, stream_id_) << "Client only support one stream";
     stream_id_ = stream_id;
+  }
+  if (stream_id) {
+    DCHECK_EQ(stream_id, stream_id_) << "Client only support one stream";
   }
   return true;
 }
@@ -1176,57 +1178,49 @@ void Socks5Connection::ProcessSentData(asio::error_code ec,
 };
 
 void Socks5Connection::OnCmdConnect(const asio::ip::tcp::endpoint& endpoint) {
+  ss_request_ = std::make_unique<ss::request>(endpoint);
+  OnConnect();
   if (adapter_) {
     std::unique_ptr<DataFrameSource> data_frame =
       std::make_unique<DataFrameSource>(this, stream_id_);
     data_frame_ = data_frame.get();
     std::vector<std::pair<std::string, std::string>> headers;
     headers.push_back({":method", "CONNECT"});
-    //    URI         = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
-    // headers.push_back({":scheme", "https"});
     //    authority   = [ userinfo "@" ] host [ ":" port ]
     headers.push_back({":authority", endpoint.address().to_string() + ":" + std::to_string(endpoint.port())});
-    headers.push_back({"Accept", "*/*"});
-    headers.push_back({"User-Agent", "curl/7.38.1"});
-    headers.push_back({"Host", endpoint.address().to_string() + ":" + std::to_string(endpoint.port())});
-    headers.push_back({"Proxy-Authorization", "basic " + GetProxyAuthorizationIdentity()});
+    headers.push_back({"host", endpoint.address().to_string() + ":" + std::to_string(endpoint.port())});
+    headers.push_back({"proxy-authorization", "basic " + GetProxyAuthorizationIdentity()});
     adapter_->SubmitRequest(
       GenerateHeaders(headers), std::move(data_frame), nullptr);
     SendIfNotProcessing();
     return;
   }
-  ss_request_ = std::make_unique<ss::request>(endpoint);
   ByteRange req(ss_request_->data(), ss_request_->length());
   std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);
-  OnConnect();
   // write variable address directly as ss header
   OnUpstreamWrite(EncryptData(buf));
 }
 
 void Socks5Connection::OnCmdConnect(const std::string& domain_name, uint16_t port) {
+  ss_request_ = std::make_unique<ss::request>(domain_name, port);
+  OnConnect();
   if (adapter_) {
     std::unique_ptr<DataFrameSource> data_frame =
       std::make_unique<DataFrameSource>(this, stream_id_);
     data_frame_ = data_frame.get();
     std::vector<std::pair<std::string, std::string>> headers;
     headers.push_back({":method", "CONNECT"});
-    //    URI         = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
-    // headers.push_back({":scheme", "https"});
     //    authority   = [ userinfo "@" ] host [ ":" port ]
     headers.push_back({":authority", domain_name + ":" + std::to_string(port)});
-    headers.push_back({"Accept", "*/*"});
-    headers.push_back({"User-Agent", "curl/7.38.1"});
-    headers.push_back({"Host", domain_name + ":" + std::to_string(port)});
-    headers.push_back({"Proxy-Authorization", "basic " + GetProxyAuthorizationIdentity()});
+    headers.push_back({"host", domain_name + ":" + std::to_string(port)});
+    headers.push_back({"proxy-authorization", "basic " + GetProxyAuthorizationIdentity()});
     adapter_->SubmitRequest(
       GenerateHeaders(headers), std::move(data_frame), nullptr);
     SendIfNotProcessing();
     return;
   }
-  ss_request_ = std::make_unique<ss::request>(domain_name, port);
   ByteRange req(ss_request_->data(), ss_request_->length());
   std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);
-  OnConnect();
   // write variable address directly as ss header
   OnUpstreamWrite(EncryptData(buf));
 }

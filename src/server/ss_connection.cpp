@@ -215,15 +215,22 @@ SsConnection::OnHeaderForStream(StreamId stream_id,
 
 bool SsConnection::OnEndHeadersForStream(
   http2::adapter::Http2StreamId stream_id) {
-  if (request_map_[":scheme"] != "CONNECT") {
+
+  if (request_map_[":method"] != "CONNECT") {
+    VLOG(2) << "Connection (server) " << connection_id()
+      << " Unexpected method: " << request_map_[":method"];
     return false;
   }
-  auto auth = request_map_["Proxy-Authorization"];
+  auto auth = request_map_["proxy-authorization"];
   if (auth != "basic " + GetProxyAuthorizationIdentity()) {
+    VLOG(2) << "Connection (server) " << connection_id()
+      << " Unexpected auth token.";
     return false;
   }
   std::vector<std::string> host_and_port = absl::StrSplit(request_map_[":authority"], ":");
   if (host_and_port.size() != 2) {
+    VLOG(2) << "Connection (server) " << connection_id()
+      << " Unexpected authority: " << request_map_[":authority"];
     return false;
   }
 
@@ -255,8 +262,10 @@ bool SsConnection::OnFrameHeader(StreamId stream_id,
                                  uint8_t /*type*/,
                                  uint8_t /*flags*/) {
   if (!stream_id_) {
-    DCHECK_EQ(stream_id, stream_id_) << "Server only support one stream";
     stream_id_ = stream_id;
+  }
+  if (stream_id) {
+    DCHECK_EQ(stream_id, stream_id_) << "Server only support one stream";
   }
   return true;
 }
@@ -279,39 +288,39 @@ bool SsConnection::OnDataForStream(StreamId stream_id,
 }
 
 bool SsConnection::OnDataPaddingLength(StreamId stream_id,
-                                           size_t padding_length) {
+                                       size_t padding_length) {
   adapter_->MarkDataConsumedForStream(stream_id, padding_length);
   return true;
 }
 
 bool SsConnection::OnGoAway(StreamId last_accepted_stream_id,
-                                http2::adapter::Http2ErrorCode error_code,
-                                absl::string_view opaque_data) {
+                            http2::adapter::Http2ErrorCode error_code,
+                            absl::string_view opaque_data) {
   return true;
 }
 
 int SsConnection::OnBeforeFrameSent(uint8_t frame_type,
-                                        StreamId stream_id,
-                                        size_t length,
-                                        uint8_t flags) {
+                                    StreamId stream_id,
+                                    size_t length,
+                                    uint8_t flags) {
   return 0;
 }
 
 int SsConnection::OnFrameSent(uint8_t frame_type,
-                                  StreamId stream_id,
-                                  size_t length,
-                                  uint8_t flags,
-                                  uint32_t error_code) {
+                              StreamId stream_id,
+                              size_t length,
+                              uint8_t flags,
+                              uint32_t error_code) {
   return 0;
 }
 
 bool SsConnection::OnInvalidFrame(StreamId stream_id,
-                                      InvalidFrameError error) {
+                                  InvalidFrameError error) {
   return true;
 }
 
 bool SsConnection::OnMetadataForStream(StreamId stream_id,
-                                           absl::string_view metadata) {
+                                       absl::string_view metadata) {
   return true;
 }
 
@@ -537,7 +546,17 @@ std::shared_ptr<IOBuf> SsConnection::GetNextDownstreamBuf(asio::error_code &ec) 
   } else {
     return nullptr;
   }
-  downstream_.push_back(EncryptData(buf));
+  if (adapter_) {
+    data_frame_->AddChunk(buf);
+    data_frame_->SetSendCompletionCallback(std::function<void()>());
+    adapter()->ResumeStream(stream_id_);
+    SendIfNotProcessing();
+  } else {
+    downstream_.push_back(EncryptData(buf));
+  }
+  if (downstream_.empty()) {
+    return nullptr;
+  }
   return downstream_.front();
 }
 
@@ -873,7 +892,15 @@ void SsConnection::received(std::shared_ptr<IOBuf> buf) {
     channel_->disable_read();
   }
 
-  OnDownstreamWrite(EncryptData(buf));
+  if (adapter_) {
+    data_frame_->AddChunk(buf);
+    data_frame_->SetSendCompletionCallback(std::function<void()>());
+    adapter()->ResumeStream(stream_id_);
+    SendIfNotProcessing();
+  } else {
+    downstream_.push_back(EncryptData(buf));
+  }
+  OnDownstreamWriteFlush();
 }
 
 void SsConnection::sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred) {
