@@ -37,12 +37,13 @@ class Socks5Connection;
 class DataFrameSource
     : public http2::adapter::DataFrameSource {
  public:
-  explicit DataFrameSource(Socks5Connection* connection,
-                           const StreamId& stream_id)
-      : connection_(connection), stream_id_(stream_id) {}
+  explicit DataFrameSource(Socks5Connection* connection)
+      : connection_(connection) {}
   ~DataFrameSource() override = default;
   DataFrameSource(const DataFrameSource&) = delete;
   DataFrameSource& operator=(const DataFrameSource&) = delete;
+
+  void set_stream_id(StreamId stream_id) { stream_id_ = stream_id; }
 
   std::pair<int64_t, bool> SelectPayloadLength(size_t max_length) override {
     if (chunks_.empty())
@@ -66,7 +67,7 @@ class DataFrameSource
 
  private:
   Socks5Connection* const connection_;
-  const StreamId stream_id_;
+  StreamId stream_id_;
   std::deque<std::shared_ptr<IOBuf>> chunks_;
   bool last_frame_ = false;
   std::function<void()> send_completion_callback_;

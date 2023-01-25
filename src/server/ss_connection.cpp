@@ -281,6 +281,7 @@ bool SsConnection::OnBeginDataForStream(StreamId stream_id,
 
 bool SsConnection::OnDataForStream(StreamId stream_id,
                                    absl::string_view data) {
+  rbytes_transferred_ += data.size();
   std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(data.data(), data.size());
   upstream_.push_back(buf);
   adapter_->MarkDataConsumedForStream(stream_id, data.size());
@@ -801,6 +802,7 @@ void SsConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
 void SsConnection::OnStreamWrite() {
   if (blocked_stream_) {
     adapter_->ResumeStream(blocked_stream_);
+    SendIfNotProcessing();
   }
   OnDownstreamWriteFlush();
 

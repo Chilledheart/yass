@@ -972,6 +972,7 @@ repeat_fetch:
   }
   rbytes_transferred_ += read;
   total_rx_bytes += read;
+  bytes_transferred += read;
 
   if (adapter_) {
     data_frame_->AddChunk(buf);
@@ -1201,7 +1202,7 @@ void Socks5Connection::OnCmdConnect(const asio::ip::tcp::endpoint& endpoint) {
   OnConnect();
   if (adapter_) {
     std::unique_ptr<DataFrameSource> data_frame =
-      std::make_unique<DataFrameSource>(this, stream_id_);
+      std::make_unique<DataFrameSource>(this);
     data_frame_ = data_frame.get();
     std::vector<std::pair<std::string, std::string>> headers;
     headers.push_back({":method", "CONNECT"});
@@ -1211,6 +1212,7 @@ void Socks5Connection::OnCmdConnect(const asio::ip::tcp::endpoint& endpoint) {
     headers.push_back({"proxy-authorization", "basic " + GetProxyAuthorizationIdentity()});
     stream_id_ = adapter_->SubmitRequest(
       GenerateHeaders(headers), std::move(data_frame), nullptr);
+    data_frame_->set_stream_id(stream_id_);
     SendIfNotProcessing();
     return;
   }
@@ -1225,7 +1227,7 @@ void Socks5Connection::OnCmdConnect(const std::string& domain_name, uint16_t por
   OnConnect();
   if (adapter_) {
     std::unique_ptr<DataFrameSource> data_frame =
-      std::make_unique<DataFrameSource>(this, stream_id_);
+      std::make_unique<DataFrameSource>(this);
     data_frame_ = data_frame.get();
     std::vector<std::pair<std::string, std::string>> headers;
     headers.push_back({":method", "CONNECT"});
@@ -1235,6 +1237,7 @@ void Socks5Connection::OnCmdConnect(const std::string& domain_name, uint16_t por
     headers.push_back({"proxy-authorization", "basic " + GetProxyAuthorizationIdentity()});
     stream_id_ = adapter_->SubmitRequest(
       GenerateHeaders(headers), std::move(data_frame), nullptr);
+    data_frame_->set_stream_id(stream_id_);
     SendIfNotProcessing();
     return;
   }
@@ -1424,6 +1427,8 @@ void Socks5Connection::sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred
 
   if (blocked_stream_) {
     adapter_->ResumeStream(blocked_stream_);
+    SendIfNotProcessing();
+    OnUpstreamWriteFlush();
   }
   if (upstream_.size() < MAX_UPSTREAM_DEPS && !downstream_readable_) {
     VLOG(2) << "Connection (client) " << connection_id()
