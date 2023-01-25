@@ -88,6 +88,11 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
     std::move(send_completion_callback_).operator()();
   }
 
+  // Unblocked
+  if (chunks_.empty()) {
+    connection_->blocked_stream_ = 0;
+  }
+
   return true;
 }
 
@@ -335,7 +340,6 @@ void SsConnection::ReadHandshake() {
   socket_.async_read_some(asio::null_buffers(),
       [self](asio::error_code ec, size_t bytes_transferred) {
         std::shared_ptr<IOBuf> cipherbuf = IOBuf::create(SOCKET_BUF_SIZE);
-        cipherbuf->reserve(0, SOCKET_BUF_SIZE);
         if (!ec) {
           do {
             bytes_transferred = self->socket_.read_some(mutable_buffer(*cipherbuf), ec);
@@ -534,7 +538,6 @@ std::shared_ptr<IOBuf> SsConnection::GetNextDownstreamBuf(asio::error_code &ec) 
 
 repeat_fetch:
   std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
-  buf->reserve(0, SOCKET_BUF_SIZE);
   size_t read;
   do {
     ec = asio::error_code();
@@ -642,7 +645,6 @@ std::shared_ptr<IOBuf> SsConnection::GetNextUpstreamBuf(asio::error_code &ec) {
     return nullptr;
   }
   std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
-  buf->reserve(0, SOCKET_BUF_SIZE);
   size_t read;
   do {
     read = socket_.read_some(mutable_buffer(*buf), ec);
@@ -959,7 +961,6 @@ void SsConnection::disconnected(asio::error_code ec) {
 
 std::shared_ptr<IOBuf> SsConnection::EncryptData(std::shared_ptr<IOBuf> plainbuf) {
   std::shared_ptr<IOBuf> cipherbuf = IOBuf::create(plainbuf->length() + 100);
-  cipherbuf->reserve(0, plainbuf->length() + 100);
 
   encoder_->encrypt(plainbuf.get(), &cipherbuf);
   MSAN_CHECK_MEM_IS_INITIALIZED(cipherbuf->data(), cipherbuf->length());

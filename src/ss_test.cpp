@@ -354,6 +354,11 @@ class SsEndToEndTest : public ::testing::Test {
     GenerateRandContent(4096); \
     SendRequestAndCheckResponse(); \
   } \
+  TEST_F(SsEndToEndTest, name##_32K) { \
+    absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name); \
+    GenerateRandContent(32 * 1024); \
+    SendRequestAndCheckResponse(); \
+  } \
   TEST_F(SsEndToEndTest, name##_256K) { \
     absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name); \
     GenerateRandContent(256 * 1024); \
