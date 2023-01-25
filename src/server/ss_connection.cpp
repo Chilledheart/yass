@@ -813,7 +813,12 @@ void SsConnection::OnStreamWrite() {
     VLOG(3) << "Connection (server) " << connection_id()
             << " last data sent: shutting down";
     asio::error_code ec;
-    socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+    if (adapter_) {
+      data_frame_->set_last_frame(true);
+      SendIfNotProcessing();
+    } else {
+      socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+    }
     return;
   }
 
@@ -953,7 +958,12 @@ void SsConnection::disconnected(asio::error_code ec) {
   if (downstream_.empty()) {
     VLOG(3) << "Connection (server) " << connection_id()
             << " upstream: last data sent: shutting down";
-    socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
+    if (adapter_) {
+      data_frame_->set_last_frame(true);
+      SendIfNotProcessing();
+    } else {
+      socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
+    }
   } else {
     socket_.shutdown(asio::ip::tcp::socket::shutdown_receive, ec);
   }
