@@ -273,7 +273,7 @@ int64_t Socks5Connection::OnReadyToSend(absl::string_view serialized) {
 
   std::shared_ptr<IOBuf> buf =
     IOBuf::copyBuffer(serialized.data(), serialized.size());
-  OnUpstreamWrite(buf);
+  upstream_.push_back(buf);
   return serialized.size();
 }
 
@@ -1278,9 +1278,10 @@ void Socks5Connection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
     data_frame_->SetSendCompletionCallback(std::function<void()>());
     adapter()->ResumeStream(stream_id_);
     SendIfNotProcessing();
-    return;
+  } else {
+    upstream_.push_back(EncryptData(buf));
   }
-  OnUpstreamWrite(EncryptData(buf));
+  OnUpstreamWriteFlush();
 }
 
 void Socks5Connection::OnStreamWrite() {

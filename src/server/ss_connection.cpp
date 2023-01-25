@@ -201,7 +201,7 @@ int64_t SsConnection::OnReadyToSend(absl::string_view serialized) {
 
   std::shared_ptr<IOBuf> buf =
     IOBuf::copyBuffer(serialized.data(), serialized.size());
-  OnDownstreamWrite(buf);
+  downstream_.push_back(buf);
   return serialized.size();
 }
 
