@@ -840,7 +840,7 @@ std::shared_ptr<IOBuf> Socks5Connection::GetNextDownstreamBuf(asio::error_code &
     ec = asio::error::try_again;
     return nullptr;
   }
-  std::shared_ptr<IOBuf> buf{IOBuf::create(SOCKET_BUF_SIZE).release()};
+  std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
   buf->reserve(0, SOCKET_BUF_SIZE);
   size_t read;
   do {
@@ -946,7 +946,10 @@ std::shared_ptr<IOBuf> Socks5Connection::GetNextUpstreamBuf(asio::error_code &ec
     ec = asio::error::try_again;
     return nullptr;
   }
-  std::shared_ptr<IOBuf> buf{IOBuf::create(SOCKET_BUF_SIZE).release()};
+  size_t bytes_transferred = 0U;
+
+repeat_fetch:
+  std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
   buf->reserve(0, SOCKET_BUF_SIZE);
   size_t read;
   do {
@@ -965,18 +968,25 @@ std::shared_ptr<IOBuf> Socks5Connection::GetNextUpstreamBuf(asio::error_code &ec
     VLOG(3) << "Connection (client) " << connection_id()
             << " received data (pipe): " << read << " bytes.";
   } else {
-    return nullptr;
+    goto out;
   }
   rbytes_transferred_ += read;
   total_rx_bytes += read;
 
   if (adapter_) {
     data_frame_->AddChunk(buf);
-    data_frame_->SetSendCompletionCallback(std::function<void()>());
-    adapter()->ResumeStream(stream_id_);
-    SendIfNotProcessing();
+    if (bytes_transferred <= kYieldAfterBytesRead) {
+      goto repeat_fetch;
+    }
   } else {
     upstream_.push_back(EncryptData(buf));
+  }
+
+out:
+  if (adapter_ && bytes_transferred) {
+    data_frame_->SetSendCompletionCallback(std::function<void()>());
+    adapter_->ResumeStream(stream_id_);
+    SendIfNotProcessing();
   }
   if (upstream_.empty()) {
     ec = asio::error::try_again;

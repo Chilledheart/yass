@@ -333,7 +333,7 @@ void SsConnection::ReadHandshake() {
 
   socket_.async_read_some(asio::null_buffers(),
       [self](asio::error_code ec, size_t bytes_transferred) {
-        std::shared_ptr<IOBuf> cipherbuf{IOBuf::create(SOCKET_BUF_SIZE).release()};
+        std::shared_ptr<IOBuf> cipherbuf = IOBuf::create(SOCKET_BUF_SIZE);
         cipherbuf->reserve(0, SOCKET_BUF_SIZE);
         if (!ec) {
           do {
@@ -529,7 +529,10 @@ std::shared_ptr<IOBuf> SsConnection::GetNextDownstreamBuf(asio::error_code &ec) 
     ec = asio::error::try_again;
     return nullptr;
   }
-  std::shared_ptr<IOBuf> buf{IOBuf::create(SOCKET_BUF_SIZE).release()};
+  size_t bytes_transferred = 0U;
+
+repeat_fetch:
+  std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
   buf->reserve(0, SOCKET_BUF_SIZE);
   size_t read;
   do {
@@ -544,17 +547,27 @@ std::shared_ptr<IOBuf> SsConnection::GetNextDownstreamBuf(asio::error_code &ec) 
     VLOG(3) << "Connection (server) " << connection_id()
             << " upstream: received reply (pipe): " << read << " bytes.";
   } else {
-    return nullptr;
+    goto out;
   }
+  bytes_transferred += read;
+
   if (adapter_) {
     data_frame_->AddChunk(buf);
-    data_frame_->SetSendCompletionCallback(std::function<void()>());
-    adapter()->ResumeStream(stream_id_);
-    SendIfNotProcessing();
+    if (bytes_transferred <= kYieldAfterBytesRead) {
+      goto repeat_fetch;
+    }
   } else {
     downstream_.push_back(EncryptData(buf));
   }
+
+out:
+  if (adapter_ && bytes_transferred) {
+    data_frame_->SetSendCompletionCallback(std::function<void()>());
+    adapter_->ResumeStream(stream_id_);
+    SendIfNotProcessing();
+  }
   if (downstream_.empty()) {
+    ec = asio::error::try_again;
     return nullptr;
   }
   return downstream_.front();
@@ -627,7 +640,7 @@ std::shared_ptr<IOBuf> SsConnection::GetNextUpstreamBuf(asio::error_code &ec) {
     ec = asio::error::try_again;
     return nullptr;
   }
-  std::shared_ptr<IOBuf> buf{IOBuf::create(SOCKET_BUF_SIZE).release()};
+  std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
   buf->reserve(0, SOCKET_BUF_SIZE);
   size_t read;
   do {
