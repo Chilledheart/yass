@@ -369,7 +369,7 @@ class SsEndToEndTest : public ::testing::Test {
     GenerateRandContent(1024 * 1024); \
     SendRequestAndCheckResponse(); \
   }
-CIPHER_METHOD_OLD_MAP(XX)
+CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
 
 int main(int argc, char **argv) {

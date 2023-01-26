@@ -764,10 +764,16 @@ void Socks5Connection::WriteHandshake() {
 }
 
 void Socks5Connection::WriteStream() {
-  scoped_refptr<Socks5Connection> self(this);
   DCHECK_EQ(CurrentState(), state_stream);
+  // DCHECK(!write_inprogress_);
+  if (write_inprogress_) {
+    return;
+  }
+  scoped_refptr<Socks5Connection> self(this);
+  write_inprogress_ = true;
   socket_.async_write_some(asio::null_buffers(),
       [self](asio::error_code ec, size_t /*bytes_transferred*/) {
+        self->write_inprogress_ = false;
         if (ec) {
           self->ProcessSentData(ec, 0);
           return;
@@ -864,12 +870,15 @@ std::shared_ptr<IOBuf> Socks5Connection::GetNextDownstreamBuf(asio::error_code &
     while (!remaining_buffer.empty()) {
       int result = adapter_->ProcessBytes(remaining_buffer);
       if (result < 0) {
-        ec = asio::error::invalid_argument;
-        disconnected(asio::error::invalid_argument);
+        ec = asio::error::connection_refused;
+        disconnected(asio::error::connection_refused);
         return nullptr;
       }
       remaining_buffer = remaining_buffer.substr(result);
     }
+    // Sent Control Streams
+    SendIfNotProcessing();
+    OnUpstreamWriteFlush();
   } else {
     decoder_->process_bytes(buf);
   }
@@ -1402,15 +1411,17 @@ void Socks5Connection::received(std::shared_ptr<IOBuf> buf) {
     while (!remaining_buffer.empty()) {
       int result = adapter_->ProcessBytes(remaining_buffer);
       if (result < 0) {
-        OnDisconnect(asio::error::invalid_argument);
+        disconnected(asio::error::connection_refused);
         return;
       }
       remaining_buffer = remaining_buffer.substr(result);
     }
-    OnDownstreamWriteFlush();
-    return;
+    // Sent Control Streams
+    SendIfNotProcessing();
+    OnUpstreamWriteFlush();
+  } else {
+    decoder_->process_bytes(buf);
   }
-  decoder_->process_bytes(buf);
   OnDownstreamWriteFlush();
 }
 

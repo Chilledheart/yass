@@ -345,6 +345,9 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
   /// decode cipher to perform data decoder from upstream
   std::unique_ptr<cipher> decoder_;
 
+  /// mark of in-progress writing
+  bool write_inprogress_ = false;
+
   /// statistics of read bytes (non-encoded)
   size_t rbytes_transferred_ = 0;
   /// statistics of write bytes (non-encoded)

@@ -441,11 +441,14 @@ void SsConnection::ReadStream() {
           while (!remaining_buffer.empty()) {
             int result = self->adapter_->ProcessBytes(remaining_buffer);
             if (result < 0) {
-              self->OnDisconnect(asio::error::invalid_argument);
+              self->OnDisconnect(asio::error::connection_refused);
               return;
             }
             remaining_buffer = remaining_buffer.substr(result);
           }
+          // Sent Control Streams
+          self->SendIfNotProcessing();
+          self->OnDownstreamWriteFlush();
         } else {
           self->decoder_->process_bytes(buf);
         }
@@ -457,9 +460,15 @@ void SsConnection::ReadStream() {
 }
 
 void SsConnection::WriteStream() {
+  if (write_inprogress_) {
+    return;
+  }
+  DCHECK(!write_inprogress_);
   scoped_refptr<SsConnection> self(this);
+  write_inprogress_ = true;
   socket_.async_write_some(asio::null_buffers(),
       [self](asio::error_code ec, size_t /*bytes_transferred*/) {
+        self->write_inprogress_ = false;
         if (ec) {
           self->ProcessSentData(ec, 0);
           return;
@@ -670,12 +679,15 @@ std::shared_ptr<IOBuf> SsConnection::GetNextUpstreamBuf(asio::error_code &ec) {
     while (!remaining_buffer.empty()) {
       int result = adapter_->ProcessBytes(remaining_buffer);
       if (result < 0) {
-        ec = asio::error::invalid_argument;
-        OnDisconnect(asio::error::invalid_argument);
+        ec = asio::error::connection_refused;
+        OnDisconnect(asio::error::connection_refused);
         return nullptr;
       }
       remaining_buffer = remaining_buffer.substr(result);
     }
+    // Sent Control Streams
+    SendIfNotProcessing();
+    OnDownstreamWriteFlush();
   } else {
     decoder_->process_bytes(buf);
   }
