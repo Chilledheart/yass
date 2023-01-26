@@ -129,6 +129,7 @@ class stream {
   /// \param buf the shared buffer used in write routine
   void start_write(std::shared_ptr<IOBuf> buf, std::function<void()> callback) {
     Channel* channel = channel_;
+    DCHECK(!write_inprogress_);
     write_inprogress_ = true;
     socket_.async_write_some(asio::null_buffers(),
         [this, channel, buf, callback](asio::error_code ec, size_t /*bytes_transferred*/) {
