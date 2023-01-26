@@ -815,9 +815,7 @@ void SsConnection::OnStreamWrite() {
     asio::error_code ec;
     if (adapter_) {
       data_frame_->set_last_frame(true);
-      adapter_->ResumeStream(stream_id_);
       SendIfNotProcessing();
-      OnDownstreamWriteFlush();
     } else {
       socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
     }
@@ -962,9 +960,7 @@ void SsConnection::disconnected(asio::error_code ec) {
             << " upstream: last data sent: shutting down";
     if (adapter_) {
       data_frame_->set_last_frame(true);
-      adapter_->ResumeStream(stream_id_);
       SendIfNotProcessing();
-      OnDownstreamWriteFlush();
     } else {
       socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
     }
