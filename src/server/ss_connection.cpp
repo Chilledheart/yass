@@ -809,7 +809,8 @@ void SsConnection::OnStreamWrite() {
   OnDownstreamWriteFlush();
 
   /* shutdown the socket if upstream is eof and all remaining data sent */
-  if (channel_->eof() && downstream_.empty()) {
+  bool nodata = !adapter_ || !data_frame_->SelectPayloadLength(1).first;
+  if (channel_->eof() && nodata && downstream_.empty()) {
     VLOG(3) << "Connection (server) " << connection_id()
             << " last data sent: shutting down";
     asio::error_code ec;
@@ -950,12 +951,11 @@ void SsConnection::disconnected(asio::error_code ec) {
   upstream_writable_ = false;
   channel_->close();
   /* delay the socket's close because downstream is buffered */
-  if (downstream_.empty()) {
+  bool nodata = !adapter_ || !data_frame_->SelectPayloadLength(1).first;
+  if (nodata && downstream_.empty()) {
     VLOG(3) << "Connection (server) " << connection_id()
             << " upstream: last data sent: shutting down";
-    socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
-  } else {
-    socket_.shutdown(asio::ip::tcp::socket::shutdown_receive, ec);
+    socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
   }
 }
 
