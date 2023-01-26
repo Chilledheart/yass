@@ -821,7 +821,7 @@ void SsConnection::OnStreamWrite() {
   OnDownstreamWriteFlush();
 
   /* shutdown the socket if upstream is eof and all remaining data sent */
-  bool nodata = !adapter_ || !data_frame_->SelectPayloadLength(1).first;
+  bool nodata = !data_frame_ || !data_frame_->SelectPayloadLength(1).first;
   if (channel_->eof() && nodata && downstream_.empty()) {
     VLOG(3) << "Connection (server) " << connection_id()
             << " last data sent: shutting down";
@@ -963,7 +963,7 @@ void SsConnection::disconnected(asio::error_code ec) {
   upstream_writable_ = false;
   channel_->close();
   /* delay the socket's close because downstream is buffered */
-  bool nodata = !adapter_ || !data_frame_->SelectPayloadLength(1).first;
+  bool nodata = !data_frame_ || !data_frame_->SelectPayloadLength(1).first;
   if (nodata && downstream_.empty()) {
     VLOG(3) << "Connection (server) " << connection_id()
             << " upstream: last data sent: shutting down";

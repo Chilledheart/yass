@@ -127,7 +127,7 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
   void SendIfNotProcessing();
   bool processing_responses_ = false;
   StreamId stream_id_ = 0;
-  DataFrameSource* data_frame_;
+  DataFrameSource* data_frame_ = nullptr;
 
  public:
   StreamId blocked_stream_ = 0;
