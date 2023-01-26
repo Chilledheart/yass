@@ -822,7 +822,7 @@ void SsConnection::OnStreamWrite() {
 
   /* shutdown the socket if upstream is eof and all remaining data sent */
   bool nodata = !data_frame_ || !data_frame_->SelectPayloadLength(1).first;
-  if (channel_->eof() && nodata && downstream_.empty()) {
+  if (channel_ && channel_->eof() && nodata && downstream_.empty()) {
     VLOG(3) << "Connection (server) " << connection_id()
             << " last data sent: shutting down";
     asio::error_code ec;
@@ -831,7 +831,7 @@ void SsConnection::OnStreamWrite() {
   }
 
   /* disable queue limit to re-enable upstream read */
-  if (channel_->connected() && downstream_.size() < MAX_DOWNSTREAM_DEPS && !upstream_readable_) {
+  if (channel_ && channel_->connected() && downstream_.size() < MAX_DOWNSTREAM_DEPS && !upstream_readable_) {
     VLOG(2) << "Connection (server) " << connection_id()
             << " re-enabling reading from upstream";
     upstream_readable_ = true;
