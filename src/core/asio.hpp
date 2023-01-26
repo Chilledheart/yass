@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2023 Chilledheart  */
 
 #ifndef H_CORE_ASIO
 #define H_CORE_ASIO
@@ -23,6 +23,7 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 #include <asio.hpp>
+#include <asio/ssl.hpp>
 #include "core/asio_throw_exceptions.hpp"
 
 #pragma GCC diagnostic pop
@@ -59,5 +60,7 @@ inline asio::ASIO_CONST_BUFFER const_buffer(const IOBuf& io_buf) ASIO_NOEXCEPT
 {
   return asio::ASIO_CONST_BUFFER(io_buf.data(), io_buf.length());
 }
+
+void load_ca_to_ssl_ctx(asio::ssl::context &ssl_ctx);
 
 #endif  // H_CORE_ASIO

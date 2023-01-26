@@ -25,16 +25,28 @@ class stream {
   /// \param channel the underlying data channel used in stream
   stream(asio::io_context& io_context,
          asio::ip::tcp::endpoint endpoint,
-         Channel* channel)
+         Channel* channel,
+         bool enable_ssl = false)
       : endpoint_(endpoint),
         socket_(io_context),
         connect_timer_(io_context),
+        enable_ssl_(enable_ssl),
+        ssl_ctx_(asio::ssl::context::tlsv13_client),
+        ssl_socket_(socket_, ssl_ctx_),
         channel_(channel) {
     assert(channel && "channel must defined to use with stream");
+    if (enable_ssl) {
+      setup_ssl();
+    }
   }
 
   ~stream() {
     close();
+  }
+
+  void setup_ssl() {
+    load_ca_to_ssl_ctx(ssl_ctx_);
+    ssl_socket_.set_verify_mode(asio::ssl::verify_peer | asio::ssl::verify_client_once);
   }
 
   void connect() {
@@ -311,6 +323,10 @@ class stream {
   asio::ip::tcp::socket socket_;
   asio::steady_timer connect_timer_;
 
+  const bool enable_ssl_;
+  asio::ssl::context ssl_ctx_;
+  asio::ssl::stream<asio::ip::tcp::socket&> ssl_socket_;
+
   Channel* channel_;
   bool connected_ = false;
   bool eof_ = false;
@@ -319,6 +335,11 @@ class stream {
   bool read_enabled_ = true;
   bool read_inprogress_ = false;
   bool write_inprogress_ = false;
+
+  // socket_async_read_some
+  // socket_read_some
+  // socket_async_write_some
+  // socket_write_some
 
   // statistics
   size_t rbytes_transferred_ = 0;
