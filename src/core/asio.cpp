@@ -122,7 +122,7 @@ out:
   for (auto ca_bundle : ca_bundle_paths) {
     ssl_ctx.load_verify_file(ca_bundle, ec);
     if (!ec) {
-      VLOG(2) << "Loading ca bundle: " << ca_bundle);
+      VLOG(2) << "Loading ca bundle: " << ca_bundle;
     }
   }
 #endif
