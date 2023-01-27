@@ -1403,9 +1403,9 @@ if (WIN32)
   set(CMAKE_CXX_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
 
   if (MSVC)
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} WS2_32 Bcrypt User32 kernel32)
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} Crypt32 WS2_32 Bcrypt User32 kernel32)
   else()
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} ws2_32 mswsock bcrypt user32 kernel32)
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} crypt32 ws2_32 mswsock bcrypt user32 kernel32)
   endif()
 
   # Don't use it even if we are compiling with gnu extensions
@@ -1474,8 +1474,8 @@ int main() {
     include_directories(third_party/lss)
   endif()
   if (APPLE AND COMPILER_CLANG)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -framework Foundation")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -framework Foundation")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -framework Foundation -framework Security")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -framework Foundation -framework Security")
   endif()
 endif()
 
@@ -1671,30 +1671,6 @@ set(SUPPORT_LIBS
   )
 
 # *****************************************************************************************
-#           asio Library
-# *****************************************************************************************
-
-add_definitions(-DASIO_STANDALONE)
-add_definitions(-DASIO_NO_TYPEID)
-add_definitions(-DASIO_NO_EXCEPTIONS)
-add_definitions(-DASIO_NO_TS_EXECUTORS)
-add_definitions(-DASIO_SEPARATE_COMPILATION)
-# forward libcxx present
-# we control the visiblity
-add_definitions(-DASIO_DISABLE_VISIBILITY)
-include_directories(third_party/asio/asio/include SYSTEM)
-# both of asio and quiche use std::allocator<void>
-if (MSVC AND NOT USE_LIBCXX)
-  add_definitions(-D_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
-  add_definitions(-D_SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING)
-endif()
-add_library(asio STATIC
-  src/core/asio.hpp
-  src/core/asio.cpp)
-target_include_directories(asio PRIVATE
-  src)
-
-# *****************************************************************************************
 #           boringssl Library
 # *****************************************************************************************
 
@@ -1726,6 +1702,35 @@ endif()
 
 set_target_properties(bssl PROPERTIES EXCLUDE_FROM_ALL TRUE)
 set_target_properties(decrepit PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
+# *****************************************************************************************
+#           asio Library
+# *****************************************************************************************
+
+add_definitions(-DASIO_STANDALONE)
+add_definitions(-DASIO_NO_TYPEID)
+add_definitions(-DASIO_NO_EXCEPTIONS)
+add_definitions(-DASIO_NO_TS_EXECUTORS)
+add_definitions(-DASIO_SEPARATE_COMPILATION)
+# forward libcxx present
+# we control the visiblity
+add_definitions(-DASIO_DISABLE_VISIBILITY)
+include_directories(third_party/asio/asio/include SYSTEM)
+# both of asio and quiche use std::allocator<void>
+if (MSVC AND NOT USE_LIBCXX)
+  add_definitions(-D_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
+  add_definitions(-D_SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING)
+endif()
+add_library(asio STATIC
+  src/core/asio.hpp
+  src/core/asio.cpp)
+target_include_directories(asio PRIVATE
+  src)
+target_link_libraries(asio PUBLIC
+  crypto
+  ssl)
+
+set(SUPPORT_LIBS asio ${SUPPORT_LIBS})
 
 # *****************************************************************************************
 #           json Library
@@ -1883,7 +1888,7 @@ if (COMPILER_GCC OR COMPILER_CLANG)
     set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wno-free-nonheap-object")
   endif()
 
-  if (COMPILER_CLANG OR NOT "7.0.0" VERSION_GREATER CMAKE_C_COMPILER_VERSION)
+  if (COMPILER_CLANG OR CMAKE_C_COMPILER_VERSION VERSION_GREATER "7.0.0")
     set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wimplicit-fallthrough")
   endif()
 

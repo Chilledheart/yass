@@ -23,7 +23,7 @@ ABSL_FLAG(bool, reuse_port, true, "Reuse the listening port");
 ABSL_FLAG(std::string, congestion_algorithm, "bbr", "TCP Congestion Algorithm");
 ABSL_FLAG(bool, tcp_fastopen, false, "TCP fastopen");
 ABSL_FLAG(bool, tcp_fastopen_connect, false, "TCP fastopen connect");
-ABSL_FLAG(int32_t, connect_timeout, 60, "Connect timeout (Linux only)");
+ABSL_FLAG(int32_t, connect_timeout, 200, "Connect timeout (Linux only)");
 ABSL_FLAG(int32_t, tcp_connection_timeout, 75000, "TCP connection timeout (BSD-like only)");
 ABSL_FLAG(int32_t, tcp_user_timeout, 300, "TCP user timeout (Linux only)");
 ABSL_FLAG(int32_t, so_linger_timeout, 30, "SO Linger timeout");

@@ -16,16 +16,71 @@
 #include "protocol.hpp"
 
 class Connection {
+  using io_handle_t = std::function<void(asio::error_code, std::size_t)>;
+  using handle_t = std::function<void(asio::error_code)>;
  public:
   /// Construct the connection with io context
   ///
   /// \param io_context the io context associated with the service
   /// \param remote_endpoint the remote endpoint of the service socket
   Connection(asio::io_context& io_context,
-             const asio::ip::tcp::endpoint& remote_endpoint)
+             const asio::ip::tcp::endpoint& remote_endpoint,
+             bool enable_upstream_tls,
+             bool enable_tls,
+             asio::ssl::context *upstream_ssl_ctx,
+             asio::ssl::context *ssl_ctx)
       : io_context_(&io_context),
         remote_endpoint_(remote_endpoint),
-        socket_(*io_context_) {}
+        socket_(*io_context_),
+        enable_upstream_tls_(enable_upstream_tls),
+        enable_tls_(enable_tls),
+        upstream_ssl_ctx_(upstream_ssl_ctx),
+        ssl_socket_(socket_, *ssl_ctx) {
+    if (enable_tls) {
+      setup_ssl();
+      s_async_read_some_ = [this](io_handle_t cb) {
+        ssl_socket_.async_read_some(asio::null_buffers(), cb);
+      };
+      s_read_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
+        return ssl_socket_.read_some(mutable_buffer(*buf), ec);
+      };
+      s_async_write_some_ = [this](io_handle_t cb) {
+        ssl_socket_.async_write_some(asio::null_buffers(), cb);
+      };
+      s_write_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
+        return ssl_socket_.write_some(const_buffer(*buf), ec);
+      };
+      s_async_shutdown_ = [this](handle_t cb) {
+        ssl_socket_.async_shutdown(cb);
+      };
+      s_shutdown_ = [this](asio::error_code &ec) {
+        // FIXME use async_shutdown correctly
+        ssl_socket_.shutdown(ec);
+      };
+    } else {
+      s_async_read_some_ = [this](io_handle_t cb) {
+        socket_.async_read_some(asio::null_buffers(), cb);
+      };
+      s_read_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
+        return socket_.read_some(mutable_buffer(*buf), ec);
+      };
+      s_async_write_some_ = [this](io_handle_t cb) {
+        socket_.async_write_some(asio::null_buffers(), cb);
+      };
+      s_write_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
+        return socket_.write_some(const_buffer(*buf), ec);
+      };
+      s_async_shutdown_ = [this](handle_t cb) {
+        asio::error_code ec;
+        socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+        cb(ec);
+      };
+      s_shutdown_ = [this](asio::error_code &ec) {
+        // FIXME use async_shutdown correctly
+        socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+      };
+    }
+  }
 
   Connection(const Connection&) = delete;
   Connection& operator=(const Connection&) = delete;
@@ -35,6 +90,12 @@ class Connection {
 
   virtual ~Connection() = default;
 
+ private:
+  void setup_ssl() {
+    ssl_socket_.set_verify_mode(asio::ssl::verify_peer);
+  }
+
+ public:
   /// Construct the connection with socket
   ///
   /// \param socket the socket bound to the service
@@ -88,6 +149,21 @@ class Connection {
   asio::ip::tcp::endpoint peer_endpoint_;
   /// the number of connection id
   int connection_id_ = -1;
+
+  /// if enable ssl layer
+  bool enable_upstream_tls_;
+  bool enable_tls_;
+  std::string upstream_certificate_;
+  asio::ssl::context* upstream_ssl_ctx_;
+  asio::ssl::stream<asio::ip::tcp::socket&> ssl_socket_;
+
+  /// io_handlers
+  std::function<void(io_handle_t)> s_async_read_some_;
+  std::function<size_t(std::shared_ptr<IOBuf>, asio::error_code &)> s_read_some_;
+  std::function<void(io_handle_t)> s_async_write_some_;
+  std::function<size_t(std::shared_ptr<IOBuf>, asio::error_code &)> s_write_some_;
+  std::function<void(handle_t)> s_async_shutdown_;
+  std::function<void(asio::error_code&)> s_shutdown_;
 
   /// the callback invoked when disconnect event happens
   std::function<void()> disconnect_cb_;
