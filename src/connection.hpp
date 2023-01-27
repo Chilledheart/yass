@@ -86,15 +86,60 @@ class Connection {
 
   virtual ~Connection() = default;
 
+ public:
+  void load_upstream_certificate(const std::string &upstream_certificate) {
+    upstream_certificate_ = upstream_certificate;
+  }
+
+  asio::error_code load_certificate(const std::string &cert) {
+    asio::error_code ec;
+    if (cert.empty()) {
+      return ec;
+    }
+    ssl_ctx_.use_certificate(asio::const_buffer(cert.data(), cert.size()),
+                             asio::ssl::context::pem,
+                             ec);
+    if (!ec) {
+      VLOG(2) << "Loaded certificate";
+    }
+    return ec;
+  }
+
+  asio::error_code load_private_key(const std::string &pkey) {
+    asio::error_code ec;
+    if (pkey.empty()) {
+      return ec;
+    }
+    ssl_ctx_.use_private_key(asio::const_buffer(pkey.data(), pkey.size()),
+                             asio::ssl::context::pem,
+                             ec);
+    if (!ec) {
+      VLOG(2) << "Loaded privated key";
+    }
+    return ec;
+  }
+
+ private:
   void setup_ssl() {
     load_ca_to_ssl_ctx(ssl_ctx_);
-    ssl_ctx_.set_options(asio::ssl::context::default_workarounds | asio::ssl::context::no_tlsv1_1);
-#if 0
-    ssl_ctx_.use_certificate_chain_file("server.pem");
-    ssl_ctx_.use_private_key_file("server.pem", asio::ssl::context::pem);
-    ssl_ctx_.use_certificate(cert_buffer, asio::ssl::context::pem);
-    ssl_ctx_.use_private_key(pem_buffer, asio::ssl::context::pem);
-#endif
+    asio::error_code ec;
+    ssl_ctx_.set_options(asio::ssl::context::default_workarounds | asio::ssl::context::no_tlsv1_1, ec);
+    std::string certificate_chain_file = absl::GetFlag(FLAGS_certificate_chain_file);
+    std::string private_key_file = absl::GetFlag(FLAGS_private_key_file);
+    if (!private_key_file.empty()) {
+      ssl_ctx_.set_password_callback([](size_t max_length,
+                                        asio::ssl::context::password_purpose purpose) {
+        return absl::GetFlag(FLAGS_private_key_password);
+      });
+      ssl_ctx_.use_certificate_chain_file(certificate_chain_file, ec);
+      if (!ec) {
+        VLOG(2) << "Using certificate file: " << certificate_chain_file;
+      }
+      ssl_ctx_.use_private_key_file(private_key_file, asio::ssl::context::pem, ec);
+      if (!ec) {
+        VLOG(2) << "Using private key file: " << private_key_file;
+      }
+    }
     ssl_socket_.set_verify_mode(asio::ssl::verify_peer);
 
     SSL_CTX *ctx = ssl_ctx_.native_handle();
@@ -125,6 +170,7 @@ class Connection {
     return SSL_TLSEXT_ERR_ALERT_FATAL;
   }
 
+ public:
   /// Construct the connection with socket
   ///
   /// \param socket the socket bound to the service
@@ -183,6 +229,7 @@ class Connection {
   bool enable_ssl_;
   asio::ssl::context ssl_ctx_;
   asio::ssl::stream<asio::ip::tcp::socket&> ssl_socket_;
+  std::string upstream_certificate_;
 
   /// io_handlers
   std::function<void(io_handle_t)> s_async_read_some_;

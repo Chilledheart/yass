@@ -34,12 +34,17 @@ class ContentServer {
 
  public:
   explicit ContentServer(asio::io_context &io_context,
-                         const asio::ip::tcp::endpoint& remote_endpoint =
-                         asio::ip::tcp::endpoint(),
+                         const asio::ip::tcp::endpoint& remote_endpoint = asio::ip::tcp::endpoint(),
+                         const std::string& upstream_certificate = {},
+                         const std::string& certificate = {},
+                         const std::string& private_key = {},
                          ContentServer::Delegate *delegate = nullptr)
     : io_context_(io_context),
       work_guard_(std::make_unique<asio::io_context::work>(io_context_)),
       remote_endpoint_(remote_endpoint),
+      upstream_certificate_(upstream_certificate),
+      certificate_(certificate),
+      private_key_(private_key),
       delegate_(delegate) {}
 
   ~ContentServer() {
@@ -125,13 +130,14 @@ class ContentServer {
     acceptor_->async_accept(
         peer_endpoint_,
         [this](asio::error_code ec, asio::ip::tcp::socket socket) {
-#ifdef CRYPTO_HTTP2_TLS
-          bool tls = absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_TLS;
-#else
-          bool tls = false;
-#endif
+          bool enable_tls = absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_TLS;
           if (!ec) {
-            scoped_refptr<ConnectionType> conn = factory_.Create(io_context_, remote_endpoint_, tls);
+            scoped_refptr<ConnectionType> conn = factory_.Create(io_context_, remote_endpoint_, enable_tls);
+            if (enable_tls) {
+              conn->load_upstream_certificate(upstream_certificate_);
+              conn->load_certificate(certificate_);
+              conn->load_private_key(private_key_);
+            }
             on_accept(conn, std::move(socket));
             accept();
           } if (ec && ec != asio::error::operation_aborted) {
@@ -188,6 +194,11 @@ class ContentServer {
   std::unique_ptr<asio::io_context::work> work_guard_;
 
   const asio::ip::tcp::endpoint remote_endpoint_;
+
+  std::string upstream_certificate_;
+  std::string certificate_;
+  std::string private_key_;
+
   ContentServer::Delegate *delegate_;
 
   asio::ip::tcp::endpoint endpoint_;

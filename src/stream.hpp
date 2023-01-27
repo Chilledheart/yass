@@ -89,12 +89,24 @@ class stream {
 
   void setup_ssl() {
     load_ca_to_ssl_ctx(ssl_ctx_);
-    ssl_ctx_.set_options(asio::ssl::context::default_workarounds | asio::ssl::context::no_tlsv1_1);
-    ssl_socket_.set_verify_mode(asio::ssl::verify_peer);
+    asio::error_code ec;
+    ssl_ctx_.set_options(asio::ssl::context::default_workarounds | asio::ssl::context::no_tlsv1_1, ec);
 
-#if 0
-    ssl_ctx_.add_certificate_authority(asio::const_buffer(data, len), ec);
-#endif
+    std::string certificate_chain_file = absl::GetFlag(FLAGS_certificate_chain_file);
+    if (!certificate_chain_file.empty()) {
+      ssl_ctx_.use_certificate_chain_file(certificate_chain_file, ec);
+      if (!ec) {
+        VLOG(2) << "Using certificate file: " << certificate_chain_file;
+      }
+    }
+    auto cert = channel_->retrive_certificate();
+    if (!cert.empty()) {
+      ssl_ctx_.add_certificate_authority(asio::const_buffer(cert.data(), cert.size()), ec);
+      if (!ec) {
+        VLOG(2) << "Loaded upstream certificate";
+      }
+    }
+    ssl_socket_.set_verify_mode(asio::ssl::verify_peer);
 
     SSL_CTX *ctx = ssl_ctx_.native_handle();
     unsigned char alpn_vec[] = {

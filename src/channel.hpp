@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
+/* Copyright (c) 2019-2023 Chilledheart  */
 
 #ifndef H_CHANNEL
 #define H_CHANNEL
@@ -16,6 +16,9 @@ class Channel {
 
   /// Deconstruct the channel
   virtual ~Channel() = default;
+
+  /// Called if stream's certificate is required
+  virtual std::string retrive_certificate() { return {}; }
 
   /// Called once connection established
   virtual void connected() = 0;

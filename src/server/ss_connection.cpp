@@ -165,9 +165,7 @@ void SsConnection::close() {
 
 void SsConnection::Start() {
   bool http2 = absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2;
-#ifdef CRYPTO_HTTP2_TLS
   http2 |= absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_TLS;
-#endif
   if (http2) {
     http2::adapter::OgHttp2Adapter::Options options;
     options.perspective = http2::adapter::Perspective::kServer;

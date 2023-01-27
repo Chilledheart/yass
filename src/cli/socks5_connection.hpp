@@ -426,6 +426,10 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
   bool downstream_read_inprogress_ = false;
 
  private:
+  std::string retrive_certificate() override {
+    return upstream_certificate_;
+  }
+
   /// handle with connnect event (upstream)
   void connected() override;
 

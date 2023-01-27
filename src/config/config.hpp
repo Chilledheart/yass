@@ -23,7 +23,10 @@ ABSL_DECLARE_FLAG(std::string, method);
 ABSL_DECLARE_FLAG(int32_t, cipher_method);
 ABSL_DECLARE_FLAG(std::string, local_host);
 ABSL_DECLARE_FLAG(int32_t, local_port);
-ABSL_DECLARE_FLAG(std::string, password);
+
+ABSL_DECLARE_FLAG(std::string, certificate_chain_file);
+ABSL_DECLARE_FLAG(std::string, private_key_file);
+ABSL_DECLARE_FLAG(std::string, private_key_password);
 
 namespace config {
 bool ReadConfig();

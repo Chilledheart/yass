@@ -201,7 +201,7 @@ Socks5Connection::Socks5Connection(
     asio::io_context& io_context,
     const asio::ip::tcp::endpoint& remote_endpoint,
     bool enable_ssl)
-    : Connection(io_context, remote_endpoint, enable_ssl),
+    : Connection(io_context, remote_endpoint, false),
       state_() {}
 
 Socks5Connection::~Socks5Connection() {
@@ -1261,12 +1261,8 @@ void Socks5Connection::OnConnect() {
   LOG(INFO) << "Connection (client) " << connection_id()
             << " to " << remote_domain();
   bool http2 = absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2;
-#ifdef CRYPTO_HTTP2_TLS
   bool tls_upstream = absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_TLS;
-  http2 |= absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_TLS;
-#else
-  bool tls_upstream = false;
-#endif
+  http2 |= (absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_TLS);
   if (http2) {
     http2::adapter::OgHttp2Adapter::Options options;
     options.perspective = http2::adapter::Perspective::kClient;

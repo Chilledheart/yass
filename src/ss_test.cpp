@@ -31,6 +31,57 @@ static std::unique_ptr<IOBuf> recv_content_buffer;
 static const char kConnectResponse[] = "HTTP/1.1 200 Connection established\r\n\r\n";
 static int kContentMaxSize = 10 * 1024 * 1024;
 
+// openssl req -newkey rsa:2048 -keyout pkey.pem -x509 -out cert.crt -days 3650 -nodes -subj /C=XX
+static const char kCertificate[] =
+"-----BEGIN CERTIFICATE-----\n"
+"MIIC+zCCAeOgAwIBAgIUC5yMAfaagwJ/fB7tBADqcYHP3jkwDQYJKoZIhvcNAQEL\n"
+"BQAwDTELMAkGA1UEBhMCWFgwHhcNMjMwMTI3MTAzNTIxWhcNMzMwMTI0MTAzNTIx\n"
+"WjANMQswCQYDVQQGEwJYWDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB\n"
+"AKhVtJCRsJBjhWZa6jtMacynN3YrgU2xF8P0eLLEeN0RtymbwtVPIQ2853oj+Uvu\n"
+"e8rsXoaW+M8m2MPd8b/by8si/d35KDDi0rijnYrsqjCvYkCotu8mta+VnnM51ueb\n"
+"Tr2P4vDT8J3UKGT4Rg9x3xcJx1IiFy5UoruI9XZnnX+pGmo0GjU704B5mLT2eDvo\n"
+"BMOMW4YKENVZX5XGpRBj+ufReQBfnZE2cyhbnJUS2fXqxmT+J+988kjQnCX8Rzre\n"
+"W5JkngHkhIWV4e38rPg9GuNiiIe6TD12ObMPhfccj5cuPU6wS2bPcBrnFDKpL1Vt\n"
+"X98LbYcc3pLjmS6lut9aA8ECAwEAAaNTMFEwHQYDVR0OBBYEFGgeu0k5L1khUQyt\n"
+"7UkZNbgS1Q2JMB8GA1UdIwQYMBaAFGgeu0k5L1khUQyt7UkZNbgS1Q2JMA8GA1Ud\n"
+"EwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBAKSYvc/tBjY4XyYu5TM5MPcC\n"
+"nIQsHSfjT5jlkq42nhNgP0SWcCOLep0m0GqoERY2A1QWep4ajFdkIhwZGWQOP5RG\n"
+"9eACGPIk7Jay1NA+8ZWxpZHfCfUdEM5MmYJHhNc2t4ImMqdBNBdjBUIerLHho0r/\n"
+"1mpQghxlFq1ru4yV2mNxFLFOn+CjL+a8n68676lIBo/wUZx8IbX1s5nd7+o9eWMx\n"
+"mF1/g9Yljw91+Dj0LJfMtHYOX8kVcWn/ZY1wRFhCLe55pef/W4u8no6eiz/tmQAH\n"
+"j/2WPF2h7TQBV9c+9COb56E5GvRcSR2LI5JTUw5BVW43k25dgRaGET61Itn03vE=\n"
+"-----END CERTIFICATE-----";
+static const char kPrivateKey[] =
+"-----BEGIN PRIVATE KEY-----\n"
+"MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCoVbSQkbCQY4Vm\n"
+"Wuo7TGnMpzd2K4FNsRfD9HiyxHjdEbcpm8LVTyENvOd6I/lL7nvK7F6GlvjPJtjD\n"
+"3fG/28vLIv3d+Sgw4tK4o52K7Kowr2JAqLbvJrWvlZ5zOdbnm069j+Lw0/Cd1Chk\n"
+"+EYPcd8XCcdSIhcuVKK7iPV2Z51/qRpqNBo1O9OAeZi09ng76ATDjFuGChDVWV+V\n"
+"xqUQY/rn0XkAX52RNnMoW5yVEtn16sZk/ifvfPJI0Jwl/Ec63luSZJ4B5ISFleHt\n"
+"/Kz4PRrjYoiHukw9djmzD4X3HI+XLj1OsEtmz3Aa5xQyqS9VbV/fC22HHN6S45ku\n"
+"pbrfWgPBAgMBAAECggEBAJ+XabHqPgAWKmHo7cq8Xk3ldsJ06ojyzbo867VoacIF\n"
+"SqaLAsNi2s6AeuCkfHSNrBWt1Mw7E7apeLbxk4G261YyXYb18jGuyeK9U95jE9NG\n"
+"Y5szmQPQqk3GRsutWV6JMrSrVpfGB4hKnOVlMF7yMXRRFAR9R4boPMQZS8Yu4/Yj\n"
+"nalS88WeSYdm1STuswyHmAv28snV5q9Vf0jBQPgArbLSXFXKTYvJrsi13f9VJ5uW\n"
+"tkiejB7RDa2rL7OAuYECVFfEQnDAvmfR4QhfOHQSRyr4w3jTUlK+xpXGBnXzqrJE\n"
+"VrIyJGeqk5sQXfiSFhrusTRJBQSwU8bdXCZmetWQ5uUCgYEA1IjBKhhwMjM8HcUN\n"
+"/Ho3cKbmkLn2DqioJFPEI0patlYvqmUBUDklGETNOXWwV4FiXLA6rT8l60tptsw3\n"
+"W6zwWNkBRxciMbq4S6h24AETUWFqqsrnbNw51TNRSBkrEvy8xBpj/B8f9KmD5LVI\n"
+"OeLYOLnP2msxSi8PK0hg2/gCNasCgYEAysLjEILm3jpyS3Pvr4N2xRYa0rvK1Ora\n"
+"4DeN/S45mVThKrBBT6FehRDRZjQkR0clydIUV98nIuFuNS00FTs0ha4VeJuY1zR0\n"
+"7B1h99GDlfV7dY5aWAwz8/uD7oU244N+XqwSofs5FlnwhTb7GtR8zVAdYW/s6aTr\n"
+"iQguA9lp6EMCgYEAhrZ32XrMAsW+4Q+6IcJFyb3AfxOgBwKYMQ53T/cdMF3IsLR8\n"
+"9KCEBrH1cupJ7+0ur5l0V8OjAVU3mIowvIcNgQNrb+gV4Hd9wVbyomGMIRUiS0d5\n"
+"EOM2NRDmAFEToGFaNOKVZYVE+AtKcnkFYsuKScpdGRDAmUji0Ih7/HFi1SkCgYAZ\n"
+"INH3J+HoxKGJjFK2E7rSbgzg9PkMLhb2Fqx4JhRpVkWZfsJ5Vexa3Vy2J9wfIUgj\n"
+"nO98fGFjR0DbQkDkKLQ3pP1wNwhYE14yLOoJRmPiX8vvI7c6ljiSEiellcjZpWAx\n"
+"521fuby3cmoGeGviRVc6MqWRf8eCpTezgdoCDB299QKBgCdMCtpn86QFFCI1T3n8\n"
+"fCHjsb0XWHZTQIQJCItLRbR7hSxQYOO36hc845X9PPdwxn9sxSioKWpivJiy1dyq\n"
+"+AdHxnkxe27osq3pwyLvFhBQx2EDBNQXpfm1Os0rmkjS1KrFWrjHGONDS86oCSsY\n"
+"N5GKmyTG29qPeKWleARxMACJ\n"
+"-----END PRIVATE KEY-----"
+;
+
 void GenerateRandContent(int size) {
   content_buffer.clear();
   content_buffer.reserve(0, size);
@@ -285,7 +336,11 @@ class SsEndToEndTest : public ::testing::Test {
   asio::error_code StartServer(asio::ip::tcp::endpoint endpoint, int backlog) {
     asio::error_code ec;
 
-    server_server_ = std::make_unique<SsServer>(io_context_);
+    server_server_ = std::make_unique<SsServer>(io_context_,
+                                                asio::ip::tcp::endpoint(),
+                                                std::string(),
+                                                std::string(kCertificate),
+                                                std::string(kPrivateKey));
     server_server_->listen(endpoint, backlog, ec);
 
     if (ec) {
@@ -310,7 +365,8 @@ class SsEndToEndTest : public ::testing::Test {
                               int backlog) {
     asio::error_code ec;
 
-    local_server_ = std::make_unique<Socks5Server>(io_context_, remote_endpoint);
+    local_server_ = std::make_unique<Socks5Server>(io_context_, remote_endpoint,
+                                                   kCertificate);
     local_server_->listen(endpoint, backlog, ec);
 
     if (ec) {
