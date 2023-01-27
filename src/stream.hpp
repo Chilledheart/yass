@@ -17,6 +17,7 @@
 
 /// the class to describe the traffic between given node (endpoint)
 class stream {
+  using callback_t = std::function<void(asio::error_code, std::size_t)>;
  public:
   /// construct a stream object with ss protocol
   ///
@@ -37,6 +38,31 @@ class stream {
     assert(channel && "channel must defined to use with stream");
     if (enable_ssl) {
       setup_ssl();
+      s_async_read_some_ = [this](callback_t cb) {
+        ssl_socket_.async_read_some(asio::null_buffers(), cb);
+      };
+      s_read_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
+        return ssl_socket_.read_some(mutable_buffer(*buf), ec);
+      };
+      s_async_write_some_ = [this](callback_t cb) {
+        ssl_socket_.async_write_some(asio::null_buffers(), cb);
+      };
+      s_write_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
+        return ssl_socket_.write_some(const_buffer(*buf), ec);
+      };
+    } else {
+      s_async_read_some_ = [this](callback_t cb) {
+        socket_.async_read_some(asio::null_buffers(), cb);
+      };
+      s_read_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
+        return socket_.read_some(mutable_buffer(*buf), ec);
+      };
+      s_async_write_some_ = [this](callback_t cb) {
+        socket_.async_write_some(asio::null_buffers(), cb);
+      };
+      s_write_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
+        return socket_.write_some(const_buffer(*buf), ec);
+      };
     }
   }
 
@@ -67,6 +93,13 @@ class stream {
       on_connect_expired(channel, ec);
     });
     socket_.async_connect(endpoint_, [this, channel](asio::error_code ec) {
+      if (enable_ssl_ && !ec) {
+        ssl_socket_.async_handshake(asio::ssl::stream_base::client,
+                                    [this, channel](asio::error_code ec) {
+          on_connect(channel, ec);
+        });
+        return;
+      }
       on_connect(channel, ec);
     });
   }
@@ -92,9 +125,8 @@ class stream {
     Channel* channel = channel_;
     read_inprogress_ = true;
 
-    socket_.async_read_some(asio::null_buffers(),
-        [this, channel, callback](asio::error_code ec,
-                        std::size_t bytes_transferred) {
+    s_async_read_some_([this, channel, callback](asio::error_code ec,
+                                                 std::size_t bytes_transferred) {
           // Cancelled, safe to ignore
           if (ec == asio::error::operation_aborted) {
             callback();
@@ -113,7 +145,7 @@ class stream {
           buf->reserve(0, SOCKET_BUF_SIZE);
           if (!ec) {
             do {
-              bytes_transferred = socket_.read_some(mutable_buffer(*buf), ec);
+              bytes_transferred = s_read_some_(buf, ec);
               if (ec == asio::error::interrupted) {
                 continue;
               }
@@ -128,7 +160,7 @@ class stream {
   }
 
   size_t read_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
-    size_t read = socket_.read_some(mutable_buffer(*buf), ec);
+    size_t read = s_read_some_(buf, ec);
     rbytes_transferred_ += read;
     if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
       on_disconnect(channel_, ec);
@@ -143,8 +175,8 @@ class stream {
     Channel* channel = channel_;
     DCHECK(!write_inprogress_);
     write_inprogress_ = true;
-    socket_.async_write_some(asio::null_buffers(),
-        [this, channel, buf, callback](asio::error_code ec, size_t /*bytes_transferred*/) {
+    s_async_write_some_([this, channel, buf, callback](asio::error_code ec,
+                                                       size_t /*bytes_transferred*/) {
           write_inprogress_ = false;
           // Cancelled, safe to ignore
           if (ec == asio::error::operation_aborted) {
@@ -158,7 +190,7 @@ class stream {
 
           size_t bytes_transferred;
           do {
-            bytes_transferred = socket_.write_some(const_buffer(*buf), ec);
+            bytes_transferred = s_write_some_(buf, ec);
             if (ec == asio::error::interrupted) {
               continue;
             }
@@ -182,7 +214,7 @@ class stream {
   }
 
   size_t write_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
-    size_t written = socket_.write_some(const_buffer(*buf), ec);
+    size_t written = s_write_some_(buf, ec);
     wbytes_transferred_ += written;
     if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
       on_disconnect(channel_, ec);
@@ -197,6 +229,10 @@ class stream {
     eof_ = true;
     closed_ = true;
     asio::error_code ec;
+    if (enable_ssl_) {
+      // FIXME use async_shutdown correctly
+      ssl_socket_.shutdown(ec);
+    }
     socket_.close(ec);
     if (ec) {
       VLOG(2) << "close() error: " << ec;
@@ -336,10 +372,10 @@ class stream {
   bool read_inprogress_ = false;
   bool write_inprogress_ = false;
 
-  // socket_async_read_some
-  // socket_read_some
-  // socket_async_write_some
-  // socket_write_some
+  std::function<void(callback_t)> s_async_read_some_;
+  std::function<size_t(std::shared_ptr<IOBuf>, asio::error_code &)> s_read_some_;
+  std::function<void(callback_t)> s_async_write_some_;
+  std::function<size_t(std::shared_ptr<IOBuf>, asio::error_code &)> s_write_some_;
 
   // statistics
   size_t rbytes_transferred_ = 0;

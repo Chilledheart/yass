@@ -34,13 +34,13 @@ void load_ca_to_ssl_ctx(asio::ssl::context &ssl_ctx) {
   asio::error_code ec;
   PCCERT_CONTEXT cert = nullptr;
 
-  auto cert_store = CertOpenSystemStoreW(NULL, L"ROOT");
+  cert_store = CertOpenSystemStoreW(NULL, L"ROOT");
   if (!cert_store) {
     PLOG(WARNING) << "CertOpenSystemStoreW failed";
     goto out;
   }
 
-  for (; cert = CertEnumCertificatesInStore(cert_store, cert);) {
+  while((cert = CertEnumCertificatesInStore(cert_store, cert))) {
     const char* data = (const char *)cert->pbCertEncoded;
     int len = cert->cbCertEncoded;
     bssl::UniquePtr<X509> cert(d2i_X509(nullptr, (const unsigned char**)&data, len));
