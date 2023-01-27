@@ -24,6 +24,7 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 
 - [Features](#features)
 - [Ciphers](#ciphers)
+  * [HTTP2 Tunnel Support](#http2-tunnel-support)
   * [PC-friendly Ciphers](#pc-friendly-ciphers)
   * [More mobile-friendly Ciphers](#more-mobile-friendly-ciphers)
 - [Supported Operating System](#supported-operating-system)
@@ -46,15 +47,21 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 - Thread Safe, tested against [Thread Sanitizer][tsan].
 
 ## Ciphers
+### HTTP2 Tunnel Support
+- [x] Basic [HTTP2] Support
+- [ ] HTTPS1.1 fallback support (both server and client)
+- [ ] Padding Support
+More Information refers to https://github.com/Chilledheart/yass/issues/55
+
 ### PC-friendly Ciphers
-- [AES_128_GCM][aes128gcm]
-- [AES_256_GCM][aes256gcm]
-- [AES_128_GCM_12][aes128gcm12]
-- [AES_192_GCM][aes192gcm] (Not recommended)
+- [x] [AES_128_GCM][aes128gcm]
+- [x] [AES_256_GCM][aes256gcm]
+- [x] [AES_128_GCM_12][aes128gcm12]
+- [x] [AES_192_GCM][aes192gcm] (Not recommended)
 
 ### More mobile-friendly Ciphers
-- [CHACHA20_POLY1305][chacha20]
-- [XCHACHA20_POLY1305][xchacha20]
+- [x] [CHACHA20_POLY1305][chacha20]
+- [x] [XCHACHA20_POLY1305][xchacha20]
 
 ## Supported Operating System
 - macOS (Mac OS X 10.10 or later, macOS 11.0 or later, Apple Silicon supported)
@@ -95,7 +102,7 @@ It is licensed with [GPLv2][license-link].
 [aead]: https://shadowsocks.org/en/wiki/AEAD-Ciphers.html
 [asan]: https://github.com/google/sanitizers/wiki/AddressSanitizer
 [tsan]: https://github.com/google/sanitizers/wiki#threadsanitizer
-[vcredist]: https://support.microsoft.com/zh-tw/help/2977003/the-latest-supported-visual-c-downloads
+[HTTP2]: https://datatracker.ietf.org/doc/html/rfc9113
 [aes128gcm]: https://tools.ietf.org/html/rfc5116
 [aes128gcm12]: https://tools.ietf.org/html/rfc5282
 [aes192gcm]: https://tools.ietf.org/html/rfc5282
