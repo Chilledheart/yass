@@ -370,7 +370,7 @@ void SsConnection::ReadHandshake() {
         std::shared_ptr<IOBuf> cipherbuf = IOBuf::create(SOCKET_BUF_SIZE);
         if (!ec) {
           do {
-            bytes_transferred = self->socket_.read_some(mutable_buffer(*cipherbuf), ec);
+            bytes_transferred = self->s_read_some_(cipherbuf, ec);
             if (ec == asio::error::interrupted) {
               continue;
             }
@@ -451,7 +451,7 @@ void SsConnection::ReadStream() {
         std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
         if (!ec) {
           do {
-            bytes_transferred = self->socket_.read_some(mutable_buffer(*buf), ec);
+            bytes_transferred = self->s_read_some_(buf, ec);
             if (ec == asio::error::interrupted) {
               continue;
             }
