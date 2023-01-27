@@ -17,9 +17,6 @@ class Channel {
   /// Deconstruct the channel
   virtual ~Channel() = default;
 
-  /// Called if stream's certificate is required
-  virtual std::string retrive_certificate() { return {}; }
-
   /// Called once connection established
   virtual void connected() = 0;
 

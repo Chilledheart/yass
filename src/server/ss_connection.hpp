@@ -103,7 +103,10 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
   /// \param remote_endpoint the upstream's endpoint
   SsConnection(asio::io_context& io_context,
                const asio::ip::tcp::endpoint& remote_endpoint,
-               bool enable_ssl);
+               bool enable_upstream_tls,
+               bool enable_tls,
+               asio::ssl::context *upstream_ssl_ctx,
+               asio::ssl::context *ssl_ctx);
 
   /// Destruct the service
   ~SsConnection() override;
@@ -362,8 +365,14 @@ class SsConnectionFactory : public ConnectionFactory {
  public:
    using ConnectionType = SsConnection;
    scoped_refptr<ConnectionType> Create(asio::io_context& io_context,
-                                        const asio::ip::tcp::endpoint& remote_endpoint, bool enable_tls) {
-     return MakeRefCounted<ConnectionType>(io_context, remote_endpoint, enable_tls);
+                                        const asio::ip::tcp::endpoint& remote_endpoint,
+                                        bool enable_upstream_tls,
+                                        bool enable_tls,
+                                        asio::ssl::context *upstream_ssl_ctx,
+                                        asio::ssl::context *ssl_ctx) {
+     return MakeRefCounted<ConnectionType>(io_context, remote_endpoint,
+                                           enable_upstream_tls, enable_tls,
+                                           upstream_ssl_ctx, ssl_ctx);
    }
    const char* Name() override { return "server"; };
    const char* ShortName() override { return "server"; };

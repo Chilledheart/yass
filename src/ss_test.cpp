@@ -100,8 +100,13 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
  public:
   ContentProviderConnection(asio::io_context& io_context,
                             const asio::ip::tcp::endpoint& remote_endpoint,
-                            bool enable_tls)
-      : Connection(io_context, remote_endpoint, false) {}
+                            bool enable_upstream_tls,
+                            bool enable_tls,
+                            asio::ssl::context *upstream_ssl_ctx,
+                            asio::ssl::context *ssl_ctx)
+      : Connection(io_context, remote_endpoint,
+                   enable_upstream_tls, enable_tls,
+                   upstream_ssl_ctx, ssl_ctx) {}
 
   ~ContentProviderConnection() override {
     VLOG(2) << "Connection (content-provider) " << connection_id() << " freed memory";
@@ -162,8 +167,13 @@ class ContentProviderConnectionFactory : public ConnectionFactory {
    using ConnectionType = ContentProviderConnection;
    scoped_refptr<ConnectionType> Create(asio::io_context& io_context,
                                         const asio::ip::tcp::endpoint& remote_endpoint,
-                                        bool enable_tls) {
-     return MakeRefCounted<ConnectionType>(io_context, remote_endpoint, enable_tls);
+                                        bool enable_upstream_tls,
+                                        bool enable_tls,
+                                        asio::ssl::context *upstream_ssl_ctx,
+                                        asio::ssl::context *ssl_ctx) {
+     return MakeRefCounted<ConnectionType>(io_context, remote_endpoint,
+                                           enable_upstream_tls, enable_tls,
+                                           upstream_ssl_ctx, ssl_ctx);
    }
    const char* Name() override { return "content-provider"; };
    const char* ShortName() override { return "cp"; };
@@ -189,6 +199,8 @@ class SsEndToEndTest : public ::testing::Test {
   void SetUp() override {
     StartWorkThread();
     absl::SetFlag(&FLAGS_password, "<dummy-password>");
+  }
+  void StartBackgroundTasks() {
     std::mutex m;
     bool done = 0;
     io_context_.post([this, &m, &done]() {
@@ -335,7 +347,6 @@ class SsEndToEndTest : public ::testing::Test {
 
   asio::error_code StartServer(asio::ip::tcp::endpoint endpoint, int backlog) {
     asio::error_code ec;
-
     server_server_ = std::make_unique<SsServer>(io_context_,
                                                 asio::ip::tcp::endpoint(),
                                                 std::string(),
@@ -365,7 +376,8 @@ class SsEndToEndTest : public ::testing::Test {
                               int backlog) {
     asio::error_code ec;
 
-    local_server_ = std::make_unique<Socks5Server>(io_context_, remote_endpoint,
+    local_server_ = std::make_unique<Socks5Server>(io_context_,
+                                                   remote_endpoint,
                                                    kCertificate);
     local_server_->listen(endpoint, backlog, ec);
 
@@ -404,26 +416,31 @@ class SsEndToEndTest : public ::testing::Test {
 #define XX(num, name, string) \
   TEST_F(SsEndToEndTest, name##_256B) { \
     absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name); \
+    StartBackgroundTasks(); \
     GenerateRandContent(256); \
     SendRequestAndCheckResponse(); \
   } \
   TEST_F(SsEndToEndTest, name##_4K) { \
     absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name); \
+    StartBackgroundTasks(); \
     GenerateRandContent(4096); \
     SendRequestAndCheckResponse(); \
   } \
   TEST_F(SsEndToEndTest, name##_32K) { \
     absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name); \
+    StartBackgroundTasks(); \
     GenerateRandContent(32 * 1024); \
     SendRequestAndCheckResponse(); \
   } \
   TEST_F(SsEndToEndTest, name##_256K) { \
     absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name); \
+    StartBackgroundTasks(); \
     GenerateRandContent(256 * 1024); \
     SendRequestAndCheckResponse(); \
   } \
   TEST_F(SsEndToEndTest, name##_1M) { \
     absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name); \
+    StartBackgroundTasks(); \
     GenerateRandContent(1024 * 1024); \
     SendRequestAndCheckResponse(); \
   }

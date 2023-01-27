@@ -28,16 +28,16 @@ class stream {
   stream(asio::io_context& io_context,
          asio::ip::tcp::endpoint endpoint,
          Channel* channel,
-         bool enable_ssl = false)
+         bool enable_tls,
+         asio::ssl::context *ssl_ctx)
       : endpoint_(endpoint),
         socket_(io_context),
         connect_timer_(io_context),
-        enable_ssl_(enable_ssl),
-        ssl_ctx_(asio::ssl::context::tls_client),
-        ssl_socket_(socket_, ssl_ctx_),
+        enable_tls_(enable_tls),
+        ssl_socket_(socket_, *ssl_ctx),
         channel_(channel) {
     assert(channel && "channel must defined to use with stream");
-    if (enable_ssl) {
+    if (enable_tls) {
       setup_ssl();
       s_async_read_some_ = [this](io_handle_t cb) {
         ssl_socket_.async_read_some(asio::null_buffers(), cb);
@@ -88,33 +88,7 @@ class stream {
   }
 
   void setup_ssl() {
-    load_ca_to_ssl_ctx(ssl_ctx_);
-    asio::error_code ec;
-    ssl_ctx_.set_options(asio::ssl::context::default_workarounds | asio::ssl::context::no_tlsv1_1, ec);
-
-    std::string certificate_chain_file = absl::GetFlag(FLAGS_certificate_chain_file);
-    if (!certificate_chain_file.empty()) {
-      ssl_ctx_.use_certificate_chain_file(certificate_chain_file, ec);
-      if (!ec) {
-        VLOG(2) << "Using certificate file: " << certificate_chain_file;
-      }
-    }
-    auto cert = channel_->retrive_certificate();
-    if (!cert.empty()) {
-      ssl_ctx_.add_certificate_authority(asio::const_buffer(cert.data(), cert.size()), ec);
-      if (!ec) {
-        VLOG(2) << "Loaded upstream certificate";
-      }
-    }
     ssl_socket_.set_verify_mode(asio::ssl::verify_peer);
-
-    SSL_CTX *ctx = ssl_ctx_.native_handle();
-    unsigned char alpn_vec[] = {
-      2, 'h', '2',
-    };
-    int ret = SSL_CTX_set_alpn_protos(ctx, alpn_vec, sizeof(alpn_vec));
-    static_cast<void>(ret);
-    DCHECK_EQ(ret, 0);
   }
 
   void connect() {
@@ -135,7 +109,7 @@ class stream {
       on_connect_expired(channel, ec);
     });
     socket_.async_connect(endpoint_, [this, channel](asio::error_code ec) {
-      if (enable_ssl_ && !ec) {
+      if (enable_tls_ && !ec) {
         ssl_socket_.async_handshake(asio::ssl::stream_base::client,
                                     [this, channel](asio::error_code ec) {
           on_connect(channel, ec);
@@ -271,7 +245,7 @@ class stream {
     eof_ = true;
     closed_ = true;
     asio::error_code ec;
-    if (enable_ssl_) {
+    if (enable_tls_) {
       // FIXME use async_shutdown correctly
       ssl_socket_.shutdown(ec);
     }
@@ -401,8 +375,7 @@ class stream {
   asio::ip::tcp::socket socket_;
   asio::steady_timer connect_timer_;
 
-  const bool enable_ssl_;
-  asio::ssl::context ssl_ctx_;
+  const bool enable_tls_;
   asio::ssl::stream<asio::ip::tcp::socket&> ssl_socket_;
 
   Channel* channel_;

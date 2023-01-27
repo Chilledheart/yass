@@ -98,8 +98,13 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
 
 SsConnection::SsConnection(asio::io_context& io_context,
                            const asio::ip::tcp::endpoint& remote_endpoint,
-                           bool enable_ssl)
-    : Connection(io_context, remote_endpoint, enable_ssl),
+                           bool enable_upstream_tls,
+                           bool enable_tls,
+                           asio::ssl::context *upstream_ssl_ctx,
+                           asio::ssl::context *ssl_ctx)
+    : Connection(io_context, remote_endpoint,
+                 enable_upstream_tls, enable_tls,
+                 upstream_ssl_ctx, ssl_ctx),
       state_(),
       resolver_(*io_context_) {}
 
@@ -117,7 +122,7 @@ void SsConnection::start() {
   socket_.non_blocking(true, ec);
 
   scoped_refptr<SsConnection> self(this);
-  if (enable_ssl_) {
+  if (enable_tls_) {
     ssl_socket_.async_handshake(asio::ssl::stream_base::server,
                                 [self](asio::error_code ec) {
       if (ec) {
@@ -145,7 +150,7 @@ void SsConnection::close() {
           << " and remaining: " << bytes << " bytes.";
   asio::error_code ec;
   closed_ = true;
-  if (enable_ssl_) {
+  if (enable_tls_) {
     // FIXME use async_shutdown correctly
     ssl_socket_.shutdown(ec);
   }
@@ -807,7 +812,8 @@ void SsConnection::ProcessSentData(asio::error_code ec,
 void SsConnection::OnConnect() {
   LOG(INFO) << "Connection (server) " << connection_id()
             << " to " << remote_domain();
-  channel_ = std::make_unique<stream>(*io_context_, remote_endpoint_, this);
+  channel_ = std::make_unique<stream>(*io_context_, remote_endpoint_, this,
+                                      false, upstream_ssl_ctx_);
   channel_->connect();
   if (adapter_) {
     // stream is ready

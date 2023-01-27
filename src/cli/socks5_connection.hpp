@@ -116,7 +116,10 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
   /// \param remote_endpoint the upstream's endpoint
   Socks5Connection(asio::io_context& io_context,
                    const asio::ip::tcp::endpoint& remote_endpoint,
-                   bool enable_ssl);
+                   bool enable_upstream_tls,
+                   bool enable_tls,
+                   asio::ssl::context *upstream_ssl_ctx,
+                   asio::ssl::context *ssl_ctx);
 
   /// Destruct the service
   ~Socks5Connection() override;
@@ -426,10 +429,6 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
   bool downstream_read_inprogress_ = false;
 
  private:
-  std::string retrive_certificate() override {
-    return upstream_certificate_;
-  }
-
   /// handle with connnect event (upstream)
   void connected() override;
 
@@ -464,8 +463,14 @@ class Socks5ConnectionFactory : public ConnectionFactory {
  public:
    using ConnectionType = Socks5Connection;
    scoped_refptr<ConnectionType> Create(asio::io_context& io_context,
-                                        const asio::ip::tcp::endpoint& remote_endpoint, bool enable_tls) {
-     return MakeRefCounted<ConnectionType>(io_context, remote_endpoint, enable_tls);
+                                        const asio::ip::tcp::endpoint& remote_endpoint,
+                                        bool enable_upstream_tls,
+                                        bool enable_tls,
+                                        asio::ssl::context *upstream_ssl_ctx,
+                                        asio::ssl::context *ssl_ctx) {
+     return MakeRefCounted<ConnectionType>(io_context, remote_endpoint,
+                                           enable_upstream_tls, enable_tls,
+                                           upstream_ssl_ctx, ssl_ctx);
    }
    const char* Name() override { return "client"; };
    const char* ShortName() override { return "client"; };
