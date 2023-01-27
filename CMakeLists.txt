@@ -1474,8 +1474,8 @@ int main() {
     include_directories(third_party/lss)
   endif()
   if (APPLE AND COMPILER_CLANG)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -framework Foundation -framework Security")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -framework Foundation -framework Security")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -framework Foundation")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -framework Foundation")
   endif()
 endif()
 
@@ -1729,6 +1729,11 @@ target_include_directories(asio PRIVATE
 target_link_libraries(asio PUBLIC
   crypto
   ssl)
+
+if (APPLE)
+  find_library(SECURITY_FRAMEWORK Security)
+  target_link_libraries(asio PRIVATE ${SECURITY_FRAMEWORK})
+endif()
 
 set(SUPPORT_LIBS asio ${SUPPORT_LIBS})
 
