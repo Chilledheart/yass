@@ -270,7 +270,7 @@ class ContentServer {
                             void *arg) {
     unsigned char pos = 0;
     while (pos < inlen) {
-      if (in[0] + 1 > inlen) {
+      if (in[0] + 1u > inlen) {
         goto err;
       }
       if (std::string(reinterpret_cast<const char*>(in + 1), in[0]) == "h2") {
