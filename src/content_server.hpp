@@ -211,7 +211,9 @@ class ContentServer {
   void setup_ssl_ctx(asio::error_code &ec) {
     load_ca_to_ssl_ctx(ssl_ctx_);
 
-    ssl_ctx_.set_options(asio::ssl::context::default_workarounds | asio::ssl::context::no_tlsv1_1, ec);
+    ssl_ctx_.set_options(asio::ssl::context::default_workarounds |
+                         asio::ssl::context::no_tlsv1 |
+                         asio::ssl::context::no_tlsv1_1, ec);
     if (ec) {
       return;
     }
@@ -286,7 +288,9 @@ class ContentServer {
 
   void setup_upstream_ssl_ctx(asio::error_code &ec) {
     load_ca_to_ssl_ctx(upstream_ssl_ctx_);
-    upstream_ssl_ctx_.set_options(asio::ssl::context::default_workarounds | asio::ssl::context::no_tlsv1_1, ec);
+    upstream_ssl_ctx_.set_options(asio::ssl::context::default_workarounds |
+                                  asio::ssl::context::no_tlsv1 |
+                                  asio::ssl::context::no_tlsv1_1, ec);
     if (ec) {
       return;
     }
