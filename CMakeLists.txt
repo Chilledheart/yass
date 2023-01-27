@@ -1671,30 +1671,6 @@ set(SUPPORT_LIBS
   )
 
 # *****************************************************************************************
-#           asio Library
-# *****************************************************************************************
-
-add_definitions(-DASIO_STANDALONE)
-add_definitions(-DASIO_NO_TYPEID)
-add_definitions(-DASIO_NO_EXCEPTIONS)
-add_definitions(-DASIO_NO_TS_EXECUTORS)
-add_definitions(-DASIO_SEPARATE_COMPILATION)
-# forward libcxx present
-# we control the visiblity
-add_definitions(-DASIO_DISABLE_VISIBILITY)
-include_directories(third_party/asio/asio/include SYSTEM)
-# both of asio and quiche use std::allocator<void>
-if (MSVC AND NOT USE_LIBCXX)
-  add_definitions(-D_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
-  add_definitions(-D_SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING)
-endif()
-add_library(asio STATIC
-  src/core/asio.hpp
-  src/core/asio.cpp)
-target_include_directories(asio PRIVATE
-  src)
-
-# *****************************************************************************************
 #           boringssl Library
 # *****************************************************************************************
 
@@ -1726,6 +1702,35 @@ endif()
 
 set_target_properties(bssl PROPERTIES EXCLUDE_FROM_ALL TRUE)
 set_target_properties(decrepit PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
+# *****************************************************************************************
+#           asio Library
+# *****************************************************************************************
+
+add_definitions(-DASIO_STANDALONE)
+add_definitions(-DASIO_NO_TYPEID)
+add_definitions(-DASIO_NO_EXCEPTIONS)
+add_definitions(-DASIO_NO_TS_EXECUTORS)
+add_definitions(-DASIO_SEPARATE_COMPILATION)
+# forward libcxx present
+# we control the visiblity
+add_definitions(-DASIO_DISABLE_VISIBILITY)
+include_directories(third_party/asio/asio/include SYSTEM)
+# both of asio and quiche use std::allocator<void>
+if (MSVC AND NOT USE_LIBCXX)
+  add_definitions(-D_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
+  add_definitions(-D_SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING)
+endif()
+add_library(asio STATIC
+  src/core/asio.hpp
+  src/core/asio.cpp)
+target_include_directories(asio PRIVATE
+  src)
+target_link_libraries(asio PUBLIC
+  crypto
+  ssl)
+
+set(SUPPORT_LIBS asio ${SUPPORT_LIBS})
 
 # *****************************************************************************************
 #           json Library
