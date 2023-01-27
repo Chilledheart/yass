@@ -1,5 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2022 Chilledheart  */
+// SPDX-License-Identifier: GPL-2.0 Copyright (c) 2019-2022 Chilledheart  */
 
 #ifndef H_CONTENT_SERVER
 #define H_CONTENT_SERVER
@@ -126,8 +125,13 @@ class ContentServer {
     acceptor_->async_accept(
         peer_endpoint_,
         [this](asio::error_code ec, asio::ip::tcp::socket socket) {
+#ifdef CRYPTO_HTTP2_TLS
+          bool tls = absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_TLS;
+#else
+          bool tls = false;
+#endif
           if (!ec) {
-            scoped_refptr<ConnectionType> conn = factory_.Create(io_context_, remote_endpoint_);
+            scoped_refptr<ConnectionType> conn = factory_.Create(io_context_, remote_endpoint_, tls);
             on_accept(conn, std::move(socket));
             accept();
           } if (ec && ec != asio::error::operation_aborted) {

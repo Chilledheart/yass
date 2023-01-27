@@ -115,7 +115,8 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
   /// \param io_context the io context associated with the service
   /// \param remote_endpoint the upstream's endpoint
   Socks5Connection(asio::io_context& io_context,
-                   const asio::ip::tcp::endpoint& remote_endpoint);
+                   const asio::ip::tcp::endpoint& remote_endpoint,
+                   bool enable_ssl);
 
   /// Destruct the service
   ~Socks5Connection() override;
@@ -459,8 +460,8 @@ class Socks5ConnectionFactory : public ConnectionFactory {
  public:
    using ConnectionType = Socks5Connection;
    scoped_refptr<ConnectionType> Create(asio::io_context& io_context,
-                                        const asio::ip::tcp::endpoint& remote_endpoint) {
-     return MakeRefCounted<ConnectionType>(io_context, remote_endpoint);
+                                        const asio::ip::tcp::endpoint& remote_endpoint, bool enable_tls) {
+     return MakeRefCounted<ConnectionType>(io_context, remote_endpoint, enable_tls);
    }
    const char* Name() override { return "client"; };
    const char* ShortName() override { return "client"; };

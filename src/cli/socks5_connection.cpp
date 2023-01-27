@@ -199,8 +199,9 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
 
 Socks5Connection::Socks5Connection(
     asio::io_context& io_context,
-    const asio::ip::tcp::endpoint& remote_endpoint)
-    : Connection(io_context, remote_endpoint),
+    const asio::ip::tcp::endpoint& remote_endpoint,
+    bool enable_ssl)
+    : Connection(io_context, remote_endpoint, enable_ssl),
       state_() {}
 
 Socks5Connection::~Socks5Connection() {
@@ -1259,7 +1260,14 @@ void Socks5Connection::OnCmdConnect(const std::string& domain_name, uint16_t por
 void Socks5Connection::OnConnect() {
   LOG(INFO) << "Connection (client) " << connection_id()
             << " to " << remote_domain();
-  if (absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2) {
+  bool http2 = absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2;
+#ifdef CRYPTO_HTTP2_TLS
+  bool tls_upstream = absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_TLS;
+  http2 |= absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_TLS;
+#else
+  bool tls_upstream = false;
+#endif
+  if (http2) {
     http2::adapter::OgHttp2Adapter::Options options;
     options.perspective = http2::adapter::Perspective::kClient;
     adapter_ = http2::adapter::OgHttp2Adapter::Create(*this, options);
@@ -1272,7 +1280,8 @@ void Socks5Connection::OnConnect() {
       this);
   }
   // create lazy
-  channel_ = std::make_unique<stream>(*io_context_, remote_endpoint_, this);
+  channel_ = std::make_unique<stream>(*io_context_, remote_endpoint_,
+                                      this, tls_upstream);
   channel_->connect();
 }
 

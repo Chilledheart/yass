@@ -5,10 +5,10 @@
 
 #ifdef _WIN32
 #include <wincrypt.h>
+#undef X509_NAME
 #elif defined(__APPLE__)
 #include <Security/Security.h>
 #endif
-
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
@@ -42,13 +42,27 @@ void load_ca_to_ssl_ctx(asio::ssl::context &ssl_ctx) {
 
   while((cert = CertEnumCertificatesInStore(cert_store, cert))) {
     const char* data = (const char *)cert->pbCertEncoded;
-    int len = cert->cbCertEncoded;
+    size_t len = cert->cbCertEncoded;
     bssl::UniquePtr<X509> cert(d2i_X509(nullptr, (const unsigned char**)&data, len));
     if (X509_cmp_current_time(X509_get0_notBefore(cert.get())) < 0 &&
         X509_cmp_current_time(X509_get0_notAfter(cert.get())) >= 0) {
-      ssl_ctx.add_certificate_authority(asio::const_buffer(data, len), ec);
       char buf[4096] = {};
-      VLOG(2) << "Loading ca: " << X509_NAME_oneline(X509_get_subject_name(cert.get()), buf, sizeof(buf));
+      const char* const subject_name = X509_NAME_oneline(X509_get_subject_name(cert.get()), buf, sizeof(buf));
+
+      bssl::UniquePtr<BIO> bio(BIO_new(BIO_s_mem()));
+      PEM_write_bio_X509(bio.get(), cert.get());
+      int ret = BIO_mem_contents(bio.get(), reinterpret_cast<const uint8_t**>(&data), &len);
+      if (ret == 0) {
+        LOG(WARNING) << "Loading ca failure: Internal Error at "<< subject_name;
+        continue;
+      }
+      ssl_ctx.add_certificate_authority(asio::const_buffer(data, len), ec);
+      if (!ec) {
+        VLOG(2) << "Loading ca: " << subject_name;
+      } else {
+        LOG(WARNING) << "Loading ca failure: " << ec << " at "<< subject_name;
+        continue;
+      }
     }
   }
 

@@ -17,7 +17,8 @@
 
 /// the class to describe the traffic between given node (endpoint)
 class stream {
-  using callback_t = std::function<void(asio::error_code, std::size_t)>;
+  using io_handle_t = std::function<void(asio::error_code, std::size_t)>;
+  using handle_t = std::function<void(asio::error_code)>;
  public:
   /// construct a stream object with ss protocol
   ///
@@ -32,36 +33,52 @@ class stream {
         socket_(io_context),
         connect_timer_(io_context),
         enable_ssl_(enable_ssl),
-        ssl_ctx_(asio::ssl::context::tlsv13_client),
+        ssl_ctx_(asio::ssl::context::tls_client),
         ssl_socket_(socket_, ssl_ctx_),
         channel_(channel) {
     assert(channel && "channel must defined to use with stream");
     if (enable_ssl) {
       setup_ssl();
-      s_async_read_some_ = [this](callback_t cb) {
+      s_async_read_some_ = [this](io_handle_t cb) {
         ssl_socket_.async_read_some(asio::null_buffers(), cb);
       };
       s_read_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
         return ssl_socket_.read_some(mutable_buffer(*buf), ec);
       };
-      s_async_write_some_ = [this](callback_t cb) {
+      s_async_write_some_ = [this](io_handle_t cb) {
         ssl_socket_.async_write_some(asio::null_buffers(), cb);
       };
       s_write_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
         return ssl_socket_.write_some(const_buffer(*buf), ec);
       };
+      s_async_shutdown_ = [this](handle_t cb) {
+        ssl_socket_.async_shutdown(cb);
+      };
+      s_shutdown_ = [this](asio::error_code &ec) {
+        // FIXME use async_shutdown correctly
+        ssl_socket_.shutdown(ec);
+      };
     } else {
-      s_async_read_some_ = [this](callback_t cb) {
+      s_async_read_some_ = [this](io_handle_t cb) {
         socket_.async_read_some(asio::null_buffers(), cb);
       };
       s_read_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
         return socket_.read_some(mutable_buffer(*buf), ec);
       };
-      s_async_write_some_ = [this](callback_t cb) {
+      s_async_write_some_ = [this](io_handle_t cb) {
         socket_.async_write_some(asio::null_buffers(), cb);
       };
       s_write_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
         return socket_.write_some(const_buffer(*buf), ec);
+      };
+      s_async_shutdown_ = [this](handle_t cb) {
+        asio::error_code ec;
+        socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+        cb(ec);
+      };
+      s_shutdown_ = [this](asio::error_code &ec) {
+        // FIXME use async_shutdown correctly
+        socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
       };
     }
   }
@@ -72,7 +89,20 @@ class stream {
 
   void setup_ssl() {
     load_ca_to_ssl_ctx(ssl_ctx_);
-    ssl_socket_.set_verify_mode(asio::ssl::verify_peer | asio::ssl::verify_client_once);
+    ssl_ctx_.set_options(asio::ssl::context::default_workarounds | asio::ssl::context::no_tlsv1_1);
+    ssl_socket_.set_verify_mode(asio::ssl::verify_peer);
+
+#if 0
+    ssl_ctx_.add_certificate_authority(asio::const_buffer(data, len), ec);
+#endif
+
+    SSL_CTX *ctx = ssl_ctx_.native_handle();
+    unsigned char alpn_vec[] = {
+      2, 'h', '2',
+    };
+    int ret = SSL_CTX_set_alpn_protos(ctx, alpn_vec, sizeof(alpn_vec));
+    static_cast<void>(ret);
+    DCHECK_EQ(ret, 0);
   }
 
   void connect() {
@@ -372,10 +402,12 @@ class stream {
   bool read_inprogress_ = false;
   bool write_inprogress_ = false;
 
-  std::function<void(callback_t)> s_async_read_some_;
+  std::function<void(io_handle_t)> s_async_read_some_;
   std::function<size_t(std::shared_ptr<IOBuf>, asio::error_code &)> s_read_some_;
-  std::function<void(callback_t)> s_async_write_some_;
+  std::function<void(io_handle_t)> s_async_write_some_;
   std::function<size_t(std::shared_ptr<IOBuf>, asio::error_code &)> s_write_some_;
+  std::function<void(handle_t)> s_async_shutdown_;
+  std::function<void(asio::error_code&)> s_shutdown_;
 
   // statistics
   size_t rbytes_transferred_ = 0;

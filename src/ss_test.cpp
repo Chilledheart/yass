@@ -48,8 +48,9 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
                                    public Connection {
  public:
   ContentProviderConnection(asio::io_context& io_context,
-                            const asio::ip::tcp::endpoint& remote_endpoint)
-      : Connection(io_context, remote_endpoint) {}
+                            const asio::ip::tcp::endpoint& remote_endpoint,
+                            bool enable_tls)
+      : Connection(io_context, remote_endpoint, false) {}
 
   ~ContentProviderConnection() override {
     VLOG(2) << "Connection (content-provider) " << connection_id() << " freed memory";
@@ -109,8 +110,9 @@ class ContentProviderConnectionFactory : public ConnectionFactory {
  public:
    using ConnectionType = ContentProviderConnection;
    scoped_refptr<ConnectionType> Create(asio::io_context& io_context,
-                                        const asio::ip::tcp::endpoint& remote_endpoint) {
-     return MakeRefCounted<ConnectionType>(io_context, remote_endpoint);
+                                        const asio::ip::tcp::endpoint& remote_endpoint,
+                                        bool enable_tls) {
+     return MakeRefCounted<ConnectionType>(io_context, remote_endpoint, enable_tls);
    }
    const char* Name() override { return "content-provider"; };
    const char* ShortName() override { return "cp"; };

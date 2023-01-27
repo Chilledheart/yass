@@ -97,8 +97,9 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
 }
 
 SsConnection::SsConnection(asio::io_context& io_context,
-                           const asio::ip::tcp::endpoint& remote_endpoint)
-    : Connection(io_context, remote_endpoint),
+                           const asio::ip::tcp::endpoint& remote_endpoint,
+                           bool enable_ssl)
+    : Connection(io_context, remote_endpoint, enable_ssl),
       state_(),
       resolver_(*io_context_) {}
 
@@ -115,20 +116,19 @@ void SsConnection::start() {
   socket_.native_non_blocking(true, ec);
   socket_.non_blocking(true, ec);
 
-  if (absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2) {
-    http2::adapter::OgHttp2Adapter::Options options;
-    options.perspective = http2::adapter::Perspective::kServer;
-    adapter_ = http2::adapter::OgHttp2Adapter::Create(*this, options);
-    SetState(state_stream);
-    ReadStream();
+  scoped_refptr<SsConnection> self(this);
+  if (enable_ssl_) {
+    ssl_socket_.async_handshake(asio::ssl::stream_base::server,
+                                [self](asio::error_code ec) {
+      if (ec) {
+        self->SetState(state_error);
+        self->OnDisconnect(ec);
+        return;
+      }
+      self->Start();
+    });
   } else {
-    encoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
-      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)),
-      this, true);
-    decoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
-      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)),
-      this);
-    ReadHandshake();
+    Start();
   }
 }
 
@@ -145,6 +145,10 @@ void SsConnection::close() {
           << " and remaining: " << bytes << " bytes.";
   asio::error_code ec;
   closed_ = true;
+  if (enable_ssl_) {
+    // FIXME use async_shutdown correctly
+    ssl_socket_.shutdown(ec);
+  }
   socket_.close(ec);
   if (ec) {
     VLOG(2) << "close() error: " << ec;
@@ -156,6 +160,28 @@ void SsConnection::close() {
   auto cb = std::move(disconnect_cb_);
   if (cb) {
     cb();
+  }
+}
+
+void SsConnection::Start() {
+  bool http2 = absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2;
+#ifdef CRYPTO_HTTP2_TLS
+  http2 |= absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_TLS;
+#endif
+  if (http2) {
+    http2::adapter::OgHttp2Adapter::Options options;
+    options.perspective = http2::adapter::Perspective::kServer;
+    adapter_ = http2::adapter::OgHttp2Adapter::Create(*this, options);
+    SetState(state_stream);
+    ReadStream();
+  } else {
+    encoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
+      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)),
+      this, true);
+    decoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
+      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)),
+      this);
+    ReadHandshake();
   }
 }
 
@@ -337,8 +363,7 @@ bool SsConnection::OnMetadataEndForStream(StreamId stream_id) {
 void SsConnection::ReadHandshake() {
   scoped_refptr<SsConnection> self(this);
 
-  socket_.async_read_some(asio::null_buffers(),
-      [self](asio::error_code ec, size_t bytes_transferred) {
+  s_async_read_some_([self](asio::error_code ec, size_t bytes_transferred) {
         std::shared_ptr<IOBuf> cipherbuf = IOBuf::create(SOCKET_BUF_SIZE);
         if (!ec) {
           do {
@@ -410,9 +435,8 @@ void SsConnection::ReadStream() {
   scoped_refptr<SsConnection> self(this);
   downstream_read_inprogress_ = true;
 
-  socket_.async_read_some(asio::null_buffers(),
-      [self](asio::error_code ec,
-             std::size_t bytes_transferred) {
+  s_async_read_some_([self](asio::error_code ec,
+                            std::size_t bytes_transferred) {
         self->downstream_read_inprogress_ = false;
         if (ec) {
           self->ProcessReceivedData(nullptr, ec, bytes_transferred);
@@ -466,8 +490,8 @@ void SsConnection::WriteStream() {
   DCHECK(!write_inprogress_);
   scoped_refptr<SsConnection> self(this);
   write_inprogress_ = true;
-  socket_.async_write_some(asio::null_buffers(),
-      [self](asio::error_code ec, size_t /*bytes_transferred*/) {
+  s_async_write_some_([self](asio::error_code ec,
+                             size_t /*bytes_transferred*/) {
         self->write_inprogress_ = false;
         if (ec) {
           self->ProcessSentData(ec, 0);
@@ -509,7 +533,7 @@ void SsConnection::WriteStreamInPipe() {
     size_t written;
     do {
       ec = asio::error_code();
-      written = socket_.write_some(const_buffer(*buf), ec);
+      written = s_write_some_(buf, ec);
       if (ec == asio::error::interrupted) {
         continue;
       }
@@ -656,7 +680,7 @@ std::shared_ptr<IOBuf> SsConnection::GetNextUpstreamBuf(asio::error_code &ec) {
   std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
   size_t read;
   do {
-    read = socket_.read_some(mutable_buffer(*buf), ec);
+    read = s_read_some_(buf, ec);
     if (ec == asio::error::interrupted) {
       continue;
     }
@@ -826,7 +850,7 @@ void SsConnection::OnStreamWrite() {
     VLOG(3) << "Connection (server) " << connection_id()
             << " last data sent: shutting down";
     asio::error_code ec;
-    socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+    s_shutdown_(ec);
     return;
   }
 
@@ -967,7 +991,7 @@ void SsConnection::disconnected(asio::error_code ec) {
   if (nodata && downstream_.empty()) {
     VLOG(3) << "Connection (server) " << connection_id()
             << " upstream: last data sent: shutting down";
-    socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+    s_shutdown_(ec);
   }
 }
 
