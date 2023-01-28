@@ -366,7 +366,6 @@ class ContentServer {
       alpn_vec = {
         8, 'h', 't', 't', 'p', '/', '1', '.', '1'
       };
-      LOG(WARNING) << "https fallback";
     }
     ret = SSL_CTX_set_alpn_protos(ctx, alpn_vec.data(), alpn_vec.size());
     static_cast<void>(ret);

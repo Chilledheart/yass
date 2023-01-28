@@ -277,8 +277,8 @@ class stream {
       SSL_get0_alpn_selected(ssl, &out, &outlen);
       std::string alpn = std::string(reinterpret_cast<const char*>(out), outlen);
       VLOG(2) << "Alpn selected (client): " << alpn;
-      if (!https_fallback_) {
-        https_fallback_ = alpn == "http/1.1";
+      https_fallback_ |= alpn == "http/1.1";
+      if (https_fallback_) {
         VLOG(2) << "Alpn fallback to https protocol (client)";
       }
     }
