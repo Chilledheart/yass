@@ -915,8 +915,10 @@ void SsConnection::OnConnect() {
     if (submit_result != 0) {
       OnDisconnect(asio::error::connection_aborted);
     }
-  } else if (https_fallback_) {
-    // TBD: Send 200 response
+  } else if (https_fallback_ && http_is_connect_) {
+    std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(
+        http_connect_reply_, sizeof(http_connect_reply_) - 1);
+    OnDownstreamWrite(buf);
   }
 }
 
@@ -1027,13 +1029,6 @@ void SsConnection::connected() {
   scoped_refptr<SsConnection> self(this);
   upstream_readable_ = true;
   upstream_writable_ = true;
-
-  /// reply on CONNECT request
-  if (https_fallback_ && http_is_connect_) {
-    std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(
-        http_connect_reply_, sizeof(http_connect_reply_) - 1);
-    OnDownstreamWrite(buf);
-  }
 
   channel_->start_read([self](){});
   OnUpstreamWriteFlush();
