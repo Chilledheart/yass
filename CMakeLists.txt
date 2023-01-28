@@ -1731,7 +1731,7 @@ target_link_libraries(asio PUBLIC
   ssl)
 
 if (APPLE)
-  find_library(SECURITY_FRAMEWORK Security)
+  find_library(SECURITY_FRAMEWORK Security REQUIRED)
   target_link_libraries(asio PRIVATE ${SECURITY_FRAMEWORK})
 endif()
 
