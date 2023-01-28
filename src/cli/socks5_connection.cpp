@@ -1367,6 +1367,16 @@ void Socks5Connection::received(std::shared_ptr<IOBuf> buf) {
         buf->trimStart(nparsed);
         buf->retreat(nparsed);
       } else {
+        if (!ok) {
+          LOG(WARNING) << "Connection (client) " << connection_id()
+                       << " upstream server unhandled: "
+                       << parser.ErrorMessage() << ": "
+                       << std::string(reinterpret_cast<const char*>(buf->data()),
+                                      nparsed);
+        } else {
+          LOG(WARNING) << "Connection (client) " << connection_id()
+                       << " upstream server returns: " << parser.status_code();
+        }
         disconnected(asio::error::connection_refused);
         return;
       }

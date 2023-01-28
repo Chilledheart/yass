@@ -172,6 +172,10 @@ class HttpResponseParser {
     return nparsed;
   }
 
+  const char* ErrorMessage() {
+    return http_errno_description(HTTP_PARSER_ERRNO(&parser_));
+  }
+
   int status_code() const { return parser_.status_code; }
 
  private:
