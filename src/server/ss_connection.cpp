@@ -9,6 +9,7 @@
 #include "config/config.hpp"
 #include "core/asio.hpp"
 #include "core/base64.hpp"
+#include "core/http_parser.hpp"
 #include "core/utils.hpp"
 
 namespace {
@@ -54,6 +55,9 @@ std::string GetProxyAuthorizationIdentity() {
 
 namespace ss {
 
+const char SsConnection::http_connect_reply_[] =
+    "HTTP/1.1 200 Connection established\r\n\r\n";
+
 bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length)  {
   absl::string_view payload(
       reinterpret_cast<const char*>(chunks_.front()->data()), payload_length);
@@ -98,11 +102,14 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
 
 SsConnection::SsConnection(asio::io_context& io_context,
                            const asio::ip::tcp::endpoint& remote_endpoint,
+                           bool upstream_https_fallback,
+                           bool https_fallback,
                            bool enable_upstream_tls,
                            bool enable_tls,
                            asio::ssl::context *upstream_ssl_ctx,
                            asio::ssl::context *ssl_ctx)
     : Connection(io_context, remote_endpoint,
+                 upstream_https_fallback, https_fallback,
                  enable_upstream_tls, enable_tls,
                  upstream_ssl_ctx, ssl_ctx),
       state_(),
@@ -171,12 +178,17 @@ void SsConnection::close() {
 void SsConnection::Start() {
   bool http2 = absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2;
   http2 |= absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_TLS;
+  if (http2 && https_fallback_) {
+    http2 = false;
+  }
   if (http2) {
     http2::adapter::OgHttp2Adapter::Options options;
     options.perspective = http2::adapter::Perspective::kServer;
     adapter_ = http2::adapter::OgHttp2Adapter::Create(*this, options);
     SetState(state_stream);
     ReadStream();
+  } else if (https_fallback_) {
+    ReadHandshakeViaHttps();
   } else {
     encoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
       static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)),
@@ -411,6 +423,72 @@ void SsConnection::ReadHandshake() {
       });
 }
 
+void SsConnection::ReadHandshakeViaHttps() {
+  scoped_refptr<SsConnection> self(this);
+
+  s_async_read_some_([this, self](asio::error_code ec, size_t bytes_transferred) {
+        std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
+        if (!ec) {
+          do {
+            bytes_transferred = self->s_read_some_(buf, ec);
+            if (ec == asio::error::interrupted) {
+              continue;
+            }
+          } while(false);
+        }
+        if (ec == asio::error::try_again || ec == asio::error::would_block) {
+          self->ReadHandshakeViaHttps();
+          return;
+        }
+        if (ec) {
+          self->OnDisconnect(ec);
+          return;
+        }
+        buf->append(bytes_transferred);
+
+        DumpHex("HANDSHAKE->", buf.get());
+
+        HttpRequestParser parser;
+
+        bool ok;
+        int nparsed = parser.Parse(buf, &ok);
+        if (nparsed) {
+          VLOG(4) << "Connection (server) " << connection_id()
+                  << " http: "
+                  << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
+        }
+
+        if (ok) {
+          buf->trimStart(nparsed);
+          buf->retreat(nparsed);
+
+          http_host_ = parser.host();
+          http_port_ = parser.port();
+          http_is_connect_ = parser.is_connect();
+
+          request_ = {http_host_, http_port_};
+
+          if (!http_is_connect_) {
+            std::string header;
+            parser.ReforgeHttpRequest(&header);
+            buf->reserve(header.size(), 0);
+            buf->prepend(header.size());
+            memcpy(buf->mutable_data(), header.c_str(), header.size());
+            VLOG(4) << "Connection (server) " << connection_id()
+                    << " Host: " << http_host_ << " PORT: " << http_port_;
+          } else {
+            VLOG(4) << "Connection (server) " << connection_id()
+                    << " CONNECT: " << http_host_ << " PORT: " << http_port_;
+          }
+          ProcessReceivedData(buf, ec, buf->length());
+        } else {
+          // FIXME better error code?
+          ec = asio::error::connection_refused;
+          self->OnDisconnect(ec);
+        }
+      });
+}
+
 void SsConnection::ResolveDns(std::shared_ptr<IOBuf> buf) {
   scoped_refptr<SsConnection> self(this);
   resolver_.async_resolve(
@@ -476,6 +554,9 @@ void SsConnection::ReadStream() {
           // Sent Control Streams
           self->SendIfNotProcessing();
           self->OnDownstreamWriteFlush();
+        } else if (self->https_fallback_) {
+          self->rbytes_transferred_ += buf->length();
+          self->upstream_.push_back(buf);
         } else {
           self->decoder_->process_bytes(buf);
         }
@@ -596,6 +677,8 @@ repeat_fetch:
     if (bytes_transferred <= kYieldAfterBytesRead) {
       goto repeat_fetch;
     }
+  } else if (https_fallback_) {
+    downstream_.push_back(buf);
   } else {
     downstream_.push_back(EncryptData(buf));
   }
@@ -715,6 +798,9 @@ std::shared_ptr<IOBuf> SsConnection::GetNextUpstreamBuf(asio::error_code &ec) {
     // Sent Control Streams
     SendIfNotProcessing();
     OnDownstreamWriteFlush();
+  } else if (https_fallback_) {
+    rbytes_transferred_ += buf->length();
+    upstream_.push_back(buf);
   } else {
     decoder_->process_bytes(buf);
   }
@@ -812,8 +898,9 @@ void SsConnection::ProcessSentData(asio::error_code ec,
 void SsConnection::OnConnect() {
   LOG(INFO) << "Connection (server) " << connection_id()
             << " to " << remote_domain();
-  channel_ = std::make_unique<stream>(*io_context_, remote_endpoint_, this,
-                                      false, upstream_ssl_ctx_);
+  channel_ = std::make_unique<stream>(*io_context_, remote_endpoint_,
+                                      this, upstream_https_fallback_,
+                                      enable_upstream_tls_, upstream_ssl_ctx_);
   channel_->connect();
   if (adapter_) {
     // stream is ready
@@ -821,12 +908,17 @@ void SsConnection::OnConnect() {
       std::make_unique<DataFrameSource>(this, stream_id_);
     data_frame_ = data_frame.get();
     std::vector<std::pair<std::string, std::string>> headers;
-    int submit_result = adapter_->SubmitResponse(
-      stream_id_, GenerateHeaders(headers, 200), std::move(data_frame));
+    int submit_result = adapter_->SubmitResponse(stream_id_,
+                                                 GenerateHeaders(headers, 200),
+                                                 std::move(data_frame));
     SendIfNotProcessing();
     if (submit_result != 0) {
       OnDisconnect(asio::error::connection_aborted);
     }
+  } else if (https_fallback_ && http_is_connect_) {
+    std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(
+        http_connect_reply_, sizeof(http_connect_reply_) - 1);
+    OnDownstreamWrite(buf);
   }
 }
 
@@ -937,6 +1029,7 @@ void SsConnection::connected() {
   scoped_refptr<SsConnection> self(this);
   upstream_readable_ = true;
   upstream_writable_ = true;
+
   channel_->start_read([self](){});
   OnUpstreamWriteFlush();
 }
@@ -958,6 +1051,8 @@ void SsConnection::received(std::shared_ptr<IOBuf> buf) {
     data_frame_->SetSendCompletionCallback(std::function<void()>());
     adapter()->ResumeStream(stream_id_);
     SendIfNotProcessing();
+  } else if (https_fallback_) {
+    downstream_.push_back(buf);
   } else {
     downstream_.push_back(EncryptData(buf));
   }

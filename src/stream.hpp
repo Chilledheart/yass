@@ -25,14 +25,19 @@ class stream {
   /// \param io_context the io context associated with the service
   /// \param endpoint the endpoint of the service socket
   /// \param channel the underlying data channel used in stream
+  /// \param https_fallback the data channel falls back to https (alpn)
+  /// \param enable_tls the underlying data channel is using tls
+  /// \param ssl_ctx the ssl context object for tls data transfer
   stream(asio::io_context& io_context,
          asio::ip::tcp::endpoint endpoint,
          Channel* channel,
+         bool https_fallback,
          bool enable_tls,
          asio::ssl::context *ssl_ctx)
       : endpoint_(endpoint),
         socket_(io_context),
         connect_timer_(io_context),
+        https_fallback_(https_fallback),
         enable_tls_(enable_tls),
         ssl_socket_(socket_, *ssl_ctx),
         channel_(channel) {
@@ -255,6 +260,8 @@ class stream {
     }
   }
 
+  bool https_fallback() const { return https_fallback_; }
+
  private:
   void on_connect(Channel* channel,
                   asio::error_code ec) {
@@ -262,6 +269,18 @@ class stream {
     if (ec) {
       channel->disconnected(ec);
       return;
+    }
+    if (enable_tls_) {
+      SSL* ssl = ssl_socket_.native_handle();
+      const unsigned char* out;
+      unsigned int outlen;
+      SSL_get0_alpn_selected(ssl, &out, &outlen);
+      std::string alpn = std::string(reinterpret_cast<const char*>(out), outlen);
+      VLOG(2) << "Alpn selected (client): " << alpn;
+      https_fallback_ |= alpn == "http/1.1";
+      if (https_fallback_) {
+        VLOG(2) << "Alpn fallback to https protocol (client)";
+      }
     }
     connected_ = true;
     SetTCPCongestion(socket_.native_handle(), ec);
@@ -375,6 +394,7 @@ class stream {
   asio::ip::tcp::socket socket_;
   asio::steady_timer connect_timer_;
 
+  bool https_fallback_;
   const bool enable_tls_;
   asio::ssl::stream<asio::ip::tcp::socket&> ssl_socket_;
 

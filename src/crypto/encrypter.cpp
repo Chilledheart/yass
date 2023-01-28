@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
+/* Copyright (c) 2019-2023 Chilledheart  */
 
 #include "crypto/encrypter.hpp"
+#include "core/logging.hpp"
 
 #include "crypto/aes_128_gcm_12_evp_encrypter.hpp"
 #include "crypto/aes_128_gcm_evp_encrypter.hpp"
@@ -42,6 +43,8 @@ std::unique_ptr<Encrypter> Encrypter::CreateFromCipherSuite(
       return std::make_unique<Aes256GcmEvpEncrypter>();
 #endif
     default:
+      LOG(FATAL) << "Unsupported cipher created: "
+        << to_cipher_method_str(static_cast<cipher_method>(cipher_suite));
       return nullptr;
   }
 }

@@ -1731,7 +1731,7 @@ target_link_libraries(asio PUBLIC
   ssl)
 
 if (APPLE)
-  find_library(SECURITY_FRAMEWORK Security)
+  find_library(SECURITY_FRAMEWORK Security REQUIRED)
   target_link_libraries(asio PRIVATE ${SECURITY_FRAMEWORK})
 endif()
 
@@ -2173,7 +2173,6 @@ set(files
     src/core/cipher.cpp
     src/core/hkdf_sha1.cpp
     src/core/hmac_sha1.cpp
-    src/core/http_parser.c
     src/core/iobuf.cpp
     src/core/socks4_request_parser.cpp
     src/core/socks5_request_parser.cpp
@@ -2231,6 +2230,9 @@ set(files
     src/crypto/xchacha20_poly1305_evp_encrypter.cpp
     src/crypto/xchacha20_poly1305_sodium_decrypter.cpp
     src/crypto/xchacha20_poly1305_sodium_encrypter.cpp
+
+    src/core/http_parser.cpp
+    third_party/http_parser/http_parser.c
     )
 
 set(hfiles
@@ -2241,7 +2243,6 @@ set(hfiles
     src/core/cipher.hpp
     src/core/hkdf_sha1.hpp
     src/core/hmac_sha1.hpp
-    src/core/http_parser.h
     src/core/iobuf.hpp
     src/core/socks4.hpp
     src/core/socks4_request.hpp
@@ -2320,6 +2321,9 @@ set(hfiles
     src/crypto/xchacha20_poly1305_evp_encrypter.hpp
     src/crypto/xchacha20_poly1305_sodium_decrypter.hpp
     src/crypto/xchacha20_poly1305_sodium_encrypter.hpp
+
+    src/core/http_parser.hpp
+    third_party/http_parser/http_parser.h
     )
 
 if (WIN32)
@@ -2354,9 +2358,9 @@ if (USE_LIBCXX)
 endif()
 
 target_include_directories(yass_base PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/third_party
   ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party SYSTEM)
 
 if (CLI)
   add_library(yass_cli_lib OBJECT

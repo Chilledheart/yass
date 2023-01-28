@@ -6,7 +6,6 @@
 #include <absl/flags/flag.h>
 #include <absl/strings/str_format.h>
 #include <algorithm>
-#include <atomic>
 #include <vector>
 #include <functional>
 #include <utility>
@@ -43,14 +42,22 @@ class ContentServer {
     : io_context_(io_context),
       work_guard_(std::make_unique<asio::io_context::work>(io_context_)),
       remote_endpoint_(remote_endpoint),
-      enable_upstream_tls_(absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_TLS),
-      enable_tls_(absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_TLS),
+      upstream_https_fallback_(absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTPS),
+      https_fallback_(absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTPS),
+      enable_upstream_tls_(
+          absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTPS ||
+          absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_TLS),
+      enable_tls_(
+          absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTPS ||
+          absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_TLS),
       upstream_certificate_(upstream_certificate),
       upstream_ssl_ctx_(asio::ssl::context::tls_client),
       certificate_(certificate),
       private_key_(private_key),
       ssl_ctx_(asio::ssl::context::tls_server),
       delegate_(delegate) {
+    upstream_https_fallback_ &= std::string(factory_.Name()) == "client";
+    https_fallback_ &= std::string(factory_.Name()) == "server";
     enable_upstream_tls_ &= std::string(factory_.Name()) == "client";
     enable_tls_ &= std::string(factory_.Name()) == "server";
   }
@@ -154,8 +161,12 @@ class ContentServer {
         peer_endpoint_,
         [this](asio::error_code ec, asio::ip::tcp::socket socket) {
           if (!ec) {
+            if (enable_tls_) {
+              setup_ssl_ctx_alpn_cb();
+            }
             scoped_refptr<ConnectionType> conn = factory_.Create(
               io_context_, remote_endpoint_,
+              upstream_https_fallback_, https_fallback_,
               enable_upstream_tls_, enable_tls_,
               &upstream_ssl_ctx_, &ssl_ctx_);
             on_accept(conn, std::move(socket));
@@ -256,10 +267,18 @@ class ContentServer {
       }
       VLOG(2) << "Using privated key (in-memory)";
     }
+  }
 
+  struct alpn_ctx_t {
+    ContentServer<T> *server;
+    int connection_id;
+  };
+
+  void setup_ssl_ctx_alpn_cb() {
     SSL_CTX *ctx = ssl_ctx_.native_handle();
-    SSL_CTX_set_alpn_select_cb(ctx, &ContentServer::on_alpn_select, nullptr);
-    VLOG(2) << "Alpn support (server) enabled";
+    alpn_ctx_t *alpn_ctx = new alpn_ctx_t({this, next_connection_id_});
+    SSL_CTX_set_alpn_select_cb(ctx, &ContentServer::on_alpn_select, alpn_ctx);
+    VLOG(2) << "Alpn support (server) enabled for connection " << next_connection_id_;
   }
 
   static int on_alpn_select(SSL *ssl,
@@ -268,22 +287,46 @@ class ContentServer {
                             const unsigned char *in,
                             unsigned int inlen,
                             void *arg) {
-    unsigned char pos = 0;
-    while (pos < inlen) {
+    std::unique_ptr<alpn_ctx_t> alpn_ctx(reinterpret_cast<alpn_ctx_t*>(arg));
+    auto server = alpn_ctx->server;
+    int connection_id = alpn_ctx->connection_id;
+    while (inlen) {
       if (in[0] + 1u > inlen) {
         goto err;
       }
-      if (std::string(reinterpret_cast<const char*>(in + 1), in[0]) == "h2") {
+      auto alpn = std::string(reinterpret_cast<const char*>(in + 1), in[0]);
+      if (!server->https_fallback_ && alpn == "h2") {
+        VLOG(2) << "Connection (" << server->factory_.Name() << ") "
+          << connection_id << " Alpn support (server) chosen: " << alpn;
+        server->set_https_fallback(connection_id, false);
         *out = in + 1;
         *outlen = in[0];
         return SSL_TLSEXT_ERR_OK;
       }
-      pos += in[0];
-      in += in[0];
+      if (alpn == "http/1.1") {
+        VLOG(2) << "Connection (" << server->factory_.Name() << ") "
+          << connection_id << " Alpn support (server) chosen: " << alpn;
+        server->set_https_fallback(connection_id, true);
+        *out = in + 1;
+        *outlen = in[0];
+        return SSL_TLSEXT_ERR_OK;
+      }
+      inlen -= 1u + in[0];
+      in += 1u + in[0];
     }
 
   err:
+    VLOG(2) << "Connection (" << server->factory_.Name() << ") "
+      << connection_id << " Alpn support (server) fatal error";
     return SSL_TLSEXT_ERR_ALERT_FATAL;
+  }
+
+  void set_https_fallback(int connection_id, bool https_fallback) {
+    for (auto conn: connections_) {
+      if (conn->connection_id() == connection_id) {
+        conn->set_https_fallback(https_fallback);
+      }
+    }
   }
 
   void setup_upstream_ssl_ctx(asio::error_code &ec) {
@@ -314,10 +357,17 @@ class ContentServer {
     }
 
     SSL_CTX *ctx = upstream_ssl_ctx_.native_handle();
-    unsigned char alpn_vec[] = {
+    int ret;
+    std::vector<unsigned char> alpn_vec = {
       2, 'h', '2',
+      8, 'h', 't', 't', 'p', '/', '1', '.', '1'
     };
-    int ret = SSL_CTX_set_alpn_protos(ctx, alpn_vec, sizeof(alpn_vec));
+    if (upstream_https_fallback_) {
+      alpn_vec = {
+        8, 'h', 't', 't', 'p', '/', '1', '.', '1'
+      };
+    }
+    ret = SSL_CTX_set_alpn_protos(ctx, alpn_vec.data(), alpn_vec.size());
     static_cast<void>(ret);
     DCHECK_EQ(ret, 0);
     if (ret) {
@@ -334,6 +384,8 @@ class ContentServer {
 
   const asio::ip::tcp::endpoint remote_endpoint_;
 
+  bool upstream_https_fallback_;
+  bool https_fallback_;
   bool enable_upstream_tls_;
   bool enable_tls_;
   std::string upstream_certificate_;

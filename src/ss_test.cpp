@@ -100,11 +100,14 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
  public:
   ContentProviderConnection(asio::io_context& io_context,
                             const asio::ip::tcp::endpoint& remote_endpoint,
+                            bool upstream_https_fallback,
+                            bool https_fallback,
                             bool enable_upstream_tls,
                             bool enable_tls,
                             asio::ssl::context *upstream_ssl_ctx,
                             asio::ssl::context *ssl_ctx)
       : Connection(io_context, remote_endpoint,
+                   upstream_https_fallback, https_fallback,
                    enable_upstream_tls, enable_tls,
                    upstream_ssl_ctx, ssl_ctx) {}
 
@@ -167,11 +170,14 @@ class ContentProviderConnectionFactory : public ConnectionFactory {
    using ConnectionType = ContentProviderConnection;
    scoped_refptr<ConnectionType> Create(asio::io_context& io_context,
                                         const asio::ip::tcp::endpoint& remote_endpoint,
+                                        bool upstream_https_fallback,
+                                        bool https_fallback,
                                         bool enable_upstream_tls,
                                         bool enable_tls,
                                         asio::ssl::context *upstream_ssl_ctx,
                                         asio::ssl::context *ssl_ctx) {
      return MakeRefCounted<ConnectionType>(io_context, remote_endpoint,
+                                           upstream_https_fallback, https_fallback,
                                            enable_upstream_tls, enable_tls,
                                            upstream_ssl_ctx, ssl_ctx);
    }
