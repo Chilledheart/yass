@@ -101,8 +101,16 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
   ///
   /// \param io_context the io context associated with the service
   /// \param remote_endpoint the upstream's endpoint
+  /// \param upstream_https_fallback the data channel (upstream) falls back to https (alpn)
+  /// \param https_fallback the data channel falls back to https (alpn)
+  /// \param enable_upstream_tls the underlying data channel (upstream) is using tls
+  /// \param enable_tls the underlying data channel is using tls
+  /// \param upstream_ssl_ctx the ssl context object for tls data transfer (upstream)
+  /// \param ssl_ctx the ssl context object for tls data transfer
   SsConnection(asio::io_context& io_context,
                const asio::ip::tcp::endpoint& remote_endpoint,
+               bool upstream_https_fallback,
+               bool https_fallback,
                bool enable_upstream_tls,
                bool enable_tls,
                asio::ssl::context *upstream_ssl_ctx,
@@ -366,11 +374,14 @@ class SsConnectionFactory : public ConnectionFactory {
    using ConnectionType = SsConnection;
    scoped_refptr<ConnectionType> Create(asio::io_context& io_context,
                                         const asio::ip::tcp::endpoint& remote_endpoint,
+                                        bool upstream_https_fallback,
+                                        bool https_fallback,
                                         bool enable_upstream_tls,
                                         bool enable_tls,
                                         asio::ssl::context *upstream_ssl_ctx,
                                         asio::ssl::context *ssl_ctx) {
      return MakeRefCounted<ConnectionType>(io_context, remote_endpoint,
+                                           upstream_https_fallback, https_fallback,
                                            enable_upstream_tls, enable_tls,
                                            upstream_ssl_ctx, ssl_ctx);
    }

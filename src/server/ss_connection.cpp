@@ -98,11 +98,14 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
 
 SsConnection::SsConnection(asio::io_context& io_context,
                            const asio::ip::tcp::endpoint& remote_endpoint,
+                           bool upstream_https_fallback,
+                           bool https_fallback,
                            bool enable_upstream_tls,
                            bool enable_tls,
                            asio::ssl::context *upstream_ssl_ctx,
                            asio::ssl::context *ssl_ctx)
     : Connection(io_context, remote_endpoint,
+                 upstream_https_fallback, https_fallback,
                  enable_upstream_tls, enable_tls,
                  upstream_ssl_ctx, ssl_ctx),
       state_(),
@@ -171,12 +174,18 @@ void SsConnection::close() {
 void SsConnection::Start() {
   bool http2 = absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2;
   http2 |= absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_TLS;
+  if (http2 && https_fallback_) {
+    http2 = false;
+  }
   if (http2) {
     http2::adapter::OgHttp2Adapter::Options options;
     options.perspective = http2::adapter::Perspective::kServer;
     adapter_ = http2::adapter::OgHttp2Adapter::Create(*this, options);
     SetState(state_stream);
     ReadStream();
+  } else if (https_fallback_) {
+    // FIXME
+    LOG(FATAL) << "TBD feed the incoming buf with http parser (handshake)";
   } else {
     encoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
       static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)),
@@ -476,6 +485,9 @@ void SsConnection::ReadStream() {
           // Sent Control Streams
           self->SendIfNotProcessing();
           self->OnDownstreamWriteFlush();
+        } else if (self->https_fallback_) {
+          self->rbytes_transferred_ += buf->length();
+          self->upstream_.push_back(buf);
         } else {
           self->decoder_->process_bytes(buf);
         }
@@ -596,6 +608,8 @@ repeat_fetch:
     if (bytes_transferred <= kYieldAfterBytesRead) {
       goto repeat_fetch;
     }
+  } else if (https_fallback_) {
+    downstream_.push_back(buf);
   } else {
     downstream_.push_back(EncryptData(buf));
   }
@@ -715,6 +729,9 @@ std::shared_ptr<IOBuf> SsConnection::GetNextUpstreamBuf(asio::error_code &ec) {
     // Sent Control Streams
     SendIfNotProcessing();
     OnDownstreamWriteFlush();
+  } else if (https_fallback_) {
+    rbytes_transferred_ += buf->length();
+    upstream_.push_back(buf);
   } else {
     decoder_->process_bytes(buf);
   }
@@ -812,8 +829,9 @@ void SsConnection::ProcessSentData(asio::error_code ec,
 void SsConnection::OnConnect() {
   LOG(INFO) << "Connection (server) " << connection_id()
             << " to " << remote_domain();
-  channel_ = std::make_unique<stream>(*io_context_, remote_endpoint_, this,
-                                      false, upstream_ssl_ctx_);
+  channel_ = std::make_unique<stream>(*io_context_, remote_endpoint_,
+                                      this, upstream_https_fallback_,
+                                      enable_upstream_tls_, upstream_ssl_ctx_);
   channel_->connect();
   if (adapter_) {
     // stream is ready
@@ -821,12 +839,15 @@ void SsConnection::OnConnect() {
       std::make_unique<DataFrameSource>(this, stream_id_);
     data_frame_ = data_frame.get();
     std::vector<std::pair<std::string, std::string>> headers;
-    int submit_result = adapter_->SubmitResponse(
-      stream_id_, GenerateHeaders(headers, 200), std::move(data_frame));
+    int submit_result = adapter_->SubmitResponse(stream_id_,
+                                                 GenerateHeaders(headers, 200),
+                                                 std::move(data_frame));
     SendIfNotProcessing();
     if (submit_result != 0) {
       OnDisconnect(asio::error::connection_aborted);
     }
+  } else if (https_fallback_) {
+    // TBD: Send 200 response
   }
 }
 
@@ -958,6 +979,8 @@ void SsConnection::received(std::shared_ptr<IOBuf> buf) {
     data_frame_->SetSendCompletionCallback(std::function<void()>());
     adapter()->ResumeStream(stream_id_);
     SendIfNotProcessing();
+  } else if (https_fallback_) {
+    downstream_.push_back(buf);
   } else {
     downstream_.push_back(EncryptData(buf));
   }

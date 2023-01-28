@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
+/* Copyright (c) 2019-2023 Chilledheart  */
 
 #ifndef H_CONNECTION
 #define H_CONNECTION
@@ -23,8 +23,16 @@ class Connection {
   ///
   /// \param io_context the io context associated with the service
   /// \param remote_endpoint the remote endpoint of the service socket
+  /// \param upstream_https_fallback the data channel (upstream) falls back to https (alpn)
+  /// \param https_fallback the data channel falls back to https (alpn)
+  /// \param enable_upstream_tls the underlying data channel (upstream) is using tls
+  /// \param enable_tls the underlying data channel is using tls
+  /// \param upstream_ssl_ctx the ssl context object for tls data transfer (upstream)
+  /// \param ssl_ctx the ssl context object for tls data transfer
   Connection(asio::io_context& io_context,
              const asio::ip::tcp::endpoint& remote_endpoint,
+             bool upstream_https_fallback,
+             bool https_fallback,
              bool enable_upstream_tls,
              bool enable_tls,
              asio::ssl::context *upstream_ssl_ctx,
@@ -32,6 +40,8 @@ class Connection {
       : io_context_(&io_context),
         remote_endpoint_(remote_endpoint),
         socket_(*io_context_),
+        upstream_https_fallback_(upstream_https_fallback),
+        https_fallback_(https_fallback),
         enable_upstream_tls_(enable_upstream_tls),
         enable_tls_(enable_tls),
         upstream_ssl_ctx_(upstream_ssl_ctx),
@@ -89,6 +99,8 @@ class Connection {
   Connection& operator=(Connection&&) = default;
 
   virtual ~Connection() = default;
+
+  void set_https_fallback(bool https_fallback) { https_fallback_ = https_fallback; }
 
  private:
   void setup_ssl() {
@@ -150,6 +162,9 @@ class Connection {
   /// the number of connection id
   int connection_id_ = -1;
 
+  /// if https fallback
+  bool upstream_https_fallback_;
+  bool https_fallback_;
   /// if enable ssl layer
   bool enable_upstream_tls_;
   bool enable_tls_;

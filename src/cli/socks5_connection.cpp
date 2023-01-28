@@ -197,14 +197,16 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
   return true;
 }
 
-Socks5Connection::Socks5Connection(
-    asio::io_context& io_context,
-    const asio::ip::tcp::endpoint& remote_endpoint,
-    bool enable_upstream_tls,
-    bool enable_tls,
-    asio::ssl::context *upstream_ssl_ctx,
-    asio::ssl::context *ssl_ctx)
+Socks5Connection::Socks5Connection(asio::io_context& io_context,
+                                   const asio::ip::tcp::endpoint& remote_endpoint,
+                                   bool upstream_https_fallback,
+                                   bool https_fallback,
+                                   bool enable_upstream_tls,
+                                   bool enable_tls,
+                                   asio::ssl::context *upstream_ssl_ctx,
+                                   asio::ssl::context *ssl_ctx)
     : Connection(io_context, remote_endpoint,
+                 upstream_https_fallback, https_fallback,
                  enable_upstream_tls, enable_tls,
                  upstream_ssl_ctx, ssl_ctx),
       state_() {}
@@ -885,6 +887,8 @@ std::shared_ptr<IOBuf> Socks5Connection::GetNextDownstreamBuf(asio::error_code &
     // Sent Control Streams
     SendIfNotProcessing();
     OnUpstreamWriteFlush();
+  } else if (upstream_https_fallback_) {
+    downstream_.push_back(buf);
   } else {
     decoder_->process_bytes(buf);
   }
@@ -994,6 +998,8 @@ repeat_fetch:
     if (bytes_transferred <= kYieldAfterBytesRead) {
       goto repeat_fetch;
     }
+  } else if (upstream_https_fallback_) {
+    upstream_.push_back(buf);
   } else {
     upstream_.push_back(EncryptData(buf));
   }
@@ -1215,73 +1221,20 @@ void Socks5Connection::ProcessSentData(asio::error_code ec,
 void Socks5Connection::OnCmdConnect(const asio::ip::tcp::endpoint& endpoint) {
   ss_request_ = std::make_unique<ss::request>(endpoint);
   OnConnect();
-  if (adapter_) {
-    std::unique_ptr<DataFrameSource> data_frame =
-      std::make_unique<DataFrameSource>(this);
-    data_frame_ = data_frame.get();
-    std::vector<std::pair<std::string, std::string>> headers;
-    headers.push_back({":method", "CONNECT"});
-    //    authority   = [ userinfo "@" ] host [ ":" port ]
-    headers.push_back({":authority", endpoint.address().to_string() + ":" + std::to_string(endpoint.port())});
-    headers.push_back({"host", endpoint.address().to_string() + ":" + std::to_string(endpoint.port())});
-    headers.push_back({"proxy-authorization", "basic " + GetProxyAuthorizationIdentity()});
-    stream_id_ = adapter_->SubmitRequest(
-      GenerateHeaders(headers), std::move(data_frame), nullptr);
-    data_frame_->set_stream_id(stream_id_);
-    SendIfNotProcessing();
-    return;
-  }
-  ByteRange req(ss_request_->data(), ss_request_->length());
-  std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);
-  // write variable address directly as ss header
-  OnUpstreamWrite(EncryptData(buf));
 }
 
 void Socks5Connection::OnCmdConnect(const std::string& domain_name, uint16_t port) {
   ss_request_ = std::make_unique<ss::request>(domain_name, port);
   OnConnect();
-  if (adapter_) {
-    std::unique_ptr<DataFrameSource> data_frame =
-      std::make_unique<DataFrameSource>(this);
-    data_frame_ = data_frame.get();
-    std::vector<std::pair<std::string, std::string>> headers;
-    headers.push_back({":method", "CONNECT"});
-    //    authority   = [ userinfo "@" ] host [ ":" port ]
-    headers.push_back({":authority", domain_name + ":" + std::to_string(port)});
-    headers.push_back({"host", domain_name + ":" + std::to_string(port)});
-    headers.push_back({"proxy-authorization", "basic " + GetProxyAuthorizationIdentity()});
-    stream_id_ = adapter_->SubmitRequest(
-      GenerateHeaders(headers), std::move(data_frame), nullptr);
-    data_frame_->set_stream_id(stream_id_);
-    SendIfNotProcessing();
-    return;
-  }
-  ByteRange req(ss_request_->data(), ss_request_->length());
-  std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);
-  // write variable address directly as ss header
-  OnUpstreamWrite(EncryptData(buf));
 }
 
 void Socks5Connection::OnConnect() {
   LOG(INFO) << "Connection (client) " << connection_id()
             << " to " << remote_domain();
-  bool http2 = absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2;
-  http2 |= (absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_TLS);
-  if (http2) {
-    http2::adapter::OgHttp2Adapter::Options options;
-    options.perspective = http2::adapter::Perspective::kClient;
-    adapter_ = http2::adapter::OgHttp2Adapter::Create(*this, options);
-  } else {
-    encoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
-      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)),
-      this, true);
-    decoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
-      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)),
-      this);
-  }
   // create lazy
   channel_ = std::make_unique<stream>(*io_context_, remote_endpoint_,
-                                      this, enable_upstream_tls_, upstream_ssl_ctx_);
+                                      this, upstream_https_fallback_,
+                                      enable_upstream_tls_, upstream_ssl_ctx_);
   channel_->connect();
 }
 
@@ -1293,12 +1246,20 @@ void Socks5Connection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
     DisableStreamRead();
   }
 
+  if (!channel_->connected()) {
+    pending_data_ = buf;
+    DisableStreamRead();
+    return;
+  }
+
   // SendContents
   if (adapter_) {
     data_frame_->AddChunk(buf);
     data_frame_->SetSendCompletionCallback(std::function<void()>());
     adapter()->ResumeStream(stream_id_);
     SendIfNotProcessing();
+  } else if (upstream_https_fallback_) {
+    upstream_.push_back(buf);
   } else {
     upstream_.push_back(EncryptData(buf));
   }
@@ -1395,6 +1356,72 @@ void Socks5Connection::connected() {
   VLOG(3) << "Connection (client) " << connection_id()
           << " remote: established upstream connection with: "
           << remote_domain();
+
+  bool http2 = absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2;
+  http2 |= (absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_TLS);
+  if (http2 && channel_->https_fallback()) {
+    http2 = false;
+    upstream_https_fallback_ = true;
+  }
+
+  // Create adapters
+  if (http2) {
+    http2::adapter::OgHttp2Adapter::Options options;
+    options.perspective = http2::adapter::Perspective::kClient;
+    adapter_ = http2::adapter::OgHttp2Adapter::Create(*this, options);
+  } else if (upstream_https_fallback_) {
+    // nothing
+  } else {
+    encoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
+      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)),
+      this, true);
+    decoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
+      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)),
+      this);
+  }
+
+  // Send Upstream Header
+  if (adapter_) {
+    std::string host;
+    int port;
+    if (ss_request_->address_type() == ss::domain) {
+      host = ss_request_->domain_name();
+      port = ss_request_->port();
+    } else {
+      auto endpoint = ss_request_->endpoint();
+      host = endpoint.address().to_string();
+      port = endpoint.port();
+    }
+
+    std::unique_ptr<DataFrameSource> data_frame =
+      std::make_unique<DataFrameSource>(this);
+    data_frame_ = data_frame.get();
+    std::vector<std::pair<std::string, std::string>> headers;
+    headers.push_back({":method", "CONNECT"});
+    //    authority   = [ userinfo "@" ] host [ ":" port ]
+    headers.push_back({":authority", host + ":" + std::to_string(port)});
+    headers.push_back({"host", host + ":" + std::to_string(port)});
+    headers.push_back({"proxy-authorization", "basic " + GetProxyAuthorizationIdentity()});
+    stream_id_ = adapter_->SubmitRequest(GenerateHeaders(headers),
+                                         std::move(data_frame), nullptr);
+    data_frame_->set_stream_id(stream_id_);
+    SendIfNotProcessing();
+  } else if (upstream_https_fallback_) {
+    // FIXME
+    LOG(FATAL) << "TBD: send HTTP1.1 CONNECT Header";
+  } else {
+    ByteRange req(ss_request_->data(), ss_request_->length());
+    std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);
+    // write variable address directly as ss header
+    OnUpstreamWrite(EncryptData(buf));
+  }
+
+  // Re-process the read data in pending
+  if (auto pending_data = std::move(pending_data_)) {
+    OnStreamRead(pending_data);
+    EnableStreamRead();
+  }
+
   scoped_refptr<Socks5Connection> self(this);
   upstream_readable_ = true;
   upstream_writable_ = true;
@@ -1428,6 +1455,8 @@ void Socks5Connection::received(std::shared_ptr<IOBuf> buf) {
     // Sent Control Streams
     SendIfNotProcessing();
     OnUpstreamWriteFlush();
+  } else if (upstream_https_fallback_) {
+    downstream_.push_back(buf);
   } else {
     decoder_->process_bytes(buf);
   }

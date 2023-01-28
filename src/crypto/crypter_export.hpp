@@ -32,28 +32,32 @@
 #define CIPHER_METHOD_MAP_BORINGSSL(XX)
 #endif
 
+#define CIPHER_METHOD_MAP_HTTP(XX)                                    \
+  XX(0x110U, HTTPS, "https-protocol")
+
 #ifdef HAVE_QUICHE
 #define CIPHER_METHOD_MAP_HTTP2(XX)                                   \
-  XX(0x20U, HTTP2, "http2-protocol")                                  \
-  XX(0x21U, HTTP2_TLS, "http2-tls-protocol")
+  XX(0x120U, HTTP2, "http2-plaintext")                                \
+  XX(0x121U, HTTP2_TLS, "http2")
 #define CIPHER_METHOD_MAP_FULL_HTTP2(XX)                              \
-  XX(0x20U, HTTP2, "http2-protocol")                                  \
-  XX(0x21U, HTTP2_TLS, "http2-tls-protocol")                          \
-  XX(0x22U, HTTP2_INPLACE_2, "http2-2-protocol")                      \
-  XX(0x23U, HTTP2_INPLACE_3, "http2-3-protocol")                      \
-  XX(0x24U, HTTP2_INPLACE_4, "http2-4-protocol")                      \
-  XX(0x25U, HTTP2_INPLACE_5, "http2-5-protocol")
+  XX(0x120U, HTTP2, "http2-plaintext")                                \
+  XX(0x121U, HTTP2_TLS, "http2")                                      \
+  XX(0x122U, HTTP2_INPLACE_2, "http2-2-protocol")                     \
+  XX(0x123U, HTTP2_INPLACE_3, "http2-3-protocol")                     \
+  XX(0x124U, HTTP2_INPLACE_4, "http2-4-protocol")                     \
+  XX(0x125U, HTTP2_INPLACE_5, "http2-5-protocol")
 #else
 #define CIPHER_METHOD_MAP_HTTP2(XX)
 #endif
 
-#define CIPHER_METHOD_OLD_MAP(XX) \
+#define CIPHER_METHOD_OLD_MAP(XX)   \
   CIPHER_METHOD_MAP_SODIUM(XX)      \
   CIPHER_METHOD_MAP_BORINGSSL(XX)
 
 #define CIPHER_METHOD_VALID_MAP(XX) \
   CIPHER_METHOD_MAP_SODIUM(XX)      \
   CIPHER_METHOD_MAP_BORINGSSL(XX)   \
+  CIPHER_METHOD_MAP_HTTP(XX)        \
   CIPHER_METHOD_MAP_HTTP2(XX)
 
 #define CIPHER_METHOD_MAP(XX)  \
