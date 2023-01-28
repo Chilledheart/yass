@@ -8,6 +8,8 @@
 #include "config/config.hpp"
 #include "core/asio.hpp"
 #include "core/base64.hpp"
+#include "core/http_parser.hpp"
+#include "core/stringprintf.hpp"
 #include "core/utils.hpp"
 
 namespace {
@@ -107,53 +109,6 @@ asio::ip::tcp::endpoint IPaddressFromSockAddr(struct sockaddr_storage* ss,
 
 } // anonymous namespace
 #endif
-
-static int http_request_url_parse(const char* buf,
-                                  size_t len,
-                                  std::string* host,
-                                  uint16_t* port,
-                                  int is_connect) {
-  struct http_parser_url url;
-
-  if (0 != ::http_parser_parse_url(buf, len, is_connect, &url)) {
-    LOG(ERROR) << "Failed to parse url: '" << std::string(buf, len) << "'";
-    return 1;
-  }
-
-  if (url.field_set & (1 << (UF_HOST))) {
-    *host = std::string(buf + url.field_data[UF_HOST].off,
-                        url.field_data[UF_HOST].len);
-  }
-
-  if (url.field_set & (1 << (UF_PORT))) {
-    *port = url.port;
-  }
-
-  return 0;
-}
-
-// Convert plain http proxy header to http request header
-//
-// reforge HTTP Request Header and pretend it to buf
-// including removal of Proxy-Connection header
-static void http_request_reforge_to_bytes(
-    std::string* header,
-    ::http_parser* p,
-    const std::string& url,
-    const absl::flat_hash_map<std::string, std::string>& headers) {
-  std::stringstream ss;
-  ss << http_method_str((http_method)p->method) << " "  // NOLINT(google-*)
-     << url << " HTTP/1.1\r\n";
-  for (const std::pair<std::string, std::string> pair : headers) {
-    if (pair.first == "Proxy-Connection") {
-      continue;
-    }
-    ss << pair.first << ": " << pair.second << "\r\n";
-  }
-  ss << "\r\n";
-
-  *header = ss.str();
-}
 
 bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length)  {
   absl::string_view payload(
@@ -568,52 +523,35 @@ asio::error_code Socks5Connection::OnReadHttpRequest(
   VLOG(3) << "Connection (client) " << connection_id()
           << " try http handshake";
 
-  static struct http_parser_settings settings_connect = {
-      //.on_message_begin
-      nullptr,
-      //.on_url
-      &Socks5Connection::OnReadHttpRequestURL,
-      //.on_status
-      nullptr,
-      //.on_header_field
-      &Socks5Connection::OnReadHttpRequestHeaderField,
-      //.on_header_value
-      &Socks5Connection::OnReadHttpRequestHeaderValue,
-      //.on_headers_complete
-      Socks5Connection::OnReadHttpRequestHeadersDone,
-      //.on_body
-      nullptr,
-      //.on_message_complete
-      nullptr,
-      //.on_chunk_header
-      nullptr,
-      //.on_chunk_complete
-      nullptr};
+  HttpRequestParser parser;
 
-  ::http_parser parser = {};
-  size_t nparsed;
-  ::http_parser_init(&parser, HTTP_REQUEST);
-
-  parser.data = this;
-  nparsed = http_parser_execute(&parser, &settings_connect,
-                                reinterpret_cast<const char*>(buf->data()),
-                                buf->length());
+  bool ok;
+  int nparsed = parser.Parse(buf, &ok);
   if (nparsed) {
     VLOG(4) << "Connection (client) " << connection_id()
             << " http: "
             << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
   }
 
-  if (HTTP_PARSER_ERRNO(&parser) == HPE_OK) {
+  if (ok) {
     buf->trimStart(nparsed);
     buf->retreat(nparsed);
 
+    http_host_ = parser.host();
+    http_port_ = parser.port();
+    http_is_connect_ = parser.is_connect();
+
     if (!http_is_connect_) {
       std::string header;
-      http_request_reforge_to_bytes(&header, &parser, http_url_, http_headers_);
+      parser.ReforgeHttpRequest(&header);
       buf->reserve(header.size(), 0);
       buf->prepend(header.size());
       memcpy(buf->mutable_data(), header.c_str(), header.size());
+      VLOG(4) << "Connection (client) " << connection_id()
+              << " Host: " << http_host_ << " PORT: " << http_port_;
+    } else {
+      VLOG(4) << "Connection (client) " << connection_id()
+              << " CONNECT: " << http_host_ << " PORT: " << http_port_;
     }
 
     SetState(state_http_handshake);
@@ -623,69 +561,10 @@ asio::error_code Socks5Connection::OnReadHttpRequest(
   }
 
   LOG(WARNING) << "Connection (client) " << connection_id()
-               << http_errno_description(HTTP_PARSER_ERRNO(&parser)) << ": "
+               << parser.ErrorMessage() << ": "
                << std::string(reinterpret_cast<const char*>(buf->data()),
                               nparsed);
   return std::make_error_code(std::errc::bad_message);
-}
-
-int Socks5Connection::OnReadHttpRequestURL(http_parser* p,
-                                           const char* buf,
-                                           size_t len) {
-  Socks5Connection* conn = reinterpret_cast<Socks5Connection*>(p->data);
-  conn->http_url_ = std::string(buf, len);
-  if (p->method == HTTP_CONNECT) {
-    if (0 != http_request_url_parse(buf, len, &conn->http_host_,
-                                    &conn->http_port_, 1)) {
-      return 1;
-    }
-    conn->http_is_connect_ = true;
-    VLOG(4) << "Connection (client) " << conn->connection_id()
-            << " CONNECT: " << conn->http_host_ << " PORT: " << conn->http_port_;
-  }
-  return 0;
-}
-
-int Socks5Connection::OnReadHttpRequestHeaderField(http_parser* parser,
-                                                   const char* buf,
-                                                   size_t len) {
-  Socks5Connection* conn = reinterpret_cast<Socks5Connection*>(parser->data);
-  conn->http_field_ = std::string(buf, len);
-  return 0;
-}
-
-int Socks5Connection::OnReadHttpRequestHeaderValue(http_parser* parser,
-                                                   const char* buf,
-                                                   size_t len) {
-  Socks5Connection* conn = reinterpret_cast<Socks5Connection*>(parser->data);
-  conn->http_value_ = std::string(buf, len);
-  conn->http_headers_[conn->http_field_] = conn->http_value_;
-  if (conn->http_field_ == "Host" && !conn->http_is_connect_) {
-    const char* url = buf;
-    // Host = "Host" ":" host [ ":" port ] ; Section 3.2.2
-    // TBD hand with IPv6 address // [xxx]:port/xxx
-    while (*buf != ':' && *buf != '\0' && len != 0) {
-      buf++, len--;
-    }
-
-    conn->http_host_ = std::string(url, buf);
-    if (len > 1 && *buf == ':') {
-      ++buf, --len;
-      conn->http_port_ = stoi(std::string(buf, len));
-    } else {
-      conn->http_port_ = 80;
-    }
-
-    VLOG(4) << "Connection (client) " << conn->connection_id()
-            << " Host: " << conn->http_host_ << " PORT: " << conn->http_port_;
-  }
-  return 0;
-}
-
-int Socks5Connection::OnReadHttpRequestHeadersDone(http_parser*) {
-  // Treat the rest part as Upgrade even when it is not CONNECT
-  // (binary protocol such as ocsp-request and dns-message).
-  return 2;
 }
 
 void Socks5Connection::ReadStream() {
@@ -1370,7 +1249,7 @@ void Socks5Connection::connected() {
     options.perspective = http2::adapter::Perspective::kClient;
     adapter_ = http2::adapter::OgHttp2Adapter::Create(*this, options);
   } else if (upstream_https_fallback_) {
-    // nothing
+    // nothing to create
   } else {
     encoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
       static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)),
@@ -1407,8 +1286,24 @@ void Socks5Connection::connected() {
     data_frame_->set_stream_id(stream_id_);
     SendIfNotProcessing();
   } else if (upstream_https_fallback_) {
-    // FIXME
-    LOG(FATAL) << "TBD: send HTTP1.1 CONNECT Header";
+    std::string host;
+    int port;
+    if (ss_request_->address_type() == ss::domain) {
+      host = ss_request_->domain_name();
+      port = ss_request_->port();
+    } else {
+      auto endpoint = ss_request_->endpoint();
+      host = endpoint.address().to_string();
+      port = endpoint.port();
+    }
+    std::string hdr = StringPrintf(
+        "CONNECT %s:%d HTTP/1.1\r\n"
+        "Host: %s:%d\r\n"
+        "Proxy-Connection: Keep-Alive\r\n"
+        "\r\n", host.c_str(), port, host.c_str(), port);
+    std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(hdr.data(), hdr.size());
+    // write variable address directly as https header
+    OnUpstreamWrite(buf);
   } else {
     ByteRange req(ss_request_->data(), ss_request_->length());
     std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);

@@ -8,7 +8,6 @@
 #include "cli/socks5_connection_stats.hpp"
 #include "connection.hpp"
 #include "core/cipher.hpp"
-#include "core/http_parser.h"
 #include "core/iobuf.hpp"
 #include "core/logging.hpp"
 #include "core/ref_counted.hpp"
@@ -261,19 +260,6 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
   /// Start to read http handshake request
   asio::error_code OnReadHttpRequest(std::shared_ptr<IOBuf> buf);
 
-  /// Callback to read http handshake request's URL field
-  static int OnReadHttpRequestURL(http_parser* p, const char* buf, size_t len);
-  /// Callback to read http handshake request's URL field
-  static int OnReadHttpRequestHeaderField(http_parser* parser,
-                                          const char* buf,
-                                          size_t len);
-  /// Callback to read http handshake request's headers done
-  static int OnReadHttpRequestHeaderValue(http_parser* parser,
-                                          const char* buf,
-                                          size_t len);
-  /// Callback to read http handshake request's headers done
-  static int OnReadHttpRequestHeadersDone(http_parser* parser);
-
   /// Start to read stream
   void ReadStream();
 
@@ -351,18 +337,10 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
   /// copy of handshake response
   socks4::reply s4_reply_;
 
-  /// copy of url;
-  std::string http_url_;
   /// copy of parsed connect host or host field
   std::string http_host_;
   /// copy of parsed connect host or host field
   uint16_t http_port_ = 0U;
-  /// copy of parsed header field
-  std::string http_field_;
-  /// copy of parsed header value
-  std::string http_value_;
-  /// copy of parsed headers
-  absl::flat_hash_map<std::string, std::string> http_headers_;
   /// copy of connect method
   bool http_is_connect_ = false;
   /// copy of connect response
