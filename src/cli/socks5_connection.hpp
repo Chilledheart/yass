@@ -349,6 +349,9 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
   /// copy of upstream request
   std::unique_ptr<ss::request> ss_request_;
 
+  /// the state of https fallback handshake (upstream)
+  bool upstream_handshake_ = true;
+
   std::string remote_domain() const {
     std::stringstream ss;
     if (ss_request_->address_type() == ss::domain) {

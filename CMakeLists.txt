@@ -2231,6 +2231,7 @@ set(files
     src/crypto/xchacha20_poly1305_sodium_decrypter.cpp
     src/crypto/xchacha20_poly1305_sodium_encrypter.cpp
 
+    src/core/http_parser.cpp
     third_party/http_parser/http_parser.c
     )
 

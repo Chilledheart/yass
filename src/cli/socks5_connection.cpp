@@ -1351,7 +1351,29 @@ void Socks5Connection::received(std::shared_ptr<IOBuf> buf) {
     SendIfNotProcessing();
     OnUpstreamWriteFlush();
   } else if (upstream_https_fallback_) {
-    downstream_.push_back(buf);
+    if (upstream_handshake_) {
+      upstream_handshake_= false;
+      HttpResponseParser parser;
+
+      bool ok;
+      int nparsed = parser.Parse(buf, &ok);
+
+      if (nparsed) {
+        VLOG(4) << "Connection (client) " << connection_id()
+                << " http: "
+                << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
+      }
+      if (ok && parser.status_code() == 200) {
+        buf->trimStart(nparsed);
+        buf->retreat(nparsed);
+      } else {
+        disconnected(asio::error::connection_refused);
+        return;
+      }
+    }
+    if (!buf->empty()) {
+      downstream_.push_back(buf);
+    }
   } else {
     decoder_->process_bytes(buf);
   }

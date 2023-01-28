@@ -234,6 +234,8 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
 
   /// Start to read handshake request
   void ReadHandshake();
+  /// Start to read handshake request (via https fallback)
+  void ReadHandshakeViaHttps();
   /// Start to resolve DNS domain name
   /// \param buf the buffer after domain name
   void ResolveDns(std::shared_ptr<IOBuf> buf);
@@ -271,6 +273,16 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
   request_parser request_parser_;
   /// copy of handshake request
   request request_;
+
+  /// copy of parsed connect host or host field
+  std::string http_host_;
+  /// copy of parsed connect host or host field
+  uint16_t http_port_ = 0U;
+  /// copy of connect method
+  bool http_is_connect_ = false;
+  /// copy of connect response
+  static const char http_connect_reply_[];
+
   /// DNS resolver
   asio::ip::tcp::resolver resolver_;
 
