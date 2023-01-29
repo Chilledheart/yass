@@ -10,6 +10,7 @@
 #include "core/base64.hpp"
 #include "core/http_parser.hpp"
 #include "core/stringprintf.hpp"
+#include "core/rand_util.hpp"
 #include "core/utils.hpp"
 
 namespace {
@@ -48,6 +49,38 @@ std::string GetProxyAuthorizationIdentity() {
 }
 
 } // anonymous namespace
+
+namespace {
+bool g_nonindex_codes_initialized;
+uint8_t g_nonindex_codes[17];
+
+void InitializeNonindexCodes() {
+  if (g_nonindex_codes_initialized)
+    return;
+  g_nonindex_codes_initialized = true;
+  unsigned i = 0;
+  for (const auto& symbol : spdy::HpackHuffmanCodeVector()) {
+    if (symbol.id >= 0x20 && symbol.id <= 0x7f && symbol.length >= 8) {
+      g_nonindex_codes[i++] = symbol.id;
+      if (i >= sizeof(g_nonindex_codes))
+        break;
+    }
+  }
+  CHECK(i == sizeof(g_nonindex_codes));
+}
+
+void FillNonindexHeaderValue(uint64_t unique_bits, char* buf, int len) {
+  DCHECK(g_nonindex_codes_initialized);
+  int first = len < 16 ? len : 16;
+  for (int i = 0; i < first; i++) {
+    buf[i] = g_nonindex_codes[unique_bits & 0b1111];
+    unique_bits >>= 4;
+  }
+  for (int i = first; i < len; i++) {
+    buf[i] = g_nonindex_codes[16];
+  }
+}
+}  // namespace
 
 // 32K / 4k = 8
 #define MAX_DOWNSTREAM_DEPS 8
@@ -249,11 +282,21 @@ http2::adapter::Http2VisitorInterface::OnHeaderResult
 Socks5Connection::OnHeaderForStream(StreamId stream_id,
                                     absl::string_view key,
                                     absl::string_view value) {
+  request_map_[key] = std::string(value);
   return http2::adapter::Http2VisitorInterface::HEADER_OK;
 }
 
 bool Socks5Connection::OnEndHeadersForStream(
   http2::adapter::Http2StreamId stream_id) {
+  auto padding_support = request_map_.find("padding") != request_map_.end();
+  if (padding_support_ && padding_support) {
+    VLOG(2) << "Connection (client) " << connection_id()
+      << " Padding support enabled.";
+  } else {
+    VLOG(2) << "Connection (client) " << connection_id()
+      << " Padding support disabled.";
+    padding_support_ = false;
+  }
   return true;
 }
 
@@ -292,6 +335,35 @@ bool Socks5Connection::OnBeginDataForStream(StreamId stream_id,
 
 bool Socks5Connection::OnDataForStream(StreamId stream_id,
                                        absl::string_view data) {
+  if (padding_support_ && num_padding_recv_ < kFirstPaddings) {
+    asio::error_code ec;
+    // Append buf to in_middle_buf
+    if (padding_in_middle_buf_) {
+      padding_in_middle_buf_->reserve(0, data.size());
+      memcpy(padding_in_middle_buf_->mutable_tail(), data.data(), data.size());
+      padding_in_middle_buf_->append(data.size());
+    } else {
+      padding_in_middle_buf_ = IOBuf::copyBuffer(data.data(), data.size());
+    }
+    adapter_->MarkDataConsumedForStream(stream_id, data.size());
+
+    // Deal with in_middle_buf
+    while (num_padding_recv_ < kFirstPaddings) {
+      auto buf = RemovePadding(padding_in_middle_buf_, ec);
+      if (ec) {
+        return true;
+      }
+      DCHECK(buf);
+      downstream_.push_back(buf);
+      ++num_padding_recv_;
+    }
+    // Deal with in_middle_buf outside paddings
+    if (num_padding_recv_ >= kFirstPaddings && !padding_in_middle_buf_->empty()) {
+      upstream_.push_back(std::move(padding_in_middle_buf_));
+    }
+    return true;
+  }
+
   std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(data.data(), data.size());
   downstream_.push_back(buf);
   adapter_->MarkDataConsumedForStream(stream_id, data.size());
@@ -873,6 +945,10 @@ repeat_fetch:
   bytes_transferred += read;
 
   if (adapter_) {
+    if (padding_support_ && num_padding_send_ < kFirstPaddings) {
+      ++num_padding_send_;
+      AddPadding(buf);
+    }
     data_frame_->AddChunk(buf);
     if (bytes_transferred <= kYieldAfterBytesRead) {
       goto repeat_fetch;
@@ -1133,6 +1209,10 @@ void Socks5Connection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
 
   // SendContents
   if (adapter_) {
+    if (padding_support_ && num_padding_send_ < kFirstPaddings) {
+      ++num_padding_send_;
+      AddPadding(buf);
+    }
     data_frame_->AddChunk(buf);
     data_frame_->SetSendCompletionCallback(std::function<void()>());
     adapter()->ResumeStream(stream_id_);
@@ -1248,8 +1328,11 @@ void Socks5Connection::connected() {
     http2::adapter::OgHttp2Adapter::Options options;
     options.perspective = http2::adapter::Perspective::kClient;
     adapter_ = http2::adapter::OgHttp2Adapter::Create(*this, options);
+    padding_support_ = absl::GetFlag(FLAGS_padding_support);
   } else if (upstream_https_fallback_) {
     // nothing to create
+    // TODO should we support it?
+    // padding_support_ = absl::GetFlag(FLAGS_padding_support);
   } else {
     encoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
       static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)),
@@ -1281,6 +1364,15 @@ void Socks5Connection::connected() {
     headers.push_back({":authority", host + ":" + std::to_string(port)});
     headers.push_back({"host", host + ":" + std::to_string(port)});
     headers.push_back({"proxy-authorization", "basic " + GetProxyAuthorizationIdentity()});
+    // Send "Padding" header
+    // originated from naive_proxy_delegate.go;func ServeHTTP
+    if (padding_support_) {
+      // Sends client-side padding header regardless of server support
+      std::string padding(RandInt(16, 32), '~');
+      InitializeNonindexCodes();
+      FillNonindexHeaderValue(RandUint64(), &padding[0], padding.size());
+      headers.emplace_back("padding", padding);
+    }
     stream_id_ = adapter_->SubmitRequest(GenerateHeaders(headers),
                                          std::move(data_frame), nullptr);
     data_frame_->set_stream_id(stream_id_);

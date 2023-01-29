@@ -282,6 +282,11 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
   bool http_is_connect_ = false;
   /// copy of connect response
   static const char http_connect_reply_[];
+  /// copy of padding support
+  bool padding_support_ = false;
+  int num_padding_send_ = 0;
+  int num_padding_recv_ = 0;
+  std::shared_ptr<IOBuf> padding_in_middle_buf_;
 
   /// DNS resolver
   asio::ip::tcp::resolver resolver_;

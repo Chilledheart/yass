@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2020 Chilledheart  */
+/* Copyright (c) 2020-2023 Chilledheart  */
 
 #ifndef H_NETWORK
 #define H_NETWORK
@@ -54,5 +54,14 @@ void SetSocketLinger(asio::ip::tcp::socket* socket, asio::error_code&);
 void SetSocketSndBuffer(asio::ip::tcp::socket* socket, asio::error_code&);
 
 void SetSocketRcvBuffer(asio::ip::tcp::socket* socket, asio::error_code&);
+
+ABSL_DECLARE_FLAG(bool, padding_support);
+
+constexpr int kFirstPaddings = 8;
+constexpr int kPaddingHeaderSize = 3;
+constexpr int kMaxPaddingSize = 255;
+
+void AddPadding(std::shared_ptr<IOBuf> buf);
+std::shared_ptr<IOBuf> RemovePadding(std::shared_ptr<IOBuf> buf, asio::error_code &ec);
 
 #endif  // H_NETWORK
