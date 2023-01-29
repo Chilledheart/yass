@@ -50,7 +50,7 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 ### HTTP2 Tunnel Support
 - [x] Basic [HTTP2] Support
 - [x] HTTPS1.1 fallback support (both server and client sides)
-- [ ] Padding Support
+- [x] Padding Support
 
 More Information refers to https://github.com/Chilledheart/yass/issues/55
 
