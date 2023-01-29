@@ -15,8 +15,8 @@
 #include "core/iobuf.hpp"
 #include "core/logging.hpp"
 
-#define SOCKET_BUF_SIZE (4096)
-#define SOCKET_DEBUF_SIZE (4096 + 100)
+#define SOCKET_BUF_SIZE (16256)
+#define SOCKET_DEBUF_SIZE (16368)
 
 #ifndef NDEBUG
 inline void DumpHex(const char* prefix, const uint8_t* data, uint32_t length) {
