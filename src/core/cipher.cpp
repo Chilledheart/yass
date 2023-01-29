@@ -58,10 +58,11 @@ class cipher_impl {
                         size_t skey_len) {
     const char* pass = key.c_str();
     size_t datal = key.size();
-    MD5_CTX c = {};
+    MD5_CTX c;
     uint8_t md_buf[MD5_DIGEST_LENGTH];
     int addmd;
     unsigned int i, j, mds;
+    MSAN_UNPOISON(md_buf, MD5_DIGEST_LENGTH);
 
     if (key.empty()) {
       return skey_len;

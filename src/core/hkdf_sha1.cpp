@@ -6,6 +6,7 @@
 
 #include <cstring>
 
+#include "core/compiler_specific.hpp"
 #include "core/hmac_sha1.hpp"
 
 #define MAX_MD_SIZE SHA512_DIGEST_LENGTH /* longest known is SHA512 */
@@ -60,9 +61,12 @@ int crypto_hkdf_expand(const unsigned char* prk,
   int hash_len;
   int N;
   int T_len = 0, where = 0, i, ret;
-  SHA_CTX ctx = {};
+  SHA_CTX ctx;
   unsigned char ipad[HASH_BLOCK_SIZE_256], opad[HASH_BLOCK_SIZE_256];
   unsigned char T[MD_MAX_SIZE_256];
+  MSAN_UNPOISON(ipad, HASH_BLOCK_SIZE_256);
+  MSAN_UNPOISON(opad, HASH_BLOCK_SIZE_256);
+  MSAN_UNPOISON(T, MD_MAX_SIZE_256);
 
   if (info_len < 0 || okm_len < 0 || okm == nullptr) {
     return -1;

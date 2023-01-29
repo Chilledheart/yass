@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
+/* Copyright (c) 2019-2023 Chilledheart  */
 
 #include "core/hmac_sha1.hpp"
 
 #include <cstring>
+
+#include "core/compiler_specific.hpp"
 
 #define HASH_BLOCK_SIZE 128
 #define HASH_BLOCK_SIZE_256 64
@@ -92,10 +94,12 @@ int hmac_sha1(const unsigned char* key,
               const unsigned char* input,
               size_t ilen,
               unsigned char* output) {
-  SHA_CTX ctx = {};
+  SHA_CTX ctx;
   unsigned char ipad[HASH_BLOCK_SIZE_256], opad[HASH_BLOCK_SIZE_256];
   int ret;
 
+  MSAN_UNPOISON(ipad, sizeof(ipad));
+  MSAN_UNPOISON(opad, sizeof(opad));
   SHA1_Init(&ctx);
 
   if ((ret = hmac_sha1_starts(&ctx, ipad, opad, key, keylen)) != 0)
