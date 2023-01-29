@@ -10,6 +10,7 @@
 #include "core/asio.hpp"
 #include "core/base64.hpp"
 #include "core/http_parser.hpp"
+#include "core/rand_util.hpp"
 #include "core/utils.hpp"
 
 namespace {
@@ -185,9 +186,12 @@ void SsConnection::Start() {
     http2::adapter::OgHttp2Adapter::Options options;
     options.perspective = http2::adapter::Perspective::kServer;
     adapter_ = http2::adapter::OgHttp2Adapter::Create(*this, options);
+    padding_support_ = absl::GetFlag(FLAGS_padding_support);
     SetState(state_stream);
     ReadStream();
   } else if (https_fallback_) {
+    // TODO should we support it?
+    // padding_support_ = absl::GetFlag(FLAGS_padding_support);
     ReadHandshakeViaHttps();
   } else {
     encoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
@@ -273,6 +277,17 @@ bool SsConnection::OnEndHeadersForStream(
       << " Unexpected auth token.";
     return false;
   }
+  auto padding_support = request_map_.find("padding") != request_map_.end();
+  asio::error_code ec;
+  auto peer_endpoint = socket_.remote_endpoint(ec);
+  if (padding_support_ && padding_support) {
+    LOG(INFO) << "Connection (server) " << connection_id() << " for "
+      << peer_endpoint << " Padding support enabled.";
+  } else {
+    VLOG(2) << "Connection (server) " << connection_id() << " for "
+      << peer_endpoint << " Padding support disabled.";
+    padding_support_ = false;
+  }
   std::vector<std::string> host_and_port = absl::StrSplit(request_map_[":authority"], ":");
   if (host_and_port.size() != 2) {
     VLOG(2) << "Connection (server) " << connection_id()
@@ -328,6 +343,36 @@ bool SsConnection::OnBeginDataForStream(StreamId stream_id,
 bool SsConnection::OnDataForStream(StreamId stream_id,
                                    absl::string_view data) {
   rbytes_transferred_ += data.size();
+
+  if (padding_support_ && num_padding_recv_ < kFirstPaddings) {
+    asio::error_code ec;
+    // Append buf to in_middle_buf
+    if (padding_in_middle_buf_) {
+      padding_in_middle_buf_->reserve(0, data.size());
+      memcpy(padding_in_middle_buf_->mutable_tail(), data.data(), data.size());
+      padding_in_middle_buf_->append(data.size());
+    } else {
+      padding_in_middle_buf_ = IOBuf::copyBuffer(data.data(), data.size());
+    }
+    adapter_->MarkDataConsumedForStream(stream_id, data.size());
+
+    // Deal with in_middle_buf
+    while (num_padding_recv_ < kFirstPaddings) {
+      auto buf = RemovePadding(padding_in_middle_buf_, ec);
+      if (ec) {
+        return true;
+      }
+      DCHECK(buf);
+      upstream_.push_back(buf);
+      ++num_padding_recv_;
+    }
+    // Deal with in_middle_buf outside paddings
+    if (num_padding_recv_ >= kFirstPaddings && !padding_in_middle_buf_->empty()) {
+      upstream_.push_back(std::move(padding_in_middle_buf_));
+    }
+    return true;
+  }
+
   std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(data.data(), data.size());
   upstream_.push_back(buf);
   adapter_->MarkDataConsumedForStream(stream_id, data.size());
@@ -673,6 +718,10 @@ repeat_fetch:
   bytes_transferred += read;
 
   if (adapter_) {
+    if (padding_support_ && num_padding_send_ < kFirstPaddings) {
+      ++num_padding_send_;
+      AddPadding(buf);
+    }
     data_frame_->AddChunk(buf);
     if (bytes_transferred <= kYieldAfterBytesRead) {
       goto repeat_fetch;
@@ -848,7 +897,7 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf,
         ec = std::make_error_code(std::errc::bad_message);
         break;
       default:
-        LOG(FATAL) << "Connection (client) " << connection_id()
+        LOG(FATAL) << "Connection (server) " << connection_id()
                    << " bad state 0x" << std::hex
                    << static_cast<int>(CurrentState()) << std::dec;
     };
@@ -883,7 +932,7 @@ void SsConnection::ProcessSentData(asio::error_code ec,
         ec = std::make_error_code(std::errc::bad_message);
         break;
       default:
-        LOG(FATAL) << "Connection (client) " << connection_id()
+        LOG(FATAL) << "Connection (server) " << connection_id()
                    << " bad state 0x" << std::hex
                    << static_cast<int>(CurrentState()) << std::dec;
     }
@@ -908,6 +957,17 @@ void SsConnection::OnConnect() {
       std::make_unique<DataFrameSource>(this, stream_id_);
     data_frame_ = data_frame.get();
     std::vector<std::pair<std::string, std::string>> headers;
+    // Send "Padding" header
+    // originated from forwardproxy.go;func ServeHTTP
+    if (padding_support_) {
+      std::string padding(RandInt(30, 64), '~');
+      uint64_t bits = RandUint64();
+      for (int i = 0; i < 16; ++i) {
+        padding[i] = "!#$()+<>?@[]^`{}"[bits & 15];
+        bits = bits >> 4;
+      }
+      headers.emplace_back("padding", padding);
+    }
     int submit_result = adapter_->SubmitResponse(stream_id_,
                                                  GenerateHeaders(headers, 200),
                                                  std::move(data_frame));
@@ -1047,6 +1107,10 @@ void SsConnection::received(std::shared_ptr<IOBuf> buf) {
   }
 
   if (adapter_) {
+    if (padding_support_ && num_padding_send_ < kFirstPaddings) {
+      ++num_padding_send_;
+      AddPadding(buf);
+    }
     data_frame_->AddChunk(buf);
     data_frame_->SetSendCompletionCallback(std::function<void()>());
     adapter()->ResumeStream(stream_id_);

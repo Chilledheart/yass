@@ -2732,6 +2732,7 @@ endif()
 if (BUILD_TESTS)
   add_executable(yass_test
     src/test_util.cpp
+    src/network_test.cpp
     src/ss_test.cpp
     src/config/config_test.cpp
     src/core/cipher_test.cpp

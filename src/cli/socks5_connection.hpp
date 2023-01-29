@@ -348,6 +348,11 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
 
   /// copy of upstream request
   std::unique_ptr<ss::request> ss_request_;
+  /// copy of padding support
+  bool padding_support_ = false;
+  int num_padding_send_ = 0;
+  int num_padding_recv_ = 0;
+  std::shared_ptr<IOBuf> padding_in_middle_buf_;
 
   /// the state of https fallback handshake (upstream)
   bool upstream_handshake_ = true;
@@ -409,6 +414,7 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
 
   /// the http2 upstream adapter
   std::unique_ptr<http2::adapter::OgHttp2Adapter> adapter_;
+  absl::flat_hash_map<std::string, std::string> request_map_;
 
   /// the queue to write downstream
   std::deque<std::shared_ptr<IOBuf>> downstream_;
