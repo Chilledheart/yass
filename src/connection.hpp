@@ -104,6 +104,8 @@ class Connection {
 
  private:
   void setup_ssl() {
+    ::SSL_set_early_data_enabled(ssl_socket_.native_handle(),
+                                 absl::GetFlag(FLAGS_tls13_early_return));
     ssl_socket_.set_verify_mode(asio::ssl::verify_peer);
   }
 
