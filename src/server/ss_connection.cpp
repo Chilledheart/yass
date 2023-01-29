@@ -278,12 +278,14 @@ bool SsConnection::OnEndHeadersForStream(
     return false;
   }
   auto padding_support = request_map_.find("padding") != request_map_.end();
+  asio::error_code ec;
+  auto peer_endpoint = socket_.remote_endpoint(ec);
   if (padding_support_ && padding_support) {
-    VLOG(2) << "Connection (server) " << connection_id()
-      << " Padding support enabled.";
+    LOG(INFO) << "Connection (server) " << connection_id() << " for "
+      << peer_endpoint << " Padding support enabled.";
   } else {
-    VLOG(2) << "Connection (client) " << connection_id()
-      << " Padding support disabled.";
+    VLOG(2) << "Connection (server) " << connection_id() << " for "
+      << peer_endpoint << " Padding support disabled.";
     padding_support_ = false;
   }
   std::vector<std::string> host_and_port = absl::StrSplit(request_map_[":authority"], ":");
@@ -895,7 +897,7 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf,
         ec = std::make_error_code(std::errc::bad_message);
         break;
       default:
-        LOG(FATAL) << "Connection (client) " << connection_id()
+        LOG(FATAL) << "Connection (server) " << connection_id()
                    << " bad state 0x" << std::hex
                    << static_cast<int>(CurrentState()) << std::dec;
     };
@@ -930,7 +932,7 @@ void SsConnection::ProcessSentData(asio::error_code ec,
         ec = std::make_error_code(std::errc::bad_message);
         break;
       default:
-        LOG(FATAL) << "Connection (client) " << connection_id()
+        LOG(FATAL) << "Connection (server) " << connection_id()
                    << " bad state 0x" << std::hex
                    << static_cast<int>(CurrentState()) << std::dec;
     }

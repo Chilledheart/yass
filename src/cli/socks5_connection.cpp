@@ -290,11 +290,11 @@ bool Socks5Connection::OnEndHeadersForStream(
   http2::adapter::Http2StreamId stream_id) {
   auto padding_support = request_map_.find("padding") != request_map_.end();
   if (padding_support_ && padding_support) {
-    VLOG(2) << "Connection (client) " << connection_id()
-      << " Padding support enabled.";
+    LOG(INFO) << "Connection (client) " << connection_id() << " for "
+      << remote_endpoint_ << " Padding support enabled.";
   } else {
-    VLOG(2) << "Connection (client) " << connection_id()
-      << " Padding support disabled.";
+    VLOG(2) << "Connection (client) " << connection_id() << " for "
+      << remote_endpoint_ <<  " Padding support disabled.";
     padding_support_ = false;
   }
   return true;
