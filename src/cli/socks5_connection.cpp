@@ -415,76 +415,76 @@ void Socks5Connection::ReadMethodSelect() {
   scoped_refptr<Socks5Connection> self(this);
 
   socket_.async_read_some(asio::null_buffers(),
-      [self](asio::error_code ec, size_t bytes_transferred) {
-        std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
-        if (!ec) {
-          do {
-            bytes_transferred = self->socket_.read_some(mutable_buffer(*buf), ec);
-            if (ec == asio::error::interrupted) {
-              continue;
-            }
-          } while(false);
-        }
-        if (ec == asio::error::try_again || ec == asio::error::would_block) {
-          self->ReadMethodSelect();
-          return;
-        }
-        if (ec) {
-          self->OnDisconnect(ec);
-          return;
-        }
-        buf->append(bytes_transferred);
-        DumpHex("HANDSHAKE/METHOD_SELECT->", buf.get());
+    [this, self](asio::error_code ec, size_t bytes_transferred) {
+      std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
+      if (!ec) {
+        do {
+          bytes_transferred = socket_.read_some(mutable_buffer(*buf), ec);
+          if (ec == asio::error::interrupted) {
+            continue;
+          }
+        } while(false);
+      }
+      if (ec == asio::error::try_again || ec == asio::error::would_block) {
+        ReadMethodSelect();
+        return;
+      }
+      if (ec) {
+        OnDisconnect(ec);
+        return;
+      }
+      buf->append(bytes_transferred);
+      DumpHex("HANDSHAKE/METHOD_SELECT->", buf.get());
 
-        ec = self->OnReadRedirHandshake(buf);
-        if (ec) {
-          ec = self->OnReadSocks5MethodSelect(buf);
-        }
-        if (ec) {
-          ec = self->OnReadSocks4Handshake(buf);
-        }
-        if (ec) {
-          ec = self->OnReadHttpRequest(buf);
-        }
-        if (ec) {
-          self->OnDisconnect(ec);
-        } else {
-          self->ProcessReceivedData(buf, ec, buf->length());
-        }
-      });
+      ec = OnReadRedirHandshake(buf);
+      if (ec) {
+        ec = OnReadSocks5MethodSelect(buf);
+      }
+      if (ec) {
+        ec = OnReadSocks4Handshake(buf);
+      }
+      if (ec) {
+        ec = OnReadHttpRequest(buf);
+      }
+      if (ec) {
+        OnDisconnect(ec);
+      } else {
+        ProcessReceivedData(buf, ec, buf->length());
+      }
+  });
 }
 
 void Socks5Connection::ReadSocks5Handshake() {
   scoped_refptr<Socks5Connection> self(this);
 
   socket_.async_read_some(asio::null_buffers(),
-      [self](asio::error_code ec, size_t bytes_transferred) {
-        std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
-        if (!ec) {
-          do {
-            bytes_transferred = self->socket_.read_some(mutable_buffer(*buf), ec);
-            if (ec == asio::error::interrupted) {
-              continue;
-            }
-          } while(false);
-        }
-        if (ec == asio::error::try_again || ec == asio::error::would_block) {
-          self->ReadSocks5Handshake();
-          return;
-        }
-        if (ec) {
-          self->OnDisconnect(ec);
-          return;
-        }
-        buf->append(bytes_transferred);
-        DumpHex("HANDSHAKE->", buf.get());
-        ec = self->OnReadSocks5Handshake(buf);
-        if (ec) {
-          self->OnDisconnect(ec);
-        } else {
-          self->ProcessReceivedData(buf, ec, buf->length());
-        }
-      });
+    [this, self](asio::error_code ec, size_t bytes_transferred) {
+      std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
+      if (!ec) {
+        do {
+          bytes_transferred = socket_.read_some(mutable_buffer(*buf), ec);
+          if (ec == asio::error::interrupted) {
+            continue;
+          }
+        } while(false);
+      }
+      if (ec == asio::error::try_again || ec == asio::error::would_block) {
+        ReadSocks5Handshake();
+        return;
+      }
+      if (ec) {
+        OnDisconnect(ec);
+        return;
+      }
+      buf->append(bytes_transferred);
+      DumpHex("HANDSHAKE->", buf.get());
+      ec = OnReadSocks5Handshake(buf);
+      if (ec) {
+        OnDisconnect(ec);
+      } else {
+        ProcessReceivedData(buf, ec, buf->length());
+      }
+  });
 }
 
 asio::error_code Socks5Connection::OnReadRedirHandshake(
@@ -644,42 +644,42 @@ void Socks5Connection::ReadStream() {
   downstream_read_inprogress_ = true;
 
   socket_.async_read_some(asio::null_buffers(),
-      [self](asio::error_code ec, size_t bytes_transferred) {
-        self->downstream_read_inprogress_ = false;
-        if (ec) {
-          self->ProcessReceivedData(nullptr, ec, bytes_transferred);
-          return;
-        }
-        if (!self->downstream_readable_) {
-          return;
-        }
-        std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
-        if (!ec) {
-          do {
-            bytes_transferred = self->socket_.read_some(mutable_buffer(*buf), ec);
-            if (ec == asio::error::interrupted) {
-              continue;
-            }
-          } while(false);
-        }
-        if (ec == asio::error::try_again || ec == asio::error::would_block) {
-          self->ReadStream();
-          return;
-        }
-        buf->append(bytes_transferred);
-        self->ProcessReceivedData(buf, ec, bytes_transferred);
-      });
+    [this, self](asio::error_code ec, size_t bytes_transferred) {
+      downstream_read_inprogress_ = false;
+      if (ec) {
+        ProcessReceivedData(nullptr, ec, bytes_transferred);
+        return;
+      }
+      if (!downstream_readable_) {
+        return;
+      }
+      std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
+      if (!ec) {
+        do {
+          bytes_transferred = socket_.read_some(mutable_buffer(*buf), ec);
+          if (ec == asio::error::interrupted) {
+            continue;
+          }
+        } while(false);
+      }
+      if (ec == asio::error::try_again || ec == asio::error::would_block) {
+        ReadStream();
+        return;
+      }
+      buf->append(bytes_transferred);
+      ProcessReceivedData(buf, ec, bytes_transferred);
+  });
 }
 
 void Socks5Connection::WriteMethodSelect() {
   scoped_refptr<Socks5Connection> self(this);
   method_select_reply_ = socks5::method_select_response_stock_reply();
   asio::async_write(
-      socket_,
-      asio::buffer(&method_select_reply_, sizeof(method_select_reply_)),
-      [self](asio::error_code ec, size_t bytes_transferred) {
-        return self->ProcessSentData(ec, bytes_transferred);
-      });
+    socket_,
+    asio::buffer(&method_select_reply_, sizeof(method_select_reply_)),
+    [this, self](asio::error_code ec, size_t bytes_transferred) {
+      return ProcessSentData(ec, bytes_transferred);
+  });
 }
 
 void Socks5Connection::WriteHandshake() {
@@ -687,23 +687,22 @@ void Socks5Connection::WriteHandshake() {
   switch (CurrentState()) {
     case state_method_select:  // impossible
     case state_socks5_handshake:
-      self->SetState(state_stream);
-      asio::async_write(
-          socket_, s5_reply_.buffers(),
-          [self](asio::error_code ec, size_t bytes_transferred) {
-            return self->ProcessSentData(ec, bytes_transferred);
-          });
+      SetState(state_stream);
+      asio::async_write(socket_, s5_reply_.buffers(),
+        [this, self](asio::error_code ec, size_t bytes_transferred) {
+          return ProcessSentData(ec, bytes_transferred);
+      });
       break;
     case state_socks4_handshake:
-      self->SetState(state_stream);
+      SetState(state_stream);
       asio::async_write(
-          socket_, s4_reply_.buffers(),
-          [self](asio::error_code ec, size_t bytes_transferred) {
-            return self->ProcessSentData(ec, bytes_transferred);
-          });
+        socket_, s4_reply_.buffers(),
+        [this, self](asio::error_code ec, size_t bytes_transferred) {
+          return ProcessSentData(ec, bytes_transferred);
+      });
       break;
     case state_http_handshake:
-      self->SetState(state_stream);
+      SetState(state_stream);
       /// reply on CONNECT request
       if (http_is_connect_) {
         std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(
@@ -718,7 +717,7 @@ void Socks5Connection::WriteHandshake() {
     default:
       LOG(FATAL) << "Connection (client) " << connection_id()
                  << "bad state 0x" << std::hex
-                 << static_cast<int>(self->CurrentState()) << std::dec;
+                 << static_cast<int>(CurrentState()) << std::dec;
   }
 }
 
@@ -731,14 +730,14 @@ void Socks5Connection::WriteStream() {
   scoped_refptr<Socks5Connection> self(this);
   write_inprogress_ = true;
   socket_.async_write_some(asio::null_buffers(),
-      [self](asio::error_code ec, size_t /*bytes_transferred*/) {
-        self->write_inprogress_ = false;
-        if (ec) {
-          self->ProcessSentData(ec, 0);
-          return;
-        }
-        self->WriteStreamInPipe();
-      });
+    [this, self](asio::error_code ec, size_t /*bytes_transferred*/) {
+      write_inprogress_ = false;
+      if (ec) {
+        ProcessSentData(ec, 0);
+        return;
+      }
+      WriteStreamInPipe();
+  });
 }
 
 void Socks5Connection::WriteStreamInPipe() {
@@ -807,7 +806,7 @@ std::shared_ptr<IOBuf> Socks5Connection::GetNextDownstreamBuf(asio::error_code &
     ec = asio::error::try_again;
     return nullptr;
   }
-  std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
+  std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_DEBUF_SIZE);
   size_t read;
   do {
     ec = asio::error_code();
@@ -1243,7 +1242,7 @@ void Socks5Connection::OnStreamWrite() {
             << " re-enabling reading from upstream";
     upstream_readable_ = true;
     scoped_refptr<Socks5Connection> self(this);
-    channel_->enable_read([self]() {});
+    channel_->enable_read([self]() {}, SOCKET_DEBUF_SIZE);
   }
 }
 
@@ -1412,7 +1411,7 @@ void Socks5Connection::connected() {
   scoped_refptr<Socks5Connection> self(this);
   upstream_readable_ = true;
   upstream_writable_ = true;
-  channel_->start_read([self]() {});
+  channel_->start_read([self]() {}, SOCKET_DEBUF_SIZE);
   OnUpstreamWriteFlush();
 }
 

@@ -133,53 +133,53 @@ class stream {
 
   void disable_read() { read_enabled_ = false; }
 
-  void enable_read(std::function<void()> callback) {
+  void enable_read(std::function<void()> callback, int capacity = SOCKET_BUF_SIZE) {
     if (!read_enabled_) {
       read_enabled_ = true;
       if (!read_inprogress_) {
-        start_read(callback);
+        start_read(callback, capacity);
       }
     }
   }
 
-  void start_read(std::function<void()> callback) {
+  void start_read(std::function<void()> callback, int capacity = SOCKET_BUF_SIZE) {
     DCHECK(read_enabled_);
     DCHECK(!read_inprogress_);
+    DCHECK(capacity);
     Channel* channel = channel_;
     read_inprogress_ = true;
 
-    s_async_read_some_([this, channel, callback](asio::error_code ec,
-                                                 std::size_t bytes_transferred) {
-          // Cancelled, safe to ignore
-          if (ec == asio::error::operation_aborted) {
-            callback();
-            return;
-          }
-          read_inprogress_ = false;
-          if (ec) {
-            on_read(channel, nullptr, ec, bytes_transferred, callback);
-            return;
-          }
-          if (!read_enabled_) {
-            callback();
-            return;
-          }
-          std::shared_ptr<IOBuf> buf{IOBuf::create(SOCKET_BUF_SIZE).release()};
-          buf->reserve(0, SOCKET_BUF_SIZE);
-          if (!ec) {
-            do {
-              bytes_transferred = s_read_some_(buf, ec);
-              if (ec == asio::error::interrupted) {
-                continue;
-              }
-            } while(false);
-          }
-          if (ec == asio::error::try_again || ec == asio::error::would_block) {
-            start_read(callback);
-            return;
-          }
-          on_read(channel, buf, ec, bytes_transferred, callback);
-        });
+    s_async_read_some_([this, channel, callback, capacity]
+      (asio::error_code ec, std::size_t bytes_transferred) {
+        // Cancelled, safe to ignore
+        if (ec == asio::error::operation_aborted) {
+          callback();
+          return;
+        }
+        read_inprogress_ = false;
+        if (ec) {
+          on_read(channel, nullptr, ec, bytes_transferred, callback);
+          return;
+        }
+        if (!read_enabled_) {
+          callback();
+          return;
+        }
+        std::shared_ptr<IOBuf> buf = IOBuf::create(capacity);
+        if (!ec) {
+          do {
+            bytes_transferred = s_read_some_(buf, ec);
+            if (ec == asio::error::interrupted) {
+              continue;
+            }
+          } while(false);
+        }
+        if (ec == asio::error::try_again || ec == asio::error::would_block) {
+          start_read(callback);
+          return;
+        }
+        on_read(channel, buf, ec, bytes_transferred, callback);
+    });
   }
 
   size_t read_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
@@ -198,41 +198,41 @@ class stream {
     Channel* channel = channel_;
     DCHECK(!write_inprogress_);
     write_inprogress_ = true;
-    s_async_write_some_([this, channel, buf, callback](asio::error_code ec,
-                                                       size_t /*bytes_transferred*/) {
-          write_inprogress_ = false;
-          // Cancelled, safe to ignore
-          if (ec == asio::error::operation_aborted) {
-            callback();
-            return;
-          }
-          if (ec) {
-            on_write(channel, nullptr, ec, 0, callback);
-            return;
-          }
+    s_async_write_some_([this, channel, buf, callback](
+      asio::error_code ec, size_t /*bytes_transferred*/) {
+        write_inprogress_ = false;
+        // Cancelled, safe to ignore
+        if (ec == asio::error::operation_aborted) {
+          callback();
+          return;
+        }
+        if (ec) {
+          on_write(channel, nullptr, ec, 0, callback);
+          return;
+        }
 
-          size_t bytes_transferred;
-          do {
-            bytes_transferred = s_write_some_(buf, ec);
-            if (ec == asio::error::interrupted) {
-              continue;
-            }
-          } while(false);
-          buf->trimStart(bytes_transferred);
+        size_t bytes_transferred;
+        do {
+          bytes_transferred = s_write_some_(buf, ec);
+          if (ec == asio::error::interrupted) {
+            continue;
+          }
+        } while(false);
+        buf->trimStart(bytes_transferred);
 
-          if (ec == asio::error::try_again || ec == asio::error::would_block) {
-            start_write(buf, callback);
-            return;
-          }
-          if (ec) {
-            on_write(channel, buf, ec, bytes_transferred, callback);
-            return;
-          }
-          if (!buf->empty()) {
-            start_write(buf, callback);
-            return;
-          }
+        if (ec == asio::error::try_again || ec == asio::error::would_block) {
+          start_write(buf, callback);
+          return;
+        }
+        if (ec) {
           on_write(channel, buf, ec, bytes_transferred, callback);
+          return;
+        }
+        if (!buf->empty()) {
+          start_write(buf, callback);
+          return;
+        }
+        on_write(channel, buf, ec, bytes_transferred, callback);
     });
   }
 

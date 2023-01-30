@@ -131,14 +131,14 @@ void SsConnection::start() {
 
   scoped_refptr<SsConnection> self(this);
   if (enable_tls_) {
-    ssl_socket_.async_handshake(asio::ssl::stream_base::server,
-                                [self](asio::error_code ec) {
-      if (ec) {
-        self->SetState(state_error);
-        self->OnDisconnect(ec);
-        return;
-      }
-      self->Start();
+    ssl_socket_.async_handshake(asio::ssl::stream_base::server, [this, self](
+      asio::error_code ec) {
+        if (ec) {
+          SetState(state_error);
+          OnDisconnect(ec);
+          return;
+        }
+        Start();
     });
   } else {
     Start();
@@ -423,193 +423,195 @@ bool SsConnection::OnMetadataEndForStream(StreamId stream_id) {
 void SsConnection::ReadHandshake() {
   scoped_refptr<SsConnection> self(this);
 
-  s_async_read_some_([self](asio::error_code ec, size_t bytes_transferred) {
-        std::shared_ptr<IOBuf> cipherbuf = IOBuf::create(SOCKET_BUF_SIZE);
-        if (!ec) {
-          do {
-            bytes_transferred = self->s_read_some_(cipherbuf, ec);
-            if (ec == asio::error::interrupted) {
-              continue;
-            }
-          } while(false);
-        }
-        if (ec == asio::error::try_again || ec == asio::error::would_block) {
-          self->ReadHandshake();
-          return;
-        }
-        if (ec) {
-          self->OnDisconnect(ec);
-          return;
-        }
-        cipherbuf->append(bytes_transferred);
-        self->decoder_->process_bytes(cipherbuf);
-        if (!self->handshake_) {
-          self->ReadHandshake();
-          return;
-        }
-        auto buf = self->handshake_;
+  s_async_read_some_([this, self](
+    asio::error_code ec, size_t bytes_transferred) {
+      std::shared_ptr<IOBuf> cipherbuf = IOBuf::create(SOCKET_DEBUF_SIZE);
+      if (!ec) {
+        do {
+          bytes_transferred = s_read_some_(cipherbuf, ec);
+          if (ec == asio::error::interrupted) {
+            continue;
+          }
+        } while(false);
+      }
+      if (ec == asio::error::try_again || ec == asio::error::would_block) {
+        ReadHandshake();
+        return;
+      }
+      if (ec) {
+        OnDisconnect(ec);
+        return;
+      }
+      cipherbuf->append(bytes_transferred);
+      decoder_->process_bytes(cipherbuf);
+      if (!handshake_) {
+        ReadHandshake();
+        return;
+      }
+      auto buf = handshake_;
 
-        DumpHex("HANDSHAKE->", buf.get());
+      DumpHex("HANDSHAKE->", buf.get());
 
-        request_parser::result_type result;
-        std::tie(result, std::ignore) = self->request_parser_.parse(
-            self->request_, buf->data(), buf->data() + bytes_transferred);
+      request_parser::result_type result;
+      std::tie(result, std::ignore) = request_parser_.parse(
+          request_, buf->data(), buf->data() + bytes_transferred);
 
-        if (result == request_parser::good) {
-          buf->trimStart(self->request_.length());
-          buf->retreat(self->request_.length());
-          DCHECK_LE(self->request_.length(), bytes_transferred);
-          self->ProcessReceivedData(buf, ec, buf->length());
-        } else {
-          // FIXME better error code?
-          ec = asio::error::connection_refused;
-          self->OnDisconnect(ec);
-        }
-      });
+      if (result == request_parser::good) {
+        buf->trimStart(request_.length());
+        buf->retreat(request_.length());
+        DCHECK_LE(request_.length(), bytes_transferred);
+        ProcessReceivedData(buf, ec, buf->length());
+      } else {
+        // FIXME better error code?
+        ec = asio::error::connection_refused;
+        OnDisconnect(ec);
+      }
+  });
 }
 
 void SsConnection::ReadHandshakeViaHttps() {
   scoped_refptr<SsConnection> self(this);
 
-  s_async_read_some_([this, self](asio::error_code ec, size_t bytes_transferred) {
-        std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
-        if (!ec) {
-          do {
-            bytes_transferred = self->s_read_some_(buf, ec);
-            if (ec == asio::error::interrupted) {
-              continue;
-            }
-          } while(false);
-        }
-        if (ec == asio::error::try_again || ec == asio::error::would_block) {
-          self->ReadHandshakeViaHttps();
-          return;
-        }
-        if (ec) {
-          self->OnDisconnect(ec);
-          return;
-        }
-        buf->append(bytes_transferred);
-
-        DumpHex("HANDSHAKE->", buf.get());
-
-        HttpRequestParser parser;
-
-        bool ok;
-        int nparsed = parser.Parse(buf, &ok);
-        if (nparsed) {
-          VLOG(4) << "Connection (server) " << connection_id()
-                  << " http: "
-                  << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
-        }
-
-        if (ok) {
-          buf->trimStart(nparsed);
-          buf->retreat(nparsed);
-
-          http_host_ = parser.host();
-          http_port_ = parser.port();
-          http_is_connect_ = parser.is_connect();
-
-          request_ = {http_host_, http_port_};
-
-          if (!http_is_connect_) {
-            std::string header;
-            parser.ReforgeHttpRequest(&header);
-            buf->reserve(header.size(), 0);
-            buf->prepend(header.size());
-            memcpy(buf->mutable_data(), header.c_str(), header.size());
-            VLOG(4) << "Connection (server) " << connection_id()
-                    << " Host: " << http_host_ << " PORT: " << http_port_;
-          } else {
-            VLOG(4) << "Connection (server) " << connection_id()
-                    << " CONNECT: " << http_host_ << " PORT: " << http_port_;
+  s_async_read_some_([this, self](
+    asio::error_code ec, size_t bytes_transferred) {
+      std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_DEBUF_SIZE);
+      if (!ec) {
+        do {
+          bytes_transferred = s_read_some_(buf, ec);
+          if (ec == asio::error::interrupted) {
+            continue;
           }
-          ProcessReceivedData(buf, ec, buf->length());
+        } while(false);
+      }
+      if (ec == asio::error::try_again || ec == asio::error::would_block) {
+        ReadHandshakeViaHttps();
+        return;
+      }
+      if (ec) {
+        OnDisconnect(ec);
+        return;
+      }
+      buf->append(bytes_transferred);
+
+      DumpHex("HANDSHAKE->", buf.get());
+
+      HttpRequestParser parser;
+
+      bool ok;
+      int nparsed = parser.Parse(buf, &ok);
+      if (nparsed) {
+        VLOG(4) << "Connection (server) " << connection_id()
+                << " http: "
+                << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
+      }
+
+      if (ok) {
+        buf->trimStart(nparsed);
+        buf->retreat(nparsed);
+
+        http_host_ = parser.host();
+        http_port_ = parser.port();
+        http_is_connect_ = parser.is_connect();
+
+        request_ = {http_host_, http_port_};
+
+        if (!http_is_connect_) {
+          std::string header;
+          parser.ReforgeHttpRequest(&header);
+          buf->reserve(header.size(), 0);
+          buf->prepend(header.size());
+          memcpy(buf->mutable_data(), header.c_str(), header.size());
+          VLOG(4) << "Connection (server) " << connection_id()
+                  << " Host: " << http_host_ << " PORT: " << http_port_;
         } else {
-          // FIXME better error code?
-          ec = asio::error::connection_refused;
-          self->OnDisconnect(ec);
+          VLOG(4) << "Connection (server) " << connection_id()
+                  << " CONNECT: " << http_host_ << " PORT: " << http_port_;
         }
-      });
+        ProcessReceivedData(buf, ec, buf->length());
+      } else {
+        // FIXME better error code?
+        ec = asio::error::connection_refused;
+        OnDisconnect(ec);
+      }
+  });
 }
 
 void SsConnection::ResolveDns(std::shared_ptr<IOBuf> buf) {
   scoped_refptr<SsConnection> self(this);
-  resolver_.async_resolve(
-      self->request_.domain_name(), std::to_string(self->request_.port()),
-      [self, buf](asio::error_code ec,
-                  asio::ip::tcp::resolver::results_type results) {
-        // Get a list of endpoints corresponding to the SOCKS 5 domain name.
-        if (!ec) {
-          self->remote_endpoint_ = results->endpoint();
-          VLOG(3) << "Connection (server) " << self->connection_id()
-                  << " resolved address: " << self->request_.domain_name()
-                  << " to: " << self->remote_endpoint_;
-          self->SetState(state_stream);
-          self->OnConnect();
-          if (buf) {
-            self->ProcessReceivedData(buf, ec, buf->length());
-          }
-        } else {
-          self->OnDisconnect(ec);
+  resolver_.async_resolve(request_.domain_name(),
+                          std::to_string(request_.port()),
+                          [this, self, buf](
+    asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
+      // Get a list of endpoints corresponding to the SOCKS 5 domain name.
+      if (!ec) {
+        remote_endpoint_ = results->endpoint();
+        VLOG(3) << "Connection (server) " << connection_id()
+                << " resolved address: " << request_.domain_name()
+                << " to: " << remote_endpoint_;
+        SetState(state_stream);
+        OnConnect();
+        if (buf) {
+          ProcessReceivedData(buf, ec, buf->length());
         }
-      });
+      } else {
+        OnDisconnect(ec);
+      }
+  });
 }
 
 void SsConnection::ReadStream() {
   scoped_refptr<SsConnection> self(this);
   downstream_read_inprogress_ = true;
 
-  s_async_read_some_([self](asio::error_code ec,
-                            std::size_t bytes_transferred) {
-        self->downstream_read_inprogress_ = false;
-        if (ec) {
-          self->ProcessReceivedData(nullptr, ec, bytes_transferred);
-          return;
-        }
-        if (!self->downstream_readable_) {
-          return;
-        }
-        std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
-        if (!ec) {
-          do {
-            bytes_transferred = self->s_read_some_(buf, ec);
-            if (ec == asio::error::interrupted) {
-              continue;
-            }
-          } while(false);
-        }
-        if (ec == asio::error::try_again || ec == asio::error::would_block) {
-          self->ReadStream();
-          return;
-        }
-        buf->append(bytes_transferred);
-        if (self->adapter_) {
-          absl::string_view remaining_buffer(
-              reinterpret_cast<const char*>(buf->data()), buf->length());
-          while (!remaining_buffer.empty()) {
-            int result = self->adapter_->ProcessBytes(remaining_buffer);
-            if (result < 0) {
-              self->OnDisconnect(asio::error::connection_refused);
-              return;
-            }
-            remaining_buffer = remaining_buffer.substr(result);
+  s_async_read_some_([this, self](
+    asio::error_code ec, std::size_t bytes_transferred) {
+      downstream_read_inprogress_ = false;
+      if (ec) {
+        ProcessReceivedData(nullptr, ec, bytes_transferred);
+        return;
+      }
+      if (!downstream_readable_) {
+        return;
+      }
+      std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_DEBUF_SIZE);
+      if (!ec) {
+        do {
+          bytes_transferred = s_read_some_(buf, ec);
+          if (ec == asio::error::interrupted) {
+            continue;
           }
-          // Sent Control Streams
-          self->SendIfNotProcessing();
-          self->OnDownstreamWriteFlush();
-        } else if (self->https_fallback_) {
-          self->rbytes_transferred_ += buf->length();
-          self->upstream_.push_back(buf);
-        } else {
-          self->decoder_->process_bytes(buf);
+        } while(false);
+      }
+      if (ec == asio::error::try_again || ec == asio::error::would_block) {
+        ReadStream();
+        return;
+      }
+      buf->append(bytes_transferred);
+      if (adapter_) {
+        absl::string_view remaining_buffer(
+            reinterpret_cast<const char*>(buf->data()), buf->length());
+        while (!remaining_buffer.empty()) {
+          int result = adapter_->ProcessBytes(remaining_buffer);
+          if (result < 0) {
+            OnDisconnect(asio::error::connection_refused);
+            return;
+          }
+          remaining_buffer = remaining_buffer.substr(result);
         }
-        self->OnUpstreamWriteFlush();
-        if (self->downstream_readable_) {
-          self->ReadStream();
-        }
-      });
+        // Sent Control Streams
+        SendIfNotProcessing();
+        OnDownstreamWriteFlush();
+      } else if (https_fallback_) {
+        rbytes_transferred_ += buf->length();
+        upstream_.push_back(buf);
+      } else {
+        decoder_->process_bytes(buf);
+      }
+      OnUpstreamWriteFlush();
+      if (downstream_readable_) {
+        ReadStream();
+      }
+  });
 }
 
 void SsConnection::WriteStream() {
@@ -619,15 +621,15 @@ void SsConnection::WriteStream() {
   DCHECK(!write_inprogress_);
   scoped_refptr<SsConnection> self(this);
   write_inprogress_ = true;
-  s_async_write_some_([self](asio::error_code ec,
-                             size_t /*bytes_transferred*/) {
-        self->write_inprogress_ = false;
-        if (ec) {
-          self->ProcessSentData(ec, 0);
-          return;
-        }
-        self->WriteStreamInPipe();
-      });
+  s_async_write_some_([this, self](
+    asio::error_code ec, size_t /*bytes_transferred*/) {
+      write_inprogress_ = false;
+      if (ec) {
+        ProcessSentData(ec, 0);
+        return;
+      }
+      WriteStreamInPipe();
+  });
 }
 
 void SsConnection::WriteStreamInPipe() {
@@ -812,7 +814,7 @@ std::shared_ptr<IOBuf> SsConnection::GetNextUpstreamBuf(asio::error_code &ec) {
     ec = asio::error::try_again;
     return nullptr;
   }
-  std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
+  std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_DEBUF_SIZE);
   size_t read;
   do {
     read = s_read_some_(buf, ec);

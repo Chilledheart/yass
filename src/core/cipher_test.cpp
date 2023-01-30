@@ -37,7 +37,7 @@ class CipherTest : public ::testing::TestWithParam<size_t>,
 
   bool on_received_data(std::shared_ptr<IOBuf> buf) override {
     if (!recv_buf_) {
-      recv_buf_ = IOBuf::create(SOCKET_BUF_SIZE);
+      recv_buf_ = IOBuf::create(SOCKET_DEBUF_SIZE);
     }
     recv_buf_->reserve(0, buf->length());
     memcpy(recv_buf_->mutable_tail(), buf->data(), buf->length());

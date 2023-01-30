@@ -220,7 +220,7 @@ cipher::~cipher() {}
 
 void cipher::process_bytes(std::shared_ptr<IOBuf> ciphertext) {
   if (!chunk_) {
-    chunk_ = IOBuf::create(SOCKET_BUF_SIZE);
+    chunk_ = IOBuf::create(SOCKET_DEBUF_SIZE);
   }
   chunk_->reserve(0, ciphertext->length());
   memcpy(chunk_->mutable_tail(), ciphertext->data(), ciphertext->length());
@@ -263,7 +263,7 @@ void cipher::process_bytes(std::shared_ptr<IOBuf> ciphertext) {
 
 void cipher::encrypt(IOBuf* plaintext,
                      std::shared_ptr<IOBuf>* ciphertext) {
-  *ciphertext = IOBuf::create(SOCKET_BUF_SIZE);
+  *ciphertext = IOBuf::create(SOCKET_DEBUF_SIZE);
 
   if (!init_) {
     encrypt_salt(ciphertext->get());
