@@ -175,6 +175,7 @@ class stream {
           } while(false);
         }
         if (ec == asio::error::try_again || ec == asio::error::would_block) {
+          DCHECK_EQ(bytes_transferred, 0u);
           start_read(callback);
           return;
         }
@@ -197,6 +198,7 @@ class stream {
   void start_write(std::shared_ptr<IOBuf> buf, std::function<void()> callback) {
     Channel* channel = channel_;
     DCHECK(!write_inprogress_);
+    DCHECK(!buf->empty());
     write_inprogress_ = true;
     s_async_write_some_([this, channel, buf, callback](
       asio::error_code ec, size_t /*bytes_transferred*/) {
@@ -220,7 +222,14 @@ class stream {
         } while(false);
         buf->trimStart(bytes_transferred);
 
+        if (bytes_transferred &&
+            (ec == asio::error::try_again || ec == asio::error::would_block)) {
+          // Treat recevied bytes correctly, EAGAIN is possible in TLS layer
+          ec = asio::error_code();
+        }
+
         if (ec == asio::error::try_again || ec == asio::error::would_block) {
+          DCHECK_EQ(bytes_transferred, 0u);
           start_write(buf, callback);
           return;
         }
@@ -251,10 +260,14 @@ class stream {
     }
     eof_ = true;
     closed_ = true;
+
     asio::error_code ec;
     if (enable_tls_) {
       // FIXME use async_shutdown correctly
       ssl_socket_.shutdown(ec);
+      if (ec) {
+        VLOG(2) << "shutdown() error: " << ec;
+      }
     }
     socket_.close(ec);
     if (ec) {
@@ -323,7 +336,7 @@ class stream {
       eof_ = true;
     }
 
-    if (!connected_) {
+    if (!connected_ || closed_) {
       callback();
       return;
     }
@@ -355,7 +368,7 @@ class stream {
       eof_ = true;
     }
 
-    if (!connected_) {
+    if (!connected_ || closed_) {
       callback();
       return;
     }
