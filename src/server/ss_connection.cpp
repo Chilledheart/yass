@@ -586,6 +586,10 @@ void SsConnection::ReadStream() {
         ReadStream();
         return;
       }
+      if (ec) {
+        disconnected(ec);
+        return;
+      }
       buf->append(bytes_transferred);
       if (adapter_) {
         absl::string_view remaining_buffer(
