@@ -1201,6 +1201,8 @@ void Socks5Connection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
   }
 
   if (!channel_->connected()) {
+    VLOG(2) << "Connection (client) " << connection_id()
+            << " disabling reading";
     pending_data_ = buf;
     DisableStreamRead();
     return;
@@ -1410,6 +1412,8 @@ void Socks5Connection::connected() {
   // Re-process the read data in pending
   if (auto pending_data = std::move(pending_data_)) {
     OnStreamRead(pending_data);
+    VLOG(2) << "Connection (client) " << connection_id()
+            << " re-enabling reading";
     EnableStreamRead();
   }
 
@@ -1462,6 +1466,9 @@ void Socks5Connection::received(std::shared_ptr<IOBuf> buf) {
       if (ok && parser.status_code() == 200) {
         buf->trimStart(nparsed);
         buf->retreat(nparsed);
+        if (buf->empty()) {
+          return;
+        }
       } else {
         if (!ok) {
           LOG(WARNING) << "Connection (client) " << connection_id()
@@ -1477,9 +1484,7 @@ void Socks5Connection::received(std::shared_ptr<IOBuf> buf) {
         return;
       }
     }
-    if (!buf->empty()) {
-      downstream_.push_back(buf);
-    }
+    downstream_.push_back(buf);
   } else {
     decoder_->process_bytes(buf);
   }
