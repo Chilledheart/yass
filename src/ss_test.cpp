@@ -130,7 +130,11 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
         }
         recv_content_buffer->append(bytes_transferred);
         recv_mutex.unlock();
-        DCHECK_EQ(self->socket_.available(), 0u);
+        size_t inpending = self->socket_.available(ec);
+        static_cast<void>(inpending);
+        if (!ec) {
+          DCHECK_EQ(inpending, 0u);
+        }
         self->socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
     });
   }
