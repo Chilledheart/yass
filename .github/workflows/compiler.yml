@@ -283,7 +283,7 @@ jobs:
         shell: cmd
         run: |
           cd build
-          yass_test -alsologtostderr -v 2
+          yass_test -logtostderr -v 2
   linux-compiler-compatible:
     runs-on: ubuntu-20.04
     if: ${{ github.event_name != 'release' }}

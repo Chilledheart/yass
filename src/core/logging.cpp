@@ -184,11 +184,9 @@ typedef FILE* FileHandle;
 #include <absl/synchronization/mutex.h>
 
 #ifndef NDEBUG
-#define DEFAULT_ALSOLOGTOSTDERR true
 #define DEFAULT_LOGBUFLEVEL -1
 #define DEFAULT_VERBOSE_LEVEL 1
 #else
-#define DEFAULT_ALSOLOGTOSTDERR false
 #define DEFAULT_LOGBUFLEVEL 1
 #define DEFAULT_VERBOSE_LEVEL 2
 #endif
@@ -272,7 +270,7 @@ ABSL_FLAG(bool,
           "log messages go to stderr instead of logfiles");
 ABSL_FLAG(bool,
           alsologtostderr,
-          DEFAULT_ALSOLOGTOSTDERR,
+          false,
           "log messages go to stderr in addition to logfiles");
 ABSL_FLAG(bool,
           colorlogtostderr,

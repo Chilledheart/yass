@@ -512,7 +512,7 @@ func buildStageExecuteBuildScript() {
 	if runTestFlag {
 		checkCmd := []string{"ninja", "check"}
 		if verboseFlag > 0 {
-			checkCmd = []string{"./yass_test", "-v", fmt.Sprintf("%d", verboseFlag), "-alsologtostderr"}
+			checkCmd = []string{"./yass_test", "-v", fmt.Sprintf("%d", verboseFlag), "-logtostderr"}
 		}
 		cmdRun(checkCmd, true)
 	}
