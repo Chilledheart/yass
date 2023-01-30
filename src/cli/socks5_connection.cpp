@@ -1289,6 +1289,11 @@ void Socks5Connection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
     downstream_.push_back(buf);
   }
   if (!downstream_.empty()) {
+    if (CurrentState() == state_error) {
+      VLOG(2) << "Connection (client) " << connection_id()
+              << " failed to sending " << buf->length() << " bytes.";
+      return;
+    }
     WriteStream();
   }
 }
