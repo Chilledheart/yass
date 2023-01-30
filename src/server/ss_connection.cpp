@@ -1009,6 +1009,10 @@ void SsConnection::OnStreamWrite() {
             << " last data sent: shutting down";
     asio::error_code ec;
     s_shutdown_(ec);
+    if (ec) {
+      VLOG(2) << "Connection (server) " << connection_id()
+              << " erorr occured in shutdown: " << ec;
+    }
     return;
   }
 
@@ -1157,6 +1161,10 @@ void SsConnection::disconnected(asio::error_code ec) {
     VLOG(3) << "Connection (server) " << connection_id()
             << " upstream: last data sent: shutting down";
     s_shutdown_(ec);
+    if (ec) {
+      VLOG(2) << "Connection (server) " << connection_id()
+              << " erorr occured in shutdown: " << ec;
+    }
   }
 }
 
