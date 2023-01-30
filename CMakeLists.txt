@@ -1759,11 +1759,7 @@ if (BUILD_TESTS)
     third_party/googletest/googletest
     third_party/googletest/googlemock)
 
-  if (COMPILER_GCC)
-    target_compile_options(yass_gtest PRIVATE "-Wno-missing-declarations")
-  elseif(COMPILER_CLANG)
-    target_compile_options(yass_gtest PRIVATE "-Wno-missing-prototypes")
-  elseif(COMPILER_MSVC)
+  if(COMPILER_MSVC)
     # VS2019,VS2022 specific: storing 32-bit float result in memory, possible loss of performance
     target_compile_options(yass_gtest PRIVATE "/wd4738")
   endif()
