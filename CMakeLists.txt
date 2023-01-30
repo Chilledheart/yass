@@ -222,6 +222,7 @@ option(SERVER "Build with server." ON)
 option(GUI "Build against GUI." OFF)
 option(GUI_SANDBOX "Build against GUI sandbox (MAC Only)." OFF)
 option(BUILD_TESTS "Build with test." OFF)
+option(BUILD_BENCHMARKS "Build with benchmark." OFF)
 option(OPTIMIZED_PROTOC "Force protobuf compiler to be built with optimization" OFF)
 option(USE_LIBCXX "Build with libc++" ON)
 option(USE_MOLD "Build with mold linker" OFF)
@@ -1763,6 +1764,27 @@ if (BUILD_TESTS)
     # VS2019,VS2022 specific: storing 32-bit float result in memory, possible loss of performance
     target_compile_options(yass_gtest PRIVATE "/wd4738")
   endif()
+endif()
+
+# *****************************************************************************************
+#           google benchmark Library
+# *****************************************************************************************
+if (BUILD_BENCHMARKS)
+  set(BENCHMARK_ENABLE_TESTING "OFF" CACHE STRING "")
+  set(BENCHMARK_ENABLE_EXCEPTIONS "OFF" CACHE STRING "")
+  set(BENCHMARK_ENABLE_LTO "OFF" CACHE STRING "")
+  set(BENCHMARK_USE_LIBCXX "OFF" CACHE STRING "")
+  set(BENCHMARK_ENABLE_WERROR "OFF" CACHE STRING "")
+  set(BENCHMARK_FORCE_WERROR "OFF" CACHE STRING "")
+  set(BENCHMARK_BUILD_32_BITS "OFF" CACHE STRING "")
+  set(BENCHMARK_ENABLE_INSTALL "OFF" CACHE STRING "")
+  set(BENCHMARK_INSTALL_DOCS "OFF" CACHE STRING "")
+  set(BENCHMARK_DOWNLOAD_DEPENDENCIES "OFF" CACHE STRING "")
+  set(BENCHMARK_ENABLE_GTEST_TESTS "OFF" CACHE STRING "")
+  set(BENCHMARK_USE_BUNDLED_GTEST "OFF" CACHE STRING "")
+  set(BENCHMARK_ENABLE_ASSEMBLY_TESTS "OFF" CACHE STRING "")
+  set(HAVE_STD_REGEX "ON" CACHE STRING "")
+  add_subdirectory(third_party/benchmark)
 endif()
 
 # *****************************************************************************************

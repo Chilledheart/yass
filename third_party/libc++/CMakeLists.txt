@@ -591,3 +591,14 @@ include_directories(${libcxx_PUBLIC_INCLUDES})
 foreach(Definition ${libcxx_PUBLIC_DEFINITIONS})
   add_definitions(-D${Definition})
 endforeach()
+
+if (NOT MSVC)
+  export(
+    TARGETS cxxabi
+    FILE cxxabi.cmake
+  )
+endif()
+export(
+  TARGETS cxx
+  FILE cxx.cmake
+)
