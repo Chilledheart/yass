@@ -959,12 +959,6 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf,
                    << static_cast<int>(CurrentState()) << std::dec;
     };
   }
-#if 1
-  // Silence Read EOF error triggered by upstream disconnection
-  if (ec == asio::error::eof && channel_ && channel_->eof()) {
-    return;
-  }
-#endif
   if (ec) {
     SetState(state_error);
     OnDisconnect(ec);
