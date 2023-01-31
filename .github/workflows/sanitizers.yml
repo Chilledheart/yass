@@ -83,5 +83,5 @@ jobs:
       - name: Run tests
         run: |
           cd build
-          ./yass_test -logtostderr -v 1
+          ./yass_test -logtostderr -v 2
           cd ..
