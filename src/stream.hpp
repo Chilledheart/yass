@@ -151,12 +151,16 @@ class stream {
 
     s_async_read_some_([this, channel, callback, capacity]
       (asio::error_code ec, std::size_t bytes_transferred) {
+        read_inprogress_ = false;
         // Cancelled, safe to ignore
         if (ec == asio::error::operation_aborted) {
           callback();
           return;
         }
-        read_inprogress_ = false;
+        if (!connected_ || closed_) {
+          callback();
+          return;
+        }
         if (ec) {
           on_read(channel, nullptr, ec, bytes_transferred, callback);
           return;
@@ -165,6 +169,7 @@ class stream {
           callback();
           return;
         }
+
         std::shared_ptr<IOBuf> buf = IOBuf::create(capacity);
         if (!ec) {
           do {
@@ -184,9 +189,11 @@ class stream {
   }
 
   size_t read_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
+    DCHECK(!closed_ && "I/O on closed upstream connection");
     size_t read = s_read_some_(buf, ec);
     rbytes_transferred_ += read;
     if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
+      eof_ = true;
       on_disconnect(channel_, ec);
     }
     return read;
@@ -205,6 +212,10 @@ class stream {
         write_inprogress_ = false;
         // Cancelled, safe to ignore
         if (ec == asio::error::operation_aborted) {
+          callback();
+          return;
+        }
+        if (!connected_ || closed_) {
           callback();
           return;
         }
@@ -246,9 +257,11 @@ class stream {
   }
 
   size_t write_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
+    DCHECK(!closed_ && "I/O on closed upstream connection");
     size_t written = s_write_some_(buf, ec);
     wbytes_transferred_ += written;
     if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
+      eof_ = true;
       on_disconnect(channel_, ec);
     }
     return written;
@@ -336,11 +349,6 @@ class stream {
       eof_ = true;
     }
 
-    if (!connected_ || closed_) {
-      callback();
-      return;
-    }
-
     if (bytes_transferred) {
       channel->received(buf);
       if (read_enabled_) {
@@ -366,11 +374,6 @@ class stream {
 
     if (ec || bytes_transferred == 0) {
       eof_ = true;
-    }
-
-    if (!connected_ || closed_) {
-      callback();
-      return;
     }
 
     if (bytes_transferred) {
