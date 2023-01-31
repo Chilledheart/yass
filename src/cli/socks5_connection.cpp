@@ -799,6 +799,7 @@ void Socks5Connection::WriteStreamInPipe() {
 
 std::shared_ptr<IOBuf> Socks5Connection::GetNextDownstreamBuf(asio::error_code &ec) {
   if (!downstream_.empty()) {
+    DCHECK(!downstream_.front()->empty());
     ec = asio::error_code();
     return downstream_.front();
   }
@@ -909,6 +910,7 @@ void Socks5Connection::WriteUpstreamInPipe() {
 
 std::shared_ptr<IOBuf> Socks5Connection::GetNextUpstreamBuf(asio::error_code &ec) {
   if (!upstream_.empty()) {
+    DCHECK(!upstream_.front()->empty());
     ec = asio::error_code();
     return upstream_.front();
   }

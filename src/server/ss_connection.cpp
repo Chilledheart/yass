@@ -695,6 +695,7 @@ void SsConnection::WriteStreamInPipe() {
 
 std::shared_ptr<IOBuf> SsConnection::GetNextDownstreamBuf(asio::error_code &ec) {
   if (!downstream_.empty()) {
+    DCHECK(!downstream_.front()->empty());
     ec = asio::error_code();
     return downstream_.front();
   }
@@ -811,6 +812,7 @@ void SsConnection::WriteUpstreamInPipe() {
 
 std::shared_ptr<IOBuf> SsConnection::GetNextUpstreamBuf(asio::error_code &ec) {
   if (!upstream_.empty()) {
+    DCHECK(!upstream_.front()->empty());
     ec = asio::error_code();
     return upstream_.front();
   }
