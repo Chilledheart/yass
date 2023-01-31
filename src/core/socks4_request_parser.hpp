@@ -37,14 +37,14 @@ class request_parser {
           return std::make_tuple(indeterminate, i);
         }
         memcpy(&req.req_, &*i, sizeof(request_header));
+        if (req.version() != version) {
+          return std::make_tuple(bad, i);
+        }
         VLOG(3) << "socks4: anom request:" << std::hex << " ver: 0x"
                 << (int)req.version() << " cmd: 0x" << (int)req.command()
                 << std::dec << " addr: " << req.endpoint()
                 << " is_socks4a: " << std::boolalpha << req.is_socks4a()
                 << std::dec;
-        if (req.version() != version) {
-          return std::make_tuple(bad, i);
-        }
 
         i += sizeof(request_header);
         state_ = request_userid_start;
