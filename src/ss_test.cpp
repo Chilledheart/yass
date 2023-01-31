@@ -447,6 +447,24 @@ class SsEndToEndTest : public ::testing::Test {
     StartBackgroundTasks(); \
     GenerateRandContent(1024 * 1024); \
     SendRequestAndCheckResponse(); \
+  } \
+  TEST_F(SsEndToEndTest, name##_2M) { \
+    absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name); \
+    StartBackgroundTasks(); \
+    GenerateRandContent(2 * 1024 * 1024); \
+    SendRequestAndCheckResponse(); \
+  } \
+  TEST_F(SsEndToEndTest, name##_4M) { \
+    absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name); \
+    StartBackgroundTasks(); \
+    GenerateRandContent(4 * 1024 * 1024); \
+    SendRequestAndCheckResponse(); \
+  } \
+  TEST_F(SsEndToEndTest, name##_8M) { \
+    absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name); \
+    StartBackgroundTasks(); \
+    GenerateRandContent(8 * 1024 * 1024); \
+    SendRequestAndCheckResponse(); \
   }
 CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
