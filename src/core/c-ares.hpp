@@ -29,12 +29,12 @@ class CAresResolver : public RefCountedThreadSafe<CAresResolver> {
   int Init(int timeout_ms, int retries);
   void Destroy();
 
-  using AsyncResolveCallback = std::function<void(struct hostent *, asio::error_code ec)>;
-  void AsyncResolve(const std::string& name, AsyncResolveCallback cb);
+  using AsyncResolveCallback = std::function<void(asio::error_code ec,
+                                                  asio::ip::tcp::resolver::results_type)>;
+  void AsyncResolve(const std::string& host, const std::string& service,
+                    AsyncResolveCallback cb);
 
  private:
-  static void OnSockState(void *arg, fd_t fd, int readable, int writable);
-
   struct ResolverPerContext : public RefCountedThreadSafe<ResolverPerContext> {
     static scoped_refptr<ResolverPerContext> Create(asio::io_context &io_context, fd_t fd) {
       return MakeRefCounted<ResolverPerContext>(io_context, fd);
@@ -50,6 +50,10 @@ class CAresResolver : public RefCountedThreadSafe<CAresResolver> {
     bool read_enable = false;
     bool write_enable = false;
   };
+
+  static void OnSockState(void *arg, fd_t fd, int readable, int writable);
+  void OnSockStateReadable(scoped_refptr<ResolverPerContext> ctx, fd_t fd);
+  void OnSockStateWritable(scoped_refptr<ResolverPerContext> ctx, fd_t fd);
 
   asio::io_context &io_context_;
 
