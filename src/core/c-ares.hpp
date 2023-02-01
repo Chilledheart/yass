@@ -34,6 +34,8 @@ class CAresResolver : public RefCountedThreadSafe<CAresResolver> {
   void AsyncResolve(const std::string& host, const std::string& service,
                     AsyncResolveCallback cb);
 
+  void Cancel();
+
  private:
   static void OnSockState(void *arg, fd_t fd, int readable, int writable);
 
@@ -62,5 +64,6 @@ class CAresResolver : public RefCountedThreadSafe<CAresResolver> {
   char lookups_[3] = "fb";
   int timeout_ms_;
   asio::steady_timer resolve_timer_;
+  bool canceled_ = false;
 };
 #endif // H_C_ARES_HPP

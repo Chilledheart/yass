@@ -116,6 +116,9 @@ void CAresResolver::AsyncResolve(const std::string& host,
     [](void *arg, int status, int timeouts, struct ares_addrinfo *result) {
       auto ctx = std::unique_ptr<async_resolve_ctx>(reinterpret_cast<async_resolve_ctx*>(arg));
       auto self = ctx->self;
+      if (self->canceled_) {
+        return;
+      }
       auto cb = ctx->cb;
       asio::error_code ec;
       self->resolve_timer_.cancel(ec);
@@ -177,4 +180,10 @@ void CAresResolver::AsyncResolve(const std::string& host,
       fd_t r = ARES_SOCKET_BAD;
       ::ares_process_fd(self->channel_, r, w);
   });
+}
+
+void CAresResolver::Cancel() {
+  canceled_ = true;
+  asio::error_code ec;
+  resolve_timer_.cancel(ec);
 }
