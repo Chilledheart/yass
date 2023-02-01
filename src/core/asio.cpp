@@ -71,6 +71,7 @@ out:
     CertCloseStore(cert_store, CERT_CLOSE_STORE_FORCE_FLAG);
   }
 #elif defined(__APPLE__)
+  return;
   SecTrustSettingsDomain domain = kSecTrustSettingsDomainSystem;
   CFArrayRef certs;
   OSStatus status;
@@ -93,7 +94,7 @@ out:
       goto out;
     } else {
       const char* data = (const char *)CFDataGetBytePtr(data_ref);
-      int len = CFDataGetLength(data_ref);
+      CFIndex len = CFDataGetLength(data_ref);
       bssl::UniquePtr<X509> cert(d2i_X509(nullptr, (const unsigned char**)&data, len));
       if (X509_cmp_current_time(X509_get0_notBefore(cert.get())) < 0 &&
           X509_cmp_current_time(X509_get0_notAfter(cert.get())) >= 0) {

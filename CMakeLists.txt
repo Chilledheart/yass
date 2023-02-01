@@ -1851,6 +1851,9 @@ set(CARES_INSTALL OFF CACHE BOOL "")
 add_subdirectory(third_party/c-ares)
 include_directories(third_party/c-ares/include SYSTEM)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/third_party/c-ares SYSTEM)
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  target_link_libraries(c-ares PRIVATE resolver)
+endif()
 
 set(SUPPORT_LIBS c-ares ${SUPPORT_LIBS})
 
@@ -2249,6 +2252,7 @@ set(files
     src/crypto/xchacha20_poly1305_sodium_decrypter.cpp
     src/crypto/xchacha20_poly1305_sodium_encrypter.cpp
 
+    src/core/c-ares.cpp
     src/core/http_parser.cpp
     third_party/http_parser/http_parser.c
     )
@@ -2340,6 +2344,7 @@ set(hfiles
     src/crypto/xchacha20_poly1305_sodium_decrypter.hpp
     src/crypto/xchacha20_poly1305_sodium_encrypter.hpp
 
+    src/core/c-ares.hpp
     src/core/http_parser.hpp
     third_party/http_parser/http_parser.h
     )
@@ -2368,6 +2373,7 @@ add_library(yass_base STATIC
 
 target_link_libraries(yass_base PUBLIC
   asio
+  c-ares
   ${SUPPORT_LIBS})
 
 if (USE_LIBCXX)
@@ -2754,6 +2760,7 @@ if (BUILD_TESTS)
     src/ss_test.cpp
     src/config/config_test.cpp
     src/core/cipher_test.cpp
+    src/core/c-ares_test.cpp
     )
   target_include_directories(yass_test PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src

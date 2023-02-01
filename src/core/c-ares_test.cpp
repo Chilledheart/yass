@@ -1,0 +1,79 @@
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright (c) 2023 Chilledheart  */
+
+#include <gtest/gtest.h>
+#include <gtest/gtest-message.h>
+
+#include <gmock/gmock.h>
+
+#include "test_util.hpp"
+#include "core/c-ares.hpp"
+
+TEST(CARES_TEST, LocalfileBasic) {
+  asio::error_code ec;
+  asio::io_context io_context;
+  auto work_guard = std::make_unique<asio::io_context::work>(io_context);
+
+  io_context.post([&]() {
+    auto resolver = CAresResolver::Create(io_context);
+    int ret = resolver->Init(3000, 1);
+    if (ret) {
+      work_guard.reset();
+    }
+    ASSERT_EQ(ret, 0);
+    resolver->AsyncResolve("localhost", [&](
+      struct hostent *hostent, asio::error_code ec) {
+        if (ec) {
+          work_guard.reset();
+        }
+        ASSERT_FALSE(ec) << ec;
+        ASSERT_NE(hostent, nullptr);
+        ASSERT_NE(hostent->h_addr_list, nullptr);
+        char **paddr = hostent->h_addr_list;
+        while (*paddr) {
+          auto addr = asio::ip::address_v4(ntohl(*(const uint16_t*)*paddr));
+          EXPECT_TRUE(addr.is_loopback()) << addr;
+          ++paddr;
+        }
+
+        work_guard.reset();
+    });
+  });
+
+  io_context.run(ec);
+}
+
+TEST(CARES_TEST, RemoteBasic) {
+  asio::error_code ec;
+  asio::io_context io_context;
+  auto work_guard = std::make_unique<asio::io_context::work>(io_context);
+
+  io_context.post([&]() {
+    auto resolver = CAresResolver::Create(io_context);
+    int ret = resolver->Init(3000, 1);
+    if (ret) {
+      work_guard.reset();
+    }
+    ASSERT_EQ(ret, 0);
+    resolver->AsyncResolve("www.baidu.com", [&](
+      struct hostent *hostent, asio::error_code ec) {
+        if (ec) {
+          work_guard.reset();
+        }
+        ASSERT_FALSE(ec) << ec;
+        ASSERT_NE(hostent, nullptr);
+        ASSERT_NE(hostent->h_addr_list, nullptr);
+        char **paddr = hostent->h_addr_list;
+        while (*paddr) {
+          auto addr = asio::ip::address_v4(ntohl(*(const uint16_t*)*paddr));
+          EXPECT_FALSE(addr.is_loopback()) << addr;
+          EXPECT_FALSE(addr.is_unspecified()) << addr;
+          ++paddr;
+        }
+
+        work_guard.reset();
+    });
+  });
+
+  io_context.run(ec);
+}
