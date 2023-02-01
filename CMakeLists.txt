@@ -1851,11 +1851,11 @@ set(CARES_INSTALL OFF CACHE BOOL "")
 add_subdirectory(third_party/c-ares)
 include_directories(third_party/c-ares/include SYSTEM)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/third_party/c-ares SYSTEM)
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-  target_link_libraries(c-ares PRIVATE resolver)
-endif()
 
 set(SUPPORT_LIBS c-ares ${SUPPORT_LIBS})
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  set(SUPPORT_LIBS resolv ${SUPPORT_LIBS})
+endif()
 
 # *****************************************************************************************
 #           Nghttp2 Library
