@@ -7,6 +7,7 @@
 #include "channel.hpp"
 #include "connection.hpp"
 #include "core/cipher.hpp"
+#include "core/c-ares.hpp"
 #include "core/iobuf.hpp"
 #include "core/logging.hpp"
 #include "core/ref_counted.hpp"
@@ -289,7 +290,7 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
   std::shared_ptr<IOBuf> padding_in_middle_buf_;
 
   /// DNS resolver
-  asio::ip::tcp::resolver resolver_;
+  scoped_refptr<CAresResolver> resolver_;
 
   std::string remote_domain() const {
     std::stringstream ss;
