@@ -21,19 +21,15 @@ TEST(CARES_TEST, LocalfileBasic) {
       work_guard.reset();
     }
     ASSERT_EQ(ret, 0);
-    resolver->AsyncResolve("localhost", [&](
-      struct hostent *hostent, asio::error_code ec) {
+    resolver->AsyncResolve("localhost", "80", [&](
+      asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
         if (ec) {
           work_guard.reset();
         }
         ASSERT_FALSE(ec) << ec;
-        ASSERT_NE(hostent, nullptr);
-        ASSERT_NE(hostent->h_addr_list, nullptr);
-        char **paddr = hostent->h_addr_list;
-        while (*paddr) {
-          auto addr = asio::ip::address_v4(ntohl(*(const uint16_t*)*paddr));
+        for (auto result : results) {
+          auto addr = result.endpoint().address();
           EXPECT_TRUE(addr.is_loopback()) << addr;
-          ++paddr;
         }
 
         work_guard.reset();
@@ -55,20 +51,16 @@ TEST(CARES_TEST, RemoteBasic) {
       work_guard.reset();
     }
     ASSERT_EQ(ret, 0);
-    resolver->AsyncResolve("www.baidu.com", [&](
-      struct hostent *hostent, asio::error_code ec) {
+    resolver->AsyncResolve("www.baidu.com", "80", [&](
+      asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
         if (ec) {
           work_guard.reset();
         }
         ASSERT_FALSE(ec) << ec;
-        ASSERT_NE(hostent, nullptr);
-        ASSERT_NE(hostent->h_addr_list, nullptr);
-        char **paddr = hostent->h_addr_list;
-        while (*paddr) {
-          auto addr = asio::ip::address_v4(ntohl(*(const uint16_t*)*paddr));
+        for (auto result : results) {
+          auto addr = result.endpoint().address();
           EXPECT_FALSE(addr.is_loopback()) << addr;
           EXPECT_FALSE(addr.is_unspecified()) << addr;
-          ++paddr;
         }
 
         work_guard.reset();

@@ -29,8 +29,10 @@ class CAresResolver : public RefCountedThreadSafe<CAresResolver> {
   int Init(int timeout_ms, int retries);
   void Destroy();
 
-  using AsyncResolveCallback = std::function<void(struct hostent *, asio::error_code ec)>;
-  void AsyncResolve(const std::string& name, AsyncResolveCallback cb);
+  using AsyncResolveCallback = std::function<void(asio::error_code ec,
+                                                  asio::ip::tcp::resolver::results_type)>;
+  void AsyncResolve(const std::string& host, const std::string& service,
+                    AsyncResolveCallback cb);
 
  private:
   static void OnSockState(void *arg, fd_t fd, int readable, int writable);
