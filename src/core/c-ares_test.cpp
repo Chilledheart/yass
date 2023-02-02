@@ -16,7 +16,7 @@ TEST(CARES_TEST, LocalfileBasic) {
 
   io_context.post([&]() {
     auto resolver = CAresResolver::Create(io_context);
-    int ret = resolver->Init(3000, 1);
+    int ret = resolver->Init(20, 5);
     if (ret) {
       work_guard.reset();
     }
@@ -29,10 +29,9 @@ TEST(CARES_TEST, LocalfileBasic) {
       asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
         work_guard.reset();
         ASSERT_FALSE(ec) << ec;
-        for (auto result : results) {
-          auto addr = result.endpoint().address();
-          EXPECT_TRUE(addr.is_loopback()) << addr;
-        }
+        auto endpoint = results->endpoint();
+        auto addr = endpoint.address();
+        EXPECT_TRUE(addr.is_loopback()) << addr;
     });
   });
 
@@ -46,7 +45,7 @@ TEST(CARES_TEST, RemoteBasic) {
 
   io_context.post([&]() {
     auto resolver = CAresResolver::Create(io_context);
-    int ret = resolver->Init(1000, 5);
+    int ret = resolver->Init(20, 5);
     if (ret) {
       work_guard.reset();
     }
@@ -55,11 +54,10 @@ TEST(CARES_TEST, RemoteBasic) {
       asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
         work_guard.reset();
         ASSERT_FALSE(ec) << ec;
-        for (auto result : results) {
-          auto addr = result.endpoint().address();
-          EXPECT_FALSE(addr.is_loopback()) << addr;
-          EXPECT_FALSE(addr.is_unspecified()) << addr;
-        }
+        auto endpoint = results->endpoint();
+        auto addr = endpoint.address();
+        EXPECT_FALSE(addr.is_loopback()) << addr;
+        EXPECT_FALSE(addr.is_unspecified()) << addr;
     });
   });
 

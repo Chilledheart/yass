@@ -57,6 +57,8 @@ class CAresResolver : public RefCountedThreadSafe<CAresResolver> {
   void OnSockStateReadable(scoped_refptr<ResolverPerContext> ctx, fd_t fd);
   void OnSockStateWritable(scoped_refptr<ResolverPerContext> ctx, fd_t fd);
 
+  void OnAsyncWait();
+
   asio::io_context &io_context_;
 
   ares_channel channel_;

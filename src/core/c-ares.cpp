@@ -172,15 +172,27 @@ void CAresResolver::AsyncResolve(const std::string& host,
         addrinfo = next_addrinfo;
       }
   }, ctx.release());
+  OnAsyncWait();
+}
+
+void CAresResolver::Cancel() {
+  canceled_ = true;
+  asio::error_code ec;
+  resolve_timer_.cancel(ec);
+}
+
+void CAresResolver::OnAsyncWait() {
+  scoped_refptr<CAresResolver> self(this);
   struct timeval tv {};
   struct timeval *tvp = ::ares_timeout(channel_, nullptr, &tv);
-  if (tvp) {
-    resolve_timer_.expires_from_now(std::chrono::seconds(tvp->tv_sec) +
-                                    std::chrono::microseconds(tvp->tv_usec + 10));
+  if (!tvp) {
+    return;
   }
-  scoped_refptr<CAresResolver> self(this);
-  resolve_timer_.async_wait([self](
-    asio::error_code ec){
+
+  resolve_timer_.expires_from_now(std::chrono::seconds(tvp->tv_sec) +
+                                  std::chrono::microseconds(tvp->tv_usec + 10));
+  resolve_timer_.async_wait([this, self](
+    asio::error_code ec) {
       if (ec == asio::error::operation_aborted) {
         return;
       }
@@ -189,12 +201,7 @@ void CAresResolver::AsyncResolve(const std::string& host,
       }
       fd_t r = ARES_SOCKET_BAD;
       fd_t w = ARES_SOCKET_BAD;
-      ::ares_process_fd(self->channel_, r, w);
+      ::ares_process_fd(channel_, r, w);
+      OnAsyncWait();
   });
-}
-
-void CAresResolver::Cancel() {
-  canceled_ = true;
-  asio::error_code ec;
-  resolve_timer_.cancel(ec);
 }
