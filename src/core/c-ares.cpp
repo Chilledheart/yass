@@ -134,10 +134,12 @@ void CAresResolver::AsyncResolve(const std::string& host,
       asio::error_code ec;
       self->resolve_timer_.cancel(ec);
       if (timeouts > 0) {
+        ares_freeaddrinfo(result);
         cb(asio::error::timed_out, {});
         return;
       }
       if (status != ARES_SUCCESS) {
+        ares_freeaddrinfo(result);
         cb(asio::error::not_found, {});
         return;
       }
@@ -167,10 +169,12 @@ void CAresResolver::AsyncResolve(const std::string& host,
       addrinfo = addrinfo->ai_next;
       delete prev_addrinfo;
       cb(asio::error_code(), asio::ip::tcp::resolver::results_type::create(addrinfo, ctx->host, ctx->service));
-      while ((next_addrinfo = addrinfo->ai_next)) {
+      while (addrinfo) {
+        next_addrinfo = addrinfo->ai_next;
         delete addrinfo;
         addrinfo = next_addrinfo;
       }
+      ares_freeaddrinfo(result);
   }, ctx.release());
   OnAsyncWait();
 }
