@@ -169,7 +169,7 @@ void CAresResolver::AsyncResolve(const std::string& host,
   ctx->service = service;
   struct ares_addrinfo_hints hints = {};
   hints.ai_flags = ARES_AI_CANONNAME;
-  hints.ai_family = AF_UNSPEC;
+  hints.ai_family = AF_INET;
   hints.ai_socktype = 0;
   hints.ai_protocol = 0;
   ::ares_getaddrinfo(channel_, host.c_str(), service.c_str(), &hints,

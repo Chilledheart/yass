@@ -21,11 +21,7 @@ TEST(CARES_TEST, LocalfileBasic) {
       work_guard.reset();
     }
     ASSERT_EQ(ret, 0);
-#ifdef __MINGW32__ // Wine has some bugs with localhost resolving
-    resolver->AsyncResolve("127.0.0.1", "80", [&](
-#else
     resolver->AsyncResolve("localhost", "80", [&](
-#endif
       asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
         work_guard.reset();
         ASSERT_FALSE(ec) << ec;
