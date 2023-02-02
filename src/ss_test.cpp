@@ -108,34 +108,37 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
 
     scoped_refptr<ContentProviderConnection> self(this);
     asio::async_write(socket_, const_buffer(content_buffer),
-      [self](asio::error_code ec, size_t bytes_transferred) {
+      [this, self](asio::error_code ec, size_t bytes_transferred) {
         if (ec || bytes_transferred != content_buffer.length()) {
-          LOG(WARNING) << "Connection (content-provider) " << self->connection_id()
+          LOG(WARNING) << "Connection (content-provider) " << connection_id()
                        << " Failed to transfer data: " << ec;
         } else {
-          VLOG(2) << "Connection (content-provider) " << self->connection_id()
+          VLOG(2) << "Connection (content-provider) " << connection_id()
                   << " written: " << bytes_transferred << " bytes";
         }
+        done_[0] = true;
+        shutdown();
     });
 
     recv_mutex.lock();
     asio::async_read(socket_, mutable_buffer(*recv_content_buffer),
-      [self](asio::error_code ec, size_t bytes_transferred) {
+      [this, self](asio::error_code ec, size_t bytes_transferred) {
         if (ec || bytes_transferred != content_buffer.length()) {
-          LOG(WARNING) << "Connection (content-provider) " << self->connection_id()
+          LOG(WARNING) << "Connection (content-provider) " << connection_id()
                        << " Failed to transfer data: " << ec;
         } else {
-          VLOG(2) << "Connection (content-provider) " << self->connection_id()
+          VLOG(2) << "Connection (content-provider) " << connection_id()
                   << " read: " << bytes_transferred << " bytes";
         }
         recv_content_buffer->append(bytes_transferred);
         recv_mutex.unlock();
-        size_t inpending = self->socket_.available(ec);
+        size_t inpending = socket_.available(ec);
         static_cast<void>(inpending);
         if (!ec) {
-          DCHECK_EQ(inpending, 0u);
+          EXPECT_EQ(inpending, 0u);
         }
-        self->socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+        done_[1] = true;
+        shutdown();
     });
   }
 
@@ -149,6 +152,21 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
       cb();
     }
   }
+
+ private:
+  void shutdown() {
+    if (!done_[0] || !done_[1]) {
+      return;
+    }
+    asio::error_code ec;
+    socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+    if (ec) {
+      LOG(WARNING) << "Connection (content-provider) " << connection_id()
+                   << " shutdown failure: " << ec;
+    }
+  }
+
+  bool done_[2] = { false, false };
 };
 
 class ContentProviderConnectionFactory : public ConnectionFactory {
