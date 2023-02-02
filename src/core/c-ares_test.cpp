@@ -27,16 +27,12 @@ TEST(CARES_TEST, LocalfileBasic) {
     resolver->AsyncResolve("localhost", "80", [&](
 #endif
       asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
-        if (ec) {
-          work_guard.reset();
-        }
+        work_guard.reset();
         ASSERT_FALSE(ec) << ec;
         for (auto result : results) {
           auto addr = result.endpoint().address();
           EXPECT_TRUE(addr.is_loopback()) << addr;
         }
-
-        work_guard.reset();
     });
   });
 
@@ -50,24 +46,20 @@ TEST(CARES_TEST, RemoteBasic) {
 
   io_context.post([&]() {
     auto resolver = CAresResolver::Create(io_context);
-    int ret = resolver->Init(3000, 1);
+    int ret = resolver->Init(1000, 5);
     if (ret) {
       work_guard.reset();
     }
     ASSERT_EQ(ret, 0);
-    resolver->AsyncResolve("www.baidu.com", "80", [&](
+    resolver->AsyncResolve("www.apple.com", "80", [&](
       asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
-        if (ec) {
-          work_guard.reset();
-        }
+        work_guard.reset();
         ASSERT_FALSE(ec) << ec;
         for (auto result : results) {
           auto addr = result.endpoint().address();
           EXPECT_FALSE(addr.is_loopback()) << addr;
           EXPECT_FALSE(addr.is_unspecified()) << addr;
         }
-
-        work_guard.reset();
     });
   });
 

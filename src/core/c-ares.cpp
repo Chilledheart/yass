@@ -32,7 +32,7 @@ int CAresResolver::Init(int timeout_ms, int retries) {
   ares_opts_.sock_state_cb = &CAresResolver::OnSockState;
   int ret = ::ares_init_options(&channel_, &ares_opts_,
                                 ARES_OPT_TIMEOUTMS | ARES_OPT_TRIES |
-                                ARES_OPT_SOCK_STATE_CB | ARES_OPT_LOOKUPS);
+                                ARES_OPT_LOOKUPS | ARES_OPT_SOCK_STATE_CB);
   if (ret) {
     LOG(WARNING) << "ares_init_options failure: " << ares_strerror(ret);
   }
@@ -48,9 +48,10 @@ void CAresResolver::OnSockState(void *arg, fd_t fd, int readable, int writable) 
   auto iter = self->fd_map_.find(fd);
   if (!readable && !writable) {
     if (iter != self->fd_map_.end()) {
-      iter->second->read_enable = false;
-      iter->second->write_enable = false;
+      auto ctx = iter->second;
       self->fd_map_.erase(iter);
+      ctx->read_enable = false;
+      ctx->write_enable = false;
     }
     return;
   }
@@ -76,13 +77,13 @@ void CAresResolver::OnSockStateReadable(scoped_refptr<ResolverPerContext> ctx, f
     if (!ctx->read_enable) {
       return;
     }
+    ctx->read_enable = false;
     if (ec) {
       return;
     }
     fd_t r = fd;
     fd_t w = ARES_SOCKET_BAD;
     ::ares_process_fd(self->channel_, r, w);
-    self->OnSockStateReadable(ctx, fd);
   });
 }
 
@@ -93,13 +94,13 @@ void CAresResolver::OnSockStateWritable(scoped_refptr<ResolverPerContext> ctx, f
     if (!ctx->write_enable) {
       return;
     }
+    ctx->write_enable = false;
     if (ec) {
       return;
     }
     fd_t r = ARES_SOCKET_BAD;
     fd_t w = fd;
     ::ares_process_fd(self->channel_, r, w);
-    self->OnSockStateReadable(ctx, fd);
   });
 }
 
@@ -118,10 +119,10 @@ void CAresResolver::AsyncResolve(const std::string& host,
   ctx->host = host;
   ctx->service = service;
   struct ares_addrinfo_hints hints = {};
+  hints.ai_flags = ARES_AI_CANONNAME;
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = 0;
   hints.ai_protocol = 0;
-  hints.ai_flags = ARES_AI_CANONNAME;
   ::ares_getaddrinfo(channel_, host.c_str(), service.c_str(), &hints,
     [](void *arg, int status, int timeouts, struct ares_addrinfo *result) {
       auto ctx = std::unique_ptr<async_resolve_ctx>(reinterpret_cast<async_resolve_ctx*>(arg));
