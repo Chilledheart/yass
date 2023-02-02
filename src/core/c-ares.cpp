@@ -175,7 +175,7 @@ void CAresResolver::AsyncResolve(const std::string& host,
   struct timeval *tvp = ::ares_timeout(channel_, nullptr, &tv);
   if (tvp) {
     resolve_timer_.expires_from_now(std::chrono::seconds(tvp->tv_sec) +
-                                    std::chrono::microseconds(tvp->tv_usec));
+                                    std::chrono::microseconds(tvp->tv_usec + 10));
   }
   scoped_refptr<CAresResolver> self(this);
   resolve_timer_.async_wait([self](
