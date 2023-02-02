@@ -2,6 +2,55 @@
 /* Copyright (c) 2023 Chilledheart  */
 
 #include "core/c-ares.hpp"
+
+namespace {
+
+asio::error_code AresToAsioError(int status) {
+  asio::error_code ec;
+  switch(status) {
+    case ARES_SUCCESS:
+      break;
+    case ARES_ENODATA:
+    case ARES_EFORMERR:
+    case ARES_ESERVFAIL:
+    case ARES_ENOTFOUND:
+    case ARES_ENOTIMP:
+    case ARES_EBADRESP:
+    case ARES_ENONAME:
+      ec = asio::error::host_not_found;
+      break;
+    case ARES_EREFUSED:
+    case ARES_ECONNREFUSED:
+      ec = asio::error::connection_refused;
+      break;
+    case ARES_ETIMEOUT:
+      ec = asio::error::timed_out;
+      break;
+    case ARES_EOF:
+      ec = asio::error::eof;
+      break;
+    case ARES_EFILE:
+      ec = asio::error::bad_descriptor;
+      break;
+    case ARES_ENOMEM:
+      ec = asio::error::no_memory;
+      break;
+    case ARES_EDESTRUCTION:
+      ec = asio::error::no_memory;
+      break;
+    case ARES_EBADQUERY:
+    case ARES_EBADNAME:
+    case ARES_EBADFAMILY:
+    case ARES_EBADSTR:
+    case ARES_EBADHINTS:
+    default:
+      ec = asio::error::invalid_argument;
+      break;
+  }
+  return ec;
+}
+} // anonymous namespace
+
 class CAresLibLoader {
  public:
   CAresLibLoader() {
@@ -134,13 +183,14 @@ void CAresResolver::AsyncResolve(const std::string& host,
       asio::error_code ec;
       self->resolve_timer_.cancel(ec);
       if (timeouts > 0) {
-        ares_freeaddrinfo(result);
+        ::ares_freeaddrinfo(result);
         cb(asio::error::timed_out, {});
         return;
       }
       if (status != ARES_SUCCESS) {
-        ares_freeaddrinfo(result);
-        cb(asio::error::not_found, {});
+        asio::error_code ec = AresToAsioError(status);
+        ::ares_freeaddrinfo(result);
+        cb(ec, {});
         return;
       }
       // Convert struct ares_addrinfo into normal struct addrinfo
@@ -169,12 +219,13 @@ void CAresResolver::AsyncResolve(const std::string& host,
       addrinfo = addrinfo->ai_next;
       delete prev_addrinfo;
       cb(asio::error_code(), asio::ip::tcp::resolver::results_type::create(addrinfo, ctx->host, ctx->service));
+      // free both of addrinfo and ares_addrinfo structures
       while (addrinfo) {
         next_addrinfo = addrinfo->ai_next;
         delete addrinfo;
         addrinfo = next_addrinfo;
       }
-      ares_freeaddrinfo(result);
+      ::ares_freeaddrinfo(result);
   }, ctx.release());
   OnAsyncWait();
 }
