@@ -114,11 +114,7 @@ SsConnection::SsConnection(asio::io_context& io_context,
                  enable_upstream_tls, enable_tls,
                  upstream_ssl_ctx, ssl_ctx),
       state_(),
-      resolver_(CAresResolver::Create(*io_context_)) {
-    int ret = resolver_->Init(1000, 5);
-    CHECK_EQ(ret, 0) << "c-ares initialize failure";
-    static_cast<void>(ret);
-}
+      resolver_(io_context) {}
 
 SsConnection::~SsConnection() {
   VLOG(1) << "Connection (server) " << connection_id() << " freed memory";
@@ -176,7 +172,7 @@ void SsConnection::close() {
   if (channel_) {
     channel_->close();
   }
-  resolver_->Cancel();
+  resolver_.cancel();
   auto cb = std::move(disconnect_cb_);
   if (cb) {
     cb();
@@ -557,7 +553,7 @@ void SsConnection::ReadHandshakeViaHttps() {
 
 void SsConnection::ResolveDns(std::shared_ptr<IOBuf> buf) {
   scoped_refptr<SsConnection> self(this);
-  resolver_->AsyncResolve(request_.domain_name(), std::to_string(request_.port()),
+  resolver_.async_resolve(request_.domain_name(), std::to_string(request_.port()),
     [this, self, buf](
       asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
       if (closed_) {

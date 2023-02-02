@@ -290,7 +290,7 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
   std::shared_ptr<IOBuf> padding_in_middle_buf_;
 
   /// DNS resolver
-  scoped_refptr<CAresResolver> resolver_;
+  asio::ip::tcp::resolver resolver_;
 
   std::string remote_domain() const {
     std::stringstream ss;
