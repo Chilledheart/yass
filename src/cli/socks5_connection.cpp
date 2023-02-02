@@ -1554,9 +1554,7 @@ void Socks5Connection::disconnected(asio::error_code ec) {
   if (downstream_.empty()) {
     VLOG(2) << "Connection (client) " << connection_id()
             << " upstream: last data sent: shutting down";
-    socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
-  } else {
-    socket_.shutdown(asio::ip::tcp::socket::shutdown_receive, ec);
+    socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
   }
 }
 
