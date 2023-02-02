@@ -121,7 +121,7 @@ SsConnection::SsConnection(asio::io_context& io_context,
 }
 
 SsConnection::~SsConnection() {
-  VLOG(2) << "Connection (server) " << connection_id() << " freed memory";
+  VLOG(1) << "Connection (server) " << connection_id() << " freed memory";
 }
 
 void SsConnection::start() {
@@ -159,7 +159,7 @@ void SsConnection::close() {
   size_t bytes = 0;
   for (auto buf : downstream_)
     bytes += buf->length();
-  VLOG(2) << "Connection (server) " << connection_id()
+  VLOG(1) << "Connection (server) " << connection_id()
           << " disconnected with client at stage: "
           << SsConnection::state_to_str(CurrentState())
           << " and remaining: " << bytes << " bytes.";
@@ -171,7 +171,7 @@ void SsConnection::close() {
   }
   socket_.close(ec);
   if (ec) {
-    VLOG(2) << "close() error: " << ec;
+    VLOG(1) << "close() error: " << ec;
   }
   if (channel_) {
     channel_->close();
@@ -274,13 +274,13 @@ bool SsConnection::OnEndHeadersForStream(
   http2::adapter::Http2StreamId stream_id) {
 
   if (request_map_[":method"] != "CONNECT") {
-    VLOG(2) << "Connection (server) " << connection_id()
+    VLOG(1) << "Connection (server) " << connection_id()
       << " Unexpected method: " << request_map_[":method"];
     return false;
   }
   auto auth = request_map_["proxy-authorization"];
   if (auth != "basic " + GetProxyAuthorizationIdentity()) {
-    VLOG(2) << "Connection (server) " << connection_id()
+    VLOG(1) << "Connection (server) " << connection_id()
       << " Unexpected auth token.";
     return false;
   }
@@ -291,13 +291,13 @@ bool SsConnection::OnEndHeadersForStream(
     LOG(INFO) << "Connection (server) " << connection_id() << " for "
       << peer_endpoint << " Padding support enabled.";
   } else {
-    VLOG(2) << "Connection (server) " << connection_id() << " for "
+    VLOG(1) << "Connection (server) " << connection_id() << " for "
       << peer_endpoint << " Padding support disabled.";
     padding_support_ = false;
   }
   std::vector<std::string> host_and_port = absl::StrSplit(request_map_[":authority"], ":");
   if (host_and_port.size() != 2) {
-    VLOG(2) << "Connection (server) " << connection_id()
+    VLOG(1) << "Connection (server) " << connection_id()
       << " Unexpected authority: " << request_map_[":authority"];
     return false;
   }
@@ -519,7 +519,7 @@ void SsConnection::ReadHandshakeViaHttps() {
       bool ok;
       int nparsed = parser.Parse(buf, &ok);
       if (nparsed) {
-        VLOG(4) << "Connection (server) " << connection_id()
+        VLOG(3) << "Connection (server) " << connection_id()
                 << " http: "
                 << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
       }
@@ -540,10 +540,10 @@ void SsConnection::ReadHandshakeViaHttps() {
           buf->reserve(header.size(), 0);
           buf->prepend(header.size());
           memcpy(buf->mutable_data(), header.c_str(), header.size());
-          VLOG(4) << "Connection (server) " << connection_id()
+          VLOG(3) << "Connection (server) " << connection_id()
                   << " Host: " << http_host_ << " PORT: " << http_port_;
         } else {
-          VLOG(4) << "Connection (server) " << connection_id()
+          VLOG(3) << "Connection (server) " << connection_id()
                   << " CONNECT: " << http_host_ << " PORT: " << http_port_;
         }
         ProcessReceivedData(buf, ec, buf->length());
@@ -569,7 +569,7 @@ void SsConnection::ResolveDns(std::shared_ptr<IOBuf> buf) {
       }
       // Get a list of endpoints corresponding to the SOCKS 5 domain name.
       remote_endpoint_ = results->endpoint();
-      VLOG(3) << "Connection (server) " << connection_id()
+      VLOG(2) << "Connection (server) " << connection_id()
               << " resolved address: " << remote_domain()
               << " to: " << remote_endpoint_;
       SetState(state_stream);
@@ -754,7 +754,7 @@ repeat_fetch:
     goto out;
   }
   if (read) {
-    VLOG(3) << "Connection (server) " << connection_id()
+    VLOG(2) << "Connection (server) " << connection_id()
             << " upstream: received reply (pipe): " << read << " bytes.";
   } else {
     goto out;
@@ -834,7 +834,7 @@ void SsConnection::WriteUpstreamInPipe() {
     } while(false);
     buf->trimStart(written);
     bytes_transferred += written;
-    VLOG(3) << "Connection (server) " << connection_id()
+    VLOG(2) << "Connection (server) " << connection_id()
             << " upstream: sent request (pipe): " << written << " bytes"
             << " ec: " << ec << " and data to write: "
             << buf->length();
@@ -880,7 +880,7 @@ std::shared_ptr<IOBuf> SsConnection::GetNextUpstreamBuf(asio::error_code &ec) {
     return nullptr;
   }
   if (read) {
-    VLOG(3) << "Connection (server) " << connection_id()
+    VLOG(2) << "Connection (server) " << connection_id()
             << " received data (pipe): " << read << " bytes.";
   } else {
     return nullptr;
@@ -919,7 +919,7 @@ std::shared_ptr<IOBuf> SsConnection::GetNextUpstreamBuf(asio::error_code &ec) {
 void SsConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf,
                                        asio::error_code ec,
                                        size_t bytes_transferred) {
-  VLOG(3) << "Connection (server) " << connection_id()
+  VLOG(2) << "Connection (server) " << connection_id()
           << " received data: " << bytes_transferred << " bytes"
           << " ec: " << ec;
 
@@ -966,7 +966,7 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf,
 
 void SsConnection::ProcessSentData(asio::error_code ec,
                                    size_t bytes_transferred) {
-  VLOG(3) << "Connection (server) " << connection_id()
+  VLOG(2) << "Connection (server) " << connection_id()
           << " sent data: " << bytes_transferred << " bytes"
           << " ec: " << ec << " and data to write: " << downstream_.size();
 
@@ -1035,7 +1035,7 @@ void SsConnection::OnConnect() {
 void SsConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
   // queue limit to downstream read
   if (upstream_.size() >= MAX_UPSTREAM_DEPS && downstream_readable_) {
-    VLOG(2) << "Connection (server) " << connection_id()
+    VLOG(1) << "Connection (server) " << connection_id()
             << " disabling reading";
     DisableStreamRead();
   }
@@ -1053,12 +1053,12 @@ void SsConnection::OnStreamWrite() {
   /* shutdown the socket if upstream is eof and all remaining data sent */
   bool nodata = !data_frame_ || !data_frame_->SelectPayloadLength(1).first;
   if (channel_ && channel_->eof() && nodata && downstream_.empty()) {
-    VLOG(3) << "Connection (server) " << connection_id()
+    VLOG(2) << "Connection (server) " << connection_id()
             << " last data sent: shutting down";
     asio::error_code ec;
     s_shutdown_(ec);
     if (ec) {
-      VLOG(2) << "Connection (server) " << connection_id()
+      VLOG(1) << "Connection (server) " << connection_id()
               << " erorr occured in shutdown: " << ec;
     }
     return;
@@ -1066,7 +1066,7 @@ void SsConnection::OnStreamWrite() {
 
   /* disable queue limit to re-enable upstream read */
   if (channel_ && channel_->connected() && downstream_.size() < MAX_DOWNSTREAM_DEPS && !upstream_readable_) {
-    VLOG(2) << "Connection (server) " << connection_id()
+    VLOG(1) << "Connection (server) " << connection_id()
             << " re-enabling reading from upstream";
     upstream_readable_ = true;
     scoped_refptr<SsConnection> self(this);
@@ -1137,7 +1137,7 @@ void SsConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
 }
 
 void SsConnection::connected() {
-  VLOG(2) << "Connection (server) " << connection_id()
+  VLOG(1) << "Connection (server) " << connection_id()
           << " remote: established upstream connection with: "
           << remote_domain();
   scoped_refptr<SsConnection> self(this);
@@ -1149,12 +1149,12 @@ void SsConnection::connected() {
 }
 
 void SsConnection::received(std::shared_ptr<IOBuf> buf) {
-  VLOG(3) << "Connection (server) " << connection_id()
+  VLOG(2) << "Connection (server) " << connection_id()
           << " upstream: received reply: " << buf->length() << " bytes.";
 
   // queue limit to upstream read
   if (downstream_.size() >= MAX_DOWNSTREAM_DEPS && upstream_readable_) {
-    VLOG(2) << "Connection (server) " << connection_id()
+    VLOG(1) << "Connection (server) " << connection_id()
             << " disabling reading from upstream";
     upstream_readable_ = false;
     channel_->disable_read();
@@ -1178,7 +1178,7 @@ void SsConnection::received(std::shared_ptr<IOBuf> buf) {
 }
 
 void SsConnection::sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred) {
-  VLOG(3) << "Connection (server) " << connection_id()
+  VLOG(2) << "Connection (server) " << connection_id()
           << " upstream: sent request: " << bytes_transferred << " bytes.";
   DCHECK(!upstream_.empty() && upstream_[0] == buf);
   upstream_.pop_front();
@@ -1189,14 +1189,14 @@ void SsConnection::sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred) {
   OnUpstreamWriteFlush();
 
   if (upstream_.size() < MAX_UPSTREAM_DEPS && !downstream_readable_) {
-    VLOG(2) << "Connection (server) " << connection_id()
+    VLOG(1) << "Connection (server) " << connection_id()
             << " re-enabling reading";
     EnableStreamRead();
   }
 }
 
 void SsConnection::disconnected(asio::error_code ec) {
-  VLOG(2) << "Connection (server) " << connection_id()
+  VLOG(1) << "Connection (server) " << connection_id()
           << " upstream: lost connection with: " << remote_domain()
           << " due to " << ec
           << " and data to write: " << downstream_.size();
@@ -1206,11 +1206,11 @@ void SsConnection::disconnected(asio::error_code ec) {
   /* delay the socket's close because downstream is buffered */
   bool nodata = !data_frame_ || !data_frame_->SelectPayloadLength(1).first;
   if (nodata && downstream_.empty()) {
-    VLOG(3) << "Connection (server) " << connection_id()
+    VLOG(2) << "Connection (server) " << connection_id()
             << " upstream: last data sent: shutting down";
     s_shutdown_(ec);
     if (ec) {
-      VLOG(2) << "Connection (server) " << connection_id()
+      VLOG(1) << "Connection (server) " << connection_id()
               << " erorr occured in shutdown: " << ec;
     }
   }

@@ -200,7 +200,7 @@ Socks5Connection::Socks5Connection(asio::io_context& io_context,
       state_() {}
 
 Socks5Connection::~Socks5Connection() {
-  VLOG(2) << "Connection (client) " << connection_id() << " freed memory";
+  VLOG(1) << "Connection (client) " << connection_id() << " freed memory";
 };
 
 void Socks5Connection::start() {
@@ -221,7 +221,7 @@ void Socks5Connection::close() {
   size_t bytes = 0;
   for (auto buf : downstream_)
     bytes += buf->length();
-  VLOG(2) << "Connection (client) " << connection_id()
+  VLOG(1) << "Connection (client) " << connection_id()
           << " disconnected with client at stage: "
           << Socks5Connection::state_to_str(CurrentState())
           << " and remaining: " << bytes << " bytes.";
@@ -229,7 +229,7 @@ void Socks5Connection::close() {
   closed_ = true;
   socket_.close(ec);
   if (ec) {
-    VLOG(2) << "close() error: " << ec;
+    VLOG(1) << "close() error: " << ec;
   }
   if (channel_) {
     channel_->close();
@@ -293,7 +293,7 @@ bool Socks5Connection::OnEndHeadersForStream(
     LOG(INFO) << "Connection (client) " << connection_id() << " for "
       << remote_endpoint_ << " Padding support enabled.";
   } else {
-    VLOG(2) << "Connection (client) " << connection_id() << " for "
+    VLOG(1) << "Connection (client) " << connection_id() << " for "
       << remote_endpoint_ <<  " Padding support disabled.";
     padding_support_ = false;
   }
@@ -500,7 +500,7 @@ void Socks5Connection::ReadSocks5Handshake() {
 asio::error_code Socks5Connection::OnReadRedirHandshake(
     std::shared_ptr<IOBuf> buf) {
 #ifdef __linux__
-  VLOG(3) << "Connection (client) " << connection_id()
+  VLOG(2) << "Connection (client) " << connection_id()
           << " try redir handshake";
   scoped_refptr<Socks5Connection> self(this);
   auto peer_address = socket_.remote_endpoint();
@@ -518,7 +518,7 @@ asio::error_code Socks5Connection::OnReadRedirHandshake(
     endpoint = IPaddressFromSockAddr(&ss, ss_len);
   }
   if (ret == 0 && !IsIPUnspecified(endpoint)) {
-    VLOG(3) << "Connection (client) " << connection_id()
+    VLOG(2) << "Connection (client) " << connection_id()
             << " redir stream from " << endpoint_ << " to " << endpoint;
 
     // no handshake required to be written
@@ -551,7 +551,7 @@ asio::error_code Socks5Connection::OnReadSocks5MethodSelect(
     buf->retreat(method_select_request_.length());
     SetState(state_method_select);
 
-    VLOG(3) << "Connection (client) " << connection_id()
+    VLOG(2) << "Connection (client) " << connection_id()
             << " socks5 method select";
     return asio::error_code();
   }
@@ -560,7 +560,7 @@ asio::error_code Socks5Connection::OnReadSocks5MethodSelect(
 
 asio::error_code Socks5Connection::OnReadSocks5Handshake(
     std::shared_ptr<IOBuf> buf) {
-  VLOG(3) << "Connection (client) " << connection_id()
+  VLOG(2) << "Connection (client) " << connection_id()
           << " try socks5 handshake";
   socks5::request_parser::result_type result;
   std::tie(result, std::ignore) = request_parser_.parse(
@@ -572,7 +572,7 @@ asio::error_code Socks5Connection::OnReadSocks5Handshake(
     buf->retreat(s5_request_.length());
     SetState(state_socks5_handshake);
 
-    VLOG(3) << "Connection (client) " << connection_id()
+    VLOG(2) << "Connection (client) " << connection_id()
             << " socks5 handshake began";
     return asio::error_code();
   }
@@ -581,7 +581,7 @@ asio::error_code Socks5Connection::OnReadSocks5Handshake(
 
 asio::error_code Socks5Connection::OnReadSocks4Handshake(
     std::shared_ptr<IOBuf> buf) {
-  VLOG(3) << "Connection (client) " << connection_id()
+  VLOG(2) << "Connection (client) " << connection_id()
           << " try socks4 handshake";
 
   socks4::request_parser::result_type result;
@@ -593,7 +593,7 @@ asio::error_code Socks5Connection::OnReadSocks4Handshake(
     buf->retreat(s4_request_.length());
     SetState(state_socks4_handshake);
 
-    VLOG(3) << "Connection (client) " << connection_id()
+    VLOG(2) << "Connection (client) " << connection_id()
             << " socks4 handshake began";
     return asio::error_code();
   }
@@ -602,7 +602,7 @@ asio::error_code Socks5Connection::OnReadSocks4Handshake(
 
 asio::error_code Socks5Connection::OnReadHttpRequest(
     std::shared_ptr<IOBuf> buf) {
-  VLOG(3) << "Connection (client) " << connection_id()
+  VLOG(2) << "Connection (client) " << connection_id()
           << " try http handshake";
 
   HttpRequestParser parser;
@@ -610,7 +610,7 @@ asio::error_code Socks5Connection::OnReadHttpRequest(
   bool ok;
   int nparsed = parser.Parse(buf, &ok);
   if (nparsed) {
-    VLOG(4) << "Connection (client) " << connection_id()
+    VLOG(3) << "Connection (client) " << connection_id()
             << " http: "
             << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
   }
@@ -629,15 +629,15 @@ asio::error_code Socks5Connection::OnReadHttpRequest(
       buf->reserve(header.size(), 0);
       buf->prepend(header.size());
       memcpy(buf->mutable_data(), header.c_str(), header.size());
-      VLOG(4) << "Connection (client) " << connection_id()
+      VLOG(3) << "Connection (client) " << connection_id()
               << " Host: " << http_host_ << " PORT: " << http_port_;
     } else {
-      VLOG(4) << "Connection (client) " << connection_id()
+      VLOG(3) << "Connection (client) " << connection_id()
               << " CONNECT: " << http_host_ << " PORT: " << http_port_;
     }
 
     SetState(state_http_handshake);
-    VLOG(3) << "Connection (client) " << connection_id()
+    VLOG(2) << "Connection (client) " << connection_id()
             << " http handshake began";
     return asio::error_code();
   }
@@ -844,7 +844,7 @@ std::shared_ptr<IOBuf> Socks5Connection::GetNextDownstreamBuf(asio::error_code &
     return nullptr;
   }
   if (read) {
-    VLOG(3) << "Connection (client) " << connection_id()
+    VLOG(2) << "Connection (client) " << connection_id()
             << " upstream: received reply (pipe): " << read << " bytes.";
   } else {
     return nullptr;
@@ -916,7 +916,7 @@ void Socks5Connection::WriteUpstreamInPipe() {
     } while(false);
     buf->trimStart(written);
     bytes_transferred += written;
-    VLOG(3) << "Connection (client) " << connection_id()
+    VLOG(2) << "Connection (client) " << connection_id()
             << " upstream: sent request (pipe): " << written << " bytes"
             << " ec: " << ec << " and data to write: "
             << buf->length();
@@ -965,7 +965,7 @@ repeat_fetch:
     goto out;
   }
   if (read) {
-    VLOG(3) << "Connection (client) " << connection_id()
+    VLOG(2) << "Connection (client) " << connection_id()
             << " received data (pipe): " << read << " bytes.";
   } else {
     goto out;
@@ -1096,7 +1096,7 @@ void Socks5Connection::ProcessReceivedData(
     asio::error_code ec,
     size_t bytes_transferred) {
 
-  VLOG(3) << "Connection (client) " << connection_id()
+  VLOG(2) << "Connection (client) " << connection_id()
           << " received data: " << bytes_transferred << " bytes"
           << " ec: " << ec;
 
@@ -1115,7 +1115,7 @@ void Socks5Connection::ProcessReceivedData(
       case state_socks5_handshake:
         ec = PerformCmdOpsV5(&s5_request_, &s5_reply_);
         WriteHandshake();
-        VLOG(3) << "Connection (client) " << connection_id()
+        VLOG(2) << "Connection (client) " << connection_id()
                 << " socks5 handshake finished";
         if (CurrentState() == state_stream) {
           goto handle_stream;
@@ -1124,7 +1124,7 @@ void Socks5Connection::ProcessReceivedData(
       case state_socks4_handshake:
         ec = PerformCmdOpsV4(&s4_request_, &s4_reply_);
         WriteHandshake();
-        VLOG(3) << "Connection (client) " << connection_id()
+        VLOG(2) << "Connection (client) " << connection_id()
                 << " socks4 handshake finished";
         if (CurrentState() == state_stream) {
           goto handle_stream;
@@ -1133,7 +1133,7 @@ void Socks5Connection::ProcessReceivedData(
       case state_http_handshake:
         ec = PerformCmdOpsHttp();
         WriteHandshake();
-        VLOG(3) << "Connection (client) " << connection_id()
+        VLOG(2) << "Connection (client) " << connection_id()
                 << " http handshake finished";
         if (CurrentState() == state_stream) {
           goto handle_stream;
@@ -1164,7 +1164,7 @@ void Socks5Connection::ProcessReceivedData(
 void Socks5Connection::ProcessSentData(asio::error_code ec,
                                        size_t bytes_transferred) {
 
-  VLOG(3) << "Connection (client) " << connection_id()
+  VLOG(2) << "Connection (client) " << connection_id()
           << " sent data: " << bytes_transferred << " bytes"
           << " ec: " << ec << " and data to write: " << downstream_.size();
 
@@ -1223,13 +1223,13 @@ void Socks5Connection::OnConnect() {
 void Socks5Connection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
   // queue limit to downstream read
   if (upstream_.size() >= MAX_UPSTREAM_DEPS && downstream_readable_) {
-    VLOG(2) << "Connection (client) " << connection_id()
+    VLOG(1) << "Connection (client) " << connection_id()
             << " disabling reading";
     DisableStreamRead();
   }
 
   if (!channel_->connected()) {
-    VLOG(2) << "Connection (client) " << connection_id()
+    VLOG(1) << "Connection (client) " << connection_id()
             << " disabling reading";
     pending_data_ = buf;
     DisableStreamRead();
@@ -1259,7 +1259,7 @@ void Socks5Connection::OnStreamWrite() {
 
   /* shutdown the socket if upstream is eof and all remaining data sent */
   if (channel_->eof() && downstream_.empty()) {
-    VLOG(3) << "Connection (client) " << connection_id()
+    VLOG(2) << "Connection (client) " << connection_id()
             << " last data sent: shutting down";
     asio::error_code ec;
     socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
@@ -1268,7 +1268,7 @@ void Socks5Connection::OnStreamWrite() {
 
   /* disable queue limit to re-enable upstream read */
   if (channel_->connected() && downstream_.size() < MAX_DOWNSTREAM_DEPS && !upstream_readable_) {
-    VLOG(2) << "Connection (client) " << connection_id()
+    VLOG(1) << "Connection (client) " << connection_id()
             << " re-enabling reading from upstream";
     upstream_readable_ = true;
     scoped_refptr<Socks5Connection> self(this);
@@ -1320,7 +1320,7 @@ void Socks5Connection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
   }
   if (!downstream_.empty() && !write_inprogress_) {
     if (CurrentState() == state_error) {
-      VLOG(2) << "Connection (client) " << connection_id()
+      VLOG(1) << "Connection (client) " << connection_id()
               << " failed to sending " << buf->length() << " bytes.";
       return;
     }
@@ -1334,7 +1334,7 @@ void Socks5Connection::OnUpstreamWriteFlush() {
 
 void Socks5Connection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf && !buf->empty()) {
-    VLOG(3) << "Connection (client) " << connection_id()
+    VLOG(2) << "Connection (client) " << connection_id()
             << " upstream: ready to send request: " << buf->length() << " bytes.";
     upstream_.push_back(buf);
   }
@@ -1346,7 +1346,7 @@ void Socks5Connection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
 }
 
 void Socks5Connection::connected() {
-  VLOG(3) << "Connection (client) " << connection_id()
+  VLOG(2) << "Connection (client) " << connection_id()
           << " remote: established upstream connection with: "
           << remote_domain();
 
@@ -1440,7 +1440,7 @@ void Socks5Connection::connected() {
   // Re-process the read data in pending
   if (auto pending_data = std::move(pending_data_)) {
     OnStreamRead(pending_data);
-    VLOG(2) << "Connection (client) " << connection_id()
+    VLOG(1) << "Connection (client) " << connection_id()
             << " re-enabling reading";
     EnableStreamRead();
   }
@@ -1453,12 +1453,12 @@ void Socks5Connection::connected() {
 }
 
 void Socks5Connection::received(std::shared_ptr<IOBuf> buf) {
-  VLOG(3) << "Connection (client) " << connection_id()
+  VLOG(2) << "Connection (client) " << connection_id()
           << " upstream: received reply: " << buf->length() << " bytes.";
 
   // queue limit to upstream read
   if (downstream_.size() >= MAX_DOWNSTREAM_DEPS && upstream_readable_) {
-    VLOG(2) << "Connection (client) " << connection_id()
+    VLOG(1) << "Connection (client) " << connection_id()
             << " disabling reading from upstream";
     upstream_readable_ = false;
     channel_->disable_read();
@@ -1487,7 +1487,7 @@ void Socks5Connection::received(std::shared_ptr<IOBuf> buf) {
       int nparsed = parser.Parse(buf, &ok);
 
       if (nparsed) {
-        VLOG(4) << "Connection (client) " << connection_id()
+        VLOG(3) << "Connection (client) " << connection_id()
                 << " http: "
                 << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
       }
@@ -1520,7 +1520,7 @@ void Socks5Connection::received(std::shared_ptr<IOBuf> buf) {
 }
 
 void Socks5Connection::sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred) {
-  VLOG(3) << "Connection (client) " << connection_id()
+  VLOG(2) << "Connection (client) " << connection_id()
           << " upstream: sent request: " << bytes_transferred << " bytes.";
   DCHECK(!upstream_.empty() && upstream_[0] == buf);
   upstream_.pop_front();
@@ -1536,14 +1536,14 @@ void Socks5Connection::sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred
     OnUpstreamWriteFlush();
   }
   if (upstream_.size() < MAX_UPSTREAM_DEPS && !downstream_readable_) {
-    VLOG(2) << "Connection (client) " << connection_id()
+    VLOG(1) << "Connection (client) " << connection_id()
             << " re-enabling reading";
     EnableStreamRead();
   }
 }
 
 void Socks5Connection::disconnected(asio::error_code ec) {
-  VLOG(2) << "Connection (client) " << connection_id()
+  VLOG(1) << "Connection (client) " << connection_id()
           << " upstream: lost connection with: " << remote_domain()
           << " due to " << ec
           << " and data to write: " << downstream_.size();
@@ -1552,7 +1552,7 @@ void Socks5Connection::disconnected(asio::error_code ec) {
   channel_->close();
   /* delay the socket's close because downstream is buffered */
   if (downstream_.empty()) {
-    VLOG(3) << "Connection (client) " << connection_id()
+    VLOG(2) << "Connection (client) " << connection_id()
             << " upstream: last data sent: shutting down";
     socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
   } else {

@@ -141,7 +141,7 @@ class ContentServer {
 
       auto conns = std::move(connections_);
       for (auto conn : conns) {
-        VLOG(2) << "Connections (" << factory_.Name() << ")"
+        VLOG(1) << "Connections (" << factory_.Name() << ")"
                 << " closing remaining connection " << conn->connection_id();
         conn->close();
       }
@@ -199,7 +199,7 @@ class ContentServer {
     if (delegate_) {
       delegate_->OnConnect(connection_id);
     }
-    VLOG(2) << "Connection (" << factory_.Name() << ") "
+    VLOG(1) << "Connection (" << factory_.Name() << ") "
             << connection_id << " with " << conn->peer_endpoint()
             << " connected";
     conn->start();
@@ -207,7 +207,7 @@ class ContentServer {
 
   void on_disconnect(scoped_refptr<ConnectionType> conn) {
     int connection_id = conn->connection_id();
-    VLOG(2) << "Connection (" << factory_.Name() << ") "
+    VLOG(1) << "Connection (" << factory_.Name() << ") "
             << connection_id << " disconnected (has ref "
             << std::boolalpha << conn->HasAtLeastOneRef()
             << std::noboolalpha << ")";
@@ -241,12 +241,12 @@ class ContentServer {
       if (ec) {
         return;
       }
-      VLOG(2) << "Using certificate file: " << certificate_chain_file;
+      VLOG(1) << "Using certificate file: " << certificate_chain_file;
       ssl_ctx_.use_private_key_file(private_key_file, asio::ssl::context::pem, ec);
       if (ec) {
         return;
       }
-      VLOG(2) << "Using private key file: " << private_key_file;
+      VLOG(1) << "Using private key file: " << private_key_file;
     }
 
     // Load Certificates (if set)
@@ -257,7 +257,7 @@ class ContentServer {
       if (ec) {
         return;
       }
-      VLOG(2) << "Using certificate (in-memory)";
+      VLOG(1) << "Using certificate (in-memory)";
       ssl_ctx_.use_private_key(asio::const_buffer(private_key_.data(),
                                                   private_key_.size()),
                                asio::ssl::context::pem,
@@ -265,7 +265,7 @@ class ContentServer {
       if (ec) {
         return;
       }
-      VLOG(2) << "Using privated key (in-memory)";
+      VLOG(1) << "Using privated key (in-memory)";
     }
   }
 
@@ -278,7 +278,7 @@ class ContentServer {
     SSL_CTX *ctx = ssl_ctx_.native_handle();
     alpn_ctx_t *alpn_ctx = new alpn_ctx_t({this, next_connection_id_});
     SSL_CTX_set_alpn_select_cb(ctx, &ContentServer::on_alpn_select, alpn_ctx);
-    VLOG(2) << "Alpn support (server) enabled for connection " << next_connection_id_;
+    VLOG(1) << "Alpn support (server) enabled for connection " << next_connection_id_;
   }
 
   static int on_alpn_select(SSL *ssl,
@@ -296,7 +296,7 @@ class ContentServer {
       }
       auto alpn = std::string(reinterpret_cast<const char*>(in + 1), in[0]);
       if (!server->https_fallback_ && alpn == "h2") {
-        VLOG(2) << "Connection (" << server->factory_.Name() << ") "
+        VLOG(1) << "Connection (" << server->factory_.Name() << ") "
           << connection_id << " Alpn support (server) chosen: " << alpn;
         server->set_https_fallback(connection_id, false);
         *out = in + 1;
@@ -304,7 +304,7 @@ class ContentServer {
         return SSL_TLSEXT_ERR_OK;
       }
       if (alpn == "http/1.1") {
-        VLOG(2) << "Connection (" << server->factory_.Name() << ") "
+        VLOG(1) << "Connection (" << server->factory_.Name() << ") "
           << connection_id << " Alpn support (server) chosen: " << alpn;
         server->set_https_fallback(connection_id, true);
         *out = in + 1;
@@ -316,7 +316,7 @@ class ContentServer {
     }
 
   err:
-    VLOG(2) << "Connection (" << server->factory_.Name() << ") "
+    VLOG(1) << "Connection (" << server->factory_.Name() << ") "
       << connection_id << " Alpn support (server) fatal error";
     return SSL_TLSEXT_ERR_ALERT_FATAL;
   }
@@ -345,7 +345,7 @@ class ContentServer {
       if (ec) {
         return;
       }
-      VLOG(2) << "Using upstream certificate file: " << certificate_chain_file;
+      VLOG(1) << "Using upstream certificate file: " << certificate_chain_file;
     }
     const auto &cert = upstream_certificate_;
     if (!cert.empty()) {
@@ -353,7 +353,7 @@ class ContentServer {
       if (ec) {
         return;
       }
-      VLOG(2) << "Using upstream certificate (in-memory)";
+      VLOG(1) << "Using upstream certificate (in-memory)";
     }
 
     SSL_CTX *ctx = upstream_ssl_ctx_.native_handle();
@@ -374,7 +374,7 @@ class ContentServer {
       ec = asio::error::access_denied;
       return;
     }
-    VLOG(2) << "Alpn support (client) enabled";
+    VLOG(1) << "Alpn support (client) enabled";
   }
 
  private:

@@ -76,7 +76,7 @@ size_t Worker::currentConnections() const {
 
 void Worker::WorkFunc() {
   asio::error_code ec;
-  VLOG(2) << "background thread started";
+  VLOG(1) << "background thread started";
 
   work_guard_ = std::make_unique<asio::io_context::work>(io_context_);
   io_context_.run(ec);
@@ -85,7 +85,7 @@ void Worker::WorkFunc() {
   }
   io_context_.reset();
 
-  VLOG(2) << "background thread stopped";
+  VLOG(1) << "background thread stopped";
 }
 
 void Worker::on_resolve_local(asio::error_code ec,
