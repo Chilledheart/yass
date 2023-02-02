@@ -16,7 +16,7 @@ TEST(CARES_TEST, LocalfileBasic) {
 
   io_context.post([&]() {
     auto resolver = CAresResolver::Create(io_context);
-    int ret = resolver->Init(20, 5);
+    int ret = resolver->Init(200, 1);
     if (ret) {
       work_guard.reset();
     }
@@ -41,7 +41,7 @@ TEST(CARES_TEST, RemoteBasic) {
 
   io_context.post([&]() {
     auto resolver = CAresResolver::Create(io_context);
-    int ret = resolver->Init(20, 5);
+    int ret = resolver->Init(200, 1);
     if (ret) {
       work_guard.reset();
     }
