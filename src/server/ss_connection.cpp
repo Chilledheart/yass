@@ -557,8 +557,7 @@ void SsConnection::ReadHandshakeViaHttps() {
 
 void SsConnection::ResolveDns(std::shared_ptr<IOBuf> buf) {
   scoped_refptr<SsConnection> self(this);
-  resolver_->AsyncResolve(request_.domain_name(),
-    std::to_string(request_.port()),
+  resolver_->AsyncResolve(request_.domain_name(), std::to_string(request_.port()),
     [this, self, buf](
       asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
       if (closed_) {
@@ -571,7 +570,7 @@ void SsConnection::ResolveDns(std::shared_ptr<IOBuf> buf) {
       // Get a list of endpoints corresponding to the SOCKS 5 domain name.
       remote_endpoint_ = results->endpoint();
       VLOG(3) << "Connection (server) " << connection_id()
-              << " resolved address: " << request_.domain_name()
+              << " resolved address: " << remote_domain()
               << " to: " << remote_endpoint_;
       SetState(state_stream);
       OnConnect();
@@ -643,10 +642,10 @@ void SsConnection::ReadStream() {
 }
 
 void SsConnection::WriteStream() {
+  DCHECK(!write_inprogress_);
   if (write_inprogress_) {
     return;
   }
-  DCHECK(!write_inprogress_);
   scoped_refptr<SsConnection> self(this);
   write_inprogress_ = true;
   s_async_write_some_([this, self](
@@ -1117,7 +1116,7 @@ void SsConnection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
     downstream_.push_back(buf);
   }
 
-  if (!downstream_.empty()) {
+  if (!downstream_.empty() && !write_inprogress_) {
     WriteStream();
   }
 }
