@@ -59,6 +59,7 @@ bool ReadConfig() {
       (config_impl->Read("cipher_method", &FLAGS_method) ||
        /* old version field: lower priority */
        config_impl->Read("method", &FLAGS_method));
+  required_fields_loaded &= config_impl->Read("username", &FLAGS_username);
   required_fields_loaded &= config_impl->Read("password", &FLAGS_password);
   required_fields_loaded &= config_impl->Read("local", &FLAGS_local_host);
   required_fields_loaded &= config_impl->Read("local_port", &FLAGS_local_port);
@@ -134,6 +135,7 @@ bool SaveConfig() {
   all_fields_written &= config_impl->Write("server_port", FLAGS_server_port);
   all_fields_written &= config_impl->Write("method", FLAGS_method);
   all_fields_written &= config_impl->Write("cipher_method", FLAGS_method);
+  all_fields_written &= config_impl->Write("username", FLAGS_username);
   all_fields_written &= config_impl->Write("password", FLAGS_password);
   all_fields_written &= config_impl->Write("local", FLAGS_local_host);
   all_fields_written &= config_impl->Write("local_port", FLAGS_local_port);

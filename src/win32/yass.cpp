@@ -363,6 +363,7 @@ BOOL CYassApp::CheckFirstInstance() {
 void CYassApp::SaveConfig() {
   auto server_host = frame_->GetServerHost();
   auto server_port = StringToInteger(frame_->GetServerPort());
+  auto username = frame_->GetUsername();
   auto password = frame_->GetPassword();
   auto method = frame_->GetMethod();
   auto local_host = frame_->GetLocalHost();
@@ -377,6 +378,7 @@ void CYassApp::SaveConfig() {
 
   absl::SetFlag(&FLAGS_server_host, server_host);
   absl::SetFlag(&FLAGS_server_port, server_port.value());
+  absl::SetFlag(&FLAGS_username, username);
   absl::SetFlag(&FLAGS_password, password);
   absl::SetFlag(&FLAGS_cipher_method, method);
   absl::SetFlag(&FLAGS_local_host, local_host);

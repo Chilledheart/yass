@@ -40,6 +40,7 @@ class CYassFrame {
  public:
   std::string GetServerHost();
   std::string GetServerPort();
+  std::string GetUsername();
   std::string GetPassword();
   cipher_method GetMethod();
   std::string GetLocalHost();
@@ -63,6 +64,7 @@ class CYassFrame {
 
   HWND server_host_label_;
   HWND server_port_label_;
+  HWND username_label_;
   HWND password_label_;
   HWND method_label_;
   HWND local_host_label_;
@@ -72,6 +74,7 @@ class CYassFrame {
 
   HWND server_host_edit_;
   HWND server_port_edit_;
+  HWND username_edit_;
   HWND password_edit_;
   HWND method_combo_box_;
   HWND local_host_edit_;
