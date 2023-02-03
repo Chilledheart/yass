@@ -148,6 +148,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   [self UpdateStatusBar];
   [self.serverHost setEditable:FALSE];
   [self.serverPort setEditable:FALSE];
+  [self.username setEditable:FALSE];
   [self.password setEditable:FALSE];
   [self.cipherMethod setEditable:FALSE];
   [self.localHost setEditable:FALSE];
@@ -160,6 +161,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   [self UpdateStatusBar];
   [self.serverHost setEditable:TRUE];
   [self.serverPort setEditable:TRUE];
+  [self.username setEditable:TRUE];
   [self.password setEditable:TRUE];
   [self.cipherMethod setEditable:TRUE];
   [self.localHost setEditable:TRUE];
@@ -172,6 +174,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   [self UpdateStatusBar];
   [self.serverHost setEditable:TRUE];
   [self.serverPort setEditable:TRUE];
+  [self.username setEditable:TRUE];
   [self.password setEditable:TRUE];
   [self.cipherMethod setEditable:TRUE];
   [self.localHost setEditable:TRUE];
@@ -220,6 +223,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   self.serverHost.stringValue =
       SysUTF8ToNSString(absl::GetFlag(FLAGS_server_host));
   self.serverPort.intValue = absl::GetFlag(FLAGS_server_port);
+  self.username.stringValue = SysUTF8ToNSString(absl::GetFlag(FLAGS_username));
   self.password.stringValue = SysUTF8ToNSString(absl::GetFlag(FLAGS_password));
   auto cipherMethod =
       static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method));

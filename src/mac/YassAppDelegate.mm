@@ -164,6 +164,7 @@
           NSApplication.sharedApplication.mainWindow.contentViewController;
   auto server_host = SysNSStringToUTF8(viewController.serverHost.stringValue);
   auto server_port = viewController.serverPort.intValue;
+  auto username = SysNSStringToUTF8(viewController.username.stringValue);
   auto password = SysNSStringToUTF8(viewController.password.stringValue);
   auto method_string =
       SysNSStringToUTF8(viewController.cipherMethod.stringValue);
@@ -179,6 +180,7 @@
 
   absl::SetFlag(&FLAGS_server_host, server_host);
   absl::SetFlag(&FLAGS_server_port, server_port);
+  absl::SetFlag(&FLAGS_username, username);
   absl::SetFlag(&FLAGS_password, password);
   absl::SetFlag(&FLAGS_cipher_method, method);
   absl::SetFlag(&FLAGS_local_host, local_host);
