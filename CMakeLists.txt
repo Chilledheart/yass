@@ -1586,7 +1586,7 @@ if (NOT MSVC)
 
   ## fortify source code. Also, fortified build may fail when optimizations are
   ## disabled, so only do that for Release build.
-  if (NOT WIN32)
+  if (NOT WIN32 AND NOT APPLE)
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -D_FORTIFY_SOURCE=2")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -D_FORTIFY_SOURCE=2")
   endif()
