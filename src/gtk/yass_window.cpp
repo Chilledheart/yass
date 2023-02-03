@@ -147,6 +147,7 @@ YASSWindow::YASSWindow()
 
   auto server_host_label_ = gtk_label_new("Server Host");
   auto server_port_label_ = gtk_label_new("Server Port");
+  auto username_label_ = gtk_label_new("Username");
   auto password_label_ = gtk_label_new("Password");
   auto method_label_ = gtk_label_new("Cipher/Method");
   auto local_host_label_ = gtk_label_new("Local Host");
@@ -156,15 +157,17 @@ YASSWindow::YASSWindow()
 
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_host_label_), 0, 0, 1, 1);
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_port_label_), 0, 1, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(password_label_), 0, 2, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(method_label_), 0, 3, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_host_label_), 0, 4, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_port_label_), 0, 5, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_label_), 0, 6, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_label_), 0, 7, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(username_label_), 0, 2, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(password_label_), 0, 3, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(method_label_), 0, 4, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_host_label_), 0, 5, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_port_label_), 0, 6, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_label_), 0, 7, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_label_), 0, 8, 1, 1);
 
   server_host_ = GTK_ENTRY(gtk_entry_new());
   server_port_ = GTK_ENTRY(gtk_entry_new());
+  username_ = GTK_ENTRY(gtk_entry_new());
   password_ = GTK_ENTRY(gtk_entry_new());
   static const char* const method_names[] = {
 #define XX(num, name, string) string,
@@ -197,12 +200,13 @@ YASSWindow::YASSWindow()
 
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_host_), 1, 0, 1, 1);
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_port_), 1, 1, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(password_), 1, 2, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(method_), 1, 3, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_host_), 1, 4, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_port_), 1, 5, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_), 1, 6, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_), 1, 7, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(username_), 1, 2, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(password_), 1, 3, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(method_), 1, 4, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_host_), 1, 5, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_port_), 1, 6, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_), 1, 7, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_), 1, 8, 1, 1);
 
 #if GTK_CHECK_VERSION(3, 12, 0)
   gtk_widget_set_margin_start(GTK_WIDGET(right_panel_grid), 10);
@@ -257,6 +261,10 @@ std::string YASSWindow::GetServerHost() {
 
 std::string YASSWindow::GetServerPort() {
   return gtk_entry_get_text(server_port_);
+}
+
+std::string YASSWindow::GetUsername() {
+  return gtk_entry_get_text(username_);
 }
 
 std::string YASSWindow::GetPassword() {
@@ -315,6 +323,7 @@ void YASSWindow::Started() {
   UpdateStatusBar();
   gtk_widget_set_sensitive(GTK_WIDGET(server_host_), false);
   gtk_widget_set_sensitive(GTK_WIDGET(server_port_), false);
+  gtk_widget_set_sensitive(GTK_WIDGET(username_), false);
   gtk_widget_set_sensitive(GTK_WIDGET(password_), false);
   gtk_widget_set_sensitive(GTK_WIDGET(method_), false);
   gtk_widget_set_sensitive(GTK_WIDGET(local_host_), false);
@@ -328,6 +337,7 @@ void YASSWindow::StartFailed() {
   UpdateStatusBar();
   gtk_widget_set_sensitive(GTK_WIDGET(server_host_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(server_port_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(username_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(password_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(method_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(local_host_), true);
@@ -349,6 +359,7 @@ void YASSWindow::Stopped() {
   UpdateStatusBar();
   gtk_widget_set_sensitive(GTK_WIDGET(server_host_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(server_port_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(username_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(password_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(method_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(local_host_), true);
@@ -362,6 +373,7 @@ void YASSWindow::Stopped() {
 void YASSWindow::LoadChanges() {
   auto server_host_str = absl::GetFlag(FLAGS_server_host);
   auto server_port_str = std::to_string(absl::GetFlag(FLAGS_server_port));
+  auto username_str = absl::GetFlag(FLAGS_username);
   auto password_str = absl::GetFlag(FLAGS_password);
   int32_t cipher_method = absl::GetFlag(FLAGS_cipher_method);
   auto local_host_str = absl::GetFlag(FLAGS_local_host);
@@ -370,6 +382,7 @@ void YASSWindow::LoadChanges() {
 
   gtk_entry_set_text(server_host_, server_host_str.c_str());
   gtk_entry_set_text(server_port_, server_port_str.c_str());
+  gtk_entry_set_text(username_, username_str.c_str());
   gtk_entry_set_text(password_, password_str.c_str());
 
   static const int method_ids[] = {

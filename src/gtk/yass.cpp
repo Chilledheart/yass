@@ -240,6 +240,7 @@ void YASSApp::OnDispatch() {
 void YASSApp::SaveConfig() {
   auto server_host = main_window_->GetServerHost();
   auto server_port = StringToInteger(main_window_->GetServerPort());
+  auto username = main_window_->GetUsername();
   auto password = main_window_->GetPassword();
   auto method_string = main_window_->GetMethod();
   auto method = to_cipher_method(method_string);
@@ -255,6 +256,7 @@ void YASSApp::SaveConfig() {
 
   absl::SetFlag(&FLAGS_server_host, server_host);
   absl::SetFlag(&FLAGS_server_port, server_port.value());
+  absl::SetFlag(&FLAGS_username, username);
   absl::SetFlag(&FLAGS_password, password);
   absl::SetFlag(&FLAGS_cipher_method, method);
   absl::SetFlag(&FLAGS_local_host, local_host);

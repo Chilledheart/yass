@@ -30,6 +30,7 @@ class YASSWindow {
   // Right Panel
   GtkEntry* server_host_;
   GtkEntry* server_port_;
+  GtkEntry* username_;
   GtkEntry* password_;
   GtkComboBoxText* method_;
   GtkEntry* local_host_;
@@ -44,6 +45,7 @@ class YASSWindow {
  public:
   std::string GetServerHost();
   std::string GetServerPort();
+  std::string GetUsername();
   std::string GetPassword();
   std::string GetMethod();
   std::string GetLocalHost();
