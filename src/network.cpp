@@ -29,8 +29,13 @@ ABSL_FLAG(int32_t, tcp_connection_timeout, 75000, "TCP connection timeout (BSD-l
 ABSL_FLAG(int32_t, tcp_user_timeout, 500, "TCP user timeout (Linux only)");
 ABSL_FLAG(int32_t, so_linger_timeout, 30, "SO Linger timeout");
 
+#ifdef OS_FREEBSD
+ABSL_FLAG(int32_t, so_snd_buffer, 1024 * 1024, "Socket Send Buffer");
+ABSL_FLAG(int32_t, so_rcv_buffer, 1024 * 1024, "Socket Receive Buffer");
+#else
 ABSL_FLAG(int32_t, so_snd_buffer, 2048 * 1024, "Socket Send Buffer");
 ABSL_FLAG(int32_t, so_rcv_buffer, 2048 * 1024, "Socket Receive Buffer");
+#endif
 
 ABSL_FLAG(bool, tcp_keep_alive, true, "TCP keep alive option");
 ABSL_FLAG(int32_t, tcp_keep_alive_cnt, 9, "The number of TCP keep-alive probes to send before give up.");
