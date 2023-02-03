@@ -45,8 +45,20 @@ void Worker::Start(std::function<void(asio::error_code)> callback) {
     }
   });
   io_context_.post([this, callback]() {
-    resolver_->AsyncResolve(absl::GetFlag(FLAGS_local_host),
-      std::to_string(absl::GetFlag(FLAGS_local_port)),
+    std::string host_name = absl::GetFlag(FLAGS_local_host);
+    uint16_t port = absl::GetFlag(FLAGS_local_port);
+
+    asio::error_code ec;
+    auto addr = asio::ip::make_address(host_name.c_str(), ec);
+    bool host_is_ip_address = !ec;
+    if (host_is_ip_address) {
+      asio::ip::tcp::endpoint endpoint(addr, port);
+      auto results = asio::ip::tcp::resolver::results_type::create(
+        endpoint, host_name, std::to_string(port));
+      on_resolve_local(ec, results, callback);
+      return;
+    }
+    resolver_->AsyncResolve(host_name, std::to_string(port),
       [this, callback](const asio::error_code& ec,
                        asio::ip::tcp::resolver::results_type results) {
         on_resolve_local(ec, results, callback);
@@ -106,7 +118,8 @@ void Worker::on_resolve_local(asio::error_code ec,
                               asio::ip::tcp::resolver::results_type results,
                               std::function<void(asio::error_code)> callback) {
   if (ec) {
-    LOG(WARNING) << "local resolved failed due to: " << ec;
+    LOG(WARNING) << "local resolved host:" << absl::GetFlag(FLAGS_local_host)
+      << " failed due to: " << ec;
     if (callback) {
       callback(ec);
     }

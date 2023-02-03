@@ -53,21 +53,31 @@ int main(int argc, const char* argv[]) {
   asio::io_context io_context;
   auto work_guard = std::make_unique<asio::io_context::work>(io_context);
 
-  asio::ip::tcp::resolver resolver(io_context);
+  asio::ip::tcp::endpoint endpoint;
+  std::string host_name = absl::GetFlag(FLAGS_local_host);
+  uint16_t port = absl::GetFlag(FLAGS_local_port);
+
   asio::error_code ec;
-
-  auto endpoints = resolver.resolve(absl::GetFlag(FLAGS_local_host),
-      std::to_string(absl::GetFlag(FLAGS_local_port)), ec);
-  if (ec) {
-    LOG(WARNING) << "local resolved failed due to: " << ec;
-    return -1;
+  auto addr = asio::ip::make_address(host_name.c_str(), ec);
+  bool host_is_ip_address = !ec;
+  if (host_is_ip_address) {
+    endpoint = asio::ip::tcp::endpoint(addr, port);
+  } else {
+    asio::ip::tcp::resolver resolver(io_context);
+    auto endpoints = resolver.resolve(host_name, std::to_string(port), ec);
+    if (ec) {
+      LOG(WARNING) << "local resolved host:" << host_name
+        << " failed due to: " << ec;
+      return -1;
+    }
+    endpoint = endpoints->endpoint();
   }
-  asio::ip::tcp::endpoint endpoint = endpoints->endpoint();
 
-  std::string remote_domain = absl::StrCat(absl::GetFlag(FLAGS_server_host),
-    ":", absl::GetFlag(FLAGS_server_port));
+  std::string remote_domain = absl::StrCat(
+    absl::GetFlag(FLAGS_server_host), ":", absl::GetFlag(FLAGS_server_port));
 
-  LOG(WARNING) << "using " << endpoint << " with upstream " << remote_domain;
+  LOG(WARNING) << "tcp server listening at " << endpoint
+    << " with upstream " << remote_domain;
 
   Socks5Server server(io_context, absl::GetFlag(FLAGS_server_host),
                       absl::GetFlag(FLAGS_server_port));

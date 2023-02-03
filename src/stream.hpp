@@ -149,6 +149,18 @@ class stream {
 
   void connect() {
     Channel* channel = channel_;
+    DCHECK_EQ(closed_, false);
+
+    asio::error_code ec;
+    auto addr = asio::ip::make_address(host_name_.c_str(), ec);
+    bool host_is_ip_address = !ec;
+    if (host_is_ip_address) {
+      endpoint_ = asio::ip::tcp::endpoint(addr, port_);
+      VLOG(2) << "resolved ip-like address: " << endpoint_;
+      on_resolve(channel);
+      return;
+    }
+
     resolver_->AsyncResolve(host_name_, std::to_string(port_),
       [this, channel](const asio::error_code& ec,
                       asio::ip::tcp::resolver::results_type results) {
@@ -162,50 +174,13 @@ class stream {
 
       /// FIXME TBD
       endpoint_ = results->endpoint();
-      VLOG(2) << "resolved address from: " << domain()
-              << " to: " << endpoint_;
+      VLOG(2) << "resolved address from: " << domain() << " to: " << endpoint_;
       on_resolve(channel);
     });
   }
 
   std::string domain() {
     return absl::StrCat(host_name_, ":", std::to_string(port_));
-  }
-
-  void on_resolve(Channel* channel) {
-    asio::error_code ec;
-    socket_.open(endpoint_.protocol(), ec);
-    if (ec) {
-      closed_ = true;
-      channel->disconnected(ec);
-      return;
-    }
-    SetTCPFastOpenConnect(socket_.native_handle(), ec);
-    socket_.native_non_blocking(true, ec);
-    socket_.non_blocking(true, ec);
-    connect_timer_.expires_from_now(
-        std::chrono::milliseconds(absl::GetFlag(FLAGS_connect_timeout)));
-    connect_timer_.async_wait(
-      [this, channel](asio::error_code ec) {
-      on_connect_expired(channel, ec);
-    });
-    socket_.async_connect(endpoint_,
-      [this, channel](asio::error_code ec) {
-      if (closed_) {
-        return;
-      }
-      if (enable_tls_ && !ec) {
-        ssl_socket_.async_handshake(asio::ssl::stream_base::client,
-                                    [this, channel](asio::error_code ec) {
-          if (closed_) {
-            return;
-          }
-          on_connect(channel, ec);
-        });
-        return;
-      }
-      on_connect(channel, ec);
-    });
   }
 
   bool connected() const { return connected_; }
@@ -374,6 +349,42 @@ class stream {
   bool https_fallback() const { return https_fallback_; }
 
  private:
+  void on_resolve(Channel* channel) {
+    asio::error_code ec;
+    socket_.open(endpoint_.protocol(), ec);
+    if (ec) {
+      closed_ = true;
+      channel->disconnected(ec);
+      return;
+    }
+    SetTCPFastOpenConnect(socket_.native_handle(), ec);
+    socket_.native_non_blocking(true, ec);
+    socket_.non_blocking(true, ec);
+    connect_timer_.expires_from_now(
+        std::chrono::milliseconds(absl::GetFlag(FLAGS_connect_timeout)));
+    connect_timer_.async_wait(
+      [this, channel](asio::error_code ec) {
+      on_connect_expired(channel, ec);
+    });
+    socket_.async_connect(endpoint_,
+      [this, channel](asio::error_code ec) {
+      if (closed_) {
+        return;
+      }
+      if (enable_tls_ && !ec) {
+        ssl_socket_.async_handshake(asio::ssl::stream_base::client,
+                                    [this, channel](asio::error_code ec) {
+          if (closed_) {
+            return;
+          }
+          on_connect(channel, ec);
+        });
+        return;
+      }
+      on_connect(channel, ec);
+    });
+  }
+
   void on_connect(Channel* channel,
                   asio::error_code ec) {
     connect_timer_.cancel();
