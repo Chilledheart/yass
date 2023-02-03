@@ -81,15 +81,15 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
                                    public Connection {
  public:
   ContentProviderConnection(asio::io_context& io_context,
-                            const asio::ip::tcp::endpoint& remote_endpoint,
                             const std::string& remote_host_name,
+                            uint16_t remote_port,
                             bool upstream_https_fallback,
                             bool https_fallback,
                             bool enable_upstream_tls,
                             bool enable_tls,
                             asio::ssl::context *upstream_ssl_ctx,
                             asio::ssl::context *ssl_ctx)
-      : Connection(io_context, remote_endpoint, remote_host_name,
+      : Connection(io_context, remote_host_name, remote_port,
                    upstream_https_fallback, https_fallback,
                    enable_upstream_tls, enable_tls,
                    upstream_ssl_ctx, ssl_ctx) {}
@@ -174,15 +174,15 @@ class ContentProviderConnectionFactory : public ConnectionFactory {
  public:
    using ConnectionType = ContentProviderConnection;
    scoped_refptr<ConnectionType> Create(asio::io_context& io_context,
-                                        const asio::ip::tcp::endpoint& remote_endpoint,
                                         const std::string& remote_host_name,
+                                        uint16_t remote_port,
                                         bool upstream_https_fallback,
                                         bool https_fallback,
                                         bool enable_upstream_tls,
                                         bool enable_tls,
                                         asio::ssl::context *upstream_ssl_ctx,
                                         asio::ssl::context *ssl_ctx) {
-     return MakeRefCounted<ConnectionType>(io_context, remote_endpoint, remote_host_name,
+     return MakeRefCounted<ConnectionType>(io_context, remote_host_name, remote_port,
                                            upstream_https_fallback, https_fallback,
                                            enable_upstream_tls, enable_tls,
                                            upstream_ssl_ctx, ssl_ctx);
@@ -360,8 +360,8 @@ class SsEndToEndTest : public ::testing::Test {
   asio::error_code StartServer(asio::ip::tcp::endpoint endpoint, int backlog) {
     asio::error_code ec;
     server_server_ = std::make_unique<SsServer>(io_context_,
-                                                asio::ip::tcp::endpoint(),
                                                 std::string(),
+                                                uint16_t(),
                                                 std::string(),
                                                 std::string(kCertificate),
                                                 std::string(kPrivateKey));
@@ -390,8 +390,8 @@ class SsEndToEndTest : public ::testing::Test {
     asio::error_code ec;
 
     local_server_ = std::make_unique<Socks5Server>(io_context_,
-                                                   remote_endpoint,
                                                    remote_endpoint.address().to_string(),
+                                                   remote_endpoint.port(),
                                                    kCertificate);
     local_server_->listen(endpoint, backlog, ec);
 

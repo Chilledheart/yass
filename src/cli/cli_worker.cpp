@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2023 Chilledheart  */
 #include "cli/cli_worker.hpp"
 #include "cli/socks5_server.hpp"
 
 #include <absl/flags/flag.h>
+#include <absl/strings/str_cat.h>
 
 #include "core/compiler_specific.hpp"
 
@@ -15,8 +16,12 @@ class WorkerPrivate {
 };
 
 Worker::Worker()
-    : resolver_(io_context_),
-      private_(new WorkerPrivate) {}
+    : resolver_(CAresResolver::Create(io_context_)),
+      private_(new WorkerPrivate) {
+  int ret = resolver_->Init(1000, 5);
+  CHECK_EQ(ret, 0) << "c-ares initialize failure";
+  static_cast<void>(ret);
+}
 
 Worker::~Worker() {
   Stop(std::function<void()>());
@@ -40,13 +45,12 @@ void Worker::Start(std::function<void(asio::error_code)> callback) {
     }
   });
   io_context_.post([this, callback]() {
-    resolver_.async_resolve(
-        absl::GetFlag(FLAGS_local_host),
-        std::to_string(absl::GetFlag(FLAGS_local_port)),
-        [this, callback](const asio::error_code& ec,
-                         asio::ip::tcp::resolver::results_type results) {
-          on_resolve_local(ec, results, callback);
-        });
+    resolver_->AsyncResolve(absl::GetFlag(FLAGS_local_host),
+      std::to_string(absl::GetFlag(FLAGS_local_port)),
+      [this, callback](const asio::error_code& ec,
+                       asio::ip::tcp::resolver::results_type results) {
+        on_resolve_local(ec, results, callback);
+    });
   });
 }
 
@@ -56,7 +60,7 @@ void Worker::Stop(std::function<void()> callback) {
     return;
   }
   io_context_.post([this, callback]() {
-    resolver_.cancel();
+    resolver_->Cancel();
     if (private_->socks5_server) {
       private_->socks5_server->stop();
     }
@@ -72,6 +76,16 @@ void Worker::Stop(std::function<void()> callback) {
 
 size_t Worker::currentConnections() const {
   return private_->socks5_server ? private_->socks5_server->num_of_connections() : 0;
+}
+
+std::string Worker::GetDomain() const {
+  return absl::StrCat(absl::GetFlag(FLAGS_local_host),
+                      ":", std::to_string(absl::GetFlag(FLAGS_local_port)));
+}
+
+std::string Worker::GetRemoteDomain() const {
+  return absl::StrCat(absl::GetFlag(FLAGS_server_host),
+                      ":", std::to_string(absl::GetFlag(FLAGS_server_port)));
 }
 
 void Worker::WorkFunc() {
@@ -101,31 +115,9 @@ void Worker::on_resolve_local(asio::error_code ec,
   }
   endpoint_ = results->endpoint();
 
-  resolver_.async_resolve(
-      absl::GetFlag(FLAGS_server_host),
-      std::to_string(absl::GetFlag(FLAGS_server_port)),
-      [this, callback](const asio::error_code& local_ec,
-                       asio::ip::tcp::resolver::results_type local_results) {
-        on_resolve_remote(local_ec, local_results, callback);
-      });
-}
-
-void Worker::on_resolve_remote(asio::error_code ec,
-                               asio::ip::tcp::resolver::results_type results,
-                               std::function<void(asio::error_code)> callback) {
-  if (ec) {
-    LOG(WARNING) << "remote resolved failed due to: " << ec;
-    work_guard_.reset();
-    if (callback) {
-      callback(ec);
-    }
-    return;
-  }
-  remote_endpoint_ = results->endpoint();
-
   private_->socks5_server = std::make_unique<Socks5Server>(io_context_,
-                                                           remote_endpoint_,
-                                                           absl::GetFlag(FLAGS_server_host)
+                                                           absl::GetFlag(FLAGS_server_host),
+                                                           absl::GetFlag(FLAGS_server_port)
                                                            );
 
   private_->socks5_server->listen(endpoint_, SOMAXCONN, ec);

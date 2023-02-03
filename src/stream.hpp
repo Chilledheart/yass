@@ -10,10 +10,13 @@
 #include "channel.hpp"
 #include "config/config.hpp"
 #include "core/asio.hpp"
+#include "core/c-ares.hpp"
 #include "core/logging.hpp"
 #include "core/scoped_refptr.hpp"
 #include "network.hpp"
 #include "protocol.hpp"
+
+#include <absl/strings/str_cat.h>
 
 /// the class to describe the traffic between given node (endpoint)
 class stream {
@@ -23,21 +26,22 @@ class stream {
   /// construct a stream object with ss protocol
   ///
   /// \param io_context the io context associated with the service
-  /// \param endpoint the endpoint of the service socket
   /// \param host_name the sni name used with endpoint
+  /// \param port the sni port used with endpoint
   /// \param channel the underlying data channel used in stream
   /// \param https_fallback the data channel falls back to https (alpn)
   /// \param enable_tls the underlying data channel is using tls
   /// \param ssl_ctx the ssl context object for tls data transfer
   stream(asio::io_context& io_context,
-         asio::ip::tcp::endpoint endpoint,
          const std::string& host_name,
+         uint16_t port,
          Channel* channel,
          bool https_fallback,
          bool enable_tls,
          asio::ssl::context *ssl_ctx)
-      : endpoint_(endpoint),
+      : resolver_(CAresResolver::Create(io_context)),
         host_name_(host_name),
+        port_(port),
         socket_(io_context),
         connect_timer_(io_context),
         https_fallback_(https_fallback),
@@ -45,6 +49,9 @@ class stream {
         ssl_socket_(socket_, *ssl_ctx),
         channel_(channel) {
     assert(channel && "channel must defined to use with stream");
+    int ret = resolver_->Init(1000, 5);
+    CHECK_EQ(ret, 0) << "c-ares initialize failure";
+    static_cast<void>(ret);
     if (enable_tls) {
       setup_ssl();
       s_async_read_some_ = [this](io_handle_t cb) {
@@ -142,6 +149,30 @@ class stream {
 
   void connect() {
     Channel* channel = channel_;
+    resolver_->AsyncResolve(host_name_, std::to_string(port_),
+      [this, channel](const asio::error_code& ec,
+                      asio::ip::tcp::resolver::results_type results) {
+      if (closed_) {
+        return;
+      }
+      if (ec) {
+        on_connect(channel, ec);
+        return;
+      }
+
+      /// FIXME TBD
+      endpoint_ = results->endpoint();
+      VLOG(2) << "resolved address from: " << domain()
+              << " to: " << endpoint_;
+      on_resolve(channel);
+    });
+  }
+
+  std::string domain() {
+    return absl::StrCat(host_name_, ":", std::to_string(port_));
+  }
+
+  void on_resolve(Channel* channel) {
     asio::error_code ec;
     socket_.open(endpoint_.protocol(), ec);
     if (ec) {
@@ -154,13 +185,21 @@ class stream {
     socket_.non_blocking(true, ec);
     connect_timer_.expires_from_now(
         std::chrono::milliseconds(absl::GetFlag(FLAGS_connect_timeout)));
-    connect_timer_.async_wait([this, channel](asio::error_code ec) {
+    connect_timer_.async_wait(
+      [this, channel](asio::error_code ec) {
       on_connect_expired(channel, ec);
     });
-    socket_.async_connect(endpoint_, [this, channel](asio::error_code ec) {
+    socket_.async_connect(endpoint_,
+      [this, channel](asio::error_code ec) {
+      if (closed_) {
+        return;
+      }
       if (enable_tls_ && !ec) {
         ssl_socket_.async_handshake(asio::ssl::stream_base::client,
                                     [this, channel](asio::error_code ec) {
+          if (closed_) {
+            return;
+          }
           on_connect(channel, ec);
         });
         return;
@@ -328,6 +367,8 @@ class stream {
     if (ec) {
       VLOG(2) << "close() error: " << ec;
     }
+    connect_timer_.cancel();
+    resolver_->Cancel();
   }
 
   bool https_fallback() const { return https_fallback_; }
@@ -450,8 +491,12 @@ class stream {
   size_t wbytes_transferred() const { return wbytes_transferred_; }
 
  private:
-  asio::ip::tcp::endpoint endpoint_;
+  /// used to resolve local and remote endpoint
+  scoped_refptr<CAresResolver> resolver_;
+
   std::string host_name_;
+  uint16_t port_;
+  asio::ip::tcp::endpoint endpoint_;
   asio::ip::tcp::socket socket_;
   asio::steady_timer connect_timer_;
 

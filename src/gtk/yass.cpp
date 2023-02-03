@@ -153,7 +153,7 @@ std::string YASSApp::GetStatus() const {
   } else if (state_ == START_FAILED) {
     ss << "Failed to connect due to " << error_msg_.c_str();
   } else {
-    ss << "Disconnected with " << worker_.GetRemoteEndpoint();
+    ss << "Disconnected with " << worker_.GetRemoteDomain();
   }
   return ss.str();
 };

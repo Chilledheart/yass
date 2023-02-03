@@ -112,8 +112,8 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
   /// Construct the service with io context and socket
   ///
   /// \param io_context the io context associated with the service
-  /// \param remote_endpoint the upstream's endpoint
   /// \param remote_host_name the sni name used with remote endpoint
+  /// \param remote_port the port used with remote endpoint
   /// \param upstream_https_fallback the data channel (upstream) falls back to https (alpn)
   /// \param https_fallback the data channel falls back to https (alpn)
   /// \param enable_upstream_tls the underlying data channel (upstream) is using tls
@@ -121,8 +121,8 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
   /// \param upstream_ssl_ctx the ssl context object for tls data transfer (upstream)
   /// \param ssl_ctx the ssl context object for tls data transfer
   Socks5Connection(asio::io_context& io_context,
-                   const asio::ip::tcp::endpoint& remote_endpoint,
                    const std::string& remote_host_name,
+                   uint16_t remote_port,
                    bool upstream_https_fallback,
                    bool https_fallback,
                    bool enable_upstream_tls,
@@ -463,15 +463,15 @@ class Socks5ConnectionFactory : public ConnectionFactory {
  public:
    using ConnectionType = Socks5Connection;
    scoped_refptr<ConnectionType> Create(asio::io_context& io_context,
-                                        const asio::ip::tcp::endpoint& remote_endpoint,
                                         const std::string& remote_host_name,
+                                        uint16_t remote_port,
                                         bool upstream_https_fallback,
                                         bool https_fallback,
                                         bool enable_upstream_tls,
                                         bool enable_tls,
                                         asio::ssl::context *upstream_ssl_ctx,
                                         asio::ssl::context *ssl_ctx) {
-     return MakeRefCounted<ConnectionType>(io_context, remote_endpoint, remote_host_name,
+     return MakeRefCounted<ConnectionType>(io_context, remote_host_name, remote_port,
                                            upstream_https_fallback, https_fallback,
                                            enable_upstream_tls, enable_tls,
                                            upstream_ssl_ctx, ssl_ctx);

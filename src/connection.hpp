@@ -22,8 +22,8 @@ class Connection {
   /// Construct the connection with io context
   ///
   /// \param io_context the io context associated with the service
-  /// \param remote_endpoint the remote endpoint of the service socket
   /// \param remote_host_name the sni name used with remote endpoint
+  /// \param remote_port the port used with remote endpoint
   /// \param upstream_https_fallback the data channel (upstream) falls back to https (alpn)
   /// \param https_fallback the data channel falls back to https (alpn)
   /// \param enable_upstream_tls the underlying data channel (upstream) is using tls
@@ -31,8 +31,8 @@ class Connection {
   /// \param upstream_ssl_ctx the ssl context object for tls data transfer (upstream)
   /// \param ssl_ctx the ssl context object for tls data transfer
   Connection(asio::io_context& io_context,
-             const asio::ip::tcp::endpoint& remote_endpoint,
              const std::string& remote_host_name,
+             uint16_t remote_port,
              bool upstream_https_fallback,
              bool https_fallback,
              bool enable_upstream_tls,
@@ -40,8 +40,8 @@ class Connection {
              asio::ssl::context *upstream_ssl_ctx,
              asio::ssl::context *ssl_ctx)
       : io_context_(&io_context),
-        remote_endpoint_(remote_endpoint),
         remote_host_name_(remote_host_name),
+        remote_port_(remote_port),
         socket_(*io_context_),
         upstream_https_fallback_(upstream_https_fallback),
         https_fallback_(https_fallback),
@@ -155,10 +155,10 @@ class Connection {
  protected:
   /// the io context associated with
   asio::io_context* io_context_;
-  /// the upstream endpoint to be established with
-  asio::ip::tcp::endpoint remote_endpoint_;
   /// the upstream host name to be established with
   std::string remote_host_name_;
+  /// the upstream port to be established with
+  uint16_t remote_port_;
 
   /// the socket the service bound with
   asio::ip::tcp::socket socket_;

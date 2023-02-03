@@ -34,16 +34,16 @@ class ContentServer {
 
  public:
   explicit ContentServer(asio::io_context &io_context,
-                         const asio::ip::tcp::endpoint& remote_endpoint = asio::ip::tcp::endpoint(),
                          const std::string& remote_host_name = {},
+                         uint16_t remote_port = {},
                          const std::string& upstream_certificate = {},
                          const std::string& certificate = {},
                          const std::string& private_key = {},
                          ContentServer::Delegate *delegate = nullptr)
     : io_context_(io_context),
       work_guard_(std::make_unique<asio::io_context::work>(io_context_)),
-      remote_endpoint_(remote_endpoint),
       remote_host_name_(remote_host_name),
+      remote_port_(remote_port),
       upstream_https_fallback_(absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTPS),
       https_fallback_(absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTPS),
       enable_upstream_tls_(
@@ -167,7 +167,7 @@ class ContentServer {
               setup_ssl_ctx_alpn_cb();
             }
             scoped_refptr<ConnectionType> conn = factory_.Create(
-              io_context_, remote_endpoint_, remote_host_name_,
+              io_context_, remote_host_name_, remote_port_,
               upstream_https_fallback_, https_fallback_,
               enable_upstream_tls_, enable_tls_,
               &upstream_ssl_ctx_, &ssl_ctx_);
@@ -389,8 +389,8 @@ class ContentServer {
   /// stopping the io_context from running out of work
   std::unique_ptr<asio::io_context::work> work_guard_;
 
-  const asio::ip::tcp::endpoint remote_endpoint_;
   std::string remote_host_name_;
+  uint16_t remote_port_;
 
   bool upstream_https_fallback_;
   bool https_fallback_;

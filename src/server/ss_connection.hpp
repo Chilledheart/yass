@@ -7,7 +7,6 @@
 #include "channel.hpp"
 #include "connection.hpp"
 #include "core/cipher.hpp"
-#include "core/c-ares.hpp"
 #include "core/iobuf.hpp"
 #include "core/logging.hpp"
 #include "core/ref_counted.hpp"
@@ -101,8 +100,8 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
   /// Construct the service with io context and socket
   ///
   /// \param io_context the io context associated with the service
-  /// \param remote_endpoint the upstream's endpoint
   /// \param remote_host_name the sni name used with remote endpoint
+  /// \param remote_port the port used with remote endpoint
   /// \param upstream_https_fallback the data channel (upstream) falls back to https (alpn)
   /// \param https_fallback the data channel falls back to https (alpn)
   /// \param enable_upstream_tls the underlying data channel (upstream) is using tls
@@ -110,8 +109,8 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
   /// \param upstream_ssl_ctx the ssl context object for tls data transfer (upstream)
   /// \param ssl_ctx the ssl context object for tls data transfer
   SsConnection(asio::io_context& io_context,
-               const asio::ip::tcp::endpoint& remote_endpoint,
                const std::string& remote_host_name,
+               uint16_t remote_port,
                bool upstream_https_fallback,
                bool https_fallback,
                bool enable_upstream_tls,
@@ -225,7 +224,6 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
   /// Get the state machine to the given state
   /// state(Read)            state(Write)
   /// handshake->ReadHandshake
-  ///          ->ResolveDns
   /// stream->ReadStream
   ///                        stream->WriteStream
   ///
@@ -239,9 +237,6 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
   void ReadHandshake();
   /// Start to read handshake request (via https fallback)
   void ReadHandshakeViaHttps();
-  /// Start to resolve DNS domain name
-  /// \param buf the buffer after domain name
-  void ResolveDns(std::shared_ptr<IOBuf> buf);
 
   /// Start to read stream
   void ReadStream();
@@ -290,9 +285,6 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
   int num_padding_send_ = 0;
   int num_padding_recv_ = 0;
   std::shared_ptr<IOBuf> padding_in_middle_buf_;
-
-  /// DNS resolver
-  scoped_refptr<CAresResolver> resolver_;
 
   std::string remote_domain() const {
     std::stringstream ss;
@@ -393,15 +385,15 @@ class SsConnectionFactory : public ConnectionFactory {
  public:
    using ConnectionType = SsConnection;
    scoped_refptr<ConnectionType> Create(asio::io_context& io_context,
-                                        const asio::ip::tcp::endpoint& remote_endpoint,
                                         const std::string& remote_host_name,
+                                        uint16_t remote_port,
                                         bool upstream_https_fallback,
                                         bool https_fallback,
                                         bool enable_upstream_tls,
                                         bool enable_tls,
                                         asio::ssl::context *upstream_ssl_ctx,
                                         asio::ssl::context *ssl_ctx) {
-     return MakeRefCounted<ConnectionType>(io_context, remote_endpoint, remote_host_name,
+     return MakeRefCounted<ConnectionType>(io_context, remote_host_name, remote_port,
                                            upstream_https_fallback, https_fallback,
                                            enable_upstream_tls, enable_tls,
                                            upstream_ssl_ctx, ssl_ctx);

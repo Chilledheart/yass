@@ -186,15 +186,15 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
 }
 
 Socks5Connection::Socks5Connection(asio::io_context& io_context,
-                                   const asio::ip::tcp::endpoint& remote_endpoint,
                                    const std::string& remote_host_name,
+                                   uint16_t remote_port,
                                    bool upstream_https_fallback,
                                    bool https_fallback,
                                    bool enable_upstream_tls,
                                    bool enable_tls,
                                    asio::ssl::context *upstream_ssl_ctx,
                                    asio::ssl::context *ssl_ctx)
-    : Connection(io_context, remote_endpoint, remote_host_name,
+    : Connection(io_context, remote_host_name, remote_port,
                  upstream_https_fallback, https_fallback,
                  enable_upstream_tls, enable_tls,
                  upstream_ssl_ctx, ssl_ctx),
@@ -292,10 +292,10 @@ bool Socks5Connection::OnEndHeadersForStream(
   auto padding_support = request_map_.find("padding") != request_map_.end();
   if (padding_support_ && padding_support) {
     LOG(INFO) << "Connection (client) " << connection_id() << " for "
-      << remote_endpoint_ << " Padding support enabled.";
+      << remote_domain() << " Padding support enabled.";
   } else {
     VLOG(1) << "Connection (client) " << connection_id() << " for "
-      << remote_endpoint_ <<  " Padding support disabled.";
+      << remote_domain() <<  " Padding support disabled.";
     padding_support_ = false;
   }
   return true;
@@ -1216,7 +1216,7 @@ void Socks5Connection::OnConnect() {
             << " to " << remote_domain();
   // create lazy
   channel_ = std::make_unique<stream>(*io_context_,
-                                      remote_endpoint_, remote_host_name_,
+                                      remote_host_name_, remote_port_,
                                       this, upstream_https_fallback_,
                                       enable_upstream_tls_, upstream_ssl_ctx_);
   channel_->connect();

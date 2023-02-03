@@ -102,24 +102,19 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
 }
 
 SsConnection::SsConnection(asio::io_context& io_context,
-                           const asio::ip::tcp::endpoint& remote_endpoint,
                            const std::string& remote_host_name,
+                           uint16_t remote_port,
                            bool upstream_https_fallback,
                            bool https_fallback,
                            bool enable_upstream_tls,
                            bool enable_tls,
                            asio::ssl::context *upstream_ssl_ctx,
                            asio::ssl::context *ssl_ctx)
-    : Connection(io_context, remote_endpoint, remote_host_name,
+    : Connection(io_context, remote_host_name, remote_port,
                  upstream_https_fallback, https_fallback,
                  enable_upstream_tls, enable_tls,
                  upstream_ssl_ctx, ssl_ctx),
-      state_(),
-      resolver_(CAresResolver::Create(*io_context_)) {
-    int ret = resolver_->Init(1000, 5);
-    CHECK_EQ(ret, 0) << "c-ares initialize failure";
-    static_cast<void>(ret);
-}
+      state_() {}
 
 SsConnection::~SsConnection() {
   VLOG(1) << "Connection (server) " << connection_id() << " freed memory";
@@ -177,7 +172,6 @@ void SsConnection::close() {
   if (channel_) {
     channel_->close();
   }
-  resolver_->Cancel();
   auto cb = std::move(disconnect_cb_);
   if (cb) {
     cb();
@@ -308,7 +302,8 @@ bool SsConnection::OnEndHeadersForStream(
   // FIXME remove stoi call
   request_ = request(host, std::stoi(port));
 
-  ResolveDns(nullptr);
+  SetState(state_stream);
+  OnConnect();
   return true;
 }
 
@@ -552,31 +547,6 @@ void SsConnection::ReadHandshakeViaHttps() {
         // FIXME better error code?
         ec = asio::error::connection_refused;
         OnDisconnect(ec);
-      }
-  });
-}
-
-void SsConnection::ResolveDns(std::shared_ptr<IOBuf> buf) {
-  scoped_refptr<SsConnection> self(this);
-  resolver_->AsyncResolve(request_.domain_name(), std::to_string(request_.port()),
-    [this, self, buf](
-      asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
-      if (closed_) {
-        return;
-      }
-      if (ec) {
-        OnDisconnect(ec);
-        return;
-      }
-      // Get a list of endpoints corresponding to the SOCKS 5 domain name.
-      remote_endpoint_ = results->endpoint();
-      VLOG(2) << "Connection (server) " << connection_id()
-              << " resolved address: " << remote_domain()
-              << " to: " << remote_endpoint_;
-      SetState(state_stream);
-      OnConnect();
-      if (buf) {
-        ProcessReceivedData(buf, ec, buf->length());
       }
   });
 }
@@ -931,11 +901,6 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf,
   if (!ec) {
     switch (CurrentState()) {
       case state_handshake:
-        if (request_.address_type() == domain) {
-          ResolveDns(buf);
-          return;
-        }
-        remote_endpoint_ = request_.endpoint();
         SetState(state_stream);
         OnConnect();
         DCHECK_EQ(buf->length(), bytes_transferred);
@@ -998,8 +963,15 @@ void SsConnection::ProcessSentData(asio::error_code ec,
 void SsConnection::OnConnect() {
   LOG(INFO) << "Connection (server) " << connection_id()
             << " to " << remote_domain();
+  std::string host_name;
+  uint16_t port = request_.port();
+  if (request_.address_type() == domain) {
+    host_name = request_.domain_name();
+  } else {
+    host_name = request_.endpoint().address().to_string();
+  }
   channel_ = std::make_unique<stream>(*io_context_,
-                                      remote_endpoint_, remote_host_name_,
+                                      host_name, port,
                                       this, upstream_https_fallback_,
                                       enable_upstream_tls_, upstream_ssl_ctx_);
   channel_->connect();

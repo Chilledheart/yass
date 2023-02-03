@@ -9,6 +9,7 @@
 #include <absl/debugging/symbolize.h>
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
+#include <absl/strings/str_cat.h>
 #include <locale.h>
 
 #include "core/asio.hpp"
@@ -63,17 +64,13 @@ int main(int argc, const char* argv[]) {
   }
   asio::ip::tcp::endpoint endpoint = endpoints->endpoint();
 
-  endpoints = resolver.resolve(absl::GetFlag(FLAGS_server_host),
-      std::to_string(absl::GetFlag(FLAGS_server_port)), ec);
-  if (ec) {
-    LOG(WARNING) << "remote resolved failed due to: " << ec;
-    return -1;
-  }
-  asio::ip::tcp::endpoint remote_endpoint = endpoints->endpoint();
+  std::string remote_domain = absl::StrCat(absl::GetFlag(FLAGS_server_host),
+    ":", absl::GetFlag(FLAGS_server_port));
 
-  LOG(WARNING) << "using " << endpoint << " with upstream " << remote_endpoint;
+  LOG(WARNING) << "using " << endpoint << " with upstream " << remote_domain;
 
-  Socks5Server server(io_context, remote_endpoint, absl::GetFlag(FLAGS_server_host));
+  Socks5Server server(io_context, absl::GetFlag(FLAGS_server_host),
+                      absl::GetFlag(FLAGS_server_port));
   server.listen(endpoint, SOMAXCONN, ec);
   if (ec) {
     LOG(ERROR) << "listen failed due to: " << ec;
