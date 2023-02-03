@@ -73,7 +73,7 @@ int main(int argc, const char* argv[]) {
 
   LOG(WARNING) << "using " << endpoint << " with upstream " << remote_endpoint;
 
-  Socks5Server server(io_context, remote_endpoint);
+  Socks5Server server(io_context, remote_endpoint, absl::GetFlag(FLAGS_server_host));
   server.listen(endpoint, SOMAXCONN, ec);
   if (ec) {
     LOG(ERROR) << "listen failed due to: " << ec;

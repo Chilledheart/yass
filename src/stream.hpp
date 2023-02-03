@@ -24,17 +24,20 @@ class stream {
   ///
   /// \param io_context the io context associated with the service
   /// \param endpoint the endpoint of the service socket
+  /// \param host_name the sni name used with endpoint
   /// \param channel the underlying data channel used in stream
   /// \param https_fallback the data channel falls back to https (alpn)
   /// \param enable_tls the underlying data channel is using tls
   /// \param ssl_ctx the ssl context object for tls data transfer
   stream(asio::io_context& io_context,
          asio::ip::tcp::endpoint endpoint,
+         const std::string& host_name,
          Channel* channel,
          bool https_fallback,
          bool enable_tls,
          asio::ssl::context *ssl_ctx)
       : endpoint_(endpoint),
+        host_name_(host_name),
         socket_(io_context),
         connect_timer_(io_context),
         https_fallback_(https_fallback),
@@ -93,8 +96,47 @@ class stream {
   }
 
   void setup_ssl() {
-    ::SSL_set_early_data_enabled(ssl_socket_.native_handle(),
-                                 absl::GetFlag(FLAGS_tls13_early_return));
+    SSL* ssl = ssl_socket_.native_handle();
+    // TODO: implement these SSL options
+    // SSLClientSocketImpl::Init
+    // SSL_CTX_set_strict_cipher_list
+    if (!host_name_.empty()) {
+      asio::error_code ec;
+      asio::ip::make_address(host_name_.c_str(), ec);
+      bool host_is_ip_address = !ec;
+      if (!host_is_ip_address) {
+        int ret = ::SSL_set_tlsext_host_name(ssl, host_name_.c_str());
+        CHECK_EQ(ret, 1) << "SSL_set_tlsext_host_name failure";
+      }
+    }
+
+    // Whether early data is enabled on this connection.
+    ::SSL_set_early_data_enabled(ssl, absl::GetFlag(FLAGS_tls13_early_return));
+
+    // ALPS TLS extension is enabled and corresponding data is sent to client if
+    // client also enabled ALPS, for each NextProto in |application_settings|.
+    // Data might be empty.
+    const char* proto_string = https_fallback_ ? "http/1.1" : "h2";
+    std::vector<uint8_t> data;
+    ::SSL_add_application_settings(ssl,
+                                   reinterpret_cast<const uint8_t*>(proto_string),
+                                   strlen(proto_string), data.data(), data.size());
+    ::SSL_enable_signed_cert_timestamps(ssl);
+    ::SSL_enable_ocsp_stapling(ssl);
+
+    // Configure BoringSSL to allow renegotiations. Once the initial handshake
+    // completes, if renegotiations are not allowed, the default reject value will
+    // be restored. This is done in this order to permit a BoringSSL
+    // optimization. See https://crbug.com/boringssl/123. Use
+    // ssl_renegotiate_explicit rather than ssl_renegotiate_freely so DoPeek()
+    // does not trigger renegotiations.
+    ::SSL_set_renegotiate_mode(ssl, ssl_renegotiate_explicit);
+
+    ::SSL_set_shed_handshake_config(ssl, 1);
+
+    // If false, disables TLS Encrypted ClientHello (ECH). If true, the feature
+    // may be enabled or disabled, depending on feature flags.
+    ::SSL_set_enable_ech_grease(ssl, 0);
     ssl_socket_.set_verify_mode(asio::ssl::verify_peer);
   }
 
@@ -409,6 +451,7 @@ class stream {
 
  private:
   asio::ip::tcp::endpoint endpoint_;
+  std::string host_name_;
   asio::ip::tcp::socket socket_;
   asio::steady_timer connect_timer_;
 

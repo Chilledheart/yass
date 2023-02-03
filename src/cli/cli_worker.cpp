@@ -124,7 +124,9 @@ void Worker::on_resolve_remote(asio::error_code ec,
   remote_endpoint_ = results->endpoint();
 
   private_->socks5_server = std::make_unique<Socks5Server>(io_context_,
-                                                           remote_endpoint_);
+                                                           remote_endpoint_,
+                                                           absl::GetFlag(FLAGS_server_host)
+                                                           );
 
   private_->socks5_server->listen(endpoint_, SOMAXCONN, ec);
   endpoint_ = private_->socks5_server->endpoint();

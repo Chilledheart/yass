@@ -23,6 +23,7 @@ class Connection {
   ///
   /// \param io_context the io context associated with the service
   /// \param remote_endpoint the remote endpoint of the service socket
+  /// \param remote_host_name the sni name used with remote endpoint
   /// \param upstream_https_fallback the data channel (upstream) falls back to https (alpn)
   /// \param https_fallback the data channel falls back to https (alpn)
   /// \param enable_upstream_tls the underlying data channel (upstream) is using tls
@@ -31,6 +32,7 @@ class Connection {
   /// \param ssl_ctx the ssl context object for tls data transfer
   Connection(asio::io_context& io_context,
              const asio::ip::tcp::endpoint& remote_endpoint,
+             const std::string& remote_host_name,
              bool upstream_https_fallback,
              bool https_fallback,
              bool enable_upstream_tls,
@@ -39,6 +41,7 @@ class Connection {
              asio::ssl::context *ssl_ctx)
       : io_context_(&io_context),
         remote_endpoint_(remote_endpoint),
+        remote_host_name_(remote_host_name),
         socket_(*io_context_),
         upstream_https_fallback_(upstream_https_fallback),
         https_fallback_(https_fallback),
@@ -104,8 +107,8 @@ class Connection {
 
  private:
   void setup_ssl() {
-    ::SSL_set_early_data_enabled(ssl_socket_.native_handle(),
-                                 absl::GetFlag(FLAGS_tls13_early_return));
+    SSL* ssl = ssl_socket_.native_handle();
+    SSL_set_shed_handshake_config(ssl, 1);
     ssl_socket_.set_verify_mode(asio::ssl::verify_peer);
   }
 
@@ -154,6 +157,8 @@ class Connection {
   asio::io_context* io_context_;
   /// the upstream endpoint to be established with
   asio::ip::tcp::endpoint remote_endpoint_;
+  /// the upstream host name to be established with
+  std::string remote_host_name_;
 
   /// the socket the service bound with
   asio::ip::tcp::socket socket_;

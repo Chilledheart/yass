@@ -103,13 +103,14 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
 
 SsConnection::SsConnection(asio::io_context& io_context,
                            const asio::ip::tcp::endpoint& remote_endpoint,
+                           const std::string& remote_host_name,
                            bool upstream_https_fallback,
                            bool https_fallback,
                            bool enable_upstream_tls,
                            bool enable_tls,
                            asio::ssl::context *upstream_ssl_ctx,
                            asio::ssl::context *ssl_ctx)
-    : Connection(io_context, remote_endpoint,
+    : Connection(io_context, remote_endpoint, remote_host_name,
                  upstream_https_fallback, https_fallback,
                  enable_upstream_tls, enable_tls,
                  upstream_ssl_ctx, ssl_ctx),
@@ -997,7 +998,8 @@ void SsConnection::ProcessSentData(asio::error_code ec,
 void SsConnection::OnConnect() {
   LOG(INFO) << "Connection (server) " << connection_id()
             << " to " << remote_domain();
-  channel_ = std::make_unique<stream>(*io_context_, remote_endpoint_,
+  channel_ = std::make_unique<stream>(*io_context_,
+                                      remote_endpoint_, remote_host_name_,
                                       this, upstream_https_fallback_,
                                       enable_upstream_tls_, upstream_ssl_ctx_);
   channel_->connect();
