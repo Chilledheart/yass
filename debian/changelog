@@ -1,3 +1,13 @@
+yass (1.2.1-1) UNRELEASED; urgency=low
+
+  * New bug-fix release.
+
+ -- Chilledheart <hukeyue@hotmail.com>  Fri, 3 Feb 2023 21:14:30 +0800
+yass (1.2.0-1) UNRELEASED; urgency=medium
+
+  * New HTTP2 Tunnel Proxy Support.
+
+ -- Chilledheart <hukeyue@hotmail.com>  Sun, 29 Jan 2023 20:52:02 +0800
 yass (1.1.0-1) UNRELEASED; urgency=low
 
   * New bug-fix release.
