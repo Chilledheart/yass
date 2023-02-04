@@ -11,7 +11,7 @@
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
 #include <openssl/crypto.h>
-#include "cli/socks5_server.hpp"
+#include "cli/cli_server.hpp"
 #include "config/config.hpp"
 #include "core/cipher.hpp"
 #include "core/iobuf.hpp"
@@ -19,7 +19,7 @@
 #include "core/ref_counted.hpp"
 #include "core/scoped_refptr.hpp"
 #include "core/stringprintf.hpp"
-#include "server/ss_server.hpp"
+#include "server/server_server.hpp"
 
 #include "test_util.hpp"
 
@@ -350,12 +350,12 @@ class SsEndToEndTest : public ::testing::Test {
 
   asio::error_code StartServer(asio::ip::tcp::endpoint endpoint, int backlog) {
     asio::error_code ec;
-    server_server_ = std::make_unique<SsServer>(io_context_,
-                                                std::string(),
-                                                uint16_t(),
-                                                std::string(),
-                                                std::string(kCertificate),
-                                                std::string(kPrivateKey));
+    server_server_ = std::make_unique<server::ServerServer>(io_context_,
+                                                            std::string(),
+                                                            uint16_t(),
+                                                            std::string(),
+                                                            std::string(kCertificate),
+                                                            std::string(kPrivateKey));
     server_server_->listen(endpoint, backlog, ec);
 
     if (ec) {
@@ -380,10 +380,10 @@ class SsEndToEndTest : public ::testing::Test {
                               int backlog) {
     asio::error_code ec;
 
-    local_server_ = std::make_unique<Socks5Server>(io_context_,
-                                                   remote_endpoint.address().to_string(),
-                                                   remote_endpoint.port(),
-                                                   kCertificate);
+    local_server_ = std::make_unique<cli::CliServer>(io_context_,
+                                                     remote_endpoint.address().to_string(),
+                                                     remote_endpoint.port(),
+                                                     kCertificate);
     local_server_->listen(endpoint, backlog, ec);
 
     if (ec) {
@@ -411,9 +411,9 @@ class SsEndToEndTest : public ::testing::Test {
 
   std::unique_ptr<ContentProviderServer> content_provider_server_;
   asio::ip::tcp::endpoint content_provider_endpoint_;
-  std::unique_ptr<SsServer> server_server_;
+  std::unique_ptr<server::ServerServer> server_server_;
   asio::ip::tcp::endpoint server_endpoint_;
-  std::unique_ptr<Socks5Server> local_server_;
+  std::unique_ptr<cli::CliServer> local_server_;
   asio::ip::tcp::endpoint local_endpoint_;
 };
 }

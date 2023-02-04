@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2019-2023 Chilledheart  */
 
-#ifndef H_SOCKS5_CONNECTION
-#define H_SOCKS5_CONNECTION
+#ifndef H_CLI_CONNECTION
+#define H_CLI_CONNECTION
 
 #include "channel.hpp"
-#include "cli/socks5_connection_stats.hpp"
+#include "cli/cli_connection_stats.hpp"
 #include "connection.hpp"
 #include "core/cipher.hpp"
 #include "core/iobuf.hpp"
@@ -28,15 +28,17 @@
 #include <absl/strings/str_cat.h>
 #include <deque>
 
+namespace cli {
+
 using StreamId = http2::adapter::Http2StreamId;
 template <typename T>
 using StreamMap = absl::flat_hash_map<StreamId, T>;
 
-class Socks5Connection;
+class CliConnection;
 class DataFrameSource
     : public http2::adapter::DataFrameSource {
  public:
-  explicit DataFrameSource(Socks5Connection* connection)
+  explicit DataFrameSource(CliConnection* connection)
       : connection_(connection) {}
   ~DataFrameSource() override = default;
   DataFrameSource(const DataFrameSource&) = delete;
@@ -65,7 +67,7 @@ class DataFrameSource
   }
 
  private:
-  Socks5Connection* const connection_;
+  CliConnection* const connection_;
   StreamId stream_id_;
   std::deque<std::shared_ptr<IOBuf>> chunks_;
   bool last_frame_ = false;
@@ -74,11 +76,11 @@ class DataFrameSource
 
 /// The ultimate service class to deliever the network traffic to the remote
 /// endpoint
-class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
-                         public Channel,
-                         public Connection,
-                         public cipher_visitor_interface,
-                         public http2::adapter::Http2VisitorInterface {
+class CliConnection : public RefCountedThreadSafe<CliConnection>,
+                      public Channel,
+                      public Connection,
+                      public cipher_visitor_interface,
+                      public http2::adapter::Http2VisitorInterface {
  public:
   /// The state of service
   enum state {
@@ -120,24 +122,24 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
   /// \param enable_tls the underlying data channel is using tls
   /// \param upstream_ssl_ctx the ssl context object for tls data transfer (upstream)
   /// \param ssl_ctx the ssl context object for tls data transfer
-  Socks5Connection(asio::io_context& io_context,
-                   const std::string& remote_host_name,
-                   uint16_t remote_port,
-                   bool upstream_https_fallback,
-                   bool https_fallback,
-                   bool enable_upstream_tls,
-                   bool enable_tls,
-                   asio::ssl::context *upstream_ssl_ctx,
-                   asio::ssl::context *ssl_ctx);
+  CliConnection(asio::io_context& io_context,
+                const std::string& remote_host_name,
+                uint16_t remote_port,
+                bool upstream_https_fallback,
+                bool https_fallback,
+                bool enable_upstream_tls,
+                bool enable_tls,
+                asio::ssl::context *upstream_ssl_ctx,
+                asio::ssl::context *ssl_ctx);
 
   /// Destruct the service
-  ~Socks5Connection() override;
+  ~CliConnection() override;
 
-  Socks5Connection(const Socks5Connection&) = delete;
-  Socks5Connection& operator=(const Socks5Connection&) = delete;
+  CliConnection(const CliConnection&) = delete;
+  CliConnection& operator=(const CliConnection&) = delete;
 
-  Socks5Connection(Socks5Connection&&) = delete;
-  Socks5Connection& operator=(Socks5Connection&&) = delete;
+  CliConnection(CliConnection&&) = delete;
+  CliConnection& operator=(CliConnection&&) = delete;
 
   /// Enter the start phase, begin to read requests
   void start() override;
@@ -459,9 +461,9 @@ class Socks5Connection : public RefCountedThreadSafe<Socks5Connection>,
   size_t wbytes_transferred_ = 0;
 };
 
-class Socks5ConnectionFactory : public ConnectionFactory {
+class CliConnectionFactory : public ConnectionFactory {
  public:
-   using ConnectionType = Socks5Connection;
+   using ConnectionType = CliConnection;
    template<typename... Args>
    scoped_refptr<ConnectionType> Create(asio::io_context& io_context,
                                         Args... args) {
@@ -471,4 +473,6 @@ class Socks5ConnectionFactory : public ConnectionFactory {
    const char* ShortName() override { return "client"; };
 };
 
-#endif  // H_SOCKS5_CONNECTION
+} // namespace cli
+
+#endif  // H_CLI_CONNECTION

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
+/* Copyright (c) 2019-2023 Chilledheart  */
 
 #include "config/config.hpp"
 #include "core/cipher.hpp"
-#include "server/ss_server.hpp"
+#include "server/server_server.hpp"
 
 #include <absl/debugging/failure_signal_handler.h>
 #include <absl/debugging/symbolize.h>
@@ -20,7 +20,7 @@
 #define SSMAXCONN 1024
 #endif
 
-using namespace ss;
+using namespace server;
 
 int main(int argc, const char* argv[]) {
 #ifdef OS_WIN
@@ -78,7 +78,7 @@ int main(int argc, const char* argv[]) {
 
   LOG(WARNING) << "tcp server listening at " << endpoint;
 
-  SsServer server(io_context);
+  ServerServer server(io_context);
   server.listen(endpoint, SSMAXCONN, ec);
   if (ec) {
     LOG(ERROR) << "listen failed due to: " << ec;

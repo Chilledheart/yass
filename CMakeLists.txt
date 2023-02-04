@@ -2390,10 +2390,10 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party SYSTEM)
 if (CLI)
   add_library(yass_cli_lib OBJECT
       src/cli/cli_worker.cpp
-      src/cli/socks5_connection.cpp
-      src/cli/socks5_connection.hpp
-      src/cli/socks5_connection_stats.cpp
-      src/cli/socks5_connection_stats.hpp
+      src/cli/cli_connection.cpp
+      src/cli/cli_connection.hpp
+      src/cli/cli_connection_stats.cpp
+      src/cli/cli_connection_stats.hpp
     )
   target_include_directories(yass_cli_lib PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -2423,8 +2423,8 @@ endif()
 
 if (SERVER)
   add_library(yass_server_lib OBJECT
-      src/server/ss_connection.cpp
-      src/server/ss_connection.hpp
+      src/server/server_connection.cpp
+      src/server/server_connection.hpp
     )
   target_include_directories(yass_server_lib PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src)

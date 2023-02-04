@@ -5,8 +5,12 @@
 #define H_SS_SERVER
 
 #include "content_server.hpp"
-#include "ss_connection.hpp"
+#include "server_connection.hpp"
 
-typedef ContentServer<ss::SsConnectionFactory> SsServer;
+namespace server {
+
+typedef ContentServer<ServerConnectionFactory> ServerServer;
+
+} // namespace cli
 
 #endif  // H_SS_SERVER

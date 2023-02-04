@@ -8,7 +8,7 @@
 
 #include <absl/flags/flag.h>
 
-#include "cli/socks5_connection_stats.hpp"
+#include "cli/cli_connection_stats.hpp"
 #include "core/utils.hpp"
 #include "gtk/option_dialog.hpp"
 #include "gtk/utils.hpp"
@@ -296,8 +296,8 @@ std::string YASSWindow::GetStatusMessage() {
   uint64_t sync_time = GetMonotonicTime();
   uint64_t delta_time = sync_time - last_sync_time_;
   if (delta_time > NS_PER_SECOND / 10) {
-    uint64_t rx_bytes = total_rx_bytes;
-    uint64_t tx_bytes = total_tx_bytes;
+    uint64_t rx_bytes = cli::total_rx_bytes;
+    uint64_t tx_bytes = cli::total_tx_bytes;
     rx_rate_ = static_cast<double>(rx_bytes - last_rx_bytes_) / delta_time *
                NS_PER_SECOND;
     tx_rate_ = static_cast<double>(tx_bytes - last_tx_bytes_) / delta_time *

@@ -24,17 +24,17 @@
 #include <deque>
 
 class cipher;
-namespace ss {
+namespace server {
 using StreamId = http2::adapter::Http2StreamId;
 template <typename T>
 using StreamMap = absl::flat_hash_map<StreamId, T>;
 
-class SsConnection;
+class ServerConnection;
 
 class DataFrameSource
     : public http2::adapter::DataFrameSource {
  public:
-  explicit DataFrameSource(SsConnection* connection,
+  explicit DataFrameSource(ServerConnection* connection,
                            const StreamId& stream_id)
       : connection_(connection), stream_id_(stream_id) {}
   ~DataFrameSource() override = default;
@@ -62,7 +62,7 @@ class DataFrameSource
   }
 
  private:
-  SsConnection* const connection_;
+  ServerConnection* const connection_;
   const StreamId stream_id_;
   std::deque<std::shared_ptr<IOBuf>> chunks_;
   bool last_frame_ = false;
@@ -71,11 +71,11 @@ class DataFrameSource
 
 /// The ultimate service class to deliever the network traffic to the remote
 /// endpoint
-class SsConnection : public RefCountedThreadSafe<SsConnection>,
-                     public Channel,
-                     public Connection,
-                     public cipher_visitor_interface,
-                     public http2::adapter::Http2VisitorInterface {
+class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
+                         public Channel,
+                         public Connection,
+                         public cipher_visitor_interface,
+                         public http2::adapter::Http2VisitorInterface {
  public:
   /// The state of service
   enum state {
@@ -108,24 +108,24 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
   /// \param enable_tls the underlying data channel is using tls
   /// \param upstream_ssl_ctx the ssl context object for tls data transfer (upstream)
   /// \param ssl_ctx the ssl context object for tls data transfer
-  SsConnection(asio::io_context& io_context,
-               const std::string& remote_host_name,
-               uint16_t remote_port,
-               bool upstream_https_fallback,
-               bool https_fallback,
-               bool enable_upstream_tls,
-               bool enable_tls,
-               asio::ssl::context *upstream_ssl_ctx,
-               asio::ssl::context *ssl_ctx);
+  ServerConnection(asio::io_context& io_context,
+                   const std::string& remote_host_name,
+                   uint16_t remote_port,
+                   bool upstream_https_fallback,
+                   bool https_fallback,
+                   bool enable_upstream_tls,
+                   bool enable_tls,
+                   asio::ssl::context *upstream_ssl_ctx,
+                   asio::ssl::context *ssl_ctx);
 
   /// Destruct the service
-  ~SsConnection() override;
+  ~ServerConnection() override;
 
-  SsConnection(const SsConnection&) = delete;
-  SsConnection& operator=(const SsConnection&) = delete;
+  ServerConnection(const ServerConnection&) = delete;
+  ServerConnection& operator=(const ServerConnection&) = delete;
 
-  SsConnection(SsConnection&&) = delete;
-  SsConnection& operator=(SsConnection&&) = delete;
+  ServerConnection(ServerConnection&&) = delete;
+  ServerConnection& operator=(ServerConnection&&) = delete;
 
   /// Enter the start phase, begin to read requests
   void start() override;
@@ -268,9 +268,9 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
   state state_;
 
   /// parser of handshake request
-  request_parser request_parser_;
+  ss::request_parser request_parser_;
   /// copy of handshake request
-  request request_;
+  ss::request request_;
 
   /// copy of parsed connect host or host field
   std::string http_host_;
@@ -288,7 +288,7 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
 
   std::string remote_domain() const {
     std::stringstream ss;
-    if (request_.address_type() == domain) {
+    if (request_.address_type() == ss::domain) {
       ss << request_.domain_name() << ":" << request_.port();
     } else {
       ss << request_.endpoint();
@@ -381,9 +381,9 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
   size_t wbytes_transferred_ = 0;
 };
 
-class SsConnectionFactory : public ConnectionFactory {
+class ServerConnectionFactory : public ConnectionFactory {
  public:
-   using ConnectionType = SsConnection;
+   using ConnectionType = ServerConnection;
    template<typename... Args>
    scoped_refptr<ConnectionType> Create(asio::io_context& io_context,
                                         Args... args) {
@@ -393,6 +393,6 @@ class SsConnectionFactory : public ConnectionFactory {
    const char* ShortName() override { return "server"; };
 };
 
-}  // namespace ss
+}  // namespace server
 
 #endif  // H_SS_CONNECTION

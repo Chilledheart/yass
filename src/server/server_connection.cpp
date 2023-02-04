@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2019-2023 Chilledheart  */
 
-#include "ss_connection.hpp"
+#include "server_connection.hpp"
 
 #include <absl/base/attributes.h>
+#include <absl/strings/str_cat.h>
 #include <absl/strings/str_split.h>
 
 #include "config/config.hpp"
@@ -20,8 +21,8 @@ namespace {
 const int kYieldAfterBytesRead = 32 * 1024;
 const int kYieldAfterDurationMilliseconds = 20;
 
-std::vector<http2::adapter::Header> GenerateHeaders(std::vector<std::pair<std::string, std::string>> headers,
-                                                    int status = 0) {
+std::vector<http2::adapter::Header> GenerateHeaders(
+  std::vector<std::pair<std::string, std::string>> headers, int status = 0) {
   std::vector<http2::adapter::Header> response_vector;
   if (status) {
     response_vector.emplace_back(
@@ -42,8 +43,9 @@ std::vector<http2::adapter::Header> GenerateHeaders(std::vector<std::pair<std::s
 }
 
 std::string GetProxyAuthorizationIdentity() {
-  std::string result, user_pass = absl::GetFlag(FLAGS_username) + ":" +
-    absl::GetFlag(FLAGS_password);
+  std::string result;
+  auto user_pass = absl::StrCat(absl::GetFlag(FLAGS_username), ":",
+                                absl::GetFlag(FLAGS_password));
   Base64Encode(user_pass, &result);
   return result;
 }
@@ -54,9 +56,9 @@ std::string GetProxyAuthorizationIdentity() {
 #define MAX_DOWNSTREAM_DEPS 8
 #define MAX_UPSTREAM_DEPS 8
 
-namespace ss {
+namespace server {
 
-const char SsConnection::http_connect_reply_[] =
+const char ServerConnection::http_connect_reply_[] =
     "HTTP/1.1 200 Connection established\r\n\r\n";
 
 bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length)  {
@@ -101,26 +103,26 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
   return true;
 }
 
-SsConnection::SsConnection(asio::io_context& io_context,
-                           const std::string& remote_host_name,
-                           uint16_t remote_port,
-                           bool upstream_https_fallback,
-                           bool https_fallback,
-                           bool enable_upstream_tls,
-                           bool enable_tls,
-                           asio::ssl::context *upstream_ssl_ctx,
-                           asio::ssl::context *ssl_ctx)
+ServerConnection::ServerConnection(asio::io_context& io_context,
+                                   const std::string& remote_host_name,
+                                   uint16_t remote_port,
+                                   bool upstream_https_fallback,
+                                   bool https_fallback,
+                                   bool enable_upstream_tls,
+                                   bool enable_tls,
+                                   asio::ssl::context *upstream_ssl_ctx,
+                                   asio::ssl::context *ssl_ctx)
     : Connection(io_context, remote_host_name, remote_port,
                  upstream_https_fallback, https_fallback,
                  enable_upstream_tls, enable_tls,
                  upstream_ssl_ctx, ssl_ctx),
       state_() {}
 
-SsConnection::~SsConnection() {
+ServerConnection::~ServerConnection() {
   VLOG(1) << "Connection (server) " << connection_id() << " freed memory";
 }
 
-void SsConnection::start() {
+void ServerConnection::start() {
   SetState(state_handshake);
   closed_ = false;
   upstream_writable_ = false;
@@ -129,7 +131,7 @@ void SsConnection::start() {
   socket_.native_non_blocking(true, ec);
   socket_.non_blocking(true, ec);
 
-  scoped_refptr<SsConnection> self(this);
+  scoped_refptr<ServerConnection> self(this);
   if (enable_tls_) {
     ssl_socket_.async_handshake(asio::ssl::stream_base::server, [this, self](
       asio::error_code ec) {
@@ -148,7 +150,7 @@ void SsConnection::start() {
   }
 }
 
-void SsConnection::close() {
+void ServerConnection::close() {
   if (closed_) {
     return;
   }
@@ -157,7 +159,7 @@ void SsConnection::close() {
     bytes += buf->length();
   VLOG(1) << "Connection (server) " << connection_id()
           << " disconnected with client at stage: "
-          << SsConnection::state_to_str(CurrentState())
+          << ServerConnection::state_to_str(CurrentState())
           << " and remaining: " << bytes << " bytes.";
   asio::error_code ec;
   closed_ = true;
@@ -178,7 +180,7 @@ void SsConnection::close() {
   }
 }
 
-void SsConnection::Start() {
+void ServerConnection::Start() {
   bool http2 = absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2;
   http2 |= absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_TLS;
   if (http2 && https_fallback_) {
@@ -206,7 +208,7 @@ void SsConnection::Start() {
   }
 }
 
-void SsConnection::SendIfNotProcessing() {
+void ServerConnection::SendIfNotProcessing() {
   if (!processing_responses_) {
     processing_responses_ = true;
     adapter_->Send();
@@ -217,7 +219,7 @@ void SsConnection::SendIfNotProcessing() {
 //
 // cipher_visitor_interface
 //
-bool SsConnection::on_received_data(std::shared_ptr<IOBuf> buf) {
+bool ServerConnection::on_received_data(std::shared_ptr<IOBuf> buf) {
   MSAN_CHECK_MEM_IS_INITIALIZED(buf->data(), buf->length());
   rbytes_transferred_ += buf->length();
   if (state_ == state_stream) {
@@ -236,7 +238,7 @@ bool SsConnection::on_received_data(std::shared_ptr<IOBuf> buf) {
   return true;
 }
 
-void SsConnection::on_protocol_error() {
+void ServerConnection::on_protocol_error() {
   LOG(WARNING) << "Connection (server) " << connection_id()
     << " Protocol error";
   OnDisconnect(asio::error::connection_aborted);
@@ -246,7 +248,7 @@ void SsConnection::on_protocol_error() {
 // http2::adapter::Http2VisitorInterface
 //
 
-int64_t SsConnection::OnReadyToSend(absl::string_view serialized) {
+int64_t ServerConnection::OnReadyToSend(absl::string_view serialized) {
   if (downstream_.size() >= MAX_DOWNSTREAM_DEPS && upstream_readable_) {
     return kSendBlocked;
   }
@@ -258,14 +260,14 @@ int64_t SsConnection::OnReadyToSend(absl::string_view serialized) {
 }
 
 http2::adapter::Http2VisitorInterface::OnHeaderResult
-SsConnection::OnHeaderForStream(StreamId stream_id,
-                                absl::string_view key,
-                                absl::string_view value) {
+ServerConnection::OnHeaderForStream(StreamId stream_id,
+                                    absl::string_view key,
+                                    absl::string_view value) {
   request_map_[key] = std::string(value);
   return http2::adapter::Http2VisitorInterface::HEADER_OK;
 }
 
-bool SsConnection::OnEndHeadersForStream(
+bool ServerConnection::OnEndHeadersForStream(
   http2::adapter::Http2StreamId stream_id) {
 
   if (request_map_[":method"] != "CONNECT") {
@@ -300,31 +302,31 @@ bool SsConnection::OnEndHeadersForStream(
   auto host = host_and_port[0];
   auto port = host_and_port[1];
   // FIXME remove stoi call
-  request_ = request(host, std::stoi(port));
+  request_ = ss::request(host, std::stoi(port));
 
   SetState(state_stream);
   OnConnect();
   return true;
 }
 
-bool SsConnection::OnEndStream(StreamId stream_id) {
+bool ServerConnection::OnEndStream(StreamId stream_id) {
   return true;
 }
 
-bool SsConnection::OnCloseStream(StreamId stream_id,
-                                 http2::adapter::Http2ErrorCode error_code) {
+bool ServerConnection::OnCloseStream(StreamId stream_id,
+                                     http2::adapter::Http2ErrorCode error_code) {
   OnDisconnect(asio::error_code());
   return true;
 }
 
-void SsConnection::OnConnectionError(ConnectionError /*error*/) {
+void ServerConnection::OnConnectionError(ConnectionError /*error*/) {
   OnDisconnect(asio::error::connection_aborted);
 }
 
-bool SsConnection::OnFrameHeader(StreamId stream_id,
-                                 size_t /*length*/,
-                                 uint8_t /*type*/,
-                                 uint8_t /*flags*/) {
+bool ServerConnection::OnFrameHeader(StreamId stream_id,
+                                     size_t /*length*/,
+                                     uint8_t /*type*/,
+                                     uint8_t /*flags*/) {
   if (!stream_id_) {
     stream_id_ = stream_id;
   }
@@ -334,17 +336,17 @@ bool SsConnection::OnFrameHeader(StreamId stream_id,
   return true;
 }
 
-bool SsConnection::OnBeginHeadersForStream(StreamId stream_id) {
+bool ServerConnection::OnBeginHeadersForStream(StreamId stream_id) {
   return true;
 }
 
-bool SsConnection::OnBeginDataForStream(StreamId stream_id,
-                                        size_t payload_length) {
+bool ServerConnection::OnBeginDataForStream(StreamId stream_id,
+                                            size_t payload_length) {
   return true;
 }
 
-bool SsConnection::OnDataForStream(StreamId stream_id,
-                                   absl::string_view data) {
+bool ServerConnection::OnDataForStream(StreamId stream_id,
+                                       absl::string_view data) {
   rbytes_transferred_ += data.size();
 
   if (padding_support_ && num_padding_recv_ < kFirstPaddings) {
@@ -382,49 +384,49 @@ bool SsConnection::OnDataForStream(StreamId stream_id,
   return true;
 }
 
-bool SsConnection::OnDataPaddingLength(StreamId stream_id,
-                                       size_t padding_length) {
+bool ServerConnection::OnDataPaddingLength(StreamId stream_id,
+                                           size_t padding_length) {
   adapter_->MarkDataConsumedForStream(stream_id, padding_length);
   return true;
 }
 
-bool SsConnection::OnGoAway(StreamId last_accepted_stream_id,
-                            http2::adapter::Http2ErrorCode error_code,
-                            absl::string_view opaque_data) {
+bool ServerConnection::OnGoAway(StreamId last_accepted_stream_id,
+                                http2::adapter::Http2ErrorCode error_code,
+                                absl::string_view opaque_data) {
   return true;
 }
 
-int SsConnection::OnBeforeFrameSent(uint8_t frame_type,
-                                    StreamId stream_id,
-                                    size_t length,
-                                    uint8_t flags) {
+int ServerConnection::OnBeforeFrameSent(uint8_t frame_type,
+                                        StreamId stream_id,
+                                        size_t length,
+                                        uint8_t flags) {
   return 0;
 }
 
-int SsConnection::OnFrameSent(uint8_t frame_type,
-                              StreamId stream_id,
-                              size_t length,
-                              uint8_t flags,
-                              uint32_t error_code) {
+int ServerConnection::OnFrameSent(uint8_t frame_type,
+                                  StreamId stream_id,
+                                  size_t length,
+                                  uint8_t flags,
+                                  uint32_t error_code) {
   return 0;
 }
 
-bool SsConnection::OnInvalidFrame(StreamId stream_id,
-                                  InvalidFrameError error) {
+bool ServerConnection::OnInvalidFrame(StreamId stream_id,
+                                      InvalidFrameError error) {
   return true;
 }
 
-bool SsConnection::OnMetadataForStream(StreamId stream_id,
-                                       absl::string_view metadata) {
+bool ServerConnection::OnMetadataForStream(StreamId stream_id,
+                                           absl::string_view metadata) {
   return true;
 }
 
-bool SsConnection::OnMetadataEndForStream(StreamId stream_id) {
+bool ServerConnection::OnMetadataEndForStream(StreamId stream_id) {
   return true;
 }
 
-void SsConnection::ReadHandshake() {
-  scoped_refptr<SsConnection> self(this);
+void ServerConnection::ReadHandshake() {
+  scoped_refptr<ServerConnection> self(this);
 
   s_async_read_some_([this, self](
     asio::error_code ec, size_t bytes_transferred) {
@@ -461,11 +463,11 @@ void SsConnection::ReadHandshake() {
 
       DumpHex("HANDSHAKE->", buf.get());
 
-      request_parser::result_type result;
+      ss::request_parser::result_type result;
       std::tie(result, std::ignore) = request_parser_.parse(
           request_, buf->data(), buf->data() + bytes_transferred);
 
-      if (result == request_parser::good) {
+      if (result == ss::request_parser::good) {
         buf->trimStart(request_.length());
         buf->retreat(request_.length());
         DCHECK_LE(request_.length(), bytes_transferred);
@@ -478,8 +480,8 @@ void SsConnection::ReadHandshake() {
   });
 }
 
-void SsConnection::ReadHandshakeViaHttps() {
-  scoped_refptr<SsConnection> self(this);
+void ServerConnection::ReadHandshakeViaHttps() {
+  scoped_refptr<ServerConnection> self(this);
 
   s_async_read_some_([this, self](
     asio::error_code ec, size_t bytes_transferred) {
@@ -551,8 +553,8 @@ void SsConnection::ReadHandshakeViaHttps() {
   });
 }
 
-void SsConnection::ReadStream() {
-  scoped_refptr<SsConnection> self(this);
+void ServerConnection::ReadStream() {
+  scoped_refptr<ServerConnection> self(this);
   downstream_read_inprogress_ = true;
 
   s_async_read_some_([this, self](
@@ -612,12 +614,12 @@ void SsConnection::ReadStream() {
   });
 }
 
-void SsConnection::WriteStream() {
+void ServerConnection::WriteStream() {
   DCHECK(!write_inprogress_);
   if (write_inprogress_) {
     return;
   }
-  scoped_refptr<SsConnection> self(this);
+  scoped_refptr<ServerConnection> self(this);
   write_inprogress_ = true;
   s_async_write_some_([this, self](
     asio::error_code ec, size_t /*bytes_transferred*/) {
@@ -633,7 +635,7 @@ void SsConnection::WriteStream() {
   });
 }
 
-void SsConnection::WriteStreamInPipe() {
+void ServerConnection::WriteStreamInPipe() {
   asio::error_code ec;
   size_t bytes_transferred = 0;
   uint64_t next_ticks = GetMonotonicTime() +
@@ -690,7 +692,7 @@ void SsConnection::WriteStreamInPipe() {
   ProcessSentData(ec, bytes_transferred);
 }
 
-std::shared_ptr<IOBuf> SsConnection::GetNextDownstreamBuf(asio::error_code &ec) {
+std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code &ec) {
   if (!downstream_.empty()) {
     /* found mark of eof */
     if (downstream_.front() == nullptr) {
@@ -768,7 +770,7 @@ out:
   return downstream_.front();
 }
 
-void SsConnection::WriteUpstreamInPipe() {
+void ServerConnection::WriteUpstreamInPipe() {
   asio::error_code ec;
   size_t bytes_transferred = 0U;
   uint64_t next_ticks = GetMonotonicTime() +
@@ -826,7 +828,7 @@ void SsConnection::WriteUpstreamInPipe() {
   }
 }
 
-std::shared_ptr<IOBuf> SsConnection::GetNextUpstreamBuf(asio::error_code &ec) {
+std::shared_ptr<IOBuf> ServerConnection::GetNextUpstreamBuf(asio::error_code &ec) {
   if (!upstream_.empty()) {
     DCHECK(!upstream_.front()->empty());
     ec = asio::error_code();
@@ -887,9 +889,9 @@ std::shared_ptr<IOBuf> SsConnection::GetNextUpstreamBuf(asio::error_code &ec) {
   return upstream_.front();
 }
 
-void SsConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf,
-                                       asio::error_code ec,
-                                       size_t bytes_transferred) {
+void ServerConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf,
+                                           asio::error_code ec,
+                                           size_t bytes_transferred) {
   VLOG(2) << "Connection (server) " << connection_id()
           << " received data: " << bytes_transferred << " bytes"
           << " ec: " << ec;
@@ -930,8 +932,8 @@ void SsConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf,
   }
 };
 
-void SsConnection::ProcessSentData(asio::error_code ec,
-                                   size_t bytes_transferred) {
+void ServerConnection::ProcessSentData(asio::error_code ec,
+                                       size_t bytes_transferred) {
   VLOG(2) << "Connection (server) " << connection_id()
           << " sent data: " << bytes_transferred << " bytes"
           << " ec: " << ec << " and data to write: " << downstream_.size();
@@ -960,12 +962,12 @@ void SsConnection::ProcessSentData(asio::error_code ec,
   }
 };
 
-void SsConnection::OnConnect() {
+void ServerConnection::OnConnect() {
   LOG(INFO) << "Connection (server) " << connection_id()
             << " to " << remote_domain();
   std::string host_name;
   uint16_t port = request_.port();
-  if (request_.address_type() == domain) {
+  if (request_.address_type() == ss::domain) {
     host_name = request_.domain_name();
   } else {
     host_name = request_.endpoint().address().to_string();
@@ -1006,7 +1008,7 @@ void SsConnection::OnConnect() {
   }
 }
 
-void SsConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
+void ServerConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
   // queue limit to downstream read
   if (upstream_.size() >= MAX_UPSTREAM_DEPS && downstream_readable_) {
     VLOG(1) << "Connection (server) " << connection_id()
@@ -1017,7 +1019,7 @@ void SsConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
   OnUpstreamWrite(buf);
 }
 
-void SsConnection::OnStreamWrite() {
+void ServerConnection::OnStreamWrite() {
   if (blocked_stream_) {
     adapter_->ResumeStream(blocked_stream_);
     SendIfNotProcessing();
@@ -1043,12 +1045,12 @@ void SsConnection::OnStreamWrite() {
     VLOG(1) << "Connection (server) " << connection_id()
             << " re-enabling reading from upstream";
     upstream_readable_ = true;
-    scoped_refptr<SsConnection> self(this);
+    scoped_refptr<ServerConnection> self(this);
     channel_->enable_read([self]() {});
   }
 }
 
-void SsConnection::EnableStreamRead() {
+void ServerConnection::EnableStreamRead() {
   if (!downstream_readable_) {
     downstream_readable_ = true;
     if (!downstream_read_inprogress_) {
@@ -1057,11 +1059,11 @@ void SsConnection::EnableStreamRead() {
   }
 }
 
-void SsConnection::DisableStreamRead() {
+void ServerConnection::DisableStreamRead() {
   downstream_readable_ = false;
 }
 
-void SsConnection::OnDisconnect(asio::error_code ec) {
+void ServerConnection::OnDisconnect(asio::error_code ec) {
   size_t bytes = 0;
   for (auto buf : downstream_)
     bytes += buf->length();
@@ -1079,13 +1081,13 @@ void SsConnection::OnDisconnect(asio::error_code ec) {
   close();
 }
 
-void SsConnection::OnDownstreamWriteFlush() {
+void ServerConnection::OnDownstreamWriteFlush() {
   if (!downstream_.empty()) {
     OnDownstreamWrite(nullptr);
   }
 }
 
-void SsConnection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
+void ServerConnection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf && !buf->empty()) {
     downstream_.push_back(buf);
   }
@@ -1095,26 +1097,26 @@ void SsConnection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
   }
 }
 
-void SsConnection::OnUpstreamWriteFlush() {
+void ServerConnection::OnUpstreamWriteFlush() {
   OnUpstreamWrite(nullptr);
 }
 
-void SsConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
+void ServerConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf && !buf->empty()) {
     upstream_.push_back(buf);
   }
   if (!upstream_.empty() && upstream_writable_) {
     upstream_writable_ = false;
-    scoped_refptr<SsConnection> self(this);
+    scoped_refptr<ServerConnection> self(this);
     channel_->start_write(upstream_.front(), [self](){});
   }
 }
 
-void SsConnection::connected() {
+void ServerConnection::connected() {
   VLOG(1) << "Connection (server) " << connection_id()
           << " remote: established upstream connection with: "
           << remote_domain();
-  scoped_refptr<SsConnection> self(this);
+  scoped_refptr<ServerConnection> self(this);
   upstream_readable_ = true;
   upstream_writable_ = true;
 
@@ -1122,7 +1124,7 @@ void SsConnection::connected() {
   OnUpstreamWriteFlush();
 }
 
-void SsConnection::received(std::shared_ptr<IOBuf> buf) {
+void ServerConnection::received(std::shared_ptr<IOBuf> buf) {
   VLOG(2) << "Connection (server) " << connection_id()
           << " upstream: received reply: " << buf->length() << " bytes.";
 
@@ -1151,7 +1153,7 @@ void SsConnection::received(std::shared_ptr<IOBuf> buf) {
   OnDownstreamWriteFlush();
 }
 
-void SsConnection::sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred) {
+void ServerConnection::sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred) {
   VLOG(2) << "Connection (server) " << connection_id()
           << " upstream: sent request: " << bytes_transferred << " bytes.";
   DCHECK(!upstream_.empty() && upstream_[0] == buf);
@@ -1169,7 +1171,7 @@ void SsConnection::sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred) {
   }
 }
 
-void SsConnection::disconnected(asio::error_code ec) {
+void ServerConnection::disconnected(asio::error_code ec) {
   VLOG(1) << "Connection (server) " << connection_id()
           << " upstream: lost connection with: " << remote_domain()
           << " due to " << ec
@@ -1190,7 +1192,8 @@ void SsConnection::disconnected(asio::error_code ec) {
   }
 }
 
-std::shared_ptr<IOBuf> SsConnection::EncryptData(std::shared_ptr<IOBuf> plainbuf) {
+std::shared_ptr<IOBuf> ServerConnection::EncryptData(
+  std::shared_ptr<IOBuf> plainbuf) {
   std::shared_ptr<IOBuf> cipherbuf = IOBuf::create(plainbuf->length() + 100);
 
   encoder_->encrypt(plainbuf.get(), &cipherbuf);
@@ -1198,4 +1201,4 @@ std::shared_ptr<IOBuf> SsConnection::EncryptData(std::shared_ptr<IOBuf> plainbuf
   return cipherbuf;
 }
 
-}  // namespace ss
+}  // namespace server

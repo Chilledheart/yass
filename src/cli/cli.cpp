@@ -3,7 +3,7 @@
 
 #include "config/config.hpp"
 #include "core/cipher.hpp"
-#include "cli/socks5_server.hpp"
+#include "cli/cli_server.hpp"
 
 #include <absl/debugging/failure_signal_handler.h>
 #include <absl/debugging/symbolize.h>
@@ -17,7 +17,7 @@
 #include "crypto/crypter_export.hpp"
 #include "version.h"
 
-using namespace socks5;
+using namespace cli;
 
 int main(int argc, const char* argv[]) {
 #ifdef OS_WIN
@@ -79,8 +79,8 @@ int main(int argc, const char* argv[]) {
   LOG(WARNING) << "tcp server listening at " << endpoint
     << " with upstream " << remote_domain;
 
-  Socks5Server server(io_context, absl::GetFlag(FLAGS_server_host),
-                      absl::GetFlag(FLAGS_server_port));
+  CliServer server(io_context, absl::GetFlag(FLAGS_server_host),
+                   absl::GetFlag(FLAGS_server_port));
   server.listen(endpoint, SOMAXCONN, ec);
   if (ec) {
     LOG(ERROR) << "listen failed due to: " << ec;

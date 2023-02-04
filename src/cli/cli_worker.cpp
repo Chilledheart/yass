@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2022-2023 Chilledheart  */
 #include "cli/cli_worker.hpp"
-#include "cli/socks5_server.hpp"
+#include "cli/cli_server.hpp"
 
 #include <absl/flags/flag.h>
 #include <absl/strings/str_cat.h>
 
 #include "core/compiler_specific.hpp"
 
-using namespace socks5;
+using namespace cli;
 
 class WorkerPrivate {
  public:
-  std::unique_ptr<Socks5Server> socks5_server;
+  std::unique_ptr<CliServer> cli_server;
 };
 
 Worker::Worker()
@@ -30,7 +30,7 @@ Worker::~Worker() {
 }
 
 void Worker::Start(std::function<void(asio::error_code)> callback) {
-  DCHECK_EQ(private_->socks5_server.get(), nullptr);
+  DCHECK_EQ(private_->cli_server.get(), nullptr);
   if (thread_ && thread_->joinable())
     thread_->join();
 
@@ -73,8 +73,8 @@ void Worker::Stop(std::function<void()> callback) {
   }
   io_context_.post([this, callback]() {
     resolver_->Cancel();
-    if (private_->socks5_server) {
-      private_->socks5_server->stop();
+    if (private_->cli_server) {
+      private_->cli_server->stop();
     }
     work_guard_.reset();
     if (callback) {
@@ -82,12 +82,12 @@ void Worker::Stop(std::function<void()> callback) {
     }
   });
   thread_->join();
-  private_->socks5_server.reset();
+  private_->cli_server.reset();
   thread_.reset();
 }
 
 size_t Worker::currentConnections() const {
-  return private_->socks5_server ? private_->socks5_server->num_of_connections() : 0;
+  return private_->cli_server ? private_->cli_server->num_of_connections() : 0;
 }
 
 std::string Worker::GetDomain() const {
@@ -128,16 +128,16 @@ void Worker::on_resolve_local(asio::error_code ec,
   }
   endpoint_ = results->endpoint();
 
-  private_->socks5_server = std::make_unique<Socks5Server>(io_context_,
-                                                           absl::GetFlag(FLAGS_server_host),
-                                                           absl::GetFlag(FLAGS_server_port)
-                                                           );
+  private_->cli_server = std::make_unique<CliServer>(io_context_,
+                                                     absl::GetFlag(FLAGS_server_host),
+                                                     absl::GetFlag(FLAGS_server_port)
+                                                     );
 
-  private_->socks5_server->listen(endpoint_, SOMAXCONN, ec);
-  endpoint_ = private_->socks5_server->endpoint();
+  private_->cli_server->listen(endpoint_, SOMAXCONN, ec);
+  endpoint_ = private_->cli_server->endpoint();
 
   if (ec) {
-    private_->socks5_server->stop();
+    private_->cli_server->stop();
   }
 
   work_guard_.reset();
