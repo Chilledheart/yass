@@ -384,19 +384,10 @@ class SsConnection : public RefCountedThreadSafe<SsConnection>,
 class SsConnectionFactory : public ConnectionFactory {
  public:
    using ConnectionType = SsConnection;
+   template<typename... Args>
    scoped_refptr<ConnectionType> Create(asio::io_context& io_context,
-                                        const std::string& remote_host_name,
-                                        uint16_t remote_port,
-                                        bool upstream_https_fallback,
-                                        bool https_fallback,
-                                        bool enable_upstream_tls,
-                                        bool enable_tls,
-                                        asio::ssl::context *upstream_ssl_ctx,
-                                        asio::ssl::context *ssl_ctx) {
-     return MakeRefCounted<ConnectionType>(io_context, remote_host_name, remote_port,
-                                           upstream_https_fallback, https_fallback,
-                                           enable_upstream_tls, enable_tls,
-                                           upstream_ssl_ctx, ssl_ctx);
+                                        Args... args) {
+     return MakeRefCounted<ConnectionType>(io_context, args...);
    }
    const char* Name() override { return "server"; };
    const char* ShortName() override { return "server"; };
