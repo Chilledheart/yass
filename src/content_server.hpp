@@ -3,6 +3,7 @@
 #ifndef H_CONTENT_SERVER
 #define H_CONTENT_SERVER
 
+#include <absl/container/flat_hash_map.h>
 #include <absl/flags/flag.h>
 #include <absl/strings/str_format.h>
 #include <algorithm>
@@ -136,15 +137,15 @@ class ContentServer {
         asio::error_code ec;
         acceptor_->close(ec);
         if (ec) {
-          LOG(WARNING) << "Acceptor: (" << factory_.Name() << ")"
-                       << " close failed: " << ec;
+          LOG(WARNING) << "Connections (" << factory_.Name() << ")"
+                       << " acceptor close failed: " << ec;
         }
       }
 
-      auto conns = std::move(connections_);
-      for (auto conn : conns) {
+      auto connection_map = std::move(connection_map_);
+      for (auto [conn_id, conn] : connection_map) {
         VLOG(1) << "Connections (" << factory_.Name() << ")"
-                << " closing remaining connection " << conn->connection_id();
+                << " closing Connection: " << conn_id;
         conn->close();
       }
 
@@ -197,7 +198,7 @@ class ContentServer {
                     connection_id);
     conn->set_disconnect_cb(
         [this, conn]() mutable { on_disconnect(conn); });
-    connections_.push_back(conn);
+    connection_map_.insert(std::make_pair(connection_id, conn));
     if (delegate_) {
       delegate_->OnConnect(connection_id);
     }
@@ -213,9 +214,10 @@ class ContentServer {
             << connection_id << " disconnected (has ref "
             << std::boolalpha << conn->HasAtLeastOneRef()
             << std::noboolalpha << ")";
-    connections_.erase(
-        std::remove(connections_.begin(), connections_.end(), conn),
-        connections_.end());
+    auto iter = connection_map_.find(connection_id);
+    if (iter != connection_map_.end()) {
+      connection_map_.erase(iter);
+    }
     if (delegate_) {
       delegate_->OnDisconnect(connection_id);
     }
@@ -329,10 +331,13 @@ class ContentServer {
   }
 
   void set_https_fallback(int connection_id, bool https_fallback) {
-    for (auto conn: connections_) {
-      if (conn->connection_id() == connection_id) {
-        conn->set_https_fallback(https_fallback);
-      }
+    auto iter = connection_map_.find(connection_id);
+    if (iter != connection_map_.end()) {
+      iter->second->set_https_fallback(https_fallback);
+    } else {
+      VLOG(1) << "Connection (" << factory_.Name() << ") "
+        << connection_id << " Set Https Fallback fatal error:"
+        << " invalid connection id";
     }
   }
 
@@ -410,7 +415,7 @@ class ContentServer {
 
   std::unique_ptr<asio::ip::tcp::acceptor> acceptor_;
 
-  std::vector<scoped_refptr<ConnectionType>> connections_;
+  absl::flat_hash_map<int, scoped_refptr<ConnectionType>> connection_map_;
 
   int next_connection_id_ = 1;
 
