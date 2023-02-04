@@ -174,9 +174,8 @@ class ContentProviderConnectionFactory : public ConnectionFactory {
  public:
    using ConnectionType = ContentProviderConnection;
    template<typename... Args>
-   scoped_refptr<ConnectionType> Create(asio::io_context& io_context,
-                                        Args... args) {
-     return MakeRefCounted<ConnectionType>(io_context, args...);
+   scoped_refptr<ConnectionType> Create(Args&&... args) {
+     return MakeRefCounted<ConnectionType>(std::forward<Args>(args)...);
    }
    const char* Name() override { return "content-provider"; };
    const char* ShortName() override { return "cp"; };

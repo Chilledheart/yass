@@ -465,9 +465,8 @@ class CliConnectionFactory : public ConnectionFactory {
  public:
    using ConnectionType = CliConnection;
    template<typename... Args>
-   scoped_refptr<ConnectionType> Create(asio::io_context& io_context,
-                                        Args... args) {
-     return MakeRefCounted<ConnectionType>(io_context, args...);
+   scoped_refptr<ConnectionType> Create(Args&&... args) {
+     return MakeRefCounted<ConnectionType>(std::forward<Args>(args)...);
    }
    const char* Name() override { return "client"; };
    const char* ShortName() override { return "client"; };

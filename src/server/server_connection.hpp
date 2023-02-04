@@ -385,9 +385,8 @@ class ServerConnectionFactory : public ConnectionFactory {
  public:
    using ConnectionType = ServerConnection;
    template<typename... Args>
-   scoped_refptr<ConnectionType> Create(asio::io_context& io_context,
-                                        Args... args) {
-     return MakeRefCounted<ConnectionType>(io_context, args...);
+   scoped_refptr<ConnectionType> Create(Args&&... args) {
+     return MakeRefCounted<ConnectionType>(std::forward<Args>(args)...);
    }
    const char* Name() override { return "server"; };
    const char* ShortName() override { return "server"; };
