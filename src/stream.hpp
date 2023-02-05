@@ -147,7 +147,7 @@ class stream {
     ssl_socket_.set_verify_mode(asio::ssl::verify_peer);
   }
 
-  void connect() {
+  void connect(std::function<void()> callback) {
     Channel* channel = channel_;
     DCHECK_EQ(closed_, false);
 
@@ -157,25 +157,26 @@ class stream {
     if (host_is_ip_address) {
       endpoint_ = asio::ip::tcp::endpoint(addr, port_);
       VLOG(2) << "resolved ip-like address: " << endpoint_;
-      on_resolve(channel);
+      on_resolve(callback, channel);
       return;
     }
 
     resolver_->AsyncResolve(host_name_, std::to_string(port_),
-      [this, channel](const asio::error_code& ec,
-                      asio::ip::tcp::resolver::results_type results) {
+      [this, channel, callback](const asio::error_code& ec,
+                                asio::ip::tcp::resolver::results_type results) {
       if (closed_) {
+        callback();
         return;
       }
       if (ec) {
-        on_connect(channel, ec);
+        on_connect(callback, channel, ec);
         return;
       }
 
       /// FIXME TBD
       endpoint_ = results->endpoint();
       VLOG(2) << "resolved address from: " << domain() << " to: " << endpoint_;
-      on_resolve(channel);
+      on_resolve(callback, channel);
     });
   }
 
@@ -354,12 +355,13 @@ class stream {
   bool https_fallback() const { return https_fallback_; }
 
  private:
-  void on_resolve(Channel* channel) {
+  void on_resolve(std::function<void()> callback, Channel* channel) {
     asio::error_code ec;
     socket_.open(endpoint_.protocol(), ec);
     if (ec) {
       closed_ = true;
       channel->disconnected(ec);
+      callback();
       return;
     }
     SetTCPFastOpenConnect(socket_.native_handle(), ec);
@@ -368,33 +370,36 @@ class stream {
     connect_timer_.expires_from_now(
         std::chrono::milliseconds(absl::GetFlag(FLAGS_connect_timeout)));
     connect_timer_.async_wait(
-      [this, channel](asio::error_code ec) {
-      on_connect_expired(channel, ec);
+      [this, channel, callback](asio::error_code ec) {
+      on_connect_expired(callback, channel, ec);
     });
     socket_.async_connect(endpoint_,
-      [this, channel](asio::error_code ec) {
+      [this, channel, callback](asio::error_code ec) {
       if (closed_) {
+        callback();
         return;
       }
       if (enable_tls_ && !ec) {
         ssl_socket_.async_handshake(asio::ssl::stream_base::client,
-                                    [this, channel](asio::error_code ec) {
+                                    [this, channel, callback](asio::error_code ec) {
           if (closed_) {
+            callback();
             return;
           }
-          on_connect(channel, ec);
+          on_connect(callback, channel, ec);
         });
         return;
       }
-      on_connect(channel, ec);
+      on_connect(callback, channel, ec);
     });
   }
 
-  void on_connect(Channel* channel,
-                  asio::error_code ec) {
+  void on_connect(std::function<void()> callback, Channel* channel, asio::error_code ec) {
     connect_timer_.cancel();
     if (ec) {
+      DCHECK_NE(ec, asio::error::operation_aborted);
       channel->disconnected(ec);
+      callback();
       return;
     }
     if (enable_tls_) {
@@ -418,12 +423,15 @@ class stream {
     SetSocketSndBuffer(&socket_, ec);
     SetSocketRcvBuffer(&socket_, ec);
     channel->connected();
+    callback();
   }
 
-  void on_connect_expired(Channel* channel,
+  void on_connect_expired(std::function<void()> callback,
+                          Channel* channel,
                           asio::error_code ec) {
     // Cancelled, safe to ignore
     if (ec == asio::error::operation_aborted) {
+      callback();
       return;
     }
     VLOG(1) << "connection timed out with endpoint: " << endpoint_;
@@ -432,6 +440,7 @@ class stream {
       ec = asio::error::timed_out;
     }
     channel->disconnected(ec);
+    callback();
   }
 
   void on_read(Channel* channel,
