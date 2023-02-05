@@ -255,6 +255,10 @@ class stream {
     return read;
   }
 
+  bool write_inprogress() const {
+    return write_inprogress_;
+  }
+
   /// start write routine
   ///
   /// \param buf the shared buffer used in write routine
@@ -265,6 +269,7 @@ class stream {
     write_inprogress_ = true;
     s_async_write_some_([this, channel, buf, callback](
       asio::error_code ec, size_t /*bytes_transferred*/) {
+        DCHECK(!buf->empty());
         write_inprogress_ = false;
         // Cancelled, safe to ignore
         if (ec == asio::error::operation_aborted) {

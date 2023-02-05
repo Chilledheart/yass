@@ -374,11 +374,6 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
 
   /// mark of in-progress writing
   bool write_inprogress_ = false;
-
-  /// statistics of read bytes (non-encoded)
-  size_t rbytes_transferred_ = 0;
-  /// statistics of write bytes (non-encoded)
-  size_t wbytes_transferred_ = 0;
 };
 
 class ServerConnectionFactory : public ConnectionFactory {

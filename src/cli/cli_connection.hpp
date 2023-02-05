@@ -454,11 +454,6 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
 
   /// mark of in-progress writing
   bool write_inprogress_ = false;
-
-  /// statistics of read bytes (non-encoded)
-  size_t rbytes_transferred_ = 0;
-  /// statistics of written bytes (non-encoded)
-  size_t wbytes_transferred_ = 0;
 };
 
 class CliConnectionFactory : public ConnectionFactory {

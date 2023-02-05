@@ -189,6 +189,12 @@ class Connection {
 
   /// the callback invoked when disconnect event happens
   std::function<void()> disconnect_cb_;
+
+ protected:
+  /// statistics of read bytes
+  size_t rbytes_transferred_ = 0;
+  /// statistics of written bytes
+  size_t wbytes_transferred_ = 0;
 };
 
 class ConnectionFactory {
