@@ -1093,10 +1093,10 @@ void ServerConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
 }
 
 void ServerConnection::connected() {
+  scoped_refptr<ServerConnection> self(this);
   VLOG(1) << "Connection (server) " << connection_id()
           << " remote: established upstream connection with: "
           << remote_domain();
-  scoped_refptr<ServerConnection> self(this);
   upstream_readable_ = true;
   upstream_writable_ = true;
 
@@ -1105,6 +1105,7 @@ void ServerConnection::connected() {
 }
 
 void ServerConnection::received(std::shared_ptr<IOBuf> buf) {
+  scoped_refptr<ServerConnection> self(this);
   VLOG(2) << "Connection (server) " << connection_id()
           << " upstream: received reply: " << buf->length() << " bytes.";
 
@@ -1134,6 +1135,7 @@ void ServerConnection::received(std::shared_ptr<IOBuf> buf) {
 }
 
 void ServerConnection::sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred) {
+  scoped_refptr<ServerConnection> self(this);
   VLOG(2) << "Connection (server) " << connection_id()
           << " upstream: sent request: " << bytes_transferred << " bytes.";
   DCHECK(!upstream_.empty() && upstream_[0] == buf);
@@ -1152,6 +1154,7 @@ void ServerConnection::sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred
 }
 
 void ServerConnection::disconnected(asio::error_code ec) {
+  scoped_refptr<ServerConnection> self(this);
   VLOG(1) << "Connection (server) " << connection_id()
           << " upstream: lost connection with: " << remote_domain()
           << " due to " << ec
