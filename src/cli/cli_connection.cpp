@@ -802,7 +802,7 @@ void CliConnection::WriteStreamInPipe() {
     kYieldAfterDurationMilliseconds * 1000 * 1000;
 
   /* recursively send the remainings */
-  while (!closed_) {
+  while (true) {
     if (GetMonotonicTime() > next_ticks) {
       break;
     }
@@ -822,6 +822,9 @@ void CliConnection::WriteStreamInPipe() {
       break;
     }
     if (!read) {
+      break;
+    }
+    if (closed_) {
       break;
     }
     size_t written;
@@ -925,7 +928,7 @@ void CliConnection::WriteUpstreamInPipe() {
   }
 
   /* recursively send the remainings */
-  while (!channel_->eof()) {
+  while (true) {
     if (bytes_transferred > kYieldAfterBytesRead) {
       ec = asio::error::try_again;
       break;
@@ -946,6 +949,9 @@ void CliConnection::WriteUpstreamInPipe() {
     if (!read) {
       break;
     }
+    if (channel_->eof()) {
+      break;
+    }
     ec = asio::error_code();
     size_t written;
     do {
@@ -962,6 +968,7 @@ void CliConnection::WriteUpstreamInPipe() {
             << buf->length();
     // continue to resume
     if (buf->empty()) {
+      DCHECK(!upstream_.empty() && upstream_[0] == buf);
       upstream_.pop_front();
     }
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
@@ -1045,6 +1052,7 @@ out:
     return nullptr;
   }
   ec = asio::error_code();
+  DCHECK(!upstream_.front()->empty());
   return upstream_.front();
 }
 
@@ -1390,6 +1398,7 @@ void CliConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
 }
 
 void CliConnection::connected() {
+  scoped_refptr<CliConnection> self(this);
   VLOG(2) << "Connection (client) " << connection_id()
           << " remote: established upstream connection with: "
           << remote_domain();
@@ -1507,7 +1516,6 @@ void CliConnection::connected() {
     EnableStreamRead();
   }
 
-  scoped_refptr<CliConnection> self(this);
   upstream_readable_ = true;
   upstream_writable_ = true;
   channel_->start_read([self]() {}, SOCKET_DEBUF_SIZE);
@@ -1515,6 +1523,7 @@ void CliConnection::connected() {
 }
 
 void CliConnection::received(std::shared_ptr<IOBuf> buf) {
+  scoped_refptr<CliConnection> self(this);
   VLOG(2) << "Connection (client) " << connection_id()
           << " upstream: received reply: " << buf->length() << " bytes.";
 
@@ -1582,6 +1591,7 @@ void CliConnection::received(std::shared_ptr<IOBuf> buf) {
 }
 
 void CliConnection::sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred) {
+  scoped_refptr<CliConnection> self(this);
   VLOG(2) << "Connection (client) " << connection_id()
           << " upstream: sent request: " << bytes_transferred << " bytes.";
   DCHECK(!upstream_.empty() && upstream_[0] == buf);
@@ -1605,6 +1615,7 @@ void CliConnection::sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred) {
 }
 
 void CliConnection::disconnected(asio::error_code ec) {
+  scoped_refptr<CliConnection> self(this);
   VLOG(1) << "Connection (client) " << connection_id()
           << " upstream: lost connection with: " << remote_domain()
           << " due to " << ec

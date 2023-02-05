@@ -642,7 +642,7 @@ void ServerConnection::WriteStreamInPipe() {
     kYieldAfterDurationMilliseconds * 1000 * 1000;
 
   /* recursively send the remainings */
-  while (!closed_) {
+  while (true) {
     if (GetMonotonicTime() > next_ticks) {
       break;
     }
@@ -662,6 +662,9 @@ void ServerConnection::WriteStreamInPipe() {
       break;
     }
     if (!read) {
+      break;
+    }
+    if (closed_) {
       break;
     }
     size_t written;
@@ -782,7 +785,7 @@ void ServerConnection::WriteUpstreamInPipe() {
   }
 
   /* recursively send the remainings */
-  while (!channel_->eof()) {
+  while (true) {
     if (bytes_transferred > kYieldAfterBytesRead) {
       ec = asio::error::try_again;
       break;
@@ -801,6 +804,9 @@ void ServerConnection::WriteUpstreamInPipe() {
       return;
     }
     if (!read) {
+      break;
+    }
+    if (channel_->eof()) {
       break;
     }
     ec = asio::error_code();
@@ -1122,10 +1128,10 @@ void ServerConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
 }
 
 void ServerConnection::connected() {
+  scoped_refptr<ServerConnection> self(this);
   VLOG(1) << "Connection (server) " << connection_id()
           << " remote: established upstream connection with: "
           << remote_domain();
-  scoped_refptr<ServerConnection> self(this);
   upstream_readable_ = true;
   upstream_writable_ = true;
 
@@ -1134,6 +1140,7 @@ void ServerConnection::connected() {
 }
 
 void ServerConnection::received(std::shared_ptr<IOBuf> buf) {
+  scoped_refptr<ServerConnection> self(this);
   VLOG(2) << "Connection (server) " << connection_id()
           << " upstream: received reply: " << buf->length() << " bytes.";
 
@@ -1163,6 +1170,7 @@ void ServerConnection::received(std::shared_ptr<IOBuf> buf) {
 }
 
 void ServerConnection::sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred) {
+  scoped_refptr<ServerConnection> self(this);
   VLOG(2) << "Connection (server) " << connection_id()
           << " upstream: sent request: " << bytes_transferred << " bytes.";
   DCHECK(!upstream_.empty() && upstream_[0] == buf);
@@ -1181,6 +1189,7 @@ void ServerConnection::sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred
 }
 
 void ServerConnection::disconnected(asio::error_code ec) {
+  scoped_refptr<ServerConnection> self(this);
   VLOG(1) << "Connection (server) " << connection_id()
           << " upstream: lost connection with: " << remote_domain()
           << " due to " << ec
