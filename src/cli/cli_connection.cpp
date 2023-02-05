@@ -561,10 +561,11 @@ asio::error_code CliConnection::OnReadRedirHandshake(
     OnCmdConnect(endpoint);
     asio::error_code ec;
 
-    if (buf->length()) {
+    if (!buf->empty()) {
       ProcessReceivedData(buf, ec, buf->length());
     } else {
-      ReadStream();  // continously read
+      WriteUpstreamInPipe();
+      OnUpstreamWriteFlush();
     }
     return ec;
   }
@@ -685,8 +686,12 @@ asio::error_code CliConnection::OnReadHttpRequest(
 
 void CliConnection::ReadStream() {
   scoped_refptr<CliConnection> self(this);
-  downstream_read_inprogress_ = true;
+  DCHECK_EQ(downstream_read_inprogress_, false);
+  if (downstream_read_inprogress_) {
+    return;
+  }
 
+  downstream_read_inprogress_ = true;
   socket_.async_read_some(asio::null_buffers(),
     [this, self](asio::error_code ec, size_t bytes_transferred) {
       downstream_read_inprogress_ = false;
@@ -700,19 +705,8 @@ void CliConnection::ReadStream() {
       if (!downstream_readable_) {
         return;
       }
-      std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
-      do {
-        bytes_transferred = socket_.read_some(mutable_buffer(*buf), ec);
-        if (ec == asio::error::interrupted) {
-          continue;
-        }
-      } while(false);
-      if (ec == asio::error::try_again || ec == asio::error::would_block) {
-        ReadStream();
-        return;
-      }
-      buf->append(bytes_transferred);
-      ProcessReceivedData(buf, ec, bytes_transferred);
+      WriteUpstreamInPipe();
+      OnUpstreamWriteFlush();
   });
 }
 
@@ -895,7 +889,7 @@ std::shared_ptr<IOBuf> CliConnection::GetNextDownstreamBuf(asio::error_code &ec)
       }
       remaining_buffer = remaining_buffer.substr(result);
     }
-    // Sent Control Streams
+    // Send Control Streams
     SendIfNotProcessing();
     OnUpstreamWriteFlush();
   } else if (upstream_https_fallback_) {
@@ -920,12 +914,12 @@ void CliConnection::WriteUpstreamInPipe() {
     kYieldAfterDurationMilliseconds * 1000 * 1000;
   bool try_again = false;
 
-  if (downstream_read_inprogress_ || channel_->write_inprogress()) {
+  if (downstream_read_inprogress_ || (channel_ && channel_->write_inprogress())) {
     return;
   }
 
   /* recursively send the remainings */
-  while (!channel_->eof()) {
+  while (true) {
     if (bytes_transferred > kYieldAfterBytesRead) {
       ec = asio::error::try_again;
       break;
@@ -944,6 +938,9 @@ void CliConnection::WriteUpstreamInPipe() {
       return;
     }
     if (!read) {
+      break;
+    }
+    if (channel_->eof()) {
       break;
     }
     ec = asio::error_code();
@@ -1016,6 +1013,12 @@ repeat_fetch:
   rbytes_transferred_ += read;
   total_rx_bytes += read;
   bytes_transferred += read;
+
+  if (!channel_ || !channel_->connected()) {
+    OnStreamRead(buf);
+    ec = asio::error::try_again;
+    return nullptr;
+  }
 
   if (adapter_) {
     if (padding_support_ && num_padding_send_ < kFirstPaddings) {
@@ -1187,7 +1190,8 @@ void CliConnection::ProcessReceivedData(
         if (buf->length()) {
           OnStreamRead(buf);
         }
-        ReadStream();  // continously read
+        WriteUpstreamInPipe();  // continously read
+        OnUpstreamWriteFlush();
         break;
       case state_error:
         ec = std::make_error_code(std::errc::bad_message);
@@ -1272,9 +1276,10 @@ void CliConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
     DisableStreamRead();
   }
 
-  if (!channel_->connected()) {
+  if (!channel_ || !channel_->connected()) {
     VLOG(1) << "Connection (client) " << connection_id()
             << " disabling reading";
+    DCHECK(!pending_data_);
     pending_data_ = buf;
     DisableStreamRead();
     return;
@@ -1324,7 +1329,8 @@ void CliConnection::EnableStreamRead() {
   if (!downstream_readable_) {
     downstream_readable_ = true;
     if (!downstream_read_inprogress_) {
-      ReadStream();
+      WriteUpstreamInPipe();
+      OnUpstreamWriteFlush();
     }
   }
 }

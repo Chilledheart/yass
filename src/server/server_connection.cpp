@@ -192,7 +192,8 @@ void ServerConnection::Start() {
     adapter_ = http2::adapter::OgHttp2Adapter::Create(*this, options);
     padding_support_ = absl::GetFlag(FLAGS_padding_support);
     SetState(state_stream);
-    ReadStream();
+    WriteUpstreamInPipe();
+    OnUpstreamWriteFlush();
   } else if (https_fallback_) {
     // TODO should we support it?
     // padding_support_ = absl::GetFlag(FLAGS_padding_support);
@@ -555,8 +556,12 @@ void ServerConnection::ReadHandshakeViaHttps() {
 
 void ServerConnection::ReadStream() {
   scoped_refptr<ServerConnection> self(this);
-  downstream_read_inprogress_ = true;
+  DCHECK_EQ(downstream_read_inprogress_, false);
+  if (downstream_read_inprogress_) {
+    return;
+  }
 
+  downstream_read_inprogress_ = true;
   s_async_read_some_([this, self](
     asio::error_code ec, std::size_t bytes_transferred) {
       downstream_read_inprogress_ = false;
@@ -570,47 +575,8 @@ void ServerConnection::ReadStream() {
       if (!downstream_readable_) {
         return;
       }
-      std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_DEBUF_SIZE);
-      do {
-        bytes_transferred = s_read_some_(buf, ec);
-        if (ec == asio::error::interrupted) {
-          continue;
-        }
-      } while(false);
-      if (ec == asio::error::try_again || ec == asio::error::would_block) {
-        DCHECK_EQ(bytes_transferred, 0u);
-        ReadStream();
-        return;
-      }
-      if (ec) {
-        OnDisconnect(ec);
-        return;
-      }
-      buf->append(bytes_transferred);
-      if (adapter_) {
-        absl::string_view remaining_buffer(
-            reinterpret_cast<const char*>(buf->data()), buf->length());
-        while (!remaining_buffer.empty()) {
-          int result = adapter_->ProcessBytes(remaining_buffer);
-          if (result < 0) {
-            OnDisconnect(asio::error::connection_refused);
-            return;
-          }
-          remaining_buffer = remaining_buffer.substr(result);
-        }
-        // Sent Control Streams
-        SendIfNotProcessing();
-        OnDownstreamWriteFlush();
-      } else if (https_fallback_) {
-        rbytes_transferred_ += buf->length();
-        upstream_.push_back(buf);
-      } else {
-        decoder_->process_bytes(buf);
-      }
+      WriteUpstreamInPipe();
       OnUpstreamWriteFlush();
-      if (downstream_readable_) {
-        ReadStream();
-      }
   });
 }
 
@@ -782,7 +748,7 @@ void ServerConnection::WriteUpstreamInPipe() {
   }
 
   /* recursively send the remainings */
-  while (!channel_->eof()) {
+  while (true) {
     if (bytes_transferred > kYieldAfterBytesRead) {
       ec = asio::error::try_again;
       break;
@@ -801,6 +767,9 @@ void ServerConnection::WriteUpstreamInPipe() {
       return;
     }
     if (!read) {
+      break;
+    }
+    if (channel_->eof()) {
       break;
     }
     ec = asio::error_code();
@@ -879,7 +848,7 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextUpstreamBuf(asio::error_code &ec
       }
       remaining_buffer = remaining_buffer.substr(result);
     }
-    // Sent Control Streams
+    // Send Control Streams
     SendIfNotProcessing();
     OnDownstreamWriteFlush();
   } else if (https_fallback_) {
@@ -923,7 +892,8 @@ void ServerConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf,
           OnStreamRead(buf);
         }
         if (downstream_readable_) {
-          ReadStream();  // continously read
+          WriteUpstreamInPipe();
+          OnUpstreamWriteFlush();
         }
         break;
       case state_error:
@@ -1063,7 +1033,8 @@ void ServerConnection::EnableStreamRead() {
   if (!downstream_readable_) {
     downstream_readable_ = true;
     if (!downstream_read_inprogress_) {
-      ReadStream();
+      WriteUpstreamInPipe();
+      OnUpstreamWriteFlush();
     }
   }
 }
