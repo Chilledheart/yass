@@ -419,7 +419,8 @@ bool ServerConnection::OnMetadataEndForStream(StreamId stream_id) {
 void ServerConnection::ReadHandshake() {
   scoped_refptr<ServerConnection> self(this);
 
-  s_async_read_some_([this, self](asio::error_code ec) {
+  s_async_read_some_([this, self](
+    asio::error_code ec, size_t bytes_transferred) {
       if (closed_) {
         return;
       }
@@ -428,7 +429,6 @@ void ServerConnection::ReadHandshake() {
         return;
       }
       std::shared_ptr<IOBuf> cipherbuf = IOBuf::create(SOCKET_DEBUF_SIZE);
-      size_t bytes_transferred;
       do {
         bytes_transferred = s_read_some_(cipherbuf, ec);
         if (ec == asio::error::interrupted) {
@@ -474,7 +474,8 @@ void ServerConnection::ReadHandshake() {
 void ServerConnection::ReadHandshakeViaHttps() {
   scoped_refptr<ServerConnection> self(this);
 
-  s_async_read_some_([this, self](asio::error_code ec) {
+  s_async_read_some_([this, self](
+    asio::error_code ec, size_t bytes_transferred) {
       if (closed_) {
         return;
       }
@@ -482,7 +483,6 @@ void ServerConnection::ReadHandshakeViaHttps() {
         ProcessReceivedData(nullptr, ec, 0);
         return;
       }
-      size_t bytes_transferred;
       std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_DEBUF_SIZE);
       do {
         bytes_transferred = s_read_some_(buf, ec);
@@ -552,7 +552,8 @@ void ServerConnection::ReadStream() {
   }
 
   downstream_read_inprogress_ = true;
-  s_async_read_some_([this, self](asio::error_code ec) {
+  s_async_read_some_([this, self](
+    asio::error_code ec, std::size_t bytes_transferred) {
       downstream_read_inprogress_ = false;
       if (closed_) {
         return;
@@ -576,7 +577,8 @@ void ServerConnection::WriteStream() {
   }
   scoped_refptr<ServerConnection> self(this);
   write_inprogress_ = true;
-  s_async_write_some_([this, self](asio::error_code ec) {
+  s_async_write_some_([this, self](
+    asio::error_code ec, size_t /*bytes_transferred*/) {
       write_inprogress_ = false;
       if (closed_) {
         return;

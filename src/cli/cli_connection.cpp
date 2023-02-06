@@ -409,7 +409,8 @@ bool CliConnection::OnMetadataEndForStream(StreamId stream_id) {
 void CliConnection::ReadMethodSelect() {
   scoped_refptr<CliConnection> self(this);
 
-  s_async_read_some_([this, self](asio::error_code ec) {
+  socket_.async_read_some(asio::null_buffers(),
+    [this, self](asio::error_code ec, size_t bytes_transferred) {
       if (closed_) {
         return;
       }
@@ -418,7 +419,6 @@ void CliConnection::ReadMethodSelect() {
         return;
       }
       std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
-      size_t bytes_transferred;
       do {
         bytes_transferred = socket_.read_some(mutable_buffer(*buf), ec);
         if (ec == asio::error::interrupted) {
@@ -457,7 +457,8 @@ void CliConnection::ReadMethodSelect() {
 void CliConnection::ReadSocks5Handshake() {
   scoped_refptr<CliConnection> self(this);
 
-  s_async_read_some_([this, self](asio::error_code ec) {
+  socket_.async_read_some(asio::null_buffers(),
+    [this, self](asio::error_code ec, size_t bytes_transferred) {
       if (closed_) {
         return;
       }
@@ -466,7 +467,6 @@ void CliConnection::ReadSocks5Handshake() {
         return;
       }
       std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
-      size_t bytes_transferred;
       do {
         bytes_transferred = socket_.read_some(mutable_buffer(*buf), ec);
         if (ec == asio::error::interrupted) {
@@ -653,7 +653,8 @@ void CliConnection::ReadStream() {
   }
 
   downstream_read_inprogress_ = true;
-  s_async_read_some_([this, self](asio::error_code ec) {
+  socket_.async_read_some(asio::null_buffers(),
+    [this, self](asio::error_code ec, size_t bytes_transferred) {
       downstream_read_inprogress_ = false;
       if (closed_) {
         return;
@@ -735,7 +736,8 @@ void CliConnection::WriteStream() {
   }
   scoped_refptr<CliConnection> self(this);
   write_inprogress_ = true;
-  s_async_write_some_([this, self](asio::error_code ec) {
+  socket_.async_write_some(asio::null_buffers(),
+    [this, self](asio::error_code ec, size_t /*bytes_transferred*/) {
       write_inprogress_ = false;
       if (closed_) {
         return;
