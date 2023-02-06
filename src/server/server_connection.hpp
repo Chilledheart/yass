@@ -354,8 +354,8 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   /// handle with connect event (upstream)
   void connected() override;
 
-  /// handle read data for data read event (upstream)
-  void received(std::shared_ptr<IOBuf> buf) override;
+  /// handle data read event (upstream)
+  void received() override;
 
   /// handle written data for data sent event (upstream)
   void sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred) override;

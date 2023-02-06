@@ -896,6 +896,41 @@ std::shared_ptr<IOBuf> CliConnection::GetNextDownstreamBuf(asio::error_code &ec)
     SendIfNotProcessing();
     OnUpstreamWriteFlush();
   } else if (upstream_https_fallback_) {
+    if (upstream_handshake_) {
+      upstream_handshake_ = false;
+      HttpResponseParser parser;
+
+      bool ok;
+      int nparsed = parser.Parse(buf, &ok);
+
+      if (nparsed) {
+        VLOG(3) << "Connection (client) " << connection_id()
+                << " http: "
+                << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
+      }
+      if (ok && parser.status_code() == 200) {
+        buf->trimStart(nparsed);
+        buf->retreat(nparsed);
+        if (buf->empty()) {
+          ec = asio::error::try_again;
+          return nullptr;
+        }
+      } else {
+        if (!ok) {
+          LOG(WARNING) << "Connection (client) " << connection_id()
+                       << " upstream server unhandled: "
+                       << parser.ErrorMessage() << ": "
+                       << std::string(reinterpret_cast<const char*>(buf->data()),
+                                      nparsed);
+        } else {
+          LOG(WARNING) << "Connection (client) " << connection_id()
+                       << " upstream server returns: " << parser.status_code();
+        }
+        ec = asio::error::connection_refused;
+        disconnected(ec);
+        return nullptr;
+      }
+    }
     downstream_.push_back(buf);
   } else {
     decoder_->process_bytes(buf);
@@ -1522,14 +1557,14 @@ void CliConnection::connected() {
 
   upstream_readable_ = true;
   upstream_writable_ = true;
-  channel_->start_read([self]() {}, SOCKET_DEBUF_SIZE);
+  channel_->start_read([self]() {});
   OnUpstreamWriteFlush();
 }
 
-void CliConnection::received(std::shared_ptr<IOBuf> buf) {
+void CliConnection::received() {
   scoped_refptr<CliConnection> self(this);
-  VLOG(2) << "Connection (client) " << connection_id()
-          << " upstream: received reply: " << buf->length() << " bytes.";
+  WriteStreamInPipe();
+  OnDownstreamWriteFlush();
 
   // queue limit to upstream read
   if (downstream_.size() >= MAX_DOWNSTREAM_DEPS && upstream_readable_) {
@@ -1538,60 +1573,6 @@ void CliConnection::received(std::shared_ptr<IOBuf> buf) {
     upstream_readable_ = false;
     channel_->disable_read();
   }
-
-  if (adapter_) {
-    absl::string_view remaining_buffer(
-        reinterpret_cast<const char*>(buf->data()), buf->length());
-    while (!remaining_buffer.empty()) {
-      int result = adapter_->ProcessBytes(remaining_buffer);
-      if (result < 0) {
-        disconnected(asio::error::connection_refused);
-        return;
-      }
-      remaining_buffer = remaining_buffer.substr(result);
-    }
-    // Sent Control Streams
-    SendIfNotProcessing();
-    OnUpstreamWriteFlush();
-  } else if (upstream_https_fallback_) {
-    if (upstream_handshake_) {
-      upstream_handshake_= false;
-      HttpResponseParser parser;
-
-      bool ok;
-      int nparsed = parser.Parse(buf, &ok);
-
-      if (nparsed) {
-        VLOG(3) << "Connection (client) " << connection_id()
-                << " http: "
-                << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
-      }
-      if (ok && parser.status_code() == 200) {
-        buf->trimStart(nparsed);
-        buf->retreat(nparsed);
-        if (buf->empty()) {
-          return;
-        }
-      } else {
-        if (!ok) {
-          LOG(WARNING) << "Connection (client) " << connection_id()
-                       << " upstream server unhandled: "
-                       << parser.ErrorMessage() << ": "
-                       << std::string(reinterpret_cast<const char*>(buf->data()),
-                                      nparsed);
-        } else {
-          LOG(WARNING) << "Connection (client) " << connection_id()
-                       << " upstream server returns: " << parser.status_code();
-        }
-        disconnected(asio::error::connection_refused);
-        return;
-      }
-    }
-    downstream_.push_back(buf);
-  } else {
-    decoder_->process_bytes(buf);
-  }
-  OnDownstreamWriteFlush();
 }
 
 void CliConnection::sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred) {

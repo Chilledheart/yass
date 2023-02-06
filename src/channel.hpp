@@ -20,10 +20,9 @@ class Channel {
   /// Called once connection established
   virtual void connected() = 0;
 
-  /// Called once an IOBuf is received
+  /// Called once ready to receive
   ///
-  /// \param buf the io buf received
-  virtual void received(std::shared_ptr<IOBuf> buf) = 0;
+  virtual void received() = 0;
 
   /// Called once an IOBuf is sent
   ///

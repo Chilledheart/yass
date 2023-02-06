@@ -194,19 +194,20 @@ class stream {
     if (!read_enabled_) {
       read_enabled_ = true;
       if (!read_inprogress_) {
-        start_read(callback, capacity);
+        start_read(callback);
       }
     }
   }
 
-  void start_read(std::function<void()> callback, int capacity = SOCKET_BUF_SIZE) {
+  /// start read routine
+  ///
+  void start_read(std::function<void()> callback) {
     DCHECK(read_enabled_);
     DCHECK(!read_inprogress_);
-    DCHECK(capacity);
     Channel* channel = channel_;
     read_inprogress_ = true;
 
-    s_async_read_some_([this, channel, callback, capacity]
+    s_async_read_some_([this, channel, callback]
       (asio::error_code ec, std::size_t bytes_transferred) {
         read_inprogress_ = false;
         // Cancelled, safe to ignore
@@ -219,29 +220,20 @@ class stream {
           return;
         }
         if (ec) {
-          on_read(channel, nullptr, ec, bytes_transferred, callback);
+          on_disconnect(channel, ec);
+          callback();
           return;
         }
         if (!read_enabled_) {
           callback();
           return;
         }
-
-        std::shared_ptr<IOBuf> buf = IOBuf::create(capacity);
-        if (!ec) {
-          do {
-            bytes_transferred = s_read_some_(buf, ec);
-            if (ec == asio::error::interrupted) {
-              continue;
-            }
-          } while(false);
-        }
-        if (ec == asio::error::try_again || ec == asio::error::would_block) {
-          DCHECK_EQ(bytes_transferred, 0u);
+        channel_->received();
+        if (read_enabled_) {
           start_read(callback);
           return;
         }
-        on_read(channel, buf, ec, bytes_transferred, callback);
+        callback();
     });
   }
 
@@ -440,36 +432,6 @@ class stream {
       ec = asio::error::timed_out;
     }
     channel->disconnected(ec);
-    callback();
-  }
-
-  void on_read(Channel* channel,
-               std::shared_ptr<IOBuf> buf,
-               asio::error_code ec,
-               size_t bytes_transferred,
-               std::function<void()> callback) {
-    rbytes_transferred_ += bytes_transferred;
-    if (buf) {
-      buf->append(bytes_transferred);
-    }
-
-    if (ec || bytes_transferred == 0) {
-      eof_ = true;
-    }
-
-    if (bytes_transferred) {
-      channel->received(buf);
-      if (read_enabled_) {
-        start_read(callback);
-        return;
-      }
-    }
-
-    if (ec) {
-      DCHECK(!bytes_transferred) << "data receiving failed with data "
-        << endpoint_ << " due to " << ec;
-      on_disconnect(channel, ec);
-    }
     callback();
   }
 

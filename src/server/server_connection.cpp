@@ -1108,34 +1108,19 @@ void ServerConnection::connected() {
   OnUpstreamWriteFlush();
 }
 
-void ServerConnection::received(std::shared_ptr<IOBuf> buf) {
+void ServerConnection::received() {
   scoped_refptr<ServerConnection> self(this);
-  VLOG(2) << "Connection (server) " << connection_id()
-          << " upstream: received reply: " << buf->length() << " bytes.";
+
+  WriteStreamInPipe();
+  OnDownstreamWriteFlush();
 
   // queue limit to upstream read
   if (downstream_.size() >= MAX_DOWNSTREAM_DEPS && upstream_readable_) {
-    VLOG(1) << "Connection (server) " << connection_id()
+    VLOG(1) << "Connection (client) " << connection_id()
             << " disabling reading from upstream";
     upstream_readable_ = false;
     channel_->disable_read();
   }
-
-  if (adapter_) {
-    if (padding_support_ && num_padding_send_ < kFirstPaddings) {
-      ++num_padding_send_;
-      AddPadding(buf);
-    }
-    data_frame_->AddChunk(buf);
-    data_frame_->SetSendCompletionCallback(std::function<void()>());
-    adapter()->ResumeStream(stream_id_);
-    SendIfNotProcessing();
-  } else if (https_fallback_) {
-    downstream_.push_back(buf);
-  } else {
-    downstream_.push_back(EncryptData(buf));
-  }
-  OnDownstreamWriteFlush();
 }
 
 void ServerConnection::sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred) {
