@@ -11,6 +11,14 @@
 #include <absl/flags/parse.h>
 #include <locale.h>
 
+#ifdef _WIN32
+#include <ws2tcpip.h>
+#else
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#endif
+
 #include "core/asio.hpp"
 #include "core/logging.hpp"
 #include "crypto/crypter_export.hpp"
@@ -66,12 +74,21 @@ int main(int argc, const char* argv[]) {
   if (host_is_ip_address) {
     endpoint = asio::ip::tcp::endpoint(addr, port);
   } else {
-    asio::ip::tcp::resolver resolver(io_context);
-    auto endpoints = resolver.resolve(host_name, std::to_string(port), ec);
-    if (ec) {
-      LOG(WARNING) << "server resolved host:" << host_name
-        << " failed due to: " << ec;
-      return -1;
+    struct addrinfo hints = {}, *addrinfo;
+    hints.ai_flags = AI_CANONNAME;
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = 0;
+    hints.ai_protocol = 0;
+    int ret = ::getaddrinfo(host_name.c_str(), std::to_string(port).c_str(), &hints, &addrinfo);
+    auto endpoints = asio::ip::tcp::resolver::results_type::create(addrinfo, host_name.c_str(), std::to_string(port));
+    ::freeaddrinfo(addrinfo);
+    if (ret) {
+      LOG(WARNING) << "server resolved host: " << host_name
+#ifdef _WIN32
+        << " failed due to: " << gai_strerrorA(ret);
+#else
+        << " failed due to: " << gai_strerror(ret);
+#endif
     }
     endpoint = endpoints->endpoint();
   }

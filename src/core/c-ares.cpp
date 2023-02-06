@@ -197,6 +197,10 @@ void CAresResolver::AsyncResolve(const std::string& host,
       struct ares_addrinfo_node* next = result->nodes;
       struct addrinfo *addrinfo = new struct addrinfo;
       addrinfo->ai_next = nullptr;
+      // If hints.ai_flags includes the AI_CANONNAME flag, then the
+      // ai_canonname field of the first of the addrinfo structures in the
+      // returned list is set to point to the official name of the host.
+      char* canon_name = result->cnames ? result->cnames->name : nullptr;
 
       // Iterate the output
       struct addrinfo *next_addrinfo = addrinfo;
@@ -209,9 +213,11 @@ void CAresResolver::AsyncResolve(const std::string& host,
         next_addrinfo->ai_socktype = next->ai_socktype;
         next_addrinfo->ai_protocol = next->ai_protocol;
         next_addrinfo->ai_addrlen = next->ai_addrlen;
-        next_addrinfo->ai_canonname = nullptr;
+        next_addrinfo->ai_canonname = canon_name;
         next_addrinfo->ai_addr = next->ai_addr;
         next_addrinfo->ai_next = nullptr;
+
+        canon_name = nullptr;
 
         next = next->ai_next;
       }
