@@ -51,14 +51,14 @@ class Connection {
         ssl_socket_(socket_, *ssl_ctx) {
     if (enable_tls) {
       setup_ssl();
-      s_async_read_some_ = [this](io_handle_t cb) {
-        ssl_socket_.async_read_some(asio::null_buffers(), cb);
+      s_async_read_some_ = [this](handle_t cb) {
+        socket_.async_wait(asio::ip::tcp::socket::wait_read, cb);
       };
       s_read_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
         return ssl_socket_.read_some(mutable_buffer(*buf), ec);
       };
-      s_async_write_some_ = [this](io_handle_t cb) {
-        ssl_socket_.async_write_some(asio::null_buffers(), cb);
+      s_async_write_some_ = [this](handle_t cb) {
+        socket_.async_wait(asio::ip::tcp::socket::wait_write, cb);
       };
       s_write_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
         return ssl_socket_.write_some(const_buffer(*buf), ec);
@@ -71,14 +71,14 @@ class Connection {
         ssl_socket_.shutdown(ec);
       };
     } else {
-      s_async_read_some_ = [this](io_handle_t cb) {
-        socket_.async_read_some(asio::null_buffers(), cb);
+      s_async_read_some_ = [this](handle_t cb) {
+        socket_.async_wait(asio::ip::tcp::socket::wait_read, cb);
       };
       s_read_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
         return socket_.read_some(mutable_buffer(*buf), ec);
       };
-      s_async_write_some_ = [this](io_handle_t cb) {
-        socket_.async_write_some(asio::null_buffers(), cb);
+      s_async_write_some_ = [this](handle_t cb) {
+        socket_.async_wait(asio::ip::tcp::socket::wait_write, cb);
       };
       s_write_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
         return socket_.write_some(const_buffer(*buf), ec);
@@ -180,9 +180,9 @@ class Connection {
   asio::ssl::stream<asio::ip::tcp::socket&> ssl_socket_;
 
   /// io_handlers
-  std::function<void(io_handle_t)> s_async_read_some_;
+  std::function<void(handle_t)> s_async_read_some_;
   std::function<size_t(std::shared_ptr<IOBuf>, asio::error_code &)> s_read_some_;
-  std::function<void(io_handle_t)> s_async_write_some_;
+  std::function<void(handle_t)> s_async_write_some_;
   std::function<size_t(std::shared_ptr<IOBuf>, asio::error_code &)> s_write_some_;
   std::function<void(handle_t)> s_async_shutdown_;
   std::function<void(asio::error_code&)> s_shutdown_;
