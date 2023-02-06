@@ -33,7 +33,7 @@
 #endif
 
 #define CIPHER_METHOD_MAP_HTTP(XX)                                    \
-  XX(0x110U, HTTPS, "https-protocol")
+  XX(0x110U, HTTPS, "https")
 
 #ifdef HAVE_QUICHE
 #define CIPHER_METHOD_MAP_HTTP2(XX)                                   \
