@@ -746,7 +746,7 @@ void ServerConnection::WriteUpstreamInPipe() {
     kYieldAfterDurationMilliseconds * 1000 * 1000;
   bool try_again = false;
 
-  if (downstream_read_inprogress_ || (channel_ && channel_->write_inprogress())) {
+  if (channel_ && channel_->write_inprogress()) {
     return;
   }
 
@@ -805,7 +805,9 @@ void ServerConnection::WriteUpstreamInPipe() {
     }
   }
   if (try_again || ec == asio::error::try_again || ec == asio::error::would_block) {
-    ReadStream();
+    if (!downstream_read_inprogress_) {
+      ReadStream();
+    }
   }
 }
 
@@ -1092,7 +1094,7 @@ void ServerConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (!upstream_.empty() && upstream_writable_) {
     upstream_writable_ = false;
     scoped_refptr<ServerConnection> self(this);
-    channel_->start_write(upstream_.front(), [self](){});
+    channel_->start_write([self](){});
   }
 }
 
@@ -1123,12 +1125,8 @@ void ServerConnection::received() {
   }
 }
 
-void ServerConnection::sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred) {
+void ServerConnection::sent() {
   scoped_refptr<ServerConnection> self(this);
-  VLOG(2) << "Connection (server) " << connection_id()
-          << " upstream: sent request: " << bytes_transferred << " bytes.";
-  DCHECK(!upstream_.empty() && upstream_[0] == buf);
-  upstream_.pop_front();
 
   upstream_writable_ = true;
 

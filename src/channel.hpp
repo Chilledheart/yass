@@ -24,11 +24,9 @@ class Channel {
   ///
   virtual void received() = 0;
 
-  /// Called once an IOBuf is sent
+  /// Called once ready to write
   ///
-  /// \param buf the io buf sent
-  /// \param bytes_transferred the bytes sent
-  virtual void sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred) = 0;
+  virtual void sent() = 0;
 
   /// Called once connection closed
   virtual void disconnected(asio::error_code error) = 0;

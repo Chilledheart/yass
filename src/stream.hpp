@@ -254,15 +254,12 @@ class stream {
 
   /// start write routine
   ///
-  /// \param buf the shared buffer used in write routine
-  void start_write(std::shared_ptr<IOBuf> buf, std::function<void()> callback) {
+  void start_write(std::function<void()> callback) {
     Channel* channel = channel_;
     DCHECK(!write_inprogress_);
-    DCHECK(!buf->empty());
     write_inprogress_ = true;
-    s_async_write_some_([this, channel, buf, callback](
+    s_async_write_some_([this, channel, callback](
       asio::error_code ec, size_t /*bytes_transferred*/) {
-        DCHECK(!buf->empty());
         write_inprogress_ = false;
         // Cancelled, safe to ignore
         if (ec == asio::error::operation_aborted) {
@@ -274,39 +271,13 @@ class stream {
           return;
         }
         if (ec) {
-          on_write(channel, nullptr, ec, 0, callback);
+          on_disconnect(channel, ec);
+          callback();
           return;
         }
 
-        size_t bytes_transferred;
-        do {
-          bytes_transferred = s_write_some_(buf, ec);
-          if (ec == asio::error::interrupted) {
-            continue;
-          }
-        } while(false);
-        buf->trimStart(bytes_transferred);
-
-        if (bytes_transferred &&
-            (ec == asio::error::try_again || ec == asio::error::would_block)) {
-          // Treat recevied bytes correctly, EAGAIN is possible in TLS layer
-          ec = asio::error_code();
-        }
-
-        if (ec == asio::error::try_again || ec == asio::error::would_block) {
-          DCHECK_EQ(bytes_transferred, 0u);
-          start_write(buf, callback);
-          return;
-        }
-        if (ec) {
-          on_write(channel, buf, ec, bytes_transferred, callback);
-          return;
-        }
-        if (!buf->empty()) {
-          start_write(buf, callback);
-          return;
-        }
-        on_write(channel, buf, ec, bytes_transferred, callback);
+        channel->sent();
+        callback();
     });
   }
 
@@ -432,30 +403,6 @@ class stream {
       ec = asio::error::timed_out;
     }
     channel->disconnected(ec);
-    callback();
-  }
-
-  void on_write(Channel* channel,
-                std::shared_ptr<IOBuf> buf,
-                asio::error_code ec,
-                size_t bytes_transferred,
-                std::function<void()> callback) {
-    wbytes_transferred_ += bytes_transferred;
-
-    if (ec || bytes_transferred == 0) {
-      eof_ = true;
-    }
-
-    if (bytes_transferred) {
-      DCHECK_EQ(buf->length(), 0u);
-      channel->sent(buf, bytes_transferred);
-    }
-
-    if (ec) {
-      DCHECK(!bytes_transferred) << "data sending failed with data "
-        << endpoint_ << " due to " << ec;
-      on_disconnect(channel, ec);
-    }
     callback();
   }
 

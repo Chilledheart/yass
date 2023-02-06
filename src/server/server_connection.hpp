@@ -357,8 +357,8 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   /// handle data read event (upstream)
   void received() override;
 
-  /// handle written data for data sent event (upstream)
-  void sent(std::shared_ptr<IOBuf> buf, size_t bytes_transferred) override;
+  /// handle data write (upstream)
+  void sent() override;
 
   /// handle with disconnect event (upstream)
   void disconnected(asio::error_code error) override;
