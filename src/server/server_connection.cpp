@@ -14,13 +14,9 @@
 #include "core/rand_util.hpp"
 #include "core/utils.hpp"
 
-namespace {
-// from spdy_session.h
-// If more than this many bytes have been read or more than that many
-// milliseconds have passed, return ERR_IO_PENDING from ReadLoop.
-const int kYieldAfterBytesRead = 32 * 1024;
-const int kYieldAfterDurationMilliseconds = 20;
+namespace server {
 
+namespace {
 std::vector<http2::adapter::Header> GenerateHeaders(
   std::vector<std::pair<std::string, std::string>> headers, int status = 0) {
   std::vector<http2::adapter::Header> response_vector;
@@ -51,12 +47,6 @@ std::string GetProxyAuthorizationIdentity() {
 }
 
 } // namespace
-
-// 32K / 4k = 8
-#define MAX_DOWNSTREAM_DEPS 8
-#define MAX_UPSTREAM_DEPS 8
-
-namespace server {
 
 const char ServerConnection::http_connect_reply_[] =
     "HTTP/1.1 200 Connection established\r\n\r\n";
@@ -612,16 +602,18 @@ void ServerConnection::WriteStreamInPipe() {
     if (GetMonotonicTime() > next_ticks) {
       break;
     }
+#ifdef ENABLE_YIELD_AFTER_WRITE
     if (bytes_transferred > kYieldAfterBytesRead) {
       break;
     }
+#endif
 
-    bool eof = false;
+    bool try_again = false;
     auto buf = GetNextDownstreamBuf(ec);
     size_t read = buf ? buf->length() : 0;
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
       ec = asio::error_code();
-      eof = true;
+      try_again = true;
     } else if (ec) {
       /* not downstream error */
       ec = asio::error_code();
@@ -654,7 +646,7 @@ void ServerConnection::WriteStreamInPipe() {
     if (ec) {
       break;
     }
-    if (eof || !buf->empty()) {
+    if (try_again || !buf->empty()) {
       break;
     }
   }
@@ -709,13 +701,13 @@ repeat_fetch:
       AddPadding(buf);
     }
     data_frame_->AddChunk(buf);
-    if (bytes_transferred <= kYieldAfterBytesRead) {
-      goto repeat_fetch;
-    }
   } else if (https_fallback_) {
     downstream_.push_back(buf);
   } else {
     downstream_.push_back(EncryptData(buf));
+  }
+  if (bytes_transferred <= kYieldAfterBytesRead) {
+    goto repeat_fetch;
   }
 
 out:
@@ -752,14 +744,17 @@ void ServerConnection::WriteUpstreamInPipe() {
 
   /* recursively send the remainings */
   while (true) {
-    if (bytes_transferred > kYieldAfterBytesRead) {
-      ec = asio::error::try_again;
-      break;
-    }
     if (GetMonotonicTime() > next_ticks) {
       ec = asio::error::try_again;
       break;
     }
+#ifdef ENABLE_YIELD_AFTER_WRITE
+    if (bytes_transferred > kYieldAfterBytesRead) {
+      ec = asio::error::try_again;
+      break;
+    }
+#endif
+
     size_t read;
     std::shared_ptr<IOBuf> buf = GetNextUpstreamBuf(ec);
     read = buf ? buf->length() : 0;
@@ -821,6 +816,9 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextUpstreamBuf(asio::error_code &ec
     ec = asio::error::try_again;
     return nullptr;
   }
+  size_t bytes_transferred = 0U;
+
+repeat_fetch:
   std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_DEBUF_SIZE);
   size_t read;
   do {
@@ -833,14 +831,16 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextUpstreamBuf(asio::error_code &ec
   if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
     /* safe to return, socket will handle this error later */
     ProcessReceivedData(nullptr, ec, read);
-    return nullptr;
+    goto out;
   }
   if (read) {
     VLOG(2) << "Connection (server) " << connection_id()
             << " received data (pipe): " << read << " bytes.";
   } else {
-    return nullptr;
+    goto out;
   }
+  bytes_transferred += read;
+
   if (adapter_) {
     absl::string_view remaining_buffer(
         reinterpret_cast<const char*>(buf->data()), buf->length());
@@ -862,11 +862,20 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextUpstreamBuf(asio::error_code &ec
   } else {
     decoder_->process_bytes(buf);
   }
+  if (bytes_transferred <= kYieldAfterBytesRead) {
+    goto repeat_fetch;
+  }
+
+out:
   if (upstream_.empty()) {
     if (!ec) {
       ec = asio::error::try_again;
     }
     return nullptr;
+  }
+  if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
+    /* mark of eof , only for downstrem */
+    upstream_.push_back(nullptr);
   }
   ec = asio::error_code();
   return upstream_.front();

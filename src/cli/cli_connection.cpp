@@ -16,42 +16,7 @@
 
 namespace cli {
 
-// from net/http/http_network_session.h
-// Specifies the maximum HPACK dynamic table size the server is allowed to set.
-const uint32_t kSpdyMaxHeaderTableSize = 64 * 1024;
-
-// The maximum size of header list that the server is allowed to send.
-const uint32_t kSpdyMaxHeaderListSize = 256 * 1024;
-
-// Specifies the maximum concurrent streams server could send (via push).
-const uint32_t kSpdyMaxConcurrentPushedStreams = 1000;
-
-// Specifies the the default value for the push setting, which is disabled.
-const uint32_t kSpdyDisablePush = 0;
-
-// from net/http/http_network_session.cc
-// The maximum receive window sizes for HTTP/2 sessions and streams.
-const int32_t kSpdySessionMaxRecvWindowSize = 15 * 1024 * 1024;  // 15 MB
-const int32_t kSpdyStreamMaxRecvWindowSize = 6 * 1024 * 1024;    //  6 MB
-
 namespace {
-// from spdy_session.h
-// If more than this many bytes have been read or more than that many
-// milliseconds have passed, return ERR_IO_PENDING from ReadLoop.
-const int kYieldAfterBytesRead = 32 * 1024;
-const int kYieldAfterDurationMilliseconds = 20;
-
-// from net/spdy/spdy_session.h
-// Maximum number of capped frames that can be queued at any time.
-// We measured how many queued capped frames were ever in the
-// SpdyWriteQueue at one given time between 2019-08 and 2020-02.
-// The numbers showed that in 99.94% of cases it would always
-// stay below 10, and that it would exceed 1000 only in
-// 10^-8 of cases. Therefore we picked 10000 as a number that will
-// virtually never be hit in practice, while still preventing an
-// attacker from growing this queue unboundedly.
-const int kSpdySessionMaxQueuedCappedFrames = 10000;
-
 std::vector<http2::adapter::Header> GenerateHeaders(
   std::vector<std::pair<std::string, std::string>> headers, int status = 0) {
   std::vector<http2::adapter::Header> response_vector;
@@ -114,10 +79,6 @@ void FillNonindexHeaderValue(uint64_t unique_bits, char* buf, int len) {
   }
 }
 }  // namespace
-
-// 32K / 4k = 8
-#define MAX_DOWNSTREAM_DEPS 8
-#define MAX_UPSTREAM_DEPS 8
 
 const char CliConnection::http_connect_reply_[] =
     "HTTP/1.1 200 Connection established\r\n\r\n";
@@ -800,9 +761,11 @@ void CliConnection::WriteStreamInPipe() {
     if (GetMonotonicTime() > next_ticks) {
       break;
     }
+#ifdef ENABLE_YIELD_AFTER_WRITE
     if (bytes_transferred > kYieldAfterBytesRead) {
       break;
     }
+#endif
 
     bool eof = false;
     auto buf = GetNextDownstreamBuf(ec);
@@ -851,6 +814,12 @@ void CliConnection::WriteStreamInPipe() {
 
 std::shared_ptr<IOBuf> CliConnection::GetNextDownstreamBuf(asio::error_code &ec) {
   if (!downstream_.empty()) {
+    /* found mark of eof */
+    if (downstream_.front() == nullptr) {
+      ec = asio::error::eof;
+      downstream_.pop_front();
+      return nullptr;
+    }
     DCHECK(!downstream_.front()->empty());
     ec = asio::error_code();
     return downstream_.front();
@@ -859,6 +828,9 @@ std::shared_ptr<IOBuf> CliConnection::GetNextDownstreamBuf(asio::error_code &ec)
     ec = asio::error::try_again;
     return nullptr;
   }
+  size_t bytes_transferred = 0U;
+
+repeat_fetch:
   std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_DEBUF_SIZE);
   size_t read;
   do {
@@ -872,14 +844,16 @@ std::shared_ptr<IOBuf> CliConnection::GetNextDownstreamBuf(asio::error_code &ec)
   if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
     // handled in channel_->read_some func
     // disconnected(ec);
-    return nullptr;
+    goto out;
   }
   if (read) {
     VLOG(2) << "Connection (client) " << connection_id()
             << " upstream: received reply (pipe): " << read << " bytes.";
   } else {
-    return nullptr;
+    goto out;
   }
+  bytes_transferred += read;
+
   if (adapter_) {
     absl::string_view remaining_buffer(
         reinterpret_cast<const char*>(buf->data()), buf->length());
@@ -935,11 +909,20 @@ std::shared_ptr<IOBuf> CliConnection::GetNextDownstreamBuf(asio::error_code &ec)
   } else {
     decoder_->process_bytes(buf);
   }
+  if (bytes_transferred <= kYieldAfterBytesRead) {
+    goto repeat_fetch;
+  }
+
+out:
   if (downstream_.empty()) {
     if (!ec) {
       ec = asio::error::try_again;
     }
     return nullptr;
+  }
+  if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
+    /* mark of eof , only for downstrem */
+    downstream_.push_back(nullptr);
   }
   ec = asio::error_code();
   return downstream_.front();
@@ -958,14 +941,17 @@ void CliConnection::WriteUpstreamInPipe() {
 
   /* recursively send the remainings */
   while (true) {
-    if (bytes_transferred > kYieldAfterBytesRead) {
-      ec = asio::error::try_again;
-      break;
-    }
     if (GetMonotonicTime() > next_ticks) {
       ec = asio::error::try_again;
       break;
     }
+#ifdef ENABLE_YIELD_AFTER_WRITE
+    if (bytes_transferred > kYieldAfterBytesRead) {
+      ec = asio::error::try_again;
+      break;
+    }
+#endif
+
     size_t read;
     std::shared_ptr<IOBuf> buf = GetNextUpstreamBuf(ec);
     read = buf ? buf->length() : 0;
@@ -1020,6 +1006,12 @@ void CliConnection::WriteUpstreamInPipe() {
 
 std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code &ec) {
   if (!upstream_.empty()) {
+    /* found mark of eof */
+    if (upstream_.front() == nullptr) {
+      ec = asio::error::eof;
+      upstream_.pop_front();
+      return nullptr;
+    }
     DCHECK(!upstream_.front()->empty());
     ec = asio::error_code();
     return upstream_.front();
@@ -1067,13 +1059,13 @@ repeat_fetch:
       AddPadding(buf);
     }
     data_frame_->AddChunk(buf);
-    if (bytes_transferred <= kYieldAfterBytesRead) {
-      goto repeat_fetch;
-    }
   } else if (upstream_https_fallback_) {
     upstream_.push_back(buf);
   } else {
     upstream_.push_back(EncryptData(buf));
+  }
+  if (bytes_transferred <= kYieldAfterBytesRead) {
+    goto repeat_fetch;
   }
 
 out:
@@ -1087,6 +1079,10 @@ out:
       ec = asio::error::try_again;
     }
     return nullptr;
+  }
+  if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
+    /* mark of eof , only for downstrem */
+    upstream_.push_back(nullptr);
   }
   ec = asio::error_code();
   DCHECK(!upstream_.front()->empty());
