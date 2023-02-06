@@ -104,4 +104,6 @@ const int kSpdySessionMaxQueuedCappedFrames = 10000;
 #define MAX_DOWNSTREAM_DEPS 8
 #define MAX_UPSTREAM_DEPS 8
 
+#define ENABLE_YIELD_AFTER_WRITE
+
 #endif  // H_NETWORK
