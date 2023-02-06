@@ -767,12 +767,12 @@ void CliConnection::WriteStreamInPipe() {
     }
 #endif
 
-    bool eof = false;
+    bool try_again = false;
     auto buf = GetNextDownstreamBuf(ec);
     size_t read = buf ? buf->length() : 0;
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
       ec = asio::error_code();
-      eof = true;
+      try_again = true;
     } else if (ec) {
       /* not downstream error */
       ec = asio::error_code();
@@ -805,7 +805,7 @@ void CliConnection::WriteStreamInPipe() {
     if (ec) {
       break;
     }
-    if (eof || !buf->empty()) {
+    if (try_again || !buf->empty()) {
       break;
     }
   }
