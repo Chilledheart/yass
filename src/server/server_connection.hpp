@@ -237,6 +237,7 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   void ReadHandshake();
   /// Start to read handshake request (via https fallback)
   void ReadHandshakeViaHttps();
+  void OnReadHandshakeViaHttps();
 
   /// Start to read stream
   void ReadStream();

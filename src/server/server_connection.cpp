@@ -475,74 +475,84 @@ void ServerConnection::ReadHandshake() {
 void ServerConnection::ReadHandshakeViaHttps() {
   scoped_refptr<ServerConnection> self(this);
 
+  if (DoPeek()) {
+    OnReadHandshakeViaHttps();
+    return;
+  }
+
   s_async_read_some_([this, self](asio::error_code ec) {
-      if (closed_) {
-        return;
-      }
-      if (ec) {
-        ProcessReceivedData(nullptr, ec, 0);
-        return;
-      }
-      size_t bytes_transferred;
-      std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_DEBUF_SIZE);
-      do {
-        bytes_transferred = s_read_some_(buf, ec);
-        if (ec == asio::error::interrupted) {
-          continue;
-        }
-      } while(false);
-      if (ec == asio::error::try_again || ec == asio::error::would_block) {
-        DCHECK_EQ(bytes_transferred, 0u);
-        ReadHandshakeViaHttps();
-        return;
-      }
-      if (ec) {
-        OnDisconnect(ec);
-        return;
-      }
-      buf->append(bytes_transferred);
-
-      DumpHex("HANDSHAKE->", buf.get());
-
-      HttpRequestParser parser;
-
-      bool ok;
-      int nparsed = parser.Parse(buf, &ok);
-      if (nparsed) {
-        VLOG(3) << "Connection (server) " << connection_id()
-                << " http: "
-                << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
-      }
-
-      if (ok) {
-        buf->trimStart(nparsed);
-        buf->retreat(nparsed);
-
-        http_host_ = parser.host();
-        http_port_ = parser.port();
-        http_is_connect_ = parser.is_connect();
-
-        request_ = {http_host_, http_port_};
-
-        if (!http_is_connect_) {
-          std::string header;
-          parser.ReforgeHttpRequest(&header);
-          buf->reserve(header.size(), 0);
-          buf->prepend(header.size());
-          memcpy(buf->mutable_data(), header.c_str(), header.size());
-          VLOG(3) << "Connection (server) " << connection_id()
-                  << " Host: " << http_host_ << " PORT: " << http_port_;
-        } else {
-          VLOG(3) << "Connection (server) " << connection_id()
-                  << " CONNECT: " << http_host_ << " PORT: " << http_port_;
-        }
-        ProcessReceivedData(buf, ec, buf->length());
-      } else {
-        // FIXME better error code?
-        ec = asio::error::connection_refused;
-        OnDisconnect(ec);
-      }
+    if (closed_) {
+      return;
+    }
+    if (ec) {
+      ProcessReceivedData(nullptr, ec, 0);
+      return;
+    }
+    OnReadHandshakeViaHttps();
   });
+}
+
+void ServerConnection::OnReadHandshakeViaHttps() {
+  asio::error_code ec;
+  size_t bytes_transferred;
+  std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_DEBUF_SIZE);
+  do {
+    bytes_transferred = s_read_some_(buf, ec);
+    if (ec == asio::error::interrupted) {
+      continue;
+    }
+  } while(false);
+  if (ec == asio::error::try_again || ec == asio::error::would_block) {
+    DCHECK_EQ(bytes_transferred, 0u);
+    ReadHandshakeViaHttps();
+    return;
+  }
+  if (ec) {
+    OnDisconnect(ec);
+    return;
+  }
+  buf->append(bytes_transferred);
+
+  DumpHex("HANDSHAKE->", buf.get());
+
+  HttpRequestParser parser;
+
+  bool ok;
+  int nparsed = parser.Parse(buf, &ok);
+  if (nparsed) {
+    VLOG(3) << "Connection (server) " << connection_id()
+            << " http: "
+            << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
+  }
+
+  if (ok) {
+    buf->trimStart(nparsed);
+    buf->retreat(nparsed);
+
+    http_host_ = parser.host();
+    http_port_ = parser.port();
+    http_is_connect_ = parser.is_connect();
+
+    request_ = {http_host_, http_port_};
+
+    if (!http_is_connect_) {
+      std::string header;
+      parser.ReforgeHttpRequest(&header);
+      buf->reserve(header.size(), 0);
+      buf->prepend(header.size());
+      memcpy(buf->mutable_data(), header.c_str(), header.size());
+      VLOG(3) << "Connection (server) " << connection_id()
+              << " Host: " << http_host_ << " PORT: " << http_port_;
+    } else {
+      VLOG(3) << "Connection (server) " << connection_id()
+              << " CONNECT: " << http_host_ << " PORT: " << http_port_;
+    }
+    ProcessReceivedData(buf, ec, buf->length());
+  } else {
+    // FIXME better error code?
+    ec = asio::error::connection_refused;
+    OnDisconnect(ec);
+  }
 }
 
 void ServerConnection::ReadStream() {
