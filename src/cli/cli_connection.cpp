@@ -656,8 +656,15 @@ void CliConnection::ReadStream() {
     return;
   }
   if (DoPeek()) {
+#if 0
     WriteUpstreamInPipe();
     OnUpstreamWriteFlush();
+#else
+    io_context_->post([this, self]() {
+      WriteUpstreamInPipe();
+      OnUpstreamWriteFlush();
+    });
+#endif
     return;
   }
 
