@@ -604,19 +604,21 @@ void ServerConnection::WriteStreamInPipe() {
   size_t bytes_transferred = 0;
   uint64_t next_ticks = GetMonotonicTime() +
     kYieldAfterDurationMilliseconds * 1000 * 1000;
+  bool try_again = false;
 
   /* recursively send the remainings */
   while (true) {
     if (GetMonotonicTime() > next_ticks) {
+      try_again = true;
       break;
     }
 #ifdef ENABLE_YIELD_AFTER_WRITE
     if (bytes_transferred > kYieldAfterBytesRead) {
+      try_again = true;
       break;
     }
 #endif
 
-    bool try_again = false;
     auto buf = GetNextDownstreamBuf(ec);
     size_t read = buf ? buf->length() : 0;
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
@@ -633,9 +635,9 @@ void ServerConnection::WriteStreamInPipe() {
     if (closed_) {
       break;
     }
+    ec = asio::error_code();
     size_t written;
     do {
-      ec = asio::error_code();
       written = s_write_some_(buf, ec);
       if (ec == asio::error::interrupted) {
         continue;
@@ -648,7 +650,10 @@ void ServerConnection::WriteStreamInPipe() {
       downstream_.pop_front();
     }
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
-      ec = asio::error_code();
+      VLOG(1) << "Connection (server) " << connection_id()
+              << " disabling reading from upstream";
+      upstream_readable_ = false;
+      channel_->disable_read();
       break;
     }
     if (ec) {
@@ -657,6 +662,13 @@ void ServerConnection::WriteStreamInPipe() {
     if (try_again || !buf->empty()) {
       break;
     }
+  }
+  if (ec == asio::error::try_again || ec == asio::error::would_block) {
+    OnDownstreamWriteFlush();
+    if (!bytes_transferred) {
+      return;
+    }
+    ec = asio::error_code();
   }
   ProcessSentData(ec, bytes_transferred);
 }
@@ -754,12 +766,12 @@ void ServerConnection::WriteUpstreamInPipe() {
   /* recursively send the remainings */
   while (true) {
     if (GetMonotonicTime() > next_ticks) {
-      ec = asio::error::try_again;
+      try_again = true;
       break;
     }
 #ifdef ENABLE_YIELD_AFTER_WRITE
     if (bytes_transferred > kYieldAfterBytesRead) {
-      ec = asio::error::try_again;
+      try_again = true;
       break;
     }
 #endif
@@ -768,6 +780,7 @@ void ServerConnection::WriteUpstreamInPipe() {
     std::shared_ptr<IOBuf> buf = GetNextUpstreamBuf(ec);
     read = buf ? buf->length() : 0;
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
+      ec = asio::error_code();
       try_again = true;
     } else if (ec) {
       /* handled in getter */
@@ -776,7 +789,8 @@ void ServerConnection::WriteUpstreamInPipe() {
     if (!read) {
       break;
     }
-    if (!channel_->connected() || channel_->eof()) {
+    if (!channel_ || !channel_->connected() || channel_->eof()) {
+      ec = asio::error::try_again;
       break;
     }
     ec = asio::error_code();
@@ -798,6 +812,9 @@ void ServerConnection::WriteUpstreamInPipe() {
       upstream_.pop_front();
     }
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
+      VLOG(1) << "Connection (server) " << connection_id()
+              << " disabling reading";
+      DisableStreamRead();
       break;
     }
     if (ec) {
@@ -808,7 +825,11 @@ void ServerConnection::WriteUpstreamInPipe() {
       break;
     }
   }
-  if (try_again || ec == asio::error::try_again || ec == asio::error::would_block) {
+  if (ec == asio::error::try_again || ec == asio::error::would_block) {
+    OnUpstreamWriteFlush();
+    return;
+  }
+  if (try_again) {
     if (!downstream_read_inprogress_) {
       ReadStream();
     }
@@ -1059,6 +1080,11 @@ void ServerConnection::OnStreamWrite() {
     scoped_refptr<ServerConnection> self(this);
     channel_->enable_read([self]() {});
   }
+
+  if (upstream_readable_ && downstream_.empty() && !channel_->read_inprogress()) {
+    scoped_refptr<ServerConnection> self(this);
+    channel_->enable_read([self]() {});
+  }
 }
 
 void ServerConnection::EnableStreamRead() {
@@ -1163,6 +1189,10 @@ void ServerConnection::sent() {
     VLOG(1) << "Connection (server) " << connection_id()
             << " re-enabling reading";
     EnableStreamRead();
+  }
+
+  if (downstream_readable_ && upstream_.empty() && !downstream_read_inprogress_) {
+    ReadStream();
   }
 }
 
