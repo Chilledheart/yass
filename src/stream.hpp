@@ -54,14 +54,14 @@ class stream {
     static_cast<void>(ret);
     if (enable_tls) {
       setup_ssl();
-      s_async_read_some_ = [this](io_handle_t cb) {
-        ssl_socket_.async_read_some(asio::null_buffers(), cb);
+      s_async_read_some_ = [this](handle_t cb) {
+        socket_.async_wait(asio::ip::tcp::socket::wait_read, cb);
       };
       s_read_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
         return ssl_socket_.read_some(mutable_buffer(*buf), ec);
       };
-      s_async_write_some_ = [this](io_handle_t cb) {
-        ssl_socket_.async_write_some(asio::null_buffers(), cb);
+      s_async_write_some_ = [this](handle_t cb) {
+        socket_.async_wait(asio::ip::tcp::socket::wait_write, cb);
       };
       s_write_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
         return ssl_socket_.write_some(const_buffer(*buf), ec);
@@ -73,14 +73,14 @@ class stream {
         ssl_socket_.shutdown(ec);
       };
     } else {
-      s_async_read_some_ = [this](io_handle_t cb) {
-        socket_.async_read_some(asio::null_buffers(), cb);
+      s_async_read_some_ = [this](handle_t cb) {
+        socket_.async_wait(asio::ip::tcp::socket::wait_read, cb);
       };
       s_read_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
         return socket_.read_some(mutable_buffer(*buf), ec);
       };
-      s_async_write_some_ = [this](io_handle_t cb) {
-        socket_.async_write_some(asio::null_buffers(), cb);
+      s_async_write_some_ = [this](handle_t cb) {
+        socket_.async_wait(asio::ip::tcp::socket::wait_write, cb);
       };
       s_write_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
         return socket_.write_some(const_buffer(*buf), ec);
@@ -205,8 +205,7 @@ class stream {
     Channel* channel = channel_;
     read_inprogress_ = true;
 
-    s_async_read_some_([this, channel, callback]
-      (asio::error_code ec, std::size_t bytes_transferred) {
+    s_async_read_some_([this, channel, callback] (asio::error_code ec) {
         read_inprogress_ = false;
         // Cancelled, safe to ignore
         if (ec == asio::error::operation_aborted) {
@@ -256,8 +255,7 @@ class stream {
     Channel* channel = channel_;
     DCHECK(!write_inprogress_);
     write_inprogress_ = true;
-    s_async_write_some_([this, channel, callback](
-      asio::error_code ec, size_t /*bytes_transferred*/) {
+    s_async_write_some_([this, channel, callback](asio::error_code ec) {
         write_inprogress_ = false;
         // Cancelled, safe to ignore
         if (ec == asio::error::operation_aborted) {
@@ -446,9 +444,9 @@ class stream {
   bool read_inprogress_ = false;
   bool write_inprogress_ = false;
 
-  std::function<void(io_handle_t)> s_async_read_some_;
+  std::function<void(handle_t)> s_async_read_some_;
   std::function<size_t(std::shared_ptr<IOBuf>, asio::error_code &)> s_read_some_;
-  std::function<void(io_handle_t)> s_async_write_some_;
+  std::function<void(handle_t)> s_async_write_some_;
   std::function<size_t(std::shared_ptr<IOBuf>, asio::error_code &)> s_write_some_;
   std::function<void(handle_t)> s_async_shutdown_;
   std::function<void(asio::error_code&)> s_shutdown_;
