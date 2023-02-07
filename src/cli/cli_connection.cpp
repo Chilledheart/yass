@@ -409,8 +409,7 @@ bool CliConnection::OnMetadataEndForStream(StreamId stream_id) {
 void CliConnection::ReadMethodSelect() {
   scoped_refptr<CliConnection> self(this);
 
-  socket_.async_read_some(asio::null_buffers(),
-    [this, self](asio::error_code ec, size_t bytes_transferred) {
+  s_async_read_some_([this, self](asio::error_code ec) {
       if (closed_) {
         return;
       }
@@ -419,6 +418,7 @@ void CliConnection::ReadMethodSelect() {
         return;
       }
       std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
+      size_t bytes_transferred;
       do {
         bytes_transferred = socket_.read_some(mutable_buffer(*buf), ec);
         if (ec == asio::error::interrupted) {
@@ -457,8 +457,7 @@ void CliConnection::ReadMethodSelect() {
 void CliConnection::ReadSocks5Handshake() {
   scoped_refptr<CliConnection> self(this);
 
-  socket_.async_read_some(asio::null_buffers(),
-    [this, self](asio::error_code ec, size_t bytes_transferred) {
+  s_async_read_some_([this, self](asio::error_code ec) {
       if (closed_) {
         return;
       }
@@ -467,6 +466,7 @@ void CliConnection::ReadSocks5Handshake() {
         return;
       }
       std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
+      size_t bytes_transferred;
       do {
         bytes_transferred = socket_.read_some(mutable_buffer(*buf), ec);
         if (ec == asio::error::interrupted) {
@@ -652,9 +652,19 @@ void CliConnection::ReadStream() {
     return;
   }
 
+#if 0
+  if (closed_ || !downstream_readable_) {
+    return;
+  }
+  if (DoPeek()) {
+    WriteUpstreamInPipe();
+    OnUpstreamWriteFlush();
+    return;
+  }
+#endif
+
   downstream_read_inprogress_ = true;
-  socket_.async_read_some(asio::null_buffers(),
-    [this, self](asio::error_code ec, size_t bytes_transferred) {
+  s_async_read_some_([this, self](asio::error_code ec) {
       downstream_read_inprogress_ = false;
       if (closed_) {
         return;
@@ -736,8 +746,7 @@ void CliConnection::WriteStream() {
   }
   scoped_refptr<CliConnection> self(this);
   write_inprogress_ = true;
-  socket_.async_write_some(asio::null_buffers(),
-    [this, self](asio::error_code ec, size_t /*bytes_transferred*/) {
+  s_async_write_some_([this, self](asio::error_code ec) {
       write_inprogress_ = false;
       if (closed_) {
         return;
@@ -848,7 +857,8 @@ repeat_fetch:
   }
   if (read) {
     VLOG(2) << "Connection (client) " << connection_id()
-            << " upstream: received reply (pipe): " << read << " bytes.";
+            << " upstream: received reply (pipe): " << read << " bytes."
+            << " done: " << channel_->rbytes_transferred() << " bytes.";
   } else {
     goto out;
   }
@@ -979,8 +989,8 @@ void CliConnection::WriteUpstreamInPipe() {
     bytes_transferred += written;
     VLOG(2) << "Connection (client) " << connection_id()
             << " upstream: sent request (pipe): " << written << " bytes"
-            << " ec: " << ec << " and data to write: "
-            << buf->length();
+            << " done: " << channel_->wbytes_transferred() << " bytes."
+            << " ec: " << ec;
     // continue to resume
     if (buf->empty()) {
       DCHECK(!upstream_.empty() && upstream_[0] == buf);
@@ -1037,15 +1047,16 @@ repeat_fetch:
     ProcessReceivedData(nullptr, ec, 0);
     goto out;
   }
-  if (read) {
-    VLOG(2) << "Connection (client) " << connection_id()
-            << " received data (pipe): " << read << " bytes.";
-  } else {
-    goto out;
-  }
   rbytes_transferred_ += read;
   total_rx_bytes += read;
   bytes_transferred += read;
+  if (read) {
+    VLOG(2) << "Connection (client) " << connection_id()
+            << " received data (pipe): " << read << " bytes."
+            << " done: " << rbytes_transferred_ << " bytes.";
+  } else {
+    goto out;
+  }
 
   if (!channel_ || !channel_->connected()) {
     OnStreamRead(buf);
@@ -1182,6 +1193,7 @@ void CliConnection::ProcessReceivedData(
 
   VLOG(2) << "Connection (client) " << connection_id()
           << " received data: " << bytes_transferred << " bytes"
+          << " done: " << rbytes_transferred_ << " bytes."
           << " ec: " << ec;
 
   rbytes_transferred_ += bytes_transferred;
@@ -1248,13 +1260,13 @@ void CliConnection::ProcessReceivedData(
 
 void CliConnection::ProcessSentData(asio::error_code ec,
                                     size_t bytes_transferred) {
-
-  VLOG(2) << "Connection (client) " << connection_id()
-          << " sent data: " << bytes_transferred << " bytes"
-          << " ec: " << ec << " and data to write: " << downstream_.size();
-
   wbytes_transferred_ += bytes_transferred;
   total_tx_bytes += bytes_transferred;
+
+  VLOG(2) << "Connection (client) " << connection_id()
+          << " sent data: " << bytes_transferred << " bytes."
+          << " done: " << wbytes_transferred_ << " bytes."
+          << " ec: " << ec;
 
   if (!ec) {
     switch (CurrentState()) {
