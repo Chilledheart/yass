@@ -67,7 +67,6 @@ class Connection {
         ssl_socket_.async_shutdown(cb);
       };
       s_shutdown_ = [this](asio::error_code &ec) {
-        // FIXME use async_shutdown correctly
         ssl_socket_.shutdown(ec);
       };
     } else {
@@ -89,7 +88,6 @@ class Connection {
         cb(ec);
       };
       s_shutdown_ = [this](asio::error_code &ec) {
-        // FIXME use async_shutdown correctly
         socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
       };
     }

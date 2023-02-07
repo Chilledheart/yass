@@ -154,8 +154,12 @@ void ServerConnection::close() {
   asio::error_code ec;
   closed_ = true;
   if (enable_tls_) {
-    // FIXME use async_shutdown correctly
+    socket_.native_non_blocking(false, ec);
+    socket_.non_blocking(false, ec);
     ssl_socket_.shutdown(ec);
+    if (ec) {
+      VLOG(2) << "shutdown() error: " << ec;
+    }
   }
   socket_.close(ec);
   if (ec) {
@@ -1025,12 +1029,16 @@ void ServerConnection::OnStreamWrite() {
   if (channel_ && channel_->eof() && nodata && downstream_.empty()) {
     VLOG(2) << "Connection (server) " << connection_id()
             << " last data sent: shutting down";
-    asio::error_code ec;
-    s_shutdown_(ec);
-    if (ec) {
-      VLOG(1) << "Connection (server) " << connection_id()
-              << " erorr occured in shutdown: " << ec;
-    }
+    scoped_refptr<ServerConnection> self(this);
+    s_async_shutdown_([this, self](asio::error_code ec) {
+      if (ec == asio::error::operation_aborted) {
+        return;
+      }
+      if (ec) {
+        VLOG(1) << "Connection (server) " << connection_id()
+                << " erorr occured in shutdown: " << ec;
+      }
+    });
     return;
   }
 
@@ -1163,11 +1171,16 @@ void ServerConnection::disconnected(asio::error_code ec) {
   if (nodata && downstream_.empty()) {
     VLOG(2) << "Connection (server) " << connection_id()
             << " upstream: last data sent: shutting down";
-    s_shutdown_(ec);
-    if (ec) {
-      VLOG(1) << "Connection (server) " << connection_id()
-              << " erorr occured in shutdown: " << ec;
-    }
+    scoped_refptr<ServerConnection> self(this);
+    s_async_shutdown_([this, self](asio::error_code ec) {
+      if (ec == asio::error::operation_aborted) {
+        return;
+      }
+      if (ec) {
+        VLOG(1) << "Connection (server) " << connection_id()
+                << " erorr occured in shutdown: " << ec;
+      }
+    });
   }
 }
 

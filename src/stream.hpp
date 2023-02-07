@@ -70,7 +70,6 @@ class stream {
         ssl_socket_.async_shutdown(cb);
       };
       s_shutdown_ = [this](asio::error_code &ec) {
-        // FIXME use async_shutdown correctly
         ssl_socket_.shutdown(ec);
       };
     } else {
@@ -92,7 +91,6 @@ class stream {
         cb(ec);
       };
       s_shutdown_ = [this](asio::error_code &ec) {
-        // FIXME use async_shutdown correctly
         socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
       };
     }
@@ -301,7 +299,8 @@ class stream {
 
     asio::error_code ec;
     if (enable_tls_) {
-      // FIXME use async_shutdown correctly
+      socket_.native_non_blocking(false, ec);
+      socket_.non_blocking(false, ec);
       ssl_socket_.shutdown(ec);
       if (ec) {
         VLOG(2) << "shutdown() error: " << ec;
