@@ -475,74 +475,84 @@ void ServerConnection::ReadHandshake() {
 void ServerConnection::ReadHandshakeViaHttps() {
   scoped_refptr<ServerConnection> self(this);
 
+  if (DoPeek()) {
+    OnReadHandshakeViaHttps();
+    return;
+  }
+
   s_async_read_some_([this, self](asio::error_code ec) {
-      if (closed_) {
-        return;
-      }
-      if (ec) {
-        ProcessReceivedData(nullptr, ec, 0);
-        return;
-      }
-      size_t bytes_transferred;
-      std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_DEBUF_SIZE);
-      do {
-        bytes_transferred = s_read_some_(buf, ec);
-        if (ec == asio::error::interrupted) {
-          continue;
-        }
-      } while(false);
-      if (ec == asio::error::try_again || ec == asio::error::would_block) {
-        DCHECK_EQ(bytes_transferred, 0u);
-        ReadHandshakeViaHttps();
-        return;
-      }
-      if (ec) {
-        OnDisconnect(ec);
-        return;
-      }
-      buf->append(bytes_transferred);
-
-      DumpHex("HANDSHAKE->", buf.get());
-
-      HttpRequestParser parser;
-
-      bool ok;
-      int nparsed = parser.Parse(buf, &ok);
-      if (nparsed) {
-        VLOG(3) << "Connection (server) " << connection_id()
-                << " http: "
-                << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
-      }
-
-      if (ok) {
-        buf->trimStart(nparsed);
-        buf->retreat(nparsed);
-
-        http_host_ = parser.host();
-        http_port_ = parser.port();
-        http_is_connect_ = parser.is_connect();
-
-        request_ = {http_host_, http_port_};
-
-        if (!http_is_connect_) {
-          std::string header;
-          parser.ReforgeHttpRequest(&header);
-          buf->reserve(header.size(), 0);
-          buf->prepend(header.size());
-          memcpy(buf->mutable_data(), header.c_str(), header.size());
-          VLOG(3) << "Connection (server) " << connection_id()
-                  << " Host: " << http_host_ << " PORT: " << http_port_;
-        } else {
-          VLOG(3) << "Connection (server) " << connection_id()
-                  << " CONNECT: " << http_host_ << " PORT: " << http_port_;
-        }
-        ProcessReceivedData(buf, ec, buf->length());
-      } else {
-        // FIXME better error code?
-        ec = asio::error::connection_refused;
-        OnDisconnect(ec);
-      }
+    if (closed_) {
+      return;
+    }
+    if (ec) {
+      ProcessReceivedData(nullptr, ec, 0);
+      return;
+    }
+    OnReadHandshakeViaHttps();
   });
+}
+
+void ServerConnection::OnReadHandshakeViaHttps() {
+  asio::error_code ec;
+  size_t bytes_transferred;
+  std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_DEBUF_SIZE);
+  do {
+    bytes_transferred = s_read_some_(buf, ec);
+    if (ec == asio::error::interrupted) {
+      continue;
+    }
+  } while(false);
+  if (ec == asio::error::try_again || ec == asio::error::would_block) {
+    DCHECK_EQ(bytes_transferred, 0u);
+    ReadHandshakeViaHttps();
+    return;
+  }
+  if (ec) {
+    OnDisconnect(ec);
+    return;
+  }
+  buf->append(bytes_transferred);
+
+  DumpHex("HANDSHAKE->", buf.get());
+
+  HttpRequestParser parser;
+
+  bool ok;
+  int nparsed = parser.Parse(buf, &ok);
+  if (nparsed) {
+    VLOG(3) << "Connection (server) " << connection_id()
+            << " http: "
+            << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
+  }
+
+  if (ok) {
+    buf->trimStart(nparsed);
+    buf->retreat(nparsed);
+
+    http_host_ = parser.host();
+    http_port_ = parser.port();
+    http_is_connect_ = parser.is_connect();
+
+    request_ = {http_host_, http_port_};
+
+    if (!http_is_connect_) {
+      std::string header;
+      parser.ReforgeHttpRequest(&header);
+      buf->reserve(header.size(), 0);
+      buf->prepend(header.size());
+      memcpy(buf->mutable_data(), header.c_str(), header.size());
+      VLOG(3) << "Connection (server) " << connection_id()
+              << " Host: " << http_host_ << " PORT: " << http_port_;
+    } else {
+      VLOG(3) << "Connection (server) " << connection_id()
+              << " CONNECT: " << http_host_ << " PORT: " << http_port_;
+    }
+    ProcessReceivedData(buf, ec, buf->length());
+  } else {
+    // FIXME better error code?
+    ec = asio::error::connection_refused;
+    OnDisconnect(ec);
+  }
 }
 
 void ServerConnection::ReadStream() {
@@ -604,19 +614,21 @@ void ServerConnection::WriteStreamInPipe() {
   size_t bytes_transferred = 0;
   uint64_t next_ticks = GetMonotonicTime() +
     kYieldAfterDurationMilliseconds * 1000 * 1000;
+  bool try_again = false;
 
   /* recursively send the remainings */
   while (true) {
     if (GetMonotonicTime() > next_ticks) {
+      try_again = true;
       break;
     }
 #ifdef ENABLE_YIELD_AFTER_WRITE
     if (bytes_transferred > kYieldAfterBytesRead) {
+      try_again = true;
       break;
     }
 #endif
 
-    bool try_again = false;
     auto buf = GetNextDownstreamBuf(ec);
     size_t read = buf ? buf->length() : 0;
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
@@ -633,9 +645,9 @@ void ServerConnection::WriteStreamInPipe() {
     if (closed_) {
       break;
     }
+    ec = asio::error_code();
     size_t written;
     do {
-      ec = asio::error_code();
       written = s_write_some_(buf, ec);
       if (ec == asio::error::interrupted) {
         continue;
@@ -648,7 +660,10 @@ void ServerConnection::WriteStreamInPipe() {
       downstream_.pop_front();
     }
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
-      ec = asio::error_code();
+      VLOG(1) << "Connection (server) " << connection_id()
+              << " disabling reading from upstream";
+      upstream_readable_ = false;
+      channel_->disable_read();
       break;
     }
     if (ec) {
@@ -657,6 +672,13 @@ void ServerConnection::WriteStreamInPipe() {
     if (try_again || !buf->empty()) {
       break;
     }
+  }
+  if (ec == asio::error::try_again || ec == asio::error::would_block) {
+    OnDownstreamWriteFlush();
+    if (!bytes_transferred) {
+      return;
+    }
+    ec = asio::error_code();
   }
   ProcessSentData(ec, bytes_transferred);
 }
@@ -754,12 +776,12 @@ void ServerConnection::WriteUpstreamInPipe() {
   /* recursively send the remainings */
   while (true) {
     if (GetMonotonicTime() > next_ticks) {
-      ec = asio::error::try_again;
+      try_again = true;
       break;
     }
 #ifdef ENABLE_YIELD_AFTER_WRITE
     if (bytes_transferred > kYieldAfterBytesRead) {
-      ec = asio::error::try_again;
+      try_again = true;
       break;
     }
 #endif
@@ -768,6 +790,7 @@ void ServerConnection::WriteUpstreamInPipe() {
     std::shared_ptr<IOBuf> buf = GetNextUpstreamBuf(ec);
     read = buf ? buf->length() : 0;
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
+      ec = asio::error_code();
       try_again = true;
     } else if (ec) {
       /* handled in getter */
@@ -776,7 +799,8 @@ void ServerConnection::WriteUpstreamInPipe() {
     if (!read) {
       break;
     }
-    if (!channel_->connected() || channel_->eof()) {
+    if (!channel_ || !channel_->connected() || channel_->eof()) {
+      ec = asio::error::try_again;
       break;
     }
     ec = asio::error_code();
@@ -798,6 +822,9 @@ void ServerConnection::WriteUpstreamInPipe() {
       upstream_.pop_front();
     }
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
+      VLOG(1) << "Connection (server) " << connection_id()
+              << " disabling reading";
+      DisableStreamRead();
       break;
     }
     if (ec) {
@@ -808,7 +835,11 @@ void ServerConnection::WriteUpstreamInPipe() {
       break;
     }
   }
-  if (try_again || ec == asio::error::try_again || ec == asio::error::would_block) {
+  if (ec == asio::error::try_again || ec == asio::error::would_block) {
+    OnUpstreamWriteFlush();
+    return;
+  }
+  if (try_again) {
     if (!downstream_read_inprogress_) {
       ReadStream();
     }
@@ -1059,6 +1090,11 @@ void ServerConnection::OnStreamWrite() {
     scoped_refptr<ServerConnection> self(this);
     channel_->enable_read([self]() {});
   }
+
+  if (upstream_readable_ && downstream_.empty() && !channel_->read_inprogress()) {
+    scoped_refptr<ServerConnection> self(this);
+    channel_->enable_read([self]() {});
+  }
 }
 
 void ServerConnection::EnableStreamRead() {
@@ -1163,6 +1199,10 @@ void ServerConnection::sent() {
     VLOG(1) << "Connection (server) " << connection_id()
             << " re-enabling reading";
     EnableStreamRead();
+  }
+
+  if (downstream_readable_ && upstream_.empty() && !downstream_read_inprogress_) {
+    ReadStream();
   }
 }
 

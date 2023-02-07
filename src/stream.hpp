@@ -215,6 +215,10 @@ class stream {
     return false;
   }
 
+  bool read_inprogress() const {
+    return read_inprogress_;
+  }
+
   /// start read routine
   ///
   void start_read(std::function<void()> callback) {
@@ -228,7 +232,9 @@ class stream {
     }
     if (do_peek()) {
       channel_->received();
-      start_read(callback);
+      if (read_enabled_) {
+        start_read(callback);
+      }
       return;
     }
 
