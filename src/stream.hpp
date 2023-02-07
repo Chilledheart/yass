@@ -17,6 +17,7 @@
 #include "protocol.hpp"
 
 #include <absl/strings/str_cat.h>
+#include <openssl/bio.h>
 
 /// the class to describe the traffic between given node (endpoint)
 class stream {
@@ -197,14 +198,41 @@ class stream {
     }
   }
 
+  bool do_peek() {
+    if (enable_tls_) {
+      char byte;
+      auto ssl = ssl_socket_.native_handle();
+      int rv = SSL_peek(ssl, &byte, 1);
+      int ssl_err = SSL_get_error(ssl, rv);
+      if (ssl_err != SSL_ERROR_WANT_READ && ssl_err != SSL_ERROR_WANT_WRITE) {
+        return true;
+      }
+    }
+    asio::error_code ec;
+    if (socket_.available(ec)) {
+      return true;
+    }
+    return false;
+  }
+
   /// start read routine
   ///
   void start_read(std::function<void()> callback) {
     DCHECK(read_enabled_);
     DCHECK(!read_inprogress_);
     Channel* channel = channel_;
-    read_inprogress_ = true;
 
+    if (!connected_ || closed_) {
+      callback();
+      return;
+    }
+    if (do_peek()) {
+      channel_->received();
+      start_read(callback);
+      return;
+    }
+
+    read_inprogress_ = true;
     s_async_read_some_([this, channel, callback] (asio::error_code ec) {
         read_inprogress_ = false;
         // Cancelled, safe to ignore

@@ -151,6 +151,25 @@ class Connection {
   }
 
  protected:
+  /// the peek current io
+  bool DoPeek() {
+    if (enable_tls_) {
+      char byte;
+      auto ssl = ssl_socket_.native_handle();
+      int rv = SSL_peek(ssl, &byte, 1);
+      int ssl_err = SSL_get_error(ssl, rv);
+      if (ssl_err != SSL_ERROR_WANT_READ && ssl_err != SSL_ERROR_WANT_WRITE) {
+        return true;
+      }
+    }
+    asio::error_code ec;
+    if (socket_.available(ec)) {
+      return true;
+    }
+    return false;
+  }
+
+ protected:
   /// the io context associated with
   asio::io_context* io_context_;
   /// the upstream host name to be established with

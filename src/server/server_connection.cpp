@@ -216,7 +216,6 @@ void ServerConnection::SendIfNotProcessing() {
 //
 bool ServerConnection::on_received_data(std::shared_ptr<IOBuf> buf) {
   MSAN_CHECK_MEM_IS_INITIALIZED(buf->data(), buf->length());
-  rbytes_transferred_ += buf->length();
   if (state_ == state_stream) {
     upstream_.push_back(buf);
   } else if (state_ == state_handshake) {
@@ -342,8 +341,6 @@ bool ServerConnection::OnBeginDataForStream(StreamId stream_id,
 
 bool ServerConnection::OnDataForStream(StreamId stream_id,
                                        absl::string_view data) {
-  rbytes_transferred_ += data.size();
-
   if (padding_support_ && num_padding_recv_ < kFirstPaddings) {
     asio::error_code ec;
     // Append buf to in_middle_buf
@@ -555,6 +552,15 @@ void ServerConnection::ReadStream() {
     return;
   }
 
+  if (closed_ || !downstream_readable_) {
+    return;
+  }
+  if (DoPeek()) {
+    WriteUpstreamInPipe();
+    OnUpstreamWriteFlush();
+    return;
+  }
+
   downstream_read_inprogress_ = true;
   s_async_read_some_([this, self](asio::error_code ec) {
       downstream_read_inprogress_ = false;
@@ -691,7 +697,8 @@ repeat_fetch:
   }
   if (read) {
     VLOG(2) << "Connection (server) " << connection_id()
-            << " upstream: received reply (pipe): " << read << " bytes.";
+            << " upstream: received reply (pipe): " << read << " bytes."
+            << " done: " << channel_->rbytes_transferred() << " bytes.";
   } else {
     goto out;
   }
@@ -784,8 +791,8 @@ void ServerConnection::WriteUpstreamInPipe() {
     bytes_transferred += written;
     VLOG(2) << "Connection (server) " << connection_id()
             << " upstream: sent request (pipe): " << written << " bytes"
-            << " ec: " << ec << " and data to write: "
-            << buf->length();
+            << " done: " << channel_->wbytes_transferred() << " bytes."
+            << " ec: " << ec;
     // continue to resume
     if (buf->empty()) {
       upstream_.pop_front();
@@ -835,13 +842,15 @@ repeat_fetch:
     ProcessReceivedData(nullptr, ec, read);
     goto out;
   }
+  bytes_transferred += read;
+  rbytes_transferred_ += read;
   if (read) {
     VLOG(2) << "Connection (server) " << connection_id()
-            << " received data (pipe): " << read << " bytes.";
+            << " received data (pipe): " << read << " bytes."
+            << " done: " << rbytes_transferred_ << " bytes.";
   } else {
     goto out;
   }
-  bytes_transferred += read;
 
   if (adapter_) {
     absl::string_view remaining_buffer(
@@ -859,7 +868,6 @@ repeat_fetch:
     SendIfNotProcessing();
     OnDownstreamWriteFlush();
   } else if (https_fallback_) {
-    rbytes_transferred_ += buf->length();
     upstream_.push_back(buf);
   } else {
     decoder_->process_bytes(buf);
@@ -886,8 +894,10 @@ out:
 void ServerConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf,
                                            asio::error_code ec,
                                            size_t bytes_transferred) {
+  rbytes_transferred_ += bytes_transferred;
   VLOG(2) << "Connection (server) " << connection_id()
           << " received data: " << bytes_transferred << " bytes"
+          << " done: " << rbytes_transferred_ << " bytes."
           << " ec: " << ec;
 
   if (buf) {
@@ -929,11 +939,12 @@ void ServerConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf,
 
 void ServerConnection::ProcessSentData(asio::error_code ec,
                                        size_t bytes_transferred) {
-  VLOG(2) << "Connection (server) " << connection_id()
-          << " sent data: " << bytes_transferred << " bytes"
-          << " ec: " << ec << " and data to write: " << downstream_.size();
-
   wbytes_transferred_ += bytes_transferred;
+
+  VLOG(2) << "Connection (server) " << connection_id()
+          << " sent data: " << bytes_transferred << " bytes."
+          << " done: " << wbytes_transferred_ << " bytes."
+          << " ec: " << ec;
 
   if (!ec) {
     switch (CurrentState()) {
