@@ -263,10 +263,6 @@ void CliConnection::on_protocol_error() {
 //
 
 int64_t CliConnection::OnReadyToSend(absl::string_view serialized) {
-  if (upstream_.size() >= MAX_UPSTREAM_DEPS && downstream_readable_) {
-    return kSendBlocked;
-  }
-
   std::shared_ptr<IOBuf> buf =
     IOBuf::copyBuffer(serialized.data(), serialized.size());
   upstream_.push_back(buf);
@@ -1615,14 +1611,15 @@ void CliConnection::sent() {
     SendIfNotProcessing();
     OnUpstreamWriteFlush();
   }
-  if (upstream_.size() < MAX_UPSTREAM_DEPS && !downstream_readable_) {
-    VLOG(1) << "Connection (client) " << connection_id()
-            << " re-enabling reading";
-    EnableStreamRead();
-  }
 
-  if (downstream_readable_ && upstream_.empty() && !downstream_read_inprogress_) {
-    ReadStream();
+  if (upstream_.empty() && !downstream_read_inprogress_) {
+    if (downstream_readable_) {
+      ReadStream();
+    } else {
+      VLOG(1) << "Connection (client) " << connection_id()
+              << " re-enabling reading";
+      EnableStreamRead();
+    }
   }
 }
 

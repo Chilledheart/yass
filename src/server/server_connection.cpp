@@ -1043,13 +1043,6 @@ void ServerConnection::OnConnect() {
 }
 
 void ServerConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
-  // queue limit to downstream read
-  if (upstream_.size() >= MAX_UPSTREAM_DEPS && downstream_readable_) {
-    VLOG(1) << "Connection (server) " << connection_id()
-            << " disabling reading";
-    DisableStreamRead();
-  }
-
   OnUpstreamWrite(buf);
 }
 
@@ -1177,14 +1170,14 @@ void ServerConnection::sent() {
   WriteUpstreamInPipe();
   OnUpstreamWriteFlush();
 
-  if (upstream_.size() < MAX_UPSTREAM_DEPS && !downstream_readable_) {
-    VLOG(1) << "Connection (server) " << connection_id()
-            << " re-enabling reading";
-    EnableStreamRead();
-  }
-
-  if (downstream_readable_ && upstream_.empty() && !downstream_read_inprogress_) {
-    ReadStream();
+  if (upstream_.empty() && !downstream_read_inprogress_) {
+    if (downstream_readable_) {
+      ReadStream();
+    } else {
+      VLOG(1) << "Connection (client) " << connection_id()
+              << " re-enabling reading";
+      EnableStreamRead();
+    }
   }
 }
 
