@@ -232,7 +232,7 @@ class stream {
     }
     if (do_peek()) {
       channel_->received();
-      if (read_enabled_) {
+      if (read_enabled_ && !read_inprogress_) {
         start_read(callback);
       }
       return;
@@ -260,7 +260,7 @@ class stream {
           return;
         }
         channel_->received();
-        if (read_enabled_) {
+        if (read_enabled_ && !read_inprogress_) {
           start_read(callback);
           return;
         }
