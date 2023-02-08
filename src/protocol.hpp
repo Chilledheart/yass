@@ -19,7 +19,7 @@
 #define SOCKET_DEBUF_SIZE (16384-8)
 
 #ifndef NDEBUG
-inline void DumpHex(const char* prefix, const uint8_t* data, uint32_t length) {
+inline void DumpHex_Impl(const char* file, int line, const char* prefix, const uint8_t* data, uint32_t length) {
   if (!VLOG_IS_ON(4)) {
     return;
   }
@@ -67,14 +67,16 @@ inline void DumpHex(const char* prefix, const uint8_t* data, uint32_t length) {
 done:
   // ensure it is null-terminated
   hex_buffer[sizeof(hex_buffer) - 1] = '\0';
-  VLOG(4) << hex_buffer;
+  LogMessage(file, line, -4).stream()
+    << hex_buffer;
 }
 
-inline void DumpHex(const char* prefix, const IOBuf* buf) {
+inline void DumpHex_Impl(const char* file, int line, const char* prefix, const IOBuf* buf) {
   const uint8_t* data = buf->data();
   uint32_t length = buf->length();
-  DumpHex(prefix, data, length);
+  DumpHex_Impl(file, line, prefix, data, length);
 }
+#define DumpHex(...) DumpHex_Impl(__FILE__, __LINE__, __VA_ARGS__)
 #else
 #define DumpHex(...)
 #endif
