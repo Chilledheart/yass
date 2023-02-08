@@ -1814,7 +1814,7 @@ endif()
 set(protobuf_BUILD_TESTS "OFF" CACHE STRING "")
 set(protobuf_WITH_ZLIB "OFF" CACHE STRING "")
 set(protobuf_BUILD_SHARED_LIBS "OFF" CACHE STRING "")
-add_subdirectory(third_party/protobuf/cmake)
+add_subdirectory(third_party/protobuf)
 include_directories(third_party/protobuf/src SYSTEM)
 # required because it is not bound with libproto/libproto-lite targets
 add_definitions(-DGOOGLE_PROTOBUF_NO_RTTI=1)

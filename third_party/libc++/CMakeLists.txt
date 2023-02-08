@@ -51,7 +51,7 @@ if (libcxx_ABI_UNSTABLE)
     "_LIBCPP_ABI_UNSTABLE")
 endif()
 
-set(libcxx_CR "4218f3525ad438b22b0e173d963515a09d143398")
+set(libcxx_CR "2948540a20cbb5b2192119f791b04dd62ca7af1c")
 if (libcxx_SHARED)
   # When libcxx_is_shared is true, symbols from libc++.so are exported for
   # all DSOs to use.  If the system libc++ gets loaded (indirectly through
@@ -91,17 +91,14 @@ set(libcxx_PUBLIC_INCLUDES
 # https://crbug.com/923166#c33, https://crbug.com/923166#c44, and
 # https://llvm.org/PR41018.
 if (NOT MSVC)
-  # libc++ has two levels of debug mode. Setting _LIBCPP_DEBUG to zero
-  # enables most assertions. Setting it to one additionally enables iterator
-  # debugging. See https://libcxx.llvm.org/docs/DesignDocs/DebugMode.html
   if (${CMAKE_BUILD_TYPE} MATCHES RELWITHDEBINFO)
    set(libcxx_PUBLIC_DEFINITIONS
      ${libcxx_PUBLIC_DEFINITIONS}
-     "_LIBCPP_DEBUG=1")
+     "_LIBCPP_ENABLE_ASSERTIONS_DEFAULT=1")
   elseif (${CMAKE_BUILD_TYPE} MATCHES Debug)
    set(libcxx_PUBLIC_DEFINITIONS
      ${libcxx_PUBLIC_DEFINITIONS}
-     "_LIBCPP_DEBUG=0")
+     "_LIBCPP_ENABLE_DEBUG_MODE")
   endif()
 endif()
 

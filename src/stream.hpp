@@ -443,6 +443,16 @@ class stream {
       VLOG(2) << "data transfer failed with " << endpoint_ << " due to "
               << ec << " stats: readed "
               << rbytes_transferred_ << " written: " << wbytes_transferred_;
+#ifndef NDEBUG
+      const char* file;
+      int line;
+      while (uint32_t error = ERR_get_error_line(&file, &line)) {
+        char buf[120];
+        ERR_error_string_n(error, buf, sizeof(buf));
+        LogMessage(file, line, LOGGING_ERROR).stream()
+          << "OpenSSL error: " << buf;
+      }
+#endif
     } else {
       VLOG(2) << "data transfer closed with: " << endpoint_ << " stats: readed "
               << rbytes_transferred_ << " written: " << wbytes_transferred_;
