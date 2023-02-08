@@ -1392,17 +1392,11 @@ void CliConnection::OnStreamWrite() {
     return;
   }
 
-  /* disable queue limit to re-enable upstream read */
-  if (channel_->connected() && downstream_.size() < MAX_DOWNSTREAM_DEPS && !upstream_readable_) {
+  if (channel_ && channel_->connected() && !upstream_readable_ && downstream_.empty() && !channel_->read_inprogress()) {
     VLOG(1) << "Connection (client) " << connection_id()
             << " re-enabling reading from upstream";
+    scoped_refptr<CliConnection> self(this);
     upstream_readable_ = true;
-    scoped_refptr<CliConnection> self(this);
-    channel_->enable_read([self]() {}, SOCKET_DEBUF_SIZE);
-  }
-
-  if (upstream_readable_ && downstream_.empty() && !channel_->read_inprogress()) {
-    scoped_refptr<CliConnection> self(this);
     channel_->enable_read([self]() {});
   }
 }
@@ -1606,14 +1600,6 @@ void CliConnection::received() {
   scoped_refptr<CliConnection> self(this);
   WriteStreamInPipe();
   OnDownstreamWriteFlush();
-
-  // queue limit to upstream read
-  if (downstream_.size() >= MAX_DOWNSTREAM_DEPS && upstream_readable_) {
-    VLOG(1) << "Connection (client) " << connection_id()
-            << " disabling reading from upstream";
-    upstream_readable_ = false;
-    channel_->disable_read();
-  }
 }
 
 void CliConnection::sent() {
