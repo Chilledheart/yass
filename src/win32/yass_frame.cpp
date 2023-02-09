@@ -464,7 +464,7 @@ std::wstring CYassFrame::GetStatusMessage() {
     last_tx_bytes_ = tx_bytes;
   }
 
-  std::stringstream ss;
+  std::ostringstream ss;
   ss << mApp->GetStatus();
   ss << " tx rate: ";
   humanReadableByteCountBin(&ss, rx_rate_);

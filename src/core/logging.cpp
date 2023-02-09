@@ -2869,7 +2869,7 @@ static void DebugWriteToStderr(const char* data, void*) {
 }
 
 static void DebugWriteToString(const char* data, void* arg) {
-  auto ss = reinterpret_cast<std::stringstream*>(arg);
+  auto ss = reinterpret_cast<std::ostringstream*>(arg);
   *ss << data;
 }
 
@@ -3107,7 +3107,7 @@ void MyUserNameInitializer() {
 }
 
 void DumpStackTraceToString(std::string* stacktrace) {
-  std::stringstream ss;
+  std::ostringstream ss;
   DumpStackTrace(1, DebugWriteToString, &ss);
   *stacktrace = ss.str();
 }

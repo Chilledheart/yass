@@ -362,7 +362,7 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   bool upstream_handshake_ = true;
 
   std::string remote_domain() const {
-    std::stringstream ss;
+    std::ostringstream ss;
     if (ss_request_->address_type() == ss::domain) {
       ss << ss_request_->domain_name() << ":" << ss_request_->port();
     } else {

@@ -255,7 +255,7 @@ BOOL CYassApp::HandleThreadMessage(UINT message, WPARAM w, LPARAM l) {
 }
 
 std::string CYassApp::GetStatus() const {
-  std::stringstream ss;
+  std::ostringstream ss;
   if (state_ == STARTED) {
     ss << "Connected with conns: " << worker_.currentConnections();
   } else if (state_ == START_FAILED) {

@@ -288,7 +288,7 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   std::shared_ptr<IOBuf> padding_in_middle_buf_;
 
   std::string remote_domain() const {
-    std::stringstream ss;
+    std::ostringstream ss;
     if (request_.address_type() == ss::domain) {
       ss << request_.domain_name() << ":" << request_.port();
     } else {

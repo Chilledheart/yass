@@ -203,7 +203,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
     last_tx_bytes_ = tx_bytes;
   }
 
-  std::stringstream ss;
+  std::ostringstream ss;
   ss << "Connected: ";
   ss << "tx: ";
   humanReadableByteCountBin(&ss, rx_rate_);

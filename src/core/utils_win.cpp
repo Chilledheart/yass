@@ -621,7 +621,7 @@ static void CheckDynamicLibraries() {
       })) {
       continue;
     }
-    std::wstringstream os;
+    std::wostringstream os;
     os << L"\nUnknown DLL library \""<< findData.cFileName
       << L"\" found in the directory with " << me << L".\n\n"
       << L"This may be a virus or a malicious program. \n\n"
