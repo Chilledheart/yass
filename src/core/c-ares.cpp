@@ -260,6 +260,9 @@ void CAresResolver::OnAsyncWait() {
       if (ec) {
         return;
       }
+      if (canceled_) {
+        return;
+      }
       fd_t r = ARES_SOCKET_BAD;
       fd_t w = ARES_SOCKET_BAD;
       ::ares_process_fd(channel_, r, w);
