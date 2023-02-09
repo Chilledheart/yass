@@ -147,7 +147,7 @@ void YASSApp::OnIdle() {
 }
 
 std::string YASSApp::GetStatus() const {
-  std::stringstream ss;
+  std::ostringstream ss;
   if (state_ == STARTED) {
     ss << "Connected with conns: " << worker_.currentConnections();
   } else if (state_ == START_FAILED) {

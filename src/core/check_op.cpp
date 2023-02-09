@@ -80,7 +80,7 @@ char* CheckOpValueStr(double v) {
 
 char* StreamValToStr(const void* v,
                      void (*stream_func)(std::ostream&, const void*)) {
-  std::stringstream ss;
+  std::ostringstream ss;
   stream_func(ss, v);
   return strdup(ss.str().c_str());
 }

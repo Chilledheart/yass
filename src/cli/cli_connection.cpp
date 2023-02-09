@@ -1629,6 +1629,11 @@ void CliConnection::disconnected(asio::error_code ec) {
           << " upstream: lost connection with: " << remote_domain()
           << " due to " << ec
           << " and data to write: " << downstream_.size();
+  if (adapter_) {
+    adapter_->SubmitShutdownNotice();
+    SendIfNotProcessing();
+    OnUpstreamWriteFlush();
+  }
   upstream_readable_ = false;
   upstream_writable_ = false;
   channel_->close();

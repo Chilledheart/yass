@@ -156,6 +156,11 @@ void ServerConnection::close() {
   if (enable_tls_) {
     socket_.native_non_blocking(false, ec);
     socket_.non_blocking(false, ec);
+    if (adapter_) {
+      adapter_->SubmitShutdownNotice();
+      SendIfNotProcessing();
+      OnDownstreamWriteFlush();
+    }
     ssl_socket_.shutdown(ec);
     if (ec) {
       VLOG(2) << "shutdown() error: " << ec;

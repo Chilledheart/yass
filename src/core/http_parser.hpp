@@ -103,7 +103,7 @@ class HttpRequestParser {
   static void ReforgeHttpRequestImpl(std::string* header, ::http_parser* p,
                                      const std::string& url,
                                      const absl::flat_hash_map<std::string, std::string>& headers) {
-    std::stringstream ss;
+    std::ostringstream ss;
     ss << http_method_str((http_method)p->method) << " "  // NOLINT(google-*)
        << url << " HTTP/1.1\r\n";
     for (const std::pair<std::string, std::string> pair : headers) {
