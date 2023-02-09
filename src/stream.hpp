@@ -428,6 +428,11 @@ class stream {
       callback();
       return;
     }
+    // Rarely happens, cancel fails but expire still there
+    if (connected_) {
+      callback();
+      return;
+    }
     VLOG(1) << "connection timed out with endpoint: " << endpoint_;
     eof_ = true;
     if (!ec) {
