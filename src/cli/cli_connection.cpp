@@ -462,6 +462,9 @@ void CliConnection::ReadSocks5Handshake() {
 asio::error_code CliConnection::OnReadRedirHandshake(
   std::shared_ptr<IOBuf> buf) {
 #ifdef __linux__
+  if (!absl::GetFlag(FLAGS_redir_mode)) {
+    return asio::error::operation_not_supported;
+  }
   VLOG(2) << "Connection (client) " << connection_id()
           << " try redir handshake";
   scoped_refptr<CliConnection> self(this);
