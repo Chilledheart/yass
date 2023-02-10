@@ -98,42 +98,6 @@ bool IsIPUnspecified(const asio::ip::tcp::endpoint& address) {
   return address.address().is_unspecified();
 }
 
-asio::ip::tcp::endpoint IPaddressFromSockAddr(struct sockaddr_storage* ss,
-                                              socklen_t ss_len) {
-  asio::ip::tcp::endpoint endpoint;
-
-  if (ss_len == sizeof(sockaddr_in)) {
-    auto socket = reinterpret_cast<struct sockaddr_in*>(ss);
-    auto addr = asio::ip::address_v4(ntohl(socket->sin_addr.s_addr));
-    endpoint.address(addr);
-    endpoint.port(ntohs(socket->sin_port));
-  } else if (ss_len == sizeof(sockaddr_in6)) {
-    auto socket = reinterpret_cast<struct sockaddr_in6*>(ss);
-    std::array<unsigned char, 16> bytes = {
-      socket->sin6_addr.s6_addr[0],
-      socket->sin6_addr.s6_addr[1],
-      socket->sin6_addr.s6_addr[2],
-      socket->sin6_addr.s6_addr[3],
-      socket->sin6_addr.s6_addr[4],
-      socket->sin6_addr.s6_addr[5],
-      socket->sin6_addr.s6_addr[6],
-      socket->sin6_addr.s6_addr[7],
-      socket->sin6_addr.s6_addr[8],
-      socket->sin6_addr.s6_addr[9],
-      socket->sin6_addr.s6_addr[10],
-      socket->sin6_addr.s6_addr[11],
-      socket->sin6_addr.s6_addr[12],
-      socket->sin6_addr.s6_addr[13],
-      socket->sin6_addr.s6_addr[14],
-      socket->sin6_addr.s6_addr[15]
-    };
-    auto addr = asio::ip::address_v6(bytes, socket->sin6_scope_id);
-    endpoint.address(addr);
-    endpoint.port(ntohs(socket->sin6_port));
-  }
-  return endpoint;
-}
-
 } // anonymous namespace
 #endif
 
@@ -513,7 +477,8 @@ asio::error_code CliConnection::OnReadRedirHandshake(
     ret = getsockopt(socket_.native_handle(), SOL_IPV6, SO_ORIGINAL_DST, &ss,
                      &ss_len);
   if (ret == 0) {
-    endpoint = IPaddressFromSockAddr(&ss, ss_len);
+    endpoint.resize(ss_len);
+    memcpy(endpoint.data(), &ss, ss_len);
   }
   if (ret == 0 && !IsIPUnspecified(endpoint)) {
     VLOG(2) << "Connection (client) " << connection_id()
