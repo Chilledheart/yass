@@ -41,7 +41,7 @@ TEST(CARES_TEST, RemoteBasic) {
 
   io_context.post([&]() {
     auto resolver = CAresResolver::Create(io_context);
-    int ret = resolver->Init(1000, 1);
+    int ret = resolver->Init(1000, 5);
     if (ret) {
       work_guard.reset();
     }
