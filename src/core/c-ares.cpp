@@ -89,11 +89,19 @@ int CAresResolver::Init(int timeout_ms, int retries) {
 }
 
 void CAresResolver::Destroy() {
+  canceled_ = true;
+  resolve_timer_.cancel();
   ::ares_destroy(channel_);
 }
 
 void CAresResolver::OnSockState(void *arg, fd_t fd, int readable, int writable) {
-  auto self = scoped_refptr(reinterpret_cast<CAresResolver*>(arg));
+  // Might be involved by Destory in dtor.
+  // Cannot call AddRef directly.
+  auto resolver = reinterpret_cast<CAresResolver*>(arg);
+  if (resolver->canceled_) {
+    return;
+  }
+  auto self = scoped_refptr(resolver);
   auto iter = self->fd_map_.find(fd);
   if (!readable && !writable) {
     if (iter != self->fd_map_.end()) {
