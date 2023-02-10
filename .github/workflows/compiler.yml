@@ -19,15 +19,12 @@ on:
   push:
     branches: [master]
     paths-ignore: [README.md, BUILDING.md]
-  release:
-    types: [published]
 env:
   CACHE_EPOCH: 5
   GOPROXY: direct
 jobs:
   win-compiler-compatible-2019:
     runs-on: windows-2019
-    if: ${{ github.event_name != 'release' }}
     strategy:
       fail-fast: false
       matrix:
@@ -125,7 +122,6 @@ jobs:
           set VCToolsVersion=
   win-compiler-compatible-2022:
     runs-on: windows-2022
-    if: ${{ github.event_name != 'release' }}
     strategy:
       fail-fast: false
       matrix:
@@ -223,7 +219,6 @@ jobs:
           set VCToolsVersion=
   mingw64-compiler-compatible-msys2:
     runs-on: windows-2019
-    if: ${{ github.event_name != 'release' }}
     strategy:
       fail-fast: false
       matrix:
@@ -286,7 +281,6 @@ jobs:
           yass_test -logtostderr -v 1
   linux-compiler-compatible:
     runs-on: ubuntu-20.04
-    if: ${{ github.event_name != 'release' }}
     strategy:
       fail-fast: false
       matrix:
@@ -366,7 +360,6 @@ jobs:
         run: |
           ./tools/build -nc -no-packaging ${{ env.build_opts }} -run-test -verbose 1
   mac-compiler-compatible:
-    if: ${{ github.event_name != 'release' }}
     strategy:
       fail-fast: false
       matrix:
