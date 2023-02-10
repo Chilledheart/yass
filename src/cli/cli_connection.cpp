@@ -297,7 +297,9 @@ bool CliConnection::OnEndStream(StreamId stream_id) {
 
 bool CliConnection::OnCloseStream(StreamId stream_id,
                                   http2::adapter::Http2ErrorCode error_code) {
-  disconnected(asio::error_code());
+  if (stream_id == stream_id_) {
+    data_frame_ = nullptr;
+  }
   return true;
 }
 
@@ -365,6 +367,11 @@ bool CliConnection::OnDataPaddingLength(StreamId stream_id,
                                         size_t padding_length) {
   adapter_->MarkDataConsumedForStream(stream_id, padding_length);
   return true;
+}
+
+void CliConnection::OnRstStream(StreamId stream_id,
+                                http2::adapter::Http2ErrorCode error_code) {
+  disconnected(asio::error::connection_reset);
 }
 
 bool CliConnection::OnGoAway(StreamId last_accepted_stream_id,
@@ -1092,6 +1099,10 @@ repeat_fetch:
   }
 
   if (adapter_) {
+    if (!data_frame_) {
+      ec = asio::error::eof;
+      return nullptr;
+    }
     if (padding_support_ && num_padding_send_ < kFirstPaddings) {
       ++num_padding_send_;
       AddPadding(buf);
@@ -1365,6 +1376,9 @@ void CliConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
 
   // SendContents
   if (adapter_) {
+    if (!data_frame_) {
+      return;
+    }
     if (padding_support_ && num_padding_send_ < kFirstPaddings) {
       ++num_padding_send_;
       AddPadding(buf);

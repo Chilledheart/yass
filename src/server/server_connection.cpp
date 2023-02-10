@@ -310,7 +310,9 @@ bool ServerConnection::OnEndStream(StreamId stream_id) {
 
 bool ServerConnection::OnCloseStream(StreamId stream_id,
                                      http2::adapter::Http2ErrorCode error_code) {
-  OnDisconnect(asio::error_code());
+  if (stream_id == stream_id_) {
+    data_frame_ = nullptr;
+  }
   return true;
 }
 
@@ -381,6 +383,11 @@ bool ServerConnection::OnDataPaddingLength(StreamId stream_id,
                                            size_t padding_length) {
   adapter_->MarkDataConsumedForStream(stream_id, padding_length);
   return true;
+}
+
+void ServerConnection::OnRstStream(StreamId stream_id,
+                                   http2::adapter::Http2ErrorCode error_code) {
+  OnDisconnect(asio::error::connection_reset);
 }
 
 bool ServerConnection::OnGoAway(StreamId last_accepted_stream_id,
@@ -728,6 +735,10 @@ repeat_fetch:
   bytes_transferred += read;
 
   if (adapter_) {
+    if (!data_frame_) {
+      ec = asio::error::eof;
+      return nullptr;
+    }
     if (padding_support_ && num_padding_send_ < kFirstPaddings) {
       ++num_padding_send_;
       AddPadding(buf);

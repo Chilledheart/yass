@@ -189,7 +189,7 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   bool OnDataForStream(StreamId stream_id, absl::string_view data) override;
   bool OnDataPaddingLength(StreamId stream_id, size_t padding_length) override;
   void OnRstStream(StreamId stream_id,
-                   http2::adapter::Http2ErrorCode error_code) override {}
+                   http2::adapter::Http2ErrorCode error_code) override;
   void OnPriorityForStream(StreamId stream_id,
                            StreamId parent_stream_id,
                            int weight,
