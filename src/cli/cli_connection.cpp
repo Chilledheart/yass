@@ -932,6 +932,11 @@ repeat_fetch:
   } else {
     decoder_->process_bytes(buf);
   }
+  // RstStream might be sent in ProcessBytes
+  if (channel_->eof()) {
+    ec = asio::error::eof;
+    return nullptr;
+  }
   if (bytes_transferred <= kYieldAfterBytesRead) {
     goto repeat_fetch;
   }
