@@ -465,9 +465,13 @@ asio::error_code CliConnection::OnReadRedirHandshake(
   VLOG(2) << "Connection (client) " << connection_id()
           << " try redir handshake";
   scoped_refptr<CliConnection> self(this);
-  auto peer_address = socket_.remote_endpoint();
+  asio::error_code ec;
+  auto peer_address = socket_.remote_endpoint(ec);
+  if (ec) {
+    return ec;
+  }
   struct sockaddr_storage ss = {};
-  socklen_t ss_len = sizeof(ss);
+  socklen_t ss_len = sizeof(struct sockaddr_in6);
   asio::ip::tcp::endpoint endpoint;
   int ret;
   if (peer_address.address().is_v4() || IsIPv4MappedIPv6(peer_address))
