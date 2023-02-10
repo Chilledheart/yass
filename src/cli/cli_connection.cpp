@@ -479,15 +479,35 @@ asio::error_code CliConnection::OnReadRedirHandshake(
     memcpy(endpoint.data(), &ss, ss_len);
   }
   if (ret == 0 && endpoint != endpoint_) {
-    VLOG(2) << "Connection (client) " << connection_id()
-            << " redir stream from " << endpoint_ << " to " << endpoint;
-
     // no handshake required to be written
     SetState(state_stream);
 
-    OnCmdConnect(endpoint);
-    asio::error_code ec;
+    // FindNameByAddr routine
+    char hostname[NI_MAXHOST];
+    char service[NI_MAXSERV];
+    uint16_t port = endpoint.port();
+    int ret = getnameinfo((const struct sockaddr*)endpoint.data(), endpoint.size(),
+                           hostname, sizeof(hostname), service, sizeof(service),
+                           NI_NAMEREQD);
+    if (ret == 0 && strlen(hostname) != 0) {
+      VLOG(2) << "Connection (client) " << connection_id()
+              << " redir stream from " << hostname << ":" << port
+              << " to " << endpoint;
+      OnCmdConnect(hostname, port);
+    } else {
+      if (ret) {
+        VLOG(3) << "Connection (client) " << connection_id()
+                << " redir getnameinfo failure: " << gai_strerror(ret);
+      } else {
+        VLOG(3) << "Connection (client) " << connection_id()
+                << " redir getnameinfo failure: truncated host name";
+      }
+      VLOG(2) << "Connection (client) " << connection_id()
+              << " redir stream from " << endpoint_ << " to " << endpoint;
+      OnCmdConnect(endpoint);
+    }
 
+    asio::error_code ec;
     if (!buf->empty()) {
       ProcessReceivedData(buf, ec, buf->length());
     } else {
