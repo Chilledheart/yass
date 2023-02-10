@@ -1448,7 +1448,8 @@ void CliConnection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (!downstream_.empty() && !write_inprogress_) {
     if (CurrentState() == state_error) {
       VLOG(1) << "Connection (client) " << connection_id()
-              << " failed to sending " << buf->length() << " bytes.";
+              << " failed to sending " << (buf ? buf->length() : 0u)
+              << " bytes.";
       return;
     }
     WriteStream();
