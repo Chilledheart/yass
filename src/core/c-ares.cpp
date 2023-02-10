@@ -188,8 +188,7 @@ void CAresResolver::AsyncResolve(const std::string& host,
         return;
       }
       auto cb = ctx->cb;
-      asio::error_code ec;
-      self->resolve_timer_.cancel(ec);
+      self->resolve_timer_.cancel();
       if (timeouts > 0) {
         ::ares_freeaddrinfo(result);
         cb(asio::error::timed_out, {});

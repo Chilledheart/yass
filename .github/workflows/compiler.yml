@@ -99,27 +99,8 @@ jobs:
           set VCToolsVersion=
       - name: Run tests
         run: |
-          set VCToolsVersion=14.29
-          set Winsdk=10.0.19041.0
-          set "WindowsSDKVersion=%Winsdk%\"
-          if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
-          set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
-          set "VSCMD_START_DIR=%CD%"
-          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set Platform=${{ matrix.arch }}
-
-          set "Path=%CD%\third_party\nasm;%Path%"
-          set "Path=%CD%\third_party\wix311;%Path%"
-
-          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
-
-          tools\build -nc -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -use-libcxx=false -run-test -no-packaging -verbose 1 || exit /b
-
-          exit /b 0
-
-          :SetNewVCToolsVersion
-          set VCToolsVersion=
+          cd build-msvc-${{ matrix.arch }}-${{ matrix.crt-linkage }}
+          yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=100 --gtest_throw_on_failure
   win-compiler-compatible-2022:
     runs-on: windows-2022
     strategy:
@@ -196,27 +177,8 @@ jobs:
           set VCToolsVersion=
       - name: Run tests
         run: |
-          set VCToolsVersion=
-          set Winsdk=10.0.19041.0
-          set "WindowsSDKVersion=%Winsdk%\"
-          if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
-          set vsdevcmd=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat
-          set "VSCMD_START_DIR=%CD%"
-          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set Platform=${{ matrix.arch }}
-
-          set "Path=%CD%\third_party\nasm;%Path%"
-          set "Path=%CD%\third_party\wix311;%Path%"
-
-          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
-
-          tools\build -nc -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -use-libcxx=false -run-test -no-packaging -verbose 1 || exit /b
-
-          exit /b 0
-
-          :SetNewVCToolsVersion
-          set VCToolsVersion=
+          cd build-msvc-${{ matrix.arch }}-${{ matrix.crt-linkage }}
+          yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=100 --gtest_throw_on_failure
   mingw64-compiler-compatible-msys2:
     runs-on: windows-2019
     strategy:
@@ -224,6 +186,9 @@ jobs:
       matrix:
         arch: [x86_64]
         build_type: [Debug, Release]
+    defaults:
+      run:
+        shell: cmd
     steps:
       - uses: actions/checkout@v3
       - name: Checkout with shallow submodules
@@ -250,7 +215,6 @@ jobs:
           del /s /q third_party\llvm-build\Release+Asserts\*.tgz
           del /s /q wix311*.zip
       - name: Build
-        shell: cmd
         run: |
           set CC=clang
           set CXX=clang++
@@ -275,10 +239,9 @@ jobs:
           cmake -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_TESTS=on -DGUI=on -DMINGW_WORKAROUND=on ..
           ninja yass yass_test
       - name: Run unittests
-        shell: cmd
         run: |
           cd build
-          yass_test -logtostderr -v 1
+          yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=100 --gtest_throw_on_failure
   linux-compiler-compatible:
     runs-on: ubuntu-20.04
     strategy:
@@ -358,7 +321,8 @@ jobs:
           ./tools/build -no-packaging ${{ env.build_opts }} -build-test
       - name: Run tests
         run: |
-          ./tools/build -nc -no-packaging ${{ env.build_opts }} -run-test -verbose 1
+          cd build-linux-amd64
+          ./yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=100 --gtest_throw_on_failure
   mac-compiler-compatible:
     strategy:
       fail-fast: false
@@ -429,6 +393,5 @@ jobs:
           ./tools/build -no-packaging -macosx-universal-build=false -build-test
       - name: Run tests
         run: |
-          # required by gcc lto
-          ulimit -n 4096
-          ./tools/build -nc -no-packaging -macosx-universal-build=false -run-test -verbose 1
+          cd build-darwin-amd64
+          ./yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=100 --gtest_throw_on_failure
