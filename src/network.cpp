@@ -42,7 +42,7 @@ ABSL_FLAG(int32_t, tcp_keep_alive_cnt, 9, "The number of TCP keep-alive probes t
 ABSL_FLAG(int32_t, tcp_keep_alive_idle_timeout, 7200, "The number of seconds a connection needs to be idle before TCP begins sending out keep-alive probes.");
 ABSL_FLAG(int32_t, tcp_keep_alive_interval, 75, "The number of seconds between TCP keep-alive probes.");
 ABSL_FLAG(bool, tls13_early_return, true, "Enable 0RTTI Early Return (risk at production)");
-ABSL_FLAG(bool, redir_mode, false, "Enable TCP Redir mode support (linux only)");
+ABSL_FLAG(bool, redir_mode, true, "Enable TCP Redir mode support (linux only)");
 
 void SetSOReusePort(asio::ip::tcp::acceptor::native_handle_type handle,
                     asio::error_code& ec) {
