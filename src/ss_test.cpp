@@ -207,11 +207,11 @@ class SsEndToEndTest : public ::testing::Test {
     bool done = 0;
     io_context_.post([this, &m, &done]() {
       std::lock_guard<std::mutex> lk(m);
-      auto ec = StartContentProvider(GetReusableEndpoint(), 1);
+      auto ec = StartContentProvider(GetReusableEndpoint(), SOMAXCONN);
       ASSERT_FALSE(ec) << ec;
-      ec = StartServer(GetReusableEndpoint(), 1);
+      ec = StartServer(GetReusableEndpoint(), SOMAXCONN);
       ASSERT_FALSE(ec) << ec;
-      ec = StartLocal(server_endpoint_, GetReusableEndpoint(), 1);
+      ec = StartLocal(server_endpoint_, GetReusableEndpoint(), SOMAXCONN);
       ASSERT_FALSE(ec) << ec;
       done = true;
     });

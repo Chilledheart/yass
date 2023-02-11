@@ -24,10 +24,6 @@
 #include "crypto/crypter_export.hpp"
 #include "version.h"
 
-#ifndef SSMAXCONN
-#define SSMAXCONN 1024
-#endif
-
 using namespace server;
 
 int main(int argc, const char* argv[]) {
@@ -96,7 +92,7 @@ int main(int argc, const char* argv[]) {
   LOG(WARNING) << "tcp server listening at " << endpoint;
 
   ServerServer server(io_context);
-  server.listen(endpoint, SSMAXCONN, ec);
+  server.listen(endpoint, SOMAXCONN, ec);
   if (ec) {
     LOG(ERROR) << "listen failed due to: " << ec;
     server.stop();
