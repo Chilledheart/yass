@@ -26,8 +26,8 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 - [Ciphers](#ciphers)
   * [HTTP2 Tunnel Support](#http2-tunnel-support)
   * [NaiveProxy Protocol Support](#naiveproxy-protocol-support)
-  * [PC-friendly Ciphers](#pc-friendly-ciphers)
-  * [More mobile-friendly Ciphers](#more-mobile-friendly-ciphers)
+  * [Shadowsocks PC-friendly Ciphers](#shadowsocks-pc-friendly-ciphers)
+  * [Shadowsocks mobile-friendly Ciphers](#shadowsocks-mobile-friendly-ciphers)
 - [Supported Operating System](#supported-operating-system)
   * [Screenshot on Windows 11](#screenshot-on-windows-11)
   * [Screenshot on Windows 7](#screenshot-on-windows-7)
@@ -66,13 +66,13 @@ Notable missing features to be done compared with [naiveproxy]
   header
 - [ ] Performance degrade compared to [naiveproxy] client
 
-### PC-friendly Ciphers
+### Shadowsocks PC-friendly Ciphers
 - [x] [AES_128_GCM][aes128gcm]
 - [x] [AES_256_GCM][aes256gcm]
 - [x] [AES_128_GCM_12][aes128gcm12]
 - [x] [AES_192_GCM][aes192gcm] (Not recommended)
 
-### More mobile-friendly Ciphers
+### Shadowsocks mobile-friendly Ciphers
 - [x] [CHACHA20_POLY1305][chacha20]
 - [x] [XCHACHA20_POLY1305][xchacha20]
 
