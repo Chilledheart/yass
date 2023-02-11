@@ -67,6 +67,13 @@ Notable missing features to be done compared with [naiveproxy]
   header
 - [ ] Performance degrade compared to [naiveproxy] client
 
+Server-side features compared with caddy+forwardproxy
+- [x] Basic Authentification
+- [x] Opt-in of padding protocol
+- [ ] Via-IP support
+- [ ] Via-via support
+- [ ] File Server fallback support
+
 ### Shadowsocks PC-friendly Ciphers
 - [x] [AES_128_GCM][aes128gcm]
 - [x] [AES_256_GCM][aes256gcm]
