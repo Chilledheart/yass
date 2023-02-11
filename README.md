@@ -25,6 +25,7 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 - [Features](#features)
 - [Ciphers](#ciphers)
   * [HTTP2 Tunnel Support](#http2-tunnel-support)
+  * [NaiveProxy Protocol Support](#naiveproxy-protocol-support)
   * [PC-friendly Ciphers](#pc-friendly-ciphers)
   * [More mobile-friendly Ciphers](#more-mobile-friendly-ciphers)
 - [Supported Operating System](#supported-operating-system)
@@ -53,6 +54,17 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 - [x] Padding Support
 
 More Information refers to https://github.com/Chilledheart/yass/issues/55
+
+### NaiveProxy Protocol Support
+Notable missing features to be done compared with [naiveproxy]
+- [x] Caddy + forwardproxy Support (see [Server setup for naive fork][naiveproxy-server])
+- [x] Proxy payload padding (see Padding Support)
+- [ ] H2 RST_STREAM frame padding
+- [x] H2 HEADERS frame padding
+- [x] Opt-in of padding protocol
+- [ ] Support HTTP/2 and HTTP/3 CONNECT tunnel Fast Open using the `fastopen`
+  header
+- [ ] Performance degrade compared to [naiveproxy] client
 
 ### PC-friendly Ciphers
 - [x] [AES_128_GCM][aes128gcm]
@@ -110,5 +122,7 @@ It is licensed with [GPLv2][license-link].
 [aes256gcm]: https://tools.ietf.org/html/rfc5116
 [chacha20]: https://tools.ietf.org/html/rfc7539
 [xchacha20]: https://en.wikipedia.org/wiki/ChaCha20-Poly1305#XChaCha20-Poly1305_%E2%80%93_extended_nonce_variant
+[naiveproxy]: https://github.com/klzgrad/naiveproxy
+[naiveproxy-server]: https://github.com/klzgrad/naiveproxy#server-setup
 
 [BUILDING.md]: BUILDING.md
