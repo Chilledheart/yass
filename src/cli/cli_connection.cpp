@@ -94,10 +94,6 @@ bool IsIPv4MappedIPv6(const asio::ip::tcp::endpoint& address) {
   return address.address().is_v6() && address.address().to_v6().is_v4_mapped();
 }
 
-bool IsIPUnspecified(const asio::ip::tcp::endpoint& address) {
-  return address.address().is_unspecified();
-}
-
 } // anonymous namespace
 #endif
 
@@ -468,16 +464,11 @@ asio::error_code CliConnection::OnReadRedirHandshake(
   VLOG(2) << "Connection (client) " << connection_id()
           << " try redir handshake";
   scoped_refptr<CliConnection> self(this);
-  asio::error_code ec;
-  auto peer_address = socket_.remote_endpoint(ec);
-  if (ec) {
-    return ec;
-  }
   struct sockaddr_storage ss = {};
   socklen_t ss_len = sizeof(struct sockaddr_in6);
   asio::ip::tcp::endpoint endpoint;
   int ret;
-  if (peer_address.address().is_v4() || IsIPv4MappedIPv6(peer_address))
+  if (peer_endpoint_.address().is_v4() || IsIPv4MappedIPv6(peer_endpoint_))
     ret = getsockopt(socket_.native_handle(), SOL_IP, SO_ORIGINAL_DST, &ss,
                      &ss_len);
   else
@@ -487,16 +478,36 @@ asio::error_code CliConnection::OnReadRedirHandshake(
     endpoint.resize(ss_len);
     memcpy(endpoint.data(), &ss, ss_len);
   }
-  if (ret == 0 && !IsIPUnspecified(endpoint)) {
-    VLOG(2) << "Connection (client) " << connection_id()
-            << " redir stream from " << endpoint_ << " to " << endpoint;
-
+  if (ret == 0 && endpoint != endpoint_) {
     // no handshake required to be written
     SetState(state_stream);
 
-    OnCmdConnect(endpoint);
-    asio::error_code ec;
+    // FindNameByAddr routine
+    char hostname[NI_MAXHOST];
+    char service[NI_MAXSERV];
+    uint16_t port = endpoint.port();
+    int ret = getnameinfo((const struct sockaddr*)endpoint.data(), endpoint.size(),
+                           hostname, sizeof(hostname), service, sizeof(service),
+                           NI_NAMEREQD);
+    if (ret == 0 && strlen(hostname) != 0) {
+      VLOG(2) << "Connection (client) " << connection_id()
+              << " redir stream from " << hostname << ":" << port
+              << " to " << endpoint;
+      OnCmdConnect(hostname, port);
+    } else {
+      if (ret) {
+        VLOG(3) << "Connection (client) " << connection_id()
+                << " redir getnameinfo failure: " << gai_strerror(ret);
+      } else {
+        VLOG(3) << "Connection (client) " << connection_id()
+                << " redir getnameinfo failure: truncated host name";
+      }
+      VLOG(2) << "Connection (client) " << connection_id()
+              << " redir stream from " << endpoint_ << " to " << endpoint;
+      OnCmdConnect(endpoint);
+    }
 
+    asio::error_code ec;
     if (!buf->empty()) {
       ProcessReceivedData(buf, ec, buf->length());
     } else {
