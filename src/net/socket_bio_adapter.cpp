@@ -74,19 +74,25 @@ int SocketBIOAdapter::BIORead(char* out, int len) {
     read_buffer_ = IOBuf::create(read_buffer_capacity_);
     asio::error_code ec;
     size_t result = socket_->read_some(mutable_buffer(*read_buffer_), ec);
+    if (ec == asio::error::try_again || ec == asio::error::would_block) {
+      auto read_buffer = read_buffer_;
+      socket_->async_read_some(mutable_buffer(*read_buffer),
+        [this, read_buffer](asio::error_code ec, size_t bytes_transferred) {
+        int result;
+        if (ec == asio::error::eof) {
+          result = 0;
+        } else if (ec) {
+          result = ERR_UNEXPECTED;
+        } else {
+          result = bytes_transferred;
+          read_buffer->append(bytes_transferred);
+        }
+        read_callback_.operator()(result);
+      });
+    }
     if (!ec) {
       read_buffer_->append(result);
-      OnSocketReadIfReadyComplete(result);
     }
-    if (ec == asio::error::try_again || ec == asio::error::would_block) {
-      read_buffer_ = nullptr;
-    }
-#if 0
-    if (result == ERR_READ_IF_READY_NOT_IMPLEMENTED) {
-      result = socket_->Read(read_buffer_.get(), read_buffer_capacity_,
-                             read_callback_);
-    }
-#endif
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
       read_result_ = ERR_IO_PENDING;
     } else {
