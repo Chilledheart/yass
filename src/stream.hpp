@@ -14,10 +14,10 @@
 #include "core/logging.hpp"
 #include "core/scoped_refptr.hpp"
 #include "network.hpp"
+#include "net/ssl_socket.hpp"
 #include "protocol.hpp"
 
 #include <absl/strings/str_cat.h>
-#include <openssl/bio.h>
 
 /// the class to describe the traffic between given node (endpoint)
 class stream {
@@ -47,31 +47,38 @@ class stream {
         connect_timer_(io_context),
         https_fallback_(https_fallback),
         enable_tls_(enable_tls),
-        ssl_socket_(socket_, *ssl_ctx),
+        ssl_socket_(&io_context, &socket_, ssl_ctx->native_handle(), https_fallback, host_name),
         channel_(channel) {
     assert(channel && "channel must defined to use with stream");
     int ret = resolver_->Init(1000, 5);
     CHECK_EQ(ret, 0) << "c-ares initialize failure";
     static_cast<void>(ret);
     if (enable_tls) {
-      setup_ssl();
       s_async_read_some_ = [this](handle_t cb) {
         socket_.async_wait(asio::ip::tcp::socket::wait_read, cb);
       };
       s_read_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
-        return ssl_socket_.read_some(mutable_buffer(*buf), ec);
+        return ssl_socket_.Read(buf, ec);
       };
       s_async_write_some_ = [this](handle_t cb) {
         socket_.async_wait(asio::ip::tcp::socket::wait_write, cb);
       };
       s_write_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
-        return ssl_socket_.write_some(const_buffer(*buf), ec);
+        return ssl_socket_.Write(buf, ec);
       };
       s_async_shutdown_ = [this](handle_t cb) {
+        asio::error_code ec;
+        socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+        cb(ec);
+#if 0
         ssl_socket_.async_shutdown(cb);
+#endif
       };
       s_shutdown_ = [this](asio::error_code &ec) {
+        socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+#if 0
         ssl_socket_.shutdown(ec);
+#endif
       };
     } else {
       s_async_read_some_ = [this](handle_t cb) {
@@ -99,51 +106,6 @@ class stream {
 
   ~stream() {
     close();
-  }
-
-  void setup_ssl() {
-    SSL* ssl = ssl_socket_.native_handle();
-    // TODO: implement these SSL options
-    // SSLClientSocketImpl::Init
-    // SSL_CTX_set_strict_cipher_list
-    if (!host_name_.empty()) {
-      asio::error_code ec;
-      asio::ip::make_address(host_name_.c_str(), ec);
-      bool host_is_ip_address = !ec;
-      if (!host_is_ip_address) {
-        int ret = ::SSL_set_tlsext_host_name(ssl, host_name_.c_str());
-        CHECK_EQ(ret, 1) << "SSL_set_tlsext_host_name failure";
-      }
-    }
-
-    // Whether early data is enabled on this connection.
-    ::SSL_set_early_data_enabled(ssl, absl::GetFlag(FLAGS_tls13_early_return));
-
-    // ALPS TLS extension is enabled and corresponding data is sent to client if
-    // client also enabled ALPS, for each NextProto in |application_settings|.
-    // Data might be empty.
-    const char* proto_string = https_fallback_ ? "http/1.1" : "h2";
-    std::vector<uint8_t> data;
-    ::SSL_add_application_settings(ssl,
-                                   reinterpret_cast<const uint8_t*>(proto_string),
-                                   strlen(proto_string), data.data(), data.size());
-    ::SSL_enable_signed_cert_timestamps(ssl);
-    ::SSL_enable_ocsp_stapling(ssl);
-
-    // Configure BoringSSL to allow renegotiations. Once the initial handshake
-    // completes, if renegotiations are not allowed, the default reject value will
-    // be restored. This is done in this order to permit a BoringSSL
-    // optimization. See https://crbug.com/boringssl/123. Use
-    // ssl_renegotiate_explicit rather than ssl_renegotiate_freely so DoPeek()
-    // does not trigger renegotiations.
-    ::SSL_set_renegotiate_mode(ssl, ssl_renegotiate_explicit);
-
-    ::SSL_set_shed_handshake_config(ssl, 1);
-
-    // If false, disables TLS Encrypted ClientHello (ECH). If true, the feature
-    // may be enabled or disabled, depending on feature flags.
-    ::SSL_set_enable_ech_grease(ssl, 0);
-    ssl_socket_.set_verify_mode(asio::ssl::verify_peer);
   }
 
   void connect(std::function<void()> callback) {
@@ -333,10 +295,12 @@ class stream {
     if (enable_tls_) {
       socket_.native_non_blocking(false, ec);
       socket_.non_blocking(false, ec);
+#if 0
       ssl_socket_.shutdown(ec);
       if (ec) {
         VLOG(2) << "shutdown() error: " << ec;
       }
+#endif
     }
     socket_.close(ec);
     if (ec) {
@@ -374,11 +338,14 @@ class stream {
         return;
       }
       if (enable_tls_ && !ec) {
-        ssl_socket_.async_handshake(asio::ssl::stream_base::client,
-                                    [this, channel, callback](asio::error_code ec) {
+        ssl_socket_.Connect([this, channel, callback](int rv) {
           if (closed_) {
             callback();
             return;
+          }
+          asio::error_code ec;
+          if (rv < 0) {
+            ec = asio::error::connection_refused;
           }
           on_connect(callback, channel, ec);
         });
@@ -482,7 +449,7 @@ class stream {
 
   bool https_fallback_;
   const bool enable_tls_;
-  asio::ssl::stream<asio::ip::tcp::socket&> ssl_socket_;
+  net::SSLSocket ssl_socket_;
 
   Channel* channel_;
   bool connected_ = false;

@@ -2190,6 +2190,9 @@ endif()
 
 set(files
     src/network.cpp
+    src/net/socket_bio_adapter.cpp
+    src/net/ssl_socket.cpp
+    src/net/openssl_util.cpp
     src/config/config.cpp
     src/config/config_impl.cpp
     src/core/cipher.cpp
@@ -2259,6 +2262,12 @@ set(files
     )
 
 set(hfiles
+    src/network.hpp
+    src/net/socket_bio_adapter.hpp
+    src/net/ssl_socket.hpp
+    src/net/net_errors.hpp
+    src/net/net_error_list.hpp
+    src/net/openssl_util.hpp
     src/config/config.hpp
     src/config/config_impl.hpp
     src/config/config_impl_posix.hpp
