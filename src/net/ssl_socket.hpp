@@ -43,7 +43,7 @@ class SSLSocket : public SocketBIOAdapter::Delegate {
 
   int DoHandshakeLoop(int last_io_result);
   int DoPayloadRead(std::shared_ptr<IOBuf> buf, int buf_len);
-  int DoPayloadWrite();
+  int DoPayloadWrite(std::shared_ptr<IOBuf> buf, int buf_len);
   void DoPeek();
   int MapLastOpenSSLError(int ssl_error);
 
@@ -53,15 +53,6 @@ class SSLSocket : public SocketBIOAdapter::Delegate {
 
   CompletionOnceCallback user_connect_callback_;
 
-#if 0
-  // Used by Read function.
-  std::shared_ptr<IOBuf> user_read_buf_;
-  int user_read_buf_len_;
-#endif
-
-  // Used by Write function.
-  std::shared_ptr<IOBuf> user_write_buf_;
-  int user_write_buf_len_;
   bool first_post_handshake_write_ = true;
 
   // True if early data enabled

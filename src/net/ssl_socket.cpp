@@ -133,8 +133,6 @@ void SSLSocket::Disconnect() {
 
   // Release user callbacks.
   user_connect_callback_ = nullptr;
-  user_write_buf_ = nullptr;
-  user_write_buf_len_ = 0;
 
   asio::error_code ec;
   stream_socket_->close(ec);
@@ -183,11 +181,9 @@ size_t SSLSocket::Read(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
 }
 
 size_t SSLSocket::Write(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
-  user_write_buf_ = buf;
-  user_write_buf_len_ = buf->length();
-  DCHECK(user_write_buf_len_);
+  DCHECK(buf->length());
 
-  int rv = DoPayloadWrite();
+  int rv = DoPayloadWrite(buf, buf->length());
 
   if (rv == ERR_IO_PENDING) {
     ec = asio::error::try_again;
@@ -195,8 +191,6 @@ size_t SSLSocket::Write(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
   } else {
     if (rv > 0)
       was_ever_used_ = true;
-    user_write_buf_ = nullptr;
-    user_write_buf_len_ = 0;
   }
 
   if (rv < 0) {
@@ -524,8 +518,8 @@ int SSLSocket::DoPayloadRead(std::shared_ptr<IOBuf> buf, int buf_len) {
   return rv;
 }
 
-int SSLSocket::DoPayloadWrite() {
-  int rv = SSL_write(ssl_.get(), user_write_buf_->data(), user_write_buf_len_);
+int SSLSocket::DoPayloadWrite(std::shared_ptr<IOBuf> buf, int buf_len) {
+  int rv = SSL_write(ssl_.get(), buf->data(), buf_len);
 
   if (rv >= 0) {
     if (first_post_handshake_write_ && SSL_is_init_finished(ssl_.get())) {
