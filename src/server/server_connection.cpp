@@ -1175,6 +1175,7 @@ void ServerConnection::connected() {
   upstream_writable_ = true;
 
   channel_->start_read([self](){});
+  WriteUpstreamInPipe();
   OnUpstreamWriteFlush();
 }
 

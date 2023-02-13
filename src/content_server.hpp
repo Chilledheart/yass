@@ -271,6 +271,8 @@ class ContentServer {
       }
       VLOG(1) << "Using privated key (in-memory)";
     }
+    SSL_CTX_set_early_data_enabled(ssl_ctx_.native_handle(),
+                                   absl::GetFlag(FLAGS_tls13_early_data));
     // TODO: implement these SSL options
     // SSLServerContextImpl::Init
     // SSL_CTX_set_strict_cipher_list

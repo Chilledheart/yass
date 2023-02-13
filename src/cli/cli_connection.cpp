@@ -1573,12 +1573,12 @@ void CliConnection::connected() {
         "\r\n", host.c_str(), port, host.c_str(), port);
     std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(hdr.data(), hdr.size());
     // write variable address directly as https header
-    OnUpstreamWrite(buf);
+    upstream_.push_back(buf);
   } else {
     ByteRange req(ss_request_->data(), ss_request_->length());
     std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);
     // write variable address directly as ss header
-    OnUpstreamWrite(EncryptData(buf));
+    upstream_.push_back(EncryptData(buf));
   }
 
   // Re-process the read data in pending
@@ -1592,6 +1592,8 @@ void CliConnection::connected() {
   upstream_readable_ = true;
   upstream_writable_ = true;
   channel_->start_read([self]() {});
+
+  WriteUpstreamInPipe();
   OnUpstreamWriteFlush();
 }
 

@@ -3,6 +3,7 @@
 
 #include "net/ssl_socket.hpp"
 #include "net/openssl_util.hpp"
+#include "network.hpp"
 
 namespace net {
 
@@ -23,6 +24,7 @@ SSLSocket::SSLSocket(asio::io_context *io_context,
                      bool https_fallback,
                      const std::string& host_name)
     : io_context_(io_context), stream_socket_(socket),
+      early_data_enabled_(absl::GetFlag(FLAGS_tls13_early_data)),
       pending_read_error_(kSSLClientSocketNoPendingResult) {
   DCHECK(!ssl_);
   ssl_.reset(SSL_new(ssl_ctx));
@@ -581,6 +583,7 @@ void SSLSocket::DoPeek() {
     // https://crbug.com/1066623.
     if (err == ERR_EARLY_DATA_REJECTED ||
         err == ERR_WRONG_VERSION_ON_EARLY_DATA) {
+      LOG(WARNING) << "Early data rejected";
 #if 0
       context_->ssl_client_session_cache()->ClearEarlyData(
           GetSessionCacheKey(absl::nullopt));

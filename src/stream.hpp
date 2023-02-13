@@ -343,7 +343,9 @@ class stream {
             on_connect(callback, channel, ec);
             return;
           }
-          int result = ssl_socket_.ConfirmHandshake([this, channel, callback](int rv){
+          on_connect(callback, channel, ec);
+          // Also queue a ConfirmHandshake. It should also be blocked on ServerHello.
+          auto cb = [this, callback](int rv){
             if (closed_) {
               callback();
               return;
@@ -352,10 +354,10 @@ class stream {
             if (rv < 0) {
               ec = asio::error::connection_refused;
             }
-            on_connect(callback, channel, ec);
-          });
-          if (result == net::OK) {
-            on_connect(callback, channel, ec);
+          };
+          int result = ssl_socket_.ConfirmHandshake(cb);
+          if (result != net::ERR_IO_PENDING) {
+            cb(result);
           }
         });
         return;
