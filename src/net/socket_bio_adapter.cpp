@@ -198,21 +198,19 @@ int SocketBIOAdapter::BIOWrite(const char* in, int len) {
     write_buffer_used_ += chunk;
   }
 
-#if 0
   // If there is still space for remaining data, try to wrap around.
-  if (len > 0 && write_buffer_used_ < write_buffer_->capacity()) {
+  if (len > 0 && write_buffer_used_ < (int)write_buffer_->capacity()) {
     // If there were any room after the offset, the previous branch would have
     // filled it.
-    CHECK_LE(write_buffer_->RemainingCapacity(), write_buffer_used_);
-    int write_offset = write_buffer_used_ - write_buffer_->RemainingCapacity();
-    int chunk = std::min(len, write_buffer_->capacity() - write_buffer_used_);
-    memcpy(write_buffer_->StartOfBuffer() + write_offset, in, chunk);
+    CHECK_LE((int)write_buffer_->tailroom(), write_buffer_used_);
+    int write_offset = write_buffer_used_ - write_buffer_->tailroom();
+    int chunk = std::min<int>(len, write_buffer_->capacity() - write_buffer_used_);
+    memcpy(write_buffer_->mutable_buffer() + write_offset, in, chunk);
     in += chunk;
     len -= chunk;
     bytes_copied += chunk;
     write_buffer_used_ += chunk;
   }
-#endif
 
   // Either the buffer is now full or there is no more input.
   DCHECK(len == 0 || write_buffer_used_ == (int)write_buffer_->capacity());
@@ -250,7 +248,7 @@ void SocketBIOAdapter::SocketWrite() {
         write_callback_(bytes_transferred);
       });
     }
-    if (ec == asio::error::try_again || ec == asio::error::would_block) {
+    if ((int)result != write_size || ec == asio::error::try_again || ec == asio::error::would_block) {
       write_error_ = ERR_IO_PENDING;
       return;
     }
@@ -274,10 +272,8 @@ void SocketBIOAdapter::HandleSocketWriteResult(int result) {
   // Advance the ring buffer.
   write_buffer_->append(result);
   write_buffer_used_ -= result;
-#if 0
   if (write_buffer_->tailroom() == 0)
-    write_buffer_->prepend(write_buffer_->capacity());
-#endif
+    write_buffer_->clear();
   write_error_ = OK;
 
   // Release the write buffer if empty.
