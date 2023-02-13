@@ -391,6 +391,7 @@ int SSLSocket::DoHandshakeComplete(int result) {
 void SSLSocket::DoConnectCallback(int rv) {
   if (user_connect_callback_) {
     std::move(user_connect_callback_).operator()(rv > OK ? OK : rv);
+    user_connect_callback_ = nullptr;
   }
 }
 

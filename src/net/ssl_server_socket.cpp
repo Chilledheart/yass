@@ -220,6 +220,7 @@ int SSLServerSocket::DoHandshake() {
 void SSLServerSocket::DoHandshakeCallback(int rv) {
   DCHECK_NE(rv, ERR_IO_PENDING);
   std::move(user_handshake_callback_).operator()(rv > OK ? OK : rv);
+  user_handshake_callback_ = nullptr;
 }
 
 int SSLServerSocket::DoHandshakeLoop(int last_io_result) {

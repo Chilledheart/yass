@@ -354,6 +354,7 @@ class stream {
           int result = ssl_socket_.ConfirmHandshake(cb);
           if (result != net::ERR_IO_PENDING) {
             cb(result);
+            callback();
           }
         });
         return;
