@@ -63,6 +63,18 @@ int SSLServerSocket::Handshake(CompletionOnceCallback callback) {
   return rv > OK ? OK : rv;
 }
 
+int SSLServerSocket::Shutdown() {
+  int result = SSL_shutdown(ssl_.get());
+  switch (result) {
+    case 1:
+      return OK;
+    case 0:
+      return ERR_IO_PENDING;
+    default:
+      return ERR_UNEXPECTED;
+  }
+}
+
 void SSLServerSocket::Disconnect() {
   asio::error_code ec;
   stream_socket_->close(ec);

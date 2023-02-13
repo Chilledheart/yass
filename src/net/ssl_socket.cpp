@@ -160,6 +160,18 @@ int SSLSocket::ConfirmHandshake(CompletionOnceCallback callback) {
   return rv > OK ? OK : rv;
 }
 
+int SSLSocket::Shutdown() {
+  int result = SSL_shutdown(ssl_.get());
+  switch (result) {
+    case 1:
+      return OK;
+    case 0:
+      return ERR_IO_PENDING;
+    default:
+      return ERR_UNEXPECTED;
+  }
+}
+
 size_t SSLSocket::Read(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
   int buf_len = buf->capacity();
   int rv = DoPayloadRead(buf, buf_len);

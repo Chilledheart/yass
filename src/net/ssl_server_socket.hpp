@@ -20,6 +20,7 @@ class SSLServerSocket : public SocketBIOAdapter::Delegate {
   SSLServerSocket& operator=(SSLServerSocket&&) = default;
 
   int Handshake(CompletionOnceCallback callback);
+  int Shutdown();
 
   // StreamSocket implementation
   void Disconnect();

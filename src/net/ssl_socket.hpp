@@ -21,6 +21,7 @@ class SSLSocket : public SocketBIOAdapter::Delegate {
   int Connect(CompletionOnceCallback callback);
   void Disconnect();
   int ConfirmHandshake(CompletionOnceCallback callback);
+  int Shutdown();
 
   SSL* native_handle() { return ssl_.get(); }
 

@@ -65,11 +65,11 @@ class Connection {
       };
       s_async_shutdown_ = [this](handle_t cb) {
         asio::error_code ec;
-        socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+        ssl_socket_.Shutdown();
         cb(ec);
       };
       s_shutdown_ = [this](asio::error_code &ec) {
-        socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+        ssl_socket_.Shutdown();
       };
     } else {
       s_async_read_some_ = [this](handle_t cb) {

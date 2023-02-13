@@ -67,18 +67,12 @@ class stream {
         return ssl_socket_.Write(buf, ec);
       };
       s_async_shutdown_ = [this](handle_t cb) {
+        ssl_socket_.Shutdown();
         asio::error_code ec;
-        socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
         cb(ec);
-#if 0
-        ssl_socket_.async_shutdown(cb);
-#endif
       };
       s_shutdown_ = [this](asio::error_code &ec) {
-        socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
-#if 0
-        ssl_socket_.shutdown(ec);
-#endif
+        ssl_socket_.Shutdown();
       };
     } else {
       s_async_read_some_ = [this](handle_t cb) {
