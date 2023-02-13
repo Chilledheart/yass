@@ -156,10 +156,11 @@ class Connection {
       if (ssl_err != SSL_ERROR_WANT_READ && ssl_err != SSL_ERROR_WANT_WRITE) {
         return true;
       }
-    }
-    asio::error_code ec;
-    if (socket_.available(ec)) {
-      return true;
+    } else {
+      asio::error_code ec;
+      if (socket_.available(ec)) {
+        return true;
+      }
     }
     return false;
   }
