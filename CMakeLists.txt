@@ -2192,6 +2192,7 @@ set(files
     src/network.cpp
     src/net/socket_bio_adapter.cpp
     src/net/ssl_socket.cpp
+    src/net/ssl_server_socket.cpp
     src/net/openssl_util.cpp
     src/config/config.cpp
     src/config/config_impl.cpp
@@ -2265,6 +2266,7 @@ set(hfiles
     src/network.hpp
     src/net/socket_bio_adapter.hpp
     src/net/ssl_socket.hpp
+    src/net/ssl_server_socket.hpp
     src/net/net_errors.hpp
     src/net/net_error_list.hpp
     src/net/openssl_util.hpp

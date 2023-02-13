@@ -13,6 +13,7 @@
 #include "core/asio.hpp"
 #include "core/logging.hpp"
 #include "network.hpp"
+#include "net/ssl_server_socket.hpp"
 #include "protocol.hpp"
 
 class Connection {
@@ -48,26 +49,27 @@ class Connection {
         enable_upstream_tls_(enable_upstream_tls),
         enable_tls_(enable_tls),
         upstream_ssl_ctx_(upstream_ssl_ctx),
-        ssl_socket_(socket_, *ssl_ctx) {
+        ssl_socket_(&io_context, &socket_, ssl_ctx->native_handle()) {
     if (enable_tls) {
-      setup_ssl();
       s_async_read_some_ = [this](handle_t cb) {
         socket_.async_wait(asio::ip::tcp::socket::wait_read, cb);
       };
       s_read_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
-        return ssl_socket_.read_some(mutable_buffer(*buf), ec);
+        return ssl_socket_.Read(buf, ec);
       };
       s_async_write_some_ = [this](handle_t cb) {
         socket_.async_wait(asio::ip::tcp::socket::wait_write, cb);
       };
       s_write_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
-        return ssl_socket_.write_some(const_buffer(*buf), ec);
+        return ssl_socket_.Write(buf, ec);
       };
       s_async_shutdown_ = [this](handle_t cb) {
-        ssl_socket_.async_shutdown(cb);
+        asio::error_code ec;
+        socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+        cb(ec);
       };
       s_shutdown_ = [this](asio::error_code &ec) {
-        ssl_socket_.shutdown(ec);
+        socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
       };
     } else {
       s_async_read_some_ = [this](handle_t cb) {
@@ -102,13 +104,6 @@ class Connection {
   virtual ~Connection() = default;
 
   void set_https_fallback(bool https_fallback) { https_fallback_ = https_fallback; }
-
- private:
-  void setup_ssl() {
-    SSL* ssl = ssl_socket_.native_handle();
-    SSL_set_shed_handshake_config(ssl, 1);
-    ssl_socket_.set_verify_mode(asio::ssl::verify_peer);
-  }
 
  public:
   /// Construct the connection with socket
@@ -194,7 +189,7 @@ class Connection {
   bool enable_tls_;
   std::string upstream_certificate_;
   asio::ssl::context* upstream_ssl_ctx_;
-  asio::ssl::stream<asio::ip::tcp::socket&> ssl_socket_;
+  net::SSLServerSocket ssl_socket_;
 
   /// io_handlers
   std::function<void(handle_t)> s_async_read_some_;

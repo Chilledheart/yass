@@ -123,14 +123,14 @@ void ServerConnection::start() {
 
   scoped_refptr<ServerConnection> self(this);
   if (enable_tls_) {
-    ssl_socket_.async_handshake(asio::ssl::stream_base::server, [this, self](
-      asio::error_code ec) {
+    ssl_socket_.Handshake([this, self](
+      int result) {
         if (closed_) {
           return;
         }
-        if (ec) {
+        if (result != net::OK) {
           SetState(state_error);
-          OnDisconnect(ec);
+          OnDisconnect(asio::error::connection_refused);
           return;
         }
         Start();
@@ -161,10 +161,12 @@ void ServerConnection::close() {
       SendIfNotProcessing();
       OnDownstreamWriteFlush();
     }
+#if 0
     ssl_socket_.shutdown(ec);
     if (ec) {
       VLOG(2) << "shutdown() error: " << ec;
     }
+#endif
   }
   socket_.close(ec);
   if (ec) {
