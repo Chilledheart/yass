@@ -62,6 +62,6 @@ inline asio::ASIO_CONST_BUFFER const_buffer(const IOBuf& io_buf) ASIO_NOEXCEPT
   return asio::ASIO_CONST_BUFFER(io_buf.data(), io_buf.length());
 }
 
-void load_ca_to_ssl_ctx(asio::ssl::context &ssl_ctx);
+void load_ca_to_ssl_ctx(SSL_CTX* ssl_ctx);
 
 #endif  // H_CORE_ASIO

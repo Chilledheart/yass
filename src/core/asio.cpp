@@ -28,15 +28,22 @@ std::ostream& operator<<(std::ostream& o, asio::error_code ec) {
   return o << ec.message();
 }
 
-void load_ca_to_ssl_ctx(asio::ssl::context &ssl_ctx) {
+void load_ca_to_ssl_ctx(SSL_CTX* ssl_ctx) {
 #ifdef _WIN32
   HCERTSTORE cert_store = NULL;
   asio::error_code ec;
   PCCERT_CONTEXT cert = nullptr;
+  X509_STORE* store = nullptr;
 
   cert_store = CertOpenSystemStoreW(NULL, L"ROOT");
   if (!cert_store) {
     PLOG(WARNING) << "CertOpenSystemStoreW failed";
+    goto out;
+  }
+
+  store = SSL_CTX_get_cert_store(ssl_ctx);
+  if (!store) {
+    LOG(WARNING) << "Can't get SSL CTX cert store";
     goto out;
   }
 
@@ -56,11 +63,13 @@ void load_ca_to_ssl_ctx(asio::ssl::context &ssl_ctx) {
         LOG(WARNING) << "Loading ca failure: Internal Error at "<< subject_name;
         continue;
       }
-      ssl_ctx.add_certificate_authority(asio::const_buffer(data, len), ec);
-      if (!ec) {
+      if (X509_STORE_add_cert(store, cert.get()) == 1) {
         VLOG(2) << "Loading ca: " << subject_name;
       } else {
-        LOG(WARNING) << "Loading ca failure: " << ec << " at "<< subject_name;
+        unsigned long err = ERR_get_error();
+        char buf[120];
+        ERR_error_string_n(err, buf, sizeof(buf));
+        LOG(WARNING) << "Loading ca failure: " << buf << " at "<< subject_name;
         continue;
       }
     }
@@ -71,14 +80,20 @@ out:
     CertCloseStore(cert_store, CERT_CLOSE_STORE_FORCE_FLAG);
   }
 #elif defined(__APPLE__)
-  return;
   SecTrustSettingsDomain domain = kSecTrustSettingsDomainSystem;
   CFArrayRef certs;
   OSStatus status;
   asio::error_code ec;
   CFIndex size;
+  X509_STORE* store = nullptr;
   status = SecTrustSettingsCopyCertificates(domain, &certs);
   if (status != errSecSuccess) {
+    goto out;
+  }
+
+  store = SSL_CTX_get_cert_store(ssl_ctx);
+  if (!store) {
+    LOG(WARNING) << "Can't get SSL CTX cert store";
     goto out;
   }
 
@@ -98,9 +113,18 @@ out:
       bssl::UniquePtr<X509> cert(d2i_X509(nullptr, (const unsigned char**)&data, len));
       if (X509_cmp_current_time(X509_get0_notBefore(cert.get())) < 0 &&
           X509_cmp_current_time(X509_get0_notAfter(cert.get())) >= 0) {
-        ssl_ctx.add_certificate_authority(asio::const_buffer(data, len), ec);
         char buf[4096] = {};
-        VLOG(2) << "Loading ca: " << X509_NAME_oneline(X509_get_subject_name(cert.get()), buf, sizeof(buf));
+        const char* const subject_name = X509_NAME_oneline(X509_get_subject_name(cert.get()), buf, sizeof(buf));
+
+        if (X509_STORE_add_cert(store, cert.get()) == 1) {
+          VLOG(2) << "Loading ca: " << subject_name;
+        } else {
+          unsigned long err = ERR_get_error();
+          char buf[120];
+          ERR_error_string_n(err, buf, sizeof(buf));
+          LOG(WARNING) << "Loading ca failure: " << buf << " at "<< subject_name;
+          continue;
+        }
       }
       CFRelease(data_ref);
     }
@@ -121,8 +145,8 @@ out:
   };
   asio::error_code ec;
   for (auto ca_bundle : ca_bundle_paths) {
-    ssl_ctx.load_verify_file(ca_bundle, ec);
-    if (!ec) {
+    int result = SSL_CTX_load_verify_locations(ssl_ctx, ca_bundle, 0);
+    if (result == 1) {
       VLOG(2) << "Loading ca bundle: " << ca_bundle;
     }
   }
