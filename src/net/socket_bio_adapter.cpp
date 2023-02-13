@@ -76,9 +76,14 @@ int SocketBIOAdapter::BIORead(char* out, int len) {
     size_t result = socket_->read_some(mutable_buffer(*read_buffer_), ec);
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
       auto read_buffer = read_buffer_;
-      socket_->async_read_some(mutable_buffer(*read_buffer),
-        [this, read_buffer](asio::error_code ec, size_t bytes_transferred) {
+      socket_->async_wait(asio::ip::tcp::socket::wait_read,
+        [this, read_buffer](asio::error_code ec) {
+        if (ec) {
+          read_callback_.operator()(ERR_UNEXPECTED);
+          return;
+        }
         int result;
+        size_t bytes_transferred = socket_->read_some(mutable_buffer(*read_buffer), ec);
         if (ec == asio::error::eof) {
           result = 0;
         } else if (ec) {
