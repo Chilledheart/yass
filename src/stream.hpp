@@ -346,8 +346,23 @@ class stream {
           asio::error_code ec;
           if (rv < 0) {
             ec = asio::error::connection_refused;
+            on_connect(callback, channel, ec);
+            return;
           }
-          on_connect(callback, channel, ec);
+          int result = ssl_socket_.ConfirmHandshake([this, channel, callback](int rv){
+            if (closed_) {
+              callback();
+              return;
+            }
+            asio::error_code ec;
+            if (rv < 0) {
+              ec = asio::error::connection_refused;
+            }
+            on_connect(callback, channel, ec);
+          });
+          if (result == net::OK) {
+            on_connect(callback, channel, ec);
+          }
         });
         return;
       }
@@ -364,12 +379,10 @@ class stream {
       return;
     }
     if (enable_tls_) {
-      SSL* ssl = ssl_socket_.native_handle();
-      const unsigned char* out;
-      unsigned int outlen;
-      SSL_get0_alpn_selected(ssl, &out, &outlen);
-      std::string alpn = std::string(reinterpret_cast<const char*>(out), outlen);
-      VLOG(2) << "Alpn selected (client): " << alpn;
+      std::string alpn = ssl_socket_.negotiated_protocol();
+      if (!alpn.empty()) {
+        VLOG(2) << "Alpn selected (client): " << alpn;
+      }
       https_fallback_ |= alpn == "http/1.1";
       if (https_fallback_) {
         VLOG(2) << "Alpn fallback to https protocol (client)";

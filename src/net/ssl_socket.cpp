@@ -269,16 +269,16 @@ int SSLSocket::DoHandshakeComplete(int result) {
   // BoringSSL will never complete the handshake in this case, so this should
   // not happen.
   CHECK(!used_ech_name_override_);
+#endif
 
   const uint8_t* alpn_proto = nullptr;
   unsigned alpn_len = 0;
   SSL_get0_alpn_selected(ssl_.get(), &alpn_proto, &alpn_len);
   if (alpn_len > 0) {
-    base::StringPiece proto(reinterpret_cast<const char*>(alpn_proto),
-                            alpn_len);
-    negotiated_protocol_ = NextProtoFromString(proto);
+    negotiated_protocol_ = std::string(reinterpret_cast<const char*>(alpn_proto), alpn_len);
   }
 
+#if 0
   RecordNegotiatedProtocol();
 
   const uint8_t* ocsp_response_raw;
