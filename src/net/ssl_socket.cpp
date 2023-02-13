@@ -22,7 +22,8 @@ SSLSocket::SSLSocket(asio::io_context *io_context,
                      SSL_CTX* ssl_ctx,
                      bool https_fallback,
                      const std::string& host_name)
-    : io_context_(io_context), stream_socket_(socket) {
+    : io_context_(io_context), stream_socket_(socket),
+      pending_read_error_(kSSLClientSocketNoPendingResult) {
   DCHECK(!ssl_);
   ssl_.reset(SSL_new(ssl_ctx));
 
@@ -111,12 +112,11 @@ void SSLSocket::RetryAllOperations() {
   // holding a WeakPtr to |this| and ensuring it's still valid.
 #if 0
   base::WeakPtr<SSLClientSocketImpl> guard(weak_factory_.GetWeakPtr());
-#else
+#endif
   if (next_handshake_state_ == STATE_HANDSHAKE) {
     // In handshake phase. The parameter to OnHandshakeIOComplete is unused.
     OnHandshakeIOComplete(OK);
   }
-#endif
 
   DoPeek();
 }
@@ -174,7 +174,9 @@ size_t SSLSocket::Read(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
     ec = asio::error::connection_refused;
     return 0;
   } else {
+#if 0
     buf->append(rv);
+#endif
   }
   ec = asio::error_code();
   return rv;
@@ -423,17 +425,15 @@ int SSLSocket::DoPayloadRead(std::shared_ptr<IOBuf> buf, int buf_len) {
   if (pending_read_error_ != kSSLClientSocketNoPendingResult) {
     rv = pending_read_error_;
     pending_read_error_ = kSSLClientSocketNoPendingResult;
-    if (rv == 0) {
 #if 0
+    if (rv == 0) {
       net_log_.AddByteTransferEvent(NetLogEventType::SSL_SOCKET_BYTES_RECEIVED,
                                     rv, buf->data());
-#endif
     } else {
-#if 0
       NetLogOpenSSLError(net_log_, NetLogEventType::SSL_READ_ERROR, rv,
                          pending_read_ssl_error_, pending_read_error_info_);
-#endif
     }
+#endif
     pending_read_ssl_error_ = SSL_ERROR_NONE;
     return rv;
   }
