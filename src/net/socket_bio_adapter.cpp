@@ -83,7 +83,7 @@ int SocketBIOAdapter::BIORead(char* out, int len) {
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
       read_result_ = ERR_IO_PENDING;
     } else {
-      HandleSocketReadResult(ec == asio::error::eof ? 0 : (ec ? ERR_UNEXPECTED : result));
+      HandleSocketReadResult(ec == asio::error::eof ? 0 : (ec ? ERR_UNEXPECTED : (int)result));
     }
   }
 
@@ -279,7 +279,7 @@ void SocketBIOAdapter::SocketWrite() {
       return;
     }
 
-    HandleSocketWriteResult(ec ? ERR_UNEXPECTED : result);
+    HandleSocketWriteResult(ec ? ERR_UNEXPECTED : (int)result);
   }
 }
 
