@@ -89,6 +89,7 @@ class SocketBIOAdapter {
 
  private:
   int BIORead(char* out, int len);
+  void OnBIORead();
   void HandleSocketReadResult(int result);
   void OnSocketReadComplete(int result);
   void OnSocketReadIfReadyComplete(int result);

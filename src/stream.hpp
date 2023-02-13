@@ -289,12 +289,7 @@ class stream {
     if (enable_tls_) {
       socket_.native_non_blocking(false, ec);
       socket_.non_blocking(false, ec);
-#if 0
-      ssl_socket_.shutdown(ec);
-      if (ec) {
-        VLOG(2) << "shutdown() error: " << ec;
-      }
-#endif
+      ssl_socket_.Shutdown();
     }
     socket_.close(ec);
     if (ec) {

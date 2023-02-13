@@ -642,16 +642,13 @@ void CliConnection::ReadStream() {
     return;
   }
   if (DoPeek()) {
-#if 0
+    downstream_read_inprogress_ = true;
     WriteUpstreamInPipe();
     OnUpstreamWriteFlush();
-#else
-    io_context_->post([this, self]() {
-      WriteUpstreamInPipe();
-      OnUpstreamWriteFlush();
-    });
-#endif
-    return;
+    downstream_read_inprogress_ = false;
+    if (closed_ || !downstream_readable_) {
+      return;
+    }
   }
 
   downstream_read_inprogress_ = true;

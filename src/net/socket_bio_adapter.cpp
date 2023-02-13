@@ -75,25 +75,7 @@ int SocketBIOAdapter::BIORead(char* out, int len) {
     asio::error_code ec;
     size_t result = socket_->read_some(mutable_buffer(*read_buffer_), ec);
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
-      auto read_buffer = read_buffer_;
-      socket_->async_wait(asio::ip::tcp::socket::wait_read,
-        [this, read_buffer](asio::error_code ec) {
-        if (ec) {
-          read_callback_.operator()(ERR_UNEXPECTED);
-          return;
-        }
-        int result;
-        size_t bytes_transferred = socket_->read_some(mutable_buffer(*read_buffer), ec);
-        if (ec == asio::error::eof) {
-          result = 0;
-        } else if (ec) {
-          result = ERR_UNEXPECTED;
-        } else {
-          result = bytes_transferred;
-          read_buffer->append(bytes_transferred);
-        }
-        read_callback_.operator()(result);
-      });
+      OnBIORead();
     }
     if (!ec) {
       read_buffer_->append(result);
@@ -131,6 +113,38 @@ int SocketBIOAdapter::BIORead(char* out, int len) {
   }
 
   return len;
+}
+
+void SocketBIOAdapter::OnBIORead() {
+  socket_->async_wait(asio::ip::tcp::socket::wait_read,
+    [this](asio::error_code ec) {
+    if (ec) {
+      read_callback_.operator()(ERR_UNEXPECTED);
+      return;
+    }
+    size_t bytes_transferred;
+    do {
+      ec = asio::error_code();
+      bytes_transferred = socket_->read_some(mutable_buffer(*read_buffer_), ec);
+      if (ec == asio::error::interrupted) {
+        continue;
+      }
+    } while(false);
+    if (ec == asio::error::try_again || ec == asio::error::would_block) {
+      OnBIORead();
+      return;
+    }
+    int result;
+    if (ec == asio::error::eof) {
+      result = 0;
+    } else if (ec) {
+      result = ERR_UNEXPECTED;
+    } else {
+      result = bytes_transferred;
+      read_buffer_->append(bytes_transferred);
+    }
+    read_callback_.operator()(result);
+  });
 }
 
 void SocketBIOAdapter::HandleSocketReadResult(int result) {
@@ -241,7 +255,14 @@ void SocketBIOAdapter::SocketWrite() {
   while (write_error_ == OK && write_buffer_used_ > 0) {
     int write_size = std::min<int>(write_buffer_used_, write_buffer_->tailroom());
     asio::error_code ec;
-    size_t result = socket_->write_some(asio::const_buffer(write_buffer_->tail(), write_size), ec);
+    size_t result;
+    do {
+      ec = asio::error_code();
+      result = socket_->write_some(asio::const_buffer(write_buffer_->tail(), write_size), ec);
+      if (ec == asio::error::interrupted) {
+        continue;
+      }
+    } while(false);
     if ((int)result != write_size || ec == asio::error::try_again || ec == asio::error::would_block) {
       asio::async_write(*socket_,
                         asio::const_buffer(write_buffer_->tail() + result, write_size - result),

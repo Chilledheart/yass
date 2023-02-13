@@ -161,12 +161,7 @@ void ServerConnection::close() {
       SendIfNotProcessing();
       OnDownstreamWriteFlush();
     }
-#if 0
-    ssl_socket_.shutdown(ec);
-    if (ec) {
-      VLOG(2) << "shutdown() error: " << ec;
-    }
-#endif
+    ssl_socket_.Shutdown();
   }
   socket_.close(ec);
   if (ec) {
@@ -576,9 +571,13 @@ void ServerConnection::ReadStream() {
     return;
   }
   if (DoPeek()) {
+    downstream_read_inprogress_ = true;
     WriteUpstreamInPipe();
     OnUpstreamWriteFlush();
-    return;
+    downstream_read_inprogress_ = false;
+    if (closed_ || !downstream_readable_) {
+      return;
+    }
   }
 
   downstream_read_inprogress_ = true;
