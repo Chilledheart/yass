@@ -689,6 +689,10 @@ void ServerConnection::WriteStreamInPipe() {
     }
     ec = asio::error_code();
   }
+  if (!bytes_transferred && !ec && !try_again) {
+    OnStreamWrite();
+    return;
+  }
   ProcessSentData(ec, bytes_transferred);
 }
 
@@ -998,7 +1002,9 @@ void ServerConnection::ProcessSentData(asio::error_code ec,
   if (!ec) {
     switch (CurrentState()) {
       case state_stream:
-        OnStreamWrite();
+        if (bytes_transferred) {
+          OnStreamWrite();
+        }
         break;
       case state_handshake:
       case state_error:

@@ -818,6 +818,10 @@ void CliConnection::WriteStreamInPipe() {
     }
     ec = asio::error_code();
   }
+  if (!bytes_transferred && !ec && !try_again) {
+    OnStreamWrite();
+    return;
+  }
   ProcessSentData(ec, bytes_transferred);
 }
 
@@ -1297,7 +1301,9 @@ void CliConnection::ProcessSentData(asio::error_code ec,
         ec = std::make_error_code(std::errc::bad_message);
         break;
       case state_stream:
-        OnStreamWrite();
+        if (bytes_transferred) {
+          OnStreamWrite();
+        }
         break;
       case state_error:
         ec = std::make_error_code(std::errc::bad_message);
