@@ -101,10 +101,4 @@ const int kYieldAfterDurationMilliseconds = 20;
 // attacker from growing this queue unboundedly.
 const int kSpdySessionMaxQueuedCappedFrames = 10000;
 
-// 32K / 4k = 8
-#define MAX_DOWNSTREAM_DEPS 8
-#define MAX_UPSTREAM_DEPS 8
-
-#define ENABLE_YIELD_AFTER_WRITE
-
 #endif  // H_NETWORK
