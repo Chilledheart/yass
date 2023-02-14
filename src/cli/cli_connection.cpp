@@ -756,16 +756,15 @@ void CliConnection::WriteStreamInPipe() {
 
   /* recursively send the remainings */
   while (true) {
-    if (GetMonotonicTime() > next_ticks) {
-      try_again = true;
+    if (GetMonotonicTime() > next_ticks||
+        bytes_transferred > kYieldAfterBytesRead) {
+      if (downstream_.empty()) {
+        try_again = true;
+      } else {
+        ec = asio::error::try_again;
+      }
       break;
     }
-#ifdef ENABLE_YIELD_AFTER_WRITE
-    if (bytes_transferred > kYieldAfterBytesRead) {
-      try_again = true;
-      break;
-    }
-#endif
 
     auto buf = GetNextDownstreamBuf(ec);
     size_t read = buf ? buf->length() : 0;
@@ -960,20 +959,20 @@ void CliConnection::WriteUpstreamInPipe() {
 
   /* recursively send the remainings */
   while (true) {
-    if (GetMonotonicTime() > next_ticks) {
-      try_again = true;
+    if (GetMonotonicTime() > next_ticks||
+        bytes_transferred > kYieldAfterBytesRead) {
+      if (upstream_.empty()) {
+        try_again = true;
+      } else {
+        ec = asio::error::try_again;
+      }
       break;
     }
-#ifdef ENABLE_YIELD_AFTER_WRITE
-    if (bytes_transferred > kYieldAfterBytesRead) {
-      try_again = true;
-      break;
-    }
-#endif
 
     size_t read;
     std::shared_ptr<IOBuf> buf = GetNextUpstreamBuf(ec);
     read = buf ? buf->length() : 0;
+
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
       ec = asio::error_code();
       try_again = true;
@@ -1344,13 +1343,6 @@ void CliConnection::OnConnect() {
 }
 
 void CliConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
-  // queue limit to downstream read
-  if (upstream_.size() >= MAX_UPSTREAM_DEPS && downstream_readable_) {
-    VLOG(1) << "Connection (client) " << connection_id()
-            << " disabling reading";
-    DisableStreamRead();
-  }
-
   if (!channel_ || !channel_->connected()) {
     VLOG(1) << "Connection (client) " << connection_id()
             << " disabling reading";

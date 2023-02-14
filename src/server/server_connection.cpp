@@ -627,16 +627,15 @@ void ServerConnection::WriteStreamInPipe() {
 
   /* recursively send the remainings */
   while (true) {
-    if (GetMonotonicTime() > next_ticks) {
-      try_again = true;
+    if (GetMonotonicTime() > next_ticks||
+        bytes_transferred > kYieldAfterBytesRead) {
+      if (downstream_.empty()) {
+        try_again = true;
+      } else {
+        ec = asio::error::try_again;
+      }
       break;
     }
-#ifdef ENABLE_YIELD_AFTER_WRITE
-    if (bytes_transferred > kYieldAfterBytesRead) {
-      try_again = true;
-      break;
-    }
-#endif
 
     auto buf = GetNextDownstreamBuf(ec);
     size_t read = buf ? buf->length() : 0;
@@ -792,16 +791,15 @@ void ServerConnection::WriteUpstreamInPipe() {
 
   /* recursively send the remainings */
   while (true) {
-    if (GetMonotonicTime() > next_ticks) {
-      try_again = true;
+    if (GetMonotonicTime() > next_ticks||
+        bytes_transferred > kYieldAfterBytesRead) {
+      if (upstream_.empty()) {
+        try_again = true;
+      } else {
+        ec = asio::error::try_again;
+      }
       break;
     }
-#ifdef ENABLE_YIELD_AFTER_WRITE
-    if (bytes_transferred > kYieldAfterBytesRead) {
-      try_again = true;
-      break;
-    }
-#endif
 
     size_t read;
     std::shared_ptr<IOBuf> buf = GetNextUpstreamBuf(ec);
