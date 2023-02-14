@@ -82,5 +82,5 @@ jobs:
       - name: Run tests
         run: |
           cd build
-          ./yass_test -logtostderr -v 1
+          ./yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=100 --gtest_throw_on_failure
           cd ..
