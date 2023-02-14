@@ -233,6 +233,11 @@ class ContentServer {
       return;
     }
 
+    ssl_ctx_.set_verify_mode(asio::ssl::verify_peer, ec);
+    if (ec) {
+      return;
+    }
+
     // Load Certificate Chain Files
     std::string certificate_chain_file = absl::GetFlag(FLAGS_certificate_chain_file);
     std::string private_key_file = absl::GetFlag(FLAGS_private_key_file);
@@ -348,6 +353,11 @@ class ContentServer {
     upstream_ssl_ctx_.set_options(asio::ssl::context::default_workarounds |
                                   asio::ssl::context::no_tlsv1 |
                                   asio::ssl::context::no_tlsv1_1, ec);
+    if (ec) {
+      return;
+    }
+
+    upstream_ssl_ctx_.set_verify_mode(asio::ssl::verify_peer, ec);
     if (ec) {
       return;
     }
