@@ -123,14 +123,14 @@ void ServerConnection::start() {
 
   scoped_refptr<ServerConnection> self(this);
   if (enable_tls_) {
-    ssl_socket_.async_handshake(asio::ssl::stream_base::server, [this, self](
-      asio::error_code ec) {
+    ssl_socket_.Handshake([this, self](
+      int result) {
         if (closed_) {
           return;
         }
-        if (ec) {
+        if (result != net::OK) {
           SetState(state_error);
-          OnDisconnect(ec);
+          OnDisconnect(asio::error::connection_refused);
           return;
         }
         Start();
@@ -161,10 +161,7 @@ void ServerConnection::close() {
       SendIfNotProcessing();
       OnDownstreamWriteFlush();
     }
-    ssl_socket_.shutdown(ec);
-    if (ec) {
-      VLOG(2) << "shutdown() error: " << ec;
-    }
+    ssl_socket_.Shutdown();
   }
   socket_.close(ec);
   if (ec) {
@@ -574,9 +571,13 @@ void ServerConnection::ReadStream() {
     return;
   }
   if (DoPeek()) {
+    downstream_read_inprogress_ = true;
     WriteUpstreamInPipe();
     OnUpstreamWriteFlush();
-    return;
+    downstream_read_inprogress_ = false;
+    if (closed_ || !downstream_readable_) {
+      return;
+    }
   }
 
   downstream_read_inprogress_ = true;
@@ -626,16 +627,15 @@ void ServerConnection::WriteStreamInPipe() {
 
   /* recursively send the remainings */
   while (true) {
-    if (GetMonotonicTime() > next_ticks) {
-      try_again = true;
+    if (GetMonotonicTime() > next_ticks||
+        bytes_transferred > kYieldAfterBytesRead) {
+      if (downstream_.empty()) {
+        try_again = true;
+      } else {
+        ec = asio::error::try_again;
+      }
       break;
     }
-#ifdef ENABLE_YIELD_AFTER_WRITE
-    if (bytes_transferred > kYieldAfterBytesRead) {
-      try_again = true;
-      break;
-    }
-#endif
 
     auto buf = GetNextDownstreamBuf(ec);
     size_t read = buf ? buf->length() : 0;
@@ -687,6 +687,10 @@ void ServerConnection::WriteStreamInPipe() {
       return;
     }
     ec = asio::error_code();
+  }
+  if (!bytes_transferred && !ec && !try_again) {
+    OnStreamWrite();
+    return;
   }
   ProcessSentData(ec, bytes_transferred);
 }
@@ -787,16 +791,15 @@ void ServerConnection::WriteUpstreamInPipe() {
 
   /* recursively send the remainings */
   while (true) {
-    if (GetMonotonicTime() > next_ticks) {
-      try_again = true;
+    if (GetMonotonicTime() > next_ticks||
+        bytes_transferred > kYieldAfterBytesRead) {
+      if (upstream_.empty()) {
+        try_again = true;
+      } else {
+        ec = asio::error::try_again;
+      }
       break;
     }
-#ifdef ENABLE_YIELD_AFTER_WRITE
-    if (bytes_transferred > kYieldAfterBytesRead) {
-      try_again = true;
-      break;
-    }
-#endif
 
     size_t read;
     std::shared_ptr<IOBuf> buf = GetNextUpstreamBuf(ec);
@@ -997,7 +1000,9 @@ void ServerConnection::ProcessSentData(asio::error_code ec,
   if (!ec) {
     switch (CurrentState()) {
       case state_stream:
-        OnStreamWrite();
+        if (bytes_transferred) {
+          OnStreamWrite();
+        }
         break;
       case state_handshake:
       case state_error:
@@ -1173,6 +1178,7 @@ void ServerConnection::connected() {
   upstream_writable_ = true;
 
   channel_->start_read([self](){});
+  WriteUpstreamInPipe();
   OnUpstreamWriteFlush();
 }
 

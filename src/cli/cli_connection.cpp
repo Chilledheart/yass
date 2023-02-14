@@ -642,16 +642,13 @@ void CliConnection::ReadStream() {
     return;
   }
   if (DoPeek()) {
-#if 0
+    downstream_read_inprogress_ = true;
     WriteUpstreamInPipe();
     OnUpstreamWriteFlush();
-#else
-    io_context_->post([this, self]() {
-      WriteUpstreamInPipe();
-      OnUpstreamWriteFlush();
-    });
-#endif
-    return;
+    downstream_read_inprogress_ = false;
+    if (closed_ || !downstream_readable_) {
+      return;
+    }
   }
 
   downstream_read_inprogress_ = true;
@@ -759,16 +756,15 @@ void CliConnection::WriteStreamInPipe() {
 
   /* recursively send the remainings */
   while (true) {
-    if (GetMonotonicTime() > next_ticks) {
-      try_again = true;
+    if (GetMonotonicTime() > next_ticks||
+        bytes_transferred > kYieldAfterBytesRead) {
+      if (downstream_.empty()) {
+        try_again = true;
+      } else {
+        ec = asio::error::try_again;
+      }
       break;
     }
-#ifdef ENABLE_YIELD_AFTER_WRITE
-    if (bytes_transferred > kYieldAfterBytesRead) {
-      try_again = true;
-      break;
-    }
-#endif
 
     auto buf = GetNextDownstreamBuf(ec);
     size_t read = buf ? buf->length() : 0;
@@ -820,6 +816,10 @@ void CliConnection::WriteStreamInPipe() {
       return;
     }
     ec = asio::error_code();
+  }
+  if (!bytes_transferred && !ec && !try_again) {
+    OnStreamWrite();
+    return;
   }
   ProcessSentData(ec, bytes_transferred);
 }
@@ -959,20 +959,20 @@ void CliConnection::WriteUpstreamInPipe() {
 
   /* recursively send the remainings */
   while (true) {
-    if (GetMonotonicTime() > next_ticks) {
-      try_again = true;
+    if (GetMonotonicTime() > next_ticks||
+        bytes_transferred > kYieldAfterBytesRead) {
+      if (upstream_.empty()) {
+        try_again = true;
+      } else {
+        ec = asio::error::try_again;
+      }
       break;
     }
-#ifdef ENABLE_YIELD_AFTER_WRITE
-    if (bytes_transferred > kYieldAfterBytesRead) {
-      try_again = true;
-      break;
-    }
-#endif
 
     size_t read;
     std::shared_ptr<IOBuf> buf = GetNextUpstreamBuf(ec);
     read = buf ? buf->length() : 0;
+
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
       ec = asio::error_code();
       try_again = true;
@@ -1300,7 +1300,9 @@ void CliConnection::ProcessSentData(asio::error_code ec,
         ec = std::make_error_code(std::errc::bad_message);
         break;
       case state_stream:
-        OnStreamWrite();
+        if (bytes_transferred) {
+          OnStreamWrite();
+        }
         break;
       case state_error:
         ec = std::make_error_code(std::errc::bad_message);
@@ -1341,13 +1343,6 @@ void CliConnection::OnConnect() {
 }
 
 void CliConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
-  // queue limit to downstream read
-  if (upstream_.size() >= MAX_UPSTREAM_DEPS && downstream_readable_) {
-    VLOG(1) << "Connection (client) " << connection_id()
-            << " disabling reading";
-    DisableStreamRead();
-  }
-
   if (!channel_ || !channel_->connected()) {
     VLOG(1) << "Connection (client) " << connection_id()
             << " disabling reading";
@@ -1573,12 +1568,12 @@ void CliConnection::connected() {
         "\r\n", host.c_str(), port, host.c_str(), port);
     std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(hdr.data(), hdr.size());
     // write variable address directly as https header
-    OnUpstreamWrite(buf);
+    upstream_.push_back(buf);
   } else {
     ByteRange req(ss_request_->data(), ss_request_->length());
     std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);
     // write variable address directly as ss header
-    OnUpstreamWrite(EncryptData(buf));
+    upstream_.push_back(EncryptData(buf));
   }
 
   // Re-process the read data in pending
@@ -1592,6 +1587,8 @@ void CliConnection::connected() {
   upstream_readable_ = true;
   upstream_writable_ = true;
   channel_->start_read([self]() {});
+
+  WriteUpstreamInPipe();
   OnUpstreamWriteFlush();
 }
 

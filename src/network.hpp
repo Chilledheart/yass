@@ -27,7 +27,7 @@ ABSL_DECLARE_FLAG(bool, tcp_keep_alive);
 ABSL_DECLARE_FLAG(int32_t, tcp_keep_alive_cnt);
 ABSL_DECLARE_FLAG(int32_t, tcp_keep_alive_idle_timeout);
 ABSL_DECLARE_FLAG(int32_t, tcp_keep_alive_interval);
-ABSL_DECLARE_FLAG(bool, tls13_early_return);
+ABSL_DECLARE_FLAG(bool, tls13_early_data);
 ABSL_DECLARE_FLAG(bool, redir_mode);
 
 void SetSOReusePort(asio::ip::tcp::acceptor::native_handle_type handle,
@@ -100,11 +100,5 @@ const int kYieldAfterDurationMilliseconds = 20;
 // virtually never be hit in practice, while still preventing an
 // attacker from growing this queue unboundedly.
 const int kSpdySessionMaxQueuedCappedFrames = 10000;
-
-// 32K / 4k = 8
-#define MAX_DOWNSTREAM_DEPS 8
-#define MAX_UPSTREAM_DEPS 8
-
-#define ENABLE_YIELD_AFTER_WRITE
 
 #endif  // H_NETWORK

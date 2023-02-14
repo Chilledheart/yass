@@ -95,7 +95,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
                    upstream_ssl_ctx, ssl_ctx) {}
 
   ~ContentProviderConnection() override {
-    VLOG(2) << "Connection (content-provider) " << connection_id() << " freed memory";
+    VLOG(1) << "Connection (content-provider) " << connection_id() << " freed memory";
   }
 
   ContentProviderConnection(const ContentProviderConnection&) = delete;
@@ -105,7 +105,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
   ContentProviderConnection& operator=(ContentProviderConnection&&) = delete;
 
   void start() override {
-    VLOG(2) << "Connection (content-provider) " << connection_id() << " start to do IO";
+    VLOG(1) << "Connection (content-provider) " << connection_id() << " start to do IO";
 
     scoped_refptr<ContentProviderConnection> self(this);
     asio::async_write(socket_, const_buffer(content_buffer),
@@ -114,7 +114,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
           LOG(WARNING) << "Connection (content-provider) " << connection_id()
                        << " Failed to transfer data: " << ec;
         } else {
-          VLOG(2) << "Connection (content-provider) " << connection_id()
+          VLOG(1) << "Connection (content-provider) " << connection_id()
                   << " written: " << bytes_transferred << " bytes";
         }
         done_[0] = true;
@@ -128,7 +128,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
           LOG(WARNING) << "Connection (content-provider) " << connection_id()
                        << " Failed to transfer data: " << ec;
         } else {
-          VLOG(2) << "Connection (content-provider) " << connection_id()
+          VLOG(1) << "Connection (content-provider) " << connection_id()
                   << " read: " << bytes_transferred << " bytes";
         }
         recv_content_buffer->append(bytes_transferred);
@@ -144,7 +144,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
   }
 
   void close() override {
-    VLOG(2) << "Connection (content-provider) " << connection_id()
+    VLOG(1) << "Connection (content-provider) " << connection_id()
             << " disconnected";
     asio::error_code ec;
     socket_.close(ec);
@@ -252,7 +252,7 @@ class SsEndToEndTest : public ::testing::Test {
   void StartWorkThread() {
     thread_ = std::make_unique<std::thread>([this]() {
       asio::error_code ec;
-      VLOG(2) << "background thread started";
+      VLOG(1) << "background thread started";
 
       work_guard_ = std::make_unique<asio::io_context::work>(io_context_);
       io_context_.run(ec);
@@ -261,7 +261,7 @@ class SsEndToEndTest : public ::testing::Test {
       }
       io_context_.reset();
 
-      VLOG(2) << "background thread stopped";
+      VLOG(1) << "background thread stopped";
     });
 
     io_context_.post([this]() {
@@ -288,19 +288,19 @@ class SsEndToEndTest : public ::testing::Test {
                            request_buf.get());
 
     size_t written = asio::write(s, const_buffer(*request_buf), ec);
-    VLOG(2) << "Connection (content-consumer) written: " << written << " bytes";
+    VLOG(1) << "Connection (content-consumer) written: " << written << " bytes";
     EXPECT_FALSE(ec) << ec;
     EXPECT_EQ(written, request_buf->length());
 
     written = asio::write(s, const_buffer(content_buffer), ec);
-    VLOG(2) << "Connection (content-consumer) written: " << written << " bytes";
+    VLOG(1) << "Connection (content-consumer) written: " << written << " bytes";
     EXPECT_FALSE(ec) << ec;
     EXPECT_EQ(written, content_buffer.length());
 
     IOBuf response_buf;
     response_buf.reserve(0, kContentMaxSize + 1024);
     size_t read = asio::read(s, tail_buffer(response_buf), ec);
-    VLOG(2) << "Connection (content-consumer) read: " << read << " bytes";
+    VLOG(1) << "Connection (content-consumer) read: " << read << " bytes";
     response_buf.append(read);
     *response_buf.mutable_tail() = '\0';
     EXPECT_EQ(ec, asio::error::eof) << ec;
@@ -336,7 +336,7 @@ class SsEndToEndTest : public ::testing::Test {
     }
 
     content_provider_endpoint_ = content_provider_server_->endpoint();
-    VLOG(2) << "content provider listening at " << content_provider_endpoint_;
+    VLOG(1) << "content provider listening at " << content_provider_endpoint_;
 
     return ec;
   }
@@ -363,7 +363,7 @@ class SsEndToEndTest : public ::testing::Test {
     }
 
     server_endpoint_ = server_server_->endpoint();
-    VLOG(2) << "tcp server listening at " << server_endpoint_;
+    VLOG(1) << "tcp server listening at " << server_endpoint_;
 
     return ec;
   }
@@ -392,7 +392,7 @@ class SsEndToEndTest : public ::testing::Test {
     }
 
     local_endpoint_ = local_server_->endpoint();
-    VLOG(2) << "local server listening at " << local_endpoint_ << " with upstream " << remote_endpoint;
+    VLOG(1) << "local server listening at " << local_endpoint_ << " with upstream " << remote_endpoint;
 
     return ec;
   }
