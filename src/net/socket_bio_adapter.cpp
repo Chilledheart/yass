@@ -116,8 +116,16 @@ int SocketBIOAdapter::BIORead(char* out, int len) {
 }
 
 void SocketBIOAdapter::OnBIORead() {
+  BIO* bio = bio_.get();
+  BIO_up_ref(bio);
+
   socket_->async_wait(asio::ip::tcp::socket::wait_read,
-    [this](asio::error_code ec) {
+    [this, bio](asio::error_code ec) {
+    if (!bio->ptr) {
+      BIO_free(bio);
+      return;
+    }
+    BIO_free(bio);
     if (ec) {
       read_callback_.operator()(ERR_UNEXPECTED);
       return;
@@ -264,9 +272,16 @@ void SocketBIOAdapter::SocketWrite() {
       }
     } while(false);
     if ((int)result != write_size || ec == asio::error::try_again || ec == asio::error::would_block) {
+      BIO* bio = bio_.get();
+      BIO_up_ref(bio);
       asio::async_write(*socket_,
                         asio::const_buffer(write_buffer_->tail() + result, write_size - result),
-                        [this](asio::error_code ec, size_t bytes_transferred) {
+                        [this, bio](asio::error_code ec, size_t bytes_transferred) {
+        if (!bio->ptr) {
+          BIO_free(bio);
+          return;
+        }
+        BIO_free(bio);
         if (ec) {
           write_callback_(ERR_UNEXPECTED);
           return;
