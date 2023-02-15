@@ -98,9 +98,16 @@ bool IsIPv4MappedIPv6(const asio::ip::tcp::endpoint& address) {
 #endif
 
 bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length)  {
-  absl::string_view payload(
-      reinterpret_cast<const char*>(chunks_.front()->data()), payload_length);
-  std::string concatenated = absl::StrCat(frame_header, payload);
+  std::string concatenated;
+  if (payload_length) {
+    DCHECK(!chunks_.empty());
+    absl::string_view payload(
+        reinterpret_cast<const char*>(chunks_.front()->data()), payload_length);
+    concatenated = absl::StrCat(frame_header, payload);
+  } else {
+    concatenated = std::string(frame_header);
+  }
+
   const int64_t result = connection_->OnReadyToSend(concatenated);
   // Write encountered error.
   if (result < 0) {
@@ -120,6 +127,10 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
         << "DATA frame not fully flushed. Connection will be corrupt!";
     connection_->OnConnectionError(http2::adapter::Http2VisitorInterface::ConnectionError::kSendError);
     return false;
+  }
+
+  if (!payload_length) {
+    return true;
   }
 
   chunks_.front()->trimStart(payload_length);
@@ -252,6 +263,11 @@ bool CliConnection::OnEndHeadersForStream(
 }
 
 bool CliConnection::OnEndStream(StreamId stream_id) {
+  if (stream_id == stream_id_) {
+    data_frame_ = nullptr;
+    stream_id_ = 0;
+    disconnected(asio::error::eof);
+  }
   return true;
 }
 
@@ -259,6 +275,7 @@ bool CliConnection::OnCloseStream(StreamId stream_id,
                                   http2::adapter::Http2ErrorCode error_code) {
   if (stream_id == stream_id_) {
     data_frame_ = nullptr;
+    stream_id_ = 0;
   }
   return true;
 }
@@ -271,13 +288,13 @@ bool CliConnection::OnFrameHeader(StreamId stream_id,
                                   size_t /*length*/,
                                   uint8_t /*type*/,
                                   uint8_t /*flags*/) {
-  if (stream_id) {
-    DCHECK_EQ(stream_id, stream_id_) << "Client only support one stream";
-  }
   return true;
 }
 
 bool CliConnection::OnBeginHeadersForStream(StreamId stream_id) {
+  if (stream_id) {
+    DCHECK_EQ(stream_id, stream_id_) << "Client only support one stream";
+  }
   return true;
 }
 
@@ -1372,9 +1389,10 @@ void CliConnection::OnStreamWrite() {
   OnDownstreamWriteFlush();
 
   /* shutdown the socket if upstream is eof and all remaining data sent */
-  if (channel_->eof() && downstream_.empty()) {
+  if (channel_->eof() && downstream_.empty() && !shutdown_) {
     VLOG(2) << "Connection (client) " << connection_id()
             << " last data sent: shutting down";
+    shutdown_ = true;
     asio::error_code ec;
     socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
     return;
@@ -1622,18 +1640,22 @@ void CliConnection::disconnected(asio::error_code ec) {
           << " upstream: lost connection with: " << remote_domain()
           << " due to " << ec
           << " and data to write: " << downstream_.size();
-  if (adapter_) {
-    adapter_->SubmitShutdownNotice();
+  if (data_frame_) {
+    data_frame_->set_last_frame(true);
+    adapter_->ResumeStream(stream_id_);
     SendIfNotProcessing();
-    OnUpstreamWriteFlush();
+    data_frame_ = nullptr;
+    stream_id_ = 0;
+    WriteUpstreamInPipe();
   }
   upstream_readable_ = false;
   upstream_writable_ = false;
   channel_->close();
   /* delay the socket's close because downstream is buffered */
-  if (downstream_.empty()) {
+  if (downstream_.empty() && !shutdown_) {
     VLOG(2) << "Connection (client) " << connection_id()
             << " upstream: last data sent: shutting down";
+    shutdown_ = true;
     socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
   }
 }

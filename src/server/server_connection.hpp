@@ -137,6 +137,12 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   /// Enter the start phase
   void Start();
 
+  /// flag to mark connection is shutdown
+  bool shutdown_ = false;
+
+  /// flag to mark connection is closing
+  bool closing_ = true;
+
   /// flag to mark connection is closed
   bool closed_ = true;
 

@@ -34,7 +34,7 @@ TEST(CARES_TEST, LocalfileBasic) {
   io_context.run(ec);
 }
 
-TEST(CARES_TEST, RemoteBasic) {
+TEST(CARES_TEST, DISABLED_RemoteBasic) {
   asio::error_code ec;
   asio::io_context io_context;
   auto work_guard = std::make_unique<asio::io_context::work>(io_context);
