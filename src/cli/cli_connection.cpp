@@ -288,13 +288,13 @@ bool CliConnection::OnFrameHeader(StreamId stream_id,
                                   size_t /*length*/,
                                   uint8_t /*type*/,
                                   uint8_t /*flags*/) {
-  if (stream_id) {
-    DCHECK_EQ(stream_id, stream_id_) << "Client only support one stream";
-  }
   return true;
 }
 
 bool CliConnection::OnBeginHeadersForStream(StreamId stream_id) {
+  if (stream_id) {
+    DCHECK_EQ(stream_id, stream_id_) << "Client only support one stream";
+  }
   return true;
 }
 
