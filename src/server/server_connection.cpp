@@ -676,7 +676,8 @@ void ServerConnection::WriteStreamInPipe() {
     if (ec) {
       break;
     }
-    if (try_again || !buf->empty()) {
+    if (!buf->empty()) {
+      ec = asio::error::try_again;
       break;
     }
   }
@@ -845,7 +846,8 @@ void ServerConnection::WriteUpstreamInPipe() {
       OnDisconnect(ec);
       return;
     }
-    if (try_again || !buf->empty()) {
+    if (!buf->empty()) {
+      ec = asio::error::try_again;
       break;
     }
   }
