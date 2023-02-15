@@ -120,12 +120,37 @@ size_t SSLServerSocket::Write(std::shared_ptr<IOBuf> buf, asio::error_code &ec) 
   return rv;
 }
 
+void SSLServerSocket::WaitRead(std::function<void(asio::error_code ec)> cb) {
+  DCHECK(!wait_read_callback_ && "Multiple calls into Wait Read");
+  wait_read_callback_ = cb;
+  BIO* bio = transport_adapter_->bio();
+  BIO_up_ref(bio);
+  stream_socket_->async_wait(asio::ip::tcp::socket::wait_read, [this, bio](asio::error_code ec){
+    if (!bio->ptr) {
+      BIO_free(bio);
+      return;
+    }
+    BIO_free(bio);
+    OnWaitRead(ec);
+  });
+}
+
+void SSLServerSocket::OnWaitRead(asio::error_code ec) {
+  if (!wait_read_callback_) {
+    return;
+  }
+  auto cb = std::move(wait_read_callback_);
+  wait_read_callback_ = nullptr;
+  cb(ec);
+}
+
 void SSLServerSocket::OnReadReady() {
   if (next_handshake_state_ == STATE_HANDSHAKE) {
     // In handshake phase. The parameter to OnHandshakeIOComplete is unused.
     OnHandshakeIOComplete(OK);
     return;
   }
+  OnWaitRead(asio::error_code());
 }
 
 void SSLServerSocket::OnWriteReady() {

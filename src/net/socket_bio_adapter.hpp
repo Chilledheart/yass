@@ -14,6 +14,7 @@ namespace net {
 // A OnceCallback specialization that takes a single int parameter. Usually this
 // is used to report a byte count or network error code.
 using CompletionOnceCallback = std::function<void(int)>;
+using WaitCallback = std::function<void(asio::error_code ec)>;
 
 class GrowableIOBuffer;
 class IOBuffer;

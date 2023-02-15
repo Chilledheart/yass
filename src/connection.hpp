@@ -52,7 +52,7 @@ class Connection {
         ssl_socket_(&io_context, &socket_, ssl_ctx->native_handle()) {
     if (enable_tls) {
       s_async_read_some_ = [this](handle_t cb) {
-        socket_.async_wait(asio::ip::tcp::socket::wait_read, cb);
+        ssl_socket_.WaitRead(cb);
       };
       s_read_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
         return ssl_socket_.Read(buf, ec);

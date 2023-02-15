@@ -30,8 +30,10 @@ class SSLServerSocket : public SocketBIOAdapter::Delegate {
   // Socket implementation.
   size_t Read(std::shared_ptr<IOBuf> buf, asio::error_code &ec);
   size_t Write(std::shared_ptr<IOBuf> buf, asio::error_code &ec);
+  void WaitRead(WaitCallback cb);
 
  protected:
+  void OnWaitRead(asio::error_code ec);
   void OnReadReady();
   void OnWriteReady();
 
@@ -52,6 +54,7 @@ class SSLServerSocket : public SocketBIOAdapter::Delegate {
   asio::ip::tcp::socket* stream_socket_;
 
   CompletionOnceCallback user_handshake_callback_;
+  WaitCallback wait_read_callback_;
   bool completed_handshake_ = false;
   bool completed_connect_ = false;
 
