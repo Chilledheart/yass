@@ -1,5 +1,27 @@
 set(CMAKE_CXX_STANDARD 20)
 
+## Setup compiler informations
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
+    CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+  set(COMPILER_CLANG TRUE)
+else()
+  set(COMPILER_CLANG FALSE)
+endif()
+
+if (COMPILER_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
+  message(FATAL_ERROR "Requires Clang 12.0 or newer to compile libc++ from source")
+endif()
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  set(COMPILER_GCC TRUE)
+else()
+  set(COMPILER_GCC FALSE)
+endif()
+
+if (COMPILER_GCC AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 11.0)
+  message(FATAL_ERROR "Requires GCC 11.0 or newer to compile libc++ from source")
+endif()
+
 # This is included by reference in the //build/config/compiler:runtime_library
 # config that is applied to all targets. It is here to separate out the logic
 # that is specific to libc++. Please see that target for advice on what should
