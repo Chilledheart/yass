@@ -151,11 +151,14 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   /// flag to mark connection is closed
   bool closed_ = true;
 
+  /// flag to mark connection is shut down
+  bool shutdown_ = false;
+
  private:
   void SendIfNotProcessing();
   bool processing_responses_ = false;
   StreamId stream_id_ = 0;
-  DataFrameSource* data_frame_;
+  DataFrameSource* data_frame_ = nullptr;
 
  public:
   StreamId blocked_stream_ = 0;

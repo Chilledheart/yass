@@ -230,7 +230,6 @@ class stream {
     size_t read = s_read_some_(buf, ec);
     rbytes_transferred_ += read;
     if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
-      eof_ = true;
       on_disconnect(channel_, ec);
     }
     return read;
@@ -273,7 +272,6 @@ class stream {
     size_t written = s_write_some_(buf, ec);
     wbytes_transferred_ += written;
     if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
-      eof_ = true;
       on_disconnect(channel_, ec);
     }
     return written;
@@ -283,13 +281,12 @@ class stream {
     if (closed_) {
       return;
     }
-    eof_ = true;
     closed_ = true;
+    connected_ = false;
+    eof_ = true;
 
     asio::error_code ec;
     if (enable_tls_) {
-      socket_.native_non_blocking(false, ec);
-      socket_.non_blocking(false, ec);
       ssl_socket_.Shutdown();
     }
     socket_.close(ec);
@@ -435,7 +432,6 @@ class stream {
       VLOG(2) << "data transfer closed with: " << endpoint_ << " stats: readed "
               << rbytes_transferred_ << " written: " << wbytes_transferred_;
     }
-    connected_ = false;
     channel->disconnected(ec);
   }
 
