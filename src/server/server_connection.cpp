@@ -52,9 +52,15 @@ const char ServerConnection::http_connect_reply_[] =
     "HTTP/1.1 200 Connection established\r\n\r\n";
 
 bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length)  {
-  absl::string_view payload(
-      reinterpret_cast<const char*>(chunks_.front()->data()), payload_length);
-  std::string concatenated = absl::StrCat(frame_header, payload);
+  std::string concatenated;
+  if (payload_length) {
+    DCHECK(!chunks_.empty());
+    absl::string_view payload(
+        reinterpret_cast<const char*>(chunks_.front()->data()), payload_length);
+    concatenated = absl::StrCat(frame_header, payload);
+  } else {
+    concatenated = std::string(frame_header);
+  }
   const int64_t result = connection_->OnReadyToSend(concatenated);
   // Write encountered error.
   if (result < 0) {
@@ -74,6 +80,10 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
         << "DATA frame not fully flushed. Connection will be corrupt!";
     connection_->OnConnectionError(http2::adapter::Http2VisitorInterface::ConnectionError::kSendError);
     return false;
+  }
+
+  if (!payload_length) {
+    return true;
   }
 
   chunks_.front()->trimStart(payload_length);
@@ -115,6 +125,7 @@ ServerConnection::~ServerConnection() {
 void ServerConnection::start() {
   SetState(state_handshake);
   closed_ = false;
+  closing_ = false;
   upstream_writable_ = false;
   downstream_readable_ = true;
   asio::error_code ec;
@@ -141,7 +152,7 @@ void ServerConnection::start() {
 }
 
 void ServerConnection::close() {
-  if (closed_) {
+  if (closing_) {
     return;
   }
   size_t bytes = 0;
@@ -152,15 +163,22 @@ void ServerConnection::close() {
           << ServerConnection::state_to_str(CurrentState())
           << " and remaining: " << bytes << " bytes.";
   asio::error_code ec;
+  closing_ = true;
+
+  if (adapter_) {
+    if (data_frame_) {
+      data_frame_->set_last_frame(true);
+      adapter_->ResumeStream(stream_id_);
+      SendIfNotProcessing();
+      data_frame_ = nullptr;
+      stream_id_ = 0;
+    }
+    adapter_->SubmitShutdownNotice();
+    SendIfNotProcessing();
+    WriteStreamInPipe();
+  }
   closed_ = true;
   if (enable_tls_) {
-    socket_.native_non_blocking(false, ec);
-    socket_.non_blocking(false, ec);
-    if (adapter_) {
-      adapter_->SubmitShutdownNotice();
-      SendIfNotProcessing();
-      OnDownstreamWriteFlush();
-    }
     ssl_socket_.shutdown(ec);
     if (ec) {
       VLOG(2) << "shutdown() error: " << ec;
@@ -305,6 +323,11 @@ bool ServerConnection::OnEndHeadersForStream(
 }
 
 bool ServerConnection::OnEndStream(StreamId stream_id) {
+  if (stream_id == stream_id_) {
+    data_frame_ = nullptr;
+    stream_id_ = 0;
+    OnDisconnect(asio::error::eof);
+  }
   return true;
 }
 
@@ -312,6 +335,7 @@ bool ServerConnection::OnCloseStream(StreamId stream_id,
                                      http2::adapter::Http2ErrorCode error_code) {
   if (stream_id == stream_id_) {
     data_frame_ = nullptr;
+    stream_id_ = 0;
   }
   return true;
 }
@@ -1078,13 +1102,21 @@ void ServerConnection::OnStreamWrite() {
     adapter_->ResumeStream(blocked_stream_);
     SendIfNotProcessing();
   }
-  OnDownstreamWriteFlush();
-
   /* shutdown the socket if upstream is eof and all remaining data sent */
   bool nodata = !data_frame_ || !data_frame_->SelectPayloadLength(1).first;
-  if (channel_ && channel_->eof() && nodata && downstream_.empty()) {
+  if (channel_ && channel_->eof() && nodata && downstream_.empty() && !shutdown_) {
     VLOG(2) << "Connection (server) " << connection_id()
             << " last data sent: shutting down";
+    shutdown_ = true;
+    if (data_frame_) {
+      data_frame_->set_last_frame(true);
+      adapter_->ResumeStream(stream_id_);
+      SendIfNotProcessing();
+      data_frame_ = nullptr;
+      stream_id_ = 0;
+      WriteStreamInPipe();
+      return;
+    }
     scoped_refptr<ServerConnection> self(this);
     s_async_shutdown_([this, self](asio::error_code ec) {
       if (ec == asio::error::operation_aborted) {
@@ -1105,6 +1137,7 @@ void ServerConnection::OnStreamWrite() {
     upstream_readable_ = true;
     channel_->enable_read([self]() {});
   }
+  OnDownstreamWriteFlush();
 }
 
 void ServerConnection::EnableStreamRead() {
@@ -1122,6 +1155,9 @@ void ServerConnection::DisableStreamRead() {
 }
 
 void ServerConnection::OnDisconnect(asio::error_code ec) {
+  if (closing_) {
+    return;
+  }
   size_t bytes = 0;
   for (auto buf : downstream_)
     bytes += buf->length();
@@ -1219,9 +1255,19 @@ void ServerConnection::disconnected(asio::error_code ec) {
   channel_->close();
   /* delay the socket's close because downstream is buffered */
   bool nodata = !data_frame_ || !data_frame_->SelectPayloadLength(1).first;
-  if (nodata && downstream_.empty()) {
+  if (nodata && downstream_.empty() && !shutdown_) {
     VLOG(2) << "Connection (server) " << connection_id()
             << " upstream: last data sent: shutting down";
+    shutdown_ = true;
+    if (data_frame_) {
+      data_frame_->set_last_frame(true);
+      adapter_->ResumeStream(stream_id_);
+      SendIfNotProcessing();
+      data_frame_ = nullptr;
+      stream_id_ = 0;
+      WriteStreamInPipe();
+      return;
+    }
     scoped_refptr<ServerConnection> self(this);
     s_async_shutdown_([this, self](asio::error_code ec) {
       if (ec == asio::error::operation_aborted) {
