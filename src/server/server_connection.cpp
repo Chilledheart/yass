@@ -345,16 +345,16 @@ bool ServerConnection::OnFrameHeader(StreamId stream_id,
                                      size_t /*length*/,
                                      uint8_t /*type*/,
                                      uint8_t /*flags*/) {
+  return true;
+}
+
+bool ServerConnection::OnBeginHeadersForStream(StreamId stream_id) {
   if (!stream_id_) {
     stream_id_ = stream_id;
   }
   if (stream_id) {
     DCHECK_EQ(stream_id, stream_id_) << "Server only support one stream";
   }
-  return true;
-}
-
-bool ServerConnection::OnBeginHeadersForStream(StreamId stream_id) {
   return true;
 }
 
