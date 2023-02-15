@@ -756,16 +756,6 @@ void CliConnection::WriteStreamInPipe() {
 
   /* recursively send the remainings */
   while (true) {
-    if (GetMonotonicTime() > next_ticks||
-        bytes_transferred > kYieldAfterBytesRead) {
-      if (downstream_.empty()) {
-        try_again = true;
-      } else {
-        ec = asio::error::try_again;
-      }
-      break;
-    }
-
     auto buf = GetNextDownstreamBuf(ec);
     size_t read = buf ? buf->length() : 0;
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
@@ -777,6 +767,11 @@ void CliConnection::WriteStreamInPipe() {
       break;
     }
     if (!read) {
+      break;
+    }
+    if (GetMonotonicTime() > next_ticks ||
+        bytes_transferred > kYieldAfterBytesRead) {
+      ec = asio::error::try_again;
       break;
     }
     if (closed_) {
@@ -960,16 +955,6 @@ void CliConnection::WriteUpstreamInPipe() {
 
   /* recursively send the remainings */
   while (true) {
-    if (GetMonotonicTime() > next_ticks||
-        bytes_transferred > kYieldAfterBytesRead) {
-      if (upstream_.empty()) {
-        try_again = true;
-      } else {
-        ec = asio::error::try_again;
-      }
-      break;
-    }
-
     size_t read;
     std::shared_ptr<IOBuf> buf = GetNextUpstreamBuf(ec);
     read = buf ? buf->length() : 0;
@@ -982,6 +967,11 @@ void CliConnection::WriteUpstreamInPipe() {
       return;
     }
     if (!read) {
+      break;
+    }
+    if (GetMonotonicTime() > next_ticks ||
+        bytes_transferred > kYieldAfterBytesRead) {
+      ec = asio::error::try_again;
       break;
     }
     if (!channel_ || !channel_->connected() || channel_->eof()) {
