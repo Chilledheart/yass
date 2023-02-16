@@ -225,6 +225,7 @@ option(BUILD_TESTS "Build with test." OFF)
 option(BUILD_BENCHMARKS "Build with benchmark." OFF)
 option(OPTIMIZED_PROTOC "Force protobuf compiler to be built with optimization" OFF)
 option(USE_LIBCXX "Build with libc++" ON)
+option(USE_NGHTTP2 "Build with libnghttp2" OFF)
 option(USE_MOLD "Build with mold linker" OFF)
 option(USE_LLD "Build with lld linker" OFF)
 option(USE_GOLD "Build with gold linker" OFF)
@@ -1860,13 +1861,16 @@ endif()
 # *****************************************************************************************
 #           Nghttp2 Library
 # *****************************************************************************************
-set(ENABLE_LIB_ONLY ON CACHE BOOL "")
-set(ENABLE_SHARED_LIB OFF CACHE BOOL "")
-set(ENABLE_STATIC_LIB ON CACHE BOOL "")
-set(ENABLE_DOC OFF CACHE BOOL "")
-include_directories(third_party/nghttp2/lib/includes SYSTEM)
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/third_party/nghttp2/lib/includes SYSTEM)
-add_subdirectory(third_party/nghttp2)
+if (USE_NGHTTP2)
+  message(STATUS "Compiling with libnghttp2")
+  set(ENABLE_LIB_ONLY ON CACHE BOOL "")
+  set(ENABLE_SHARED_LIB OFF CACHE BOOL "")
+  set(ENABLE_STATIC_LIB ON CACHE BOOL "")
+  set(ENABLE_DOC OFF CACHE BOOL "")
+  include_directories(third_party/nghttp2/lib/includes SYSTEM)
+  include_directories(${CMAKE_CURRENT_BINARY_DIR}/third_party/nghttp2/lib/includes SYSTEM)
+  add_subdirectory(third_party/nghttp2)
+endif()
 
 # *****************************************************************************************
 #           QUICHE Library
