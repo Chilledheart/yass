@@ -181,7 +181,9 @@ void SSLServerSocket::OnWriteReady() {
     OnHandshakeIOComplete(OK);
     return;
   }
+#ifdef ENABLE_TLS_WRITE_QUICK_FEEDBACK
   OnWaitWrite(asio::error_code());
+#endif
 }
 
 void SSLServerSocket::OnHandshakeIOComplete(int result) {

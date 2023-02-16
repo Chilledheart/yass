@@ -130,7 +130,10 @@ void SSLSocket::RetryAllOperations() {
 
   if (!bio->ptr)
     return;
+
+#ifdef ENABLE_TLS_WRITE_QUICK_FEEDBACK
   OnWaitWrite(asio::error_code());
+#endif
 }
 
 void SSLSocket::Disconnect() {

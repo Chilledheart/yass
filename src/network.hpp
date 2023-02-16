@@ -101,4 +101,7 @@ const int kYieldAfterDurationMilliseconds = 20;
 // attacker from growing this queue unboundedly.
 const int kSpdySessionMaxQueuedCappedFrames = 10000;
 
+// enable tls feed back quickly from BIO layer
+#undef ENABLE_TLS_WRITE_QUICK_FEEDBACK
+
 #endif  // H_NETWORK
