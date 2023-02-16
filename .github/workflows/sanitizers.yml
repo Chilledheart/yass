@@ -20,7 +20,7 @@ on:
     branches: [master, develop]
     paths-ignore: [README.md, BUILDING.md]
 env:
-  CACHE_EPOCH: 5
+  CACHE_EPOCH: 0
   GOPROXY: direct
 jobs:
   sanitizer-linux:
