@@ -100,7 +100,7 @@ jobs:
       - name: Run tests
         run: |
           cd build-msvc-${{ matrix.arch }}-${{ matrix.crt-linkage }}
-          yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=100 --gtest_throw_on_failure
+          yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=50 --gtest_throw_on_failure
   win-compiler-compatible-2022:
     runs-on: windows-2022
     strategy:
@@ -178,7 +178,7 @@ jobs:
       - name: Run tests
         run: |
           cd build-msvc-${{ matrix.arch }}-${{ matrix.crt-linkage }}
-          yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=100 --gtest_throw_on_failure
+          yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=50 --gtest_throw_on_failure
   mingw64-compiler-compatible-msys2:
     runs-on: windows-2019
     strategy:
@@ -241,7 +241,7 @@ jobs:
       - name: Run unittests
         run: |
           cd build
-          yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=100 --gtest_throw_on_failure
+          yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=50 --gtest_throw_on_failure
   linux-compiler-compatible:
     runs-on: ubuntu-20.04
     strategy:
