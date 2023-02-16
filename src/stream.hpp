@@ -61,7 +61,7 @@ class stream {
         return ssl_socket_.Read(buf, ec);
       };
       s_async_write_some_ = [this](handle_t cb) {
-        socket_.async_wait(asio::ip::tcp::socket::wait_write, cb);
+        ssl_socket_.WaitWrite(cb);
       };
       s_write_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
         return ssl_socket_.Write(buf, ec);

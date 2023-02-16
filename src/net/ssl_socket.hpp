@@ -29,12 +29,14 @@ class SSLSocket : public SocketBIOAdapter::Delegate {
   size_t Read(std::shared_ptr<IOBuf> buf, asio::error_code &ec);
   size_t Write(std::shared_ptr<IOBuf> buf, asio::error_code &ec);
   void WaitRead(WaitCallback cb);
+  void WaitWrite(WaitCallback cb);
 
   const std::string& negotiated_protocol() const {
     return negotiated_protocol_;
   }
  protected:
   void OnWaitRead(asio::error_code ec);
+  void OnWaitWrite(asio::error_code ec);
   void OnReadReady();
   void OnWriteReady();
 
@@ -59,6 +61,7 @@ class SSLSocket : public SocketBIOAdapter::Delegate {
 
   CompletionOnceCallback user_connect_callback_;
   WaitCallback wait_read_callback_;
+  WaitCallback wait_write_callback_;
 
   bool first_post_handshake_write_ = true;
 

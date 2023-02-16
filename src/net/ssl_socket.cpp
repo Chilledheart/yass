@@ -121,6 +121,9 @@ void SSLSocket::RetryAllOperations() {
   }
 
   DoPeek();
+
+  OnWaitRead(asio::error_code());
+  OnWaitWrite(asio::error_code());
 }
 
 void SSLSocket::Disconnect() {
@@ -232,12 +235,36 @@ void SSLSocket::WaitRead(std::function<void(asio::error_code ec)> cb) {
   });
 }
 
+void SSLSocket::WaitWrite(std::function<void(asio::error_code ec)> cb) {
+  DCHECK(!wait_write_callback_ && "Multiple calls into Wait Write");
+  wait_write_callback_ = cb;
+  BIO* bio = transport_adapter_->bio();
+  BIO_up_ref(bio);
+  stream_socket_->async_wait(asio::ip::tcp::socket::wait_write, [this, bio](asio::error_code ec){
+    if (!bio->ptr) {
+      BIO_free(bio);
+      return;
+    }
+    BIO_free(bio);
+    OnWaitWrite(ec);
+  });
+}
+
 void SSLSocket::OnWaitRead(asio::error_code ec) {
   if (!wait_read_callback_) {
     return;
   }
   auto cb = std::move(wait_read_callback_);
   wait_read_callback_ = nullptr;
+  cb(ec);
+}
+
+void SSLSocket::OnWaitWrite(asio::error_code ec) {
+  if (!wait_write_callback_) {
+    return;
+  }
+  auto cb = std::move(wait_write_callback_);
+  wait_write_callback_ = nullptr;
   cb(ec);
 }
 
