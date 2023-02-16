@@ -68,9 +68,6 @@ jobs:
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
           scripts\download-toolchain.bat
-          del /s /q third_party\nasm-2.15*.zip
-          del /s /q third_party\llvm-build\Release+Asserts\*.tgz
-          del /s /q third_party\wix311*.zip
       - name: Build
         run: |
           set VCToolsVersion=14.16
