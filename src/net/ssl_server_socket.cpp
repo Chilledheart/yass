@@ -126,11 +126,10 @@ void SSLServerSocket::WaitRead(std::function<void(asio::error_code ec)> cb) {
   BIO* bio = transport_adapter_->bio();
   BIO_up_ref(bio);
   stream_socket_->async_wait(asio::ip::tcp::socket::wait_read, [this, bio](asio::error_code ec){
+    bssl::UniquePtr<BIO> scoped_bio(bio);
     if (!bio->ptr) {
-      BIO_free(bio);
       return;
     }
-    BIO_free(bio);
     OnWaitRead(ec);
   });
 }
@@ -141,11 +140,10 @@ void SSLServerSocket::WaitWrite(std::function<void(asio::error_code ec)> cb) {
   BIO* bio = transport_adapter_->bio();
   BIO_up_ref(bio);
   stream_socket_->async_wait(asio::ip::tcp::socket::wait_write, [this, bio](asio::error_code ec){
+    bssl::UniquePtr<BIO> scoped_bio(bio);
     if (!bio->ptr) {
-      BIO_free(bio);
       return;
     }
-    BIO_free(bio);
     OnWaitWrite(ec);
   });
 }

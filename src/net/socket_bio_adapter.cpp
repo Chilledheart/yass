@@ -121,11 +121,10 @@ void SocketBIOAdapter::OnBIORead() {
 
   socket_->async_wait(asio::ip::tcp::socket::wait_read,
     [this, bio](asio::error_code ec) {
+    bssl::UniquePtr<BIO> scoped_bio(bio);
     if (!bio->ptr) {
-      BIO_free(bio);
       return;
     }
-    BIO_free(bio);
     if (ec) {
       read_callback_.operator()(ERR_UNEXPECTED);
       return;
@@ -277,11 +276,10 @@ void SocketBIOAdapter::SocketWrite() {
       asio::async_write(*socket_,
                         asio::const_buffer(write_buffer_->tail() + result, write_size - result),
                         [this, bio](asio::error_code ec, size_t bytes_transferred) {
+        bssl::UniquePtr<BIO> scoped_bio(bio);
         if (!bio->ptr) {
-          BIO_free(bio);
           return;
         }
-        BIO_free(bio);
         if (ec) {
           write_callback_(ERR_UNEXPECTED);
           return;

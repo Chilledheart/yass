@@ -112,17 +112,24 @@ void SSLSocket::RetryAllOperations() {
   // Performing these callbacks may cause |this| to be deleted. If this
   // happens, the other callbacks should not be invoked. Guard against this by
   // holding a WeakPtr to |this| and ensuring it's still valid.
-#if 0
-  base::WeakPtr<SSLClientSocketImpl> guard(weak_factory_.GetWeakPtr());
-#endif
+  BIO* bio = transport_adapter_->bio();
   if (next_handshake_state_ == STATE_HANDSHAKE) {
     // In handshake phase. The parameter to OnHandshakeIOComplete is unused.
     OnHandshakeIOComplete(OK);
   }
 
+  if (!bio->ptr)
+    return;
+
   DoPeek();
 
+  if (!bio->ptr)
+    return;
+
   OnWaitRead(asio::error_code());
+
+  if (!bio->ptr)
+    return;
   OnWaitWrite(asio::error_code());
 }
 
@@ -226,11 +233,10 @@ void SSLSocket::WaitRead(std::function<void(asio::error_code ec)> cb) {
   BIO* bio = transport_adapter_->bio();
   BIO_up_ref(bio);
   stream_socket_->async_wait(asio::ip::tcp::socket::wait_read, [this, bio](asio::error_code ec){
+    bssl::UniquePtr<BIO> scoped_bio(bio);
     if (!bio->ptr) {
-      BIO_free(bio);
       return;
     }
-    BIO_free(bio);
     OnWaitRead(ec);
   });
 }
@@ -241,11 +247,10 @@ void SSLSocket::WaitWrite(std::function<void(asio::error_code ec)> cb) {
   BIO* bio = transport_adapter_->bio();
   BIO_up_ref(bio);
   stream_socket_->async_wait(asio::ip::tcp::socket::wait_write, [this, bio](asio::error_code ec){
+    bssl::UniquePtr<BIO> scoped_bio(bio);
     if (!bio->ptr) {
-      BIO_free(bio);
       return;
     }
-    BIO_free(bio);
     OnWaitWrite(ec);
   });
 }
