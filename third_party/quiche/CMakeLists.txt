@@ -205,17 +205,6 @@ set(quiche_SRCS
   src/quiche/http2/adapter/http2_visitor_interface.h
   src/quiche/http2/adapter/noop_header_validator.cc
   src/quiche/http2/adapter/noop_header_validator.h
-  src/quiche/http2/adapter/nghttp2.h
-  src/quiche/http2/adapter/nghttp2_adapter.cc
-  src/quiche/http2/adapter/nghttp2_adapter.h
-  src/quiche/http2/adapter/nghttp2_callbacks.cc
-  src/quiche/http2/adapter/nghttp2_callbacks.h
-  src/quiche/http2/adapter/nghttp2_data_provider.cc
-  src/quiche/http2/adapter/nghttp2_data_provider.h
-  src/quiche/http2/adapter/nghttp2_session.cc
-  src/quiche/http2/adapter/nghttp2_session.h
-  src/quiche/http2/adapter/nghttp2_util.cc
-  src/quiche/http2/adapter/nghttp2_util.h
   src/quiche/http2/adapter/oghttp2_adapter.cc
   src/quiche/http2/adapter/oghttp2_adapter.h
   src/quiche/http2/adapter/oghttp2_session.cc
@@ -797,6 +786,23 @@ set(quiche_SRCS
   src/quiche/spdy/core/zero_copy_output_buffer.h
   )
 
+set(quiche_nghttp2_SOURCES
+  src/quiche/http2/adapter/nghttp2.h
+  src/quiche/http2/adapter/nghttp2_adapter.cc
+  src/quiche/http2/adapter/nghttp2_adapter.h
+  src/quiche/http2/adapter/nghttp2_callbacks.cc
+  src/quiche/http2/adapter/nghttp2_callbacks.h
+  src/quiche/http2/adapter/nghttp2_data_provider.cc
+  src/quiche/http2/adapter/nghttp2_data_provider.h
+  src/quiche/http2/adapter/nghttp2_session.cc
+  src/quiche/http2/adapter/nghttp2_session.h
+  src/quiche/http2/adapter/nghttp2_util.cc
+  src/quiche/http2/adapter/nghttp2_util.h
+  )
+if (NOT USE_NGHTTP2)
+  set(quiche_nghttp2_SOURCES)
+endif()
+
 set(quiche_protos
   src/quiche/quic/core/proto/cached_network_parameters.proto
   src/quiche/quic/core/proto/crypto_server_config.proto
@@ -808,6 +814,7 @@ protobuf_generate_cpp(quiche_protos_SRCS quiche_protos_HDRS ${quiche_protos})
 
 add_library(quiche STATIC
   ${quiche_SRCS}
+  ${quiche_nghttp2_SOURCES}
   ${quiche_protos_SRCS}
   )
 
@@ -826,7 +833,6 @@ target_include_directories(quiche PUBLIC
 target_link_libraries(quiche PUBLIC
   libprotobuf-lite
   zlib
-  nghttp2_static
   crypto
   ssl
   url
@@ -855,6 +861,10 @@ target_link_libraries(quiche PUBLIC
   absl::flags_parse
   absl::flags_marshalling
   )
+
+if (USE_NGHTTP2)
+  target_link_libraries(quiche PUBLIC nghttp2_static)
+endif()
 
 if (COMPILER_CLANG)
   set_target_properties(quiche PROPERTIES
