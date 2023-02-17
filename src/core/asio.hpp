@@ -23,6 +23,10 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
 
+#if 0
+#define ASIO_ENABLE_HANDLER_TRACKING
+#endif
+
 #include <asio.hpp>
 #include <asio/ssl.hpp>
 #include "core/asio_throw_exceptions.hpp"
