@@ -892,9 +892,6 @@ repeat_fetch:
       }
       remaining_buffer = remaining_buffer.substr(result);
     }
-    // Send Control Streams
-    SendIfNotProcessing();
-    OnUpstreamWriteFlush();
   } else if (upstream_https_fallback_) {
     if (upstream_handshake_) {
       upstream_handshake_ = false;
@@ -945,6 +942,11 @@ repeat_fetch:
   }
 
 out:
+  if (adapter_) {
+    // Send Control Streams
+    SendIfNotProcessing();
+    WriteUpstreamInPipe();
+  }
   if (downstream_.empty()) {
     if (!ec) {
       ec = asio::error::try_again;
