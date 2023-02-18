@@ -361,7 +361,7 @@ jobs:
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             echo "CC=gcc-11" >> $GITHUB_ENV
             echo "CXX=g++-11" >> $GITHUB_ENV
-            echo "GNU_DEPS=gtk+3" >> $GITHUB_ENV
+            echo "GNU_DEPS=gtk+3 pkgconfig" >> $GITHUB_ENV
           fi
       - name: Remove homebrew conflicts
         run: |
