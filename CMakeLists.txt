@@ -1779,6 +1779,7 @@ if (BUILD_BENCHMARKS)
   set(BENCHMARK_FORCE_WERROR "OFF" CACHE STRING "")
   set(BENCHMARK_BUILD_32_BITS "OFF" CACHE STRING "")
   set(BENCHMARK_ENABLE_INSTALL "OFF" CACHE STRING "")
+  set(BENCHMARK_ENABLE_DOXYGEN "OFF" CACHE STRING "")
   set(BENCHMARK_INSTALL_DOCS "OFF" CACHE STRING "")
   set(BENCHMARK_DOWNLOAD_DEPENDENCIES "OFF" CACHE STRING "")
   set(BENCHMARK_ENABLE_GTEST_TESTS "OFF" CACHE STRING "")
@@ -2793,4 +2794,20 @@ if (BUILD_TESTS)
     COMMAND ${CMAKE_CURRENT_BINARY_DIR}/yass_test
     DEPENDS yass_test
     COMMENT "yass unittests")
+endif()
+
+if (BUILD_BENCHMARKS)
+  add_executable(yass_benchmark
+    src/ss_benchmark.cpp)
+  target_include_directories(yass_benchmark PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/src
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/cli
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/server
+      )
+  target_link_libraries(yass_benchmark PUBLIC
+      ${SUPPORT_LIBS}
+      yass_cli_lib
+      yass_server_lib
+      benchmark::benchmark
+      )
 endif()
