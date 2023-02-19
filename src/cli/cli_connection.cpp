@@ -853,6 +853,10 @@ std::shared_ptr<IOBuf> CliConnection::GetNextDownstreamBuf(asio::error_code &ec)
     ec = asio::error::try_again;
     return nullptr;
   }
+  if (channel_->eof()) {
+    ec = asio::error::eof;
+    return nullptr;
+  }
   size_t bytes_transferred = 0U;
 
 repeat_fetch:
