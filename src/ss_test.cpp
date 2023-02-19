@@ -377,13 +377,19 @@ class SsEndToEndTest : public ::testing::Test {
       }
     }
 
-    EXPECT_EQ(s.available(ec), 0u);
-    EXPECT_FALSE(ec) << ec;
-
     auto stop = std::chrono::steady_clock::now();
     double delta = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count() / 1000.0 / 1000.0 / 1000.0;
 
     LOG(WARNING) << "full duplex: " << content_buffer.length() * kIOLoopCount / 1024.0 / (delta) << " kb/s";
+
+    EXPECT_EQ(s.available(ec), 0u);
+    EXPECT_FALSE(ec) << ec;
+
+    IOBuf resp_buffer;
+    resp_buffer.reserve(0, SOCKET_DEBUF_SIZE);
+    read = asio::read(s, tail_buffer(resp_buffer), ec);
+    EXPECT_EQ(ec, asio::error::eof) << ec;
+    EXPECT_EQ(read, 0u);
 
     s.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
     EXPECT_FALSE(ec) << ec;
