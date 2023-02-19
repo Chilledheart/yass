@@ -734,6 +734,10 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code &
     ec = asio::error::try_again;
     return nullptr;
   }
+  if (channel_->eof()) {
+    ec = asio::error::eof;
+    return nullptr;
+  }
   size_t bytes_transferred = 0U;
 
   std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
