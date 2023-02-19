@@ -26,10 +26,15 @@
 namespace {
 
 static IOBuf content_buffer;
-static std::mutex recv_mutex;
+static std::mutex g_in_provider_mutex;
+static std::mutex g_in_consumer_mutex;
 static std::unique_ptr<IOBuf> recv_content_buffer;
 static const char kConnectResponse[] = "HTTP/1.1 200 Connection established\r\n\r\n";
-static int kContentMaxSize = 10 * 1024 * 1024;
+#if defined(NDEBUG) && !defined(_DEBUG) && !defined(MEMORY_SANITIZER) && !defined(_WIN32)
+static const int kIOLoopCount = 5;
+#else
+static const int kIOLoopCount = 1;
+#endif
 
 // openssl req -newkey rsa:1024 -keyout pkey.pem -x509 -out cert.crt -days 3650 -nodes -subj /C=XX
 static const char kCertificate[] =
@@ -105,42 +110,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
   ContentProviderConnection& operator=(ContentProviderConnection&&) = delete;
 
   void start() override {
-    VLOG(1) << "Connection (content-provider) " << connection_id() << " start to do IO";
-
-    scoped_refptr<ContentProviderConnection> self(this);
-    asio::async_write(socket_, const_buffer(content_buffer),
-      [this, self](asio::error_code ec, size_t bytes_transferred) {
-        if (ec || bytes_transferred != content_buffer.length()) {
-          LOG(WARNING) << "Connection (content-provider) " << connection_id()
-                       << " Failed to transfer data: " << ec;
-        } else {
-          VLOG(1) << "Connection (content-provider) " << connection_id()
-                  << " written: " << bytes_transferred << " bytes";
-        }
-        done_[0] = true;
-        shutdown();
-    });
-
-    recv_mutex.lock();
-    asio::async_read(socket_, mutable_buffer(*recv_content_buffer),
-      [this, self](asio::error_code ec, size_t bytes_transferred) {
-        if (ec || bytes_transferred != content_buffer.length()) {
-          LOG(WARNING) << "Connection (content-provider) " << connection_id()
-                       << " Failed to transfer data: " << ec;
-        } else {
-          VLOG(1) << "Connection (content-provider) " << connection_id()
-                  << " read: " << bytes_transferred << " bytes";
-        }
-        recv_content_buffer->append(bytes_transferred);
-        recv_mutex.unlock();
-        size_t inpending = socket_.available(ec);
-        static_cast<void>(inpending);
-        if (!ec) {
-          EXPECT_EQ(inpending, 0u);
-        }
-        done_[1] = true;
-        shutdown();
-    });
+    do_io();
   }
 
   void close() override {
@@ -155,8 +125,67 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
   }
 
  private:
+  void do_io() {
+    done_[0] = false;
+    done_[1] = false;
+
+    VLOG(1) << "Connection (content-provider) " << connection_id() << " start to do IO (" << counter__ << " left)";
+    scoped_refptr<ContentProviderConnection> self(this);
+    g_in_provider_mutex.lock();
+
+    asio::async_write(socket_, const_buffer(content_buffer),
+      [this, self](asio::error_code ec, size_t bytes_transferred) {
+        if (ec || bytes_transferred != content_buffer.length()) {
+          LOG(WARNING) << "Connection (content-provider) " << connection_id()
+                       << " Failed to transfer data: " << ec;
+        } else {
+          VLOG(1) << "Connection (content-provider) " << connection_id()
+                  << " written: " << bytes_transferred << " bytes";
+        }
+        done_[0] = true;
+        shutdown();
+    });
+
+    asio::async_read(socket_, mutable_buffer(*recv_content_buffer),
+      [this, self](asio::error_code ec, size_t bytes_transferred) {
+        if (ec || bytes_transferred != content_buffer.length()) {
+          LOG(WARNING) << "Connection (content-provider) " << connection_id()
+                       << " Failed to transfer data: " << ec;
+        } else {
+          VLOG(1) << "Connection (content-provider) " << connection_id()
+                  << " read: " << bytes_transferred << " bytes";
+        }
+        recv_content_buffer->append(bytes_transferred);
+        size_t inpending = socket_.available(ec);
+        static_cast<void>(inpending);
+        if (!ec) {
+          EXPECT_EQ(inpending, 0u);
+        }
+        done_[1] = true;
+        shutdown();
+    });
+  }
+
   void shutdown() {
     if (!done_[0] || !done_[1]) {
+      return;
+    }
+    g_in_provider_mutex.unlock();
+    shutdown_impl();
+  }
+
+  void shutdown_impl() {
+    if (!g_in_consumer_mutex.try_lock()) {
+      scoped_refptr<ContentProviderConnection> self(this);
+      io_context_->post([this, self]() {
+        shutdown_impl();
+      });
+      return;
+    }
+    // consumer locked
+    if (--counter__) {
+      do_io();
+      g_in_consumer_mutex.unlock();
       return;
     }
     asio::error_code ec;
@@ -165,9 +194,11 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
       LOG(WARNING) << "Connection (content-provider) " << connection_id()
                    << " shutdown failure: " << ec;
     }
+    g_in_consumer_mutex.unlock();
   }
 
   bool done_[2] = { false, false };
+  int counter__ = kIOLoopCount;
 };
 
 class ContentProviderConnectionFactory : public ConnectionFactory {
@@ -292,33 +323,67 @@ class SsEndToEndTest : public ::testing::Test {
     EXPECT_FALSE(ec) << ec;
     EXPECT_EQ(written, request_buf->length());
 
-    written = asio::write(s, const_buffer(content_buffer), ec);
-    VLOG(1) << "Connection (content-consumer) written: " << written << " bytes";
-    EXPECT_FALSE(ec) << ec;
-    EXPECT_EQ(written, content_buffer.length());
-
+    constexpr int response_len = sizeof(kConnectResponse) - 1;
     IOBuf response_buf;
-    response_buf.reserve(0, kContentMaxSize + 1024);
-    size_t read = asio::read(s, tail_buffer(response_buf), ec);
+    response_buf.reserve(0, response_len);
+    size_t read = asio::read(s, asio::mutable_buffer(response_buf.mutable_tail(), response_len), ec);
     VLOG(1) << "Connection (content-consumer) read: " << read << " bytes";
     response_buf.append(read);
-    *response_buf.mutable_tail() = '\0';
-    EXPECT_EQ(ec, asio::error::eof) << ec;
+    ASSERT_EQ((int)read, response_len);
 
     const char* buffer = reinterpret_cast<const char*>(response_buf.data());
     size_t buffer_length = response_buf.length();
-    ASSERT_GE(buffer_length, sizeof(kConnectResponse) - 1);
-    ASSERT_THAT(buffer, ::testing::StartsWith(kConnectResponse));
-    buffer += sizeof(kConnectResponse) - 1;
-    buffer_length -= sizeof(kConnectResponse) - 1;
-    ASSERT_EQ(buffer_length, content_buffer.length());
+    ASSERT_EQ((int)buffer_length, response_len);
     ASSERT_EQ(::testing::Bytes(buffer, buffer_length),
-              ::testing::Bytes(content_buffer.data(), content_buffer.length()));
+              ::testing::Bytes(kConnectResponse, response_len));
 
-    std::lock_guard<std::mutex> lk(recv_mutex);
-    ASSERT_EQ(recv_content_buffer->length(), content_buffer.length());
-    ASSERT_EQ(::testing::Bytes(recv_content_buffer->data(), recv_content_buffer->length()),
-              ::testing::Bytes(content_buffer.data(), content_buffer.length()));
+    auto start = std::chrono::steady_clock::now();
+
+    for (int i = kIOLoopCount; i; --i) {
+      while (true) {
+        std::lock_guard<std::mutex> lk(g_in_consumer_mutex);
+        if (!g_in_provider_mutex.try_lock()) {
+          break;
+        }
+        g_in_provider_mutex.unlock();
+      }
+      std::lock_guard<std::mutex> done_lk(g_in_consumer_mutex);
+      VLOG(1) << "Connection (content-consumer) start to do IO (" << i << " left)";
+      written = asio::write(s, const_buffer(content_buffer), ec);
+      VLOG(1) << "Connection (content-consumer) written: " << written << " bytes";
+      EXPECT_FALSE(ec) << ec;
+      EXPECT_EQ(written, content_buffer.length());
+
+      IOBuf resp_buffer;
+      resp_buffer.reserve(0, content_buffer.length());
+      size_t read = asio::read(s, tail_buffer(resp_buffer), ec);
+      VLOG(1) << "Connection (content-consumer) read: " << read << " bytes";
+      resp_buffer.append(read);
+      EXPECT_FALSE(ec) << ec;
+
+      const char* buffer = reinterpret_cast<const char*>(resp_buffer.data());
+      size_t buffer_length = resp_buffer.length();
+      ASSERT_EQ(buffer_length, content_buffer.length());
+      ASSERT_EQ(::testing::Bytes(buffer, buffer_length),
+                ::testing::Bytes(content_buffer.data(), content_buffer.length()));
+
+      {
+        std::lock_guard<std::mutex> lk(g_in_provider_mutex);
+        ASSERT_EQ(recv_content_buffer->length(), content_buffer.length());
+        ASSERT_EQ(::testing::Bytes(recv_content_buffer->data(), recv_content_buffer->length()),
+                  ::testing::Bytes(content_buffer.data(), content_buffer.length()));
+
+        recv_content_buffer->clear();
+      }
+    }
+
+    EXPECT_EQ(s.available(ec), 0u);
+    EXPECT_FALSE(ec) << ec;
+
+    auto stop = std::chrono::steady_clock::now();
+    double delta = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count() / 1000.0 / 1000.0 / 1000.0;
+
+    LOG(WARNING) << "full duplex: " << content_buffer.length() * kIOLoopCount / 1024.0 / (delta) << " kb/s";
 
     s.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
     EXPECT_FALSE(ec) << ec;
