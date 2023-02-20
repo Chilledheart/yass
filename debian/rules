@@ -59,8 +59,8 @@ override_dh_auto_test:
 ifneq ($(filter nocheck,$(DEB_BUILD_PROFILES)),)
 	echo 'test skipped'
 else
-	./yass_test
-	./yass_benchmark
+	./build/yass_test
+	./build/yass_benchmark
 endif
 
 override_dh_shlibdeps:
