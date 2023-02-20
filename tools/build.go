@@ -513,20 +513,24 @@ func buildStageExecuteBuildScript() {
 	cmdRun(ninjaCmd, true)
 	if buildBenchmarkFlag || runBenchmarkFlag {
 		ninjaCmd := []string{"ninja", "-j", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "yass_benchmark"}
-		ninjaCmd = append(ninjaCmd)
 		cmdRun(ninjaCmd, true)
 	}
 	if runBenchmarkFlag {
-		benchmarkCmd := []string{"./yass_benchmark", "-v", fmt.Sprintf("%d", verboseFlag), "-logtostderr"}
+		benchmarkCmd := []string{"./yass_benchmark"}
+		if verboseFlag > 0 {
+			benchmarkCmd = []string{"./yass_benchmark", "-v", fmt.Sprintf("%d", verboseFlag), "-logtostderr"}
+		}
 		cmdRun(benchmarkCmd, true)
 	}
 	if buildTestFlag || runTestFlag {
 		ninjaCmd := []string{"ninja", "-j", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "yass_test"}
-		ninjaCmd = append(ninjaCmd)
 		cmdRun(ninjaCmd, true)
 	}
 	if runTestFlag {
-		checkCmd := []string{"./yass_test", "-v", fmt.Sprintf("%d", verboseFlag), "-logtostderr"}
+		checkCmd := []string{"./yass_test"}
+		if verboseFlag > 0 {
+			checkCmd = []string{"./yass_test", "-v", fmt.Sprintf("%d", verboseFlag), "-logtostderr"}
+		}
 		cmdRun(checkCmd, true)
 	}
 	// FIXME move to cmake (required by Xcode generator)
