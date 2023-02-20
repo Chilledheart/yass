@@ -63,18 +63,20 @@ int SocketBIOAdapter::BIORead(char* out, int len) {
     return -1;
   }
 
-  if (read_result_ == 0) {
+  if (read_result_ == 0 || read_result_ == ERR_IO_PENDING) {
     // Instantiate the read buffer and read from the socket. Although only |len|
     // bytes were requested, intentionally read to the full buffer size. The SSL
     // layer reads the record header and body in separate reads to avoid
     // overreading, but issuing one is more efficient. SSL sockets are not
     // reused after shutdown for non-SSL traffic, so overreading is fine.
-    DCHECK(!read_buffer_);
+    if (read_result_ == 0) {
+      DCHECK(!read_buffer_);
+    }
     DCHECK_EQ(0, read_offset_);
     read_buffer_ = IOBuf::create(read_buffer_capacity_);
     asio::error_code ec;
-    size_t result = socket_->read_some(mutable_buffer(*read_buffer_), ec);
-    if (ec == asio::error::try_again || ec == asio::error::would_block) {
+    size_t result = socket_->read_some(tail_buffer(*read_buffer_), ec);
+    if (read_result_ == 0 && (ec == asio::error::try_again || ec == asio::error::would_block)) {
       OnBIORead();
     }
     if (!ec) {
@@ -118,11 +120,19 @@ int SocketBIOAdapter::BIORead(char* out, int len) {
 void SocketBIOAdapter::OnBIORead() {
   BIO* bio = bio_.get();
   BIO_up_ref(bio);
+  auto read_buffer = read_buffer_;
 
   socket_->async_wait(asio::ip::tcp::socket::wait_read,
-    [this, bio](asio::error_code ec) {
+    [this, bio, read_buffer](asio::error_code ec) {
     bssl::UniquePtr<BIO> scoped_bio(bio);
     if (!bio->ptr) {
+      return;
+    }
+    if (ec == asio::error::operation_aborted) {
+      return;
+    }
+    if (read_buffer != read_buffer_) {
+      delegate_->OnReadReady();
       return;
     }
     if (ec) {
@@ -132,7 +142,7 @@ void SocketBIOAdapter::OnBIORead() {
     size_t bytes_transferred;
     do {
       ec = asio::error_code();
-      bytes_transferred = socket_->read_some(mutable_buffer(*read_buffer_), ec);
+      bytes_transferred = socket_->read_some(tail_buffer(*read_buffer_), ec);
       if (ec == asio::error::interrupted) {
         continue;
       }
