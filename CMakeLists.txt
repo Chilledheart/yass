@@ -2403,20 +2403,20 @@ target_include_directories(yass_base PRIVATE
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party SYSTEM)
 
-if (CLI)
-  add_library(yass_cli_lib OBJECT
-      src/cli/cli_worker.cpp
-      src/cli/cli_connection.cpp
-      src/cli/cli_connection.hpp
-      src/cli/cli_connection_stats.cpp
-      src/cli/cli_connection_stats.hpp
-    )
-  target_include_directories(yass_cli_lib PRIVATE
-      ${CMAKE_CURRENT_SOURCE_DIR}/src)
+add_library(yass_cli_lib OBJECT
+  src/cli/cli_worker.cpp
+  src/cli/cli_connection.cpp
+  src/cli/cli_connection.hpp
+  src/cli/cli_connection_stats.cpp
+  src/cli/cli_connection_stats.hpp
+  )
+target_include_directories(yass_cli_lib PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+if (CLI)
   add_executable(yass_cli
-      src/cli/cli.cpp
-      )
+    src/cli/cli.cpp
+    )
 
   if (WIN32)
     set(CLI_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass_cli.manifest")
@@ -2425,29 +2425,29 @@ if (CLI)
   endif()
 
   target_include_directories(yass_cli PRIVATE
-      ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
   target_link_libraries(yass_cli PUBLIC
-      yass_cli_lib
-      yass_base
-      )
+    yass_cli_lib
+    yass_base
+    )
 
   if (NOT APPLE AND NOT MSVC)
     install(TARGETS yass_cli DESTINATION bin)
   endif()
 endif()
 
-if (SERVER)
-  add_library(yass_server_lib OBJECT
-      src/server/server_connection.cpp
-      src/server/server_connection.hpp
-    )
-  target_include_directories(yass_server_lib PRIVATE
-      ${CMAKE_CURRENT_SOURCE_DIR}/src)
+add_library(yass_server_lib OBJECT
+  src/server/server_connection.cpp
+  src/server/server_connection.hpp
+  )
+target_include_directories(yass_server_lib PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+if (SERVER)
   add_executable(yass_server
-      src/server/server.cpp
-      )
+    src/server/server.cpp
+    )
 
   if (WIN32)
     set(SERVER_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass_server.manifest")
@@ -2456,12 +2456,12 @@ if (SERVER)
   endif()
 
   target_include_directories(yass_server PRIVATE
-      ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
   target_link_libraries(yass_server PUBLIC
-      yass_server_lib
-      yass_base
-      )
+    yass_server_lib
+    yass_base
+    )
 
   if (NOT APPLE AND NOT MSVC)
     install(TARGETS yass_server DESTINATION bin)
