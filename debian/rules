@@ -50,7 +50,7 @@ override_dh_auto_configure: CMAKE_OPTIONS += -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_S
 override_dh_auto_configure: CMAKE_OPTIONS += -DUSE_HOST_TOOLS=on
 
 override_dh_auto_configure:
-	dh_auto_configure ${DEB_BUILD_SYSTEM_OPTIONS} -- -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=on $(CMAKE_OPTIONS) -DCLI=on -DSERVER=on
+	dh_auto_configure ${DEB_BUILD_SYSTEM_OPTIONS} -- -DCMAKE_BUILD_TYPE=Release -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on $(CMAKE_OPTIONS) -DCLI=on -DSERVER=on
 
 override_dh_auto_build:
 	dh_auto_build ${DEB_BUILD_SYSTEM_OPTIONS} -- -j $(NCPUS)
@@ -59,7 +59,8 @@ override_dh_auto_test:
 ifneq ($(filter nocheck,$(DEB_BUILD_PROFILES)),)
 	echo 'test skipped'
 else
-	cmake --build build --target check
+	./yass_test
+	./yass_benchmark
 endif
 
 override_dh_shlibdeps:

@@ -78,10 +78,10 @@ jobs:
           echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
       - name: Build
         run: |
-          ./tools/build -build-test
+          ./tools/build -build-benchmark -build-test
       - name: Run tests
         run: |
-          ./tools/build -nc -run-test -no-packaging
+          ./tools/build -nc -run-benchmark -run-test -no-packaging
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:

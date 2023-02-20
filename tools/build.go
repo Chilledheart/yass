@@ -29,6 +29,8 @@ var buildDir string
 var dryRunFlag bool
 var preCleanFlag bool
 var noPackagingFlag bool
+var buildBenchmarkFlag bool
+var runBenchmarkFlag bool
 var buildTestFlag bool
 var runTestFlag bool
 var verboseFlag int
@@ -101,6 +103,8 @@ func InitFlag() {
 	flag.BoolVar(&preCleanFlag, "pre-clean", true, "Clean the source tree before building")
 	flag.BoolVar(&flagNoPreClean, "nc", false, "Don't Clean the source tree before building")
 	flag.BoolVar(&noPackagingFlag, "no-packaging", false, "Skip packaging step")
+	flag.BoolVar(&buildBenchmarkFlag, "build-benchmark", false, "Build benchmarks")
+	flag.BoolVar(&runBenchmarkFlag, "run-benchmark", false, "Build and run benchmarks")
 	flag.BoolVar(&buildTestFlag, "build-test", false, "Build unittests")
 	flag.BoolVar(&runTestFlag, "run-test", false, "Build and run unittests")
 	flag.IntVar(&verboseFlag, "verbose", 0, "Run unittests with verbose level")
@@ -353,6 +357,9 @@ func buildStageGenerateBuildScript() {
 	cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_BUILD_TYPE=%s", cmakeBuildTypeFlag))
 	cmakeArgs = append(cmakeArgs, "-G", "Ninja")
 	cmakeArgs = append(cmakeArgs, "-DUSE_HOST_TOOLS=on")
+	if buildBenchmarkFlag || runBenchmarkFlag {
+		cmakeArgs = append(cmakeArgs, "-DBUILD_BENCHMARKS=on")
+	}
 	if buildTestFlag || runTestFlag {
 		cmakeArgs = append(cmakeArgs, "-DBUILD_TESTS=on")
 	}
@@ -504,16 +511,22 @@ func buildStageExecuteBuildScript() {
 	glog.Info("======================================================================")
 	ninjaCmd := []string{"ninja", "-j", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), APPNAME}
 	cmdRun(ninjaCmd, true)
+	if buildBenchmarkFlag || runBenchmarkFlag {
+		ninjaCmd := []string{"ninja", "-j", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "yass_benchmark"}
+		ninjaCmd = append(ninjaCmd)
+		cmdRun(ninjaCmd, true)
+	}
+	if runBenchmarkFlag {
+		benchmarkCmd := []string{"./yass_benchmark", "-v", fmt.Sprintf("%d", verboseFlag), "-logtostderr"}
+		cmdRun(benchmarkCmd, true)
+	}
 	if buildTestFlag || runTestFlag {
 		ninjaCmd := []string{"ninja", "-j", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "yass_test"}
 		ninjaCmd = append(ninjaCmd)
 		cmdRun(ninjaCmd, true)
 	}
 	if runTestFlag {
-		checkCmd := []string{"ninja", "check"}
-		if verboseFlag > 0 {
-			checkCmd = []string{"./yass_test", "-v", fmt.Sprintf("%d", verboseFlag), "-logtostderr"}
-		}
+		checkCmd := []string{"./yass_test", "-v", fmt.Sprintf("%d", verboseFlag), "-logtostderr"}
 		cmdRun(checkCmd, true)
 	}
 	// FIXME move to cmake (required by Xcode generator)
