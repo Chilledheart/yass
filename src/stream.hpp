@@ -187,6 +187,7 @@ class stream {
       callback();
       return;
     }
+#if 0
     if (do_peek()) {
       channel_->received();
       if (read_enabled_ && !read_inprogress_) {
@@ -194,6 +195,7 @@ class stream {
       }
       return;
     }
+#endif
 
     read_inprogress_ = true;
     s_async_read_some_([this, channel, callback] (asio::error_code ec) {

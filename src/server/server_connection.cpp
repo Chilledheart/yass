@@ -594,6 +594,7 @@ void ServerConnection::ReadStream() {
   if (closed_ || !downstream_readable_) {
     return;
   }
+#if 0
   if (DoPeek()) {
     downstream_read_inprogress_ = true;
     WriteUpstreamInPipe();
@@ -603,6 +604,7 @@ void ServerConnection::ReadStream() {
       return;
     }
   }
+#endif
 
   downstream_read_inprogress_ = true;
   s_async_read_some_([this, self](asio::error_code ec) {
