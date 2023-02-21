@@ -697,6 +697,10 @@ void ServerConnection::WriteStreamInPipe() {
     }
     if (!buf->empty()) {
       ec = asio::error::try_again;
+      VLOG(1) << "Connection (server) " << connection_id()
+              << " disabling reading from upstream";
+      upstream_readable_ = false;
+      channel_->disable_read();
       break;
     }
   }
@@ -732,7 +736,6 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code &
   }
   size_t bytes_transferred = 0U;
 
-repeat_fetch:
   std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
   size_t read;
   do {
@@ -771,9 +774,6 @@ repeat_fetch:
     downstream_.push_back(buf);
   } else {
     downstream_.push_back(EncryptData(buf));
-  }
-  if (bytes_transferred <= kYieldAfterBytesRead) {
-    goto repeat_fetch;
   }
 
 out:
@@ -862,6 +862,9 @@ void ServerConnection::WriteUpstreamInPipe() {
     }
     if (!buf->empty()) {
       ec = asio::error::try_again;
+      VLOG(1) << "Connection (client) " << connection_id()
+              << " disabling reading";
+      DisableStreamRead();
       break;
     }
   }
@@ -888,7 +891,6 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextUpstreamBuf(asio::error_code &ec
   }
   size_t bytes_transferred = 0U;
 
-repeat_fetch:
   std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_DEBUF_SIZE);
   size_t read;
   do {
@@ -934,9 +936,6 @@ repeat_fetch:
   if (closed_) {
     ec = asio::error::eof;
     return nullptr;
-  }
-  if (bytes_transferred <= kYieldAfterBytesRead) {
-    goto repeat_fetch;
   }
 
 out:
