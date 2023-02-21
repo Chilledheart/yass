@@ -514,10 +514,8 @@ int main(int argc, char** argv) {
 
   ::CRYPTO_library_init();
 
-  auto other_args = absl::ParseCommandLine(argc, argv);
-  argc = other_args.size();
-  argv = &other_args[0];
   ::benchmark::Initialize(&argc, argv);
+  absl::ParseCommandLine(argc, argv);
 
   if (::benchmark::ReportUnrecognizedArguments(argc, argv)) return 1;
   ::benchmark::RunSpecifiedBenchmarks();

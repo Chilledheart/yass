@@ -154,24 +154,6 @@ class stream {
     }
   }
 
-  bool do_peek() {
-    if (enable_tls_) {
-      char byte;
-      auto ssl = ssl_socket_.native_handle();
-      int rv = SSL_peek(ssl, &byte, 1);
-      int ssl_err = SSL_get_error(ssl, rv);
-      if (ssl_err != SSL_ERROR_WANT_READ && ssl_err != SSL_ERROR_WANT_WRITE) {
-        return true;
-      }
-    } else {
-      asio::error_code ec;
-      if (socket_.available(ec)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   bool read_inprogress() const {
     return read_inprogress_;
   }
@@ -187,15 +169,6 @@ class stream {
       callback();
       return;
     }
-#if 0
-    if (do_peek()) {
-      channel_->received();
-      if (read_enabled_ && !read_inprogress_) {
-        start_read(callback);
-      }
-      return;
-    }
-#endif
 
     read_inprogress_ = true;
     s_async_read_some_([this, channel, callback] (asio::error_code ec) {

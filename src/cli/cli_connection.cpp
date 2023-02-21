@@ -658,17 +658,6 @@ void CliConnection::ReadStream() {
   if (closed_ || !downstream_readable_) {
     return;
   }
-#if 0
-  if (DoPeek()) {
-    downstream_read_inprogress_ = true;
-    WriteUpstreamInPipe();
-    OnUpstreamWriteFlush();
-    downstream_read_inprogress_ = false;
-    if (closed_ || !downstream_readable_) {
-      return;
-    }
-  }
-#endif
 
   downstream_read_inprogress_ = true;
   s_async_read_some_([this, self](asio::error_code ec) {
