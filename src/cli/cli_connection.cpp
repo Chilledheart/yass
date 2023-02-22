@@ -866,6 +866,12 @@ std::shared_ptr<IOBuf> CliConnection::GetNextDownstreamBuf(asio::error_code &ec)
   }
   size_t bytes_transferred = 0U;
 
+try_again:
+  // RstStream might be sent in ProcessBytes
+  if (channel_->eof()) {
+    ec = asio::error::eof;
+    return nullptr;
+  }
   std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_DEBUF_SIZE);
   size_t read;
   do {
@@ -901,6 +907,10 @@ std::shared_ptr<IOBuf> CliConnection::GetNextDownstreamBuf(asio::error_code &ec)
         return nullptr;
       }
       remaining_buffer = remaining_buffer.substr(result);
+    }
+    // not data frame, try again
+    if (upstream_.empty()) {
+      goto try_again;
     }
   } else if (upstream_https_fallback_) {
     if (upstream_handshake_) {
@@ -949,7 +959,7 @@ std::shared_ptr<IOBuf> CliConnection::GetNextDownstreamBuf(asio::error_code &ec)
   }
 
 out:
-  if (adapter_) {
+  if (adapter_ && adapter_->want_write()) {
     // Send Control Streams
     SendIfNotProcessing();
     WriteUpstreamInPipe();
