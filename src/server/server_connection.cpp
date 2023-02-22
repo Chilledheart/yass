@@ -507,11 +507,6 @@ void ServerConnection::ReadHandshake() {
 void ServerConnection::ReadHandshakeViaHttps() {
   scoped_refptr<ServerConnection> self(this);
 
-  if (DoPeek()) {
-    OnReadHandshakeViaHttps();
-    return;
-  }
-
   s_async_read_some_([this, self](asio::error_code ec) {
     if (closed_) {
       return;
@@ -595,11 +590,6 @@ void ServerConnection::ReadStream() {
   }
 
   if (closed_ || !downstream_readable_) {
-    return;
-  }
-  if (DoPeek()) {
-    WriteUpstreamInPipe();
-    OnUpstreamWriteFlush();
     return;
   }
 
