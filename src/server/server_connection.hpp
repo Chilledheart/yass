@@ -252,12 +252,14 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   /// Write remaining buffers to stream
   void WriteStreamInPipe();
   /// Get next remaining buffer to stream
-  std::shared_ptr<IOBuf> GetNextDownstreamBuf(asio::error_code &ec);
+  std::shared_ptr<IOBuf> GetNextDownstreamBuf(asio::error_code &ec,
+                                              size_t* bytes_transferred);
 
   /// Write remaining buffers to channel
   void WriteUpstreamInPipe();
   /// Get next remaining buffer to channel
-  std::shared_ptr<IOBuf> GetNextUpstreamBuf(asio::error_code &ec);
+  std::shared_ptr<IOBuf> GetNextUpstreamBuf(asio::error_code &ec,
+                                            size_t* bytes_transferred);
 
   /// Process the recevied data
   /// \param buf pointer to received buffer
@@ -372,7 +374,8 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
 
  private:
   /// encrypt data
-  std::shared_ptr<IOBuf> EncryptData(std::shared_ptr<IOBuf> buf);
+  void EncryptData(std::deque<std::shared_ptr<IOBuf>>* queue,
+                   std::shared_ptr<IOBuf> plaintext);
 
   /// encode cipher to perform data encoder for upstream
   std::unique_ptr<cipher> encoder_;

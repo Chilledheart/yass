@@ -282,12 +282,14 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   /// Write remaining buffers to stream
   void WriteStreamInPipe();
   /// Get next remaining buffer to stream
-  std::shared_ptr<IOBuf> GetNextDownstreamBuf(asio::error_code &ec);
+  std::shared_ptr<IOBuf> GetNextDownstreamBuf(asio::error_code &ec,
+                                              size_t *bytes_transferred);
 
   /// Write remaining buffers to channel
   void WriteUpstreamInPipe();
   /// Get next remaining buffer to channel
-  std::shared_ptr<IOBuf> GetNextUpstreamBuf(asio::error_code &ec);
+  std::shared_ptr<IOBuf> GetNextUpstreamBuf(asio::error_code &ec,
+                                            size_t *bytes_transferred);
 
   /// dispatch the command to delegate
   /// \param command command type
@@ -448,7 +450,8 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   std::shared_ptr<IOBuf> pending_data_;
 
   /// encrypt data
-  std::shared_ptr<IOBuf> EncryptData(std::shared_ptr<IOBuf> buf);
+  void EncryptData(std::deque<std::shared_ptr<IOBuf>>* queue,
+                   std::shared_ptr<IOBuf> plaintext);
 
   /// encode cipher to perform data encoder for upstream
   std::unique_ptr<cipher> encoder_;
