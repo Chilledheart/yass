@@ -1896,6 +1896,11 @@ if (COMPILER_GCC OR COMPILER_CLANG)
     set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wall -fno-common")
   endif()
 
+  # honor it. Suppress it here to compensate. See https://crbug.com/772117.
+  if (NOT COMPILER_MSVC)
+    set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wno-deprecated-declarations")
+  endif()
+
   if(COMPILER_CLANG)
     set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wnewline-eof -fcolor-diagnostics")
   else()
