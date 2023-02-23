@@ -142,7 +142,7 @@ if(MSVC)
 endif()
 
 if (APPLE AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
-  set(CMAKE_OSX_DEPLOYMENT_TARGET "10.10")
+  set(CMAKE_OSX_DEPLOYMENT_TARGET "10.14")
 endif()
 
 enable_language(C)
@@ -735,7 +735,7 @@ if (LTO AND COMPILER_CLANG AND USE_MOLD)
   set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto=thin")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto=thin")
 
-  if (NOT APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
     # TODO(lgrey): Enable unit splitting for Mac when supported.
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -fsplit-lto-unit")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fsplit-lto-unit")
@@ -824,6 +824,8 @@ if (LTO AND COMPILER_CLANG AND USE_LLD)
         set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,-cache_path_lto,thinlto-cache")
         set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-cache_path_lto,thinlto-cache")
       endif()
+      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wcrl,object_path_lto")
+      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wcrl,object_path_lto")
       set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,--thinlto-cache-policy=${cache_policy}")
       set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,--thinlto-cache-policy=${cache_policy}")
     elseif (NOT APPLE)
@@ -1180,38 +1182,18 @@ if (COMPILER_CLANG)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-trigraphs")
 endif()
 
-# Before C++17, an `alignas(N)` type would be N-aligned on the stack,
-# but heap allocation would just return something aligned to whatever the
-# default allocator happens to return. Starting with C++17, operator new
-# called on aligned types with N > __STDCPP_DEFAULT_NEW_ALIGNMENT__ will
-# call a special overload that hands in the desired alignment, and that will
-# honor the alignas even for memory on the heap.
-# However, that requires that operator new overload to exist. At least on
-# macOS and iOS, they are in libc++abi, and system libc++abi has them as of
-# "macOS 10.12, iOS 10.0" (https://reviews.llvm.org/D112921#3128089).
-# However, we do statically link libc++abi, so maybe just explicitly passing
-# -faligned-allocation is enough to make things work.
-# For now, explicitly disable this feature though to keep the C++14 aligned
-# allocation behavior (and do that on all platforms so that we have
-# consistent behavior across platforms), to make the change more incremental.
-# GCC 6 series on Debian Stretch doesn't support it
-if (NOT COMPILER_GCC OR (COMPILER_GCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.0))
-  if (MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:alignedNew-")
-  else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-aligned-new")
-  endif()
-endif()
-
-if (APPLE)
-  add_definitions(-D_LIBCPP_HAS_NO_ALIGNED_ALLOCATION)
-endif()
-
 # Pass flag to LLD so Android builds can allow debuggerd to properly symbolize
 # stack crashes (http://crbug.com/919499).
 if (USE_LLD AND ANDROID)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-rosegment")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-rosegment")
+endif()
+
+# TODO(crbug.com/1374347): Cleanup undefined symbol errors caught by
+# --no-undefined-version.
+if (USE_LLD AND NOT WIN32 AND NOT APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16.0)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--undefined-version")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--undefined-version")
 endif()
 
 # LLD does call-graph-sorted binary layout by default when profile data is
@@ -1908,9 +1890,6 @@ if (COMPILER_GCC OR COMPILER_CLANG)
     # as -Weverything, to match MSVC. Instead -W3 is the alias for -Wall.
     # See http://llvm.org/viewvc/llvm-project?view=revision&revision=319116
     set(C_CXX_FLAGS "${C_CXX_FLAGS} -W3 -Wno-unused-parameter")
-    # googletest suppresses warning C4996 via a pragma, but clang-cl does not
-    # honor it. Suppress it here to compensate. See https://crbug.com/772117.
-    set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wno-deprecated-declarations")
   elseif (ENABLE_CLANG_TIDY)
     set(C_CXX_FLAGS "${C_CXX_FLAGS} -fno-common")
   else()
@@ -1927,6 +1906,10 @@ if (COMPILER_GCC OR COMPILER_CLANG)
 
   if (COMPILER_CLANG OR CMAKE_C_COMPILER_VERSION VERSION_GREATER "7.0.0")
     set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wimplicit-fallthrough")
+  endif()
+
+  if (COMPILER_CLANG OR CMAKE_C_COMPILER_VERSION VERSION_GREATER "16.0.0")
+    set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wextra-semi")
   endif()
 
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${C_CXX_FLAGS} -Wmissing-prototypes -Wold-style-definition -Wstrict-prototypes")
@@ -2009,8 +1992,8 @@ if (COMPILER_GCC OR COMPILER_CLANG)
   # Don't warn about "maybe" uninitialized. Clang doesn't include this
   # in -Wall but gcc does, and it gives false positives.
   if (COMPILER_GCC)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-maybe-uninitialized -Wno-deprecated-declarations")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized -Wno-deprecated-declarations")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-maybe-uninitialized")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
   endif()
 
   # -Wcomment gives too many false positives in the case a

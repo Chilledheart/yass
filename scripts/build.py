@@ -1201,8 +1201,8 @@ def main():
   group.add_argument('--no-use-libcxx', help='Don\'t use custom libcxx',
                      action='store_true')
 
-  parser.add_argument('--macosx-version-min', help='Set Mac OS X deployment target, such as 10.9',
-                      default=os.getenv('MACOSX_VERSION_MIN', '10.10'))
+  parser.add_argument('--macosx-version-min', help='Set Mac OS X deployment target, such as 10.15',
+                      default=os.getenv('MACOSX_VERSION_MIN', '10.14'))
   parser.add_argument('--macosx-universal-build', help='Mac OS X Universal Build',
                       default=os.getenv('ENABLE_OSX_UNIVERSAL_BUILD', True),
                       action='store_true')

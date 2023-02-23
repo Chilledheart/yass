@@ -393,8 +393,8 @@ class ServerConnectionFactory : public ConnectionFactory {
    scoped_refptr<ConnectionType> Create(Args&&... args) {
      return MakeRefCounted<ConnectionType>(std::forward<Args>(args)...);
    }
-   const char* Name() override { return "server"; };
-   const char* ShortName() override { return "server"; };
+   const char* Name() override { return "server"; }
+   const char* ShortName() override { return "server"; }
 };
 
 }  // namespace server

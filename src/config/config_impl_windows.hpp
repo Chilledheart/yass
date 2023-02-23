@@ -102,7 +102,7 @@ bool ReadValue(HKEY hkey,
 namespace config {
 class ConfigImplWindows : public ConfigImpl {
  public:
-  ~ConfigImplWindows() override{};
+  ~ConfigImplWindows() override{}
 
  protected:
   bool OpenImpl(bool dontread) override {
@@ -293,7 +293,7 @@ class ConfigImplWindows : public ConfigImpl {
  private:
   HKEY hkey_;
 };
-};  // namespace config
+}  // namespace config
 
 #endif  // _WIN32
 #endif  // H_CONFIG_CONFIG_IMPL_WINDOWS

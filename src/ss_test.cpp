@@ -208,8 +208,8 @@ class ContentProviderConnectionFactory : public ConnectionFactory {
    scoped_refptr<ConnectionType> Create(Args&&... args) {
      return MakeRefCounted<ConnectionType>(std::forward<Args>(args)...);
    }
-   const char* Name() override { return "content-provider"; };
-   const char* ShortName() override { return "cp"; };
+   const char* Name() override { return "content-provider"; }
+   const char* ShortName() override { return "cp"; }
 };
 
 typedef ContentServer<ContentProviderConnectionFactory> ContentProviderServer;

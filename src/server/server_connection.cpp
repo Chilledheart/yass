@@ -1003,7 +1003,7 @@ void ServerConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf,
     SetState(state_error);
     OnDisconnect(ec);
   }
-};
+}
 
 void ServerConnection::ProcessSentData(asio::error_code ec,
                                        size_t bytes_transferred) {
@@ -1036,7 +1036,7 @@ void ServerConnection::ProcessSentData(asio::error_code ec,
     SetState(state_error);
     OnDisconnect(ec);
   }
-};
+}
 
 void ServerConnection::OnConnect() {
   scoped_refptr<ServerConnection> self(this);

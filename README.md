@@ -85,7 +85,7 @@ Server-side features compared with caddy+forwardproxy
 - [x] [XCHACHA20_POLY1305][xchacha20]
 
 ## Supported Operating System
-- macOS (Mac OS X 10.10 or later, macOS 11.0 or later, Apple Silicon supported)
+- macOS (Mac OS X 10.14 or later, macOS 11.0 or later, Apple Silicon supported)
 - Linux (CentOS 7 or later, Debian 8 or later, Ubuntu 14.04 or later)
 - Windows (Windows 7 or later, Windows XP-supported version also provided)
 

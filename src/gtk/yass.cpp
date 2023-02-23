@@ -156,7 +156,7 @@ std::string YASSApp::GetStatus() const {
     ss << "Disconnected with " << worker_.GetRemoteDomain();
   }
   return ss.str();
-};
+}
 
 void YASSApp::OnStart(bool quiet) {
   state_ = STARTING;

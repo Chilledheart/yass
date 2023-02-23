@@ -167,7 +167,7 @@ CliConnection::CliConnection(asio::io_context& io_context,
 
 CliConnection::~CliConnection() {
   VLOG(1) << "Connection (client) " << connection_id() << " freed memory";
-};
+}
 
 void CliConnection::start() {
   SetState(state_method_select);
@@ -1287,7 +1287,7 @@ void CliConnection::ProcessReceivedData(
     SetState(state_error);
     OnDisconnect(ec);
   }
-};
+}
 
 void CliConnection::ProcessSentData(asio::error_code ec,
                                     size_t bytes_transferred) {
@@ -1328,7 +1328,7 @@ void CliConnection::ProcessSentData(asio::error_code ec,
     SetState(state_error);
     OnDisconnect(ec);
   }
-};
+}
 
 void CliConnection::OnCmdConnect(const asio::ip::tcp::endpoint& endpoint) {
   ss_request_ = std::make_unique<ss::request>(endpoint);

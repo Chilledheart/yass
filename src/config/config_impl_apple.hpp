@@ -18,7 +18,7 @@ namespace config {
 
 class ConfigImplApple : public ConfigImpl {
  public:
-  ~ConfigImplApple() override{};
+  ~ConfigImplApple() override{}
 
  protected:
   bool OpenImpl(bool dontread) override;

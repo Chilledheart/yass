@@ -469,8 +469,8 @@ class CliConnectionFactory : public ConnectionFactory {
    scoped_refptr<ConnectionType> Create(Args&&... args) {
      return MakeRefCounted<ConnectionType>(std::forward<Args>(args)...);
    }
-   const char* Name() override { return "client"; };
-   const char* ShortName() override { return "client"; };
+   const char* Name() override { return "client"; }
+   const char* ShortName() override { return "client"; }
 };
 
 } // namespace cli
