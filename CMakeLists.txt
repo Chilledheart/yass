@@ -156,6 +156,11 @@ else()
   set(COMPILER_CLANG FALSE)
 endif()
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+  set(COMPILER_APPLE_CLANG TRUE)
+  add_definitions(-DHAVE_APPLE_CLANG)
+endif()
+
 if (COMPILER_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5.0)
   message(FATAL_ERROR "Requires Clang 5.0 or newer to compile")
 endif()
