@@ -87,7 +87,7 @@ Server-side features compared with caddy+forwardproxy
 ## Supported Operating System
 - macOS (Mac OS X 10.14 or later, macOS 11.0 or later, Apple Silicon supported)
 - Linux (CentOS 7 or later, Debian 8 or later, Ubuntu 14.04 or later)
-- Windows (Windows 7 or later, Windows XP-supported version also provided)
+- Windows (Windows 8.1 or later, Windows XP/Windows 7 binaries also provided)
 
 ### Screenshot on Windows 11
 <img width="484" alt="snapshot-win11" src="https://user-images.githubusercontent.com/54673341/151115838-4deb128c-4c51-4a3c-9758-4f58da47984e.png">
