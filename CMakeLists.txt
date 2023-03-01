@@ -1905,7 +1905,7 @@ if (COMPILER_GCC OR COMPILER_CLANG)
   endif()
 
   # honor it. Suppress it here to compensate. See https://crbug.com/772117.
-  if (NOT COMPILER_MSVC)
+  if (COMPILER_GCC AND USE_LIBCXX)
     set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wno-deprecated-declarations")
   endif()
 

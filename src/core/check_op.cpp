@@ -14,6 +14,8 @@
 #include <cstdio>
 #include <sstream>
 
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 char* CheckOpValueStr(int v) {
   char buf[50];
   snprintf(buf, sizeof(buf), "%d", v);

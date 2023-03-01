@@ -20,7 +20,6 @@
 #endif  // defined(_MSC_VER) && !defined(__clang__)
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
 
 #if 0
