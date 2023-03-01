@@ -99,7 +99,7 @@ HWND CreateEdit(DWORD dwStyle,
                 HINSTANCE hInstance) {
   return CreateWindowExW(
       0, WC_EDITW, nullptr,
-      WS_CHILD | WS_VISIBLE | WS_BORDER | WS_BORDER | ES_LEFT | dwStyle,
+      WS_TABSTOP | WS_CHILD | WS_VISIBLE | WS_BORDER | WS_BORDER | ES_LEFT | dwStyle,
       rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
       pParentWnd, reinterpret_cast<HMENU>(static_cast<UINT_PTR>(nID)), hInstance, nullptr);
 }
@@ -110,7 +110,8 @@ HWND CreateComboBox(DWORD dwStyle,
                     UINT nID,
                     HINSTANCE hInstance) {
   return CreateWindowExW(
-      0, WC_COMBOBOXW, nullptr, WS_CHILD | WS_VISIBLE | WS_VSCROLL | dwStyle,
+      0, WC_COMBOBOXW, nullptr,
+      WS_TABSTOP | WS_CHILD | WS_VISIBLE | WS_VSCROLL | dwStyle,
       rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
       pParentWnd, reinterpret_cast<HMENU>(static_cast<UINT_PTR>(nID)), hInstance, nullptr);
 }
@@ -122,7 +123,8 @@ HWND CreateButton(const wchar_t* label,
                   UINT nID,
                   HINSTANCE hInstance) {
   return CreateWindowExW(
-      0, WC_BUTTONW, label, WS_CHILD | WS_VISIBLE | dwStyle,
+      0, WC_BUTTONW, label,
+      WS_TABSTOP | WS_CHILD | WS_VISIBLE | dwStyle,
       rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
       pParentWnd, reinterpret_cast<HMENU>(static_cast<UINT_PTR>(nID)), hInstance, nullptr);
 }

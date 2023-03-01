@@ -222,6 +222,8 @@ int CYassApp::RunMainLoop() {
       // The hwnd member of the returned MSG structure is NULL.
       if (msg.hwnd == nullptr)
         HandleThreadMessage(msg.message, msg.wParam, msg.lParam);
+      if (frame_ && IsDialogMessageW(frame_->Wnd(), &msg))
+        continue;
       if (!TranslateAcceleratorW(msg.hwnd, hAccelTable, &msg)) {
         TranslateMessage(&msg);
         DispatchMessageW(&msg);
