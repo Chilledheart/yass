@@ -33,6 +33,9 @@ class CYassFrame {
   static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam,
                                   LPARAM lParam);
 
+ public:
+  HWND Wnd() { return m_hWnd; }
+
  private:
   HWND m_hWnd;
   HINSTANCE m_hInstance;
