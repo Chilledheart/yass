@@ -1292,8 +1292,8 @@ if (WIN32)
     # for winapifamily.h
     include_directories(third_party/xp-compatible SYSTEM)
   else()
-    add_definitions(-D_WIN32_WINNT=0x0601)
-    add_definitions(-DWINVER=0x0601)
+    add_definitions(-D_WIN32_WINNT=0x0603)
+    add_definitions(-DWINVER=0x0603)
   endif()
 
   # add missing definitions in some sdks
@@ -1843,19 +1843,22 @@ set(SUPPORT_LIBS zlib ${SUPPORT_LIBS})
 # *****************************************************************************************
 #           c-ares Library
 # *****************************************************************************************
-set(CARES_BUILD_TOOLS OFF CACHE BOOL "")
-set(CARES_SHARED OFF CACHE BOOL "")
-set(CARES_STATIC ON CACHE BOOL "")
-set(CARES_STATIC_PIC ON CACHE BOOL "")
-set(CARES_BUILD_TESTS OFF CACHE BOOL "")
-set(CARES_INSTALL OFF CACHE BOOL "")
-add_subdirectory(third_party/c-ares)
-include_directories(third_party/c-ares/include SYSTEM)
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/third_party/c-ares SYSTEM)
+if (NOT ALLOW_XP)
+  add_definitions(-DHAVE_C_ARES)
+  set(CARES_BUILD_TOOLS OFF CACHE BOOL "")
+  set(CARES_SHARED OFF CACHE BOOL "")
+  set(CARES_STATIC ON CACHE BOOL "")
+  set(CARES_STATIC_PIC ON CACHE BOOL "")
+  set(CARES_BUILD_TESTS OFF CACHE BOOL "")
+  set(CARES_INSTALL OFF CACHE BOOL "")
+  add_subdirectory(third_party/c-ares)
+  include_directories(third_party/c-ares/include SYSTEM)
+  include_directories(${CMAKE_CURRENT_BINARY_DIR}/third_party/c-ares SYSTEM)
 
-set(SUPPORT_LIBS c-ares ${SUPPORT_LIBS})
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-  set(SUPPORT_LIBS resolv ${SUPPORT_LIBS})
+  set(SUPPORT_LIBS c-ares ${SUPPORT_LIBS})
+  if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(SUPPORT_LIBS resolv ${SUPPORT_LIBS})
+  endif()
 endif()
 
 # *****************************************************************************************
@@ -2376,10 +2379,11 @@ add_library(yass_base STATIC
   ${files} ${hfiles}
   )
 
-target_link_libraries(yass_base PUBLIC
-  asio
-  c-ares
-  ${SUPPORT_LIBS})
+target_link_libraries(yass_base PUBLIC asio)
+if (NOT ALLOW_XP)
+  target_link_libraries(yass_base PUBLIC c-ares)
+endif()
+target_link_libraries(yass_base PUBLIC ${SUPPORT_LIBS})
 
 if (USE_LIBCXX)
   target_link_libraries(yass_base PUBLIC

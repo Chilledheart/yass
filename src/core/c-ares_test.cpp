@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2023 Chilledheart  */
 
+#ifdef HAVE_C_ARES
+
 #include <gtest/gtest.h>
 #include <gtest/gtest-message.h>
 
@@ -59,3 +61,5 @@ TEST(CARES_TEST, DISABLED_RemoteBasic) {
 
   io_context.run(ec);
 }
+
+#endif // HAVE_C_ARES

@@ -11,8 +11,11 @@
 
 #include "config/config.hpp"
 #include "core/asio.hpp"
-#include "core/c-ares.hpp"
 #include "core/logging.hpp"
+
+#ifdef HAVE_C_ARES
+#include "core/c-ares.hpp"
+#endif
 
 class WorkerPrivate;
 class Worker {
@@ -39,7 +42,11 @@ class Worker {
   /// stopping the io_context from running out of work
   std::unique_ptr<asio::io_context::work> work_guard_;
   /// used to resolve local and remote endpoint
+#ifdef HAVE_C_ARES
   scoped_refptr<CAresResolver> resolver_;
+#else
+  asio::ip::tcp::resolver resolver_;
+#endif
   /// used to do io in another thread
   std::unique_ptr<std::thread> thread_;
 

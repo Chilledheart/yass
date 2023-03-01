@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2023 Chilledheart  */
 
+#ifdef HAVE_C_ARES
+
 #include "core/c-ares.hpp"
 
 namespace {
@@ -276,3 +278,5 @@ void CAresResolver::OnAsyncWait() {
       OnAsyncWait();
   });
 }
+
+#endif // HAVE_C_ARES

@@ -3,6 +3,9 @@
 
 #ifndef H_C_ARES_HPP
 #define H_C_ARES_HPP
+
+#ifdef HAVE_C_ARES
+
 #include <ares.h>
 #include <functional>
 #include <memory>
@@ -70,4 +73,7 @@ class CAresResolver : public RefCountedThreadSafe<CAresResolver> {
   asio::steady_timer resolve_timer_;
   bool canceled_ = false;
 };
+
+#endif // HAVE_C_ARES
+
 #endif // H_C_ARES_HPP
