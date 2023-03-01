@@ -16,11 +16,17 @@ class WorkerPrivate {
 };
 
 Worker::Worker()
+#ifdef HAVE_C_ARES
     : resolver_(CAresResolver::Create(io_context_)),
+#else
+    : resolver_(io_context_),
+#endif
       private_(new WorkerPrivate) {
+#ifdef HAVE_C_ARES
   int ret = resolver_->Init(1000, 5);
   CHECK_EQ(ret, 0) << "c-ares initialize failure";
   static_cast<void>(ret);
+#endif
 }
 
 Worker::~Worker() {
@@ -58,7 +64,11 @@ void Worker::Start(std::function<void(asio::error_code)> callback) {
       on_resolve_local(ec, results, callback);
       return;
     }
+#ifdef HAVE_C_ARES
     resolver_->AsyncResolve(host_name, std::to_string(port),
+#else
+    resolver_.async_resolve(host_name, std::to_string(port),
+#endif
       [this, callback](const asio::error_code& ec,
                        asio::ip::tcp::resolver::results_type results) {
         on_resolve_local(ec, results, callback);
@@ -72,7 +82,11 @@ void Worker::Stop(std::function<void()> callback) {
     return;
   }
   io_context_.post([this, callback]() {
+#ifdef HAVE_C_ARES
     resolver_->Cancel();
+#else
+    resolver_.cancel();
+#endif
     if (private_->cli_server) {
       private_->cli_server->stop();
     }

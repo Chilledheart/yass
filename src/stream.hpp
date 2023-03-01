@@ -10,11 +10,14 @@
 #include "channel.hpp"
 #include "config/config.hpp"
 #include "core/asio.hpp"
-#include "core/c-ares.hpp"
 #include "core/logging.hpp"
 #include "core/scoped_refptr.hpp"
 #include "network.hpp"
 #include "protocol.hpp"
+
+#ifdef HAVE_C_ARES
+#include "core/c-ares.hpp"
+#endif
 
 #include <absl/strings/str_cat.h>
 #include <openssl/bio.h>
@@ -40,7 +43,11 @@ class stream {
          bool https_fallback,
          bool enable_tls,
          asio::ssl::context *ssl_ctx)
+#ifdef HAVE_C_ARES
       : resolver_(CAresResolver::Create(io_context)),
+#else
+      : resolver_(io_context),
+#endif
         host_name_(host_name),
         port_(port),
         socket_(io_context),
@@ -50,9 +57,11 @@ class stream {
         ssl_socket_(socket_, *ssl_ctx),
         channel_(channel) {
     assert(channel && "channel must defined to use with stream");
+#ifdef HAVE_C_ARES
     int ret = resolver_->Init(1000, 5);
     CHECK_EQ(ret, 0) << "c-ares initialize failure";
     static_cast<void>(ret);
+#endif
     if (enable_tls) {
       setup_ssl();
       s_async_read_some_ = [this](handle_t cb) {
@@ -160,7 +169,11 @@ class stream {
       return;
     }
 
+#ifdef HAVE_C_ARES
     resolver_->AsyncResolve(host_name_, std::to_string(port_),
+#else
+    resolver_.async_resolve(host_name_, std::to_string(port_),
+#endif
       [this, channel, callback](const asio::error_code& ec,
                                 asio::ip::tcp::resolver::results_type results) {
       if (closed_) {
@@ -340,7 +353,11 @@ class stream {
       VLOG(2) << "close() error: " << ec;
     }
     connect_timer_.cancel();
+#ifdef HAVE_C_ARES
     resolver_->Cancel();
+#else
+    resolver_.cancel();
+#endif
   }
 
   bool https_fallback() const { return https_fallback_; }
@@ -468,7 +485,11 @@ class stream {
 
  private:
   /// used to resolve local and remote endpoint
+#ifdef HAVE_C_ARES
   scoped_refptr<CAresResolver> resolver_;
+#else
+  asio::ip::tcp::resolver resolver_;
+#endif
 
   std::string host_name_;
   uint16_t port_;
