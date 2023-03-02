@@ -414,6 +414,7 @@ void ServerConnection::OnRstStream(StreamId stream_id,
 bool ServerConnection::OnGoAway(StreamId last_accepted_stream_id,
                                 http2::adapter::Http2ErrorCode error_code,
                                 absl::string_view opaque_data) {
+  OnDisconnect(asio::error::connection_reset);
   return true;
 }
 
