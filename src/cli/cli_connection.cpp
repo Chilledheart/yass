@@ -14,6 +14,8 @@
 #include "core/rand_util.hpp"
 #include "core/utils.hpp"
 
+#include <quiche/spdy/core/hpack/hpack_constants.h>
+
 namespace cli {
 
 namespace {
@@ -1492,9 +1494,13 @@ void CliConnection::connected() {
 
   // Create adapters
   if (http2) {
+#ifdef HAVE_NGHTTP2
+    adapter_ = http2::adapter::NgHttp2Adapter::CreateClientAdapter(*this);
+#else
     http2::adapter::OgHttp2Adapter::Options options;
     options.perspective = http2::adapter::Perspective::kClient;
     adapter_ = http2::adapter::OgHttp2Adapter::Create(*this, options);
+#endif
     padding_support_ = absl::GetFlag(FLAGS_padding_support);
   } else if (upstream_https_fallback_) {
     // nothing to create

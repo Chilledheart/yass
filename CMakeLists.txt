@@ -1859,6 +1859,7 @@ endif()
 # *****************************************************************************************
 if (USE_NGHTTP2)
   message(STATUS "Compiling with libnghttp2")
+  add_definitions(-DHAVE_NGHTTP2)
   set(ENABLE_LIB_ONLY ON CACHE BOOL "")
   set(ENABLE_SHARED_LIB OFF CACHE BOOL "")
   set(ENABLE_STATIC_LIB ON CACHE BOOL "")

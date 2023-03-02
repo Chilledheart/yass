@@ -16,12 +16,17 @@
 #include "core/ss_request_parser.hpp"
 #include "protocol.hpp"
 #include "stream.hpp"
-#include "quiche/http2/adapter/oghttp2_adapter.h"
 
 #include <absl/container/flat_hash_map.h>
 #include <absl/strings/string_view.h>
 #include <absl/strings/str_cat.h>
 #include <deque>
+
+#ifdef HAVE_NGHTTP2
+#include <quiche/http2/adapter/nghttp2_adapter.h>
+#else
+#include <quiche/http2/adapter/oghttp2_adapter.h>
+#endif
 
 class cipher;
 namespace server {
@@ -224,7 +229,11 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   bool OnMetadataEndForStream(StreamId stream_id) override;
   void OnErrorDebug(absl::string_view message) override {}
 
+#ifdef HAVE_NGHTTP2
+  http2::adapter::NgHttp2Adapter* adapter() { return adapter_.get(); }
+#else
   http2::adapter::OgHttp2Adapter* adapter() { return adapter_.get(); }
+#endif
 
  private:
   /// Get the state machine to the given state
@@ -349,7 +358,11 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   std::unique_ptr<stream> channel_;
 
   /// the http2 upstream adapter
+#ifdef HAVE_NGHTTP2
+  std::unique_ptr<http2::adapter::NgHttp2Adapter> adapter_;
+#else
   std::unique_ptr<http2::adapter::OgHttp2Adapter> adapter_;
+#endif
   absl::flat_hash_map<std::string, std::string> request_map_;
 
   /// the queue to write downstream

@@ -201,9 +201,13 @@ void ServerConnection::Start() {
     http2 = false;
   }
   if (http2) {
+#ifdef HAVE_NGHTTP2
+    adapter_ = http2::adapter::NgHttp2Adapter::CreateServerAdapter(*this);
+#else
     http2::adapter::OgHttp2Adapter::Options options;
     options.perspective = http2::adapter::Perspective::kServer;
     adapter_ = http2::adapter::OgHttp2Adapter::Create(*this, options);
+#endif
     padding_support_ = absl::GetFlag(FLAGS_padding_support);
     SetState(state_stream);
 
