@@ -206,6 +206,23 @@ void ServerConnection::Start() {
     adapter_ = http2::adapter::OgHttp2Adapter::Create(*this, options);
     padding_support_ = absl::GetFlag(FLAGS_padding_support);
     SetState(state_stream);
+
+    // Send Upstream Settings (HTTP2 Only)
+    std::vector<http2::adapter::Http2Setting> settings {
+      { http2::adapter::Http2KnownSettingsId::HEADER_TABLE_SIZE,
+        kSpdyMaxHeaderTableSize },
+      { http2::adapter::Http2KnownSettingsId::MAX_CONCURRENT_STREAMS,
+        kSpdyMaxConcurrentPushedStreams },
+      { http2::adapter::Http2KnownSettingsId::INITIAL_WINDOW_SIZE,
+        kSpdyStreamMaxRecvWindowSize },
+      { http2::adapter::Http2KnownSettingsId::MAX_HEADER_LIST_SIZE,
+        kSpdyMaxHeaderListSize },
+      { http2::adapter::Http2KnownSettingsId::ENABLE_PUSH,
+        kSpdyDisablePush },
+    };
+    adapter_->SubmitSettings(settings);
+    SendIfNotProcessing();
+
     WriteUpstreamInPipe();
     OnUpstreamWriteFlush();
   } else if (https_fallback_) {
