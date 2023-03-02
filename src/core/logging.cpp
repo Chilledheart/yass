@@ -185,10 +185,10 @@ typedef FILE* FileHandle;
 
 #ifndef NDEBUG
 #define DEFAULT_LOGBUFLEVEL -1
-#define DEFAULT_VERBOSE_LEVEL 1
+#define DEFAULT_VERBOSE_LEVEL 0
 #else
 #define DEFAULT_LOGBUFLEVEL 1
-#define DEFAULT_VERBOSE_LEVEL 2
+#define DEFAULT_VERBOSE_LEVEL 1
 #endif
 
 namespace {
