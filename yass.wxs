@@ -34,13 +34,13 @@
             <RemoveExistingProducts After='InstallInitialize' Overridable='yes'>UPGRADE</RemoveExistingProducts>
         </InstallExecuteSequence>
 
-        <Condition Message='Yass requires Windows XP or above'>
+        <Condition Message='YASS requires Windows XP or above'>
             VersionNT >= 501
         </Condition>
 
         <MediaTemplate EmbedCab='yes' CompressionLevel='high' />
 
-        <Property Id='DiskPrompt' Value="Chilledheart's Yass Installation [1]" />
+        <Property Id='DiskPrompt' Value="Chilledheart's YASS Installation [1]" />
         <Property Id='WIXUI_INSTALLDIR' Value='INSTALLDIR' />
         <Icon Id='ARPIcon' SourceFile='..\src\win32\yass.ico' />
         <Property Id='ARPPRODUCTICON' Value='ARPIcon' />
@@ -50,10 +50,10 @@
 
         <Directory Id='TARGETDIR' Name='SourceDir'>
             <Directory Id='$(var.PlatformProgramFilesFolder)'>
-                <Directory Id='INSTALLDIR' Name='Yass'/>
+                <Directory Id='INSTALLDIR' Name='YASS'/>
             </Directory>
             <Directory Id='ProgramMenuFolder'>
-                <Directory Id='MenuDir' Name='Yass' />
+                <Directory Id='MenuDir' Name='YASS' />
             </Directory>
         </Directory>
 
@@ -90,9 +90,9 @@
         <ComponentGroup Id='exe_shortcut'>
              <Component Id='Shortcut' Directory='MenuDir' Guid='E9D83A2A-7F75-4558-A718-795DAA3021E4'>
                  <Shortcut Id='ApplicationStartMenuShortCut'
-                           Name='Yass'
-                           Target='[#yass.exe]'
-                           Description='Launch Yass'
+                           Name='YASS'
+                           Description='Launch YASS'
+                           Target='[INSTALLDIR]yass.exe'
                            WorkingDirectory='INSTALLDIR' />
                  <RemoveFolder Id='Remove_MenuDir' Directory='MenuDir' On='uninstall' />
                  <RegistryKey Root='HKMU' Key='[REGISTRYKEY]'>
@@ -101,16 +101,12 @@
              </Component>
         </ComponentGroup>
 
-        <Feature Id='DefaultFeature' Title='Yass' Description='The Yass package.' ConfigurableDirectory='INSTALLDIR'>
+        <Feature Id='DefaultFeature' Title='YASS' Description='The YASS package.' ConfigurableDirectory='INSTALLDIR'>
             <Feature Id='DefaultFeatures' AllowAdvertise='no' Title='Program' Description='The main executable.' Level='1'>
                 <ComponentGroupRef Id='exe_yass' Primary='yes' />
                 <ComponentGroupRef Id='exe_dll' Primary='yes' />
                 <ComponentGroupRef Id='exe_license' />
-            </Feature>
-
-            <Feature Id='Shortcuts' AllowAdvertise='no' Title='Shortcuts' Description='Add shortcuts to yass'>
-                <ComponentGroupRef Id='exe_yass' />
-                <ComponentGroupRef Id='exe_shortcut' Primary='yes'/>
+                <ComponentGroupRef Id='exe_shortcut' />
             </Feature>
         </Feature>
 
