@@ -941,6 +941,21 @@ func generateMsi(output string, dllPaths []string, licensePaths []string) {
 	cmdRun([]string{"light.exe", "-ext", "WixUIExtension", "-out", output, "-cultures:en-US", "-sice:ICE03", "-sice:ICE57", "-sice:ICE61", "yass.wixobj"}, true)
 }
 
+func generateNSIS(output string) {
+	nsiTemplate, err := ioutil.ReadFile(filepath.Join("..", "yass.nsi"))
+	if err != nil {
+		glog.Fatalf("%v", err)
+	}
+	nsiContent := string(nsiTemplate)
+	nsiContent = strings.Replace(nsiContent, "yass-installer.exe", output, 1)
+	err = ioutil.WriteFile("yass.nsi", []byte(nsiContent), 0666)
+	if err != nil {
+		glog.Fatalf("%v", err)
+	}
+	glog.Info("Feeding NSIS compiler...")
+	cmdRun([]string{"C:\\Program Files (x86)\\NSIS\\makensis.exe", "/XSetCompressor /FINAL lzma", "yass.nsi"}, true)
+}
+
 func postStateArchives() map[string][]string {
 	glog.Info("PostState -- Archives")
 	glog.Info("======================================================================")
@@ -978,10 +993,12 @@ func postStateArchives() map[string][]string {
 	}
 
 	msiArchive := fmt.Sprintf(archiveFormat, APPNAME, "", ".msi")
+	nsisArchive := fmt.Sprintf(archiveFormat, APPNAME, "-installer", ".exe")
 	debugArchive := fmt.Sprintf(archiveFormat, APPNAME, "-debuginfo", ext)
 
 	archive = filepath.Join("..", archive)
 	msiArchive = filepath.Join("..", msiArchive)
+	nsisArchive = filepath.Join("..", nsisArchive)
 	debugArchive = filepath.Join("..", debugArchive)
 
 	archives := map[string][]string{}
@@ -1006,6 +1023,11 @@ func postStateArchives() map[string][]string {
 	if systemNameFlag == "windows" && msvcTargetArchFlag != "arm64" {
 		generateMsi(msiArchive, dllPaths, licensePaths)
 		archives[msiArchive] = []string{msiArchive}
+	}
+	// nsis installer
+	if systemNameFlag == "windows" && msvcTargetArchFlag != "arm64" {
+		generateNSIS(nsisArchive)
+		archives[nsisArchive] = []string{nsisArchive}
 	}
 	// debuginfo file
 	if systemNameFlag == "windows" {
