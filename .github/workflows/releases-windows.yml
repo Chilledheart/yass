@@ -232,4 +232,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          gh release upload ${{ github.event.release.tag_name }} *.msi *.zip
+          gh release upload ${{ github.event.release.tag_name }} *.msi *.exe *.zip

@@ -1038,7 +1038,7 @@ func get7zPath() string {
 func inspectArchive(file string, files []string) {
 	if strings.HasSuffix(file, ".dmg") {
 		cmdRun([]string{"hdiutil", "imageinfo", file}, false)
-	} else if strings.HasSuffix(file, ".zip") || strings.HasSuffix(file, ".msi") {
+	} else if strings.HasSuffix(file, ".zip") || strings.HasSuffix(file, ".msi") || strings.HasSuffix(file, ".exe") {
 		p7z := get7zPath()
 		cmdRun([]string{p7z, "l", file}, false)
 	} else if strings.HasSuffix(file, ".tgz") {
