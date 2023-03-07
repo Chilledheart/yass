@@ -17,7 +17,8 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 //
 // Icon
 //
-IDR_MAINFRAME       ICON    DISCARDABLE     "yass.ico"
+IDI_APPICON        ICON    "yass.ico"
+IDI_TRAYICON       ICON    "yass-tray.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //

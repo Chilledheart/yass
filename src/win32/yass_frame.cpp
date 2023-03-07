@@ -7,6 +7,9 @@
 #include <iomanip>
 #include <sstream>
 
+#include <commctrl.h>
+#include <shellapi.h>
+#include <strsafe.h>
 #include <windowsx.h>
 
 #include "cli/cli_connection_stats.hpp"
@@ -174,6 +177,50 @@ HWND CreateStatusBar(HWND pParentWnd,
   LocalFree(hloc);
   return hWnd;
 }
+// Use a guid to uniquely identify our icon
+class __declspec(uuid("4324603D-4274-47AA-BAD5-7CF638A863C6")) TrayIcon;
+
+BOOL AddNotificationIcon(HWND hwnd, HINSTANCE hInstance) {
+  // Add Notification Icon
+  NOTIFYICONDATAW nid = {sizeof(nid)};
+  nid.hWnd = hwnd;
+  nid.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE | NIF_SHOWTIP | NIF_GUID;
+  nid.guidItem = __uuidof(TrayIcon);
+  nid.uCallbackMessage = WMAPP_NOTIFYCALLBACK;
+  LoadIconMetric(hInstance, MAKEINTRESOURCE(IDI_TRAYICON), LIM_SMALL, &nid.hIcon);
+  wcscpy(nid.szTip, L"Show YASS");
+  Shell_NotifyIcon(NIM_ADD, &nid);
+
+  // NOTIFICATION_VERSION_4 is perfered
+  nid.uVersion = NOTIFYICON_VERSION_4;
+  return Shell_NotifyIcon(NIM_SETVERSION, &nid);
+}
+
+BOOL UpdateNotificationIcon(HINSTANCE hInstance, UINT uDpi) {
+  // Add Notification Icon
+  NOTIFYICONDATAW nid = {sizeof(nid)};
+  nid.uFlags = NIF_ICON | NIF_GUID;
+  nid.guidItem = __uuidof(TrayIcon);
+  LoadIconMetric(hInstance, MAKEINTRESOURCE(IDI_TRAYICON),
+                 uDpi > 96 ? LIM_LARGE : LIM_SMALL, &nid.hIcon);
+  return Shell_NotifyIcon(NIM_MODIFY, &nid);
+}
+
+BOOL DeleteNotificationIcon() {
+  NOTIFYICONDATA nid = {sizeof(nid)};
+  nid.uFlags = NIF_GUID;
+  nid.guidItem = __uuidof(TrayIcon);
+  return Shell_NotifyIcon(NIM_DELETE, &nid);
+}
+
+BOOL RestoreTooltip() {
+  // After the balloon is dismissed, restore the tooltip.
+  NOTIFYICONDATA nid = {sizeof(nid)};
+  nid.uFlags = NIF_SHOWTIP | NIF_GUID;
+  nid.guidItem = __uuidof(TrayIcon);
+  return Shell_NotifyIcon(NIM_MODIFY, &nid);
+}
+
 } // namespace
 
 static CYassFrame* mFrame;
@@ -190,10 +237,10 @@ int CYassFrame::Create(const wchar_t* className,
   // FIXME
   mFrame = this;
 
+  m_hInstance = hInstance;
   m_hWnd = CreateWindowExW(0, className, title, dwStyle, rect.left, rect.top,
                            rect.right - rect.left, rect.bottom - rect.top,
                            nullptr, nullptr, hInstance, nullptr);
-  m_hInstance = hInstance;
 
   SetWindowLongPtrW(m_hWnd, GWLP_HINSTANCE, reinterpret_cast<LPARAM>(hInstance));
 
@@ -346,6 +393,9 @@ void CYassFrame::CentreWindow() {
 LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam,
                                      LPARAM lParam) {
   switch (msg) {
+    case WM_CREATE:
+      AddNotificationIcon(hWnd, mFrame->m_hInstance);
+      break;
     case WM_NCCREATE: {
       // Enable per-monitor DPI scaling for caption, menu, and top-level
       // scroll bars.
@@ -367,6 +417,7 @@ LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam,
     case WM_QUERYENDSESSION:
       return static_cast<INT_PTR>(mFrame->OnQueryEndSession());
     case WM_DESTROY:
+      DeleteNotificationIcon();
       PostQuitMessage(0);
       break;
     case WM_DPICHANGED:
@@ -408,6 +459,32 @@ LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam,
           return DefWindowProc(hWnd, msg, wParam, lParam);
       }
       break;
+    case WMAPP_NOTIFYCALLBACK: {
+        switch(LOWORD(lParam)) {
+        case NIN_SELECT:
+          // for NOTIFYICON_VERSION_4 clients, NIN_SELECT is prerable to listening to mouse clicks and key presses
+          // directly.
+          if (IsWindowVisible(mFrame->m_hWnd)) {
+            ShowWindow(mFrame->m_hWnd, SW_HIDE);
+          } else {
+            ShowWindow(mFrame->m_hWnd, SW_SHOW);
+          }
+          break;
+
+        case NIN_BALLOONTIMEOUT:
+          RestoreTooltip();
+          break;
+
+        case NIN_BALLOONUSERCLICK:
+          RestoreTooltip();
+          break;
+
+        case WM_CONTEXTMENU:
+          break;
+        }
+        break;
+      break;
+    }
     default:
       return DefWindowProc(hWnd, msg, wParam, lParam);
   }
@@ -731,6 +808,7 @@ LRESULT CYassFrame::OnDPIChanged(WPARAM w, LPARAM l) {
                SWP_NOZORDER | SWP_NOACTIVATE);
 
   UpdateLayoutForDpi(uDpi);
+  UpdateNotificationIcon(m_hInstance, uDpi);
   return 0;
 }
 

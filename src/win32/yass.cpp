@@ -131,7 +131,7 @@ BOOL CYassApp::InitInstance() {
   wndcls.lpfnWndProc = &CYassFrame::WndProc;
   wndcls.cbClsExtra = wndcls.cbWndExtra = 0;
   wndcls.hInstance = m_hInstance;
-  wndcls.hIcon = LoadIconW(m_hInstance, MAKEINTRESOURCE(IDR_MAINFRAME));
+  wndcls.hIcon = LoadIconW(m_hInstance, MAKEINTRESOURCE(IDI_APPICON));
   wndcls.hCursor = LoadCursor(nullptr, IDC_ARROW);
   wndcls.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_BTNFACE + 1);
   wndcls.lpszMenuName = MAKEINTRESOURCE(IDR_MAINFRAME);
@@ -146,7 +146,7 @@ BOOL CYassApp::InitInstance() {
   RECT rect{0, 0, MULDIVDPI(500), MULDIVDPI(400)};
 
   // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow
-  int nCmdShow = absl::GetFlag(FLAGS_background) ? SW_SHOWMINIMIZED : SW_SHOW;
+  int nCmdShow = absl::GetFlag(FLAGS_background) ? SW_HIDE : SW_SHOW;
   if (!frame_->Create(className, frame_name.c_str(),
                       WS_MINIMIZEBOX | WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
                       rect, m_hInstance, nCmdShow)) {
