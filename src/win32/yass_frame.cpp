@@ -23,6 +23,7 @@
 #define WM_DPICHANGED 0x02E0
 #endif
 
+#define TRAY_ICON_ID 0x100
 // Use a guid to uniquely identify our icon
 #ifdef COMPILER_MSVC
 class __declspec(uuid("4324603D-4274-47AA-BAD5-7CF638A863C6")) TrayIcon;
@@ -190,43 +191,69 @@ HWND CreateStatusBar(HWND pParentWnd,
 
 BOOL AddNotificationIcon(HWND hwnd, HINSTANCE hInstance) {
   // Add Notification Icon
-  NOTIFYICONDATAW nid = {sizeof(nid)};
+  NOTIFYICONDATAW nid = {};
+  nid.cbSize = sizeof(nid);
   nid.hWnd = hwnd;
+  wcscpy(nid.szTip, L"Show YASS");
+#if _WIN32_WINNT >= 0x0600
   nid.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE | NIF_SHOWTIP | NIF_GUID;
   nid.guidItem = __uuidof(TrayIcon);
-  nid.uCallbackMessage = WMAPP_NOTIFYCALLBACK;
   LoadIconMetric(hInstance, MAKEINTRESOURCE(IDI_TRAYICON), LIM_SMALL, &nid.hIcon);
-  wcscpy(nid.szTip, L"Show YASS");
+#else
+  nid.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE;
+  nid.uID = TRAY_ICON_ID;
+  nid.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_TRAYICON));
+#endif
+  nid.uCallbackMessage = WMAPP_NOTIFYCALLBACK;
   Shell_NotifyIcon(NIM_ADD, &nid);
-
+#if _WIN32_WINNT >= 0x0600
   // NOTIFICATION_VERSION_4 is perfered
   nid.uVersion = NOTIFYICON_VERSION_4;
   return Shell_NotifyIcon(NIM_SETVERSION, &nid);
+#else
+  return TRUE;
+#endif
 }
 
 BOOL UpdateNotificationIcon(HINSTANCE hInstance, UINT uDpi) {
+#if _WIN32_WINNT >= 0x0600
   // Add Notification Icon
-  NOTIFYICONDATAW nid = {sizeof(nid)};
+  NOTIFYICONDATAW nid = {};
+  nid.cbSize = sizeof(nid);
   nid.uFlags = NIF_ICON | NIF_GUID;
   nid.guidItem = __uuidof(TrayIcon);
   LoadIconMetric(hInstance, MAKEINTRESOURCE(IDI_TRAYICON),
                  uDpi > 96 ? LIM_LARGE : LIM_SMALL, &nid.hIcon);
   return Shell_NotifyIcon(NIM_MODIFY, &nid);
+#else
+  return TRUE;
+#endif
 }
 
-BOOL DeleteNotificationIcon() {
-  NOTIFYICONDATA nid = {sizeof(nid)};
+BOOL DeleteNotificationIcon(HWND hwnd) {
+  NOTIFYICONDATAW nid = {};
+  nid.cbSize = sizeof(nid);
+  nid.hWnd = hwnd;
+#if _WIN32_WINNT >= 0x0600
   nid.uFlags = NIF_GUID;
   nid.guidItem = __uuidof(TrayIcon);
+#else
+  nid.uID = TRAY_ICON_ID;
+#endif
   return Shell_NotifyIcon(NIM_DELETE, &nid);
 }
 
 BOOL RestoreTooltip() {
+#if _WIN32_WINNT >= 0x0600
   // After the balloon is dismissed, restore the tooltip.
-  NOTIFYICONDATA nid = {sizeof(nid)};
+  NOTIFYICONDATAW nid = {};
+  nid.cbSize = sizeof(nid);
   nid.uFlags = NIF_SHOWTIP | NIF_GUID;
   nid.guidItem = __uuidof(TrayIcon);
   return Shell_NotifyIcon(NIM_MODIFY, &nid);
+#else
+  return TRUE;
+#endif
 }
 
 } // namespace
@@ -425,7 +452,7 @@ LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam,
     case WM_QUERYENDSESSION:
       return static_cast<INT_PTR>(mFrame->OnQueryEndSession());
     case WM_DESTROY:
-      DeleteNotificationIcon();
+      LOG(WARNING) << DeleteNotificationIcon(mFrame->m_hWnd);
       PostQuitMessage(0);
       break;
     case WM_DPICHANGED:
@@ -469,7 +496,12 @@ LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam,
       break;
     case WMAPP_NOTIFYCALLBACK: {
         switch(LOWORD(lParam)) {
+#if _WIN32_WINNT >= 0x0600
         case NIN_SELECT:
+#else
+        case WM_LBUTTONDOWN:
+        case WM_RBUTTONDOWN:
+#endif
           // for NOTIFYICON_VERSION_4 clients, NIN_SELECT is prerable to listening to mouse clicks and key presses
           // directly.
           if (IsWindowVisible(mFrame->m_hWnd)) {
@@ -487,7 +519,12 @@ LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam,
           RestoreTooltip();
           break;
 
+#if _WIN32_WINNT >= 0x0600
         case WM_CONTEXTMENU:
+#else
+        case WM_LBUTTONUP:
+        case WM_RBUTTONUP:
+#endif
           break;
         }
         break;
