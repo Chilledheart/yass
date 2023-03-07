@@ -9,7 +9,6 @@
 
 #include <commctrl.h>
 #include <shellapi.h>
-#include <strsafe.h>
 #include <windowsx.h>
 
 #include "cli/cli_connection_stats.hpp"
@@ -22,6 +21,17 @@
 // https://docs.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged
 #ifndef WM_DPICHANGED
 #define WM_DPICHANGED 0x02E0
+#endif
+
+// Use a guid to uniquely identify our icon
+#ifdef COMPILER_MSVC
+class __declspec(uuid("4324603D-4274-47AA-BAD5-7CF638A863C6")) TrayIcon;
+#else
+DEFINE_GUID(CLSID_TrayIcon, 0x4324603D, 0x4274, 0x47AA, 0xBA, 0xD5, 0x7C, 0xF6, 0x38, 0xA8, 0x63, 0xC6);
+class DECLSPEC_UUID("4324603D-4274-47AA-BAD5-7CF638A863C6") TrayIcon;
+#ifdef __CRT_UUID_DECL
+__CRT_UUID_DECL(TrayIcon, 0x4324603D, 0x4274, 0x47AA, 0xBA, 0xD5, 0x7C, 0xF6, 0x38, 0xA8, 0x63, 0xC6);
+#endif
 #endif
 
 #define INITIAL_COLUMN_ONE_LEFT 20
@@ -177,8 +187,6 @@ HWND CreateStatusBar(HWND pParentWnd,
   LocalFree(hloc);
   return hWnd;
 }
-// Use a guid to uniquely identify our icon
-class __declspec(uuid("4324603D-4274-47AA-BAD5-7CF638A863C6")) TrayIcon;
 
 BOOL AddNotificationIcon(HWND hwnd, HINSTANCE hInstance) {
   // Add Notification Icon
