@@ -1,0 +1,21 @@
+1. Download acextract from https://github.com/bartoszj/acextract
+2. Extract png from cat
+./acextract -i /System/Library/PreferencePanes/Network.prefPane/Contents/Resources/Assets.car -o network
+3. install imagemagick
+brew install imagemagick
+4. convert to ico
+convert network/NetworkPrefPane16x16.png \
+        network/NetworkPrefPane16x16@2x.png \
+        network/NetworkPrefPane32x32.png \
+        network/NetworkPrefPane32x32@2x.png \
+        yass-tray.ico
+convert network/NetworkPrefPane32x32.png \
+        network/NetworkPrefPane32x32@2x.png \
+        network/NetworkPrefPane128x128.png \
+        network/NetworkPrefPane128x128@2x.png \
+        yass.ico
+convert network/NetworkPrefPane256x256.png \
+        network/NetworkPrefPane256x256@2x.png \
+        network/NetworkPrefPane512x512.png \
+        network/NetworkPrefPane512x512@2x.png \
+        yass-large.ico
