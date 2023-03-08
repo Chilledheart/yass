@@ -18,8 +18,8 @@ else()
   set(COMPILER_GCC FALSE)
 endif()
 
-if (COMPILER_GCC AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 11.0)
-  message(FATAL_ERROR "Requires GCC 11.0 or newer to compile libc++ from source")
+if (COMPILER_GCC)
+  message(FATAL_ERROR "GCC is no longer supported to compile libc++ from source")
 endif()
 
 # This is included by reference in the //build/config/compiler:runtime_library
