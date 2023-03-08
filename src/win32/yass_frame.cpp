@@ -23,6 +23,7 @@
 #define WM_DPICHANGED 0x02E0
 #endif
 
+// https://github.com/microsoft/Windows-classic-samples/blob/main/Samples/Win7Samples/winui/shell/appshellintegration/NotificationIcon/NotificationIcon.cpp
 #define TRAY_ICON_ID 0x100
 // Use a guid to uniquely identify our icon
 #ifdef COMPILER_MSVC
@@ -250,6 +251,28 @@ BOOL RestoreTooltip() {
 #else
   return TRUE;
 #endif
+}
+
+void ShowContextMenu(HINSTANCE hInstance, HWND hwnd, POINT pt) {
+  HMENU hMenu = LoadMenu(hInstance, MAKEINTRESOURCE(IDC_CONTEXTMENU));
+  if (hMenu) {
+    HMENU hSubMenu = GetSubMenu(hMenu, 0);
+    if (hSubMenu) {
+      // our window must be foreground before calling TrackPopupMenu or the menu will not disappear when the user clicks away
+      SetForegroundWindow(hwnd);
+
+      // respect menu drop alignment
+      UINT uFlags = TPM_RIGHTBUTTON;
+      if (GetSystemMetrics(SM_MENUDROPALIGNMENT) != 0) {
+        uFlags |= TPM_RIGHTALIGN;
+      } else {
+        uFlags |= TPM_LEFTALIGN;
+      }
+
+      TrackPopupMenuEx(hSubMenu, uFlags, pt.x, pt.y, hwnd, NULL);
+    }
+    DestroyMenu(hMenu);
+  }
 }
 
 } // namespace
@@ -486,8 +509,7 @@ LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam,
 #if _WIN32_WINNT >= 0x0600
         case NIN_SELECT:
 #else
-        case WM_LBUTTONDOWN:
-        case WM_RBUTTONDOWN:
+        case WM_LBUTTONUP:
 #endif
           // for NOTIFYICON_VERSION_4 clients, NIN_SELECT is prerable to listening to mouse clicks and key presses
           // directly.
@@ -508,10 +530,16 @@ LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam,
 
 #if _WIN32_WINNT >= 0x0600
         case WM_CONTEXTMENU:
+          {
+            POINT const pt = { LOWORD(wParam), HIWORD(wParam) };
 #else
-        case WM_LBUTTONUP:
         case WM_RBUTTONUP:
+          {
+            POINT pt;
+            GetCursorPos(&pt);
 #endif
+            ShowContextMenu(mFrame->m_hInstance, mFrame->m_hWnd, pt);
+          }
           break;
         }
         break;
