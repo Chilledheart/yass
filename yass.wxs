@@ -19,7 +19,7 @@
     <?endif ?>
 
     <Product Name='$(var.ProductName)' Id='YOURGUID' UpgradeCode='83F393F8-069C-4FF2-94D5-A40ACFDCF603'
-      Language='1033' Codepage='1252' Version='1.2.6' Manufacturer='Chilledheart.'>
+      Language='1033' Codepage='1252' Version='1.2.7' Manufacturer='Chilledheart.'>
 
         <Package InstallerVersion='$(var.MinimumInstallerVersion)' Compressed='yes' InstallScope='perMachine' Platform='$(var.Platform)' />
 
