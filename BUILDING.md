@@ -149,8 +149,11 @@ sudo apt-get install -y \
     libgtk-3-dev
 ```
 
-Notes: please make sure you have [GCC] (11.0 or above) or [Clang] (12.0 or above) and [CMake] (3.12 or above).
-  You might want to give these APT/PPA sites a look if the requirements are not meet:
+Notes: please make sure you have [GCC] (7.1 or above) or [Clang] (12.0 or above) and [CMake] (3.12 or above).
+
+For [GCC], cmake argument `-DUSE_LIBCXX=off` should be passed to disable libc++ build under gcc.
+
+You might want to give these APT/PPA sites a look if the requirements are not meet:
 
 * [PPA for Ubuntu Toolchain](https://launchpad.net/~ubuntu-toolchain-r/+archive/ubuntu/test)
 * [Kitware CMake](https://apt.kitware.com/)
@@ -189,8 +192,10 @@ sudo yum install -y \
 ```
 
 Notes: please make sure you have [GCC] (7.1 or above) or [Clang] (12.0 or above) and [CMake] (3.12 or above).
-  For [GCC], cmake argument `-DUSE_LIBCXX=off` should be passed to disable libc++ build under gcc.
-  You might want to enable CodeReady (for RHEL), PowerTools (for CentOS) and EPEL repo before above commands:
+
+For [GCC], cmake argument `-DUSE_LIBCXX=off` should be passed to disable libc++ build under gcc.
+
+You might want to enable CodeReady (for RHEL), PowerTools (for CentOS) and EPEL repo before above commands:
 
 * CodeReady (for RHEL 7):
 ```
