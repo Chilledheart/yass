@@ -188,7 +188,8 @@ sudo yum install -y \
     golang
 ```
 
-Notes: please make sure you have [GCC] (11.0 or above) or [Clang] (12.0 or above) and [CMake] (3.12 or above).
+Notes: please make sure you have [GCC] (7.1 or above) or [Clang] (12.0 or above) and [CMake] (3.12 or above).
+  For [GCC], cmake argument `-DUSE_LIBCXX=off` should be passed to disable libc++ build under gcc.
   You might want to enable CodeReady (for RHEL), PowerTools (for CentOS) and EPEL repo before above commands:
 
 * CodeReady (for RHEL 7):
