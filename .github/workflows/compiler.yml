@@ -241,6 +241,9 @@ jobs:
         compiler: [gcc, clang]
         build_type: [Release]
         cxxruntime: [libstdc++, libc++]
+        exclude:
+          - compiler: gcc
+            cxxruntime: libc++
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
@@ -284,9 +287,6 @@ jobs:
             clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/lib/clang/12.0.1/include \
             clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/{clang,clang++,clang-12,ld.lld,lld,llvm-ar,llvm-ranlib}
           rm -f *.xz
-      - name: "Install dependency: gcc 11"
-        if: ${{ matrix.compiler == 'gcc' }}
-        run: sudo add-apt-repository ppa:ubuntu-toolchain-r/test && sudo apt-get update -qq && sudo apt-get install -y gcc-11 g++-11
       - name: Populate depedencies
         run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build libgtk-3-dev libncurses5
       - name: Set build options
@@ -294,19 +294,12 @@ jobs:
           if [ "${{ matrix.compiler }}" = "clang" ]; then
             echo "CC=${{ github.workspace }}/third_party/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/clang" >> $GITHUB_ENV
             echo "CXX=${{ github.workspace }}/third_party/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/clang++" >> $GITHUB_ENV
-          else
-            echo CC=gcc-11 >> $GITHUB_ENV
-            echo CXX=g++-11 >> $GITHUB_ENV
           fi
           if [ "${{ matrix.cxxruntime }}" = "libc++" ]; then
             echo build_opts="${{ env.build_opts }} -use-libcxx=1" >> $GITHUB_ENV
           else
             echo build_opts="${{ env.build_opts }} -use-libcxx=0" >> $GITHUB_ENV
           fi
-      - name: Patch libcxx for gcc
-        run: |
-          cd third_party/libc++/trunk
-          patch -p1 < ../gcc-using-if-exist.patch
       - name: Build
         run: |
           ./tools/build -no-packaging ${{ env.build_opts }} -build-test
