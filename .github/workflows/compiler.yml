@@ -234,7 +234,7 @@ jobs:
           cd build
           yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=50 --gtest_throw_on_failure
   linux-compiler-compatible:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -284,9 +284,9 @@ jobs:
             clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/lib/clang/12.0.1/include \
             clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/{clang,clang++,clang-12,ld.lld,lld,llvm-ar,llvm-ranlib}
           rm -f *.xz
-      - name: "Install dependency: gcc 11"
+      - name: "Install dependency: gcc 12"
         if: ${{ matrix.compiler == 'gcc' }}
-        run: sudo add-apt-repository ppa:ubuntu-toolchain-r/test && sudo apt-get update -qq && sudo apt-get install -y gcc-11 g++-11
+        run: sudo apt-get update -qq && sudo apt-get install -y gcc-12 g++-12
       - name: Populate depedencies
         run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build libgtk-3-dev libncurses5
       - name: Set build options
@@ -295,8 +295,8 @@ jobs:
             echo "CC=${{ github.workspace }}/third_party/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/clang" >> $GITHUB_ENV
             echo "CXX=${{ github.workspace }}/third_party/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/clang++" >> $GITHUB_ENV
           else
-            echo CC=gcc-11 >> $GITHUB_ENV
-            echo CXX=g++-11 >> $GITHUB_ENV
+            echo CC=gcc-12 >> $GITHUB_ENV
+            echo CXX=g++-12 >> $GITHUB_ENV
           fi
           if [ "${{ matrix.cxxruntime }}" = "libc++" ]; then
             echo build_opts="${{ env.build_opts }} -use-libcxx=1" >> $GITHUB_ENV
