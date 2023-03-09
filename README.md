@@ -34,7 +34,8 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
   * [Screenshot on Windows 11](#screenshot-on-windows-11)
   * [Screenshot on Windows 7](#screenshot-on-windows-7)
   * [Screenshot on Windows XP](#screenshot-on-windows-xp)
-  * [Screenshot on Ubuntu 16.04](#screenshot-on-ubuntu-1604)
+  * [Screenshot on Ubuntu 20.04](#screenshot-on-ubuntu-2004)
+  * [Screenshot on CentOS 7](#screenshot-on-centos-7)
   * [Screenshot on FreeBSD](#screenshot-on-freebsd)
 - [Client Protocols Supported](#client-protocols-supported)
 - [Build from Source](#build-from-source)
@@ -94,16 +95,19 @@ Server-side features compared with caddy+forwardproxy
 <img width="484" alt="snapshot-macos" src="https://user-images.githubusercontent.com/54673341/223671134-a42974b5-9801-4999-bbbf-740e409ae708.png">
 
 ### Screenshot on Windows 11
-<img width="484" alt="snapshot-win11" src="https://user-images.githubusercontent.com/54673341/151115838-4deb128c-4c51-4a3c-9758-4f58da47984e.png">
+<img width="484" alt="snapshot-win11" src="https://user-images.githubusercontent.com/54673341/223904001-c56e1fbc-26d1-4f67-863b-4d6d0a032da6.png">
 
 ### Screenshot on Windows 7
-<img width="484" alt="snapshot-win7" src="https://user-images.githubusercontent.com/54673341/151115815-dd8cfdf4-f5b0-4313-956b-125c35a54d6f.png">
+<img width="484" alt="snapshot-win7" src="https://user-images.githubusercontent.com/54673341/223904030-9e404d12-924d-42f7-988e-83e9433aa173.png">
 
 ### Screenshot on Windows XP
-<img width="484" alt="snapshot-winxp" src="https://user-images.githubusercontent.com/54673341/151115871-218610b6-413c-4c00-827b-3fdffc241b65.png">
+<img width="484" alt="snapshot-winxp" src="https://user-images.githubusercontent.com/54673341/223904060-5e84a623-337f-4446-9a18-d710f2089dea.png">
 
-### Screenshot on Ubuntu 16.04
-<img width="484" alt="snapshot-ubuntu" src="https://user-images.githubusercontent.com/54673341/151591522-d86248f7-763f-432e-9dd8-fd16317d477b.png">
+### Screenshot on Ubuntu 20.04
+<img width="484" alt="snapshot-ubuntu" src="https://user-images.githubusercontent.com/54673341/223904103-b20361a4-b704-4575-9244-9839b3aa3384.png">
+
+### Screenshot on CentOS 7
+<img width="484" alt="snapshot-centos" src="https://user-images.githubusercontent.com/54673341/223904439-a8187be2-17a1-43a4-81e4-2258db36c690.png">
 
 ### Screenshot on FreeBSD
 <img width="484" alt="snapshot-freebsd" src="https://user-images.githubusercontent.com/54673341/158511519-493f1a40-97c5-4748-a530-fe8e4b3c2ce1.jpg">
