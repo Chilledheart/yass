@@ -110,7 +110,7 @@ Server-side features compared with caddy+forwardproxy
 <img width="484" alt="snapshot-centos" src="https://user-images.githubusercontent.com/54673341/223904439-a8187be2-17a1-43a4-81e4-2258db36c690.png">
 
 ### Screenshot on FreeBSD
-<img width="484" alt="snapshot-freebsd" src="https://user-images.githubusercontent.com/54673341/158511519-493f1a40-97c5-4748-a530-fe8e4b3c2ce1.jpg">
+<img width="484" alt="snapshot-freebsd" src="https://user-images.githubusercontent.com/54673341/223905714-14c18b17-e11a-4f63-a8fb-83522f04cbed.png">
 
 ## Client Protocols Supported
 - Socks4 Proxy
