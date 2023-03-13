@@ -41,6 +41,7 @@ function(create_cross_target project_name target_name toolchain buildtype)
   set(use_server_flags "-DSERVER=${SERVER}")
   set(use_gui_flags "-DGUI=${GUI}")
   set(use_build_tests_flags "-DBUILD_TESTS=${BUILD_TESTS}")
+  set(use_build_benchmarks_flags "-DBUILD_BENCHMARKS=${BUILD_BENCHMARKS}")
 
   if (CMAKE_OSX_DEPLOYMENT_TARGET)
     set(osx_deployment_flags "-DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET}")
@@ -66,7 +67,8 @@ function(create_cross_target project_name target_name toolchain buildtype)
         ${CROSS_TOOLCHAIN_FLAGS_${project_name}_${target_name}}
         ${build_type_flags} ${linker_flag} ${allow_xp_flags} ${use_libcxx_flags}
         ${enable_lto_flags} ${enable_lld_flags} ${enable_gold_flags}
-        ${use_cli_flags} ${use_server_flags} ${use_gui_flags} ${use_build_tests_flags}
+        ${use_cli_flags} ${use_server_flags} ${use_gui_flags}
+        ${use_build_tests_flags} ${use_build_benchmarks_flags}
         ${osx_deployment_flags} ${osx_architectures_flags}
         ${ARGN}
     WORKING_DIRECTORY ${${project_name}_${target_name}_BUILD}
