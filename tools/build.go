@@ -160,7 +160,11 @@ func prebuildFindSourceDirectory() {
 	}
 
 	if systemNameFlag == "windows" && msvcTargetArchFlag != "" {
-		buildDir = fmt.Sprintf("build-msvc-%s-%s", msvcTargetArchFlag, msvcCrtLinkageFlag)
+		osSuffix := ""
+		if msvcAllowXpFlag {
+			osSuffix = "-winxp"
+		}
+		buildDir = fmt.Sprintf("build-msvc%s-%s-%s", osSuffix, msvcTargetArchFlag, msvcCrtLinkageFlag)
 	} else {
 		arch := archFlag
 		if systemNameFlag == "darwin" && macosxUniversalBuildFlag {
