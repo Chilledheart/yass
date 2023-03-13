@@ -363,12 +363,17 @@ if (CMAKE_OSX_ARCHITECTURES)
         USES_TERMINAL
         )
     endif()
+    if (BUILD_BENCHMARKS)
+      add_osx_univeral_target(yass_benchmark "${OSX_CROSS_ARCHITECTURES}" yass)
+    endif()
+
     # overrided default target with universal ones
     # turning them off
     set(CLI OFF)
     set(SERVER OFF)
     set(GUI OFF)
     set(BUILD_TESTS OFF)
+    set(BUILD_BENCHMARKS OFF)
     set(CMAKE_OSX_ARCHITECTURES ${CMAKE_SYSTEM_PROCESSOR})
   else()
     set(OSX_UNIVERSALBUILD OFF)
