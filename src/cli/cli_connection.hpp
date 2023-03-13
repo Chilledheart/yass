@@ -21,12 +21,17 @@
 #include "core/ss_request.hpp"
 #include "protocol.hpp"
 #include "stream.hpp"
-#include "quiche/http2/adapter/oghttp2_adapter.h"
 
 #include <absl/container/flat_hash_map.h>
 #include <absl/strings/string_view.h>
 #include <absl/strings/str_cat.h>
 #include <deque>
+
+#ifdef HAVE_NGHTTP2
+#include <quiche/http2/adapter/nghttp2_adapter.h>
+#else
+#include <quiche/http2/adapter/oghttp2_adapter.h>
+#endif
 
 namespace cli {
 
@@ -231,8 +236,11 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
                            absl::string_view metadata) override;
   bool OnMetadataEndForStream(StreamId stream_id) override;
   void OnErrorDebug(absl::string_view message) override {}
-
+#ifdef HAVE_NGHTTP2
+  http2::adapter::NgHttp2Adapter* adapter() { return adapter_.get(); }
+#else
   http2::adapter::OgHttp2Adapter* adapter() { return adapter_.get(); }
+#endif
 
  private:
   /// Get the state machine to the given state
@@ -282,12 +290,14 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   /// Write remaining buffers to stream
   void WriteStreamInPipe();
   /// Get next remaining buffer to stream
-  std::shared_ptr<IOBuf> GetNextDownstreamBuf(asio::error_code &ec);
+  std::shared_ptr<IOBuf> GetNextDownstreamBuf(asio::error_code &ec,
+                                              size_t *bytes_transferred);
 
   /// Write remaining buffers to channel
   void WriteUpstreamInPipe();
   /// Get next remaining buffer to channel
-  std::shared_ptr<IOBuf> GetNextUpstreamBuf(asio::error_code &ec);
+  std::shared_ptr<IOBuf> GetNextUpstreamBuf(asio::error_code &ec,
+                                            size_t *bytes_transferred);
 
   /// dispatch the command to delegate
   /// \param command command type
@@ -420,7 +430,11 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   std::unique_ptr<stream> channel_;
 
   /// the http2 upstream adapter
+#ifdef HAVE_NGHTTP2
+  std::unique_ptr<http2::adapter::NgHttp2Adapter> adapter_;
+#else
   std::unique_ptr<http2::adapter::OgHttp2Adapter> adapter_;
+#endif
   absl::flat_hash_map<std::string, std::string> request_map_;
 
   /// the queue to write downstream
@@ -448,7 +462,8 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   std::shared_ptr<IOBuf> pending_data_;
 
   /// encrypt data
-  std::shared_ptr<IOBuf> EncryptData(std::shared_ptr<IOBuf> buf);
+  void EncryptData(std::deque<std::shared_ptr<IOBuf>>* queue,
+                   std::shared_ptr<IOBuf> plaintext);
 
   /// encode cipher to perform data encoder for upstream
   std::unique_ptr<cipher> encoder_;
@@ -466,8 +481,8 @@ class CliConnectionFactory : public ConnectionFactory {
    scoped_refptr<ConnectionType> Create(Args&&... args) {
      return MakeRefCounted<ConnectionType>(std::forward<Args>(args)...);
    }
-   const char* Name() override { return "client"; };
-   const char* ShortName() override { return "client"; };
+   const char* Name() override { return "client"; }
+   const char* ShortName() override { return "client"; }
 };
 
 } // namespace cli

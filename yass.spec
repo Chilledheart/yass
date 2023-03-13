@@ -30,12 +30,15 @@ mkdir build
 cd build
 ENABLE_LLD=on
 [ "a$DISABLE_LLD" != "a" ] && ENABLE_LLD=off
-cmake3 -G Ninja -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DUSE_HOST_TOOLS=on -DGUI=on -DCLI=on -DSERVER=on -DENABLE_LLD="$ENABLE_LLD" ..
+cmake3 -G Ninja -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DUSE_HOST_TOOLS=on -DGUI=on -DCLI=on -DSERVER=on -DENABLE_LLD="$ENABLE_LLD" ..
 ninja
 cd ..
 
 %check
-ninja -C build check
+cd build
+./yass_test
+./yass_benchmark
+cd ..
 
 %install
 cd build

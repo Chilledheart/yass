@@ -266,7 +266,7 @@ std::string CYassApp::GetStatus() const {
     ss << "Disconnected with " << worker_.GetRemoteDomain();
   }
   return ss.str();
-};
+}
 
 void CYassApp::OnStart(bool quiet) {
   DWORD main_thread_id = GetCurrentThreadId();

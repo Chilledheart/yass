@@ -12,6 +12,8 @@
 
 #define _GNU_SOURCE 1  // needed for O_NOFOLLOW and pread()/pwrite()
 
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 #include <algorithm>
 #include <atomic>
 #include <cassert>

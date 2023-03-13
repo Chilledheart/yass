@@ -261,7 +261,8 @@ void cipher::process_bytes(std::shared_ptr<IOBuf> ciphertext) {
   chunk_->retreat(chunk_->headroom());
 }
 
-void cipher::encrypt(IOBuf* plaintext,
+void cipher::encrypt(const uint8_t* plaintext_data,
+                     size_t plaintext_size,
                      std::shared_ptr<IOBuf>* ciphertext) {
   *ciphertext = IOBuf::create(SOCKET_DEBUF_SIZE);
 
@@ -270,7 +271,7 @@ void cipher::encrypt(IOBuf* plaintext,
     init_ = true;
   }
 
-  size_t clen = 2 * tag_len_ + CHUNK_SIZE_LEN + plaintext->length();
+  size_t clen = 2 * tag_len_ + CHUNK_SIZE_LEN + plaintext_size;
 
   (*ciphertext)->reserve(0, clen);
 
@@ -279,7 +280,8 @@ void cipher::encrypt(IOBuf* plaintext,
   counter = counter_;
 
   // TBD better to apply MTU-like things
-  int ret = chunk_encrypt_frame(&counter, plaintext, ciphertext->get());
+  int ret = chunk_encrypt_frame(&counter, plaintext_data,
+                                plaintext_size, ciphertext->get());
   if (ret < 0) {
     visitor_->on_protocol_error();
     return;
@@ -398,11 +400,12 @@ int cipher::chunk_decrypt_frame(uint64_t* counter,
 }
 
 int cipher::chunk_encrypt_frame(uint64_t* counter,
-                                const IOBuf* plaintext,
+                                const uint8_t* plaintext_data,
+                                size_t plaintext_size,
                                 IOBuf* ciphertext) const {
   size_t tlen = tag_len_;
 
-  DCHECK_LE(plaintext->length(), CHUNK_SIZE_MASK);
+  DCHECK_LE(plaintext_size, CHUNK_SIZE_MASK);
 
   int err;
   size_t clen = CHUNK_SIZE_LEN + tlen;
@@ -414,7 +417,7 @@ int cipher::chunk_encrypt_frame(uint64_t* counter,
 
   static_assert(sizeof(len) == CHUNK_SIZE_LEN, "Chunk Size not matched");
 
-  len.cover = htons(plaintext->length() & CHUNK_SIZE_MASK);
+  len.cover = htons(plaintext_size & CHUNK_SIZE_MASK);
 
   VLOG(4) << "encrypt: 1st chunk: origin: " << CHUNK_SIZE_LEN
           << " encrypted: " << clen;
@@ -434,9 +437,9 @@ int cipher::chunk_encrypt_frame(uint64_t* counter,
 
   (*counter)++;
 
-  clen = plaintext->length() + tlen;
+  clen = plaintext_size + tlen;
 
-  VLOG(4) << "encrypt: 2nd chunk: origin: " << plaintext->length()
+  VLOG(4) << "encrypt: 2nd chunk: origin: " << plaintext_size
           << " encrypted: " << clen;
 
   ciphertext->reserve(0, clen);
@@ -444,13 +447,13 @@ int cipher::chunk_encrypt_frame(uint64_t* counter,
   memset(ciphertext->mutable_tail(), 0, clen);
 
   err = impl_->EncryptPacket(*counter, ciphertext->mutable_tail(), &clen,
-                             plaintext->data(), plaintext->length());
+                             plaintext_data, plaintext_size);
   if (err) {
     ciphertext->trimEnd(CHUNK_SIZE_LEN + tlen);
     return -EBADMSG;
   }
 
-  DCHECK_EQ(clen, plaintext->length() + tlen);
+  DCHECK_EQ(clen, plaintext_size + tlen);
 
   ciphertext->append(clen);
 

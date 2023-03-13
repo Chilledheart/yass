@@ -17,7 +17,7 @@ on:
         type: boolean
   pull_request:
   push:
-    branches: [master]
+    branches: [master, develop]
     paths-ignore: [README.md, BUILDING.md]
   release:
     types: [published]
@@ -90,7 +90,7 @@ jobs:
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-          tools\build -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -build-test || exit /b
+          tools\build -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -build-benchmark -build-test || exit /b
 
           exit /b 0
 
@@ -114,7 +114,7 @@ jobs:
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-          tools\build -nc -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -run-test -no-packaging || exit /b
+          tools\build -nc -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -run-benchmark -run-test -no-packaging || exit /b
 
           exit /b 0
 

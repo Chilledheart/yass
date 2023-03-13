@@ -77,7 +77,8 @@ class cipher {
 
   void process_bytes(std::shared_ptr<IOBuf> ciphertext);
 
-  void encrypt(IOBuf* plaintext,
+  void encrypt(const uint8_t* plaintext_data,
+               size_t plaintext_size,
                std::shared_ptr<IOBuf>* ciphertext);
 
  private:
@@ -90,7 +91,8 @@ class cipher {
                           IOBuf* ciphertext) const;
 
   int chunk_encrypt_frame(uint64_t* counter,
-                          const IOBuf* plaintext,
+                          const uint8_t* plaintext_data,
+                          size_t plaintext_size,
                           IOBuf* ciphertext) const;
 
   void set_key_aead(const uint8_t* salt, size_t salt_len);

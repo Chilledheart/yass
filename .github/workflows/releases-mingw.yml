@@ -17,7 +17,7 @@ on:
         type: boolean
   pull_request:
   push:
-    branches: [master]
+    branches: [master, develop]
     paths-ignore: [README.md, BUILDING.md]
   release:
     types: [published]
@@ -126,10 +126,10 @@ jobs:
         run: |
           mkdir build-mingw
           cd build-mingw
-          cmake -G Ninja -DGUI=on -DBUILD_TESTS=on .. \
+          cmake -G Ninja -DGUI=on -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on .. \
             -DCMAKE_TOOLCHAIN_FILE="$PWD/../MinGW.cmake" -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DCROSS_TOOLCHAIN_FLAGS_NATIVE=\"-DCMAKE_TOOLCHAIN_FILE=$PWD/../Native.cmake\"
-          ninja yass yass_test
+          ninja yass yass_benchmark yass_test
       - name: Packaging
         run: |
           export OBJCOPY="$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-objcopy"
@@ -173,6 +173,7 @@ jobs:
         run: |
           cd build-mingw
           wine yass_test.exe
+          wine yass_benchmark.exe
       - name: Upload dist tarball
         if: ${{ github.event_name == 'release' }}
         env:

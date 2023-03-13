@@ -29,6 +29,8 @@ var buildDir string
 var dryRunFlag bool
 var preCleanFlag bool
 var noPackagingFlag bool
+var buildBenchmarkFlag bool
+var runBenchmarkFlag bool
 var buildTestFlag bool
 var runTestFlag bool
 var verboseFlag int
@@ -101,6 +103,8 @@ func InitFlag() {
 	flag.BoolVar(&preCleanFlag, "pre-clean", true, "Clean the source tree before building")
 	flag.BoolVar(&flagNoPreClean, "nc", false, "Don't Clean the source tree before building")
 	flag.BoolVar(&noPackagingFlag, "no-packaging", false, "Skip packaging step")
+	flag.BoolVar(&buildBenchmarkFlag, "build-benchmark", false, "Build benchmarks")
+	flag.BoolVar(&runBenchmarkFlag, "run-benchmark", false, "Build and run benchmarks")
 	flag.BoolVar(&buildTestFlag, "build-test", false, "Build unittests")
 	flag.BoolVar(&runTestFlag, "run-test", false, "Build and run unittests")
 	flag.IntVar(&verboseFlag, "verbose", 0, "Run unittests with verbose level")
@@ -114,7 +118,7 @@ func InitFlag() {
 	flag.BoolVar(&clangTidyModeFlag, "clang-tidy-mode", getEnvBool("ENABLE_CLANG_TIDY", false), "Enable Clang Tidy Build")
 	flag.StringVar(&clangTidyExecutablePathFlag, "clang-tidy-executable-path", getEnv("CLANG_TIDY_EXECUTABLE", ""), "Path to clang-tidy, only used by Clang Tidy Build")
 
-	flag.StringVar(&macosxVersionMinFlag, "macosx-version-min", getEnv("MACOSX_DEPLOYMENT_TARGET", "10.10"), "Set Mac OS X deployment target, such as 10.9")
+	flag.StringVar(&macosxVersionMinFlag, "macosx-version-min", getEnv("MACOSX_DEPLOYMENT_TARGET", "10.14"), "Set Mac OS X deployment target, such as 10.15")
 	flag.BoolVar(&macosxUniversalBuildFlag, "macosx-universal-build", getEnvBool("ENABLE_OSX_UNIVERSAL_BUILD", true), "Enable Mac OS X Universal Build")
 	flag.StringVar(&macosxCodeSignIdentityFlag, "macosx-codesign-identity", getEnv("CODESIGN_IDENTITY", "-"), "Set Mac OS X CodeSign Identity")
 
@@ -353,6 +357,9 @@ func buildStageGenerateBuildScript() {
 	cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_BUILD_TYPE=%s", cmakeBuildTypeFlag))
 	cmakeArgs = append(cmakeArgs, "-G", "Ninja")
 	cmakeArgs = append(cmakeArgs, "-DUSE_HOST_TOOLS=on")
+	if buildBenchmarkFlag || runBenchmarkFlag {
+		cmakeArgs = append(cmakeArgs, "-DBUILD_BENCHMARKS=on")
+	}
 	if buildTestFlag || runTestFlag {
 		cmakeArgs = append(cmakeArgs, "-DBUILD_TESTS=on")
 	}
@@ -504,13 +511,23 @@ func buildStageExecuteBuildScript() {
 	glog.Info("======================================================================")
 	ninjaCmd := []string{"ninja", "-j", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), APPNAME}
 	cmdRun(ninjaCmd, true)
+	if buildBenchmarkFlag || runBenchmarkFlag {
+		ninjaCmd := []string{"ninja", "-j", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "yass_benchmark"}
+		cmdRun(ninjaCmd, true)
+	}
+	if runBenchmarkFlag {
+		benchmarkCmd := []string{"./yass_benchmark"}
+		if verboseFlag > 0 {
+			benchmarkCmd = []string{"./yass_benchmark", "-v", fmt.Sprintf("%d", verboseFlag), "-logtostderr"}
+		}
+		cmdRun(benchmarkCmd, true)
+	}
 	if buildTestFlag || runTestFlag {
 		ninjaCmd := []string{"ninja", "-j", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "yass_test"}
-		ninjaCmd = append(ninjaCmd)
 		cmdRun(ninjaCmd, true)
 	}
 	if runTestFlag {
-		checkCmd := []string{"ninja", "check"}
+		checkCmd := []string{"./yass_test"}
 		if verboseFlag > 0 {
 			checkCmd = []string{"./yass_test", "-v", fmt.Sprintf("%d", verboseFlag), "-logtostderr"}
 		}

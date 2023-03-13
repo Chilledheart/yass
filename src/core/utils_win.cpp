@@ -617,7 +617,7 @@ static void CheckDynamicLibraries() {
     if (std::end(kDllWhiteList) != std::find_if(
       std::begin(kDllWhiteList), std::end(kDllWhiteList),
       [&findData](const wchar_t* dll) {
-        return wcsicmp(dll, findData.cFileName) == 0;
+        return _wcsicmp(dll, findData.cFileName) == 0;
       })) {
       continue;
     }

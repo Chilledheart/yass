@@ -20,8 +20,11 @@
 #endif  // defined(_MSC_VER) && !defined(__clang__)
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+
+#if 0
+#define ASIO_ENABLE_HANDLER_TRACKING
+#endif
 
 #include <asio.hpp>
 #include <asio/ssl.hpp>
@@ -62,6 +65,6 @@ inline asio::ASIO_CONST_BUFFER const_buffer(const IOBuf& io_buf) ASIO_NOEXCEPT
   return asio::ASIO_CONST_BUFFER(io_buf.data(), io_buf.length());
 }
 
-void load_ca_to_ssl_ctx(asio::ssl::context &ssl_ctx);
+void load_ca_to_ssl_ctx(SSL_CTX* ssl_ctx);
 
 #endif  // H_CORE_ASIO

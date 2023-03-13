@@ -17,7 +17,7 @@ on:
         type: boolean
   pull_request:
   push:
-    branches: [master]
+    branches: [master, develop]
     paths-ignore: [README.md, BUILDING.md]
   release:
     types: [published]

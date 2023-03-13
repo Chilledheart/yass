@@ -96,7 +96,7 @@ namespace config {
 
 class ConfigImplPosix : public ConfigImpl {
  public:
-  ~ConfigImplPosix() override{};
+  ~ConfigImplPosix() override{}
 
  protected:
   bool OpenImpl(bool dontread) override {

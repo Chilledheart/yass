@@ -142,7 +142,7 @@ if(MSVC)
 endif()
 
 if (APPLE AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
-  set(CMAKE_OSX_DEPLOYMENT_TARGET "10.10")
+  set(CMAKE_OSX_DEPLOYMENT_TARGET "10.14")
 endif()
 
 enable_language(C)
@@ -154,6 +154,11 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
   set(COMPILER_CLANG TRUE)
 else()
   set(COMPILER_CLANG FALSE)
+endif()
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+  set(COMPILER_APPLE_CLANG TRUE)
+  add_definitions(-DHAVE_APPLE_CLANG)
 endif()
 
 if (COMPILER_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5.0)
@@ -225,7 +230,12 @@ option(BUILD_TESTS "Build with test." OFF)
 option(BUILD_BENCHMARKS "Build with benchmark." OFF)
 option(OPTIMIZED_PROTOC "Force protobuf compiler to be built with optimization" OFF)
 option(USE_LIBCXX "Build with libc++" ON)
-option(USE_NGHTTP2 "Build with libnghttp2" OFF)
+# blocked by memory sanitizer build
+if (NOT MSAN)
+  option(USE_NGHTTP2 "Build with libnghttp2" ON)
+else()
+  option(USE_NGHTTP2 "Build with libnghttp2" OFF)
+endif()
 option(USE_MOLD "Build with mold linker" OFF)
 option(USE_LLD "Build with lld linker" OFF)
 option(USE_GOLD "Build with gold linker" OFF)
@@ -468,8 +478,13 @@ if(UBSAN)
 endif()
 
 if(GCOV)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-arcs -ftest-coverage")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
+  if (COMPILER_CLANG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
+  else()
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-arcs -ftest-coverage")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
+  endif()
 endif()
 
 if (NOT MSAN AND NOT ASAN AND NOT TSAN AND NOT UBSAN)
@@ -730,7 +745,7 @@ if (LTO AND COMPILER_CLANG AND USE_MOLD)
   set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto=thin")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto=thin")
 
-  if (NOT APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
     # TODO(lgrey): Enable unit splitting for Mac when supported.
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -fsplit-lto-unit")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fsplit-lto-unit")
@@ -819,6 +834,8 @@ if (LTO AND COMPILER_CLANG AND USE_LLD)
         set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,-cache_path_lto,thinlto-cache")
         set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-cache_path_lto,thinlto-cache")
       endif()
+      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wcrl,object_path_lto")
+      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wcrl,object_path_lto")
       set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,--thinlto-cache-policy=${cache_policy}")
       set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,--thinlto-cache-policy=${cache_policy}")
     elseif (NOT APPLE)
@@ -1175,38 +1192,18 @@ if (COMPILER_CLANG)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-trigraphs")
 endif()
 
-# Before C++17, an `alignas(N)` type would be N-aligned on the stack,
-# but heap allocation would just return something aligned to whatever the
-# default allocator happens to return. Starting with C++17, operator new
-# called on aligned types with N > __STDCPP_DEFAULT_NEW_ALIGNMENT__ will
-# call a special overload that hands in the desired alignment, and that will
-# honor the alignas even for memory on the heap.
-# However, that requires that operator new overload to exist. At least on
-# macOS and iOS, they are in libc++abi, and system libc++abi has them as of
-# "macOS 10.12, iOS 10.0" (https://reviews.llvm.org/D112921#3128089).
-# However, we do statically link libc++abi, so maybe just explicitly passing
-# -faligned-allocation is enough to make things work.
-# For now, explicitly disable this feature though to keep the C++14 aligned
-# allocation behavior (and do that on all platforms so that we have
-# consistent behavior across platforms), to make the change more incremental.
-# GCC 6 series on Debian Stretch doesn't support it
-if (NOT COMPILER_GCC OR (COMPILER_GCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.0))
-  if (MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:alignedNew-")
-  else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-aligned-new")
-  endif()
-endif()
-
-if (APPLE)
-  add_definitions(-D_LIBCPP_HAS_NO_ALIGNED_ALLOCATION)
-endif()
-
 # Pass flag to LLD so Android builds can allow debuggerd to properly symbolize
 # stack crashes (http://crbug.com/919499).
 if (USE_LLD AND ANDROID)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-rosegment")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-rosegment")
+endif()
+
+# TODO(crbug.com/1374347): Cleanup undefined symbol errors caught by
+# --no-undefined-version.
+if (USE_LLD AND NOT WIN32 AND NOT APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16.0)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--undefined-version")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--undefined-version")
 endif()
 
 # LLD does call-graph-sorted binary layout by default when profile data is
@@ -1779,6 +1776,7 @@ if (BUILD_BENCHMARKS)
   set(BENCHMARK_FORCE_WERROR "OFF" CACHE STRING "")
   set(BENCHMARK_BUILD_32_BITS "OFF" CACHE STRING "")
   set(BENCHMARK_ENABLE_INSTALL "OFF" CACHE STRING "")
+  set(BENCHMARK_ENABLE_DOXYGEN "OFF" CACHE STRING "")
   set(BENCHMARK_INSTALL_DOCS "OFF" CACHE STRING "")
   set(BENCHMARK_DOWNLOAD_DEPENDENCIES "OFF" CACHE STRING "")
   set(BENCHMARK_ENABLE_GTEST_TESTS "OFF" CACHE STRING "")
@@ -1866,6 +1864,7 @@ endif()
 # *****************************************************************************************
 if (USE_NGHTTP2)
   message(STATUS "Compiling with libnghttp2")
+  add_definitions(-DHAVE_NGHTTP2)
   set(ENABLE_LIB_ONLY ON CACHE BOOL "")
   set(ENABLE_SHARED_LIB OFF CACHE BOOL "")
   set(ENABLE_STATIC_LIB ON CACHE BOOL "")
@@ -1905,13 +1904,15 @@ if (COMPILER_GCC OR COMPILER_CLANG)
     # as -Weverything, to match MSVC. Instead -W3 is the alias for -Wall.
     # See http://llvm.org/viewvc/llvm-project?view=revision&revision=319116
     set(C_CXX_FLAGS "${C_CXX_FLAGS} -W3 -Wno-unused-parameter")
-    # googletest suppresses warning C4996 via a pragma, but clang-cl does not
-    # honor it. Suppress it here to compensate. See https://crbug.com/772117.
-    set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wno-deprecated-declarations")
   elseif (ENABLE_CLANG_TIDY)
     set(C_CXX_FLAGS "${C_CXX_FLAGS} -fno-common")
   else()
     set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wall -fno-common")
+  endif()
+
+  # honor it. Suppress it here to compensate. See https://crbug.com/772117.
+  if (COMPILER_GCC AND USE_LIBCXX)
+    set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wno-deprecated-declarations")
   endif()
 
   if(COMPILER_CLANG)
@@ -1924,6 +1925,10 @@ if (COMPILER_GCC OR COMPILER_CLANG)
 
   if (COMPILER_CLANG OR CMAKE_C_COMPILER_VERSION VERSION_GREATER "7.0.0")
     set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wimplicit-fallthrough")
+  endif()
+
+  if (COMPILER_CLANG OR CMAKE_C_COMPILER_VERSION VERSION_GREATER "16.0.0")
+    set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wextra-semi")
   endif()
 
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${C_CXX_FLAGS} -Wmissing-prototypes -Wold-style-definition -Wstrict-prototypes")
@@ -2006,8 +2011,8 @@ if (COMPILER_GCC OR COMPILER_CLANG)
   # Don't warn about "maybe" uninitialized. Clang doesn't include this
   # in -Wall but gcc does, and it gives false positives.
   if (COMPILER_GCC)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-maybe-uninitialized -Wno-deprecated-declarations")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized -Wno-deprecated-declarations")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-maybe-uninitialized")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
   endif()
 
   # -Wcomment gives too many false positives in the case a
@@ -2197,6 +2202,10 @@ endif()
 
 set(files
     src/network.cpp
+    src/net/socket_bio_adapter.cpp
+    src/net/ssl_socket.cpp
+    src/net/ssl_server_socket.cpp
+    src/net/openssl_util.cpp
     src/config/config.cpp
     src/config/config_impl.cpp
     src/core/cipher.cpp
@@ -2266,6 +2275,13 @@ set(files
     )
 
 set(hfiles
+    src/network.hpp
+    src/net/socket_bio_adapter.hpp
+    src/net/ssl_socket.hpp
+    src/net/ssl_server_socket.hpp
+    src/net/net_errors.hpp
+    src/net/net_error_list.hpp
+    src/net/openssl_util.hpp
     src/config/config.hpp
     src/config/config_impl.hpp
     src/config/config_impl_posix.hpp
@@ -2395,20 +2411,20 @@ target_include_directories(yass_base PRIVATE
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party SYSTEM)
 
-if (CLI)
-  add_library(yass_cli_lib OBJECT
-      src/cli/cli_worker.cpp
-      src/cli/cli_connection.cpp
-      src/cli/cli_connection.hpp
-      src/cli/cli_connection_stats.cpp
-      src/cli/cli_connection_stats.hpp
-    )
-  target_include_directories(yass_cli_lib PRIVATE
-      ${CMAKE_CURRENT_SOURCE_DIR}/src)
+add_library(yass_cli_lib OBJECT
+  src/cli/cli_worker.cpp
+  src/cli/cli_connection.cpp
+  src/cli/cli_connection.hpp
+  src/cli/cli_connection_stats.cpp
+  src/cli/cli_connection_stats.hpp
+  )
+target_include_directories(yass_cli_lib PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+if (CLI)
   add_executable(yass_cli
-      src/cli/cli.cpp
-      )
+    src/cli/cli.cpp
+    )
 
   if (WIN32)
     set(CLI_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass_cli.manifest")
@@ -2417,29 +2433,29 @@ if (CLI)
   endif()
 
   target_include_directories(yass_cli PRIVATE
-      ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
   target_link_libraries(yass_cli PUBLIC
-      yass_cli_lib
-      yass_base
-      )
+    yass_cli_lib
+    yass_base
+    )
 
   if (NOT APPLE AND NOT MSVC)
     install(TARGETS yass_cli DESTINATION bin)
   endif()
 endif()
 
-if (SERVER)
-  add_library(yass_server_lib OBJECT
-      src/server/server_connection.cpp
-      src/server/server_connection.hpp
-    )
-  target_include_directories(yass_server_lib PRIVATE
-      ${CMAKE_CURRENT_SOURCE_DIR}/src)
+add_library(yass_server_lib OBJECT
+  src/server/server_connection.cpp
+  src/server/server_connection.hpp
+  )
+target_include_directories(yass_server_lib PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+if (SERVER)
   add_executable(yass_server
-      src/server/server.cpp
-      )
+    src/server/server.cpp
+    )
 
   if (WIN32)
     set(SERVER_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass_server.manifest")
@@ -2448,12 +2464,12 @@ if (SERVER)
   endif()
 
   target_include_directories(yass_server PRIVATE
-      ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
   target_link_libraries(yass_server PUBLIC
-      yass_server_lib
-      yass_base
-      )
+    yass_server_lib
+    yass_base
+    )
 
   if (NOT APPLE AND NOT MSVC)
     install(TARGETS yass_server DESTINATION bin)
@@ -2786,4 +2802,20 @@ if (BUILD_TESTS)
     COMMAND ${CMAKE_CURRENT_BINARY_DIR}/yass_test
     DEPENDS yass_test
     COMMENT "yass unittests")
+endif()
+
+if (BUILD_BENCHMARKS)
+  add_executable(yass_benchmark
+    src/ss_benchmark.cpp)
+  target_include_directories(yass_benchmark PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/src
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/cli
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/server
+      )
+  target_link_libraries(yass_benchmark PUBLIC
+      ${SUPPORT_LIBS}
+      yass_cli_lib
+      yass_server_lib
+      benchmark::benchmark
+      )
 endif()

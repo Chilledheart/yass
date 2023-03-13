@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022-2023 Chilledheart  */
+/* Copyright (c) 2023 Chilledheart  */
 
-#include <gtest/gtest.h>
-#include <gtest/gtest-message.h>
-
-#include <gmock/gmock.h>
+#include <benchmark/benchmark.h>
 
 #include <absl/debugging/failure_signal_handler.h>
 #include <absl/debugging/symbolize.h>
@@ -21,8 +18,6 @@
 #include "core/stringprintf.hpp"
 #include "server/server_server.hpp"
 
-#include "test_util.hpp"
-
 namespace {
 
 IOBuf content_buffer;
@@ -30,11 +25,7 @@ std::mutex g_in_provider_mutex;
 std::mutex g_in_consumer_mutex;
 std::unique_ptr<IOBuf> recv_content_buffer;
 const char kConnectResponse[] = "HTTP/1.1 200 Connection established\r\n\r\n";
-#if defined(NDEBUG) && !defined(_DEBUG) && !defined(MEMORY_SANITIZER) && !defined(_WIN32)
-const int kIOLoopCount = 5;
-#else
 const int kIOLoopCount = 1;
-#endif
 
 // openssl req -newkey rsa:1024 -keyout pkey.pem -x509 -out cert.crt -days 3650 -nodes -subj /C=XX
 const char kCertificate[] =
@@ -129,7 +120,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
     done_[0] = false;
     done_[1] = false;
 
-    VLOG(1) << "Connection (content-provider) " << connection_id() << " start to do IO (" << counter_ << " left)";
+    VLOG(1) << "Connection (content-provider) " << connection_id() << " start to do IO";
     scoped_refptr<ContentProviderConnection> self(this);
     g_in_provider_mutex.lock();
 
@@ -143,7 +134,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
                   << " written: " << bytes_transferred << " bytes";
         }
         done_[0] = true;
-        shutdown();
+        shutdown(ec);
     });
 
     asio::async_read(socket_, mutable_buffer(*recv_content_buffer),
@@ -156,21 +147,19 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
                   << " read: " << bytes_transferred << " bytes";
         }
         recv_content_buffer->append(bytes_transferred);
-        size_t inpending = socket_.available(ec);
-        static_cast<void>(inpending);
-        if (!ec) {
-          EXPECT_EQ(inpending, 0u);
-        }
         done_[1] = true;
-        shutdown();
+        shutdown(ec);
     });
   }
 
-  void shutdown() {
+  void shutdown(asio::error_code ec) {
     if (!done_[0] || !done_[1]) {
       return;
     }
     g_in_provider_mutex.unlock();
+    if (ec) {
+      return;
+    }
     shutdown_impl();
   }
 
@@ -183,22 +172,11 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
       return;
     }
     // consumer locked
-    if (--counter_) {
-      do_io();
-      g_in_consumer_mutex.unlock();
-      return;
-    }
-    asio::error_code ec;
-    socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
-    if (ec) {
-      LOG(WARNING) << "Connection (content-provider) " << connection_id()
-                   << " shutdown failure: " << ec;
-    }
+    do_io();
     g_in_consumer_mutex.unlock();
   }
 
   bool done_[2] = { false, false };
-  int counter_ = kIOLoopCount;
 };
 
 class ContentProviderConnectionFactory : public ConnectionFactory {
@@ -227,23 +205,30 @@ void GenerateConnectRequest(std::string host, int port_num, IOBuf *buf) {
 }
 
 // [content provider] <== [ss server] <== [ss local] <== [content consumer]
-class SsEndToEndTest : public ::testing::Test {
+class SsEndToEndBM : public benchmark::Fixture {
  public:
-  void SetUp() override {
+  void SetUp(const ::benchmark::State& state) override {
     StartWorkThread();
     absl::SetFlag(&FLAGS_password, "<dummy-password>");
   }
+
   void StartBackgroundTasks() {
     std::mutex m;
     bool done = 0;
     io_context_.post([this, &m, &done]() {
       std::lock_guard<std::mutex> lk(m);
       auto ec = StartContentProvider(GetReusableEndpoint(), SOMAXCONN);
-      ASSERT_FALSE(ec) << ec;
+      if (ec) {
+        return;
+      }
       ec = StartServer(GetReusableEndpoint(), SOMAXCONN);
-      ASSERT_FALSE(ec) << ec;
+      if (ec) {
+        return;
+      }
       ec = StartLocal(server_endpoint_, GetReusableEndpoint(), SOMAXCONN);
-      ASSERT_FALSE(ec) << ec;
+      if (ec) {
+        return;
+      }
       done = true;
     });
     while (true) {
@@ -253,7 +238,7 @@ class SsEndToEndTest : public ::testing::Test {
     }
   }
 
-  void TearDown() override {
+  void TearDown(const ::benchmark::State& state) override {
     StopClient();
     StopServer();
     StopContentProvider();
@@ -305,23 +290,26 @@ class SsEndToEndTest : public ::testing::Test {
     });
   }
 
-  void SendRequestAndCheckResponse() {
-    asio::io_context io_context;
-    asio::ip::tcp::socket s(io_context);
-
+ public:
+  void SendRequestAndCheckResponse_Pre(asio::ip::tcp::socket& s) {
     auto endpoint = local_endpoint_;
 
     asio::error_code ec;
     s.connect(endpoint, ec);
-    ASSERT_FALSE(ec) << ec;
+    if (ec) {
+      LOG(WARNING) << ec;
+      exit(-1);
+    }
     auto request_buf = IOBuf::create(SOCKET_BUF_SIZE);
     GenerateConnectRequest("127.0.0.1", content_provider_endpoint_.port(),
                            request_buf.get());
 
     size_t written = asio::write(s, const_buffer(*request_buf), ec);
     VLOG(1) << "Connection (content-consumer) written: " << written << " bytes";
-    EXPECT_FALSE(ec) << ec;
-    EXPECT_EQ(written, request_buf->length());
+    if (ec) {
+      LOG(WARNING) << ec;
+      exit(-1);
+    }
 
     constexpr int response_len = sizeof(kConnectResponse) - 1;
     IOBuf response_buf;
@@ -329,70 +317,73 @@ class SsEndToEndTest : public ::testing::Test {
     size_t read = asio::read(s, asio::mutable_buffer(response_buf.mutable_tail(), response_len), ec);
     VLOG(1) << "Connection (content-consumer) read: " << read << " bytes";
     response_buf.append(read);
-    ASSERT_EQ((int)read, response_len);
+    if ((int)read != response_len) {
+      LOG(WARNING) << "Partial read";
+      exit(-1);
+    }
 
     const char* buffer = reinterpret_cast<const char*>(response_buf.data());
     size_t buffer_length = response_buf.length();
-    ASSERT_EQ((int)buffer_length, response_len);
-    ASSERT_EQ(::testing::Bytes(buffer, buffer_length),
-              ::testing::Bytes(kConnectResponse, response_len));
+    if ((int)buffer_length != response_len) {
+      LOG(WARNING) << "Partial read";
+      exit(-1);
+    }
+  }
 
-    auto start = std::chrono::steady_clock::now();
+  void SendRequestAndCheckResponse(asio::ip::tcp::socket& s) {
+    size_t written;
+    asio::error_code ec;
 
-    for (int i = kIOLoopCount; i; --i) {
-      while (true) {
-        std::lock_guard<std::mutex> lk(g_in_consumer_mutex);
-        if (!g_in_provider_mutex.try_lock()) {
-          break;
-        }
-        g_in_provider_mutex.unlock();
+    while (true) {
+      std::lock_guard<std::mutex> lk(g_in_consumer_mutex);
+      if (!g_in_provider_mutex.try_lock()) {
+        break;
       }
-      std::lock_guard<std::mutex> done_lk(g_in_consumer_mutex);
-      VLOG(1) << "Connection (content-consumer) start to do IO (" << i << " left)";
-      written = asio::write(s, const_buffer(content_buffer), ec);
-      VLOG(1) << "Connection (content-consumer) written: " << written << " bytes";
-      EXPECT_FALSE(ec) << ec;
-      EXPECT_EQ(written, content_buffer.length());
-
-      IOBuf resp_buffer;
-      resp_buffer.reserve(0, content_buffer.length());
-      size_t read = asio::read(s, tail_buffer(resp_buffer), ec);
-      VLOG(1) << "Connection (content-consumer) read: " << read << " bytes";
-      resp_buffer.append(read);
-      EXPECT_FALSE(ec) << ec;
-
-      const char* buffer = reinterpret_cast<const char*>(resp_buffer.data());
-      size_t buffer_length = resp_buffer.length();
-      ASSERT_EQ(buffer_length, content_buffer.length());
-      ASSERT_EQ(::testing::Bytes(buffer, buffer_length),
-                ::testing::Bytes(content_buffer.data(), content_buffer.length()));
-
-      {
-        std::lock_guard<std::mutex> lk(g_in_provider_mutex);
-        ASSERT_EQ(recv_content_buffer->length(), content_buffer.length());
-        ASSERT_EQ(::testing::Bytes(recv_content_buffer->data(), recv_content_buffer->length()),
-                  ::testing::Bytes(content_buffer.data(), content_buffer.length()));
-
-        recv_content_buffer->clear();
-      }
+      g_in_provider_mutex.unlock();
+    }
+    std::lock_guard<std::mutex> done_lk(g_in_consumer_mutex);
+    VLOG(1) << "Connection (content-consumer) start to do IO";
+    written = asio::write(s, const_buffer(content_buffer), ec);
+    VLOG(1) << "Connection (content-consumer) written: " << written << " bytes";
+    if (ec) {
+      LOG(WARNING) << ec;
+      exit(-1);
+    }
+    if (written != content_buffer.length()) {
+      LOG(WARNING) << "Partial written";
+      exit(-1);
     }
 
-    auto stop = std::chrono::steady_clock::now();
-    double delta = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count() / 1000.0 / 1000.0 / 1000.0;
-
-    LOG(WARNING) << "full duplex: " << content_buffer.length() * kIOLoopCount / 1024.0 / (delta) << " kb/s";
-
-    EXPECT_EQ(s.available(ec), 0u);
-    EXPECT_FALSE(ec) << ec;
-
     IOBuf resp_buffer;
-    resp_buffer.reserve(0, SOCKET_DEBUF_SIZE);
-    read = asio::read(s, tail_buffer(resp_buffer), ec);
-    EXPECT_EQ(ec, asio::error::eof) << ec;
-    EXPECT_EQ(read, 0u);
+    resp_buffer.reserve(0, content_buffer.length());
+    size_t read = asio::read(s, tail_buffer(resp_buffer), ec);
+    VLOG(1) << "Connection (content-consumer) read: " << read << " bytes";
+    resp_buffer.append(read);
+    if (ec) {
+      LOG(WARNING) << ec;
+      exit(-1);
+    }
 
+    const char* buffer = reinterpret_cast<const char*>(resp_buffer.data());
+    size_t buffer_length = resp_buffer.length();
+    if (buffer_length != content_buffer.length()) {
+      LOG(WARNING) << "Partial read";
+      exit(-1);
+    }
+
+    {
+      std::lock_guard<std::mutex> lk(g_in_provider_mutex);
+      if (recv_content_buffer->length() != content_buffer.length()) {
+        LOG(WARNING) << "Partial read";
+        exit(-1);
+      }
+      recv_content_buffer->clear();
+    }
+  }
+
+  void SendRequestAndCheckResponse_Post(asio::ip::tcp::socket& s) {
+    asio::error_code ec;
     s.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
-    EXPECT_FALSE(ec) << ec;
   }
 
  private:
@@ -488,29 +479,31 @@ class SsEndToEndTest : public ::testing::Test {
 };
 }
 
+// Register the function as a benchmark
+
 #define XX(num, name, string) \
-  TEST_F(SsEndToEndTest, name##_4K) { \
-    absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name); \
-    StartBackgroundTasks(); \
-    GenerateRandContent(4096); \
-    SendRequestAndCheckResponse(); \
-  } \
-  TEST_F(SsEndToEndTest, name##_256K) { \
-    absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name); \
-    StartBackgroundTasks(); \
-    GenerateRandContent(256 * 1024); \
-    SendRequestAndCheckResponse(); \
-  } \
-  TEST_F(SsEndToEndTest, name##_1M) { \
-    absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name); \
-    StartBackgroundTasks(); \
-    GenerateRandContent(1024 * 1024); \
-    SendRequestAndCheckResponse(); \
-  }
-CIPHER_METHOD_VALID_MAP(XX)
+  BENCHMARK_DEFINE_F(SsEndToEndBM, BM_FullDuplex_##name)(benchmark::State& state) { \
+    absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name);                 \
+    StartBackgroundTasks();                                             \
+    GenerateRandContent(state.range(0));                                \
+                                                                        \
+    asio::io_context io_context;                                        \
+    asio::ip::tcp::socket s(io_context);                                \
+    SendRequestAndCheckResponse_Pre(s);                                 \
+    for (auto _ : state) {                                              \
+      SendRequestAndCheckResponse(s);                                   \
+      state.SetBytesProcessed(state.bytes_processed() + state.range(0));\
+    }                                                                   \
+    SendRequestAndCheckResponse_Post(s);                                \
+  }                                                                     \
+  BENCHMARK_REGISTER_F(SsEndToEndBM, BM_FullDuplex_##name)              \
+    ->Range(4096, 1*1024*1024)->MeasureProcessCPUTime();
+CIPHER_METHOD_MAP_SODIUM(XX)
+CIPHER_METHOD_MAP_HTTP(XX)
+CIPHER_METHOD_MAP_HTTP2(XX)
 #undef XX
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   absl::InitializeSymbolizer(argv[0]);
   absl::FailureSignalHandlerOptions failure_handle_options;
   absl::InstallFailureSignalHandler(failure_handle_options);
@@ -521,8 +514,11 @@ int main(int argc, char **argv) {
 
   ::CRYPTO_library_init();
 
-  ::testing::InitGoogleTest(&argc, argv);
+  ::benchmark::Initialize(&argc, argv);
   absl::ParseCommandLine(argc, argv);
 
-  return RUN_ALL_TESTS();
+  if (::benchmark::ReportUnrecognizedArguments(argc, argv)) return 1;
+  ::benchmark::RunSpecifiedBenchmarks();
+  ::benchmark::Shutdown();
+  return 0;
 }

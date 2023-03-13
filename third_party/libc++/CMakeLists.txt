@@ -1,5 +1,27 @@
 set(CMAKE_CXX_STANDARD 20)
 
+## Setup compiler informations
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
+    CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+  set(COMPILER_CLANG TRUE)
+else()
+  set(COMPILER_CLANG FALSE)
+endif()
+
+if (COMPILER_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
+  message(FATAL_ERROR "Requires Clang 12.0 or newer to compile libc++ from source")
+endif()
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  set(COMPILER_GCC TRUE)
+else()
+  set(COMPILER_GCC FALSE)
+endif()
+
+if (COMPILER_GCC)
+  message(FATAL_ERROR "GCC is no longer supported to compile libc++ from source")
+endif()
+
 # This is included by reference in the //build/config/compiler:runtime_library
 # config that is applied to all targets. It is here to separate out the logic
 # that is specific to libc++. Please see that target for advice on what should
@@ -9,12 +31,6 @@ if (BUILD_SHARED_LIBS OR CMAKE_MSVC_CRT_LINKAGE STREQUAL "dynamic")
 else()
   set(libcxx_SHARED OFF)
 endif()
-
-# Old versions of lldb weren't able to pretty-print std:: types with libc++'s
-# unstable API. But that was fixed over 2 years ago in
-# https://reviews.llvm.org/rL352899, and as far as I can tell Xcode's
-# lldb has picked up that fix (I'm using Xcode 13.2.1's lldb).
-set(libcxx_ABI_UNSTABLE ON)
 
 # experimental, turn off to build libc++ without exceptions
 if (MSVC OR APPLE)
@@ -34,39 +50,18 @@ if (COMPILER_GCC AND LTO_FLAVOUR)
   set(libcxx_USE_EXCEPTIONS OFF)
 endif()
 
-#The system libc++ on Mac doesn't have aligned allocation in C++17.
-if (APPLE)
-  add_definitions(-D_LIBCPP_HAS_NO_ALIGNED_ALLOCATION)
-endif()
-
 message(STATUS "Build with libc++")
 
 # *****************************************************************************************
 #           Public-specific
 # *****************************************************************************************
 
-if (libcxx_ABI_UNSTABLE)
-  set(libcxx_PUBLIC_DEFINITIONS
-    ${libcxx_PUBLIC_DEFINITIONS}
-    "_LIBCPP_ABI_UNSTABLE")
-endif()
-
 set(libcxx_CR "2948540a20cbb5b2192119f791b04dd62ca7af1c")
-if (libcxx_SHARED)
-  # When libcxx_is_shared is true, symbols from libc++.so are exported for
-  # all DSOs to use.  If the system libc++ gets loaded (indirectly through
-  # a system library), then it will conflict with our libc++.so.  Add a
-  # custom ABI version if we're building with _LIBCPP_ABI_UNSTABLE to avoid
-  # conflicts.
-  #
-  # Windows doesn't need to set _LIBCPP_ABI_VERSION since there's no system
-  # C++ library we could conflict with.
-  if (libcxx_ABI_UNSTABLE AND NOT MSVC)
-    set(libcxx_PUBLIC_DEFINITIONS
-      ${libcxx_PUBLIC_DEFINITIONS}
-      "_LIBCPP_ABI_VERSION=${libcxx_CR}")
-  endif()
-else()
+# Fixed libc++ configuration macros are in
+# buildtools/third_party/libc++/__config_site. This config only has defines
+# that vary depending on gn args, and non-define flags.
+
+if (NOT libcxx_SHARED)
   # Don't leak any symbols on a static build.
   set(libcxx_PUBLIC_DEFINITIONS
     ${libcxx_PUBLIC_DEFINITIONS}
@@ -78,29 +73,25 @@ else()
   endif()
 endif()
 
-set(libcxx_PUBLIC_DEFINITIONS
-  ${libcxx_PUBLIC_DEFINITIONS}
-  "_LIBCPP_ENABLE_NODISCARD")
-
 set(libcxx_PUBLIC_INCLUDES
   ${libcxx_PUBLIC_INCLUDES}
   ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
-# The Windows component build fails to link with libc++'s debug mode. See
-# https://crbug.com/923166#c33, https://crbug.com/923166#c44, and
-# https://llvm.org/PR41018.
-if (NOT MSVC)
-  if (${CMAKE_BUILD_TYPE} MATCHES RELWITHDEBINFO)
-   set(libcxx_PUBLIC_DEFINITIONS
-     ${libcxx_PUBLIC_DEFINITIONS}
-     "_LIBCPP_ENABLE_ASSERTIONS_DEFAULT=1")
-  elseif (${CMAKE_BUILD_TYPE} MATCHES Debug)
-   set(libcxx_PUBLIC_DEFINITIONS
-     ${libcxx_PUBLIC_DEFINITIONS}
-     "_LIBCPP_ENABLE_DEBUG_MODE")
-  endif()
+# libc++ has two levels of additional checking:
+# 1. _LIBCPP_ENABLE_ASSERTIONS enables assertions for bounds checking.
+#    We always enable this in __config_site, in all build configurations.
+# 2. _LIBCPP_ENABLE_DEBUG_MODE enables iterator debugging and other
+#    expensive checks. Enable these only if enable_iterator_debugging is on.
+if (${CMAKE_BUILD_TYPE} MATCHES Debug)
+ set(libcxx_PUBLIC_DEFINITIONS
+   ${libcxx_PUBLIC_DEFINITIONS}
+   "_LIBCPP_ENABLE_DEBUG_MODE")
 endif()
+
+set(libcxx_PUBLIC_DEFINITIONS
+  ${libcxx_PUBLIC_DEFINITIONS}
+  "CR_LIBCXX_REVISION=${libcxx_CR}")
 
 if (MSVC)
   # Intentionally not using libc++abi on Windows because libc++abi only
@@ -111,20 +102,9 @@ if (MSVC)
     "${CMAKE_CXX_FLAGS} -I ${CMAKE_CURRENT_SOURCE_DIR}/trunk/include"
     )
 
-  # Prevent libc++ from embedding linker flags to try to automatically link
-  # against its runtime library. This is unnecessary with our build system,
-  # and can also result in build failures if libc++'s name for a library
-  # does not match ours.
-  set(libcxx_PUBLIC_DEFINITIONS
-    ${libcxx_PUBLIC_DEFINITIONS}
-    "_LIBCPP_NO_AUTO_LINK")
 else()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -nostdinc++ -isystem ${CMAKE_CURRENT_SOURCE_DIR}/trunk/include -isystem ${CMAKE_CURRENT_SOURCE_DIR}/../libc++abi/trunk/include"
     )
-
-  set(libcxx_PUBLIC_DEFINITIONS
-    ${libcxx_PUBLIC_DEFINITIONS}
-    "CR_LIBCXX_REVISION=${libcxx_CR}")
 
   # Make sure we don't link against the system libstdc++ or libc++.
   if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" AND COMPILER_CLANG)
@@ -402,6 +382,11 @@ if (NOT APPLE AND (ASAN OR TSAN OR MSAN))
   )
 endif()
 
+if (NOT ${CMAKE_BUILD_TYPE} MATCHES Debug)
+  set(libcxx_DEFINITIONS
+    ${libcxx_DEFINITIONS}
+    "_LIBCPP_AVAILABILITY_CUSTOM_VERBOSE_ABORT_PROVIDED=1")
+endif()
 if (NOT MSVC)
   set(libcxx_DEFINITIONS
     ${libcxx_DEFINITIONS}

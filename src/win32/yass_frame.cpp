@@ -97,50 +97,46 @@ static void SetWindowTextStd(HWND hWnd, const std::string& text) {
 
 namespace {
 HWND CreateStatic(const wchar_t* label,
-                  const RECT& rect,
                   HWND pParentWnd,
                   UINT nID,
                   HINSTANCE hInstance) {
   return CreateWindowExW(
       0, WC_STATICW, label, WS_CHILD | WS_VISIBLE | SS_LEFT,
-      rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
+      CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
       pParentWnd, reinterpret_cast<HMENU>(static_cast<UINT_PTR>(nID)), hInstance, nullptr);
 }
 
 HWND CreateEdit(DWORD dwStyle,
-                const RECT& rect,
                 HWND pParentWnd,
                 UINT nID,
                 HINSTANCE hInstance) {
   return CreateWindowExW(
       0, WC_EDITW, nullptr,
       WS_TABSTOP | WS_CHILD | WS_VISIBLE | WS_BORDER | WS_BORDER | ES_LEFT | dwStyle,
-      rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
+      CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
       pParentWnd, reinterpret_cast<HMENU>(static_cast<UINT_PTR>(nID)), hInstance, nullptr);
 }
 
 HWND CreateComboBox(DWORD dwStyle,
-                    const RECT& rect,
                     HWND pParentWnd,
                     UINT nID,
                     HINSTANCE hInstance) {
   return CreateWindowExW(
       0, WC_COMBOBOXW, nullptr,
       WS_TABSTOP | WS_CHILD | WS_VISIBLE | WS_VSCROLL | dwStyle,
-      rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
+      CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
       pParentWnd, reinterpret_cast<HMENU>(static_cast<UINT_PTR>(nID)), hInstance, nullptr);
 }
 
 HWND CreateButton(const wchar_t* label,
                   DWORD dwStyle,
-                  const RECT& rect,
                   HWND pParentWnd,
                   UINT nID,
                   HINSTANCE hInstance) {
   return CreateWindowExW(
       0, WC_BUTTONW, label,
       WS_TABSTOP | WS_CHILD | WS_VISIBLE | dwStyle,
-      rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
+      CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
       pParentWnd, reinterpret_cast<HMENU>(static_cast<UINT_PTR>(nID)), hInstance, nullptr);
 }
 
@@ -305,11 +301,9 @@ int CYassFrame::Create(const wchar_t* className,
   rect = RECT{};
 
   // Left Panel
-  start_button_ =
-      CreateButton(L"START", BS_PUSHBUTTON, rect, m_hWnd, IDC_START, hInstance);
+  start_button_ = CreateButton(L"START", BS_PUSHBUTTON, m_hWnd, IDC_START, hInstance);
 
-  stop_button_ =
-      CreateButton(L"STOP", BS_PUSHBUTTON, rect, m_hWnd, IDC_STOP, hInstance);
+  stop_button_ = CreateButton(L"STOP", BS_PUSHBUTTON, m_hWnd, IDC_STOP, hInstance);
 
   EnableWindow(stop_button_, FALSE);
 
@@ -331,27 +325,23 @@ int CYassFrame::Create(const wchar_t* className,
   // https://docs.microsoft.com/en-us/windows/win32/winmsg/about-window-classes
   // Right Panel
   // Column 2
-  server_host_label_ = CreateStatic(L"Server Host", rect, m_hWnd, 0, hInstance);
-  server_port_label_ = CreateStatic(L"Server Port", rect, m_hWnd, 0, hInstance);
-  username_label_ = CreateStatic(L"Username", rect, m_hWnd, 0, hInstance);
-  password_label_ = CreateStatic(L"Password", rect, m_hWnd, 0, hInstance);
-  method_label_ = CreateStatic(L"Cipher Method", rect, m_hWnd, 0, hInstance);
-  local_host_label_ = CreateStatic(L"Local Host", rect, m_hWnd, 0, hInstance);
-  local_port_label_ = CreateStatic(L"Local Port", rect, m_hWnd, 0, hInstance);
-  timeout_label_ = CreateStatic(L"Timeout", rect, m_hWnd, 0, hInstance);
-  autostart_label_ = CreateStatic(L"Auto Start", rect, m_hWnd, 0, hInstance);
+  server_host_label_ = CreateStatic(L"Server Host", m_hWnd, 0, hInstance);
+  server_port_label_ = CreateStatic(L"Server Port", m_hWnd, 0, hInstance);
+  username_label_ = CreateStatic(L"Username", m_hWnd, 0, hInstance);
+  password_label_ = CreateStatic(L"Password", m_hWnd, 0, hInstance);
+  method_label_ = CreateStatic(L"Cipher Method", m_hWnd, 0, hInstance);
+  local_host_label_ = CreateStatic(L"Local Host", m_hWnd, 0, hInstance);
+  local_port_label_ = CreateStatic(L"Local Port", m_hWnd, 0, hInstance);
+  timeout_label_ = CreateStatic(L"Timeout", m_hWnd, 0, hInstance);
+  autostart_label_ = CreateStatic(L"Auto Start", m_hWnd, 0, hInstance);
 
   // Column 3
-  server_host_edit_ =
-      CreateEdit(0, rect, m_hWnd, IDC_EDIT_SERVER_HOST, hInstance);
-  server_port_edit_ =
-      CreateEdit(ES_NUMBER, rect, m_hWnd, IDC_EDIT_SERVER_PORT, hInstance);
-  username_edit_ =
-      CreateEdit(0, rect, m_hWnd, IDC_EDIT_USERNAME, hInstance);
-  password_edit_ =
-      CreateEdit(ES_PASSWORD, rect, m_hWnd, IDC_EDIT_PASSWORD, hInstance);
+  server_host_edit_ = CreateEdit(0, m_hWnd, IDC_EDIT_SERVER_HOST, hInstance);
+  server_port_edit_ = CreateEdit(ES_NUMBER, m_hWnd, IDC_EDIT_SERVER_PORT, hInstance);
+  username_edit_ = CreateEdit(0, m_hWnd, IDC_EDIT_USERNAME, hInstance);
+  password_edit_ = CreateEdit(ES_PASSWORD, m_hWnd, IDC_EDIT_PASSWORD, hInstance);
 
-  method_combo_box_ = CreateComboBox(CBS_DROPDOWNLIST, rect, m_hWnd,
+  method_combo_box_ = CreateComboBox(CBS_DROPDOWNLIST, m_hWnd,
                                      IDC_COMBOBOX_METHOD, hInstance);
 
   int method_count = sizeof(method_strings) / sizeof(method_strings[0]) - 1;
@@ -362,14 +352,11 @@ int CYassFrame::Create(const wchar_t* className,
 
   ComboBox_SetMinVisible(method_combo_box_, method_count);
 
-  local_host_edit_ =
-      CreateEdit(0, rect, m_hWnd, IDC_EDIT_LOCAL_HOST, hInstance);
-  local_port_edit_ =
-      CreateEdit(ES_NUMBER, rect, m_hWnd, IDC_EDIT_LOCAL_PORT, hInstance);
-  timeout_edit_ =
-      CreateEdit(ES_NUMBER, rect, m_hWnd, IDC_EDIT_TIMEOUT, hInstance);
+  local_host_edit_ = CreateEdit(0, m_hWnd, IDC_EDIT_LOCAL_HOST, hInstance);
+  local_port_edit_ = CreateEdit(ES_NUMBER, m_hWnd, IDC_EDIT_LOCAL_PORT, hInstance);
+  timeout_edit_ = CreateEdit(ES_NUMBER, m_hWnd, IDC_EDIT_TIMEOUT, hInstance);
 
-  autostart_button_ = CreateButton(L"Enable", BS_AUTOCHECKBOX | BS_LEFT, rect,
+  autostart_button_ = CreateButton(L"Enable", BS_AUTOCHECKBOX | BS_LEFT,
                                    m_hWnd, IDC_AUTOSTART_CHECKBOX, hInstance);
 
   Button_SetCheck(autostart_button_,

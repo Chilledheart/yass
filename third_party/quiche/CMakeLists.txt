@@ -138,6 +138,8 @@ set(quiche_SRCS
 
   src/quiche/binary_http/binary_http_message.cc
   src/quiche/binary_http/binary_http_message.h
+  src/quiche/common/capsule.h
+  src/quiche/common/capsule.cc
   src/quiche/common/platform/api/quiche_bug_tracker.h
   src/quiche/common/platform/api/quiche_client_stats.h
   src/quiche/common/platform/api/quiche_containers.h
@@ -185,6 +187,7 @@ set(quiche_SRCS
   src/quiche/common/quiche_mem_slice_storage.h
   src/quiche/common/quiche_random.cc
   src/quiche/common/quiche_random.h
+  src/quiche/common/quiche_stream.h
   src/quiche/common/quiche_text_utils.cc
   src/quiche/common/quiche_text_utils.h
   src/quiche/common/simple_buffer_allocator.cc
@@ -215,8 +218,6 @@ set(quiche_SRCS
   src/quiche/http2/adapter/window_manager.h
   src/quiche/http2/core/http2_trace_logging.cc
   src/quiche/http2/core/http2_trace_logging.h
-  src/quiche/http2/core/priority_write_scheduler.h
-  src/quiche/http2/core/write_scheduler.h
   src/quiche/http2/decoder/decode_buffer.cc
   src/quiche/http2/decoder/decode_buffer.h
   src/quiche/http2/decoder/decode_http2_structures.cc
@@ -498,8 +499,6 @@ set(quiche_SRCS
   src/quiche/quic/core/frames/quic_window_update_frame.cc
   src/quiche/quic/core/frames/quic_window_update_frame.h
   src/quiche/quic/core/handshaker_delegate_interface.h
-  src/quiche/quic/core/http/capsule.cc
-  src/quiche/quic/core/http/capsule.h
   src/quiche/quic/core/http/http_constants.cc
   src/quiche/quic/core/http/http_constants.h
   src/quiche/quic/core/http/http_decoder.cc
@@ -784,6 +783,7 @@ set(quiche_SRCS
   src/quiche/spdy/core/spdy_simple_arena.cc
   src/quiche/spdy/core/spdy_simple_arena.h
   src/quiche/spdy/core/zero_copy_output_buffer.h
+  src/quiche/web_transport/web_transport.h
   )
 
 set(quiche_nghttp2_SOURCES
