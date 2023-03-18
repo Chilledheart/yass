@@ -155,13 +155,9 @@ void ServerConnection::close() {
   if (closing_) {
     return;
   }
-  size_t bytes = 0;
-  for (auto buf : downstream_)
-    bytes += buf->length();
   VLOG(1) << "Connection (server) " << connection_id()
           << " disconnected with client at stage: "
-          << ServerConnection::state_to_str(CurrentState())
-          << " and remaining: " << bytes << " bytes.";
+          << ServerConnection::state_to_str(CurrentState());
   asio::error_code ec;
   closing_ = true;
 
@@ -1172,9 +1168,6 @@ void ServerConnection::OnDisconnect(asio::error_code ec) {
   if (closing_) {
     return;
   }
-  size_t bytes = 0;
-  for (auto buf : downstream_)
-    bytes += buf->length();
 #ifdef WIN32
   if (ec.value() == WSAESHUTDOWN) {
     ec = asio::error_code();
@@ -1185,7 +1178,7 @@ void ServerConnection::OnDisconnect(asio::error_code ec) {
   }
 #endif
   LOG(INFO) << "Connection (server) " << connection_id()
-            << " closed: " << ec << " remaining: " << bytes << " bytes";
+            << " closed: " << ec;
   close();
 }
 
@@ -1263,8 +1256,7 @@ void ServerConnection::disconnected(asio::error_code ec) {
   scoped_refptr<ServerConnection> self(this);
   VLOG(1) << "Connection (server) " << connection_id()
           << " upstream: lost connection with: " << remote_domain()
-          << " due to " << ec
-          << " and data to write: " << downstream_.size();
+          << " due to " << ec;
   upstream_readable_ = false;
   upstream_writable_ = false;
   channel_->close();
@@ -1296,7 +1288,7 @@ void ServerConnection::disconnected(asio::error_code ec) {
   }
 }
 
-void ServerConnection::EncryptData(std::deque<std::shared_ptr<IOBuf>>* queue,
+void ServerConnection::EncryptData(IoQueue* queue,
                                    std::shared_ptr<IOBuf> plaintext) {
   size_t plaintext_offset = 0;
   while (plaintext_offset < plaintext->length()) {

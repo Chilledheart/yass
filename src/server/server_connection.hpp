@@ -8,6 +8,7 @@
 #include "connection.hpp"
 #include "core/cipher.hpp"
 #include "core/iobuf.hpp"
+#include "core/io_queue.hpp"
 #include "core/logging.hpp"
 #include "core/ref_counted.hpp"
 #include "core/scoped_refptr.hpp"
@@ -348,7 +349,7 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   /// buffer of handshake header
   std::shared_ptr<IOBuf> handshake_;
   /// the queue to write upstream
-  std::deque<std::shared_ptr<IOBuf>> upstream_;
+  IoQueue upstream_;
   /// the flag to mark current write
   bool upstream_writable_ = false;
   /// the flag to mark current read
@@ -366,7 +367,7 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   absl::flat_hash_map<std::string, std::string> request_map_;
 
   /// the queue to write downstream
-  std::deque<std::shared_ptr<IOBuf>> downstream_;
+  IoQueue downstream_;
   /// the flag to mark current read
   bool downstream_readable_ = false;
   /// the flag to mark current read in progress
@@ -387,7 +388,7 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
 
  private:
   /// encrypt data
-  void EncryptData(std::deque<std::shared_ptr<IOBuf>>* queue,
+  void EncryptData(IoQueue* queue,
                    std::shared_ptr<IOBuf> plaintext);
 
   /// encode cipher to perform data encoder for upstream

@@ -9,6 +9,7 @@
 #include "connection.hpp"
 #include "core/cipher.hpp"
 #include "core/iobuf.hpp"
+#include "core/io_queue.hpp"
 #include "core/logging.hpp"
 #include "core/ref_counted.hpp"
 #include "core/scoped_refptr.hpp"
@@ -420,7 +421,7 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   void OnUpstreamWrite(std::shared_ptr<IOBuf> buf);
 
   /// the queue to write upstream
-  std::deque<std::shared_ptr<IOBuf>> upstream_;
+  IoQueue upstream_;
   /// the flag to mark current write
   bool upstream_writable_ = false;
   /// the flag to mark current read
@@ -438,7 +439,7 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   absl::flat_hash_map<std::string, std::string> request_map_;
 
   /// the queue to write downstream
-  std::deque<std::shared_ptr<IOBuf>> downstream_;
+  IoQueue downstream_;
   /// the flag to mark current read
   bool downstream_readable_ = false;
   /// the flag to mark current read in progress
@@ -462,7 +463,7 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   std::shared_ptr<IOBuf> pending_data_;
 
   /// encrypt data
-  void EncryptData(std::deque<std::shared_ptr<IOBuf>>* queue,
+  void EncryptData(IoQueue* queue,
                    std::shared_ptr<IOBuf> plaintext);
 
   /// encode cipher to perform data encoder for upstream

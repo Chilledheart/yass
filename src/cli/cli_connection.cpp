@@ -186,13 +186,9 @@ void CliConnection::close() {
   if (closed_) {
     return;
   }
-  size_t bytes = 0;
-  for (auto buf : downstream_)
-    bytes += buf->length();
   VLOG(1) << "Connection (client) " << connection_id()
           << " disconnected with client at stage: "
-          << CliConnection::state_to_str(CurrentState())
-          << " and remaining: " << bytes << " bytes.";
+          << CliConnection::state_to_str(CurrentState());
   asio::error_code ec;
   closed_ = true;
   socket_.close(ec);
@@ -1016,7 +1012,7 @@ void CliConnection::WriteUpstreamInPipe() {
             << " ec: " << ec;
     // continue to resume
     if (buf->empty()) {
-      DCHECK(!upstream_.empty() && upstream_[0] == buf);
+      DCHECK(!upstream_.empty() && upstream_.front() == buf);
       upstream_.pop_front();
     }
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
@@ -1423,9 +1419,6 @@ void CliConnection::DisableStreamRead() {
 }
 
 void CliConnection::OnDisconnect(asio::error_code ec) {
-  size_t bytes = 0;
-  for (auto buf : downstream_)
-    bytes += buf->length();
 #ifdef WIN32
   if (ec.value() == WSAESHUTDOWN) {
     ec = asio::error_code();
@@ -1436,7 +1429,7 @@ void CliConnection::OnDisconnect(asio::error_code ec) {
   }
 #endif
   LOG(INFO) << "Connection (client) " << connection_id()
-            << " closed: " << ec << " remaining: " << bytes << " bytes";
+            << " closed: " << ec;
   close();
 }
 
@@ -1645,8 +1638,7 @@ void CliConnection::disconnected(asio::error_code ec) {
   scoped_refptr<CliConnection> self(this);
   VLOG(1) << "Connection (client) " << connection_id()
           << " upstream: lost connection with: " << remote_domain()
-          << " due to " << ec
-          << " and data to write: " << downstream_.size();
+          << " due to " << ec;
   if (data_frame_) {
     data_frame_->set_last_frame(true);
     adapter_->ResumeStream(stream_id_);
@@ -1667,7 +1659,7 @@ void CliConnection::disconnected(asio::error_code ec) {
   }
 }
 
-void CliConnection::EncryptData(std::deque<std::shared_ptr<IOBuf>>* queue,
+void CliConnection::EncryptData(IoQueue* queue,
                                 std::shared_ptr<IOBuf> plaintext) {
   size_t plaintext_offset = 0;
   while (plaintext_offset < plaintext->length()) {
