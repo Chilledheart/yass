@@ -2463,7 +2463,7 @@ static void GetTempDirectories(std::vector<std::string>* list) {
     }
     list->push_back(dstr);
 
-    struct stat statbuf;
+    struct stat statbuf {};
     if (!stat(d, &statbuf) && S_ISDIR(statbuf.st_mode)) {
       // We found a dir that exists - we're done.
       return;
