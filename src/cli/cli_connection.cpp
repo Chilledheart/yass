@@ -232,6 +232,7 @@ void CliConnection::on_protocol_error() {
 //
 
 int64_t CliConnection::OnReadyToSend(absl::string_view serialized) {
+  MSAN_UNPOISON(serialized.data(), serialized.size());
   std::shared_ptr<IOBuf> buf =
     IOBuf::copyBuffer(serialized.data(), serialized.size());
   upstream_.push_back(buf);

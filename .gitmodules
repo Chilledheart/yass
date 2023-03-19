@@ -40,7 +40,7 @@
 	url = https://github.com/c-ares/c-ares
 [submodule "third_party/nghttp2"]
 	path = third_party/nghttp2
-	url = https://github.com/nghttp2/nghttp2
+	url = https://github.com/Chilledheart/nghttp2
 [submodule "third_party/benchmark"]
 	path = third_party/benchmark
 	url = https://github.com/google/benchmark
