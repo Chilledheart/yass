@@ -42,7 +42,7 @@ std::string ExpandUser(const std::string& file_path) {
 }
 
 bool IsDirectory(const std::string& path) {
-  struct stat Stat;
+  struct stat Stat {};
   if (::stat(path.c_str(), &Stat) != 0) {
     return false;
   }
