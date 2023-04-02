@@ -187,6 +187,7 @@ set(quiche_SRCS
   src/quiche/common/quiche_mem_slice_storage.h
   src/quiche/common/quiche_random.cc
   src/quiche/common/quiche_random.h
+  src/quiche/common/quiche_status_utils.h
   src/quiche/common/quiche_stream.h
   src/quiche/common/quiche_text_utils.cc
   src/quiche/common/quiche_text_utils.h
@@ -194,6 +195,7 @@ set(quiche_SRCS
   src/quiche/common/simple_buffer_allocator.h
   src/quiche/common/structured_headers.cc
   src/quiche/common/structured_headers.h
+  src/quiche/common/wire_serialization.h
   src/quiche/http2/adapter/data_source.h
   src/quiche/http2/adapter/event_forwarder.cc
   src/quiche/http2/adapter/event_forwarder.h

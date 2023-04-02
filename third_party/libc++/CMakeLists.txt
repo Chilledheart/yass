@@ -305,14 +305,10 @@ if (MSVC)
     # libc++ wants to redefine the macros WIN32_LEAN_AND_MEAN and _CRT_RAND_S in
     # its implementation.
     "-Wno-macro-redefined"
-    # We want to use a uniform C++ version across all of chromium, but
-    # upstream libc++ requires C++17 so we have to make an exception here.
-    "-std:c++20"
     )
 else()
   set(libcxx_CFLAGS ${libcxx_CFLAGS}
     "-fPIC"
-    "-std=c++20"
     )
 endif()
 
