@@ -125,7 +125,6 @@ set(quiche_SRCS
   overrides/quiche_platform_impl/quiche_mutex_impl.cc
   overrides/quiche_platform_impl/quiche_reference_counted_impl.h
   #overrides/quiche_platform_impl/quiche_server_stats_impl.h
-  #overrides/quiche_platform_impl/quiche_thread_local_impl.h
   overrides/quiche_platform_impl/quiche_time_utils_impl.h
   overrides/quiche_platform_impl/quiche_time_utils_impl.cc
 
@@ -161,7 +160,6 @@ set(quiche_SRCS
   src/quiche/common/platform/api/quiche_stack_trace.h
   src/quiche/common/platform/api/quiche_testvalue.h
   src/quiche/common/platform/api/quiche_thread.h
-  src/quiche/common/platform/api/quiche_thread_local.h
   src/quiche/common/platform/api/quiche_time_utils.h
   src/quiche/common/platform/api/quiche_url_utils.h
   # src/quiche/common/platform/default/quiche_platform_impl/quiche_flags_impl.cc
