@@ -8,6 +8,9 @@
 #include <malloc.h>  // for _alloca
 #endif               // _WIN32
 
+#include <exception>
+#include <thread>
+
 #include "core/iobuf.hpp"
 
 #if defined(_MSC_VER) && !defined(__clang__)

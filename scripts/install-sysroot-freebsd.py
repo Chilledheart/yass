@@ -65,7 +65,7 @@ def resolve_deps(pkg_db, deps):
 
 def extract_pkg(pkg_url, pkg_sum, dst):
   print(f'extracting pkg {pkg_url}...')
-  write_output(['curl', '-C', '-', '-L', '-O', pkg_url])
+  write_output(['curl', '-C', '-', '-L', '-O', pkg_url], check=True)
   if GetSha256(os.path.basename(pkg_url)) != pkg_sum:
     print(f'{pkg_url} checksum mismatched, expected: {pkg_sum}!')
     return
@@ -74,17 +74,15 @@ def extract_pkg(pkg_url, pkg_sum, dst):
 def main(args):
   if not args:
     print("no abi specified, setting to freebsd11")
-    abi = '11'
+    abi = '12'
   else:
     abi = args[0]
 
   # not all tarbars exist in public sever
-  if abi == '11':
-    release = '3'
-  elif abi == '12':
-    release = '3'
+  if abi == '12':
+    release = '4'
   elif abi == '13':
-    release = '0'
+    release = '1'
   else:
     release = '0'
   version = f'{abi}.{release}'
@@ -97,8 +95,8 @@ def main(args):
     os.mkdir(sysroot)
 
   # extract include and so only
-  write_output(['curl', '-C', '-', '-L', '-O', f'http://ftp.freebsd.org/pub/FreeBSD/releases/amd64/{version}-RELEASE/base.txz'])
-  write_output(['tar', '-C', sysroot, '-xvf', 'base.txz', './usr/include', './usr/lib', './lib', './usr/libdata/pkgconfig'])
+  write_output(['curl', '-C', '-', '-L', '-O', f'http://ftp.freebsd.org/pub/FreeBSD/releases/amd64/{version}-RELEASE/base.txz'], check=True)
+  write_output(['tar', '-C', sysroot, '-xvf', 'base.txz', './usr/include', './usr/lib', './lib', './usr/libdata/pkgconfig'], check=True)
 
   print(f'extract sysroot (gtk3)...')
 
