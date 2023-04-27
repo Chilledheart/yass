@@ -69,7 +69,7 @@ def extract_pkg(pkg_url, pkg_sum, dst):
   if GetSha256(os.path.basename(pkg_url)) != pkg_sum:
     print(f'{pkg_url} checksum mismatched, expected: {pkg_sum}!')
     return
-  write_output(['tar', '-C', dst, '-xvf', os.path.basename(pkg_url), '/usr/local/include', '/usr/local/libdata', '/usr/local/lib'])
+  write_output(['tar', '-C', dst, '-xf', os.path.basename(pkg_url), '/usr/local/include', '/usr/local/libdata', '/usr/local/lib'])
 
 def main(args):
   if not args:
@@ -87,23 +87,28 @@ def main(args):
     release = '0'
   version = f'{abi}.{release}'
 
-  sysroot = f'freebsd-{abi}-toolchain'
+  tmproot = os.path.abspath(f'freebsd-{abi}-tmp')
+  sysroot = os.path.abspath(f'freebsd-{abi}-toolchain')
 
   print('extracting sysroot...')
+
+  if not os.path.isdir(tmproot):
+    os.mkdir(tmproot)
+  os.chdir(tmproot)
 
   if not os.path.isdir(sysroot):
     os.mkdir(sysroot)
 
   # extract include and so only
   write_output(['curl', '-C', '-', '-L', '-O', f'http://ftp.freebsd.org/pub/FreeBSD/releases/amd64/{version}-RELEASE/base.txz'], check=True)
-  write_output(['tar', '-C', sysroot, '-xvf', 'base.txz', './usr/include', './usr/lib', './lib', './usr/libdata/pkgconfig'], check=True)
+  write_output(['tar', '-C', sysroot, '-xf', 'base.txz', './usr/include', './usr/lib', './lib', './usr/libdata/pkgconfig'], check=True)
 
   print(f'extract sysroot (gtk3)...')
 
   base_url = f'http://pkg.freebsd.org/FreeBSD%3A{abi}%3Aamd64/release_{release}'
-  write_output(['curl', '-C', '-', '-L', '-O', f'{base_url}/packagesite.txz'])
+  write_output(['curl', '-C', '-', '-L', '-O', f'{base_url}/packagesite.txz'], check=True)
 
-  write_output(['tar', '-xvf', 'packagesite.txz', 'packagesite.yaml'])
+  write_output(['tar', '-xf', 'packagesite.txz', 'packagesite.yaml'], check=True)
 
   pkg_db = {}
 
@@ -114,7 +119,6 @@ def main(args):
     for raw_pkg in raw_json.split('\n'):
       pkg = json.loads(raw_pkg)
       pkg_db[pkg['name']] = pkg
-  os.unlink('packagesite.yaml')
 
   deps = resolve_deps(pkg_db, ['gtk3'])
   for dep in deps:
@@ -136,6 +140,10 @@ def main(args):
     cmd.append(f)
   for f in glob.glob(f'{sysroot}/usr/local/lib/python*'):
     cmd.append(f)
+  write_output(cmd)
+
+  # remove tmp files
+  cmd = ['rm', '-rf', tmproot]
   write_output(cmd)
 
   return 0
