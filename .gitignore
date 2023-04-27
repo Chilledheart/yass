@@ -36,3 +36,5 @@ sscxx
 /build-*
 /cmake-build-*
 /doxygen
+/freebsd-*-toolchain
+/freebsd-*-tmp
