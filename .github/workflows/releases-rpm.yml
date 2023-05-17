@@ -33,7 +33,7 @@ jobs:
         - 'centos7'
         # - 'centos8'
         # - 'centos9'
-        # - 'fedora35'
+        # - 'fedora36'
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
@@ -72,7 +72,7 @@ jobs:
         - 'centos7'
         # - 'centos8'
         # - 'centos9'
-        # - 'fedora35'
+        # - 'fedora36'
     runs-on: ubuntu-20.04
     needs: docker_publish
     container: 'ghcr.io/chilledheart/${{ matrix.container }}'
