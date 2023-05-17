@@ -165,6 +165,8 @@ set(quiche_SRCS
   # src/quiche/common/platform/default/quiche_platform_impl/quiche_flags_impl.cc
   # src/quiche/common/platform/default/quiche_platform_impl/quiche_flags_impl.h
   src/quiche/common/platform/default/quiche_platform_impl/quiche_prefetch_impl.h
+  #src/quiche/common/platform/default/quiche_platform_impl/quiche_default_proof_providers_impl.h
+  #src/quiche/common/platform/default/quiche_platform_impl/quiche_default_proof_providers_impl.cc
   src/quiche/common/print_elements.h
   src/quiche/common/quiche_buffer_allocator.cc
   src/quiche/common/quiche_buffer_allocator.h
@@ -599,7 +601,6 @@ set(quiche_SRCS
   src/quiche/quic/core/quic_blocked_writer_interface.h
   src/quiche/quic/core/quic_chaos_protector.cc
   src/quiche/quic/core/quic_chaos_protector.h
-  src/quiche/quic/core/quic_clock.cc
   src/quiche/quic/core/quic_clock.h
   src/quiche/quic/core/quic_coalesced_packet.cc
   src/quiche/quic/core/quic_coalesced_packet.h
