@@ -4,6 +4,7 @@
 #include "gtk/utils.hpp"
 
 #include "core/logging.hpp"
+#include <absl/strings/str_cat.h>
 
 #include <absl/strings/string_view.h>
 #include <fcntl.h>
@@ -38,7 +39,20 @@ std::string ExpandUser(const std::string& file_path) {
 
   if (!real_path.empty() && real_path[0] == '~') {
     std::string home = ::getenv("HOME");
-    return home + "/" + real_path.substr(2);
+#ifdef _WIN32
+    if (home.empty()) {
+      home = ::getenv("HOMEPATH");
+    }
+#endif
+    if (real_path.size() == 1) {
+      return home;
+    }
+    // ~username
+    if (real_path[1] != '/') {
+      return absl::StrCat("/home/", real_path.substr(1));
+    }
+    // ~/path/to/directory
+    return absl::StrCat(home, "/", real_path.substr(2));
   }
 
   return real_path;
@@ -75,7 +89,7 @@ bool IsDirectory(const std::string& path) {
 }
 
 bool CreatePrivateDirectory(const std::string& path) {
-  return mkdir(path.c_str(), S_IRUSR | S_IWUSR | S_IXUSR) != 0;
+  return ::mkdir(path.c_str(), S_IRUSR | S_IWUSR | S_IXUSR) != 0;
 }
 
 bool EnsureCreatedDirectory(const std::string& path) {
@@ -86,51 +100,59 @@ bool EnsureCreatedDirectory(const std::string& path) {
 }
 
 bool WriteFileWithContent(const std::string& path, absl::string_view context) {
-  int fd = open(path.c_str(), O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
+  int fd = ::open(path.c_str(), O_WRONLY | O_TRUNC | O_CREAT,
+                  S_IRUSR | S_IWUSR);
   if (fd < 0) {
     return false;
   }
-  ssize_t ret = write(fd, context.data(), context.size());
+  ssize_t written = ::write(fd, context.data(), context.size());
 
-  if (ret != static_cast<long>(context.size()) || close(fd) < 0) {
+  if (written != static_cast<long>(context.size())) {
+    ::close(fd);
+    return false;
+  }
+  if (::close(fd) < 0) {
     return false;
   }
   return true;
 }
 
 std::string GetAutostartDirectory() {
-  const char* XdgConfigHome = getenv("XDG_CONFIG_HOME");
+  const char* XdgConfigHome = ::getenv("XDG_CONFIG_HOME");
   if (!XdgConfigHome)
     XdgConfigHome = "~/.config";
-  return ExpandUser(XdgConfigHome) + "/" + "autostart";
+  return absl::StrCat(ExpandUser(XdgConfigHome), "/", "autostart");
 }
 }  // namespace
 
 bool Utils::GetAutoStart() {
-  std::string autostart_desktop =
-    GetAutostartDirectory() + "/" + DEFAULT_AUTOSTART_NAME + ".desktop";
-  return IsFile(autostart_desktop);
+  std::string autostart_desktop_path =
+    absl::StrCat(GetAutostartDirectory(), "/" ,
+                 DEFAULT_AUTOSTART_NAME , ".desktop");
+  return IsFile(autostart_desktop_path);
 }
 
 void Utils::EnableAutoStart(bool on) {
-  std::string autostart_desktop =
-    GetAutostartDirectory() + "/" + DEFAULT_AUTOSTART_NAME + ".desktop";
+  std::string autostart_desktop_path =
+    absl::StrCat(GetAutostartDirectory(), "/" ,
+                 DEFAULT_AUTOSTART_NAME , ".desktop");
   if (!on) {
-    if (::unlink(autostart_desktop.c_str()) != 0) {
+    if (::unlink(autostart_desktop_path.c_str()) != 0) {
       PLOG(WARNING)
           << "Internal error: unable to remove autostart file";
     }
   } else {
-
     EnsureCreatedDirectory(GetAutostartDirectory());
+
     // force update, delete first
-    if (IsFile(autostart_desktop) && ::unlink(autostart_desktop.c_str()) != 0) {
+    if (IsFile(autostart_desktop_path) &&
+        ::unlink(autostart_desktop_path.c_str()) != 0) {
       PLOG(WARNING)
           << "Internal error: unable to remove previous autostart file";
     }
 
     // write to target
-    if (!WriteFileWithContent(autostart_desktop, kAutoStartFileContent))  {
+    if (!WriteFileWithContent(autostart_desktop_path, kAutoStartFileContent))  {
       PLOG(WARNING) << "Internal error: unable to create autostart file";
     }
   }
@@ -145,20 +167,20 @@ bool Dispatcher::Init(std::function<void()> callback) {
   if (!callback)
     return false;
 #ifdef SOCK_NONBLOCK
-  if (socketpair(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0,
-                 fds_) != 0) {
+  if (::socketpair(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC,
+                   0, fds_) != 0) {
     PLOG(WARNING) << "Dispatcher: socketpair failure";
     return false;
   }
 #else
-  if (socketpair(AF_UNIX, SOCK_STREAM, 0, fds_) != 0) {
+  if (::socketpair(AF_UNIX, SOCK_STREAM, 0, fds_) != 0) {
     PLOG(WARNING) << "Dispatcher: socketpair failure";
     return false;
   }
-  if (fcntl(fds_[0], F_SETFL, fcntl(fds_[0], F_GETFL) | O_NONBLOCK | O_CLOEXEC) != 0 ||
-      fcntl(fds_[1], F_SETFL, fcntl(fds_[1], F_GETFL) | O_NONBLOCK | O_CLOEXEC) != 0) {
-    close(fds_[0]);
-    close(fds_[1]);
+  if (::fcntl(fds_[0], F_SETFL, ::fcntl(fds_[0], F_GETFL) | O_NONBLOCK | O_CLOEXEC) != 0 ||
+      ::fcntl(fds_[1], F_SETFL, ::fcntl(fds_[1], F_GETFL) | O_NONBLOCK | O_CLOEXEC) != 0) {
+    ::close(fds_[0]);
+    ::close(fds_[1]);
     PLOG(WARNING) << "Dispatcher: set non-block failure";
     return false;
   }
@@ -196,7 +218,9 @@ bool Dispatcher::Destroy() {
     return true;
   g_source_destroy(source_);
   source_ = nullptr;
-  if (close(fds_[0]) != 0 || close(fds_[1]) != 0) {
+  bool failure_on_close = ::close(fds_[0]) != 0;
+  failure_on_close |= ::close(fds_[1]) != 0;
+  if (failure_on_close) {
     PLOG(WARNING) << "Dispatcher: close failure";
     return false;
   }
@@ -214,15 +238,15 @@ bool Dispatcher::Emit() {
   const char* ptr = reinterpret_cast<char*>(&data);
   uint32_t size = sizeof(data);
   while (size) {
-    int ret = write(fds_[1], ptr, size);
-    if (ret < 0 && (errno == EINTR || errno == EAGAIN))
+    int written = ::write(fds_[1], ptr, size);
+    if (written < 0 && (errno == EINTR || errno == EAGAIN))
       continue;
-    if (ret < 0) {
+    if (written < 0) {
       PLOG(WARNING) << "Dispatcher: write failure";
       return false;
     }
-    ptr += ret;
-    size -= ret;
+    ptr += written;
+    size -= written;
   }
   return true;
 }
@@ -230,14 +254,12 @@ bool Dispatcher::Emit() {
 bool Dispatcher::ReadCallback() {
   DCHECK(source_);
   DCHECK_NE(fds_[0], -1);
-
   VLOG(2) << "Dispatcher: " << this << " Reading";
-
   int32_t data = 0;
   char* ptr = reinterpret_cast<char*>(&data);
   uint32_t size = sizeof(data);
   while (size) {
-    int ret = read(fds_[0], ptr, size);
+    int ret = ::read(fds_[0], ptr, size);
     if (ret < 0 && (errno == EINTR || errno == EAGAIN))
       continue;
     if (ret < 0) {
