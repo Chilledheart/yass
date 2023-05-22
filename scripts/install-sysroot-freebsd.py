@@ -71,12 +71,18 @@ def extract_pkg(pkg_url, pkg_sum, dst):
     return
   write_output(['tar', '-C', dst, '-xf', os.path.basename(pkg_url), '/usr/local/include', '/usr/local/libdata', '/usr/local/lib'])
 
+def usage():
+  print("usage: ./install-sysroot-freebsd.py <abi>")
+  sys.exit(-1)
+
 def main(args):
   if not args:
     print("no abi specified, setting to freebsd11")
     abi = '12'
-  else:
+  elif args and len(args) == 1 and str.isdecimal(args[0]):
     abi = args[0]
+  else:
+    usage()
 
   # not all tarbars exist in public sever
   if abi == '12':
@@ -84,7 +90,7 @@ def main(args):
   elif abi == '13':
     release = '1'
   else:
-    release = '0'
+    usage()
   version = f'{abi}.{release}'
 
   tmproot = os.path.abspath(f'freebsd-{abi}-tmp')
