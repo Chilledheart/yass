@@ -22,7 +22,7 @@ on:
   release:
     types: [published]
 env:
-  CACHE_EPOCH: 0
+  CACHE_EPOCH: 1
   GOPROXY: direct
 jobs:
   freebsd-binary-release:
@@ -86,7 +86,7 @@ jobs:
           ./scripts/install-sysroot-freebsd.py ${{ matrix.abi }}
           rm -f *.txz *.xz
       - name: Populate depedencies
-        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build
+        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build libglib2.0-dev-bin
       - name: Set clang environment
         run: |
           echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV

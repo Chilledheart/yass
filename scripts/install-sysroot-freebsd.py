@@ -126,7 +126,7 @@ def main(args):
       pkg = json.loads(raw_pkg)
       pkg_db[pkg['name']] = pkg
 
-  deps = resolve_deps(pkg_db, ['gtk3'])
+  deps = resolve_deps(pkg_db, ['gtk4'])
   for dep in deps:
     pkg = pkg_db[dep]
     extract_pkg(base_url + '/' + pkg['path'], pkg['sum'], sysroot)
