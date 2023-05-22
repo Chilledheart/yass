@@ -29,6 +29,7 @@ embedded devices and low end boxes.
 mkdir build
 cd build
 ENABLE_LLD=on
+unset CFLAGS CXXFLAGS FFLAGS FCFLAGS LDFLAGS
 [ "a$DISABLE_LLD" != "a" ] && ENABLE_LLD=off
 cmake3 -G Ninja -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DUSE_HOST_TOOLS=on -DGUI=on -DCLI=on -DSERVER=on -DENABLE_LLD="$ENABLE_LLD" ..
 ninja
