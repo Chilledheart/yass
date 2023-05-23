@@ -37,7 +37,7 @@
 	url = https://quiche.googlesource.com/googleurl/
 [submodule "third_party/c-ares"]
 	path = third_party/c-ares
-	url = https://github.com/c-ares/c-ares
+	url = https://github.com/Chilledheart/c-ares
 [submodule "third_party/nghttp2"]
 	path = third_party/nghttp2
 	url = https://github.com/Chilledheart/nghttp2
