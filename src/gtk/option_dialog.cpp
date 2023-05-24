@@ -22,7 +22,8 @@ OptionDialog::OptionDialog(const std::string& title,
   gtk_window_set_default_size(GTK_WINDOW(impl_), 400, 200);
   gtk_window_set_position(GTK_WINDOW(impl_), GTK_WIN_POS_CENTER);
 
-  static OptionDialog* window = this;
+  static OptionDialog* window;
+  window = this;
 
   GtkGrid *grid = GTK_GRID(gtk_grid_new());
   gtk_grid_set_row_homogeneous(grid, true);
