@@ -11,6 +11,28 @@ import shutil
 # curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
 # curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
 
+try:
+  # For Python 3.0 and later
+  from urllib.request import urlopen
+except ImportError:
+  # Fall back to Python 2's urllib2
+  from urllib2 import urlopen
+
+def download_url(url, tarball):
+  print('Downloading %s to %s' % (url, tarball))
+  sys.stdout.flush()
+  sys.stderr.flush()
+  for _ in range(3):
+    try:
+      response = urlopen(url)
+      with open(tarball, 'wb') as f:
+        f.write(response.read())
+      break
+    except Exception:  # Ignore exceptions.
+      pass
+  else:
+    raise Exception('Failed to download %s' % url)
+
 def mkdir_p(path):
   try:
     os.makedirs(path)
@@ -21,14 +43,32 @@ def mkdir_p(path):
     else:
       raise
 
-def write_output(command, suppress_error=False):
+def write_output(command, check=False):
   print('--- %s' % ' '.join(command))
-  proc = subprocess.Popen(command, stdout=sys.stdout, stderr=sys.stdout,
-      shell=False, env=os.environ)
-  proc.communicate()
-  if not suppress_error and proc.returncode != 0:
-    raise RuntimeError('cmd "%s" failed, exit code %d' % (' '.join(command),
-                                                          proc.returncode))
+  proc = None
+  try:
+    proc = subprocess.Popen(command, stdout=sys.stdout, stderr=sys.stderr,
+        shell=False, env=os.environ)
+  except:
+    if check:
+      raise
+    else:
+      return
+  try:
+    proc.communicate()
+  except KeyboardInterrupt:
+    proc.kill()
+    # We don't call process.wait() as .__exit__ does that for us.
+    raise
+  except:
+    proc.kill()
+    # We don't call process.wait() as .__exit__ does that for us.
+    if check:
+      raise
+  retcode = proc.returncode
+  if check and retcode:
+    raise subprocess.CalledProcessError(retcode, proc.args,
+                                        output=sys.stdout, stderr=sys.stderr)
 def main():
   os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -52,22 +92,22 @@ def main():
   mkdir_p('third_party/llvm-build/Release+Asserts')
   os.chdir('third_party/llvm-build/Release+Asserts')
 
-  write_output(['curl', '-C', '-', '-o', f'clang-{clang_revision}-{clang_arch}.tgz',
-                f'https://commondatastorage.googleapis.com/chromium-browser-clang/{clang_arch}/clang-{clang_revision}.tgz'])
-  write_output(['curl', '-C', '-', '-o', f'clang-tidy-{clang_revision}-{clang_arch}.tgz',
-                f'https://commondatastorage.googleapis.com/chromium-browser-clang/{clang_arch}/clang-tidy-{clang_revision}.tgz'])
-  write_output(['tar', '-xzf', f'clang-{clang_revision}-{clang_arch}.tgz'])
-  write_output(['tar', '-xzf', f'clang-tidy-{clang_revision}-{clang_arch}.tgz'])
+  download_url(f'https://commondatastorage.googleapis.com/chromium-browser-clang/{clang_arch}/clang-{clang_revision}.tgz',
+               f'clang-{clang_revision}-{clang_arch}.tgz')
+  download_url(f'https://commondatastorage.googleapis.com/chromium-browser-clang/{clang_arch}/clang-tidy-{clang_revision}.tgz',
+               f'clang-tidy-{clang_revision}-{clang_arch}.tgz')
+  write_output(['tar', '-xzf', f'clang-{clang_revision}-{clang_arch}.tgz'], check=True)
+  write_output(['tar', '-xzf', f'clang-tidy-{clang_revision}-{clang_arch}.tgz'], check=True)
 
   # create a shim to lld-link
   os.chdir('bin')
   if platform.system() == 'Windows':
     write_output(['clang-cl.exe', '..\..\..\..\scripts\llvm-lib.c', '/DWIN32',
                   '/DWIN32_LEAN_AND_MEAN', '/D_UNICODE', '/DUNICODE', '/MT',
-                  '/O2', '/Ob2', '/DNDEBUG', 'shell32.lib'])
+                  '/O2', '/Ob2', '/DNDEBUG', 'shell32.lib'], check=True)
   else:
-    write_output(['ln', '-sf', 'llvm-ar', 'llvm-lib'])
-    write_output(['ln', '-sf', 'llvm-ar', 'llvm-ranlib'])
+    write_output(['ln', '-sf', 'llvm-ar', 'llvm-lib'], check=True)
+    write_output(['ln', '-sf', 'llvm-ar', 'llvm-ranlib'], check=True)
     # still missing llvm-rc
 
 if __name__ == '__main__':
