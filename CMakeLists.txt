@@ -1532,6 +1532,12 @@ elseif (GUI)
       set(GUI off)
     endif()
 
+    include(FindGettext)
+    if (NOT GETTEXT_FOUND)
+      message(WARNING "gettext not found, disabling GUI build")
+      set(GUI off)
+    endif()
+
     pkg_check_modules(GTK4 gtk4)
     if (GTK4_FOUND)
       set(GUI_FLAVOUR "gtk4")
@@ -1543,6 +1549,16 @@ elseif (GUI)
                         "It should have been installed with the glib2 library. ")
         set(GUI off)
       endif()
+
+      if (GUI)
+        set(GUI_USE_FILE "")
+        set(GUI_INCLUDE_DIRS ${GTK4_INCLUDE_DIRS} ${FONTCONFIG_INCLUDE_DIRS})
+        set(GUI_DEFINITIONS "")
+        set(GUI_C_CXX_FLAGS ${GTK4_CFLAGS} ${GTK4_CFLAGS_OTHER}
+          ${FONTCONFIG_CFLAGS} ${GUI_OTHER_FLAGS})
+        set(GUI_LIBRARY_DIRS ${GTK4_LIBRARY_DIRS} ${FONTCONFIG_LIBRARY_DIRS})
+        set(GUI_LIBRARIES ${GTK4_LIBRARIES} ${FONTCONFIG_LIBRARIES})
+      endif()
     else()
       pkg_check_modules(GTK gtk+-3.0)
       set(GUI_FLAVOUR "gtk3")
@@ -1551,15 +1567,15 @@ elseif (GUI)
         message(WARNING "Gtk+ not found in pkg-config, disabling GUI build")
         set(GUI off)
       endif()
-    endif()
-    if (GUI)
-      set(GUI_USE_FILE "")
-      set(GUI_INCLUDE_DIRS ${GTK_INCLUDE_DIRS} ${GTK4_INCLUDE_DIRS} ${FONTCONFIG_INCLUDE_DIRS})
-      set(GUI_DEFINITIONS "")
-      set(GUI_C_CXX_FLAGS ${GTK_CFLAGS} ${GTK_CFLAGS_OTHER} ${GTK4_CFLAGS} ${GTK4_CFLAGS_OTHER}
-        ${FONTCONFIG_CFLAGS} ${GUI_OTHER_FLAGS})
-      set(GUI_LIBRARY_DIRS ${GTK_LIBRARY_DIRS} ${GTK4_LIBRARY_DIRS} ${FONTCONFIG_LIBRARY_DIRS})
-      set(GUI_LIBRARIES ${GTK_LIBRARIES} ${GTK4_LIBRARIES} ${FONTCONFIG_LIBRARIES})
+      if (GUI)
+        set(GUI_USE_FILE "")
+        set(GUI_INCLUDE_DIRS ${GTK_INCLUDE_DIRS} ${FONTCONFIG_INCLUDE_DIRS})
+        set(GUI_DEFINITIONS "")
+        set(GUI_C_CXX_FLAGS ${GTK_CFLAGS} ${GTK_CFLAGS_OTHER}
+          ${FONTCONFIG_CFLAGS} ${GUI_OTHER_FLAGS})
+        set(GUI_LIBRARY_DIRS ${GTK_LIBRARY_DIRS} ${FONTCONFIG_LIBRARY_DIRS})
+        set(GUI_LIBRARIES ${GTK_LIBRARIES} ${FONTCONFIG_LIBRARIES})
+      endif()
     endif()
   endif()
 endif()
@@ -2561,7 +2577,11 @@ if (GUI)
           src/gtk/yass.cpp
           src/gtk/yass_window.cpp
           src/gtk/option_dialog.cpp
-          src/gtk/utils_gtk.cpp)
+          src/gtk/utils_gtk.cpp
+        )
+        include(CompilePo)
+        create_po_target(yass en src/gtk/yass_en.po)
+        list(APPEND SRC_FILES ${CMAKE_CURRENT_BINARY_DIR}/yass_en.gmo)
     elseif(GUI_FLAVOUR STREQUAL "gtk4")
         # Compile the gresource file with the glib-compile-resources.
         set(MAIN_GRESOURCE ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4/yass.gresource.xml)
@@ -2577,6 +2597,10 @@ if (GUI)
           src/gtk4/yass_window.cpp
           src/gtk4/option_dialog.cpp
           src/gtk4/utils_gtk.cpp)
+        # HOLDPLACE for TODO gettext support
+        include(CompilePo)
+        create_po_target(yass en src/gtk4/yass_en.po)
+        list(APPEND SRC_FILES ${CMAKE_CURRENT_BINARY_DIR}/yass_en.gmo)
     endif()
 
     # target_link_directories requires cmake 3.13

@@ -10,6 +10,7 @@
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
 #include <fontconfig/fontconfig.h>
+#include <glib/gi18n.h>
 #include <locale.h>
 #include <stdarg.h>
 
@@ -115,6 +116,9 @@ int main(int argc, char** argv) {
   if (!SetUTF8Locale()) {
     LOG(WARNING) << "Failed to set up utf-8 locale";
   }
+  setlocale(LC_ALL, "");
+  bindtextdomain("yass", "../share/locale");
+  textdomain("yass");
 
   absl::InitializeSymbolizer(argv[0]);
   absl::FailureSignalHandlerOptions failure_handle_options;

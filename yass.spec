@@ -78,6 +78,7 @@ update-desktop-database
 %{_datadir}/icons/hicolor/128x128/apps/yass.png
 %{_datadir}/icons/hicolor/256x256/apps/yass.png
 %{_datadir}/icons/hicolor/512x512/apps/yass.png
+%{_datadir}/locale/en/LC_MESSAGES/yass.mo
 
 %package server
 Summary: lightweight and secure http/socks4/socks5 proxy (server side)

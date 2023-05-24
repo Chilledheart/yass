@@ -31,7 +31,7 @@ jobs:
       matrix:
         container:
         - 'centos7'
-        - 'fedora36'
+        - 'fedora37'
         # - 'centos8'
         # - 'centos9'
     runs-on: ubuntu-20.04
@@ -70,7 +70,7 @@ jobs:
       matrix:
         container:
         - 'centos7'
-        - 'fedora36'
+        - 'fedora37'
         # - 'centos8'
         # - 'centos9'
     runs-on: ubuntu-20.04

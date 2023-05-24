@@ -7,6 +7,7 @@
 #include <sstream>
 
 #include <absl/flags/flag.h>
+#include <glib/gi18n.h>
 
 #include "cli/cli_connection_stats.hpp"
 #include "core/utils.hpp"
@@ -74,9 +75,9 @@ YASSWindow::YASSWindow()
   menubar = gtk_menu_bar_new();
 
   file_menu = gtk_menu_new();
-  file_menu_item = gtk_menu_item_new_with_label("File");
-  option_menu_item = gtk_menu_item_new_with_label("Option...");
-  exit_menu_item = gtk_menu_item_new_with_label("Exit");
+  file_menu_item = gtk_menu_item_new_with_label(_("File"));
+  option_menu_item = gtk_menu_item_new_with_label(_("Option..."));
+  exit_menu_item = gtk_menu_item_new_with_label(_("Exit"));
 
   sep = gtk_separator_menu_item_new();
 
@@ -109,7 +110,7 @@ YASSWindow::YASSWindow()
   gtk_box_pack_start(vbox, menubar, FALSE, FALSE, 0);
 
   start_button_ = GTK_BUTTON(gtk_button_new());
-  gtk_button_set_label(start_button_, "Start");
+  gtk_button_set_label(start_button_, _("Start"));
 
 #if GTK_CHECK_VERSION(3, 12, 0)
   gtk_widget_set_margin_top(GTK_WIDGET(start_button_), 30);
@@ -117,7 +118,7 @@ YASSWindow::YASSWindow()
 #endif
 
   stop_button_ = GTK_BUTTON(gtk_button_new());
-  gtk_button_set_label(stop_button_, "Stop");
+  gtk_button_set_label(stop_button_, _("Stop"));
 #if GTK_CHECK_VERSION(3, 12, 0)
   gtk_widget_set_margin_top(GTK_WIDGET(stop_button_), 30);
   gtk_widget_set_margin_bottom(GTK_WIDGET(stop_button_), 30);
@@ -145,15 +146,15 @@ YASSWindow::YASSWindow()
 
   gtk_container_add(GTK_CONTAINER(hbox), GTK_WIDGET(left_box));
 
-  auto server_host_label_ = gtk_label_new("Server Host");
-  auto server_port_label_ = gtk_label_new("Server Port");
-  auto username_label_ = gtk_label_new("Username");
-  auto password_label_ = gtk_label_new("Password");
-  auto method_label_ = gtk_label_new("Cipher/Method");
-  auto local_host_label_ = gtk_label_new("Local Host");
-  auto local_port_label_ = gtk_label_new("Local Port");
-  auto timeout_label_ = gtk_label_new("Timeout");
-  auto autostart_label_ = gtk_label_new("Auto Start");
+  auto server_host_label_ = gtk_label_new(_("Server Host"));
+  auto server_port_label_ = gtk_label_new(_("Server Port"));
+  auto username_label_ = gtk_label_new(_("Username"));
+  auto password_label_ = gtk_label_new(_("Password"));
+  auto method_label_ = gtk_label_new(_("Cipher/Method"));
+  auto local_host_label_ = gtk_label_new(_("Local Host"));
+  auto local_port_label_ = gtk_label_new(_("Local Port"));
+  auto timeout_label_ = gtk_label_new(_("Timeout"));
+  auto autostart_label_ = gtk_label_new(_("Auto Start"));
 
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_host_label_), 0, 0, 1, 1);
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_port_label_), 0, 1, 1, 1);
@@ -219,7 +220,7 @@ YASSWindow::YASSWindow()
 
   status_bar_ = GTK_STATUSBAR(gtk_statusbar_new());
   gtk_statusbar_remove_all(status_bar_, 0);
-  gtk_statusbar_push(status_bar_, 0, "READY");
+  gtk_statusbar_push(status_bar_, 0, _("READY"));
 
   gtk_box_pack_start(vbox, GTK_WIDGET(status_bar_), true, false, 0);
 
@@ -409,7 +410,7 @@ void YASSWindow::UpdateStatusBar() {
 }
 
 void YASSWindow::OnOption() {
-  OptionDialog option_dialog("YASS Option", nullptr, true);
+  OptionDialog option_dialog(_("YASS Option"), nullptr, true);
 
   option_dialog.run();
 }

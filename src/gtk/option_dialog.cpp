@@ -4,6 +4,7 @@
 #include "gtk/option_dialog.hpp"
 
 #include <absl/flags/flag.h>
+#include <glib/gi18n.h>
 
 #include "config/config.hpp"
 #include "core/logging.hpp"
@@ -29,16 +30,16 @@ OptionDialog::OptionDialog(const std::string& title,
   gtk_grid_set_row_homogeneous(grid, true);
   gtk_grid_set_column_homogeneous(grid, true);
 
-  auto connect_timeout_label = gtk_label_new("Connect Timeout");
-  auto tcp_user_timeout_label = gtk_label_new("TCP User Timeout");
-  auto so_linger_timeout_label = gtk_label_new("TCP Linger Timeout");
-  auto so_snd_buffer_label = gtk_label_new("TCP Send Buffer");
-  auto so_rcv_buffer_label = gtk_label_new("TCP Receive Buffer");
+  auto connect_timeout_label = gtk_label_new(_("Connect Timeout"));
+  auto tcp_user_timeout_label = gtk_label_new(_("TCP User Timeout"));
+  auto so_linger_timeout_label = gtk_label_new(_("TCP Linger Timeout"));
+  auto so_snd_buffer_label = gtk_label_new(_("TCP Send Buffer"));
+  auto so_rcv_buffer_label = gtk_label_new(_("TCP Receive Buffer"));
 
-  auto tcp_keep_alive_label = gtk_label_new("TCP keep alive");
-  auto tcp_keep_alive_cnt_label = gtk_label_new("The number of TCP keep-alive probes");
-  auto tcp_keep_alive_idle_timeout_label = gtk_label_new("TCP keep alive after idle");
-  auto tcp_keep_alive_interval_label = gtk_label_new("TCP keep alive interval");
+  auto tcp_keep_alive_label = gtk_label_new(_("TCP keep alive"));
+  auto tcp_keep_alive_cnt_label = gtk_label_new(_("The number of TCP keep-alive probes"));
+  auto tcp_keep_alive_idle_timeout_label = gtk_label_new(_("TCP keep alive after idle"));
+  auto tcp_keep_alive_interval_label = gtk_label_new(_("TCP keep alive interval"));
 
   gtk_grid_attach(grid, GTK_WIDGET(connect_timeout_label), 0, 0, 1, 1);
   gtk_grid_attach(grid, GTK_WIDGET(tcp_user_timeout_label), 0, 1, 1, 1);
@@ -74,10 +75,10 @@ OptionDialog::OptionDialog(const std::string& title,
   gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_interval_), 1, 8, 1, 1);
 
   okay_button_ = GTK_BUTTON(gtk_button_new());
-  gtk_button_set_label(okay_button_, "Okay");
+  gtk_button_set_label(okay_button_, _("Okay"));
 
   cancel_button_ = GTK_BUTTON(gtk_button_new());
-  gtk_button_set_label(cancel_button_, "Cancel");
+  gtk_button_set_label(cancel_button_, _("Cancel"));
 
   auto okay_callback = []() { window->OnOkayButtonClicked(); };
 

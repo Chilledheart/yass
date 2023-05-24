@@ -288,7 +288,7 @@ jobs:
             clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/{clang,clang++,clang-12,ld.lld,lld,llvm-ar,llvm-ranlib}
           rm -f *.xz
       - name: Populate depedencies
-        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build libgtk-3-dev libncurses5
+        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build libgtk-3-dev libncurses5 gettext
       - name: Set build options
         run: |
           if [ "${{ matrix.compiler }}" = "clang" ]; then
