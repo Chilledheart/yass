@@ -6,8 +6,27 @@ import os
 import subprocess
 import sys
 
-def check_string_output(command):
-  return subprocess.check_output(command, stderr=subprocess.STDOUT).decode().strip()
+try:
+  # For Python 3.0 and later
+  from urllib.request import urlopen
+except ImportError:
+  # Fall back to Python 2's urllib2
+  from urllib2 import urlopen
+
+def download_url(url, tarball):
+  print('Downloading %s to %s' % (url, tarball))
+  sys.stdout.flush()
+  sys.stderr.flush()
+  for _ in range(3):
+    try:
+      response = urlopen(url)
+      with open(tarball, 'wb') as f:
+        f.write(response.read())
+      break
+    except Exception:  # Ignore exceptions.
+      pass
+  else:
+    raise Exception('Failed to download %s' % url)
 
 def write_output(command, check=False):
   print('--- %s' % ' '.join(command))
@@ -65,7 +84,7 @@ def resolve_deps(pkg_db, deps):
 
 def extract_pkg(pkg_url, pkg_sum, dst):
   print(f'extracting pkg {pkg_url}...')
-  write_output(['curl', '-C', '-', '-L', '-O', pkg_url], check=True)
+  download_url(pkg_url, os.path.basename(pkg_url))
   if GetSha256(os.path.basename(pkg_url)) != pkg_sum:
     print(f'{pkg_url} checksum mismatched, expected: {pkg_sum}!')
     return
@@ -106,13 +125,13 @@ def main(args):
     os.mkdir(sysroot)
 
   # extract include and so only
-  write_output(['curl', '-C', '-', '-L', '-O', f'http://ftp.freebsd.org/pub/FreeBSD/releases/amd64/{version}-RELEASE/base.txz'], check=True)
+  download_url(f'http://ftp.freebsd.org/pub/FreeBSD/releases/amd64/{version}-RELEASE/base.txz', 'base.txz')
   write_output(['tar', '-C', sysroot, '-xf', 'base.txz', './usr/include', './usr/lib', './lib', './usr/libdata/pkgconfig'], check=True)
 
   print(f'extract sysroot (gtk4)...')
 
   base_url = f'http://pkg.freebsd.org/FreeBSD%3A{abi}%3Aamd64/release_{release}'
-  write_output(['curl', '-C', '-', '-L', '-O', f'{base_url}/packagesite.txz'], check=True)
+  download_url(f'{base_url}/packagesite.txz', 'packagesite.txz')
 
   write_output(['tar', '-xf', 'packagesite.txz', 'packagesite.yaml'], check=True)
 
