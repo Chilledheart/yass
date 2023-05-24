@@ -109,7 +109,7 @@ def main(args):
   write_output(['curl', '-C', '-', '-L', '-O', f'http://ftp.freebsd.org/pub/FreeBSD/releases/amd64/{version}-RELEASE/base.txz'], check=True)
   write_output(['tar', '-C', sysroot, '-xf', 'base.txz', './usr/include', './usr/lib', './lib', './usr/libdata/pkgconfig'], check=True)
 
-  print(f'extract sysroot (gtk3)...')
+  print(f'extract sysroot (gtk4)...')
 
   base_url = f'http://pkg.freebsd.org/FreeBSD%3A{abi}%3Aamd64/release_{release}'
   write_output(['curl', '-C', '-', '-L', '-O', f'{base_url}/packagesite.txz'], check=True)
