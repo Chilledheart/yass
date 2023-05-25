@@ -75,7 +75,11 @@ jobs:
         # - 'centos9'
     runs-on: ubuntu-20.04
     needs: docker_publish
-    container: 'ghcr.io/chilledheart/${{ matrix.container }}'
+    container:
+      image: 'ghcr.io/chilledheart/${{ matrix.container }}'
+      # required by old libseccomp2 (https://github.com/docker/for-linux/issues/1262)
+      # close_range syscall in container returns operatio not permitted
+      options: --privileged
     env:
       DISTRO: ${{ matrix.container }}
     steps:
