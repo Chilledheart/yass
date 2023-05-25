@@ -1,5 +1,14 @@
 FROM fedora:37
 
+# Install utils for selinux
+RUN yum clean all && \
+  rm -rf /var/cache/yum && rm -rf /var/cache/dnf && \
+  yum install -y selinux-policy && \
+  yum clean all && \
+  rm -rf /var/cache/yum && rm -rf /var/cache/dnf
+
+RUN setenforce 0
+
 # Install requirements : update repo and install all requirements
 RUN yum clean all && \
   rm -rf /var/cache/yum && rm -rf /var/cache/dnf && \
