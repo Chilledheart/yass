@@ -360,7 +360,9 @@ func buildStageGenerateBuildScript() {
 	cmakeArgs = append(cmakeArgs, "-DGUI=ON", "-DCLI=ON", "-DSERVER=ON")
 	cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_BUILD_TYPE=%s", cmakeBuildTypeFlag))
 	cmakeArgs = append(cmakeArgs, "-G", "Ninja")
-	cmakeArgs = append(cmakeArgs, "-DUSE_HOST_TOOLS=on")
+	if systemNameFlag != runtime.GOOS || sysrootFlag != "" || msvcTargetArchFlag != "x64" {
+		cmakeArgs = append(cmakeArgs, "-DUSE_HOST_TOOLS=on")
+	}
 	if buildBenchmarkFlag || runBenchmarkFlag {
 		cmakeArgs = append(cmakeArgs, "-DBUILD_BENCHMARKS=on")
 	}
