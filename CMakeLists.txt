@@ -2802,6 +2802,18 @@ if (BUILD_TESTS)
     COMMAND ${CMAKE_CURRENT_BINARY_DIR}/yass_test
     DEPENDS yass_test
     COMMENT "yass unittests")
+
+  find_package(PkgConfig)
+  if (PKG_CONFIG_FOUND)
+    pkg_check_modules(CURL libcurl)
+    if (CURL_FOUND)
+      target_compile_definitions(yass_test PRIVATE HAVE_CURL)
+      target_include_directories(yass_test PRIVATE ${CURL_INCLUDE_DIRS})
+      target_compile_options(yass_test PRIVATE ${CURL_CFLAGS} ${CURL_CFLAGS_OTHER})
+      target_link_directories(yass_test PRIVATE ${CURL_LIBRARY_DIRS})
+      target_link_libraries(yass_test PRIVATE ${CURL_LIBRARIES})
+    endif()
+  endif()
 endif()
 
 if (BUILD_BENCHMARKS)
