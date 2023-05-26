@@ -1,5 +1,5 @@
 Name:    yass
-Version: 1.3.2
+Version: 1.3.3
 Release: 1%{?dist}
 Summary: lightweight and secure http/socks4/socks5 proxy
 
@@ -97,6 +97,8 @@ embedded devices and low end boxes.
 %{_bindir}/yass_cli
 
 %changelog
+* Fri May 26 2023 Chilledheart <hukeyue@hotmail.com> - 1.3.3-1
+  - New bug-fix release.
 * Wed Apr 26 2023 Chilledheart <hukeyue@hotmail.com> - 1.3.2-1
   - New bug-fix release.
 * Sun Apr 2 2023 Chilledheart <hukeyue@hotmail.com> - 1.3.1-1
