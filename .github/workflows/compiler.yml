@@ -289,6 +289,8 @@ jobs:
           rm -f *.xz
       - name: Populate depedencies
         run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build libgtk-3-dev libncurses5
+      - name: Populate depedencies (test purposes)
+        run: sudo apt-get update -qq && sudo apt-get install -y libcurl4-openssl-dev
       - name: Set build options
         run: |
           if [ "${{ matrix.compiler }}" = "clang" ]; then
