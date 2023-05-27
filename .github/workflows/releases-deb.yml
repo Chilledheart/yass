@@ -22,7 +22,7 @@ on:
   release:
     types: [published]
 env:
-  CACHE_EPOCH: 0
+  CACHE_EPOCH: 1
   GOPROXY: direct
   DH_QUIET: 1
 jobs:
@@ -267,6 +267,11 @@ jobs:
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y pkg-config libglib2.0-dev:${{ env.HOST_ARCH }} libgtk-3-dev:${{ env.HOST_ARCH }}
+      - name: Populate depedencie (curl, for test purpose)
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_ARCH != 'armel' && env.HOST_ARCH != 'mipsel' && env.HOST_ARCH != 'mips64el' }}
+        run: |
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get install -y libcurl4-openssl-dev:${{ env.HOST_ARCH }}
       - name: Populate depedencie (list upgradable packages)
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \

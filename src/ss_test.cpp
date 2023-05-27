@@ -11,6 +11,11 @@
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
 #include <openssl/crypto.h>
+
+#ifdef HAVE_CURL
+#include <curl/curl.h>
+#endif
+
 #include "cli/cli_server.hpp"
 #include "config/config.hpp"
 #include "core/cipher.hpp"
@@ -25,16 +30,10 @@
 
 namespace {
 
-IOBuf content_buffer;
+IOBuf g_send_buffer;
 std::mutex g_in_provider_mutex;
-std::mutex g_in_consumer_mutex;
-std::unique_ptr<IOBuf> recv_content_buffer;
+std::unique_ptr<IOBuf> g_recv_buffer;
 const char kConnectResponse[] = "HTTP/1.1 200 Connection established\r\n\r\n";
-#if defined(NDEBUG) && !defined(_DEBUG) && !defined(MEMORY_SANITIZER) && !defined(_WIN32)
-const int kIOLoopCount = 5;
-#else
-const int kIOLoopCount = 1;
-#endif
 
 // openssl req -newkey rsa:1024 -keyout pkey.pem -x509 -out cert.crt -days 3650 -nodes -subj /C=XX
 const char kCertificate[] =
@@ -70,16 +69,16 @@ const char kPrivateKey[] =
 "-----END PRIVATE KEY-----\n";
 
 void GenerateRandContent(int size) {
-  content_buffer.clear();
-  content_buffer.reserve(0, size);
+  g_send_buffer.clear();
+  g_send_buffer.reserve(0, size);
 
-  RandBytes(content_buffer.mutable_data(), std::min(256, size));
+  RandBytes(g_send_buffer.mutable_data(), std::min(256, size));
   for (int i = 1; i < size / 256; ++i) {
-    memcpy(content_buffer.mutable_data() + 256 * i, content_buffer.data(), 256);
+    memcpy(g_send_buffer.mutable_data() + 256 * i, g_send_buffer.data(), 256);
   }
-  content_buffer.append(size);
+  g_send_buffer.append(size);
 
-  recv_content_buffer = IOBuf::create(size);
+  g_recv_buffer = IOBuf::create(size);
 }
 
 class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderConnection>,
@@ -125,80 +124,136 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
   }
 
  private:
-  void do_io() {
-    done_[0] = false;
-    done_[1] = false;
+  asio::streambuf recv_buff_hdr;
 
-    VLOG(1) << "Connection (content-provider) " << connection_id() << " start to do IO (" << counter_ << " left)";
+  void read_http_request() {
     scoped_refptr<ContentProviderConnection> self(this);
-    g_in_provider_mutex.lock();
-
-    asio::async_write(socket_, const_buffer(content_buffer),
+    // Read HTTP Request Header
+    asio::async_read_until(socket_, recv_buff_hdr, "\r\n\r\n",
       [this, self](asio::error_code ec, size_t bytes_transferred) {
-        if (ec || bytes_transferred != content_buffer.length()) {
+        if (ec) {
+          LOG(WARNING) << "Connection (content-provider) " << connection_id()
+                       << " Failed to transfer data: " << ec;
+          shutdown();
+          return;
+        }
+        VLOG(1) << "Connection (content-provider) " << connection_id()
+                << " read http header: " << bytes_transferred << " bytes";
+        // FIXME parse http header
+#if 0
+        std::string recv_buff_hdr_str(asio::buffers_begin(recv_buff_hdr.data()),
+                                      asio::buffers_begin(recv_buff_hdr.data()) + bytes_transferred);
+#endif
+
+        // append the rest of data to another stage
+        recv_buff_hdr.consume(bytes_transferred);
+        if (recv_buff_hdr.size()) {
+          memcpy(g_recv_buffer->mutable_tail(), &*asio::buffers_begin(recv_buff_hdr.data()), recv_buff_hdr.size());
+          g_recv_buffer->append(recv_buff_hdr.size());
+          VLOG(1) << "Connection (content-provider) " << connection_id()
+                  << " read http data: " << bytes_transferred << " bytes";
+        }
+
+        write_http_response_hdr1();
+    });
+  }
+
+  void write_http_response_hdr1() {
+    scoped_refptr<ContentProviderConnection> self(this);
+    // Write HTTP Response Header
+    static const char http_response_hdr1[] = "HTTP/1.1 100 Continue\r\n\r\n";
+    asio::async_write(socket_, asio::const_buffer(http_response_hdr1,
+                                                  sizeof(http_response_hdr1) - 1),
+      [this, self](asio::error_code ec, size_t bytes_transferred) {
+        if (ec || bytes_transferred != sizeof(http_response_hdr1) - 1) {
+          LOG(WARNING) << "Connection (content-provider) " << connection_id()
+                       << " Failed to transfer data: " << ec;
+          shutdown();
+          return;
+        }
+        VLOG(1) << "Connection (content-provider) " << connection_id()
+                << " write http header: " << bytes_transferred << " bytes.";
+        read_http_request_data();
+    });
+  }
+
+  void read_http_request_data() {
+    scoped_refptr<ContentProviderConnection> self(this);
+    // Read HTTP Request Data
+    asio::async_read(socket_, tail_buffer(*g_recv_buffer),
+      [this, self](asio::error_code ec, size_t bytes_transferred) {
+        g_recv_buffer->append(bytes_transferred);
+        VLOG(1) << "Connection (content-provider) " << connection_id()
+                << " read http data: " << bytes_transferred << " bytes";
+
+        bytes_transferred = g_recv_buffer->length();
+        if (ec || bytes_transferred != g_send_buffer.length()) {
+          LOG(WARNING) << "Connection (content-provider) " << connection_id()
+                       << " Failed to transfer data: " << ec;
+          shutdown();
+          return;
+        }
+        write_http_response_hdr2();
+    });
+  }
+
+  std::string http_response_hdr2;
+
+  void write_http_response_hdr2() {
+    scoped_refptr<ContentProviderConnection> self(this);
+    // Write HTTP Response Header, Part 2
+    http_response_hdr2 = StringPrintf(
+      "HTTP/1.1 200 OK\r\n"
+      "Server: asio/1.0.0\r\n"
+      "Content-Type: application/octet-stream\r\n"
+      "Content-Length: %llu\r\n"
+      "Connection: close\r\n\r\n", (unsigned long long)g_send_buffer.length());
+    asio::async_write(socket_, asio::const_buffer(http_response_hdr2.data(),
+                                                  http_response_hdr2.size()),
+      [this, self](asio::error_code ec, size_t bytes_transferred) {
+        if (ec || bytes_transferred != http_response_hdr2.size()) {
+          LOG(WARNING) << "Connection (content-provider) " << connection_id()
+                       << " Failed to transfer data: " << ec;
+          shutdown();
+          return;
+        }
+        write_http_response_data();
+    });
+  }
+
+  void write_http_response_data() {
+    // Write HTTP Response Data
+    scoped_refptr<ContentProviderConnection> self(this);
+    asio::async_write(socket_, const_buffer(g_send_buffer),
+      [this, self](asio::error_code ec, size_t bytes_transferred) {
+        if (ec || bytes_transferred != g_send_buffer.length()) {
           LOG(WARNING) << "Connection (content-provider) " << connection_id()
                        << " Failed to transfer data: " << ec;
         } else {
           VLOG(1) << "Connection (content-provider) " << connection_id()
                   << " written: " << bytes_transferred << " bytes";
         }
-        done_[0] = true;
         shutdown();
     });
+  }
 
-    asio::async_read(socket_, mutable_buffer(*recv_content_buffer),
-      [this, self](asio::error_code ec, size_t bytes_transferred) {
-        if (ec || bytes_transferred != content_buffer.length()) {
-          LOG(WARNING) << "Connection (content-provider) " << connection_id()
-                       << " Failed to transfer data: " << ec;
-        } else {
-          VLOG(1) << "Connection (content-provider) " << connection_id()
-                  << " read: " << bytes_transferred << " bytes";
-        }
-        recv_content_buffer->append(bytes_transferred);
-        size_t inpending = socket_.available(ec);
-        static_cast<void>(inpending);
-        if (!ec) {
-          EXPECT_EQ(inpending, 0u);
-        }
-        done_[1] = true;
-        shutdown();
-    });
+  void do_io() {
+    scoped_refptr<ContentProviderConnection> self(this);
+    g_in_provider_mutex.lock();
+    read_http_request();
   }
 
   void shutdown() {
-    if (!done_[0] || !done_[1]) {
-      return;
-    }
-    g_in_provider_mutex.unlock();
-    shutdown_impl();
-  }
-
-  void shutdown_impl() {
-    if (!g_in_consumer_mutex.try_lock()) {
-      scoped_refptr<ContentProviderConnection> self(this);
-      io_context_->post([this, self]() {
-        shutdown_impl();
-      });
-      return;
-    }
-    // consumer locked
-    if (--counter_) {
-      do_io();
-      g_in_consumer_mutex.unlock();
-      return;
-    }
     asio::error_code ec;
+    g_in_provider_mutex.unlock();
     socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+    LOG(WARNING) << "Connection (content-provider) " << connection_id()
+                 << " Shutting down";
     if (ec) {
       LOG(WARNING) << "Connection (content-provider) " << connection_id()
                    << " shutdown failure: " << ec;
     }
-    g_in_consumer_mutex.unlock();
   }
-
-  bool done_[2] = { false, false };
-  int counter_ = kIOLoopCount;
 };
 
 class ContentProviderConnectionFactory : public ConnectionFactory {
@@ -214,6 +269,7 @@ class ContentProviderConnectionFactory : public ConnectionFactory {
 
 typedef ContentServer<ContentProviderConnectionFactory> ContentProviderServer;
 
+#ifndef HAVE_CURL
 void GenerateConnectRequest(std::string host, int port_num, IOBuf *buf) {
   std::string request_header = StringPrintf(
       "CONNECT %s:%d HTTP/1.1\r\n"
@@ -225,6 +281,7 @@ void GenerateConnectRequest(std::string host, int port_num, IOBuf *buf) {
   memcpy(buf->mutable_buffer(), request_header.c_str(), request_header.size());
   buf->prepend(request_header.size());
 }
+#endif
 
 // [content provider] <== [ss server] <== [ss local] <== [content consumer]
 class SsEndToEndTest : public ::testing::Test {
@@ -306,23 +363,92 @@ class SsEndToEndTest : public ::testing::Test {
   }
 
   void SendRequestAndCheckResponse() {
-    asio::io_context io_context;
-    asio::ip::tcp::socket s(io_context);
+#ifdef HAVE_CURL
+    CURL *curl;
+    char errbuf[CURL_ERROR_SIZE];
+    std::stringstream err_ss;
+    CURLcode ret;
+    const uint8_t* data = g_send_buffer.data();
+    IOBuf resp_buffer;
 
+    curl = curl_easy_init();
+    ASSERT_TRUE(curl) << "curl initial failure";
+    std::string url = "http://127.0.0.1:" + std::to_string(content_provider_endpoint_.port());
+    std::string proxy_url = "http://127.0.0.1:" + std::to_string(local_endpoint_.port());
+    if (VLOG_IS_ON(1)) {
+      curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+    }
+    curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errbuf);
+    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(curl, CURLOPT_PROXY, proxy_url.c_str());
+    curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
+    curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
+    /* we want to use our own read function */
+    curl_read_callback r_callback = [](char *buffer, size_t size, size_t nmemb, void *clientp) -> size_t {
+      const uint8_t **data = reinterpret_cast<const uint8_t **>(clientp);
+      size_t copied = std::min<size_t>(g_send_buffer.tail() - *data, size * nmemb);
+      if (copied) {
+        memcpy(buffer, *data, copied);
+        *data += copied;
+        VLOG(1) << "Connection (content-consumer) write: " << copied << " bytes";
+      }
+      return copied;
+    };
+    curl_easy_setopt(curl, CURLOPT_READFUNCTION, r_callback);
+    /* we want to use our own write function */
+    curl_write_callback w_callback = [](char *data, size_t size, size_t nmemb, void *clientp) -> size_t {
+      size_t copied = size * nmemb;
+      VLOG(1) << "Connection (content-consumer) read: " << copied << " bytes";
+      IOBuf* buf = reinterpret_cast<IOBuf*>(clientp);
+      buf->reserve(0, copied);
+      memcpy(buf->mutable_tail(), data, copied);
+      buf->append(copied);
+      return copied;
+    };
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, w_callback);
+    curl_easy_setopt(curl, CURLOPT_READDATA, &data);
+    /* provide the size of the upload, we typecast the value to curl_off_t
+       since we must be sure to use the correct data size */
+    curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE,
+                     (curl_off_t)g_send_buffer.length());
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resp_buffer);
+    ret = curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+    /* if the request did not complete correctly, show the error
+    information. if no detailed error information was written to errbuf
+    show the more generic information from curl_easy_strerror instead.
+    */
+    if (ret != CURLE_OK) {
+      size_t len = strlen(errbuf);
+      err_ss << "libcurl: (" << ret << ") ";
+      if (len)
+        err_ss << errbuf << ((errbuf[len - 1] != '\n') ? "\n" : "");
+      else
+        err_ss << curl_easy_strerror(ret);
+    }
+    ASSERT_EQ(ret, CURLE_OK) << "curl perform error: " << err_ss.str();
+#else
+    asio::io_context io_context;
     auto endpoint = local_endpoint_;
 
+    // Connect to proxy server
+    asio::ip::tcp::socket s(io_context);
     asio::error_code ec;
     s.connect(endpoint, ec);
     ASSERT_FALSE(ec) << ec;
+
+    // Generate http 1.0 proxy header
     auto request_buf = IOBuf::create(SOCKET_BUF_SIZE);
     GenerateConnectRequest("127.0.0.1", content_provider_endpoint_.port(),
                            request_buf.get());
 
+    // Write data after proxy header
     size_t written = asio::write(s, const_buffer(*request_buf), ec);
     VLOG(1) << "Connection (content-consumer) written: " << written << " bytes";
     EXPECT_FALSE(ec) << ec;
     EXPECT_EQ(written, request_buf->length());
 
+    // Read proxy response
     constexpr int response_len = sizeof(kConnectResponse) - 1;
     IOBuf response_buf;
     response_buf.reserve(0, response_len);
@@ -331,68 +457,113 @@ class SsEndToEndTest : public ::testing::Test {
     response_buf.append(read);
     ASSERT_EQ((int)read, response_len);
 
-    const char* buffer = reinterpret_cast<const char*>(response_buf.data());
-    size_t buffer_length = response_buf.length();
-    ASSERT_EQ((int)buffer_length, response_len);
-    ASSERT_EQ(::testing::Bytes(buffer, buffer_length),
+    // Check proxy response
+    const char* response_buffer = reinterpret_cast<const char*>(response_buf.data());
+    size_t response_buffer_length = response_buf.length();
+    ASSERT_EQ((int)response_buffer_length, response_len);
+    ASSERT_EQ(::testing::Bytes(response_buffer, response_buffer_length),
               ::testing::Bytes(kConnectResponse, response_len));
 
-    auto start = std::chrono::steady_clock::now();
+    // Write HTTP Request Header
+    std::string http_request_hdr =
+      StringPrintf(
+      "PUT / HTTP/1.1\r\n"
+      "Host: localhost\r\n"
+      "Accept: */*\r\n"
+      "Content-Length: %llu\r\n"
+      "Expect: 100-continue\r\n\r\n", (unsigned long long)g_send_buffer.length());
 
-    for (int i = kIOLoopCount; i; --i) {
-      while (true) {
-        std::lock_guard<std::mutex> lk(g_in_consumer_mutex);
-        if (!g_in_provider_mutex.try_lock()) {
-          break;
-        }
-        g_in_provider_mutex.unlock();
-      }
-      std::lock_guard<std::mutex> done_lk(g_in_consumer_mutex);
-      VLOG(1) << "Connection (content-consumer) start to do IO (" << i << " left)";
-      written = asio::write(s, const_buffer(content_buffer), ec);
-      VLOG(1) << "Connection (content-consumer) written: " << written << " bytes";
-      EXPECT_FALSE(ec) << ec;
-      EXPECT_EQ(written, content_buffer.length());
+    written = asio::write(s, asio::const_buffer(http_request_hdr.c_str(),
+                                                http_request_hdr.size()), ec);
+    VLOG(1) << "Connection (content-consumer) written hdr: " << http_request_hdr;
+    EXPECT_FALSE(ec) << ec;
+    EXPECT_EQ(written, http_request_hdr.size());
 
-      IOBuf resp_buffer;
-      resp_buffer.reserve(0, content_buffer.length());
-      size_t read = asio::read(s, tail_buffer(resp_buffer), ec);
-      VLOG(1) << "Connection (content-consumer) read: " << read << " bytes";
-      resp_buffer.append(read);
-      EXPECT_FALSE(ec) << ec;
+    // Read HTTP Response "HTTP/1.1 100 Continue\r\n\r\n"
+    static const char http_response_hdr1[] = "HTTP/1.1 100 Continue\r\n\r\n";
 
-      const char* buffer = reinterpret_cast<const char*>(resp_buffer.data());
-      size_t buffer_length = resp_buffer.length();
-      ASSERT_EQ(buffer_length, content_buffer.length());
-      ASSERT_EQ(::testing::Bytes(buffer, buffer_length),
-                ::testing::Bytes(content_buffer.data(), content_buffer.length()));
+    // parse http response1
+    asio::streambuf response_hdr1;
+    read = asio::read_until(s, response_hdr1, "\r\n\r\n", ec);
+    VLOG(1) << "Connection (content-consumer) read hdr1: " << read << " bytes";
+    EXPECT_FALSE(ec) << ec;
+    EXPECT_EQ(read, response_hdr1.size());
+    std::string response_hdr1_str(asio::buffers_begin(response_hdr1.data()),
+                                  asio::buffers_begin(response_hdr1.data()) + read);
+    EXPECT_EQ(response_hdr1_str, std::string(http_response_hdr1));
 
-      {
-        std::lock_guard<std::mutex> lk(g_in_provider_mutex);
-        ASSERT_EQ(recv_content_buffer->length(), content_buffer.length());
-        ASSERT_EQ(::testing::Bytes(recv_content_buffer->data(), recv_content_buffer->length()),
-                  ::testing::Bytes(content_buffer.data(), content_buffer.length()));
+    EXPECT_FALSE(ec) << ec;
+    EXPECT_EQ(read, sizeof(http_response_hdr1) - 1);
 
-        recv_content_buffer->clear();
-      }
+    // Write HTTP Data
+    written = asio::write(s, const_buffer(g_send_buffer), ec);
+    VLOG(1) << "Connection (content-consumer) written upload data: " << written << " bytes";
+    EXPECT_FALSE(ec) << ec;
+    EXPECT_EQ(written, g_send_buffer.length());
+
+    // Read HTTP Response Header
+    // such as
+    //    HTTP/1.1 200 OK
+    //    Server: asio/1.0.0
+    //    Content-Type: application/octet-stream
+    //    Content-Length: 4096
+    //    Connection: close
+    asio::streambuf response_hdr2;
+    read = asio::read_until(s, response_hdr2, "\r\n\r\n", ec);
+    VLOG(1) << "Connection (content-consumer) read hdr2: " << read << " bytes";
+    EXPECT_FALSE(ec) << ec;
+    // FIXME parse http response2 and extract content-length
+#if 0
+    std::string response_hdr2_str(asio::buffers_begin(response_hdr2.data()),
+                                  asio::buffers_begin(response_hdr2.data()) + read);
+#endif
+    response_hdr2.consume(read);
+
+    // Read HTTP Data
+    IOBuf resp_buffer;
+    resp_buffer.reserve(0, g_send_buffer.length());
+
+    if (response_hdr2.size()) {
+      memcpy(resp_buffer.mutable_tail(), &*asio::buffers_begin(response_hdr2.data()), response_hdr2.size());
+      resp_buffer.append(response_hdr2.size());
+      VLOG(1) << "Connection (content-consumer) read: " << response_hdr2.size() << " bytes";
     }
 
-    auto stop = std::chrono::steady_clock::now();
-    double delta = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count() / 1000.0 / 1000.0 / 1000.0;
+    read = asio::read(s, tail_buffer(resp_buffer), ec);
+    VLOG(1) << "Connection (content-consumer) read: " << read << " bytes";
+    resp_buffer.append(read);
+    read = resp_buffer.length();
+    EXPECT_EQ(read, g_send_buffer.length());
+    EXPECT_FALSE(ec) << ec;
 
-    LOG(WARNING) << "full duplex: " << content_buffer.length() * kIOLoopCount / 1024.0 / (delta) << " kb/s";
-
+    // Confirm EOF
     EXPECT_EQ(s.available(ec), 0u);
     EXPECT_FALSE(ec) << ec;
 
-    IOBuf resp_buffer;
-    resp_buffer.reserve(0, SOCKET_DEBUF_SIZE);
-    read = asio::read(s, tail_buffer(resp_buffer), ec);
+    // Confirm EOF (2)
+    IOBuf eof_buffer;
+    eof_buffer.reserve(0, SOCKET_DEBUF_SIZE);
+    read = asio::read(s, tail_buffer(eof_buffer), ec);
     EXPECT_EQ(ec, asio::error::eof) << ec;
     EXPECT_EQ(read, 0u);
 
+    // Shutdown socket to proxy server
     s.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
     EXPECT_FALSE(ec) << ec;
+#endif
+
+    const char* buffer = reinterpret_cast<const char*>(resp_buffer.data());
+    size_t buffer_length = resp_buffer.length();
+    ASSERT_EQ(buffer_length, g_send_buffer.length());
+    ASSERT_EQ(::testing::Bytes(buffer, buffer_length),
+              ::testing::Bytes(g_send_buffer.data(), g_send_buffer.length()));
+
+    {
+      std::lock_guard<std::mutex> lk(g_in_provider_mutex);
+      ASSERT_EQ(g_recv_buffer->length(), g_send_buffer.length());
+      ASSERT_EQ(::testing::Bytes(g_recv_buffer->data(), g_recv_buffer->length()),
+                ::testing::Bytes(g_send_buffer.data(), g_send_buffer.length()));
+    }
   }
 
  private:
@@ -416,6 +587,7 @@ class SsEndToEndTest : public ::testing::Test {
     if (content_provider_server_) {
       content_provider_server_->stop();
     }
+    g_recv_buffer->clear();
   }
 
   asio::error_code StartServer(asio::ip::tcp::endpoint endpoint, int backlog) {
@@ -524,5 +696,15 @@ int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   absl::ParseCommandLine(argc, argv);
 
-  return RUN_ALL_TESTS();
+#ifdef HAVE_CURL
+  curl_global_init(CURL_GLOBAL_ALL);
+#endif
+
+  int ret = RUN_ALL_TESTS();
+
+#ifdef HAVE_CURL
+  curl_global_cleanup();
+#endif
+
+  return ret;
 }

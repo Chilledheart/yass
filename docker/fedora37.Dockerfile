@@ -9,6 +9,6 @@ RUN yum clean all && \
     git make python3 bash coreutils gh ncurses-compat-libs \
     rpm-build rpm-devel rpmlint diffutils patch rpmdevtools \
     cmake ninja-build pkg-config perl golang \
-    gtk4-devel && \
+    gtk4-devel curl-devel && \
   yum clean all && \
   rm -rf /var/cache/yum && rm -rf /var/cache/dnf

@@ -1657,6 +1657,8 @@ void CliConnection::disconnected(asio::error_code ec) {
             << " upstream: last data sent: shutting down";
     shutdown_ = true;
     socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+  } else {
+    WriteStreamInPipe();
   }
 }
 

@@ -1286,6 +1286,8 @@ void ServerConnection::disconnected(asio::error_code ec) {
                 << " erorr occured in shutdown: " << ec;
       }
     });
+  } else {
+    WriteStreamInPipe();
   }
 }
 
