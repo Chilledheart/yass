@@ -563,8 +563,6 @@ class SsEndToEndTest : public ::testing::Test {
       ASSERT_EQ(g_recv_buffer->length(), g_send_buffer.length());
       ASSERT_EQ(::testing::Bytes(g_recv_buffer->data(), g_recv_buffer->length()),
                 ::testing::Bytes(g_send_buffer.data(), g_send_buffer.length()));
-
-      g_recv_buffer->clear();
     }
   }
 
@@ -589,6 +587,7 @@ class SsEndToEndTest : public ::testing::Test {
     if (content_provider_server_) {
       content_provider_server_->stop();
     }
+    g_recv_buffer->clear();
   }
 
   asio::error_code StartServer(asio::ip::tcp::endpoint endpoint, int backlog) {
