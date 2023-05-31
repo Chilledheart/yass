@@ -56,7 +56,7 @@ message(STATUS "Build with libc++")
 #           Public-specific
 # *****************************************************************************************
 
-set(libcxx_CR "2948540a20cbb5b2192119f791b04dd62ca7af1c")
+set(libcxx_CR "bff81b702ff4b7f74b1c0ed02a4bcf6c2744a90b")
 # Fixed libc++ configuration macros are in
 # buildtools/third_party/libc++/__config_site. This config only has defines
 # that vary depending on gn args, and non-define flags.
@@ -72,11 +72,6 @@ if (NOT libcxx_SHARED)
       "_LIBCXXABI_DISABLE_VISIBILITY_ANNOTATIONS")
   endif()
 endif()
-
-set(libcxx_PUBLIC_INCLUDES
-  ${libcxx_PUBLIC_INCLUDES}
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  )
 
 # libc++ has two levels of additional checking:
 # 1. _LIBCPP_ENABLE_ASSERTIONS enables assertions for bounds checking.
@@ -99,11 +94,11 @@ if (MSVC)
   # Windows (and we need to use in order to interoperate correctly with COM
   # among other things).
   set(CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -I ${CMAKE_CURRENT_SOURCE_DIR}/trunk/include"
+    "${CMAKE_CXX_FLAGS} -I ${CMAKE_CURRENT_SOURCE_DIR} -I ${CMAKE_CURRENT_SOURCE_DIR}/trunk/include"
     )
 
 else()
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -nostdinc++ -isystem ${CMAKE_CURRENT_SOURCE_DIR}/trunk/include -isystem ${CMAKE_CURRENT_SOURCE_DIR}/../libc++abi/trunk/include"
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -nostdinc++ -isystem ${CMAKE_CURRENT_SOURCE_DIR} -isystem ${CMAKE_CURRENT_SOURCE_DIR}/trunk/include -isystem ${CMAKE_CURRENT_SOURCE_DIR}/../libc++abi/trunk/include"
     )
 
   # Make sure we don't link against the system libstdc++ or libc++.
@@ -561,14 +556,23 @@ include_directories(trunk/include)
 set(libcxx_PUBLIC_INCLUDES ${libcxx_PUBLIC_INCLUDES} PARENT_SCOPE)
 set(libcxx_PUBLIC_DEFINITIONS ${libcxx_PUBLIC_DEFINITIONS} PARENT_SCOPE)
 set(libcxx_PUBLIC_LIBRARIES ${libcxx_PUBLIC_LIBRARIES} PARENT_SCOPE)
+
+foreach(IncludeDir ${libcxx_PUBLIC_INCLUDES})
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I${IncludeDir}")
+endforeach()
+
+foreach(Definition ${libcxx_PUBLIC_DEFINITIONS})
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D${Definition}")
+endforeach()
+
+foreach(Library ${libcxx_PUBLIC_LIBRARIES})
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-l${Library}")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-l${Library}")
+endforeach()
+
 set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} PARENT_SCOPE)
 set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} PARENT_SCOPE)
 set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} PARENT_SCOPE)
-
-include_directories(${libcxx_PUBLIC_INCLUDES})
-foreach(Definition ${libcxx_PUBLIC_DEFINITIONS})
-  add_definitions(-D${Definition})
-endforeach()
 
 if (NOT MSVC)
   export(

@@ -36,7 +36,7 @@ void load_ca_to_ssl_ctx(SSL_CTX* ssl_ctx) {
   PCCERT_CONTEXT cert = nullptr;
   X509_STORE* store = nullptr;
 
-  cert_store = CertOpenSystemStoreW(NULL, L"ROOT");
+  cert_store = CertOpenSystemStoreW(0, L"ROOT");
   if (!cert_store) {
     PLOG(WARNING) << "CertOpenSystemStoreW failed";
     goto out;

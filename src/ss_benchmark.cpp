@@ -322,7 +322,9 @@ class SsEndToEndBM : public benchmark::Fixture {
       exit(-1);
     }
 
+#if 0
     const char* buffer = reinterpret_cast<const char*>(response_buf.data());
+#endif
     size_t buffer_length = response_buf.length();
     if ((int)buffer_length != response_len) {
       LOG(WARNING) << "Partial read";
@@ -364,7 +366,9 @@ class SsEndToEndBM : public benchmark::Fixture {
       exit(-1);
     }
 
+#if 0
     const char* buffer = reinterpret_cast<const char*>(resp_buffer.data());
+#endif
     size_t buffer_length = resp_buffer.length();
     if (buffer_length != content_buffer.length()) {
       LOG(WARNING) << "Partial read";
