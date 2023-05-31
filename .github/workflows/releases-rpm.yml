@@ -34,7 +34,7 @@ jobs:
         - 'fedora37'
         # - 'centos8'
         # - 'centos9'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - name: Cache docker files (dummy)
@@ -73,13 +73,10 @@ jobs:
         - 'fedora37'
         # - 'centos8'
         # - 'centos9'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: docker_publish
     container:
       image: 'ghcr.io/chilledheart/${{ matrix.container }}'
-      # required by old libseccomp2 (https://github.com/docker/for-linux/issues/1262)
-      # close_range syscall in container returns operatio not permitted
-      options: --privileged
     env:
       DISTRO: ${{ matrix.container }}
     steps:
