@@ -1351,17 +1351,6 @@ endif()
 
 if (USE_LIBCXX)
   add_subdirectory(third_party/libc++)
-  include_directories(${libcxx_PUBLIC_INCLUDES})
-  # fix cmake check
-  set(CMAKE_REQUIRED_INCLUDES
-    ${libcxx_PUBLIC_INCLUDES}
-    ${CMAKE_REQUIRED_INCLUDES})
-  set(CMAKE_REQUIRED_LIBRARIES
-    ${libcxx_PUBLIC_LIBRARIES}
-    ${CMAKE_REQUIRED_LIBRARIES})
-  foreach(Definition ${libcxx_PUBLIC_DEFINITIONS})
-    add_definitions(-D${Definition})
-  endforeach()
   link_libraries(cxx ${libcxx_PUBLIC_LIBRARIES})
 endif()
 
@@ -1820,6 +1809,7 @@ if (BUILD_BENCHMARKS)
   set(BENCHMARK_USE_BUNDLED_GTEST "OFF" CACHE STRING "")
   set(BENCHMARK_ENABLE_ASSEMBLY_TESTS "OFF" CACHE STRING "")
   set(HAVE_STD_REGEX "ON" CACHE STRING "")
+  set(HAVE_STEADY_CLOCK "ON" CACHE STRING "")
   add_subdirectory(third_party/benchmark)
 endif()
 
