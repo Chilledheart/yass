@@ -4,6 +4,7 @@
 #ifndef CORE_STRINGS_STRING_NUMBER_CONVERSIONS_WIN_H_
 #define CORE_STRINGS_STRING_NUMBER_CONVERSIONS_WIN_H_
 
+#include <cstdint>
 #include <string>
 
 std::wstring NumberToWString(int value);
