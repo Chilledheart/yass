@@ -521,6 +521,10 @@ int main(int argc, char** argv) {
   ::benchmark::Initialize(&argc, argv);
   absl::ParseCommandLine(argc, argv);
 
+#ifdef SIGPIPE
+  signal(SIGPIPE, SIG_IGN);
+#endif
+
   if (::benchmark::ReportUnrecognizedArguments(argc, argv)) return 1;
   ::benchmark::RunSpecifiedBenchmarks();
   ::benchmark::Shutdown();
