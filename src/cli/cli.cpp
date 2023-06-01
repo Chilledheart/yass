@@ -118,6 +118,10 @@ int main(int argc, const char* argv[]) {
     work_guard.reset();
   });
 
+#ifdef SIGPIPE
+  signal(SIGPIPE, SIG_IGN);
+#endif
+
   io_context.run(ec);
 
   if (ec) {
