@@ -54,7 +54,7 @@ class stream {
         connect_timer_(io_context),
         https_fallback_(https_fallback),
         enable_tls_(enable_tls),
-        ssl_socket_(&io_context, &socket_, ssl_ctx->native_handle(), https_fallback, host_name),
+        ssl_socket_(enable_tls ? net::SSLSocket::Create(&io_context, &socket_, ssl_ctx->native_handle(), https_fallback, host_name) : nullptr),
         channel_(channel) {
     assert(channel && "channel must defined to use with stream");
 #ifdef HAVE_C_ARES
@@ -64,24 +64,24 @@ class stream {
 #endif
     if (enable_tls) {
       s_async_read_some_ = [this](handle_t cb) {
-        ssl_socket_.WaitRead(cb);
+        ssl_socket_->WaitRead(cb);
       };
       s_read_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
-        return ssl_socket_.Read(buf, ec);
+        return ssl_socket_->Read(buf, ec);
       };
       s_async_write_some_ = [this](handle_t cb) {
-        ssl_socket_.WaitWrite(cb);
+        ssl_socket_->WaitWrite(cb);
       };
       s_write_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
-        return ssl_socket_.Write(buf, ec);
+        return ssl_socket_->Write(buf, ec);
       };
       s_async_shutdown_ = [this](handle_t cb) {
-        ssl_socket_.Shutdown();
+        ssl_socket_->Shutdown();
         asio::error_code ec;
         cb(ec);
       };
       s_shutdown_ = [this](asio::error_code &ec) {
-        ssl_socket_.Shutdown();
+        ssl_socket_->Shutdown();
       };
     } else {
       s_async_read_some_ = [this](handle_t cb) {
@@ -275,7 +275,7 @@ class stream {
 
     asio::error_code ec;
     if (enable_tls_) {
-      ssl_socket_.Shutdown();
+      ssl_socket_->Shutdown();
     }
     socket_.close(ec);
     if (ec) {
@@ -317,7 +317,7 @@ class stream {
         return;
       }
       if (enable_tls_ && !ec) {
-        ssl_socket_.Connect([this, channel, callback](int rv) {
+        ssl_socket_->Connect([this, channel, callback](int rv) {
           if (closed_) {
             callback();
             return;
@@ -340,7 +340,7 @@ class stream {
               ec = asio::error::connection_refused;
             }
           };
-          int result = ssl_socket_.ConfirmHandshake(cb);
+          int result = ssl_socket_->ConfirmHandshake(cb);
           if (result != net::ERR_IO_PENDING) {
             cb(result);
             callback();
@@ -361,7 +361,7 @@ class stream {
       return;
     }
     if (enable_tls_) {
-      std::string alpn = ssl_socket_.negotiated_protocol();
+      std::string alpn = ssl_socket_->negotiated_protocol();
       if (!alpn.empty()) {
         VLOG(2) << "Alpn selected (client): " << alpn;
       }
@@ -447,7 +447,7 @@ class stream {
 
   bool https_fallback_;
   const bool enable_tls_;
-  net::SSLSocket ssl_socket_;
+  scoped_refptr<net::SSLSocket> ssl_socket_;
 
   Channel* channel_;
   bool connected_ = false;

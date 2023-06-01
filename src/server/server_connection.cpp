@@ -134,7 +134,7 @@ void ServerConnection::start() {
 
   scoped_refptr<ServerConnection> self(this);
   if (enable_tls_) {
-    ssl_socket_.Handshake([this, self](
+    ssl_socket_->Handshake([this, self](
       int result) {
         if (closed_) {
           return;
@@ -175,7 +175,7 @@ void ServerConnection::close() {
   }
   closed_ = true;
   if (enable_tls_) {
-    ssl_socket_.Shutdown();
+    ssl_socket_->Shutdown();
   }
   socket_.close(ec);
   if (ec) {

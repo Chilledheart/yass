@@ -4,20 +4,36 @@
 #ifndef H_NET_SSL_SERVER_SOCKET
 #define H_NET_SSL_SERVER_SOCKET
 
-#include "net/socket_bio_adapter.hpp"
 #include <openssl/ssl.h>
+
+#include "core/asio.hpp"
+#include "core/iobuf.hpp"
+#include "core/ref_counted.hpp"
+#include "core/scoped_refptr.hpp"
+#include "net/openssl_util.hpp"
+#include "net/net_errors.hpp"
 
 namespace net {
 
-class SSLServerSocket : public SocketBIOAdapter::Delegate {
+// A OnceCallback specialization that takes a single int parameter. Usually this
+// is used to report a byte count or network error code.
+using CompletionOnceCallback = std::function<void(int)>;
+using WaitCallback = std::function<void(asio::error_code ec)>;
+
+class SSLServerSocket : public RefCountedThreadSafe<SSLServerSocket> {
  public:
   SSLServerSocket(asio::io_context *io_context,
                   asio::ip::tcp::socket* socket,
                   SSL_CTX* ssl_ctx);
   ~SSLServerSocket();
 
-  SSLServerSocket(SSLServerSocket&&) = default;
-  SSLServerSocket& operator=(SSLServerSocket&&) = default;
+  SSLServerSocket(SSLServerSocket&&) = delete;
+  SSLServerSocket& operator=(SSLServerSocket&&) = delete;
+
+  template<typename... Args>
+  static scoped_refptr<SSLServerSocket> Create(Args&&... args) {
+    return MakeRefCounted<SSLServerSocket>(std::forward<Args>(args)...);
+  }
 
   int Handshake(CompletionOnceCallback callback);
   int Shutdown();
@@ -76,8 +92,6 @@ class SSLServerSocket : public SocketBIOAdapter::Delegate {
     STATE_HANDSHAKE,
   };
   State next_handshake_state_ = STATE_NONE;
-
-  std::unique_ptr<SocketBIOAdapter> transport_adapter_;
 };
 
 } // namespace net

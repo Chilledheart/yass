@@ -2,7 +2,6 @@
 /* Copyright (c) 2023 Chilledheart  */
 
 #include "net/ssl_socket.hpp"
-#include "net/openssl_util.hpp"
 #include "network.hpp"
 
 namespace net {
@@ -29,18 +28,11 @@ SSLSocket::SSLSocket(asio::io_context *io_context,
   DCHECK(!ssl_);
   ssl_.reset(SSL_new(ssl_ctx));
 
+  asio::error_code ec;
+  socket->native_non_blocking(true, ec);
+  socket->non_blocking(true, ec);
+
   // TODO: reuse SSL session
-
-  transport_adapter_ = std::make_unique<SocketBIOAdapter>(
-      io_context, socket, kDefaultOpenSSLBufferSize,
-      kDefaultOpenSSLBufferSize, this);
-  BIO* transport_bio = transport_adapter_->bio();
-
-  BIO_up_ref(transport_bio);  // SSL_set0_rbio takes ownership.
-  SSL_set0_rbio(ssl_.get(), transport_bio);
-
-  BIO_up_ref(transport_bio);  // SSL_set0_wbio takes ownership.
-  SSL_set0_wbio(ssl_.get(), transport_bio);
 
   // TODO: implement these SSL options
   // SSLClientSocketImpl::Init
@@ -92,6 +84,8 @@ int SSLSocket::Connect(CompletionOnceCallback callback) {
   // https://crbug.com/499289.
   CHECK(!disconnected_);
 
+  SSL_set_fd(ssl_.get(), stream_socket_->native_handle());
+
   // Set SSL to client mode. Handshake happens in the loop below.
   SSL_set_connect_state(ssl_.get());
 
@@ -104,31 +98,31 @@ int SSLSocket::Connect(CompletionOnceCallback callback) {
   return rv > OK ? OK : rv;
 }
 
+SSLSocket::~SSLSocket() {
+  VLOG(1) << "SSLSocket " << this << " freed memory";
+}
+
 void SSLSocket::RetryAllOperations() {
   // SSL_do_handshake, SSL_read, and SSL_write may all be retried when blocked,
   // so retry all operations for simplicity. (Otherwise, SSL_get_error for each
   // operation may be remembered to retry only the blocked ones.)
 
-  // Performing these callbacks may cause |this| to be deleted. If this
-  // happens, the other callbacks should not be invoked. Guard against this by
-  // holding a WeakPtr to |this| and ensuring it's still valid.
-  BIO* bio = transport_adapter_->bio();
   if (next_handshake_state_ == STATE_HANDSHAKE) {
     // In handshake phase. The parameter to OnHandshakeIOComplete is unused.
     OnHandshakeIOComplete(OK);
   }
 
-  if (!bio->ptr)
+  if (disconnected_)
     return;
 
   DoPeek();
 
-  if (!bio->ptr)
+  if (disconnected_)
     return;
 
   OnWaitRead(asio::error_code());
 
-  if (!bio->ptr)
+  if (disconnected_)
     return;
 
 #ifdef ENABLE_TLS_WRITE_QUICK_FEEDBACK
@@ -142,9 +136,7 @@ void SSLSocket::Disconnect() {
   // Shut down anything that may call us back.
 #if 0
   cert_verifier_request_.reset();
-  weak_factory_.InvalidateWeakPtrs();
 #endif
-  transport_adapter_.reset();
 
   // Release user callbacks.
   user_connect_callback_ = nullptr;
@@ -232,14 +224,21 @@ size_t SSLSocket::Write(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
 
 void SSLSocket::WaitRead(std::function<void(asio::error_code ec)> cb) {
   DCHECK(!wait_read_callback_ && "Multiple calls into Wait Read");
+
+  char byte;
+  int rv = SSL_peek(ssl_.get(), &byte, 1);
+  int ssl_err = SSL_get_error(ssl_.get(), rv);
+  if (ssl_err != SSL_ERROR_WANT_READ && ssl_err != SSL_ERROR_WANT_WRITE) {
+    cb(asio::error_code());
+    return;
+  }
+
   wait_read_callback_ = cb;
-  BIO* bio = transport_adapter_->bio();
-  BIO_up_ref(bio);
-  stream_socket_->async_wait(asio::ip::tcp::socket::wait_read, [this, bio](asio::error_code ec){
-    bssl::UniquePtr<BIO> scoped_bio(bio);
-    if (!bio->ptr) {
+  scoped_refptr<SSLSocket> self(this);
+  stream_socket_->async_wait(asio::ip::tcp::socket::wait_read,
+    [this, self](asio::error_code ec){
+    if (disconnected_)
       return;
-    }
     OnWaitRead(ec);
   });
 }
@@ -247,13 +246,11 @@ void SSLSocket::WaitRead(std::function<void(asio::error_code ec)> cb) {
 void SSLSocket::WaitWrite(std::function<void(asio::error_code ec)> cb) {
   DCHECK(!wait_write_callback_ && "Multiple calls into Wait Write");
   wait_write_callback_ = cb;
-  BIO* bio = transport_adapter_->bio();
-  BIO_up_ref(bio);
-  stream_socket_->async_wait(asio::ip::tcp::socket::wait_write, [this, bio](asio::error_code ec){
-    bssl::UniquePtr<BIO> scoped_bio(bio);
-    if (!bio->ptr) {
+  scoped_refptr<SSLSocket> self(this);
+  stream_socket_->async_wait(asio::ip::tcp::socket::wait_write,
+    [this, self](asio::error_code ec){
+    if (disconnected_)
       return;
-    }
     OnWaitWrite(ec);
   });
 }
@@ -287,7 +284,6 @@ void SSLSocket::OnWriteReady() {
   // transport read.
   RetryAllOperations();
 }
-
 int SSLSocket::DoHandshake() {
   int rv = SSL_do_handshake(ssl_.get());
   int net_error = OK;
@@ -488,6 +484,17 @@ int SSLSocket::DoHandshakeLoop(int last_io_result) {
         break;
     }
   } while (rv != ERR_IO_PENDING && next_handshake_state_ != STATE_NONE);
+  if (rv == ERR_IO_PENDING) {
+    scoped_refptr<SSLSocket> self(this);
+    stream_socket_->async_wait(asio::ip::tcp::socket::wait_read,
+      [this, self](asio::error_code ec){
+      OnReadReady();
+    });
+    stream_socket_->async_wait(asio::ip::tcp::socket::wait_write,
+      [this, self](asio::error_code ec){
+      OnWriteReady();
+    });
+  }
   return rv;
 }
 
@@ -528,8 +535,7 @@ int SSLSocket::DoPayloadRead(std::shared_ptr<IOBuf> buf, int buf_len) {
     // Continue processing records as long as there is more data available
     // synchronously.
   } while (ssl_err == SSL_ERROR_WANT_RENEGOTIATE ||
-           (total_bytes_read < buf_len && ssl_ret > 0 &&
-            transport_adapter_->HasPendingReadData()));
+           (total_bytes_read < buf_len && ssl_ret > 0));
 
   // Although only the final SSL_read call may have failed, the failure needs to
   // processed immediately, while the information still available in OpenSSL's
