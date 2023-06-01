@@ -36,7 +36,7 @@ class SSLServerSocket : public RefCountedThreadSafe<SSLServerSocket> {
   }
 
   int Handshake(CompletionOnceCallback callback);
-  int Shutdown();
+  int Shutdown(WaitCallback callback, bool force = false);
 
   // StreamSocket implementation
   void Disconnect();
@@ -74,6 +74,7 @@ class SSLServerSocket : public RefCountedThreadSafe<SSLServerSocket> {
   CompletionOnceCallback user_handshake_callback_;
   WaitCallback wait_read_callback_;
   WaitCallback wait_write_callback_;
+  WaitCallback wait_shutdown_callback_;
   bool completed_handshake_ = false;
   bool completed_connect_ = false;
 

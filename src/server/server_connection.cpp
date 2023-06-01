@@ -174,8 +174,9 @@ void ServerConnection::close() {
     WriteStreamInPipe();
   }
   closed_ = true;
-  if (enable_tls_) {
-    ssl_socket_->Shutdown();
+  if (enable_tls_ && !shutdown_) {
+    shutdown_ = true;
+    ssl_socket_->Shutdown([](asio::error_code ec){}, true);
   }
   socket_.close(ec);
   if (ec) {
@@ -1136,6 +1137,8 @@ void ServerConnection::OnStreamWrite() {
       if (ec) {
         VLOG(1) << "Connection (server) " << connection_id()
                 << " erorr occured in shutdown: " << ec;
+        OnDisconnect(ec);
+        return;
       }
     });
     return;
@@ -1284,6 +1287,8 @@ void ServerConnection::disconnected(asio::error_code ec) {
       if (ec) {
         VLOG(1) << "Connection (server) " << connection_id()
                 << " erorr occured in shutdown: " << ec;
+        OnDisconnect(ec);
+        return;
       }
     });
   } else {

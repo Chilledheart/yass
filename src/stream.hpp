@@ -76,12 +76,11 @@ class stream {
         return ssl_socket_->Write(buf, ec);
       };
       s_async_shutdown_ = [this](handle_t cb) {
-        ssl_socket_->Shutdown();
-        asio::error_code ec;
-        cb(ec);
+        ssl_socket_->Shutdown(cb);
       };
       s_shutdown_ = [this](asio::error_code &ec) {
-        ssl_socket_->Shutdown();
+        ec = asio::error_code();
+        ssl_socket_->Shutdown([](asio::error_code ec){}, true);
       };
     } else {
       s_async_read_some_ = [this](handle_t cb) {
@@ -275,7 +274,7 @@ class stream {
 
     asio::error_code ec;
     if (enable_tls_) {
-      ssl_socket_->Shutdown();
+      ssl_socket_->Shutdown([](asio::error_code ec){}, true);
     }
     socket_.close(ec);
     if (ec) {
