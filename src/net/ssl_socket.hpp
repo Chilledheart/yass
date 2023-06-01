@@ -4,18 +4,38 @@
 #ifndef H_NET_SSL_SOCKET
 #define H_NET_SSL_SOCKET
 
-#include "net/socket_bio_adapter.hpp"
 #include <openssl/ssl.h>
+
+#include "core/asio.hpp"
+#include "core/iobuf.hpp"
+#include "core/ref_counted.hpp"
+#include "core/scoped_refptr.hpp"
+#include "net/openssl_util.hpp"
+#include "net/net_errors.hpp"
 
 namespace net {
 
-class SSLSocket : public SocketBIOAdapter::Delegate {
+// A OnceCallback specialization that takes a single int parameter. Usually this
+// is used to report a byte count or network error code.
+using CompletionOnceCallback = std::function<void(int)>;
+using WaitCallback = std::function<void(asio::error_code ec)>;
+
+class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
  public:
   SSLSocket(asio::io_context *io_context,
             asio::ip::tcp::socket* socket,
             SSL_CTX* ssl_ctx,
             bool https_fallback,
             const std::string& host_name);
+  ~SSLSocket();
+
+  SSLSocket(SSLSocket&&) = delete;
+  SSLSocket& operator=(SSLSocket&&) = delete;
+
+  template<typename... Args>
+  static scoped_refptr<SSLSocket> Create(Args&&... args) {
+    return MakeRefCounted<SSLSocket>(std::forward<Args>(args)...);
+  }
 
   // StreamSocket implementation
   int Connect(CompletionOnceCallback callback);
@@ -117,8 +137,6 @@ class SSLSocket : public SocketBIOAdapter::Delegate {
   // with no certificate. If false, client certificate requests will result in
   // ERR_SSL_CLIENT_AUTH_CERT_NEEDED.
   bool send_client_cert_;
-
-  std::unique_ptr<SocketBIOAdapter> transport_adapter_;
 
   std::string negotiated_protocol_;
 };

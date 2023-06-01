@@ -22,23 +22,17 @@ SSLServerSocket::SSLServerSocket(asio::io_context *io_context,
   DCHECK(!ssl_);
   ssl_.reset(SSL_new(ssl_ctx));
 
+  asio::error_code ec;
+  socket->native_non_blocking(true, ec);
+  socket->non_blocking(true, ec);
+
   // TODO: reuse SSL session
-
-  transport_adapter_ = std::make_unique<SocketBIOAdapter>(
-      io_context, socket, kDefaultOpenSSLBufferSize,
-      kDefaultOpenSSLBufferSize, this);
-  BIO* transport_bio = transport_adapter_->bio();
-
-  BIO_up_ref(transport_bio);  // SSL_set0_rbio takes ownership.
-  SSL_set0_rbio(ssl_.get(), transport_bio);
-
-  BIO_up_ref(transport_bio);  // SSL_set0_wbio takes ownership.
-  SSL_set0_wbio(ssl_.get(), transport_bio);
 
   SSL_set_shed_handshake_config(ssl_.get(), 1);
 }
 
 SSLServerSocket::~SSLServerSocket() {
+  VLOG(1) << "SSLServerSocket " << this << " freed memory";
   if (ssl_) {
     SSL_shutdown(ssl_.get());
     ssl_.reset();
@@ -46,6 +40,8 @@ SSLServerSocket::~SSLServerSocket() {
 }
 
 int SSLServerSocket::Handshake(CompletionOnceCallback callback) {
+  SSL_set_fd(ssl_.get(), stream_socket_->native_handle());
+
   // Set SSL to server mode. Handshake happens in the loop below.
   SSL_set_accept_state(ssl_.get());
 
@@ -122,14 +118,18 @@ size_t SSLServerSocket::Write(std::shared_ptr<IOBuf> buf, asio::error_code &ec) 
 
 void SSLServerSocket::WaitRead(std::function<void(asio::error_code ec)> cb) {
   DCHECK(!wait_read_callback_ && "Multiple calls into Wait Read");
+  char byte;
+  int rv = SSL_peek(ssl_.get(), &byte, 1);
+  int ssl_err = SSL_get_error(ssl_.get(), rv);
+  if (ssl_err != SSL_ERROR_WANT_READ && ssl_err != SSL_ERROR_WANT_WRITE) {
+    cb(asio::error_code());
+    return;
+  }
+
   wait_read_callback_ = cb;
-  BIO* bio = transport_adapter_->bio();
-  BIO_up_ref(bio);
-  stream_socket_->async_wait(asio::ip::tcp::socket::wait_read, [this, bio](asio::error_code ec){
-    bssl::UniquePtr<BIO> scoped_bio(bio);
-    if (!bio->ptr) {
-      return;
-    }
+  scoped_refptr<SSLServerSocket> self(this);
+  stream_socket_->async_wait(asio::ip::tcp::socket::wait_read,
+    [this, self](asio::error_code ec){
     OnWaitRead(ec);
   });
 }
@@ -137,13 +137,9 @@ void SSLServerSocket::WaitRead(std::function<void(asio::error_code ec)> cb) {
 void SSLServerSocket::WaitWrite(std::function<void(asio::error_code ec)> cb) {
   DCHECK(!wait_write_callback_ && "Multiple calls into Wait Write");
   wait_write_callback_ = cb;
-  BIO* bio = transport_adapter_->bio();
-  BIO_up_ref(bio);
-  stream_socket_->async_wait(asio::ip::tcp::socket::wait_write, [this, bio](asio::error_code ec){
-    bssl::UniquePtr<BIO> scoped_bio(bio);
-    if (!bio->ptr) {
-      return;
-    }
+  scoped_refptr<SSLServerSocket> self(this);
+  stream_socket_->async_wait(asio::ip::tcp::socket::wait_write,
+    [this, self](asio::error_code ec){
     OnWaitWrite(ec);
   });
 }
@@ -294,6 +290,17 @@ int SSLServerSocket::DoHandshakeLoop(int last_io_result) {
         break;
     }
   } while (rv != ERR_IO_PENDING && next_handshake_state_ != STATE_NONE);
+  if (rv == ERR_IO_PENDING) {
+    scoped_refptr<SSLServerSocket> self(this);
+    stream_socket_->async_wait(asio::ip::tcp::socket::wait_read,
+      [this, self](asio::error_code ec){
+      OnReadReady();
+    });
+    stream_socket_->async_wait(asio::ip::tcp::socket::wait_write,
+      [this, self](asio::error_code ec){
+      OnWriteReady();
+    });
+  }
   return rv;
 }
 

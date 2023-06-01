@@ -49,27 +49,27 @@ class Connection {
         enable_upstream_tls_(enable_upstream_tls),
         enable_tls_(enable_tls),
         upstream_ssl_ctx_(upstream_ssl_ctx),
-        ssl_socket_(&io_context, &socket_, ssl_ctx->native_handle()) {
+        ssl_socket_(enable_tls ? net::SSLServerSocket::Create(&io_context, &socket_, ssl_ctx->native_handle()) : nullptr) {
     if (enable_tls) {
       s_async_read_some_ = [this](handle_t cb) {
-        ssl_socket_.WaitRead(cb);
+        ssl_socket_->WaitRead(cb);
       };
       s_read_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
-        return ssl_socket_.Read(buf, ec);
+        return ssl_socket_->Read(buf, ec);
       };
       s_async_write_some_ = [this](handle_t cb) {
-        ssl_socket_.WaitWrite(cb);
+        ssl_socket_->WaitWrite(cb);
       };
       s_write_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
-        return ssl_socket_.Write(buf, ec);
+        return ssl_socket_->Write(buf, ec);
       };
       s_async_shutdown_ = [this](handle_t cb) {
         asio::error_code ec;
-        ssl_socket_.Shutdown();
+        ssl_socket_->Shutdown();
         cb(ec);
       };
       s_shutdown_ = [this](asio::error_code &ec) {
-        ssl_socket_.Shutdown();
+        ssl_socket_->Shutdown();
       };
     } else {
       s_async_read_some_ = [this](handle_t cb) {
@@ -150,7 +150,7 @@ class Connection {
   bool DoPeek() {
     if (enable_tls_) {
       char byte;
-      auto ssl = ssl_socket_.native_handle();
+      auto ssl = ssl_socket_->native_handle();
       int rv = SSL_peek(ssl, &byte, 1);
       int ssl_err = SSL_get_error(ssl, rv);
       if (ssl_err != SSL_ERROR_WANT_READ && ssl_err != SSL_ERROR_WANT_WRITE) {
@@ -190,7 +190,7 @@ class Connection {
   bool enable_tls_;
   std::string upstream_certificate_;
   asio::ssl::context* upstream_ssl_ctx_;
-  net::SSLServerSocket ssl_socket_;
+  scoped_refptr<net::SSLServerSocket> ssl_socket_;
 
   /// io_handlers
   std::function<void(handle_t)> s_async_read_some_;

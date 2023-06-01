@@ -700,6 +700,10 @@ int main(int argc, char **argv) {
   curl_global_init(CURL_GLOBAL_ALL);
 #endif
 
+#ifdef SIGPIPE
+  signal(SIGPIPE, SIG_IGN);
+#endif
+
   int ret = RUN_ALL_TESTS();
 
 #ifdef HAVE_CURL
