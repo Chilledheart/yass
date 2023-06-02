@@ -4,6 +4,7 @@
 #include "gtk/utils.hpp"
 
 #include "core/logging.hpp"
+#include "core/utils.hpp"
 #include <absl/strings/str_cat.h>
 
 #include <absl/strings/string_view.h>
@@ -33,30 +34,6 @@ static const char* kAutoStartFileContent =
 "Categories=Network;GTK;Utility\n";
 
 namespace {
-
-std::string ExpandUser(const std::string& file_path) {
-  std::string real_path = file_path;
-
-  if (!real_path.empty() && real_path[0] == '~') {
-    std::string home = ::getenv("HOME");
-#ifdef _WIN32
-    if (home.empty()) {
-      home = ::getenv("HOMEPATH");
-    }
-#endif
-    if (real_path.size() == 1) {
-      return home;
-    }
-    // ~username
-    if (real_path[1] != '/') {
-      return absl::StrCat("/home/", real_path.substr(1));
-    }
-    // ~/path/to/directory
-    return absl::StrCat(home, "/", real_path.substr(2));
-  }
-
-  return real_path;
-}
 
 // returns true if the "file" exists and is a symbolic link
 bool IsFile(const std::string& path) {
