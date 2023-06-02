@@ -24,17 +24,6 @@ static const char* kYassKeyName = "YASSConfiguration";
 
 namespace {
 
-std::string ExpandUser(const std::string& file_path) {
-  std::string real_path = file_path;
-
-  if (!real_path.empty() && real_path[0] == '~') {
-    std::string home = getenv("HOME");
-    return home + "/" + real_path.substr(2);
-  }
-
-  return real_path;
-}
-
 bool IsFile(const std::string& path) {
   struct stat s;
   return stat(path.c_str(), &s) == 0;

@@ -236,4 +236,6 @@ inline absl::string_view Basename(absl::string_view path) {
                      first_non_slash_at_end_pos - last_slash_pos);
 }
 
+std::string ExpandUser(const std::string& file_path);
+
 #endif  // YASS_UTILS
