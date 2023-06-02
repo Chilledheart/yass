@@ -34,7 +34,6 @@ SSLServerSocket::SSLServerSocket(asio::io_context *io_context,
 SSLServerSocket::~SSLServerSocket() {
   VLOG(1) << "SSLServerSocket " << this << " freed memory";
   if (ssl_) {
-    SSL_shutdown(ssl_.get());
     ssl_.reset();
   }
 }
@@ -59,16 +58,87 @@ int SSLServerSocket::Handshake(CompletionOnceCallback callback) {
   return rv > OK ? OK : rv;
 }
 
-int SSLServerSocket::Shutdown() {
-  int result = SSL_shutdown(ssl_.get());
-  switch (result) {
-    case 1:
-      return OK;
-    case 0:
-      return ERR_IO_PENDING;
-    default:
-      return ERR_UNEXPECTED;
+int SSLServerSocket::Shutdown(WaitCallback callback, bool force) {
+  DCHECK(callback);
+  DCHECK(!wait_shutdown_callback_ && "Recursively SSL Shutdown isn't allowed");
+  if (SSL_in_init(ssl_.get())) {
+    callback(asio::error_code());
+    return OK;
   }
+  if (force) {
+    int mode = SSL_RECEIVED_SHUTDOWN | SSL_SENT_SHUTDOWN;
+    SSL_set_quiet_shutdown(ssl_.get(), 1);
+    SSL_set_shutdown(ssl_.get(), mode);
+  }
+  ERR_clear_error();
+  int tries = 2;
+  for (;;) {
+    /*
+     * For bidirectional shutdown, SSL_shutdown() needs to be called
+     * twice: first call sends the "close notify" alert and returns 0,
+     * second call waits for the peer's "close notify" alert.
+     */
+    int result = SSL_shutdown(ssl_.get());
+    if (result == 1) {
+      callback(asio::error_code());
+      return OK;
+    }
+    if (result == 0 && tries-- > 1)
+      continue;
+    int sslerr = SSL_get_error(ssl_.get(), result);
+    if (sslerr == SSL_ERROR_WANT_READ) {
+      scoped_refptr<SSLServerSocket> self(this);
+      VLOG(2) << "Shutdown ... (demand more reading)";
+
+      wait_shutdown_callback_ = [this, self, callback](asio::error_code ec) {
+        if (ec) {
+          callback(ec);
+          return;
+        }
+        Shutdown(callback);
+      };
+
+      if (!wait_read_callback_) {
+        stream_socket_->async_wait(asio::ip::tcp::socket::wait_read,
+          [self, this](asio::error_code ec){
+          OnWaitRead(ec);
+        });
+      }
+
+      return ERR_IO_PENDING;
+    } else if (sslerr == SSL_ERROR_WANT_WRITE) {
+      scoped_refptr<SSLServerSocket> self(this);
+      VLOG(2) << "Shutdown ... (demand more writing)";
+
+      wait_shutdown_callback_ = [this, self, callback](asio::error_code ec) {
+        if (ec) {
+          callback(ec);
+          return;
+        }
+        Shutdown(callback);
+      };
+
+      if (!wait_write_callback_) {
+        stream_socket_->async_wait(asio::ip::tcp::socket::wait_write,
+          [self, this](asio::error_code ec){
+          OnWaitWrite(ec);
+        });
+      }
+
+      return ERR_IO_PENDING;
+    }
+
+    if (sslerr == SSL_ERROR_ZERO_RETURN || ERR_peek_error() == 0) {
+      callback(asio::error_code());
+      return OK;
+    }
+
+    PLOG(WARNING) << "SSL_Shutdown failed with sslerr: " << sslerr;
+    callback(asio::error::connection_reset);
+    return ERR_UNEXPECTED;
+  }
+  callback(asio::error_code());
+  return OK;
 }
 
 void SSLServerSocket::Disconnect() {
@@ -145,21 +215,25 @@ void SSLServerSocket::WaitWrite(std::function<void(asio::error_code ec)> cb) {
 }
 
 void SSLServerSocket::OnWaitRead(asio::error_code ec) {
-  if (!wait_read_callback_) {
-    return;
+  if (auto cb = std::move(wait_shutdown_callback_)) {
+    wait_shutdown_callback_ = nullptr;
+    cb(ec);
   }
-  auto cb = std::move(wait_read_callback_);
-  wait_read_callback_ = nullptr;
-  cb(ec);
+  if (auto cb = std::move(wait_read_callback_)) {
+    wait_read_callback_ = nullptr;
+    cb(ec);
+  }
 }
 
 void SSLServerSocket::OnWaitWrite(asio::error_code ec) {
-  if (!wait_write_callback_) {
-    return;
+  if (auto cb = std::move(wait_shutdown_callback_)) {
+    wait_shutdown_callback_ = nullptr;
+    cb(ec);
   }
-  auto cb = std::move(wait_write_callback_);
-  wait_write_callback_ = nullptr;
-  cb(ec);
+  if (auto cb = std::move(wait_write_callback_)) {
+    wait_write_callback_ = nullptr;
+    cb(ec);
+  }
 }
 
 void SSLServerSocket::OnReadReady() {

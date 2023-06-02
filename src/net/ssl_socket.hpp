@@ -41,7 +41,7 @@ class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
   int Connect(CompletionOnceCallback callback);
   void Disconnect();
   int ConfirmHandshake(CompletionOnceCallback callback);
-  int Shutdown();
+  int Shutdown(WaitCallback cb, bool force = false);
 
   SSL* native_handle() { return ssl_.get(); }
 
@@ -82,6 +82,7 @@ class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
   CompletionOnceCallback user_connect_callback_;
   WaitCallback wait_read_callback_;
   WaitCallback wait_write_callback_;
+  WaitCallback wait_shutdown_callback_;
 
   bool first_post_handshake_write_ = true;
 
