@@ -1737,6 +1737,7 @@ add_definitions(-DASIO_NO_TYPEID)
 add_definitions(-DASIO_NO_EXCEPTIONS)
 add_definitions(-DASIO_NO_TS_EXECUTORS)
 add_definitions(-DASIO_SEPARATE_COMPILATION)
+add_definitions(-DASIO_NO_DEPRECATED)
 # forward libcxx present
 # we control the visiblity
 add_definitions(-DASIO_DISABLE_VISIBILITY)

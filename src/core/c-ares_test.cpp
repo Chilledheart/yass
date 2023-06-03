@@ -14,9 +14,9 @@
 TEST(CARES_TEST, LocalfileBasic) {
   asio::error_code ec;
   asio::io_context io_context;
-  auto work_guard = std::make_unique<asio::io_context::work>(io_context);
+  auto work_guard = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context.get_executor());
 
-  io_context.post([&]() {
+  asio::post(io_context, [&]() {
     auto resolver = CAresResolver::Create(io_context);
     int ret = resolver->Init(1000, 1);
     if (ret) {
@@ -27,21 +27,22 @@ TEST(CARES_TEST, LocalfileBasic) {
       asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
         work_guard.reset();
         ASSERT_FALSE(ec) << ec;
-        auto endpoint = results->endpoint();
+        auto iter = std::begin(results);
+        asio::ip::tcp::endpoint endpoint = *iter;
         auto addr = endpoint.address();
         EXPECT_TRUE(addr.is_loopback()) << addr;
     });
   });
 
-  io_context.run(ec);
+  io_context.run();
 }
 
 TEST(CARES_TEST, DISABLED_RemoteBasic) {
   asio::error_code ec;
   asio::io_context io_context;
-  auto work_guard = std::make_unique<asio::io_context::work>(io_context);
+  auto work_guard = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context.get_executor());
 
-  io_context.post([&]() {
+  asio::post(io_context, [&]() {
     auto resolver = CAresResolver::Create(io_context);
     int ret = resolver->Init(1000, 5);
     if (ret) {
@@ -52,14 +53,15 @@ TEST(CARES_TEST, DISABLED_RemoteBasic) {
       asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
         work_guard.reset();
         ASSERT_FALSE(ec) << ec;
-        auto endpoint = results->endpoint();
+        auto iter = std::begin(results);
+        asio::ip::tcp::endpoint endpoint = *iter;
         auto addr = endpoint.address();
         EXPECT_FALSE(addr.is_loopback()) << addr;
         EXPECT_FALSE(addr.is_unspecified()) << addr;
     });
   });
 
-  io_context.run(ec);
+  io_context.run();
 }
 
 #endif // HAVE_C_ARES
