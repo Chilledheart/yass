@@ -58,7 +58,7 @@ int main(int argc, const char* argv[]) {
 
   // Start Io Context
   asio::io_context io_context;
-  auto work_guard = std::make_unique<asio::io_context::work>(io_context);
+  auto work_guard = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context.get_executor());
 
   asio::ip::tcp::endpoint endpoint;
   std::string host_name = absl::GetFlag(FLAGS_server_host);
@@ -86,7 +86,7 @@ int main(int argc, const char* argv[]) {
         << " failed due to: " << gai_strerror(ret);
 #endif
     }
-    endpoint = endpoints->endpoint();
+    endpoint = *std::begin(endpoints);
   }
 
   LOG(WARNING) << "tcp server listening at " << endpoint;
@@ -115,12 +115,7 @@ int main(int argc, const char* argv[]) {
   signal(SIGPIPE, SIG_IGN);
 #endif
 
-  io_context.run(ec);
-
-  if (ec) {
-    LOG(ERROR) << "io_context failed due to: " << ec;
-    return -1;
-  }
+  io_context.run();
 
   return 0;
 }

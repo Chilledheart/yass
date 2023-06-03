@@ -248,7 +248,7 @@ void CAresResolver::AsyncResolve(const std::string& host,
 void CAresResolver::Cancel() {
   canceled_ = true;
   asio::error_code ec;
-  resolve_timer_.cancel(ec);
+  resolve_timer_.cancel();
 }
 
 void CAresResolver::OnAsyncWait() {
@@ -259,8 +259,8 @@ void CAresResolver::OnAsyncWait() {
     return;
   }
 
-  resolve_timer_.expires_from_now(std::chrono::seconds(tvp->tv_sec) +
-                                  std::chrono::microseconds(tvp->tv_usec + 10));
+  resolve_timer_.expires_after(std::chrono::seconds(tvp->tv_sec) +
+                               std::chrono::microseconds(tvp->tv_usec + 10));
   resolve_timer_.async_wait([this, self](
     asio::error_code ec) {
       if (ec == asio::error::operation_aborted) {

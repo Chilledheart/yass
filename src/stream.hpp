@@ -139,9 +139,10 @@ class stream {
         on_connect(callback, channel, ec);
         return;
       }
+      auto iter = std::begin(results);
 
       /// FIXME TBD
-      endpoint_ = results->endpoint();
+      endpoint_ = *iter;
       VLOG(2) << "resolved address from: " << domain() << " to: " << endpoint_;
       on_resolve(callback, channel);
     });
@@ -303,7 +304,7 @@ class stream {
     SetTCPFastOpenConnect(socket_.native_handle(), ec);
     socket_.native_non_blocking(true, ec);
     socket_.non_blocking(true, ec);
-    connect_timer_.expires_from_now(
+    connect_timer_.expires_after(
         std::chrono::milliseconds(absl::GetFlag(FLAGS_connect_timeout)));
     connect_timer_.async_wait(
       [this, channel, callback](asio::error_code ec) {

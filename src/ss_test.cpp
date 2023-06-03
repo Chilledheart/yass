@@ -293,7 +293,7 @@ class SsEndToEndTest : public ::testing::Test {
   void StartBackgroundTasks() {
     std::mutex m;
     bool done = 0;
-    io_context_.post([this, &m, &done]() {
+    asio::post(io_context_, [this, &m, &done]() {
       std::lock_guard<std::mutex> lk(m);
       auto ec = StartContentProvider(GetReusableEndpoint(), SOMAXCONN);
       ASSERT_FALSE(ec) << ec;
@@ -342,17 +342,14 @@ class SsEndToEndTest : public ::testing::Test {
       asio::error_code ec;
       VLOG(1) << "background thread started";
 
-      work_guard_ = std::make_unique<asio::io_context::work>(io_context_);
-      io_context_.run(ec);
-      if (ec) {
-        LOG(ERROR) << "io_context failed due to: " << ec;
-      }
-      io_context_.reset();
+      work_guard_ = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context_.get_executor());
+      io_context_.run();
+      io_context_.restart();
 
       VLOG(1) << "background thread stopped";
     });
 
-    io_context_.post([this]() {
+    asio::post(io_context_, [this]() {
       if (!SetThreadName(thread_->native_handle(), "background")) {
         PLOG(WARNING) << "failed to set thread name";
       }
@@ -648,7 +645,7 @@ class SsEndToEndTest : public ::testing::Test {
 
  private:
   asio::io_context io_context_;
-  std::unique_ptr<asio::io_context::work> work_guard_;
+  std::unique_ptr<asio::executor_work_guard<asio::io_context::executor_type>> work_guard_;
   std::unique_ptr<std::thread> thread_;
 
   std::unique_ptr<ContentProviderServer> content_provider_server_;

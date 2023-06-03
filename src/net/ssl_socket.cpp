@@ -511,7 +511,7 @@ int SSLSocket::DoHandshakeComplete(int result) {
   //
   // TODO(https://crbug.com/958638): It is also a step in making TLS 1.3 client
   // certificate alerts less unreliable.
-  io_context_->post([this]() {
+  asio::post(*io_context_, [this]() {
     DoPeek();
   });
 
