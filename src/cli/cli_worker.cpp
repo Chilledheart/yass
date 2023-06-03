@@ -42,7 +42,7 @@ void Worker::Start(std::function<void(asio::error_code)> callback) {
 
   /// listen in the worker thread
   thread_ = std::make_unique<std::thread>([this] { WorkFunc(); });
-  io_context_.post([this]() {
+  asio::post(io_context_, [this]() {
     if (!SetThreadName(thread_->native_handle(), "background")) {
       PLOG(WARNING) << "failed to set thread name";
     }
@@ -50,7 +50,7 @@ void Worker::Start(std::function<void(asio::error_code)> callback) {
       PLOG(WARNING) << "failed to set thread priority";
     }
   });
-  io_context_.post([this, callback]() {
+  asio::post(io_context_, [this, callback]() {
     std::string host_name = absl::GetFlag(FLAGS_local_host);
     uint16_t port = absl::GetFlag(FLAGS_local_port);
 
@@ -81,7 +81,7 @@ void Worker::Stop(std::function<void()> callback) {
   if (!thread_) {
     return;
   }
-  io_context_.post([this, callback]() {
+  asio::post(io_context_ ,[this, callback]() {
 #ifdef HAVE_C_ARES
     resolver_->Cancel();
 #else
@@ -118,12 +118,9 @@ void Worker::WorkFunc() {
   asio::error_code ec;
   VLOG(1) << "background thread started";
 
-  work_guard_ = std::make_unique<asio::io_context::work>(io_context_);
-  io_context_.run(ec);
-  if (ec) {
-    LOG(ERROR) << "io_context failed due to: " << ec;
-  }
-  io_context_.reset();
+  work_guard_ = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context_.get_executor());
+  io_context_.run();
+  io_context_.restart();
 
   VLOG(1) << "background thread stopped";
 }
@@ -140,7 +137,8 @@ void Worker::on_resolve_local(asio::error_code ec,
     work_guard_.reset();
     return;
   }
-  endpoint_ = results->endpoint();
+  auto iter = std::begin(results);
+  endpoint_ = *iter;
 
   private_->cli_server = std::make_unique<CliServer>(io_context_,
                                                      absl::GetFlag(FLAGS_server_host),

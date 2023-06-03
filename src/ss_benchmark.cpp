@@ -166,7 +166,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
   void shutdown_impl() {
     if (!g_in_consumer_mutex.try_lock()) {
       scoped_refptr<ContentProviderConnection> self(this);
-      io_context_->post([this, self]() {
+      asio::post(*io_context_, [this, self]() {
         shutdown_impl();
       });
       return;
@@ -215,7 +215,7 @@ class SsEndToEndBM : public benchmark::Fixture {
   void StartBackgroundTasks() {
     std::mutex m;
     bool done = 0;
-    io_context_.post([this, &m, &done]() {
+    asio::post(io_context_, [this, &m, &done]() {
       std::lock_guard<std::mutex> lk(m);
       auto ec = StartContentProvider(GetReusableEndpoint(), SOMAXCONN);
       if (ec) {
@@ -270,15 +270,14 @@ class SsEndToEndBM : public benchmark::Fixture {
       asio::error_code ec;
       VLOG(1) << "background thread started";
 
-      work_guard_ = std::make_unique<asio::io_context::work>(io_context_);
-      io_context_.run(ec);
-      CHECK(!ec) << "io_context failed due to: " << ec;
-      io_context_.reset();
+      work_guard_ = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context_.get_executor());
+      io_context_.run();
+      io_context_.restart();
 
       VLOG(1) << "background thread stopped";
     });
 
-    io_context_.post([this]() {
+    asio::post(io_context_, [this]() {
       if (!SetThreadName(thread_->native_handle(), "background")) {
         PLOG(WARNING) << "failed to set thread name";
       }
@@ -442,7 +441,7 @@ class SsEndToEndBM : public benchmark::Fixture {
 
  private:
   asio::io_context io_context_;
-  std::unique_ptr<asio::io_context::work> work_guard_;
+  std::unique_ptr<asio::executor_work_guard<asio::io_context::executor_type>> work_guard_;
   std::unique_ptr<std::thread> thread_;
 
   std::unique_ptr<ContentProviderServer> content_provider_server_;

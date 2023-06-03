@@ -40,7 +40,7 @@ class Worker {
 
   asio::io_context io_context_;
   /// stopping the io_context from running out of work
-  std::unique_ptr<asio::io_context::work> work_guard_;
+  std::unique_ptr<asio::executor_work_guard<asio::io_context::executor_type>> work_guard_;
   /// used to resolve local and remote endpoint
 #ifdef HAVE_C_ARES
   scoped_refptr<CAresResolver> resolver_;

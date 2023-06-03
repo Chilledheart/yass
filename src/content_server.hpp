@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0 Copyright (c) 2019-2022 Chilledheart  */
+// SPDX-License-Identifier: GPL-2.0 Copyright (c) 2019-2023 Chilledheart  */
 
 #ifndef H_CONTENT_SERVER
 #define H_CONTENT_SERVER
@@ -42,7 +42,7 @@ class ContentServer {
                          const std::string& private_key = {},
                          ContentServer::Delegate *delegate = nullptr)
     : io_context_(io_context),
-      work_guard_(std::make_unique<asio::io_context::work>(io_context_)),
+      work_guard_(std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context_.get_executor())),
       remote_host_name_(remote_host_name),
       remote_port_(remote_port),
       upstream_https_fallback_(absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTPS),
@@ -127,12 +127,12 @@ class ContentServer {
     }
     LOG(INFO) << "Listening (" << factory_.Name() << ") on "
               << endpoint_;
-    io_context_.post([this]() { accept(); });
+    asio::post(io_context_ ,[this]() { accept(); });
   }
 
   // Allow called from different threads
   void stop() {
-    io_context_.post([this]() {
+    asio::post(io_context_, [this]() {
       if (acceptor_) {
         asio::error_code ec;
         acceptor_->close(ec);
@@ -404,7 +404,7 @@ class ContentServer {
  private:
   asio::io_context &io_context_;
   /// stopping the io_context from running out of work
-  std::unique_ptr<asio::io_context::work> work_guard_;
+  std::unique_ptr<asio::executor_work_guard<asio::io_context::executor_type>> work_guard_;
 
   std::string remote_host_name_;
   uint16_t remote_port_;
