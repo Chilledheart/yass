@@ -20,10 +20,10 @@
 
 namespace {
 
-IOBuf content_buffer;
+IOBuf g_send_buffer;
 std::mutex g_in_provider_mutex;
 std::mutex g_in_consumer_mutex;
-std::unique_ptr<IOBuf> recv_content_buffer;
+std::unique_ptr<IOBuf> g_recv_buffer;
 const char kConnectResponse[] = "HTTP/1.1 200 Connection established\r\n\r\n";
 const int kIOLoopCount = 1;
 
@@ -61,16 +61,16 @@ const char kPrivateKey[] =
 "-----END PRIVATE KEY-----\n";
 
 void GenerateRandContent(int size) {
-  content_buffer.clear();
-  content_buffer.reserve(0, size);
+  g_send_buffer.clear();
+  g_send_buffer.reserve(0, size);
 
-  RandBytes(content_buffer.mutable_data(), std::min(256, size));
+  RandBytes(g_send_buffer.mutable_data(), std::min(256, size));
   for (int i = 1; i < size / 256; ++i) {
-    memcpy(content_buffer.mutable_data() + 256 * i, content_buffer.data(), 256);
+    memcpy(g_send_buffer.mutable_data() + 256 * i, g_send_buffer.data(), 256);
   }
-  content_buffer.append(size);
+  g_send_buffer.append(size);
 
-  recv_content_buffer = IOBuf::create(size);
+  g_recv_buffer = IOBuf::create(size);
 }
 
 class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderConnection>,
@@ -124,9 +124,9 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
     scoped_refptr<ContentProviderConnection> self(this);
     g_in_provider_mutex.lock();
 
-    asio::async_write(socket_, const_buffer(content_buffer),
+    asio::async_write(socket_, const_buffer(g_send_buffer),
       [this, self](asio::error_code ec, size_t bytes_transferred) {
-        if (ec || bytes_transferred != content_buffer.length()) {
+        if (ec || bytes_transferred != g_send_buffer.length()) {
           LOG(WARNING) << "Connection (content-provider) " << connection_id()
                        << " Failed to transfer data: " << ec;
         } else {
@@ -137,16 +137,16 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
         shutdown(ec);
     });
 
-    asio::async_read(socket_, mutable_buffer(*recv_content_buffer),
+    asio::async_read(socket_, mutable_buffer(*g_recv_buffer),
       [this, self](asio::error_code ec, size_t bytes_transferred) {
-        if (ec || bytes_transferred != content_buffer.length()) {
+        if (ec || bytes_transferred != g_send_buffer.length()) {
           LOG(WARNING) << "Connection (content-provider) " << connection_id()
                        << " Failed to transfer data: " << ec;
         } else {
           VLOG(1) << "Connection (content-provider) " << connection_id()
                   << " read: " << bytes_transferred << " bytes";
         }
-        recv_content_buffer->append(bytes_transferred);
+        g_recv_buffer->append(bytes_transferred);
         done_[1] = true;
         shutdown(ec);
     });
@@ -258,7 +258,7 @@ class SsEndToEndBM : public benchmark::Fixture {
   asio::ip::tcp::endpoint GetEndpoint(int port_num) const {
     asio::error_code ec;
     auto addr = asio::ip::make_address("127.0.0.1", ec);
-    // ASSERT_FALSE(ec) << ec;
+    CHECK(!ec) << ec;
     asio::ip::tcp::endpoint endpoint;
     endpoint.address(addr);
     endpoint.port(port_num);
@@ -272,9 +272,7 @@ class SsEndToEndBM : public benchmark::Fixture {
 
       work_guard_ = std::make_unique<asio::io_context::work>(io_context_);
       io_context_.run(ec);
-      if (ec) {
-        LOG(ERROR) << "io_context failed due to: " << ec;
-      }
+      CHECK(!ec) << "io_context failed due to: " << ec;
       io_context_.reset();
 
       VLOG(1) << "background thread stopped";
@@ -296,20 +294,14 @@ class SsEndToEndBM : public benchmark::Fixture {
 
     asio::error_code ec;
     s.connect(endpoint, ec);
-    if (ec) {
-      LOG(WARNING) << ec;
-      exit(-1);
-    }
+    CHECK(!ec) << "Connection (content-consumer) connect failure " << ec;
     auto request_buf = IOBuf::create(SOCKET_BUF_SIZE);
     GenerateConnectRequest("127.0.0.1", content_provider_endpoint_.port(),
                            request_buf.get());
 
     size_t written = asio::write(s, const_buffer(*request_buf), ec);
     VLOG(1) << "Connection (content-consumer) written: " << written << " bytes";
-    if (ec) {
-      LOG(WARNING) << ec;
-      exit(-1);
-    }
+    CHECK(!ec) << "Connection (content-consumer) write failure " << ec;
 
     constexpr int response_len = sizeof(kConnectResponse) - 1;
     IOBuf response_buf;
@@ -317,19 +309,13 @@ class SsEndToEndBM : public benchmark::Fixture {
     size_t read = asio::read(s, asio::mutable_buffer(response_buf.mutable_tail(), response_len), ec);
     VLOG(1) << "Connection (content-consumer) read: " << read << " bytes";
     response_buf.append(read);
-    if ((int)read != response_len) {
-      LOG(WARNING) << "Partial read";
-      exit(-1);
-    }
+    CHECK_EQ((int)read, response_len) << "Partial read";
 
 #if 0
     const char* buffer = reinterpret_cast<const char*>(response_buf.data());
 #endif
     size_t buffer_length = response_buf.length();
-    if ((int)buffer_length != response_len) {
-      LOG(WARNING) << "Partial read";
-      exit(-1);
-    }
+    CHECK_EQ((int)buffer_length, response_len) << "Partial read";
   }
 
   void SendRequestAndCheckResponse(asio::ip::tcp::socket& s) {
@@ -345,43 +331,28 @@ class SsEndToEndBM : public benchmark::Fixture {
     }
     std::lock_guard<std::mutex> done_lk(g_in_consumer_mutex);
     VLOG(1) << "Connection (content-consumer) start to do IO";
-    written = asio::write(s, const_buffer(content_buffer), ec);
+    written = asio::write(s, const_buffer(g_send_buffer), ec);
     VLOG(1) << "Connection (content-consumer) written: " << written << " bytes";
-    if (ec) {
-      LOG(WARNING) << ec;
-      exit(-1);
-    }
-    if (written != content_buffer.length()) {
-      LOG(WARNING) << "Partial written";
-      exit(-1);
-    }
+    CHECK(!ec) << "Connection (content-consumer) write failure " << ec;
+    CHECK_EQ(written, g_send_buffer.length()) << "Partial written";
 
     IOBuf resp_buffer;
-    resp_buffer.reserve(0, content_buffer.length());
+    resp_buffer.reserve(0, g_send_buffer.length());
     size_t read = asio::read(s, tail_buffer(resp_buffer), ec);
     VLOG(1) << "Connection (content-consumer) read: " << read << " bytes";
     resp_buffer.append(read);
-    if (ec) {
-      LOG(WARNING) << ec;
-      exit(-1);
-    }
+    CHECK(!ec) << "Connection (content-consumer) read failure " << ec;
 
 #if 0
     const char* buffer = reinterpret_cast<const char*>(resp_buffer.data());
 #endif
     size_t buffer_length = resp_buffer.length();
-    if (buffer_length != content_buffer.length()) {
-      LOG(WARNING) << "Partial read";
-      exit(-1);
-    }
+    CHECK_EQ(buffer_length, g_send_buffer.length()) << "Partial read";
 
     {
       std::lock_guard<std::mutex> lk(g_in_provider_mutex);
-      if (recv_content_buffer->length() != content_buffer.length()) {
-        LOG(WARNING) << "Partial read";
-        exit(-1);
-      }
-      recv_content_buffer->clear();
+      CHECK_EQ(g_recv_buffer->length(), g_send_buffer.length()) << "Partial read";
+      g_recv_buffer->clear();
     }
   }
 
