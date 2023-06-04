@@ -27,10 +27,11 @@ TEST(CARES_TEST, LocalfileBasic) {
       asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
         work_guard.reset();
         ASSERT_FALSE(ec) << ec;
-        auto iter = std::begin(results);
-        asio::ip::tcp::endpoint endpoint = *iter;
-        auto addr = endpoint.address();
-        EXPECT_TRUE(addr.is_loopback()) << addr;
+        for (auto iter = std::begin(results); iter != std::end(results); ++iter) {
+          asio::ip::tcp::endpoint endpoint = *iter;
+          auto addr = endpoint.address();
+          EXPECT_TRUE(addr.is_loopback()) << addr;
+        }
     });
   });
 
@@ -53,11 +54,12 @@ TEST(CARES_TEST, DISABLED_RemoteBasic) {
       asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
         work_guard.reset();
         ASSERT_FALSE(ec) << ec;
-        auto iter = std::begin(results);
-        asio::ip::tcp::endpoint endpoint = *iter;
-        auto addr = endpoint.address();
-        EXPECT_FALSE(addr.is_loopback()) << addr;
-        EXPECT_FALSE(addr.is_unspecified()) << addr;
+        for (auto iter = std::begin(results); iter != std::end(results); ++iter) {
+          asio::ip::tcp::endpoint endpoint = *iter;
+          auto addr = endpoint.address();
+          EXPECT_FALSE(addr.is_loopback()) << addr;
+          EXPECT_FALSE(addr.is_unspecified()) << addr;
+        }
     });
   });
 
