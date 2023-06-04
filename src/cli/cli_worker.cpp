@@ -137,16 +137,18 @@ void Worker::on_resolve_local(asio::error_code ec,
     work_guard_.reset();
     return;
   }
-  auto iter = std::begin(results);
-  endpoint_ = *iter;
+  endpoints_.insert(endpoints_.end(), std::begin(results), std::end(results));
 
   private_->cli_server = std::make_unique<CliServer>(io_context_,
                                                      absl::GetFlag(FLAGS_server_host),
                                                      absl::GetFlag(FLAGS_server_port)
                                                      );
 
-  private_->cli_server->listen(endpoint_, SOMAXCONN, ec);
-  endpoint_ = private_->cli_server->endpoint();
+  for (auto &endpoint : endpoints_) {
+    private_->cli_server->listen(endpoint, SOMAXCONN, ec);
+    endpoint = private_->cli_server->endpoint();
+    LOG(WARNING) << "tcp server listening at " << endpoint;
+  }
 
   if (ec) {
     private_->cli_server->stop();

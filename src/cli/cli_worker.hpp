@@ -51,7 +51,7 @@ class Worker {
   std::unique_ptr<std::thread> thread_;
 
   WorkerPrivate *private_;
-  asio::ip::tcp::endpoint endpoint_;
+  std::vector<asio::ip::tcp::endpoint> endpoints_;
 };
 
 #endif  // YASS_CLI_WORKER
