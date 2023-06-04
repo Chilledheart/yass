@@ -56,7 +56,7 @@ class stream {
         enable_tls_(enable_tls),
         ssl_socket_(enable_tls ? net::SSLSocket::Create(&io_context, &socket_, ssl_ctx->native_handle(), https_fallback, host_name) : nullptr),
         channel_(channel) {
-    assert(channel && "channel must defined to use with stream");
+    CHECK(channel && "channel must defined to use with stream");
 #ifdef HAVE_C_ARES
     int ret = resolver_->Init(1000, 5);
     CHECK_EQ(ret, 0) << "c-ares initialize failure";
@@ -118,9 +118,9 @@ class stream {
     auto addr = asio::ip::make_address(host_name_.c_str(), ec);
     bool host_is_ip_address = !ec;
     if (host_is_ip_address) {
-      endpoint_ = asio::ip::tcp::endpoint(addr, port_);
-      VLOG(2) << "resolved ip-like address: " << endpoint_;
-      on_resolve(callback, channel);
+      VLOG(2) << "resolved ip-like address: " << domain();
+      endpoints_.push_back(asio::ip::tcp::endpoint(addr, port_));
+      on_try_next_endpoint(callback, channel);
       return;
     }
 
@@ -139,12 +139,12 @@ class stream {
         on_connect(callback, channel, ec);
         return;
       }
-      auto iter = std::begin(results);
+      for (auto iter = std::begin(results); iter != std::end(results); ++iter) {
+        VLOG(2) << "resolved address " << domain() << ": " << endpoint_;
+        endpoints_.push_back(*iter);
+      }
 
-      /// FIXME TBD
-      endpoint_ = *iter;
-      VLOG(2) << "resolved address from: " << domain() << " to: " << endpoint_;
-      on_resolve(callback, channel);
+      on_try_next_endpoint(callback, channel);
     });
   }
 
@@ -292,10 +292,26 @@ class stream {
   bool https_fallback() const { return https_fallback_; }
 
  private:
+  void on_try_next_endpoint(std::function<void()> callback, Channel* channel) {
+    asio::ip::tcp::endpoint endpoint = endpoints_.front();
+    VLOG(1) << "trying endpoint (" << domain() << "): " << endpoint;
+    endpoints_.pop_front();
+    endpoint_ = std::move(endpoint);
+    if (socket_.is_open()) {
+      asio::error_code ec;
+      socket_.close(ec);
+    }
+    on_resolve(callback, channel);
+  }
+
   void on_resolve(std::function<void()> callback, Channel* channel) {
     asio::error_code ec;
     socket_.open(endpoint_.protocol(), ec);
     if (ec) {
+      if (!endpoints_.empty()) {
+        on_try_next_endpoint(callback, channel);
+        return;
+      }
       closed_ = true;
       channel->disconnected(ec);
       callback();
@@ -356,6 +372,10 @@ class stream {
     connect_timer_.cancel();
     if (ec) {
       DCHECK_NE(ec, asio::error::operation_aborted);
+      if (!endpoints_.empty()) {
+        on_try_next_endpoint(callback, channel);
+        return;
+      }
       channel->disconnected(ec);
       callback();
       return;
@@ -444,6 +464,7 @@ class stream {
   asio::ip::tcp::endpoint endpoint_;
   asio::ip::tcp::socket socket_;
   asio::steady_timer connect_timer_;
+  std::deque<asio::ip::tcp::endpoint> endpoints_;
 
   bool https_fallback_;
   const bool enable_tls_;
