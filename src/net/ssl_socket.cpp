@@ -295,15 +295,6 @@ size_t SSLSocket::Write(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
 
 void SSLSocket::WaitRead(std::function<void(asio::error_code ec)> cb) {
   DCHECK(!wait_read_callback_ && "Multiple calls into Wait Read");
-
-  char byte;
-  int rv = SSL_peek(ssl_.get(), &byte, 1);
-  int ssl_err = SSL_get_error(ssl_.get(), rv);
-  if (ssl_err != SSL_ERROR_WANT_READ && ssl_err != SSL_ERROR_WANT_WRITE) {
-    cb(asio::error_code());
-    return;
-  }
-
   wait_read_callback_ = cb;
   scoped_refptr<SSLSocket> self(this);
   stream_socket_->async_wait(asio::ip::tcp::socket::wait_read,
