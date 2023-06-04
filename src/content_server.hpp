@@ -7,6 +7,7 @@
 #include <absl/flags/flag.h>
 #include <absl/strings/str_format.h>
 #include <algorithm>
+#include <array>
 #include <vector>
 #include <functional>
 #include <utility>
@@ -20,6 +21,8 @@
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
 #include "network.hpp"
+
+#define MAX_LISTEN_ADDRESSES 30
 
 /// An interface used to provide service
 template <typename T>
@@ -72,44 +75,47 @@ class ContentServer {
   ContentServer(const ContentServer&) = delete;
   ContentServer& operator=(const ContentServer&) = delete;
 
+  // Retrieve last local endpoint
   const asio::ip::tcp::endpoint& endpoint() const {
-    return endpoint_;
+    DCHECK_NE(next_listen_ctx_, 0) << "Server should listen to some address";
+    return listen_ctxs_[next_listen_ctx_ - 1].endpoint;
   }
 
   void listen(const asio::ip::tcp::endpoint& endpoint,
               int backlog,
               asio::error_code& ec) {
-    if (acceptor_) {
+    if (next_listen_ctx_ >= MAX_LISTEN_ADDRESSES) {
       ec = asio::error::already_started;
       return;
     }
-    endpoint_ = endpoint;
-    acceptor_ = std::make_unique<asio::ip::tcp::acceptor>(io_context_);
+    ListenCtx& ctx = listen_ctxs_[next_listen_ctx_];
+    ctx.endpoint = endpoint;
+    ctx.acceptor = std::make_unique<asio::ip::tcp::acceptor>(io_context_);
 
-    acceptor_->open(endpoint.protocol(), ec);
+    ctx.acceptor->open(endpoint.protocol(), ec);
     if (ec) {
       return;
     }
     if (absl::GetFlag(FLAGS_reuse_port)) {
-      acceptor_->set_option(asio::ip::tcp::acceptor::reuse_address(true), ec);
-      SetSOReusePort(acceptor_->native_handle(), ec);
+      ctx.acceptor->set_option(asio::ip::tcp::acceptor::reuse_address(true), ec);
+      SetSOReusePort(ctx.acceptor->native_handle(), ec);
     }
     if (ec) {
       return;
     }
-    SetTCPFastOpen(acceptor_->native_handle(), ec);
+    SetTCPFastOpen(ctx.acceptor->native_handle(), ec);
     if (ec) {
       return;
     }
-    acceptor_->bind(endpoint, ec);
+    ctx.acceptor->bind(endpoint, ec);
     if (ec) {
       return;
     }
-    acceptor_->listen(backlog, ec);
+    ctx.acceptor->listen(backlog, ec);
     if (ec) {
       return;
     }
-    endpoint_ = acceptor_->local_endpoint(ec);
+    ctx.endpoint = ctx.acceptor->local_endpoint(ec);
     if (ec) {
       return;
     }
@@ -126,19 +132,23 @@ class ContentServer {
       }
     }
     LOG(INFO) << "Listening (" << factory_.Name() << ") on "
-              << endpoint_;
-    asio::post(io_context_ ,[this]() { accept(); });
+              << ctx.endpoint;
+    int listen_ctx_num = next_listen_ctx_++;
+    asio::post(io_context_ ,[this, listen_ctx_num]() { accept(listen_ctx_num); });
   }
 
   // Allow called from different threads
   void stop() {
     asio::post(io_context_, [this]() {
-      if (acceptor_) {
-        asio::error_code ec;
-        acceptor_->close(ec);
-        if (ec) {
-          LOG(WARNING) << "Connections (" << factory_.Name() << ")"
-                       << " acceptor close failed: " << ec;
+      for (int i = 0; i < next_listen_ctx_; ++i) {
+        ListenCtx& ctx = listen_ctxs_[i];
+        if (ctx.acceptor) {
+          asio::error_code ec;
+          ctx.acceptor->close(ec);
+          if (ec) {
+            LOG(WARNING) << "Connections (" << factory_.Name() << ")"
+                         << " acceptor (" << ctx.endpoint << ") close failed: " << ec;
+          }
         }
       }
 
@@ -149,7 +159,10 @@ class ContentServer {
         conn->close();
       }
 
-      acceptor_.reset();
+      for (int i = 0; i < next_listen_ctx_; ++i) {
+        ListenCtx& ctx = listen_ctxs_[i];
+        ctx.acceptor.reset();
+      }
       work_guard_.reset();
     });
   }
@@ -159,10 +172,11 @@ class ContentServer {
   }
 
  private:
-  void accept() {
-    acceptor_->async_accept(
-        peer_endpoint_,
-        [this](asio::error_code ec, asio::ip::tcp::socket socket) {
+  void accept(int listen_ctx_num) {
+    ListenCtx& ctx = listen_ctxs_[listen_ctx_num];
+    ctx.acceptor->async_accept(
+        ctx.peer_endpoint,
+        [this, listen_ctx_num](asio::error_code ec, asio::ip::tcp::socket socket) {
           if (!ec) {
             if (enable_tls_) {
               setup_ssl_ctx_alpn_cb();
@@ -172,8 +186,8 @@ class ContentServer {
               upstream_https_fallback_, https_fallback_,
               enable_upstream_tls_, enable_tls_,
               &upstream_ssl_ctx_, &ssl_ctx_);
-            on_accept(conn, std::move(socket));
-            accept();
+            on_accept(conn, std::move(socket), listen_ctx_num);
+            accept(listen_ctx_num);
           } if (ec && ec != asio::error::operation_aborted) {
             LOG(WARNING) << "Acceptor (" << factory_.Name() << ")"
                          << " failed to accept more due to: " << ec;
@@ -183,8 +197,10 @@ class ContentServer {
   }
 
   void on_accept(scoped_refptr<ConnectionType> conn,
-                 asio::ip::tcp::socket &&socket) {
+                 asio::ip::tcp::socket &&socket,
+                 int listen_ctx_num) {
     asio::error_code ec;
+    ListenCtx& ctx = listen_ctxs_[listen_ctx_num];
 
     int connection_id = next_connection_id_++;
     SetTCPCongestion(socket.native_handle(), ec);
@@ -194,7 +210,7 @@ class ContentServer {
     SetSocketLinger(&socket, ec);
     SetSocketSndBuffer(&socket, ec);
     SetSocketRcvBuffer(&socket, ec);
-    conn->on_accept(std::move(socket), endpoint_, peer_endpoint_,
+    conn->on_accept(std::move(socket), ctx.endpoint, ctx.peer_endpoint,
                     connection_id);
     conn->set_disconnect_cb(
         [this, conn]() mutable { on_disconnect(conn); });
@@ -422,10 +438,13 @@ class ContentServer {
 
   ContentServer::Delegate *delegate_;
 
-  asio::ip::tcp::endpoint endpoint_;
-  asio::ip::tcp::endpoint peer_endpoint_;
-
-  std::unique_ptr<asio::ip::tcp::acceptor> acceptor_;
+  struct ListenCtx {
+    asio::ip::tcp::endpoint endpoint;
+    asio::ip::tcp::endpoint peer_endpoint;
+    std::unique_ptr<asio::ip::tcp::acceptor> acceptor;
+  };
+  std::array<ListenCtx, MAX_LISTEN_ADDRESSES> listen_ctxs_;
+  int next_listen_ctx_ = 0;
 
   absl::flat_hash_map<int, scoped_refptr<ConnectionType>> connection_map_;
 
