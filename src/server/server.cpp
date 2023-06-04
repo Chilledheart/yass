@@ -60,7 +60,7 @@ int main(int argc, const char* argv[]) {
   asio::io_context io_context;
   auto work_guard = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context.get_executor());
 
-  asio::ip::tcp::endpoint endpoint;
+  std::vector<asio::ip::tcp::endpoint> endpoints;
   std::string host_name = absl::GetFlag(FLAGS_server_host);
   uint16_t port = absl::GetFlag(FLAGS_server_port);
 
@@ -68,7 +68,7 @@ int main(int argc, const char* argv[]) {
   auto addr = asio::ip::make_address(host_name.c_str(), ec);
   bool host_is_ip_address = !ec;
   if (host_is_ip_address) {
-    endpoint = asio::ip::tcp::endpoint(addr, port);
+    endpoints.push_back(asio::ip::tcp::endpoint(addr, port));
   } else {
     struct addrinfo hints = {}, *addrinfo;
     hints.ai_flags = AI_CANONNAME;
@@ -76,7 +76,7 @@ int main(int argc, const char* argv[]) {
     hints.ai_socktype = 0;
     hints.ai_protocol = 0;
     int ret = ::getaddrinfo(host_name.c_str(), std::to_string(port).c_str(), &hints, &addrinfo);
-    auto endpoints = asio::ip::tcp::resolver::results_type::create(addrinfo, host_name.c_str(), std::to_string(port));
+    auto results = asio::ip::tcp::resolver::results_type::create(addrinfo, host_name.c_str(), std::to_string(port));
     ::freeaddrinfo(addrinfo);
     if (ret) {
       LOG(WARNING) << "server resolved host: " << host_name
@@ -86,20 +86,21 @@ int main(int argc, const char* argv[]) {
         << " failed due to: " << gai_strerror(ret);
 #endif
     }
-    endpoint = *std::begin(endpoints);
+    endpoints.insert(endpoints.end(), std::begin(results), std::end(results));
   }
-
-  LOG(WARNING) << "tcp server listening at " << endpoint;
 
   ServerServer server(io_context);
-  server.listen(endpoint, SOMAXCONN, ec);
-  if (ec) {
-    LOG(ERROR) << "listen failed due to: " << ec;
-    server.stop();
-    work_guard.reset();
-    return -1;
+  for (auto &endpoint : endpoints) {
+    server.listen(endpoint, SOMAXCONN, ec);
+    endpoint = server.endpoint();
+    LOG(WARNING) << "tcp server listening at " << endpoint;
+    if (ec) {
+      LOG(ERROR) << "listen failed due to: " << ec;
+      server.stop();
+      work_guard.reset();
+      return -1;
+    }
   }
-  endpoint = server.endpoint();
 
   asio::signal_set signals(io_context);
   signals.add(SIGINT, ec);
