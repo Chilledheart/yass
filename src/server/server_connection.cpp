@@ -136,7 +136,7 @@ void ServerConnection::start() {
   if (enable_tls_) {
     ssl_socket_->Handshake([this, self](
       int result) {
-        if (closed_) {
+        if (closed_ || closing_) {
           return;
         }
         if (result != net::OK) {
@@ -470,7 +470,7 @@ void ServerConnection::ReadHandshake() {
   scoped_refptr<ServerConnection> self(this);
 
   s_async_read_some_([this, self](asio::error_code ec) {
-      if (closed_) {
+      if (closed_ || closing_) {
         return;
       }
       if (ec) {
@@ -530,7 +530,7 @@ void ServerConnection::ReadHandshakeViaHttps() {
   }
 
   s_async_read_some_([this, self](asio::error_code ec) {
-    if (closed_) {
+    if (closed_ || closing_) {
       return;
     }
     if (ec) {
@@ -611,14 +611,14 @@ void ServerConnection::ReadStream() {
     return;
   }
 
-  if (closed_ || !downstream_readable_) {
+  if (closed_ || closing_ || !downstream_readable_) {
     return;
   }
 
   downstream_read_inprogress_ = true;
   s_async_read_some_([this, self](asio::error_code ec) {
       downstream_read_inprogress_ = false;
-      if (closed_) {
+      if (closed_ || closing_) {
         return;
       }
       if (ec) {
@@ -642,7 +642,7 @@ void ServerConnection::WriteStream() {
   write_inprogress_ = true;
   s_async_write_some_([this, self](asio::error_code ec) {
       write_inprogress_ = false;
-      if (closed_) {
+      if (closed_ || closing_) {
         return;
       }
       if (ec) {
@@ -680,7 +680,7 @@ void ServerConnection::WriteStreamInPipe() {
       ec = asio::error::try_again;
       break;
     }
-    if (closed_) {
+    if (closed_ || closing_) {
       break;
     }
     ec = asio::error_code();
@@ -909,7 +909,7 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextUpstreamBuf(asio::error_code &ec
 
 try_again:
   // RstStream might be sent in ProcessBytes
-  if (closed_) {
+  if (closed_ || closing_) {
     ec = asio::error::eof;
     return nullptr;
   }
