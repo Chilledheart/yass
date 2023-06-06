@@ -2,27 +2,27 @@
 set -x
 set -e
 PWD=$(dirname "${BASH_SOURCE[0]}")
-VERSION=1.3.0
-SUBVERSION=1
-
 cd $PWD/..
 
 # update LAST_CHANGE
 if [ -d '.git' ]; then
   LAST_CHANGE_REF=$(/usr/bin/git rev-parse HEAD)
-  LAST_TAG=$(/usr/bin/git describe --abbrev=0 --tags HEAD || echo none)
-  if [ "$LAST_TAG" != "none" ]; then
-    COUNT_FROM_LATEST_TAG=$(/usr/bin/git rev-list $LATEST_TAG..HEAD --count || cat TAG)
-    ABBREV_REF="$LAST_TAG{$COUNT_FROM_LATEST_TAG}"
-  else
-    ABBREV_REF=$(/usr/bin/git rev-parse --abbrev-ref HEAD)
-  fi
-  TAG=$(/usr/bin/git describe --abbrev=40 --tags HEAD || cat TAG)
+  TAG=$(/usr/bin/git describe --abbrev=0 --tags HEAD)
+  SUBTAG=$(/usr/bin/git rev-list $TAG..HEAD --count)
+  ABBREV_REF="$TAG{$SUBTAG}"
   echo -n "${LAST_CHANGE_REF}-refs/branch-heads/${ABBREV_REF}" > LAST_CHANGE
   echo -n "${TAG}" > TAG
+  echo -n "${SUBTAG}" > SUBTAG
+else
+  TAG=$(< TAG)
+  SUBTAG=$(< SUBTAG)
 fi
 
-# TODO use correct build number dynamically
+VERSION=$TAG
+SUBVERSION=$SUBTAG
+# FIXME deb cannot pickup subtag correctly
+SUBVERSION=1
+
 /usr/bin/git ls-files --recurse-submodules | \
   tar caf ../yass_${VERSION}.orig.tar.gz --xform="s,^,yass-${VERSION}/," -T -
 
@@ -45,13 +45,22 @@ fi
 
 if [ "x$HOST_ARCH" != "x" ]; then
   DEB_VERSION=$(sudo schroot --chroot "source:$HOST_DISTRO-$BUILD_ARCH-$HOST_ARCH" --user root -- dpkg -s debhelper|grep Version|sed -s 's/^Version: //g')
+  DPKG_VERSION=$(sudo schroot --chroot "source:$HOST_DISTRO-$BUILD_ARCH-$HOST_ARCH" --user root -- dpkg -s dpkg|grep Version|sed -s 's/^Version: //g')
 else
   DEB_VERSION=$(dpkg -s debhelper|grep Version|sed -s 's/^Version: //g')
+  DPKG_VERSION=$(dpkg -s dpkg|grep Version|sed -s 's/^Version: //g')
 fi
 DEB_HAS_CMAKE_NINIA_BUILD_SUPPORT=$(dpkg --compare-versions $DEB_VERSION ge 11.2 || echo no)
+DPKG_HAS_LTO_DEFAULT_SUPPORT=$(dpkg --compare-versions $DPKG_VERSION ge 1.21 || echo no)
 
 if [ "x$DEB_HAS_CMAKE_NINIA_BUILD_SUPPORT" != "xno" ]; then
   export DEB_BUILD_SYSTEM_OPTIONS="--buildsystem=cmake+ninja"
+fi
+
+# we're using clang, not gcc
+# https://wiki.debian.org/ToolChain/LTO
+if [ "x$DPKG_HAS_LTO_DEFAULT_SUPPORT" != "xno" ]; then
+  export DEB_BUILD_MAINT_OPTIONS=optimize=-lto
 fi
 
 if [ "x$HOST_ARCH" != "x" ]; then

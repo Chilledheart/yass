@@ -14,6 +14,7 @@ codenames = {
   "focal" : "ubuntu-20.04-focal",
   "impish" : "ubuntu-21.10-impish",
   "jammy" : "ubuntu-22.04-jammy",
+  "lunar" : "ubuntu-23.04-lunar",
   "stretch" : "debian-9-stretch",
   "buster" : "debian-10-buster",
   "bullseye" : "debian-11-bullseye",
@@ -25,20 +26,18 @@ def main():
   import argparse
   parser = argparse.ArgumentParser()
   parser.add_argument('codename', nargs='?', help='Debian Distribution Name')
-  parser.add_argument('--id', help='Debian Distribution ID')
   args = parser.parse_args()
 
   codename = args.codename
   if not codename:
-    codename = check_string_output(['lsb_release', '-sc'])
+    codename = check_string_output(['lsb_release', '-sc']).lower()
 
   if codename in codenames:
     print(codenames[codename])
   else:
-    id = args.id
-    if not id:
-      id = check_string_output(['lsb_release', '-si'])
-    print("%s-unknown-%s" % (id, codename))
+    id = check_string_output(['lsb_release', '-si']).lower()
+    release = check_string_output(['lsb_release', '-sr'])
+    print("%s-%s-%s" % (id, release, codename))
 
 if __name__ == '__main__':
   main()

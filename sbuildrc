@@ -29,4 +29,5 @@ $environment_filter = ['^PATH$',
 			'^CC$',
 			'^CXX$',
 			'^DH_QUIET$',
-			'^DEB_BUILD_SYSTEM_OPTIONS$' ];
+			'^DEB_BUILD_SYSTEM_OPTIONS$',
+			'^DEB_BUILD_MAINT_OPTIONS$' ];
