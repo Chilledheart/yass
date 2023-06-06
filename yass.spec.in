@@ -1,3 +1,7 @@
+%global _lto_cflags %nil
+%global _clang_extra_ldflags %nil
+%global toolchain clang
+
 Name:    yass
 Version: __VERSION__
 Release: __SUBVERSION__%{?dist}
