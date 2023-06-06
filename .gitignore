@@ -39,3 +39,4 @@ sscxx
 /freebsd-*-toolchain
 /freebsd-*-tmp
 *.mo
+yass.spec
