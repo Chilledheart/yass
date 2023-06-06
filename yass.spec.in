@@ -1,6 +1,6 @@
 Name:    yass
-Version: 1.3.3
-Release: 1%{?dist}
+Version: __VERSION__
+Release: __SUBVERSION__%{?dist}
 Summary: lightweight and secure http/socks4/socks5 proxy
 
 License: GPLv2

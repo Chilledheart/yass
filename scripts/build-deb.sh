@@ -2,27 +2,27 @@
 set -x
 set -e
 PWD=$(dirname "${BASH_SOURCE[0]}")
-VERSION=1.3.3
-SUBVERSION=1
-
 cd $PWD/..
 
 # update LAST_CHANGE
 if [ -d '.git' ]; then
   LAST_CHANGE_REF=$(/usr/bin/git rev-parse HEAD)
-  LAST_TAG=$(/usr/bin/git describe --abbrev=0 --tags HEAD || echo none)
-  if [ "$LAST_TAG" != "none" ]; then
-    COUNT_FROM_LATEST_TAG=$(/usr/bin/git rev-list $LATEST_TAG..HEAD --count || cat TAG)
-    ABBREV_REF="$LAST_TAG{$COUNT_FROM_LATEST_TAG}"
-  else
-    ABBREV_REF=$(/usr/bin/git rev-parse --abbrev-ref HEAD)
-  fi
-  TAG=$(/usr/bin/git describe --abbrev=40 --tags HEAD || cat TAG)
+  TAG=$(/usr/bin/git describe --abbrev=0 --tags HEAD)
+  SUBTAG=$(/usr/bin/git rev-list $TAG..HEAD --count)
+  ABBREV_REF="$TAG{$SUBTAG}"
   echo -n "${LAST_CHANGE_REF}-refs/branch-heads/${ABBREV_REF}" > LAST_CHANGE
   echo -n "${TAG}" > TAG
+  echo -n "${SUBTAG}" > SUBTAG
+else
+  TAG=$(< TAG)
+  SUBTAG=$(< SUBTAG)
 fi
 
-# TODO use correct build number dynamically
+VERSION=$TAG
+SUBVERSION=$SUBTAG
+# FIXME deb cannot pickup subtag correctly
+SUBVERSION=1
+
 /usr/bin/git ls-files --recurse-submodules | \
   tar caf ../yass_${VERSION}.orig.tar.gz --xform="s,^,yass-${VERSION}/," -T -
 

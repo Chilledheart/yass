@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"bytes"
 
 	"github.com/golang/glog"
 	"github.com/google/uuid"
@@ -25,6 +26,7 @@ var APPNAME = "yass"
 var toolDir string
 var projectDir string
 var buildDir string
+var tagFlag string
 
 var dryRunFlag bool
 var preCleanFlag bool
@@ -157,6 +159,25 @@ func prebuildFindSourceDirectory() {
 	}
 	if _, err = os.Stat("CMakeLists.txt"); errors.Is(err, os.ErrNotExist) {
 		glog.Fatalf("Cannot find top dir of the source tree")
+	}
+
+	if _, err = os.Stat(".git"); err == nil {
+		cmd := exec.Command("git", "describe", "--abbrev=0", "--tags", "HEAD")
+		var outb, errb bytes.Buffer
+		cmd.Stdout = &outb
+		cmd.Stderr = &errb
+		err = cmd.Run()
+		if err == nil {
+			tagFlag = strings.TrimSpace(outb.String())
+		}
+	}
+
+	if err != nil {
+		tagContent, err := os.ReadFile("TAG")
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
+		tagFlag = strings.TrimSpace(string(tagContent))
 	}
 
 	if systemNameFlag == "windows" && msvcTargetArchFlag != "" {
@@ -941,7 +962,7 @@ func generateMsi(output string, dllPaths []string, licensePaths []string) {
 	}
 
 	glog.Info("Feeding WiX compiler...")
-	cmdRun([]string{"candle.exe", "yass.wxs", "-dPlatform=" + msvcTargetArchFlag}, true)
+	cmdRun([]string{"candle.exe", "yass.wxs", "-dPlatform=" + msvcTargetArchFlag, "-dVersion=" + tagFlag}, true)
 
 	glog.Info("Generating MSI file...")
 	cmdRun([]string{"light.exe", "-ext", "WixUIExtension", "-out", output, "-cultures:en-US", "-sice:ICE03", "-sice:ICE57", "-sice:ICE61", "yass.wixobj"}, true)
