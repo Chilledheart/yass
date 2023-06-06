@@ -45,13 +45,22 @@ fi
 
 if [ "x$HOST_ARCH" != "x" ]; then
   DEB_VERSION=$(sudo schroot --chroot "source:$HOST_DISTRO-$BUILD_ARCH-$HOST_ARCH" --user root -- dpkg -s debhelper|grep Version|sed -s 's/^Version: //g')
+  DPKG_VERSION=$(sudo schroot --chroot "source:$HOST_DISTRO-$BUILD_ARCH-$HOST_ARCH" --user root -- dpkg -s dpkg|grep Version|sed -s 's/^Version: //g')
 else
   DEB_VERSION=$(dpkg -s debhelper|grep Version|sed -s 's/^Version: //g')
+  DPKG_VERSION=$(dpkg -s dpkg|grep Version|sed -s 's/^Version: //g')
 fi
 DEB_HAS_CMAKE_NINIA_BUILD_SUPPORT=$(dpkg --compare-versions $DEB_VERSION ge 11.2 || echo no)
+DPKG_HAS_LTO_DEFAULT_SUPPORT=$(dpkg --compare-versions $DPKG_VERSION ge 1.21 || echo no)
 
 if [ "x$DEB_HAS_CMAKE_NINIA_BUILD_SUPPORT" != "xno" ]; then
   export DEB_BUILD_SYSTEM_OPTIONS="--buildsystem=cmake+ninja"
+fi
+
+# we're using clang, not gcc
+# https://wiki.debian.org/ToolChain/LTO
+if [ "x$DPKG_HAS_LTO_DEFAULT_SUPPORT" != "xno" ]; then
+  export DEB_BUILD_MAINT_OPTIONS=optimize=-lto
 fi
 
 if [ "x$HOST_ARCH" != "x" ]; then

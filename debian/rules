@@ -5,7 +5,7 @@
 #export DH_VERBOSE = 1
 
 # Security Hardening
-export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export DEB_BUILD_MAINT_OPTIONS += hardening=+all
 NCPUS = $(shell nproc)
 
 export GOPROXY
