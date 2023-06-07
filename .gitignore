@@ -18,11 +18,14 @@ sscxx
 /debian/.debhelper
 /debian/tmp
 /debian/debhelper-build-stamp
-/debian/yass-dbg.substvars
 /debian/yass-dbg
-/debian/yass.substvars
 /debian/yass
+/debian/yass-client-dbg
+/debian/yass-client
+/debian/yass-server-dbg
+/debian/yass-server
 /debian/files
+*.substvars
 *.msi
 *.wixpdb
 /debian_sid_*
