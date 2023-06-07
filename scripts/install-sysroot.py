@@ -25,8 +25,8 @@ import optparse
 import os
 import re
 import shutil
-import subprocess
 import sys
+import tarfile
 try:
   # For Python 3.0 and later
   from urllib.request import urlopen
@@ -56,6 +56,10 @@ def GetSha1(filename):
         break
       sha1.update(chunk)
   return sha1.hexdigest()
+def extract_tarfile(tar, sysroot):
+  print('Extracting %s' % tar)
+  with tarfile.open(tar) as package_tar:
+    package_tar.extractall(sysroot)
 def main(args):
   parser = optparse.OptionParser('usage: %prog [OPTIONS]', description=__doc__)
   parser.add_option('--arch',
@@ -128,7 +132,7 @@ def InstallSysroot(target_platform, target_arch):
   if sha1sum != tarball_sha1sum:
     raise Error('Tarball sha1sum is wrong.'
                 'Expected %s, actual: %s' % (tarball_sha1sum, sha1sum))
-  subprocess.check_call(['tar', 'xf', tarball, '-C', sysroot])
+  extract_tarfile(tarball, sysroot)
   os.remove(tarball)
   with open(stamp, 'w') as s:
     s.write(url)
