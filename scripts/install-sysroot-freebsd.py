@@ -3,8 +3,12 @@
 """
 import hashlib
 import os
-import subprocess
+import shutil
 import sys
+import tarfile
+
+FREEBSD_MAIN_SITE = 'http://ftp.freebsd.org/pub/FreeBSD/releases'
+FREEBSD_PKG_SITE = 'http://pkg.freebsd.org'
 
 try:
   # For Python 3.0 and later
@@ -14,7 +18,7 @@ except ImportError:
   from urllib2 import urlopen
 
 def download_url(url, tarball):
-  print('Downloading %s to %s' % (url, tarball))
+  print(f'downloading {url}...')
   sys.stdout.flush()
   sys.stderr.flush()
   for _ in range(3):
@@ -28,32 +32,45 @@ def download_url(url, tarball):
   else:
     raise Exception('Failed to download %s' % url)
 
-def write_output(command, check=False):
-  print('--- %s' % ' '.join(command))
-  proc = None
-  try:
-    proc = subprocess.Popen(command, stdout=sys.stdout, stderr=sys.stderr,
-        shell=False, env=os.environ)
-  except:
-    if check:
-      raise
-    else:
+# ['tar', '-C', sysroot, '-xf', 'base.txz', './usr/include', './usr/lib', './lib', './usr/libdata/pkgconfig']
+# ['tar', '-xf', 'packagesite.txz', 'packagesite.yaml']
+# ['tar', '-C', sysroot, '-xf', os.path.basename(pkg_url), '/usr/local/include', '/usr/local/libdata', '/usr/local/lib']
+def extract_tarfile(tar, sysroot=".", filters=[]):
+  print('extracting %s with (filters %s)' % (tar, ' '.join(filters)))
+  with tarfile.open(tar) as package_tar:
+    members = package_tar.getmembers()
+    filtered_members = []
+    for member in members:
+      filtered = False if filters else True
+      path = member.name
+      basename = os.path.basename(path)
+      dirname = os.path.dirname(path)
+      for filter in filters:
+        _dirname = dirname + "/"
+        if _dirname.startswith(filter + "/"):
+          filtered = True
+          break;
+      # remove all '.a' archive files except for libc_nonshared.a and libssp_nonshared.a
+      # remove all python-related files inside /usr/local/lib
+      if filtered:
+        if basename.endswith('.a'):
+          filtered = False
+        if basename == 'libc_nonshared.a' or basename == 'libssp_nonshared.a':
+          filtered = True
+        dirnames = dirname.split('/')
+        if dirname.startswith('/usr/local/lib') and len(dirnames) >= 5 and dirnames[4].startswith('python'):
+          filtered = False
+        if '__pycache__' in dirnames:
+          filtered = False
+      if filtered:
+        if dirname.startswith("/"):
+          member.name = "." + member.name
+        print(member.name)
+        filtered_members.append(member)
+    if not filtered_members:
       return
-  try:
-    proc.communicate()
-  except KeyboardInterrupt:
-    proc.kill()
-    # We don't call process.wait() as .__exit__ does that for us.
-    raise
-  except:
-    proc.kill()
-    # We don't call process.wait() as .__exit__ does that for us.
-    if check:
-      raise
-  retcode = proc.returncode
-  if check and retcode:
-    raise subprocess.CalledProcessError(retcode, proc.args,
-                                        output=sys.stdout, stderr=sys.stderr)
+    package_tar.extractall(sysroot, filtered_members)
+
 
 def GetSha256(filename):
   sha256 = hashlib.sha256()
@@ -82,13 +99,13 @@ def resolve_deps(pkg_db, deps):
       return deps
     deps = resolved_deps
 
-def extract_pkg(pkg_url, pkg_sum, dst):
-  print(f'extracting pkg {pkg_url}...')
-  download_url(pkg_url, os.path.basename(pkg_url))
-  if GetSha256(os.path.basename(pkg_url)) != pkg_sum:
-    print(f'{pkg_url} checksum mismatched, expected: {pkg_sum}!')
-    return
-  write_output(['tar', '-C', dst, '-xf', os.path.basename(pkg_url), '/usr/local/include', '/usr/local/libdata', '/usr/local/lib'])
+def extract_pkg(pkg_url, pkg_sum, sysroot):
+  pkg_name = os.path.basename(pkg_url)
+  download_url(pkg_url, pkg_name)
+  if GetSha256(pkg_name) != pkg_sum:
+    print(f'{pkg_name} checksum mismatched, expected: {pkg_sum}!')
+    sys.exit(-1)
+  extract_tarfile(pkg_name, sysroot, ['/usr/local/include', '/usr/local/libdata', '/usr/local/lib'])
 
 def usage():
   print("usage: ./install-sysroot-freebsd.py <abi>")
@@ -96,7 +113,7 @@ def usage():
 
 def main(args):
   if not args:
-    print("no abi specified, setting to freebsd11")
+    print("no abi specified, setting to freebsd 12")
     abi = '12'
   elif args and len(args) == 1 and str.isdecimal(args[0]):
     abi = args[0]
@@ -115,25 +132,24 @@ def main(args):
   tmproot = os.path.abspath(f'freebsd-{abi}-tmp')
   sysroot = os.path.abspath(f'freebsd-{abi}-toolchain')
 
-  print('extracting sysroot...')
-
   if not os.path.isdir(tmproot):
     os.mkdir(tmproot)
   os.chdir(tmproot)
 
-  if not os.path.isdir(sysroot):
-    os.mkdir(sysroot)
+  # remove old sysroot files
+  if os.path.isdir(sysroot):
+    shutil.rmtree(sysroot)
+  os.mkdir(sysroot)
 
-  # extract include and so only
-  download_url(f'http://ftp.freebsd.org/pub/FreeBSD/releases/amd64/{version}-RELEASE/base.txz', 'base.txz')
-  write_output(['tar', '-C', sysroot, '-xf', 'base.txz', './usr/include', './usr/lib', './lib', './usr/libdata/pkgconfig'], check=True)
+  # extract include and shared libraries only
+  print('Extracting sysroot (base)...')
+  download_url(f'{FREEBSD_MAIN_SITE}/amd64/{version}-RELEASE/base.txz', 'base.txz')
+  extract_tarfile('base.txz', sysroot, ['./usr/include', './usr/lib', './lib', './usr/libdata/pkgconfig'])
 
-  print(f'extract sysroot (gtk3)...')
-
-  base_url = f'http://pkg.freebsd.org/FreeBSD%3A{abi}%3Aamd64/release_{release}'
+  print(f'Extracting sysroot (gtk3)...')
+  base_url = f'{FREEBSD_PKG_SITE}/FreeBSD%3A{abi}%3Aamd64/release_{release}'
   download_url(f'{base_url}/packagesite.txz', 'packagesite.txz')
-
-  write_output(['tar', '-xf', 'packagesite.txz', 'packagesite.yaml'], check=True)
+  extract_tarfile('packagesite.txz')
 
   pkg_db = {}
 
@@ -150,26 +166,8 @@ def main(args):
     pkg = pkg_db[dep]
     extract_pkg(base_url + '/' + pkg['path'], pkg['sum'], sysroot)
 
-  print(f'clean up sysroot...')
-  # remove remaining files in lib
-  import glob
-  cmd = ['rm', '-rf']
-  cmd.append(f'{sysroot}/usr/lib/clang')
-  for f in glob.glob(f'{sysroot}/usr/lib/*.a'):
-    if f.endswith('libc_nonshared.a') or f.endswith('libssp_nonshared.a'):
-      continue
-    cmd.append(f)
-  for f in glob.glob(f'{sysroot}/usr/local/lib/*.a'):
-    cmd.append(f)
-  for f in glob.glob(f'{sysroot}/usr/local/lib/*.a'):
-    cmd.append(f)
-  for f in glob.glob(f'{sysroot}/usr/local/lib/python*'):
-    cmd.append(f)
-  write_output(cmd)
-
   # remove tmp files
-  cmd = ['rm', '-rf', tmproot]
-  write_output(cmd)
+  shutil.rmtree(tmproot)
 
   return 0
 
