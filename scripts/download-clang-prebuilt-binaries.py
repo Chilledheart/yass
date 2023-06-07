@@ -5,11 +5,14 @@ import platform
 import errno
 import sys
 import shutil
+import tarfile
 
 # mkdir -p third_party/llvm-build/Release+Asserts
 # CLANG_REVISION=$(< CLANG_REVISION)
 # curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
 # curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clang-tidy-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+# curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/libclang-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
+# curl https://commondatastorage.googleapis.com/chromium-browser-clang/$CLANG_ARCH/clangd-$CLANG_REVISION.tgz | tar xzf - -C third_party/llvm-build/Release+Asserts
 
 try:
   # For Python 3.0 and later
@@ -32,6 +35,11 @@ def download_url(url, tarball):
       pass
   else:
     raise Exception('Failed to download %s' % url)
+
+def extract_tarfile(tar):
+  print('Extracting %s' % tar)
+  with tarfile.open(tar) as package_tar:
+    package_tar.extractall()
 
 def mkdir_p(path):
   try:
@@ -96,8 +104,14 @@ def main():
                f'clang-{clang_revision}-{clang_arch}.tgz')
   download_url(f'https://commondatastorage.googleapis.com/chromium-browser-clang/{clang_arch}/clang-tidy-{clang_revision}.tgz',
                f'clang-tidy-{clang_revision}-{clang_arch}.tgz')
-  write_output(['tar', '-xzf', f'clang-{clang_revision}-{clang_arch}.tgz'], check=True)
-  write_output(['tar', '-xzf', f'clang-tidy-{clang_revision}-{clang_arch}.tgz'], check=True)
+  download_url(f'https://commondatastorage.googleapis.com/chromium-browser-clang/{clang_arch}/libclang-{clang_revision}.tgz',
+               f'libclang-{clang_revision}-{clang_arch}.tgz')
+  download_url(f'https://commondatastorage.googleapis.com/chromium-browser-clang/{clang_arch}/clangd-{clang_revision}.tgz',
+               f'clangd-{clang_revision}-{clang_arch}.tgz')
+  extract_tarfile(f'clang-{clang_revision}-{clang_arch}.tgz')
+  extract_tarfile(f'clang-tidy-{clang_revision}-{clang_arch}.tgz')
+  extract_tarfile(f'libclang-{clang_revision}-{clang_arch}.tgz')
+  extract_tarfile(f'clangd-{clang_revision}-{clang_arch}.tgz')
 
   # create a shim to lld-link
   os.chdir('bin')

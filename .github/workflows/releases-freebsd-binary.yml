@@ -22,7 +22,7 @@ on:
   release:
     types: [published]
 env:
-  CACHE_EPOCH: 1
+  CACHE_EPOCH: 2
   GOPROXY: direct
 jobs:
   freebsd-binary-release:
