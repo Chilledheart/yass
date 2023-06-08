@@ -206,6 +206,12 @@ void SSLServerSocket::WaitWrite(std::function<void(asio::error_code ec)> cb) {
 }
 
 void SSLServerSocket::OnWaitRead(asio::error_code ec) {
+  if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+    wait_read_callback_ = nullptr;
+    wait_write_callback_ = nullptr;
+    wait_shutdown_callback_ = nullptr;
+    return;
+  }
   if (auto cb = std::move(wait_shutdown_callback_)) {
     wait_shutdown_callback_ = nullptr;
     cb(ec);
@@ -217,6 +223,12 @@ void SSLServerSocket::OnWaitRead(asio::error_code ec) {
 }
 
 void SSLServerSocket::OnWaitWrite(asio::error_code ec) {
+  if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+    wait_read_callback_ = nullptr;
+    wait_write_callback_ = nullptr;
+    wait_shutdown_callback_ = nullptr;
+    return;
+  }
   if (auto cb = std::move(wait_shutdown_callback_)) {
     wait_shutdown_callback_ = nullptr;
     cb(ec);
