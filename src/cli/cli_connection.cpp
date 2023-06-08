@@ -393,6 +393,9 @@ void CliConnection::ReadMethodSelect() {
       if (closed_) {
         return;
       }
+      if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+        return;
+      }
       if (ec) {
         ProcessReceivedData(nullptr, ec, 0);
         return;
@@ -439,6 +442,9 @@ void CliConnection::ReadSocks5Handshake() {
 
   s_async_read_some_([this, self](asio::error_code ec) {
       if (closed_) {
+        return;
+      }
+      if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
         return;
       }
       if (ec) {
@@ -665,6 +671,9 @@ void CliConnection::ReadStream() {
       if (closed_) {
         return;
       }
+      if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+        return;
+      }
       if (ec) {
         ProcessReceivedData(nullptr, ec, 0);
         return;
@@ -745,6 +754,9 @@ void CliConnection::WriteStream() {
   s_async_write_some_([this, self](asio::error_code ec) {
       write_inprogress_ = false;
       if (closed_) {
+        return;
+      }
+      if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
         return;
       }
       if (ec) {

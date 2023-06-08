@@ -28,10 +28,6 @@ SSLSocket::SSLSocket(asio::io_context *io_context,
   DCHECK(!ssl_);
   ssl_.reset(SSL_new(ssl_ctx));
 
-  asio::error_code ec;
-  socket->native_non_blocking(true, ec);
-  socket->non_blocking(true, ec);
-
   // TODO: reuse SSL session
 
   // TODO: implement these SSL options
@@ -84,6 +80,9 @@ int SSLSocket::Connect(CompletionOnceCallback callback) {
   // https://crbug.com/499289.
   CHECK(!disconnected_);
 
+  DCHECK(stream_socket_->native_non_blocking());
+  DCHECK(stream_socket_->non_blocking());
+
   SSL_set_fd(ssl_.get(), stream_socket_->native_handle());
 
   // Set SSL to client mode. Handshake happens in the loop below.
@@ -125,9 +124,7 @@ void SSLSocket::RetryAllOperations() {
   if (disconnected_)
     return;
 
-#ifdef ENABLE_TLS_WRITE_QUICK_FEEDBACK
   OnWaitWrite(asio::error_code());
-#endif
 }
 
 void SSLSocket::Disconnect() {
@@ -318,6 +315,12 @@ void SSLSocket::WaitWrite(std::function<void(asio::error_code ec)> cb) {
 }
 
 void SSLSocket::OnWaitRead(asio::error_code ec) {
+  if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+    wait_read_callback_ = nullptr;
+    wait_write_callback_ = nullptr;
+    wait_shutdown_callback_ = nullptr;
+    return;
+  }
   if (auto cb = std::move(wait_shutdown_callback_)) {
     wait_shutdown_callback_ = nullptr;
     cb(ec);
@@ -329,6 +332,12 @@ void SSLSocket::OnWaitRead(asio::error_code ec) {
 }
 
 void SSLSocket::OnWaitWrite(asio::error_code ec) {
+  if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+    wait_read_callback_ = nullptr;
+    wait_write_callback_ = nullptr;
+    wait_shutdown_callback_ = nullptr;
+    return;
+  }
   if (auto cb = std::move(wait_shutdown_callback_)) {
     wait_shutdown_callback_ = nullptr;
     cb(ec);
@@ -350,6 +359,7 @@ void SSLSocket::OnWriteReady() {
   // transport read.
   RetryAllOperations();
 }
+
 int SSLSocket::DoHandshake() {
   int rv = SSL_do_handshake(ssl_.get());
   int net_error = OK;

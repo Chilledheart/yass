@@ -473,6 +473,9 @@ void ServerConnection::ReadHandshake() {
       if (closed_ || closing_) {
         return;
       }
+      if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+        return;
+      }
       if (ec) {
         ProcessReceivedData(nullptr, ec, 0);
         return;
@@ -531,6 +534,9 @@ void ServerConnection::ReadHandshakeViaHttps() {
 
   s_async_read_some_([this, self](asio::error_code ec) {
     if (closed_ || closing_) {
+      return;
+    }
+    if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
       return;
     }
     if (ec) {
@@ -621,6 +627,9 @@ void ServerConnection::ReadStream() {
       if (closed_ || closing_) {
         return;
       }
+      if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+        return;
+      }
       if (ec) {
         ProcessReceivedData(nullptr, ec, 0);
         return;
@@ -643,6 +652,9 @@ void ServerConnection::WriteStream() {
   s_async_write_some_([this, self](asio::error_code ec) {
       write_inprogress_ = false;
       if (closed_ || closing_) {
+        return;
+      }
+      if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
         return;
       }
       if (ec) {
@@ -1131,7 +1143,10 @@ void ServerConnection::OnStreamWrite() {
     }
     scoped_refptr<ServerConnection> self(this);
     s_async_shutdown_([this, self](asio::error_code ec) {
-      if (ec == asio::error::operation_aborted) {
+      if (closed_ || closing_) {
+        return;
+      }
+      if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
         return;
       }
       if (ec) {
@@ -1281,7 +1296,10 @@ void ServerConnection::disconnected(asio::error_code ec) {
     }
     scoped_refptr<ServerConnection> self(this);
     s_async_shutdown_([this, self](asio::error_code ec) {
-      if (ec == asio::error::operation_aborted) {
+      if (closed_ || closing_) {
+        return;
+      }
+      if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
         return;
       }
       if (ec) {
