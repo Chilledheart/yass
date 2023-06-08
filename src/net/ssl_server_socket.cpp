@@ -22,10 +22,6 @@ SSLServerSocket::SSLServerSocket(asio::io_context *io_context,
   DCHECK(!ssl_);
   ssl_.reset(SSL_new(ssl_ctx));
 
-  asio::error_code ec;
-  socket->native_non_blocking(true, ec);
-  socket->non_blocking(true, ec);
-
   // TODO: reuse SSL session
 
   SSL_set_shed_handshake_config(ssl_.get(), 1);
@@ -39,6 +35,9 @@ SSLServerSocket::~SSLServerSocket() {
 }
 
 int SSLServerSocket::Handshake(CompletionOnceCallback callback) {
+  DCHECK(stream_socket_->native_non_blocking());
+  DCHECK(stream_socket_->non_blocking());
+
   SSL_set_fd(ssl_.get(), stream_socket_->native_handle());
 
   // Set SSL to server mode. Handshake happens in the loop below.
@@ -243,9 +242,7 @@ void SSLServerSocket::OnWriteReady() {
     OnHandshakeIOComplete(OK);
     return;
   }
-#ifdef ENABLE_TLS_WRITE_QUICK_FEEDBACK
   OnWaitWrite(asio::error_code());
-#endif
 }
 
 void SSLServerSocket::OnHandshakeIOComplete(int result) {
