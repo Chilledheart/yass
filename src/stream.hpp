@@ -187,7 +187,7 @@ class stream {
     s_async_read_some_([this, channel, callback] (asio::error_code ec) {
         read_inprogress_ = false;
         // Cancelled, safe to ignore
-        if (ec == asio::error::operation_aborted) {
+        if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
           callback();
           return;
         }
@@ -236,7 +236,7 @@ class stream {
     s_async_write_some_([this, channel, callback](asio::error_code ec) {
         write_inprogress_ = false;
         // Cancelled, safe to ignore
-        if (ec == asio::error::operation_aborted) {
+        if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
           callback();
           return;
         }
