@@ -28,10 +28,6 @@ SSLSocket::SSLSocket(asio::io_context *io_context,
   DCHECK(!ssl_);
   ssl_.reset(SSL_new(ssl_ctx));
 
-  asio::error_code ec;
-  socket->native_non_blocking(true, ec);
-  socket->non_blocking(true, ec);
-
   // TODO: reuse SSL session
 
   // TODO: implement these SSL options
@@ -84,6 +80,9 @@ int SSLSocket::Connect(CompletionOnceCallback callback) {
   // https://crbug.com/499289.
   CHECK(!disconnected_);
 
+  DCHECK(stream_socket_->native_non_blocking());
+  DCHECK(stream_socket_->non_blocking());
+
   SSL_set_fd(ssl_.get(), stream_socket_->native_handle());
 
   // Set SSL to client mode. Handshake happens in the loop below.
@@ -125,9 +124,7 @@ void SSLSocket::RetryAllOperations() {
   if (disconnected_)
     return;
 
-#ifdef ENABLE_TLS_WRITE_QUICK_FEEDBACK
   OnWaitWrite(asio::error_code());
-#endif
 }
 
 void SSLSocket::Disconnect() {
@@ -350,6 +347,7 @@ void SSLSocket::OnWriteReady() {
   // transport read.
   RetryAllOperations();
 }
+
 int SSLSocket::DoHandshake() {
   int rv = SSL_do_handshake(ssl_.get());
   int net_error = OK;
