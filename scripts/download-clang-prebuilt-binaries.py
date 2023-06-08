@@ -16,10 +16,10 @@ import tarfile
 
 try:
   # For Python 3.0 and later
-  from urllib.request import urlopen
+  from urllib.request import urlretrieve
 except ImportError:
   # Fall back to Python 2's urllib2
-  from urllib2 import urlopen
+  from urllib import urlretrieve
 
 def download_url(url, tarball):
   print('Downloading %s to %s' % (url, tarball))
@@ -27,9 +27,7 @@ def download_url(url, tarball):
   sys.stderr.flush()
   for _ in range(3):
     try:
-      response = urlopen(url)
-      with open(tarball, 'wb') as f:
-        f.write(response.read())
+      urlretrieve(url, tarball)
       break
     except Exception:  # Ignore exceptions.
       pass

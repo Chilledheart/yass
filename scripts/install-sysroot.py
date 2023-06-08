@@ -29,10 +29,10 @@ import sys
 import tarfile
 try:
   # For Python 3.0 and later
-  from urllib.request import urlopen
+  from urllib.request import urlretrieve
 except ImportError:
   # Fall back to Python 2's urllib2
-  from urllib2 import urlopen
+  from urllib import urlretrieve
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 URL_PREFIX = 'https://commondatastorage.googleapis.com'
 URL_PATH = 'chrome-linux-sysroot/toolchain'
@@ -120,9 +120,7 @@ def InstallSysroot(target_platform, target_arch):
   sys.stderr.flush()
   for _ in range(3):
     try:
-      response = urlopen(url)
-      with open(tarball, "wb") as f:
-        f.write(response.read())
+      urlretrieve(url, tarball)
       break
     except Exception:  # Ignore exceptions.
       pass
