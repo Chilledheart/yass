@@ -586,7 +586,7 @@ if (NOT MSVC)
   # and -fcoverage-compilation-dir=.
   if (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14.0)
     set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wa,-fdebug-compilation-dir,.")
-    set(CMAKE_CC_FLAGS "${CMAKE_CC_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
   endif()
 
@@ -594,7 +594,7 @@ if (NOT MSVC)
   # paths to the tools it invokes. We don't want this because we don't
   # really need it and it can mess up the goma cache entries.
   if (COMPILER_CLANG)
-    set(CMAKE_CC_FLAGS "${CMAKE_CC_FLAGS} -no-canonical-prefixes")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -no-canonical-prefixes")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-canonical-prefixes")
 
     # Same for links: Let the compiler driver invoke the linker
@@ -711,7 +711,7 @@ else()
   # and -fcoverage-compilation-dir=.
   if (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14.0)
     set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Xclang -fdebug-compilation-dir -Xclang .")
-    set(CMAKE_CC_FLAGS "${CMAKE_CC_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
   endif()
 
@@ -732,7 +732,7 @@ else()
   # paths to the tools it invokes. We don't want this because we don't
   # really need it and it can mess up the goma cache entries.
   if (COMPILER_CLANG)
-    set(CMAKE_CC_FLAGS "${CMAKE_CC_FLAGS} -no-canonical-prefixes")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -no-canonical-prefixes")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-canonical-prefixes")
   endif()
 endif()
