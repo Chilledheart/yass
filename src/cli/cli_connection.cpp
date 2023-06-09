@@ -1074,6 +1074,11 @@ std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code &ec,
     ec = asio::error::try_again;
     return nullptr;
   }
+  // RstStream might be sent in ProcessBytes
+  if (closed_) {
+    ec = asio::error::eof;
+    return nullptr;
+  }
 
   std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
   size_t read;
