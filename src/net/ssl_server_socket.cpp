@@ -245,7 +245,6 @@ void SSLServerSocket::OnReadReady() {
     OnHandshakeIOComplete(OK);
     return;
   }
-  OnWaitRead(asio::error_code());
 }
 
 void SSLServerSocket::OnWriteReady() {
@@ -254,7 +253,6 @@ void SSLServerSocket::OnWriteReady() {
     OnHandshakeIOComplete(OK);
     return;
   }
-  OnWaitWrite(asio::error_code());
 }
 
 void SSLServerSocket::OnHandshakeIOComplete(int result) {
