@@ -199,6 +199,7 @@ void CliConnection::close() {
     channel_->close();
   }
   auto cb = std::move(disconnect_cb_);
+  disconnect_cb_ = nullptr;
   if (cb) {
     cb();
   }
@@ -1072,6 +1073,11 @@ std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code &ec,
   }
   if (!downstream_readable_) {
     ec = asio::error::try_again;
+    return nullptr;
+  }
+  // RstStream might be sent in ProcessBytes
+  if (closed_) {
+    ec = asio::error::eof;
     return nullptr;
   }
 

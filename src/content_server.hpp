@@ -145,6 +145,7 @@ class ContentServer {
         if (ctx.acceptor) {
           asio::error_code ec;
           ctx.acceptor->close(ec);
+          ctx.acceptor.reset();
           if (ec) {
             LOG(WARNING) << "Connections (" << factory_.Name() << ")"
                          << " acceptor (" << ctx.endpoint << ") close failed: " << ec;
@@ -159,10 +160,6 @@ class ContentServer {
         conn->close();
       }
 
-      for (int i = 0; i < next_listen_ctx_; ++i) {
-        ListenCtx& ctx = listen_ctxs_[i];
-        ctx.acceptor.reset();
-      }
       work_guard_.reset();
     });
   }
@@ -177,6 +174,11 @@ class ContentServer {
     ctx.acceptor->async_accept(
         ctx.peer_endpoint,
         [this, listen_ctx_num](asio::error_code ec, asio::ip::tcp::socket socket) {
+          // acceptor->close might return success as well
+          ListenCtx& ctx = listen_ctxs_[listen_ctx_num];
+          if (!ctx.acceptor) {
+            return;
+          }
           if (!ec) {
             if (enable_tls_) {
               setup_ssl_ctx_alpn_cb();
