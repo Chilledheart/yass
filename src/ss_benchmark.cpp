@@ -110,6 +110,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
     asio::error_code ec;
     socket_.close(ec);
     auto cb = std::move(disconnect_cb_);
+    disconnect_cb_ = nullptr;
     if (cb) {
       cb();
     }

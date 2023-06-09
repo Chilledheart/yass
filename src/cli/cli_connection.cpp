@@ -199,6 +199,7 @@ void CliConnection::close() {
     channel_->close();
   }
   auto cb = std::move(disconnect_cb_);
+  disconnect_cb_ = nullptr;
   if (cb) {
     cb();
   }
