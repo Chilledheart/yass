@@ -369,10 +369,16 @@ int SSLServerSocket::DoHandshakeLoop(int last_io_result) {
     scoped_refptr<SSLServerSocket> self(this);
     stream_socket_->async_wait(asio::ip::tcp::socket::wait_read,
       [this, self](asio::error_code ec){
+      if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+        return;
+      }
       OnReadReady();
     });
     stream_socket_->async_wait(asio::ip::tcp::socket::wait_write,
       [this, self](asio::error_code ec){
+      if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+        return;
+      }
       OnWriteReady();
     });
   }
