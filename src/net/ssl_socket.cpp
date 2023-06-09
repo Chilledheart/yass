@@ -115,16 +115,6 @@ void SSLSocket::RetryAllOperations() {
     return;
 
   DoPeek();
-
-  if (disconnected_)
-    return;
-
-  OnWaitRead(asio::error_code());
-
-  if (disconnected_)
-    return;
-
-  OnWaitWrite(asio::error_code());
 }
 
 void SSLSocket::Disconnect() {
