@@ -766,7 +766,6 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code &
   }
 
   std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
-try_again:
   size_t read;
   do {
     ec = asio::error_code();
@@ -780,10 +779,6 @@ try_again:
   if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
     // handled in channel_->read_some func
     // disconnected(ec);
-    if (buf->length()) {
-      /* mark of eof , only for downstrem */
-      downstream_.push_back(nullptr);
-    }
     goto out;
   }
   if (read) {
@@ -794,17 +789,6 @@ try_again:
     goto out;
   }
 
-  // we might have more data, try again
-  if (buf->tailroom()) {
-    goto try_again;
-  }
-
-out:
-  if (buf->length()) {
-    ec = asio::error_code();
-  } else {
-    goto out2;
-  }
   if (adapter_) {
     if (!data_frame_) {
       ec = asio::error::eof;
@@ -821,7 +805,7 @@ out:
     EncryptData(&downstream_, buf);
   }
 
-out2:
+out:
   if (data_frame_ && *bytes_transferred) {
     data_frame_->SetSendCompletionCallback(std::function<void()>());
     adapter_->ResumeStream(stream_id_);
@@ -832,6 +816,10 @@ out2:
       ec = asio::error::try_again;
     }
     return nullptr;
+  }
+  if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
+    /* mark of eof , only for downstrem */
+    downstream_.push_back(nullptr);
   }
   /* not downstream error */
   ec = asio::error_code();

@@ -862,13 +862,14 @@ std::shared_ptr<IOBuf> CliConnection::GetNextDownstreamBuf(asio::error_code &ec,
     ec = asio::error::try_again;
     return nullptr;
   }
+
+try_again:
+  // RstStream might be sent in ProcessBytes
   if (channel_->eof()) {
     ec = asio::error::eof;
     return nullptr;
   }
-
   std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_DEBUF_SIZE);
-try_again:
   size_t read;
   do {
     ec = asio::error_code();
@@ -882,10 +883,6 @@ try_again:
   if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
     // handled in channel_->read_some func
     // disconnected(ec);
-    if (buf->length()) {
-      /* mark of eof , only for downstrem */
-      downstream_.push_back(nullptr);
-    }
     goto out;
   }
   if (read) {
@@ -896,17 +893,6 @@ try_again:
     goto out;
   }
 
-  // we might have more data, try again
-  if (buf->tailroom()) {
-    goto try_again;
-  }
-
-out:
-  if (buf->length()) {
-    ec = asio::error_code();
-  } else {
-    goto out2;
-  }
   if (adapter_) {
     absl::string_view remaining_buffer(
         reinterpret_cast<const char*>(buf->data()), buf->length());
@@ -918,6 +904,10 @@ out:
         return nullptr;
       }
       remaining_buffer = remaining_buffer.substr(result);
+    }
+    // not data frame, try again
+    if (upstream_.empty()) {
+      goto try_again;
     }
   } else if (upstream_https_fallback_) {
     if (upstream_handshake_) {
@@ -960,7 +950,7 @@ out:
     decoder_->process_bytes(buf);
   }
 
-out2:
+out:
   if (adapter_ && adapter_->want_write()) {
     // Send Control Streams
     SendIfNotProcessing();
@@ -971,6 +961,10 @@ out2:
       ec = asio::error::try_again;
     }
     return nullptr;
+  }
+  if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
+    /* mark of eof , only for downstrem */
+    downstream_.push_back(nullptr);
   }
   ec = asio::error_code();
   return downstream_.front();
