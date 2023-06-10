@@ -670,8 +670,13 @@ else()
   ## Generate debug info, Debug information in the .obj files for clang.
   ## Produce PDB file for msvc, no edit and continue.
   if (COMPILER_CLANG)
-    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Z7")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Z7")
+    # Debug information in the .obj files.
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /Z7")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Z7")
+    # Disable putting the compiler command line into the debug info to
+    # prevent some types of non-determinism.
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -gno-codeview-command-line")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gno-codeview-command-line")
     ## To generate PDB files for debugging with MSVC, you can use the /Z7 option.
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
       string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
@@ -689,8 +694,8 @@ else()
   endif()
 
   # Tell linker to include symbol data
-  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG")
-  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /DEBUG")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DEBUG")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEBUG")
 
   ## Remove unreferenced data
   set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /OPT:REF /OPT:ICF /INCREMENTAL:NO /FIXED:NO")
