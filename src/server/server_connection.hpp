@@ -354,6 +354,8 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   bool upstream_writable_ = false;
   /// the flag to mark current read
   bool upstream_readable_ = false;
+  /// the previous read error (upstream)
+  asio::error_code pending_upstream_read_error_;
 
   /// the upstream the service bound with
   std::unique_ptr<stream> channel_;
@@ -372,6 +374,8 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   bool downstream_readable_ = false;
   /// the flag to mark current read in progress
   bool downstream_read_inprogress_ = false;
+  /// the previous read error (downstream)
+  asio::error_code pending_downstream_read_error_;
 
  private:
   /// handle with connect event (upstream)
