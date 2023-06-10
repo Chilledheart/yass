@@ -548,10 +548,12 @@ class SsEndToEndTest : public ::testing::Test {
     read = asio::read(s, tail_buffer(eof_buffer), ec);
     EXPECT_EQ(ec, asio::error::eof) << ec;
     EXPECT_EQ(read, 0u);
+    VLOG(1) << "Connection (content-consumer) read EOF";
 
     // Shutdown socket to proxy server
     s.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
     EXPECT_FALSE(ec) << ec;
+    VLOG(1) << "Connection (content-consumer) shutdown";
 #endif
 
     const char* buffer = reinterpret_cast<const char*>(resp_buffer.data());

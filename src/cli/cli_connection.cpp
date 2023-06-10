@@ -771,8 +771,6 @@ void CliConnection::WriteStream() {
 void CliConnection::WriteStreamInPipe() {
   asio::error_code ec;
   size_t bytes_transferred = 0U, wbytes_transferred = 0U;
-  uint64_t next_ticks = GetMonotonicTime() +
-    kYieldAfterDurationMilliseconds * 1000 * 1000;
   bool try_again = false;
 
   /* recursively send the remainings */
@@ -790,11 +788,6 @@ void CliConnection::WriteStreamInPipe() {
     if (!read) {
       break;
     }
-    if (GetMonotonicTime() > next_ticks ||
-        wbytes_transferred > kYieldAfterBytesRead) {
-      ec = asio::error::try_again;
-      break;
-    }
     if (closed_) {
       break;
     }
@@ -807,16 +800,13 @@ void CliConnection::WriteStreamInPipe() {
       }
     } while(false);
     buf->trimStart(written);
+    bytes_downstream_passed_without_yield_ += written;
     wbytes_transferred += written;
     // continue to resume
     if (buf->empty()) {
       downstream_.pop_front();
     }
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
-      VLOG(1) << "Connection (client) " << connection_id()
-              << " disabling reading from upstream";
-      upstream_readable_ = false;
-      channel_->disable_read();
       break;
     }
     if (ec) {
@@ -824,11 +814,24 @@ void CliConnection::WriteStreamInPipe() {
     }
     if (!buf->empty()) {
       ec = asio::error::try_again;
-      VLOG(1) << "Connection (client) " << connection_id()
-              << " disabling reading from upstream";
-      upstream_readable_ = false;
-      channel_->disable_read();
       break;
+    }
+    if (GetMonotonicTime() > yield_downstream_after_time_ ||
+        bytes_downstream_passed_without_yield_ > kYieldAfterBytesRead) {
+      bytes_downstream_passed_without_yield_ = 0U;
+      yield_downstream_after_time_ = GetMonotonicTime() + kYieldAfterDurationMilliseconds * 1000 * 1000;
+      if (downstream_.empty()) {
+        try_again = true;
+      } else {
+        ec = asio::error::try_again;
+      }
+      break;
+    }
+  }
+  if (try_again) {
+    if (channel_ && channel_->connected() && !channel_->read_inprogress()) {
+      scoped_refptr<CliConnection> self(this);
+      channel_->start_read([self]() {});
     }
   }
   if (ec == asio::error::try_again || ec == asio::error::would_block) {
@@ -854,14 +857,6 @@ std::shared_ptr<IOBuf> CliConnection::GetNextDownstreamBuf(asio::error_code &ec,
   }
   if (pending_downstream_read_error_) {
     ec = std::move(pending_downstream_read_error_);
-    return nullptr;
-  }
-  if (!upstream_readable_) {
-    ec = asio::error::try_again;
-    return nullptr;
-  }
-  if (channel_->eof()) {
-    ec = asio::error::eof;
     return nullptr;
   }
 
@@ -1404,14 +1399,6 @@ void CliConnection::OnStreamWrite() {
     socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
     return;
   }
-
-  if (channel_ && channel_->connected() && !upstream_readable_ && downstream_.empty() && !channel_->read_inprogress()) {
-    VLOG(1) << "Connection (client) " << connection_id()
-            << " re-enabling reading from upstream";
-    scoped_refptr<CliConnection> self(this);
-    upstream_readable_ = true;
-    channel_->enable_read([self]() {});
-  }
 }
 
 void CliConnection::EnableStreamRead() {
@@ -1607,8 +1594,10 @@ void CliConnection::connected() {
 
   upstream_readable_ = true;
   upstream_writable_ = true;
-  channel_->start_read([self]() {});
 
+  yield_downstream_after_time_ = GetMonotonicTime() + kYieldAfterDurationMilliseconds * 1000 * 1000;
+
+  WriteStreamInPipe();
   WriteUpstreamInPipe();
   OnUpstreamWriteFlush();
 }
