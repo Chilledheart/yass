@@ -8,6 +8,11 @@
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
 #include <openssl/crypto.h>
+
+#ifdef _WIN32
+#include <ws2tcpip.h>
+#endif
+
 #include "cli/cli_server.hpp"
 #include "config/config.hpp"
 #include "core/cipher.hpp"
@@ -491,6 +496,15 @@ int main(int argc, char** argv) {
 
   ::benchmark::Initialize(&argc, argv);
   absl::ParseCommandLine(argc, argv);
+
+#ifdef _WIN32
+  int iResult = 0;
+  WSADATA wsaData = {0};
+  iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+  CHECK_EQ(iResult, 0) << "WSAStartup failure";
+#endif
+
+  CRYPTO_library_init();
 
 #ifdef SIGPIPE
   signal(SIGPIPE, SIG_IGN);
