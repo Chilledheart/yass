@@ -75,7 +75,7 @@ class Connection {
         socket_.async_wait(asio::ip::tcp::socket::wait_read, cb);
       };
       s_read_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
-        return socket_.read_some(mutable_buffer(*buf), ec);
+        return socket_.read_some(tail_buffer(*buf), ec);
       };
       s_async_write_some_ = [this](handle_t cb) {
         socket_.async_wait(asio::ip::tcp::socket::wait_write, cb);

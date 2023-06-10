@@ -35,6 +35,8 @@ SSLServerSocket::~SSLServerSocket() {
 }
 
 int SSLServerSocket::Handshake(CompletionOnceCallback callback) {
+  CHECK(!disconnected_);
+
   DCHECK(stream_socket_->native_non_blocking());
   DCHECK(stream_socket_->non_blocking());
 
@@ -141,12 +143,20 @@ int SSLServerSocket::Shutdown(WaitCallback callback, bool force) {
 }
 
 void SSLServerSocket::Disconnect() {
+  disconnected_ = true;
+
+  // Release user callbacks.
+  wait_shutdown_callback_ = nullptr;
+  wait_read_callback_ = nullptr;
+  wait_write_callback_ = nullptr;
+
   asio::error_code ec;
   stream_socket_->close(ec);
 }
 
 size_t SSLServerSocket::Read(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
-  int buf_len = buf->capacity();
+  DCHECK(buf->tailroom());
+  int buf_len = buf->tailroom();
   int rv = DoPayloadRead(buf, buf_len);
   if (rv == ERR_IO_PENDING) {
     ec = asio::error::try_again;
@@ -206,6 +216,8 @@ void SSLServerSocket::WaitWrite(std::function<void(asio::error_code ec)> cb) {
 }
 
 void SSLServerSocket::OnWaitRead(asio::error_code ec) {
+  if (disconnected_)
+    return;
   if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
     wait_read_callback_ = nullptr;
     wait_write_callback_ = nullptr;
@@ -223,6 +235,8 @@ void SSLServerSocket::OnWaitRead(asio::error_code ec) {
 }
 
 void SSLServerSocket::OnWaitWrite(asio::error_code ec) {
+  if (disconnected_)
+    return;
   if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
     wait_read_callback_ = nullptr;
     wait_write_callback_ = nullptr;
@@ -240,6 +254,8 @@ void SSLServerSocket::OnWaitWrite(asio::error_code ec) {
 }
 
 void SSLServerSocket::OnReadReady() {
+  if (disconnected_)
+    return;
   if (next_handshake_state_ == STATE_HANDSHAKE) {
     // In handshake phase. The parameter to OnHandshakeIOComplete is unused.
     OnHandshakeIOComplete(OK);
@@ -248,6 +264,8 @@ void SSLServerSocket::OnReadReady() {
 }
 
 void SSLServerSocket::OnWriteReady() {
+  if (disconnected_)
+    return;
   if (next_handshake_state_ == STATE_HANDSHAKE) {
     // In handshake phase. The parameter to OnHandshakeIOComplete is unused.
     OnHandshakeIOComplete(OK);
@@ -389,7 +407,7 @@ int SSLServerSocket::DoPayloadRead(std::shared_ptr<IOBuf> buf, int buf_len) {
   DCHECK(buf);
   DCHECK_GT(buf_len, 0);
 
-  int rv = SSL_read(ssl_.get(), buf->mutable_data(), buf_len);
+  int rv = SSL_read(ssl_.get(), buf->mutable_tail(), buf_len);
   if (rv >= 0) {
     if (SSL_in_early_data(ssl_.get()))
       early_data_received_ = true;

@@ -105,6 +105,8 @@ void SSLSocket::RetryAllOperations() {
   // SSL_do_handshake, SSL_read, and SSL_write may all be retried when blocked,
   // so retry all operations for simplicity. (Otherwise, SSL_get_error for each
   // operation may be remembered to retry only the blocked ones.)
+  if (disconnected_)
+    return;
 
   if (next_handshake_state_ == STATE_HANDSHAKE) {
     // In handshake phase. The parameter to OnHandshakeIOComplete is unused.
@@ -127,6 +129,9 @@ void SSLSocket::Disconnect() {
 
   // Release user callbacks.
   user_connect_callback_ = nullptr;
+  wait_shutdown_callback_ = nullptr;
+  wait_read_callback_ = nullptr;
+  wait_write_callback_ = nullptr;
 
   asio::error_code ec;
   stream_socket_->close(ec);
@@ -238,7 +243,8 @@ int SSLSocket::Shutdown(WaitCallback callback, bool force) {
 }
 
 size_t SSLSocket::Read(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
-  int buf_len = buf->capacity();
+  DCHECK(buf->tailroom());
+  int buf_len = buf->tailroom();
   int rv = DoPayloadRead(buf, buf_len);
   if (rv == ERR_IO_PENDING) {
     ec = asio::error::try_again;
@@ -286,8 +292,6 @@ void SSLSocket::WaitRead(std::function<void(asio::error_code ec)> cb) {
   scoped_refptr<SSLSocket> self(this);
   stream_socket_->async_wait(asio::ip::tcp::socket::wait_read,
     [this, self](asio::error_code ec){
-    if (disconnected_)
-      return;
     OnWaitRead(ec);
   });
 }
@@ -298,13 +302,13 @@ void SSLSocket::WaitWrite(std::function<void(asio::error_code ec)> cb) {
   scoped_refptr<SSLSocket> self(this);
   stream_socket_->async_wait(asio::ip::tcp::socket::wait_write,
     [this, self](asio::error_code ec){
-    if (disconnected_)
-      return;
     OnWaitWrite(ec);
   });
 }
 
 void SSLSocket::OnWaitRead(asio::error_code ec) {
+  if (disconnected_)
+    return;
   if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
     wait_read_callback_ = nullptr;
     wait_write_callback_ = nullptr;
@@ -322,6 +326,8 @@ void SSLSocket::OnWaitRead(asio::error_code ec) {
 }
 
 void SSLSocket::OnWaitWrite(asio::error_code ec) {
+  if (disconnected_)
+    return;
   if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
     wait_read_callback_ = nullptr;
     wait_write_callback_ = nullptr;
@@ -510,9 +516,9 @@ int SSLSocket::DoHandshakeComplete(int result) {
 }
 
 void SSLSocket::DoConnectCallback(int rv) {
-  if (user_connect_callback_) {
-    std::move(user_connect_callback_).operator()(rv > OK ? OK : rv);
+  if (auto cb = std::move(user_connect_callback_)) {
     user_connect_callback_ = nullptr;
+    cb.operator()(rv > OK ? OK : rv);
   }
 }
 
@@ -594,7 +600,7 @@ int SSLSocket::DoPayloadRead(std::shared_ptr<IOBuf> buf, int buf_len) {
   int total_bytes_read = 0;
   int ssl_ret, ssl_err;
   do {
-    ssl_ret = SSL_read(ssl_.get(), buf->mutable_data() + total_bytes_read,
+    ssl_ret = SSL_read(ssl_.get(), buf->mutable_tail() + total_bytes_read,
                        buf_len - total_bytes_read);
     ssl_err = SSL_get_error(ssl_.get(), ssl_ret);
     if (ssl_ret > 0) {

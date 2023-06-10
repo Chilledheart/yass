@@ -11,6 +11,7 @@
 #include <absl/flags/parse.h>
 #include <absl/strings/str_cat.h>
 #include <locale.h>
+#include <openssl/crypto.h>
 
 #ifdef _WIN32
 #include <ws2tcpip.h>
@@ -56,6 +57,15 @@ int main(int argc, const char* argv[]) {
       static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
 
   LOG(WARNING) << "Application starting: " << YASS_APP_TAG;
+
+#ifdef _WIN32
+  int iResult = 0;
+  WSADATA wsaData = {0};
+  iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+  CHECK_EQ(iResult, 0) << "WSAStartup failure";
+#endif
+
+  CRYPTO_library_init();
 
   // Start Io Context
   asio::io_context io_context;

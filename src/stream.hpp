@@ -87,7 +87,7 @@ class stream {
         socket_.async_wait(asio::ip::tcp::socket::wait_read, cb);
       };
       s_read_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
-        return socket_.read_some(mutable_buffer(*buf), ec);
+        return socket_.read_some(tail_buffer(*buf), ec);
       };
       s_async_write_some_ = [this](handle_t cb) {
         socket_.async_wait(asio::ip::tcp::socket::wait_write, cb);
@@ -275,9 +275,10 @@ class stream {
 
     asio::error_code ec;
     if (enable_tls_) {
-      ssl_socket_->Shutdown([](asio::error_code ec){}, true);
+      ssl_socket_->Disconnect();
+    } else {
+      socket_.close(ec);
     }
-    socket_.close(ec);
     if (ec) {
       VLOG(2) << "close() error: " << ec;
     }

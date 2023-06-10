@@ -12,6 +12,10 @@
 #include <absl/flags/parse.h>
 #include <openssl/crypto.h>
 
+#ifdef _WIN32
+#include <ws2tcpip.h>
+#endif
+
 #ifdef HAVE_CURL
 #include <curl/curl.h>
 #endif
@@ -693,6 +697,15 @@ int main(int argc, char **argv) {
 
   ::testing::InitGoogleTest(&argc, argv);
   absl::ParseCommandLine(argc, argv);
+
+#ifdef _WIN32
+  int iResult = 0;
+  WSADATA wsaData = {0};
+  iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+  CHECK_EQ(iResult, 0) << "WSAStartup failure";
+#endif
+
+  CRYPTO_library_init();
 
 #ifdef HAVE_CURL
   curl_global_init(CURL_GLOBAL_ALL);
