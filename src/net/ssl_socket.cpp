@@ -238,7 +238,8 @@ int SSLSocket::Shutdown(WaitCallback callback, bool force) {
 }
 
 size_t SSLSocket::Read(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
-  int buf_len = buf->capacity();
+  DCHECK(buf->tailroom());
+  int buf_len = buf->tailroom();
   int rv = DoPayloadRead(buf, buf_len);
   if (rv == ERR_IO_PENDING) {
     ec = asio::error::try_again;
@@ -594,7 +595,7 @@ int SSLSocket::DoPayloadRead(std::shared_ptr<IOBuf> buf, int buf_len) {
   int total_bytes_read = 0;
   int ssl_ret, ssl_err;
   do {
-    ssl_ret = SSL_read(ssl_.get(), buf->mutable_data() + total_bytes_read,
+    ssl_ret = SSL_read(ssl_.get(), buf->mutable_tail() + total_bytes_read,
                        buf_len - total_bytes_read);
     ssl_err = SSL_get_error(ssl_.get(), ssl_ret);
     if (ssl_ret > 0) {
