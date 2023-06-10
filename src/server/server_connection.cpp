@@ -176,9 +176,10 @@ void ServerConnection::close() {
   closed_ = true;
   if (enable_tls_ && !shutdown_) {
     shutdown_ = true;
-    ssl_socket_->Shutdown([](asio::error_code ec){}, true);
+    ssl_socket_->Disconnect();
+  } else {
+    socket_.close(ec);
   }
-  socket_.close(ec);
   if (ec) {
     VLOG(1) << "close() error: " << ec;
   }

@@ -275,9 +275,10 @@ class stream {
 
     asio::error_code ec;
     if (enable_tls_) {
-      ssl_socket_->Shutdown([](asio::error_code ec){}, true);
+      ssl_socket_->Disconnect();
+    } else {
+      socket_.close(ec);
     }
-    socket_.close(ec);
     if (ec) {
       VLOG(2) << "close() error: " << ec;
     }

@@ -93,6 +93,9 @@ class SSLServerSocket : public RefCountedThreadSafe<SSLServerSocket> {
     STATE_HANDSHAKE,
   };
   State next_handshake_state_ = STATE_NONE;
+
+  // True if the socket has been disconnected.
+  bool disconnected_ = false;
 };
 
 } // namespace net
