@@ -35,6 +35,8 @@ SSLServerSocket::~SSLServerSocket() {
 }
 
 int SSLServerSocket::Handshake(CompletionOnceCallback callback) {
+  CHECK(!disconnected_);
+
   DCHECK(stream_socket_->native_non_blocking());
   DCHECK(stream_socket_->non_blocking());
 
@@ -141,6 +143,13 @@ int SSLServerSocket::Shutdown(WaitCallback callback, bool force) {
 }
 
 void SSLServerSocket::Disconnect() {
+  disconnected_ = true;
+
+  // Release user callbacks.
+  wait_shutdown_callback_ = nullptr;
+  wait_read_callback_ = nullptr;
+  wait_write_callback_ = nullptr;
+
   asio::error_code ec;
   stream_socket_->close(ec);
 }
@@ -207,6 +216,8 @@ void SSLServerSocket::WaitWrite(std::function<void(asio::error_code ec)> cb) {
 }
 
 void SSLServerSocket::OnWaitRead(asio::error_code ec) {
+  if (disconnected_)
+    return;
   if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
     wait_read_callback_ = nullptr;
     wait_write_callback_ = nullptr;
@@ -224,6 +235,8 @@ void SSLServerSocket::OnWaitRead(asio::error_code ec) {
 }
 
 void SSLServerSocket::OnWaitWrite(asio::error_code ec) {
+  if (disconnected_)
+    return;
   if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
     wait_read_callback_ = nullptr;
     wait_write_callback_ = nullptr;
@@ -241,6 +254,8 @@ void SSLServerSocket::OnWaitWrite(asio::error_code ec) {
 }
 
 void SSLServerSocket::OnReadReady() {
+  if (disconnected_)
+    return;
   if (next_handshake_state_ == STATE_HANDSHAKE) {
     // In handshake phase. The parameter to OnHandshakeIOComplete is unused.
     OnHandshakeIOComplete(OK);
@@ -249,6 +264,8 @@ void SSLServerSocket::OnReadReady() {
 }
 
 void SSLServerSocket::OnWriteReady() {
+  if (disconnected_)
+    return;
   if (next_handshake_state_ == STATE_HANDSHAKE) {
     // In handshake phase. The parameter to OnHandshakeIOComplete is unused.
     OnHandshakeIOComplete(OK);
