@@ -747,15 +747,13 @@ void ServerConnection::WriteStreamInPipe() {
 std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code &ec,
                                                               size_t* bytes_transferred) {
   if (!downstream_.empty()) {
-    /* found mark of eof */
-    if (downstream_.front() == nullptr) {
-      ec = asio::error::eof;
-      downstream_.pop_front();
-      return nullptr;
-    }
     DCHECK(!downstream_.front()->empty());
     ec = asio::error_code();
     return downstream_.front();
+  }
+  if (pending_downstream_read_error_) {
+    ec = std::move(pending_downstream_read_error_);
+    return nullptr;
   }
   if (!upstream_readable_) {
     ec = asio::error::try_again;
@@ -819,11 +817,8 @@ out:
     return nullptr;
   }
   if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
-    /* mark of eof , only for downstrem */
-    downstream_.push_back(nullptr);
+    pending_downstream_read_error_ = std::move(ec);
   }
-  /* not downstream error */
-  ec = asio::error_code();
   return downstream_.front();
 }
 
@@ -916,6 +911,10 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextUpstreamBuf(asio::error_code &ec
     ec = asio::error_code();
     return upstream_.front();
   }
+  if (pending_upstream_read_error_) {
+    ec = std::move(pending_upstream_read_error_);
+    return nullptr;
+  }
   if (!downstream_readable_) {
     ec = asio::error::try_again;
     return nullptr;
@@ -986,10 +985,8 @@ out:
     return nullptr;
   }
   if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
-    /* mark of eof , only for downstrem */
-    upstream_.push_back(nullptr);
+    pending_upstream_read_error_ = std::move(ec);
   }
-  ec = asio::error_code();
   return upstream_.front();
 }
 
