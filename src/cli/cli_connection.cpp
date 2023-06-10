@@ -404,7 +404,7 @@ void CliConnection::ReadMethodSelect() {
       std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
       size_t bytes_transferred;
       do {
-        bytes_transferred = socket_.read_some(mutable_buffer(*buf), ec);
+        bytes_transferred = socket_.read_some(tail_buffer(*buf), ec);
         if (ec == asio::error::interrupted) {
           continue;
         }
@@ -1084,7 +1084,7 @@ std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code &ec,
   std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
   size_t read;
   do {
-    read = socket_.read_some(mutable_buffer(*buf), ec);
+    read = socket_.read_some(tail_buffer(*buf), ec);
     if (ec == asio::error::interrupted) {
       continue;
     }
