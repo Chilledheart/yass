@@ -5,6 +5,11 @@
 
 #include <absl/flags/flag.h>
 #include <absl/strings/str_cat.h>
+#include <openssl/crypto.h>
+
+#ifdef _WIN32
+#include <ws2tcpip.h>
+#endif
 
 #include "core/compiler_specific.hpp"
 
@@ -27,6 +32,15 @@ Worker::Worker()
   CHECK_EQ(ret, 0) << "c-ares initialize failure";
   static_cast<void>(ret);
 #endif
+
+#ifdef _WIN32
+  int iResult = 0;
+  WSADATA wsaData = {0};
+  iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+  CHECK_EQ(iResult, 0) << "WSAStartup failure";
+#endif
+
+  CRYPTO_library_init();
 }
 
 Worker::~Worker() {
