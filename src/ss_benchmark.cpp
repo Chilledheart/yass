@@ -510,7 +510,6 @@ int main(int argc, char** argv) {
   signal(SIGPIPE, SIG_IGN);
 #endif
 
-  if (::benchmark::ReportUnrecognizedArguments(argc, argv)) return 1;
   ::benchmark::RunSpecifiedBenchmarks();
   ::benchmark::Shutdown();
   return 0;
