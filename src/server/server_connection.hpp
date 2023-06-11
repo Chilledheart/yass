@@ -325,12 +325,6 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   /// handle the written data from stream write event (downstream)
   void OnStreamWrite();
 
-  /// enable stream read
-  void EnableStreamRead();
-
-  /// disable stream read
-  void DisableStreamRead();
-
   /// handle with disconnect event (downstream)
   void OnDisconnect(asio::error_code error);
 
@@ -356,6 +350,10 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   bool upstream_readable_ = false;
   /// the previous read error (upstream)
   asio::error_code pending_upstream_read_error_;
+  /// the previous written bytes
+  size_t bytes_upstream_passed_without_yield_ = 0U;
+  /// the time to yield after previous write
+  uint64_t yield_upstream_after_time_ = 0U;
 
   /// the upstream the service bound with
   std::unique_ptr<stream> channel_;

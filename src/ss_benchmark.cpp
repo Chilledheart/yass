@@ -132,19 +132,26 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
 
     asio::async_write(socket_, const_buffer(g_send_buffer),
       [this, self](asio::error_code ec, size_t bytes_transferred) {
+        if (ec.value() == asio::error::bad_descriptor || ec.value() == asio::error::operation_aborted) {
+          goto done;
+        }
         if (ec || bytes_transferred != g_send_buffer.length()) {
           LOG(WARNING) << "Connection (content-provider) " << connection_id()
-                       << " Failed to transfer data: " << ec;
+                       << " Failed to transfer data: " << ec.value();
         } else {
           VLOG(1) << "Connection (content-provider) " << connection_id()
                   << " written: " << bytes_transferred << " bytes";
         }
+      done:
         done_[0] = true;
         shutdown(ec);
     });
 
     asio::async_read(socket_, mutable_buffer(*g_recv_buffer),
       [this, self](asio::error_code ec, size_t bytes_transferred) {
+        if (ec.value() == asio::error::bad_descriptor || ec.value() == asio::error::operation_aborted) {
+          goto done;
+        }
         if (ec || bytes_transferred != g_send_buffer.length()) {
           LOG(WARNING) << "Connection (content-provider) " << connection_id()
                        << " Failed to transfer data: " << ec;
@@ -153,6 +160,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
                   << " read: " << bytes_transferred << " bytes";
         }
         g_recv_buffer->append(bytes_transferred);
+      done:
         done_[1] = true;
         shutdown(ec);
     });
