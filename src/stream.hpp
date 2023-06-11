@@ -156,17 +156,6 @@ class stream {
 
   bool eof() const { return eof_; }
 
-  void disable_read() { read_enabled_ = false; }
-
-  void enable_read(std::function<void()> callback, int capacity = SOCKET_BUF_SIZE) {
-    if (!read_enabled_) {
-      read_enabled_ = true;
-      if (!read_inprogress_) {
-        start_read(callback);
-      }
-    }
-  }
-
   bool read_inprogress() const {
     return read_inprogress_;
   }
@@ -174,7 +163,6 @@ class stream {
   /// start read routine
   ///
   void start_read(std::function<void()> callback) {
-    DCHECK(read_enabled_);
     DCHECK(!read_inprogress_);
     Channel* channel = channel_;
 
@@ -200,15 +188,7 @@ class stream {
           callback();
           return;
         }
-        if (!read_enabled_) {
-          callback();
-          return;
-        }
         channel_->received();
-        if (read_enabled_ && !read_inprogress_) {
-          start_read(callback);
-          return;
-        }
         callback();
     });
   }
@@ -476,7 +456,6 @@ class stream {
   bool eof_ = false;
   bool closed_ = false;
 
-  bool read_enabled_ = true;
   bool read_inprogress_ = false;
   bool write_inprogress_ = false;
 
