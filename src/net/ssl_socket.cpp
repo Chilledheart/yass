@@ -290,6 +290,16 @@ void SSLSocket::WaitRead(std::function<void(asio::error_code ec)> cb) {
   DCHECK(!wait_read_callback_ && "Multiple calls into Wait Read");
   wait_read_callback_ = cb;
   scoped_refptr<SSLSocket> self(this);
+  if (pending_read_error_ != kSSLClientSocketNoPendingResult) {
+    OnWaitRead(asio::error_code());
+    return;
+  }
+  if (SSL_has_pending(ssl_.get())) {
+    asio::post(io_context_->get_executor(), [this, self]() {
+      OnWaitRead(asio::error_code());
+    });
+    return;
+  }
   stream_socket_->async_wait(asio::ip::tcp::socket::wait_read,
     [this, self](asio::error_code ec){
     OnWaitRead(ec);
