@@ -56,7 +56,7 @@ message(STATUS "Build with libc++")
 #           Public-specific
 # *****************************************************************************************
 
-set(libcxx_CR "bff81b702ff4b7f74b1c0ed02a4bcf6c2744a90b")
+set(libcxx_CR "f8279b01085b800724f5c5629dc365b9f040dc53")
 # Fixed libc++ configuration macros are in
 # buildtools/third_party/libc++/__config_site. This config only has defines
 # that vary depending on gn args, and non-define flags.
@@ -203,7 +203,6 @@ set(libcxx_SOURCES
   trunk/src/system_error.cpp
   trunk/src/thread.cpp
   trunk/src/typeinfo.cpp
-  trunk/src/utility.cpp
   trunk/src/valarray.cpp
   trunk/src/vector.cpp
   trunk/src/verbose_abort.cpp
