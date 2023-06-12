@@ -164,6 +164,8 @@ set(quiche_SRCS
   src/quiche/common/platform/api/quiche_url_utils.h
   # src/quiche/common/platform/default/quiche_platform_impl/quiche_flags_impl.cc
   # src/quiche/common/platform/default/quiche_platform_impl/quiche_flags_impl.h
+  # src/quiche/common/platform/default/quiche_platform_impl/quiche_logging_impl.cc
+  # src/quiche/common/platform/default/quiche_platform_impl/quiche_logging_impl.h
   src/quiche/common/platform/default/quiche_platform_impl/quiche_prefetch_impl.h
   #src/quiche/common/platform/default/quiche_platform_impl/quiche_default_proof_providers_impl.h
   #src/quiche/common/platform/default/quiche_platform_impl/quiche_default_proof_providers_impl.cc
