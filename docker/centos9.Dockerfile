@@ -11,5 +11,6 @@ RUN yum clean all && \
     rpm-build rpm-devel rpmlint diffutils patch rpmdevtools \
     cmake ninja-build pkg-config golang \
     gtk3-devel curl-devel && \
+  yum install -y --enablerepo=devel libatomic-static && \
   yum clean all && \
   rm -rf /var/cache/yum && rm -rf /var/cache/dnf
