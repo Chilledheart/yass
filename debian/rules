@@ -31,7 +31,7 @@ export ASMFLAGS
 export PKG_CONFIG
 
 %:
-	dh $@ --builddirectory=build
+	dh $@ --builddirectory=build-debian
 
 override_dh_auto_clean:
 	dh_auto_clean
@@ -58,8 +58,8 @@ override_dh_auto_test:
 ifneq ($(filter nocheck,$(DEB_BUILD_PROFILES)),)
 	echo 'test skipped'
 else
-	./build/yass_test
-	./build/yass_benchmark
+	./build-debian/yass_test
+	./build-debian/yass_benchmark
 endif
 
 override_dh_shlibdeps:
