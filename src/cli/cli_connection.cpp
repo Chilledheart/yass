@@ -1266,6 +1266,7 @@ void CliConnection::ProcessReceivedData(
       handle_stream:
         if (buf->length()) {
           OnStreamRead(buf);
+          return;
         }
         WriteUpstreamInPipe();  // continously read
         OnUpstreamWriteFlush();
@@ -1339,7 +1340,7 @@ void CliConnection::OnCmdConnect(const std::string& domain_name, uint16_t port) 
 void CliConnection::OnConnect() {
   scoped_refptr<CliConnection> self(this);
   LOG(INFO) << "Connection (client) " << connection_id()
-            << " to " << remote_domain();
+            << " connect " << remote_domain();
   // create lazy
   channel_ = std::make_unique<stream>(*io_context_,
                                       remote_host_name_, remote_port_,
@@ -1350,9 +1351,7 @@ void CliConnection::OnConnect() {
 
 void CliConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
   if (!channel_ || !channel_->connected()) {
-    VLOG(1) << "Connection (client) " << connection_id()
-            << " disabling reading";
-    DCHECK(!pending_data_);
+    CHECK(!pending_data_);
     pending_data_ = buf;
     return;
   }

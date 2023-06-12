@@ -1011,6 +1011,7 @@ void ServerConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf,
         DCHECK_EQ(bytes_transferred, buf->length());
         if (bytes_transferred) {
           OnStreamRead(buf);
+          return;
         }
         WriteUpstreamInPipe();
         OnUpstreamWriteFlush();
@@ -1066,7 +1067,7 @@ void ServerConnection::ProcessSentData(asio::error_code ec,
 void ServerConnection::OnConnect() {
   scoped_refptr<ServerConnection> self(this);
   LOG(INFO) << "Connection (server) " << connection_id()
-            << " to " << remote_domain();
+            << " connect " << remote_domain();
   std::string host_name;
   uint16_t port = request_.port();
   if (request_.address_type() == ss::domain) {
