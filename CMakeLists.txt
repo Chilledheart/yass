@@ -1821,6 +1821,38 @@ if (BUILD_BENCHMARKS)
   set(BENCHMARK_ENABLE_ASSEMBLY_TESTS "OFF" CACHE STRING "")
   set(HAVE_STD_REGEX "ON" CACHE STRING "")
   set(HAVE_STEADY_CLOCK "ON" CACHE STRING "")
+
+check_c_source_compiles("
+#include <regex.h>
+#include <stddef.h>
+int main() {
+  const char* str = \"test0159\";
+  regex_t re;
+  int ec = regcomp(&re, \"^[a-z]+[0-9]+$\", REG_EXTENDED | REG_NOSUB);
+  if (ec != 0) {
+    return ec;
+  }
+  int ret = regexec(&re, str, 0, NULL, 0) ? -1 : 0;
+  regfree(&re);
+  return ret;
+} " HAVE_POSIX_REGEX_C)
+  set(HAVE_POSIX_REGEX "${HAVE_POSIX_REGEX_C}" CACHE STRING "")
+
+check_c_source_compiles("
+#include <gnuregex.h>
+#include <stddef.h>
+int main() {
+  const char* str = \"test0159\";
+  regex_t re;
+  int ec = regcomp(&re, \"^[a-z]+[0-9]+$\", REG_EXTENDED | REG_NOSUB);
+  if (ec != 0) {
+    return ec;
+  }
+  return regexec(&re, str, 0, NULL, 0) ? -1 : 0;
+}
+} " HAVE_GNU_POSIX_REGEX_C)
+  set(HAVE_GNU_POSIX_REGEX "${HAVE_GNU_POSIX_REGEX_C}" CACHE STRING "")
+
   add_subdirectory(third_party/benchmark)
 endif()
 
