@@ -177,7 +177,7 @@ ninja yass
 ## Fedora/RHEL/CentOS/AlmaLinux/Rocky Linux
 1. Install GNU C++ Compiler:
 ```
-sudo yum install -y gcc gcc-c++ libatomic-static \
+sudo yum install -y gcc gcc-c++ \
     make python bash coreutils diffutils patch
 ```
 2. Install required dependencies:
@@ -305,7 +305,7 @@ export CXX=clang++
 
 1. Install Packaging Tools
 ```
-sudo yum install -y gcc gcc-c++ libatomic-static \
+sudo yum install -y gcc gcc-c++ \
     rpm-build rpm-devel rpmlint make python bash coreutils diffutils patch rpmdevtools
 ```
 

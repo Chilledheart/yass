@@ -522,10 +522,10 @@ if (NOT MSVC)
     set(libcxx_LINK_LIBATOMIC TRUE)
   endif()
   set(CMAKE_REQUIRED_FLAGS ${OLD_CMAKE_REQUIRED_FLAGS})
-endif()
 
-if (libcxx_LINK_LIBATOMIC)
-  target_link_libraries(cxx -Wl,'-Bstatic,-latomic,-Bdynamic')
+  if (libcxx_LINK_LIBATOMIC)
+    target_link_libraries(cxx atomic)
+  endif()
 endif()
 
 if (MSVC)
