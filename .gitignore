@@ -35,6 +35,7 @@ sscxx
 *.tgz
 *.gz
 *.rpm
+*.deb
 /tools/build
 /build-*
 /cmake-build-*
