@@ -352,7 +352,10 @@ class stream {
   void on_connect(std::function<void()> callback, Channel* channel, asio::error_code ec) {
     connect_timer_.cancel();
     if (ec) {
-      DCHECK_NE(ec, asio::error::operation_aborted);
+      if (ec == asio::error::operation_aborted) {
+        callback();
+        return;
+      }
       if (!endpoints_.empty()) {
         on_try_next_endpoint(callback, channel);
         return;
