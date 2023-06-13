@@ -331,7 +331,7 @@ class SsEndToEndBM : public benchmark::Fixture {
     CHECK_EQ((int)buffer_length, response_len) << "Partial read";
   }
 
-  void SendRequestAndCheckResponse(asio::ip::tcp::socket& s) {
+  void SendRequestAndCheckResponse(asio::ip::tcp::socket& s, asio::io_context& io_context) {
     size_t written;
     asio::error_code ec;
 
@@ -343,18 +343,26 @@ class SsEndToEndBM : public benchmark::Fixture {
       g_in_provider_mutex.unlock();
     }
     std::lock_guard<std::mutex> done_lk(g_in_consumer_mutex);
+    auto work_guard = std::make_shared<asio::executor_work_guard<asio::io_context::executor_type>>(io_context.get_executor());
     VLOG(1) << "Connection (content-consumer) start to do IO";
-    written = asio::write(s, const_buffer(g_send_buffer), ec);
-    VLOG(1) << "Connection (content-consumer) written: " << written << " bytes";
-    CHECK(!ec) << "Connection (content-consumer) write failure " << ec;
-    CHECK_EQ(written, g_send_buffer.length()) << "Partial written";
+    asio::async_write(s, const_buffer(g_send_buffer),
+      [work_guard](asio::error_code ec, size_t written) {
+      VLOG(1) << "Connection (content-consumer) written: " << written << " bytes";
+      CHECK(!ec) << "Connection (content-consumer) write failure " << ec;
+      CHECK_EQ(written, g_send_buffer.length()) << "Partial written";
+    });
 
     IOBuf resp_buffer;
     resp_buffer.reserve(0, g_send_buffer.length());
-    size_t read = asio::read(s, tail_buffer(resp_buffer), ec);
-    VLOG(1) << "Connection (content-consumer) read: " << read << " bytes";
-    resp_buffer.append(read);
-    CHECK(!ec) << "Connection (content-consumer) read failure " << ec;
+    asio::async_read(s, tail_buffer(resp_buffer),
+      [work_guard, &resp_buffer](asio::error_code ec, size_t read) {
+      VLOG(1) << "Connection (content-consumer) read: " << read << " bytes";
+      resp_buffer.append(read);
+      CHECK(!ec) << "Connection (content-consumer) read failure " << ec;
+    });
+    work_guard.reset();
+    io_context.restart();
+    io_context.run();
 
 #if 0
     const char* buffer = reinterpret_cast<const char*>(resp_buffer.data());
@@ -479,7 +487,7 @@ class SsEndToEndBM : public benchmark::Fixture {
     asio::ip::tcp::socket s(io_context);                                \
     SendRequestAndCheckResponse_Pre(s);                                 \
     for (auto _ : state) {                                              \
-      SendRequestAndCheckResponse(s);                                   \
+      SendRequestAndCheckResponse(s, io_context);                       \
       state.SetBytesProcessed(state.bytes_processed() + state.range(0));\
     }                                                                   \
     SendRequestAndCheckResponse_Post(s);                                \
