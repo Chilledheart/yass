@@ -25,8 +25,7 @@ defaults:
   run:
     shell: cmd
 env:
-  CACHE_EPOCH: 0
-  GOPROXY: direct
+  CACHE_EPOCH: 2
 jobs:
   windows-release:
     runs-on: windows-2019

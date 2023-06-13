@@ -22,8 +22,7 @@ on:
   release:
     types: [published]
 env:
-  CACHE_EPOCH: 0
-  GOPROXY: direct
+  CACHE_EPOCH: 2
 jobs:
   linux-binary-release:
     strategy:

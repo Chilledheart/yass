@@ -16,8 +16,7 @@ on:
         required: false
         type: boolean
 env:
-  CACHE_EPOCH: 0
-  GOPROXY: direct
+  CACHE_EPOCH: 2
 jobs:
   win-clang-tidy:
     runs-on: windows-2019

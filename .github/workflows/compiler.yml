@@ -20,8 +20,7 @@ on:
     branches: [master, develop]
     paths-ignore: [README.md, BUILDING.md]
 env:
-  CACHE_EPOCH: 0
-  GOPROXY: direct
+  CACHE_EPOCH: 2
 jobs:
   win-compiler-compatible-2019:
     runs-on: windows-2019
