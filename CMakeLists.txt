@@ -1782,9 +1782,48 @@ if (BUILD_BENCHMARKS)
   set(BENCHMARK_ENABLE_GTEST_TESTS "OFF" CACHE STRING "")
   set(BENCHMARK_USE_BUNDLED_GTEST "OFF" CACHE STRING "")
   set(BENCHMARK_ENABLE_ASSEMBLY_TESTS "OFF" CACHE STRING "")
+  # by-pass linkage issue with libc++
   set(HAVE_STD_REGEX "ON" CACHE STRING "")
   set(HAVE_STEADY_CLOCK "ON" CACHE STRING "")
+
+check_c_source_compiles("
+#include <regex.h>
+#include <stddef.h>
+int main() {
+  const char* str = \"test0159\";
+  regex_t re;
+  int ec = regcomp(&re, \"^[a-z]+[0-9]+$\", REG_EXTENDED | REG_NOSUB);
+  if (ec != 0) {
+    return ec;
+  }
+  int ret = regexec(&re, str, 0, NULL, 0) ? -1 : 0;
+  regfree(&re);
+  return ret;
+} " HAVE_POSIX_REGEX_C)
+  if (HAVE_POSIX_REGEX_C)
+    set(HAVE_POSIX_REGEX "ON" CACHE STRING "")
+  endif()
+
+check_c_source_compiles("
+#include <gnuregex.h>
+#include <stddef.h>
+int main() {
+  const char* str = \"test0159\";
+  regex_t re;
+  int ec = regcomp(&re, \"^[a-z]+[0-9]+$\", REG_EXTENDED | REG_NOSUB);
+  if (ec != 0) {
+    return ec;
+  }
+  return regexec(&re, str, 0, NULL, 0) ? -1 : 0;
+}
+} " HAVE_GNU_POSIX_REGEX_C)
+  if (HAVE_GNU_POSIX_REGEX_C)
+    set(HAVE_GNU_POSIX_REGEX "ON" CACHE STRING "")
+  endif()
+
   add_subdirectory(third_party/benchmark)
+  # fix a typo in re.h
+  target_compile_definitions(benchmark PRIVATE BENCHMARK_HAVE_STD_REGEX)
 endif()
 
 # *****************************************************************************************
