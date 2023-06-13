@@ -16,7 +16,7 @@ BuildRequires: gtk4-devel
 BuildRequires: gtk3-devel
 %endif
 %if 0%{?rhel} < 9 || 0%{?fedora}
-BuildRequires: perl, libatomic-static
+BuildRequires: perl
 %endif
 %if 0%{?rhel} >= 8 || 0%{?fedora}
 BuildRequires: cmake >= 3.12, pkg-config
