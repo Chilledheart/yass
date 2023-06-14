@@ -331,7 +331,7 @@ class SsEndToEndBM : public benchmark::Fixture {
     CHECK_EQ((int)buffer_length, response_len) << "Partial read";
   }
 
-  void SendRequestAndCheckResponse(asio::ip::tcp::socket& s, asio::io_context& io_context, benchmark::State& state) {
+  void SendRequestAndCheckResponse(asio::ip::tcp::socket& s, asio::io_context& io_context) {
     size_t written;
     asio::error_code ec;
 
@@ -344,9 +344,6 @@ class SsEndToEndBM : public benchmark::Fixture {
     }
     std::lock_guard<std::mutex> done_lk(g_in_consumer_mutex);
     auto work_guard = std::make_shared<asio::executor_work_guard<asio::io_context::executor_type>>(io_context.get_executor());
-
-    auto start = std::chrono::high_resolution_clock::now();
-
     VLOG(1) << "Connection (content-consumer) start to do IO";
     asio::async_write(s, const_buffer(g_send_buffer),
       [work_guard](asio::error_code ec, size_t written) {
@@ -378,11 +375,6 @@ class SsEndToEndBM : public benchmark::Fixture {
       CHECK_EQ(g_recv_buffer->length(), g_send_buffer.length()) << "Partial read";
       g_recv_buffer->clear();
     }
-
-    auto end = std::chrono::high_resolution_clock::now();
-    auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(
-        end - start);
-    state.SetIterationTime(elapsed_seconds.count());
   }
 
   void SendRequestAndCheckResponse_Post(asio::ip::tcp::socket& s) {
@@ -495,10 +487,10 @@ class SsEndToEndBM : public benchmark::Fixture {
     asio::ip::tcp::socket s(io_context);                                \
     SendRequestAndCheckResponse_Pre(s);                                 \
     for (auto _ : state) {                                              \
-      SendRequestAndCheckResponse(s, io_context, state);                \
+      SendRequestAndCheckResponse(s, io_context);                       \
+      state.SetBytesProcessed(state.bytes_processed() + state.range(0));\
     }                                                                   \
     SendRequestAndCheckResponse_Post(s);                                \
-    state.SetBytesProcessed(int64_t(state.iterations()) * int64_t(state.range(0))); \
   }                                                                     \
   BENCHMARK_REGISTER_F(SsEndToEndBM, BM_FullDuplex_##name)              \
     ->Range(4096, 1*1024*1024)->MeasureProcessCPUTime();
@@ -506,76 +498,6 @@ CIPHER_METHOD_MAP_SODIUM(XX)
 CIPHER_METHOD_MAP_HTTP(XX)
 CIPHER_METHOD_MAP_HTTP2(XX)
 #undef XX
-
-#ifdef ASIO_HAS_LOCAL_SOCKETS
-class ASIOFixture : public benchmark::Fixture {
- public:
-  ASIOFixture() : s1(io_context), s2(io_context) {}
-  void SetUp(const ::benchmark::State& state) {
-    asio::error_code ec;
-    asio::local::connect_pair(s1, s2, ec);
-    CHECK(!ec) << "connect_pair failure " << ec;
-
-    GenerateRandContent(state.range(0));
-  }
-
-  void TearDown(const ::benchmark::State& state) {
-    asio::error_code ec;
-    s1.close(ec);
-    CHECK(!ec) << "close failure " << ec;
-    s2.close(ec);
-    CHECK(!ec) << "close failure " << ec;
-  }
-
- protected:
-  asio::io_context io_context;
-  asio::local::stream_protocol::socket s1, s2;
-};
-
-BENCHMARK_DEFINE_F(ASIOFixture, PlainIO)(benchmark::State& state)  {
-  for (auto _ : state) {
-    auto work_guard = std::make_shared<asio::executor_work_guard<asio::io_context::executor_type>>(io_context.get_executor());
-    IOBuf resp_buffer;
-    resp_buffer.reserve(0, g_send_buffer.length());
-
-    auto start = std::chrono::high_resolution_clock::now();
-    asio::async_write(s1, const_buffer(g_send_buffer),
-      [work_guard](asio::error_code ec, size_t written) {
-      CHECK(!ec) << "Connection (content-consumer) write failure " << ec;
-    });
-
-    asio::async_read(s1, tail_buffer(resp_buffer),
-      [work_guard, &resp_buffer](asio::error_code ec, size_t read) {
-      resp_buffer.append(read);
-      CHECK(!ec) << "Connection (content-consumer) read failure " << ec;
-    });
-
-    asio::async_read(s2, mutable_buffer(*g_recv_buffer),
-      [work_guard](asio::error_code ec, size_t read) {
-      CHECK(!ec) << "Connection (content-provider) read failure " << ec;
-    });
-
-    asio::async_write(s2, const_buffer(g_send_buffer),
-      [work_guard](asio::error_code ec, size_t written) {
-      CHECK(!ec) << "Connection (content-provider) write failure " << ec;
-    });
-
-    work_guard.reset();
-    io_context.restart();
-    io_context.run();
-
-    auto end = std::chrono::high_resolution_clock::now();
-    auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(
-        end - start);
-    state.SetIterationTime(elapsed_seconds.count());
-  }
-
-  state.SetBytesProcessed(int64_t(state.iterations()) * int64_t(state.range(0)));
-}
-
-BENCHMARK_REGISTER_F(ASIOFixture, PlainIO)->Range(4096, 1*1024*1024);
-
-#endif
 
 int main(int argc, char** argv) {
   absl::InitializeSymbolizer(argv[0]);
