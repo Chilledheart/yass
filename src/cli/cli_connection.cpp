@@ -899,8 +899,8 @@ try_again:
       }
       remaining_buffer = remaining_buffer.substr(result);
     }
-    // not data frame, try again
-    if (upstream_.empty()) {
+    // not enough buffer for recv window
+    if (downstream_.byte_length() < kSpdySessionMaxRecvWindowSize) {
       goto try_again;
     }
   } else if (upstream_https_fallback_) {
