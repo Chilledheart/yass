@@ -332,7 +332,6 @@ class SsEndToEndBM : public benchmark::Fixture {
   }
 
   void SendRequestAndCheckResponse(asio::ip::tcp::socket& s, asio::io_context& io_context, benchmark::State& state) {
-    size_t written;
     asio::error_code ec;
 
     while (true) {
@@ -501,7 +500,7 @@ class SsEndToEndBM : public benchmark::Fixture {
     state.SetBytesProcessed(int64_t(state.iterations()) * int64_t(state.range(0))); \
   }                                                                     \
   BENCHMARK_REGISTER_F(SsEndToEndBM, BM_FullDuplex_##name)              \
-    ->Range(4096, 1*1024*1024);
+    ->Range(4096, 1*1024*1024)->UseManualTime();
 CIPHER_METHOD_MAP_SODIUM(XX)
 CIPHER_METHOD_MAP_HTTP(XX)
 CIPHER_METHOD_MAP_HTTP2(XX)
@@ -604,7 +603,7 @@ BENCHMARK_DEFINE_F(ASIOFixture, PlainIO)(benchmark::State& state)  {
   state.SetBytesProcessed(int64_t(state.iterations()) * int64_t(state.range(0)));
 }
 
-BENCHMARK_REGISTER_F(ASIOFixture, PlainIO)->Range(4096, 1*1024*1024);
+BENCHMARK_REGISTER_F(ASIOFixture, PlainIO)->Range(4096, 1*1024*1024)->UseManualTime();
 
 int main(int argc, char** argv) {
   absl::InitializeSymbolizer(argv[0]);
