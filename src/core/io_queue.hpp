@@ -36,6 +36,20 @@ class IoQueue {
     idx_ = (idx_ + 1) % queue_.size();
   }
 
+  size_t length() const {
+    return (end_idx_ + queue_.size() - idx_) % queue_.size();
+  }
+
+  size_t byte_length() const {
+    if (empty())  {
+      return 0u;
+    }
+    size_t ret = 0u;
+    for (int i = idx_; i != end_idx_; i = (i+1) % queue_.size())
+      ret += queue_[i]->length();
+    return ret;
+  }
+
  private:
   int idx_ = 0;
   int end_idx_ = 0;
