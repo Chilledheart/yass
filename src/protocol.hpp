@@ -15,7 +15,7 @@
 #include "core/iobuf.hpp"
 #include "core/logging.hpp"
 
-#define SOCKET_BUF_SIZE (16384)
+#define SOCKET_BUF_SIZE (16384*2)
 #define SOCKET_DEBUF_SIZE (16384)
 #define SS_FRAME_SIZE (16384-128)
 

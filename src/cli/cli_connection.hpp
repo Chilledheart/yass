@@ -252,6 +252,8 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   ///          ->PerformCmdOps
   ///                        handshake->WriteHandShake
   /// stream->ReadStream
+  ///                        stream->WriteUpstream
+  /// stream->ReadUpstream
   ///                        stream->WriteStream
   ///
   /// Return current state of service
@@ -285,11 +287,12 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   /// \param reply the reply used to write to socket
   void WriteHandshake();
   /// write to stream
-  /// \param buf the buffer used to write to socket
   void WriteStream();
+  /// write to stream (on writable event)
+  void WriteStreamAsync();
 
-  /// Write remaining buffers to stream
-  void WriteStreamInPipe();
+  /// Read remaining buffers from upstream
+  void ReadUpstream();
   /// Get next remaining buffer to stream
   std::shared_ptr<IOBuf> GetNextDownstreamBuf(asio::error_code &ec,
                                               size_t *bytes_transferred);
