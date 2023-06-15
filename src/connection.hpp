@@ -72,6 +72,13 @@ class Connection {
       };
     } else {
       s_async_read_some_ = [this](handle_t cb) {
+        asio::error_code ec;
+        if (socket_.available(ec)) {
+          asio::post(*io_context_, [cb]() {
+            cb(asio::error_code());
+          });
+          return;
+        }
         socket_.async_wait(asio::ip::tcp::socket::wait_read, cb);
       };
       s_read_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {

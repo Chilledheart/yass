@@ -294,7 +294,8 @@ void SSLSocket::WaitRead(std::function<void(asio::error_code ec)> cb) {
     OnWaitRead(asio::error_code());
     return;
   }
-  if (SSL_has_pending(ssl_.get())) {
+  asio::error_code ec;
+  if (SSL_has_pending(ssl_.get()) || stream_socket_->available(ec)) {
     asio::post(io_context_->get_executor(), [this, self]() {
       OnWaitRead(asio::error_code());
     });

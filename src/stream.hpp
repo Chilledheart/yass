@@ -50,6 +50,7 @@ class stream {
 #endif
         host_name_(host_name),
         port_(port),
+        io_context_(io_context),
         socket_(io_context),
         connect_timer_(io_context),
         https_fallback_(https_fallback),
@@ -168,6 +169,21 @@ class stream {
 
     if (!connected_ || closed_) {
       callback();
+      return;
+    }
+
+    asio::error_code ec;
+    if (socket_.available(ec)) {
+      read_inprogress_ = true;
+      asio::post(io_context_, [this, callback]() {
+        read_inprogress_ = false;
+        if (!connected_ || closed_) {
+          callback();
+          return;
+        }
+        channel_->received();
+        callback();
+      });
       return;
     }
 
@@ -445,6 +461,7 @@ class stream {
 
   std::string host_name_;
   uint16_t port_;
+  asio::io_context& io_context_;
   asio::ip::tcp::endpoint endpoint_;
   asio::ip::tcp::socket socket_;
   asio::steady_timer connect_timer_;
