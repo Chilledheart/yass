@@ -744,55 +744,23 @@ void CliConnection::WriteHandshake() {
 void CliConnection::WriteStream() {
   DCHECK_EQ(CurrentState(), state_stream);
   DCHECK(!write_inprogress_);
-  if (write_inprogress_) {
+  if (UNLIKELY(write_inprogress_)) {
     return;
   }
-  scoped_refptr<CliConnection> self(this);
-  write_inprogress_ = true;
-  s_async_write_some_([this, self](asio::error_code ec) {
-      write_inprogress_ = false;
-      if (closed_) {
-        return;
-      }
-      if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
-        return;
-      }
-      if (ec) {
-        ProcessSentData(ec, 0);
-        return;
-      }
-      WriteStreamInPipe();
-  });
-}
 
-void CliConnection::WriteStreamInPipe() {
-  asio::error_code ec;
-  size_t bytes_transferred = 0U, wbytes_transferred = 0U;
   bool try_again = false;
-
-  /* recursively send the remainings */
-  while (true) {
-    auto buf = GetNextDownstreamBuf(ec, &bytes_transferred);
-    size_t read = buf ? buf->length() : 0;
-    if (ec == asio::error::try_again || ec == asio::error::would_block) {
-      ec = asio::error_code();
+  asio::error_code ec;
+  size_t wbytes_transferred = 0u;
+  do {
+    if (UNLIKELY(downstream_.empty())) {
       try_again = true;
-    } else if (ec) {
-      /* not downstream error */
-      ec = asio::error_code();
       break;
     }
-    if (!read) {
-      break;
-    }
-    if (closed_) {
-      break;
-    }
-    ec = asio::error_code();
+    auto buf = downstream_.front();
     size_t written;
     do {
       written = socket_.write_some(const_buffer(*buf), ec);
-      if (ec == asio::error::interrupted) {
+      if (UNLIKELY(ec == asio::error::interrupted)) {
         continue;
       }
     } while(false);
@@ -800,21 +768,21 @@ void CliConnection::WriteStreamInPipe() {
     bytes_downstream_passed_without_yield_ += written;
     wbytes_transferred += written;
     // continue to resume
-    if (buf->empty()) {
+    if (LIKELY(buf->empty())) {
       downstream_.pop_front();
     }
-    if (ec == asio::error::try_again || ec == asio::error::would_block) {
+    if (UNLIKELY(ec == asio::error::try_again || ec == asio::error::would_block)) {
       break;
     }
-    if (ec) {
+    if (UNLIKELY(ec)) {
       break;
     }
-    if (!buf->empty()) {
+    if (UNLIKELY(!buf->empty())) {
       ec = asio::error::try_again;
       break;
     }
-    if (GetMonotonicTime() > yield_downstream_after_time_ ||
-        bytes_downstream_passed_without_yield_ > kYieldAfterBytesRead) {
+    if (UNLIKELY(GetMonotonicTime() > yield_downstream_after_time_ ||
+                 bytes_downstream_passed_without_yield_ > kYieldAfterBytesRead)) {
       bytes_downstream_passed_without_yield_ = 0U;
       yield_downstream_after_time_ = GetMonotonicTime() + kYieldAfterDurationMilliseconds * 1000 * 1000;
       if (downstream_.empty()) {
@@ -824,7 +792,8 @@ void CliConnection::WriteStreamInPipe() {
       }
       break;
     }
-  }
+  } while(true);
+
   if (try_again) {
     if (channel_ && channel_->connected() && !channel_->read_inprogress()) {
       scoped_refptr<CliConnection> self(this);
@@ -832,17 +801,75 @@ void CliConnection::WriteStreamInPipe() {
     }
   }
   if (ec == asio::error::try_again || ec == asio::error::would_block) {
-    OnDownstreamWriteFlush();
+    WriteStreamAsync();
+
     if (!wbytes_transferred) {
       return;
     }
     ec = asio::error_code();
   }
-  if (!bytes_transferred && !ec && !try_again) {
-    OnStreamWrite();
+  ProcessSentData(ec, wbytes_transferred);
+}
+
+void CliConnection::WriteStreamAsync() {
+  scoped_refptr<CliConnection> self(this);
+  DCHECK(!write_inprogress_);
+  if (UNLIKELY(write_inprogress_)) {
     return;
   }
-  ProcessSentData(ec, wbytes_transferred);
+  write_inprogress_ = true;
+  s_async_write_some_([this, self](asio::error_code ec) {
+    write_inprogress_ = false;
+    if (closed_) {
+      return;
+    }
+    if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+      return;
+    }
+    if (ec) {
+      ProcessSentData(ec, 0);
+      return;
+    }
+    WriteStream();
+  });
+}
+
+void CliConnection::ReadUpstream() {
+  asio::error_code ec;
+  size_t bytes_transferred = 0U;
+  bool try_again = false;
+
+  DCHECK(!channel_->read_inprogress());
+  if (UNLIKELY(channel_->read_inprogress())) {
+    return;
+  }
+  // DCHECK(!write_inprogress_);
+  if (UNLIKELY(write_inprogress_)) {
+    return;
+  }
+
+  do {
+    auto buf = GetNextDownstreamBuf(ec, &bytes_transferred);
+    size_t read = buf ? buf->length() : 0;
+    if (UNLIKELY(ec == asio::error::try_again || ec == asio::error::would_block)) {
+      ec = asio::error_code();
+      try_again = true;
+    } else if (UNLIKELY(ec)) {
+      /* not downstream error */
+      ec = asio::error_code();
+      break;
+    }
+    if (UNLIKELY(!read)) {
+      break;
+    }
+    WriteStream();
+  } while(false);
+  if (try_again) {
+    if (channel_ && channel_->connected() && !channel_->read_inprogress()) {
+      scoped_refptr<CliConnection> self(this);
+      channel_->start_read([self]() {});
+    }
+  }
 }
 
 std::shared_ptr<IOBuf> CliConnection::GetNextDownstreamBuf(asio::error_code &ec,
@@ -1574,15 +1601,14 @@ void CliConnection::connected() {
   yield_upstream_after_time_ = yield_downstream_after_time_ =
     GetMonotonicTime() + kYieldAfterDurationMilliseconds * 1000 * 1000;
 
-  WriteStreamInPipe();
+  ReadUpstream();
   WriteUpstreamInPipe();
   OnUpstreamWriteFlush();
 }
 
 void CliConnection::received() {
   scoped_refptr<CliConnection> self(this);
-  WriteStreamInPipe();
-  OnDownstreamWriteFlush();
+  ReadUpstream();
 }
 
 void CliConnection::sent() {
@@ -1619,11 +1645,11 @@ void CliConnection::disconnected(asio::error_code ec) {
   /* delay the socket's close because downstream is buffered */
   if (downstream_.empty() && !shutdown_) {
     VLOG(2) << "Connection (client) " << connection_id()
-            << " upstream: last data sent: shutting down";
+            << " last data sent: shutting down";
     shutdown_ = true;
     socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
   } else {
-    WriteStreamInPipe();
+    WriteStream();
   }
 }
 
