@@ -443,6 +443,7 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
 
   /// the queue to write downstream
   IoQueue downstream_;
+  std::vector<std::shared_ptr<IOBuf>> downstream_pool_;
   /// the flag to mark current read
   bool downstream_readable_ = false;
   /// the flag to mark current read in progress
@@ -482,6 +483,8 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
 
   /// mark of in-progress writing
   bool write_inprogress_ = false;
+
+  friend class DataFrameSource;
 };
 
 class CliConnectionFactory : public ConnectionFactory {
