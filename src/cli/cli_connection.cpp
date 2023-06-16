@@ -137,8 +137,12 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
 
   chunks_.front()->trimStart(payload_length);
 
-  if (chunks_.front()->empty())
+  if (chunks_.front()->empty()) {
+    auto buf = chunks_.front();
+    buf->clear();
+    connection_->downstream_pool_.push_back(buf);
     chunks_.pop_front();
+  }
 
   if (chunks_.empty() && send_completion_callback_) {
     std::move(send_completion_callback_).operator()();
@@ -767,6 +771,8 @@ void CliConnection::WriteStream() {
     wbytes_transferred += written;
     // continue to resume
     if (LIKELY(buf->empty())) {
+      buf->clear();
+      downstream_pool_.push_back(buf);
       downstream_.pop_front();
     }
     if (UNLIKELY(ec == asio::error::try_again || ec == asio::error::would_block)) {
@@ -892,7 +898,14 @@ try_again:
     ec = asio::error::eof;
     return nullptr;
   }
-  std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_DEBUF_SIZE);
+  std::shared_ptr<IOBuf> buf;
+  if (!downstream_pool_.empty()) {
+    buf = downstream_pool_.back();
+    downstream_pool_.pop_back();
+    buf->reserve(0, SOCKET_DEBUF_SIZE);
+  } else {
+    buf = IOBuf::create(SOCKET_DEBUF_SIZE);
+  }
   size_t read;
   do {
     ec = asio::error_code();
