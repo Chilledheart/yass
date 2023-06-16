@@ -263,17 +263,17 @@ void cipher::process_bytes(std::shared_ptr<IOBuf> ciphertext) {
 
 void cipher::encrypt(const uint8_t* plaintext_data,
                      size_t plaintext_size,
-                     std::shared_ptr<IOBuf>* ciphertext) {
-  *ciphertext = IOBuf::create(SOCKET_DEBUF_SIZE);
+                     std::shared_ptr<IOBuf> ciphertext) {
+  DCHECK(ciphertext);
 
   if (!init_) {
-    encrypt_salt(ciphertext->get());
+    encrypt_salt(ciphertext.get());
     init_ = true;
   }
 
   size_t clen = 2 * tag_len_ + CHUNK_SIZE_LEN + plaintext_size;
 
-  (*ciphertext)->reserve(0, clen);
+  ciphertext->reserve(0, clen);
 
   uint64_t counter = counter_;
 
@@ -281,7 +281,7 @@ void cipher::encrypt(const uint8_t* plaintext_data,
 
   // TBD better to apply MTU-like things
   int ret = chunk_encrypt_frame(&counter, plaintext_data,
-                                plaintext_size, ciphertext->get());
+                                plaintext_size, ciphertext.get());
   if (ret < 0) {
     visitor_->on_protocol_error();
     return;

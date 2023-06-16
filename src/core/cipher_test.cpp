@@ -56,7 +56,7 @@ class CipherTest : public ::testing::TestWithParam<size_t>,
     auto decoder = std::make_unique<cipher>(key, password, crypto_method, this, false);
     auto send_buf = GenerateRandContent(size);
     std::shared_ptr<IOBuf> cipherbuf = IOBuf::create(size + 100);
-    encoder->encrypt(send_buf->data(), send_buf->length(), &cipherbuf);
+    encoder->encrypt(send_buf->data(), send_buf->length(), cipherbuf);
     decoder->process_bytes(cipherbuf);
     ASSERT_EQ(ec_, asio::error_code());
 

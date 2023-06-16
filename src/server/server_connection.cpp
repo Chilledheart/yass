@@ -284,9 +284,7 @@ void ServerConnection::on_protocol_error() {
 
 int64_t ServerConnection::OnReadyToSend(absl::string_view serialized) {
   MSAN_UNPOISON(serialized.data(), serialized.size());
-  std::shared_ptr<IOBuf> buf =
-    IOBuf::copyBuffer(serialized.data(), serialized.size());
-  downstream_.push_back(buf);
+  downstream_.push_back_merged(serialized.data(), serialized.size());
   return serialized.size();
 }
 
@@ -799,7 +797,7 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code &
     }
     data_frame_->AddChunk(buf);
   } else if (https_fallback_) {
-    downstream_.push_back(buf);
+    downstream_.push_back_merged(buf);
   } else {
     EncryptData(&downstream_, buf);
   }
@@ -1282,17 +1280,23 @@ void ServerConnection::disconnected(asio::error_code ec) {
 
 void ServerConnection::EncryptData(IoQueue* queue,
                                    std::shared_ptr<IOBuf> plaintext) {
+  std::shared_ptr<IOBuf> cipherbuf;
+  if (queue->empty()) {
+    cipherbuf = IOBuf::create(SOCKET_DEBUF_SIZE);
+    queue->push_back(cipherbuf);
+  } else {
+    cipherbuf = queue->back();
+  }
+  cipherbuf->reserve(0, plaintext->length() + (plaintext->length() / SS_FRAME_SIZE + 1) * 100);
+
   size_t plaintext_offset = 0;
   while (plaintext_offset < plaintext->length()) {
     size_t plaintext_size = std::min<int>(plaintext->length() - plaintext_offset,
                                           SS_FRAME_SIZE);
-    std::shared_ptr<IOBuf> cipherbuf = IOBuf::create(plaintext->length() + 100);
-
-    encoder_->encrypt(plaintext->data() + plaintext_offset, plaintext_size, &cipherbuf);
-    MSAN_CHECK_MEM_IS_INITIALIZED(cipherbuf->data(), cipherbuf->length());
-    queue->push_back(cipherbuf);
+    encoder_->encrypt(plaintext->data() + plaintext_offset, plaintext_size, cipherbuf);
     plaintext_offset += plaintext_size;
   }
+  MSAN_CHECK_MEM_IS_INITIALIZED(cipherbuf->data(), cipherbuf->length());
 }
 
 }  // namespace server
