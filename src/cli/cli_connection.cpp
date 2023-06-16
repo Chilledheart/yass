@@ -137,8 +137,11 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
 
   chunks_.front()->trimStart(payload_length);
 
-  if (chunks_.front()->empty())
+  if (chunks_.front()->empty()) {
+    auto buf = chunks_.front();
+    connection_->downstream_pool_.push_back(buf);
     chunks_.pop_front();
+  }
 
   if (chunks_.empty() && send_completion_callback_) {
     std::move(send_completion_callback_).operator()();
@@ -218,7 +221,9 @@ void CliConnection::SendIfNotProcessing() {
 //
 bool CliConnection::on_received_data(std::shared_ptr<IOBuf> buf) {
   MSAN_CHECK_MEM_IS_INITIALIZED(buf->data(), buf->length());
-  downstream_.push_back_merged(buf);
+  if (downstream_.push_back_merged(buf)) {
+    downstream_pool_.push_back(buf);
+  };
   return true;
 }
 
@@ -322,7 +327,9 @@ bool CliConnection::OnDataForStream(StreamId stream_id,
         return true;
       }
       DCHECK(buf);
-      downstream_.push_back_merged(buf);
+      if (downstream_.push_back_merged(buf)) {
+        downstream_pool_.push_back(buf);
+      };
       ++num_padding_recv_;
     }
     // Deal with in_middle_buf outside paddings
@@ -332,8 +339,7 @@ bool CliConnection::OnDataForStream(StreamId stream_id,
     return true;
   }
 
-  std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(data.data(), data.size());
-  downstream_.push_back_merged(buf);
+  downstream_.push_back_merged(data.data(), data.size());
   adapter_->MarkDataConsumedForStream(stream_id, data.size());
   return true;
 }
@@ -767,6 +773,7 @@ void CliConnection::WriteStream() {
     wbytes_transferred += written;
     // continue to resume
     if (LIKELY(buf->empty())) {
+      downstream_pool_.push_back(buf);
       downstream_.pop_front();
     }
     if (UNLIKELY(ec == asio::error::try_again || ec == asio::error::would_block)) {
@@ -892,7 +899,15 @@ try_again:
     ec = asio::error::eof;
     return nullptr;
   }
-  std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_DEBUF_SIZE);
+  std::shared_ptr<IOBuf> buf;
+  if (LIKELY(!downstream_pool_.empty())) {
+    buf = downstream_pool_.back();
+    downstream_pool_.pop_back();
+    buf->clear();
+    buf->reserve(0, SOCKET_DEBUF_SIZE);
+  } else {
+    buf = IOBuf::create(SOCKET_DEBUF_SIZE);
+  }
   size_t read;
   do {
     ec = asio::error_code();
@@ -968,7 +983,9 @@ try_again:
         return nullptr;
       }
     }
-    downstream_.push_back_merged(buf);
+    if (downstream_.push_back_merged(buf)) {
+      downstream_pool_.push_back(buf);
+    };
   } else {
     decoder_->process_bytes(buf);
   }
@@ -1444,7 +1461,9 @@ void CliConnection::OnDownstreamWriteFlush() {
 void CliConnection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf) {
     DCHECK(!buf->empty());
-    downstream_.push_back_merged(buf);
+    if (downstream_.push_back_merged(buf)) {
+      downstream_pool_.push_back(buf);
+    };
   }
   if (!downstream_.empty() && !write_inprogress_) {
     if (CurrentState() == state_error) {

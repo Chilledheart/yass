@@ -25,16 +25,17 @@ class IoQueue {
     CHECK_NE(end_idx_, idx_) << "IO queue is full";
   }
 
-  void push_back_merged(T buf) {
+  bool push_back_merged(T buf) {
     DCHECK(!buf->empty());
     if (empty()) {
       push_back(buf);
-      return;
+      return false;
     }
     auto prev_buf = queue_[(end_idx_ + queue_.size() - 1) % queue_.size()];
     prev_buf->reserve(0, buf->length());
     memcpy(prev_buf->mutable_tail(), buf->data(), buf->length());
     prev_buf->append(buf->length());
+    return true;
   }
 
   void push_back_merged(const char* data, size_t length) {
