@@ -218,7 +218,7 @@ void CliConnection::SendIfNotProcessing() {
 //
 bool CliConnection::on_received_data(std::shared_ptr<IOBuf> buf) {
   MSAN_CHECK_MEM_IS_INITIALIZED(buf->data(), buf->length());
-  downstream_.push_back(buf);
+  downstream_.push_back_merged(buf);
   return true;
 }
 
@@ -322,18 +322,18 @@ bool CliConnection::OnDataForStream(StreamId stream_id,
         return true;
       }
       DCHECK(buf);
-      downstream_.push_back(buf);
+      downstream_.push_back_merged(buf);
       ++num_padding_recv_;
     }
     // Deal with in_middle_buf outside paddings
     if (num_padding_recv_ >= kFirstPaddings && !padding_in_middle_buf_->empty()) {
-      upstream_.push_back(std::move(padding_in_middle_buf_));
+      upstream_.push_back_merged(std::move(padding_in_middle_buf_));
     }
     return true;
   }
 
   std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(data.data(), data.size());
-  downstream_.push_back(buf);
+  downstream_.push_back_merged(buf);
   adapter_->MarkDataConsumedForStream(stream_id, data.size());
   return true;
 }
@@ -964,7 +964,7 @@ try_again:
         return nullptr;
       }
     }
-    downstream_.push_back(buf);
+    downstream_.push_back_merged(buf);
   } else {
     decoder_->process_bytes(buf);
   }
@@ -1395,7 +1395,7 @@ void CliConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
     adapter()->ResumeStream(stream_id_);
     SendIfNotProcessing();
   } else if (upstream_https_fallback_) {
-    upstream_.push_back(buf);
+    upstream_.push_back_merged(buf);
   } else {
     EncryptData(&upstream_, buf);
   }
@@ -1440,7 +1440,7 @@ void CliConnection::OnDownstreamWriteFlush() {
 void CliConnection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf) {
     DCHECK(!buf->empty());
-    downstream_.push_back(buf);
+    downstream_.push_back_merged(buf);
   }
   if (!downstream_.empty() && !write_inprogress_) {
     if (CurrentState() == state_error) {
@@ -1461,7 +1461,7 @@ void CliConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf && !buf->empty()) {
     VLOG(2) << "Connection (client) " << connection_id()
             << " upstream: ready to send request: " << buf->length() << " bytes.";
-    upstream_.push_back(buf);
+    upstream_.push_back_merged(buf);
   }
   if (!upstream_.empty() && upstream_writable_) {
     upstream_writable_ = false;
@@ -1577,7 +1577,7 @@ void CliConnection::connected() {
         "\r\n", host.c_str(), port, host.c_str(), port);
     std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(hdr.data(), hdr.size());
     // write variable address directly as https header
-    upstream_.push_back(buf);
+    upstream_.push_back_merged(buf);
   } else {
     ByteRange req(ss_request_->data(), ss_request_->length());
     std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);

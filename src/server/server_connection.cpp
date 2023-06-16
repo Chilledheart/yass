@@ -257,7 +257,7 @@ void ServerConnection::SendIfNotProcessing() {
 bool ServerConnection::on_received_data(std::shared_ptr<IOBuf> buf) {
   MSAN_CHECK_MEM_IS_INITIALIZED(buf->data(), buf->length());
   if (state_ == state_stream) {
-    upstream_.push_back(buf);
+    upstream_.push_back_merged(buf);
   } else if (state_ == state_handshake) {
     if (handshake_) {
       handshake_->reserve(0, buf->length());
@@ -403,18 +403,18 @@ bool ServerConnection::OnDataForStream(StreamId stream_id,
         return true;
       }
       DCHECK(buf);
-      upstream_.push_back(buf);
+      upstream_.push_back_merged(buf);
       ++num_padding_recv_;
     }
     // Deal with in_middle_buf outside paddings
     if (num_padding_recv_ >= kFirstPaddings && !padding_in_middle_buf_->empty()) {
-      upstream_.push_back(std::move(padding_in_middle_buf_));
+      upstream_.push_back_merged(std::move(padding_in_middle_buf_));
     }
     return true;
   }
 
   std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(data.data(), data.size());
-  upstream_.push_back(buf);
+  upstream_.push_back_merged(buf);
   adapter_->MarkDataConsumedForStream(stream_id, data.size());
   return true;
 }
@@ -961,7 +961,7 @@ try_again:
       goto try_again;
     }
   } else if (https_fallback_) {
-    upstream_.push_back(buf);
+    upstream_.push_back_merged(buf);
   } else {
     decoder_->process_bytes(buf);
   }
@@ -1180,7 +1180,7 @@ void ServerConnection::OnDownstreamWriteFlush() {
 
 void ServerConnection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf && !buf->empty()) {
-    downstream_.push_back(buf);
+    downstream_.push_back_merged(buf);
   }
 
   if (!downstream_.empty() && !write_inprogress_) {
@@ -1194,7 +1194,7 @@ void ServerConnection::OnUpstreamWriteFlush() {
 
 void ServerConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf && !buf->empty()) {
-    upstream_.push_back(buf);
+    upstream_.push_back_merged(buf);
   }
   if (!upstream_.empty() && upstream_writable_) {
     upstream_writable_ = false;
