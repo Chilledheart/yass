@@ -79,7 +79,7 @@ class cipher {
 
   void encrypt(const uint8_t* plaintext_data,
                size_t plaintext_size,
-               std::shared_ptr<IOBuf>* ciphertext);
+               std::shared_ptr<IOBuf> ciphertext);
 
  private:
   void decrypt_salt(IOBuf* chunk);
