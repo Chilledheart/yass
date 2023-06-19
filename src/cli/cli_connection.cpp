@@ -138,8 +138,6 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
   chunks_.front()->trimStart(payload_length);
 
   if (chunks_.front()->empty()) {
-    auto buf = chunks_.front();
-    connection_->downstream_pool_.push_back(buf);
     chunks_.pop_front();
   }
 
