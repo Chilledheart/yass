@@ -37,9 +37,15 @@ std::string ExpandUser(const std::string& file_path) {
 #ifdef _WIN32
       home = absl::StrCat(::getenv("HOMEDRIVE"), "\\", ::getenv("HOMEPATH"));
 #else
-      struct passwd *pw = getpwuid(geteuid());
-      if (pw) {
-        home = pw->pw_dir;
+      struct passwd pwd;
+      struct passwd* result = nullptr;
+      char buffer[PATH_MAX * 2] = {'\0'};
+      uid_t uid = ::geteuid();
+      int pwuid_res = ::getpwuid_r(uid, &pwd, buffer, sizeof(buffer), &result);
+      if (pwuid_res == 0 && result) {
+        home = pwd.pw_dir;
+      } else {
+        home = "/";
       }
 #endif
     }
@@ -51,18 +57,20 @@ std::string ExpandUser(const std::string& file_path) {
 #ifdef _WIN32
       return absl::StrCat(::getenv("HOMEDRIVE"), "\\Users");
 #else
-      struct passwd *pw = nullptr;
+      struct passwd pwd;
+      struct passwd* result = nullptr;
+      char buffer[PATH_MAX * 2] = {'\0'};
       auto pos = real_path.find("/", 1);
       auto username = real_path.substr(1, pos - 1);
       pos = real_path.find_first_not_of("/", pos);
-      pw = ::getpwnam(username.c_str());
-      if (pw == nullptr) {
-        return std::string();
+      int pwnam_res = ::getpwnam_r(username.c_str(), &pwd, buffer, sizeof(buffer), &result);
+      if (pwnam_res != 0 || result == nullptr) {
+        return "/";
       }
       if (pos != std::string::npos) {
-        return absl::StrCat(pw->pw_dir, "/", real_path.substr(pos).c_str());
+        return absl::StrCat(pwd.pw_dir, "/", real_path.substr(pos).c_str());
       } else {
-        return pw->pw_dir;
+        return pwd.pw_dir;
       }
 #endif
     }
