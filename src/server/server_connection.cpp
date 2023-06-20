@@ -128,9 +128,6 @@ void ServerConnection::start() {
   closing_ = false;
   upstream_writable_ = false;
   downstream_readable_ = true;
-  asio::error_code ec;
-  socket_.native_non_blocking(true, ec);
-  socket_.non_blocking(true, ec);
 
   scoped_refptr<ServerConnection> self(this);
   if (enable_tls_) {

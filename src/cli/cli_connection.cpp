@@ -177,9 +177,6 @@ void CliConnection::start() {
   closed_ = false;
   upstream_writable_ = false;
   downstream_readable_ = true;
-  asio::error_code ec;
-  socket_.native_non_blocking(true, ec);
-  socket_.non_blocking(true, ec);
   ReadMethodSelect();
 }
 
