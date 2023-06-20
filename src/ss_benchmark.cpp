@@ -545,6 +545,24 @@ class ASIOFixture : public benchmark::Fixture {
     asio::error_code ec;
     connect_pair(s1, s2, ec, io_context);
     CHECK(!ec) << "connect_pair failure " << ec;
+    s1.native_non_blocking(true, ec);
+    s1.non_blocking(true, ec);
+
+    SetTCPCongestion(s1.native_handle(), ec);
+    SetTCPConnectionTimeout(s1.native_handle(), ec);
+    SetTCPUserTimeout(s1.native_handle(), ec);
+    SetTCPKeepAlive(s1.native_handle(), ec);
+    SetSocketLinger(&s1, ec);
+    SetSocketSndBuffer(&s1, ec);
+    SetSocketRcvBuffer(&s1, ec);
+
+    SetTCPCongestion(s2.native_handle(), ec);
+    SetTCPConnectionTimeout(s2.native_handle(), ec);
+    SetTCPUserTimeout(s2.native_handle(), ec);
+    SetTCPKeepAlive(s2.native_handle(), ec);
+    SetSocketLinger(&s2, ec);
+    SetSocketSndBuffer(&s2, ec);
+    SetSocketRcvBuffer(&s2, ec);
 
     GenerateRandContent(state.range(0));
   }
@@ -565,35 +583,72 @@ class ASIOFixture : public benchmark::Fixture {
 BENCHMARK_DEFINE_F(ASIOFixture, PlainIO)(benchmark::State& state)  {
   for (auto _ : state) {
     auto work_guard = std::make_shared<asio::executor_work_guard<asio::io_context::executor_type>>(io_context.get_executor());
+
+    IOBuf req_buffer;
+    req_buffer.reserve(0, g_send_buffer.length());
+    memcpy(req_buffer.mutable_tail(), g_send_buffer.data(), g_send_buffer.length());
+    req_buffer.append(g_send_buffer.length());
+
     IOBuf resp_buffer;
     resp_buffer.reserve(0, g_send_buffer.length());
 
+    //
+    // START
+    //
     auto start = std::chrono::high_resolution_clock::now();
-    asio::async_write(s1, const_buffer(g_send_buffer),
-      [work_guard](asio::error_code ec, size_t written) {
-      CHECK(!ec) << "Connection (content-consumer) write failure " << ec;
-    });
 
-    asio::async_read(s1, tail_buffer(resp_buffer),
-      [work_guard, &resp_buffer](asio::error_code ec, size_t read) {
-      resp_buffer.append(read);
+    std::function<void(asio::error_code ec)> s1_write_cb =
+      [this, &req_buffer, work_guard, &s1_write_cb](asio::error_code ec){
+      CHECK(!ec) << "Connection (content-consumer) write failure " << ec;
+      do {
+        size_t slice = std::min<size_t>(16 * 1024, req_buffer.length());
+        size_t written = s1.write_some(asio::ASIO_CONST_BUFFER(req_buffer.data(), slice), ec);
+        req_buffer.trimStart(written);
+        VLOG(1) << "Connection (content-consumer) write: " << written;
+      } while(!req_buffer.empty() && !ec);
+      if (!req_buffer.empty()) {
+        s1.async_wait(asio::ip::tcp::socket::wait_write, s1_write_cb);
+      } else {
+        s1_write_cb = nullptr;
+      }
+    };
+    s1.async_wait(asio::ip::tcp::socket::wait_write, s1_write_cb);
+
+    std::function<void(asio::error_code ec)> s1_read_cb =
+      [this, &resp_buffer, work_guard, &s1_read_cb](asio::error_code ec){
       CHECK(!ec) << "Connection (content-consumer) read failure " << ec;
-    });
+      do {
+        size_t read = s1.read_some(tail_buffer(resp_buffer), ec);
+        resp_buffer.append(read);
+        VLOG(1) << "Connection (content-consumer) read: " << read;
+      } while(resp_buffer.length() != g_send_buffer.length() && !ec);
+      if (resp_buffer.length() != g_send_buffer.length()) {
+        s1.async_wait(asio::ip::tcp::socket::wait_read, s1_read_cb);
+      } else {
+        s1_read_cb = nullptr;
+      }
+    };
+    s1.async_wait(asio::ip::tcp::socket::wait_read, s1_read_cb);
 
     asio::async_read(s2, mutable_buffer(*g_recv_buffer),
       [work_guard](asio::error_code ec, size_t read) {
       CHECK(!ec) << "Connection (content-provider) read failure " << ec;
+      VLOG(1) << "Connection (content-provider) read: " << read;
     });
 
     asio::async_write(s2, const_buffer(g_send_buffer),
       [work_guard](asio::error_code ec, size_t written) {
       CHECK(!ec) << "Connection (content-provider) write failure " << ec;
+      VLOG(1) << "Connection (content-provider) write: " << written;
     });
 
     work_guard.reset();
     io_context.restart();
     io_context.run();
 
+    //
+    // END
+    //
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(
         end - start);
