@@ -205,6 +205,8 @@ class ContentServer {
     ListenCtx& ctx = listen_ctxs_[listen_ctx_num];
 
     int connection_id = next_connection_id_++;
+    socket.native_non_blocking(true, ec);
+    socket.non_blocking(true, ec);
     SetTCPCongestion(socket.native_handle(), ec);
     SetTCPConnectionTimeout(socket.native_handle(), ec);
     SetTCPUserTimeout(socket.native_handle(), ec);
