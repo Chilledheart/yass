@@ -356,7 +356,7 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   uint64_t yield_upstream_after_time_ = 0U;
 
   /// the upstream the service bound with
-  std::unique_ptr<stream> channel_;
+  scoped_refptr<stream> channel_;
 
   /// the http2 upstream adapter
 #ifdef HAVE_NGHTTP2
@@ -381,13 +381,13 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
 
  private:
   /// handle with connect event (upstream)
-  void connected() override;
+  void connected();
 
   /// handle data read event (upstream)
-  void received() override;
+  void received();
 
   /// handle data write (upstream)
-  void sent() override;
+  void sent();
 
   /// handle with disconnect event (upstream)
   void disconnected(asio::error_code error) override;
