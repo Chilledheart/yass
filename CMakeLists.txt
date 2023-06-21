@@ -312,7 +312,7 @@ endif()
 
 if (CMAKE_CROSSCOMPILING AND CMAKE_SYSROOT)
   set(ENV{PKG_CONFIG_DIR} "")
-  set(ENV{PKG_CONFIG_LIBDIR} "${CMAKE_SYSROOT}/usr/lib/pkgconfig:${CMAKE_SYSROOT}/usr/share/pkgconfig")
+  set(ENV{PKG_CONFIG_LIBDIR} "${CMAKE_SYSROOT}/usr/lib/pkgconfig:${CMAKE_SYSROOT}/lib/pkgconfig:${CMAKE_SYSROOT}/usr/share/pkgconfig")
   if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
     set(ENV{PKG_CONFIG_LIBDIR} "${CMAKE_SYSROOT}/usr/libdata/pkgconfig:${CMAKE_SYSROOT}/usr/local/libdata/pkgconfig")
   endif()
