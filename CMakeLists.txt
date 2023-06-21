@@ -310,6 +310,12 @@ if (CMAKE_CROSSCOMPILING OR (OPTIMIZED_PROTOC AND CMAKE_CONFIGURATION_TYPES))
   set(USE_HOST_TOOLS ON)
 endif()
 
+if (CMAKE_CROSSCOMPILING AND CMAKE_SYSROOT)
+  set(ENV{PKG_CONFIG_DIR} "")
+  set(ENV{PKG_CONFIG_LIBDIR} "${CMAKE_SYSROOT}/usr/lib/pkgconfig:${CMAKE_SYSROOT}/usr/share/pkgconfig")
+  set(ENV{PKG_CONFIG_SYSROOT_DIR} ${CMAKE_SYSROOT})
+endif()
+
 include(CrossCompile)
 # when crosscompiling import the executable targets from a file
 if (USE_HOST_TOOLS)
