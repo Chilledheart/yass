@@ -23,10 +23,17 @@
 #include <absl/strings/str_cat.h>
 
 /// the class to describe the traffic between given node (endpoint)
-class stream {
+class stream : public RefCountedThreadSafe<stream> {
   using io_handle_t = std::function<void(asio::error_code, std::size_t)>;
   using handle_t = std::function<void(asio::error_code)>;
+
  public:
+  /// construct a stream object
+  template<typename... Args>
+  static scoped_refptr<stream> create(Args&&... args) {
+    return MakeRefCounted<stream>(std::forward<Args>(args)...);
+  }
+
   /// construct a stream object with ss protocol
   ///
   /// \param io_context the io context associated with the service
@@ -63,13 +70,13 @@ class stream {
     static_cast<void>(ret);
 #endif
     if (enable_tls) {
-      s_async_read_some_ = [this](handle_t cb) {
+      s_wait_read_ = [this](handle_t cb) {
         ssl_socket_->WaitRead(cb);
       };
       s_read_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
         return ssl_socket_->Read(buf, ec);
       };
-      s_async_write_some_ = [this](handle_t cb) {
+      s_wait_write = [this](handle_t cb) {
         ssl_socket_->WaitWrite(cb);
       };
       s_write_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
@@ -83,13 +90,13 @@ class stream {
         ssl_socket_->Shutdown([](asio::error_code ec){}, true);
       };
     } else {
-      s_async_read_some_ = [this](handle_t cb) {
+      s_wait_read_ = [this](handle_t cb) {
         socket_.async_wait(asio::ip::tcp::socket::wait_read, cb);
       };
       s_read_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
         return socket_.read_some(tail_buffer(*buf), ec);
       };
-      s_async_write_some_ = [this](handle_t cb) {
+      s_wait_write = [this](handle_t cb) {
         socket_.async_wait(asio::ip::tcp::socket::wait_write, cb);
       };
       s_write_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
@@ -110,9 +117,17 @@ class stream {
     close();
   }
 
-  void connect(std::function<void()> callback) {
+  void on_async_connect_callback(asio::error_code ec) {
+    if (auto cb = std::move(user_connect_callback_)) {
+      cb(ec);
+    }
+  }
+
+  void async_connect(handle_t callback) {
     Channel* channel = channel_;
     DCHECK_EQ(closed_, false);
+    DCHECK(callback);
+    user_connect_callback_ = std::move(callback);
 
     asio::error_code ec;
     auto addr = asio::ip::make_address(host_name_.c_str(), ec);
@@ -120,31 +135,37 @@ class stream {
     if (host_is_ip_address) {
       VLOG(2) << "resolved ip-like address: " << domain();
       endpoints_.push_back(asio::ip::tcp::endpoint(addr, port_));
-      on_try_next_endpoint(callback, channel);
+      on_try_next_endpoint(channel);
       return;
     }
 
+    scoped_refptr<stream> self(this);
 #ifdef HAVE_C_ARES
     resolver_->AsyncResolve(host_name_, std::to_string(port_),
 #else
     resolver_.async_resolve(host_name_, std::to_string(port_),
 #endif
-      [this, channel, callback](const asio::error_code& ec,
-                                asio::ip::tcp::resolver::results_type results) {
+      [this, channel, self](const asio::error_code& ec,
+                            asio::ip::tcp::resolver::results_type results) {
+      // Cancelled, safe to ignore
+      if (UNLIKELY(ec == asio::error::operation_aborted)) {
+        return;
+      }
       if (closed_) {
-        callback();
+        DCHECK(!user_connect_callback_);
         return;
       }
       if (ec) {
-        on_connect(callback, channel, ec);
+        on_connect(channel, ec);
         return;
       }
       for (auto iter = std::begin(results); iter != std::end(results); ++iter) {
         VLOG(2) << "resolved address " << domain() << ": " << endpoint_;
         endpoints_.push_back(*iter);
       }
+      DCHECK(!endpoints_.empty());
 
-      on_try_next_endpoint(callback, channel);
+      on_try_next_endpoint(channel);
     });
   }
 
@@ -160,36 +181,35 @@ class stream {
     return read_inprogress_;
   }
 
-  /// start read routine
+  /// wait read routine
   ///
-  void start_read(std::function<void()> callback) {
+  void wait_read(handle_t callback) {
     DCHECK(!read_inprogress_);
-    Channel* channel = channel_;
+    DCHECK(callback);
 
-    if (!connected_ || closed_) {
-      callback();
+    if (UNLIKELY(!connected_ || closed_)) {
       return;
     }
 
     read_inprogress_ = true;
-    s_async_read_some_([this, channel, callback] (asio::error_code ec) {
-        read_inprogress_ = false;
-        // Cancelled, safe to ignore
-        if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
-          callback();
-          return;
-        }
-        if (!connected_ || closed_) {
-          callback();
-          return;
-        }
-        if (ec) {
-          on_disconnect(channel, ec);
-          callback();
-          return;
-        }
-        channel_->received();
-        callback();
+    wait_read_callback_ = std::move(callback);
+    scoped_refptr<stream> self(this);
+    s_wait_read_([this, self](asio::error_code ec) {
+      // Cancelled, safe to ignore
+      if (UNLIKELY(ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted)) {
+        return;
+      }
+      handle_t callback = std::move(wait_read_callback_);
+      wait_read_callback_ = nullptr;
+      read_inprogress_ = false;
+      if (UNLIKELY(!connected_ || closed_)) {
+        DCHECK(!user_connect_callback_);
+        return;
+      }
+      if (UNLIKELY(!callback)) {
+        return;
+      }
+      callback(ec);
     });
   }
 
@@ -197,7 +217,7 @@ class stream {
     DCHECK(!closed_ && "I/O on closed upstream connection");
     size_t read = s_read_some_(buf, ec);
     rbytes_transferred_ += read;
-    if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
+    if (UNLIKELY(ec && ec != asio::error::try_again && ec != asio::error::would_block)) {
       on_disconnect(channel_, ec);
     }
     return read;
@@ -207,31 +227,31 @@ class stream {
     return write_inprogress_;
   }
 
-  /// start write routine
+  /// wait write routine
   ///
-  void start_write(std::function<void()> callback) {
-    Channel* channel = channel_;
+  void wait_write(std::function<void(asio::error_code ec)> callback) {
     DCHECK(!write_inprogress_);
-    write_inprogress_ = true;
-    s_async_write_some_([this, channel, callback](asio::error_code ec) {
-        write_inprogress_ = false;
-        // Cancelled, safe to ignore
-        if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
-          callback();
-          return;
-        }
-        if (!connected_ || closed_) {
-          callback();
-          return;
-        }
-        if (ec) {
-          on_disconnect(channel, ec);
-          callback();
-          return;
-        }
+    DCHECK(callback);
 
-        channel->sent();
-        callback();
+    write_inprogress_ = true;
+    wait_write_callback_ = std::move(callback);
+    scoped_refptr<stream> self(this);
+    s_wait_write([this, self](asio::error_code ec) {
+      // Cancelled, safe to ignore
+      if (UNLIKELY(ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted)) {
+        return;
+      }
+      handle_t callback = std::move(wait_write_callback_);
+      wait_write_callback_ = nullptr;
+      write_inprogress_ = false;
+      if (UNLIKELY(!connected_ || closed_)) {
+        DCHECK(!user_connect_callback_);
+        return;
+      }
+      if (UNLIKELY(!callback)) {
+        return;
+      }
+      callback(ec);
     });
   }
 
@@ -239,7 +259,7 @@ class stream {
     DCHECK(!closed_ && "I/O on closed upstream connection");
     size_t written = s_write_some_(buf, ec);
     wbytes_transferred_ += written;
-    if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
+    if (UNLIKELY(ec && ec != asio::error::try_again && ec != asio::error::would_block)) {
       on_disconnect(channel_, ec);
     }
     return written;
@@ -252,6 +272,10 @@ class stream {
     closed_ = true;
     connected_ = false;
     eof_ = true;
+
+    user_connect_callback_ = nullptr;
+    wait_read_callback_ = nullptr;
+    wait_write_callback_ = nullptr;
 
     asio::error_code ec;
     if (enable_tls_) {
@@ -273,7 +297,8 @@ class stream {
   bool https_fallback() const { return https_fallback_; }
 
  private:
-  void on_try_next_endpoint(std::function<void()> callback, Channel* channel) {
+  void on_try_next_endpoint(Channel* channel) {
+    DCHECK(!endpoints_.empty());
     asio::ip::tcp::endpoint endpoint = endpoints_.front();
     VLOG(1) << "trying endpoint (" << domain() << "): " << endpoint;
     endpoints_.pop_front();
@@ -282,20 +307,19 @@ class stream {
       asio::error_code ec;
       socket_.close(ec);
     }
-    on_resolve(callback, channel);
+    on_resolve(channel);
   }
 
-  void on_resolve(std::function<void()> callback, Channel* channel) {
+  void on_resolve(Channel* channel) {
     asio::error_code ec;
     socket_.open(endpoint_.protocol(), ec);
     if (ec) {
       if (!endpoints_.empty()) {
-        on_try_next_endpoint(callback, channel);
+        on_try_next_endpoint(channel);
         return;
       }
       closed_ = true;
-      channel->disconnected(ec);
-      callback();
+      on_async_connect_callback(ec);
       return;
     }
     SetTCPFastOpenConnect(socket_.native_handle(), ec);
@@ -303,33 +327,44 @@ class stream {
     socket_.non_blocking(true, ec);
     connect_timer_.expires_after(
         std::chrono::milliseconds(absl::GetFlag(FLAGS_connect_timeout)));
+    scoped_refptr<stream> self(this);
     connect_timer_.async_wait(
-      [this, channel, callback](asio::error_code ec) {
-      on_connect_expired(callback, channel, ec);
+      [this, channel, self](asio::error_code ec) {
+      // Cancelled, safe to ignore
+      if (ec == asio::error::operation_aborted) {
+        return;
+      }
+      on_connect_expired(channel, ec);
     });
     socket_.async_connect(endpoint_,
-      [this, channel, callback](asio::error_code ec) {
+      [this, channel](asio::error_code ec) {
+      // Cancelled, safe to ignore
+      if (UNLIKELY(ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted)) {
+        return;
+      }
       if (closed_) {
-        callback();
+        DCHECK(!user_connect_callback_);
         return;
       }
       if (enable_tls_ && !ec) {
-        ssl_socket_->Connect([this, channel, callback](int rv) {
+        scoped_refptr<stream> self(this);
+        ssl_socket_->Connect([this, channel, self](int rv) {
           if (closed_) {
-            callback();
+            DCHECK(!user_connect_callback_);
             return;
           }
           asio::error_code ec;
           if (rv < 0) {
             ec = asio::error::connection_refused;
-            on_connect(callback, channel, ec);
+            on_connect(channel, ec);
             return;
           }
-          on_connect(callback, channel, ec);
+          on_connect(channel, ec);
+          scoped_refptr<stream> self(this);
           // Also queue a ConfirmHandshake. It should also be blocked on ServerHello.
-          auto cb = [this, callback](int rv){
+          auto cb = [this, self](int rv){
             if (closed_) {
-              callback();
+              DCHECK(!user_connect_callback_);
               return;
             }
             asio::error_code ec;
@@ -340,28 +375,22 @@ class stream {
           int result = ssl_socket_->ConfirmHandshake(cb);
           if (result != net::ERR_IO_PENDING) {
             cb(result);
-            callback();
           }
         });
         return;
       }
-      on_connect(callback, channel, ec);
+      on_connect(channel, ec);
     });
   }
 
-  void on_connect(std::function<void()> callback, Channel* channel, asio::error_code ec) {
+  void on_connect(Channel* channel, asio::error_code ec) {
     connect_timer_.cancel();
     if (ec) {
-      if (ec == asio::error::operation_aborted) {
-        callback();
-        return;
-      }
       if (!endpoints_.empty()) {
-        on_try_next_endpoint(callback, channel);
+        on_try_next_endpoint(channel);
         return;
       }
-      channel->disconnected(ec);
-      callback();
+      on_async_connect_callback(ec);
       return;
     }
     if (enable_tls_) {
@@ -382,21 +411,14 @@ class stream {
     SetSocketLinger(&socket_, ec);
     SetSocketSndBuffer(&socket_, ec);
     SetSocketRcvBuffer(&socket_, ec);
-    channel->connected();
-    callback();
+    on_async_connect_callback(asio::error_code());
   }
 
-  void on_connect_expired(std::function<void()> callback,
-                          Channel* channel,
+  void on_connect_expired(Channel* channel,
                           asio::error_code ec) {
-    // Cancelled, safe to ignore
-    if (ec == asio::error::operation_aborted) {
-      callback();
-      return;
-    }
     // Rarely happens, cancel fails but expire still there
     if (connected_) {
-      callback();
+      DCHECK(!user_connect_callback_);
       return;
     }
     VLOG(1) << "connection timed out with endpoint: " << endpoint_;
@@ -404,8 +426,7 @@ class stream {
     if (!ec) {
       ec = asio::error::timed_out;
     }
-    channel->disconnected(ec);
-    callback();
+    on_async_connect_callback(ec);
   }
 
   void on_disconnect(Channel* channel,
@@ -458,13 +479,16 @@ class stream {
   bool connected_ = false;
   bool eof_ = false;
   bool closed_ = false;
+  handle_t user_connect_callback_;
 
   bool read_inprogress_ = false;
   bool write_inprogress_ = false;
+  handle_t wait_read_callback_;
+  handle_t wait_write_callback_;
 
-  std::function<void(handle_t)> s_async_read_some_;
+  std::function<void(handle_t)> s_wait_read_;
   std::function<size_t(std::shared_ptr<IOBuf>, asio::error_code &)> s_read_some_;
-  std::function<void(handle_t)> s_async_write_some_;
+  std::function<void(handle_t)> s_wait_write;
   std::function<size_t(std::shared_ptr<IOBuf>, asio::error_code &)> s_write_some_;
   std::function<void(handle_t)> s_async_shutdown_;
   std::function<void(asio::error_code&)> s_shutdown_;

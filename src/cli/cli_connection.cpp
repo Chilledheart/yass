@@ -797,7 +797,16 @@ void CliConnection::WriteStream() {
   if (try_again) {
     if (channel_ && channel_->connected() && !channel_->read_inprogress()) {
       scoped_refptr<CliConnection> self(this);
-      channel_->start_read([self]() {});
+      channel_->wait_read([this, self](asio::error_code ec) {
+        if (UNLIKELY(closed_)) {
+          return;
+        }
+        if (UNLIKELY(ec)) {
+          disconnected(ec);
+          return;
+        }
+        received();
+      });
     }
   }
   if (ec == asio::error::try_again || ec == asio::error::would_block) {
@@ -867,7 +876,16 @@ void CliConnection::ReadUpstream() {
   if (try_again) {
     if (channel_ && channel_->connected() && !channel_->read_inprogress()) {
       scoped_refptr<CliConnection> self(this);
-      channel_->start_read([self]() {});
+      channel_->wait_read([this, self](asio::error_code ec) {
+        if (UNLIKELY(closed_)) {
+          return;
+        }
+        if (UNLIKELY(ec)) {
+          disconnected(ec);
+          return;
+        }
+        received();
+      });
     }
   }
 }
@@ -1383,11 +1401,20 @@ void CliConnection::OnConnect() {
   LOG(INFO) << "Connection (client) " << connection_id()
             << " connect " << remote_domain();
   // create lazy
-  channel_ = std::make_unique<stream>(*io_context_,
-                                      remote_host_name_, remote_port_,
-                                      this, upstream_https_fallback_,
-                                      enable_upstream_tls_, upstream_ssl_ctx_);
-  channel_->connect([self]{});
+  channel_ = stream::create(*io_context_,
+                            remote_host_name_, remote_port_,
+                            this, upstream_https_fallback_,
+                            enable_upstream_tls_, upstream_ssl_ctx_);
+  channel_->async_connect([this, self](asio::error_code ec){
+    if (UNLIKELY(closed_)) {
+      return;
+    }
+    if (UNLIKELY(ec)) {
+      disconnected(ec);
+      return;
+    }
+    connected();
+  });
 }
 
 void CliConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
@@ -1484,7 +1511,16 @@ void CliConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (!upstream_.empty() && upstream_writable_) {
     upstream_writable_ = false;
     scoped_refptr<CliConnection> self(this);
-    channel_->start_write([self](){});
+    channel_->wait_write([this, self](asio::error_code ec) {
+      if (UNLIKELY(closed_)) {
+        return;
+      }
+      if (UNLIKELY(ec)) {
+        disconnected(ec);
+        return;
+      }
+      sent();
+    });
   }
 }
 

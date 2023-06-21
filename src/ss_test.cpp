@@ -113,6 +113,10 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
   ContentProviderConnection& operator=(ContentProviderConnection&&) = delete;
 
   void start() override {
+    // FIXME check out why testcases fail with nonblocking mode
+    asio::error_code ec;
+    socket_.native_non_blocking(false, ec);
+    socket_.non_blocking(false, ec);
     do_io();
   }
 
