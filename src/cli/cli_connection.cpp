@@ -956,6 +956,7 @@ try_again:
       }
       remaining_buffer = remaining_buffer.substr(result);
     }
+    downstream_pool_.push_back(buf);
     // not enough buffer for recv window
     if (downstream_.byte_length() < kSpdySessionMaxRecvWindowSize) {
       goto try_again;
@@ -977,6 +978,7 @@ try_again:
         buf->trimStart(nparsed);
         buf->retreat(nparsed);
         if (buf->empty()) {
+          downstream_pool_.push_back(buf);
           ec = asio::error::try_again;
           return nullptr;
         }
@@ -1001,6 +1003,7 @@ try_again:
     };
   } else {
     decoder_->process_bytes(buf);
+    downstream_pool_.push_back(buf);
   }
 
 out:
