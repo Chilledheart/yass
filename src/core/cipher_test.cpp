@@ -52,8 +52,8 @@ class CipherTest : public ::testing::TestWithParam<size_t>,
                        const std::string& password,
                        cipher_method crypto_method,
                        size_t size) {
-    auto encoder = std::make_unique<cipher>(key, password, crypto_method, this, true);
-    auto decoder = std::make_unique<cipher>(key, password, crypto_method, this, false);
+    auto encoder = std::make_unique<cipher>(key, password, crypto_method, this, nullptr, true);
+    auto decoder = std::make_unique<cipher>(key, password, crypto_method, this, nullptr, false);
     auto send_buf = GenerateRandContent(size);
     std::shared_ptr<IOBuf> cipherbuf = IOBuf::create(size + 100);
     encoder->encrypt(send_buf->data(), send_buf->length(), cipherbuf);

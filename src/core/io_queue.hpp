@@ -10,6 +10,7 @@
 
 class IoQueue {
   using T = std::shared_ptr<IOBuf>;
+  using PooledT = std::vector<T>;
  public:
   IoQueue() {}
   IoQueue(const IoQueue&) = default;
@@ -25,7 +26,7 @@ class IoQueue {
     CHECK_NE(end_idx_, idx_) << "IO queue is full";
   }
 
-  bool push_back_merged(T buf) {
+  bool push_back_merged(T buf, PooledT *pool) {
     DCHECK(!buf->empty());
     if (empty()) {
       push_back(buf);
@@ -35,13 +36,26 @@ class IoQueue {
     prev_buf->reserve(0, buf->length());
     memcpy(prev_buf->mutable_tail(), buf->data(), buf->length());
     prev_buf->append(buf->length());
+    if (pool) {
+      pool->push_back(buf);
+    }
     return true;
   }
 
-  void push_back_merged(const char* data, size_t length) {
+  void push_back_merged(const char* data, size_t length, PooledT *pool) {
     DCHECK(data && length);
     if (empty()) {
-      std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(data, length);
+      std::shared_ptr<IOBuf> buf;
+      if (pool && !pool->empty()) {
+        buf = pool->back();
+        pool->pop_back();
+        buf->clear();
+        buf->reserve(0, length);
+        memcpy(buf->mutable_tail(), data, length);
+        buf->append(length);
+      } else {
+        buf = IOBuf::copyBuffer(data, length);
+      }
       push_back(buf);
       return;
     }

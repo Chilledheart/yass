@@ -232,10 +232,10 @@ void ServerConnection::Start() {
   } else {
     encoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
       static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)),
-      this, true);
+      this, nullptr, true);
     decoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
       static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)),
-      this);
+      this, nullptr);
     ReadHandshake();
   }
 }
@@ -254,7 +254,7 @@ void ServerConnection::SendIfNotProcessing() {
 bool ServerConnection::on_received_data(std::shared_ptr<IOBuf> buf) {
   MSAN_CHECK_MEM_IS_INITIALIZED(buf->data(), buf->length());
   if (state_ == state_stream) {
-    upstream_.push_back_merged(buf);
+    upstream_.push_back_merged(buf, nullptr);
   } else if (state_ == state_handshake) {
     if (handshake_) {
       handshake_->reserve(0, buf->length());
@@ -281,7 +281,7 @@ void ServerConnection::on_protocol_error() {
 
 int64_t ServerConnection::OnReadyToSend(absl::string_view serialized) {
   MSAN_UNPOISON(serialized.data(), serialized.size());
-  downstream_.push_back_merged(serialized.data(), serialized.size());
+  downstream_.push_back_merged(serialized.data(), serialized.size(), nullptr);
   return serialized.size();
 }
 
@@ -400,18 +400,18 @@ bool ServerConnection::OnDataForStream(StreamId stream_id,
         return true;
       }
       DCHECK(buf);
-      upstream_.push_back_merged(buf);
+      upstream_.push_back_merged(buf, nullptr);
       ++num_padding_recv_;
     }
     // Deal with in_middle_buf outside paddings
     if (num_padding_recv_ >= kFirstPaddings && !padding_in_middle_buf_->empty()) {
-      upstream_.push_back_merged(std::move(padding_in_middle_buf_));
+      upstream_.push_back_merged(std::move(padding_in_middle_buf_), nullptr);
     }
     return true;
   }
 
   std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(data.data(), data.size());
-  upstream_.push_back_merged(buf);
+  upstream_.push_back_merged(buf, nullptr);
   adapter_->MarkDataConsumedForStream(stream_id, data.size());
   return true;
 }
@@ -807,7 +807,7 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code &
     }
     data_frame_->AddChunk(buf);
   } else if (https_fallback_) {
-    downstream_.push_back_merged(buf);
+    downstream_.push_back_merged(buf, nullptr);
   } else {
     EncryptData(&downstream_, buf);
   }
@@ -971,7 +971,7 @@ try_again:
       goto try_again;
     }
   } else if (https_fallback_) {
-    upstream_.push_back_merged(buf);
+    upstream_.push_back_merged(buf, nullptr);
   } else {
     decoder_->process_bytes(buf);
   }
@@ -1199,7 +1199,7 @@ void ServerConnection::OnDownstreamWriteFlush() {
 
 void ServerConnection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf && !buf->empty()) {
-    downstream_.push_back_merged(buf);
+    downstream_.push_back_merged(buf, nullptr);
   }
 
   if (!downstream_.empty() && !write_inprogress_) {
@@ -1213,7 +1213,7 @@ void ServerConnection::OnUpstreamWriteFlush() {
 
 void ServerConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf && !buf->empty()) {
-    upstream_.push_back_merged(buf);
+    upstream_.push_back_merged(buf, nullptr);
   }
   if (!upstream_.empty() && upstream_writable_) {
     upstream_writable_ = false;
