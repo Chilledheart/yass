@@ -329,7 +329,7 @@ bool CliConnection::OnDataForStream(StreamId stream_id,
     }
     // Deal with in_middle_buf outside paddings
     if (num_padding_recv_ >= kFirstPaddings && !padding_in_middle_buf_->empty()) {
-      upstream_.push_back_merged(std::move(padding_in_middle_buf_));
+      downstream_.push_back_merged(std::move(padding_in_middle_buf_));
     }
     return true;
   }
