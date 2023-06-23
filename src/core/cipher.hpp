@@ -72,6 +72,7 @@ class cipher {
          const std::string& password,
          enum cipher_method method,
          cipher_visitor_interface *visitor,
+         std::vector<std::shared_ptr<IOBuf>> *mempool,
          bool enc = false);
   ~cipher();
 
@@ -112,6 +113,8 @@ class cipher {
   std::unique_ptr<IOBuf> chunk_;
 
   cipher_visitor_interface *visitor_;
+
+  std::vector<std::shared_ptr<IOBuf>> *mempool_;
 };
 
 #endif  // H_CORE_CIPHER

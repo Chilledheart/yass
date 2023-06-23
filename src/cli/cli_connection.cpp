@@ -216,9 +216,7 @@ void CliConnection::SendIfNotProcessing() {
 //
 bool CliConnection::on_received_data(std::shared_ptr<IOBuf> buf) {
   MSAN_CHECK_MEM_IS_INITIALIZED(buf->data(), buf->length());
-  if (downstream_.push_back_merged(buf)) {
-    downstream_pool_.push_back(buf);
-  };
+  downstream_.push_back_merged(buf, &downstream_pool_);
   return true;
 }
 
@@ -234,7 +232,7 @@ void CliConnection::on_protocol_error() {
 
 int64_t CliConnection::OnReadyToSend(absl::string_view serialized) {
   MSAN_UNPOISON(serialized.data(), serialized.size());
-  upstream_.push_back_merged(serialized.data(), serialized.size());
+  upstream_.push_back_merged(serialized.data(), serialized.size(), nullptr);
   return serialized.size();
 }
 
@@ -322,19 +320,17 @@ bool CliConnection::OnDataForStream(StreamId stream_id,
         return true;
       }
       DCHECK(buf);
-      if (downstream_.push_back_merged(buf)) {
-        downstream_pool_.push_back(buf);
-      };
+      downstream_.push_back_merged(buf, &downstream_pool_);
       ++num_padding_recv_;
     }
     // Deal with in_middle_buf outside paddings
     if (num_padding_recv_ >= kFirstPaddings && !padding_in_middle_buf_->empty()) {
-      upstream_.push_back_merged(std::move(padding_in_middle_buf_));
+      downstream_.push_back_merged(std::move(padding_in_middle_buf_), &downstream_pool_);
     }
     return true;
   }
 
-  downstream_.push_back_merged(data.data(), data.size());
+  downstream_.push_back_merged(data.data(), data.size(), &downstream_pool_);
   adapter_->MarkDataConsumedForStream(stream_id, data.size());
   return true;
 }
@@ -956,6 +952,7 @@ try_again:
       }
       remaining_buffer = remaining_buffer.substr(result);
     }
+    downstream_pool_.push_back(buf);
     // not enough buffer for recv window
     if (downstream_.byte_length() < kSpdySessionMaxRecvWindowSize) {
       goto try_again;
@@ -977,6 +974,7 @@ try_again:
         buf->trimStart(nparsed);
         buf->retreat(nparsed);
         if (buf->empty()) {
+          downstream_pool_.push_back(buf);
           ec = asio::error::try_again;
           return nullptr;
         }
@@ -996,11 +994,10 @@ try_again:
         return nullptr;
       }
     }
-    if (downstream_.push_back_merged(buf)) {
-      downstream_pool_.push_back(buf);
-    };
+    downstream_.push_back_merged(buf, &downstream_pool_);
   } else {
     decoder_->process_bytes(buf);
+    downstream_pool_.push_back(buf);
   }
 
 out:
@@ -1163,7 +1160,7 @@ std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code &ec,
     }
     data_frame_->AddChunk(buf);
   } else if (upstream_https_fallback_) {
-    upstream_.push_back_merged(buf);
+    upstream_.push_back_merged(buf, nullptr);
   } else {
     EncryptData(&upstream_, buf);
   }
@@ -1438,7 +1435,7 @@ void CliConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
     adapter()->ResumeStream(stream_id_);
     SendIfNotProcessing();
   } else if (upstream_https_fallback_) {
-    upstream_.push_back_merged(buf);
+    upstream_.push_back_merged(buf, nullptr);
   } else {
     EncryptData(&upstream_, buf);
   }
@@ -1483,9 +1480,7 @@ void CliConnection::OnDownstreamWriteFlush() {
 void CliConnection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf) {
     DCHECK(!buf->empty());
-    if (downstream_.push_back_merged(buf)) {
-      downstream_pool_.push_back(buf);
-    };
+    downstream_.push_back_merged(buf, &downstream_pool_);
   }
   if (!downstream_.empty() && !write_inprogress_) {
     if (CurrentState() == state_error) {
@@ -1506,7 +1501,7 @@ void CliConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf && !buf->empty()) {
     VLOG(2) << "Connection (client) " << connection_id()
             << " upstream: ready to send request: " << buf->length() << " bytes.";
-    upstream_.push_back_merged(buf);
+    upstream_.push_back_merged(buf, nullptr);
   }
   if (!upstream_.empty() && upstream_writable_) {
     upstream_writable_ = false;
@@ -1554,10 +1549,10 @@ void CliConnection::connected() {
   } else {
     encoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
       static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)),
-      this, true);
+      this, nullptr, true);
     decoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
       static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)),
-      this);
+      this, &downstream_pool_);
   }
 
   // Send Upstream Settings (HTTP2 Only)
@@ -1631,7 +1626,7 @@ void CliConnection::connected() {
         "\r\n", host.c_str(), port, host.c_str(), port);
     std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(hdr.data(), hdr.size());
     // write variable address directly as https header
-    upstream_.push_back_merged(buf);
+    upstream_.push_back_merged(buf, nullptr);
   } else {
     ByteRange req(ss_request_->data(), ss_request_->length());
     std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);
