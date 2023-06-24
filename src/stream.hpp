@@ -156,7 +156,7 @@ class stream : public RefCountedThreadSafe<stream> {
         return;
       }
       if (ec) {
-        on_connect(channel, ec);
+        on_async_connected(channel, ec);
         return;
       }
       for (auto iter = std::begin(results); iter != std::end(results); ++iter) {
@@ -334,7 +334,7 @@ class stream : public RefCountedThreadSafe<stream> {
       if (ec == asio::error::operation_aborted) {
         return;
       }
-      on_connect_expired(channel, ec);
+      on_async_connect_expired(channel, ec);
     });
     socket_.async_connect(endpoint_,
       [this, channel](asio::error_code ec) {
@@ -356,10 +356,10 @@ class stream : public RefCountedThreadSafe<stream> {
           asio::error_code ec;
           if (rv < 0) {
             ec = asio::error::connection_refused;
-            on_connect(channel, ec);
+            on_async_connected(channel, ec);
             return;
           }
-          on_connect(channel, ec);
+          on_async_connected(channel, ec);
           scoped_refptr<stream> self(this);
           // Also queue a ConfirmHandshake. It should also be blocked on ServerHello.
           auto cb = [this, self, channel](int rv){
@@ -373,18 +373,15 @@ class stream : public RefCountedThreadSafe<stream> {
               channel->disconnected(ec);
             }
           };
-          int result = ssl_socket_->ConfirmHandshake(cb);
-          if (result != net::ERR_IO_PENDING) {
-            cb(result);
-          }
+          ssl_socket_->ConfirmHandshake(cb);
         });
         return;
       }
-      on_connect(channel, ec);
+      on_async_connected(channel, ec);
     });
   }
 
-  void on_connect(Channel* channel, asio::error_code ec) {
+  void on_async_connected(Channel* channel, asio::error_code ec) {
     connect_timer_.cancel();
     if (ec) {
       if (!endpoints_.empty()) {
@@ -415,8 +412,8 @@ class stream : public RefCountedThreadSafe<stream> {
     on_async_connect_callback(asio::error_code());
   }
 
-  void on_connect_expired(Channel* channel,
-                          asio::error_code ec) {
+  void on_async_connect_expired(Channel* channel,
+                                asio::error_code ec) {
     // Rarely happens, cancel fails but expire still there
     if (connected_) {
       DCHECK(!user_connect_callback_);
