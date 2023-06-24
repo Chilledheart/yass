@@ -144,6 +144,7 @@ int SSLSocket::ConfirmHandshake(CompletionOnceCallback callback) {
   CHECK(completed_connect_);
   CHECK(!in_confirm_handshake_);
   if (!SSL_in_early_data(ssl_.get())) {
+    callback(OK);
     return OK;
   }
 
@@ -154,6 +155,7 @@ int SSLSocket::ConfirmHandshake(CompletionOnceCallback callback) {
     user_connect_callback_ = std::move(callback);
   } else {
     in_confirm_handshake_ = false;
+    callback(rv > OK ? OK : rv);
   }
 
   return rv > OK ? OK : rv;
