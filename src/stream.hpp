@@ -362,7 +362,7 @@ class stream : public RefCountedThreadSafe<stream> {
           on_connect(channel, ec);
           scoped_refptr<stream> self(this);
           // Also queue a ConfirmHandshake. It should also be blocked on ServerHello.
-          auto cb = [this, self](int rv){
+          auto cb = [this, self, channel](int rv){
             if (closed_) {
               DCHECK(!user_connect_callback_);
               return;
@@ -370,6 +370,7 @@ class stream : public RefCountedThreadSafe<stream> {
             asio::error_code ec;
             if (rv < 0) {
               ec = asio::error::connection_refused;
+              channel->disconnected(ec);
             }
           };
           int result = ssl_socket_->ConfirmHandshake(cb);
