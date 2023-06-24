@@ -792,17 +792,7 @@ void CliConnection::WriteStream() {
 
   if (try_again) {
     if (channel_ && channel_->connected() && !channel_->read_inprogress()) {
-      scoped_refptr<CliConnection> self(this);
-      channel_->wait_read([this, self](asio::error_code ec) {
-        if (UNLIKELY(closed_)) {
-          return;
-        }
-        if (UNLIKELY(ec)) {
-          disconnected(ec);
-          return;
-        }
-        received();
-      });
+      ReadUpstreamAsync();
     }
   }
   if (ec == asio::error::try_again || ec == asio::error::would_block) {
@@ -869,21 +859,32 @@ void CliConnection::ReadUpstream() {
     }
     WriteStream();
   } while(false);
+
   if (try_again) {
     if (channel_ && channel_->connected() && !channel_->read_inprogress()) {
-      scoped_refptr<CliConnection> self(this);
-      channel_->wait_read([this, self](asio::error_code ec) {
-        if (UNLIKELY(closed_)) {
-          return;
-        }
-        if (UNLIKELY(ec)) {
-          disconnected(ec);
-          return;
-        }
-        received();
-      });
+      ReadUpstreamAsync();
     }
   }
+}
+
+void CliConnection::ReadUpstreamAsync() {
+  DCHECK(channel_ && channel_->connected());
+  DCHECK(!channel_->read_inprogress());
+  if (UNLIKELY(channel_->read_inprogress())) {
+    return;
+  }
+
+  scoped_refptr<CliConnection> self(this);
+  channel_->wait_read([this, self](asio::error_code ec) {
+    if (UNLIKELY(closed_)) {
+      return;
+    }
+    if (UNLIKELY(ec)) {
+      disconnected(ec);
+      return;
+    }
+    received();
+  });
 }
 
 std::shared_ptr<IOBuf> CliConnection::GetNextDownstreamBuf(asio::error_code &ec,

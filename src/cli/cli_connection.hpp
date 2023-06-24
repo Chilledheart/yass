@@ -293,6 +293,9 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
 
   /// Read remaining buffers from upstream
   void ReadUpstream();
+  /// Read remaining buffers from upstream (on readable event)
+  void ReadUpstreamAsync();
+
   /// Get next remaining buffer to stream
   std::shared_ptr<IOBuf> GetNextDownstreamBuf(asio::error_code &ec,
                                               size_t *bytes_transferred);
