@@ -23,11 +23,6 @@ class OptionDialog {
   void LoadChanges();
   void OnSave();
 
-  GtkEntry* connect_timeout_;
-  GtkEntry* tcp_user_timeout_;
-  GtkEntry* so_linger_timeout_;
-  GtkEntry* so_snd_buffer_;
-  GtkEntry* so_rcv_buffer_;
   GtkCheckButton* tcp_keep_alive_;
   GtkEntry* tcp_keep_alive_cnt_;
   GtkEntry* tcp_keep_alive_idle_timeout_;

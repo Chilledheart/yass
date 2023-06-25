@@ -902,22 +902,9 @@ INT_PTR CALLBACK CYassFrame::OnAppOptionMessage(HWND hDlg, UINT message,
     case WM_INITDIALOG: {
       SetWindowLongPtrW(hDlg, GWLP_USERDATA, lParam);
       // extra initialization to all fields
-      auto connect_timeout = absl::GetFlag(FLAGS_connect_timeout);
-      auto tcp_user_timeout = absl::GetFlag(FLAGS_tcp_user_timeout);
-      auto tcp_so_linger_timeout = absl::GetFlag(FLAGS_so_linger_timeout);
-      auto tcp_so_snd_buffer = absl::GetFlag(FLAGS_so_snd_buffer);
-      auto tcp_so_rcv_buffer = absl::GetFlag(FLAGS_so_rcv_buffer);
       auto tcp_keep_alive = absl::GetFlag(FLAGS_tcp_keep_alive);
       auto tcp_keep_alive_timeout = absl::GetFlag(FLAGS_tcp_keep_alive_idle_timeout);
       auto tcp_keep_alive_interval = absl::GetFlag(FLAGS_tcp_keep_alive_interval);
-      SetDlgItemInt(hDlg, IDC_EDIT_CONNECT_TIMEOUT, connect_timeout, FALSE);
-      SetDlgItemInt(hDlg, IDC_EDIT_TCP_USER_TIMEOUT, tcp_user_timeout, FALSE);
-      SetDlgItemInt(hDlg, IDC_EDIT_TCP_SO_LINGER_TIMEOUT, tcp_so_linger_timeout,
-                    FALSE);
-      SetDlgItemInt(hDlg, IDC_EDIT_TCP_SO_SEND_BUFFER, tcp_so_snd_buffer,
-                    FALSE);
-      SetDlgItemInt(hDlg, IDC_EDIT_TCP_SO_RECEIVE_BUFFER, tcp_so_rcv_buffer,
-                    FALSE);
       CheckDlgButton(hDlg, IDC_CHECKBOX_TCP_KEEP_ALIVE,
                      tcp_keep_alive ? BST_CHECKED : BST_UNCHECKED);
       SetDlgItemInt(hDlg, IDC_EDIT_TCP_KEEP_ALIVE_TIMEOUT, tcp_keep_alive_timeout,
@@ -930,26 +917,6 @@ INT_PTR CALLBACK CYassFrame::OnAppOptionMessage(HWND hDlg, UINT message,
       if (LOWORD(wParam) == IDOK) {
         BOOL translated;
         // TODO prompt a fix-me tip
-        auto connect_timeout =
-            GetDlgItemInt(hDlg, IDC_EDIT_CONNECT_TIMEOUT, &translated, FALSE);
-        if (translated == FALSE)
-          return static_cast<INT_PTR>(FALSE);
-        auto tcp_user_timeout =
-            GetDlgItemInt(hDlg, IDC_EDIT_TCP_USER_TIMEOUT, &translated, FALSE);
-        if (translated == FALSE)
-          return static_cast<INT_PTR>(FALSE);
-        auto tcp_so_linger_timeout = GetDlgItemInt(
-            hDlg, IDC_EDIT_TCP_SO_LINGER_TIMEOUT, &translated, FALSE);
-        if (translated == FALSE)
-          return static_cast<INT_PTR>(FALSE);
-        auto tcp_so_snd_buffer = GetDlgItemInt(
-            hDlg, IDC_EDIT_TCP_SO_SEND_BUFFER, &translated, FALSE);
-        if (translated == FALSE)
-          return static_cast<INT_PTR>(FALSE);
-        auto tcp_so_rcv_buffer = GetDlgItemInt(
-            hDlg, IDC_EDIT_TCP_SO_RECEIVE_BUFFER, &translated, FALSE);
-        if (translated == FALSE)
-          return static_cast<INT_PTR>(FALSE);
         auto tcp_keep_alive = IsDlgButtonChecked(hDlg, IDC_CHECKBOX_TCP_KEEP_ALIVE) == BST_CHECKED;
         auto tcp_keep_alive_timeout = GetDlgItemInt(
             hDlg, IDC_EDIT_TCP_KEEP_ALIVE_TIMEOUT, &translated, FALSE);
@@ -959,11 +926,6 @@ INT_PTR CALLBACK CYassFrame::OnAppOptionMessage(HWND hDlg, UINT message,
             hDlg, IDC_EDIT_TCP_KEEP_ALIVE_INTERVAL, &translated, FALSE);
         if (translated == FALSE)
           return static_cast<INT_PTR>(FALSE);
-        absl::SetFlag(&FLAGS_connect_timeout, connect_timeout);
-        absl::SetFlag(&FLAGS_tcp_user_timeout, tcp_user_timeout);
-        absl::SetFlag(&FLAGS_so_linger_timeout, tcp_so_linger_timeout);
-        absl::SetFlag(&FLAGS_so_snd_buffer, tcp_so_snd_buffer);
-        absl::SetFlag(&FLAGS_so_rcv_buffer, tcp_so_rcv_buffer);
         absl::SetFlag(&FLAGS_tcp_keep_alive, tcp_keep_alive);
         absl::SetFlag(&FLAGS_tcp_keep_alive_idle_timeout, tcp_keep_alive_timeout);
         absl::SetFlag(&FLAGS_tcp_keep_alive_interval, tcp_keep_alive_interval);

@@ -1,4 +1,4 @@
-FROM fedora:35
+FROM fedora:37
 
 # Install requirements : update repo and install all requirements
 RUN yum clean all && \
@@ -6,9 +6,9 @@ RUN yum clean all && \
   yum install -y yum-utils && \
   yum-config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo && \
   yum install -y gcc gcc-c++ \
-    git make python39 bash coreutils gh ncurses-compat-libs \
+    git make python3 bash coreutils gh ncurses-compat-libs \
     rpm-build rpm-devel rpmlint diffutils patch rpmdevtools \
     cmake ninja-build pkg-config perl golang \
-    gtk3-devel curl-devel && \
+    gtk4-devel curl-devel && \
   yum clean all && \
   rm -rf /var/cache/yum && rm -rf /var/cache/dnf

@@ -10,6 +10,7 @@
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
 #include <fontconfig/fontconfig.h>
+#include <glib/gi18n.h>
 #include <locale.h>
 #include <stdarg.h>
 
@@ -32,6 +33,9 @@ int main(int argc, char** argv) {
   if (!SetUTF8Locale()) {
     LOG(WARNING) << "Failed to set up utf-8 locale";
   }
+  setlocale(LC_ALL, "");
+  bindtextdomain("yass", "../share/locale");
+  textdomain("yass");
 
   absl::InitializeSymbolizer(argv[0]);
   absl::FailureSignalHandlerOptions failure_handle_options;
@@ -149,11 +153,11 @@ void YASSApp::OnIdle() {
 std::string YASSApp::GetStatus() const {
   std::ostringstream ss;
   if (state_ == STARTED) {
-    ss << "Connected with conns: " << worker_.currentConnections();
+    ss << _("Connected with conns: ") << worker_.currentConnections();
   } else if (state_ == START_FAILED) {
-    ss << "Failed to connect due to " << error_msg_.c_str();
+    ss << _("Failed to connect due to ") << error_msg_.c_str();
   } else {
-    ss << "Disconnected with " << worker_.GetRemoteDomain();
+    ss << _("Disconnected with ") << worker_.GetRemoteDomain();
   }
   return ss.str();
 }

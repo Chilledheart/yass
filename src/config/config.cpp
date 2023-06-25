@@ -8,8 +8,6 @@
 
 #include "core/cipher.hpp"
 
-#define MAX_CONNECT_TIMEOUT 10
-
 ABSL_FLAG(std::string,
           server_host,
           "0.0.0.0",
@@ -79,12 +77,8 @@ bool ReadConfig() {
   config_impl->Read("fast_open_connect", &FLAGS_tcp_fastopen_connect);
 
   config_impl->Read("congestion_algorithm", &FLAGS_congestion_algorithm);
-  config_impl->Read("timeout", &FLAGS_connect_timeout);
   config_impl->Read("connect_timeout", &FLAGS_connect_timeout);
-  config_impl->Read("tcp_user_timeout", &FLAGS_tcp_user_timeout);
-  config_impl->Read("so_linger_timeout", &FLAGS_so_linger_timeout);
-  config_impl->Read("so_snd_buffer", &FLAGS_so_snd_buffer);
-  config_impl->Read("so_rcv_buffer", &FLAGS_so_rcv_buffer);
+  config_impl->Read("tcp_nodelay", &FLAGS_tcp_nodelay);
 
   config_impl->Read("tcp_keep_alive", &FLAGS_tcp_keep_alive);
   config_impl->Read("tcp_keep_alive_cnt", &FLAGS_tcp_keep_alive_cnt);
@@ -95,17 +89,8 @@ bool ReadConfig() {
   config_impl->Close();
 
   /* correct options */
-  absl::SetFlag(
-      &FLAGS_connect_timeout,
-      std::max(MAX_CONNECT_TIMEOUT, absl::GetFlag(FLAGS_connect_timeout)));
-  absl::SetFlag(&FLAGS_tcp_user_timeout,
-                std::max(0, absl::GetFlag(FLAGS_tcp_user_timeout)));
-  absl::SetFlag(&FLAGS_so_linger_timeout,
-                std::max(0, absl::GetFlag(FLAGS_so_linger_timeout)));
-  absl::SetFlag(&FLAGS_so_snd_buffer,
-                std::max(0, absl::GetFlag(FLAGS_so_snd_buffer)));
-  absl::SetFlag(&FLAGS_so_rcv_buffer,
-                std::max(0, absl::GetFlag(FLAGS_so_rcv_buffer)));
+  absl::SetFlag(&FLAGS_connect_timeout,
+                std::max(0, absl::GetFlag(FLAGS_connect_timeout)));
 
   absl::SetFlag(&FLAGS_tcp_keep_alive_cnt,
                 std::max(0, absl::GetFlag(FLAGS_tcp_keep_alive_cnt)));
@@ -150,13 +135,7 @@ bool SaveConfig() {
   all_fields_written &=
       config_impl->Write("connect_timeout", FLAGS_connect_timeout);
   all_fields_written &=
-      config_impl->Write("tcp_user_timeout", FLAGS_tcp_user_timeout);
-  all_fields_written &=
-      config_impl->Write("so_linger_timeout", FLAGS_so_linger_timeout);
-  all_fields_written &=
-      config_impl->Write("so_snd_buffer", FLAGS_so_snd_buffer);
-  all_fields_written &=
-      config_impl->Write("so_rcv_buffer", FLAGS_so_rcv_buffer);
+      config_impl->Write("tcp_nodelay", FLAGS_tcp_nodelay);
 
   all_fields_written &=
       config_impl->Write("tcp_keep_alive", FLAGS_tcp_keep_alive);

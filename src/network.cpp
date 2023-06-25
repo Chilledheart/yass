@@ -24,18 +24,9 @@ ABSL_FLAG(bool, reuse_port, true, "Reuse the listening port");
 ABSL_FLAG(std::string, congestion_algorithm, "bbr", "TCP Congestion Algorithm");
 ABSL_FLAG(bool, tcp_fastopen, false, "TCP fastopen");
 ABSL_FLAG(bool, tcp_fastopen_connect, false, "TCP fastopen connect");
-ABSL_FLAG(int32_t, connect_timeout, 200, "Connect timeout (Linux only)");
-ABSL_FLAG(int32_t, tcp_connection_timeout, 75000, "TCP connection timeout (BSD-like only)");
-ABSL_FLAG(int32_t, tcp_user_timeout, 500, "TCP user timeout (Linux only)");
-ABSL_FLAG(int32_t, so_linger_timeout, 30, "SO Linger timeout");
+ABSL_FLAG(int32_t, connect_timeout, 0, "Connect timeout (in seconds)");
 
-#ifdef OS_FREEBSD
-ABSL_FLAG(int32_t, so_snd_buffer, 1024 * 1024, "Socket Send Buffer");
-ABSL_FLAG(int32_t, so_rcv_buffer, 1024 * 1024, "Socket Receive Buffer");
-#else
-ABSL_FLAG(int32_t, so_snd_buffer, 2048 * 1024, "Socket Send Buffer");
-ABSL_FLAG(int32_t, so_rcv_buffer, 2048 * 1024, "Socket Receive Buffer");
-#endif
+ABSL_FLAG(bool, tcp_nodelay, true, "TCP_NODELAY option");
 
 ABSL_FLAG(bool, tcp_keep_alive, true, "TCP keep alive option");
 ABSL_FLAG(int32_t, tcp_keep_alive_cnt, 9, "The number of TCP keep-alive probes to send before give up.");
@@ -163,50 +154,6 @@ void SetTCPFastOpenConnect(asio::ip::tcp::socket::native_handle_type handle,
 #endif  // TCP_FASTOPEN_CONNECT
 }
 
-void SetTCPConnectionTimeout(asio::ip::tcp::acceptor::native_handle_type handle,
-                             asio::error_code& ec) {
-  (void)handle;
-  ec = asio::error_code();
-  if (!absl::GetFlag(FLAGS_tcp_connection_timeout)) {
-    return;
-  }
-#if defined(TCP_CONNECTIONTIMEOUT)
-  int fd = handle;
-  unsigned int opt = absl::GetFlag(FLAGS_tcp_connection_timeout);
-  int ret = setsockopt(fd, IPPROTO_TCP, TCP_CONNECTIONTIMEOUT, &opt, sizeof(opt));
-  if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
-    ec = asio::error_code(errno, asio::error::get_system_category());
-    VLOG(2) << "TCP Connection Timeout is not supported on this platform";
-    absl::SetFlag(&FLAGS_tcp_connection_timeout, 0);
-  } else {
-    VLOG(3) << "Applied current tcp_option: tcp_connection_timeout "
-            << absl::GetFlag(FLAGS_tcp_connection_timeout);
-  }
-#endif  // TCP_CONNECTIONTIMEOUT
-}
-
-void SetTCPUserTimeout(asio::ip::tcp::acceptor::native_handle_type handle,
-                       asio::error_code& ec) {
-  (void)handle;
-  ec = asio::error_code();
-  if (!absl::GetFlag(FLAGS_tcp_user_timeout)) {
-    return;
-  }
-#if defined(TCP_USER_TIMEOUT)
-  int fd = handle;
-  unsigned int opt = absl::GetFlag(FLAGS_tcp_user_timeout);
-  int ret = setsockopt(fd, IPPROTO_TCP, TCP_USER_TIMEOUT, &opt, sizeof(opt));
-  if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
-    ec = asio::error_code(errno, asio::error::get_system_category());
-    VLOG(2) << "TCP User Timeout is not supported on this platform";
-    absl::SetFlag(&FLAGS_tcp_user_timeout, 0);
-  } else {
-    VLOG(3) << "Applied current tcp_option: tcp_user_timeout "
-            << absl::GetFlag(FLAGS_tcp_user_timeout);
-  }
-#endif  // TCP_USER_TIMEOUT
-}
-
 void SetTCPKeepAlive(asio::ip::tcp::acceptor::native_handle_type handle,
                      asio::error_code& ec) {
   (void)handle;
@@ -278,54 +225,18 @@ void SetTCPKeepAlive(asio::ip::tcp::acceptor::native_handle_type handle,
 #endif
 }
 
-void SetSocketLinger(asio::ip::tcp::socket* socket, asio::error_code& ec) {
-  if (!absl::GetFlag(FLAGS_so_linger_timeout)) {
-    ec = asio::error_code();
-    return;
-  }
-  asio::socket_base::linger option(true,
-                                   absl::GetFlag(FLAGS_so_linger_timeout));
-  socket->set_option(option, ec);
-  if (ec) {
-    VLOG(2) << "SO Linger is not supported on this platform: " << ec;
-    absl::SetFlag(&FLAGS_so_linger_timeout, 0);
-  } else {
-    VLOG(3) << "Applied SO Linger by " << absl::GetFlag(FLAGS_so_linger_timeout)
-            << " seconds";
-  }
-}
-
-void SetSocketSndBuffer(asio::ip::tcp::socket* socket, asio::error_code& ec) {
+void SetSocketTcpNoDelay(asio::ip::tcp::socket* socket, asio::error_code& ec) {
   ec = asio::error_code();
-  if (!absl::GetFlag(FLAGS_so_snd_buffer)) {
+  if (!absl::GetFlag(FLAGS_tcp_nodelay)) {
     return;
   }
-  asio::socket_base::send_buffer_size option(
-      absl::GetFlag(FLAGS_so_snd_buffer));
+  asio::ip::tcp::no_delay option(true);
   socket->set_option(option, ec);
   if (ec) {
-    VLOG(2) << "SO_SNDBUF is not supported on this platform: " << ec;
-    absl::SetFlag(&FLAGS_so_snd_buffer, 0);
+    VLOG(2) << "TCP_NODELAY is not supported on this platform: " << ec;
+    absl::SetFlag(&FLAGS_tcp_nodelay, false);
   } else {
-    VLOG(3) << "Applied SO_SNDBUF by " << absl::GetFlag(FLAGS_so_snd_buffer)
-            << " bytes";
-  }
-}
-
-void SetSocketRcvBuffer(asio::ip::tcp::socket* socket, asio::error_code& ec) {
-  ec = asio::error_code();
-  if (!absl::GetFlag(FLAGS_so_rcv_buffer)) {
-    return;
-  }
-  asio::socket_base::receive_buffer_size option(
-      absl::GetFlag(FLAGS_so_rcv_buffer));
-  socket->set_option(option, ec);
-  if (ec) {
-    VLOG(2) << "SO_RCVBUF is not supported on this platform: " << ec;
-    absl::SetFlag(&FLAGS_so_rcv_buffer, 0);
-  } else {
-    VLOG(3) << "Applied SO_RCVBUF by " << absl::GetFlag(FLAGS_so_rcv_buffer)
-            << " bytes";
+    VLOG(3) << "Applied TCP_NODELAY";
   }
 }
 

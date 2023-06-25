@@ -146,6 +146,7 @@ sudo apt-get install -y \
     ninja-build \
     pkg-config \
     perl \
+    gettext \
     libgtk-3-dev
 ```
 
@@ -188,6 +189,7 @@ sudo yum install -y \
     pkg-config \
     perl \
     gtk3-devel \
+    gettext \
     golang
 ```
 
@@ -237,6 +239,7 @@ pkg install -y \
     ninja \
     pkgconf \
     perl5 \
+    gettext \
     gtk3 \
     go
 ```

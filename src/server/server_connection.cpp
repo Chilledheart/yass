@@ -763,6 +763,10 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code &
     ec = asio::error::try_again;
     return nullptr;
   }
+  if (!channel_->connected()) {
+    ec = asio::error::try_again;
+    return nullptr;
+  }
   if (channel_->eof()) {
     ec = asio::error::eof;
     return nullptr;

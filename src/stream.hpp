@@ -325,19 +325,20 @@ class stream : public RefCountedThreadSafe<stream> {
     SetTCPFastOpenConnect(socket_.native_handle(), ec);
     socket_.native_non_blocking(true, ec);
     socket_.non_blocking(true, ec);
-    connect_timer_.expires_after(
-        std::chrono::milliseconds(absl::GetFlag(FLAGS_connect_timeout)));
     scoped_refptr<stream> self(this);
-    connect_timer_.async_wait(
-      [this, channel, self](asio::error_code ec) {
-      // Cancelled, safe to ignore
-      if (ec == asio::error::operation_aborted) {
-        return;
-      }
-      on_async_connect_expired(channel, ec);
-    });
+    if (auto connect_timeout = absl::GetFlag(FLAGS_connect_timeout)) {
+      connect_timer_.expires_after(std::chrono::seconds(connect_timeout));
+      connect_timer_.async_wait(
+        [this, channel, self](asio::error_code ec) {
+        // Cancelled, safe to ignore
+        if (ec == asio::error::operation_aborted) {
+          return;
+        }
+        on_async_connect_expired(channel, ec);
+      });
+    }
     socket_.async_connect(endpoint_,
-      [this, channel](asio::error_code ec) {
+      [this, channel, self](asio::error_code ec) {
       // Cancelled, safe to ignore
       if (UNLIKELY(ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted)) {
         return;
@@ -403,12 +404,8 @@ class stream : public RefCountedThreadSafe<stream> {
     }
     connected_ = true;
     SetTCPCongestion(socket_.native_handle(), ec);
-    SetTCPConnectionTimeout(socket_.native_handle(), ec);
-    SetTCPUserTimeout(socket_.native_handle(), ec);
     SetTCPKeepAlive(socket_.native_handle(), ec);
-    SetSocketLinger(&socket_, ec);
-    SetSocketSndBuffer(&socket_, ec);
-    SetSocketRcvBuffer(&socket_, ec);
+    SetSocketTcpNoDelay(&socket_, ec);
     on_async_connect_callback(asio::error_code());
   }
 

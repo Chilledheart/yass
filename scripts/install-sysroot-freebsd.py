@@ -144,7 +144,7 @@ def main(args):
   download_url(f'{FREEBSD_MAIN_SITE}/amd64/{version}-RELEASE/base.txz', 'base.txz')
   extract_tarfile('base.txz', sysroot, ['./usr/include', './usr/lib', './lib', './usr/libdata/pkgconfig'])
 
-  print(f'Extracting sysroot (gtk3)...')
+  print(f'Extracting sysroot (gtk4)...')
   base_url = f'{FREEBSD_PKG_SITE}/FreeBSD%3A{abi}%3Aamd64/release_{release}'
   download_url(f'{base_url}/packagesite.txz', 'packagesite.txz')
   extract_tarfile('packagesite.txz')
@@ -159,7 +159,7 @@ def main(args):
       pkg = json.loads(raw_pkg)
       pkg_db[pkg['name']] = pkg
 
-  deps = resolve_deps(pkg_db, ['gtk3'])
+  deps = resolve_deps(pkg_db, ['gtk4'])
   for dep in deps:
     pkg = pkg_db[dep]
     extract_pkg(base_url + '/' + pkg['path'], pkg['sum'], sysroot)

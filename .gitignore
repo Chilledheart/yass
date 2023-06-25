@@ -42,4 +42,5 @@ sscxx
 /doxygen
 /freebsd-*-toolchain
 /freebsd-*-tmp
+*.mo
 yass.spec

@@ -1534,19 +1534,56 @@ elseif (GUI)
     message(WARNING "pkg-config (required to search gtk+ path) not found, disabling GUI build")
     set(GUI off)
   else()
-    pkg_check_modules(GTK gtk+-3.0)
     pkg_check_modules(FONTCONFIG fontconfig)
-    if (NOT GTK_FOUND OR NOT FONTCONFIG_FOUND)
-      message(WARNING "Gtk+ not found in pkg-config, disabling GUI build")
+    if (NOT FONTCONFIG_FOUND)
+      message(WARNING "fontconfig not found in pkg-config, disabling GUI build")
       set(GUI off)
+    endif()
+
+    include(FindGettext)
+    if (NOT GETTEXT_FOUND)
+      message(WARNING "gettext not found, disabling GUI build")
+      set(GUI off)
+    endif()
+
+    pkg_check_modules(GTK4 gtk4)
+    if (GTK4_FOUND)
+      set(GUI_FLAVOUR "gtk4")
+      set(GUI_OTHER_FLAGS -Wno-deprecated-declarations)
+
+      find_program(GLIB_COMPILE_RESOURCES glib-compile-resources HINTS "/usr/bin")
+      if(${GLIB_COMPILE_RESOURCES} STREQUAL "GLIB_COMPILE_RESOURCES-NOTFOUND")
+        message(WARNING "glib-compile-resources can not be found and is needed to compile the .gresource files. "
+                        "It should have been installed with the glib2 library. ")
+        set(GUI off)
+      endif()
+
+      if (GUI)
+        set(GUI_USE_FILE "")
+        set(GUI_INCLUDE_DIRS ${GTK4_INCLUDE_DIRS} ${FONTCONFIG_INCLUDE_DIRS})
+        set(GUI_DEFINITIONS "")
+        set(GUI_C_CXX_FLAGS ${GTK4_CFLAGS} ${GTK4_CFLAGS_OTHER}
+          ${FONTCONFIG_CFLAGS} ${GUI_OTHER_FLAGS})
+        set(GUI_LIBRARY_DIRS ${GTK4_LIBRARY_DIRS} ${FONTCONFIG_LIBRARY_DIRS})
+        set(GUI_LIBRARIES ${GTK4_LIBRARIES} ${FONTCONFIG_LIBRARIES})
+      endif()
     else()
-      set(GUI_FLAVOUR "gtk+")
-      set(GUI_USE_FILE "")
-      set(GUI_INCLUDE_DIRS ${GTK_INCLUDE_DIRS} ${FONTCONFIG_INCLUDE_DIRS})
-      set(GUI_DEFINITIONS "")
-      set(GUI_C_CXX_FLAGS ${GTK_CFLAGS} ${GTK_CFLAGS_OTHER} ${FONTCONFIG_CFLAGS})
-      set(GUI_LIBRARY_DIRS ${GTK_LIBRARY_DIRS} ${FONTCONFIG_LIBRARY_DIRS})
-      set(GUI_LIBRARIES ${GTK_LIBRARIES} ${FONTCONFIG_LIBRARIES})
+      pkg_check_modules(GTK gtk+-3.0)
+      set(GUI_FLAVOUR "gtk3")
+      set(GUI_OTHER_FLAGS -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED)
+      if (NOT GTK_FOUND)
+        message(WARNING "Gtk+ not found in pkg-config, disabling GUI build")
+        set(GUI off)
+      endif()
+      if (GUI)
+        set(GUI_USE_FILE "")
+        set(GUI_INCLUDE_DIRS ${GTK_INCLUDE_DIRS} ${FONTCONFIG_INCLUDE_DIRS})
+        set(GUI_DEFINITIONS "")
+        set(GUI_C_CXX_FLAGS ${GTK_CFLAGS} ${GTK_CFLAGS_OTHER}
+          ${FONTCONFIG_CFLAGS} ${GUI_OTHER_FLAGS})
+        set(GUI_LIBRARY_DIRS ${GTK_LIBRARY_DIRS} ${FONTCONFIG_LIBRARY_DIRS})
+        set(GUI_LIBRARIES ${GTK_LIBRARIES} ${FONTCONFIG_LIBRARIES})
+      endif()
     endif()
   endif()
 endif()
@@ -2568,12 +2605,35 @@ if (GUI)
           src/mac/utils.h
           src/mac/utils_mac.mm
           src/mac/main.mm)
-    elseif(GUI_FLAVOUR STREQUAL "gtk+")
+    elseif(GUI_FLAVOUR STREQUAL "gtk3")
         list(APPEND SRC_FILES
           src/gtk/yass.cpp
           src/gtk/yass_window.cpp
           src/gtk/option_dialog.cpp
-          src/gtk/utils_gtk.cpp)
+          src/gtk/utils_gtk.cpp
+        )
+        include(CompilePo)
+        create_po_target(yass en src/gtk/yass_en.po)
+        list(APPEND SRC_FILES ${CMAKE_CURRENT_BINARY_DIR}/yass_en.gmo)
+    elseif(GUI_FLAVOUR STREQUAL "gtk4")
+        # Compile the gresource file with the glib-compile-resources.
+        set(MAIN_GRESOURCE ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4/yass.gresource.xml)
+        set(MAIN_GRESOURCE_C ${CMAKE_CURRENT_BINARY_DIR}/resources.c)
+        add_custom_command(OUTPUT ${MAIN_GRESOURCE_C}
+          COMMAND ${GLIB_COMPILE_RESOURCES} ${MAIN_GRESOURCE} --target=${MAIN_GRESOURCE_C} --generate-source
+          WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4
+          DEPENDS ${MAIN_GRESOURCE} src/gtk4/menu.ui src/gtk4/yass_window.ui src/gtk4/option_dialog.ui
+          COMMENT "Compiling yass gresource")
+        list(APPEND SRC_FILES
+          ${MAIN_GRESOURCE_C}
+          src/gtk4/yass.cpp
+          src/gtk4/yass_window.cpp
+          src/gtk4/option_dialog.cpp
+          src/gtk4/utils_gtk.cpp)
+        # HOLDPLACE for TODO gettext support
+        include(CompilePo)
+        create_po_target(yass en src/gtk4/yass_en.po)
+        list(APPEND SRC_FILES ${CMAKE_CURRENT_BINARY_DIR}/yass_en.gmo)
     endif()
 
     # target_link_directories requires cmake 3.13
@@ -2601,9 +2661,12 @@ if (GUI)
     elseif(GUI_FLAVOUR STREQUAL "cocoa")
       target_include_directories(${APP_NAME} PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/src/mac)
-    elseif(GUI_FLAVOUR STREQUAL "gtk+")
+    elseif(GUI_FLAVOUR STREQUAL "gtk3")
       target_include_directories(${APP_NAME} PRIVATE
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/gui)
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk)
+    elseif(GUI_FLAVOUR STREQUAL "gtk4")
+      target_include_directories(${APP_NAME} PRIVATE
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4)
     endif()
 
     foreach(GUI_DEFINITION IN LISTS GUI_DEFINITIONS)
@@ -2783,7 +2846,7 @@ if (GUI)
         endif()
     endif()
 
-    if (GUI_FLAVOUR STREQUAL "gtk+")
+    if (GUI_FLAVOUR STREQUAL "gtk3")
       install(TARGETS ${APP_NAME} DESTINATION bin)
 
       install(FILES
@@ -2803,6 +2866,29 @@ if (GUI)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/128x128
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/256x256
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/512x512
+        DESTINATION share/icons/hicolor)
+    endif()
+
+    if (GUI_FLAVOUR STREQUAL "gtk4")
+      install(TARGETS ${APP_NAME} DESTINATION bin)
+
+      install(FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4/yass.desktop
+        DESTINATION share/applications)
+
+      install(FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4/yass.png
+        DESTINATION share/pixmaps)
+
+      install(DIRECTORY
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4/icons/16x16
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4/icons/22x22
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4/icons/24x24
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4/icons/32x32
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4/icons/48x48
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4/icons/128x128
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4/icons/256x256
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4/icons/512x512
         DESTINATION share/icons/hicolor)
     endif()
 endif()

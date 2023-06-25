@@ -697,7 +697,6 @@ int main(int argc, char **argv) {
 
   absl::SetFlag(&FLAGS_v, 0);
   absl::SetFlag(&FLAGS_log_thread_id, 1);
-  absl::SetFlag(&FLAGS_tcp_user_timeout, 1000);
 
   ::CRYPTO_library_init();
 

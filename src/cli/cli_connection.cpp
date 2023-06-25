@@ -898,6 +898,10 @@ std::shared_ptr<IOBuf> CliConnection::GetNextDownstreamBuf(asio::error_code &ec,
     ec = std::move(pending_downstream_read_error_);
     return nullptr;
   }
+  if (!channel_->connected()) {
+    ec = asio::error::try_again;
+    return nullptr;
+  }
 
 try_again:
   // RstStream might be sent in ProcessBytes

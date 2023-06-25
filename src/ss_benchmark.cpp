@@ -553,20 +553,12 @@ class ASIOFixture : public benchmark::Fixture {
     s1.non_blocking(true, ec);
 
     SetTCPCongestion(s1.native_handle(), ec);
-    SetTCPConnectionTimeout(s1.native_handle(), ec);
-    SetTCPUserTimeout(s1.native_handle(), ec);
     SetTCPKeepAlive(s1.native_handle(), ec);
-    SetSocketLinger(&s1, ec);
-    SetSocketSndBuffer(&s1, ec);
-    SetSocketRcvBuffer(&s1, ec);
+    SetSocketTcpNoDelay(&s1, ec);
 
     SetTCPCongestion(s2.native_handle(), ec);
-    SetTCPConnectionTimeout(s2.native_handle(), ec);
-    SetTCPUserTimeout(s2.native_handle(), ec);
     SetTCPKeepAlive(s2.native_handle(), ec);
-    SetSocketLinger(&s2, ec);
-    SetSocketSndBuffer(&s2, ec);
-    SetSocketRcvBuffer(&s2, ec);
+    SetSocketTcpNoDelay(&s2, ec);
 
     GenerateRandContent(state.range(0));
   }
@@ -671,7 +663,6 @@ int main(int argc, char** argv) {
 
   absl::SetFlag(&FLAGS_v, 0);
   absl::SetFlag(&FLAGS_log_thread_id, 1);
-  absl::SetFlag(&FLAGS_tcp_user_timeout, 1000);
 
   ::CRYPTO_library_init();
 
