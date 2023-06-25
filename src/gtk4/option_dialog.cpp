@@ -16,11 +16,6 @@ struct _OptionGtkDialog
 {
   GtkDialog parent;
 
-  GtkWidget* connect_timeout;
-  GtkWidget* tcp_user_timeout;
-  GtkWidget* so_linger_timeout;
-  GtkWidget* so_snd_buffer;
-  GtkWidget* so_rcv_buffer;
   GtkWidget* tcp_keep_alive_check;
   GtkWidget* tcp_keep_alive_cnt;
   GtkWidget* tcp_keep_alive_idle_timeout;
@@ -46,11 +41,6 @@ option_dialog_class_init (OptionGtkDialogClass *cls)
 {
   gtk_widget_class_set_template_from_resource(GTK_WIDGET_CLASS (cls),
                                               "/it/gui/yass/option_dialog.ui");
-  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), OptionGtkDialog, connect_timeout);
-  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), OptionGtkDialog, tcp_user_timeout);
-  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), OptionGtkDialog, so_linger_timeout);
-  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), OptionGtkDialog, so_snd_buffer);
-  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), OptionGtkDialog, so_rcv_buffer);
 
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), OptionGtkDialog, tcp_keep_alive_check);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), OptionGtkDialog, tcp_keep_alive_cnt);
@@ -143,30 +133,6 @@ void OptionDialog::run() {
 }
 
 void OptionDialog::LoadChanges() {
-  auto connect_timeout_str =
-      std::to_string(absl::GetFlag(FLAGS_connect_timeout));
-  auto tcp_user_timeout_str =
-      std::to_string(absl::GetFlag(FLAGS_tcp_user_timeout));
-  auto so_linger_timeout_str =
-      std::to_string(absl::GetFlag(FLAGS_so_linger_timeout));
-  auto so_snd_buffer_str =
-      std::to_string(absl::GetFlag(FLAGS_so_snd_buffer));
-  auto so_rcv_buffer_str =
-      std::to_string(absl::GetFlag(FLAGS_so_rcv_buffer));
-#if GTK_CHECK_VERSION(4, 0, 0)
-  gtk_editable_set_text(GTK_EDITABLE(impl_->connect_timeout), connect_timeout_str.c_str());
-  gtk_editable_set_text(GTK_EDITABLE(impl_->tcp_user_timeout), tcp_user_timeout_str.c_str());
-  gtk_editable_set_text(GTK_EDITABLE(impl_->so_linger_timeout), so_linger_timeout_str.c_str());
-  gtk_editable_set_text(GTK_EDITABLE(impl_->so_snd_buffer), so_snd_buffer_str.c_str());
-  gtk_editable_set_text(GTK_EDITABLE(impl_->so_rcv_buffer), so_rcv_buffer_str.c_str());
-#else
-  gtk_entry_set_text(GTK_ENTRY(impl_->connect_timeout), connect_timeout_str.c_str());
-  gtk_entry_set_text(GTK_ENTRY(impl_->tcp_user_timeout), tcp_user_timeout_str.c_str());
-  gtk_entry_set_text(GTK_ENTRY(impl_->so_linger_timeout), so_linger_timeout_str.c_str());
-  gtk_entry_set_text(GTK_ENTRY(impl_->so_snd_buffer), so_snd_buffer_str.c_str());
-  gtk_entry_set_text(GTK_ENTRY(impl_->so_rcv_buffer), so_rcv_buffer_str.c_str());
-#endif
-
 #if GTK_CHECK_VERSION(4, 0, 0)
   gtk_check_button_set_active(GTK_CHECK_BUTTON(impl_->tcp_keep_alive_check),
                               absl::GetFlag(FLAGS_tcp_keep_alive));
@@ -193,13 +159,6 @@ void OptionDialog::LoadChanges() {
 
 void OptionDialog::OnSave() {
 #if GTK_CHECK_VERSION(4, 0, 0)
-  auto connect_timeout = StringToInteger(gtk_editable_get_text(GTK_EDITABLE(impl_->connect_timeout)));
-  auto user_timeout = StringToInteger(gtk_editable_get_text(GTK_EDITABLE(impl_->tcp_user_timeout)));
-  auto so_linger_timeout =
-      StringToInteger(gtk_editable_get_text(GTK_EDITABLE(impl_->so_linger_timeout)));
-  auto so_snd_buffer = StringToInteger(gtk_editable_get_text(GTK_EDITABLE(impl_->so_snd_buffer)));
-  auto so_rcv_buffer = StringToInteger(gtk_editable_get_text(GTK_EDITABLE(impl_->so_rcv_buffer)));
-
   auto tcp_keep_alive = gtk_check_button_get_active(GTK_CHECK_BUTTON(impl_->tcp_keep_alive_check));
   auto tcp_keep_alive_cnt =
       StringToInteger(gtk_editable_get_text(GTK_EDITABLE(impl_->tcp_keep_alive_cnt)));
@@ -208,13 +167,6 @@ void OptionDialog::OnSave() {
   auto tcp_keep_alive_interval =
       StringToInteger(gtk_editable_get_text(GTK_EDITABLE(impl_->tcp_keep_alive_interval)));
 #else
-  auto connect_timeout = StringToInteger(gtk_entry_get_text(GTK_ENTRY(impl_->connect_timeout)));
-  auto user_timeout = StringToInteger(gtk_entry_get_text(GTK_ENTRY(impl_->tcp_user_timeout)));
-  auto so_linger_timeout =
-      StringToInteger(gtk_entry_get_text(GTK_ENTRY(impl_->so_linger_timeout)));
-  auto so_snd_buffer = StringToInteger(gtk_entry_get_text(GTK_ENTRY(impl_->so_snd_buffer)));
-  auto so_rcv_buffer = StringToInteger(gtk_entry_get_text(GTK_ENTRY(impl_->so_rcv_buffer)));
-
   auto tcp_keep_alive = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(impl_->tcp_keep_alive_check));
   auto tcp_keep_alive_cnt =
       StringToInteger(gtk_entry_get_text(GTK_ENTRY(impl_->tcp_keep_alive_cnt)));
@@ -224,20 +176,12 @@ void OptionDialog::OnSave() {
       StringToInteger(gtk_entry_get_text(GTK_ENTRY(impl_->tcp_keep_alive_interval)));
 #endif
 
-  if (!connect_timeout.ok() || !user_timeout.ok() || !so_linger_timeout.ok() ||
-      !so_snd_buffer.ok() || !so_rcv_buffer.ok() ||
-      !tcp_keep_alive_cnt.ok() ||
+  if (!tcp_keep_alive_cnt.ok() ||
       !tcp_keep_alive_idle_timeout.ok() ||
       !tcp_keep_alive_interval.ok()) {
     LOG(WARNING) << "invalid options";
     return;
   }
-
-  absl::SetFlag(&FLAGS_connect_timeout, connect_timeout.value());
-  absl::SetFlag(&FLAGS_tcp_user_timeout, user_timeout.value());
-  absl::SetFlag(&FLAGS_so_linger_timeout, so_linger_timeout.value());
-  absl::SetFlag(&FLAGS_so_snd_buffer, so_snd_buffer.value());
-  absl::SetFlag(&FLAGS_so_rcv_buffer, so_rcv_buffer.value());
 
   absl::SetFlag(&FLAGS_tcp_keep_alive, tcp_keep_alive);
   absl::SetFlag(&FLAGS_tcp_keep_alive_cnt, tcp_keep_alive_cnt.value());

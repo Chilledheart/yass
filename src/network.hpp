@@ -17,11 +17,7 @@ ABSL_DECLARE_FLAG(std::string, congestion_algorithm);
 ABSL_DECLARE_FLAG(bool, tcp_fastopen);
 ABSL_DECLARE_FLAG(bool, tcp_fastopen_connect);
 ABSL_DECLARE_FLAG(int32_t, connect_timeout);
-ABSL_DECLARE_FLAG(int32_t, tcp_connection_timeout);
-ABSL_DECLARE_FLAG(int32_t, tcp_user_timeout);
-ABSL_DECLARE_FLAG(int32_t, so_linger_timeout);
-ABSL_DECLARE_FLAG(int32_t, so_snd_buffer);
-ABSL_DECLARE_FLAG(int32_t, so_rcv_buffer);
+ABSL_DECLARE_FLAG(bool, tcp_nodelay);
 
 ABSL_DECLARE_FLAG(bool, tcp_keep_alive);
 ABSL_DECLARE_FLAG(int32_t, tcp_keep_alive_cnt);
@@ -42,20 +38,12 @@ void SetTCPFastOpen(asio::ip::tcp::acceptor::native_handle_type handle,
 void SetTCPFastOpenConnect(asio::ip::tcp::socket::native_handle_type handle,
                            asio::error_code&);
 
-void SetTCPConnectionTimeout(asio::ip::tcp::socket::native_handle_type handle,
-                             asio::error_code&);
-
-void SetTCPUserTimeout(asio::ip::tcp::socket::native_handle_type handle,
-                       asio::error_code&);
-
 void SetTCPKeepAlive(asio::ip::tcp::acceptor::native_handle_type handle,
                      asio::error_code& ec);
 
 void SetSocketLinger(asio::ip::tcp::socket* socket, asio::error_code&);
 
-void SetSocketSndBuffer(asio::ip::tcp::socket* socket, asio::error_code&);
-
-void SetSocketRcvBuffer(asio::ip::tcp::socket* socket, asio::error_code&);
+void SetSocketTcpNoDelay(asio::ip::tcp::socket* socket, asio::error_code& ec);
 
 ABSL_DECLARE_FLAG(bool, padding_support);
 
