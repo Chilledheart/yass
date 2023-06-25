@@ -17,11 +17,12 @@
 
 - (void)viewDidLoad {
   [super viewDidLoad];
-  self.connectTimeout.intValue = absl::GetFlag(FLAGS_connect_timeout);
-  self.tcpUserTimeout.intValue = absl::GetFlag(FLAGS_tcp_user_timeout);
-  self.tcpSoLingerTimeout.intValue = absl::GetFlag(FLAGS_so_linger_timeout);
-  self.tcpSendBuffer.intValue = absl::GetFlag(FLAGS_so_snd_buffer);
-  self.tcpRecevieBuffer.intValue = absl::GetFlag(FLAGS_so_rcv_buffer);
+  // TODO remove these entries
+  [self.connectTimeout setEnabled:NO];
+  [self.tcpUserTimeout setEnabled:NO];
+  [self.tcpSoLingerTimeout setEnabled:NO];
+  [self.tcpSendBuffer setEnabled:NO];
+  [self.tcpRecevieBuffer setEnabled:NO];
 
   [self.tcpKeepAlive
       setState:(absl::GetFlag(FLAGS_tcp_keep_alive) ? NSControlStateValueOn : NSControlStateValueOff)];
@@ -36,10 +37,6 @@
 
 - (IBAction)OnOkButtonClicked:(id)sender {
   absl::SetFlag(&FLAGS_connect_timeout, self.connectTimeout.intValue);
-  absl::SetFlag(&FLAGS_tcp_user_timeout, self.tcpUserTimeout.intValue);
-  absl::SetFlag(&FLAGS_so_linger_timeout, self.tcpSoLingerTimeout.intValue);
-  absl::SetFlag(&FLAGS_so_snd_buffer, self.tcpSendBuffer.intValue);
-  absl::SetFlag(&FLAGS_so_rcv_buffer, self.tcpRecevieBuffer.intValue);
 
   absl::SetFlag(&FLAGS_tcp_keep_alive, self.tcpKeepAlive.state == NSControlStateValueOn);
   absl::SetFlag(&FLAGS_tcp_keep_alive_cnt, self.tcpKeepAliveCnt.intValue);

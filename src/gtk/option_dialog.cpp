@@ -30,49 +30,25 @@ OptionDialog::OptionDialog(const std::string& title,
   gtk_grid_set_row_homogeneous(grid, true);
   gtk_grid_set_column_homogeneous(grid, true);
 
-  auto connect_timeout_label = gtk_label_new(_("Connect Timeout"));
-  auto tcp_user_timeout_label = gtk_label_new(_("TCP User Timeout"));
-  auto so_linger_timeout_label = gtk_label_new(_("TCP Linger Timeout"));
-  auto so_snd_buffer_label = gtk_label_new(_("TCP Send Buffer"));
-  auto so_rcv_buffer_label = gtk_label_new(_("TCP Receive Buffer"));
-
   auto tcp_keep_alive_label = gtk_label_new(_("TCP keep alive"));
   auto tcp_keep_alive_cnt_label = gtk_label_new(_("The number of TCP keep-alive probes"));
   auto tcp_keep_alive_idle_timeout_label = gtk_label_new(_("TCP keep alive after idle"));
   auto tcp_keep_alive_interval_label = gtk_label_new(_("TCP keep alive interval"));
 
-  gtk_grid_attach(grid, GTK_WIDGET(connect_timeout_label), 0, 0, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(tcp_user_timeout_label), 0, 1, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(so_linger_timeout_label), 0, 2, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(so_snd_buffer_label), 0, 3, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(so_rcv_buffer_label), 0, 4, 1, 1);
-
-  gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_label), 0, 5, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_cnt_label), 0, 6, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_idle_timeout_label), 0, 7, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_interval_label), 0, 8, 1, 1);
-
-  connect_timeout_ = GTK_ENTRY(gtk_entry_new());
-  tcp_user_timeout_ = GTK_ENTRY(gtk_entry_new());
-  so_linger_timeout_ = GTK_ENTRY(gtk_entry_new());
-  so_snd_buffer_ = GTK_ENTRY(gtk_entry_new());
-  so_rcv_buffer_ = GTK_ENTRY(gtk_entry_new());
+  gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_label), 0, 0, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_cnt_label), 0, 1, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_idle_timeout_label), 0, 2, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_interval_label), 0, 3, 1, 1);
 
   tcp_keep_alive_ = GTK_CHECK_BUTTON(gtk_check_button_new());
   tcp_keep_alive_cnt_ = GTK_ENTRY(gtk_entry_new());
   tcp_keep_alive_idle_timeout_ = GTK_ENTRY(gtk_entry_new());
   tcp_keep_alive_interval_ = GTK_ENTRY(gtk_entry_new());
 
-  gtk_grid_attach(grid, GTK_WIDGET(connect_timeout_), 1, 0, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(tcp_user_timeout_), 1, 1, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(so_linger_timeout_), 1, 2, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(so_snd_buffer_), 1, 3, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(so_rcv_buffer_), 1, 4, 1, 1);
-
-  gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_), 1, 5, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_cnt_), 1, 6, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_idle_timeout_), 1, 7, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_interval_), 1, 8, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_), 1, 0, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_cnt_), 1, 1, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_idle_timeout_), 1, 2, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(tcp_keep_alive_interval_), 1, 3, 1, 1);
 
   okay_button_ = GTK_BUTTON(gtk_button_new());
   gtk_button_set_label(okay_button_, _("Okay"));
@@ -90,8 +66,8 @@ OptionDialog::OptionDialog(const std::string& title,
   g_signal_connect(G_OBJECT(cancel_button_), "clicked",
                    G_CALLBACK(cancel_callback), nullptr);
 
-  gtk_grid_attach(grid, GTK_WIDGET(okay_button_), 0, 5, 1, 1);
-  gtk_grid_attach(grid, GTK_WIDGET(cancel_button_), 1, 5, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(okay_button_), 0, 4, 1, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(cancel_button_), 1, 4, 1, 1);
 
   gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(impl_)),
                     GTK_WIDGET(grid));
@@ -119,22 +95,6 @@ gint OptionDialog::run() {
 }
 
 void OptionDialog::LoadChanges() {
-  auto connect_timeout_str =
-      std::to_string(absl::GetFlag(FLAGS_connect_timeout));
-  gtk_entry_set_text(connect_timeout_, connect_timeout_str.c_str());
-  auto tcp_user_timeout_str =
-      std::to_string(absl::GetFlag(FLAGS_tcp_user_timeout));
-  gtk_entry_set_text(tcp_user_timeout_, tcp_user_timeout_str.c_str());
-  auto so_linger_timeout_str =
-      std::to_string(absl::GetFlag(FLAGS_so_linger_timeout));
-  gtk_entry_set_text(so_linger_timeout_, so_linger_timeout_str.c_str());
-  auto so_snd_buffer_str =
-      std::to_string(absl::GetFlag(FLAGS_so_snd_buffer));
-  gtk_entry_set_text(so_snd_buffer_, so_snd_buffer_str.c_str());
-  auto so_rcv_buffer_str =
-      std::to_string(absl::GetFlag(FLAGS_so_rcv_buffer));
-  gtk_entry_set_text(so_rcv_buffer_, so_rcv_buffer_str.c_str());
-
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(tcp_keep_alive_),
                                absl::GetFlag(FLAGS_tcp_keep_alive));
   auto tcp_keep_alive_cnt_str =
@@ -149,13 +109,6 @@ void OptionDialog::LoadChanges() {
 }
 
 void OptionDialog::OnSave() {
-  auto connect_timeout = StringToInteger(gtk_entry_get_text(connect_timeout_));
-  auto user_timeout = StringToInteger(gtk_entry_get_text(tcp_user_timeout_));
-  auto so_linger_timeout =
-      StringToInteger(gtk_entry_get_text(so_linger_timeout_));
-  auto so_snd_buffer = StringToInteger(gtk_entry_get_text(so_snd_buffer_));
-  auto so_rcv_buffer = StringToInteger(gtk_entry_get_text(so_rcv_buffer_));
-
   auto tcp_keep_alive = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(tcp_keep_alive_));
   auto tcp_keep_alive_cnt =
       StringToInteger(gtk_entry_get_text(tcp_keep_alive_cnt_));
@@ -164,20 +117,12 @@ void OptionDialog::OnSave() {
   auto tcp_keep_alive_interval =
       StringToInteger(gtk_entry_get_text(tcp_keep_alive_interval_));
 
-  if (!connect_timeout.ok() || !user_timeout.ok() || !so_linger_timeout.ok() ||
-      !so_snd_buffer.ok() || !so_rcv_buffer.ok() ||
-      !tcp_keep_alive_cnt.ok() ||
+  if (!tcp_keep_alive_cnt.ok() ||
       !tcp_keep_alive_idle_timeout.ok() ||
       !tcp_keep_alive_interval.ok()) {
     LOG(WARNING) << "invalid options";
     return;
   }
-
-  absl::SetFlag(&FLAGS_connect_timeout, connect_timeout.value());
-  absl::SetFlag(&FLAGS_tcp_user_timeout, user_timeout.value());
-  absl::SetFlag(&FLAGS_so_linger_timeout, so_linger_timeout.value());
-  absl::SetFlag(&FLAGS_so_snd_buffer, so_snd_buffer.value());
-  absl::SetFlag(&FLAGS_so_rcv_buffer, so_rcv_buffer.value());
 
   absl::SetFlag(&FLAGS_tcp_keep_alive, tcp_keep_alive);
   absl::SetFlag(&FLAGS_tcp_keep_alive_cnt, tcp_keep_alive_cnt.value());
