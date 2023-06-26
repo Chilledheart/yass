@@ -33,9 +33,10 @@ ABSL_FLAG(int32_t,
           8000,
           "Port number which local server listens to");
 
-ABSL_FLAG(std::string, certificate_chain_file, "", "Certificate Chain File Path");
+ABSL_FLAG(std::string, certificate_chain_file, "", "Certificate Chain File Path (SSL)");
 ABSL_FLAG(std::string, private_key_file, "", "Private Key File Path (Server Only)");
 ABSL_FLAG(std::string, private_key_password, "", "Private Key Password (Server Only)");
+ABSL_FLAG(bool, insecure_mode, false, "Allow insecure mode (SSL)");
 
 namespace config {
 

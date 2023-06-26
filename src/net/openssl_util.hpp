@@ -7,6 +7,15 @@
 #include <cstdint>
 
 namespace net {
+// Utility to construct the appropriate set & clear masks for use the OpenSSL
+// options and mode configuration functions. (SSL_set_options etc)
+struct SslSetClearMask {
+  SslSetClearMask();
+  void ConfigureFlag(long flag, bool state);
+
+  long set_mask = 0;
+  long clear_mask = 0;
+};
 int OpenSSLNetErrorLib();
 int MapOpenSSLErrorSSL(uint32_t error_code);
 int MapOpenSSLErrorWithDetails(int err);

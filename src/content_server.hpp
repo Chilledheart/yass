@@ -373,7 +373,12 @@ class ContentServer {
       return;
     }
 
-    upstream_ssl_ctx_.set_verify_mode(asio::ssl::verify_peer, ec);
+    if (absl::GetFlag(FLAGS_insecure_mode)) {
+      upstream_ssl_ctx_.set_verify_mode(asio::ssl::verify_none, ec);
+    } else {
+      upstream_ssl_ctx_.set_verify_mode(asio::ssl::verify_peer, ec);
+      SSL_CTX_set_reverify_on_resume(upstream_ssl_ctx_.native_handle(), 1);
+    }
     if (ec) {
       return;
     }
@@ -415,6 +420,10 @@ class ContentServer {
       return;
     }
     VLOG(1) << "Alpn support (client) enabled";
+
+    SSL_CTX_set_timeout(upstream_ssl_ctx_.native_handle(), 1 * 60 * 60 /* one hour */);
+
+    SSL_CTX_set_grease_enabled(upstream_ssl_ctx_.native_handle(), 1);
   }
 
  private:

@@ -27,6 +27,7 @@ ABSL_DECLARE_FLAG(int32_t, local_port);
 ABSL_DECLARE_FLAG(std::string, certificate_chain_file);
 ABSL_DECLARE_FLAG(std::string, private_key_file);
 ABSL_DECLARE_FLAG(std::string, private_key_password);
+ABSL_DECLARE_FLAG(bool, insecure_mode);
 
 namespace config {
 bool ReadConfig();

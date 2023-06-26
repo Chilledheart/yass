@@ -45,6 +45,60 @@ SSLSocket::SSLSocket(asio::io_context *io_context,
 
   SSL_set_early_data_enabled(ssl_.get(), early_data_enabled_);
 
+  // OpenSSL defaults some options to on, others to off. To avoid ambiguity,
+  // set everything we care about to an absolute value.
+  SslSetClearMask options;
+  options.ConfigureFlag(SSL_OP_NO_COMPRESSION, true);
+
+  // TODO(joth): Set this conditionally, see http://crbug.com/55410
+  options.ConfigureFlag(SSL_OP_LEGACY_SERVER_CONNECT, true);
+
+  SSL_set_options(ssl_.get(), options.set_mask);
+  SSL_clear_options(ssl_.get(), options.clear_mask);
+
+  // Same as above, this time for the SSL mode.
+  SslSetClearMask mode;
+
+  mode.ConfigureFlag(SSL_MODE_RELEASE_BUFFERS, true);
+  mode.ConfigureFlag(SSL_MODE_CBC_RECORD_SPLITTING, true);
+
+  mode.ConfigureFlag(SSL_MODE_ENABLE_FALSE_START, true);
+
+  SSL_set_mode(ssl_.get(), mode.set_mask);
+  SSL_clear_mode(ssl_.get(), mode.clear_mask);
+
+  std::string command("ALL:!aPSK:!ECDSA+SHA1:!3DES");
+
+#if 0
+  if (ssl_config_.require_ecdhe) {
+    command.append(":!kRSA");
+  }
+
+  // Remove any disabled ciphers.
+  for (uint16_t id : context_->config().disabled_cipher_suites) {
+    const SSL_CIPHER* cipher = SSL_get_cipher_by_value(id);
+    if (cipher) {
+      command.append(":!");
+      command.append(SSL_CIPHER_get_name(cipher));
+    }
+  }
+#endif
+
+  if (!SSL_set_strict_cipher_list(ssl_.get(), command.c_str())) {
+    LOG(FATAL) << "SSL_set_cipher_list('" << command << "') failed";
+  }
+
+  static const uint16_t kVerifyPrefs[] = {
+      SSL_SIGN_ECDSA_SECP256R1_SHA256, SSL_SIGN_RSA_PSS_RSAE_SHA256,
+      SSL_SIGN_RSA_PKCS1_SHA256,       SSL_SIGN_ECDSA_SECP384R1_SHA384,
+      SSL_SIGN_RSA_PSS_RSAE_SHA384,    SSL_SIGN_RSA_PKCS1_SHA384,
+      SSL_SIGN_RSA_PSS_RSAE_SHA512,    SSL_SIGN_RSA_PKCS1_SHA512,
+  };
+  if (!SSL_set_verify_algorithm_prefs(ssl_.get(), kVerifyPrefs,
+                                      std::size(kVerifyPrefs))) {
+    LOG(FATAL) << "SSL_set_verify_algorithm_prefs failed";
+  }
+
   // ALPS TLS extension is enabled and corresponding data is sent to client if
   // client also enabled ALPS, for each NextProto in |application_settings|.
   // Data might be empty.
@@ -53,6 +107,7 @@ SSLSocket::SSLSocket(asio::io_context *io_context,
   SSL_add_application_settings(ssl_.get(),
                                reinterpret_cast<const uint8_t*>(proto_string),
                                strlen(proto_string), data.data(), data.size());
+
   SSL_enable_signed_cert_timestamps(ssl_.get());
   SSL_enable_ocsp_stapling(ssl_.get());
 
@@ -66,9 +121,7 @@ SSLSocket::SSLSocket(asio::io_context *io_context,
 
   SSL_set_shed_handshake_config(ssl_.get(), 1);
 
-  // If false, disables TLS Encrypted ClientHello (ECH). If true, the feature
-  // may be enabled or disabled, depending on feature flags.
-  SSL_set_enable_ech_grease(ssl_.get(), 0);
+  SSL_set_permute_extensions(ssl_.get(), 1);
 }
 
 int SSLSocket::Connect(CompletionOnceCallback callback) {

@@ -102,14 +102,14 @@ int main(int argc, const char* argv[]) {
   ServerServer server(io_context);
   for (auto &endpoint : endpoints) {
     server.listen(endpoint, SOMAXCONN, ec);
-    endpoint = server.endpoint();
-    LOG(WARNING) << "tcp server listening at " << endpoint;
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec;
       server.stop();
       work_guard.reset();
       return -1;
     }
+    endpoint = server.endpoint();
+    LOG(WARNING) << "tcp server listening at " << endpoint;
   }
 
   asio::signal_set signals(io_context);
