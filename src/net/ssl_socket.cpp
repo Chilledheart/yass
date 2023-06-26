@@ -45,6 +45,28 @@ SSLSocket::SSLSocket(asio::io_context *io_context,
 
   SSL_set_early_data_enabled(ssl_.get(), early_data_enabled_);
 
+  // OpenSSL defaults some options to on, others to off. To avoid ambiguity,
+  // set everything we care about to an absolute value.
+  SslSetClearMask options;
+  options.ConfigureFlag(SSL_OP_NO_COMPRESSION, true);
+
+  // TODO(joth): Set this conditionally, see http://crbug.com/55410
+  options.ConfigureFlag(SSL_OP_LEGACY_SERVER_CONNECT, true);
+
+  SSL_set_options(ssl_.get(), options.set_mask);
+  SSL_clear_options(ssl_.get(), options.clear_mask);
+
+  // Same as above, this time for the SSL mode.
+  SslSetClearMask mode;
+
+  mode.ConfigureFlag(SSL_MODE_RELEASE_BUFFERS, true);
+  mode.ConfigureFlag(SSL_MODE_CBC_RECORD_SPLITTING, true);
+
+  mode.ConfigureFlag(SSL_MODE_ENABLE_FALSE_START, true);
+
+  SSL_set_mode(ssl_.get(), mode.set_mask);
+  SSL_clear_mode(ssl_.get(), mode.clear_mask);
+
   std::string command("ALL:!aPSK:!ECDSA+SHA1:!3DES");
 
 #if 0
@@ -85,6 +107,7 @@ SSLSocket::SSLSocket(asio::io_context *io_context,
   SSL_add_application_settings(ssl_.get(),
                                reinterpret_cast<const uint8_t*>(proto_string),
                                strlen(proto_string), data.data(), data.size());
+
   SSL_enable_signed_cert_timestamps(ssl_.get());
   SSL_enable_ocsp_stapling(ssl_.get());
 
