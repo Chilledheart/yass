@@ -420,6 +420,10 @@ class ContentServer {
       return;
     }
     VLOG(1) << "Alpn support (client) enabled";
+
+    SSL_CTX_set_timeout(upstream_ssl_ctx_.native_handle(), 1 * 60 * 60 /* one hour */);
+
+    SSL_CTX_set_grease_enabled(upstream_ssl_ctx_.native_handle(), 1);
   }
 
  private:

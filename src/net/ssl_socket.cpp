@@ -45,6 +45,38 @@ SSLSocket::SSLSocket(asio::io_context *io_context,
 
   SSL_set_early_data_enabled(ssl_.get(), early_data_enabled_);
 
+  std::string command("ALL:!aPSK:!ECDSA+SHA1:!3DES");
+
+#if 0
+  if (ssl_config_.require_ecdhe) {
+    command.append(":!kRSA");
+  }
+
+  // Remove any disabled ciphers.
+  for (uint16_t id : context_->config().disabled_cipher_suites) {
+    const SSL_CIPHER* cipher = SSL_get_cipher_by_value(id);
+    if (cipher) {
+      command.append(":!");
+      command.append(SSL_CIPHER_get_name(cipher));
+    }
+  }
+#endif
+
+  if (!SSL_set_strict_cipher_list(ssl_.get(), command.c_str())) {
+    LOG(FATAL) << "SSL_set_cipher_list('" << command << "') failed";
+  }
+
+  static const uint16_t kVerifyPrefs[] = {
+      SSL_SIGN_ECDSA_SECP256R1_SHA256, SSL_SIGN_RSA_PSS_RSAE_SHA256,
+      SSL_SIGN_RSA_PKCS1_SHA256,       SSL_SIGN_ECDSA_SECP384R1_SHA384,
+      SSL_SIGN_RSA_PSS_RSAE_SHA384,    SSL_SIGN_RSA_PKCS1_SHA384,
+      SSL_SIGN_RSA_PSS_RSAE_SHA512,    SSL_SIGN_RSA_PKCS1_SHA512,
+  };
+  if (!SSL_set_verify_algorithm_prefs(ssl_.get(), kVerifyPrefs,
+                                      std::size(kVerifyPrefs))) {
+    LOG(FATAL) << "SSL_set_verify_algorithm_prefs failed";
+  }
+
   // ALPS TLS extension is enabled and corresponding data is sent to client if
   // client also enabled ALPS, for each NextProto in |application_settings|.
   // Data might be empty.
@@ -66,9 +98,7 @@ SSLSocket::SSLSocket(asio::io_context *io_context,
 
   SSL_set_shed_handshake_config(ssl_.get(), 1);
 
-  // If false, disables TLS Encrypted ClientHello (ECH). If true, the feature
-  // may be enabled or disabled, depending on feature flags.
-  SSL_set_enable_ech_grease(ssl_.get(), 0);
+  SSL_set_permute_extensions(ssl_.get(), 1);
 }
 
 int SSLSocket::Connect(CompletionOnceCallback callback) {
