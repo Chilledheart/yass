@@ -279,7 +279,7 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   asio::error_code OnReadHttpRequest(std::shared_ptr<IOBuf> buf);
 
   /// Start to read stream
-  void ReadStream();
+  void ReadStream(bool yield);
 
   /// write method select response
   void WriteMethodSelect();
@@ -294,7 +294,7 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   /// Read remaining buffers from upstream
   void ReadUpstream();
   /// Read remaining buffers from upstream (on readable event)
-  void ReadUpstreamAsync();
+  void ReadUpstreamAsync(bool yield);
 
   /// Get next remaining buffer to stream
   std::shared_ptr<IOBuf> GetNextDownstreamBuf(asio::error_code &ec,

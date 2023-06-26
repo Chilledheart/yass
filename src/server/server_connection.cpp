@@ -607,7 +607,7 @@ void ServerConnection::OnReadHandshakeViaHttps() {
   }
 }
 
-void ServerConnection::ReadStream() {
+void ServerConnection::ReadStream(bool yield) {
   scoped_refptr<ServerConnection> self(this);
   DCHECK_EQ(downstream_read_inprogress_, false);
   if (downstream_read_inprogress_) {
@@ -619,20 +619,31 @@ void ServerConnection::ReadStream() {
   }
 
   downstream_read_inprogress_ = true;
-  s_async_read_some_([this, self](asio::error_code ec) {
+  if (yield) {
+    asio::post(*io_context_, [this, self]() {
       downstream_read_inprogress_ = false;
-      if (closed_ || closing_) {
-        return;
-      }
-      if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
-        return;
-      }
-      if (ec) {
-        ProcessReceivedData(nullptr, ec, 0);
+      if (closed_) {
         return;
       }
       WriteUpstreamInPipe();
       OnUpstreamWriteFlush();
+    });
+    return;
+  }
+  s_async_read_some_([this, self](asio::error_code ec) {
+    downstream_read_inprogress_ = false;
+    if (closed_ || closing_) {
+      return;
+    }
+    if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+      return;
+    }
+    if (ec) {
+      ProcessReceivedData(nullptr, ec, 0);
+      return;
+    }
+    WriteUpstreamInPipe();
+    OnUpstreamWriteFlush();
   });
 }
 
@@ -663,6 +674,7 @@ void ServerConnection::WriteStreamInPipe() {
   asio::error_code ec;
   size_t bytes_transferred = 0U, wbytes_transferred = 0U;
   bool try_again = false;
+  bool yield = false;
 
   /* recursively send the remainings */
   while (true) {
@@ -713,6 +725,7 @@ void ServerConnection::WriteStreamInPipe() {
       yield_downstream_after_time_ = GetMonotonicTime() + kYieldAfterDurationMilliseconds * 1000 * 1000;
       if (downstream_.empty()) {
         try_again = true;
+        yield = true;
       } else {
         ec = asio::error::try_again;
       }
@@ -731,7 +744,7 @@ void ServerConnection::WriteStreamInPipe() {
           return;
         }
         received();
-      });
+      }, yield);
     }
   }
   if (ec == asio::error::try_again || ec == asio::error::would_block) {
@@ -834,6 +847,7 @@ void ServerConnection::WriteUpstreamInPipe() {
   asio::error_code ec;
   size_t bytes_transferred = 0U, wbytes_transferred = 0U;
   bool try_again = false;
+  bool yield = false;
 
   if (channel_ && channel_->write_inprogress()) {
     return;
@@ -895,6 +909,7 @@ void ServerConnection::WriteUpstreamInPipe() {
       yield_upstream_after_time_ = GetMonotonicTime() + kYieldAfterDurationMilliseconds;
       if (upstream_.empty()) {
         try_again = true;
+        yield = true;
       } else {
         ec = asio::error::try_again;
       }
@@ -903,7 +918,7 @@ void ServerConnection::WriteUpstreamInPipe() {
   }
   if (try_again) {
     if (!downstream_read_inprogress_) {
-      ReadStream();
+      ReadStream(yield);
     }
   }
   if (ec == asio::error::try_again || ec == asio::error::would_block) {
