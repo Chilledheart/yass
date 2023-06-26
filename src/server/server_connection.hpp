@@ -256,7 +256,7 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   void OnReadHandshakeViaHttps();
 
   /// Start to read stream
-  void ReadStream();
+  void ReadStream(bool yield);
   /// Write remaining buffers to stream
   void WriteStream();
   /// Write remaining buffers to stream

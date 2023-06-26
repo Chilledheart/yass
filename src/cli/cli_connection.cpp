@@ -650,7 +650,7 @@ asio::error_code CliConnection::OnReadHttpRequest(
   return std::make_error_code(std::errc::bad_message);
 }
 
-void CliConnection::ReadStream() {
+void CliConnection::ReadStream(bool yield) {
   scoped_refptr<CliConnection> self(this);
   DCHECK_EQ(downstream_read_inprogress_, false);
   if (downstream_read_inprogress_) {
@@ -662,20 +662,31 @@ void CliConnection::ReadStream() {
   }
 
   downstream_read_inprogress_ = true;
-  s_async_read_some_([this, self](asio::error_code ec) {
+  if (yield) {
+    asio::post(*io_context_, [this, self]() {
       downstream_read_inprogress_ = false;
       if (closed_) {
         return;
       }
-      if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
-        return;
-      }
-      if (ec) {
-        ProcessReceivedData(nullptr, ec, 0);
-        return;
-      }
       WriteUpstreamInPipe();
       OnUpstreamWriteFlush();
+    });
+    return;
+  }
+  s_async_read_some_([this, self](asio::error_code ec) {
+    downstream_read_inprogress_ = false;
+    if (closed_) {
+      return;
+    }
+    if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+      return;
+    }
+    if (ec) {
+      ProcessReceivedData(nullptr, ec, 0);
+      return;
+    }
+    WriteUpstreamInPipe();
+    OnUpstreamWriteFlush();
   });
 }
 
@@ -744,6 +755,7 @@ void CliConnection::WriteStream() {
   }
 
   bool try_again = false;
+  bool yield = false;
   asio::error_code ec;
   size_t wbytes_transferred = 0u;
   do {
@@ -783,6 +795,7 @@ void CliConnection::WriteStream() {
       yield_downstream_after_time_ = GetMonotonicTime() + kYieldAfterDurationMilliseconds * 1000 * 1000;
       if (downstream_.empty()) {
         try_again = true;
+        yield = true;
       } else {
         ec = asio::error::try_again;
       }
@@ -792,7 +805,7 @@ void CliConnection::WriteStream() {
 
   if (try_again) {
     if (channel_ && channel_->connected() && !channel_->read_inprogress()) {
-      ReadUpstreamAsync();
+      ReadUpstreamAsync(yield);
     }
   }
   if (ec == asio::error::try_again || ec == asio::error::would_block) {
@@ -862,12 +875,12 @@ void CliConnection::ReadUpstream() {
 
   if (try_again) {
     if (channel_ && channel_->connected() && !channel_->read_inprogress()) {
-      ReadUpstreamAsync();
+      ReadUpstreamAsync(false);
     }
   }
 }
 
-void CliConnection::ReadUpstreamAsync() {
+void CliConnection::ReadUpstreamAsync(bool yield) {
   DCHECK(channel_ && channel_->connected());
   DCHECK(!channel_->read_inprogress());
   if (UNLIKELY(channel_->read_inprogress())) {
@@ -884,7 +897,7 @@ void CliConnection::ReadUpstreamAsync() {
       return;
     }
     received();
-  });
+  }, yield);
 }
 
 std::shared_ptr<IOBuf> CliConnection::GetNextDownstreamBuf(asio::error_code &ec,
@@ -1023,6 +1036,7 @@ void CliConnection::WriteUpstreamInPipe() {
   asio::error_code ec;
   size_t bytes_transferred = 0U, wbytes_transferred = 0U;
   bool try_again = false;
+  bool yield = false;
 
   if (channel_ && channel_->write_inprogress()) {
     return;
@@ -1085,6 +1099,7 @@ void CliConnection::WriteUpstreamInPipe() {
       yield_upstream_after_time_ = GetMonotonicTime() + kYieldAfterDurationMilliseconds;
       if (upstream_.empty()) {
         try_again = true;
+        yield = true;
       } else {
         ec = asio::error::try_again;
       }
@@ -1093,7 +1108,7 @@ void CliConnection::WriteUpstreamInPipe() {
   }
   if (try_again) {
     if (!downstream_read_inprogress_) {
-      ReadStream();
+      ReadStream(yield);
     }
   }
   if (ec == asio::error::try_again || ec == asio::error::would_block) {
