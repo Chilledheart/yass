@@ -377,7 +377,7 @@ class ContentServer {
       upstream_ssl_ctx_.set_verify_mode(asio::ssl::verify_none, ec);
     } else {
       upstream_ssl_ctx_.set_verify_mode(asio::ssl::verify_peer, ec);
-      SSL_CTX_set_reverify_on_resume(ssl_ctx_.native_handle(), 1);
+      SSL_CTX_set_reverify_on_resume(upstream_ssl_ctx_.native_handle(), 1);
     }
     if (ec) {
       return;
