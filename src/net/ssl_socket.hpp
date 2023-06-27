@@ -15,6 +15,29 @@
 
 namespace net {
 
+// This enum is persisted into histograms. Values may not be renumbered.
+enum class SSLHandshakeDetails {
+  // TLS 1.2 (or earlier) full handshake (2-RTT)
+  kTLS12Full = 0,
+  // TLS 1.2 (or earlier) resumption (1-RTT)
+  kTLS12Resume = 1,
+  // TLS 1.2 full handshake with False Start (1-RTT)
+  kTLS12FalseStart = 2,
+  // 3 was previously used for TLS 1.3 full handshakes with or without HRR.
+  // 4 was previously used for TLS 1.3 resumptions with or without HRR.
+  // TLS 1.3 0-RTT handshake (0-RTT)
+  kTLS13Early = 5,
+  // TLS 1.3 full handshake without HelloRetryRequest (1-RTT)
+  kTLS13Full = 6,
+  // TLS 1.3 resumption handshake without HelloRetryRequest (1-RTT)
+  kTLS13Resume = 7,
+  // TLS 1.3 full handshake with HelloRetryRequest (2-RTT)
+  kTLS13FullWithHelloRetryRequest = 8,
+  // TLS 1.3 resumption handshake with HelloRetryRequest (2-RTT)
+  kTLS13ResumeWithHelloRetryRequest = 9,
+  kMaxValue = kTLS13ResumeWithHelloRetryRequest,
+};
+
 // A OnceCallback specialization that takes a single int parameter. Usually this
 // is used to report a byte count or network error code.
 using CompletionOnceCallback = std::function<void(int)>;
@@ -140,6 +163,24 @@ class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
   bool send_client_cert_;
 
   std::string negotiated_protocol_;
+
+  bool IsRenegotiationAllowed() const {
+    // Prior to HTTP/2 and SPDY, some servers use TLS renegotiation to request
+    // TLS client authentication after the HTTP request was sent. Allow
+    // renegotiation for only those connections.
+    if (negotiated_protocol_ == "http/1.1") {
+      return true;
+    }
+    // True if renegotiation should be allowed for the default application-level
+    // protocol when the peer does not negotiate ALPN.
+    bool renego_allowed_default = false;
+    return renego_allowed_default;
+  }
+
+  // True if SCTs were received via a TLS extension.
+  bool signed_cert_timestamps_received_ = false;
+  // True if a stapled OCSP response was received.
+  bool stapled_ocsp_response_received_ = false;
 };
 
 } // namespace net
