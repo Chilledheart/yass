@@ -22,9 +22,14 @@ SSLServerSocket::SSLServerSocket(asio::io_context *io_context,
   DCHECK(!ssl_);
   ssl_.reset(SSL_new(ssl_ctx));
 
+  // TODO: SSL_set_app_data
   // TODO: reuse SSL session
 
   SSL_set_shed_handshake_config(ssl_.get(), 1);
+  // TODO:
+  // Set certificate and private key.
+  // SSL_set_signing_algorithm_prefs
+  // SSL_set1_curves
 }
 
 SSLServerSocket::~SSLServerSocket() {
