@@ -484,43 +484,21 @@ int SSLSocket::DoHandshakeComplete(int result) {
     negotiated_protocol_ = std::string(reinterpret_cast<const char*>(alpn_proto), alpn_len);
   }
 
-#if 0
-  RecordNegotiatedProtocol();
-
   const uint8_t* ocsp_response_raw;
   size_t ocsp_response_len;
   SSL_get0_ocsp_response(ssl_.get(), &ocsp_response_raw, &ocsp_response_len);
-  set_stapled_ocsp_response_received(ocsp_response_len != 0);
+  signed_cert_timestamps_received_ = (ocsp_response_len != 0);
 
   const uint8_t* sct_list;
   size_t sct_list_len;
   SSL_get0_signed_cert_timestamp_list(ssl_.get(), &sct_list, &sct_list_len);
-  set_signed_cert_timestamps_received(sct_list_len != 0);
+  stapled_ocsp_response_received_ = (sct_list_len != 0);
 
   if (!IsRenegotiationAllowed())
     SSL_set_renegotiate_mode(ssl_.get(), ssl_renegotiate_never);
 
   uint16_t signature_algorithm = SSL_get_peer_signature_algorithm(ssl_.get());
-  if (signature_algorithm != 0) {
-    base::UmaHistogramSparse("Net.SSLSignatureAlgorithm", signature_algorithm);
-  }
-
-  SSLInfo ssl_info;
-  bool ok = GetSSLInfo(&ssl_info);
-  // Ensure the verify callback was called, and got far enough to fill
-  // in server_cert_.
-  CHECK(ok);
-
-  // See how feasible enforcing RSA key usage would be. See
-  // https://crbug.com/795089.
-  if (!server_cert_verify_result_.is_issued_by_known_root) {
-    RSAKeyUsage rsa_key_usage = CheckRSAKeyUsage(
-        server_cert_.get(), SSL_get_current_cipher(ssl_.get()));
-    if (rsa_key_usage != RSAKeyUsage::kNotRSA) {
-      UMA_HISTOGRAM_ENUMERATION("Net.SSLRSAKeyUsage.UnknownRoot", rsa_key_usage,
-                                static_cast<int>(RSAKeyUsage::kLastValue) + 1);
-    }
-  }
+  (void)signature_algorithm;
 
   SSLHandshakeDetails details;
   if (SSL_version(ssl_.get()) < TLS1_3_VERSION) {
@@ -546,15 +524,13 @@ int SSLSocket::DoHandshakeComplete(int result) {
                     : SSLHandshakeDetails::kTLS13Full;
     }
   }
-  UMA_HISTOGRAM_ENUMERATION("Net.SSLHandshakeDetails", details);
+  (void)details;
 
   // Measure TLS connections that implement the renegotiation_info extension.
   // Note this records true for TLS 1.3. By removing renegotiation altogether,
   // TLS 1.3 is implicitly patched against the bug. See
   // https://crbug.com/850800.
-  base::UmaHistogramBoolean("Net.SSLRenegotiationInfoSupported",
-                            SSL_get_secure_renegotiation_support(ssl_.get()));
-#endif
+  (void)SSL_get_secure_renegotiation_support(ssl_.get());
 
   completed_connect_ = true;
   next_handshake_state_ = STATE_NONE;
