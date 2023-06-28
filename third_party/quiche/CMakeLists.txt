@@ -317,6 +317,54 @@ set(quiche_SRCS
   src/quiche/oblivious_http/oblivious_http_client.h
   src/quiche/oblivious_http/oblivious_http_gateway.cc
   src/quiche/oblivious_http/oblivious_http_gateway.h
+  src/quiche/spdy/core/array_output_buffer.cc
+  src/quiche/spdy/core/array_output_buffer.h
+  src/quiche/spdy/core/hpack/hpack_constants.cc
+  src/quiche/spdy/core/hpack/hpack_constants.h
+  src/quiche/spdy/core/hpack/hpack_decoder_adapter.cc
+  src/quiche/spdy/core/hpack/hpack_decoder_adapter.h
+  src/quiche/spdy/core/hpack/hpack_encoder.cc
+  src/quiche/spdy/core/hpack/hpack_encoder.h
+  src/quiche/spdy/core/hpack/hpack_entry.cc
+  src/quiche/spdy/core/hpack/hpack_entry.h
+  src/quiche/spdy/core/hpack/hpack_header_table.cc
+  src/quiche/spdy/core/hpack/hpack_header_table.h
+  src/quiche/spdy/core/hpack/hpack_output_stream.cc
+  src/quiche/spdy/core/hpack/hpack_output_stream.h
+  src/quiche/spdy/core/hpack/hpack_static_table.cc
+  src/quiche/spdy/core/hpack/hpack_static_table.h
+  src/quiche/spdy/core/http2_frame_decoder_adapter.cc
+  src/quiche/spdy/core/http2_frame_decoder_adapter.h
+  src/quiche/spdy/core/http2_header_block.cc
+  src/quiche/spdy/core/http2_header_block.h
+  src/quiche/spdy/core/http2_header_storage.cc
+  src/quiche/spdy/core/http2_header_storage.h
+  src/quiche/spdy/core/recording_headers_handler.cc
+  src/quiche/spdy/core/recording_headers_handler.h
+  src/quiche/spdy/core/spdy_alt_svc_wire_format.cc
+  src/quiche/spdy/core/spdy_alt_svc_wire_format.h
+  src/quiche/spdy/core/spdy_bitmasks.h
+  src/quiche/spdy/core/spdy_frame_builder.cc
+  src/quiche/spdy/core/spdy_frame_builder.h
+  src/quiche/spdy/core/spdy_framer.cc
+  src/quiche/spdy/core/spdy_framer.h
+  src/quiche/spdy/core/spdy_headers_handler_interface.h
+  src/quiche/spdy/core/spdy_intrusive_list.h
+  src/quiche/spdy/core/spdy_no_op_visitor.cc
+  src/quiche/spdy/core/spdy_no_op_visitor.h
+  src/quiche/spdy/core/spdy_pinnable_buffer_piece.cc
+  src/quiche/spdy/core/spdy_pinnable_buffer_piece.h
+  src/quiche/spdy/core/spdy_prefixed_buffer_reader.cc
+  src/quiche/spdy/core/spdy_prefixed_buffer_reader.h
+  src/quiche/spdy/core/spdy_protocol.cc
+  src/quiche/spdy/core/spdy_protocol.h
+  src/quiche/spdy/core/spdy_simple_arena.cc
+  src/quiche/spdy/core/spdy_simple_arena.h
+  src/quiche/spdy/core/zero_copy_output_buffer.h
+  src/quiche/web_transport/web_transport.h
+  )
+
+set(quiche_quic_SOURCES
   src/quiche/quic/core/congestion_control/bandwidth_sampler.cc
   src/quiche/quic/core/congestion_control/bandwidth_sampler.h
   src/quiche/quic/core/congestion_control/bbr2_drain.cc
@@ -742,51 +790,6 @@ set(quiche_SRCS
   src/quiche/quic/platform/api/quic_stack_trace.h
   src/quiche/quic/platform/api/quic_testvalue.h
   src/quiche/quic/platform/api/quic_thread.h
-  src/quiche/spdy/core/array_output_buffer.cc
-  src/quiche/spdy/core/array_output_buffer.h
-  src/quiche/spdy/core/hpack/hpack_constants.cc
-  src/quiche/spdy/core/hpack/hpack_constants.h
-  src/quiche/spdy/core/hpack/hpack_decoder_adapter.cc
-  src/quiche/spdy/core/hpack/hpack_decoder_adapter.h
-  src/quiche/spdy/core/hpack/hpack_encoder.cc
-  src/quiche/spdy/core/hpack/hpack_encoder.h
-  src/quiche/spdy/core/hpack/hpack_entry.cc
-  src/quiche/spdy/core/hpack/hpack_entry.h
-  src/quiche/spdy/core/hpack/hpack_header_table.cc
-  src/quiche/spdy/core/hpack/hpack_header_table.h
-  src/quiche/spdy/core/hpack/hpack_output_stream.cc
-  src/quiche/spdy/core/hpack/hpack_output_stream.h
-  src/quiche/spdy/core/hpack/hpack_static_table.cc
-  src/quiche/spdy/core/hpack/hpack_static_table.h
-  src/quiche/spdy/core/http2_frame_decoder_adapter.cc
-  src/quiche/spdy/core/http2_frame_decoder_adapter.h
-  src/quiche/spdy/core/http2_header_block.cc
-  src/quiche/spdy/core/http2_header_block.h
-  src/quiche/spdy/core/http2_header_storage.cc
-  src/quiche/spdy/core/http2_header_storage.h
-  src/quiche/spdy/core/recording_headers_handler.cc
-  src/quiche/spdy/core/recording_headers_handler.h
-  src/quiche/spdy/core/spdy_alt_svc_wire_format.cc
-  src/quiche/spdy/core/spdy_alt_svc_wire_format.h
-  src/quiche/spdy/core/spdy_bitmasks.h
-  src/quiche/spdy/core/spdy_frame_builder.cc
-  src/quiche/spdy/core/spdy_frame_builder.h
-  src/quiche/spdy/core/spdy_framer.cc
-  src/quiche/spdy/core/spdy_framer.h
-  src/quiche/spdy/core/spdy_headers_handler_interface.h
-  src/quiche/spdy/core/spdy_intrusive_list.h
-  src/quiche/spdy/core/spdy_no_op_visitor.cc
-  src/quiche/spdy/core/spdy_no_op_visitor.h
-  src/quiche/spdy/core/spdy_pinnable_buffer_piece.cc
-  src/quiche/spdy/core/spdy_pinnable_buffer_piece.h
-  src/quiche/spdy/core/spdy_prefixed_buffer_reader.cc
-  src/quiche/spdy/core/spdy_prefixed_buffer_reader.h
-  src/quiche/spdy/core/spdy_protocol.cc
-  src/quiche/spdy/core/spdy_protocol.h
-  src/quiche/spdy/core/spdy_simple_arena.cc
-  src/quiche/spdy/core/spdy_simple_arena.h
-  src/quiche/spdy/core/zero_copy_output_buffer.h
-  src/quiche/web_transport/web_transport.h
   )
 
 set(quiche_nghttp2_SOURCES
@@ -815,10 +818,12 @@ set(quiche_protos
 set(PROTOBUF_IMPORT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src)
 protobuf_generate_cpp(quiche_protos_SRCS quiche_protos_HDRS ${quiche_protos})
 
+# TODO re-add quic code if http3 support is added
 add_library(quiche STATIC
   ${quiche_SRCS}
+  #${quiche_quic_SOURCES}
   ${quiche_nghttp2_SOURCES}
-  ${quiche_protos_SRCS}
+  #${quiche_protos_SRCS}
   )
 
 target_include_directories(quiche PUBLIC
@@ -833,8 +838,9 @@ target_include_directories(quiche PUBLIC
   src
   )
 
+# TODO re-add quic code if http3 support is added
 target_link_libraries(quiche PUBLIC
-  libprotobuf-lite
+  #libprotobuf-lite
   zlib
   crypto
   ssl

@@ -48,7 +48,7 @@ class CAresResolver : public RefCountedThreadSafe<CAresResolver> {
       : socket(io_context, asio::ip::udp::v4(), fd) {}
     ~ResolverPerContext() {
       asio::error_code ec;
-      static_cast<void>(socket.release(ec));
+      static_cast<void>(socket.close(ec));
     }
 
     asio::ip::udp::socket socket;
