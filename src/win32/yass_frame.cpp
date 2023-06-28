@@ -462,7 +462,7 @@ LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam,
     case WM_QUERYENDSESSION:
       return static_cast<INT_PTR>(mFrame->OnQueryEndSession());
     case WM_DESTROY:
-      LOG(WARNING) << DeleteNotificationIcon(mFrame->m_hWnd);
+      DeleteNotificationIcon(mFrame->m_hWnd);
       PostQuitMessage(0);
       break;
     case WM_DPICHANGED:
