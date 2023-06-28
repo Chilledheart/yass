@@ -233,6 +233,7 @@ option(USE_GOLD "Build with gold linker" OFF)
 option(USE_ICF "Build with ICF" OFF)
 option(USE_LTO "Build with LTO" OFF)
 option(USE_CURL "Build with libcurl (test only)" ON)
+option(USE_CARES "Build with c-ares" ON)
 option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
 
 option(ENABLE_LTO "Enable build with LTO" ON)
@@ -1915,7 +1916,7 @@ set(SUPPORT_LIBS zlib ${SUPPORT_LIBS})
 # *****************************************************************************************
 #           c-ares Library
 # *****************************************************************************************
-if (NOT ALLOW_XP)
+if (USE_CARES)
   add_definitions(-DHAVE_C_ARES)
   set(CARES_BUILD_TOOLS OFF CACHE BOOL "")
   set(CARES_SHARED OFF CACHE BOOL "")

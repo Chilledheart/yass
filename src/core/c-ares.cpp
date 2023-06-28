@@ -72,7 +72,7 @@ CAresResolver::CAresResolver(asio::io_context &io_context) :
 
 CAresResolver::~CAresResolver() {
   Destroy();
-  VLOG(2) << "c-ares resolver freed memory";
+  VLOG(1) << "c-ares resolver freed memory";
 }
 
 int CAresResolver::Init(int timeout_ms, int retries) {
@@ -91,8 +91,9 @@ int CAresResolver::Init(int timeout_ms, int retries) {
 }
 
 void CAresResolver::Destroy() {
-  canceled_ = true;
-  resolve_timer_.cancel();
+  if (!canceled_) {
+    Cancel();
+  }
   ::ares_destroy(channel_);
 }
 
@@ -115,7 +116,28 @@ void CAresResolver::OnSockState(void *arg, fd_t fd, int readable, int writable) 
     return;
   }
   if (iter == self->fd_map_.end()) {
-    auto value = std::make_pair(fd, ResolverPerContext::Create(self->io_context_, fd));
+#ifdef _WIN32
+    WSAPROTOCOL_INFOW pi {};
+    if (::WSADuplicateSocketW(fd, ::GetCurrentProcessId(), &pi) != 0) {
+      PLOG(WARNING) << "c-ares: WSASocket failed to dup";
+      resolver->Cancel();
+      return;
+    }
+    fd_t fd2 = ::WSASocketW(pi.iAddressFamily, pi.iSocketType, pi.iProtocol, &pi, 0, 0);
+    if (fd2 == INVALID_SOCKET) {
+      PLOG(WARNING) << "c-ares: WSASocket failed to dup";
+      resolver->Cancel();
+      return;
+    }
+#else
+    fd_t fd2 = dup(fd);
+    if (fd2 < 0) {
+      PLOG(WARNING) << "c-ares: file descriptor failed to dup";
+      resolver->Cancel();
+      return;
+    }
+#endif
+    auto value = std::make_pair(fd, ResolverPerContext::Create(self->io_context_, fd2));
     iter = self->fd_map_.insert(value).first;
   }
   auto ctx = iter->second;
@@ -132,7 +154,10 @@ void CAresResolver::OnSockState(void *arg, fd_t fd, int readable, int writable) 
 void CAresResolver::OnSockStateReadable(scoped_refptr<ResolverPerContext> ctx, fd_t fd) {
   auto self = scoped_refptr(this);
   ctx->socket.async_wait(asio::ip::tcp::socket::wait_read,
-    [self, ctx, fd](asio::error_code ec) {
+    [this, self, ctx, fd](asio::error_code ec) {
+    if (canceled_) {
+      return;
+    }
     if (!ctx->read_enable) {
       return;
     }
@@ -142,14 +167,17 @@ void CAresResolver::OnSockStateReadable(scoped_refptr<ResolverPerContext> ctx, f
     }
     fd_t r = fd;
     fd_t w = ARES_SOCKET_BAD;
-    ::ares_process_fd(self->channel_, r, w);
+    ::ares_process_fd(channel_, r, w);
   });
 }
 
 void CAresResolver::OnSockStateWritable(scoped_refptr<ResolverPerContext> ctx, fd_t fd) {
   auto self = scoped_refptr(this);
   ctx->socket.async_wait(asio::ip::tcp::socket::wait_write,
-    [self, ctx, fd](asio::error_code ec) {
+    [this, self, ctx, fd](asio::error_code ec) {
+    if (canceled_) {
+      return;
+    }
     if (!ctx->write_enable) {
       return;
     }
@@ -159,7 +187,7 @@ void CAresResolver::OnSockStateWritable(scoped_refptr<ResolverPerContext> ctx, f
     }
     fd_t r = ARES_SOCKET_BAD;
     fd_t w = fd;
-    ::ares_process_fd(self->channel_, r, w);
+    ::ares_process_fd(channel_, r, w);
   });
 }
 
@@ -186,6 +214,9 @@ void CAresResolver::AsyncResolve(const std::string& host,
     [](void *arg, int status, int timeouts, struct ares_addrinfo *result) {
       auto ctx = std::unique_ptr<async_resolve_ctx>(reinterpret_cast<async_resolve_ctx*>(arg));
       auto self = ctx->self;
+      if (status == ARES_ECANCELLED || status == ARES_EDESTRUCTION) {
+        return;
+      }
       if (self->canceled_) {
         return;
       }
@@ -247,8 +278,11 @@ void CAresResolver::AsyncResolve(const std::string& host,
 
 void CAresResolver::Cancel() {
   canceled_ = true;
-  asio::error_code ec;
   resolve_timer_.cancel();
+  for (auto [fd, ctx]: fd_map_) {
+    asio::error_code ec;
+    ctx->socket.close(ec);
+  }
 }
 
 void CAresResolver::OnAsyncWait() {
