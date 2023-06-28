@@ -384,7 +384,10 @@ int CYassFrame::Create(const wchar_t* className,
   LoadConfig();
 
   CentreWindow();
-  ShowWindow(m_hWnd, nCmdShow);
+  ShowWindow(m_hWnd, SW_SHOW);
+  if (nCmdShow != SW_SHOW) {
+    ShowWindow(m_hWnd, nCmdShow);
+  }
   UpdateWindow(m_hWnd);
 
   SetTimer(m_hWnd, IDT_UPDATE_STATUS_BAR, 200, nullptr);
