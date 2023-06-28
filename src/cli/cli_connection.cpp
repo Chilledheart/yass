@@ -232,7 +232,7 @@ void CliConnection::on_protocol_error() {
 
 int64_t CliConnection::OnReadyToSend(absl::string_view serialized) {
   MSAN_UNPOISON(serialized.data(), serialized.size());
-  upstream_.push_back_merged(serialized.data(), serialized.size(), nullptr);
+  upstream_.push_back(IOBuf::copyBuffer(serialized.data(), serialized.size()));
   return serialized.size();
 }
 
@@ -1073,6 +1073,9 @@ void CliConnection::WriteUpstreamInPipe() {
     buf->trimStart(written);
     wbytes_transferred += written;
     bytes_upstream_passed_without_yield_ += written;
+    if (ec == asio::error::try_again || ec == asio::error::would_block) {
+      break;
+    }
     VLOG(2) << "Connection (client) " << connection_id()
             << " upstream: sent request (pipe): " << written << " bytes"
             << " done: " << channel_->wbytes_transferred() << " bytes."
@@ -1081,9 +1084,6 @@ void CliConnection::WriteUpstreamInPipe() {
     if (buf->empty()) {
       DCHECK(!upstream_.empty() && upstream_.front() == buf);
       upstream_.pop_front();
-    }
-    if (ec == asio::error::try_again || ec == asio::error::would_block) {
-      break;
     }
     if (ec) {
       OnDisconnect(ec);
@@ -1176,7 +1176,7 @@ std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code &ec,
     }
     data_frame_->AddChunk(buf);
   } else if (upstream_https_fallback_) {
-    upstream_.push_back_merged(buf, nullptr);
+    upstream_.push_back(buf);
   } else {
     EncryptData(&upstream_, buf);
   }
@@ -1451,7 +1451,7 @@ void CliConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
     adapter()->ResumeStream(stream_id_);
     SendIfNotProcessing();
   } else if (upstream_https_fallback_) {
-    upstream_.push_back_merged(buf, nullptr);
+    upstream_.push_back(buf);
   } else {
     EncryptData(&upstream_, buf);
   }
@@ -1517,7 +1517,7 @@ void CliConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf && !buf->empty()) {
     VLOG(2) << "Connection (client) " << connection_id()
             << " upstream: ready to send request: " << buf->length() << " bytes.";
-    upstream_.push_back_merged(buf, nullptr);
+    upstream_.push_back(buf);
   }
   if (!upstream_.empty() && upstream_writable_) {
     upstream_writable_ = false;
@@ -1642,7 +1642,7 @@ void CliConnection::connected() {
         "\r\n", host.c_str(), port, host.c_str(), port);
     std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(hdr.data(), hdr.size());
     // write variable address directly as https header
-    upstream_.push_back_merged(buf, nullptr);
+    upstream_.push_back(buf);
   } else {
     ByteRange req(ss_request_->data(), ss_request_->length());
     std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);
