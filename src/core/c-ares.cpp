@@ -72,7 +72,7 @@ CAresResolver::CAresResolver(asio::io_context &io_context) :
 
 CAresResolver::~CAresResolver() {
   Destroy();
-  VLOG(2) << "c-ares resolver freed memory";
+  VLOG(1) << "c-ares resolver freed memory";
 }
 
 int CAresResolver::Init(int timeout_ms, int retries) {
@@ -91,8 +91,15 @@ int CAresResolver::Init(int timeout_ms, int retries) {
 }
 
 void CAresResolver::Destroy() {
-  canceled_ = true;
-  resolve_timer_.cancel();
+  if (!canceled_) {
+    // cancel manually
+    canceled_ = true;
+    resolve_timer_.cancel();
+    for (auto [fd, ctx]: fd_map_) {
+      asio::error_code ec;
+      ctx->socket.cancel(ec);
+    }
+  }
   ::ares_destroy(channel_);
 }
 
@@ -186,6 +193,9 @@ void CAresResolver::AsyncResolve(const std::string& host,
     [](void *arg, int status, int timeouts, struct ares_addrinfo *result) {
       auto ctx = std::unique_ptr<async_resolve_ctx>(reinterpret_cast<async_resolve_ctx*>(arg));
       auto self = ctx->self;
+      if (status == ARES_ECANCELLED || status == ARES_EDESTRUCTION) {
+        return;
+      }
       if (self->canceled_) {
         return;
       }
@@ -247,8 +257,12 @@ void CAresResolver::AsyncResolve(const std::string& host,
 
 void CAresResolver::Cancel() {
   canceled_ = true;
-  asio::error_code ec;
   resolve_timer_.cancel();
+  for (auto [fd, ctx]: fd_map_) {
+    asio::error_code ec;
+    ctx->socket.cancel(ec);
+  }
+  ares_cancel(channel_);
 }
 
 void CAresResolver::OnAsyncWait() {
