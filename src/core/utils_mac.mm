@@ -5,6 +5,8 @@
 
 #ifdef __APPLE__
 
+#include <absl/flags/internal/program_name.h>
+
 #if defined(OS_APPLE) && defined(__clang__)
 
 #include <AvailabilityMacros.h>
@@ -702,6 +704,10 @@ bool GetExecutablePath(std::string* path) {
 
 void SetExecutablePath(const std::string& exe_path) {
   main_exe_path = exe_path;
+
+  std::string new_exe_path;
+  GetExecutablePath(new_exe_path);
+  absl::flags_internal::SetProgramInvocationName(new_exe_path);
 }
 
 #endif  // __APPLE__

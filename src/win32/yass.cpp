@@ -50,6 +50,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   if (!GetExecutablePath(&exec_path)) {
     return -1;
   }
+  SetExecutablePath(exec_path);
 
   absl::InitializeSymbolizer(exec_path.c_str());
   absl::FailureSignalHandlerOptions failure_handle_options;

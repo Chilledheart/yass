@@ -10,6 +10,8 @@
 #include "core/compiler_specific.hpp"
 #include "core/logging.hpp"
 
+#include <absl/flags/internal/program_name.h>
+
 #ifdef _WIN32
 
 #define MAKE_WIN_VER(major, minor, build_number) \
@@ -780,10 +782,18 @@ bool GetExecutablePathW(std::wstring* exe_path) {
 
 void SetExecutablePath(const std::string& exe_path) {
   main_exe_path = exe_path;
+
+  std::string new_exe_path;
+  GetExecutablePath(new_exe_path);
+  absl::flags_internal::SetProgramInvocationName(new_exe_path);
 }
 
 void SetExecutablePathW(const std::wstring& exe_path) {
   main_exe_path = SysWideToUTF8(exe_path);
+
+  std::string new_exe_path;
+  GetExecutablePath(new_exe_path);
+  absl::flags_internal::SetProgramInvocationName(new_exe_path);
 }
 
 #endif  // _WIN32

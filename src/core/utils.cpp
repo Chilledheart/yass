@@ -8,6 +8,8 @@
 #include <unistd.h>
 #endif
 
+#include <absl/flags/internal/program_name.h>
+
 absl::StatusOr<int32_t> StringToInteger(absl::string_view value) {
   long result = 0;
   char* endptr = nullptr;
@@ -97,5 +99,6 @@ bool GetExecutablePath(std::string* exe_path) {
 
 void SetExecutablePath(const std::string& exe_path) {
   main_exe_path = exe_path;
+  absl::flags_internal::SetProgramInvocationName(exe_path);
 }
 #endif
