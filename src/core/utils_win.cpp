@@ -784,7 +784,7 @@ void SetExecutablePath(const std::string& exe_path) {
   main_exe_path = exe_path;
 
   std::string new_exe_path;
-  GetExecutablePath(new_exe_path);
+  GetExecutablePath(&new_exe_path);
   absl::flags_internal::SetProgramInvocationName(new_exe_path);
 }
 
