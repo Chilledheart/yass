@@ -57,6 +57,7 @@ class stream : public RefCountedThreadSafe<stream> {
 #endif
         host_name_(host_name),
         port_(port),
+        io_context_(io_context),
         socket_(io_context),
         connect_timer_(io_context),
         https_fallback_(https_fallback),
@@ -183,7 +184,7 @@ class stream : public RefCountedThreadSafe<stream> {
 
   /// wait read routine
   ///
-  void wait_read(handle_t callback) {
+  void wait_read(handle_t callback, bool yield) {
     DCHECK(!read_inprogress_);
     DCHECK(callback);
 
@@ -194,6 +195,22 @@ class stream : public RefCountedThreadSafe<stream> {
     read_inprogress_ = true;
     wait_read_callback_ = std::move(callback);
     scoped_refptr<stream> self(this);
+    if (yield) {
+      asio::post(io_context_, [this, self]() {
+        handle_t callback = std::move(wait_read_callback_);
+        wait_read_callback_ = nullptr;
+        read_inprogress_ = false;
+        if (UNLIKELY(!connected_ || closed_)) {
+          DCHECK(!user_connect_callback_);
+          return;
+        }
+        if (UNLIKELY(!callback)) {
+          return;
+        }
+        callback(asio::error_code());
+      });
+      return;
+    }
     s_wait_read_([this, self](asio::error_code ec) {
       // Cancelled, safe to ignore
       if (UNLIKELY(ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted)) {
@@ -462,6 +479,7 @@ class stream : public RefCountedThreadSafe<stream> {
   std::string host_name_;
   uint16_t port_;
   asio::ip::tcp::endpoint endpoint_;
+  asio::io_context& io_context_;
   asio::ip::tcp::socket socket_;
   asio::steady_timer connect_timer_;
   std::deque<asio::ip::tcp::endpoint> endpoints_;

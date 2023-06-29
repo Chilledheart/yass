@@ -258,6 +258,7 @@ class ContentServer {
     std::string certificate_chain_file = absl::GetFlag(FLAGS_certificate_chain_file);
     std::string private_key_file = absl::GetFlag(FLAGS_private_key_file);
     if (!private_key_file.empty()) {
+      CHECK(!certificate_chain_file.empty()) << "certificate chain file is not provided";
       ssl_ctx_.set_password_callback([](size_t max_length,
                                         asio::ssl::context::password_purpose purpose) {
         return absl::GetFlag(FLAGS_private_key_password);
@@ -276,6 +277,7 @@ class ContentServer {
 
     // Load Certificates (if set)
     if (!private_key_.empty()) {
+      CHECK(!certificate_.empty()) << "certificate buffer is not provided";
       ssl_ctx_.use_certificate_chain(asio::const_buffer(certificate_.data(),
                                                         certificate_.size()),
                                      ec);
@@ -294,11 +296,53 @@ class ContentServer {
     }
     SSL_CTX_set_early_data_enabled(ssl_ctx_.native_handle(),
                                    absl::GetFlag(FLAGS_tls13_early_data));
+
+    CHECK(SSL_CTX_set_min_proto_version(ssl_ctx_.native_handle(),
+                                        TLS1_2_VERSION));
+    CHECK(SSL_CTX_set_max_proto_version(ssl_ctx_.native_handle(),
+                                        TLS1_3_VERSION));
+
+    // OpenSSL defaults some options to on, others to off. To avoid ambiguity,
+    // set everything we care about to an absolute value.
+    net::SslSetClearMask options;
+    options.ConfigureFlag(SSL_OP_NO_COMPRESSION, true);
+
+    SSL_CTX_set_options(ssl_ctx_.native_handle(), options.set_mask);
+    SSL_CTX_clear_options(ssl_ctx_.native_handle(), options.clear_mask);
+
+    // Same as above, this time for the SSL mode.
+    net::SslSetClearMask mode;
+
+    mode.ConfigureFlag(SSL_MODE_RELEASE_BUFFERS, true);
+
+    SSL_CTX_set_mode(ssl_ctx_.native_handle(), mode.set_mask);
+    SSL_CTX_clear_mode(ssl_ctx_.native_handle(), mode.clear_mask);
+
+    // Use BoringSSL defaults, but disable 3DES and HMAC-SHA1 ciphers in ECDSA.
+    // These are the remaining CBC-mode ECDSA ciphers.
+    std::string command("ALL:!aPSK:!ECDSA+SHA1:!3DES");
+
+#if 0
+    // SSLPrivateKey only supports ECDHE-based ciphers because it lacks decrypt.
+    if (ssl_server_config_.require_ecdhe || (!pkey_ && private_key_))
+      command.append(":!kRSA");
+
+    // Remove any disabled ciphers.
+    for (uint16_t id : ssl_server_config_.disabled_cipher_suites) {
+      const SSL_CIPHER* cipher = SSL_get_cipher_by_value(id);
+      if (cipher) {
+        command.append(":!");
+        command.append(SSL_CIPHER_get_name(cipher));
+      }
+    }
+#endif
+
+    CHECK(SSL_CTX_set_strict_cipher_list(ssl_ctx_.native_handle(), command.c_str()));
+
     // TODO: implement these SSL options
-    // SSLServerContextImpl::Init
-    // SSL_CTX_set_strict_cipher_list
     // SSL_CTX_set_ocsp_response
     // SSL_CTX_set_signed_cert_timestamp_list
+    // SSL_CTX_set1_ech_keys
   }
 
   struct alpn_ctx_t {
@@ -343,12 +387,13 @@ class ContentServer {
         *outlen = in[0];
         return SSL_TLSEXT_ERR_OK;
       }
+      LOG(WARNING) << "Unexpected alpn: " << alpn;
       inlen -= 1u + in[0];
       in += 1u + in[0];
     }
 
   err:
-    VLOG(1) << "Connection (" << server->factory_.Name() << ") "
+    LOG(WARNING) << "Connection (" << server->factory_.Name() << ") "
       << connection_id << " Alpn support (server) fatal error";
     return SSL_TLSEXT_ERR_ALERT_FATAL;
   }
@@ -373,7 +418,12 @@ class ContentServer {
       return;
     }
 
-    upstream_ssl_ctx_.set_verify_mode(asio::ssl::verify_peer, ec);
+    if (absl::GetFlag(FLAGS_insecure_mode)) {
+      upstream_ssl_ctx_.set_verify_mode(asio::ssl::verify_none, ec);
+    } else {
+      upstream_ssl_ctx_.set_verify_mode(asio::ssl::verify_peer, ec);
+      SSL_CTX_set_reverify_on_resume(upstream_ssl_ctx_.native_handle(), 1);
+    }
     if (ec) {
       return;
     }
@@ -415,6 +465,10 @@ class ContentServer {
       return;
     }
     VLOG(1) << "Alpn support (client) enabled";
+
+    SSL_CTX_set_timeout(upstream_ssl_ctx_.native_handle(), 1 * 60 * 60 /* one hour */);
+
+    SSL_CTX_set_grease_enabled(upstream_ssl_ctx_.native_handle(), 1);
   }
 
  private:

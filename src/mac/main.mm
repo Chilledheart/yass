@@ -19,17 +19,6 @@
 #include "crypto/crypter_export.hpp"
 #include "version.h"
 
-static std::string GetMainExecutablePath() {
-  char exe_path[PATH_MAX];
-  uint32_t size = sizeof(exe_path);
-  if (_NSGetExecutablePath(exe_path, &size) == 0) {
-    char link_path[PATH_MAX];
-    if (realpath(exe_path, link_path))
-      return link_path;
-  }
-  return "UNKNOWN";
-}
-
 #if defined(ARCH_CPU_X86_64)
 // This is for https://crbug.com/1300598, and more generally,
 // https://crbug.com/1297588 (and all of the associated bugs). It's horrible!
@@ -50,7 +39,13 @@ int main(int argc, const char* argv[]) {
     LOG(WARNING) << "Failed to set up utf-8 locale";
   }
 
-  absl::InitializeSymbolizer(GetMainExecutablePath().c_str());
+  SetExecutablePath(argv[0]);
+  std::string exec_path;
+  if (!GetExecutablePath(&exec_path)) {
+    return -1;
+  }
+
+  absl::InitializeSymbolizer(exec_path.c_str());
   absl::FailureSignalHandlerOptions failure_handle_options;
   absl::InstallFailureSignalHandler(failure_handle_options);
 

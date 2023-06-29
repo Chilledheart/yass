@@ -232,7 +232,7 @@ void CliConnection::on_protocol_error() {
 
 int64_t CliConnection::OnReadyToSend(absl::string_view serialized) {
   MSAN_UNPOISON(serialized.data(), serialized.size());
-  upstream_.push_back_merged(serialized.data(), serialized.size(), nullptr);
+  upstream_.push_back(IOBuf::copyBuffer(serialized.data(), serialized.size()));
   return serialized.size();
 }
 
@@ -650,7 +650,7 @@ asio::error_code CliConnection::OnReadHttpRequest(
   return std::make_error_code(std::errc::bad_message);
 }
 
-void CliConnection::ReadStream() {
+void CliConnection::ReadStream(bool yield) {
   scoped_refptr<CliConnection> self(this);
   DCHECK_EQ(downstream_read_inprogress_, false);
   if (downstream_read_inprogress_) {
@@ -662,20 +662,31 @@ void CliConnection::ReadStream() {
   }
 
   downstream_read_inprogress_ = true;
-  s_async_read_some_([this, self](asio::error_code ec) {
+  if (yield) {
+    asio::post(*io_context_, [this, self]() {
       downstream_read_inprogress_ = false;
       if (closed_) {
         return;
       }
-      if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
-        return;
-      }
-      if (ec) {
-        ProcessReceivedData(nullptr, ec, 0);
-        return;
-      }
       WriteUpstreamInPipe();
       OnUpstreamWriteFlush();
+    });
+    return;
+  }
+  s_async_read_some_([this, self](asio::error_code ec) {
+    downstream_read_inprogress_ = false;
+    if (closed_) {
+      return;
+    }
+    if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+      return;
+    }
+    if (ec) {
+      ProcessReceivedData(nullptr, ec, 0);
+      return;
+    }
+    WriteUpstreamInPipe();
+    OnUpstreamWriteFlush();
   });
 }
 
@@ -744,6 +755,7 @@ void CliConnection::WriteStream() {
   }
 
   bool try_again = false;
+  bool yield = false;
   asio::error_code ec;
   size_t wbytes_transferred = 0u;
   do {
@@ -783,6 +795,7 @@ void CliConnection::WriteStream() {
       yield_downstream_after_time_ = GetMonotonicTime() + kYieldAfterDurationMilliseconds * 1000 * 1000;
       if (downstream_.empty()) {
         try_again = true;
+        yield = true;
       } else {
         ec = asio::error::try_again;
       }
@@ -792,7 +805,7 @@ void CliConnection::WriteStream() {
 
   if (try_again) {
     if (channel_ && channel_->connected() && !channel_->read_inprogress()) {
-      ReadUpstreamAsync();
+      ReadUpstreamAsync(yield);
     }
   }
   if (ec == asio::error::try_again || ec == asio::error::would_block) {
@@ -862,12 +875,12 @@ void CliConnection::ReadUpstream() {
 
   if (try_again) {
     if (channel_ && channel_->connected() && !channel_->read_inprogress()) {
-      ReadUpstreamAsync();
+      ReadUpstreamAsync(false);
     }
   }
 }
 
-void CliConnection::ReadUpstreamAsync() {
+void CliConnection::ReadUpstreamAsync(bool yield) {
   DCHECK(channel_ && channel_->connected());
   DCHECK(!channel_->read_inprogress());
   if (UNLIKELY(channel_->read_inprogress())) {
@@ -884,7 +897,7 @@ void CliConnection::ReadUpstreamAsync() {
       return;
     }
     received();
-  });
+  }, yield);
 }
 
 std::shared_ptr<IOBuf> CliConnection::GetNextDownstreamBuf(asio::error_code &ec,
@@ -1023,6 +1036,7 @@ void CliConnection::WriteUpstreamInPipe() {
   asio::error_code ec;
   size_t bytes_transferred = 0U, wbytes_transferred = 0U;
   bool try_again = false;
+  bool yield = false;
 
   if (channel_ && channel_->write_inprogress()) {
     return;
@@ -1059,6 +1073,9 @@ void CliConnection::WriteUpstreamInPipe() {
     buf->trimStart(written);
     wbytes_transferred += written;
     bytes_upstream_passed_without_yield_ += written;
+    if (ec == asio::error::try_again || ec == asio::error::would_block) {
+      break;
+    }
     VLOG(2) << "Connection (client) " << connection_id()
             << " upstream: sent request (pipe): " << written << " bytes"
             << " done: " << channel_->wbytes_transferred() << " bytes."
@@ -1067,9 +1084,6 @@ void CliConnection::WriteUpstreamInPipe() {
     if (buf->empty()) {
       DCHECK(!upstream_.empty() && upstream_.front() == buf);
       upstream_.pop_front();
-    }
-    if (ec == asio::error::try_again || ec == asio::error::would_block) {
-      break;
     }
     if (ec) {
       OnDisconnect(ec);
@@ -1085,6 +1099,7 @@ void CliConnection::WriteUpstreamInPipe() {
       yield_upstream_after_time_ = GetMonotonicTime() + kYieldAfterDurationMilliseconds;
       if (upstream_.empty()) {
         try_again = true;
+        yield = true;
       } else {
         ec = asio::error::try_again;
       }
@@ -1093,7 +1108,7 @@ void CliConnection::WriteUpstreamInPipe() {
   }
   if (try_again) {
     if (!downstream_read_inprogress_) {
-      ReadStream();
+      ReadStream(yield);
     }
   }
   if (ec == asio::error::try_again || ec == asio::error::would_block) {
@@ -1161,7 +1176,7 @@ std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code &ec,
     }
     data_frame_->AddChunk(buf);
   } else if (upstream_https_fallback_) {
-    upstream_.push_back_merged(buf, nullptr);
+    upstream_.push_back(buf);
   } else {
     EncryptData(&upstream_, buf);
   }
@@ -1436,7 +1451,7 @@ void CliConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
     adapter()->ResumeStream(stream_id_);
     SendIfNotProcessing();
   } else if (upstream_https_fallback_) {
-    upstream_.push_back_merged(buf, nullptr);
+    upstream_.push_back(buf);
   } else {
     EncryptData(&upstream_, buf);
   }
@@ -1502,7 +1517,7 @@ void CliConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf && !buf->empty()) {
     VLOG(2) << "Connection (client) " << connection_id()
             << " upstream: ready to send request: " << buf->length() << " bytes.";
-    upstream_.push_back_merged(buf, nullptr);
+    upstream_.push_back(buf);
   }
   if (!upstream_.empty() && upstream_writable_) {
     upstream_writable_ = false;
@@ -1627,7 +1642,7 @@ void CliConnection::connected() {
         "\r\n", host.c_str(), port, host.c_str(), port);
     std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(hdr.data(), hdr.size());
     // write variable address directly as https header
-    upstream_.push_back_merged(buf, nullptr);
+    upstream_.push_back(buf);
   } else {
     ByteRange req(ss_request_->data(), ss_request_->length());
     std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);

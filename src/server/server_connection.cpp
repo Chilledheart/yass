@@ -281,7 +281,7 @@ void ServerConnection::on_protocol_error() {
 
 int64_t ServerConnection::OnReadyToSend(absl::string_view serialized) {
   MSAN_UNPOISON(serialized.data(), serialized.size());
-  downstream_.push_back_merged(serialized.data(), serialized.size(), nullptr);
+  downstream_.push_back(IOBuf::copyBuffer(serialized.data(), serialized.size()));
   return serialized.size();
 }
 
@@ -607,7 +607,7 @@ void ServerConnection::OnReadHandshakeViaHttps() {
   }
 }
 
-void ServerConnection::ReadStream() {
+void ServerConnection::ReadStream(bool yield) {
   scoped_refptr<ServerConnection> self(this);
   DCHECK_EQ(downstream_read_inprogress_, false);
   if (downstream_read_inprogress_) {
@@ -619,20 +619,31 @@ void ServerConnection::ReadStream() {
   }
 
   downstream_read_inprogress_ = true;
-  s_async_read_some_([this, self](asio::error_code ec) {
+  if (yield) {
+    asio::post(*io_context_, [this, self]() {
       downstream_read_inprogress_ = false;
-      if (closed_ || closing_) {
-        return;
-      }
-      if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
-        return;
-      }
-      if (ec) {
-        ProcessReceivedData(nullptr, ec, 0);
+      if (closed_) {
         return;
       }
       WriteUpstreamInPipe();
       OnUpstreamWriteFlush();
+    });
+    return;
+  }
+  s_async_read_some_([this, self](asio::error_code ec) {
+    downstream_read_inprogress_ = false;
+    if (closed_ || closing_) {
+      return;
+    }
+    if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+      return;
+    }
+    if (ec) {
+      ProcessReceivedData(nullptr, ec, 0);
+      return;
+    }
+    WriteUpstreamInPipe();
+    OnUpstreamWriteFlush();
   });
 }
 
@@ -663,6 +674,7 @@ void ServerConnection::WriteStreamInPipe() {
   asio::error_code ec;
   size_t bytes_transferred = 0U, wbytes_transferred = 0U;
   bool try_again = false;
+  bool yield = false;
 
   /* recursively send the remainings */
   while (true) {
@@ -713,6 +725,7 @@ void ServerConnection::WriteStreamInPipe() {
       yield_downstream_after_time_ = GetMonotonicTime() + kYieldAfterDurationMilliseconds * 1000 * 1000;
       if (downstream_.empty()) {
         try_again = true;
+        yield = true;
       } else {
         ec = asio::error::try_again;
       }
@@ -731,7 +744,7 @@ void ServerConnection::WriteStreamInPipe() {
           return;
         }
         received();
-      });
+      }, yield);
     }
   }
   if (ec == asio::error::try_again || ec == asio::error::would_block) {
@@ -807,7 +820,7 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code &
     }
     data_frame_->AddChunk(buf);
   } else if (https_fallback_) {
-    downstream_.push_back_merged(buf, nullptr);
+    downstream_.push_back(buf);
   } else {
     EncryptData(&downstream_, buf);
   }
@@ -834,6 +847,7 @@ void ServerConnection::WriteUpstreamInPipe() {
   asio::error_code ec;
   size_t bytes_transferred = 0U, wbytes_transferred = 0U;
   bool try_again = false;
+  bool yield = false;
 
   if (channel_ && channel_->write_inprogress()) {
     return;
@@ -868,6 +882,9 @@ void ServerConnection::WriteUpstreamInPipe() {
     } while(false);
     buf->trimStart(written);
     wbytes_transferred += written;
+    if (ec == asio::error::try_again || ec == asio::error::would_block) {
+      break;
+    }
     VLOG(2) << "Connection (server) " << connection_id()
             << " upstream: sent request (pipe): " << written << " bytes"
             << " done: " << channel_->wbytes_transferred() << " bytes."
@@ -875,11 +892,6 @@ void ServerConnection::WriteUpstreamInPipe() {
     // continue to resume
     if (buf->empty()) {
       upstream_.pop_front();
-    }
-    if (ec == asio::error::try_again || ec == asio::error::would_block) {
-      VLOG(1) << "Connection (server) " << connection_id()
-              << " disabling reading";
-      break;
     }
     if (ec) {
       OnDisconnect(ec);
@@ -895,6 +907,7 @@ void ServerConnection::WriteUpstreamInPipe() {
       yield_upstream_after_time_ = GetMonotonicTime() + kYieldAfterDurationMilliseconds;
       if (upstream_.empty()) {
         try_again = true;
+        yield = true;
       } else {
         ec = asio::error::try_again;
       }
@@ -903,7 +916,7 @@ void ServerConnection::WriteUpstreamInPipe() {
   }
   if (try_again) {
     if (!downstream_read_inprogress_) {
-      ReadStream();
+      ReadStream(yield);
     }
   }
   if (ec == asio::error::try_again || ec == asio::error::would_block) {
@@ -1199,7 +1212,7 @@ void ServerConnection::OnDownstreamWriteFlush() {
 
 void ServerConnection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf && !buf->empty()) {
-    downstream_.push_back_merged(buf, nullptr);
+    downstream_.push_back(buf);
   }
 
   if (!downstream_.empty() && !write_inprogress_) {

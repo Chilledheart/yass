@@ -37,11 +37,16 @@ int main(int argc, const char* argv[]) {
   if (!SetUTF8Locale()) {
     LOG(WARNING) << "Failed to set up utf-8 locale";
   }
+  SetExecutablePath(argv[0]);
+  std::string exec_path;
+  if (!GetExecutablePath(&exec_path)) {
+    return -1;
+  }
 
   // Major routine
   // - Read config from ss config file
   // - Listen by local address and local port
-  absl::InitializeSymbolizer(argv[0]);
+  absl::InitializeSymbolizer(exec_path.c_str());
   absl::FailureSignalHandlerOptions failure_handle_options;
   absl::InstallFailureSignalHandler(failure_handle_options);
 
@@ -109,15 +114,15 @@ int main(int argc, const char* argv[]) {
                    absl::GetFlag(FLAGS_server_port));
   for (auto &endpoint : endpoints) {
     server.listen(endpoint, SOMAXCONN, ec);
-    endpoint = server.endpoint();
-    LOG(WARNING) << "tcp server listening at " << endpoint
-      << " with upstream " << remote_domain;
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec;
       server.stop();
       work_guard.reset();
       return -1;
     }
+    endpoint = server.endpoint();
+    LOG(WARNING) << "tcp server listening at " << endpoint
+      << " with upstream " << remote_domain;
   }
 
   asio::signal_set signals(io_context);

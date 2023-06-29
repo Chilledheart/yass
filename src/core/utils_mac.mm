@@ -5,6 +5,8 @@
 
 #ifdef __APPLE__
 
+#include <absl/flags/internal/program_name.h>
+
 #if defined(OS_APPLE) && defined(__clang__)
 
 #include <AvailabilityMacros.h>
@@ -18,6 +20,7 @@
 #include <mach/mach_port.h>
 #include <mach/mach_time.h>
 #include <mach/vm_map.h>
+#include <mach-o/dyld.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <sys/mman.h>  // For mlock.
@@ -678,5 +681,33 @@ std::u16string SysNSStringToUTF16(NSString* nsstring) {
 }
 
 #endif  // defined(OS_APPLE) && defined(__clang__)
+
+static std::string main_exe_path = "UNKNOWN";
+
+bool GetExecutablePath(std::string* path) {
+  char exe_path[PATH_MAX];
+  uint32_t size = sizeof(exe_path);
+  if (_NSGetExecutablePath(exe_path, &size) == 0) {
+    char link_path[PATH_MAX];
+    if (realpath(exe_path, link_path)) {
+      *path = link_path;
+      return true;
+    } else {
+      PLOG(WARNING) << "Internal error: realpath failed";
+    }
+  } else {
+    PLOG(WARNING) << "Internal error: _NSGetExecutablePath failed";
+  }
+  *path = main_exe_path;
+  return false;
+}
+
+void SetExecutablePath(const std::string& exe_path) {
+  main_exe_path = exe_path;
+
+  std::string new_exe_path;
+  GetExecutablePath(&new_exe_path);
+  absl::flags_internal::SetProgramInvocationName(new_exe_path);
+}
 
 #endif  // __APPLE__

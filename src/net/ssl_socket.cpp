@@ -45,6 +45,60 @@ SSLSocket::SSLSocket(asio::io_context *io_context,
 
   SSL_set_early_data_enabled(ssl_.get(), early_data_enabled_);
 
+  // OpenSSL defaults some options to on, others to off. To avoid ambiguity,
+  // set everything we care about to an absolute value.
+  SslSetClearMask options;
+  options.ConfigureFlag(SSL_OP_NO_COMPRESSION, true);
+
+  // TODO(joth): Set this conditionally, see http://crbug.com/55410
+  options.ConfigureFlag(SSL_OP_LEGACY_SERVER_CONNECT, true);
+
+  SSL_set_options(ssl_.get(), options.set_mask);
+  SSL_clear_options(ssl_.get(), options.clear_mask);
+
+  // Same as above, this time for the SSL mode.
+  SslSetClearMask mode;
+
+  mode.ConfigureFlag(SSL_MODE_RELEASE_BUFFERS, true);
+  mode.ConfigureFlag(SSL_MODE_CBC_RECORD_SPLITTING, true);
+
+  mode.ConfigureFlag(SSL_MODE_ENABLE_FALSE_START, true);
+
+  SSL_set_mode(ssl_.get(), mode.set_mask);
+  SSL_clear_mode(ssl_.get(), mode.clear_mask);
+
+  std::string command("ALL:!aPSK:!ECDSA+SHA1:!3DES");
+
+#if 0
+  if (ssl_config_.require_ecdhe) {
+    command.append(":!kRSA");
+  }
+
+  // Remove any disabled ciphers.
+  for (uint16_t id : context_->config().disabled_cipher_suites) {
+    const SSL_CIPHER* cipher = SSL_get_cipher_by_value(id);
+    if (cipher) {
+      command.append(":!");
+      command.append(SSL_CIPHER_get_name(cipher));
+    }
+  }
+#endif
+
+  if (!SSL_set_strict_cipher_list(ssl_.get(), command.c_str())) {
+    LOG(FATAL) << "SSL_set_cipher_list('" << command << "') failed";
+  }
+
+  static const uint16_t kVerifyPrefs[] = {
+      SSL_SIGN_ECDSA_SECP256R1_SHA256, SSL_SIGN_RSA_PSS_RSAE_SHA256,
+      SSL_SIGN_RSA_PKCS1_SHA256,       SSL_SIGN_ECDSA_SECP384R1_SHA384,
+      SSL_SIGN_RSA_PSS_RSAE_SHA384,    SSL_SIGN_RSA_PKCS1_SHA384,
+      SSL_SIGN_RSA_PSS_RSAE_SHA512,    SSL_SIGN_RSA_PKCS1_SHA512,
+  };
+  if (!SSL_set_verify_algorithm_prefs(ssl_.get(), kVerifyPrefs,
+                                      std::size(kVerifyPrefs))) {
+    LOG(FATAL) << "SSL_set_verify_algorithm_prefs failed";
+  }
+
   // ALPS TLS extension is enabled and corresponding data is sent to client if
   // client also enabled ALPS, for each NextProto in |application_settings|.
   // Data might be empty.
@@ -53,6 +107,7 @@ SSLSocket::SSLSocket(asio::io_context *io_context,
   SSL_add_application_settings(ssl_.get(),
                                reinterpret_cast<const uint8_t*>(proto_string),
                                strlen(proto_string), data.data(), data.size());
+
   SSL_enable_signed_cert_timestamps(ssl_.get());
   SSL_enable_ocsp_stapling(ssl_.get());
 
@@ -66,9 +121,7 @@ SSLSocket::SSLSocket(asio::io_context *io_context,
 
   SSL_set_shed_handshake_config(ssl_.get(), 1);
 
-  // If false, disables TLS Encrypted ClientHello (ECH). If true, the feature
-  // may be enabled or disabled, depending on feature flags.
-  SSL_set_enable_ech_grease(ssl_.get(), 0);
+  SSL_set_permute_extensions(ssl_.get(), 1);
 }
 
 int SSLSocket::Connect(CompletionOnceCallback callback) {
@@ -431,43 +484,21 @@ int SSLSocket::DoHandshakeComplete(int result) {
     negotiated_protocol_ = std::string(reinterpret_cast<const char*>(alpn_proto), alpn_len);
   }
 
-#if 0
-  RecordNegotiatedProtocol();
-
   const uint8_t* ocsp_response_raw;
   size_t ocsp_response_len;
   SSL_get0_ocsp_response(ssl_.get(), &ocsp_response_raw, &ocsp_response_len);
-  set_stapled_ocsp_response_received(ocsp_response_len != 0);
+  signed_cert_timestamps_received_ = (ocsp_response_len != 0);
 
   const uint8_t* sct_list;
   size_t sct_list_len;
   SSL_get0_signed_cert_timestamp_list(ssl_.get(), &sct_list, &sct_list_len);
-  set_signed_cert_timestamps_received(sct_list_len != 0);
+  stapled_ocsp_response_received_ = (sct_list_len != 0);
 
   if (!IsRenegotiationAllowed())
     SSL_set_renegotiate_mode(ssl_.get(), ssl_renegotiate_never);
 
   uint16_t signature_algorithm = SSL_get_peer_signature_algorithm(ssl_.get());
-  if (signature_algorithm != 0) {
-    base::UmaHistogramSparse("Net.SSLSignatureAlgorithm", signature_algorithm);
-  }
-
-  SSLInfo ssl_info;
-  bool ok = GetSSLInfo(&ssl_info);
-  // Ensure the verify callback was called, and got far enough to fill
-  // in server_cert_.
-  CHECK(ok);
-
-  // See how feasible enforcing RSA key usage would be. See
-  // https://crbug.com/795089.
-  if (!server_cert_verify_result_.is_issued_by_known_root) {
-    RSAKeyUsage rsa_key_usage = CheckRSAKeyUsage(
-        server_cert_.get(), SSL_get_current_cipher(ssl_.get()));
-    if (rsa_key_usage != RSAKeyUsage::kNotRSA) {
-      UMA_HISTOGRAM_ENUMERATION("Net.SSLRSAKeyUsage.UnknownRoot", rsa_key_usage,
-                                static_cast<int>(RSAKeyUsage::kLastValue) + 1);
-    }
-  }
+  (void)signature_algorithm;
 
   SSLHandshakeDetails details;
   if (SSL_version(ssl_.get()) < TLS1_3_VERSION) {
@@ -493,15 +524,13 @@ int SSLSocket::DoHandshakeComplete(int result) {
                     : SSLHandshakeDetails::kTLS13Full;
     }
   }
-  UMA_HISTOGRAM_ENUMERATION("Net.SSLHandshakeDetails", details);
+  (void)details;
 
   // Measure TLS connections that implement the renegotiation_info extension.
   // Note this records true for TLS 1.3. By removing renegotiation altogether,
   // TLS 1.3 is implicitly patched against the bug. See
   // https://crbug.com/850800.
-  base::UmaHistogramBoolean("Net.SSLRenegotiationInfoSupported",
-                            SSL_get_secure_renegotiation_support(ssl_.get()));
-#endif
+  (void)SSL_get_secure_renegotiation_support(ssl_.get());
 
   completed_connect_ = true;
   next_handshake_state_ = STATE_NONE;

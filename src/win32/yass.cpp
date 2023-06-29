@@ -46,11 +46,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     LOG(WARNING) << "Failed to set up utf-8 locale";
   }
 
-  std::wstring wexec_path;
-  if (!Utils::GetExecutablePath(&wexec_path)) {
+  std::string exec_path;
+  if (!GetExecutablePath(&exec_path)) {
     return -1;
   }
-  std::string exec_path = SysWideToUTF8(wexec_path);
+  SetExecutablePath(exec_path);
 
   absl::InitializeSymbolizer(exec_path.c_str());
   absl::FailureSignalHandlerOptions failure_handle_options;

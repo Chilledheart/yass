@@ -233,6 +233,7 @@ option(USE_GOLD "Build with gold linker" OFF)
 option(USE_ICF "Build with ICF" OFF)
 option(USE_LTO "Build with LTO" OFF)
 option(USE_CURL "Build with libcurl (test only)" ON)
+option(USE_CARES "Build with c-ares" ON)
 option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
 
 option(ENABLE_LTO "Enable build with LTO" ON)
@@ -1410,9 +1411,14 @@ if (WIN32)
   set(CMAKE_CXX_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
 
   if (MSVC)
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} Crypt32 WS2_32 Bcrypt User32 kernel32)
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} ShLwApi Crypt32 WS2_32 Bcrypt User32 kernel32)
   else()
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} crypt32 ws2_32 mswsock bcrypt user32 kernel32)
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} shlwapi crypt32 ws2_32 mswsock bcrypt user32 kernel32)
+  endif()
+
+  # FIXME Old Versions of Mingw64 (at least 8.1.0) doesn't contain pathcch library
+  if (NOT ALLOW_XP AND NOT MINGW)
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} pathcch)
   endif()
 
   # Don't use it even if we are compiling with gnu extensions
@@ -1896,8 +1902,10 @@ set_target_properties(protoc PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 
 # exclude non-native protoc from being build
+set_target_properties(protoc PROPERTIES EXCLUDE_FROM_ALL TRUE)
 set_target_properties(libprotoc PROPERTIES EXCLUDE_FROM_ALL TRUE)
 set_target_properties(libprotobuf PROPERTIES EXCLUDE_FROM_ALL TRUE)
+set_target_properties(libprotobuf-lite PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 include(Protobuf)
 add_protoc(protoc yass)
@@ -1913,7 +1921,7 @@ set(SUPPORT_LIBS zlib ${SUPPORT_LIBS})
 # *****************************************************************************************
 #           c-ares Library
 # *****************************************************************************************
-if (NOT ALLOW_XP)
+if (USE_CARES)
   add_definitions(-DHAVE_C_ARES)
   set(CARES_BUILD_TOOLS OFF CACHE BOOL "")
   set(CARES_SHARED OFF CACHE BOOL "")

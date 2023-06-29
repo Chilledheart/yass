@@ -30,6 +30,7 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
   * [Shadowsocks PC-friendly Ciphers](#shadowsocks-pc-friendly-ciphers)
   * [Shadowsocks mobile-friendly Ciphers](#shadowsocks-mobile-friendly-ciphers)
 - [Supported Operating System](#supported-operating-system)
+  * [Screenshot on HTTP2 support](#screenshot-on-http2-support)
   * [Screenshot on macOS](#screenshot-on-macos)
   * [Screenshot on Windows 11](#screenshot-on-windows-11)
   * [Screenshot on Windows 7](#screenshot-on-windows-7)
@@ -90,6 +91,9 @@ Server-side features compared with caddy+forwardproxy
 - macOS (Mac OS X 10.14 or later, macOS 11.0 or later, Apple Silicon supported)
 - Linux (CentOS 7 or later, Debian 8 or later, Ubuntu 14.04 or later)
 - Windows (Windows 8.1 or later, Windows XP/Windows 7 binaries also provided)
+
+### Screenshot on HTTP2 support
+<img width="484" alt="snapshot-http2" src="https://github.com/Chilledheart/yass/assets/54673341/99db123b-6d8a-418f-b1ea-8a2844702348">
 
 ### Screenshot on macOS
 <img width="484" alt="snapshot-macos" src="https://user-images.githubusercontent.com/54673341/223671134-a42974b5-9801-4999-bbbf-740e409ae708.png">

@@ -33,9 +33,12 @@ ABSL_FLAG(int32_t,
           8000,
           "Port number which local server listens to");
 
-ABSL_FLAG(std::string, certificate_chain_file, "", "Certificate Chain File Path");
-ABSL_FLAG(std::string, private_key_file, "", "Private Key File Path (Server Only)");
-ABSL_FLAG(std::string, private_key_password, "", "Private Key Password (Server Only)");
+ABSL_FLAG(std::string, certificate_chain_file, "", "(TLS) Certificate Chain File Path");
+ABSL_FLAG(std::string, private_key_file, "", "(TLS) Private Key File Path (Server Only)");
+ABSL_FLAG(std::string, private_key_password, "", "(TLS) Private Key Password (Server Only)");
+ABSL_FLAG(bool, insecure_mode, false, "(TLS) This option makes to skip the verification step and proceed without checking");
+ABSL_FLAG(std::string, cacert, getenv("YASS_CA_BUNDLE") ? getenv("YASS_CA_BUNDLE") : "", "(TLS) Tells where to use the specified certificate file to verify the peer.");
+ABSL_FLAG(std::string, capath, "", "(TLS) Tells where to use the specified certificate directory to verify the peer.");
 
 namespace config {
 
