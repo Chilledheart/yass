@@ -281,7 +281,7 @@ void ServerConnection::on_protocol_error() {
 
 int64_t ServerConnection::OnReadyToSend(absl::string_view serialized) {
   MSAN_UNPOISON(serialized.data(), serialized.size());
-  downstream_.push_back_merged(serialized.data(), serialized.size(), nullptr);
+  downstream_.push_back(IOBuf::copyBuffer(serialized.data(), serialized.size()));
   return serialized.size();
 }
 
@@ -820,7 +820,7 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code &
     }
     data_frame_->AddChunk(buf);
   } else if (https_fallback_) {
-    downstream_.push_back_merged(buf, nullptr);
+    downstream_.push_back(buf);
   } else {
     EncryptData(&downstream_, buf);
   }
@@ -882,6 +882,9 @@ void ServerConnection::WriteUpstreamInPipe() {
     } while(false);
     buf->trimStart(written);
     wbytes_transferred += written;
+    if (ec == asio::error::try_again || ec == asio::error::would_block) {
+      break;
+    }
     VLOG(2) << "Connection (server) " << connection_id()
             << " upstream: sent request (pipe): " << written << " bytes"
             << " done: " << channel_->wbytes_transferred() << " bytes."
@@ -889,11 +892,6 @@ void ServerConnection::WriteUpstreamInPipe() {
     // continue to resume
     if (buf->empty()) {
       upstream_.pop_front();
-    }
-    if (ec == asio::error::try_again || ec == asio::error::would_block) {
-      VLOG(1) << "Connection (server) " << connection_id()
-              << " disabling reading";
-      break;
     }
     if (ec) {
       OnDisconnect(ec);
@@ -1214,7 +1212,7 @@ void ServerConnection::OnDownstreamWriteFlush() {
 
 void ServerConnection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf && !buf->empty()) {
-    downstream_.push_back_merged(buf, nullptr);
+    downstream_.push_back(buf);
   }
 
   if (!downstream_.empty() && !write_inprogress_) {
