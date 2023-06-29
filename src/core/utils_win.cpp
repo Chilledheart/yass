@@ -792,7 +792,7 @@ void SetExecutablePathW(const std::wstring& exe_path) {
   main_exe_path = SysWideToUTF8(exe_path);
 
   std::string new_exe_path;
-  GetExecutablePath(new_exe_path);
+  GetExecutablePath(&new_exe_path);
   absl::flags_internal::SetProgramInvocationName(new_exe_path);
 }
 
