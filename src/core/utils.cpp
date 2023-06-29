@@ -86,3 +86,16 @@ std::string ExpandUser(const std::string& file_path) {
 
   return real_path;
 }
+
+#if !defined(__APPLE__) && !defined(_WIN32)
+static std::string main_exe_path = "UNKNOWN";
+
+bool GetExecutablePath(std::string* exe_path) {
+  *exe_path = main_exe_path;
+  return true;
+}
+
+void SetExecutablePath(const std::string& exe_path) {
+  main_exe_path = exe_path;
+}
+#endif

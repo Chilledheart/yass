@@ -563,7 +563,7 @@ static const wchar_t *kDllWhiteList [] = {
 };
 
 static void CheckDynamicLibraries() {
-  std::wstring exe(MAX_PATH, L'\0');
+  std::wstring exe(_MAX_PATH, L'\0');
   const auto exeLength = GetModuleFileNameW(
     nullptr,
     const_cast<wchar_t*>(exe.c_str()),
@@ -728,6 +728,62 @@ bool IsWindowsVersionBNOrGreater(int wMajorVersion,
                     &os_type);
   return MAKE_WIN_VER(current_major, current_minor, current_build_number) >=
          MAKE_WIN_VER(wMajorVersion, wMinorVersion, wBuildNumber);
+}
+
+static std::string main_exe_path = "UNKNOWN";
+
+bool GetExecutablePath(std::string* exe_path) {
+  DWORD len;
+  exe_path->clear();
+  // Windows XP:  The string is truncated to nSize characters and is not
+  // null-terminated.
+  exe_path->resize(_MAX_PATH + 1, '\0');
+  len = ::GetModuleFileNameA(nullptr, const_cast<char*>(exe_path->data()),
+                             _MAX_PATH);
+  exe_path->resize(len);
+
+  // A zero return value indicates a failure other than insufficient space.
+
+  // Insufficient space is determined by a return value equal to the size of
+  // the buffer passed in.
+  if (len == 0 || len == _MAX_PATH) {
+    PLOG(WARNING) << "Internal error: GetModuleFileNameA failed";
+    *exe_path = main_exe_path;
+    return false;
+  }
+
+  return true;
+}
+
+bool GetExecutablePathW(std::wstring* exe_path) {
+  DWORD len;
+  exe_path->clear();
+  // Windows XP:  The string is truncated to nSize characters and is not
+  // null-terminated.
+  exe_path->resize(_MAX_PATH + 1, L'\0');
+  len = ::GetModuleFileNameW(nullptr, const_cast<wchar_t*>(exe_path->data()),
+                             _MAX_PATH);
+  exe_path->resize(len);
+
+  // A zero return value indicates a failure other than insufficient space.
+
+  // Insufficient space is determined by a return value equal to the size of
+  // the buffer passed in.
+  if (len == 0 || len == _MAX_PATH) {
+    PLOG(WARNING) << "Internal error: GetModuleFileNameW failed";
+    *exe_path = SysUTF8ToWide(main_exe_path);
+    return false;
+  }
+
+  return true;
+}
+
+void SetExecutablePath(const std::string& exe_path) {
+  main_exe_path = exe_path;
+}
+
+void SetExecutablePathW(const std::wstring& exe_path) {
+  main_exe_path = SysWideToUTF8(exe_path);
 }
 
 #endif  // _WIN32

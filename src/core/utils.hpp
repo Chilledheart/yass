@@ -238,4 +238,14 @@ inline absl::string_view Basename(absl::string_view path) {
 
 std::string ExpandUser(const std::string& file_path);
 
+bool GetExecutablePath(std::string* exe_path);
+#ifdef _WIN32
+bool GetExecutablePathW(std::wstring* exe_path);
+#endif
+
+void SetExecutablePath(const std::string& exe_path);
+#ifdef _WIN32
+void SetExecutablePathW(const std::wstring& exe_path);
+#endif
+
 #endif  // YASS_UTILS

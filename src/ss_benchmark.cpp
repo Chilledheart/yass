@@ -657,7 +657,13 @@ BENCHMARK_DEFINE_F(ASIOFixture, PlainIO)(benchmark::State& state)  {
 BENCHMARK_REGISTER_F(ASIOFixture, PlainIO)->Range(4096, 1*1024*1024)->UseManualTime();
 
 int main(int argc, char** argv) {
-  absl::InitializeSymbolizer(argv[0]);
+  SetExecutablePath(argv[0]);
+  std::string exec_path;
+  if (!GetExecutablePath(&exec_path)) {
+    return -1;
+  }
+
+  absl::InitializeSymbolizer(exec_path.c_str());
   absl::FailureSignalHandlerOptions failure_handle_options;
   absl::InstallFailureSignalHandler(failure_handle_options);
 

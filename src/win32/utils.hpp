@@ -23,7 +23,6 @@ class Utils {
   static bool EnableNonClientDpiScaling(HWND hWnd);
   static bool GetAutoStart();
   static void EnableAutoStart(bool on);
-  static bool GetExecutablePath(std::wstring* executable_path);
 };
 
 std::wstring LoadStringStdW(HINSTANCE hInstance, UINT uID);
