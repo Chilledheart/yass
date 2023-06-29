@@ -3,7 +3,17 @@
 
 #include "core/asio.hpp"
 
+#include "core/utils.hpp"
+#include "config/config.hpp"
+#include <absl/strings/str_split.h>
+
 #ifdef _WIN32
+#if _WIN32_WINNT >= 0x0602 && !defined(__MINGW32__)
+#include <pathcch.h>
+#else
+struct IUnknown;
+#include <shlwapi.h>
+#endif
 #include <wincrypt.h>
 #undef X509_NAME
 #elif defined(__APPLE__)
@@ -30,12 +40,94 @@ std::ostream& operator<<(std::ostream& o, asio::error_code ec) {
   return o << ec.message();
 }
 
+static void print_openssl_error() {
+  const char* file;
+  int line;
+  while (uint32_t error = ERR_get_error_line(&file, &line)) {
+    char buf[120];
+    ERR_error_string_n(error, buf, sizeof(buf));
+    LogMessage(file, line, LOGGING_ERROR).stream()
+      << "OpenSSL error: " << buf;
+  }
+}
+
+static bool load_ca_to_ssl_ctx_override(SSL_CTX* ssl_ctx) {
+  std::string ca_bundle = absl::GetFlag(FLAGS_cacert);
+  if (!ca_bundle.empty()) {
+    int result = SSL_CTX_load_verify_locations(ssl_ctx, ca_bundle.c_str(), nullptr);
+    if (result == 1) {
+      VLOG(1) << "Loading ca bundle: " << ca_bundle;
+    } else {
+      print_openssl_error();
+    }
+    return true;
+  }
+  std::string ca_path = absl::GetFlag(FLAGS_capath);
+  if (!ca_path.empty()) {
+    int result = SSL_CTX_load_verify_locations(ssl_ctx, nullptr, ca_path.c_str());
+    if (result == 1) {
+      VLOG(1) << "Loading ca path: " << ca_bundle;
+    } else {
+      print_openssl_error();
+    }
+    return true;
+  }
+#ifdef _WIN32
+#define CA_BUNDLE "yass-ca-bundle.crt"
+  // The windows version will automatically look for a CA certs file named 'ca-bundle.crt',
+  // either in the same directory as yass.exe, or in the Current Working Directory, or in any folder along your PATH.
+
+  std::vector<std::string> ca_bundles;
+
+  // executable directory
+#if _WIN32_WINNT >= 0x0602 && !defined(__MINGW32__)
+  std::wstring wexe_path;
+  CHECK(GetExecutablePathW(&wexe_path));
+  wchar_t wexe_dir[_MAX_PATH+1];
+  memcpy(wexe_dir, wexe_path.c_str(), sizeof(wchar_t) *(wexe_path.size() + 1));
+  PathCchRemoveFileSpec(wexe_dir, _MAX_PATH);
+  std::string exe_dir = SysWideToUTF8(wexe_dir);
+#else
+  std::string exe_path;
+  CHECK(GetExecutablePath(&exe_path));
+  char exe_dir[_MAX_PATH+1];
+  memcpy(exe_dir, exe_path.c_str(), exe_path.size() + 1);
+  PathRemoveFileSpecA(exe_dir);
+#endif
+  ca_bundles.push_back(std::string(exe_dir) + "\\" + CA_BUNDLE);
+
+  // current directory
+  ca_bundles.push_back(CA_BUNDLE);
+
+  // path directory
+  std::string path = getenv("PATH");
+  std::vector<std::string> paths = absl::StrSplit(path, ';');
+  for (const auto& path : paths) {
+    ca_bundles.push_back(path + "\\" + CA_BUNDLE);
+  }
+
+  for (const auto &ca_bundle : ca_bundles) {
+    int result = SSL_CTX_load_verify_locations(ssl_ctx, ca_bundle.c_str(), nullptr);
+    if (result == 1) {
+      VLOG(1) << "Loading ca bundle: " << ca_bundle;
+      return true;
+    }
+  }
+#endif
+
+  return false;
+}
+
 void load_ca_to_ssl_ctx(SSL_CTX* ssl_ctx) {
+  if (load_ca_to_ssl_ctx_override(ssl_ctx)) {
+    return;
+  }
 #ifdef _WIN32
   HCERTSTORE cert_store = NULL;
   asio::error_code ec;
   PCCERT_CONTEXT cert = nullptr;
   X509_STORE* store = nullptr;
+  int count = 0;
 
   cert_store = CertOpenSystemStoreW(0, L"ROOT");
   if (!cert_store) {
@@ -67,6 +159,7 @@ void load_ca_to_ssl_ctx(SSL_CTX* ssl_ctx) {
       }
       if (X509_STORE_add_cert(store, cert.get()) == 1) {
         VLOG(2) << "Loading ca: " << subject_name;
+        ++count;
       } else {
         unsigned long err = ERR_get_error();
         char buf[120];
@@ -81,6 +174,7 @@ out:
   if (cert_store) {
     CertCloseStore(cert_store, CERT_CLOSE_STORE_FORCE_FLAG);
   }
+  VLOG(1) << "Loading ca from SChannel: " << count << " certificates";
 #elif defined(__APPLE__)
   SecTrustSettingsDomain domain = kSecTrustSettingsDomainSystem;
   CFArrayRef certs;
@@ -88,6 +182,8 @@ out:
   asio::error_code ec;
   CFIndex size;
   X509_STORE* store = nullptr;
+  int count = 0;
+
   status = SecTrustSettingsCopyCertificates(domain, &certs);
   if (status != errSecSuccess) {
     goto out;
@@ -119,6 +215,7 @@ out:
         const char* const subject_name = X509_NAME_oneline(X509_get_subject_name(cert.get()), buf, sizeof(buf));
 
         if (X509_STORE_add_cert(store, cert.get()) == 1) {
+          ++count;
           VLOG(2) << "Loading ca: " << subject_name;
         } else {
           unsigned long err = ERR_get_error();
@@ -133,6 +230,7 @@ out:
   }
 out:
   CFRelease(certs);
+  VLOG(1) << "Loading ca from Sec: " << count << " certificates";
 #else
   // cert list copied from golang src/crypto/x509/root_unix.go
   const char *ca_bundle_paths[] = {
@@ -147,9 +245,9 @@ out:
   };
   asio::error_code ec;
   for (auto ca_bundle : ca_bundle_paths) {
-    int result = SSL_CTX_load_verify_locations(ssl_ctx, ca_bundle, 0);
+    int result = SSL_CTX_load_verify_locations(ssl_ctx, ca_bundle, nullptr);
     if (result == 1) {
-      VLOG(2) << "Loading ca bundle: " << ca_bundle;
+      VLOG(1) << "Loading ca bundle: " << ca_bundle;
     }
   }
 #endif

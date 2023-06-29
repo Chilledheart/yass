@@ -8,6 +8,7 @@
 #include "win32/utils.hpp"
 
 #include "core/logging.hpp"
+#include "core/utils.hpp"
 
 #ifdef _WIN32
 
@@ -679,7 +680,7 @@ int set_yass_auto_start(bool on) {
     std::wstring cmdline;
 
     /* turn on auto start  */
-    if (!Utils::GetExecutablePath(&cmdline)) {
+    if (!GetExecutablePathW(&cmdline)) {
       return -1;
     }
 
@@ -702,29 +703,6 @@ bool Utils::GetAutoStart() {
 
 void Utils::EnableAutoStart(bool on) {
   set_yass_auto_start(on);
-}
-
-// static
-bool Utils::GetExecutablePath(std::wstring* exe_path) {
-  DWORD len;
-  exe_path->clear();
-  // Windows XP:  The string is truncated to nSize characters and is not
-  // null-terminated.
-  exe_path->resize(MAX_PATH + 1, L'\0');
-  len = GetModuleFileNameW(nullptr, const_cast<wchar_t*>(exe_path->data()),
-                           MAX_PATH);
-  exe_path->resize(len);
-
-  // A zero return value indicates a failure other than insufficient space.
-
-  // Insufficient space is determined by a return value equal to the size of
-  // the buffer passed in.
-  if (len == 0 || len == MAX_PATH) {
-    PLOG(WARNING) << "Internal error: GetModuleFileNameW failed";
-    return false;
-  }
-
-  return true;
 }
 
 std::wstring LoadStringStdW(HINSTANCE hInstance, UINT uID) {

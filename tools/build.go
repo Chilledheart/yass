@@ -784,6 +784,19 @@ func postStateArchiveLicenses() []string {
 	return licenses
 }
 
+// ca-certificates
+func postStateArchiveCaCerts() []string {
+	var caCerts []string
+	if systemNameFlag == "windows" && msvcAllowXpFlag {
+		srcPath := filepath.Join("..", "third_party", "ca-certificates", "ca-bundle.crt")
+		if err := copyFile(srcPath, "yass-ca-bundle.crt"); err != nil {
+			glog.Fatalf("%v", err)
+		}
+		caCerts = append(caCerts, "yass-ca-bundle.crt")
+	}
+	return caCerts
+}
+
 // add to zip writer
 func archiveFileToZip(zipWriter *zip.Writer, info os.FileInfo, prefix string, path string) error {
 	if info.Mode()&os.ModeSymlink == os.ModeSymlink {
@@ -937,7 +950,7 @@ func archiveMainFile(output string, prefix string, paths []string) {
 	}
 }
 
-func generateMsi(output string, dllPaths []string, licensePaths []string) {
+func generateMsi(output string, dllPaths []string, licensePaths []string, caCertsPaths []string) {
 	wxsTemplate, err := ioutil.ReadFile(filepath.Join("..", "yass.wxs"))
 	if err != nil {
 		glog.Fatalf("%v", err)
@@ -955,6 +968,11 @@ func generateMsi(output string, dllPaths []string, licensePaths []string) {
 		licenseReplacement += fmt.Sprintf("<File Name='%s' Source='%s' KeyPath='no' />\n", filepath.Base(licensePath), licensePath)
 	}
 	wxsXml = strings.Replace(wxsXml, "<!-- %LICENSEPLACEHOLDER% -->", licenseReplacement, 1)
+	caCertsReplacement := ""
+	for _, caCertsPath := range caCertsPaths {
+		caCertsReplacement += fmt.Sprintf("<File Name='%s' Source='%s' KeyPath='no' />\n", filepath.Base(caCertsPath), caCertsPath)
+	}
+	wxsXml = strings.Replace(wxsXml, "<!-- %CABUNDLEPLACEHOLDER% -->", caCertsReplacement, 1)
 
 	err = ioutil.WriteFile("yass.wxs", []byte(wxsXml), 0666)
 	if err != nil {
@@ -1038,6 +1056,10 @@ func postStateArchives() map[string][]string {
 	licensePaths := postStateArchiveLicenses()
 	paths = append(paths, licensePaths...)
 
+	// copying dependent ca-bundle.crt
+	caCertsPaths := postStateArchiveCaCerts()
+	paths = append(paths, caCertsPaths...)
+
 	// main bundle
 	archiveMainFile(archive, archivePrefix, paths)
 	archives[archive] = paths
@@ -1048,7 +1070,7 @@ func postStateArchives() map[string][]string {
 	// error CNDL0265 : The Platform attribute has an invalid value arm64.
 	// Possible values are x86, x64, or ia64.
 	if systemNameFlag == "windows" && msvcTargetArchFlag != "arm64" {
-		generateMsi(msiArchive, dllPaths, licensePaths)
+		generateMsi(msiArchive, dllPaths, licensePaths, caCertsPaths)
 		archives[msiArchive] = []string{msiArchive}
 	}
 	// nsis installer
