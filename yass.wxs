@@ -87,16 +87,6 @@
             </Component>
         </ComponentGroup>
 
-        <ComponentGroup Id='exe_cabundle'>
-            <Component Id='CaBundle' Directory='INSTALLDIR' Win64='$(var.Win64)' Guid='3747847A-FA52-4BFD-88B3-1AE610ABAECB'>
-                <CreateFolder/>
-                <!-- %CABUNDLEPLACEHOLDER% -->
-                <!--
-                <File Name='yass-ca-bundle.crt' Source='yass-ca-bundle.crt' KeyPath='yes' />
-                -->
-            </Component>
-        </ComponentGroup>
-
         <ComponentGroup Id='exe_shortcut'>
              <Component Id='Shortcut' Directory='MenuDir' Guid='E9D83A2A-7F75-4558-A718-795DAA3021E4'>
                  <Shortcut Id='ApplicationStartMenuShortCut'
@@ -117,7 +107,6 @@
                 <ComponentGroupRef Id='exe_dll' Primary='yes' />
                 <ComponentGroupRef Id='exe_license' />
                 <ComponentGroupRef Id='exe_shortcut' />
-                <ComponentGroupRef Id='exe_cabundle' />
             </Feature>
         </Feature>
 

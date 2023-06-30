@@ -43,7 +43,6 @@ Section "Yet Another Shadow Socket"
 
     File "yass.exe"
     File /r "LICENSE*"
-    File /nonfatal "yass-ca-bundle.crt"
 
 SectionEnd
 
