@@ -246,7 +246,7 @@ CliConnection::OnHeaderForStream(StreamId stream_id,
 
 bool CliConnection::OnEndHeadersForStream(
   http2::adapter::Http2StreamId stream_id) {
-  auto padding_support = request_map_.find("padding") != request_map_.end();
+  bool padding_support = request_map_.find("padding") != request_map_.end();
   if (padding_support_ && padding_support) {
     LOG(INFO) << "Connection (client) " << connection_id() << " for "
       << remote_domain() << " Padding support enabled.";
@@ -262,7 +262,9 @@ bool CliConnection::OnEndStream(StreamId stream_id) {
   if (stream_id == stream_id_) {
     data_frame_ = nullptr;
     stream_id_ = 0;
-    disconnected(asio::error::eof);
+    adapter_->SubmitShutdownNotice();
+    SendIfNotProcessing();
+    WriteUpstreamInPipe();
   }
   return true;
 }
@@ -349,7 +351,7 @@ void CliConnection::OnRstStream(StreamId stream_id,
 bool CliConnection::OnGoAway(StreamId last_accepted_stream_id,
                              http2::adapter::Http2ErrorCode error_code,
                              absl::string_view opaque_data) {
-  disconnected(asio::error::connection_reset);
+  disconnected(asio::error::eof);
   return true;
 }
 
