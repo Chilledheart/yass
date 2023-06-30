@@ -1,0 +1,3 @@
+#include "resource.hpp"
+
+IDR_CA_BUNDLE RCDATA "@YASS_CA_BUNDLE@"
