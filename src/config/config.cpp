@@ -39,6 +39,7 @@ ABSL_FLAG(std::string, private_key_password, "", "(TLS) Private Key Password (Se
 ABSL_FLAG(bool, insecure_mode, false, "(TLS) This option makes to skip the verification step and proceed without checking");
 ABSL_FLAG(std::string, cacert, getenv("YASS_CA_BUNDLE") ? getenv("YASS_CA_BUNDLE") : "", "(TLS) Tells where to use the specified certificate file to verify the peer.");
 ABSL_FLAG(std::string, capath, "", "(TLS) Tells where to use the specified certificate directory to verify the peer.");
+ABSL_FLAG(std::string, cacert_content, "", "(TLS) Tells where to use the specified certificate content to verify the peer.");
 
 namespace config {
 
