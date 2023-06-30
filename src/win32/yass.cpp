@@ -23,6 +23,7 @@
 #include "win32/yass_frame.hpp"
 
 ABSL_FLAG(bool, background, false, "start up backgroundd");
+ABSL_FLAG(bool, use_ca_bundle_crt, false, "(TLS) Use internal yass-ca-bundle.crt.");
 
 #define MULDIVDPI(x) MulDiv(x, uDpi, 96)
 
@@ -106,6 +107,16 @@ BOOL CYassApp::InitInstance() {
   // HKLM\...\Run key
   if (!::SetPriorityClass(::GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS)) {
     PLOG(WARNING) << "Failed to set PriorityClass";
+  }
+
+  // Use internal ca-bundle.crt if necessary
+  bool use_ca_bundle_crt = absl::GetFlag(FLAGS_use_ca_bundle_crt);
+  // we take care of the ca-bundle if windows version is below windows 8.1
+#if _WIN32_WINNT < 0x0603
+  use_ca_bundle_crt |= !IsWindowsVersionBNOrGreater(6, 3, 0);
+#endif
+  if (absl::GetFlag(FLAGS_cacert).empty() && use_ca_bundle_crt) {
+    WriteCaBundleCrt(m_hInstance, IDR_CA_BUNDLE);
   }
 
   state_ = STOPPED;

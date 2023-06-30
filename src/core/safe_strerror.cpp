@@ -93,8 +93,8 @@ void safe_strerror_r(int err, char* buf, size_t len) {
 }
 
 std::string safe_strerror(int err) {
-  const int buffer_size = 256;
-  char buf[buffer_size];
+  constexpr int buffer_size = 256;
+  char buf[buffer_size] = {};
   int rc = posix_strerror_r(err, buf, sizeof(buf));
   if ((rc < 0) || (buf[0] == '\000')) {
     snprintf(buf, sizeof(buf), "Error number %d", err);

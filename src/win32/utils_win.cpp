@@ -9,6 +9,7 @@
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
+#include "config/config.hpp"
 
 #ifdef _WIN32
 
@@ -718,5 +719,80 @@ std::wstring LoadStringStdW(HINSTANCE hInstance, UINT uID) {
   ::LoadStringW(hInstance, uID, str.data(), len + 1);
   return str;
 }
+
+bool WriteCaBundleCrt(HINSTANCE hInstance, UINT uID) {
+  bool ret = false;
+  HRSRC hRSrc = 0;
+  HGLOBAL hResource = 0;
+  DWORD size = 0;
+  _TCHAR filename[_MAX_PATH] = {};
+  unsigned char* data = nullptr;
+  size_t filenameLength = 0;
+  HANDLE hFile = INVALID_HANDLE_VALUE;
+  DWORD written = 0;
+  std::string filename_utf8;
+
+  hRSrc = ::FindResource(hInstance, MAKEINTRESOURCE(uID), RT_RCDATA);
+  if (hRSrc == 0) {
+    PLOG(WARNING) << "internal error: ca-bundle resource is not found";
+    goto done;
+  }
+
+  hResource = ::LoadResource(NULL, hRSrc);
+  if (hResource == 0) {
+    PLOG(WARNING) << "internal error: ca-bundle resource is not loaded";
+    goto done;
+  }
+  data = (unsigned char*)::LockResource(hResource);
+  size = ::SizeofResource(NULL, hRSrc);
+  if (size == 0) {
+    LOG(WARNING) << "internal error: ca-bundle resource is empty";
+    goto done;
+  }
+
+  // Store size bytes of data to "ca-bundle.crt"
+  ::GetEnvironmentVariable(_T("TEMP"), filename, _MAX_PATH);
+  filenameLength = _tcslen(filename);
+  if (filename[filenameLength - 1] == _T('\\'))
+      _tcscat(filename, _T("yass-ca-bundle.crt"));
+  else
+      _tcscat(filename, _T("\\yass-ca-bundle.crt"));
+
+  // Remove previous file
+  ::DeleteFileW(filename);
+
+  hFile = ::CreateFileW(filename, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
+  if (hFile == INVALID_HANDLE_VALUE) {
+    PLOG(WARNING) << "internal error: ca-bundle resource is not created";
+    goto done;
+  }
+
+  if (!::WriteFile(hFile, data, size, &written, NULL)) {
+    PLOG(WARNING) << "internal error: ca-bundle resource is not writable";
+    goto done;
+  }
+
+  if (written != size) {
+    PLOG(WARNING) << "internal error: ca-bundle resource is partially written";
+    goto done;
+  }
+
+  filename_utf8 = SysWideToUTF8(filename);
+  absl::SetFlag(&FLAGS_cacert, filename_utf8);
+
+  LOG(INFO) << "Written ca bundle file: " << filename_utf8;
+
+  ret = true;
+done:
+  if (hFile != INVALID_HANDLE_VALUE) {
+    ::CloseHandle(hFile);
+  }
+  if (hResource) {
+    ::FreeResource(hResource);
+  }
+  return ret;
+}
+
 
 #endif  // _WIN32
