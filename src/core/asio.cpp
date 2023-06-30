@@ -5,7 +5,9 @@
 
 #include "core/utils.hpp"
 #include "config/config.hpp"
+
 #include <absl/strings/str_split.h>
+#include <string>
 
 #ifdef _WIN32
 #if _WIN32_WINNT >= 0x0602 && !defined(__MINGW32__)
@@ -51,7 +53,64 @@ static void print_openssl_error() {
   }
 }
 
+static bool load_ca_to_x509_trust(X509_STORE* store, const uint8_t *data, size_t len) {
+  bssl::UniquePtr<BIO> bio(BIO_new(BIO_s_mem()));
+  BIO_write(bio.get(), data, len);
+  bssl::UniquePtr<X509> cert(PEM_read_bio_X509(bio.get(), nullptr, 0, nullptr));
+  if (!cert) {
+    print_openssl_error();
+    return false;
+  }
+  if (X509_cmp_current_time(X509_get0_notBefore(cert.get())) < 0 &&
+      X509_cmp_current_time(X509_get0_notAfter(cert.get())) >= 0) {
+    char buf[4096] = {};
+    const char* const subject_name = X509_NAME_oneline(X509_get_subject_name(cert.get()), buf, sizeof(buf));
+
+    if (X509_STORE_add_cert(store, cert.get()) == 1) {
+      VLOG(2) << "Loading ca: " << subject_name;
+      return true;
+    } else {
+      unsigned long err = ERR_get_error();
+      char buf[120];
+      ERR_error_string_n(err, buf, sizeof(buf));
+      LOG(WARNING) << "Loading ca failure: " << buf << " at "<< subject_name;
+    }
+  }
+  return false;
+}
+
+static const char kEndCertificateMark[] = "-----END CERTIFICATE-----\n";
+static void load_ca_to_ssl_ctx_from_mem(SSL_CTX* ssl_ctx, const absl::string_view& cadata) {
+  X509_STORE* store = nullptr;
+  int count = 0;
+  store = SSL_CTX_get_cert_store(ssl_ctx);
+  if (!store) {
+    LOG(WARNING) << "Can't get SSL CTX cert store";
+    goto out;
+  }
+  for (size_t pos = 0, end = pos; end < cadata.size(); pos = end) {
+    end = cadata.find(kEndCertificateMark, pos);
+    if (end == absl::string_view::npos) {
+      break;
+    }
+    end += sizeof(kEndCertificateMark) -1;
+
+    absl::string_view cacert(cadata.data() + pos, end - pos);
+    if (load_ca_to_x509_trust(store, (const uint8_t*)cacert.data(), cacert.size())) {
+      ++count;
+    }
+  }
+
+out:
+  VLOG(1) << "Loading ca from memory: " << count << " certificates";
+}
+
 static bool load_ca_to_ssl_ctx_override(SSL_CTX* ssl_ctx) {
+  std::string ca_bundle_content = absl::GetFlag(FLAGS_cacert_content);
+  if (!ca_bundle_content.empty()) {
+    load_ca_to_ssl_ctx_from_mem(ssl_ctx, ca_bundle_content);
+    return true;
+  }
   std::string ca_bundle = absl::GetFlag(FLAGS_cacert);
   if (!ca_bundle.empty()) {
     int result = SSL_CTX_load_verify_locations(ssl_ctx, ca_bundle.c_str(), nullptr);
@@ -145,6 +204,10 @@ void load_ca_to_ssl_ctx(SSL_CTX* ssl_ctx) {
     const char* data = (const char *)cert->pbCertEncoded;
     size_t len = cert->cbCertEncoded;
     bssl::UniquePtr<X509> cert(d2i_X509(nullptr, (const unsigned char**)&data, len));
+    if (!cert) {
+      print_openssl_error();
+      continue;
+    }
     if (X509_cmp_current_time(X509_get0_notBefore(cert.get())) < 0 &&
         X509_cmp_current_time(X509_get0_notAfter(cert.get())) >= 0) {
       char buf[4096] = {};
@@ -209,6 +272,10 @@ out:
       const char* data = (const char *)CFDataGetBytePtr(data_ref);
       CFIndex len = CFDataGetLength(data_ref);
       bssl::UniquePtr<X509> cert(d2i_X509(nullptr, (const unsigned char**)&data, len));
+      if (!cert) {
+        print_openssl_error();
+        continue;
+      }
       if (X509_cmp_current_time(X509_get0_notBefore(cert.get())) < 0 &&
           X509_cmp_current_time(X509_get0_notAfter(cert.get())) >= 0) {
         char buf[4096] = {};

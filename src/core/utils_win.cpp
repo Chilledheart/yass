@@ -683,6 +683,7 @@ static bool GetProductInfo(DWORD dwOSMajorVersion,
                           dwSpMinorVersion, pdwReturnedProductType) != 0;
 }
 
+// https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-osversioninfoexa
 void GetWindowsVersion(int* major,
                        int* minor,
                        int* build_number,

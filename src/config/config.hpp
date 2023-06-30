@@ -30,6 +30,7 @@ ABSL_DECLARE_FLAG(std::string, private_key_password);
 ABSL_DECLARE_FLAG(bool, insecure_mode);
 ABSL_DECLARE_FLAG(std::string, cacert);
 ABSL_DECLARE_FLAG(std::string, capath);
+ABSL_DECLARE_FLAG(std::string, cacert_content);
 
 namespace config {
 bool ReadConfig();

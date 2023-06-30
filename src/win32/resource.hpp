@@ -70,4 +70,6 @@
 
 #define IDT_UPDATE_STATUS_BAR 3000
 
+#define IDR_CA_BUNDLE 4000
+
 #endif  // YASS_WIN32_RESOURCE_H

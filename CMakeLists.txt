@@ -119,6 +119,7 @@ set(YASS_APP_VERSION_PATCH ${PACKAGE_VERSION_PATCH})
 set(YASS_APP_VERSION_TWEAK ${PACKAGE_VERSION_TWEAK})
 set(YASS_APP_FULL_VERSION ${PACKAGE_VERSION}.${PACKAGE_VERSION_TWEAK})
 set(YASS_APP_COPYRIGHT "Copyright 2019-2023 Chilledheart. All rights reserved.")
+set(YASS_CA_BUNDLE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/ca-certificates/ca-bundle.crt")
 
 set(APP_VERSION_HEADER "${CMAKE_CURRENT_BINARY_DIR}/version.h")
 configure_file("src/version.h.in" "${APP_VERSION_HEADER}" @ONLY)
@@ -2578,12 +2579,15 @@ if (GUI)
         configure_file("src/win32/yass_version.rc.in" "${APP_MSVC_VERSION_RC}" @ONLY)
         set(APP_MSVC_ABOUT_DIALOG_RC "${CMAKE_CURRENT_BINARY_DIR}/yass_about.rc")
         configure_file("src/win32/yass_about.rc.in" "${APP_MSVC_ABOUT_DIALOG_RC}" @ONLY)
+        set(APP_MSVC_CA_BUNDLE_RC "${CMAKE_CURRENT_BINARY_DIR}/yass_cabundle.rc")
+        configure_file("src/win32/yass_cabundle.rc.in" "${APP_MSVC_CA_BUNDLE_RC}" @ONLY)
 
         list(APPEND SRC_FILES
           ${APP_MSVC_MANIFEST}
           ${APP_MINGW_MANIFEST_RC}
           ${APP_MSVC_VERSION_RC}
           ${APP_MSVC_ABOUT_DIALOG_RC}
+          ${APP_MSVC_CA_BUNDLE_RC}
           src/win32/yass.rc
           src/win32/yass.cpp
           src/win32/yass_frame.cpp
