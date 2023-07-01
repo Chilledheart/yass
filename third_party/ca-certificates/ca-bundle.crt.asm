@@ -6,7 +6,7 @@ section .rdata
 
 __binary_ca_bundle_crt_start:
 ALIGN 4
-incbin "@YASS_CA_BUNDLE_PATH@"
+incbin "ca-bundle.crt"
 __binary_ca_bundle_crt_end:
 %else
 global _binary_ca_bundle_crt_start
@@ -15,6 +15,6 @@ section .rdata
 
 _binary_ca_bundle_crt_start:
 ALIGN 4
-incbin "@YASS_CA_BUNDLE_PATH@"
+incbin "ca-bundle.crt"
 _binary_ca_bundle_crt_end:
 %endif

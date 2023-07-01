@@ -6,7 +6,7 @@
 .align  4
 
 _binary_ca_bundle_crt_start:
-.incbin "@YASS_CA_BUNDLE_PATH@"
+.incbin "ca-bundle.crt"
 
 _binary_ca_bundle_crt_end:
 .previous
