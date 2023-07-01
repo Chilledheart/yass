@@ -1,12 +1,12 @@
-.section rodata
-.global __binary_ca_bundle_crt_start
-.type   __binary_ca_bundle_crt_start, @object
-.global __binary_ca_bundle_crt_end
-.type   __binary_ca_bundle_crt_end, @object
+.section .rodata
+.global _binary_ca_bundle_crt_start
+.type   _binary_ca_bundle_crt_start, %object
+.global _binary_ca_bundle_crt_end
+.type   _binary_ca_bundle_crt_end, %object
 .align  4
 
-__binary_ca_bundle_crt_start:
+_binary_ca_bundle_crt_start:
 .incbin "@YASS_CA_BUNDLE_PATH@"
 
-__binary_ca_bundle_crt_end:
+_binary_ca_bundle_crt_end:
 .previous
