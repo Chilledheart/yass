@@ -67,6 +67,7 @@ static void print_openssl_error() {
   }
 }
 
+#if defined(_WIN32) || defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
 static bool load_ca_to_x509_trust(X509_STORE* store, const uint8_t *data, size_t len) {
   bssl::UniquePtr<BIO> bio(BIO_new(BIO_s_mem()));
   BIO_write(bio.get(), data, len);
@@ -118,6 +119,7 @@ static void load_ca_to_ssl_ctx_from_mem(SSL_CTX* ssl_ctx, const absl::string_vie
 out:
   VLOG(1) << "Loading ca from memory: " << count << " certificates";
 }
+#endif
 
 static bool load_ca_to_ssl_ctx_override(SSL_CTX* ssl_ctx) {
 #if defined(_WIN32) || defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
@@ -127,11 +129,6 @@ static bool load_ca_to_ssl_ctx_override(SSL_CTX* ssl_ctx) {
     return true;
   }
 #endif
-  std::string ca_bundle_content = absl::GetFlag(FLAGS_cacert_content);
-  if (!ca_bundle_content.empty()) {
-    load_ca_to_ssl_ctx_from_mem(ssl_ctx, ca_bundle_content);
-    return true;
-  }
   std::string ca_bundle = absl::GetFlag(FLAGS_cacert);
   if (!ca_bundle.empty()) {
     int result = SSL_CTX_load_verify_locations(ssl_ctx, ca_bundle.c_str(), nullptr);
