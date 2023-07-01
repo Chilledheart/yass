@@ -27,8 +27,6 @@ class Utils {
 
 std::wstring LoadStringStdW(HINSTANCE hInstance, UINT uID);
 
-bool WriteCaBundleCrt(HINSTANCE hInstance, UINT uID);
-
 #define DEFAULT_AUTOSTART_NAME "YASS"
 
 #endif  // YASS_WIN32_UTILS
