@@ -1,4 +1,4 @@
-.section __DATA,__const
+.section __DATA_CONST,__const
 .global __binary_ca_bundle_crt_start
 .global __binary_ca_bundle_crt_end
 .p2align  6
