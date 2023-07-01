@@ -68,6 +68,10 @@ inline asio::ASIO_CONST_BUFFER const_buffer(const IOBuf& io_buf) ASIO_NOEXCEPT
   return asio::ASIO_CONST_BUFFER(io_buf.data(), io_buf.length());
 }
 
+#if defined(_WIN32) || defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
+ABSL_DECLARE_FLAG(bool, use_ca_bundle_crt);
+#endif
+
 void load_ca_to_ssl_ctx(SSL_CTX* ssl_ctx);
 
 #endif  // H_CORE_ASIO

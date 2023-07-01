@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2021 Chilledheart  */
+/* Copyright (c) 2021-2023 Chilledheart  */
 
 // We use dynamic loading for below functions
 #define GetDeviceCaps GetDeviceCapsHidden
@@ -719,43 +719,5 @@ std::wstring LoadStringStdW(HINSTANCE hInstance, UINT uID) {
   ::LoadStringW(hInstance, uID, str.data(), len + 1);
   return str;
 }
-
-bool WriteCaBundleCrt(HINSTANCE hInstance, UINT uID) {
-  bool ret = false;
-  HRSRC hRSrc = 0;
-  HGLOBAL hResource = 0;
-  DWORD size = 0;
-  const char* data = nullptr;
-
-  hRSrc = ::FindResource(hInstance, MAKEINTRESOURCE(uID), RT_RCDATA);
-  if (hRSrc == 0) {
-    PLOG(WARNING) << "internal error: ca-bundle resource is not found";
-    goto done;
-  }
-
-  hResource = ::LoadResource(NULL, hRSrc);
-  if (hResource == 0) {
-    PLOG(WARNING) << "internal error: ca-bundle resource is not loaded";
-    goto done;
-  }
-  data = (const char*)::LockResource(hResource);
-  size = ::SizeofResource(NULL, hRSrc);
-  if (size == 0) {
-    LOG(WARNING) << "internal error: ca-bundle resource is empty";
-    goto done;
-  }
-
-  absl::SetFlag(&FLAGS_cacert_content, std::string(data, size));
-
-  LOG(INFO) << "Written ca bundle file to memory";
-
-  ret = true;
-done:
-  if (hResource) {
-    ::FreeResource(hResource);
-  }
-  return ret;
-}
-
 
 #endif  // _WIN32

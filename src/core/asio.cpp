@@ -38,6 +38,20 @@ struct IUnknown;
 
 #pragma GCC diagnostic pop
 
+#if defined(_WIN32) || defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
+extern "C" const char _binary_ca_bundle_crt_start[];
+extern "C" const char _binary_ca_bundle_crt_end[];
+
+// Use internal ca-bundle.crt if necessary
+// we take care of the ca-bundle if windows version is below windows 8.1
+#if defined(_WIN32) && _WIN32_WINNT < 0x0603
+ABSL_FLAG(bool, use_ca_bundle_crt, !IsWindowsVersionBNOrGreater(6, 3, 0), "(TLS) Use internal yass-ca-bundle.crt.");
+#else
+ABSL_FLAG(bool, use_ca_bundle_crt, false, "(TLS) Use internal yass-ca-bundle.crt.");
+#endif
+
+#endif
+
 std::ostream& operator<<(std::ostream& o, asio::error_code ec) {
   return o << ec.message();
 }
@@ -106,6 +120,13 @@ out:
 }
 
 static bool load_ca_to_ssl_ctx_override(SSL_CTX* ssl_ctx) {
+#if defined(_WIN32) || defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
+  if (absl::GetFlag(FLAGS_cacert).empty() && absl::GetFlag(FLAGS_use_ca_bundle_crt)) {
+    absl::string_view ca_bundle_content(_binary_ca_bundle_crt_start, _binary_ca_bundle_crt_end - _binary_ca_bundle_crt_start);
+    load_ca_to_ssl_ctx_from_mem(ssl_ctx, ca_bundle_content);
+    return true;
+  }
+#endif
   std::string ca_bundle_content = absl::GetFlag(FLAGS_cacert_content);
   if (!ca_bundle_content.empty()) {
     load_ca_to_ssl_ctx_from_mem(ssl_ctx, ca_bundle_content);

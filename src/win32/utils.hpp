@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2023 Chilledheart  */
 #ifndef YASS_WIN32_UTILS
 #define YASS_WIN32_UTILS
 #include <cstdint>
@@ -26,8 +26,6 @@ class Utils {
 };
 
 std::wstring LoadStringStdW(HINSTANCE hInstance, UINT uID);
-
-bool WriteCaBundleCrt(HINSTANCE hInstance, UINT uID);
 
 #define DEFAULT_AUTOSTART_NAME "YASS"
 
