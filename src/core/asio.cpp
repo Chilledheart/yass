@@ -38,7 +38,8 @@ struct IUnknown;
 
 #pragma GCC diagnostic pop
 
-#if defined(_WIN32) || defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
+#ifdef HAVE_BUILTIN_CA_BUNDLE_CRT
+
 extern "C" const char _binary_ca_bundle_crt_start[];
 extern "C" const char _binary_ca_bundle_crt_end[];
 
@@ -46,6 +47,8 @@ extern "C" const char _binary_ca_bundle_crt_end[];
 // we take care of the ca-bundle if windows version is below windows 8.1
 #if defined(_WIN32) && _WIN32_WINNT < 0x0603
 ABSL_FLAG(bool, use_ca_bundle_crt, !IsWindowsVersionBNOrGreater(6, 3, 0), "(TLS) Use internal yass-ca-bundle.crt.");
+#elif defined(__FreeBSD__)
+ABSL_FLAG(bool, use_ca_bundle_crt, true, "(TLS) Use internal yass-ca-bundle.crt.");
 #else
 ABSL_FLAG(bool, use_ca_bundle_crt, false, "(TLS) Use internal yass-ca-bundle.crt.");
 #endif
@@ -67,7 +70,7 @@ static void print_openssl_error() {
   }
 }
 
-#if defined(_WIN32) || defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
+#ifdef HAVE_BUILTIN_CA_BUNDLE_CRT
 static bool load_ca_to_x509_trust(X509_STORE* store, const uint8_t *data, size_t len) {
   bssl::UniquePtr<BIO> bio(BIO_new(BIO_s_mem()));
   BIO_write(bio.get(), data, len);
@@ -122,7 +125,7 @@ out:
 #endif
 
 static bool load_ca_to_ssl_ctx_override(SSL_CTX* ssl_ctx) {
-#if defined(_WIN32) || defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
+#ifdef HAVE_BUILTIN_CA_BUNDLE_CRT
   if (absl::GetFlag(FLAGS_cacert).empty() && absl::GetFlag(FLAGS_use_ca_bundle_crt)) {
     absl::string_view ca_bundle_content(_binary_ca_bundle_crt_start, _binary_ca_bundle_crt_end - _binary_ca_bundle_crt_start);
     load_ca_to_ssl_ctx_from_mem(ssl_ctx, ca_bundle_content);

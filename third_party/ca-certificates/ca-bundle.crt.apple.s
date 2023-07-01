@@ -4,7 +4,7 @@
 .p2align  6
 
 __binary_ca_bundle_crt_start:
-.incbin "@YASS_CA_BUNDLE_PATH@"
+.incbin "ca-bundle.crt"
 
 __binary_ca_bundle_crt_end:
 .previous
