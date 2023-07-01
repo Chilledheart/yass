@@ -1777,7 +1777,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
   set(CA_BUNDLE_O ${CMAKE_CURRENT_BINARY_DIR}/ca-bundle.crt.o)
   if (USE_LLD)
     # ELF Driver https://github.com/llvm/llvm-project/blob/main/lld/ELF/Driver.cpp#L163
-    if (CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" )
+    if (CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
       set(EMULATED_FORMAT "aarch64elf")
     elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "amd64")
       set(EMULATED_FORMAT "elf_amd64")
@@ -1810,6 +1810,12 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
   target_sources(asio PRIVATE ${CA_BUNDLE_O})
 endif()
 
+if (APPLE)
+  set(CA_BUNDLE_S ${CMAKE_CURRENT_BINARY_DIR}/ca-bundle.crt.s)
+  set(YASS_CA_BUNDLE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/third_party/ca-certificates/ca-bundle.crt")
+  configure_file("third_party/ca-certificates/ca-bundle.crt.s.apple.in" "${CA_BUNDLE_S}" @ONLY)
+  target_sources(asio PRIVATE ${CA_BUNDLE_S})
+endif()
 
 set(SUPPORT_LIBS asio ${SUPPORT_LIBS})
 

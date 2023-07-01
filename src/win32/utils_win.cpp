@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2021 Chilledheart  */
+/* Copyright (c) 2021-2023 Chilledheart  */
 
 // We use dynamic loading for below functions
 #define GetDeviceCaps GetDeviceCapsHidden
@@ -756,6 +756,5 @@ done:
   }
   return ret;
 }
-
 
 #endif  // _WIN32
