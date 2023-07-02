@@ -2736,9 +2736,10 @@ static void VLOG2Initializer() {
       tail = info;
     }
     // Skip past this entry
-    vmodule = strchr(sep, ',');
-    if (vmodule == nullptr)
+    const char *vmodule_ptr = strchr(sep, ',');
+    if (vmodule_ptr == nullptr)
       break;
+    vmodule = absl::string_view(vmodule_ptr);
     vmodule.remove_prefix(1);
   }
   if (head) {  // Put them into the list at the head:
