@@ -32,7 +32,7 @@ jobs:
       fail-fast: false
       matrix:
         distro: [xenial]
-        arch: [amd64]
+        arch: [amd64, i386]
         include:
           - distro: bionic
             arch: arm64

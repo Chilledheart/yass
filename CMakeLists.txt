@@ -119,7 +119,6 @@ set(YASS_APP_VERSION_PATCH ${PACKAGE_VERSION_PATCH})
 set(YASS_APP_VERSION_TWEAK ${PACKAGE_VERSION_TWEAK})
 set(YASS_APP_FULL_VERSION ${PACKAGE_VERSION}.${PACKAGE_VERSION_TWEAK})
 set(YASS_APP_COPYRIGHT "Copyright 2019-2023 Chilledheart. All rights reserved.")
-set(YASS_CA_BUNDLE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/third_party/ca-certificates/ca-bundle.crt")
 
 set(APP_VERSION_HEADER "${CMAKE_CURRENT_BINARY_DIR}/version.h")
 configure_file("src/version.h.in" "${APP_VERSION_HEADER}" @ONLY)
@@ -236,6 +235,7 @@ option(USE_LTO "Build with LTO" OFF)
 option(USE_CURL "Build with libcurl (test only)" ON)
 option(USE_CARES "Build with c-ares" ON)
 option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
+option(USE_BUILTIN_CA_BUNDLE_CRT "Build with embedded ca-bundle.crt support" ON)
 
 option(ENABLE_LTO "Enable build with LTO" ON)
 option(ENABLE_LLD "Enable build with LLD" ON)
@@ -1773,61 +1773,29 @@ if (APPLE)
   target_link_libraries(asio PRIVATE ${SECURITY_FRAMEWORK})
 endif()
 
-if (WIN32 AND NOT MSVC_PROCESSOR_ARCHITECTURE STREQUAL "arm64")
-  enable_language(ASM_NASM)
-  set(CA_BUNDLE_ASM ${CMAKE_CURRENT_BINARY_DIR}/ca-bundle.crt.asm)
-  configure_file("third_party/ca-certificates/ca-bundle.crt.asm.in" "${CA_BUNDLE_ASM}" @ONLY)
-  target_sources(asio PRIVATE ${CA_BUNDLE_ASM})
-endif()
+if (USE_BUILTIN_CA_BUNDLE_CRT)
+  target_compile_definitions(asio PRIVATE HAVE_BUILTIN_CA_BUNDLE_CRT=1)
+  target_include_directories(asio PRIVATE third_party/ca-certificates)
 
-if (WIN32 AND MSVC_PROCESSOR_ARCHITECTURE STREQUAL "arm64")
-  enable_language(ASM)
-  set(CA_BUNDLE_S ${CMAKE_CURRENT_BINARY_DIR}/ca-bundle.crt.s)
-  configure_file("third_party/ca-certificates/ca-bundle.crt.s.win.in" "${CA_BUNDLE_S}" @ONLY)
-  target_sources(asio PRIVATE ${CA_BUNDLE_S})
-endif()
-
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
-  set(CA_BUNDLE_O ${CMAKE_CURRENT_BINARY_DIR}/ca-bundle.crt.o)
-  if (USE_LLD)
-    # ELF Driver https://github.com/llvm/llvm-project/blob/main/lld/ELF/Driver.cpp#L163
-    if (CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
-      set(EMULATED_FORMAT "aarch64elf")
-    elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "amd64")
-      set(EMULATED_FORMAT "elf_amd64")
-    elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "i386" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "i686")
-      set(EMULATED_FORMAT "elf_i386")
-    elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "armel" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "armhf")
-      set(EMULATED_FORMAT "armelf")
-    elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "mipsel")
-      set(EMULATED_FORMAT "elf32ltsmip")
-    elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "mips64el")
-      set(EMULATED_FORMAT "elf64ltsmip")
-    endif()
-    if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
-      set(EMULATED_FORMAT "${EMULATED_FORMAT}_fbsd")
-    endif()
-
-    add_custom_command(OUTPUT ${CA_BUNDLE_O}
-      COMMAND ${CMAKE_LINKER} -r -o ${CA_BUNDLE_O} -z noexecstack --format=binary -m ${EMULATED_FORMAT} ca-bundle.crt
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/third_party/ca-certificates
-      DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/ca-certificates
-      COMMENT "Compiling ca-bundle.crt into object file")
-  else()
-    add_custom_command(OUTPUT ${CA_BUNDLE_O}
-      COMMAND ${CMAKE_LINKER} -r -b binary -o ${CA_BUNDLE_O} ca-bundle.crt
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/third_party/ca-certificates
-      DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/ca-certificates
-      COMMENT "Compiling ca-bundle.crt into object file")
+  if (WIN32 AND NOT MSVC_PROCESSOR_ARCHITECTURE STREQUAL "arm64")
+    enable_language(ASM_NASM)
+    target_sources(asio PRIVATE "third_party/ca-certificates/ca-bundle.crt.asm")
   endif()
-  set_source_files_properties(${CA_BUNDLE_O} PROPERTIES GENERATED true)
-  target_sources(asio PRIVATE ${CA_BUNDLE_O})
-endif()
 
-if (APPLE)
-  set(CA_BUNDLE_S ${CMAKE_CURRENT_BINARY_DIR}/ca-bundle.crt.s)
-  configure_file("third_party/ca-certificates/ca-bundle.crt.s.apple.in" "${CA_BUNDLE_S}" @ONLY)
-  target_sources(asio PRIVATE ${CA_BUNDLE_S})
+  if (WIN32 AND MSVC_PROCESSOR_ARCHITECTURE STREQUAL "arm64")
+    enable_language(ASM)
+    target_sources(asio PRIVATE "third_party/ca-certificates/ca-bundle.crt.win.s")
+  endif()
+
+  if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+    enable_language(ASM)
+    target_sources(asio PRIVATE "third_party/ca-certificates/ca-bundle.crt.s")
+  endif()
+
+  if (APPLE)
+    enable_language(ASM)
+    target_sources(asio PRIVATE "third_party/ca-certificates/ca-bundle.crt.apple.s")
+  endif()
 endif()
 
 set(SUPPORT_LIBS asio ${SUPPORT_LIBS})
