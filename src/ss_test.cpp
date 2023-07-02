@@ -216,7 +216,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
       "Server: asio/1.0.0\r\n"
       "Content-Type: application/octet-stream\r\n"
       "Content-Length: %llu\r\n"
-      "Connection: close\r\n\r\n", (unsigned long long)g_send_buffer.length());
+      "Connection: close\r\n\r\n", static_cast<unsigned long long>(g_send_buffer.length()));
     asio::async_write(socket_, asio::const_buffer(http_response_hdr2.data(),
                                                   http_response_hdr2.size()),
       [this, self](asio::error_code ec, size_t bytes_transferred) {
@@ -301,7 +301,7 @@ class SsEndToEndTest : public ::testing::Test {
   }
   void StartBackgroundTasks() {
     std::mutex m;
-    bool done = 0;
+    bool done = false;
     asio::post(io_context_, [this, &m, &done]() {
       std::lock_guard<std::mutex> lk(m);
       auto ec = StartContentProvider(GetReusableEndpoint(), SOMAXCONN);
@@ -477,7 +477,7 @@ class SsEndToEndTest : public ::testing::Test {
       "Host: localhost\r\n"
       "Accept: */*\r\n"
       "Content-Length: %llu\r\n"
-      "Expect: 100-continue\r\n\r\n", (unsigned long long)g_send_buffer.length());
+      "Expect: 100-continue\r\n\r\n", static_cast<unsigned long long>(g_send_buffer.length()));
 
     written = asio::write(s, asio::const_buffer(http_request_hdr.c_str(),
                                                 http_request_hdr.size()), ec);

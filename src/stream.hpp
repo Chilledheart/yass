@@ -135,7 +135,7 @@ class stream : public RefCountedThreadSafe<stream> {
     bool host_is_ip_address = !ec;
     if (host_is_ip_address) {
       VLOG(2) << "resolved ip-like address: " << domain();
-      endpoints_.push_back(asio::ip::tcp::endpoint(addr, port_));
+      endpoints_.emplace_back(addr, port_);
       on_try_next_endpoint(channel);
       return;
     }

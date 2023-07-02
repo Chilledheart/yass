@@ -59,7 +59,7 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
         reinterpret_cast<const char*>(chunks_.front()->data()), payload_length);
     concatenated = absl::StrCat(frame_header, payload);
   } else {
-    concatenated = std::string(frame_header);
+    concatenated = std::string{frame_header};
   }
   const int64_t result = connection_->OnReadyToSend(concatenated);
   // Write encountered error.
@@ -290,7 +290,7 @@ http2::adapter::Http2VisitorInterface::OnHeaderResult
 ServerConnection::OnHeaderForStream(StreamId stream_id,
                                     absl::string_view key,
                                     absl::string_view value) {
-  request_map_[key] = std::string(value);
+  request_map_[key] = std::string{value};
   return http2::adapter::Http2VisitorInterface::HEADER_OK;
 }
 

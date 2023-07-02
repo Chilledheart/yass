@@ -680,7 +680,7 @@ else()
 
   ## Generate debug info, Debug information in the .obj files for clang.
   ## Produce PDB file for msvc, no edit and continue.
-  if (COMPILER_CLANG)
+  if (COMPILER_CLANG AND NOT ENABLE_CLANG_TIDY)
     # Debug information in the .obj files.
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /Z7")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Z7")
