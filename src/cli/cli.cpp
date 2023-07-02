@@ -84,7 +84,7 @@ int main(int argc, const char* argv[]) {
   auto addr = asio::ip::make_address(host_name.c_str(), ec);
   bool host_is_ip_address = !ec;
   if (host_is_ip_address) {
-    endpoints.push_back(asio::ip::tcp::endpoint(addr, port));
+    endpoints.emplace_back(addr, port);
   } else {
     struct addrinfo hints = {}, *addrinfo;
     hints.ai_flags = AI_CANONNAME;

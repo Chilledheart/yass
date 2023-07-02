@@ -217,7 +217,7 @@ cipher::cipher(const std::string& key,
   tag_len_ = impl_->GetTagSize();
 }
 
-cipher::~cipher() {}
+cipher::~cipher() = default;
 
 void cipher::process_bytes(std::shared_ptr<IOBuf> ciphertext) {
   if (!chunk_) {

@@ -107,7 +107,7 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
         reinterpret_cast<const char*>(chunks_.front()->data()), payload_length);
     concatenated = absl::StrCat(frame_header, payload);
   } else {
-    concatenated = std::string(frame_header);
+    concatenated = std::string{frame_header};
   }
 
   const int64_t result = connection_->OnReadyToSend(concatenated);
@@ -253,7 +253,7 @@ http2::adapter::Http2VisitorInterface::OnHeaderResult
 CliConnection::OnHeaderForStream(StreamId stream_id,
                                  absl::string_view key,
                                  absl::string_view value) {
-  request_map_[key] = std::string(value);
+  request_map_[key] = std::string{value};
   return http2::adapter::Http2VisitorInterface::HEADER_OK;
 }
 
@@ -521,9 +521,10 @@ asio::error_code CliConnection::OnReadRedirHandshake(
     char hostname[NI_MAXHOST];
     char service[NI_MAXSERV];
     uint16_t port = endpoint.port();
-    int ret = getnameinfo((const struct sockaddr*)endpoint.data(), endpoint.size(),
-                           hostname, sizeof(hostname), service, sizeof(service),
-                           NI_NAMEREQD);
+    int ret = getnameinfo(reinterpret_cast<const struct sockaddr*>(endpoint.data()),
+                          endpoint.size(),
+                          hostname, sizeof(hostname), service, sizeof(service),
+                          NI_NAMEREQD);
     if (ret == 0 && strlen(hostname) != 0) {
       VLOG(2) << "Connection (client) " << connection_id()
               << " redir stream from " << hostname << ":" << port
@@ -1622,11 +1623,11 @@ void CliConnection::connected() {
       std::make_unique<DataFrameSource>(this);
     data_frame_ = data_frame.get();
     std::vector<std::pair<std::string, std::string>> headers;
-    headers.push_back({":method", "CONNECT"});
+    headers.emplace_back(":method", "CONNECT");
     //    authority   = [ userinfo "@" ] host [ ":" port ]
-    headers.push_back({":authority", host + ":" + std::to_string(port)});
-    headers.push_back({"host", host + ":" + std::to_string(port)});
-    headers.push_back({"proxy-authorization", "basic " + GetProxyAuthorizationIdentity()});
+    headers.emplace_back(":authority", host + ":" + std::to_string(port));
+    headers.emplace_back("host", host + ":" + std::to_string(port));
+    headers.emplace_back("proxy-authorization", "basic " + GetProxyAuthorizationIdentity());
     // Send "Padding" header
     // originated from naive_proxy_delegate.go;func ServeHTTP
     if (padding_support_) {

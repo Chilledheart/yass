@@ -566,7 +566,7 @@ static OutStringType STLStringToSTLStringWithEncodingsT(
     return OutStringType();
 
   ScopedCFTypeRef<CFStringRef> cfstring(CFStringCreateWithBytesNoCopy(
-      NULL, reinterpret_cast<const UInt8*>(in.data()),
+      nullptr, reinterpret_cast<const UInt8*>(in.data()),
       in_length * sizeof(typename InStringType::value_type), in_encoding, false,
       kCFAllocatorNull));
   if (!cfstring)
