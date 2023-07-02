@@ -110,7 +110,7 @@ jobs:
         run: |
           sudo dpkg --add-architecture ${{ matrix.arch }}
           sudo apt-get update -qq
-          sudo apt-get install -y libc6:${{ matrix.arch }} libgcc-s1:${{ matrix.arch }} zlib1g:${{ matrix.arch }} libcom-err2:${{ matrix.arch }}
+          sudo apt-get install -y libc6:${{ matrix.arch }} libgcc-s1:${{ matrix.arch }} zlib1g:${{ matrix.arch }} libcom-err2:${{ matrix.arch }} libkeyutils1:${{ matrix.arch }}
       - name: Run tests (i386)
         if: ${{ matrix.arch == 'i386'}}
         run: |
