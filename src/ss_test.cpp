@@ -579,7 +579,7 @@ class SsEndToEndTest : public ::testing::Test {
     asio::error_code ec;
 
     content_provider_server_ = std::make_unique<ContentProviderServer>(io_context_);
-    content_provider_server_->listen(endpoint, backlog, ec);
+    content_provider_server_->listen(endpoint, std::string(), backlog, ec);
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec;
       return ec;
@@ -606,7 +606,7 @@ class SsEndToEndTest : public ::testing::Test {
                                                             std::string(),
                                                             std::string(kCertificate),
                                                             std::string(kPrivateKey));
-    server_server_->listen(endpoint, backlog, ec);
+    server_server_->listen(endpoint, std::string(), backlog, ec);
 
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec;
@@ -634,7 +634,7 @@ class SsEndToEndTest : public ::testing::Test {
                                                      remote_endpoint.address().to_string(),
                                                      remote_endpoint.port(),
                                                      kCertificate);
-    local_server_->listen(endpoint, backlog, ec);
+    local_server_->listen(endpoint, std::string(), backlog, ec);
 
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec;

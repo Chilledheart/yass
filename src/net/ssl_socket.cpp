@@ -653,8 +653,7 @@ int SSLSocket::DoPayloadRead(std::shared_ptr<IOBuf> buf, int buf_len) {
     }
     // Continue processing records as long as there is more data available
     // synchronously.
-  } while (ssl_err == SSL_ERROR_WANT_RENEGOTIATE ||
-           (total_bytes_read < buf_len && ssl_ret > 0));
+  } while (ssl_err == SSL_ERROR_WANT_RENEGOTIATE);
 
   // Although only the final SSL_read call may have failed, the failure needs to
   // processed immediately, while the information still available in OpenSSL's
