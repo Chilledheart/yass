@@ -82,6 +82,7 @@ class ContentServer {
   }
 
   void listen(const asio::ip::tcp::endpoint& endpoint,
+              const std::string& server_name,
               int backlog,
               asio::error_code& ec) {
     if (next_listen_ctx_ >= MAX_LISTEN_ADDRESSES) {
@@ -89,6 +90,7 @@ class ContentServer {
       return;
     }
     ListenCtx& ctx = listen_ctxs_[next_listen_ctx_];
+    ctx.server_name = server_name;
     ctx.endpoint = endpoint;
     ctx.acceptor = std::make_unique<asio::ip::tcp::acceptor>(io_context_);
 
@@ -182,6 +184,7 @@ class ContentServer {
           if (!ec) {
             if (enable_tls_) {
               setup_ssl_ctx_alpn_cb();
+              setup_ssl_ctx_tlsext_servername_cb(listen_ctx_num);
             }
             scoped_refptr<ConnectionType> conn = factory_.Create(
               io_context_, remote_host_name_, remote_port_,
@@ -346,14 +349,14 @@ class ContentServer {
   }
 
   struct alpn_ctx_t {
-    ContentServer<T> *server;
+    ContentServer *server;
     int connection_id;
   };
 
   void setup_ssl_ctx_alpn_cb() {
     SSL_CTX *ctx = ssl_ctx_.native_handle();
-    alpn_ctx_t *alpn_ctx = new alpn_ctx_t({this, next_connection_id_});
-    SSL_CTX_set_alpn_select_cb(ctx, &ContentServer::on_alpn_select, alpn_ctx);
+    std::unique_ptr<alpn_ctx_t> alpn_ctx(new alpn_ctx_t{this, next_connection_id_});
+    SSL_CTX_set_alpn_select_cb(ctx, &ContentServer::on_alpn_select, alpn_ctx.release());
     VLOG(1) << "Alpn support (server) enabled for connection " << next_connection_id_;
   }
 
@@ -395,6 +398,49 @@ class ContentServer {
   err:
     LOG(WARNING) << "Connection (" << server->factory_.Name() << ") "
       << connection_id << " Alpn support (server) fatal error";
+    return SSL_TLSEXT_ERR_ALERT_FATAL;
+  }
+
+  struct tlsext_servername_ctx_t {
+    ContentServer *server;
+    int connection_id;
+    int listen_ctx_num;
+  };
+
+  void setup_ssl_ctx_tlsext_servername_cb(int listen_ctx_num) {
+    SSL_CTX *ctx = ssl_ctx_.native_handle();
+    std::unique_ptr<tlsext_servername_ctx_t> tlsext_servername_ctx(new tlsext_servername_ctx_t{this, next_connection_id_, listen_ctx_num});
+    SSL_CTX_set_tlsext_servername_callback(ctx, &ContentServer::on_tlsext_servername);
+    SSL_CTX_set_tlsext_servername_arg(ctx, tlsext_servername_ctx.release());
+
+    VLOG(1) << "TLSEXT: Servername (server) enabled for connection "
+      << next_connection_id_ << " sever_name: "
+      << listen_ctxs_[listen_ctx_num].server_name;
+  }
+
+  static int on_tlsext_servername(SSL *ssl,
+                                  int *al,
+                                  void *arg) {
+    std::unique_ptr<tlsext_servername_ctx_t> tlsext_servername_ctx(reinterpret_cast<tlsext_servername_ctx_t*>(arg));
+    auto server = tlsext_servername_ctx->server;
+    int connection_id = tlsext_servername_ctx->connection_id;
+    int listen_ctx_num = tlsext_servername_ctx->listen_ctx_num;
+    const std::string &expected_server_name = server->listen_ctxs_[listen_ctx_num].server_name;
+
+    // SNI must be accessible from the SNI callback.
+    const char *server_name_ptr = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);
+    absl::string_view server_name;
+    if (server_name_ptr)  {
+      server_name = server_name_ptr;
+    }
+    // Allow once if matched
+    if (server_name == expected_server_name) {
+      return SSL_TLSEXT_ERR_OK;
+    }
+
+    VLOG(1) << "Connection (" << server->factory_.Name() << ") "
+      << connection_id << " TLSEXT: Servername mismatch "
+      << "(got " << server_name << "; want " << expected_server_name << ").";
     return SSL_TLSEXT_ERR_ALERT_FATAL;
   }
 
@@ -493,6 +539,7 @@ class ContentServer {
   ContentServer::Delegate *delegate_;
 
   struct ListenCtx {
+    std::string server_name;
     asio::ip::tcp::endpoint endpoint;
     asio::ip::tcp::endpoint peer_endpoint;
     std::unique_ptr<asio::ip::tcp::acceptor> acceptor;

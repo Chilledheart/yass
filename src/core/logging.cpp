@@ -2311,7 +2311,7 @@ void LogMessage::SaveOrSendToLog() ABSL_EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
     // Omit prefix of message and trailing newline when recording in outvec_.
     const char* start = data_->message_text_ + data_->num_prefix_chars_;
     int len = data_->num_chars_to_log_ - data_->num_prefix_chars_ - 1;
-    data_->outvec_->push_back(std::string(start, len));
+    data_->outvec_->emplace_back(start, len);
   } else {
     SendToLog();
   }
@@ -2736,9 +2736,10 @@ static void VLOG2Initializer() {
       tail = info;
     }
     // Skip past this entry
-    vmodule = strchr(sep, ',');
-    if (vmodule == nullptr)
+    const char *vmodule_ptr = strchr(sep, ',');
+    if (vmodule_ptr == nullptr)
       break;
+    vmodule = absl::string_view(vmodule_ptr);
     vmodule.remove_prefix(1);
   }
   if (head) {  // Put them into the list at the head:

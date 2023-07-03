@@ -269,7 +269,7 @@ void ShowContextMenu(HINSTANCE hInstance, HWND hwnd, POINT pt) {
         uFlags |= TPM_LEFTALIGN;
       }
 
-      TrackPopupMenuEx(hSubMenu, uFlags, pt.x, pt.y, hwnd, NULL);
+      TrackPopupMenuEx(hSubMenu, uFlags, pt.x, pt.y, hwnd, nullptr);
     }
     DestroyMenu(hMenu);
   }

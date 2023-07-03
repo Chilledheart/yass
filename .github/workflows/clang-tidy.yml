@@ -85,7 +85,7 @@ jobs:
 
           call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-          tools\build -clang-tidy-mode "-clang-tidy-executable-path=%CD%/third_party/llvm-build/Release+Asserts/bin/clang-tidy.exe" -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -build-test -no-packaging || exit /b
+          tools\build -clang-tidy-mode "-clang-tidy-executable-path=%CD%/third_party/llvm-build/Release+Asserts/bin/clang-tidy.exe" -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -build-test -build-benchmark -no-packaging || exit /b
 
           exit /b 0
 
@@ -140,7 +140,7 @@ jobs:
         run: |
           export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
           export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
-          ./tools/build -clang-tidy-mode -clang-tidy-executable-path="$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy" -build-test -no-packaging
+          ./tools/build -clang-tidy-mode -clang-tidy-executable-path="$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy" -build-test -build-benchmark -no-packaging
   linux-clang-tidy:
     runs-on: ubuntu-20.04
     if: ${{ github.event_name != 'release' }}
@@ -189,11 +189,11 @@ jobs:
           sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
           sudo apt-get update -qq
       - name: Populate depedencies
-        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build libgtk-3-dev
+        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build libgtk-3-dev gettext
       - name: Populate depedencies (test purposes)
         run: sudo apt-get update -qq && sudo apt-get install -y libcurl4-openssl-dev
       - name: Build
         run: |
           export CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang
           export CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++
-          ./tools/build -clang-tidy-mode -clang-tidy-executable-path="$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy" -build-test -no-packaging
+          ./tools/build -clang-tidy-mode -clang-tidy-executable-path="$PWD/third_party/llvm-build/Release+Asserts/bin/clang-tidy" -build-test -build-benchmark -no-packaging

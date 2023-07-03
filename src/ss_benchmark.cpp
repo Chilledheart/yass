@@ -232,7 +232,7 @@ class SsEndToEndBM : public benchmark::Fixture {
 
   void StartBackgroundTasks() {
     std::mutex m;
-    bool done = 0;
+    bool done = false;
     asio::post(io_context_, [this, &m, &done]() {
       std::lock_guard<std::mutex> lk(m);
       auto ec = StartContentProvider(GetReusableEndpoint(), SOMAXCONN);
@@ -398,7 +398,7 @@ class SsEndToEndBM : public benchmark::Fixture {
     asio::error_code ec;
 
     content_provider_server_ = std::make_unique<ContentProviderServer>(io_context_);
-    content_provider_server_->listen(endpoint, backlog, ec);
+    content_provider_server_->listen(endpoint, std::string(), backlog, ec);
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec;
       return ec;
@@ -424,7 +424,7 @@ class SsEndToEndBM : public benchmark::Fixture {
                                                             std::string(),
                                                             std::string(kCertificate),
                                                             std::string(kPrivateKey));
-    server_server_->listen(endpoint, backlog, ec);
+    server_server_->listen(endpoint, std::string(), backlog, ec);
 
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec;
@@ -452,7 +452,7 @@ class SsEndToEndBM : public benchmark::Fixture {
                                                      remote_endpoint.address().to_string(),
                                                      remote_endpoint.port(),
                                                      kCertificate);
-    local_server_->listen(endpoint, backlog, ec);
+    local_server_->listen(endpoint, std::string(), backlog, ec);
 
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec;
@@ -545,7 +545,7 @@ static void connect_pair(asio::ip::tcp::socket &s1, asio::ip::tcp::socket &s2,
 class ASIOFixture : public benchmark::Fixture {
  public:
   ASIOFixture() : s1(io_context), s2(io_context) {}
-  void SetUp(const ::benchmark::State& state) {
+  void SetUp(const ::benchmark::State& state) override {
     asio::error_code ec;
     connect_pair(s1, s2, ec, io_context);
     CHECK(!ec) << "connect_pair failure " << ec;
@@ -563,7 +563,7 @@ class ASIOFixture : public benchmark::Fixture {
     GenerateRandContent(state.range(0));
   }
 
-  void TearDown(const ::benchmark::State& state) {
+  void TearDown(const ::benchmark::State& state) override {
     asio::error_code ec;
     s1.close(ec);
     CHECK(!ec) << "close failure " << ec;
@@ -651,7 +651,7 @@ BENCHMARK_DEFINE_F(ASIOFixture, PlainIO)(benchmark::State& state)  {
     state.SetIterationTime(elapsed_seconds.count());
   }
 
-  state.SetBytesProcessed(int64_t(state.iterations()) * int64_t(state.range(0)));
+  state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) * static_cast<int64_t>(state.range(0)));
 }
 
 BENCHMARK_REGISTER_F(ASIOFixture, PlainIO)->Range(4096, 1*1024*1024)->UseManualTime();

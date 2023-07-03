@@ -261,7 +261,7 @@ std::string UnescapeURLWithAdjustmentsImpl(
     adjustments->clear();
   // Do not unescape anything, return the |escaped_text| text.
   if (rules == UnescapeRule::NONE)
-    return std::string(escaped_text);
+    return std::string{escaped_text};
 
   // The output of the unescaping is always smaller than the input, so we can
   // reserve the input size to make sure we have enough buffer and don't have
@@ -286,7 +286,7 @@ std::string UnescapeURLWithAdjustmentsImpl(
       if (UnescapeUnsignedByteAtIndex(escaped_text, i, &non_utf8_byte)) {
         result.push_back(non_utf8_byte);
         if (adjustments)
-          adjustments->push_back(OffsetAdjuster::Adjustment(i, 3, 1));
+          adjustments->emplace_back(i, 3, 1);
         i += 3;
         continue;
       }
@@ -318,7 +318,7 @@ std::string UnescapeURLWithAdjustmentsImpl(
     result.append(unescaped);
     if (adjustments) {
       for (size_t j = 0; j < unescaped.length(); ++j) {
-        adjustments->push_back(OffsetAdjuster::Adjustment(i + j * 3, 3, 1));
+        adjustments->emplace_back(i + j * 3, 3, 1);
       }
     }
     i += 3 * unescaped.length();
