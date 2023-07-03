@@ -106,7 +106,7 @@ int main(int argc, const char* argv[]) {
 
   ServerServer server(io_context);
   for (auto &endpoint : endpoints) {
-    server.listen(endpoint, SOMAXCONN, ec);
+    server.listen(endpoint, host_is_ip_address ? std::string() : host_name, SOMAXCONN, ec);
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec;
       server.stop();

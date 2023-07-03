@@ -113,7 +113,7 @@ int main(int argc, const char* argv[]) {
   CliServer server(io_context, absl::GetFlag(FLAGS_server_host),
                    absl::GetFlag(FLAGS_server_port));
   for (auto &endpoint : endpoints) {
-    server.listen(endpoint, SOMAXCONN, ec);
+    server.listen(endpoint, std::string(), SOMAXCONN, ec);
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec;
       server.stop();
