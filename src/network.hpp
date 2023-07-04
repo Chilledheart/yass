@@ -67,9 +67,11 @@ const uint32_t kSpdyMaxConcurrentPushedStreams = 1000;
 // Specifies the the default value for the push setting, which is disabled.
 const uint32_t kSpdyDisablePush = 0;
 
+// followed by curl's nghttp adapter
+#define HTTP2_HUGE_WINDOW_SIZE (32 * 1024 * 1024) /* 32 MB */
 // from net/http/http_network_session.cc
 // The maximum receive window sizes for HTTP/2 sessions and streams.
-const int32_t kSpdySessionMaxRecvWindowSize = 15 * 1024 * 1024;  // 15 MB
+const int32_t kSpdySessionMaxRecvWindowSize = HTTP2_HUGE_WINDOW_SIZE;
 const int32_t kSpdyStreamMaxRecvWindowSize = 6 * 1024 * 1024;    //  6 MB
 
 // from net/spdy/spdy_session.h
