@@ -11,6 +11,7 @@ Build-Depends:
  golang:native,
  ninja-build:native,
  debhelper (>= 9),
+ ca-certificates,
  pkg-config <!nogui>,
  libglib2.0-dev <!nogui>,
  libgtk-3-dev <!nogui>
@@ -23,6 +24,7 @@ Package: yass
 Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Build-Profiles: <!nogui>
+Recommends: ca-certificates
 Depends:
  lsb-base (>= 3.0-6),
  ${misc:Depends},
@@ -48,6 +50,7 @@ Depends:
  lsb-base (>= 3.0-6),
  ${misc:Depends},
  ${shlibs:Depends}
+Recommends: ca-certificates
 Description: lightweight and secure http/socks4/socks5 proxy
  Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for
  embedded devices and low end boxes.
@@ -68,6 +71,7 @@ Depends:
  lsb-base (>= 3.0-6),
  ${misc:Depends},
  ${shlibs:Depends}
+Recommends: ca-certificates
 Description: lightweight and secure http/socks4/socks5 proxy
  Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for
  embedded devices and low end boxes.
