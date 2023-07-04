@@ -68,7 +68,7 @@ Notable missing features to be done compared with [naiveproxy]
 - [x] Opt-in of padding protocol
 - [ ] Support HTTP/2 and HTTP/3 CONNECT tunnel Fast Open using the `fastopen`
   header
-- [ ] Performance degrade compared to [naiveproxy] client
+- [x] Performance degrade compared to [naiveproxy] client (only in naive protocol)
 
 Server-side features compared with caddy+forwardproxy
 - [x] Basic Authentification

@@ -1731,12 +1731,6 @@ foreach(source ${BCM_ASM_SOURCES})
   set_source_files_properties(${source} PROPERTIES GENERATED true)
 endforeach()
 
-# fix use_custom_libcxx
-if (MSVC AND USE_LIBCXX)
-  target_compile_definitions(ssl PRIVATE _HAS_EXCEPTIONS=1)
-  target_compile_options(ssl PRIVATE -Wno-macro-redefined)
-endif()
-
 set_target_properties(bssl PROPERTIES EXCLUDE_FROM_ALL TRUE)
 set_target_properties(decrepit PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
@@ -1978,6 +1972,19 @@ if (USE_NGHTTP2)
   include_directories(third_party/nghttp2/lib/includes SYSTEM)
   include_directories(${CMAKE_CURRENT_BINARY_DIR}/third_party/nghttp2/lib/includes SYSTEM)
   add_subdirectory(third_party/nghttp2)
+  if (COMPILER_CLANG)
+    target_compile_options(nghttp2_static PRIVATE -Wno-cast-qual)
+    target_compile_options(nghttp2_static PRIVATE -Wno-implicit-fallthrough)
+    if (CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 16.0)
+      target_compile_options(nghttp2_static PRIVATE -Wno-unsafe-buffer-usage)
+    endif()
+    target_compile_options(nghttp2_static PRIVATE -Wno-documentation)
+    target_compile_options(nghttp2_static PRIVATE -Wno-documentation-unknown-command)
+    target_compile_options(nghttp2_static PRIVATE -Wno-switch-enum)
+    target_compile_options(nghttp2_static PRIVATE -Wno-shorten-64-to-32)
+    target_compile_options(nghttp2_static PRIVATE -Wno-extra-semi-stmt)
+    target_compile_options(nghttp2_static PRIVATE -Wno-covered-switch-default)
+  endif()
 endif()
 
 # *****************************************************************************************
