@@ -3,7 +3,7 @@
 [![License][license-svg]][license-link]
 [![GitHub all downloads](https://img.shields.io/github/downloads/Chilledheart/yass/total)](https://github.com/Chilledheart/yass/releases)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Chilledheart/yass)](https://github.com/Chilledheart/yass/releases)
-[![GitHub latest downloads](https://img.shields.io/github/downloads/Chilledheart/yass/1.3.5/total)](https://github.com/Chilledheart/yass/releases/tag/1.3.5)
+[![GitHub latest downloads](https://img.shields.io/github/downloads/Chilledheart/yass/1.3.6/total)](https://github.com/Chilledheart/yass/releases/tag/1.3.6)
 
 [![Compiler Compatibility](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml)
 [![Sanitizers](https://github.com/Chilledheart/yass/actions/workflows/sanitizers.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/sanitizers.yml)
@@ -68,7 +68,7 @@ Notable missing features to be done compared with [naiveproxy]
 - [x] Opt-in of padding protocol
 - [ ] Support HTTP/2 and HTTP/3 CONNECT tunnel Fast Open using the `fastopen`
   header
-- [x] Performance degrade compared to [naiveproxy] client (only in naive protocol)
+- [x] No performance degrade compared to [naiveproxy] client
 
 Server-side features compared with caddy+forwardproxy
 - [x] Basic Authentification
