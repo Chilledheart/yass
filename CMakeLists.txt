@@ -1731,12 +1731,6 @@ foreach(source ${BCM_ASM_SOURCES})
   set_source_files_properties(${source} PROPERTIES GENERATED true)
 endforeach()
 
-# fix use_custom_libcxx
-if (MSVC AND USE_LIBCXX)
-  target_compile_definitions(ssl PRIVATE _HAS_EXCEPTIONS=1)
-  target_compile_options(ssl PRIVATE -Wno-macro-redefined)
-endif()
-
 set_target_properties(bssl PROPERTIES EXCLUDE_FROM_ALL TRUE)
 set_target_properties(decrepit PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
