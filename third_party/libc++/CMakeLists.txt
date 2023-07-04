@@ -294,7 +294,7 @@ if (COMPILER_GCC)
   set(libcxx_CFLAGS ${libcxx_CFLAGS} "-Wno-attributes")
 endif()
 
-if (MSVC)
+if (WIN32)
   set(libcxx_CFLAGS ${libcxx_CFLAGS}
     # libc++ wants to redefine the macros WIN32_LEAN_AND_MEAN and _CRT_RAND_S in
     # its implementation.
