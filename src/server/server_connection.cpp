@@ -5,7 +5,7 @@
 
 #include <absl/base/attributes.h>
 #include <absl/strings/str_cat.h>
-#include <absl/strings/str_split.h>
+#include <cstdlib>
 
 #include "config/config.hpp"
 #include "core/asio.hpp"
@@ -18,6 +18,27 @@ ABSL_FLAG(bool, hide_via, true, "If true, the Via heaeder will not be added.");
 ABSL_FLAG(bool, hide_ip, true, "If true, the Forwarded header will not be augmented with your IP address.");
 
 namespace server {
+
+static void SplitHostPort(std::string *out_hostname, std::string *out_port,
+                          const std::string &hostname_and_port) {
+  size_t colon_offset = hostname_and_port.find_last_of(':');
+  const size_t bracket_offset = hostname_and_port.find_last_of(']');
+  std::string hostname, port;
+
+  // An IPv6 literal may have colons internally, guarded by square brackets.
+  if (bracket_offset != std::string::npos &&
+      colon_offset != std::string::npos && bracket_offset > colon_offset) {
+    colon_offset = std::string::npos;
+  }
+
+  if (colon_offset == std::string::npos) {
+    *out_hostname = hostname_and_port;
+    *out_port = "443";
+  } else {
+    *out_hostname = hostname_and_port.substr(0, colon_offset);
+    *out_port = hostname_and_port.substr(colon_offset + 1);
+  }
+}
 
 namespace {
 std::vector<http2::adapter::Header> GenerateHeaders(
@@ -318,12 +339,38 @@ bool ServerConnection::OnEndHeadersForStream(
       << " Unexpected auth token.";
     return false;
   }
-  std::vector<std::string> host_and_port = absl::StrSplit(request_map_[":authority"], ":");
-  if (host_and_port.size() != 2) {
+  // https://datatracker.ietf.org/doc/html/rfc9113
+  // The recipient of an HTTP/2 request MUST NOT use the Host header field
+  // to determine the target URI if ":authority" is present.
+  auto authority = request_map_[":authority"];
+  if (authority.empty()) {
+    authority = request_map_["host"];
+  }
+  if (authority.empty()) {
     LOG(INFO) << "Connection (server) " << connection_id()
-      << " Unexpected authority: " << request_map_[":authority"];
+      << " Unexpected empty authority";
     return false;
   }
+
+  std::string hostname, port;
+  SplitHostPort(&hostname, &port, authority);
+
+  // Handle IPv6 literals.
+  if (hostname.size() >= 2 && hostname[0] == '[' &&
+      hostname[hostname.size() - 1] == ']') {
+    hostname = hostname.substr(1, hostname.size() - 2);
+  }
+
+  char* end;
+  const unsigned long portnum = strtoul(port.c_str(), &end, 10);
+  if (*end != '\0' || portnum >= UINT16_MAX || (errno == ERANGE && portnum == ULONG_MAX)) {
+    LOG(INFO) << "Connection (server) " << connection_id()
+      << " Unexpected authority: " << authority;
+    return false;
+  }
+
+  request_ = ss::request(hostname, portnum);
+
   bool padding_support = request_map_.find("padding") != request_map_.end();
   if (padding_support_ && padding_support) {
     LOG(INFO) << "Connection (server) " << connection_id() << " for " << peer_endpoint
@@ -333,11 +380,6 @@ bool ServerConnection::OnEndHeadersForStream(
       << " Padding support disabled.";
     padding_support_ = false;
   }
-
-  auto host = host_and_port[0];
-  auto port = host_and_port[1];
-  // FIXME remove stoi call
-  request_ = ss::request(host, std::stoi(port));
 
   SetState(state_stream);
   OnConnect();

@@ -1608,6 +1608,7 @@ void CliConnection::connected() {
 
   // Send Upstream Header
   if (adapter_) {
+    std::string hostname_and_port;
     std::string host;
     int port;
     if (ss_request_->address_type() == ss::domain) {
@@ -1618,6 +1619,14 @@ void CliConnection::connected() {
       host = endpoint.address().to_string();
       port = endpoint.port();
     }
+    hostname_and_port = host + ":" + std::to_string(port);
+
+    // Handle IPv6 literals.
+    asio::error_code ec;
+    auto addr = asio::ip::make_address(host, ec);
+    if (!ec && addr.is_v6()) {
+      hostname_and_port = "[" + host + "]" + ":" + std::to_string(port);
+    }
 
     std::unique_ptr<DataFrameSource> data_frame =
       std::make_unique<DataFrameSource>(this);
@@ -1625,8 +1634,8 @@ void CliConnection::connected() {
     std::vector<std::pair<std::string, std::string>> headers;
     headers.emplace_back(":method", "CONNECT");
     //    authority   = [ userinfo "@" ] host [ ":" port ]
-    headers.emplace_back(":authority", host + ":" + std::to_string(port));
-    headers.emplace_back("host", host + ":" + std::to_string(port));
+    headers.emplace_back(":authority", hostname_and_port);
+    headers.emplace_back("host", hostname_and_port);
     headers.emplace_back("proxy-authorization", "basic " + GetProxyAuthorizationIdentity());
     // Send "Padding" header
     // originated from naive_proxy_delegate.go;func ServeHTTP
@@ -1642,6 +1651,7 @@ void CliConnection::connected() {
     data_frame_->set_stream_id(stream_id_);
     SendIfNotProcessing();
   } else if (upstream_https_fallback_) {
+    std::string hostname_and_port;
     std::string host;
     int port;
     if (ss_request_->address_type() == ss::domain) {
@@ -1652,11 +1662,20 @@ void CliConnection::connected() {
       host = endpoint.address().to_string();
       port = endpoint.port();
     }
+    hostname_and_port = host + ":" + std::to_string(port);
+
+    // Handle IPv6 literals.
+    asio::error_code ec;
+    auto addr = asio::ip::make_address(host, ec);
+    if (!ec && addr.is_v6()) {
+      hostname_and_port = "[" + host + "]" + ":" + std::to_string(port);
+    }
+
     std::string hdr = StringPrintf(
-        "CONNECT %s:%d HTTP/1.1\r\n"
-        "Host: %s:%d\r\n"
+        "CONNECT %s HTTP/1.1\r\n"
+        "Host: %s\r\n"
         "Proxy-Connection: Keep-Alive\r\n"
-        "\r\n", host.c_str(), port, host.c_str(), port);
+        "\r\n", hostname_and_port.c_str(), hostname_and_port.c_str());
     std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(hdr.data(), hdr.size());
     // write variable address directly as https header
     upstream_.push_back(buf);
