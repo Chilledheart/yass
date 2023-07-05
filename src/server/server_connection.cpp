@@ -14,6 +14,9 @@
 #include "core/rand_util.hpp"
 #include "core/utils.hpp"
 
+ABSL_FLAG(bool, hide_via, true, "If true, the Via heaeder will not be added.");
+ABSL_FLAG(bool, hide_ip, true, "If true, the Forwarded header will not be augmented with your IP address.");
+
 namespace server {
 
 namespace {
@@ -297,33 +300,38 @@ ServerConnection::OnHeaderForStream(StreamId stream_id,
 bool ServerConnection::OnEndHeadersForStream(
   http2::adapter::Http2StreamId stream_id) {
 
+  asio::error_code ec;
+  auto peer_endpoint = socket_.remote_endpoint(ec);
+  if (ec) {
+    LOG(INFO) << "Connection (server) " << connection_id()
+      << " Failed to retrieve remote endpoint: " << ec;
+    return false;
+  }
   if (request_map_[":method"] != "CONNECT") {
-    VLOG(1) << "Connection (server) " << connection_id()
+    LOG(INFO) << "Connection (server) " << connection_id() << " for " << peer_endpoint
       << " Unexpected method: " << request_map_[":method"];
     return false;
   }
   auto auth = request_map_["proxy-authorization"];
   if (auth != "basic " + GetProxyAuthorizationIdentity()) {
-    VLOG(1) << "Connection (server) " << connection_id()
+    LOG(INFO) << "Connection (server) " << connection_id() << " for " << peer_endpoint
       << " Unexpected auth token.";
     return false;
   }
-  bool padding_support = request_map_.find("padding") != request_map_.end();
-  asio::error_code ec;
-  auto peer_endpoint = socket_.remote_endpoint(ec);
-  if (padding_support_ && padding_support) {
-    LOG(INFO) << "Connection (server) " << connection_id() << " for "
-      << peer_endpoint << " Padding support enabled.";
-  } else {
-    VLOG(1) << "Connection (server) " << connection_id() << " for "
-      << peer_endpoint << " Padding support disabled.";
-    padding_support_ = false;
-  }
   std::vector<std::string> host_and_port = absl::StrSplit(request_map_[":authority"], ":");
   if (host_and_port.size() != 2) {
-    VLOG(1) << "Connection (server) " << connection_id()
+    LOG(INFO) << "Connection (server) " << connection_id()
       << " Unexpected authority: " << request_map_[":authority"];
     return false;
+  }
+  bool padding_support = request_map_.find("padding") != request_map_.end();
+  if (padding_support_ && padding_support) {
+    LOG(INFO) << "Connection (server) " << connection_id() << " for " << peer_endpoint
+      << " Padding support enabled.";
+  } else {
+    VLOG(1) << "Connection (server) " << connection_id() << " for " << peer_endpoint
+      << " Padding support disabled.";
+    padding_support_ = false;
   }
 
   auto host = host_and_port[0];
@@ -592,8 +600,24 @@ void ServerConnection::OnReadHandshakeViaHttps() {
     request_ = {http_host_, http_port_};
 
     if (!http_is_connect_) {
+      absl::flat_hash_map<std::string, std::string> via_headers;
+      if (!absl::GetFlag(FLAGS_hide_ip)) {
+        asio::error_code ec;
+        auto peer_endpoint = socket_.remote_endpoint(ec);
+        if (ec) {
+          LOG(WARNING) << "Failed to retrieve remote endpoint: " << ec;
+        }
+        std::ostringstream ss;
+        ss << "for=\"" << peer_endpoint << "\"";
+        via_headers["Forwarded"] = ss.str();
+      }
+      // https://datatracker.ietf.org/doc/html/rfc7230#section-5.7.1
+      if (!absl::GetFlag(FLAGS_hide_via)) {
+        via_headers["Via"] = "1.1 asio";
+      }
       std::string header;
-      parser.ReforgeHttpRequest(&header);
+      parser.ReforgeHttpRequest(&header, &via_headers);
+
       buf->reserve(header.size(), 0);
       buf->prepend(header.size());
       memcpy(buf->mutable_data(), header.c_str(), header.size());

@@ -73,8 +73,8 @@ Notable missing features to be done compared with [naiveproxy]
 Server-side features compared with caddy+forwardproxy
 - [x] Basic Authentification
 - [x] Opt-in of padding protocol
-- [ ] Via-IP support
-- [ ] Via-via support
+- [x] Via-IP support (HTTPS 1.1 only)
+- [x] Via-via support (HTTPS 1.1 only)
 - [ ] File Server fallback support
 
 ### Shadowsocks PC-friendly Ciphers
