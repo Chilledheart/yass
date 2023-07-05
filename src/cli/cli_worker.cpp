@@ -28,7 +28,7 @@ Worker::Worker()
 #endif
       private_(new WorkerPrivate) {
 #ifdef HAVE_C_ARES
-  int ret = resolver_->Init(1000, 5);
+  int ret = resolver_->Init(5000);
   CHECK_EQ(ret, 0) << "c-ares initialize failure";
   static_cast<void>(ret);
 #endif
