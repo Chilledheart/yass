@@ -3,6 +3,27 @@
 
 #include "core/http_parser.hpp"
 
+static void SplitHostPort(std::string *out_hostname, std::string *out_port,
+                          const std::string &hostname_and_port) {
+  size_t colon_offset = hostname_and_port.find_last_of(':');
+  const size_t bracket_offset = hostname_and_port.find_last_of(']');
+  std::string hostname, port;
+
+  // An IPv6 literal may have colons internally, guarded by square brackets.
+  if (bracket_offset != std::string::npos &&
+      colon_offset != std::string::npos && bracket_offset > colon_offset) {
+    colon_offset = std::string::npos;
+  }
+
+  if (colon_offset == std::string::npos) {
+    *out_hostname = hostname_and_port;
+    *out_port = "80";
+  } else {
+    *out_hostname = hostname_and_port.substr(0, colon_offset);
+    *out_port = hostname_and_port.substr(colon_offset + 1);
+  }
+}
+
 int HttpRequestParser::OnReadHttpRequestURL(http_parser* p,
                                             const char* buf,
                                             size_t len) {
@@ -33,20 +54,23 @@ int HttpRequestParser::OnReadHttpRequestHeaderValue(http_parser* parser,
   self->http_value_ = std::string(buf, len);
   self->http_headers_[self->http_field_] = self->http_value_;
   if (self->http_field_ == "Host" && !self->http_is_connect_) {
-    const char* url = buf;
-    // Host = "Host" ":" host [ ":" port ] ; Section 3.2.2
-    // TBD hand with IPv6 address // [xxx]:port/xxx
-    while (*buf != ':' && *buf != '\0' && len != 0) {
-      buf++, len--;
+    std::string authority = std::string(buf, len);
+    std::string hostname, port;
+    SplitHostPort(&hostname, &port, authority);
+
+    // Handle IPv6 literals.
+    if (hostname.size() >= 2 && hostname[0] == '[' &&
+        hostname[hostname.size() - 1] == ']') {
+      hostname = hostname.substr(1, hostname.size() - 2);
     }
 
-    self->http_host_ = std::string(url, buf);
-    if (len > 1 && *buf == ':') {
-      ++buf, --len;
-      self->http_port_ = stoi(std::string(buf, len));
-    } else {
-      self->http_port_ = 80;
+    char* end;
+    const unsigned long portnum = strtoul(port.c_str(), &end, 10);
+    if (*end != '\0' || portnum >= UINT16_MAX || (errno == ERANGE && portnum == ULONG_MAX)) {
+      return -1;
     }
+    self->http_host_ = hostname;
+    self->http_port_ = portnum;
   }
   return 0;
 }
