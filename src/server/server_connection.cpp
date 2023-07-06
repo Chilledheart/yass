@@ -363,7 +363,7 @@ bool ServerConnection::OnEndHeadersForStream(
 
   char* end;
   const unsigned long portnum = strtoul(port.c_str(), &end, 10);
-  if (*end != '\0' || portnum >= UINT16_MAX || (errno == ERANGE && portnum == ULONG_MAX)) {
+  if (*end != '\0' || portnum > UINT16_MAX || (errno == ERANGE && portnum == ULONG_MAX)) {
     LOG(INFO) << "Connection (server) " << connection_id()
       << " Unexpected authority: " << authority;
     return false;
