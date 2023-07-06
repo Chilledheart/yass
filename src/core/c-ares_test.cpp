@@ -28,6 +28,7 @@ TEST(CARES_TEST, LocalfileBasic) {
           asio::ip::tcp::endpoint endpoint = *iter;
           auto addr = endpoint.address();
           EXPECT_TRUE(addr.is_loopback()) << addr;
+          VLOG(1) << "Resolved: " << addr;
         }
     });
   });
@@ -50,6 +51,7 @@ TEST(CARES_TEST, RemoteNotFound) {
       [&](asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
         work_guard.reset();
         ASSERT_TRUE(ec) << ec;
+        VLOG(1) << "Resolved error: " << ec;
     });
   });
 
@@ -58,6 +60,8 @@ TEST(CARES_TEST, RemoteNotFound) {
 
 static void DoRemoteResolve(asio::io_context& io_context, scoped_refptr<CAresResolver> resolver) {
   auto work_guard = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context.get_executor());
+
+  io_context.restart();
 
   asio::post(io_context, [&]() {
     resolver->AsyncResolve("www.apple.com", "80",
@@ -69,6 +73,7 @@ static void DoRemoteResolve(asio::io_context& io_context, scoped_refptr<CAresRes
           auto addr = endpoint.address();
           EXPECT_FALSE(addr.is_loopback()) << addr;
           EXPECT_FALSE(addr.is_unspecified()) << addr;
+          VLOG(1) << "Resolved: " << addr;
         }
     });
   });

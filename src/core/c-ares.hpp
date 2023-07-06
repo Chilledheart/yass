@@ -73,8 +73,7 @@ class CAresResolver : public RefCountedThreadSafe<CAresResolver> {
   int timeout_ms_;
   asio::steady_timer resolve_timer_;
 
-  bool done_;
-  bool canceled_;
+  bool done_ = true;
   bool expired_;
 };
 

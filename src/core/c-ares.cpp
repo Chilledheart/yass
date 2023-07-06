@@ -98,9 +98,7 @@ void CAresResolver::Destroy() {
   if (!init_) {
     return;
   }
-  if (!canceled_) {
-    Cancel();
-  }
+  Cancel();
   ::ares_destroy(channel_);
 }
 
@@ -108,9 +106,6 @@ void CAresResolver::OnSockState(void *arg, fd_t fd, int readable, int writable) 
   // Might be involved by Destory in dtor.
   // Cannot call AddRef directly.
   auto resolver = reinterpret_cast<CAresResolver*>(arg);
-  if (resolver->canceled_) {
-    return;
-  }
   auto self = scoped_refptr(resolver);
   auto iter = self->fd_map_.find(fd);
   if (!readable && !writable) {
@@ -162,9 +157,6 @@ void CAresResolver::OnSockStateReadable(scoped_refptr<ResolverPerContext> ctx, f
   auto self = scoped_refptr(this);
   ctx->socket.async_wait(asio::ip::tcp::socket::wait_read,
     [this, self, ctx, fd](asio::error_code ec) {
-    if (canceled_) {
-      return;
-    }
     if (!ctx->read_enable) {
       return;
     }
@@ -182,9 +174,6 @@ void CAresResolver::OnSockStateWritable(scoped_refptr<ResolverPerContext> ctx, f
   auto self = scoped_refptr(this);
   ctx->socket.async_wait(asio::ip::tcp::socket::wait_write,
     [this, self, ctx, fd](asio::error_code ec) {
-    if (canceled_) {
-      return;
-    }
     if (!ctx->write_enable) {
       return;
     }
@@ -201,10 +190,10 @@ void CAresResolver::OnSockStateWritable(scoped_refptr<ResolverPerContext> ctx, f
 void CAresResolver::AsyncResolve(const std::string& host,
                                  const std::string& service,
                                  AsyncResolveCallback cb) {
-  DCHECK(init_);
+  DCHECK(init_) << "Init should be called before use";
+  DCHECK(done_) << "Another resolve is in progress";
 
   done_ = false;
-  canceled_ = false;
   expired_ = false;
 
   struct async_resolve_ctx {
@@ -219,9 +208,12 @@ void CAresResolver::AsyncResolve(const std::string& host,
   ctx->host = host;
   ctx->service = service;
   struct ares_addrinfo_hints hints = {};
-  hints.ai_flags = ARES_AI_CANONNAME;
+  /* Since the service is a numerical one, set the hint flags
+   * accordingly to save a call to getservbyname in inside C-Ares
+   */
+  hints.ai_flags = ARES_AI_CANONNAME | ARES_AI_NUMERICSERV;
   hints.ai_family = AF_INET;
-  hints.ai_socktype = 0;
+  hints.ai_socktype = SOCK_STREAM;
   hints.ai_protocol = 0;
   ::ares_getaddrinfo(channel_, host.c_str(), service.c_str(), &hints,
     [](void *arg, int status, int timeouts, struct ares_addrinfo *result) {
@@ -289,7 +281,9 @@ void CAresResolver::AsyncResolve(const std::string& host,
 
 void CAresResolver::Cancel() {
   DCHECK(init_);
-  canceled_ = true;
+  if (done_) {
+    return;
+  }
   resolve_timer_.cancel();
   ::ares_cancel(channel_);
 }
@@ -312,7 +306,7 @@ void CAresResolver::OnAsyncWait() {
       if (ec) {
         return;
       }
-      if (canceled_) {
+      if (done_) {
         return;
       }
       expired_ = true;
