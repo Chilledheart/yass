@@ -18,7 +18,7 @@ TEST(CARES_TEST, LocalfileBasic) {
 
   asio::post(io_context, [&]() {
     auto resolver = CAresResolver::Create(io_context);
-    int ret = resolver->Init(1000, 1);
+    int ret = resolver->Init(1000);
     if (ret) {
       work_guard.reset();
     }
@@ -38,14 +38,36 @@ TEST(CARES_TEST, LocalfileBasic) {
   io_context.run();
 }
 
-TEST(CARES_TEST, DISABLED_RemoteBasic) {
+TEST(CARES_TEST, RemoteNotFound) {
   asio::error_code ec;
   asio::io_context io_context;
   auto work_guard = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context.get_executor());
 
   asio::post(io_context, [&]() {
     auto resolver = CAresResolver::Create(io_context);
-    int ret = resolver->Init(1000, 5);
+    int ret = resolver->Init(10);
+    if (ret) {
+      work_guard.reset();
+    }
+    ASSERT_EQ(ret, 0);
+    resolver->AsyncResolve("not-found.invalid", "80", [&](
+      asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
+        work_guard.reset();
+        ASSERT_TRUE(ec) << ec;
+    });
+  });
+
+  io_context.run();
+}
+
+TEST(CARES_TEST, RemoteBasic) {
+  asio::error_code ec;
+  asio::io_context io_context;
+  auto work_guard = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context.get_executor());
+
+  asio::post(io_context, [&]() {
+    auto resolver = CAresResolver::Create(io_context);
+    int ret = resolver->Init(5000);
     if (ret) {
       work_guard.reset();
     }

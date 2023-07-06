@@ -5,6 +5,9 @@
 
 #include "core/c-ares.hpp"
 
+#define CURL_TIMEOUT_RESOLVE 300 /* when using asynch methods, we allow this
+                                    many seconds for a name resolve */
+
 namespace {
 
 asio::error_code AresToAsioError(int status) {
@@ -37,8 +40,9 @@ asio::error_code AresToAsioError(int status) {
     case ARES_ENOMEM:
       ec = asio::error::no_memory;
       break;
+    case ARES_ECANCELLED:
     case ARES_EDESTRUCTION:
-      ec = asio::error::no_memory;
+      ec = asio::error::operation_aborted;
       break;
     case ARES_EBADQUERY:
     case ARES_EBADNAME:
@@ -75,18 +79,16 @@ CAresResolver::~CAresResolver() {
   VLOG(1) << "c-ares resolver freed memory";
 }
 
-int CAresResolver::Init(int timeout_ms, int retries) {
+int CAresResolver::Init(int timeout_ms) {
   ares_opts_.lookups = lookups_;
-  ares_opts_.timeout = timeout_ms_ = timeout_ms;
-  ares_opts_.tries = retries;
   ares_opts_.sock_state_cb_data = this;
   ares_opts_.sock_state_cb = &CAresResolver::OnSockState;
   int ret = ::ares_init_options(&channel_, &ares_opts_,
-                                ARES_OPT_TIMEOUTMS | ARES_OPT_TRIES |
                                 ARES_OPT_LOOKUPS | ARES_OPT_SOCK_STATE_CB);
   if (ret) {
     LOG(WARNING) << "ares_init_options failure: " << ares_strerror(ret);
   }
+  timeout_ms_ = timeout_ms ? timeout_ms : CURL_TIMEOUT_RESOLVE * 1000;
   return ret;
 }
 
@@ -194,6 +196,11 @@ void CAresResolver::OnSockStateWritable(scoped_refptr<ResolverPerContext> ctx, f
 void CAresResolver::AsyncResolve(const std::string& host,
                                  const std::string& service,
                                  AsyncResolveCallback cb) {
+
+  done_ = false;
+  canceled_ = false;
+  expired_ = false;
+
   struct async_resolve_ctx {
     async_resolve_ctx(scoped_refptr<CAresResolver> s, AsyncResolveCallback c)
      : self(s), cb(c) {}
@@ -214,22 +221,18 @@ void CAresResolver::AsyncResolve(const std::string& host,
     [](void *arg, int status, int timeouts, struct ares_addrinfo *result) {
       auto ctx = std::unique_ptr<async_resolve_ctx>(reinterpret_cast<async_resolve_ctx*>(arg));
       auto self = ctx->self;
-      if (status == ARES_ECANCELLED || status == ARES_EDESTRUCTION) {
-        return;
+      self->done_ = true;
+      if (status != ARES_SUCCESS && self->expired_) {
+        status = ARES_ETIMEOUT;
       }
-      if (self->canceled_) {
+      if (status == ARES_ECANCELLED || status == ARES_EDESTRUCTION) {
         return;
       }
       auto cb = ctx->cb;
       self->resolve_timer_.cancel();
-      if (timeouts > 0) {
-        ::ares_freeaddrinfo(result);
-        cb(asio::error::timed_out, {});
-        return;
-      }
+      (void)timeouts;
       if (status != ARES_SUCCESS) {
         asio::error_code ec = AresToAsioError(status);
-        ::ares_freeaddrinfo(result);
         cb(ec, {});
         return;
       }
@@ -273,25 +276,24 @@ void CAresResolver::AsyncResolve(const std::string& host,
       }
       ::ares_freeaddrinfo(result);
   }, ctx.release());
-  OnAsyncWait();
+  if (!done_) {
+    OnAsyncWait();
+  }
 }
 
 void CAresResolver::Cancel() {
   canceled_ = true;
   resolve_timer_.cancel();
-  for (auto [fd, ctx]: fd_map_) {
-    asio::error_code ec;
-    ctx->socket.close(ec);
-  }
+  ::ares_cancel(channel_);
 }
 
 void CAresResolver::OnAsyncWait() {
   scoped_refptr<CAresResolver> self(this);
-  struct timeval tv {};
-  struct timeval *tvp = ::ares_timeout(channel_, nullptr, &tv);
-  if (!tvp) {
-    return;
-  }
+  struct timeval tv, maxtime;
+  maxtime.tv_sec = timeout_ms_ / 1000;
+  maxtime.tv_usec = (timeout_ms_ % 1000) * 1000;
+  struct timeval *tvp = ::ares_timeout(channel_, &maxtime, &tv);
+  DCHECK(tvp);
 
   resolve_timer_.expires_after(std::chrono::seconds(tvp->tv_sec) +
                                std::chrono::microseconds(tvp->tv_usec + 10));
@@ -306,10 +308,11 @@ void CAresResolver::OnAsyncWait() {
       if (canceled_) {
         return;
       }
+      expired_ = true;
+      Cancel();
       fd_t r = ARES_SOCKET_BAD;
       fd_t w = ARES_SOCKET_BAD;
       ::ares_process_fd(channel_, r, w);
-      OnAsyncWait();
   });
 }
 
