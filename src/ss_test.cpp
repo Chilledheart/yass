@@ -709,8 +709,6 @@ int main(int argc, char **argv) {
   absl::SetFlag(&FLAGS_v, 0);
   absl::SetFlag(&FLAGS_log_thread_id, 1);
 
-  ::CRYPTO_library_init();
-
   ::testing::InitGoogleTest(&argc, argv);
   absl::ParseCommandLine(argc, argv);
 
