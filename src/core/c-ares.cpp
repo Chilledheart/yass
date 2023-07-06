@@ -87,12 +87,17 @@ int CAresResolver::Init(int timeout_ms) {
                                 ARES_OPT_LOOKUPS | ARES_OPT_SOCK_STATE_CB);
   if (ret) {
     LOG(WARNING) << "ares_init_options failure: " << ares_strerror(ret);
+  } else {
+    init_ = true;
   }
   timeout_ms_ = timeout_ms ? timeout_ms : CURL_TIMEOUT_RESOLVE * 1000;
   return ret;
 }
 
 void CAresResolver::Destroy() {
+  if (!init_) {
+    return;
+  }
   if (!canceled_) {
     Cancel();
   }
@@ -196,6 +201,7 @@ void CAresResolver::OnSockStateWritable(scoped_refptr<ResolverPerContext> ctx, f
 void CAresResolver::AsyncResolve(const std::string& host,
                                  const std::string& service,
                                  AsyncResolveCallback cb) {
+  DCHECK(init_);
 
   done_ = false;
   canceled_ = false;
@@ -282,6 +288,7 @@ void CAresResolver::AsyncResolve(const std::string& host,
 }
 
 void CAresResolver::Cancel() {
+  DCHECK(init_);
   canceled_ = true;
   resolve_timer_.cancel();
   ::ares_cancel(channel_);

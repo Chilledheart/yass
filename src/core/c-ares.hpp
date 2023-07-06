@@ -64,6 +64,7 @@ class CAresResolver : public RefCountedThreadSafe<CAresResolver> {
 
   asio::io_context &io_context_;
 
+  bool init_ = false;
   ares_channel channel_;
   ares_options ares_opts_;
   std::unordered_map<fd_t, scoped_refptr<ResolverPerContext>> fd_map_;
