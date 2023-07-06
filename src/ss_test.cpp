@@ -729,6 +729,10 @@ int main(int argc, char **argv) {
   signal(SIGPIPE, SIG_IGN);
 #endif
 
+  if (absl::GetFlag(FLAGS_ipv6_mode)) {
+    CHECK(Net_ipv6works()) << "IPv6 stack is required but not available";
+  }
+
   int ret = RUN_ALL_TESTS();
 
 #ifdef HAVE_CURL

@@ -4,6 +4,7 @@
 #ifdef HAVE_C_ARES
 
 #include "core/c-ares.hpp"
+#include "core/utils.hpp"
 
 #define CURL_TIMEOUT_RESOLVE 300 /* when using asynch methods, we allow this
                                     many seconds for a name resolve */
@@ -114,6 +115,8 @@ void CAresResolver::OnSockState(void *arg, fd_t fd, int readable, int writable) 
       self->fd_map_.erase(iter);
       ctx->read_enable = false;
       ctx->write_enable = false;
+      asio::error_code ec;
+      ctx->socket.close(ec);
     }
     return;
   }
@@ -160,13 +163,19 @@ void CAresResolver::OnSockStateReadable(scoped_refptr<ResolverPerContext> ctx, f
     if (!ctx->read_enable) {
       return;
     }
-    ctx->read_enable = false;
-    if (ec) {
+    if (ec == asio::error::bad_descriptor) {
       return;
+    }
+    if (ec) {
+      ctx->read_enable = false;
     }
     fd_t r = fd;
     fd_t w = ARES_SOCKET_BAD;
     ::ares_process_fd(channel_, r, w);
+    if (!ctx->read_enable) {
+      return;
+    }
+    OnSockStateReadable(ctx, fd);
   });
 }
 
@@ -177,13 +186,19 @@ void CAresResolver::OnSockStateWritable(scoped_refptr<ResolverPerContext> ctx, f
     if (!ctx->write_enable) {
       return;
     }
-    ctx->write_enable = false;
-    if (ec) {
+    if (ec == asio::error::bad_descriptor) {
       return;
+    }
+    if (ec) {
+      ctx->write_enable = false;
     }
     fd_t r = ARES_SOCKET_BAD;
     fd_t w = fd;
     ::ares_process_fd(channel_, r, w);
+    if (!ctx->write_enable) {
+      return;
+    }
+    OnSockStateWritable(ctx, fd);
   });
 }
 
@@ -212,7 +227,7 @@ void CAresResolver::AsyncResolve(const std::string& host,
    * accordingly to save a call to getservbyname in inside C-Ares
    */
   hints.ai_flags = ARES_AI_CANONNAME | ARES_AI_NUMERICSERV;
-  hints.ai_family = AF_INET;
+  hints.ai_family = Net_ipv6works() ? AF_UNSPEC : AF_INET;
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_protocol = 0;
   ::ares_getaddrinfo(channel_, host.c_str(), service.c_str(), &hints,
@@ -220,6 +235,8 @@ void CAresResolver::AsyncResolve(const std::string& host,
       auto ctx = std::unique_ptr<async_resolve_ctx>(reinterpret_cast<async_resolve_ctx*>(arg));
       auto self = ctx->self;
       self->done_ = true;
+      self->resolve_timer_.cancel();
+      (void)timeouts;
       if (status != ARES_SUCCESS && self->expired_) {
         status = ARES_ETIMEOUT;
       }
@@ -227,8 +244,6 @@ void CAresResolver::AsyncResolve(const std::string& host,
         return;
       }
       auto cb = ctx->cb;
-      self->resolve_timer_.cancel();
-      (void)timeouts;
       if (status != ARES_SUCCESS) {
         asio::error_code ec = AresToAsioError(status);
         cb(ec, {});
@@ -303,17 +318,11 @@ void CAresResolver::OnAsyncWait() {
       if (ec == asio::error::operation_aborted) {
         return;
       }
-      if (ec) {
-        return;
-      }
       if (done_) {
         return;
       }
       expired_ = true;
       Cancel();
-      fd_t r = ARES_SOCKET_BAD;
-      fd_t w = ARES_SOCKET_BAD;
-      ::ares_process_fd(channel_, r, w);
   });
 }
 
