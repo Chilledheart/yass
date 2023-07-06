@@ -67,6 +67,8 @@ int HttpRequestParser::OnReadHttpRequestHeaderValue(http_parser* parser,
     char* end;
     const unsigned long portnum = strtoul(port.c_str(), &end, 10);
     if (*end != '\0' || portnum > UINT16_MAX || (errno == ERANGE && portnum == ULONG_MAX)) {
+      VLOG(1) << "parser failed: bad http field: Host: " << authority
+        << " hostname: " << hostname << " port: " << port;
       return -1;
     }
     self->http_host_ = hostname;

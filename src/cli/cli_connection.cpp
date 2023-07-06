@@ -661,7 +661,7 @@ asio::error_code CliConnection::OnReadHttpRequest(
   }
 
   LOG(WARNING) << "Connection (client) " << connection_id()
-               << parser.ErrorMessage() << ": "
+               << " " << parser.ErrorMessage() << ": "
                << std::string(reinterpret_cast<const char*>(buf->data()),
                               nparsed);
   return std::make_error_code(std::errc::bad_message);
