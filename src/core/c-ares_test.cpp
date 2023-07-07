@@ -64,7 +64,7 @@ static void DoRemoteResolve(asio::io_context& io_context, scoped_refptr<CAresRes
   io_context.restart();
 
   asio::post(io_context, [&]() {
-    resolver->AsyncResolve("www.apple.com", "80",
+    resolver->AsyncResolve("www.google.com", "80",
       [&](asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
         work_guard.reset();
         ASSERT_FALSE(ec) << ec;
