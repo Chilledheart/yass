@@ -28,7 +28,6 @@ TEST(CARES_TEST, LocalfileBasic) {
           asio::ip::tcp::endpoint endpoint = *iter;
           auto addr = endpoint.address();
           EXPECT_TRUE(addr.is_loopback()) << addr;
-          VLOG(1) << "Resolved: " << addr;
         }
     });
   });
@@ -51,7 +50,6 @@ TEST(CARES_TEST, RemoteNotFound) {
       [&](asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
         work_guard.reset();
         ASSERT_TRUE(ec) << ec;
-        VLOG(1) << "Resolved error: " << ec;
     });
   });
 
@@ -69,11 +67,10 @@ static void DoRemoteResolve(asio::io_context& io_context, scoped_refptr<CAresRes
         work_guard.reset();
         ASSERT_FALSE(ec) << ec;
         for (auto iter = std::begin(results); iter != std::end(results); ++iter) {
-          asio::ip::tcp::endpoint endpoint = *iter;
+          const asio::ip::tcp::endpoint &endpoint = *iter;
           auto addr = endpoint.address();
           EXPECT_FALSE(addr.is_loopback()) << addr;
           EXPECT_FALSE(addr.is_unspecified()) << addr;
-          VLOG(1) << "Resolved: " << addr;
         }
     });
   });
