@@ -16,12 +16,13 @@
 #include "core/scoped_refptr.hpp"
 #include "core/ref_counted.hpp"
 
-class CAresResolver : public RefCountedThreadSafe<CAresResolver> {
 #ifdef _WIN32
   using fd_t = SOCKET;
 #else
   using fd_t = int;
 #endif
+
+class CAresResolver : public RefCountedThreadSafe<CAresResolver> {
  public:
   CAresResolver(asio::io_context &io_context);
   static scoped_refptr<CAresResolver> Create(asio::io_context &io_context) {
@@ -30,6 +31,8 @@ class CAresResolver : public RefCountedThreadSafe<CAresResolver> {
   ~CAresResolver();
 
   int Init(int timeout_ms);
+
+  void Cancel();
   void Destroy();
 
   using AsyncResolveCallback = std::function<void(asio::error_code ec,
@@ -37,7 +40,11 @@ class CAresResolver : public RefCountedThreadSafe<CAresResolver> {
   void AsyncResolve(const std::string& host, const std::string& service,
                     AsyncResolveCallback cb);
 
-  void Cancel();
+ private:
+  static void OnAsyncResolveCtx(void *arg, int status, int timeouts, struct ares_addrinfo *result);
+  void OnAsyncResolve(AsyncResolveCallback cb,
+                      const std::string& host, const std::string& service,
+                      int status, int timeouts, struct ares_addrinfo *result);
 
  private:
   struct ResolverPerContext : public RefCountedThreadSafe<ResolverPerContext> {
@@ -56,12 +63,14 @@ class CAresResolver : public RefCountedThreadSafe<CAresResolver> {
     bool write_enable = false;
   };
 
-  static void OnSockState(void *arg, fd_t fd, int readable, int writable);
-  void OnSockStateReadable(scoped_refptr<ResolverPerContext> ctx, fd_t fd);
-  void OnSockStateWritable(scoped_refptr<ResolverPerContext> ctx, fd_t fd);
+  static void OnSockStateCtx(void *arg, fd_t fd, int readable, int writable);
+  void OnSockState(fd_t fd, int readable, int writable);
 
-  void OnAsyncWait();
+  void WaitRead(scoped_refptr<ResolverPerContext> ctx, fd_t fd);
+  void WaitWrite(scoped_refptr<ResolverPerContext> ctx, fd_t fd);
+  void WaitTimer();
 
+ private:
   asio::io_context &io_context_;
 
   bool init_ = false;
@@ -70,7 +79,7 @@ class CAresResolver : public RefCountedThreadSafe<CAresResolver> {
   std::unordered_map<fd_t, scoped_refptr<ResolverPerContext>> fd_map_;
 
   char lookups_[3] = "fb";
-  int timeout_ms_;
+  int timeout_ms_ = 0;
   asio::steady_timer resolve_timer_;
 
   bool done_ = true;
