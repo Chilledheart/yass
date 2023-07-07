@@ -56,7 +56,82 @@ asio::error_code AresToAsioError(int status) {
   }
   return ec;
 }
+
+struct async_resolve_ctx {
+  async_resolve_ctx(scoped_refptr<CAresResolver> s, CAresResolver::AsyncResolveCallback c)
+    : self(s), cb(c) {}
+  scoped_refptr<CAresResolver> self;
+  CAresResolver::AsyncResolveCallback cb;
+  std::string host;
+  std::string service;
+};
+
 } // anonymous namespace
+
+static bool DuplicateSocket(fd_t fd, fd_t *dup_fd) {
+#ifdef _WIN32
+  WSAPROTOCOL_INFOW pi {};
+  if (::WSADuplicateSocketW(fd, ::GetCurrentProcessId(), &pi) != 0) {
+    return false;
+  }
+  fd_t fd2 = ::WSASocketW(pi.iAddressFamily, pi.iSocketType, pi.iProtocol, &pi, 0, 0);
+  if (fd2 == INVALID_SOCKET) {
+    return false;
+  }
+#else
+  fd_t fd2 = dup(fd);
+  if (fd2 < 0) {
+    return false;
+  }
+#endif
+  *dup_fd = fd2;
+  return true;
+}
+
+// Convert struct ares_addrinfo into normal struct addrinfo
+static struct addrinfo* addrinfo_dup(struct ares_addrinfo *result) {
+  struct ares_addrinfo_node* next = result->nodes;
+  struct addrinfo *addrinfo = new struct addrinfo;
+  addrinfo->ai_next = nullptr;
+  // If hints.ai_flags includes the AI_CANONNAME flag, then the
+  // ai_canonname field of the first of the addrinfo structures in the
+  // returned list is set to point to the official name of the host.
+  char* canon_name = result->cnames ? result->cnames->name : nullptr;
+
+  // Iterate the output
+  struct addrinfo *next_addrinfo = addrinfo;
+  while (next) {
+    next_addrinfo->ai_next = new struct addrinfo;
+    next_addrinfo = next_addrinfo->ai_next;
+
+    next_addrinfo->ai_flags = next->ai_flags;
+    next_addrinfo->ai_family = next->ai_family;
+    next_addrinfo->ai_socktype = next->ai_socktype;
+    next_addrinfo->ai_protocol = next->ai_protocol;
+    next_addrinfo->ai_addrlen = next->ai_addrlen;
+    next_addrinfo->ai_canonname = canon_name;
+    next_addrinfo->ai_addr = next->ai_addr;
+    next_addrinfo->ai_next = nullptr;
+
+    canon_name = nullptr;
+
+    next = next->ai_next;
+  }
+  struct addrinfo *prev_addrinfo = addrinfo;
+  addrinfo = addrinfo->ai_next;
+  delete prev_addrinfo;
+  return addrinfo;
+}
+
+// free addrinfo
+static void addrinfo_freedup(struct addrinfo* addrinfo) {
+  struct addrinfo *next_addrinfo;
+  while (addrinfo) {
+    next_addrinfo = addrinfo->ai_next;
+    delete addrinfo;
+    addrinfo = next_addrinfo;
+  }
+}
 
 class CAresLibLoader {
  public:
@@ -77,13 +152,14 @@ CAresResolver::CAresResolver(asio::io_context &io_context) :
 
 CAresResolver::~CAresResolver() {
   Destroy();
-  VLOG(1) << "c-ares resolver freed memory";
+  VLOG(1) << "C-Ares resolver freed memory";
 }
 
 int CAresResolver::Init(int timeout_ms) {
+  timeout_ms_ = timeout_ms ? timeout_ms : CURL_TIMEOUT_RESOLVE * 1000;
   ares_opts_.lookups = lookups_;
   ares_opts_.sock_state_cb_data = this;
-  ares_opts_.sock_state_cb = &CAresResolver::OnSockState;
+  ares_opts_.sock_state_cb = &CAresResolver::OnSockStateCtx;
   int ret = ::ares_init_options(&channel_, &ares_opts_,
                                 ARES_OPT_LOOKUPS | ARES_OPT_SOCK_STATE_CB);
   if (ret) {
@@ -91,8 +167,16 @@ int CAresResolver::Init(int timeout_ms) {
   } else {
     init_ = true;
   }
-  timeout_ms_ = timeout_ms ? timeout_ms : CURL_TIMEOUT_RESOLVE * 1000;
   return ret;
+}
+
+void CAresResolver::Cancel() {
+  DCHECK(init_);
+  if (done_) {
+    return;
+  }
+  resolve_timer_.cancel();
+  ::ares_cancel(channel_);
 }
 
 void CAresResolver::Destroy() {
@@ -103,16 +187,25 @@ void CAresResolver::Destroy() {
   ::ares_destroy(channel_);
 }
 
-void CAresResolver::OnSockState(void *arg, fd_t fd, int readable, int writable) {
+void CAresResolver::OnSockStateCtx(void *arg, fd_t fd, int readable, int writable) {
   // Might be involved by Destory in dtor.
   // Cannot call AddRef directly.
   auto resolver = reinterpret_cast<CAresResolver*>(arg);
   auto self = scoped_refptr(resolver);
-  auto iter = self->fd_map_.find(fd);
+  self->OnSockState(fd, readable, writable);
+}
+
+void CAresResolver::OnSockState(fd_t fd, int readable, int writable) {
+  auto iter = fd_map_.find(fd);
+  // Erase event ctx and destory the duplicated socket to trigger pending
+  // events to get out.
+  //
+  // We shouldn't pass STAYOOPEN option to c-ares here otherwise we never get
+  // pending events triggered.
   if (!readable && !writable) {
-    if (iter != self->fd_map_.end()) {
+    if (iter != fd_map_.end()) {
       auto ctx = iter->second;
-      self->fd_map_.erase(iter);
+      fd_map_.erase(iter);
       ctx->read_enable = false;
       ctx->write_enable = false;
       asio::error_code ec;
@@ -120,43 +213,32 @@ void CAresResolver::OnSockState(void *arg, fd_t fd, int readable, int writable) 
     }
     return;
   }
-  if (iter == self->fd_map_.end()) {
-#ifdef _WIN32
-    WSAPROTOCOL_INFOW pi {};
-    if (::WSADuplicateSocketW(fd, ::GetCurrentProcessId(), &pi) != 0) {
-      PLOG(WARNING) << "c-ares: WSASocket failed to dup";
-      resolver->Cancel();
-      return;
-    }
-    fd_t fd2 = ::WSASocketW(pi.iAddressFamily, pi.iSocketType, pi.iProtocol, &pi, 0, 0);
-    if (fd2 == INVALID_SOCKET) {
-      PLOG(WARNING) << "c-ares: WSASocket failed to dup";
-      resolver->Cancel();
-      return;
-    }
-#else
-    fd_t fd2 = dup(fd);
-    if (fd2 < 0) {
+  // Create event ctx if not found
+  if (iter == fd_map_.end()) {
+    fd_t dup_fd;
+    if (!DuplicateSocket(fd, &dup_fd)) {
       PLOG(WARNING) << "c-ares: file descriptor failed to dup";
-      resolver->Cancel();
+      Cancel();
       return;
     }
-#endif
-    auto value = std::make_pair(fd, ResolverPerContext::Create(self->io_context_, fd2));
-    iter = self->fd_map_.insert(value).first;
+    auto value = std::make_pair(fd, ResolverPerContext::Create(io_context_, dup_fd));
+    iter = fd_map_.insert(value).first;
   }
+  // Put pending events
   auto ctx = iter->second;
   if (!ctx->read_enable && readable) {
-    self->OnSockStateReadable(ctx, fd);
+    WaitRead(ctx, fd);
   }
   if (!ctx->write_enable && writable) {
-    self->OnSockStateWritable(ctx, fd);
+    WaitWrite(ctx, fd);
   }
+  // We have already handled cancel event in first stage,
+  // so we simply update the event ctx.
   ctx->read_enable = readable;
   ctx->write_enable = writable;
 }
 
-void CAresResolver::OnSockStateReadable(scoped_refptr<ResolverPerContext> ctx, fd_t fd) {
+void CAresResolver::WaitRead(scoped_refptr<ResolverPerContext> ctx, fd_t fd) {
   auto self = scoped_refptr(this);
   ctx->socket.async_wait(asio::ip::tcp::socket::wait_read,
     [this, self, ctx, fd](asio::error_code ec) {
@@ -172,14 +254,15 @@ void CAresResolver::OnSockStateReadable(scoped_refptr<ResolverPerContext> ctx, f
     fd_t r = fd;
     fd_t w = ARES_SOCKET_BAD;
     ::ares_process_fd(channel_, r, w);
+    // ctx's read_enable might get updated in callback from process_fd
     if (!ctx->read_enable) {
       return;
     }
-    OnSockStateReadable(ctx, fd);
+    WaitRead(ctx, fd);
   });
 }
 
-void CAresResolver::OnSockStateWritable(scoped_refptr<ResolverPerContext> ctx, fd_t fd) {
+void CAresResolver::WaitWrite(scoped_refptr<ResolverPerContext> ctx, fd_t fd) {
   auto self = scoped_refptr(this);
   ctx->socket.async_wait(asio::ip::tcp::socket::wait_write,
     [this, self, ctx, fd](asio::error_code ec) {
@@ -195,10 +278,11 @@ void CAresResolver::OnSockStateWritable(scoped_refptr<ResolverPerContext> ctx, f
     fd_t r = ARES_SOCKET_BAD;
     fd_t w = fd;
     ::ares_process_fd(channel_, r, w);
+    // ctx's write_enable might get updated in callback from process_fd
     if (!ctx->write_enable) {
       return;
     }
-    OnSockStateWritable(ctx, fd);
+    WaitWrite(ctx, fd);
   });
 }
 
@@ -211,14 +295,6 @@ void CAresResolver::AsyncResolve(const std::string& host,
   done_ = false;
   expired_ = false;
 
-  struct async_resolve_ctx {
-    async_resolve_ctx(scoped_refptr<CAresResolver> s, AsyncResolveCallback c)
-     : self(s), cb(c) {}
-    scoped_refptr<CAresResolver> self;
-    AsyncResolveCallback cb;
-    std::string host;
-    std::string service;
-  };
   auto ctx = std::make_unique<async_resolve_ctx>(this, std::move(cb));
   ctx->host = host;
   ctx->service = service;
@@ -230,82 +306,67 @@ void CAresResolver::AsyncResolve(const std::string& host,
   hints.ai_family = Net_ipv6works() ? AF_UNSPEC : AF_INET;
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_protocol = 0;
-  ::ares_getaddrinfo(channel_, host.c_str(), service.c_str(), &hints,
-    [](void *arg, int status, int timeouts, struct ares_addrinfo *result) {
-      auto ctx = std::unique_ptr<async_resolve_ctx>(reinterpret_cast<async_resolve_ctx*>(arg));
-      auto self = ctx->self;
-      self->done_ = true;
-      self->resolve_timer_.cancel();
-      (void)timeouts;
-      if (status != ARES_SUCCESS && self->expired_) {
-        status = ARES_ETIMEOUT;
-      }
-      if (status == ARES_ECANCELLED || status == ARES_EDESTRUCTION) {
-        return;
-      }
-      auto cb = ctx->cb;
-      if (status != ARES_SUCCESS) {
-        asio::error_code ec = AresToAsioError(status);
-        cb(ec, {});
-        return;
-      }
-      // Convert struct ares_addrinfo into normal struct addrinfo
-      struct ares_addrinfo_node* next = result->nodes;
-      struct addrinfo *addrinfo = new struct addrinfo;
-      addrinfo->ai_next = nullptr;
-      // If hints.ai_flags includes the AI_CANONNAME flag, then the
-      // ai_canonname field of the first of the addrinfo structures in the
-      // returned list is set to point to the official name of the host.
-      char* canon_name = result->cnames ? result->cnames->name : nullptr;
-
-      // Iterate the output
-      struct addrinfo *next_addrinfo = addrinfo;
-      while (next) {
-        next_addrinfo->ai_next = new struct addrinfo;
-        next_addrinfo = next_addrinfo->ai_next;
-
-        next_addrinfo->ai_flags = next->ai_flags;
-        next_addrinfo->ai_family = next->ai_family;
-        next_addrinfo->ai_socktype = next->ai_socktype;
-        next_addrinfo->ai_protocol = next->ai_protocol;
-        next_addrinfo->ai_addrlen = next->ai_addrlen;
-        next_addrinfo->ai_canonname = canon_name;
-        next_addrinfo->ai_addr = next->ai_addr;
-        next_addrinfo->ai_next = nullptr;
-
-        canon_name = nullptr;
-
-        next = next->ai_next;
-      }
-      struct addrinfo *prev_addrinfo = addrinfo;
-      addrinfo = addrinfo->ai_next;
-      delete prev_addrinfo;
-      cb(asio::error_code(), asio::ip::tcp::resolver::results_type::create(addrinfo, ctx->host, ctx->service));
-      // free both of addrinfo and ares_addrinfo structures
-      while (addrinfo) {
-        next_addrinfo = addrinfo->ai_next;
-        delete addrinfo;
-        addrinfo = next_addrinfo;
-      }
-      ::ares_freeaddrinfo(result);
-  }, ctx.release());
-  if (!done_) {
-    OnAsyncWait();
-  }
+  ::ares_getaddrinfo(channel_, host.c_str(), service.c_str(),
+                     &hints, &CAresResolver::OnAsyncResolveCtx, ctx.release());
+  WaitTimer();
 }
 
-void CAresResolver::Cancel() {
-  DCHECK(init_);
+void CAresResolver::OnAsyncResolveCtx(void *arg, int status,
+                                      int timeouts,
+                                      struct ares_addrinfo *result) {
+  auto ctx = std::unique_ptr<async_resolve_ctx>(reinterpret_cast<async_resolve_ctx*>(arg));
+  auto self = ctx->self;
+  self->OnAsyncResolve(ctx->cb, ctx->host, ctx->service, status, timeouts, result);
+}
+
+void CAresResolver::OnAsyncResolve(AsyncResolveCallback cb,
+                                   const std::string& host, const std::string& service,
+                                   int status, int timeouts, struct ares_addrinfo *result) {
+  done_ = true;
+  resolve_timer_.cancel();
+  (void)timeouts;
+  // Update timeout event for Cancel triggered from WaitTimer
+  if (status != ARES_SUCCESS && expired_) {
+    status = ARES_ETIMEOUT;
+  }
+  if (status == ARES_ECANCELLED || status == ARES_EDESTRUCTION) {
+    return;
+  }
+  if (status != ARES_SUCCESS) {
+    asio::error_code ec = AresToAsioError(status);
+    VLOG(1) << "C-Ares: Host " << host << ":"<< service
+      << " Resolved error: " << ec;
+    cb(ec, {});
+    return;
+  }
+
+  // We create a libc's addrinfo structure from c-ares's one, but the previous
+  // depends on the later.
+  struct addrinfo *addrinfo = addrinfo_dup(result);
+  auto results = asio::ip::tcp::resolver::results_type::create(addrinfo, host, service);
+  // freed all allocated resouce once the target structure is created
+  addrinfo_freedup(addrinfo);
+  ::ares_freeaddrinfo(result);
+
+  // Invoke the callback
+  for (auto iter = std::begin(results); iter != std::end(results); ++iter) {
+    const asio::ip::tcp::endpoint &endpoint = *iter;
+    VLOG(1) << "C-Ares: Host " << host << ":"<< service
+      << " Resolved: " << endpoint;
+  }
+  cb(asio::error_code(), std::move(results));
+}
+
+void CAresResolver::WaitTimer() {
+  scoped_refptr<CAresResolver> self(this);
+  struct timeval tv, maxtime;
+
+  // callback might be invoked already, and there is no need to trigger a timer
+  // for this event.
   if (done_) {
     return;
   }
-  resolve_timer_.cancel();
-  ::ares_cancel(channel_);
-}
 
-void CAresResolver::OnAsyncWait() {
-  scoped_refptr<CAresResolver> self(this);
-  struct timeval tv, maxtime;
   maxtime.tv_sec = timeout_ms_ / 1000;
   maxtime.tv_usec = (timeout_ms_ % 1000) * 1000;
   struct timeval *tvp = ::ares_timeout(channel_, &maxtime, &tv);
