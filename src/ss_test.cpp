@@ -32,6 +32,8 @@
 
 #include "test_util.hpp"
 
+ABSL_FLAG(bool, ipv6_mode, false, "Run test under IPv6");
+
 namespace {
 
 IOBuf g_send_buffer;
@@ -338,8 +340,9 @@ class SsEndToEndTest : public ::testing::Test {
 
   asio::ip::tcp::endpoint GetEndpoint(int port_num) const {
     asio::error_code ec;
-    auto addr = asio::ip::make_address("127.0.0.1", ec);
-    // ASSERT_FALSE(ec) << ec;
+    auto addr = asio::ip::make_address(
+        absl::GetFlag(FLAGS_ipv6_mode) ?  "::1" : "127.0.0.1", ec);
+    CHECK(!ec) << ec;
     asio::ip::tcp::endpoint endpoint;
     endpoint.address(addr);
     endpoint.port(port_num);
@@ -379,8 +382,9 @@ class SsEndToEndTest : public ::testing::Test {
 
     curl = curl_easy_init();
     ASSERT_TRUE(curl) << "curl initial failure";
-    std::string url = "http://127.0.0.1:" + std::to_string(content_provider_endpoint_.port());
-    std::string proxy_url = "http://127.0.0.1:" + std::to_string(local_endpoint_.port());
+    const char* http_prefix = absl::GetFlag(FLAGS_ipv6_mode) ?  "http://[::1]:" : "http://127.0.0.1:";
+    std::string url = http_prefix + std::to_string(content_provider_endpoint_.port());
+    std::string proxy_url = http_prefix + std::to_string(local_endpoint_.port());
     if (VLOG_IS_ON(1)) {
       curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
     }
@@ -445,7 +449,8 @@ class SsEndToEndTest : public ::testing::Test {
 
     // Generate http 1.0 proxy header
     auto request_buf = IOBuf::create(SOCKET_BUF_SIZE);
-    GenerateConnectRequest("127.0.0.1", content_provider_endpoint_.port(),
+    const char* http_host = absl::GetFlag(FLAGS_ipv6_mode) ?  "[::1]" : "127.0.0.1";
+    GenerateConnectRequest(http_host, content_provider_endpoint_.port(),
                            request_buf.get());
 
     // Write data after proxy header
@@ -704,8 +709,6 @@ int main(int argc, char **argv) {
   absl::SetFlag(&FLAGS_v, 0);
   absl::SetFlag(&FLAGS_log_thread_id, 1);
 
-  ::CRYPTO_library_init();
-
   ::testing::InitGoogleTest(&argc, argv);
   absl::ParseCommandLine(argc, argv);
 
@@ -725,6 +728,10 @@ int main(int argc, char **argv) {
 #ifdef SIGPIPE
   signal(SIGPIPE, SIG_IGN);
 #endif
+
+  if (absl::GetFlag(FLAGS_ipv6_mode)) {
+    CHECK(Net_ipv6works()) << "IPv6 stack is required but not available";
+  }
 
   int ret = RUN_ALL_TESTS();
 

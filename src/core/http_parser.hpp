@@ -46,8 +46,9 @@ class HttpRequestParser {
     return nparsed;
   }
 
-  void ReforgeHttpRequest(std::string *header) {
-    ReforgeHttpRequestImpl(header, &parser_, http_url_, http_headers_);
+  void ReforgeHttpRequest(std::string *header,
+                          const absl::flat_hash_map<std::string, std::string> *additional_headers = nullptr) {
+    ReforgeHttpRequestImpl(header, &parser_, additional_headers, http_url_, http_headers_);
   }
 
   const char* ErrorMessage() {
@@ -101,16 +102,22 @@ class HttpRequestParser {
   // reforge HTTP Request Header and pretend it to buf
   // including removal of Proxy-Connection header
   static void ReforgeHttpRequestImpl(std::string* header, ::http_parser* p,
+                                     const absl::flat_hash_map<std::string, std::string> *additional_headers,
                                      const std::string& url,
                                      const absl::flat_hash_map<std::string, std::string>& headers) {
     std::ostringstream ss;
     ss << http_method_str((http_method)p->method) << " "  // NOLINT(google-*)
        << url << " HTTP/1.1\r\n";
-    for (const std::pair<std::string, std::string> pair : headers) {
-      if (pair.first == "Proxy-Connection") {
+    for (auto [key, value] : headers) {
+      if (key == "Proxy-Connection") {
         continue;
       }
-      ss << pair.first << ": " << pair.second << "\r\n";
+      ss << key << ": " << value << "\r\n";
+    }
+    if (additional_headers) {
+      for (auto [key, value] : *additional_headers) {
+        ss << key << ": " << value << "\r\n";
+      }
     }
     ss << "\r\n";
 

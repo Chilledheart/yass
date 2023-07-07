@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2023 Chilledheart  */
 
 #include "core/utils.hpp"
 
 #ifndef _WIN32
 #include <pwd.h>
 #include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#else
+#include <winsock2.h>
 #endif
 
 #include <absl/flags/internal/program_name.h>
@@ -102,3 +106,26 @@ void SetExecutablePath(const std::string& exe_path) {
   absl::flags_internal::SetProgramInvocationName(exe_path);
 }
 #endif
+
+/*
+ * Net_ipv6works() returns true if IPv6 seems to work.
+ */
+bool Net_ipv6works() {
+#ifdef _WIN32
+  using fd_t = SOCKET;
+#else
+  using fd_t = int;
+#endif
+  /* probe to see if we have a working IPv6 stack */
+  fd_t s = socket(AF_INET6, SOCK_DGRAM, 0);
+  if (s < 0) {
+    return false;
+  } else {
+#ifndef _WIN32
+    close(s);
+#else
+    closesocket(s);
+#endif
+    return true;
+  }
+}

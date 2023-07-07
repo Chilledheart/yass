@@ -97,7 +97,8 @@ jobs:
       - name: Run tests
         run: |
           cd build-msvc-${{ matrix.arch }}-${{ matrix.crt-linkage }}
-          yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=50 --gtest_throw_on_failure
+          yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=25 --gtest_throw_on_failure
+          yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=25 --gtest_throw_on_failure --ipv6_mode
   win-compiler-compatible-2022:
     runs-on: windows-2022
     strategy:
@@ -172,7 +173,8 @@ jobs:
       - name: Run tests
         run: |
           cd build-msvc-${{ matrix.arch }}-${{ matrix.crt-linkage }}
-          yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=50 --gtest_throw_on_failure
+          yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=25 --gtest_throw_on_failure
+          yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=25 --gtest_throw_on_failure --ipv6_mode
   mingw64-compiler-compatible-msys2:
     runs-on: windows-2019
     strategy:
@@ -232,7 +234,8 @@ jobs:
       - name: Run unittests
         run: |
           cd build
-          yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=50 --gtest_throw_on_failure
+          yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=25 --gtest_throw_on_failure
+          yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=25 --gtest_throw_on_failure --ipv6_mode
   linux-compiler-compatible:
     runs-on: ubuntu-20.04
     strategy:
@@ -308,7 +311,8 @@ jobs:
       - name: Run tests
         run: |
           cd build-linux-amd64
-          ./yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=100 --gtest_throw_on_failure
+          ./yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=50 --gtest_throw_on_failure
+          ./yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=50 --gtest_throw_on_failure --ipv6_mode
   mac-compiler-compatible:
     strategy:
       fail-fast: false
@@ -357,4 +361,5 @@ jobs:
       - name: Run tests
         run: |
           cd build-darwin-amd64
-          ./yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=100 --gtest_throw_on_failure
+          ./yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=50 --gtest_throw_on_failure
+          ./yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=50 --gtest_throw_on_failure --ipv6_mode

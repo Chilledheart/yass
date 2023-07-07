@@ -3,7 +3,7 @@
 [![License][license-svg]][license-link]
 [![GitHub all downloads](https://img.shields.io/github/downloads/Chilledheart/yass/total)](https://github.com/Chilledheart/yass/releases)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Chilledheart/yass)](https://github.com/Chilledheart/yass/releases)
-[![GitHub latest downloads](https://img.shields.io/github/downloads/Chilledheart/yass/1.3.5/total)](https://github.com/Chilledheart/yass/releases/tag/1.3.5)
+[![GitHub latest downloads](https://img.shields.io/github/downloads/Chilledheart/yass/1.3.6/total)](https://github.com/Chilledheart/yass/releases/tag/1.3.6)
 
 [![Compiler Compatibility](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml)
 [![Sanitizers](https://github.com/Chilledheart/yass/actions/workflows/sanitizers.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/sanitizers.yml)
@@ -50,6 +50,7 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 - Easier to maintain and adopt new features, so far [aead][aead] ciphers supported.
 - Safe memory layout, tested against [Address Sanitizer][asan].
 - Thread Safe, tested against [Thread Sanitizer][tsan].
+- [ ] IPv6 compatible (both client and server side)
 
 ## Ciphers
 ### HTTP2 Tunnel Support
@@ -68,13 +69,13 @@ Notable missing features to be done compared with [naiveproxy]
 - [x] Opt-in of padding protocol
 - [ ] Support HTTP/2 and HTTP/3 CONNECT tunnel Fast Open using the `fastopen`
   header
-- [x] Performance degrade compared to [naiveproxy] client (only in naive protocol)
+- [x] No performance degrade compared to [naiveproxy] client
 
 Server-side features compared with caddy+forwardproxy
 - [x] Basic Authentification
 - [x] Opt-in of padding protocol
-- [ ] Via-IP support
-- [ ] Via-via support
+- [x] Via-IP support (HTTPS 1.1 only)
+- [x] Via-via support (HTTPS 1.1 only)
 - [ ] File Server fallback support
 
 ### Shadowsocks PC-friendly Ciphers

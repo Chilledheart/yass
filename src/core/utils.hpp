@@ -248,4 +248,6 @@ void SetExecutablePath(const std::string& exe_path);
 void SetExecutablePathW(const std::wstring& exe_path);
 #endif
 
+bool Net_ipv6works();
+
 #endif  // YASS_UTILS

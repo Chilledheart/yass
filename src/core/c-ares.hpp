@@ -29,7 +29,7 @@ class CAresResolver : public RefCountedThreadSafe<CAresResolver> {
   }
   ~CAresResolver();
 
-  int Init(int timeout_ms, int retries);
+  int Init(int timeout_ms);
   void Destroy();
 
   using AsyncResolveCallback = std::function<void(asio::error_code ec,
@@ -64,6 +64,7 @@ class CAresResolver : public RefCountedThreadSafe<CAresResolver> {
 
   asio::io_context &io_context_;
 
+  bool init_ = false;
   ares_channel channel_;
   ares_options ares_opts_;
   std::unordered_map<fd_t, scoped_refptr<ResolverPerContext>> fd_map_;
@@ -71,7 +72,9 @@ class CAresResolver : public RefCountedThreadSafe<CAresResolver> {
   char lookups_[3] = "fb";
   int timeout_ms_;
   asio::steady_timer resolve_timer_;
-  bool canceled_ = false;
+
+  bool done_ = true;
+  bool expired_;
 };
 
 #endif // HAVE_C_ARES

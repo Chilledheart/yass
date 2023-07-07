@@ -26,6 +26,8 @@ BuildRequires: cmake3 >= 3.12, pkgconfig
 %endif
 BuildRequires: ninja-build, gcc, gcc-c++, golang >= 1.4
 BuildRequires: glib2-devel
+BuildRequires: curl-devel
+Requires: ca-certificates
 
 %description
 Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for
@@ -39,7 +41,7 @@ mkdir build
 cd build
 ENABLE_LLD=on
 [ "a$DISABLE_LLD" != "a" ] && ENABLE_LLD=off
-cmake3 -G Ninja -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DGUI=on -DCLI=on -DSERVER=on -DENABLE_LLD="$ENABLE_LLD" ..
+cmake3 -G Ninja -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DGUI=on -DCLI=on -DSERVER=on -DENABLE_LLD="$ENABLE_LLD" -DUSE_BUILTIN_CA_BUNDLE_CRT=off ..
 ninja
 cd ..
 
