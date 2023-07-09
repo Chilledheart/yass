@@ -275,7 +275,8 @@ class SsEndToEndBM : public benchmark::Fixture {
 
   asio::ip::tcp::endpoint GetEndpoint(int port_num) const {
     asio::error_code ec;
-    auto addr = asio::ip::make_address("127.0.0.1", ec);
+    auto addr = asio::ip::make_address(
+        absl::GetFlag(FLAGS_ipv6_mode) ?  "::1" : "127.0.0.1", ec);
     CHECK(!ec) << ec;
     asio::ip::tcp::endpoint endpoint;
     endpoint.address(addr);
@@ -313,7 +314,7 @@ class SsEndToEndBM : public benchmark::Fixture {
     s.connect(endpoint, ec);
     CHECK(!ec) << "Connection (content-consumer) connect failure " << ec;
     auto request_buf = IOBuf::create(SOCKET_BUF_SIZE);
-    GenerateConnectRequest("127.0.0.1", content_provider_endpoint_.port(),
+    GenerateConnectRequest("localhost", content_provider_endpoint_.port(),
                            request_buf.get());
 
     size_t written = asio::write(s, const_buffer(*request_buf), ec);
@@ -424,7 +425,7 @@ class SsEndToEndBM : public benchmark::Fixture {
                                                             std::string(),
                                                             std::string(kCertificate),
                                                             std::string(kPrivateKey));
-    server_server_->listen(endpoint, std::string(), backlog, ec);
+    server_server_->listen(endpoint, "localhost", backlog, ec);
 
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec;
@@ -449,7 +450,7 @@ class SsEndToEndBM : public benchmark::Fixture {
     asio::error_code ec;
 
     local_server_ = std::make_unique<cli::CliServer>(io_context_,
-                                                     remote_endpoint.address().to_string(),
+                                                     "localhost",
                                                      remote_endpoint.port(),
                                                      kCertificate);
     local_server_->listen(endpoint, std::string(), backlog, ec);
@@ -669,6 +670,7 @@ int main(int argc, char** argv) {
 
   absl::SetFlag(&FLAGS_v, 0);
   absl::SetFlag(&FLAGS_log_thread_id, 1);
+  absl::SetFlag(&FLAGS_ipv6_mode, false);
 
   ::benchmark::Initialize(&argc, argv);
   absl::ParseCommandLine(argc, argv);
@@ -688,6 +690,10 @@ int main(int argc, char** argv) {
 #ifdef SIGPIPE
   signal(SIGPIPE, SIG_IGN);
 #endif
+
+  if (absl::GetFlag(FLAGS_ipv6_mode)) {
+    CHECK(Net_ipv6works()) << "IPv6 stack is required but not available";
+  }
 
   ::benchmark::RunSpecifiedBenchmarks();
   ::benchmark::Shutdown();

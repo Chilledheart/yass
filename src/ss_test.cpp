@@ -32,8 +32,6 @@
 
 #include "test_util.hpp"
 
-ABSL_FLAG(bool, ipv6_mode, false, "Run test under IPv6");
-
 namespace {
 
 IOBuf g_send_buffer;
@@ -382,9 +380,8 @@ class SsEndToEndTest : public ::testing::Test {
 
     curl = curl_easy_init();
     ASSERT_TRUE(curl) << "curl initial failure";
-    const char* http_prefix = absl::GetFlag(FLAGS_ipv6_mode) ?  "http://[::1]:" : "http://127.0.0.1:";
-    std::string url = http_prefix + std::to_string(content_provider_endpoint_.port());
-    std::string proxy_url = http_prefix + std::to_string(local_endpoint_.port());
+    std::string url = "http://localhost:" + std::to_string(content_provider_endpoint_.port());
+    std::string proxy_url = "http://localhost:" + std::to_string(local_endpoint_.port());
     if (VLOG_IS_ON(1)) {
       curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
     }
@@ -449,8 +446,7 @@ class SsEndToEndTest : public ::testing::Test {
 
     // Generate http 1.0 proxy header
     auto request_buf = IOBuf::create(SOCKET_BUF_SIZE);
-    const char* http_host = absl::GetFlag(FLAGS_ipv6_mode) ?  "[::1]" : "127.0.0.1";
-    GenerateConnectRequest(http_host, content_provider_endpoint_.port(),
+    GenerateConnectRequest("localhost", content_provider_endpoint_.port(),
                            request_buf.get());
 
     // Write data after proxy header
@@ -611,7 +607,7 @@ class SsEndToEndTest : public ::testing::Test {
                                                             std::string(),
                                                             std::string(kCertificate),
                                                             std::string(kPrivateKey));
-    server_server_->listen(endpoint, std::string(), backlog, ec);
+    server_server_->listen(endpoint, "localhost", backlog, ec);
 
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec;
@@ -636,7 +632,7 @@ class SsEndToEndTest : public ::testing::Test {
     asio::error_code ec;
 
     local_server_ = std::make_unique<cli::CliServer>(io_context_,
-                                                     remote_endpoint.address().to_string(),
+                                                     "localhost",
                                                      remote_endpoint.port(),
                                                      kCertificate);
     local_server_->listen(endpoint, std::string(), backlog, ec);
@@ -708,6 +704,7 @@ int main(int argc, char **argv) {
 
   absl::SetFlag(&FLAGS_v, 0);
   absl::SetFlag(&FLAGS_log_thread_id, 1);
+  absl::SetFlag(&FLAGS_ipv6_mode, false);
 
   ::testing::InitGoogleTest(&argc, argv);
   absl::ParseCommandLine(argc, argv);

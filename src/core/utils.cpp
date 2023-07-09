@@ -3,6 +3,8 @@
 
 #include "core/utils.hpp"
 
+#include "config/config.hpp"
+
 #ifndef _WIN32
 #include <pwd.h>
 #include <unistd.h>
@@ -111,6 +113,9 @@ void SetExecutablePath(const std::string& exe_path) {
  * Net_ipv6works() returns true if IPv6 seems to work.
  */
 bool Net_ipv6works() {
+  if (!absl::GetFlag(FLAGS_ipv6_mode)) {
+    return false;
+  }
 #ifdef _WIN32
   using fd_t = SOCKET;
 #else
