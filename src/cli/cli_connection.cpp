@@ -16,10 +16,7 @@
 
 #include <quiche/spdy/core/hpack/hpack_constants.h>
 
-namespace cli {
-
-namespace {
-std::vector<http2::adapter::Header> GenerateHeaders(
+static std::vector<http2::adapter::Header> GenerateHeaders(
   std::vector<std::pair<std::string, std::string>> headers, int status = 0) {
   std::vector<http2::adapter::Header> response_vector;
   if (status) {
@@ -40,7 +37,7 @@ std::vector<http2::adapter::Header> GenerateHeaders(
   return response_vector;
 }
 
-std::string GetProxyAuthorizationIdentity() {
+static std::string GetProxyAuthorizationIdentity() {
   std::string result;
   auto user_pass = absl::StrCat(absl::GetFlag(FLAGS_username), ":",
                                 absl::GetFlag(FLAGS_password));
@@ -48,13 +45,10 @@ std::string GetProxyAuthorizationIdentity() {
   return result;
 }
 
-} // anonymous namespace
+static bool g_nonindex_codes_initialized;
+static uint8_t g_nonindex_codes[17];
 
-namespace {
-bool g_nonindex_codes_initialized;
-uint8_t g_nonindex_codes[17];
-
-void InitializeNonindexCodes() {
+static void InitializeNonindexCodes() {
   if (g_nonindex_codes_initialized)
     return;
   g_nonindex_codes_initialized = true;
@@ -69,7 +63,7 @@ void InitializeNonindexCodes() {
   CHECK(i == sizeof(g_nonindex_codes));
 }
 
-void FillNonindexHeaderValue(uint64_t unique_bits, char* buf, int len) {
+static void FillNonindexHeaderValue(uint64_t unique_bits, char* buf, int len) {
   DCHECK(g_nonindex_codes_initialized);
   int first = len < 16 ? len : 16;
   for (int i = 0; i < first; i++) {
@@ -80,7 +74,8 @@ void FillNonindexHeaderValue(uint64_t unique_bits, char* buf, int len) {
     buf[i] = g_nonindex_codes[16];
   }
 }
-}  // namespace
+
+namespace cli {
 
 const char CliConnection::http_connect_reply_[] =
     "HTTP/1.1 200 Connection established\r\n\r\n";
@@ -90,13 +85,9 @@ const char CliConnection::http_connect_reply_[] =
 #endif
 
 #ifdef __linux__
-namespace {
-
-bool IsIPv4MappedIPv6(const asio::ip::tcp::endpoint& address) {
+static bool IsIPv4MappedIPv6(const asio::ip::tcp::endpoint& address) {
   return address.address().is_v6() && address.address().to_v6().is_v4_mapped();
 }
-
-} // anonymous namespace
 #endif
 
 bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length)  {
