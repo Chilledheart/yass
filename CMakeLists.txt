@@ -2516,7 +2516,7 @@ add_library(yass_base STATIC
   )
 
 target_link_libraries(yass_base PUBLIC asio)
-if (NOT ALLOW_XP)
+if (USE_CARES)
   target_link_libraries(yass_base PUBLIC c-ares)
 endif()
 target_link_libraries(yass_base PUBLIC ${SUPPORT_LIBS})

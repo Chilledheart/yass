@@ -12,6 +12,7 @@
 #include "core/asio.hpp"
 #include "core/logging.hpp"
 #include "core/scoped_refptr.hpp"
+#include "core/utils.hpp"
 #include "network.hpp"
 #include "net/ssl_socket.hpp"
 #include "protocol.hpp"
@@ -144,7 +145,8 @@ class stream : public RefCountedThreadSafe<stream> {
 #ifdef HAVE_C_ARES
     resolver_->AsyncResolve(host_name_, std::to_string(port_),
 #else
-    resolver_.async_resolve(host_name_, std::to_string(port_),
+    resolver_.async_resolve(Net_ipv6works() ? asio::ip::tcp::unspec() : asio::ip::tcp::v4(),
+                            host_name_, std::to_string(port_),
 #endif
       [this, channel, self](const asio::error_code& ec,
                             asio::ip::tcp::resolver::results_type results) {

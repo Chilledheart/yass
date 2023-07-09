@@ -81,7 +81,8 @@ void Worker::Start(std::function<void(asio::error_code)> callback) {
 #ifdef HAVE_C_ARES
     resolver_->AsyncResolve(host_name, std::to_string(port),
 #else
-    resolver_.async_resolve(host_name, std::to_string(port),
+    resolver_.async_resolve(Net_ipv6works() ? asio::ip::tcp::unspec() : asio::ip::tcp::v4(),
+                            host_name, std::to_string(port),
 #endif
       [this, callback](const asio::error_code& ec,
                        asio::ip::tcp::resolver::results_type results) {
