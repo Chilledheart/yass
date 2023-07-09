@@ -12,12 +12,11 @@
 #include "core/base64.hpp"
 #include "core/http_parser.hpp"
 #include "core/rand_util.hpp"
+#include "core/string_util.hpp"
 #include "core/utils.hpp"
 
 ABSL_FLAG(bool, hide_via, true, "If true, the Via heaeder will not be added.");
 ABSL_FLAG(bool, hide_ip, true, "If true, the Forwarded header will not be augmented with your IP address.");
-
-namespace server {
 
 static void SplitHostPort(std::string *out_hostname, std::string *out_port,
                           const std::string &hostname_and_port) {
@@ -40,8 +39,7 @@ static void SplitHostPort(std::string *out_hostname, std::string *out_port,
   }
 }
 
-namespace {
-std::vector<http2::adapter::Header> GenerateHeaders(
+static std::vector<http2::adapter::Header> GenerateHeaders(
   std::vector<std::pair<std::string, std::string>> headers, int status = 0) {
   std::vector<http2::adapter::Header> response_vector;
   if (status) {
@@ -62,7 +60,7 @@ std::vector<http2::adapter::Header> GenerateHeaders(
   return response_vector;
 }
 
-std::string GetProxyAuthorizationIdentity() {
+static std::string GetProxyAuthorizationIdentity() {
   std::string result;
   auto user_pass = absl::StrCat(absl::GetFlag(FLAGS_username), ":",
                                 absl::GetFlag(FLAGS_password));
@@ -70,7 +68,7 @@ std::string GetProxyAuthorizationIdentity() {
   return result;
 }
 
-} // namespace
+namespace server {
 
 const char ServerConnection::http_connect_reply_[] =
     "HTTP/1.1 200 Connection established\r\n\r\n";
@@ -334,7 +332,7 @@ bool ServerConnection::OnEndHeadersForStream(
     return false;
   }
   auto auth = request_map_["proxy-authorization"];
-  if (auth != "basic " + GetProxyAuthorizationIdentity()) {
+  if (ToLowerASCII(auth) != ToLowerASCII("basic " + GetProxyAuthorizationIdentity())) {
     LOG(INFO) << "Connection (server) " << connection_id() << " for " << peer_endpoint
       << " Unexpected auth token.";
     return false;
@@ -345,6 +343,10 @@ bool ServerConnection::OnEndHeadersForStream(
   auto authority = request_map_[":authority"];
   if (authority.empty()) {
     authority = request_map_["host"];
+  } else if (!request_map_["host"].empty() && ToLowerASCII(authority) != ToLowerASCII(request_map_["host"])) {
+    LOG(INFO) << "Connection (server) " << connection_id()
+      << " Unmatched authority: " << authority << " with host: " << request_map_["host"];
+    return false;
   }
   if (authority.empty()) {
     LOG(INFO) << "Connection (server) " << connection_id()
