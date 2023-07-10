@@ -35,6 +35,35 @@ ABSL_FLAG(int32_t, tcp_keep_alive_interval, 75, "The number of seconds between T
 ABSL_FLAG(bool, tls13_early_data, true, "Enable 0RTTI Early Data (risk at production)");
 ABSL_FLAG(bool, redir_mode, true, "Enable TCP Redir mode support (linux only)");
 
+void SetIPV6Only(asio::ip::tcp::acceptor::native_handle_type handle,
+                 int family,
+                 asio::error_code& ec) {
+  if (family != AF_INET6) {
+    ec = asio::error_code();
+    return;
+  }
+  /* It makes support for IPv4-mapped IPv6 addresses.
+   * Linux kernel, NetBSD, FreeBSD and Darwin: default is off;
+   * Windows Vista and later: default is on;
+   * DragonFly BSD: acts like off, and dummy setting;
+   * OpenBSD and earlier Windows: unsupported.
+   * Linux: controlled by /proc/sys/net/ipv6/bindv6only.
+   */
+#ifdef _WIN32
+  SOCKET result = handle;
+  DWORD value = 0;
+  if (setsockopt(result, IPPROTO_IPV6, IPV6_V6ONLY,
+                 reinterpret_cast<const char*>(&value), sizeof(value))) {
+    PLOG(WARNING) << "Disabling IPV6_V6ONLY failed";
+    ec = asio::error::socket_type_not_supported;
+    return;
+  }
+  ec = asio::error_code();
+#else
+  ec = asio::error_code();
+#endif
+}
+
 void SetSOReusePort(asio::ip::tcp::acceptor::native_handle_type handle,
                     asio::error_code& ec) {
   (void)handle;

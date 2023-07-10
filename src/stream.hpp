@@ -342,6 +342,7 @@ class stream : public RefCountedThreadSafe<stream> {
       return;
     }
     SetTCPFastOpenConnect(socket_.native_handle(), ec);
+    SetIPV6Only(socket_.native_handle(), endpoint_.protocol().family(), ec);
     socket_.native_non_blocking(true, ec);
     socket_.non_blocking(true, ec);
     scoped_refptr<stream> self(this);

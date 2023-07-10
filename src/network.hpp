@@ -26,6 +26,10 @@ ABSL_DECLARE_FLAG(int32_t, tcp_keep_alive_interval);
 ABSL_DECLARE_FLAG(bool, tls13_early_data);
 ABSL_DECLARE_FLAG(bool, redir_mode);
 
+void SetIPV6Only(asio::ip::tcp::acceptor::native_handle_type handle,
+                 int family,
+                 asio::error_code& ec);
+
 void SetSOReusePort(asio::ip::tcp::acceptor::native_handle_type handle,
                     asio::error_code&);
 

@@ -98,6 +98,10 @@ class ContentServer {
     if (ec) {
       return;
     }
+    SetIPV6Only(ctx.acceptor->native_handle(), endpoint.protocol().family(), ec);
+    if (ec) {
+      return;
+    }
     if (absl::GetFlag(FLAGS_reuse_port)) {
       ctx.acceptor->set_option(asio::ip::tcp::acceptor::reuse_address(true), ec);
       SetSOReusePort(ctx.acceptor->native_handle(), ec);
