@@ -1,26 +1,35 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
+/* Copyright (c) 2019-2023 Chilledheart  */
 #include "config/config_impl.hpp"
 
 #include <absl/flags/flag.h>
 #include <stdint.h>
 
 #include "config/config_impl_apple.hpp"
-#include "config/config_impl_posix.hpp"
+#include "config/config_impl_local.hpp"
 #include "config/config_impl_windows.hpp"
 #include "core/logging.hpp"
 
 namespace config {
 
+std::string g_configfile
+#if !defined(_WIN32) && !defined(__APPLE__)
+  = "~/.yass/config.json"
+#endif
+  ;
+
 ConfigImpl::~ConfigImpl() = default;
 
 std::unique_ptr<ConfigImpl> ConfigImpl::Create() {
+  if (!g_configfile.empty()) {
+    return std::make_unique<ConfigImplLocal>(g_configfile);
+  }
 #ifdef _WIN32
   return std::make_unique<ConfigImplWindows>();
 #elif defined(__APPLE__) && defined(__clang__)
   return std::make_unique<ConfigImplApple>();
 #else
-  return std::make_unique<ConfigImplPosix>();
+  return std::make_unique<ConfigImplLocal>("config.json");
 #endif
 }
 

@@ -16,31 +16,26 @@ ABSL_FLAG(int64_t, test_signed_64val, 0, "Test int64_t value");
 ABSL_FLAG(uint64_t, test_unsigned_64val, 0, "Test uint64_t value");
 ABSL_FLAG(std::string, test_string, "", "Test string value");
 
-
-#if !(defined(_WIN32) || (defined(__APPLE__) && defined(__clang__)))
-ABSL_DECLARE_FLAG(std::string, configfile);
-#endif
-
 class ConfigTest : public ::testing::Test {
  public:
   void SetUp() override {
-#if !(defined(_WIN32) || (defined(__APPLE__) && defined(__clang__)))
-    original_configfile_ = absl::GetFlag(FLAGS_configfile);
+#if !(defined(_WIN32) || defined(__APPLE__))
+    original_configfile_ = config::g_configfile;
     const char* tmpdir = getenv("TMPDIR");
     if (!tmpdir || *tmpdir == '\0')
       tmpdir = "/tmp";
     std::string tmpdir_configfile = std::string(tmpdir) + "/" + "yass.json";
-    absl::SetFlag(&FLAGS_configfile, tmpdir_configfile);
+    config::g_configfile = tmpdir_configfile;
 #endif
   }
   void TearDown() override {
-#if !(defined(_WIN32) || (defined(__APPLE__) && defined(__clang__)))
-    absl::SetFlag(&FLAGS_configfile, original_configfile_);
+#if !(defined(_WIN32) || defined(__APPLE__))
+    config::g_configfile = original_configfile_;
 #endif
   }
 
  private:
-#if !(defined(_WIN32) || (defined(__APPLE__) && defined(__clang__)))
+#if !(defined(_WIN32) || defined(__APPLE__))
   std::string original_configfile_;
 #endif
 };

@@ -34,6 +34,7 @@ ABSL_DECLARE_FLAG(std::string, capath);
 ABSL_DECLARE_FLAG(bool, ipv6_mode);
 
 namespace config {
+void ReadConfigFileOption(int argc, const char** argv);
 bool ReadConfig();
 bool SaveConfig();
 }  // namespace config

@@ -50,6 +50,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   if (!GetExecutablePath(&exec_path)) {
     return -1;
   }
+  // Fix log output name
   SetExecutablePath(exec_path);
 
   absl::InitializeSymbolizer(exec_path.c_str());
@@ -67,15 +68,25 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   std::unique_ptr<wchar_t*[], decltype(&LocalFree)> wargv(
       CommandLineToArgvW(cmdline, &argc), &LocalFree);
   std::vector<std::string> argv_store(argc);
-  std::vector<char*> argv(argc, nullptr);
+  std::vector<const char*> argv(argc, nullptr);
   for (int i = 0; i != argc; ++i) {
     argv_store[i] = SysWideToUTF8(wargv[i]);
     argv[i] = argv_store[i].data();
   }
   absl::SetFlag(&FLAGS_logtostderr, false);
-  // Fix log output name
   argv[0] = exec_path.data();
-  absl::ParseCommandLine(argv.size(), &argv[0]);
+
+  config::ReadConfigFileOption(argc, &argv[0]);
+  config::ReadConfig();
+  absl::ParseCommandLine(argv.size(), const_cast<char**>(&argv[0]));
+
+  auto cipher_method = to_cipher_method(absl::GetFlag(FLAGS_method));
+  if (cipher_method != CRYPTO_INVALID) {
+    absl::SetFlag(&FLAGS_cipher_method, cipher_method);
+  }
+
+  DCHECK(is_valid_cipher_method(
+      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
 
   auto override_cipher_method = to_cipher_method(absl::GetFlag(FLAGS_method));
   if (override_cipher_method != CRYPTO_INVALID) {
@@ -93,11 +104,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 BOOL CYassApp::InitInstance() {
   if (!CheckFirstInstance())
     return FALSE;
-
-  config::ReadConfig();
-
-  DCHECK(is_valid_cipher_method(
-      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
 
   // https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-setpriorityclass
   // While the system is starting, the SetThreadPriority function returns a

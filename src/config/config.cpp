@@ -44,6 +44,24 @@ ABSL_FLAG(bool, ipv6_mode, true, "Enable IPv6 support");
 
 namespace config {
 
+void ReadConfigFileOption(int argc, const char** argv) {
+  int pos = 1;
+  while (pos < argc) {
+    std::string arg = argv[pos];
+    if (pos + 1 < argc && (arg == "-c" || arg == "--configfile")) {
+      g_configfile = argv[pos + 1];
+      argv[pos] = "";
+      argv[pos+1] = "";
+      pos += 2;
+    }
+    ++pos;
+  }
+  if (!g_configfile.empty()) {
+    fprintf(stderr, "loaded option from file: %s\n", g_configfile.c_str());
+    fflush(stderr);
+  }
+}
+
 bool ReadConfig() {
   auto config_impl = config::ConfigImpl::Create();
   bool required_fields_loaded = false;
