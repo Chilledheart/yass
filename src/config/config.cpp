@@ -40,6 +40,8 @@ ABSL_FLAG(bool, insecure_mode, false, "(TLS) This option makes to skip the verif
 ABSL_FLAG(std::string, cacert, getenv("YASS_CA_BUNDLE") ? getenv("YASS_CA_BUNDLE") : "", "(TLS) Tells where to use the specified certificate file to verify the peer.");
 ABSL_FLAG(std::string, capath, "", "(TLS) Tells where to use the specified certificate directory to verify the peer.");
 
+ABSL_FLAG(bool, ipv6_mode, true, "Enable IPv6 support");
+
 namespace config {
 
 bool ReadConfig() {

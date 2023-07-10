@@ -349,11 +349,12 @@ void CAresResolver::OnAsyncResolve(AsyncResolveCallback cb,
   ::ares_freeaddrinfo(result);
 
   // Invoke the callback
+  std::ostringstream ss;
   for (auto iter = std::begin(results); iter != std::end(results); ++iter) {
     const asio::ip::tcp::endpoint &endpoint = *iter;
-    VLOG(1) << "C-Ares: Host " << host << ":"<< service
-      << " Resolved: " << endpoint;
+    ss << endpoint << " ";
   }
+  VLOG(1) << "C-Ares: Resolved " << host << ":"<< service << " to: [ " << ss.str() << " ]";
   cb(asio::error_code(), std::move(results));
 }
 

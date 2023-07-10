@@ -50,7 +50,7 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 - Easier to maintain and adopt new features, so far [aead][aead] ciphers supported.
 - Safe memory layout, tested against [Address Sanitizer][asan].
 - Thread Safe, tested against [Thread Sanitizer][tsan].
-- [ ] IPv6 compatible (both client and server side)
+- IPv6 compatible (both client and server side)
 
 ## Ciphers
 ### HTTP2 Tunnel Support

@@ -31,6 +31,8 @@ ABSL_DECLARE_FLAG(bool, insecure_mode);
 ABSL_DECLARE_FLAG(std::string, cacert);
 ABSL_DECLARE_FLAG(std::string, capath);
 
+ABSL_DECLARE_FLAG(bool, ipv6_mode);
+
 namespace config {
 bool ReadConfig();
 bool SaveConfig();
