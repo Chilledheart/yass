@@ -34,7 +34,7 @@
 __attribute__((used)) const char kGrossPaddingForCrbug1300598[68 * 1024] = {};
 #endif
 
-int main(int argc, const char* argv[]) {
+int main(int argc, const char** argv) {
   if (!SetUTF8Locale()) {
     LOG(WARNING) << "Failed to set up utf-8 locale";
   }
@@ -49,14 +49,14 @@ int main(int argc, const char* argv[]) {
   absl::FailureSignalHandlerOptions failure_handle_options;
   absl::InstallFailureSignalHandler(failure_handle_options);
 
+  config::ReadConfigFileOption(argc, argv);
+  config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
 
   auto cipher_method = to_cipher_method(absl::GetFlag(FLAGS_method));
   if (cipher_method != CRYPTO_INVALID) {
     absl::SetFlag(&FLAGS_cipher_method, cipher_method);
   }
-
-  config::ReadConfig();
 
   DCHECK(is_valid_cipher_method(
       static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));

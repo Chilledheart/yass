@@ -1,17 +1,22 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
+/* Copyright (c) 2019-2023 Chilledheart  */
 
 #ifndef H_CONFIG_CONFIG_IMPL_POSIX
 #define H_CONFIG_CONFIG_IMPL_POSIX
 
 #include "config/config_impl.hpp"
 
-#if !defined(_WIN32)
-
+#ifdef _WIN32
+#include <windows.h>
+#ifdef _MSC_VER
+typedef SSIZE_T ssize_t;
+#endif
+#else
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#endif
 
 #include <absl/flags/flag.h>
 #include <memory>
@@ -21,16 +26,83 @@
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 
-ABSL_FLAG(std::string,
-          configfile,
-          "~/.yass/config.json",
-          "load configs from file");
-
 using json = nlohmann::json;
 
 namespace {
 
+#ifdef _WIN32
 bool IsDirectory(const std::string& path) {
+  if (path == "." || path == "..") {
+    return true;
+  }
+  BY_HANDLE_FILE_INFORMATION info;
+  HANDLE hFile = CreateFileA(path.c_str(), GENERIC_READ,
+                             FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
+  if (hFile == INVALID_HANDLE_VALUE) {
+    return false;
+  }
+  if (!::GetFileInformationByHandle(hFile, &info)) {
+    CloseHandle(hFile);
+    return false;
+  }
+  CloseHandle(hFile);
+  return info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
+}
+
+bool CreatePrivateDirectory(const std::string& path) {
+  return CreateDirectoryA(path.c_str(), nullptr);
+}
+
+bool EnsureCreatedDirectory(const std::string& path) {
+  if (!IsDirectory(path) && !CreatePrivateDirectory(path)) {
+    return false;
+  }
+  return true;
+}
+
+ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len) {
+  DWORD read;
+  HANDLE hFile = CreateFileA(path.c_str(), GENERIC_READ,
+                             FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
+  if (hFile == INVALID_HANDLE_VALUE) {
+    return -1;
+  }
+
+  if (!ReadFile(hFile, buf, buf_len - 1, &read, nullptr)) {
+    CloseHandle(hFile);
+    return -1;
+  }
+
+  CloseHandle(hFile);
+
+  buf[read] = '\0';
+  return read;
+}
+
+ssize_t WriteFileWithBuffer(const std::string& path,
+                            const char* buf,
+                            size_t buf_len) {
+  DWORD written;
+  HANDLE hFile = CreateFileA(path.c_str(), GENERIC_WRITE,
+                             0, nullptr, CREATE_ALWAYS, 0, nullptr);
+  if (hFile == INVALID_HANDLE_VALUE) {
+    return -1;
+  }
+
+  if (!WriteFile(hFile, buf, buf_len, &written, nullptr) || written != buf_len) {
+    CloseHandle(hFile);
+    return -1;
+  }
+
+  CloseHandle(hFile);
+
+  return written;
+}
+#else
+bool IsDirectory(const std::string& path) {
+  if (path == "." || path == "..") {
+    return true;
+  }
   struct stat Stat {};
   if (::stat(path.c_str(), &Stat) != 0) {
     return false;
@@ -78,20 +150,20 @@ ssize_t WriteFileWithBuffer(const std::string& path,
   }
   return ret;
 }
-
+#endif
 }  // anonymous namespace
 
 namespace config {
 
-class ConfigImplPosix : public ConfigImpl {
+class ConfigImplLocal : public ConfigImpl {
  public:
-  ~ConfigImplPosix() override{}
+  ConfigImplLocal(const std::string &path) : path_(ExpandUser(path)) {}
+  ~ConfigImplLocal() override{}
 
  protected:
   bool OpenImpl(bool dontread) override {
+    DCHECK(!path_.empty());
     dontread_ = dontread;
-
-    path_ = ExpandUser(absl::GetFlag(FLAGS_configfile));
 
     do {
       ssize_t size =
@@ -248,5 +320,4 @@ class ConfigImplPosix : public ConfigImpl {
 
 }  // namespace config
 
-#endif  // !defined(_WIN32)
 #endif  // H_CONFIG_CONFIG_IMPL_POSIX

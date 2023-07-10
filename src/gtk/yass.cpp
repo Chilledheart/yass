@@ -29,7 +29,7 @@ YASSApp* mApp = nullptr;
 static const char* kAppId = "it.gui.yass";
 static const char* kAppName = YASS_APP_PRODUCT_NAME;
 
-int main(int argc, char** argv) {
+int main(int argc, const char** argv) {
   if (!SetUTF8Locale()) {
     LOG(WARNING) << "Failed to set up utf-8 locale";
   }
@@ -47,14 +47,14 @@ int main(int argc, char** argv) {
   absl::FailureSignalHandlerOptions failure_handle_options;
   absl::InstallFailureSignalHandler(failure_handle_options);
 
-  absl::ParseCommandLine(argc, argv);
+  config::ReadConfigFileOption(argc, argv);
+  config::ReadConfig();
+  absl::ParseCommandLine(argc, const_cast<char**>(argv));
 
   auto cipher_method = to_cipher_method(absl::GetFlag(FLAGS_method));
   if (cipher_method != CRYPTO_INVALID) {
     absl::SetFlag(&FLAGS_cipher_method, cipher_method);
   }
-
-  config::ReadConfig();
 
   DCHECK(is_valid_cipher_method(
       static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
 
   mApp = app.operator->();
 
-  return app->ApplicationRun(1, argv);
+  return app->ApplicationRun(1, const_cast<char**>(argv));
 }
 
 YASSApp::YASSApp()

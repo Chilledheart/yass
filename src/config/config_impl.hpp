@@ -11,6 +11,9 @@
 #include <absl/strings/string_view.h>
 
 namespace config {
+
+extern std::string g_configfile;
+
 class ConfigImpl {
  public:
   /// Deconstruct the ConfigTree object

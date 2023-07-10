@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2023 Chilledheart  */
 
 #include "config/config_impl_apple.hpp"
 
@@ -22,65 +22,15 @@ ABSL_DECLARE_FLAG(std::string, configfile);
 static const char* kYassSuiteName = "it.gui.yass.suite";
 static const char* kYassKeyName = "YASSConfiguration";
 
-namespace {
-
-bool IsFile(const std::string& path) {
-  struct stat s;
-  return stat(path.c_str(), &s) == 0;
-}
-
-bool LoadConfigFromLegacyConfig(const std::string& path,
-                                CFMutableDictionaryRef mutable_root) {
-  NSError* error = nil;
-  NSData* data;
-
-  if (!IsFile(path)) {
-    VLOG(2) << "legacy configure file not exists";
-    return false;
-  }
-
-  data = [NSData dataWithContentsOfFile:@(path.c_str())
-                                options:NSDataReadingUncached
-                                  error:&error];
-  if (!data || error) {
-    VLOG(1) << "legacy configure file failed to read: " << path
-            << " error: " << error;
-    return false;
-  }
-  error = nil;
-  ScopedCFTypeRef<CFDictionaryRef> root;
-  NSDictionary* dictionary =
-      [NSJSONSerialization JSONObjectWithData:data
-                                      options:NSJSONReadingMutableContainers
-                                        error:&error];
-  root.reset((CFDictionaryRef)CFBridgingRetain(dictionary));
-  if (!root || error) {
-    VLOG(1) << "legacy configure file failed to parse: " << error
-            << " content: \"" << data << "\"";
-    return false;
-  }
-
-  [CFBridgingRelease(CFRetain(mutable_root)) addEntriesFromDictionary:dictionary];
-  return true;
-}
-
-}  // anonymous namespace
-
 namespace config {
 
 bool ConfigImplApple::OpenImpl(bool dontread) {
   dontread_ = dontread;
 
-  path_ = ExpandUser(absl::GetFlag(FLAGS_configfile));
-
   ScopedCFTypeRef<CFMutableDictionaryRef> mutable_root(
       CFDictionaryCreateMutable(kCFAllocatorDefault, 0,
                                 &kCFTypeDictionaryKeyCallBacks,
                                 &kCFTypeDictionaryValueCallBacks));
-
-  if (LoadConfigFromLegacyConfig(path_, mutable_root)) {
-    LOG(WARNING) << "loaded from legacy config file: " << path_;
-  }
 
   // Overwrite all fields from UserDefaults
   NSUserDefaults* defaultsRoot =
@@ -106,7 +56,7 @@ bool ConfigImplApple::OpenImpl(bool dontread) {
 }
 
 bool ConfigImplApple::CloseImpl() {
-  if (path_.empty() || !dontread_) {
+  if (!dontread_) {
     root_.reset();
     return true;
   }
@@ -116,12 +66,6 @@ bool ConfigImplApple::CloseImpl() {
   [userDefaults setObject:CFBridgingRelease(CFRetain(write_root_)) forKey:@(kYassKeyName)];
 
   write_root_.reset();
-
-  if (!path_.empty() && IsFile(path_) && ::unlink(path_.c_str()) == 0) {
-    LOG(WARNING) << "removed legacy config file: " << path_;
-  }
-
-  path_.clear();
 
   return true;
 }
