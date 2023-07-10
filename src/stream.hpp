@@ -163,7 +163,6 @@ class stream : public RefCountedThreadSafe<stream> {
         return;
       }
       for (auto iter = std::begin(results); iter != std::end(results); ++iter) {
-        VLOG(2) << "resolved address " << domain() << ": " << endpoint_;
         endpoints_.push_back(*iter);
       }
       DCHECK(!endpoints_.empty());
