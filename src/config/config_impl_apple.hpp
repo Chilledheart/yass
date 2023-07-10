@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2023 Chilledheart  */
 
 #ifndef H_CONFIG_CONFIG_IMPL_APPLE
 #define H_CONFIG_CONFIG_IMPL_APPLE
@@ -42,7 +42,6 @@ class ConfigImplApple : public ConfigImpl {
   bool DeleteImpl(const std::string& key) override;
 
  private:
-  std::string path_;
   ScopedCFTypeRef<CFDictionaryRef> root_;
   ScopedCFTypeRef<CFMutableDictionaryRef> write_root_;
 };

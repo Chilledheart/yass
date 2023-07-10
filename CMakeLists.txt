@@ -2404,7 +2404,7 @@ set(hfiles
     src/net/openssl_util.hpp
     src/config/config.hpp
     src/config/config_impl.hpp
-    src/config/config_impl_posix.hpp
+    src/config/config_impl_local.hpp
     src/config/config_impl_windows.hpp
     src/core/cipher.hpp
     src/core/hkdf_sha1.hpp
