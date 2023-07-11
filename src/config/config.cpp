@@ -8,6 +8,32 @@
 
 #include "core/cipher.hpp"
 
+bool AbslParseFlag(absl::string_view text, CipherMethodFlag* flag,
+                   std::string* err);
+
+std::string AbslUnparseFlag(const CipherMethodFlag&);
+
+// Within the implementation, `AbslParseFlag()` will, in turn invoke
+// `absl::ParseFlag()` on its constituent `int` and `std::string` types
+// (which have built-in Abseil flag support.
+
+bool AbslParseFlag(absl::string_view text, CipherMethodFlag* flag,
+                   std::string* err) {
+  flag->method = to_cipher_method(std::string(text));
+  if (flag->method == CRYPTO_INVALID) {
+    *err = "bad cipher_method: " + std::string(text);
+    return false;
+  }
+  return true;
+}
+
+// Similarly, for unparsing, we can simply invoke `absl::UnparseFlag()` on
+// the constituent types.
+std::string AbslUnparseFlag(const CipherMethodFlag& flag) {
+  DCHECK(is_valid_cipher_method(flag.method));
+  return to_cipher_method_str(flag.method);
+}
+
 ABSL_FLAG(bool, ipv6_mode, true, "Enable IPv6 support");
 
 ABSL_FLAG(std::string,
@@ -29,11 +55,10 @@ ABSL_FLAG(int32_t,
 
 ABSL_FLAG(std::string, username, "<default-user>", "Username");
 ABSL_FLAG(std::string, password, "<default-pass>", "Password pharsal");
-ABSL_FLAG(std::string,
+ABSL_FLAG(CipherMethodFlag,
           method,
-          CRYPTO_INVALID_STR,
+          CipherMethodFlag(CRYPTO_HTTP2),
           "Method of encrypt, such as http2");
-ABSL_FLAG(int32_t, cipher_method, CRYPTO_HTTP2, "Method of encrypt (Internal Usage)");
 
 namespace config {
 
@@ -119,7 +144,6 @@ void ReadConfigFileOption(int argc, const char** argv) {
 bool ReadConfig() {
   auto config_impl = config::ConfigImpl::Create();
   bool required_fields_loaded = false;
-  std::string cipher_method_str;
 
   if (!config_impl->Open(false)) {
     return false;
@@ -129,25 +153,11 @@ bool ReadConfig() {
   required_fields_loaded &= config_impl->Read("server", &FLAGS_server_host);
   required_fields_loaded &=
       config_impl->Read("server_port", &FLAGS_server_port);
-  required_fields_loaded &=
-      /* new version field: higher priority */
-      (config_impl->Read("cipher_method", &FLAGS_method) ||
-       /* old version field: lower priority */
-       config_impl->Read("method", &FLAGS_method));
+  required_fields_loaded &= config_impl->Read("method", &FLAGS_method);
   required_fields_loaded &= config_impl->Read("username", &FLAGS_username);
   required_fields_loaded &= config_impl->Read("password", &FLAGS_password);
   required_fields_loaded &= config_impl->Read("local", &FLAGS_local_host);
   required_fields_loaded &= config_impl->Read("local_port", &FLAGS_local_port);
-
-  cipher_method_str = absl::GetFlag(FLAGS_method);
-  auto cipher_method = to_cipher_method(cipher_method_str);
-  if (cipher_method == CRYPTO_INVALID) {
-    LOG(WARNING) << "bad cipher_method: " << cipher_method_str;
-    required_fields_loaded = false;
-  } else {
-    absl::SetFlag(&FLAGS_cipher_method, cipher_method);
-    VLOG(1) << "loaded option cipher_method: " << cipher_method_str;
-  }
 
   /* optional fields */
   config_impl->Read("fast_open", &FLAGS_tcp_fastopen);
@@ -183,12 +193,6 @@ bool SaveConfig() {
   auto config_impl = config::ConfigImpl::Create();
   bool all_fields_written = false;
 
-  DCHECK(is_valid_cipher_method(
-      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
-  auto cipher_method_str = to_cipher_method_str(
-      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)));
-  absl::SetFlag(&FLAGS_method, cipher_method_str);
-
   if (!config_impl->Open(true)) {
     return false;
   }
@@ -196,7 +200,6 @@ bool SaveConfig() {
   all_fields_written &= config_impl->Write("server", FLAGS_server_host);
   all_fields_written &= config_impl->Write("server_port", FLAGS_server_port);
   all_fields_written &= config_impl->Write("method", FLAGS_method);
-  all_fields_written &= config_impl->Write("cipher_method", FLAGS_method);
   all_fields_written &= config_impl->Write("username", FLAGS_username);
   all_fields_written &= config_impl->Write("password", FLAGS_password);
   all_fields_written &= config_impl->Write("local", FLAGS_local_host);

@@ -66,16 +66,6 @@ int main(int argc, const char* argv[]) {
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
 
-  auto cipher_method = to_cipher_method(absl::GetFlag(FLAGS_method));
-  if (cipher_method == CRYPTO_INVALID) {
-    LOG(WARNING) << "Invalid cipher method: " << absl::GetFlag(FLAGS_method);
-    return -1;
-  }
-  absl::SetFlag(&FLAGS_cipher_method, cipher_method);
-
-  DCHECK(is_valid_cipher_method(
-      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
-
   LOG(WARNING) << "Application starting: " << YASS_APP_TAG;
 
 #ifdef _WIN32

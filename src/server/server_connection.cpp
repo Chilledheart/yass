@@ -214,8 +214,8 @@ void ServerConnection::close() {
 }
 
 void ServerConnection::Start() {
-  bool http2 = absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_PLAINTEXT;
-  http2 |= absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2;
+  bool http2 = absl::GetFlag(FLAGS_method).method == CRYPTO_HTTP2_PLAINTEXT;
+  http2 |= absl::GetFlag(FLAGS_method).method == CRYPTO_HTTP2;
   if (http2 && https_fallback_) {
     http2 = false;
   }
@@ -254,10 +254,10 @@ void ServerConnection::Start() {
     ReadHandshakeViaHttps();
   } else {
     encoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
-      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)),
+      absl::GetFlag(FLAGS_method).method,
       this, nullptr, true);
     decoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
-      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method)),
+      absl::GetFlag(FLAGS_method).method,
       this, nullptr);
     ReadHandshake();
   }
