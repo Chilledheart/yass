@@ -33,7 +33,7 @@ ABSL_FLAG(std::string,
           method,
           CRYPTO_INVALID_STR,
           "Method of encrypt, such as http2");
-ABSL_FLAG(int32_t, cipher_method, CRYPTO_HTTP2_TLS, "Method of encrypt (Internal Usage)");
+ABSL_FLAG(int32_t, cipher_method, CRYPTO_HTTP2, "Method of encrypt (Internal Usage)");
 
 namespace config {
 

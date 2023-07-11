@@ -37,11 +37,11 @@
 
 #ifdef HAVE_QUICHE
 #define CIPHER_METHOD_MAP_HTTP2(XX)                                   \
-  XX(0x120U, HTTP2, "http2-plaintext")                                \
-  XX(0x121U, HTTP2_TLS, "http2")
+  XX(0x120U, HTTP2_PLAINTEXT, "http2-plaintext")                      \
+  XX(0x121U, HTTP2, "http2")
 #define CIPHER_METHOD_MAP_FULL_HTTP2(XX)                              \
-  XX(0x120U, HTTP2, "http2-plaintext")                                \
-  XX(0x121U, HTTP2_TLS, "http2")                                      \
+  XX(0x120U, HTTP2_PLAINTEXT, "http2-plaintext")                      \
+  XX(0x121U, HTTP2, "http2")                                          \
   XX(0x122U, HTTP2_INPLACE_2, "http2-2-protocol")                     \
   XX(0x123U, HTTP2_INPLACE_3, "http2-3-protocol")                     \
   XX(0x124U, HTTP2_INPLACE_4, "http2-4-protocol")                     \

@@ -52,10 +52,10 @@ class ContentServer {
       https_fallback_(absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTPS),
       enable_upstream_tls_(
           absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTPS ||
-          absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_TLS),
+          absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2),
       enable_tls_(
           absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTPS ||
-          absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_TLS),
+          absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2),
       upstream_certificate_(upstream_certificate),
       upstream_ssl_ctx_(asio::ssl::context::tls_client),
       certificate_(certificate),

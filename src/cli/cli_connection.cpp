@@ -1549,8 +1549,8 @@ void CliConnection::connected() {
           << " remote: established upstream connection with: "
           << remote_domain();
 
-  bool http2 = absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2;
-  http2 |= (absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_TLS);
+  bool http2 = absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_PLAINTEXT;
+  http2 |= (absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2);
   if (http2 && channel_->https_fallback()) {
     http2 = false;
     upstream_https_fallback_ = true;
