@@ -104,6 +104,9 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   }
 }
 
+- (IBAction)OnSystemProxyChecked:(id)sender {
+}
+
 - (void)OnStatusBarClicked:(id)sender {
   if ([NSApp currentEvent].type == NSEventTypeLeftMouseDown) {
     LOG(WARNING) << "Clicked";
