@@ -5,6 +5,7 @@
 #include "config/config_impl.hpp"
 
 #include <absl/flags/flag.h>
+#include <absl/strings/str_cat.h>
 
 #include "core/cipher.hpp"
 
@@ -58,7 +59,8 @@ ABSL_FLAG(std::string, password, "<default-pass>", "Password pharsal");
 ABSL_FLAG(CipherMethodFlag,
           method,
           CipherMethodFlag(CRYPTO_HTTP2),
-          "Method of encrypt, such as http2");
+          absl::StrCat("Method of encrypt, one of ",
+                      absl::string_view(kCipherMethodsStr, strlen(kCipherMethodsStr)-2)));
 
 namespace config {
 
