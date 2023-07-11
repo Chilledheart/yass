@@ -48,11 +48,60 @@ void ReadConfigFileOption(int argc, const char** argv) {
   int pos = 1;
   while (pos < argc) {
     std::string arg = argv[pos];
-    if (pos + 1 < argc && (arg == "-c" || arg == "--configfile")) {
+    if (pos + 1 < argc && (arg == "-v" || arg == "--v")) {
+      absl::SetFlag(&FLAGS_v, atoi(argv[pos + 1]));
+      argv[pos] = "";
+      argv[pos+1] = "";
+      pos += 2;
+      continue;
+    } else if (pos + 1 < argc && (arg == "-vmodule" || arg == "--vmodule")) {
+      absl::SetFlag(&FLAGS_vmodule, argv[pos + 1]);
+      argv[pos] = "";
+      argv[pos+1] = "";
+      pos += 2;
+      continue;
+    } else if (arg == "-logtostderr" || arg == "-logtostderr=true" ||
+               arg == "--logtostderr" || arg == "--logtostderr=true") {
+      absl::SetFlag(&FLAGS_logtostderr, true);
+      argv[pos] = "";
+      pos += 1;
+      continue;
+    } else if (arg == "-nologtostderr" || arg == "-logtostderr=false" ||
+               arg == "--nologtostderr" || arg == "--logtostderr=false") {
+      absl::SetFlag(&FLAGS_logtostderr, false);
+      argv[pos] = "";
+      pos += 1;
+      continue;
+    } else if (arg == "-alsologtostderr" || arg == "-alsologtostderr=true" ||
+               arg == "--alsologtostderr" || arg == "--alsologtostderr=true") {
+      absl::SetFlag(&FLAGS_alsologtostderr, true);
+      argv[pos] = "";
+      pos += 1;
+      continue;
+    } else if (arg == "-noalsologtostderr" || arg == "-alsologtostderr=false" ||
+               arg == "--noalsologtostderr" || arg == "--alsologtostderr=false") {
+      absl::SetFlag(&FLAGS_alsologtostderr, false);
+      argv[pos] = "";
+      pos += 1;
+      continue;
+    } else if (arg == "-colorlogtostderr" || arg == "-colorlogtostderr=true" ||
+               arg == "--colorlogtostderr" || arg == "--colorlogtostderr=true") {
+      absl::SetFlag(&FLAGS_colorlogtostderr, true);
+      argv[pos] = "";
+      pos += 1;
+      continue;
+    } else if (arg == "-nocolorlogtostderr" || arg == "-colorlogtostderr=false" ||
+               arg == "--nocolorlogtostderr" || arg == "--colorlogtostderr=false") {
+      absl::SetFlag(&FLAGS_colorlogtostderr, false);
+      argv[pos] = "";
+      pos += 1;
+      continue;
+    } else if (pos + 1 < argc && (arg == "-c" || arg == "--configfile")) {
       g_configfile = argv[pos + 1];
       argv[pos] = "";
       argv[pos+1] = "";
       pos += 2;
+      continue;
     }
     ++pos;
   }
