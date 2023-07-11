@@ -2099,7 +2099,7 @@ if (COMPILER_GCC OR COMPILER_CLANG)
 
   # Lots of third-party libraries have unused variables. Instead of
   # suppressing them individually, we just blanket suppress them here.
-  if (COMPILER_CLANG)
+  if (COMPILER_CLANG OR COMPILER_GCC)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-variable")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-variable")
   endif()
