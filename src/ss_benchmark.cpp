@@ -491,7 +491,7 @@ class SsEndToEndBM : public benchmark::Fixture {
 
 #define XX(num, name, string) \
   BENCHMARK_DEFINE_F(SsEndToEndBM, BM_FullDuplex_##name)(benchmark::State& state) { \
-    absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name);                 \
+    absl::SetFlag(&FLAGS_method, CRYPTO_##name);                        \
     StartBackgroundTasks();                                             \
     GenerateRandContent(state.range(0));                                \
                                                                         \

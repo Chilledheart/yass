@@ -182,7 +182,7 @@
   absl::SetFlag(&FLAGS_server_port, server_port);
   absl::SetFlag(&FLAGS_username, username);
   absl::SetFlag(&FLAGS_password, password);
-  absl::SetFlag(&FLAGS_cipher_method, method);
+  absl::SetFlag(&FLAGS_method, method);
   absl::SetFlag(&FLAGS_local_host, local_host);
   absl::SetFlag(&FLAGS_local_port, local_port);
   absl::SetFlag(&FLAGS_connect_timeout, connect_timeout);

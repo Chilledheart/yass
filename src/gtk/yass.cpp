@@ -9,6 +9,8 @@
 #include <absl/debugging/symbolize.h>
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
+#include <absl/flags/usage.h>
+#include <absl/strings/str_cat.h>
 #include <fontconfig/fontconfig.h>
 #include <glib/gi18n.h>
 #include <locale.h>
@@ -47,17 +49,19 @@ int main(int argc, const char** argv) {
   absl::FailureSignalHandlerOptions failure_handle_options;
   absl::InstallFailureSignalHandler(failure_handle_options);
 
+  absl::SetProgramUsageMessage(
+      absl::StrCat("Usage: ", Basename(exec_path), " [options ...]\n",
+                   " -c, --configfile <file> Use specified config file\n",
+                   " --server_host <host> Host address which remote server listens to\n",
+                   " --server_port <port> Port number which remote server listens to\n",
+                   " --local_host <host> Host address which local server listens to\n"
+                   " --local_port <port> Port number which local server listens to\n"
+                   " --username <username> Username\n",
+                   " --password <pasword> Password pharsal\n",
+                   " --method <method> Method of encrypt"));
   config::ReadConfigFileOption(argc, argv);
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
-
-  auto cipher_method = to_cipher_method(absl::GetFlag(FLAGS_method));
-  if (cipher_method != CRYPTO_INVALID) {
-    absl::SetFlag(&FLAGS_cipher_method, cipher_method);
-  }
-
-  DCHECK(is_valid_cipher_method(
-      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
 
 #if !GLIB_CHECK_VERSION(2, 35, 0)
   // GLib type system initialization. It's unclear if it's still required for
@@ -268,7 +272,7 @@ void YASSApp::SaveConfig() {
   absl::SetFlag(&FLAGS_server_port, server_port.value());
   absl::SetFlag(&FLAGS_username, username);
   absl::SetFlag(&FLAGS_password, password);
-  absl::SetFlag(&FLAGS_cipher_method, method);
+  absl::SetFlag(&FLAGS_method, method);
   absl::SetFlag(&FLAGS_local_host, local_host);
   absl::SetFlag(&FLAGS_local_port, local_port.value());
   absl::SetFlag(&FLAGS_connect_timeout, connect_timeout.value());

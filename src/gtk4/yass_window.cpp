@@ -342,7 +342,7 @@ void YASSWindow::LoadChanges() {
   auto server_port_str = std::to_string(absl::GetFlag(FLAGS_server_port));
   auto username_str = absl::GetFlag(FLAGS_username);
   auto password_str = absl::GetFlag(FLAGS_password);
-  int32_t cipher_method = absl::GetFlag(FLAGS_cipher_method);
+  int32_t cipher_method = absl::GetFlag(FLAGS_method).method;
   auto local_host_str = absl::GetFlag(FLAGS_local_host);
   auto local_port_str = std::to_string(absl::GetFlag(FLAGS_local_port));
   auto timeout_str = std::to_string(absl::GetFlag(FLAGS_connect_timeout));

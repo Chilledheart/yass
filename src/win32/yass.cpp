@@ -11,6 +11,8 @@
 #include <absl/debugging/symbolize.h>
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
+#include <absl/flags/usage.h>
+#include <absl/strings/str_cat.h>
 #include <locale.h>
 
 #include "core/debug.hpp"
@@ -53,6 +55,16 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   // Fix log output name
   SetExecutablePath(exec_path);
 
+  absl::SetProgramUsageMessage(
+      absl::StrCat("Usage: ", Basename(exec_path), " [options ...]\n",
+                   " -c, --configfile <file> Use specified config file\n",
+                   " --server_host <host> Host address which remote server listens to\n",
+                   " --server_port <port> Port number which remote server listens to\n",
+                   " --local_host <host> Host address which local server listens to\n"
+                   " --local_port <port> Port number which local server listens to\n"
+                   " --username <username> Username\n",
+                   " --password <pasword> Password pharsal\n",
+                   " --method <method> Method of encrypt"));
   absl::InitializeSymbolizer(exec_path.c_str());
   absl::FailureSignalHandlerOptions failure_handle_options;
   absl::InstallFailureSignalHandler(failure_handle_options);
@@ -79,19 +91,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   config::ReadConfigFileOption(argc, &argv[0]);
   config::ReadConfig();
   absl::ParseCommandLine(argv.size(), const_cast<char**>(&argv[0]));
-
-  auto cipher_method = to_cipher_method(absl::GetFlag(FLAGS_method));
-  if (cipher_method != CRYPTO_INVALID) {
-    absl::SetFlag(&FLAGS_cipher_method, cipher_method);
-  }
-
-  DCHECK(is_valid_cipher_method(
-      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
-
-  auto override_cipher_method = to_cipher_method(absl::GetFlag(FLAGS_method));
-  if (override_cipher_method != CRYPTO_INVALID) {
-    absl::SetFlag(&FLAGS_cipher_method, override_cipher_method);
-  }
 
   // TODO: transfer OutputDebugString to internal logging
 
@@ -388,7 +387,7 @@ void CYassApp::SaveConfig() {
   absl::SetFlag(&FLAGS_server_port, server_port.value());
   absl::SetFlag(&FLAGS_username, username);
   absl::SetFlag(&FLAGS_password, password);
-  absl::SetFlag(&FLAGS_cipher_method, method);
+  absl::SetFlag(&FLAGS_method, method);
   absl::SetFlag(&FLAGS_local_host, local_host);
   absl::SetFlag(&FLAGS_local_port, local_port.value());
   absl::SetFlag(&FLAGS_connect_timeout, connect_timeout.value());

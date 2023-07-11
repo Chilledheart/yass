@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
+/* Copyright (c) 2019-2023 Chilledheart  */
 
 #include "crypto/crypter_export.hpp"
 
@@ -36,3 +36,9 @@ bool is_valid_cipher_method(enum cipher_method method) {
 #undef XX
   return false;
 }
+
+#define XX(num, name, string) string ", "
+const char kCipherMethodsStr[] =
+CIPHER_METHOD_VALID_MAP(XX)
+#undef XX
+  ;

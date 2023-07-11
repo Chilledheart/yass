@@ -2099,7 +2099,7 @@ if (COMPILER_GCC OR COMPILER_CLANG)
 
   # Lots of third-party libraries have unused variables. Instead of
   # suppressing them individually, we just blanket suppress them here.
-  if (COMPILER_CLANG)
+  if (COMPILER_CLANG OR COMPILER_GCC)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-variable")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-variable")
   endif()
@@ -2192,6 +2192,12 @@ if (COMPILER_GCC OR COMPILER_CLANG)
   if (COMPILER_GCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 11.0)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-stringop-overread -Wno-stringop-overflow -Wno-array-bounds")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-stringop-overread -Wno-stringop-overflow -Wno-array-bounds")
+  endif()
+
+  # silence some mingw compiler warnings
+  if (WIN32 AND NOT MSVC AND COMPILER_CLANG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unknown-pragmas")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
   endif()
 elseif (MSVC)
   set(MSVC_DISABLED_WARNINGS_LIST
@@ -2328,6 +2334,7 @@ set(files
     src/net/ssl_server_socket.cpp
     src/net/openssl_util.cpp
     src/config/config.cpp
+    src/config/config_tls.cpp
     src/config/config_impl.cpp
     src/core/cipher.cpp
     src/core/hkdf_sha1.cpp

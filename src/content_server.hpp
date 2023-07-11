@@ -48,14 +48,14 @@ class ContentServer {
       work_guard_(std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context_.get_executor())),
       remote_host_name_(remote_host_name),
       remote_port_(remote_port),
-      upstream_https_fallback_(absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTPS),
-      https_fallback_(absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTPS),
+      upstream_https_fallback_(absl::GetFlag(FLAGS_method).method == CRYPTO_HTTPS),
+      https_fallback_(absl::GetFlag(FLAGS_method).method == CRYPTO_HTTPS),
       enable_upstream_tls_(
-          absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTPS ||
-          absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_TLS),
+          absl::GetFlag(FLAGS_method).method == CRYPTO_HTTPS ||
+          absl::GetFlag(FLAGS_method).method == CRYPTO_HTTP2),
       enable_tls_(
-          absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTPS ||
-          absl::GetFlag(FLAGS_cipher_method) == CRYPTO_HTTP2_TLS),
+          absl::GetFlag(FLAGS_method).method == CRYPTO_HTTPS ||
+          absl::GetFlag(FLAGS_method).method == CRYPTO_HTTP2),
       upstream_certificate_(upstream_certificate),
       upstream_ssl_ctx_(asio::ssl::context::tls_client),
       certificate_(certificate),
