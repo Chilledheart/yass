@@ -2334,6 +2334,7 @@ set(files
     src/net/ssl_server_socket.cpp
     src/net/openssl_util.cpp
     src/config/config.cpp
+    src/config/config_tls.cpp
     src/config/config_impl.cpp
     src/core/cipher.cpp
     src/core/hkdf_sha1.cpp

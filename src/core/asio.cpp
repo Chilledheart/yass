@@ -45,15 +45,17 @@ extern "C" const char _binary_ca_bundle_crt_end[];
 
 // Use internal ca-bundle.crt if necessary
 // we take care of the ca-bundle if windows version is below windows 8.1
+ABSL_FLAG(bool, use_ca_bundle_crt,
 #if defined(_WIN32) && _WIN32_WINNT < 0x0603
-ABSL_FLAG(bool, use_ca_bundle_crt, !IsWindowsVersionBNOrGreater(6, 3, 0), "(TLS) Use internal yass-ca-bundle.crt.");
+          !IsWindowsVersionBNOrGreater(6, 3, 0),
 #elif defined(__FreeBSD__)
-ABSL_FLAG(bool, use_ca_bundle_crt, true, "(TLS) Use internal yass-ca-bundle.crt.");
+          true,
 #else
-ABSL_FLAG(bool, use_ca_bundle_crt, false, "(TLS) Use internal yass-ca-bundle.crt.");
+          false,
 #endif
+          "Use internal ca-bundle.crt instead of system CA store.");
 
-#endif
+#endif // HAVE_BUILTIN_CA_BUNDLE_CRT
 
 std::ostream& operator<<(std::ostream& o, asio::error_code ec) {
   return o << ec.message();
@@ -122,7 +124,7 @@ static void load_ca_to_ssl_ctx_from_mem(SSL_CTX* ssl_ctx, const absl::string_vie
 out:
   VLOG(1) << "Loading ca from memory: " << count << " certificates";
 }
-#endif
+#endif // HAVE_BUILTIN_CA_BUNDLE_CRT
 
 static bool load_ca_to_ssl_ctx_override(SSL_CTX* ssl_ctx) {
 #ifdef HAVE_BUILTIN_CA_BUNDLE_CRT
@@ -131,7 +133,7 @@ static bool load_ca_to_ssl_ctx_override(SSL_CTX* ssl_ctx) {
     load_ca_to_ssl_ctx_from_mem(ssl_ctx, ca_bundle_content);
     return true;
   }
-#endif
+#endif // HAVE_BUILTIN_CA_BUNDLE_CRT
   std::string ca_bundle = absl::GetFlag(FLAGS_cacert);
   if (!ca_bundle.empty()) {
     int result = SSL_CTX_load_verify_locations(ssl_ctx, ca_bundle.c_str(), nullptr);

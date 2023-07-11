@@ -8,6 +8,8 @@
 
 #include "core/cipher.hpp"
 
+ABSL_FLAG(bool, ipv6_mode, true, "Enable IPv6 support");
+
 ABSL_FLAG(std::string,
           server_host,
           "0.0.0.0",
@@ -16,14 +18,6 @@ ABSL_FLAG(int32_t,
           server_port,
           8443,
           "Port number which remote server listens to");
-
-ABSL_FLAG(std::string, username, "<default-user>", "Username");
-ABSL_FLAG(std::string, password, "<default-pass>", "Password pharsal");
-ABSL_FLAG(std::string,
-          method,
-          CRYPTO_INVALID_STR,
-          "Method of encrypt (internal)");
-ABSL_FLAG(int32_t, cipher_method, CRYPTO_AES256GCMSHA256, "Method of encrypt");
 ABSL_FLAG(std::string,
           local_host,
           "127.0.0.1",
@@ -33,14 +27,13 @@ ABSL_FLAG(int32_t,
           8000,
           "Port number which local server listens to");
 
-ABSL_FLAG(std::string, certificate_chain_file, "", "(TLS) Certificate Chain File Path");
-ABSL_FLAG(std::string, private_key_file, "", "(TLS) Private Key File Path (Server Only)");
-ABSL_FLAG(std::string, private_key_password, "", "(TLS) Private Key Password (Server Only)");
-ABSL_FLAG(bool, insecure_mode, false, "(TLS) This option makes to skip the verification step and proceed without checking");
-ABSL_FLAG(std::string, cacert, getenv("YASS_CA_BUNDLE") ? getenv("YASS_CA_BUNDLE") : "", "(TLS) Tells where to use the specified certificate file to verify the peer.");
-ABSL_FLAG(std::string, capath, "", "(TLS) Tells where to use the specified certificate directory to verify the peer.");
-
-ABSL_FLAG(bool, ipv6_mode, true, "Enable IPv6 support");
+ABSL_FLAG(std::string, username, "<default-user>", "Username");
+ABSL_FLAG(std::string, password, "<default-pass>", "Password pharsal");
+ABSL_FLAG(std::string,
+          method,
+          CRYPTO_INVALID_STR,
+          "Method of encrypt, such as http2");
+ABSL_FLAG(int32_t, cipher_method, CRYPTO_HTTP2_TLS, "Method of encrypt (Internal Usage)");
 
 namespace config {
 
@@ -93,6 +86,18 @@ void ReadConfigFileOption(int argc, const char** argv) {
     } else if (arg == "-nocolorlogtostderr" || arg == "-colorlogtostderr=false" ||
                arg == "--nocolorlogtostderr" || arg == "--colorlogtostderr=false") {
       absl::SetFlag(&FLAGS_colorlogtostderr, false);
+      argv[pos] = "";
+      pos += 1;
+      continue;
+    } else if (arg == "-k" || arg == "--k" ||
+               arg == "-insecure_mode" || arg == "--insecure_mode") {
+      absl::SetFlag(&FLAGS_insecure_mode, true);
+      argv[pos] = "";
+      pos += 1;
+      continue;
+    } else if (arg == "-noinsecure_mode" || arg == "-insecure_mode=false" ||
+               arg == "--noinsecure_mode" || arg == "--insecure_mode=false") {
+      absl::SetFlag(&FLAGS_insecure_mode, false);
       argv[pos] = "";
       pos += 1;
       continue;
