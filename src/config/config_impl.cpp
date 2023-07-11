@@ -71,7 +71,20 @@ bool ConfigImpl::Read(const std::string& key, absl::Flag<T>* value) {
 template bool ConfigImpl::Read(const std::string& key,
                                absl::Flag<std::string>* value);
 
-template bool ConfigImpl::Read(const std::string& key, absl::Flag<bool>* value);
+template <>
+bool ConfigImpl::Read(const std::string& key, absl::Flag<bool>* value) {
+  // Use an int instead of a bool to guarantee that a non-zero value has
+  // a bit set.
+
+  alignas(bool) alignas(8) bool real_value;
+  if (!ReadImpl(key, &real_value)) {
+    LOG(WARNING) << "failed to load option " << key;
+    return false;
+  }
+  absl::SetFlag(value, real_value);
+  VLOG(1) << "loaded option " << key << ": " << std::boolalpha << real_value;
+  return true;
+}
 
 template bool ConfigImpl::Read(const std::string& key,
                                absl::Flag<uint32_t>* value);
@@ -99,8 +112,16 @@ bool ConfigImpl::Write(const std::string& key, const absl::Flag<T>& value) {
 template bool ConfigImpl::Write(const std::string& key,
                                 const absl::Flag<std::string>& value);
 
-template bool ConfigImpl::Write(const std::string& key,
-                                const absl::Flag<bool>& value);
+template <>
+bool ConfigImpl::Write(const std::string& key, const absl::Flag<bool>& value) {
+  alignas(bool) alignas(8) bool real_value = absl::GetFlag(value);
+  if (!WriteImpl(key, real_value)) {
+    LOG(WARNING) << "failed to saved option " << key << ": " << std::boolalpha << real_value;
+    return false;
+  }
+  VLOG(1) << "saved option " << key << ": " << std::boolalpha << real_value;
+  return true;
+}
 
 template bool ConfigImpl::Write(const std::string& key,
                                 const absl::Flag<uint32_t>& value);
