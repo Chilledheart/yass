@@ -2193,6 +2193,12 @@ if (COMPILER_GCC OR COMPILER_CLANG)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-stringop-overread -Wno-stringop-overflow -Wno-array-bounds")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-stringop-overread -Wno-stringop-overflow -Wno-array-bounds")
   endif()
+
+  # silence some mingw compiler warnings
+  if (WIN32 AND NOT MSVC AND COMPILER_CLANG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unknown-pragmas")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
+  endif()
 elseif (MSVC)
   set(MSVC_DISABLED_WARNINGS_LIST
       "C4061" # enumerator 'identifier' in switch of enum 'enumeration' is not
