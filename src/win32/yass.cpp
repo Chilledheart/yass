@@ -92,21 +92,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   config::ReadConfig();
   absl::ParseCommandLine(argv.size(), const_cast<char**>(&argv[0]));
 
-  auto cipher_method = to_cipher_method(absl::GetFlag(FLAGS_method));
-  if (cipher_method == CRYPTO_INVALID) {
-    LOG(WARNING) << "Invalid cipher method: " << absl::GetFlag(FLAGS_method);
-    return -1;
-  }
-  absl::SetFlag(&FLAGS_cipher_method, cipher_method);
-
-  DCHECK(is_valid_cipher_method(
-      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
-
-  auto override_cipher_method = to_cipher_method(absl::GetFlag(FLAGS_method));
-  if (override_cipher_method != CRYPTO_INVALID) {
-    absl::SetFlag(&FLAGS_cipher_method, override_cipher_method);
-  }
-
   // TODO: transfer OutputDebugString to internal logging
 
   CYassApp app(hInstance);
@@ -402,7 +387,7 @@ void CYassApp::SaveConfig() {
   absl::SetFlag(&FLAGS_server_port, server_port.value());
   absl::SetFlag(&FLAGS_username, username);
   absl::SetFlag(&FLAGS_password, password);
-  absl::SetFlag(&FLAGS_cipher_method, method);
+  absl::SetFlag(&FLAGS_method, method);
   absl::SetFlag(&FLAGS_local_host, local_host);
   absl::SetFlag(&FLAGS_local_port, local_port.value());
   absl::SetFlag(&FLAGS_connect_timeout, connect_timeout.value());

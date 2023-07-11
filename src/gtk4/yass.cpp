@@ -147,16 +147,6 @@ int main(int argc, const char** argv) {
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
 
-  auto cipher_method = to_cipher_method(absl::GetFlag(FLAGS_method));
-  if (cipher_method == CRYPTO_INVALID) {
-    LOG(WARNING) << "Invalid cipher method: " << absl::GetFlag(FLAGS_method);
-    return -1;
-  }
-  absl::SetFlag(&FLAGS_cipher_method, cipher_method);
-
-  DCHECK(is_valid_cipher_method(
-      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method))));
-
 #if !GLIB_CHECK_VERSION(2, 35, 0)
   // GLib type system initialization. It's unclear if it's still required for
   // any remaining code. Most likely this is superfluous as gtk_init() ought
@@ -360,7 +350,7 @@ void YASSApp::SaveConfig() {
   absl::SetFlag(&FLAGS_server_port, server_port.value());
   absl::SetFlag(&FLAGS_username, username);
   absl::SetFlag(&FLAGS_password, password);
-  absl::SetFlag(&FLAGS_cipher_method, method);
+  absl::SetFlag(&FLAGS_method, method);
   absl::SetFlag(&FLAGS_local_host, local_host);
   absl::SetFlag(&FLAGS_local_port, local_port.value());
   absl::SetFlag(&FLAGS_connect_timeout, connect_timeout.value());

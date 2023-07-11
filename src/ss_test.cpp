@@ -671,19 +671,19 @@ class SsEndToEndTest : public ::testing::Test {
 
 #define XX(num, name, string) \
   TEST_F(SsEndToEndTest, name##_4K) { \
-    absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name); \
+    absl::SetFlag(&FLAGS_method, CRYPTO_##name);        \
     StartBackgroundTasks(); \
     GenerateRandContent(4096); \
     SendRequestAndCheckResponse(); \
   } \
   TEST_F(SsEndToEndTest, name##_256K) { \
-    absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name); \
+    absl::SetFlag(&FLAGS_method, CRYPTO_##name);        \
     StartBackgroundTasks(); \
     GenerateRandContent(256 * 1024); \
     SendRequestAndCheckResponse(); \
   } \
   TEST_F(SsEndToEndTest, name##_1M) { \
-    absl::SetFlag(&FLAGS_cipher_method, CRYPTO_##name); \
+    absl::SetFlag(&FLAGS_method, CRYPTO_##name);        \
     StartBackgroundTasks(); \
     GenerateRandContent(1024 * 1024); \
     SendRequestAndCheckResponse(); \

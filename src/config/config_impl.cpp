@@ -9,6 +9,12 @@
 #include "config/config_impl_local.hpp"
 #include "config/config_impl_windows.hpp"
 #include "core/logging.hpp"
+#include "core/cipher.hpp"
+
+struct CipherMethodFlag {
+  explicit CipherMethodFlag(cipher_method m) : method(m) {}
+  cipher_method method;
+};
 
 namespace config {
 
@@ -22,13 +28,21 @@ ConfigImpl::~ConfigImpl() = default;
 
 std::unique_ptr<ConfigImpl> ConfigImpl::Create() {
   if (!g_configfile.empty()) {
+    fprintf(stderr, "using option from file: %s\n", g_configfile.c_str());
+    fflush(stderr);
     return std::make_unique<ConfigImplLocal>(g_configfile);
   }
 #ifdef _WIN32
+  fprintf(stderr, "using option from registry\n");
+  fflush(stderr);
   return std::make_unique<ConfigImplWindows>();
-#elif defined(__APPLE__) && defined(__clang__)
+#elif defined(__APPLE__)
+  fprintf(stderr, "using option from defaults database\n");
+  fflush(stderr);
   return std::make_unique<ConfigImplApple>();
 #else
+  fprintf(stderr, "using option from file: config.json\n");
+  fflush(stderr);
   return std::make_unique<ConfigImplLocal>("config.json");
 #endif
 }
@@ -71,6 +85,25 @@ bool ConfigImpl::Read(const std::string& key, absl::Flag<T>* value) {
 template bool ConfigImpl::Read(const std::string& key,
                                absl::Flag<std::string>* value);
 
+template<>
+bool ConfigImpl::Read(const std::string& key,
+                      absl::Flag<CipherMethodFlag>* value) {
+  alignas(std::string) alignas(8) std::string real_value;
+  if (!ReadImpl(key, &real_value)) {
+    LOG(WARNING) << "failed to load option " << key;
+    return false;
+  }
+  auto cipher_method = to_cipher_method(real_value);
+  if (cipher_method == CRYPTO_INVALID) {
+    LOG(WARNING) << "invalid value for key: " << key << " value: " << real_value;
+    return false;
+  }
+  CipherMethodFlag method(cipher_method);
+  absl::SetFlag(value, method);
+  VLOG(1) << "loaded option " << key << ": " << real_value;
+  return true;
+}
+
 template <>
 bool ConfigImpl::Read(const std::string& key, absl::Flag<bool>* value) {
   // Use an int instead of a bool to guarantee that a non-zero value has
@@ -111,6 +144,19 @@ bool ConfigImpl::Write(const std::string& key, const absl::Flag<T>& value) {
 
 template bool ConfigImpl::Write(const std::string& key,
                                 const absl::Flag<std::string>& value);
+
+template <>
+bool ConfigImpl::Write(const std::string& key, const absl::Flag<CipherMethodFlag>& value) {
+  auto cipher_method = absl::GetFlag(value).method;
+  DCHECK(is_valid_cipher_method(cipher_method));
+  auto real_value = to_cipher_method_str(cipher_method);
+  if (!WriteImpl(key, real_value)) {
+    LOG(WARNING) << "failed to saved option " << key << ": " << real_value;
+    return false;
+  }
+  VLOG(1) << "saved option " << key << ": " << real_value;
+  return true;
+}
 
 template <>
 bool ConfigImpl::Write(const std::string& key, const absl::Flag<bool>& value) {

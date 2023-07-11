@@ -78,4 +78,6 @@ bool is_valid_cipher_method(enum cipher_method method);
 CIPHER_METHOD_MAP(XX)
 #undef XX
 
+extern const char kCipherMethodsStr[];
+
 #endif  // H_CRYPTO_CRYPTER_EXPORT

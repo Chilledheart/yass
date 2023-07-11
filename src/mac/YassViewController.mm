@@ -225,8 +225,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   self.serverPort.intValue = absl::GetFlag(FLAGS_server_port);
   self.username.stringValue = SysUTF8ToNSString(absl::GetFlag(FLAGS_username));
   self.password.stringValue = SysUTF8ToNSString(absl::GetFlag(FLAGS_password));
-  auto cipherMethod =
-      static_cast<enum cipher_method>(absl::GetFlag(FLAGS_cipher_method));
+  auto cipherMethod = absl::GetFlag(FLAGS_method).method;
   self.cipherMethod.stringValue =
       SysUTF8ToNSString(to_cipher_method_str(cipherMethod));
   self.localHost.stringValue =

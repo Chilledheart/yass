@@ -673,7 +673,7 @@ void CYassFrame::LoadConfig() {
   SetWindowTextStd(username_edit_, username);
   SetWindowTextStd(password_edit_, password);
 
-  int32_t method = absl::GetFlag(FLAGS_cipher_method);
+  int32_t method = absl::GetFlag(FLAGS_method).method;
   for (int i = 0, cnt = ComboBox_GetCount(method_combo_box_); i < cnt; ++i) {
     if (ComboBox_GetItemData(method_combo_box_, i) ==
         static_cast<LRESULT>(method)) {
