@@ -11,7 +11,7 @@
 ABSL_FLAG(std::string,
           server_host,
           "0.0.0.0",
-          "IP address which remote server listens to");
+          "Host address which remote server listens to");
 ABSL_FLAG(int32_t,
           server_port,
           8443,
@@ -27,7 +27,7 @@ ABSL_FLAG(int32_t, cipher_method, CRYPTO_AES256GCMSHA256, "Method of encrypt");
 ABSL_FLAG(std::string,
           local_host,
           "127.0.0.1",
-          "IP address which local server listens to");
+          "Host address which local server listens to");
 ABSL_FLAG(int32_t,
           local_port,
           8000,
