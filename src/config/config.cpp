@@ -137,10 +137,6 @@ void ReadConfigFileOption(int argc, const char** argv) {
     }
     ++pos;
   }
-  if (!g_configfile.empty()) {
-    fprintf(stderr, "loaded option from file: %s\n", g_configfile.c_str());
-    fflush(stderr);
-  }
 }
 
 bool ReadConfig() {

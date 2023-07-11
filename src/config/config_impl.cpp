@@ -28,13 +28,21 @@ ConfigImpl::~ConfigImpl() = default;
 
 std::unique_ptr<ConfigImpl> ConfigImpl::Create() {
   if (!g_configfile.empty()) {
+    fprintf(stderr, "using option from file: %s\n", g_configfile.c_str());
+    fflush(stderr);
     return std::make_unique<ConfigImplLocal>(g_configfile);
   }
 #ifdef _WIN32
+  fprintf(stderr, "using option from registry\n");
+  fflush(stderr);
   return std::make_unique<ConfigImplWindows>();
-#elif defined(__APPLE__) && defined(__clang__)
+#elif defined(__APPLE__)
+  fprintf(stderr, "using option from defaults database\n");
+  fflush(stderr);
   return std::make_unique<ConfigImplApple>();
 #else
+  fprintf(stderr, "using option from file: config.json\n");
+  fflush(stderr);
   return std::make_unique<ConfigImplLocal>("config.json");
 #endif
 }
