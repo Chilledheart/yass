@@ -43,7 +43,7 @@ class IoQueue {
 
   bool push_back_merged(T buf, PooledT *pool) {
     DCHECK(!buf->empty());
-    if (empty()) {
+    if (empty() || (this->length() == 1 && dirty_front_)) {
       push_back(buf);
       return false;
     }
@@ -59,7 +59,8 @@ class IoQueue {
 
   void push_back_merged(const char* data, size_t length, PooledT *pool) {
     DCHECK(data && length);
-    if (empty()) {
+    // if empty or the only buffer is dirty
+    if (empty() || (this->length() == 1 && dirty_front_)) {
       push_back(data, length, pool);
       return;
     }
@@ -71,11 +72,13 @@ class IoQueue {
 
   T front() {
     DCHECK(!empty());
+    dirty_front_ = true;
     return queue_[idx_];
   }
 
   void pop_front() {
     DCHECK(!empty());
+    dirty_front_ = false;
     queue_[idx_] = nullptr;
     idx_ = (idx_ + 1) % queue_.size();
   }
@@ -103,6 +106,7 @@ class IoQueue {
   int idx_ = 0;
   int end_idx_ = 0;
   std::array<T, 4096> queue_;
+  bool dirty_front_ = false;
 };
 
 #endif // CORE_IO_QUEUE_HPP

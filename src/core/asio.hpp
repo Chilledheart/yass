@@ -45,9 +45,9 @@ extern std::ostream& operator<<(std::ostream& o, asio::error_code);
 /**
  * @returns <tt>mutable_buffer(tail, tailroom)</tt>.
  */
-inline asio::ASIO_MUTABLE_BUFFER tail_buffer(IOBuf& io_buf) ASIO_NOEXCEPT
+inline asio::ASIO_MUTABLE_BUFFER tail_buffer(IOBuf& io_buf, uint32_t max_length = UINT32_MAX) ASIO_NOEXCEPT
 {
-  return asio::ASIO_MUTABLE_BUFFER(io_buf.mutable_tail(), io_buf.tailroom());
+  return asio::ASIO_MUTABLE_BUFFER(io_buf.mutable_tail(), std::min<uint32_t>(io_buf.tailroom(), max_length));
 }
 
 /// Create a new modifiable buffer that represents the given memory range.
