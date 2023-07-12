@@ -46,10 +46,14 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 <!-- /TOC -->
 
 ## Usage
-0. Download the package (and install if it is a installer) and run YASS:
-- Windows (Setup installer, MSI installer, ZIP files)
-- Linux (DEB/RPM/Tarball)
-- macOS (DMG image/Tarball)
+0. Download the package (and install if it is a installer) and run YASS.
+Basically, it is a GUI application, so it requires:
+- Windows XP or later ([Setup installer](https://github.com/Chilledheart/yass/releases/download/1.3.6/yass-winxp-release-x86-static-1.3.6-installer.exe))
+- Linux (Ubuntu 16.04 or CentOS 7 at least) ([DEB](https://github.com/Chilledheart/yass/releases/download/1.3.6/yass-ubuntu-16.04-xenial_amd64.1.3.6.deb)/[RPM](https://github.com/Chilledheart/yass/releases/download/1.3.6/yass-centos-7.el7.x86_64.1.3.6.rpm))
+- macOS 10.14 or later ([DMG image](https://github.com/Chilledheart/yass/releases/download/1.3.6/yass-macos-release-universal-1.3.6.dmg))
+
+Visit the [release page](https://github.com/Chilledheart/yass/releases/tag/1.3.6) for other flavours such as tarball
+download or packages running on aarch64/arm64 hardware.
 
 1. Make sure we have your server setup (for example, see [Naiveproxy Server setup][naiveproxy-server])
 
