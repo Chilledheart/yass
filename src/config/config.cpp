@@ -57,11 +57,13 @@ ABSL_FLAG(int32_t,
 
 ABSL_FLAG(std::string, username, "<default-user>", "Username");
 ABSL_FLAG(std::string, password, "<default-pass>", "Password pharsal");
+static const std::string kCipherMethodHelpMessage =
+    absl::StrCat("Method of encrypt, one of ",
+                 absl::string_view(kCipherMethodsStr, strlen(kCipherMethodsStr)-2));
 ABSL_FLAG(CipherMethodFlag,
           method,
           CipherMethodFlag(CRYPTO_HTTP2),
-          absl::StrCat("Method of encrypt, one of ",
-                      absl::string_view(kCipherMethodsStr, strlen(kCipherMethodsStr)-2)));
+          kCipherMethodHelpMessage);
 
 namespace config {
 
