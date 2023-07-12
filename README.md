@@ -23,6 +23,7 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 
 <!-- TOC -->
 
+- [Usage](#usage)
 - [Features](#features)
 - [Ciphers](#ciphers)
   * [HTTP2 Tunnel Support](#http2-tunnel-support)
@@ -43,6 +44,25 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 - [License](#license)
 
 <!-- /TOC -->
+
+## Usage
+0. Download the package (and install if it is a installer) and run YASS:
+- Windows (Setup installer, MSI installer, ZIP files)
+- Linux (DEB/RPM/Tarball)
+- macOS (DMG image/Tarball)
+
+1. Make sure we have your server setup (for example, see [Naiveproxy Server setup][naiveproxy-server])
+
+2. In YASS windows, please feel free to find and feed in server host, server port,
+username and password used in previous step, cipher method to `http2` if you don't know anything,
+local host to `127.0.0.1`, local port to `1081` and timeout to `0`.
+
+3. Click your platform's internet options to use HTTP PROXY on `127.0.0.1` port to `1081` and
+then start your website as you visit the websites from the server. You can use this software as SOCKS4/SOCKS5 PROXY
+on the SAME port!
+
+> As REDIR mode usage in middle box for advanced usage, please make sure you pass `--redir_mode` argument to the software.
+> and local host to `0.0.0.0` to listen other machines' requirement
 
 ## Features
 
