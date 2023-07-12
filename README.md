@@ -47,26 +47,27 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 
 ## Usage
 0. Download the package (and install if it is a installer) and run YASS.
-Basically, it is a GUI application, so it requires:
+Basically, it is a GUI application, for a quick start we can pick from here:
+
 - Windows XP or later ([Setup installer](https://github.com/Chilledheart/yass/releases/download/1.3.6/yass-winxp-release-x86-static-1.3.6-installer.exe))
 - Linux (Ubuntu 16.04 or CentOS 7 at least) ([DEB](https://github.com/Chilledheart/yass/releases/download/1.3.6/yass-ubuntu-16.04-xenial_amd64.1.3.6.deb)/[RPM](https://github.com/Chilledheart/yass/releases/download/1.3.6/yass-centos-7.el7.x86_64.1.3.6.rpm))
 - macOS 10.14 or later ([DMG image](https://github.com/Chilledheart/yass/releases/download/1.3.6/yass-macos-release-universal-1.3.6.dmg))
 
-Visit the [release page](https://github.com/Chilledheart/yass/releases/tag/1.3.6) for other flavours such as tarball
-download or packages running on aarch64/arm64 hardware.
+> Visit the [release page](https://github.com/Chilledheart/yass/releases/tag/1.3.6) for other flavours such as tarball
+downloads or packages running on aarch64/arm64 hardware.
 
-1. Make sure we have your server setup (for example, see [Naiveproxy Server setup][naiveproxy-server])
+1. Please have your server set up (for example, you can give it a visit: [Naiveproxy Server setup][naiveproxy-server], the server side is compatible)
 
-2. In YASS windows, please feel free to find and feed in server host, server port,
-username and password used in previous step, cipher method to `http2` if you don't know anything,
-local host to `127.0.0.1`, local port to `1081` and timeout to `0`.
+2. In YASS windows, please feed in Server's Host (domain name), Server Port,
+Username and Password used in previous step, changing Cipher Method to `http2`,
+Local Host to `127.0.0.1`, Local Port to `1081` and Timeout to `0`.
 
 3. Click your platform's internet options to use HTTP PROXY on `127.0.0.1` port to `1081` and
-then start your website as you visit the websites from the server. You can use this software as SOCKS4/SOCKS5 PROXY
-on the SAME port!
+then start your browser just as you visit the websites directly from the server.
+You can use this software as SOCKS4/SOCKS5 PROXY on the SAME port!
 
-> As REDIR mode usage in middle box for advanced usage, please make sure you pass `--redir_mode` argument to the software.
-> and local host to `0.0.0.0` to listen other machines' requirement
+> As REDIR mode usage in middle box for advanced users, please make sure you pass `--redir_mode` argument to the software.
+> and local host to `0.0.0.0` to receive requests other that the current machine.
 
 ## Features
 
