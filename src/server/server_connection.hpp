@@ -369,6 +369,7 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
 
   /// the queue to write downstream
   IoQueue downstream_;
+  std::vector<std::shared_ptr<IOBuf>> downstream_pool_;
   /// the flag to mark current read
   bool downstream_readable_ = false;
   /// the flag to mark current read in progress
@@ -405,6 +406,8 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
 
   /// mark of in-progress writing
   bool write_inprogress_ = false;
+
+  friend class DataFrameSource;
 };
 
 class ServerConnectionFactory : public ConnectionFactory {

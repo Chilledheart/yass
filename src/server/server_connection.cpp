@@ -110,8 +110,10 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
 
   chunks_.front()->trimStart(payload_length);
 
-  if (chunks_.front()->empty())
+  if (chunks_.front()->empty()) {
+    connection_->downstream_pool_.push_back(chunks_.front());
     chunks_.pop_front();
+  }
 
   if (chunks_.empty() && send_completion_callback_) {
     std::move(send_completion_callback_).operator()();
@@ -304,7 +306,7 @@ void ServerConnection::on_protocol_error() {
 
 int64_t ServerConnection::OnReadyToSend(absl::string_view serialized) {
   MSAN_UNPOISON(serialized.data(), serialized.size());
-  downstream_.push_back(IOBuf::copyBuffer(serialized.data(), serialized.size()));
+  downstream_.push_back_merged(serialized.data(), serialized.size(), &downstream_pool_);
   return serialized.size();
 }
 
@@ -778,6 +780,7 @@ void ServerConnection::WriteStreamInPipe() {
     wbytes_transferred += written;
     // continue to resume
     if (buf->empty()) {
+      downstream_pool_.push_back(buf);
       downstream_.pop_front();
     }
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
@@ -856,7 +859,16 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code &
     return nullptr;
   }
 
-  std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
+  std::shared_ptr<IOBuf> buf;
+  if (LIKELY(!downstream_pool_.empty())) {
+    buf = downstream_pool_.back();
+    downstream_pool_.pop_back();
+    buf->clear();
+    buf->reserve(0, SOCKET_BUF_SIZE);
+  } else {
+    buf = IOBuf::create(SOCKET_BUF_SIZE);
+  }
+  buf->fake_capacity(SOCKET_BUF_SIZE);
   size_t read;
   do {
     ec = asio::error_code();
@@ -891,9 +903,10 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code &
     }
     data_frame_->AddChunk(buf);
   } else if (https_fallback_) {
-    downstream_.push_back(buf);
+    downstream_.push_back_merged(buf, &downstream_pool_);
   } else {
     EncryptData(&downstream_, buf);
+    downstream_pool_.push_back(buf);
   }
 
 out:
@@ -1294,7 +1307,7 @@ void ServerConnection::OnDownstreamWriteFlush() {
 
 void ServerConnection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf && !buf->empty()) {
-    downstream_.push_back(buf);
+    downstream_.push_back_merged(buf, &downstream_pool_);
   }
 
   if (!downstream_.empty() && !write_inprogress_) {
