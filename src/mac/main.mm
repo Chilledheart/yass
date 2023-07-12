@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2023 Chilledheart  */
 
 #import <Cocoa/Cocoa.h>
 
@@ -16,6 +16,7 @@
 #include <absl/strings/str_cat.h>
 
 #include "config/config.hpp"
+#include "core/io_queue.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
@@ -64,6 +65,7 @@ int main(int argc, const char** argv) {
   config::ReadConfigFileOption(argc, argv);
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
+  IoQueue::set_allow_merge(absl::GetFlag(FLAGS_io_queue_allow_merge));
 
   if (!MemoryLockAll()) {
     LOG(WARNING) << "Failed to set memory lock";

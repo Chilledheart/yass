@@ -11,6 +11,10 @@
 class IoQueue {
   using T = std::shared_ptr<IOBuf>;
   using PooledT = std::vector<T>;
+
+ private:
+  static bool g_allow_merge_;
+
  public:
   IoQueue() {}
   IoQueue(const IoQueue&) = default;
@@ -43,7 +47,7 @@ class IoQueue {
 
   bool push_back_merged(T buf, PooledT *pool) {
     DCHECK(!buf->empty());
-    if (empty() || (this->length() == 1 && dirty_front_)) {
+    if (!g_allow_merge_ || empty() || (this->length() == 1 && dirty_front_)) {
       push_back(buf);
       return false;
     }
@@ -60,7 +64,7 @@ class IoQueue {
   void push_back_merged(const char* data, size_t length, PooledT *pool) {
     DCHECK(data && length);
     // if empty or the only buffer is dirty
-    if (empty() || (this->length() == 1 && dirty_front_)) {
+    if (!g_allow_merge_ || empty() || (this->length() == 1 && dirty_front_)) {
       push_back(data, length, pool);
       return;
     }
@@ -100,6 +104,11 @@ class IoQueue {
     for (int i = idx_; i != end_idx_; i = (i+1) % queue_.size())
       ret += queue_[i]->length();
     return ret;
+  }
+
+ public:
+  static void set_allow_merge(bool on) {
+    g_allow_merge_ = on;
   }
 
  private:

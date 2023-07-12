@@ -21,6 +21,9 @@ struct CipherMethodFlag {
   cipher_method method;
 };
 
+ABSL_DECLARE_FLAG(bool, ipv6_mode);
+ABSL_DECLARE_FLAG(bool, io_queue_allow_merge);
+
 ABSL_DECLARE_FLAG(std::string, server_host);
 ABSL_DECLARE_FLAG(int32_t, server_port);
 ABSL_DECLARE_FLAG(std::string, username);
@@ -35,8 +38,6 @@ ABSL_DECLARE_FLAG(std::string, private_key_password);
 ABSL_DECLARE_FLAG(bool, insecure_mode);
 ABSL_DECLARE_FLAG(std::string, cacert);
 ABSL_DECLARE_FLAG(std::string, capath);
-
-ABSL_DECLARE_FLAG(bool, ipv6_mode);
 
 namespace config {
 void ReadConfigFileOption(int argc, const char** argv);

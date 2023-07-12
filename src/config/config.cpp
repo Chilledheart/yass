@@ -36,6 +36,7 @@ std::string AbslUnparseFlag(const CipherMethodFlag& flag) {
 }
 
 ABSL_FLAG(bool, ipv6_mode, true, "Enable IPv6 support");
+ABSL_FLAG(bool, io_queue_allow_merge, true, "Allow IoQueue push_back_merge");
 
 ABSL_FLAG(std::string,
           server_host,
