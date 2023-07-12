@@ -16,6 +16,7 @@
 #include <locale.h>
 #include <stdarg.h>
 
+#include "core/io_queue.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "core/cxx17_backports.hpp"
@@ -62,6 +63,7 @@ int main(int argc, const char** argv) {
   config::ReadConfigFileOption(argc, argv);
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
+  IoQueue::set_allow_merge(absl::GetFlag(FLAGS_io_queue_allow_merge));
 
 #if !GLIB_CHECK_VERSION(2, 35, 0)
   // GLib type system initialization. It's unclear if it's still required for

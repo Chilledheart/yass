@@ -674,6 +674,7 @@ int main(int argc, char** argv) {
 
   ::benchmark::Initialize(&argc, argv);
   absl::ParseCommandLine(argc, argv);
+  IoQueue::set_allow_merge(absl::GetFlag(FLAGS_io_queue_allow_merge));
 
 #ifdef _WIN32
   int iResult = 0;

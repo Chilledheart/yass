@@ -100,6 +100,10 @@ class IOBuf {
   uint8_t* mutable_buffer() { return buf_; }
 
   size_t capacity() const { return capacity_; }
+  void fake_capacity(std::size_t capacity) {
+    DCHECK_LE(capacity, capacity_);
+    capacity_ = capacity;
+  }
 
   size_t length() const { return length_; }
 
