@@ -277,7 +277,7 @@ void ServerConnection::SendIfNotProcessing() {
 bool ServerConnection::on_received_data(std::shared_ptr<IOBuf> buf) {
   MSAN_CHECK_MEM_IS_INITIALIZED(buf->data(), buf->length());
   if (state_ == state_stream) {
-    upstream_.push_back_merged(buf, nullptr);
+    upstream_.push_back_merged(buf, &upstream_pool_);
   } else if (state_ == state_handshake) {
     if (handshake_) {
       handshake_->reserve(0, buf->length());
@@ -456,18 +456,17 @@ bool ServerConnection::OnDataForStream(StreamId stream_id,
         return true;
       }
       DCHECK(buf);
-      upstream_.push_back_merged(buf, nullptr);
+      upstream_.push_back_merged(buf, &upstream_pool_);
       ++num_padding_recv_;
     }
     // Deal with in_middle_buf outside paddings
     if (num_padding_recv_ >= kFirstPaddings && !padding_in_middle_buf_->empty()) {
-      upstream_.push_back_merged(std::move(padding_in_middle_buf_), nullptr);
+      upstream_.push_back_merged(std::move(padding_in_middle_buf_), &upstream_pool_);
     }
     return true;
   }
 
-  std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(data.data(), data.size());
-  upstream_.push_back_merged(buf, nullptr);
+  upstream_.push_back_merged(data.data(), data.size(), &upstream_pool_);
   adapter_->MarkDataConsumedForStream(stream_id, data.size());
   return true;
 }
@@ -963,6 +962,7 @@ void ServerConnection::WriteUpstreamInPipe() {
             << " ec: " << ec;
     // continue to resume
     if (buf->empty()) {
+      upstream_pool_.push_back(buf);
       upstream_.pop_front();
     }
     if (ec) {
@@ -1015,7 +1015,15 @@ try_again:
     ec = asio::error::eof;
     return nullptr;
   }
-  std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_DEBUF_SIZE);
+  std::shared_ptr<IOBuf> buf;
+  if (LIKELY(!upstream_pool_.empty())) {
+    buf = upstream_pool_.back();
+    upstream_pool_.pop_back();
+    buf->clear();
+    buf->reserve(0, SOCKET_DEBUF_SIZE);
+  } else {
+    buf = IOBuf::create(SOCKET_DEBUF_SIZE);
+  }
   size_t read;
   do {
     read = s_read_some_(buf, ec);
@@ -1051,14 +1059,16 @@ try_again:
       }
       remaining_buffer = remaining_buffer.substr(result);
     }
+    upstream_pool_.push_back(buf);
     // not enough buffer for recv window
     if (upstream_.byte_length() < kSpdySessionMaxRecvWindowSize) {
       goto try_again;
     }
   } else if (https_fallback_) {
-    upstream_.push_back_merged(buf, nullptr);
+    upstream_.push_back_merged(buf, &upstream_pool_);
   } else {
     decoder_->process_bytes(buf);
+    upstream_pool_.push_back(buf);
   }
 
 out:

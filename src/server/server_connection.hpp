@@ -344,6 +344,7 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   std::shared_ptr<IOBuf> handshake_;
   /// the queue to write upstream
   IoQueue upstream_;
+  std::vector<std::shared_ptr<IOBuf>> upstream_pool_;
   /// the flag to mark current write
   bool upstream_writable_ = false;
   /// the flag to mark current read

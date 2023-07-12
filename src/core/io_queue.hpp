@@ -26,6 +26,21 @@ class IoQueue {
     CHECK_NE(end_idx_, idx_) << "IO queue is full";
   }
 
+  void push_back(const char* data, size_t length, PooledT *pool) {
+    std::shared_ptr<IOBuf> buf;
+    if (pool && !pool->empty()) {
+      buf = pool->back();
+      pool->pop_back();
+      buf->clear();
+      buf->reserve(0, length);
+      memcpy(buf->mutable_tail(), data, length);
+      buf->append(length);
+    } else {
+      buf = IOBuf::copyBuffer(data, length);
+    }
+    push_back(buf);
+  }
+
   bool push_back_merged(T buf, PooledT *pool) {
     DCHECK(!buf->empty());
     if (empty()) {
@@ -45,18 +60,7 @@ class IoQueue {
   void push_back_merged(const char* data, size_t length, PooledT *pool) {
     DCHECK(data && length);
     if (empty()) {
-      std::shared_ptr<IOBuf> buf;
-      if (pool && !pool->empty()) {
-        buf = pool->back();
-        pool->pop_back();
-        buf->clear();
-        buf->reserve(0, length);
-        memcpy(buf->mutable_tail(), data, length);
-        buf->append(length);
-      } else {
-        buf = IOBuf::copyBuffer(data, length);
-      }
-      push_back(buf);
+      push_back(data, length, pool);
       return;
     }
     auto prev_buf = queue_[(end_idx_ + queue_.size() - 1) % queue_.size()];
