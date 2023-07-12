@@ -317,7 +317,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-11, macos-12]
+        os: [macos-12, macos-13]
         build_type: [Debug, Release]
     runs-on: ${{ matrix.os }}
     env:
@@ -329,6 +329,9 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '>=1.19.0'
       - name: Cache golang
         uses: actions/cache@v3
         with:
@@ -347,14 +350,15 @@ jobs:
           # brew update
           # brew install ninja cmake p7zip
           brew install ninja
-      - name: Set up Xcode to 12.5.1 (macos 11)
-        if: ${{ matrix.os == 'macos-11' }}
-        run: |
-          sudo xcode-select -s /Applications/Xcode_12.5.1.app
       - name: Set up Xcode to 14.2 (macos 12)
         if: ${{ matrix.os == 'macos-12' }}
         run: |
           sudo xcode-select -s /Applications/Xcode_14.2.app
+      - name: Set up Xcode to 14.3.1 (macos 13)
+        if: ${{ matrix.os == 'macos-13' }}
+        run: |
+          # ignore buggy apple clang 13 from Xcode 13
+          sudo xcode-select -s /Applications/Xcode_14.3.1.app
       - name: Build
         run: |
           ./tools/build -no-packaging -macosx-universal-build=false -build-test

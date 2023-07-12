@@ -8,8 +8,16 @@ else()
   set(COMPILER_CLANG FALSE)
 endif()
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+  set(COMPILER_APPLE_CLANG TRUE)
+endif()
+
 if (COMPILER_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
   message(FATAL_ERROR "Requires Clang 12.0 or newer to compile libc++ from source")
+endif()
+
+if (COMPILER_APPLE_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14.0)
+  message(FATAL_ERROR "Requires Apple Clang 14.0 or newer to compile libc++ from source")
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
