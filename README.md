@@ -48,16 +48,15 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 ## Usage
 
 0. Please have your server set up (for example, you can give it a visit: [Naiveproxy Server setup][naiveproxy-server], the server side is compatible)
-> Please note you must buy your server from any VPS provider such as AMAZON, Azure, Google Compute Cloud and etc.
-> You might have your own choice but YASS is basically a client to get yourself served by connecting to a server.
-> Read it carefully, don't omit things important but not clear such as buying a domain name (used to do TLS extention, http2 requirement)
+> Please note you must buy from any VPS provider such as AMAZON, Azure, Google Compute Cloud and etc to get a VPS running naiveproxy/yass server.
+> Read it carefully, don't omit things important but not stated such as buying a domain name (used to do TLS extention, http2 requirement)
 >
 > Ask your friends if you don't know how to setup a naive/yass server. We don't provide any service, either free or paid.
 > 
 > otherwise you can switch to weaker ciphers other than http2
 > so you can use your IP address as server's host address directly.
 
-2. Download the package (and install if it is a installer) and run YASS.
+1. Download the package (and install if it is a installer) and run YASS.
 It is a GUI application, for a quick start we can pick from here:
 
 - Windows XP or later ([Setup installer](https://github.com/Chilledheart/yass/releases/download/1.3.6/yass-winxp-release-x86-static-1.3.6-installer.exe))
