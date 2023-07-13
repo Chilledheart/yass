@@ -1,0 +1,2 @@
+[memory]
+fun:session_predicate_request_headers_send

@@ -1994,6 +1994,9 @@ if (USE_NGHTTP2)
     target_compile_options(nghttp2_static PRIVATE -Wno-extra-semi-stmt)
     target_compile_options(nghttp2_static PRIVATE -Wno-covered-switch-default)
   endif()
+  if (MSAN)
+    target_compile_options(nghttp2_static PRIVATE "-fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
+  endif()
 endif()
 
 # *****************************************************************************************
