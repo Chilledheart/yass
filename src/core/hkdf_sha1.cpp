@@ -64,9 +64,6 @@ int crypto_hkdf_expand(const unsigned char* prk,
   SHA_CTX ctx;
   unsigned char ipad[HASH_BLOCK_SIZE_256], opad[HASH_BLOCK_SIZE_256];
   unsigned char T[MD_MAX_SIZE_256];
-  MSAN_UNPOISON(ipad, HASH_BLOCK_SIZE_256);
-  MSAN_UNPOISON(opad, HASH_BLOCK_SIZE_256);
-  MSAN_UNPOISON(T, MD_MAX_SIZE_256);
 
   if (info_len < 0 || okm_len < 0 || okm == nullptr) {
     return -1;
