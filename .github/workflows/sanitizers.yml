@@ -37,7 +37,7 @@ jobs:
           - name: thread
             cmake_options: -DTSAN=on
           - name: memory
-            cmake_options: -DMSAN=on -DUSE_CURL=off
+            cmake_options: -DMSAN=on -DUSE_CURL=off -DENABLE_LTO=off
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
