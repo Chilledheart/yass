@@ -108,7 +108,9 @@ embedded devices and low end boxes.
 %{_bindir}/yass_cli
 
 %changelog
-* Sun Jul 2 2023 Chilledheart <hukeyue@hotmail.com> - 1.3.6-1
+* Thu Jul 13 2023 Chilledheart <hukeyue@hotmail.com> - 1.3.7-1
+  - More complete IPv6 support.
+* Tue Jul 4 2023 Chilledheart <hukeyue@hotmail.com> - 1.3.6-1
   - Improvement of performance over http2 (client).
 * Sun Jul 2 2023 Chilledheart <hukeyue@hotmail.com> - 1.3.5-1
   - New bug-fix release.

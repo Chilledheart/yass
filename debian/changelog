@@ -1,3 +1,8 @@
+yass (1.3.7-1) UNRELEASED; urgency=low
+
+  * More complete IPv6 support.
+
+ -- Chilledheart <hukeyue@hotmail.com>  Thu, 13 Jul 2023 11:06:45 +0800
 yass (1.3.6-1) UNRELEASED; urgency=low
 
   * Improvement of performance over http2 (client).
