@@ -1734,6 +1734,11 @@ endforeach()
 set_target_properties(bssl PROPERTIES EXCLUDE_FROM_ALL TRUE)
 set_target_properties(decrepit PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
+if (MSAN)
+  target_compile_options(crypto PRIVATE "-fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
+  target_compile_options(ssl PRIVATE "-fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
+endif()
+
 # *****************************************************************************************
 #           asio Library
 # *****************************************************************************************

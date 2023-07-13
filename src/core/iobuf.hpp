@@ -184,9 +184,7 @@ class IOBuf {
   void advance(size_t amount) {
     DCHECK_LE(amount, tailroom());
     if (amount) {
-      MSAN_CHECK_MEM_IS_INITIALIZED(data_, length_);
       memmove(data_ + amount, data_, length_);
-      MSAN_UNPOISON(data_ + amount, length_);
     }
     data_ += amount;
   }
@@ -207,9 +205,7 @@ class IOBuf {
     DCHECK_LE(amount, headroom());
 
     if (length_ > 0) {
-      MSAN_CHECK_MEM_IS_INITIALIZED(data_, length_);
       memmove(data_ - amount, data_, length_);
-      MSAN_UNPOISON(data_ - amount, length_);
     }
     data_ -= amount;
   }
@@ -348,9 +344,7 @@ inline std::unique_ptr<IOBuf> IOBuf::copyBuffer(const void* data,
   std::unique_ptr<IOBuf> buf = create(capacity);
   buf->advance(headroom);
   if (size != 0) {
-    MSAN_CHECK_MEM_IS_INITIALIZED(data, size);
     memcpy(buf->mutable_data(), data, size);
-    MSAN_UNPOISON(buf->data(), size);
   }
   buf->append(size);
   return buf;

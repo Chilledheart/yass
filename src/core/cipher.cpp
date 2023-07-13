@@ -62,7 +62,6 @@ class cipher_impl {
     uint8_t md_buf[MD5_DIGEST_LENGTH];
     int addmd;
     unsigned int i, j, mds;
-    MSAN_UNPOISON(md_buf, MD5_DIGEST_LENGTH);
 
     if (key.empty()) {
       return skey_len;
@@ -402,7 +401,6 @@ int cipher::chunk_decrypt_frame(uint64_t* counter,
 
   ciphertext->trimStart(clen);
 
-  MSAN_UNPOISON(plaintext->tail(), plen);
   plaintext->append(plen);
 
   return 0;
@@ -441,7 +439,6 @@ int cipher::chunk_encrypt_frame(uint64_t* counter,
 
   DCHECK_EQ(clen, CHUNK_SIZE_LEN + tlen);
 
-  MSAN_UNPOISON(ciphertext->tail(), clen);
   ciphertext->append(clen);
 
   (*counter)++;

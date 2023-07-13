@@ -98,8 +98,6 @@ int hmac_sha1(const unsigned char* key,
   unsigned char ipad[HASH_BLOCK_SIZE_256], opad[HASH_BLOCK_SIZE_256];
   int ret;
 
-  MSAN_UNPOISON(ipad, sizeof(ipad));
-  MSAN_UNPOISON(opad, sizeof(opad));
   SHA1_Init(&ctx);
 
   if ((ret = hmac_sha1_starts(&ctx, ipad, opad, key, keylen)) != 0)

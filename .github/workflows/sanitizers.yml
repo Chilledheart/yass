@@ -37,8 +37,8 @@ jobs:
           - name: thread
             cmake_options: -DTSAN=on
           - name: memory
-            cmake_options: -DMSAN=on -DUSE_CURL=off
-    runs-on: ubuntu-20.04
+            cmake_options: -DMSAN=on -DUSE_CURL=off -DENABLE_LTO=off
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - name: Checkout with shallow submodules

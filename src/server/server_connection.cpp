@@ -277,7 +277,6 @@ void ServerConnection::SendIfNotProcessing() {
 // cipher_visitor_interface
 //
 bool ServerConnection::on_received_data(std::shared_ptr<IOBuf> buf) {
-  MSAN_CHECK_MEM_IS_INITIALIZED(buf->data(), buf->length());
   if (state_ == state_stream) {
     upstream_.push_back_merged(buf, &upstream_pool_);
   } else if (state_ == state_handshake) {
@@ -305,7 +304,6 @@ void ServerConnection::on_protocol_error() {
 //
 
 int64_t ServerConnection::OnReadyToSend(absl::string_view serialized) {
-  MSAN_UNPOISON(serialized.data(), serialized.size());
   downstream_.push_back_merged(serialized.data(), serialized.size(), &downstream_pool_);
   return serialized.size();
 }
@@ -1432,7 +1430,6 @@ void ServerConnection::EncryptData(IoQueue* queue,
     encoder_->encrypt(plaintext->data() + plaintext_offset, plaintext_size, cipherbuf);
     plaintext_offset += plaintext_size;
   }
-  MSAN_CHECK_MEM_IS_INITIALIZED(cipherbuf->data(), cipherbuf->length());
 }
 
 }  // namespace server
