@@ -97,6 +97,9 @@ YASSApp::YASSApp()
   g_signal_connect(impl_, "activate", G_CALLBACK(activate), NULL);
 
   auto idle = [](gpointer user_data) -> gboolean {
+    if (!mApp) {
+      return G_SOURCE_REMOVE;
+    }
     mApp->OnIdle();
     return G_SOURCE_CONTINUE;
   };
@@ -155,6 +158,10 @@ int YASSApp::ApplicationRun(int argc, char** argv) {
 }
 
 void YASSApp::Exit() {
+  if (!mApp) {
+    return;
+  }
+  mApp = nullptr;
   g_source_destroy(idle_source_);
 }
 

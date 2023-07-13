@@ -172,6 +172,9 @@ YASSApp::YASSApp()
   g_set_application_name(kAppName);
 
   auto idle = [](gpointer user_data) -> gboolean {
+    if (!mApp) {
+      return G_SOURCE_REMOVE;
+    }
     mApp->OnIdle();
     return G_SOURCE_CONTINUE;
   };
@@ -232,6 +235,10 @@ int YASSApp::ApplicationRun(int argc, char** argv) {
 }
 
 void YASSApp::Exit() {
+  if (!mApp) {
+    return;
+  }
+  mApp = nullptr;
   g_source_destroy(idle_source_);
   g_application_quit(G_APPLICATION(impl_));
 }
