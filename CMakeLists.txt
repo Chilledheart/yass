@@ -1966,6 +1966,9 @@ if (USE_CARES)
   if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(SUPPORT_LIBS resolv ${SUPPORT_LIBS})
   endif()
+  if (MSAN)
+    target_compile_options(c-ares PRIVATE "-fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
+  endif()
 endif()
 
 # *****************************************************************************************
