@@ -3,7 +3,7 @@
 [![License][license-svg]][license-link]
 [![GitHub all downloads](https://img.shields.io/github/downloads/Chilledheart/yass/total)](https://github.com/Chilledheart/yass/releases)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Chilledheart/yass)](https://github.com/Chilledheart/yass/releases)
-[![GitHub latest downloads](https://img.shields.io/github/downloads/Chilledheart/yass/1.3.6/total)](https://github.com/Chilledheart/yass/releases/tag/1.3.6)
+[![GitHub latest downloads](https://img.shields.io/github/downloads/Chilledheart/yass/1.3.7/total)](https://github.com/Chilledheart/yass/releases/tag/1.3.7)
 
 [![Compiler Compatibility](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml)
 [![Sanitizers](https://github.com/Chilledheart/yass/actions/workflows/sanitizers.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/sanitizers.yml)
@@ -52,18 +52,18 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 > Read it carefully, don't omit things important but not stated such as buying a domain name (used to do TLS extention, http2 requirement)
 >
 > Ask your friends if you don't know how to setup a naive/yass server. We don't provide any service, either free or paid.
-> 
+>
 > otherwise you can switch to weaker ciphers other than http2
 > so you can use your IP address as server's host address directly.
 
 1. Download the package (and install if it is a installer) and run YASS.
 It is a GUI application, for a quick start we can pick from here:
 
-- Windows XP or later ([Setup installer](https://github.com/Chilledheart/yass/releases/download/1.3.6/yass-winxp-release-x86-static-1.3.6-installer.exe))
-- Linux (Ubuntu 16.04 or CentOS 7 at least) ([DEB](https://github.com/Chilledheart/yass/releases/download/1.3.6/yass-ubuntu-16.04-xenial_amd64.1.3.6.deb)/[RPM](https://github.com/Chilledheart/yass/releases/download/1.3.6/yass-centos-7.el7.x86_64.1.3.6.rpm))
-- macOS 10.14 or later ([DMG image](https://github.com/Chilledheart/yass/releases/download/1.3.6/yass-macos-release-universal-1.3.6.dmg))
+- Windows XP or later ([Setup installer](https://github.com/Chilledheart/yass/releases/download/1.3.7/yass-winxp-release-x86-static-1.3.7-installer.exe))
+- Linux (Ubuntu 16.04 or CentOS 7 at least) ([DEB](https://github.com/Chilledheart/yass/releases/download/1.3.7/yass-ubuntu-16.04-xenial_amd64.1.3.7.deb)/[RPM](https://github.com/Chilledheart/yass/releases/download/1.3.7/yass-centos-7.el7.x86_64.1.3.7.rpm))
+- macOS 10.14 or later ([DMG image](https://github.com/Chilledheart/yass/releases/download/1.3.7/yass-macos-release-universal-1.3.7.dmg))
 
-> Visit the [release page](https://github.com/Chilledheart/yass/releases/tag/1.3.6) for other flavours such as tarball
+> Visit the [release page](https://github.com/Chilledheart/yass/releases/tag/1.3.7) for other flavours such as tarball
 downloads or packages running on aarch64/arm64 hardware.
 
 2. In YASS windows, please feed in Server's Host (domain name), Server Port,
