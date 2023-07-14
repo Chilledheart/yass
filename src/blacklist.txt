@@ -2,4 +2,3 @@
 fun:session_predicate_request_headers_send
 src:*/ares__sortaddrinfo.c
 src:*/third_party/boringssl/src/crypto/*
-src:*/third_party/asio/asio/include/asio/detail/impl/socket_ops.ipp
