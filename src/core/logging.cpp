@@ -185,12 +185,12 @@ typedef FILE* FileHandle;
 #include <absl/strings/str_split.h>
 #include <absl/synchronization/mutex.h>
 
-#ifndef NDEBUG
+#if !defined(NDEBUG) || defined(_DEBUG)
 #define DEFAULT_LOGBUFLEVEL -1
-#define DEFAULT_VERBOSE_LEVEL 0
-#else
-#define DEFAULT_LOGBUFLEVEL 1
 #define DEFAULT_VERBOSE_LEVEL 1
+#else
+#define DEFAULT_LOGBUFLEVEL 0
+#define DEFAULT_VERBOSE_LEVEL 0
 #endif
 
 namespace {

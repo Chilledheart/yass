@@ -975,7 +975,7 @@ try_again:
     }
     downstream_pool_.push_back(buf);
     // not enough buffer for recv window
-    if (downstream_.byte_length() < kSpdySessionMaxRecvWindowSize) {
+    if (downstream_.byte_length() < H2_STREAM_WINDOW_SIZE) {
       goto try_again;
     }
   } else if (upstream_https_fallback_) {
@@ -1597,7 +1597,7 @@ void CliConnection::connected() {
       { http2::adapter::Http2KnownSettingsId::MAX_CONCURRENT_STREAMS,
         kSpdyMaxConcurrentPushedStreams },
       { http2::adapter::Http2KnownSettingsId::INITIAL_WINDOW_SIZE,
-        kSpdyStreamMaxRecvWindowSize },
+        H2_STREAM_WINDOW_SIZE },
       { http2::adapter::Http2KnownSettingsId::MAX_HEADER_LIST_SIZE,
         kSpdyMaxHeaderListSize },
       { http2::adapter::Http2KnownSettingsId::ENABLE_PUSH,

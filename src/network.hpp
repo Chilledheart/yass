@@ -68,11 +68,9 @@ const uint32_t kSpdyMaxConcurrentPushedStreams = 1000;
 const uint32_t kSpdyDisablePush = 0;
 
 // followed by curl's nghttp adapter
-#define HTTP2_HUGE_WINDOW_SIZE (32 * 1024 * 1024) /* 32 MB */
-// from net/http/http_network_session.cc
-// The maximum receive window sizes for HTTP/2 sessions and streams.
-const int32_t kSpdySessionMaxRecvWindowSize = HTTP2_HUGE_WINDOW_SIZE;
-const int32_t kSpdyStreamMaxRecvWindowSize = 6 * 1024 * 1024;    //  6 MB
+/* this is how much we want "in flight" for a stream */
+#define H2_STREAM_WINDOW_SIZE   (10 * 1024 * 1024)
+#define HTTP2_HUGE_WINDOW_SIZE (100 * H2_STREAM_WINDOW_SIZE)
 
 // from net/spdy/spdy_session.h
 // If more than this many bytes have been read or more than that many
