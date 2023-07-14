@@ -260,6 +260,11 @@ if (ENABLE_CLANG_TIDY)
   set(ENABLE_LTO OFF)
 endif()
 
+# -fsanitize-blacklist doesn't work with lto
+if (ASAN OR TSAN OR UBSAN OR MSAN)
+  set(ENABLE_LTO OFF)
+endif()
+
 if (USE_MOLD)
   set(USE_LLD OFF)
   set(USE_GOLD OFF)
