@@ -59,8 +59,9 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 1. Download the package (and install if it is a installer) and run YASS.
 It is a GUI application, for a quick start we can pick from here:
 
-- Windows XP or later ([Setup installer](https://github.com/Chilledheart/yass/releases/download/1.3.7/yass-winxp-release-x86-static-1.3.7-installer.exe))
-- Linux (Ubuntu 16.04 or CentOS 7 at least) ([DEB](https://github.com/Chilledheart/yass/releases/download/1.3.7/yass-ubuntu-16.04-xenial_amd64.1.3.7.deb)/[RPM](https://github.com/Chilledheart/yass/releases/download/1.3.7/yass-centos-7.el7.x86_64.1.3.7.rpm))
+- Windows XP SP3 or later ([Setup installer](https://github.com/Chilledheart/yass/releases/download/1.3.7/yass-winxp-release-x86-static-1.3.7-installer.exe))
+- Ubuntu 16.04 or later ([DEB](https://github.com/Chilledheart/yass/releases/download/1.3.7/yass-ubuntu-16.04-xenial_amd64.1.3.7.deb))
+- CentOS 7 or later ([RPM](https://github.com/Chilledheart/yass/releases/download/1.3.7/yass-centos-7.el7.x86_64.1.3.7.rpm))
 - macOS 10.14 or later ([DMG image](https://github.com/Chilledheart/yass/releases/download/1.3.7/yass-macos-release-universal-1.3.7.dmg))
 
 > Visit the [release page](https://github.com/Chilledheart/yass/releases/tag/1.3.7) for other flavours such as tarball
@@ -124,7 +125,7 @@ Server-side features compared with caddy+forwardproxy
 ## Supported Operating System
 - macOS (Mac OS X 10.14 or later, macOS 11.0 or later, Apple Silicon supported)
 - Linux (CentOS 7 or later, Debian 8 or later, Ubuntu 14.04 or later)
-- Windows (Windows 8.1 or later, Windows XP/Windows 7 binaries also provided)
+- Windows (Windows 8.1 or later, Windows XP SP3/Windows 7 binaries also provided)
 
 ### Screenshot on HTTP2 support
 <img width="484" alt="snapshot-http2" src="https://github.com/Chilledheart/yass/assets/54673341/99db123b-6d8a-418f-b1ea-8a2844702348">
