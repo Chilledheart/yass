@@ -65,6 +65,7 @@ int main(int argc, const char* argv[]) {
   config::ReadConfigFileOption(argc, argv);
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
+  IoQueue::set_allow_merge(absl::GetFlag(FLAGS_io_queue_allow_merge));
 
   LOG(WARNING) << "Application starting: " << YASS_APP_TAG;
 

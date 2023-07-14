@@ -16,6 +16,7 @@
 #include <locale.h>
 
 #include "core/debug.hpp"
+#include "core/io_queue.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
@@ -91,6 +92,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   config::ReadConfigFileOption(argc, &argv[0]);
   config::ReadConfig();
   absl::ParseCommandLine(argv.size(), const_cast<char**>(&argv[0]));
+  IoQueue::set_allow_merge(absl::GetFlag(FLAGS_io_queue_allow_merge));
 
   // TODO: transfer OutputDebugString to internal logging
 

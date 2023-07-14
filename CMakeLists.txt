@@ -260,6 +260,11 @@ if (ENABLE_CLANG_TIDY)
   set(ENABLE_LTO OFF)
 endif()
 
+# -fsanitize-blacklist doesn't work with lto
+if (ASAN OR TSAN OR UBSAN OR MSAN)
+  set(ENABLE_LTO OFF)
+endif()
+
 if (USE_MOLD)
   set(USE_LLD OFF)
   set(USE_GOLD OFF)
@@ -1366,6 +1371,11 @@ if (WIN32)
   endif()
 endif()
 
+# On windows preload settings
+if (WIN32)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/platforms/WindowsCache.cmake)
+endif()
+
 # *****************************************************************************************
 #           Libc++ Library
 # *****************************************************************************************
@@ -1734,6 +1744,11 @@ endforeach()
 set_target_properties(bssl PROPERTIES EXCLUDE_FROM_ALL TRUE)
 set_target_properties(decrepit PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
+if (MSAN)
+  target_compile_options(crypto PRIVATE "-fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
+  target_compile_options(ssl PRIVATE "-fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
+endif()
+
 # *****************************************************************************************
 #           asio Library
 # *****************************************************************************************
@@ -1966,6 +1981,9 @@ if (USE_CARES)
   if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(SUPPORT_LIBS resolv ${SUPPORT_LIBS})
   endif()
+  if (MSAN)
+    target_compile_options(c-ares PRIVATE "-fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
+  endif()
 endif()
 
 # *****************************************************************************************
@@ -1993,6 +2011,9 @@ if (USE_NGHTTP2)
     target_compile_options(nghttp2_static PRIVATE -Wno-shorten-64-to-32)
     target_compile_options(nghttp2_static PRIVATE -Wno-extra-semi-stmt)
     target_compile_options(nghttp2_static PRIVATE -Wno-covered-switch-default)
+  endif()
+  if (MSAN)
+    target_compile_options(nghttp2_static PRIVATE "-fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
   endif()
 endif()
 
@@ -2368,6 +2389,7 @@ set(files
     src/core/atl_throw.cpp
     src/core/thread_collision_warner.hpp
     src/core/thread_collision_warner.cpp
+    src/core/io_queue.cpp
     src/crypto/aead_base_decrypter.cpp
     src/crypto/aead_base_encrypter.cpp
     src/crypto/aead_evp_decrypter.cpp
@@ -2466,6 +2488,7 @@ set(hfiles
     src/core/token.hpp
     src/core/atl_throw.hpp
     src/core/atl.hpp
+    src/core/io_queue.hpp
     src/crypto/aead_base_decrypter.hpp
     src/crypto/aead_base_encrypter.hpp
     src/crypto/aead_evp_decrypter.hpp

@@ -16,6 +16,7 @@
 #include <locale.h>
 #include <stdarg.h>
 
+#include "core/io_queue.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "core/cxx17_backports.hpp"
@@ -146,6 +147,7 @@ int main(int argc, const char** argv) {
   config::ReadConfigFileOption(argc, argv);
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
+  IoQueue::set_allow_merge(absl::GetFlag(FLAGS_io_queue_allow_merge));
 
 #if !GLIB_CHECK_VERSION(2, 35, 0)
   // GLib type system initialization. It's unclear if it's still required for
@@ -170,6 +172,9 @@ YASSApp::YASSApp()
   g_set_application_name(kAppName);
 
   auto idle = [](gpointer user_data) -> gboolean {
+    if (!mApp) {
+      return G_SOURCE_REMOVE;
+    }
     mApp->OnIdle();
     return G_SOURCE_CONTINUE;
   };
@@ -230,6 +235,10 @@ int YASSApp::ApplicationRun(int argc, char** argv) {
 }
 
 void YASSApp::Exit() {
+  if (!mApp) {
+    return;
+  }
+  mApp = nullptr;
   g_source_destroy(idle_source_);
   g_application_quit(G_APPLICATION(impl_));
 }

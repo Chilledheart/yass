@@ -11,6 +11,10 @@
 class IoQueue {
   using T = std::shared_ptr<IOBuf>;
   using PooledT = std::vector<T>;
+
+ private:
+  static bool g_allow_merge_;
+
  public:
   IoQueue() {}
   IoQueue(const IoQueue&) = default;
@@ -26,9 +30,24 @@ class IoQueue {
     CHECK_NE(end_idx_, idx_) << "IO queue is full";
   }
 
+  void push_back(const char* data, size_t length, PooledT *pool) {
+    std::shared_ptr<IOBuf> buf;
+    if (pool && !pool->empty()) {
+      buf = pool->back();
+      pool->pop_back();
+      buf->clear();
+      buf->reserve(0, length);
+      memcpy(buf->mutable_tail(), data, length);
+      buf->append(length);
+    } else {
+      buf = IOBuf::copyBuffer(data, length);
+    }
+    push_back(buf);
+  }
+
   bool push_back_merged(T buf, PooledT *pool) {
     DCHECK(!buf->empty());
-    if (empty()) {
+    if (!g_allow_merge_ || empty() || (this->length() == 1 && dirty_front_)) {
       push_back(buf);
       return false;
     }
@@ -44,19 +63,9 @@ class IoQueue {
 
   void push_back_merged(const char* data, size_t length, PooledT *pool) {
     DCHECK(data && length);
-    if (empty()) {
-      std::shared_ptr<IOBuf> buf;
-      if (pool && !pool->empty()) {
-        buf = pool->back();
-        pool->pop_back();
-        buf->clear();
-        buf->reserve(0, length);
-        memcpy(buf->mutable_tail(), data, length);
-        buf->append(length);
-      } else {
-        buf = IOBuf::copyBuffer(data, length);
-      }
-      push_back(buf);
+    // if empty or the only buffer is dirty
+    if (!g_allow_merge_ || empty() || (this->length() == 1 && dirty_front_)) {
+      push_back(data, length, pool);
       return;
     }
     auto prev_buf = queue_[(end_idx_ + queue_.size() - 1) % queue_.size()];
@@ -67,11 +76,13 @@ class IoQueue {
 
   T front() {
     DCHECK(!empty());
+    dirty_front_ = true;
     return queue_[idx_];
   }
 
   void pop_front() {
     DCHECK(!empty());
+    dirty_front_ = false;
     queue_[idx_] = nullptr;
     idx_ = (idx_ + 1) % queue_.size();
   }
@@ -95,10 +106,16 @@ class IoQueue {
     return ret;
   }
 
+ public:
+  static void set_allow_merge(bool on) {
+    g_allow_merge_ = on;
+  }
+
  private:
   int idx_ = 0;
   int end_idx_ = 0;
   std::array<T, 4096> queue_;
+  bool dirty_front_ = false;
 };
 
 #endif // CORE_IO_QUEUE_HPP

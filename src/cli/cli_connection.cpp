@@ -129,6 +129,7 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
   chunks_.front()->trimStart(payload_length);
 
   if (chunks_.front()->empty()) {
+    connection_->upstream_pool_.push_back(chunks_.front());
     chunks_.pop_front();
   }
 
@@ -219,7 +220,6 @@ void CliConnection::SendIfNotProcessing() {
 // cipher_visitor_interface
 //
 bool CliConnection::on_received_data(std::shared_ptr<IOBuf> buf) {
-  MSAN_CHECK_MEM_IS_INITIALIZED(buf->data(), buf->length());
   downstream_.push_back_merged(buf, &downstream_pool_);
   return true;
 }
@@ -235,8 +235,7 @@ void CliConnection::on_protocol_error() {
 //
 
 int64_t CliConnection::OnReadyToSend(absl::string_view serialized) {
-  MSAN_UNPOISON(serialized.data(), serialized.size());
-  upstream_.push_back(IOBuf::copyBuffer(serialized.data(), serialized.size()));
+  upstream_.push_back_merged(serialized.data(), serialized.size(), &upstream_pool_);
   return serialized.size();
 }
 
@@ -976,7 +975,7 @@ try_again:
     }
     downstream_pool_.push_back(buf);
     // not enough buffer for recv window
-    if (downstream_.byte_length() < kSpdySessionMaxRecvWindowSize) {
+    if (downstream_.byte_length() < H2_STREAM_WINDOW_SIZE) {
       goto try_again;
     }
   } else if (upstream_https_fallback_) {
@@ -1091,6 +1090,7 @@ void CliConnection::WriteUpstreamInPipe() {
     // continue to resume
     if (buf->empty()) {
       DCHECK(!upstream_.empty() && upstream_.front() == buf);
+      upstream_pool_.push_back(buf);
       upstream_.pop_front();
     }
     if (ec) {
@@ -1142,10 +1142,18 @@ std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code &ec,
     return nullptr;
   }
 
-  std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
+  std::shared_ptr<IOBuf> buf;
+  if (LIKELY(!upstream_pool_.empty())) {
+    buf = upstream_pool_.back();
+    upstream_pool_.pop_back();
+    buf->clear();
+    buf->reserve(0, SOCKET_BUF_SIZE);
+  } else {
+    buf = IOBuf::create(SOCKET_BUF_SIZE);
+  }
   size_t read;
   do {
-    read = socket_.read_some(tail_buffer(*buf), ec);
+    read = socket_.read_some(tail_buffer(*buf, SOCKET_BUF_SIZE), ec);
     if (ec == asio::error::interrupted) {
       continue;
     }
@@ -1184,9 +1192,10 @@ std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code &ec,
     }
     data_frame_->AddChunk(buf);
   } else if (upstream_https_fallback_) {
-    upstream_.push_back(buf);
+    upstream_.push_back_merged(buf, &upstream_pool_);
   } else {
     EncryptData(&upstream_, buf);
+    upstream_pool_.push_back(buf);
   }
 
 out:
@@ -1459,9 +1468,10 @@ void CliConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
     adapter()->ResumeStream(stream_id_);
     SendIfNotProcessing();
   } else if (upstream_https_fallback_) {
-    upstream_.push_back(buf);
+    upstream_.push_back_merged(buf, &upstream_pool_);
   } else {
     EncryptData(&upstream_, buf);
+    upstream_pool_.push_back(buf);
   }
   OnUpstreamWriteFlush();
 }
@@ -1525,7 +1535,7 @@ void CliConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf && !buf->empty()) {
     VLOG(2) << "Connection (client) " << connection_id()
             << " upstream: ready to send request: " << buf->length() << " bytes.";
-    upstream_.push_back(buf);
+    upstream_.push_back_merged(buf, &upstream_pool_);
   }
   if (!upstream_.empty() && upstream_writable_) {
     upstream_writable_ = false;
@@ -1587,7 +1597,7 @@ void CliConnection::connected() {
       { http2::adapter::Http2KnownSettingsId::MAX_CONCURRENT_STREAMS,
         kSpdyMaxConcurrentPushedStreams },
       { http2::adapter::Http2KnownSettingsId::INITIAL_WINDOW_SIZE,
-        kSpdyStreamMaxRecvWindowSize },
+        H2_STREAM_WINDOW_SIZE },
       { http2::adapter::Http2KnownSettingsId::MAX_HEADER_LIST_SIZE,
         kSpdyMaxHeaderListSize },
       { http2::adapter::Http2KnownSettingsId::ENABLE_PUSH,
@@ -1667,14 +1677,14 @@ void CliConnection::connected() {
         "Host: %s\r\n"
         "Proxy-Connection: Keep-Alive\r\n"
         "\r\n", hostname_and_port.c_str(), hostname_and_port.c_str());
-    std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(hdr.data(), hdr.size());
     // write variable address directly as https header
-    upstream_.push_back(buf);
+    upstream_.push_back_merged(hdr.data(), hdr.size(), &upstream_pool_);
   } else {
     ByteRange req(ss_request_->data(), ss_request_->length());
     std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);
     // write variable address directly as ss header
     EncryptData(&upstream_, buf);
+    upstream_pool_.push_back(buf);
   }
 
   // Re-process the read data in pending
@@ -1761,7 +1771,6 @@ void CliConnection::EncryptData(IoQueue* queue,
     encoder_->encrypt(plaintext->data() + plaintext_offset, plaintext_size, cipherbuf);
     plaintext_offset += plaintext_size;
   }
-  MSAN_CHECK_MEM_IS_INITIALIZED(cipherbuf->data(), cipherbuf->length());
 }
 
 } // namespace cli
