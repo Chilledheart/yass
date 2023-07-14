@@ -1371,6 +1371,11 @@ if (WIN32)
   endif()
 endif()
 
+# On windows preload settings
+if (WIN32)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/platforms/WindowsCache.cmake)
+endif()
+
 # *****************************************************************************************
 #           Libc++ Library
 # *****************************************************************************************
