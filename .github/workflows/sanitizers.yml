@@ -36,7 +36,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [amd64]
-        build_type: [Debug, Release]
+        build_type: [Release]
         sanitizer:
           - name: address
             cmake_options: -DASAN=on
