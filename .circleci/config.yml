@@ -14,6 +14,13 @@ commands:
     steps:
       - run:
           command: |
+            ./scripts/download-clang-prebuilt-binaries.py
+            rm -f third_party/llvm-build/Release+Asserts/*.tgz
+
+  download-toolchain-clang:
+    steps:
+      - run:
+          command: |
             curl -L -O https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
             tar -C third_party -xvf clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz \
               clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/lib/clang/12.0.1/include \
@@ -71,26 +78,6 @@ commands:
             cd build
             cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DUSE_LIBCXX=off ..
 
-  configure-without-curl:
-    steps:
-      - run:
-          command: |
-            export "CC=$PWD/third_party/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/clang"
-            export "CXX=$PWD/third_party/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/clang++"
-            mkdir build
-            cd build
-            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DUSE_CURL=off ..
-
-  configure-without-nghttp2:
-    steps:
-      - run:
-          command: |
-            export "CC=$PWD/third_party/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/clang"
-            export "CXX=$PWD/third_party/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/clang++"
-            mkdir build
-            cd build
-            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DUSE_NGHTTP2=off ..
-
   configure-arm:
     steps:
       - run:
@@ -101,6 +88,46 @@ commands:
             cd build
             cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release ..
 
+  configure-asan:
+    steps:
+      - run:
+          command: |
+            export "CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang"
+            export "CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++"
+            mkdir build
+            cd build
+            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DASAN=on ..
+
+  configure-ubsan:
+    steps:
+      - run:
+          command: |
+            export "CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang"
+            export "CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++"
+            mkdir build
+            cd build
+            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DUBSAN=on -DUSE_LIBCXX=off ..
+
+  configure-tsan:
+    steps:
+      - run:
+          command: |
+            export "CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang"
+            export "CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++"
+            mkdir build
+            cd build
+            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DTSAN=on ..
+
+  configure-msan:
+    steps:
+      - run:
+          command: |
+            export "CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang"
+            export "CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++"
+            mkdir build
+            cd build
+            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DMSAN=on -DUSE_CURL=off ..
+
   build:
     steps:
       - run:
@@ -109,7 +136,13 @@ commands:
 
   test:
     steps:
-      - run: ninja -C build check
+      - run:
+          command: |
+            ./build/yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=5 --gtest_throw_on_failure
+            # FIXME somehow the container DNS resolves localhost to 127.0.0.1
+            # not ::1
+            #./build/yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=5 --gtest_throw_on_failure --ipv6_mode
+
 
 executors:
   ubuntu:
@@ -123,7 +156,7 @@ jobs:
       - checkout
       - update-submodule
       - install-deps
-      - download-toolchain
+      - download-toolchain-clang
       - configure
       - build
       - test
@@ -145,30 +178,8 @@ jobs:
       - checkout
       - update-submodule
       - install-deps
-      - download-toolchain
+      - download-toolchain-clang
       - configure-without-libcxx
-      - build
-      - test
-
-  basic-without-curl:
-    executor: ubuntu
-    steps:
-      - checkout
-      - update-submodule
-      - install-deps
-      - download-toolchain
-      - configure-without-curl
-      - build
-      - test
-
-  basic-without-nghttp2:
-    executor: ubuntu
-    steps:
-      - checkout
-      - update-submodule
-      - install-deps
-      - download-toolchain
-      - configure-without-nghttp2
       - build
       - test
 
@@ -185,6 +196,50 @@ jobs:
       - build
       - test
 
+  basic-asan:
+    executor: ubuntu
+    steps:
+      - checkout
+      - update-submodule
+      - install-deps
+      - download-toolchain
+      - configure-asan
+      - build
+      - test
+
+  basic-ubsan:
+    executor: ubuntu
+    steps:
+      - checkout
+      - update-submodule
+      - install-deps
+      - download-toolchain
+      - configure-ubsan
+      - build
+      - test
+
+  basic-tsan:
+    executor: ubuntu
+    steps:
+      - checkout
+      - update-submodule
+      - install-deps
+      - download-toolchain
+      - configure-tsan
+      - build
+      - test
+
+  basic-msan:
+    executor: ubuntu
+    steps:
+      - checkout
+      - update-submodule
+      - install-deps
+      - download-toolchain
+      - configure-msan
+      - build
+      - test
+
 workflows:
   x64-basic:
     jobs:
@@ -198,14 +253,22 @@ workflows:
     jobs:
       - basic-without-libcxx
 
-  x64-basic-without-curl:
-    jobs:
-      - basic-without-curl
-
-  x64-basic-without-nghttp2:
-    jobs:
-      - basic-without-nghttp2
-
   arm-basic:
     jobs:
       - basic
+
+  x64-asan:
+    jobs:
+      - basic-asan
+
+  x64-ubsan:
+    jobs:
+      - basic-ubsan
+
+  x64-tsan:
+    jobs:
+      - basic-tsan
+
+  x64-msan:
+    jobs:
+      - basic-msan
