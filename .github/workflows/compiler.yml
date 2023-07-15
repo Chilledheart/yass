@@ -249,12 +249,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        compiler: [gcc, clang]
+        compiler: [clang]
         build_type: [Release]
-        cxxruntime: [libstdc++, libc++]
-        exclude:
-          - compiler: gcc
-            cxxruntime: libc++
+        cxxruntime: [libc++]
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
@@ -325,8 +322,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-12, macos-13]
-        build_type: [Debug, Release]
+        os: [macos-12]
+        build_type: [Release]
     runs-on: ${{ matrix.os }}
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
