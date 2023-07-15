@@ -228,7 +228,7 @@ ninja yass
 It is impossible to upgrade system compiler without upgrading OS,
 so you can install latest [Clang]:
 ```
-pkg install llvm15
+pkg install llvm16-lite
 ```
 Notes: please make sure you have [Clang] (12.0 or above) and [CMake] (3.12 or above).
 
@@ -256,11 +256,12 @@ Notes: Not required since FreeBSD 13.1
 
 3. Compile the program with Release configuration.
 ```
-export CC=clang15
-export CXX=clang++15
+export PATH="/usr/local/llvm16/bin:$PATH"
+export CC=clang
+export CXX=clang++
 mkdir build
 cd build
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on -DENALBE_LLD=off ..
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
 ninja yass
 ```
 
