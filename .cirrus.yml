@@ -63,15 +63,9 @@ macos_task:
     - name: macOS x86_64 release
       env:
         configure: -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=x86_64
-    - name: macOS x86_64 debug
-      env:
-        configure: -DCMAKE_BUILD_TYPE=Debug -DCMAKE_OSX_ARCHITECTURES=x86_64
     - name: macOS arm64 release
       env:
         configure: -DCMAKE_BUILD_TYPE=Release
-    - name: macOS arm64 debug
-      env:
-        configure: -DCMAKE_BUILD_TYPE=Debug
 
   env:
     CIRRUS_CLONE_DEPTH: 10
