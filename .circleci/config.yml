@@ -14,8 +14,11 @@ commands:
     steps:
       - run:
           command: |
-            ./scripts/download-clang-prebuilt-binaries.py
-            rm -f third_party/llvm-build/Release+Asserts/*.tgz
+            curl -L -O https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
+            tar -C third_party -xvf clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz \
+              clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/lib/clang/12.0.1/include \
+              clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/{clang,clang++,clang-12,ld.lld,lld,llvm-ar,llvm-ranlib}
+            rm -f *.xz
 
   download-toolchain-arm:
     steps:
@@ -35,41 +38,51 @@ commands:
     steps:
       - run:
           command: |
-            export "CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang"
-            export "CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++"
+            export "CC=$PWD/third_party/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/clang"
+            export "CXX=$PWD/third_party/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/clang++"
             mkdir build
             cd build
-            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on ..
+            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release ..
+
+  configure-gcc:
+    steps:
+      - run:
+          command: |
+            export "CC=gcc"
+            export "CXX=g++"
+            mkdir build
+            cd build
+            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DUSE_LIBCXX=off ..
 
   configure-without-libcxx:
     steps:
       - run:
           command: |
-            export "CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang"
-            export "CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++"
+            export "CC=$PWD/third_party/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/clang"
+            export "CXX=$PWD/third_party/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/clang++"
             mkdir build
             cd build
-            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DUSE_LIBCXX=off ..
+            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DUSE_LIBCXX=off ..
 
   configure-without-curl:
     steps:
       - run:
           command: |
-            export "CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang"
-            export "CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++"
+            export "CC=$PWD/third_party/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/clang"
+            export "CXX=$PWD/third_party/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/clang++"
             mkdir build
             cd build
-            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DUSE_CURL=off ..
+            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DUSE_CURL=off ..
 
   configure-without-nghttp2:
     steps:
       - run:
           command: |
-            export "CC=$PWD/third_party/llvm-build/Release+Asserts/bin/clang"
-            export "CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++"
+            export "CC=$PWD/third_party/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/clang"
+            export "CXX=$PWD/third_party/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/clang++"
             mkdir build
             cd build
-            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DUSE_NGHTTP2=off ..
+            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DUSE_NGHTTP2=off ..
 
   configure-arm:
     steps:
@@ -79,7 +92,7 @@ commands:
             export "CXX=clang++"
             mkdir build
             cd build
-            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on ..
+            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release ..
 
   build:
     steps:
@@ -105,6 +118,17 @@ jobs:
       - install-deps
       - download-toolchain
       - configure
+      - build
+      - test
+
+  basic-gcc:
+    executor: ubuntu
+    steps:
+      - checkout
+      - update-submodule
+      - install-deps
+      - download-toolchain
+      - configure-gcc
       - build
       - test
 
@@ -158,6 +182,10 @@ workflows:
   x64-basic:
     jobs:
       - basic
+
+  x64-basic-gcc:
+    jobs:
+      - basic-gcc
 
   x64-basic-without-libcxx:
     jobs:
