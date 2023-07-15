@@ -44,3 +44,4 @@ sscxx
 /freebsd-*-tmp
 *.mo
 yass.spec
+!.circleci

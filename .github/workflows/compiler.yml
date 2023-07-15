@@ -16,89 +16,21 @@ on:
         required: false
         type: boolean
   pull_request:
+    branches: [master, develop]
+    paths-ignore:
+    - '**/*.md'
+    - '.circleci/**'
+    - '.cirrus.yml'
   push:
     branches: [master, develop]
-    paths-ignore: [README.md, BUILDING.md]
+    paths-ignore:
+    - '**/*.md'
+    - '.circleci/**'
+    - '.cirrus.yml'
 env:
   CACHE_EPOCH: 0
   GOPROXY: direct
 jobs:
-  win-compiler-compatible-2019:
-    runs-on: windows-2019
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [x64, x86]
-        crt-linkage: [static]
-        build_type: [Debug, Release]
-    env:
-      BUILD_TYPE: '${{ matrix.build_type }}'
-    defaults:
-      run:
-        shell: cmd
-    steps:
-      - uses: actions/checkout@v3
-      - name: Checkout with shallow submodules
-        run: |
-          # unshallow must come first otherwise submodule may be get unshallowed
-          git fetch --tags --unshallow
-          git submodule update --init --depth 1
-      - name: Cache clang, nasm and wixtoolset 3
-        id: clang-cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            third_party/nasm
-            third_party/llvm-build/Release+Asserts
-            third_party/wix311
-          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-          restore-keys: |
-            ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
-      - name: Cache golang
-        uses: actions/cache@v3
-        with:
-          path: |
-            %LocalAppData%\go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-      - name: Build build tool
-        run: |
-          cd tools
-          go build
-      - name: "Download dependency: clang, nasm and wixtoolset 3"
-        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
-        run: |
-          scripts\download-toolchain.bat
-      - name: Build
-        run: |
-          set VCToolsVersion=14.29
-          set Winsdk=10.0.19041.0
-          set "WindowsSDKVersion=%Winsdk%\"
-          if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
-          set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
-          set "VSCMD_START_DIR=%CD%"
-          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set Platform=${{ matrix.arch }}
-
-          set "Path=%CD%\third_party\nasm;%Path%"
-          set "Path=%CD%\third_party\wix311;%Path%"
-
-          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
-
-          tools\build -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -use-libcxx=false -build-test -no-packaging || exit /b
-
-          exit /b 0
-
-          :SetNewVCToolsVersion
-          set VCToolsVersion=
-      - name: Run tests
-        run: |
-          cd build-msvc-${{ matrix.arch }}-${{ matrix.crt-linkage }}
-          yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=25 --gtest_throw_on_failure
-          yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=25 --gtest_throw_on_failure --ipv6_mode
   win-compiler-compatible-2022:
     runs-on: windows-2022
     strategy:
@@ -241,12 +173,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        compiler: [gcc, clang]
-        build_type: [Release]
-        cxxruntime: [libstdc++, libc++]
-        exclude:
-          - compiler: gcc
-            cxxruntime: libc++
+        compiler: [clang]
+        build_type: [Debug, Release]
+        cxxruntime: [libc++]
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
@@ -317,7 +246,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-12, macos-13]
+        os: [macos-12]
         build_type: [Debug, Release]
     runs-on: ${{ matrix.os }}
     env:

@@ -15,10 +15,6 @@ on:
         description: 'Test scenario tags'
         required: false
         type: boolean
-  pull_request:
-  push:
-    branches: [master, develop]
-    paths-ignore: [README.md, BUILDING.md]
 env:
   CACHE_EPOCH: 0
   GOPROXY: direct
@@ -28,7 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [amd64]
-        build_type: [Debug, Release]
+        build_type: [Release]
         sanitizer:
           - name: address
             cmake_options: -DASAN=on
