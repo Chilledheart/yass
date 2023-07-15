@@ -7,6 +7,7 @@
 
 [![Compiler Compatibility](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml)
 [![Sanitizers](https://github.com/Chilledheart/yass/actions/workflows/sanitizers.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/sanitizers.yml)
+[![CircleCI](https://circleci.com/gh/Chilledheart/yass/tree/develop.svg?style=svg)](https://circleci.com/gh/Chilledheart/yass/?branch=develop)
 
 [![Clang Tidy Results](https://github.com/Chilledheart/yass/actions/workflows/clang-tidy.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/clang-tidy.yml)
 
