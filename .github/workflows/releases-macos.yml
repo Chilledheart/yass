@@ -16,9 +16,17 @@ on:
         required: false
         type: boolean
   pull_request:
+    branches: [master, develop]
+    paths-ignore:
+    - '**/*.md'
+    - '.circleci/**'
+    - '.cirrus.yml'
   push:
     branches: [master, develop]
-    paths-ignore: [README.md, BUILDING.md]
+    paths-ignore:
+    - '**/*.md'
+    - '.circleci/**'
+    - '.cirrus.yml'
   release:
     types: [published]
 env:
