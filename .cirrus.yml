@@ -55,11 +55,17 @@ macos_task:
     '.github/**'
     )"
 
-  name: macOS arm64
+  name: macOS x86_64 and arm64
   macos_instance:
     image: ghcr.io/cirruslabs/macos-ventura-xcode:latest
 
   matrix:
+    - name: macOS x86_64 release
+      env:
+        configure: -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=x86_64
+    - name: macOS x86_64 debug
+      env:
+        configure: -DCMAKE_BUILD_TYPE=Debug -DCMAKE_OSX_ARCHITECTURES=x86_64
     - name: macOS arm64 release
       env:
         configure: -DCMAKE_BUILD_TYPE=Release
@@ -71,6 +77,7 @@ macos_task:
     CIRRUS_CLONE_DEPTH: 10
 
   pkginstall_script:
+    - sudo /usr/sbin/softwareupdate --install-rosetta --agree-to-license
     - echo ninja cmake go p7zip ${install_packages} | xargs -Ix -n1 echo brew '"x"' > /tmp/Brewfile
     - "while [[ $? == 0 ]]; do for i in 1 2 3; do brew update && brew bundle install --no-lock --file /tmp/Brewfile && break 2 || { echo Error: wait to try again; sleep 10; } done; false Too many retries; done"
   submodules_script:
