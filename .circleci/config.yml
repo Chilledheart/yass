@@ -20,6 +20,13 @@ commands:
               clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/{clang,clang++,clang-12,ld.lld,lld,llvm-ar,llvm-ranlib}
             rm -f *.xz
 
+  download-toolchain-gcc:
+    steps:
+      - run:
+          command: |
+            sudo apt-get update -qq
+            sudo apt-get install -y build-essential
+
   download-toolchain-arm:
     steps:
       - run:
@@ -127,7 +134,7 @@ jobs:
       - checkout
       - update-submodule
       - install-deps
-      - download-toolchain
+      - download-toolchain-gcc
       - configure-gcc
       - build
       - test
