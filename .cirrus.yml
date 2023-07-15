@@ -25,7 +25,7 @@ freebsd_task:
 
   pkginstall_script:
     - pkg update -f
-    - pkg install -y cmake ninja pkgconf perl5 gettext gtk3 go llvm16-lite git
+    - pkg install -y cmake ninja pkgconf perl5 go llvm16-lite git
     - ln -sf /usr/include/c++/v1/unwind.h /usr/include/unwind.h
     - ln -sf /usr/include/c++/v1/unwind-arm.h /usr/include/unwind-arm.h
     - ln -sf /usr/include/c++/v1/unwind-itanium.h /usr/include/unwind-itanium.h
@@ -39,9 +39,9 @@ freebsd_task:
     - export CXX=clang++
     - mkdir build
     - cd build
-    - cmake -G Ninja -DGUI=on -DBUILD_TESTS=on ${configure} ..
+    - cmake -G Ninja -DBUILD_TESTS=on ${configure} ..
   compile_script:
-    - ninja -C build yass yass_test
+    - ninja -C build yass_cli yass_server yass_test
   test_script:
     # blackhole?
     - sysctl net.inet.tcp.blackhole
