@@ -108,6 +108,8 @@ embedded devices and low end boxes.
 %{_bindir}/yass_cli
 
 %changelog
+* Sun Jul 16 2023 Chilledheart <hukeyue@hotmail.com> - 1.3.8-1
+  - CVE/http: Fix memory leak in nghttp2 codec.
 * Thu Jul 13 2023 Chilledheart <hukeyue@hotmail.com> - 1.3.7-1
   - More complete IPv6 support.
 * Tue Jul 4 2023 Chilledheart <hukeyue@hotmail.com> - 1.3.6-1
