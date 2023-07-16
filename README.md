@@ -3,7 +3,7 @@
 [![License][license-svg]][license-link]
 [![GitHub all downloads](https://img.shields.io/github/downloads/Chilledheart/yass/total)](https://github.com/Chilledheart/yass/releases)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Chilledheart/yass)](https://github.com/Chilledheart/yass/releases)
-[![GitHub latest downloads](https://img.shields.io/github/downloads/Chilledheart/yass/1.3.7/total)](https://github.com/Chilledheart/yass/releases/tag/1.3.7)
+[![GitHub latest downloads](https://img.shields.io/github/downloads/Chilledheart/yass/1.3.8/total)](https://github.com/Chilledheart/yass/releases/tag/1.3.8)
 
 [![Compiler Compatibility](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml)
 [![CircleCI](https://img.shields.io/circleci/build/github/Chilledheart/yass/develop?logo=circleci&&label=Sanitizers%20and%20Ubuntu%20arm)](https://circleci.com/gh/Chilledheart/yass/?branch=develop)
@@ -58,12 +58,12 @@ Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
 1. Download the package (and install if it is a installer) and run YASS.
 It is a GUI application, for a quick start we can pick from here:
 
-- Windows XP SP3 or later ([Setup installer](https://github.com/Chilledheart/yass/releases/download/1.3.7/yass-winxp-release-x86-static-1.3.7-installer.exe))
-- Ubuntu 16.04 or later ([DEB](https://github.com/Chilledheart/yass/releases/download/1.3.7/yass-ubuntu-16.04-xenial_amd64.1.3.7.deb))
-- CentOS 7 or later ([RPM](https://github.com/Chilledheart/yass/releases/download/1.3.7/yass-centos-7.el7.x86_64.1.3.7.rpm))
-- macOS 10.14 or later ([DMG image](https://github.com/Chilledheart/yass/releases/download/1.3.7/yass-macos-release-universal-1.3.7.dmg))
+- Windows XP SP3 or later ([Setup installer](https://github.com/Chilledheart/yass/releases/download/1.3.8/yass-winxp-release-x86-static-1.3.8-installer.exe))
+- Ubuntu 16.04 or later ([DEB](https://github.com/Chilledheart/yass/releases/download/1.3.8/yass-ubuntu-16.04-xenial_amd64.1.3.8.deb))
+- CentOS 7 or later ([RPM](https://github.com/Chilledheart/yass/releases/download/1.3.8/yass-centos-7.el7.x86_64.1.3.8.rpm))
+- macOS 10.14 or later ([DMG image](https://github.com/Chilledheart/yass/releases/download/1.3.8/yass-macos-release-universal-1.3.8.dmg))
 
-> Visit the [release page](https://github.com/Chilledheart/yass/releases/tag/1.3.7) for other flavours such as tarball
+> Visit the [release page](https://github.com/Chilledheart/yass/releases/tag/1.3.8) for other flavours such as tarball
 downloads or packages running on aarch64/arm64 hardware.
 
 2. In YASS windows, please feed in Server's Host (domain name), Server Port,
