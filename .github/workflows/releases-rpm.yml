@@ -206,4 +206,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload ${{ github.event.release.tag_name }} yass*.tgz
+      - name: Cleanup before Cache callbacks
+        run: |
+          rm -rf build-*
 
