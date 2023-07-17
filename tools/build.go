@@ -57,6 +57,7 @@ var msvcAllowXpFlag bool
 var freebsdAbiFlag int
 
 var systemNameFlag string
+var subSystemNameFlag string
 var sysrootFlag string
 var archFlag string
 
@@ -131,6 +132,7 @@ func InitFlag() {
 	flag.IntVar(&freebsdAbiFlag, "freebsd-abi", getFreebsdABI(11), "Select FreeBSD ABI")
 
 	flag.StringVar(&systemNameFlag, "system", runtime.GOOS, "Specify host system name")
+	flag.StringVar(&subSystemNameFlag, "subsystem", "", "Specify host subsystem name")
 	flag.StringVar(&sysrootFlag, "sysroot", "", "Specify host sysroot, used in cross-compiling")
 	flag.StringVar(&archFlag, "arch", runtime.GOARCH, "Specify host architecture")
 
@@ -192,6 +194,9 @@ func prebuildFindSourceDirectory() {
 			arch = "universal"
 		}
 		buildDir = fmt.Sprintf("build-%s-%s", systemNameFlag, arch)
+		if subSystemNameFlag != "" {
+			buildDir = fmt.Sprintf("build-%s-%s-%s", systemNameFlag, subSystemNameFlag, arch)
+		}
 	}
 	buildDir, err = filepath.Abs(buildDir)
 	if err != nil {
@@ -1005,6 +1010,9 @@ func postStateArchives() map[string][]string {
 		archiveFormat = fmt.Sprintf("%%s-%s%d-release-%s-%s%%s%%s", systemNameFlag, freebsdAbiFlag, archFlag, tag)
 	} else {
 		archiveFormat = fmt.Sprintf("%%s-%s-release-%s-%s%%s%%s", systemNameFlag, archFlag, tag)
+		if subSystemNameFlag != "" {
+			archiveFormat = fmt.Sprintf("%%s-%s-%s-release-%s-%s%%s%%s", systemNameFlag, subSystemNameFlag, archFlag, tag)
+		}
 	}
 
 	ext := ".zip"

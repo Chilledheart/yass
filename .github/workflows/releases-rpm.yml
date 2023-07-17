@@ -40,6 +40,7 @@ jobs:
         container:
         - 'centos7'
         - 'fedora37'
+        - 'alpine318'
         # - 'centos8'
         # - 'centos9'
     runs-on: ubuntu-22.04
@@ -155,3 +156,51 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload --clobber ${{ github.event.release.tag_name }} yass*.rpm
+  musl-release:
+    strategy:
+      fail-fast: false
+      matrix:
+        container:
+        - 'alpine318'
+    runs-on: ubuntu-22.04
+    needs: docker_publish
+    container:
+      image: 'ghcr.io/chilledheart/${{ matrix.container }}'
+    env:
+      DISTRO: ${{ matrix.container }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Checkout with shallow submodules
+        run: |
+          # ignore annoying failures
+          git config --global --add safe.directory "$PWD"
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
+      - name: Cache golang
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-docker-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-docker-
+      - name: Build build tool
+        run: |
+          cd tools
+          go build
+      - name: Build TGZ packages
+        run: |
+          ./tools/build --arch amd64 --system linux --subsystem musl -build-benchmark -build-test -use-libcxx=false
+      - name: Run tests (amd64)
+        run: |
+          ./build-linux-musl-amd64/yass_test
+          ./build-linux-musl-amd64/yass_benchmark
+      - name: Upload dist tarball (including debuginfo)
+        if: ${{ github.event_name == 'release' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} yass*.tgz
+
