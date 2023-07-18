@@ -18,7 +18,7 @@
 
 #ifdef HAVE_CURL
 #include <curl/curl.h>
-ABSL_FLAG(std::string, proxy_type, "http", "proxy type, available: socks4, socks4a, socks5, http");
+ABSL_FLAG(std::string, proxy_type, "http", "proxy type, available: socks4, socks4a, socks5, socks5h, http");
 #endif
 
 #include "cli/cli_server.hpp"
@@ -406,7 +406,11 @@ class SsEndToEndTest : public ::testing::Test {
     } else if (absl::GetFlag(FLAGS_proxy_type) == "socks5") {
       std::string proxy_url = "socks5://localhost:" + std::to_string(local_endpoint_.port());
       curl_easy_setopt(curl, CURLOPT_PROXY, proxy_url.c_str());
-      curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5);
+      curl_easy_setopt(curl, CURLOPT_PROXYTYPE, (long)CURLPROXY_SOCKS5);
+    } else if (absl::GetFlag(FLAGS_proxy_type) == "socks5h") {
+      std::string proxy_url = "socks5h://localhost:" + std::to_string(local_endpoint_.port());
+      curl_easy_setopt(curl, CURLOPT_PROXY, proxy_url.c_str());
+      curl_easy_setopt(curl, CURLOPT_PROXYTYPE, (long)CURLPROXY_SOCKS5_HOSTNAME);
     } else if (absl::GetFlag(FLAGS_proxy_type) == "http") {
       std::string proxy_url = "http://localhost:" + std::to_string(local_endpoint_.port());
       curl_easy_setopt(curl, CURLOPT_PROXY, proxy_url.c_str());
