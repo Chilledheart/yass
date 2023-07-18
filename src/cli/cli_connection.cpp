@@ -1259,23 +1259,9 @@ asio::error_code CliConnection::PerformCmdOpsV4(
 
   switch (request->command()) {
     case socks4::cmd_connect: {
-      asio::ip::tcp::endpoint endpoint;
-
-      if (request->is_socks4a()) {
-        // TBD
-        LOG(WARNING) << "Connection (client) " << connection_id()
-                     << " not supported protocol socks4a";
-        ec = asio::error::invalid_argument;
-      }
-      endpoint = asio::ip::tcp::endpoint(asio::ip::tcp::v4(), 0);
-
-      if (ec) {
-        reply->mutable_status() = socks4::reply::request_failed;
-      } else {
-        reply->set_endpoint(endpoint);
-        // reply->set_loopback();
-        reply->mutable_status() = socks4::reply::request_granted;
-      }
+      asio::ip::tcp::endpoint endpoint{asio::ip::tcp::v4(), 0};
+      reply->set_endpoint(endpoint);
+      reply->mutable_status() = socks4::reply::request_granted;
 
       if (request->is_socks4a()) {
         OnCmdConnect(request->domain_name(), request->port());
@@ -1328,7 +1314,7 @@ void CliConnection::ProcessReceivedData(
         ec = PerformCmdOpsV5(&s5_request_, &s5_reply_);
         WriteHandshake();
         VLOG(2) << "Connection (client) " << connection_id()
-                << " socks5 handshake finished";
+                << " socks5 handshake finished: ec: " << ec;
         if (CurrentState() == state_stream) {
           goto handle_stream;
         }
@@ -1337,7 +1323,7 @@ void CliConnection::ProcessReceivedData(
         ec = PerformCmdOpsV4(&s4_request_, &s4_reply_);
         WriteHandshake();
         VLOG(2) << "Connection (client) " << connection_id()
-                << " socks4 handshake finished";
+                << " socks4 handshake finished: ec:" << ec;
         if (CurrentState() == state_stream) {
           goto handle_stream;
         }
@@ -1346,7 +1332,7 @@ void CliConnection::ProcessReceivedData(
         ec = PerformCmdOpsHttp();
         WriteHandshake();
         VLOG(2) << "Connection (client) " << connection_id()
-                << " http handshake finished";
+                << " http handshake finished: ec: " << ec;
         if (CurrentState() == state_stream) {
           goto handle_stream;
         }
