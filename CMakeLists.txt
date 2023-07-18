@@ -3001,7 +3001,9 @@ if (BUILD_TESTS)
   add_custom_target(check
     COMMAND ${CMAKE_CURRENT_BINARY_DIR}/yass_test
     DEPENDS yass_test
-    COMMENT "yass unittests")
+    COMMENT "yass unittests"
+    USES_TERMINAL
+  )
 
   if (USE_CURL)
     find_package(PkgConfig)

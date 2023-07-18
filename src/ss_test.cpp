@@ -18,6 +18,7 @@
 
 #ifdef HAVE_CURL
 #include <curl/curl.h>
+ABSL_FLAG(std::string, proxy_type, "http", "proxy type, available: socks4, socks4a, socks5, socks5h, http");
 #endif
 
 #include "cli/cli_server.hpp"
@@ -381,14 +382,34 @@ class SsEndToEndTest : public ::testing::Test {
     curl = curl_easy_init();
     ASSERT_TRUE(curl) << "curl initial failure";
     std::string url = "http://localhost:" + std::to_string(content_provider_endpoint_.port());
-    std::string proxy_url = "http://localhost:" + std::to_string(local_endpoint_.port());
+    // TODO A bug inside curl that it doesn't respect IPRESOLVE_V6
+    // https://github.com/curl/curl/issues/11458
+    if (absl::GetFlag(FLAGS_ipv6_mode) &&
+        absl::GetFlag(FLAGS_proxy_type) == "socks5") {
+      url = "http://[::1]:" + std::to_string(content_provider_endpoint_.port());
+    }
     if (VLOG_IS_ON(1)) {
       curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
     }
     curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errbuf);
+    const long ip_version = absl::GetFlag(FLAGS_ipv6_mode) ? CURL_IPRESOLVE_V6 : CURL_IPRESOLVE_V4;
+    curl_easy_setopt(curl, CURLOPT_IPRESOLVE, ip_version);
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+    std::string proxy_url = "localhost:" + std::to_string(local_endpoint_.port());
     curl_easy_setopt(curl, CURLOPT_PROXY, proxy_url.c_str());
-    curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
+    if (absl::GetFlag(FLAGS_proxy_type) == "socks4") {
+      curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS4);
+    } else if (absl::GetFlag(FLAGS_proxy_type) == "socks4a") {
+      curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS4A);
+    } else if (absl::GetFlag(FLAGS_proxy_type) == "socks5") {
+      curl_easy_setopt(curl, CURLOPT_PROXYTYPE, (long)CURLPROXY_SOCKS5);
+    } else if (absl::GetFlag(FLAGS_proxy_type) == "socks5h") {
+      curl_easy_setopt(curl, CURLOPT_PROXYTYPE, (long)CURLPROXY_SOCKS5_HOSTNAME);
+    } else if (absl::GetFlag(FLAGS_proxy_type) == "http") {
+      curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
+    } else {
+      LOG(FATAL) << "Invalid proxy type: " << absl::GetFlag(FLAGS_proxy_type);
+    }
     curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
     /* we want to use our own read function */
     curl_read_callback r_callback = [](char *buffer, size_t size, size_t nmemb, void *clientp) -> size_t {

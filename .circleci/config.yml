@@ -139,9 +139,11 @@ commands:
       - run:
           command: |
             ./build/yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=5 --gtest_throw_on_failure
-            # FIXME somehow the container DNS resolves localhost to 127.0.0.1
-            # not ::1
-            #./build/yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=5 --gtest_throw_on_failure --ipv6_mode
+            # somehow inside the container DNS hosts file resolves localhost to 127.0.0.1 only not ::1
+            # due to the incompleteness
+            grep localhost /etc/hosts
+            sudo sed -i s/ip6-localhost/localhost/g /etc/hosts
+            ./build/yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=5 --gtest_throw_on_failure --ipv6_mode
 
 
 executors:
