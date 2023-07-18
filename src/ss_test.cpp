@@ -391,7 +391,7 @@ class SsEndToEndTest : public ::testing::Test {
       curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
     }
     curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errbuf);
-    const long ip_version = absl::GetFlag(FLAGS_ipv6_mode) ? 6 : 4;
+    const long ip_version = absl::GetFlag(FLAGS_ipv6_mode) ? CURL_IPRESOLVE_V6 : CURL_IPRESOLVE_V4;
     curl_easy_setopt(curl, CURLOPT_IPRESOLVE, ip_version);
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
     if (absl::GetFlag(FLAGS_proxy_type) == "socks4") {
