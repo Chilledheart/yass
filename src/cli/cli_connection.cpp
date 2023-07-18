@@ -1435,8 +1435,7 @@ void CliConnection::OnConnect() {
 
 void CliConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
   if (!channel_ || !channel_->connected()) {
-    CHECK(!pending_data_);
-    pending_data_ = buf;
+    pending_data_.push_back(buf);
     return;
   }
 
@@ -1674,10 +1673,11 @@ void CliConnection::connected() {
   }
 
   // Re-process the read data in pending
-  if (auto pending_data = std::move(pending_data_)) {
-    OnStreamRead(pending_data);
-    VLOG(1) << "Connection (client) " << connection_id()
-            << " re-enabling reading";
+  if (!pending_data_.empty()) {
+    auto pending_data = std::move(pending_data_);
+    for (auto buf: pending_data) {
+      OnStreamRead(buf);
+    }
     WriteUpstreamInPipe();
   }
 

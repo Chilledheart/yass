@@ -474,7 +474,7 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
 
  private:
   /// pending data
-  std::shared_ptr<IOBuf> pending_data_;
+  std::vector<std::shared_ptr<IOBuf>> pending_data_;
 
   /// encrypt data
   void EncryptData(IoQueue* queue,
