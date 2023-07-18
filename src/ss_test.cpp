@@ -382,7 +382,8 @@ class SsEndToEndTest : public ::testing::Test {
     curl = curl_easy_init();
     ASSERT_TRUE(curl) << "curl initial failure";
     std::string url = "http://localhost:" + std::to_string(content_provider_endpoint_.port());
-    // TODO A bug inside curl that it doesn't call ipv6 socks5 correctly
+    // TODO A bug inside curl that it doesn't respect IPRESOLVE_V6
+    // https://github.com/curl/curl/issues/11458
     if (absl::GetFlag(FLAGS_ipv6_mode) &&
         absl::GetFlag(FLAGS_proxy_type) == "socks5") {
       url = "http://[::1]:" + std::to_string(content_provider_endpoint_.port());
