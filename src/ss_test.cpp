@@ -395,25 +395,17 @@ class SsEndToEndTest : public ::testing::Test {
     const long ip_version = absl::GetFlag(FLAGS_ipv6_mode) ? CURL_IPRESOLVE_V6 : CURL_IPRESOLVE_V4;
     curl_easy_setopt(curl, CURLOPT_IPRESOLVE, ip_version);
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+    std::string proxy_url = "localhost:" + std::to_string(local_endpoint_.port());
+    curl_easy_setopt(curl, CURLOPT_PROXY, proxy_url.c_str());
     if (absl::GetFlag(FLAGS_proxy_type) == "socks4") {
-      std::string proxy_url = "socks4://localhost:" + std::to_string(local_endpoint_.port());
-      curl_easy_setopt(curl, CURLOPT_PROXY, proxy_url.c_str());
       curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS4);
     } else if (absl::GetFlag(FLAGS_proxy_type) == "socks4a") {
-      std::string proxy_url = "socks4a://localhost:" + std::to_string(local_endpoint_.port());
-      curl_easy_setopt(curl, CURLOPT_PROXY, proxy_url.c_str());
       curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS4A);
     } else if (absl::GetFlag(FLAGS_proxy_type) == "socks5") {
-      std::string proxy_url = "socks5://localhost:" + std::to_string(local_endpoint_.port());
-      curl_easy_setopt(curl, CURLOPT_PROXY, proxy_url.c_str());
       curl_easy_setopt(curl, CURLOPT_PROXYTYPE, (long)CURLPROXY_SOCKS5);
     } else if (absl::GetFlag(FLAGS_proxy_type) == "socks5h") {
-      std::string proxy_url = "socks5h://localhost:" + std::to_string(local_endpoint_.port());
-      curl_easy_setopt(curl, CURLOPT_PROXY, proxy_url.c_str());
       curl_easy_setopt(curl, CURLOPT_PROXYTYPE, (long)CURLPROXY_SOCKS5_HOSTNAME);
     } else if (absl::GetFlag(FLAGS_proxy_type) == "http") {
-      std::string proxy_url = "http://localhost:" + std::to_string(local_endpoint_.port());
-      curl_easy_setopt(curl, CURLOPT_PROXY, proxy_url.c_str());
       curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
     } else {
       LOG(FATAL) << "Invalid proxy type: " << absl::GetFlag(FLAGS_proxy_type);
