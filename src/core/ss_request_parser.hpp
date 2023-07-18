@@ -78,7 +78,7 @@ class request_parser {
           case ipv6:
             memcpy(&req.atyp_req_.address6, &*i,
                    sizeof(asio::ip::address_v6::bytes_type));
-            i += sizeof(asio::ip::address_v4::bytes_type);
+            i += sizeof(asio::ip::address_v6::bytes_type);
 
             req.port_high_byte() = *i;
             i += sizeof(uint8_t);
