@@ -29,6 +29,7 @@ template <typename T>
 class ContentServer {
  public:
   using ConnectionType = typename T::ConnectionType;
+  using tlsext_ctx_t = typename ConnectionType::tlsext_ctx_t;
   class Delegate {
    public:
     virtual ~Delegate() = default;
@@ -182,16 +183,18 @@ class ContentServer {
             return;
           }
           if (!ec) {
+            tlsext_ctx_t* tlsext_ctx = nullptr;
             if (enable_tls_) {
-              setup_ssl_ctx_alpn_cb();
-              setup_ssl_ctx_tlsext_servername_cb(listen_ctx_num);
+              tlsext_ctx = new tlsext_ctx_t{this, next_connection_id_, listen_ctx_num};
+              setup_ssl_ctx_alpn_cb(tlsext_ctx);
+              setup_ssl_ctx_tlsext_cb(tlsext_ctx);
             }
             scoped_refptr<ConnectionType> conn = factory_.Create(
               io_context_, remote_host_name_, remote_port_,
               upstream_https_fallback_, https_fallback_,
               enable_upstream_tls_, enable_tls_,
               &upstream_ssl_ctx_, &ssl_ctx_);
-            on_accept(conn, std::move(socket), listen_ctx_num);
+            on_accept(conn, std::move(socket), listen_ctx_num, tlsext_ctx);
             accept(listen_ctx_num);
           } if (ec && ec != asio::error::operation_aborted) {
             LOG(WARNING) << "Acceptor (" << factory_.Name() << ")"
@@ -203,7 +206,8 @@ class ContentServer {
 
   void on_accept(scoped_refptr<ConnectionType> conn,
                  asio::ip::tcp::socket &&socket,
-                 int listen_ctx_num) {
+                 int listen_ctx_num,
+                 tlsext_ctx_t *tlsext_ctx) {
     asio::error_code ec;
     ListenCtx& ctx = listen_ctxs_[listen_ctx_num];
 
@@ -214,7 +218,7 @@ class ContentServer {
     SetTCPKeepAlive(socket.native_handle(), ec);
     SetSocketTcpNoDelay(&socket, ec);
     conn->on_accept(std::move(socket), ctx.endpoint, ctx.peer_endpoint,
-                    connection_id);
+                    connection_id, tlsext_ctx);
     conn->set_disconnect_cb(
         [this, conn]() mutable { on_disconnect(conn); });
     connection_map_.insert(std::make_pair(connection_id, conn));
@@ -348,15 +352,9 @@ class ContentServer {
     // SSL_CTX_set1_ech_keys
   }
 
-  struct alpn_ctx_t {
-    ContentServer *server;
-    int connection_id;
-  };
-
-  void setup_ssl_ctx_alpn_cb() {
+  void setup_ssl_ctx_alpn_cb(tlsext_ctx_t *tlsext_ctx) {
     SSL_CTX *ctx = ssl_ctx_.native_handle();
-    std::unique_ptr<alpn_ctx_t> alpn_ctx(new alpn_ctx_t{this, next_connection_id_});
-    SSL_CTX_set_alpn_select_cb(ctx, &ContentServer::on_alpn_select, alpn_ctx.release());
+    SSL_CTX_set_alpn_select_cb(ctx, &ContentServer::on_alpn_select, tlsext_ctx);
     VLOG(1) << "Alpn support (server) enabled for connection " << next_connection_id_;
   }
 
@@ -366,9 +364,9 @@ class ContentServer {
                             const unsigned char *in,
                             unsigned int inlen,
                             void *arg) {
-    std::unique_ptr<alpn_ctx_t> alpn_ctx(reinterpret_cast<alpn_ctx_t*>(arg));
-    auto server = alpn_ctx->server;
-    int connection_id = alpn_ctx->connection_id;
+    auto tlsext_ctx = reinterpret_cast<tlsext_ctx_t*>(arg);
+    auto server = reinterpret_cast<ContentServer*>(tlsext_ctx->server);
+    int connection_id = tlsext_ctx->connection_id;
     while (inlen) {
       if (in[0] + 1u > inlen) {
         goto err;
@@ -401,31 +399,24 @@ class ContentServer {
     return SSL_TLSEXT_ERR_ALERT_FATAL;
   }
 
-  struct tlsext_servername_ctx_t {
-    ContentServer *server;
-    int connection_id;
-    int listen_ctx_num;
-  };
-
-  void setup_ssl_ctx_tlsext_servername_cb(int listen_ctx_num) {
+  void setup_ssl_ctx_tlsext_cb(tlsext_ctx_t *tlsext_ctx) {
     SSL_CTX *ctx = ssl_ctx_.native_handle();
-    std::unique_ptr<tlsext_servername_ctx_t> tlsext_servername_ctx(new tlsext_servername_ctx_t{this, next_connection_id_, listen_ctx_num});
-    SSL_CTX_set_tlsext_servername_callback(ctx, &ContentServer::on_tlsext_servername);
-    SSL_CTX_set_tlsext_servername_arg(ctx, tlsext_servername_ctx.release());
+    SSL_CTX_set_tlsext_servername_callback(ctx, &ContentServer::on_tlsext);
+    SSL_CTX_set_tlsext_servername_arg(ctx, tlsext_ctx);
 
     VLOG(1) << "TLSEXT: Servername (server) enabled for connection "
-      << next_connection_id_ << " sever_name: "
-      << listen_ctxs_[listen_ctx_num].server_name;
+      << next_connection_id_ << " server_name: "
+      << listen_ctxs_[tlsext_ctx->listen_ctx_num].server_name;
   }
 
-  static int on_tlsext_servername(SSL *ssl,
+  static int on_tlsext(SSL *ssl,
                                   int *al,
                                   void *arg) {
-    std::unique_ptr<tlsext_servername_ctx_t> tlsext_servername_ctx(reinterpret_cast<tlsext_servername_ctx_t*>(arg));
-    auto server = tlsext_servername_ctx->server;
-    int connection_id = tlsext_servername_ctx->connection_id;
-    int listen_ctx_num = tlsext_servername_ctx->listen_ctx_num;
-    const std::string &expected_server_name = server->listen_ctxs_[listen_ctx_num].server_name;
+    auto tlsext_ctx = reinterpret_cast<tlsext_ctx_t*>(arg);
+    auto server = reinterpret_cast<ContentServer*>(tlsext_ctx->server);
+    int connection_id = tlsext_ctx->connection_id;
+    int listen_ctx_num = tlsext_ctx->listen_ctx_num;
+    absl::string_view expected_server_name = server->listen_ctxs_[listen_ctx_num].server_name;
 
     // SNI must be accessible from the SNI callback.
     const char *server_name_ptr = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);
