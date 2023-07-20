@@ -82,6 +82,20 @@ int main(int argc, const char* argv[]) {
   asio::io_context io_context;
   auto work_guard = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context.get_executor());
 
+  // raise some early warning on SSL server setups
+  auto method = absl::GetFlag(FLAGS_method).method;
+  if (method == cipher_method::CRYPTO_HTTPS ||
+      method == cipher_method::CRYPTO_HTTP2) {
+    if (absl::GetFlag(FLAGS_certificate_chain_file).empty()) {
+      LOG(WARNING) << "No certificate provided";
+      return -1;
+    }
+    if (absl::GetFlag(FLAGS_private_key_file).empty()) {
+      LOG(WARNING) << "No private key for certificate provided";
+      return -1;
+    }
+  }
+
   std::vector<asio::ip::tcp::endpoint> endpoints;
   std::string host_name = absl::GetFlag(FLAGS_server_host);
   uint16_t port = absl::GetFlag(FLAGS_server_port);
