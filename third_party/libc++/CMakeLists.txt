@@ -216,6 +216,14 @@ set(libcxx_SOURCES
   trunk/src/verbose_abort.cpp
 )
 
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  set(libcxx_SOURCES
+    ${libcxx_SOURCES}
+    trunk/src/filesystem/directory_iterator.cpp
+    trunk/src/filesystem/operations.cpp
+  )
+endif()
+
 # GCC 6 series on Debian Stretch doesn't compile
 if (NOT COMPILER_GCC OR (COMPILER_GCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.0))
   set(libcxx_SOURCES
@@ -453,10 +461,14 @@ if (NOT MSVC)
   set(libcxxabi_DEFINITIONS
     ${libcxxabi_DEFINITIONS}
     "LIBCXXABI_SILENT_TERMINATE"
-    # TODO(crbug.com/1298070) _LIBCPP_CONSTINIT is defined in a libc++ revision
-    # more recent than the one currently used in Chromium.
-    "_LIBCPP_CONSTINIT=constinit"
     )
+
+  if (ANDROID)
+    set(libcxxabi_DEFINITIONS
+      ${libcxxabi_DEFINITIONS}
+      "HAVE___CXA_THREAD_ATEXIT_IMPL"
+      )
+  endif()
 
   if (NOT libcxx_SHARED)
     add_library(cxxabi STATIC ${libcxxabi_SOURCES})
