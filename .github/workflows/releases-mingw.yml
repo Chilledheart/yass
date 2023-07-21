@@ -40,13 +40,11 @@ jobs:
       matrix:
         build_type: [Release]
         arch: [x86_64, i686]
-        allow_xp: [no_allow_xp]
+        variant: [standard]
         include:
           - build_type: Release
             arch: i686
-            allow_xp: allow_xp
-    env:
-      ALLOW_XP: '${{ matrix.allow_xp }}'
+            variant: winxp
     steps:
       - uses: actions/checkout@v3
       - name: Checkout with shallow submodules
@@ -138,7 +136,7 @@ jobs:
           set(CMAKE_CXX_COMPILER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++")
           EOF
       - name: Patch libcxx for windows xp
-        if: ${{ env.ALLOW_XP == 'allow_xp' }}
+        if: ${{ matrix.variant == 'winxp' }}
         run: |
           pushd third_party/libc++/trunk
           patch -p1 < ../winxp.patch
@@ -147,6 +145,8 @@ jobs:
           patch -p1 < ../benchmark-winxp-fix.patch
           popd
           echo "CMAKE_OPTIONS=-DALLOW_XP=on" >> $GITHUB_ENV
+          # cp -v /usr/i686-w64-mingw32/lib/*.dll .
+          echo "WINEPATH=/usr/i686-w64-mingw32/lib" >> $GITHUB_ENV
       - name: Build
         run: |
           mkdir build-mingw
@@ -172,7 +172,7 @@ jobs:
           # to add a link to the debugging info into the stripped executable.
           $OBJCOPY --add-gnu-debuglink=yass.exe.dbg yass.exe
 
-          export PREFIX=yass-win-mingw64-${{ matrix.arch }}-${{ github.event.release.tag_name }}
+          export PREFIX=yass-win-mingw64-${{ matrix.arch }}-${{ matrix.variant }}-${{ github.event.release.tag_name }}
           # generate archive
           mkdir $PREFIX
           cp -f yass.exe $PREFIX/
