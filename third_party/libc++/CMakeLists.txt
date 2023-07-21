@@ -265,10 +265,16 @@ if (WIN32)
   endif()
 
   # turn on win32 thread model manually
-  if (MINGW)
+  if (MINGW AND NOT ALLOW_XP)
     set(libcxx_PUBLIC_DEFINITIONS
       ${libcxx_PUBLIC_DEFINITIONS}
       "_LIBCPP_HAS_THREAD_API_WIN32"
+    )
+  endif()
+  if (MINGW AND ALLOW_XP)
+    set(libcxx_PUBLIC_DEFINITIONS
+      ${libcxx_PUBLIC_DEFINITIONS}
+      "_LIBCPP_HAS_THREAD_API_PTHREAD"
     )
   endif()
 
