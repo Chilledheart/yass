@@ -16,6 +16,9 @@
 
 #ifdef _WIN32
 #include <ws2tcpip.h>
+#ifndef AI_NUMERICSERV
+#define AI_NUMERICSERV  0x00000008
+#endif
 #else
 #include <sys/types.h>
 #include <sys/socket.h>

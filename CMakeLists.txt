@@ -1722,7 +1722,7 @@ set(SUPPORT_LIBS
 # *****************************************************************************************
 
 # hacks to force win32 thread usage
-if (MINGW AND USE_LIBCXX)
+if (MINGW AND USE_LIBCXX AND NOT ALLOW_XP)
   set(PREVIOUS_CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
   set(PREVIOUS_CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -U__MINGW32__")
@@ -1730,7 +1730,7 @@ if (MINGW AND USE_LIBCXX)
 endif()
 add_subdirectory(third_party/boringssl/src)
 # restore hacks
-if (MINGW AND USE_LIBCXX)
+if (MINGW AND USE_LIBCXX AND NOT ALLOW_XP)
   set(CMAKE_C_FLAGS "${PREVIOUS_CMAKE_C_FLAGS}")
   set(CMAKE_CXX_FLAGS "${PREVIOUS_CMAKE_CXX_FLAGS}")
 endif()
