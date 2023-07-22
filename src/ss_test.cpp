@@ -383,10 +383,13 @@ class SsEndToEndTest : public ::testing::Test {
     ASSERT_TRUE(curl) << "curl initial failure";
     std::string url = "http://localhost:" + std::to_string(content_provider_endpoint_.port());
     // TODO A bug inside curl that it doesn't respect IPRESOLVE_V6
-    // https://github.com/curl/curl/issues/11458
-    if (absl::GetFlag(FLAGS_ipv6_mode) &&
-        absl::GetFlag(FLAGS_proxy_type) == "socks5") {
-      url = "http://[::1]:" + std::to_string(content_provider_endpoint_.port());
+    // https://github.com/curl/curl/issues/11465
+    if (absl::GetFlag(FLAGS_proxy_type) == "socks5") {
+      if (absl::GetFlag(FLAGS_ipv6_mode)) {
+        url = "http://[::1]:" + std::to_string(content_provider_endpoint_.port());
+      } else {
+        url = "http://127.0.0.1:" + std::to_string(content_provider_endpoint_.port());
+      }
     }
     if (VLOG_IS_ON(1)) {
       curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
