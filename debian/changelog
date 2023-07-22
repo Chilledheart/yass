@@ -1,3 +1,9 @@
+yass (1.3.9-1) UNRELEASED; urgency=medium
+
+  * Bump to chromium 116 dependents.
+  * server: fix crash in hostname tlsext handling.
+
+ -- Chilledheart <hukeyue@hotmail.com>  Sat, 22 Jul 2023 20:16:25 +0800
 yass (1.3.8-1) UNRELEASED; urgency=high
 
   * CVE/http: Fix memory leak in nghttp2 codec.
