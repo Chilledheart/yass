@@ -30,7 +30,7 @@ on:
   release:
     types: [published]
 env:
-  CACHE_EPOCH: 0
+  CACHE_EPOCH: 116
   GOPROXY: direct
 jobs:
   mingw64-release:
@@ -40,6 +40,11 @@ jobs:
       matrix:
         build_type: [Release]
         arch: [x86_64, i686]
+        variant: [standard]
+        include:
+          - build_type: Release
+            arch: i686
+            variant: winxp
     steps:
       - uses: actions/checkout@v3
       - name: Checkout with shallow submodules
@@ -130,13 +135,26 @@ jobs:
           set(CMAKE_C_COMPILER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang")
           set(CMAKE_CXX_COMPILER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++")
           EOF
+      - name: Patch libcxx for windows xp
+        if: ${{ matrix.variant == 'winxp' }}
+        run: |
+          pushd third_party/libc++/trunk
+          patch -p1 < ../winxp.patch
+          popd
+          pushd third_party/benchmark
+          patch -p1 < ../benchmark-winxp-fix.patch
+          popd
+          echo "CMAKE_OPTIONS=-DALLOW_XP=on" >> $GITHUB_ENV
+          # cp -v /usr/i686-w64-mingw32/lib/*.dll .
+          echo "WINEPATH=/usr/i686-w64-mingw32/lib" >> $GITHUB_ENV
       - name: Build
         run: |
           mkdir build-mingw
           cd build-mingw
           cmake -G Ninja -DGUI=on -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on .. \
             -DCMAKE_TOOLCHAIN_FILE="$PWD/../MinGW.cmake" -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DCROSS_TOOLCHAIN_FLAGS_NATIVE=\"-DCMAKE_TOOLCHAIN_FILE=$PWD/../Native.cmake\"
+            -DCROSS_TOOLCHAIN_FLAGS_NATIVE=\"-DCMAKE_TOOLCHAIN_FILE=$PWD/../Native.cmake\" \
+            ${{ env.CMAKE_OPTIONS }}
           ninja yass yass_benchmark yass_test
       - name: Packaging
         run: |
@@ -154,7 +172,7 @@ jobs:
           # to add a link to the debugging info into the stripped executable.
           $OBJCOPY --add-gnu-debuglink=yass.exe.dbg yass.exe
 
-          export PREFIX=yass-win-mingw64-${{ matrix.arch }}-${{ github.event.release.tag_name }}
+          export PREFIX=yass-win-mingw64-${{ matrix.arch }}-${{ matrix.variant }}-${{ github.event.release.tag_name }}
           # generate archive
           mkdir $PREFIX
           cp -f yass.exe $PREFIX/

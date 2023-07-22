@@ -1,0 +1,59 @@
+From f9dae25d4721574d55a75e79c29615f3407717a2 Mon Sep 17 00:00:00 2001
+From: Chilledheart <hukeyue@hotmail.com>
+Date: Fri, 21 Jul 2023 16:00:26 +0800
+Subject: [PATCH] allow windows xp build
+
+---
+ src/sysinfo.cc | 8 +++++---
+ src/timers.cc  | 2 +-
+ 2 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/src/sysinfo.cc b/src/sysinfo.cc
+index 4578cb0..3ad29eb 100644
+--- a/src/sysinfo.cc
++++ b/src/sysinfo.cc
+@@ -15,12 +15,15 @@
+ #include "internal_macros.h"
+ 
+ #ifdef BENCHMARK_OS_WINDOWS
++struct IUnknown;
+ #include <shlwapi.h>
+ #undef StrCat  // Don't let StrCat in string_util.h be renamed to lstrcatA
+-#include <versionhelpers.h>
+ #include <windows.h>
+ 
+ #include <codecvt>
++#ifndef WC_ERR_INVALID_CHARS
++#define WC_ERR_INVALID_CHARS      0x00000080  // error for invalid chars
++#endif
+ #else
+ #include <fcntl.h>
+ #if !defined(BENCHMARK_OS_FUCHSIA) && !defined(BENCHMARK_OS_QURT)
+@@ -733,8 +736,7 @@ double GetCPUCyclesPerSecond(CPUInfo::Scaling scaling) {
+   // In NT, read MHz from the registry. If we fail to do so or we're in win9x
+   // then make a crude estimate.
+   DWORD data, data_size = sizeof(data);
+-  if (IsWindowsXPOrGreater() &&
+-      SUCCEEDED(
++  if (SUCCEEDED(
+           SHGetValueA(HKEY_LOCAL_MACHINE,
+                       "HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0",
+                       "~MHz", nullptr, &data, &data_size)))
+diff --git a/src/timers.cc b/src/timers.cc
+index b23feea..a871002 100644
+--- a/src/timers.cc
++++ b/src/timers.cc
+@@ -17,9 +17,9 @@
+ #include "internal_macros.h"
+ 
+ #ifdef BENCHMARK_OS_WINDOWS
++struct IUnknown;
+ #include <shlwapi.h>
+ #undef StrCat  // Don't let StrCat in string_util.h be renamed to lstrcatA
+-#include <versionhelpers.h>
+ #include <windows.h>
+ #else
+ #include <fcntl.h>
+-- 
+2.40.1.windows.1
+

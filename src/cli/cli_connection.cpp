@@ -1435,6 +1435,13 @@ void CliConnection::OnConnect() {
 
 void CliConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
   if (!channel_ || !channel_->connected()) {
+    constexpr size_t kMaxHeaderSize = 64 * 1024;
+    if (pending_data_.byte_length() + buf->length() >= kMaxHeaderSize) {
+      LOG(WARNING) << "Connection (client) " << connection_id()
+                   << " too much data in incoming";
+      OnDisconnect(asio::error::connection_reset);
+      return;
+    }
     pending_data_.push_back(buf);
     return;
   }
@@ -1674,8 +1681,10 @@ void CliConnection::connected() {
 
   // Re-process the read data in pending
   if (!pending_data_.empty()) {
-    auto pending_data = std::move(pending_data_);
-    for (auto buf: pending_data) {
+    auto queue = std::move(pending_data_);
+    while(!queue.empty()) {
+      auto buf = queue.front();
+      queue.pop_front();
       OnStreamRead(buf);
     }
     WriteUpstreamInPipe();

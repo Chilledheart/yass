@@ -33,7 +33,7 @@ defaults:
   run:
     shell: cmd
 env:
-  CACHE_EPOCH: 0
+  CACHE_EPOCH: 116
   GOPROXY: direct
 jobs:
   windows-release:
@@ -190,8 +190,12 @@ jobs:
       - name: Patch libcxx for windows xp
         shell: bash
         run: |
-          cd third_party/libc++/trunk
+          pushd third_party/libc++/trunk
           patch -p1 < ../winxp.patch
+          popd
+          pushd third_party/benchmark
+          patch -p1 < ../benchmark-winxp-fix.patch
+          popd
       - name: Build
         run: |
           set VCToolsVersion=14.16.27012
@@ -210,7 +214,7 @@ jobs:
 
           call "scripts\callxp-%Platform%.cmd"
 
-          tools\build -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -msvc-allow-xp -build-test || exit /b
+          tools\build -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -msvc-allow-xp -build-test -build-benchmark || exit /b
 
           goto :eof
       - name: Run tests
@@ -231,7 +235,7 @@ jobs:
 
           call "scripts\callxp-%Platform%.cmd"
 
-          tools\build -nc -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -msvc-allow-xp -run-test -no-packaging || exit /b
+          tools\build -nc -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -msvc-allow-xp -run-test -run-benchmark -no-packaging || exit /b
 
           goto :eof
       - name: Upload dist tarball (including debuginfo)

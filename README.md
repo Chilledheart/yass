@@ -18,17 +18,20 @@
 [![RPM Build](https://github.com/Chilledheart/yass/actions/workflows/releases-rpm.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/releases-rpm.yml)
 [![DEB Build](https://github.com/Chilledheart/yass/actions/workflows/releases-deb.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/releases-deb.yml)
 
-Yet Another Shadow Socket is lightweight and secure http/socks4/socks5 proxy.
+Yet Another Shadow Socket is client-server model based and efficient forward proxy
+supporting http/socks4/socks4a/socks5 protocol via https/http2 tunnel in the air.
+
+The theory benchmark is over 600MB/s at a modern i5 CPU.
 
 <!-- TOC -->
 
 - [Usage](#usage)
 - [Features](#features)
-- [Ciphers](#ciphers)
+- [Tunnels](#tunnels)
   * [HTTP2 Tunnel Support](#http2-tunnel-support)
   * [NaiveProxy Protocol Support](#naiveproxy-protocol-support)
-  * [Shadowsocks PC-friendly Ciphers](#shadowsocks-pc-friendly-ciphers)
-  * [Shadowsocks mobile-friendly Ciphers](#shadowsocks-mobile-friendly-ciphers)
+  * [Shadowsocks PC-friendly Tunnels](#shadowsocks-pc-friendly-ciphers)
+  * [Shadowsocks mobile-friendly Tunnels](#shadowsocks-mobile-friendly-ciphers)
 - [Supported Operating System](#supported-operating-system)
   * [Screenshot on HTTP2 support](#screenshot-on-http2-support)
   * [Screenshot on macOS](#screenshot-on-macos)
@@ -85,7 +88,7 @@ You can use this software as SOCKS4/SOCKS5 PROXY on the SAME port!
 - Thread Safe, tested against [Thread Sanitizer][tsan].
 - IPv6 compatible (both client and server side)
 
-## Ciphers
+## Tunnels
 ### HTTP2 Tunnel Support
 - [x] Basic [HTTP2] Support
 - [x] HTTPS1.1 fallback support (both server and client sides)
@@ -111,13 +114,13 @@ Server-side features compared with caddy+forwardproxy
 - [x] Via-via support (HTTPS 1.1 only)
 - [ ] File Server fallback support
 
-### Shadowsocks PC-friendly Ciphers
+### Shadowsocks PC-friendly Tunnels
 - [x] [AES_128_GCM][aes128gcm]
 - [x] [AES_256_GCM][aes256gcm]
 - [x] [AES_128_GCM_12][aes128gcm12]
 - [x] [AES_192_GCM][aes192gcm] (Not recommended)
 
-### Shadowsocks mobile-friendly Ciphers
+### Shadowsocks mobile-friendly Tunnels
 - [x] [CHACHA20_POLY1305][chacha20]
 - [x] [XCHACHA20_POLY1305][xchacha20]
 

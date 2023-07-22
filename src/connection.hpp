@@ -20,6 +20,13 @@ class Connection {
   using io_handle_t = std::function<void(asio::error_code, std::size_t)>;
   using handle_t = std::function<void(asio::error_code)>;
  public:
+  struct tlsext_ctx_t {
+    void *server;
+    int connection_id;
+    int listen_ctx_num;
+  };
+
+ public:
   /// Construct the connection with io context
   ///
   /// \param io_context the io context associated with the service
@@ -111,14 +118,17 @@ class Connection {
   /// \param endpoint the service socket's endpoint
   /// \param peer_endpoint the peer endpoint
   /// \param the number of connection id
+  /// \param the pointer of tlsext ctx
   void on_accept(asio::ip::tcp::socket&& socket,
                  const asio::ip::tcp::endpoint& endpoint,
                  const asio::ip::tcp::endpoint& peer_endpoint,
-                 int connection_id) {
+                 int connection_id,
+                 tlsext_ctx_t *tlsext_ctx) {
     socket_ = std::move(socket);
     endpoint_ = endpoint;
     peer_endpoint_ = peer_endpoint;
     connection_id_ = connection_id;
+    tlsext_ctx_.reset(tlsext_ctx);
   }
 
   /// Enter the start phase, begin to read requests
@@ -142,6 +152,11 @@ class Connection {
 
   int connection_id() const {
     return connection_id_;
+  }
+
+  const tlsext_ctx_t& tlsext_ctx() const {
+    DCHECK(tlsext_ctx_);
+    return *tlsext_ctx_;
   }
 
  protected:
@@ -180,6 +195,8 @@ class Connection {
   asio::ip::tcp::endpoint peer_endpoint_;
   /// the number of connection id
   int connection_id_ = -1;
+  /// the tlsext ctx
+  std::unique_ptr<tlsext_ctx_t> tlsext_ctx_;
 
   /// if https fallback
   bool upstream_https_fallback_;

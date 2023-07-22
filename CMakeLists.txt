@@ -1313,7 +1313,9 @@ if (WIN32)
     add_definitions(-D_WIN32_WINNT=0x0501)
     add_definitions(-DWINVER=0x0501)
     # for winapifamily.h
-    include_directories(third_party/xp-compatible SYSTEM)
+    if (NOT MINGW)
+      include_directories(third_party/xp-compatible SYSTEM)
+    endif()
   else()
     add_definitions(-D_WIN32_WINNT=0x0603)
     add_definitions(-DWINVER=0x0603)
@@ -1722,7 +1724,7 @@ set(SUPPORT_LIBS
 # *****************************************************************************************
 
 # hacks to force win32 thread usage
-if (MINGW AND USE_LIBCXX)
+if (MINGW AND USE_LIBCXX AND NOT ALLOW_XP)
   set(PREVIOUS_CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
   set(PREVIOUS_CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -U__MINGW32__")
@@ -1730,7 +1732,7 @@ if (MINGW AND USE_LIBCXX)
 endif()
 add_subdirectory(third_party/boringssl/src)
 # restore hacks
-if (MINGW AND USE_LIBCXX)
+if (MINGW AND USE_LIBCXX AND NOT ALLOW_XP)
   set(CMAKE_C_FLAGS "${PREVIOUS_CMAKE_C_FLAGS}")
   set(CMAKE_CXX_FLAGS "${PREVIOUS_CMAKE_CXX_FLAGS}")
 endif()
