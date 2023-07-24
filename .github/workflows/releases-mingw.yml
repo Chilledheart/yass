@@ -34,17 +34,16 @@ env:
   GOPROXY: direct
 jobs:
   mingw64-release:
-    runs-on: ubuntu-20.04
+    runs-on: windows-2019
     strategy:
       fail-fast: false
       matrix:
+        arch: [i686, x86_64]
         build_type: [Release]
-        arch: [x86_64, i686]
         variant: [standard]
-        include:
-          - build_type: Release
-            arch: i686
-            variant: winxp
+    defaults:
+      run:
+        shell: cmd
     steps:
       - uses: actions/checkout@v3
       - name: Checkout with shallow submodules
@@ -52,157 +51,92 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache clang
+      - name: Cache clang, nasm and wixtoolset 3
         id: clang-cache
         uses: actions/cache@v3
         with:
           path: |
+            third_party/nasm
             third_party/llvm-build/Release+Asserts
+            third_party/wix311
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
           restore-keys: |
             ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
-      - name: Cache golang
+      - name: Cache mingw64 toolchain
+        id: mingw64-cache
         uses: actions/cache@v3
         with:
           path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-      - name: Build build tool
-        run: |
-          cd tools
-          go build
-      - name: Change ubuntu mirror
-        run: |
-          sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
-          sudo apt-get update -qq
-      - name: "Install dependency: prebuilt clang and clang-tidy binaries"
+            third_party/mingw64
+            third_party/mingw32
+          key: ${{ runner.os }}-mingw64-${{ matrix.arch }}-toolchain-v${{ env.CACHE_EPOCH }}
+      - name: "Download dependency: clang, nasm and wixtoolset 3"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
-          ./scripts/download-clang-prebuilt-binaries.py
-          rm -f third_party/llvm-build/Release+Asserts/*.tgz
-      - name: Populate depedencies
-        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build mingw-w64 nasm zip
-      - name: Set toolchain cmake files
+          scripts\download-toolchain.bat
+      - name: "Download dependency: mingw64"
+        if: ${{ steps.mingw64-cache.outputs.cache-hit != 'true' }}
         run: |
-          cat > MinGW.cmake << EOF
-          # Sample toolchain file for building for Windows from an Ubuntu Linux system.
-          #
-          # Typical usage:
-          #    *) install cross compiler: sudo apt-get install mingw-w64
-          #    *) cd build
-          #    *) cmake -DCMAKE_TOOLCHAIN_FILE=~/mingw-w64-x86_64.cmake ..
-
-          set(CMAKE_SYSTEM_NAME Windows)
-          set(CMAKE_SYSTEM_PROCESSOR ${{ matrix.arch }})
-          set(GNU_TARGET ${{ matrix.arch }}-w64-mingw32)
-
-          set(CMAKE_C_COMPILER_TARGET \${GNU_TARGET} CACHE STRING "")
-          set(CMAKE_CXX_COMPILER_TARGET \${GNU_TARGET} CACHE STRING "")
-          set(CMAKE_ASM_COMPILER_TARGET \${GNU_TARGET} CACHE STRING "")
-
-          set(CMAKE_ASM_FLAGS "-target \${GNU_TARGET} -ccc-gcc-name \${GNU_TARGET}-gcc")
-          set(CMAKE_C_FLAGS "-target \${GNU_TARGET} -ccc-gcc-name \${GNU_TARGET}-gcc")
-          set(CMAKE_CXX_FLAGS "-target \${GNU_TARGET} -ccc-gcc-name \${GNU_TARGET}-gcc")
-          set(CMAKE_SHARED_LINKER_FLAGS "-target \${GNU_TARGET} -ccc-gcc-name \${GNU_TARGET}-gcc -Wl,-L/usr/lib/gcc/\${GNU_TARGET}/9.3-win32")
-          set(CMAKE_EXE_LINKER_FLAGS "-target \${GNU_TARGET} -ccc-gcc-name \${GNU_TARGET}-gcc -Wl,-L/usr/lib/gcc/\${GNU_TARGET}/9.3-win32")
-
-          # cross compilers to use for C and C++
-          set(CMAKE_C_COMPILER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang")
-          set(CMAKE_CXX_COMPILER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++")
-          set(CMAKE_LINKER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/ld.lld")
-          set(CMAKE_AR "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/llvm-ar")
-          set(CMAKE_CXX_COMPILER_AR "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/llvm-ar")
-          set(CMAKE_RANLIB "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/llvm-ranlib")
-          set(CMAKE_CXX_COMPILER_RANLIB "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/llvm-ranlib")
-          # disabled because it is missing from binary
-          # set(CMAKE_RC_COMPILER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/llvm-rc")
-          set(CMAKE_RC_COMPILER "\${GNU_TARGET}-windres")
-
-          set(CMAKE_SYSROOT "/usr/\${GNU_TARGET}" CACHE STRING "")
-
-          # target environment on the build host system
-          set(CMAKE_FIND_ROOT_PATH /usr/\${GNU_TARGET})
-
-          # modify default behavior of FIND_XXX() commands
-          set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-          set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-          set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-          EOF
-          cat > Native.cmake << EOF
-          set(CMAKE_C_COMPILER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang")
-          set(CMAKE_CXX_COMPILER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++")
-          EOF
-      - name: Patch libcxx for windows xp
-        if: ${{ matrix.variant == 'winxp' }}
-        run: |
-          pushd third_party/libc++/trunk
-          patch -p1 < ../winxp.patch
-          popd
-          pushd third_party/benchmark
-          patch -p1 < ../benchmark-winxp-fix.patch
-          popd
-          echo "CMAKE_OPTIONS=-DALLOW_XP=on" >> $GITHUB_ENV
-          # cp -v /usr/i686-w64-mingw32/lib/*.dll .
-          echo "WINEPATH=/usr/i686-w64-mingw32/lib" >> $GITHUB_ENV
+          scripts\download-toolchain-mingw.bat ${{ matrix.arch }}
       - name: Build
         run: |
+          set CC=clang
+          set CXX=clang++
+          set MINGWDIR=mingw32
+          set GCC_VER=7.5.0
+          if "${{ matrix.arch }}"=="x86_64" set MINGWDIR=mingw64
+          set "CFLAGS=-target ${{ matrix.arch }}-pc-windows-gnu --sysroot %CD%\third_party\%MINGWDIR%\${{ matrix.arch }}-w64-mingw32 -I %CD%\third_party\%MINGWDIR%\lib\gcc\${{ matrix.arch }}-w64-mingw32\%GCC_VER%\include"
+          set "CXXFLAGS=-target ${{ matrix.arch }}-pc-windows-gnu --sysroot %CD%\third_party\%MINGWDIR%\${{ matrix.arch }}-w64-mingw32 -I %CD%\third_party\%MINGWDIR%\lib\gcc\${{ matrix.arch }}-w64-mingw32\%GCC_VER%\include"
+          set "LDFLAGS=-target ${{ matrix.arch }}-pc-windows-gnu --sysroot %CD%\third_party\%MINGWDIR%\${{ matrix.arch }}-w64-mingw32 -Wl,-L%CD%\third_party\%MINGWDIR%\lib -Wl,-L%CD%\third_party\%MINGWDIR%\lib\gcc\${{ matrix.arch }}-w64-mingw32\%GCC_VER%"
+          set "Path=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;%Path%"
+          set "Path=%CD%\third_party\%MINGWDIR%\bin;%Path%"
+          set "Path=%CD%\third_party\nasm;%Path%"
+          REM for clang.exe and clang++.exe
+          REM set "Path=C:\Program Files\LLVM\bin;%Path%"
+
+          REM remove conflicting heaaders
+          del "%CD%\third_party\%MINGWDIR%\lib\gcc\${{ matrix.arch }}-w64-mingw32\%GCC_VER%\include\std*.h"
+          del "%CD%\third_party\%MINGWDIR%\lib\gcc\${{ matrix.arch }}-w64-mingw32\%GCC_VER%\include\*intrin.h"
+          del "%CD%\third_party\%MINGWDIR%\lib\gcc\${{ matrix.arch }}-w64-mingw32\%GCC_VER%\include\mm3dnow.h"
+
+          REM start to build with workaround
           mkdir build-mingw
           cd build-mingw
-          cmake -G Ninja -DGUI=on -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on .. \
-            -DCMAKE_TOOLCHAIN_FILE="$PWD/../MinGW.cmake" -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DCROSS_TOOLCHAIN_FLAGS_NATIVE=\"-DCMAKE_TOOLCHAIN_FILE=$PWD/../Native.cmake\" \
-            ${{ env.CMAKE_OPTIONS }}
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DMINGW_WORKAROUND=on ..
           ninja yass yass_benchmark yass_test
       - name: Packaging
+        shell: bash
         run: |
-          export OBJCOPY="$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-objcopy"
-          if [ ! -x $OBJCOPY ]; then
-            echo "llvm-objcopy not found, using stock one"
-            OBJCOPY=${{ matrix.arch }}-w64-mingw32-objcopy
-          fi
           cd build-mingw
           # https://www.systutorials.com/docs/linux/man/1-x86_64-w64-mingw32-objcopy/
           # create a file containing the debugging info.
-          $OBJCOPY --only-keep-debug yass.exe yass.exe.dbg
+          llvm-objcopy --only-keep-debug yass.exe yass.exe.dbg
           # stripped executable.
-          $OBJCOPY --strip-debug yass.exe
+          llvm-objcopy --strip-debug yass.exe
           # to add a link to the debugging info into the stripped executable.
-          $OBJCOPY --add-gnu-debuglink=yass.exe.dbg yass.exe
+          llvm-objcopy --add-gnu-debuglink=yass.exe.dbg yass.exe
 
           export PREFIX=yass-win-mingw64-${{ matrix.arch }}-${{ matrix.variant }}-${{ github.event.release.tag_name }}
           # generate archive
+          rm -rf $PREFIX
           mkdir $PREFIX
           cp -f yass.exe $PREFIX/
-          zip -9 -r ../$PREFIX.zip $PREFIX
-          rm -rf $PREFIX
+          "/c/Program Files/7-Zip/7z.exe" a -tzip ../$PREFIX.zip $PREFIX
 
           # generate debuginfo archive
+          rm -rf $PREFIX
           mkdir $PREFIX
           cp -f yass.exe.dbg $PREFIX/
-          zip -9 -r ../$PREFIX-debuginfo.zip $PREFIX
-          rm -rf $PREFIX
-      - name: Populate depedencies (Tests-i686)
-        if: ${{ matrix.arch == 'i686' }}
-        run: |
-          # fix for missing i386 deb packages from deb.sury.org repository
-          sudo add-apt-repository ppa:ondrej/php
-          # alternative fix is to downgrade overloaded libpcre2 versions with five locally installed packages which are PHP-related and came from deb.sury.org repository.
-          # sudo apt-get install -y --allow-downgrades libpcre2-8-0=10.34-7ubuntu0.1 libpcre2-16-0=10.34-7ubuntu0.1 libpcre2-32-0=10.34-7ubuntu0.1 libpcre2-dev=10.34-7ubuntu0.1 libgd3=2.2.5-5.2ubuntu2.1
-          sudo dpkg --add-architecture i386 && sudo apt-get update -qq && sudo apt-get install -y wine wine32
-      - name: Populate depedencies (Tests-x86_64)
-        if: ${{ matrix.arch == 'x86_64' }}
-        run: sudo apt-get update -qq && sudo apt-get install -y wine wine64
-      - name: Run tests
+          "/c/Program Files/7-Zip/7z.exe" a -tzip ../$PREFIX-debuginfo.zip $PREFIX
+      - name: Run unittests
         run: |
           cd build-mingw
-          wine yass_test.exe
-          wine yass_benchmark.exe
+          yass_benchmark
+          yass_test
       - name: Upload dist tarball
         if: ${{ github.event_name == 'release' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
         run: |
           gh release upload ${{ github.event.release.tag_name }} *.zip
