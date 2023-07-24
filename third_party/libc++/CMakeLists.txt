@@ -256,7 +256,13 @@ if (WIN32)
     set_source_files_properties(emutls.cpp
       PROPERTIES
       COMPILE_FLAGS "-fno-builtin")
-    if (CMAKE_SIZEOF_VOID_P EQUAL 4)
+    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+      set(libcxx_SOURCES
+        ${libcxx_SOURCES}
+        umodti3.c
+        udivmodti4.c
+        )
+    elseif (CMAKE_SIZEOF_VOID_P EQUAL 4)
       set(libcxx_SOURCES
         ${libcxx_SOURCES}
         libgcc2.c

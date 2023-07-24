@@ -244,8 +244,6 @@ jobs:
       - name: Run tests
         run: |
           cd build-mingw
-          # FIXME remove __umodti3 symbol import
-          cp -v /usr/lib/gcc/x86_64-w64-mingw32/9.3-win32/libgcc_s_seh-1.dll .
           wine yass_test.exe -logtostderr -v 1 --gtest_shuffle --gtest_repeat=25 --gtest_throw_on_failure
           wine yass_test.exe -logtostderr -v 1 --gtest_shuffle --gtest_repeat=25 --gtest_throw_on_failure --ipv6_mode
   linux-compiler-compatible:
