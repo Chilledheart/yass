@@ -256,16 +256,29 @@ if (WIN32)
     set_source_files_properties(emutls.cpp
       PROPERTIES
       COMPILE_FLAGS "-fno-builtin")
+  endif()
+  # override libgcc builtin with compiler-rt's implementation
+  # TODO embedded compiler-rt builtin library directly
+  if (MINGW)
     if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+      # __umodti3
       set(libcxx_SOURCES
         ${libcxx_SOURCES}
         umodti3.c
         udivmodti4.c
         )
     elseif (CMAKE_SIZEOF_VOID_P EQUAL 4)
+      #   42  __divdi3
+      #   86  __moddi3
+      #  121  __udivdi3
+      #  123  __umoddi3
       set(libcxx_SOURCES
         ${libcxx_SOURCES}
-        libgcc2.c
+        divdi3.c
+        moddi3.c
+        udivdi3.c
+        umoddi3.c
+        udivmoddi4.c
         )
     endif()
   endif()
