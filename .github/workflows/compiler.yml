@@ -245,10 +245,7 @@ jobs:
         run: |
           cd build-mingw
           wine yass_test.exe -logtostderr -v 1 --gtest_shuffle --gtest_repeat=25 --gtest_throw_on_failure
-          # FIXME somehow inside the container DNS hosts file resolves localhost to 127.0.0.1 only not ::1
-          # due to the incompleteness
-          # sudo sed -i s/ip6-localhost/localhost/g /etc/hosts
-          # wine yass_test.exe -logtostderr -v 1 --gtest_shuffle --gtest_repeat=25 --gtest_throw_on_failure --ipv6_mode
+          wine yass_test.exe -logtostderr -v 1 --gtest_shuffle --gtest_repeat=25 --gtest_throw_on_failure --ipv6_mode
   linux-compiler-compatible:
     runs-on: ubuntu-20.04
     strategy:

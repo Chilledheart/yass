@@ -322,9 +322,10 @@ bool ServerConnection::OnEndHeadersForStream(
   asio::error_code ec;
   auto peer_endpoint = socket_.remote_endpoint(ec);
   if (ec) {
-    LOG(INFO) << "Connection (server) " << connection_id()
+    // TODO Improve this case
+    // In Wine IPv6-enabled environment this call might fail without a reason.
+    LOG(WARNING) << "Connection (server) " << connection_id()
       << " Failed to retrieve remote endpoint: " << ec;
-    return false;
   }
   if (request_map_[":method"] != "CONNECT") {
     LOG(INFO) << "Connection (server) " << connection_id() << " for " << peer_endpoint
