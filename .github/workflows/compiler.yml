@@ -107,7 +107,7 @@ jobs:
           cd build-msvc-${{ matrix.arch }}-${{ matrix.crt-linkage }}
           yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=25 --gtest_throw_on_failure
           yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=25 --gtest_throw_on_failure --ipv6_mode
-  mingw64-compiler-compatible-msys2:
+  mingw64-compiler-compatible-winlibs:
     runs-on: windows-2019
     strategy:
       fail-fast: false
@@ -135,28 +135,41 @@ jobs:
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
           restore-keys: |
             ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
+      - name: Cache mingw64 toolchain
+        id: mingw64-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            third_party/mingw64
+          key: ${{ runner.os }}-mingw64-toolchain-v${{ env.CACHE_EPOCH }}
       - name: "Download dependency: clang, nasm and wixtoolset 3"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
           scripts\download-toolchain.bat
+      - name: "Download dependency: mingw64"
+        if: ${{ steps.mingw64-cache.outputs.cache-hit != 'true' }}
+        run: |
+          cd third_party
+          curl -L -O https://github.com/brechtsanders/winlibs_mingw/releases/download/8.5.0-9.0.0-r1/winlibs-x86_64-posix-seh-gcc-8.5.0-mingw-w64-9.0.0-r1.7z
+          "C:\Program Files\7-Zip\7z.exe" x winlibs-x86_64-posix-seh-gcc-8.5.0-mingw-w64-9.0.0-r1.7z -aoa
+          del /s /q winlibs-x86_64-posix-seh-gcc-8.5.0-mingw-w64-9.0.0-r1.7z
       - name: Build
         run: |
           set CC=clang
           set CXX=clang++
-          set "CFLAGS=-target x86_64-pc-windows-gnu --sysroot C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw64\x86_64-w64-mingw32 -I C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw64\lib\gcc\x86_64-w64-mingw32\8.1.0\include"
-          set "CXXFLAGS=-target x86_64-pc-windows-gnu --sysroot C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw64\x86_64-w64-mingw32 -I C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw64\lib\gcc\x86_64-w64-mingw32\8.1.0\include"
-          set "LDFLAGS=-target x86_64-pc-windows-gnu --sysroot C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw64\x86_64-w64-mingw32 -Wl,-LC:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw64\lib\gcc\x86_64-w64-mingw32\8.1.0"
+          set "CFLAGS=-target x86_64-pc-windows-gnu --sysroot %CD%\third_party\mingw64\x86_64-w64-mingw32 -I %CD%\third_party\mingw64\lib\gcc\x86_64-w64-mingw32\8.5.0\include"
+          set "CXXFLAGS=-target x86_64-pc-windows-gnu --sysroot %CD%\third_party\mingw64\x86_64-w64-mingw32 -I %CD%\third_party\mingw64\lib\gcc\x86_64-w64-mingw32\8.5.0\include"
+          set "LDFLAGS=-target x86_64-pc-windows-gnu --sysroot %CD%\third_party\mingw64\x86_64-w64-mingw32 -Wl,-L%CD%\third_party\mingw64\lib -Wl,-L%CD%\third_party\mingw64\lib\gcc\x86_64-w64-mingw32\8.5.0"
           set "Path=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;%Path%"
-          REM for crtbegin.o, crt2.o and crtend.o
-          set "Path=C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw64\x86_64-w64-mingw32\lib;%Path%"
+          set "Path=%CD%\third_party\mingw64\bin;%Path%"
           set "Path=%CD%\third_party\nasm;%Path%"
           REM for clang.exe and clang++.exe
           REM set "Path=C:\Program Files\LLVM\bin;%Path%"
 
           REM remove conflicting heaaders
-          del "C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw64\lib\gcc\x86_64-w64-mingw32\8.1.0\include\std*.h"
-          del "C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw64\lib\gcc\x86_64-w64-mingw32\8.1.0\include\*intrin.h"
-          del "C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw64\lib\gcc\x86_64-w64-mingw32\8.1.0\include\mm3dnow.h"
+          del "%CD%\third_party\mingw64\lib\gcc\x86_64-w64-mingw32\8.5.0\include\std*.h"
+          del "%CD%\third_party\mingw64\lib\gcc\x86_64-w64-mingw32\8.5.0\include\*intrin.h"
+          del "%CD%\third_party\mingw64\lib\gcc\x86_64-w64-mingw32\8.5.0\include\mm3dnow.h"
 
           REM start to build with workaround
           mkdir build
@@ -165,6 +178,7 @@ jobs:
           ninja yass yass_test
       - name: Run unittests
         run: |
+          set "Path=%CD%\third_party\mingw64\bin;%Path%"
           cd build
           yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=25 --gtest_throw_on_failure
           yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=25 --gtest_throw_on_failure --ipv6_mode
