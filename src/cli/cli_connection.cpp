@@ -1435,7 +1435,7 @@ void CliConnection::OnConnect() {
 
 void CliConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
   if (!channel_ || !channel_->connected()) {
-    constexpr size_t kMaxHeaderSize = 64 * 1024;
+    constexpr size_t kMaxHeaderSize = 256 * 1024;
     if (pending_data_.byte_length() + buf->length() >= kMaxHeaderSize) {
       LOG(WARNING) << "Connection (client) " << connection_id()
                    << " too much data in incoming";
