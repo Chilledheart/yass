@@ -70,6 +70,14 @@ jobs:
             third_party/mingw64
             third_party/mingw32
           key: ${{ runner.os }}-mingw64-${{ matrix.arch }}-toolchain-v${{ env.CACHE_EPOCH }}
+      - name: Cache mingw64 curl
+        id: curl-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            third_party/curl-8.2.0_1-win64-mingw
+            third_party/curl-8.2.0_1-win32-mingw
+          key: ${{ runner.os }}-mingw64-curl-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
       - name: "Download dependency: clang, nasm and wixtoolset 3"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -78,6 +86,10 @@ jobs:
         if: ${{ steps.mingw64-cache.outputs.cache-hit != 'true' }}
         run: |
           scripts\download-toolchain-mingw.bat ${{ matrix.arch }}
+      - name: "Download dependency: curl"
+        if: ${{ steps.curl-cache.outputs.cache-hit != 'true' }}
+        run: |
+          scripts\download-curl-mingw.bat ${{ matrix.arch }}
       - name: Build
         run: |
           set CC=clang
@@ -128,6 +140,14 @@ jobs:
           mkdir $PREFIX
           cp -f yass.exe.dbg $PREFIX/
           "/c/Program Files/7-Zip/7z.exe" a -tzip ../$PREFIX-debuginfo.zip $PREFIX
+      - name: Populate depedencies (Tests-i686)
+        if: ${{ matrix.arch == 'i686' }}
+        run: |
+          xcopy /F third_party\curl-8.2.0_1-win32-mingw\bin\libcurl.dll build-mingw
+      - name: Populate depedencies (Tests-x86_64)
+        if: ${{ matrix.arch == 'x86_64' }}
+        run: |
+          xcopy /F third_party\curl-8.2.0_1-win64-mingw\bin\libcurl-x64.dll build-mingw
       - name: Run unittests
         run: |
           cd build-mingw

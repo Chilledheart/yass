@@ -135,6 +135,14 @@ jobs:
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
           restore-keys: |
             ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
+      - name: Cache mingw64 curl
+        id: curl-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            third_party/curl-8.2.0_1-win64-mingw
+            third_party/curl-8.2.0_1-win32-mingw
+          key: ${{ runner.os }}-mingw64-curl-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
         uses: actions/cache@v3
         with:
@@ -157,6 +165,15 @@ jobs:
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
+      - name: "Download dependency: curl"
+        if: ${{ steps.curl-cache.outputs.cache-hit != 'true' }}
+        run: |
+          cd third_party
+          curl -L -O https://curl.se/windows/dl-8.2.0_1/curl-8.2.0_1-win64-mingw.zip
+          7z x curl-8.2.0_1-win64-mingw.zip -aoa
+          curl -L -O https://curl.se/windows/dl-8.2.0_1/curl-8.2.0_1-win32-mingw.zip
+          7z x curl-8.2.0_1-win32-mingw.zip -aoa
+          rm -vf curl*.zip
       - name: Populate depedencies
         run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build mingw-w64 nasm zip
       - name: Set toolchain cmake files
@@ -233,6 +250,8 @@ jobs:
       - name: Populate depedencies (Tests-i686)
         if: ${{ matrix.arch == 'i686' }}
         run: |
+          # copy curl dll required by yass_test
+          cp -v third_party/curl-8.2.0_1-win32-mingw/bin/libcurl.dll build-mingw
           # fix for missing i386 deb packages from deb.sury.org repository
           sudo add-apt-repository ppa:ondrej/php
           # alternative fix is to downgrade overloaded libpcre2 versions with five locally installed packages which are PHP-related and came from deb.sury.org repository.
@@ -240,12 +259,25 @@ jobs:
           sudo dpkg --add-architecture i386 && sudo apt-get update -qq && sudo apt-get install -y wine wine32
       - name: Populate depedencies (Tests-x86_64)
         if: ${{ matrix.arch == 'x86_64' }}
-        run: sudo apt-get update -qq && sudo apt-get install -y wine wine64
+        run: |
+          # copy curl dll required by yass_test
+          cp -v third_party/curl-8.2.0_1-win64-mingw/bin/libcurl-x64.dll build-mingw
+          sudo apt-get update -qq && sudo apt-get install -y wine wine64
       - name: Run tests
         run: |
           cd build-mingw
           wine yass_test.exe -logtostderr -v 1 --gtest_shuffle --gtest_repeat=25 --gtest_throw_on_failure
           wine yass_test.exe -logtostderr -v 1 --gtest_shuffle --gtest_repeat=25 --gtest_throw_on_failure --ipv6_mode
+
+          wine yass_test.exe -logtostderr -v 1 --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks4
+          wine yass_test.exe -logtostderr -v 1 --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks4a
+          wine yass_test.exe -logtostderr -v 1 --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks5
+          wine yass_test.exe -logtostderr -v 1 --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks5h
+          wine yass_test.exe -logtostderr -v 1 --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type http
+          wine yass_test.exe -logtostderr -v 1 --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks4a --ipv6_mode
+          wine yass_test.exe -logtostderr -v 1 --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks5 --ipv6_mode
+          wine yass_test.exe -logtostderr -v 1 --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks5h --ipv6_mode
+          wine yass_test.exe -logtostderr -v 1 --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type http --ipv6_mode
   linux-compiler-compatible:
     runs-on: ubuntu-20.04
     strategy:
