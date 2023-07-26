@@ -25,6 +25,9 @@ set "WindowsSDKVersion=10.0.10240.0\"
 set "WindowsSdkDir=C:\Program Files (x86)\Windows Kits\10"
 set "VCINSTALLDIR=%VisualStudioInstallDir%\VC"
 
+cd /D "%~dp0"
+cd ..
+
 REM
 REM Generate build helper
 REM

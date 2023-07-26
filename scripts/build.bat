@@ -11,7 +11,7 @@ REM   Visual Studio 2019, CMake, Ninja,
 REM   Visual Studio 2019 SDK and Python 3.
 REM
 REM VCToolsVersion:PlatformToolchainversion:VisualStudioVersion
-REM   14.30-14.3?:v143:Visual Studio 2019
+REM   14.30-14.3?:v143:Visual Studio 2022
 REM   14.20-14.29:v142:Visual Studio 2019
 REM   14.10-14.19:v141:Visual Studio 2017
 REM   14.00-14.00:v140:Visual Studio 2015
@@ -33,6 +33,9 @@ set VCToolsVersion=
 set Winsdk=10.0.19041.0
 set "WindowsSDKVersion=%Winsdk%\"
 set "vsdevcmd=%VisualStudioInstallDir%\Common7\Tools\VsDevCmd.bat"
+
+cd /D "%~dp0"
+cd ..
 
 REM
 REM Generate build helper
