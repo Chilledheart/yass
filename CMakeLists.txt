@@ -1752,6 +1752,15 @@ if (MSAN)
   target_compile_options(ssl PRIVATE "-fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
 endif()
 
+if (BORINGSSL_BUILD_TESTS)
+  add_custom_target(check_boringssl
+    COMMAND ${GO_EXECUTABLE} run util/all_tests.go -build-dir
+            ${CMAKE_CURRENT_BINARY_DIR}/third_party/boringssl/src
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/third_party/boringssl/src
+    DEPENDS all_tests
+    USES_TERMINAL)
+endif()
+
 # *****************************************************************************************
 #           asio Library
 # *****************************************************************************************

@@ -164,10 +164,7 @@ commands:
             sudo sed -i s/ip6-localhost/localhost/g /etc/hosts
             ./build/yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=5 --gtest_throw_on_failure --ipv6_mode
             # alternative for ninja -C build run_tests
-            BUILD_DIR=$PWD/build/third_party/boringssl/src
-            cd third_party/boringssl/src
-            go run util/all_tests.go -build-dir ${BUILD_DIR}
-
+            ninja -C build check_boringssl
 
 executors:
   ubuntu:
