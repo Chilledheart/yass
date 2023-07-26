@@ -134,10 +134,6 @@ jobs:
         arch: [i686, x86_64]
         build_type: [Debug, Release]
         variant: [standard]
-        include:
-          - build_type: Release
-            arch: i686
-            variant: winxp
     steps:
       - uses: actions/checkout@v3
       - name: Checkout with shallow submodules
@@ -245,18 +241,6 @@ jobs:
           set(CMAKE_C_COMPILER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang")
           set(CMAKE_CXX_COMPILER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++")
           EOF
-      - name: Patch libcxx for windows xp
-        if: ${{ matrix.variant == 'winxp' }}
-        run: |
-          pushd third_party/libc++/trunk
-          patch -p1 < ../winxp.patch
-          popd
-          pushd third_party/benchmark
-          patch -p1 < ../benchmark-winxp-fix.patch
-          popd
-          echo "CMAKE_OPTIONS=-DALLOW_XP=on" >> $GITHUB_ENV
-          # cp -v /usr/i686-w64-mingw32/lib/*.dll .
-          echo "WINEPATH=/usr/i686-w64-mingw32/lib" >> $GITHUB_ENV
       - name: Build
         run: |
           mkdir build-mingw
