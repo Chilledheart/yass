@@ -23,7 +23,11 @@ set CL=/MP
 cd /D "%~dp0"
 cd ..\third_party
 
+goto :Build
 :DownloadCurl
+REM
+REM download source tarball
+REM
 curl -L -O https://github.com/curl/curl/releases/download/curl-8_2_0/curl-8.2.0.zip
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 "C:\Program Files\7-Zip\7z.exe" x curl-8.2.0.zip -aoa
@@ -31,11 +35,14 @@ if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 del /s /q curl-8.2.0.zip
 
 :Build
+REM
+REM x86 build
+REM
 set Platform=x86
-call "%vsdevcmd%" -arch=%Platform% -host_arch=%Platform% -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
+call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
 cd curl-8.2.0\winbuild
-nmake /f Makefile.vc mode=static RTLIBCFG=static debug=no VC=16
+nmake /f Makefile.vc mode=static MACHINE=x86 RTLIBCFG=static debug=no VC=16
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 cd ..\builds
 "C:\Program Files\7-Zip\7z.exe" a -tzip libcurl-vc16-x86-release-static-ipv6-sspi-schannel.zip libcurl-vc16-x86-release-static-ipv6-sspi-schannel
@@ -46,11 +53,14 @@ move libcurl-vc16-x86-release-static-ipv6-sspi-schannel.zip ..\..\..\
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 cd ..\winbuild
 
+REM
+REM x64 build
+REM
 set Platform=x64
-call "%vsdevcmd%" -arch=%Platform% -host_arch=%Platform% -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
+call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
 cd curl-8.2.0\winbuild
-nmake /f Makefile.vc mode=static RTLIBCFG=static debug=no VC=16
+nmake /f Makefile.vc mode=static MACHINE=x64 RTLIBCFG=static debug=no VC=16
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 cd ..\builds
 "C:\Program Files\7-Zip\7z.exe" a -tzip libcurl-vc16-x64-release-static-ipv6-sspi-schannel.zip libcurl-vc16-x64-release-static-ipv6-sspi-schannel
@@ -61,5 +71,25 @@ move libcurl-vc16-x64-release-static-ipv6-sspi-schannel.zip ..\..\..\
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 cd ..\winbuild
 
+REM
+REM arm64 build
+REM
+set Platform=arm64
+call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
+cd curl-8.2.0\winbuild
+nmake /f Makefile.vc mode=static MACHINE=arm64 RTLIBCFG=static debug=no VC=16
+if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
+cd ..\builds
+"C:\Program Files\7-Zip\7z.exe" a -tzip libcurl-vc16-arm64-release-static-ipv6-sspi-schannel.zip libcurl-vc16-arm64-release-static-ipv6-sspi-schannel
+if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
+xcopy /F /S /E /I libcurl-vc16-arm64-release-static-ipv6-sspi-schannel ..\..\libcurl-vc16-arm64-release-static-ipv6-sspi-schannel
+if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
+move libcurl-vc16-arm64-release-static-ipv6-sspi-schannel.zip ..\..\..\
+if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
+cd ..\winbuild
+
+REM
+REM cleanup
+REM
 cd ..\..\
 del /s /q curl-8.2.0
