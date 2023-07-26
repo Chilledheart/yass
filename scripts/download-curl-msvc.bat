@@ -19,18 +19,18 @@ exit /B 1
 
 :DownloadX86_64
 echo Select architecture: %1
-curl -L -O https://github.com/Chilledheart/curl/releases/download/curl-8_2_0/libcurl-vc17-x64-release-static-ipv6-sspi-schannel.zip
+curl -L -O https://github.com/Chilledheart/curl/releases/download/curl-8_2_0/libcurl-vc16-x64-release-static-ipv6-sspi-schannel.zip
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
-"C:\Program Files\7-Zip\7z.exe" x libcurl-vc17-x64-release-static-ipv6-sspi-schannel.zip -aoa
+"C:\Program Files\7-Zip\7z.exe" x libcurl-vc16-x64-release-static-ipv6-sspi-schannel.zip -aoa
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
-del /s /q libcurl-vc17-x64-release-static-ipv6-sspi-schannel.zip
+del /s /q libcurl-vc16-x64-release-static-ipv6-sspi-schannel.zip
 exit /B 0
 
 :DownloadI686
 echo Select architecture: %1
-curl -L -O https://github.com/Chilledheart/curl/releases/download/curl-8_2_0/libcurl-vc17-x86-release-static-ipv6-sspi-schannel.zip
+curl -L -O https://github.com/Chilledheart/curl/releases/download/curl-8_2_0/libcurl-vc16-x86-release-static-ipv6-sspi-schannel.zip
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
-"C:\Program Files\7-Zip\7z.exe" x libcurl-vc17-x86-release-static-ipv6-sspi-schannel.zip -aoa
+"C:\Program Files\7-Zip\7z.exe" x libcurl-vc16-x86-release-static-ipv6-sspi-schannel.zip -aoa
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
-del /s /q libcurl-vc17-x86-release-static-ipv6-sspi-schannel.zip
+del /s /q libcurl-vc16-x86-release-static-ipv6-sspi-schannel.zip
 exit /B 0

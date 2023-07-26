@@ -67,9 +67,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            third_party/libcurl-vc17-x64-release-static-ipv6-sspi-schannel
-            third_party/libcurl-vc17-x86-release-static-ipv6-sspi-schannel
-          key: ${{ runner.os }}-msvc-curl-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
+            third_party/libcurl-vc16-x64-release-static-ipv6-sspi-schannel
+            third_party/libcurl-vc16-x86-release-static-ipv6-sspi-schannel
+          key: ${{ runner.os }}-msvc-curl-vc16-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
         uses: actions/cache@v3
         with:
