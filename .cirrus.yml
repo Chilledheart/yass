@@ -39,15 +39,16 @@ freebsd_task:
     - export CXX=clang++
     - mkdir build
     - cd build
-    - cmake -G Ninja -DBUILD_TESTS=on ${configure} ..
+    - cmake -G Ninja -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on ${configure} ..
   compile_script:
-    - ninja -C build yass_cli yass_server yass_test
+    - ninja -C build yass_cli yass_server yass_test all_tests bssl_shim handshaker
   test_script:
     # blackhole?
     - sysctl net.inet.tcp.blackhole
     # make sure we don't run blackhole != 0
     - sudo sysctl net.inet.tcp.blackhole=0
     - ninja -C build check
+    - ninja -C build check_boringssl
 
 macos_task:
   skip: "changesIncludeOnly(
@@ -81,8 +82,9 @@ macos_task:
   configure_script:
     - mkdir build
     - cd build
-    - cmake -G Ninja -DGUI=on -DBUILD_TESTS=on ${configure} ..
+    - cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on ${configure} ..
   compile_script:
-    - ninja -C build yass yass_test
+    - ninja -C build yass yass_test all_tests bssl_shim handshaker
   test_script:
     - ninja -C build check
+    - ninja -C build check_boringssl

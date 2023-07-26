@@ -121,7 +121,7 @@ else()
 
     set(libcxx_PUBLIC_LIBRARIES
       ${libcxx_PUBLIC_LIBRARIES}
-      c thr gcc_s m rt
+      pthread c gcc_s m rt
       )
   elseif (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6.0)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nostdlib++")

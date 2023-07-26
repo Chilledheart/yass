@@ -1123,6 +1123,11 @@ if (UNIX AND NOT APPLE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 endif()
 
+# similar workaround exists inside libc++ directory
+if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+  link_libraries(pthread)
+endif()
+
 # Clang-specific compiler flags setup.
 # ------------------------------------
 if (COMPILER_CLANG)
