@@ -3007,11 +3007,14 @@ if (BUILD_TESTS)
     USES_TERMINAL
   )
 
-  if (USE_CURL)
-    if (MSVC AND NOT ALLOW_XP)
-      if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+  # curl is incompatible with windows xp
+  if (USE_CURL AND NOT ALLOW_XP)
+    if (MSVC)
+      if("${MSVC_PROCESSOR_ARCHITECTURE}" STREQUAL "arm64")
+        set(CURL_MSVC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libcurl-vc16-arm64-release-static-ipv6-sspi-schannel")
+      elseif("${MSVC_PROCESSOR_ARCHITECTURE}" STREQUAL "amd64")
         set(CURL_MSVC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libcurl-vc16-x64-release-static-ipv6-sspi-schannel")
-      else()
+      elseif("${MSVC_PROCESSOR_ARCHITECTURE}" STREQUAL "x86")
         set(CURL_MSVC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libcurl-vc16-x86-release-static-ipv6-sspi-schannel")
       endif()
       if (EXISTS ${CURL_MSVC_DIR}/include/curl/curl.h)
