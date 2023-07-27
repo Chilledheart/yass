@@ -284,16 +284,10 @@ if (WIN32)
   endif()
 
   # turn on win32 thread model manually
-  if (MINGW AND NOT ALLOW_XP)
+  if (MINGW)
     set(libcxx_PUBLIC_DEFINITIONS
       ${libcxx_PUBLIC_DEFINITIONS}
       "_LIBCPP_HAS_THREAD_API_WIN32"
-    )
-  endif()
-  if (MINGW AND ALLOW_XP)
-    set(libcxx_PUBLIC_DEFINITIONS
-      ${libcxx_PUBLIC_DEFINITIONS}
-      "_LIBCPP_HAS_THREAD_API_PTHREAD"
     )
   endif()
 
@@ -503,6 +497,7 @@ if (NOT MSVC)
 
   target_compile_definitions(cxxabi PRIVATE ${libcxxabi_DEFINITIONS})
   target_compile_definitions(cxxabi PRIVATE ${libcxx_DEFINITIONS})
+  target_compile_definitions(cxxabi PRIVATE ${libcxx_PUBLIC_DEFINITIONS})
   target_compile_options(cxxabi PRIVATE ${libcxx_CFLAGS})
 
   target_include_directories(cxxabi PRIVATE
@@ -537,6 +532,7 @@ if (NOT MSVC)
 endif()
 
 target_compile_definitions(cxx PRIVATE ${libcxx_DEFINITIONS})
+target_compile_definitions(cxx PRIVATE ${libcxx_PUBLIC_DEFINITIONS})
 
 target_include_directories(cxx PRIVATE
   ../libc++
