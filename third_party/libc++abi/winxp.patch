@@ -1,0 +1,61 @@
+From 0aa66bdf04c70d2d4dc03e4fa7faf1d5386109b7 Mon Sep 17 00:00:00 2001
+From: Chilledheart <hukeyue@hotmail.com>
+Date: Thu, 27 Jul 2023 16:14:43 +0800
+Subject: [PATCH] allow xp build
+
+---
+ src/cxa_guard_impl.h    | 13 +++++++++++++
+ src/fallback_malloc.cpp |  6 ++++++
+ 2 files changed, 19 insertions(+)
+
+diff --git a/src/cxa_guard_impl.h b/src/cxa_guard_impl.h
+index e00d54b..682e670 100644
+--- a/src/cxa_guard_impl.h
++++ b/src/cxa_guard_impl.h
+@@ -280,6 +280,13 @@ struct LibcppCondVar;
+ #ifndef _LIBCXXABI_HAS_NO_THREADS
+ struct LibcppMutex {
+   LibcppMutex() = default;
++
++#if defined(_LIBCPP_HAS_THREAD_API_WIN32)
++  void init() {
++    std::__libcpp_mutex_init(&mutex);
++  }
++#endif
++
+   LibcppMutex(LibcppMutex const&) = delete;
+   LibcppMutex& operator=(LibcppMutex const&) = delete;
+ 
+@@ -393,6 +400,12 @@ private:
+     LockGuard& operator=(LockGuard const&) = delete;
+ 
+     explicit LockGuard(const char* calling_func) : calling_func_(calling_func) {
++#if defined(_LIBCPP_HAS_THREAD_API_WIN32)
++      static std::__libcpp_exec_once_flag init_mutex_flag = _LIBCPP_EXEC_ONCE_INITIALIZER;
++      std::__libcpp_execute_once(&init_mutex_flag, []() {
++        global_mutex.init();
++      });
++#endif
+       if (global_mutex.lock())
+         ABORT_WITH_MESSAGE("%s failed to acquire mutex", calling_func_);
+     }
+diff --git a/src/fallback_malloc.cpp b/src/fallback_malloc.cpp
+index f9fb1bc..477fb8b 100644
+--- a/src/fallback_malloc.cpp
++++ b/src/fallback_malloc.cpp
+@@ -43,6 +43,12 @@ class mutexor {
+ public:
+ #ifndef _LIBCXXABI_HAS_NO_THREADS
+   mutexor(std::__libcpp_mutex_t* m) : mtx_(m) {
++#if defined(_LIBCPP_HAS_THREAD_API_WIN32)
++    static std::__libcpp_exec_once_flag init_mutex_flag = _LIBCPP_EXEC_ONCE_INITIALIZER;
++    std::__libcpp_execute_once(&init_mutex_flag, []() {
++      std::__libcpp_mutex_init(&heap_mutex);
++    });
++#endif
+     std::__libcpp_mutex_lock(mtx_);
+   }
+   ~mutexor() { std::__libcpp_mutex_unlock(mtx_); }
+-- 
+2.41.0.windows.3
+

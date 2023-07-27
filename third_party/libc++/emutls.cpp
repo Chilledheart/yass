@@ -101,6 +101,9 @@ static void emutls_init(void) {
   if (std::__libcpp_tls_create(&emutls_key, emutls_destroy) != 0) {
     abort();
   }
+#if defined(__libcpp_mutex_init)
+  std::__libcpp_mutex_init(&emutls_mutex);
+#endif
 }
 
 static void* emutls_alloc(struct __emutls_object* obj) {
