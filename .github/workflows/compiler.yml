@@ -241,6 +241,18 @@ jobs:
           set(CMAKE_C_COMPILER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang")
           set(CMAKE_CXX_COMPILER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++")
           EOF
+      - name: Patch libcxx for windows xp
+        run: |
+          pushd third_party/libc++/trunk
+          patch -p1 < ../winxp.patch
+          popd
+          pushd third_party/libc++abi/trunk
+          patch -p1 < ../winxp.patch
+          popd
+          pushd third_party/benchmark
+          patch -p1 < ../benchmark-winxp-fix.patch
+          popd
+          echo "CMAKE_OPTIONS=-DALLOW_XP=on" >> $GITHUB_ENV
       - name: Build
         run: |
           mkdir build-mingw
