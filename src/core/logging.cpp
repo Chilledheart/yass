@@ -2984,7 +2984,11 @@ int32_t GetMainThreadPid() {
 }
 
 bool PidHasChanged() {
+#ifdef _WIN32
+  int32_t pid = _getpid();
+#else
   int32_t pid = getpid();
+#endif
   if (g_main_thread_pid == pid) {
     return false;
   }
