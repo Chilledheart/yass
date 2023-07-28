@@ -1433,14 +1433,9 @@ if (WIN32)
   set(CMAKE_CXX_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
 
   if (MSVC)
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} ShLwApi Crypt32 WS2_32 Bcrypt User32 kernel32)
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} Crypt32 WS2_32 Bcrypt User32 kernel32)
   else()
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} shlwapi crypt32 ws2_32 mswsock bcrypt user32 kernel32)
-  endif()
-
-  # FIXME Old Versions of Mingw64 (at least 8.1.0) doesn't contain pathcch library
-  if (NOT ALLOW_XP AND NOT MINGW)
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} pathcch)
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} crypt32 ws2_32 mswsock bcrypt user32 kernel32)
   endif()
 
   # Don't use it even if we are compiling with gnu extensions
