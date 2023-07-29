@@ -391,15 +391,19 @@ int64_t UsecToCycles(int64_t usec);
 typedef double WallTime;
 WallTime WallTime_Now();
 
-int32_t GetMainThreadPid();
-bool PidHasChanged();
-
 #ifdef COMPILER_MSVC
 // On Windows, process id and thread id are of the same type according to the
 // return types of GetProcessId() and GetThreadId() are both DWORD, an unsigned
 // 32-bit type.
 using pid_t = uint32_t;
+static_assert(sizeof(uint32_t) == sizeof(DWORD), "");
+#elif defined(_WIN32)
+static_assert(sizeof(pid_t) >= sizeof(DWORD), "");
 #endif
+
+pid_t GetMainThreadPid();
+bool PidHasChanged();
+
 pid_t GetPID();
 pid_t GetTID();
 
@@ -2978,17 +2982,13 @@ WallTime WallTime_Now() {
   return static_cast<double>(CycleClock_Now()) * 0.000001;
 }
 
-static int32_t g_main_thread_pid = GetPID();
-int32_t GetMainThreadPid() {
+static pid_t g_main_thread_pid = GetPID();
+pid_t GetMainThreadPid() {
   return g_main_thread_pid;
 }
 
 bool PidHasChanged() {
-#ifdef _WIN32
-  int32_t pid = _getpid();
-#else
-  int32_t pid = getpid();
-#endif
+  pid_t pid = GetPID();
   if (g_main_thread_pid == pid) {
     return false;
   }
@@ -3030,7 +3030,7 @@ pid_t GetPID() {
 #elif defined(OS_WIN)
   return GetCurrentProcessId();
 #else
-#error
+#error "Lack GetPID implementation for host environment"
 #endif
 }
 
