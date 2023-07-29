@@ -2602,7 +2602,7 @@ if (CLI)
   if (WIN32)
     set(CLI_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass_cli.manifest")
     configure_file("src/core/win32.manifest" "${CLI_MSVC_MANIFEST}" @ONLY)
-    target_sources(yass_cli PRIVATE ${CLI_MSVC_MANIFESTi})
+    target_sources(yass_cli PRIVATE ${CLI_MSVC_MANIFEST})
   endif()
 
   target_include_directories(yass_cli PRIVATE
@@ -3021,6 +3021,11 @@ if (BUILD_TESTS)
       yass_server_lib
       yass_gtest
       )
+  if (WIN32)
+    set(TEST_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass_test.manifest")
+    configure_file("src/core/win32.manifest" "${TEST_MSVC_MANIFEST}" @ONLY)
+    target_sources(yass_test PRIVATE ${TEST_MSVC_MANIFEST})
+  endif()
   add_custom_target(check
     COMMAND ${CMAKE_CURRENT_BINARY_DIR}/yass_test
     DEPENDS yass_test
@@ -3100,4 +3105,9 @@ if (BUILD_BENCHMARKS)
       yass_server_lib
       benchmark::benchmark
       )
+  if (WIN32)
+    set(BENCHMARK_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass_benchmark.manifest")
+    configure_file("src/core/win32.manifest" "${BENCHMARK_MSVC_MANIFEST}" @ONLY)
+    target_sources(yass_benchmark PRIVATE ${BENCHMARK_MSVC_MANIFEST})
+  endif()
 endif()

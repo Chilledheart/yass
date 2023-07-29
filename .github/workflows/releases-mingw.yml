@@ -157,10 +157,18 @@ jobs:
         if: ${{ matrix.arch == 'i686' }}
         run: |
           xcopy /F third_party\curl-8.2.0_1-win32-mingw\bin\libcurl.dll build-mingw
+          # Install vcredist2010
+          curl -L -O https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x86.exe
+          vcredist_x86.exe /install /quiet /norestart
+          del vcredist_x86.exe
       - name: Populate depedencies (Tests-x86_64)
         if: ${{ matrix.arch == 'x86_64' }}
         run: |
           xcopy /F third_party\curl-8.2.0_1-win64-mingw\bin\libcurl-x64.dll build-mingw
+          # Install vcredist2010
+          curl -L -O https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x64.exe
+          vcredist_x64.exe /install /quiet /norestart
+          del vcredist_x64.exe
       - name: Run unittests
         run: |
           cd build-mingw
