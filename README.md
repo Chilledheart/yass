@@ -43,6 +43,7 @@ The theory benchmark is over 600MB/s at a modern i5 CPU.
   * [Screenshot on FreeBSD](#screenshot-on-freebsd)
 - [Client Protocols Supported](#client-protocols-supported)
 - [Build from Source](#build-from-source)
+- [Runtime requirements on Mingw](#runtime-requirements-on-mingw)
 - [License](#license)
 
 <!-- /TOC -->
@@ -163,6 +164,11 @@ Server-side features compared with caddy+forwardproxy
 Looking for how to build from source?
 Take a look at [BUILDING.md] for more instructions.
 
+## Runtime requirements on Mingw
+If you are using windows operating system, there is no runtime requirement mostly. However, if you choose to use mingw
+binaries, it is necessary that you must make sure your OS has visual c++ 2010 runtime. For your reference, here is [x86
+installer][vs2010_x86] download url and here is [x64 installer][vs2010_x64] one.
+
 ## License
 It is licensed with [GPLv2][license-link].
 
@@ -183,3 +189,5 @@ It is licensed with [GPLv2][license-link].
 [naiveproxy-server]: https://github.com/klzgrad/naiveproxy#server-setup
 
 [BUILDING.md]: BUILDING.md
+[vs2010_x64]: https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x64.exe
+[vs2010_x86]: https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x86.exe
