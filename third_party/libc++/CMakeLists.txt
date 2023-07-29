@@ -159,9 +159,9 @@ else()
     elseif (MINGW)
       set(libcxx_PUBLIC_LIBRARIES
         ${libcxx_PUBLIC_LIBRARIES}
-         mingw32 gcc_eh gcc moldname mingwex msvcrt
+         mingw32 gcc_eh gcc moldname mingwex msvcr100
          advapi32 shell32 user32 kernel32
-         mingw32 gcc_eh gcc moldname mingwex msvcrt kernel32
+         mingw32 gcc_eh gcc moldname mingwex msvcr100 kernel32
         )
     endif()
   endif()
