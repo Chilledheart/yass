@@ -39,15 +39,16 @@ freebsd_task:
     - export CXX=clang++
     - mkdir build
     - cd build
-    - cmake -G Ninja -DBUILD_TESTS=on ${configure} ..
+    - cmake -G Ninja -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on ${configure} ..
   compile_script:
-    - ninja -C build yass_cli yass_server yass_test
+    - ninja -C build yass_cli yass_server yass_test all_tests bssl_shim handshaker
   test_script:
     # blackhole?
     - sysctl net.inet.tcp.blackhole
     # make sure we don't run blackhole != 0
     - sudo sysctl net.inet.tcp.blackhole=0
     - ninja -C build check
+    - ninja -C build check_boringssl
 
 macos_task:
   skip: "changesIncludeOnly(
@@ -55,14 +56,11 @@ macos_task:
     '.github/**'
     )"
 
-  name: macOS x86_64 and arm64
+  name: macOS arm64
   macos_instance:
     image: ghcr.io/cirruslabs/macos-ventura-xcode:latest
 
   matrix:
-    - name: macOS x86_64 release
-      env:
-        configure: -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=x86_64
     - name: macOS arm64 release
       env:
         configure: -DCMAKE_BUILD_TYPE=Release
@@ -71,7 +69,6 @@ macos_task:
     CIRRUS_CLONE_DEPTH: 10
 
   pkginstall_script:
-    - sudo /usr/sbin/softwareupdate --install-rosetta --agree-to-license
     - echo ninja cmake go p7zip ${install_packages} | xargs -Ix -n1 echo brew '"x"' > /tmp/Brewfile
     - "while [[ $? == 0 ]]; do for i in 1 2 3; do brew update && brew bundle install --no-lock --file /tmp/Brewfile && break 2 || { echo Error: wait to try again; sleep 10; } done; false Too many retries; done"
   submodules_script:
@@ -81,8 +78,9 @@ macos_task:
   configure_script:
     - mkdir build
     - cd build
-    - cmake -G Ninja -DGUI=on -DBUILD_TESTS=on ${configure} ..
+    - cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on ${configure} ..
   compile_script:
-    - ninja -C build yass yass_test
+    - ninja -C build yass yass_test all_tests bssl_shim handshaker
   test_script:
     - ninja -C build check
+    - ninja -C build check_boringssl

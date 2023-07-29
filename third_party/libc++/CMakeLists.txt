@@ -121,9 +121,9 @@ else()
 
     set(libcxx_PUBLIC_LIBRARIES
       ${libcxx_PUBLIC_LIBRARIES}
-      c thr gcc_s m rt
+      pthread c gcc_s m rt
       )
-  elseif (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6.0)
+  elseif (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6.0 AND NOT MINGW)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nostdlib++")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -nostdlib++")
   else()
@@ -159,9 +159,9 @@ else()
     elseif (MINGW)
       set(libcxx_PUBLIC_LIBRARIES
         ${libcxx_PUBLIC_LIBRARIES}
-         mingw32 gcc_eh gcc moldname mingwex msvcrt advapi32
-         shell32 user32 kernel32 mingw32 gcc_eh gcc
-         moldname mingwex msvcrt
+         mingw32 gcc_eh gcc moldname mingwex msvcr100
+         advapi32 shell32 user32 kernel32
+         mingw32 gcc_eh gcc moldname mingwex msvcr100 kernel32
         )
     endif()
   endif()
@@ -256,25 +256,38 @@ if (WIN32)
     set_source_files_properties(emutls.cpp
       PROPERTIES
       COMPILE_FLAGS "-fno-builtin")
-    if (CMAKE_SIZEOF_VOID_P EQUAL 4)
+  endif()
+  # override libgcc builtin with compiler-rt's implementation
+  # TODO embedded compiler-rt builtin library directly
+  if (MINGW)
+    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+      # __umodti3
       set(libcxx_SOURCES
         ${libcxx_SOURCES}
-        libgcc2.c
+        umodti3.c
+        udivmodti4.c
+        )
+    elseif (CMAKE_SIZEOF_VOID_P EQUAL 4)
+      #   42  __divdi3
+      #   86  __moddi3
+      #  121  __udivdi3
+      #  123  __umoddi3
+      set(libcxx_SOURCES
+        ${libcxx_SOURCES}
+        divdi3.c
+        moddi3.c
+        udivdi3.c
+        umoddi3.c
+        udivmoddi4.c
         )
     endif()
   endif()
 
   # turn on win32 thread model manually
-  if (MINGW AND NOT ALLOW_XP)
+  if (MINGW)
     set(libcxx_PUBLIC_DEFINITIONS
       ${libcxx_PUBLIC_DEFINITIONS}
       "_LIBCPP_HAS_THREAD_API_WIN32"
-    )
-  endif()
-  if (MINGW AND ALLOW_XP)
-    set(libcxx_PUBLIC_DEFINITIONS
-      ${libcxx_PUBLIC_DEFINITIONS}
-      "_LIBCPP_HAS_THREAD_API_PTHREAD"
     )
   endif()
 
@@ -484,6 +497,7 @@ if (NOT MSVC)
 
   target_compile_definitions(cxxabi PRIVATE ${libcxxabi_DEFINITIONS})
   target_compile_definitions(cxxabi PRIVATE ${libcxx_DEFINITIONS})
+  target_compile_definitions(cxxabi PRIVATE ${libcxx_PUBLIC_DEFINITIONS})
   target_compile_options(cxxabi PRIVATE ${libcxx_CFLAGS})
 
   target_include_directories(cxxabi PRIVATE
@@ -518,6 +532,7 @@ if (NOT MSVC)
 endif()
 
 target_compile_definitions(cxx PRIVATE ${libcxx_DEFINITIONS})
+target_compile_definitions(cxx PRIVATE ${libcxx_PUBLIC_DEFINITIONS})
 
 target_include_directories(cxx PRIVATE
   ../libc++
@@ -590,10 +605,12 @@ foreach(Definition ${libcxx_PUBLIC_DEFINITIONS})
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D${Definition}")
 endforeach()
 
-foreach(Library ${libcxx_PUBLIC_LIBRARIES})
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-l${Library}")
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-l${Library}")
-endforeach()
+if (NOT WIN32)
+  foreach(Library ${libcxx_PUBLIC_LIBRARIES})
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-l${Library}")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-l${Library}")
+  endforeach()
+endif()
 
 set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} PARENT_SCOPE)
 set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} PARENT_SCOPE)

@@ -46,7 +46,26 @@ commands:
       - run:
           command: |
             sudo apt-get update -qq
-            sudo apt-get install -y cmake ninja-build libgtk-3-dev libncurses5 gettext libcurl4-openssl-dev
+            sudo apt-get install -y cmake ninja-build libgtk-3-dev libncurses5 gettext libcurl4-openssl-dev dpkg-dev
+
+  install-deps-golang:
+    steps:
+      - run:
+          command: |
+            BUILD_ARCH=$(dpkg-architecture -q DEB_BUILD_ARCH)
+            cd /tmp
+            # shipped with debian bookworm
+            curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-defaults/golang_1.19~1_${BUILD_ARCH}.deb
+            curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-defaults/golang-go_1.19~1_${BUILD_ARCH}.deb
+            curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-defaults/golang-src_1.19~1_all.deb
+            curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-defaults/golang-doc_1.19~1_all.deb
+            curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-1.19/golang-1.19_1.19.8-2_all.deb
+            curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-1.19/golang-1.19-go_1.19.8-2_${BUILD_ARCH}.deb
+            curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-1.19/golang-1.19-src_1.19.8-2_all.deb
+            curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-1.19/golang-1.19-doc_1.19.8-2_all.deb
+            sudo dpkg --force-depends -i $PWD/*.deb || true
+            sudo apt-get install -y -f
+            rm -vf *.deb
 
   configure:
     steps:
@@ -56,7 +75,7 @@ commands:
             export "CXX=$PWD/third_party/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/clang++"
             mkdir build
             cd build
-            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release ..
+            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release ..
 
   configure-gcc:
     steps:
@@ -66,7 +85,7 @@ commands:
             export "CXX=g++"
             mkdir build
             cd build
-            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DUSE_LIBCXX=off ..
+            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DUSE_LIBCXX=off ..
 
   configure-without-libcxx:
     steps:
@@ -76,7 +95,7 @@ commands:
             export "CXX=$PWD/third_party/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/clang++"
             mkdir build
             cd build
-            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DUSE_LIBCXX=off ..
+            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DUSE_LIBCXX=off ..
 
   configure-arm:
     steps:
@@ -86,7 +105,7 @@ commands:
             export "CXX=clang++"
             mkdir build
             cd build
-            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release ..
+            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release ..
 
   configure-asan:
     steps:
@@ -96,7 +115,7 @@ commands:
             export "CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++"
             mkdir build
             cd build
-            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DASAN=on ..
+            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DASAN=on ..
 
   configure-ubsan:
     steps:
@@ -106,7 +125,7 @@ commands:
             export "CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++"
             mkdir build
             cd build
-            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DUBSAN=on -DUSE_LIBCXX=off ..
+            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DUBSAN=on -DUSE_LIBCXX=off ..
 
   configure-tsan:
     steps:
@@ -116,7 +135,7 @@ commands:
             export "CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++"
             mkdir build
             cd build
-            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DTSAN=on ..
+            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DTSAN=on ..
 
   configure-msan:
     steps:
@@ -126,13 +145,13 @@ commands:
             export "CXX=$PWD/third_party/llvm-build/Release+Asserts/bin/clang++"
             mkdir build
             cd build
-            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DMSAN=on -DUSE_CURL=off ..
+            cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DMSAN=on -DUSE_CURL=off ..
 
   build:
     steps:
       - run:
           command: |
-            ninja -C build yass yass_test
+            ninja -C build yass yass_test all_tests bssl_shim handshaker
 
   test:
     steps:
@@ -144,12 +163,13 @@ commands:
             grep localhost /etc/hosts
             sudo sed -i s/ip6-localhost/localhost/g /etc/hosts
             ./build/yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=5 --gtest_throw_on_failure --ipv6_mode
-
+            # alternative for ninja -C build run_tests
+            ninja -C build check_boringssl
 
 executors:
   ubuntu:
     machine:
-      image: ubuntu-2004:202010-01
+      image: ubuntu-2204:2023.07.2
 
 jobs:
   basic:
@@ -158,6 +178,7 @@ jobs:
       - checkout
       - update-submodule
       - install-deps
+      - install-deps-golang
       - download-toolchain-clang
       - configure
       - build
@@ -169,6 +190,7 @@ jobs:
       - checkout
       - update-submodule
       - install-deps
+      - install-deps-golang
       - download-toolchain-gcc
       - configure-gcc
       - build
@@ -180,6 +202,7 @@ jobs:
       - checkout
       - update-submodule
       - install-deps
+      - install-deps-golang
       - download-toolchain-clang
       - configure-without-libcxx
       - build
@@ -187,12 +210,13 @@ jobs:
 
   arm:
     machine:
-      image: ubuntu-2004:202101-01
+      image: ubuntu-2204:2023.07.2
     resource_class: arm.medium
     steps:
       - checkout
       - update-submodule
       - install-deps
+      - install-deps-golang
       - download-toolchain-arm
       - configure-arm
       - build
@@ -204,6 +228,7 @@ jobs:
       - checkout
       - update-submodule
       - install-deps
+      - install-deps-golang
       - download-toolchain
       - configure-asan
       - build
@@ -215,6 +240,7 @@ jobs:
       - checkout
       - update-submodule
       - install-deps
+      - install-deps-golang
       - download-toolchain
       - configure-ubsan
       - build
@@ -226,6 +252,7 @@ jobs:
       - checkout
       - update-submodule
       - install-deps
+      - install-deps-golang
       - download-toolchain
       - configure-tsan
       - build
@@ -237,6 +264,7 @@ jobs:
       - checkout
       - update-submodule
       - install-deps
+      - install-deps-golang
       - download-toolchain
       - configure-msan
       - build

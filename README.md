@@ -3,7 +3,7 @@
 [![License][license-svg]][license-link]
 [![GitHub all downloads](https://img.shields.io/github/downloads/Chilledheart/yass/total)](https://github.com/Chilledheart/yass/releases)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Chilledheart/yass)](https://github.com/Chilledheart/yass/releases)
-[![GitHub latest downloads](https://img.shields.io/github/downloads/Chilledheart/yass/1.3.8/total)](https://github.com/Chilledheart/yass/releases/tag/1.3.8)
+[![GitHub latest downloads](https://img.shields.io/github/downloads/Chilledheart/yass/1.3.9/total)](https://github.com/Chilledheart/yass/releases/tag/1.3.9)
 
 [![Compiler Compatibility](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml)
 [![CircleCI](https://img.shields.io/circleci/build/github/Chilledheart/yass/develop?logo=circleci&&label=Sanitizers%20and%20Ubuntu%20arm)](https://circleci.com/gh/Chilledheart/yass/?branch=develop)
@@ -43,6 +43,7 @@ The theory benchmark is over 600MB/s at a modern i5 CPU.
   * [Screenshot on FreeBSD](#screenshot-on-freebsd)
 - [Client Protocols Supported](#client-protocols-supported)
 - [Build from Source](#build-from-source)
+- [Runtime requirements on Mingw](#runtime-requirements-on-mingw)
 - [License](#license)
 
 <!-- /TOC -->
@@ -61,13 +62,13 @@ The theory benchmark is over 600MB/s at a modern i5 CPU.
 1. Download the package (and install if it is a installer) and run YASS.
 It is a GUI application, for a quick start we can pick from here:
 
-- Windows XP SP3 or later ([Setup installer](https://github.com/Chilledheart/yass/releases/download/1.3.8/yass-winxp-release-x86-static-1.3.8-installer.exe))
-- Ubuntu 16.04 or later ([DEB](https://github.com/Chilledheart/yass/releases/download/1.3.8/yass-ubuntu-16.04-xenial_amd64.1.3.8.deb))
-- CentOS 7 or later ([RPM](https://github.com/Chilledheart/yass/releases/download/1.3.8/yass-centos-7.el7.x86_64.1.3.8.rpm))
-- macOS 10.14 or later ([DMG image](https://github.com/Chilledheart/yass/releases/download/1.3.8/yass-macos-release-universal-1.3.8.dmg))
+- Windows XP SP3 or later ([Setup installer](https://github.com/Chilledheart/yass/releases/download/1.3.9/yass-winxp-release-x86-static-1.3.9-installer.exe))
+- Ubuntu 16.04 or later ([DEB](https://github.com/Chilledheart/yass/releases/download/1.3.9/yass-ubuntu-16.04-xenial_amd64.1.3.9.deb))
+- CentOS 7 or later ([RPM](https://github.com/Chilledheart/yass/releases/download/1.3.9/yass-centos-7.el7.x86_64.1.3.9.rpm))
+- macOS 10.14 or later ([DMG image](https://github.com/Chilledheart/yass/releases/download/1.3.9/yass-macos-release-universal-1.3.9.dmg))
 
-> Visit the [release page](https://github.com/Chilledheart/yass/releases/tag/1.3.8) for other flavours such as tarball
-downloads or packages running on aarch64/arm64 hardware.
+> Visit the [release page](https://github.com/Chilledheart/yass/releases/tag/1.3.9) for other favours, such as tarball
+downloads or aarch64/arm64 packages.
 
 2. In YASS windows, please feed in Server's Host (domain name), Server Port,
 Username and Password used in previous step, changing Cipher Method to `http2`,
@@ -163,6 +164,11 @@ Server-side features compared with caddy+forwardproxy
 Looking for how to build from source?
 Take a look at [BUILDING.md] for more instructions.
 
+## Runtime requirements on Mingw
+If you are using windows operating system, there is no runtime requirement mostly. However, if you choose to use mingw
+binaries, it is necessary that you must make sure your OS has visual c++ 2010 runtime. For your reference, here is [x86
+installer][vs2010_x86] download url and here is [x64 installer][vs2010_x64] one.
+
 ## License
 It is licensed with [GPLv2][license-link].
 
@@ -183,3 +189,5 @@ It is licensed with [GPLv2][license-link].
 [naiveproxy-server]: https://github.com/klzgrad/naiveproxy#server-setup
 
 [BUILDING.md]: BUILDING.md
+[vs2010_x64]: https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x64.exe
+[vs2010_x86]: https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x86.exe

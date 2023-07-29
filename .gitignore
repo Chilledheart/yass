@@ -13,6 +13,13 @@ sscxx
 /third_party/vcredist
 /third_party/nasm
 /third_party/wix311
+/third_party/mingw32
+/third_party/mingw64
+/third_party/libcurl-vc16-x86-release-static-ipv6-sspi-schannel
+/third_party/libcurl-vc16-x64-release-static-ipv6-sspi-schannel
+/third_party/libcurl-vc16-arm64-release-static-ipv6-sspi-schannel
+/third_party/curl-8.2.0_1-win32-mingw
+/third_party/curl-8.2.0_1-win64-mingw
 *.aps
 *.build
 /debian/.debhelper

@@ -161,27 +161,22 @@ static bool load_ca_to_ssl_ctx_override(SSL_CTX* ssl_ctx) {
 
   std::vector<std::string> ca_bundles;
 
-  // executable directory
-#if _WIN32_WINNT >= 0x0602 && !defined(__MINGW32__)
-  std::wstring wexe_path;
-  CHECK(GetExecutablePathW(&wexe_path));
-  wchar_t wexe_dir[_MAX_PATH+1];
-  memcpy(wexe_dir, wexe_path.c_str(), sizeof(wchar_t) *(wexe_path.size() + 1));
-  PathCchRemoveFileSpec(wexe_dir, _MAX_PATH);
-  std::string exe_dir = SysWideToUTF8(wexe_dir);
-#else
+  // search under executable directory
   std::string exe_path;
   CHECK(GetExecutablePath(&exe_path));
-  char exe_dir[_MAX_PATH+1];
-  memcpy(exe_dir, exe_path.c_str(), exe_path.size() + 1);
-  PathRemoveFileSpecA(exe_dir);
-#endif
-  ca_bundles.push_back(std::string(exe_dir) + "\\" + CA_BUNDLE);
+  auto pos = exe_path.find_last_of('\\');
+  if (pos != std::string::npos) {
+    exe_path.resize(pos);
+  } else {
+    exe_path = "C:\\";
+  }
 
-  // current directory
+  ca_bundles.push_back(std::string(exe_path) + "\\" + CA_BUNDLE);
+
+  // search under current directory
   ca_bundles.push_back(CA_BUNDLE);
 
-  // path directory
+  // search under path directory
   std::string path = getenv("PATH");
   std::vector<std::string> paths = absl::StrSplit(path, ';');
   for (const auto& path : paths) {
