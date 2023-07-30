@@ -169,6 +169,9 @@ If you are using windows operating system, there is no runtime requirement mostl
 binaries, it is necessary that you must make sure your OS has visual c++ 2010 runtime. For your reference, here is [x86
 installer][vs2010_x86] download url and here is [x64 installer][vs2010_x64] one.
 
+## Sponsor Me
+Please visit [website][https://letshack.info].
+
 ## License
 It is licensed with [GPLv2][license-link].
 
