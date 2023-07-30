@@ -3,7 +3,7 @@
 [![License][license-svg]][license-link]
 [![GitHub all downloads](https://img.shields.io/github/downloads/Chilledheart/yass/total)](https://github.com/Chilledheart/yass/releases)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Chilledheart/yass)](https://github.com/Chilledheart/yass/releases)
-[![GitHub latest downloads](https://img.shields.io/github/downloads/Chilledheart/yass/1.3.9/total)](https://github.com/Chilledheart/yass/releases/tag/1.3.9)
+[![GitHub latest downloads](https://img.shields.io/github/downloads/Chilledheart/yass/1.3.10/total)](https://github.com/Chilledheart/yass/releases/tag/1.3.10)
 
 [![Compiler Compatibility](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml)
 [![CircleCI](https://img.shields.io/circleci/build/github/Chilledheart/yass/develop?logo=circleci&&label=Sanitizers%20and%20Ubuntu%20arm)](https://circleci.com/gh/Chilledheart/yass/?branch=develop)
