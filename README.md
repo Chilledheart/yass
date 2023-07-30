@@ -52,39 +52,6 @@ The theory benchmark is over 600MB/s at a modern i5 CPU.
 
 <!-- /TOC -->
 
-## Usage
-
-0. Please have your server set up (for example, you can give it a visit: [Naiveproxy Server setup][naiveproxy-server], the server side is compatible)
-> Please note you must buy from any VPS provider such as AMAZON, Azure, Google Compute Cloud and etc to get a VPS running naiveproxy/yass server.
-> Read it carefully, don't omit things important but not stated such as buying a domain name (used to do TLS extention, http2 requirement)
->
-> Ask your friends if you don't know how to setup a naive/yass server. We don't provide any service, either free or paid.
->
-> otherwise you can switch to weaker ciphers other than http2
-> so you can use your IP address as server's host address directly.
-
-1. Download the package (and install if it is a installer) and run YASS.
-It is a GUI application, for a quick start we can pick from here:
-
-- Windows XP SP3 or later ([Setup installer](https://github.com/Chilledheart/yass/releases/download/1.3.9/yass-winxp-release-x86-static-1.3.9-installer.exe))
-- Ubuntu 16.04 or later ([DEB](https://github.com/Chilledheart/yass/releases/download/1.3.9/yass-ubuntu-16.04-xenial_amd64.1.3.9.deb))
-- CentOS 7 or later ([RPM](https://github.com/Chilledheart/yass/releases/download/1.3.9/yass-centos-7.el7.x86_64.1.3.9.rpm))
-- macOS 10.14 or later ([DMG image](https://github.com/Chilledheart/yass/releases/download/1.3.9/yass-macos-release-universal-1.3.9.dmg))
-
-> Visit the [release page](https://github.com/Chilledheart/yass/releases/tag/1.3.9) for other favours, such as tarball
-downloads or aarch64/arm64 packages.
-
-2. In YASS windows, please feed in Server's Host (domain name), Server Port,
-Username and Password used in previous step, changing Cipher Method to `http2`,
-Local Host to `127.0.0.1`, Local Port to `1081` and Timeout to `0`.
-
-3. Click your platform's internet options to use HTTP PROXY on `127.0.0.1` port to `1081` and
-then start your browser just as you visit the websites directly from the server.
-You can use this software as SOCKS4/SOCKS5 PROXY on the SAME port!
-
-> As REDIR mode usage in middle box for advanced users, please make sure you pass `--redir_mode` argument to the software.
-> and local host to `0.0.0.0` to receive requests other that the current machine.
-
 ## Features
 
 - Better scale, less memory consumption and CPU cycles, less than 0.1% on my iMac.
