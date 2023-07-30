@@ -32,6 +32,10 @@ The theory benchmark is over 600MB/s at a modern i5 CPU.
   * [NaiveProxy Protocol Support](#naiveproxy-protocol-support)
   * [Shadowsocks PC-friendly Tunnels](#shadowsocks-pc-friendly-ciphers)
   * [Shadowsocks mobile-friendly Tunnels](#shadowsocks-mobile-friendly-ciphers)
+  * [VMess Tunnels](#vmess-tunnels)
+  * [Trojan Tunnels](#trojan-tunnels)
+  * [ShadowsocksR Tunnels](#shadowsocksr-tunnels)
+  * [Shadowsocks Legacy Tunnels](#shadowsocks-legacy-tunnels)
 - [Supported Operating System](#supported-operating-system)
   * [Screenshot on HTTP2 support](#screenshot-on-http2-support)
   * [Screenshot on macOS](#screenshot-on-macos)
@@ -124,6 +128,28 @@ Server-side features compared with caddy+forwardproxy
 ### Shadowsocks mobile-friendly Tunnels
 - [x] [CHACHA20_POLY1305][chacha20]
 - [x] [XCHACHA20_POLY1305][xchacha20]
+
+### VMess Tunnels
+- [ ] auto
+- [ ] [AES_128_GCM][aes128gcm]
+- [ ] [CHACHA20_POLY1305][chacha20]
+
+### Trojan Tunnels
+Not supported
+
+### ShadowsocksR Tunnels
+Not supported
+
+### Shadowsocks Legacy Tunnels
+- [ ] RC4-MD5
+- [ ] AES_128_CFB
+- [ ] AES_256_CFB
+- [ ] AES_192_CFB
+- [ ] AES_128_CTR
+- [ ] AES_256_CTR
+- [ ] AES_192_CTR
+- [ ] CHACHA20
+- [ ] XCHACHA20
 
 ## Supported Operating System
 - macOS (Mac OS X 10.14 or later, macOS 11.0 or later, Apple Silicon supported)
