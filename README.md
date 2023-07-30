@@ -25,7 +25,6 @@ The theory benchmark is over 600MB/s at a modern i5 CPU.
 
 <!-- TOC -->
 
-- [Usage](#usage)
 - [Features](#features)
 - [Tunnels](#tunnels)
   * [HTTP2 Tunnel Support](#http2-tunnel-support)
