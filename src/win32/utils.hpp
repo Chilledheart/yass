@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <string>
 
+#include <string>
+
 #include <windows.h>
 
 class Utils {
@@ -23,6 +25,10 @@ class Utils {
   static bool EnableNonClientDpiScaling(HWND hWnd);
   static bool GetAutoStart();
   static void EnableAutoStart(bool on);
+  static bool GetSystemProxy();
+  static bool SetSystemProxy(bool on);
+  // http://127.0.0.1:1081
+  static std::string GetLocalAddr();
 };
 
 std::wstring LoadStringStdW(HINSTANCE hInstance, UINT uID);

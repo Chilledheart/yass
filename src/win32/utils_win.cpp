@@ -11,6 +11,8 @@
 #include "core/utils.hpp"
 #include "config/config.hpp"
 
+#include <sstream>
+
 #ifdef _WIN32
 
 #define DEFAULT_AUTOSTART_KEY \
@@ -705,6 +707,40 @@ bool Utils::GetAutoStart() {
 
 void Utils::EnableAutoStart(bool on) {
   set_yass_auto_start(on);
+}
+
+bool Utils::GetSystemProxy() {
+  bool enabled;
+  std::string server_addr, bypass_addr;
+  if (!QuerySystemProxy(&enabled, &server_addr, &bypass_addr)) {
+      return false;
+  }
+  return enabled && server_addr == GetLocalAddr();
+}
+
+std::string Utils::GetLocalAddr() {
+  std::ostringstream ss;
+  auto local_host = absl::GetFlag(FLAGS_local_host);
+  auto local_port = absl::GetFlag(FLAGS_local_port);
+
+  asio::error_code ec;
+  auto addr = asio::ip::make_address(local_host.c_str(), ec);
+  bool host_is_ip_address = !ec;
+  if (host_is_ip_address && addr.is_v6()) {
+    ss << "http://[" << local_host << "]:" << local_port;
+  } else {
+    ss << "http://" << local_host << ":" << local_port;
+  }
+  return ss.str();
+}
+
+bool Utils::SetSystemProxy(bool on) {
+  std::string server_addr, bypass_addr;
+  if (on) {
+    server_addr = GetLocalAddr();
+    bypass_addr = "<local>";
+  }
+  return ::SetSystemProxy(on, server_addr, bypass_addr);
 }
 
 std::wstring LoadStringStdW(HINSTANCE hInstance, UINT uID) {
