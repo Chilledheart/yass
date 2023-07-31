@@ -735,10 +735,11 @@ std::string Utils::GetLocalAddr() {
 }
 
 bool Utils::SetSystemProxy(bool on) {
-  std::string server_addr, bypass_addr;
+  bool enabled;
+  std::string server_addr, bypass_addr = "<local>";
+  ::QuerySystemProxy(&enabled, &server_addr, &bypass_addr);
   if (on) {
     server_addr = GetLocalAddr();
-    bypass_addr = "<local>";
   }
   return ::SetSystemProxy(on, server_addr, bypass_addr);
 }
