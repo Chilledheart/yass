@@ -22,6 +22,7 @@
 #include <tchar.h>
 #endif  // COMPILER_MSVC
 #include <windows.h>
+#include <wininet.h>
 
 // https://docs.microsoft.com/en-us/windows/win32/winprog/using-the-windows-headers
 //
@@ -718,6 +719,94 @@ std::wstring LoadStringStdW(HINSTANCE hInstance, UINT uID) {
   // not including the terminating null character.
   ::LoadStringW(hInstance, uID, str.data(), len + 1);
   return str;
+}
+
+bool QuerySystemProxy(bool *enabled,
+                      std::string *server_addr,
+                      std::string *bypass_addr) {
+  std::vector<INTERNET_PER_CONN_OPTIONA> options;
+  options.resize(3);
+  options[0].dwOption = INTERNET_PER_CONN_FLAGS_UI;
+  options[1].dwOption = INTERNET_PER_CONN_PROXY_SERVER;
+  options[1].Value.pszValue = nullptr;
+  options[2].dwOption = INTERNET_PER_CONN_PROXY_BYPASS;
+  options[2].Value.pszValue = nullptr;
+
+  INTERNET_PER_CONN_OPTION_LISTA option_list;
+  option_list.dwSize = sizeof(option_list);
+  option_list.pszConnection = nullptr;
+  option_list.dwOptionCount = options.size();
+  option_list.dwOptionError = 0;
+  option_list.pOptions = &options[0];
+  DWORD option_list_size = sizeof(option_list);
+
+  if (!::InternetQueryOptionA(nullptr, INTERNET_OPTION_PER_CONNECTION_OPTION,
+                              &option_list, &option_list_size)) {
+    option_list_size = sizeof(option_list);
+    options[0].dwOption = INTERNET_PER_CONN_FLAGS;
+    if (!::InternetQueryOptionA(nullptr, INTERNET_OPTION_PER_CONNECTION_OPTION,
+                                &option_list, &option_list_size)) {
+      PLOG(WARNING)<< "Failed to query system proxy";
+      return false;
+    }
+  }
+  if (options[0].Value.dwValue & PROXY_TYPE_PROXY) {
+    *enabled = true;
+  }
+  if (options[1].Value.pszValue) {
+    *server_addr = options[1].Value.pszValue;
+  }
+  if (options[2].Value.pszValue) {
+    *bypass_addr = options[2].Value.pszValue;
+  }
+  return true;
+}
+
+bool SetSystemProxy(bool enable,
+                    const std::string &server_addr,
+                    const std::string &bypass_addr) {
+  std::vector<INTERNET_PER_CONN_OPTIONA> options;
+  options.resize(3);
+  options[0].dwOption = INTERNET_PER_CONN_FLAGS;
+  if (enable) {
+    options[0].Value.dwValue = PROXY_TYPE_PROXY | PROXY_TYPE_DIRECT;
+  } else {
+    options[0].Value.dwValue = PROXY_TYPE_DIRECT;
+  }
+  options[1].dwOption = INTERNET_PER_CONN_PROXY_SERVER;
+  options[1].Value.pszValue = const_cast<char*>(server_addr.c_str());
+  options[2].dwOption = INTERNET_PER_CONN_PROXY_BYPASS;
+  options[2].Value.pszValue = const_cast<char*>(bypass_addr.c_str());
+
+  INTERNET_PER_CONN_OPTION_LISTA option_list;
+  option_list.dwSize = sizeof(option_list);
+  option_list.pszConnection = nullptr;
+  option_list.dwOptionCount = options.size();
+  option_list.dwOptionError = 0;
+  option_list.pOptions = &options[0];
+
+  if (!::InternetSetOptionA(nullptr, INTERNET_OPTION_PER_CONNECTION_OPTION,
+                            &option_list, sizeof(option_list))) {
+    PLOG(WARNING)<< "Failed to set system proxy";
+    return false;
+  }
+  if (!::InternetSetOptionA(nullptr, INTERNET_OPTION_PROXY_SETTINGS_CHANGED,
+                            nullptr, 0)) {
+    PLOG(WARNING)<< "Failed to refresh system proxy";
+    return false;
+  }
+  if (!::InternetSetOptionA(nullptr, INTERNET_OPTION_REFRESH,
+                            nullptr, 0)) {
+    PLOG(WARNING)<< "Failed to reload via system proxy";
+    return false;
+  }
+  if (enable) {
+    LOG(INFO) << "Set system proxy to " << server_addr
+      << " by pass " << bypass_addr << ".";
+  } else {
+    LOG(INFO) << "Set system proxy disabled.";
+  }
+  return true;
 }
 
 #endif  // _WIN32

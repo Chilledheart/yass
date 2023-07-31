@@ -29,4 +29,15 @@ std::wstring LoadStringStdW(HINSTANCE hInstance, UINT uID);
 
 #define DEFAULT_AUTOSTART_NAME "YASS"
 
+// server_addr and bypass_addr should be something like
+// server_addr http://127.0.0.1:1081 bypass_addr <local>
+// server_addr http=127.0.0.1:1081;https=127.0.0.1:1081;ftp=127.0.0.1:1081;socks=127.0.0.1:1081 bypass_addr <local>
+bool QuerySystemProxy(bool *enabled,
+                      std::string *server_addr,
+                      std::string *bypass_addr);
+
+bool SetSystemProxy(bool enable,
+                    const std::string &server_addr,
+                    const std::string &bypass_addr);
+
 #endif  // YASS_WIN32_UTILS
