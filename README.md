@@ -6,7 +6,7 @@
 [![GitHub latest downloads](https://img.shields.io/github/downloads/Chilledheart/yass/1.3.10/total)](https://github.com/Chilledheart/yass/releases/tag/1.3.10)
 
 Yet Another Shadow Socket is client-server model based and efficient forward proxy
-supporting http/socks4/socks4a/socks5 protocol.
+supporting http/socks4/socks4a/socks5 protocol. The server side is experimental.
 
 ## Features
 
