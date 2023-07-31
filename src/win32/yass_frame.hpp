@@ -74,6 +74,7 @@ class CYassFrame {
   HWND local_port_label_;
   HWND timeout_label_;
   HWND autostart_label_;
+  HWND systemproxy_label_;
 
   HWND server_host_edit_;
   HWND server_port_edit_;
@@ -84,6 +85,7 @@ class CYassFrame {
   HWND local_port_edit_;
   HWND timeout_edit_;
   HWND autostart_button_;
+  HWND systemproxy_button_;
 
  protected:
   HWND status_bar_;
@@ -105,6 +107,7 @@ class CYassFrame {
   void OnStartButtonClicked();
   void OnStopButtonClicked();
   void OnCheckedAutoStartButtonClicked();
+  void OnCheckedSystemProxyButtonClicked();
 
  public:
   void OnAppOption();
