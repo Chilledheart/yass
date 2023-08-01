@@ -48,8 +48,8 @@ bool SetSystemProxy(bool enable,
 bool SetSystemProxy(bool enable,
                     const std::string &server_addr,
                     const std::string &bypass_addr,
-                    const std::string &conn_name);
+                    const std::wstring &conn_name);
 
-bool GetAllRasConnection(std::vector<std::string> *result);
+bool GetAllRasConnection(std::vector<std::wstring> *result);
 
 #endif  // YASS_WIN32_UTILS
