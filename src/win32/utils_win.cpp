@@ -25,6 +25,8 @@
 #endif  // COMPILER_MSVC
 #include <windows.h>
 #include <wininet.h>
+#include <ras.h>
+#include <raserror.h>
 
 // https://docs.microsoft.com/en-us/windows/win32/winprog/using-the-windows-headers
 //
@@ -802,6 +804,23 @@ bool QuerySystemProxy(bool *enabled,
 bool SetSystemProxy(bool enable,
                     const std::string &server_addr,
                     const std::string &bypass_addr) {
+  std::vector<std::string> conn_names;
+  if (!::GetAllRasConnection(&conn_names)) {
+    return false;
+  }
+  // Insert an empty RAS connection, happens in wine environment.
+  conn_names.insert(conn_names.begin(), 1, std::string());
+  bool ret = true;
+  for (const std::string& conn_name : conn_names) {
+    ret &= ::SetSystemProxy(enable, server_addr, bypass_addr, conn_name);
+  }
+  return ret;
+}
+
+bool SetSystemProxy(bool enable,
+                    const std::string &server_addr,
+                    const std::string &bypass_addr,
+                    const std::string &conn_name) {
   std::vector<INTERNET_PER_CONN_OPTIONA> options;
   options.resize(3);
   options[0].dwOption = INTERNET_PER_CONN_FLAGS;
@@ -817,33 +836,102 @@ bool SetSystemProxy(bool enable,
 
   INTERNET_PER_CONN_OPTION_LISTA option_list;
   option_list.dwSize = sizeof(option_list);
-  option_list.pszConnection = nullptr;
+  option_list.pszConnection = conn_name.empty() ? nullptr : const_cast<char*>(conn_name.c_str());
   option_list.dwOptionCount = options.size();
   option_list.dwOptionError = 0;
   option_list.pOptions = &options[0];
 
   if (!::InternetSetOptionA(nullptr, INTERNET_OPTION_PER_CONNECTION_OPTION,
                             &option_list, sizeof(option_list))) {
-    PLOG(WARNING)<< "Failed to set system proxy";
+    PLOG(WARNING)<< "Failed to set system proxy"
+      << " in connection \"" << conn_name << "\".";
     return false;
   }
   if (!::InternetSetOptionA(nullptr, INTERNET_OPTION_PROXY_SETTINGS_CHANGED,
                             nullptr, 0)) {
-    PLOG(WARNING)<< "Failed to refresh system proxy";
+    PLOG(WARNING)<< "Failed to refresh system proxy"
+      << " in connection \"" << conn_name << "\".";
     return false;
   }
   if (!::InternetSetOptionA(nullptr, INTERNET_OPTION_REFRESH,
                             nullptr, 0)) {
-    PLOG(WARNING)<< "Failed to reload via system proxy";
+    PLOG(WARNING)<< "Failed to reload via system proxy"
+      << " in connection \"" << conn_name << "\".";
     return false;
   }
   if (enable) {
     LOG(INFO) << "Set system proxy to " << server_addr
-      << " by pass " << bypass_addr << ".";
+      << " by pass " << bypass_addr
+      << " in connection \"" << conn_name << "\".";
   } else {
-    LOG(INFO) << "Set system proxy disabled.";
+    LOG(INFO) << "Set system proxy disabled"
+      << " in connection \"" << conn_name << "\".";
   }
   return true;
+}
+
+bool GetAllRasConnection(std::vector<std::string> *result) {
+  DWORD dwCb = 0;
+  DWORD dwRet = ERROR_SUCCESS;
+  DWORD dwEntries = 0;
+  LPRASENTRYNAMEA lpRasEntryName = nullptr;
+  constexpr int kStaticRasEntryNumber = 30;
+
+  RASENTRYNAMEA rasEntryNames[kStaticRasEntryNumber] = {};
+  dwCb = sizeof(RASENTRYNAMEA) * kStaticRasEntryNumber;
+  dwEntries = kStaticRasEntryNumber;
+  lpRasEntryName = &rasEntryNames[0];
+
+  for (DWORD i = 0; i < dwEntries; ++i) {
+    lpRasEntryName[i].dwSize = sizeof(RASENTRYNAMEA);
+  }
+
+  // Call RasEnumEntries with lpRasEntryName = NULL. dwCb is returned with the required buffer size and
+  // a return code of ERROR_BUFFER_TOO_SMALL
+  dwRet = RasEnumEntriesA(nullptr, nullptr, lpRasEntryName, &dwCb, &dwEntries);
+  result->clear();
+
+  if (dwRet == ERROR_BUFFER_TOO_SMALL) {
+    if (dwCb != dwEntries * sizeof(RASENTRYNAMEA)) {
+      LOG(WARNING) << "RasEnumEntriesA: mismatched dwCb and dwEntries";
+      return false;
+    }
+    // Allocate the memory needed for the array of RAS entry names.
+    lpRasEntryName = reinterpret_cast<RASENTRYNAMEA*>(malloc(sizeof(RASENTRYNAMEA) * dwEntries));
+    if (lpRasEntryName == nullptr){
+      LOG(WARNING) << "RasEnumEntriesA: not enough memory";
+      return false;
+    }
+    // The first RASENTRYNAME structure in the array must contain the structure size
+    for (DWORD i = 0; i < dwEntries; ++i) {
+      lpRasEntryName[i].dwSize = sizeof(RASENTRYNAMEA);
+    }
+
+    // Call RasEnumEntries to enumerate all RAS entry names
+    dwRet = RasEnumEntriesA(nullptr, nullptr, lpRasEntryName, &dwCb, &dwEntries);
+
+    // If successful, print the RAS entry names
+    if (dwRet == ERROR_SUCCESS){
+      for (DWORD i = 0; i < dwEntries; i++){
+        result->emplace_back(lpRasEntryName[i].szEntryName);
+      }
+    } else {
+      PLOG(WARNING) << "RasEnumEntriesA failed";
+    }
+    // Deallocate memory for the connection buffer
+    free(lpRasEntryName);
+    lpRasEntryName = nullptr;
+  } else if (dwRet == ERROR_SUCCESS) {
+    for (DWORD i = 0; i < dwEntries; i++){
+      result->emplace_back(lpRasEntryName[i].szEntryName);
+    }
+  } else {
+    PLOG(WARNING) << "RasEnumEntriesA failed";
+  }
+  if (dwRet == ERROR_SUCCESS && result->empty()) {
+    LOG(INFO) << "RasEnumEntriesA: there were no RAS entry names found";
+  }
+  return dwRet == ERROR_SUCCESS;
 }
 
 #endif  // _WIN32
