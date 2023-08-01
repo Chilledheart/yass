@@ -1,0 +1,3 @@
+#!/bin/bash
+
+exec "@CMAKE_RC_COMPILER@" -no-preprocess "$@"
