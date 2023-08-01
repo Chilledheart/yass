@@ -4,8 +4,7 @@
 #define YASS_WIN32_UTILS
 #include <cstdint>
 #include <string>
-
-#include <string>
+#include <vector>
 
 #include <windows.h>
 
@@ -45,5 +44,12 @@ bool QuerySystemProxy(bool *enabled,
 bool SetSystemProxy(bool enable,
                     const std::string &server_addr,
                     const std::string &bypass_addr);
+
+bool SetSystemProxy(bool enable,
+                    const std::string &server_addr,
+                    const std::string &bypass_addr,
+                    const std::string &conn_name);
+
+bool GetAllRasConnection(std::vector<std::string> *result);
 
 #endif  // YASS_WIN32_UTILS
