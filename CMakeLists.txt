@@ -644,6 +644,14 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:twoPhase")
   endif()
 
+  # Consistently use backslash as the path separator when expanding the
+  # __FILE__ macro when targeting Windows regardless of the build
+  # environment.
+  if (COMPILER_CLANG AND CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 15.0)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffile-reproducible")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffile-reproducible")
+  endif()
+
   # Work around crbug.com/526851, bug in VS 2015 RTM compiler.
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Zc:sizedDealloc-")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:sizedDealloc-")
@@ -3034,7 +3042,7 @@ if (BUILD_TESTS)
   )
 
   if (USE_CURL)
-    if (MSVC)
+    if (MSVC AND CMAKE_MSVC_CRT_LINKAGE STREQUAL "static")
       if("${MSVC_PROCESSOR_ARCHITECTURE}" STREQUAL "arm64")
         set(CURL_MSVC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libcurl-vc16-arm64-release-static-ipv6-sspi-schannel")
       elseif("${MSVC_PROCESSOR_ARCHITECTURE}" STREQUAL "amd64")
