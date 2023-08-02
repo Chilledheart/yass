@@ -1376,7 +1376,7 @@ if (WIN32)
     # 5.01 = Windows XP
     set(SUBSYSTEM_VERSION_SUFFIX ",5.01")
   endif()
-  if (MINGW)
+  if (MINGW AND USE_LLD)
     if (CMAKE_SIZEOF_VOID_P EQUAL 8)
       set(SUBSYSTEM_VERSION_SUFFIX ",5.02")
     else()
