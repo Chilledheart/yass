@@ -795,10 +795,16 @@ bool QuerySystemProxy(bool *enabled,
   if (options[1].Value.pszValue) {
     auto temp = options[1].Value.pszValue;
     *server_addr = temp ? SysWideToUTF8(temp) : std::string();
+    if (temp) {
+      GlobalFree(temp);
+    }
   }
   if (options[2].Value.pszValue) {
     auto temp = options[2].Value.pszValue;
     *server_addr = temp ? SysWideToUTF8(temp) : std::string();
+    if (temp) {
+      GlobalFree(temp);
+    }
   }
   return true;
 }
