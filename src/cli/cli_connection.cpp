@@ -80,6 +80,9 @@ namespace cli {
 const char CliConnection::http_connect_reply_[] =
     "HTTP/1.1 200 Connection established\r\n\r\n";
 
+#ifdef __APPLE__
+#include <xnu_private/net_pfvar.h>
+#endif
 #ifdef __linux__
 #include <linux/netfilter_ipv4.h>
 #endif
@@ -482,7 +485,84 @@ void CliConnection::ReadSocks5Handshake() {
 
 asio::error_code CliConnection::OnReadRedirHandshake(
   std::shared_ptr<IOBuf> buf) {
-#ifdef __linux__
+#ifdef __APPLE__
+  if (!absl::GetFlag(FLAGS_redir_mode)) {
+    return asio::error::operation_not_supported;
+  }
+  VLOG(2) << "Connection (client) " << connection_id()
+          << " try redir handshake";
+  scoped_refptr<CliConnection> self(this);
+  const bool ipv4_compatible = peer_endpoint_.address().is_v4();
+
+  int pf_fd = open("/dev/pf", 0, O_RDONLY);
+  if (pf_fd < 0) {
+    PLOG(WARNING) << "pf not connected";
+    return asio::error::operation_not_supported;
+  }
+  struct pfioc_natlook pnl;
+  pnl.direction = PF_OUT;
+  pnl.proto = IPPROTO_TCP;
+
+  union sockaddr_storage_union {
+    struct sockaddr_storage ss;
+    struct sockaddr_in s4;
+    struct sockaddr_in6 s6;
+  };
+  sockaddr_storage_union peer_ss = {}, ss = {};
+  memcpy(&peer_ss, peer_endpoint_.data(), peer_endpoint_.size());
+  memcpy(&ss, endpoint_.data(), endpoint_.size());
+
+  if (ipv4_compatible) {
+    pnl.af = AF_INET;
+    memcpy(&pnl.saddr.v4addr, &peer_ss.s4.sin_addr.s_addr, sizeof pnl.saddr.v4addr);
+    memcpy(&pnl.daddr.v4addr, &ss.s4.sin_addr.s_addr, sizeof pnl.daddr.v4addr);
+    pnl.sxport.port = peer_ss.s4.sin_port;
+    pnl.dxport.port = ss.s4.sin_port;
+  } else {
+    pnl.af = AF_INET6;
+    memcpy(&pnl.saddr.v6addr, &peer_ss.s6.sin6_addr.s6_addr, sizeof pnl.saddr.v6addr);
+    memcpy(&pnl.daddr.v6addr, &ss.s6.sin6_addr.s6_addr, sizeof pnl.daddr.v6addr);
+    pnl.sxport.port = peer_ss.s6.sin6_port;
+    pnl.dxport.port = ss.s6.sin6_port;
+  }
+  if (ioctl(pf_fd, DIOCNATLOOK, &pnl) < 0) {
+    PLOG(WARNING) << "DIOCNATLOOK failed on pf";
+    ::close(pf_fd);
+    return asio::error::operation_not_supported;
+  }
+  ::close(pf_fd);
+
+  asio::ip::tcp::endpoint endpoint;
+  if (pnl.af == AF_INET) {
+    endpoint.resize(sizeof(struct sockaddr_in));
+    auto in = reinterpret_cast<struct sockaddr_in*>(endpoint.data());
+    memset(in, 0, sizeof(struct sockaddr_in));
+
+    in->sin_family = AF_INET;
+    memcpy(&in->sin_addr.s_addr, &pnl.rdaddr.v4addr, sizeof pnl.rdaddr.v4addr);
+    in->sin_port = pnl.rdxport.port;
+  } else {
+    endpoint.resize(sizeof(struct sockaddr_in6));
+    auto in6 = reinterpret_cast<struct sockaddr_in6*>(endpoint.data());
+    memset(in6, 0, sizeof(struct sockaddr_in6));
+
+    in6->sin6_family = AF_INET6;
+    memcpy(&in6->sin6_addr.s6_addr, &pnl.rdaddr.v6addr, sizeof pnl.rdaddr.v6addr);
+    in6->sin6_port = pnl.rdxport.port;
+  }
+  VLOG(2) << "Connection (client) " << connection_id()
+          << " redir stream from " << endpoint_ << " to " << endpoint;
+  OnCmdConnect(endpoint);
+
+  asio::error_code ec;
+  if (!buf->empty()) {
+    ProcessReceivedData(buf, ec, buf->length());
+  } else {
+    WriteUpstreamInPipe();
+    OnUpstreamWriteFlush();
+  }
+  return ec;
+#elif defined(__linux__)
   if (!absl::GetFlag(FLAGS_redir_mode)) {
     return asio::error::operation_not_supported;
   }
