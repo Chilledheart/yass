@@ -195,18 +195,18 @@ BOOL AddNotificationIcon(HWND hwnd, HINSTANCE hInstance) {
 #if _WIN32_WINNT >= 0x0600
   nid.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE | NIF_SHOWTIP | NIF_GUID;
   nid.guidItem = __uuidof(TrayIcon);
-  LoadIconMetric(hInstance, MAKEINTRESOURCE(IDI_TRAYICON), LIM_SMALL, &nid.hIcon);
+  LoadIconMetric(hInstance, MAKEINTRESOURCEW(IDI_TRAYICON), LIM_SMALL, &nid.hIcon);
 #else
   nid.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE;
   nid.uID = TRAY_ICON_ID;
-  nid.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_TRAYICON));
+  nid.hIcon = LoadIconW(hInstance, MAKEINTRESOURCEW(IDI_TRAYICON));
 #endif
   nid.uCallbackMessage = WMAPP_NOTIFYCALLBACK;
-  Shell_NotifyIcon(NIM_ADD, &nid);
+  Shell_NotifyIconW(NIM_ADD, &nid);
 #if _WIN32_WINNT >= 0x0600
   // NOTIFICATION_VERSION_4 is perfered
   nid.uVersion = NOTIFYICON_VERSION_4;
-  return Shell_NotifyIcon(NIM_SETVERSION, &nid);
+  return Shell_NotifyIconW(NIM_SETVERSION, &nid);
 #else
   return TRUE;
 #endif
@@ -219,9 +219,9 @@ BOOL UpdateNotificationIcon(HINSTANCE hInstance, UINT uDpi) {
   nid.cbSize = sizeof(nid);
   nid.uFlags = NIF_ICON | NIF_GUID;
   nid.guidItem = __uuidof(TrayIcon);
-  LoadIconMetric(hInstance, MAKEINTRESOURCE(IDI_TRAYICON),
+  LoadIconMetric(hInstance, MAKEINTRESOURCEW(IDI_TRAYICON),
                  uDpi > 96 ? LIM_LARGE : LIM_SMALL, &nid.hIcon);
-  return Shell_NotifyIcon(NIM_MODIFY, &nid);
+  return Shell_NotifyIconW(NIM_MODIFY, &nid);
 #else
   return TRUE;
 #endif
@@ -237,7 +237,7 @@ BOOL DeleteNotificationIcon(HWND hwnd) {
 #else
   nid.uID = TRAY_ICON_ID;
 #endif
-  return Shell_NotifyIcon(NIM_DELETE, &nid);
+  return Shell_NotifyIconW(NIM_DELETE, &nid);
 }
 
 BOOL RestoreTooltip() {
@@ -247,14 +247,14 @@ BOOL RestoreTooltip() {
   nid.cbSize = sizeof(nid);
   nid.uFlags = NIF_SHOWTIP | NIF_GUID;
   nid.guidItem = __uuidof(TrayIcon);
-  return Shell_NotifyIcon(NIM_MODIFY, &nid);
+  return Shell_NotifyIconW(NIM_MODIFY, &nid);
 #else
   return TRUE;
 #endif
 }
 
 void ShowContextMenu(HINSTANCE hInstance, HWND hwnd, POINT pt) {
-  HMENU hMenu = LoadMenu(hInstance, MAKEINTRESOURCE(IDC_CONTEXTMENU));
+  HMENU hMenu = LoadMenuW(hInstance, MAKEINTRESOURCEW(IDC_CONTEXTMENU));
   if (hMenu) {
     HMENU hSubMenu = GetSubMenu(hMenu, 0);
     if (hSubMenu) {
@@ -914,7 +914,7 @@ void CYassFrame::OnCheckedSystemProxyButtonClicked() {
 }
 
 void CYassFrame::OnAppOption() {
-  DialogBoxParamW(m_hInstance, MAKEINTRESOURCE(IDD_OPTIONBOX), m_hWnd,
+  DialogBoxParamW(m_hInstance, MAKEINTRESOURCEW(IDD_OPTIONBOX), m_hWnd,
                   &CYassFrame::OnAppOptionMessage,
                   reinterpret_cast<LPARAM>(this));
 }
@@ -969,7 +969,7 @@ INT_PTR CALLBACK CYassFrame::OnAppOptionMessage(HWND hDlg, UINT message,
 }
 
 void CYassFrame::OnAppAbout() {
-  DialogBoxParamW(m_hInstance, MAKEINTRESOURCE(IDD_ABOUTBOX), m_hWnd,
+  DialogBoxParamW(m_hInstance, MAKEINTRESOURCEW(IDD_ABOUTBOX), m_hWnd,
                   &CYassFrame::OnAppAboutMessage, 0L);
 }
 

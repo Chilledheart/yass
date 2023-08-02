@@ -32,7 +32,7 @@ class Utils {
 
 std::wstring LoadStringStdW(HINSTANCE hInstance, UINT uID);
 
-#define DEFAULT_AUTOSTART_NAME "YASS"
+#define DEFAULT_AUTOSTART_NAME L"YASS"
 
 // server_addr and bypass_addr should be something like
 // server_addr http://127.0.0.1:1081 bypass_addr <local>

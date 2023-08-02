@@ -138,10 +138,10 @@ BOOL CYassApp::InitInstance() {
   wndcls.lpfnWndProc = &CYassFrame::WndProc;
   wndcls.cbClsExtra = wndcls.cbWndExtra = 0;
   wndcls.hInstance = m_hInstance;
-  wndcls.hIcon = LoadIconW(m_hInstance, MAKEINTRESOURCE(IDI_APPICON));
+  wndcls.hIcon = LoadIconW(m_hInstance, MAKEINTRESOURCEW(IDI_APPICON));
   wndcls.hCursor = LoadCursor(nullptr, IDC_ARROW);
   wndcls.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_BTNFACE + 1);
-  wndcls.lpszMenuName = MAKEINTRESOURCE(IDR_MAINFRAME);
+  wndcls.lpszMenuName = MAKEINTRESOURCEW(IDR_MAINFRAME);
   wndcls.lpszClassName = className;
   wndcls.hIconSm = nullptr;
 
@@ -189,7 +189,7 @@ int CYassApp::RunMainLoop() {
   MSG msg;
 
   HACCEL hAccelTable = LoadAcceleratorsW(m_hInstance,
-                                         MAKEINTRESOURCE(IDC_YASS));
+                                         MAKEINTRESOURCEW(IDC_YASS));
 
   if (!InitInstance()) {
     return -1;

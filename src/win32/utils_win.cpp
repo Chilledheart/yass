@@ -665,7 +665,7 @@ int get_yass_auto_start() {
   char buf[MAX_PATH + 1] = {0};
   DWORD len = sizeof(buf);
   result = RegQueryValueExW(hKey,                          /* Key */
-                            _T(DEFAULT_AUTOSTART_NAME),    /* value */
+                            DEFAULT_AUTOSTART_NAME,        /* value */
                             nullptr,                       /* reserved */
                             nullptr,                       /* output type */
                             reinterpret_cast<LPBYTE>(buf), /* output data */
@@ -692,11 +692,11 @@ int set_yass_auto_start(bool on) {
 
     cmdline = L"\"" + cmdline + L"\" --background";
 
-    result = add_to_auto_start(_T(DEFAULT_AUTOSTART_NAME), cmdline);
+    result = add_to_auto_start(DEFAULT_AUTOSTART_NAME, cmdline);
 
   } else {
     /* turn off auto start */
-    result = delete_from_auto_start(_T(DEFAULT_AUTOSTART_NAME));
+    result = delete_from_auto_start(DEFAULT_AUTOSTART_NAME);
   }
   return result;
 }
