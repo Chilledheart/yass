@@ -34,6 +34,7 @@ class YASSWindow {
 
   void OnStartButtonClicked();
   void OnStopButtonClicked();
+  void OnAutoStartClicked();
 
  public:
   std::string GetServerHost();

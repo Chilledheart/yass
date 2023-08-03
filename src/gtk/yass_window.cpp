@@ -191,11 +191,10 @@ YASSWindow::YASSWindow()
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(autostart_),
                                Utils::GetAutoStart());
 
-  auto checked_auto_start_callback = []() { window->OnCheckedAutoStart(); };
+  auto checked_auto_start_callback = []() { window->OnAutoStartClicked(); };
 
-  g_signal_connect(G_OBJECT(autostart_), "clicked",
+  g_signal_connect(G_OBJECT(autostart_), "toggled",
                    G_CALLBACK(checked_auto_start_callback), nullptr);
-
 
   gtk_entry_set_visibility(password_, false);
 
@@ -251,7 +250,7 @@ void YASSWindow::OnStopButtonClicked() {
   mApp->OnStop();
 }
 
-void YASSWindow::OnCheckedAutoStart() {
+void YASSWindow::OnAutoStartClicked() {
   Utils::EnableAutoStart(
       gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(autostart_)));
 }

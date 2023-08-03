@@ -130,6 +130,11 @@ YASSWindow::YASSWindow(GApplication *app)
 
   gtk_widget_set_sensitive(GTK_WIDGET(impl_->stop_button), false);
 
+  auto autostart_callback = []() { window->OnAutoStartClicked(); };
+
+  g_signal_connect(G_OBJECT(impl_->autostart), "toggled",
+                   G_CALLBACK(autostart_callback), nullptr);
+
   static const char* const method_names[] = {
 #define XX(num, name, string) string,
       CIPHER_METHOD_MAP(XX)
@@ -145,7 +150,6 @@ YASSWindow::YASSWindow(GApplication *app)
 
   gtk_check_button_set_active(GTK_CHECK_BUTTON(impl_->autostart),
                               Utils::GetAutoStart());
-
 
   gtk_entry_set_visibility(GTK_ENTRY(impl_->password), false);
 
@@ -169,16 +173,18 @@ void YASSWindow::present() {
 void YASSWindow::OnStartButtonClicked() {
   gtk_widget_set_sensitive(GTK_WIDGET(impl_->start_button), false);
 
-  Utils::EnableAutoStart(
-      gtk_check_button_get_active(GTK_CHECK_BUTTON(impl_->autostart))
-      );
-
   mApp->OnStart();
 }
 
 void YASSWindow::OnStopButtonClicked() {
   gtk_widget_set_sensitive(GTK_WIDGET(impl_->stop_button), false);
   mApp->OnStop();
+}
+
+void YASSWindow::OnAutoStartClicked() {
+  Utils::EnableAutoStart(
+      gtk_check_button_get_active(GTK_CHECK_BUTTON(impl_->autostart))
+      );
 }
 
 std::string YASSWindow::GetServerHost() {
