@@ -66,6 +66,8 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   [self.autoStart
       setState:(CheckLoginItemStatus(nullptr) ? NSControlStateValueOn
                                               : NSControlStateValueOff)];
+  [self.systemProxy
+      setState:(GetSystemProxy() ? NSControlStateValueOn : NSControlStateValueOff)];
   [self LoadChanges];
   [self.startButton setEnabled:TRUE];
   [self.stopButton setEnabled:FALSE];
@@ -105,6 +107,8 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 }
 
 - (IBAction)OnSystemProxyChecked:(id)sender {
+  bool enable = self.systemProxy.state == NSControlStateValueOn;
+  SetSystemProxy(enable);
 }
 
 - (void)OnStatusBarClicked:(id)sender {
