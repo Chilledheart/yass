@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2023 Chilledheart  */
 
 #include "mac/utils.h"
 
 #import <Cocoa/Cocoa.h>
+#import <SystemConfiguration/SystemConfiguration.h>
 #include <CoreServices/CoreServices.h>
 #import <IOKit/IOKitLib.h>
 #include <errno.h>
@@ -14,14 +15,17 @@
 #include <sys/utsname.h>
 #include <sys/xattr.h>
 
+#include "config/config.hpp"
 #include "core/compiler_specific.hpp"
 #include "core/foundation_util.hpp"
 #include "core/logging.hpp"
 #include "core/scoped_cftyperef.hpp"
 #include "core/scoped_ioobject.hpp"
+#include "core/process_utils.hpp"
 #include "core/utils.hpp"
 
 #include <absl/strings/string_view.h>
+#include <absl/strings/str_split.h>
 
 namespace {
 
@@ -440,4 +444,150 @@ std::string GetPlatformSerialNumber() {
   }
 
   return SysCFStringRefToUTF8(serial_number_cfstring);
+}
+
+bool GetSystemProxy() {
+  bool enabled;
+  std::string server_addr, bypass_addr;
+  int32_t server_port;
+
+  if (!QuerySystemProxy(&enabled, &server_addr, &server_port, &bypass_addr)) {
+    return false;
+  }
+  auto local_host = absl::GetFlag(FLAGS_local_host);
+  auto local_port = absl::GetFlag(FLAGS_local_port);
+  return enabled && local_host == server_addr && local_port == server_port;
+}
+
+bool SetSystemProxy(bool on) {
+  bool enabled;
+  std::string server_addr, bypass_addr;
+  int32_t server_port;
+
+  ::QuerySystemProxy(&enabled, &server_addr, &server_port, &bypass_addr);
+  if (on) {
+    server_addr = absl::GetFlag(FLAGS_local_host);
+    server_port = absl::GetFlag(FLAGS_local_port);
+  }
+  return ::SetSystemProxy(on, server_addr, server_port, bypass_addr);
+}
+
+bool QuerySystemProxy(bool *enabled,
+                      std::string *server_addr,
+                      int32_t *server_port,
+                      std::string *bypass_addr) {
+  *enabled = false;
+  server_addr->clear();
+  *server_port = 0;
+  bypass_addr->clear();
+
+  ScopedCFTypeRef<CFDictionaryRef> proxies {SCDynamicStoreCopyProxies(nullptr)};
+
+  {
+    CFNumberRef obj;
+    if (CFDictionaryGetValueIfPresent(proxies, kSCPropNetProxiesHTTPEnable,
+            (const void**)&obj) &&
+        CFGetTypeID(obj) == CFNumberGetTypeID() &&
+        CFNumberGetValue(obj, kCFNumberSInt8Type, enabled)) {
+      LOG(INFO) << "QuerySystemProxy: enabled " << *enabled;
+    }
+  }
+
+  {
+    CFStringRef obj;
+    if (CFDictionaryGetValueIfPresent(proxies, kSCPropNetProxiesHTTPProxy,
+            (const void**)&obj) &&
+        CFGetTypeID(obj) == CFStringGetTypeID()) {
+      *server_addr = SysCFStringRefToUTF8(obj);
+      LOG(INFO) << "QuerySystemProxy: server_addr " << *server_addr;
+    }
+  }
+
+  {
+    CFNumberRef obj;
+    if (CFDictionaryGetValueIfPresent(proxies, kSCPropNetProxiesHTTPPort,
+            (const void**)&obj) &&
+        CFGetTypeID(obj) == CFNumberGetTypeID() &&
+        CFNumberGetValue(obj, kCFNumberSInt32Type, server_port)) {
+      LOG(INFO) << "QuerySystemProxy: server_port " << *server_port;
+    }
+  }
+
+  {
+    CFArrayRef obj;
+    if (CFDictionaryGetValueIfPresent(proxies, kSCPropNetProxiesExceptionsList,
+            (const void**)&obj) &&
+        CFGetTypeID(obj) == CFArrayGetTypeID()) {
+      CFIndex array_count = CFArrayGetCount(obj);
+      for (CFIndex i = 0; i < array_count; ++i) {
+        CFStringRef str_obj = (CFStringRef)CFArrayGetValueAtIndex(obj, i);
+        *bypass_addr = *bypass_addr + SysCFStringRefToUTF8(str_obj) + ", ";
+      }
+      if (array_count) {
+        bypass_addr->resize(bypass_addr->size() - 2);
+      }
+      LOG(INFO) << "QuerySystemProxy: bypass " << *bypass_addr;
+    }
+  }
+  return true;
+}
+
+bool SetSystemProxy(bool enable,
+                    const std::string &server_addr,
+                    int32_t server_port,
+                    const std::string &bypass_addr) {
+  std::string output, _;
+  std::vector<std::string> params = {"/usr/sbin/networksetup", "-listallnetworkservices"};
+  if (ExecuteProcess(params, &output, &_) != 0) {
+    return false;
+  }
+  std::vector<std::string> services = absl::StrSplit(output, '\n');
+
+  for (const auto& service: services) {
+    if (service.empty()) {
+      continue;
+    }
+    if (service.find('*') != std::string::npos) {
+      continue;
+    }
+    LOG(INFO) << "Found service: " << service;
+    params = {"/usr/sbin/networksetup", "-setwebproxystate",
+      service, enable ?  "on" : "off"};
+    if (ExecuteProcess(params, &_, &_) != 0) {
+      return false;
+    }
+    if (enable) {
+      params = {"/usr/sbin/networksetup", "-setwebproxy",
+        service, server_addr, std::to_string(server_port)};
+      if (ExecuteProcess(params, &_, &_) != 0) {
+        return false;
+      }
+    }
+    params = {"/usr/sbin/networksetup", "-setsecurewebproxystate",
+      service, enable ?  "on" : "off"};
+    if (ExecuteProcess(params, &_, &_) != 0) {
+      return false;
+    }
+    if (enable) {
+      params = {"/usr/sbin/networksetup", "-setsecurewebproxy",
+        service, server_addr, std::to_string(server_port)};
+      if (ExecuteProcess(params, &_, &_) != 0) {
+        return false;
+      }
+    }
+    params = {"/usr/sbin/networksetup", "-setsocksfirewallproxystate",
+      service, enable ?  "on" : "off"};
+    if (ExecuteProcess(params, &_, &_) != 0) {
+      return false;
+    }
+    if (enable) {
+      params = {"/usr/sbin/networksetup", "-setsocksfirewallproxy",
+        service, server_addr, std::to_string(server_port)};
+      if (ExecuteProcess(params, &_, &_) != 0) {
+        return false;
+      }
+    }
+  }
+
+  return true;
 }

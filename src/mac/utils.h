@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2023 Chilledheart  */
 #ifndef YASS_MAC_UTILS
 #define YASS_MAC_UTILS
 
@@ -191,5 +191,18 @@ std::string GetOSDisplayName();
 
 // Returns the serial number of the macOS device.
 std::string GetPlatformSerialNumber();
+
+bool GetSystemProxy();
+bool SetSystemProxy(bool on);
+
+bool QuerySystemProxy(bool *enabled,
+                      std::string *server_addr,
+                      int32_t *server_port,
+                      std::string *bypass_addr);
+
+bool SetSystemProxy(bool enable,
+                    const std::string &server_addr,
+                    int32_t server_port,
+                    const std::string &bypass_addr);
 
 #endif  // YASS_MAC_UTILS

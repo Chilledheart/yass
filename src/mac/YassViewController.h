@@ -23,6 +23,7 @@
 @property (weak) IBOutlet NSTextField *localPort;
 @property (weak) IBOutlet NSTextField *timeout;
 @property (weak) IBOutlet NSButton *autoStart;
+@property (weak) IBOutlet NSButton *systemProxy;
 @end
 
 #endif // YASS_MAC_VIEW_CONTROLLER
