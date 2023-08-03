@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2023 Chilledheart  */
 #ifndef YASS_GUI_UTILS
 #define YASS_GUI_UTILS
 #include <glib.h>
@@ -12,7 +12,19 @@ class Utils {
  public:
   static bool GetAutoStart();
   static void EnableAutoStart(bool on);
+  static bool GetSystemProxy();
+  static bool SetSystemProxy(bool on);
 };
+
+bool QuerySystemProxy(bool *enabled,
+                      std::string *server_addr,
+                      std::string *server_port,
+                      std::string *bypass_addr);
+
+bool SetSystemProxy(bool enable,
+                    const std::string &server_addr,
+                    const std::string &server_port,
+                    const std::string &bypass_addr);
 
 template <typename T>
 std::unique_ptr<T[], decltype(&g_free)> make_unique_ptr_gfree(T* p) {

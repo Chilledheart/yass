@@ -5,8 +5,10 @@
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
-#include <absl/strings/str_cat.h>
+#include "core/process_utils.hpp"
+#include "config/config.hpp"
 
+#include <absl/strings/str_cat.h>
 #include <absl/strings/string_view.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -133,6 +135,122 @@ void Utils::EnableAutoStart(bool on) {
       PLOG(WARNING) << "Internal error: unable to create autostart file";
     }
   }
+}
+
+bool Utils::GetSystemProxy() {
+  bool enabled;
+  std::string server_addr, server_port, bypass_addr;
+  if (!QuerySystemProxy(&enabled, &server_addr, &server_port, &bypass_addr)) {
+    return false;
+  }
+  auto local_host = "'" + absl::GetFlag(FLAGS_local_host) + "'";
+  auto local_port = std::to_string(absl::GetFlag(FLAGS_local_port));
+  return enabled && server_addr == local_host && server_port == local_port;
+}
+
+bool Utils::SetSystemProxy(bool on) {
+  bool enabled;
+  std::string server_addr, server_port, bypass_addr = "['localhost', '127.0.0.0/8', '::1']";
+  ::QuerySystemProxy(&enabled, &server_addr, &server_port, &bypass_addr);
+  if (on) {
+    server_addr = "'" + absl::GetFlag(FLAGS_local_host) + "'";
+    server_port = std::to_string(absl::GetFlag(FLAGS_local_port));
+  }
+  return ::SetSystemProxy(on, server_addr, server_port, bypass_addr);
+}
+
+bool QuerySystemProxy(bool *enabled,
+                      std::string *server_addr,
+                      std::string *server_port,
+                      std::string *bypass_addr) {
+  std::string output, _;
+  std::vector<std::string> params = {"gsettings", "get", "org.gnome.system.proxy", "mode"};
+  if (ExecuteProcess(params, &output, &_) != 0) {
+    return false;
+  }
+  // trim whites
+  if (output[output.size() - 1] == '\n') {
+    output.resize(output.size() - 1);
+  }
+  *enabled = output == "'manual'";
+
+  params = {"gsettings", "get", "org.gnome.system.proxy.http", "host"};
+  if (ExecuteProcess(params, &output, &_) != 0) {
+    return false;
+  }
+  // trim whites
+  if (output[output.size() - 1] == '\n') {
+    output.resize(output.size() - 1);
+  }
+  *server_addr = output;
+
+  params = {"gsettings", "get", "org.gnome.system.proxy.http", "port"};
+  if (ExecuteProcess(params, &output, &_) != 0) {
+    return false;
+  }
+  // trim whites
+  if (output[output.size() - 1] == '\n') {
+    output.resize(output.size() - 1);
+  }
+  *server_port = output;
+
+  params = {"gsettings", "get", "org.gnome.system.proxy", "ignore-hosts"};
+  if (ExecuteProcess(params, &output, &_) != 0) {
+    return false;
+  }
+  // trim whites
+  if (output[output.size() - 1] == '\n') {
+    output.resize(output.size() - 1);
+  }
+  *bypass_addr = output;
+  return true;
+}
+
+bool SetSystemProxy(bool enable,
+                    const std::string &server_addr,
+                    const std::string &server_port,
+                    const std::string &bypass_addr) {
+  std::string _;
+  std::vector<std::string> params = {"gsettings", "set", "org.gnome.system.proxy", "mode",
+    enable ?  "'manual'" : "'none'"};
+  if (ExecuteProcess(params, &_, &_) != 0) {
+    return false;
+  }
+
+  const char* kProtocol[] = {
+    "org.gnome.system.proxy.http",
+    "org.gnome.system.proxy.https",
+    "org.gnome.system.proxy.ftp",
+    "org.gnome.system.proxy.socks",
+  };
+  for (const char * protocol: kProtocol) {
+    params = {"gsettings", "set", protocol, "host", server_addr};
+    if (ExecuteProcess(params, &_, &_) != 0) {
+      return false;
+    }
+
+    params = {"gsettings", "set", protocol, "port", server_port};
+    if (ExecuteProcess(params, &_, &_) != 0) {
+      return false;
+    }
+  }
+
+  params = {"gsettings", "set", "org.gnome.system.proxy", "use-same-proxy", "true"};
+  if (ExecuteProcess(params, &_, &_) != 0) {
+    return false;
+  }
+
+  params = {"gsettings", "set", "org.gnome.system.proxy", "ignore-hosts", bypass_addr};
+  if (ExecuteProcess(params, &_, &_) != 0) {
+    return false;
+  }
+
+  params = {"gsettings", "set", "org.gnome.system.proxy", "mode",
+    enable ?  "'manual'" : "'none'"};
+  if (ExecuteProcess(params, &_, &_) != 0) {
+    return false;
+  }
+  return true;
 }
 
 Dispatcher::Dispatcher() = default;
