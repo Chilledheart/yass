@@ -38,7 +38,7 @@ class YASSWindow {
   GtkEntry* timeout_;
   GtkCheckButton* autostart_;
 
-  void OnCheckedAutoStart();
+  void OnAutoStartClicked();
 
   GtkStatusbar* status_bar_;
 

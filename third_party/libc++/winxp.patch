@@ -1,13 +1,13 @@
-From f6dc3b20b60bdd1aa8b8e2f61de38fc33fbc552f Mon Sep 17 00:00:00 2001
+From 3ec28599ff7885e2bba171abf80a0a40f95de7c0 Mon Sep 17 00:00:00 2001
 From: Chilledheart <hukeyue@hotmail.com>
-Date: Thu, 27 Jul 2023 15:02:57 +0800
+Date: Thu, 3 Aug 2023 10:00:55 +0800
 Subject: [PATCH] winxp build
 
 ---
  .../__condition_variable/condition_variable.h |   4 +
  include/__config                              |   5 +-
  include/__mutex/mutex.h                       |   4 +
- include/__threading_support                   |  44 +-
+ include/__threading_support                   |  45 ++
  include/mutex                                 |  47 +-
  include/thread                                |  45 ++
  src/condition_variable.cpp                    |   7 +
@@ -17,7 +17,7 @@ Subject: [PATCH] winxp build
  src/mutex_destructor.cpp                      |   5 +
  src/random_shuffle.cpp                        |   3 +
  src/support/win32/thread_win32.cpp            | 447 +++++++++++++++++-
- 13 files changed, 606 insertions(+), 24 deletions(-)
+ 13 files changed, 612 insertions(+), 19 deletions(-)
 
 diff --git a/include/__condition_variable/condition_variable.h b/include/__condition_variable/condition_variable.h
 index 8fc80b633..fc91f19b4 100644
@@ -75,7 +75,7 @@ index 819d4f37d..6c0ca4adf 100644
    mutex(const mutex&)            = delete;
    mutex& operator=(const mutex&) = delete;
 diff --git a/include/__threading_support b/include/__threading_support
-index 08dfd73c0..8a29f31f7 100644
+index 08dfd73c0..130fec1a4 100644
 --- a/include/__threading_support
 +++ b/include/__threading_support
 @@ -121,9 +121,23 @@ typedef tss_t __libcpp_tls_key;
@@ -155,24 +155,30 @@ index 08dfd73c0..8a29f31f7 100644
  _LIBCPP_THREAD_ABI_VISIBILITY
  int __libcpp_execute_once(__libcpp_exec_once_flag *__flag,
                            void (*__init_routine)());
-@@ -218,15 +255,12 @@ _LIBCPP_THREAD_ABI_VISIBILITY
+@@ -217,15 +254,23 @@ bool __libcpp_thread_id_less(__libcpp_thread_id __t1, __libcpp_thread_id __t2);
+ _LIBCPP_THREAD_ABI_VISIBILITY
  bool __libcpp_thread_isnull(const __libcpp_thread_t *__t);
  
++#ifndef _LIBCPP_HAS_THREAD_API_WIN32
  _LIBCPP_THREAD_ABI_VISIBILITY
--int __libcpp_thread_create(__libcpp_thread_t *__t, void *(*__func)(void *),
--                           void *__arg);
+ int __libcpp_thread_create(__libcpp_thread_t *__t, void *(*__func)(void *),
+                            void *__arg);
++#endif
++
++_LIBCPP_THREAD_ABI_VISIBILITY
 +int __libcpp_thread_create(__libcpp_thread_t *__t, __libcpp_thread_id* __t_id,
 +                           void *(*__func)(void *), void *__arg);
  
  _LIBCPP_THREAD_ABI_VISIBILITY
  __libcpp_thread_id __libcpp_thread_get_current_id();
  
--_LIBCPP_THREAD_ABI_VISIBILITY
--__libcpp_thread_id __libcpp_thread_get_id(const __libcpp_thread_t *__t);
--
++#ifndef _LIBCPP_HAS_THREAD_API_WIN32
+ _LIBCPP_THREAD_ABI_VISIBILITY
+ __libcpp_thread_id __libcpp_thread_get_id(const __libcpp_thread_t *__t);
++#endif
+ 
  _LIBCPP_THREAD_ABI_VISIBILITY
  int __libcpp_thread_join(__libcpp_thread_t *__t);
- 
 diff --git a/include/mutex b/include/mutex
 index ed9b43d59..3e7e4746e 100644
 --- a/include/mutex
