@@ -2396,6 +2396,7 @@ set(files
     src/core/socks5_request_parser.cpp
     src/core/ss_request_parser.cpp
     src/core/stringprintf.cpp
+    src/core/process_utils.cpp
     src/core/rand_util.cpp
     src/core/logging.cpp
     src/core/utils.cpp
@@ -2479,6 +2480,7 @@ set(hfiles
     src/core/ss.hpp
     src/core/ss_request.hpp
     src/core/ss_request_parser.hpp
+    src/core/process_utils.hpp
     src/core/rand_util.hpp
     src/core/logging.hpp
     src/core/utils.hpp
@@ -3017,6 +3019,7 @@ if (BUILD_TESTS)
     src/config/config_test.cpp
     src/core/cipher_test.cpp
     src/core/c-ares_test.cpp
+    src/core/process_utils_test.cpp
     )
   target_include_directories(yass_test PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src
