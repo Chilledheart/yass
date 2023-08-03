@@ -155,6 +155,7 @@ YASSWindow::YASSWindow()
   auto local_port_label_ = gtk_label_new(_("Local Port"));
   auto timeout_label_ = gtk_label_new(_("Timeout"));
   auto autostart_label_ = gtk_label_new(_("Auto Start"));
+  auto systemproxy_label_ = gtk_label_new(_("System Proxy"));
 
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_host_label_), 0, 0, 1, 1);
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_port_label_), 0, 1, 1, 1);
@@ -165,6 +166,7 @@ YASSWindow::YASSWindow()
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_port_label_), 0, 6, 1, 1);
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_label_), 0, 7, 1, 1);
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_label_), 0, 8, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(systemproxy_label_), 0, 9, 1, 1);
 
   server_host_ = GTK_ENTRY(gtk_entry_new());
   server_port_ = GTK_ENTRY(gtk_entry_new());
@@ -196,6 +198,16 @@ YASSWindow::YASSWindow()
   g_signal_connect(G_OBJECT(autostart_), "toggled",
                    G_CALLBACK(checked_auto_start_callback), nullptr);
 
+  systemproxy_ = GTK_CHECK_BUTTON(gtk_check_button_new());
+
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(systemproxy_),
+                               Utils::GetSystemProxy());
+
+  auto checked_system_proxy_callback = []() { window->OnSystemProxyClicked(); };
+
+  g_signal_connect(G_OBJECT(systemproxy_), "toggled",
+                   G_CALLBACK(checked_system_proxy_callback), nullptr);
+
   gtk_entry_set_visibility(password_, false);
 
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_host_), 1, 0, 1, 1);
@@ -207,6 +219,7 @@ YASSWindow::YASSWindow()
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_port_), 1, 6, 1, 1);
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_), 1, 7, 1, 1);
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_), 1, 8, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(systemproxy_), 1, 9, 1, 1);
 
 #if GTK_CHECK_VERSION(3, 12, 0)
   gtk_widget_set_margin_start(GTK_WIDGET(right_panel_grid), 10);
@@ -253,6 +266,11 @@ void YASSWindow::OnStopButtonClicked() {
 void YASSWindow::OnAutoStartClicked() {
   Utils::EnableAutoStart(
       gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(autostart_)));
+}
+
+void YASSWindow::OnSystemProxyClicked() {
+  Utils::SetSystemProxy(
+      gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(systemproxy_)));
 }
 
 std::string YASSWindow::GetServerHost() {
@@ -330,6 +348,7 @@ void YASSWindow::Started() {
   gtk_widget_set_sensitive(GTK_WIDGET(local_port_), false);
   gtk_widget_set_sensitive(GTK_WIDGET(timeout_), false);
   gtk_widget_set_sensitive(GTK_WIDGET(autostart_), false);
+  gtk_widget_set_sensitive(GTK_WIDGET(systemproxy_), false);
   gtk_widget_set_sensitive(GTK_WIDGET(stop_button_), true);
 }
 
@@ -344,6 +363,7 @@ void YASSWindow::StartFailed() {
   gtk_widget_set_sensitive(GTK_WIDGET(local_port_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(timeout_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(autostart_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(systemproxy_), true);
 
   gtk_widget_set_sensitive(GTK_WIDGET(start_button_), true);
 
@@ -366,6 +386,7 @@ void YASSWindow::Stopped() {
   gtk_widget_set_sensitive(GTK_WIDGET(local_port_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(timeout_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(autostart_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(systemproxy_), true);
 
   gtk_widget_set_sensitive(GTK_WIDGET(start_button_), true);
 }

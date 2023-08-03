@@ -54,6 +54,7 @@ struct _YASSGtkWindow
   GtkWidget* local_port;
   GtkWidget* timeout;
   GtkWidget* autostart;
+  GtkWidget* systemproxy;
 };
 
 G_DEFINE_TYPE (YASSGtkWindow, yass_window, GTK_TYPE_APPLICATION_WINDOW)
@@ -93,6 +94,7 @@ yass_window_class_init (YASSGtkWindowClass *cls)
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, local_port);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, timeout);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, autostart);
+  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, systemproxy);
 }
 
 YASSGtkWindow *
@@ -135,6 +137,11 @@ YASSWindow::YASSWindow(GApplication *app)
   g_signal_connect(G_OBJECT(impl_->autostart), "toggled",
                    G_CALLBACK(autostart_callback), nullptr);
 
+  auto systemproxy_callback = []() { window->OnSystemProxyClicked(); };
+
+  g_signal_connect(G_OBJECT(impl_->systemproxy), "toggled",
+                   G_CALLBACK(systemproxy_callback), nullptr);
+
   static const char* const method_names[] = {
 #define XX(num, name, string) string,
       CIPHER_METHOD_MAP(XX)
@@ -150,6 +157,9 @@ YASSWindow::YASSWindow(GApplication *app)
 
   gtk_check_button_set_active(GTK_CHECK_BUTTON(impl_->autostart),
                               Utils::GetAutoStart());
+
+  gtk_check_button_set_active(GTK_CHECK_BUTTON(impl_->systemproxy),
+                              Utils::GetSystemProxy());
 
   gtk_entry_set_visibility(GTK_ENTRY(impl_->password), false);
 
@@ -184,6 +194,12 @@ void YASSWindow::OnStopButtonClicked() {
 void YASSWindow::OnAutoStartClicked() {
   Utils::EnableAutoStart(
       gtk_check_button_get_active(GTK_CHECK_BUTTON(impl_->autostart))
+      );
+}
+
+void YASSWindow::OnSystemProxyClicked() {
+  Utils::SetSystemProxy(
+      gtk_check_button_get_active(GTK_CHECK_BUTTON(impl_->systemproxy))
       );
 }
 
@@ -262,6 +278,7 @@ void YASSWindow::Started() {
   gtk_widget_set_sensitive(impl_->local_port, false);
   gtk_widget_set_sensitive(impl_->timeout, false);
   gtk_widget_set_sensitive(impl_->autostart, false);
+  gtk_widget_set_sensitive(impl_->systemproxy, false);
   gtk_widget_set_sensitive(impl_->stop_button, true);
 }
 
@@ -276,6 +293,7 @@ void YASSWindow::StartFailed() {
   gtk_widget_set_sensitive(impl_->local_port, true);
   gtk_widget_set_sensitive(impl_->timeout, true);
   gtk_widget_set_sensitive(impl_->autostart, true);
+  gtk_widget_set_sensitive(impl_->systemproxy, true);
 
   gtk_widget_set_sensitive(impl_->start_button, true);
 
@@ -297,6 +315,7 @@ void YASSWindow::Stopped() {
   gtk_widget_set_sensitive(impl_->local_port, true);
   gtk_widget_set_sensitive(impl_->timeout, true);
   gtk_widget_set_sensitive(impl_->autostart, true);
+  gtk_widget_set_sensitive(impl_->systemproxy, true);
 
   gtk_widget_set_sensitive(impl_->start_button, true);
 }
