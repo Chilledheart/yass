@@ -14,17 +14,26 @@ class Utils {
   static void EnableAutoStart(bool on);
   static bool GetSystemProxy();
   static bool SetSystemProxy(bool on);
+  static std::string GetLocalAddr();
 };
 
 bool QuerySystemProxy(bool *enabled,
-                      std::string *server_addr,
+                      std::string *server_host,
                       std::string *server_port,
                       std::string *bypass_addr);
 
 bool SetSystemProxy(bool enable,
-                    const std::string &server_addr,
+                    const std::string &server_host,
                     const std::string &server_port,
                     const std::string &bypass_addr);
+
+bool QuerySystemProxy_KDE(bool *enabled,
+                          std::string *server_addr,
+                          std::string *bypass_addr);
+
+bool SetSystemProxy_KDE(bool enable,
+                        const std::string &server_addr,
+                        const std::string &bypass_addr);
 
 template <typename T>
 std::unique_ptr<T[], decltype(&g_free)> make_unique_ptr_gfree(T* p) {
