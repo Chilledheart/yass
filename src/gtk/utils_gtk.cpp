@@ -5,8 +5,10 @@
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
-#include <absl/strings/str_cat.h>
+#include "core/process_utils.hpp"
+#include "config/config.hpp"
 
+#include <absl/strings/str_cat.h>
 #include <absl/strings/string_view.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -94,11 +96,27 @@ bool WriteFileWithContent(const std::string& path, absl::string_view context) {
   return true;
 }
 
+// followed https://github.com/qt/qtbase/blob/7fe1198f6edb40de2299272c7523d85d7486598b/src/corelib/io/qstandardpaths_unix.cpp#L218
+std::string GetConfigDir() {
+  const char *config_dir_ptr = getenv("XDG_CONFIG_HOME");
+  std::string config_dir;
+  // spec says relative paths should be ignored
+  if (config_dir_ptr == nullptr || config_dir_ptr[0] != '/') {
+    config_dir = ExpandUser("~/.config");
+  } else {
+    config_dir = config_dir_ptr;
+  }
+  return config_dir;
+}
+
 std::string GetAutostartDirectory() {
-  const char* XdgConfigHome = ::getenv("XDG_CONFIG_HOME");
-  if (!XdgConfigHome)
-    XdgConfigHome = "~/.config";
-  return absl::StrCat(ExpandUser(XdgConfigHome), "/", "autostart");
+  return absl::StrCat(GetConfigDir(), "/", "autostart");
+}
+
+bool IsKDE() {
+  const char* desktop_ptr = getenv("XDG_SESSION_DESKTOP");
+  absl::string_view desktop = desktop_ptr ? absl::string_view(desktop_ptr) : absl::string_view();
+  return desktop == "KDE" || desktop == "plasma";
 }
 }  // namespace
 
@@ -133,6 +151,242 @@ void Utils::EnableAutoStart(bool on) {
       PLOG(WARNING) << "Internal error: unable to create autostart file";
     }
   }
+}
+
+bool Utils::GetSystemProxy() {
+  if (IsKDE()) {
+    bool enabled;
+    std::string server_addr, bypass_addr;
+    if (!QuerySystemProxy_KDE(&enabled, &server_addr, &bypass_addr)) {
+      return false;
+    }
+    return enabled && server_addr == GetLocalAddr();
+  }
+  bool enabled;
+  std::string server_host, server_port, bypass_addr;
+  if (!QuerySystemProxy(&enabled, &server_host, &server_port, &bypass_addr)) {
+    return false;
+  }
+  auto local_host = "'" + absl::GetFlag(FLAGS_local_host) + "'";
+  auto local_port = std::to_string(absl::GetFlag(FLAGS_local_port));
+  return enabled && server_host == local_host && server_port == local_port;
+}
+
+bool Utils::SetSystemProxy(bool on) {
+  bool ret = true;
+  if (IsKDE()) {
+    bool enabled;
+    std::string server_addr, bypass_addr;
+    if (!QuerySystemProxy_KDE(&enabled, &server_addr, &bypass_addr)) {
+      return false;
+    }
+    if (on) {
+      server_addr = GetLocalAddr();
+    }
+    ret = ::SetSystemProxy_KDE(on, server_addr, bypass_addr);
+  }
+  bool enabled;
+  std::string server_host, server_port, bypass_addr = "['localhost', '127.0.0.0/8', '::1']";
+  ::QuerySystemProxy(&enabled, &server_host, &server_port, &bypass_addr);
+  if (on) {
+    server_host = "'" + absl::GetFlag(FLAGS_local_host) + "'";
+    server_port = std::to_string(absl::GetFlag(FLAGS_local_port));
+  }
+  return ::SetSystemProxy(on, server_host, server_port, bypass_addr) && ret;
+}
+
+std::string Utils::GetLocalAddr() {
+  std::ostringstream ss;
+  auto local_host = absl::GetFlag(FLAGS_local_host);
+  auto local_port = absl::GetFlag(FLAGS_local_port);
+
+  asio::error_code ec;
+  auto addr = asio::ip::make_address(local_host.c_str(), ec);
+  bool host_is_ip_address = !ec;
+  if (host_is_ip_address && addr.is_v6()) {
+    ss << "http://[" << local_host << "]:" << local_port;
+  } else {
+    ss << "http://" << local_host << ":" << local_port;
+  }
+  return ss.str();
+}
+
+bool QuerySystemProxy(bool *enabled,
+                      std::string *server_host,
+                      std::string *server_port,
+                      std::string *bypass_addr) {
+  std::string output, _;
+  std::vector<std::string> params = {"gsettings", "get", "org.gnome.system.proxy", "mode"};
+  if (ExecuteProcess(params, &output, &_) != 0) {
+    return false;
+  }
+  // trim whites
+  if (output[output.size() - 1] == '\n') {
+    output.resize(output.size() - 1);
+  }
+  *enabled = output == "'manual'";
+
+  params = {"gsettings", "get", "org.gnome.system.proxy.http", "host"};
+  if (ExecuteProcess(params, &output, &_) != 0) {
+    return false;
+  }
+  // trim whites
+  if (output[output.size() - 1] == '\n') {
+    output.resize(output.size() - 1);
+  }
+  *server_host = output;
+
+  params = {"gsettings", "get", "org.gnome.system.proxy.http", "port"};
+  if (ExecuteProcess(params, &output, &_) != 0) {
+    return false;
+  }
+  // trim whites
+  if (output[output.size() - 1] == '\n') {
+    output.resize(output.size() - 1);
+  }
+  *server_port = output;
+
+  params = {"gsettings", "get", "org.gnome.system.proxy", "ignore-hosts"};
+  if (ExecuteProcess(params, &output, &_) != 0) {
+    return false;
+  }
+  // trim whites
+  if (output[output.size() - 1] == '\n') {
+    output.resize(output.size() - 1);
+  }
+  *bypass_addr = output;
+  return true;
+}
+
+bool SetSystemProxy(bool enable,
+                    const std::string &server_host,
+                    const std::string &server_port,
+                    const std::string &bypass_addr) {
+  std::string _;
+  std::vector<std::string> params = {"gsettings", "set", "org.gnome.system.proxy", "mode",
+    enable ?  "'manual'" : "'none'"};
+  if (ExecuteProcess(params, &_, &_) != 0) {
+    return false;
+  }
+
+  static const char* kProtocol[] = {
+    "org.gnome.system.proxy.http",
+    "org.gnome.system.proxy.https",
+    "org.gnome.system.proxy.ftp",
+    "org.gnome.system.proxy.socks",
+  };
+  for (const char * protocol: kProtocol) {
+    params = {"gsettings", "set", protocol, "host", server_host};
+    if (ExecuteProcess(params, &_, &_) != 0) {
+      return false;
+    }
+
+    params = {"gsettings", "set", protocol, "port", server_port};
+    if (ExecuteProcess(params, &_, &_) != 0) {
+      return false;
+    }
+  }
+
+  params = {"gsettings", "set", "org.gnome.system.proxy", "use-same-proxy", "true"};
+  if (ExecuteProcess(params, &_, &_) != 0) {
+    return false;
+  }
+
+  params = {"gsettings", "set", "org.gnome.system.proxy", "ignore-hosts", bypass_addr};
+  if (ExecuteProcess(params, &_, &_) != 0) {
+    return false;
+  }
+
+  params = {"gsettings", "set", "org.gnome.system.proxy", "mode",
+    enable ?  "'manual'" : "'none'"};
+  if (ExecuteProcess(params, &_, &_) != 0) {
+    return false;
+  }
+  return true;
+}
+
+bool QuerySystemProxy_KDE(bool *enabled,
+                          std::string *server_addr,
+                          std::string *bypass_addr) {
+  bypass_addr->clear();
+
+  std::string config_dir = GetConfigDir();
+  std::string output, _;
+  std::vector<std::string> params = {"kreadconfig5", "--file", config_dir + "/kioslaverc",
+    "--group", "Proxy Settings", "--key" , "ProxyType"};
+  if (ExecuteProcess(params, &output, &_) != 0) {
+    return false;
+  }
+  // trim whites
+  if (output[output.size() - 1] == '\n') {
+    output.resize(output.size() - 1);
+  }
+  *enabled = output == "1";
+
+  params = {"kreadconfig5", "--file", config_dir + "/kioslaverc",
+    "--group", "Proxy Settings", "--key" , "httpProxy"};
+  if (ExecuteProcess(params, &output, &_) != 0) {
+    return false;
+  }
+  // trim whites
+  if (output[output.size() - 1] == '\n') {
+    output.resize(output.size() - 1);
+  }
+  *server_addr = output;
+
+  params = {"kreadconfig5", "--file", config_dir + "/kioslaverc",
+    "--group", "Proxy Settings", "--key" , "NoProxyFor"};
+  if (ExecuteProcess(params, &output, &_) != 0) {
+    return false;
+  }
+  // trim whites
+  if (output[output.size() - 1] == '\n') {
+    output.resize(output.size() - 1);
+  }
+  *bypass_addr = output;
+
+  return true;
+}
+
+bool SetSystemProxy_KDE(bool enable,
+                        const std::string &server_addr,
+                        const std::string &bypass_addr) {
+  std::string config_dir = GetConfigDir();
+  std::string _;
+  std::vector<std::string> params = {"kwriteconfig5", "--file", config_dir + "/kioslaverc",
+    "--group", "Proxy Settings", "--key" , "ProxyType", enable ? "1" : "0"};
+  if (ExecuteProcess(params, &_, &_) != 0) {
+    return false;
+  }
+
+  static const char* kProtocol[] = {
+    "httpProxy",
+    "httpsProxy",
+    "ftpProxy",
+    "socksProxy",
+  };
+
+  for (const char * protocol: kProtocol) {
+    params = {"kwriteconfig5", "--file", config_dir + "/kioslaverc",
+      "--group", "Proxy Settings", "--key" , protocol, server_addr};
+    if (ExecuteProcess(params, &_, &_) != 0) {
+      return false;
+    }
+  }
+
+  params = {"kwriteconfig5", "--file", config_dir + "/kioslaverc",
+    "--group", "Proxy Settings", "--key" , "NoProxyFor", bypass_addr};
+  if (ExecuteProcess(params, &_, &_) != 0) {
+    return false;
+  }
+
+  params = {"dbus-send", "--type=signal", "/KIO/Scheduler",
+    "org.kde.KIO.Scheduler.reparseSlaveConfiguration", "string:''"};
+  if (ExecuteProcess(params, &_, &_) != 0) {
+    return false;
+  }
+
+  return true;
 }
 
 Dispatcher::Dispatcher() = default;

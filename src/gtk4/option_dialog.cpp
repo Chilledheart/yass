@@ -8,7 +8,7 @@
 #include "config/config.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
-#include "gtk4/utils.hpp"
+#include "gtk/utils.hpp"
 
 extern "C" {
 

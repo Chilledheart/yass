@@ -117,6 +117,16 @@
               </object>
             </child>
             <child>
+              <object class="GtkLabel">
+                <property name="label">System Proxy:</property>
+                <property name="xalign">1</property>
+                <layout>
+                  <property name="column">1</property>
+                  <property name="row">9</property>
+                </layout>
+              </object>
+            </child>
+            <child>
               <object class="GtkEntry" id="server_host">
                 <layout>
                   <property name="column">2</property>
@@ -185,6 +195,14 @@
                 <layout>
                   <property name="column">2</property>
                   <property name="row">8</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkCheckButton" id="systemproxy">
+                <layout>
+                  <property name="column">2</property>
+                  <property name="row">9</property>
                 </layout>
               </object>
             </child>
