@@ -143,13 +143,8 @@ YASSWindow::YASSWindow(GApplication *app)
     gtk_combo_box_text_append_text(method, method_names[i]);
   }
 
-#if GTK_CHECK_VERSION(4, 0, 0)
   gtk_check_button_set_active(GTK_CHECK_BUTTON(impl_->autostart),
                               Utils::GetAutoStart());
-#else
-  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(impl_->autostart),
-                               Utils::GetAutoStart());
-#endif
 
 
   gtk_entry_set_visibility(GTK_ENTRY(impl_->password), false);
@@ -175,11 +170,7 @@ void YASSWindow::OnStartButtonClicked() {
   gtk_widget_set_sensitive(GTK_WIDGET(impl_->start_button), false);
 
   Utils::EnableAutoStart(
-#if GTK_CHECK_VERSION(4, 0, 0)
       gtk_check_button_get_active(GTK_CHECK_BUTTON(impl_->autostart))
-#else
-      gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(impl_->autostart))
-#endif
       );
 
   mApp->OnStart();
@@ -191,35 +182,19 @@ void YASSWindow::OnStopButtonClicked() {
 }
 
 std::string YASSWindow::GetServerHost() {
-#if GTK_CHECK_VERSION(4, 0, 0)
   return gtk_editable_get_text(GTK_EDITABLE(impl_->server_host));
-#else
-  return gtk_entry_get_text(GTK_ENTRY(impl_->server_host));
-#endif
 }
 
 std::string YASSWindow::GetServerPort() {
-#if GTK_CHECK_VERSION(4, 0, 0)
   return gtk_editable_get_text(GTK_EDITABLE(impl_->server_port));
-#else
-  return gtk_entry_get_text(GTK_ENTRY(impl_->server_port));
-#endif
 }
 
 std::string YASSWindow::GetUsername() {
-#if GTK_CHECK_VERSION(4, 0, 0)
   return gtk_editable_get_text(GTK_EDITABLE(impl_->username));
-#else
-  return gtk_entry_get_text(GTK_ENTRY(impl_->username));
-#endif
 }
 
 std::string YASSWindow::GetPassword() {
-#if GTK_CHECK_VERSION(4, 0, 0)
   return gtk_editable_get_text(GTK_EDITABLE(impl_->password));
-#else
-  return gtk_entry_get_text(GTK_ENTRY(impl_->password));
-#endif
 }
 
 std::string YASSWindow::GetMethod() {
@@ -229,27 +204,15 @@ std::string YASSWindow::GetMethod() {
 }
 
 std::string YASSWindow::GetLocalHost() {
-#if GTK_CHECK_VERSION(4, 0, 0)
   return gtk_editable_get_text(GTK_EDITABLE(impl_->local_host));
-#else
-  return gtk_entry_get_text(GTK_ENTRY(impl_->local_host));
-#endif
 }
 
 std::string YASSWindow::GetLocalPort() {
-#if GTK_CHECK_VERSION(4, 0, 0)
   return gtk_editable_get_text(GTK_EDITABLE(impl_->local_port));
-#else
-  return gtk_entry_get_text(GTK_ENTRY(impl_->local_port));
-#endif
 }
 
 std::string YASSWindow::GetTimeout() {
-#if GTK_CHECK_VERSION(4, 0, 0)
   return gtk_editable_get_text(GTK_EDITABLE(impl_->timeout));
-#else
-  return gtk_entry_get_text(GTK_ENTRY(impl_->timeout));
-#endif
 }
 
 std::string YASSWindow::GetStatusMessage() {
@@ -314,12 +277,7 @@ void YASSWindow::StartFailed() {
       gtk_message_dialog_new(GTK_WINDOW(impl_), GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING,
                              GTK_BUTTONS_CLOSE, "%s", mApp->GetStatus().c_str()));
 
-#if GTK_CHECK_VERSION(4, 0, 0)
   g_signal_connect(dialog, "response", G_CALLBACK(gtk_window_destroy), NULL);
-#else
-  gtk_dialog_run(dialog);
-  gtk_widget_destroy(GTK_WIDGET(dialog));
-#endif
 }
 
 void YASSWindow::Stopped() {
@@ -347,17 +305,10 @@ void YASSWindow::LoadChanges() {
   auto local_port_str = std::to_string(absl::GetFlag(FLAGS_local_port));
   auto timeout_str = std::to_string(absl::GetFlag(FLAGS_connect_timeout));
 
-#if GTK_CHECK_VERSION(4, 0, 0)
   gtk_editable_set_text(GTK_EDITABLE(impl_->server_host), server_host_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->server_port), server_port_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->username), username_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->password), password_str.c_str());
-#else
-  gtk_entry_set_text(GTK_ENTRY(impl_->server_host), server_host_str.c_str());
-  gtk_entry_set_text(GTK_ENTRY(impl_->server_port), server_port_str.c_str());
-  gtk_entry_set_text(GTK_ENTRY(impl_->username), username_str.c_str());
-  gtk_entry_set_text(GTK_ENTRY(impl_->password), password_str.c_str());
-#endif
 
   static const int method_ids[] = {
 #define XX(num, name, string) num,
@@ -372,15 +323,9 @@ void YASSWindow::LoadChanges() {
 
   gtk_combo_box_set_active(GTK_COMBO_BOX(impl_->method), i - 1);
 
-#if GTK_CHECK_VERSION(4, 0, 0)
   gtk_editable_set_text(GTK_EDITABLE(impl_->local_host), local_host_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->local_port), local_port_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->timeout), timeout_str.c_str());
-#else
-  gtk_entry_set_text(GTK_ENTRY(impl_->local_host), local_host_str.c_str());
-  gtk_entry_set_text(GTK_ENTRY(impl_->local_port), local_port_str.c_str());
-  gtk_entry_set_text(GTK_ENTRY(impl_->timeout), timeout_str.c_str());
-#endif
 }
 
 void YASSWindow::UpdateStatusBar() {
