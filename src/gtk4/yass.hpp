@@ -10,7 +10,7 @@
 #include <gtk/gtk.h>
 
 #include "cli/cli_worker.hpp"
-#include "gtk4/utils.hpp"
+#include "gtk/utils.hpp"
 
 extern "C" {
 #define YASS_APP_TYPE (yass_app_get_type ()))

@@ -2740,7 +2740,7 @@ if (GUI)
           src/gtk4/yass.cpp
           src/gtk4/yass_window.cpp
           src/gtk4/option_dialog.cpp
-          src/gtk4/utils_gtk.cpp)
+          src/gtk/utils_gtk.cpp)
         # HOLDPLACE for TODO gettext support
         include(CompilePo)
         create_po_target(yass en src/gtk4/yass_en.po)

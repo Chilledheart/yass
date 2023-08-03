@@ -10,7 +10,7 @@
 
 #include "cli/cli_connection_stats.hpp"
 #include "core/utils.hpp"
-#include "gtk4/utils.hpp"
+#include "gtk/utils.hpp"
 #include "gtk4/yass.hpp"
 #include "version.h"
 

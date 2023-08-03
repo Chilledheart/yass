@@ -21,7 +21,6 @@
 #include "core/utils.hpp"
 #include "core/cxx17_backports.hpp"
 #include "crypto/crypter_export.hpp"
-#include "gtk4/utils.hpp"
 #include "gtk4/yass_window.hpp"
 #include "version.h"
 #include "gtk4/option_dialog.hpp"
