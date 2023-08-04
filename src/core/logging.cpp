@@ -1941,11 +1941,6 @@ void LogMessage::Init(const char* file,
                       void (LogMessage::*send_method)()) {
   allocated_ = nullptr;
 
-  auto log_process_id = g_log_process_id;
-  auto log_thread_id = g_log_thread_id;
-  auto log_timestamp = g_log_timestamp;
-  auto log_tickcount = g_log_tickcount;
-  auto log_prefix = g_log_prefix;
   // https://en.cppreference.com/w/cpp/atomic/atomic_thread_fence
   std::atomic_thread_fence(std::memory_order_release);
   if (!g_log_init.load(std::memory_order_acquire)) {
@@ -1956,6 +1951,12 @@ void LogMessage::Init(const char* file,
     g_log_prefix = absl::GetFlag(FLAGS_log_prefix);
     g_log_init.store(true, std::memory_order_relaxed);
   }
+
+  auto log_process_id = g_log_process_id;
+  auto log_thread_id = g_log_thread_id;
+  auto log_timestamp = g_log_timestamp;
+  auto log_tickcount = g_log_tickcount;
+  auto log_prefix = g_log_prefix;
 
   if (severity != LOGGING_FATAL || !exit_on_dfatal) {
 #ifdef THREAD_LOCAL_STORAGE
