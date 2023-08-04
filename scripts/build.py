@@ -690,9 +690,9 @@ def build_stage_generate_build_script():
       f.write('set(CMAKE_C_COMPILER_TARGET "x86_64-pc-windows-msvc")\n')
       f.write('set(CMAKE_CXX_COMPILER_TARGET "x86_64-pc-windows-msvc")\n')
     if msvc_crt_linkage == 'static':
-      cmake_args.extend(['-DCMAKE_MSVC_CRT_LINKAGE=static'])
+      cmake_args.extend(['-DMSVC_CRT_LINKAGE=static'])
     else:
-      cmake_args.extend(['-DCMAKE_MSVC_CRT_LINKAGE=dynamic'])
+      cmake_args.extend(['-DMSVC_CRT_LINKAGE=dynamic'])
     if msvc_allow_xp:
       cmake_args.extend(['-DALLOW_XP=ON'])
 
