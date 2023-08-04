@@ -108,7 +108,15 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 
 - (IBAction)OnSystemProxyChecked:(id)sender {
   bool enable = self.systemProxy.state == NSControlStateValueOn;
-  SetSystemProxy(enable);
+  [self.systemProxy setEnabled:FALSE];
+  // this operation might be slow, moved to background
+  dispatch_async(
+    dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+      SetSystemProxy(enable);
+      dispatch_async(dispatch_get_main_queue(), ^{
+        [self.systemProxy setEnabled:TRUE];
+      });
+  });
 }
 
 - (void)OnStatusBarClicked:(id)sender {

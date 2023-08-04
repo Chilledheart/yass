@@ -347,8 +347,7 @@ void YASSWindow::Started() {
   gtk_widget_set_sensitive(GTK_WIDGET(local_host_), false);
   gtk_widget_set_sensitive(GTK_WIDGET(local_port_), false);
   gtk_widget_set_sensitive(GTK_WIDGET(timeout_), false);
-  gtk_widget_set_sensitive(GTK_WIDGET(autostart_), false);
-  gtk_widget_set_sensitive(GTK_WIDGET(systemproxy_), false);
+
   gtk_widget_set_sensitive(GTK_WIDGET(stop_button_), true);
 }
 
@@ -362,8 +361,6 @@ void YASSWindow::StartFailed() {
   gtk_widget_set_sensitive(GTK_WIDGET(local_host_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(local_port_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(timeout_), true);
-  gtk_widget_set_sensitive(GTK_WIDGET(autostart_), true);
-  gtk_widget_set_sensitive(GTK_WIDGET(systemproxy_), true);
 
   gtk_widget_set_sensitive(GTK_WIDGET(start_button_), true);
 
@@ -385,8 +382,6 @@ void YASSWindow::Stopped() {
   gtk_widget_set_sensitive(GTK_WIDGET(local_host_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(local_port_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(timeout_), true);
-  gtk_widget_set_sensitive(GTK_WIDGET(autostart_), true);
-  gtk_widget_set_sensitive(GTK_WIDGET(systemproxy_), true);
 
   gtk_widget_set_sensitive(GTK_WIDGET(start_button_), true);
 }

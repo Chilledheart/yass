@@ -277,8 +277,7 @@ void YASSWindow::Started() {
   gtk_widget_set_sensitive(impl_->local_host, false);
   gtk_widget_set_sensitive(impl_->local_port, false);
   gtk_widget_set_sensitive(impl_->timeout, false);
-  gtk_widget_set_sensitive(impl_->autostart, false);
-  gtk_widget_set_sensitive(impl_->systemproxy, false);
+
   gtk_widget_set_sensitive(impl_->stop_button, true);
 }
 
@@ -292,8 +291,6 @@ void YASSWindow::StartFailed() {
   gtk_widget_set_sensitive(impl_->local_host, true);
   gtk_widget_set_sensitive(impl_->local_port, true);
   gtk_widget_set_sensitive(impl_->timeout, true);
-  gtk_widget_set_sensitive(impl_->autostart, true);
-  gtk_widget_set_sensitive(impl_->systemproxy, true);
 
   gtk_widget_set_sensitive(impl_->start_button, true);
 
@@ -314,8 +311,6 @@ void YASSWindow::Stopped() {
   gtk_widget_set_sensitive(impl_->local_host, true);
   gtk_widget_set_sensitive(impl_->local_port, true);
   gtk_widget_set_sensitive(impl_->timeout, true);
-  gtk_widget_set_sensitive(impl_->autostart, true);
-  gtk_widget_set_sensitive(impl_->systemproxy, true);
 
   gtk_widget_set_sensitive(impl_->start_button, true);
 }

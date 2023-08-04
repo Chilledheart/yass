@@ -81,10 +81,15 @@ int ExecuteProcess(const std::vector<std::string>& params,
     }
     _params.push_back(nullptr);
     ret = execvp(_params[0], &_params[0]);
+
+    fprintf(stderr, "execvp failure on %s\n", command_line.c_str());
+    fflush(stderr);
+    PLOG(ERROR) << "execvp failure on " << command_line;
+
     if (ret < 0) {
       _exit(ret);
     }
-    PLOG(FATAL) << "execvp failure on " << command_line;
+    LOG(FATAL) << "non reachable";
   }
   // In Parent Process
   DCHECK(pid) << "Invalid pid in parent process";
@@ -104,11 +109,19 @@ int ExecuteProcess(const std::vector<std::string>& params,
 
   // polling stdout and stderr
   int mfd = std::max(stdout_pipe[0], stderr_pipe[0]) + 1;
+  bool stdout_eof = false, stderr_eof = false;
   while (true) {
+    if (stdout_eof && stderr_eof) {
+      break;
+    }
     fd_set rfds;
     FD_ZERO(&rfds);
-    FD_SET(stdout_pipe[0], &rfds);
-    FD_SET(stderr_pipe[0], &rfds);
+    if (!stdout_eof) {
+      FD_SET(stdout_pipe[0], &rfds);
+    }
+    if (!stderr_eof) {
+      FD_SET(stderr_pipe[0], &rfds);
+    }
     ret = select(mfd, &rfds, nullptr, nullptr, nullptr);
     if (ret < 0) {
       PLOG(WARNING) << "failure on polling process output: " << command_line;
@@ -125,8 +138,11 @@ int ExecuteProcess(const std::vector<std::string>& params,
         goto done;
       }
       // EOF
-      if (ret == 0)
-        goto done;
+      if (ret == 0) {
+        VLOG(2) << "process " << command_line << " stdout eof";
+        stdout_eof = true;
+        continue;
+      }
       stdout_ss << absl::string_view(buf, ret);
     }
     if (FD_ISSET(stderr_pipe[0], &rfds)) {
@@ -139,8 +155,11 @@ int ExecuteProcess(const std::vector<std::string>& params,
         goto done;
       }
       // EOF
-      if (ret == 0)
-        goto done;
+      if (ret == 0) {
+        VLOG(2) << "process " << command_line << " stderr eof";
+        stderr_eof = true;
+        continue;
+      }
       stderr_ss << absl::string_view(buf, ret);
     }
   }

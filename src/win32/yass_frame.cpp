@@ -378,12 +378,13 @@ int CYassFrame::Create(const wchar_t* className,
       !username_label_|| !password_label_||
       !method_label_||
       !local_host_label_|| !local_port_label_||
-      !timeout_label_|| !autostart_label_||
+      !timeout_label_|| !autostart_label_|| !systemproxy_label_ ||
       !server_host_edit_|| !server_port_edit_||
       !username_edit_|| !password_edit_||
       !method_combo_box_||
       !local_host_edit_|| !local_port_edit_||
-      !timeout_edit_|| !autostart_button_|| !status_bar_)
+      !timeout_edit_|| !autostart_button_|| !systemproxy_button_ ||
+      !status_bar_)
     return FALSE;
 
   UpdateLayoutForDpi();
@@ -637,7 +638,7 @@ void CYassFrame::OnStarted() {
   EnableWindow(local_host_edit_, FALSE);
   EnableWindow(local_port_edit_, FALSE);
   EnableWindow(timeout_edit_, FALSE);
-  EnableWindow(autostart_button_, FALSE);
+
   EnableWindow(stop_button_, TRUE);
 }
 
@@ -650,7 +651,7 @@ void CYassFrame::OnStartFailed() {
   EnableWindow(local_host_edit_, TRUE);
   EnableWindow(local_port_edit_, TRUE);
   EnableWindow(timeout_edit_, TRUE);
-  EnableWindow(autostart_button_, TRUE);
+
   EnableWindow(start_button_, TRUE);
   MessageBoxW(m_hWnd, SysUTF8ToWide(mApp->GetStatus()).c_str(), L"Start Failed",
               MB_ICONEXCLAMATION | MB_OK);
@@ -665,7 +666,7 @@ void CYassFrame::OnStopped() {
   EnableWindow(local_host_edit_, TRUE);
   EnableWindow(local_port_edit_, TRUE);
   EnableWindow(timeout_edit_, TRUE);
-  EnableWindow(autostart_button_, TRUE);
+
   EnableWindow(start_button_, TRUE);
 }
 
