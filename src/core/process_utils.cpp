@@ -16,6 +16,24 @@ extern "C" char **environ;
 
 #include <sstream>
 
+static int Pipe2(int pipe_fds[2]) {
+  int ret;
+#ifdef HAVE_PIPE2
+  if ((ret = pipe2(pipe_fds, O_CLOEXEC))) {
+    PLOG(WARNING) << "pipe2 failure";
+    return ret;
+  }
+#else
+  if ((ret = pipe(pipe_fds))) {
+    PLOG(WARNING) << "pipe failure";
+    return ret;
+  }
+  fcntl(pipe_fds[0], F_SETFD, FD_CLOEXEC);
+  fcntl(pipe_fds[1], F_SETFD, FD_CLOEXEC);
+#endif
+  return ret;
+}
+
 int ExecuteProcess(const std::vector<std::string>& params,
                    std::string* output,
                    std::string* error) {
@@ -34,32 +52,21 @@ int ExecuteProcess(const std::vector<std::string>& params,
   int stdin_pipe[2];
   int stdout_pipe[2];
   int stderr_pipe[2];
-  // TODO use pipe2 if possible
-  // pipe2(xxx, O_CLOEXEC | O_NONBLOCK);
-  if ((ret = pipe(stdin_pipe))) {
-    PLOG(WARNING) << "pipe failure";
+  if ((ret = Pipe2(stdin_pipe))) {
     return ret;
   }
-  fcntl(stdin_pipe[0], F_SETFD, FD_CLOEXEC);
-  fcntl(stdin_pipe[1], F_SETFD, FD_CLOEXEC);
-  if ((ret = pipe(stdout_pipe))) {
+  if ((ret = Pipe2(stdout_pipe))) {
     close(stdin_pipe[0]);
     close(stdin_pipe[1]);
-    PLOG(WARNING) << "pipe failure";
     return ret;
   }
-  fcntl(stdout_pipe[0], F_SETFD, FD_CLOEXEC);
-  fcntl(stdout_pipe[1], F_SETFD, FD_CLOEXEC);
-  if ((ret = pipe(stderr_pipe))) {
+  if ((ret = Pipe2(stderr_pipe))) {
     close(stdin_pipe[0]);
     close(stdin_pipe[1]);
-    close(stderr_pipe[0]);
-    close(stderr_pipe[1]);
-    PLOG(WARNING) << "pipe failure";
+    close(stdout_pipe[0]);
+    close(stdout_pipe[1]);
     return ret;
   }
-  fcntl(stderr_pipe[0], F_SETFD, FD_CLOEXEC);
-  fcntl(stderr_pipe[1], F_SETFD, FD_CLOEXEC);
 
   ret = pid = fork();
   if (ret < 0) {
@@ -68,11 +75,15 @@ int ExecuteProcess(const std::vector<std::string>& params,
   }
   // In Child Process
   if (ret == 0) {
-    // TODO use dup3 if possible
-    // dup3(xxx, yyy, O_CLOEXEC);
+#ifdef HAVE_DUP3
+    dup3(stdin_pipe[0], STDIN_FILENO, 0);
+    dup3(stdout_pipe[1], STDOUT_FILENO, 0);
+    dup3(stderr_pipe[1], STDERR_FILENO, 0);
+#else
     dup2(stdin_pipe[0], STDIN_FILENO);
     dup2(stdout_pipe[1], STDOUT_FILENO);
     dup2(stderr_pipe[1], STDERR_FILENO);
+#endif
 
     std::vector<char*> _params;
     _params.reserve(params.size() + 1);

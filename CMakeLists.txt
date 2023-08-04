@@ -1418,6 +1418,7 @@ endif()
 include(CheckIncludeFile)
 include(CheckCSourceCompiles)
 include(CheckCXXSourceCompiles)
+include(CheckLibraryExists)
 
 check_c_source_compiles ("
 #define STDOUT_FILENO 1
@@ -1435,6 +1436,15 @@ int main() {
 " HAVE_FLOCK)
 if (HAVE_FLOCK)
   add_definitions(-DHAVE_FLOCK)
+endif()
+
+check_library_exists(c pipe2 "" HAVE_PIPE2)
+check_library_exists(c dup3 "" HAVE_DUP3)
+if (HAVE_PIPE2)
+  add_definitions(-DHAVE_PIPE2)
+endif()
+if (HAVE_DUP3)
+  add_definitions(-DHAVE_DUP3)
 endif()
 
 # *****************************************************************************************
