@@ -22,7 +22,7 @@ if (POLICY CMP0075)
 endif (POLICY CMP0075)
 
 # Select the MSVC runtime library for use by compilers targeting the MSVC ABI.
-# Use CMAKE_MSVC_CRT_LINKAGE variable internally, option: dynamic and static
+# Use MSVC_CRT_LINKAGE variable internally, option: dynamic and static
 #
 # Introduced by cmake 3.15
 # https://cmake.org/cmake/help/latest/variable/CMAKE_MSVC_RUNTIME_LIBRARY.html#variable:CMAKE_MSVC_RUNTIME_LIBRARY
@@ -42,8 +42,11 @@ if(POLICY CMP0118)
 endif()
 
 # https://docs.microsoft.com/en-us/cpp/c-runtime-library/crt-library-features?redirectedfrom=MSDN&view=msvc-170
-set(CMAKE_MSVC_CRT_LINKAGE "static" CACHE STRING "")
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:${CMAKE_MSVC_CRT_LINKAGE},dynamic>:DLL>" CACHE STRING "")
+set(MSVC_CRT_LINKAGE "static" CACHE STRING "")
+if (NOT MSVC_CRT_LINKAGE STREQUAL "static" AND NOT MSVC_CRT_LINKAGE STREQUAL "dynamic")
+  message(FATAL_ERROR "MSVC_CRT_LINKAGE only accepts: dynamic or static")
+endif()
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:${MSVC_CRT_LINKAGE},dynamic>:DLL>")
 
 # Use relative paths (May not work!).
 set(CMAKE_USE_RELATIVE_PATHS TRUE)
@@ -203,7 +206,7 @@ endif()
 
 if (MSVC)
   message(STATUS "Build with MSVC target architecture: ${MSVC_PROCESSOR_ARCHITECTURE}")
-  message(STATUS "Build with MSVC ${CMAKE_MSVC_CRT_LINKAGE} CRT library")
+  message(STATUS "Build with MSVC ${MSVC_CRT_LINKAGE} CRT library")
 elseif(APPLE)
   message(STATUS "Build with target architecture: ${CMAKE_OSX_ARCHITECTURES}")
 else()
@@ -668,7 +671,7 @@ else()
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
 
   ## Disable LTCG for static libraries because this setting introduces ABI incompatibility between minor compiler versions
-  if (NOT CMAKE_MSVC_CRT_LINKAGE STREQUAL "static" AND NOT COMPILER_CLANG)
+  if (NOT MSVC_CRT_LINKAGE STREQUAL "static" AND NOT COMPILER_CLANG)
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /GL")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")
     set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG")
@@ -1468,7 +1471,7 @@ if (WIN32)
     add_definitions(-D__USE_MINGW_ANSI_STDIO=0)
   endif()
 
-  if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "static")
+  if (MSVC_CRT_LINKAGE STREQUAL "static")
     # replace /MD with /MT
     set(CompilerFlags
       CMAKE_CXX_FLAGS
@@ -1968,7 +1971,7 @@ set(SUPPORT_LIBS xxhash ${SUPPORT_LIBS})
 
 set(protobuf_INSTALL "OFF" CACHE STRING "")
 set(protobuf_DISABLE_RTTI "ON" CACHE STRING "")
-if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "dynamic")
+if (MSVC_CRT_LINKAGE STREQUAL "dynamic")
   set(protobuf_MSVC_STATIC_RUNTIME "OFF" CACHE STRING "")
 else()
   set(protobuf_MSVC_STATIC_RUNTIME "ON" CACHE STRING "")
@@ -3055,7 +3058,7 @@ if (BUILD_TESTS)
   )
 
   if (USE_CURL)
-    if (MSVC AND CMAKE_MSVC_CRT_LINKAGE STREQUAL "static")
+    if (MSVC AND MSVC_CRT_LINKAGE STREQUAL "static")
       if("${MSVC_PROCESSOR_ARCHITECTURE}" STREQUAL "arm64")
         set(CURL_MSVC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libcurl-vc16-arm64-release-static-ipv6-sspi-schannel")
       elseif("${MSVC_PROCESSOR_ARCHITECTURE}" STREQUAL "amd64")

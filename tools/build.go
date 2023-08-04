@@ -455,7 +455,7 @@ func buildStageGenerateBuildScript() {
 			glog.Fatalf("%v", err)
 		}
 
-		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_MSVC_CRT_LINKAGE=%s", msvcCrtLinkageFlag))
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DMSVC_CRT_LINKAGE=%s", msvcCrtLinkageFlag))
 		if msvcAllowXpFlag {
 			cmakeArgs = append(cmakeArgs, "-DALLOW_XP=ON")
 		} else {
