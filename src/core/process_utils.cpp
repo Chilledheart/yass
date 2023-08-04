@@ -104,11 +104,19 @@ int ExecuteProcess(const std::vector<std::string>& params,
 
   // polling stdout and stderr
   int mfd = std::max(stdout_pipe[0], stderr_pipe[0]) + 1;
+  bool stdout_eof = false, stderr_eof = false;
   while (true) {
+    if (stdout_eof && stderr_eof) {
+      break;
+    }
     fd_set rfds;
     FD_ZERO(&rfds);
-    FD_SET(stdout_pipe[0], &rfds);
-    FD_SET(stderr_pipe[0], &rfds);
+    if (!stdout_eof) {
+      FD_SET(stdout_pipe[0], &rfds);
+    }
+    if (!stderr_eof) {
+      FD_SET(stderr_pipe[0], &rfds);
+    }
     ret = select(mfd, &rfds, nullptr, nullptr, nullptr);
     if (ret < 0) {
       PLOG(WARNING) << "failure on polling process output: " << command_line;
@@ -125,8 +133,11 @@ int ExecuteProcess(const std::vector<std::string>& params,
         goto done;
       }
       // EOF
-      if (ret == 0)
-        goto done;
+      if (ret == 0) {
+        VLOG(2) << "process " << command_line << " stdout eof";
+        stdout_eof = true;
+        continue;
+      }
       stdout_ss << absl::string_view(buf, ret);
     }
     if (FD_ISSET(stderr_pipe[0], &rfds)) {
@@ -139,8 +150,11 @@ int ExecuteProcess(const std::vector<std::string>& params,
         goto done;
       }
       // EOF
-      if (ret == 0)
-        goto done;
+      if (ret == 0) {
+        VLOG(2) << "process " << command_line << " stderr eof";
+        stderr_eof = true;
+        continue;
+      }
       stderr_ss << absl::string_view(buf, ret);
     }
   }
