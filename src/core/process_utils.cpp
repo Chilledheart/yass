@@ -81,10 +81,15 @@ int ExecuteProcess(const std::vector<std::string>& params,
     }
     _params.push_back(nullptr);
     ret = execvp(_params[0], &_params[0]);
+
+    fprintf(stderr, "execvp failure on %s\n", command_line.c_str());
+    fflush(stderr);
+    PLOG(ERROR) << "execvp failure on " << command_line;
+
     if (ret < 0) {
       _exit(ret);
     }
-    PLOG(FATAL) << "execvp failure on " << command_line;
+    LOG(FATAL) << "non reachable";
   }
   // In Parent Process
   DCHECK(pid) << "Invalid pid in parent process";
