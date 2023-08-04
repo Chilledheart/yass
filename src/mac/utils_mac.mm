@@ -551,36 +551,39 @@ bool SetSystemProxy(bool enable,
       continue;
     }
     LOG(INFO) << "Found service: " << service;
-    params = {"/usr/sbin/networksetup", "-setwebproxystate",
-      service, enable ?  "on" : "off"};
-    if (ExecuteProcess(params, &_, &_) != 0) {
-      return false;
-    }
-    if (enable) {
+    if (!enable) {
+      params = {"/usr/sbin/networksetup", "-setwebproxystate",
+        service, "off"};
+      if (ExecuteProcess(params, &_, &_) != 0) {
+        return false;
+      }
+    } else {
       params = {"/usr/sbin/networksetup", "-setwebproxy",
         service, server_addr, std::to_string(server_port)};
       if (ExecuteProcess(params, &_, &_) != 0) {
         return false;
       }
     }
-    params = {"/usr/sbin/networksetup", "-setsecurewebproxystate",
-      service, enable ?  "on" : "off"};
-    if (ExecuteProcess(params, &_, &_) != 0) {
-      return false;
-    }
-    if (enable) {
+    if (!enable) {
+      params = {"/usr/sbin/networksetup", "-setsecurewebproxystate",
+        service, "off"};
+      if (ExecuteProcess(params, &_, &_) != 0) {
+        return false;
+      }
+    } else {
       params = {"/usr/sbin/networksetup", "-setsecurewebproxy",
         service, server_addr, std::to_string(server_port)};
       if (ExecuteProcess(params, &_, &_) != 0) {
         return false;
       }
     }
-    params = {"/usr/sbin/networksetup", "-setsocksfirewallproxystate",
-      service, enable ?  "on" : "off"};
-    if (ExecuteProcess(params, &_, &_) != 0) {
-      return false;
-    }
-    if (enable) {
+    if (!enable) {
+      params = {"/usr/sbin/networksetup", "-setsocksfirewallproxystate",
+        service, "off"};
+      if (ExecuteProcess(params, &_, &_) != 0) {
+        return false;
+      }
+    } else {
       params = {"/usr/sbin/networksetup", "-setsocksfirewallproxy",
         service, server_addr, std::to_string(server_port)};
       if (ExecuteProcess(params, &_, &_) != 0) {
