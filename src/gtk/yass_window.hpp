@@ -37,8 +37,10 @@ class YASSWindow {
   GtkEntry* local_port_;
   GtkEntry* timeout_;
   GtkCheckButton* autostart_;
+  GtkCheckButton* systemproxy_;
 
-  void OnCheckedAutoStart();
+  void OnAutoStartClicked();
+  void OnSystemProxyClicked();
 
   GtkStatusbar* status_bar_;
 

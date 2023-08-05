@@ -123,7 +123,11 @@ bool Net_ipv6works() {
 #endif
   /* probe to see if we have a working IPv6 stack */
   fd_t s = socket(AF_INET6, SOCK_DGRAM, 0);
+#ifndef _WIN32
   if (s < 0) {
+#else
+  if (s == INVALID_SOCKET) {
+#endif
     return false;
   } else {
 #ifndef _WIN32

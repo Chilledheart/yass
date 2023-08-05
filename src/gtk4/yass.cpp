@@ -21,7 +21,6 @@
 #include "core/utils.hpp"
 #include "core/cxx17_backports.hpp"
 #include "crypto/crypter_export.hpp"
-#include "gtk4/utils.hpp"
 #include "gtk4/yass_window.hpp"
 #include "version.h"
 #include "gtk4/option_dialog.hpp"
@@ -380,12 +379,7 @@ void YASSApp::OnAbout() {
   gtk_about_dialog_set_website(about_dialog, YASS_APP_WEBSITE);
   gtk_about_dialog_set_website_label(about_dialog, "official-site");
 
-#if GTK_CHECK_VERSION(4, 0, 0)
   gtk_window_present(GTK_WINDOW(about_dialog));
-#else
-  gtk_dialog_run(GTK_DIALOG(about_dialog));
-  gtk_widget_destroy(GTK_WIDGET(about_dialog));
-#endif
 }
 
 void YASSApp::OnOption() {

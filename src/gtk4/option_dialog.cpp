@@ -8,7 +8,7 @@
 #include "config/config.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
-#include "gtk4/utils.hpp"
+#include "gtk/utils.hpp"
 
 extern "C" {
 
@@ -97,20 +97,16 @@ OptionDialog::OptionDialog(const std::string& title,
   g_signal_connect(G_OBJECT(impl_->cancel_button), "clicked",
                    G_CALLBACK(cancel_callback), nullptr);
 
-#if GTK_CHECK_VERSION(4, 0, 0)
   auto response_callback = []() { delete window; };
 
   g_signal_connect(impl_, "response",
                    G_CALLBACK(response_callback), nullptr);
 
   gtk_widget_set_visible(GTK_WIDGET(impl_), true);
-#endif
 }
 
 OptionDialog::~OptionDialog() {
-#if GTK_CHECK_VERSION(4, 0, 0)
   gtk_window_destroy(GTK_WINDOW(impl_));
-#endif
 }
 
 void OptionDialog::OnOkayButtonClicked() {
@@ -123,42 +119,24 @@ void OptionDialog::OnCancelButtonClicked() {
 }
 
 void OptionDialog::run() {
-#if GTK_CHECK_VERSION(4, 0, 0)
   gtk_window_present(GTK_WINDOW(impl_));
-#else
-  gtk_dialog_run(GTK_DIALOG(impl_));
-  gtk_widget_destroy(GTK_WIDGET(impl_));
-  delete this;
-#endif
 }
 
 void OptionDialog::LoadChanges() {
-#if GTK_CHECK_VERSION(4, 0, 0)
   gtk_check_button_set_active(GTK_CHECK_BUTTON(impl_->tcp_keep_alive_check),
                               absl::GetFlag(FLAGS_tcp_keep_alive));
-#else
-  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(impl_->tcp_keep_alive_check),
-                               absl::GetFlag(FLAGS_tcp_keep_alive));
-#endif
   auto tcp_keep_alive_cnt_str =
       std::to_string(absl::GetFlag(FLAGS_tcp_keep_alive_cnt));
   auto tcp_keep_alive_idle_timeout_str =
       std::to_string(absl::GetFlag(FLAGS_tcp_keep_alive_idle_timeout));
   auto tcp_keep_alive_interval_str =
       std::to_string(absl::GetFlag(FLAGS_tcp_keep_alive_interval));
-#if GTK_CHECK_VERSION(4, 0, 0)
   gtk_editable_set_text(GTK_EDITABLE(impl_->tcp_keep_alive_cnt), tcp_keep_alive_cnt_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->tcp_keep_alive_idle_timeout), tcp_keep_alive_idle_timeout_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->tcp_keep_alive_interval), tcp_keep_alive_interval_str.c_str());
-#else
-  gtk_entry_set_text(GTK_ENTRY(impl_->tcp_keep_alive_cnt), tcp_keep_alive_cnt_str.c_str());
-  gtk_entry_set_text(GTK_ENTRY(impl_->tcp_keep_alive_idle_timeout), tcp_keep_alive_idle_timeout_str.c_str());
-  gtk_entry_set_text(GTK_ENTRY(impl_->tcp_keep_alive_interval), tcp_keep_alive_interval_str.c_str());
-#endif
 }
 
 void OptionDialog::OnSave() {
-#if GTK_CHECK_VERSION(4, 0, 0)
   auto tcp_keep_alive = gtk_check_button_get_active(GTK_CHECK_BUTTON(impl_->tcp_keep_alive_check));
   auto tcp_keep_alive_cnt =
       StringToInteger(gtk_editable_get_text(GTK_EDITABLE(impl_->tcp_keep_alive_cnt)));
@@ -166,15 +144,6 @@ void OptionDialog::OnSave() {
       StringToInteger(gtk_editable_get_text(GTK_EDITABLE(impl_->tcp_keep_alive_idle_timeout)));
   auto tcp_keep_alive_interval =
       StringToInteger(gtk_editable_get_text(GTK_EDITABLE(impl_->tcp_keep_alive_interval)));
-#else
-  auto tcp_keep_alive = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(impl_->tcp_keep_alive_check));
-  auto tcp_keep_alive_cnt =
-      StringToInteger(gtk_entry_get_text(GTK_ENTRY(impl_->tcp_keep_alive_cnt)));
-  auto tcp_keep_alive_idle_timeout =
-      StringToInteger(gtk_entry_get_text(GTK_ENTRY(impl_->tcp_keep_alive_idle_timeout)));
-  auto tcp_keep_alive_interval =
-      StringToInteger(gtk_entry_get_text(GTK_ENTRY(impl_->tcp_keep_alive_interval)));
-#endif
 
   if (!tcp_keep_alive_cnt.ok() ||
       !tcp_keep_alive_idle_timeout.ok() ||

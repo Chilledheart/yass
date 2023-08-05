@@ -195,18 +195,18 @@ BOOL AddNotificationIcon(HWND hwnd, HINSTANCE hInstance) {
 #if _WIN32_WINNT >= 0x0600
   nid.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE | NIF_SHOWTIP | NIF_GUID;
   nid.guidItem = __uuidof(TrayIcon);
-  LoadIconMetric(hInstance, MAKEINTRESOURCE(IDI_TRAYICON), LIM_SMALL, &nid.hIcon);
+  LoadIconMetric(hInstance, MAKEINTRESOURCEW(IDI_TRAYICON), LIM_SMALL, &nid.hIcon);
 #else
   nid.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE;
   nid.uID = TRAY_ICON_ID;
-  nid.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_TRAYICON));
+  nid.hIcon = LoadIconW(hInstance, MAKEINTRESOURCEW(IDI_TRAYICON));
 #endif
   nid.uCallbackMessage = WMAPP_NOTIFYCALLBACK;
-  Shell_NotifyIcon(NIM_ADD, &nid);
+  Shell_NotifyIconW(NIM_ADD, &nid);
 #if _WIN32_WINNT >= 0x0600
   // NOTIFICATION_VERSION_4 is perfered
   nid.uVersion = NOTIFYICON_VERSION_4;
-  return Shell_NotifyIcon(NIM_SETVERSION, &nid);
+  return Shell_NotifyIconW(NIM_SETVERSION, &nid);
 #else
   return TRUE;
 #endif
@@ -219,9 +219,9 @@ BOOL UpdateNotificationIcon(HINSTANCE hInstance, UINT uDpi) {
   nid.cbSize = sizeof(nid);
   nid.uFlags = NIF_ICON | NIF_GUID;
   nid.guidItem = __uuidof(TrayIcon);
-  LoadIconMetric(hInstance, MAKEINTRESOURCE(IDI_TRAYICON),
+  LoadIconMetric(hInstance, MAKEINTRESOURCEW(IDI_TRAYICON),
                  uDpi > 96 ? LIM_LARGE : LIM_SMALL, &nid.hIcon);
-  return Shell_NotifyIcon(NIM_MODIFY, &nid);
+  return Shell_NotifyIconW(NIM_MODIFY, &nid);
 #else
   return TRUE;
 #endif
@@ -237,7 +237,7 @@ BOOL DeleteNotificationIcon(HWND hwnd) {
 #else
   nid.uID = TRAY_ICON_ID;
 #endif
-  return Shell_NotifyIcon(NIM_DELETE, &nid);
+  return Shell_NotifyIconW(NIM_DELETE, &nid);
 }
 
 BOOL RestoreTooltip() {
@@ -247,14 +247,14 @@ BOOL RestoreTooltip() {
   nid.cbSize = sizeof(nid);
   nid.uFlags = NIF_SHOWTIP | NIF_GUID;
   nid.guidItem = __uuidof(TrayIcon);
-  return Shell_NotifyIcon(NIM_MODIFY, &nid);
+  return Shell_NotifyIconW(NIM_MODIFY, &nid);
 #else
   return TRUE;
 #endif
 }
 
 void ShowContextMenu(HINSTANCE hInstance, HWND hwnd, POINT pt) {
-  HMENU hMenu = LoadMenu(hInstance, MAKEINTRESOURCE(IDC_CONTEXTMENU));
+  HMENU hMenu = LoadMenuW(hInstance, MAKEINTRESOURCEW(IDC_CONTEXTMENU));
   if (hMenu) {
     HMENU hSubMenu = GetSubMenu(hMenu, 0);
     if (hSubMenu) {
@@ -334,6 +334,7 @@ int CYassFrame::Create(const wchar_t* className,
   local_port_label_ = CreateStatic(L"Local Port", m_hWnd, 0, hInstance);
   timeout_label_ = CreateStatic(L"Timeout", m_hWnd, 0, hInstance);
   autostart_label_ = CreateStatic(L"Auto Start", m_hWnd, 0, hInstance);
+  systemproxy_label_ = CreateStatic(L"System Proxy", m_hWnd, 0, hInstance);
 
   // Column 3
   server_host_edit_ = CreateEdit(0, m_hWnd, IDC_EDIT_SERVER_HOST, hInstance);
@@ -359,8 +360,14 @@ int CYassFrame::Create(const wchar_t* className,
   autostart_button_ = CreateButton(L"Enable", BS_AUTOCHECKBOX | BS_LEFT,
                                    m_hWnd, IDC_AUTOSTART_CHECKBOX, hInstance);
 
+  systemproxy_button_ = CreateButton(L"Enable", BS_AUTOCHECKBOX | BS_LEFT,
+                                     m_hWnd, IDC_SYSTEMPROXY_CHECKBOX, hInstance);
+
   Button_SetCheck(autostart_button_,
                   Utils::GetAutoStart() ? BST_CHECKED : BST_UNCHECKED);
+
+  Button_SetCheck(systemproxy_button_,
+                  Utils::GetSystemProxy() ? BST_CHECKED : BST_UNCHECKED);
 
   // Status Bar
   // https://docs.microsoft.com/en-us/windows/win32/controls/status-bars
@@ -371,12 +378,13 @@ int CYassFrame::Create(const wchar_t* className,
       !username_label_|| !password_label_||
       !method_label_||
       !local_host_label_|| !local_port_label_||
-      !timeout_label_|| !autostart_label_||
+      !timeout_label_|| !autostart_label_|| !systemproxy_label_ ||
       !server_host_edit_|| !server_port_edit_||
       !username_edit_|| !password_edit_||
       !method_combo_box_||
       !local_host_edit_|| !local_port_edit_||
-      !timeout_edit_|| !autostart_button_|| !status_bar_)
+      !timeout_edit_|| !autostart_button_|| !systemproxy_button_ ||
+      !status_bar_)
     return FALSE;
 
   UpdateLayoutForDpi();
@@ -492,6 +500,9 @@ LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam,
         break;
       case IDC_AUTOSTART_CHECKBOX:
         mFrame->OnCheckedAutoStartButtonClicked();
+        break;
+      case IDC_SYSTEMPROXY_CHECKBOX:
+        mFrame->OnCheckedSystemProxyButtonClicked();
         break;
       default:
         return DefWindowProc(hWnd, msg, wParam, lParam);
@@ -627,7 +638,7 @@ void CYassFrame::OnStarted() {
   EnableWindow(local_host_edit_, FALSE);
   EnableWindow(local_port_edit_, FALSE);
   EnableWindow(timeout_edit_, FALSE);
-  EnableWindow(autostart_button_, FALSE);
+
   EnableWindow(stop_button_, TRUE);
 }
 
@@ -640,7 +651,7 @@ void CYassFrame::OnStartFailed() {
   EnableWindow(local_host_edit_, TRUE);
   EnableWindow(local_port_edit_, TRUE);
   EnableWindow(timeout_edit_, TRUE);
-  EnableWindow(autostart_button_, TRUE);
+
   EnableWindow(start_button_, TRUE);
   MessageBoxW(m_hWnd, SysUTF8ToWide(mApp->GetStatus()).c_str(), L"Start Failed",
               MB_ICONEXCLAMATION | MB_OK);
@@ -655,7 +666,7 @@ void CYassFrame::OnStopped() {
   EnableWindow(local_host_edit_, TRUE);
   EnableWindow(local_port_edit_, TRUE);
   EnableWindow(timeout_edit_, TRUE);
-  EnableWindow(autostart_button_, TRUE);
+
   EnableWindow(start_button_, TRUE);
 }
 
@@ -759,6 +770,11 @@ void CYassFrame::UpdateLayoutForDpi(UINT uDpi) {
   SetWindowPos(autostart_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
                LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
+  rect.left = client_rect.left + COLUMN_TWO_LEFT;
+  rect.top = client_rect.top + VERTICAL_HEIGHT * 10;
+  SetWindowPos(systemproxy_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
+               LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+
   // Column 3
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT;
@@ -803,6 +819,11 @@ void CYassFrame::UpdateLayoutForDpi(UINT uDpi) {
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 9;
   SetWindowPos(autostart_button_, nullptr, rect.left, rect.top, EDIT_WIDTH,
+               EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+
+  rect.left = client_rect.left + COLUMN_THREE_LEFT;
+  rect.top = client_rect.top + VERTICAL_HEIGHT * 10;
+  SetWindowPos(systemproxy_button_, nullptr, rect.left, rect.top, EDIT_WIDTH,
                EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   // Status Bar
@@ -889,8 +910,12 @@ void CYassFrame::OnCheckedAutoStartButtonClicked() {
   Utils::EnableAutoStart(Button_GetCheck(autostart_button_) & BST_CHECKED);
 }
 
+void CYassFrame::OnCheckedSystemProxyButtonClicked() {
+  Utils::SetSystemProxy(Button_GetCheck(systemproxy_button_) & BST_CHECKED);
+}
+
 void CYassFrame::OnAppOption() {
-  DialogBoxParamW(m_hInstance, MAKEINTRESOURCE(IDD_OPTIONBOX), m_hWnd,
+  DialogBoxParamW(m_hInstance, MAKEINTRESOURCEW(IDD_OPTIONBOX), m_hWnd,
                   &CYassFrame::OnAppOptionMessage,
                   reinterpret_cast<LPARAM>(this));
 }
@@ -945,7 +970,7 @@ INT_PTR CALLBACK CYassFrame::OnAppOptionMessage(HWND hDlg, UINT message,
 }
 
 void CYassFrame::OnAppAbout() {
-  DialogBoxParamW(m_hInstance, MAKEINTRESOURCE(IDD_ABOUTBOX), m_hWnd,
+  DialogBoxParamW(m_hInstance, MAKEINTRESOURCEW(IDD_ABOUTBOX), m_hWnd,
                   &CYassFrame::OnAppAboutMessage, 0L);
 }
 

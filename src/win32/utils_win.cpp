@@ -11,6 +11,8 @@
 #include "core/utils.hpp"
 #include "config/config.hpp"
 
+#include <sstream>
+
 #ifdef _WIN32
 
 #define DEFAULT_AUTOSTART_KEY \
@@ -22,6 +24,9 @@
 #include <tchar.h>
 #endif  // COMPILER_MSVC
 #include <windows.h>
+#include <wininet.h>
+#include <ras.h>
+#include <raserror.h>
 
 // https://docs.microsoft.com/en-us/windows/win32/winprog/using-the-windows-headers
 //
@@ -660,7 +665,7 @@ int get_yass_auto_start() {
   char buf[MAX_PATH + 1] = {0};
   DWORD len = sizeof(buf);
   result = RegQueryValueExW(hKey,                          /* Key */
-                            _T(DEFAULT_AUTOSTART_NAME),    /* value */
+                            DEFAULT_AUTOSTART_NAME,        /* value */
                             nullptr,                       /* reserved */
                             nullptr,                       /* output type */
                             reinterpret_cast<LPBYTE>(buf), /* output data */
@@ -687,11 +692,11 @@ int set_yass_auto_start(bool on) {
 
     cmdline = L"\"" + cmdline + L"\" --background";
 
-    result = add_to_auto_start(_T(DEFAULT_AUTOSTART_NAME), cmdline);
+    result = add_to_auto_start(DEFAULT_AUTOSTART_NAME, cmdline);
 
   } else {
     /* turn off auto start */
-    result = delete_from_auto_start(_T(DEFAULT_AUTOSTART_NAME));
+    result = delete_from_auto_start(DEFAULT_AUTOSTART_NAME);
   }
   return result;
 }
@@ -706,6 +711,41 @@ void Utils::EnableAutoStart(bool on) {
   set_yass_auto_start(on);
 }
 
+bool Utils::GetSystemProxy() {
+  bool enabled;
+  std::string server_addr, bypass_addr;
+  if (!QuerySystemProxy(&enabled, &server_addr, &bypass_addr)) {
+      return false;
+  }
+  return enabled && server_addr == GetLocalAddr();
+}
+
+std::string Utils::GetLocalAddr() {
+  std::ostringstream ss;
+  auto local_host = absl::GetFlag(FLAGS_local_host);
+  auto local_port = absl::GetFlag(FLAGS_local_port);
+
+  asio::error_code ec;
+  auto addr = asio::ip::make_address(local_host.c_str(), ec);
+  bool host_is_ip_address = !ec;
+  if (host_is_ip_address && addr.is_v6()) {
+    ss << "http://[" << local_host << "]:" << local_port;
+  } else {
+    ss << "http://" << local_host << ":" << local_port;
+  }
+  return ss.str();
+}
+
+bool Utils::SetSystemProxy(bool on) {
+  bool enabled;
+  std::string server_addr, bypass_addr = "<local>";
+  ::QuerySystemProxy(&enabled, &server_addr, &bypass_addr);
+  if (on) {
+    server_addr = GetLocalAddr();
+  }
+  return ::SetSystemProxy(on, server_addr, bypass_addr);
+}
+
 std::wstring LoadStringStdW(HINSTANCE hInstance, UINT uID) {
   // The buffer to receive a read-only pointer to the string resource itself (if
   // cchBufferMax is zero).
@@ -718,6 +758,192 @@ std::wstring LoadStringStdW(HINSTANCE hInstance, UINT uID) {
   // not including the terminating null character.
   ::LoadStringW(hInstance, uID, str.data(), len + 1);
   return str;
+}
+
+bool QuerySystemProxy(bool *enabled,
+                      std::string *server_addr,
+                      std::string *bypass_addr) {
+  std::vector<INTERNET_PER_CONN_OPTIONW> options;
+  options.resize(3);
+  options[0].dwOption = INTERNET_PER_CONN_FLAGS_UI;
+  options[1].dwOption = INTERNET_PER_CONN_PROXY_SERVER;
+  options[1].Value.pszValue = nullptr;
+  options[2].dwOption = INTERNET_PER_CONN_PROXY_BYPASS;
+  options[2].Value.pszValue = nullptr;
+
+  INTERNET_PER_CONN_OPTION_LISTW option_list;
+  option_list.dwSize = sizeof(option_list);
+  option_list.pszConnection = nullptr;
+  option_list.dwOptionCount = options.size();
+  option_list.dwOptionError = 0;
+  option_list.pOptions = &options[0];
+  DWORD option_list_size = sizeof(option_list);
+
+  if (!::InternetQueryOptionW(nullptr, INTERNET_OPTION_PER_CONNECTION_OPTION,
+                              &option_list, &option_list_size)) {
+    option_list_size = sizeof(option_list);
+    options[0].dwOption = INTERNET_PER_CONN_FLAGS;
+    if (!::InternetQueryOptionW(nullptr, INTERNET_OPTION_PER_CONNECTION_OPTION,
+                                &option_list, &option_list_size)) {
+      PLOG(WARNING)<< "Failed to query system proxy";
+      return false;
+    }
+  }
+  if (options[0].Value.dwValue & PROXY_TYPE_PROXY) {
+    *enabled = true;
+  }
+  if (options[1].Value.pszValue) {
+    auto temp = options[1].Value.pszValue;
+    *server_addr = temp ? SysWideToUTF8(temp) : std::string();
+    if (temp) {
+      GlobalFree(temp);
+    }
+  }
+  if (options[2].Value.pszValue) {
+    auto temp = options[2].Value.pszValue;
+    *server_addr = temp ? SysWideToUTF8(temp) : std::string();
+    if (temp) {
+      GlobalFree(temp);
+    }
+  }
+  return true;
+}
+
+bool SetSystemProxy(bool enable,
+                    const std::string &server_addr,
+                    const std::string &bypass_addr) {
+  std::vector<std::wstring> conn_names;
+  if (!::GetAllRasConnection(&conn_names)) {
+    return false;
+  }
+  // Insert an empty RAS connection, happens in wine environment.
+  conn_names.insert(conn_names.begin(), 1, std::wstring());
+  bool ret = true;
+  for (const auto& conn_name : conn_names) {
+    ret &= ::SetSystemProxy(enable, server_addr, bypass_addr, conn_name);
+  }
+  return ret;
+}
+
+bool SetSystemProxy(bool enable,
+                    const std::string &server_addr,
+                    const std::string &bypass_addr,
+                    const std::wstring &wconn_name) {
+  std::wstring wserver_addr = SysUTF8ToWide(server_addr);
+  std::wstring wbypass_addr = SysUTF8ToWide(bypass_addr);
+
+  std::vector<INTERNET_PER_CONN_OPTIONW> options;
+  options.resize(3);
+  options[0].dwOption = INTERNET_PER_CONN_FLAGS;
+  if (enable) {
+    options[0].Value.dwValue = PROXY_TYPE_PROXY | PROXY_TYPE_DIRECT;
+  } else {
+    options[0].Value.dwValue = PROXY_TYPE_DIRECT;
+  }
+  options[1].dwOption = INTERNET_PER_CONN_PROXY_SERVER;
+  options[1].Value.pszValue = const_cast<wchar_t*>(wserver_addr.c_str());
+  options[2].dwOption = INTERNET_PER_CONN_PROXY_BYPASS;
+  options[2].Value.pszValue = const_cast<wchar_t*>(wbypass_addr.c_str());
+
+  INTERNET_PER_CONN_OPTION_LISTW option_list;
+  option_list.dwSize = sizeof(option_list);
+  option_list.pszConnection = wconn_name.empty() ? nullptr : const_cast<wchar_t*>(wconn_name.c_str());
+  option_list.dwOptionCount = options.size();
+  option_list.dwOptionError = 0;
+  option_list.pOptions = &options[0];
+
+  std::string conn_name = SysWideToUTF8(wconn_name);
+  if (!::InternetSetOptionW(nullptr, INTERNET_OPTION_PER_CONNECTION_OPTION,
+                            &option_list, sizeof(option_list))) {
+    PLOG(WARNING)<< "Failed to set system proxy"
+      << " in connection \"" << conn_name << "\".";
+    return false;
+  }
+  if (!::InternetSetOptionW(nullptr, INTERNET_OPTION_PROXY_SETTINGS_CHANGED,
+                            nullptr, 0)) {
+    PLOG(WARNING)<< "Failed to refresh system proxy"
+      << " in connection \"" << conn_name << "\".";
+    return false;
+  }
+  if (!::InternetSetOptionW(nullptr, INTERNET_OPTION_REFRESH,
+                            nullptr, 0)) {
+    PLOG(WARNING)<< "Failed to reload via system proxy"
+      << " in connection \"" << conn_name << "\".";
+    return false;
+  }
+  if (enable) {
+    LOG(INFO) << "Set system proxy to " << server_addr
+      << " by pass " << bypass_addr
+      << " in connection \"" << conn_name << "\".";
+  } else {
+    LOG(INFO) << "Set system proxy disabled"
+      << " in connection \"" << conn_name << "\".";
+  }
+  return true;
+}
+
+bool GetAllRasConnection(std::vector<std::wstring> *result) {
+  DWORD dwCb = 0;
+  DWORD dwRet = ERROR_SUCCESS;
+  DWORD dwEntries = 0;
+  LPRASENTRYNAMEW lpRasEntryName = nullptr;
+  constexpr int kStaticRasEntryNumber = 30;
+
+  RASENTRYNAMEW rasEntryNames[kStaticRasEntryNumber] = {};
+  dwCb = sizeof(RASENTRYNAMEW) * kStaticRasEntryNumber;
+  dwEntries = kStaticRasEntryNumber;
+  lpRasEntryName = &rasEntryNames[0];
+
+  for (DWORD i = 0; i < dwEntries; ++i) {
+    lpRasEntryName[i].dwSize = sizeof(RASENTRYNAMEW);
+  }
+
+  // Call RasEnumEntries with lpRasEntryName = NULL. dwCb is returned with the required buffer size and
+  // a return code of ERROR_BUFFER_TOO_SMALL
+  dwRet = RasEnumEntriesW(nullptr, nullptr, lpRasEntryName, &dwCb, &dwEntries);
+  result->clear();
+
+  if (dwRet == ERROR_BUFFER_TOO_SMALL) {
+    if (dwCb != dwEntries * sizeof(RASENTRYNAMEW)) {
+      LOG(WARNING) << "RasEnumEntriesA: mismatched dwCb and dwEntries";
+      return false;
+    }
+    // Allocate the memory needed for the array of RAS entry names.
+    lpRasEntryName = reinterpret_cast<RASENTRYNAMEW*>(malloc(sizeof(RASENTRYNAMEW) * dwEntries));
+    if (lpRasEntryName == nullptr){
+      LOG(WARNING) << "RasEnumEntries: not enough memory";
+      return false;
+    }
+    // The first RASENTRYNAME structure in the array must contain the structure size
+    for (DWORD i = 0; i < dwEntries; ++i) {
+      lpRasEntryName[i].dwSize = sizeof(RASENTRYNAMEW);
+    }
+
+    // Call RasEnumEntries to enumerate all RAS entry names
+    dwRet = RasEnumEntriesW(nullptr, nullptr, lpRasEntryName, &dwCb, &dwEntries);
+
+    // If successful, print the RAS entry names
+    if (dwRet == ERROR_SUCCESS){
+      for (DWORD i = 0; i < dwEntries; i++){
+        result->emplace_back(lpRasEntryName[i].szEntryName);
+      }
+    } else {
+      PLOG(WARNING) << "RasEnumEntries failed";
+    }
+    // Deallocate memory for the connection buffer
+    free(lpRasEntryName);
+    lpRasEntryName = nullptr;
+  } else if (dwRet == ERROR_SUCCESS) {
+    for (DWORD i = 0; i < dwEntries; i++){
+      result->emplace_back(lpRasEntryName[i].szEntryName);
+    }
+  } else {
+    PLOG(WARNING) << "RasEnumEntries failed";
+  }
+  if (dwRet == ERROR_SUCCESS && result->empty()) {
+    LOG(INFO) << "RasEnumEntries: there were no RAS entry names found";
+  }
+  return dwRet == ERROR_SUCCESS;
 }
 
 #endif  // _WIN32

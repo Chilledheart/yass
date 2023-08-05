@@ -10,7 +10,7 @@
 
 #include "cli/cli_connection_stats.hpp"
 #include "core/utils.hpp"
-#include "gtk4/utils.hpp"
+#include "gtk/utils.hpp"
 #include "gtk4/yass.hpp"
 #include "version.h"
 
@@ -54,6 +54,7 @@ struct _YASSGtkWindow
   GtkWidget* local_port;
   GtkWidget* timeout;
   GtkWidget* autostart;
+  GtkWidget* systemproxy;
 };
 
 G_DEFINE_TYPE (YASSGtkWindow, yass_window, GTK_TYPE_APPLICATION_WINDOW)
@@ -93,6 +94,7 @@ yass_window_class_init (YASSGtkWindowClass *cls)
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, local_port);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, timeout);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, autostart);
+  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, systemproxy);
 }
 
 YASSGtkWindow *
@@ -130,6 +132,16 @@ YASSWindow::YASSWindow(GApplication *app)
 
   gtk_widget_set_sensitive(GTK_WIDGET(impl_->stop_button), false);
 
+  auto autostart_callback = []() { window->OnAutoStartClicked(); };
+
+  g_signal_connect(G_OBJECT(impl_->autostart), "toggled",
+                   G_CALLBACK(autostart_callback), nullptr);
+
+  auto systemproxy_callback = []() { window->OnSystemProxyClicked(); };
+
+  g_signal_connect(G_OBJECT(impl_->systemproxy), "toggled",
+                   G_CALLBACK(systemproxy_callback), nullptr);
+
   static const char* const method_names[] = {
 #define XX(num, name, string) string,
       CIPHER_METHOD_MAP(XX)
@@ -143,14 +155,11 @@ YASSWindow::YASSWindow(GApplication *app)
     gtk_combo_box_text_append_text(method, method_names[i]);
   }
 
-#if GTK_CHECK_VERSION(4, 0, 0)
   gtk_check_button_set_active(GTK_CHECK_BUTTON(impl_->autostart),
                               Utils::GetAutoStart());
-#else
-  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(impl_->autostart),
-                               Utils::GetAutoStart());
-#endif
 
+  gtk_check_button_set_active(GTK_CHECK_BUTTON(impl_->systemproxy),
+                              Utils::GetSystemProxy());
 
   gtk_entry_set_visibility(GTK_ENTRY(impl_->password), false);
 
@@ -174,14 +183,6 @@ void YASSWindow::present() {
 void YASSWindow::OnStartButtonClicked() {
   gtk_widget_set_sensitive(GTK_WIDGET(impl_->start_button), false);
 
-  Utils::EnableAutoStart(
-#if GTK_CHECK_VERSION(4, 0, 0)
-      gtk_check_button_get_active(GTK_CHECK_BUTTON(impl_->autostart))
-#else
-      gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(impl_->autostart))
-#endif
-      );
-
   mApp->OnStart();
 }
 
@@ -190,36 +191,32 @@ void YASSWindow::OnStopButtonClicked() {
   mApp->OnStop();
 }
 
+void YASSWindow::OnAutoStartClicked() {
+  Utils::EnableAutoStart(
+      gtk_check_button_get_active(GTK_CHECK_BUTTON(impl_->autostart))
+      );
+}
+
+void YASSWindow::OnSystemProxyClicked() {
+  Utils::SetSystemProxy(
+      gtk_check_button_get_active(GTK_CHECK_BUTTON(impl_->systemproxy))
+      );
+}
+
 std::string YASSWindow::GetServerHost() {
-#if GTK_CHECK_VERSION(4, 0, 0)
   return gtk_editable_get_text(GTK_EDITABLE(impl_->server_host));
-#else
-  return gtk_entry_get_text(GTK_ENTRY(impl_->server_host));
-#endif
 }
 
 std::string YASSWindow::GetServerPort() {
-#if GTK_CHECK_VERSION(4, 0, 0)
   return gtk_editable_get_text(GTK_EDITABLE(impl_->server_port));
-#else
-  return gtk_entry_get_text(GTK_ENTRY(impl_->server_port));
-#endif
 }
 
 std::string YASSWindow::GetUsername() {
-#if GTK_CHECK_VERSION(4, 0, 0)
   return gtk_editable_get_text(GTK_EDITABLE(impl_->username));
-#else
-  return gtk_entry_get_text(GTK_ENTRY(impl_->username));
-#endif
 }
 
 std::string YASSWindow::GetPassword() {
-#if GTK_CHECK_VERSION(4, 0, 0)
   return gtk_editable_get_text(GTK_EDITABLE(impl_->password));
-#else
-  return gtk_entry_get_text(GTK_ENTRY(impl_->password));
-#endif
 }
 
 std::string YASSWindow::GetMethod() {
@@ -229,27 +226,15 @@ std::string YASSWindow::GetMethod() {
 }
 
 std::string YASSWindow::GetLocalHost() {
-#if GTK_CHECK_VERSION(4, 0, 0)
   return gtk_editable_get_text(GTK_EDITABLE(impl_->local_host));
-#else
-  return gtk_entry_get_text(GTK_ENTRY(impl_->local_host));
-#endif
 }
 
 std::string YASSWindow::GetLocalPort() {
-#if GTK_CHECK_VERSION(4, 0, 0)
   return gtk_editable_get_text(GTK_EDITABLE(impl_->local_port));
-#else
-  return gtk_entry_get_text(GTK_ENTRY(impl_->local_port));
-#endif
 }
 
 std::string YASSWindow::GetTimeout() {
-#if GTK_CHECK_VERSION(4, 0, 0)
   return gtk_editable_get_text(GTK_EDITABLE(impl_->timeout));
-#else
-  return gtk_entry_get_text(GTK_ENTRY(impl_->timeout));
-#endif
 }
 
 std::string YASSWindow::GetStatusMessage() {
@@ -292,7 +277,7 @@ void YASSWindow::Started() {
   gtk_widget_set_sensitive(impl_->local_host, false);
   gtk_widget_set_sensitive(impl_->local_port, false);
   gtk_widget_set_sensitive(impl_->timeout, false);
-  gtk_widget_set_sensitive(impl_->autostart, false);
+
   gtk_widget_set_sensitive(impl_->stop_button, true);
 }
 
@@ -306,7 +291,6 @@ void YASSWindow::StartFailed() {
   gtk_widget_set_sensitive(impl_->local_host, true);
   gtk_widget_set_sensitive(impl_->local_port, true);
   gtk_widget_set_sensitive(impl_->timeout, true);
-  gtk_widget_set_sensitive(impl_->autostart, true);
 
   gtk_widget_set_sensitive(impl_->start_button, true);
 
@@ -314,12 +298,7 @@ void YASSWindow::StartFailed() {
       gtk_message_dialog_new(GTK_WINDOW(impl_), GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING,
                              GTK_BUTTONS_CLOSE, "%s", mApp->GetStatus().c_str()));
 
-#if GTK_CHECK_VERSION(4, 0, 0)
   g_signal_connect(dialog, "response", G_CALLBACK(gtk_window_destroy), NULL);
-#else
-  gtk_dialog_run(dialog);
-  gtk_widget_destroy(GTK_WIDGET(dialog));
-#endif
 }
 
 void YASSWindow::Stopped() {
@@ -332,7 +311,6 @@ void YASSWindow::Stopped() {
   gtk_widget_set_sensitive(impl_->local_host, true);
   gtk_widget_set_sensitive(impl_->local_port, true);
   gtk_widget_set_sensitive(impl_->timeout, true);
-  gtk_widget_set_sensitive(impl_->autostart, true);
 
   gtk_widget_set_sensitive(impl_->start_button, true);
 }
@@ -347,17 +325,10 @@ void YASSWindow::LoadChanges() {
   auto local_port_str = std::to_string(absl::GetFlag(FLAGS_local_port));
   auto timeout_str = std::to_string(absl::GetFlag(FLAGS_connect_timeout));
 
-#if GTK_CHECK_VERSION(4, 0, 0)
   gtk_editable_set_text(GTK_EDITABLE(impl_->server_host), server_host_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->server_port), server_port_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->username), username_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->password), password_str.c_str());
-#else
-  gtk_entry_set_text(GTK_ENTRY(impl_->server_host), server_host_str.c_str());
-  gtk_entry_set_text(GTK_ENTRY(impl_->server_port), server_port_str.c_str());
-  gtk_entry_set_text(GTK_ENTRY(impl_->username), username_str.c_str());
-  gtk_entry_set_text(GTK_ENTRY(impl_->password), password_str.c_str());
-#endif
 
   static const int method_ids[] = {
 #define XX(num, name, string) num,
@@ -372,15 +343,9 @@ void YASSWindow::LoadChanges() {
 
   gtk_combo_box_set_active(GTK_COMBO_BOX(impl_->method), i - 1);
 
-#if GTK_CHECK_VERSION(4, 0, 0)
   gtk_editable_set_text(GTK_EDITABLE(impl_->local_host), local_host_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->local_port), local_port_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->timeout), timeout_str.c_str());
-#else
-  gtk_entry_set_text(GTK_ENTRY(impl_->local_host), local_host_str.c_str());
-  gtk_entry_set_text(GTK_ENTRY(impl_->local_port), local_port_str.c_str());
-  gtk_entry_set_text(GTK_ENTRY(impl_->timeout), timeout_str.c_str());
-#endif
 }
 
 void YASSWindow::UpdateStatusBar() {

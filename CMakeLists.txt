@@ -22,7 +22,7 @@ if (POLICY CMP0075)
 endif (POLICY CMP0075)
 
 # Select the MSVC runtime library for use by compilers targeting the MSVC ABI.
-# Use CMAKE_MSVC_CRT_LINKAGE variable internally, option: dynamic and static
+# Use MSVC_CRT_LINKAGE variable internally, option: dynamic and static
 #
 # Introduced by cmake 3.15
 # https://cmake.org/cmake/help/latest/variable/CMAKE_MSVC_RUNTIME_LIBRARY.html#variable:CMAKE_MSVC_RUNTIME_LIBRARY
@@ -42,8 +42,11 @@ if(POLICY CMP0118)
 endif()
 
 # https://docs.microsoft.com/en-us/cpp/c-runtime-library/crt-library-features?redirectedfrom=MSDN&view=msvc-170
-set(CMAKE_MSVC_CRT_LINKAGE "static" CACHE STRING "")
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:${CMAKE_MSVC_CRT_LINKAGE},dynamic>:DLL>" CACHE STRING "")
+set(MSVC_CRT_LINKAGE "static" CACHE STRING "")
+if (NOT MSVC_CRT_LINKAGE STREQUAL "static" AND NOT MSVC_CRT_LINKAGE STREQUAL "dynamic")
+  message(FATAL_ERROR "MSVC_CRT_LINKAGE only accepts: dynamic or static")
+endif()
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:${MSVC_CRT_LINKAGE},dynamic>:DLL>")
 
 # Use relative paths (May not work!).
 set(CMAKE_USE_RELATIVE_PATHS TRUE)
@@ -203,7 +206,7 @@ endif()
 
 if (MSVC)
   message(STATUS "Build with MSVC target architecture: ${MSVC_PROCESSOR_ARCHITECTURE}")
-  message(STATUS "Build with MSVC ${CMAKE_MSVC_CRT_LINKAGE} CRT library")
+  message(STATUS "Build with MSVC ${MSVC_CRT_LINKAGE} CRT library")
 elseif(APPLE)
   message(STATUS "Build with target architecture: ${CMAKE_OSX_ARCHITECTURES}")
 else()
@@ -644,6 +647,14 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:twoPhase")
   endif()
 
+  # Consistently use backslash as the path separator when expanding the
+  # __FILE__ macro when targeting Windows regardless of the build
+  # environment.
+  if (COMPILER_CLANG AND CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 15.0)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffile-reproducible")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffile-reproducible")
+  endif()
+
   # Work around crbug.com/526851, bug in VS 2015 RTM compiler.
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Zc:sizedDealloc-")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:sizedDealloc-")
@@ -660,7 +671,7 @@ else()
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
 
   ## Disable LTCG for static libraries because this setting introduces ABI incompatibility between minor compiler versions
-  if (NOT CMAKE_MSVC_CRT_LINKAGE STREQUAL "static" AND NOT COMPILER_CLANG)
+  if (NOT MSVC_CRT_LINKAGE STREQUAL "static" AND NOT COMPILER_CLANG)
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /GL")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")
     set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG")
@@ -1368,7 +1379,7 @@ if (WIN32)
     # 5.01 = Windows XP
     set(SUBSYSTEM_VERSION_SUFFIX ",5.01")
   endif()
-  if (MINGW)
+  if (MINGW AND USE_LLD)
     if (CMAKE_SIZEOF_VOID_P EQUAL 8)
       set(SUBSYSTEM_VERSION_SUFFIX ",5.02")
     else()
@@ -1410,6 +1421,7 @@ endif()
 include(CheckIncludeFile)
 include(CheckCSourceCompiles)
 include(CheckCXXSourceCompiles)
+include(CheckLibraryExists)
 
 check_c_source_compiles ("
 #define STDOUT_FILENO 1
@@ -1429,6 +1441,15 @@ if (HAVE_FLOCK)
   add_definitions(-DHAVE_FLOCK)
 endif()
 
+check_library_exists(c pipe2 "" HAVE_PIPE2)
+check_library_exists(c dup3 "" HAVE_DUP3)
+if (HAVE_PIPE2)
+  add_definitions(-DHAVE_PIPE2)
+endif()
+if (HAVE_DUP3)
+  add_definitions(-DHAVE_DUP3)
+endif()
+
 # *****************************************************************************************
 #           Core Support Libraries
 # *****************************************************************************************
@@ -1440,7 +1461,7 @@ if (WIN32)
   set(CMAKE_CXX_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
 
   if (MSVC)
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} Crypt32 WS2_32 Bcrypt User32 kernel32)
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} Crypt32 WS2_32 bcrypt User32 kernel32)
   else()
     set(SYSTEM_LIBS ${SYSTEM_LIBS} crypt32 ws2_32 mswsock bcrypt user32 kernel32)
   endif()
@@ -1450,7 +1471,7 @@ if (WIN32)
     add_definitions(-D__USE_MINGW_ANSI_STDIO=0)
   endif()
 
-  if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "static")
+  if (MSVC_CRT_LINKAGE STREQUAL "static")
     # replace /MD with /MT
     set(CompilerFlags
       CMAKE_CXX_FLAGS
@@ -1511,8 +1532,8 @@ int main() {
     include_directories(third_party/lss)
   endif()
   if (APPLE AND COMPILER_CLANG)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -framework Foundation")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -framework Foundation")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -framework Foundation -framework SystemConfiguration")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -framework Foundation -framework SystemConfiguration")
   endif()
 endif()
 
@@ -1531,9 +1552,9 @@ if (WIN32 AND GUI)
   set(GUI_C_CXX_FLAGS "")
   set(GUI_LIBRARY_DIRS "")
   if (MSVC)
-    set(GUI_LIBRARIES ShLwApi WinMM Gdi32 ComDlg32 Ole32 ComCtl32 shell32)
+    set(GUI_LIBRARIES RASAPI32 wininet ShLwApi WinMM Gdi32 ComDlg32 Ole32 ComCtl32 shell32)
   else()
-    set(GUI_LIBRARIES shlwapi winmm gdi32 comdlg32 ole32 comctl32 shell32)
+    set(GUI_LIBRARIES rasapi32 wininet shlwapi winmm gdi32 comdlg32 ole32 comctl32 shell32)
   endif()
 elseif (APPLE AND GUI AND COMPILER_CLANG)
   message(STATUS "Compiling with GUI support: Cocoa")
@@ -1950,7 +1971,7 @@ set(SUPPORT_LIBS xxhash ${SUPPORT_LIBS})
 
 set(protobuf_INSTALL "OFF" CACHE STRING "")
 set(protobuf_DISABLE_RTTI "ON" CACHE STRING "")
-if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "dynamic")
+if (MSVC_CRT_LINKAGE STREQUAL "dynamic")
   set(protobuf_MSVC_STATIC_RUNTIME "OFF" CACHE STRING "")
 else()
   set(protobuf_MSVC_STATIC_RUNTIME "ON" CACHE STRING "")
@@ -2388,6 +2409,7 @@ set(files
     src/core/socks5_request_parser.cpp
     src/core/ss_request_parser.cpp
     src/core/stringprintf.cpp
+    src/core/process_utils.cpp
     src/core/rand_util.cpp
     src/core/logging.cpp
     src/core/utils.cpp
@@ -2471,6 +2493,7 @@ set(hfiles
     src/core/ss.hpp
     src/core/ss_request.hpp
     src/core/ss_request_parser.hpp
+    src/core/process_utils.hpp
     src/core/rand_util.hpp
     src/core/logging.hpp
     src/core/utils.hpp
@@ -2732,7 +2755,7 @@ if (GUI)
           src/gtk4/yass.cpp
           src/gtk4/yass_window.cpp
           src/gtk4/option_dialog.cpp
-          src/gtk4/utils_gtk.cpp)
+          src/gtk/utils_gtk.cpp)
         # HOLDPLACE for TODO gettext support
         include(CompilePo)
         create_po_target(yass en src/gtk4/yass_en.po)
@@ -3009,6 +3032,7 @@ if (BUILD_TESTS)
     src/config/config_test.cpp
     src/core/cipher_test.cpp
     src/core/c-ares_test.cpp
+    src/core/process_utils_test.cpp
     )
   target_include_directories(yass_test PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -3034,7 +3058,7 @@ if (BUILD_TESTS)
   )
 
   if (USE_CURL)
-    if (MSVC)
+    if (MSVC AND MSVC_CRT_LINKAGE STREQUAL "static")
       if("${MSVC_PROCESSOR_ARCHITECTURE}" STREQUAL "arm64")
         set(CURL_MSVC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libcurl-vc16-arm64-release-static-ipv6-sspi-schannel")
       elseif("${MSVC_PROCESSOR_ARCHITECTURE}" STREQUAL "amd64")

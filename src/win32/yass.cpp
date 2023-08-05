@@ -138,10 +138,10 @@ BOOL CYassApp::InitInstance() {
   wndcls.lpfnWndProc = &CYassFrame::WndProc;
   wndcls.cbClsExtra = wndcls.cbWndExtra = 0;
   wndcls.hInstance = m_hInstance;
-  wndcls.hIcon = LoadIconW(m_hInstance, MAKEINTRESOURCE(IDI_APPICON));
+  wndcls.hIcon = LoadIconW(m_hInstance, MAKEINTRESOURCEW(IDI_APPICON));
   wndcls.hCursor = LoadCursor(nullptr, IDC_ARROW);
   wndcls.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_BTNFACE + 1);
-  wndcls.lpszMenuName = MAKEINTRESOURCE(IDR_MAINFRAME);
+  wndcls.lpszMenuName = MAKEINTRESOURCEW(IDR_MAINFRAME);
   wndcls.lpszClassName = className;
   wndcls.hIconSm = nullptr;
 
@@ -150,7 +150,7 @@ BOOL CYassApp::InitInstance() {
   std::wstring frame_name = LoadStringStdW(m_hInstance, IDS_APP_TITLE);
 
   UINT uDpi = Utils::GetDpiForWindowOrSystem(nullptr);
-  RECT rect{0, 0, MULDIVDPI(500), MULDIVDPI(400)};
+  RECT rect{0, 0, MULDIVDPI(500), MULDIVDPI(420)};
 
   // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow
   int nCmdShow = absl::GetFlag(FLAGS_background) ? SW_HIDE : SW_SHOW;
@@ -189,7 +189,7 @@ int CYassApp::RunMainLoop() {
   MSG msg;
 
   HACCEL hAccelTable = LoadAcceleratorsW(m_hInstance,
-                                         MAKEINTRESOURCE(IDC_YASS));
+                                         MAKEINTRESOURCEW(IDC_YASS));
 
   if (!InitInstance()) {
     return -1;

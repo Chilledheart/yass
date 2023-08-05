@@ -158,7 +158,7 @@ bool SetThreadName(std::thread::native_handle_type,
   // The SetThreadDescription API works even if no debugger is attached.
   static const auto fPointer = reinterpret_cast<PFNSETTHREADDESCRIPTION>(
       reinterpret_cast<void*>(::GetProcAddress(
-          ::GetModuleHandle(L"Kernel32.dll"), "SetThreadDescription")));
+          ::GetModuleHandleW(L"Kernel32.dll"), "SetThreadDescription")));
   HRESULT ret = E_NOTIMPL;
 
   if (handle == HANDLE() || handle == INVALID_HANDLE_VALUE) {

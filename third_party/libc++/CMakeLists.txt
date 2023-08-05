@@ -34,7 +34,7 @@ endif()
 # config that is applied to all targets. It is here to separate out the logic
 # that is specific to libc++. Please see that target for advice on what should
 # go in :runtime_library vs. :compiler.
-if (BUILD_SHARED_LIBS OR CMAKE_MSVC_CRT_LINKAGE STREQUAL "dynamic")
+if (BUILD_SHARED_LIBS OR MSVC_CRT_LINKAGE STREQUAL "dynamic")
   set(libcxx_SHARED ON)
 else()
   set(libcxx_SHARED OFF)
@@ -574,7 +574,7 @@ if (MSVC)
   if (${CMAKE_BUILD_TYPE} MATCHES Debug)
     set(DLL_SUFFIX "d")
   endif()
-  if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "dynamic")
+  if (MSVC_CRT_LINKAGE STREQUAL "dynamic")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEFAULTLIB:msvcprt${DLL_SUFFIX}.lib")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DEFAULTLIB:msvcprt${DLL_SUFFIX}.lib")
   else()
