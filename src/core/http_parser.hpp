@@ -106,8 +106,30 @@ class HttpRequestParser {
                                      const std::string& url,
                                      const absl::flat_hash_map<std::string, std::string>& headers) {
     std::ostringstream ss;
+    absl::string_view canon_url;
+
+    // https://www.w3.org/Protocols/rfc2616/rfc2616-sec5.html#sec5.1.2
+    if (url[0] == '*' || url[0] == '/') {
+      // allow all defined in spec except for absoluteURI
+      canon_url = url;
+    } else {
+      // convert absoluteURI to abs_path
+      auto absolute_prefix = url.find("://");
+      if (absolute_prefix == std::string::npos) {
+        LOG(WARNING) << "Invalid Uri: " << url;
+        canon_url = url;
+      } else {
+        auto uri_start = url.find('/', absolute_prefix + 3);
+        if (uri_start == std::string::npos) {
+          canon_url = "/";
+        } else {
+          canon_url = absl::string_view(url).substr(uri_start);
+        }
+      }
+    }
+
     ss << http_method_str((http_method)p->method) << " "  // NOLINT(google-*)
-       << url << " HTTP/1.1\r\n";
+       << canon_url << " HTTP/1.1\r\n";
     for (auto [key, value] : headers) {
       if (key == "Proxy-Connection") {
         continue;
