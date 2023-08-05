@@ -1,0 +1,56 @@
+name: Build Artifacts (Source)
+on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+        type: choice
+        options:
+        - info
+        - warning
+        - debug
+      tags:
+        description: 'Test scenario tags'
+        required: false
+        type: boolean
+  pull_request:
+    branches: [master, develop]
+    paths-ignore:
+    - '**/*.md'
+    - '.circleci/**'
+    - '.cirrus.yml'
+  push:
+    branches: [master, develop]
+    paths-ignore:
+    - '**/*.md'
+    - '.circleci/**'
+    - '.cirrus.yml'
+  release:
+    types: [published]
+jobs:
+  src-release:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v3
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
+      - name: Patch libcxxabi for both of armel and armhf
+        run: |
+          cd third_party/libc++abi
+          patch -p1 < v8-6.7.17-fix-gcc-unwind-header.patch
+      - name: Build tarball
+        run: |
+          ./scripts/build-src.sh
+      - name: Upload dist tarball (including debuginfo)
+        if: ${{ github.event_name == 'release' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} yass*.tar.gz
