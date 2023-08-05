@@ -3,7 +3,7 @@
   <template class="YASSGtkWindow" parent="GtkApplicationWindow">
     <property name="title" translatable="yes">Yet Another Shadow Socket</property>
     <property name="default-width">450</property>
-    <property name="default-height">390</property>
+    <property name="default-height">420</property>
     <property name="resizable">0</property>
     <property name="modal">0</property>
     <child type="titlebar">
