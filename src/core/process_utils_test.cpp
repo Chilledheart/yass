@@ -5,19 +5,29 @@
 
 #include <gtest/gtest.h>
 #include <gtest/gtest-message.h>
+#include <absl/flags/flag.h>
 
 #include <gmock/gmock.h>
 
 #include "test_util.hpp"
 #include "core/process_utils.hpp"
 #include "core/logging.hpp"
+#include "core/utils.hpp"
+
+ABSL_FLAG(bool, no_exec_proc_tests, false, "skip execute_process tests");
 
 TEST(PROCESS_TEST, ExecuteProcessBasic) {
-  std::vector<std::string> params = {"/bin/echo", "-n", "cAsHcOw"};
+  if (absl::GetFlag(FLAGS_no_exec_proc_tests)) {
+    GTEST_SKIP() << "skipped as required";
+    return;
+  }
+  std::string main_exe;
+  GetExecutablePath(&main_exe);
+  std::vector<std::string> params = {main_exe.c_str(), "--version"};
   std::string output, error;
   int ret = ExecuteProcess(params, &output, &error);
   EXPECT_EQ(ret, 0);
-  EXPECT_EQ(output, "cAsHcOw");
+  EXPECT_EQ(output, "yass_test\n");
   EXPECT_EQ(error, "");
 }
 
