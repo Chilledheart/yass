@@ -1144,7 +1144,7 @@ func postStateArchives() map[string][]string {
 	archives[debugArchive] = dbgPaths
 
 	// Create openwrt Makefile
-	if subSystemNameFlag == "openwrt" {
+	if subSystemNameFlag == "openwrt" && variantFlag == "cli" {
 		generateOpenWrtMakefile(archive, archiveSuffix)
 	}
 	return archives
