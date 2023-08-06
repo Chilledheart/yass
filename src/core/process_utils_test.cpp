@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 #include <gtest/gtest-message.h>
+#include <absl/flags/flag.h>
 
 #include <gmock/gmock.h>
 
@@ -13,7 +14,13 @@
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 
+ABSL_FLAG(bool, no_exec_proc_tests, false, "skip execute_process tests");
+
 TEST(PROCESS_TEST, ExecuteProcessBasic) {
+  if (absl::GetFlag(FLAGS_no_exec_proc_tests)) {
+    GTEST_SKIP() << "skipped as required";
+    return;
+  }
   std::string main_exe;
   GetExecutablePath(&main_exe);
   std::vector<std::string> params = {main_exe.c_str(), "--version"};
