@@ -120,7 +120,11 @@ jobs:
           tar -C $SDK_ROOT -xf $SDK_PATH.tar.xz --strip-components 3 $full_root
           rm -rf $SDK_ROOT/bin $SDK_ROOT/libexec
       - name: Populate depedencies
-        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cmake ninja-build pkg-config bubblewrap
+          # libc6-i386 interferes with x86 build
+          sudo apt remove libc6-i386
       - name: Set clang environment
         run: |
           echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
@@ -130,6 +134,17 @@ jobs:
           echo "#define _LIBCPP_HAS_MUSL_LIBC" >> ./third_party/libc++/__config_site
           ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --subsystem musl --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
           ./tools/build --variant server --arch ${{ matrix.arch }} --system linux --subsystem musl --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
+      - name: Run tests (x86 and x86_64)
+        if: ${{ matrix.arch == 'x86' || matrix.arch == 'x86_64' }}
+        run: |
+          mkdir -p $SDK_ROOT/etc $SDK_ROOT/dev $SDK_ROOT/proc $SDK_ROOT/tmp
+          touch $SDK_ROOT/etc/resolv.conf
+          bwrap --die-with-parent --ro-bind $SDK_ROOT / \
+            --ro-bind /etc/resolv.conf /etc/resolv.conf \
+            --proc /proc --dev /dev \
+            --unshare-all --share-net \
+            --bind $PWD/build-linux-musl-${{ matrix.arch }} /tmp \
+            /tmp/yass_test
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:

@@ -48,6 +48,7 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       ARCH: ${{ matrix.arch }}
+      SDK_ROOT: ${{ github.workspace }}/debian_sid_${{ matrix.arch }}-sysroot
     steps:
       - uses: actions/checkout@v3
       - name: Checkout with shallow submodules
@@ -83,10 +84,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            debian_sid_${{ matrix.arch }}-sysroot
+            ${{ env.SDK_ROOT }}
           key: ${{ runner.os }}-sysroot-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-v${{ env.CACHE_EPOCH }}
-          restore-keys: |
-            ${{ runner.os }}-sysroot-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-
       - name: Build build tool
         run: |
           cd tools
@@ -105,32 +104,31 @@ jobs:
           sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
           sudo apt-get update -qq
       - name: Populate depedencies
-        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build gettext
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cmake ninja-build pkg-config gettext bubblewrap
+          # libc6-i386 interferes with x86 build
+          sudo apt remove libc6-i386
       - name: Set clang environment
         run: |
           echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
           echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
       - name: Build TGZ packages
         run: |
-          ./tools/build --variant gui --arch ${{ matrix.arch }} --system linux --sysroot $PWD/debian_sid_${{ matrix.arch }}-sysroot -build-benchmark -build-test -nc
-          ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --sysroot $PWD/debian_sid_${{ matrix.arch }}-sysroot -build-benchmark -build-test -nc
-          ./tools/build --variant server --arch ${{ matrix.arch }} --system linux --sysroot $PWD/debian_sid_${{ matrix.arch }}-sysroot -build-benchmark -build-test -nc
-      - name: Populate depedencies (tests)
-        if: ${{ matrix.arch == 'i386' }}
+          ./tools/build --variant gui --arch ${{ matrix.arch }} --system linux --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
+          ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
+          ./tools/build --variant server --arch ${{ matrix.arch }} --system linux --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
+      - name: Run tests (i386 and amd64)
+        if: ${{ matrix.arch == 'i386' ||  matrix.arch == 'amd64' }}
         run: |
-          sudo dpkg --add-architecture ${{ matrix.arch }}
-          sudo apt-get update -qq
-          sudo apt-get install -y libc6:${{ matrix.arch }} libgcc-s1:${{ matrix.arch }} zlib1g:${{ matrix.arch }} libcom-err2:${{ matrix.arch }} libkeyutils1:${{ matrix.arch }}
-      - name: Run tests (i386)
-        if: ${{ matrix.arch == 'i386'}}
-        run: |
-          LD_LIBRARY_PATH=$PWD/debian_sid_i386-sysroot/usr/lib/i386-linux-gnu ./build-linux-i386/yass_test
-          LD_LIBRARY_PATH=$PWD/debian_sid_i386-sysroot/usr/lib/i386-linux-gnu ./build-linux-i386/yass_benchmark
-      - name: Run tests (amd64)
-        if: ${{ matrix.arch == 'amd64'}}
-        run: |
-          LD_LIBRARY_PATH=$PWD/debian_sid_amd64-sysroot/usr/lib/x86_64-linux-gnu ./build-linux-amd64/yass_test
-          LD_LIBRARY_PATH=$PWD/debian_sid_amd64-sysroot/usr/lib/x86_64-linux-gnu ./build-linux-amd64/yass_benchmark
+          mkdir -p $SDK_ROOT/etc $SDK_ROOT/dev $SDK_ROOT/proc $SDK_ROOT/tmp
+          touch $SDK_ROOT/etc/resolv.conf
+          bwrap --die-with-parent --bind $SDK_ROOT / \
+            --ro-bind /etc/resolv.conf /etc/resolv.conf \
+            --proc /proc --dev /dev \
+            --unshare-all --share-net \
+            --bind $PWD/build-linux-${{ matrix.arch }} /tmp \
+            /tmp/yass_test
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
