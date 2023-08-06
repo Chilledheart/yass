@@ -193,7 +193,7 @@ func prebuildFindSourceDirectory() {
 	}
 
 	if err != nil {
-		tagContent, err := os.ReadFile("TAG")
+		tagContent, err := ioutil.ReadFile("TAG")
 		if err != nil {
 			glog.Fatalf("%v", err)
 		}
