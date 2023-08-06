@@ -329,6 +329,18 @@ if (CMAKE_CROSSCOMPILING AND CMAKE_SYSROOT)
   set(ENV{PKG_CONFIG_SYSROOT_DIR} ${CMAKE_SYSROOT})
 endif()
 
+if (NOT MSVC AND CMAKE_CROSSCOMPILING AND CMAKE_SYSROOT AND COMPILER_CLANG)
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16.0)
+    file(GLOB _GCC_SYSROOT "${CMAKE_SYSROOT}/lib/gcc/*/*.*.*")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --gcc-install-dir=${_GCC_SYSROOT}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --gcc-install-dir=${_GCC_SYSROOT}")
+  else()
+    # not useful usage:
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --gcc-toolchain=${CMAKE_SYSROOT}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --gcc-toolchain=${CMAKE_SYSROOT}")
+  endif()
+endif()
+
 include(CrossCompile)
 # when crosscompiling import the executable targets from a file
 if (USE_HOST_TOOLS)
