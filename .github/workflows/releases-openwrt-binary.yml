@@ -132,8 +132,9 @@ jobs:
       - name: Build TGZ packages
         run: |
           echo "#define _LIBCPP_HAS_MUSL_LIBC" >> ./third_party/libc++/__config_site
-          ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --subsystem musl --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
-          ./tools/build --variant server --arch ${{ matrix.arch }} --system linux --subsystem musl --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
+          ./tools/build --variant server --arch ${{ matrix.arch }} --system linux --subsystem openwrt --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
+          # we package cli's ipk, so we do it at least
+          ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --subsystem openwrt --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
       - name: Run tests (x86 and x86_64)
         if: ${{ matrix.arch == 'x86' || matrix.arch == 'x86_64' }}
         run: |
@@ -143,7 +144,7 @@ jobs:
             --ro-bind /etc/resolv.conf /etc/resolv.conf \
             --proc /proc --dev /dev \
             --unshare-all --share-net \
-            --bind $PWD/build-linux-musl-${{ matrix.arch }} /tmp \
+            --bind $PWD/build-linux-openwrt-${{ matrix.arch }} /tmp \
             /tmp/yass_test
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
@@ -151,3 +152,31 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload ${{ github.event.release.tag_name }} yass*.tgz
+      - name: Build IPK packages
+        run: |
+          # FIXME support better caching for it ?
+          eval "$OPENWRT_FLAGS"
+
+          if [ "$subtarget" ]; then
+            SDK_PATH=openwrt-sdk-$release-$target-${subtarget}_gcc-${gcc_ver}_${abi}.Linux-x86_64
+          else
+            subtarget='generic'
+            SDK_PATH=openwrt-sdk-$release-${target}_gcc-${gcc_ver}_${abi}.Linux-x86_64
+          fi
+
+          SDK_URL=https://downloads.openwrt.org/releases/$release/targets/$target/$subtarget/$SDK_PATH.tar.xz
+          curl -L -O $SDK_URL
+          tar -xf $SDK_PATH.tar.xz
+          SDK_HOME=$PWD/$SDK_PATH
+          ln -sf $PWD/openwrt $SDK_HOME/package/yass-cli
+          pushd $SDK_HOME
+          make defconfig
+          make package/yass-cli/{clean,compile} V=s
+          popd
+          find $SDK_HOME -type f -name "yass*.ipk" -exec cp -v {} . \;
+      - name: Upload dist tarball (including debuginfo)
+        if: ${{ github.event_name == 'release' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} yass*.ipk
