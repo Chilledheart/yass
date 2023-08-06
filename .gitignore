@@ -53,3 +53,5 @@ sscxx
 yass.spec
 !.circleci
 /openwrt-sdk-*
+/openwrt/Makefile
+*.ipk
