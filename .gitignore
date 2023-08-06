@@ -52,3 +52,4 @@ sscxx
 *.mo
 yass.spec
 !.circleci
+/openwrt-sdk-*

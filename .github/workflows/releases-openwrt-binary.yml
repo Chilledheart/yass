@@ -1,4 +1,4 @@
-name: Build Artifacts (Linux Binary)
+name: Build Artifacts (OpenWrt Binary)
 on:
   workflow_dispatch:
     inputs:
@@ -33,21 +33,20 @@ env:
   CACHE_EPOCH: 116
   GOPROXY: direct
 jobs:
-  linux-binary-release:
+  openwrt-binary-release:
     strategy:
       fail-fast: false
       matrix:
-        arch:
-        - 'i386'
-        - 'amd64'
-        - 'arm'
-        - 'arm64'
-        - 'armel'
-        - 'mips'
-        - 'mips64el'
+        include:
+          - arch: x86_64
+            openwrt: 'target=x86 subtarget=64 abi=musl'
+          - arch: x86
+            openwrt: 'target=x86 subtarget=generic abi=musl'
     runs-on: ubuntu-20.04
     env:
       ARCH: ${{ matrix.arch }}
+      OPENWRT_FLAGS: arch=${{ matrix.arch }} release=22.03.5 gcc_ver=11.2.0 ${{ matrix.openwrt }}
+      SDK_ROOT: ${{ github.workspace }}/openwrt-sdk-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v3
       - name: Checkout with shallow submodules
@@ -78,15 +77,13 @@ jobs:
           key: ${{ runner.os }}-go-docker-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-docker-
-      - name: Cache sysroot
-        id: sysroot-cache
+      - name: Cache openwrt sysroot
+        id: openwrt-sysroot-cache
         uses: actions/cache@v3
         with:
           path: |
-            debian_sid_${{ matrix.arch }}-sysroot
-          key: ${{ runner.os }}-sysroot-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-v${{ env.CACHE_EPOCH }}
-          restore-keys: |
-            ${{ runner.os }}-sysroot-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-
+            ${{ env.SDK_ROOT }}
+          key: openwrt-sysroot-v0-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
       - name: Build build tool
         run: |
           cd tools
@@ -96,41 +93,43 @@ jobs:
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
-      - name: "Install dependency: sysroot"
-        if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
-        run: |
-          ./scripts/install-sysroot.py --arch ${{ env.ARCH }}
       - name: Change ubuntu mirror
         run: |
           sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
           sudo apt-get update -qq
+      - name: "Install dependency: openwrt sysroot"
+        if: ${{ steps.openwrt-sysroot-cache.outputs.cache-hit != 'true' }}
+        run: |
+          eval "$OPENWRT_FLAGS"
+
+          mkdir -p $SDK_ROOT
+
+          if [ "$subtarget" ]; then
+            SDK_PATH=openwrt-sdk-$release-$target-${subtarget}_gcc-${gcc_ver}_${abi}.Linux-x86_64
+          else
+            subtarget='generic'
+            SDK_PATH=openwrt-sdk-$release-${target}_gcc-${gcc_ver}_${abi}.Linux-x86_64
+          fi
+
+          SDK_URL=https://downloads.openwrt.org/releases/$release/targets/$target/$subtarget/$SDK_PATH.tar.xz
+          curl -L -O $SDK_URL
+
+          #full_root=$SDK_PATH/staging_dir/toolchain-*_gcc-${gcc_ver}_${abi}
+          full_root=$(tar -tf $SDK_PATH.tar.xz "$SDK_PATH/staging_dir/" |grep -E "/toolchain-.*_gcc-${gcc_ver}_${abi}/$")
+
+          tar -C $SDK_ROOT -xf $SDK_PATH.tar.xz --strip-components 3 $full_root
+          rm -rf $SDK_ROOT/bin $SDK_ROOT/libexec
       - name: Populate depedencies
-        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build gettext
+        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build
       - name: Set clang environment
         run: |
           echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
           echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
       - name: Build TGZ packages
         run: |
-          ./tools/build --variant gui --arch ${{ matrix.arch }} --system linux --sysroot $PWD/debian_sid_${{ matrix.arch }}-sysroot -build-benchmark -build-test -nc
-          ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --sysroot $PWD/debian_sid_${{ matrix.arch }}-sysroot -build-benchmark -build-test -nc
-          ./tools/build --variant server --arch ${{ matrix.arch }} --system linux --sysroot $PWD/debian_sid_${{ matrix.arch }}-sysroot -build-benchmark -build-test -nc
-      - name: Populate depedencies (tests)
-        if: ${{ matrix.arch == 'i386' }}
-        run: |
-          sudo dpkg --add-architecture ${{ matrix.arch }}
-          sudo apt-get update -qq
-          sudo apt-get install -y libc6:${{ matrix.arch }} libgcc-s1:${{ matrix.arch }} zlib1g:${{ matrix.arch }} libcom-err2:${{ matrix.arch }} libkeyutils1:${{ matrix.arch }}
-      - name: Run tests (i386)
-        if: ${{ matrix.arch == 'i386'}}
-        run: |
-          LD_LIBRARY_PATH=$PWD/debian_sid_i386-sysroot/usr/lib/i386-linux-gnu ./build-linux-i386/yass_test
-          LD_LIBRARY_PATH=$PWD/debian_sid_i386-sysroot/usr/lib/i386-linux-gnu ./build-linux-i386/yass_benchmark
-      - name: Run tests (amd64)
-        if: ${{ matrix.arch == 'amd64'}}
-        run: |
-          LD_LIBRARY_PATH=$PWD/debian_sid_amd64-sysroot/usr/lib/x86_64-linux-gnu ./build-linux-amd64/yass_test
-          LD_LIBRARY_PATH=$PWD/debian_sid_amd64-sysroot/usr/lib/x86_64-linux-gnu ./build-linux-amd64/yass_benchmark
+          echo "#define _LIBCPP_HAS_MUSL_LIBC" >> ./third_party/libc++/__config_site
+          ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --subsystem musl --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
+          ./tools/build --variant server --arch ${{ matrix.arch }} --system linux --subsystem musl --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:

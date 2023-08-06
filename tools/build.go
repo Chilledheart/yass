@@ -61,6 +61,8 @@ var subSystemNameFlag string
 var sysrootFlag string
 var archFlag string
 
+var variantFlag string
+
 func getAppName() string {
 	if systemNameFlag == "windows" {
 		return APPNAME + ".exe"
@@ -136,6 +138,8 @@ func InitFlag() {
 	flag.StringVar(&sysrootFlag, "sysroot", "", "Specify host sysroot, used in cross-compiling")
 	flag.StringVar(&archFlag, "arch", runtime.GOARCH, "Specify host architecture")
 
+	flag.StringVar(&variantFlag, "variant", "gui", "Specify variant, available: gui, cli, server")
+
 	flag.Parse()
 
 	if flagNoPreClean {
@@ -150,6 +154,20 @@ func InitFlag() {
 
 	// For compatiblity
 	systemNameFlag = strings.ToLower(systemNameFlag)
+
+	if (variantFlag == "gui") {
+		APPNAME = "yass"
+	} else if (variantFlag == "cli") {
+		APPNAME = "yass_cli"
+	} else if (variantFlag == "server") {
+		APPNAME = "yass_server"
+	} else if (variantFlag == "benchmark") {
+		APPNAME = "yass_benchmark"
+	} else if (variantFlag == "test") {
+		APPNAME = "yass_test"
+	} else {
+		glog.Fatalf("Invalid variant: %s", variantFlag)
+	}
 }
 
 func prebuildFindSourceDirectory() {
@@ -175,7 +193,7 @@ func prebuildFindSourceDirectory() {
 	}
 
 	if err != nil {
-		tagContent, err := os.ReadFile("TAG")
+		tagContent, err := ioutil.ReadFile("TAG")
 		if err != nil {
 			glog.Fatalf("%v", err)
 		}
@@ -242,20 +260,42 @@ func getLLVMTargetTripleMSVC(msvcTargetArch string) string {
 	return ""
 }
 
-func getGNUTargetTypeAndArch(arch string) (string, string) {
+// https://docs.rust-embedded.org/embedonomicon/compiler-support.html
+func getGNUTargetTypeAndArch(arch string, subsystem string) (string, string) {
 	if arch == "amd64" || arch == "x86_64" {
+		if subsystem == "musl" {
+			return "x86_64-linux-musl", "x86_64"
+		}
 		return "x86_64-linux-gnu", "x86_64"
-	} else if arch == "x86" || arch == "i386" {
-		return "i386-linux-gnu", "i386"
+	} else if arch == "x86" || arch == "i386" || arch == "i586" || arch == "i686" {
+		if subsystem == "musl" {
+			return "i686-linux-musl", "i386"
+		}
+		return "i686-linux-gnu", "i386"
 	} else if arch == "arm64" || arch == "aarch64" {
+		if subsystem == "musl" {
+			return "aarch64-linux-musl", "aarch64"
+		}
 		return "aarch64-linux-gnu", "aarch64"
 	} else if arch == "armel" {
+		if subsystem == "musl" {
+			return "arm-linux-musleabi", "armel"
+		}
 		return "arm-linux-gnueabi", "armel"
 	} else if arch == "arm" {
+		if subsystem == "musl" {
+			return "arm-linux-musleabihf", "armhf"
+		}
 		return "arm-linux-gnueabihf", "armhf"
 	} else if arch == "mips" {
+		if subsystem == "musl" {
+			return "mipsel-linux-musl", "mipsel"
+		}
 		return "mipsel-linux-gnu", "mipsel"
 	} else if arch == "mips64el" {
+		if subsystem == "musl" {
+			return "mips64el-linux-muslabi64", "mips64el"
+		}
 		return "mips64el-linux-gnuabi64", "mips64el"
 	}
 	glog.Fatalf("Invalid arch: %s", arch)
@@ -482,7 +522,7 @@ func buildStageGenerateBuildScript() {
 	}
 
 	if systemNameFlag == "linux" && sysrootFlag != "" {
-		gnuType, gnuArch := getGNUTargetTypeAndArch(archFlag)
+		gnuType, gnuArch := getGNUTargetTypeAndArch(archFlag, subSystemNameFlag)
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/Linux.cmake", buildDir))
 		var pkgConfigPath = filepath.Join(sysrootFlag, "usr", "lib", "pkgconfig")
 		pkgConfigPath += ";" + filepath.Join(sysrootFlag, "usr", "share", "pkgconfig")
