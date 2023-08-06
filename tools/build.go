@@ -61,6 +61,8 @@ var subSystemNameFlag string
 var sysrootFlag string
 var archFlag string
 
+var variantFlag string
+
 func getAppName() string {
 	if systemNameFlag == "windows" {
 		return APPNAME + ".exe"
@@ -136,6 +138,8 @@ func InitFlag() {
 	flag.StringVar(&sysrootFlag, "sysroot", "", "Specify host sysroot, used in cross-compiling")
 	flag.StringVar(&archFlag, "arch", runtime.GOARCH, "Specify host architecture")
 
+	flag.StringVar(&variantFlag, "variant", "gui", "Specify variant, available: gui, cli, server")
+
 	flag.Parse()
 
 	if flagNoPreClean {
@@ -150,6 +154,20 @@ func InitFlag() {
 
 	// For compatiblity
 	systemNameFlag = strings.ToLower(systemNameFlag)
+
+	if (variantFlag == "gui") {
+		APPNAME = "yass"
+	} else if (variantFlag == "cli") {
+		APPNAME = "yass_cli"
+	} else if (variantFlag == "server") {
+		APPNAME = "yass_server"
+	} else if (variantFlag == "benchmark") {
+		APPNAME = "yass_benchmark"
+	} else if (variantFlag == "test") {
+		APPNAME = "yass_test"
+	} else {
+		glog.Fatalf("Invalid variant: %s", variantFlag)
+	}
 }
 
 func prebuildFindSourceDirectory() {
