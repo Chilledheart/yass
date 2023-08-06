@@ -112,7 +112,9 @@ jobs:
           echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
       - name: Build TGZ packages
         run: |
-          ./tools/build --arch ${{ matrix.arch }} --system linux --sysroot $PWD/debian_sid_${{ matrix.arch }}-sysroot -build-benchmark -build-test
+          ./tools/build --variant gui --arch ${{ matrix.arch }} --system linux --sysroot $PWD/debian_sid_${{ matrix.arch }}-sysroot -build-benchmark -build-test -nc
+          ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --sysroot $PWD/debian_sid_${{ matrix.arch }}-sysroot -build-benchmark -build-test -nc
+          ./tools/build --variant server --arch ${{ matrix.arch }} --system linux --sysroot $PWD/debian_sid_${{ matrix.arch }}-sysroot -build-benchmark -build-test -nc
       - name: Populate depedencies (tests)
         if: ${{ matrix.arch == 'i386' }}
         run: |
