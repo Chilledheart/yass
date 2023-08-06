@@ -522,7 +522,11 @@ func buildStageGenerateBuildScript() {
 	}
 
 	if systemNameFlag == "linux" && sysrootFlag != "" {
-		gnuType, gnuArch := getGNUTargetTypeAndArch(archFlag, subSystemNameFlag)
+		subsystem := subSystemNameFlag
+		if subSystemNameFlag == "openwrt" {
+			subsystem = "musl"
+		}
+		gnuType, gnuArch := getGNUTargetTypeAndArch(archFlag, subsystem)
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/Linux.cmake", buildDir))
 		var pkgConfigPath = filepath.Join(sysrootFlag, "usr", "lib", "pkgconfig")
 		pkgConfigPath += ";" + filepath.Join(sysrootFlag, "usr", "share", "pkgconfig")
@@ -1028,6 +1032,26 @@ func generateNSIS(output string) {
 	cmdRun([]string{"C:\\Program Files (x86)\\NSIS\\makensis.exe", "/XSetCompressor /FINAL lzma", "yass.nsi"}, true)
 }
 
+func generateOpenWrtMakefile(archive string, pkg_version string) {
+	archive_dir, _ := filepath.Abs("..")
+	archive_dir += "/"
+	archive_checksum := strings.TrimSpace(cmdCheckOutput([]string{"sha256sum", archive}))
+	archive_checksum = strings.Split(archive_checksum, " ")[0]
+	mkTemplate, err := ioutil.ReadFile(filepath.Join("..", "openwrt", "Makefile.tmpl"))
+	if err != nil {
+		glog.Fatalf("%v", err)
+	}
+	mkContent := string(mkTemplate)
+	mkContent = strings.Replace(mkContent, "%%PKG_VERSION%%", pkg_version, 1)
+	mkContent = strings.Replace(mkContent, "%%PKG_DIR%%", archive_dir, 1)
+	mkContent = strings.Replace(mkContent, "%%PKG_SHA256SUM%%", archive_checksum, 1)
+	err = ioutil.WriteFile(filepath.Join("..", "openwrt", "Makefile"), []byte(mkContent), 0666)
+	if err != nil {
+		glog.Fatalf("%v", err)
+	}
+	glog.Info("OpenWRT Makefile written to openwrt/Makefile")
+}
+
 func postStateArchives() map[string][]string {
 	glog.Info("PostState -- Archives")
 	glog.Info("======================================================================")
@@ -1062,7 +1086,9 @@ func postStateArchives() map[string][]string {
 	}
 
 	archive := fmt.Sprintf(archiveFormat, APPNAME, "", ext)
-	archivePrefix := fmt.Sprintf(archiveFormat, APPNAME, "", "")
+	archivePrefix := fmt.Sprintf(archiveFormat, strings.Replace(APPNAME, "_", "-", 1), "", "")
+	archiveSuffix := fmt.Sprintf(archiveFormat, "", "", "")
+	archiveSuffix = archiveSuffix[1:]
 	if systemNameFlag == "darwin" {
 		archive = fmt.Sprintf(archiveFormat, APPNAME, "", ".dmg")
 	}
@@ -1116,6 +1142,11 @@ func postStateArchives() map[string][]string {
 		dbgPaths = append(dbgPaths, getAppName()+".dSYM")
 	}
 	archives[debugArchive] = dbgPaths
+
+	// Create openwrt Makefile
+	if subSystemNameFlag == "openwrt" {
+		generateOpenWrtMakefile(archive, archiveSuffix)
+	}
 	return archives
 }
 
