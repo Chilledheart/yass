@@ -37,14 +37,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch:
-        - 'i386'
-        - 'amd64'
-        - 'arm'
-        - 'arm64'
-        - 'armel'
-        - 'mips'
-        - 'mips64el'
+        include:
+          - arch: i386
+            qemu_suffix: i386
+          - arch: amd64
+            qemu_suffix: amd64
+          - arch: arm
+            qemu_suffix: armhf
+          - arch: armel
+            qemu_suffix: armel
+          - arch: arm64
+            qemu_suffix: aarch64
+          - arch: mips
+            qemu_suffix: mipsel
+          - arch: mips64el
+            qemu_suffix: mips64el
     runs-on: ubuntu-20.04
     env:
       ARCH: ${{ matrix.arch }}
@@ -85,7 +92,8 @@ jobs:
         with:
           path: |
             ${{ env.SDK_ROOT }}
-          key: ${{ runner.os }}-sysroot-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-v${{ env.CACHE_EPOCH }}
+            qemu-user-static*.deb
+          key: ${{ runner.os }}-sysroot-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-with-qemu-v${{ env.CACHE_EPOCH }}
       - name: Build build tool
         run: |
           cd tools
@@ -99,6 +107,7 @@ jobs:
         if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
         run: |
           ./scripts/install-sysroot.py --arch ${{ env.ARCH }}
+          wget http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-static_8.0.3+dfsg-5_amd64.deb
       - name: Change ubuntu mirror
         run: |
           sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
@@ -109,6 +118,10 @@ jobs:
           sudo apt-get install -y cmake ninja-build pkg-config gettext bubblewrap
           # libc6-i386 interferes with x86 build
           sudo apt remove libc6-i386
+
+          sudo apt install qemu-user
+          sudo apt remove -y qemu-user-binfmt
+          sudo dpkg -i qemu-user-static_*.deb
       - name: Set clang environment
         run: |
           echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
@@ -129,6 +142,12 @@ jobs:
             --unshare-all --share-net \
             --bind $PWD/build-linux-${{ matrix.arch }} /tmp \
             /tmp/yass_test
+      - name: Run tests (non x86, under qemu emulation)
+        if: ${{ matrix.arch != 'i386' && matrix.arch != 'amd64' }}
+        run: |
+          qemu-${{ matrix.qemu_suffix }}-static -L $SDK_ROOT \
+            $PWD/build-linux-${{ matrix.arch }}/yass_test \
+            --no_exec_proc_tests
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
