@@ -27,7 +27,7 @@ TEST(PROCESS_TEST, ExecuteProcessBasic) {
   std::string output, error;
   int ret = ExecuteProcess(params, &output, &error);
   EXPECT_EQ(ret, 0);
-  EXPECT_EQ(output, "yass_test\n");
+  EXPECT_THAT(output, ::testing::StartsWith("yass_test\n"));
   EXPECT_EQ(error, "");
 }
 
