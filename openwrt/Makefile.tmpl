@@ -13,6 +13,8 @@ PKG_HASH:=%%PKG_SHA256SUM%%
 
 include $(INCLUDE_DIR)/package.mk
 
+RSTRIP:=:
+
 define Package/$(PKG_NAME)
 	SECTION:=Custom
 	CATEGORY:=Extra packages
