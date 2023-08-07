@@ -25,3 +25,10 @@ SUBVERSION=1
 
 /usr/bin/git ls-files --recurse-submodules | \
   tar caf yass-${VERSION}.tar.gz --xform="s,^,yass-${VERSION}/," -T -
+
+# doesn't work because zip cannot create prefix
+# /usr/bin/git ls-files --recurse-submodules | \
+#   zip -@ yass-${VERSION}.zip
+
+/usr/bin/git ls-files --recurse-submodules | \
+  bsdtar caf yass-${VERSION}.zip -s ",^,yass-${VERSION}/," -T -
