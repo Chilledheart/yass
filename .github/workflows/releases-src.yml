@@ -45,12 +45,20 @@ jobs:
         run: |
           cd third_party/libc++abi
           patch -p1 < v8-6.7.17-fix-gcc-unwind-header.patch
-      - name: Build tarball
+      - name: Change ubuntu mirror
+        run: |
+          sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
+          sudo apt-get update -qq
+      - name: Populate depedencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libarchive-tools
+      - name: Build tarball and zip archive
         run: |
           ./scripts/build-src.sh
-      - name: Upload dist tarball (including debuginfo)
+      - name: Upload tarball and zip archive
         if: ${{ github.event_name == 'release' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} yass*.tar.gz
+          gh release upload ${{ github.event.release.tag_name }} yass*.tar.gz yass*.zip
