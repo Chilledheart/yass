@@ -273,7 +273,14 @@ if (USE_MOLD)
   set(USE_GOLD OFF)
 endif()
 
-if (ENABLE_LTO AND (${CMAKE_BUILD_TYPE} MATCHES Release))
+if (${CMAKE_BUILD_TYPE} MATCHES Release OR ${CMAKE_BUILD_TYPE} MATCHES MinSizeRel OR ${CMAKE_BUILD_TYPE} MATCHES RelWithDebInfo)
+  message(STATUS "Release Build: ${CMAKE_BUILD_TYPE}")
+  set(IS_RELEASE_BUILD ON)
+else()
+  message(STATUS "Debug Build")
+endif()
+
+if (ENABLE_LTO AND IS_RELEASE_BUILD)
   if (COMPILER_CLANG)
     if (USE_MOLD AND UNIX AND NOT APPLE)
       set(LTO ON)
@@ -333,8 +340,10 @@ endif()
 if (UNIX AND CMAKE_CROSSCOMPILING AND CMAKE_SYSROOT AND COMPILER_CLANG AND NOT CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
   if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16.0)
     file(GLOB _GCC_SYSROOT "${CMAKE_SYSROOT}/lib/gcc/*/*.*.*")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --gcc-install-dir=${_GCC_SYSROOT}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --gcc-install-dir=${_GCC_SYSROOT}")
+    if (_GCC_SYSROOT)
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --gcc-install-dir=${_GCC_SYSROOT}")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --gcc-install-dir=${_GCC_SYSROOT}")
+    endif()
   else()
     # not useful usage:
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --gcc-toolchain=${CMAKE_SYSROOT}")
@@ -534,6 +543,8 @@ if (NOT MSVC)
   endif()
 
   ## optimization flags
+  set(CMAKE_C_FLAGS_MINSIZEREL   "${CMAKE_C_FLAGS_MINSIZEREL} -DNDEBUG")
+  set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -DNDEBUG")
   set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG")
 
@@ -727,6 +738,9 @@ else()
     elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
       string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
       string(REPLACE "/Zi" "/Z7" CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO}")
+    elseif(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
+      string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL}")
+      string(REPLACE "/Zi" "/Z7" CMAKE_C_FLAGS_MINSIZEREL "${CMAKE_C_FLAGS_MINSIZEREL}")
     endif()
   else()
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zi")
@@ -765,12 +779,16 @@ else()
     # output fully deterministic and independent of the build directory.
     set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /PDBSourcePath:o:\\fake\\prefix")
     set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /PDBSourcePath:o:\\fake\\prefix")
+    set(CMAKE_EXE_LINKER_FLAGS_MINSIZEREL "${CMAKE_EXE_LINKER_FLAGS_MINSIZEREL} /PDBSourcePath:o:\\fake\\prefix")
+    set(CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL "${CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL} /PDBSourcePath:o:\\fake\\prefix")
 
     # Absolutize source file paths for PDB. Pass the real build directory
     # if the pdb contains source-level debug information and if linker
     # reproducibility is not critical.
     set(CMAKE_EXE_LINKER_FLAGS_DEBUG   "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /PDBSourcePath:${CMAKE_CURRENT_BINARY_DIR}")
-    set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /PDBSourcePath:${CMAKE_CURRENT_BINARY_DIR}")
+    set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} /PDBSourcePath:${CMAKE_CURRENT_BINARY_DIR}")
+    set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO   "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO} /PDBSourcePath:${CMAKE_CURRENT_BINARY_DIR}")
+    set(CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO} /PDBSourcePath:${CMAKE_CURRENT_BINARY_DIR}")
   endif()
 
   # Tells the compiler not to use absolute paths when passing the default
@@ -1016,6 +1034,10 @@ if (NOT MSVC)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fstack-protector-strong")
     set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fstack-protector")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fstack-protector")
+    set(CMAKE_C_FLAGS_MINSIZEREL "${CMAKE_C_FLAGS_MINSIZEREL} -fstack-protector")
+    set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -fstack-protector")
+    set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -fstack-protector")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -fstack-protector")
   elseif (UNIX AND NOT APPLE)
     # TODO(phajdan.jr): Use -fstack-protector-strong when our gcc supports it.
     # See also https://crbug.com/533294
@@ -1057,6 +1079,10 @@ if (UNIX AND NOT APPLE)
   # ENABLE_LINKER_BUILD_ID=ON).
   set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,--build-id=sha1")
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,--build-id=sha1")
+  set(CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL "${CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL} -Wl,--build-id=sha1")
+  set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO} -Wl,--build-id=sha1")
+  set(CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO} -Wl,--build-id=sha1")
+  set(CMAKE_EXE_LINKER_FLAGS_MINSIZEREL "${CMAKE_EXE_LINKER_FLAGS_MINSIZEREL} -Wl,--build-id=sha1")
   set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -Wl,--build-id")
   set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -Wl,--build-id")
 
@@ -1200,11 +1226,11 @@ if (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6.0)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mllvm -instcombine-lower-dbg-declare=0")
   if (USE_LLD)
     if (MSVC)
-      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -mllvm:-instcombine-lower-dbg-declare=0")
-      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -mllvm:-instcombine-lower-dbg-declare=0")
+      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -mllvm:-instcombine-lower-dbg-declare=0")
+      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mllvm:-instcombine-lower-dbg-declare=0")
     else()
-      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} -Wl,-mllvm,-instcombine-lower-dbg-declare=0")
-      set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Wl,-mllvm,-instcombine-lower-dbg-declare=0")
+      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-mllvm,-instcombine-lower-dbg-declare=0")
+      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-mllvm,-instcombine-lower-dbg-declare=0")
     endif()
   endif()
 
@@ -1494,7 +1520,6 @@ if (WIN32)
       CMAKE_CXX_FLAGS_RELWITHDEBINFO
       CMAKE_C_FLAGS
       CMAKE_C_FLAGS_DEBUG
-      CMAKE_C_FLAGS_RELEASE
       CMAKE_C_FLAGS_MINSIZEREL
       CMAKE_C_FLAGS_RELEASE
       CMAKE_C_FLAGS_RELWITHDEBINFO
@@ -1676,12 +1701,16 @@ if (NOT MSVC)
   ## not omit stack frame pointer for release
   set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -fno-omit-frame-pointer")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-omit-frame-pointer")
+  set(CMAKE_C_FLAGS_RELWITHDEBINFO   "${CMAKE_C_FLAGS_RELWITHDEBINFO} -fno-omit-frame-pointer")
+  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -fno-omit-frame-pointer")
 
   ## fortify source code. Also, fortified build may fail when optimizations are
   ## disabled, so only do that for Release build.
   if (NOT WIN32 AND NOT APPLE)
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -D_FORTIFY_SOURCE=2")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -D_FORTIFY_SOURCE=2")
+    set(CMAKE_C_FLAGS_RELWITHDEBINFO   "${CMAKE_C_FLAGS_RELWITHDEBINFO} -D_FORTIFY_SOURCE=2")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -D_FORTIFY_SOURCE=2")
   endif()
 
   ## set rpath origin
@@ -1701,7 +1730,6 @@ else()
       CMAKE_CXX_FLAGS_RELWITHDEBINFO
       CMAKE_C_FLAGS
       CMAKE_C_FLAGS_DEBUG
-      CMAKE_C_FLAGS_RELEASE
       CMAKE_C_FLAGS_MINSIZEREL
       CMAKE_C_FLAGS_RELEASE
       CMAKE_C_FLAGS_RELWITHDEBINFO

@@ -141,10 +141,10 @@ jobs:
           echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
       - name: Build TGZ packages
         run: |
-          echo "#define _LIBCPP_HAS_MUSL_LIBC" >> ./third_party/libc++/__config_site
-          ./tools/build --variant server --arch ${{ matrix.arch }} --system linux --subsystem openwrt --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
-          # we package cli's ipk, so we do it at least
-          ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --subsystem openwrt --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
+          ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --subsystem openwrt --sysroot ${{ env.SDK_ROOT }} \
+            --cmake-build-type MinSizeRel -build-benchmark -build-test -nc
+          ./tools/build --variant server --arch ${{ matrix.arch }} --system linux --subsystem openwrt --sysroot ${{ env.SDK_ROOT }} \
+            --cmake-build-type MinSizeRel -build-benchmark -build-test -nc
       - name: Run tests (x86 and x86_64)
         if: ${{ matrix.arch == 'x86' || matrix.arch == 'x86_64' }}
         run: |
