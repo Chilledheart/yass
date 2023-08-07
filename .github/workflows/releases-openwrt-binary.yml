@@ -47,6 +47,7 @@ jobs:
       ARCH: ${{ matrix.arch }}
       OPENWRT_FLAGS: arch=${{ matrix.arch }} release=22.03.5 gcc_ver=11.2.0 ${{ matrix.openwrt }}
       SDK_ROOT: ${{ github.workspace }}/openwrt-sdk-${{ matrix.arch }}
+      SDK_HOME: ${{ github.workspace }}/openwrt-sdk-${{ matrix.arch }}-home
     steps:
       - uses: actions/checkout@v3
       - name: Checkout with shallow submodules
@@ -77,13 +78,15 @@ jobs:
           key: ${{ runner.os }}-go-docker-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-docker-
-      - name: Cache openwrt sysroot
-        id: openwrt-sysroot-cache
+      - name: Cache openwrt sdk home
+        id: openwrt-sdkhome-cache
         uses: actions/cache@v3
         with:
           path: |
+            openwrt-sdk-*.Linux-x86_64
             ${{ env.SDK_ROOT }}
-          key: openwrt-sysroot-v0-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
+            ${{ env.SDK_HOME }}
+          key: openwrt-sysroot-and-home-v0-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
       - name: Build build tool
         run: |
           cd tools
@@ -97,12 +100,10 @@ jobs:
         run: |
           sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
           sudo apt-get update -qq
-      - name: "Install dependency: openwrt sysroot"
-        if: ${{ steps.openwrt-sysroot-cache.outputs.cache-hit != 'true' }}
+      - name: "Install dependency: openwrt sdkhome"
+        if: ${{ steps.openwrt-sdkhome-cache.outputs.cache-hit != 'true' }}
         run: |
           eval "$OPENWRT_FLAGS"
-
-          mkdir -p $SDK_ROOT
 
           if [ "$subtarget" ]; then
             SDK_PATH=openwrt-sdk-$release-$target-${subtarget}_gcc-${gcc_ver}_${abi}.Linux-x86_64
@@ -114,11 +115,15 @@ jobs:
           SDK_URL=https://downloads.openwrt.org/releases/$release/targets/$target/$subtarget/$SDK_PATH.tar.xz
           curl -L -O $SDK_URL
 
-          #full_root=$SDK_PATH/staging_dir/toolchain-*_gcc-${gcc_ver}_${abi}
+          # full_root=$SDK_PATH/staging_dir/toolchain-*_gcc-${gcc_ver}_${abi}
           full_root=$(tar -tf $SDK_PATH.tar.xz "$SDK_PATH/staging_dir/" |grep -E "/toolchain-.*_gcc-${gcc_ver}_${abi}/$")
+          #tar -C $SDK_ROOT -xf $SDK_PATH.tar.xz --strip-components 3 $full_root
+          tar -xf $SDK_PATH.tar.xz
 
-          tar -C $SDK_ROOT -xf $SDK_PATH.tar.xz --strip-components 3 $full_root
-          rm -rf $SDK_ROOT/bin $SDK_ROOT/libexec
+          ln -sf $SDK_PATH ${{ env.SDK_HOME }}
+          ln -sf $full_root ${{ env.SDK_ROOT }}
+
+          rm -rf ${{ env.SDK_ROOT }}/bin ${{ env.SDK_ROOT }}/libexec
       - name: Populate depedencies
         run: |
           sudo apt-get update -qq
@@ -138,9 +143,9 @@ jobs:
       - name: Run tests (x86 and x86_64)
         if: ${{ matrix.arch == 'x86' || matrix.arch == 'x86_64' }}
         run: |
-          mkdir -p $SDK_ROOT/etc $SDK_ROOT/dev $SDK_ROOT/proc $SDK_ROOT/tmp
-          touch $SDK_ROOT/etc/resolv.conf
-          bwrap --die-with-parent --ro-bind $SDK_ROOT / \
+          mkdir -p ${{ env.SDK_ROOT }}/etc ${{ env.SDK_ROOT }}/dev ${{ env.SDK_ROOT }}/proc ${{ env.SDK_ROOT }}/tmp
+          touch ${{ env.SDK_ROOT }}/etc/resolv.conf
+          bwrap --die-with-parent --ro-bind ${{ env.SDK_ROOT }} / \
             --ro-bind /etc/resolv.conf /etc/resolv.conf \
             --proc /proc --dev /dev \
             --unshare-all --share-net \
@@ -154,26 +159,12 @@ jobs:
           gh release upload ${{ github.event.release.tag_name }} yass*.tgz
       - name: Build IPK packages
         run: |
-          # FIXME support better caching for it ?
-          eval "$OPENWRT_FLAGS"
-
-          if [ "$subtarget" ]; then
-            SDK_PATH=openwrt-sdk-$release-$target-${subtarget}_gcc-${gcc_ver}_${abi}.Linux-x86_64
-          else
-            subtarget='generic'
-            SDK_PATH=openwrt-sdk-$release-${target}_gcc-${gcc_ver}_${abi}.Linux-x86_64
-          fi
-
-          SDK_URL=https://downloads.openwrt.org/releases/$release/targets/$target/$subtarget/$SDK_PATH.tar.xz
-          curl -L -O $SDK_URL
-          tar -xf $SDK_PATH.tar.xz
-          SDK_HOME=$PWD/$SDK_PATH
-          ln -sf $PWD/openwrt $SDK_HOME/package/yass-cli
-          pushd $SDK_HOME
+          ln -sf $PWD/openwrt ${{ env.SDK_HOME }}/package/yass-cli
+          pushd ${{ env.SDK_HOME }}
           make defconfig
           make package/yass-cli/{clean,compile} V=s
           popd
-          find $SDK_HOME -type f -name "yass*.ipk" -exec cp -v {} . \;
+          find ${{ env.SDK_HOME }} -type f -name "yass*.ipk" -exec cp -v {} . \;
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
