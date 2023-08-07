@@ -26,6 +26,10 @@ define Package/$(PKG_NAME)/description
 	lightweight and secure http/socks4/socks4a/socks5/socks5h proxy
 endef
 
+define Build/Configure
+	true
+endef
+
 define Build/Compile
 	mkdir -p $(PKG_INSTALL_DIR)/bin
 	$(CP) $(PKG_BUILD_DIR)/yass_cli $(PKG_INSTALL_DIR)/bin/yass_cli;
