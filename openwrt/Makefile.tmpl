@@ -16,8 +16,8 @@ include $(INCLUDE_DIR)/package.mk
 RSTRIP:=:
 
 define Package/$(PKG_NAME)
-	SECTION:=Custom
-	CATEGORY:=Extra packages
+	SECTION:=net
+	CATEGORY:=Network
 	TITLE:=Yet Another Shadow Socket
 	URL:=https://github.com/Chilledheart/yass
 endef
@@ -38,6 +38,8 @@ endef
 define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/bin/yass_cli $(1)/usr/bin/yass_cli
+	$(INSTALL_DIR) $(1)/etc/init.d
+	$(INSTALL_BIN) files/yass_cli.init $(1)/etc/init.d/yass_cli
 endef
 
 $(eval $(call BuildPackage,$(PKG_NAME)))
