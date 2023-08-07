@@ -86,7 +86,7 @@ jobs:
             openwrt-sdk-*.Linux-x86_64
             ${{ env.SDK_ROOT }}
             ${{ env.SDK_HOME }}
-          key: openwrt-sysroot-and-home-v0-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
+          key: openwrt-sdkhome-v0-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
       - name: Build build tool
         run: |
           cd tools
@@ -119,6 +119,11 @@ jobs:
           full_root=$(tar -tf $SDK_PATH.tar.xz "$SDK_PATH/staging_dir/" |grep -E "/toolchain-.*_gcc-${gcc_ver}_${abi}/$")
           #tar -C $SDK_ROOT -xf $SDK_PATH.tar.xz --strip-components 3 $full_root
           tar -xf $SDK_PATH.tar.xz
+          # fix dl directory
+          rm -rf $SDK_PATH/dl
+          ln -sf /tmp $SDK_PATH/dl
+          # fix package directory
+          ln -sf $PWD/openwrt $SDK_PATH/package/yass-cli
 
           ln -sf $SDK_PATH ${{ env.SDK_HOME }}
           ln -sf $full_root ${{ env.SDK_ROOT }}
@@ -159,12 +164,15 @@ jobs:
           gh release upload ${{ github.event.release.tag_name }} yass*.tgz
       - name: Build IPK packages
         run: |
-          ln -sf $PWD/openwrt ${{ env.SDK_HOME }}/package/yass-cli
           pushd ${{ env.SDK_HOME }}
           make defconfig
           make package/yass-cli/{clean,compile} V=s
           popd
           find ${{ env.SDK_HOME }} -type f -name "yass*.ipk" -exec cp -v {} . \;
+          # clean up after build
+          pushd ${{ env.SDK_HOME }}
+          make package/yass-cli/clean V=s
+          popd
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
