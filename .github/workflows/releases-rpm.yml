@@ -194,7 +194,6 @@ jobs:
         run: |
           export CC=clang
           export CXX=clang++
-          echo "#define _LIBCPP_HAS_MUSL_LIBC" >> ./third_party/libc++/__config_site
           ./tools/build --arch amd64 --system linux --subsystem musl -build-benchmark -build-test
       - name: Run tests (amd64)
         run: |

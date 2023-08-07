@@ -429,6 +429,9 @@ func buildStageGenerateBuildScript() {
 	if systemNameFlag != runtime.GOOS || sysrootFlag != "" || msvcTargetArchFlag != "x64" {
 		cmakeArgs = append(cmakeArgs, "-DUSE_HOST_TOOLS=on")
 	}
+	if subSystemNameFlag == "musl" || subSystemNameFlag == "openwrt" {
+		cmakeArgs = append(cmakeArgs, "-DUSE_MUSL=on")
+	}
 	if buildBenchmarkFlag || runBenchmarkFlag {
 		cmakeArgs = append(cmakeArgs, "-DBUILD_BENCHMARKS=on")
 	}
