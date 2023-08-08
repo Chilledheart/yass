@@ -287,7 +287,17 @@ func getGNUTargetTypeAndArch(arch string, subsystem string) (string, string) {
 			return "arm-linux-musleabihf", "armhf"
 		}
 		return "arm-linux-gnueabihf", "armhf"
-	} else if arch == "mips" || arch == "mipsel" {
+	} else if arch == "mips" {
+		if subsystem == "musl" {
+			return "mips-linux-musl", "mips"
+		}
+		return "mips-linux-gnu", "mips"
+	} else if arch == "mips64" {
+		if subsystem == "musl" {
+			return "mips64-linux-muslabi64", "mips64"
+		}
+		return "mips64-linux-gnuabi64", "mips64"
+	} else if arch == "mipsel" {
 		if subsystem == "musl" {
 			return "mipsel-linux-musl", "mipsel"
 		}

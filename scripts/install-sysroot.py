@@ -132,6 +132,8 @@ def InstallSysroot(target_platform, target_arch):
                 'Expected %s, actual: %s' % (tarball_sha1sum, sha1sum))
   extract_tarfile(tarball, sysroot)
   os.remove(tarball)
+  if target_arch == 'mips':
+    os.symlink(sysroot, sysroot.replace('mips', 'mipsel'))
   with open(stamp, 'w') as s:
     s.write(url)
 if __name__ == '__main__':

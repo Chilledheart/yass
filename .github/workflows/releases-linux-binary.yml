@@ -48,7 +48,7 @@ jobs:
             qemu_suffix: armel
           - arch: arm64
             qemu_suffix: aarch64
-          - arch: mips
+          - arch: mipsel
             qemu_suffix: mipsel
           - arch: mips64el
             qemu_suffix: mips64el
@@ -92,6 +92,7 @@ jobs:
         with:
           path: |
             ${{ env.SDK_ROOT }}
+            debian_sid_mips-sysroot
             qemu-user-static*.deb
           key: ${{ runner.os }}-sysroot-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-with-qemu-v${{ env.CACHE_EPOCH }}
       - name: Build build tool
