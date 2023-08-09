@@ -37,17 +37,25 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch:
-        - 'i386'
-        - 'amd64'
-        - 'arm'
-        - 'arm64'
-        - 'armel'
-        - 'mips'
-        - 'mips64el'
+        include:
+          - arch: i386
+            qemu_suffix: i386
+          - arch: amd64
+            qemu_suffix: amd64
+          - arch: arm
+            qemu_suffix: armhf
+          - arch: armel
+            qemu_suffix: armel
+          - arch: arm64
+            qemu_suffix: aarch64
+          - arch: mipsel
+            qemu_suffix: mipsel
+          - arch: mips64el
+            qemu_suffix: mips64el
     runs-on: ubuntu-20.04
     env:
       ARCH: ${{ matrix.arch }}
+      SDK_ROOT: ${{ github.workspace }}/debian_sid_${{ matrix.arch }}-sysroot
     steps:
       - uses: actions/checkout@v3
       - name: Checkout with shallow submodules
@@ -83,10 +91,10 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            debian_sid_${{ matrix.arch }}-sysroot
-          key: ${{ runner.os }}-sysroot-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-v${{ env.CACHE_EPOCH }}
-          restore-keys: |
-            ${{ runner.os }}-sysroot-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-
+            ${{ env.SDK_ROOT }}
+            debian_sid_mips-sysroot
+            qemu-user-static*.deb
+          key: ${{ runner.os }}-sysroot-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-with-qemu-v${{ env.CACHE_EPOCH }}
       - name: Build build tool
         run: |
           cd tools
@@ -100,35 +108,47 @@ jobs:
         if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
         run: |
           ./scripts/install-sysroot.py --arch ${{ env.ARCH }}
+          wget http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-static_8.0.3+dfsg-5_amd64.deb
       - name: Change ubuntu mirror
         run: |
           sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
           sudo apt-get update -qq
       - name: Populate depedencies
-        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build gettext
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cmake ninja-build pkg-config gettext bubblewrap
+          # libc6-i386 interferes with x86 build
+          sudo apt remove libc6-i386
+
+          sudo apt install qemu-user
+          sudo apt remove -y qemu-user-binfmt
+          sudo dpkg -i qemu-user-static_*.deb
       - name: Set clang environment
         run: |
           echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
           echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
       - name: Build TGZ packages
         run: |
-          ./tools/build --arch ${{ matrix.arch }} --system linux --sysroot $PWD/debian_sid_${{ matrix.arch }}-sysroot -build-benchmark -build-test
-      - name: Populate depedencies (tests)
-        if: ${{ matrix.arch == 'i386' }}
+          ./tools/build --variant gui --arch ${{ matrix.arch }} --system linux --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
+          ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
+          ./tools/build --variant server --arch ${{ matrix.arch }} --system linux --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
+      - name: Run tests (i386 and amd64)
+        if: ${{ matrix.arch == 'i386' ||  matrix.arch == 'amd64' }}
         run: |
-          sudo dpkg --add-architecture ${{ matrix.arch }}
-          sudo apt-get update -qq
-          sudo apt-get install -y libc6:${{ matrix.arch }} libgcc-s1:${{ matrix.arch }} zlib1g:${{ matrix.arch }} libcom-err2:${{ matrix.arch }} libkeyutils1:${{ matrix.arch }}
-      - name: Run tests (i386)
-        if: ${{ matrix.arch == 'i386'}}
+          mkdir -p $SDK_ROOT/etc $SDK_ROOT/dev $SDK_ROOT/proc $SDK_ROOT/tmp
+          touch $SDK_ROOT/etc/resolv.conf
+          bwrap --die-with-parent --bind $SDK_ROOT / \
+            --ro-bind /etc/resolv.conf /etc/resolv.conf \
+            --proc /proc --dev /dev \
+            --unshare-all --share-net \
+            --bind $PWD/build-linux-${{ matrix.arch }} /tmp \
+            /tmp/yass_test
+      - name: Run tests (non x86, under qemu emulation)
+        if: ${{ matrix.arch != 'i386' && matrix.arch != 'amd64' }}
         run: |
-          LD_LIBRARY_PATH=$PWD/debian_sid_i386-sysroot/usr/lib/i386-linux-gnu ./build-linux-i386/yass_test
-          LD_LIBRARY_PATH=$PWD/debian_sid_i386-sysroot/usr/lib/i386-linux-gnu ./build-linux-i386/yass_benchmark
-      - name: Run tests (amd64)
-        if: ${{ matrix.arch == 'amd64'}}
-        run: |
-          LD_LIBRARY_PATH=$PWD/debian_sid_amd64-sysroot/usr/lib/x86_64-linux-gnu ./build-linux-amd64/yass_test
-          LD_LIBRARY_PATH=$PWD/debian_sid_amd64-sysroot/usr/lib/x86_64-linux-gnu ./build-linux-amd64/yass_benchmark
+          qemu-${{ matrix.qemu_suffix }}-static -L $SDK_ROOT \
+            $PWD/build-linux-${{ matrix.arch }}/yass_test \
+            --no_exec_proc_tests
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:

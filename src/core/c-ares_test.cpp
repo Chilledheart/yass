@@ -5,11 +5,14 @@
 
 #include <gtest/gtest.h>
 #include <gtest/gtest-message.h>
+#include <absl/flags/flag.h>
 
 #include <gmock/gmock.h>
 
 #include "test_util.hpp"
 #include "core/c-ares.hpp"
+
+ABSL_FLAG(bool, no_cares_tests, false, "skip c-ares tests");
 
 TEST(CARES_TEST, LocalfileBasic) {
   asio::error_code ec;
@@ -36,6 +39,10 @@ TEST(CARES_TEST, LocalfileBasic) {
 }
 
 TEST(CARES_TEST, RemoteNotFound) {
+  if (absl::GetFlag(FLAGS_no_cares_tests)) {
+    GTEST_SKIP() << "skipped as required";
+    return;
+  }
   asio::error_code ec;
   asio::io_context io_context;
 
@@ -83,6 +90,10 @@ static void DoRemoteResolve(asio::io_context& io_context, scoped_refptr<CAresRes
 }
 
 TEST(CARES_TEST, RemoteBasic) {
+  if (absl::GetFlag(FLAGS_no_cares_tests)) {
+    GTEST_SKIP() << "skipped as required";
+    return;
+  }
   asio::error_code ec;
   asio::io_context io_context;
 
@@ -94,6 +105,10 @@ TEST(CARES_TEST, RemoteBasic) {
 }
 
 TEST(CARES_TEST, RemoteMulti) {
+  if (absl::GetFlag(FLAGS_no_cares_tests)) {
+    GTEST_SKIP() << "skipped as required";
+    return;
+  }
   asio::error_code ec;
   asio::io_context io_context;
 

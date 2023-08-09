@@ -61,6 +61,8 @@ var subSystemNameFlag string
 var sysrootFlag string
 var archFlag string
 
+var variantFlag string
+
 func getAppName() string {
 	if systemNameFlag == "windows" {
 		return APPNAME + ".exe"
@@ -136,6 +138,8 @@ func InitFlag() {
 	flag.StringVar(&sysrootFlag, "sysroot", "", "Specify host sysroot, used in cross-compiling")
 	flag.StringVar(&archFlag, "arch", runtime.GOARCH, "Specify host architecture")
 
+	flag.StringVar(&variantFlag, "variant", "gui", "Specify variant, available: gui, cli, server")
+
 	flag.Parse()
 
 	if flagNoPreClean {
@@ -150,6 +154,20 @@ func InitFlag() {
 
 	// For compatiblity
 	systemNameFlag = strings.ToLower(systemNameFlag)
+
+	if (variantFlag == "gui") {
+		APPNAME = "yass"
+	} else if (variantFlag == "cli") {
+		APPNAME = "yass_cli"
+	} else if (variantFlag == "server") {
+		APPNAME = "yass_server"
+	} else if (variantFlag == "benchmark") {
+		APPNAME = "yass_benchmark"
+	} else if (variantFlag == "test") {
+		APPNAME = "yass_test"
+	} else {
+		glog.Fatalf("Invalid variant: %s", variantFlag)
+	}
 }
 
 func prebuildFindSourceDirectory() {
@@ -175,7 +193,7 @@ func prebuildFindSourceDirectory() {
 	}
 
 	if err != nil {
-		tagContent, err := os.ReadFile("TAG")
+		tagContent, err := ioutil.ReadFile("TAG")
 		if err != nil {
 			glog.Fatalf("%v", err)
 		}
@@ -242,20 +260,52 @@ func getLLVMTargetTripleMSVC(msvcTargetArch string) string {
 	return ""
 }
 
-func getGNUTargetTypeAndArch(arch string) (string, string) {
+// https://docs.rust-embedded.org/embedonomicon/compiler-support.html
+func getGNUTargetTypeAndArch(arch string, subsystem string) (string, string) {
 	if arch == "amd64" || arch == "x86_64" {
+		if subsystem == "musl" {
+			return "x86_64-linux-musl", "x86_64"
+		}
 		return "x86_64-linux-gnu", "x86_64"
-	} else if arch == "x86" || arch == "i386" {
-		return "i386-linux-gnu", "i386"
+	} else if arch == "x86" || arch == "i386" || arch == "i586" || arch == "i686" {
+		if subsystem == "musl" {
+			return "i686-linux-musl", "i386"
+		}
+		return "i686-linux-gnu", "i386"
 	} else if arch == "arm64" || arch == "aarch64" {
+		if subsystem == "musl" {
+			return "aarch64-linux-musl", "aarch64"
+		}
 		return "aarch64-linux-gnu", "aarch64"
 	} else if arch == "armel" {
+		if subsystem == "musl" {
+			return "arm-linux-musleabi", "armel"
+		}
 		return "arm-linux-gnueabi", "armel"
-	} else if arch == "arm" {
+	} else if arch == "arm" || arch == "armhf" {
+		if subsystem == "musl" {
+			return "arm-linux-musleabihf", "armhf"
+		}
 		return "arm-linux-gnueabihf", "armhf"
 	} else if arch == "mips" {
+		if subsystem == "musl" {
+			return "mips-linux-musl", "mips"
+		}
+		return "mips-linux-gnu", "mips"
+	} else if arch == "mips64" {
+		if subsystem == "musl" {
+			return "mips64-linux-muslabi64", "mips64"
+		}
+		return "mips64-linux-gnuabi64", "mips64"
+	} else if arch == "mipsel" {
+		if subsystem == "musl" {
+			return "mipsel-linux-musl", "mipsel"
+		}
 		return "mipsel-linux-gnu", "mipsel"
 	} else if arch == "mips64el" {
+		if subsystem == "musl" {
+			return "mips64el-linux-muslabi64", "mips64el"
+		}
 		return "mips64el-linux-gnuabi64", "mips64el"
 	}
 	glog.Fatalf("Invalid arch: %s", arch)
@@ -389,6 +439,9 @@ func buildStageGenerateBuildScript() {
 	if systemNameFlag != runtime.GOOS || sysrootFlag != "" || msvcTargetArchFlag != "x64" {
 		cmakeArgs = append(cmakeArgs, "-DUSE_HOST_TOOLS=on")
 	}
+	if subSystemNameFlag == "musl" || subSystemNameFlag == "openwrt" {
+		cmakeArgs = append(cmakeArgs, "-DUSE_MUSL=on")
+	}
 	if buildBenchmarkFlag || runBenchmarkFlag {
 		cmakeArgs = append(cmakeArgs, "-DBUILD_BENCHMARKS=on")
 	}
@@ -482,7 +535,11 @@ func buildStageGenerateBuildScript() {
 	}
 
 	if systemNameFlag == "linux" && sysrootFlag != "" {
-		gnuType, gnuArch := getGNUTargetTypeAndArch(archFlag)
+		subsystem := subSystemNameFlag
+		if subSystemNameFlag == "openwrt" {
+			subsystem = "musl"
+		}
+		gnuType, gnuArch := getGNUTargetTypeAndArch(archFlag, subsystem)
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/Linux.cmake", buildDir))
 		var pkgConfigPath = filepath.Join(sysrootFlag, "usr", "lib", "pkgconfig")
 		pkgConfigPath += ";" + filepath.Join(sysrootFlag, "usr", "share", "pkgconfig")
@@ -988,6 +1045,26 @@ func generateNSIS(output string) {
 	cmdRun([]string{"C:\\Program Files (x86)\\NSIS\\makensis.exe", "/XSetCompressor /FINAL lzma", "yass.nsi"}, true)
 }
 
+func generateOpenWrtMakefile(archive string, pkg_version string) {
+	archive_dir, _ := filepath.Abs("..")
+	archive_dir += "/"
+	archive_checksum := strings.TrimSpace(cmdCheckOutput([]string{"sha256sum", archive}))
+	archive_checksum = strings.Split(archive_checksum, " ")[0]
+	mkTemplate, err := ioutil.ReadFile(filepath.Join("..", "openwrt", "Makefile.tmpl"))
+	if err != nil {
+		glog.Fatalf("%v", err)
+	}
+	mkContent := string(mkTemplate)
+	mkContent = strings.Replace(mkContent, "%%PKG_VERSION%%", pkg_version, 1)
+	mkContent = strings.Replace(mkContent, "%%PKG_DIR%%", archive_dir, 1)
+	mkContent = strings.Replace(mkContent, "%%PKG_SHA256SUM%%", archive_checksum, 1)
+	err = ioutil.WriteFile(filepath.Join("..", "openwrt", "Makefile"), []byte(mkContent), 0666)
+	if err != nil {
+		glog.Fatalf("%v", err)
+	}
+	glog.Info("OpenWRT Makefile written to openwrt/Makefile")
+}
+
 func postStateArchives() map[string][]string {
 	glog.Info("PostState -- Archives")
 	glog.Info("======================================================================")
@@ -1022,7 +1099,9 @@ func postStateArchives() map[string][]string {
 	}
 
 	archive := fmt.Sprintf(archiveFormat, APPNAME, "", ext)
-	archivePrefix := fmt.Sprintf(archiveFormat, APPNAME, "", "")
+	archivePrefix := fmt.Sprintf(archiveFormat, strings.Replace(APPNAME, "_", "-", 1), "", "")
+	archiveSuffix := fmt.Sprintf(archiveFormat, "", "", "")
+	archiveSuffix = archiveSuffix[1:]
 	if systemNameFlag == "darwin" {
 		archive = fmt.Sprintf(archiveFormat, APPNAME, "", ".dmg")
 	}
@@ -1076,6 +1155,11 @@ func postStateArchives() map[string][]string {
 		dbgPaths = append(dbgPaths, getAppName()+".dSYM")
 	}
 	archives[debugArchive] = dbgPaths
+
+	// Create openwrt Makefile
+	if subSystemNameFlag == "openwrt" && variantFlag == "cli" {
+		generateOpenWrtMakefile(archive, archiveSuffix)
+	}
 	return archives
 }
 

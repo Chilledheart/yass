@@ -96,6 +96,12 @@ set(libcxx_PUBLIC_DEFINITIONS
   ${libcxx_PUBLIC_DEFINITIONS}
   "CR_LIBCXX_REVISION=${libcxx_CR}")
 
+if (USE_MUSL)
+  set(libcxx_PUBLIC_DEFINITIONS
+    ${libcxx_PUBLIC_DEFINITIONS}
+    "_LIBCPP_HAS_MUSL_LIBC")
+endif()
+
 if (MSVC)
   # Intentionally not using libc++abi on Windows because libc++abi only
   # implements the Itanium C++ ABI, and not the Microsoft ABI which we use on

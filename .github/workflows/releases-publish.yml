@@ -24,6 +24,7 @@ on:
       - 'Build Artifacts (Linux Binary)'
       - 'Build Artifacts (FreeBSD Binary)'
       - 'Build Artifacts (MinGW)'
+      - 'Build Artifacts (Source)'
     types:
       - completed
 jobs:

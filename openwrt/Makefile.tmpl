@@ -1,0 +1,45 @@
+include $(TOPDIR)/rules.mk
+
+PKG_NAME:=yass-cli
+PKG_VERSION:=%%PKG_VERSION%%
+PKG_RELEASE:=1
+
+PKG_LICENSE:=GPLv2
+PKG_LICENSE_FILES:=LICENSE
+PKG_MAINTAINER:=Chilledheart <hukeyue@hotmail.com>
+PKG_SOURCE:=yass_cli-$(PKG_VERSION).tgz
+PKG_SOURCE_URL:=file://%%PKG_DIR%%
+PKG_HASH:=%%PKG_SHA256SUM%%
+
+include $(INCLUDE_DIR)/package.mk
+
+RSTRIP:=:
+
+define Package/$(PKG_NAME)
+	SECTION:=net
+	CATEGORY:=Network
+	TITLE:=Yet Another Shadow Socket
+	URL:=https://github.com/Chilledheart/yass
+endef
+
+define Package/$(PKG_NAME)/description
+	lightweight and secure http/socks4/socks4a/socks5/socks5h proxy
+endef
+
+define Build/Configure
+	true
+endef
+
+define Build/Compile
+	mkdir -p $(PKG_INSTALL_DIR)/bin
+	$(CP) $(PKG_BUILD_DIR)/yass_cli $(PKG_INSTALL_DIR)/bin/yass_cli;
+endef
+
+define Package/$(PKG_NAME)/install
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/bin/yass_cli $(1)/usr/bin/yass_cli
+	$(INSTALL_DIR) $(1)/etc/init.d
+	$(INSTALL_BIN) files/yass_cli.init $(1)/etc/init.d/yass_cli
+endef
+
+$(eval $(call BuildPackage,$(PKG_NAME)))
