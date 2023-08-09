@@ -3019,7 +3019,7 @@ if (GUI)
         endif()
     endif()
 
-    if (GUI_FLAVOUR STREQUAL "gtk3")
+    if (GUI_FLAVOUR STREQUAL "gtk3" OR GUI_FLAVOUR STREQUAL "gtk4")
       install(TARGETS ${APP_NAME} DESTINATION bin)
 
       install(FILES
@@ -3039,29 +3039,6 @@ if (GUI)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/128x128
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/256x256
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/512x512
-        DESTINATION share/icons/hicolor)
-    endif()
-
-    if (GUI_FLAVOUR STREQUAL "gtk4")
-      install(TARGETS ${APP_NAME} DESTINATION bin)
-
-      install(FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4/yass.desktop
-        DESTINATION share/applications)
-
-      install(FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4/yass.png
-        DESTINATION share/pixmaps)
-
-      install(DIRECTORY
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4/icons/16x16
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4/icons/22x22
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4/icons/24x24
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4/icons/32x32
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4/icons/48x48
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4/icons/128x128
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4/icons/256x256
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4/icons/512x512
         DESTINATION share/icons/hicolor)
     endif()
 endif()
