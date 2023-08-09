@@ -168,7 +168,7 @@ jobs:
           make defconfig
           make package/yass-cli/{clean,compile} V=s
           popd
-          find ${{ env.SDK_HOME }} -type f -name "yass*.ipk" -exec cp -v {} . \;
+          find ${{ env.SDK_HOME }}/ -type f -name "yass*.ipk" -exec cp -v {} . \;
           # clean up after build
           pushd ${{ env.SDK_HOME }}
           make package/yass-cli/clean V=s
