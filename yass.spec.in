@@ -27,7 +27,9 @@ BuildRequires: cmake3 >= 3.12, pkgconfig
 BuildRequires: ninja-build, gcc, gcc-c++, golang >= 1.4
 BuildRequires: glib2-devel
 BuildRequires: curl-devel
-Requires: ca-certificates
+BuildRequires: desktop-file-utils
+Requires:      hicolor-icon-theme
+Requires:      ca-certificates
 
 %description
 Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for
@@ -62,6 +64,7 @@ rm -rf %{buildroot}/usr/lib64
 rm -rf %{buildroot}/usr/share/doc
 rm -rf %{buildroot}/usr/share/man
 rm -rf %{buildroot}/usr/share/yass/fetch-ocsp-response
+desktop-file-validate %{buildroot}%{_datadir}/applications/yass.desktop
 
 %post
 update-desktop-database
