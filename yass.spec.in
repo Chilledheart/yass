@@ -26,6 +26,9 @@ BuildRequires: cmake3 >= 3.12, pkgconfig
 %endif
 BuildRequires: ninja-build, gcc, gcc-c++, golang >= 1.4
 BuildRequires: glib2-devel
+BuildRequires: zlib-devel
+BuildRequires: c-ares-devel
+BuildRequires: libnghttp2-devel
 BuildRequires: curl-devel
 BuildRequires: desktop-file-utils
 Requires:      hicolor-icon-theme
@@ -43,7 +46,10 @@ mkdir build
 cd build
 ENABLE_LLD=on
 [ "a$DISABLE_LLD" != "a" ] && ENABLE_LLD=off
-cmake3 -G Ninja -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DGUI=on -DCLI=on -DSERVER=on -DENABLE_LLD="$ENABLE_LLD" -DUSE_BUILTIN_CA_BUNDLE_CRT=off ..
+# old c-ares doesn't contain ares_getaddrinfo api
+cmake3 -G Ninja -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DGUI=on -DCLI=on -DSERVER=on \
+   -DUSE_SYSTEM_ZLIB=on -DUSE_SYSTEM_CARES=off -DUSE_SYSTEM_NGHTTP2=on \
+   -DENABLE_LLD="$ENABLE_LLD" -DUSE_BUILTIN_CA_BUNDLE_CRT=off ..
 ninja
 cd ..
 
