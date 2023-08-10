@@ -27,6 +27,7 @@ var toolDir string
 var projectDir string
 var buildDir string
 var tagFlag string
+var fullTagFlag string
 
 var dryRunFlag bool
 var preCleanFlag bool
@@ -198,6 +199,35 @@ func prebuildFindSourceDirectory() {
 			glog.Fatalf("%v", err)
 		}
 		tagFlag = strings.TrimSpace(string(tagContent))
+	}
+
+	if _, err = os.Stat(".git"); err == nil {
+		cmd := exec.Command("git", "describe", "--tags", "HEAD")
+		var outb, errb bytes.Buffer
+		cmd.Stdout = &outb
+		cmd.Stderr = &errb
+		err = cmd.Run()
+		if err == nil {
+			fullTagFlag = strings.TrimSpace(outb.String())
+		}
+	}
+
+	if err != nil {
+		var subtagContent []byte;
+		subtagContent, err = ioutil.ReadFile("SUBTAG")
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
+		subtagFlag := strings.TrimSpace(string(subtagContent))
+
+		var lastChangeContent []byte;
+		lastChangeContent, err = ioutil.ReadFile("LAST_CHANGE")
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
+		lastChangeFlag := strings.TrimSpace(string(lastChangeContent))[:8]
+
+		fullTagFlag = fmt.Sprintf("%s-%s-%s", tagFlag, subtagFlag, lastChangeFlag)
 	}
 
 	if systemNameFlag == "windows" && msvcTargetArchFlag != "" {
@@ -1068,7 +1098,7 @@ func generateOpenWrtMakefile(archive string, pkg_version string) {
 func postStateArchives() map[string][]string {
 	glog.Info("PostState -- Archives")
 	glog.Info("======================================================================")
-	tag := strings.TrimSpace(cmdCheckOutput([]string{"git", "describe", "--tags", "HEAD"}))
+	tag := fullTagFlag
 	var archiveFormat string
 	if systemNameFlag == "windows" {
 		osName := "win"
