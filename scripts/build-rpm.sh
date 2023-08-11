@@ -32,9 +32,11 @@ sed -i "s|__SUBVERSION__|${SUBTAG}|g" yass.spec
 mkdir -p $HOME/rpmbuild/SPECS
 cp -fv yass.spec $HOME/rpmbuild/SPECS
 
+[ "a$DISABLE_LLD" != "a" ] && rpm_options="--with=disable_lld"
+
 pushd $HOME/rpmbuild/SPECS/
-rpmbuild -v -bs yass.spec
-rpmbuild -v -bb yass.spec
+rpmbuild -v $rpm_options -bs yass.spec
+rpmbuild -v $rpm_options -bb yass.spec
 popd
 
 # Rename rpms

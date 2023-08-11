@@ -2,6 +2,13 @@
 %global _clang_extra_ldflags %nil
 %global toolchain clang
 
+%bcond_with disable_lld
+%if %{with disable_lld}
+%global enable_lld_opt off
+%else
+%global enable_lld_opt on
+%endif
+
 Name:    yass
 Version: __VERSION__
 Release: __SUBVERSION__%{?dist}
@@ -45,11 +52,11 @@ embedded devices and low end boxes.
 mkdir build
 cd build
 ENABLE_LLD=on
-[ "a$DISABLE_LLD" != "a" ] && ENABLE_LLD=off
 # old c-ares doesn't contain ares_getaddrinfo api
-cmake3 -G Ninja -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DGUI=on -DCLI=on -DSERVER=on \
+cmake3 -G Ninja -DCMAKE_BUILD_TYPE=Release \
+   -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DCLI=on -DSERVER=on \
    -DUSE_SYSTEM_ZLIB=on -DUSE_SYSTEM_CARES=off -DUSE_SYSTEM_NGHTTP2=on \
-   -DENABLE_LLD="$ENABLE_LLD" -DUSE_BUILTIN_CA_BUNDLE_CRT=off ..
+   -DENABLE_LLD="%enable_lld_opt" -DUSE_BUILTIN_CA_BUNDLE_CRT=off ..
 ninja
 cd ..
 
@@ -60,6 +67,7 @@ cd build
 cd ..
 
 %install
+echo "Toolchain is %toolchain"
 cd build
 cmake3 -DCMAKE_INSTALL_PREFIX=%{buildroot}/usr ..
 rm -rf %{buildroot}
