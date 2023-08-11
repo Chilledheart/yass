@@ -34,6 +34,8 @@ cp -fv yass.spec $HOME/rpmbuild/SPECS
 
 [ "a$DISABLE_LLD" != "a" ] && rpm_options="--with=disable_lld"
 
+rpm_options="--with=toolchain_clang $rpm_options"
+
 pushd $HOME/rpmbuild/SPECS/
 rpmbuild -v $rpm_options -bs yass.spec
 rpmbuild -v $rpm_options -bb yass.spec

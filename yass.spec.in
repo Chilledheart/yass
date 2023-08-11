@@ -1,7 +1,26 @@
+# lto is handled with cmakelists.txt internally
+# with flag -DENABLE_LTO
 %global _lto_cflags %nil
+
+# requires recent version of c-ares
+%if 0%{?fedora}
+%global enable_system_cares on
+%else
+%global enable_system_cares off
+%endif
+
+# libc++ is only built with clang now
+%bcond_with toolchain_clang
+%if %{with toolchain_clang}
 %global _clang_extra_ldflags %nil
 %global toolchain clang
+%global enable_libcxx_opt on
+%else
+%global toolchain gcc
+%global enable_libcxx_opt off
+%endif
 
+# lld is forced to be enabled if you are using external toolchain and so
 %bcond_with disable_lld
 %if %{with disable_lld}
 %global enable_lld_opt off
@@ -54,11 +73,11 @@ embedded devices and low end boxes.
 %build
 mkdir build
 cd build
-ENABLE_LLD=on
 # old c-ares doesn't contain ares_getaddrinfo api
 cmake3 -G Ninja -DCMAKE_BUILD_TYPE=Release \
    -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DCLI=on -DSERVER=on \
-   -DUSE_SYSTEM_ZLIB=on -DUSE_SYSTEM_CARES=off -DUSE_SYSTEM_NGHTTP2=on \
+   -DUSE_SYSTEM_ZLIB=on -DUSE_SYSTEM_CARES="%enable_system_cares" -DUSE_SYSTEM_NGHTTP2=on \
+   -DUSE_LIBCXX="%enable_libcxx_opt" \
    -DENABLE_LLD="%enable_lld_opt" -DUSE_BUILTIN_CA_BUNDLE_CRT=off ..
 ninja
 cd ..
