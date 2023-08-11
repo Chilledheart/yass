@@ -36,13 +36,6 @@ cp -fv yass.spec $HOME/rpmbuild/SPECS
 
 rpm_options="--with=toolchain_clang $rpm_options"
 
-pushd $HOME/rpmbuild/SPECS/
-rpmbuild -v $rpm_options -bs yass.spec
-rpmbuild -v $rpm_options -bb yass.spec
-popd
-
-# Rename rpms
-
 # from rpm --querytags
 ARCH=$(rpm -q --queryformat '%{ARCH}' gcc)
 
@@ -55,6 +48,14 @@ if [ ${ID} = "rocky" -o ${ID} = "centos" -o ${ID} = "rhel" ]; then
 elif [ ${ID} = "fedora" ]; then
   SUFFIX=fc${VERSION_ID}
 fi
+
+pushd $HOME/rpmbuild/SPECS/
+rpmbuild -v $rpm_options -bs yass.spec
+rpmlint "$HOME/rpmbuild/SRPMS/yass-${RPM_VERSION}-${RPM_SUBVERSION}.${SUFFIX}.src.rpm"
+rpmbuild -v $rpm_options -bb yass.spec
+popd
+
+# Rename rpms
 
 # under centos 7, some commands might fail because it doesn't separate debuginfo
 # for sub package: https://fedoraproject.org/wiki/Changes/SubpackageAndSourceDebuginfo
