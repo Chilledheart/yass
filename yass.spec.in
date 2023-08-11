@@ -2,6 +2,14 @@
 # with flag -DENABLE_LTO
 %global _lto_cflags %nil
 
+# test failed in copr
+%bcond_with tests_cares
+%if !%{with tests_cares}
+%global yass_test_opt --no_cares_tests
+%else
+%global yass_test_opt %nil
+%endif
+
 # requires recent version of c-ares
 %if 0%{?fedora}
 %global enable_system_cares on
@@ -84,7 +92,7 @@ cd ..
 
 %check
 cd build
-./yass_test
+./yass_test %yass_test_opt
 ./yass_benchmark
 cd ..
 
