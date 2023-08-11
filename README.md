@@ -29,6 +29,9 @@ Please visit [website](https://letshack.info).
 ## License
 It is licensed with [GPLv2][license-link].
 
+## Usages
+Please visit to wiki such as [Usages](https://github.com/Chilledheart/yass/wiki/Usage) and [Server Usage](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup)
+
 ## Build Status
 
 [![Compiler Compatibility](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/compiler.yml)
