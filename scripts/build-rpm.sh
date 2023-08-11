@@ -35,6 +35,7 @@ cp -fv yass.spec $HOME/rpmbuild/SPECS
 [ "a$DISABLE_LLD" != "a" ] && rpm_options="--with=disable_lld"
 
 rpm_options="--with=toolchain_clang $rpm_options"
+rpm_options="--with=tests_cares $rpm_options"
 
 # from rpm --querytags
 ARCH=$(rpm -q --queryformat '%{ARCH}' gcc)
