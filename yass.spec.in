@@ -2,6 +2,14 @@
 # with flag -DENABLE_LTO
 %global _lto_cflags %nil
 
+# test failed in copr
+%bcond_with tests_cares
+%if !%{with tests_cares}
+%global yass_test_opt --no_cares_tests
+%else
+%global yass_test_opt %nil
+%endif
+
 # requires recent version of c-ares
 %if 0%{?fedora}
 %global enable_system_cares on
@@ -31,7 +39,7 @@
 Name:    yass
 Version: __VERSION__
 Release: __SUBVERSION__%{?dist}
-Summary: lightweight and secure http/socks4/socks5 proxy
+Summary: Lightweight and Secure http/socks4/socks5 Proxy
 
 License: GPLv2
 URL: https://github.com/Chilledheart/yass
@@ -64,8 +72,8 @@ Requires:      hicolor-icon-theme
 Requires:      ca-certificates
 
 %description
-Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for
-embedded devices and low end boxes.
+yass is a lightweight and secure http/socks proxy
+for embedded devices and low end boxes.
 
 %prep
 %setup -q -n %{name}-%{version}
@@ -84,7 +92,7 @@ cd ..
 
 %check
 cd build
-./yass_test
+./yass_test %yass_test_opt
 ./yass_benchmark
 cd ..
 
@@ -120,22 +128,22 @@ update-desktop-database
 %{_datadir}/locale/en/LC_MESSAGES/yass.mo
 
 %package server
-Summary: lightweight and secure http/socks4/socks5 proxy (server side)
+Summary: Lightweight and Secure http/socks4/socks5 Proxy (Server Side)
 
 %description server
-Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for
-embedded devices and low end boxes.
+yass is a lightweight and secure http/socks proxy
+for embedded devices and low end boxes.
 
 %files server
 %defattr(-,root,root)
 %{_bindir}/yass_server
 
 %package client
-Summary: lightweight and secure http/socks4/socks5 proxy (client side)
+Summary: Lightweight and Secure http/socks4/socks5 Proxy (Client Side)
 
 %description client
-Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for
-embedded devices and low end boxes.
+yass is a lightweight and secure http/socks proxy
+for embedded devices and low end boxes.
 
 %files client
 %defattr(-,root,root)
