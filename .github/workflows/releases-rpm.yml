@@ -138,7 +138,8 @@ jobs:
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
           ./scripts/libstdc++-el7.sh
-      - name: Set clang environment
+      - name: Set clang environment (centos only)
+        if: ${{ env.DISTRO == 'centos7' || env.DISTRO == 'centos8' || env.DISTRO == 'centos9' }}
         run: |
           echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
           echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV

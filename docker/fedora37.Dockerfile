@@ -12,3 +12,10 @@ RUN yum clean all && \
     gtk4-devel zlib-devel c-ares-devel libnghttp2-devel curl-devel && \
   yum clean all && \
   rm -rf /var/cache/yum && rm -rf /var/cache/dnf
+
+# Install toolchain
+RUN yum clean all && \
+  rm -rf /var/cache/yum && rm -rf /var/cache/dnf && \
+  yum install -y clang lld && \
+  yum clean all && \
+  rm -rf /var/cache/yum && rm -rf /var/cache/dnf
