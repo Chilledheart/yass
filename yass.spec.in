@@ -128,22 +128,22 @@ update-desktop-database
 %{_datadir}/locale/en/LC_MESSAGES/yass.mo
 
 %package server
-Summary: lightweight and secure http/socks4/socks5 proxy (server side)
+Summary: Lightweight and Secure http/socks4/socks5 Proxy (Server Side)
 
 %description server
-Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for
-embedded devices and low end boxes.
+yass is a lightweight and secure http/socks proxy
+for embedded devices and low end boxes.
 
 %files server
 %defattr(-,root,root)
 %{_bindir}/yass_server
 
 %package client
-Summary: lightweight and secure http/socks4/socks5 proxy (client side)
+Summary: Lightweight and Secure http/socks4/socks5 Proxy (Client Side)
 
 %description client
-Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for
-embedded devices and low end boxes.
+yass is a lightweight and secure http/socks proxy
+for embedded devices and low end boxes.
 
 %files client
 %defattr(-,root,root)
