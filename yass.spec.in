@@ -65,11 +65,6 @@ cmake3 -DCMAKE_INSTALL_PREFIX=%{buildroot}/usr ..
 rm -rf %{buildroot}
 ninja install
 cd ..
-rm -rf %{buildroot}/usr/include
-rm -rf %{buildroot}/usr/lib64
-rm -rf %{buildroot}/usr/share/doc
-rm -rf %{buildroot}/usr/share/man
-rm -rf %{buildroot}/usr/share/yass/fetch-ocsp-response
 desktop-file-validate %{buildroot}%{_datadir}/applications/yass.desktop
 
 %post
