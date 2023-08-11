@@ -1,6 +1,32 @@
+# lto is handled with cmakelists.txt internally
+# with flag -DENABLE_LTO
 %global _lto_cflags %nil
+
+# requires recent version of c-ares
+%if 0%{?fedora}
+%global enable_system_cares on
+%else
+%global enable_system_cares off
+%endif
+
+# libc++ is only built with clang now
+%bcond_with toolchain_clang
+%if %{with toolchain_clang}
 %global _clang_extra_ldflags %nil
 %global toolchain clang
+%global enable_libcxx_opt on
+%else
+%global toolchain gcc
+%global enable_libcxx_opt off
+%endif
+
+# lld is forced to be enabled if you are using external toolchain and so
+%bcond_with disable_lld
+%if %{with disable_lld}
+%global enable_lld_opt off
+%else
+%global enable_lld_opt on
+%endif
 
 Name:    yass
 Version: __VERSION__
@@ -24,10 +50,18 @@ BuildRequires: cmake >= 3.12, pkg-config
 %if 0%{?rhel} == 7
 BuildRequires: cmake3 >= 3.12, pkgconfig
 %endif
+%if 0%{?fedora}
+BuildRequires: clang, lld
+%endif
 BuildRequires: ninja-build, gcc, gcc-c++, golang >= 1.4
 BuildRequires: glib2-devel
+BuildRequires: zlib-devel
+BuildRequires: c-ares-devel
+BuildRequires: libnghttp2-devel
 BuildRequires: curl-devel
-Requires: ca-certificates
+BuildRequires: desktop-file-utils
+Requires:      hicolor-icon-theme
+Requires:      ca-certificates
 
 %description
 Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for
@@ -39,9 +73,12 @@ embedded devices and low end boxes.
 %build
 mkdir build
 cd build
-ENABLE_LLD=on
-[ "a$DISABLE_LLD" != "a" ] && ENABLE_LLD=off
-cmake3 -G Ninja -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DGUI=on -DCLI=on -DSERVER=on -DENABLE_LLD="$ENABLE_LLD" -DUSE_BUILTIN_CA_BUNDLE_CRT=off ..
+# old c-ares doesn't contain ares_getaddrinfo api
+cmake3 -G Ninja -DCMAKE_BUILD_TYPE=Release \
+   -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DCLI=on -DSERVER=on \
+   -DUSE_SYSTEM_ZLIB=on -DUSE_SYSTEM_CARES="%enable_system_cares" -DUSE_SYSTEM_NGHTTP2=on \
+   -DUSE_LIBCXX="%enable_libcxx_opt" \
+   -DENABLE_LLD="%enable_lld_opt" -DUSE_BUILTIN_CA_BUNDLE_CRT=off ..
 ninja
 cd ..
 
@@ -52,16 +89,13 @@ cd build
 cd ..
 
 %install
+echo "Toolchain is %toolchain"
 cd build
 cmake3 -DCMAKE_INSTALL_PREFIX=%{buildroot}/usr ..
 rm -rf %{buildroot}
 ninja install
 cd ..
-rm -rf %{buildroot}/usr/include
-rm -rf %{buildroot}/usr/lib64
-rm -rf %{buildroot}/usr/share/doc
-rm -rf %{buildroot}/usr/share/man
-rm -rf %{buildroot}/usr/share/yass/fetch-ocsp-response
+desktop-file-validate %{buildroot}%{_datadir}/applications/yass.desktop
 
 %post
 update-desktop-database

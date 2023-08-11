@@ -841,7 +841,7 @@ target_include_directories(quiche PUBLIC
 # TODO re-add quic code if http3 support is added
 target_link_libraries(quiche PUBLIC
   #libprotobuf-lite
-  zlib
+  ${ZLIB_LIBRARIES}
   crypto
   ssl
   url
@@ -872,7 +872,7 @@ target_link_libraries(quiche PUBLIC
   )
 
 if (USE_NGHTTP2)
-  target_link_libraries(quiche PUBLIC nghttp2_static)
+  target_link_libraries(quiche PUBLIC ${NGHTTP2_LIBRARIES})
 endif()
 
 if (COMPILER_CLANG)
