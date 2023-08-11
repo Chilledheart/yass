@@ -31,6 +31,9 @@ BuildRequires: cmake >= 3.12, pkg-config
 %if 0%{?rhel} == 7
 BuildRequires: cmake3 >= 3.12, pkgconfig
 %endif
+%if 0%{?fedora}
+BuildRequires: clang, lld
+%endif
 BuildRequires: ninja-build, gcc, gcc-c++, golang >= 1.4
 BuildRequires: glib2-devel
 BuildRequires: zlib-devel
