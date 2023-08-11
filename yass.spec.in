@@ -2,6 +2,13 @@
 # with flag -DENABLE_LTO
 %global _lto_cflags %nil
 
+# requires recent version of c-ares
+%if 0%{?fedora}
+%global enable_system_cares on
+%else
+%global enable_system_cares off
+%endif
+
 # libc++ is only built with clang now
 %bcond_with toolchain_clang
 %if %{with toolchain_clang}
@@ -69,7 +76,7 @@ cd build
 # old c-ares doesn't contain ares_getaddrinfo api
 cmake3 -G Ninja -DCMAKE_BUILD_TYPE=Release \
    -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DCLI=on -DSERVER=on \
-   -DUSE_SYSTEM_ZLIB=on -DUSE_SYSTEM_CARES=off -DUSE_SYSTEM_NGHTTP2=on \
+   -DUSE_SYSTEM_ZLIB=on -DUSE_SYSTEM_CARES="%enable_system_cares" -DUSE_SYSTEM_NGHTTP2=on \
    -DUSE_LIBCXX="%enable_libcxx_opt" \
    -DENABLE_LLD="%enable_lld_opt" -DUSE_BUILTIN_CA_BUNDLE_CRT=off ..
 ninja
