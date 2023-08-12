@@ -2181,6 +2181,31 @@ include_directories(
 set(SUPPORT_LIBS url quiche ${SUPPORT_LIBS})
 
 # *****************************************************************************************
+#           http-parser Library
+# *****************************************************************************************
+
+if (USE_SYSTEM_HTTP_PARSER)
+  check_library_exists(http_parser http_parser_init "" HAVE_HTTP_PARSER_INIT)
+  if (NOT HAVE_HTTP_PARSER_INIT)
+    message(STATUS "System http_parser not found, using bundled one")
+    set(USE_SYSTEM_HTTP_PARSER FALSE)
+  endif()
+endif()
+
+if (USE_SYSTEM_HTTP_PARSER)
+  message(STATUS "Compiling with system http-parser")
+  set(SUPPORT_LIBS http_parser ${SUPPORT_LIBS})
+else()
+  message(STATUS "Compiling with bundled http-parser")
+  add_library(http_parser STATIC
+    third_party/http_parser/http_parser.h
+    third_party/http_parser/http_parser.c
+    )
+  include_directories(third_party/http_parser SYSTEM)
+  set(SUPPORT_LIBS http_parser ${SUPPORT_LIBS})
+endif()
+
+# *****************************************************************************************
 #           Compiler warning flags
 # *****************************************************************************************
 
@@ -2569,7 +2594,6 @@ set(files
 
     src/core/c-ares.cpp
     src/core/http_parser.cpp
-    third_party/http_parser/http_parser.c
     )
 
 set(hfiles
@@ -2669,7 +2693,6 @@ set(hfiles
 
     src/core/c-ares.hpp
     src/core/http_parser.hpp
-    third_party/http_parser/http_parser.h
     )
 
 if (WIN32)

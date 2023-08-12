@@ -10,6 +10,7 @@ RUN yum clean all && \
     git make python39 bash coreutils gh \
     rpm-build rpm-devel rpmlint diffutils patch rpmdevtools \
     cmake ninja-build pkg-config golang \
-    gtk4-devel zlib-devel c-ares-devel libnghttp2-devel curl-devel && \
+    gtk4-devel zlib-devel c-ares-devel libnghttp2-devel curl-devel \
+    http-parser-devel && \
   yum clean all && \
   rm -rf /var/cache/yum && rm -rf /var/cache/dnf

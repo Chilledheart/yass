@@ -24,6 +24,7 @@ RUN yum clean all && \
     git make python3 bash coreutils gh ncurses-libs \
     rpm-build rpm-devel rpmlint diffutils patch rpmdevtools \
     cmake3 ninja-build pkgconfig perl golang \
-    gtk3-devel zlib-devel c-ares-devel libnghttp2-devel curl-devel && \
+    gtk3-devel zlib-devel c-ares-devel libnghttp2-devel curl-devel \
+    http-parser-devel && \
   yum clean all && \
   rm -rf /var/cache/yum && rm -rf /var/cache/dnf
