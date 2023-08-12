@@ -2,6 +2,13 @@
 # with flag -DENABLE_LTO
 %global _lto_cflags %nil
 
+# requires recent version of http_parser
+%if 0%{?fedora}
+%global enable_http_parser_opt on
+%else
+%global enable_http_parser_opt off
+%endif
+
 # test failed in copr
 %bcond_with tests_cares
 %if !%{with tests_cares}
@@ -12,9 +19,9 @@
 
 # requires recent version of c-ares
 %if 0%{?fedora}
-%global enable_system_cares on
+%global enable_system_cares_opt on
 %else
-%global enable_system_cares off
+%global enable_system_cares_opt off
 %endif
 
 # libc++ is only built with clang now
@@ -63,6 +70,7 @@ BuildRequires: clang, lld
 %endif
 BuildRequires: ninja-build, gcc, gcc-c++, golang >= 1.4
 BuildRequires: glib2-devel
+BuildRequires: http-parser-devel
 BuildRequires: zlib-devel
 BuildRequires: c-ares-devel
 BuildRequires: libnghttp2-devel
@@ -84,7 +92,8 @@ cd build
 # old c-ares doesn't contain ares_getaddrinfo api
 cmake3 -G Ninja -DCMAKE_BUILD_TYPE=Release \
    -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DCLI=on -DSERVER=on \
-   -DUSE_SYSTEM_ZLIB=on -DUSE_SYSTEM_CARES="%enable_system_cares" -DUSE_SYSTEM_NGHTTP2=on \
+   -DUSE_SYSTEM_ZLIB=on -DUSE_SYSTEM_CARES="%enable_system_cares_opt" -DUSE_SYSTEM_NGHTTP2=on \
+   -DUSE_SYSTEM_HTTP_PARSER="%enable_http_parser_opt" \
    -DUSE_LIBCXX="%enable_libcxx_opt" \
    -DENABLE_LLD="%enable_lld_opt" -DUSE_BUILTIN_CA_BUNDLE_CRT=off ..
 ninja
