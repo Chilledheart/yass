@@ -2558,9 +2558,6 @@ set(files
     src/core/utf_string_conversion_utils.cpp
     src/core/base64.cpp
     src/core/hash.cpp
-    src/core/unguessable_token.cpp
-    src/core/pickle.cpp
-    src/core/token.cpp
     src/core/atl_throw.cpp
     src/core/thread_collision_warner.hpp
     src/core/thread_collision_warner.cpp
@@ -2653,14 +2650,7 @@ set(hfiles
     src/core/utf_string_conversion_utils.hpp
     src/core/hash.hpp
     src/core/base64.hpp
-    src/core/token.hpp
-    src/core/unguessable_token.hpp
-    src/core/checked_iterators.hpp
-    src/core/contiguous_iterator.hpp
     src/core/cxx20_to_address.hpp
-    src/core/pickle.hpp
-    src/core/span.hpp
-    src/core/token.hpp
     src/core/atl_throw.hpp
     src/core/atl.hpp
     src/core/io_queue.hpp

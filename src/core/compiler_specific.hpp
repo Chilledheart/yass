@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2023 Chilledheart  */
 #ifndef CORE_COMPILER_SPECIFIC_H
 #define CORE_COMPILER_SPECIFIC_H
+
+#include "base/compiler_specific.h"
 
 // This file adds defines about the platform we're currently building on.
 //
@@ -261,6 +263,8 @@
 #define ALLOW_UNUSED_TYPE
 #endif
 
+// clang 13 doesn't recognize the newer NOINLINE definitions
+#undef NOINLINE
 // Annotate a function indicating it should not be inlined.
 // Use like:
 //   NOINLINE void DoStuff() { ... }
@@ -272,53 +276,14 @@
 #define NOINLINE
 #endif
 
+// clang 13 doesn't recognize the newer ALWAYS_INLINE definitions
+#undef ALWAYS_INLINE
 #if defined(COMPILER_GCC) && defined(NDEBUG)
 #define ALWAYS_INLINE inline __attribute__((__always_inline__))
 #elif defined(COMPILER_MSVC) && defined(NDEBUG)
 #define ALWAYS_INLINE __forceinline
 #else
 #define ALWAYS_INLINE inline
-#endif
-
-// Annotate a function indicating it should never be tail called. Useful to make
-// sure callers of the annotated function are never omitted from call-stacks.
-// To provide the complementary behavior (prevent the annotated function from
-// being omitted) look at NOINLINE. Also note that this doesn't prevent code
-// folding of multiple identical caller functions into a single signature. To
-// prevent code folding, see NO_CODE_FOLDING() in base/debug/alias.h.
-// Use like:
-//   void NOT_TAIL_CALLED FooBar();
-#if defined(__clang__) && HAS_ATTRIBUTE(not_tail_called)
-#define NOT_TAIL_CALLED __attribute__((not_tail_called))
-#else
-#define NOT_TAIL_CALLED
-#endif
-
-// Specify memory alignment for structs, classes, etc.
-// Use like:
-//   class ALIGNAS(16) MyClass { ... }
-//   ALIGNAS(16) int array[4];
-//
-// In most places you can use the C++11 keyword "alignas", which is preferred.
-//
-// But compilers have trouble mixing __attribute__((...)) syntax with
-// alignas(...) syntax.
-//
-// Doesn't work in clang or gcc:
-//   struct alignas(16) __attribute__((packed)) S { char c; };
-// Works in clang but not gcc:
-//   struct __attribute__((packed)) alignas(16) S2 { char c; };
-// Works in clang and gcc:
-//   struct alignas(16) S3 { char c; } __attribute__((packed));
-//
-// There are also some attributes that must be specified *before* a class
-// definition: visibility (used for exporting functions/classes) is one of
-// these attributes. This means that it is not possible to use alignas() with a
-// class that is marked as exported.
-#if defined(COMPILER_MSVC)
-#define ALIGNAS(byte_alignment) __declspec(align(byte_alignment))
-#elif defined(COMPILER_GCC)
-#define ALIGNAS(byte_alignment) __attribute__((aligned(byte_alignment)))
 #endif
 
 // Annotate a function indicating the caller must examine the return value.
@@ -386,6 +351,9 @@
 #  endif
 #endif
 #if defined(MEMORY_SANITIZER) && !defined(OS_NACL)
+#undef MSAN_UNPOISON
+#undef MSAN_CHECK_MEM_IS_INITIALIZED
+
 #include <sanitizer/msan_interface.h>
 
 // Mark a memory region fully initialized.
@@ -407,28 +375,6 @@
 
 #define NO_SANITIZE_MEMORY
 #endif  // MEMORY_SANITIZER
-
-// DISABLE_CFI_PERF -- Disable Control Flow Integrity for perf reasons.
-#if !defined(DISABLE_CFI_PERF)
-#if defined(__clang__) && defined(OFFICIAL_BUILD)
-#define DISABLE_CFI_PERF __attribute__((no_sanitize("cfi")))
-#else
-#define DISABLE_CFI_PERF
-#endif
-#endif
-
-// DISABLE_CFI_ICALL -- Disable Control Flow Integrity indirect call checks.
-#if !defined(DISABLE_CFI_ICALL)
-#if defined(OS_WIN)
-// Windows also needs __declspec(guard(nocf)).
-#define DISABLE_CFI_ICALL NO_SANITIZE("cfi-icall") __declspec(guard(nocf))
-#else
-#define DISABLE_CFI_ICALL NO_SANITIZE("cfi-icall")
-#endif
-#endif
-#if !defined(DISABLE_CFI_ICALL)
-#define DISABLE_CFI_ICALL
-#endif
 
 // Macro useful for writing cross-platform function pointers.
 #if !defined(CDECL)
@@ -475,93 +421,6 @@
 #define FALLTHROUGH
 #endif
 
-#if defined(COMPILER_GCC)
-#define PRETTY_FUNCTION __PRETTY_FUNCTION__
-#elif defined(COMPILER_MSVC)
-#define PRETTY_FUNCTION __FUNCSIG__
-#else
-// See https://en.cppreference.com/w/c/language/function_definition#func
-#define PRETTY_FUNCTION __func__
-#endif
-
-#if !defined(CPU_ARM_NEON)
-#if defined(__arm__)
-#if !defined(__ARMEB__) && !defined(__ARM_EABI__) && !defined(__EABI__) && \
-    !defined(__VFP_FP__) && !defined(_WIN32_WCE) && !defined(ANDROID)
-#error Chromium does not support middle endian architecture
-#endif
-#if defined(__ARM_NEON__)
-#define CPU_ARM_NEON 1
-#endif
-#endif  // defined(__arm__)
-#endif  // !defined(CPU_ARM_NEON)
-
-#if !defined(HAVE_MIPS_MSA_INTRINSICS)
-#if defined(__mips_msa) && defined(__mips_isa_rev) && (__mips_isa_rev >= 5)
-#define HAVE_MIPS_MSA_INTRINSICS 1
-#endif
-#endif
-
-#if defined(__clang__) && HAS_ATTRIBUTE(uninitialized)
-// Attribute "uninitialized" disables -ftrivial-auto-var-init=pattern for
-// the specified variable.
-// Library-wide alternative is
-// 'configs -= [ "//build/config/compiler:default_init_stack_vars" ]' in .gn
-// file.
-//
-// See "init_stack_vars" in build/config/compiler/BUILD.gn and
-// http://crbug.com/977230
-// "init_stack_vars" is enabled for non-official builds and we hope to enable it
-// in official build in 2020 as well. The flag writes fixed pattern into
-// uninitialized parts of all local variables. In rare cases such initialization
-// is undesirable and attribute can be used:
-//   1. Degraded performance
-// In most cases compiler is able to remove additional stores. E.g. if memory is
-// never accessed or properly initialized later. Preserved stores mostly will
-// not affect program performance. However if compiler failed on some
-// performance critical code we can get a visible regression in a benchmark.
-//   2. memset, memcpy calls
-// Compiler may replaces some memory writes with memset or memcpy calls. This is
-// not -ftrivial-auto-var-init specific, but it can happen more likely with the
-// flag. It can be a problem if code is not linked with C run-time library.
-//
-// Note: The flag is security risk mitigation feature. So in future the
-// attribute uses should be avoided when possible. However to enable this
-// mitigation on the most of the code we need to be less strict now and minimize
-// number of exceptions later. So if in doubt feel free to use attribute, but
-// please document the problem for someone who is going to cleanup it later.
-// E.g. platform, bot, benchmark or test name in patch description or next to
-// the attribute.
-#define STACK_UNINITIALIZED __attribute__((uninitialized))
-#else
-#define STACK_UNINITIALIZED
-#endif
-
-// Attribute "no_stack_protector" disables -fstack-protector for the specified
-// function.
-//
-// "stack_protector" is enabled on most POSIX builds. The flag adds a canary
-// to each stack frame, which on function return is checked against a reference
-// canary. If the canaries do not match, it's likely that a stack buffer
-// overflow has occurred, so immediately crashing will prevent exploitation in
-// many cases.
-//
-// In some cases it's desirable to remove this, e.g. on hot functions, or if
-// we have purposely changed the reference canary.
-#if defined(COMPILER_GCC) || defined(__clang__)
-#if defined(__has_attribute)
-#if __has_attribute(__no_stack_protector__)
-#define NO_STACK_PROTECTOR __attribute__((__no_stack_protector__))
-#else  // __has_attribute(__no_stack_protector__)
-#define NO_STACK_PROTECTOR __attribute__((__optimize__("-fno-stack-protector")))
-#endif
-#else  // defined(__has_attribute)
-#define NO_STACK_PROTECTOR __attribute__((__optimize__("-fno-stack-protector")))
-#endif
-#else
-#define NO_STACK_PROTECTOR
-#endif
-
 // The ANALYZER_ASSUME_TRUE(bool arg) macro adds compiler-specific hints
 // to Clang which control what code paths are statically analyzed,
 // and is meant to be used in conjunction with assert & assert-like functions.
@@ -598,52 +457,6 @@ inline constexpr bool AnalyzerAssumeTrue(bool arg) {
 #define NOMERGE [[clang::nomerge]]
 #else
 #define NOMERGE
-#endif
-
-// Marks a type as being eligible for the "trivial" ABI despite having a
-// non-trivial destructor or copy/move constructor. Such types can be relocated
-// after construction by simply copying their memory, which makes them eligible
-// to be passed in registers. The canonical example is std::unique_ptr.
-//
-// Use with caution; this has some subtle effects on constructor/destructor
-// ordering and will be very incorrect if the type relies on its address
-// remaining constant. When used as a function argument (by value), the value
-// may be constructed in the caller's stack frame, passed in a register, and
-// then used and destructed in the callee's stack frame. A similar thing can
-// occur when values are returned.
-//
-// TRIVIAL_ABI is not needed for types which have a trivial destructor and
-// copy/move constructors, such as base::TimeTicks and other POD.
-//
-// It is also not likely to be effective on types too large to be passed in one
-// or two registers on typical target ABIs.
-//
-// See also:
-//   https://clang.llvm.org/docs/AttributeReference.html#trivial-abi
-//   https://libcxx.llvm.org/docs/DesignDocs/UniquePtrTrivialAbi.html
-#if defined(__clang__) && HAS_ATTRIBUTE(trivial_abi)
-#define TRIVIAL_ABI [[clang::trivial_abi]]
-#else
-#define TRIVIAL_ABI
-#endif
-
-// Marks a member function as reinitializing a moved-from variable.
-// See also
-// https://clang.llvm.org/extra/clang-tidy/checks/bugprone-use-after-move.html#reinitialization
-#if defined(__clang__) && HAS_ATTRIBUTE(reinitializes)
-#define REINITIALIZES_AFTER_MOVE [[clang::reinitializes]]
-#else
-#define REINITIALIZES_AFTER_MOVE
-#endif
-
-// Requires constant initialization. See constinit in C++20. Allows to rely on a
-// variable being initialized before execution, and not requiring a global
-// constructor.
-#if HAS_ATTRIBUTE(require_constant_initialization)
-#define CONSTINIT __attribute__((require_constant_initialization))
-#endif
-#if !defined(CONSTINIT)
-#define CONSTINIT
 #endif
 
 #if HAS_ATTRIBUTE(noreturn) || (defined(__GNUC__) && !defined(__clang__))
