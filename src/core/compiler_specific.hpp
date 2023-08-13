@@ -263,27 +263,16 @@
 #define ALLOW_UNUSED_TYPE
 #endif
 
-// clang 13 doesn't recognize the newer NOINLINE definitions
+// clang 14 doesn't recognize the newer NOINLINE definitions
+#if defined(__clang__) && HAS_ATTRIBUTE(noinline) && __clang_major__ <= 14
 #undef NOINLINE
-// Annotate a function indicating it should not be inlined.
-// Use like:
-//   NOINLINE void DoStuff() { ... }
-#if defined(COMPILER_GCC) || defined(__clang__)
 #define NOINLINE __attribute__((noinline))
-#elif defined(COMPILER_MSVC)
-#define NOINLINE __declspec(noinline)
-#else
-#define NOINLINE
 #endif
 
 // clang 13 doesn't recognize the newer ALWAYS_INLINE definitions
+#if defined(__clang__) && HAS_ATTRIBUTE(always_inline) && __clang_major__ <= 14
 #undef ALWAYS_INLINE
-#if defined(COMPILER_GCC) && defined(NDEBUG)
 #define ALWAYS_INLINE inline __attribute__((__always_inline__))
-#elif defined(COMPILER_MSVC) && defined(NDEBUG)
-#define ALWAYS_INLINE __forceinline
-#else
-#define ALWAYS_INLINE inline
 #endif
 
 // Annotate a function indicating the caller must examine the return value.
