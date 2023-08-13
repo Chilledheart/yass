@@ -362,6 +362,8 @@ set(quiche_SRCS
   src/quiche/spdy/core/spdy_simple_arena.cc
   src/quiche/spdy/core/spdy_simple_arena.h
   src/quiche/spdy/core/zero_copy_output_buffer.h
+  src/quiche/web_transport/complete_buffer_visitor.cc
+  src/quiche/web_transport/complete_buffer_visitor.h
   src/quiche/web_transport/web_transport.h
   )
 
@@ -515,6 +517,8 @@ set(quiche_quic_SOURCES
   src/quiche/quic/core/frames/quic_crypto_frame.h
   src/quiche/quic/core/frames/quic_frame.cc
   src/quiche/quic/core/frames/quic_frame.h
+  src/quiche/quic/core/frames/quic_generic_session.cc
+  src/quiche/quic/core/frames/quic_generic_session.h
   src/quiche/quic/core/frames/quic_goaway_frame.cc
   src/quiche/quic/core/frames/quic_goaway_frame.h
   src/quiche/quic/core/frames/quic_handshake_done_frame.cc
