@@ -264,13 +264,13 @@
 #endif
 
 // clang 14 doesn't recognize the newer NOINLINE definitions
-#if defined(__clang__) && HAS_ATTRIBUTE(noinline) && __clang_major__ <= 14
+#if defined(__clang__) && HAS_ATTRIBUTE(noinline) && ((defined(HAVE_APPLE_CLANG) && __clang_major__ <= 15) || (!defined(HAVE_APPLE_CLANG) && __clang_major__ <= 14))
 #undef NOINLINE
 #define NOINLINE __attribute__((noinline))
 #endif
 
 // clang 13 doesn't recognize the newer ALWAYS_INLINE definitions
-#if defined(__clang__) && HAS_ATTRIBUTE(always_inline) && __clang_major__ <= 14
+#if defined(__clang__) && HAS_ATTRIBUTE(always_inline) && ((defined(HAVE_APPLE_CLANG) && __clang_major__ <= 14) || (!defined(HAVE_APPLE_CLANG) && __clang_major__ <= 13))
 #undef ALWAYS_INLINE
 #define ALWAYS_INLINE inline __attribute__((__always_inline__))
 #endif
