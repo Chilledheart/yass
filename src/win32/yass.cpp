@@ -41,6 +41,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   UNREFERENCED_PARAMETER(hPrevInstance);
   UNREFERENCED_PARAMETER(lpCmdLine);
 
+  std::string exec_path;
+  if (!GetExecutablePath(&exec_path)) {
+    return -1;
+  }
+  // Fix log output name
+  SetExecutablePath(exec_path);
+
   if (!EnableSecureDllLoading()) {
     return -1;
   }
@@ -48,13 +55,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   if (!SetUTF8Locale()) {
     LOG(WARNING) << "Failed to set up utf-8 locale";
   }
-
-  std::string exec_path;
-  if (!GetExecutablePath(&exec_path)) {
-    return -1;
-  }
-  // Fix log output name
-  SetExecutablePath(exec_path);
 
   absl::SetProgramUsageMessage(
       absl::StrCat("Usage: ", Basename(exec_path), " [options ...]\n",

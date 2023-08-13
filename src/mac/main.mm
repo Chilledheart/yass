@@ -38,14 +38,14 @@ __attribute__((used)) const char kGrossPaddingForCrbug1300598[68 * 1024] = {};
 #endif
 
 int main(int argc, const char** argv) {
-  if (!SetUTF8Locale()) {
-    LOG(WARNING) << "Failed to set up utf-8 locale";
-  }
-
   SetExecutablePath(argv[0]);
   std::string exec_path;
   if (!GetExecutablePath(&exec_path)) {
     return -1;
+  }
+
+  if (!SetUTF8Locale()) {
+    LOG(WARNING) << "Failed to set up utf-8 locale";
   }
 
   absl::InitializeSymbolizer(exec_path.c_str());

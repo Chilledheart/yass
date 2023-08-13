@@ -33,18 +33,18 @@ static const char* kAppId = "it.gui.yass";
 static const char* kAppName = YASS_APP_PRODUCT_NAME;
 
 int main(int argc, const char** argv) {
+  SetExecutablePath(argv[0]);
+  std::string exec_path;
+  if (!GetExecutablePath(&exec_path)) {
+    return -1;
+  }
+
   if (!SetUTF8Locale()) {
     LOG(WARNING) << "Failed to set up utf-8 locale";
   }
   setlocale(LC_ALL, "");
   bindtextdomain("yass", "../share/locale");
   textdomain("yass");
-
-  SetExecutablePath(argv[0]);
-  std::string exec_path;
-  if (!GetExecutablePath(&exec_path)) {
-    return -1;
-  }
 
   absl::InitializeSymbolizer(exec_path.c_str());
   absl::FailureSignalHandlerOptions failure_handle_options;
