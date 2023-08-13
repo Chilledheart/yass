@@ -35,10 +35,10 @@ struct __emutls_object {
   void *templ;
 };
 
-extern "C" _LIBCPP_FUNC_VIS
+extern "C" _LIBCPP_EXPORTED_FROM_ABI
 void* __emutls_get_address(struct __emutls_object*);
 
-extern "C" _LIBCPP_FUNC_VIS
+extern "C" _LIBCPP_EXPORTED_FROM_ABI
 void __emutls_register_common(struct __emutls_object* obj,
                               word size,
                               word align,
