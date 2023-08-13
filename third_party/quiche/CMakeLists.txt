@@ -23,7 +23,6 @@ add_library(url STATIC
   ../googleurl/base/containers/contiguous_iterator.h
   ../googleurl/base/containers/span.h
   ../googleurl/base/containers/util.h
-  ../googleurl/base/cxx17_backports.h
   ../googleurl/base/cxx20_is_constant_evaluated.h
   ../googleurl/base/cxx20_to_address.h
   ../googleurl/base/debug/crash_logging.h
@@ -52,16 +51,18 @@ add_library(url STATIC
   ../googleurl/base/strings/string_piece_forward.h
   ../googleurl/base/strings/string_piece.h
   ../googleurl/base/strings/string_util.h
+  ../googleurl/base/strings/to_string.h
   ../googleurl/base/strings/string_util_impl_helpers.h
   ../googleurl/base/strings/string_util_internal.h
   ../googleurl/base/strings/string_number_conversions.h
+  ../googleurl/base/strings/utf_ostream_operators.h
   ../googleurl/base/strings/utf_string_conversions.h
   ../googleurl/base/strings/utf_string_conversion_utils.h
   ../googleurl/base/win/win_handle_types.h
   ../googleurl/base/debug/crash_logging.cc
-  ../googleurl/base/strings/string_piece.cc
   ../googleurl/base/strings/string_util.cc
   ../googleurl/base/strings/string_util_constants.cc
+  ../googleurl/base/strings/utf_ostream_operators.cc
   ../googleurl/base/strings/utf_string_conversion_utils.cc
   ../googleurl/base/strings/utf_string_conversions.cc
   # icu
