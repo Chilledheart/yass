@@ -67,12 +67,12 @@ BuildRequires: cmake3 >= 3.12, pkgconfig
 %endif
 %if 0%{?fedora}
 BuildRequires: clang, lld
+BuildRequires: http-parser-devel
+BuildRequires: c-ares-devel
 %endif
 BuildRequires: ninja-build, gcc, gcc-c++, golang >= 1.4
 BuildRequires: glib2-devel
-BuildRequires: http-parser-devel
 BuildRequires: zlib-devel
-BuildRequires: c-ares-devel
 BuildRequires: libnghttp2-devel
 BuildRequires: curl-devel
 BuildRequires: desktop-file-utils
