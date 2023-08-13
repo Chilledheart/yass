@@ -62,7 +62,8 @@ add_library(url STATIC
   ../googleurl/base/debug/crash_logging.cc
   ../googleurl/base/strings/string_util.cc
   ../googleurl/base/strings/string_util_constants.cc
-  ../googleurl/base/strings/utf_ostream_operators.cc
+  # FIXME vs2022 doesn't even compile
+  #../googleurl/base/strings/utf_ostream_operators.cc
   ../googleurl/base/strings/utf_string_conversion_utils.cc
   ../googleurl/base/strings/utf_string_conversions.cc
   # icu
