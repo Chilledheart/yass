@@ -2006,14 +2006,31 @@ endif()
 #           xxhash Library
 # *****************************************************************************************
 
-include_directories(third_party/xxhash SYSTEM)
-add_library(xxhash STATIC third_party/xxhash/xxhash.c)
-
-if (COMPILER_MSVC)
-  target_compile_options(xxhash PRIVATE "/wd4255")
+if (USE_SYSTEM_XXHASH)
+  find_package(PkgConfig)
+  if (PKG_CONFIG_FOUND)
+    pkg_check_modules(XXHASH libxxhash)
+  endif()
+  if(NOT XXHASH_FOUND)
+    message(STATUS "System xxhash not found, using bundled one")
+    set(USE_SYSTEM_XXHASH FALSE)
+  endif()
 endif()
 
-set(SUPPORT_LIBS xxhash ${SUPPORT_LIBS})
+if (USE_SYSTEM_XXHASH)
+  message(STATUS "Compiling with system xxhash")
+  # ignore broken pkg-config output
+  set(SUPPORT_LIBS xxhash ${SUPPORT_LIBS})
+else()
+  message(STATUS "Compiling with bundled xxhash")
+  include_directories(third_party/xxhash SYSTEM)
+  add_library(xxhash STATIC third_party/xxhash/xxhash.c)
+
+  if (COMPILER_MSVC)
+    target_compile_options(xxhash PRIVATE "/wd4255")
+  endif()
+  set(SUPPORT_LIBS xxhash ${SUPPORT_LIBS})
+endif()
 
 # *****************************************************************************************
 #           Protobuf Library
