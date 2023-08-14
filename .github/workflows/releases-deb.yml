@@ -35,7 +35,7 @@ env:
   DH_QUIET: 1
 jobs:
   deb-release:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -44,6 +44,8 @@ jobs:
         include:
           - distro: bionic
             arch: arm64
+          - distro: sid
+            arch: riscv64
         # distro: [trusty, xenial, bionic, focal, stretch, buster, bullseye]
         # arch: [i386, amd64, armhf, arm64]
         # include:
@@ -96,26 +98,15 @@ jobs:
         run: |
           sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
           sudo apt-get update -qq
-      - name: Populate depedencies (sbuild, upgrade for null-resolver)
-        run: |
-          curl -O http://azure.archive.ubuntu.com/ubuntu/pool/main/s/sbuild/sbuild_0.79.0-1ubuntu1_all.deb
-          curl -O http://azure.archive.ubuntu.com/ubuntu/pool/main/s/sbuild/libsbuild-perl_0.79.0-1ubuntu1_all.deb
-          sudo apt-get update -qq && sudo apt-get install -f -y $PWD/sbuild*.deb $PWD/libsbuild*.deb
-          rm -f *.deb
       - name: Populate depedencies (debian keyring, for debian distributions)
         run: |
-          curl -O http://azure.archive.ubuntu.com/ubuntu/pool/universe/d/debian-keyring/debian-keyring_2020.03.24_all.deb
-          curl -O http://azure.archive.ubuntu.com/ubuntu/pool/universe/d/debian-archive-keyring/debian-archive-keyring_2019.1ubuntu2_all.deb
+          curl -O http://ftp.us.debian.org/debian/pool/main/d/debian-archive-keyring/debian-archive-keyring_2023.4_all.deb
           sudo apt-get update -qq && sudo apt-get install -f -y $PWD/debian*.deb
           rm -f *.deb
-      - name: Populate depedencies (debhelper, for correct dh_shlibdeps path)
-        run: |
-          curl -O http://azure.archive.ubuntu.com/ubuntu/pool/main/d/debhelper/debhelper_12.10ubuntu1_all.deb
-          curl -O http://azure.archive.ubuntu.com/ubuntu/pool/main/d/debhelper/libdebhelper-perl_12.10ubuntu1_all.deb
-          sudo apt-get update -qq && sudo apt-get install -f -y $PWD/*.deb
-          rm -f *.deb
       - name: Populate depedencies (schroot, debootstrap and ubuntu-dev-tools)
-        run: sudo apt-get update -qq && sudo apt-get install -y schroot debootstrap ubuntu-dev-tools qemu-user-static
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y sbuild debhelper schroot debootstrap ubuntu-dev-tools qemu-user-static
       - name: Copy sbuilrc
         run: |
           cp -fv sbuildrc ~/.sbuildrc
@@ -124,7 +115,7 @@ jobs:
           sudo chown -R sbuild:sbuild /var/lib/sbuild/
           sudo chmod g+rws /var/lib/sbuild/
       - name: Pre-Populate sysroot (distro option)
-        if: ${{ env.HOST_DISTRO == 'stretch' || env.HOST_DISTRO == 'buster' || env.HOST_DISTRO == 'bullseye' }}
+        if: ${{ env.HOST_DISTRO == 'stretch' || env.HOST_DISTRO == 'buster' || env.HOST_DISTRO == 'bullseye' || env.HOST_DISTRO == 'sid' }}
         run: |
           echo "mksbuild_distro_opts=--distro=debian" >> $GITHUB_ENV
       - name: Pre-Populate BUILD_ARCH (i386)
@@ -166,9 +157,9 @@ jobs:
           path: |
             /etc/schroot/chroot.d
             /var/lib/schroot/chroots
-          key: ${{ runner.os }}-schroot-${{ env.HOST_DISTRO }}-${{ env.HOST_ARCH }}-v${{ env.CACHE_EPOCH}}
+          key: ${{ runner.os }}-22.04-schroot-${{ env.HOST_DISTRO }}-${{ env.HOST_ARCH }}-v${{ env.CACHE_EPOCH}}
           restore-keys: |
-            ${{ runner.os }}-schroot-${{ env.HOST_DISTRO }}-${{ env.HOST_ARCH }}-
+            ${{ runner.os }}-22.04-schroot-${{ env.HOST_DISTRO }}-${{ env.HOST_ARCH }}-
       - name: Fix schroot permissions (restore root permissions)
         run: |
           sudo chown -R root:root /etc/schroot/chroot.d /var/lib/schroot/chroots
