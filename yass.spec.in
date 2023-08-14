@@ -55,7 +55,7 @@ Version: __VERSION__
 Release: __SUBVERSION__%{?dist}
 Summary: Lightweight and Secure http/socks4/socks5 Proxy
 
-License: GPLv2
+License: GPL-2.0-only
 URL: https://github.com/Chilledheart/%{name}
 Source0: %{url}/releases/download/%{version}/%{name}-%{version}.tar.gz
 %if 0%{?rhel} == 9 || 0%{?fedora}
