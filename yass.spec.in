@@ -2,6 +2,20 @@
 # with flag -DENABLE_LTO
 %global _lto_cflags %nil
 
+# requires recent version of xxhash
+%if 0%{?fedora}
+%global enable_xxhash_opt on
+%else
+%global enable_xxhash_opt off
+%endif
+
+# requires recent version of http_parser
+%if 0%{?fedora}
+%global enable_http_parser_opt on
+%else
+%global enable_http_parser_opt off
+%endif
+
 # test failed in copr
 %bcond_with tests_cares
 %if !%{with tests_cares}
@@ -12,9 +26,9 @@
 
 # requires recent version of c-ares
 %if 0%{?fedora}
-%global enable_system_cares on
+%global enable_system_cares_opt on
 %else
-%global enable_system_cares off
+%global enable_system_cares_opt off
 %endif
 
 # libc++ is only built with clang now
@@ -42,8 +56,8 @@ Release: __SUBVERSION__%{?dist}
 Summary: Lightweight and Secure http/socks4/socks5 Proxy
 
 License: GPLv2
-URL: https://github.com/Chilledheart/yass
-Source0: https://github.com/Chilledheart/yass/archive/refs/tags/%{version}.tar.gz
+URL: https://github.com/Chilledheart/%{name}
+Source0: %{url}/releases/download/%{version}/%{name}-%{version}.tar.gz
 %if 0%{?rhel} == 9 || 0%{?fedora}
 BuildRequires: gtk4-devel
 %else
@@ -60,11 +74,13 @@ BuildRequires: cmake3 >= 3.12, pkgconfig
 %endif
 %if 0%{?fedora}
 BuildRequires: clang, lld
+BuildRequires: xxhash-devel
+BuildRequires: http-parser-devel
+BuildRequires: c-ares-devel
 %endif
 BuildRequires: ninja-build, gcc, gcc-c++, golang >= 1.4
 BuildRequires: glib2-devel
 BuildRequires: zlib-devel
-BuildRequires: c-ares-devel
 BuildRequires: libnghttp2-devel
 BuildRequires: curl-devel
 BuildRequires: desktop-file-utils
@@ -84,7 +100,8 @@ cd build
 # old c-ares doesn't contain ares_getaddrinfo api
 cmake3 -G Ninja -DCMAKE_BUILD_TYPE=Release \
    -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DCLI=on -DSERVER=on \
-   -DUSE_SYSTEM_ZLIB=on -DUSE_SYSTEM_CARES="%enable_system_cares" -DUSE_SYSTEM_NGHTTP2=on \
+   -DUSE_SYSTEM_ZLIB=on -DUSE_SYSTEM_CARES="%enable_system_cares_opt" -DUSE_SYSTEM_NGHTTP2=on \
+   -DUSE_SYSTEM_XXHASH="%enable_xxhash_opt" -DUSE_SYSTEM_HTTP_PARSER="%enable_http_parser_opt" \
    -DUSE_LIBCXX="%enable_libcxx_opt" \
    -DENABLE_LLD="%enable_lld_opt" -DUSE_BUILTIN_CA_BUNDLE_CRT=off ..
 ninja

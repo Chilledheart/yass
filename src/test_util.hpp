@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2023 Chilledheart  */
 
-#include "core/span.hpp"
+#include "base/containers/span.h"
 
 #ifndef _TEST_UTIL_H
 #define _TEST_UTIL_H
@@ -10,6 +10,8 @@
 #include <ostream>
 
 namespace testing {
+
+using gurl_base::span;
 
 // hexdump writes |msg| to |fp| followed by the hex encoding of |len| bytes
 // from |in|.

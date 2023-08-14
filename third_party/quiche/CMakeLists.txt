@@ -23,7 +23,6 @@ add_library(url STATIC
   ../googleurl/base/containers/contiguous_iterator.h
   ../googleurl/base/containers/span.h
   ../googleurl/base/containers/util.h
-  ../googleurl/base/cxx17_backports.h
   ../googleurl/base/cxx20_is_constant_evaluated.h
   ../googleurl/base/cxx20_to_address.h
   ../googleurl/base/debug/crash_logging.h
@@ -52,16 +51,19 @@ add_library(url STATIC
   ../googleurl/base/strings/string_piece_forward.h
   ../googleurl/base/strings/string_piece.h
   ../googleurl/base/strings/string_util.h
+  ../googleurl/base/strings/to_string.h
   ../googleurl/base/strings/string_util_impl_helpers.h
   ../googleurl/base/strings/string_util_internal.h
   ../googleurl/base/strings/string_number_conversions.h
+  ../googleurl/base/strings/utf_ostream_operators.h
   ../googleurl/base/strings/utf_string_conversions.h
   ../googleurl/base/strings/utf_string_conversion_utils.h
   ../googleurl/base/win/win_handle_types.h
   ../googleurl/base/debug/crash_logging.cc
-  ../googleurl/base/strings/string_piece.cc
   ../googleurl/base/strings/string_util.cc
   ../googleurl/base/strings/string_util_constants.cc
+  # FIXME vs2022 doesn't even compile
+  #../googleurl/base/strings/utf_ostream_operators.cc
   ../googleurl/base/strings/utf_string_conversion_utils.cc
   ../googleurl/base/strings/utf_string_conversions.cc
   # icu
@@ -361,6 +363,8 @@ set(quiche_SRCS
   src/quiche/spdy/core/spdy_simple_arena.cc
   src/quiche/spdy/core/spdy_simple_arena.h
   src/quiche/spdy/core/zero_copy_output_buffer.h
+  src/quiche/web_transport/complete_buffer_visitor.cc
+  src/quiche/web_transport/complete_buffer_visitor.h
   src/quiche/web_transport/web_transport.h
   )
 
@@ -514,6 +518,8 @@ set(quiche_quic_SOURCES
   src/quiche/quic/core/frames/quic_crypto_frame.h
   src/quiche/quic/core/frames/quic_frame.cc
   src/quiche/quic/core/frames/quic_frame.h
+  src/quiche/quic/core/frames/quic_generic_session.cc
+  src/quiche/quic/core/frames/quic_generic_session.h
   src/quiche/quic/core/frames/quic_goaway_frame.cc
   src/quiche/quic/core/frames/quic_goaway_frame.h
   src/quiche/quic/core/frames/quic_handshake_done_frame.cc

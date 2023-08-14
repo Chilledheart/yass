@@ -277,6 +277,7 @@ if (CMAKE_BUILD_TYPE)
   string(TOUPPER ${CMAKE_BUILD_TYPE} upper_CMAKE_BUILD_TYPE)
 else()
   string(TOUPPER "Debug" upper_CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
 if (${CMAKE_BUILD_TYPE} MATCHES Release OR ${CMAKE_BUILD_TYPE} MATCHES MinSizeRel OR ${CMAKE_BUILD_TYPE} MATCHES RelWithDebInfo)
@@ -1486,8 +1487,10 @@ if (HAVE_FLOCK)
   add_definitions(-DHAVE_FLOCK)
 endif()
 
-check_library_exists(c pipe2 "" HAVE_PIPE2)
-check_library_exists(c dup3 "" HAVE_DUP3)
+if (NOT WIN32)
+  check_library_exists(c pipe2 "" HAVE_PIPE2)
+  check_library_exists(c dup3 "" HAVE_DUP3)
+endif()
 if (HAVE_PIPE2)
   add_definitions(-DHAVE_PIPE2)
 endif()
@@ -2003,14 +2006,31 @@ endif()
 #           xxhash Library
 # *****************************************************************************************
 
-include_directories(third_party/xxhash SYSTEM)
-add_library(xxhash STATIC third_party/xxhash/xxhash.c)
-
-if (COMPILER_MSVC)
-  target_compile_options(xxhash PRIVATE "/wd4255")
+if (USE_SYSTEM_XXHASH)
+  find_package(PkgConfig)
+  if (PKG_CONFIG_FOUND)
+    pkg_check_modules(XXHASH libxxhash)
+  endif()
+  if(NOT XXHASH_FOUND)
+    message(STATUS "System xxhash not found, using bundled one")
+    set(USE_SYSTEM_XXHASH FALSE)
+  endif()
 endif()
 
-set(SUPPORT_LIBS xxhash ${SUPPORT_LIBS})
+if (USE_SYSTEM_XXHASH)
+  message(STATUS "Compiling with system xxhash")
+  # ignore broken pkg-config output
+  set(SUPPORT_LIBS xxhash ${SUPPORT_LIBS})
+else()
+  message(STATUS "Compiling with bundled xxhash")
+  include_directories(third_party/xxhash SYSTEM)
+  add_library(xxhash STATIC third_party/xxhash/xxhash.c)
+
+  if (COMPILER_MSVC)
+    target_compile_options(xxhash PRIVATE "/wd4255")
+  endif()
+  set(SUPPORT_LIBS xxhash ${SUPPORT_LIBS})
+endif()
 
 # *****************************************************************************************
 #           Protobuf Library
@@ -2179,6 +2199,31 @@ include_directories(
   third_party/quiche/src
   SYSTEM)
 set(SUPPORT_LIBS url quiche ${SUPPORT_LIBS})
+
+# *****************************************************************************************
+#           http-parser Library
+# *****************************************************************************************
+
+if (USE_SYSTEM_HTTP_PARSER)
+  check_library_exists(http_parser http_parser_init "" HAVE_HTTP_PARSER_INIT)
+  if (NOT HAVE_HTTP_PARSER_INIT)
+    message(STATUS "System http_parser not found, using bundled one")
+    set(USE_SYSTEM_HTTP_PARSER FALSE)
+  endif()
+endif()
+
+if (USE_SYSTEM_HTTP_PARSER)
+  message(STATUS "Compiling with system http-parser")
+  set(SUPPORT_LIBS http_parser ${SUPPORT_LIBS})
+else()
+  message(STATUS "Compiling with bundled http-parser")
+  add_library(http_parser STATIC
+    third_party/http_parser/http_parser.h
+    third_party/http_parser/http_parser.c
+    )
+  include_directories(third_party/http_parser SYSTEM)
+  set(SUPPORT_LIBS http_parser ${SUPPORT_LIBS})
+endif()
 
 # *****************************************************************************************
 #           Compiler warning flags
@@ -2531,9 +2576,6 @@ set(files
     src/core/utf_string_conversion_utils.cpp
     src/core/base64.cpp
     src/core/hash.cpp
-    src/core/unguessable_token.cpp
-    src/core/pickle.cpp
-    src/core/token.cpp
     src/core/atl_throw.cpp
     src/core/thread_collision_warner.hpp
     src/core/thread_collision_warner.cpp
@@ -2569,7 +2611,6 @@ set(files
 
     src/core/c-ares.cpp
     src/core/http_parser.cpp
-    third_party/http_parser/http_parser.c
     )
 
 set(hfiles
@@ -2627,14 +2668,7 @@ set(hfiles
     src/core/utf_string_conversion_utils.hpp
     src/core/hash.hpp
     src/core/base64.hpp
-    src/core/token.hpp
-    src/core/unguessable_token.hpp
-    src/core/checked_iterators.hpp
-    src/core/contiguous_iterator.hpp
     src/core/cxx20_to_address.hpp
-    src/core/pickle.hpp
-    src/core/span.hpp
-    src/core/token.hpp
     src/core/atl_throw.hpp
     src/core/atl.hpp
     src/core/io_queue.hpp
@@ -2669,7 +2703,6 @@ set(hfiles
 
     src/core/c-ares.hpp
     src/core/http_parser.hpp
-    third_party/http_parser/http_parser.h
     )
 
 if (WIN32)

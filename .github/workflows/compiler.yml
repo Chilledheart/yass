@@ -310,15 +310,15 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache clang (v12.0)
-        id: clang12-cache
+      - name: Cache clang (v13.0)
+        id: clang13-cache
         uses: actions/cache@v3
         with:
           path: |
-            third_party/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04
-          key: ${{ runner.os }}-toolchain-clang12-v${{ env.CACHE_EPOCH }}
+            third_party/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04
+          key: ${{ runner.os }}-toolchain-clang13-v${{ env.CACHE_EPOCH }}
           restore-keys: |
-            ${{ runner.os }}-toolchain-clang12-
+            ${{ runner.os }}-toolchain-clang13-
       - name: Cache golang
         uses: actions/cache@v3
         with:
@@ -336,13 +336,13 @@ jobs:
         run: |
           sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
           sudo apt-get update -qq
-      - name: "Install dependency: clang 12"
-        if: ${{ steps.clang12-cache.outputs.cache-hit != 'true' }}
+      - name: "Install dependency: clang 13"
+        if: ${{ steps.clang13-cache.outputs.cache-hit != 'true' }}
         run: |
-          curl -L -O https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
-          tar -C third_party -xvf clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz \
-            clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/lib/clang/12.0.1/include \
-            clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/{clang,clang++,clang-12,ld.lld,lld,llvm-ar,llvm-ranlib}
+          curl -L -O https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz
+          tar -C third_party -xvf clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz \
+            clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04/lib/clang/13.0.1/include \
+            clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04/bin/{clang,clang++,clang-13,ld.lld,lld,llvm-ar,llvm-ranlib}
           rm -f *.xz
       - name: Populate depedencies
         run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build libgtk-3-dev libncurses5 gettext
@@ -351,8 +351,8 @@ jobs:
       - name: Set build options
         run: |
           if [ "${{ matrix.compiler }}" = "clang" ]; then
-            echo "CC=${{ github.workspace }}/third_party/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/clang" >> $GITHUB_ENV
-            echo "CXX=${{ github.workspace }}/third_party/clang+llvm-12.0.1-x86_64-linux-gnu-ubuntu-/bin/clang++" >> $GITHUB_ENV
+            echo "CC=${{ github.workspace }}/third_party/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04/bin/clang" >> $GITHUB_ENV
+            echo "CXX=${{ github.workspace }}/third_party/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04/bin/clang++" >> $GITHUB_ENV
           fi
           if [ "${{ matrix.cxxruntime }}" = "libc++" ]; then
             echo build_opts="${{ env.build_opts }} -use-libcxx=1" >> $GITHUB_ENV

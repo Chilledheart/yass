@@ -28,15 +28,15 @@
 #define _LIBCPP_HAS_NO_VENDOR_AVAILABILITY_ANNOTATIONS
 /* #undef _LIBCPP_NO_VCRUNTIME */
 /* #undef _LIBCPP_TYPEINFO_COMPARISON_IMPLEMENTATION */
-/* #undef _LIBCPP_HAS_NO_FILESYSTEM_LIBRARY */
+/* #undef _LIBCPP_HAS_NO_FILESYSTEM */
 /* #undef _LIBCPP_HAS_PARALLEL_ALGORITHMS */
 /* #undef _LIBCPP_HAS_NO_RANDOM_DEVICE */
 /* #undef _LIBCPP_HAS_NO_LOCALIZATION */
 /* #undef _LIBCPP_HAS_NO_WIDE_CHARACTERS */
 
-// Enable libc++ assertions for hardening and safety
-// (https://crbug.com/1335422).
-#define _LIBCPP_ENABLE_ASSERTIONS 1
+// PSTL backends
+/* #undef _LIBCPP_PSTL_CPU_BACKEND_SERIAL */
+#define _LIBCPP_PSTL_CPU_BACKEND_THREAD
 
 // Settings below aren't part of __config_site upstream.
 // We set them here since we want them to take effect everywhere,
@@ -49,6 +49,11 @@
 #define _LIBCPP_NO_AUTO_LINK
 
 #define _LIBCPP_REMOVE_TRANSITIVE_INCLUDES
+
+// Don't add ABI tags to libc++ symbols. ABI tags increase mangled name sizes.
+// This only exists to allow multiple // libc++ versions to be linked into a
+// binary, which Chrome doesn't do.
+#define _LIBCPP_NO_ABI_TAG
 
 // Explicitly define  _LIBCPP_VERBOSE_ABORT(...) to call the termination
 // function because by default, this macro will does not call the verbose

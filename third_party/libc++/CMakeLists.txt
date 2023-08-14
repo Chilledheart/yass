@@ -12,8 +12,8 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
   set(COMPILER_APPLE_CLANG TRUE)
 endif()
 
-if (COMPILER_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
-  message(FATAL_ERROR "Requires Clang 12.0 or newer to compile libc++ from source")
+if (COMPILER_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13.0)
+  message(FATAL_ERROR "Requires Clang 13.0 or newer to compile libc++ from source")
 endif()
 
 if (COMPILER_APPLE_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14.0)
@@ -95,6 +95,18 @@ endif()
 set(libcxx_PUBLIC_DEFINITIONS
   ${libcxx_PUBLIC_DEFINITIONS}
   "CR_LIBCXX_REVISION=${libcxx_CR}")
+
+# Normally, this would be defined in the `runtime_library` config but NaCl
+# saigo libc++ does not use the custom hermetic libc++. Unfortunately, there
+# isn't really a better config to add this define for the define to
+# consistently apply in both Chromium and non-Chromium code *and* non-NaCl
+# and NaCl code.
+#
+# TODO(https://crbug.com/702997): Move this back to the `runtime_library`
+# config when NaCl is removed.
+set(libcxx_PUBLIC_DEFINITIONS
+  ${libcxx_PUBLIC_DEFINITIONS}
+  "_LIBCPP_ENABLE_ASSERTIONS=1")
 
 if (USE_MUSL)
   set(libcxx_PUBLIC_DEFINITIONS
@@ -190,7 +202,6 @@ set(libcxx_SOURCES
   trunk/src/debug.cpp
   trunk/src/legacy_debug_handler.cpp
   trunk/src/exception.cpp
-  trunk/src/format.cpp
   trunk/src/functional.cpp
   trunk/src/future.cpp
   trunk/src/hash.cpp
@@ -202,7 +213,8 @@ set(libcxx_SOURCES
   trunk/src/memory.cpp
   trunk/src/mutex.cpp
   trunk/src/mutex_destructor.cpp
-  trunk/src/new.cpp
+  trunk/src/new_handler.cpp
+  trunk/src/new_helpers.cpp
   trunk/src/optional.cpp
   trunk/src/random.cpp
   trunk/src/random_shuffle.cpp
@@ -222,11 +234,32 @@ set(libcxx_SOURCES
   trunk/src/verbose_abort.cpp
 )
 
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if (NOT WIN32 OR NOT ALLOW_XP)
   set(libcxx_SOURCES
     ${libcxx_SOURCES}
     trunk/src/filesystem/directory_iterator.cpp
+    trunk/src/filesystem/filesystem_error.cpp
     trunk/src/filesystem/operations.cpp
+    trunk/src/filesystem/path.cpp
+    )
+endif()
+
+if (APPLE OR (NOT ASAN AND NOT TSAN AND NOT MSAN))
+  # In {a,t,m}san configurations, operator new and operator delete will be
+  # provided by the sanitizer runtime library.  Since libc++ defines these
+  # symbols with weak linkage, and the *san runtime uses strong linkage, it
+  # should technically be OK to include this file, but it's removed to be
+  # explicit.
+  set(libcxx_SOURCES
+    ${libcxx_SOURCES}
+    trunk/src/new.cpp)
+endif()
+
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  set(libcxx_SOURCES
+    ${libcxx_SOURCES}
+    trunk/src/filesystem/directory_entry.cpp
+    trunk/src/filesystem/filesystem_clock.cpp
   )
 endif()
 

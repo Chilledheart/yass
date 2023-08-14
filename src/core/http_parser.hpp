@@ -7,7 +7,7 @@
 #include <absl/container/flat_hash_map.h>
 
 #include "core/iobuf.hpp"
-#include "http_parser/http_parser.h"
+#include <http_parser.h>
 
 class HttpRequestParser {
  public:

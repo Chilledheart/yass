@@ -33,6 +33,12 @@
 using namespace cli;
 
 int main(int argc, const char* argv[]) {
+  SetExecutablePath(argv[0]);
+  std::string exec_path;
+  if (!GetExecutablePath(&exec_path)) {
+    return -1;
+  }
+
 #ifdef OS_WIN
   if (!EnableSecureDllLoading()) {
     return -1;
@@ -40,11 +46,6 @@ int main(int argc, const char* argv[]) {
 #endif
   if (!SetUTF8Locale()) {
     LOG(WARNING) << "Failed to set up utf-8 locale";
-  }
-  SetExecutablePath(argv[0]);
-  std::string exec_path;
-  if (!GetExecutablePath(&exec_path)) {
-    return -1;
   }
 
   // Major routine
