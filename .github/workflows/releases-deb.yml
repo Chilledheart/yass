@@ -30,12 +30,12 @@ on:
   release:
     types: [published]
 env:
-  CACHE_EPOCH: 116
+  CACHE_EPOCH: 116v2
   GOPROXY: direct
   DH_QUIET: 1
 jobs:
   deb-release:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -44,7 +44,10 @@ jobs:
         include:
           - distro: bionic
             arch: arm64
-        # distro: [trusty, xenial, bionic, focal, stretch, buster, bullseye]
+        # XFAIL stretch
+        # XFAIL focal-i386,jammy-i386
+        # XFAIL sid-riscv64
+        # distro: [trusty, xenial, bionic, focal, jammy, stretch, buster, bullseye, bookworm]
         # arch: [i386, amd64, armhf, arm64]
         # include:
         #   - distro: stretch
@@ -53,6 +56,8 @@ jobs:
         #     arch: mipsel
         #   - distro: stretch
         #     arch: mips64el
+        #   - distro: sid
+        #     arch: riscv64
     env:
       DEBIAN_FRONTEND: 'noninteractive'
       HOST_ARCH: '${{ matrix.arch }}'
@@ -96,26 +101,15 @@ jobs:
         run: |
           sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
           sudo apt-get update -qq
-      - name: Populate depedencies (sbuild, upgrade for null-resolver)
-        run: |
-          curl -O http://azure.archive.ubuntu.com/ubuntu/pool/main/s/sbuild/sbuild_0.79.0-1ubuntu1_all.deb
-          curl -O http://azure.archive.ubuntu.com/ubuntu/pool/main/s/sbuild/libsbuild-perl_0.79.0-1ubuntu1_all.deb
-          sudo apt-get update -qq && sudo apt-get install -f -y $PWD/sbuild*.deb $PWD/libsbuild*.deb
-          rm -f *.deb
       - name: Populate depedencies (debian keyring, for debian distributions)
         run: |
-          curl -O http://azure.archive.ubuntu.com/ubuntu/pool/universe/d/debian-keyring/debian-keyring_2020.03.24_all.deb
-          curl -O http://azure.archive.ubuntu.com/ubuntu/pool/universe/d/debian-archive-keyring/debian-archive-keyring_2019.1ubuntu2_all.deb
+          curl -O http://ftp.us.debian.org/debian/pool/main/d/debian-archive-keyring/debian-archive-keyring_2023.4_all.deb
           sudo apt-get update -qq && sudo apt-get install -f -y $PWD/debian*.deb
           rm -f *.deb
-      - name: Populate depedencies (debhelper, for correct dh_shlibdeps path)
+      - name: Populate depedencies (sbuild, debhelper, schroot, debootstrap and ubuntu-dev-tools)
         run: |
-          curl -O http://azure.archive.ubuntu.com/ubuntu/pool/main/d/debhelper/debhelper_12.10ubuntu1_all.deb
-          curl -O http://azure.archive.ubuntu.com/ubuntu/pool/main/d/debhelper/libdebhelper-perl_12.10ubuntu1_all.deb
-          sudo apt-get update -qq && sudo apt-get install -f -y $PWD/*.deb
-          rm -f *.deb
-      - name: Populate depedencies (schroot, debootstrap and ubuntu-dev-tools)
-        run: sudo apt-get update -qq && sudo apt-get install -y schroot debootstrap ubuntu-dev-tools qemu-user-static
+          sudo apt-get update -qq
+          sudo apt-get install -y sbuild debhelper schroot debootstrap ubuntu-dev-tools qemu-user-static
       - name: Copy sbuilrc
         run: |
           cp -fv sbuildrc ~/.sbuildrc
@@ -124,7 +118,7 @@ jobs:
           sudo chown -R sbuild:sbuild /var/lib/sbuild/
           sudo chmod g+rws /var/lib/sbuild/
       - name: Pre-Populate sysroot (distro option)
-        if: ${{ env.HOST_DISTRO == 'stretch' || env.HOST_DISTRO == 'buster' || env.HOST_DISTRO == 'bullseye' }}
+        if: ${{ env.HOST_DISTRO == 'stretch' || env.HOST_DISTRO == 'buster' || env.HOST_DISTRO == 'bullseye' || env.HOST_DISTRO == 'bookworm' || env.HOST_DISTRO == 'sid' }}
         run: |
           echo "mksbuild_distro_opts=--distro=debian" >> $GITHUB_ENV
       - name: Pre-Populate BUILD_ARCH (i386)
@@ -166,9 +160,9 @@ jobs:
           path: |
             /etc/schroot/chroot.d
             /var/lib/schroot/chroots
-          key: ${{ runner.os }}-schroot-${{ env.HOST_DISTRO }}-${{ env.HOST_ARCH }}-v${{ env.CACHE_EPOCH}}
+          key: ${{ runner.os }}-22.04-schroot-${{ env.HOST_DISTRO }}-${{ env.HOST_ARCH }}-v${{ env.CACHE_EPOCH}}
           restore-keys: |
-            ${{ runner.os }}-schroot-${{ env.HOST_DISTRO }}-${{ env.HOST_ARCH }}-
+            ${{ runner.os }}-22.04-schroot-${{ env.HOST_DISTRO }}-${{ env.HOST_ARCH }}-
       - name: Fix schroot permissions (restore root permissions)
         run: |
           sudo chown -R root:root /etc/schroot/chroot.d /var/lib/schroot/chroots
@@ -181,15 +175,6 @@ jobs:
           sudo sed -i '/profile/d' /etc/schroot/chroot.d/*
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get clean
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get update -qq
-      # The format of the /etc/apt/sources.list line for the security repository has changed.
-      # https://wiki.debian.org/NewInBullseye
-      - name: Populate sysroot (bullseye only, fix security repo)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_DISTRO == 'bullseye' }}
-        run: |
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            sed -i 's/security.debian.org\/ ${{ env.HOST_DISTRO }}\/updates/security.debian.org\/debian-security ${{ env.HOST_DISTRO }}-security/g' /etc/apt/sources.list
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get update -qq
       - name: Populate sysroot (crosscompile toolchain)
@@ -225,25 +210,21 @@ jobs:
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get update -qq
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get install -y libc6:amd64 libstdc++6:amd64 zlib1g:amd64 libtinfo5:amd64
+            apt-get install -y libc6:amd64 libstdc++6:amd64 zlib1g:amd64
       - name: Populate sysroot (ca-certificates, git)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y ca-certificates git
-      - name: Populate sysroot (dpkg fix)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
+      - name: Populate sysroot (golang, new distro)
+        if: ${{ env.HOST_DISTRO == 'focal' || env.HOST_DISTRO == 'jammy' || env.HOST_DISTRO == 'bookworm' || env.HOST_DISTRO == 'sid' }}
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get clean
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get update -qq
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get install -y dpkg
-      - name: Populate sysroot (golang)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
+            apt-get install -y golang
+      - name: Populate sysroot (golang, old distro)
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_DISTRO != 'focal' && env.HOST_DISTRO != 'jammy' && env.HOST_DISTRO != 'bookworm' && env.HOST_DISTRO != 'sid' }}
         run: |
-          # shipped with debian bulleye
+          # shipped with debian bullseye
           curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-defaults/golang_1.15~1_${{ env.BUILD_ARCH }}.deb
           curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-defaults/golang-go_1.15~1_${{ env.BUILD_ARCH }}.deb
           curl -O http://ftp.us.debian.org/debian/pool/main/g/golang-defaults/golang-src_1.15~1_${{ env.BUILD_ARCH }}.deb
@@ -257,13 +238,18 @@ jobs:
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y -f
           rm -f *.deb
-      - name: Populate depedencie (cmake)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
+      - name: Populate depedencie (cmake, new distro)
+        if: ${{ env.HOST_DISTRO == 'focal' || env.HOST_DISTRO == 'jammy' || env.HOST_DISTRO == 'bookworm' || env.HOST_DISTRO == 'sid' }}
+        run: |
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            apt-get install -y cmake
+      - name: Populate depedencie (cmake, old distro)
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_DISTRO != 'focal' && env.HOST_DISTRO != 'jammy' && env.HOST_DISTRO != 'bookworm' && env.HOST_DISTRO != 'sid' }}
         run: |
           # fallback cmake: https://cmake.org/files/v3.12/cmake-3.12.4-Linux-x86_64.tar.gz
           curl -L -O https://github.com/Kitware/CMake/releases/download/v3.22.3/cmake-3.22.3-linux-x86_64.tar.gz
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            tar -C / --strip-components=1 -xvf cmake-3.22.3-linux-x86_64.tar.gz
+            tar -C /usr --strip-components=1 -xvf cmake-3.22.3-linux-x86_64.tar.gz
           rm -f *.tar.gz
       - name: Populate depedencie (base)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
