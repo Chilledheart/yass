@@ -277,7 +277,7 @@ class stream : public RefCountedThreadSafe<stream> {
 
     if (limit_rate_) {
       std::chrono::duration<double, std::milli> delta_ms(std::chrono::steady_clock::now() - write_start_);
-      int64_t limit = limit_rate_ * (delta_ms.count() + 1) / 1000 - rbytes_transferred_;
+      int64_t limit = limit_rate_ * (delta_ms.count() + 1) / 1000 - wbytes_transferred_;
       if (limit <= 0) {
         scoped_refptr<stream> self(this);
         write_delay_timer_.expires_after(std::chrono::milliseconds(-limit * 1000 / limit_rate_+1));
