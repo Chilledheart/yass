@@ -65,14 +65,15 @@ class stream : public RefCountedThreadSafe<stream> {
         enable_tls_(enable_tls),
         ssl_socket_(enable_tls ? net::SSLSocket::Create(&io_context, &socket_, ssl_ctx->native_handle(), https_fallback, host_name) : nullptr),
         channel_(channel),
-        read_delay_timer_(io_context) {
+        limit_rate_(absl::GetFlag(FLAGS_limit_rate).rate),
+        read_delay_timer_(io_context),
+        write_delay_timer_(io_context) {
     CHECK(channel && "channel must defined to use with stream");
 #ifdef HAVE_C_ARES
     int ret = resolver_->Init(5000);
     CHECK_EQ(ret, 0) << "c-ares initialize failure";
     static_cast<void>(ret);
 #endif
-    limit_rate_ = absl::GetFlag(FLAGS_limit_rate).rate;
     if (enable_tls) {
       s_wait_read_ = [this](handle_t cb) {
         ssl_socket_->WaitRead(cb);
@@ -270,6 +271,27 @@ class stream : public RefCountedThreadSafe<stream> {
     DCHECK(!write_inprogress_);
     DCHECK(callback);
 
+    if (UNLIKELY(!connected_ || closed_)) {
+      return;
+    }
+
+    if (limit_rate_) {
+      std::chrono::duration<double, std::milli> delta_ms(std::chrono::steady_clock::now() - write_start_);
+      int64_t limit = limit_rate_ * (delta_ms.count() + 1) / 1000 - rbytes_transferred_;
+      if (limit <= 0) {
+        scoped_refptr<stream> self(this);
+        write_delay_timer_.expires_after(std::chrono::milliseconds(-limit * 1000 / limit_rate_+1));
+        write_delay_timer_.async_wait([this, self, callback](asio::error_code ec) {
+          // Cancelled, safe to ignore
+          if (ec == asio::error::operation_aborted) {
+            return;
+          }
+          wait_write(callback);
+        });
+        return;
+      }
+    }
+
     write_inprogress_ = true;
     wait_write_callback_ = std::move(callback);
     scoped_refptr<stream> self(this);
@@ -444,7 +466,7 @@ class stream : public RefCountedThreadSafe<stream> {
     SetTCPCongestion(socket_.native_handle(), ec);
     SetTCPKeepAlive(socket_.native_handle(), ec);
     SetSocketTcpNoDelay(&socket_, ec);
-    read_start_ = std::chrono::steady_clock::now();
+    write_start_ = read_start_ = std::chrono::steady_clock::now();
     on_async_connect_callback(asio::error_code());
   }
 
@@ -533,9 +555,12 @@ class stream : public RefCountedThreadSafe<stream> {
   size_t wbytes_transferred_ = 0;
 
   // rate limiter
-  uint64_t limit_rate_;
+  const uint64_t limit_rate_;
   std::chrono::steady_clock::time_point read_start_;
   asio::steady_timer read_delay_timer_;
+
+  std::chrono::steady_clock::time_point write_start_;
+  asio::steady_timer write_delay_timer_;
 };
 
 #endif  // H_STREAM
