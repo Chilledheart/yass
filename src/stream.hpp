@@ -72,7 +72,7 @@ class stream : public RefCountedThreadSafe<stream> {
     CHECK_EQ(ret, 0) << "c-ares initialize failure";
     static_cast<void>(ret);
 #endif
-    limit_rate_ = absl::GetFlag(FLAGS_limit_rate);
+    limit_rate_ = absl::GetFlag(FLAGS_limit_rate).rate;
     if (enable_tls) {
       s_wait_read_ = [this](handle_t cb) {
         ssl_socket_->WaitRead(cb);

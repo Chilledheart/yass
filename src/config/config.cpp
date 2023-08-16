@@ -4,6 +4,9 @@
 #include "config/config.hpp"
 #include "config/config_impl.hpp"
 
+#include <iomanip>
+#include <sstream>
+
 #include <absl/flags/flag.h>
 #include <absl/strings/str_cat.h>
 
@@ -13,6 +16,11 @@ bool AbslParseFlag(absl::string_view text, CipherMethodFlag* flag,
                    std::string* err);
 
 std::string AbslUnparseFlag(const CipherMethodFlag&);
+
+bool AbslParseFlag(absl::string_view text, RateFlag* flag,
+                   std::string* err);
+
+std::string AbslUnparseFlag(const RateFlag&);
 
 // Within the implementation, `AbslParseFlag()` will, in turn invoke
 // `absl::ParseFlag()` on its constituent `int` and `std::string` types
@@ -33,6 +41,106 @@ bool AbslParseFlag(absl::string_view text, CipherMethodFlag* flag,
 std::string AbslUnparseFlag(const CipherMethodFlag& flag) {
   DCHECK(is_valid_cipher_method(flag.method));
   return to_cipher_method_str(flag.method);
+}
+
+// Within the implementation, `AbslParseFlag()` will, in turn invoke
+// `absl::ParseFlag()` on its constituent `int` and `std::string` types
+// (which have built-in Abseil flag support.
+
+static int64_t ngx_atosz(const char *line, size_t n) {
+  int64_t  value, cutoff, cutlim;
+
+  if (n == 0) {
+    return -1;
+  }
+
+  cutoff = INT64_MAX / 10;
+  cutlim = INT64_MAX % 10;
+
+  for (value = 0; n--; line++) {
+    if (*line < '0' || *line > '9') {
+      return -1;
+    }
+
+    if (value >= cutoff && (value > cutoff || *line - '0' > cutlim)) {
+      return -1;
+    }
+
+    value = value * 10 + (*line - '0');
+  }
+
+  return value;
+}
+
+static int64_t ngx_parse_size(const char *line, size_t len) {
+  char   unit;
+  int64_t  size, scale, max;
+
+  if (len == 0) {
+    return -1;
+  }
+
+  unit = line[len - 1];
+
+  switch (unit) {
+  case 'K':
+  case 'k':
+    len--;
+    max = INT64_MAX / 1024;
+    scale = 1024;
+    break;
+
+  case 'M':
+  case 'm':
+    len--;
+    max = INT64_MAX / (1024 * 1024);
+    scale = 1024 * 1024;
+    break;
+
+  default:
+    max = INT64_MAX;
+    scale = 1;
+  }
+
+  size = ngx_atosz(line, len);
+  if (size < 0 || size > max) {
+    return -1;
+  }
+
+  size *= scale;
+
+  return size;
+}
+
+bool AbslParseFlag(absl::string_view text, RateFlag* flag,
+                   std::string* err) {
+  int64_t size = ngx_parse_size(text.data(), text.size());
+  if (size < 0) {
+    *err = "bad size: " + std::string(text);
+    return false;
+  }
+  flag->rate = size;
+  return true;
+}
+
+static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
+  if (bytes < 1024) {
+    *ss << bytes;
+    return;
+  }
+  if (bytes < 1024 * 1024) {
+    *ss << bytes / 1024 << "k";
+    return;
+  }
+  *ss << bytes / 1024 / 1024 << "m";
+}
+
+// Similarly, for unparsing, we can simply invoke `absl::UnparseFlag()` on
+// the constituent types.
+std::string AbslUnparseFlag(const RateFlag& flag) {
+  std::ostringstream os;
+  humanReadableByteCountBin(&os, flag.rate);
+  return os.str();
 }
 
 ABSL_FLAG(bool, ipv6_mode, true, "Enable IPv6 support");
@@ -70,9 +178,9 @@ ABSL_FLAG(uint32_t,
           512,
           "Maximum number of accepted connection");
 
-ABSL_FLAG(uint64_t,
+ABSL_FLAG(RateFlag,
           limit_rate,
-          0,
+          RateFlag(),
           "Limits the rate of response transmission to a client. Uint is byte per second");
 
 namespace config {
