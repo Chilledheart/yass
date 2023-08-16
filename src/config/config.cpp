@@ -65,6 +65,11 @@ ABSL_FLAG(CipherMethodFlag,
           CipherMethodFlag(CRYPTO_HTTP2),
           kCipherMethodHelpMessage);
 
+ABSL_FLAG(uint32_t,
+          worker_connections,
+          512,
+          "Maximum number of accepted connection");
+
 namespace config {
 
 void ReadConfigFileOption(int argc, const char** argv) {
