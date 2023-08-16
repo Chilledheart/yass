@@ -21,7 +21,7 @@ RUN yum clean all && \
   yum-config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo && \
   yum install -y https://packages.endpointdev.com/rhel/7/os/x86_64/endpoint-repo.x86_64.rpm &&\
   yum install -y gcc gcc-c++ \
-    git make python3 bash coreutils gh ncurses-libs \
+    git make python3 bash coreutils gh \
     rpm-build rpm-devel rpmlint diffutils patch rpmdevtools \
     cmake3 ninja-build pkgconfig perl golang \
     gtk3-devel zlib-devel c-ares-devel libnghttp2-devel curl-devel \

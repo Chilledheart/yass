@@ -6,4 +6,4 @@ RUN apk add --no-cache git bash perl curl go tar && \
   ln -sf /usr/lib/ninja-build/bin/ninja /usr/bin/ninja
 # https://github.com/cli/cli/blob/trunk/docs/install_linux.md
 RUN echo "@community http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories
-RUN apk add github-cli@community
+RUN apk add --no-cache github-cli@community

@@ -182,25 +182,35 @@ class ContentServer {
           if (!ctx.acceptor) {
             return;
           }
-          if (!ec) {
-            tlsext_ctx_t* tlsext_ctx = nullptr;
-            if (enable_tls_) {
-              tlsext_ctx = new tlsext_ctx_t{this, next_connection_id_, listen_ctx_num};
-              setup_ssl_ctx_alpn_cb(tlsext_ctx);
-              setup_ssl_ctx_tlsext_cb(tlsext_ctx);
-            }
-            scoped_refptr<ConnectionType> conn = factory_.Create(
-              io_context_, remote_host_name_, remote_port_,
-              upstream_https_fallback_, https_fallback_,
-              enable_upstream_tls_, enable_tls_,
-              &upstream_ssl_ctx_, &ssl_ctx_);
-            on_accept(conn, std::move(socket), listen_ctx_num, tlsext_ctx);
-            accept(listen_ctx_num);
-          } if (ec && ec != asio::error::operation_aborted) {
+          // cancelled
+          if (ec == asio::error::operation_aborted) {
+            return;
+          }
+          if (ec) {
             LOG(WARNING) << "Acceptor (" << factory_.Name() << ")"
                          << " failed to accept more due to: " << ec;
             work_guard_.reset();
+            return;
           }
+          // FIXME should we handle it more gracefully?
+          if (connection_map_.size() >= absl::GetFlag(FLAGS_worker_connections)) {
+            socket.close(ec);
+            accept(listen_ctx_num);
+            return;
+          }
+          tlsext_ctx_t* tlsext_ctx = nullptr;
+          if (enable_tls_) {
+            tlsext_ctx = new tlsext_ctx_t{this, next_connection_id_, listen_ctx_num};
+            setup_ssl_ctx_alpn_cb(tlsext_ctx);
+            setup_ssl_ctx_tlsext_cb(tlsext_ctx);
+          }
+          scoped_refptr<ConnectionType> conn = factory_.Create(
+            io_context_, remote_host_name_, remote_port_,
+            upstream_https_fallback_, https_fallback_,
+            enable_upstream_tls_, enable_tls_,
+            &upstream_ssl_ctx_, &ssl_ctx_);
+          on_accept(conn, std::move(socket), listen_ctx_num, tlsext_ctx);
+          accept(listen_ctx_num);
         });
   }
 
