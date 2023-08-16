@@ -328,13 +328,13 @@ bool ServerConnection::OnEndHeadersForStream(
       << " Failed to retrieve remote endpoint: " << ec;
   }
   if (request_map_[":method"] != "CONNECT") {
-    LOG(INFO) << "Connection (server) " << connection_id() << " for " << peer_endpoint
+    LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
       << " Unexpected method: " << request_map_[":method"];
     return false;
   }
   auto auth = request_map_["proxy-authorization"];
   if (auth != "basic " + GetProxyAuthorizationIdentity()) {
-    LOG(INFO) << "Connection (server) " << connection_id() << " for " << peer_endpoint
+    LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
       << " Unexpected auth token.";
     return false;
   }
@@ -345,12 +345,12 @@ bool ServerConnection::OnEndHeadersForStream(
   if (authority.empty()) {
     authority = request_map_["host"];
   } else if (!request_map_["host"].empty() && ToLowerASCII(authority) != ToLowerASCII(request_map_["host"])) {
-    LOG(INFO) << "Connection (server) " << connection_id()
+    LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
       << " Unmatched authority: " << authority << " with host: " << request_map_["host"];
     return false;
   }
   if (authority.empty()) {
-    LOG(INFO) << "Connection (server) " << connection_id()
+    LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
       << " Unexpected empty authority";
     return false;
   }
@@ -367,7 +367,7 @@ bool ServerConnection::OnEndHeadersForStream(
   char* end;
   const unsigned long portnum = strtoul(port.c_str(), &end, 10);
   if (*end != '\0' || portnum > UINT16_MAX || (errno == ERANGE && portnum == ULONG_MAX)) {
-    LOG(INFO) << "Connection (server) " << connection_id()
+    LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
       << " Unexpected authority: " << authority;
     return false;
   }
@@ -376,10 +376,10 @@ bool ServerConnection::OnEndHeadersForStream(
 
   bool padding_support = request_map_.find("padding") != request_map_.end();
   if (padding_support_ && padding_support) {
-    LOG(INFO) << "Connection (server) " << connection_id() << " for " << peer_endpoint
+    LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
       << " Padding support enabled.";
   } else {
-    VLOG(1) << "Connection (server) " << connection_id() << " for " << peer_endpoint
+    VLOG(1) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
       << " Padding support disabled.";
     padding_support_ = false;
   }
@@ -1181,8 +1181,11 @@ void ServerConnection::ProcessSentData(asio::error_code ec,
 
 void ServerConnection::OnConnect() {
   scoped_refptr<ServerConnection> self(this);
-  LOG(INFO) << "Connection (server) " << connection_id()
-            << " connect " << remote_domain();
+  asio::error_code ec;
+  auto peer_endpoint = socket_.remote_endpoint(ec);
+  // TODO improve access log
+  LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
+    << " connect " << remote_domain();
   std::string host_name;
   uint16_t port = request_.port();
   if (request_.address_type() == ss::domain) {

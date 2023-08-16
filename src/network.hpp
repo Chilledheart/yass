@@ -16,6 +16,9 @@ ABSL_DECLARE_FLAG(bool, reuse_port);
 ABSL_DECLARE_FLAG(std::string, congestion_algorithm);
 ABSL_DECLARE_FLAG(bool, tcp_fastopen);
 ABSL_DECLARE_FLAG(bool, tcp_fastopen_connect);
+// same with proxy_connect_timeout no need for proxy_read_timeout
+// and proxy_write_timeout because it is a tcp tunnel.
+// TODO rename connect_timeout to proxy_connect_timeout
 ABSL_DECLARE_FLAG(int32_t, connect_timeout);
 ABSL_DECLARE_FLAG(bool, tcp_nodelay);
 
