@@ -41,6 +41,8 @@ ABSL_DECLARE_FLAG(std::string, capath);
 
 ABSL_DECLARE_FLAG(uint32_t, worker_connections);
 
+ABSL_DECLARE_FLAG(uint64_t, limit_rate); //bytes per second
+
 namespace config {
 void ReadConfigFileOption(int argc, const char** argv);
 bool ReadConfig();

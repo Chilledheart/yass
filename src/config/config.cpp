@@ -70,6 +70,11 @@ ABSL_FLAG(uint32_t,
           512,
           "Maximum number of accepted connection");
 
+ABSL_FLAG(uint64_t,
+          limit_rate,
+          0,
+          "Limits the rate of response transmission to a client. Uint is byte per second");
+
 namespace config {
 
 void ReadConfigFileOption(int argc, const char** argv) {
