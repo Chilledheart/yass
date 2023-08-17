@@ -44,9 +44,11 @@ jobs:
         include:
           - distro: bionic
             arch: arm64
+          - distro: sid
+            arch: riscv64
         # XFAIL stretch
         # XFAIL focal-i386,jammy-i386
-        # XFAIL sid-riscv64
+        # XFAIL sid-riscv64 (gui, curl)
         # distro: [trusty, xenial, bionic, focal, jammy, stretch, buster, bullseye, bookworm]
         # arch: [i386, amd64, armhf, arm64]
         # include:
@@ -56,8 +58,6 @@ jobs:
         #     arch: mipsel
         #   - distro: stretch
         #     arch: mips64el
-        #   - distro: sid
-        #     arch: riscv64
     env:
       DEBIAN_FRONTEND: 'noninteractive'
       HOST_ARCH: '${{ matrix.arch }}'
@@ -139,8 +139,8 @@ jobs:
         if: ${{ env.HOST_ARCH != 'i386' && env.HOST_ARCH != 'amd64' }}
         run: |
           echo "DEB_BUILD_PROFILES=nocheck cross ${{ env.DEB_BUILD_PROFILES }}" >> $GITHUB_ENV
-      - name: Set nogui build profile (armel/mipsel/mips64el only)
-        if: ${{ env.HOST_ARCH == 'armel' || env.HOST_ARCH == 'mipsel' || env.HOST_ARCH == 'mips64el' }}
+      - name: Set nogui build profile (armel/mipsel/mips64el and riscv64 only)
+        if: ${{ env.HOST_ARCH == 'armel' || env.HOST_ARCH == 'mipsel' || env.HOST_ARCH == 'mips64el' || env.HOST_ARCH == 'riscv64' }}
         run: |
           echo "DEB_BUILD_PROFILES=nogui ${{ env.DEB_BUILD_PROFILES }}" >> $GITHUB_ENV
           echo "APT_DEB_BUILD_PROFILES=-o Apt::Build-Profiles=nogui" >> $GITHUB_ENV
@@ -256,13 +256,13 @@ jobs:
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y perl gcc g++ ninja-build debhelper
-      - name: Populate depedencie (gui)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_ARCH != 'armel' && env.HOST_ARCH != 'mipsel' && env.HOST_ARCH != 'mips64el' }}
+      - name: Populate depedencie (gui, exclude some arches)
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_ARCH != 'armel' && env.HOST_ARCH != 'mipsel' && env.HOST_ARCH != 'mips64el' && env.HOST_ARCH != 'riscv64' }}
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y pkg-config libglib2.0-dev:${{ env.HOST_ARCH }} libgtk-3-dev:${{ env.HOST_ARCH }}
-      - name: Populate depedencie (curl, for test purpose)
-        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_ARCH != 'armel' && env.HOST_ARCH != 'mipsel' && env.HOST_ARCH != 'mips64el' }}
+      - name: Populate depedencie (curl, for test purpose, exclude some arches)
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_ARCH != 'armel' && env.HOST_ARCH != 'mipsel' && env.HOST_ARCH != 'mips64el' && env.HOST_ARCH != 'riscv64' }}
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y libcurl4-openssl-dev:${{ env.HOST_ARCH }}
