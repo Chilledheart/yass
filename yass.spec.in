@@ -2,6 +2,13 @@
 # with flag -DENABLE_LTO
 %global _lto_cflags %nil
 
+# requires recent version of json
+%if 0%{?fedora}
+%global enable_json_opt on
+%else
+%global enable_json_opt off
+%endif
+
 # requires recent version of xxhash
 %if 0%{?fedora}
 %global enable_xxhash_opt on
@@ -74,6 +81,7 @@ BuildRequires: cmake3 >= 3.12, pkgconfig
 %endif
 %if 0%{?fedora}
 BuildRequires: clang, lld
+BuildRequires: json-devel
 BuildRequires: xxhash-devel
 BuildRequires: http-parser-devel
 BuildRequires: c-ares-devel
@@ -101,7 +109,9 @@ cd build
 cmake3 -G Ninja -DCMAKE_BUILD_TYPE=Release \
    -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DCLI=on -DSERVER=on \
    -DUSE_SYSTEM_ZLIB=on -DUSE_SYSTEM_CARES="%enable_system_cares_opt" -DUSE_SYSTEM_NGHTTP2=on \
-   -DUSE_SYSTEM_XXHASH="%enable_xxhash_opt" -DUSE_SYSTEM_HTTP_PARSER="%enable_http_parser_opt" \
+   -DUSE_SYSTEM_JSON="%enable_json_opt" \
+   -DUSE_SYSTEM_XXHASH="%enable_xxhash_opt" \
+   -DUSE_SYSTEM_HTTP_PARSER="%enable_http_parser_opt" \
    -DUSE_LIBCXX="%enable_libcxx_opt" \
    -DENABLE_LLD="%enable_lld_opt" -DUSE_BUILTIN_CA_BUNDLE_CRT=off ..
 ninja
@@ -121,11 +131,12 @@ rm -rf %{buildroot}
 ninja install
 cd ..
 desktop-file-validate %{buildroot}%{_datadir}/applications/yass.desktop
+%find_lang %{name}
 
 %post
 update-desktop-database
 
-%files
+%files -f %{name}.lang
 %defattr(-,root,root)
 %license LICENSE
 %dir /usr/share/icons/hicolor/
@@ -142,7 +153,6 @@ update-desktop-database
 %{_datadir}/icons/hicolor/128x128/apps/yass.png
 %{_datadir}/icons/hicolor/256x256/apps/yass.png
 %{_datadir}/icons/hicolor/512x512/apps/yass.png
-%{_datadir}/locale/en/LC_MESSAGES/yass.mo
 
 %package server
 Summary: Lightweight and Secure http/socks4/socks5 Proxy (Server Side)

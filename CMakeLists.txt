@@ -1916,7 +1916,24 @@ set(SUPPORT_LIBS asio ${SUPPORT_LIBS})
 #           json Library
 # *****************************************************************************************
 
-include_directories(third_party/json/include SYSTEM)
+
+if (USE_SYSTEM_JSON)
+  check_cxx_source_compiles ("
+#include <nlohmann/json.hpp>
+int main() {}
+" HAVE_SYSTEM_JSON)
+  if (NOT HAVE_SYSTEM_JSON)
+    message(STATUS "System cares not found, using bundled one")
+    set(USE_SYSTEM_JSON FALSE)
+  endif()
+endif()
+
+if (USE_SYSTEM_JSON)
+  message(STATUS "Compiling with system nlohmann json library")
+else()
+  message(STATUS "Compiling with bundled nlohmann json library")
+  include_directories(third_party/json/include SYSTEM)
+endif()
 
 # *****************************************************************************************
 #           googletest Library

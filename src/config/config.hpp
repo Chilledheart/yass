@@ -39,6 +39,13 @@ ABSL_DECLARE_FLAG(bool, insecure_mode);
 ABSL_DECLARE_FLAG(std::string, cacert);
 ABSL_DECLARE_FLAG(std::string, capath);
 
+ABSL_DECLARE_FLAG(uint32_t, worker_connections);
+
+struct RateFlag {
+  uint64_t rate;
+};
+ABSL_DECLARE_FLAG(RateFlag, limit_rate); //bytes per second
+
 namespace config {
 void ReadConfigFileOption(int argc, const char** argv);
 bool ReadConfig();

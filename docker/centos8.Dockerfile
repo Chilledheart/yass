@@ -7,7 +7,7 @@ RUN yum clean all && \
   yum-config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo && \
   yum-config-manager --enable powertools && \
   yum install -y --allowerasing gcc gcc-c++ \
-    git make python39 bash coreutils gh ncurses-compat-libs \
+    git make python39 bash coreutils gh \
     rpm-build rpm-devel rpmlint diffutils patch rpmdevtools \
     cmake ninja-build pkg-config perl golang \
     gtk3-devel zlib-devel c-ares-devel libnghttp2-devel curl-devel \
