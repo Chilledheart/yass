@@ -8,33 +8,40 @@
 // This file adds defines about the platform we're currently building on.
 //
 //  Operating System:
-//    OS_AIX / OS_ANDROID / OS_ASMJS / OS_FREEBSD / OS_IOS /
-//    OS_LINUX / OS_MAC / OS_NETBSD / OS_OPENBSD /
-//    OS_QNX / OS_SOLARIS / OS_WIN
+//    IS_AIX / IS_ANDROID / IS_ASMJS / IS_CHROMEOS / IS_FREEBSD / IS_FUCHSIA /
+//    IS_IOS / IS_IOS_MACCATALYST / IS_LINUX / IS_MAC / IS_NACL / IS_NETBSD /
+//    IS_OPENBSD / IS_QNX / IS_SOLARIS / IS_WIN
 //  Operating System family:
-//    OS_APPLE: IOS or MAC
-//    OS_BSD: FREEBSD or NETBSD or OPENBSD
-//    OS_POSIX: AIX or ANDROID or ASMJS or FREEBSD or IOS or LINUX
-//              or MAC or NETBSD or OPENBSD or QNX or SOLARIS
+//    IS_APPLE: IOS or MAC or IOS_MACCATALYST
+//    IS_BSD: FREEBSD or NETBSD or OPENBSD
+//    IS_POSIX: AIX or ANDROID or ASMJS or CHROMEOS or FREEBSD or IOS or LINUX
+//              or MAC or NACL or NETBSD or OPENBSD or QNX or SOLARIS
 //
 //  Compiler:
 //    COMPILER_MSVC / COMPILER_GCC
 //
 //  Processor:
-//    ARCH_CPU_ARM64 / ARCH_CPU_ARMEL / ARCH_CPU_MIPS / ARCH_CPU_MIPS64 /
+//    ARCH_CPU_ARM64 / ARCH_CPU_ARMEL / ARCH_CPU_LOONGARCH32 /
+//    ARCH_CPU_LOONGARCH64 / ARCH_CPU_MIPS / ARCH_CPU_MIPS64 /
 //    ARCH_CPU_MIPS64EL / ARCH_CPU_MIPSEL / ARCH_CPU_PPC64 / ARCH_CPU_S390 /
-//    ARCH_CPU_S390X / ARCH_CPU_X86 / ARCH_CPU_X86_64
+//    ARCH_CPU_S390X / ARCH_CPU_X86 / ARCH_CPU_X86_64 / ARCH_CPU_RISCV64
 //  Processor family:
 //    ARCH_CPU_ARM_FAMILY: ARMEL or ARM64
+//    ARCH_CPU_LOONGARCH_FAMILY: LOONGARCH32 or LOONGARCH64
 //    ARCH_CPU_MIPS_FAMILY: MIPS64EL or MIPSEL or MIPS64 or MIPS
 //    ARCH_CPU_PPC64_FAMILY: PPC64
 //    ARCH_CPU_S390_FAMILY: S390 or S390X
 //    ARCH_CPU_X86_FAMILY: X86 or X86_64
+//    ARCH_CPU_RISCV_FAMILY: Riscv64
 //  Processor features:
 //    ARCH_CPU_31_BITS / ARCH_CPU_32_BITS / ARCH_CPU_64_BITS
 //    ARCH_CPU_BIG_ENDIAN / ARCH_CPU_LITTLE_ENDIAN
 
-#if defined(ANDROID) || defined(__ANDROID__)
+// A set of macros to use for platform detection.
+#if defined(__native_client__)
+// __native_client__ must be first, so that other OS_ defines are not set.
+#define OS_NACL 1
+#elif defined(ANDROID)
 #define OS_ANDROID 1
 #elif defined(__APPLE__)
 // Only include TargetConditionals after testing ANDROID as some Android builds
@@ -43,19 +50,30 @@
 #include <TargetConditionals.h>
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 #define OS_IOS 1
+// Catalyst is the technology that allows running iOS apps on macOS. These
+// builds are both OS_IOS and OS_IOS_MACCATALYST.
+#if defined(TARGET_OS_MACCATALYST) && TARGET_OS_MACCATALYST
+#define OS_IOS_MACCATALYST
+#endif  // defined(TARGET_OS_MACCATALYST) && TARGET_OS_MACCATALYST
 #else
 #define OS_MAC 1
 #endif  // defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 #elif defined(__linux__)
+#if !defined(OS_CHROMEOS)
+// Do not define OS_LINUX on Chrome OS build.
+// The OS_CHROMEOS macro is defined in GN.
 #define OS_LINUX 1
+#endif  // !defined(OS_CHROMEOS)
 // Include a system header to pull in features.h for glibc/uclibc macros.
-#include <unistd.h>
+#include <assert.h>
 #if defined(__GLIBC__) && !defined(__UCLIBC__)
 // We really are using glibc, not uClibc pretending to be glibc.
 #define LIBC_GLIBC 1
 #endif
 #elif defined(_WIN32)
 #define OS_WIN 1
+#elif defined(__Fuchsia__)
+#define OS_FUCHSIA 1
 #elif defined(__FreeBSD__)
 #define OS_FREEBSD 1
 #elif defined(__NetBSD__)
@@ -73,7 +91,7 @@
 #elif defined(__MVS__)
 #define OS_ZOS 1
 #else
-#error Please add support for your platform in build/build_config.h
+#error Please add support for your platform in compiler_specific.hpp
 #endif
 // NOTE: Adding a new port? Please follow
 // https://chromium.googlesource.com/chromium/src/+/main/docs/new_port_policy.md
@@ -92,8 +110,9 @@
 // more specific macro.
 #if defined(OS_AIX) || defined(OS_ANDROID) || defined(OS_ASMJS) ||  \
     defined(OS_FREEBSD) || defined(OS_IOS) || defined(OS_LINUX) ||  \
-    defined(OS_MAC) || defined(OS_NETBSD) || defined(OS_OPENBSD) || \
-    defined(OS_QNX) || defined(OS_SOLARIS) || defined(OS_ZOS)
+    defined(OS_CHROMEOS) || defined(OS_MAC) || defined(OS_NACL) ||  \
+    defined(OS_NETBSD) || defined(OS_OPENBSD) || defined(OS_QNX) || \
+    defined(OS_SOLARIS) || defined(OS_ZOS)
 #define OS_POSIX 1
 #endif
 
@@ -104,7 +123,7 @@
 #elif defined(_MSC_VER)
 #define COMPILER_MSVC 1
 #else
-#error Please add support for your compiler in build/build_config.h
+#error Please add support for your compiler in compiler_specific.hpp
 #endif
 
 // Processor architecture detection.  For more info on what's defined, see:
@@ -178,8 +197,23 @@
 #define ARCH_CPU_32_BITS 1
 #define ARCH_CPU_BIG_ENDIAN 1
 #endif
+#elif defined(__loongarch__)
+#define ARCH_CPU_LOONGARCH_FAMILY 1
+#define ARCH_CPU_LITTLE_ENDIAN 1
+#if __loongarch_grlen == 64
+#define ARCH_CPU_LOONGARCH64 1
+#define ARCH_CPU_64_BITS 1
 #else
-#error Please add support for your architecture in build/build_config.h
+#define ARCH_CPU_LOONGARCH32 1
+#define ARCH_CPU_32_BITS 1
+#endif
+#elif defined(__riscv) && (__riscv_xlen == 64)
+#define ARCH_CPU_RISCV_FAMILY 1
+#define ARCH_CPU_RISCV64 1
+#define ARCH_CPU_64_BITS 1
+#define ARCH_CPU_LITTLE_ENDIAN 1
+#else
+#error Please add support for your architecture in compiler_specific.hpp
 #endif
 
 // Type detection for wchar_t.
@@ -198,7 +232,7 @@
 // short wchar works for them.
 #define WCHAR_T_IS_UTF16
 #else
-#error Please add support for your compiler in build/build_config.h
+#error Please add support for your compiler in compiler_specific.hpp
 #endif
 
 #if defined(OS_ANDROID)
