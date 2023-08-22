@@ -1859,6 +1859,7 @@ if (USE_MBEDTLS)
 
   add_subdirectory(third_party/mbedtls)
   add_definitions(-DHAVE_MBEDTLS)
+  include_directories(third_party/mbedtls/include SYSTEM)
 
   set(SUPPORT_LIBS libmbedcrypto ${SUPPORT_LIBS})
 endif()
@@ -2645,6 +2646,7 @@ set(files
     src/crypto/xchacha20_poly1305_evp_encrypter.cpp
     src/crypto/xchacha20_poly1305_sodium_decrypter.cpp
     src/crypto/xchacha20_poly1305_sodium_encrypter.cpp
+    src/crypto/mbedtls_common.cpp
 
     src/core/c-ares.cpp
     src/core/http_parser.cpp
@@ -2737,6 +2739,7 @@ set(hfiles
     src/crypto/xchacha20_poly1305_evp_encrypter.hpp
     src/crypto/xchacha20_poly1305_sodium_decrypter.hpp
     src/crypto/xchacha20_poly1305_sodium_encrypter.hpp
+    src/crypto/mbedtls_common.hpp
 
     src/core/c-ares.hpp
     src/core/http_parser.hpp
