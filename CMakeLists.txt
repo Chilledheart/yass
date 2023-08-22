@@ -239,6 +239,7 @@ option(USE_CURL "Build with libcurl (test only)" ON)
 option(USE_CARES "Build with c-ares" ON)
 option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
 option(USE_BUILTIN_CA_BUNDLE_CRT "Build with embedded ca-bundle.crt support" ON)
+option(USE_MBEDTLS "Build with mbedtls support" OFF)
 
 option(ENABLE_LTO "Enable build with LTO" ON)
 option(ENABLE_LLD "Enable build with LLD" ON)
@@ -1841,6 +1842,25 @@ if (BORINGSSL_BUILD_TESTS)
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/third_party/boringssl/src
     DEPENDS all_tests
     USES_TERMINAL)
+endif()
+
+# *****************************************************************************************
+#           mbedssl Library
+# *****************************************************************************************
+# pip install -U 'jsonschema<4.0'
+# pip install -U jinja2
+
+if (USE_MBEDTLS)
+  set(USE_SHARED_MBEDTLS_LIBRARY "OFF" CACHE STRING "")
+  set(USE_STATIC_MBEDTLS_LIBRARY "ON" CACHE STRING "")
+  set(ENABLE_TESTING "OFF" CACHE STRING "")
+  set(ENABLE_PROGRAMS "OFF" CACHE STRING "")
+  set(MBEDTLS_FATAL_WARNINGS OFF CACHE BOOL "")
+
+  add_subdirectory(third_party/mbedtls)
+  add_definitions(-DHAVE_MBEDTLS)
+
+  set(SUPPORT_LIBS libmbedcrypto ${SUPPORT_LIBS})
 endif()
 
 # *****************************************************************************************
