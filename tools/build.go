@@ -297,11 +297,16 @@ func getGNUTargetTypeAndArch(arch string, subsystem string) (string, string) {
 			return "x86_64-linux-musl", "x86_64"
 		}
 		return "x86_64-linux-gnu", "x86_64"
-	} else if arch == "x86" || arch == "i386" || arch == "i586" || arch == "i686" {
+	} else if arch == "x86" {
 		if subsystem == "musl" {
-			return "i686-linux-musl", "i386"
+			return "i686-linux-musl", "i686"
 		}
-		return "i686-linux-gnu", "i386"
+		return "i686-linux-gnu", "i686"
+	} else if arch == "i386" || arch == "i486" || arch == "i586" || arch == "i686" {
+		if subsystem == "musl" {
+			return fmt.Sprintf("%s-linux-musl", arch), arch
+		}
+		return fmt.Sprintf("%s-linux-gnu", arch), arch
 	} else if arch == "arm64" || arch == "aarch64" {
 		if subsystem == "musl" {
 			return "aarch64-linux-musl", "aarch64"
