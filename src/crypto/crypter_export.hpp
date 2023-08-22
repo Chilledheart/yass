@@ -34,15 +34,12 @@
 
 #ifdef HAVE_MBEDTLS
 #define CIPHER_METHOD_MAP_MBEDTLS(XX)              \
-  XX(0x20U, RC4, "rc4")                            \
-  XX(0x21U, RC4_MD5, "rc4-md5")                    \
   XX(0x22U, AES_128_CFB, "aes-128-cfb")            \
   XX(0x23U, AES_192_CFB, "aes-192-cfb")            \
   XX(0x24U, AES_256_CFB, "aes-256-cfb")            \
   XX(0x25U, AES_128_CTR, "aes-128-ctr")            \
   XX(0x26U, AES_192_CTR, "aes-192-ctr")            \
   XX(0x27U, AES_256_CTR, "aes-256-ctr")            \
-  XX(0x28U, BF_CFB, "bf-cfb")                      \
   XX(0x29U, CAMELLIA_128_CFB, "camellia-128-cfb")  \
   XX(0x30U, CAMELLIA_192_CFB, "camellia-192-cfb")  \
   XX(0x31U, CAMELLIA_256_CFB, "camellia-256-cfb")  \

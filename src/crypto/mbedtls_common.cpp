@@ -9,8 +9,23 @@
 namespace crypto {
 
 mbedtls_cipher_context_t* mbedtls_create_evp(enum cipher_method method) {
-  const mbedtls_cipher_info_t* info = mbedtls_get_cipher(method);
+  const mbedtls_cipher_info_t* info;
+  mbedtls_cipher_info_t* info_store = nullptr;
+  switch(method) {
+    case CRYPTO_SALSA20:
+    case CRYPTO_CHACHA20:
+    case CRYPTO_CHACHA20IETF:
+      info = info_store = new mbedtls_cipher_info_t;
+      info_store->private_base = nullptr;
+      info_store->private_key_bitlen = mbedtls_get_key_size(method) * 8;
+      info_store->private_iv_size = mbedtls_get_nonce_size(method);
+      break;
+    default:
+      info = mbedtls_get_cipher(method);
+      break;
+  }
   if (!info) {
+    LOG(WARNING) << "mbedtls: setup failed";
     return nullptr;
   }
   auto *evp = new mbedtls_cipher_context_t;
@@ -28,7 +43,7 @@ void mbedtls_release_evp(mbedtls_cipher_context_t* evp) {
 }
 
 const mbedtls_cipher_info_t* mbedtls_get_cipher(enum cipher_method method) {
-  const char* name = nullptr;
+  mbedtls_cipher_type_t type;
   //  "table",
   //  "ARC4-128",
   //  "ARC4-128",
@@ -46,67 +61,61 @@ const mbedtls_cipher_info_t* mbedtls_get_cipher(enum cipher_method method) {
   //  "chacha20",
   //  "chacha20-ietf"
   switch(method) {
+#if 0
     case CRYPTO_RC4:
     case CRYPTO_RC4_MD5:
-      name = "ARC4-128";
+      type = MBEDTLS_CIPHER_ARC4_128;
       break;
+#endif
     case CRYPTO_AES_128_CFB:
-      name = "AES-128-CFB128";
+      type = MBEDTLS_CIPHER_AES_128_CFB128;
       break;
     case CRYPTO_AES_192_CFB:
-      name = "AES-192-CFB128";
+      type = MBEDTLS_CIPHER_AES_192_CFB128;
       break;
     case CRYPTO_AES_256_CFB:
-      name = "AES-256-CFB128";
+      type = MBEDTLS_CIPHER_AES_256_CFB128;
       break;
     case CRYPTO_AES_128_CTR:
-      name = "AES-128-CTR";
+      type = MBEDTLS_CIPHER_AES_128_CTR;
       break;
     case CRYPTO_AES_192_CTR:
-      name = "AES-192-CTR";
+      type = MBEDTLS_CIPHER_AES_192_CTR;
       break;
     case CRYPTO_AES_256_CTR:
-      name = "AES-256-CTR";
+      type = MBEDTLS_CIPHER_AES_256_CTR;
       break;
+#if 0
     case CRYPTO_BF_CFB:
-      name = "BLOWFISH-CFB64";
+      type = MBEDTLS_CIPHER_BLOWFISH_CFB64;
       break;
+#endif
     case CRYPTO_CAMELLIA_128_CFB:
-      name = "CAMELLIA-128-CFB128";
+      type = MBEDTLS_CIPHER_CAMELLIA_128_CFB128;
       break;
     case CRYPTO_CAMELLIA_192_CFB:
-      name = "CAMELLIA-192-CFB128";
+      type = MBEDTLS_CIPHER_CAMELLIA_192_CFB128;
       break;
     case CRYPTO_CAMELLIA_256_CFB:
-      name = "CAMELLIA-256-CFB128";
-      break;
-    case CRYPTO_SALSA20:
-      name = "sala20";
-      break;
-    case CRYPTO_CHACHA20:
-      name = "chacha20";
-      break;
-    case CRYPTO_CHACHA20IETF:
-      name = "chacha20-ietf";
+      type = MBEDTLS_CIPHER_CAMELLIA_256_CFB128;
       break;
     default:
       LOG(WARNING) << "bad cipher method: " << method;
-      name = nullptr;
+      return nullptr;
       break;
   }
-  if (!name) {
-    return nullptr;
-  }
-  return mbedtls_cipher_info_from_string(name);
+  return mbedtls_cipher_info_from_type(type);
 }
 
 uint8_t mbedtls_get_nonce_size(enum cipher_method method) {
   // TABLE, RC4, ..., CHACHA20_IETF
   // 0, 0, 16, 16, 16, 16, 16, 16, 16, 8, 16, 16, 16, 8, 8, 12
   switch(method) {
+#if 0
     case CRYPTO_RC4:
       return 0;
     case CRYPTO_RC4_MD5:
+#endif
     case CRYPTO_AES_128_CFB:
     case CRYPTO_AES_192_CFB:
     case CRYPTO_AES_256_CFB:
@@ -114,8 +123,10 @@ uint8_t mbedtls_get_nonce_size(enum cipher_method method) {
     case CRYPTO_AES_192_CTR:
     case CRYPTO_AES_256_CTR:
       return 16;
+#if 0
     case CRYPTO_BF_CFB:
       return 8;
+#endif
     case CRYPTO_CAMELLIA_128_CFB:
     case CRYPTO_CAMELLIA_192_CFB:
     case CRYPTO_CAMELLIA_256_CFB:
@@ -135,9 +146,11 @@ uint8_t mbedtls_get_key_size(enum cipher_method method) {
   // TABLE, RC4, ..., CHACHA20_IETF
   // 0, 16, 16, 16, 24, 32, 16, 24, 32, 16, 16, 24, 32, 32, 32, 32
   switch(method) {
+#if 0
     case CRYPTO_RC4:
     case CRYPTO_RC4_MD5:
       return 16;
+#endif
     case CRYPTO_AES_128_CFB:
       return 16;
     case CRYPTO_AES_192_CFB:
@@ -150,8 +163,10 @@ uint8_t mbedtls_get_key_size(enum cipher_method method) {
       return 24;
     case CRYPTO_AES_256_CTR:
       return 32;
+#if 0
     case CRYPTO_BF_CFB:
       return 16;
+#endif
     case CRYPTO_CAMELLIA_128_CFB:
       return 16;
     case CRYPTO_CAMELLIA_192_CFB:

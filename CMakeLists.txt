@@ -1861,7 +1861,7 @@ if (USE_MBEDTLS)
   add_definitions(-DHAVE_MBEDTLS)
   include_directories(third_party/mbedtls/include SYSTEM)
 
-  set(SUPPORT_LIBS libmbedcrypto ${SUPPORT_LIBS})
+  set(SUPPORT_LIBS mbedcrypto ${SUPPORT_LIBS})
 endif()
 
 # *****************************************************************************************
@@ -2624,6 +2624,8 @@ set(files
     src/crypto/aead_evp_encrypter.cpp
     src/crypto/aead_sodium_decrypter.cpp
     src/crypto/aead_sodium_encrypter.cpp
+    src/crypto/aead_mbedtls_decrypter.cpp
+    src/crypto/aead_mbedtls_encrypter.cpp
     src/crypto/aes_128_gcm_12_evp_decrypter.cpp
     src/crypto/aes_128_gcm_12_evp_encrypter.cpp
     src/crypto/aes_128_gcm_evp_decrypter.cpp
@@ -2717,6 +2719,8 @@ set(hfiles
     src/crypto/aead_evp_encrypter.hpp
     src/crypto/aead_sodium_decrypter.hpp
     src/crypto/aead_sodium_encrypter.hpp
+    src/crypto/aead_mbedtls_decrypter.hpp
+    src/crypto/aead_mbedtls_encrypter.hpp
     src/crypto/aes_128_gcm_12_evp_decrypter.hpp
     src/crypto/aes_128_gcm_12_evp_encrypter.hpp
     src/crypto/aes_128_gcm_evp_decrypter.hpp

@@ -15,6 +15,9 @@
 #include "crypto/xchacha20_poly1305_evp_encrypter.hpp"
 #include "crypto/xchacha20_poly1305_sodium_encrypter.hpp"
 
+#include "crypto/aead_mbedtls_encrypter.hpp"
+#include "crypto/mbedtls_common.hpp"
+
 namespace crypto {
 
 Encrypter::~Encrypter() = default;
@@ -41,6 +44,33 @@ std::unique_ptr<Encrypter> Encrypter::CreateFromCipherSuite(
       return std::make_unique<Aes192GcmEvpEncrypter>();
     case CRYPTO_AES256GCMSHA256_EVP:
       return std::make_unique<Aes256GcmEvpEncrypter>();
+#endif
+#ifdef HAVE_MBEDTLS
+#if 0
+    case CRYPTO_RC4:
+    case CRYPTO_RC4_MD5:
+#endif
+    case CRYPTO_AES_128_CFB:
+    case CRYPTO_AES_192_CFB:
+    case CRYPTO_AES_256_CFB:
+    case CRYPTO_AES_128_CTR:
+    case CRYPTO_AES_192_CTR:
+    case CRYPTO_AES_256_CTR:
+#if 0
+    case CRYPTO_BF_CFB:
+#endif
+    case CRYPTO_CAMELLIA_128_CFB:
+    case CRYPTO_CAMELLIA_192_CFB:
+    case CRYPTO_CAMELLIA_256_CFB:
+    case CRYPTO_SALSA20:
+    case CRYPTO_CHACHA20:
+    case CRYPTO_CHACHA20IETF: {
+      auto evp = mbedtls_create_evp(static_cast<cipher_method>(cipher_suite));
+      auto key_len = mbedtls_get_key_size(static_cast<cipher_method>(cipher_suite));
+      auto nonce_len = mbedtls_get_nonce_size(static_cast<cipher_method>(cipher_suite));
+      return std::make_unique<AeadMbedtlsEncrypter>(static_cast<cipher_method>(cipher_suite),
+                                                    evp, key_len, 255, nonce_len);
+    }
 #endif
     default:
       LOG(FATAL) << "Unsupported cipher created: "
