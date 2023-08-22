@@ -44,3 +44,6 @@
 [submodule "third_party/benchmark"]
 	path = third_party/benchmark
 	url = https://github.com/google/benchmark
+[submodule "third_party/mbedtls"]
+	path = third_party/mbedtls
+	url = https://github.com/Chilledheart/mbedtls
