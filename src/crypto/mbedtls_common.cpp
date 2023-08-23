@@ -26,6 +26,7 @@ mbedtls_cipher_context_t* mbedtls_create_evp(enum cipher_method method) {
 
 void mbedtls_release_evp(mbedtls_cipher_context_t* evp) {
   mbedtls_cipher_free(evp);
+  delete evp;
 }
 
 const mbedtls_cipher_info_t* mbedtls_get_cipher(enum cipher_method method) {
