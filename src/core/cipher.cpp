@@ -187,6 +187,16 @@ class cipher_impl {
                      : decrypter->GetNoncePrefix();
   }
 
+  uint32_t cipher_id() const {
+    if (encrypter) {
+      return encrypter->cipher_id();
+    }
+    if (decrypter) {
+      return decrypter->cipher_id();
+    }
+    return CRYPTO_INVALID;
+  }
+
   std::unique_ptr<crypto::Encrypter> encrypter;
   std::unique_ptr<crypto::Decrypter> decrypter;
 };
@@ -332,6 +342,16 @@ void cipher::encrypt_salt(IOBuf* chunk) {
 int cipher::chunk_decrypt_frame(uint64_t* counter,
                                 IOBuf* plaintext,
                                 IOBuf* ciphertext) const {
+  if (impl_->cipher_id() >= CRYPTO_AES_128_CFB && impl_->cipher_id() <= CRYPTO_CAMELLIA_256_CFB) {
+    return chunk_decrypt_frame_stream(counter, plaintext, ciphertext);
+  } else {
+    return chunk_decrypt_frame_aead(counter, plaintext, ciphertext);
+  }
+}
+
+int cipher::chunk_decrypt_frame_aead(uint64_t* counter,
+                                     IOBuf* plaintext,
+                                     IOBuf* ciphertext) const {
   int err;
   size_t mlen;
   size_t tlen = tag_len_;
@@ -406,10 +426,42 @@ int cipher::chunk_decrypt_frame(uint64_t* counter,
   return 0;
 }
 
+int cipher::chunk_decrypt_frame_stream(uint64_t* counter,
+                                       IOBuf* plaintext,
+                                       IOBuf* ciphertext) const {
+  int err;
+  size_t plen = ciphertext->length();
+  plaintext->reserve(0, ciphertext->length());
+
+  VLOG(4) << "decrypt: stream chunk: origin: " << plen
+          << " actual: " << ciphertext->length();
+
+  err = impl_->DecryptPacket(*counter, plaintext->mutable_tail(), &plen,
+                             ciphertext->data(), ciphertext->length());
+  if (err) {
+    return -EBADMSG;
+  }
+  plaintext->append(plen);
+  ciphertext->trimStart(ciphertext->length());
+  (*counter)++;
+  return 0;
+}
+
 int cipher::chunk_encrypt_frame(uint64_t* counter,
                                 const uint8_t* plaintext_data,
                                 size_t plaintext_size,
                                 IOBuf* ciphertext) const {
+  if (impl_->cipher_id() >= CRYPTO_AES_128_CFB && impl_->cipher_id() <= CRYPTO_CAMELLIA_256_CFB) {
+    return chunk_encrypt_frame_stream(counter, plaintext_data, plaintext_size, ciphertext);
+  } else {
+    return chunk_encrypt_frame_aead(counter, plaintext_data, plaintext_size, ciphertext);
+  }
+}
+
+int cipher::chunk_encrypt_frame_aead(uint64_t* counter,
+                                     const uint8_t* plaintext_data,
+                                     size_t plaintext_size,
+                                     IOBuf* ciphertext) const {
   size_t tlen = tag_len_;
 
   DCHECK_LE(plaintext_size, CHUNK_SIZE_MASK);
@@ -463,6 +515,28 @@ int cipher::chunk_encrypt_frame(uint64_t* counter,
 
   ciphertext->append(clen);
 
+  (*counter)++;
+
+  return 0;
+}
+
+int cipher::chunk_encrypt_frame_stream(uint64_t* counter,
+                                       const uint8_t* plaintext_data,
+                                       size_t plaintext_size,
+                                       IOBuf* ciphertext) const {
+  int err;
+  size_t clen = plaintext_size;
+  ciphertext->reserve(0, clen);
+
+  VLOG(4) << "encrypt: stream chunk: origin: " << plaintext_size
+          << " actual: " << clen;
+
+  err = impl_->EncryptPacket(*counter, ciphertext->mutable_tail(), &clen,
+                             plaintext_data, plaintext_size);
+  if (err) {
+    return -EBADMSG;
+  }
+  ciphertext->append(clen);
   (*counter)++;
 
   return 0;

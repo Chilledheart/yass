@@ -13,6 +13,7 @@
 
 namespace crypto {
 
+/// actually, it is stream cipher, not ahead cipher
 class AeadMbedtlsEncrypter : public AeadBaseEncrypter {
  public:
   AeadMbedtlsEncrypter(cipher_method method,

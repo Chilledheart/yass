@@ -87,9 +87,27 @@ class cipher {
 
   void encrypt_salt(IOBuf* chunk);
 
+  int chunk_decrypt_frame_aead(uint64_t* counter,
+                               IOBuf* plaintext,
+                               IOBuf* ciphertext) const;
+
+  int chunk_decrypt_frame_stream(uint64_t* counter,
+                                 IOBuf* plaintext,
+                                 IOBuf* ciphertext) const;
+
   int chunk_decrypt_frame(uint64_t* counter,
                           IOBuf* plaintext,
                           IOBuf* ciphertext) const;
+
+  int chunk_encrypt_frame_aead(uint64_t* counter,
+                               const uint8_t* plaintext_data,
+                               size_t plaintext_size,
+                               IOBuf* ciphertext) const;
+
+  int chunk_encrypt_frame_stream(uint64_t* counter,
+                                 const uint8_t* plaintext_data,
+                                 size_t plaintext_size,
+                                 IOBuf* ciphertext) const;
 
   int chunk_encrypt_frame(uint64_t* counter,
                           const uint8_t* plaintext_data,
