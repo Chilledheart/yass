@@ -239,7 +239,7 @@ option(USE_CURL "Build with libcurl (test only)" ON)
 option(USE_CARES "Build with c-ares" ON)
 option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
 option(USE_BUILTIN_CA_BUNDLE_CRT "Build with embedded ca-bundle.crt support" ON)
-option(USE_MBEDTLS "Build with mbedtls support" OFF)
+option(USE_MBEDTLS "Build with mbedtls support" ON)
 
 option(ENABLE_LTO "Enable build with LTO" ON)
 option(ENABLE_LLD "Enable build with LLD" ON)
