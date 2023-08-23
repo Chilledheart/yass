@@ -136,6 +136,8 @@ jobs:
           sudo apt-get install -y cmake ninja-build pkg-config bubblewrap
           # libc6-i386 interferes with x86 build
           sudo apt remove libc6-i386
+          # required by mbedtls build
+          sudo apt-get install -y python3-jsonschema python3-jinja2
       - name: Set clang environment
         run: |
           echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
