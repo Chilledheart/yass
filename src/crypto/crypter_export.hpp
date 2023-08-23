@@ -42,10 +42,7 @@
   XX(0x27U, AES_256_CTR, "aes-256-ctr")            \
   XX(0x29U, CAMELLIA_128_CFB, "camellia-128-cfb")  \
   XX(0x30U, CAMELLIA_192_CFB, "camellia-192-cfb")  \
-  XX(0x31U, CAMELLIA_256_CFB, "camellia-256-cfb")  \
-  XX(0x32U, SALSA20, "salsa20")                    \
-  XX(0x33U, CHACHA20, "chacha20")                  \
-  XX(0x34U, CHACHA20IETF, "chacha20-ietf")
+  XX(0x31U, CAMELLIA_256_CFB, "camellia-256-cfb")
 #else
 #define CIPHER_METHOD_MAP_MBEDTLS(XX)
 #endif

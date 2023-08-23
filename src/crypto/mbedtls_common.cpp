@@ -9,21 +9,7 @@
 namespace crypto {
 
 mbedtls_cipher_context_t* mbedtls_create_evp(enum cipher_method method) {
-  const mbedtls_cipher_info_t* info;
-  mbedtls_cipher_info_t* info_store = nullptr;
-  switch(method) {
-    case CRYPTO_SALSA20:
-    case CRYPTO_CHACHA20:
-    case CRYPTO_CHACHA20IETF:
-      info = info_store = new mbedtls_cipher_info_t;
-      info_store->private_base = nullptr;
-      info_store->private_key_bitlen = mbedtls_get_key_size(method) * 8;
-      info_store->private_iv_size = mbedtls_get_nonce_size(method);
-      break;
-    default:
-      info = mbedtls_get_cipher(method);
-      break;
-  }
+  const auto *info = mbedtls_get_cipher(method);
   if (!info) {
     LOG(WARNING) << "mbedtls: setup failed";
     return nullptr;
@@ -131,11 +117,6 @@ uint8_t mbedtls_get_nonce_size(enum cipher_method method) {
     case CRYPTO_CAMELLIA_192_CFB:
     case CRYPTO_CAMELLIA_256_CFB:
       return 16;
-    case CRYPTO_SALSA20:
-    case CRYPTO_CHACHA20:
-      return 8;
-    case CRYPTO_CHACHA20IETF:
-      return 12;
     default:
       LOG(WARNING) << "bad cipher method: " << method;
       return -1;
@@ -172,10 +153,6 @@ uint8_t mbedtls_get_key_size(enum cipher_method method) {
     case CRYPTO_CAMELLIA_192_CFB:
       return 24;
     case CRYPTO_CAMELLIA_256_CFB:
-      return 32;
-    case CRYPTO_SALSA20:
-    case CRYPTO_CHACHA20:
-    case CRYPTO_CHACHA20IETF:
       return 32;
     default:
       LOG(WARNING) << "bad cipher method: " << method;

@@ -60,10 +60,7 @@ std::unique_ptr<Decrypter> Decrypter::CreateFromCipherSuite(
 #endif
     case CRYPTO_CAMELLIA_128_CFB:
     case CRYPTO_CAMELLIA_192_CFB:
-    case CRYPTO_CAMELLIA_256_CFB:
-    case CRYPTO_SALSA20:
-    case CRYPTO_CHACHA20:
-    case CRYPTO_CHACHA20IETF: {
+    case CRYPTO_CAMELLIA_256_CFB: {
       auto evp = mbedtls_create_evp(static_cast<cipher_method>(cipher_suite));
       auto key_len = mbedtls_get_key_size(static_cast<cipher_method>(cipher_suite));
       auto nonce_len = mbedtls_get_nonce_size(static_cast<cipher_method>(cipher_suite));
