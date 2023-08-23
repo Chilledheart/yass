@@ -342,11 +342,15 @@ void cipher::encrypt_salt(IOBuf* chunk) {
 int cipher::chunk_decrypt_frame(uint64_t* counter,
                                 IOBuf* plaintext,
                                 IOBuf* ciphertext) const {
+#ifdef HAVE_MBEDTLS
   if (impl_->cipher_id() >= CRYPTO_AES_128_CFB && impl_->cipher_id() <= CRYPTO_CAMELLIA_256_CFB) {
     return chunk_decrypt_frame_stream(counter, plaintext, ciphertext);
   } else {
+#endif
     return chunk_decrypt_frame_aead(counter, plaintext, ciphertext);
+#ifdef HAVE_MBEDTLS
   }
+#endif
 }
 
 int cipher::chunk_decrypt_frame_aead(uint64_t* counter,
@@ -451,11 +455,15 @@ int cipher::chunk_encrypt_frame(uint64_t* counter,
                                 const uint8_t* plaintext_data,
                                 size_t plaintext_size,
                                 IOBuf* ciphertext) const {
+#ifdef HAVE_MBEDTLS
   if (impl_->cipher_id() >= CRYPTO_AES_128_CFB && impl_->cipher_id() <= CRYPTO_CAMELLIA_256_CFB) {
     return chunk_encrypt_frame_stream(counter, plaintext_data, plaintext_size, ciphertext);
   } else {
+#endif
     return chunk_encrypt_frame_aead(counter, plaintext_data, plaintext_size, ciphertext);
+#ifdef HAVE_MBEDTLS
   }
+#endif
 }
 
 int cipher::chunk_encrypt_frame_aead(uint64_t* counter,
