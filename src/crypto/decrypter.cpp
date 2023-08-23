@@ -68,7 +68,7 @@ std::unique_ptr<Decrypter> Decrypter::CreateFromCipherSuite(
       auto key_len = mbedtls_get_key_size(static_cast<cipher_method>(cipher_suite));
       auto nonce_len = mbedtls_get_nonce_size(static_cast<cipher_method>(cipher_suite));
       return std::make_unique<AeadMbedtlsDecrypter>(static_cast<cipher_method>(cipher_suite),
-                                                    evp, key_len, 255, nonce_len);
+                                                    evp, key_len, 0, nonce_len);
     }
 #endif
     default:
