@@ -1850,12 +1850,28 @@ endif()
 # pip install -U 'jsonschema<4.0'
 # pip install -U jinja2
 
-if (USE_MBEDTLS)
+if (USE_SYSTEM_MBEDTLS)
+  check_library_exists(mbedcrypto mbedtls_cipher_init "" HAVE_SYSTEM_MBEDTLS)
+  if (NOT HAVE_SYSTEM_MBEDTLS)
+    message(STATUS "System mbedtls not found, using bundled one")
+    set(HAVE_SYSTEM_MBEDTLS FALSE)
+  endif()
+endif()
+
+if (USE_SYSTEM_MBEDTLS AND USE_MBEDTLS)
+  message(STATUS "Compiling with system mbedtls library")
+  add_definitions(-DHAVE_MBEDTLS)
+
+  set(SUPPORT_LIBS mbedcrypto ${SUPPORT_LIBS})
+elseif (USE_MBEDTLS)
+  message(STATUS "Compiling with bundled mbedtls library")
   set(USE_SHARED_MBEDTLS_LIBRARY "OFF" CACHE STRING "")
   set(USE_STATIC_MBEDTLS_LIBRARY "ON" CACHE STRING "")
   set(ENABLE_TESTING "OFF" CACHE STRING "")
   set(ENABLE_PROGRAMS "OFF" CACHE STRING "")
   set(MBEDTLS_FATAL_WARNINGS OFF CACHE BOOL "")
+  set(DISABLE_PACKAGE_CONFIG_AND_INSTALL ON CACHE BOOL "")
+  set(INSTALL_MBEDTLS_HEADERS OFF CACHE BOOL "")
 
   add_subdirectory(third_party/mbedtls)
   add_definitions(-DHAVE_MBEDTLS)

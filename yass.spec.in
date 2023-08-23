@@ -2,6 +2,13 @@
 # with flag -DENABLE_LTO
 %global _lto_cflags %nil
 
+# requires recent version of mbedtls
+%if 0%{?fedora}
+%global enable_mbedtls_opt on
+%else
+%global enable_mbedtls_opt off
+%endif
+
 # requires recent version of json
 %if 0%{?fedora}
 %global enable_json_opt on
@@ -109,11 +116,11 @@ cd build
 cmake3 -G Ninja -DCMAKE_BUILD_TYPE=Release \
    -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DCLI=on -DSERVER=on \
    -DUSE_SYSTEM_ZLIB=on -DUSE_SYSTEM_CARES="%enable_system_cares_opt" -DUSE_SYSTEM_NGHTTP2=on \
+   -DUSE_SYSTEM_MBEDTLS="%enable_mbedtls_opt" \
    -DUSE_SYSTEM_JSON="%enable_json_opt" \
    -DUSE_SYSTEM_XXHASH="%enable_xxhash_opt" \
    -DUSE_SYSTEM_HTTP_PARSER="%enable_http_parser_opt" \
    -DUSE_LIBCXX="%enable_libcxx_opt" \
-   -DUSE_MBEDTLS=off \
    -DENABLE_LLD="%enable_lld_opt" -DUSE_BUILTIN_CA_BUNDLE_CRT=off ..
 ninja
 cd ..
