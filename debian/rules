@@ -46,6 +46,8 @@ ifneq ($(filter riscv64,$(DEB_HOST_GNU_CPU)),)
 override_dh_auto_configure: ASMFLAGS += -march=rv64gc -mabi=lp64d
 override_dh_auto_configure: CFLAGS += -march=rv64gc -mabi=lp64d
 override_dh_auto_configure: CXXFLAGS += -march=rv64gc -mabi=lp64d
+# lto mess with d extension support
+CMAKE_OPTIONS += -DENABLE_LTO=off
 endif
 endif
 
