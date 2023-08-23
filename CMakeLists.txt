@@ -218,6 +218,15 @@ if (NOT (WIN32 AND (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "x86" OR MSVC_PROCESSOR
   enable_language(ASM)
 endif()
 
+# temporary fix for d extension on debian riscv64 architecture
+# tested with
+# echo | LD_LIBRARY_PATH=./usr/lib/x86_64-linux-gnu ./usr/bin/riscv64-linux-gnu-gcc -dM -E -|grep -i float
+if (COMPILER_CLANG AND ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "riscv64")
+  set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Xclang -target-abi -Xclang lp64d")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xclang -target-abi -Xclang lp64d")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -target-abi -Xclang lp64d")
+endif()
+
 ## Export build compilation database if possible
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
