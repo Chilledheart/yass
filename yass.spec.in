@@ -88,6 +88,7 @@ BuildRequires: cmake3 >= 3.12, pkgconfig
 %endif
 %if 0%{?fedora}
 BuildRequires: clang, lld
+BuildRequires: mbedtls-devel
 BuildRequires: json-devel
 BuildRequires: xxhash-devel
 BuildRequires: http-parser-devel
