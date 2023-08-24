@@ -82,11 +82,6 @@ bool AeadMbedtlsEncrypter::EncryptPacket(uint64_t packet_number,
   uint8_t nonce[kMaxNonceSize] = {};
   memcpy(nonce, iv_, nonce_size_);
 
-  // for libsodium, packet number is written ahead
-  PacketNumberToNonceSodium(nonce, nonce_size_, packet_number);
-
-  DumpHex("EN-NONCE", nonce, nonce_size_);
-
   *output_length = max_output_length;
 
   if (!Encrypt(nonce, nonce_size_, associated_data, associated_data_len,

@@ -114,6 +114,7 @@ class cipher {
                           size_t plaintext_size,
                           IOBuf* ciphertext) const;
 
+  void set_key_stream(const uint8_t* nonce, size_t nonce_len);
   void set_key_aead(const uint8_t* salt, size_t salt_len);
 
  private:
