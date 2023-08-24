@@ -23,6 +23,7 @@ SUBVERSION=$SUBTAG
 # FIXME deb cannot pickup subtag correctly
 SUBVERSION=1
 
+rm -f ../yass_${VERSION}.orig.tar.gz
 /usr/bin/git ls-files --recurse-submodules | \
   tar caf ../yass_${VERSION}.orig.tar.gz --xform="s,^,yass-${VERSION}/," -T -
 

@@ -25,12 +25,12 @@ RPM_SUBVERSION=$SUBTAG
   tar caf yass-${RPM_VERSION}.tar.gz --xform="s,^,yass-${RPM_VERSION}/," -T -
 
 mkdir -p $HOME/rpmbuild/SOURCES
-cp -fv yass-${RPM_VERSION}.tar.gz $HOME/rpmbuild/SOURCES
+mv -fv yass-${RPM_VERSION}.tar.gz $HOME/rpmbuild/SOURCES
 
 sed "s|__VERSION__|${TAG}|g" yass.spec.in > yass.spec
 sed -i "s|__SUBVERSION__|${SUBTAG}|g" yass.spec
 mkdir -p $HOME/rpmbuild/SPECS
-cp -fv yass.spec $HOME/rpmbuild/SPECS
+mv -fv yass.spec $HOME/rpmbuild/SPECS
 
 [ "a$DISABLE_LLD" != "a" ] && rpm_options="--with=disable_lld"
 
