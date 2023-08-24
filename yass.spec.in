@@ -41,7 +41,15 @@ Version: __VERSION__
 Release: __SUBVERSION__%{?dist}
 Summary: Lightweight and Secure http/socks4/socks5 Proxy
 
+# fedora supports spdx license
+# see /etc/xdg/rpmlint/fedora-spdx-licenses.toml
+%if 0%{?fedora}
 License: GPL-2.0-only
+%else
+# old distributions don't
+# see https://github.com/rpm-software-management/rpmlint/blob/main/configs/Fedora/licenses.toml
+License: GPLv2
+%endif
 URL: https://github.com/Chilledheart/%{name}
 Source0: %{url}/releases/download/%{version}/%{name}-%{version}.tar.gz
 %if 0%{?rhel} == 9 || 0%{?fedora}
