@@ -58,6 +58,7 @@ class Encrypter : public Crypter {
 
   // For use by unit tests only.
   virtual const uint8_t* GetKey() const = 0;
+  virtual const uint8_t* GetIV() const = 0;
   virtual const uint8_t* GetNoncePrefix() const = 0;
 };
 

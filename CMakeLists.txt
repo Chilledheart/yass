@@ -239,6 +239,7 @@ option(USE_CURL "Build with libcurl (test only)" ON)
 option(USE_CARES "Build with c-ares" ON)
 option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
 option(USE_BUILTIN_CA_BUNDLE_CRT "Build with embedded ca-bundle.crt support" ON)
+option(USE_MBEDTLS "Build with mbedtls support" ON)
 
 option(ENABLE_LTO "Enable build with LTO" ON)
 option(ENABLE_LLD "Enable build with LLD" ON)
@@ -1844,6 +1845,42 @@ if (BORINGSSL_BUILD_TESTS)
 endif()
 
 # *****************************************************************************************
+#           mbedssl Library
+# *****************************************************************************************
+# pip install -U 'jsonschema<4.0'
+# pip install -U jinja2
+
+if (USE_SYSTEM_MBEDTLS)
+  check_library_exists(mbedcrypto mbedtls_cipher_init "" HAVE_SYSTEM_MBEDTLS)
+  if (NOT HAVE_SYSTEM_MBEDTLS)
+    message(STATUS "System mbedtls not found, using bundled one")
+    set(HAVE_SYSTEM_MBEDTLS FALSE)
+  endif()
+endif()
+
+if (USE_SYSTEM_MBEDTLS AND USE_MBEDTLS)
+  message(STATUS "Compiling with system mbedtls library")
+  add_definitions(-DHAVE_MBEDTLS)
+
+  set(SUPPORT_LIBS mbedcrypto ${SUPPORT_LIBS})
+elseif (USE_MBEDTLS)
+  message(STATUS "Compiling with bundled mbedtls library")
+  set(USE_SHARED_MBEDTLS_LIBRARY "OFF" CACHE STRING "")
+  set(USE_STATIC_MBEDTLS_LIBRARY "ON" CACHE STRING "")
+  set(ENABLE_TESTING "OFF" CACHE STRING "")
+  set(ENABLE_PROGRAMS "OFF" CACHE STRING "")
+  set(MBEDTLS_FATAL_WARNINGS OFF CACHE BOOL "")
+  set(DISABLE_PACKAGE_CONFIG_AND_INSTALL ON CACHE BOOL "")
+  set(INSTALL_MBEDTLS_HEADERS OFF CACHE BOOL "")
+
+  add_subdirectory(third_party/mbedtls)
+  add_definitions(-DHAVE_MBEDTLS)
+  include_directories(third_party/mbedtls/include SYSTEM)
+
+  set(SUPPORT_LIBS mbedcrypto ${SUPPORT_LIBS})
+endif()
+
+# *****************************************************************************************
 #           asio Library
 # *****************************************************************************************
 
@@ -2603,6 +2640,8 @@ set(files
     src/crypto/aead_evp_encrypter.cpp
     src/crypto/aead_sodium_decrypter.cpp
     src/crypto/aead_sodium_encrypter.cpp
+    src/crypto/aead_mbedtls_decrypter.cpp
+    src/crypto/aead_mbedtls_encrypter.cpp
     src/crypto/aes_128_gcm_12_evp_decrypter.cpp
     src/crypto/aes_128_gcm_12_evp_encrypter.cpp
     src/crypto/aes_128_gcm_evp_decrypter.cpp
@@ -2625,6 +2664,7 @@ set(files
     src/crypto/xchacha20_poly1305_evp_encrypter.cpp
     src/crypto/xchacha20_poly1305_sodium_decrypter.cpp
     src/crypto/xchacha20_poly1305_sodium_encrypter.cpp
+    src/crypto/mbedtls_common.cpp
 
     src/core/c-ares.cpp
     src/core/http_parser.cpp
@@ -2695,6 +2735,8 @@ set(hfiles
     src/crypto/aead_evp_encrypter.hpp
     src/crypto/aead_sodium_decrypter.hpp
     src/crypto/aead_sodium_encrypter.hpp
+    src/crypto/aead_mbedtls_decrypter.hpp
+    src/crypto/aead_mbedtls_encrypter.hpp
     src/crypto/aes_128_gcm_12_evp_decrypter.hpp
     src/crypto/aes_128_gcm_12_evp_encrypter.hpp
     src/crypto/aes_128_gcm_evp_decrypter.hpp
@@ -2717,6 +2759,7 @@ set(hfiles
     src/crypto/xchacha20_poly1305_evp_encrypter.hpp
     src/crypto/xchacha20_poly1305_sodium_decrypter.hpp
     src/crypto/xchacha20_poly1305_sodium_encrypter.hpp
+    src/crypto/mbedtls_common.hpp
 
     src/core/c-ares.hpp
     src/core/http_parser.hpp

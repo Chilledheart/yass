@@ -182,9 +182,23 @@ class cipher_impl {
     return encrypter ? encrypter->GetKey() : decrypter->GetKey();
   }
 
+  const uint8_t* GetIV() const {
+    return encrypter ? encrypter->GetIV() : decrypter->GetIV();
+  }
+
   const uint8_t* GetNoncePrefix() const {
     return encrypter ? encrypter->GetNoncePrefix()
                      : decrypter->GetNoncePrefix();
+  }
+
+  uint32_t cipher_id() const {
+    if (encrypter) {
+      return encrypter->cipher_id();
+    }
+    if (decrypter) {
+      return decrypter->cipher_id();
+    }
+    return CRYPTO_INVALID;
   }
 
   std::unique_ptr<crypto::Encrypter> encrypter;
@@ -300,6 +314,23 @@ void cipher::encrypt(const uint8_t* plaintext_data,
 
 void cipher::decrypt_salt(IOBuf* chunk) {
   DCHECK(!init_);
+
+#ifdef HAVE_MBEDTLS
+  if (impl_->cipher_id() >= CRYPTO_AES_128_CFB && impl_->cipher_id() <= CRYPTO_CAMELLIA_256_CFB) {
+    size_t nonce_len = impl_->GetIVSize();
+    VLOG(4) << "decrypt: nonce: " << nonce_len;
+    uint8_t nonce[MAX_NONCE_LENGTH] = {};
+    memcpy(nonce, chunk->data(), nonce_len);
+    chunk->trimStart(nonce_len);
+    chunk->retreat(nonce_len);
+    set_key_stream(nonce, nonce_len);
+#ifndef NDEBUG
+    DumpHex("DE-NONCE", nonce, nonce_len);
+#endif
+    return;
+  }
+#endif
+
   size_t salt_len = key_len_;
   VLOG(4) << "decrypt: salt: " << salt_len;
 
@@ -315,6 +346,23 @@ void cipher::decrypt_salt(IOBuf* chunk) {
 
 void cipher::encrypt_salt(IOBuf* chunk) {
   DCHECK(!init_);
+
+#ifdef HAVE_MBEDTLS
+  if (impl_->cipher_id() >= CRYPTO_AES_128_CFB && impl_->cipher_id() <= CRYPTO_CAMELLIA_256_CFB) {
+    size_t nonce_len = impl_->GetIVSize();
+    VLOG(4) << "encrypt: nonce: " << nonce_len;
+    uint8_t nonce[MAX_NONCE_LENGTH] = {};
+    RandBytes(nonce, nonce_len);
+    chunk->reserve(nonce_len, 0);
+    chunk->prepend(nonce_len);
+    memcpy(chunk->mutable_data(), nonce, nonce_len);
+    set_key_stream(nonce, nonce_len);
+#ifndef NDEBUG
+    DumpHex("EN-NONCE", nonce, nonce_len);
+#endif
+    return;
+  }
+#endif
 
   size_t salt_len = key_len_;
   VLOG(4) << "encrypt: salt: " << salt_len;
@@ -332,6 +380,20 @@ void cipher::encrypt_salt(IOBuf* chunk) {
 int cipher::chunk_decrypt_frame(uint64_t* counter,
                                 IOBuf* plaintext,
                                 IOBuf* ciphertext) const {
+#ifdef HAVE_MBEDTLS
+  if (impl_->cipher_id() >= CRYPTO_AES_128_CFB && impl_->cipher_id() <= CRYPTO_CAMELLIA_256_CFB) {
+    return chunk_decrypt_frame_stream(counter, plaintext, ciphertext);
+  } else {
+#endif
+    return chunk_decrypt_frame_aead(counter, plaintext, ciphertext);
+#ifdef HAVE_MBEDTLS
+  }
+#endif
+}
+
+int cipher::chunk_decrypt_frame_aead(uint64_t* counter,
+                                     IOBuf* plaintext,
+                                     IOBuf* ciphertext) const {
   int err;
   size_t mlen;
   size_t tlen = tag_len_;
@@ -406,10 +468,46 @@ int cipher::chunk_decrypt_frame(uint64_t* counter,
   return 0;
 }
 
+int cipher::chunk_decrypt_frame_stream(uint64_t* counter,
+                                       IOBuf* plaintext,
+                                       IOBuf* ciphertext) const {
+  int err;
+  size_t plen = ciphertext->length();
+  plaintext->reserve(0, ciphertext->length());
+
+  VLOG(4) << "decrypt: stream chunk: origin: " << plen
+          << " actual: " << ciphertext->length();
+
+  err = impl_->DecryptPacket(*counter, plaintext->mutable_tail(), &plen,
+                             ciphertext->data(), ciphertext->length());
+  if (err) {
+    return -EBADMSG;
+  }
+  plaintext->append(plen);
+  ciphertext->trimStart(ciphertext->length());
+  (*counter)++;
+  return 0;
+}
+
 int cipher::chunk_encrypt_frame(uint64_t* counter,
                                 const uint8_t* plaintext_data,
                                 size_t plaintext_size,
                                 IOBuf* ciphertext) const {
+#ifdef HAVE_MBEDTLS
+  if (impl_->cipher_id() >= CRYPTO_AES_128_CFB && impl_->cipher_id() <= CRYPTO_CAMELLIA_256_CFB) {
+    return chunk_encrypt_frame_stream(counter, plaintext_data, plaintext_size, ciphertext);
+  } else {
+#endif
+    return chunk_encrypt_frame_aead(counter, plaintext_data, plaintext_size, ciphertext);
+#ifdef HAVE_MBEDTLS
+  }
+#endif
+}
+
+int cipher::chunk_encrypt_frame_aead(uint64_t* counter,
+                                     const uint8_t* plaintext_data,
+                                     size_t plaintext_size,
+                                     IOBuf* ciphertext) const {
   size_t tlen = tag_len_;
 
   DCHECK_LE(plaintext_size, CHUNK_SIZE_MASK);
@@ -466,6 +564,45 @@ int cipher::chunk_encrypt_frame(uint64_t* counter,
   (*counter)++;
 
   return 0;
+}
+
+int cipher::chunk_encrypt_frame_stream(uint64_t* counter,
+                                       const uint8_t* plaintext_data,
+                                       size_t plaintext_size,
+                                       IOBuf* ciphertext) const {
+  int err;
+  size_t clen = plaintext_size;
+  ciphertext->reserve(0, clen);
+
+  VLOG(4) << "encrypt: stream chunk: origin: " << plaintext_size
+          << " actual: " << clen;
+
+  err = impl_->EncryptPacket(*counter, ciphertext->mutable_tail(), &clen,
+                             plaintext_data, plaintext_size);
+  if (err) {
+    return -EBADMSG;
+  }
+  ciphertext->append(clen);
+  (*counter)++;
+
+  return 0;
+}
+
+void cipher::set_key_stream(const uint8_t* nonce, size_t nonce_len) {
+  counter_ = 0;
+
+  if (!impl_->SetIV(nonce, nonce_len)) {
+    LOG(WARNING) << "SetIV Failed";
+  }
+
+  if (!impl_->SetKey(key_, key_len_)) {
+    LOG(WARNING) << "SetKey Failed";
+  }
+
+#ifndef NDEBUG
+  DumpHex("KEY", impl_->GetKey(), impl_->GetKeySize());
+  DumpHex("IV", impl_->GetIV(), impl_->GetIVSize());
+#endif
 }
 
 void cipher::set_key_aead(const uint8_t* salt, size_t salt_len) {

@@ -94,7 +94,11 @@ jobs:
           ./scripts/install-sysroot-freebsd.py ${{ matrix.abi }}
           rm -f *.txz *.xz
       - name: Populate depedencies
-        run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build libglib2.0-dev-bin gettext
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cmake ninja-build libglib2.0-dev-bin gettext
+          # required by mbedtls build
+          sudo apt-get install -y python3-jsonschema python3-jinja2
       - name: Set clang environment
         run: |
           echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV

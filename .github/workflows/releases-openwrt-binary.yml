@@ -39,12 +39,13 @@ jobs:
       matrix:
         include:
           - arch: x86_64
+            subarch: x86_64
             openwrt: 'target=x86 subtarget=64 abi=musl'
           - arch: x86
+            subarch: i486
             openwrt: 'target=x86 subtarget=generic abi=musl'
     runs-on: ubuntu-20.04
     env:
-      ARCH: ${{ matrix.arch }}
       OPENWRT_FLAGS: arch=${{ matrix.arch }} release=22.03.5 gcc_ver=11.2.0 ${{ matrix.openwrt }}
       SDK_ROOT: ${{ github.workspace }}/openwrt-sdk-${{ matrix.arch }}
       SDK_HOME: ${{ github.workspace }}/openwrt-sdk-${{ matrix.arch }}-home
@@ -135,15 +136,17 @@ jobs:
           sudo apt-get install -y cmake ninja-build pkg-config bubblewrap
           # libc6-i386 interferes with x86 build
           sudo apt remove libc6-i386
+          # required by mbedtls build
+          sudo apt-get install -y python3-jsonschema python3-jinja2
       - name: Set clang environment
         run: |
           echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
           echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
       - name: Build TGZ packages
         run: |
-          ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --subsystem openwrt --sysroot ${{ env.SDK_ROOT }} \
+          ./tools/build --variant cli --arch ${{ matrix.subarch }} --system linux --subsystem openwrt --sysroot ${{ env.SDK_ROOT }} \
             --cmake-build-type MinSizeRel -build-benchmark -build-test -nc
-          ./tools/build --variant server --arch ${{ matrix.arch }} --system linux --subsystem openwrt --sysroot ${{ env.SDK_ROOT }} \
+          ./tools/build --variant server --arch ${{ matrix.subarch }} --system linux --subsystem openwrt --sysroot ${{ env.SDK_ROOT }} \
             --cmake-build-type MinSizeRel -build-benchmark -build-test -nc
       - name: Run tests (x86 and x86_64)
         if: ${{ matrix.arch == 'x86' || matrix.arch == 'x86_64' }}
@@ -154,7 +157,7 @@ jobs:
             --ro-bind /etc/resolv.conf /etc/resolv.conf \
             --proc /proc --dev /dev \
             --unshare-all --share-net \
-            --bind $PWD/build-linux-openwrt-${{ matrix.arch }} /tmp \
+            --bind $PWD/build-linux-openwrt-${{ matrix.subarch }} /tmp \
             /tmp/yass_test
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
