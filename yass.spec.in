@@ -2,34 +2,6 @@
 # with flag -DENABLE_LTO
 %global _lto_cflags %nil
 
-# requires recent version of mbedtls
-%if 0%{?fedora}
-%global enable_mbedtls_opt on
-%else
-%global enable_mbedtls_opt off
-%endif
-
-# requires recent version of json
-%if 0%{?fedora}
-%global enable_json_opt on
-%else
-%global enable_json_opt off
-%endif
-
-# requires recent version of xxhash
-%if 0%{?fedora}
-%global enable_xxhash_opt on
-%else
-%global enable_xxhash_opt off
-%endif
-
-# requires recent version of http_parser
-%if 0%{?fedora}
-%global enable_http_parser_opt on
-%else
-%global enable_http_parser_opt off
-%endif
-
 # test failed in copr
 %bcond_with tests_cares
 %if !%{with tests_cares}
@@ -69,7 +41,15 @@ Version: __VERSION__
 Release: __SUBVERSION__%{?dist}
 Summary: Lightweight and Secure http/socks4/socks5 Proxy
 
+# fedora supports spdx license
+# see /etc/xdg/rpmlint/fedora-spdx-licenses.toml
+%if 0%{?fedora}
 License: GPL-2.0-only
+%else
+# old distributions don't
+# see https://github.com/rpm-software-management/rpmlint/blob/main/configs/Fedora/licenses.toml
+License: GPLv2
+%endif
 URL: https://github.com/Chilledheart/%{name}
 Source0: %{url}/releases/download/%{version}/%{name}-%{version}.tar.gz
 %if 0%{?rhel} == 9 || 0%{?fedora}
@@ -88,16 +68,16 @@ BuildRequires: cmake3 >= 3.12, pkgconfig
 %endif
 %if 0%{?fedora}
 BuildRequires: clang, lld
+BuildRequires: c-ares-devel
+%endif
 BuildRequires: mbedtls-devel
 BuildRequires: json-devel
 BuildRequires: xxhash-devel
 BuildRequires: http-parser-devel
-BuildRequires: c-ares-devel
-%endif
-BuildRequires: ninja-build, gcc, gcc-c++, golang >= 1.4
-BuildRequires: glib2-devel
 BuildRequires: zlib-devel
 BuildRequires: libnghttp2-devel
+BuildRequires: ninja-build, gcc, gcc-c++, golang >= 1.4
+BuildRequires: glib2-devel
 BuildRequires: curl-devel
 BuildRequires: desktop-file-utils
 Requires:      hicolor-icon-theme
@@ -116,12 +96,10 @@ cd build
 # old c-ares doesn't contain ares_getaddrinfo api
 cmake3 -G Ninja -DCMAKE_BUILD_TYPE=Release \
    -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DCLI=on -DSERVER=on \
-   -DUSE_SYSTEM_ZLIB=on -DUSE_SYSTEM_CARES="%enable_system_cares_opt" -DUSE_SYSTEM_NGHTTP2=on \
-   -DUSE_SYSTEM_MBEDTLS="%enable_mbedtls_opt" \
-   -DUSE_SYSTEM_JSON="%enable_json_opt" \
-   -DUSE_SYSTEM_XXHASH="%enable_xxhash_opt" \
-   -DUSE_SYSTEM_HTTP_PARSER="%enable_http_parser_opt" \
-   -DUSE_LIBCXX="%enable_libcxx_opt" \
+   -DUSE_SYSTEM_ZLIB=on -DUSE_SYSTEM_NGHTTP2=on \
+   -DUSE_SYSTEM_MBEDTLS=on -DUSE_SYSTEM_JSON=on \
+   -DUSE_SYSTEM_XXHASH=on -DUSE_SYSTEM_HTTP_PARSER=on \
+   -DUSE_SYSTEM_CARES="%enable_system_cares_opt" -DUSE_LIBCXX="%enable_libcxx_opt" \
    -DENABLE_LLD="%enable_lld_opt" -DUSE_BUILTIN_CA_BUNDLE_CRT=off ..
 ninja
 cd ..
