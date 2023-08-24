@@ -65,11 +65,6 @@ bool AeadMbedtlsDecrypter::DecryptPacket(uint64_t packet_number,
   uint8_t nonce[kMaxNonceSize] = {};
   memcpy(nonce, iv_, nonce_size_);
 
-  // for libsodium, packet number is written ahead
-  PacketNumberToNonceSodium(nonce, nonce_size_, packet_number);
-
-  DumpHex("DE-NONCE", nonce, nonce_size_);
-
   if (mbedtls_cipher_update(evp_,
                             reinterpret_cast<const uint8_t*>(ciphertext),
                             ciphertext_len,

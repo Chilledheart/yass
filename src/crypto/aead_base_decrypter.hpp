@@ -29,6 +29,7 @@ class AeadBaseDecrypter : public Decrypter {
   size_t GetTagSize() const override;
 
   const uint8_t* GetKey() const override;
+  const uint8_t* GetIV() const override;
   const uint8_t* GetNoncePrefix() const override;
 
  protected:

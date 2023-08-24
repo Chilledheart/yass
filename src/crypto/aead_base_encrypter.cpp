@@ -81,6 +81,10 @@ const uint8_t* AeadBaseEncrypter::GetKey() const {
   return key_;
 }
 
+const uint8_t* AeadBaseEncrypter::GetIV() const {
+  return iv_;
+}
+
 const uint8_t* AeadBaseEncrypter::GetNoncePrefix() const {
   return iv_;
 }

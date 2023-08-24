@@ -182,6 +182,10 @@ class cipher_impl {
     return encrypter ? encrypter->GetKey() : decrypter->GetKey();
   }
 
+  const uint8_t* GetIV() const {
+    return encrypter ? encrypter->GetIV() : decrypter->GetIV();
+  }
+
   const uint8_t* GetNoncePrefix() const {
     return encrypter ? encrypter->GetNoncePrefix()
                      : decrypter->GetNoncePrefix();
@@ -310,6 +314,23 @@ void cipher::encrypt(const uint8_t* plaintext_data,
 
 void cipher::decrypt_salt(IOBuf* chunk) {
   DCHECK(!init_);
+
+#ifdef HAVE_MBEDTLS
+  if (impl_->cipher_id() >= CRYPTO_AES_128_CFB && impl_->cipher_id() <= CRYPTO_CAMELLIA_256_CFB) {
+    size_t nonce_len = impl_->GetIVSize();
+    VLOG(4) << "decrypt: nonce: " << nonce_len;
+    uint8_t nonce[MAX_NONCE_LENGTH] = {};
+    memcpy(nonce, chunk->data(), nonce_len);
+    chunk->trimStart(nonce_len);
+    chunk->retreat(nonce_len);
+    set_key_stream(nonce, nonce_len);
+#ifndef NDEBUG
+    DumpHex("DE-NONCE", nonce, nonce_len);
+#endif
+    return;
+  }
+#endif
+
   size_t salt_len = key_len_;
   VLOG(4) << "decrypt: salt: " << salt_len;
 
@@ -325,6 +346,23 @@ void cipher::decrypt_salt(IOBuf* chunk) {
 
 void cipher::encrypt_salt(IOBuf* chunk) {
   DCHECK(!init_);
+
+#ifdef HAVE_MBEDTLS
+  if (impl_->cipher_id() >= CRYPTO_AES_128_CFB && impl_->cipher_id() <= CRYPTO_CAMELLIA_256_CFB) {
+    size_t nonce_len = impl_->GetIVSize();
+    VLOG(4) << "encrypt: nonce: " << nonce_len;
+    uint8_t nonce[MAX_NONCE_LENGTH] = {};
+    RandBytes(nonce, nonce_len);
+    chunk->reserve(nonce_len, 0);
+    chunk->prepend(nonce_len);
+    memcpy(chunk->mutable_data(), nonce, nonce_len);
+    set_key_stream(nonce, nonce_len);
+#ifndef NDEBUG
+    DumpHex("EN-NONCE", nonce, nonce_len);
+#endif
+    return;
+  }
+#endif
 
   size_t salt_len = key_len_;
   VLOG(4) << "encrypt: salt: " << salt_len;
@@ -548,6 +586,23 @@ int cipher::chunk_encrypt_frame_stream(uint64_t* counter,
   (*counter)++;
 
   return 0;
+}
+
+void cipher::set_key_stream(const uint8_t* nonce, size_t nonce_len) {
+  counter_ = 0;
+
+  if (!impl_->SetIV(nonce, nonce_len)) {
+    LOG(WARNING) << "SetIV Failed";
+  }
+
+  if (!impl_->SetKey(key_, key_len_)) {
+    LOG(WARNING) << "SetKey Failed";
+  }
+
+#ifndef NDEBUG
+  DumpHex("KEY", impl_->GetKey(), impl_->GetKeySize());
+  DumpHex("IV", impl_->GetIV(), impl_->GetIVSize());
+#endif
 }
 
 void cipher::set_key_aead(const uint8_t* salt, size_t salt_len) {
