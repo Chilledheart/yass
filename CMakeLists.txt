@@ -325,6 +325,18 @@ endif()
 
 include(config-ix)
 
+# set default _MSC_VER
+if (MSVC AND COMPILER_CLANG)
+  if (ALLOW_XP)
+    # look back to vs2017, fix issue of linkage of ___dyn_tls_on_demand_init and ___tls_guard defined in msvcrt/libcmt
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fmsc-version=1916")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmsc-version=1916")
+  else()
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fmsc-version=1934")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmsc-version=1934")
+  endif()
+endif()
+
 if (CMAKE_OSX_ARCHITECTURES)
   if (NOT "${CMAKE_OSX_ARCHITECTURES}" STREQUAL ${CMAKE_SYSTEM_PROCESSOR})
     set(USE_HOST_TOOLS ON)
