@@ -197,8 +197,15 @@ class stream : public RefCountedThreadSafe<stream> {
     }
 
     if (limit_rate_) {
-      std::chrono::duration<double, std::milli> delta_ms(std::chrono::steady_clock::now() - read_start_);
-      int64_t limit = limit_rate_ * (delta_ms.count() + 1) / 1000 - rbytes_transferred_;
+      auto delta = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - read_start_);
+      int64_t clicks = delta.count() + 1;
+      int64_t estimated_transferred;
+      if (UNLIKELY(INT64_MAX / (int64_t)limit_rate_ <= clicks)) {
+        estimated_transferred = INT64_MAX;
+      } else {
+        estimated_transferred = limit_rate_ * clicks;
+      }
+      int64_t limit = estimated_transferred - rbytes_transferred_;
       if (limit <= 0) {
         scoped_refptr<stream> self(this);
         read_delay_timer_.expires_after(std::chrono::milliseconds(-limit * 1000 / limit_rate_+1));
@@ -276,8 +283,15 @@ class stream : public RefCountedThreadSafe<stream> {
     }
 
     if (limit_rate_) {
-      std::chrono::duration<double, std::milli> delta_ms(std::chrono::steady_clock::now() - write_start_);
-      int64_t limit = limit_rate_ * (delta_ms.count() + 1) / 1000 - wbytes_transferred_;
+      auto delta = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - write_start_);
+      int64_t clicks = delta.count() + 1;
+      int64_t estimated_transferred;
+      if (UNLIKELY(INT64_MAX / (int64_t)limit_rate_ <= clicks)) {
+        estimated_transferred = INT64_MAX;
+      } else {
+        estimated_transferred = limit_rate_ * clicks;
+      }
+      int64_t limit = estimated_transferred - wbytes_transferred_;
       if (limit <= 0) {
         scoped_refptr<stream> self(this);
         write_delay_timer_.expires_after(std::chrono::milliseconds(-limit * 1000 / limit_rate_+1));
