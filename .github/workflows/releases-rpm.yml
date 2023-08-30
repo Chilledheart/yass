@@ -41,6 +41,7 @@ jobs:
         - 'centos7'
         - 'fedora37'
         - 'alpine318'
+        - 'opensuse15'
         # - 'centos8'
         # - 'centos9'
     runs-on: ubuntu-22.04
@@ -80,6 +81,7 @@ jobs:
         container:
         - 'centos7'
         - 'fedora37'
+        - 'opensuse15'
         # - 'centos8'
         # - 'centos9'
     runs-on: ubuntu-22.04
@@ -138,8 +140,8 @@ jobs:
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
           ./scripts/libstdc++-el7.sh
-      - name: Set clang environment (centos only)
-        if: ${{ env.DISTRO == 'centos7' || env.DISTRO == 'centos8' || env.DISTRO == 'centos9' }}
+      - name: Set clang environment (centos and opensuse only)
+        if: ${{ env.DISTRO == 'centos7' || env.DISTRO == 'centos8' || env.DISTRO == 'centos9' || env.DISTRO == 'opensuse15' }}
         run: |
           echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
           echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV

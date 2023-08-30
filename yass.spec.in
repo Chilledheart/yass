@@ -2,6 +2,19 @@
 # with flag -DENABLE_LTO
 %global _lto_cflags %nil
 
+%if 0%{?fedora} || 0%{?rhel}
+%global cmake_alias cmake3
+%else
+%global cmake_alias cmake
+%endif
+
+# requires nlohman json
+%if 0%{?fedora} || 0%{?rhel}
+%global enable_system_json_opt on
+%else
+%global enable_system_json_opt off
+%endif
+
 # test failed in copr
 %bcond_with tests_cares
 %if !%{with tests_cares}
@@ -43,7 +56,7 @@ Summary: Lightweight and Secure http/socks4/socks5 Proxy
 
 # fedora supports spdx license
 # see /etc/xdg/rpmlint/fedora-spdx-licenses.toml
-%if 0%{?fedora}
+%if 0%{?fedora} || 0%{?sle_version}
 License: GPL-2.0-only
 %else
 # old distributions don't
@@ -52,15 +65,15 @@ License: GPLv2
 %endif
 URL: https://github.com/Chilledheart/%{name}
 Source0: %{url}/releases/download/%{version}/%{name}-%{version}.tar.gz
-%if 0%{?rhel} == 9 || 0%{?fedora}
+%if 0%{?rhel} == 9 || 0%{?fedora} || 0%{?sle_version}
 BuildRequires: gtk4-devel
 %else
 BuildRequires: gtk3-devel
 %endif
-%if 0%{?rhel} < 9 || 0%{?fedora}
+%if 0%{?rhel} < 9 || 0%{?fedora} || 0%{?sle_version}
 BuildRequires: perl
 %endif
-%if 0%{?rhel} >= 8 || 0%{?fedora}
+%if 0%{?rhel} >= 8 || 0%{?fedora} || 0%{?sle_version}
 BuildRequires: cmake >= 3.12, pkg-config
 %endif
 %if 0%{?rhel} == 7
@@ -71,12 +84,19 @@ BuildRequires: clang, lld
 BuildRequires: c-ares-devel
 %endif
 BuildRequires: mbedtls-devel
+%if 0%{?fedora} || 0%{?rhel}
 BuildRequires: json-devel
+%endif
 BuildRequires: xxhash-devel
 BuildRequires: http-parser-devel
 BuildRequires: zlib-devel
 BuildRequires: libnghttp2-devel
-BuildRequires: ninja-build, gcc, gcc-c++, golang >= 1.4
+BuildRequires: gcc, gcc-c++, golang >= 1.4
+%if 0%{?sle_version}
+BuildRequires: ninja
+%else
+BuildRequires: ninja-build
+%endif
 BuildRequires: glib2-devel
 BuildRequires: curl-devel
 BuildRequires: desktop-file-utils
@@ -94,10 +114,10 @@ for embedded devices and low end boxes.
 mkdir build
 cd build
 # old c-ares doesn't contain ares_getaddrinfo api
-cmake3 -G Ninja -DCMAKE_BUILD_TYPE=Release \
+%cmake_alias -G Ninja -DCMAKE_BUILD_TYPE=Release \
    -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DCLI=on -DSERVER=on \
    -DUSE_SYSTEM_ZLIB=on -DUSE_SYSTEM_NGHTTP2=on \
-   -DUSE_SYSTEM_MBEDTLS=on -DUSE_SYSTEM_JSON=on \
+   -DUSE_SYSTEM_MBEDTLS=on -DUSE_SYSTEM_JSON="%enable_system_json_opt" \
    -DUSE_SYSTEM_XXHASH=on -DUSE_SYSTEM_HTTP_PARSER=on \
    -DUSE_SYSTEM_CARES="%enable_system_cares_opt" -DUSE_LIBCXX="%enable_libcxx_opt" \
    -DENABLE_LLD="%enable_lld_opt" -DUSE_BUILTIN_CA_BUNDLE_CRT=off ..
@@ -113,7 +133,7 @@ cd ..
 %install
 echo "Toolchain is %toolchain"
 cd build
-cmake3 -DCMAKE_INSTALL_PREFIX=%{buildroot}/usr ..
+%cmake_alias -DCMAKE_INSTALL_PREFIX=%{buildroot}/usr ..
 rm -rf %{buildroot}
 ninja install
 cd ..
