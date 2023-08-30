@@ -30,8 +30,8 @@ Depends:
  ${misc:Depends},
  ${shlibs:Depends}
 Description: lightweight and secure http/socks4/socks5 proxy
- Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for
- embedded devices and low end boxes.
+ yass is a lightweight and secure http/socks proxy
+ for embedded devices and low end boxes.
 
 Package: yass-dbg
 Section: debug
@@ -52,8 +52,8 @@ Depends:
  ${shlibs:Depends}
 Recommends: ca-certificates
 Description: lightweight and secure http/socks4/socks5 proxy
- Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for
- embedded devices and low end boxes.
+ yass is a lightweight and secure http/socks proxy
+ for embedded devices and low end boxes.
 
 Package: yass-server-dbg
 Section: debug
@@ -73,8 +73,8 @@ Depends:
  ${shlibs:Depends}
 Recommends: ca-certificates
 Description: lightweight and secure http/socks4/socks5 proxy
- Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for
- embedded devices and low end boxes.
+ yass is a lightweight and secure http/socks proxy
+ for embedded devices and low end boxes.
 
 Package: yass-client-dbg
 Section: debug
