@@ -59,9 +59,9 @@ elif [ ${ID} = "opensuse-leap" ]; then
 fi
 
 pushd $HOME/rpmbuild/SPECS/
-rpmbuild -v $rpm_options -bs yass.spec
+rpmbuild --define "_topdir $HOME/rpmbuild" -v $rpm_options -bs yass.spec
 rpmlint "$HOME/rpmbuild/SRPMS/yass-${RPM_VERSION}-${RPM_SUBVERSION}${SUFFIX}.src.rpm"
-rpmbuild -v $rpm_options -bb yass.spec
+rpmbuild --define "_topdir $HOME/rpmbuild" -v $rpm_options -bb yass.spec
 popd
 
 # Rename rpms
