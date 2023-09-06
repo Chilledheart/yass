@@ -38,7 +38,8 @@ def extract_zipfile(tar, sysroot=".", filters=[]):
   print('extracting %s with (filters %s)' % (tar, ' '.join(filters)))
   safe_archive_names = [ 'libatomic.a', 'libgcc.a', 'libgcc_real.a',
                          'libcompiler_rt-extras.a', 'libandroid_support.a', 'libunwind.a',
-                         'libandroid.so', 'libc.so', 'libdl.so', 'liblog.so', 'libm.so']
+                         'libandroid.so', 'libc.so', 'libdl.so', 'liblog.so', 'libm.so',
+                         'libc++.so', 'libc++.a', 'libc++_shared.so', 'libc++_static.a']
   with zipfile.ZipFile(tar, 'r') as package_tar:
     members = package_tar.namelist()
     filtered_members = []
@@ -54,11 +55,12 @@ def extract_zipfile(tar, sysroot=".", filters=[]):
       # remove all '.a' archive files except for libc_nonshared.a and libssp_nonshared.a
       # remove all python-related files inside /usr/local/lib
       if filtered:
-        if basename.endswith('.a'):
-          filtered = False
-        if basename.endswith('.so'):
-          filtered = False
+        filtered = False
+        if 'include' in dirname:
+          filtered = True
         if basename.endswith('.o'):
+          filtered = True
+        if basename.endswith('-android.a') or basename.endswith('-android.so'):
           filtered = True
         if basename in safe_archive_names:
           filtered = True
@@ -103,6 +105,7 @@ def main(args):
   print(f'Extracting sysroot to {tmproot}...')
   extract_zipfile(ndk_tarball, tmproot,
                   [f'{ndk_prefix}/sources/android/cpufeatures',
+                   f'{ndk_prefix}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.7/lib/linux',
                    f'{ndk_prefix}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib',
                    f'{ndk_prefix}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/local/include',
                    f'{ndk_prefix}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include'])

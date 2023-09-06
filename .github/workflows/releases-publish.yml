@@ -21,6 +21,7 @@ on:
       - 'Build Artifacts (macOS)'
       - 'Build Artifacts (RPM)'
       - 'Build Artifacts (DEB)'
+      - 'Build Artifacts (Android Binary)'
       - 'Build Artifacts (Linux Binary)'
       - 'Build Artifacts (FreeBSD Binary)'
       - 'Build Artifacts (MinGW)'

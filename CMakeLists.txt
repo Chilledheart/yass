@@ -1793,6 +1793,9 @@ if (MINGW AND USE_LIBCXX)
   # force c++11 thread model
   add_definitions(-DABSL_FORCE_THREAD_IDENTITY_MODE=ABSL_THREAD_IDENTITY_MODE_USE_CPP11)
 endif()
+if (ANDROID)
+  set(LIBRT "OFF" CACHE BOOL "")
+endif()
 add_subdirectory(third_party/abseil-cpp)
 include_directories(third_party/abseil-cpp SYSTEM)
 
@@ -1942,7 +1945,7 @@ if (USE_BUILTIN_CA_BUNDLE_CRT)
     target_sources(asio PRIVATE "third_party/ca-certificates/ca-bundle.crt.win.s")
   endif()
 
-  if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+  if (ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
     enable_language(ASM)
     if (COMPILER_CLANG)
       set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wno-unused-command-line-argument")

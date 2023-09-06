@@ -346,6 +346,13 @@ if (WIN32)
   endif()
 endif()
 
+if (ANDROID)
+  set(libcxx_SOURCES
+    ${libcxx_SOURCES}
+    sync_synchronize.S
+    )
+endif()
+
 set(libcxx_CFLAGS "-fstrict-aliasing")
 
 if (COMPILER_CLANG)
