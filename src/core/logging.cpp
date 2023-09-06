@@ -26,7 +26,7 @@
 #include <sys/types.h>
 #include <climits>
 #include <csignal>
-#if defined(OS_APPLE) || defined(OS_LINUX)
+#if defined(OS_APPLE) || defined(OS_LINUX) || defined(OS_ANDROID)
 #include <sys/utsname.h>  // For uname.
 #endif
 #if defined(OS_LINUX)

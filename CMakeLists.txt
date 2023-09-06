@@ -1463,6 +1463,40 @@ if (WIN32)
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/platforms/WindowsCache.cmake)
 endif()
 
+# comes from build/config/android/BUILD.gn
+if (ANDROID)
+  set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fno-short-enums")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-short-enums")
+
+  add_definitions(-DANDROID)
+
+  # The NDK has these things, but doesn't define the constants to say that it
+  # does. Define them here instead.
+  add_definitions(-DHAVE_SYS_UIO_H)
+
+  # Forces full rebuilds on NDK rolls. To rebuild everything when NDK version
+  # stays the same, increment the suffix number.
+  add_definitions(-DANDROID_NDK_VERSION_ROLL=${ANDROID_API_VERSION})
+
+  # Don't allow visible symbols from libraries that contain
+  # assembly code with symbols that aren't hidden properly.
+  # http://crbug.com/448386
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--exclude-libs=libvpx_assembly_arm.a")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--exclude-libs=libvpx_assembly_arm.a")
+
+  # Reduce the page size from 65536 in order to reduce binary size slightly
+  # by shrinking the alignment gap between segments. This also causes all
+  # segments to be mapped adjacently, which breakpad relies on.
+  if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "^arm64.*")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,max-page-size=4096")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,max-page-size=4096")
+  endif()
+
+  # TODO Instead of using an unwind lib from the toolchain,
+  # buildtools/third_party/libunwind will be built and used directly.
+  # ldflags += [ "--unwindlib=none" ]
+endif()
+
 # *****************************************************************************************
 #           Libc++ Library
 # *****************************************************************************************
@@ -2811,6 +2845,10 @@ target_link_libraries(yass_base PUBLIC ${SUPPORT_LIBS})
 if (USE_LIBCXX)
   target_link_libraries(yass_base PUBLIC
     cxx ${libcxx_PUBLIC_LIBRARIES})
+endif()
+
+if (ANDROID)
+  target_link_libraries(yass_base PUBLIC log)
 endif()
 
 target_include_directories(yass_base PRIVATE
