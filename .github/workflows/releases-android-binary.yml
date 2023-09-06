@@ -1,0 +1,133 @@
+name: Build Artifacts (Android Binary)
+on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+        type: choice
+        options:
+        - info
+        - warning
+        - debug
+      tags:
+        description: 'Test scenario tags'
+        required: false
+        type: boolean
+  pull_request:
+    branches: [master, develop]
+    paths-ignore:
+    - '**/*.md'
+    - '.circleci/**'
+    - '.cirrus.yml'
+  push:
+    branches: [master, develop]
+    paths-ignore:
+    - '**/*.md'
+    - '.circleci/**'
+    - '.cirrus.yml'
+  release:
+    types: [published]
+env:
+  CACHE_EPOCH: 116
+  GOPROXY: direct
+jobs:
+  linux-binary-release:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86
+            qemu_suffix: i386
+          - arch: x64
+            qemu_suffix: amd64
+          - arch: arm
+            qemu_suffix: armhf
+          - arch: arm64
+            qemu_suffix: aarch64
+    runs-on: ubuntu-20.04
+    env:
+      ARCH: ${{ matrix.arch }}
+      SDK_ROOT: ${{ github.workspace }}/third_party/android_toolchain
+    steps:
+      - uses: actions/checkout@v3
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
+      - name: Patch libcxxabi for both of armel and armhf
+        if: ${{ matrix.arch == 'armel' || matrix.arch == 'arm' }}
+        run: |
+          cd third_party/libc++abi
+          patch -p1 < v8-6.7.17-fix-gcc-unwind-header.patch
+      - name: Cache clang
+        id: clang-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            third_party/llvm-build/Release+Asserts
+          key: ${{ runner.os }}-android-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          restore-keys: |
+            ${{ runner.os }}-android-toolchain-${{ hashFiles('CLANG_REVISION') }}-
+      - name: Cache golang
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-docker-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-docker-
+      - name: Cache sysroot
+        id: sysroot-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ env.SDK_ROOT }}
+            qemu-user-static*.deb
+          key: ${{ runner.os }}-android-ndk-${{ matrix.arch }}-with-qemu-v${{ env.CACHE_EPOCH }}
+      - name: Build build tool
+        run: |
+          cd tools
+          go build
+      - name: "Install dependency: prebuilt clang and clang-tidy binaries"
+        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        run: |
+          ./scripts/download-clang-prebuilt-binaries.py
+          rm -f third_party/llvm-build/Release+Asserts/*.tgz
+      - name: "Install dependency: android ndk"
+        if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
+        run: |
+          ./scripts/install-sysroot-android.py
+          wget http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-static_8.0.3+dfsg-5_amd64.deb
+      - name: Change ubuntu mirror
+        run: |
+          sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
+          sudo apt-get update -qq
+      - name: Populate depedencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cmake ninja-build pkg-config gettext bubblewrap
+          # libc6-i386 interferes with x86 build
+          sudo apt remove libc6-i386
+
+          sudo apt install qemu-user
+          sudo apt remove -y qemu-user-binfmt
+          sudo dpkg -i qemu-user-static_*.deb
+          # required by mbedtls build
+          sudo apt-get install -y python3-jsonschema python3-jinja2
+      - name: Set clang environment
+        run: |
+          echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
+          echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
+      - name: Build TGZ packages
+        run: |
+          ./tools/build --variant cli --arch ${{ matrix.arch }} --system android -build-benchmark -build-test -nc
+      - name: Upload dist tarball (including debuginfo)
+        if: ${{ github.event_name == 'release' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} yass*.tgz
