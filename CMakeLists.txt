@@ -1492,9 +1492,10 @@ if (ANDROID)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,max-page-size=4096")
   endif()
 
-  # TODO Instead of using an unwind lib from the toolchain,
+  # Instead of using an unwind lib from the toolchain,
   # buildtools/third_party/libunwind will be built and used directly.
-  # ldflags += [ "--unwindlib=none" ]
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --unwindlib=none")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --unwindlib=none")
 endif()
 
 # *****************************************************************************************

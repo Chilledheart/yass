@@ -577,6 +577,59 @@ if (NOT MSVC)
   target_link_libraries(cxx cxxabi)
 endif()
 
+if (ANDROID)
+  set(libunwind_SOURCES
+    # C++ sources
+    ../libunwind/trunk/src/Unwind-EHABI.cpp
+    ../libunwind/trunk/src/libunwind.cpp
+    # C sources
+    ../libunwind/trunk/src/Unwind-sjlj.c
+    ../libunwind/trunk/src/UnwindLevel1-gcc-ext.c
+    ../libunwind/trunk/src/UnwindLevel1.c
+    # ASM sources
+    ../libunwind/trunk/src/UnwindRegistersRestore.S
+    ../libunwind/trunk/src/UnwindRegistersSave.S
+  )
+  if (NOT libcxx_SHARED)
+    add_library(unwind STATIC ${libunwind_SOURCES})
+  else()
+    add_library(unwind SHARED ${libunwind_SOURCES})
+  endif()
+
+  target_include_directories(unwind PRIVATE
+    ../libunwind/trunk/include)
+
+  target_compile_definitions(unwind PRIVATE ${libcxx_DEFINITIONS})
+  target_compile_definitions(unwind PRIVATE ${libcxx_PUBLIC_DEFINITIONS})
+  target_compile_options(unwind PRIVATE ${libcxx_CFLAGS})
+
+  target_include_directories(unwind PRIVATE
+    ../libc++
+    ../libc++/trunk/src
+    ../libc++abi/trunk/include
+    ../libc++abi/trunk/src)
+
+  target_compile_definitions(unwind PRIVATE _LIBUNWIND_IS_NATIVE_ONLY)
+  target_compile_definitions(unwind PRIVATE _LIBUNWIND_DISABLE_VISIBILITY_ANNOTATIONS)
+
+  target_compile_options(unwind PRIVATE "-fstrict-aliasing")
+  target_compile_options(unwind PRIVATE "-fPIC")
+  # ValueAsBitPattern in Unwind-EHABI.cpp is only used on Debug builds.
+  target_compile_options(unwind PRIVATE "-Wno-unused-function")
+  # libunwind expects to be compiled with unwind tables so it can
+  # unwind its own frames.
+  target_compile_options(unwind PRIVATE "-funwind-tables")
+
+  target_compile_options(unwind PRIVATE "-frtti")
+  if (libcxx_USE_EXCEPTIONS)
+    target_compile_options(unwind PRIVATE "-fexceptions")
+  else()
+    target_compile_options(unwind PRIVATE "-fno-exceptions")
+  endif()
+
+  target_link_libraries(cxx unwind)
+endif()
+
 target_compile_definitions(cxx PRIVATE ${libcxx_DEFINITIONS})
 target_compile_definitions(cxx PRIVATE ${libcxx_PUBLIC_DEFINITIONS})
 
@@ -666,6 +719,12 @@ if (NOT MSVC)
   export(
     TARGETS cxxabi
     FILE cxxabi.cmake
+  )
+endif()
+if (ANDROID)
+  export(
+    TARGETS unwind
+    FILE unwind.cmake
   )
 endif()
 export(
