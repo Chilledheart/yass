@@ -64,7 +64,7 @@ message(STATUS "Build with libc++")
 #           Public-specific
 # *****************************************************************************************
 
-set(libcxx_CR "f8279b01085b800724f5c5629dc365b9f040dc53")
+set(libcxx_CR "84fb809dd6dae36d556dc0bb702c6cc2ce9d4b80")
 # Fixed libc++ configuration macros are in
 # buildtools/third_party/libc++/__config_site. This config only has defines
 # that vary depending on gn args, and non-define flags.
