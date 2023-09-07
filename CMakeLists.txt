@@ -762,6 +762,15 @@ else()
       string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL}")
       string(REPLACE "/Zi" "/Z7" CMAKE_C_FLAGS_MINSIZEREL "${CMAKE_C_FLAGS_MINSIZEREL}")
     endif()
+
+    # Turn this on to use ghash feature of lld for faster debug link on Windows.
+    # http://blog.llvm.org/2018/01/improving-link-time-on-windows-with.html
+    if (USE_LLD)
+      set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -gcodeview-ghash")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gcodeview-ghash")
+      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DEBUG:GHASH")
+      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEBUG:GHASH")
+    endif()
   else()
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zi")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
