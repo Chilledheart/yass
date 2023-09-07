@@ -1496,6 +1496,13 @@ if (ANDROID)
   # buildtools/third_party/libunwind will be built and used directly.
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --unwindlib=none")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --unwindlib=none")
+
+  # for arm 32-bit v7, use correct march
+  if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "^armeabi.*")
+    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -march=armv7-a -mfloat-abi=softfp")
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -march=armv7-a -mfloat-abi=softfp")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv7-a -mfloat-abi=softfp")
+  endif()
 endif()
 
 # *****************************************************************************************
