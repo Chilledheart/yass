@@ -43,13 +43,14 @@ jobs:
           - arch: x64
             qemu_suffix: amd64
           - arch: arm
-            qemu_suffix: armhf
+            qemu_suffix: armel
           - arch: arm64
             qemu_suffix: aarch64
     runs-on: ubuntu-20.04
     env:
       ARCH: ${{ matrix.arch }}
       SDK_ROOT: ${{ github.workspace }}/third_party/android_toolchain
+      SYSROOT: ${{ github.workspace }}/android-sysroot-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v3
       - name: Checkout with shallow submodules
@@ -80,14 +81,21 @@ jobs:
           key: ${{ runner.os }}-go-docker-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-docker-
-      - name: Cache sysroot
-        id: sysroot-cache
+      - name: Cache sdk root
+        id: ndk-cache
         uses: actions/cache@v3
         with:
           path: |
             ${{ env.SDK_ROOT }}
             qemu-user-static*.deb
-          key: ${{ runner.os }}-android-ndk-${{ matrix.arch }}-with-qemu-v${{ env.CACHE_EPOCH }}
+          key: android-ndk-${{ matrix.arch }}-with-qemu-v${{ env.CACHE_EPOCH }}
+      - name: Cache sysroot
+        id: sysroot-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ env.SYSROOT }}
+          key: android-sysroot-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
       - name: Build build tool
         run: |
           cd tools
@@ -98,7 +106,7 @@ jobs:
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
       - name: "Install dependency: android ndk"
-        if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
+        if: ${{ steps.ndk-cache.outputs.cache-hit != 'true' }}
         run: |
           ./scripts/install-sysroot-android.py
           wget http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-static_8.0.4+dfsg-3+b1_amd64.deb
@@ -125,6 +133,25 @@ jobs:
       - name: Build TGZ packages
         run: |
           ./tools/build --variant cli --arch ${{ matrix.arch }} --system android -build-benchmark -build-test -nc
+      - name: "Install dependency: android sysroot (test purpose)"
+        if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
+        run: |
+          ./scripts/get-android-sys.sh ${{ matrix.arch }} "${{ matrix.SYSROOT }}"
+      - name: Run tests (x86 and x64)
+        if: ${{ matrix.arch == 'x86' ||  matrix.arch == 'x64' }}
+        run: |
+          # android sysimg doesn't like resolv.conf
+          mkdir -p $SYSROOT/dev $SYSROOT/proc $SYSROOT/tmp
+          bwrap --die-with-parent --bind $SYSROOT / \
+            --proc /proc --dev /dev \
+            --unshare-all \
+            --bind $PWD/build-android-${{ matrix.arch }} /tmp \
+            /tmp/yass_test
+      - name: Run tests (non x86, under qemu emulation)
+        if: ${{ matrix.arch != 'x86' && matrix.arch != 'x64' }}
+        run: |
+          qemu-${{ matrix.qemu_suffix }}-static -L $SYSROOT \
+            $PWD/build-android-${{ matrix.arch }}/yass_test
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:

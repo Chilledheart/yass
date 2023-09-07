@@ -11,8 +11,13 @@
 
 #include "test_util.hpp"
 #include "core/c-ares.hpp"
+#include "core/compiler_specific.hpp"
 
+#ifdef OS_ANDROID
+ABSL_FLAG(bool, no_cares_tests, true, "skip c-ares tests");
+#else
 ABSL_FLAG(bool, no_cares_tests, false, "skip c-ares tests");
+#endif
 
 TEST(CARES_TEST, LocalfileBasic) {
   asio::error_code ec;
