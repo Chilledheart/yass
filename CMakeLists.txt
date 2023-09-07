@@ -1278,6 +1278,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# https://chromium.googlesource.com/chromium/src/build/config/+/refs/heads/main/compiler/BUILD.gn
 if (UNIX AND NOT APPLE)
   # Since we build with -std=c* and not -std=gnu*, _GNU_SOURCE will not be
   # defined by the compiler.  However, lots of code relies on the
@@ -1305,6 +1306,18 @@ endif()
 if (USE_LLD AND NOT WIN32 AND NOT APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16.0)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--undefined-version")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--undefined-version")
+endif()
+
+# Apple: pass --strict-auto-link to ld64.lld
+#
+# Previously ld64.lld would always warn if LC_LINKER_OPTIONS specified
+# a nonexistent library.
+#
+# After https://reviews.llvm.org/D140491, this will only happen if the link fails,
+# matching ld64. Passing `--strict-auto-link` restores the old behavior.
+if (USE_LLD AND APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16.0)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--strict-auto-link")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--strict-auto-link")
 endif()
 
 # LLD does call-graph-sorted binary layout by default when profile data is
@@ -1341,6 +1354,17 @@ endif()
 if (COMPILER_CLANG AND (MSVC OR USE_LIBCXX) AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.0)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fcomplete-member-pointers")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcomplete-member-pointers")
+endif()
+
+# Use DWARF simple template names, with the following exceptions:
+#
+# * Windows is not supported as it doesn't use DWARF.
+# * Apple platforms (e.g. MacOS, iPhone, iPad) aren't supported because xcode
+#   lldb doesn't have the needed changes yet.
+# TODO(crbug.com/1379070): Remove if the upstream default ever changes.
+#  Using simple template names results in considerable decrease in size in debug builds.
+if (COMPILER_CLANG AND NOT MSVC AND NOT APPLE AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14.0)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gsimple-template-names")
 endif()
 
 if (WIN32)
