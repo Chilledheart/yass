@@ -1505,7 +1505,7 @@ if (ANDROID)
 
   # The NDK has these things, but doesn't define the constants to say that it
   # does. Define them here instead.
-  add_definitions(-DHAVE_SYS_UIO_H)
+  add_definitions(-DHAVE_SYS_UIO_H=1)
 
   # Forces full rebuilds on NDK rolls. To rebuild everything when NDK version
   # stays the same, increment the suffix number.
