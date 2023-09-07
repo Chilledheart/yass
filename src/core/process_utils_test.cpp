@@ -13,8 +13,13 @@
 #include "core/process_utils.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
+#include "core/compiler_specific.hpp"
 
+#ifdef OS_ANDROID
+ABSL_FLAG(bool, no_exec_proc_tests, true, "skip execute_process tests");
+#else
 ABSL_FLAG(bool, no_exec_proc_tests, false, "skip execute_process tests");
+#endif
 
 TEST(PROCESS_TEST, ExecuteProcessBasic) {
   if (absl::GetFlag(FLAGS_no_exec_proc_tests)) {

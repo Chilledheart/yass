@@ -57,3 +57,4 @@ yass.spec
 *.ipk
 /android-*-tmp
 /third_party/android_toolchain
+/android-sysroot-*
