@@ -1531,19 +1531,35 @@ if (ANDROID)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --unwindlib=none")
 
   # for arm 32-bit v7, use correct march
+  # following https://developer.android.com/ndk/guides/abis#v7a
+  # thumb is enabled in v7 and neon is optional
+  # following https://developer.android.com/ndk/guides/cpu-arm-neon
+  # Almost all ARMv7-based Android devices support Neon, including all devices that
+  # shipped with API level 21 or later. The NDK enables Neon by default.
   if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "^armeabi.*")
-    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -march=armv7-a -mfloat-abi=softfp")
-    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -march=armv7-a -mfloat-abi=softfp")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv7-a -mfloat-abi=softfp")
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -march=armv7-a -mfloat-abi=softfp -mthumb -mfpu=neon")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv7-a -mfloat-abi=softfp -mthumb -mfpu=neon")
+  endif()
+
+  # for arm64-v8a
+  # You can use Neon intrinsics in C and C++ code to take advantage of the Advanced SIMD extension.
+  # following https://developer.android.com/ndk/guides/abis#arm64-v8a
+  if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "^arm64.*")
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -march=armv8-a+simd+fp")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv8-a+simd+fp")
   endif()
 
   # for x64 arch
+  # following https://developer.android.com/ndk/guides/abis#x64
+  # Android's ABI includes the base instruction set plus MMX, SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, and the POPCNT instruction.
   if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "^x64$")
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -msse3")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3")
   endif()
 
   # for x86 arch
+  # following https://developer.android.com/ndk/guides/abis#x86
+  # Android's ABI includes the base instruction set plus the MMX, SSE, SSE2, SSE3, and SSSE3 extensions.
   if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "^x86$")
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -mfpmath=sse -msse3")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpmath=sse -msse3")
