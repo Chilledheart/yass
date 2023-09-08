@@ -1496,6 +1496,17 @@ if (WIN32)
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/platforms/WindowsCache.cmake)
 endif()
 
+# requires sse3, the next is avx
+if (WIN32)
+  # FIXME for mingw, CMAKE_SYSTEM_PROCESSOR can't tell which target it is building,
+  # it needs to exclude arm64 build correctly.
+  if (MINGW OR MSVC_PROCESSOR_ARCHITECTURE STREQUAL "x86" OR MSVC_PROCESSOR_ARCHITECTURE STREQUAL "amd64")
+    message(STATUS "Built with sse3 support")
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -msse3")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3")
+  endif()
+endif()
+
 # comes from build/config/android/BUILD.gn
 if (ANDROID)
   set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fno-short-enums")
