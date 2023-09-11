@@ -18,7 +18,8 @@ More Information refers to [wiki](https://github.com/Chilledheart/yass/wiki)
 ## Supported Operating System
 - Windows
 - macOS
-- Linux
+- Linux (including Android and OpenWRT, Ubuntu, CentOS and etc)
+- FreeBSD
 
 ## Build from Source
 Take a look at [BUILDING.md] for more instructions.
