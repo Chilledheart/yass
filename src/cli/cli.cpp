@@ -71,8 +71,6 @@ int main(int argc, const char* argv[]) {
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
   IoQueue::set_allow_merge(absl::GetFlag(FLAGS_io_queue_allow_merge));
 
-  LOG(WARNING) << "Application starting: " << YASS_APP_TAG;
-
 #ifdef _WIN32
   int iResult = 0;
   WSADATA wsaData = {0};
@@ -141,6 +139,7 @@ int main(int argc, const char* argv[]) {
   signals.add(SIGQUIT, ec);
 #endif
   signals.async_wait([&](asio::error_code /*error*/, int /*signal_number*/) {
+    LOG(WARNING) << "Application exiting";
     server.stop();
     work_guard.reset();
   });

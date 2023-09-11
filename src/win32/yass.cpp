@@ -174,8 +174,6 @@ BOOL CYassApp::InitInstance() {
   }
 #endif
 
-  LOG(WARNING) << "Application starting: " << YASS_APP_TAG;
-
   return TRUE;
 }
 

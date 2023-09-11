@@ -212,8 +212,6 @@ void YASSApp::OnActivate() {
 }
 
 int YASSApp::ApplicationRun(int argc, char** argv) {
-  LOG(WARNING) << "Application starting: " << YASS_APP_TAG;
-
   int ret = g_application_run(G_APPLICATION(impl_), argc, argv);
 
   if (ret) {

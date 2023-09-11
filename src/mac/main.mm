@@ -71,7 +71,5 @@ int main(int argc, const char** argv) {
     LOG(WARNING) << "Failed to set memory lock";
   }
 
-  LOG(WARNING) << "Application starting: " << YASS_APP_TAG;
-
   return NSApplicationMain(argc, argv);
 }
