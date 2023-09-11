@@ -109,4 +109,5 @@ for deb in *.deb; do
   echo $deb :
   echo "======================================================================"
   dpkg -I $deb
+  dpkg -c $deb
 done
