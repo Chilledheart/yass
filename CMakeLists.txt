@@ -438,7 +438,7 @@ if(YASS_TARGET_IS_CROSSCOMPILE_HOST)
 # (this is a variable that CrossCompile sets on recursive invocations)
 endif()
 
-if (NOT MSVC AND NOT APPLE)
+if (NOT CMAKE_SKIP_INSTALL_RULES)
   include(GNUInstallDirs)
 endif()
 
@@ -2965,8 +2965,8 @@ if (CLI)
     yass_base
     )
 
-  if (NOT APPLE AND NOT MSVC)
-    install(TARGETS yass_cli DESTINATION bin)
+  if (NOT CMAKE_SKIP_INSTALL_RULES)
+    install(TARGETS yass_cli RUNTIME DESTINATION bin)
   endif()
 endif()
 
@@ -2996,8 +2996,8 @@ if (SERVER)
     yass_base
     )
 
-  if (NOT APPLE AND NOT MSVC)
-    install(TARGETS yass_server DESTINATION bin)
+  if (NOT CMAKE_SKIP_INSTALL_RULES)
+    install(TARGETS yass_server RUNTIME DESTINATION bin)
   endif()
 endif()
 
@@ -3301,28 +3301,57 @@ if (GUI)
         endif()
     endif()
 
-    if (GUI_FLAVOUR STREQUAL "gtk3" OR GUI_FLAVOUR STREQUAL "gtk4")
-      install(TARGETS ${APP_NAME} DESTINATION bin)
+    if (NOT CMAKE_SKIP_INSTALL_RULES)
+      # installable, except on macOS when marked as MACOSX_BUNDLE
+      if (NOT APPLE)
+        install(TARGETS ${APP_NAME} RUNTIME DESTINATION bin)
+      endif()
 
-      install(FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/yass.desktop
-        DESTINATION share/applications)
+      if (GUI_FLAVOUR STREQUAL "gtk3" OR GUI_FLAVOUR STREQUAL "gtk4")
+        install(FILES
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/yass.desktop
+          DESTINATION share/applications)
 
-      install(FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/yass.png
-        DESTINATION share/pixmaps)
+        install(FILES
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/yass.png
+          DESTINATION share/pixmaps)
 
-      install(DIRECTORY
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/16x16
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/22x22
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/24x24
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/32x32
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/48x48
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/128x128
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/256x256
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/512x512
-        DESTINATION share/icons/hicolor)
+        install(DIRECTORY
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/16x16
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/22x22
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/24x24
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/32x32
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/48x48
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/128x128
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/256x256
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/icons/512x512
+          DESTINATION share/icons/hicolor)
+      endif()
     endif()
+endif()
+
+# *****************************************************************************************
+#           Source code: LICENSE part
+# *****************************************************************************************
+
+if(NOT CMAKE_SKIP_INSTALL_RULES)
+  install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR})
+  install(FILES third_party/abseil-cpp/LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR} RENAME LICENSE.abseil-cpp)
+  install(FILES third_party/asio/asio/LICENSE_1_0.txt DESTINATION ${CMAKE_INSTALL_DOCDIR} RENAME LICENSE.asio)
+  install(FILES third_party/boringssl/src/LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR} RENAME LICENSE.boringssl)
+  install(FILES third_party/googleurl/LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR} RENAME LICENSE.googleurl)
+  install(FILES third_party/http_parser/LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR} RENAME LICENSE.http-parser)
+  install(FILES third_party/icu/LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR} RENAME LICENSE.icu)
+  install(FILES third_party/json/LICENSE.MIT DESTINATION ${CMAKE_INSTALL_DOCDIR} RENAME LICENSE.json)
+  install(FILES third_party/libc++/trunk/LICENSE.TXT DESTINATION ${CMAKE_INSTALL_DOCDIR} RENAME LICENSE.libc++)
+  install(FILES third_party/libc++abi/trunk/LICENSE.TXT DESTINATION ${CMAKE_INSTALL_DOCDIR} RENAME LICENSE.libc++abi)
+  install(FILES third_party/lss/LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR} RENAME LICENSE.lss)
+  install(FILES third_party/mbedtls/LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR} RENAME LICENSE.mbedtls)
+  install(FILES third_party/url/third_party/mozilla/LICENSE.txt DESTINATION ${CMAKE_INSTALL_DOCDIR} RENAME LICENSE.mozilla)
+  install(FILES third_party/protobuf/LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR} RENAME LICENSE.protobuf)
+  install(FILES third_party/quiche/src/LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR} RENAME LICENSE.quiche)
+  install(FILES third_party/xxhash/LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR} RENAME LICENSE.xxhash)
+  install(FILES third_party/zlib/LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR} RENAME LICENSE.zlib)
 endif()
 
 # *****************************************************************************************

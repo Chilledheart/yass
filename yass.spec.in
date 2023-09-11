@@ -149,6 +149,7 @@ update-desktop-database
 %dir /usr/share/icons/hicolor/
 %dir /usr/share/applications/
 %dir /usr/share/pixmaps/
+%dir /usr/share/doc/
 %{_bindir}/yass
 %{_datadir}/applications/yass.desktop
 %{_datadir}/pixmaps/yass.png
@@ -160,6 +161,23 @@ update-desktop-database
 %{_datadir}/icons/hicolor/128x128/apps/yass.png
 %{_datadir}/icons/hicolor/256x256/apps/yass.png
 %{_datadir}/icons/hicolor/512x512/apps/yass.png
+%{_datadir}/doc/yass/LICENSE
+%{_datadir}/doc/yass/LICENSE.abseil-cpp
+%{_datadir}/doc/yass/LICENSE.asio
+%{_datadir}/doc/yass/LICENSE.boringssl
+%{_datadir}/doc/yass/LICENSE.googleurl
+%{_datadir}/doc/yass/LICENSE.http-parser
+%{_datadir}/doc/yass/LICENSE.icu
+%{_datadir}/doc/yass/LICENSE.json
+%{_datadir}/doc/yass/LICENSE.libc++
+%{_datadir}/doc/yass/LICENSE.libc++abi
+%{_datadir}/doc/yass/LICENSE.lss
+%{_datadir}/doc/yass/LICENSE.mbedtls
+%{_datadir}/doc/yass/LICENSE.mozilla
+%{_datadir}/doc/yass/LICENSE.protobuf
+%{_datadir}/doc/yass/LICENSE.quiche
+%{_datadir}/doc/yass/LICENSE.xxhash
+%{_datadir}/doc/yass/LICENSE.zlib
 
 %package server
 Summary: Lightweight and Secure http/socks4/socks5 Proxy (Server Side)
