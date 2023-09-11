@@ -125,8 +125,6 @@ void YASSApp::OnActivate() {
     LOG(WARNING) << "Failed to init dispatcher";
   }
 
-  LOG(WARNING) << "Application starting: " << YASS_APP_TAG;
-
   main_window_ = new YASSWindow();
   main_window_->show();
   // https://docs.gtk.org/gtk3/method.Window.present.html

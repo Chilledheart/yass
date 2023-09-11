@@ -9,8 +9,10 @@
 
 #include <absl/flags/flag.h>
 #include <absl/strings/str_cat.h>
+#include <absl/flags/internal/program_name.h>
 
 #include "core/cipher.hpp"
+#include "version.h"
 
 bool AbslParseFlag(absl::string_view text, CipherMethodFlag* flag,
                    std::string* err);
@@ -255,9 +257,26 @@ void ReadConfigFileOption(int argc, const char** argv) {
       argv[pos+1] = "";
       pos += 2;
       continue;
+    } else if (arg == "--version") {
+      fprintf(stdout, "%s %s\n", absl::flags_internal::ShortProgramInvocationName().c_str(),
+              YASS_APP_TAG);
+      fprintf(stdout, "Last Change: %s\n", YASS_APP_LAST_CHANGE);
+#ifndef NDEBUG
+      fprintf(stdout, "Debug build (NDEBUG not #defined)\n");
+#endif
+      fflush(stdout);
+      argv[pos] = "";
+      pos += 1;
+      exit(0);
     }
     ++pos;
   }
+
+  LOG(WARNING) << "Application starting: " << YASS_APP_TAG;
+  LOG(WARNING) << "Last Change: " << YASS_APP_LAST_CHANGE;
+#ifndef NDEBUG
+  LOG(WARNING) << "Debug build (NDEBUG not #defined)\n";
+#endif
 }
 
 bool ReadConfig() {
