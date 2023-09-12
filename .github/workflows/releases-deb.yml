@@ -30,7 +30,7 @@ on:
   release:
     types: [published]
 env:
-  CACHE_EPOCH: 116v2
+  CACHE_EPOCH: 116v3
   GOPROXY: direct
   DH_QUIET: 1
 jobs:
@@ -189,6 +189,11 @@ jobs:
             apt-get install -y dpkg-cross pkg-config gcc-$HOST_GNU_TYPE g++-$HOST_GNU_TYPE libc6:${{ env.HOST_ARCH }} libstdc++6:${{ env.HOST_ARCH }} linux-libc-dev:${{ env.HOST_ARCH }}
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             ln -sf /usr/share/pkg-config-crosswrapper /usr/bin/${HOST_GNU_TYPE}-pkg-config
+      - name: Populate sysroot (crosscompile toolchain, for bookworm and later distro)
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_ARCH != 'i386' && env.HOST_ARCH != 'amd64' }}
+        run: |
+          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
+            bash -c "[ ! -f /usr/share/pkg-config-crosswrapper ] && cp -v $PWD/debian/pkg-config-crosswrapper /usr/share/pkg-config-crosswrapper || :"
       - name: Populate sysroot (standard toolchain)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' }}
         run: |
