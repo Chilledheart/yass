@@ -30,7 +30,7 @@ on:
   release:
     types: [published]
 env:
-  CACHE_EPOCH: 116
+  CACHE_EPOCH: 118
   GOPROXY: direct
 jobs:
   mingw64-release:
@@ -60,8 +60,6 @@ jobs:
             third_party/llvm-build/Release+Asserts
             third_party/wix311
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-          restore-keys: |
-            ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
       - name: Cache mingw64 toolchain
         id: mingw64-cache
         uses: actions/cache@v3

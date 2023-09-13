@@ -16,7 +16,7 @@ on:
         required: false
         type: boolean
 env:
-  CACHE_EPOCH: 116
+  CACHE_EPOCH: 118
   GOPROXY: direct
 jobs:
   sanitizer-linux:
@@ -49,8 +49,6 @@ jobs:
           path: |
             third_party/llvm-build/Release+Asserts
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-          restore-keys: |
-            ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |

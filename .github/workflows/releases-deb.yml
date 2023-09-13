@@ -30,7 +30,7 @@ on:
   release:
     types: [published]
 env:
-  CACHE_EPOCH: 116v3
+  CACHE_EPOCH: 118
   GOPROXY: direct
   DH_QUIET: 1
 jobs:
@@ -81,8 +81,6 @@ jobs:
           path: |
             third_party/llvm-build/Release+Asserts
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-          restore-keys: |
-            ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
       - name: Cache golang
         uses: actions/cache@v3
         with:

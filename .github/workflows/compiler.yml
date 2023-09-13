@@ -28,7 +28,7 @@ on:
     - '.circleci/**'
     - '.cirrus.yml'
 env:
-  CACHE_EPOCH: 116
+  CACHE_EPOCH: 118
   GOPROXY: direct
 jobs:
   win-compiler-compatible-2022:
@@ -60,8 +60,6 @@ jobs:
             third_party/llvm-build/Release+Asserts
             third_party/wix311
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-          restore-keys: |
-            ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
       - name: Cache msvc curl
         id: curl-cache
         uses: actions/cache@v3
@@ -148,8 +146,6 @@ jobs:
           path: |
             third_party/llvm-build/Release+Asserts
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-          restore-keys: |
-            ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-
       - name: Cache mingw64 curl
         id: curl-cache
         uses: actions/cache@v3
@@ -321,8 +317,6 @@ jobs:
           path: |
             third_party/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04
           key: ${{ runner.os }}-toolchain-clang13-v${{ env.CACHE_EPOCH }}
-          restore-keys: |
-            ${{ runner.os }}-toolchain-clang13-
       - name: Cache golang
         uses: actions/cache@v3
         with:
