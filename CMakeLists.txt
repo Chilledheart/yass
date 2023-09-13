@@ -1962,6 +1962,7 @@ if (MSAN)
   target_compile_options(fipsmodule PRIVATE "-fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
   target_compile_options(crypto PRIVATE "-fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
   target_compile_options(ssl PRIVATE "-fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
+  target_compile_options(pki PRIVATE "-fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
 endif()
 
 if (BORINGSSL_BUILD_TESTS)
