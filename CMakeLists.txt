@@ -535,6 +535,15 @@ if(UBSAN)
   endif()
 endif()
 
+# apply sanitizer blacklist
+if (MSAN OR ASAN OR TSAN OR UBSAN)
+  if (COMPILER_CLANG)
+    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
+  endif()
+endif()
+
 if(GCOV)
   if (COMPILER_CLANG)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
@@ -1958,13 +1967,6 @@ endforeach()
 set_target_properties(bssl PROPERTIES EXCLUDE_FROM_ALL TRUE)
 set_target_properties(decrepit PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
-if (MSAN)
-  target_compile_options(fipsmodule PRIVATE "-fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
-  target_compile_options(crypto PRIVATE "-fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
-  target_compile_options(ssl PRIVATE "-fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
-  target_compile_options(pki PRIVATE "-fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
-endif()
-
 if (BORINGSSL_BUILD_TESTS)
   add_custom_target(check_boringssl
     COMMAND ${GO_EXECUTABLE} run util/all_tests.go -build-dir
@@ -2313,9 +2315,6 @@ elseif (USE_CARES)
 
   set(SUPPORT_LIBS c-ares ${SUPPORT_LIBS})
   set(CARES_LIBRARIES c-ares)
-  if (MSAN)
-    target_compile_options(c-ares PRIVATE "-fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
-  endif()
 endif()
 
 # *****************************************************************************************
@@ -2363,9 +2362,6 @@ elseif (USE_NGHTTP2)
     target_compile_options(nghttp2_static PRIVATE -Wno-covered-switch-default)
   endif()
   set(NGHTTP2_LIBRARIES nghttp2_static)
-  if (MSAN)
-    target_compile_options(nghttp2_static PRIVATE "-fsanitize-blacklist=${CMAKE_CURRENT_SOURCE_DIR}/src/blacklist.txt")
-  endif()
 endif()
 
 # *****************************************************************************************
