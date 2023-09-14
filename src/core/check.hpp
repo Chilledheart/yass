@@ -9,6 +9,8 @@
 #include "core/compiler_specific.hpp"
 #include "core/immediate_crash.hpp"
 
+namespace yass {
+
 // This header defines the CHECK, DCHECK, and DPCHECK macros.
 //
 // CHECK dies with a fatal error if its condition is not true. It is not
@@ -48,11 +50,12 @@ class VoidifyStream {
 // Helper macro which avoids evaluating the arguents to a stream if the
 // condition is false.
 #define LAZY_CHECK_STREAM(stream, condition) \
-  !(condition) ? (void)0 : VoidifyStream() & (stream)
+  !(condition) ? (void)0 : ::yass::VoidifyStream() & (stream)
 
 // Macro which uses but does not evaluate expr and any stream parameters.
 #define EAT_CHECK_STREAM_PARAMS(expr) \
-  true ? (void)0 : VoidifyStream(expr) & (*g_swallow_stream)
+  true ? (void)0 : ::yass::VoidifyStream(expr) & (*::yass::g_swallow_stream)
+
 extern std::ostream* g_swallow_stream;
 
 class CheckOpResult;
@@ -62,10 +65,10 @@ class LogMessage;
 class CheckError {
  public:
   static CheckError Check(const char* file, int line, const char* condition);
-  static CheckError CheckOp(const char* file, int line, CheckOpResult* result);
+  static CheckError CheckOp(const char* file, int line, ::yass::CheckOpResult* result);
 
   static CheckError DCheck(const char* file, int line, const char* condition);
-  static CheckError DCheckOp(const char* file, int line, CheckOpResult* result);
+  static CheckError DCheckOp(const char* file, int line, ::yass::CheckOpResult* result);
 
   static CheckError PCheck(const char* file, int line, const char* condition);
   static CheckError PCheck(const char* file, int line);
@@ -103,19 +106,19 @@ class CheckError {
   UNLIKELY(!(condition)) ? IMMEDIATE_CRASH() : EAT_CHECK_STREAM_PARAMS()
 
 #define PCHECK(condition)                                            \
-  LAZY_CHECK_STREAM(CheckError::PCheck(__FILE__, __LINE__).stream(), \
+  LAZY_CHECK_STREAM(::yass::CheckError::PCheck(__FILE__, __LINE__).stream(), \
                     UNLIKELY(!(condition)))
 
 #else
 
 #define CHECK(condition)                                          \
   LAZY_CHECK_STREAM(                                              \
-      CheckError::Check(__FILE__, __LINE__, #condition).stream(), \
+      ::yass::CheckError::Check(__FILE__, __LINE__, #condition).stream(), \
       !ANALYZER_ASSUME_TRUE(condition))
 
 #define PCHECK(condition)                                          \
   LAZY_CHECK_STREAM(                                               \
-      CheckError::PCheck(__FILE__, __LINE__, #condition).stream(), \
+      ::yass::CheckError::PCheck(__FILE__, __LINE__, #condition).stream(), \
       !ANALYZER_ASSUME_TRUE(condition))
 
 #endif
@@ -124,12 +127,12 @@ class CheckError {
 
 #define DCHECK(condition)                                          \
   LAZY_CHECK_STREAM(                                               \
-      CheckError::DCheck(__FILE__, __LINE__, #condition).stream(), \
+      ::yass::CheckError::DCheck(__FILE__, __LINE__, #condition).stream(), \
       !ANALYZER_ASSUME_TRUE(condition))
 
 #define DPCHECK(condition)                                          \
   LAZY_CHECK_STREAM(                                                \
-      CheckError::DPCheck(__FILE__, __LINE__, #condition).stream(), \
+      ::yass::CheckError::DPCheck(__FILE__, __LINE__, #condition).stream(), \
       !ANALYZER_ASSUME_TRUE(condition))
 
 #else
@@ -169,5 +172,7 @@ void RawError(const char* message);
     }                                \
   }                                  \
   EAT_CHECK_STREAM_PARAMS()
+
+} // namespace yass
 
 #endif  // CORE_CHECK_H_

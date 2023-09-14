@@ -358,6 +358,24 @@ ABSL_FLAG(std::string,
           "",
           "Emit a backtrace when logging at file:linenum.");
 
+ABSL_FLAG(int32_t, v, DEFAULT_VERBOSE_LEVEL, "verboselevel");
+
+ABSL_FLAG(std::string,
+          vmodule,
+          "",
+          "per-module verbose level."
+          " Argument is a comma-separated list of <module name>=<log level>."
+          " <module name> is a glob pattern, matched against the filename base"
+          " (that is, name ignoring .cc/.h./-inl.h)."
+          " <log level> overrides any value given by --v.");
+
+ABSL_FLAG(bool,
+          symbolize_stacktrace,
+          true,
+          "Symbolize the stack trace in the tombstone");
+
+namespace yass {
+
 // TODO(hamaji): consider windows
 #define PATH_SEPARATOR '/'
 
@@ -2635,17 +2653,6 @@ MSVC_POP_WARNING()
 // Broken out from logging.cc by Soren Lassen
 // logging_unittest.cc covers the functionality herein
 
-ABSL_FLAG(int32_t, v, DEFAULT_VERBOSE_LEVEL, "verboselevel");
-
-ABSL_FLAG(std::string,
-          vmodule,
-          "",
-          "per-module verbose level."
-          " Argument is a comma-separated list of <module name>=<log level>."
-          " <module name> is a glob pattern, matched against the filename base"
-          " (that is, name ignoring .cc/.h./-inl.h)."
-          " <log level> overrides any value given by --v.");
-
 bool SafeFNMatch_(const char* pattern,
                   size_t patt_len,
                   const char* str,
@@ -2857,11 +2864,6 @@ bool InitVLOG3__(absl::Flag<int32_t>** site_flag,
 
 // Broken out from utilities.cc
 // Author: Shinichiro Hamaji
-
-ABSL_FLAG(bool,
-          symbolize_stacktrace,
-          true,
-          "Symbolize the stack trace in the tombstone");
 
 typedef void DebugWriter(const char*, void*);
 
@@ -3238,3 +3240,5 @@ void RawLog(int level, const char* message) {
   if (level == LOGGING_FATAL)
     BreakDebuggerAsyncSafe();
 }
+
+} // namespace yass

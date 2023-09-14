@@ -11,6 +11,8 @@
 #include "core/check.hpp"
 #include "core/template_util.hpp"
 
+namespace yass {
+
 // This header defines the (DP)CHECK_EQ etc. macros.
 //
 // (DP)CHECK_EQ(x, y) is similar to (DP)CHECK(x == y) but will also log the
@@ -149,11 +151,11 @@ class CheckOpResult {
   switch (0)                                                            \
   case 0:                                                               \
   default:                                                              \
-    if (CheckOpResult true_if_passed =                                  \
-            Check##name##Impl((val1), (val2), #val1 " " #op " " #val2)) \
+    if (::yass::CheckOpResult true_if_passed =                                  \
+            ::yass::Check##name##Impl((val1), (val2), #val1 " " #op " " #val2)) \
       ;                                                                 \
     else                                                                \
-      CheckError::CheckOp(__FILE__, __LINE__, &true_if_passed).stream()
+      ::yass::CheckError::CheckOp(__FILE__, __LINE__, &true_if_passed).stream()
 
 #endif
 
@@ -205,18 +207,18 @@ DEFINE_CHECK_OP_IMPL(GT, > )
   switch (0)                                                            \
   case 0:                                                               \
   default:                                                              \
-    if (CheckOpResult true_if_passed =                                  \
-            Check##name##Impl((val1), (val2), #val1 " " #op " " #val2)) \
+    if (::yass::CheckOpResult true_if_passed =                                  \
+            ::yass::Check##name##Impl((val1), (val2), #val1 " " #op " " #val2)) \
       ;                                                                 \
     else                                                                \
-      CheckError::DCheckOp(__FILE__, __LINE__, &true_if_passed).stream()
+      ::yass::CheckError::DCheckOp(__FILE__, __LINE__, &true_if_passed).stream()
 
 #else
 
 // Don't do any evaluation but still reference the same stuff as when enabled.
 #define DCHECK_OP(name, op, val1, val2) \
   EAT_CHECK_STREAM_PARAMS(              \
-      (CheckOpValueStr(val1), CheckOpValueStr(val2), (val1)op(val2)))
+      (::yass::CheckOpValueStr(val1), ::yass::CheckOpValueStr(val2), (val1)op(val2)))
 
 #endif
 
@@ -228,5 +230,7 @@ DEFINE_CHECK_OP_IMPL(GT, > )
 #define DCHECK_GE(val1, val2) DCHECK_OP(GE, >=, val1, val2)
 #define DCHECK_GT(val1, val2) DCHECK_OP(GT, > , val1, val2)
 // clang-format on
+
+} // namespace yass
 
 #endif  // CORE_CHECK_OP_H_

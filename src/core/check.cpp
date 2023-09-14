@@ -12,6 +12,8 @@
 #include "core/compiler_specific.hpp"
 #include "core/logging.hpp"
 
+namespace yass {
+
 CheckError CheckError::Check(const char* file,
                              int line,
                              const char* condition) {
@@ -110,3 +112,5 @@ void RawCheck(const char* message) {
 void RawError(const char* message) {
   RawLog(LOGGING_ERROR, message);
 }
+
+} // namespace yass

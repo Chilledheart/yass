@@ -511,7 +511,7 @@ class stream : public RefCountedThreadSafe<stream> {
       while (uint32_t error = ERR_get_error_line(&file, &line)) {
         char buf[120];
         ERR_error_string_n(error, buf, sizeof(buf));
-        LogMessage(file, line, LOGGING_ERROR).stream()
+        ::yass::LogMessage(file, line, LOGGING_ERROR).stream()
           << "OpenSSL error: " << buf;
       }
 #endif

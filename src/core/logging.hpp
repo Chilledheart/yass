@@ -94,17 +94,17 @@ constexpr LogSeverity LOG_DFATAL = LOGGING_DFATAL;
 // by LOG() and LOG_IF, etc. Since these are used all over our code, it's
 // better to have compact code for these operations.
 #define COMPACT_LOGGING_EX_INFO(ClassName, ...) \
-  ClassName(__FILE__, __LINE__, LOGGING_INFO, ##__VA_ARGS__)
+  ::yass::ClassName(__FILE__, __LINE__, LOGGING_INFO, ##__VA_ARGS__)
 #define COMPACT_LOGGING_EX_WARNING(ClassName, ...) \
-  ClassName(__FILE__, __LINE__, LOGGING_WARNING, ##__VA_ARGS__)
+  ::yass::ClassName(__FILE__, __LINE__, LOGGING_WARNING, ##__VA_ARGS__)
 #define COMPACT_LOGGING_EX_ERROR(ClassName, ...) \
-  ClassName(__FILE__, __LINE__, LOGGING_ERROR, ##__VA_ARGS__)
+  ::yass::ClassName(__FILE__, __LINE__, LOGGING_ERROR, ##__VA_ARGS__)
 #define COMPACT_LOGGING_EX_FATAL(ClassName, ...) \
-  ClassName(__FILE__, __LINE__, LOGGING_FATAL, ##__VA_ARGS__)
+  ::yass::ClassName(__FILE__, __LINE__, LOGGING_FATAL, ##__VA_ARGS__)
 #define COMPACT_LOGGING_EX_DFATAL(ClassName, ...) \
-  ClassName(__FILE__, __LINE__, LOGGING_DFATAL, ##__VA_ARGS__)
+  ::yass::ClassName(__FILE__, __LINE__, LOGGING_DFATAL, ##__VA_ARGS__)
 #define COMPACT_LOGGING_EX_DCHECK(ClassName, ...) \
-  ClassName(__FILE__, __LINE__, LOGGING_DCHECK, ##__VA_ARGS__)
+  ::yass::ClassName(__FILE__, __LINE__, LOGGING_DCHECK, ##__VA_ARGS__)
 
 #define COMPACT_LOGGING_INFO COMPACT_LOGGING_EX_INFO(LogMessage)
 #define COMPACT_LOGGING_WARNING COMPACT_LOGGING_EX_WARNING(LogMessage)
@@ -130,7 +130,7 @@ constexpr LogSeverity LOGGING_0 = LOGGING_ERROR;
 // As special cases, we can assume that LOG_IS_ON(FATAL) always holds. Also,
 // LOG_IS_ON(DFATAL) always holds in debug mode. In particular, CHECK()s will
 // always fire if they fail.
-#define LOG_IS_ON(severity) (ShouldCreateLogMessage(LOGGING_##severity))
+#define LOG_IS_ON(severity) (::yass::ShouldCreateLogMessage(LOGGING_##severity))
 
 #if defined(__GNUC__)
 // We emit an anonymous static int* variable at every VLOG_IS_ON(n) site.
@@ -144,7 +144,7 @@ constexpr LogSeverity LOGGING_0 = LOGGING_ERROR;
     static absl::Flag<int32_t>* vlocal__ = NULL;                       \
     int32_t verbose_level__ = (verboselevel);                          \
     (vlocal__ == NULL                                                  \
-         ? InitVLOG3__(&vlocal__, &FLAGS_v, __FILE__, verbose_level__) \
+         ? ::yass::InitVLOG3__(&vlocal__, &FLAGS_v, __FILE__, verbose_level__) \
          : absl::GetFlag(*vlocal__) >= verbose_level__);               \
   })
 #else
@@ -156,7 +156,7 @@ constexpr LogSeverity LOGGING_0 = LOGGING_ERROR;
 // Helper macro which avoids evaluating the arguments to a stream if
 // the condition doesn't hold. Condition is evaluated once and only once.
 #define LAZY_STREAM(stream, condition) \
-  !(condition) ? (void)0 : LogMessageVoidify() & (stream)
+  !(condition) ? (void)0 : ::yass::LogMessageVoidify() & (stream)
 
 // We use the preprocessor's merging operator, "##", so that, e.g.,
 // LOG(INFO) becomes the token COMPACT_LOGGING_INFO.  There's some funny
@@ -174,7 +174,7 @@ constexpr LogSeverity LOGGING_0 = LOGGING_ERROR;
 
 // The VLOG macros log with negative verbosities.
 #define VLOG_STREAM(verbose_level) \
-  LogMessage(__FILE__, __LINE__, -(verbose_level)).stream()
+  ::yass::LogMessage(__FILE__, __LINE__, -(verbose_level)).stream()
 
 #define VLOG(verbose_level) \
   LAZY_STREAM(VLOG_STREAM(verbose_level), VLOG_IS_ON(verbose_level))
@@ -185,13 +185,13 @@ constexpr LogSeverity LOGGING_0 = LOGGING_ERROR;
 
 #if defined(OS_WIN)
 #define VPLOG_STREAM(verbose_level)                          \
-  Win32ErrorLogMessage(__FILE__, __LINE__, -(verbose_level), \
-                       GetLastSystemErrorCode())             \
+  ::yass::Win32ErrorLogMessage(__FILE__, __LINE__, -(verbose_level), \
+                       ::yass::GetLastSystemErrorCode())             \
       .stream()
 #elif defined(OS_POSIX)
 #define VPLOG_STREAM(verbose_level)                     \
-  ErrnoLogMessage(__FILE__, __LINE__, -(verbose_level), \
-                  GetLastSystemErrorCode())             \
+  ::yass::ErrnoLogMessage(__FILE__, __LINE__, -(verbose_level), \
+                  ::yass::GetLastSystemErrorCode())             \
       .stream()
 #endif
 
@@ -211,11 +211,11 @@ constexpr LogSeverity LOGGING_0 = LOGGING_ERROR;
 #if defined(OS_WIN)
 #define PLOG_STREAM(severity)                             \
   COMPACT_LOGGING_EX_##severity(Win32ErrorLogMessage,     \
-                                GetLastSystemErrorCode()) \
+                                ::yass::GetLastSystemErrorCode()) \
       .stream()
 #elif defined(OS_POSIX)
 #define PLOG_STREAM(severity)                                              \
-  COMPACT_LOGGING_EX_##severity(ErrnoLogMessage, GetLastSystemErrorCode()) \
+  COMPACT_LOGGING_EX_##severity(ErrnoLogMessage, ::yass::GetLastSystemErrorCode()) \
       .stream()
 #endif
 
@@ -224,7 +224,9 @@ constexpr LogSeverity LOGGING_0 = LOGGING_ERROR;
 #define PLOG_IF(severity, condition) \
   LAZY_STREAM(PLOG_STREAM(severity), LOG_IS_ON(severity) && (condition))
 
+namespace yass {
 extern std::ostream* g_swallow_stream;
+} // namespace yass
 
 // Note that g_swallow_stream is used instead of an arbitrary LOG() stream to
 // avoid the creation of an object with a non-trivial destructor (LogMessage).
@@ -239,7 +241,7 @@ extern std::ostream* g_swallow_stream;
 // ostream* also is not suitable, because some compilers warn of undefined
 // behavior.
 #define EAT_STREAM_PARAMETERS \
-  true ? (void)0 : LogMessageVoidify() & (*g_swallow_stream)
+  true ? (void)0 : ::yass::LogMessageVoidify() & (*::yass::g_swallow_stream)
 
 // Definitions for DLOG et al.
 
@@ -311,6 +313,8 @@ ABSL_DECLARE_FLAG(bool, log_thread_id);
 ABSL_DECLARE_FLAG(bool, log_timestamp);
 ABSL_DECLARE_FLAG(bool, log_tickcount);
 ABSL_DECLARE_FLAG(std::string, log_prefix);
+
+namespace yass {
 
 // Set VLOG(_IS_ON) level for module_pattern to log_level.
 // This lets us dynamically control what is normally set by the --vmodule flag.
@@ -880,6 +884,8 @@ bool ShouldCreateLogMessage(LogSeverity severity);
 void RawLog(int level, const char* message);
 
 #define RAW_LOG(level, message) RawLog(LOGGING_##level, message)
+
+} // namespace yass
 
 #include "core/check_op.hpp"
 

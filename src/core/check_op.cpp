@@ -16,6 +16,8 @@
 
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
+namespace yass {
+
 char* CheckOpValueStr(int v) {
   char buf[50];
   snprintf(buf, sizeof(buf), "%d", v);
@@ -94,3 +96,5 @@ CheckOpResult::CheckOpResult(const char* expr_str, char* v1_str, char* v2_str) {
   free(v1_str);
   free(v2_str);
 }
+
+} // namespace yass

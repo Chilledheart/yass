@@ -68,7 +68,7 @@ inline void DumpHex_Impl(const char* file, int line, const char* prefix, const u
 done:
   // ensure it is null-terminated
   hex_buffer[sizeof(hex_buffer) - 1] = '\0';
-  LogMessage(file, line, -4).stream()
+  ::yass::LogMessage(file, line, -4).stream()
     << hex_buffer;
 }
 
