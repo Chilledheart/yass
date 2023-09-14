@@ -48,6 +48,8 @@ SectionEnd
 
 # uninstaller section start
 Section "uninstall"
+    # kill current process
+    ExecWait "TASKKILL /F /IM yass.exe /T"
 
     # first, delete the uninstaller
     Delete "$INSTDIR\uninstall.exe"
