@@ -27,11 +27,15 @@
             <UpgradeVersion OnlyDetect='yes' Property='NEWERFOUND' Minimum='1.0.0' IncludeMinimum='no' />
         </Upgrade>
 
-        <CustomAction Id='NoDowngrade' Error='A later version of [ProductName] is already installed.' />
+        <Binary Id='taskkill_exe' SourceFile='C:\Windows\System32\TASKKILL.exe' />
+
+        <CustomAction Id='StopYass' BinaryKey='taskkill_exe' ExeCommand='/F /IM yass.exe /T'
+                      Execute='immediate' Impersonate='yes' Return='ignore' />
 
         <InstallExecuteSequence>
-            <Custom Action='NoDowngrade' After='FindRelatedProducts'>NEWERFOUND</Custom>
-            <RemoveExistingProducts After='InstallInitialize' Overridable='yes'>UPGRADE</RemoveExistingProducts>
+            <Custom Action='StopYass' Before='InstallValidate'>
+              (REMOVE="ALL") OR UPGRADINGPRODUCTCODE OR WIX_UPGRADE_DETECTED
+            </Custom>
         </InstallExecuteSequence>
 
         <Condition Message='YASS requires Windows XP or above'>
