@@ -2111,6 +2111,60 @@ endif()
 include_directories(third_party/googletest/googletest/include SYSTEM)
 include_directories(third_party/googletest/googlemock/include SYSTEM)
 if (BUILD_TESTS)
+  # build re2 required by absl
+  set(RE2_SOURCES
+      third_party/re2/re2/bitmap256.cc
+      third_party/re2/re2/bitstate.cc
+      third_party/re2/re2/compile.cc
+      third_party/re2/re2/dfa.cc
+      third_party/re2/re2/filtered_re2.cc
+      third_party/re2/re2/mimics_pcre.cc
+      third_party/re2/re2/nfa.cc
+      third_party/re2/re2/onepass.cc
+      third_party/re2/re2/parse.cc
+      third_party/re2/re2/perl_groups.cc
+      third_party/re2/re2/prefilter.cc
+      third_party/re2/re2/prefilter_tree.cc
+      third_party/re2/re2/prog.cc
+      third_party/re2/re2/re2.cc
+      third_party/re2/re2/regexp.cc
+      third_party/re2/re2/set.cc
+      third_party/re2/re2/simplify.cc
+      third_party/re2/re2/tostring.cc
+      third_party/re2/re2/unicode_casefold.cc
+      third_party/re2/re2/unicode_groups.cc
+      third_party/re2/util/rune.cc
+      third_party/re2/util/strutil.cc
+      )
+
+  set(RE2_HEADERS
+      third_party/re2/re2/filtered_re2.h
+      third_party/re2/re2/re2.h
+      third_party/re2/re2/set.h
+      third_party/re2/re2/stringpiece.h
+      )
+
+  add_library(re2 ${RE2_SOURCES})
+  target_compile_options(re2 PRIVATE -Wno-error)
+  target_include_directories(re2 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/re2)
+
+  set(ABSL_DEPS
+      absl::base
+      absl::core_headers
+      absl::fixed_array
+      absl::flags
+      absl::flat_hash_map
+      absl::flat_hash_set
+      absl::inlined_vector
+      absl::optional
+      absl::span
+      absl::str_format
+      absl::strings
+      absl::synchronization
+      )
+  target_link_libraries(re2 PUBLIC ${ABSL_DEPS})
+  add_library(re2::re2 ALIAS re2)
+
   # Add minimal googletest targets. The provided one has many side-effects, and
   # googletest has a very straightforward build.
   add_library(yass_gtest STATIC
@@ -2119,6 +2173,22 @@ if (BUILD_TESTS)
   target_include_directories(yass_gtest PRIVATE
     third_party/googletest/googletest
     third_party/googletest/googlemock)
+
+  # absl part support requires re2
+  target_compile_definitions(yass_gtest PUBLIC GTEST_HAS_ABSL=1)
+  target_link_libraries(yass_gtest PUBLIC
+    absl::failure_signal_handler
+    absl::stacktrace
+    absl::symbolize
+    absl::flags_parse
+    absl::flags_reflection
+    absl::flags_usage
+    absl::strings
+    absl::any
+    absl::optional
+    absl::variant
+    re2::re2
+  )
 
   if(COMPILER_MSVC)
     # VS2019,VS2022 specific: storing 32-bit float result in memory, possible loss of performance
