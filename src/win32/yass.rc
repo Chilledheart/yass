@@ -44,28 +44,25 @@ BEGIN
     IDS_STATUS_START_FAILED "Start Failed"
 END
 
-// FIXME mingw32 generate error stringtable in runtime
-#ifndef __MINGW32__
 STRINGTABLE PRELOAD DISCARDABLE
 LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
 BEGIN
-    IDS_START_BUTTON        L"启动"
-    IDS_STOP_BUTTON         L"停止"
-    IDS_SERVER_HOST_LABEL   L"服务器域名"
-    IDS_SERVER_PORT_LABEL   L"服务器端口号"
-    IDS_USERNAME_LABEL      L"用户名"
-    IDS_PASSWORD_LABEL      L"密码"
-    IDS_METHOD_LABEL        L"加密方式"
-    IDS_LOCAL_HOST_LABEL    L"本地域名"
-    IDS_LOCAL_PORT_LABEL    L"本地端口"
-    IDS_TIMEOUT_LABEL       L"超时时间"
-    IDS_AUTOSTART_LABEL     L"随系统自启动"
-    IDS_SYSTEMPROXY_LABEL   L"系统代理"
-    IDS_ENABLE_LABEL        L"启用"
-    IDS_SHOW_YASS_TIP       L"显示 YASS"
-    IDS_STATUS_START_FAILED L"启动失败"
+    IDS_START_BUTTON        "启动"
+    IDS_STOP_BUTTON         "停止"
+    IDS_SERVER_HOST_LABEL   "服务器域名"
+    IDS_SERVER_PORT_LABEL   "服务器端口号"
+    IDS_USERNAME_LABEL      "用户名"
+    IDS_PASSWORD_LABEL      "密码"
+    IDS_METHOD_LABEL        "加密方式"
+    IDS_LOCAL_HOST_LABEL    "本地域名"
+    IDS_LOCAL_PORT_LABEL    "本地端口"
+    IDS_TIMEOUT_LABEL       "超时时间"
+    IDS_AUTOSTART_LABEL     "随系统自启动"
+    IDS_SYSTEMPROXY_LABEL   "系统代理"
+    IDS_ENABLE_LABEL        "启用"
+    IDS_SHOW_YASS_TIP       "显示 YASS"
+    IDS_STATUS_START_FAILED "启动失败"
 END
-#endif
 
 STRINGTABLE PRELOAD DISCARDABLE
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
@@ -77,8 +74,8 @@ END
 STRINGTABLE PRELOAD DISCARDABLE
 LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
 BEGIN
-    IDS_ABOUTBOX            L"关于... (&A)"
-    IDS_OPTIONBOX           L"选项... (&O)"
+    IDS_ABOUTBOX            "关于... (&A)"
+    IDS_OPTIONBOX           "选项... (&O)"
 END
 
 STRINGTABLE PRELOAD DISCARDABLE
@@ -91,8 +88,8 @@ END
 STRINGTABLE PRELOAD DISCARDABLE
 LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
 BEGIN
-    IDS_APP_TITLE       L"YASS"
-    IDS_IDLEMESSAGE     L"就绪"
+    IDS_APP_TITLE       "YASS"
+    IDS_IDLEMESSAGE     "就绪"
 END
 
 STRINGTABLE PRELOAD DISCARDABLE
@@ -104,7 +101,7 @@ END
 STRINGTABLE PRELOAD DISCARDABLE
 LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
 BEGIN
-    ID_APP_MSG             L"状态栏"
+    ID_APP_MSG             "状态栏"
 END
 
 /////////////////////////////////////////////////////////////////////////////
@@ -130,15 +127,15 @@ END
 IDR_MAINFRAME MENU PRELOAD DISCARDABLE
 LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
 BEGIN
-    POPUP L"文件 (&F)"
+    POPUP "文件 (&F)"
     BEGIN
-        MENUITEM L"选项... (&O)",                 ID_APP_OPTION
+        MENUITEM "选项... (&O)",                 ID_APP_OPTION
         MENUITEM SEPARATOR
-        MENUITEM L"退出 (&x)",                    ID_APP_EXIT
+        MENUITEM "退出 (&x)",                    ID_APP_EXIT
     END
-    POPUP L"帮助 (&H)"
+    POPUP "帮助 (&H)"
     BEGIN
-        MENUITEM L"关于YASS (&A)",                ID_APP_ABOUT
+        MENUITEM "关于YASS (&A)",                ID_APP_ABOUT
     END
 END
 
@@ -158,9 +155,9 @@ LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
 BEGIN
     POPUP ""
     BEGIN
-        MENUITEM L"选项... (&O)",          ID_APP_OPTION
+        MENUITEM "选项... (&O)",          ID_APP_OPTION
         MENUITEM SEPARATOR
-        MENUITEM L"退出 (&X)",                        ID_APP_EXIT
+        MENUITEM "退出 (&X)",                        ID_APP_EXIT
     END
 END
 
