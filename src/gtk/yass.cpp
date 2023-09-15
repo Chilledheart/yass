@@ -32,17 +32,8 @@ YASSApp* mApp = nullptr;
 static const char* kAppId = "it.gui.yass";
 static const char* kAppName = YASS_APP_PRODUCT_NAME;
 
-static std::string _GetExecutablePath(const std::string& fallback) {
-  char buf[PATH_MAX+1];
-  ssize_t ret = readlink("/proc/self/exe", buf, sizeof(buf)-1);
-  if (ret < 0) {
-    return fallback;
-  }
-  return std::string(buf, ret);
-}
-
 int main(int argc, const char** argv) {
-  SetExecutablePath(_GetExecutablePath(argv[0]));
+  SetExecutablePath(argv[0]);
   std::string exec_path;
   if (!GetExecutablePath(&exec_path)) {
     return -1;
