@@ -1,3 +1,8 @@
+yass (1.4.2-1) UNRELEASED; urgency=low
+
+  * New minor release.
+
+ -- Chilledheart <hukeyue@hotmail.com>  Fri, 15 Sep 2023 09:43:56 +0800
 yass (1.4.1-1) UNRELEASED; urgency=low
 
   * Bump to chromium 118 dependents.
