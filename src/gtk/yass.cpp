@@ -32,8 +32,17 @@ YASSApp* mApp = nullptr;
 static const char* kAppId = "it.gui.yass";
 static const char* kAppName = YASS_APP_PRODUCT_NAME;
 
+static std::string _GetExecutablePath(const std::string& fallback) {
+  char buf[PATH_MAX+1];
+  ssize_t ret = readlink("/proc/self/exe", buf, sizeof(buf)-1);
+  if (ret < 0) {
+    return fallback;
+  }
+  return std::string(buf, ret);
+}
+
 int main(int argc, const char** argv) {
-  SetExecutablePath(argv[0]);
+  SetExecutablePath(_GetExecutablePath(argv[0]));
   std::string exec_path;
   if (!GetExecutablePath(&exec_path)) {
     return -1;
@@ -42,8 +51,12 @@ int main(int argc, const char** argv) {
   if (!SetUTF8Locale()) {
     LOG(WARNING) << "Failed to set up utf-8 locale";
   }
+  std::string locale_path = "../share/locale";
+  size_t rpos = exec_path.rfind('/');
+  if (rpos != std::string::npos)
+    locale_path = exec_path.substr(0, rpos + 1) + locale_path;
   setlocale(LC_ALL, "");
-  bindtextdomain("yass", "../share/locale");
+  bindtextdomain("yass", locale_path.c_str());
   textdomain("yass");
 
   absl::InitializeSymbolizer(exec_path.c_str());
