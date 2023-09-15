@@ -3136,7 +3136,9 @@ if (GUI)
         )
         include(CompilePo)
         create_po_target(yass en src/gtk/yass_en.po)
+        create_po_target(yass zh_CN src/gtk/yass_zh_CN.po)
         list(APPEND SRC_FILES ${CMAKE_CURRENT_BINARY_DIR}/yass_en.gmo)
+        list(APPEND SRC_FILES ${CMAKE_CURRENT_BINARY_DIR}/yass_zh_CN.gmo)
     elseif(GUI_FLAVOUR STREQUAL "gtk4")
         # Compile the gresource file with the glib-compile-resources.
         set(MAIN_GRESOURCE ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk4/yass.gresource.xml)
@@ -3155,7 +3157,9 @@ if (GUI)
         # HOLDPLACE for TODO gettext support
         include(CompilePo)
         create_po_target(yass en src/gtk4/yass_en.po)
+        create_po_target(yass zh_CN src/gtk4/yass_zh_CN.po)
         list(APPEND SRC_FILES ${CMAKE_CURRENT_BINARY_DIR}/yass_en.gmo)
+        list(APPEND SRC_FILES ${CMAKE_CURRENT_BINARY_DIR}/yass_zh_CN.gmo)
     endif()
 
     # target_link_directories requires cmake 3.13

@@ -3,120 +3,121 @@
 # This file is distributed under the same license as the yass package.
 # Keyue Hu <hukeyue@hotmail.com>, 2023.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-05-24 14:35+0800\n"
-"PO-Revision-Date: 2023-09-15 11:18+0800\n"
-"Last-Translator: Keyue Hu <hukeyue@hotmail.com>\n"
+"PO-Revision-Date: 2023-09-15 11:26+0800\n"
 "Language-Team: Keyue Hu <hukeyue@hotmail.com>\n"
-"Language: English\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.2.4\n"
+"Last-Translator: \n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Language: zh_CN\n"
 
 #: option_dialog.cpp:33
 msgid "TCP keep alive"
-msgstr "TCP keep alive"
+msgstr "TCP 保活"
 
 #: option_dialog.cpp:34
 msgid "The number of TCP keep-alive probes"
-msgstr "The number of TCP keep-alive probes"
+msgstr "TCP 保活测量数"
 
 #: option_dialog.cpp:35
 msgid "TCP keep alive after idle"
-msgstr "TCP keep alive after idle"
+msgstr "TCP 在闲置以后的保活次数"
 
 #: option_dialog.cpp:36
 msgid "TCP keep alive interval"
-msgstr "TCP keep alive interval"
+msgstr "TCP 保活间隔"
 
 #: option_dialog.cpp:54
 msgid "Okay"
-msgstr "Okay"
+msgstr "确认"
 
 #: option_dialog.cpp:57
 msgid "Cancel"
-msgstr "Cancel"
+msgstr "取消"
 
 #: yass_window.cpp:78
 msgid "File"
-msgstr "File"
+msgstr "文件"
 
 #: yass_window.cpp:79
 msgid "Option..."
-msgstr "Option..."
+msgstr "选项..."
 
 #: yass_window.cpp:80
 msgid "Exit"
-msgstr "Exit"
+msgstr "退出"
 
 #: yass_window.cpp:113
 msgid "Start"
-msgstr "Start"
+msgstr "启动"
 
 #: yass_window.cpp:121
 msgid "Stop"
-msgstr "Stop"
+msgstr "停止"
 
 #: yass_window.cpp:149
 msgid "Server Host"
-msgstr "Server Host"
+msgstr "服务器域名"
 
 #: yass_window.cpp:150
 msgid "Server Port"
-msgstr "Server Port"
+msgstr "服务器端口号"
 
 #: yass_window.cpp:151
 msgid "Username"
-msgstr "Username"
+msgstr "用户名"
 
 #: yass_window.cpp:152
 msgid "Password"
-msgstr "Password"
+msgstr "密码"
 
 #: yass_window.cpp:153
 msgid "Cipher/Method"
-msgstr "Cipher/Method"
+msgstr "加密方式"
 
 #: yass_window.cpp:154
 msgid "Local Host"
-msgstr "Local Host"
+msgstr "本地域名"
 
 #: yass_window.cpp:155
 msgid "Local Port"
-msgstr "Local Port"
+msgstr "本地端口号"
 
 #: yass_window.cpp:156
 msgid "Timeout"
-msgstr "Timeout"
+msgstr "超时时间"
 
 #: yass_window.cpp:157
 msgid "Auto Start"
-msgstr "Auto Start"
+msgstr "随系统自启动"
 
 #: yass_window.cpp:158
 msgid "System Proxy"
-msgstr "System Proxy"
+msgstr "系统代理"
 
 #: yass_window.cpp:235
 msgid "READY"
-msgstr "READY"
+msgstr "就绪"
 
 #: yass_window.cpp:428
 msgid "YASS Option"
-msgstr "YASS Option"
+msgstr "YASS 选项"
 
 #: yass.cpp:173
 msgid "Connected with conns: "
-msgstr "Connected with conns: "
+msgstr "已产生连接: "
 
 #: yass.cpp:175
 msgid "Failed to connect due to "
-msgstr "Failed to connect due to "
+msgstr "无法连接因为 "
 
 #: yass.cpp:177
 msgid "Disconnected with "
-msgstr "Disconnected with "
+msgstr "断开连接于服务器"
