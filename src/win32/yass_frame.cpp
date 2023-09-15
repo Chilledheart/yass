@@ -191,7 +191,8 @@ BOOL AddNotificationIcon(HWND hwnd, HINSTANCE hInstance) {
   NOTIFYICONDATAW nid = {};
   nid.cbSize = sizeof(nid);
   nid.hWnd = hwnd;
-  wcscpy(nid.szTip, L"Show YASS");
+  std::wstring show_yass_name = LoadStringStdW(hInstance, IDS_SHOW_YASS_TIP);
+  wcscpy(nid.szTip, show_yass_name.c_str());
 #if _WIN32_WINNT >= 0x0600
   nid.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE | NIF_SHOWTIP | NIF_GUID;
   nid.guidItem = __uuidof(TrayIcon);
@@ -301,9 +302,12 @@ int CYassFrame::Create(const wchar_t* className,
   rect = RECT{};
 
   // Left Panel
-  start_button_ = CreateButton(L"START", BS_PUSHBUTTON, m_hWnd, IDC_START, hInstance);
+  std::wstring start_name = LoadStringStdW(m_hInstance, IDS_START_BUTTON);
+  std::wstring stop_name = LoadStringStdW(m_hInstance, IDS_STOP_BUTTON);
 
-  stop_button_ = CreateButton(L"STOP", BS_PUSHBUTTON, m_hWnd, IDC_STOP, hInstance);
+  start_button_ = CreateButton(start_name.c_str(), BS_PUSHBUTTON, m_hWnd, IDC_START, hInstance);
+
+  stop_button_ = CreateButton(stop_name.c_str(), BS_PUSHBUTTON, m_hWnd, IDC_STOP, hInstance);
 
   EnableWindow(stop_button_, FALSE);
 
@@ -325,16 +329,29 @@ int CYassFrame::Create(const wchar_t* className,
   // https://docs.microsoft.com/en-us/windows/win32/winmsg/about-window-classes
   // Right Panel
   // Column 2
-  server_host_label_ = CreateStatic(L"Server Host", m_hWnd, 0, hInstance);
-  server_port_label_ = CreateStatic(L"Server Port", m_hWnd, 0, hInstance);
-  username_label_ = CreateStatic(L"Username", m_hWnd, 0, hInstance);
-  password_label_ = CreateStatic(L"Password", m_hWnd, 0, hInstance);
-  method_label_ = CreateStatic(L"Cipher Method", m_hWnd, 0, hInstance);
-  local_host_label_ = CreateStatic(L"Local Host", m_hWnd, 0, hInstance);
-  local_port_label_ = CreateStatic(L"Local Port", m_hWnd, 0, hInstance);
-  timeout_label_ = CreateStatic(L"Timeout", m_hWnd, 0, hInstance);
-  autostart_label_ = CreateStatic(L"Auto Start", m_hWnd, 0, hInstance);
-  systemproxy_label_ = CreateStatic(L"System Proxy", m_hWnd, 0, hInstance);
+
+  std::wstring server_host_name = LoadStringStdW(hInstance, IDS_SERVER_HOST_LABEL);
+  std::wstring server_port_name = LoadStringStdW(hInstance, IDS_SERVER_PORT_LABEL);
+  std::wstring username_name = LoadStringStdW(hInstance, IDS_USERNAME_LABEL);
+  std::wstring password_name = LoadStringStdW(hInstance, IDS_PASSWORD_LABEL);
+  std::wstring method_name = LoadStringStdW(hInstance, IDS_METHOD_LABEL);
+  std::wstring local_host_name = LoadStringStdW(hInstance, IDS_LOCAL_HOST_LABEL);
+  std::wstring local_port_name = LoadStringStdW(hInstance, IDS_LOCAL_PORT_LABEL);
+  std::wstring timeout_name = LoadStringStdW(hInstance, IDS_TIMEOUT_LABEL);
+  std::wstring autostart_name = LoadStringStdW(hInstance, IDS_AUTOSTART_LABEL);
+  std::wstring systemproxy_name = LoadStringStdW(hInstance, IDS_SYSTEMPROXY_LABEL);
+  LOG(WARNING) << SysWideToUTF8(server_host_name);
+
+  server_host_label_ = CreateStatic(server_host_name.c_str(), m_hWnd, 0, hInstance);
+  server_port_label_ = CreateStatic(server_port_name.c_str(), m_hWnd, 0, hInstance);
+  username_label_ = CreateStatic(username_name.c_str(), m_hWnd, 0, hInstance);
+  password_label_ = CreateStatic(password_name.c_str(), m_hWnd, 0, hInstance);
+  method_label_ = CreateStatic(method_name.c_str(), m_hWnd, 0, hInstance);
+  local_host_label_ = CreateStatic(local_host_name.c_str(), m_hWnd, 0, hInstance);
+  local_port_label_ = CreateStatic(local_port_name.c_str(), m_hWnd, 0, hInstance);
+  timeout_label_ = CreateStatic(timeout_name.c_str(), m_hWnd, 0, hInstance);
+  autostart_label_ = CreateStatic(autostart_name.c_str(), m_hWnd, 0, hInstance);
+  systemproxy_label_ = CreateStatic(systemproxy_name.c_str(), m_hWnd, 0, hInstance);
 
   // Column 3
   server_host_edit_ = CreateEdit(0, m_hWnd, IDC_EDIT_SERVER_HOST, hInstance);
@@ -357,10 +374,11 @@ int CYassFrame::Create(const wchar_t* className,
   local_port_edit_ = CreateEdit(ES_NUMBER, m_hWnd, IDC_EDIT_LOCAL_PORT, hInstance);
   timeout_edit_ = CreateEdit(ES_NUMBER, m_hWnd, IDC_EDIT_TIMEOUT, hInstance);
 
-  autostart_button_ = CreateButton(L"Enable", BS_AUTOCHECKBOX | BS_LEFT,
+  std::wstring enable_name = LoadStringStdW(hInstance, IDS_ENABLE_LABEL);
+  autostart_button_ = CreateButton(enable_name.c_str(), BS_AUTOCHECKBOX | BS_LEFT,
                                    m_hWnd, IDC_AUTOSTART_CHECKBOX, hInstance);
 
-  systemproxy_button_ = CreateButton(L"Enable", BS_AUTOCHECKBOX | BS_LEFT,
+  systemproxy_button_ = CreateButton(enable_name.c_str(), BS_AUTOCHECKBOX | BS_LEFT,
                                      m_hWnd, IDC_SYSTEMPROXY_CHECKBOX, hInstance);
 
   Button_SetCheck(autostart_button_,
@@ -653,7 +671,8 @@ void CYassFrame::OnStartFailed() {
   EnableWindow(timeout_edit_, TRUE);
 
   EnableWindow(start_button_, TRUE);
-  MessageBoxW(m_hWnd, SysUTF8ToWide(mApp->GetStatus()).c_str(), L"Start Failed",
+  std::wstring start_failed_name = LoadStringStdW(m_hInstance, IDS_STATUS_START_FAILED);
+  MessageBoxW(m_hWnd, SysUTF8ToWide(mApp->GetStatus()).c_str(), start_failed_name.c_str(),
               MB_ICONEXCLAMATION | MB_OK);
 }
 
