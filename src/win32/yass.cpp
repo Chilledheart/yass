@@ -261,14 +261,14 @@ BOOL CYassApp::HandleThreadMessage(UINT message, WPARAM w, LPARAM l) {
   return FALSE;
 }
 
-std::string CYassApp::GetStatus() const {
-  std::ostringstream ss;
+std::wstring CYassApp::GetStatus() const {
+  std::wostringstream ss;
   if (state_ == STARTED) {
-    ss << "Connected with conns: " << worker_.currentConnections();
+    ss << LoadStringStdW(m_hInstance, IDS_STATUS_CONNECTED_WITH_CONNS) << worker_.currentConnections();
   } else if (state_ == START_FAILED) {
-    ss << "Failed to connect due to " << error_msg_;
+    ss << LoadStringStdW(m_hInstance, IDS_STATUS_FAILED_TO_CONNECT_DUE_TO) << SysUTF8ToWide(error_msg_);
   } else {
-    ss << "Disconnected with " << worker_.GetRemoteDomain();
+    ss << LoadStringStdW(m_hInstance, IDS_STATUS_DISCONNECTED_WITH) << SysUTF8ToWide(worker_.GetRemoteDomain());
   }
   return ss.str();
 }
@@ -356,6 +356,8 @@ BOOL CYassApp::CheckFirstInstance() {
   if (first_wnd) {
     HWND popup_wnd = GetLastActivePopup(first_wnd);
     SetForegroundWindow(popup_wnd);
+    if (!IsWindowVisible(popup_wnd))
+      ShowWindow(popup_wnd, SW_SHOW);
     if (IsIconic(popup_wnd))
       ShowWindow(popup_wnd, SW_SHOWNORMAL);
     if (first_wnd != popup_wnd)

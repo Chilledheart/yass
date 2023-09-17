@@ -120,4 +120,4 @@ msgstr "无法连接因为 "
 
 #: yass.cpp:177
 msgid "Disconnected with "
-msgstr "断开连接于服务器"
+msgstr "断开连接于服务器 "
