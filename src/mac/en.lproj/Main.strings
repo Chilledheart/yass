@@ -1,0 +1,87 @@
+
+/* Class = "NSMenuItem"; title = "YASS"; ObjectID = "1Xt-HY-uBw"; */
+"1Xt-HY-uBw.title" = "YASS";
+
+/* Class = "NSTextFieldCell"; title = "Local Port"; ObjectID = "3bJ-wb-xnh"; */
+"3bJ-wb-xnh.title" = "Local Port";
+
+/* Class = "NSMenuItem"; title = "Quit YASS"; ObjectID = "4sb-4s-VLi"; */
+"4sb-4s-VLi.title" = "Quit YASS";
+
+/* Class = "NSMenuItem"; title = "About YASS"; ObjectID = "5kV-Vb-QxS"; */
+"5kV-Vb-QxS.title" = "About YASS";
+
+/* Class = "NSTextFieldCell"; title = "Auto Start"; ObjectID = "8hL-Qd-hQU"; */
+"8hL-Qd-hQU.title" = "Auto Start";
+
+/* Class = "NSTextFieldCell"; title = "Password"; ObjectID = "9N4-Lw-6Ob"; */
+"9N4-Lw-6Ob.title" = "Password";
+
+/* Class = "NSMenu"; title = "Main Menu"; ObjectID = "AYu-sK-qS6"; */
+"AYu-sK-qS6.title" = "Main Menu";
+
+/* Class = "NSTextFieldCell"; title = "TCP Keep Alive Count"; ObjectID = "DwU-MU-ncE"; */
+"DwU-MU-ncE.title" = "TCP Keep Alive Count";
+
+/* Class = "NSTextFieldCell"; title = "TCP Keep Alive Idle Timeout"; ObjectID = "EnC-Oa-kda"; */
+"EnC-Oa-kda.title" = "TCP Keep Alive Idle Timeout";
+
+/* Class = "NSWindow"; title = "Yet Another Shadow Socket"; ObjectID = "IQv-IB-iLA"; */
+"IQv-IB-iLA.title" = "Yet Another Shadow Socket";
+
+/* Class = "NSButtonCell"; title = "Enable"; ObjectID = "IpF-Ur-Zlh"; */
+"IpF-Ur-Zlh.title" = "Enable";
+
+/* Class = "NSButtonCell"; title = "Stop"; ObjectID = "JYa-MA-4KH"; */
+"JYa-MA-4KH.title" = "Stop";
+
+/* Class = "NSButtonCell"; title = "Enable"; ObjectID = "Jw2-My-hmB"; */
+"Jw2-My-hmB.title" = "Enable";
+
+/* Class = "NSButtonCell"; title = "Start"; ObjectID = "KPU-2Q-dN7"; */
+"KPU-2Q-dN7.title" = "Start";
+
+/* Class = "NSButtonCell"; title = "Cancel"; ObjectID = "Mei-lK-JLB"; */
+"Mei-lK-JLB.title" = "Cancel";
+
+/* Class = "NSTextFieldCell"; title = "Username"; ObjectID = "QRy-PK-jJT"; */
+"QRy-PK-jJT.title" = "Username";
+
+/* Class = "NSTextFieldCell"; title = "TCP Keep Alive Interval"; ObjectID = "dCR-E3-G0W"; */
+"dCR-E3-G0W.title" = "TCP Keep Alive Interval";
+
+/* Class = "NSTextFieldCell"; title = "System Proxy"; ObjectID = "g0k-mZ-0JW"; */
+"g0k-mZ-0JW.title" = "System Proxy";
+
+/* Class = "NSTextFieldCell"; title = "Server Host"; ObjectID = "g3k-Ab-Oin"; */
+"g3k-Ab-Oin.title" = "Server Host";
+
+/* Class = "NSButtonCell"; title = "Enable"; ObjectID = "hei-7a-ZHr"; */
+"hei-7a-ZHr.title" = "Enable";
+
+/* Class = "NSTextFieldCell"; title = "Server Port"; ObjectID = "mcp-Vm-U1E"; */
+"mcp-Vm-U1E.title" = "Server Port";
+
+/* Class = "NSMenuItem"; title = "Option"; ObjectID = "n7v-aO-ITf"; */
+"n7v-aO-ITf.title" = "Option";
+
+/* Class = "NSComboBoxCell"; qHI-jj-mpI.ibShadowedObjectValues[0] = "Item"; ObjectID = "qHI-jj-mpI"; */
+"qHI-jj-mpI.ibShadowedObjectValues[0]" = "Item";
+
+/* Class = "NSTextFieldCell"; title = "Local Host"; ObjectID = "rim-zj-Iub"; */
+"rim-zj-Iub.title" = "Local Host";
+
+/* Class = "NSTextFieldCell"; title = "Cipher/Method"; ObjectID = "tOi-q9-yJY"; */
+"tOi-q9-yJY.title" = "Cipher/Method";
+
+/* Class = "NSMenu"; title = "YASS"; ObjectID = "uQy-DD-JDr"; */
+"uQy-DD-JDr.title" = "YASS";
+
+/* Class = "NSButtonCell"; title = "OK"; ObjectID = "yzs-Gu-p7Y"; */
+"yzs-Gu-p7Y.title" = "OK";
+
+/* Class = "NSTextFieldCell"; title = "TCP Keep Alive"; ObjectID = "z0q-m8-6KJ"; */
+"z0q-m8-6KJ.title" = "TCP Keep Alive";
+
+/* Class = "NSTextFieldCell"; title = "Timeout"; ObjectID = "zY6-tD-aUd"; */
+"zY6-tD-aUd.title" = "Timeout";
