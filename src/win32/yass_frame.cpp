@@ -95,6 +95,25 @@ static void SetWindowTextStd(HWND hWnd, const std::string& text) {
   SetWindowTextW(hWnd, SysUTF8ToWide(text).c_str());
 }
 
+static BOOL __stdcall EnumChildWindowsProc(HWND hWnd, LPARAM lParam) {
+  SendMessage(hWnd, WM_SETFONT, (WPARAM)lParam, MAKELPARAM(TRUE, 0));
+  return TRUE;
+}
+
+static void UpdateFontForDpi(HWND hWnd, UINT uDpi) {
+  // Send a new font to all child controls (the 'plugin' content is subclassed to ignore WM_SETFONT)
+  HFONT hFontOld = GetWindowFont(hWnd);
+  LOGFONTW lfText = {};
+  if (!Utils::SystemParametersInfoForDpi(SPI_GETICONTITLELOGFONT, sizeof(lfText), &lfText, FALSE, uDpi)) {
+    return;
+  }
+  HFONT hFontNew = CreateFontIndirectW(&lfText);
+  if (hFontNew) {
+    DeleteObject(hFontOld);
+    EnumChildWindows(hWnd, EnumChildWindowsProc, (LPARAM)hFontNew);
+  }
+}
+
 namespace {
 HWND CreateStatic(const wchar_t* label,
                   HWND pParentWnd,
@@ -856,6 +875,8 @@ void CYassFrame::UpdateLayoutForDpi(UINT uDpi) {
                status_bar_rect.right - status_bar_rect.left,
                status_bar_rect.bottom - status_bar_rect.top,
                SWP_NOZORDER | SWP_NOACTIVATE);
+
+  UpdateFontForDpi(m_hWnd, uDpi);
 }
 
 void CYassFrame::OnClose() {
