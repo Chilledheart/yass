@@ -153,7 +153,10 @@ typedef DPI_HOSTING_BEHAVIOR(__stdcall* PFNSETTHREADDPIHOSTINGBEHAVIOR)(
 // from winuser.h, starting from Windows 10, version 1607
 typedef BOOL(__stdcall* PFNENABLENONCLIENTDPISCALING)(HWND);
 // from winuser.h, starting from Windows 10, version 1607
-typedef BOOL(__stdcall* PFNSYSTEMPARAMETERSINFOFORDPI)(UINT  uiAction, UINT  uiParam, PVOID pvParam, UINT  fWinIni, UINT  dpi);
+typedef BOOL(__stdcall* PFNSYSTEMPARAMETERSINFOFORDPI)(UINT uiAction, UINT uiParam, PVOID pvParam, UINT fWinIni, UINT dpi);
+
+// from winnls.h, starting from Windows Vista
+typedef int(__stdcall* PFNGETUSERDEFAULTLOCALENAME)(LPWSTR lpLocaleName, int cchLocaleName);
 
 // We use dynamic loading for below functions
 #undef GetDeviceCaps
@@ -171,6 +174,10 @@ HANDLE EnsureGdi32Loaded() {
 
 HANDLE EnsureShcoreLoaded() {
   return LoadLibraryExW(L"Shcore.dll", nullptr, 0);
+}
+
+HANDLE EnsureKernel32Loaded() {
+  return LoadLibraryExW(L"Kernel32.dll", nullptr, 0);
 }
 
 // https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-getdevicecaps
@@ -415,6 +422,22 @@ BOOL SystemParametersInfoForDpi(UINT uiAction, UINT uiParam, PVOID pvParam, UINT
   return fPointer(uiAction, uiParam, pvParam, fWinIni, dpi);
 }
 
+// https://learn.microsoft.com/en-us/windows/win32/api/winnls/nf-winnls-getuserdefaultlocalename?redirectedfrom=MSDN
+// Retrieves the user default locale name.
+#if _WIN32_WINNT < 0x0600
+int GetUserDefaultLocaleName(LPWSTR lpLocaleName, int cchLocaleName) {
+  static const auto fPointer = reinterpret_cast<PFNGETUSERDEFAULTLOCALENAME>(
+      reinterpret_cast<void*>(::GetProcAddress(
+          static_cast<HMODULE>(EnsureKernel32Loaded()),
+          "GetUserDefaultLocaleName")));
+  if (fPointer == nullptr) {
+    ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
+    return 0;
+  }
+  return fPointer(lpLocaleName, cchLocaleName);
+}
+#endif
+
 }  // namespace
 
 // https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows
@@ -630,6 +653,18 @@ bool Utils::SystemParametersInfoForDpi(UINT uiAction, UINT uiParam, PVOID pvPara
   return ::SystemParametersInfoForDpi(uiAction, uiParam, pvParam, fWinIni, dpi) == TRUE;
 }
 
+bool Utils::GetUserDefaultLocaleName(std::wstring* localeName) {
+  wchar_t localeNameBuf[LOCALE_NAME_MAX_LENGTH];
+  // Returns the size of the buffer containing the locale name, including the terminating null character, if successful.
+  int localNameLen = ::GetUserDefaultLocaleName(localeNameBuf, sizeof(localeNameBuf)/sizeof(localeNameBuf[0]));
+  if (localNameLen == 0 || localNameLen == 1) {
+    localeName->clear();
+    return false;
+  }
+  *localeName = std::wstring(localeNameBuf, localNameLen - 1);
+  return true;
+}
+
 namespace {
 LONG get_win_run_key(HKEY* pKey) {
   const wchar_t* key_run = DEFAULT_AUTOSTART_KEY;
@@ -724,6 +759,7 @@ int set_yass_auto_start(bool on) {
 }  // namespace
 
 bool Utils::GetAutoStart() {
+  (void)EnsureKernel32Loaded();
   return get_yass_auto_start() == 0;
 }
 

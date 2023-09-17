@@ -23,6 +23,7 @@ class Utils {
   static unsigned int GetDpiForWindowOrSystem(HWND hWnd);
   static bool EnableNonClientDpiScaling(HWND hWnd);
   static bool SystemParametersInfoForDpi(UINT uiAction, UINT uiParam, PVOID pvParam, UINT fWinIni, UINT dpi);
+  static bool GetUserDefaultLocaleName(std::wstring* localeName);
 
   static bool GetAutoStart();
   static void EnableAutoStart(bool on);
