@@ -114,6 +114,65 @@ static void UpdateFontForDpi(HWND hWnd, UINT uDpi) {
   }
 }
 
+static bool isSChinese() {
+  std::wstring localeName;
+  if (Utils::GetUserDefaultLocaleName(&localeName)) {
+    return localeName.rfind(L"zh-CN", 0) == 0 || localeName.rfind(L"zh-SG", 0) == 0;
+  }
+  return GetUserDefaultUILanguage() == MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED);
+}
+
+static bool isTChinese() {
+  std::wstring localeName;
+  if (Utils::GetUserDefaultLocaleName(&localeName)) {
+    return localeName.rfind(L"zh-TW", 0) == 0 || localeName.rfind(L"zh-HK", 0) == 0;
+  }
+  return GetUserDefaultUILanguage() == MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL);
+}
+
+static void ApplyDefaultSystemFont(HWND hWnd) {
+  if (isSChinese()) {
+    LOG(WARNING) << "detected locale : simplified chinese";
+    LOGFONTW lfText = {};
+    lfText.lfHeight = -MulDiv(9, 92, 72);
+    lfText.lfWidth = 0;
+    lfText.lfWeight = FW_NORMAL;
+    lfText.lfCharSet = DEFAULT_CHARSET;
+    lfText.lfOutPrecision = OUT_DEVICE_PRECIS;
+    lfText.lfClipPrecision = CLIP_DEFAULT_PRECIS;
+    lfText.lfQuality = DEFAULT_QUALITY;
+    lfText.lfPitchAndFamily = FF_DONTCARE;
+    wcsncpy(lfText.lfFaceName, L"SimSun", sizeof(L"SimSun")/sizeof(wchar_t));
+    HFONT hFontOld = GetWindowFont(hWnd);
+    HFONT hFontNew = CreateFontIndirectW(&lfText);
+    if (hFontNew) {
+      DeleteObject(hFontOld);
+      EnumChildWindows(hWnd, EnumChildWindowsProc, (LPARAM)hFontNew);
+    }
+    return;
+  }
+  if (isTChinese()) {
+    LOG(WARNING) << "detected locale : traditional chinese";
+    LOGFONTW lfText = {};
+    lfText.lfHeight = -MulDiv(9, 92, 72);
+    lfText.lfWidth = 0;
+    lfText.lfWeight = FW_NORMAL;
+    lfText.lfCharSet = DEFAULT_CHARSET;
+    lfText.lfOutPrecision = OUT_DEVICE_PRECIS;
+    lfText.lfClipPrecision = CLIP_DEFAULT_PRECIS;
+    lfText.lfQuality = DEFAULT_QUALITY;
+    lfText.lfPitchAndFamily = FF_DONTCARE;
+    wcsncpy(lfText.lfFaceName, L"PMingLiu", sizeof(L"PMingLiu")/sizeof(wchar_t));
+    HFONT hFontOld = GetWindowFont(hWnd);
+    HFONT hFontNew = CreateFontIndirectW(&lfText);
+    if (hFontNew) {
+      DeleteObject(hFontOld);
+      EnumChildWindows(hWnd, EnumChildWindowsProc, (LPARAM)hFontNew);
+    }
+    return;
+  }
+}
+
 namespace {
 HWND CreateStatic(const wchar_t* label,
                   HWND pParentWnd,
@@ -359,7 +418,6 @@ int CYassFrame::Create(const wchar_t* className,
   std::wstring timeout_name = LoadStringStdW(hInstance, IDS_TIMEOUT_LABEL);
   std::wstring autostart_name = LoadStringStdW(hInstance, IDS_AUTOSTART_LABEL);
   std::wstring systemproxy_name = LoadStringStdW(hInstance, IDS_SYSTEMPROXY_LABEL);
-  LOG(WARNING) << SysWideToUTF8(server_host_name);
 
   server_host_label_ = CreateStatic(server_host_name.c_str(), m_hWnd, 0, hInstance);
   server_port_label_ = CreateStatic(server_port_name.c_str(), m_hWnd, 0, hInstance);
@@ -423,6 +481,8 @@ int CYassFrame::Create(const wchar_t* className,
       !timeout_edit_|| !autostart_button_|| !systemproxy_button_ ||
       !status_bar_)
     return FALSE;
+
+  ApplyDefaultSystemFont(m_hWnd);
 
   UpdateLayoutForDpi();
 
