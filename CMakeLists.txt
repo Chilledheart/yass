@@ -3368,7 +3368,7 @@ if (GUI)
         configure_file("src/mac/Info.plist.in" "${APP_MACOSX_BUNDLE_INFO}" @ONLY)
 
         set_target_properties(${APP_NAME} PROPERTIES
-            RESOURCE "yass.icns ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/Base.lproj/Main.storyboard"
+            RESOURCE "yass.icns"
             MACOSX_BUNDLE_ICON_FILE yass.icns
             MACOSX_BUNDLE_COPYRIGHT "${YASS_APP_COPYRIGHT}"
             MACOSX_BUNDLE_GUI_IDENTIFIER "it.gui.yass"
