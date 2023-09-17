@@ -41,7 +41,12 @@ BEGIN
     IDS_SYSTEMPROXY_LABEL   "System Proxy"
     IDS_ENABLE_LABEL        "Enable"
     IDS_SHOW_YASS_TIP       "Show YASS"
-    IDS_STATUS_START_FAILED "Start Failed"
+    IDS_START_FAILED_MESSAGE            "Start Failed"
+    IDS_STATUS_CONNECTED_WITH_CONNS     "Connected with conns: "
+    IDS_STATUS_FAILED_TO_CONNECT_DUE_TO "Failed to connect due to "
+    IDS_STATUS_DISCONNECTED_WITH        "Disconnected with "
+    IDS_STATUS_TX_RATE      " tx rate: "
+    IDS_STATUS_RX_RATE      " rx rate: "
 END
 
 STRINGTABLE PRELOAD DISCARDABLE
@@ -61,7 +66,12 @@ BEGIN
     IDS_SYSTEMPROXY_LABEL   "系统代理"
     IDS_ENABLE_LABEL        "启用"
     IDS_SHOW_YASS_TIP       "显示 YASS"
-    IDS_STATUS_START_FAILED "启动失败"
+    IDS_START_FAILED_MESSAGE "启动失败"
+    IDS_STATUS_CONNECTED_WITH_CONNS     "已产生连接: "
+    IDS_STATUS_FAILED_TO_CONNECT_DUE_TO "无法连接因为 "
+    IDS_STATUS_DISCONNECTED_WITH        "断开连接于服务器 "
+    IDS_STATUS_TX_RATE      " 上传速率: "
+    IDS_STATUS_RX_RATE      " 下载速率: "
 END
 
 STRINGTABLE PRELOAD DISCARDABLE

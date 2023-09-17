@@ -27,7 +27,7 @@ class CYassApp {
   void OnStart(bool quiet = false);
   void OnStop(bool quiet = false);
 
-  std::string GetStatus() const;
+  std::wstring GetStatus() const;
   enum YASSState { STARTED, STARTING, START_FAILED, STOPPING, STOPPED };
   YASSState GetState() const { return state_; }
 

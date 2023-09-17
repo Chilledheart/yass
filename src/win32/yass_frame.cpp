@@ -67,7 +67,7 @@ __CRT_UUID_DECL(TrayIcon, 0x4324603D, 0x4274, 0x47AA, 0xBA, 0xD5, 0x7C, 0xF6, 0x
 
 #define STATUS_BAR_HEIGHT MulDiv(INITIAL_STATUS_BAR_HEIGHT, uDpi, 96)
 
-static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
+static void humanReadableByteCountBin(std::wostream* ss, uint64_t bytes) {
   if (bytes < 1024) {
     *ss << bytes << " B";
     return;
@@ -619,7 +619,7 @@ std::string CYassFrame::GetTimeout() {
 
 std::wstring CYassFrame::GetStatusMessage() {
   if (mApp->GetState() != CYassApp::STARTED) {
-    return SysUTF8ToWide(mApp->GetStatus());
+    return mApp->GetStatus();
   }
   uint64_t sync_time = GetMonotonicTime();
   uint64_t delta_time = sync_time - last_sync_time_;
@@ -635,16 +635,16 @@ std::wstring CYassFrame::GetStatusMessage() {
     last_tx_bytes_ = tx_bytes;
   }
 
-  std::ostringstream ss;
+  std::wostringstream ss;
   ss << mApp->GetStatus();
-  ss << " tx rate: ";
+  ss << LoadStringStdW(m_hInstance, IDS_STATUS_TX_RATE); // " tx rate: ";
   humanReadableByteCountBin(&ss, rx_rate_);
   ss << "/s";
-  ss << " rx rate: ";
+  ss << LoadStringStdW(m_hInstance, IDS_STATUS_RX_RATE); // " rx rate: ";
   humanReadableByteCountBin(&ss, tx_rate_);
   ss << "/s";
 
-  return SysUTF8ToWide(ss.str());
+  return ss.str();
 }
 
 void CYassFrame::OnStarted() {
@@ -671,8 +671,8 @@ void CYassFrame::OnStartFailed() {
   EnableWindow(timeout_edit_, TRUE);
 
   EnableWindow(start_button_, TRUE);
-  std::wstring start_failed_name = LoadStringStdW(m_hInstance, IDS_STATUS_START_FAILED);
-  MessageBoxW(m_hWnd, SysUTF8ToWide(mApp->GetStatus()).c_str(), start_failed_name.c_str(),
+  std::wstring start_failed_name = LoadStringStdW(m_hInstance, IDS_START_FAILED_MESSAGE);
+  MessageBoxW(m_hWnd, mApp->GetStatus().c_str(), start_failed_name.c_str(),
               MB_ICONEXCLAMATION | MB_OK);
 }
 
