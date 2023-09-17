@@ -356,6 +356,8 @@ BOOL CYassApp::CheckFirstInstance() {
   if (first_wnd) {
     HWND popup_wnd = GetLastActivePopup(first_wnd);
     SetForegroundWindow(popup_wnd);
+    if (!IsWindowVisible(popup_wnd))
+      ShowWindow(popup_wnd, SW_SHOW);
     if (IsIconic(popup_wnd))
       ShowWindow(popup_wnd, SW_SHOWNORMAL);
     if (first_wnd != popup_wnd)
