@@ -656,7 +656,7 @@ if (NOT MSVC)
 
   # -ffile-compilation-dir is an alias for both -fdebug-compilation-dir=
   # and -fcoverage-compilation-dir=.
-  if (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14.0)
+  if (COMPILER_CLANG AND NOT COMPILER_APPLE_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14.0)
     set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wa,-fdebug-compilation-dir,.")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
@@ -802,14 +802,6 @@ else()
   if (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xclang -fuse-ctor-homing")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -fuse-ctor-homing")
-  endif()
-
-  # -ffile-compilation-dir is an alias for both -fdebug-compilation-dir=
-  # and -fcoverage-compilation-dir=.
-  if (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14.0)
-    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Xclang -fdebug-compilation-dir -Xclang .")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
   endif()
 
   if (USE_LLD)
