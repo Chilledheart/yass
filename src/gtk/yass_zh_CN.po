@@ -54,6 +54,14 @@ msgstr "选项..."
 msgid "Exit"
 msgstr "退出"
 
+#: yass_window.cpp:99
+msgid "Help"
+msgstr "帮助"
+
+#: yass_window.cpp:100
+msgid "About..."
+msgstr "关于..."
+
 #: yass_window.cpp:113
 msgid "Start"
 msgstr "启动"
@@ -106,9 +114,25 @@ msgstr "系统代理"
 msgid "READY"
 msgstr "就绪"
 
+#: yass_window.cpp:330
+msgid " tx rate: "
+msgstr " 上传速率: "
+
+#: yass_window.cpp:333
+msgid " rx rate: "
+msgstr " 下载速率: "
+
 #: yass_window.cpp:428
 msgid "YASS Option"
 msgstr "YASS 选项"
+
+#: yass_window.cpp:439
+msgid "Last Change: "
+msgstr "最后改动: "
+
+#: yass_window.cpp:446
+msgid "official-site"
+msgstr "官方网站"
 
 #: yass.cpp:173
 msgid "Connected with conns: "
