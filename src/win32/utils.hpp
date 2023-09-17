@@ -22,6 +22,8 @@ class Utils {
   // Determine the DPI to use, according to the DPI awareness mode
   static unsigned int GetDpiForWindowOrSystem(HWND hWnd);
   static bool EnableNonClientDpiScaling(HWND hWnd);
+  static bool SystemParametersInfoForDpi(UINT uiAction, UINT uiParam, PVOID pvParam, UINT fWinIni, UINT dpi);
+
   static bool GetAutoStart();
   static void EnableAutoStart(bool on);
   static bool GetSystemProxy();

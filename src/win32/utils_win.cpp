@@ -152,6 +152,8 @@ typedef DPI_HOSTING_BEHAVIOR(__stdcall* PFNSETTHREADDPIHOSTINGBEHAVIOR)(
     DPI_HOSTING_BEHAVIOR);
 // from winuser.h, starting from Windows 10, version 1607
 typedef BOOL(__stdcall* PFNENABLENONCLIENTDPISCALING)(HWND);
+// from winuser.h, starting from Windows 10, version 1607
+typedef BOOL(__stdcall* PFNSYSTEMPARAMETERSINFOFORDPI)(UINT  uiAction, UINT  uiParam, PVOID pvParam, UINT  fWinIni, UINT  dpi);
 
 // We use dynamic loading for below functions
 #undef GetDeviceCaps
@@ -399,6 +401,20 @@ BOOL EnableNonClientDpiScaling(HWND hwnd) {
   return fPointer(hwnd);
 }
 
+// https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-systemparametersinfofordpi
+// Retrieves the value of one of the system-wide parameters, taking into account the provided DPI value.
+BOOL SystemParametersInfoForDpi(UINT uiAction, UINT uiParam, PVOID pvParam, UINT fWinIni, UINT dpi) {
+  static const auto fPointer = reinterpret_cast<PFNSYSTEMPARAMETERSINFOFORDPI>(
+      reinterpret_cast<void*>(::GetProcAddress(
+          static_cast<HMODULE>(EnsureUser32Loaded()),
+          "SystemParametersInfoForDpi")));
+  if (fPointer == nullptr) {
+    ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
+    return FALSE;
+  }
+  return fPointer(uiAction, uiParam, pvParam, fWinIni, dpi);
+}
+
 }  // namespace
 
 // https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows
@@ -608,6 +624,10 @@ unsigned int Utils::GetDpiForWindowOrSystem(HWND hWnd) {
 
 bool Utils::EnableNonClientDpiScaling(HWND hWnd) {
   return ::EnableNonClientDpiScaling(hWnd) == TRUE;
+}
+
+bool Utils::SystemParametersInfoForDpi(UINT uiAction, UINT uiParam, PVOID pvParam, UINT fWinIni, UINT dpi) {
+  return ::SystemParametersInfoForDpi(uiAction, uiParam, pvParam, fWinIni, dpi) == TRUE;
 }
 
 namespace {
