@@ -656,7 +656,7 @@ if (NOT MSVC)
 
   # -ffile-compilation-dir is an alias for both -fdebug-compilation-dir=
   # and -fcoverage-compilation-dir=.
-  if (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14.0)
+  if (COMPILER_CLANG AND NOT COMPILER_APPLE_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14.0)
     set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wa,-fdebug-compilation-dir,.")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
@@ -802,14 +802,6 @@ else()
   if (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xclang -fuse-ctor-homing")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -fuse-ctor-homing")
-  endif()
-
-  # -ffile-compilation-dir is an alias for both -fdebug-compilation-dir=
-  # and -fcoverage-compilation-dir=.
-  if (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14.0)
-    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Xclang -fdebug-compilation-dir -Xclang .")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -fdebug-compilation-dir -Xclang . -ffile-compilation-dir=.")
   endif()
 
   if (USE_LLD)
@@ -3107,7 +3099,8 @@ if (GUI)
         set(ASSET_CATALOG src/mac/Assets.xcassets)
         set(ASSET_CATALOG_ASSETS Assets)
         list(APPEND SRC_FILES
-          ${MAIN_STORYBOARD})
+          ${MAIN_STORYBOARD}
+          )
         list(APPEND SRC_FILES
           ${ASSET_CATALOG})
         if (GUI_SANDBOX)
@@ -3333,9 +3326,23 @@ if (GUI)
             --warnings
             --notices
             --output-format human-readable-text
-            --compile ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.app/Contents/Resources/Main.storyboardc
+            --compile ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.app/Contents/Resources/Base.lproj/Main.storyboardc
             ${MAIN_STORYBOARD}
             COMMENT "Compiling Main storyboard")
+
+          set(YASS_LANGS)
+          file(GLOB YASS_LPROJS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/ "${CMAKE_CURRENT_SOURCE_DIR}/src/mac/*.lproj")
+          foreach(LPROJ ${YASS_LPROJS})
+            string(REGEX REPLACE "^.*/([a-z]+)\\.lproj/.*$" "\\1" _LANG ${LPROJ})
+            list(FIND YASS_LANGS "${_LANG}" _INDEX)
+            if(_INDEX EQUAL -1 AND NOT _LANG STREQUAL "Base.lproj")
+              list(APPEND YASS_LANGS ${_LANG})
+              add_custom_command(TARGET ${APP_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.app/Contents/Resources
+                COMMAND cp -r ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/${_LANG} ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.app/Contents/Resources/
+              COMMENT "Copying language file: ${_LANG}")
+            endif()
+          endforeach()
         endif()
 
         # adds to Copy Bundle Resources build phase
@@ -3350,7 +3357,7 @@ if (GUI)
         configure_file("src/mac/Info.plist.in" "${APP_MACOSX_BUNDLE_INFO}" @ONLY)
 
         set_target_properties(${APP_NAME} PROPERTIES
-            RESOURCE "yass.icns ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/Base.lproj/Main.storyboard"
+            RESOURCE "yass.icns"
             MACOSX_BUNDLE_ICON_FILE yass.icns
             MACOSX_BUNDLE_COPYRIGHT "${YASS_APP_COPYRIGHT}"
             MACOSX_BUNDLE_GUI_IDENTIFIER "it.gui.yass"

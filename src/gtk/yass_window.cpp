@@ -96,8 +96,8 @@ YASSWindow::YASSWindow()
                    G_CALLBACK(exit_callback), nullptr);
 
   help_menu = gtk_menu_new();
-  help_menu_item = gtk_menu_item_new_with_label("Help");
-  about_menu_item = gtk_menu_item_new_with_label("About...");
+  help_menu_item = gtk_menu_item_new_with_label(_("Help"));
+  about_menu_item = gtk_menu_item_new_with_label(_("About..."));
 
   gtk_menu_item_set_submenu(GTK_MENU_ITEM(help_menu_item), help_menu);
   gtk_menu_shell_append(GTK_MENU_SHELL(help_menu), about_menu_item);
@@ -327,10 +327,10 @@ std::string YASSWindow::GetStatusMessage() {
 
   std::ostringstream ss;
   ss << mApp->GetStatus();
-  ss << " tx rate: ";
+  ss << _(" tx rate: ");
   humanReadableByteCountBin(&ss, rx_rate_);
   ss << "/s";
-  ss << " rx rate: ";
+  ss << _(" rx rate: ");
   humanReadableByteCountBin(&ss, tx_rate_);
   ss << "/s";
 
@@ -435,15 +435,17 @@ void YASSWindow::OnAbout() {
   const char* artists[] = {"macosicons.com", nullptr};
   gtk_about_dialog_set_artists(about_dialog, artists);
   const char* authors[] = {YASS_APP_COMPANY_NAME, nullptr};
+  std::string comments = _("Last Change: ");
+  comments += YASS_APP_LAST_CHANGE;
   gtk_about_dialog_set_authors(about_dialog, authors);
-  gtk_about_dialog_set_comments(about_dialog, "Last Change: " YASS_APP_LAST_CHANGE);
+  gtk_about_dialog_set_comments(about_dialog, comments.c_str());
   gtk_about_dialog_set_copyright(about_dialog, YASS_APP_COPYRIGHT);
   gtk_about_dialog_set_license_type(about_dialog, GTK_LICENSE_GPL_2_0);
   gtk_about_dialog_set_logo_icon_name(about_dialog, "yass");
   gtk_about_dialog_set_program_name(about_dialog, YASS_APP_PRODUCT_NAME);
   gtk_about_dialog_set_version(about_dialog, YASS_APP_PRODUCT_VERSION);
   gtk_about_dialog_set_website(about_dialog, YASS_APP_WEBSITE);
-  gtk_about_dialog_set_website_label(about_dialog, "official-site");
+  gtk_about_dialog_set_website_label(about_dialog, _("official-site"));
   gtk_window_set_position(GTK_WINDOW(about_dialog), GTK_WIN_POS_CENTER);
   gtk_dialog_run(GTK_DIALOG(about_dialog));
   gtk_widget_destroy(GTK_WIDGET(about_dialog));

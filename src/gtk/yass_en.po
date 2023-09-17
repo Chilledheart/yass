@@ -53,6 +53,14 @@ msgstr "Option..."
 msgid "Exit"
 msgstr "Exit"
 
+#: yass_window.cpp:99
+msgid "Help"
+msgstr "Help"
+
+#: yass_window.cpp:100
+msgid "About..."
+msgstr "About..."
+
 #: yass_window.cpp:113
 msgid "Start"
 msgstr "Start"
@@ -105,9 +113,25 @@ msgstr "System Proxy"
 msgid "READY"
 msgstr "READY"
 
+#: yass_window.cpp:330
+msgid " tx rate: "
+msgstr " tx rate: "
+
+#: yass_window.cpp:333
+msgid " rx rate: "
+msgstr " rx rate: "
+
 #: yass_window.cpp:428
 msgid "YASS Option"
 msgstr "YASS Option"
+
+#: yass_window.cpp:439
+msgid "Last Change: "
+msgstr "Last Change: "
+
+#: yass_window.cpp:446
+msgid "official-site"
+msgstr "official-site"
 
 #: yass.cpp:173
 msgid "Connected with conns: "
