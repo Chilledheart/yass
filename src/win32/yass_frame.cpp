@@ -100,11 +100,14 @@ static BOOL __stdcall EnumChildWindowsProc(HWND hWnd, LPARAM lParam) {
   return TRUE;
 }
 
+static void ApplyDefaultSystemFont(HWND hWnd, UINT uDpi);
+
 static void UpdateFontForDpi(HWND hWnd, UINT uDpi) {
   // Send a new font to all child controls (the 'plugin' content is subclassed to ignore WM_SETFONT)
   HFONT hFontOld = GetWindowFont(hWnd);
   LOGFONTW lfText = {};
   if (!Utils::SystemParametersInfoForDpi(SPI_GETICONTITLELOGFONT, sizeof(lfText), &lfText, FALSE, uDpi)) {
+    ApplyDefaultSystemFont(hWnd, uDpi);
     return;
   }
   HFONT hFontNew = CreateFontIndirectW(&lfText);
@@ -130,46 +133,34 @@ static bool isTChinese() {
   return GetUserDefaultUILanguage() == MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL);
 }
 
-static void ApplyDefaultSystemFont(HWND hWnd) {
+static void ApplyDefaultSystemFont(HWND hWnd, UINT uDpi) {
+  const wchar_t* font_name = L"Tahoma";
+  int font_size = 8;
   if (isSChinese()) {
     LOG(WARNING) << "detected locale : simplified chinese";
-    LOGFONTW lfText = {};
-    lfText.lfHeight = -MulDiv(9, 92, 72);
-    lfText.lfWidth = 0;
-    lfText.lfWeight = FW_NORMAL;
-    lfText.lfCharSet = DEFAULT_CHARSET;
-    lfText.lfOutPrecision = OUT_DEVICE_PRECIS;
-    lfText.lfClipPrecision = CLIP_DEFAULT_PRECIS;
-    lfText.lfQuality = DEFAULT_QUALITY;
-    lfText.lfPitchAndFamily = FF_DONTCARE;
-    wcsncpy(lfText.lfFaceName, L"SimSun", sizeof(L"SimSun")/sizeof(wchar_t));
-    HFONT hFontOld = GetWindowFont(hWnd);
-    HFONT hFontNew = CreateFontIndirectW(&lfText);
-    if (hFontNew) {
-      DeleteObject(hFontOld);
-      EnumChildWindows(hWnd, EnumChildWindowsProc, (LPARAM)hFontNew);
-    }
-    return;
+    font_name = L"SimSun";
+    font_size = 9;
   }
   if (isTChinese()) {
     LOG(WARNING) << "detected locale : traditional chinese";
-    LOGFONTW lfText = {};
-    lfText.lfHeight = -MulDiv(9, 92, 72);
-    lfText.lfWidth = 0;
-    lfText.lfWeight = FW_NORMAL;
-    lfText.lfCharSet = DEFAULT_CHARSET;
-    lfText.lfOutPrecision = OUT_DEVICE_PRECIS;
-    lfText.lfClipPrecision = CLIP_DEFAULT_PRECIS;
-    lfText.lfQuality = DEFAULT_QUALITY;
-    lfText.lfPitchAndFamily = FF_DONTCARE;
-    wcsncpy(lfText.lfFaceName, L"PMingLiu", sizeof(L"PMingLiu")/sizeof(wchar_t));
-    HFONT hFontOld = GetWindowFont(hWnd);
-    HFONT hFontNew = CreateFontIndirectW(&lfText);
-    if (hFontNew) {
-      DeleteObject(hFontOld);
-      EnumChildWindows(hWnd, EnumChildWindowsProc, (LPARAM)hFontNew);
-    }
-    return;
+    font_name = L"PMingLiu";
+    font_size = 9;
+  }
+  LOGFONTW lfText = {};
+  lfText.lfHeight = -MulDiv(font_size, uDpi, 72);
+  lfText.lfWidth = 0;
+  lfText.lfWeight = FW_NORMAL;
+  lfText.lfCharSet = DEFAULT_CHARSET;
+  lfText.lfOutPrecision = OUT_DEVICE_PRECIS;
+  lfText.lfClipPrecision = CLIP_DEFAULT_PRECIS;
+  lfText.lfQuality = DEFAULT_QUALITY;
+  lfText.lfPitchAndFamily = FF_DONTCARE;
+  wcscpy(lfText.lfFaceName, font_name);
+  HFONT hFontOld = GetWindowFont(hWnd);
+  HFONT hFontNew = CreateFontIndirectW(&lfText);
+  if (hFontNew) {
+    DeleteObject(hFontOld);
+    EnumChildWindows(hWnd, EnumChildWindowsProc, (LPARAM)hFontNew);
   }
 }
 
@@ -482,7 +473,7 @@ int CYassFrame::Create(const wchar_t* className,
       !status_bar_)
     return FALSE;
 
-  ApplyDefaultSystemFont(m_hWnd);
+  ApplyDefaultSystemFont(m_hWnd, 92);
 
   UpdateLayoutForDpi();
 
