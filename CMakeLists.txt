@@ -3319,12 +3319,8 @@ if (GUI)
 
         # Handle the Storyboard ourselves
         if(NOT ${CMAKE_GENERATOR} MATCHES "^Xcode.*")
-          add_custom_target(create_resource_dir
-            COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.app/Contents/Resources
-            DEPENDS ${APP_NAME}
-            )
           # Compile the storyboard file with the ibtool.
-          add_custom_target(compile_storyboard
+          add_custom_command(TARGET ${APP_NAME} POST_BUILD
             COMMAND ${IBTOOL}
             --errors
             --warnings
@@ -3332,11 +3328,7 @@ if (GUI)
             --output-format human-readable-text
             --compile ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.app/Contents/Resources/Base.lproj/Main.storyboardc
             ${MAIN_STORYBOARD}
-            DEPENDS create_resource_dir
             COMMENT "Compiling Main storyboard")
-
-          add_custom_target(copy_resources_lproj
-            DEPENDS create_resource_dir)
 
           set(YASS_LANGS)
           file(GLOB YASS_LPROJS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/ "${CMAKE_CURRENT_SOURCE_DIR}/src/mac/*.lproj")
@@ -3345,15 +3337,12 @@ if (GUI)
             list(FIND YASS_LANGS "${_LANG}" _INDEX)
             if(_INDEX EQUAL -1 AND NOT _LANG STREQUAL "Base.lproj")
               list(APPEND YASS_LANGS ${_LANG})
-              add_custom_target(copy_resources_lproj_${_LANG}
+              add_custom_command(TARGET ${APP_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.app/Contents/Resources
                 COMMAND cp -r ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/${_LANG} ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.app/Contents/Resources/
-                DEPENDS create_resource_dir)
-              add_dependencies(copy_resources_lproj copy_resources_lproj_${_LANG})
+              COMMENT "Copying language file: ${_LANG}")
             endif()
           endforeach()
-
-          add_custom_target(yass_app ALL
-            DEPENDS copy_resources_lproj compile_storyboard)
         endif()
 
         # adds to Copy Bundle Resources build phase
