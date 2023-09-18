@@ -22,18 +22,126 @@ msgstr ""
 msgid "Option"
 msgstr "选项"
 
-#: menu.ui:6
-msgid "_Option"
-msgstr "_选项"
+#: option_dialog.ui:20
+msgid "TCP keep alive:"
+msgstr "TCP 保活:"
 
-#: menu.ui:12
-msgid "_About"
-msgstr "_关于"
+#: option_dialog.ui:30
+msgid "The number of TCP keep-alive probes:"
+msgstr "TCP 保活测量数:"
 
-#: menu.ui:18
-msgid "_Quit"
-msgstr "_退出"
+#: option_dialog.ui:40
+msgid "TCP keep alive after idle:"
+msgstr "TCP 在闲置以后的保活次数:"
+
+#: option_dialog.ui:50
+msgid "TCP keep alive interval:"
+msgstr "TCP 保活间隔:"
+
+#: option_dialog.ui:92
+msgid "Okay"
+msgstr "确认"
+
+#: option_dialog.ui:101
+msgid "Cancel"
+msgstr "取消"
 
 #: yass_window.ui:4
 msgid "Yet Another Shadow Socket"
 msgstr "YASS"
+
+#: yass_window.ui:31
+msgid "Server Host:"
+msgstr "服务器域名:"
+
+#: yass_window.ui:41
+msgid "Server Port:"
+msgstr "服务器端口号:"
+
+#: yass_window.ui:51
+msgid "Username:"
+msgstr "用户名:"
+
+#: yass_window.ui:61
+msgid "Password:"
+msgstr "密码:"
+
+#: yass_window.ui:71
+msgid "Cipher/Method:"
+msgstr "加密方式:"
+
+#: yass_window.ui:81
+msgid "Local Host:"
+msgstr "本地域名:"
+
+#: yass_window.ui:91
+msgid "Local Port:"
+msgstr "本地端口号:"
+
+#: yass_window.ui:101
+msgid "Timeout:"
+msgstr "超时时间:"
+
+#: yass_window.ui:111
+msgid "Auto Start:"
+msgstr "随系统自启动:"
+
+#: yass_window.ui:121
+msgid "System Proxy:"
+msgstr "系统代理:"
+
+#: yass_window.ui:211
+msgid "Start"
+msgstr "启动"
+
+#: yass_window.ui:220
+msgid "Stop"
+msgstr "停止"
+
+#: menu.ui:6
+msgid "_Option"
+msgstr "选项"
+
+#: menu.ui:12
+msgid "_About"
+msgstr "关于"
+
+#: menu.ui:18
+msgid "_Quit"
+msgstr "退出"
+
+#: yass.cpp:253
+msgid "Connected with conns: "
+msgstr "已产生连接: "
+
+#: yass.cpp:255
+msgid "Failed to connect due to "
+msgstr "无法连接因为 "
+
+#: yass.cpp:257
+msgid "Disconnected with "
+msgstr "断开连接于服务器 "
+
+#: yass.cpp:374
+msgid "Last Change: "
+msgstr "最后改动: "
+
+#: yass.cpp:383
+msgid "official-site"
+msgstr "官方网站"
+
+#: yass.cpp:389
+msgid "YASS Option"
+msgstr "YASS 选项"
+
+#: yass_window.cpp:169
+msgid "READY"
+msgstr "就绪"
+
+#: yass_window.cpp:261
+msgid " tx rate: "
+msgstr " 上传速率: "
+
+#: yass_window.cpp:264
+msgid " rx rate: "
+msgstr " 下载速率: "

@@ -250,11 +250,11 @@ void YASSApp::OnIdle() {
 std::string YASSApp::GetStatus() const {
   std::ostringstream ss;
   if (state_ == STARTED) {
-    ss << "Connected with conns: " << worker_.currentConnections();
+    ss << _("Connected with conns: ") << worker_.currentConnections();
   } else if (state_ == START_FAILED) {
-    ss << "Failed to connect due to " << error_msg_.c_str();
+    ss << _("Failed to connect due to ") << error_msg_.c_str();
   } else {
-    ss << "Disconnected with " << worker_.GetRemoteDomain();
+    ss << _("Disconnected with ") << worker_.GetRemoteDomain();
   }
   return ss.str();
 }
@@ -371,20 +371,22 @@ void YASSApp::OnAbout() {
   gtk_about_dialog_set_artists(about_dialog, artists);
   const char* authors[] = {YASS_APP_COMPANY_NAME, nullptr};
   gtk_about_dialog_set_authors(about_dialog, authors);
-  gtk_about_dialog_set_comments(about_dialog, "Last Change: " YASS_APP_LAST_CHANGE);
+  std::string comments = _("Last Change: ");
+  comments += YASS_APP_LAST_CHANGE;
+  gtk_about_dialog_set_comments(about_dialog, comments.c_str());
   gtk_about_dialog_set_copyright(about_dialog, YASS_APP_COPYRIGHT);
   gtk_about_dialog_set_license_type(about_dialog, GTK_LICENSE_GPL_2_0);
   gtk_about_dialog_set_logo_icon_name(about_dialog, "yass");
   gtk_about_dialog_set_program_name(about_dialog, YASS_APP_PRODUCT_NAME);
   gtk_about_dialog_set_version(about_dialog, YASS_APP_PRODUCT_VERSION);
   gtk_about_dialog_set_website(about_dialog, YASS_APP_WEBSITE);
-  gtk_about_dialog_set_website_label(about_dialog, "official-site");
+  gtk_about_dialog_set_website_label(about_dialog, _("official-site"));
 
   gtk_window_present(GTK_WINDOW(about_dialog));
 }
 
 void YASSApp::OnOption() {
-  auto dialog = new OptionDialog("YASS Option",
+  auto dialog = new OptionDialog(_("YASS Option"),
                                  GTK_WINDOW(main_window_->impl()), true);
 
   dialog->run();
