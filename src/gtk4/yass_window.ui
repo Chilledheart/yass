@@ -28,7 +28,7 @@
             <property name="column-spacing">12</property>
             <child>
               <object class="GtkLabel">
-                <property name="label">Server Host:</property>
+                <property name="label" translatable="yes">Server Host:</property>
                 <property name="xalign">1</property>
                 <layout>
                   <property name="column">1</property>
@@ -38,7 +38,7 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label">Server Port:</property>
+                <property name="label" translatable="yes">Server Port:</property>
                 <property name="xalign">1</property>
                 <layout>
                   <property name="column">1</property>
@@ -48,7 +48,7 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label">Username:</property>
+                <property name="label" translatable="yes">Username:</property>
                 <property name="xalign">1</property>
                 <layout>
                   <property name="column">1</property>
@@ -58,7 +58,7 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label">Password:</property>
+                <property name="label" translatable="yes">Password:</property>
                 <property name="xalign">1</property>
                 <layout>
                   <property name="column">1</property>
@@ -68,7 +68,7 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label">Cipher/Method:</property>
+                <property name="label" translatable="yes">Cipher/Method:</property>
                 <property name="xalign">1</property>
                 <layout>
                   <property name="column">1</property>
@@ -78,7 +78,7 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label">Local Host:</property>
+                <property name="label" translatable="yes">Local Host:</property>
                 <property name="xalign">1</property>
                 <layout>
                   <property name="column">1</property>
@@ -88,7 +88,7 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label">Local Port:</property>
+                <property name="label" translatable="yes">Local Port:</property>
                 <property name="xalign">1</property>
                 <layout>
                   <property name="column">1</property>
@@ -98,7 +98,7 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label">Timeout:</property>
+                <property name="label" translatable="yes">Timeout:</property>
                 <property name="xalign">1</property>
                 <layout>
                   <property name="column">1</property>
@@ -108,7 +108,7 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label">Auto Start:</property>
+                <property name="label" translatable="yes">Auto Start:</property>
                 <property name="xalign">1</property>
                 <layout>
                   <property name="column">1</property>
@@ -118,7 +118,7 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label">System Proxy:</property>
+                <property name="label" translatable="yes">System Proxy:</property>
                 <property name="xalign">1</property>
                 <layout>
                   <property name="column">1</property>
@@ -208,7 +208,7 @@
             </child>
             <child>
               <object class="GtkButton" id="start_button">
-                <property name="label">Start</property>
+                <property name="label" translatable="yes">Start</property>
                 <layout>
                   <property name="column">0</property>
                   <property name="row">2</property>
@@ -217,7 +217,7 @@
             </child>
             <child>
               <object class="GtkButton" id="stop_button">
-                <property name="label">Stop</property>
+                <property name="label" translatable="yes">Stop</property>
                 <layout>
                   <property name="column">0</property>
                   <property name="row">7</property>

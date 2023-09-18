@@ -7,6 +7,7 @@
 #include <sstream>
 
 #include <absl/flags/flag.h>
+#include <glib/gi18n.h>
 
 #include "cli/cli_connection_stats.hpp"
 #include "core/utils.hpp"
@@ -165,7 +166,7 @@ YASSWindow::YASSWindow(GApplication *app)
 
   GtkStatusbar *status_bar = GTK_STATUSBAR(impl_->status_bar);
   gtk_statusbar_remove_all(status_bar, 0);
-  gtk_statusbar_push(status_bar, 0, "READY");
+  gtk_statusbar_push(status_bar, 0, _("READY"));
 
   LoadChanges();
 }
@@ -257,10 +258,10 @@ std::string YASSWindow::GetStatusMessage() {
 
   std::ostringstream ss;
   ss << mApp->GetStatus();
-  ss << " tx rate: ";
+  ss << _(" tx rate: ");
   humanReadableByteCountBin(&ss, rx_rate_);
   ss << "/s";
-  ss << " rx rate: ";
+  ss << _(" rx rate: ");
   humanReadableByteCountBin(&ss, tx_rate_);
   ss << "/s";
 
