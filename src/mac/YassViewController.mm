@@ -121,7 +121,6 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 
 - (void)OnStatusBarClicked:(id)sender {
   if ([NSApp currentEvent].type == NSEventTypeLeftMouseDown) {
-    LOG(WARNING) << "Clicked";
     NSWindow* window = self.view.window;
     if ([window isVisible])
       [window performSelector:@selector(orderFrontRegardless)
@@ -219,11 +218,14 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   }
 
   std::ostringstream ss;
-  ss << "Connected: ";
-  ss << "tx: ";
+  NSString *message = NSLocalizedString(@"CONNECTED", @"Connected:");
+  ss << SysNSStringToUTF8(message);
+  message = NSLocalizedString(@"TXRATE", @" tx rate: ");
+  ss << SysNSStringToUTF8(message);
   humanReadableByteCountBin(&ss, rx_rate_);
   ss << "/s";
-  ss << " rx: ";
+  message = NSLocalizedString(@"RXRATE", @" rx rate: ");
+  ss << SysNSStringToUTF8(message);
   humanReadableByteCountBin(&ss, tx_rate_);
   ss << "/s";
 

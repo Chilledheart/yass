@@ -124,8 +124,12 @@ int main(int argc, const char** argv) {
   if (!SetUTF8Locale()) {
     LOG(WARNING) << "Failed to set up utf-8 locale";
   }
+  std::string locale_path = "../share/locale";
+  size_t rpos = exec_path.rfind('/');
+  if (rpos != std::string::npos)
+    locale_path = exec_path.substr(0, rpos + 1) + locale_path;
   setlocale(LC_ALL, "");
-  bindtextdomain("yass", "../share/locale");
+  bindtextdomain("yass", locale_path.c_str());
   textdomain("yass");
 
   absl::InitializeSymbolizer(exec_path.c_str());

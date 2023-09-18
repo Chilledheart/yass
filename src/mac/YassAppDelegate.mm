@@ -71,11 +71,14 @@
 - (NSString*)getStatus {
   std::ostringstream ss;
   if (state_ == STARTED) {
-    ss << "Connected with conns: " << worker_.currentConnections();
+    NSString *prefixMessage = NSLocalizedString(@"CONNECTED_WITH_CONNS", @"Connected with conns: ");
+    ss << SysNSStringToUTF8(prefixMessage) << worker_.currentConnections();
   } else if (state_ == START_FAILED) {
-    ss << "Failed to connect due to " << error_msg_.c_str();
+    NSString *prefixMessage = NSLocalizedString(@"FAILED_TO_CONNECT_DUE_TO", @"Failed to connect due to ");
+    ss << SysNSStringToUTF8(prefixMessage) << error_msg_.c_str();
   } else {
-    ss << "Disconnected with " << worker_.GetRemoteDomain();
+    NSString *prefixMessage = NSLocalizedString(@"DISCONNECTED_WITH", @"Disconnected with ");
+    ss << SysNSStringToUTF8(prefixMessage) << worker_.GetRemoteDomain();
   }
 
   return SysUTF8ToNSString(ss.str());
