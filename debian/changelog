@@ -1,3 +1,8 @@
+yass (1.4.3-1) UNRELEASED; urgency=low
+
+  * Add chinese translation.
+
+ -- Chilledheart <hukeyue@hotmail.com>  Mon, 18 Sep 2023 11:18:19 +0800
 yass (1.4.2-1) UNRELEASED; urgency=low
 
   * New minor release.

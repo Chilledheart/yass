@@ -202,6 +202,8 @@ for embedded devices and low end boxes.
 %{_bindir}/yass_cli
 
 %changelog
+* Mon Sep 18 2023 Chilledheart <hukeyue@hotmail.com> - 1.4.3-1
+  - Add chinese translation.
 * Fri Sep 15 2023 Chilledheart <hukeyue@hotmail.com> - 1.4.2-1
   - New minor release.
 * Thu Sep 14 2023 Chilledheart <hukeyue@hotmail.com> - 1.4.1-1
