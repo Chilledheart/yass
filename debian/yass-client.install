@@ -1,1 +1,3 @@
 usr/bin/yass_cli
+etc/yass/config.json
+usr/lib/systemd/system/yass.service

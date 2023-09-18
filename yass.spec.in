@@ -100,6 +100,7 @@ BuildRequires: ninja-build
 BuildRequires: glib2-devel
 BuildRequires: curl-devel
 BuildRequires: desktop-file-utils
+BuildRequires: systemd
 Requires:      hicolor-icon-theme
 Requires:      ca-certificates
 
@@ -133,7 +134,7 @@ cd ..
 %install
 echo "Toolchain is %toolchain"
 cd build
-%cmake_alias -DCMAKE_INSTALL_PREFIX=%{buildroot}/usr ..
+%cmake_alias -DCMAKE_INSTALL_PREFIX=%{buildroot}/usr -DCMAKE_INSTALL_SYSCONFDIR=%{buildroot}/etc ..
 rm -rf %{buildroot}
 ninja install
 cd ..
@@ -189,6 +190,8 @@ for embedded devices and low end boxes.
 %files server
 %defattr(-,root,root)
 %{_bindir}/yass_server
+%{_sysconfdir}/yass/server.json
+%{_unitdir}/yass-server.service
 
 %package client
 Summary: Lightweight and Secure http/socks4/socks5 Proxy (Client Side)
@@ -200,6 +203,8 @@ for embedded devices and low end boxes.
 %files client
 %defattr(-,root,root)
 %{_bindir}/yass_cli
+%{_sysconfdir}/yass/config.json
+%{_unitdir}/yass.service
 
 %changelog
 * Thu Aug 24 2023 Chilledheart <hukeyue@hotmail.com> - 1.4.0-1
