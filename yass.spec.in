@@ -204,7 +204,9 @@ for embedded devices and low end boxes.
 %defattr(-,root,root)
 %{_bindir}/yass_cli
 %{_sysconfdir}/yass/config.json
+%{_sysconfdir}/yass/redir.json
 %{_unitdir}/yass.service
+%{_unitdir}/yass-redir.service
 
 %changelog
 * Thu Aug 24 2023 Chilledheart <hukeyue@hotmail.com> - 1.4.0-1
