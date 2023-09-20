@@ -3026,6 +3026,14 @@ if (CLI)
 
   if (NOT CMAKE_SKIP_INSTALL_RULES)
     install(TARGETS yass_cli RUNTIME DESTINATION bin)
+    # TODO add freebsd rc files
+    if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID)
+      install(FILES yass.json.sample RENAME config.json DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/yass)
+      install(FILES yass.service RENAME yass.service DESTINATION lib/systemd/system)
+
+      install(FILES yass-redir.json.sample RENAME redir.json DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/yass)
+      install(FILES yass-redir.service RENAME yass-redir.service DESTINATION lib/systemd/system)
+    endif()
   endif()
 endif()
 
@@ -3057,6 +3065,10 @@ if (SERVER)
 
   if (NOT CMAKE_SKIP_INSTALL_RULES)
     install(TARGETS yass_server RUNTIME DESTINATION bin)
+    if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID)
+      install(FILES yass-server.json.sample RENAME server.json DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/yass)
+      install(FILES yass-server.service RENAME yass-server.service DESTINATION lib/systemd/system)
+    endif()
   endif()
 endif()
 

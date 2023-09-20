@@ -4,7 +4,7 @@ FROM opensuse/leap:15
 RUN zypper cc -a && \
   zypper addrepo https://cli.github.com/packages/rpm/gh-cli.repo && \
   zypper --gpg-auto-import-keys ref && \
-  zypper install -y gcc gcc-c++ \
+  zypper install -y gcc gcc-c++ systemd \
     git make python3 bash coreutils gh \
     rpm-build rpm-devel rpmlint diffutils patch rpmdevtools \
     cmake ninja pkg-config perl golang \

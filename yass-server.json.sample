@@ -1,8 +1,6 @@
 {
-    "local": "127.0.0.1",
-    "local_port": 8000,
     "method": "http2",
-    "server": "example.com",
+    "server": "localhost",
     "server_port": 443,
     "timeout": 0,
     "username": "username",

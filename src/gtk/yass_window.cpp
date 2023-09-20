@@ -435,9 +435,9 @@ void YASSWindow::OnAbout() {
   const char* artists[] = {"macosicons.com", nullptr};
   gtk_about_dialog_set_artists(about_dialog, artists);
   const char* authors[] = {YASS_APP_COMPANY_NAME, nullptr};
+  gtk_about_dialog_set_authors(about_dialog, authors);
   std::string comments = _("Last Change: ");
   comments += YASS_APP_LAST_CHANGE;
-  gtk_about_dialog_set_authors(about_dialog, authors);
   gtk_about_dialog_set_comments(about_dialog, comments.c_str());
   gtk_about_dialog_set_copyright(about_dialog, YASS_APP_COPYRIGHT);
   gtk_about_dialog_set_license_type(about_dialog, GTK_LICENSE_GPL_2_0);

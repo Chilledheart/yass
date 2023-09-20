@@ -29,6 +29,17 @@
 #include "core/logging.hpp"
 #include "core/foundation_util.hpp"
 
+#ifndef VM_MEMORY_MALLOC_PROB_GUARD
+#define VM_MEMORY_MALLOC_PROB_GUARD 13
+#endif // VM_MEMORY_MALLOC_PROB_GUARD
+
+#ifndef VM_MEMORY_COLORSYNC
+#define VM_MEMORY_COLORSYNC 104
+#endif // VM_MEMORY_COLORSYNC
+#ifndef VM_MEMORY_BTINFO
+#define VM_MEMORY_BTINFO 105
+#endif  // VM_MEMORY_BTINFO
+
 bool SetThreadPriority(std::thread::native_handle_type handle,
                        ThreadPriority priority) {
   // Changing the priority of the main thread causes performance regressions.
@@ -169,9 +180,8 @@ static const char* user_tag_str(unsigned int user_tag) {
       return "malloc-nano";
     case VM_MEMORY_MALLOC_MEDIUM:
       return "malloc-medium";
-    case VM_MEMORY_MALLOC_PGUARD:
+    case VM_MEMORY_MALLOC_PROB_GUARD:
       return "malloc-pguard";
-    // case VM_MEMORY_MALLOC_PROB_GUARD:
     case VM_MEMORY_MACH_MSG:
       return "mach-msg";
     case VM_MEMORY_IOKIT:
@@ -193,10 +203,11 @@ static const char* user_tag_str(unsigned int user_tag) {
     case VM_MEMORY_FOUNDATION:
       return "foundation";
     case VM_MEMORY_COREGRAPHICS:
+    // case VM_MEMORY_COREGRAPHICS_MISC:
       return "coregraphics";
     case VM_MEMORY_CORESERVICES:
-      return "coreservices";
     // case VM_MEMORY_CARBON:
+      return "coreservices";
     case VM_MEMORY_JAVA:
       return "java";
     case VM_MEMORY_COREDATA:
@@ -221,7 +232,6 @@ static const char* user_tag_str(unsigned int user_tag) {
       return "coregraphics-backingstores";
     case VM_MEMORY_COREGRAPHICS_XALLOC:
       return "coregraphics-xalloc";
-    // case VM_MEMORY_COREGRAPHICS_MISC:
     case VM_MEMORY_DYLD:
       return "dyld";
     case VM_MEMORY_DYLD_MALLOC:
@@ -229,8 +239,8 @@ static const char* user_tag_str(unsigned int user_tag) {
     case VM_MEMORY_SQLITE:
       return "sqlite";
     case VM_MEMORY_JAVASCRIPT_CORE:
+    // case VM_MEMORY_WEBASSEMBLY:
       return "javascript-core";
-    // case VM_MEMORY_WEBASSEMBLY VM_MEMORY_JAVASCRIPT_CORE
     case VM_MEMORY_JAVASCRIPT_JIT_EXECUTABLE_ALLOCATOR:
       return "javascript-jit-executable-allocator";
     case VM_MEMORY_JAVASCRIPT_JIT_REGISTER_FILE:
@@ -309,14 +319,10 @@ static const char* user_tag_str(unsigned int user_tag) {
       return "ear-decoder";
     case VM_MEMORY_COREUI_CACHED_IMAGE_DATA:
       return "coreui-cached-image-data";
-#ifdef VM_MEMORY_COLORSYNC
     case VM_MEMORY_COLORSYNC:
       return "colorsync";
-#endif
-#ifdef VM_MEMORY_BTINFO
     case VM_MEMORY_BTINFO:
       return "backtrace-info";
-#endif
     case VM_MEMORY_ROSETTA:
       return "rosetta";
     case VM_MEMORY_ROSETTA_THREAD_CONTEXT:
@@ -413,7 +419,7 @@ bool MemoryLockAll() {
       case VM_MEMORY_IOKIT:
       case VM_MEMORY_DYLIB:
       case VM_MEMORY_OBJC_DISPATCHERS:
-      case VM_MEMORY_MALLOC_PGUARD:
+      case VM_MEMORY_MALLOC_PROB_GUARD:
       case VM_MEMORY_GUARD:
       case VM_MEMORY_SHARED_PMAP:
       case VM_MEMORY_UNSHARED_PMAP:

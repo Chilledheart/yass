@@ -21,18 +21,126 @@ msgstr ""
 msgid "Option"
 msgstr "Option"
 
-#: menu.ui:6
-msgid "_Option"
-msgstr "_Option"
+#: option_dialog.ui:20
+msgid "TCP keep alive:"
+msgstr "TCP keep alive:"
 
-#: menu.ui:12
-msgid "_About"
-msgstr "_About"
+#: option_dialog.ui:30
+msgid "The number of TCP keep-alive probes:"
+msgstr "The number of TCP keep-alive probes:"
 
-#: menu.ui:18
-msgid "_Quit"
-msgstr "_Quit"
+#: option_dialog.ui:40
+msgid "TCP keep alive after idle:"
+msgstr "TCP keep alive after idle:"
+
+#: option_dialog.ui:50
+msgid "TCP keep alive interval:"
+msgstr "TCP keep alive interval:"
+
+#: option_dialog.ui:92
+msgid "Okay"
+msgstr "Okay"
+
+#: option_dialog.ui:101
+msgid "Cancel"
+msgstr "Cancel"
 
 #: yass_window.ui:4
 msgid "Yet Another Shadow Socket"
 msgstr "Yet Another Shadow Socket"
+
+#: yass_window.ui:31
+msgid "Server Host:"
+msgstr "Server Host:"
+
+#: yass_window.ui:41
+msgid "Server Port:"
+msgstr "Server Port:"
+
+#: yass_window.ui:51
+msgid "Username:"
+msgstr "Username:"
+
+#: yass_window.ui:61
+msgid "Password:"
+msgstr "Password:"
+
+#: yass_window.ui:71
+msgid "Cipher/Method:"
+msgstr "Cipher/Method:"
+
+#: yass_window.ui:81
+msgid "Local Host:"
+msgstr "Local Host:"
+
+#: yass_window.ui:91
+msgid "Local Port:"
+msgstr "Local Port:"
+
+#: yass_window.ui:101
+msgid "Timeout:"
+msgstr "Timeout:"
+
+#: yass_window.ui:111
+msgid "Auto Start:"
+msgstr "Auto Start:"
+
+#: yass_window.ui:121
+msgid "System Proxy:"
+msgstr "System Proxy:"
+
+#: yass_window.ui:211
+msgid "Start"
+msgstr "Start"
+
+#: yass_window.ui:220
+msgid "Stop"
+msgstr "Stop"
+
+#: menu.ui:6
+msgid "_Option"
+msgstr "Option"
+
+#: menu.ui:12
+msgid "_About"
+msgstr "About"
+
+#: menu.ui:18
+msgid "_Quit"
+msgstr "Quit"
+
+#: yass.cpp:253
+msgid "Connected with conns: "
+msgstr "Connected with conns: "
+
+#: yass.cpp:255
+msgid "Failed to connect due to "
+msgstr "Failed to connect due to "
+
+#: yass.cpp:257
+msgid "Disconnected with "
+msgstr "Disconnected with "
+
+#: yass.cpp:374
+msgid "Last Change: "
+msgstr "Last Change: "
+
+#: yass.cpp:383
+msgid "official-site"
+msgstr "official-site"
+
+#: yass.cpp:389
+msgid "YASS Option"
+msgstr "YASS Option"
+
+#: yass_window.cpp:169
+msgid "READY"
+msgstr "READY"
+
+#: yass_window.cpp:261
+msgid " tx rate: "
+msgstr " tx rate: "
+
+#: yass_window.cpp:264
+msgid " rx rate: "
+msgstr " rx rate: "

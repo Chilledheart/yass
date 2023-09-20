@@ -40,8 +40,10 @@ define Package/$(PKG_NAME)/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/bin/yass_cli $(1)/usr/bin/yass_cli
 	$(INSTALL_DIR) $(1)/etc/yass
 	$(INSTALL_CONF) files/config.json $(1)/etc/yass
+	$(INSTALL_CONF) files/redir.json $(1)/etc/yass
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) files/yass_cli.init $(1)/etc/init.d/yass_cli
+	$(INSTALL_BIN) files/yass_redir.init $(1)/etc/init.d/yass_redir
 endef
 
 $(eval $(call BuildPackage,$(PKG_NAME)))
