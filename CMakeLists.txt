@@ -3424,7 +3424,7 @@ endif()
 #           Source code: LICENSE part
 # *****************************************************************************************
 
-if(NOT CMAKE_SKIP_INSTALL_RULES)
+if(NOT CMAKE_SKIP_INSTALL_RULES AND GUI)
   install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR})
   install(FILES third_party/abseil-cpp/LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR} RENAME LICENSE.abseil-cpp)
   install(FILES third_party/asio/asio/LICENSE_1_0.txt DESTINATION ${CMAKE_INSTALL_DOCDIR} RENAME LICENSE.asio)
