@@ -260,8 +260,8 @@ BOOL AddNotificationIcon(HWND hwnd, HINSTANCE hInstance) {
   NOTIFYICONDATAW nid = {};
   nid.cbSize = sizeof(nid);
   nid.hWnd = hwnd;
-  std::wstring show_yass_name = LoadStringStdW(hInstance, IDS_SHOW_YASS_TIP);
-  wcscpy(nid.szTip, show_yass_name.c_str());
+  std::wstring tip_name = LoadStringStdW(hInstance, IDS_HIDE_YASS_TIP);
+  wcscpy(nid.szTip, tip_name.c_str());
 #if _WIN32_WINNT >= 0x0600
   nid.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE | NIF_SHOWTIP | NIF_GUID;
   nid.guidItem = __uuidof(TrayIcon);
@@ -280,6 +280,25 @@ BOOL AddNotificationIcon(HWND hwnd, HINSTANCE hInstance) {
 #else
   return TRUE;
 #endif
+}
+
+BOOL UpdateNotificationIcon(HWND hwnd, HINSTANCE hInstance, bool isShow) {
+  NOTIFYICONDATAW nid = {};
+  nid.cbSize = sizeof(nid);
+  nid.hWnd = hwnd;
+  std::wstring tip_name = LoadStringStdW(hInstance,
+                                         isShow ? IDS_HIDE_YASS_TIP :
+                                         IDS_SHOW_YASS_TIP);
+#if _WIN32_WINNT >= 0x0600
+  nid.uFlags = NIF_TIP | NIF_SHOWTIP | NIF_GUID;
+  nid.guidItem = __uuidof(TrayIcon);
+#else
+  nid.uFlags = NIF_TIP;
+  nid.uID = TRAY_ICON_ID;
+#endif
+  wcscpy(nid.szTip, tip_name.c_str());
+  Shell_NotifyIconW(NIM_MODIFY, &nid);
+  return TRUE;
 }
 
 BOOL UpdateNotificationIcon(HINSTANCE hInstance, UINT uDpi) {
@@ -555,6 +574,14 @@ LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam,
 
       return DefWindowProc(hWnd, msg, wParam, lParam);
     }
+
+    // https://learn.microsoft.com/en-us/windows/win32/winmsg/wm-showwindow
+    case WM_SHOWWINDOW:
+      // If wParam is TRUE, the window is being shown. If wParam is FALSE, the window is being hidden.
+      // update the show tip
+      UpdateNotificationIcon(mFrame->m_hWnd, mFrame->m_hInstance,
+                             /*isShow*/ wParam == TRUE);
+      return DefWindowProc(hWnd, msg, wParam, lParam);
     case WM_CLOSE:
       mFrame->OnClose();
       break;
@@ -615,10 +642,9 @@ LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam,
 #endif
           // for NOTIFYICON_VERSION_4 clients, NIN_SELECT is prerable to listening to mouse clicks and key presses
           // directly.
-          if (IsWindowVisible(mFrame->m_hWnd)) {
-            ShowWindow(mFrame->m_hWnd, SW_HIDE);
-          } else {
-            ShowWindow(mFrame->m_hWnd, SW_SHOW);
+          {
+            bool isShow = IsWindowVisible(mFrame->m_hWnd);
+            ShowWindow(mFrame->m_hWnd, isShow ? SW_HIDE : SW_SHOW);
           }
           break;
 
