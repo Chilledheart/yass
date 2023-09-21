@@ -148,3 +148,35 @@ bool Net_ipv6works() {
     return true;
   }
 }
+
+#ifndef _WIN32
+ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len) {
+  int fd = ::open(path.c_str(), O_RDONLY);
+  if (fd < 0) {
+    return -1;
+  }
+  ssize_t ret = ::read(fd, buf, buf_len - 1);
+
+  if (ret < 0 || close(fd) < 0) {
+    return -1;
+  }
+  buf[ret] = '\0';
+  return ret;
+}
+
+ssize_t WriteFileWithBuffer(const std::string& path,
+                            const char* buf,
+                            size_t buf_len) {
+  int fd = ::open(path.c_str(), O_WRONLY | O_TRUNC | O_CREAT,
+                  S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+  if (fd < 0) {
+    return false;
+  }
+  ssize_t ret = ::write(fd, buf, buf_len);
+
+  if (ret < 0 || close(fd) < 0) {
+    return -1;
+  }
+  return ret;
+}
+#endif
