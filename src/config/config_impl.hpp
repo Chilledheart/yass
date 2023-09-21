@@ -22,6 +22,16 @@ class ConfigImpl {
   /// Construct the given ConfigTree implementation
   static std::unique_ptr<ConfigImpl> Create();
 
+  /// Set enforce
+  ///
+  /// \param enforce_read exit if fail to read
+  void SetEnforceRead() { enforce_read_ = true; }
+
+  /// Get enforce
+  ///
+  /// Get exit if fail to read
+  bool GetEnforceRead() const { return enforce_read_; }
+
   /// Open the ConfigTree
   ///
   /// \param dontread don't load from config tree, useful for write-only object
@@ -154,6 +164,7 @@ class ConfigImpl {
  protected:
   /// dontread don't load from config tree, useful for write-only object
   bool dontread_;
+  bool enforce_read_ = false;
 };
 }  // namespace config
 
