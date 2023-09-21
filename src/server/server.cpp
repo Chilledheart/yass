@@ -20,6 +20,8 @@
 #define AI_NUMERICSERV  0x00000008
 #endif
 #else
+#include <pwd.h>
+#include <grp.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -29,6 +31,9 @@
 #include "core/logging.hpp"
 #include "crypto/crypter_export.hpp"
 #include "version.h"
+
+ABSL_FLAG(std::string, user, "", "set non-privileged user for worker");
+ABSL_FLAG(std::string, group, "", "set non-privileged group for worker");
 
 using namespace server;
 
@@ -175,6 +180,64 @@ int main(int argc, const char* argv[]) {
 
 #ifdef SIGPIPE
   signal(SIGPIPE, SIG_IGN);
+#endif
+
+#ifndef _WIN32
+  // change user and change group
+  std::string username = absl::GetFlag(FLAGS_user);
+  std::string groupname = absl::GetFlag(FLAGS_group);
+  if ((!username.empty()) && ::geteuid() == 0) {
+    int uid = 0;
+    int gid = 0;
+    char buffer[PATH_MAX * 2] = {'\0'};
+
+    if (!username.empty()) {
+      struct passwd pwd;
+      struct passwd* result = nullptr;
+      int pwnam_res = getpwnam_r(username.c_str(), &pwd,
+                                 buffer, sizeof(buffer), &result);
+      if (pwnam_res == 0 && result) {
+        uid = result->pw_uid;
+      } else {
+        PLOG(WARNING) << "Failed to find user named: " << username;
+        return -1;
+      }
+    }
+
+    if (!groupname.empty()) {
+      struct group grp;
+      struct group* grp_result = nullptr;
+      int pwnam_gres = getgrnam_r(groupname.c_str(), &grp,
+                                  buffer, sizeof(buffer), &grp_result);
+      if (pwnam_gres == 0 && grp_result) {
+        gid = grp_result->gr_gid;
+      } else {
+        PLOG(WARNING) << "Failed to find group named: " << groupname;
+        return -1;
+      }
+    }
+
+    int ret;
+    ret = setgid(gid);
+    if (ret != 0) {
+      PLOG(WARNING) << "setgid failed: to " << gid;
+      return -1;
+    }
+    ret = initgroups(username.c_str(), gid);
+    if (ret != 0) {
+      PLOG(WARNING) << "initgroups failed: to " << gid;
+      return -1;
+    }
+
+    ret = setuid(uid);
+    if (ret != 0) {
+      PLOG(WARNING) << "setuid failed to " << uid;
+      return -1;
+    }
+    LOG(INFO) << "Changed to user: " << username;
+    LOG(INFO) << "Changed to group: "
+      << (groupname.empty() ? std::to_string(gid) : groupname);
+  }
 #endif
 
   io_context.run();
