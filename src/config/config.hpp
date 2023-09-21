@@ -32,6 +32,8 @@ ABSL_DECLARE_FLAG(CipherMethodFlag, method);
 ABSL_DECLARE_FLAG(std::string, local_host);
 ABSL_DECLARE_FLAG(int32_t, local_port);
 
+extern std::string g_certificate_chain_content;
+extern std::string g_private_key_content;
 ABSL_DECLARE_FLAG(std::string, certificate_chain_file);
 ABSL_DECLARE_FLAG(std::string, private_key_file);
 ABSL_DECLARE_FLAG(std::string, private_key_password);

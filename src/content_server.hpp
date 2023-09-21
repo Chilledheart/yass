@@ -272,24 +272,9 @@ class ContentServer {
     }
 
     // Load Certificate Chain Files
-    std::string certificate_chain_file = absl::GetFlag(FLAGS_certificate_chain_file);
-    std::string private_key_file = absl::GetFlag(FLAGS_private_key_file);
-    if (!private_key_file.empty()) {
-      CHECK(!certificate_chain_file.empty()) << "certificate chain file is not provided";
-      ssl_ctx_.set_password_callback([](size_t max_length,
-                                        asio::ssl::context::password_purpose purpose) {
-        return absl::GetFlag(FLAGS_private_key_password);
-      });
-      ssl_ctx_.use_certificate_chain_file(certificate_chain_file, ec);
-      if (ec) {
-        return;
-      }
-      VLOG(1) << "Using certificate file: " << certificate_chain_file;
-      ssl_ctx_.use_private_key_file(private_key_file, asio::ssl::context::pem, ec);
-      if (ec) {
-        return;
-      }
-      VLOG(1) << "Using private key file: " << private_key_file;
+    if (private_key_.empty()) {
+      private_key_ = g_private_key_content;
+      certificate_ = g_certificate_chain_content;
     }
 
     // Load Certificates (if set)
