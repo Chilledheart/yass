@@ -281,21 +281,28 @@ void ReadConfigFileOption(int argc, const char** argv) {
 
 bool ReadConfig() {
   auto config_impl = config::ConfigImpl::Create();
-  bool required_fields_loaded = false;
+  bool required_fields_loaded = true;
+  bool client_required_fields_loaded = true;
 
   if (!config_impl->Open(false)) {
+    if (config_impl->GetEnforceRead()) {
+      exit(-1);
+    }
     return false;
   }
 
   /* load required fields */
   required_fields_loaded &= config_impl->Read("server", &FLAGS_server_host);
-  required_fields_loaded &=
-      config_impl->Read("server_port", &FLAGS_server_port);
+  required_fields_loaded &= config_impl->Read("server_port", &FLAGS_server_port);
   required_fields_loaded &= config_impl->Read("method", &FLAGS_method);
   required_fields_loaded &= config_impl->Read("username", &FLAGS_username);
   required_fields_loaded &= config_impl->Read("password", &FLAGS_password);
-  required_fields_loaded &= config_impl->Read("local", &FLAGS_local_host);
-  required_fields_loaded &= config_impl->Read("local_port", &FLAGS_local_port);
+  client_required_fields_loaded &= config_impl->Read("local", &FLAGS_local_host);
+  client_required_fields_loaded &= config_impl->Read("local_port", &FLAGS_local_port);
+
+  if (absl::flags_internal::ShortProgramInvocationName() != "yass_server") {
+    required_fields_loaded &= client_required_fields_loaded;
+  }
 
   /* optional fields */
   config_impl->Read("fast_open", &FLAGS_tcp_fastopen);
@@ -312,6 +319,13 @@ bool ReadConfig() {
 
   /* close fields */
   config_impl->Close();
+
+  /* check enforced options */
+  if (!required_fields_loaded) {
+    if (config_impl->GetEnforceRead()) {
+      exit(-1);
+    }
+  }
 
   /* correct options */
   absl::SetFlag(&FLAGS_connect_timeout,

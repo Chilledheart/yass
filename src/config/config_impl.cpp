@@ -30,7 +30,9 @@ std::unique_ptr<ConfigImpl> ConfigImpl::Create() {
   if (!g_configfile.empty()) {
     fprintf(stderr, "using option from file: %s\n", g_configfile.c_str());
     fflush(stderr);
-    return std::make_unique<ConfigImplLocal>(g_configfile);
+    auto config = std::make_unique<ConfigImplLocal>(g_configfile);
+    config->SetEnforceRead();
+    return config;
   }
 #ifdef _WIN32
   fprintf(stderr, "using option from registry\n");
