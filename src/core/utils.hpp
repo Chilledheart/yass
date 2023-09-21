@@ -252,8 +252,7 @@ bool Net_ipv6works();
 
 #ifdef _MSC_VER
 // https://learn.microsoft.com/en-us/windows/win32/winprog/windows-data-types
-#include <BaseTsd.h>
-typedef SSIZE_T ssize_t;
+using ssize_t = ptrdiff_t;
 #endif
 
 ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len);
