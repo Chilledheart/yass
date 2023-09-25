@@ -1193,10 +1193,17 @@ void ServerConnection::OnConnect() {
   } else {
     host_name = request_.endpoint().address().to_string();
   }
-  channel_ = stream::create(*io_context_,
-                            host_name, port,
-                            this, upstream_https_fallback_,
-                            enable_upstream_tls_, upstream_ssl_ctx_);
+  if (enable_upstream_tls_) {
+    channel_ = ssl_stream::create(*io_context_,
+                                  host_name, port,
+                                  this, upstream_https_fallback_,
+                                  upstream_ssl_ctx_);
+
+  } else {
+    channel_ = stream::create(*io_context_,
+                              host_name, port,
+                              this);
+  }
   channel_->async_connect([this, self](asio::error_code ec){
     if (UNLIKELY(closed_)) {
       return;
