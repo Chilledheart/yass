@@ -25,10 +25,10 @@
 
 /// the class to describe the traffic between given node (endpoint)
 class stream : public RefCountedThreadSafe<stream> {
+ public:
   using io_handle_t = std::function<void(asio::error_code, std::size_t)>;
   using handle_t = std::function<void(asio::error_code)>;
 
- public:
   /// construct a stream object
   template<typename... Args>
   static scoped_refptr<stream> create(Args&&... args) {
@@ -41,16 +41,10 @@ class stream : public RefCountedThreadSafe<stream> {
   /// \param host_name the sni name used with endpoint
   /// \param port the sni port used with endpoint
   /// \param channel the underlying data channel used in stream
-  /// \param https_fallback the data channel falls back to https (alpn)
-  /// \param enable_tls the underlying data channel is using tls
-  /// \param ssl_ctx the ssl context object for tls data transfer
   stream(asio::io_context& io_context,
          const std::string& host_name,
          uint16_t port,
-         Channel* channel,
-         bool https_fallback,
-         bool enable_tls,
-         asio::ssl::context *ssl_ctx)
+         Channel* channel)
 #ifdef HAVE_C_ARES
       : resolver_(CAresResolver::Create(io_context)),
 #else
@@ -61,9 +55,6 @@ class stream : public RefCountedThreadSafe<stream> {
         io_context_(io_context),
         socket_(io_context),
         connect_timer_(io_context),
-        https_fallback_(https_fallback),
-        enable_tls_(enable_tls),
-        ssl_socket_(enable_tls ? net::SSLSocket::Create(&io_context, &socket_, ssl_ctx->native_handle(), https_fallback, host_name) : nullptr),
         channel_(channel),
         limit_rate_(absl::GetFlag(FLAGS_limit_rate).rate),
         read_delay_timer_(io_context),
@@ -74,51 +65,9 @@ class stream : public RefCountedThreadSafe<stream> {
     CHECK_EQ(ret, 0) << "c-ares initialize failure";
     static_cast<void>(ret);
 #endif
-    if (enable_tls) {
-      s_wait_read_ = [this](handle_t cb) {
-        ssl_socket_->WaitRead(cb);
-      };
-      s_read_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
-        return ssl_socket_->Read(buf, ec);
-      };
-      s_wait_write = [this](handle_t cb) {
-        ssl_socket_->WaitWrite(cb);
-      };
-      s_write_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
-        return ssl_socket_->Write(buf, ec);
-      };
-      s_async_shutdown_ = [this](handle_t cb) {
-        ssl_socket_->Shutdown(cb);
-      };
-      s_shutdown_ = [this](asio::error_code &ec) {
-        ec = asio::error_code();
-        ssl_socket_->Shutdown([](asio::error_code ec){}, true);
-      };
-    } else {
-      s_wait_read_ = [this](handle_t cb) {
-        socket_.async_wait(asio::ip::tcp::socket::wait_read, cb);
-      };
-      s_read_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
-        return socket_.read_some(tail_buffer(*buf), ec);
-      };
-      s_wait_write = [this](handle_t cb) {
-        socket_.async_wait(asio::ip::tcp::socket::wait_write, cb);
-      };
-      s_write_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
-        return socket_.write_some(const_buffer(*buf), ec);
-      };
-      s_async_shutdown_ = [this](handle_t cb) {
-        asio::error_code ec;
-        socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
-        cb(ec);
-      };
-      s_shutdown_ = [this](asio::error_code &ec) {
-        socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
-      };
-    }
   }
 
-  ~stream() {
+  virtual ~stream() {
     close();
   }
 
@@ -239,7 +188,7 @@ class stream : public RefCountedThreadSafe<stream> {
       });
       return;
     }
-    s_wait_read_([this, self](asio::error_code ec) {
+    s_wait_read([this, self](asio::error_code ec) {
       // Cancelled, safe to ignore
       if (UNLIKELY(ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted)) {
         return;
@@ -260,7 +209,7 @@ class stream : public RefCountedThreadSafe<stream> {
 
   size_t read_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
     DCHECK(!closed_ && "I/O on closed upstream connection");
-    size_t read = s_read_some_(buf, ec);
+    size_t read = s_read_some(buf, ec);
     rbytes_transferred_ += read;
     if (UNLIKELY(ec && ec != asio::error::try_again && ec != asio::error::would_block)) {
       on_disconnect(channel_, ec);
@@ -330,7 +279,7 @@ class stream : public RefCountedThreadSafe<stream> {
 
   size_t write_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
     DCHECK(!closed_ && "I/O on closed upstream connection");
-    size_t written = s_write_some_(buf, ec);
+    size_t written = s_write_some(buf, ec);
     wbytes_transferred_ += written;
     if (UNLIKELY(ec && ec != asio::error::try_again && ec != asio::error::would_block)) {
       on_disconnect(channel_, ec);
@@ -351,11 +300,7 @@ class stream : public RefCountedThreadSafe<stream> {
     wait_write_callback_ = nullptr;
 
     asio::error_code ec;
-    if (enable_tls_) {
-      ssl_socket_->Disconnect();
-    } else {
-      socket_.close(ec);
-    }
+    s_close(ec);
     if (ec) {
       VLOG(2) << "close() error: " << ec;
     }
@@ -368,7 +313,7 @@ class stream : public RefCountedThreadSafe<stream> {
 #endif
   }
 
-  bool https_fallback() const { return https_fallback_; }
+  virtual bool https_fallback() const { return false; }
 
  private:
   void on_try_next_endpoint(Channel* channel) {
@@ -421,42 +366,12 @@ class stream : public RefCountedThreadSafe<stream> {
         DCHECK(!user_connect_callback_);
         return;
       }
-      if (enable_tls_ && !ec) {
-        scoped_refptr<stream> self(this);
-        ssl_socket_->Connect([this, channel, self](int rv) {
-          if (closed_) {
-            DCHECK(!user_connect_callback_);
-            return;
-          }
-          asio::error_code ec;
-          if (rv < 0) {
-            ec = asio::error::connection_refused;
-            on_async_connected(channel, ec);
-            return;
-          }
-          on_async_connected(channel, ec);
-          scoped_refptr<stream> self(this);
-          // Also queue a ConfirmHandshake. It should also be blocked on ServerHello.
-          auto cb = [this, self, channel](int rv){
-            if (closed_) {
-              DCHECK(!user_connect_callback_);
-              return;
-            }
-            asio::error_code ec;
-            if (rv < 0) {
-              ec = asio::error::connection_refused;
-              channel->disconnected(ec);
-            }
-          };
-          ssl_socket_->ConfirmHandshake(cb);
-        });
-        return;
-      }
       on_async_connected(channel, ec);
     });
   }
 
-  void on_async_connected(Channel* channel, asio::error_code ec) {
+ protected:
+  virtual void on_async_connected(Channel* channel, asio::error_code ec) {
     connect_timer_.cancel();
     if (ec) {
       if (!endpoints_.empty()) {
@@ -466,16 +381,6 @@ class stream : public RefCountedThreadSafe<stream> {
       on_async_connect_callback(ec);
       return;
     }
-    if (enable_tls_) {
-      std::string alpn = ssl_socket_->negotiated_protocol();
-      if (!alpn.empty()) {
-        VLOG(2) << "Alpn selected (client): " << alpn;
-      }
-      https_fallback_ |= alpn == "http/1.1";
-      if (https_fallback_) {
-        VLOG(2) << "Alpn fallback to https protocol (client)";
-      }
-    }
     connected_ = true;
     SetTCPCongestion(socket_.native_handle(), ec);
     SetTCPKeepAlive(socket_.native_handle(), ec);
@@ -484,6 +389,7 @@ class stream : public RefCountedThreadSafe<stream> {
     on_async_connect_callback(asio::error_code());
   }
 
+ private:
   void on_async_connect_expired(Channel* channel,
                                 asio::error_code ec) {
     // Rarely happens, cancel fails but expire still there
@@ -522,6 +428,37 @@ class stream : public RefCountedThreadSafe<stream> {
     channel->disconnected(ec);
   }
 
+ protected:
+  virtual void s_wait_read(handle_t cb) {
+    socket_.async_wait(asio::ip::tcp::socket::wait_read, cb);
+  }
+
+  virtual size_t s_read_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
+    return socket_.read_some(tail_buffer(*buf), ec);
+  }
+
+  virtual void s_wait_write(handle_t cb) {
+    socket_.async_wait(asio::ip::tcp::socket::wait_write, cb);
+  }
+
+  virtual size_t s_write_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
+    return socket_.write_some(const_buffer(*buf), ec);
+  }
+
+  virtual void s_async_shutdown(handle_t cb) {
+    asio::error_code ec;
+    socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+    cb(ec);
+  }
+
+  virtual void s_shutdown(asio::error_code &ec) {
+    socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+  }
+
+  virtual void s_close(asio::error_code &ec) {
+    socket_.close(ec);
+  }
+
  public:
   size_t rbytes_transferred() const { return rbytes_transferred_; }
   size_t wbytes_transferred() const { return wbytes_transferred_; }
@@ -534,6 +471,7 @@ class stream : public RefCountedThreadSafe<stream> {
   asio::ip::tcp::resolver resolver_;
 #endif
 
+ protected:
   std::string host_name_;
   uint16_t port_;
   asio::ip::tcp::endpoint endpoint_;
@@ -542,27 +480,17 @@ class stream : public RefCountedThreadSafe<stream> {
   asio::steady_timer connect_timer_;
   std::deque<asio::ip::tcp::endpoint> endpoints_;
 
-  bool https_fallback_;
-  const bool enable_tls_;
-  scoped_refptr<net::SSLSocket> ssl_socket_;
-
   Channel* channel_;
   bool connected_ = false;
   bool eof_ = false;
   bool closed_ = false;
   handle_t user_connect_callback_;
 
+ private:
   bool read_inprogress_ = false;
   bool write_inprogress_ = false;
   handle_t wait_read_callback_;
   handle_t wait_write_callback_;
-
-  std::function<void(handle_t)> s_wait_read_;
-  std::function<size_t(std::shared_ptr<IOBuf>, asio::error_code &)> s_read_some_;
-  std::function<void(handle_t)> s_wait_write;
-  std::function<size_t(std::shared_ptr<IOBuf>, asio::error_code &)> s_write_some_;
-  std::function<void(handle_t)> s_async_shutdown_;
-  std::function<void(asio::error_code&)> s_shutdown_;
 
   // statistics
   size_t rbytes_transferred_ = 0;

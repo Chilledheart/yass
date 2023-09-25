@@ -17,6 +17,7 @@
 #include "core/ss_request_parser.hpp"
 #include "protocol.hpp"
 #include "stream.hpp"
+#include "ssl_stream.hpp"
 
 #include <absl/container/flat_hash_map.h>
 #include <absl/strings/string_view.h>

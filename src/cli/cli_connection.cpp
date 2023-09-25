@@ -1497,10 +1497,17 @@ void CliConnection::OnConnect() {
   LOG(INFO) << "Connection (client) " << connection_id()
             << " connect " << remote_domain();
   // create lazy
-  channel_ = stream::create(*io_context_,
-                            remote_host_name_, remote_port_,
-                            this, upstream_https_fallback_,
-                            enable_upstream_tls_, upstream_ssl_ctx_);
+  if (enable_upstream_tls_) {
+    channel_ = ssl_stream::create(*io_context_,
+                                  remote_host_name_, remote_port_,
+                                  this, upstream_https_fallback_,
+                                  upstream_ssl_ctx_);
+
+  } else {
+    channel_ = stream::create(*io_context_,
+                              remote_host_name_, remote_port_,
+                              this);
+  }
   channel_->async_connect([this, self](asio::error_code ec){
     if (UNLIKELY(closed_)) {
       return;
