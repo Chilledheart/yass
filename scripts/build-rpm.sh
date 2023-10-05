@@ -21,11 +21,20 @@ fi
 RPM_VERSION=$TAG
 RPM_SUBVERSION=$SUBTAG
 
+function build_source() {
 /usr/bin/git ls-files --recurse-submodules | \
   tar caf yass-${RPM_VERSION}.tar.gz --xform="s,^,yass-${RPM_VERSION}/," -T -
 
 mkdir -p $HOME/rpmbuild/SOURCES
 mv -fv yass-${RPM_VERSION}.tar.gz $HOME/rpmbuild/SOURCES
+}
+
+if [ -z "$1" ]; then
+  build_source
+else
+  mkdir -p $HOME/rpmbuild/SOURCES
+  cp -v "$1" $HOME/rpmbuild/SOURCES/yass-${RPM_VERSION}.tar.gz
+fi
 
 sed "s|__VERSION__|${TAG}|g" yass.spec.in > yass.spec
 sed -i "s|__SUBVERSION__|${SUBTAG}|g" yass.spec
