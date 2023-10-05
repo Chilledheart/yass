@@ -157,6 +157,7 @@ class ContentServer {
       }
 
       auto connection_map = std::move(connection_map_);
+      opened_connections_ = 0;
       for (auto [conn_id, conn] : connection_map) {
         VLOG(1) << "Connections (" << factory_.Name() << ")"
                 << " closing Connection: " << conn_id;
@@ -168,7 +169,7 @@ class ContentServer {
   }
 
   size_t num_of_connections() const {
-    return next_connection_id_ - 1;
+    return opened_connections_;
   }
 
  private:
@@ -232,6 +233,8 @@ class ContentServer {
     conn->set_disconnect_cb(
         [this, conn]() mutable { on_disconnect(conn); });
     connection_map_.insert(std::make_pair(connection_id, conn));
+    ++opened_connections_;
+    DCHECK_EQ(connection_map_.size(), opened_connections_);
     if (delegate_) {
       delegate_->OnConnect(connection_id);
     }
@@ -250,6 +253,8 @@ class ContentServer {
     auto iter = connection_map_.find(connection_id);
     if (iter != connection_map_.end()) {
       connection_map_.erase(iter);
+      --opened_connections_;
+      DCHECK_EQ(connection_map_.size(), (size_t)opened_connections_);
     }
     if (delegate_) {
       delegate_->OnDisconnect(connection_id);
@@ -536,6 +541,7 @@ class ContentServer {
   absl::flat_hash_map<int, scoped_refptr<ConnectionType>> connection_map_;
 
   int next_connection_id_ = 1;
+  std::atomic<size_t> opened_connections_ = 0;
 
   T factory_;
 };
