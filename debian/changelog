@@ -1,3 +1,8 @@
+yass (1.4.5-1) UNRELEASED; urgency=low
+
+  * Some trivial changes.
+
+ -- Chilledheart <hukeyue@hotmail.com>  Thu, 5 Oct 2023 17:08:33 +0800
 yass (1.4.4-1) UNRELEASED; urgency=low
 
   * Add chinese translation (GTK4).
