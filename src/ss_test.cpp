@@ -116,8 +116,8 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
   void start() override {
     // FIXME check out why testcases fail with nonblocking mode
     asio::error_code ec;
-    socket_.native_non_blocking(false, ec);
-    socket_.non_blocking(false, ec);
+    downlink_->socket_.native_non_blocking(false, ec);
+    downlink_->socket_.non_blocking(false, ec);
     do_io();
   }
 
@@ -125,7 +125,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
     VLOG(1) << "Connection (content-provider) " << connection_id()
             << " disconnected";
     asio::error_code ec;
-    socket_.close(ec);
+    downlink_->socket_.close(ec);
     auto cb = std::move(disconnect_cb_);
     disconnect_cb_ = nullptr;
     if (cb) {
@@ -139,7 +139,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
   void read_http_request() {
     scoped_refptr<ContentProviderConnection> self(this);
     // Read HTTP Request Header
-    asio::async_read_until(socket_, recv_buff_hdr, "\r\n\r\n",
+    asio::async_read_until(downlink_->socket_, recv_buff_hdr, "\r\n\r\n",
       [this, self](asio::error_code ec, size_t bytes_transferred) {
         if (ec) {
           LOG(WARNING) << "Connection (content-provider) " << connection_id()
@@ -172,7 +172,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
     scoped_refptr<ContentProviderConnection> self(this);
     // Write HTTP Response Header
     static const char http_response_hdr1[] = "HTTP/1.1 100 Continue\r\n\r\n";
-    asio::async_write(socket_, asio::const_buffer(http_response_hdr1,
+    asio::async_write(downlink_->socket_, asio::const_buffer(http_response_hdr1,
                                                   sizeof(http_response_hdr1) - 1),
       [this, self](asio::error_code ec, size_t bytes_transferred) {
         if (ec || bytes_transferred != sizeof(http_response_hdr1) - 1) {
@@ -190,7 +190,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
   void read_http_request_data() {
     scoped_refptr<ContentProviderConnection> self(this);
     // Read HTTP Request Data
-    asio::async_read(socket_, tail_buffer(*g_recv_buffer),
+    asio::async_read(downlink_->socket_, tail_buffer(*g_recv_buffer),
       [this, self](asio::error_code ec, size_t bytes_transferred) {
         g_recv_buffer->append(bytes_transferred);
         VLOG(1) << "Connection (content-provider) " << connection_id()
@@ -218,7 +218,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
       "Content-Type: application/octet-stream\r\n"
       "Content-Length: %llu\r\n"
       "Connection: close\r\n\r\n", static_cast<unsigned long long>(g_send_buffer.length()));
-    asio::async_write(socket_, asio::const_buffer(http_response_hdr2.data(),
+    asio::async_write(downlink_->socket_, asio::const_buffer(http_response_hdr2.data(),
                                                   http_response_hdr2.size()),
       [this, self](asio::error_code ec, size_t bytes_transferred) {
         if (ec || bytes_transferred != http_response_hdr2.size()) {
@@ -234,7 +234,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
   void write_http_response_data() {
     // Write HTTP Response Data
     scoped_refptr<ContentProviderConnection> self(this);
-    asio::async_write(socket_, const_buffer(g_send_buffer),
+    asio::async_write(downlink_->socket_, const_buffer(g_send_buffer),
       [this, self](asio::error_code ec, size_t bytes_transferred) {
         if (ec || bytes_transferred != g_send_buffer.length()) {
           LOG(WARNING) << "Connection (content-provider) " << connection_id()
@@ -256,7 +256,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
   void shutdown() {
     asio::error_code ec;
     g_in_provider_mutex.unlock();
-    socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+    downlink_->socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
     LOG(WARNING) << "Connection (content-provider) " << connection_id()
                  << " Shutting down";
     if (ec) {
