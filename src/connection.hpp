@@ -16,9 +16,149 @@
 #include "net/ssl_server_socket.hpp"
 #include "protocol.hpp"
 
-class Connection {
+class Downlink {
+ public:
   using io_handle_t = std::function<void(asio::error_code, std::size_t)>;
   using handle_t = std::function<void(asio::error_code)>;
+
+  Downlink(asio::io_context& io_context)
+    : io_context_(io_context), socket_(io_context_) {}
+
+  virtual ~Downlink() {}
+
+  void on_accept(asio::ip::tcp::socket&& socket) {
+    socket_ = std::move(socket);
+  }
+
+ public:
+  virtual void handshake(handle_t cb) {
+    cb(asio::error_code());
+  }
+
+  virtual bool do_peek() {
+    asio::error_code ec;
+    if (socket_.available(ec)) {
+      return true;
+    }
+    return false;
+  }
+
+  virtual void async_read_some(handle_t cb) {
+    socket_.async_wait(asio::ip::tcp::socket::wait_read, cb);
+  }
+
+  virtual size_t read_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
+    return socket_.read_some(tail_buffer(*buf), ec);
+  }
+
+  virtual void async_write_some(handle_t cb) {
+    socket_.async_wait(asio::ip::tcp::socket::wait_write, cb);
+  }
+
+  virtual size_t write_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
+    return socket_.write_some(const_buffer(*buf), ec);
+  }
+
+  virtual void async_shutdown(handle_t cb) {
+    asio::error_code ec;
+    socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+    cb(ec);
+  }
+
+  virtual void shutdown(asio::error_code &ec) {
+    socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+  }
+
+  virtual void set_https_fallback(bool https_fallback) {}
+
+  virtual bool https_fallback() const {
+    return false;
+  }
+
+  virtual void close(asio::error_code &ec) {
+    socket_.close(ec);
+  }
+
+ public:
+  asio::io_context& io_context_;
+  asio::ip::tcp::socket socket_;
+};
+
+class SSLDownlink : public Downlink {
+ public:
+  SSLDownlink(asio::io_context& io_context,
+              bool https_fallback,
+              asio::ssl::context *ssl_ctx)
+   : Downlink(io_context),
+     https_fallback_(https_fallback),
+     ssl_socket_(net::SSLServerSocket::Create(&io_context, &socket_, ssl_ctx->native_handle())) {
+  }
+
+  ~SSLDownlink() override {}
+
+  void handshake(handle_t cb) override {
+    ssl_socket_->Handshake([cb](int result) {
+      asio::error_code ec = result == net::OK ? asio::error_code() : asio::error::connection_refused ;
+      cb(ec);
+    });
+  }
+
+  bool do_peek() override {
+    char byte;
+    auto ssl = ssl_socket_->native_handle();
+    int rv = SSL_peek(ssl, &byte, 1);
+    int ssl_err = SSL_get_error(ssl, rv);
+    if (ssl_err != SSL_ERROR_WANT_READ && ssl_err != SSL_ERROR_WANT_WRITE) {
+      return true;
+    }
+    return false;
+  }
+
+  void async_read_some(handle_t cb) override {
+    ssl_socket_->WaitRead(cb);
+  }
+
+  size_t read_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) override {
+    return ssl_socket_->Read(buf, ec);
+  }
+
+  void async_write_some(handle_t cb) override {
+    ssl_socket_->WaitWrite(cb);
+  }
+
+  size_t write_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) override {
+    return ssl_socket_->Write(buf, ec);
+  }
+
+  void async_shutdown(handle_t cb) override {
+    ssl_socket_->Shutdown(cb);
+  }
+
+  void shutdown(asio::error_code &ec) override {
+    ec = asio::error_code();
+    ssl_socket_->Shutdown([](asio::error_code ec){}, true);
+  }
+
+  void set_https_fallback(bool https_fallback) override {
+    https_fallback_ = https_fallback;
+  }
+
+  bool https_fallback() const override {
+    return https_fallback_;
+  }
+
+  void close(asio::error_code &ec) override {
+    ssl_socket_->Disconnect();
+  }
+
+ private:
+  bool https_fallback_;
+  scoped_refptr<net::SSLServerSocket> ssl_socket_;
+};
+
+class Connection {
+  using io_handle_t = Downlink::io_handle_t;
+  using handle_t = Downlink::handle_t;
  public:
   struct tlsext_ctx_t {
     void *server;
@@ -50,54 +190,14 @@ class Connection {
       : io_context_(&io_context),
         remote_host_name_(remote_host_name),
         remote_port_(remote_port),
-        socket_(*io_context_),
         upstream_https_fallback_(upstream_https_fallback),
-        https_fallback_(https_fallback),
         enable_upstream_tls_(enable_upstream_tls),
         enable_tls_(enable_tls),
-        upstream_ssl_ctx_(upstream_ssl_ctx),
-        ssl_socket_(enable_tls ? net::SSLServerSocket::Create(&io_context, &socket_, ssl_ctx->native_handle()) : nullptr) {
+        upstream_ssl_ctx_(upstream_ssl_ctx) {
     if (enable_tls) {
-      s_async_read_some_ = [this](handle_t cb) {
-        ssl_socket_->WaitRead(cb);
-      };
-      s_read_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
-        return ssl_socket_->Read(buf, ec);
-      };
-      s_async_write_some_ = [this](handle_t cb) {
-        ssl_socket_->WaitWrite(cb);
-      };
-      s_write_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
-        return ssl_socket_->Write(buf, ec);
-      };
-      s_async_shutdown_ = [this](handle_t cb) {
-        ssl_socket_->Shutdown(cb);
-      };
-      s_shutdown_ = [this](asio::error_code &ec) {
-        ec = asio::error_code();
-        ssl_socket_->Shutdown([](asio::error_code ec){}, true);
-      };
+      downlink_ = std::make_unique<SSLDownlink>(io_context, https_fallback, ssl_ctx);
     } else {
-      s_async_read_some_ = [this](handle_t cb) {
-        socket_.async_wait(asio::ip::tcp::socket::wait_read, cb);
-      };
-      s_read_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
-        return socket_.read_some(tail_buffer(*buf), ec);
-      };
-      s_async_write_some_ = [this](handle_t cb) {
-        socket_.async_wait(asio::ip::tcp::socket::wait_write, cb);
-      };
-      s_write_some_ = [this](std::shared_ptr<IOBuf> buf, asio::error_code &ec) -> size_t {
-        return socket_.write_some(const_buffer(*buf), ec);
-      };
-      s_async_shutdown_ = [this](handle_t cb) {
-        asio::error_code ec;
-        socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
-        cb(ec);
-      };
-      s_shutdown_ = [this](asio::error_code &ec) {
-        socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
-      };
+      downlink_ = std::make_unique<Downlink>(io_context);
     }
   }
 
@@ -109,7 +209,9 @@ class Connection {
 
   virtual ~Connection() = default;
 
-  void set_https_fallback(bool https_fallback) { https_fallback_ = https_fallback; }
+  void set_https_fallback(bool https_fallback) {
+    downlink_->set_https_fallback(https_fallback);
+  }
 
  public:
   /// Construct the connection with socket
@@ -124,7 +226,7 @@ class Connection {
                  const asio::ip::tcp::endpoint& peer_endpoint,
                  int connection_id,
                  tlsext_ctx_t *tlsext_ctx) {
-    socket_ = std::move(socket);
+    downlink_->on_accept(std::move(socket));
     endpoint_ = endpoint;
     peer_endpoint_ = peer_endpoint;
     connection_id_ = connection_id;
@@ -162,21 +264,7 @@ class Connection {
  protected:
   /// the peek current io
   bool DoPeek() {
-    if (enable_tls_) {
-      char byte;
-      auto ssl = ssl_socket_->native_handle();
-      int rv = SSL_peek(ssl, &byte, 1);
-      int ssl_err = SSL_get_error(ssl, rv);
-      if (ssl_err != SSL_ERROR_WANT_READ && ssl_err != SSL_ERROR_WANT_WRITE) {
-        return true;
-      }
-    } else {
-      asio::error_code ec;
-      if (socket_.available(ec)) {
-        return true;
-      }
-    }
-    return false;
+    return downlink_->do_peek();
   }
 
  protected:
@@ -187,8 +275,6 @@ class Connection {
   /// the upstream port to be established with
   uint16_t remote_port_;
 
-  /// the socket the service bound with
-  asio::ip::tcp::socket socket_;
   /// service's bound endpoint
   asio::ip::tcp::endpoint endpoint_;
   /// the peer endpoint the connection connects
@@ -200,21 +286,13 @@ class Connection {
 
   /// if https fallback
   bool upstream_https_fallback_;
-  bool https_fallback_;
   /// if enable ssl layer
   bool enable_upstream_tls_;
   bool enable_tls_;
   std::string upstream_certificate_;
   asio::ssl::context* upstream_ssl_ctx_;
-  scoped_refptr<net::SSLServerSocket> ssl_socket_;
 
-  /// io_handlers
-  std::function<void(handle_t)> s_async_read_some_;
-  std::function<size_t(std::shared_ptr<IOBuf>, asio::error_code &)> s_read_some_;
-  std::function<void(handle_t)> s_async_write_some_;
-  std::function<size_t(std::shared_ptr<IOBuf>, asio::error_code &)> s_write_some_;
-  std::function<void(handle_t)> s_async_shutdown_;
-  std::function<void(asio::error_code&)> s_shutdown_;
+  std::unique_ptr<Downlink> downlink_;
 
   /// the callback invoked when disconnect event happens
   std::function<void()> disconnect_cb_;
