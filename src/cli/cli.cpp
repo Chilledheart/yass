@@ -97,7 +97,7 @@ int main(int argc, const char* argv[]) {
     struct addrinfo hints = {}, *addrinfo;
     hints.ai_flags = AI_CANONNAME | AI_NUMERICSERV;
     hints.ai_family = Net_ipv6works() ? AF_UNSPEC : AF_INET;
-    hints.ai_socktype = 0;
+    hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = 0;
     int ret = ::getaddrinfo(host_name.c_str(), std::to_string(port).c_str(), &hints, &addrinfo);
     auto results = asio::ip::tcp::resolver::results_type::create(addrinfo, host_name.c_str(), std::to_string(port));

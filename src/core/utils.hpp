@@ -250,4 +250,12 @@ void SetExecutablePathW(const std::wstring& exe_path);
 
 bool Net_ipv6works();
 
+#ifdef _MSC_VER
+// https://learn.microsoft.com/en-us/windows/win32/winprog/windows-data-types
+using ssize_t = ptrdiff_t;
+#endif
+
+ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len);
+ssize_t WriteFileWithBuffer(const std::string& path, const char* buf, size_t buf_len);
+
 #endif  // YASS_UTILS

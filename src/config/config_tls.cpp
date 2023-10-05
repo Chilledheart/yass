@@ -3,6 +3,9 @@
 
 #include "config/config.hpp"
 
+std::string g_certificate_chain_content;
+std::string g_private_key_content;
+
 ABSL_FLAG(std::string, certificate_chain_file, "", "Certificate Chain File Path (Both of Server and Client)");
 ABSL_FLAG(std::string, private_key_file, "", "Private Key File Path (Server Only)");
 ABSL_FLAG(std::string, private_key_password, "", "Private Key Password (Server Only)");

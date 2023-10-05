@@ -132,7 +132,9 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
   chunks_.front()->trimStart(payload_length);
 
   if (chunks_.front()->empty()) {
-    connection_->upstream_pool_.push_back(chunks_.front());
+    if (connection_->upstream_pool_.size() < 32U) {
+      connection_->upstream_pool_.push_back(chunks_.front());
+    }
     chunks_.pop_front();
   }
 
@@ -863,7 +865,9 @@ void CliConnection::WriteStream() {
     wbytes_transferred += written;
     // continue to resume
     if (LIKELY(buf->empty())) {
-      downstream_pool_.push_back(buf);
+      if (downstream_pool_.size() < 32U) {
+        downstream_pool_.push_back(buf);
+      }
       downstream_.pop_front();
     }
     if (UNLIKELY(ec == asio::error::try_again || ec == asio::error::would_block)) {
@@ -1053,7 +1057,9 @@ try_again:
       }
       remaining_buffer = remaining_buffer.substr(result);
     }
-    downstream_pool_.push_back(buf);
+    if (downstream_pool_.size() < 32U) {
+      downstream_pool_.push_back(buf);
+    }
     // not enough buffer for recv window
     if (downstream_.byte_length() < H2_STREAM_WINDOW_SIZE) {
       goto try_again;
@@ -1075,7 +1081,9 @@ try_again:
         buf->trimStart(nparsed);
         buf->retreat(nparsed);
         if (buf->empty()) {
-          downstream_pool_.push_back(buf);
+          if (downstream_pool_.size() < 32U) {
+            downstream_pool_.push_back(buf);
+          }
           ec = asio::error::try_again;
           return nullptr;
         }
@@ -1098,7 +1106,9 @@ try_again:
     downstream_.push_back_merged(buf, &downstream_pool_);
   } else {
     decoder_->process_bytes(buf);
-    downstream_pool_.push_back(buf);
+    if (downstream_pool_.size() < 32U) {
+      downstream_pool_.push_back(buf);
+    }
   }
 
 out:
@@ -1170,7 +1180,9 @@ void CliConnection::WriteUpstreamInPipe() {
     // continue to resume
     if (buf->empty()) {
       DCHECK(!upstream_.empty() && upstream_.front() == buf);
-      upstream_pool_.push_back(buf);
+      if (upstream_pool_.size() < 32U) {
+        upstream_pool_.push_back(buf);
+      }
       upstream_.pop_front();
     }
     if (ec) {
@@ -1275,7 +1287,9 @@ std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code &ec,
     upstream_.push_back_merged(buf, &upstream_pool_);
   } else {
     EncryptData(&upstream_, buf);
-    upstream_pool_.push_back(buf);
+    if (upstream_pool_.size() < 32U) {
+      upstream_pool_.push_back(buf);
+    }
   }
 
 out:
@@ -1497,10 +1511,17 @@ void CliConnection::OnConnect() {
   LOG(INFO) << "Connection (client) " << connection_id()
             << " connect " << remote_domain();
   // create lazy
-  channel_ = stream::create(*io_context_,
-                            remote_host_name_, remote_port_,
-                            this, upstream_https_fallback_,
-                            enable_upstream_tls_, upstream_ssl_ctx_);
+  if (enable_upstream_tls_) {
+    channel_ = ssl_stream::create(*io_context_,
+                                  remote_host_name_, remote_port_,
+                                  this, upstream_https_fallback_,
+                                  upstream_ssl_ctx_);
+
+  } else {
+    channel_ = stream::create(*io_context_,
+                              remote_host_name_, remote_port_,
+                              this);
+  }
   channel_->async_connect([this, self](asio::error_code ec){
     if (UNLIKELY(closed_)) {
       return;
@@ -1543,7 +1564,9 @@ void CliConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
     upstream_.push_back_merged(buf, &upstream_pool_);
   } else {
     EncryptData(&upstream_, buf);
-    upstream_pool_.push_back(buf);
+    if (upstream_pool_.size() < 32U) {
+      upstream_pool_.push_back(buf);
+    }
   }
   OnUpstreamWriteFlush();
 }
@@ -1756,7 +1779,9 @@ void CliConnection::connected() {
     std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);
     // write variable address directly as ss header
     EncryptData(&upstream_, buf);
-    upstream_pool_.push_back(buf);
+    if (upstream_pool_.size() < 32U) {
+      upstream_pool_.push_back(buf);
+    }
   }
 
   // Re-process the read data in pending

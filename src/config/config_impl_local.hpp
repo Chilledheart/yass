@@ -8,9 +8,6 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#ifdef _MSC_VER
-typedef SSIZE_T ssize_t;
-#endif
 #else
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -59,45 +56,6 @@ bool EnsureCreatedDirectory(const std::string& path) {
   }
   return true;
 }
-
-ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len) {
-  DWORD read;
-  HANDLE hFile = CreateFileA(path.c_str(), GENERIC_READ,
-                             FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
-  if (hFile == INVALID_HANDLE_VALUE) {
-    return -1;
-  }
-
-  if (!ReadFile(hFile, buf, buf_len - 1, &read, nullptr)) {
-    CloseHandle(hFile);
-    return -1;
-  }
-
-  CloseHandle(hFile);
-
-  buf[read] = '\0';
-  return read;
-}
-
-ssize_t WriteFileWithBuffer(const std::string& path,
-                            const char* buf,
-                            size_t buf_len) {
-  DWORD written;
-  HANDLE hFile = CreateFileA(path.c_str(), GENERIC_WRITE,
-                             0, nullptr, CREATE_ALWAYS, 0, nullptr);
-  if (hFile == INVALID_HANDLE_VALUE) {
-    return -1;
-  }
-
-  if (!WriteFile(hFile, buf, buf_len, &written, nullptr) || written != buf_len) {
-    CloseHandle(hFile);
-    return -1;
-  }
-
-  CloseHandle(hFile);
-
-  return written;
-}
 #else
 bool IsDirectory(const std::string& path) {
   if (path == "." || path == "..") {
@@ -119,36 +77,6 @@ bool EnsureCreatedDirectory(const std::string& path) {
     return false;
   }
   return true;
-}
-
-ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len) {
-  int fd = ::open(path.c_str(), O_RDONLY);
-  if (fd < 0) {
-    return -1;
-  }
-  ssize_t ret = ::read(fd, buf, buf_len - 1);
-
-  if (ret < 0 || close(fd) < 0) {
-    return -1;
-  }
-  buf[ret] = '\0';
-  return ret;
-}
-
-ssize_t WriteFileWithBuffer(const std::string& path,
-                            const char* buf,
-                            size_t buf_len) {
-  int fd = ::open(path.c_str(), O_WRONLY | O_TRUNC | O_CREAT,
-                  S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-  if (fd < 0) {
-    return false;
-  }
-  ssize_t ret = ::write(fd, buf, buf_len);
-
-  if (ret < 0 || close(fd) < 0) {
-    return -1;
-  }
-  return ret;
 }
 #endif
 }  // anonymous namespace

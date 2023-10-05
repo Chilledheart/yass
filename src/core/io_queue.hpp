@@ -55,7 +55,7 @@ class IoQueue {
     prev_buf->reserve(0, buf->length());
     memcpy(prev_buf->mutable_tail(), buf->data(), buf->length());
     prev_buf->append(buf->length());
-    if (pool) {
+    if (pool && pool->size() < 32U) {
       pool->push_back(buf);
     }
     return true;
