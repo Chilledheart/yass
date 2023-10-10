@@ -134,10 +134,12 @@ int main(int argc, const char* argv[]) {
   }
 
   asio::signal_set signals(io_context);
-  signals.add(SIGINT, ec);
 #ifdef SIGQUIT
   signals.add(SIGQUIT, ec);
 #endif
+  // TODO tell different of sigquit (shutdown) and sigterm (quit)
+  signals.add(SIGINT, ec);
+  signals.add(SIGTERM, ec);
   signals.async_wait([&](asio::error_code /*error*/, int /*signal_number*/) {
     LOG(WARNING) << "Application exiting";
     server.stop();
