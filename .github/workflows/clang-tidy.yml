@@ -16,7 +16,7 @@ on:
         required: false
         type: boolean
 env:
-  CACHE_EPOCH: 118
+  CACHE_EPOCH: 119
   GOPROXY: direct
 jobs:
   win-clang-tidy:
