@@ -21,10 +21,10 @@ commands:
     steps:
       - run:
           command: |
-            curl -L -O https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz
-            tar -C third_party -xvf clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz \
-              clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04/lib/clang/13.0.1/include \
-              clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04/bin/{clang,clang++,clang-13,ld.lld,lld,llvm-ar,llvm-ranlib}
+            curl -L -O https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.6/clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04.tar.xz
+            tar -C third_party -xvf clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04.tar.xz \
+              clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04/lib/clang/15.0.6/include \
+              clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04/bin/{clang,clang++,clang-15,ld.lld,lld,llvm-ar,llvm-ranlib}
             rm -f *.xz
 
   download-toolchain-gcc:
@@ -73,8 +73,8 @@ commands:
     steps:
       - run:
           command: |
-            export "CC=$PWD/third_party/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04/bin/clang"
-            export "CXX=$PWD/third_party/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04/bin/clang++"
+            export "CC=$PWD/third_party/clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04/bin/clang"
+            export "CXX=$PWD/third_party/clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04/bin/clang++"
             mkdir build
             cd build
             cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release ..
@@ -93,8 +93,8 @@ commands:
     steps:
       - run:
           command: |
-            export "CC=$PWD/third_party/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04/bin/clang"
-            export "CXX=$PWD/third_party/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04/bin/clang++"
+            export "CC=$PWD/third_party/clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04/bin/clang"
+            export "CXX=$PWD/third_party/clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04/bin/clang++"
             mkdir build
             cd build
             cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on -DCMAKE_BUILD_TYPE=Release -DUSE_LIBCXX=off ..
