@@ -172,16 +172,25 @@ int main(int argc, const char* argv[]) {
   }
 
   asio::signal_set signals(io_context);
+  signals.add(SIGINT, ec);
+  signals.add(SIGTERM, ec);
 #ifdef SIGQUIT
   signals.add(SIGQUIT, ec);
 #endif
-  // TODO tell different of sigquit (shutdown) and sigterm (quit)
-  signals.add(SIGINT, ec);
-  signals.add(SIGTERM, ec);
-  signals.async_wait([&](asio::error_code /*error*/, int /*signal_number*/) {
-    LOG(WARNING) << "Application exiting";
-    server.stop();
+  signals.async_wait([&](asio::error_code /*ec*/, int signal_number) {
+#ifdef SIGQUIT
+    if (signal_number == SIGQUIT) {
+      LOG(WARNING) << "Application shuting down";
+      server.shutdown();
+    } else {
+#endif
+      LOG(WARNING) << "Application exiting";
+      server.stop();
+#ifdef SIGQUIT
+    }
+#endif
     work_guard.reset();
+    signals.clear();
   });
 
 #ifdef SIGPIPE
