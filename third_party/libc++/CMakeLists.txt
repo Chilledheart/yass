@@ -12,12 +12,12 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
   set(COMPILER_APPLE_CLANG TRUE)
 endif()
 
-if (COMPILER_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13.0)
-  message(FATAL_ERROR "Requires Clang 13.0 or newer to compile libc++ from source")
+if (COMPILER_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15.0)
+  message(FATAL_ERROR "Requires Clang 15.0 or newer to compile libc++ from source")
 endif()
 
-if (COMPILER_APPLE_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14.0)
-  message(FATAL_ERROR "Requires Apple Clang 14.0 or newer to compile libc++ from source")
+if (COMPILER_APPLE_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15.0)
+  message(FATAL_ERROR "Requires Apple Clang 15.0 or newer to compile libc++ from source")
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -26,8 +26,8 @@ else()
   set(COMPILER_GCC FALSE)
 endif()
 
-if (COMPILER_GCC AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
-  message(FATAL_ERROR "Requires gcc 12.0 or newer to compile libc++ from source")
+if (COMPILER_GCC AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13.0)
+  message(FATAL_ERROR "Requires gcc 13.0 or newer to compile libc++ from source")
 endif()
 
 # This is included by reference in the //build/config/compiler:runtime_library
