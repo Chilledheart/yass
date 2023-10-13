@@ -15,6 +15,7 @@ codenames = {
   "impish" : "ubuntu-21.10-impish",
   "jammy" : "ubuntu-22.04-jammy",
   "lunar" : "ubuntu-23.04-lunar",
+  "mantic" : "ubuntu-23.10-mantic",
   "stretch" : "debian-9-stretch",
   "buster" : "debian-10-buster",
   "bullseye" : "debian-11-bullseye",
