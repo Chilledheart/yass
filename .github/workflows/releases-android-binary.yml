@@ -107,7 +107,7 @@ jobs:
         if: ${{ steps.ndk-cache.outputs.cache-hit != 'true' }}
         run: |
           ./scripts/install-sysroot-android.py
-          wget http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-static_8.1.1+ds-2_amd64.deb
+          wget http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-static_8.1.2+ds-1_amd64.deb
       - name: Change ubuntu mirror
         run: |
           sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
