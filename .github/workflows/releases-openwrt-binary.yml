@@ -50,7 +50,7 @@ jobs:
       SDK_ROOT: ${{ github.workspace }}/openwrt-sdk-${{ matrix.arch }}
       SDK_HOME: ${{ github.workspace }}/openwrt-sdk-${{ matrix.arch }}-home
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Checkout with shallow submodules
         run: |
           # unshallow must come first otherwise submodule may be get unshallowed

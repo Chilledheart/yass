@@ -63,7 +63,7 @@ jobs:
       HOST_ARCH: '${{ matrix.arch }}'
       HOST_DISTRO: '${{ matrix.distro }}'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Checkout with shallow submodules
         run: |
           # unshallow must come first otherwise submodule may be get unshallowed
