@@ -91,7 +91,7 @@ jobs:
     env:
       DISTRO: ${{ matrix.container }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
       - name: Checkout with shallow submodules
         run: |
           # ignore annoying failures
