@@ -1,3 +1,9 @@
+yass (1.4.6-1) UNRELEASED; urgency=low
+
+  * Better handling with SIGTERM signal.
+  * Bump to chromium 119 dependents.
+
+ -- Chilledheart <hukeyue@hotmail.com>  Mon, 23 Oct 2023 10:04:17 +0800
 yass (1.4.5-1) UNRELEASED; urgency=low
 
   * Some trivial changes.
