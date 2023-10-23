@@ -21,7 +21,9 @@
 #pragma GCC diagnostic pop
 #endif  // defined(__clang__)
 #else
-#include <http_parser.h>
+extern "C" {
+typedef struct http_parser http_parser;
+}
 #endif
 
 #ifdef HAVE_BALSA_HTTP_PARSER
@@ -110,51 +112,21 @@ class HttpResponseParser : public HttpRequestParser {
 #else
 class HttpRequestParser {
  public:
-  HttpRequestParser() : parser_() {
-    ::http_parser_init(&parser_, HTTP_REQUEST);
-    parser_.data = this;
-  }
+  HttpRequestParser(bool is_request = true);
+  virtual ~HttpRequestParser();
 
-  int Parse(std::shared_ptr<IOBuf> buf, bool *ok) {
-    struct http_parser_settings settings_connect = {
-        //.on_message_begin
-        nullptr,
-        //.on_url
-        &HttpRequestParser::OnReadHttpRequestURL,
-        //.on_status
-        nullptr,
-        //.on_header_field
-        &HttpRequestParser::OnReadHttpRequestHeaderField,
-        //.on_header_value
-        &HttpRequestParser::OnReadHttpRequestHeaderValue,
-        //.on_headers_complete
-        HttpRequestParser::OnReadHttpRequestHeadersDone,
-        //.on_body
-        nullptr,
-        //.on_message_complete
-        nullptr,
-        //.on_chunk_header
-        nullptr,
-        //.on_chunk_complete
-        nullptr};
-    size_t nparsed;
-    nparsed = http_parser_execute(&parser_, &settings_connect,
-                                  reinterpret_cast<const char*>(buf->data()),
-                                  buf->length());
-    *ok = HTTP_PARSER_ERRNO(&parser_) == HPE_OK;
-    return nparsed;
-  }
+  int Parse(std::shared_ptr<IOBuf> buf, bool *ok);
 
   void ReforgeHttpRequest(std::string *header,
                           const absl::flat_hash_map<std::string, std::string> *additional_headers = nullptr);
 
-  const char* ErrorMessage() {
-    return http_errno_description(HTTP_PARSER_ERRNO(&parser_));
-  }
+  const char* ErrorMessage() const;
 
   const std::string& host() const { return http_host_; }
   uint16_t port() const { return http_port_; }
   bool is_connect() const { return http_is_connect_; }
+
+  int status_code() const;
 
  private:
   /// Callback to read http handshake request's URL field
@@ -170,32 +142,8 @@ class HttpRequestParser {
   /// Callback to read http handshake request's headers done
   static int OnReadHttpRequestHeadersDone(http_parser* parser);
 
-  static int OnHttpRequestParseUrl(const char* buf,
-                                   size_t len,
-                                   std::string* host,
-                                   uint16_t* port,
-                                   int is_connect) {
-    struct http_parser_url url;
-
-    if (0 != ::http_parser_parse_url(buf, len, is_connect, &url)) {
-      LOG(ERROR) << "Failed to parse url: '" << std::string(buf, len) << "'";
-      return 1;
-    }
-
-    if (url.field_set & (1 << (UF_HOST))) {
-      *host = std::string(buf + url.field_data[UF_HOST].off,
-                          url.field_data[UF_HOST].len);
-    }
-
-    if (url.field_set & (1 << (UF_PORT))) {
-      *port = url.port;
-    }
-
-    return 0;
-  }
-
- private:
-  ::http_parser parser_;
+ protected:
+  ::http_parser* parser_ = nullptr;
   /// copy of url
   std::string http_url_;
   /// copy of parsed connect host or host field
@@ -212,69 +160,11 @@ class HttpRequestParser {
   bool http_is_connect_ = false;
 };
 
-class HttpResponseParser {
+class HttpResponseParser : public HttpRequestParser {
  public:
-  HttpResponseParser() : parser_() {
-    ::http_parser_init(&parser_, HTTP_RESPONSE);
-    parser_.data = this;
-  }
+  HttpResponseParser();
+  ~HttpResponseParser() override {}
 
-  int Parse(std::shared_ptr<IOBuf> buf, bool *ok) {
-    struct http_parser_settings settings_connect = {
-        //.on_message_begin
-        nullptr,
-        //.on_url
-        nullptr,
-        //.on_status
-        nullptr,
-        //.on_header_field
-        &HttpResponseParser::OnReadHttpResponseHeaderField,
-        //.on_header_value
-        &HttpResponseParser::OnReadHttpResponseHeaderValue,
-        //.on_headers_complete
-        HttpResponseParser::OnReadHttpResponseHeadersDone,
-        //.on_body
-        nullptr,
-        //.on_message_complete
-        nullptr,
-        //.on_chunk_header
-        nullptr,
-        //.on_chunk_complete
-        nullptr};
-    size_t nparsed;
-    nparsed = http_parser_execute(&parser_, &settings_connect,
-                                  reinterpret_cast<const char*>(buf->data()),
-                                  buf->length());
-    *ok = HTTP_PARSER_ERRNO(&parser_) == HPE_OK;
-    return nparsed;
-  }
-
-  const char* ErrorMessage() {
-    return http_errno_description(HTTP_PARSER_ERRNO(&parser_));
-  }
-
-  int status_code() const { return parser_.status_code; }
-
- private:
-  /// Callback to read http handshake request's header field
-  static int OnReadHttpResponseHeaderField(http_parser* parser,
-                                           const char* buf,
-                                           size_t len);
-  /// Callback to read http handshake request's headers done
-  static int OnReadHttpResponseHeaderValue(http_parser* parser,
-                                           const char* buf,
-                                           size_t len);
-  /// Callback to read http handshake request's headers done
-  static int OnReadHttpResponseHeadersDone(http_parser* parser);
-
- private:
-  ::http_parser parser_;
-  /// copy of parsed header field
-  std::string http_field_;
-  /// copy of parsed header value
-  std::string http_value_;
-  /// copy of parsed headers
-  absl::flat_hash_map<std::string, std::string> http_headers_;
 };
 #endif // HAVE_BALSA_HTTP_PARSER
 

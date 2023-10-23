@@ -4,6 +4,10 @@
 #include "core/http_parser.hpp"
 #include "core/utils.hpp"
 
+#ifndef HAVE_BALSA_HTTP_PARSER
+#include <http_parser.h>
+#endif
+
 #ifndef HTTP_MAX_HEADER_SIZE
 # define HTTP_MAX_HEADER_SIZE (80*1024)
 #endif
@@ -57,7 +61,6 @@ static void ReforgeHttpRequestImpl(std::string* header,
 
   *header = ss.str();
 }
-
 
 static void SplitHostPort(std::string *out_hostname, std::string *out_port,
                           const std::string &hostname_and_port) {
@@ -422,6 +425,81 @@ void HttpRequestParser::HandleWarning(BalsaFrameEnums::ErrorCode error_code) {
 HttpResponseParser::HttpResponseParser() : HttpRequestParser(false) {}
 
 #else
+
+HttpRequestParser::HttpRequestParser(bool is_request) : parser_(new http_parser) {
+  ::http_parser_init(parser_, is_request ? HTTP_REQUEST: HTTP_RESPONSE);
+  parser_->data = this;
+}
+
+HttpRequestParser::~HttpRequestParser() {
+  delete parser_;
+}
+
+int HttpRequestParser::Parse(std::shared_ptr<IOBuf> buf, bool *ok) {
+  struct http_parser_settings settings_connect = {
+      //.on_message_begin
+      nullptr,
+      //.on_url
+      &HttpRequestParser::OnReadHttpRequestURL,
+      //.on_status
+      nullptr,
+      //.on_header_field
+      &HttpRequestParser::OnReadHttpRequestHeaderField,
+      //.on_header_value
+      &HttpRequestParser::OnReadHttpRequestHeaderValue,
+      //.on_headers_complete
+      HttpRequestParser::OnReadHttpRequestHeadersDone,
+      //.on_body
+      nullptr,
+      //.on_message_complete
+      nullptr,
+      //.on_chunk_header
+      nullptr,
+      //.on_chunk_complete
+      nullptr};
+  size_t nparsed;
+  nparsed = http_parser_execute(parser_, &settings_connect,
+                                reinterpret_cast<const char*>(buf->data()),
+                                buf->length());
+  *ok = HTTP_PARSER_ERRNO(parser_) == HPE_OK;
+  return nparsed;
+}
+
+void HttpRequestParser::ReforgeHttpRequest(std::string *header,
+                        const absl::flat_hash_map<std::string, std::string> *additional_headers) {
+  ReforgeHttpRequestImpl(header, http_method_str((http_method)parser_->method), additional_headers, http_url_, http_headers_);
+}
+
+const char* HttpRequestParser::ErrorMessage() const {
+  return http_errno_description(HTTP_PARSER_ERRNO(parser_));
+}
+
+int HttpRequestParser::status_code() const { return parser_->status_code; }
+
+static int OnHttpRequestParseUrl(const char* buf,
+                                 size_t len,
+                                 std::string* host,
+                                 uint16_t* port,
+                                 int is_connect) {
+  struct http_parser_url url;
+
+  if (0 != ::http_parser_parse_url(buf, len, is_connect, &url)) {
+    LOG(ERROR) << "Failed to parse url: '" << std::string(buf, len) << "'";
+    return 1;
+  }
+
+  if (url.field_set & (1 << (UF_HOST))) {
+    *host = std::string(buf + url.field_data[UF_HOST].off,
+                        url.field_data[UF_HOST].len);
+  }
+
+  if (url.field_set & (1 << (UF_PORT))) {
+    *port = url.port;
+  }
+
+  return 0;
+}
+
 int HttpRequestParser::OnReadHttpRequestURL(http_parser* p,
                                             const char* buf,
                                             size_t len) {
@@ -481,33 +559,6 @@ int HttpRequestParser::OnReadHttpRequestHeadersDone(http_parser*) {
   return 2;
 }
 
-void HttpRequestParser::ReforgeHttpRequest(std::string *header,
-                        const absl::flat_hash_map<std::string, std::string> *additional_headers) {
-  ReforgeHttpRequestImpl(header, http_method_str((http_method)parser_.method), additional_headers, http_url_, http_headers_);
-}
-
-int HttpResponseParser::OnReadHttpResponseHeaderField(http_parser* parser,
-                                                      const char* buf,
-                                                      size_t len) {
-  HttpResponseParser* self = reinterpret_cast<HttpResponseParser*>(parser->data);
-  self->http_field_ = std::string(buf, len);
-  return 0;
-}
-
-int HttpResponseParser::OnReadHttpResponseHeaderValue(http_parser* parser,
-                                                      const char* buf,
-                                                      size_t len) {
-  HttpResponseParser* self = reinterpret_cast<HttpResponseParser*>(parser->data);
-  self->http_value_ = std::string(buf, len);
-  self->http_headers_[self->http_field_] = self->http_value_;
-  LOG(WARNING) << self->http_value_ << "=" << self->http_value_;
-  return 0;
-}
-
-int HttpResponseParser::OnReadHttpResponseHeadersDone(http_parser*) {
-  // Treat the rest part as Upgrade even when it is not CONNECT
-  // (binary protocol such as ocsp-request and dns-message).
-  return 2;
-}
+HttpResponseParser::HttpResponseParser() : HttpRequestParser(false) {}
 
 #endif // HAVE_BALSA_HTTP_PARSER
