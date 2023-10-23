@@ -240,6 +240,7 @@ option(USE_CARES "Build with c-ares" ON)
 option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
 option(USE_BUILTIN_CA_BUNDLE_CRT "Build with embedded ca-bundle.crt support" ON)
 option(USE_MBEDTLS "Build with mbedtls support" ON)
+option(USE_BALSA_HTTP_PARSER "Build with balsa http parser" ON)
 
 option(ENABLE_LTO "Enable build with LTO" ON)
 option(ENABLE_LLD "Enable build with LLD" ON)
@@ -2439,6 +2440,7 @@ include_directories(
   third_party/googleurl/polyfills
   third_party/quiche/overrides
   third_party/quiche/src
+  third_party/quiche/src/quiche/common/platform/default
   SYSTEM)
 set(SUPPORT_LIBS url quiche ${SUPPORT_LIBS})
 
@@ -2446,7 +2448,7 @@ set(SUPPORT_LIBS url quiche ${SUPPORT_LIBS})
 #           http-parser Library
 # *****************************************************************************************
 
-if (USE_SYSTEM_HTTP_PARSER)
+if (USE_SYSTEM_HTTP_PARSER AND NOT USE_BALSA_HTTP_PARSER)
   check_library_exists(http_parser http_parser_init "" HAVE_HTTP_PARSER_INIT)
   if (NOT HAVE_HTTP_PARSER_INIT)
     message(STATUS "System http_parser not found, using bundled one")
@@ -2454,10 +2456,10 @@ if (USE_SYSTEM_HTTP_PARSER)
   endif()
 endif()
 
-if (USE_SYSTEM_HTTP_PARSER)
+if (USE_SYSTEM_HTTP_PARSER AND NOT USE_BALSA_HTTP_PARSER)
   message(STATUS "Compiling with system http-parser")
   set(SUPPORT_LIBS http_parser ${SUPPORT_LIBS})
-else()
+elseif(NOT USE_BALSA_HTTP_PARSER)
   message(STATUS "Compiling with bundled http-parser")
   add_library(http_parser STATIC
     third_party/http_parser/http_parser.h
@@ -2465,6 +2467,12 @@ else()
     )
   include_directories(third_party/http_parser SYSTEM)
   set(SUPPORT_LIBS http_parser ${SUPPORT_LIBS})
+endif()
+
+if (USE_BALSA_HTTP_PARSER)
+  message(STATUS "Compiling with balsa http parser")
+  add_definitions(-DHAVE_BALSA_HTTP_PARSER)
+  set(SUPPORT_LIBS balsa ${SUPPORT_LIBS})
 endif()
 
 # *****************************************************************************************
