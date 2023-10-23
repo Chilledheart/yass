@@ -30,7 +30,7 @@ on:
   release:
     types: [published]
 env:
-  CACHE_EPOCH: 118
+  CACHE_EPOCH: 119
   GOPROXY: direct
 jobs:
   docker_publish:
@@ -46,7 +46,7 @@ jobs:
         # - 'centos9'
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Cache docker files (dummy)
         id: docker-cache
         uses: actions/cache@v3
@@ -167,7 +167,7 @@ jobs:
     env:
       DISTRO: ${{ matrix.container }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Checkout with shallow submodules
         run: |
           # ignore annoying failures

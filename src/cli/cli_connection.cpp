@@ -186,7 +186,7 @@ void CliConnection::close() {
           << CliConnection::state_to_str(CurrentState());
   asio::error_code ec;
   closed_ = true;
-  socket_.close(ec);
+  downlink_->close(ec);
   if (ec) {
     VLOG(1) << "close() error: " << ec;
   }
@@ -396,7 +396,7 @@ bool CliConnection::OnMetadataEndForStream(StreamId stream_id) {
 void CliConnection::ReadMethodSelect() {
   scoped_refptr<CliConnection> self(this);
 
-  s_async_read_some_([this, self](asio::error_code ec) {
+  downlink_->async_read_some([this, self](asio::error_code ec) {
       if (closed_) {
         return;
       }
@@ -410,7 +410,7 @@ void CliConnection::ReadMethodSelect() {
       std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
       size_t bytes_transferred;
       do {
-        bytes_transferred = socket_.read_some(tail_buffer(*buf), ec);
+        bytes_transferred = downlink_->read_some(buf, ec);
         if (ec == asio::error::interrupted) {
           continue;
         }
@@ -447,7 +447,7 @@ void CliConnection::ReadMethodSelect() {
 void CliConnection::ReadSocks5Handshake() {
   scoped_refptr<CliConnection> self(this);
 
-  s_async_read_some_([this, self](asio::error_code ec) {
+  downlink_->async_read_some([this, self](asio::error_code ec) {
       if (closed_) {
         return;
       }
@@ -461,7 +461,7 @@ void CliConnection::ReadSocks5Handshake() {
       std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
       size_t bytes_transferred;
       do {
-        bytes_transferred = socket_.read_some(mutable_buffer(*buf), ec);
+        bytes_transferred = downlink_->read_some(buf, ec);
         if (ec == asio::error::interrupted) {
           continue;
         }
@@ -576,10 +576,10 @@ asio::error_code CliConnection::OnReadRedirHandshake(
   asio::ip::tcp::endpoint endpoint;
   int ret;
   if (peer_endpoint_.address().is_v4() || IsIPv4MappedIPv6(peer_endpoint_))
-    ret = getsockopt(socket_.native_handle(), SOL_IP, SO_ORIGINAL_DST, &ss,
+    ret = getsockopt(downlink_->socket_.native_handle(), SOL_IP, SO_ORIGINAL_DST, &ss,
                      &ss_len);
   else
-    ret = getsockopt(socket_.native_handle(), SOL_IPV6, SO_ORIGINAL_DST, &ss,
+    ret = getsockopt(downlink_->socket_.native_handle(), SOL_IPV6, SO_ORIGINAL_DST, &ss,
                      &ss_len);
   if (ret == 0) {
     endpoint.resize(ss_len);
@@ -762,7 +762,7 @@ void CliConnection::ReadStream(bool yield) {
     });
     return;
   }
-  s_async_read_some_([this, self](asio::error_code ec) {
+  downlink_->async_read_some([this, self](asio::error_code ec) {
     downstream_read_inprogress_ = false;
     if (closed_) {
       return;
@@ -782,7 +782,7 @@ void CliConnection::ReadStream(bool yield) {
 void CliConnection::WriteMethodSelect() {
   scoped_refptr<CliConnection> self(this);
   method_select_reply_ = socks5::method_select_response_stock_reply();
-  asio::async_write(socket_,
+  asio::async_write(downlink_->socket_,
     asio::buffer(&method_select_reply_, sizeof(method_select_reply_)),
     [this, self](asio::error_code ec, size_t bytes_transferred) {
       if (closed_) {
@@ -798,7 +798,7 @@ void CliConnection::WriteHandshake() {
     case state_method_select:  // impossible
     case state_socks5_handshake:
       SetState(state_stream);
-      asio::async_write(socket_, s5_reply_.buffers(),
+      asio::async_write(downlink_->socket_, s5_reply_.buffers(),
         [this, self](asio::error_code ec, size_t bytes_transferred) {
           if (closed_) {
             return;
@@ -808,7 +808,7 @@ void CliConnection::WriteHandshake() {
       break;
     case state_socks4_handshake:
       SetState(state_stream);
-      asio::async_write(socket_, s4_reply_.buffers(),
+      asio::async_write(downlink_->socket_, s4_reply_.buffers(),
         [this, self](asio::error_code ec, size_t bytes_transferred) {
           if (closed_) {
             return;
@@ -855,7 +855,7 @@ void CliConnection::WriteStream() {
     auto buf = downstream_.front();
     size_t written;
     do {
-      written = socket_.write_some(const_buffer(*buf), ec);
+      written = downlink_->write_some(buf, ec);
       if (UNLIKELY(ec == asio::error::interrupted)) {
         continue;
       }
@@ -917,7 +917,7 @@ void CliConnection::WriteStreamAsync() {
     return;
   }
   write_inprogress_ = true;
-  s_async_write_some_([this, self](asio::error_code ec) {
+  downlink_->async_write_some([this, self](asio::error_code ec) {
     write_inprogress_ = false;
     if (closed_) {
       return;
@@ -1245,7 +1245,7 @@ std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code &ec,
   }
   size_t read;
   do {
-    read = socket_.read_some(tail_buffer(*buf, SOCKET_BUF_SIZE), ec);
+    read = downlink_->socket_.read_some(tail_buffer(*buf, SOCKET_BUF_SIZE), ec);
     if (ec == asio::error::interrupted) {
       continue;
     }
@@ -1580,7 +1580,7 @@ void CliConnection::OnStreamWrite() {
             << " last data sent: shutting down";
     shutdown_ = true;
     asio::error_code ec;
-    socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+    downlink_->shutdown(ec);
     return;
   }
 }
@@ -1847,7 +1847,7 @@ void CliConnection::disconnected(asio::error_code ec) {
     VLOG(2) << "Connection (client) " << connection_id()
             << " last data sent: shutting down";
     shutdown_ = true;
-    socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+    downlink_->shutdown(ec);
   } else {
     WriteStream();
   }

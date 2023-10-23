@@ -156,22 +156,17 @@ void ServerConnection::start() {
   downstream_readable_ = true;
 
   scoped_refptr<ServerConnection> self(this);
-  if (enable_tls_) {
-    ssl_socket_->Handshake([this, self](
-      int result) {
-        if (closed_ || closing_) {
-          return;
-        }
-        if (result != net::OK) {
-          SetState(state_error);
-          OnDisconnect(asio::error::connection_refused);
-          return;
-        }
-        Start();
-    });
-  } else {
+  downlink_->handshake([this, self](asio::error_code ec) {
+    if (closed_ || closing_) {
+      return;
+    }
+    if (ec) {
+      SetState(state_error);
+      OnDisconnect(asio::error::connection_refused);
+      return;
+    }
     Start();
-  }
+  });
 }
 
 void ServerConnection::close() {
@@ -200,10 +195,8 @@ void ServerConnection::close() {
   closed_ = true;
   if (enable_tls_ && !shutdown_) {
     shutdown_ = true;
-    ssl_socket_->Disconnect();
-  } else {
-    socket_.close(ec);
   }
+  downlink_->close(ec);
   if (ec) {
     VLOG(1) << "close() error: " << ec;
   }
@@ -220,7 +213,7 @@ void ServerConnection::close() {
 void ServerConnection::Start() {
   bool http2 = absl::GetFlag(FLAGS_method).method == CRYPTO_HTTP2_PLAINTEXT;
   http2 |= absl::GetFlag(FLAGS_method).method == CRYPTO_HTTP2;
-  if (http2 && https_fallback_) {
+  if (http2 && downlink_->https_fallback()) {
     http2 = false;
   }
   if (http2) {
@@ -252,7 +245,7 @@ void ServerConnection::Start() {
 
     WriteUpstreamInPipe();
     OnUpstreamWriteFlush();
-  } else if (https_fallback_) {
+  } else if (downlink_->https_fallback()) {
     // TODO should we support it?
     // padding_support_ = absl::GetFlag(FLAGS_padding_support);
     ReadHandshakeViaHttps();
@@ -321,14 +314,7 @@ ServerConnection::OnHeaderForStream(StreamId stream_id,
 bool ServerConnection::OnEndHeadersForStream(
   http2::adapter::Http2StreamId stream_id) {
 
-  asio::error_code ec;
-  auto peer_endpoint = socket_.remote_endpoint(ec);
-  if (ec) {
-    // TODO Improve this case
-    // In Wine IPv6-enabled environment this call might fail without a reason.
-    LOG(WARNING) << "Connection (server) " << connection_id()
-      << " Failed to retrieve remote endpoint: " << ec;
-  }
+  auto peer_endpoint = peer_endpoint_;
   if (request_map_[":method"] != "CONNECT") {
     LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
       << " Unexpected method: " << request_map_[":method"];
@@ -524,7 +510,7 @@ bool ServerConnection::OnMetadataEndForStream(StreamId stream_id) {
 void ServerConnection::ReadHandshake() {
   scoped_refptr<ServerConnection> self(this);
 
-  s_async_read_some_([this, self](asio::error_code ec) {
+  downlink_->async_read_some([this, self](asio::error_code ec) {
       if (closed_ || closing_) {
         return;
       }
@@ -538,7 +524,7 @@ void ServerConnection::ReadHandshake() {
       std::shared_ptr<IOBuf> cipherbuf = IOBuf::create(SOCKET_DEBUF_SIZE);
       size_t bytes_transferred;
       do {
-        bytes_transferred = s_read_some_(cipherbuf, ec);
+        bytes_transferred = downlink_->read_some(cipherbuf, ec);
         if (ec == asio::error::interrupted) {
           continue;
         }
@@ -587,7 +573,7 @@ void ServerConnection::ReadHandshakeViaHttps() {
     return;
   }
 
-  s_async_read_some_([this, self](asio::error_code ec) {
+  downlink_->async_read_some([this, self](asio::error_code ec) {
     if (closed_ || closing_) {
       return;
     }
@@ -607,7 +593,7 @@ void ServerConnection::OnReadHandshakeViaHttps() {
   size_t bytes_transferred;
   std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_DEBUF_SIZE);
   do {
-    bytes_transferred = s_read_some_(buf, ec);
+    bytes_transferred = downlink_->read_some(buf, ec);
     if (ec == asio::error::interrupted) {
       continue;
     }
@@ -649,7 +635,7 @@ void ServerConnection::OnReadHandshakeViaHttps() {
       absl::flat_hash_map<std::string, std::string> via_headers;
       if (!absl::GetFlag(FLAGS_hide_ip)) {
         asio::error_code ec;
-        auto peer_endpoint = socket_.remote_endpoint(ec);
+        auto peer_endpoint = peer_endpoint_;
         if (ec) {
           LOG(WARNING) << "Failed to retrieve remote endpoint: " << ec;
         }
@@ -704,7 +690,7 @@ void ServerConnection::ReadStream(bool yield) {
     });
     return;
   }
-  s_async_read_some_([this, self](asio::error_code ec) {
+  downlink_->async_read_some([this, self](asio::error_code ec) {
     downstream_read_inprogress_ = false;
     if (closed_ || closing_) {
       return;
@@ -728,7 +714,7 @@ void ServerConnection::WriteStream() {
   }
   scoped_refptr<ServerConnection> self(this);
   write_inprogress_ = true;
-  s_async_write_some_([this, self](asio::error_code ec) {
+  downlink_->async_write_some([this, self](asio::error_code ec) {
       write_inprogress_ = false;
       if (closed_ || closing_) {
         return;
@@ -771,7 +757,7 @@ void ServerConnection::WriteStreamInPipe() {
     ec = asio::error_code();
     size_t written;
     do {
-      written = s_write_some_(buf, ec);
+      written = downlink_->write_some(buf, ec);
       if (ec == asio::error::interrupted) {
         continue;
       }
@@ -905,7 +891,7 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code &
       AddPadding(buf);
     }
     data_frame_->AddChunk(buf);
-  } else if (https_fallback_) {
+  } else if (downlink_->https_fallback()) {
     downstream_.push_back_merged(buf, &downstream_pool_);
   } else {
     EncryptData(&downstream_, buf);
@@ -1046,7 +1032,7 @@ try_again:
   }
   size_t read;
   do {
-    read = s_read_some_(buf, ec);
+    read = downlink_->read_some(buf, ec);
     if (ec == asio::error::interrupted) {
       continue;
     }
@@ -1086,7 +1072,7 @@ try_again:
     if (upstream_.byte_length() < H2_STREAM_WINDOW_SIZE) {
       goto try_again;
     }
-  } else if (https_fallback_) {
+  } else if (downlink_->https_fallback()) {
     upstream_.push_back_merged(buf, &upstream_pool_);
   } else {
     decoder_->process_bytes(buf);
@@ -1194,7 +1180,7 @@ void ServerConnection::ProcessSentData(asio::error_code ec,
 void ServerConnection::OnConnect() {
   scoped_refptr<ServerConnection> self(this);
   asio::error_code ec;
-  auto peer_endpoint = socket_.remote_endpoint(ec);
+  auto peer_endpoint = peer_endpoint_;
   // TODO improve access log
   LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
     << " connect " << remote_domain();
@@ -1250,7 +1236,7 @@ void ServerConnection::OnConnect() {
     if (submit_result != 0) {
       OnDisconnect(asio::error::connection_aborted);
     }
-  } else if (https_fallback_ && http_is_connect_) {
+  } else if (downlink_->https_fallback() && http_is_connect_) {
     std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(
         http_connect_reply_, sizeof(http_connect_reply_) - 1);
     OnDownstreamWrite(buf);
@@ -1282,7 +1268,7 @@ void ServerConnection::OnStreamWrite() {
       return;
     }
     scoped_refptr<ServerConnection> self(this);
-    s_async_shutdown_([this, self](asio::error_code ec) {
+    downlink_->async_shutdown([this, self](asio::error_code ec) {
       if (closed_ || closing_) {
         return;
       }
@@ -1416,7 +1402,7 @@ void ServerConnection::disconnected(asio::error_code ec) {
       return;
     }
     scoped_refptr<ServerConnection> self(this);
-    s_async_shutdown_([this, self](asio::error_code ec) {
+    downlink_->async_shutdown([this, self](asio::error_code ec) {
       if (closed_ || closing_) {
         return;
       }

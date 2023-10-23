@@ -141,6 +141,8 @@ set(quiche_SRCS
   src/quiche/binary_http/binary_http_message.h
   src/quiche/common/capsule.h
   src/quiche/common/capsule.cc
+  src/quiche/common/http/http_header_block.cc
+  src/quiche/common/http/http_header_storage.cc
   src/quiche/common/platform/api/quiche_bug_tracker.h
   src/quiche/common/platform/api/quiche_client_stats.h
   src/quiche/common/platform/api/quiche_containers.h
@@ -191,6 +193,7 @@ set(quiche_SRCS
   src/quiche/common/quiche_mem_slice_storage.h
   src/quiche/common/quiche_random.cc
   src/quiche/common/quiche_random.h
+  src/quiche/common/quiche_simple_arena.cc
   src/quiche/common/quiche_status_utils.h
   src/quiche/common/quiche_stream.h
   src/quiche/common/quiche_text_utils.cc
@@ -337,10 +340,6 @@ set(quiche_SRCS
   src/quiche/spdy/core/hpack/hpack_static_table.h
   src/quiche/spdy/core/http2_frame_decoder_adapter.cc
   src/quiche/spdy/core/http2_frame_decoder_adapter.h
-  src/quiche/spdy/core/http2_header_block.cc
-  src/quiche/spdy/core/http2_header_block.h
-  src/quiche/spdy/core/http2_header_storage.cc
-  src/quiche/spdy/core/http2_header_storage.h
   src/quiche/spdy/core/recording_headers_handler.cc
   src/quiche/spdy/core/recording_headers_handler.h
   src/quiche/spdy/core/spdy_alt_svc_wire_format.cc
@@ -360,8 +359,6 @@ set(quiche_SRCS
   src/quiche/spdy/core/spdy_prefixed_buffer_reader.h
   src/quiche/spdy/core/spdy_protocol.cc
   src/quiche/spdy/core/spdy_protocol.h
-  src/quiche/spdy/core/spdy_simple_arena.cc
-  src/quiche/spdy/core/spdy_simple_arena.h
   src/quiche/spdy/core/zero_copy_output_buffer.h
   src/quiche/web_transport/complete_buffer_visitor.cc
   src/quiche/web_transport/complete_buffer_visitor.h
@@ -780,6 +777,7 @@ set(quiche_quic_SOURCES
   src/quiche/quic/core/uber_quic_stream_id_manager.h
   src/quiche/quic/core/uber_received_packet_manager.cc
   src/quiche/quic/core/uber_received_packet_manager.h
+  src/quiche/quic/core/web_transport_stats.cc
   src/quiche/quic/core/web_transport_interface.h
   src/quiche/quic/platform/api/quic_bug_tracker.h
   src/quiche/quic/platform/api/quic_client_stats.h

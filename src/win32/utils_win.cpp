@@ -889,17 +889,17 @@ bool SetSystemProxy(bool enable,
   std::wstring wbypass_addr = SysUTF8ToWide(bypass_addr);
 
   std::vector<INTERNET_PER_CONN_OPTIONW> options;
-  options.resize(3);
+  options.resize(enable ? 3 : 1);
   options[0].dwOption = INTERNET_PER_CONN_FLAGS;
   if (enable) {
     options[0].Value.dwValue = PROXY_TYPE_PROXY | PROXY_TYPE_DIRECT;
+    options[1].dwOption = INTERNET_PER_CONN_PROXY_SERVER;
+    options[1].Value.pszValue = const_cast<wchar_t*>(wserver_addr.c_str());
+    options[2].dwOption = INTERNET_PER_CONN_PROXY_BYPASS;
+    options[2].Value.pszValue = const_cast<wchar_t*>(wbypass_addr.c_str());
   } else {
     options[0].Value.dwValue = PROXY_TYPE_DIRECT;
   }
-  options[1].dwOption = INTERNET_PER_CONN_PROXY_SERVER;
-  options[1].Value.pszValue = const_cast<wchar_t*>(wserver_addr.c_str());
-  options[2].dwOption = INTERNET_PER_CONN_PROXY_BYPASS;
-  options[2].Value.pszValue = const_cast<wchar_t*>(wbypass_addr.c_str());
 
   INTERNET_PER_CONN_OPTION_LISTW option_list;
   option_list.dwSize = sizeof(option_list);
@@ -909,6 +909,9 @@ bool SetSystemProxy(bool enable,
   option_list.pOptions = &options[0];
 
   std::string conn_name = SysWideToUTF8(wconn_name);
+  if (conn_name.empty()) {
+    conn_name = "(empty)";
+  }
   if (!::InternetSetOptionW(nullptr, INTERNET_OPTION_PER_CONNECTION_OPTION,
                             &option_list, sizeof(option_list))) {
     PLOG(WARNING)<< "Failed to set system proxy"

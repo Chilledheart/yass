@@ -108,8 +108,8 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
   void start() override {
     // FIXME check out why testcases fail with nonblocking mode
     asio::error_code ec;
-    socket_.native_non_blocking(false, ec);
-    socket_.non_blocking(false, ec);
+    downlink_->socket_.native_non_blocking(false, ec);
+    downlink_->socket_.non_blocking(false, ec);
     do_io();
   }
 
@@ -117,7 +117,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
     VLOG(1) << "Connection (content-provider) " << connection_id()
             << " disconnected";
     asio::error_code ec;
-    socket_.close(ec);
+    downlink_->socket_.close(ec);
     auto cb = std::move(disconnect_cb_);
     disconnect_cb_ = nullptr;
     if (cb) {
@@ -134,7 +134,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
     scoped_refptr<ContentProviderConnection> self(this);
     g_in_provider_mutex.lock();
 
-    asio::async_write(socket_, const_buffer(g_send_buffer),
+    asio::async_write(downlink_->socket_, const_buffer(g_send_buffer),
       [this, self](asio::error_code ec, size_t bytes_transferred) {
         if (ec.value() == asio::error::bad_descriptor || ec.value() == asio::error::operation_aborted) {
           goto done;
@@ -151,7 +151,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
         shutdown(ec);
     });
 
-    asio::async_read(socket_, mutable_buffer(*g_recv_buffer),
+    asio::async_read(downlink_->socket_, mutable_buffer(*g_recv_buffer),
       [this, self](asio::error_code ec, size_t bytes_transferred) {
         if (ec.value() == asio::error::bad_descriptor || ec.value() == asio::error::operation_aborted) {
           goto done;

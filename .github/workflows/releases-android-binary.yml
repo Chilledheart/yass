@@ -30,7 +30,7 @@ on:
   release:
     types: [published]
 env:
-  CACHE_EPOCH: 118
+  CACHE_EPOCH: 119
   GOPROXY: direct
 jobs:
   linux-binary-release:
@@ -52,7 +52,7 @@ jobs:
       SDK_ROOT: ${{ github.workspace }}/third_party/android_toolchain
       SYSROOT: ${{ github.workspace }}/android-sysroot-${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Checkout with shallow submodules
         run: |
           # unshallow must come first otherwise submodule may be get unshallowed
@@ -107,7 +107,7 @@ jobs:
         if: ${{ steps.ndk-cache.outputs.cache-hit != 'true' }}
         run: |
           ./scripts/install-sysroot-android.py
-          wget http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-static_8.1.1+ds-1_amd64.deb
+          wget http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-static_8.1.2+ds-1_amd64.deb
       - name: Change ubuntu mirror
         run: |
           sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list

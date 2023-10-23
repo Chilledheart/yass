@@ -16,7 +16,7 @@ on:
         required: false
         type: boolean
 env:
-  CACHE_EPOCH: 118
+  CACHE_EPOCH: 119
   GOPROXY: direct
 jobs:
   sanitizer-linux:
@@ -36,7 +36,7 @@ jobs:
             cmake_options: -DMSAN=on -DUSE_CURL=off
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Checkout with shallow submodules
         run: |
           # unshallow must come first otherwise submodule may be get unshallowed

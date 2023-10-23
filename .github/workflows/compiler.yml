@@ -28,7 +28,7 @@ on:
     - '.circleci/**'
     - '.cirrus.yml'
 env:
-  CACHE_EPOCH: 118
+  CACHE_EPOCH: 119
   GOPROXY: direct
 jobs:
   win-compiler-compatible-2022:
@@ -45,7 +45,7 @@ jobs:
       run:
         shell: cmd
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Checkout with shallow submodules
         run: |
           # unshallow must come first otherwise submodule may be get unshallowed
@@ -133,7 +133,7 @@ jobs:
         build_type: [Debug, Release]
         variant: [standard]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Checkout with shallow submodules
         run: |
           # unshallow must come first otherwise submodule may be get unshallowed
@@ -304,19 +304,19 @@ jobs:
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Checkout with shallow submodules
         run: |
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache clang (v13.0)
-        id: clang13-cache
+      - name: Cache clang (v15.0.6)
+        id: clang15-cache
         uses: actions/cache@v3
         with:
           path: |
-            third_party/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04
-          key: ${{ runner.os }}-toolchain-clang13-v${{ env.CACHE_EPOCH }}
+            third_party/clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04
+          key: ${{ runner.os }}-toolchain-clang15-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
         uses: actions/cache@v3
         with:
@@ -334,13 +334,13 @@ jobs:
         run: |
           sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
           sudo apt-get update -qq
-      - name: "Install dependency: clang 13"
-        if: ${{ steps.clang13-cache.outputs.cache-hit != 'true' }}
+      - name: "Install dependency: clang 15"
+        if: ${{ steps.clang15-cache.outputs.cache-hit != 'true' }}
         run: |
-          curl -L -O https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz
-          tar -C third_party -xvf clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz \
-            clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04/lib/clang/13.0.1/include \
-            clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04/bin/{clang,clang++,clang-13,ld.lld,lld,llvm-ar,llvm-ranlib}
+          curl -L -O https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.6/clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04.tar.xz
+          tar -C third_party -xvf clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04.tar.xz \
+            clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04/lib/clang/15.0.6/include \
+            clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04/bin/{clang,clang++,clang-15,ld.lld,lld,llvm-ar,llvm-ranlib}
           rm -f *.xz
       - name: Populate depedencies
         run: |
@@ -353,8 +353,8 @@ jobs:
       - name: Set build options
         run: |
           if [ "${{ matrix.compiler }}" = "clang" ]; then
-            echo "CC=${{ github.workspace }}/third_party/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04/bin/clang" >> $GITHUB_ENV
-            echo "CXX=${{ github.workspace }}/third_party/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04/bin/clang++" >> $GITHUB_ENV
+            echo "CC=${{ github.workspace }}/third_party/clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04/bin/clang" >> $GITHUB_ENV
+            echo "CXX=${{ github.workspace }}/third_party/clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04/bin/clang++" >> $GITHUB_ENV
           fi
           if [ "${{ matrix.cxxruntime }}" = "libc++" ]; then
             echo build_opts="${{ env.build_opts }} -use-libcxx=1" >> $GITHUB_ENV
@@ -380,13 +380,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-12]
+        os: [macos-13]
         build_type: [Debug, Release]
     runs-on: ${{ matrix.os }}
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Checkout with shallow submodules
         run: |
           # unshallow must come first otherwise submodule may be get unshallowed
@@ -417,11 +417,11 @@ jobs:
         if: ${{ matrix.os == 'macos-12' }}
         run: |
           sudo xcode-select -s /Applications/Xcode_14.2.app
-      - name: Set up Xcode to 14.3.1 (macos 13)
+      - name: Set up Xcode to 15 (macos 13)
         if: ${{ matrix.os == 'macos-13' }}
         run: |
           # ignore buggy apple clang 13 from Xcode 13
-          sudo xcode-select -s /Applications/Xcode_14.3.1.app
+          sudo xcode-select -s /Applications/Xcode_15.0.app
       - name: Build
         run: |
           ./tools/build -no-packaging -macosx-universal-build=false -build-test

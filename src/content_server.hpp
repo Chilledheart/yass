@@ -141,6 +141,31 @@ class ContentServer {
   }
 
   // Allow called from different threads
+  void shutdown() {
+    asio::post(io_context_, [this]() {
+      for (int i = 0; i < next_listen_ctx_; ++i) {
+        ListenCtx& ctx = listen_ctxs_[i];
+        if (ctx.acceptor) {
+          asio::error_code ec;
+          ctx.acceptor->close(ec);
+          ctx.acceptor.reset();
+          if (ec) {
+            LOG(WARNING) << "Connections (" << factory_.Name() << ")"
+                         << " acceptor (" << ctx.endpoint << ") close failed: " << ec;
+          }
+        }
+      }
+      if (connection_map_.empty()) {
+        LOG(WARNING) << "No more connections alive... ready to stop";
+        work_guard_.reset();
+        in_shutdown_ = false;
+      } else {
+        LOG(WARNING) << "Waiting for remaining connects: " << connection_map_.size();
+        in_shutdown_ = true;
+      }
+    });
+  }
+  // Allow called from different threads
   void stop() {
     asio::post(io_context_, [this]() {
       for (int i = 0; i < next_listen_ctx_; ++i) {
@@ -258,6 +283,16 @@ class ContentServer {
     }
     if (delegate_) {
       delegate_->OnDisconnect(connection_id);
+    }
+    // reset guard to quit io loop if in shutdown
+    if (in_shutdown_) {
+      if (connection_map_.empty()) {
+        LOG(WARNING) << "No more connections alive... ready to stop";
+        work_guard_.reset();
+        in_shutdown_ = false;
+      } else {
+        LOG(WARNING) << "Waiting for remaining connects: " << connection_map_.size();
+      }
     }
   }
 
@@ -537,6 +572,7 @@ class ContentServer {
   };
   std::array<ListenCtx, MAX_LISTEN_ADDRESSES> listen_ctxs_;
   int next_listen_ctx_ = 0;
+  bool in_shutdown_ = false;
 
   absl::flat_hash_map<int, scoped_refptr<ConnectionType>> connection_map_;
 

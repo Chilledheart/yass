@@ -12,12 +12,12 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
   set(COMPILER_APPLE_CLANG TRUE)
 endif()
 
-if (COMPILER_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13.0)
-  message(FATAL_ERROR "Requires Clang 13.0 or newer to compile libc++ from source")
+if (COMPILER_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15.0)
+  message(FATAL_ERROR "Requires Clang 15.0 or newer to compile libc++ from source")
 endif()
 
-if (COMPILER_APPLE_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14.0)
-  message(FATAL_ERROR "Requires Apple Clang 14.0 or newer to compile libc++ from source")
+if (COMPILER_APPLE_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15.0)
+  message(FATAL_ERROR "Requires Apple Clang 15.0 or newer to compile libc++ from source")
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -26,8 +26,8 @@ else()
   set(COMPILER_GCC FALSE)
 endif()
 
-if (COMPILER_GCC AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0)
-  message(FATAL_ERROR "Requires gcc 12.0 or newer to compile libc++ from source")
+if (COMPILER_GCC AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13.0)
+  message(FATAL_ERROR "Requires gcc 13.0 or newer to compile libc++ from source")
 endif()
 
 # This is included by reference in the //build/config/compiler:runtime_library
@@ -104,9 +104,11 @@ set(libcxx_PUBLIC_DEFINITIONS
 #
 # TODO(https://crbug.com/702997): Move this back to the `runtime_library`
 # config when NaCl is removed.
-set(libcxx_PUBLIC_DEFINITIONS
-  ${libcxx_PUBLIC_DEFINITIONS}
-  "_LIBCPP_ENABLE_ASSERTIONS=1")
+if (NOT ${CMAKE_BUILD_TYPE} MATCHES Debug)
+ set(libcxx_PUBLIC_DEFINITIONS
+   ${libcxx_PUBLIC_DEFINITIONS}
+   "_LIBCPP_ENABLE_SAFE_MODE=1")
+endif()
 
 if (USE_MUSL)
   set(libcxx_PUBLIC_DEFINITIONS
@@ -199,7 +201,7 @@ set(libcxx_SOURCES
   trunk/src/chrono.cpp
   trunk/src/condition_variable.cpp
   trunk/src/condition_variable_destructor.cpp
-  trunk/src/debug.cpp
+  trunk/src/error_category.cpp
   trunk/src/legacy_debug_handler.cpp
   trunk/src/exception.cpp
   trunk/src/functional.cpp
@@ -234,6 +236,7 @@ set(libcxx_SOURCES
   trunk/src/verbose_abort.cpp
 )
 
+# TODO move to base
 if (NOT WIN32 OR NOT ALLOW_XP)
   set(libcxx_SOURCES
     ${libcxx_SOURCES}

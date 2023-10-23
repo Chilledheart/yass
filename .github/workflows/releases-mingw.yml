@@ -30,7 +30,7 @@ on:
   release:
     types: [published]
 env:
-  CACHE_EPOCH: 118
+  CACHE_EPOCH: 119
   GOPROXY: direct
 jobs:
   mingw64-release:
@@ -45,7 +45,7 @@ jobs:
       run:
         shell: cmd
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Checkout with shallow submodules
         run: |
           # unshallow must come first otherwise submodule may be get unshallowed
