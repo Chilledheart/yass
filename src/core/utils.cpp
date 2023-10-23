@@ -24,7 +24,7 @@ absl::StatusOr<int32_t> StringToInteger(absl::string_view value) {
     return absl::InvalidArgumentError("overflow");
   } else if (result < INT_MIN || (errno == ERANGE && result == LONG_MIN)) {
     return absl::InvalidArgumentError("underflow");
-  } else if (*endptr != '\0') {
+  } else if (endptr > value.end()) {
     return absl::InvalidArgumentError("bad integer");
   }
   return static_cast<int32_t>(result);

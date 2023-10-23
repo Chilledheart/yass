@@ -173,6 +173,7 @@ set(quiche_SRCS
   src/quiche/common/platform/default/quiche_platform_impl/quiche_prefetch_impl.h
   #src/quiche/common/platform/default/quiche_platform_impl/quiche_default_proof_providers_impl.h
   #src/quiche/common/platform/default/quiche_platform_impl/quiche_default_proof_providers_impl.cc
+  src/quiche/common/platform/default/quiche_platform_impl/quiche_lower_case_string_impl.h
   src/quiche/common/print_elements.h
   src/quiche/common/quiche_buffer_allocator.cc
   src/quiche/common/quiche_buffer_allocator.h
@@ -888,4 +889,39 @@ elseif (COMPILER_GCC)
 elseif (COMPILER_MSVC)
   set_target_properties(quiche PROPERTIES
     COMPILE_FLAGS "/wd4267 /wd4244 /wd4068 /wd4305 /wd4309 /wd4334 /DQUIC_FRAME_DEBUG=0")
+endif()
+
+if (USE_BALSA_HTTP_PARSER)
+  add_library(balsa STATIC
+    src/quiche/balsa/balsa_enums.h
+    src/quiche/balsa/balsa_frame.h
+    src/quiche/balsa/balsa_headers.h
+    src/quiche/balsa/balsa_headers_sequence.h
+    src/quiche/balsa/balsa_visitor_interface.h
+    src/quiche/balsa/framer_interface.h
+    src/quiche/balsa/header_api.h
+    src/quiche/balsa/header_properties.h
+    src/quiche/balsa/http_validation_policy.h
+    src/quiche/balsa/noop_balsa_visitor.h
+    src/quiche/balsa/simple_buffer.h
+    src/quiche/balsa/standard_header_map.h
+    src/quiche/balsa/balsa_enums.cc
+    src/quiche/balsa/balsa_frame.cc
+    src/quiche/balsa/balsa_headers.cc
+    src/quiche/balsa/balsa_headers_sequence.cc
+    src/quiche/balsa/header_properties.cc
+    src/quiche/balsa/simple_buffer.cc
+    src/quiche/balsa/standard_header_map.cc
+    )
+
+  target_include_directories(balsa PUBLIC
+    src
+    )
+
+  target_link_libraries(balsa PUBLIC
+    quiche
+    absl::flat_hash_map
+    absl::flat_hash_set
+    absl::memory
+    absl::strings)
 endif()
