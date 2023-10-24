@@ -258,7 +258,10 @@ void HttpRequestParser::ProcessHeaders(const quiche::BalsaHeaders& headers) {
     absl::string_view key = key_value.first;
     absl::string_view value = key_value.second;
     http_headers_[std::string(key)] = std::string(value);
-    LOG(WARNING) << key << "=" << value;
+    if (key == "Cookie") {
+      value = "(masked)";
+    }
+    VLOG(2) << "HTTP Request Header: " << key << "=" << value;
 
     if (key == "Host" && !http_is_connect_) {
       std::string authority = std::string(value);
