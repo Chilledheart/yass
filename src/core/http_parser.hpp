@@ -9,15 +9,15 @@
 #include "core/iobuf.hpp"
 
 #ifdef HAVE_BALSA_HTTP_PARSER
-#if defined(__clang__)
-#pragma GCC diagnostic ignored "-Wdeprecated"
+#if defined(__clang__) || defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif  // defined(__clang__)
 #include <absl/base/attributes.h>
 #include <quiche/balsa/balsa_enums.h>
 #include <quiche/balsa/balsa_frame.h>
 #include <quiche/balsa/balsa_headers.h>
 #include <quiche/balsa/balsa_visitor_interface.h>
-#if defined(__clang__)
+#if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif  // defined(__clang__)
 #else

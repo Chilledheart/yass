@@ -207,10 +207,30 @@ endif()
 if (MSVC)
   message(STATUS "Build with MSVC target architecture: ${MSVC_PROCESSOR_ARCHITECTURE}")
   message(STATUS "Build with MSVC ${MSVC_CRT_LINKAGE} CRT library")
+  if (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "x86")
+    set(OS_X86 TRUE)
+  endif()
 elseif(APPLE)
   message(STATUS "Build with target architecture: ${CMAKE_OSX_ARCHITECTURES}")
 else()
   message(STATUS "Build with target architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+  if (NOT CMAKE_CROSSCOMPILING AND
+      (CMAKE_SYSTEM_PROCESSOR STREQUAL "i386" OR
+       CMAKE_SYSTEM_PROCESSOR STREQUAL "i486" OR
+       CMAKE_SYSTEM_PROCESSOR STREQUAL "i586" OR
+       CMAKE_SYSTEM_PROCESSOR STREQUAL "i686"))
+    set(OS_X86 TRUE)
+  endif()
+  if (CMAKE_CROSSCOMPILING AND
+      (CMAKE_C_COMPILER_TARGET MATCHES "^i386-.*" OR
+       CMAKE_C_COMPILER_TARGET MATCHES "^i486-.*" OR
+       CMAKE_C_COMPILER_TARGET MATCHES "^i586-.*" OR
+       CMAKE_C_COMPILER_TARGET MATCHES "^i686-.*"))
+    set(OS_X86 TRUE)
+  endif()
+  if (MINGW AND CMAKE_SIZEOF_VOID_P EQUAL 4)
+    set(OS_X86 TRUE)
+  endif()
 endif()
 
 ## postpone ASM enabling after C/CXX LANG DIALECT otherwise it might fails
@@ -1997,6 +2017,10 @@ elseif (USE_MBEDTLS)
   set(MBEDTLS_FATAL_WARNINGS OFF CACHE BOOL "")
   set(DISABLE_PACKAGE_CONFIG_AND_INSTALL ON CACHE BOOL "")
   set(INSTALL_MBEDTLS_HEADERS OFF CACHE BOOL "")
+  if (OS_X86)
+    message(STATUS "Compiling with mbedtls aesni support (x86)")
+    set(ENABLE_AESNI_C_X86 ON CACHE BOOL "")
+  endif()
 
   add_subdirectory(third_party/mbedtls)
   add_definitions(-DHAVE_MBEDTLS)
@@ -2408,6 +2432,7 @@ elseif (USE_NGHTTP2)
   set(ENABLE_SHARED_LIB OFF CACHE BOOL "")
   set(ENABLE_STATIC_LIB ON CACHE BOOL "")
   set(ENABLE_DOC OFF CACHE BOOL "")
+  set(DISABLE_INSTALL ON CACHE BOOL "")
   include_directories(third_party/nghttp2/lib/includes SYSTEM)
   include_directories(${CMAKE_CURRENT_BINARY_DIR}/third_party/nghttp2/lib/includes SYSTEM)
   add_subdirectory(third_party/nghttp2)
