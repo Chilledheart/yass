@@ -40,6 +40,7 @@ ifneq ($(filter clang,$(DEB_BUILD_PROFILES)),)
 override_dh_auto_configure: ASMFLAGS += -target ${DEB_HOST_GNU_TYPE} -ccc-gcc-name ${DEB_HOST_GNU_TYPE}-gcc
 override_dh_auto_configure: CFLAGS += -target ${DEB_HOST_GNU_TYPE} -ccc-gcc-name ${DEB_HOST_GNU_TYPE}-gcc
 override_dh_auto_configure: CXXFLAGS += -target ${DEB_HOST_GNU_TYPE} -ccc-gcc-name ${DEB_HOST_GNU_TYPE}-g++
+CMAKE_OPTIONS += -DCMAKE_C_COMPILER_TARGET=${DEB_HOST_GNU_TYPE} -DCMAKE_CXX_COMPILER_TARGET=${DEB_HOST_GNU_TYPE} -DCMAKE_ASM_COMPILER_TARGET=${DEB_HOST_GNU_TYPE}
 ifneq ($(filter riscv64,$(DEB_HOST_GNU_CPU)),)
 # According to the ISA spec definition rv64gc is rv64imafdc_zicsr_zifencei and
 # rv64imafdc is rv64imafdc_zicsr, see https://github.com/riscv-collab/riscv-gcc/issues/344
