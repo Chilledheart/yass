@@ -108,9 +108,9 @@ jobs:
           set MINGWDIR=mingw32
           set GCC_VER=7.5.0
           if "${{ matrix.arch }}"=="x86_64" set MINGWDIR=mingw64
-          set "CFLAGS=-target ${{ matrix.arch }}-pc-windows-gnu --sysroot %CD%\third_party\%MINGWDIR%\${{ matrix.arch }}-w64-mingw32 -I %CD%\third_party\%MINGWDIR%\lib\gcc\${{ matrix.arch }}-w64-mingw32\%GCC_VER%\include"
-          set "CXXFLAGS=-target ${{ matrix.arch }}-pc-windows-gnu --sysroot %CD%\third_party\%MINGWDIR%\${{ matrix.arch }}-w64-mingw32 -I %CD%\third_party\%MINGWDIR%\lib\gcc\${{ matrix.arch }}-w64-mingw32\%GCC_VER%\include"
-          set "LDFLAGS=-target ${{ matrix.arch }}-pc-windows-gnu --sysroot %CD%\third_party\%MINGWDIR%\${{ matrix.arch }}-w64-mingw32 -Wl,-L%CD%\third_party\%MINGWDIR%\lib -Wl,-L%CD%\third_party\%MINGWDIR%\lib\gcc\${{ matrix.arch }}-w64-mingw32\%GCC_VER%"
+          set "CFLAGS=--sysroot %CD%\third_party\%MINGWDIR%\${{ matrix.arch }}-w64-mingw32 -I %CD%\third_party\%MINGWDIR%\lib\gcc\${{ matrix.arch }}-w64-mingw32\%GCC_VER%\include"
+          set "CXXFLAGS=--sysroot %CD%\third_party\%MINGWDIR%\${{ matrix.arch }}-w64-mingw32 -I %CD%\third_party\%MINGWDIR%\lib\gcc\${{ matrix.arch }}-w64-mingw32\%GCC_VER%\include"
+          set "LDFLAGS=--sysroot %CD%\third_party\%MINGWDIR%\${{ matrix.arch }}-w64-mingw32 -Wl,-L%CD%\third_party\%MINGWDIR%\lib -Wl,-L%CD%\third_party\%MINGWDIR%\lib\gcc\${{ matrix.arch }}-w64-mingw32\%GCC_VER%"
           set "Path=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;%Path%"
           set "Path=%CD%\third_party\%MINGWDIR%\bin;%Path%"
           set "Path=%CD%\third_party\nasm;%Path%"
@@ -125,7 +125,7 @@ jobs:
           REM start to build with workaround
           mkdir build-mingw
           cd build-mingw
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DMINGW_WORKAROUND=on .. ${{ env.CMAKE_OPTIONS }}
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DMINGW_WORKAROUND=on .. ${{ env.CMAKE_OPTIONS }} -DCMAKE_C_COMPILER_TARGET=${{ matrix.arch }}-pc-windows-gnu -DCMAKE_CXX_COMPILER_TARGET=${{ matrix.arch }}-pc-windows-gnu -DCMAKE_ASM_COMPILER_TARGET=${{ matrix.arch }}-pc-windows-gnu
           ninja yass yass_benchmark yass_test
       - name: Packaging
         shell: bash

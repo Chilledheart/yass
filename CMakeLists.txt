@@ -207,10 +207,30 @@ endif()
 if (MSVC)
   message(STATUS "Build with MSVC target architecture: ${MSVC_PROCESSOR_ARCHITECTURE}")
   message(STATUS "Build with MSVC ${MSVC_CRT_LINKAGE} CRT library")
+  if (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "x86")
+    set(OS_X86 TRUE)
+  endif()
 elseif(APPLE)
   message(STATUS "Build with target architecture: ${CMAKE_OSX_ARCHITECTURES}")
 else()
   message(STATUS "Build with target architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+  if (NOT CMAKE_CROSSCOMPILING AND
+      (CMAKE_SYSTEM_PROCESSOR STREQUAL "i386" OR
+       CMAKE_SYSTEM_PROCESSOR STREQUAL "i486" OR
+       CMAKE_SYSTEM_PROCESSOR STREQUAL "i586" OR
+       CMAKE_SYSTEM_PROCESSOR STREQUAL "i686"))
+    set(OS_X86 TRUE)
+  endif()
+  if (CMAKE_CROSSCOMPILING AND
+      (CMAKE_C_COMPILER_TARGET MATCHES "^i386-.*" OR
+       CMAKE_C_COMPILER_TARGET MATCHES "^i486-.*" OR
+       CMAKE_C_COMPILER_TARGET MATCHES "^i586-.*" OR
+       CMAKE_C_COMPILER_TARGET MATCHES "^i686-.*"))
+    set(OS_X86 TRUE)
+  endif()
+  if (MINGW AND CMAKE_SIZEOF_VOID_P EQUAL 4)
+    set(OS_X86 TRUE)
+  endif()
 endif()
 
 ## postpone ASM enabling after C/CXX LANG DIALECT otherwise it might fails
@@ -240,6 +260,7 @@ option(USE_CARES "Build with c-ares" ON)
 option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
 option(USE_BUILTIN_CA_BUNDLE_CRT "Build with embedded ca-bundle.crt support" ON)
 option(USE_MBEDTLS "Build with mbedtls support" ON)
+option(USE_BALSA_HTTP_PARSER "Build with balsa http parser" ON)
 
 option(ENABLE_LTO "Enable build with LTO" ON)
 option(ENABLE_LLD "Enable build with LLD" ON)
@@ -1996,6 +2017,10 @@ elseif (USE_MBEDTLS)
   set(MBEDTLS_FATAL_WARNINGS OFF CACHE BOOL "")
   set(DISABLE_PACKAGE_CONFIG_AND_INSTALL ON CACHE BOOL "")
   set(INSTALL_MBEDTLS_HEADERS OFF CACHE BOOL "")
+  if (OS_X86)
+    message(STATUS "Compiling with mbedtls aesni support (x86)")
+    set(ENABLE_AESNI_C_X86 ON CACHE BOOL "")
+  endif()
 
   add_subdirectory(third_party/mbedtls)
   add_definitions(-DHAVE_MBEDTLS)
@@ -2407,6 +2432,7 @@ elseif (USE_NGHTTP2)
   set(ENABLE_SHARED_LIB OFF CACHE BOOL "")
   set(ENABLE_STATIC_LIB ON CACHE BOOL "")
   set(ENABLE_DOC OFF CACHE BOOL "")
+  set(DISABLE_INSTALL ON CACHE BOOL "")
   include_directories(third_party/nghttp2/lib/includes SYSTEM)
   include_directories(${CMAKE_CURRENT_BINARY_DIR}/third_party/nghttp2/lib/includes SYSTEM)
   add_subdirectory(third_party/nghttp2)
@@ -2439,6 +2465,7 @@ include_directories(
   third_party/googleurl/polyfills
   third_party/quiche/overrides
   third_party/quiche/src
+  third_party/quiche/src/quiche/common/platform/default
   SYSTEM)
 set(SUPPORT_LIBS url quiche ${SUPPORT_LIBS})
 
@@ -2446,7 +2473,7 @@ set(SUPPORT_LIBS url quiche ${SUPPORT_LIBS})
 #           http-parser Library
 # *****************************************************************************************
 
-if (USE_SYSTEM_HTTP_PARSER)
+if (USE_SYSTEM_HTTP_PARSER AND NOT USE_BALSA_HTTP_PARSER)
   check_library_exists(http_parser http_parser_init "" HAVE_HTTP_PARSER_INIT)
   if (NOT HAVE_HTTP_PARSER_INIT)
     message(STATUS "System http_parser not found, using bundled one")
@@ -2454,10 +2481,10 @@ if (USE_SYSTEM_HTTP_PARSER)
   endif()
 endif()
 
-if (USE_SYSTEM_HTTP_PARSER)
+if (USE_SYSTEM_HTTP_PARSER AND NOT USE_BALSA_HTTP_PARSER)
   message(STATUS "Compiling with system http-parser")
   set(SUPPORT_LIBS http_parser ${SUPPORT_LIBS})
-else()
+elseif(NOT USE_BALSA_HTTP_PARSER)
   message(STATUS "Compiling with bundled http-parser")
   add_library(http_parser STATIC
     third_party/http_parser/http_parser.h
@@ -2465,6 +2492,12 @@ else()
     )
   include_directories(third_party/http_parser SYSTEM)
   set(SUPPORT_LIBS http_parser ${SUPPORT_LIBS})
+endif()
+
+if (USE_BALSA_HTTP_PARSER)
+  message(STATUS "Compiling with balsa http parser")
+  add_definitions(-DHAVE_BALSA_HTTP_PARSER)
+  set(SUPPORT_LIBS balsa ${SUPPORT_LIBS})
 endif()
 
 # *****************************************************************************************
@@ -3430,7 +3463,6 @@ if(NOT CMAKE_SKIP_INSTALL_RULES AND GUI)
   file(READ third_party/asio/asio/LICENSE_1_0.txt           _ASIO_LICENSE)
   file(READ third_party/boringssl/src/LICENSE               _BORINGSSL_LICENSE)
   file(READ third_party/googleurl/LICENSE                   _GOOGLEURL_LICENSE)
-  file(READ third_party/http_parser/LICENSE                 _HTTP_PARSER_LICENSE)
   file(READ third_party/icu/LICENSE                         _ICU_LICENSE)
   file(READ third_party/json/LICENSE.MIT                    _JSON_LICENSE)
   file(READ third_party/libc++/trunk/LICENSE.TXT            _LIBCXX_LICENSE)
