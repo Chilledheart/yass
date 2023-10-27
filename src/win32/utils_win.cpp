@@ -17,6 +17,7 @@
 
 #define DEFAULT_AUTOSTART_KEY \
   L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"
+static constexpr size_t kRegReadMaximumSize = 1024 * 1024;
 
 #ifdef COMPILER_MSVC
 #include <Tchar.h>
@@ -438,7 +439,50 @@ int GetUserDefaultLocaleName(LPWSTR lpLocaleName, int cchLocaleName) {
 }
 #endif
 
+class ScopedHKEY {
+ public:
+   explicit ScopedHKEY(HKEY hkey) : hkey_(hkey) {}
+   ~ScopedHKEY() {
+     if (hkey_) {
+       ::RegCloseKey(hkey_);
+     }
+   }
+
+ private:
+   HKEY hkey_;
+};
+
 }  // namespace
+
+static bool OpenKey(HKEY *hkey, bool isWrite) {
+  DWORD disposition;
+  const wchar_t* subkey = DEFAULT_AUTOSTART_KEY;
+  REGSAM samDesired = (isWrite ? KEY_SET_VALUE : KEY_QUERY_VALUE);
+
+  // Creates the specified registry key. If the key already exists, the
+  // function opens it. Note that key names are not case sensitive.
+  if (::RegCreateKeyExW(
+      HKEY_CURRENT_USER /* HKEY */, subkey /* lpSubKey */, 0 /* Reserved */,
+      nullptr /*lpClass*/, REG_OPTION_NON_VOLATILE /* dwOptions */,
+      samDesired /* samDesired */, nullptr /* lpSecurityAttributes */,
+      hkey /* phkResult */,
+      &disposition /* lpdwDisposition */) == ERROR_SUCCESS) {
+    if (disposition == REG_CREATED_NEW_KEY) {
+    } else if (disposition == REG_OPENED_EXISTING_KEY) {
+    }
+    return true;
+  }
+  return false;
+}
+
+static bool OpenReadableKey(HKEY *hkey) {
+  return OpenKey(hkey, false);
+}
+
+static bool OpenWritableKey(HKEY *hkey) {
+  return OpenKey(hkey, true);
+}
+
 
 // https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows
 // https://docs.microsoft.com/en-us/windows/win32/hidpi/setting-the-default-dpi-awareness-for-a-process
@@ -665,98 +709,140 @@ bool Utils::GetUserDefaultLocaleName(std::wstring* localeName) {
   return true;
 }
 
-namespace {
-LONG get_win_run_key(HKEY* pKey) {
-  const wchar_t* key_run = DEFAULT_AUTOSTART_KEY;
-  LONG result =
-      RegOpenKeyExW(HKEY_CURRENT_USER, key_run, 0L, KEY_WRITE | KEY_READ, pKey);
+static int add_to_auto_start(const wchar_t* appname_w, const std::wstring& cmdline) {
+  HKEY hkey;
 
-  return result;
-}
-
-int add_to_auto_start(const wchar_t* appname_w, const std::wstring& cmdline) {
-  HKEY hKey;
-  LONG result = get_win_run_key(&hKey);
-  if (result != ERROR_SUCCESS) {
+  if (!OpenWritableKey(&hkey)) {
     return -1;
   }
+  ScopedHKEY hk(hkey);
 
+  // For string-based types, such as REG_SZ, the string must be null-terminated.
+  // If the data is of type REG_SZ, REG_EXPAND_SZ, or REG_MULTI_SZ,
+  // cbData must include the size of the terminating null character or characters.
   DWORD n = sizeof(wchar_t) * (cmdline.size() + 1);
+  LSTATUS result = ::RegSetValueExW(hkey      /* HKEY */,
+                                    appname_w /* lpValueName */,
+                                    0         /* Reserved */,
+                                    REG_SZ    /* dwType */,
+                                    reinterpret_cast<const BYTE*>(cmdline.c_str()) /* lpData */,
+                                    n         /* cbData */);
 
-  result = RegSetValueExW(hKey, appname_w, 0, REG_SZ,
-                          reinterpret_cast<const BYTE*>(cmdline.c_str()), n);
-
-  RegCloseKey(hKey);
   if (result != ERROR_SUCCESS) {
     return -1;
   }
+
+  VLOG(1) << "[autostart] written autostart entry: " << SysWideToUTF8(cmdline);
 
   return 0;
 }
 
-int delete_from_auto_start(const wchar_t* appname) {
-  HKEY hKey;
-  LONG result = get_win_run_key(&hKey);
+static int delete_from_auto_start(const wchar_t* appname) {
+  HKEY hkey;
+
+  if (!OpenWritableKey(&hkey)) {
+    return -1;
+  }
+  ScopedHKEY hk(hkey);
+
+  LSTATUS result = ::RegDeleteValueW(hkey /* HKEY */, appname /* lpValueName */);
+
   if (result != ERROR_SUCCESS) {
     return -1;
   }
 
-  result = RegDeleteValueW(hKey, appname);
-  RegCloseKey(hKey);
-  if (result != ERROR_SUCCESS) {
-    return -1;
-  }
+  VLOG(1) << "[autostart] removed autostart entry";
 
   return 0;
 }
 
-int get_yass_auto_start() {
-  HKEY hKey;
-  LONG result = get_win_run_key(&hKey);
-  if (result != ERROR_SUCCESS) {
-    return -1;
+static std::wstring GetAutoStartCmdline() {
+  std::wostringstream ss;
+  std::wstring cmdline;
+
+  /* turn on auto start  */
+  if (!GetExecutablePathW(&cmdline)) {
+    LOG(FATAL) << "GetExecutablePathW failed";
   }
 
-  char buf[MAX_PATH + 1] = {0};
-  DWORD len = sizeof(buf);
-  result = RegQueryValueExW(hKey,                          /* Key */
-                            DEFAULT_AUTOSTART_NAME,        /* value */
-                            nullptr,                       /* reserved */
-                            nullptr,                       /* output type */
-                            reinterpret_cast<LPBYTE>(buf), /* output data */
-                            &len);                         /* output length */
+  ss << L"\"" << cmdline << L"\" --background";
+  return ss.str();
+}
 
-  RegCloseKey(hKey);
-  if (result != ERROR_SUCCESS) {
+static int get_yass_auto_start() {
+  HKEY hkey;
+
+  if (!OpenReadableKey(&hkey)) {
+    return -1;
+  }
+  ScopedHKEY hk(hkey);
+
+  std::wstring output;
+  const wchar_t* valueName = DEFAULT_AUTOSTART_NAME;
+  DWORD BufferSize;
+  DWORD type;
+
+  // If lpData is nullptr, and lpcbData is non-nullptr, the function returns
+  // ERROR_SUCCESS and stores the size of the data, in bytes, in the variable
+  // pointed to by lpcbData. This enables an application to determine the best
+  // way to allocate a buffer for the value's data.
+  if (::RegQueryValueExW(hkey /* HKEY */, valueName /* lpValueName */,
+                         nullptr /* lpReserved */, &type /* lpType */,
+                         nullptr /* lpData */,
+                         &BufferSize /* lpcbData */) != ERROR_SUCCESS) {
     /* yass applet auto start no set  */
+    VLOG(1) << "[autostart] no auto start entry set";
     return -1;
   }
+
+  if (type != REG_SZ || BufferSize > kRegReadMaximumSize ||
+      BufferSize % sizeof(wchar_t) != 0) {
+    VLOG(1) << "[autostart] mistyped auto start entry set";
+    return -1;
+  }
+
+  output.resize(BufferSize / sizeof(wchar_t) + 2);
+  if (::RegQueryValueExW(hkey /* HKEY */,
+                         valueName /* lpValueName */,
+                         nullptr /* lpReserved */,
+                         &type /* lpType */,
+                         reinterpret_cast<BYTE*>(output.data()) /* lpData */,
+                         &BufferSize /* lpcbData */) != ERROR_SUCCESS) {
+    VLOG(1) << "[autostart] failed to fetch auto start entry";
+    return -1;
+  }
+  // If the data has the REG_SZ, REG_MULTI_SZ or REG_EXPAND_SZ type,
+  // the string may not have been stored with the proper terminating null characters.
+  // Therefore, even if the function returns ERROR_SUCCESS,
+  // the application should ensure that the string is properly terminated before using it
+  output.reserve(BufferSize / sizeof(wchar_t));
+  // removing trailing space
+  while (!output.empty() && output.back() == L'\0') {
+    output.resize(output.size()-1);
+  }
+
+  VLOG(2) << "[autostart] previous autostart entry: " << SysWideToUTF8(output);
+
+  if (GetAutoStartCmdline() != output) {
+    return -1;
+  }
+
+  VLOG(1) << "[autostart] previous autostart entry matches current one";
 
   return 0;
 }
 
-int set_yass_auto_start(bool on) {
+static int set_yass_auto_start(bool on) {
   int result = 0;
   if (on) {
-    std::wstring cmdline;
-
     /* turn on auto start  */
-    if (!GetExecutablePathW(&cmdline)) {
-      return -1;
-    }
-
-    cmdline = L"\"" + cmdline + L"\" --background";
-
-    result = add_to_auto_start(DEFAULT_AUTOSTART_NAME, cmdline);
-
+    result = add_to_auto_start(DEFAULT_AUTOSTART_NAME, GetAutoStartCmdline());
   } else {
     /* turn off auto start */
     result = delete_from_auto_start(DEFAULT_AUTOSTART_NAME);
   }
   return result;
 }
-
-}  // namespace
 
 bool Utils::GetAutoStart() {
   (void)EnsureKernel32Loaded();
