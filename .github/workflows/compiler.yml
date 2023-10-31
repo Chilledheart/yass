@@ -146,6 +146,13 @@ jobs:
           path: |
             third_party/llvm-build/Release+Asserts
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+      - name: Cache mingw64 llvm
+        id: mingw-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            llvm-mingw-*.tar.xz
+          key: ${{ runner.os }}-mingw64-llvm-v${{ env.CACHE_EPOCH }}
       - name: Cache mingw64 curl
         id: curl-cache
         uses: actions/cache@v3
@@ -177,10 +184,9 @@ jobs:
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
       - name: "Download dependency: llvm-mingw"
+        if: ${{ steps.mingw-cache.outputs.cache-hit != 'true' }}
         run: |
           curl -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20220906/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64.tar.xz
-          sudo tar -C /opt -xvf llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64.tar.xz
-          sudo ln -sf libclang_rt.builtins-i386.a /opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/lib/clang/15.0.0/lib/windows/libclang_rt.builtins-i686.a
       - name: "Download dependency: curl"
         if: ${{ steps.curl-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -190,6 +196,10 @@ jobs:
           curl -L -O https://curl.se/windows/dl-8.2.0_1/curl-8.2.0_1-win32-mingw.zip
           7z x curl-8.2.0_1-win32-mingw.zip -aoa
           rm -vf curl*.zip
+      - name: Populate llvm-mingw
+        run: |
+          sudo tar -C /opt -xvf llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64.tar.xz
+          sudo ln -sf libclang_rt.builtins-i386.a /opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/lib/clang/15.0.0/lib/windows/libclang_rt.builtins-i686.a
       - name: Populate depedencies
         run: |
           sudo apt-get update -qq
