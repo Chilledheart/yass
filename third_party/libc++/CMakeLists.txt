@@ -64,6 +64,18 @@ message(STATUS "Build with libc++")
 #           Public-specific
 # *****************************************************************************************
 
+# replace -stdlib=libc++ with ""
+set(CompilerFlags
+  CMAKE_CXX_FLAGS
+  CMAKE_CXX_FLAGS_DEBUG
+  CMAKE_CXX_FLAGS_MINSIZEREL
+  CMAKE_CXX_FLAGS_RELEASE
+  CMAKE_CXX_FLAGS_RELWITHDEBINFO
+  )
+foreach(CompilerFlag ${CompilerFlags})
+  string(REPLACE "-stdlib=libc++" "" ${CompilerFlag} "${${CompilerFlag}}")
+endforeach()
+
 set(libcxx_CR "84fb809dd6dae36d556dc0bb702c6cc2ce9d4b80")
 # Fixed libc++ configuration macros are in
 # buildtools/third_party/libc++/__config_site. This config only has defines
@@ -177,12 +189,21 @@ else()
           )
       endif()
     elseif (MINGW)
-      set(libcxx_PUBLIC_LIBRARIES
-        ${libcxx_PUBLIC_LIBRARIES}
-         mingw32 gcc_eh gcc moldname mingwex msvcr100
-         advapi32 shell32 user32 kernel32
-         mingw32 gcc_eh gcc moldname mingwex msvcr100 kernel32
-        )
+      if (USE_LIBUNWIND AND USE_COMPILER_RT)
+        set(libcxx_PUBLIC_LIBRARIES
+          ${libcxx_PUBLIC_LIBRARIES}
+           mingw32 ${COMPILER_RT_PATH} unwind moldname mingwex msvcr100
+           advapi32 shell32 user32 kernel32
+           mingw32 ${COMPILER_RT_PATH} unwind moldname mingwex msvcr100 kernel32
+          )
+      else()
+        set(libcxx_PUBLIC_LIBRARIES
+          ${libcxx_PUBLIC_LIBRARIES}
+           mingw32 gcc_eh gcc moldname mingwex msvcr100
+           advapi32 shell32 user32 kernel32
+           mingw32 gcc_eh gcc moldname mingwex msvcr100 kernel32
+          )
+      endif()
     endif()
   endif()
 endif()
@@ -646,7 +667,7 @@ target_compile_options(cxx PRIVATE ${libcxx_CFLAGS})
 # We need to link with libatomic on systems that do not have builtin atomics, or
 # don't have builtin support for 8 byte atomics
 set(libcxx_LINK_LIBATOMIC FALSE)
-if (NOT MSVC)
+if (NOT MSVC AND NOT USE_COMPILER_RT)
   include(CheckCSourceCompiles)
   set(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
   set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} ${libcxx_PUBLIC_LIBRARIES}")

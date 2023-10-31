@@ -176,6 +176,11 @@ jobs:
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
+      - name: "Download dependency: llvm-mingw"
+        run: |
+          curl -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20220906/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64.tar.xz
+          sudo tar -C /opt -xvf llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64.tar.xz
+          sudo ln -sf libclang_rt.builtins-i386.a /opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/lib/clang/15.0.0/lib/windows/libclang_rt.builtins-i686.a
       - name: "Download dependency: curl"
         if: ${{ steps.curl-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -188,7 +193,7 @@ jobs:
       - name: Populate depedencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y cmake ninja-build mingw-w64 nasm zip
+          sudo apt-get install -y cmake ninja-build nasm zip
           # required by mbedtls build
           sudo apt-get install -y python3-jsonschema python3-jinja2
       - name: Set toolchain cmake files
@@ -209,28 +214,31 @@ jobs:
           set(CMAKE_CXX_COMPILER_TARGET \${GNU_TARGET} CACHE STRING "")
           set(CMAKE_ASM_COMPILER_TARGET \${GNU_TARGET} CACHE STRING "")
 
-          set(CMAKE_ASM_FLAGS "-target \${GNU_TARGET} -ccc-gcc-name \${GNU_TARGET}-gcc")
-          set(CMAKE_C_FLAGS "-target \${GNU_TARGET} -ccc-gcc-name \${GNU_TARGET}-gcc")
-          set(CMAKE_CXX_FLAGS "-target \${GNU_TARGET} -ccc-gcc-name \${GNU_TARGET}-gcc")
-          set(CMAKE_SHARED_LINKER_FLAGS "-target \${GNU_TARGET} -ccc-gcc-name \${GNU_TARGET}-gcc -Wl,-L/usr/lib/gcc/\${GNU_TARGET}/9.3-win32")
-          set(CMAKE_EXE_LINKER_FLAGS "-target \${GNU_TARGET} -ccc-gcc-name \${GNU_TARGET}-gcc -Wl,-L/usr/lib/gcc/\${GNU_TARGET}/9.3-win32")
+          set(CMAKE_ASM_FLAGS "--rtlib=compiler-rt")
+          set(CMAKE_C_FLAGS "--rtlib=compiler-rt")
+          set(CMAKE_CXX_FLAGS "--rtlib=compiler-rt -stdlib=libc++")
+          set(CMAKE_SHARED_LINKER_FLAGS "--rtlib=compiler-rt --unwindlib=libunwind")
+          set(CMAKE_EXE_LINKER_FLAGS "--rtlib=compiler-rt --unwindlib=libunwind")
+          set(USE_COMPILER_RT TRUE)
+          set(USE_LIBUNWIND TRUE)
+          set(COMPILER_RT_PATH "/opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/lib/clang/15.0.0/lib/windows/libclang_rt.builtins-${{ matrix.arch }}.a")
 
           # cross compilers to use for C and C++
-          set(CMAKE_C_COMPILER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang")
-          set(CMAKE_CXX_COMPILER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++")
-          set(CMAKE_LINKER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/ld.lld")
-          set(CMAKE_AR "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/llvm-ar")
-          set(CMAKE_CXX_COMPILER_AR "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/llvm-ar")
-          set(CMAKE_RANLIB "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/llvm-ranlib")
-          set(CMAKE_CXX_COMPILER_RANLIB "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/llvm-ranlib")
+          set(CMAKE_C_COMPILER "/opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/bin/clang")
+          set(CMAKE_CXX_COMPILER "/opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/bin/clang++")
+          set(CMAKE_LINKER "/opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/bin/ld.lld")
+          set(CMAKE_AR "/opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/bin/llvm-ar")
+          set(CMAKE_CXX_COMPILER_AR "/opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/bin/llvm-ar")
+          set(CMAKE_RANLIB "/opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/bin/llvm-ranlib")
+          set(CMAKE_CXX_COMPILER_RANLIB "/opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/bin/llvm-ranlib")
           # disabled because it is missing from binary
-          # set(CMAKE_RC_COMPILER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/llvm-rc")
-          set(CMAKE_RC_COMPILER "\${GNU_TARGET}-windres")
+          # set(CMAKE_RC_COMPILER "/opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/bin/llvm-rc")
+          set(CMAKE_RC_COMPILER "/opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/bin/\${GNU_TARGET}-windres")
 
-          set(CMAKE_SYSROOT "/usr/\${GNU_TARGET}" CACHE STRING "")
+          set(CMAKE_SYSROOT "/opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/\${GNU_TARGET}" CACHE STRING "")
 
           # target environment on the build host system
-          set(CMAKE_FIND_ROOT_PATH /usr/\${GNU_TARGET})
+          set(CMAKE_FIND_ROOT_PATH /opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/\${GNU_TARGET})
 
           # modify default behavior of FIND_XXX() commands
           set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
