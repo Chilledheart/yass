@@ -102,6 +102,10 @@ if (${CMAKE_BUILD_TYPE} MATCHES Debug)
  set(libcxx_PUBLIC_DEFINITIONS
    ${libcxx_PUBLIC_DEFINITIONS}
    "_LIBCPP_ENABLE_DEBUG_MODE")
+else()
+ set(libcxx_PUBLIC_DEFINITIONS
+   ${libcxx_PUBLIC_DEFINITIONS}
+   "_LIBCPP_ENABLE_SAFE_MODE=1")
 endif()
 
 set(libcxx_PUBLIC_DEFINITIONS
@@ -116,11 +120,6 @@ set(libcxx_PUBLIC_DEFINITIONS
 #
 # TODO(https://crbug.com/702997): Move this back to the `runtime_library`
 # config when NaCl is removed.
-if (NOT ${CMAKE_BUILD_TYPE} MATCHES Debug)
- set(libcxx_PUBLIC_DEFINITIONS
-   ${libcxx_PUBLIC_DEFINITIONS}
-   "_LIBCPP_ENABLE_SAFE_MODE=1")
-endif()
 
 if (USE_MUSL)
   set(libcxx_PUBLIC_DEFINITIONS
@@ -223,7 +222,6 @@ set(libcxx_SOURCES
   trunk/src/condition_variable.cpp
   trunk/src/condition_variable_destructor.cpp
   trunk/src/error_category.cpp
-  trunk/src/legacy_debug_handler.cpp
   trunk/src/exception.cpp
   trunk/src/functional.cpp
   trunk/src/future.cpp
