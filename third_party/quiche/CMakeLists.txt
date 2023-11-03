@@ -149,6 +149,7 @@ set(quiche_SRCS
   src/quiche/common/platform/api/quiche_export.h
   src/quiche/common/platform/api/quiche_flag_utils.h
   src/quiche/common/platform/api/quiche_flags.h
+  src/quiche/common/platform/api/quiche_googleurl.h
   src/quiche/common/platform/api/quiche_header_policy.h
   src/quiche/common/platform/api/quiche_hostname_utils.cc
   src/quiche/common/platform/api/quiche_hostname_utils.h
@@ -168,6 +169,7 @@ set(quiche_SRCS
   src/quiche/common/platform/api/quiche_url_utils.h
   # src/quiche/common/platform/default/quiche_platform_impl/quiche_flags_impl.cc
   # src/quiche/common/platform/default/quiche_platform_impl/quiche_flags_impl.h
+  src/quiche/common/platform/default/quiche_platform_impl/quiche_googleurl_impl.h
   # src/quiche/common/platform/default/quiche_platform_impl/quiche_logging_impl.cc
   # src/quiche/common/platform/default/quiche_platform_impl/quiche_logging_impl.h
   src/quiche/common/platform/default/quiche_platform_impl/quiche_prefetch_impl.h
@@ -562,10 +564,6 @@ set(quiche_quic_SOURCES
   src/quiche/quic/core/http/http_encoder.cc
   src/quiche/quic/core/http/http_encoder.h
   src/quiche/quic/core/http/http_frames.h
-  src/quiche/quic/core/http/quic_client_promised_info.cc
-  src/quiche/quic/core/http/quic_client_promised_info.h
-  src/quiche/quic/core/http/quic_client_push_promise_index.cc
-  src/quiche/quic/core/http/quic_client_push_promise_index.h
   src/quiche/quic/core/http/quic_header_list.cc
   src/quiche/quic/core/http/quic_header_list.h
   src/quiche/quic/core/http/quic_headers_stream.cc
