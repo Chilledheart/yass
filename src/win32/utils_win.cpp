@@ -859,6 +859,8 @@ bool Utils::GetSystemProxy() {
   if (!QuerySystemProxy(&enabled, &server_addr, &bypass_addr)) {
       return false;
   }
+  VLOG(2) << "[system proxy] previous enabled: " << std::boolalpha << enabled
+    << " server addr: " << server_addr << " bypass addr: " << bypass_addr;
   return enabled && server_addr == GetLocalAddr();
 }
 
@@ -943,7 +945,7 @@ bool QuerySystemProxy(bool *enabled,
   }
   if (options[2].Value.pszValue) {
     auto temp = options[2].Value.pszValue;
-    *server_addr = temp ? SysWideToUTF8(temp) : std::string();
+    *bypass_addr = temp ? SysWideToUTF8(temp) : std::string();
     if (temp) {
       GlobalFree(temp);
     }
