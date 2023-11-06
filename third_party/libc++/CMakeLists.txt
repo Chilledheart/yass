@@ -64,6 +64,18 @@ message(STATUS "Build with libc++")
 #           Public-specific
 # *****************************************************************************************
 
+# replace -stdlib=libc++ with ""
+set(CompilerFlags
+  CMAKE_CXX_FLAGS
+  CMAKE_CXX_FLAGS_DEBUG
+  CMAKE_CXX_FLAGS_MINSIZEREL
+  CMAKE_CXX_FLAGS_RELEASE
+  CMAKE_CXX_FLAGS_RELWITHDEBINFO
+  )
+foreach(CompilerFlag ${CompilerFlags})
+  string(REPLACE "-stdlib=libc++" "" ${CompilerFlag} "${${CompilerFlag}}")
+endforeach()
+
 set(libcxx_CR "84fb809dd6dae36d556dc0bb702c6cc2ce9d4b80")
 # Fixed libc++ configuration macros are in
 # buildtools/third_party/libc++/__config_site. This config only has defines
@@ -90,6 +102,10 @@ if (${CMAKE_BUILD_TYPE} MATCHES Debug)
  set(libcxx_PUBLIC_DEFINITIONS
    ${libcxx_PUBLIC_DEFINITIONS}
    "_LIBCPP_ENABLE_DEBUG_MODE")
+else()
+ set(libcxx_PUBLIC_DEFINITIONS
+   ${libcxx_PUBLIC_DEFINITIONS}
+   "_LIBCPP_ENABLE_SAFE_MODE=1")
 endif()
 
 set(libcxx_PUBLIC_DEFINITIONS
@@ -104,11 +120,6 @@ set(libcxx_PUBLIC_DEFINITIONS
 #
 # TODO(https://crbug.com/702997): Move this back to the `runtime_library`
 # config when NaCl is removed.
-if (NOT ${CMAKE_BUILD_TYPE} MATCHES Debug)
- set(libcxx_PUBLIC_DEFINITIONS
-   ${libcxx_PUBLIC_DEFINITIONS}
-   "_LIBCPP_ENABLE_SAFE_MODE=1")
-endif()
 
 if (USE_MUSL)
   set(libcxx_PUBLIC_DEFINITIONS
@@ -177,12 +188,21 @@ else()
           )
       endif()
     elseif (MINGW)
-      set(libcxx_PUBLIC_LIBRARIES
-        ${libcxx_PUBLIC_LIBRARIES}
-         mingw32 gcc_eh gcc moldname mingwex msvcr100
-         advapi32 shell32 user32 kernel32
-         mingw32 gcc_eh gcc moldname mingwex msvcr100 kernel32
-        )
+      if (USE_LIBUNWIND AND USE_COMPILER_RT)
+        set(libcxx_PUBLIC_LIBRARIES
+          ${libcxx_PUBLIC_LIBRARIES}
+           mingw32 ${COMPILER_RT_PATH} unwind moldname mingwex msvcr100
+           advapi32 shell32 user32 kernel32
+           mingw32 ${COMPILER_RT_PATH} unwind moldname mingwex msvcr100 kernel32
+          )
+      else()
+        set(libcxx_PUBLIC_LIBRARIES
+          ${libcxx_PUBLIC_LIBRARIES}
+           mingw32 gcc_eh gcc moldname mingwex msvcr100
+           advapi32 shell32 user32 kernel32
+           mingw32 gcc_eh gcc moldname mingwex msvcr100 kernel32
+          )
+      endif()
     endif()
   endif()
 endif()
@@ -202,7 +222,6 @@ set(libcxx_SOURCES
   trunk/src/condition_variable.cpp
   trunk/src/condition_variable_destructor.cpp
   trunk/src/error_category.cpp
-  trunk/src/legacy_debug_handler.cpp
   trunk/src/exception.cpp
   trunk/src/functional.cpp
   trunk/src/future.cpp
@@ -646,7 +665,7 @@ target_compile_options(cxx PRIVATE ${libcxx_CFLAGS})
 # We need to link with libatomic on systems that do not have builtin atomics, or
 # don't have builtin support for 8 byte atomics
 set(libcxx_LINK_LIBATOMIC FALSE)
-if (NOT MSVC)
+if (NOT MSVC AND NOT USE_COMPILER_RT)
   include(CheckCSourceCompiles)
   set(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
   set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} ${libcxx_PUBLIC_LIBRARIES}")

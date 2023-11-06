@@ -443,6 +443,7 @@ class SsEndToEndTest : public ::testing::Test {
     curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE,
                      (curl_off_t)g_send_buffer.length());
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resp_buffer);
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl/7.77.0");
     ret = curl_easy_perform(curl);
     curl_easy_cleanup(curl);
     /* if the request did not complete correctly, show the error

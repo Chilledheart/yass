@@ -30,7 +30,7 @@ on:
   release:
     types: [published]
 env:
-  CACHE_EPOCH: 119
+  CACHE_EPOCH: 120
   GOPROXY: direct
 jobs:
   docker_publish:
