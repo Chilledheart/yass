@@ -1607,6 +1607,7 @@ if (USE_LIBCXX)
   add_definitions(-DHAVE_LIBCXX)
   add_subdirectory(third_party/libc++)
   link_libraries(cxx ${libcxx_PUBLIC_LIBRARIES})
+  set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} ${libcxx_PUBLIC_LIBRARIES}")
 endif()
 
 # *****************************************************************************************
