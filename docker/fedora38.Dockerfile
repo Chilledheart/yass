@@ -1,4 +1,4 @@
-FROM fedora:37
+FROM fedora:38
 
 # Install requirements : update repo and install all requirements
 RUN yum clean all && \
