@@ -2502,6 +2502,21 @@ if (USE_BALSA_HTTP_PARSER)
 endif()
 
 # *****************************************************************************************
+#           leveldb Library
+# *****************************************************************************************
+
+set(LEVELDB_BUILD_TESTS "OFF" CACHE STRING "")
+set(LEVELDB_BUILD_BENCHMARKS "OFF" CACHE STRING "")
+set(LEVELDB_INSTALL "OFF" CACHE STRING "")
+set(HAVE_CRC32C 0)
+set(HAVE_SNAPPY 0)
+set(HAVE_ZSTD 0) #TODO: linking zstd support
+set(HAVE_TCMALLOC 0)
+add_subdirectory(third_party/leveldb)
+include_directories(third_party/leveldb/include SYSTEM)
+set(SUPPORT_LIBS leveldb ${SUPPORT_LIBS})
+
+# *****************************************************************************************
 #           Compiler warning flags
 # *****************************************************************************************
 
