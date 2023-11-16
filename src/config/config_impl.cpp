@@ -18,11 +18,7 @@ struct CipherMethodFlag {
 
 namespace config {
 
-std::string g_configfile
-#if !defined(_WIN32) && !defined(__APPLE__)
-  = "~/.yass/config.json"
-#endif
-  ;
+std::string g_configfile;
 
 ConfigImpl::~ConfigImpl() = default;
 
@@ -43,9 +39,10 @@ std::unique_ptr<ConfigImpl> ConfigImpl::Create() {
   fflush(stderr);
   return std::make_unique<ConfigImplApple>();
 #else
-  fprintf(stderr, "using option from file: config.json\n");
+  const char* configfile = "~/.yass/config.json";
+  fprintf(stderr, "using option from file: %s\n", configfile);
   fflush(stderr);
-  return std::make_unique<ConfigImplLocal>("config.json");
+  return std::make_unique<ConfigImplLocal>(configfile);
 #endif
 }
 
