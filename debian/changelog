@@ -1,3 +1,8 @@
+yass (1.4.9-1) UNRELEASED; urgency=medium
+
+  * Fix startup failure on the first try since version 1.4.5.
+
+ -- Chilledheart <hukeyue@hotmail.com>  Thu, 16 Nov 2023 13:47:59 +0800
 yass (1.4.8-1) UNRELEASED; urgency=low
 
   * Some trivial changes.
