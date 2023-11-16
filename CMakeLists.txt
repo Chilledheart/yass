@@ -1607,6 +1607,7 @@ if (USE_LIBCXX)
   add_definitions(-DHAVE_LIBCXX)
   add_subdirectory(third_party/libc++)
   link_libraries(cxx ${libcxx_PUBLIC_LIBRARIES})
+  set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} ${libcxx_PUBLIC_LIBRARIES}")
 endif()
 
 # *****************************************************************************************
@@ -2499,6 +2500,21 @@ if (USE_BALSA_HTTP_PARSER)
   add_definitions(-DHAVE_BALSA_HTTP_PARSER)
   set(SUPPORT_LIBS balsa ${SUPPORT_LIBS})
 endif()
+
+# *****************************************************************************************
+#           leveldb Library
+# *****************************************************************************************
+
+set(LEVELDB_BUILD_TESTS "OFF" CACHE STRING "")
+set(LEVELDB_BUILD_BENCHMARKS "OFF" CACHE STRING "")
+set(LEVELDB_INSTALL "OFF" CACHE STRING "")
+set(HAVE_CRC32C 0)
+set(HAVE_SNAPPY 0)
+set(HAVE_ZSTD 0) #TODO: linking zstd support
+set(HAVE_TCMALLOC 0)
+add_subdirectory(third_party/leveldb)
+include_directories(third_party/leveldb/include SYSTEM)
+set(SUPPORT_LIBS leveldb ${SUPPORT_LIBS})
 
 # *****************************************************************************************
 #           Compiler warning flags

@@ -39,7 +39,7 @@ jobs:
       matrix:
         container:
         - 'centos7'
-        - 'fedora37'
+        - 'fedora38'
         - 'alpine318'
         - 'opensuse15'
         # - 'centos8'
@@ -80,7 +80,7 @@ jobs:
       matrix:
         container:
         - 'centos7'
-        - 'fedora37'
+        - 'fedora38'
         - 'opensuse15'
         # - 'centos8'
         # - 'centos9'
