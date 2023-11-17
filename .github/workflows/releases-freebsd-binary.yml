@@ -42,6 +42,7 @@ jobs:
         abi:
         - '12'
         - '13'
+        - '14'
     runs-on: ubuntu-20.04
     env:
       ARCH: ${{ matrix.arch }}
@@ -97,6 +98,8 @@ jobs:
           sudo apt-get install -y cmake ninja-build libglib2.0-dev-bin gettext
           # required by mbedtls build
           sudo apt-get install -y python3-jsonschema python3-jinja2
+          # required by unpacking pkg file
+          sudo apt-get install -y zstd
       - name: Set clang environment
         run: |
           echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV

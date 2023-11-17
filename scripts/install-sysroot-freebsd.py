@@ -6,6 +6,7 @@ import os
 import shutil
 import sys
 import tarfile
+import subprocess
 
 FREEBSD_MAIN_SITE = 'http://ftp.freebsd.org/pub/FreeBSD/releases'
 FREEBSD_PKG_SITE = 'http://pkg.freebsd.org'
@@ -29,6 +30,9 @@ def download_url(url, tarball):
       pass
   else:
     raise Exception('Failed to download %s' % url)
+
+def check_string_output(command):
+  return subprocess.check_output(command, stderr=subprocess.STDOUT).decode().strip()
 
 # ['tar', '-C', sysroot, '-xf', 'base.txz', './usr/include', './usr/lib', './lib', './usr/libdata/pkgconfig']
 # ['tar', '-xf', 'packagesite.txz', 'packagesite.yaml']
@@ -97,13 +101,19 @@ def resolve_deps(pkg_db, deps):
       return deps
     deps = resolved_deps
 
-def extract_pkg(pkg_url, pkg_sum, sysroot):
+def extract_pkg(pkg_url, pkg_sum, sysroot, is_zstd):
   pkg_name = os.path.basename(pkg_url)
   download_url(pkg_url, pkg_name)
   if GetSha256(pkg_name) != pkg_sum:
     print(f'{pkg_name} checksum mismatched, expected: {pkg_sum}!')
     sys.exit(-1)
+  if is_zstd:
+    pkg_tar = pkg_name.replace('.pkg', '.tar')
+    print(check_string_output(['zstd', '-d', pkg_name, '-o', pkg_tar, '-f']))
+    pkg_name = pkg_tar
   extract_tarfile(pkg_name, sysroot, ['/usr/local/include', '/usr/local/libdata', '/usr/local/lib'])
+  if is_zstd:
+    os.unlink(pkg_name)
 
 def usage():
   print("usage: ./install-sysroot-freebsd.py <abi>")
@@ -121,8 +131,13 @@ def main(args):
   # not all tarbars exist in public sever
   if abi == '12':
     release = '4'
+    is_zstd = False
   elif abi == '13':
     release = '1'
+    is_zstd = False
+  elif abi == '14':
+    release = '0'
+    is_zstd = True
   else:
     usage()
   version = f'{abi}.{release}'
@@ -162,7 +177,7 @@ def main(args):
   deps = resolve_deps(pkg_db, ['gtk4'])
   for dep in deps:
     pkg = pkg_db[dep]
-    extract_pkg(base_url + '/' + pkg['path'], pkg['sum'], sysroot)
+    extract_pkg(base_url + '/' + pkg['path'], pkg['sum'], sysroot, is_zstd)
 
   # remove tmp files
   shutil.rmtree(tmproot)
