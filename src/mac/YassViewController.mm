@@ -205,7 +205,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   }
   uint64_t sync_time = GetMonotonicTime();
   uint64_t delta_time = sync_time - last_sync_time_;
-  if (delta_time > NS_PER_SECOND / 10) {
+  if (delta_time > NS_PER_SECOND) {
     uint64_t rx_bytes = cli::total_rx_bytes;
     uint64_t tx_bytes = cli::total_tx_bytes;
     rx_rate_ = static_cast<double>(rx_bytes - last_rx_bytes_) / delta_time *
