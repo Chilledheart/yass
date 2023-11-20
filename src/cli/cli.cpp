@@ -138,7 +138,18 @@ int main(int argc, const char* argv[]) {
 #ifdef SIGQUIT
   signals.add(SIGQUIT, ec);
 #endif
-  signals.async_wait([&](asio::error_code /*ec*/, int signal_number) {
+#ifdef HAVE_TCMALLOC
+  signals.add(SIGUSR1, ec);
+#endif
+  std::function<void(asio::error_code, int)> cb;
+  cb = [&](asio::error_code /*ec*/, int signal_number) {
+#ifdef HAVE_TCMALLOC
+    if (signal_number == SIGUSR1) {
+      PrintTcmallocStats();
+      signals.async_wait(cb);
+      return;
+    }
+#endif
 #ifdef SIGQUIT
     if (signal_number == SIGQUIT) {
       LOG(WARNING) << "Application shuting down";
@@ -152,7 +163,8 @@ int main(int argc, const char* argv[]) {
 #endif
     work_guard.reset();
     signals.clear();
-  });
+  };
+  signals.async_wait(cb);
 
 #ifdef SIGPIPE
   signal(SIGPIPE, SIG_IGN);

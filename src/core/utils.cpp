@@ -16,6 +16,10 @@
 
 #include <absl/flags/internal/program_name.h>
 
+#ifdef HAVE_TCMALLOC
+#include <tcmalloc/malloc_extension.h>
+#endif
+
 absl::StatusOr<int32_t> StringToInteger(absl::string_view value) {
   long result = 0;
   char* endptr = nullptr;
@@ -178,5 +182,25 @@ ssize_t WriteFileWithBuffer(const std::string& path,
     return -1;
   }
   return ret;
+}
+#endif
+
+#ifdef HAVE_TCMALLOC
+void PrintTcmallocStats() {
+  std::vector<const char*> properties = {
+    "generic.current_allocated_bytes",
+    "generic.heap_size",
+    "tcmalloc.max_total_thread_cache_bytes",
+    "tcmalloc.current_total_thread_cache_bytes",
+    "tcmalloc.pageheap_free_bytes",
+    "tcmalloc.pageheap_unmapped_bytes",
+  };
+  for (auto property : properties) {
+    absl::optional<size_t> size =
+        tcmalloc::MallocExtension::GetNumericProperty(property);
+    if (size.has_value()) {
+      LOG(INFO) << "TCMALLOC: " << property << " = " << *size << " bytes";
+    }
+  }
 }
 #endif
