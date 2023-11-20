@@ -2001,6 +2001,16 @@ if (USE_TCMALLOC)
     tcmalloc
     ${SUPPORT_LIBS}
     )
+  # silence lto warning on gcc: tcmalloc_sampler
+  if (COMPILER_GCC AND LTO)
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12.0)
+      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-odr")
+      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-odr")
+    else()
+      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch")
+      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch")
+    endif()
+  endif()
 endif()
 
 # *****************************************************************************************
