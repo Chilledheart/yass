@@ -942,6 +942,7 @@ func postStateArchiveLicenses() []string {
 		"LICENSE.googleurl":  filepath.Join("..", "third_party", "googleurl", "LICENSE"),
 		"LICENSE.icu":        filepath.Join("..", "third_party", "icu", "LICENSE"),
 		"LICENSE.json":       filepath.Join("..", "third_party", "json", "LICENSE.MIT"),
+		"LICENSE.leveldb":    filepath.Join("..", "third_party", "leveldb", "LICENSE"),
 		"LICENSE.libc++":     filepath.Join("..", "third_party", "libc++", "trunk", "LICENSE.TXT"),
 		"LICENSE.libc++abi":  filepath.Join("..", "third_party", "libc++abi", "trunk", "LICENSE.TXT"),
 		"LICENSE.lss":        filepath.Join("..", "third_party", "lss", "LICENSE"),
@@ -949,6 +950,7 @@ func postStateArchiveLicenses() []string {
 		"LICENSE.mozilla":    filepath.Join("..", "third_party", "url", "third_party", "mozilla", "LICENSE.txt"),
 		"LICENSE.protobuf":   filepath.Join("..", "third_party", "protobuf", "LICENSE"),
 		"LICENSE.quiche":     filepath.Join("..", "third_party", "quiche", "src", "LICENSE"),
+		"LICENSE.tcmalloc":   filepath.Join("..", "third_party", "tcmalloc", "src", "LICENSE"),
 		"LICENSE.xxhash":     filepath.Join("..", "third_party", "xxhash", "LICENSE"),
 		"LICENSE.zlib":       filepath.Join("..", "third_party", "zlib", "LICENSE"),
 	}
