@@ -248,6 +248,7 @@ option(GUI_SANDBOX "Build against GUI sandbox (MAC Only)." OFF)
 option(BUILD_TESTS "Build with test." OFF)
 option(BUILD_BENCHMARKS "Build with benchmark." OFF)
 option(OPTIMIZED_PROTOC "Force protobuf compiler to be built with optimization" OFF)
+option(USE_TCMALLOC "Build with tcmalloc (linux only)" OFF)
 option(USE_LIBCXX "Build with libc++" ON)
 option(USE_NGHTTP2 "Build with libnghttp2" ON)
 option(USE_MOLD "Build with mold linker" OFF)
@@ -1958,6 +1959,51 @@ set(SUPPORT_LIBS
   )
 
 # *****************************************************************************************
+#           tcmalloc Library
+# *****************************************************************************************
+
+# only support platform: linux
+if (USE_TCMALLOC)
+  if (NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    message(WARNING "tcmalloc: only Linux is supported, disabling...")
+    set(USE_TCMALLOC OFF)
+  endif()
+  if (OS_X86)
+    message(WARNING "tcmalloc: 32-bit x86 is not supported, disabling...")
+    set(USE_TCMALLOC OFF)
+  endif()
+  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "mips" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "mips64" OR
+      CMAKE_SYSTEM_PROCESSOR STREQUAL "mipsel" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "mips64el")
+    message(WARNING "tcmalloc: mips/mips64 is not supported, disabling...")
+    set(USE_TCMALLOC OFF)
+  endif()
+  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "armhf" OR
+      CMAKE_SYSTEM_PROCESSOR STREQUAL "armel")
+    message(WARNING "tcmalloc: 32-bit arm is not supported, disabling...")
+    set(USE_TCMALLOC OFF)
+  endif()
+endif()
+
+# tunings:
+# default pages: nop
+# large pages: -DTCMALLOC_LARGE_PAGES
+# 256k pages: -DTCMALLOC_256K_PAGES
+# small pages: -DTCMALLOC_SMALL_BUT_SLOW
+# numa pages: -DTCMALLOC_NUMA_AWARE
+if (USE_TCMALLOC)
+  message(STATUS "Compiling with bundled tcmalloc support")
+
+  add_definitions(-DHAVE_TCMALLOC)
+  add_subdirectory(third_party/tcmalloc)
+  include_directories(third_party/tcmalloc/src SYSTEM)
+
+  set(SUPPORT_LIBS
+    tcmalloc
+    ${SUPPORT_LIBS}
+    )
+endif()
+
+# *****************************************************************************************
 #           boringssl Library
 # *****************************************************************************************
 
@@ -2873,7 +2919,6 @@ set(files
     src/core/atl_throw.cpp
     src/core/thread_collision_warner.hpp
     src/core/thread_collision_warner.cpp
-    src/core/io_queue.cpp
     src/crypto/aead_base_decrypter.cpp
     src/crypto/aead_base_encrypter.cpp
     src/crypto/aead_evp_decrypter.cpp
@@ -2968,7 +3013,6 @@ set(hfiles
     src/core/cxx20_to_address.hpp
     src/core/atl_throw.hpp
     src/core/atl.hpp
-    src/core/io_queue.hpp
     src/crypto/aead_base_decrypter.hpp
     src/crypto/aead_base_encrypter.hpp
     src/crypto/aead_evp_decrypter.hpp
@@ -3484,6 +3528,7 @@ if(NOT CMAKE_SKIP_INSTALL_RULES AND GUI)
   file(READ third_party/googleurl/LICENSE                   _GOOGLEURL_LICENSE)
   file(READ third_party/icu/LICENSE                         _ICU_LICENSE)
   file(READ third_party/json/LICENSE.MIT                    _JSON_LICENSE)
+  file(READ third_party/leveldb/LICENSE                     _LEVELDB_LICENSE)
   file(READ third_party/libc++/trunk/LICENSE.TXT            _LIBCXX_LICENSE)
   file(READ third_party/libc++abi/trunk/LICENSE.TXT         _LIBCXXABI_LICENSE)
   file(READ third_party/libunwind/trunk/LICENSE.TXT         _LIBUNWIND_LICENSE)
@@ -3492,6 +3537,7 @@ if(NOT CMAKE_SKIP_INSTALL_RULES AND GUI)
   file(READ third_party/url/third_party/mozilla/LICENSE.txt _MOZILLA_LICENSE)
   file(READ third_party/protobuf/LICENSE                    _PROTOBUF_LICENSE)
   file(READ third_party/quiche/src/LICENSE                  _QUICHE_LICENSE)
+  file(READ third_party/tcmalloc/src/LICENSE                _TCMALLOC_LICENSE)
   file(READ third_party/xxhash/LICENSE                      _XXHASH_LICENSE)
   file(READ third_party/zlib/LICENSE                        _ZLIB_LICENSE)
 

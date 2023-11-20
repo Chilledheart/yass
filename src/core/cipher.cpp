@@ -209,9 +209,8 @@ cipher::cipher(const std::string& key,
                const std::string& password,
                enum cipher_method method,
                cipher_visitor_interface *visitor,
-               std::vector<std::shared_ptr<IOBuf>> *mempool,
                bool enc)
-    : salt_(), key_(), counter_(), init_(false), visitor_(visitor), mempool_(mempool) {
+    : salt_(), key_(), counter_(), init_(false), visitor_(visitor) {
   DCHECK(is_valid_cipher_method(method));
   VLOG(3) << "cipher: " << (enc ? "encoder" : "decoder")
           << " create with key \"" << key << "\" password \"" << password
@@ -250,15 +249,7 @@ void cipher::process_bytes(std::shared_ptr<IOBuf> ciphertext) {
   }
 
   while (!chunk_->empty()) {
-    std::shared_ptr<IOBuf> plaintext;
-    if (mempool_  && !mempool_->empty()) {
-      plaintext = mempool_->back();
-      mempool_->pop_back();
-      plaintext->clear();
-      plaintext->reserve(0, SOCKET_BUF_SIZE);
-    } else {
-      plaintext = IOBuf::create(SOCKET_BUF_SIZE);
-    }
+    std::shared_ptr<IOBuf> plaintext = IOBuf::create(SOCKET_BUF_SIZE);
 
     uint64_t counter = counter_;
 

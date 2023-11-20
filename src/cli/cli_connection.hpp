@@ -423,7 +423,6 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
 
   /// the queue to write upstream
   IoQueue upstream_;
-  std::vector<std::shared_ptr<IOBuf>> upstream_pool_;
   /// the flag to mark current write
   bool upstream_writable_ = false;
   /// the flag to mark current read
@@ -448,7 +447,6 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
 
   /// the queue to write downstream
   IoQueue downstream_;
-  std::vector<std::shared_ptr<IOBuf>> downstream_pool_;
   /// the flag to mark current read
   bool downstream_readable_ = false;
   /// the flag to mark current read in progress

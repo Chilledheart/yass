@@ -56,3 +56,6 @@
 [submodule "third_party/leveldb"]
 	path = third_party/leveldb
 	url = https://github.com/Chilledheart/leveldb
+[submodule "third_party/tcmalloc/src"]
+	path = third_party/tcmalloc/src
+	url = https://github.com/google/tcmalloc

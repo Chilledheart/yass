@@ -132,9 +132,6 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
   chunks_.front()->trimStart(payload_length);
 
   if (chunks_.front()->empty()) {
-    if (connection_->upstream_pool_.size() < 32U) {
-      connection_->upstream_pool_.push_back(chunks_.front());
-    }
     chunks_.pop_front();
   }
 
@@ -225,7 +222,7 @@ void CliConnection::SendIfNotProcessing() {
 // cipher_visitor_interface
 //
 bool CliConnection::on_received_data(std::shared_ptr<IOBuf> buf) {
-  downstream_.push_back_merged(buf, &downstream_pool_);
+  downstream_.push_back(buf);
   return true;
 }
 
@@ -240,7 +237,7 @@ void CliConnection::on_protocol_error() {
 //
 
 int64_t CliConnection::OnReadyToSend(absl::string_view serialized) {
-  upstream_.push_back_merged(serialized.data(), serialized.size(), &upstream_pool_);
+  upstream_.push_back(serialized.data(), serialized.size());
   return serialized.size();
 }
 
@@ -331,17 +328,17 @@ bool CliConnection::OnDataForStream(StreamId stream_id,
         return true;
       }
       DCHECK(buf);
-      downstream_.push_back_merged(buf, &downstream_pool_);
+      downstream_.push_back(buf);
       ++num_padding_recv_;
     }
     // Deal with in_middle_buf outside paddings
     if (num_padding_recv_ >= kFirstPaddings && !padding_in_middle_buf_->empty()) {
-      downstream_.push_back_merged(std::move(padding_in_middle_buf_), &downstream_pool_);
+      downstream_.push_back(std::move(padding_in_middle_buf_));
     }
     return true;
   }
 
-  downstream_.push_back_merged(data.data(), data.size(), &downstream_pool_);
+  downstream_.push_back(data.data(), data.size());
   adapter_->MarkDataConsumedForStream(stream_id, data.size());
   return true;
 }
@@ -865,9 +862,6 @@ void CliConnection::WriteStream() {
     wbytes_transferred += written;
     // continue to resume
     if (LIKELY(buf->empty())) {
-      if (downstream_pool_.size() < 32U) {
-        downstream_pool_.push_back(buf);
-      }
       downstream_.pop_front();
     }
     if (UNLIKELY(ec == asio::error::try_again || ec == asio::error::would_block)) {
@@ -1013,15 +1007,7 @@ try_again:
     ec = asio::error::eof;
     return nullptr;
   }
-  std::shared_ptr<IOBuf> buf;
-  if (LIKELY(!downstream_pool_.empty())) {
-    buf = downstream_pool_.back();
-    downstream_pool_.pop_back();
-    buf->clear();
-    buf->reserve(0, SOCKET_DEBUF_SIZE);
-  } else {
-    buf = IOBuf::create(SOCKET_DEBUF_SIZE);
-  }
+  std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_DEBUF_SIZE);
   size_t read;
   do {
     ec = asio::error_code();
@@ -1057,9 +1043,6 @@ try_again:
       }
       remaining_buffer = remaining_buffer.substr(result);
     }
-    if (downstream_pool_.size() < 32U) {
-      downstream_pool_.push_back(buf);
-    }
     // not enough buffer for recv window
     if (downstream_.byte_length() < H2_STREAM_WINDOW_SIZE) {
       goto try_again;
@@ -1081,9 +1064,6 @@ try_again:
         buf->trimStart(nparsed);
         buf->retreat(nparsed);
         if (buf->empty()) {
-          if (downstream_pool_.size() < 32U) {
-            downstream_pool_.push_back(buf);
-          }
           ec = asio::error::try_again;
           return nullptr;
         }
@@ -1103,12 +1083,9 @@ try_again:
         return nullptr;
       }
     }
-    downstream_.push_back_merged(buf, &downstream_pool_);
+    downstream_.push_back(buf);
   } else {
     decoder_->process_bytes(buf);
-    if (downstream_pool_.size() < 32U) {
-      downstream_pool_.push_back(buf);
-    }
   }
 
 out:
@@ -1180,9 +1157,6 @@ void CliConnection::WriteUpstreamInPipe() {
     // continue to resume
     if (buf->empty()) {
       DCHECK(!upstream_.empty() && upstream_.front() == buf);
-      if (upstream_pool_.size() < 32U) {
-        upstream_pool_.push_back(buf);
-      }
       upstream_.pop_front();
     }
     if (ec) {
@@ -1234,15 +1208,7 @@ std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code &ec,
     return nullptr;
   }
 
-  std::shared_ptr<IOBuf> buf;
-  if (LIKELY(!upstream_pool_.empty())) {
-    buf = upstream_pool_.back();
-    upstream_pool_.pop_back();
-    buf->clear();
-    buf->reserve(0, SOCKET_BUF_SIZE);
-  } else {
-    buf = IOBuf::create(SOCKET_BUF_SIZE);
-  }
+  std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
   size_t read;
   do {
     read = downlink_->socket_.read_some(tail_buffer(*buf, SOCKET_BUF_SIZE), ec);
@@ -1284,12 +1250,9 @@ std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code &ec,
     }
     data_frame_->AddChunk(buf);
   } else if (upstream_https_fallback_) {
-    upstream_.push_back_merged(buf, &upstream_pool_);
+    upstream_.push_back(buf);
   } else {
     EncryptData(&upstream_, buf);
-    if (upstream_pool_.size() < 32U) {
-      upstream_pool_.push_back(buf);
-    }
   }
 
 out:
@@ -1561,12 +1524,9 @@ void CliConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
     adapter()->ResumeStream(stream_id_);
     SendIfNotProcessing();
   } else if (upstream_https_fallback_) {
-    upstream_.push_back_merged(buf, &upstream_pool_);
+    upstream_.push_back(buf);
   } else {
     EncryptData(&upstream_, buf);
-    if (upstream_pool_.size() < 32U) {
-      upstream_pool_.push_back(buf);
-    }
   }
   OnUpstreamWriteFlush();
 }
@@ -1609,7 +1569,7 @@ void CliConnection::OnDownstreamWriteFlush() {
 void CliConnection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf) {
     DCHECK(!buf->empty());
-    downstream_.push_back_merged(buf, &downstream_pool_);
+    downstream_.push_back(buf);
   }
   if (!downstream_.empty() && !write_inprogress_) {
     if (CurrentState() == state_error) {
@@ -1630,7 +1590,7 @@ void CliConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf && !buf->empty()) {
     VLOG(2) << "Connection (client) " << connection_id()
             << " upstream: ready to send request: " << buf->length() << " bytes.";
-    upstream_.push_back_merged(buf, &upstream_pool_);
+    upstream_.push_back(buf);
   }
   if (!upstream_.empty() && upstream_writable_) {
     upstream_writable_ = false;
@@ -1678,10 +1638,10 @@ void CliConnection::connected() {
   } else {
     encoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
       absl::GetFlag(FLAGS_method).method,
-      this, nullptr, true);
+      this, true);
     decoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
       absl::GetFlag(FLAGS_method).method,
-      this, &downstream_pool_);
+      this);
   }
 
   // Send Upstream Settings (HTTP2 Only)
@@ -1773,15 +1733,12 @@ void CliConnection::connected() {
         "Proxy-Connection: Keep-Alive\r\n"
         "\r\n", hostname_and_port.c_str(), hostname_and_port.c_str());
     // write variable address directly as https header
-    upstream_.push_back_merged(hdr.data(), hdr.size(), &upstream_pool_);
+    upstream_.push_back(hdr.data(), hdr.size());
   } else {
     ByteRange req(ss_request_->data(), ss_request_->length());
     std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(req);
     // write variable address directly as ss header
     EncryptData(&upstream_, buf);
-    if (upstream_pool_.size() < 32U) {
-      upstream_pool_.push_back(buf);
-    }
   }
 
   // Re-process the read data in pending
