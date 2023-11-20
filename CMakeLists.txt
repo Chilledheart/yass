@@ -2919,7 +2919,6 @@ set(files
     src/core/atl_throw.cpp
     src/core/thread_collision_warner.hpp
     src/core/thread_collision_warner.cpp
-    src/core/io_queue.cpp
     src/crypto/aead_base_decrypter.cpp
     src/crypto/aead_base_encrypter.cpp
     src/crypto/aead_evp_decrypter.cpp
@@ -3014,7 +3013,6 @@ set(hfiles
     src/core/cxx20_to_address.hpp
     src/core/atl_throw.hpp
     src/core/atl.hpp
-    src/core/io_queue.hpp
     src/crypto/aead_base_decrypter.hpp
     src/crypto/aead_base_encrypter.hpp
     src/crypto/aead_evp_decrypter.hpp
