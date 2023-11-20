@@ -25,6 +25,10 @@
 ABSL_FLAG(std::string, proxy_type, "http", "proxy type, available: socks4, socks4a, socks5, socks5h, http");
 #endif
 
+#ifdef HAVE_TCMALLOC
+#include <tcmalloc/malloc_extension.h>
+#endif
+
 #include "cli/cli_server.hpp"
 #include "config/config.hpp"
 #include "core/cipher.hpp"
@@ -776,6 +780,15 @@ int main(int argc, char **argv) {
   }
 
   int ret = RUN_ALL_TESTS();
+
+#ifdef HAVE_TCMALLOC
+  absl::optional<size_t> heap_size =
+      tcmalloc::MallocExtension::GetNumericProperty(
+          "generic.current_allocated_bytes");
+  if (heap_size.has_value()) {
+    LOG(ERROR) << "Current heap size = " << *heap_size << " bytes";
+  }
+#endif
 
 #ifdef HAVE_CURL
   curl_global_cleanup();
