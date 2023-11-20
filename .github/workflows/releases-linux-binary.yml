@@ -138,6 +138,7 @@ jobs:
           mkdir -p $SDK_ROOT/etc $SDK_ROOT/dev $SDK_ROOT/proc $SDK_ROOT/tmp
           touch $SDK_ROOT/etc/resolv.conf
           bwrap --die-with-parent --bind $SDK_ROOT / \
+            --ro-bind /sys /sys \
             --ro-bind /etc/resolv.conf /etc/resolv.conf \
             --proc /proc --dev /dev \
             --unshare-all --share-net \
