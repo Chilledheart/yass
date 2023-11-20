@@ -666,6 +666,9 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSROOT=%s", sysrootFlag))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSTEM_PROCESSOR=%s", gnuArch))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_TARGET=%s", gnuType))
+		if subsystem == "" {
+			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_TCMALLOC=on"))
+		}
 	}
 
 	if systemNameFlag == "freebsd" && sysrootFlag != "" {
