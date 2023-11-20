@@ -248,6 +248,7 @@ option(GUI_SANDBOX "Build against GUI sandbox (MAC Only)." OFF)
 option(BUILD_TESTS "Build with test." OFF)
 option(BUILD_BENCHMARKS "Build with benchmark." OFF)
 option(OPTIMIZED_PROTOC "Force protobuf compiler to be built with optimization" OFF)
+option(USE_TCMALLOC "Build with tcmalloc (linux only)" OFF)
 option(USE_LIBCXX "Build with libc++" ON)
 option(USE_NGHTTP2 "Build with libnghttp2" ON)
 option(USE_MOLD "Build with mold linker" OFF)
@@ -1956,6 +1957,51 @@ set(SUPPORT_LIBS
   absl::failure_signal_handler
   ${SUPPORT_LIBS}
   )
+
+# *****************************************************************************************
+#           tcmalloc Library
+# *****************************************************************************************
+
+# only support platform: linux
+if (USE_TCMALLOC)
+  if (NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    message(WARNING "tcmalloc: only Linux is supported, disabling...")
+    set(USE_TCMALLOC OFF)
+  endif()
+  if (OS_X86)
+    message(WARNING "tcmalloc: 32-bit x86 is not supported, disabling...")
+    set(USE_TCMALLOC OFF)
+  endif()
+  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "mips" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "mips64" OR
+      CMAKE_SYSTEM_PROCESSOR STREQUAL "mipsel" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "mips64el")
+    message(WARNING "tcmalloc: mips/mips64 is not supported, disabling...")
+    set(USE_TCMALLOC OFF)
+  endif()
+  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "armhf" OR
+      CMAKE_SYSTEM_PROCESSOR STREQUAL "armel")
+    message(WARNING "tcmalloc: 32-bit arm is not supported, disabling...")
+    set(USE_TCMALLOC OFF)
+  endif()
+endif()
+
+# tunings:
+# default pages: nop
+# large pages: -DTCMALLOC_LARGE_PAGES
+# 256k pages: -DTCMALLOC_256K_PAGES
+# small pages: -DTCMALLOC_SMALL_BUT_SLOW
+# numa pages: -DTCMALLOC_NUMA_AWARE
+if (USE_TCMALLOC)
+  message(STATUS "Compiling with bundled tcmalloc support")
+
+  add_definitions(-DHAVE_TCMALLOC)
+  add_subdirectory(third_party/tcmalloc)
+  include_directories(third_party/tcmalloc/src SYSTEM)
+
+  set(SUPPORT_LIBS
+    tcmalloc
+    ${SUPPORT_LIBS}
+    )
+endif()
 
 # *****************************************************************************************
 #           boringssl Library
