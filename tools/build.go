@@ -564,7 +564,7 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, "-DENABLE_CLANG_TIDY=on", fmt.Sprintf("-DCLANG_TIDY_EXECUTABLE=%s", clangTidyExecutablePathFlag))
 	}
 	if systemNameFlag == "windows" {
-		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCROSS_TOOLCHAIN_FLAGS_NATIVE=\"-DCMAKE_TOOLCHAIN_FILE=%s\\Native.cmake\"", buildDir))
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCROSS_TOOLCHAIN_FLAGS_TOOLCHAIN_FILE=%s\\Native.cmake", buildDir))
 		// Guesting native LIB paths from host LIB paths
 		var nativeLibPaths []string
 		hostLibPaths := strings.Split(os.Getenv("LIB"), ";")

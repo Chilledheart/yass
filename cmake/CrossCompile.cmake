@@ -9,7 +9,11 @@ function(create_cross_target project_name target_name toolchain buildtype)
     message(STATUS "Setting cross build dir to " ${${project_name}_${target_name}_BUILD})
   endif(NOT DEFINED ${project_name}_${target_name}_BUILD)
 
-  if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/cmake/${toolchain}.cmake)
+  if (CROSS_TOOLCHAIN_FLAGS_TOOLCHAIN_FILE)
+    set(CROSS_TOOLCHAIN_FLAGS_INIT
+      -DCMAKE_TOOLCHAIN_FILE=\"${CROSS_TOOLCHAIN_FLAGS_TOOLCHAIN_FILE}\"
+      )
+  elseif (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/cmake/${toolchain}.cmake)
     set(CROSS_TOOLCHAIN_FLAGS_INIT
       -DCMAKE_TOOLCHAIN_FILE=\"${CMAKE_CURRENT_SOURCE_DIR}/cmake/${toolchain}.cmake\")
   else()
@@ -18,7 +22,7 @@ function(create_cross_target project_name target_name toolchain buildtype)
       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
       )
   endif()
-  set(CROSS_TOOLCHAIN_FLAGS_${target_name} ${CROSS_TOOLCHAIN_FLAGS_INIT}
+  set(CROSS_TOOLCHAIN_FLAGS_${target_name} "${CROSS_TOOLCHAIN_FLAGS_INIT}"
     CACHE STRING "Toolchain configuration for ${target_name}")
 
   # project specific version of the flags up above
