@@ -258,4 +258,8 @@ using ssize_t = ptrdiff_t;
 ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len);
 ssize_t WriteFileWithBuffer(const std::string& path, const char* buf, size_t buf_len);
 
+#ifdef HAVE_TCMALLOC
+void PrintTcmallocStats();
+#endif
+
 #endif  // YASS_UTILS
