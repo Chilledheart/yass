@@ -133,7 +133,7 @@ def main(args):
     release = '4'
     is_zstd = False
   elif abi == '13':
-    release = '1'
+    release = '2'
     is_zstd = False
   elif abi == '14':
     release = '0'
