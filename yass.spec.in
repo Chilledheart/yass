@@ -116,6 +116,7 @@ cd build
 # old c-ares doesn't contain ares_getaddrinfo api
 %cmake_alias -G Ninja -DCMAKE_BUILD_TYPE=Release \
    -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DCLI=on -DSERVER=on \
+   -DUSE_TCMALLOC=on \
    -DUSE_SYSTEM_ZLIB=on -DUSE_SYSTEM_NGHTTP2=on \
    -DUSE_SYSTEM_MBEDTLS=on -DUSE_SYSTEM_JSON="%enable_system_json_opt" \
    -DUSE_SYSTEM_XXHASH=on \
