@@ -30,7 +30,7 @@ on:
   release:
     types: [published]
 env:
-  CACHE_EPOCH: 120
+  CACHE_EPOCH: 120-1
   GOPROXY: direct
 jobs:
   mac-release:
