@@ -298,12 +298,24 @@ void GenerateConnectRequest(std::string host, int port_num, IOBuf *buf) {
 #endif
 
 // [content provider] <== [ss server] <== [ss local] <== [content consumer]
-class SsEndToEndTest : public ::testing::Test {
+class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
  public:
-  void SetUp() override {
-    StartWorkThread();
+  static void SetUpTestSuite() {
+    // avoid triggering flag saver
+    absl::SetFlag(&FLAGS_congestion_algorithm, "cubic");
     absl::SetFlag(&FLAGS_password, "<dummy-password>");
   }
+
+  static void TearDownTestSuite() {
+    // nop
+  }
+
+  void SetUp() override {
+    StartWorkThread();
+    absl::SetFlag(&FLAGS_method, GetParam());
+    StartBackgroundTasks();
+  }
+
   void StartBackgroundTasks() {
     std::mutex m;
     bool done = false;
@@ -698,27 +710,32 @@ class SsEndToEndTest : public ::testing::Test {
 };
 }
 
+TEST_P(EndToEndTest, 4K) {
+  GenerateRandContent(4096);
+  SendRequestAndCheckResponse();
+}
+
+TEST_P(EndToEndTest, 256K) {
+  GenerateRandContent(256 * 1024);
+  SendRequestAndCheckResponse();
+}
+
+TEST_P(EndToEndTest, 1M) {
+  GenerateRandContent(1024 * 1024);
+  SendRequestAndCheckResponse();
+}
+
+static constexpr cipher_method kCiphers[] = {
 #define XX(num, name, string) \
-  TEST_F(SsEndToEndTest, name##_4K) { \
-    absl::SetFlag(&FLAGS_method, CRYPTO_##name);        \
-    StartBackgroundTasks(); \
-    GenerateRandContent(4096); \
-    SendRequestAndCheckResponse(); \
-  } \
-  TEST_F(SsEndToEndTest, name##_256K) { \
-    absl::SetFlag(&FLAGS_method, CRYPTO_##name);        \
-    StartBackgroundTasks(); \
-    GenerateRandContent(256 * 1024); \
-    SendRequestAndCheckResponse(); \
-  } \
-  TEST_F(SsEndToEndTest, name##_1M) { \
-    absl::SetFlag(&FLAGS_method, CRYPTO_##name);        \
-    StartBackgroundTasks(); \
-    GenerateRandContent(1024 * 1024); \
-    SendRequestAndCheckResponse(); \
-  }
-CIPHER_METHOD_VALID_MAP(XX)
+  CRYPTO_##name,
+  CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
+};
+
+INSTANTIATE_TEST_SUITE_P(Ss, EndToEndTest, ::testing::ValuesIn(kCiphers),
+                         [](const ::testing::TestParamInfo<cipher_method>& info) -> std::string {
+                           return to_cipher_method_name(info.param);
+                         });
 
 int main(int argc, char **argv) {
   SetExecutablePath(argv[0]);
