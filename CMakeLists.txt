@@ -233,6 +233,13 @@ else()
   endif()
 endif()
 
+# handling bug with cmake+clang-cl
+# newer clang-cl produces "Note: including file: .\\foo.h"
+# unable to parse by cmake's CMakeDetermineCompilerId.cmake
+if (MSVC AND COMPILER_CLANG)
+  set(CMAKE_CL_SHOWINCLUDES_PREFIX "Note: including file:" CACHE STRING "" FORCE)
+endif()
+
 ## postpone ASM enabling after C/CXX LANG DIALECT otherwise it might fails
 if (NOT (WIN32 AND (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "x86" OR MSVC_PROCESSOR_ARCHITECTURE STREQUAL "amd64")))
   enable_language(ASM)

@@ -30,7 +30,7 @@ on:
   release:
     types: [published]
 env:
-  CACHE_EPOCH: 120
+  CACHE_EPOCH: 121
   GOPROXY: direct
 jobs:
   linux-binary-release:
