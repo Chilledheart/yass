@@ -933,9 +933,7 @@ bool QuerySystemProxy(bool *enabled,
       return false;
     }
   }
-  if (options[0].Value.dwValue & PROXY_TYPE_PROXY) {
-    *enabled = true;
-  }
+  *enabled = !!(options[0].Value.dwValue & PROXY_TYPE_PROXY);
   if (options[1].Value.pszValue) {
     auto temp = options[1].Value.pszValue;
     *server_addr = temp ? SysWideToUTF8(temp) : std::string();
