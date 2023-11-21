@@ -17,6 +17,16 @@ enum cipher_method to_cipher_method(const std::string& method) {
   return CRYPTO_INVALID;
 }
 
+const char* to_cipher_method_name(enum cipher_method method) {
+#define XX(num, name, string) \
+  if (method == num) {        \
+    return #name;            \
+  }
+  CIPHER_METHOD_MAP(XX)
+#undef XX
+  return CRYPTO_INVALID_STR;
+}
+
 const char* to_cipher_method_str(enum cipher_method method) {
 #define XX(num, name, string) \
   if (method == num) {        \
