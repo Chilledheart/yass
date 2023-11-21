@@ -33,7 +33,7 @@ defaults:
   run:
     shell: cmd
 env:
-  CACHE_EPOCH: 120-1
+  CACHE_EPOCH: 121
   GOPROXY: direct
 jobs:
   windows-release:
