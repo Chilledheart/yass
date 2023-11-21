@@ -226,12 +226,23 @@ void GenerateConnectRequest(std::string host, int port_num, IOBuf *buf) {
   buf->prepend(request_header.size());
 }
 
+#define XX(num, name, string) \
+struct CryptoTraits##name { \
+  static constexpr cipher_method value = CRYPTO_##name; \
+};
+CIPHER_METHOD_VALID_MAP(XX)
+#undef XX
+
 // [content provider] <== [ss server] <== [ss local] <== [content consumer]
+template<typename T>
 class SsEndToEndBM : public benchmark::Fixture {
  public:
-  void SetUp(const ::benchmark::State& state) override {
+  void SetUp(::benchmark::State& state) override {
     StartWorkThread();
-    absl::SetFlag(&FLAGS_password, "<dummy-password>");
+    absl::SetFlag(&FLAGS_method, T::value);
+    StartBackgroundTasks();
+
+    GenerateRandContent(state.range(0));
   }
 
   void StartBackgroundTasks() {
@@ -260,7 +271,7 @@ class SsEndToEndBM : public benchmark::Fixture {
     }
   }
 
-  void TearDown(const ::benchmark::State& state) override {
+  void TearDown(::benchmark::State& state) override {
     StopClient();
     StopServer();
     StopContentProvider();
@@ -489,16 +500,12 @@ class SsEndToEndBM : public benchmark::Fixture {
   std::unique_ptr<cli::CliServer> local_server_;
   asio::ip::tcp::endpoint local_endpoint_;
 };
-}
+} // namespace
 
 // Register the function as a benchmark
 
 #define XX(num, name, string) \
-  BENCHMARK_DEFINE_F(SsEndToEndBM, BM_FullDuplex_##name)(benchmark::State& state) { \
-    absl::SetFlag(&FLAGS_method, CRYPTO_##name);                        \
-    StartBackgroundTasks();                                             \
-    GenerateRandContent(state.range(0));                                \
-                                                                        \
+  BENCHMARK_TEMPLATE_DEFINE_F(SsEndToEndBM, name, CryptoTraits##name)(benchmark::State& state) { \
     asio::io_context io_context;                                        \
     asio::ip::tcp::socket s(io_context);                                \
     SendRequestAndCheckResponse_Pre(s);                                 \
@@ -508,8 +515,8 @@ class SsEndToEndBM : public benchmark::Fixture {
     SendRequestAndCheckResponse_Post(s);                                \
     state.SetBytesProcessed(int64_t(state.iterations()) * int64_t(state.range(0))); \
   }                                                                     \
-  BENCHMARK_REGISTER_F(SsEndToEndBM, BM_FullDuplex_##name)              \
-    ->Range(4096, 1*1024*1024)->UseManualTime();
+  BENCHMARK_REGISTER_F(SsEndToEndBM, name)              \
+    ->Name("SsEndToEndBM_FullDuplex_" # name)->Range(4096, 1*1024*1024)->UseManualTime();
 CIPHER_METHOD_MAP_SODIUM(XX)
 CIPHER_METHOD_MAP_HTTP(XX)
 CIPHER_METHOD_MAP_HTTP2(XX)
@@ -550,7 +557,7 @@ static void connect_pair(asio::ip::tcp::socket &s1, asio::ip::tcp::socket &s2,
 class ASIOFixture : public benchmark::Fixture {
  public:
   ASIOFixture() : s1(io_context), s2(io_context) {}
-  void SetUp(const ::benchmark::State& state) override {
+  void SetUp(::benchmark::State& state) override {
     asio::error_code ec;
     connect_pair(s1, s2, ec, io_context);
     CHECK(!ec) << "connect_pair failure " << ec;
@@ -568,7 +575,7 @@ class ASIOFixture : public benchmark::Fixture {
     GenerateRandContent(state.range(0));
   }
 
-  void TearDown(const ::benchmark::State& state) override {
+  void TearDown(::benchmark::State& state) override {
     asio::error_code ec;
     s1.close(ec);
     CHECK(!ec) << "close failure " << ec;
@@ -714,7 +721,12 @@ int main(int argc, char** argv) {
     CHECK(Net_ipv6works()) << "IPv6 stack is required but not available";
   }
 
+  // avoid triggering flag saver
+  absl::SetFlag(&FLAGS_congestion_algorithm, "cubic");
+  absl::SetFlag(&FLAGS_password, "<dummy-password>");
+
   ::benchmark::RunSpecifiedBenchmarks();
+
   ::benchmark::Shutdown();
   return 0;
 }
