@@ -13,4 +13,8 @@
 
 #include "third_party/sqlite/sqlite3_shim_fixups.h"
 
+// fixing missing declaration of alloca
+#if defined(__FreeBSD__)
+#include <stdlib.h>
+#endif
 #include "third_party/sqlite/src/amalgamation/sqlite3.c"
