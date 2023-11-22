@@ -953,6 +953,7 @@ func postStateArchiveLicenses() []string {
 		"LICENSE.mozilla":    filepath.Join("..", "third_party", "url", "third_party", "mozilla", "LICENSE.txt"),
 		"LICENSE.protobuf":   filepath.Join("..", "third_party", "protobuf", "LICENSE"),
 		"LICENSE.quiche":     filepath.Join("..", "third_party", "quiche", "src", "LICENSE"),
+		"LICENSE.sqlite":     filepath.Join("..", "third_party", "sqlite", "LICENSE"),
 		"LICENSE.tcmalloc":   filepath.Join("..", "third_party", "tcmalloc", "src", "LICENSE"),
 		"LICENSE.xxhash":     filepath.Join("..", "third_party", "xxhash", "LICENSE"),
 		"LICENSE.zlib":       filepath.Join("..", "third_party", "zlib", "LICENSE"),
