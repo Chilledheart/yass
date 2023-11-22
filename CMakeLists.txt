@@ -2584,6 +2584,14 @@ include_directories(third_party/leveldb/include SYSTEM)
 set(SUPPORT_LIBS leveldb ${SUPPORT_LIBS})
 
 # *****************************************************************************************
+#           sqlite3 Library
+# *****************************************************************************************
+
+add_subdirectory(third_party/sqlite)
+include_directories(third_party/sqlite SYSTEM)
+set(SUPPORT_LIBS sqlite ${SUPPORT_LIBS})
+
+# *****************************************************************************************
 #           Compiler warning flags
 # *****************************************************************************************
 
@@ -3578,6 +3586,7 @@ if (BUILD_TESTS)
     src/core/cipher_test.cpp
     src/core/c-ares_test.cpp
     src/core/process_utils_test.cpp
+    third_party/sqlite/sqlite3_test.cc
     )
   target_include_directories(yass_test PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src
