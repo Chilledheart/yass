@@ -2584,6 +2584,14 @@ include_directories(third_party/leveldb/include SYSTEM)
 set(SUPPORT_LIBS leveldb ${SUPPORT_LIBS})
 
 # *****************************************************************************************
+#           sqlite3 Library
+# *****************************************************************************************
+
+add_subdirectory(third_party/sqlite)
+include_directories(third_party/sqlite SYSTEM)
+set(SUPPORT_LIBS sqlite ${SUPPORT_LIBS})
+
+# *****************************************************************************************
 #           Compiler warning flags
 # *****************************************************************************************
 
