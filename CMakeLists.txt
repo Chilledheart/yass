@@ -2571,6 +2571,7 @@ endif()
 #           leveldb Library
 # *****************************************************************************************
 
+message(STATUS "Compiling with bundled leveldb library")
 set(LEVELDB_BUILD_UTILS "OFF" CACHE STRING "")
 set(LEVELDB_BUILD_TESTS "OFF" CACHE STRING "")
 set(LEVELDB_BUILD_BENCHMARKS "OFF" CACHE STRING "")
@@ -2587,6 +2588,7 @@ set(SUPPORT_LIBS leveldb ${SUPPORT_LIBS})
 #           sqlite3 Library
 # *****************************************************************************************
 
+message(STATUS "Compiling with bundled sqlite3 library")
 add_subdirectory(third_party/sqlite)
 include_directories(third_party/sqlite SYSTEM)
 set(SUPPORT_LIBS sqlite ${SUPPORT_LIBS})
