@@ -139,15 +139,19 @@ jobs:
         if: ${{ matrix.arch == 'x86' ||  matrix.arch == 'x64' }}
         run: |
           # android sysimg doesn't like resolv.conf
-          mkdir -p $SYSROOT/dev $SYSROOT/proc $SYSROOT/tmp
+          mkdir -p $SYSROOT/dev $SYSROOT/proc $SYSROOT/data/local/tmp
           bwrap --die-with-parent --bind $SYSROOT / \
             --proc /proc --dev /dev \
             --unshare-all \
-            --bind $PWD/build-android-${{ matrix.arch }} /tmp \
-            /tmp/yass_test
+            --bind $PWD/build-android-${{ matrix.arch }} /data/local/tmp \
+            /data/local/tmp/yass_test
       - name: Run tests (non x86, under qemu emulation)
         if: ${{ matrix.arch != 'x86' && matrix.arch != 'x64' }}
         run: |
+          # TODO: better with chroot before qemu emulation
+          # required by leveldb unittests
+          sudo mkdir -p /data/local/tmp
+          sudo chown -R $USER /data
           qemu-${{ matrix.qemu_suffix }}-static -L $SYSROOT \
             $PWD/build-android-${{ matrix.arch }}/yass_test
       - name: Upload dist tarball (including debuginfo)
