@@ -2568,6 +2568,15 @@ if (USE_BALSA_HTTP_PARSER)
 endif()
 
 # *****************************************************************************************
+#           snappy Library
+# *****************************************************************************************
+
+message(STATUS "Compiling with bundled snappy library")
+add_subdirectory(third_party/snappy)
+include_directories(third_party/snappy/src SYSTEM)
+set(SUPPORT_LIBS snappy ${SUPPORT_LIBS})
+
+# *****************************************************************************************
 #           leveldb Library
 # *****************************************************************************************
 
@@ -2577,7 +2586,7 @@ set(LEVELDB_BUILD_TESTS "OFF" CACHE STRING "")
 set(LEVELDB_BUILD_BENCHMARKS "OFF" CACHE STRING "")
 set(LEVELDB_INSTALL "OFF" CACHE STRING "")
 set(HAVE_CRC32C 0)
-set(HAVE_SNAPPY 0)
+set(HAVE_SNAPPY 1)
 set(HAVE_ZSTD 0) #TODO: linking zstd support
 set(HAVE_TCMALLOC 0)
 add_subdirectory(third_party/leveldb)
