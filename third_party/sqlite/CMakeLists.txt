@@ -173,8 +173,8 @@ if (UNIX)
   target_compile_definitions(sqlite PUBLIC USE_PREAD=1)
 endif()
 
-target_include_directories(sqlite PRIVATE
-  .  # sqlite3.h here must override the one in src/amalgamation/.
+target_include_directories(sqlite PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}  # sqlite3.h here must override the one in src/amalgamation/.
   src/amalgamation)
 
 target_include_directories(sqlite PUBLIC ../..)
