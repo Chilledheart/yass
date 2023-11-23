@@ -59,3 +59,6 @@
 [submodule "third_party/tcmalloc/src"]
 	path = third_party/tcmalloc/src
 	url = https://github.com/google/tcmalloc
+[submodule "third_party/snappy/src"]
+	path = third_party/snappy/src
+	url = https://github.com/google/snappy
