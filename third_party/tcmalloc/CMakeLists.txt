@@ -3,7 +3,7 @@ add_library(tcmalloc_new_extension STATIC
   src/tcmalloc/new_extension.h
 )
 
-target_include_directories(tcmalloc_new_extension PRIVATE
+target_include_directories(tcmalloc_new_extension PUBLIC
   src
 )
 
@@ -16,7 +16,7 @@ add_library(tcmalloc_malloc_extension STATIC
   src/tcmalloc/malloc_extension.h
 )
 
-target_include_directories(tcmalloc_malloc_extension PRIVATE
+target_include_directories(tcmalloc_malloc_extension PUBLIC
   src
 )
 

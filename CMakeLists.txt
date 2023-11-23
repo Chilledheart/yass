@@ -1736,7 +1736,7 @@ int main() {
   endif()
 
   # linux-syscall-support
-  if (UNIX AND NOT APPLE)
+  if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR ANDROID)
     include_directories(third_party/lss)
   endif()
   if (APPLE AND COMPILER_CLANG)
@@ -1945,9 +1945,14 @@ if (ANDROID)
   set(LIBRT "OFF" CACHE BOOL "")
 endif()
 add_subdirectory(third_party/abseil-cpp)
-include_directories(third_party/abseil-cpp SYSTEM)
+set(SUPPORT_INCLUDE_DIRS
+  third_party/abseil-cpp
+  ${SUPPORT_INCLUDE_DIRS}
+)
 
 set(SUPPORT_LIBS
+  absl::base
+  absl::core_headers
   absl::flat_hash_map
   absl::flat_hash_set
   absl::flags
@@ -2000,9 +2005,11 @@ endif()
 if (USE_TCMALLOC)
   message(STATUS "Compiling with bundled tcmalloc support")
 
-  add_definitions(-DHAVE_TCMALLOC)
+  set(SUPPORT_DEFINITIONS
+    HAVE_TCMALLOC
+    ${SUPPORT_DEFINITIONS}
+  )
   add_subdirectory(third_party/tcmalloc)
-  include_directories(third_party/tcmalloc/src SYSTEM)
 
   set(SUPPORT_LIBS
     tcmalloc
@@ -2037,8 +2044,10 @@ if (MINGW AND USE_LIBCXX)
   set(CMAKE_C_FLAGS "${PREVIOUS_CMAKE_C_FLAGS}")
   set(CMAKE_CXX_FLAGS "${PREVIOUS_CMAKE_CXX_FLAGS}")
 endif()
-add_definitions(-DHAVE_BORINGSSL)
-include_directories(BEFORE third_party/boringssl/src/include SYSTEM)
+set(SUPPORT_DEFINITIONS
+  HAVE_BORINGSSL
+  ${SUPPORT_DEFINITIONS}
+)
 set(SUPPORT_LIBS crypto ssl ${SUPPORT_LIBS})
 foreach(source ${BCM_ASM_SOURCES})
   set_source_files_properties(${source} PROPERTIES GENERATED true)
@@ -2072,7 +2081,10 @@ endif()
 
 if (USE_SYSTEM_MBEDTLS AND USE_MBEDTLS)
   message(STATUS "Compiling with system mbedtls library")
-  add_definitions(-DHAVE_MBEDTLS)
+  set(SUPPORT_DEFINITIONS
+    HAVE_MBEDTLS
+    ${SUPPORT_DEFINITIONS}
+  )
 
   set(SUPPORT_LIBS mbedcrypto ${SUPPORT_LIBS})
 elseif (USE_MBEDTLS)
@@ -2090,9 +2102,11 @@ elseif (USE_MBEDTLS)
   endif()
 
   add_subdirectory(third_party/mbedtls)
-  add_definitions(-DHAVE_MBEDTLS)
-  include_directories(third_party/mbedtls/include SYSTEM)
 
+  set(SUPPORT_DEFINITIONS
+    HAVE_MBEDTLS
+    ${SUPPORT_DEFINITIONS}
+  )
   set(SUPPORT_LIBS mbedcrypto ${SUPPORT_LIBS})
 endif()
 
@@ -2100,27 +2114,31 @@ endif()
 #           asio Library
 # *****************************************************************************************
 
-add_definitions(-DASIO_STANDALONE)
-add_definitions(-DASIO_NO_TYPEID)
-add_definitions(-DASIO_NO_EXCEPTIONS)
-add_definitions(-DASIO_NO_TS_EXECUTORS)
-add_definitions(-DASIO_SEPARATE_COMPILATION)
-add_definitions(-DASIO_NO_DEPRECATED)
-# forward libcxx present
-# we control the visiblity
-add_definitions(-DASIO_DISABLE_VISIBILITY)
-include_directories(third_party/asio/asio/include SYSTEM)
-# both of asio and quiche use std::allocator<void>
-if (MSVC AND NOT USE_LIBCXX)
-  add_definitions(-D_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
-  add_definitions(-D_SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING)
-endif()
 add_library(asio STATIC
   src/core/asio.hpp
   src/core/asio.cpp)
-target_include_directories(asio PRIVATE
+target_include_directories(asio PUBLIC
   src)
+target_include_directories(asio PUBLIC
+  third_party/googleurl/polyfills
+  third_party/asio/asio/include)
+target_compile_definitions(asio PUBLIC ASIO_STANDALONE)
+target_compile_definitions(asio PUBLIC ASIO_NO_TYPEID)
+target_compile_definitions(asio PUBLIC ASIO_NO_EXCEPTIONS)
+target_compile_definitions(asio PUBLIC ASIO_NO_TS_EXECUTORS)
+target_compile_definitions(asio PUBLIC ASIO_SEPARATE_COMPILATION)
+target_compile_definitions(asio PUBLIC ASIO_NO_DEPRECATED)
+# forward libcxx present
+# we control the visiblity
+target_compile_definitions(asio PUBLIC ASIO_DISABLE_VISIBILITY)
+# both of asio and quiche use std::allocator<void>
+if (MSVC AND NOT USE_LIBCXX)
+  target_compile_definitions(asio PUBLIC _SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
+  target_compile_definitions(asio PUBLIC _SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING)
+endif()
 target_link_libraries(asio PUBLIC
+  absl::flags
+  url
   crypto
   ssl)
 
@@ -2185,15 +2203,19 @@ if (USE_SYSTEM_JSON)
   message(STATUS "Compiling with system nlohmann json library")
 else()
   message(STATUS "Compiling with bundled nlohmann json library")
-  include_directories(third_party/json/include SYSTEM)
+  set(SUPPORT_INCLUDE_DIRS
+    third_party/json/include
+    ${SUPPORT_INCLUDE_DIRS}
+  )
 endif()
 
 # *****************************************************************************************
 #           googletest Library
 # *****************************************************************************************
 
-include_directories(third_party/googletest/googletest/include SYSTEM)
-include_directories(third_party/googletest/googlemock/include SYSTEM)
+# for forward declaration
+include_directories(third_party/googletest/googletest/include)
+include_directories(third_party/googletest/googlemock/include)
 if (BUILD_TESTS)
   # build re2 required by absl
   set(RE2_SOURCES
@@ -2254,7 +2276,7 @@ if (BUILD_TESTS)
   add_library(yass_gtest STATIC
     third_party/googletest/googletest/src/gtest-all.cc
     third_party/googletest/googlemock/src/gmock-all.cc)
-  target_include_directories(yass_gtest PRIVATE
+  target_include_directories(yass_gtest PUBLIC
     third_party/googletest/googletest
     third_party/googletest/googlemock)
 
@@ -2363,8 +2385,8 @@ if (USE_SYSTEM_XXHASH)
   set(SUPPORT_LIBS xxhash ${SUPPORT_LIBS})
 else()
   message(STATUS "Compiling with bundled xxhash")
-  include_directories(third_party/xxhash SYSTEM)
   add_library(xxhash STATIC third_party/xxhash/xxhash.c)
+  target_include_directories(xxhash PUBLIC third_party/xxhash)
 
   if (COMPILER_MSVC)
     target_compile_options(xxhash PRIVATE "/wd4255")
@@ -2387,10 +2409,12 @@ set(protobuf_BUILD_TESTS "OFF" CACHE STRING "")
 set(protobuf_WITH_ZLIB "OFF" CACHE STRING "")
 set(protobuf_BUILD_SHARED_LIBS "OFF" CACHE STRING "")
 add_subdirectory(third_party/protobuf)
-include_directories(third_party/protobuf/src SYSTEM)
 # required because it is not bound with libproto/libproto-lite targets
-add_definitions(-DGOOGLE_PROTOBUF_NO_RTTI=1)
-add_definitions(-DPROTOBUF_USE_EXCEPTIONS=0)
+set(SUPPORT_DEFINITIONS
+  GOOGLE_PROTOBUF_NO_RTTI=1
+  PROTOBUF_USE_EXCEPTIONS=0
+  ${SUPPORT_DEFINITIONS}
+)
 
 # fix protoc's path
 set_target_properties(protoc PROPERTIES
@@ -2428,9 +2452,7 @@ if (USE_SYSTEM_ZLIB)
 else()
   message(STATUS "Compiling with bundled zlib")
   add_subdirectory(third_party/zlib)
-  include_directories(third_party/zlib SYSTEM)
   set(SUPPORT_LIBS zlib ${SUPPORT_LIBS})
-  set(ZLIB_LIBRARIES zlib)
 endif()
 
 # *****************************************************************************************
@@ -2450,13 +2472,19 @@ endif()
 
 if (USE_SYSTEM_CARES AND USE_CARES)
   message(STATUS "Compiling with system cares")
-  add_definitions(-DHAVE_C_ARES)
+  set(SUPPORT_DEFINITIONS
+    HAVE_C_ARES
+    ${SUPPORT_DEFINITIONS}
+  )
   include_directories(${CARES_INCLUDE_DIRS})
   link_directories(${CARES_LIBRARY_DIRS})
   link_libraries(${CARES_LIBRARIES})
 elseif (USE_CARES)
   message(STATUS "Compiling with bundled cares")
-  add_definitions(-DHAVE_C_ARES)
+  set(SUPPORT_DEFINITIONS
+    HAVE_C_ARES
+    ${SUPPORT_DEFINITIONS}
+  )
   set(CARES_BUILD_TOOLS OFF CACHE BOOL "")
   set(CARES_SHARED OFF CACHE BOOL "")
   set(CARES_STATIC ON CACHE BOOL "")
@@ -2464,11 +2492,8 @@ elseif (USE_CARES)
   set(CARES_BUILD_TESTS OFF CACHE BOOL "")
   set(CARES_INSTALL OFF CACHE BOOL "")
   add_subdirectory(third_party/c-ares)
-  include_directories(third_party/c-ares/include SYSTEM)
-  include_directories(${CMAKE_CURRENT_BINARY_DIR}/third_party/c-ares SYSTEM)
 
   set(SUPPORT_LIBS c-ares ${SUPPORT_LIBS})
-  set(CARES_LIBRARIES c-ares)
 endif()
 
 # *****************************************************************************************
@@ -2488,20 +2513,29 @@ endif()
 
 if (USE_SYSTEM_NGHTTP2 AND USE_NGHTTP2)
   message(STATUS "Compiling with system libnghttp2")
-  add_definitions(-DHAVE_NGHTTP2)
+  set(SUPPORT_DEFINITIONS
+    HAVE_NGHTTP2
+    ${SUPPORT_DEFINITIONS}
+  )
   include_directories(${NGHTTP2_INCLUDE_DIRS})
   link_directories(${NGHTTP2_LIBRARY_DIRS})
   link_libraries(${NGHTTP2_LIBRARIES})
 elseif (USE_NGHTTP2)
   message(STATUS "Compiling with bundled libnghttp2")
-  add_definitions(-DHAVE_NGHTTP2)
+  set(SUPPORT_DEFINITIONS
+    HAVE_NGHTTP2
+    ${SUPPORT_DEFINITIONS}
+  )
+  set(SUPPORT_INCLUDE_DIRS
+    third_party/nghttp2/lib/includes
+    ${CMAKE_CURRENT_BINARY_DIR}/third_party/nghttp2/lib/includes
+    ${SUPPORT_INCLUDE_DIRS}
+  )
   set(ENABLE_LIB_ONLY ON CACHE BOOL "")
   set(ENABLE_SHARED_LIB OFF CACHE BOOL "")
   set(ENABLE_STATIC_LIB ON CACHE BOOL "")
   set(ENABLE_DOC OFF CACHE BOOL "")
   set(DISABLE_INSTALL ON CACHE BOOL "")
-  include_directories(third_party/nghttp2/lib/includes SYSTEM)
-  include_directories(${CMAKE_CURRENT_BINARY_DIR}/third_party/nghttp2/lib/includes SYSTEM)
   add_subdirectory(third_party/nghttp2)
   if (COMPILER_CLANG)
     target_compile_options(nghttp2_static PRIVATE -Wno-cast-qual)
@@ -2517,6 +2551,10 @@ elseif (USE_NGHTTP2)
     target_compile_options(nghttp2_static PRIVATE -Wno-covered-switch-default)
   endif()
   set(NGHTTP2_LIBRARIES nghttp2_static)
+  set(SUPPORT_LIBS
+    nghttp2_static
+    ${SUPPORT_LIBS}
+  )
 endif()
 
 # *****************************************************************************************
@@ -2525,15 +2563,11 @@ endif()
 
 # include both of googleurl and quiche
 # TODO:Uncomment the below line out
-add_definitions(-DHAVE_QUICHE)
+set(SUPPORT_DEFINITIONS
+  HAVE_QUICHE
+  ${SUPPORT_DEFINITIONS}
+)
 add_subdirectory(third_party/quiche)
-include_directories(
-  third_party/googleurl
-  third_party/googleurl/polyfills
-  third_party/quiche/overrides
-  third_party/quiche/src
-  third_party/quiche/src/quiche/common/platform/default
-  SYSTEM)
 set(SUPPORT_LIBS url quiche ${SUPPORT_LIBS})
 
 # *****************************************************************************************
@@ -2557,13 +2591,16 @@ elseif(NOT USE_BALSA_HTTP_PARSER)
     third_party/http_parser/http_parser.h
     third_party/http_parser/http_parser.c
     )
-  include_directories(third_party/http_parser SYSTEM)
+  target_include_directories(http_parser PUBLIC third_party/http_parser)
   set(SUPPORT_LIBS http_parser ${SUPPORT_LIBS})
 endif()
 
 if (USE_BALSA_HTTP_PARSER)
   message(STATUS "Compiling with balsa http parser")
-  add_definitions(-DHAVE_BALSA_HTTP_PARSER)
+  set(SUPPORT_DEFINITIONS
+    HAVE_BALSA_HTTP_PARSER
+    ${SUPPORT_DEFINITIONS}
+  )
   set(SUPPORT_LIBS balsa ${SUPPORT_LIBS})
 endif()
 
@@ -2573,7 +2610,7 @@ endif()
 
 message(STATUS "Compiling with bundled snappy library")
 add_subdirectory(third_party/snappy)
-include_directories(third_party/snappy/src SYSTEM)
+include_directories(third_party/snappy/src)
 set(SUPPORT_LIBS snappy ${SUPPORT_LIBS})
 
 # *****************************************************************************************
@@ -2590,7 +2627,6 @@ set(HAVE_SNAPPY 1)
 set(HAVE_ZSTD 0) #TODO: linking zstd support
 set(HAVE_TCMALLOC 0)
 add_subdirectory(third_party/leveldb)
-include_directories(third_party/leveldb/include SYSTEM)
 set(SUPPORT_LIBS leveldb ${SUPPORT_LIBS})
 
 # *****************************************************************************************
@@ -2599,7 +2635,6 @@ set(SUPPORT_LIBS leveldb ${SUPPORT_LIBS})
 
 message(STATUS "Compiling with bundled sqlite3 library")
 add_subdirectory(third_party/sqlite)
-include_directories(third_party/sqlite SYSTEM)
 set(SUPPORT_LIBS sqlite ${SUPPORT_LIBS})
 
 # *****************************************************************************************
@@ -3108,10 +3143,18 @@ add_library(yass_base STATIC
   ${files} ${hfiles}
   )
 
-target_link_libraries(yass_base PUBLIC asio)
-if (USE_CARES)
-  target_link_libraries(yass_base PUBLIC ${CARES_LIBRARIES})
-endif()
+target_include_directories(yass_base PUBLIC
+  ${SUPPORT_INCLUDE_DIRS})
+
+target_include_directories(yass_base PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+target_include_directories(yass_base PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
+
+target_compile_definitions(yass_base PUBLIC
+  ${SUPPORT_DEFINITIONS})
+
 target_link_libraries(yass_base PUBLIC ${SUPPORT_LIBS})
 
 if (USE_LIBCXX)
@@ -3123,11 +3166,6 @@ if (ANDROID)
   target_link_libraries(yass_base PUBLIC log)
 endif()
 
-target_include_directories(yass_base PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/src)
-
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party SYSTEM)
-
 add_library(yass_cli_lib OBJECT
   src/cli/cli_worker.cpp
   src/cli/cli_connection.cpp
@@ -3137,6 +3175,8 @@ add_library(yass_cli_lib OBJECT
   )
 target_include_directories(yass_cli_lib PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+target_link_libraries(yass_cli_lib PUBLIC yass_base)
 
 if (CLI)
   add_executable(yass_cli
@@ -3176,6 +3216,8 @@ add_library(yass_server_lib OBJECT
   )
 target_include_directories(yass_server_lib PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+target_link_libraries(yass_server_lib PUBLIC yass_base)
 
 if (SERVER)
   add_executable(yass_server
@@ -3606,7 +3648,6 @@ if (BUILD_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/server
       )
   target_link_libraries(yass_test PUBLIC
-      ${SUPPORT_LIBS}
       yass_cli_lib
       yass_server_lib
       yass_gtest
@@ -3671,7 +3712,7 @@ if (BUILD_TESTS)
   endif()
   if (USE_CURL AND CURL_FOUND)
     target_compile_definitions(yass_test PRIVATE HAVE_CURL)
-    target_include_directories(yass_test PRIVATE ${CURL_INCLUDE_DIRS})
+    target_include_directories(yass_test SYSTEM PRIVATE ${CURL_INCLUDE_DIRS})
     target_compile_options(yass_test PRIVATE ${CURL_CFLAGS} ${CURL_CFLAGS_OTHER})
     target_link_directories(yass_test PRIVATE ${CURL_LIBRARY_DIRS})
     target_link_libraries(yass_test PRIVATE ${CURL_LIBRARIES})
@@ -3690,7 +3731,6 @@ if (BUILD_BENCHMARKS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/server
       )
   target_link_libraries(yass_benchmark PUBLIC
-      ${SUPPORT_LIBS}
       yass_cli_lib
       yass_server_lib
       benchmark::benchmark
