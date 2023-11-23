@@ -147,6 +147,11 @@ endif()
 enable_language(C)
 enable_language(CXX)
 
+# required by zstd
+if (NOT COMPILER_MSVC)
+  enable_language(ASM)
+endif()
+
 ## Setup compiler informations
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
     CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
@@ -2607,7 +2612,21 @@ endif()
 message(STATUS "Compiling with bundled snappy library")
 add_subdirectory(third_party/snappy)
 include_directories(third_party/snappy/src)
-set(SUPPORT_LIBS snappy ${SUPPORT_LIBS})
+
+# *****************************************************************************************
+#           zstd Library
+# *****************************************************************************************
+
+message(STATUS "Compiling with bundled zstd library")
+set(ZSTD_BUILD_PROGRAMS "OFF" CACHE STRING "")
+set(ZSTD_BUILD_CONTRIB "OFF" CACHE STRING "")
+set(ZSTD_BUILD_TESTS "OFF" CACHE STRING "")
+set(ZSTD_BUILD_STATIC "ON" CACHE STRING "")
+set(ZSTD_BUILD_SHARED "OFF" CACHE STRING "")
+set(ZSTD_PROGRAMS_LINK_SHARED "OFF" CACHE STRING "")
+set(ZSTD_INSTALL "OFF" CACHE STRING "")
+add_subdirectory(third_party/zstd/build/cmake)
+include_directories(third_party/zstd/lib)
 
 # *****************************************************************************************
 #           leveldb Library
@@ -2620,7 +2639,7 @@ set(LEVELDB_BUILD_BENCHMARKS "OFF" CACHE STRING "")
 set(LEVELDB_INSTALL "OFF" CACHE STRING "")
 set(HAVE_CRC32C 0)
 set(HAVE_SNAPPY 1)
-set(HAVE_ZSTD 0) #TODO: linking zstd support
+set(HAVE_ZSTD 1)
 set(HAVE_TCMALLOC 0)
 add_subdirectory(third_party/leveldb)
 set(SUPPORT_LIBS leveldb ${SUPPORT_LIBS})
