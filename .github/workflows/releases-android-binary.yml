@@ -148,11 +148,10 @@ jobs:
       - name: Run tests (non x86, under qemu emulation)
         if: ${{ matrix.arch != 'x86' && matrix.arch != 'x64' }}
         run: |
-          # TODO: better with chroot before qemu emulation
           # required by leveldb unittests
-          sudo mkdir -p /data/local/tmp
-          sudo chown -R $USER /data
+          mkdir -p $SYSROOT/data/local/tmp
           qemu-${{ matrix.qemu_suffix }}-static -L $SYSROOT \
+            -E TMPDIR=$SYSROOT/data/local/tmp \
             $PWD/build-android-${{ matrix.arch }}/yass_test
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
