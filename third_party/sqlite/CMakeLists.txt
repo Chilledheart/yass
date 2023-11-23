@@ -177,7 +177,8 @@ target_include_directories(sqlite PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}  # sqlite3.h here must override the one in src/amalgamation/.
   src/amalgamation)
 
-target_include_directories(sqlite PUBLIC ../..)
+target_include_directories(sqlite PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 
 # By default, we disable all SQLite features that can be disabled by adding a
 # SQLITE_OMIT_ define, or by leaving out a SQLITE_ENABLE_ define. We only enable
