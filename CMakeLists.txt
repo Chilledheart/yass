@@ -1945,10 +1945,6 @@ if (ANDROID)
   set(LIBRT "OFF" CACHE BOOL "")
 endif()
 add_subdirectory(third_party/abseil-cpp)
-set(SUPPORT_INCLUDE_DIRS
-  third_party/abseil-cpp
-  ${SUPPORT_INCLUDE_DIRS}
-)
 
 set(SUPPORT_LIBS
   absl::base
