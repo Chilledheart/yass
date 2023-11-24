@@ -5,6 +5,7 @@
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
+#include "core/utils_fs.hpp"
 #include "core/process_utils.hpp"
 #include "config/config.hpp"
 
@@ -25,6 +26,8 @@
 #define G_SOURCE_FUNC(f) ((GSourceFunc) (void (*)(void)) (f))
 #endif
 
+using namespace yass;
+
 static const char* kAutoStartFileContent =
 "[Desktop Entry]\n"
 "Type=Application\n"
@@ -36,47 +39,6 @@ static const char* kAutoStartFileContent =
 "Categories=Network;GTK;Utility\n";
 
 namespace {
-
-// returns true if the "file" exists and is a symbolic link
-bool IsFile(const std::string& path) {
-  struct stat Stat;
-  if (::stat(path.c_str(), &Stat) != 0) {
-    return false;
-  }
-  if (S_ISLNK(Stat.st_mode)) {
-    char real_path[PATH_MAX];
-    if (char* resolved_path = ::realpath(path.c_str(), real_path)) {
-      return ::stat(resolved_path, &Stat) == 0 && S_ISREG(Stat.st_mode);
-    }
-  }
-  return S_ISREG(Stat.st_mode);
-}
-
-// returns true if the "dir" exists and is a symbolic link
-bool IsDirectory(const std::string& path) {
-  struct stat Stat;
-  if (::stat(path.c_str(), &Stat) != 0) {
-    return false;
-  }
-  if (S_ISLNK(Stat.st_mode)) {
-    char real_path[PATH_MAX];
-    if (char* resolved_path = ::realpath(path.c_str(), real_path)) {
-      return ::stat(resolved_path, &Stat) == 0 && S_ISDIR(Stat.st_mode);
-    }
-  }
-  return S_ISDIR(Stat.st_mode);
-}
-
-bool CreatePrivateDirectory(const std::string& path) {
-  return ::mkdir(path.c_str(), S_IRUSR | S_IWUSR | S_IXUSR) != 0;
-}
-
-bool EnsureCreatedDirectory(const std::string& path) {
-  if (!IsDirectory(path) && !CreatePrivateDirectory(path)) {
-    return false;
-  }
-  return true;
-}
 
 bool WriteFileWithContent(const std::string& path, absl::string_view context) {
   int fd = ::open(path.c_str(), O_WRONLY | O_TRUNC | O_CREAT,
@@ -132,16 +94,19 @@ void Utils::EnableAutoStart(bool on) {
     absl::StrCat(GetAutostartDirectory(), "/" ,
                  DEFAULT_AUTOSTART_NAME , ".desktop");
   if (!on) {
-    if (::unlink(autostart_desktop_path.c_str()) != 0) {
+    if (!RemoveFile(autostart_desktop_path)) {
       PLOG(WARNING)
           << "Internal error: unable to remove autostart file";
     }
   } else {
-    EnsureCreatedDirectory(GetAutostartDirectory());
+    if (!CreateDirectories(GetAutostartDirectory())) {
+      PLOG(WARNING)
+          << "Internal error: unable to create config directory";
+    }
 
     // force update, delete first
     if (IsFile(autostart_desktop_path) &&
-        ::unlink(autostart_desktop_path.c_str()) != 0) {
+        !RemoveFile(autostart_desktop_path)) {
       PLOG(WARNING)
           << "Internal error: unable to remove previous autostart file";
     }

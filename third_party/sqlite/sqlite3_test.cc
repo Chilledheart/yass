@@ -5,6 +5,7 @@
 #include <gtest/gtest-message.h>
 #include <filesystem>
 
+#include "core/utils_fs.hpp"
 #include "test_util.hpp"
 #include <sqlite3.h>
 
@@ -61,10 +62,7 @@ static void SqliteDestroyDB(SqliteStorageType type, const std::string& filename)
   if (type == kMemory) {
     return;
   }
-  std::error_code ec;
-  std::filesystem::path p(filename);
-  std::filesystem::remove(p, ec);
-  ASSERT_FALSE(ec) << "Removing sqlite file failed: " << ec;
+  ASSERT_TRUE(RemoveFile(filename)) << "Removing sqlite file failed";
 }
 
 class SqliteTest : public ::testing::TestWithParam<SqliteStorageType> {

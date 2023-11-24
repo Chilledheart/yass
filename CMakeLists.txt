@@ -2988,6 +2988,7 @@ set(files
     src/core/rand_util.cpp
     src/core/logging.cpp
     src/core/utils.cpp
+    src/core/utils_fs.cpp
     src/core/safe_strerror.cpp
     src/core/debug.cpp
     src/core/string_util.cpp
@@ -3070,6 +3071,7 @@ set(hfiles
     src/core/rand_util.hpp
     src/core/logging.hpp
     src/core/utils.hpp
+    src/core/utils_fs.hpp
     src/core/safe_strerror.hpp
     src/core/debug.hpp
     src/core/string_util.hpp
