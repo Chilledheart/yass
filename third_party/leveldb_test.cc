@@ -17,13 +17,41 @@ static std::string RandString(size_t length) {
   return ret;
 }
 
+static const char* LevelDBCompressionTypeToName(leveldb::CompressionType type) {
+  switch(type) {
+    case leveldb::kNoCompression:
+      return "NoCompression";
+    case leveldb::kSnappyCompression:
+      return "SnappyCompression";
+    case leveldb::kZstdCompression:
+      return "ZstdCompression";
+    default:
+      return "InvalidCompression";
+  }
+}
+
+static const char* LevelDBCompressionTypeToDBName(leveldb::CompressionType type) {
+  switch(type) {
+    case leveldb::kNoCompression:
+      return "test-ldb-no";
+    case leveldb::kSnappyCompression:
+      return "test-ldb-snappy";
+    case leveldb::kZstdCompression:
+      return "test-ldb-zstd";
+    default:
+      return "test-ldb-invalid";
+  }
+}
+
+
 class LevelDBTest : public ::testing::TestWithParam<leveldb::CompressionType> {
  public:
   void SetUp() override {
+    db = nullptr;
     leveldb::Options options;
     options.compression = GetParam();
     options.create_if_missing = true;
-    auto status = leveldb::DB::Open(options, ::testing::TempDir() + "test-db", &db);
+    auto status = leveldb::DB::Open(options, ::testing::TempDir() + LevelDBCompressionTypeToDBName(GetParam()), &db);
     ASSERT_TRUE(status.ok()) << status.ToString();
   }
 
@@ -33,7 +61,7 @@ class LevelDBTest : public ::testing::TestWithParam<leveldb::CompressionType> {
     leveldb::Options options;
     options.compression = GetParam();
     options.create_if_missing = true;
-    auto status = leveldb::DestroyDB(::testing::TempDir() + "test-db", options);
+    auto status = leveldb::DestroyDB(::testing::TempDir() + LevelDBCompressionTypeToDBName(GetParam()), options);
     ASSERT_TRUE(status.ok()) << status.ToString();
   }
 
@@ -94,15 +122,6 @@ static constexpr leveldb::CompressionType kCompressions[] = {
 };
 
 INSTANTIATE_TEST_SUITE_P(ThirdParty, LevelDBTest, ::testing::ValuesIn(kCompressions),
-                         [](const ::testing::TestParamInfo<leveldb::CompressionType>& info) -> std::string {
-                           switch(info.param) {
-                             case leveldb::kNoCompression:
-                               return "NoCompression";
-                             case leveldb::kSnappyCompression:
-                               return "SnappyCompression";
-                             case leveldb::kZstdCompression:
-                               return "ZstdCompression";
-                             default:
-                               return "InvalidCompression";
-                           }
-                         });
+  [](const ::testing::TestParamInfo<leveldb::CompressionType>& info) -> std::string {
+     return LevelDBCompressionTypeToName(info.param);
+  });
