@@ -2625,6 +2625,7 @@ set(ZSTD_BUILD_STATIC "ON" CACHE STRING "")
 set(ZSTD_BUILD_SHARED "OFF" CACHE STRING "")
 set(ZSTD_PROGRAMS_LINK_SHARED "OFF" CACHE STRING "")
 set(ZSTD_INSTALL "OFF" CACHE STRING "")
+set(ZSTD_LEGACY_SUPPORT "OFF" CACHE STRING "")
 add_subdirectory(third_party/zstd/build/cmake)
 include_directories(third_party/zstd/lib)
 
