@@ -9,6 +9,7 @@
 #include <absl/base/thread_annotations.h>
 
 #include "core/logging.hpp"
+#include "core/process_utils.hpp"
 
 #define _GNU_SOURCE 1  // needed for O_NOFOLLOW and pread()/pwrite()
 
@@ -408,22 +409,6 @@ int64_t UsecToCycles(int64_t usec);
 
 typedef double WallTime;
 WallTime WallTime_Now();
-
-#ifdef COMPILER_MSVC
-// On Windows, process id and thread id are of the same type according to the
-// return types of GetProcessId() and GetThreadId() are both DWORD, an unsigned
-// 32-bit type.
-using pid_t = uint32_t;
-static_assert(sizeof(uint32_t) == sizeof(DWORD), "");
-#elif defined(_WIN32)
-static_assert(sizeof(pid_t) >= sizeof(DWORD), "");
-#endif
-
-pid_t GetMainThreadPid();
-bool PidHasChanged();
-
-pid_t GetPID();
-pid_t GetTID();
 
 const std::string& MyUserName();
 
@@ -2983,90 +2968,6 @@ int64_t UsecToCycles(int64_t usec) {
 WallTime WallTime_Now() {
   // Now, cycle clock is retuning microseconds since the epoch.
   return static_cast<double>(CycleClock_Now()) * 0.000001;
-}
-
-static pid_t g_main_thread_pid = GetPID();
-pid_t GetMainThreadPid() {
-  return g_main_thread_pid;
-}
-
-bool PidHasChanged() {
-  pid_t pid = GetPID();
-  if (g_main_thread_pid == pid) {
-    return false;
-  }
-  g_main_thread_pid = pid;
-  return true;
-}
-
-// Keep the same implementation with chromium
-
-#if defined(OS_LINUX) && !defined(OS_ANDROID)
-
-// Store the thread ids in local storage since calling the SWI can be
-// expensive and PlatformThread::CurrentId is used liberally. Clear
-// the stored value after a fork() because forking changes the thread
-// id. Forking without going through fork() (e.g. clone()) is not
-// supported, but there is no known usage. Using thread_local is
-// fine here (despite being banned) since it is going to be allowed
-// but is blocked on a clang bug for Mac (https://crbug.com/829078)
-// and we can't use ThreadLocalStorage because of re-entrancy due to
-// CHECK/DCHECKs.
-thread_local pid_t g_thread_id = -1;
-
-static void ClearTidCache() {
-  g_thread_id = -1;
-}
-
-class InitAtFork {
- public:
-  InitAtFork() { pthread_atfork(nullptr, nullptr, ClearTidCache); }
-};
-
-#endif  // defined(OS_LINUX) && !defined(OS_ANDROID)
-
-pid_t GetPID() {
-  // Pthreads doesn't have the concept of a thread ID, so we have to reach down
-  // into the kernel.
-#if defined(OS_POSIX)
-  return getpid();
-#elif defined(OS_WIN)
-  return GetCurrentProcessId();
-#else
-#error "Lack GetPID implementation for host environment"
-#endif
-}
-
-pid_t GetTID() {
-  // Pthreads doesn't have the concept of a thread ID, so we have to reach down
-  // into the kernel.
-#if defined(OS_APPLE)
-  return pthread_mach_thread_np(pthread_self());
-  // On Linux and MacOSX, we try to use gettid().
-#elif defined(OS_LINUX) && !defined(OS_ANDROID)
-  static InitAtFork init_at_fork;
-  if (g_thread_id == -1) {
-    g_thread_id = syscall(__NR_gettid);
-  } else {
-    DCHECK_EQ(g_thread_id, syscall(__NR_gettid))
-        << "Thread id stored in TLS is different from thread id returned by "
-           "the system. It is likely that the process was forked without going "
-           "through fork().";
-  }
-  return g_thread_id;
-#elif defined(OS_ANDROID)
-  // Note: do not cache the return value inside a thread_local variable on
-  // Android (as above). The reasons are:
-  // - thread_local is slow on Android (goes through emutls)
-  // - gettid() is fast, since its return value is cached in pthread (in the
-  //   thread control block of pthread). See gettid.c in bionic.
-  return gettid();
-#elif defined(OS_WIN)
-  return GetCurrentThreadId();
-#else
-  // If none of the techniques above worked, we use pthread_self().
-  return (pid_t)(uintptr_t)pthread_self();
-#endif
 }
 
 const char* const_basename(const char* filepath) {

@@ -5,6 +5,7 @@
 #include <gtest/gtest-message.h>
 #include <filesystem>
 
+#include "core/process_utils.hpp"
 #include "core/utils_fs.hpp"
 #include "test_util.hpp"
 #include <sqlite3.h>
@@ -31,12 +32,12 @@ static const char* SqliteStorageTypeToName(SqliteStorageType type) {
   }
 }
 
-static const char* SqliteStorageTypeToDbName(SqliteStorageType type) {
+static std::string SqliteStorageTypeToDbName(SqliteStorageType type) {
   switch (type) {
     case kMemory:
       return kSqliteOpenInMemoryPath;
     case kDisk:
-      return kSqliteMainDatabaseName;
+      return std::string(kSqliteMainDatabaseName) + "-" + std::to_string(GetPID());
     default:
       return "(null)";
   }

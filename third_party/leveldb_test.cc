@@ -8,6 +8,7 @@
 #include <leveldb/write_batch.h>
 
 #include "core/logging.hpp"
+#include "core/process_utils.hpp"
 #include "core/rand_util.hpp"
 
 static std::string RandString(size_t length) {
@@ -30,16 +31,16 @@ static const char* LevelDBCompressionTypeToName(leveldb::CompressionType type) {
   }
 }
 
-static const char* LevelDBCompressionTypeToDBName(leveldb::CompressionType type) {
+static std::string LevelDBCompressionTypeToDBName(leveldb::CompressionType type) {
   switch(type) {
     case leveldb::kNoCompression:
-      return "test-ldb-no";
+      return std::string("test-ldb-no") + "-" + std::to_string(GetPID());
     case leveldb::kSnappyCompression:
-      return "test-ldb-snappy";
+      return std::string("test-ldb-snappy") + "-" + std::to_string(GetPID());
     case leveldb::kZstdCompression:
-      return "test-ldb-zstd";
+      return std::string("test-ldb-zstd") + "-" + std::to_string(GetPID());
     default:
-      return "test-ldb-invalid";
+      return std::string("test-ldb-invalid") + "-" + std::to_string(GetPID());
   }
 }
 
