@@ -78,7 +78,6 @@ class SqliteTest : public ::testing::TestWithParam<SqliteStorageType> {
 
   void SetUp() override {
     db = nullptr;
-    errmsg = nullptr;
     // The flags are documented at https://www.sqlite.org/c3ref/open.html.
     //
     // Chrome uses SQLITE_OPEN_PRIVATECACHE because SQLite is used by many
@@ -95,10 +94,6 @@ class SqliteTest : public ::testing::TestWithParam<SqliteStorageType> {
   }
 
   void TearDown() override {
-    if (errmsg) {
-      sqlite3_free(errmsg);
-      errmsg = nullptr;
-    }
     // sqlite3_open_v2() will usually create a database connection handle, even
     // if an error occurs (see https://www.sqlite.org/c3ref/open.html).
     // Therefore, we'll clear `db_` immediately - particularly before triggering
@@ -110,7 +105,6 @@ class SqliteTest : public ::testing::TestWithParam<SqliteStorageType> {
     ASSERT_NO_FATAL_FAILURE(SqliteDestroyDB(GetParam(), ::testing::TempDir() + SqliteStorageTypeToDbName(GetParam())));
   }
 
-  char* errmsg;
   sqlite3* db;
 };
 
@@ -121,21 +115,42 @@ TEST_P(SqliteTest, OpenAndClose) {
 TEST_P(SqliteTest, InsertAndDelete) {
   ASSERT_EQ(SQLITE_OK, sqlite3_exec(db,
                                     "create table if not exists tbl5(name TEXT varchar(100));",
-                                    nullptr, nullptr, &errmsg)) << errmsg;
-  ASSERT_EQ(errmsg, nullptr);
+                                    nullptr, nullptr, nullptr)) << sqlite3_errmsg(db);
 
-  char s[20] = "some string";
-  char* query = sqlite3_mprintf("insert into tbl5 values ('%q');", s);
-  ASSERT_EQ(SQLITE_OK, sqlite3_exec(db, query,
-                                    nullptr, nullptr, &errmsg)) << errmsg;
-  sqlite3_free(query);
-  ASSERT_EQ(errmsg, nullptr);
+  constexpr char s[20] = "some string";
 
-  query = sqlite3_mprintf("delete from tbl5 where name= ('%q');", s);
-  ASSERT_EQ(SQLITE_OK, sqlite3_exec(db, query,
-                                    nullptr, nullptr, &errmsg)) << errmsg;
-  sqlite3_free(query);
-  ASSERT_EQ(errmsg, nullptr);
+  sqlite3_stmt *stmt;
+  const char *remaining;
+  const char* sql = "INSERT INTO tbl5(name) VALUES (?);";
+  ASSERT_EQ(SQLITE_OK, sqlite3_prepare_v2(db, sql, strlen(sql), &stmt, &remaining)) << sqlite3_errmsg(db);
+  ASSERT_TRUE(std::all_of(remaining, sql + strlen(sql), [](char c) { return std::isspace(c); }));
+  ASSERT_EQ(SQLITE_OK, sqlite3_bind_text(stmt, 1, s, strlen(s), nullptr)) << sqlite3_errmsg(db);
+  ASSERT_EQ(SQLITE_DONE, sqlite3_step(stmt)) << sqlite3_errmsg(db);
+  ASSERT_EQ(SQLITE_OK, sqlite3_finalize(stmt)) << sqlite3_errmsg(db);
+
+  sql = "SELECT name FROM tbl5 where name=?1;";
+  ASSERT_EQ(SQLITE_OK, sqlite3_prepare_v2(db, sql, strlen(sql), &stmt, &remaining)) << sqlite3_errmsg(db);
+  ASSERT_TRUE(std::all_of(remaining, sql + strlen(sql), [](char c) { return std::isspace(c); }));
+  ASSERT_EQ(SQLITE_OK, sqlite3_bind_text(stmt, 1, s, strlen(s), nullptr)) << sqlite3_errmsg(db);
+  ASSERT_EQ(SQLITE_ROW, sqlite3_step(stmt)) << sqlite3_errmsg(db);
+  ASSERT_EQ(SQLITE_TEXT, sqlite3_column_type(stmt, 0));
+  ASSERT_STREQ(s, (const char*)sqlite3_column_text(stmt, 0));
+  ASSERT_EQ(SQLITE_DONE, sqlite3_step(stmt)) << sqlite3_errmsg(db);
+  ASSERT_EQ(SQLITE_OK, sqlite3_finalize(stmt)) << sqlite3_errmsg(db);
+
+  sql = "DELETE FROM tbl5 where name=?1;";
+  ASSERT_EQ(SQLITE_OK, sqlite3_prepare_v2(db, sql, strlen(sql), &stmt, &remaining)) << sqlite3_errmsg(db);
+  ASSERT_EQ(true, std::all_of(remaining, sql + strlen(sql), [](char c) { return std::isspace(c); }));
+  ASSERT_EQ(SQLITE_OK, sqlite3_bind_text(stmt, 1, s, strlen(s), nullptr)) << sqlite3_errmsg(db);
+  ASSERT_EQ(SQLITE_DONE, sqlite3_step(stmt)) << sqlite3_errmsg(db);
+  ASSERT_EQ(SQLITE_OK, sqlite3_finalize(stmt)) << sqlite3_errmsg(db);
+
+  sql = "SELECT name FROM tbl5 where name=?1;";
+  ASSERT_EQ(SQLITE_OK, sqlite3_prepare_v2(db, sql, strlen(sql), &stmt, &remaining)) << sqlite3_errmsg(db);
+  ASSERT_TRUE(std::all_of(remaining, sql + strlen(sql), [](char c) { return std::isspace(c); }));
+  ASSERT_EQ(SQLITE_OK, sqlite3_bind_text(stmt, 1, s, strlen(s), nullptr)) << sqlite3_errmsg(db);
+  ASSERT_EQ(SQLITE_DONE, sqlite3_step(stmt)) << sqlite3_errmsg(db);
+  ASSERT_EQ(SQLITE_OK, sqlite3_finalize(stmt)) << sqlite3_errmsg(db);
 }
 
 static constexpr SqliteStorageType kTestTypes[] = {
