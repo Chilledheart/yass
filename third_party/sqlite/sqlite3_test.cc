@@ -73,7 +73,7 @@ class SqliteTest : public ::testing::TestWithParam<SqliteStorageType> {
   }
 
   static void TearDownTestSuite() {
-    // nop
+    ASSERT_EQ(SQLITE_OK, sqlite3_shutdown());
   }
 
   void SetUp() override {
@@ -114,7 +114,7 @@ TEST_P(SqliteTest, OpenAndClose) {
 
 TEST_P(SqliteTest, InsertAndDelete) {
   ASSERT_EQ(SQLITE_OK, sqlite3_exec(db,
-                                    "create table if not exists tbl5(name TEXT varchar(100));",
+                                    "CREATE TABLE IF NOT EXISTS tbl5(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT varchar(100));",
                                     nullptr, nullptr, nullptr)) << sqlite3_errmsg(db);
 
   constexpr char s[20] = "some string";
@@ -127,14 +127,17 @@ TEST_P(SqliteTest, InsertAndDelete) {
   ASSERT_EQ(SQLITE_OK, sqlite3_bind_text(stmt, 1, s, strlen(s), nullptr)) << sqlite3_errmsg(db);
   ASSERT_EQ(SQLITE_DONE, sqlite3_step(stmt)) << sqlite3_errmsg(db);
   ASSERT_EQ(SQLITE_OK, sqlite3_finalize(stmt)) << sqlite3_errmsg(db);
+  ASSERT_EQ(1, sqlite3_changes(db));
 
-  sql = "SELECT name FROM tbl5 where name=?1;";
+  sql = "SELECT id, name FROM tbl5 where name=?1;";
   ASSERT_EQ(SQLITE_OK, sqlite3_prepare_v2(db, sql, strlen(sql), &stmt, &remaining)) << sqlite3_errmsg(db);
   ASSERT_TRUE(std::all_of(remaining, sql + strlen(sql), [](char c) { return std::isspace(c); }));
   ASSERT_EQ(SQLITE_OK, sqlite3_bind_text(stmt, 1, s, strlen(s), nullptr)) << sqlite3_errmsg(db);
   ASSERT_EQ(SQLITE_ROW, sqlite3_step(stmt)) << sqlite3_errmsg(db);
-  ASSERT_EQ(SQLITE_TEXT, sqlite3_column_type(stmt, 0));
-  ASSERT_STREQ(s, (const char*)sqlite3_column_text(stmt, 0));
+  ASSERT_EQ(SQLITE_INTEGER, sqlite3_column_type(stmt, 0));
+  ASSERT_EQ(1, sqlite3_column_int(stmt, 0));
+  ASSERT_EQ(SQLITE_TEXT, sqlite3_column_type(stmt, 1));
+  ASSERT_STREQ(s, (const char*)sqlite3_column_text(stmt, 1));
   ASSERT_EQ(SQLITE_DONE, sqlite3_step(stmt)) << sqlite3_errmsg(db);
   ASSERT_EQ(SQLITE_OK, sqlite3_finalize(stmt)) << sqlite3_errmsg(db);
 
@@ -144,8 +147,9 @@ TEST_P(SqliteTest, InsertAndDelete) {
   ASSERT_EQ(SQLITE_OK, sqlite3_bind_text(stmt, 1, s, strlen(s), nullptr)) << sqlite3_errmsg(db);
   ASSERT_EQ(SQLITE_DONE, sqlite3_step(stmt)) << sqlite3_errmsg(db);
   ASSERT_EQ(SQLITE_OK, sqlite3_finalize(stmt)) << sqlite3_errmsg(db);
+  ASSERT_EQ(1, sqlite3_changes(db));
 
-  sql = "SELECT name FROM tbl5 where name=?1;";
+  sql = "SELECT id, name FROM tbl5 where name=?1;";
   ASSERT_EQ(SQLITE_OK, sqlite3_prepare_v2(db, sql, strlen(sql), &stmt, &remaining)) << sqlite3_errmsg(db);
   ASSERT_TRUE(std::all_of(remaining, sql + strlen(sql), [](char c) { return std::isspace(c); }));
   ASSERT_EQ(SQLITE_OK, sqlite3_bind_text(stmt, 1, s, strlen(s), nullptr)) << sqlite3_errmsg(db);
