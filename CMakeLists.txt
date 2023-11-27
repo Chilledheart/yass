@@ -3659,6 +3659,7 @@ if (BUILD_TESTS)
     src/core/cipher_test.cpp
     src/core/c-ares_test.cpp
     src/core/process_utils_test.cpp
+    src/core/utils_test.cpp
     third_party/leveldb_test.cc
     third_party/sqlite/sqlite3_test.cc
     )

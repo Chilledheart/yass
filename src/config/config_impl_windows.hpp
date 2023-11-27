@@ -41,28 +41,6 @@ typedef unsigned __int64 QWORD;
 static_assert(sizeof(QWORD) == sizeof(uint64_t),
               "A QWORD is a 64-bit unsigned integer.");
 
-std::wstring ExpandUserFromString(const wchar_t* path, size_t path_len) {
-  // the return value is the REQUIRED number of TCHARs,
-  // including the terminating NULL character.
-  DWORD required_size = ::ExpandEnvironmentStringsW(path, nullptr, 0);
-
-  /* if failure or too many bytes required, documented in
-   * ExpandEnvironmentStringsW */
-  if (required_size == 0 || required_size > 32 * 1024) {
-    return std::wstring(path, path_len ? path_len - 1 : path_len);
-  }
-
-  std::wstring expanded_path;
-  expanded_path.resize(required_size);
-  ::ExpandEnvironmentStringsW(path, &expanded_path[0], required_size);
-
-  while (!expanded_path.empty() && expanded_path[expanded_path.size() - 1] == L'\0') {
-    expanded_path.resize(expanded_path.size() - 1);
-  }
-
-  return expanded_path;
-}
-
 bool ReadValue(HKEY hkey,
                const std::string& value,
                DWORD* type,

@@ -836,4 +836,23 @@ ssize_t WriteFileWithBuffer(const std::string& path,
   return written;
 }
 
+std::wstring ExpandUserFromString(const wchar_t* path, size_t path_len) {
+  // the return value is the REQUIRED number of TCHARs,
+  // including the terminating NULL character.
+  DWORD required_size = ::ExpandEnvironmentStringsW(path, nullptr, 0);
+
+  /* if failure or too many bytes required, documented in
+   * ExpandEnvironmentStringsW */
+  if (required_size == 0 || required_size > 32 * 1024) {
+    return std::wstring(path, path_len ? path_len - 1 : 0);
+  }
+
+  std::wstring expanded_path;
+  expanded_path.resize(required_size - 1);
+  /* the buffer size should be the string length plus the terminating null character */
+  ::ExpandEnvironmentStringsW(path, &expanded_path[0], required_size);
+
+  return expanded_path;
+}
+
 #endif  // _WIN32

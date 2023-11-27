@@ -16,9 +16,10 @@
 #endif  // _MSC_VER
 
 #include <absl/strings/string_view.h>
-#include <cstdint>
+#include <stdint.h>
 #include <string>
 #include <thread>
+#include <wchar.h>
 
 #include "core/compiler_specific.hpp"
 
@@ -237,6 +238,10 @@ inline absl::string_view Basename(absl::string_view path) {
 }
 
 std::string ExpandUser(const std::string& file_path);
+#ifdef _WIN32
+/* path_len should be the string length plus the terminating null character*/
+std::wstring ExpandUserFromString(const wchar_t* path, size_t path_len);
+#endif
 
 bool GetExecutablePath(std::string* exe_path);
 #ifdef _WIN32
