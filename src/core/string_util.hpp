@@ -11,6 +11,7 @@
 
 #include <initializer_list>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
@@ -81,6 +82,12 @@ bool IsWprintfFormatPortable(const wchar_t* format);
 // Reference: https://wg21.link/string.view.cons
 template <typename Iter>
 constexpr absl::string_view MakeStringView(Iter begin, Iter end) {
+  DCHECK_GE(end - begin, 0);
+  return {to_address(begin), static_cast<size_t>(end - begin)};
+}
+
+template <typename Iter>
+constexpr std::wstring_view MakeWStringView(Iter begin, Iter end) {
   DCHECK_GE(end - begin, 0);
   return {to_address(begin), static_cast<size_t>(end - begin)};
 }
@@ -251,6 +258,10 @@ bool IsStringUTF8AllowingNoncharacters(absl::string_view str);
 // Note 2: IsStringASCII assumes the input is likely all ASCII, and
 // does not leave early if it is not the case.
 bool IsStringASCII(absl::string_view str);
+
+#if defined(WCHAR_T_IS_32_BIT)
+bool IsStringASCII(std::wstring_view str);
+#endif
 
 // Compare the lower-case form of the given string against the given
 // previously-lower-cased ASCII string (typically a constant).

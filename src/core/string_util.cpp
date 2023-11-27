@@ -140,6 +140,12 @@ bool IsStringASCII(absl::string_view str) {
   return internal::DoIsStringASCII(str.data(), str.length());
 }
 
+#if defined(WCHAR_T_IS_32_BIT)
+bool IsStringASCII(std::wstring_view str) {
+  return internal::DoIsStringASCII(str.data(), str.length());
+}
+#endif
+
 bool IsStringUTF8(absl::string_view str) {
   return internal::DoIsStringUTF8<IsValidCharacter>(str);
 }
