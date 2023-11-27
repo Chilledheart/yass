@@ -2998,8 +2998,6 @@ set(files
     src/core/scoped_clear_last_error_win.cpp
     src/core/string_util_constants.cpp
     src/core/ref_counted.cpp
-    src/core/escape.cpp
-    src/core/utf_offset_string_conversions.cpp
     src/core/utf_string_conversion_utils.cpp
     src/core/base64.cpp
     src/core/hash.cpp
@@ -3082,9 +3080,7 @@ set(hfiles
     src/core/thread_annotations.hpp
     src/core/clamped_math.hpp
     src/core/clamped_math_impl.hpp
-    src/core/escape.hpp
     src/core/safe_math.hpp
-    src/core/utf_offset_string_conversions.hpp
     src/core/utf_string_conversion_utils.hpp
     src/core/hash.hpp
     src/core/base64.hpp
