@@ -20,7 +20,7 @@
 #include <tcmalloc/malloc_extension.h>
 #endif
 
-absl::StatusOr<int32_t> StringToInteger(absl::string_view value) {
+absl::StatusOr<int32_t> StringToInteger(std::string_view value) {
   long result = 0;
   char* endptr = nullptr;
   result = strtol(value.data(), &endptr, 10);

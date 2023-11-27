@@ -162,7 +162,7 @@ int ExecuteProcess(const std::vector<std::string>& params,
         stdout_eof = true;
         continue;
       }
-      stdout_ss << absl::string_view(buf, ret);
+      stdout_ss << std::string_view(buf, ret);
     }
     if (FD_ISSET(stderr_pipe[0], &rfds)) {
       char buf[4096];
@@ -179,7 +179,7 @@ int ExecuteProcess(const std::vector<std::string>& params,
         stderr_eof = true;
         continue;
       }
-      stderr_ss << absl::string_view(buf, ret);
+      stderr_ss << std::string_view(buf, ret);
     }
   }
 

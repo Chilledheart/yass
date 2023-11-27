@@ -6,9 +6,9 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 
 #include <absl/flags/declare.h>
-#include <absl/strings/string_view.h>
 
 namespace config {
 
@@ -109,7 +109,7 @@ class ConfigImpl {
   /// \param key the key value
   /// \param value the value (string)
   bool WriteImpl(const std::string& key, const std::string& value) {
-    return WriteImpl(key, absl::string_view(value));
+    return WriteImpl(key, std::string_view(value));
   }
 
   /// Write the key,value into ConfigTree
@@ -117,14 +117,14 @@ class ConfigImpl {
   /// \param key the key value
   /// \param value the value (c-style string)
   bool WriteImpl(const std::string& key, const char* value) {
-    return WriteImpl(key, absl::string_view(value));
+    return WriteImpl(key, std::string_view(value));
   }
 
   /// Write the key,value into ConfigTree
   ///
   /// \param key the key value
   /// \param value the value (string_view)
-  virtual bool WriteImpl(const std::string& key, absl::string_view value) = 0;
+  virtual bool WriteImpl(const std::string& key, std::string_view value) = 0;
 
   /// Write the key,value into ConfigTree
   ///

@@ -25,9 +25,9 @@
 #include "ssl_stream.hpp"
 
 #include <absl/container/flat_hash_map.h>
-#include <absl/strings/string_view.h>
 #include <absl/strings/str_cat.h>
 #include <deque>
+#include <absl/strings/string_view.h>
 
 #ifdef HAVE_NGHTTP2
 #include <quiche/http2/adapter/nghttp2_adapter.h>

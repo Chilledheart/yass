@@ -100,7 +100,7 @@ static bool load_ca_to_x509_trust(X509_STORE* store, const uint8_t *data, size_t
 }
 
 static const char kEndCertificateMark[] = "-----END CERTIFICATE-----\n";
-static void load_ca_to_ssl_ctx_from_mem(SSL_CTX* ssl_ctx, const absl::string_view& cadata) {
+static void load_ca_to_ssl_ctx_from_mem(SSL_CTX* ssl_ctx, const std::string_view& cadata) {
   X509_STORE* store = nullptr;
   int count = 0;
   store = SSL_CTX_get_cert_store(ssl_ctx);
@@ -110,12 +110,12 @@ static void load_ca_to_ssl_ctx_from_mem(SSL_CTX* ssl_ctx, const absl::string_vie
   }
   for (size_t pos = 0, end = pos; end < cadata.size(); pos = end) {
     end = cadata.find(kEndCertificateMark, pos);
-    if (end == absl::string_view::npos) {
+    if (end == std::string_view::npos) {
       break;
     }
     end += sizeof(kEndCertificateMark) -1;
 
-    absl::string_view cacert(cadata.data() + pos, end - pos);
+    std::string_view cacert(cadata.data() + pos, end - pos);
     if (load_ca_to_x509_trust(store, (const uint8_t*)cacert.data(), cacert.size())) {
       ++count;
     }
@@ -129,7 +129,7 @@ out:
 static bool load_ca_to_ssl_ctx_override(SSL_CTX* ssl_ctx) {
 #ifdef HAVE_BUILTIN_CA_BUNDLE_CRT
   if (absl::GetFlag(FLAGS_cacert).empty() && absl::GetFlag(FLAGS_use_ca_bundle_crt)) {
-    absl::string_view ca_bundle_content(_binary_ca_bundle_crt_start, _binary_ca_bundle_crt_end - _binary_ca_bundle_crt_start);
+    std::string_view ca_bundle_content(_binary_ca_bundle_crt_start, _binary_ca_bundle_crt_end - _binary_ca_bundle_crt_start);
     load_ca_to_ssl_ctx_from_mem(ssl_ctx, ca_bundle_content);
     return true;
   }

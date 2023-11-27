@@ -86,8 +86,8 @@ TrimPositions TrimStringT(T input,
                           TrimPositions positions,
                           std::basic_string<CharT>* output) {
   // Find the edges of leading/trailing whitespace as desired. Need to use
-  // a absl::string_view version of input to be able to call find* on it with
-  // the absl::string_view version of trim_chars (normally the trim_chars will
+  // a std::string_view version of input to be able to call find* on it with
+  // the std::string_view version of trim_chars (normally the trim_chars will
   // be a constant so avoid making a copy).
   const size_t last_char = input.length() - 1;
   const size_t first_good_char =
@@ -219,7 +219,7 @@ bool DoIsStringASCII(const Char* characters, size_t length) {
 }
 
 template <bool (*Validator)(uint32_t)>
-inline bool DoIsStringUTF8(absl::string_view str) {
+inline bool DoIsStringUTF8(std::string_view str) {
   const char* src = str.data();
   int32_t src_len = static_cast<int32_t>(str.length());
   int32_t char_index = 0;
@@ -234,7 +234,7 @@ inline bool DoIsStringUTF8(absl::string_view str) {
 }
 
 // Implementation note: Normally this function will be called with a hardcoded
-// constant for the lowercase_ascii parameter. Constructing a absl::string_view
+// constant for the lowercase_ascii parameter. Constructing a std::string_view
 // from a C constant requires running strlen, so the result will be two passes
 // through the buffers, one to file the length of lowercase_ascii, and one to
 // compare each letter.
@@ -247,9 +247,9 @@ inline bool DoIsStringUTF8(absl::string_view str) {
 //
 // The hardcoded strings are typically very short so it doesn't matter, and the
 // string piece gives additional flexibility for the caller (doesn't have to be
-// null terminated) so we choose the absl::string_view route.
+// null terminated) so we choose the std::string_view route.
 template <typename T, typename CharT = typename T::value_type>
-inline bool DoLowerCaseEqualsASCII(T str, absl::string_view lowercase_ascii) {
+inline bool DoLowerCaseEqualsASCII(T str, std::string_view lowercase_ascii) {
   return std::equal(
       str.begin(), str.end(), lowercase_ascii.begin(), lowercase_ascii.end(),
       [](auto lhs, auto rhs) { return ToLowerASCII(lhs) == rhs; });
@@ -260,7 +260,7 @@ bool StartsWithT(T str, T search_for, CompareCase case_sensitivity) {
   if (search_for.size() > str.size())
     return false;
 
-  absl::string_view source = str.substr(0, search_for.size());
+  std::string_view source = str.substr(0, search_for.size());
 
   switch (case_sensitivity) {
     case CompareCase::SENSITIVE:
@@ -281,7 +281,7 @@ bool EndsWithT(T str, T search_for, CompareCase case_sensitivity) {
   if (search_for.size() > str.size())
     return false;
 
-  absl::string_view source =
+  std::string_view source =
       str.substr(str.size() - search_for.size(), search_for.size());
 
   switch (case_sensitivity) {
@@ -301,7 +301,7 @@ bool EndsWithT(T str, T search_for, CompareCase case_sensitivity) {
 // A Matcher for DoReplaceMatchesAfterOffset() that matches substrings.
 template <class CharT>
 struct SubstringMatcher {
-  absl::string_view find_this;
+  std::string_view find_this;
 
   size_t Find(const std::basic_string<CharT>& input, size_t pos) {
     return input.find(find_this.data(), pos, find_this.length());
@@ -318,7 +318,7 @@ auto MakeSubstringMatcher(T find_this) {
 // A Matcher for DoReplaceMatchesAfterOffset() that matches single characters.
 template <class CharT>
 struct CharacterMatcher {
-  absl::string_view find_any_of_these;
+  std::string_view find_any_of_these;
 
   size_t Find(const std::basic_string<CharT>& input, size_t pos) {
     return input.find_first_of(find_any_of_these.data(), pos,
@@ -509,8 +509,8 @@ inline typename string_type::value_type* WriteIntoT(string_type* str,
 }
 
 // Generic version for all JoinString overloads. |list_type| must be a sequence
-// (std::initializer_list) of strings/absl::string_views (std::string,
-// std::u16string, absl::string_view). |CharT| is either char or char16_t.
+// (std::initializer_list) of strings/std::string_views (std::string,
+// std::u16string, std::string_view). |CharT| is either char or char16_t.
 template <typename list_type,
           typename T,
           typename CharT = typename T::value_type>

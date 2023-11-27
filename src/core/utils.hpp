@@ -15,7 +15,6 @@
 #pragma pop
 #endif  // _MSC_VER
 
-#include <absl/strings/string_view.h>
 #include <stdint.h>
 #include <string>
 #include <thread>
@@ -60,16 +59,16 @@ bool IsProgramConsole();
 
 bool SetUTF8Locale();
 
-absl::StatusOr<int32_t> StringToInteger(absl::string_view value);
+absl::StatusOr<int32_t> StringToInteger(std::string_view value);
 
 // Converts between wide and UTF-8 representations of a string. On error, the
 // result is system-dependent.
 std::string SysWideToUTF8(const std::wstring& wide);
-std::wstring SysUTF8ToWide(absl::string_view utf8);
+std::wstring SysUTF8ToWide(std::string_view utf8);
 
 // Converts between wide and UTF-8 representations of a string. On error, the
 // result is system-dependent.
-std::wstring SysMultiByteToWide(absl::string_view mb, uint32_t code_page);
+std::wstring SysMultiByteToWide(std::string_view mb, uint32_t code_page);
 
 std::string SysWideToMultiByte(const std::wstring& wide, uint32_t code_page);
 
@@ -77,7 +76,7 @@ std::string SysWideToMultiByte(const std::wstring& wide, uint32_t code_page);
 // DANGER: This will lose information and can change (on Windows, this can
 // change between reboots).
 std::string SysWideToNativeMB(const std::wstring& wide);
-std::wstring SysNativeMBToWide(absl::string_view native_mb);
+std::wstring SysNativeMBToWide(std::string_view native_mb);
 
 // Windows-specific ------------------------------------------------------------
 #ifdef _WIN32
@@ -86,7 +85,7 @@ std::wstring SysNativeMBToWide(absl::string_view native_mb);
 // MultiByteToWideChar().
 std::string SysWideToNativeMB(const std::wstring& wide);
 
-std::wstring SysNativeMBToWide(absl::string_view native_mb);
+std::wstring SysNativeMBToWide(std::string_view native_mb);
 
 bool EnableSecureDllLoading();
 
@@ -124,11 +123,11 @@ class UIFont;
 
 // Creates a string, and returns it with a refcount of 1. You are responsible
 // for releasing it. Returns NULL on failure.
-ScopedCFTypeRef<CFStringRef> SysUTF8ToCFStringRef(absl::string_view utf8);
+ScopedCFTypeRef<CFStringRef> SysUTF8ToCFStringRef(std::string_view utf8);
 ScopedCFTypeRef<CFStringRef> SysUTF16ToCFStringRef(const std::u16string& utf16);
 
 // Same, but returns an autoreleased NSString.
-NSString* SysUTF8ToNSString(absl::string_view utf8);
+NSString* SysUTF8ToNSString(std::string_view utf8);
 NSString* SysUTF16ToNSString(const std::u16string& utf16);
 
 // Converts a CFStringRef to an STL string. Returns an empty string on failure.
@@ -162,12 +161,12 @@ extern const char kSeparators[];
 // returns "/dir"
 //
 // TODO: handle with driver letter under windows
-inline absl::string_view Dirname(absl::string_view path) {
+inline std::string_view Dirname(std::string_view path) {
   // trim the extra trailing slash
   auto first_non_slash_at_end_pos = path.find_last_not_of(kSeparators);
 
   // path is in the root directory
-  if (first_non_slash_at_end_pos == absl::string_view::npos) {
+  if (first_non_slash_at_end_pos == std::string_view::npos) {
     return path.empty() ? "/" : path.substr(0, 1);
   }
 
@@ -175,7 +174,7 @@ inline absl::string_view Dirname(absl::string_view path) {
       path.find_last_of(kSeparators, first_non_slash_at_end_pos);
 
   // path is in the current directory.
-  if (last_slash_pos == absl::string_view::npos) {
+  if (last_slash_pos == std::string_view::npos) {
     return ".";
   }
 
@@ -184,7 +183,7 @@ inline absl::string_view Dirname(absl::string_view path) {
       path.find_last_not_of(kSeparators, last_slash_pos);
 
   // path is in the root directory
-  if (first_non_slash_at_end_pos == absl::string_view::npos) {
+  if (first_non_slash_at_end_pos == std::string_view::npos) {
     return path.substr(0, 1);
   }
 
@@ -215,12 +214,12 @@ inline absl::string_view Dirname(absl::string_view path) {
 // returns "c"
 //
 // TODO: handle with driver letter under windows
-inline absl::string_view Basename(absl::string_view path) {
+inline std::string_view Basename(std::string_view path) {
   // trim the extra trailing slash
   auto first_non_slash_at_end_pos = path.find_last_not_of(kSeparators);
 
   // path is in the root directory
-  if (first_non_slash_at_end_pos == absl::string_view::npos) {
+  if (first_non_slash_at_end_pos == std::string_view::npos) {
     return path.empty() ? "" : path.substr(0, 1);
   }
 
@@ -228,7 +227,7 @@ inline absl::string_view Basename(absl::string_view path) {
       path.find_last_of(kSeparators, first_non_slash_at_end_pos);
 
   // path is in the current directory
-  if (last_slash_pos == absl::string_view::npos) {
+  if (last_slash_pos == std::string_view::npos) {
     return path.substr(0, first_non_slash_at_end_pos + 1);
   }
 

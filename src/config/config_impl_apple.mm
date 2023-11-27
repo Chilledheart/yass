@@ -149,7 +149,7 @@ bool ConfigImplApple::ReadImpl(const std::string& key, int64_t* value) {
 }
 
 bool ConfigImplApple::WriteImpl(const std::string& key,
-                                absl::string_view value) {
+                                std::string_view value) {
   ScopedCFTypeRef<CFStringRef> obj(CFStringCreateWithBytes(
       kCFAllocatorDefault, reinterpret_cast<const UInt8*>(value.data()),
       value.size(), kCFStringEncodingUTF8, FALSE));

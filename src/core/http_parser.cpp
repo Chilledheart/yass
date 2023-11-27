@@ -22,7 +22,7 @@ static void ReforgeHttpRequestImpl(std::string* header,
                                    const std::string& url,
                                    const absl::flat_hash_map<std::string, std::string>& headers) {
   std::ostringstream ss;
-  absl::string_view canon_url;
+  std::string_view canon_url;
 
   // https://www.w3.org/Protocols/rfc2616/rfc2616-sec5.html#sec5.1.2
   if (url[0] == '*' || url[0] == '/') {
@@ -39,7 +39,7 @@ static void ReforgeHttpRequestImpl(std::string* header,
       if (uri_start == std::string::npos) {
         canon_url = "/";
       } else {
-        canon_url = absl::string_view(url).substr(uri_start);
+        canon_url = std::string_view(url).substr(uri_start);
       }
     }
   }
@@ -86,7 +86,7 @@ static void SplitHostPort(std::string *out_hostname, std::string *out_port,
 #ifdef HAVE_BALSA_HTTP_PARSER
 using quiche::BalsaFrameEnums;
 namespace {
-constexpr absl::string_view kColonSlashSlash = "://";
+constexpr std::string_view kColonSlashSlash = "://";
 // Response must start with "HTTP".
 constexpr char kResponseFirstByte = 'H';
 
@@ -103,7 +103,7 @@ bool isFirstCharacterOfValidMethod(char c) {
 
 // TODO(#21245): Skip method validation altogether when UHV method validation is
 // enabled.
-bool isMethodValid(absl::string_view method, bool allow_custom_methods) {
+bool isMethodValid(std::string_view method, bool allow_custom_methods) {
   if (allow_custom_methods) {
     // Allowed characters in method according to RFC 9110,
     // https://www.rfc-editor.org/rfc/rfc9110.html#section-5.1.
@@ -117,12 +117,12 @@ bool isMethodValid(absl::string_view method, bool allow_custom_methods) {
     const auto* end = &kValidCharacters[ABSL_ARRAYSIZE(kValidCharacters) - 1] + 1;
 
     return !method.empty() &&
-           std::all_of(method.begin(), method.end(), [begin, end](absl::string_view::value_type c) {
+           std::all_of(method.begin(), method.end(), [begin, end](std::string_view::value_type c) {
              return std::binary_search(begin, end, c);
            });
   }
 
-  static constexpr absl::string_view kValidMethods[] = {
+  static constexpr std::string_view kValidMethods[] = {
       "ACL",       "BIND",    "CHECKOUT", "CONNECT", "COPY",       "DELETE",     "GET",
       "HEAD",      "LINK",    "LOCK",     "MERGE",   "MKACTIVITY", "MKCALENDAR", "MKCOL",
       "MOVE",      "MSEARCH", "NOTIFY",   "OPTIONS", "PATCH",      "POST",       "PROPFIND",
@@ -135,7 +135,7 @@ bool isMethodValid(absl::string_view method, bool allow_custom_methods) {
 }
 
 // This function is crafted to match the URL validation behavior of the http-parser library.
-bool isUrlValid(absl::string_view url, bool is_connect) {
+bool isUrlValid(std::string_view url, bool is_connect) {
   if (url.empty()) {
     return false;
   }
@@ -176,8 +176,8 @@ bool isUrlValid(absl::string_view url, bool is_connect) {
 
   // Divide the rest of the URL into two sections: host, and path/query/fragments.
   auto path_query_begin = std::find_if(url.begin(), url.end(), is_path_query_start);
-  const absl::string_view host = url.substr(0, path_query_begin - url.begin());
-  const absl::string_view path_query = url.substr(path_query_begin - url.begin());
+  const std::string_view host = url.substr(0, path_query_begin - url.begin());
+  const std::string_view path_query = url.substr(path_query_begin - url.begin());
 
   const auto valid_host_char = [](char c) {
     return std::isalnum(c) || c == '!' || c == '$' || c == '%' || c == '&' || c == '\'' ||
@@ -192,7 +192,7 @@ bool isUrlValid(absl::string_view url, bool is_connect) {
          std::all_of(path_query.begin(), path_query.end(), is_valid_path_query_char);
 }
 
-bool isVersionValid(absl::string_view version_input) {
+bool isVersionValid(std::string_view version_input) {
   // HTTP-version is defined at
   // https://www.rfc-editor.org/rfc/rfc9112.html#section-2.3. HTTP/0.9 requests
   // have no http-version, so empty `version_input` is also accepted.
@@ -245,18 +245,18 @@ void HttpRequestParser::ReforgeHttpRequest(std::string *header,
   ReforgeHttpRequestImpl(header, method_.c_str(), additional_headers, http_url_, http_headers_);
 }
 
-void HttpRequestParser::OnRawBodyInput(absl::string_view /*input*/) {}
+void HttpRequestParser::OnRawBodyInput(std::string_view /*input*/) {}
 
-void HttpRequestParser::OnBodyChunkInput(absl::string_view /*input*/) {}
+void HttpRequestParser::OnBodyChunkInput(std::string_view /*input*/) {}
 
-void HttpRequestParser::OnHeaderInput(absl::string_view /*input*/) {}
-void HttpRequestParser::OnTrailerInput(absl::string_view /*input*/) {}
-void HttpRequestParser::OnHeader(absl::string_view /*key*/, absl::string_view /*value*/) {}
+void HttpRequestParser::OnHeaderInput(std::string_view /*input*/) {}
+void HttpRequestParser::OnTrailerInput(std::string_view /*input*/) {}
+void HttpRequestParser::OnHeader(std::string_view /*key*/, std::string_view /*value*/) {}
 
 void HttpRequestParser::ProcessHeaders(const quiche::BalsaHeaders& headers) {
-  for (const std::pair<absl::string_view, absl::string_view>& key_value : headers.lines()) {
-    absl::string_view key = key_value.first;
-    absl::string_view value = key_value.second;
+  for (const std::pair<std::string_view, std::string_view>& key_value : headers.lines()) {
+    std::string_view key = key_value.first;
+    std::string_view value = key_value.second;
     http_headers_[std::string(key)] = std::string(value);
     if (key == "Cookie") {
       value = "(masked)";
@@ -292,10 +292,10 @@ void HttpRequestParser::ProcessTrailers(const quiche::BalsaHeaders& /*trailer*/)
 
 void HttpRequestParser::OnTrailers(std::unique_ptr<quiche::BalsaHeaders> /*trailers*/) {}
 
-void HttpRequestParser::OnRequestFirstLineInput(absl::string_view /*line_input*/,
-                                                absl::string_view method_input,
-                                                absl::string_view request_uri,
-                                                absl::string_view version_input) {
+void HttpRequestParser::OnRequestFirstLineInput(std::string_view /*line_input*/,
+                                                std::string_view method_input,
+                                                std::string_view request_uri,
+                                                std::string_view version_input) {
   if (status_ == ParserStatus::Error) {
     return;
   }
@@ -343,10 +343,10 @@ void HttpRequestParser::OnRequestFirstLineInput(absl::string_view /*line_input*/
   }
 }
 
-void HttpRequestParser::OnResponseFirstLineInput(absl::string_view /*line_input*/,
-                                                 absl::string_view version_input,
-                                                 absl::string_view status_input,
-                                                 absl::string_view /*reason_input*/) {
+void HttpRequestParser::OnResponseFirstLineInput(std::string_view /*line_input*/,
+                                                 std::string_view version_input,
+                                                 std::string_view status_input,
+                                                 std::string_view /*reason_input*/) {
   if (status_ == ParserStatus::Error) {
     return;
   }
@@ -367,7 +367,7 @@ void HttpRequestParser::OnResponseFirstLineInput(absl::string_view /*line_input*
 
 void HttpRequestParser::OnChunkLength(size_t /*chunk_length*/) {}
 
-void HttpRequestParser::OnChunkExtensionInput(absl::string_view /*input*/) {}
+void HttpRequestParser::OnChunkExtensionInput(std::string_view /*input*/) {}
 
 void HttpRequestParser::OnInterimHeaders(std::unique_ptr<quiche::BalsaHeaders> /*header*/) {}
 

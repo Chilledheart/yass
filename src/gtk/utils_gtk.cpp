@@ -10,10 +10,10 @@
 #include "config/config.hpp"
 
 #include <absl/strings/str_cat.h>
-#include <absl/strings/string_view.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <string_view>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -40,7 +40,7 @@ static const char* kAutoStartFileContent =
 
 namespace {
 
-bool WriteFileWithContent(const std::string& path, absl::string_view context) {
+bool WriteFileWithContent(const std::string& path, std::string_view context) {
   int fd = ::open(path.c_str(), O_WRONLY | O_TRUNC | O_CREAT,
                   S_IRUSR | S_IWUSR);
   if (fd < 0) {
@@ -77,7 +77,7 @@ std::string GetAutostartDirectory() {
 
 bool IsKDE() {
   const char* desktop_ptr = getenv("XDG_SESSION_DESKTOP");
-  absl::string_view desktop = desktop_ptr ? absl::string_view(desktop_ptr) : absl::string_view();
+  std::string_view desktop = desktop_ptr ? std::string_view(desktop_ptr) : std::string_view();
   return desktop == "KDE" || desktop == "plasma";
 }
 }  // namespace

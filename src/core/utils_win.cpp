@@ -436,7 +436,7 @@ std::string SysWideToUTF8(const std::wstring& wide) {
 }
 
 // Do not assert in this function since it is used by the asssertion code!
-std::wstring SysUTF8ToWide(absl::string_view utf8) {
+std::wstring SysUTF8ToWide(std::string_view utf8) {
   return SysMultiByteToWide(utf8, CP_UTF8);
 }
 
@@ -444,12 +444,12 @@ std::string SysWideToNativeMB(const std::wstring& wide) {
   return SysWideToMultiByte(wide, CP_ACP);
 }
 
-std::wstring SysNativeMBToWide(absl::string_view native_mb) {
+std::wstring SysNativeMBToWide(std::string_view native_mb) {
   return SysMultiByteToWide(native_mb, CP_ACP);
 }
 
 // Do not assert in this function since it is used by the asssertion code!
-std::wstring SysMultiByteToWide(absl::string_view mb, uint32_t code_page) {
+std::wstring SysMultiByteToWide(std::string_view mb, uint32_t code_page) {
   int mb_length = static_cast<int>(mb.length());
   // Note that, if cbMultiByte is 0, the function fails.
   if (mb_length == 0)

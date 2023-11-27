@@ -31,7 +31,7 @@
 //
 // User code should not inspect this macro.  To check in the preprocessor if
 // absl::any is a typedef of std::any, use the feature macro ABSL_USES_STD_ANY.
-#define ABSL_OPTION_USE_STD_ANY 0
+#define ABSL_OPTION_USE_STD_ANY 2
 // ABSL_OPTION_USE_STD_OPTIONAL
 //
 // This option controls whether absl::optional is implemented as an alias to
@@ -54,7 +54,7 @@
 // User code should not inspect this macro.  To check in the preprocessor if
 // absl::optional is a typedef of std::optional, use the feature macro
 // ABSL_USES_STD_OPTIONAL.
-#define ABSL_OPTION_USE_STD_OPTIONAL 0
+#define ABSL_OPTION_USE_STD_OPTIONAL 2
 // ABSL_OPTION_USE_STD_STRING_VIEW
 //
 // This option controls whether absl::string_view is implemented as an alias to
@@ -78,7 +78,7 @@
 // User code should not inspect this macro.  To check in the preprocessor if
 // absl::string_view is a typedef of std::string_view, use the feature macro
 // ABSL_USES_STD_STRING_VIEW.
-#define ABSL_OPTION_USE_STD_STRING_VIEW 0
+#define ABSL_OPTION_USE_STD_STRING_VIEW 2
 // ABSL_OPTION_USE_STD_VARIANT
 //
 // This option controls whether absl::variant is implemented as an alias to

@@ -937,7 +937,7 @@ static void ColoredWriteToStderr(LogSeverity severity,
     return;
   }
 
-  std::wstring wmessage = SysUTF8ToWide(absl::string_view(message, len));
+  std::wstring wmessage = SysUTF8ToWide(std::string_view(message, len));
   const wchar_t *text = wmessage.c_str();
   uint32_t remaining = wmessage.size();
 
@@ -2713,7 +2713,7 @@ static void VLOG2Initializer() {
   // logging levels.
   inited_vmodule = false;
   const std::string vmodule_data = absl::GetFlag(FLAGS_vmodule);
-  absl::string_view vmodule(vmodule_data);
+  std::string_view vmodule(vmodule_data);
   const char* sep;
   VModuleInfo* head = nullptr;
   VModuleInfo* tail = nullptr;
@@ -2736,7 +2736,7 @@ static void VLOG2Initializer() {
     const char *vmodule_ptr = strchr(sep, ',');
     if (vmodule_ptr == nullptr)
       break;
-    vmodule = absl::string_view(vmodule_ptr);
+    vmodule = std::string_view(vmodule_ptr);
     vmodule.remove_prefix(1);
   }
   if (head) {  // Put them into the list at the head:
