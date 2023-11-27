@@ -3077,10 +3077,6 @@ set(hfiles
     src/core/atomic_ref_count.hpp
     src/core/gtest_prod_util.hpp
     src/core/ref_counted.hpp
-    src/core/thread_annotations.hpp
-    src/core/clamped_math.hpp
-    src/core/clamped_math_impl.hpp
-    src/core/safe_math.hpp
     src/core/utf_string_conversion_utils.hpp
     src/core/hash.hpp
     src/core/base64.hpp
