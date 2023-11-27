@@ -3083,9 +3083,6 @@ set(hfiles
     src/core/clamped_math.hpp
     src/core/clamped_math_impl.hpp
     src/core/escape.hpp
-    src/core/functional/identity.hpp
-    src/core/functional/invoke.hpp
-    src/core/functional/not_fn.hpp
     src/core/safe_math.hpp
     src/core/utf_offset_string_conversions.hpp
     src/core/utf_string_conversion_utils.hpp
