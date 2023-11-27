@@ -37,7 +37,7 @@ static std::string SqliteStorageTypeToDbName(SqliteStorageType type) {
     case kMemory:
       return kSqliteOpenInMemoryPath;
     case kDisk:
-      return std::string(kSqliteMainDatabaseName) + "-" + std::to_string(GetPID());
+      return ::testing::TempDir() + kSqliteMainDatabaseName + "-" + std::to_string(GetPID());
     default:
       return "(null)";
   }
@@ -88,7 +88,7 @@ class SqliteTest : public ::testing::TestWithParam<SqliteStorageType> {
     // SQLITE_OPEN_EXRESCODE enables the full range of SQLite error codes. See
     // https://www.sqlite.org/rescode.html for details.
     ASSERT_EQ(SQLITE_OK, SqliteOpenDB(GetParam(),
-                                      ::testing::TempDir() + SqliteStorageTypeToDbName(GetParam()), &db,
+                                      SqliteStorageTypeToDbName(GetParam()), &db,
                                       SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE |
                                       SQLITE_OPEN_EXRESCODE | SQLITE_OPEN_PRIVATECACHE, nullptr));
   }
@@ -102,7 +102,8 @@ class SqliteTest : public ::testing::TestWithParam<SqliteStorageType> {
       ASSERT_EQ(SQLITE_OK, sqlite3_close(db));
       db = nullptr;
     }
-    ASSERT_NO_FATAL_FAILURE(SqliteDestroyDB(GetParam(), ::testing::TempDir() + SqliteStorageTypeToDbName(GetParam())));
+    ASSERT_NO_FATAL_FAILURE(SqliteDestroyDB(GetParam(),
+                                            SqliteStorageTypeToDbName(GetParam())));
   }
 
   sqlite3* db;
@@ -113,15 +114,14 @@ TEST_P(SqliteTest, OpenAndClose) {
 }
 
 TEST_P(SqliteTest, InsertAndDelete) {
-  ASSERT_EQ(SQLITE_OK, sqlite3_exec(db,
-                                    "CREATE TABLE IF NOT EXISTS tbl5(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT varchar(100));",
-                                    nullptr, nullptr, nullptr)) << sqlite3_errmsg(db);
+  const char* sql = "CREATE TABLE IF NOT EXISTS tbl5(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT varchar(100));";
+  ASSERT_EQ(SQLITE_OK, sqlite3_exec(db, sql, nullptr, nullptr, nullptr)) << sqlite3_errmsg(db);
 
   constexpr char s[20] = "some string";
 
   sqlite3_stmt *stmt;
   const char *remaining;
-  const char* sql = "INSERT INTO tbl5(name) VALUES (?);";
+  sql = "INSERT INTO tbl5(name) VALUES (?);";
   ASSERT_EQ(SQLITE_OK, sqlite3_prepare_v2(db, sql, strlen(sql), &stmt, &remaining)) << sqlite3_errmsg(db);
   ASSERT_TRUE(std::all_of(remaining, sql + strlen(sql), [](char c) { return std::isspace(c); }));
   ASSERT_EQ(SQLITE_OK, sqlite3_bind_text(stmt, 1, s, strlen(s), nullptr)) << sqlite3_errmsg(db);

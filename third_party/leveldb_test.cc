@@ -34,11 +34,11 @@ static const char* LevelDBCompressionTypeToName(leveldb::CompressionType type) {
 static std::string LevelDBCompressionTypeToDBName(leveldb::CompressionType type) {
   switch(type) {
     case leveldb::kNoCompression:
-      return std::string("test-ldb-no") + "-" + std::to_string(GetPID());
+      return ::testing::TempDir() + "test-ldb-no" + "-" + std::to_string(GetPID());
     case leveldb::kSnappyCompression:
-      return std::string("test-ldb-snappy") + "-" + std::to_string(GetPID());
+      return ::testing::TempDir() + "test-ldb-snappy" + "-" + std::to_string(GetPID());
     case leveldb::kZstdCompression:
-      return std::string("test-ldb-zstd") + "-" + std::to_string(GetPID());
+      return ::testing::TempDir() + "test-ldb-zstd" + "-" + std::to_string(GetPID());
     default:
       return std::string("test-ldb-invalid") + "-" + std::to_string(GetPID());
   }
@@ -52,7 +52,7 @@ class LevelDBTest : public ::testing::TestWithParam<leveldb::CompressionType> {
     leveldb::Options options;
     options.compression = GetParam();
     options.create_if_missing = true;
-    auto status = leveldb::DB::Open(options, ::testing::TempDir() + LevelDBCompressionTypeToDBName(GetParam()), &db);
+    auto status = leveldb::DB::Open(options, LevelDBCompressionTypeToDBName(GetParam()), &db);
     ASSERT_TRUE(status.ok()) << status.ToString();
   }
 
@@ -62,7 +62,7 @@ class LevelDBTest : public ::testing::TestWithParam<leveldb::CompressionType> {
     leveldb::Options options;
     options.compression = GetParam();
     options.create_if_missing = true;
-    auto status = leveldb::DestroyDB(::testing::TempDir() + LevelDBCompressionTypeToDBName(GetParam()), options);
+    auto status = leveldb::DestroyDB(LevelDBCompressionTypeToDBName(GetParam()), options);
     ASSERT_TRUE(status.ok()) << status.ToString();
   }
 
