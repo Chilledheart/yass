@@ -522,55 +522,13 @@ CIPHER_METHOD_MAP_HTTP(XX)
 CIPHER_METHOD_MAP_HTTP2(XX)
 #undef XX
 
-static void connect_pair(asio::ip::tcp::socket &s1, asio::ip::tcp::socket &s2,
-                         asio::error_code &ec,
-                         asio::io_context &io_context) {
-  asio::ip::tcp::acceptor ls(io_context);
-  asio::ip::tcp::endpoint endpoint(asio::ip::make_address("127.0.0.1"), 0);
-  ls.open(endpoint.protocol(), ec);
-  if (ec) {
-    return;
-  }
-  ls.bind(endpoint, ec);
-  if (ec) {
-    return;
-  }
-  ls.listen(1, ec);
-  if (ec) {
-    return;
-  }
-  endpoint = ls.local_endpoint(ec);
-  if (ec) {
-    return;
-  }
-  s1.connect(endpoint, ec);
-  if (ec) {
-    return;
-  }
-  s2 = ls.accept(endpoint, ec);
-  if (ec) {
-    s1.close(ec);
-    return;
-  }
-}
-
 class ASIOFixture : public benchmark::Fixture {
  public:
   ASIOFixture() : s1(io_context), s2(io_context) {}
   void SetUp(::benchmark::State& state) override {
     asio::error_code ec;
-    connect_pair(s1, s2, ec, io_context);
+    asio::connect_pipe(s2, s1, ec);
     CHECK(!ec) << "connect_pair failure " << ec;
-    s1.native_non_blocking(true, ec);
-    s1.non_blocking(true, ec);
-
-    SetTCPCongestion(s1.native_handle(), ec);
-    SetTCPKeepAlive(s1.native_handle(), ec);
-    SetSocketTcpNoDelay(&s1, ec);
-
-    SetTCPCongestion(s2.native_handle(), ec);
-    SetTCPKeepAlive(s2.native_handle(), ec);
-    SetSocketTcpNoDelay(&s2, ec);
 
     GenerateRandContent(state.range(0));
   }
@@ -585,7 +543,8 @@ class ASIOFixture : public benchmark::Fixture {
 
  protected:
   asio::io_context io_context;
-  asio::ip::tcp::socket s1, s2;
+  asio::writable_pipe s1;
+  asio::readable_pipe s2;
 };
 
 BENCHMARK_DEFINE_F(ASIOFixture, PlainIO)(benchmark::State& state)  {
@@ -605,49 +564,16 @@ BENCHMARK_DEFINE_F(ASIOFixture, PlainIO)(benchmark::State& state)  {
     //
     auto start = std::chrono::high_resolution_clock::now();
 
-    std::function<void(asio::error_code ec)> s1_write_cb =
-      [this, &req_buffer, work_guard, &s1_write_cb](asio::error_code ec){
-      CHECK(!ec) << "Connection (content-consumer) write failure " << ec;
-      do {
-        size_t slice = std::min<size_t>(16 * 1024, req_buffer.length());
-        size_t written = s1.write_some(asio::ASIO_CONST_BUFFER(req_buffer.data(), slice), ec);
-        req_buffer.trimStart(written);
-        VLOG(1) << "Connection (content-consumer) write: " << written;
-      } while(!req_buffer.empty() && !ec);
-      if (!req_buffer.empty()) {
-        s1.async_wait(asio::ip::tcp::socket::wait_write, s1_write_cb);
-      } else {
-        s1_write_cb = nullptr;
-      }
-    };
-    s1.async_wait(asio::ip::tcp::socket::wait_write, s1_write_cb);
-
-    std::function<void(asio::error_code ec)> s1_read_cb =
-      [this, &resp_buffer, work_guard, &s1_read_cb](asio::error_code ec){
-      CHECK(!ec) << "Connection (content-consumer) read failure " << ec;
-      do {
-        size_t read = s1.read_some(tail_buffer(resp_buffer), ec);
-        resp_buffer.append(read);
-        VLOG(1) << "Connection (content-consumer) read: " << read;
-      } while(resp_buffer.length() != g_send_buffer.length() && !ec);
-      if (resp_buffer.length() != g_send_buffer.length()) {
-        s1.async_wait(asio::ip::tcp::socket::wait_read, s1_read_cb);
-      } else {
-        s1_read_cb = nullptr;
-      }
-    };
-    s1.async_wait(asio::ip::tcp::socket::wait_read, s1_read_cb);
+    asio::async_write(s1, const_buffer(req_buffer),
+      [work_guard](asio::error_code ec, size_t written) {
+      CHECK(!ec) << "Connection (content-provider) written failure " << ec;
+      VLOG(1) << "Connection (content-provider) written: " << written;
+    });
 
     asio::async_read(s2, mutable_buffer(*g_recv_buffer),
       [work_guard](asio::error_code ec, size_t read) {
       CHECK(!ec) << "Connection (content-provider) read failure " << ec;
       VLOG(1) << "Connection (content-provider) read: " << read;
-    });
-
-    asio::async_write(s2, const_buffer(g_send_buffer),
-      [work_guard](asio::error_code ec, size_t written) {
-      CHECK(!ec) << "Connection (content-provider) write failure " << ec;
-      VLOG(1) << "Connection (content-provider) write: " << written;
     });
 
     work_guard.reset();
