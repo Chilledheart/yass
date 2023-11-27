@@ -2999,8 +2999,6 @@ set(files
     src/core/string_util_constants.cpp
     src/core/ref_counted.cpp
     src/core/escape.cpp
-    src/core/string_number_conversions.cpp
-    src/core/string_number_conversions_win.cpp
     src/core/utf_offset_string_conversions.cpp
     src/core/utf_string_conversion_utils.cpp
     src/core/base64.cpp
@@ -3093,9 +3091,6 @@ set(hfiles
     src/core/ranges/functional.hpp
     src/core/ranges/ranges.hpp
     src/core/safe_math.hpp
-    src/core/string_number_conversions.hpp
-    src/core/string_number_conversions_internal.hpp
-    src/core/string_number_conversions_win.hpp
     src/core/utf_offset_string_conversions.hpp
     src/core/utf_string_conversion_utils.hpp
     src/core/hash.hpp
