@@ -3082,14 +3082,10 @@ set(hfiles
     src/core/thread_annotations.hpp
     src/core/clamped_math.hpp
     src/core/clamped_math_impl.hpp
-    src/core/contains.hpp
     src/core/escape.hpp
     src/core/functional/identity.hpp
     src/core/functional/invoke.hpp
     src/core/functional/not_fn.hpp
-    src/core/ranges/algorithm.hpp
-    src/core/ranges/functional.hpp
-    src/core/ranges/ranges.hpp
     src/core/safe_math.hpp
     src/core/utf_offset_string_conversions.hpp
     src/core/utf_string_conversion_utils.hpp
