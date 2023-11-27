@@ -32,11 +32,16 @@ TEST(UtilsTest, ExpandUserFromStringImpl) {
 }
 
 TEST(UtilsTest, ExpandUserFromString) {
-  wchar_t path[] = L"C:/path/to/directory";
+  wchar_t path[] = L"%TEMP%/path/to/directory";
   size_t path_len = sizeof(path) / sizeof(path[0]);
 
-  std::wstring expanded_path = ExpandUserFromString(path, path_len);
-  ASSERT_STREQ(path, expanded_path.c_str());
-  ASSERT_EQ(std::wstring(path, path_len-1), expanded_path);
+  wchar_t temp[32767];
+  DWORD temp_len = GetEnvironmentVariableW(L"TEMP", temp, sizeof(temp) / sizeof(temp[0]));
+  // GetEnvironmentVariableW: the return value is the number of characters
+  // stored in the buffer pointed to by lpBuffer, not including the terminating null character.
+  ASSERT_NE(0u, temp_len);
+  std::wstring expected_expanded_path = std::wstring(temp, temp_len) + L"/path/to/directory";
+
+  ASSERT_EQ(expected_expanded_path, ExpandUserFromString(path, path_len));
 }
 #endif
