@@ -5,7 +5,7 @@
 #define BASE_APPLE_SCOPED_TYPEREF_H_
 #include "base/check.h"
 #include "base/memory/scoped_policy.h"
-namespace apple {
+namespace gurl_base::apple {
 // ScopedTypeRef<> is patterned after std::unique_ptr<>, but maintains ownership
 // of a reference to any type that is maintained by Retain and Release methods.
 //
@@ -29,7 +29,7 @@ namespace apple {
 // of ownership of the object. For example, continuing to use the above
 // CGLContextObj specialization:
 //
-//   base::apple::ScopedTypeRef<CGLContextObj> context;
+//   gurl_base::apple::ScopedTypeRef<CGLContextObj> context;
 //   CGLCreateContext(pixel_format, share_group, context.InitializeInto());
 //
 // For initialization with an existing object, the caller may specify whether
@@ -47,9 +47,9 @@ class ScopedTypeRef {
   using element_type = T;
   explicit constexpr ScopedTypeRef(
       element_type object = Traits::InvalidValue(),
-      base::scoped_policy::OwnershipPolicy policy = base::scoped_policy::ASSUME)
+      gurl_base::scoped_policy::OwnershipPolicy policy = gurl_base::scoped_policy::ASSUME)
       : object_(object) {
-    if (object_ && policy == base::scoped_policy::RETAIN) {
+    if (object_ && policy == gurl_base::scoped_policy::RETAIN) {
       object_ = Traits::Retain(object_);
     }
   }
@@ -75,7 +75,7 @@ class ScopedTypeRef {
     }
   }
   ScopedTypeRef& operator=(const ScopedTypeRef<T, Traits>& that) {
-    reset(that.get(), base::scoped_policy::RETAIN);
+    reset(that.get(), gurl_base::scoped_policy::RETAIN);
     return *this;
   }
   // This is to be used only to take ownership of objects that are created
@@ -86,12 +86,12 @@ class ScopedTypeRef {
     return &object_;
   }
   void reset(const ScopedTypeRef<T, Traits>& that) {
-    reset(that.get(), base::scoped_policy::RETAIN);
+    reset(that.get(), gurl_base::scoped_policy::RETAIN);
   }
   void reset(element_type object = Traits::InvalidValue(),
-             base::scoped_policy::OwnershipPolicy policy =
-                 base::scoped_policy::ASSUME) {
-    if (object && policy == base::scoped_policy::RETAIN) {
+             gurl_base::scoped_policy::OwnershipPolicy policy =
+                 gurl_base::scoped_policy::ASSUME) {
+    if (object && policy == gurl_base::scoped_policy::RETAIN) {
       object = Traits::Retain(object);
     }
     if (object_) {
@@ -123,5 +123,5 @@ class ScopedTypeRef {
  private:
   element_type object_;
 };
-}  // namespace apple
+}  // namespace gurl_base::apple
 #endif  // BASE_APPLE_SCOPED_TYPEREF_H_

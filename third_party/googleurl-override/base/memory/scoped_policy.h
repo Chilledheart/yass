@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 #ifndef BASE_MEMORY_SCOPED_POLICY_H_
 #define BASE_MEMORY_SCOPED_POLICY_H_
-namespace base {
+namespace gurl_base {
 namespace scoped_policy {
 // Defines the ownership policy for a scoped object.
 enum OwnershipPolicy {
@@ -15,5 +15,5 @@ enum OwnershipPolicy {
   RETAIN
 };
 }  // namespace scoped_policy
-}  // namespace base
+}  // namespace gurl_base
 #endif  // BASE_MEMORY_SCOPED_POLICY_H_
