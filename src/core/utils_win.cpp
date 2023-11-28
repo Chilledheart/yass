@@ -721,18 +721,18 @@ void SetExecutablePathW(const std::wstring& exe_path) {
 
 ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len) {
   DWORD read;
-  HANDLE hFile = CreateFileA(path.c_str(), GENERIC_READ,
-                             FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
+  HANDLE hFile = ::CreateFileW(SysUTF8ToWide(path).c_str(), GENERIC_READ,
+                               FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
   if (hFile == INVALID_HANDLE_VALUE) {
     return -1;
   }
 
-  if (!ReadFile(hFile, buf, buf_len - 1, &read, nullptr)) {
-    CloseHandle(hFile);
+  if (!::ReadFile(hFile, buf, buf_len - 1, &read, nullptr)) {
+    ::CloseHandle(hFile);
     return -1;
   }
 
-  CloseHandle(hFile);
+  ::CloseHandle(hFile);
 
   buf[read] = '\0';
   return read;
@@ -742,18 +742,18 @@ ssize_t WriteFileWithBuffer(const std::string& path,
                             const char* buf,
                             size_t buf_len) {
   DWORD written;
-  HANDLE hFile = CreateFileA(path.c_str(), GENERIC_WRITE,
-                             0, nullptr, CREATE_ALWAYS, 0, nullptr);
+  HANDLE hFile = ::CreateFileW(SysUTF8ToWide(path).c_str(), GENERIC_WRITE,
+                               0, nullptr, CREATE_ALWAYS, 0, nullptr);
   if (hFile == INVALID_HANDLE_VALUE) {
     return -1;
   }
 
-  if (!WriteFile(hFile, buf, buf_len, &written, nullptr) || written != buf_len) {
-    CloseHandle(hFile);
+  if (!::WriteFile(hFile, buf, buf_len, &written, nullptr) || written != buf_len) {
+    ::CloseHandle(hFile);
     return -1;
   }
 
-  CloseHandle(hFile);
+  ::CloseHandle(hFile);
 
   return written;
 }
