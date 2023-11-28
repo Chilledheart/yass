@@ -2029,6 +2029,187 @@ if (USE_TCMALLOC)
 endif()
 
 # *****************************************************************************************
+#           re2 Library
+# *****************************************************************************************
+
+message(STATUS "Compiling with bundled re2 library")
+# build re2 required by absl
+set(RE2_SOURCES
+    third_party/re2/re2/bitmap256.cc
+    third_party/re2/re2/bitstate.cc
+    third_party/re2/re2/compile.cc
+    third_party/re2/re2/dfa.cc
+    third_party/re2/re2/filtered_re2.cc
+    third_party/re2/re2/mimics_pcre.cc
+    third_party/re2/re2/nfa.cc
+    third_party/re2/re2/onepass.cc
+    third_party/re2/re2/parse.cc
+    third_party/re2/re2/perl_groups.cc
+    third_party/re2/re2/prefilter.cc
+    third_party/re2/re2/prefilter_tree.cc
+    third_party/re2/re2/prog.cc
+    third_party/re2/re2/re2.cc
+    third_party/re2/re2/regexp.cc
+    third_party/re2/re2/set.cc
+    third_party/re2/re2/simplify.cc
+    third_party/re2/re2/tostring.cc
+    third_party/re2/re2/unicode_casefold.cc
+    third_party/re2/re2/unicode_groups.cc
+    third_party/re2/util/rune.cc
+    third_party/re2/util/strutil.cc
+    )
+
+set(RE2_HEADERS
+    third_party/re2/re2/filtered_re2.h
+    third_party/re2/re2/re2.h
+    third_party/re2/re2/set.h
+    third_party/re2/re2/stringpiece.h
+    )
+
+add_library(re2 ${RE2_SOURCES} ${RE2_HEADERS})
+target_compile_options(re2 PRIVATE -Wno-error)
+target_include_directories(re2 PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/third_party/re2)
+
+target_link_libraries(re2 PUBLIC
+    absl::base
+    absl::core_headers
+    absl::fixed_array
+    absl::flags
+    absl::flat_hash_map
+    absl::flat_hash_set
+    absl::inlined_vector
+    absl::optional
+    absl::span
+    absl::str_format
+    absl::strings
+    absl::synchronization
+    )
+add_library(re2::re2 ALIAS re2)
+set(SUPPORT_LIBS re2 ${SUPPORT_LIBS})
+
+# *****************************************************************************************
+#           googleurl Library
+# *****************************************************************************************
+
+message(STATUS "Compiling with bundled googleurl library")
+
+add_library(url STATIC
+  # polyfills
+  third_party/googleurl/polyfills/base/allocator/buildflags.h
+  third_party/googleurl/polyfills/base/base_export.h
+  third_party/googleurl/polyfills/base/check.h
+  third_party/googleurl/polyfills/base/check_op.h
+  third_party/googleurl/polyfills/base/component_export.h
+  third_party/googleurl/polyfills/base/cpu_reduction_experiment.h
+  third_party/googleurl/polyfills/base/dcheck_is_on.h
+  third_party/googleurl/polyfills/base/debug/alias.h
+  third_party/googleurl/polyfills/base/export_template.h
+  third_party/googleurl/polyfills/base/feature_list.h
+  third_party/googleurl/polyfills/base/logging.h
+  third_party/googleurl/polyfills/base/memory/raw_ptr.h
+  third_party/googleurl/polyfills/base/metrics/histogram_macros.h
+  third_party/googleurl/polyfills/base/notreached.h
+  third_party/googleurl/polyfills/base/trace_event/memory_usage_estimator.h
+  # base
+  third_party/googleurl/base/bits.h
+  third_party/googleurl/base/compiler_specific.h
+  third_party/googleurl/base/containers/checked_iterators.h
+  third_party/googleurl/base/containers/contains.h
+  third_party/googleurl/base/containers/contiguous_iterator.h
+  third_party/googleurl/base/containers/span.h
+  third_party/googleurl/base/containers/util.h
+  third_party/googleurl/base/cxx20_is_constant_evaluated.h
+  third_party/googleurl/base/cxx20_to_address.h
+  third_party/googleurl/base/debug/crash_logging.h
+  third_party/googleurl/base/debug/leak_annotations.h
+  third_party/googleurl/base/functional/identity.h
+  third_party/googleurl/base/functional/invoke.h
+  third_party/googleurl/base/functional/not_fn.h
+  third_party/googleurl/base/memory/raw_ptr_exclusion.h
+  third_party/googleurl/base/no_destructor.h
+  third_party/googleurl/base/numerics/checked_math.h
+  third_party/googleurl/base/numerics/checked_math_impl.h
+  third_party/googleurl/base/numerics/clamped_math.h
+  third_party/googleurl/base/numerics/clamped_math_impl.h
+  third_party/googleurl/base/numerics/safe_conversions.h
+  third_party/googleurl/base/numerics/safe_conversions_arm_impl.h
+  third_party/googleurl/base/numerics/safe_conversions_impl.h
+  third_party/googleurl/base/numerics/safe_math.h
+  third_party/googleurl/base/numerics/safe_math_arm_impl.h
+  third_party/googleurl/base/numerics/safe_math_clang_gcc_impl.h
+  third_party/googleurl/base/numerics/safe_math_shared_impl.h
+  third_party/googleurl/base/ranges/algorithm.h
+  third_party/googleurl/base/ranges/functional.h
+  third_party/googleurl/base/ranges/ranges.h
+  third_party/googleurl/base/stl_util.h
+  third_party/googleurl/base/template_util.h
+  third_party/googleurl/base/strings/string_piece_forward.h
+  third_party/googleurl/base/strings/string_piece.h
+  third_party/googleurl/base/strings/string_util.h
+  third_party/googleurl/base/strings/to_string.h
+  third_party/googleurl/base/strings/string_util_impl_helpers.h
+  third_party/googleurl/base/strings/string_util_internal.h
+  third_party/googleurl/base/strings/string_number_conversions.h
+  third_party/googleurl/base/strings/utf_ostream_operators.h
+  third_party/googleurl/base/strings/utf_string_conversions.h
+  third_party/googleurl/base/strings/utf_string_conversion_utils.h
+  third_party/googleurl/base/win/win_handle_types.h
+  third_party/googleurl/base/debug/crash_logging.cc
+  third_party/googleurl/base/strings/string_util.cc
+  third_party/googleurl/base/strings/string_util_constants.cc
+  # FIXME vs2022 doesn't even compile
+  #../googleurl/base/strings/utf_ostream_operators.cc
+  third_party/googleurl/base/strings/utf_string_conversion_utils.cc
+  third_party/googleurl/base/strings/utf_string_conversions.cc
+  # icu
+  third_party/googleurl/base/third_party/icu/icu_utf.h
+  # url
+  third_party/googleurl/url/gurl.cc
+  third_party/googleurl/url/third_party/mozilla/url_parse.cc
+  third_party/googleurl/url/url_canon.cc
+  third_party/googleurl/url/url_canon_etc.cc
+  third_party/googleurl/url/url_canon_filesystemurl.cc
+  third_party/googleurl/url/url_canon_fileurl.cc
+  third_party/googleurl/url/url_canon_host.cc
+  third_party/googleurl/url/url_canon_internal.cc
+  third_party/googleurl/url/url_canon_internal.h
+  third_party/googleurl/url/url_canon_internal_file.h
+  third_party/googleurl/url/url_canon_ip.cc
+  third_party/googleurl/url/url_canon_mailtourl.cc
+  third_party/googleurl/url/url_canon_path.cc
+  third_party/googleurl/url/url_canon_pathurl.cc
+  third_party/googleurl/url/url_canon_query.cc
+  third_party/googleurl/url/url_canon_relative.cc
+  third_party/googleurl/url/url_canon_stdstring.cc
+  third_party/googleurl/url/url_canon_stdurl.cc
+  third_party/googleurl/url/url_constants.cc
+  third_party/googleurl/url/url_features.cc
+  third_party/googleurl/url/url_parse_file.cc
+  third_party/googleurl/url/url_parse_internal.h
+  third_party/googleurl/url/url_util.cc
+  third_party/googleurl/url/url_util_internal.h
+  # third_party/googleurl/url/scheme_host_port.cc
+  # third_party/googleurl/url/scheme_host_port.h
+  # third_party/googleurl/url/origin.cc
+  # third_party/googleurl/url/origin.h
+  # IDNA: if with system icu ../googleurl/url/url_idna_icu.cc
+  third_party/googleurl/url/url_idna_ascii_only.cc
+  )
+
+target_include_directories(url PUBLIC
+  third_party/googleurl
+  third_party/googleurl/polyfills
+  )
+
+target_compile_options(url PRIVATE -Wno-error)
+
+target_link_libraries(url PUBLIC
+  absl::optional)
+
+set(SUPPORT_LIBS url ${SUPPORT_LIBS})
+
+# *****************************************************************************************
 #           boringssl Library
 # *****************************************************************************************
 
@@ -2209,66 +2390,6 @@ else()
     ${SUPPORT_INCLUDE_DIRS}
   )
 endif()
-
-# *****************************************************************************************
-#           re2 Library
-# *****************************************************************************************
-
-message(STATUS "Compiling with bundled re2 library")
-# build re2 required by absl
-set(RE2_SOURCES
-    third_party/re2/re2/bitmap256.cc
-    third_party/re2/re2/bitstate.cc
-    third_party/re2/re2/compile.cc
-    third_party/re2/re2/dfa.cc
-    third_party/re2/re2/filtered_re2.cc
-    third_party/re2/re2/mimics_pcre.cc
-    third_party/re2/re2/nfa.cc
-    third_party/re2/re2/onepass.cc
-    third_party/re2/re2/parse.cc
-    third_party/re2/re2/perl_groups.cc
-    third_party/re2/re2/prefilter.cc
-    third_party/re2/re2/prefilter_tree.cc
-    third_party/re2/re2/prog.cc
-    third_party/re2/re2/re2.cc
-    third_party/re2/re2/regexp.cc
-    third_party/re2/re2/set.cc
-    third_party/re2/re2/simplify.cc
-    third_party/re2/re2/tostring.cc
-    third_party/re2/re2/unicode_casefold.cc
-    third_party/re2/re2/unicode_groups.cc
-    third_party/re2/util/rune.cc
-    third_party/re2/util/strutil.cc
-    )
-
-set(RE2_HEADERS
-    third_party/re2/re2/filtered_re2.h
-    third_party/re2/re2/re2.h
-    third_party/re2/re2/set.h
-    third_party/re2/re2/stringpiece.h
-    )
-
-add_library(re2 ${RE2_SOURCES} ${RE2_HEADERS})
-target_compile_options(re2 PRIVATE -Wno-error)
-target_include_directories(re2 PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/third_party/re2)
-
-target_link_libraries(re2 PUBLIC
-    absl::base
-    absl::core_headers
-    absl::fixed_array
-    absl::flags
-    absl::flat_hash_map
-    absl::flat_hash_set
-    absl::inlined_vector
-    absl::optional
-    absl::span
-    absl::str_format
-    absl::strings
-    absl::synchronization
-    )
-add_library(re2::re2 ALIAS re2)
-set(SUPPORT_LIBS re2 ${SUPPORT_LIBS})
 
 # *****************************************************************************************
 #           googletest Library
