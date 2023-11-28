@@ -2197,7 +2197,17 @@ add_library(url STATIC
   third_party/googleurl/url/url_idna_ascii_only.cc
   )
 
+if (WIN32)
+  target_sources(url PRIVATE
+    third_party/googleurl/base/strings/sys_string_conversions_win.cc)
+elseif(NOT APPLE)
+  target_sources(url PRIVATE
+    third_party/googleurl/base/strings/sys_string_conversions_posix.cc)
+  # missing apple part
+endif()
+
 target_include_directories(url PUBLIC
+  third_party/googleurl-override
   third_party/googleurl
   third_party/googleurl/polyfills
   )

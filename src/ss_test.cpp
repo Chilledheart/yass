@@ -42,10 +42,10 @@ namespace {
 IOBuf g_send_buffer;
 std::mutex g_in_provider_mutex;
 std::unique_ptr<IOBuf> g_recv_buffer;
-const char kConnectResponse[] = "HTTP/1.1 200 Connection established\r\n\r\n";
+constexpr char kConnectResponse[] = "HTTP/1.1 200 Connection established\r\n\r\n";
 
 // openssl req -newkey rsa:1024 -keyout pkey.pem -x509 -out cert.crt -days 3650 -nodes -subj /C=XX
-const char kCertificate[] =
+constexpr char kCertificate[] =
 "-----BEGIN CERTIFICATE-----\n"
 "MIIB9jCCAV+gAwIBAgIUM03bTKd+A2WwrfolXJC+L9AsxI8wDQYJKoZIhvcNAQEL\n"
 "BQAwDTELMAkGA1UEBhMCWFgwHhcNMjMwMTI5MjA1MDU5WhcNMzMwMTI2MjA1MDU5\n"
@@ -59,7 +59,7 @@ const char kCertificate[] =
 "Hine/sjADd7nGUrsIP+JIxplayLXcrP37KwaWxyRHoh/Bqa+7D3RpCv0SrNsIvlt\n"
 "yyvnIm8njIJSin7Vf4tD1PfY6Obyc8ygUSw=\n"
 "-----END CERTIFICATE-----\n";
-const char kPrivateKey[] =
+constexpr char kPrivateKey[] =
 "-----BEGIN PRIVATE KEY-----\n"
 "MIICdQIBADANBgkqhkiG9w0BAQEFAASCAl8wggJbAgEAAoGBANxhmaUG3T4dtrgj\n"
 "CHrORlCXw6rAHWuSOyXlLdVKtCnm7ENa8TPUFIM7L1ZLWKihsWVue3Yz5XFrYX1B\n"

@@ -21,13 +21,13 @@
 #include <wchar.h>
 
 #include "core/compiler_specific.hpp"
+#include "base/strings/sys_string_conversions.h"
 
-#if defined(OS_APPLE) && defined(__clang__)
+#if defined(OS_APPLE)
 #include <AvailabilityMacros.h>
 #include <CoreFoundation/CoreFoundation.h>
-
 #include "core/scoped_cftyperef.hpp"
-#endif  // defined(OS_APPLE) && defined(__clang__)
+#endif  // defined(OS_APPLE)
 
 // Valid values for priority of Thread::Options and SimpleThread::Options, and
 // SetCurrentThreadPriority(), listed in increasing order of importance.
@@ -61,32 +61,7 @@ bool SetUTF8Locale();
 
 absl::StatusOr<int32_t> StringToInteger(const std::string& value);
 
-// Converts between wide and UTF-8 representations of a string. On error, the
-// result is system-dependent.
-std::string SysWideToUTF8(const std::wstring& wide);
-std::wstring SysUTF8ToWide(std::string_view utf8);
-
-// Converts between wide and UTF-8 representations of a string. On error, the
-// result is system-dependent.
-std::wstring SysMultiByteToWide(std::string_view mb, uint32_t code_page);
-
-std::string SysWideToMultiByte(const std::wstring& wide, uint32_t code_page);
-
-// Converts between wide and the system multi-byte representations of a string.
-// DANGER: This will lose information and can change (on Windows, this can
-// change between reboots).
-std::string SysWideToNativeMB(const std::wstring& wide);
-std::wstring SysNativeMBToWide(std::string_view native_mb);
-
-// Windows-specific ------------------------------------------------------------
 #ifdef _WIN32
-// Converts between 8-bit and wide strings, using the given code page. The
-// code page identifier is one accepted by the Windows function
-// MultiByteToWideChar().
-std::string SysWideToNativeMB(const std::wstring& wide);
-
-std::wstring SysNativeMBToWide(std::string_view native_mb);
-
 bool EnableSecureDllLoading();
 
 void GetWindowsVersion(int* major, int* minor, int* build_number, int* os_type);
@@ -94,12 +69,30 @@ void GetWindowsVersion(int* major, int* minor, int* build_number, int* os_type);
 bool IsWindowsVersionBNOrGreater(int wMajorVersion,
                                  int wMinorVersion,
                                  int wBuildNumber);
-
 #endif
 
-// Mac-specific ----------------------------------------------------------------
+// Converts between wide and UTF-8 representations of a string. On error, the
+// result is system-dependent.
+using gurl_base::SysWideToUTF8;
+using gurl_base::SysUTF8ToWide;
 
-#if defined(OS_APPLE) && defined(__clang__)
+// Converts between wide and the system multi-byte representations of a string.
+// DANGER: This will lose information and can change (on Windows, this can
+// change between reboots).
+using gurl_base::SysWideToNativeMB;
+using gurl_base::SysNativeMBToWide;
+
+// Windows-specific ------------------------------------------------------------
+#ifdef OS_WIN
+// Converts between 8-bit and wide strings, using the given code page. The
+// code page identifier is one accepted by the Windows function
+// MultiByteToWideChar().
+using gurl_base::SysMultiByteToWide;
+using gurl_base::SysWideToMultiByte;
+#endif // OS_WIN
+
+// Mac-specific ----------------------------------------------------------------
+#if defined(OS_APPLE)
 
 #if defined(__OBJC__)
 #import <Foundation/Foundation.h>
@@ -139,7 +132,7 @@ std::u16string SysCFStringRefToUTF16(CFStringRef ref);
 std::string SysNSStringToUTF8(NSString* ref);
 std::u16string SysNSStringToUTF16(NSString* ref);
 
-#endif  // defined(OS_APPLE) && defined(__clang__)
+#endif  // defined(OS_APPLE)
 
 extern const char kSeparators[];
 
