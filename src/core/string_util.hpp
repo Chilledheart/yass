@@ -4,7 +4,6 @@
 #ifndef CORE_STRING_UTIL_H
 #define CORE_STRING_UTIL_H
 
-#include <ctype.h>
 #include <stdarg.h>  // va_list
 #include <stddef.h>
 #include <stdint.h>
