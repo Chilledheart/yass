@@ -47,7 +47,7 @@ std::string ExpandUser(const std::string& file_path) {
     std::string home = ::getenv("HOME");
     if (home.empty()) {
 #ifdef _WIN32
-      home = absl::StrCat(::getenv("HOMEDRIVE"), "\\", ::getenv("HOMEPATH"));
+      home = absl::StrCat(::getenv("HOMEDRIVE"), ::getenv("HOMEPATH"));
 #else
       struct passwd pwd;
       struct passwd* result = nullptr;
@@ -67,7 +67,7 @@ std::string ExpandUser(const std::string& file_path) {
     // ~username
     if (real_path[1] != '/') {
 #ifdef _WIN32
-      return absl::StrCat(::getenv("HOMEDRIVE"), "\\Users");
+      return absl::StrCat(::getenv("HOMEDRIVE"), "\\Users", "\\", real_path.substr(1));
 #else
       struct passwd pwd;
       struct passwd* result = nullptr;

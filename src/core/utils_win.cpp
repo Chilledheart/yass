@@ -428,84 +428,6 @@ bool SetUTF8Locale() {
   return success;
 }
 
-// borrowed from sys_string_conversions_win.cc
-
-// Do not assert in this function since it is used by the asssertion code!
-std::string SysWideToUTF8(const std::wstring& wide) {
-  return SysWideToMultiByte(wide, CP_UTF8);
-}
-
-// Do not assert in this function since it is used by the asssertion code!
-std::wstring SysUTF8ToWide(std::string_view utf8) {
-  return SysMultiByteToWide(utf8, CP_UTF8);
-}
-
-std::string SysWideToNativeMB(const std::wstring& wide) {
-  return SysWideToMultiByte(wide, CP_ACP);
-}
-
-std::wstring SysNativeMBToWide(std::string_view native_mb) {
-  return SysMultiByteToWide(native_mb, CP_ACP);
-}
-
-// Do not assert in this function since it is used by the asssertion code!
-std::wstring SysMultiByteToWide(std::string_view mb, uint32_t code_page) {
-  int mb_length = static_cast<int>(mb.length());
-  // Note that, if cbMultiByte is 0, the function fails.
-  if (mb_length == 0)
-    return std::wstring();
-
-  // Compute the length of the buffer.
-  int charcount = MultiByteToWideChar(
-      code_page /* CodePage */, 0 /* dwFlags */, mb.data() /* lpMultiByteStr */,
-      mb_length /* cbMultiByte */, nullptr /* lpWideCharStr */,
-      0 /* cchWideChar */);
-  // The function returns 0 if it does not succeed.
-  if (charcount == 0)
-    return std::wstring();
-
-  // If the function succeeds and cchWideChar is 0,
-  // the return value is the required size, in characters,
-  std::wstring wide;
-  wide.resize(charcount);
-  MultiByteToWideChar(code_page /* CodePage */, 0 /* dwFlags */,
-                      mb.data() /* lpMultiByteStr */,
-                      mb_length /* cbMultiByte */, &wide[0] /* lpWideCharStr */,
-                      charcount /* cchWideChar */);
-
-  return wide;
-}
-
-// Do not assert in this function since it is used by the asssertion code!
-std::string SysWideToMultiByte(const std::wstring& wide, uint32_t code_page) {
-  int wide_length = static_cast<int>(wide.length());
-  // If cchWideChar is set to 0, the function fails.
-  if (wide_length == 0)
-    return std::string();
-
-  // Compute the length of the buffer we'll need.
-  int charcount = WideCharToMultiByte(
-      code_page /* CodePage */, 0 /* dwFlags */,
-      wide.data() /* lpWideCharStr */, wide_length /* cchWideChar */,
-      nullptr /* lpMultiByteStr */, 0 /* cbMultiByte */,
-      nullptr /* lpDefaultChar */, nullptr /* lpUsedDefaultChar */);
-  // The function returns 0 if it does not succeed.
-  if (charcount == 0)
-    return std::string();
-  // If the function succeeds and cbMultiByte is 0, the return value is
-  // the required size, in bytes, for the buffer indicated by lpMultiByteStr.
-  std::string mb;
-  mb.resize(charcount);
-
-  WideCharToMultiByte(
-      code_page /* CodePage */, 0 /* dwFlags */,
-      wide.data() /* lpWideCharStr */, wide_length /* cchWideChar */,
-      &mb[0] /* lpMultiByteStr */, charcount /* cbMultiByte */,
-      nullptr /* lpDefaultChar */, nullptr /* lpUsedDefaultChar */);
-
-  return mb;
-}
-
 static const wchar_t *kDllWhiteList [] = {
 #ifndef _LIBCPP_MSVCRT
 // msvc runtime, still searched current directory
@@ -571,7 +493,7 @@ static void CheckDynamicLibraries() {
     const_cast<wchar_t*>(exe.c_str()),
     exe.size() + 1);
   if (!exeLength || exeLength >= exe.size() + 1) {
-    PLOG(FATAL) << L"Could not get executable path!";
+    PLOG(FATAL) << "Could not get executable path!";
   }
   exe.resize(exeLength);
   const auto last1 = exe.find_last_of('\\');
@@ -580,7 +502,7 @@ static void CheckDynamicLibraries() {
     (last1 == std::wstring::npos) ? -1 : static_cast<int>(last1),
     (last2 == std::wstring::npos) ? -1 : static_cast<int>(last2));
   if (last < 0) {
-    LOG(FATAL) << L"Could not get executable directory!";
+    LOG(FATAL) << "Could not get executable directory!";
   }
   // In the ANSI version of this function,
   // the name is limited to MAX_PATH characters.
@@ -608,7 +530,7 @@ static void CheckDynamicLibraries() {
     if (error == ERROR_FILE_NOT_FOUND) {
       return;
     }
-    PLOG(FATAL) << L"Could not enumerate executable path!";
+    PLOG(FATAL) << "Could not enumerate executable path!";
   }
 
   do {

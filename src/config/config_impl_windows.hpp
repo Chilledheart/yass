@@ -118,11 +118,11 @@ class ConfigImplWindows : public ConfigImpl {
             &disposition /* lpdwDisposition*/) == ERROR_SUCCESS) {
       if (disposition == REG_CREATED_NEW_KEY) {
         VLOG(2) << "The key did not exist and was created: HKEY_CURRENT_USER/"
-                << subkey;
+                << SysWideToUTF8(subkey);
       } else if (disposition == REG_OPENED_EXISTING_KEY) {
         VLOG(2) << "The key existed and was simply opened without being "
                    "changed: HKEY_CURRENT_USER/"
-                << subkey;
+                << SysWideToUTF8(subkey);
       }
       return true;
     }

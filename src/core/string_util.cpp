@@ -3,7 +3,6 @@
 
 #include "core/string_util.hpp"
 
-#include <ctype.h>
 #include <errno.h>
 #include <math.h>
 #include <stdarg.h>
@@ -13,7 +12,6 @@
 #include <string.h>
 #include <time.h>
 #include <wchar.h>
-#include <wctype.h>
 
 #include <algorithm>
 #include <limits>

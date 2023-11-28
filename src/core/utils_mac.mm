@@ -7,12 +7,8 @@
 
 #include <absl/flags/internal/program_name.h>
 
-#if defined(OS_APPLE) && defined(__clang__)
-
 #include <AvailabilityMacros.h>
 #include <CoreFoundation/CoreFoundation.h>
-
-#endif  // defined(OS_APPLE) && defined(__clang__)
 
 #include <errno.h>
 #include <locale.h>
@@ -505,8 +501,6 @@ bool SetUTF8Locale() {
   return true;
 }
 
-#if defined(OS_APPLE) && defined(__clang__)
-
 namespace {
 
 // Convert the supplied CFString into the specified encoding, and return it as
@@ -628,6 +622,8 @@ static const CFStringEncoding kWideStringEncoding = kCFStringEncodingUTF32LE;
 
 }  // namespace
 
+namespace gurl_base {
+
 // Do not assert in this function since it is used by the asssertion code!
 std::string SysWideToUTF8(const std::wstring& wide) {
   return STLStringToSTLStringWithEncodingsT<std::wstring, std::string>(
@@ -647,6 +643,8 @@ std::string SysWideToNativeMB(const std::wstring& wide) {
 std::wstring SysNativeMBToWide(std::string_view native_mb) {
   return SysUTF8ToWide(native_mb);
 }
+
+} // gurl_base namespace
 
 ScopedCFTypeRef<CFStringRef> SysUTF8ToCFStringRef(std::string_view utf8) {
   return StringViewToCFStringWithEncodingsT(utf8, kNarrowStringEncoding);
@@ -685,8 +683,6 @@ std::u16string SysNSStringToUTF16(NSString* nsstring) {
     return std::u16string();
   return SysCFStringRefToUTF16(reinterpret_cast<CFStringRef>(nsstring));
 }
-
-#endif  // defined(OS_APPLE) && defined(__clang__)
 
 static std::string main_exe_path = "UNKNOWN";
 
