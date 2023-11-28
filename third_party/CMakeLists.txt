@@ -32,7 +32,6 @@ set(RE2_HEADERS
     )
 
 add_library(re2 ${RE2_SOURCES} ${RE2_HEADERS})
-target_compile_definitions(re2 PRIVATE RE2_USE_ICU)
 target_include_directories(re2 PUBLIC re2)
 
 target_link_libraries(re2 PUBLIC
@@ -48,6 +47,11 @@ target_link_libraries(re2 PUBLIC
     absl::str_format
     absl::strings
     absl::synchronization
-    icuuc
     )
+
+if (USE_ICU)
+  target_compile_definitions(re2 PRIVATE RE2_USE_ICU)
+  target_link_libraries(re2 PRIVATE icuuc)
+endif()
+
 add_library(re2::re2 ALIAS re2)

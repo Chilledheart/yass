@@ -274,6 +274,7 @@ option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
 option(USE_BUILTIN_CA_BUNDLE_CRT "Build with embedded ca-bundle.crt support" ON)
 option(USE_MBEDTLS "Build with mbedtls support" ON)
 option(USE_BALSA_HTTP_PARSER "Build with balsa http parser" ON)
+option(USE_ICU "Build with icu" OFF)
 
 option(ENABLE_LTO "Enable build with LTO" ON)
 option(ENABLE_LLD "Enable build with LLD" ON)
@@ -2032,9 +2033,11 @@ endif()
 #           icu Library
 # *****************************************************************************************
 
-message(STATUS "Compiling with bundled icu library")
-add_subdirectory(third_party/icu)
-set(SUPPORT_LIBS icuuc icui18n ${SUPPORT_LIBS})
+if (USE_ICU)
+  message(STATUS "Compiling with bundled icu library")
+  add_subdirectory(third_party/icu)
+  set(SUPPORT_LIBS icuuc icui18n ${SUPPORT_LIBS})
+endif()
 
 # *****************************************************************************************
 #           re2 Library
@@ -3381,6 +3384,10 @@ if (GUI)
           )
         list(APPEND SRC_FILES
           ${ASSET_CATALOG})
+        if (USE_ICU)
+          list(APPEND SRC_FILES
+            ${ICU_DATAFILE})
+        endif()
         if (GUI_SANDBOX)
           list(APPEND SRC_FILES
             src/mac/yass.entitlements)
@@ -3630,6 +3637,10 @@ if (GUI)
           MACOSX_PACKAGE_LOCATION "Resources")
         set_source_files_properties("${ASSET_CATALOG}" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")
+        if (USE_ICU)
+          set_source_files_properties("${ICU_DATAFILE}" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
+        endif()
 
         set(APP_MACOSX_BUNDLE_INFO "${CMAKE_CURRENT_BINARY_DIR}/Info.plist")
         configure_file("src/mac/Info.plist.in" "${APP_MACOSX_BUNDLE_INFO}" @ONLY)

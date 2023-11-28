@@ -1079,5 +1079,6 @@ endif()
 set(data_bundle_prefix "icudtl")
 set(data_bundle "${data_bundle_prefix}.dat")
 
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/${data_dir}/${data_bundle}
-  DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/${data_bundle})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/${data_dir}/${data_bundle} DESTINATION ${CMAKE_BINARY_DIR})
+
+set(ICU_DATAFILE ${data_bundle} PARENT_SCOPE)
