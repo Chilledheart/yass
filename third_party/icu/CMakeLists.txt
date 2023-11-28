@@ -971,6 +971,9 @@ set(icu_config
   # to avoid performance issues.
   U_ENABLE_TRACING=1
   U_ENABLE_RESOURCE_TRACING=0
+
+  # icu_use_data_file
+  ICU_UTIL_DATA_IMPL=ICU_UTIL_DATA_FILE
 )
 
 set(icu_includes
