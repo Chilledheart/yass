@@ -213,8 +213,8 @@ static pid_t GetDebuggerProcess() {
   if (pid_end_index == std::string_view::npos)
     return -1;
 
-  std::string_view pid_str(buf + pid_index, pid_end_index - pid_index);
-  absl::StatusOr<int32_t> pid = StringToInteger(pid_str);
+  std::string pid_str(buf + pid_index, pid_end_index - pid_index);
+  auto pid = StringToInteger(pid_str);
   if (!pid.ok())
     return -1;
 

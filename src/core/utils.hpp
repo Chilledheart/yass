@@ -59,7 +59,7 @@ bool IsProgramConsole();
 
 bool SetUTF8Locale();
 
-absl::StatusOr<int32_t> StringToInteger(std::string_view value);
+absl::StatusOr<int32_t> StringToInteger(const std::string& value);
 
 // Converts between wide and UTF-8 representations of a string. On error, the
 // result is system-dependent.
