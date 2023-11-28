@@ -32,7 +32,7 @@ class ConfigImplApple : public ConfigImpl {
   bool ReadImpl(const std::string& key, uint64_t* value) override;
   bool ReadImpl(const std::string& key, int64_t* value) override;
 
-  bool WriteImpl(const std::string& key, absl::string_view value) override;
+  bool WriteImpl(const std::string& key, std::string_view value) override;
   bool WriteImpl(const std::string& key, bool value) override;
   bool WriteImpl(const std::string& key, uint32_t value) override;
   bool WriteImpl(const std::string& key, int32_t value) override;

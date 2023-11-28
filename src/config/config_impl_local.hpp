@@ -147,7 +147,7 @@ class ConfigImplLocal : public ConfigImpl {
     return false;
   }
 
-  bool WriteImpl(const std::string& key, absl::string_view value) override {
+  bool WriteImpl(const std::string& key, std::string_view value) override {
     root_[key] = std::string(value.data(), value.size());
     return true;
   }

@@ -45,3 +45,22 @@ TEST(UtilsTest, ExpandUserFromString) {
   ASSERT_EQ(expected_expanded_path, ExpandUserFromString(path, path_len));
 }
 #endif
+
+TEST(UtilsTest, StringToInteger) {
+  auto i = StringToInteger("123");
+  ASSERT_TRUE(i.ok()) << i.status();
+  ASSERT_EQ(i.value(), 123);
+
+  const char s3[] = "123";
+  i = StringToInteger(std::string(s3, 3));
+  ASSERT_TRUE(i.ok()) << i.status();
+  ASSERT_EQ(i.value(), 123);
+
+  i = StringToInteger(std::string(s3, 4));
+  ASSERT_FALSE(i.ok()) << i.status();
+
+  const char s4[] = "123a";
+
+  i = StringToInteger(std::string(s4, 4));
+  ASSERT_FALSE(i.ok()) << i.status();
+}

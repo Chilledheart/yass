@@ -60,19 +60,19 @@ bool IsWprintfFormatPortable(const wchar_t* format) {
   return true;
 }
 
-std::string ToLowerASCII(absl::string_view str) {
+std::string ToLowerASCII(std::string_view str) {
   return internal::ToLowerASCIIImpl(str);
 }
 
-std::string ToUpperASCII(absl::string_view str) {
+std::string ToUpperASCII(std::string_view str) {
   return internal::ToUpperASCIIImpl(str);
 }
 
-int CompareCaseInsensitiveASCII(absl::string_view a, absl::string_view b) {
+int CompareCaseInsensitiveASCII(std::string_view a, std::string_view b) {
   return internal::CompareCaseInsensitiveASCIIT(a, b);
 }
 
-bool EqualsCaseInsensitiveASCII(absl::string_view a, absl::string_view b) {
+bool EqualsCaseInsensitiveASCII(std::string_view a, std::string_view b) {
   return a.size() == b.size() &&
          internal::CompareCaseInsensitiveASCIIT(a, b) == 0;
 }
@@ -87,85 +87,91 @@ const std::u16string& EmptyString16() {
   return *s16;
 }
 
-bool ReplaceChars(absl::string_view input,
-                  absl::string_view replace_chars,
-                  absl::string_view replace_with,
+bool ReplaceChars(std::string_view input,
+                  std::string_view replace_chars,
+                  std::string_view replace_with,
                   std::string* output) {
   return internal::ReplaceCharsT(input, replace_chars, replace_with, output);
 }
 
-bool RemoveChars(absl::string_view input,
-                 absl::string_view remove_chars,
+bool RemoveChars(std::string_view input,
+                 std::string_view remove_chars,
                  std::string* output) {
-  return internal::ReplaceCharsT(input, remove_chars, absl::string_view(),
+  return internal::ReplaceCharsT(input, remove_chars, std::string_view(),
                                  output);
 }
 
-bool TrimString(absl::string_view input,
-                absl::string_view trim_chars,
+bool TrimString(std::string_view input,
+                std::string_view trim_chars,
                 std::string* output) {
   return internal::TrimStringT(input, trim_chars, TRIM_ALL, output) !=
          TRIM_NONE;
 }
 
-absl::string_view TrimString(absl::string_view input,
-                             absl::string_view trim_chars,
+std::string_view TrimString(std::string_view input,
+                             std::string_view trim_chars,
                              TrimPositions positions) {
   return internal::TrimStringViewT(input, trim_chars, positions);
 }
 
-TrimPositions TrimWhitespaceASCII(absl::string_view input,
+TrimPositions TrimWhitespaceASCII(std::string_view input,
                                   TrimPositions positions,
                                   std::string* output) {
-  return internal::TrimStringT(input, absl::string_view(kWhitespaceASCII),
+  return internal::TrimStringT(input, std::string_view(kWhitespaceASCII),
                                positions, output);
 }
 
-absl::string_view TrimWhitespaceASCII(absl::string_view input,
+std::string_view TrimWhitespaceASCII(std::string_view input,
                                       TrimPositions positions) {
-  return internal::TrimStringViewT(input, absl::string_view(kWhitespaceASCII),
+  return internal::TrimStringViewT(input, std::string_view(kWhitespaceASCII),
                                    positions);
 }
 
-std::string CollapseWhitespaceASCII(absl::string_view text,
+std::string CollapseWhitespaceASCII(std::string_view text,
                                     bool trim_sequences_with_line_breaks) {
   return internal::CollapseWhitespaceT(text, trim_sequences_with_line_breaks);
 }
 
-bool ContainsOnlyChars(absl::string_view input, absl::string_view characters) {
-  return input.find_first_not_of(characters) == absl::string_view::npos;
+bool ContainsOnlyChars(std::string_view input, std::string_view characters) {
+  return input.find_first_not_of(characters) == std::string_view::npos;
 }
 
-bool IsStringASCII(absl::string_view str) {
+bool IsStringASCII(std::string_view str) {
   return internal::DoIsStringASCII(str.data(), str.length());
 }
 
-bool IsStringUTF8(absl::string_view str) {
+#if defined(WCHAR_T_IS_32_BIT)
+bool IsStringASCII(std::wstring_view str) {
+  return internal::DoIsStringASCII(str.data(), str.length());
+}
+#endif
+
+bool IsStringUTF8(std::string_view str) {
   return internal::DoIsStringUTF8<IsValidCharacter>(str);
 }
 
-bool IsStringUTF8AllowingNoncharacters(absl::string_view str) {
+bool IsStringUTF8AllowingNoncharacters(std::string_view str) {
   return internal::DoIsStringUTF8<IsValidCodepoint>(str);
 }
 
-bool LowerCaseEqualsASCII(absl::string_view str,
-                          absl::string_view lowercase_ascii) {
+bool LowerCaseEqualsASCII(std::string_view str,
+                          std::string_view lowercase_ascii) {
   return internal::DoLowerCaseEqualsASCII(str, lowercase_ascii);
 }
 
 bool LowerCaseEqualsASCII(const std::u16string& str,
-                          absl::string_view lowercase_ascii) {
+                          std::string_view lowercase_ascii) {
   return internal::DoLowerCaseEqualsASCII(str, lowercase_ascii);
 }
 
-bool StartsWith(absl::string_view str,
-                absl::string_view search_for,
+bool StartsWith(std::string_view str,
+                std::string_view search_for,
                 CompareCase case_sensitivity) {
   return internal::StartsWithT(str, search_for, case_sensitivity);
 }
 
-bool EndsWith(absl::string_view str,
-              absl::string_view search_for,
+bool EndsWith(std::string_view str,
+              std::string_view search_for,
               CompareCase case_sensitivity) {
   return internal::EndsWithT(str, search_for, case_sensitivity);
 }
@@ -192,8 +198,8 @@ bool IsUnicodeWhitespace(wchar_t c) {
 
 void ReplaceFirstSubstringAfterOffset(std::string* str,
                                       size_t start_offset,
-                                      absl::string_view find_this,
-                                      absl::string_view replace_with) {
+                                      std::string_view find_this,
+                                      std::string_view replace_with) {
   internal::DoReplaceMatchesAfterOffset(
       str, start_offset, internal::MakeSubstringMatcher(find_this),
       replace_with, internal::ReplaceType::REPLACE_FIRST);
@@ -201,8 +207,8 @@ void ReplaceFirstSubstringAfterOffset(std::string* str,
 
 void ReplaceSubstringsAfterOffset(std::string* str,
                                   size_t start_offset,
-                                  absl::string_view find_this,
-                                  absl::string_view replace_with) {
+                                  std::string_view find_this,
+                                  std::string_view replace_with) {
   internal::DoReplaceMatchesAfterOffset(
       str, start_offset, internal::MakeSubstringMatcher(find_this),
       replace_with, internal::ReplaceType::REPLACE_ALL);
@@ -216,8 +222,8 @@ char16_t* WriteInto(std::u16string* str, size_t length_with_null) {
   return internal::WriteIntoT(str, length_with_null);
 }
 
-std::string JoinString(std::initializer_list<absl::string_view> parts,
-                       absl::string_view separator) {
+std::string JoinString(std::initializer_list<std::string_view> parts,
+                       std::string_view separator) {
   return internal::JoinStringT(parts, separator);
 }
 

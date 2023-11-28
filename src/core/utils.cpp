@@ -20,7 +20,7 @@
 #include <tcmalloc/malloc_extension.h>
 #endif
 
-absl::StatusOr<int32_t> StringToInteger(absl::string_view value) {
+absl::StatusOr<int32_t> StringToInteger(const std::string& value) {
   long result = 0;
   char* endptr = nullptr;
   result = strtol(value.data(), &endptr, 10);
@@ -28,7 +28,7 @@ absl::StatusOr<int32_t> StringToInteger(absl::string_view value) {
     return absl::InvalidArgumentError("overflow");
   } else if (result < INT_MIN || (errno == ERANGE && result == LONG_MIN)) {
     return absl::InvalidArgumentError("underflow");
-  } else if (endptr > value.end()) {
+  } else if (endptr - value.data() != static_cast<ptrdiff_t>(value.size())) {
     return absl::InvalidArgumentError("bad integer");
   }
   return static_cast<int32_t>(result);

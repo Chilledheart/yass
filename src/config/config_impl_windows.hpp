@@ -210,7 +210,7 @@ class ConfigImplWindows : public ConfigImpl {
     return ReadImpl(key, reinterpret_cast<uint64_t*>(value));
   }
 
-  bool WriteImpl(const std::string& key, absl::string_view value) override {
+  bool WriteImpl(const std::string& key, std::string_view value) override {
     std::wstring wkey = SysUTF8ToWide(key);
     std::wstring wvalue = SysUTF8ToWide(value);
 
