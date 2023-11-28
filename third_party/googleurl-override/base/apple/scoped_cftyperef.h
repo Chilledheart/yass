@@ -5,7 +5,7 @@
 #define BASE_APPLE_SCOPED_CFTYPEREF_H_
 #include <CoreFoundation/CoreFoundation.h>
 #include "base/apple/scoped_typeref.h"
-namespace apple {
+namespace gurl_base::apple {
 // ScopedCFTypeRef<> is patterned after std::unique_ptr<>, but maintains
 // ownership of a CoreFoundation object: any object that can be represented
 // as a CFTypeRef.  Style deviations here are solely for compatibility with
@@ -33,5 +33,5 @@ struct ScopedCFTypeRefTraits {
 template <typename CFT>
 using ScopedCFTypeRef =
     ScopedTypeRef<CFT, internal::ScopedCFTypeRefTraits<CFT>>;
-}  // namespace apple
+}  // namespace gurl_base::apple
 #endif  // BASE_APPLE_SCOPED_CFTYPEREF_H_
