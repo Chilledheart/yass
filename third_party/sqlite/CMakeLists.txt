@@ -7,8 +7,11 @@ add_library(sqlite STATIC
   src/amalgamation/sqlite3.h
 )
 
+# Compile-time options passed to SQLite when compiling and building
+# the Chromium amalgamations.
+#
 # sqlite_common_configuration_flags
-target_compile_definitions(sqlite PUBLIC
+target_compile_definitions(sqlite PRIVATE
   SQLITE_ENABLE_FTS3
 
   # New unicode61 tokenizer with built-in tables.
@@ -16,8 +19,6 @@ target_compile_definitions(sqlite PUBLIC
 
   # Chrome does not enable fts4 disable extra code.
   SQLITE_DISABLE_FTS4_DEFERRED
-  # TODO: enable ICU
-  #SQLITE_ENABLE_ICU
 
   # Defaults the secure_delete pragma to 1.
   #
@@ -116,26 +117,31 @@ target_compile_definitions(sqlite PUBLIC
   SQLITE_ENABLE_DBPAGE_VTAB
 )
 
-target_compile_definitions(sqlite PUBLIC
+target_compile_definitions(sqlite PRIVATE
   SQLITE_ENABLE_BATCH_ATOMIC_WRITE
   SQLITE_TEMP_STORE=3
 )
 
+if (USE_ICU)
+  target_compile_definitions(sqlite PRIVATE SQLITE_ENABLE_ICU)
+  target_link_libraries(sqlite PRIVATE icuuc)
+endif()
+
 if (APPLE)
-  target_compile_definitions(sqlite PUBLIC SQLITE_ENABLE_LOCKING_STYLE=1)
+  target_compile_definitions(sqlite PRIVATE SQLITE_ENABLE_LOCKING_STYLE=1)
 else()
-  target_compile_definitions(sqlite PUBLIC SQLITE_ENABLE_LOCKING_STYLE=0)
+  target_compile_definitions(sqlite PRIVATE SQLITE_ENABLE_LOCKING_STYLE=0)
 endif()
 
 if (ASAN OR TSAN OR UBSAN OR MSAN)
   # Limit max length of data blobs and queries to 128 MB for fuzzing builds.
-  target_compile_definitions(sqlite PUBLIC SQLITE_MAX_LENGTH=128000000)
-  target_compile_definitions(sqlite PUBLIC SQLITE_MAX_SQL_LENGTH=128000000)
-  target_compile_definitions(sqlite PUBLIC SQLITE_PRINTF_PRECISION_LIMIT=1280000)
+  target_compile_definitions(sqlite PRIVATE SQLITE_MAX_LENGTH=128000000)
+  target_compile_definitions(sqlite PRIVATE SQLITE_MAX_SQL_LENGTH=128000000)
+  target_compile_definitions(sqlite PRIVATE SQLITE_PRINTF_PRECISION_LIMIT=1280000)
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-  target_compile_definitions(sqlite PUBLIC SQLITE_ENABLE_API_ARMOR)
+  target_compile_definitions(sqlite PRIVATE SQLITE_ENABLE_API_ARMOR)
 endif()
 
 # warnings
@@ -180,6 +186,10 @@ target_include_directories(sqlite PUBLIC
 target_include_directories(sqlite PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 
+
+# These options add SQLite features that we need in Chrome.
+
+# sqlite_chromium_configuration_flags
 # By default, we disable all SQLite features that can be disabled by adding a
 # SQLITE_OMIT_ define, or by leaving out a SQLITE_ENABLE_ define. We only enable
 # features that have compelling use cases in the codebase.
