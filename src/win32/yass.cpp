@@ -369,13 +369,13 @@ BOOL CYassApp::CheckFirstInstance() {
 
 void CYassApp::SaveConfig() {
   auto server_host = frame_->GetServerHost();
-  auto server_port = StringToInteger(frame_->GetServerPort());
+  auto server_port = StringToIntegerU(frame_->GetServerPort());
   auto username = frame_->GetUsername();
   auto password = frame_->GetPassword();
   auto method = frame_->GetMethod();
   auto local_host = frame_->GetLocalHost();
-  auto local_port = StringToInteger(frame_->GetLocalPort());
-  auto connect_timeout = StringToInteger(frame_->GetTimeout());
+  auto local_port = StringToIntegerU(frame_->GetLocalPort());
+  auto connect_timeout = StringToIntegerU(frame_->GetTimeout());
 
   if (!server_port.ok() || method == CRYPTO_INVALID || !local_port.ok() ||
       !connect_timeout.ok()) {

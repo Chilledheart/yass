@@ -13,6 +13,11 @@
 #include "base/win/pe_image.h"
 #include <windows.h>
 #include <winnt.h>  // NOLINT(build/include_order)
+#ifndef SEC_IMAGE_NO_EXECUTE
+// This value is not supported before Windows Server 2012 and Windows 8
+// #define SEC_IMAGE_NO_EXECUTE (SEC_IMAGE | SEC_NOCACHE)
+#define SEC_IMAGE_NO_EXECUTE SEC_NOCACHE
+#endif
 static int64_t GetLength(gurl_base::PlatformFile file) {
   LARGE_INTEGER size;
   if (!::GetFileSizeEx(file, &size))

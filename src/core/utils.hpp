@@ -62,7 +62,10 @@ bool IsProgramConsole();
 
 bool SetUTF8Locale();
 
-absl::StatusOr<int32_t> StringToInteger(const std::string& value);
+absl::StatusOr<int> StringToInteger(const std::string& value);
+absl::StatusOr<unsigned> StringToIntegerU(const std::string& value);
+absl::StatusOr<int64_t> StringToInteger64(const std::string& value);
+absl::StatusOr<uint64_t> StringToIntegerU64(const std::string& value);
 
 #ifdef _WIN32
 bool EnableSecureDllLoading();
