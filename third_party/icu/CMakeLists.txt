@@ -1072,6 +1072,7 @@ target_compile_definitions(icui18n PRIVATE ${icu_private_config})
 target_compile_options(icui18n PRIVATE ${icu_private_options})
 target_compile_definitions(icui18n PRIVATE U_COMMON_IMPLEMENTATION)
 target_compile_definitions(icui18n PRIVATE U_I18N_IMPLEMENTATION)
+target_link_libraries(icui18n PUBLIC icuuc)
 
 if(ANDROID)
   set(data_dir "android")
