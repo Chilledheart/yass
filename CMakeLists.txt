@@ -2007,12 +2007,12 @@ endif()
 if (USE_TCMALLOC)
   message(STATUS "Compiling with bundled tcmalloc support")
 
+  add_subdirectory(third_party/tcmalloc)
+
   set(SUPPORT_DEFINITIONS
     HAVE_TCMALLOC
     ${SUPPORT_DEFINITIONS}
   )
-  add_subdirectory(third_party/tcmalloc)
-
   set(SUPPORT_LIBS
     tcmalloc
     ${SUPPORT_LIBS}
@@ -2036,6 +2036,10 @@ endif()
 if (USE_ICU)
   message(STATUS "Compiling with bundled icu library")
   add_subdirectory(third_party/icu)
+  set(SUPPORT_DEFINITIONS
+    HAVE_ICU
+    ${SUPPORT_DEFINITIONS}
+  )
   set(SUPPORT_LIBS icuuc icui18n ${SUPPORT_LIBS})
 endif()
 
@@ -2619,15 +2623,6 @@ if (USE_SYSTEM_NGHTTP2 AND USE_NGHTTP2)
   link_libraries(${NGHTTP2_LIBRARIES})
 elseif (USE_NGHTTP2)
   message(STATUS "Compiling with bundled libnghttp2")
-  set(SUPPORT_DEFINITIONS
-    HAVE_NGHTTP2
-    ${SUPPORT_DEFINITIONS}
-  )
-  set(SUPPORT_INCLUDE_DIRS
-    third_party/nghttp2/lib/includes
-    ${CMAKE_CURRENT_BINARY_DIR}/third_party/nghttp2/lib/includes
-    ${SUPPORT_INCLUDE_DIRS}
-  )
   set(ENABLE_LIB_ONLY ON CACHE BOOL "")
   set(ENABLE_SHARED_LIB OFF CACHE BOOL "")
   set(ENABLE_STATIC_LIB ON CACHE BOOL "")
@@ -2648,6 +2643,15 @@ elseif (USE_NGHTTP2)
     target_compile_options(nghttp2_static PRIVATE -Wno-covered-switch-default)
   endif()
   set(NGHTTP2_LIBRARIES nghttp2_static)
+  set(SUPPORT_DEFINITIONS
+    HAVE_NGHTTP2
+    ${SUPPORT_DEFINITIONS}
+  )
+  set(SUPPORT_INCLUDE_DIRS
+    third_party/nghttp2/lib/includes
+    ${CMAKE_CURRENT_BINARY_DIR}/third_party/nghttp2/lib/includes
+    ${SUPPORT_INCLUDE_DIRS}
+  )
   set(SUPPORT_LIBS
     nghttp2_static
     ${SUPPORT_LIBS}
@@ -2660,11 +2664,11 @@ endif()
 
 # include both of googleurl and quiche
 # TODO:Uncomment the below line out
+add_subdirectory(third_party/quiche)
 set(SUPPORT_DEFINITIONS
   HAVE_QUICHE
   ${SUPPORT_DEFINITIONS}
 )
-add_subdirectory(third_party/quiche)
 set(SUPPORT_LIBS url quiche ${SUPPORT_LIBS})
 
 # *****************************************************************************************

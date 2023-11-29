@@ -22,6 +22,7 @@
 #endif
 
 #include <absl/strings/str_cat.h>
+#include <absl/time/time.h>
 
 /// the class to describe the traffic between given node (endpoint)
 class stream : public RefCountedThreadSafe<stream> {
@@ -146,8 +147,8 @@ class stream : public RefCountedThreadSafe<stream> {
     }
 
     if (limit_rate_) {
-      auto delta = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - read_start_);
-      int64_t clicks = delta.count() + 1;
+      auto delta = absl::ToInt64Seconds(absl::Now() - read_start_);
+      int64_t clicks = delta + 1;
       int64_t estimated_transferred;
       if (UNLIKELY(INT64_MAX / (int64_t)limit_rate_ <= clicks)) {
         estimated_transferred = INT64_MAX;
@@ -232,8 +233,8 @@ class stream : public RefCountedThreadSafe<stream> {
     }
 
     if (limit_rate_) {
-      auto delta = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - write_start_);
-      int64_t clicks = delta.count() + 1;
+      auto delta = absl::ToInt64Seconds(absl::Now() - write_start_);
+      int64_t clicks = delta + 1;
       int64_t estimated_transferred;
       if (UNLIKELY(INT64_MAX / (int64_t)limit_rate_ <= clicks)) {
         estimated_transferred = INT64_MAX;
@@ -385,7 +386,7 @@ class stream : public RefCountedThreadSafe<stream> {
     SetTCPCongestion(socket_.native_handle(), ec);
     SetTCPKeepAlive(socket_.native_handle(), ec);
     SetSocketTcpNoDelay(&socket_, ec);
-    write_start_ = read_start_ = std::chrono::steady_clock::now();
+    write_start_ = read_start_ = absl::Now();
     on_async_connect_callback(asio::error_code());
   }
 
@@ -498,10 +499,10 @@ class stream : public RefCountedThreadSafe<stream> {
 
   // rate limiter
   const uint64_t limit_rate_;
-  std::chrono::steady_clock::time_point read_start_;
+  absl::Time read_start_;
   asio::steady_timer read_delay_timer_;
 
-  std::chrono::steady_clock::time_point write_start_;
+  absl::Time write_start_;
   asio::steady_timer write_delay_timer_;
 };
 
