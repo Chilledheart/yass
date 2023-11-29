@@ -20,6 +20,8 @@ sscxx
 /third_party/libcurl-vc16-arm64-release-static-ipv6-sspi-schannel
 /third_party/curl-8.2.0_1-win32-mingw
 /third_party/curl-8.2.0_1-win64-mingw
+/third_party/curl-8.4.0_7-win32-mingw
+/third_party/curl-8.4.0_7-win64-mingw
 *.aps
 *.build
 /debian/.debhelper
