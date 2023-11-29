@@ -161,6 +161,9 @@ void Worker::on_resolve_local(asio::error_code ec,
 
   for (auto &endpoint : endpoints_) {
     private_->cli_server->listen(endpoint, std::string(), SOMAXCONN, ec);
+    if (ec) {
+      break;
+    }
     endpoint = private_->cli_server->endpoint();
     LOG(WARNING) << "tcp server listening at " << endpoint;
   }
