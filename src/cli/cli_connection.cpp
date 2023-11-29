@@ -10,7 +10,6 @@
 #include "core/asio.hpp"
 #include "core/base64.hpp"
 #include "core/http_parser.hpp"
-#include "core/stringprintf.hpp"
 #include "core/rand_util.hpp"
 #include "core/utils.hpp"
 
@@ -1727,7 +1726,7 @@ void CliConnection::connected() {
       hostname_and_port = "[" + host + "]" + ":" + std::to_string(port);
     }
 
-    std::string hdr = StringPrintf(
+    std::string hdr = absl::StrFormat(
         "CONNECT %s HTTP/1.1\r\n"
         "Host: %s\r\n"
         "Proxy-Connection: Keep-Alive\r\n"

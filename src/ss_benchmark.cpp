@@ -7,6 +7,7 @@
 #include <absl/debugging/symbolize.h>
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
+#include <absl/strings/str_format.h>
 #include <openssl/crypto.h>
 
 #ifdef _MSC_VER
@@ -24,7 +25,6 @@
 #include "core/rand_util.hpp"
 #include "core/ref_counted.hpp"
 #include "core/scoped_refptr.hpp"
-#include "core/stringprintf.hpp"
 #include "server/server_server.hpp"
 
 namespace {
@@ -215,7 +215,7 @@ class ContentProviderConnectionFactory : public ConnectionFactory {
 typedef ContentServer<ContentProviderConnectionFactory> ContentProviderServer;
 
 void GenerateConnectRequest(std::string host, int port_num, IOBuf *buf) {
-  std::string request_header = StringPrintf(
+  std::string request_header = absl::StrFormat(
       "CONNECT %s:%d HTTP/1.1\r\n"
       "Host: packages.endpointdev.com:443\r\n"
       "User-Agent: curl/7.77.0\r\n"

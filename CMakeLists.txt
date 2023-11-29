@@ -2960,7 +2960,6 @@ set(files
     src/core/socks4_request_parser.cpp
     src/core/socks5_request_parser.cpp
     src/core/ss_request_parser.cpp
-    src/core/stringprintf.cpp
     src/core/process_utils.cpp
     src/core/rand_util.cpp
     src/core/logging.cpp
