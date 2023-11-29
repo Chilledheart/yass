@@ -10,7 +10,6 @@
 #include <absl/debugging/symbolize.h>
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
-#include <absl/strings/str_format.h>
 #include <openssl/crypto.h>
 
 #ifdef _MSC_VER
@@ -37,6 +36,7 @@ ABSL_FLAG(std::string, proxy_type, "http", "proxy type, available: socks4, socks
 #include "core/rand_util.hpp"
 #include "core/ref_counted.hpp"
 #include "core/scoped_refptr.hpp"
+#include "core/stringprintf.hpp"
 #include "server/server_server.hpp"
 
 #include "test_util.hpp"
@@ -220,7 +220,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
   void write_http_response_hdr2() {
     scoped_refptr<ContentProviderConnection> self(this);
     // Write HTTP Response Header, Part 2
-    http_response_hdr2 = absl::StrFormat(
+    http_response_hdr2 = StringPrintf(
       "HTTP/1.1 200 OK\r\n"
       "Server: asio/1.0.0\r\n"
       "Content-Type: application/octet-stream\r\n"
@@ -289,7 +289,7 @@ typedef ContentServer<ContentProviderConnectionFactory> ContentProviderServer;
 
 #ifndef HAVE_CURL
 void GenerateConnectRequest(std::string host, int port_num, IOBuf *buf) {
-  std::string request_header = absl::StrFormat(
+  std::string request_header = StringPrintf(
       "CONNECT %s:%d HTTP/1.1\r\n"
       "Host: packages.endpointdev.com:443\r\n"
       "User-Agent: curl/7.77.0\r\n"
@@ -518,7 +518,7 @@ class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
 
     // Write HTTP Request Header
     std::string http_request_hdr =
-      absl::StrFormat(
+      StringPrintf(
       "PUT / HTTP/1.1\r\n"
       "Host: localhost\r\n"
       "Accept: */*\r\n"

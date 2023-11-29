@@ -64,6 +64,7 @@
 #include "core/debug.hpp"
 #include "core/safe_strerror.hpp"
 #include "core/string_util.hpp"
+#include "core/stringprintf.hpp"
 #include "core/utils.hpp"
 
 #ifdef _MSC_VER
@@ -3072,12 +3073,12 @@ std::string SystemErrorCodeToString(SystemErrorCode error_code) {
   if (len) {
     // Messages returned by system end with line breaks.
     return CollapseWhitespaceASCII(msgbuf, true) +
-      absl::StrFormat(" (0x%lX)", error_code);
+           StringPrintf(" (0x%lX)", error_code);
   }
-  return absl::StrFormat("Error (0x%lX) while retrieving error. (0x%lX)",
-                         GetLastError(), error_code);
+  return StringPrintf("Error (0x%lX) while retrieving error. (0x%lX)",
+                      GetLastError(), error_code);
 #elif defined(OS_POSIX)
-  return safe_strerror(error_code) + absl::StrFormat(" (%d)", error_code);
+  return safe_strerror(error_code) + StringPrintf(" (%d)", error_code);
 #endif  // defined(OS_WIN)
 }
 
