@@ -275,6 +275,8 @@ option(USE_BUILTIN_CA_BUNDLE_CRT "Build with embedded ca-bundle.crt support" ON)
 option(USE_MBEDTLS "Build with mbedtls support" ON)
 option(USE_BALSA_HTTP_PARSER "Build with balsa http parser" ON)
 option(USE_ICU "Build with icu" OFF)
+option(USE_LEVELDB "Build with leveldb" ON)
+option(USE_SQLITE "Build with sqlite" ON)
 
 option(ENABLE_LTO "Enable build with LTO" ON)
 option(ENABLE_LLD "Enable build with LLD" ON)
@@ -2609,25 +2611,37 @@ include_directories(third_party/zstd/lib)
 #           leveldb Library
 # *****************************************************************************************
 
-message(STATUS "Compiling with bundled leveldb library")
-set(LEVELDB_BUILD_UTILS "OFF" CACHE STRING "")
-set(LEVELDB_BUILD_TESTS "OFF" CACHE STRING "")
-set(LEVELDB_BUILD_BENCHMARKS "OFF" CACHE STRING "")
-set(LEVELDB_INSTALL "OFF" CACHE STRING "")
-set(HAVE_CRC32C 0)
-set(HAVE_SNAPPY 1)
-set(HAVE_ZSTD 1)
-set(HAVE_TCMALLOC 0)
-add_subdirectory(third_party/leveldb)
-set(SUPPORT_LIBS leveldb ${SUPPORT_LIBS})
+if (USE_LEVELDB)
+  message(STATUS "Compiling with bundled leveldb library")
+  set(LEVELDB_BUILD_UTILS "OFF" CACHE STRING "")
+  set(LEVELDB_BUILD_TESTS "OFF" CACHE STRING "")
+  set(LEVELDB_BUILD_BENCHMARKS "OFF" CACHE STRING "")
+  set(LEVELDB_INSTALL "OFF" CACHE STRING "")
+  set(HAVE_CRC32C 0)
+  set(HAVE_SNAPPY 1)
+  set(HAVE_ZSTD 1)
+  set(HAVE_TCMALLOC 0)
+  add_subdirectory(third_party/leveldb)
+  set(SUPPORT_DEFINITIONS
+    HAVE_LEVELDB
+    ${SUPPORT_DEFINITIONS}
+  )
+  set(SUPPORT_LIBS leveldb ${SUPPORT_LIBS})
+endif()
 
 # *****************************************************************************************
 #           sqlite3 Library
 # *****************************************************************************************
 
-message(STATUS "Compiling with bundled sqlite3 library")
-add_subdirectory(third_party/sqlite)
-set(SUPPORT_LIBS sqlite ${SUPPORT_LIBS})
+if (USE_SQLITE)
+  message(STATUS "Compiling with bundled sqlite3 library")
+  add_subdirectory(third_party/sqlite)
+  set(SUPPORT_DEFINITIONS
+    HAVE_SQLITE
+    ${SUPPORT_DEFINITIONS}
+  )
+  set(SUPPORT_LIBS sqlite ${SUPPORT_LIBS})
+endif()
 
 # *****************************************************************************************
 #           Compiler warning flags
@@ -3629,9 +3643,13 @@ if (BUILD_TESTS)
     src/core/c-ares_test.cpp
     src/core/process_utils_test.cpp
     src/core/utils_test.cpp
-    third_party/leveldb_test.cc
-    third_party/sqlite/sqlite3_test.cc
     )
+  if (USE_LEVELDB)
+    target_sources(yass_test PRIVATE third_party/leveldb_test.cc)
+  endif()
+  if (USE_SQLITE)
+    target_sources(yass_test PRIVATE third_party/sqlite/sqlite3_test.cc)
+  endif()
   target_include_directories(yass_test PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src
       ${CMAKE_CURRENT_SOURCE_DIR}/src/cli
