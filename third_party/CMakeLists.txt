@@ -175,38 +175,6 @@ elseif(NOT APPLE)
   # missing apple part
 endif()
 
-if (ANDROID)
-  target_sources(url PRIVATE
-    googleurl-override/base/files/scoped_file_android.cc)
-elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-  target_sources(url PRIVATE
-    googleurl-override/base/files/scoped_file_linux.cc)
-  target_link_libraries(url PUBLIC ${CMAKE_DL_LIBS})
-endif()
-
-target_sources(url PRIVATE
-  googleurl-override/base/files/memory_mapped_file.h
-  googleurl-override/base/files/memory_mapped_file.cc
-  googleurl-override/base/location.h
-  googleurl-override/base/location.cc
-)
-if (WIN32)
-  target_sources(url PRIVATE
-    googleurl-override/base/win/pe_image.cc
-    googleurl-override/base/win/pe_image.h
-    googleurl-override/base/win/scoped_handle.cc
-    googleurl-override/base/win/scoped_handle.h
-    googleurl-override/base/win/windows_types.h
-    googleurl-override/base/win/win_handle_types.h
-    googleurl-override/base/files/memory_mapped_file_win.cc
-  )
-  target_link_libraries(url PRIVATE delayimp)
-else()
-  target_sources(url PRIVATE
-    googleurl-override/base/files/memory_mapped_file_posix.cc
-  )
-endif()
-
 if (USE_ICU)
   target_sources(url PRIVATE
     googleurl/url/url_idna_icu.cc
@@ -250,6 +218,8 @@ target_include_directories(double_conversion PRIVATE
 
 target_compile_options(double_conversion PRIVATE -Wno-unused-const-variable -Wno-unused-function)
 
+target_link_libraries(url PUBLIC double_conversion)
+
 target_include_directories(url PUBLIC
   googleurl-override
   googleurl
@@ -257,7 +227,39 @@ target_include_directories(url PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/..
   )
 
-target_link_libraries(url PUBLIC
-  double_conversion
-  absl::optional)
+target_link_libraries(url PUBLIC absl::optional)
 
+if (USE_ICU)
+  # buggy with bwrap
+  if (ANDROID)
+    target_sources(url PRIVATE
+      googleurl-override/base/files/scoped_file_android.cc)
+  elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_sources(url PRIVATE
+      googleurl-override/base/files/scoped_file_linux.cc)
+    target_link_libraries(url PUBLIC ${CMAKE_DL_LIBS})
+  endif()
+
+  target_sources(url PRIVATE
+    googleurl-override/base/files/memory_mapped_file.h
+    googleurl-override/base/files/memory_mapped_file.cc
+    googleurl-override/base/location.h
+    googleurl-override/base/location.cc
+  )
+  if (WIN32)
+    target_sources(url PRIVATE
+      googleurl-override/base/win/pe_image.cc
+      googleurl-override/base/win/pe_image.h
+      googleurl-override/base/win/scoped_handle.cc
+      googleurl-override/base/win/scoped_handle.h
+      googleurl-override/base/win/windows_types.h
+      googleurl-override/base/win/win_handle_types.h
+      googleurl-override/base/files/memory_mapped_file_win.cc
+    )
+    target_link_libraries(url PRIVATE delayimp)
+  else()
+    target_sources(url PRIVATE
+      googleurl-override/base/files/memory_mapped_file_posix.cc
+    )
+  endif()
+endif()

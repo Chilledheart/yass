@@ -2587,25 +2587,29 @@ endif()
 #           snappy Library
 # *****************************************************************************************
 
-message(STATUS "Compiling with bundled snappy library")
-add_subdirectory(third_party/snappy)
-include_directories(third_party/snappy/src)
+if (USE_LEVELDB)
+  message(STATUS "Compiling with bundled snappy library")
+  add_subdirectory(third_party/snappy)
+  include_directories(third_party/snappy/src)
+endif()
 
 # *****************************************************************************************
 #           zstd Library
 # *****************************************************************************************
 
-message(STATUS "Compiling with bundled zstd library")
-set(ZSTD_BUILD_PROGRAMS "OFF" CACHE STRING "")
-set(ZSTD_BUILD_CONTRIB "OFF" CACHE STRING "")
-set(ZSTD_BUILD_TESTS "OFF" CACHE STRING "")
-set(ZSTD_BUILD_STATIC "ON" CACHE STRING "")
-set(ZSTD_BUILD_SHARED "OFF" CACHE STRING "")
-set(ZSTD_PROGRAMS_LINK_SHARED "OFF" CACHE STRING "")
-set(ZSTD_INSTALL "OFF" CACHE STRING "")
-set(ZSTD_LEGACY_SUPPORT "OFF" CACHE STRING "")
-add_subdirectory(third_party/zstd/build/cmake)
-include_directories(third_party/zstd/lib)
+if (USE_LEVELDB)
+  message(STATUS "Compiling with bundled zstd library")
+  set(ZSTD_BUILD_PROGRAMS "OFF" CACHE STRING "")
+  set(ZSTD_BUILD_CONTRIB "OFF" CACHE STRING "")
+  set(ZSTD_BUILD_TESTS "OFF" CACHE STRING "")
+  set(ZSTD_BUILD_STATIC "ON" CACHE STRING "")
+  set(ZSTD_BUILD_SHARED "OFF" CACHE STRING "")
+  set(ZSTD_PROGRAMS_LINK_SHARED "OFF" CACHE STRING "")
+  set(ZSTD_INSTALL "OFF" CACHE STRING "")
+  set(ZSTD_LEGACY_SUPPORT "OFF" CACHE STRING "")
+  add_subdirectory(third_party/zstd/build/cmake)
+  include_directories(third_party/zstd/lib)
+endif()
 
 # *****************************************************************************************
 #           leveldb Library
