@@ -183,6 +183,10 @@ ssize_t WriteFileWithBuffer(const std::string& path,
   }
   return ret;
 }
+
+PlatformFile OpenReadFile(const std::string &path) {
+  return ::open(path.c_str(), O_RDONLY);
+}
 #endif
 
 #ifdef HAVE_TCMALLOC

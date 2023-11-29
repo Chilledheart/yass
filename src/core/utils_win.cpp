@@ -758,6 +758,16 @@ ssize_t WriteFileWithBuffer(const std::string& path,
   return written;
 }
 
+PlatformFile OpenReadFile(const std::string &path) {
+  return ::CreateFileW(SysUTF8ToWide(path).c_str(), GENERIC_READ,
+                       FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
+}
+
+PlatformFile OpenReadFileW(const std::wstring &path) {
+  return ::CreateFileW(path.c_str(), GENERIC_READ,
+                       FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
+}
+
 std::wstring ExpandUserFromString(const wchar_t* path, size_t path_len) {
   // the return value is the REQUIRED number of TCHARs,
   // including the terminating NULL character.

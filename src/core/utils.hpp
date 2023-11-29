@@ -22,6 +22,9 @@
 
 #include "core/compiler_specific.hpp"
 #include "base/strings/sys_string_conversions.h"
+#include "base/files/platform_file.h"
+
+using gurl_base::PlatformFile;
 
 #if defined(OS_APPLE)
 #include <AvailabilityMacros.h>
@@ -254,6 +257,10 @@ using ssize_t = ptrdiff_t;
 
 ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len);
 ssize_t WriteFileWithBuffer(const std::string& path, const char* buf, size_t buf_len);
+PlatformFile OpenReadFile(const std::string &path);
+#ifdef _WIN32
+PlatformFile OpenReadFileW(const std::wstring& path);
+#endif
 
 #ifdef HAVE_TCMALLOC
 void PrintTcmallocStats();
