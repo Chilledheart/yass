@@ -11,7 +11,7 @@ add_library(sqlite STATIC
 # the Chromium amalgamations.
 #
 # sqlite_common_configuration_flags
-target_compile_definitions(sqlite PRIVATE
+set(sqlite_common_configuration_flags
   SQLITE_ENABLE_FTS3
 
   # New unicode61 tokenizer with built-in tables.
@@ -117,6 +117,8 @@ target_compile_definitions(sqlite PRIVATE
   SQLITE_ENABLE_DBPAGE_VTAB
 )
 
+target_compile_definitions(sqlite PRIVATE ${sqlite_common_configuration_flags})
+
 target_compile_definitions(sqlite PRIVATE
   SQLITE_ENABLE_BATCH_ATOMIC_WRITE
   SQLITE_TEMP_STORE=3
@@ -124,7 +126,7 @@ target_compile_definitions(sqlite PRIVATE
 
 if (USE_ICU)
   target_compile_definitions(sqlite PRIVATE SQLITE_ENABLE_ICU)
-  target_link_libraries(sqlite PRIVATE icuuc)
+  target_link_libraries(sqlite PRIVATE icui18n)
 endif()
 
 if (APPLE)
@@ -200,7 +202,7 @@ target_include_directories(sqlite PUBLIC
 # covered by our fuzzers, more logic to reason through when debugging a crash
 # or a security vulnerability report). Enabled features must provide benefits
 # that outweigh these costs.
-target_compile_definitions(sqlite PUBLIC
+set(sqlite_chromium_configuration_flags
   # Chrome doesn't use the ANALYZE SQLite extension.
   #
   # ANALYZE [1] is non-standard and currently performs a table scan to
@@ -276,6 +278,8 @@ target_compile_definitions(sqlite PUBLIC
   SQLITE_OMIT_WINDOWFUNC
 )
 
+target_compile_definitions(sqlite PUBLIC ${sqlite_chromium_configuration_flags})
+
 if (APPLE)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -framework CoreFoundation -framework CoreServices")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -framework CoreFoundation -framework CoreServices")
@@ -292,7 +296,8 @@ if (SQLITE_BUILD_UTILS)
   )
   # SQLite's shell.c contains an '#include "sqlite3.h", which we want to be
   # resolved to //third_party/sqlite/sqlite3.h.
-  target_include_directories(sqlite3 PRIVATE .)
+  target_compile_definitions(sqlite3 PRIVATE ${sqlite_common_configuration_flags})
+  target_include_directories(sqlite3 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
   target_link_libraries(sqlite3 PRIVATE sqlite)
   if (USE_TCMALLOC)
     target_link_libraries(sqlite3 PRIVATE tcmalloc)

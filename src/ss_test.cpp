@@ -25,6 +25,10 @@
 ABSL_FLAG(std::string, proxy_type, "http", "proxy type, available: socks4, socks4a, socks5, socks5h, http");
 #endif
 
+#ifdef HAVE_ICU
+#include "i18n/icu_util.hpp"
+#endif
+
 #include "cli/cli_server.hpp"
 #include "config/config.hpp"
 #include "core/cipher.hpp"
@@ -790,6 +794,10 @@ int main(int argc, char **argv) {
   if (absl::GetFlag(FLAGS_ipv6_mode)) {
     CHECK(Net_ipv6works()) << "IPv6 stack is required but not available";
   }
+
+#ifdef HAVE_ICU
+  CHECK(InitializeICU());
+#endif
 
   int ret = RUN_ALL_TESTS();
 
