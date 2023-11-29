@@ -120,6 +120,8 @@ add_library(url STATIC
   googleurl/base/strings/string_util_impl_helpers.h
   googleurl/base/strings/string_util_internal.h
   googleurl/base/strings/string_number_conversions.h
+  googleurl/base/strings/string_number_conversions.cc
+  googleurl/base/strings/string_number_conversions_win.cc
   googleurl/base/strings/utf_ostream_operators.h
   googleurl/base/strings/utf_string_conversions.h
   googleurl/base/strings/utf_string_conversion_utils.h
@@ -219,6 +221,35 @@ else()
   )
 endif()
 
+add_library(double_conversion STATIC
+  googleurl-override/base/third_party/double_conversion/double-conversion/bignum-dtoa.cc
+  googleurl-override/base/third_party/double_conversion/double-conversion/bignum-dtoa.h
+  googleurl-override/base/third_party/double_conversion/double-conversion/bignum.cc
+  googleurl-override/base/third_party/double_conversion/double-conversion/bignum.h
+  googleurl-override/base/third_party/double_conversion/double-conversion/cached-powers.cc
+  googleurl-override/base/third_party/double_conversion/double-conversion/cached-powers.h
+  googleurl-override/base/third_party/double_conversion/double-conversion/diy-fp.h
+  googleurl-override/base/third_party/double_conversion/double-conversion/double-to-string.cc
+  googleurl-override/base/third_party/double_conversion/double-conversion/double-to-string.h
+  googleurl-override/base/third_party/double_conversion/double-conversion/double-conversion.h
+  googleurl-override/base/third_party/double_conversion/double-conversion/fast-dtoa.cc
+  googleurl-override/base/third_party/double_conversion/double-conversion/fast-dtoa.h
+  googleurl-override/base/third_party/double_conversion/double-conversion/fixed-dtoa.cc
+  googleurl-override/base/third_party/double_conversion/double-conversion/fixed-dtoa.h
+  googleurl-override/base/third_party/double_conversion/double-conversion/ieee.h
+  googleurl-override/base/third_party/double_conversion/double-conversion/string-to-double.cc
+  googleurl-override/base/third_party/double_conversion/double-conversion/string-to-double.h
+  googleurl-override/base/third_party/double_conversion/double-conversion/strtod.cc
+  googleurl-override/base/third_party/double_conversion/double-conversion/strtod.h
+  googleurl-override/base/third_party/double_conversion/double-conversion/utils.h
+)
+
+target_include_directories(double_conversion PRIVATE
+  googleurl-override/base/third_party/double_conversion/double-conversion
+)
+
+target_compile_options(double_conversion PRIVATE -Wno-unused-const-variable -Wno-unused-function)
+
 target_include_directories(url PUBLIC
   googleurl-override
   googleurl
@@ -226,8 +257,7 @@ target_include_directories(url PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/..
   )
 
-target_compile_options(url PRIVATE -Wno-error)
-
 target_link_libraries(url PUBLIC
+  double_conversion
   absl::optional)
 

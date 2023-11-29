@@ -262,14 +262,14 @@ void YASSApp::OnDispatch() {
 
 void YASSApp::SaveConfig() {
   auto server_host = main_window_->GetServerHost();
-  auto server_port = StringToInteger(main_window_->GetServerPort());
+  auto server_port = StringToIntegerU(main_window_->GetServerPort());
   auto username = main_window_->GetUsername();
   auto password = main_window_->GetPassword();
   auto method_string = main_window_->GetMethod();
   auto method = to_cipher_method(method_string);
   auto local_host = main_window_->GetLocalHost();
-  auto local_port = StringToInteger(main_window_->GetLocalPort());
-  auto connect_timeout = StringToInteger(main_window_->GetTimeout());
+  auto local_port = StringToIntegerU(main_window_->GetLocalPort());
+  auto connect_timeout = StringToIntegerU(main_window_->GetTimeout());
 
   if (!server_port.ok() || method == CRYPTO_INVALID || !local_port.ok() ||
       !connect_timeout.ok()) {

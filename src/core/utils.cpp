@@ -3,6 +3,7 @@
 
 #include "core/utils.hpp"
 
+#include "base/strings/string_number_conversions.h"
 #include "config/config.hpp"
 
 #ifndef _WIN32
@@ -20,18 +21,44 @@
 #include <tcmalloc/malloc_extension.h>
 #endif
 
-absl::StatusOr<int32_t> StringToInteger(const std::string& value) {
-  long result = 0;
-  char* endptr = nullptr;
-  result = strtol(value.data(), &endptr, 10);
-  if (result > INT32_MAX || (errno == ERANGE && result == LONG_MAX)) {
-    return absl::InvalidArgumentError("overflow");
-  } else if (result < INT_MIN || (errno == ERANGE && result == LONG_MIN)) {
-    return absl::InvalidArgumentError("underflow");
-  } else if (endptr - value.data() != static_cast<ptrdiff_t>(value.size())) {
-    return absl::InvalidArgumentError("bad integer");
+absl::StatusOr<int> StringToInteger(const std::string& value) {
+  int result;
+
+  if (gurl_base::StringToInt(value, &result)) {
+    return result;
   }
-  return static_cast<int32_t>(result);
+
+  return absl::InvalidArgumentError("bad integer");
+}
+
+absl::StatusOr<unsigned> StringToIntegerU(const std::string& value) {
+  unsigned result;
+
+  if (gurl_base::StringToUint(value, &result)) {
+    return result;
+  }
+
+  return absl::InvalidArgumentError("bad integer");
+}
+
+absl::StatusOr<int64_t> StringToInteger64(const std::string& value) {
+  int64_t result;
+
+  if (gurl_base::StringToInt64(value, &result)) {
+    return result;
+  }
+
+  return absl::InvalidArgumentError("bad integer");
+}
+
+absl::StatusOr<uint64_t> StringToIntegerU64(const std::string& value) {
+  uint64_t result;
+
+  if (gurl_base::StringToUint64(value, &result)) {
+    return result;
+  }
+
+  return absl::InvalidArgumentError("bad integer");
 }
 
 #ifdef _WIN32

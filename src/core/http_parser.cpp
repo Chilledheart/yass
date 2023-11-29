@@ -355,7 +355,7 @@ void HttpRequestParser::OnResponseFirstLineInput(std::string_view /*line_input*/
     error_message_ = "HPE_INVALID_VERSION";
     return;
   }
-  auto status = StringToInteger(std::string(status_input));
+  auto status = StringToIntegerU(std::string(status_input));
   if (!status.ok()) {
     LOG(WARNING) << status.status();
     status_ = ParserStatus::Error;

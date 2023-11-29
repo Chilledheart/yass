@@ -111,11 +111,11 @@ void OptionDialog::LoadChanges() {
 void OptionDialog::OnSave() {
   auto tcp_keep_alive = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(tcp_keep_alive_));
   auto tcp_keep_alive_cnt =
-      StringToInteger(gtk_entry_get_text(tcp_keep_alive_cnt_));
+      StringToIntegerU(gtk_entry_get_text(tcp_keep_alive_cnt_));
   auto tcp_keep_alive_idle_timeout =
-      StringToInteger(gtk_entry_get_text(tcp_keep_alive_idle_timeout_));
+      StringToIntegerU(gtk_entry_get_text(tcp_keep_alive_idle_timeout_));
   auto tcp_keep_alive_interval =
-      StringToInteger(gtk_entry_get_text(tcp_keep_alive_interval_));
+      StringToIntegerU(gtk_entry_get_text(tcp_keep_alive_interval_));
 
   if (!tcp_keep_alive_cnt.ok() ||
       !tcp_keep_alive_idle_timeout.ok() ||

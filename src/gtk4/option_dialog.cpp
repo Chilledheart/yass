@@ -139,11 +139,11 @@ void OptionDialog::LoadChanges() {
 void OptionDialog::OnSave() {
   auto tcp_keep_alive = gtk_check_button_get_active(GTK_CHECK_BUTTON(impl_->tcp_keep_alive_check));
   auto tcp_keep_alive_cnt =
-      StringToInteger(gtk_editable_get_text(GTK_EDITABLE(impl_->tcp_keep_alive_cnt)));
+      StringToIntegerU(gtk_editable_get_text(GTK_EDITABLE(impl_->tcp_keep_alive_cnt)));
   auto tcp_keep_alive_idle_timeout =
-      StringToInteger(gtk_editable_get_text(GTK_EDITABLE(impl_->tcp_keep_alive_idle_timeout)));
+      StringToIntegerU(gtk_editable_get_text(GTK_EDITABLE(impl_->tcp_keep_alive_idle_timeout)));
   auto tcp_keep_alive_interval =
-      StringToInteger(gtk_editable_get_text(GTK_EDITABLE(impl_->tcp_keep_alive_interval)));
+      StringToIntegerU(gtk_editable_get_text(GTK_EDITABLE(impl_->tcp_keep_alive_interval)));
 
   if (!tcp_keep_alive_cnt.ok() ||
       !tcp_keep_alive_idle_timeout.ok() ||
