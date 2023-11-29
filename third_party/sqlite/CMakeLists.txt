@@ -168,7 +168,7 @@ if (COMPILER_MSVC)
 endif()
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR ANDROID)
-  target_compile_definitions(sqlite PUBLIC fdatasync=fdatasync)
+  target_compile_definitions(sqlite PRIVATE fdatasync=fdatasync)
 endif()
 
 if (UNIX)
@@ -176,9 +176,9 @@ if (UNIX)
   # will have microsecond precision.  Should only affect contended
   # databases via the busy callback.  Browser profile databases are mostly
   # exclusive, but renderer databases may allow for contention.
-  target_compile_definitions(sqlite PUBLIC HAVE_USLEEP=1)
+  target_compile_definitions(sqlite PRIVATE HAVE_USLEEP=1)
   # Use pread/pwrite directly rather than emulating them.
-  target_compile_definitions(sqlite PUBLIC USE_PREAD=1)
+  target_compile_definitions(sqlite PRIVATE USE_PREAD=1)
 endif()
 
 target_include_directories(sqlite PUBLIC
