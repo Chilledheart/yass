@@ -4,6 +4,7 @@
 // This file contains defines and typedefs that allow popular Windows types to
 // be used without the overhead of including windows.h.
 #ifndef BASE_WIN_WINDOWS_TYPES_H_
+#ifndef _WINNT_
 #define BASE_WIN_WINDOWS_TYPES_H_
 // Needed for function prototypes.
 #include <concurrencysal.h>
@@ -297,4 +298,5 @@ inline MSG* ChromeToWindowsType(CHROME_MSG* p) {
 #define SendMessage SendMessageW
 #define SendMessageCallback SendMessageCallbackW
 #define SetCurrentDirectory SetCurrentDirectoryW
+#endif  // _WINNT_
 #endif  // BASE_WIN_WINDOWS_TYPES_H_
