@@ -22,6 +22,8 @@ sscxx
 /third_party/curl-8.2.0_1-win64-mingw
 /third_party/curl-8.4.0_7-win32-mingw
 /third_party/curl-8.4.0_7-win64-mingw
+/third_party/crashpad
+/third_party/depot_tools
 *.aps
 *.build
 /debian/.debhelper

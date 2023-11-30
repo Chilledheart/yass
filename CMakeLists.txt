@@ -2061,6 +2061,42 @@ message(STATUS "Compiling with bundled googleurl library")
 set(SUPPORT_LIBS url ${SUPPORT_LIBS})
 
 # *****************************************************************************************
+#           crashpad Library
+# *****************************************************************************************
+
+if (${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/crashpad/crashpad/out/Default/obj/client/client.lib)
+  message(STATUS "Compiling with bundled crashpad client library")
+  add_library(crashpad_common STATIC IMPORTED)
+  set_property(TARGET crashpad_common PROPERTY
+               IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/third_party/crashpad/crashpad/out/Default/obj/client/common.lib")
+  add_library(crashpad_util STATIC IMPORTED)
+  set_property(TARGET crashpad_util PROPERTY
+               IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/third_party/crashpad/crashpad/out/Default/obj/util/util.lib")
+  add_library(crashpad_client STATIC IMPORTED)
+  set_property(TARGET crashpad_client PROPERTY
+               IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/third_party/crashpad/crashpad/out/Default/obj/client/client.lib")
+  add_library(mini_chromium_base STATIC IMPORTED)
+  set_property(TARGET mini_chromium_base PROPERTY
+               IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/third_party/crashpad/crashpad/out/Default/obj/third_party/mini_chromium/mini_chromium/base/base.lib")
+
+  add_library(yass_crashpad STATIC
+    src/crashpad_helper.cpp
+    src/crashpad_helper.hpp
+  )
+  target_compile_definitions(yass_crashpad PUBLIC HAVE_CRASHPAD)
+  target_include_directories(yass_crashpad PRIVATE
+    third_party/crashpad/crashpad/out/Default/gen
+    third_party/crashpad/crashpad/third_party/mini_chromium/mini_chromium
+    third_party/crashpad/crashpad
+    src
+  )
+  target_link_libraries(yass_crashpad PRIVATE crashpad_client crashpad_common crashpad_util mini_chromium_base)
+  set(SUPPORT_LIBS yass_crashpad ${SUPPORT_LIBS})
+
+  file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/third_party/crashpad/crashpad/out/Binary/crashpad_handler.exe DESTINATION ${CMAKE_BINARY_DIR})
+endif()
+
+# *****************************************************************************************
 #           boringssl Library
 # *****************************************************************************************
 

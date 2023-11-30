@@ -1123,7 +1123,7 @@ func archiveMainFile(output string, prefix string, paths []string) {
 	}
 }
 
-func generateMsi(output string, dllPaths []string, licensePaths []string) {
+func generateMsi(output string, dllPaths []string, licensePaths []string, hasCrashpad bool) {
 	wxsTemplate, err := ioutil.ReadFile(filepath.Join("..", "yass.wxs"))
 	if err != nil {
 		glog.Fatalf("%v", err)
@@ -1141,6 +1141,9 @@ func generateMsi(output string, dllPaths []string, licensePaths []string) {
 		licenseReplacement += fmt.Sprintf("<File Name='%s' Source='%s' KeyPath='no' />\n", filepath.Base(licensePath), licensePath)
 	}
 	wxsXml = strings.Replace(wxsXml, "<!-- %LICENSEPLACEHOLDER% -->", licenseReplacement, 1)
+	if (hasCrashpad) {
+		wxsXml = strings.Replace(wxsXml, "<!-- %CRASHPAD_HANDLER_HOLDER% -->", "<File Name='crashpad_handler.exe' Source='crashpad_handler.exe' KeyPath='no'/>", 1)
+	}
 
 	err = ioutil.WriteFile("yass.wxs", []byte(wxsXml), 0666)
 	if err != nil {
@@ -1229,6 +1232,10 @@ func postStateArchives() map[string][]string {
 	if systemNameFlag == "darwin" {
 		archive = fmt.Sprintf(archiveFormat, APPNAME, "", ".dmg")
 	}
+	hasCrashpad := true
+	if _, err := os.Stat("crashpad_handler.exe"); errors.Is(err, os.ErrNotExist) {
+		hasCrashpad = false
+	}
 
 	msiArchive := fmt.Sprintf(archiveFormat, APPNAME, "", ".msi")
 	nsisArchive := fmt.Sprintf(archiveFormat, APPNAME, "-installer", ".exe")
@@ -1245,6 +1252,11 @@ func postStateArchives() map[string][]string {
 	var dllPaths []string
 	var dbgPaths []string
 
+	// copying dependent crashpad handler if any
+	if hasCrashpad {
+		paths = append(paths, "crashpad_handler.exe")
+	}
+
 	// copying dependent LICENSEs
 	licensePaths := postStateArchiveLicenses()
 	paths = append(paths, licensePaths...)
@@ -1259,7 +1271,7 @@ func postStateArchives() map[string][]string {
 	// error CNDL0265 : The Platform attribute has an invalid value arm64.
 	// Possible values are x86, x64, or ia64.
 	if systemNameFlag == "windows" && msvcTargetArchFlag != "arm64" {
-		generateMsi(msiArchive, dllPaths, licensePaths)
+		generateMsi(msiArchive, dllPaths, licensePaths, hasCrashpad)
 		archives[msiArchive] = []string{msiArchive}
 	}
 	// nsis installer
