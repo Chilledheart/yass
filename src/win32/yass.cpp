@@ -23,6 +23,7 @@
 #include "win32/resource.hpp"
 #include "win32/utils.hpp"
 #include "win32/yass_frame.hpp"
+#include "crashpad_helper.hpp"
 
 ABSL_FLAG(bool, background, false, "start up backgroundd");
 
@@ -46,6 +47,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   }
   // Fix log output name
   SetExecutablePath(exec_path);
+#ifdef HAVE_CRASHPAD
+  CHECK(InitializeCrashpad(exec_path));
+#endif
 
   if (!EnableSecureDllLoading()) {
     return -1;
