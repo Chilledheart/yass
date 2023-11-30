@@ -230,16 +230,6 @@ target_include_directories(url PUBLIC
 target_link_libraries(url PUBLIC absl::optional)
 
 if (USE_ICU)
-  # buggy with bwrap
-  if (ANDROID)
-    target_sources(url PRIVATE
-      googleurl-override/base/files/scoped_file_android.cc)
-  elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    target_sources(url PRIVATE
-      googleurl-override/base/files/scoped_file_linux.cc)
-    target_link_libraries(url PUBLIC ${CMAKE_DL_LIBS})
-  endif()
-
   target_sources(url PRIVATE
     googleurl-override/base/files/memory_mapped_file.h
     googleurl-override/base/files/memory_mapped_file.cc

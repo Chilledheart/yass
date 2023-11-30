@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 #ifndef BASE_FILES_PLATFORM_FILE_H_
 #define BASE_FILES_PLATFORM_FILE_H_
-#include "base/files/scoped_file.h"
 #include "build/build_config.h"
 #if BUILDFLAG(IS_WIN)
 #include "base/win/scoped_handle.h"
@@ -19,14 +18,12 @@
 namespace gurl_base {
 #if BUILDFLAG(IS_WIN)
 using PlatformFile = HANDLE;
-using ScopedPlatformFile = ::gurl_base::win::ScopedHandle;
 // It would be nice to make this constexpr but INVALID_HANDLE_VALUE is a
 // ((void*)(-1)) which Clang rejects since reinterpret_cast is technically
 // disallowed in constexpr. Visual Studio accepts this, however.
 const PlatformFile kInvalidPlatformFile = INVALID_HANDLE_VALUE;
 #elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
 using PlatformFile = int;
-using ScopedPlatformFile = ::gurl_base::ScopedFD;
 constexpr PlatformFile kInvalidPlatformFile = -1;
 #endif
 }  // namespace gurl_base

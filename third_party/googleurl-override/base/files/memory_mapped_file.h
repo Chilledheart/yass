@@ -10,6 +10,7 @@
 
 #include "base/base_export.h"
 #include "base/files/platform_file.h"
+#include "base/memory/raw_ptr.h"
 #include "build/build_config.h"
 
 #if BUILDFLAG(IS_WIN)
