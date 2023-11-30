@@ -80,12 +80,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - name: Cache depot_tools
+        id: depot-cache
         uses: actions/cache@v3
         with:
           path: |
             third_party/depot_tools
           key: ${{ runner.os }}-depot_tools
       - name: Cache crashpad build stage
+        id: crashpad-cache
         uses: actions/cache@v3
         with:
           path: |
@@ -104,6 +106,7 @@ jobs:
         run: |
           scripts\download-curl-msvc.bat ${{ matrix.arch }}
       - name: Download and Build Crashpad (include depot_tools)
+        if: ${{ steps.depot-cache.outputs.cache-hit != 'true' || steps.crashpad-cache.outputs.cache-hit != 'true' }}
         shell: bash
         run: |
           WITH_CPU=${{ matrix.arch }} ./scripts/build-crashpad.sh
