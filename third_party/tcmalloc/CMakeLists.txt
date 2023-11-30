@@ -175,6 +175,7 @@ target_link_libraries(tcmalloc_common PUBLIC
 )
 
 add_library(tcmalloc STATIC
+  src/tcmalloc/libc_override.h
   src/tcmalloc/tcmalloc.h
   src/tcmalloc/tcmalloc.cc
 )
@@ -189,4 +190,6 @@ target_compile_options(tcmalloc PRIVATE
 
 target_link_libraries(tcmalloc PUBLIC
   tcmalloc_common
+  absl::span
+  absl::time
 )
