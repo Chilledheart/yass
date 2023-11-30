@@ -16,6 +16,7 @@
 #endif
 
 #include <absl/flags/internal/program_name.h>
+#include <absl/strings/str_cat.h>
 
 #ifdef HAVE_TCMALLOC
 #include <tcmalloc/malloc_extension.h>
