@@ -13,7 +13,7 @@ cd third_party
 case "$ARCH" in
   Linux|Darwin)
     if [ ! -d depot_tools ]; then
-      git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+      git clone --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
     fi
     export PATH="$PWD/depot_tools:$PATH"
   ;;
@@ -35,8 +35,7 @@ case "$ARCH" in
 esac
 
 flags="$flags"'
-use_sysroot=false
-treat_warnings_as_errors=false'
+use_sysroot=false'
 
 case "$ARCH" in
   Darwin)
@@ -49,8 +48,8 @@ case "$ARCH" in
   Darwin)
     flags="$flags
 clang_path=\"$PWD/llvm-build/Release+Asserts\"
-extra_cflags_cc=\"-nostdinc++ -isystem $PWD/libc++ -isystem $PWD/libc++/trunk/include -I $PWD/libc++ -I $PWD/libc++/trunk/include -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\"
-extra_cflags_objcc=\"-nostdinc++ -isystem $PWD/libc++ -isystem $PWD/libc++/trunk/include -I $PWD/libc++ -I $PWD/libc++/trunk/include -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\""
+extra_cflags_cc=\"-nostdinc++ -I $PWD/libc++ -I $PWD/libc++/trunk/include -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\"
+extra_cflags_objcc=\"-nostdinc++ -I $PWD/libc++ -I $PWD/libc++/trunk/include -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\""
   ;;
   Linux)
     flags="$flags

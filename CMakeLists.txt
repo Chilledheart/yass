@@ -421,8 +421,8 @@ if (USE_HOST_TOOLS)
 endif()
 
 if (CMAKE_OSX_ARCHITECTURES)
-  list(LENGTH CMAKE_OSX_ARCHITECTURES NUM_ARCHES)
-  if(NOT NUM_ARCHES EQUAL 1)
+  list(LENGTH CMAKE_OSX_ARCHITECTURES OSX_CROSS_ARCHITECTURES_COUNT)
+  if(NOT OSX_CROSS_ARCHITECTURES_COUNT EQUAL 1)
     if (COMPILER_GCC)
       message(FATAL_ERROR "GCC is not supported to compiling universal build")
     endif()
@@ -2098,10 +2098,9 @@ if (MSVC AND ${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS "${_CRASHPAD_PREFIX}
   file(COPY "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler.exe" DESTINATION ${CMAKE_BINARY_DIR})
 endif()
 
-LIST(LENGTH CMAKE_OSX_ARCHITECTURES _CMAKE_OSX_ARCHITECTURES_COUNT)
-if (_CMAKE_OSX_ARCHITECTURES_COUNT EQUAL 0)
+if (NOT OSX_CROSS_ARCHITECTURES_COUNT)
   set(_CRASHPAD_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
-elseif (_CMAKE_OSX_ARCHITECTURES_COUNT EQUAL 1)
+elseif (OSX_CROSS_ARCHITECTURES_COUNT EQUAL 1)
   set(_CRASHPAD_ARCH "${CMAKE_OSX_ARCHITECTURES}")
 else()
   set(_CRASHPAD_ARCH "mac_universal")
@@ -2144,9 +2143,15 @@ if (${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS "${_CRASHPAD_PREFIX}/obj/clie
   )
   target_link_libraries(yass_crashpad PRIVATE crashpad_client crashpad_common crashpad_util mini_chromium_base)
   set(SUPPORT_LIBS yass_crashpad ${SUPPORT_LIBS})
+  if (APPLE)
+    add_library(crashpad_util_mig STATIC IMPORTED)
+    set_property(TARGET crashpad_util_mig PROPERTY
+                 IMPORTED_LOCATION "${_CRASHPAD_PREFIX}/obj/util/libmig_output.a")
+    target_link_libraries(yass_crashpad PRIVATE crashpad_util_mig bsm)
+  endif()
 
   file(COPY "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler" DESTINATION ${CMAKE_BINARY_DIR})
-  set(_CRASHPAD_BINARY "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler")
+  set(_CRASHPAD_BINARY "${CMAKE_BINARY_DIR}/crashpad_handler")
 endif()
 
 # *****************************************************************************************
@@ -3637,7 +3642,7 @@ if (GUI)
             MACOSX_PACKAGE_LOCATION "Resources")
         endif()
         if (_CRASHPAD_BINARY)
-          set_source_files_properties("crashpad_handler" PROPERTIES
+          set_source_files_properties("${_CRASHPAD_BINARY}" PROPERTIES
             MACOSX_PACKAGE_LOCATION "Resources")
         endif()
 
