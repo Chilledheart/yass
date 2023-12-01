@@ -60,13 +60,16 @@ macro(add_osx_univeral_bundle target arches project)
     set(${target}_universal_BUNDLE ${${target}_universal_BUNDLE} "${${project}_${target}_${arch}_EXE}")
     set(${target}_universal_BINARY ${${target}_universal_BINARY} "${${project}_${target}_${arch}_EXE}.app/Contents/MacOS/${target}")
     set(${target}_universal_TARGET ${${target}_universal_TARGET} ${${project}_${target}_${arch}_TARGET})
+    set(${target}_universal_CRASHPAD ${${target}_universal_CRASHPAD} "${${project}_${target}_${arch}_EXE}.app/Contents/Resources/crashpad_handler")
   endforeach()
   set(${target}_native_BUNDLE "${${project}_${target}_${CMAKE_SYSTEM_PROCESSOR}_EXE}.app")
   set(${target}_universal_OUTPUT_BINARY "${CMAKE_CURRENT_BINARY_DIR}/${target}.app/Contents/MacOS/${target}")
   set(${target}_universal_OUTPUT_BUNDLE "${CMAKE_CURRENT_BINARY_DIR}/${target}.app")
+  set(${target}_universal_OUTPUT_CRASHPAD "${CMAKE_CURRENT_BINARY_DIR}/${target}.app/Contents/Resources/crashpad_handler")
   add_custom_command(OUTPUT "${${target}_universal_OUTPUT_BUNDLE}"
                      COMMAND ${CMAKE_COMMAND} -E copy_directory ${${target}_native_BUNDLE} ${${target}_universal_OUTPUT_BUNDLE}
                      COMMAND lipo -create ${${target}_universal_BINARY} -output ${${target}_universal_OUTPUT_BINARY}
+                     COMMAND lipo -create ${${target}_universal_CRASHPAD} -output ${${target}_universal_OUTPUT_CRASHPAD} || :
                      DEPENDS ${${target}_universal_BUNDLE} ${${target}_universal_TARGET}
                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                      COMMENT "Creating universal bundle ${target}..."

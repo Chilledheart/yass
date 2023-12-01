@@ -68,7 +68,7 @@ jobs:
         with:
           path: |
             third_party/crashpad
-          key: ${{ runner.os }}-mac-universal-crashpad-build-stage-universal-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-mac-perarch-crashpad-build-stage-universal-v${{ env.CACHE_EPOCH }}
       - name: Cache golang (tools only)
         uses: actions/cache@v3
         with:
@@ -107,11 +107,8 @@ jobs:
         if: ${{ steps.depot-cache.outputs.cache-hit != 'true' || steps.crashpad-cache.outputs.cache-hit != 'true' }}
         shell: bash
         run: |
-          which python
-          which python3
-          python --version
-          python3 --version
-          WITH_CPU=mac_universal ./scripts/build-crashpad.sh
+          WITH_CPU=x64 ./scripts/build-crashpad.sh
+          WITH_CPU=arm64 ./scripts/build-crashpad.sh
       - name: Build
         run: |
           ./tools/build -build-benchmark -build-test
