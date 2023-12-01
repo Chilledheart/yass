@@ -13,7 +13,7 @@ cd third_party
 case "$ARCH" in
   Linux)
     ARCH=Linux
-    if [ ! -z depot_tools ]; then
+    if [ ! -d depot_tools ]; then
       git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
     fi
     export PATH="$PWD/depot_tools:$PATH"
@@ -39,7 +39,33 @@ flags="$flags"'
 use_sysroot=false
 treat_warnings_as_errors=false'
 
-WITH_CPU=${WITH_CPU:-x64}
+case "$ARCH" in
+  Linux|Darwin)
+    flags="$flags
+clang_path=\"$PWD/llvm-build/Release+Asserts\"
+extra_cflags_cc=\"-nostdinc++ -I $PWD/libc++ -I $PWD/libc++/trunk/include -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\""
+  ;;
+  Windows)
+    flags="$flags
+clang_path=\"$(cygpath -m $PWD)/llvm-build/Release+Asserts\"
+extra_cflags=\"/MT\"
+extra_cflags_cc=\"-I $(cygpath -m $PWD)/libc++ -I $(cygpath -m $PWD)/libc++/trunk/include -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\""
+  ;;
+esac
+
+case "$MACHINE" in
+  x86|i586|i686)
+    WITH_CPU_DEFAULT="x86"
+    ;;
+  x86_64)
+    WITH_CPU_DEFAULT="x64"
+    ;;
+  arch64|arm64)
+    WITH_CPU_DEFAULT="arm64"
+    ;;
+esac
+
+WITH_CPU=${WITH_CPU:-${WITH_CPU_DEFAULT}}
 
 if [ "$WITH_CPU" ]; then
   flags="$flags
@@ -53,17 +79,10 @@ fi
 
 if [ "$WITH_SYSROOT" ]; then
   flags="$flags
-target_sysroot=\"//$WITH_SYSROOT\""
+target_sysroot=\"$WITH_SYSROOT\""
 fi
 
-flags="$flags
-clang_path=\"$(cygpath -m $PWD)/llvm-build/Release+Asserts\"
-extra_cflags=\"/MT\"
-extra_cflags_cc=\"-I $(cygpath -m $PWD)/libc++ -I $(cygpath -m $PWD)/libc++/trunk/include -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\""
-
 bin_flags="$flags
-clang_path=\"$(cygpath -m $PWD)/llvm-build/Release+Asserts\"
-extra_cflags=\"/MT\"
 extra_cflags_cc=\"\""
 
 out="$PWD/crashpad/crashpad/out/Default-${WITH_CPU}"
