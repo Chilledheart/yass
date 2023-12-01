@@ -30,7 +30,7 @@ on:
   release:
     types: [published]
 env:
-  CACHE_EPOCH: 121
+  CACHE_EPOCH: 121-1
   GOPROXY: direct
 jobs:
   mingw64-release:

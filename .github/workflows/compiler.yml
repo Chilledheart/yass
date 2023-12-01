@@ -28,7 +28,7 @@ on:
     - '.circleci/**'
     - '.cirrus.yml'
 env:
-  CACHE_EPOCH: 121
+  CACHE_EPOCH: 121-1
   GOPROXY: direct
 jobs:
   win-compiler-compatible-2022:
