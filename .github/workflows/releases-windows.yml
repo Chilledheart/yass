@@ -70,15 +70,6 @@ jobs:
             third_party/libcurl-vc16-x64-release-static-ipv6-sspi-schannel
             third_party/libcurl-vc16-x86-release-static-ipv6-sspi-schannel
           key: ${{ runner.os }}-msvc-curl-vc16-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
-      - name: Cache golang
-        uses: actions/cache@v3
-        with:
-          path: |
-            %LocalAppData%\go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
       - name: Cache depot_tools
         id: depot-cache
         uses: actions/cache@v3
@@ -93,6 +84,15 @@ jobs:
           path: |
             third_party/crashpad
           key: ${{ runner.os }}-msvc-perarch-crashpad-build-stage-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
+      - name: Cache golang (tools only)
+        uses: actions/cache@v3
+        with:
+          path: |
+            %LocalAppData%\go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-tools-${{ hashFiles('tools/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-tools-
       - name: Build build tool
         run: |
           cd tools
