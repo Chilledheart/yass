@@ -144,7 +144,7 @@ config("default") {
     cflags = [
       "-Wall",
       "-Wendif-labels",
-      "-Werror",
+      "-Wno-error",
       "-Wextra",
       "-Wextra-semi",
       "-Wheader-hygiene",
@@ -465,7 +465,6 @@ toolchain("gcc_like_toolchain") {
       cc = rebase_path(clang_path, root_build_dir) + "/bin/clang"
       cxx = rebase_path(clang_path, root_build_dir) + "/bin/clang++"
       asm = cxx
-      ar = rebase_path(clang_path, root_build_dir) + "/bin/llvm-ar"
       ld = cxx
       extra_ldflags = "-fuse-ld=lld"
     } else {

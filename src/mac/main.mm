@@ -20,6 +20,7 @@
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
 #include "version.h"
+#include "crashpad_helper.hpp"
 
 #if defined(ARCH_CPU_X86_64)
 // This is for https://crbug.com/1300598, and more generally,
@@ -42,6 +43,9 @@ int main(int argc, const char** argv) {
   if (!GetExecutablePath(&exec_path)) {
     return -1;
   }
+#ifdef HAVE_CRASHPAD
+  CHECK(InitializeCrashpad(exec_path));
+#endif
 
   if (!SetUTF8Locale()) {
     LOG(WARNING) << "Failed to set up utf-8 locale";

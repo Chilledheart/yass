@@ -11,8 +11,7 @@ PYTHON=$(which python3 2>/dev/null || which python 2>/dev/null)
 cd third_party
 
 case "$ARCH" in
-  Linux)
-    ARCH=Linux
+  Linux|Darwin)
     if [ ! -d depot_tools ]; then
       git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
     fi
@@ -40,7 +39,20 @@ use_sysroot=false
 treat_warnings_as_errors=false'
 
 case "$ARCH" in
-  Linux|Darwin)
+  Darwin)
+    flags="$flags
+mac_deployment_target=\"10.14\""
+  ;;
+esac
+
+case "$ARCH" in
+  Darwin)
+    flags="$flags
+clang_path=\"$PWD/llvm-build/Release+Asserts\"
+extra_cflags_cc=\"-nostdinc++ -isystem $PWD/libc++ -isystem $PWD/libc++/trunk/include -I $PWD/libc++ -I $PWD/libc++/trunk/include -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\"
+extra_cflags_objcc=\"-nostdinc++ -isystem $PWD/libc++ -isystem $PWD/libc++/trunk/include -I $PWD/libc++ -I $PWD/libc++/trunk/include -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\""
+  ;;
+  Linux)
     flags="$flags
 clang_path=\"$PWD/llvm-build/Release+Asserts\"
 extra_cflags_cc=\"-nostdinc++ -I $PWD/libc++ -I $PWD/libc++/trunk/include -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\""
@@ -83,7 +95,8 @@ target_sysroot=\"$WITH_SYSROOT\""
 fi
 
 bin_flags="$flags
-extra_cflags_cc=\"\""
+extra_cflags_cc=\"\"
+extra_cflags_objcc=\"\""
 
 out="$PWD/crashpad/crashpad/out/Default-${WITH_CPU}"
 bin_out="$PWD/crashpad/crashpad/out/Binary-${WITH_CPU}"
@@ -98,8 +111,17 @@ git checkout -f 5613499bbda780dfa663344ea6253844e82c88c4
 gclient sync -f
 
 # patch stage
+case "$ARCH" in
+  Darwin)
+    sed="sed -i '' -e"
+    ;;
+  *)
+    sed="sed -i"
+    ;;
+esac
+
 cp -f ../../../scripts/mini_chromium.BUILD.gn third_party/mini_chromium/mini_chromium/build/config/BUILD.gn
-sed -i s/__hlt\(0\)/__builtin_trap\(\)/g third_party/mini_chromium/mini_chromium/base/logging.cc
+$sed "s|__hlt\(0\)|__builtin_trap\(\)|g" third_party/mini_chromium/mini_chromium/base/logging.cc
 # build stage
 rm -rf "$out"
 mkdir -p "$out"

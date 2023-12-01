@@ -23,6 +23,7 @@
 #include "gtk4/yass_window.hpp"
 #include "version.h"
 #include "gtk4/option_dialog.hpp"
+#include "crashpad_helper.hpp"
 
 ABSL_FLAG(bool, background, false, "start up backgroundd");
 
@@ -119,6 +120,9 @@ int main(int argc, const char** argv) {
   if (!GetExecutablePath(&exec_path)) {
     return -1;
   }
+#ifdef HAVE_CRASHPAD
+  CHECK(InitializeCrashpad(exec_path));
+#endif
 
   if (!SetUTF8Locale()) {
     LOG(WARNING) << "Failed to set up utf-8 locale";
