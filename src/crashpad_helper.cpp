@@ -20,7 +20,7 @@ bool InitializeCrashpad(const std::string& exe_path) {
 #ifdef _WIN32
   base::FilePath handler(exeDir / "crashpad_handler.exe");
 #elif defined(__APPLE__)
-  base::FilePath handler(exeDir.parent_path() / "Resources" / "crashpad_handler.exe");
+  base::FilePath handler(exeDir.parent_path() / "Resources" / "crashpad_handler");
 #else
   base::FilePath handler(exeDir / "crashpad_handler");
 #endif
