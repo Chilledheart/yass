@@ -812,6 +812,24 @@ func postStateCodeSign() {
 	// reference https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/resolving_common_notarization_issues?language=objc
 	// Hardened runtime is available in the Capabilities pane of Xcode 10 or later
 	//
+	// code sign crashpad_handler as well if any
+	hasCrashpad := true
+	crashpadPath := filepath.Join(getAppName(), "Contents", "Resources", "crashpad_handler")
+	if _, err := os.Stat(crashpadPath); errors.Is(err, os.ErrNotExist) {
+		hasCrashpad = false
+	}
+	// FIXME crashpad require more entitlements as below
+	// see https://github.com/electron-userland/electron-builder/issues/3989
+	//    <key>com.apple.security.cs.allow-dyld-environment-variables</key><true/>
+	//    <key>com.apple.security.files.user-selected.read-write</key><true/>
+	//    <key>com.apple.security.network.client</key><true/>
+	//    <key>com.apple.security.network.server</key><true/>
+	if hasCrashpad {
+		cmdRun([]string{"codesign", "--timestamp=none", "--preserve-metadata=entitlements", "--force", "--deep", "--sign", macosxCodeSignIdentityFlag, crashpadPath}, true)
+		cmdRun([]string{"codesign", "-dv", "--deep", "--strict", "--verbose=4",
+			crashpadPath}, true)
+		cmdRun([]string{"codesign", "-d", "--entitlements", ":-", crashpadPath}, true)
+	}
 	cmdRun([]string{"codesign", "--timestamp=none", "--preserve-metadata=entitlements", "--options=runtime", "--force", "--deep",
 		"--sign", macosxCodeSignIdentityFlag, getAppName()}, true)
 	cmdRun([]string{"codesign", "-dv", "--deep", "--strict", "--verbose=4",
