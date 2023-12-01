@@ -39,6 +39,8 @@ flags="$flags"'
 use_sysroot=false
 treat_warnings_as_errors=false'
 
+WITH_CPU=${WITH_CPU:-x64}
+
 if [ "$WITH_CPU" ]; then
   flags="$flags
 target_cpu=\"$WITH_CPU\""
@@ -64,8 +66,8 @@ clang_path=\"$(cygpath -m $PWD)/llvm-build/Release+Asserts\"
 extra_cflags=\"/MT\"
 extra_cflags_cc=\"\""
 
-out="$PWD/crashpad/crashpad/out/Default"
-bin_out="$PWD/crashpad/crashpad/out/Binary"
+out="$PWD/crashpad/crashpad/out/Default-${WITH_CPU}"
+bin_out="$PWD/crashpad/crashpad/out/Binary-${WITH_CPU}"
 
 export DEPOT_TOOLS_WIN_TOOLCHAIN=0
 
@@ -79,13 +81,14 @@ cd crashpad
 cp -f ../../../scripts/mini_chromium.BUILD.gn third_party/mini_chromium/mini_chromium/build/config/BUILD.gn
 sed -i s/__hlt\(0\)/__builtin_trap\(\)/g third_party/mini_chromium/mini_chromium/base/logging.cc
 # build stage
-rm -rf out
-mkdir -p out/Default
-echo "$flags" > out/Default/args.gn
+rm -rf "$out"
+mkdir -p "$out"
+echo "$flags" > "$out/args.gn"
 gn gen "$out" --script-executable="$PYTHON" --export-compile-comman
 ninja -C "$out" client
 
-mkdir -p out/Binary
-echo "$bin_flags" > out/Binary/args.gn
+rm -rf "$bin_out"
+mkdir -p "$bin_out"
+echo "$bin_flags" > "$bin_out/args.gn"
 gn gen "$bin_out" --script-executable="$PYTHON" --export-compile-comman
 ninja -C "$bin_out" crashpad_handler
