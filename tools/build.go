@@ -787,6 +787,16 @@ func postStateStripBinaries() {
 		cmdRun([]string{"dsymutil", filepath.Join(getAppName(), "Contents", "MacOS", APPNAME),
 			"--statistics", "--papertrail", "-o", getAppName() + ".dSYM"}, false)
 		cmdRun([]string{"strip", "-S", "-x", "-v", filepath.Join(getAppName(), "Contents", "MacOS", APPNAME)}, false)
+
+		// strip crashpad_handler as well if any
+		hasCrashpad := true
+		crashpadPath := filepath.Join(getAppName(), "Contents", "Resources", "crashpad_handler")
+		if _, err := os.Stat(crashpadPath); errors.Is(err, os.ErrNotExist) {
+			hasCrashpad = false
+		}
+		if hasCrashpad {
+			cmdRun([]string{"strip", "-S", "-x", "-v", crashpadPath}, false)
+		}
 	} else {
 		glog.Warningf("not supported in platform %s", systemNameFlag)
 	}
