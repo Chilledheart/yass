@@ -2143,6 +2143,12 @@ if (${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS "${_CRASHPAD_PREFIX}/obj/clie
   )
   target_link_libraries(yass_crashpad PRIVATE crashpad_client crashpad_common crashpad_util mini_chromium_base)
   set(SUPPORT_LIBS yass_crashpad ${SUPPORT_LIBS})
+  if (APPLE)
+    add_library(crashpad_util_mig STATIC IMPORTED)
+    set_property(TARGET crashpad_util_mig PROPERTY
+                 IMPORTED_LOCATION "${_CRASHPAD_PREFIX}/obj/util/libmig_output.a")
+    target_link_libraries(yass_crashpad PRIVATE crashpad_util_mig bsm)
+  endif()
 
   file(COPY "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler" DESTINATION ${CMAKE_BINARY_DIR})
   set(_CRASHPAD_BINARY "${CMAKE_BINARY_DIR}/crashpad_handler")
