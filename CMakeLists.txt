@@ -2146,7 +2146,7 @@ if (${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS "${_CRASHPAD_PREFIX}/obj/clie
   set(SUPPORT_LIBS yass_crashpad ${SUPPORT_LIBS})
 
   file(COPY "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler" DESTINATION ${CMAKE_BINARY_DIR})
-  set(_CRASHPAD_BINARY "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler")
+  set(_CRASHPAD_BINARY "${CMAKE_BINARY_DIR}/crashpad_handler")
 endif()
 
 # *****************************************************************************************
@@ -3637,7 +3637,7 @@ if (GUI)
             MACOSX_PACKAGE_LOCATION "Resources")
         endif()
         if (_CRASHPAD_BINARY)
-          set_source_files_properties("crashpad_handler" PROPERTIES
+          set_source_files_properties("${_CRASHPAD_BINARY}" PROPERTIES
             MACOSX_PACKAGE_LOCATION "Resources")
         endif()
 
