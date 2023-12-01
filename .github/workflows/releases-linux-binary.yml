@@ -42,7 +42,7 @@ jobs:
             qemu_suffix: i386
           - arch: amd64
             qemu_suffix: amd64
-          - arch: arm
+          - arch: armhf
             qemu_suffix: armhf
           - arch: armel
             qemu_suffix: armel
@@ -55,7 +55,7 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       ARCH: ${{ matrix.arch }}
-      SDK_ROOT: ${{ github.workspace }}/debian_sid_${{ matrix.arch }}-sysroot
+      SDK_ROOT: ${{ github.workspace }}/debian_bullseye_${{ matrix.arch }}-sysroot
     steps:
       - uses: actions/checkout@v4
       - name: Checkout with shallow submodules
@@ -64,7 +64,7 @@ jobs:
           git fetch --tags --unshallow
           git submodule update --init --depth 1
       - name: Patch libcxxabi for both of armel and armhf
-        if: ${{ matrix.arch == 'armel' || matrix.arch == 'arm' }}
+        if: ${{ matrix.arch == 'armel' || matrix.arch == 'armhf' }}
         run: |
           cd third_party/libc++abi
           patch -p1 < v8-6.7.17-fix-gcc-unwind-header.patch
@@ -90,7 +90,6 @@ jobs:
         with:
           path: |
             ${{ env.SDK_ROOT }}
-            debian_sid_mips-sysroot
             qemu-user-static*.deb
           key: ${{ runner.os }}-sysroot-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-with-qemu-v${{ env.CACHE_EPOCH }}
       - name: Build build tool

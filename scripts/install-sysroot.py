@@ -36,14 +36,14 @@ except ImportError:
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 URL_PREFIX = 'https://commondatastorage.googleapis.com'
 URL_PATH = 'chrome-linux-sysroot/toolchain'
-VALID_ARCHS = ('arm', 'armel', 'arm64', 'i386', 'amd64', 'mips', 'mips64el')
+VALID_ARCHS = ('armhf', 'armel', 'arm64', 'i386', 'amd64', 'mipsel', 'mips64el')
 ARCH_TRANSLATIONS = {
     'x64': 'amd64',
     'x86': 'i386',
-    'mipsel': 'mips',
+    'mips': 'mipsel',
     'mips64': 'mips64el',
 }
-DEFAULT_TARGET_PLATFORM = 'sid'
+DEFAULT_TARGET_PLATFORM = 'bullseye'
 class Error(Exception):
   pass
 def GetSha1(filename):
@@ -132,8 +132,6 @@ def InstallSysroot(target_platform, target_arch):
                 'Expected %s, actual: %s' % (tarball_sha1sum, sha1sum))
   extract_tarfile(tarball, sysroot)
   os.remove(tarball)
-  if target_arch == 'mips':
-    os.symlink(sysroot, sysroot.replace('mips', 'mipsel'))
   with open(stamp, 'w') as s:
     s.write(url)
 if __name__ == '__main__':

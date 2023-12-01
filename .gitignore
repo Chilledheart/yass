@@ -9,7 +9,7 @@ sscxx
 /.vscode
 *.exe
 *.zip
-/third_party/llvm-build/Release+Asserts
+/third_party/llvm-build
 /third_party/vcredist
 /third_party/nasm
 /third_party/wix311
@@ -40,6 +40,7 @@ sscxx
 *.msi
 *.wixpdb
 /debian_sid_*
+/debian_bullseye_*
 /freebsd-11.3-toolchain
 *.txz
 *.xz
