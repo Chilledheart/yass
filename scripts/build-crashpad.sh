@@ -93,9 +93,10 @@ export DEPOT_TOOLS_WIN_TOOLCHAIN=0
 mkdir -p crashpad
 cd crashpad
 fetch --nohistory crashpad || true
+cd crashpad
+git checkout -f 5613499bbda780dfa663344ea6253844e82c88c4
 gclient sync -f
 
-cd crashpad
 # patch stage
 cp -f ../../../scripts/mini_chromium.BUILD.gn third_party/mini_chromium/mini_chromium/build/config/BUILD.gn
 sed -i s/__hlt\(0\)/__builtin_trap\(\)/g third_party/mini_chromium/mini_chromium/base/logging.cc
