@@ -33,7 +33,7 @@ env:
   CACHE_EPOCH: 121-1
   GOPROXY: direct
 jobs:
-  linux-binary-release:
+  android-binary-release:
     strategy:
       fail-fast: false
       matrix:
