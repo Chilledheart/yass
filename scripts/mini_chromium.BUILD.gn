@@ -12,6 +12,9 @@ import("../sysroot.gni")
 
 if (mini_chromium_is_mac) {
   declare_args() {
+    # Path to the Clang toolchain. If unset, uses the system-installed Clang.
+    clang_path = ""
+
     # The minimum runtime macOS version that built products are expected to run
     # on. If empty, the toolchain will choose its own default, typically the
     # older of the SDK version and the build host’s OS version.
@@ -411,6 +414,7 @@ toolchain("gcc_like_toolchain") {
     asm = cxx
     ar = rebase_path(clang_path, root_build_dir) + "/bin/llvm-ar"
     ld = cxx
+    extra_ldflags = "-fuse-ld=lld"
   } else if (mini_chromium_is_android) {
     assert(android_ndk_root != "", "Android builds must set android_ndk_root")
 
@@ -455,11 +459,21 @@ toolchain("gcc_like_toolchain") {
     asm = cxx
     ld = cxx
     ar = ndk_bin_dir + tool_prefix + "-ar"
+    extra_ldflags = "-fuse-ld=lld"
   } else {
-    cc = "clang"
-    cxx = "clang++"
-    asm = cxx
-    ld = cxx
+    if (clang_path != "") {
+      cc = rebase_path(clang_path, root_build_dir) + "/bin/clang"
+      cxx = rebase_path(clang_path, root_build_dir) + "/bin/clang++"
+      asm = cxx
+      ar = rebase_path(clang_path, root_build_dir) + "/bin/llvm-ar"
+      ld = cxx
+      extra_ldflags = "-fuse-ld=lld"
+    } else {
+      cc = "clang"
+      cxx = "clang++"
+      asm = cxx
+      ld = cxx
+    }
 
     if (!mini_chromium_is_mac && !mini_chromium_is_ios) {
       # macOS uses libtool instead of ar.

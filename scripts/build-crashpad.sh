@@ -13,7 +13,7 @@ cd third_party
 case "$ARCH" in
   Linux)
     ARCH=Linux
-    if [ ! -z depot_tools ]; then
+    if [ ! -d depot_tools ]; then
       git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
     fi
     export PATH="$PWD/depot_tools:$PATH"
@@ -39,6 +39,34 @@ flags="$flags"'
 use_sysroot=false
 treat_warnings_as_errors=false'
 
+case "$ARCH" in
+  Linux|Darwin)
+    flags="$flags
+clang_path=\"$PWD/llvm-build/Release+Asserts\"
+extra_cflags_cc=\"-nostdinc++ -I $PWD/libc++ -I $PWD/libc++/trunk/include -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\""
+  ;;
+  Windows)
+    flags="$flags
+clang_path=\"$(cygpath -m $PWD)/llvm-build/Release+Asserts\"
+extra_cflags=\"/MT\"
+extra_cflags_cc=\"-I $(cygpath -m $PWD)/libc++ -I $(cygpath -m $PWD)/libc++/trunk/include -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\""
+  ;;
+esac
+
+case "$MACHINE" in
+  x86|i586|i686)
+    WITH_CPU_DEFAULT="x86"
+    ;;
+  x86_64)
+    WITH_CPU_DEFAULT="x64"
+    ;;
+  arch64|arm64)
+    WITH_CPU_DEFAULT="arm64"
+    ;;
+esac
+
+WITH_CPU=${WITH_CPU:-${WITH_CPU_DEFAULT}}
+
 if [ "$WITH_CPU" ]; then
   flags="$flags
 target_cpu=\"$WITH_CPU\""
@@ -51,21 +79,14 @@ fi
 
 if [ "$WITH_SYSROOT" ]; then
   flags="$flags
-target_sysroot=\"//$WITH_SYSROOT\""
+target_sysroot=\"$WITH_SYSROOT\""
 fi
 
-flags="$flags
-clang_path=\"$(cygpath -m $PWD)/llvm-build/Release+Asserts\"
-extra_cflags=\"/MT\"
-extra_cflags_cc=\"-I $(cygpath -m $PWD)/libc++ -I $(cygpath -m $PWD)/libc++/trunk/include -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\""
-
 bin_flags="$flags
-clang_path=\"$(cygpath -m $PWD)/llvm-build/Release+Asserts\"
-extra_cflags=\"/MT\"
 extra_cflags_cc=\"\""
 
-out="$PWD/crashpad/crashpad/out/Default"
-bin_out="$PWD/crashpad/crashpad/out/Binary"
+out="$PWD/crashpad/crashpad/out/Default-${WITH_CPU}"
+bin_out="$PWD/crashpad/crashpad/out/Binary-${WITH_CPU}"
 
 export DEPOT_TOOLS_WIN_TOOLCHAIN=0
 
@@ -79,13 +100,14 @@ cd crashpad
 cp -f ../../../scripts/mini_chromium.BUILD.gn third_party/mini_chromium/mini_chromium/build/config/BUILD.gn
 sed -i s/__hlt\(0\)/__builtin_trap\(\)/g third_party/mini_chromium/mini_chromium/base/logging.cc
 # build stage
-rm -rf out
-mkdir -p out/Default
-echo "$flags" > out/Default/args.gn
+rm -rf "$out"
+mkdir -p "$out"
+echo "$flags" > "$out/args.gn"
 gn gen "$out" --script-executable="$PYTHON" --export-compile-comman
 ninja -C "$out" client
 
-mkdir -p out/Binary
-echo "$bin_flags" > out/Binary/args.gn
+rm -rf "$bin_out"
+mkdir -p "$bin_out"
+echo "$bin_flags" > "$bin_out/args.gn"
 gn gen "$bin_out" --script-executable="$PYTHON" --export-compile-comman
 ninja -C "$bin_out" crashpad_handler
