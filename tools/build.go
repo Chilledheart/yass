@@ -242,6 +242,10 @@ func prebuildFindSourceDirectory() {
 			osSuffix = "-winxp"
 		}
 		buildDir = fmt.Sprintf("build-msvc%s-%s-%s", osSuffix, msvcTargetArchFlag, msvcCrtLinkageFlag)
+	} else if systemNameFlag == "freebsd" {
+		buildDir = fmt.Sprintf("build-%s%d-%s", systemNameFlag, freebsdAbiFlag, archFlag)
+	} else if systemNameFlag == "android" {
+		buildDir = fmt.Sprintf("build-%s%d-%s", systemNameFlag, androidApiLevel, archFlag)
 	} else {
 		arch := archFlag
 		if systemNameFlag == "darwin" && macosxUniversalBuildFlag {

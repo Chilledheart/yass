@@ -40,12 +40,16 @@ jobs:
         include:
           - arch: x86
             qemu_suffix: i386
+            apilevel: 24
           - arch: x64
             qemu_suffix: amd64
+            apilevel: 24
           - arch: arm
             qemu_suffix: armel
+            apilevel: 24
           - arch: arm64
             qemu_suffix: aarch64
+            apilevel: 24
     runs-on: ubuntu-20.04
     env:
       ARCH: ${{ matrix.arch }}
@@ -143,7 +147,7 @@ jobs:
           bwrap --die-with-parent --bind $SYSROOT / \
             --proc /proc --dev /dev \
             --unshare-all \
-            --bind $PWD/build-android-${{ matrix.arch }} /data/local/tmp \
+            --bind $PWD/build-android${{ matrix.apilevel }}-${{ matrix.arch }} /data/local/tmp \
             /data/local/tmp/yass_test
       - name: Run tests (non x86, under qemu emulation)
         if: ${{ matrix.arch != 'x86' && matrix.arch != 'x64' }}
@@ -152,7 +156,7 @@ jobs:
           mkdir -p $SYSROOT/data/local/tmp
           qemu-${{ matrix.qemu_suffix }}-static -L $SYSROOT \
             -E TMPDIR=$SYSROOT/data/local/tmp \
-            $PWD/build-android-${{ matrix.arch }}/yass_test
+            $PWD/build-android${{ matrix.apilevel }}-${{ matrix.arch }}/yass_test
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
