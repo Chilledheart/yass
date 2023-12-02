@@ -35,6 +35,7 @@
 #include "core/logging.hpp"
 #include "crypto/crypter_export.hpp"
 #include "version.h"
+#include "i18n/icu_util.hpp"
 
 ABSL_FLAG(std::string, user, "", "set non-privileged user for worker");
 ABSL_FLAG(std::string, group, "", "set non-privileged group for worker");
@@ -78,6 +79,12 @@ int main(int argc, const char* argv[]) {
   config::ReadConfigFileOption(argc, argv);
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
+
+#ifdef HAVE_ICU
+  if (!InitializeICU()) {
+    LOG(WARNING) << "Failed to initialize icu component";
+  }
+#endif
 
 #ifdef _WIN32
   int iResult = 0;

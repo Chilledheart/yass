@@ -14,6 +14,7 @@
 #include <absl/flags/parse.h>
 #include <absl/flags/usage.h>
 #include <absl/strings/str_cat.h>
+#include <openssl/crypto.h>
 
 #include "config/config.hpp"
 #include "core/logging.hpp"
@@ -21,6 +22,7 @@
 #include "crypto/crypter_export.hpp"
 #include "version.h"
 #include "crashpad_helper.hpp"
+#include "i18n/icu_util.hpp"
 
 #if defined(ARCH_CPU_X86_64)
 // This is for https://crbug.com/1300598, and more generally,
@@ -70,9 +72,19 @@ int main(int argc, const char** argv) {
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
 
+#if 0
   if (!MemoryLockAll()) {
     LOG(WARNING) << "Failed to set memory lock";
   }
+#endif
+
+#ifdef HAVE_ICU
+  if (!InitializeICU()) {
+    LOG(WARNING) << "Failed to initialize icu component";
+  }
+#endif
+
+  CRYPTO_library_init();
 
   return NSApplicationMain(argc, argv);
 }

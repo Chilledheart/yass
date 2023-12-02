@@ -109,18 +109,29 @@ void LazyInitIcuDataFile() {
     return;
   }
 #endif  // !defined(__APPLE__)
-#endif
+#else // 0
 #ifdef _WIN32
   std::wstring exe_path;
   CHECK(GetExecutablePathW(&exe_path));
-  std::wstring data_path = std::filesystem::path(exe_path).parent_path() / SysUTF8ToWide(kIcuDataFileName);
+  std::filesystem::path exe_dir = std::filesystem::path(exe_path).parent_path();
+  std::wstring data_path = exe_dir / SysUTF8ToWide(kIcuDataFileName);
   PlatformFile pf = OpenReadFileW(data_path);
-#else
+#else // _WIN32
   std::string exe_path;
   CHECK(GetExecutablePath(&exe_path));
-  std::string data_path = std::filesystem::path(exe_path).parent_path() / kIcuDataFileName;
-  PlatformFile pf = OpenReadFile(data_path);
-#endif
+  std::filesystem::path exe_dir = std::filesystem::path(exe_path).parent_path();
+  std::string data_path;
+  PlatformFile pf = kInvalidPlatformFile;
+#ifdef __APPLE__
+  data_path = exe_dir.parent_path() / "Resources" / kIcuDataFileName;
+  pf = OpenReadFile(data_path);
+#endif //  __APPLE__
+  if (pf == kInvalidPlatformFile) {
+    data_path = exe_dir / kIcuDataFileName;
+    pf = OpenReadFile(data_path);
+  }
+#endif // _WIN32
+#endif // 0
   if (pf != kInvalidPlatformFile) {
     // TODO(brucedawson): http://crbug.com/445616.
     g_debug_icu_pf_last_error = 0;

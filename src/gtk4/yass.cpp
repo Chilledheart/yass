@@ -14,6 +14,7 @@
 #include <fontconfig/fontconfig.h>
 #include <glib/gi18n.h>
 #include <locale.h>
+#include <openssl/crypto.h>
 #include <stdarg.h>
 
 #include "core/logging.hpp"
@@ -24,6 +25,7 @@
 #include "version.h"
 #include "gtk4/option_dialog.hpp"
 #include "crashpad_helper.hpp"
+#include "i18n/icu_util.hpp"
 
 ABSL_FLAG(bool, background, false, "start up backgroundd");
 
@@ -154,6 +156,20 @@ int main(int argc, const char** argv) {
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
 
+#if 0
+  if (!MemoryLockAll()) {
+    LOG(WARNING) << "Failed to set memory lock";
+  }
+#endif
+
+#ifdef HAVE_ICU
+  if (!InitializeICU()) {
+    LOG(WARNING) << "Failed to initialize icu component";
+  }
+#endif
+
+  CRYPTO_library_init();
+
 #if !GLIB_CHECK_VERSION(2, 35, 0)
   // GLib type system initialization. It's unclear if it's still required for
   // any remaining code. Most likely this is superfluous as gtk_init() ought
@@ -197,10 +213,6 @@ std::unique_ptr<YASSApp> YASSApp::create() {
 }
 
 void YASSApp::OnActivate() {
-  if (!MemoryLockAll()) {
-    LOG(WARNING) << "Failed to set memory lock";
-  }
-
   if (!dispatcher_.Init([this]() { OnDispatch(); })) {
     LOG(WARNING) << "Failed to init dispatcher";
   }
