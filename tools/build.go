@@ -43,6 +43,7 @@ var cmakeBuildConcurrencyFlag int
 
 var useLibCxxFlag bool
 var enableLtoFlag bool
+var useIcuFlag bool
 
 var clangTidyModeFlag bool
 var clangTidyExecutablePathFlag string
@@ -124,6 +125,7 @@ func InitFlag() {
 
 	flag.BoolVar(&useLibCxxFlag, "use-libcxx", true, "Use Custom libc++")
 	flag.BoolVar(&enableLtoFlag, "enable-lto", true, "Enable lto")
+	flag.BoolVar(&useIcuFlag, "use-icu", false, "Use ICU Feature")
 
 	flag.BoolVar(&clangTidyModeFlag, "clang-tidy-mode", getEnvBool("ENABLE_CLANG_TIDY", false), "Enable Clang Tidy Build")
 	flag.StringVar(&clangTidyExecutablePathFlag, "clang-tidy-executable-path", getEnv("CLANG_TIDY_EXECUTABLE", ""), "Path to clang-tidy, only used by Clang Tidy Build")
@@ -242,6 +244,10 @@ func prebuildFindSourceDirectory() {
 			osSuffix = "-winxp"
 		}
 		buildDir = fmt.Sprintf("build-msvc%s-%s-%s", osSuffix, msvcTargetArchFlag, msvcCrtLinkageFlag)
+	} else if systemNameFlag == "freebsd" {
+		buildDir = fmt.Sprintf("build-%s%d-%s", systemNameFlag, freebsdAbiFlag, archFlag)
+	} else if systemNameFlag == "android" {
+		buildDir = fmt.Sprintf("build-%s%d-%s", systemNameFlag, androidApiLevel, archFlag)
 	} else {
 		arch := archFlag
 		if systemNameFlag == "darwin" && macosxUniversalBuildFlag {
@@ -560,11 +566,16 @@ func buildStageGenerateBuildScript() {
 	} else {
 		cmakeArgs = append(cmakeArgs, "-DENABLE_LTO=off")
 	}
+	if useIcuFlag {
+		cmakeArgs = append(cmakeArgs, "-DUSE_ICU=on")
+	} else {
+		cmakeArgs = append(cmakeArgs, "-DUSE_ICU=off")
+	}
 	if clangTidyModeFlag {
 		cmakeArgs = append(cmakeArgs, "-DENABLE_CLANG_TIDY=on", fmt.Sprintf("-DCLANG_TIDY_EXECUTABLE=%s", clangTidyExecutablePathFlag))
 	}
 	if systemNameFlag == "windows" {
-		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCROSS_TOOLCHAIN_FLAGS_NATIVE=\"-DCMAKE_TOOLCHAIN_FILE=%s\\Native.cmake\"", buildDir))
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCROSS_TOOLCHAIN_FLAGS_TOOLCHAIN_FILE=%s\\Native.cmake", buildDir))
 		// Guesting native LIB paths from host LIB paths
 		var nativeLibPaths []string
 		hostLibPaths := strings.Split(os.Getenv("LIB"), ";")
@@ -666,6 +677,9 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSROOT=%s", sysrootFlag))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSTEM_PROCESSOR=%s", gnuArch))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_TARGET=%s", gnuType))
+		if subsystem == "" {
+			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_TCMALLOC=on"))
+		}
 	}
 
 	if systemNameFlag == "freebsd" && sysrootFlag != "" {
@@ -780,6 +794,16 @@ func postStateStripBinaries() {
 		cmdRun([]string{"dsymutil", filepath.Join(getAppName(), "Contents", "MacOS", APPNAME),
 			"--statistics", "--papertrail", "-o", getAppName() + ".dSYM"}, false)
 		cmdRun([]string{"strip", "-S", "-x", "-v", filepath.Join(getAppName(), "Contents", "MacOS", APPNAME)}, false)
+
+		// strip crashpad_handler as well if any
+		hasCrashpad := true
+		crashpadPath := filepath.Join(getAppName(), "Contents", "Resources", "crashpad_handler")
+		if _, err := os.Stat(crashpadPath); errors.Is(err, os.ErrNotExist) {
+			hasCrashpad = false
+		}
+		if hasCrashpad {
+			cmdRun([]string{"strip", "-S", "-x", "-v", crashpadPath}, false)
+		}
 	} else {
 		glog.Warningf("not supported in platform %s", systemNameFlag)
 	}
@@ -795,6 +819,24 @@ func postStateCodeSign() {
 	// reference https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/resolving_common_notarization_issues?language=objc
 	// Hardened runtime is available in the Capabilities pane of Xcode 10 or later
 	//
+	// code sign crashpad_handler as well if any
+	hasCrashpad := true
+	crashpadPath := filepath.Join(getAppName(), "Contents", "Resources", "crashpad_handler")
+	if _, err := os.Stat(crashpadPath); errors.Is(err, os.ErrNotExist) {
+		hasCrashpad = false
+	}
+	// FIXME crashpad require more entitlements as below
+	// see https://github.com/electron-userland/electron-builder/issues/3989
+	//    <key>com.apple.security.cs.allow-dyld-environment-variables</key><true/>
+	//    <key>com.apple.security.files.user-selected.read-write</key><true/>
+	//    <key>com.apple.security.network.client</key><true/>
+	//    <key>com.apple.security.network.server</key><true/>
+	if hasCrashpad {
+		cmdRun([]string{"codesign", "--timestamp=none", "--preserve-metadata=entitlements", "--force", "--deep", "--sign", macosxCodeSignIdentityFlag, crashpadPath}, true)
+		cmdRun([]string{"codesign", "-dv", "--deep", "--strict", "--verbose=4",
+			crashpadPath}, true)
+		cmdRun([]string{"codesign", "-d", "--entitlements", ":-", crashpadPath}, true)
+	}
 	cmdRun([]string{"codesign", "--timestamp=none", "--preserve-metadata=entitlements", "--options=runtime", "--force", "--deep",
 		"--sign", macosxCodeSignIdentityFlag, getAppName()}, true)
 	cmdRun([]string{"codesign", "-dv", "--deep", "--strict", "--verbose=4",
@@ -942,6 +984,7 @@ func postStateArchiveLicenses() []string {
 		"LICENSE.googleurl":  filepath.Join("..", "third_party", "googleurl", "LICENSE"),
 		"LICENSE.icu":        filepath.Join("..", "third_party", "icu", "LICENSE"),
 		"LICENSE.json":       filepath.Join("..", "third_party", "json", "LICENSE.MIT"),
+		"LICENSE.leveldb":    filepath.Join("..", "third_party", "leveldb", "LICENSE"),
 		"LICENSE.libc++":     filepath.Join("..", "third_party", "libc++", "trunk", "LICENSE.TXT"),
 		"LICENSE.libc++abi":  filepath.Join("..", "third_party", "libc++abi", "trunk", "LICENSE.TXT"),
 		"LICENSE.lss":        filepath.Join("..", "third_party", "lss", "LICENSE"),
@@ -949,6 +992,10 @@ func postStateArchiveLicenses() []string {
 		"LICENSE.mozilla":    filepath.Join("..", "third_party", "url", "third_party", "mozilla", "LICENSE.txt"),
 		"LICENSE.protobuf":   filepath.Join("..", "third_party", "protobuf", "LICENSE"),
 		"LICENSE.quiche":     filepath.Join("..", "third_party", "quiche", "src", "LICENSE"),
+		"LICENSE.re2":        filepath.Join("..", "third_party", "re2", "LICENSE"),
+		"LICENSE.snappy":     filepath.Join("..", "third_party", "snappy", "src", "COPYING"),
+		"LICENSE.sqlite":     filepath.Join("..", "third_party", "sqlite", "LICENSE"),
+		"LICENSE.tcmalloc":   filepath.Join("..", "third_party", "tcmalloc", "src", "LICENSE"),
 		"LICENSE.xxhash":     filepath.Join("..", "third_party", "xxhash", "LICENSE"),
 		"LICENSE.zlib":       filepath.Join("..", "third_party", "zlib", "LICENSE"),
 	}
@@ -1115,7 +1162,7 @@ func archiveMainFile(output string, prefix string, paths []string) {
 	}
 }
 
-func generateMsi(output string, dllPaths []string, licensePaths []string) {
+func generateMsi(output string, dllPaths []string, licensePaths []string, hasCrashpad bool, hasIcuDataFile bool) {
 	wxsTemplate, err := ioutil.ReadFile(filepath.Join("..", "yass.wxs"))
 	if err != nil {
 		glog.Fatalf("%v", err)
@@ -1133,6 +1180,12 @@ func generateMsi(output string, dllPaths []string, licensePaths []string) {
 		licenseReplacement += fmt.Sprintf("<File Name='%s' Source='%s' KeyPath='no' />\n", filepath.Base(licensePath), licensePath)
 	}
 	wxsXml = strings.Replace(wxsXml, "<!-- %LICENSEPLACEHOLDER% -->", licenseReplacement, 1)
+	if (hasCrashpad) {
+		wxsXml = strings.Replace(wxsXml, "<!-- %CRASHPAD_HANDLER_HOLDER% -->", "<File Name='crashpad_handler.exe' Source='crashpad_handler.exe' KeyPath='no'/>", 1)
+	}
+	if (hasIcuDataFile) {
+		wxsXml = strings.Replace(wxsXml, "<!-- %ICUDATAFILE_HOLDER% -->", "<File Name='icudtl.dat' Source='icudtl.dat' KeyPath='no'/>", 1)
+	}
 
 	err = ioutil.WriteFile("yass.wxs", []byte(wxsXml), 0666)
 	if err != nil {
@@ -1221,6 +1274,14 @@ func postStateArchives() map[string][]string {
 	if systemNameFlag == "darwin" {
 		archive = fmt.Sprintf(archiveFormat, APPNAME, "", ".dmg")
 	}
+	hasCrashpad := true
+	if _, err := os.Stat("crashpad_handler.exe"); errors.Is(err, os.ErrNotExist) {
+		hasCrashpad = false
+	}
+	hasIcuDataFile := true
+	if _, err := os.Stat("icudtl.dat"); errors.Is(err, os.ErrNotExist) {
+		hasIcuDataFile = false
+	}
 
 	msiArchive := fmt.Sprintf(archiveFormat, APPNAME, "", ".msi")
 	nsisArchive := fmt.Sprintf(archiveFormat, APPNAME, "-installer", ".exe")
@@ -1237,6 +1298,15 @@ func postStateArchives() map[string][]string {
 	var dllPaths []string
 	var dbgPaths []string
 
+	// copying dependent crashpad handler if any
+	if hasCrashpad {
+		paths = append(paths, "crashpad_handler.exe")
+	}
+	// copying dependent icudata
+	if hasIcuDataFile {
+		paths = append(paths, "icudtl.dat")
+	}
+
 	// copying dependent LICENSEs
 	licensePaths := postStateArchiveLicenses()
 	paths = append(paths, licensePaths...)
@@ -1251,7 +1321,7 @@ func postStateArchives() map[string][]string {
 	// error CNDL0265 : The Platform attribute has an invalid value arm64.
 	// Possible values are x86, x64, or ia64.
 	if systemNameFlag == "windows" && msvcTargetArchFlag != "arm64" {
-		generateMsi(msiArchive, dllPaths, licensePaths)
+		generateMsi(msiArchive, dllPaths, licensePaths, hasCrashpad, hasIcuDataFile)
 		archives[msiArchive] = []string{msiArchive}
 	}
 	// nsis installer

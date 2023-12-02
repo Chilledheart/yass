@@ -147,6 +147,11 @@ endif()
 enable_language(C)
 enable_language(CXX)
 
+# required by zstd
+if (NOT COMPILER_MSVC)
+  enable_language(ASM)
+endif()
+
 ## Setup compiler informations
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
     CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
@@ -233,6 +238,13 @@ else()
   endif()
 endif()
 
+# handling bug with cmake+clang-cl
+# newer clang-cl produces "Note: including file: .\\foo.h"
+# unable to parse by cmake's CMakeDetermineCompilerId.cmake
+if (MSVC AND COMPILER_CLANG)
+  set(CMAKE_CL_SHOWINCLUDES_PREFIX "Note: including file:" CACHE STRING "" FORCE)
+endif()
+
 ## postpone ASM enabling after C/CXX LANG DIALECT otherwise it might fails
 if (NOT (WIN32 AND (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "x86" OR MSVC_PROCESSOR_ARCHITECTURE STREQUAL "amd64")))
   enable_language(ASM)
@@ -248,6 +260,7 @@ option(GUI_SANDBOX "Build against GUI sandbox (MAC Only)." OFF)
 option(BUILD_TESTS "Build with test." OFF)
 option(BUILD_BENCHMARKS "Build with benchmark." OFF)
 option(OPTIMIZED_PROTOC "Force protobuf compiler to be built with optimization" OFF)
+option(USE_TCMALLOC "Build with tcmalloc (linux only)" OFF)
 option(USE_LIBCXX "Build with libc++" ON)
 option(USE_NGHTTP2 "Build with libnghttp2" ON)
 option(USE_MOLD "Build with mold linker" OFF)
@@ -261,6 +274,9 @@ option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
 option(USE_BUILTIN_CA_BUNDLE_CRT "Build with embedded ca-bundle.crt support" ON)
 option(USE_MBEDTLS "Build with mbedtls support" ON)
 option(USE_BALSA_HTTP_PARSER "Build with balsa http parser" ON)
+option(USE_ICU "Build with icu" OFF)
+option(USE_LEVELDB "Build with leveldb" OFF)
+option(USE_SQLITE "Build with sqlite" OFF)
 
 option(ENABLE_LTO "Enable build with LTO" ON)
 option(ENABLE_LLD "Enable build with LLD" ON)
@@ -369,6 +385,9 @@ if (CMAKE_CROSSCOMPILING OR (OPTIMIZED_PROTOC AND CMAKE_CONFIGURATION_TYPES))
 endif()
 
 if (CMAKE_CROSSCOMPILING AND CMAKE_SYSROOT)
+  if (NOT EXISTS ${CMAKE_SYSROOT})
+    message(FATAL_ERROR "Invalid sysroot ${CMAKE_SYSROOT}")
+  endif()
   set(ENV{PKG_CONFIG_DIR} "")
   set(ENV{PKG_CONFIG_LIBDIR} "${CMAKE_SYSROOT}/usr/lib/pkgconfig:${CMAKE_SYSROOT}/lib/pkgconfig:${CMAKE_SYSROOT}/usr/share/pkgconfig")
   if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
@@ -402,8 +421,8 @@ if (USE_HOST_TOOLS)
 endif()
 
 if (CMAKE_OSX_ARCHITECTURES)
-  list(LENGTH CMAKE_OSX_ARCHITECTURES NUM_ARCHES)
-  if(NOT NUM_ARCHES EQUAL 1)
+  list(LENGTH CMAKE_OSX_ARCHITECTURES OSX_CROSS_ARCHITECTURES_COUNT)
+  if(NOT OSX_CROSS_ARCHITECTURES_COUNT EQUAL 1)
     if (COMPILER_GCC)
       message(FATAL_ERROR "GCC is not supported to compiling universal build")
     endif()
@@ -1725,7 +1744,7 @@ int main() {
   endif()
 
   # linux-syscall-support
-  if (UNIX AND NOT APPLE)
+  if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR ANDROID)
     include_directories(third_party/lss)
   endif()
   if (APPLE AND COMPILER_CLANG)
@@ -1934,9 +1953,10 @@ if (ANDROID)
   set(LIBRT "OFF" CACHE BOOL "")
 endif()
 add_subdirectory(third_party/abseil-cpp)
-include_directories(third_party/abseil-cpp SYSTEM)
 
 set(SUPPORT_LIBS
+  absl::base
+  absl::core_headers
   absl::flat_hash_map
   absl::flat_hash_set
   absl::flags
@@ -1955,6 +1975,186 @@ set(SUPPORT_LIBS
   )
 
 # *****************************************************************************************
+#           tcmalloc Library
+# *****************************************************************************************
+
+# only support platform: linux
+if (USE_TCMALLOC)
+  if (NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    message(WARNING "tcmalloc: only Linux is supported, disabling...")
+    set(USE_TCMALLOC OFF)
+  endif()
+  if (OS_X86)
+    message(WARNING "tcmalloc: 32-bit x86 is not supported, disabling...")
+    set(USE_TCMALLOC OFF)
+  endif()
+  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "mips" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "mips64" OR
+      CMAKE_SYSTEM_PROCESSOR STREQUAL "mipsel" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "mips64el")
+    message(WARNING "tcmalloc: mips/mips64 is not supported, disabling...")
+    set(USE_TCMALLOC OFF)
+  endif()
+  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "armhf" OR
+      CMAKE_SYSTEM_PROCESSOR STREQUAL "armel")
+    message(WARNING "tcmalloc: 32-bit arm is not supported, disabling...")
+    set(USE_TCMALLOC OFF)
+  endif()
+endif()
+
+# tunings:
+# default pages: nop
+# large pages: -DTCMALLOC_LARGE_PAGES
+# 256k pages: -DTCMALLOC_256K_PAGES
+# small pages: -DTCMALLOC_SMALL_BUT_SLOW
+# numa pages: -DTCMALLOC_NUMA_AWARE
+if (USE_TCMALLOC)
+  message(STATUS "Compiling with bundled tcmalloc support")
+
+  add_subdirectory(third_party/tcmalloc)
+
+  set(SUPPORT_DEFINITIONS
+    HAVE_TCMALLOC
+    ${SUPPORT_DEFINITIONS}
+  )
+  set(SUPPORT_LIBS
+    tcmalloc
+    ${SUPPORT_LIBS}
+    )
+  # silence lto warning on gcc: tcmalloc_sampler
+  if (COMPILER_GCC AND LTO)
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12.0)
+      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
+      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
+    else()
+      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch")
+      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch")
+    endif()
+  endif()
+endif()
+
+# *****************************************************************************************
+#           icu Library
+# *****************************************************************************************
+
+if (USE_ICU)
+  message(STATUS "Compiling with bundled icu library")
+  add_subdirectory(third_party/icu)
+  set(SUPPORT_DEFINITIONS
+    HAVE_ICU
+    ${SUPPORT_DEFINITIONS}
+  )
+  set(SUPPORT_LIBS icuuc icui18n ${SUPPORT_LIBS})
+endif()
+
+# *****************************************************************************************
+#           re2 Library
+# *****************************************************************************************
+
+message(STATUS "Compiling with bundled re2 library")
+add_subdirectory(third_party)
+set(SUPPORT_LIBS re2 ${SUPPORT_LIBS})
+
+# *****************************************************************************************
+#           googleurl Library
+# *****************************************************************************************
+
+message(STATUS "Compiling with bundled googleurl library")
+set(SUPPORT_LIBS url ${SUPPORT_LIBS})
+
+# *****************************************************************************************
+#           crashpad Library
+# *****************************************************************************************
+
+set(_CRASHPAD_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/third_party/crashpad/crashpad/out/Default-${MSVC_C_ARCHITECTURE_ID}")
+set(_CRASHPAD_BINARY_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/third_party/crashpad/crashpad/out/Binary-${MSVC_C_ARCHITECTURE_ID}")
+if (MSVC AND ${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS "${_CRASHPAD_PREFIX}/obj/client/client.lib")
+  message(STATUS "Compiling with bundled crashpad client library")
+  add_library(crashpad_common STATIC IMPORTED)
+  set_property(TARGET crashpad_common PROPERTY
+               IMPORTED_LOCATION "${_CRASHPAD_PREFIX}/obj/client/common.lib")
+  add_library(crashpad_util STATIC IMPORTED)
+  set_property(TARGET crashpad_util PROPERTY
+               IMPORTED_LOCATION "${_CRASHPAD_PREFIX}/obj/util/util.lib")
+  add_library(crashpad_client STATIC IMPORTED)
+  set_property(TARGET crashpad_client PROPERTY
+               IMPORTED_LOCATION "${_CRASHPAD_PREFIX}/obj/client/client.lib")
+  add_library(mini_chromium_base STATIC IMPORTED)
+  set_property(TARGET mini_chromium_base PROPERTY
+               IMPORTED_LOCATION "${_CRASHPAD_PREFIX}/obj/third_party/mini_chromium/mini_chromium/base/base.lib")
+
+  add_library(yass_crashpad STATIC
+    src/crashpad_helper.cpp
+    src/crashpad_helper.hpp
+  )
+  target_compile_definitions(yass_crashpad PUBLIC HAVE_CRASHPAD)
+  target_include_directories(yass_crashpad PRIVATE
+    "${_CRASHPAD_PREFIX}/gen"
+    third_party/crashpad/crashpad/third_party/mini_chromium/mini_chromium
+    third_party/crashpad/crashpad
+    src
+  )
+  target_link_libraries(yass_crashpad PRIVATE crashpad_client crashpad_common crashpad_util mini_chromium_base)
+  set(SUPPORT_LIBS yass_crashpad ${SUPPORT_LIBS})
+
+  file(COPY "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler.exe" DESTINATION ${CMAKE_BINARY_DIR})
+endif()
+
+if (NOT OSX_CROSS_ARCHITECTURES_COUNT)
+  set(_CRASHPAD_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
+elseif (OSX_CROSS_ARCHITECTURES_COUNT EQUAL 1)
+  set(_CRASHPAD_ARCH "${CMAKE_OSX_ARCHITECTURES}")
+else()
+  set(_CRASHPAD_ARCH "mac_universal")
+endif()
+# mapping to gn arch syntax
+if (_CRASHPAD_ARCH STREQUAL "x86_64" OR _CRASHPAD_ARCH STREQUAL "amd64")
+  set(_CRASHPAD_ARCH "x64")
+elseif (_CRASHPAD_ARCH STREQUAL "i386" OR _CRASHPAD_ARCH STREQUAL "i586" OR _CRASHPAD_ARCH STREQUAL "i686")
+  set(_CRASHPAD_ARCH "x86")
+elseif (_CRASHPAD_ARCH STREQUAL "aarch64")
+  set(_CRASHPAD_ARCH "arm64")
+endif()
+set(_CRASHPAD_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/third_party/crashpad/crashpad/out/Default-${_CRASHPAD_ARCH}")
+set(_CRASHPAD_BINARY_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/third_party/crashpad/crashpad/out/Binary-${_CRASHPAD_ARCH}")
+if (${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS "${_CRASHPAD_PREFIX}/obj/client/libclient.a")
+  message(STATUS "Compiling with bundled crashpad client library")
+  add_library(crashpad_common STATIC IMPORTED)
+  set_property(TARGET crashpad_common PROPERTY
+               IMPORTED_LOCATION "${_CRASHPAD_PREFIX}/obj/client/libcommon.a")
+  add_library(crashpad_util STATIC IMPORTED)
+  set_property(TARGET crashpad_util PROPERTY
+               IMPORTED_LOCATION "${_CRASHPAD_PREFIX}/obj/util/libutil.a")
+  add_library(crashpad_client STATIC IMPORTED)
+  set_property(TARGET crashpad_client PROPERTY
+               IMPORTED_LOCATION "${_CRASHPAD_PREFIX}/obj/client/libclient.a")
+  add_library(mini_chromium_base STATIC IMPORTED)
+  set_property(TARGET mini_chromium_base PROPERTY
+               IMPORTED_LOCATION "${_CRASHPAD_PREFIX}/obj/third_party/mini_chromium/mini_chromium/base/libbase.a")
+
+  add_library(yass_crashpad STATIC
+    src/crashpad_helper.cpp
+    src/crashpad_helper.hpp
+  )
+  target_compile_definitions(yass_crashpad PUBLIC HAVE_CRASHPAD)
+  target_include_directories(yass_crashpad PRIVATE
+    "${_CRASHPAD_PREFIX}/gen"
+    third_party/crashpad/crashpad/third_party/mini_chromium/mini_chromium
+    third_party/crashpad/crashpad
+    src
+  )
+  target_link_libraries(yass_crashpad PRIVATE crashpad_client crashpad_common crashpad_util mini_chromium_base)
+  set(SUPPORT_LIBS yass_crashpad ${SUPPORT_LIBS})
+  if (APPLE)
+    add_library(crashpad_util_mig STATIC IMPORTED)
+    set_property(TARGET crashpad_util_mig PROPERTY
+                 IMPORTED_LOCATION "${_CRASHPAD_PREFIX}/obj/util/libmig_output.a")
+    target_link_libraries(yass_crashpad PRIVATE crashpad_util_mig bsm)
+  endif()
+
+  file(COPY "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler" DESTINATION ${CMAKE_BINARY_DIR})
+  set(_CRASHPAD_BINARY "${CMAKE_BINARY_DIR}/crashpad_handler")
+endif()
+
+# *****************************************************************************************
 #           boringssl Library
 # *****************************************************************************************
 
@@ -1971,8 +2171,10 @@ if (MINGW AND USE_LIBCXX)
   set(CMAKE_C_FLAGS "${PREVIOUS_CMAKE_C_FLAGS}")
   set(CMAKE_CXX_FLAGS "${PREVIOUS_CMAKE_CXX_FLAGS}")
 endif()
-add_definitions(-DHAVE_BORINGSSL)
-include_directories(BEFORE third_party/boringssl/src/include SYSTEM)
+set(SUPPORT_DEFINITIONS
+  HAVE_BORINGSSL
+  ${SUPPORT_DEFINITIONS}
+)
 set(SUPPORT_LIBS crypto ssl ${SUPPORT_LIBS})
 foreach(source ${BCM_ASM_SOURCES})
   set_source_files_properties(${source} PROPERTIES GENERATED true)
@@ -2006,7 +2208,10 @@ endif()
 
 if (USE_SYSTEM_MBEDTLS AND USE_MBEDTLS)
   message(STATUS "Compiling with system mbedtls library")
-  add_definitions(-DHAVE_MBEDTLS)
+  set(SUPPORT_DEFINITIONS
+    HAVE_MBEDTLS
+    ${SUPPORT_DEFINITIONS}
+  )
 
   set(SUPPORT_LIBS mbedcrypto ${SUPPORT_LIBS})
 elseif (USE_MBEDTLS)
@@ -2024,9 +2229,11 @@ elseif (USE_MBEDTLS)
   endif()
 
   add_subdirectory(third_party/mbedtls)
-  add_definitions(-DHAVE_MBEDTLS)
-  include_directories(third_party/mbedtls/include SYSTEM)
 
+  set(SUPPORT_DEFINITIONS
+    HAVE_MBEDTLS
+    ${SUPPORT_DEFINITIONS}
+  )
   set(SUPPORT_LIBS mbedcrypto ${SUPPORT_LIBS})
 endif()
 
@@ -2034,27 +2241,31 @@ endif()
 #           asio Library
 # *****************************************************************************************
 
-add_definitions(-DASIO_STANDALONE)
-add_definitions(-DASIO_NO_TYPEID)
-add_definitions(-DASIO_NO_EXCEPTIONS)
-add_definitions(-DASIO_NO_TS_EXECUTORS)
-add_definitions(-DASIO_SEPARATE_COMPILATION)
-add_definitions(-DASIO_NO_DEPRECATED)
-# forward libcxx present
-# we control the visiblity
-add_definitions(-DASIO_DISABLE_VISIBILITY)
-include_directories(third_party/asio/asio/include SYSTEM)
-# both of asio and quiche use std::allocator<void>
-if (MSVC AND NOT USE_LIBCXX)
-  add_definitions(-D_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
-  add_definitions(-D_SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING)
-endif()
 add_library(asio STATIC
   src/core/asio.hpp
   src/core/asio.cpp)
-target_include_directories(asio PRIVATE
+target_include_directories(asio PUBLIC
   src)
+target_include_directories(asio PUBLIC
+  third_party/googleurl/polyfills
+  third_party/asio/asio/include)
+target_compile_definitions(asio PUBLIC ASIO_STANDALONE)
+target_compile_definitions(asio PUBLIC ASIO_NO_TYPEID)
+target_compile_definitions(asio PUBLIC ASIO_NO_EXCEPTIONS)
+target_compile_definitions(asio PUBLIC ASIO_NO_TS_EXECUTORS)
+target_compile_definitions(asio PUBLIC ASIO_SEPARATE_COMPILATION)
+target_compile_definitions(asio PUBLIC ASIO_NO_DEPRECATED)
+# forward libcxx present
+# we control the visiblity
+target_compile_definitions(asio PUBLIC ASIO_DISABLE_VISIBILITY)
+# both of asio and quiche use std::allocator<void>
+if (MSVC AND NOT USE_LIBCXX)
+  target_compile_definitions(asio PUBLIC _SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
+  target_compile_definitions(asio PUBLIC _SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING)
+endif()
 target_link_libraries(asio PUBLIC
+  absl::flags
+  url
   crypto
   ssl)
 
@@ -2119,76 +2330,26 @@ if (USE_SYSTEM_JSON)
   message(STATUS "Compiling with system nlohmann json library")
 else()
   message(STATUS "Compiling with bundled nlohmann json library")
-  include_directories(third_party/json/include SYSTEM)
+  set(SUPPORT_INCLUDE_DIRS
+    third_party/json/include
+    ${SUPPORT_INCLUDE_DIRS}
+  )
 endif()
 
 # *****************************************************************************************
 #           googletest Library
 # *****************************************************************************************
 
-include_directories(third_party/googletest/googletest/include SYSTEM)
-include_directories(third_party/googletest/googlemock/include SYSTEM)
+# for forward declaration
+include_directories(third_party/googletest/googletest/include)
+include_directories(third_party/googletest/googlemock/include)
 if (BUILD_TESTS)
-  # build re2 required by absl
-  set(RE2_SOURCES
-      third_party/re2/re2/bitmap256.cc
-      third_party/re2/re2/bitstate.cc
-      third_party/re2/re2/compile.cc
-      third_party/re2/re2/dfa.cc
-      third_party/re2/re2/filtered_re2.cc
-      third_party/re2/re2/mimics_pcre.cc
-      third_party/re2/re2/nfa.cc
-      third_party/re2/re2/onepass.cc
-      third_party/re2/re2/parse.cc
-      third_party/re2/re2/perl_groups.cc
-      third_party/re2/re2/prefilter.cc
-      third_party/re2/re2/prefilter_tree.cc
-      third_party/re2/re2/prog.cc
-      third_party/re2/re2/re2.cc
-      third_party/re2/re2/regexp.cc
-      third_party/re2/re2/set.cc
-      third_party/re2/re2/simplify.cc
-      third_party/re2/re2/tostring.cc
-      third_party/re2/re2/unicode_casefold.cc
-      third_party/re2/re2/unicode_groups.cc
-      third_party/re2/util/rune.cc
-      third_party/re2/util/strutil.cc
-      )
-
-  set(RE2_HEADERS
-      third_party/re2/re2/filtered_re2.h
-      third_party/re2/re2/re2.h
-      third_party/re2/re2/set.h
-      third_party/re2/re2/stringpiece.h
-      )
-
-  add_library(re2 ${RE2_SOURCES})
-  target_compile_options(re2 PRIVATE -Wno-error)
-  target_include_directories(re2 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/re2)
-
-  set(ABSL_DEPS
-      absl::base
-      absl::core_headers
-      absl::fixed_array
-      absl::flags
-      absl::flat_hash_map
-      absl::flat_hash_set
-      absl::inlined_vector
-      absl::optional
-      absl::span
-      absl::str_format
-      absl::strings
-      absl::synchronization
-      )
-  target_link_libraries(re2 PUBLIC ${ABSL_DEPS})
-  add_library(re2::re2 ALIAS re2)
-
   # Add minimal googletest targets. The provided one has many side-effects, and
   # googletest has a very straightforward build.
   add_library(yass_gtest STATIC
     third_party/googletest/googletest/src/gtest-all.cc
     third_party/googletest/googlemock/src/gmock-all.cc)
-  target_include_directories(yass_gtest PRIVATE
+  target_include_directories(yass_gtest PUBLIC
     third_party/googletest/googletest
     third_party/googletest/googlemock)
 
@@ -2297,8 +2458,8 @@ if (USE_SYSTEM_XXHASH)
   set(SUPPORT_LIBS xxhash ${SUPPORT_LIBS})
 else()
   message(STATUS "Compiling with bundled xxhash")
-  include_directories(third_party/xxhash SYSTEM)
   add_library(xxhash STATIC third_party/xxhash/xxhash.c)
+  target_include_directories(xxhash PUBLIC third_party/xxhash)
 
   if (COMPILER_MSVC)
     target_compile_options(xxhash PRIVATE "/wd4255")
@@ -2321,10 +2482,12 @@ set(protobuf_BUILD_TESTS "OFF" CACHE STRING "")
 set(protobuf_WITH_ZLIB "OFF" CACHE STRING "")
 set(protobuf_BUILD_SHARED_LIBS "OFF" CACHE STRING "")
 add_subdirectory(third_party/protobuf)
-include_directories(third_party/protobuf/src SYSTEM)
 # required because it is not bound with libproto/libproto-lite targets
-add_definitions(-DGOOGLE_PROTOBUF_NO_RTTI=1)
-add_definitions(-DPROTOBUF_USE_EXCEPTIONS=0)
+set(SUPPORT_DEFINITIONS
+  GOOGLE_PROTOBUF_NO_RTTI=1
+  PROTOBUF_USE_EXCEPTIONS=0
+  ${SUPPORT_DEFINITIONS}
+)
 
 # fix protoc's path
 set_target_properties(protoc PROPERTIES
@@ -2362,9 +2525,7 @@ if (USE_SYSTEM_ZLIB)
 else()
   message(STATUS "Compiling with bundled zlib")
   add_subdirectory(third_party/zlib)
-  include_directories(third_party/zlib SYSTEM)
   set(SUPPORT_LIBS zlib ${SUPPORT_LIBS})
-  set(ZLIB_LIBRARIES zlib)
 endif()
 
 # *****************************************************************************************
@@ -2384,13 +2545,19 @@ endif()
 
 if (USE_SYSTEM_CARES AND USE_CARES)
   message(STATUS "Compiling with system cares")
-  add_definitions(-DHAVE_C_ARES)
+  set(SUPPORT_DEFINITIONS
+    HAVE_C_ARES
+    ${SUPPORT_DEFINITIONS}
+  )
   include_directories(${CARES_INCLUDE_DIRS})
   link_directories(${CARES_LIBRARY_DIRS})
   link_libraries(${CARES_LIBRARIES})
 elseif (USE_CARES)
   message(STATUS "Compiling with bundled cares")
-  add_definitions(-DHAVE_C_ARES)
+  set(SUPPORT_DEFINITIONS
+    HAVE_C_ARES
+    ${SUPPORT_DEFINITIONS}
+  )
   set(CARES_BUILD_TOOLS OFF CACHE BOOL "")
   set(CARES_SHARED OFF CACHE BOOL "")
   set(CARES_STATIC ON CACHE BOOL "")
@@ -2398,11 +2565,8 @@ elseif (USE_CARES)
   set(CARES_BUILD_TESTS OFF CACHE BOOL "")
   set(CARES_INSTALL OFF CACHE BOOL "")
   add_subdirectory(third_party/c-ares)
-  include_directories(third_party/c-ares/include SYSTEM)
-  include_directories(${CMAKE_CURRENT_BINARY_DIR}/third_party/c-ares SYSTEM)
 
   set(SUPPORT_LIBS c-ares ${SUPPORT_LIBS})
-  set(CARES_LIBRARIES c-ares)
 endif()
 
 # *****************************************************************************************
@@ -2422,20 +2586,20 @@ endif()
 
 if (USE_SYSTEM_NGHTTP2 AND USE_NGHTTP2)
   message(STATUS "Compiling with system libnghttp2")
-  add_definitions(-DHAVE_NGHTTP2)
+  set(SUPPORT_DEFINITIONS
+    HAVE_NGHTTP2
+    ${SUPPORT_DEFINITIONS}
+  )
   include_directories(${NGHTTP2_INCLUDE_DIRS})
   link_directories(${NGHTTP2_LIBRARY_DIRS})
   link_libraries(${NGHTTP2_LIBRARIES})
 elseif (USE_NGHTTP2)
   message(STATUS "Compiling with bundled libnghttp2")
-  add_definitions(-DHAVE_NGHTTP2)
   set(ENABLE_LIB_ONLY ON CACHE BOOL "")
   set(ENABLE_SHARED_LIB OFF CACHE BOOL "")
   set(ENABLE_STATIC_LIB ON CACHE BOOL "")
   set(ENABLE_DOC OFF CACHE BOOL "")
   set(DISABLE_INSTALL ON CACHE BOOL "")
-  include_directories(third_party/nghttp2/lib/includes SYSTEM)
-  include_directories(${CMAKE_CURRENT_BINARY_DIR}/third_party/nghttp2/lib/includes SYSTEM)
   add_subdirectory(third_party/nghttp2)
   if (COMPILER_CLANG)
     target_compile_options(nghttp2_static PRIVATE -Wno-cast-qual)
@@ -2451,6 +2615,19 @@ elseif (USE_NGHTTP2)
     target_compile_options(nghttp2_static PRIVATE -Wno-covered-switch-default)
   endif()
   set(NGHTTP2_LIBRARIES nghttp2_static)
+  set(SUPPORT_DEFINITIONS
+    HAVE_NGHTTP2
+    ${SUPPORT_DEFINITIONS}
+  )
+  set(SUPPORT_INCLUDE_DIRS
+    third_party/nghttp2/lib/includes
+    ${CMAKE_CURRENT_BINARY_DIR}/third_party/nghttp2/lib/includes
+    ${SUPPORT_INCLUDE_DIRS}
+  )
+  set(SUPPORT_LIBS
+    nghttp2_static
+    ${SUPPORT_LIBS}
+  )
 endif()
 
 # *****************************************************************************************
@@ -2459,15 +2636,11 @@ endif()
 
 # include both of googleurl and quiche
 # TODO:Uncomment the below line out
-add_definitions(-DHAVE_QUICHE)
 add_subdirectory(third_party/quiche)
-include_directories(
-  third_party/googleurl
-  third_party/googleurl/polyfills
-  third_party/quiche/overrides
-  third_party/quiche/src
-  third_party/quiche/src/quiche/common/platform/default
-  SYSTEM)
+set(SUPPORT_DEFINITIONS
+  HAVE_QUICHE
+  ${SUPPORT_DEFINITIONS}
+)
 set(SUPPORT_LIBS url quiche ${SUPPORT_LIBS})
 
 # *****************************************************************************************
@@ -2491,30 +2664,82 @@ elseif(NOT USE_BALSA_HTTP_PARSER)
     third_party/http_parser/http_parser.h
     third_party/http_parser/http_parser.c
     )
-  include_directories(third_party/http_parser SYSTEM)
+  target_include_directories(http_parser PUBLIC third_party/http_parser)
   set(SUPPORT_LIBS http_parser ${SUPPORT_LIBS})
 endif()
 
 if (USE_BALSA_HTTP_PARSER)
   message(STATUS "Compiling with balsa http parser")
-  add_definitions(-DHAVE_BALSA_HTTP_PARSER)
+  set(SUPPORT_DEFINITIONS
+    HAVE_BALSA_HTTP_PARSER
+    ${SUPPORT_DEFINITIONS}
+  )
   set(SUPPORT_LIBS balsa ${SUPPORT_LIBS})
+endif()
+
+# *****************************************************************************************
+#           snappy Library
+# *****************************************************************************************
+
+if (USE_LEVELDB)
+  message(STATUS "Compiling with bundled snappy library")
+  add_subdirectory(third_party/snappy)
+  include_directories(third_party/snappy/src)
+endif()
+
+# *****************************************************************************************
+#           zstd Library
+# *****************************************************************************************
+
+if (USE_LEVELDB)
+  message(STATUS "Compiling with bundled zstd library")
+  set(ZSTD_BUILD_PROGRAMS "OFF" CACHE STRING "")
+  set(ZSTD_BUILD_CONTRIB "OFF" CACHE STRING "")
+  set(ZSTD_BUILD_TESTS "OFF" CACHE STRING "")
+  set(ZSTD_BUILD_STATIC "ON" CACHE STRING "")
+  set(ZSTD_BUILD_SHARED "OFF" CACHE STRING "")
+  set(ZSTD_PROGRAMS_LINK_SHARED "OFF" CACHE STRING "")
+  set(ZSTD_INSTALL "OFF" CACHE STRING "")
+  set(ZSTD_LEGACY_SUPPORT "OFF" CACHE STRING "")
+  add_subdirectory(third_party/zstd/build/cmake)
+  include_directories(third_party/zstd/lib)
 endif()
 
 # *****************************************************************************************
 #           leveldb Library
 # *****************************************************************************************
 
-set(LEVELDB_BUILD_TESTS "OFF" CACHE STRING "")
-set(LEVELDB_BUILD_BENCHMARKS "OFF" CACHE STRING "")
-set(LEVELDB_INSTALL "OFF" CACHE STRING "")
-set(HAVE_CRC32C 0)
-set(HAVE_SNAPPY 0)
-set(HAVE_ZSTD 0) #TODO: linking zstd support
-set(HAVE_TCMALLOC 0)
-add_subdirectory(third_party/leveldb)
-include_directories(third_party/leveldb/include SYSTEM)
-set(SUPPORT_LIBS leveldb ${SUPPORT_LIBS})
+if (USE_LEVELDB)
+  message(STATUS "Compiling with bundled leveldb library")
+  set(LEVELDB_BUILD_UTILS "OFF" CACHE STRING "")
+  set(LEVELDB_BUILD_TESTS "OFF" CACHE STRING "")
+  set(LEVELDB_BUILD_BENCHMARKS "OFF" CACHE STRING "")
+  set(LEVELDB_INSTALL "OFF" CACHE STRING "")
+  set(HAVE_CRC32C 0)
+  set(HAVE_SNAPPY 1)
+  set(HAVE_ZSTD 1)
+  set(HAVE_TCMALLOC 0)
+  add_subdirectory(third_party/leveldb)
+  set(SUPPORT_DEFINITIONS
+    HAVE_LEVELDB
+    ${SUPPORT_DEFINITIONS}
+  )
+  set(SUPPORT_LIBS leveldb ${SUPPORT_LIBS})
+endif()
+
+# *****************************************************************************************
+#           sqlite3 Library
+# *****************************************************************************************
+
+if (USE_SQLITE)
+  message(STATUS "Compiling with bundled sqlite3 library")
+  add_subdirectory(third_party/sqlite)
+  set(SUPPORT_DEFINITIONS
+    HAVE_SQLITE
+    ${SUPPORT_DEFINITIONS}
+  )
+  set(SUPPORT_LIBS sqlite ${SUPPORT_LIBS})
+endif()
 
 # *****************************************************************************************
 #           Compiler warning flags
@@ -2847,11 +3072,11 @@ set(files
     src/core/socks4_request_parser.cpp
     src/core/socks5_request_parser.cpp
     src/core/ss_request_parser.cpp
-    src/core/stringprintf.cpp
     src/core/process_utils.cpp
     src/core/rand_util.cpp
     src/core/logging.cpp
     src/core/utils.cpp
+    src/core/utils_fs.cpp
     src/core/safe_strerror.cpp
     src/core/debug.cpp
     src/core/string_util.cpp
@@ -2860,17 +3085,12 @@ set(files
     src/core/scoped_clear_last_error_win.cpp
     src/core/string_util_constants.cpp
     src/core/ref_counted.cpp
-    src/core/escape.cpp
-    src/core/string_number_conversions.cpp
-    src/core/string_number_conversions_win.cpp
-    src/core/utf_offset_string_conversions.cpp
     src/core/utf_string_conversion_utils.cpp
     src/core/base64.cpp
     src/core/hash.cpp
     src/core/atl_throw.cpp
     src/core/thread_collision_warner.hpp
     src/core/thread_collision_warner.cpp
-    src/core/io_queue.cpp
     src/crypto/aead_base_decrypter.cpp
     src/crypto/aead_base_encrypter.cpp
     src/crypto/aead_evp_decrypter.cpp
@@ -2935,6 +3155,7 @@ set(hfiles
     src/core/rand_util.hpp
     src/core/logging.hpp
     src/core/utils.hpp
+    src/core/utils_fs.hpp
     src/core/safe_strerror.hpp
     src/core/debug.hpp
     src/core/string_util.hpp
@@ -2943,29 +3164,12 @@ set(hfiles
     src/core/atomic_ref_count.hpp
     src/core/gtest_prod_util.hpp
     src/core/ref_counted.hpp
-    src/core/thread_annotations.hpp
-    src/core/clamped_math.hpp
-    src/core/clamped_math_impl.hpp
-    src/core/contains.hpp
-    src/core/escape.hpp
-    src/core/functional/identity.hpp
-    src/core/functional/invoke.hpp
-    src/core/functional/not_fn.hpp
-    src/core/ranges/algorithm.hpp
-    src/core/ranges/functional.hpp
-    src/core/ranges/ranges.hpp
-    src/core/safe_math.hpp
-    src/core/string_number_conversions.hpp
-    src/core/string_number_conversions_internal.hpp
-    src/core/string_number_conversions_win.hpp
-    src/core/utf_offset_string_conversions.hpp
     src/core/utf_string_conversion_utils.hpp
     src/core/hash.hpp
     src/core/base64.hpp
     src/core/cxx20_to_address.hpp
     src/core/atl_throw.hpp
     src/core/atl.hpp
-    src/core/io_queue.hpp
     src/crypto/aead_base_decrypter.hpp
     src/crypto/aead_base_encrypter.hpp
     src/crypto/aead_evp_decrypter.hpp
@@ -3020,14 +3224,27 @@ else()
   list(APPEND files src/core/utils_freebsd.cpp)
 endif()
 
+if (USE_ICU)
+  list(APPEND files src/i18n/icu_util.cpp)
+  list(APPEND hfiles src/i18n/icu_util.hpp)
+endif()
+
 add_library(yass_base STATIC
   ${files} ${hfiles}
   )
 
-target_link_libraries(yass_base PUBLIC asio)
-if (USE_CARES)
-  target_link_libraries(yass_base PUBLIC ${CARES_LIBRARIES})
-endif()
+target_include_directories(yass_base PUBLIC
+  ${SUPPORT_INCLUDE_DIRS})
+
+target_include_directories(yass_base PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+target_include_directories(yass_base PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
+
+target_compile_definitions(yass_base PUBLIC
+  ${SUPPORT_DEFINITIONS})
+
 target_link_libraries(yass_base PUBLIC ${SUPPORT_LIBS})
 
 if (USE_LIBCXX)
@@ -3039,11 +3256,6 @@ if (ANDROID)
   target_link_libraries(yass_base PUBLIC log)
 endif()
 
-target_include_directories(yass_base PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/src)
-
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party SYSTEM)
-
 add_library(yass_cli_lib OBJECT
   src/cli/cli_worker.cpp
   src/cli/cli_connection.cpp
@@ -3053,6 +3265,8 @@ add_library(yass_cli_lib OBJECT
   )
 target_include_directories(yass_cli_lib PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+target_link_libraries(yass_cli_lib PUBLIC yass_base)
 
 if (CLI)
   add_executable(yass_cli
@@ -3092,6 +3306,8 @@ add_library(yass_server_lib OBJECT
   )
 target_include_directories(yass_server_lib PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+target_link_libraries(yass_server_lib PUBLIC yass_base)
 
 if (SERVER)
   add_executable(yass_server
@@ -3164,6 +3380,14 @@ if (GUI)
           )
         list(APPEND SRC_FILES
           ${ASSET_CATALOG})
+        if (USE_ICU)
+          list(APPEND SRC_FILES
+            ${ICU_DATAFILE})
+        endif()
+        if (_CRASHPAD_BINARY)
+          list(APPEND SRC_FILES
+            ${_CRASHPAD_BINARY})
+        endif()
         if (GUI_SANDBOX)
           list(APPEND SRC_FILES
             src/mac/yass.entitlements)
@@ -3413,6 +3637,14 @@ if (GUI)
           MACOSX_PACKAGE_LOCATION "Resources")
         set_source_files_properties("${ASSET_CATALOG}" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")
+        if (USE_ICU)
+          set_source_files_properties("${ICU_DATAFILE}" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
+        endif()
+        if (_CRASHPAD_BINARY)
+          set_source_files_properties("${_CRASHPAD_BINARY}" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
+        endif()
 
         set(APP_MACOSX_BUNDLE_INFO "${CMAKE_CURRENT_BINARY_DIR}/Info.plist")
         configure_file("src/mac/Info.plist.in" "${APP_MACOSX_BUNDLE_INFO}" @ONLY)
@@ -3481,6 +3713,7 @@ if(NOT CMAKE_SKIP_INSTALL_RULES AND GUI)
   file(READ third_party/googleurl/LICENSE                   _GOOGLEURL_LICENSE)
   file(READ third_party/icu/LICENSE                         _ICU_LICENSE)
   file(READ third_party/json/LICENSE.MIT                    _JSON_LICENSE)
+  file(READ third_party/leveldb/LICENSE                     _LEVELDB_LICENSE)
   file(READ third_party/libc++/trunk/LICENSE.TXT            _LIBCXX_LICENSE)
   file(READ third_party/libc++abi/trunk/LICENSE.TXT         _LIBCXXABI_LICENSE)
   file(READ third_party/libunwind/trunk/LICENSE.TXT         _LIBUNWIND_LICENSE)
@@ -3489,6 +3722,10 @@ if(NOT CMAKE_SKIP_INSTALL_RULES AND GUI)
   file(READ third_party/url/third_party/mozilla/LICENSE.txt _MOZILLA_LICENSE)
   file(READ third_party/protobuf/LICENSE                    _PROTOBUF_LICENSE)
   file(READ third_party/quiche/src/LICENSE                  _QUICHE_LICENSE)
+  file(READ third_party/re2/LICENSE                         _RE2_LICENSE)
+  file(READ third_party/snappy/src/COPYING                  _SNAPPY_LICENSE)
+  file(READ third_party/sqlite/LICENSE                      _SQLITE_LICENSE)
+  file(READ third_party/tcmalloc/src/LICENSE                _TCMALLOC_LICENSE)
   file(READ third_party/xxhash/LICENSE                      _XXHASH_LICENSE)
   file(READ third_party/zlib/LICENSE                        _ZLIB_LICENSE)
 
@@ -3511,14 +3748,20 @@ if (BUILD_TESTS)
     src/core/cipher_test.cpp
     src/core/c-ares_test.cpp
     src/core/process_utils_test.cpp
+    src/core/utils_test.cpp
     )
+  if (USE_LEVELDB)
+    target_sources(yass_test PRIVATE third_party/leveldb_test.cc)
+  endif()
+  if (USE_SQLITE)
+    target_sources(yass_test PRIVATE third_party/sqlite/sqlite3_test.cc)
+  endif()
   target_include_directories(yass_test PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src
       ${CMAKE_CURRENT_SOURCE_DIR}/src/cli
       ${CMAKE_CURRENT_SOURCE_DIR}/src/server
       )
   target_link_libraries(yass_test PUBLIC
-      ${SUPPORT_LIBS}
       yass_cli_lib
       yass_server_lib
       yass_gtest
@@ -3559,9 +3802,9 @@ if (BUILD_TESTS)
     endif()
     if (MINGW)
       if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(CURL_MINGW_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/curl-8.2.0_1-win64-mingw")
+        set(CURL_MINGW_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/curl-8.4.0_7-win64-mingw")
       else()
-        set(CURL_MINGW_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/curl-8.2.0_1-win32-mingw")
+        set(CURL_MINGW_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/curl-8.4.0_7-win32-mingw")
       endif()
       if (EXISTS ${CURL_MINGW_DIR}/include/curl/curl.h)
         set(MINGW_CURL_EXIST TRUE)
@@ -3583,7 +3826,7 @@ if (BUILD_TESTS)
   endif()
   if (USE_CURL AND CURL_FOUND)
     target_compile_definitions(yass_test PRIVATE HAVE_CURL)
-    target_include_directories(yass_test PRIVATE ${CURL_INCLUDE_DIRS})
+    target_include_directories(yass_test SYSTEM PRIVATE ${CURL_INCLUDE_DIRS})
     target_compile_options(yass_test PRIVATE ${CURL_CFLAGS} ${CURL_CFLAGS_OTHER})
     target_link_directories(yass_test PRIVATE ${CURL_LIBRARY_DIRS})
     target_link_libraries(yass_test PRIVATE ${CURL_LIBRARIES})
@@ -3602,7 +3845,6 @@ if (BUILD_BENCHMARKS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/server
       )
   target_link_libraries(yass_benchmark PUBLIC
-      ${SUPPORT_LIBS}
       yass_cli_lib
       yass_server_lib
       benchmark::benchmark

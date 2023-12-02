@@ -21,12 +21,12 @@ std::string Base64Encode(const uint8_t* data, size_t length) {
   return output;
 }
 
-void Base64Encode(absl::string_view input, std::string* output) {
+void Base64Encode(std::string_view input, std::string* output) {
   *output = Base64Encode(reinterpret_cast<const uint8_t*>(&*input.begin()),
                          input.size());
 }
 
-bool Base64Decode(absl::string_view input, std::string* output) {
+bool Base64Decode(std::string_view input, std::string* output) {
   std::string temp;
   size_t out_len;
   EVP_DecodedLength(&out_len, input.size());
@@ -45,7 +45,7 @@ bool Base64Decode(absl::string_view input, std::string* output) {
   return true;
 }
 
-absl::optional<std::vector<uint8_t>> Base64Decode(absl::string_view input) {
+absl::optional<std::vector<uint8_t>> Base64Decode(std::string_view input) {
   std::vector<uint8_t> ret;
   size_t out_len;
   EVP_DecodedLength(&out_len, input.size());

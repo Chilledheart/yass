@@ -16,7 +16,7 @@ on:
         required: false
         type: boolean
 env:
-  CACHE_EPOCH: 120
+  CACHE_EPOCH: 121-1
   GOPROXY: direct
 jobs:
   sanitizer-linux:

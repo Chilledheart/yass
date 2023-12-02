@@ -4,19 +4,17 @@
 #ifndef CORE_STRING_UTIL_H
 #define CORE_STRING_UTIL_H
 
-#include <ctype.h>
 #include <stdarg.h>  // va_list
 #include <stddef.h>
 #include <stdint.h>
 
 #include <initializer_list>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
 #include "core/compiler_specific.hpp"
-
-#include <absl/strings/string_view.h>
 
 // C standard-library functions that aren't cross-platform are provided as
 // "...", and their prototypes are listed below. These functions are
@@ -80,7 +78,13 @@ bool IsWprintfFormatPortable(const wchar_t* format);
 // Simplified implementation of C++20's std::basic_string_view(It, End).
 // Reference: https://wg21.link/string.view.cons
 template <typename Iter>
-constexpr absl::string_view MakeStringView(Iter begin, Iter end) {
+constexpr std::string_view MakeStringView(Iter begin, Iter end) {
+  DCHECK_GE(end - begin, 0);
+  return {to_address(begin), static_cast<size_t>(end - begin)};
+}
+
+template <typename Iter>
+constexpr std::wstring_view MakeWStringView(Iter begin, Iter end) {
   DCHECK_GE(end - begin, 0);
   return {to_address(begin), static_cast<size_t>(end - begin)};
 }
@@ -102,10 +106,10 @@ CharT ToUpperASCII(CharT c) {
 }
 
 // Converts the given string to it's ASCII-lowercase equivalent.
-std::string ToLowerASCII(absl::string_view str);
+std::string ToLowerASCII(std::string_view str);
 
 // Converts the given string to it's ASCII-uppercase equivalent.
-std::string ToUpperASCII(absl::string_view str);
+std::string ToUpperASCII(std::string_view str);
 
 // Functor for case-insensitive ASCII comparisons for STL algorithms like
 // std::search.
@@ -130,12 +134,12 @@ struct CaseInsensitiveCompareASCII {
 // (unlike strcasecmp which can return values greater or less than 1/-1). For
 // full Unicode support, use i18n::ToLower or i18h::FoldCase
 // and then just call the normal string operators on the result.
-int CompareCaseInsensitiveASCII(absl::string_view a, absl::string_view b);
+int CompareCaseInsensitiveASCII(std::string_view a, std::string_view b);
 
 // Equality for ASCII case-insensitive comparisons. For full Unicode support,
 // use i18n::ToLower or i18h::FoldCase and then compare with either
 // == or !=.
-bool EqualsCaseInsensitiveASCII(absl::string_view a, absl::string_view b);
+bool EqualsCaseInsensitiveASCII(std::string_view a, std::string_view b);
 
 // These threadsafe functions return references to globally unique empty
 // strings.
@@ -168,8 +172,8 @@ extern const char kUtf8ByteOrderMark[];
 // Removes characters in |remove_chars| from anywhere in |input|.  Returns true
 // if any characters were removed.  |remove_chars| must be null-terminated.
 // NOTE: Safe to use the same variable for both |input| and |output|.
-bool RemoveChars(absl::string_view input,
-                 absl::string_view remove_chars,
+bool RemoveChars(std::string_view input,
+                 std::string_view remove_chars,
                  std::string* output);
 
 // Replaces characters in |replace_chars| from anywhere in |input| with
@@ -177,9 +181,9 @@ bool RemoveChars(absl::string_view input,
 // the |replace_with| string.  Returns true if any characters were replaced.
 // |replace_chars| must be null-terminated.
 // NOTE: Safe to use the same variable for both |input| and |output|.
-bool ReplaceChars(absl::string_view input,
-                  absl::string_view replace_chars,
-                  absl::string_view replace_with,
+bool ReplaceChars(std::string_view input,
+                  std::string_view replace_chars,
+                  std::string_view replace_with,
                   std::string* output);
 
 enum TrimPositions {
@@ -195,27 +199,27 @@ enum TrimPositions {
 //
 // It is safe to use the same variable for both |input| and |output| (this is
 // the normal usage to trim in-place).
-bool TrimString(absl::string_view input,
-                absl::string_view trim_chars,
+bool TrimString(std::string_view input,
+                std::string_view trim_chars,
                 std::string* output);
 
-// absl::string_view versions of the above. The returned pieces refer to the
+// std::string_view versions of the above. The returned pieces refer to the
 // original buffer.
-absl::string_view TrimString(absl::string_view input,
-                             absl::string_view trim_chars,
+std::string_view TrimString(std::string_view input,
+                             std::string_view trim_chars,
                              TrimPositions positions);
 
 // Trims any whitespace from either end of the input string.
 //
-// The absl::string_view versions return a substring referencing the input
+// The std::string_view versions return a substring referencing the input
 // buffer. The ASCII versions look only for ASCII whitespace.
 //
 // The std::string versions return where whitespace was found.
 // NOTE: Safe to use the same variable for both input and output.
-TrimPositions TrimWhitespaceASCII(absl::string_view input,
+TrimPositions TrimWhitespaceASCII(std::string_view input,
                                   TrimPositions positions,
                                   std::string* output);
-absl::string_view TrimWhitespaceASCII(absl::string_view input,
+std::string_view TrimWhitespaceASCII(std::string_view input,
                                       TrimPositions positions);
 
 // Searches for CR or LF characters.  Removes all contiguous whitespace
@@ -226,23 +230,23 @@ absl::string_view TrimWhitespaceASCII(absl::string_view input,
 // (2) If |trim_sequences_with_line_breaks| is true, any other whitespace
 //     sequences containing a CR or LF are trimmed.
 // (3) All other whitespace sequences are converted to single spaces.
-std::string CollapseWhitespaceASCII(absl::string_view text,
+std::string CollapseWhitespaceASCII(std::string_view text,
                                     bool trim_sequences_with_line_breaks);
 
 // Returns true if |input| is empty or contains only characters found in
 // |characters|.
-bool ContainsOnlyChars(absl::string_view input, absl::string_view characters);
+bool ContainsOnlyChars(std::string_view input, std::string_view characters);
 
 // Returns true if |str| is structurally valid UTF-8 and also doesn't
 // contain any non-character code point (e.g. U+10FFFE). Prohibiting
 // non-characters increases the likelihood of detecting non-UTF-8 in
 // real-world text, for callers which do not need to accept
 // non-characters in strings.
-bool IsStringUTF8(absl::string_view str);
+bool IsStringUTF8(std::string_view str);
 
 // Returns true if |str| contains valid UTF-8, allowing non-character
 // code points.
-bool IsStringUTF8AllowingNoncharacters(absl::string_view str);
+bool IsStringUTF8AllowingNoncharacters(std::string_view str);
 
 // Returns true if |str| contains only valid ASCII character values.
 // Note 1: IsStringASCII executes in time determined solely by the
@@ -250,14 +254,18 @@ bool IsStringUTF8AllowingNoncharacters(absl::string_view str);
 // timing attacks for all strings of equal length.
 // Note 2: IsStringASCII assumes the input is likely all ASCII, and
 // does not leave early if it is not the case.
-bool IsStringASCII(absl::string_view str);
+bool IsStringASCII(std::string_view str);
+
+#if defined(WCHAR_T_IS_32_BIT)
+bool IsStringASCII(std::wstring_view str);
+#endif
 
 // Compare the lower-case form of the given string against the given
 // previously-lower-cased ASCII string (typically a constant).
-bool LowerCaseEqualsASCII(absl::string_view str,
-                          absl::string_view lowercase_ascii);
+bool LowerCaseEqualsASCII(std::string_view str,
+                          std::string_view lowercase_ascii);
 bool LowerCaseEqualsASCII(const std::u16string& str,
-                          absl::string_view lowercase_ascii);
+                          std::string_view lowercase_ascii);
 
 // Indicates case sensitivity of comparisons. Only ASCII case insensitivity
 // is supported. Full Unicode case-insensitive conversions would need to go in
@@ -272,11 +280,11 @@ enum class CompareCase {
   INSENSITIVE_ASCII,
 };
 
-bool StartsWith(absl::string_view str,
-                absl::string_view search_for,
+bool StartsWith(std::string_view str,
+                std::string_view search_for,
                 CompareCase case_sensitivity = CompareCase::SENSITIVE);
-bool EndsWith(absl::string_view str,
-              absl::string_view search_for,
+bool EndsWith(std::string_view str,
+              std::string_view search_for,
               CompareCase case_sensitivity = CompareCase::SENSITIVE);
 
 // Determines the type of ASCII character, independent of locale (the C
@@ -326,8 +334,8 @@ bool IsUnicodeWhitespace(wchar_t c);
 // |find_this| with |replace_with|.
 void ReplaceFirstSubstringAfterOffset(std::string* str,
                                       size_t start_offset,
-                                      absl::string_view find_this,
-                                      absl::string_view replace_with);
+                                      std::string_view find_this,
+                                      std::string_view replace_with);
 
 // Starting at |start_offset| (usually 0), look through |str| and replace all
 // instances of |find_this| with |replace_with|.
@@ -337,8 +345,8 @@ void ReplaceFirstSubstringAfterOffset(std::string* str,
 //   std::replace(str.begin(), str.end(), 'a', 'b');
 void ReplaceSubstringsAfterOffset(std::string* str,
                                   size_t start_offset,
-                                  absl::string_view find_this,
-                                  absl::string_view replace_with);
+                                  std::string_view find_this,
+                                  std::string_view replace_with);
 
 // Reserves enough memory in |str| to accommodate |length_with_null| characters,
 // sets the size of |str| to |length_with_null - 1| characters, and returns a
@@ -361,8 +369,8 @@ char16_t* WriteInto(std::u16string* str, size_t length_with_null);
 
 // Explicit initializer_list overloads are required to break ambiguity when used
 // with a literal initializer list (otherwise the compiler would not be able to
-// decide between the string and absl::string_view overloads).
-std::string JoinString(std::initializer_list<absl::string_view> parts,
-                       absl::string_view separator);
+// decide between the string and std::string_view overloads).
+std::string JoinString(std::initializer_list<std::string_view> parts,
+                       std::string_view separator);
 
 #endif  // CORE_STRING_UTIL_H

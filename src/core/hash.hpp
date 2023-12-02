@@ -9,9 +9,8 @@
 
 #include <limits>
 #include <string>
+#include <string_view>
 #include <utility>
-
-#include <absl/strings/string_view.h>
 
 // WARNING: This hash functions should not be used for any cryptographic
 // purpose.
@@ -31,7 +30,7 @@ uint32_t Hash(const std::u16string& str);
 // publicly available.
 // May changed without warning, do not expect stability of outputs.
 size_t FastHash(const uint8_t *data, size_t length);
-inline size_t FastHash(absl::string_view str) {
+inline size_t FastHash(std::string_view str) {
   return FastHash(reinterpret_cast<const uint8_t*>(str.data()), str.size());
 }
 

@@ -30,7 +30,7 @@ on:
   release:
     types: [published]
 env:
-  CACHE_EPOCH: 120
+  CACHE_EPOCH: 121-1
   GOPROXY: direct
 jobs:
   mingw64-release:
@@ -73,8 +73,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            third_party/curl-8.2.0_1-win64-mingw
-            third_party/curl-8.2.0_1-win32-mingw
+            third_party/curl-8.4.0_7-win64-mingw
+            third_party/curl-8.4.0_7-win32-mingw
           key: ${{ runner.os }}-mingw64-curl-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
       - name: "Download dependency: clang, nasm and wixtoolset 3"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
@@ -154,7 +154,7 @@ jobs:
       - name: Populate depedencies (Tests-i686)
         if: ${{ matrix.arch == 'i686' }}
         run: |
-          xcopy /F third_party\curl-8.2.0_1-win32-mingw\bin\libcurl.dll build-mingw
+          xcopy /F third_party\curl-8.4.0_7-win32-mingw\bin\libcurl.dll build-mingw
           # Install vcredist2010
           curl -L -O https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x86.exe
           vcredist_x86.exe /install /quiet /norestart
@@ -162,7 +162,7 @@ jobs:
       - name: Populate depedencies (Tests-x86_64)
         if: ${{ matrix.arch == 'x86_64' }}
         run: |
-          xcopy /F third_party\curl-8.2.0_1-win64-mingw\bin\libcurl-x64.dll build-mingw
+          xcopy /F third_party\curl-8.4.0_7-win64-mingw\bin\libcurl-x64.dll build-mingw
           # Install vcredist2010
           curl -L -O https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x64.exe
           vcredist_x64.exe /install /quiet /norestart

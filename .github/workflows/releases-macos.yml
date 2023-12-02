@@ -30,7 +30,7 @@ on:
   release:
     types: [published]
 env:
-  CACHE_EPOCH: 120
+  CACHE_EPOCH: 121-1
   GOPROXY: direct
 jobs:
   mac-release:
@@ -55,15 +55,29 @@ jobs:
           path: |
             third_party/llvm-build/Release+Asserts
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
-      - name: Cache golang
+      - name: Cache depot_tools
+        id: depot-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            third_party/depot_tools
+          key: ${{ runner.os }}-depot_tools
+      - name: Cache crashpad build stage
+        id: crashpad-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            third_party/crashpad
+          key: ${{ runner.os }}-mac-perarch-crashpad-build-stage-universal-v${{ env.CACHE_EPOCH }}
+      - name: Cache golang (tools only)
         uses: actions/cache@v3
         with:
           path: |
             ~/Library/Caches/go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-tools-${{ hashFiles('tools/go.sum') }}
           restore-keys: |
-            ${{ runner.os }}-go-
+            ${{ runner.os }}-go-tools-
       - name: Build build tool
         run: |
           cd tools
@@ -78,10 +92,23 @@ jobs:
           # brew update
           # brew install ninja cmake p7zip
           brew install ninja
+          # pin to old python for distutils (python 3.12 removed it)
+          brew install python@3.11
+          brew unlink python@3.11
+          brew unlink python@3.12
+          brew link --force --overwrite python@3.11
+          ln -sf $(brew --prefix)/opt/python@3.11/libexec/bin/python /usr/local/bin/python
+          ln -sf $(brew --prefix)/opt/python@3.11/libexec/bin/python /usr/local/bin/python3
       - name: Set clang environment
         run: |
           echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
           echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
+      - name: Download and Build Crashpad (include depot_tools)
+        if: ${{ steps.depot-cache.outputs.cache-hit != 'true' || steps.crashpad-cache.outputs.cache-hit != 'true' }}
+        shell: bash
+        run: |
+          WITH_CPU=x64 ./scripts/build-crashpad.sh
+          WITH_CPU=arm64 ./scripts/build-crashpad.sh
       - name: Build
         run: |
           ./tools/build -build-benchmark -build-test

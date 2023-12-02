@@ -33,7 +33,7 @@ defaults:
   run:
     shell: cmd
 env:
-  CACHE_EPOCH: 120
+  CACHE_EPOCH: 121-1
   GOPROXY: direct
 jobs:
   windows-release:
@@ -70,15 +70,29 @@ jobs:
             third_party/libcurl-vc16-x64-release-static-ipv6-sspi-schannel
             third_party/libcurl-vc16-x86-release-static-ipv6-sspi-schannel
           key: ${{ runner.os }}-msvc-curl-vc16-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
-      - name: Cache golang
+      - name: Cache depot_tools
+        id: depot-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            third_party/depot_tools
+          key: ${{ runner.os }}-depot_tools
+      - name: Cache crashpad build stage
+        id: crashpad-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            third_party/crashpad
+          key: ${{ runner.os }}-msvc-perarch-crashpad-build-stage-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
+      - name: Cache golang (tools only)
         uses: actions/cache@v3
         with:
           path: |
             %LocalAppData%\go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-tools-${{ hashFiles('tools/go.sum') }}
           restore-keys: |
-            ${{ runner.os }}-go-
+            ${{ runner.os }}-go-tools-
       - name: Build build tool
         run: |
           cd tools
@@ -91,6 +105,11 @@ jobs:
         if: ${{ steps.curl-cache.outputs.cache-hit != 'true' }}
         run: |
           scripts\download-curl-msvc.bat ${{ matrix.arch }}
+      - name: Download and Build Crashpad (include depot_tools)
+        if: ${{ steps.depot-cache.outputs.cache-hit != 'true' || steps.crashpad-cache.outputs.cache-hit != 'true' }}
+        shell: bash
+        run: |
+          WITH_CPU=${{ matrix.arch }} ./scripts/build-crashpad.sh
       - name: Build
         run: |
           set VCToolsVersion=14.29

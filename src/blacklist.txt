@@ -3,3 +3,5 @@ fun:session_predicate_request_headers_send
 src:*/ares__sortaddrinfo.c
 src:*/third_party/boringssl/src/crypto/*
 src:*/third_party/boringssl/src/pki/*
+src:*/third_party/sqlite/src/*
+src:*/third_party/libc\+\+/trunk/src/filesystem/file_descriptor.h

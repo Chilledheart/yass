@@ -22,7 +22,6 @@ struct CipherMethodFlag {
 };
 
 ABSL_DECLARE_FLAG(bool, ipv6_mode);
-ABSL_DECLARE_FLAG(bool, io_queue_allow_merge);
 
 ABSL_DECLARE_FLAG(std::string, server_host);
 ABSL_DECLARE_FLAG(int32_t, server_port);

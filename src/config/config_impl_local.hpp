@@ -22,55 +22,10 @@
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
+#include "core/utils_fs.hpp"
 
 using json = nlohmann::json;
-
-namespace {
-
-#ifdef _WIN32
-bool IsDirectory(const std::string& path) {
-  if (path == "." || path == "..") {
-    return true;
-  }
-  DWORD dwAttrib = GetFileAttributesA(path.c_str());
-  return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
-           (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
-}
-
-bool CreatePrivateDirectory(const std::string& path) {
-  return CreateDirectoryA(path.c_str(), nullptr);
-}
-
-bool EnsureCreatedDirectory(const std::string& path) {
-  if (!IsDirectory(path) && !CreatePrivateDirectory(path)) {
-    return false;
-  }
-  return true;
-}
-#else
-bool IsDirectory(const std::string& path) {
-  if (path == "." || path == "..") {
-    return true;
-  }
-  struct stat Stat {};
-  if (::stat(path.c_str(), &Stat) != 0) {
-    return false;
-  }
-  return S_ISDIR(Stat.st_mode);
-}
-
-bool CreatePrivateDirectory(const std::string& path) {
-  return ::mkdir(path.c_str(), 0700) == 0;
-}
-
-bool EnsureCreatedDirectory(const std::string& path) {
-  if (!IsDirectory(path) && !CreatePrivateDirectory(path)) {
-    return false;
-  }
-  return true;
-}
-#endif
-}  // anonymous namespace
+using namespace yass;
 
 namespace config {
 
@@ -117,8 +72,8 @@ class ConfigImplLocal : public ConfigImpl {
 
     auto dir_ref = Dirname(path_);
     std::string dir(dir_ref.data(), dir_ref.size());
-    if (!EnsureCreatedDirectory(dir)) {
-      LOG(WARNING) << "configure dir could not create: " << dir;
+    if (!CreateDirectories(dir)) {
+      PLOG(WARNING) << "configure dir could not create: " << dir;
       return false;
     }
 
@@ -192,7 +147,7 @@ class ConfigImplLocal : public ConfigImpl {
     return false;
   }
 
-  bool WriteImpl(const std::string& key, absl::string_view value) override {
+  bool WriteImpl(const std::string& key, std::string_view value) override {
     root_[key] = std::string(value.data(), value.size());
     return true;
   }

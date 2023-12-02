@@ -873,8 +873,14 @@ std::string Utils::GetLocalAddr() {
   auto addr = asio::ip::make_address(local_host.c_str(), ec);
   bool host_is_ip_address = !ec;
   if (host_is_ip_address && addr.is_v6()) {
+    if (addr.is_unspecified()) {
+      local_host = "::1";
+    }
     ss << "http://[" << local_host << "]:" << local_port;
   } else {
+    if (host_is_ip_address && addr.is_unspecified()) {
+      local_host = "127.0.0.1";
+    }
     ss << "http://" << local_host << ":" << local_port;
   }
   return ss.str();
@@ -933,9 +939,7 @@ bool QuerySystemProxy(bool *enabled,
       return false;
     }
   }
-  if (options[0].Value.dwValue & PROXY_TYPE_PROXY) {
-    *enabled = true;
-  }
+  *enabled = !!(options[0].Value.dwValue & PROXY_TYPE_PROXY);
   if (options[1].Value.pszValue) {
     auto temp = options[1].Value.pszValue;
     *server_addr = temp ? SysWideToUTF8(temp) : std::string();

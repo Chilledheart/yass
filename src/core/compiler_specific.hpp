@@ -607,10 +607,6 @@ class NoDestructor {
 #endif  // defined(LEAK_SANITIZER)
 };
 
-#if defined(NDEBUG) && !defined(DCHECK_ALWAYS_ON)
-#define DCHECK_IS_ON() false
-#else
-#define DCHECK_IS_ON() true
-#endif
+#include <base/dcheck_is_on.h>
 
 #endif  // CORE_COMPILER_SPECIFIC_H

@@ -28,7 +28,7 @@ on:
     - '.circleci/**'
     - '.cirrus.yml'
 env:
-  CACHE_EPOCH: 120
+  CACHE_EPOCH: 121-1
   GOPROXY: direct
 jobs:
   win-compiler-compatible-2022:
@@ -158,8 +158,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            third_party/curl-8.2.0_1-win64-mingw
-            third_party/curl-8.2.0_1-win32-mingw
+            third_party/curl-8.4.0_7-win64-mingw
+            third_party/curl-8.4.0_7-win32-mingw
           key: ${{ runner.os }}-mingw64-curl-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
         uses: actions/cache@v3
@@ -191,10 +191,10 @@ jobs:
         if: ${{ steps.curl-cache.outputs.cache-hit != 'true' }}
         run: |
           cd third_party
-          curl -L -O https://curl.se/windows/dl-8.2.0_1/curl-8.2.0_1-win64-mingw.zip
-          7z x curl-8.2.0_1-win64-mingw.zip -aoa
-          curl -L -O https://curl.se/windows/dl-8.2.0_1/curl-8.2.0_1-win32-mingw.zip
-          7z x curl-8.2.0_1-win32-mingw.zip -aoa
+          curl -L -O https://curl.se/windows/dl-8.4.0_7/curl-8.4.0_7-win64-mingw.zip
+          7z x curl-8.4.0_7-win64-mingw.zip -aoa
+          curl -L -O https://curl.se/windows/dl-8.4.0_7/curl-8.4.0_7-win32-mingw.zip
+          7z x curl-8.4.0_7-win32-mingw.zip -aoa
           rm -vf curl*.zip
       - name: Populate llvm-mingw
         run: |
@@ -277,14 +277,14 @@ jobs:
           cd build-mingw
           cmake -G Ninja -DGUI=on -DBUILD_TESTS=on .. \
             -DCMAKE_TOOLCHAIN_FILE="$PWD/../MinGW.cmake" -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DCROSS_TOOLCHAIN_FLAGS_NATIVE=\"-DCMAKE_TOOLCHAIN_FILE=$PWD/../Native.cmake\" \
+            -DCROSS_TOOLCHAIN_FLAGS_TOOLCHAIN_FILE=\"$PWD/../Native.cmake\" \
             ${{ env.CMAKE_OPTIONS }}
           ninja yass yass_test
       - name: Populate depedencies (Tests-i686)
         if: ${{ matrix.arch == 'i686' }}
         run: |
           # copy curl dll required by yass_test
-          cp -v third_party/curl-8.2.0_1-win32-mingw/bin/libcurl.dll build-mingw
+          cp -v third_party/curl-8.4.0_7-win32-mingw/bin/libcurl.dll build-mingw
           # fix for missing i386 deb packages from deb.sury.org repository
           sudo add-apt-repository ppa:ondrej/php
           # alternative fix is to downgrade overloaded libpcre2 versions with five locally installed packages which are PHP-related and came from deb.sury.org repository.
@@ -294,7 +294,7 @@ jobs:
         if: ${{ matrix.arch == 'x86_64' }}
         run: |
           # copy curl dll required by yass_test
-          cp -v third_party/curl-8.2.0_1-win64-mingw/bin/libcurl-x64.dll build-mingw
+          cp -v third_party/curl-8.4.0_7-win64-mingw/bin/libcurl-x64.dll build-mingw
           sudo apt-get update -qq && sudo apt-get install -y wine wine64
       - name: Run tests
         run: |

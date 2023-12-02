@@ -35,6 +35,7 @@
 #include "core/logging.hpp"
 #include "crypto/crypter_export.hpp"
 #include "version.h"
+#include "i18n/icu_util.hpp"
 
 ABSL_FLAG(std::string, user, "", "set non-privileged user for worker");
 ABSL_FLAG(std::string, group, "", "set non-privileged group for worker");
@@ -78,7 +79,12 @@ int main(int argc, const char* argv[]) {
   config::ReadConfigFileOption(argc, argv);
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
-  IoQueue::set_allow_merge(absl::GetFlag(FLAGS_io_queue_allow_merge));
+
+#ifdef HAVE_ICU
+  if (!InitializeICU()) {
+    LOG(WARNING) << "Failed to initialize icu component";
+  }
+#endif
 
 #ifdef _WIN32
   int iResult = 0;
@@ -177,7 +183,18 @@ int main(int argc, const char* argv[]) {
 #ifdef SIGQUIT
   signals.add(SIGQUIT, ec);
 #endif
-  signals.async_wait([&](asio::error_code /*ec*/, int signal_number) {
+#ifdef HAVE_TCMALLOC
+  signals.add(SIGUSR1, ec);
+#endif
+  std::function<void(asio::error_code, int)> cb;
+  cb = [&](asio::error_code /*ec*/, int signal_number) {
+#ifdef HAVE_TCMALLOC
+    if (signal_number == SIGUSR1) {
+      PrintTcmallocStats();
+      signals.async_wait(cb);
+      return;
+    }
+#endif
 #ifdef SIGQUIT
     if (signal_number == SIGQUIT) {
       LOG(WARNING) << "Application shuting down";
@@ -191,7 +208,8 @@ int main(int argc, const char* argv[]) {
 #endif
     work_guard.reset();
     signals.clear();
-  });
+  };
+  signals.async_wait(cb);
 
 #ifdef SIGPIPE
   signal(SIGPIPE, SIG_IGN);

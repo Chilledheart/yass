@@ -303,8 +303,7 @@ int DarwinMajorVersionInternal() {
   int darwin_major_version = 0;
   char* dot = strchr(uname_info.release, '.');
   if (dot) {
-    auto ver = StringToInteger(
-        absl::string_view(uname_info.release, dot - uname_info.release));
+    auto ver = StringToInteger(std::string(uname_info.release, dot - uname_info.release));
 
     if (!ver.ok()) {
       dot = nullptr;
@@ -404,9 +403,9 @@ bool ParseModelIdentifier(const std::string& ident,
   if (comma_loc == std::string::npos)
     return false;
   auto major_tmp = StringToInteger(
-      absl::string_view(ident.c_str() + number_loc, comma_loc - number_loc));
+      std::string(ident.c_str() + number_loc, comma_loc - number_loc));
   auto minor_tmp =
-      StringToInteger(absl::string_view(ident.c_str() + comma_loc + 1));
+      StringToInteger(std::string(ident.c_str() + comma_loc + 1));
   if (!major_tmp.ok() || !minor_tmp.ok())
     return false;
   *type = ident.substr(0, number_loc);
@@ -446,6 +445,22 @@ std::string GetPlatformSerialNumber() {
   return SysCFStringRefToUTF8(serial_number_cfstring);
 }
 
+static std::string GetLocalAddr() {
+  auto local_host = absl::GetFlag(FLAGS_local_host);
+
+  asio::error_code ec;
+  auto addr = asio::ip::make_address(local_host.c_str(), ec);
+  bool host_is_ip_address = !ec;
+  if (host_is_ip_address && addr.is_unspecified()) {
+    if (addr.is_v6()) {
+      local_host = "::1";
+    } else {
+      local_host = "127.0.0.1";
+    }
+  }
+  return local_host;
+}
+
 bool GetSystemProxy() {
   bool enabled;
   std::string server_addr, bypass_addr;
@@ -454,7 +469,7 @@ bool GetSystemProxy() {
   if (!QuerySystemProxy(&enabled, &server_addr, &server_port, &bypass_addr)) {
     return false;
   }
-  auto local_host = absl::GetFlag(FLAGS_local_host);
+  auto local_host = GetLocalAddr();
   auto local_port = absl::GetFlag(FLAGS_local_port);
   return enabled && local_host == server_addr && local_port == server_port;
 }
@@ -466,7 +481,7 @@ bool SetSystemProxy(bool on) {
 
   ::QuerySystemProxy(&enabled, &server_addr, &server_port, &bypass_addr);
   if (on) {
-    server_addr = absl::GetFlag(FLAGS_local_host);
+    server_addr = GetLocalAddr();
     server_port = absl::GetFlag(FLAGS_local_port);
   }
   return ::SetSystemProxy(on, server_addr, server_port, bypass_addr);

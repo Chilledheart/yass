@@ -42,6 +42,8 @@ Section "Yet Another Shadow Socket"
     CreateShortcut "$SMPROGRAMS\YASS Uninstall.lnk" "$INSTDIR\uninstall.exe"
 
     File "yass.exe"
+    File /nonfatal "crashpad_handler.exe"
+    File /nonfatal "icudtl.dat"
     File /r "LICENSE*"
 
 SectionEnd

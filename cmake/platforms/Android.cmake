@@ -16,3 +16,9 @@ set(CMAKE_RANLIB "${LLVM_SYSROOT}/bin/llvm-ranlib" CACHE FILEPATH "")
 set(CMAKE_CXX_COMPILER_RANLIB "${LLVM_SYSROOT}/bin/llvm-ranlib" CACHE FILEPATH "")
 
 set(CMAKE_SYSROOT "${CMAKE_CURRENT_SOURCE_DIR}/third_party/android_toolchain/toolchains/llvm/prebuilt/linux-x86_64/sysroot" CACHE STRING "")
+
+# set CMAKE_ANDROID_STL_TYPE to none manually
+# following /usr/share/cmake/Modules/Platform/Android-Common.cmake
+set(CMAKE_CXX_COMPILE_OBJECT
+  "<CMAKE_CXX_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -o <OBJECT> -c <SOURCE> -nostdinc++")
+string(APPEND CMAKE_CXX_STANDARD_LIBRARIES " -nostdlib++")

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022-2023 Chilledheart  */
+/* Copyright (c) 2022 Chilledheart  */
 
 #import <Cocoa/Cocoa.h>
 
@@ -14,13 +14,15 @@
 #include <absl/flags/parse.h>
 #include <absl/flags/usage.h>
 #include <absl/strings/str_cat.h>
+#include <openssl/crypto.h>
 
 #include "config/config.hpp"
-#include "core/io_queue.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
 #include "version.h"
+#include "crashpad_helper.hpp"
+#include "i18n/icu_util.hpp"
 
 #if defined(ARCH_CPU_X86_64)
 // This is for https://crbug.com/1300598, and more generally,
@@ -49,8 +51,12 @@ int main(int argc, const char** argv) {
   }
 
   absl::InitializeSymbolizer(exec_path.c_str());
+#ifdef HAVE_CRASHPAD
+  CHECK(InitializeCrashpad(exec_path));
+#else
   absl::FailureSignalHandlerOptions failure_handle_options;
   absl::InstallFailureSignalHandler(failure_handle_options);
+#endif
 
   absl::SetProgramUsageMessage(
       absl::StrCat("Usage: ", Basename(exec_path), " [options ...]\n",
@@ -65,11 +71,20 @@ int main(int argc, const char** argv) {
   config::ReadConfigFileOption(argc, argv);
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
-  IoQueue::set_allow_merge(absl::GetFlag(FLAGS_io_queue_allow_merge));
 
+#if 0
   if (!MemoryLockAll()) {
     LOG(WARNING) << "Failed to set memory lock";
   }
+#endif
+
+#ifdef HAVE_ICU
+  if (!InitializeICU()) {
+    LOG(WARNING) << "Failed to initialize icu component";
+  }
+#endif
+
+  CRYPTO_library_init();
 
   return NSApplicationMain(argc, argv);
 }

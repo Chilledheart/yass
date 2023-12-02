@@ -10,11 +10,6 @@
 
 class IoQueue {
   using T = std::shared_ptr<IOBuf>;
-  using PooledT = std::vector<T>;
-
- private:
-  static bool g_allow_merge_;
-
  public:
   IoQueue() {}
   IoQueue(const IoQueue&) = default;
@@ -30,48 +25,8 @@ class IoQueue {
     CHECK_NE(end_idx_, idx_) << "IO queue is full";
   }
 
-  void push_back(const char* data, size_t length, PooledT *pool) {
-    std::shared_ptr<IOBuf> buf;
-    if (pool && !pool->empty()) {
-      buf = pool->back();
-      pool->pop_back();
-      buf->clear();
-      buf->reserve(0, length);
-      memcpy(buf->mutable_tail(), data, length);
-      buf->append(length);
-    } else {
-      buf = IOBuf::copyBuffer(data, length);
-    }
-    push_back(buf);
-  }
-
-  bool push_back_merged(T buf, PooledT *pool) {
-    DCHECK(!buf->empty());
-    if (!g_allow_merge_ || empty() || (this->length() == 1 && dirty_front_)) {
-      push_back(buf);
-      return false;
-    }
-    auto prev_buf = queue_[(end_idx_ + queue_.size() - 1) % queue_.size()];
-    prev_buf->reserve(0, buf->length());
-    memcpy(prev_buf->mutable_tail(), buf->data(), buf->length());
-    prev_buf->append(buf->length());
-    if (pool && pool->size() < 32U) {
-      pool->push_back(buf);
-    }
-    return true;
-  }
-
-  void push_back_merged(const char* data, size_t length, PooledT *pool) {
-    DCHECK(data && length);
-    // if empty or the only buffer is dirty
-    if (!g_allow_merge_ || empty() || (this->length() == 1 && dirty_front_)) {
-      push_back(data, length, pool);
-      return;
-    }
-    auto prev_buf = queue_[(end_idx_ + queue_.size() - 1) % queue_.size()];
-    prev_buf->reserve(0, length);
-    memcpy(prev_buf->mutable_tail(), data, length);
-    prev_buf->append(length);
+  void push_back(const char* data, size_t length) {
+    push_back(IOBuf::copyBuffer(data, length));
   }
 
   T front() {
@@ -104,11 +59,6 @@ class IoQueue {
     for (int i = idx_; i != end_idx_; i = (i+1) % queue_.size())
       ret += queue_[i]->length();
     return ret;
-  }
-
- public:
-  static void set_allow_merge(bool on) {
-    g_allow_merge_ = on;
   }
 
  private:

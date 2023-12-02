@@ -582,6 +582,12 @@ LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam,
       UpdateNotificationIcon(mFrame->m_hWnd, mFrame->m_hInstance,
                              /*isShow*/ wParam == TRUE);
       return DefWindowProc(hWnd, msg, wParam, lParam);
+    case WM_SIZE:
+      if (hWnd == mFrame->m_hWnd && wParam == SIZE_MINIMIZED) {
+        ShowWindow(mFrame->m_hWnd, SW_HIDE);
+      }
+      return DefWindowProc(hWnd, msg, wParam, lParam);
+      break;
     case WM_CLOSE:
       mFrame->OnClose();
       break;
@@ -644,7 +650,24 @@ LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam,
           // directly.
           {
             bool isShow = IsWindowVisible(mFrame->m_hWnd);
-            ShowWindow(mFrame->m_hWnd, isShow ? SW_HIDE : SW_SHOW);
+            if (!isShow) {
+              HWND first_wnd = mFrame->m_hWnd;
+              HWND popup_wnd = GetLastActivePopup(first_wnd);
+              SetForegroundWindow(popup_wnd);
+              if (!IsWindowVisible(popup_wnd))
+                ShowWindow(popup_wnd, SW_SHOW);
+              if (IsIconic(popup_wnd))
+                ShowWindow(popup_wnd, SW_SHOWNORMAL);
+              if (first_wnd != popup_wnd)
+                SetForegroundWindow(popup_wnd);
+            } else {
+              HWND first_wnd = mFrame->m_hWnd;
+              HWND popup_wnd = GetLastActivePopup(first_wnd);
+              if (first_wnd != popup_wnd) {
+                ShowWindow(popup_wnd, SW_HIDE);
+              }
+              ShowWindow(first_wnd, SW_HIDE);
+            }
           }
           break;
 
@@ -719,7 +742,7 @@ std::wstring CYassFrame::GetStatusMessage() {
   }
   uint64_t sync_time = GetMonotonicTime();
   uint64_t delta_time = sync_time - last_sync_time_;
-  if (delta_time > NS_PER_SECOND / 10) {
+  if (delta_time > NS_PER_SECOND) {
     uint64_t rx_bytes = cli::total_rx_bytes;
     uint64_t tx_bytes = cli::total_tx_bytes;
     rx_rate_ = static_cast<double>(rx_bytes - last_rx_bytes_) /

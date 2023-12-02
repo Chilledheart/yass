@@ -111,9 +111,6 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
   chunks_.front()->trimStart(payload_length);
 
   if (chunks_.front()->empty()) {
-    if (connection_->downstream_pool_.size() < 32U) {
-      connection_->downstream_pool_.push_back(chunks_.front());
-    }
     chunks_.pop_front();
   }
 
@@ -252,10 +249,10 @@ void ServerConnection::Start() {
   } else {
     encoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
       absl::GetFlag(FLAGS_method).method,
-      this, nullptr, true);
+      this, true);
     decoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
       absl::GetFlag(FLAGS_method).method,
-      this, nullptr);
+      this);
     ReadHandshake();
   }
 }
@@ -273,7 +270,7 @@ void ServerConnection::SendIfNotProcessing() {
 //
 bool ServerConnection::on_received_data(std::shared_ptr<IOBuf> buf) {
   if (state_ == state_stream) {
-    upstream_.push_back_merged(buf, &upstream_pool_);
+    upstream_.push_back(buf);
   } else if (state_ == state_handshake) {
     if (handshake_) {
       handshake_->reserve(0, buf->length());
@@ -299,7 +296,7 @@ void ServerConnection::on_protocol_error() {
 //
 
 int64_t ServerConnection::OnReadyToSend(absl::string_view serialized) {
-  downstream_.push_back_merged(serialized.data(), serialized.size(), &downstream_pool_);
+  downstream_.push_back(serialized.data(), serialized.size());
   return serialized.size();
 }
 
@@ -445,17 +442,17 @@ bool ServerConnection::OnDataForStream(StreamId stream_id,
         return true;
       }
       DCHECK(buf);
-      upstream_.push_back_merged(buf, &upstream_pool_);
+      upstream_.push_back(buf);
       ++num_padding_recv_;
     }
     // Deal with in_middle_buf outside paddings
     if (num_padding_recv_ >= kFirstPaddings && !padding_in_middle_buf_->empty()) {
-      upstream_.push_back_merged(std::move(padding_in_middle_buf_), &upstream_pool_);
+      upstream_.push_back(std::move(padding_in_middle_buf_));
     }
     return true;
   }
 
-  upstream_.push_back_merged(data.data(), data.size(), &upstream_pool_);
+  upstream_.push_back(data.data(), data.size());
   adapter_->MarkDataConsumedForStream(stream_id, data.size());
   return true;
 }
@@ -767,9 +764,6 @@ void ServerConnection::WriteStreamInPipe() {
     wbytes_transferred += written;
     // continue to resume
     if (buf->empty()) {
-      if (downstream_pool_.size() < 32U) {
-        downstream_pool_.push_back(buf);
-      }
       downstream_.pop_front();
     }
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
@@ -848,16 +842,7 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code &
     return nullptr;
   }
 
-  std::shared_ptr<IOBuf> buf;
-  if (LIKELY(!downstream_pool_.empty())) {
-    buf = downstream_pool_.back();
-    downstream_pool_.pop_back();
-    buf->clear();
-    buf->reserve(0, SOCKET_BUF_SIZE);
-  } else {
-    buf = IOBuf::create(SOCKET_BUF_SIZE);
-  }
-  buf->fake_capacity(SOCKET_BUF_SIZE);
+  std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
   size_t read;
   do {
     ec = asio::error_code();
@@ -892,12 +877,9 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code &
     }
     data_frame_->AddChunk(buf);
   } else if (downlink_->https_fallback()) {
-    downstream_.push_back_merged(buf, &downstream_pool_);
+    downstream_.push_back(buf);
   } else {
     EncryptData(&downstream_, buf);
-    if (downstream_pool_.size() < 32U) {
-      downstream_pool_.push_back(buf);
-    }
   }
 
 out:
@@ -966,9 +948,6 @@ void ServerConnection::WriteUpstreamInPipe() {
             << " ec: " << ec;
     // continue to resume
     if (buf->empty()) {
-      if (upstream_pool_.size() < 32U) {
-        upstream_pool_.push_back(buf);
-      }
       upstream_.pop_front();
     }
     if (ec) {
@@ -1021,15 +1000,7 @@ try_again:
     ec = asio::error::eof;
     return nullptr;
   }
-  std::shared_ptr<IOBuf> buf;
-  if (LIKELY(!upstream_pool_.empty())) {
-    buf = upstream_pool_.back();
-    upstream_pool_.pop_back();
-    buf->clear();
-    buf->reserve(0, SOCKET_DEBUF_SIZE);
-  } else {
-    buf = IOBuf::create(SOCKET_DEBUF_SIZE);
-  }
+  std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_DEBUF_SIZE);
   size_t read;
   do {
     read = downlink_->read_some(buf, ec);
@@ -1065,20 +1036,14 @@ try_again:
       }
       remaining_buffer = remaining_buffer.substr(result);
     }
-    if (upstream_pool_.size() < 32U) {
-      upstream_pool_.push_back(buf);
-    }
     // not enough buffer for recv window
     if (upstream_.byte_length() < H2_STREAM_WINDOW_SIZE) {
       goto try_again;
     }
   } else if (downlink_->https_fallback()) {
-    upstream_.push_back_merged(buf, &upstream_pool_);
+    upstream_.push_back(buf);
   } else {
     decoder_->process_bytes(buf);
-    if (upstream_pool_.size() < 32U) {
-      upstream_pool_.push_back(buf);
-    }
   }
 
 out:
@@ -1314,7 +1279,7 @@ void ServerConnection::OnDownstreamWriteFlush() {
 
 void ServerConnection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf && !buf->empty()) {
-    downstream_.push_back_merged(buf, &downstream_pool_);
+    downstream_.push_back(buf);
   }
 
   if (!downstream_.empty() && !write_inprogress_) {
@@ -1328,7 +1293,7 @@ void ServerConnection::OnUpstreamWriteFlush() {
 
 void ServerConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf && !buf->empty()) {
-    upstream_.push_back_merged(buf, nullptr);
+    upstream_.push_back(buf);
   }
   if (!upstream_.empty() && upstream_writable_) {
     upstream_writable_ = false;

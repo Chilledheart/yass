@@ -58,22 +58,22 @@ class HttpRequestParser : public quiche::BalsaVisitorInterface {
  protected:
   // quiche::BalsaVisitorInterface implementation
   // TODO(bnc): Encapsulate in a private object.
-  void OnRawBodyInput(absl::string_view input) override;
-  void OnBodyChunkInput(absl::string_view input) override;
-  void OnHeaderInput(absl::string_view input) override;
-  void OnHeader(absl::string_view key, absl::string_view value) override;
-  void OnTrailerInput(absl::string_view input) override;
+  void OnRawBodyInput(std::string_view input) override;
+  void OnBodyChunkInput(std::string_view input) override;
+  void OnHeaderInput(std::string_view input) override;
+  void OnHeader(std::string_view key, std::string_view value) override;
+  void OnTrailerInput(std::string_view input) override;
   void ProcessHeaders(const quiche::BalsaHeaders& headers) override;
   void ProcessTrailers(const quiche::BalsaHeaders& trailer) override;
   void OnTrailers(std::unique_ptr<quiche::BalsaHeaders> trailers) override;
-  void OnRequestFirstLineInput(absl::string_view line_input, absl::string_view method_input,
-                               absl::string_view request_uri,
-                               absl::string_view version_input) override;
-  void OnResponseFirstLineInput(absl::string_view line_input, absl::string_view version_input,
-                                absl::string_view status_input,
-                                absl::string_view reason_input) override;
+  void OnRequestFirstLineInput(std::string_view line_input, std::string_view method_input,
+                               std::string_view request_uri,
+                               std::string_view version_input) override;
+  void OnResponseFirstLineInput(std::string_view line_input, std::string_view version_input,
+                                std::string_view status_input,
+                                std::string_view reason_input) override;
   void OnChunkLength(size_t chunk_length) override;
-  void OnChunkExtensionInput(absl::string_view input) override;
+  void OnChunkExtensionInput(std::string_view input) override;
   void OnInterimHeaders(std::unique_ptr<quiche::BalsaHeaders> header) override;
   void HeaderDone() override;
   void ContinueHeaderDone() override;
@@ -102,7 +102,7 @@ class HttpRequestParser : public quiche::BalsaVisitorInterface {
   ParserStatus status_ = ParserStatus::Ok;
   int status_code_ = 0;
   // An error message, often seemingly arbitrary to match http-parser behavior.
-  absl::string_view error_message_;
+  std::string_view error_message_;
 };
 
 class HttpResponseParser : public HttpRequestParser {

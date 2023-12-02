@@ -3,6 +3,7 @@
 
 #include "core/utils.hpp"
 
+#include "base/strings/string_number_conversions.h"
 #include "config/config.hpp"
 
 #ifndef _WIN32
@@ -15,19 +16,50 @@
 #endif
 
 #include <absl/flags/internal/program_name.h>
+#include <absl/strings/str_cat.h>
 
-absl::StatusOr<int32_t> StringToInteger(absl::string_view value) {
-  long result = 0;
-  char* endptr = nullptr;
-  result = strtol(value.data(), &endptr, 10);
-  if (result > INT32_MAX || (errno == ERANGE && result == LONG_MAX)) {
-    return absl::InvalidArgumentError("overflow");
-  } else if (result < INT_MIN || (errno == ERANGE && result == LONG_MIN)) {
-    return absl::InvalidArgumentError("underflow");
-  } else if (endptr > value.end()) {
-    return absl::InvalidArgumentError("bad integer");
+#ifdef HAVE_TCMALLOC
+#include <tcmalloc/malloc_extension.h>
+#endif
+
+absl::StatusOr<int> StringToInteger(const std::string& value) {
+  int result;
+
+  if (gurl_base::StringToInt(value, &result)) {
+    return result;
   }
-  return static_cast<int32_t>(result);
+
+  return absl::InvalidArgumentError("bad integer");
+}
+
+absl::StatusOr<unsigned> StringToIntegerU(const std::string& value) {
+  unsigned result;
+
+  if (gurl_base::StringToUint(value, &result)) {
+    return result;
+  }
+
+  return absl::InvalidArgumentError("bad integer");
+}
+
+absl::StatusOr<int64_t> StringToInteger64(const std::string& value) {
+  int64_t result;
+
+  if (gurl_base::StringToInt64(value, &result)) {
+    return result;
+  }
+
+  return absl::InvalidArgumentError("bad integer");
+}
+
+absl::StatusOr<uint64_t> StringToIntegerU64(const std::string& value) {
+  uint64_t result;
+
+  if (gurl_base::StringToUint64(value, &result)) {
+    return result;
+  }
+
+  return absl::InvalidArgumentError("bad integer");
 }
 
 #ifdef _WIN32
@@ -43,7 +75,7 @@ std::string ExpandUser(const std::string& file_path) {
     std::string home = ::getenv("HOME");
     if (home.empty()) {
 #ifdef _WIN32
-      home = absl::StrCat(::getenv("HOMEDRIVE"), "\\", ::getenv("HOMEPATH"));
+      home = absl::StrCat(::getenv("HOMEDRIVE"), ::getenv("HOMEPATH"));
 #else
       struct passwd pwd;
       struct passwd* result = nullptr;
@@ -63,7 +95,7 @@ std::string ExpandUser(const std::string& file_path) {
     // ~username
     if (real_path[1] != '/') {
 #ifdef _WIN32
-      return absl::StrCat(::getenv("HOMEDRIVE"), "\\Users");
+      return absl::StrCat(::getenv("HOMEDRIVE"), "\\Users", "\\", real_path.substr(1));
 #else
       struct passwd pwd;
       struct passwd* result = nullptr;
@@ -178,5 +210,29 @@ ssize_t WriteFileWithBuffer(const std::string& path,
     return -1;
   }
   return ret;
+}
+
+PlatformFile OpenReadFile(const std::string &path) {
+  return ::open(path.c_str(), O_RDONLY);
+}
+#endif
+
+#ifdef HAVE_TCMALLOC
+void PrintTcmallocStats() {
+  std::vector<const char*> properties = {
+    "generic.current_allocated_bytes",
+    "generic.heap_size",
+    "tcmalloc.max_total_thread_cache_bytes",
+    "tcmalloc.current_total_thread_cache_bytes",
+    "tcmalloc.pageheap_free_bytes",
+    "tcmalloc.pageheap_unmapped_bytes",
+  };
+  for (auto property : properties) {
+    absl::optional<size_t> size =
+        tcmalloc::MallocExtension::GetNumericProperty(property);
+    if (size.has_value()) {
+      LOG(INFO) << "TCMALLOC: " << property << " = " << *size << " bytes";
+    }
+  }
 }
 #endif

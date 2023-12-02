@@ -10,7 +10,12 @@
 #include <absl/debugging/symbolize.h>
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
+#include <absl/strings/str_format.h>
 #include <openssl/crypto.h>
+
+#ifdef _MSC_VER
+#include <crtdbg.h>
+#endif
 
 #ifdef _WIN32
 #include <ws2tcpip.h>
@@ -28,8 +33,8 @@ ABSL_FLAG(std::string, proxy_type, "http", "proxy type, available: socks4, socks
 #include "core/rand_util.hpp"
 #include "core/ref_counted.hpp"
 #include "core/scoped_refptr.hpp"
-#include "core/stringprintf.hpp"
 #include "server/server_server.hpp"
+#include "i18n/icu_util.hpp"
 
 #include "test_util.hpp"
 
@@ -38,10 +43,10 @@ namespace {
 IOBuf g_send_buffer;
 std::mutex g_in_provider_mutex;
 std::unique_ptr<IOBuf> g_recv_buffer;
-const char kConnectResponse[] = "HTTP/1.1 200 Connection established\r\n\r\n";
+constexpr char kConnectResponse[] = "HTTP/1.1 200 Connection established\r\n\r\n";
 
 // openssl req -newkey rsa:1024 -keyout pkey.pem -x509 -out cert.crt -days 3650 -nodes -subj /C=XX
-const char kCertificate[] =
+constexpr char kCertificate[] =
 "-----BEGIN CERTIFICATE-----\n"
 "MIIB9jCCAV+gAwIBAgIUM03bTKd+A2WwrfolXJC+L9AsxI8wDQYJKoZIhvcNAQEL\n"
 "BQAwDTELMAkGA1UEBhMCWFgwHhcNMjMwMTI5MjA1MDU5WhcNMzMwMTI2MjA1MDU5\n"
@@ -55,7 +60,7 @@ const char kCertificate[] =
 "Hine/sjADd7nGUrsIP+JIxplayLXcrP37KwaWxyRHoh/Bqa+7D3RpCv0SrNsIvlt\n"
 "yyvnIm8njIJSin7Vf4tD1PfY6Obyc8ygUSw=\n"
 "-----END CERTIFICATE-----\n";
-const char kPrivateKey[] =
+constexpr char kPrivateKey[] =
 "-----BEGIN PRIVATE KEY-----\n"
 "MIICdQIBADANBgkqhkiG9w0BAQEFAASCAl8wggJbAgEAAoGBANxhmaUG3T4dtrgj\n"
 "CHrORlCXw6rAHWuSOyXlLdVKtCnm7ENa8TPUFIM7L1ZLWKihsWVue3Yz5XFrYX1B\n"
@@ -212,7 +217,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
   void write_http_response_hdr2() {
     scoped_refptr<ContentProviderConnection> self(this);
     // Write HTTP Response Header, Part 2
-    http_response_hdr2 = StringPrintf(
+    http_response_hdr2 = absl::StrFormat(
       "HTTP/1.1 200 OK\r\n"
       "Server: asio/1.0.0\r\n"
       "Content-Type: application/octet-stream\r\n"
@@ -281,7 +286,7 @@ typedef ContentServer<ContentProviderConnectionFactory> ContentProviderServer;
 
 #ifndef HAVE_CURL
 void GenerateConnectRequest(std::string host, int port_num, IOBuf *buf) {
-  std::string request_header = StringPrintf(
+  std::string request_header = absl::StrFormat(
       "CONNECT %s:%d HTTP/1.1\r\n"
       "Host: packages.endpointdev.com:443\r\n"
       "User-Agent: curl/7.77.0\r\n"
@@ -294,12 +299,24 @@ void GenerateConnectRequest(std::string host, int port_num, IOBuf *buf) {
 #endif
 
 // [content provider] <== [ss server] <== [ss local] <== [content consumer]
-class SsEndToEndTest : public ::testing::Test {
+class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
  public:
-  void SetUp() override {
-    StartWorkThread();
+  static void SetUpTestSuite() {
+    // avoid triggering flag saver
+    absl::SetFlag(&FLAGS_congestion_algorithm, "cubic");
     absl::SetFlag(&FLAGS_password, "<dummy-password>");
   }
+
+  static void TearDownTestSuite() {
+    // nop
+  }
+
+  void SetUp() override {
+    StartWorkThread();
+    absl::SetFlag(&FLAGS_method, GetParam());
+    StartBackgroundTasks();
+  }
+
   void StartBackgroundTasks() {
     std::mutex m;
     bool done = false;
@@ -498,7 +515,7 @@ class SsEndToEndTest : public ::testing::Test {
 
     // Write HTTP Request Header
     std::string http_request_hdr =
-      StringPrintf(
+      absl::StrFormat(
       "PUT / HTTP/1.1\r\n"
       "Host: localhost\r\n"
       "Accept: */*\r\n"
@@ -694,27 +711,32 @@ class SsEndToEndTest : public ::testing::Test {
 };
 }
 
+TEST_P(EndToEndTest, 4K) {
+  GenerateRandContent(4096);
+  SendRequestAndCheckResponse();
+}
+
+TEST_P(EndToEndTest, 256K) {
+  GenerateRandContent(256 * 1024);
+  SendRequestAndCheckResponse();
+}
+
+TEST_P(EndToEndTest, 1M) {
+  GenerateRandContent(1024 * 1024);
+  SendRequestAndCheckResponse();
+}
+
+static constexpr cipher_method kCiphers[] = {
 #define XX(num, name, string) \
-  TEST_F(SsEndToEndTest, name##_4K) { \
-    absl::SetFlag(&FLAGS_method, CRYPTO_##name);        \
-    StartBackgroundTasks(); \
-    GenerateRandContent(4096); \
-    SendRequestAndCheckResponse(); \
-  } \
-  TEST_F(SsEndToEndTest, name##_256K) { \
-    absl::SetFlag(&FLAGS_method, CRYPTO_##name);        \
-    StartBackgroundTasks(); \
-    GenerateRandContent(256 * 1024); \
-    SendRequestAndCheckResponse(); \
-  } \
-  TEST_F(SsEndToEndTest, name##_1M) { \
-    absl::SetFlag(&FLAGS_method, CRYPTO_##name);        \
-    StartBackgroundTasks(); \
-    GenerateRandContent(1024 * 1024); \
-    SendRequestAndCheckResponse(); \
-  }
-CIPHER_METHOD_VALID_MAP(XX)
+  CRYPTO_##name,
+  CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
+};
+
+INSTANTIATE_TEST_SUITE_P(Ss, EndToEndTest, ::testing::ValuesIn(kCiphers),
+                         [](const ::testing::TestParamInfo<cipher_method>& info) -> std::string {
+                           return to_cipher_method_name(info.param);
+                         });
 
 int main(int argc, char **argv) {
   SetExecutablePath(argv[0]);
@@ -722,6 +744,21 @@ int main(int argc, char **argv) {
   if (!GetExecutablePath(&exec_path)) {
     return -1;
   }
+
+#ifdef _WIN32
+  // Disable all of the possible ways Windows conspires to make automated
+  // testing impossible.
+  ::SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
+#ifdef _MSC_VER
+  ::_set_error_mode(_OUT_TO_STDERR);
+  _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE | _CRTDBG_MODE_DEBUG);
+  _CrtSetReportFile(_CRT_WARN, _CRTDBG_FILE_STDERR);
+  _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_FILE | _CRTDBG_MODE_DEBUG);
+  _CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDERR);
+  _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE | _CRTDBG_MODE_DEBUG);
+  _CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDERR);
+#endif
+#endif
 
   absl::InitializeSymbolizer(exec_path.c_str());
   absl::FailureSignalHandlerOptions failure_handle_options;
@@ -733,7 +770,6 @@ int main(int argc, char **argv) {
 
   ::testing::InitGoogleTest(&argc, argv);
   absl::ParseCommandLine(argc, argv);
-  IoQueue::set_allow_merge(absl::GetFlag(FLAGS_io_queue_allow_merge));
 
 #ifdef _WIN32
   int iResult = 0;
@@ -756,7 +792,15 @@ int main(int argc, char **argv) {
     CHECK(Net_ipv6works()) << "IPv6 stack is required but not available";
   }
 
+#ifdef HAVE_ICU
+  CHECK(InitializeICU());
+#endif
+
   int ret = RUN_ALL_TESTS();
+
+#ifdef HAVE_TCMALLOC
+  PrintTcmallocStats();
+#endif
 
 #ifdef HAVE_CURL
   curl_global_cleanup();

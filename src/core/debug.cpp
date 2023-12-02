@@ -4,7 +4,7 @@
 #include "core/debug.hpp"
 #include "core/check_op.hpp"
 
-#include <absl/strings/string_view.h>
+#include <string_view>
 
 #include "core/common_posix.hpp"
 #include "core/compiler_specific.hpp"
@@ -202,19 +202,19 @@ static pid_t GetDebuggerProcess() {
   if (num_read <= 0)
     return -1;
 
-  absl::string_view status(buf, num_read);
-  absl::string_view tracer("TracerPid:\t");
+  std::string_view status(buf, num_read);
+  std::string_view tracer("TracerPid:\t");
 
-  absl::string_view::size_type pid_index = status.find(tracer);
-  if (pid_index == absl::string_view::npos)
+  std::string_view::size_type pid_index = status.find(tracer);
+  if (pid_index == std::string_view::npos)
     return -1;
   pid_index += tracer.size();
-  absl::string_view::size_type pid_end_index = status.find('\n', pid_index);
-  if (pid_end_index == absl::string_view::npos)
+  std::string_view::size_type pid_end_index = status.find('\n', pid_index);
+  if (pid_end_index == std::string_view::npos)
     return -1;
 
-  absl::string_view pid_str(buf + pid_index, pid_end_index - pid_index);
-  absl::StatusOr<int32_t> pid = StringToInteger(pid_str);
+  std::string pid_str(buf + pid_index, pid_end_index - pid_index);
+  auto pid = StringToIntegerU64(pid_str);
   if (!pid.ok())
     return -1;
 

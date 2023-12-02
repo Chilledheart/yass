@@ -7,12 +7,8 @@
 
 #include <absl/flags/internal/program_name.h>
 
-#if defined(OS_APPLE) && defined(__clang__)
-
 #include <AvailabilityMacros.h>
 #include <CoreFoundation/CoreFoundation.h>
-
-#endif  // defined(OS_APPLE) && defined(__clang__)
 
 #include <errno.h>
 #include <locale.h>
@@ -505,8 +501,6 @@ bool SetUTF8Locale() {
   return true;
 }
 
-#if defined(OS_APPLE) && defined(__clang__)
-
 namespace {
 
 // Convert the supplied CFString into the specified encoding, and return it as
@@ -602,7 +596,7 @@ static ScopedCFTypeRef<CFStringRef> StringToCFStringWithEncodingsT(
 // Given a std::string_view|in| with an encoding specified by |in_encoding|, return
 // it as a CFStringRef.  Returns NULL on failure.
 static ScopedCFTypeRef<CFStringRef> StringViewToCFStringWithEncodingsT(
-    absl::string_view in,
+    std::string_view in,
     CFStringEncoding in_encoding) {
   const auto in_length = in.length();
   ScopedCFTypeRef<CFStringRef> ret;
@@ -628,6 +622,8 @@ static const CFStringEncoding kWideStringEncoding = kCFStringEncodingUTF32LE;
 
 }  // namespace
 
+namespace gurl_base {
+
 // Do not assert in this function since it is used by the asssertion code!
 std::string SysWideToUTF8(const std::wstring& wide) {
   return STLStringToSTLStringWithEncodingsT<std::wstring, std::string>(
@@ -635,8 +631,8 @@ std::string SysWideToUTF8(const std::wstring& wide) {
 }
 
 // Do not assert in this function since it is used by the asssertion code!
-std::wstring SysUTF8ToWide(absl::string_view utf8) {
-  return STLStringToSTLStringWithEncodingsT<absl::string_view, std::wstring>(
+std::wstring SysUTF8ToWide(std::string_view utf8) {
+  return STLStringToSTLStringWithEncodingsT<std::string_view, std::wstring>(
       utf8, kNarrowStringEncoding, kWideStringEncoding);
 }
 
@@ -644,11 +640,13 @@ std::string SysWideToNativeMB(const std::wstring& wide) {
   return SysWideToUTF8(wide);
 }
 
-std::wstring SysNativeMBToWide(absl::string_view native_mb) {
+std::wstring SysNativeMBToWide(std::string_view native_mb) {
   return SysUTF8ToWide(native_mb);
 }
 
-ScopedCFTypeRef<CFStringRef> SysUTF8ToCFStringRef(absl::string_view utf8) {
+} // gurl_base namespace
+
+ScopedCFTypeRef<CFStringRef> SysUTF8ToCFStringRef(std::string_view utf8) {
   return StringViewToCFStringWithEncodingsT(utf8, kNarrowStringEncoding);
 }
 
@@ -656,7 +654,7 @@ ScopedCFTypeRef<CFStringRef> SysUTF16ToCFStringRef(const std::u16string& utf16) 
   return StringToCFStringWithEncodingsT(utf16, kMediumStringEncoding);
 }
 
-NSString* SysUTF8ToNSString(absl::string_view utf8) {
+NSString* SysUTF8ToNSString(std::string_view utf8) {
   return CFBridgingRelease(CFRetain(SysUTF8ToCFStringRef(utf8)));
 }
 
@@ -685,8 +683,6 @@ std::u16string SysNSStringToUTF16(NSString* nsstring) {
     return std::u16string();
   return SysCFStringRefToUTF16(reinterpret_cast<CFStringRef>(nsstring));
 }
-
-#endif  // defined(OS_APPLE) && defined(__clang__)
 
 static std::string main_exe_path = "UNKNOWN";
 

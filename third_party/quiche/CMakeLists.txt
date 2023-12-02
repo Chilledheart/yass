@@ -1,114 +1,3 @@
-add_library(url STATIC
-  # polyfills
-  ../googleurl/polyfills/base/allocator/buildflags.h
-  ../googleurl/polyfills/base/base_export.h
-  ../googleurl/polyfills/base/check.h
-  ../googleurl/polyfills/base/check_op.h
-  ../googleurl/polyfills/base/component_export.h
-  ../googleurl/polyfills/base/cpu_reduction_experiment.h
-  ../googleurl/polyfills/base/dcheck_is_on.h
-  ../googleurl/polyfills/base/debug/alias.h
-  ../googleurl/polyfills/base/export_template.h
-  ../googleurl/polyfills/base/feature_list.h
-  ../googleurl/polyfills/base/logging.h
-  ../googleurl/polyfills/base/memory/raw_ptr.h
-  ../googleurl/polyfills/base/metrics/histogram_macros.h
-  ../googleurl/polyfills/base/notreached.h
-  ../googleurl/polyfills/base/trace_event/memory_usage_estimator.h
-  # base
-  ../googleurl/base/bits.h
-  ../googleurl/base/compiler_specific.h
-  ../googleurl/base/containers/checked_iterators.h
-  ../googleurl/base/containers/contains.h
-  ../googleurl/base/containers/contiguous_iterator.h
-  ../googleurl/base/containers/span.h
-  ../googleurl/base/containers/util.h
-  ../googleurl/base/cxx20_is_constant_evaluated.h
-  ../googleurl/base/cxx20_to_address.h
-  ../googleurl/base/debug/crash_logging.h
-  ../googleurl/base/debug/leak_annotations.h
-  ../googleurl/base/functional/identity.h
-  ../googleurl/base/functional/invoke.h
-  ../googleurl/base/functional/not_fn.h
-  ../googleurl/base/memory/raw_ptr_exclusion.h
-  ../googleurl/base/no_destructor.h
-  ../googleurl/base/numerics/checked_math.h
-  ../googleurl/base/numerics/checked_math_impl.h
-  ../googleurl/base/numerics/clamped_math.h
-  ../googleurl/base/numerics/clamped_math_impl.h
-  ../googleurl/base/numerics/safe_conversions.h
-  ../googleurl/base/numerics/safe_conversions_arm_impl.h
-  ../googleurl/base/numerics/safe_conversions_impl.h
-  ../googleurl/base/numerics/safe_math.h
-  ../googleurl/base/numerics/safe_math_arm_impl.h
-  ../googleurl/base/numerics/safe_math_clang_gcc_impl.h
-  ../googleurl/base/numerics/safe_math_shared_impl.h
-  ../googleurl/base/ranges/algorithm.h
-  ../googleurl/base/ranges/functional.h
-  ../googleurl/base/ranges/ranges.h
-  ../googleurl/base/stl_util.h
-  ../googleurl/base/template_util.h
-  ../googleurl/base/strings/string_piece_forward.h
-  ../googleurl/base/strings/string_piece.h
-  ../googleurl/base/strings/string_util.h
-  ../googleurl/base/strings/to_string.h
-  ../googleurl/base/strings/string_util_impl_helpers.h
-  ../googleurl/base/strings/string_util_internal.h
-  ../googleurl/base/strings/string_number_conversions.h
-  ../googleurl/base/strings/utf_ostream_operators.h
-  ../googleurl/base/strings/utf_string_conversions.h
-  ../googleurl/base/strings/utf_string_conversion_utils.h
-  ../googleurl/base/win/win_handle_types.h
-  ../googleurl/base/debug/crash_logging.cc
-  ../googleurl/base/strings/string_util.cc
-  ../googleurl/base/strings/string_util_constants.cc
-  # FIXME vs2022 doesn't even compile
-  #../googleurl/base/strings/utf_ostream_operators.cc
-  ../googleurl/base/strings/utf_string_conversion_utils.cc
-  ../googleurl/base/strings/utf_string_conversions.cc
-  # icu
-  ../googleurl/base/third_party/icu/icu_utf.h
-  # url
-  ../googleurl/url/gurl.cc
-  ../googleurl/url/third_party/mozilla/url_parse.cc
-  ../googleurl/url/url_canon.cc
-  ../googleurl/url/url_canon_etc.cc
-  ../googleurl/url/url_canon_filesystemurl.cc
-  ../googleurl/url/url_canon_fileurl.cc
-  ../googleurl/url/url_canon_host.cc
-  ../googleurl/url/url_canon_internal.cc
-  ../googleurl/url/url_canon_internal.h
-  ../googleurl/url/url_canon_internal_file.h
-  ../googleurl/url/url_canon_ip.cc
-  ../googleurl/url/url_canon_mailtourl.cc
-  ../googleurl/url/url_canon_path.cc
-  ../googleurl/url/url_canon_pathurl.cc
-  ../googleurl/url/url_canon_query.cc
-  ../googleurl/url/url_canon_relative.cc
-  ../googleurl/url/url_canon_stdstring.cc
-  ../googleurl/url/url_canon_stdurl.cc
-  ../googleurl/url/url_constants.cc
-  ../googleurl/url/url_features.cc
-  ../googleurl/url/url_parse_file.cc
-  ../googleurl/url/url_parse_internal.h
-  ../googleurl/url/url_util.cc
-  ../googleurl/url/url_util_internal.h
-  # ../googleurl/url/scheme_host_port.cc
-  # ../googleurl/url/scheme_host_port.h
-  # ../googleurl/url/origin.cc
-  # ../googleurl/url/origin.h
-  # IDNA: if with system icu ../googleurl/url/url_idna_icu.cc
-  ../googleurl/url/url_idna_ascii_only.cc
-  )
-
-target_include_directories(url PUBLIC
-  ../googleurl
-  ../googleurl/polyfills
-  )
-
-target_link_libraries(url PUBLIC
-  absl::optional)
-
 set(quiche_SRCS
   overrides/quiche_platform_impl/quiche_stack_trace_impl.h
   overrides/quiche_platform_impl/quiche_stack_trace_impl.cc
@@ -830,13 +719,13 @@ add_library(quiche STATIC
   )
 
 target_include_directories(quiche PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/overrides
   ${CMAKE_CURRENT_BINARY_DIR}/src
   ${CMAKE_CURRENT_BINARY_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/../googleurl
   ${CMAKE_CURRENT_SOURCE_DIR}/..
   ${CMAKE_CURRENT_SOURCE_DIR}/../../src
   ${CMAKE_CURRENT_SOURCE_DIR}/../../
-  ${CMAKE_CURRENT_SOURCE_DIR}/overrides
   src/quiche/common/platform/default
   src
   )

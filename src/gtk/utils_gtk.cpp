@@ -5,14 +5,15 @@
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
+#include "core/utils_fs.hpp"
 #include "core/process_utils.hpp"
 #include "config/config.hpp"
 
 #include <absl/strings/str_cat.h>
-#include <absl/strings/string_view.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <string_view>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -24,6 +25,8 @@
 #ifndef G_SOURCE_FUNC
 #define G_SOURCE_FUNC(f) ((GSourceFunc) (void (*)(void)) (f))
 #endif
+
+using namespace yass;
 
 static const char* kAutoStartFileContent =
 "[Desktop Entry]\n"
@@ -37,48 +40,7 @@ static const char* kAutoStartFileContent =
 
 namespace {
 
-// returns true if the "file" exists and is a symbolic link
-bool IsFile(const std::string& path) {
-  struct stat Stat;
-  if (::stat(path.c_str(), &Stat) != 0) {
-    return false;
-  }
-  if (S_ISLNK(Stat.st_mode)) {
-    char real_path[PATH_MAX];
-    if (char* resolved_path = ::realpath(path.c_str(), real_path)) {
-      return ::stat(resolved_path, &Stat) == 0 && S_ISREG(Stat.st_mode);
-    }
-  }
-  return S_ISREG(Stat.st_mode);
-}
-
-// returns true if the "dir" exists and is a symbolic link
-bool IsDirectory(const std::string& path) {
-  struct stat Stat;
-  if (::stat(path.c_str(), &Stat) != 0) {
-    return false;
-  }
-  if (S_ISLNK(Stat.st_mode)) {
-    char real_path[PATH_MAX];
-    if (char* resolved_path = ::realpath(path.c_str(), real_path)) {
-      return ::stat(resolved_path, &Stat) == 0 && S_ISDIR(Stat.st_mode);
-    }
-  }
-  return S_ISDIR(Stat.st_mode);
-}
-
-bool CreatePrivateDirectory(const std::string& path) {
-  return ::mkdir(path.c_str(), S_IRUSR | S_IWUSR | S_IXUSR) != 0;
-}
-
-bool EnsureCreatedDirectory(const std::string& path) {
-  if (!IsDirectory(path) && !CreatePrivateDirectory(path)) {
-    return false;
-  }
-  return true;
-}
-
-bool WriteFileWithContent(const std::string& path, absl::string_view context) {
+bool WriteFileWithContent(const std::string& path, std::string_view context) {
   int fd = ::open(path.c_str(), O_WRONLY | O_TRUNC | O_CREAT,
                   S_IRUSR | S_IWUSR);
   if (fd < 0) {
@@ -115,7 +77,7 @@ std::string GetAutostartDirectory() {
 
 bool IsKDE() {
   const char* desktop_ptr = getenv("XDG_SESSION_DESKTOP");
-  absl::string_view desktop = desktop_ptr ? absl::string_view(desktop_ptr) : absl::string_view();
+  std::string_view desktop = desktop_ptr ? std::string_view(desktop_ptr) : std::string_view();
   return desktop == "KDE" || desktop == "plasma";
 }
 }  // namespace
@@ -132,16 +94,19 @@ void Utils::EnableAutoStart(bool on) {
     absl::StrCat(GetAutostartDirectory(), "/" ,
                  DEFAULT_AUTOSTART_NAME , ".desktop");
   if (!on) {
-    if (::unlink(autostart_desktop_path.c_str()) != 0) {
+    if (!RemoveFile(autostart_desktop_path)) {
       PLOG(WARNING)
           << "Internal error: unable to remove autostart file";
     }
   } else {
-    EnsureCreatedDirectory(GetAutostartDirectory());
+    if (!CreateDirectories(GetAutostartDirectory())) {
+      PLOG(WARNING)
+          << "Internal error: unable to create config directory";
+    }
 
     // force update, delete first
     if (IsFile(autostart_desktop_path) &&
-        ::unlink(autostart_desktop_path.c_str()) != 0) {
+        !RemoveFile(autostart_desktop_path)) {
       PLOG(WARNING)
           << "Internal error: unable to remove previous autostart file";
     }
@@ -204,8 +169,14 @@ std::string Utils::GetLocalAddr() {
   auto addr = asio::ip::make_address(local_host.c_str(), ec);
   bool host_is_ip_address = !ec;
   if (host_is_ip_address && addr.is_v6()) {
+    if (addr.is_unspecified()) {
+      local_host = "::1";
+    }
     ss << "http://[" << local_host << "]:" << local_port;
   } else {
+    if (host_is_ip_address && addr.is_unspecified()) {
+      local_host = "127.0.0.1";
+    }
     ss << "http://" << local_host << ":" << local_port;
   }
   return ss.str();
