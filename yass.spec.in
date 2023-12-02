@@ -192,6 +192,10 @@ for embedded devices and low end boxes.
 %{_unitdir}/yass-redir.service
 
 %changelog
+* Sat Dec 2 2023 Chilledheart <hukeyue@hotmail.com> - 1.4.10-1
+  - Bump Clang and Abseil-Cpp.
+  - Use tcmalloc be default.
+  - Misc fixes.
 * Thu Nov 16 2023 Chilledheart <hukeyue@hotmail.com> - 1.4.9-1
   - Fix startup failure on the first try since version 1.4.5.
 * Thu Nov 16 2023 Chilledheart <hukeyue@hotmail.com> - 1.4.8-1

@@ -1,3 +1,10 @@
+yass (1.4.10-1) UNRELEASED; urgency=medium
+
+  * Bump Clang and Abseil-Cpp.
+  * Use tcmalloc be default.
+  * Misc fixes.
+
+ -- Chilledheart <hukeyue@hotmail.com>  Sat, 2 Dec 2023 15:47:47 +0800
 yass (1.4.9-1) UNRELEASED; urgency=medium
 
   * Fix startup failure on the first try since version 1.4.5.
