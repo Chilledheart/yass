@@ -126,6 +126,10 @@ void LazyInitIcuDataFile() {
   data_path = exe_dir.parent_path() / "Resources" / kIcuDataFileName;
   pf = OpenReadFile(data_path);
 #endif //  __APPLE__
+  if (pf == kInvalidPlatformFile && exe_dir.has_filename() && exe_dir.filename() == "bin") {
+    data_path = exe_dir.parent_path() / "share" / "yass" / kIcuDataFileName;
+    pf = OpenReadFile(data_path);
+  }
   if (pf == kInvalidPlatformFile) {
     data_path = exe_dir / kIcuDataFileName;
     pf = OpenReadFile(data_path);
