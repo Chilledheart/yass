@@ -111,7 +111,7 @@ jobs:
           WITH_CPU=arm64 ./scripts/build-crashpad.sh
       - name: Build
         run: |
-          ./tools/build -build-benchmark -build-test
+          ./tools/build -build-benchmark -build-test -use-icu
       - name: Run tests
         run: |
           ./build-darwin-universal/yass_test
