@@ -14,6 +14,7 @@
 #include <absl/flags/usage.h>
 #include <absl/strings/str_cat.h>
 #include <locale.h>
+#include <openssl/crypto.h>
 
 #include "core/debug.hpp"
 #include "core/logging.hpp"
@@ -24,6 +25,7 @@
 #include "win32/utils.hpp"
 #include "win32/yass_frame.hpp"
 #include "crashpad_helper.hpp"
+#include "i18n/icu_util.hpp"
 
 ABSL_FLAG(bool, background, false, "start up backgroundd");
 
@@ -47,9 +49,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   }
   // Fix log output name
   SetExecutablePath(exec_path);
-#ifdef HAVE_CRASHPAD
-  CHECK(InitializeCrashpad(exec_path));
-#endif
 
   if (!EnableSecureDllLoading()) {
     return -1;
@@ -70,8 +69,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                    " --password <pasword> Password pharsal\n",
                    " --method <method> Method of encrypt"));
   absl::InitializeSymbolizer(exec_path.c_str());
+#ifdef HAVE_CRASHPAD
+  CHECK(InitializeCrashpad(exec_path));
+#else
   absl::FailureSignalHandlerOptions failure_handle_options;
   absl::InstallFailureSignalHandler(failure_handle_options);
+#endif
 
   // TODO move to standalone function
   // Parse command line for internal options
@@ -95,6 +98,27 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   config::ReadConfigFileOption(argc, &argv[0]);
   config::ReadConfig();
   absl::ParseCommandLine(argv.size(), const_cast<char**>(&argv[0]));
+
+  // FIXME problem with static build
+  // in dynamic build, it may be scanned as virus ???
+#if 0
+  if (!MemoryLockAll()) {
+    LOG(WARNING) << "Failed to set memory lock";
+  }
+#endif
+
+#ifdef HAVE_ICU
+  if (!InitializeICU()) {
+    LOG(WARNING) << "Failed to initialize icu component";
+  }
+#endif
+
+  int iResult = 0;
+  WSADATA wsaData = {0};
+  iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+  CHECK_EQ(iResult, 0) << "WSAStartup failure";
+
+  CRYPTO_library_init();
 
   // TODO: transfer OutputDebugString to internal logging
 
@@ -167,14 +191,6 @@ BOOL CYassApp::InitInstance() {
   if (Utils::GetAutoStart()) {
     frame_->OnStartButtonClicked();
   }
-
-  // FIXME problem with static build
-  // in dynamic build, it may be scanned as virus ???
-#if 0
-  if (!MemoryLockAll()) {
-    LOG(WARNING) << "Failed to set memory lock";
-  }
-#endif
 
   return TRUE;
 }

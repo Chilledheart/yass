@@ -14,6 +14,7 @@
 #include <fontconfig/fontconfig.h>
 #include <glib/gi18n.h>
 #include <locale.h>
+#include <openssl/crypto.h>
 #include <stdarg.h>
 
 #include "core/logging.hpp"
@@ -24,6 +25,7 @@
 #include "gtk/yass_window.hpp"
 #include "version.h"
 #include "crashpad_helper.hpp"
+#include "i18n/icu_util.hpp"
 
 ABSL_FLAG(bool, background, false, "start up backgroundd");
 
@@ -38,9 +40,6 @@ int main(int argc, const char** argv) {
   if (!GetExecutablePath(&exec_path)) {
     return -1;
   }
-#ifdef HAVE_CRASHPAD
-  CHECK(InitializeCrashpad(exec_path));
-#endif
 
   if (!SetUTF8Locale()) {
     LOG(WARNING) << "Failed to set up utf-8 locale";
@@ -54,8 +53,12 @@ int main(int argc, const char** argv) {
   textdomain("yass");
 
   absl::InitializeSymbolizer(exec_path.c_str());
+#ifdef HAVE_CRASHPAD
+  CHECK(InitializeCrashpad(exec_path));
+#else
   absl::FailureSignalHandlerOptions failure_handle_options;
   absl::InstallFailureSignalHandler(failure_handle_options);
+#endif
 
   absl::SetProgramUsageMessage(
       absl::StrCat("Usage: ", Basename(exec_path), " [options ...]\n",
@@ -70,6 +73,20 @@ int main(int argc, const char** argv) {
   config::ReadConfigFileOption(argc, argv);
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
+
+#if 0
+  if (!MemoryLockAll()) {
+    LOG(WARNING) << "Failed to set memory lock";
+  }
+#endif
+
+#ifdef HAVE_ICU
+  if (!InitializeICU()) {
+    LOG(WARNING) << "Failed to initialize icu component";
+  }
+#endif
+
+  CRYPTO_library_init();
 
 #if !GLIB_CHECK_VERSION(2, 35, 0)
   // GLib type system initialization. It's unclear if it's still required for
@@ -123,10 +140,6 @@ std::unique_ptr<YASSApp> YASSApp::create() {
 }
 
 void YASSApp::OnActivate() {
-  if (!MemoryLockAll()) {
-    LOG(WARNING) << "Failed to set memory lock";
-  }
-
   if (!dispatcher_.Init([this]() { OnDispatch(); })) {
     LOG(WARNING) << "Failed to init dispatcher";
   }

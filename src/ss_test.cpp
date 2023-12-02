@@ -26,10 +26,6 @@
 ABSL_FLAG(std::string, proxy_type, "http", "proxy type, available: socks4, socks4a, socks5, socks5h, http");
 #endif
 
-#ifdef HAVE_ICU
-#include "i18n/icu_util.hpp"
-#endif
-
 #include "cli/cli_server.hpp"
 #include "config/config.hpp"
 #include "core/cipher.hpp"
@@ -38,6 +34,7 @@ ABSL_FLAG(std::string, proxy_type, "http", "proxy type, available: socks4, socks
 #include "core/ref_counted.hpp"
 #include "core/scoped_refptr.hpp"
 #include "server/server_server.hpp"
+#include "i18n/icu_util.hpp"
 
 #include "test_util.hpp"
 

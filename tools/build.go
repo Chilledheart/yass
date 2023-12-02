@@ -43,6 +43,7 @@ var cmakeBuildConcurrencyFlag int
 
 var useLibCxxFlag bool
 var enableLtoFlag bool
+var useIcuFlag bool
 
 var clangTidyModeFlag bool
 var clangTidyExecutablePathFlag string
@@ -124,6 +125,7 @@ func InitFlag() {
 
 	flag.BoolVar(&useLibCxxFlag, "use-libcxx", true, "Use Custom libc++")
 	flag.BoolVar(&enableLtoFlag, "enable-lto", true, "Enable lto")
+	flag.BoolVar(&useIcuFlag, "use-icu", false, "Use ICU Feature")
 
 	flag.BoolVar(&clangTidyModeFlag, "clang-tidy-mode", getEnvBool("ENABLE_CLANG_TIDY", false), "Enable Clang Tidy Build")
 	flag.StringVar(&clangTidyExecutablePathFlag, "clang-tidy-executable-path", getEnv("CLANG_TIDY_EXECUTABLE", ""), "Path to clang-tidy, only used by Clang Tidy Build")
@@ -563,6 +565,11 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, "-DENABLE_LTO=on")
 	} else {
 		cmakeArgs = append(cmakeArgs, "-DENABLE_LTO=off")
+	}
+	if useIcuFlag {
+		cmakeArgs = append(cmakeArgs, "-DUSE_ICU=on")
+	} else {
+		cmakeArgs = append(cmakeArgs, "-DUSE_ICU=off")
 	}
 	if clangTidyModeFlag {
 		cmakeArgs = append(cmakeArgs, "-DENABLE_CLANG_TIDY=on", fmt.Sprintf("-DCLANG_TIDY_EXECUTABLE=%s", clangTidyExecutablePathFlag))
@@ -1155,7 +1162,7 @@ func archiveMainFile(output string, prefix string, paths []string) {
 	}
 }
 
-func generateMsi(output string, dllPaths []string, licensePaths []string, hasCrashpad bool) {
+func generateMsi(output string, dllPaths []string, licensePaths []string, hasCrashpad bool, hasIcuDataFile bool) {
 	wxsTemplate, err := ioutil.ReadFile(filepath.Join("..", "yass.wxs"))
 	if err != nil {
 		glog.Fatalf("%v", err)
@@ -1175,6 +1182,9 @@ func generateMsi(output string, dllPaths []string, licensePaths []string, hasCra
 	wxsXml = strings.Replace(wxsXml, "<!-- %LICENSEPLACEHOLDER% -->", licenseReplacement, 1)
 	if (hasCrashpad) {
 		wxsXml = strings.Replace(wxsXml, "<!-- %CRASHPAD_HANDLER_HOLDER% -->", "<File Name='crashpad_handler.exe' Source='crashpad_handler.exe' KeyPath='no'/>", 1)
+	}
+	if (hasIcuDataFile) {
+		wxsXml = strings.Replace(wxsXml, "<!-- %ICUDATAFILE_HOLDER% -->", "<File Name='icudtl.dat' Source='icudtl.dat' KeyPath='no'/>", 1)
 	}
 
 	err = ioutil.WriteFile("yass.wxs", []byte(wxsXml), 0666)
@@ -1268,6 +1278,10 @@ func postStateArchives() map[string][]string {
 	if _, err := os.Stat("crashpad_handler.exe"); errors.Is(err, os.ErrNotExist) {
 		hasCrashpad = false
 	}
+	hasIcuDataFile := true
+	if _, err := os.Stat("icudtl.dat"); errors.Is(err, os.ErrNotExist) {
+		hasIcuDataFile = false
+	}
 
 	msiArchive := fmt.Sprintf(archiveFormat, APPNAME, "", ".msi")
 	nsisArchive := fmt.Sprintf(archiveFormat, APPNAME, "-installer", ".exe")
@@ -1288,6 +1302,10 @@ func postStateArchives() map[string][]string {
 	if hasCrashpad {
 		paths = append(paths, "crashpad_handler.exe")
 	}
+	// copying dependent icudata
+	if hasIcuDataFile {
+		paths = append(paths, "icudtl.dat")
+	}
 
 	// copying dependent LICENSEs
 	licensePaths := postStateArchiveLicenses()
@@ -1303,7 +1321,7 @@ func postStateArchives() map[string][]string {
 	// error CNDL0265 : The Platform attribute has an invalid value arm64.
 	// Possible values are x86, x64, or ia64.
 	if systemNameFlag == "windows" && msvcTargetArchFlag != "arm64" {
-		generateMsi(msiArchive, dllPaths, licensePaths, hasCrashpad)
+		generateMsi(msiArchive, dllPaths, licensePaths, hasCrashpad, hasIcuDataFile)
 		archives[msiArchive] = []string{msiArchive}
 	}
 	// nsis installer
