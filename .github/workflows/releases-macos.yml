@@ -114,7 +114,8 @@ jobs:
           ./tools/build -build-benchmark -build-test
       - name: Run tests
         run: |
-          ./tools/build -nc -run-benchmark -run-test -no-packaging
+          ./build-darwin-universal/yass_test
+          ./build-darwin-universal/yass_benchmark
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
