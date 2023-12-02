@@ -25,7 +25,7 @@ freebsd_task:
 
   pkginstall_script:
     - pkg update -f
-    - pkg install -y cmake ninja pkgconf perl5 go llvm16-lite git
+    - pkg install -y cmake ninja pkgconf perl5 go llvm17-lite git
     - ln -sf /usr/include/c++/v1/unwind.h /usr/include/unwind.h
     - ln -sf /usr/include/c++/v1/unwind-arm.h /usr/include/unwind-arm.h
     - ln -sf /usr/include/c++/v1/unwind-itanium.h /usr/include/unwind-itanium.h
@@ -35,7 +35,7 @@ freebsd_task:
     - git fetch --tags --unshallow
     - git submodule update --init --depth 1
   configure_script:
-    - export PATH="/usr/local/llvm16/bin:$PATH"
+    - export PATH="/usr/local/llvm17/bin:$PATH"
     - export CC=clang
     - export CXX=clang++
     - mkdir build
