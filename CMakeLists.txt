@@ -274,7 +274,7 @@ option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
 option(USE_BUILTIN_CA_BUNDLE_CRT "Build with embedded ca-bundle.crt support" ON)
 option(USE_MBEDTLS "Build with mbedtls support" ON)
 option(USE_BALSA_HTTP_PARSER "Build with balsa http parser" ON)
-option(USE_ICU "Build with icu" OFF)
+option(USE_ICU "Build with icu" ON)
 option(USE_LEVELDB "Build with leveldb" OFF)
 option(USE_SQLITE "Build with sqlite" OFF)
 
