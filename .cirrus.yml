@@ -14,11 +14,6 @@ freebsd_task:
         image_family: freebsd-13-2
       env:
         configure: -DCMAKE_BUILD_TYPE=Release
-    - name: FreeBSD 12.4
-      freebsd_instance:
-        image_family: freebsd-12-4
-      env:
-        configure: -DCMAKE_BUILD_TYPE=Release
 
   env:
     CIRRUS_CLONE_DEPTH: 10
