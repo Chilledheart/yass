@@ -43,17 +43,18 @@ int main(int argc, const char** argv) {
   if (!GetExecutablePath(&exec_path)) {
     return -1;
   }
-#ifdef HAVE_CRASHPAD
-  CHECK(InitializeCrashpad(exec_path));
-#endif
 
   if (!SetUTF8Locale()) {
     LOG(WARNING) << "Failed to set up utf-8 locale";
   }
 
   absl::InitializeSymbolizer(exec_path.c_str());
+#ifdef HAVE_CRASHPAD
+  CHECK(InitializeCrashpad(exec_path));
+#else
   absl::FailureSignalHandlerOptions failure_handle_options;
   absl::InstallFailureSignalHandler(failure_handle_options);
+#endif
 
   absl::SetProgramUsageMessage(
       absl::StrCat("Usage: ", Basename(exec_path), " [options ...]\n",

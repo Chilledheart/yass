@@ -47,9 +47,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   }
   // Fix log output name
   SetExecutablePath(exec_path);
-#ifdef HAVE_CRASHPAD
-  CHECK(InitializeCrashpad(exec_path));
-#endif
 
   if (!EnableSecureDllLoading()) {
     return -1;
@@ -70,8 +67,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                    " --password <pasword> Password pharsal\n",
                    " --method <method> Method of encrypt"));
   absl::InitializeSymbolizer(exec_path.c_str());
+#ifdef HAVE_CRASHPAD
+  CHECK(InitializeCrashpad(exec_path));
+#else
   absl::FailureSignalHandlerOptions failure_handle_options;
   absl::InstallFailureSignalHandler(failure_handle_options);
+#endif
 
   // TODO move to standalone function
   // Parse command line for internal options
