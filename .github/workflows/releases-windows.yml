@@ -136,22 +136,8 @@ jobs:
       - name: Run tests
         if: ${{ matrix.arch == 'x64' || matrix.arch == 'x86' }}
         run: |
-          set VCToolsVersion=14.29
-          set Winsdk=10.0.19041.0
-          set "WindowsSDKVersion=%Winsdk%\"
-          if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
-          set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
-          set "VSCMD_START_DIR=%CD%"
-          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set Platform=${{ matrix.arch }}
-
-          set "Path=%CD%\third_party\nasm;%Path%"
-          set "Path=%CD%\third_party\wix311;%Path%"
-
-          call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
-
-          tools\build -nc -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -run-benchmark -run-test -no-packaging || exit /b
+          build-msvc-${{ matrix.arch }}-${{ matrix.crt-linkage }}\yass_test || exit /b
+          build-msvc-${{ matrix.arch }}-${{ matrix.crt-linkage }}\yass_benchmark || exit /b
 
           exit /b 0
 
@@ -246,25 +232,8 @@ jobs:
           goto :eof
       - name: Run tests
         run: |
-          set VCToolsVersion=14.16.27012
-          set "VCINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC"
-          set "WindowsSDKVersion=10.0.10240.0\"
-          set "WindowsSdkDir=C:\Program Files (x86)\Windows Kits\10"
-          set "PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;%PATH%"
-
-          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set Platform=${{ matrix.arch }}
-          set VSCMD_ARG_TGT_ARCH=${{ matrix.arch }}
-
-          set "Path=%CD%\third_party\nasm;%Path%"
-          set "Path=%CD%\third_party\wix311;%Path%"
-
-          call "scripts\callxp-%Platform%.cmd"
-
-          tools\build -nc -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -msvc-allow-xp -run-test -run-benchmark -no-packaging || exit /b
-
-          goto :eof
+          build-msvc-winxp-${{ matrix.arch }}-${{ matrix.crt-linkage }}\yass_test || exit /b
+          build-msvc-winxp-${{ matrix.arch }}-${{ matrix.crt-linkage }}\yass_benchmark || exit /b
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
