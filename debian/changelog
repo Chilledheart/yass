@@ -1,3 +1,8 @@
+yass (1.5.0-1) UNRELEASED; urgency=low
+
+  * New major release.
+
+ -- Chilledheart <hukeyue@hotmail.com>  Sat, 2 Dec 2023 15:47:47 +0800
 yass (1.4.10-1) UNRELEASED; urgency=medium
 
   * Bump Clang and Abseil-Cpp.
