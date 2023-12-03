@@ -89,7 +89,6 @@ add_library(url STATIC
   googleurl/base/containers/span.h
   googleurl/base/containers/util.h
   googleurl/base/cxx20_is_constant_evaluated.h
-  googleurl/base/cxx20_to_address.h
   googleurl/base/debug/crash_logging.h
   googleurl/base/debug/leak_annotations.h
   googleurl/base/functional/identity.h
@@ -113,7 +112,7 @@ add_library(url STATIC
   googleurl/base/ranges/ranges.h
   googleurl/base/stl_util.h
   googleurl/base/template_util.h
-  googleurl/base/strings/string_piece_forward.h
+  googleurl/base/types/supports_ostream_operator.h
   googleurl/base/strings/string_piece.h
   googleurl/base/strings/to_string.h
   googleurl/base/strings/string_util_impl_helpers.h
