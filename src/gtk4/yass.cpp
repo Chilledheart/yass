@@ -19,7 +19,6 @@
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
-#include "core/cxx17_backports.hpp"
 #include "crypto/crypter_export.hpp"
 #include "gtk4/yass_window.hpp"
 #include "version.h"

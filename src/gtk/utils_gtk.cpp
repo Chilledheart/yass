@@ -19,8 +19,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "core/cxx17_backports.hpp"
-
 // Available in 2.58
 #ifndef G_SOURCE_FUNC
 #define G_SOURCE_FUNC(f) ((GSourceFunc) (void (*)(void)) (f))

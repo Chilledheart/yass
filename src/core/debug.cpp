@@ -4,6 +4,7 @@
 #include "core/debug.hpp"
 #include "core/check_op.hpp"
 
+#include <iterator>
 #include <string_view>
 #include <base/strings/string_util.h>
 
@@ -85,8 +86,6 @@ void VerifyDebugger() {}
 
 #include <memory>
 
-#include "core/cxx17_backports.hpp"
-
 #if defined(__GLIBCXX__)
 #include <cxxabi.h>
 #endif
@@ -146,14 +145,14 @@ bool BeingDebugged() {
   size_t info_size = sizeof(info);
 
 #if defined(OS_OPENBSD)
-  if (sysctl(mib, base::size(mib), NULL, &info_size, NULL, 0) < 0)
+  if (sysctl(mib, std::size(mib), NULL, &info_size, NULL, 0) < 0)
     return -1;
 
   mib[5] = (info_size / sizeof(struct kinfo_proc));
 #endif
 
   int sysctl_result =
-      sysctl(mib, internal::size(mib), &info, &info_size, nullptr, 0);
+    sysctl(mib, std::size(mib), &info, &info_size, nullptr, 0);
   DCHECK_EQ(sysctl_result, 0);
   if (sysctl_result != 0) {
     is_set = true;

@@ -9,7 +9,6 @@
 
 #include <stdint.h>
 #include "core/checked_math.hpp"
-#include "core/cxx17_backports.hpp"
 #include "core/logging.hpp"
 #include "core/safe_conversions.hpp"
 #include "core/scoped_cftyperef.hpp"
