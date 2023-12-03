@@ -3168,7 +3168,6 @@ set(hfiles
     src/core/check_op.hpp
     src/core/check.hpp
     src/core/atomic_ref_count.hpp
-    src/core/gtest_prod_util.hpp
     src/core/ref_counted.hpp
     src/core/hash.hpp
     src/core/base64.hpp
