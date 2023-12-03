@@ -152,7 +152,7 @@ jobs:
         with:
           path: |
             llvm-mingw-*.tar.xz
-          key: ${{ runner.os }}-mingw64-llvm-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-mingw64-llvm-20230614
       - name: Cache mingw64 curl
         id: curl-cache
         uses: actions/cache@v3
@@ -186,7 +186,7 @@ jobs:
       - name: "Download dependency: llvm-mingw"
         if: ${{ steps.mingw-cache.outputs.cache-hit != 'true' }}
         run: |
-          curl -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20220906/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64.tar.xz
+          curl -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20230614/llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64.tar.xz
       - name: "Download dependency: curl"
         if: ${{ steps.curl-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -198,8 +198,8 @@ jobs:
           rm -vf curl*.zip
       - name: Populate llvm-mingw
         run: |
-          sudo tar -C /opt -xvf llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64.tar.xz
-          sudo ln -sf libclang_rt.builtins-i386.a /opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/lib/clang/15.0.0/lib/windows/libclang_rt.builtins-i686.a
+          sudo tar -C /opt -xvf llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64.tar.xz
+          sudo ln -sf libclang_rt.builtins-i386.a /opt/llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64/lib/clang/16/lib/windows/libclang_rt.builtins-i686.a
       - name: Populate depedencies
         run: |
           sudo apt-get update -qq
@@ -225,30 +225,30 @@ jobs:
           set(CMAKE_ASM_COMPILER_TARGET \${GNU_TARGET} CACHE STRING "")
 
           set(CMAKE_ASM_FLAGS "--rtlib=compiler-rt")
-          set(CMAKE_C_FLAGS "--rtlib=compiler-rt")
-          set(CMAKE_CXX_FLAGS "--rtlib=compiler-rt -stdlib=libc++")
+          set(CMAKE_C_FLAGS "--rtlib=compiler-rt -Wno-unused-command-line-argument")
+          set(CMAKE_CXX_FLAGS "--rtlib=compiler-rt -stdlib=libc++ -Wno-unused-command-line-argument")
           set(CMAKE_SHARED_LINKER_FLAGS "--rtlib=compiler-rt --unwindlib=libunwind")
           set(CMAKE_EXE_LINKER_FLAGS "--rtlib=compiler-rt --unwindlib=libunwind")
           set(USE_COMPILER_RT TRUE)
           set(USE_LIBUNWIND TRUE)
-          set(COMPILER_RT_PATH "/opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/lib/clang/15.0.0/lib/windows/libclang_rt.builtins-${{ matrix.arch }}.a")
+          set(COMPILER_RT_PATH "/opt/llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64/lib/clang/16/lib/windows/libclang_rt.builtins-${{ matrix.arch }}.a")
 
           # cross compilers to use for C and C++
-          set(CMAKE_C_COMPILER "/opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/bin/clang")
-          set(CMAKE_CXX_COMPILER "/opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/bin/clang++")
-          set(CMAKE_LINKER "/opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/bin/ld.lld")
-          set(CMAKE_AR "/opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/bin/llvm-ar")
-          set(CMAKE_CXX_COMPILER_AR "/opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/bin/llvm-ar")
-          set(CMAKE_RANLIB "/opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/bin/llvm-ranlib")
-          set(CMAKE_CXX_COMPILER_RANLIB "/opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/bin/llvm-ranlib")
+          set(CMAKE_C_COMPILER "/opt/llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64/bin/clang")
+          set(CMAKE_CXX_COMPILER "/opt/llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64/bin/clang++")
+          set(CMAKE_LINKER "/opt/llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64/bin/ld.lld")
+          set(CMAKE_AR "/opt/llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64/bin/llvm-ar")
+          set(CMAKE_CXX_COMPILER_AR "/opt/llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64/bin/llvm-ar")
+          set(CMAKE_RANLIB "/opt/llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64/bin/llvm-ranlib")
+          set(CMAKE_CXX_COMPILER_RANLIB "/opt/llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64/bin/llvm-ranlib")
           # disabled because it is missing from binary
-          # set(CMAKE_RC_COMPILER "/opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/bin/llvm-rc")
-          set(CMAKE_RC_COMPILER "/opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/bin/\${GNU_TARGET}-windres")
+          # set(CMAKE_RC_COMPILER "/opt/llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64/bin/llvm-rc")
+          set(CMAKE_RC_COMPILER "/opt/llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64/bin/\${GNU_TARGET}-windres")
 
-          set(CMAKE_SYSROOT "/opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/\${GNU_TARGET}" CACHE STRING "")
+          set(CMAKE_SYSROOT "/opt/llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64/\${GNU_TARGET}" CACHE STRING "")
 
           # target environment on the build host system
-          set(CMAKE_FIND_ROOT_PATH /opt/llvm-mingw-20220906-msvcrt-ubuntu-18.04-x86_64/\${GNU_TARGET})
+          set(CMAKE_FIND_ROOT_PATH /opt/llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64/\${GNU_TARGET})
 
           # modify default behavior of FIND_XXX() commands
           set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
@@ -312,7 +312,7 @@ jobs:
           wine yass_test.exe -logtostderr -v 1 --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks5h --ipv6_mode
           wine yass_test.exe -logtostderr -v 1 --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type http --ipv6_mode
   linux-compiler-compatible:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -328,13 +328,13 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache clang (v15.0.6)
-        id: clang15-cache
+      - name: Cache clang (v16.0.4)
+        id: clang16-cache
         uses: actions/cache@v3
         with:
           path: |
-            third_party/clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04
-          key: ${{ runner.os }}-toolchain-clang15-v${{ env.CACHE_EPOCH }}
+            third_party/clang+llvm-16.0.4-x86_64-linux-gnu-ubuntu-22.04
+          key: ${{ runner.os }}-toolchain-clang16-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
         uses: actions/cache@v3
         with:
@@ -352,13 +352,13 @@ jobs:
         run: |
           sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
           sudo apt-get update -qq
-      - name: "Install dependency: clang 15"
-        if: ${{ steps.clang15-cache.outputs.cache-hit != 'true' }}
+      - name: "Install dependency: clang 16"
+        if: ${{ steps.clang16-cache.outputs.cache-hit != 'true' }}
         run: |
-          curl -L -O https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.6/clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04.tar.xz
-          tar -C third_party -xvf clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04.tar.xz \
-            clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04/lib/clang/15.0.6/include \
-            clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04/bin/{clang,clang++,clang-15,ld.lld,lld,llvm-ar,llvm-ranlib}
+          curl -L -O https://github.com/llvm/llvm-project/releases/download/llvmorg-16.0.4/clang+llvm-16.0.4-x86_64-linux-gnu-ubuntu-22.04.tar.xz
+          tar -C third_party -xvf clang+llvm-16.0.4-x86_64-linux-gnu-ubuntu-22.04.tar.xz \
+            clang+llvm-16.0.4-x86_64-linux-gnu-ubuntu-22.04/lib/clang/16/include \
+            clang+llvm-16.0.4-x86_64-linux-gnu-ubuntu-22.04/bin/{clang,clang++,clang-16,ld.lld,lld,llvm-ar,llvm-ranlib}
           rm -f *.xz
       - name: Populate depedencies
         run: |
@@ -371,8 +371,8 @@ jobs:
       - name: Set build options
         run: |
           if [ "${{ matrix.compiler }}" = "clang" ]; then
-            echo "CC=${{ github.workspace }}/third_party/clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04/bin/clang" >> $GITHUB_ENV
-            echo "CXX=${{ github.workspace }}/third_party/clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04/bin/clang++" >> $GITHUB_ENV
+            echo "CC=${{ github.workspace }}/third_party/clang+llvm-16.0.4-x86_64-linux-gnu-ubuntu-22.04/bin/clang" >> $GITHUB_ENV
+            echo "CXX=${{ github.workspace }}/third_party/clang+llvm-16.0.4-x86_64-linux-gnu-ubuntu-22.04/bin/clang++" >> $GITHUB_ENV
           fi
           if [ "${{ matrix.cxxruntime }}" = "libc++" ]; then
             echo build_opts="${{ env.build_opts }} -use-libcxx=1" >> $GITHUB_ENV
