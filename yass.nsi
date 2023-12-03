@@ -44,7 +44,7 @@ Section "Yet Another Shadow Socket"
     File "yass.exe"
     File /nonfatal "crashpad_handler.exe"
     File /nonfatal "icudtl.dat"
-    File /r "LICENSE*"
+    File "LICENSE"
 
 SectionEnd
 

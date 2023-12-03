@@ -974,37 +974,10 @@ func copyFile(src string, dst string) error {
 	return nil
 }
 
-// LICENSEs
+// LICENSEs use unified LICENSE
 func postStateArchiveLicenses() []string {
-	licenseMaps := map[string]string{
-		"LICENSE":            filepath.Join("..", "LICENSE"),
-		"LICENSE.abseil-cpp": filepath.Join("..", "third_party", "abseil-cpp", "LICENSE"),
-		"LICENSE.asio":       filepath.Join("..", "third_party", "asio", "asio", "LICENSE_1_0.txt"),
-		"LICENSE.boringssl":  filepath.Join("..", "third_party", "boringssl", "src", "LICENSE"),
-		"LICENSE.googleurl":  filepath.Join("..", "third_party", "googleurl", "LICENSE"),
-		"LICENSE.icu":        filepath.Join("..", "third_party", "icu", "LICENSE"),
-		"LICENSE.json":       filepath.Join("..", "third_party", "json", "LICENSE.MIT"),
-		"LICENSE.leveldb":    filepath.Join("..", "third_party", "leveldb", "LICENSE"),
-		"LICENSE.libc++":     filepath.Join("..", "third_party", "libc++", "trunk", "LICENSE.TXT"),
-		"LICENSE.libc++abi":  filepath.Join("..", "third_party", "libc++abi", "trunk", "LICENSE.TXT"),
-		"LICENSE.lss":        filepath.Join("..", "third_party", "lss", "LICENSE"),
-		"LICENSE.mbedtls":    filepath.Join("..", "third_party", "mbedtls", "LICENSE"),
-		"LICENSE.protobuf":   filepath.Join("..", "third_party", "protobuf", "LICENSE"),
-		"LICENSE.quiche":     filepath.Join("..", "third_party", "quiche", "src", "LICENSE"),
-		"LICENSE.re2":        filepath.Join("..", "third_party", "re2", "LICENSE"),
-		"LICENSE.snappy":     filepath.Join("..", "third_party", "snappy", "src", "COPYING"),
-		"LICENSE.sqlite":     filepath.Join("..", "third_party", "sqlite", "LICENSE"),
-		"LICENSE.tcmalloc":   filepath.Join("..", "third_party", "tcmalloc", "src", "LICENSE"),
-		"LICENSE.xxhash":     filepath.Join("..", "third_party", "xxhash", "LICENSE"),
-		"LICENSE.zlib":       filepath.Join("..", "third_party", "zlib", "LICENSE"),
-	}
 	var licenses []string
-	for license := range licenseMaps {
-		if err := copyFile(licenseMaps[license], license); err != nil {
-			glog.Fatalf("%v", err)
-		}
-		licenses = append(licenses, license)
-	}
+	licenses = append(licenses, "LICENSE")
 	return licenses
 }
 

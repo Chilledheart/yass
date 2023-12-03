@@ -3708,7 +3708,7 @@ endif()
 #           Source code: LICENSE part
 # *****************************************************************************************
 
-if(NOT CMAKE_SKIP_INSTALL_RULES AND GUI)
+if(NOT CMAKE_SKIP_INSTALL_RULES)
   file(READ LICENSE                                         _YASS_LICENSE)
   file(READ third_party/abseil-cpp/LICENSE                  _ABSEIL_CPP_LICENSE)
   file(READ third_party/asio/asio/LICENSE_1_0.txt           _ASIO_LICENSE)
