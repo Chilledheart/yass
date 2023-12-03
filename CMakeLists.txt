@@ -3093,7 +3093,6 @@ set(files
     src/core/check.cpp
     src/core/scoped_clear_last_error_win.cpp
     src/core/ref_counted.cpp
-    src/core/utf_string_conversion_utils.cpp
     src/core/base64.cpp
     src/core/hash.cpp
     src/core/atl_throw.cpp
@@ -3169,9 +3168,7 @@ set(hfiles
     src/core/check_op.hpp
     src/core/check.hpp
     src/core/atomic_ref_count.hpp
-    src/core/gtest_prod_util.hpp
     src/core/ref_counted.hpp
-    src/core/utf_string_conversion_utils.hpp
     src/core/hash.hpp
     src/core/base64.hpp
     src/core/atl_throw.hpp
@@ -3711,7 +3708,7 @@ endif()
 #           Source code: LICENSE part
 # *****************************************************************************************
 
-if(NOT CMAKE_SKIP_INSTALL_RULES AND GUI)
+if(NOT CMAKE_SKIP_INSTALL_RULES)
   file(READ LICENSE                                         _YASS_LICENSE)
   file(READ third_party/abseil-cpp/LICENSE                  _ABSEIL_CPP_LICENSE)
   file(READ third_party/asio/asio/LICENSE_1_0.txt           _ASIO_LICENSE)

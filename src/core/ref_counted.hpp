@@ -5,16 +5,15 @@
 #define CORE_REF_COUNTED_H_
 
 #include <stddef.h>
-
 #include <utility>
 
 #include "core/atomic_ref_count.hpp"
 #include "core/check_op.hpp"
 #include "core/compiler_specific.hpp"
-#include "core/gtest_prod_util.hpp"
 #include "core/scoped_refptr.hpp"
-#include "core/template_util.hpp"
 #include "core/thread_collision_warner.hpp"
+
+#include <base/gtest_prod_util.h>
 
 namespace subtle {
 
