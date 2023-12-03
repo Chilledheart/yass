@@ -101,11 +101,11 @@ endif()
 if (${CMAKE_BUILD_TYPE} MATCHES Debug)
  set(libcxx_PUBLIC_DEFINITIONS
    ${libcxx_PUBLIC_DEFINITIONS}
-   "_LIBCPP_ENABLE_DEBUG_MODE")
+   "_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG")
 else()
  set(libcxx_PUBLIC_DEFINITIONS
    ${libcxx_PUBLIC_DEFINITIONS}
-   "_LIBCPP_ENABLE_SAFE_MODE=1")
+   "_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE")
 endif()
 
 set(libcxx_PUBLIC_DEFINITIONS
@@ -217,6 +217,7 @@ set(libcxx_SOURCES
   trunk/src/atomic.cpp
   trunk/src/barrier.cpp
   trunk/src/bind.cpp
+  trunk/src/call_once.cpp
   trunk/src/charconv.cpp
   trunk/src/chrono.cpp
   trunk/src/condition_variable.cpp
