@@ -30,7 +30,7 @@ on:
   release:
     types: [published]
 env:
-  CACHE_EPOCH: 121-1
+  CACHE_EPOCH: 121-2
   GOPROXY: direct
   DH_QUIET: 1
 jobs:
