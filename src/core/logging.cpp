@@ -7,6 +7,7 @@
 #include <absl/base/config.h>
 #endif
 #include <absl/base/thread_annotations.h>
+#include <base/strings/string_util.h>
 
 #include "core/logging.hpp"
 #include "core/process_utils.hpp"
@@ -63,7 +64,6 @@
 #include "core/compiler_specific.hpp"
 #include "core/debug.hpp"
 #include "core/safe_strerror.hpp"
-#include "core/string_util.hpp"
 #include "core/utils.hpp"
 
 #ifdef _MSC_VER
@@ -3071,7 +3071,7 @@ std::string SystemErrorCodeToString(SystemErrorCode error_code) {
                              sizeof(msgbuf) / sizeof(msgbuf[0]), nullptr);
   if (len) {
     // Messages returned by system end with line breaks.
-    return CollapseWhitespaceASCII(msgbuf, true) +
+    return gurl_base::CollapseWhitespaceASCII(msgbuf, true) +
       absl::StrFormat(" (0x%lX)", error_code);
   }
   return absl::StrFormat("Error (0x%lX) while retrieving error. (0x%lX)",

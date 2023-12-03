@@ -5,6 +5,7 @@
 #include "core/check_op.hpp"
 
 #include <string_view>
+#include <base/strings/string_util.h>
 
 #include "core/common_posix.hpp"
 #include "core/compiler_specific.hpp"
@@ -85,7 +86,6 @@ void VerifyDebugger() {}
 #include <memory>
 
 #include "core/cxx17_backports.hpp"
-#include "core/string_util.hpp"
 
 #if defined(__GLIBCXX__)
 #include <cxxabi.h>
