@@ -3089,11 +3089,9 @@ set(files
     src/core/utils_fs.cpp
     src/core/safe_strerror.cpp
     src/core/debug.cpp
-    src/core/string_util.cpp
     src/core/check_op.cpp
     src/core/check.cpp
     src/core/scoped_clear_last_error_win.cpp
-    src/core/string_util_constants.cpp
     src/core/ref_counted.cpp
     src/core/utf_string_conversion_utils.cpp
     src/core/base64.cpp
@@ -3168,7 +3166,6 @@ set(hfiles
     src/core/utils_fs.hpp
     src/core/safe_strerror.hpp
     src/core/debug.hpp
-    src/core/string_util.hpp
     src/core/check_op.hpp
     src/core/check.hpp
     src/core/atomic_ref_count.hpp
@@ -3177,7 +3174,6 @@ set(hfiles
     src/core/utf_string_conversion_utils.hpp
     src/core/hash.hpp
     src/core/base64.hpp
-    src/core/cxx20_to_address.hpp
     src/core/atl_throw.hpp
     src/core/atl.hpp
     src/crypto/aead_base_decrypter.hpp

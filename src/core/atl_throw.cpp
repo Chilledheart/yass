@@ -8,8 +8,9 @@
 #include <winerror.h>
 #include <windows.h>
 
+#include <iterator>
+
 #include "core/compiler_specific.hpp"
-#include "core/cxx17_backports.hpp"
 #include "core/immediate_crash.hpp"
 #include "core/logging.hpp"
 
@@ -28,7 +29,7 @@ static void TerminateBecauseOutOfMemory() {
   // Pass the size of the failed request in an exception argument.
   ULONG_PTR exception_args[] = {0};
   ::RaiseException(kOomExceptionCode, EXCEPTION_NONCONTINUABLE,
-                   internal::size(exception_args), exception_args);
+                   std::size(exception_args), exception_args);
 
   // Safety check, make sure process exits here.
   _exit(kOomExceptionCode);

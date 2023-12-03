@@ -6,17 +6,19 @@
 #include <absl/base/attributes.h>
 #include <absl/strings/str_cat.h>
 #include <cstdlib>
+#include <base/strings/string_util.h>
 
 #include "config/config.hpp"
 #include "core/asio.hpp"
 #include "core/base64.hpp"
 #include "core/http_parser.hpp"
 #include "core/rand_util.hpp"
-#include "core/string_util.hpp"
 #include "core/utils.hpp"
 
 ABSL_FLAG(bool, hide_via, true, "If true, the Via heaeder will not be added.");
 ABSL_FLAG(bool, hide_ip, true, "If true, the Forwarded header will not be augmented with your IP address.");
+
+using gurl_base::ToLowerASCII;
 
 static void SplitHostPort(std::string *out_hostname, std::string *out_port,
                           const std::string &hostname_and_port) {
