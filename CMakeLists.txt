@@ -1324,7 +1324,7 @@ endif()
 # C11/C++17 compiler flags setup.
 # --------------------------
 set(CMAKE_C_STANDARD 99)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -2255,6 +2255,7 @@ target_compile_definitions(asio PUBLIC ASIO_NO_EXCEPTIONS)
 target_compile_definitions(asio PUBLIC ASIO_NO_TS_EXECUTORS)
 target_compile_definitions(asio PUBLIC ASIO_SEPARATE_COMPILATION)
 target_compile_definitions(asio PUBLIC ASIO_NO_DEPRECATED)
+target_compile_definitions(asio PUBLIC ASIO_DISABLE_CO_AWAIT)
 # forward libcxx present
 # we control the visiblity
 target_compile_definitions(asio PUBLIC ASIO_DISABLE_VISIBILITY)
