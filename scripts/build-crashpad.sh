@@ -120,7 +120,7 @@ case "$ARCH" in
 esac
 
 cp -f ../../../scripts/mini_chromium.BUILD.gn third_party/mini_chromium/mini_chromium/build/config/BUILD.gn
-$sed 's|__hlt(0)|__builtin_trap()|g' third_party/mini_chromium/mini_chromium/base/logging.cc
+$sed 's|__hlt(0)|asm volatile("hlt #0")|g' third_party/mini_chromium/mini_chromium/base/logging.cc
 # build stage
 rm -rf "$out"
 mkdir -p "$out"
