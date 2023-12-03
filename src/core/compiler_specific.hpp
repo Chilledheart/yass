@@ -323,20 +323,6 @@
 #define WARN_UNUSED_RESULT
 #endif
 
-// In case the compiler supports it NO_UNIQUE_ADDRESS evaluates to the C++20
-// attribute [[no_unique_address]]. This allows annotating data members so that
-// they need not have an address distinct from all other non-static data members
-// of its class.
-//
-// References:
-// * https://en.cppreference.com/w/cpp/language/attributes/no_unique_address
-// * https://wg21.link/dcl.attr.nouniqueaddr
-#if HAS_CPP_ATTRIBUTE(no_unique_address)
-#define NO_UNIQUE_ADDRESS [[no_unique_address]]
-#else
-#define NO_UNIQUE_ADDRESS
-#endif
-
 // Tell the compiler a function is using a printf-style format string.
 // |format_param| is the one-based index of the format string parameter;
 // |dots_param| is the one-based index of the "..." parameter.
