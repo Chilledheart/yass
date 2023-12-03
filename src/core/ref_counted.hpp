@@ -13,7 +13,6 @@
 #include "core/compiler_specific.hpp"
 #include "core/gtest_prod_util.hpp"
 #include "core/scoped_refptr.hpp"
-#include "core/template_util.hpp"
 #include "core/thread_collision_warner.hpp"
 
 namespace subtle {
