@@ -254,7 +254,11 @@ set(quiche_SRCS
   src/quiche/spdy/core/zero_copy_output_buffer.h
   src/quiche/web_transport/complete_buffer_visitor.cc
   src/quiche/web_transport/complete_buffer_visitor.h
+  src/quiche/web_transport/encapsulated/encapsulated_web_transport.cc
+  src/quiche/web_transport/encapsulated/encapsulated_web_transport.h
   src/quiche/web_transport/web_transport.h
+  src/quiche/web_transport/web_transport_headers.cc
+  src/quiche/web_transport/web_transport_headers.h
   )
 
 set(quiche_quic_SOURCES
