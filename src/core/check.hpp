@@ -82,7 +82,7 @@ class CheckError {
   // Stream for adding optional details to the error message.
   std::ostream& stream();
 
-  NOMERGE ~CheckError();
+  NOMERGE NOINLINE NOT_TAIL_CALLED ~CheckError();
 
   CheckError(const CheckError& other) = delete;
   CheckError& operator=(const CheckError& other) = delete;
