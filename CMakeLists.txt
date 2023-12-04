@@ -2254,7 +2254,6 @@ target_compile_definitions(asio PUBLIC ASIO_NO_EXCEPTIONS)
 target_compile_definitions(asio PUBLIC ASIO_NO_TS_EXECUTORS)
 target_compile_definitions(asio PUBLIC ASIO_SEPARATE_COMPILATION)
 target_compile_definitions(asio PUBLIC ASIO_NO_DEPRECATED)
-target_compile_definitions(asio PUBLIC ASIO_DISABLE_CO_AWAIT)
 # forward libcxx present
 # we control the visiblity
 target_compile_definitions(asio PUBLIC ASIO_DISABLE_VISIBILITY)
@@ -3097,7 +3096,6 @@ set(files
     src/core/ref_counted.cpp
     src/core/base64.cpp
     src/core/hash.cpp
-    src/core/atl_throw.cpp
     src/core/thread_collision_warner.hpp
     src/core/thread_collision_warner.cpp
     src/crypto/aead_base_decrypter.cpp
@@ -3173,8 +3171,6 @@ set(hfiles
     src/core/ref_counted.hpp
     src/core/hash.hpp
     src/core/base64.hpp
-    src/core/atl_throw.hpp
-    src/core/atl.hpp
     src/crypto/aead_base_decrypter.hpp
     src/crypto/aead_base_encrypter.hpp
     src/crypto/aead_evp_decrypter.hpp

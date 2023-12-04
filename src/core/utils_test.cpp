@@ -9,6 +9,27 @@
 #include <windows.h>
 #endif
 
+TEST(UtilsTest, Dirname) {
+  ASSERT_EQ(Dirname("a/b/prog/file.cc"), "a/b/prog");
+  ASSERT_EQ(Dirname("a/b/prog//"), "a/b");
+  ASSERT_EQ(Dirname("file.cc"), ".");
+  ASSERT_EQ(Dirname("/file.cc"), "/");
+  ASSERT_EQ(Dirname("//file.cc"), "/");
+  ASSERT_EQ(Dirname("/dir//file.cc"), "/dir");
+}
+
+TEST(UtilsTest, Basename) {
+  ASSERT_EQ(Basename("a/b/prog/file.cc"), "file.cc");
+  ASSERT_EQ(Basename("a/b/prog//"), "prog");
+  ASSERT_EQ(Basename("file.cc"), "file.cc");
+  ASSERT_EQ(Basename("/file.cc"), "file.cc");
+  ASSERT_EQ(Basename("//file.cc"), "file.cc");
+  ASSERT_EQ(Basename("/dir//file.cc"), "file.cc");
+  ASSERT_EQ(Basename("////"), "/");
+  ASSERT_EQ(Basename("c/"), "c");
+  ASSERT_EQ(Basename("/a/b/c"), "c");
+}
+
 #ifdef _WIN32
 TEST(UtilsTest, ExpandUserFromStringImpl) {
   wchar_t path[] = L"C:/path/to/directory";

@@ -68,6 +68,81 @@ const char kSeparators[] = "/\\";
 const char kSeparators[] = "/";
 #endif
 
+std::string_view Dirname(std::string_view path) {
+  // trim the extra trailing slash
+  auto first_non_slash_at_end_pos = path.find_last_not_of(kSeparators);
+
+  // path is in the root directory
+  if (first_non_slash_at_end_pos == std::string_view::npos) {
+    return path.empty() ? "/" : path.substr(0, 1);
+  }
+
+  auto last_slash_pos =
+      path.find_last_of(kSeparators, first_non_slash_at_end_pos);
+
+  // path is in the current directory.
+  if (last_slash_pos == std::string_view::npos) {
+    return ".";
+  }
+
+  // trim the extra trailing slash
+  first_non_slash_at_end_pos =
+      path.find_last_not_of(kSeparators, last_slash_pos);
+
+  // path is in the root directory
+  if (first_non_slash_at_end_pos == std::string_view::npos) {
+    return path.substr(0, 1);
+  }
+
+  return path.substr(0, first_non_slash_at_end_pos + 1);
+}
+
+// A portable interface that returns the basename of the filename passed as an
+// argument. It is similar to basename(3)
+// <https://linux.die.net/man/3/basename>.
+// For example:
+//     Basename("a/b/prog/file.cc")
+// returns "file.cc"
+//     Basename("a/b/prog//")
+// returns "prog"
+//     Basename("file.cc")
+// returns "file.cc"
+//     Basename("/file.cc")
+// returns "file.cc"
+//     Basename("//file.cc")
+// returns "file.cc"
+//     Basename("/dir//file.cc")
+// returns "file.cc"
+//     Basename("////")
+// returns "/"
+//     Basename("c/")
+// returns "c"
+//     Basename("/a/b/c")
+// returns "c"
+//
+// TODO: handle with driver letter under windows
+std::string_view Basename(std::string_view path) {
+  // trim the extra trailing slash
+  auto first_non_slash_at_end_pos = path.find_last_not_of(kSeparators);
+
+  // path is in the root directory
+  if (first_non_slash_at_end_pos == std::string_view::npos) {
+    return path.empty() ? "" : path.substr(0, 1);
+  }
+
+  auto last_slash_pos =
+      path.find_last_of(kSeparators, first_non_slash_at_end_pos);
+
+  // path is in the current directory
+  if (last_slash_pos == std::string_view::npos) {
+    return path.substr(0, first_non_slash_at_end_pos + 1);
+  }
+
+  // path is in the root directory
+  return path.substr(last_slash_pos + 1,
+                     first_non_slash_at_end_pos - last_slash_pos);
+}
+
 std::string ExpandUser(const std::string& file_path) {
   std::string real_path = file_path;
 
