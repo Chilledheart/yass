@@ -1,3 +1,10 @@
+yass (1.5.1-1) UNRELEASED; urgency=medium
+
+  * Bump to chromium 121 dependents.
+  * Fix use cached configuration issue.
+  * Fix crash in resume from previous failure.
+
+ -- Chilledheart <hukeyue@hotmail.com>  Mon, 4 Dec 2023 20:06:54 +0800
 yass (1.5.0-1) UNRELEASED; urgency=low
 
   * New major release.
