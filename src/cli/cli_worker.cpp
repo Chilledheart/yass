@@ -149,7 +149,6 @@ void Worker::on_resolve_local(asio::error_code ec,
     if (callback) {
       callback(ec);
     }
-    private_->cli_server.reset();
     work_guard_.reset();
     return;
   }
@@ -171,7 +170,6 @@ void Worker::on_resolve_local(asio::error_code ec,
 
   if (ec) {
     private_->cli_server->stop();
-    private_->cli_server.reset();
   }
 
   work_guard_.reset();
