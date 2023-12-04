@@ -47,17 +47,19 @@ Worker::~Worker() {
   start_callback_ = nullptr;
   stop_callback_ = nullptr;
   Stop(nullptr);
-  
-  work_guard_.reset();
+
+  if (thread_ && thread_->joinable())
+    thread_->join();
+
   delete private_;
 }
 
 void Worker::Start(absl::AnyInvocable<void(asio::error_code)> &&callback) {
-  DCHECK_EQ(private_->cli_server.get(), nullptr);
-  DCHECK(!start_callback_);
-  start_callback_ = std::move(callback);
   if (thread_ && thread_->joinable())
     thread_->join();
+  DCHECK(!start_callback_);
+  start_callback_ = std::move(callback);
+  DCHECK_EQ(private_->cli_server.get(), nullptr);
 
   /// listen in the worker thread
   thread_ = std::make_unique<std::thread>([this] { WorkFunc(); });
@@ -109,18 +111,12 @@ void Worker::Stop(absl::AnyInvocable<void()> &&callback) {
 #else
     resolver_.cancel();
 #endif
-    auto callback = std::move(stop_callback_);
+
     if (private_->cli_server) {
       private_->cli_server->stop();
     }
     work_guard_.reset();
-    if (callback) {
-      callback();
-    }
   });
-  thread_->join();
-  private_->cli_server.reset();
-  thread_.reset();
 }
 
 size_t Worker::currentConnections() const {
@@ -144,6 +140,13 @@ void Worker::WorkFunc() {
   work_guard_ = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context_.get_executor());
   io_context_.run();
   io_context_.restart();
+  private_->cli_server.reset();
+
+  auto callback = std::move(stop_callback_);
+  if (callback) {
+    callback();
+  }
+  DCHECK(!stop_callback_);
 
   VLOG(1) << "background thread stopped";
 }
@@ -160,6 +163,7 @@ void Worker::on_resolve_local(asio::error_code ec,
     work_guard_.reset();
     return;
   }
+  endpoints_.clear();
   endpoints_.insert(endpoints_.end(), std::begin(results), std::end(results));
 
   private_->cli_server = std::make_unique<CliServer>(io_context_,
@@ -178,10 +182,9 @@ void Worker::on_resolve_local(asio::error_code ec,
 
   if (ec) {
     private_->cli_server->stop();
-    private_->cli_server.reset();
+    work_guard_.reset();
   }
 
-  work_guard_.reset();
   if (callback) {
     callback(ec);
   }
