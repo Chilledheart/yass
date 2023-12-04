@@ -131,11 +131,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
             << " disconnected";
     asio::error_code ec;
     downlink_->socket_.close(ec);
-    auto cb = std::move(disconnect_cb_);
-    disconnect_cb_ = nullptr;
-    if (cb) {
-      cb();
-    }
+    on_disconnect();
   }
 
  private:

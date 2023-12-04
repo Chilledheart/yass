@@ -84,6 +84,7 @@ class Downlink {
  public:
   asio::io_context& io_context_;
   asio::ip::tcp::socket socket_;
+  handle_t handshake_callback_; // FIXME handle it gracefully
 };
 
 class SSLDownlink : public Downlink {
@@ -161,7 +162,6 @@ class SSLDownlink : public Downlink {
 
  private:
   bool https_fallback_;
-  handle_t handshake_callback_; // FIXME handle it gracefully
   scoped_refptr<net::SSLServerSocket> ssl_socket_;
 };
 
@@ -251,7 +251,18 @@ class Connection {
   /// set callback
   ///
   /// \param cb the callback function pointer when disconnect happens
-  void set_disconnect_cb(std::function<void()> cb) { disconnect_cb_ = cb; }
+  void set_disconnect_cb(absl::AnyInvocable<void()> &&cb) { disconnect_cb_ = std::move(cb); }
+
+  /// call callback
+  ///
+  void on_disconnect() {
+    downlink_->handshake_callback_ = nullptr;
+    auto cb = std::move(disconnect_cb_);
+    DCHECK(!disconnect_cb_);
+    if (cb) {
+      cb();
+    }
+  }
 
   asio::io_context& io_context() { return *io_context_; }
 
@@ -303,14 +314,15 @@ class Connection {
 
   std::unique_ptr<Downlink> downlink_;
 
-  /// the callback invoked when disconnect event happens
-  std::function<void()> disconnect_cb_;
-
  protected:
   /// statistics of read bytes
   size_t rbytes_transferred_ = 0;
   /// statistics of written bytes
   size_t wbytes_transferred_ = 0;
+
+ private:
+  /// the callback invoked when disconnect event happens
+  absl::AnyInvocable<void()> disconnect_cb_;
 };
 
 class ConnectionFactory {
