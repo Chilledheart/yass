@@ -50,9 +50,9 @@ Worker::~Worker() {
 }
 
 void Worker::Start(std::function<void(asio::error_code)> callback) {
-  DCHECK_EQ(private_->cli_server.get(), nullptr);
   if (thread_ && thread_->joinable())
     thread_->join();
+  DCHECK_EQ(private_->cli_server.get(), nullptr);
 
   /// listen in the worker thread
   thread_ = std::make_unique<std::thread>([this] { WorkFunc(); });
@@ -96,7 +96,7 @@ void Worker::Stop(std::function<void()> callback) {
   if (!thread_) {
     return;
   }
-  asio::post(io_context_ ,[this, callback]() {
+  asio::post(io_context_ ,[this]() {
 #ifdef HAVE_C_ARES
     resolver_->Cancel();
 #else
@@ -106,13 +106,12 @@ void Worker::Stop(std::function<void()> callback) {
       private_->cli_server->stop();
     }
     work_guard_.reset();
-    if (callback) {
-      callback();
-    }
   });
   thread_->join();
-  private_->cli_server.reset();
   thread_.reset();
+  if (callback) {
+    callback();
+  }
 }
 
 size_t Worker::currentConnections() const {
@@ -136,6 +135,7 @@ void Worker::WorkFunc() {
   work_guard_ = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context_.get_executor());
   io_context_.run();
   io_context_.restart();
+  private_->cli_server.reset();
 
   VLOG(1) << "background thread stopped";
 }
@@ -152,6 +152,7 @@ void Worker::on_resolve_local(asio::error_code ec,
     work_guard_.reset();
     return;
   }
+  endpoints_.clear();
   endpoints_.insert(endpoints_.end(), std::begin(results), std::end(results));
 
   private_->cli_server = std::make_unique<CliServer>(io_context_,
