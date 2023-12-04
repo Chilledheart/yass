@@ -12,7 +12,7 @@
 #include <string>
 
 #include <CoreFoundation/CoreFoundation.h>
-#include "core/scoped_cftyperef.hpp"
+#include <base/apple/scoped_cftyperef.h>
 
 namespace config {
 
@@ -42,8 +42,8 @@ class ConfigImplApple : public ConfigImpl {
   bool DeleteImpl(const std::string& key) override;
 
  private:
-  ScopedCFTypeRef<CFDictionaryRef> root_;
-  ScopedCFTypeRef<CFMutableDictionaryRef> write_root_;
+  gurl_base::apple::ScopedCFTypeRef<CFDictionaryRef> root_;
+  gurl_base::apple::ScopedCFTypeRef<CFMutableDictionaryRef> write_root_;
 };
 
 }  // namespace config

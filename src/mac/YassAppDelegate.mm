@@ -9,6 +9,7 @@
 #include <string>
 
 #include <absl/flags/flag.h>
+#include <base/strings/sys_string_conversions.h>
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
@@ -72,16 +73,16 @@
   std::ostringstream ss;
   if (state_ == STARTED) {
     NSString *prefixMessage = NSLocalizedString(@"CONNECTED_WITH_CONNS", @"Connected with conns: ");
-    ss << SysNSStringToUTF8(prefixMessage) << worker_.currentConnections();
+    ss << gurl_base::SysNSStringToUTF8(prefixMessage) << worker_.currentConnections();
   } else if (state_ == START_FAILED) {
     NSString *prefixMessage = NSLocalizedString(@"FAILED_TO_CONNECT_DUE_TO", @"Failed to connect due to ");
-    ss << SysNSStringToUTF8(prefixMessage) << error_msg_.c_str();
+    ss << gurl_base::SysNSStringToUTF8(prefixMessage) << error_msg_.c_str();
   } else {
     NSString *prefixMessage = NSLocalizedString(@"DISCONNECTED_WITH", @"Disconnected with ");
-    ss << SysNSStringToUTF8(prefixMessage) << worker_.GetRemoteDomain();
+    ss << gurl_base::SysNSStringToUTF8(prefixMessage) << worker_.GetRemoteDomain();
   }
 
-  return SysUTF8ToNSString(ss.str());
+  return gurl_base::SysUTF8ToNSString(ss.str());
 }
 
 - (void)OnStart:(BOOL)quiet {
@@ -165,14 +166,14 @@
   YassViewController* viewController =
       (YassViewController*)
           NSApplication.sharedApplication.mainWindow.contentViewController;
-  auto server_host = SysNSStringToUTF8(viewController.serverHost.stringValue);
+  auto server_host = gurl_base::SysNSStringToUTF8(viewController.serverHost.stringValue);
   auto server_port = viewController.serverPort.intValue;
-  auto username = SysNSStringToUTF8(viewController.username.stringValue);
-  auto password = SysNSStringToUTF8(viewController.password.stringValue);
+  auto username = gurl_base::SysNSStringToUTF8(viewController.username.stringValue);
+  auto password = gurl_base::SysNSStringToUTF8(viewController.password.stringValue);
   auto method_string =
-      SysNSStringToUTF8(viewController.cipherMethod.stringValue);
+      gurl_base::SysNSStringToUTF8(viewController.cipherMethod.stringValue);
   auto method = to_cipher_method(method_string);
-  auto local_host = SysNSStringToUTF8(viewController.localHost.stringValue);
+  auto local_host = gurl_base::SysNSStringToUTF8(viewController.localHost.stringValue);
   auto local_port = viewController.localPort.intValue;
   auto connect_timeout = viewController.timeout.intValue;
 

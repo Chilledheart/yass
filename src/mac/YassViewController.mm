@@ -3,9 +3,11 @@
 
 #import "mac/YassViewController.h"
 
-#include <absl/flags/flag.h>
 #include <iomanip>
 #include <sstream>
+
+#include <absl/flags/flag.h>
+#include <base/strings/sys_string_conversions.h>
 
 #include "cli/cli_connection_stats.hpp"
 #include "config/config.hpp"
@@ -219,17 +221,17 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 
   std::ostringstream ss;
   NSString *message = NSLocalizedString(@"CONNECTED", @"Connected:");
-  ss << SysNSStringToUTF8(message);
+  ss << gurl_base::SysNSStringToUTF8(message);
   message = NSLocalizedString(@"TXRATE", @" tx rate: ");
-  ss << SysNSStringToUTF8(message);
+  ss << gurl_base::SysNSStringToUTF8(message);
   humanReadableByteCountBin(&ss, rx_rate_);
   ss << "/s";
   message = NSLocalizedString(@"RXRATE", @" rx rate: ");
-  ss << SysNSStringToUTF8(message);
+  ss << gurl_base::SysNSStringToUTF8(message);
   humanReadableByteCountBin(&ss, tx_rate_);
   ss << "/s";
 
-  return SysUTF8ToNSString(ss.str());
+  return gurl_base::SysUTF8ToNSString(ss.str());
 }
 
 - (void)UpdateStatusBar {
@@ -238,15 +240,15 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 
 - (void)LoadChanges {
   self.serverHost.stringValue =
-      SysUTF8ToNSString(absl::GetFlag(FLAGS_server_host));
+      gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_server_host));
   self.serverPort.intValue = absl::GetFlag(FLAGS_server_port);
-  self.username.stringValue = SysUTF8ToNSString(absl::GetFlag(FLAGS_username));
-  self.password.stringValue = SysUTF8ToNSString(absl::GetFlag(FLAGS_password));
+  self.username.stringValue = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_username));
+  self.password.stringValue = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_password));
   auto cipherMethod = absl::GetFlag(FLAGS_method).method;
   self.cipherMethod.stringValue =
-      SysUTF8ToNSString(to_cipher_method_str(cipherMethod));
+      gurl_base::SysUTF8ToNSString(to_cipher_method_str(cipherMethod));
   self.localHost.stringValue =
-      SysUTF8ToNSString(absl::GetFlag(FLAGS_local_host));
+      gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_local_host));
   self.localPort.intValue = absl::GetFlag(FLAGS_local_port);
   self.timeout.intValue = absl::GetFlag(FLAGS_connect_timeout);
 }
