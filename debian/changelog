@@ -1,3 +1,10 @@
+yass (1.4.11-1) UNRELEASED; urgency=medium
+
+  * Bump Clang.
+  * Fix use cached configuration issue.
+  * Fix crash in resume from previous failure.
+
+ -- Chilledheart <hukeyue@hotmail.com>  Mon, 4 Dec 2023 19:47:54 +0800
 yass (1.4.10-1) UNRELEASED; urgency=medium
 
   * Bump Clang and Abseil-Cpp.
