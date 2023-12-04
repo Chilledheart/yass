@@ -173,6 +173,15 @@ if (WIN32)
 elseif(NOT APPLE)
   target_sources(url PRIVATE
     googleurl/base/strings/sys_string_conversions_posix.cc)
+else()
+  target_sources(url PRIVATE
+    googleurl-override/base/apple/scoped_cftyperef.h
+    googleurl-override/base/apple/scoped_typeref.h
+    googleurl-override/base/apple/foundation_util.mm
+    googleurl-override/base/apple/foundation_util.h
+    googleurl-override/base/mac/scoped_ioobject.h
+    googleurl-override/base/strings/sys_string_conversions_apple.mm
+  )
   # missing apple part
 endif()
 

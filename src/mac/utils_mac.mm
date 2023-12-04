@@ -17,15 +17,16 @@
 
 #include "config/config.hpp"
 #include "core/compiler_specific.hpp"
-#include "core/foundation_util.hpp"
 #include "core/logging.hpp"
-#include "core/scoped_cftyperef.hpp"
-#include "core/scoped_ioobject.hpp"
 #include "core/process_utils.hpp"
 #include "core/utils.hpp"
 
+#include <base/apple/scoped_cftyperef.h>
+#include <base/apple/foundation_util.h>
+#include <base/mac/scoped_ioobject.h>
 #include <absl/strings/string_view.h>
 #include <absl/strings/str_split.h>
+#include <base/strings/sys_string_conversions.h>
 
 namespace {
 
@@ -59,10 +60,10 @@ class LoginItemsFileList {
   // representing the specified bundle.  If such an item is found, returns a
   // retained reference to it. Caller is responsible for releasing the
   // reference.
-  ScopedCFTypeRef<LSSharedFileListItemRef> GetLoginItemForApp(NSURL* url) {
+  gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> GetLoginItemForApp(NSURL* url) {
     DCHECK(login_items_.get()) << "Initialize() failed or not called.";
 
-  ScopedCFTypeRef<CFURLRef> cfurl((CFURLRef)(CFBridgingRetain(url)));
+  gurl_base::apple::ScopedCFTypeRef<CFURLRef> cfurl((CFURLRef)(CFBridgingRetain(url)));
 
 #pragma clang diagnostic push  // https://crbug.com/1154377
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
@@ -78,32 +79,32 @@ class LoginItemsFileList {
       // kLSSharedFileListDoNotMountVolumes is used so that we don't trigger
       // mounting when it's not expected by a user. Just listing the login
       // items should not cause any side-effects.
-      ScopedCFTypeRef<CFURLRef> item_url(LSSharedFileListItemCopyResolvedURL(
+      gurl_base::apple::ScopedCFTypeRef<CFURLRef> item_url(LSSharedFileListItemCopyResolvedURL(
           item, kLSSharedFileListDoNotMountVolumes, nullptr));
 #pragma clang diagnostic pop
 
       if (item_url && CFEqual(item_url.get(), cfurl.get())) {
-        return ScopedCFTypeRef<LSSharedFileListItemRef>(item,
-                                                        scoped_policy::RETAIN);
+        return gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef>(item,
+                                                                          gurl_base::scoped_policy::RETAIN);
       }
     }
 
-    return ScopedCFTypeRef<LSSharedFileListItemRef>();
+    return gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef>();
   }
 
-  ScopedCFTypeRef<LSSharedFileListItemRef> GetLoginItemForMainApp() {
+  gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> GetLoginItemForMainApp() {
     NSURL* url = [NSURL fileURLWithPath:[[NSBundle mainBundle] bundlePath]];
     return GetLoginItemForApp(url);
   }
 
  private:
-  ScopedCFTypeRef<LSSharedFileListRef> login_items_;
+  gurl_base::apple::ScopedCFTypeRef<LSSharedFileListRef> login_items_;
 };
 
 bool IsHiddenLoginItem(LSSharedFileListItemRef item) {
 #pragma clang diagnostic push  // https://crbug.com/1154377
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-  ScopedCFTypeRef<CFBooleanRef> hidden(
+  gurl_base::apple::ScopedCFTypeRef<CFBooleanRef> hidden(
       reinterpret_cast<CFBooleanRef>(LSSharedFileListItemCopyProperty(
           item,
           reinterpret_cast<CFStringRef>(kLSSharedFileListLoginItemHidden))));
@@ -119,7 +120,7 @@ bool CheckLoginItemStatus(bool* is_hidden) {
   if (!login_items.Initialize())
     return false;
 
-  ScopedCFTypeRef<LSSharedFileListItemRef> item(
+  gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> item(
       login_items.GetLoginItemForMainApp());
   if (!item.get())
     return false;
@@ -132,7 +133,7 @@ bool CheckLoginItemStatus(bool* is_hidden) {
 
 void AddToLoginItems(bool hide_on_startup) {
   NSBundle* bundle = [NSBundle mainBundle];
-  AddToLoginItems(SysNSStringToUTF8([bundle bundlePath]), hide_on_startup);
+  AddToLoginItems(gurl_base::SysNSStringToUTF8([bundle bundlePath]), hide_on_startup);
 }
 
 void AddToLoginItems(const std::string& app_bundle_file_path,
@@ -143,9 +144,9 @@ void AddToLoginItems(const std::string& app_bundle_file_path,
 
   NSURL* app_bundle_url = [NSURL fileURLWithPath:@(app_bundle_file_path.c_str()) isDirectory:TRUE];
 
-  ScopedCFTypeRef<CFURLRef> cf_app_bundle_url((CFURLRef)CFBridgingRetain(app_bundle_url));
+  gurl_base::apple::ScopedCFTypeRef<CFURLRef> cf_app_bundle_url((CFURLRef)CFBridgingRetain(app_bundle_url));
 
-  ScopedCFTypeRef<LSSharedFileListItemRef> item(login_items.GetLoginItemForApp(app_bundle_url));
+  gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> item(login_items.GetLoginItemForApp(app_bundle_url));
 
   if (item.get() && (IsHiddenLoginItem(item) == hide_on_startup)) {
     return;  // Already is a login item with required hide flag.
@@ -164,9 +165,9 @@ void AddToLoginItems(const std::string& app_bundle_file_path,
   BOOL hide = hide_on_startup ? YES : NO;
   NSDictionary* properties =
       @{CFBridgingRelease(CFRetain(kLSSharedFileListLoginItemHidden)) : @(hide)};
-  ScopedCFTypeRef<CFDictionaryRef> cfproperties((CFDictionaryRef)CFBridgingRetain(properties));
+  gurl_base::apple::ScopedCFTypeRef<CFDictionaryRef> cfproperties((CFDictionaryRef)CFBridgingRetain(properties));
 
-  ScopedCFTypeRef<LSSharedFileListItemRef> new_item(
+  gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> new_item(
       LSSharedFileListInsertItemURL(login_items.GetLoginFileList(),
                                     kLSSharedFileListItemLast, nullptr, nullptr,
                                     cf_app_bundle_url, cfproperties, nullptr));
@@ -179,7 +180,7 @@ void AddToLoginItems(const std::string& app_bundle_file_path,
 
 void RemoveFromLoginItems() {
   NSBundle* bundle = [NSBundle mainBundle];
-  RemoveFromLoginItems(SysNSStringToUTF8([bundle bundlePath]));
+  RemoveFromLoginItems(gurl_base::SysNSStringToUTF8([bundle bundlePath]));
 }
 
 void RemoveFromLoginItems(const std::string& app_bundle_file_path) {
@@ -189,7 +190,7 @@ void RemoveFromLoginItems(const std::string& app_bundle_file_path) {
 
   NSURL* app_bundle_url =
       [NSURL fileURLWithPath:@(app_bundle_file_path.c_str())];
-  ScopedCFTypeRef<LSSharedFileListItemRef> item(
+  gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> item(
       login_items.GetLoginItemForApp(app_bundle_url));
   if (!item.get())
     return;
@@ -232,7 +233,7 @@ bool WasLaunchedAsLoginItemRestoreState() {
 
   CFStringRef app = CFSTR("com.apple.loginwindow");
   CFStringRef save_state = CFSTR("TALLogoutSavesState");
-  ScopedCFTypeRef<CFPropertyListRef> plist(
+  gurl_base::apple::ScopedCFTypeRef<CFPropertyListRef> plist(
       CFPreferencesCopyAppValue(save_state, app));
   // According to documentation, com.apple.loginwindow.plist does not exist on a
   // fresh installation until the user changes a login window setting.  The
@@ -256,7 +257,7 @@ bool WasLaunchedAsHiddenLoginItem() {
   if (!login_items.Initialize())
     return false;
 
-  ScopedCFTypeRef<LSSharedFileListItemRef> item(
+  gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> item(
       login_items.GetLoginItemForMainApp());
   if (!item.get()) {
     // OS X can launch items for the resume feature.
@@ -378,10 +379,10 @@ CPUType GetCPUType() {
 
 std::string GetModelIdentifier() {
   std::string return_string;
-  ScopedIOObject<io_service_t> platform_expert(IOServiceGetMatchingService(
+  gurl_base::mac::ScopedIOObject<io_service_t> platform_expert(IOServiceGetMatchingService(
       kIOMasterPortDefault, IOServiceMatching("IOPlatformExpertDevice")));
   if (platform_expert) {
-    ScopedCFTypeRef<CFDataRef> model_data(
+    gurl_base::apple::ScopedCFTypeRef<CFDataRef> model_data(
         static_cast<CFDataRef>(IORegistryEntryCreateCFProperty(
             platform_expert, CFSTR("model"), kCFAllocatorDefault, 0)));
     if (model_data) {
@@ -420,20 +421,20 @@ std::string GetOSDisplayName() {
     os_name = "OS X";
   else
     os_name = "macOS";
-  std::string version_string = SysNSStringToUTF8(
+  std::string version_string = gurl_base::SysNSStringToUTF8(
       [[NSProcessInfo processInfo] operatingSystemVersionString]);
   return os_name + " " + version_string;
 }
 
 std::string GetPlatformSerialNumber() {
-  ScopedIOObject<io_service_t> expert_device(IOServiceGetMatchingService(
+  gurl_base::mac::ScopedIOObject<io_service_t> expert_device(IOServiceGetMatchingService(
       kIOMasterPortDefault, IOServiceMatching("IOPlatformExpertDevice")));
   if (!expert_device) {
     DLOG(ERROR) << "Error retrieving the machine serial number.";
     return std::string();
   }
 
-  ScopedCFTypeRef<CFTypeRef> serial_number(IORegistryEntryCreateCFProperty(
+  gurl_base::apple::ScopedCFTypeRef<CFTypeRef> serial_number(IORegistryEntryCreateCFProperty(
       expert_device, CFSTR(kIOPlatformSerialNumberKey), kCFAllocatorDefault,
       0));
   CFStringRef serial_number_cfstring = CFCast<CFStringRef>(serial_number);
@@ -442,7 +443,7 @@ std::string GetPlatformSerialNumber() {
     return std::string();
   }
 
-  return SysCFStringRefToUTF8(serial_number_cfstring);
+  return gurl_base::SysCFStringRefToUTF8(serial_number_cfstring);
 }
 
 static std::string GetLocalAddr() {
@@ -496,7 +497,7 @@ bool QuerySystemProxy(bool *enabled,
   *server_port = 0;
   bypass_addr->clear();
 
-  ScopedCFTypeRef<CFDictionaryRef> proxies {SCDynamicStoreCopyProxies(nullptr)};
+  gurl_base::apple::ScopedCFTypeRef<CFDictionaryRef> proxies {SCDynamicStoreCopyProxies(nullptr)};
 
   {
     CFNumberRef obj;
@@ -513,7 +514,7 @@ bool QuerySystemProxy(bool *enabled,
     if (CFDictionaryGetValueIfPresent(proxies, kSCPropNetProxiesHTTPProxy,
             (const void**)&obj) &&
         CFGetTypeID(obj) == CFStringGetTypeID()) {
-      *server_addr = SysCFStringRefToUTF8(obj);
+      *server_addr = gurl_base::SysCFStringRefToUTF8(obj);
       LOG(INFO) << "QuerySystemProxy: server_addr " << *server_addr;
     }
   }
@@ -536,7 +537,7 @@ bool QuerySystemProxy(bool *enabled,
       CFIndex array_count = CFArrayGetCount(obj);
       for (CFIndex i = 0; i < array_count; ++i) {
         CFStringRef str_obj = (CFStringRef)CFArrayGetValueAtIndex(obj, i);
-        *bypass_addr = *bypass_addr + SysCFStringRefToUTF8(str_obj) + ", ";
+        *bypass_addr = *bypass_addr + gurl_base::SysCFStringRefToUTF8(str_obj) + ", ";
       }
       if (array_count) {
         bypass_addr->resize(bypass_addr->size() - 2);

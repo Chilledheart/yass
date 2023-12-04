@@ -516,7 +516,7 @@ class LogMessage {
   void SendToLog();  // Actually dispatch to the logs
 
   // Call abort() or similar to perform LOG(FATAL) crash.
-  static void NORETURN Fail();
+  [[noreturn]] static void Fail();
 
   int preserved_errno() const;
 
@@ -567,7 +567,7 @@ class LogMessage {
 class LogMessageFatal : public LogMessage {
  public:
   LogMessageFatal(const char* file, int line);
-  NORETURN ~LogMessageFatal();
+  [[noreturn]] ~LogMessageFatal();
 };
 
 // A non-macro interface to the log facility; (useful
@@ -874,7 +874,7 @@ inline NullStream& operator<<(NullStream& str, const T&) {
 class NullStreamFatal : public NullStream {
  public:
   NullStreamFatal() {}
-  NORETURN ~NullStreamFatal() throw() { _exit(1); }
+  [[noreturn]] ~NullStreamFatal() throw() { _exit(1); }
 };
 
 // Used by LOG_IS_ON to lazy-evaluate stream arguments.

@@ -26,12 +26,6 @@
 
 using gurl_base::PlatformFile;
 
-#if defined(OS_APPLE)
-#include <AvailabilityMacros.h>
-#include <CoreFoundation/CoreFoundation.h>
-#include "core/scoped_cftyperef.hpp"
-#endif  // defined(OS_APPLE)
-
 // Valid values for priority of Thread::Options and SimpleThread::Options, and
 // SetCurrentThreadPriority(), listed in increasing order of importance.
 enum class ThreadPriority : int {
@@ -96,49 +90,6 @@ using gurl_base::SysNativeMBToWide;
 using gurl_base::SysMultiByteToWide;
 using gurl_base::SysWideToMultiByte;
 #endif // OS_WIN
-
-// Mac-specific ----------------------------------------------------------------
-#if defined(OS_APPLE)
-
-#if defined(__OBJC__)
-#import <Foundation/Foundation.h>
-@class NSFont;
-@class UIFont;
-#else  // __OBJC__
-#include <CoreFoundation/CoreFoundation.h>
-class NSBundle;
-class NSFont;
-class NSString;
-class UIFont;
-#endif  // __OBJC__
-
-#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
-#include <CoreText/CoreText.h>
-#else
-#include <ApplicationServices/ApplicationServices.h>
-#endif
-
-// Converts between STL strings and CFStringRefs/NSStrings.
-
-// Creates a string, and returns it with a refcount of 1. You are responsible
-// for releasing it. Returns NULL on failure.
-ScopedCFTypeRef<CFStringRef> SysUTF8ToCFStringRef(std::string_view utf8);
-ScopedCFTypeRef<CFStringRef> SysUTF16ToCFStringRef(const std::u16string& utf16);
-
-// Same, but returns an autoreleased NSString.
-NSString* SysUTF8ToNSString(std::string_view utf8);
-NSString* SysUTF16ToNSString(const std::u16string& utf16);
-
-// Converts a CFStringRef to an STL string. Returns an empty string on failure.
-std::string SysCFStringRefToUTF8(CFStringRef ref);
-std::u16string SysCFStringRefToUTF16(CFStringRef ref);
-
-// Same, but accepts NSString input. Converts nil NSString* to the appropriate
-// string type of length 0.
-std::string SysNSStringToUTF8(NSString* ref);
-std::u16string SysNSStringToUTF16(NSString* ref);
-
-#endif  // defined(OS_APPLE)
 
 extern const char kSeparators[];
 

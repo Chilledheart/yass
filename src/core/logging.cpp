@@ -8,6 +8,7 @@
 #endif
 #include <absl/base/thread_annotations.h>
 #include <base/strings/string_util.h>
+#include <base/strings/sys_string_conversions.h>
 
 #include "core/logging.hpp"
 #include "core/process_utils.hpp"
@@ -417,7 +418,7 @@ const char* const_basename(const char* filepath);
 
 void DumpStackTraceToString(std::string* stacktrace);
 
-static void NORETURN DumpStackTraceAndExit();
+[[noreturn]] static void DumpStackTraceAndExit();
 
 struct CrashReason {
   const char* filename = nullptr;
@@ -1039,7 +1040,7 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
       CFStringRef main_bundle_id_cf =
           main_bundle ? CFBundleGetIdentifier(main_bundle) : nullptr;
       std::string main_bundle_id = main_bundle_id_cf
-                                       ? SysCFStringRefToUTF8(main_bundle_id_cf)
+                                       ? gurl_base::SysCFStringRefToUTF8(main_bundle_id_cf)
                                        : std::string("");
 #if defined(USE_ASL)
       // The facility is set to the main bundle ID if available. Otherwise,
