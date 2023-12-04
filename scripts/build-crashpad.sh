@@ -107,6 +107,7 @@ cd crashpad
 fetch --nohistory crashpad || true
 cd crashpad
 git checkout -f 5613499bbda780dfa663344ea6253844e82c88c4
+git reset --hard
 gclient sync -f
 
 # patch stage
@@ -121,6 +122,8 @@ esac
 
 cp -f ../../../scripts/mini_chromium.BUILD.gn third_party/mini_chromium/mini_chromium/build/config/BUILD.gn
 $sed 's|__hlt(0)|asm volatile("hlt #0")|g' third_party/mini_chromium/mini_chromium/base/logging.cc
+patch -p1 < ../../../scripts/crashpad_mips.patch
+
 # build stage
 rm -rf "$out"
 mkdir -p "$out"
