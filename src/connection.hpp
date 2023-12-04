@@ -16,10 +16,12 @@
 #include "net/ssl_server_socket.hpp"
 #include "protocol.hpp"
 
+#include <absl/functional/any_invocable.h>
+
 class Downlink {
  public:
-  using io_handle_t = std::function<void(asio::error_code, std::size_t)>;
-  using handle_t = std::function<void(asio::error_code)>;
+  using io_handle_t = absl::AnyInvocable<void(asio::error_code, std::size_t)>;
+  using handle_t = absl::AnyInvocable<void(asio::error_code)>;
 
   Downlink(asio::io_context& io_context)
     : io_context_(io_context), socket_(io_context_) {}
@@ -31,7 +33,7 @@ class Downlink {
   }
 
  public:
-  virtual void handshake(handle_t cb) {
+  virtual void handshake(handle_t &&cb) {
     cb(asio::error_code());
   }
 
@@ -43,23 +45,23 @@ class Downlink {
     return false;
   }
 
-  virtual void async_read_some(handle_t cb) {
-    socket_.async_wait(asio::ip::tcp::socket::wait_read, cb);
+  virtual void async_read_some(handle_t &&cb) {
+    socket_.async_wait(asio::ip::tcp::socket::wait_read, std::move(cb));
   }
 
   virtual size_t read_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
     return socket_.read_some(tail_buffer(*buf), ec);
   }
 
-  virtual void async_write_some(handle_t cb) {
-    socket_.async_wait(asio::ip::tcp::socket::wait_write, cb);
+  virtual void async_write_some(handle_t &&cb) {
+    socket_.async_wait(asio::ip::tcp::socket::wait_write, std::move(cb));
   }
 
   virtual size_t write_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
     return socket_.write_some(const_buffer(*buf), ec);
   }
 
-  virtual void async_shutdown(handle_t cb) {
+  virtual void async_shutdown(handle_t &&cb) {
     asio::error_code ec;
     socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
     cb(ec);
@@ -94,12 +96,18 @@ class SSLDownlink : public Downlink {
      ssl_socket_(net::SSLServerSocket::Create(&io_context, &socket_, ssl_ctx->native_handle())) {
   }
 
-  ~SSLDownlink() override {}
+  ~SSLDownlink() override { DCHECK(!handshake_callback_); }
 
-  void handshake(handle_t cb) override {
-    ssl_socket_->Handshake([cb](int result) {
+  void handshake(handle_t &&cb) override {
+    DCHECK(!handshake_callback_);
+    handshake_callback_ = std::move(cb);
+    ssl_socket_->Handshake([this](int result) {
+      auto callback = std::move(handshake_callback_);
+      DCHECK(!handshake_callback_);
       asio::error_code ec = result == net::OK ? asio::error_code() : asio::error::connection_refused ;
-      cb(ec);
+      if (callback) {
+        callback(ec);
+      }
     });
   }
 
@@ -114,24 +122,24 @@ class SSLDownlink : public Downlink {
     return false;
   }
 
-  void async_read_some(handle_t cb) override {
-    ssl_socket_->WaitRead(cb);
+  void async_read_some(handle_t &&cb) override {
+    ssl_socket_->WaitRead(std::move(cb));
   }
 
   size_t read_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) override {
     return ssl_socket_->Read(buf, ec);
   }
 
-  void async_write_some(handle_t cb) override {
-    ssl_socket_->WaitWrite(cb);
+  void async_write_some(handle_t &&cb) override {
+    ssl_socket_->WaitWrite(std::move(cb));
   }
 
   size_t write_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) override {
     return ssl_socket_->Write(buf, ec);
   }
 
-  void async_shutdown(handle_t cb) override {
-    ssl_socket_->Shutdown(cb);
+  void async_shutdown(handle_t &&cb) override {
+    ssl_socket_->Shutdown(std::move(cb));
   }
 
   void shutdown(asio::error_code &ec) override {
@@ -153,6 +161,7 @@ class SSLDownlink : public Downlink {
 
  private:
   bool https_fallback_;
+  handle_t handshake_callback_; // FIXME handle it gracefully
   scoped_refptr<net::SSLServerSocket> ssl_socket_;
 };
 
