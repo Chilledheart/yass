@@ -2254,7 +2254,6 @@ target_compile_definitions(asio PUBLIC ASIO_NO_EXCEPTIONS)
 target_compile_definitions(asio PUBLIC ASIO_NO_TS_EXECUTORS)
 target_compile_definitions(asio PUBLIC ASIO_SEPARATE_COMPILATION)
 target_compile_definitions(asio PUBLIC ASIO_NO_DEPRECATED)
-target_compile_definitions(asio PUBLIC ASIO_DISABLE_CO_AWAIT)
 # forward libcxx present
 # we control the visiblity
 target_compile_definitions(asio PUBLIC ASIO_DISABLE_VISIBILITY)
