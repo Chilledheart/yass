@@ -44,9 +44,10 @@ Worker::Worker()
 }
 
 Worker::~Worker() {
-  Stop(std::function<void()>());
   start_callback_ = nullptr;
   stop_callback_ = nullptr;
+  Stop(nullptr);
+  
   work_guard_.reset();
   delete private_;
 }
