@@ -91,15 +91,6 @@
 #endif
 
 // no more defined in code
-#if HAS_ATTRIBUTE(noreturn) || (defined(__GNUC__) && !defined(__clang__))
-#define NORETURN __attribute__((noreturn))
-#elif defined(_MSC_VER)
-#define NORETURN __declspec(noreturn)
-#else
-#define NORETURN [[noreturn]]
-#endif
-
-// no more defined in code
 #if defined(_MSC_VER)
 #define MSVC_PUSH_DISABLE_WARNING(n) \
   __pragma(warning(push)) __pragma(warning(disable : n))

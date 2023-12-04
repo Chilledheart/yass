@@ -417,7 +417,7 @@ const char* const_basename(const char* filepath);
 
 void DumpStackTraceToString(std::string* stacktrace);
 
-static void NORETURN DumpStackTraceAndExit();
+[[noreturn]] static void DumpStackTraceAndExit();
 
 struct CrashReason {
   const char* filename = nullptr;
