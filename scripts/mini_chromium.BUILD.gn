@@ -286,6 +286,12 @@ config("default") {
       common_flags += [ "-m64" ]
     } else if (current_cpu == "arm64") {
       common_flags += [ "--target=aarch64-linux-gnu" ]
+    } else if (current_cpu == "armhf") {
+      common_flags += [ "--target=arm-linux-gnueabihf" ]
+    } else if (current_cpu == "mipsel") {
+      common_flags += [ "--target=mipsel-linux-gnu" ]
+    } else if (current_cpu == "mips64el") {
+      common_flags += [ "--target=mips64el-linux-gnuabi64" ]
     } else if (current_cpu == "riscv64") {
       common_flags += [ "--target=riscv64-linux-gnu" ]
     } else {

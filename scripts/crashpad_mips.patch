@@ -1,0 +1,28 @@
+diff --git a/snapshot/linux/cpu_context_linux.h b/snapshot/linux/cpu_context_linux.h
+index 507d1b44..d901ef9d 100644
+--- a/snapshot/linux/cpu_context_linux.h
++++ b/snapshot/linux/cpu_context_linux.h
+@@ -20,6 +20,8 @@
+ #include "snapshot/linux/signal_context.h"
+ #include "util/linux/thread_info.h"
+ 
++#include <string.h>
++
+ namespace crashpad {
+ namespace internal {
+ 
+diff --git a/util/net/http_transport_libcurl.cc b/util/net/http_transport_libcurl.cc
+index df63a772..0d2abfa3 100644
+--- a/util/net/http_transport_libcurl.cc
++++ b/util/net/http_transport_libcurl.cc
+@@ -239,6 +239,10 @@ std::string UserAgent() {
+ #endif
+ #elif defined (ARCH_CPU_RISCV64)
+     static constexpr char arch[] = "riscv64";
++#elif defined (ARCH_CPU_MIPSEL)
++    static constexpr char arch[] = "mipsel";
++#elif defined (ARCH_CPU_MIPS64EL)
++    static constexpr char arch[] = "mips64el";
+ #else
+ #error Port
+ #endif
