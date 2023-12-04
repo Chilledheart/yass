@@ -202,11 +202,7 @@ void ServerConnection::close() {
   if (channel_) {
     channel_->close();
   }
-  auto cb = std::move(disconnect_cb_);
-  disconnect_cb_ = nullptr;
-  if (cb) {
-    cb();
-  }
+  on_disconnect();
 }
 
 void ServerConnection::Start() {

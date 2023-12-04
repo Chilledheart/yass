@@ -21,14 +21,15 @@
 #include "core/c-ares.hpp"
 #endif
 
+#include <absl/functional/any_invocable.h>
 #include <absl/strings/str_cat.h>
 #include <absl/time/time.h>
 
 /// the class to describe the traffic between given node (endpoint)
 class stream : public RefCountedThreadSafe<stream> {
  public:
-  using io_handle_t = std::function<void(asio::error_code, std::size_t)>;
-  using handle_t = std::function<void(asio::error_code)>;
+  using io_handle_t = absl::AnyInvocable<void(asio::error_code, std::size_t)>;
+  using handle_t = absl::AnyInvocable<void(asio::error_code)>;
 
   /// construct a stream object
   template<typename... Args>
@@ -159,12 +160,15 @@ class stream : public RefCountedThreadSafe<stream> {
       if (limit <= 0) {
         scoped_refptr<stream> self(this);
         read_delay_timer_.expires_after(std::chrono::milliseconds(-limit * 1000 / limit_rate_+1));
-        read_delay_timer_.async_wait([this, self, callback](asio::error_code ec) {
+        wait_read_callback_ = std::move(callback);
+        read_delay_timer_.async_wait([this, self](asio::error_code ec) {
+          auto callback = std::move(wait_read_callback_);
+          DCHECK(!wait_read_callback_);
           // Cancelled, safe to ignore
-          if (ec == asio::error::operation_aborted) {
+          if (UNLIKELY(ec == asio::error::operation_aborted)) {
             return;
           }
-          wait_read(callback, false);
+          wait_read(std::move(callback), false);
         });
         return;
       }
@@ -175,7 +179,7 @@ class stream : public RefCountedThreadSafe<stream> {
     scoped_refptr<stream> self(this);
     if (yield) {
       asio::post(io_context_, [this, self]() {
-        handle_t callback = std::move(wait_read_callback_);
+        auto callback = std::move(wait_read_callback_);
         wait_read_callback_ = nullptr;
         read_inprogress_ = false;
         if (UNLIKELY(!connected_ || closed_)) {
@@ -224,7 +228,7 @@ class stream : public RefCountedThreadSafe<stream> {
 
   /// wait write routine
   ///
-  void wait_write(std::function<void(asio::error_code ec)> callback) {
+  void wait_write(handle_t callback) {
     DCHECK(!write_inprogress_);
     DCHECK(callback);
 
@@ -245,12 +249,14 @@ class stream : public RefCountedThreadSafe<stream> {
       if (limit <= 0) {
         scoped_refptr<stream> self(this);
         write_delay_timer_.expires_after(std::chrono::milliseconds(-limit * 1000 / limit_rate_+1));
-        write_delay_timer_.async_wait([this, self, callback](asio::error_code ec) {
+        wait_write_callback_ = std::move(callback);
+        write_delay_timer_.async_wait([this, self](asio::error_code ec) {
+          auto callback = std::move(wait_write_callback_);
           // Cancelled, safe to ignore
-          if (ec == asio::error::operation_aborted) {
+          if (UNLIKELY(ec == asio::error::operation_aborted)) {
             return;
           }
-          wait_write(callback);
+          wait_write(std::move(callback));
         });
         return;
       }
@@ -351,7 +357,7 @@ class stream : public RefCountedThreadSafe<stream> {
       connect_timer_.async_wait(
         [this, channel, self](asio::error_code ec) {
         // Cancelled, safe to ignore
-        if (ec == asio::error::operation_aborted) {
+        if (UNLIKELY(ec == asio::error::operation_aborted)) {
           return;
         }
         on_async_connect_expired(channel, ec);
@@ -430,23 +436,23 @@ class stream : public RefCountedThreadSafe<stream> {
   }
 
  protected:
-  virtual void s_wait_read(handle_t cb) {
-    socket_.async_wait(asio::ip::tcp::socket::wait_read, cb);
+  virtual void s_wait_read(handle_t &&cb) {
+    socket_.async_wait(asio::ip::tcp::socket::wait_read, std::move(cb));
   }
 
   virtual size_t s_read_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
     return socket_.read_some(tail_buffer(*buf), ec);
   }
 
-  virtual void s_wait_write(handle_t cb) {
-    socket_.async_wait(asio::ip::tcp::socket::wait_write, cb);
+  virtual void s_wait_write(handle_t &&cb) {
+    socket_.async_wait(asio::ip::tcp::socket::wait_write, std::move(cb));
   }
 
   virtual size_t s_write_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
     return socket_.write_some(const_buffer(*buf), ec);
   }
 
-  virtual void s_async_shutdown(handle_t cb) {
+  virtual void s_async_shutdown(handle_t &&cb) {
     asio::error_code ec;
     socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
     cb(ec);

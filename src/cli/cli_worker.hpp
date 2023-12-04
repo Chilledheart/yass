@@ -5,9 +5,10 @@
 
 #include "core/cipher.hpp"
 
-#include <functional>
 #include <memory>
 #include <thread>
+
+#include <absl/functional/any_invocable.h>
 
 #include "config/config.hpp"
 #include "core/asio.hpp"
@@ -23,8 +24,8 @@ class Worker {
   Worker();
   ~Worker();
 
-  void Start(std::function<void(asio::error_code)> callback);
-  void Stop(std::function<void()> callback);
+  void Start(absl::AnyInvocable<void(asio::error_code)> &&callback);
+  void Stop(absl::AnyInvocable<void()> &&callback);
 
   std::string GetDomain() const;
   std::string GetRemoteDomain() const;
@@ -35,8 +36,7 @@ class Worker {
   void WorkFunc();
 
   void on_resolve_local(asio::error_code ec,
-                        asio::ip::tcp::resolver::results_type results,
-                        std::function<void(asio::error_code)> callback);
+                        asio::ip::tcp::resolver::results_type results);
 
   asio::io_context io_context_;
   /// stopping the io_context from running out of work
@@ -49,6 +49,9 @@ class Worker {
 #endif
   /// used to do io in another thread
   std::unique_ptr<std::thread> thread_;
+
+  absl::AnyInvocable<void(asio::error_code)> start_callback_;
+  absl::AnyInvocable<void()> stop_callback_;
 
   WorkerPrivate *private_;
   std::vector<asio::ip::tcp::endpoint> endpoints_;

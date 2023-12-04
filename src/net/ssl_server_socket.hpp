@@ -4,6 +4,7 @@
 #ifndef H_NET_SSL_SERVER_SOCKET
 #define H_NET_SSL_SERVER_SOCKET
 
+#include <absl/functional/any_invocable.h>
 #include <openssl/ssl.h>
 
 #include "core/asio.hpp"
@@ -17,8 +18,8 @@ namespace net {
 
 // A OnceCallback specialization that takes a single int parameter. Usually this
 // is used to report a byte count or network error code.
-using CompletionOnceCallback = std::function<void(int)>;
-using WaitCallback = std::function<void(asio::error_code ec)>;
+using CompletionOnceCallback = absl::AnyInvocable<void(int)>;
+using WaitCallback = absl::AnyInvocable<void(asio::error_code ec)>;
 
 class SSLServerSocket : public RefCountedThreadSafe<SSLServerSocket> {
  public:
@@ -36,7 +37,7 @@ class SSLServerSocket : public RefCountedThreadSafe<SSLServerSocket> {
   }
 
   int Handshake(CompletionOnceCallback callback);
-  int Shutdown(WaitCallback callback, bool force = false);
+  int Shutdown(WaitCallback &&callback, bool force = false);
 
   // StreamSocket implementation
   void Disconnect();
@@ -46,14 +47,15 @@ class SSLServerSocket : public RefCountedThreadSafe<SSLServerSocket> {
   // Socket implementation.
   size_t Read(std::shared_ptr<IOBuf> buf, asio::error_code &ec);
   size_t Write(std::shared_ptr<IOBuf> buf, asio::error_code &ec);
-  void WaitRead(WaitCallback cb);
-  void WaitWrite(WaitCallback cb);
+  void WaitRead(WaitCallback &&cb);
+  void WaitWrite(WaitCallback &&cb);
 
  protected:
   void OnWaitRead(asio::error_code ec);
   void OnWaitWrite(asio::error_code ec);
   void OnReadReady();
   void OnWriteReady();
+  void OnDoWaitShutdown(asio::error_code ec);
 
  private:
   int DoHandshake();
