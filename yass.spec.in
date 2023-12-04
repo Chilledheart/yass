@@ -196,7 +196,7 @@ for embedded devices and low end boxes.
   - Bump to chromium 121 dependents.
   - Fix use cached configuration issue.
   - Fix crash in resume from previous failure.
-* Sat Dec 2 2023 Chilledheart <hukeyue@hotmail.com> - 1.5.0-1
+* Mon Dec 4 2023 Chilledheart <hukeyue@hotmail.com> - 1.5.0-1
   - New major release.
 * Mon Dec 4 2023 Chilledheart <keeyou-cn@outlook.com> - 1.4.11-1
   - Bump Clang.
