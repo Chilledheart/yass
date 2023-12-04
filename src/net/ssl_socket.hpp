@@ -4,6 +4,7 @@
 #ifndef H_NET_SSL_SOCKET
 #define H_NET_SSL_SOCKET
 
+#include <absl/functional/any_invocable.h>
 #include <openssl/ssl.h>
 
 #include "core/asio.hpp"
@@ -40,8 +41,8 @@ enum class SSLHandshakeDetails {
 
 // A OnceCallback specialization that takes a single int parameter. Usually this
 // is used to report a byte count or network error code.
-using CompletionOnceCallback = std::function<void(int)>;
-using WaitCallback = std::function<void(asio::error_code ec)>;
+using CompletionOnceCallback = absl::AnyInvocable<void(int)>;
+using WaitCallback = absl::AnyInvocable<void(asio::error_code ec)>;
 
 class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
  public:
@@ -64,15 +65,15 @@ class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
   int Connect(CompletionOnceCallback callback);
   void Disconnect();
   int ConfirmHandshake(CompletionOnceCallback callback);
-  int Shutdown(WaitCallback cb, bool force = false);
+  int Shutdown(WaitCallback &&cb, bool force = false);
 
   SSL* native_handle() { return ssl_.get(); }
 
   // Socket implementation.
   size_t Read(std::shared_ptr<IOBuf> buf, asio::error_code &ec);
   size_t Write(std::shared_ptr<IOBuf> buf, asio::error_code &ec);
-  void WaitRead(WaitCallback cb);
-  void WaitWrite(WaitCallback cb);
+  void WaitRead(WaitCallback &&cb);
+  void WaitWrite(WaitCallback &&cb);
 
   const std::string& negotiated_protocol() const {
     return negotiated_protocol_;
@@ -82,6 +83,7 @@ class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
   void OnWaitWrite(asio::error_code ec);
   void OnReadReady();
   void OnWriteReady();
+  void OnDoWaitShutdown(asio::error_code ec);
 
  private:
   int DoHandshake();

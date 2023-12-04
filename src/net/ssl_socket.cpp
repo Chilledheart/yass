@@ -214,7 +214,7 @@ int SSLSocket::ConfirmHandshake(CompletionOnceCallback callback) {
   return rv > OK ? OK : rv;
 }
 
-int SSLSocket::Shutdown(WaitCallback callback, bool force) {
+int SSLSocket::Shutdown(WaitCallback &&callback, bool force) {
   DCHECK(callback);
   DCHECK(!wait_shutdown_callback_ && "Recursively SSL Shutdown isn't allowed");
   if (SSL_in_init(ssl_.get())) {
@@ -246,13 +246,7 @@ int SSLSocket::Shutdown(WaitCallback callback, bool force) {
       scoped_refptr<SSLSocket> self(this);
       VLOG(2) << "Shutdown ... (demand more reading)";
 
-      wait_shutdown_callback_ = [this, self, callback](asio::error_code ec) {
-        if (ec) {
-          callback(ec);
-          return;
-        }
-        Shutdown(callback);
-      };
+      wait_shutdown_callback_ = std::move(callback);
 
       if (!wait_read_callback_) {
         stream_socket_->async_wait(asio::ip::tcp::socket::wait_read,
@@ -266,13 +260,7 @@ int SSLSocket::Shutdown(WaitCallback callback, bool force) {
       scoped_refptr<SSLSocket> self(this);
       VLOG(2) << "Shutdown ... (demand more writing)";
 
-      wait_shutdown_callback_ = [this, self, callback](asio::error_code ec) {
-        if (ec) {
-          callback(ec);
-          return;
-        }
-        Shutdown(callback);
-      };
+      wait_shutdown_callback_ = std::move(callback);
 
       if (!wait_write_callback_) {
         stream_socket_->async_wait(asio::ip::tcp::socket::wait_write,
@@ -341,9 +329,9 @@ size_t SSLSocket::Write(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
   return rv;
 }
 
-void SSLSocket::WaitRead(std::function<void(asio::error_code ec)> cb) {
+void SSLSocket::WaitRead(WaitCallback &&cb) {
   DCHECK(!wait_read_callback_ && "Multiple calls into Wait Read");
-  wait_read_callback_ = cb;
+  wait_read_callback_ = std::move(cb);
   scoped_refptr<SSLSocket> self(this);
   if (pending_read_error_ != kSSLClientSocketNoPendingResult) {
     OnWaitRead(asio::error_code());
@@ -363,9 +351,9 @@ void SSLSocket::WaitRead(std::function<void(asio::error_code ec)> cb) {
   });
 }
 
-void SSLSocket::WaitWrite(std::function<void(asio::error_code ec)> cb) {
+void SSLSocket::WaitWrite(WaitCallback &&cb) {
   DCHECK(!wait_write_callback_ && "Multiple calls into Wait Write");
-  wait_write_callback_ = cb;
+  wait_write_callback_ = std::move(cb);
   scoped_refptr<SSLSocket> self(this);
   stream_socket_->async_wait(asio::ip::tcp::socket::wait_write,
     [this, self](asio::error_code ec){
@@ -382,12 +370,12 @@ void SSLSocket::OnWaitRead(asio::error_code ec) {
     wait_shutdown_callback_ = nullptr;
     return;
   }
-  if (auto cb = std::move(wait_shutdown_callback_)) {
-    wait_shutdown_callback_ = nullptr;
-    cb(ec);
+  if (wait_shutdown_callback_) {
+    OnDoWaitShutdown(ec);
+    DCHECK(!wait_shutdown_callback_);
   }
   if (auto cb = std::move(wait_read_callback_)) {
-    wait_read_callback_ = nullptr;
+    DCHECK(!wait_read_callback_);
     cb(ec);
   }
 }
@@ -401,12 +389,12 @@ void SSLSocket::OnWaitWrite(asio::error_code ec) {
     wait_shutdown_callback_ = nullptr;
     return;
   }
-  if (auto cb = std::move(wait_shutdown_callback_)) {
-    wait_shutdown_callback_ = nullptr;
-    cb(ec);
+  if (wait_shutdown_callback_) {
+    OnDoWaitShutdown(ec);
+    DCHECK(!wait_shutdown_callback_);
   }
   if (auto cb = std::move(wait_write_callback_)) {
-    wait_write_callback_ = nullptr;
+    DCHECK(!wait_write_callback_);
     cb(ec);
   }
 }
@@ -421,6 +409,17 @@ void SSLSocket::OnWriteReady() {
   // During a renegotiation, either Read or Write calls may be blocked on a
   // transport read.
   RetryAllOperations();
+}
+
+void SSLSocket::OnDoWaitShutdown(asio::error_code ec) {
+  DCHECK(wait_shutdown_callback_);
+  auto callback = std::move(wait_shutdown_callback_);
+  DCHECK(!wait_shutdown_callback_);
+  if (ec) {
+    callback(ec);
+    return;
+  }
+  Shutdown(std::move(callback));
 }
 
 int SSLSocket::DoHandshake() {
