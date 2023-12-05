@@ -1,6 +1,8 @@
 !include "MUI.nsh"
 
 !define MUI_ABORTWARNING # This will warn the user if they exit from the installer.
+!define MUI_ICON "..\src\win32\yass.ico"
+!define MUI_UNICON "..\src\win32\yass.ico"
 
 !insertmacro MUI_PAGE_WELCOME # Welcome to the installer page.
 !insertmacro MUI_PAGE_LICENSE "..\GPL-2.0.rtf"

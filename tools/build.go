@@ -1186,6 +1186,19 @@ func generateNSIS(output string) {
 	cmdRun([]string{"C:\\Program Files (x86)\\NSIS\\makensis.exe", "/XSetCompressor /FINAL lzma", "yass.nsi"}, true)
 }
 
+func generateNSISSystemInstaller(output string) {
+	glog.Info("Feeding CPack NSIS compiler...")
+	cmdRun([]string{"C:\\Program Files\\CMake\\bin\\cpack.exe"}, true)
+
+	if msvcTargetArchFlag == "x86" {
+		os.Rename(fmt.Sprintf("yass-%s-win32.exe", tagFlag), output)
+	} else if msvcTargetArchFlag == "x64" {
+		os.Rename(fmt.Sprintf("yass-%s-win64.exe", tagFlag), output)
+	} else {
+		glog.Fatalf("Unsupported msvc arch: %s for nsis builder", msvcTargetArchFlag)
+	}
+}
+
 func generateOpenWrtMakefile(archive string, pkg_version string) {
 	archive_dir, _ := filepath.Abs("..")
 	archive_dir += "/"
@@ -1256,13 +1269,15 @@ func postStateArchives() map[string][]string {
 	}
 
 	msiArchive := fmt.Sprintf(archiveFormat, APPNAME, "", ".msi")
-	nsisArchive := fmt.Sprintf(archiveFormat, APPNAME, "-installer", ".exe")
+	nsisArchive := fmt.Sprintf(archiveFormat, APPNAME, "-user-installer", ".exe")
 	debugArchive := fmt.Sprintf(archiveFormat, APPNAME, "-debuginfo", ext)
+	nsisSystemArchive := fmt.Sprintf(archiveFormat, APPNAME, "-system-installer", ".exe")
 
 	archive = filepath.Join("..", archive)
 	msiArchive = filepath.Join("..", msiArchive)
 	nsisArchive = filepath.Join("..", nsisArchive)
 	debugArchive = filepath.Join("..", debugArchive)
+	nsisSystemArchive = filepath.Join("..", nsisSystemArchive)
 
 	archives := map[string][]string{}
 
@@ -1300,6 +1315,8 @@ func postStateArchives() map[string][]string {
 	if systemNameFlag == "windows" && msvcTargetArchFlag != "arm64" {
 		generateNSIS(nsisArchive)
 		archives[nsisArchive] = []string{nsisArchive}
+		generateNSISSystemInstaller(nsisSystemArchive)
+		archives[nsisSystemArchive] = []string{nsisSystemArchive}
 	}
 	// debuginfo file
 	if systemNameFlag == "windows" {
