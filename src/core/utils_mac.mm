@@ -9,6 +9,7 @@
 
 #include <AvailabilityMacros.h>
 #include <CoreFoundation/CoreFoundation.h>
+#import <Foundation/Foundation.h>
 
 #include <errno.h>
 #include <locale.h>
@@ -22,6 +23,7 @@
 #include <sys/mman.h>  // For mlock.
 #include <sys/resource.h>
 
+#include <base/strings/sys_string_conversions.h>
 #include "core/logging.hpp"
 
 #ifndef VM_MEMORY_MALLOC_PROB_GUARD
@@ -528,4 +530,17 @@ void SetExecutablePath(const std::string& exe_path) {
   absl::flags_internal::SetProgramInvocationName(new_exe_path);
 }
 
+bool GetTempDir(std::string *path) {
+  const char* env_tmpdir = getenv("TMPDIR");
+  if (env_tmpdir) {
+    *path = env_tmpdir;
+    return true;
+  }
+  NSString* tmp = NSTemporaryDirectory();
+  if (tmp == nil) {
+    return false;
+  }
+  *path = gurl_base::SysNSStringToUTF8(tmp);
+  return true;
+}
 #endif  // __APPLE__

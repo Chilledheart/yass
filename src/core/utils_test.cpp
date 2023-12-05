@@ -3,6 +3,7 @@
 
 #include <gtest/gtest.h>
 
+#include "core/logging.hpp"
 #include "core/process_utils.hpp"
 #include "core/rand_util.hpp"
 #include "core/utils.hpp"
@@ -92,6 +93,13 @@ TEST(UtilsTest, StringToInteger) {
 
   i = StringToInteger(std::string(s4, 4));
   ASSERT_FALSE(i.ok()) << i.status();
+}
+
+TEST(UtilsTest, GetTempDir) {
+  std::string tmp_dir;
+  ASSERT_TRUE(GetTempDir(&tmp_dir));
+  ASSERT_FALSE(tmp_dir.empty());
+  LOG(ERROR) << "tmp_dir: " << tmp_dir;
 }
 
 TEST(UtilsTest, ReadFileAndWrite4K) {

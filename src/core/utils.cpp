@@ -225,6 +225,24 @@ void SetExecutablePath(const std::string& exe_path) {
   GetExecutablePath(&new_exe_path);
   absl::flags_internal::SetProgramInvocationName(new_exe_path);
 }
+
+bool GetTempDir(std::string *path) {
+  const char* tmp = getenv("TMPDIR");
+  if (tmp) {
+    *path = tmp;
+    return true;
+  }
+#if 0 // BUILDFLAG(IS_ANDROID)
+  return PathService::Get(DIR_CACHE, path);
+#else
+#if defined(__ANDROID__)
+  *path = "/data/local/tmp";
+#else
+  *path = "/tmp";
+#endif
+  return true;
+#endif
+}
 #endif
 
 /*
