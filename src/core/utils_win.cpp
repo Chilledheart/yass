@@ -11,6 +11,7 @@
 #include "core/compiler_specific.hpp"
 #include "core/logging.hpp"
 
+struct IUnknown;
 #include <windows.h>
 #include <shellapi.h>
 #include <shlobj.h>
