@@ -24,6 +24,8 @@ extern "C" char **environ;
 
 #include <sstream>
 
+#include <base/posix/eintr_wrapper.h>
+
 static int Pipe2(int pipe_fds[2]) {
   int ret;
 #ifdef HAVE_PIPE2
@@ -112,9 +114,9 @@ int ExecuteProcess(const std::vector<std::string>& params,
   }
   // In Parent Process
   DCHECK(pid) << "Invalid pid in parent process";
-  close(stdin_pipe[0]);
-  close(stdout_pipe[1]);
-  close(stderr_pipe[1]);
+  IGNORE_EINTR(close(stdin_pipe[0]));
+  IGNORE_EINTR(close(stdout_pipe[1]));
+  IGNORE_EINTR(close(stderr_pipe[1]));
 
   // Post Stage
   fcntl(stdin_pipe[1], F_SETFD, FD_CLOEXEC | O_NONBLOCK);
@@ -124,7 +126,7 @@ int ExecuteProcess(const std::vector<std::string>& params,
   int wstatus;
 
   // mark write end as eof
-  close(stdin_pipe[1]);
+  IGNORE_EINTR(close(stdin_pipe[1]));
 
   // polling stdout and stderr
   int mfd = std::max(stdout_pipe[0], stderr_pipe[0]) + 1;
@@ -186,14 +188,14 @@ int ExecuteProcess(const std::vector<std::string>& params,
 done:
   // already closed
   // close(stdin_pipe[1]);
-  close(stdout_pipe[0]);
-  close(stderr_pipe[0]);
+  IGNORE_EINTR(close(stdout_pipe[0]));
+  IGNORE_EINTR(close(stderr_pipe[0]));
 
   if (ret) {
     LOG(INFO) << "process " << command_line << " killed with SIGKILL";
     kill(pid, SIGKILL);
   }
-  ret = waitpid(pid, &wstatus, 0);
+  ret = HANDLE_EINTR(waitpid(pid, &wstatus, 0));
   if (ret >= 0) {
     ret = WEXITSTATUS(wstatus);
     VLOG(1) << "process " << command_line << " exited with ret: " << ret;

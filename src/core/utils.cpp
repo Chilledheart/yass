@@ -17,6 +17,7 @@
 
 #include <absl/flags/internal/program_name.h>
 #include <absl/strings/str_cat.h>
+#include <base/posix/eintr_wrapper.h>
 
 #ifdef HAVE_TCMALLOC
 #include <tcmalloc/malloc_extension.h>
@@ -258,13 +259,13 @@ bool Net_ipv6works() {
 
 #ifndef _WIN32
 ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len) {
-  int fd = ::open(path.c_str(), O_RDONLY);
+  int fd = HANDLE_EINTR(::open(path.c_str(), O_RDONLY));
   if (fd < 0) {
     return -1;
   }
-  ssize_t ret = ::read(fd, buf, buf_len - 1);
+  ssize_t ret = HANDLE_EINTR(::read(fd, buf, buf_len - 1));
 
-  if (ret < 0 || close(fd) < 0) {
+  if (IGNORE_EINTR(close(fd)) < 0) {
     return -1;
   }
   buf[ret] = '\0';
@@ -274,21 +275,21 @@ ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len) {
 ssize_t WriteFileWithBuffer(const std::string& path,
                             const char* buf,
                             size_t buf_len) {
-  int fd = ::open(path.c_str(), O_WRONLY | O_TRUNC | O_CREAT,
-                  S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+  int fd = HANDLE_EINTR(::open(path.c_str(), O_WRONLY | O_TRUNC | O_CREAT,
+                               S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
   if (fd < 0) {
     return false;
   }
-  ssize_t ret = ::write(fd, buf, buf_len);
+  ssize_t ret = HANDLE_EINTR(::write(fd, buf, buf_len));
 
-  if (ret < 0 || close(fd) < 0) {
+  if (IGNORE_EINTR(close(fd)) < 0) {
     return -1;
   }
   return ret;
 }
 
 PlatformFile OpenReadFile(const std::string &path) {
-  return ::open(path.c_str(), O_RDONLY);
+  return HANDLE_EINTR(::open(path.c_str(), O_RDONLY));
 }
 #endif
 

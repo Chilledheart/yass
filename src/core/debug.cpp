@@ -7,8 +7,8 @@
 #include <iterator>
 #include <string_view>
 #include <base/strings/string_util.h>
+#include <base/posix/eintr_wrapper.h>
 
-#include "core/common_posix.hpp"
 #include "core/compiler_specific.hpp"
 #include "core/utils.hpp"
 #include "core/logging.hpp"

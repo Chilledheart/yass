@@ -9,6 +9,7 @@
 #include <absl/base/thread_annotations.h>
 #include <base/strings/string_util.h>
 #include <base/strings/sys_string_conversions.h>
+#include <base/posix/eintr_wrapper.h>
 
 #include "core/logging.hpp"
 #include "core/process_utils.hpp"
@@ -61,7 +62,6 @@
 #include <dirent.h>  // for automatic removal of old logs
 #endif
 
-#include "core/common_posix.hpp"
 #include "core/compiler_specific.hpp"
 #include "core/debug.hpp"
 #include "core/safe_strerror.hpp"
