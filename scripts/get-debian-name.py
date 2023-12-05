@@ -21,6 +21,8 @@ codenames = {
   "bullseye" : "debian-11-bullseye",
   "bookworm" : "debian-12-bookworm",
   "trixie" : "debian-13-trixie",
+  "testing" : "debian-testing",
+  "sid" : "debian-sid",
 }
 
 def main():
