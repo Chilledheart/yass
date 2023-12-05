@@ -243,6 +243,23 @@ bool GetTempDir(std::string *path) {
   return true;
 #endif
 }
+
+std::string GetHomeDir() {
+  const char* home_dir = getenv("HOME");
+  if (home_dir && home_dir[0]) {
+    return home_dir;
+  }
+#if defined(__ANDROID__)
+  DLOG(WARNING) << "OS_ANDROID: Home directory lookup not yet implemented.";
+#endif
+  // Fall back on temp dir if no home directory is defined.
+  std::string rv;
+  if (GetTempDir(&rv)) {
+    return rv;
+  }
+  // Last resort.
+  return "/tmp";
+}
 #endif
 
 /*

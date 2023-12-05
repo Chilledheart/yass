@@ -102,6 +102,12 @@ TEST(UtilsTest, GetTempDir) {
   LOG(ERROR) << "tmp_dir: " << tmp_dir;
 }
 
+TEST(UtilsTest, GetHomeDir) {
+  std::string home_dir = GetHomeDir();
+  ASSERT_FALSE(home_dir.empty());
+  LOG(ERROR) << "home_dir: " << home_dir;
+}
+
 TEST(UtilsTest, ReadFileAndWrite4K) {
   std::string buf, buf2;
   buf.resize(4096);

@@ -160,6 +160,11 @@ bool GetTempDir(std::string *path);
 bool GetTempDir(std::wstring *path);
 #endif
 
+std::string GetHomeDir();
+#ifdef _WIN32
+std::wstring GetHomeDirW();
+#endif
+
 bool Net_ipv6works();
 
 #ifdef _MSC_VER

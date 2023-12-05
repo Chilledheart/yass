@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2022 Chilledheart  */
 
+#ifdef _WIN32
 
 // We use dynamic loading for below functions
 #define GetProductInfo GetProductInfoHidden
@@ -10,9 +11,11 @@
 #include "core/compiler_specific.hpp"
 #include "core/logging.hpp"
 
-#include <absl/flags/internal/program_name.h>
+#include <windows.h>
+#include <shellapi.h>
+#include <shlobj.h>
 
-#ifdef _WIN32
+#include <absl/flags/internal/program_name.h>
 
 #define MAKE_WIN_VER(major, minor, build_number) \
     (((major) << 24) | ((minor) << 16) | (build_number))
@@ -738,6 +741,25 @@ bool GetTempDir(std::wstring *path) {
   *path = std::wstring(temp_path, path_len);
   DCHECK_NE((*path)[path_len-1], L'\0');
   return true;
+}
+
+std::string GetHomeDir() {
+  return SysWideToUTF8(GetHomeDirW());
+}
+
+std::wstring GetHomeDirW() {
+  wchar_t result[MAX_PATH];
+  if (SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_PROFILE, NULL, SHGFP_TYPE_CURRENT,
+                                 result)) && result[0]) {
+    return result;
+  }
+  // Fall back to the temporary directory on failure.
+  std::wstring rv;
+  if (GetTempDir(&rv)) {
+    return rv;
+  }
+  // Last resort.
+  return L"C:\\";
 }
 
 ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len) {
