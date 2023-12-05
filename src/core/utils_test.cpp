@@ -3,11 +3,19 @@
 
 #include <gtest/gtest.h>
 
+#include "core/process_utils.hpp"
+#include "core/rand_util.hpp"
 #include "core/utils.hpp"
+#include "core/utils_fs.hpp"
 
 #ifdef _WIN32
 #include <windows.h>
 #endif
+
+#include <absl/strings/str_format.h>
+#include <filesystem>
+
+using namespace yass;
 
 TEST(UtilsTest, Dirname) {
   ASSERT_EQ(Dirname("a/b/prog/file.cc"), "a/b/prog");
@@ -84,4 +92,26 @@ TEST(UtilsTest, StringToInteger) {
 
   i = StringToInteger(std::string(s4, 4));
   ASSERT_FALSE(i.ok()) << i.status();
+}
+
+TEST(UtilsTest, ReadFileAndWrite4K) {
+  std::string buf, buf2;
+  buf.resize(4096);
+  buf2.resize(4096);
+  RandBytes(buf.data(), buf.size());
+  int tmp_suffix;
+  RandBytes(&tmp_suffix, sizeof(tmp_suffix));
+  auto tmp_name = absl::StrFormat("read_write_file-%u-%d", GetPID(), tmp_suffix);
+  auto tmp_dir = std::filesystem::path(::testing::TempDir());
+#ifdef _WIN32
+  std::string tmp = SysWideToUTF8(tmp_dir / tmp_name);
+#else
+  std::string tmp = tmp_dir / tmp_name;
+#endif
+
+  ASSERT_TRUE(WriteFileWithBuffer(tmp, buf.c_str(), buf.size()));
+  ASSERT_TRUE(ReadFileToBuffer(tmp, buf2.data(), buf2.size()+1));
+  ASSERT_EQ(buf, buf2);
+
+  ASSERT_TRUE(RemoveFile(tmp));
 }

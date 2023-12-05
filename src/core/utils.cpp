@@ -272,6 +272,22 @@ ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len) {
   return ret;
 }
 
+static bool WriteFileDescriptor(int fd, std::string_view data) {
+  // Allow for partial writes.
+  ssize_t bytes_written_total = 0;
+  ssize_t size = static_cast<ssize_t>(data.size());
+  DCHECK_LE(data.size(), static_cast<size_t>(SSIZE_MAX)); // checked_cast
+  for (ssize_t bytes_written_partial = 0; bytes_written_total < size;
+       bytes_written_total += bytes_written_partial) {
+    bytes_written_partial =
+        HANDLE_EINTR(::write(fd, data.data() + bytes_written_total,
+                             static_cast<size_t>(size - bytes_written_total)));
+    if (bytes_written_partial < 0)
+      return false;
+  }
+  return true;
+}
+
 ssize_t WriteFileWithBuffer(const std::string& path,
                             const char* buf,
                             size_t buf_len) {
@@ -280,7 +296,9 @@ ssize_t WriteFileWithBuffer(const std::string& path,
   if (fd < 0) {
     return false;
   }
-  ssize_t ret = HANDLE_EINTR(::write(fd, buf, buf_len));
+
+  ssize_t ret = WriteFileDescriptor(fd, std::string_view(buf, buf_len))
+    ? buf_len : -1;
 
   if (IGNORE_EINTR(close(fd)) < 0) {
     return -1;
