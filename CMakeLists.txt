@@ -1677,9 +1677,9 @@ if (WIN32)
   set(CMAKE_CXX_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
 
   if (MSVC)
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} Crypt32 WS2_32 bcrypt User32 kernel32)
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} Crypt32 WS2_32 bcrypt User32 shell32 kernel32)
   else()
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} crypt32 ws2_32 mswsock bcrypt user32 kernel32)
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} crypt32 ws2_32 mswsock bcrypt user32 shell32 kernel32)
   endif()
 
   # Don't use it even if we are compiling with gnu extensions

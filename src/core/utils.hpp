@@ -155,6 +155,16 @@ void SetExecutablePath(const std::string& exe_path);
 void SetExecutablePath(const std::wstring& exe_path);
 #endif
 
+bool GetTempDir(std::string *path);
+#ifdef _WIN32
+bool GetTempDir(std::wstring *path);
+#endif
+
+std::string GetHomeDir();
+#ifdef _WIN32
+std::wstring GetHomeDirW();
+#endif
+
 bool Net_ipv6works();
 
 #ifdef _MSC_VER

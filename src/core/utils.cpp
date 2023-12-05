@@ -225,6 +225,41 @@ void SetExecutablePath(const std::string& exe_path) {
   GetExecutablePath(&new_exe_path);
   absl::flags_internal::SetProgramInvocationName(new_exe_path);
 }
+
+bool GetTempDir(std::string *path) {
+  const char* tmp = getenv("TMPDIR");
+  if (tmp) {
+    *path = tmp;
+    return true;
+  }
+#if 0 // BUILDFLAG(IS_ANDROID)
+  return PathService::Get(DIR_CACHE, path);
+#else
+#if defined(__ANDROID__)
+  *path = "/data/local/tmp";
+#else
+  *path = "/tmp";
+#endif
+  return true;
+#endif
+}
+
+std::string GetHomeDir() {
+  const char* home_dir = getenv("HOME");
+  if (home_dir && home_dir[0]) {
+    return home_dir;
+  }
+#if defined(__ANDROID__)
+  DLOG(WARNING) << "OS_ANDROID: Home directory lookup not yet implemented.";
+#endif
+  // Fall back on temp dir if no home directory is defined.
+  std::string rv;
+  if (GetTempDir(&rv)) {
+    return rv;
+  }
+  // Last resort.
+  return "/tmp";
+}
 #endif
 
 /*
@@ -272,6 +307,22 @@ ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len) {
   return ret;
 }
 
+static bool WriteFileDescriptor(int fd, std::string_view data) {
+  // Allow for partial writes.
+  ssize_t bytes_written_total = 0;
+  ssize_t size = static_cast<ssize_t>(data.size());
+  DCHECK_LE(data.size(), static_cast<size_t>(SSIZE_MAX)); // checked_cast
+  for (ssize_t bytes_written_partial = 0; bytes_written_total < size;
+       bytes_written_total += bytes_written_partial) {
+    bytes_written_partial =
+        HANDLE_EINTR(::write(fd, data.data() + bytes_written_total,
+                             static_cast<size_t>(size - bytes_written_total)));
+    if (bytes_written_partial < 0)
+      return false;
+  }
+  return true;
+}
+
 ssize_t WriteFileWithBuffer(const std::string& path,
                             const char* buf,
                             size_t buf_len) {
@@ -280,7 +331,9 @@ ssize_t WriteFileWithBuffer(const std::string& path,
   if (fd < 0) {
     return false;
   }
-  ssize_t ret = HANDLE_EINTR(::write(fd, buf, buf_len));
+
+  ssize_t ret = WriteFileDescriptor(fd, std::string_view(buf, buf_len))
+    ? buf_len : -1;
 
   if (IGNORE_EINTR(close(fd)) < 0) {
     return -1;
