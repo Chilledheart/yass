@@ -64,10 +64,7 @@
 // termination function on Apple platforms.
 #define _LIBCPP_VERBOSE_ABORT(...) ::std::__libcpp_verbose_abort(__VA_ARGS__)
 
-// TODO(crbug.com/1481891): Enable on Android too.
 // TODO(thakis): Remove this after LLVM 19's libc++ is rolled in.
-#if !defined(__ANDROID__)
 #define _LIBCPP_CHAR_TRAITS_REMOVE_BASE_SPECIALIZATION
-#endif
 
 #endif // _LIBCPP_CONFIG_SITE
