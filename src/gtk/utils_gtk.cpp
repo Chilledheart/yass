@@ -395,8 +395,7 @@ bool Dispatcher::Init(std::function<void()> callback) {
                           gpointer user_data) -> gboolean {
     auto self = reinterpret_cast<Dispatcher*>(user_data);
     if (condition & G_IO_ERR || condition & G_IO_HUP) {
-      VLOG(2) << "Dispatcher: " << self << " pipe hup";
-      self->Destroy();
+      LOG(WARNING) << "Dispatcher: " << self << " pipe hup";
       return G_SOURCE_REMOVE;
     }
     return self->ReadCallback();
@@ -409,7 +408,7 @@ bool Dispatcher::Init(std::function<void()> callback) {
   g_source_unref(source_);
 
   callback_ = callback;
-  VLOG(2) << "Dispatcher: " << this << " Inited";
+  LOG(INFO) << "Dispatcher: " << this << " Inited";
   return true;
 }
 
@@ -418,6 +417,7 @@ bool Dispatcher::Destroy() {
     return true;
   g_source_destroy(source_);
   source_ = nullptr;
+  callback_ = nullptr;
   bool failure_on_close = ::close(fds_[0]) != 0;
   failure_on_close |= ::close(fds_[1]) != 0;
   if (failure_on_close) {
@@ -426,7 +426,7 @@ bool Dispatcher::Destroy() {
   }
   fds_[0] = -1;
   fds_[1] = -1;
-  VLOG(2) << "Dispatcher: " << this << " Destroyed";
+  LOG(INFO) << "Dispatcher: " << this << " Destroyed";
   return true;
 }
 
@@ -470,6 +470,9 @@ bool Dispatcher::ReadCallback() {
     size -= ret;
   }
 
+  if (!callback_) {
+    return G_SOURCE_REMOVE;
+  }
   callback_();
 
   return G_SOURCE_CONTINUE;
