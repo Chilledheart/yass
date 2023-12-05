@@ -147,12 +147,12 @@ std::wstring ExpandUserFromString(const wchar_t* path, size_t path_len);
 
 bool GetExecutablePath(std::string* exe_path);
 #ifdef _WIN32
-bool GetExecutablePathW(std::wstring* exe_path);
+bool GetExecutablePath(std::wstring* exe_path);
 #endif
 
 void SetExecutablePath(const std::string& exe_path);
 #ifdef _WIN32
-void SetExecutablePathW(const std::wstring& exe_path);
+void SetExecutablePath(const std::wstring& exe_path);
 #endif
 
 bool Net_ipv6works();
@@ -166,7 +166,7 @@ ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len);
 ssize_t WriteFileWithBuffer(const std::string& path, const char* buf, size_t buf_len);
 PlatformFile OpenReadFile(const std::string &path);
 #ifdef _WIN32
-PlatformFile OpenReadFileW(const std::wstring& path);
+PlatformFile OpenReadFile(const std::wstring& path);
 #endif
 
 #ifdef HAVE_TCMALLOC

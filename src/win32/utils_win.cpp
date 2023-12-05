@@ -761,8 +761,8 @@ static std::wstring GetAutoStartCmdline() {
   std::wstring cmdline;
 
   /* turn on auto start  */
-  if (!GetExecutablePathW(&cmdline)) {
-    LOG(FATAL) << "GetExecutablePathW failed";
+  if (!GetExecutablePath(&cmdline)) {
+    LOG(FATAL) << "GetExecutablePath failed";
   }
 
   ss << L"\"" << cmdline << L"\" --background";

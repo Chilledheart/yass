@@ -658,29 +658,17 @@ bool IsWindowsVersionBNOrGreater(int wMajorVersion,
 static std::string main_exe_path = "UNKNOWN";
 
 bool GetExecutablePath(std::string* exe_path) {
-  DWORD len;
+  std::wstring wexe_path;
   exe_path->clear();
-  // Windows XP:  The string is truncated to nSize characters and is not
-  // null-terminated.
-  exe_path->resize(_MAX_PATH + 1, '\0');
-  len = ::GetModuleFileNameA(nullptr, const_cast<char*>(exe_path->data()),
-                             _MAX_PATH);
-  exe_path->resize(len);
-
-  // A zero return value indicates a failure other than insufficient space.
-
-  // Insufficient space is determined by a return value equal to the size of
-  // the buffer passed in.
-  if (len == 0 || len == _MAX_PATH) {
-    PLOG(WARNING) << "Internal error: GetModuleFileNameA failed";
-    *exe_path = main_exe_path;
+  if (!GetExecutablePath(&wexe_path)) {
     return false;
   }
+  *exe_path = SysWideToUTF8(wexe_path);
 
   return true;
 }
 
-bool GetExecutablePathW(std::wstring* exe_path) {
+bool GetExecutablePath(std::wstring* exe_path) {
   DWORD len;
   exe_path->clear();
   // Windows XP:  The string is truncated to nSize characters and is not
@@ -688,6 +676,9 @@ bool GetExecutablePathW(std::wstring* exe_path) {
   exe_path->resize(_MAX_PATH + 1, L'\0');
   len = ::GetModuleFileNameW(nullptr, const_cast<wchar_t*>(exe_path->data()),
                              _MAX_PATH);
+  // If the function succeeds, the return value is the length of the string
+  // that is copied to the buffer, in characters,
+  // not including the terminating null character.
   exe_path->resize(len);
 
   // A zero return value indicates a failure other than insufficient space.
@@ -711,7 +702,7 @@ void SetExecutablePath(const std::string& exe_path) {
   absl::flags_internal::SetProgramInvocationName(new_exe_path);
 }
 
-void SetExecutablePathW(const std::wstring& exe_path) {
+void SetExecutablePath(const std::wstring& exe_path) {
   main_exe_path = SysWideToUTF8(exe_path);
 
   std::string new_exe_path;
@@ -763,7 +754,7 @@ PlatformFile OpenReadFile(const std::string &path) {
                        FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
 }
 
-PlatformFile OpenReadFileW(const std::wstring &path) {
+PlatformFile OpenReadFile(const std::wstring &path) {
   return ::CreateFileW(path.c_str(), GENERIC_READ,
                        FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
 }
