@@ -11,7 +11,8 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#include "core/common_posix.hpp"
+#include <base/posix/eintr_wrapper.h>
+
 #include "core/logging.hpp"
 
 #if defined(__linux__) || defined(__ANDROID__)

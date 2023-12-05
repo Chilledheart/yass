@@ -736,10 +736,21 @@ ssize_t WriteFileWithBuffer(const std::string& path,
   HANDLE hFile = ::CreateFileW(SysUTF8ToWide(path).c_str(), GENERIC_WRITE,
                                0, nullptr, CREATE_ALWAYS, 0, nullptr);
   if (hFile == INVALID_HANDLE_VALUE) {
+    DPLOG(WARNING) << "WriteFile failed for path " << path;
     return -1;
   }
 
-  if (!::WriteFile(hFile, buf, buf_len, &written, nullptr) || written != buf_len) {
+  if (!::WriteFile(hFile, buf, buf_len, &written, nullptr)) {
+    // WriteFile failed.
+    DPLOG(WARNING) << "writing file " << path << " failed";
+    ::CloseHandle(hFile);
+    return -1;
+  }
+
+  if (written != buf_len) {
+    // Didn't write all the bytes.
+    DLOG(WARNING) << "wrote" << written << " bytes to " << path
+                  << " expected " << buf_len;
     ::CloseHandle(hFile);
     return -1;
   }
