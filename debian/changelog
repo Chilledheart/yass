@@ -1,3 +1,9 @@
+yass (1.5.2-1) UNRELEASED; urgency=medium
+
+  * Bump to chromium 121 dependents (updated).
+  * Fix RPM releases.
+
+ -- Chilledheart <hukeyue@hotmail.com>  Tue, 5 Dec 2023 20:07:51 +0800
 yass (1.5.1-1) UNRELEASED; urgency=medium
 
   * Bump to chromium 121 dependents.
