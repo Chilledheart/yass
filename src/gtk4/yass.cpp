@@ -277,7 +277,7 @@ void YASSApp::OnStart(bool quiet) {
   state_ = STARTING;
   SaveConfig();
 
-  std::function<void(asio::error_code)> callback;
+  absl::AnyInvocable<void(asio::error_code)> callback;
   if (!quiet) {
     callback = [this](asio::error_code ec) {
       bool successed = false;
@@ -298,13 +298,13 @@ void YASSApp::OnStart(bool quiet) {
       dispatcher_.Emit();
     };
   }
-  worker_.Start(callback);
+  worker_.Start(std::move(callback));
 }
 
 void YASSApp::OnStop(bool quiet) {
   state_ = STOPPING;
 
-  std::function<void()> callback;
+  absl::AnyInvocable<void()> callback;
   if (!quiet) {
     callback = [this]() {
       {
@@ -315,7 +315,7 @@ void YASSApp::OnStop(bool quiet) {
       dispatcher_.Emit();
     };
   }
-  worker_.Stop(callback);
+  worker_.Stop(std::move(callback));
 }
 
 void YASSApp::OnStarted() {

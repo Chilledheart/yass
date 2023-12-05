@@ -89,7 +89,7 @@
   state_ = STARTING;
   [self SaveConfig];
 
-  std::function<void(asio::error_code)> callback;
+  absl::AnyInvocable<void(asio::error_code)> callback;
   if (!quiet) {
     callback = [=](asio::error_code ec) {
       bool successed = false;
@@ -111,13 +111,13 @@
       });
     };
   }
-  worker_.Start(callback);
+  worker_.Start(std::move(callback));
 }
 
 - (void)OnStop:(BOOL)quiet {
   state_ = STOPPING;
 
-  std::function<void()> callback;
+  absl::AnyInvocable<void()> callback;
   if (!quiet) {
     callback = [=]() {
       dispatch_async(dispatch_get_main_queue(), ^{
@@ -125,7 +125,7 @@
       });
     };
   }
-  worker_.Stop(callback);
+  worker_.Stop(std::move(callback));
 }
 
 - (void)OnStarted {

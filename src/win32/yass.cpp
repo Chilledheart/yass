@@ -296,7 +296,7 @@ void CYassApp::OnStart(bool quiet) {
   state_ = STARTING;
   SaveConfig();
 
-  std::function<void(asio::error_code)> callback;
+  absl::AnyInvocable<void(asio::error_code)> callback;
   if (!quiet) {
     callback = [main_thread_id](asio::error_code ec) {
       bool successed = false;
@@ -320,13 +320,13 @@ void CYassApp::OnStart(bool quiet) {
       }
     };
   }
-  worker_.Start(callback);
+  worker_.Start(std::move(callback));
 }
 
 void CYassApp::OnStop(bool quiet) {
   DWORD main_thread_id = GetCurrentThreadId();
   state_ = STOPPING;
-  std::function<void()> callback;
+  absl::AnyInvocable<void()> callback;
   if (!quiet) {
     callback = [main_thread_id]() {
       bool ret;
@@ -336,7 +336,7 @@ void CYassApp::OnStop(bool quiet) {
       }
     };
   }
-  worker_.Stop(callback);
+  worker_.Stop(std::move(callback));
 }
 
 // https://docs.microsoft.com/en-us/windows/win32/winprog/windows-data-types?redirectedfrom=MSDN
