@@ -15,6 +15,14 @@
 #include <base/strings/sys_string_conversions.h>
 #include <base/files/platform_file.h>
 
+#ifdef __ANDROID__
+#include <android_native_app_glue.h>
+#endif
+
+#ifdef __ANDROID__
+extern android_app *a_app;
+#endif
+
 using gurl_base::PlatformFile;
 
 // Valid values for priority of Thread::Options and SimpleThread::Options, and

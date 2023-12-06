@@ -23,6 +23,10 @@
 #include <tcmalloc/malloc_extension.h>
 #endif
 
+#ifdef __ANDROID__
+android_app *a_app = nullptr;
+#endif
+
 std::optional<int> StringToInteger(const std::string& value) {
   int result;
 

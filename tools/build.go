@@ -74,6 +74,11 @@ func getAppName() string {
 		return APPNAME + ".exe"
 	} else if systemNameFlag == "darwin" {
 		return APPNAME + ".app"
+	} else if systemNameFlag == "android" {
+		if strings.HasSuffix(APPNAME, "_cli") || strings.HasSuffix(APPNAME, "_server") {
+			return "lib" + APPNAME + ".so"
+		}
+		return APPNAME
 	} else {
 		return APPNAME
 	}
@@ -785,11 +790,11 @@ func postStateStripBinaries() {
 			objcopy = "objcopy"
 		}
 		// create a file containing the debugging info.
-		cmdRun([]string{objcopy, "--only-keep-debug", APPNAME, APPNAME + ".dbg"}, false)
+		cmdRun([]string{objcopy, "--only-keep-debug", getAppName(), getAppName() + ".dbg"}, false)
 		// stripped executable.
-		cmdRun([]string{objcopy, "--strip-debug", APPNAME}, false)
+		cmdRun([]string{objcopy, "--strip-debug", getAppName()}, false)
 		// to add a link to the debugging info into the stripped executable.
-		cmdRun([]string{objcopy, "--add-gnu-debuglink=" + APPNAME + ".dbg", APPNAME}, false)
+		cmdRun([]string{objcopy, "--add-gnu-debuglink=" + getAppName() + ".dbg", getAppName()}, false)
 	} else if systemNameFlag == "darwin" {
 		cmdRun([]string{"dsymutil", filepath.Join(getAppName(), "Contents", "MacOS", APPNAME),
 			"--statistics", "--papertrail", "-o", getAppName() + ".dSYM"}, false)
@@ -1323,7 +1328,7 @@ func postStateArchives() map[string][]string {
 		archiveFiles(debugArchive, archivePrefix, []string{APPNAME + ".pdb"})
 		dbgPaths = append(dbgPaths, APPNAME+".pdb")
 	} else if systemNameFlag == "android" || systemNameFlag == "linux" || systemNameFlag == "freebsd" {
-		archiveFiles(debugArchive, archivePrefix, []string{APPNAME + ".dbg"})
+		archiveFiles(debugArchive, archivePrefix, []string{getAppName() + ".dbg"})
 		dbgPaths = append(dbgPaths, APPNAME+".dbg")
 	} else if systemNameFlag == "darwin" {
 		archiveFiles(debugArchive, archivePrefix, []string{getAppName() + ".dSYM"})

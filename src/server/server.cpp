@@ -42,6 +42,10 @@ ABSL_FLAG(std::string, group, "", "set non-privileged group for worker");
 
 using namespace server;
 
+#ifdef __ANDROID__
+void android_main(android_app* state) {
+  a_app = state;
+#else // __ANDROID__
 int main(int argc, const char* argv[]) {
   SetExecutablePath(argv[0]);
   std::string exec_path;
@@ -79,6 +83,7 @@ int main(int argc, const char* argv[]) {
   config::ReadConfigFileOption(argc, argv);
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
+#endif // __ANDROID__
 
 #ifdef HAVE_ICU
   if (!InitializeICU()) {
@@ -107,13 +112,13 @@ int main(int argc, const char* argv[]) {
     std::string private_key, private_key_path = absl::GetFlag(FLAGS_private_key_file);
     if (private_key_path.empty()) {
       LOG(WARNING) << "No private key file for certificate provided";
-      return -1;
+      exit(-1);
     }
     private_key.resize(256 * 1024);
     ret = ReadFileToBuffer(private_key_path, private_key.data(), private_key.size());
     if (ret < 0) {
       LOG(WARNING) << "private key " << private_key_path << " failed to read";
-      return -1;
+      exit(-1);
     }
     private_key.resize(ret);
     g_private_key_content = private_key;
@@ -122,13 +127,13 @@ int main(int argc, const char* argv[]) {
     std::string certificate_chain, certificate_chain_path = absl::GetFlag(FLAGS_certificate_chain_file);
     if (certificate_chain_path.empty()) {
       LOG(WARNING) << "No certificate file provided";
-      return -1;
+      exit(-1);
     }
     certificate_chain.resize(256 * 1024);
     ret = ReadFileToBuffer(certificate_chain_path, certificate_chain.data(), certificate_chain.size());
     if (ret < 0) {
       LOG(WARNING) << "certificate file " << certificate_chain_path << " failed to read";
-      return -1;
+      exit(-1);
     }
     certificate_chain.resize(ret);
     g_certificate_chain_content = certificate_chain;
@@ -171,7 +176,7 @@ int main(int argc, const char* argv[]) {
       LOG(ERROR) << "listen failed due to: " << ec;
       server.stop();
       work_guard.reset();
-      return -1;
+      exit(-1);
     }
     endpoint = server.endpoint();
     LOG(WARNING) << "tcp server listening at " << endpoint;
@@ -233,7 +238,7 @@ int main(int argc, const char* argv[]) {
         uid = result->pw_uid;
       } else {
         PLOG(WARNING) << "Failed to find user named: " << username;
-        return -1;
+        exit(-1);
       }
     }
 
@@ -246,7 +251,7 @@ int main(int argc, const char* argv[]) {
         gid = grp_result->gr_gid;
       } else {
         PLOG(WARNING) << "Failed to find group named: " << groupname;
-        return -1;
+        exit(-1);
       }
     }
 
@@ -254,18 +259,18 @@ int main(int argc, const char* argv[]) {
     ret = setgid(gid);
     if (ret != 0) {
       PLOG(WARNING) << "setgid failed: to " << gid;
-      return -1;
+      exit(-1);
     }
     ret = initgroups(username.c_str(), gid);
     if (ret != 0) {
       PLOG(WARNING) << "initgroups failed: to " << gid;
-      return -1;
+      exit(-1);
     }
 
     ret = setuid(uid);
     if (ret != 0) {
       PLOG(WARNING) << "setuid failed to " << uid;
-      return -1;
+      exit(-1);
     }
     LOG(INFO) << "Changed to user: " << username;
     LOG(INFO) << "Changed to group: "
@@ -281,6 +286,4 @@ int main(int argc, const char* argv[]) {
 #endif
 
   io_context.run();
-
-  return 0;
 }

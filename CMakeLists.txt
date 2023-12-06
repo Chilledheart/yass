@@ -1935,6 +1935,25 @@ else()
 endif()
 
 # *****************************************************************************************
+#           native_app_glue Library (Android)
+# *****************************************************************************************
+
+if (ANDROID)
+  add_library(native_app_glue STATIC
+    third_party/android_toolchain/sources/android/native_app_glue/android_native_app_glue.c
+    third_party/android_toolchain/sources/android/native_app_glue/android_native_app_glue.h)
+  target_compile_options(native_app_glue PRIVATE -Wno-error)
+  target_include_directories(native_app_glue PUBLIC
+    third_party/android_toolchain/sources/android/native_app_glue)
+  target_link_libraries(native_app_glue PRIVATE android log)
+  set(SUPPORT_LIBS
+    native_app_glue
+    ${SUPPORT_LIBS}
+    )
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
+endif()
+
+# *****************************************************************************************
 #           abseil-cpp Library
 # *****************************************************************************************
 
@@ -2306,6 +2325,10 @@ target_link_libraries(asio PUBLIC
   url
   crypto
   ssl)
+
+if (ANDROID)
+  target_link_libraries(asio PUBLIC native_app_glue)
+endif()
 
 if (APPLE)
   find_library(SECURITY_FRAMEWORK Security REQUIRED)
@@ -3308,9 +3331,15 @@ target_include_directories(yass_cli_lib PRIVATE
 target_link_libraries(yass_cli_lib PUBLIC yass_base)
 
 if (CLI)
-  add_executable(yass_cli
-    src/cli/cli.cpp
+  if (ANDROID)
+    add_library(yass_cli SHARED
+      src/cli/cli.cpp
     )
+  else()
+    add_executable(yass_cli
+      src/cli/cli.cpp
+    )
+  endif()
 
   if (WIN32)
     set(CLI_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass_cli.manifest")
@@ -3349,9 +3378,15 @@ target_include_directories(yass_server_lib PRIVATE
 target_link_libraries(yass_server_lib PUBLIC yass_base)
 
 if (SERVER)
-  add_executable(yass_server
-    src/server/server.cpp
+  if (ANDROID)
+    add_library(yass_server SHARED
+      src/server/server.cpp
     )
+  else()
+    add_executable(yass_server
+      src/server/server.cpp
+      )
+  endif()
 
   if (WIN32)
     set(SERVER_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass_server.manifest")
