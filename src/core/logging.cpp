@@ -3,10 +3,11 @@
 
 #if defined(__SANITIZE_THREAD__)
 #define DYNAMIC_ANNOTATIONS_ENABLED 1
-#include <absl/base/dynamic_annotations.h>
 #include <absl/base/config.h>
 #endif
+#include <absl/base/dynamic_annotations.h>
 #include <absl/base/thread_annotations.h>
+#include <absl/strings/str_format.h>
 #include <base/strings/string_util.h>
 #include <base/strings/sys_string_conversions.h>
 #include <base/posix/eintr_wrapper.h>

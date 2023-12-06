@@ -287,8 +287,8 @@ void YASSApp::SaveConfig() {
   auto local_port = StringToIntegerU(main_window_->GetLocalPort());
   auto connect_timeout = StringToIntegerU(main_window_->GetTimeout());
 
-  if (!server_port.ok() || method == CRYPTO_INVALID || !local_port.ok() ||
-      !connect_timeout.ok()) {
+  if (!server_port.has_value() || method == CRYPTO_INVALID || !local_port.has_value() ||
+      !connect_timeout.has_value()) {
     LOG(WARNING) << "invalid options";
     return;
   }

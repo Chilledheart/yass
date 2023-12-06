@@ -306,7 +306,7 @@ int DarwinMajorVersionInternal() {
   if (dot) {
     auto ver = StringToInteger(std::string(uname_info.release, dot - uname_info.release));
 
-    if (!ver.ok()) {
+    if (!ver.has_value()) {
       dot = nullptr;
     } else {
       darwin_major_version = ver.value();
@@ -407,7 +407,7 @@ bool ParseModelIdentifier(const std::string& ident,
       std::string(ident.c_str() + number_loc, comma_loc - number_loc));
   auto minor_tmp =
       StringToInteger(std::string(ident.c_str() + comma_loc + 1));
-  if (!major_tmp.ok() || !minor_tmp.ok())
+  if (!major_tmp.has_value() || !minor_tmp.has_value())
     return false;
   *type = ident.substr(0, number_loc);
   *major = major_tmp.value();

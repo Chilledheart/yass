@@ -78,21 +78,21 @@ TEST(UtilsTest, ExpandUserFromString) {
 
 TEST(UtilsTest, StringToInteger) {
   auto i = StringToInteger("123");
-  ASSERT_TRUE(i.ok()) << i.status();
+  ASSERT_TRUE(i.has_value());
   ASSERT_EQ(i.value(), 123);
 
   const char s3[] = "123";
   i = StringToInteger(std::string(s3, 3));
-  ASSERT_TRUE(i.ok()) << i.status();
+  ASSERT_TRUE(i.has_value());
   ASSERT_EQ(i.value(), 123);
 
   i = StringToInteger(std::string(s3, 4));
-  ASSERT_FALSE(i.ok()) << i.status();
+  ASSERT_FALSE(i.has_value());
 
   const char s4[] = "123a";
 
   i = StringToInteger(std::string(s4, 4));
-  ASSERT_FALSE(i.ok()) << i.status();
+  ASSERT_FALSE(i.has_value());
 }
 
 TEST(UtilsTest, GetTempDir) {
