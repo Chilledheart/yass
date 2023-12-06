@@ -34,7 +34,7 @@ def download_url(url, tarball):
 # cp -r --parents toolchains/llvm/prebuilt ../third_party/android_toolchain
 # find toolchains -type f -regextype egrep \! -regex \
 #  '.*(lib(atomic|gcc|gcc_real|compiler_rt-extras|android_support|unwind).a|crt.*o|lib(android|c|dl|log|m).so|usr/local.*|usr/include.*)' -delete
-def extract_zipfile(tar, sysroot=".", filters=[]):
+def extract_zipfile(tar, sysroot=".", filters=[], dir_filters=[]):
   print('extracting %s with (filters %s)' % (tar, ' '.join(filters)))
   safe_archive_names = [ 'libatomic.a', 'libgcc.a', 'libgcc_real.a',
                          'libcompiler_rt-extras.a', 'libandroid_support.a', 'libunwind.a',
@@ -45,6 +45,7 @@ def extract_zipfile(tar, sysroot=".", filters=[]):
     filtered_members = []
     for member in members:
       filtered = False if filters else True
+      dir_filtered = False
       basename = os.path.basename(member)
       dirname = os.path.dirname(member)
       for filter in filters:
@@ -52,9 +53,14 @@ def extract_zipfile(tar, sysroot=".", filters=[]):
         if _dirname.startswith(filter + "/"):
           filtered = True
           break;
+      for dir_filter in dir_filters:
+        if dirname.startswith(dir_filter):
+          filtered = True
+          dir_filtered = True
+          break;
       # remove all '.a' archive files except for libc_nonshared.a and libssp_nonshared.a
       # remove all python-related files inside /usr/local/lib
-      if filtered:
+      if filtered and not dir_filtered:
         filtered = False
         if 'include' in dirname:
           filtered = True
@@ -104,11 +110,13 @@ def main(args):
 
   print(f'Extracting sysroot to {tmproot}...')
   extract_zipfile(ndk_tarball, tmproot,
-                  [f'{ndk_prefix}/sources/android/cpufeatures',
-                   f'{ndk_prefix}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.7/lib/linux',
+                  [f'{ndk_prefix}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.7/lib/linux',
                    f'{ndk_prefix}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib',
                    f'{ndk_prefix}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/local/include',
-                   f'{ndk_prefix}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include'])
+                   f'{ndk_prefix}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include'],
+                  [f'{ndk_prefix}/sources/android/cpufeatures',
+                   f'{ndk_prefix}/sources/android/native_app_glue']
+                 )
   dir_list = os.listdir(f'{tmproot}/{ndk_prefix}')
   for dir_item in dir_list:
     if os.path.isdir(f'{tmproot}/{ndk_prefix}/{dir_item}'):

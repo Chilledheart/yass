@@ -90,14 +90,14 @@ jobs:
           path: |
             ${{ env.SDK_ROOT }}
             qemu-user-static*.deb
-          key: android-ndk-${{ matrix.arch }}-with-qemu-v${{ env.CACHE_EPOCH }}
+          key: android-ndk-${{ matrix.arch }}-with-qemu-v1
       - name: Cache sysroot
         id: sysroot-cache
         uses: actions/cache@v3
         with:
           path: |
             ${{ env.SYSROOT }}
-          key: android-sysroot-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
+          key: android-sysroot-${{ matrix.arch }}-v1
       - name: Build build tool
         run: |
           cd tools
@@ -145,6 +145,7 @@ jobs:
           # android sysimg doesn't like resolv.conf
           mkdir -p $SYSROOT/dev $SYSROOT/proc $SYSROOT/data/local/tmp
           bwrap --die-with-parent --bind $SYSROOT / \
+            --ro-bind /sys /sys \
             --proc /proc --dev /dev \
             --unshare-all \
             --bind $PWD/build-android${{ matrix.apilevel }}-${{ matrix.arch }} /data/local/tmp \
