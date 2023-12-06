@@ -1,6 +1,8 @@
 apply plugin: 'com.android.application'
 
 android {
+    // https://developer.android.com/build/configure-app-module#set-namespace
+    namespace = "it.gui.yass"
     compileSdkVersion rootProject.ext.compileSdkVersion
     defaultConfig {
         applicationId 'it.gui.yass'
@@ -48,24 +50,24 @@ task copyTask {
         include 'icudtl.dat'
     }
     copy {
-        from '../../build-android24-x86/libyass_cli.so'
+        from '../../build-android24-x86/libyass.so'
         into 'libs/x86'
-        rename('libyass_cli.so', 'libnative-lib.so')
+        rename('libyass.so', 'libnative-lib.so')
     }
     copy {
-        from '../../build-android24-x64/libyass_cli.so'
+        from '../../build-android24-x64/libyass.so'
         into 'libs/x86_64'
-        rename('libyass_cli.so', 'libnative-lib.so')
+        rename('libyass.so', 'libnative-lib.so')
     }
     copy {
-        from '../../build-android24-arm/libyass_cli.so'
+        from '../../build-android24-arm/libyass.so'
         into 'libs/armeabi-v7a'
-        rename('libyass_cli.so', 'libnative-lib.so')
+        rename('libyass.so', 'libnative-lib.so')
     }
     copy {
-        from '../../build-android24-arm64/libyass_cli.so'
+        from '../../build-android24-arm64/libyass.so'
         into 'libs/arm64-v8a'
-        rename('libyass_cli.so', 'libnative-lib.so')
+        rename('libyass.so', 'libnative-lib.so')
     }
 }
 
