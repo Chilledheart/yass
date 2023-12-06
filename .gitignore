@@ -63,3 +63,8 @@ yass.spec
 /android-*-tmp
 /third_party/android_toolchain
 /android-sysroot-*
+/android/yass/assets
+/android/yass/build
+/android/yass/libs
+/android/yass/src/main/res/drawable
+local.properties
