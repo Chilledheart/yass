@@ -26,7 +26,6 @@ allprojects {
 }
 
 ext {
-    abiFilters = "x86_64"
     minSdkVersion = 24
     targetSdkVersion = 30
     compileSdkVersion = 30
