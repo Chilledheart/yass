@@ -75,7 +75,7 @@ func getAppName() string {
 	} else if systemNameFlag == "darwin" {
 		return APPNAME + ".app"
 	} else if systemNameFlag == "android" {
-		if strings.HasSuffix(APPNAME, "_cli") || strings.HasSuffix(APPNAME, "_server") {
+		if APPNAME == "yass" {
 			return "lib" + APPNAME + ".so"
 		}
 		return APPNAME

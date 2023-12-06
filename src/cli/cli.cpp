@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
+/* Copyright (c) 2019-2023 Chilledheart  */
 
 #include "config/config.hpp"
 #include "core/cipher.hpp"
@@ -33,10 +33,6 @@
 
 using namespace cli;
 
-#ifdef __ANDROID__
-void android_main(android_app* state) {
-  a_app = state;
-#else // __ANDROID__
 int main(int argc, const char* argv[]) {
   SetExecutablePath(argv[0]);
   std::string exec_path;
@@ -74,7 +70,6 @@ int main(int argc, const char* argv[]) {
   config::ReadConfigFileOption(argc, argv);
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
-#endif // __ANDROID__
 
 #ifdef HAVE_ICU
   if (!InitializeICU()) {
@@ -120,7 +115,7 @@ int main(int argc, const char* argv[]) {
 #else
         << " failed due to: " << gai_strerror(ret);
 #endif
-      exit(-1);
+      return -1;
     }
     endpoints.insert(endpoints.end(), std::begin(results), std::end(results));
   }
@@ -137,7 +132,7 @@ int main(int argc, const char* argv[]) {
       LOG(ERROR) << "listen failed due to: " << ec;
       server.stop();
       work_guard.reset();
-      exit(-1);
+      return -1;
     }
     endpoint = server.endpoint();
     LOG(WARNING) << "tcp server listening at " << endpoint
@@ -183,4 +178,6 @@ int main(int argc, const char* argv[]) {
 #endif
 
   io_context.run();
+
+  return 0;
 }

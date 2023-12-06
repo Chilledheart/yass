@@ -134,7 +134,7 @@ jobs:
           echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
       - name: Build TGZ packages
         run: |
-          ./tools/build --variant cli --arch ${{ matrix.arch }} --system android -build-benchmark -build-test -nc
+          ./tools/build --variant gui --arch ${{ matrix.arch }} --system android -build-benchmark -build-test -nc
       - name: "Install dependency: android sysroot (test purpose)"
         if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
         run: |
