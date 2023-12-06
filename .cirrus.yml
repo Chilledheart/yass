@@ -77,6 +77,8 @@ macos_task:
     - cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on ${configure} ..
   compile_script:
     - ninja -C build yass yass_test all_tests bssl_shim handshaker
+    - ninja -C build
   test_script:
     - ninja -C build check
     - ninja -C build check_boringssl
+    - ctest --test-dir build/third_party/abseil-cpp || :

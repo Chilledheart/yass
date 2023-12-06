@@ -214,7 +214,7 @@ static pid_t GetDebuggerProcess() {
 
   std::string pid_str(buf + pid_index, pid_end_index - pid_index);
   auto pid = StringToIntegerU64(pid_str);
-  if (!pid.ok())
+  if (!pid.has_value())
     return -1;
 
   return pid.value();

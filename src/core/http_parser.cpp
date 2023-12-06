@@ -348,8 +348,8 @@ void HttpRequestParser::OnResponseFirstLineInput(std::string_view /*line_input*/
     return;
   }
   auto status = StringToIntegerU(std::string(status_input));
-  if (!status.ok()) {
-    LOG(WARNING) << status.status();
+  if (!status.has_value()) {
+    LOG(WARNING) << "invalid status: " << status_input;
     status_ = ParserStatus::Error;
     error_message_ = "HPE_INVALID_STATUS";
     return;

@@ -145,9 +145,9 @@ void OptionDialog::OnSave() {
   auto tcp_keep_alive_interval =
       StringToIntegerU(gtk_editable_get_text(GTK_EDITABLE(impl_->tcp_keep_alive_interval)));
 
-  if (!tcp_keep_alive_cnt.ok() ||
-      !tcp_keep_alive_idle_timeout.ok() ||
-      !tcp_keep_alive_interval.ok()) {
+  if (!tcp_keep_alive_cnt.has_value() ||
+      !tcp_keep_alive_idle_timeout.has_value() ||
+      !tcp_keep_alive_interval.has_value()) {
     LOG(WARNING) << "invalid options";
     return;
   }

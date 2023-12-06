@@ -397,8 +397,8 @@ void CYassApp::SaveConfig() {
   auto local_port = StringToIntegerU(frame_->GetLocalPort());
   auto connect_timeout = StringToIntegerU(frame_->GetTimeout());
 
-  if (!server_port.ok() || method == CRYPTO_INVALID || !local_port.ok() ||
-      !connect_timeout.ok()) {
+  if (!server_port.has_value() || method == CRYPTO_INVALID || !local_port.has_value() ||
+      !connect_timeout.has_value()) {
     LOG(WARNING) << "invalid options";
     return;
   }

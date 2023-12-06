@@ -3,26 +3,17 @@
 #ifndef YASS_UTILS
 #define YASS_UTILS
 
-#ifdef _MSC_VER
-#pragma push
-// constructor is not implicitly called
-#pragma warning(disable : 4582)
-// destructor is not implicitly called
-#pragma warning(disable : 4583)
-#endif  // _MSC_VER
-#include <absl/status/statusor.h>
-#ifdef _MSC_VER
-#pragma pop
-#endif  // _MSC_VER
 
 #include <stdint.h>
 #include <string>
 #include <thread>
 #include <wchar.h>
+#include <optional>
 
 #include "core/compiler_specific.hpp"
-#include "base/strings/sys_string_conversions.h"
-#include "base/files/platform_file.h"
+
+#include <base/strings/sys_string_conversions.h>
+#include <base/files/platform_file.h>
 
 using gurl_base::PlatformFile;
 
@@ -56,10 +47,10 @@ bool IsProgramConsole();
 
 bool SetUTF8Locale();
 
-absl::StatusOr<int> StringToInteger(const std::string& value);
-absl::StatusOr<unsigned> StringToIntegerU(const std::string& value);
-absl::StatusOr<int64_t> StringToInteger64(const std::string& value);
-absl::StatusOr<uint64_t> StringToIntegerU64(const std::string& value);
+std::optional<int> StringToInteger(const std::string& value);
+std::optional<unsigned> StringToIntegerU(const std::string& value);
+std::optional<int64_t> StringToInteger64(const std::string& value);
+std::optional<uint64_t> StringToIntegerU64(const std::string& value);
 
 #ifdef _WIN32
 bool EnableSecureDllLoading();

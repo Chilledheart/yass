@@ -1951,6 +1951,43 @@ endif()
 if (ANDROID)
   set(LIBRT "OFF" CACHE BOOL "")
 endif()
+if (ABSL_BUILD_TESTING)
+  set(ABSL_USE_EXTERNAL_GOOGLETEST "ON" CACHE BOOL "")
+  add_library(absl_gtest STATIC
+    third_party/googletest/googletest/src/gtest-all.cc)
+  target_include_directories(absl_gtest PRIVATE
+    third_party/googletest/googletest)
+  target_include_directories(absl_gtest PUBLIC
+    third_party/googletest/googletest/include)
+  add_library(absl_gtest_main STATIC
+    third_party/googletest/googletest/src/gtest_main.cc)
+  add_library(GTest::gtest ALIAS absl_gtest)
+  add_library(GTest::gtest_main ALIAS absl_gtest_main)
+
+  add_library(absl_gmock STATIC
+    third_party/googletest/googlemock/src/gmock-all.cc)
+  target_include_directories(absl_gmock PRIVATE
+    third_party/googletest/googlemock)
+  target_include_directories(absl_gmock PUBLIC
+    third_party/googletest/googletest/include
+    third_party/googletest/googlemock/include)
+  add_library(absl_gmock_main STATIC
+    third_party/googletest/googlemock/src/gmock_main.cc)
+  add_library(GTest::gmock ALIAS absl_gmock)
+  add_library(GTest::gmock_main ALIAS absl_gmock_main)
+  target_link_libraries(absl_gmock PUBLIC absl_gtest)
+
+  target_link_libraries(absl_gtest_main PUBLIC absl_gtest absl_gmock)
+  target_link_libraries(absl_gmock_main PUBLIC absl_gtest absl_gmock)
+
+  set(GTEST_LIBRARY absl_gtest)
+  set(GTEST_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googletest/googletest)
+  set(GTEST_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googletest/googletest/include)
+  set(GTEST_MAIN_LIBRARY absl_gtest_main)
+  set(GMOCK_LIBRARY absl_gmock)
+  set(GMOCK_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googletest/googlemock/include)
+  set(GMOCK_MAIN_LIBRARY absl_gmock_main)
+endif()
 add_subdirectory(third_party/abseil-cpp)
 
 set(SUPPORT_LIBS

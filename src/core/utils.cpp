@@ -3,7 +3,6 @@
 
 #include "core/utils.hpp"
 
-#include "base/strings/string_number_conversions.h"
 #include "config/config.hpp"
 
 #ifndef _WIN32
@@ -18,49 +17,50 @@
 #include <absl/flags/internal/program_name.h>
 #include <absl/strings/str_cat.h>
 #include <base/posix/eintr_wrapper.h>
+#include <base/strings/string_number_conversions.h>
 
 #ifdef HAVE_TCMALLOC
 #include <tcmalloc/malloc_extension.h>
 #endif
 
-absl::StatusOr<int> StringToInteger(const std::string& value) {
+std::optional<int> StringToInteger(const std::string& value) {
   int result;
 
   if (gurl_base::StringToInt(value, &result)) {
     return result;
   }
 
-  return absl::InvalidArgumentError("bad integer");
+  return std::nullopt;
 }
 
-absl::StatusOr<unsigned> StringToIntegerU(const std::string& value) {
+std::optional<unsigned> StringToIntegerU(const std::string& value) {
   unsigned result;
 
   if (gurl_base::StringToUint(value, &result)) {
     return result;
   }
 
-  return absl::InvalidArgumentError("bad integer");
+  return std::nullopt;
 }
 
-absl::StatusOr<int64_t> StringToInteger64(const std::string& value) {
+std::optional<int64_t> StringToInteger64(const std::string& value) {
   int64_t result;
 
   if (gurl_base::StringToInt64(value, &result)) {
     return result;
   }
 
-  return absl::InvalidArgumentError("bad integer");
+  return std::nullopt;
 }
 
-absl::StatusOr<uint64_t> StringToIntegerU64(const std::string& value) {
+std::optional<uint64_t> StringToIntegerU64(const std::string& value) {
   uint64_t result;
 
   if (gurl_base::StringToUint64(value, &result)) {
     return result;
   }
 
-  return absl::InvalidArgumentError("bad integer");
+  return std::nullopt;
 }
 
 #ifdef _WIN32
