@@ -19,6 +19,11 @@
 #include "third_party/icu/source/i18n/unicode/timezone.h"
 #endif
 
+#if defined(ANDROID)
+#include <android/native_activity.h>
+#include <android/asset_manager.h>
+#endif
+
 #include <filesystem>
 
 namespace {
@@ -114,6 +119,21 @@ void LazyInitIcuDataFile() {
   }
 #endif  // !defined(__APPLE__)
 #else // 0
+#if defined(ANDROID)
+  if (a_app) {
+    off64_t offset{}, size{};
+    auto asset = AAssetManager_open(a_app->activity->assetManager,
+                                    kAndroidAssetsIcuDataFileName, AASSET_MODE_STREAMING);
+    int fd = AAsset_openFileDescriptor64(asset, &offset, &size);
+    g_icudtl_region.offset = offset;
+    g_icudtl_region.size = size;
+    g_icudtl_pf = fd;
+    if (fd != -1) {
+      return;
+    }
+  }
+#endif // ANDROID
+  MemoryMappedFile::Region region = MemoryMappedFile::Region::kWholeFile;
 #ifdef _WIN32
   std::wstring exe_path, data_path;
 #else // _WIN32
