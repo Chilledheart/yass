@@ -83,6 +83,11 @@ jobs:
           key: ${{ runner.os }}-go-docker-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-docker-
+      - name: Gradle cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('android/**/*.gradle') }}
       - name: Cache sdk root
         id: ndk-cache
         uses: actions/cache@v3
@@ -134,7 +139,7 @@ jobs:
           echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
       - name: Build TGZ packages
         run: |
-          ./tools/build --variant gui --arch ${{ matrix.arch }} --system android -build-benchmark -build-test -nc
+          ./tools/build --variant gui --arch ${{ matrix.arch }} --system android --cmake-build-type MinSizeRel -build-benchmark -build-test -android-sdk-dir "${ANDROID_HOME}"
       - name: "Install dependency: android sysroot (test purpose)"
         if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -163,4 +168,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} yass*.tgz
+          gh release upload ${{ github.event.release.tag_name }} yass*.tgz yass*.apk

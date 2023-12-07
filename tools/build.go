@@ -58,6 +58,8 @@ var msvcAllowXpFlag bool
 
 var freebsdAbiFlag int
 
+var androidSdkDir string
+
 var systemNameFlag string
 var subSystemNameFlag string
 var sysrootFlag string
@@ -144,6 +146,7 @@ func InitFlag() {
 	flag.BoolVar(&msvcAllowXpFlag, "msvc-allow-xp", getEnvBool("MSVC_ALLOW_XP", false), "Enable Windows XP Build")
 
 	flag.IntVar(&freebsdAbiFlag, "freebsd-abi", getFreebsdABI(11), "Select FreeBSD ABI")
+	flag.StringVar(&androidSdkDir, "android-sdk-dir", "", "Android SDK Home Path")
 
 	flag.StringVar(&systemNameFlag, "system", runtime.GOOS, "Specify host system name")
 	flag.StringVar(&subSystemNameFlag, "subsystem", "", "Specify host subsystem name")
@@ -1124,7 +1127,7 @@ func archiveMainFile(output string, prefix string, paths []string) {
 		// Use this command line to update .DS_Store
 		// hdiutil convert -format UDRW -o yass.dmg yass-macos-release-universal-*.dmg
 		// hdiutil resize -size 1G yass.dmg
-		cmdCheckOutput([]string{"../scripts/pkg-dmg",
+		cmdRun([]string{"../scripts/pkg-dmg",
 			"--source", paths[0],
 			"--target", output,
 			"--sourcefile",
@@ -1133,7 +1136,39 @@ func archiveMainFile(output string, prefix string, paths []string) {
 			"--icon", "../src/mac/yass.icns",
 			"--copy", "../macos/.DS_Store:/.DS_Store",
 			"--copy", "../macos/.background:/",
-			"--symlink", "/Applications:/Applications"})
+			"--symlink", "/Applications:/Applications"}, true)
+	} else if systemNameFlag == "android" && variantFlag == "gui" {
+		androidDir := "../android"
+		err := os.Chdir(androidDir)
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
+		if (androidSdkDir != "") {
+			glog.Infof("android sdk dir to %s", androidSdkDir)
+			localProperties := fmt.Sprintf("sdk.dir=%s\n", androidSdkDir)
+			err = ioutil.WriteFile("local.properties", []byte(localProperties), 0666)
+			if err != nil {
+				glog.Fatalf("%v", err)
+			}
+		}
+		_, abi := getAndroidTargetAndAppAbi(archFlag)
+		if cmakeBuildTypeFlag == "Release" || cmakeBuildTypeFlag == "MinSizeRel" {
+			cmdRun([]string{"./gradlew", "yass:assembleRelease"}, true)
+			err = os.Rename(fmt.Sprintf("./yass/build/outputs/apk/release/yass-%s-release-unsigned.apk", abi), output)
+			if err != nil {
+				glog.Fatalf("%v", err)
+			}
+		} else {
+			cmdRun([]string{"./gradlew", "yass:assembleDebug"}, true)
+			err = os.Rename(fmt.Sprintf("./yass/build/outputs/apk/debug/yass-%s-release-unsigned.apk", abi), output)
+			if err != nil {
+				glog.Fatalf("%v", err)
+			}
+		}
+		err = os.Chdir(buildDir)
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
 	} else {
 		archiveFiles(output, prefix, paths)
 	}
@@ -1261,6 +1296,9 @@ func postStateArchives() map[string][]string {
 	archivePrefix := fmt.Sprintf(archiveFormat, strings.Replace(APPNAME, "_", "-", 1), "", "")
 	archiveSuffix := fmt.Sprintf(archiveFormat, "", "", "")
 	archiveSuffix = archiveSuffix[1:]
+	if systemNameFlag == "android" && variantFlag == "gui" {
+		archive = fmt.Sprintf(archiveFormat, APPNAME, archFlag, ".apk")
+	}
 	if systemNameFlag == "darwin" {
 		archive = fmt.Sprintf(archiveFormat, APPNAME, "", ".dmg")
 	}
