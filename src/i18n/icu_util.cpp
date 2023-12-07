@@ -68,7 +68,18 @@ const char kAndroidAssetsIcuDataFileName[] = "assets/icudtl.dat";
 PlatformFile g_icudtl_pf = kInvalidPlatformFile;
 MemoryMappedFile* g_icudtl_mapped_file = nullptr;
 MemoryMappedFile::Region g_icudtl_region;
+#if defined(ANDROID)
+AAsset *g_icudtl_asset_file = nullptr;
+#endif
 
+#if defined(ANDROID)
+void LazyInitIcuDataFileAndroid() {
+  if (a_app) {
+    g_icudtl_asset_file = AAssetManager_open(a_app->activity->assetManager,
+                                             kIcuDataFileName, AASSET_MODE_BUFFER);
+  }
+}
+#endif // ANDROID
 void LazyInitIcuDataFile() {
   if (g_icudtl_pf != kInvalidPlatformFile) {
     return;
@@ -119,20 +130,6 @@ void LazyInitIcuDataFile() {
   }
 #endif  // !defined(__APPLE__)
 #else // 0
-#if defined(ANDROID)
-  if (a_app) {
-    off64_t offset{}, size{};
-    auto asset = AAssetManager_open(a_app->activity->assetManager,
-                                    kAndroidAssetsIcuDataFileName, AASSET_MODE_STREAMING);
-    int fd = AAsset_openFileDescriptor64(asset, &offset, &size);
-    g_icudtl_region.offset = offset;
-    g_icudtl_region.size = size;
-    g_icudtl_pf = fd;
-    if (fd != -1) {
-      return;
-    }
-  }
-#endif // ANDROID
   MemoryMappedFile::Region region = MemoryMappedFile::Region::kWholeFile;
 #ifdef _WIN32
   std::wstring exe_path, data_path;
@@ -179,6 +176,26 @@ void LazyInitIcuDataFile() {
 // Configures ICU to load external time zone data, if appropriate.
 void InitializeExternalTimeZoneData() {}
 
+int LoadIcuData(const void* data,
+                UErrorCode* out_error_code) {
+  InitializeExternalTimeZoneData();
+
+  if (data == nullptr) {
+    LOG(ERROR) << "Invalid data to ICU data received.";
+    return 1;
+  }
+
+  (*out_error_code) = U_ZERO_ERROR;
+  udata_setCommonData(data, out_error_code);
+  if (U_FAILURE(*out_error_code)) {
+    LOG(ERROR) << "Failed to initialize ICU with data file: "
+               << u_errorName(*out_error_code);
+    return 3;  // To debug http://crbug.com/445616.
+  }
+
+  return 0;
+}
+
 int LoadIcuData(PlatformFile data_fd,
                 const MemoryMappedFile::Region& data_region,
                 std::unique_ptr<MemoryMappedFile>* out_mapped_data_file,
@@ -196,16 +213,28 @@ int LoadIcuData(PlatformFile data_fd,
     return 2;  // To debug http://crbug.com/445616.
   }
 
-  (*out_error_code) = U_ZERO_ERROR;
-  udata_setCommonData(const_cast<uint8_t*>((*out_mapped_data_file)->data()),
-                      out_error_code);
-  if (U_FAILURE(*out_error_code)) {
-    LOG(ERROR) << "Failed to initialize ICU with data file: "
-               << u_errorName(*out_error_code);
-    return 3;  // To debug http://crbug.com/445616.
+  return LoadIcuData(const_cast<uint8_t*>((*out_mapped_data_file)->data()), out_error_code);
+}
+
+bool InitializeICUWithDataInternal(const void* data) {
+  UErrorCode err;
+  g_debug_icu_load = LoadIcuData(data, &err);
+  if (g_debug_icu_load == 1 || g_debug_icu_load == 2) {
+    return false;
+  }
+#ifdef __ANDROID__
+  // Shoudn't release this memory
+  // AAsset_close(g_icudtl_asset_file);
+  // g_icudtl_asset_file = nullptr;
+#endif
+
+  if (g_debug_icu_load == 3) {
+    g_debug_icu_last_error = err;
   }
 
-  return 0;
+  // Never try to load ICU data from files.
+  udata_setFileAccess(UDATA_ONLY_PACKAGES, &err);
+  return U_SUCCESS(err);
 }
 
 bool InitializeICUWithFileDescriptorInternal(
@@ -239,9 +268,19 @@ bool InitializeICUFromDataFile() {
   // it is needed.  This can fail if the process is sandboxed at that time.
   // Instead, we map the file in and hand off the data so the sandbox won't
   // cause any problems.
-  LazyInitIcuDataFile();
-  bool result =
-      InitializeICUWithFileDescriptorInternal(g_icudtl_pf, g_icudtl_region);
+  bool result;
+#if defined(ANDROID)
+  LazyInitIcuDataFileAndroid();
+  if (g_icudtl_asset_file) {
+    DCHECK(g_icudtl_asset_file);
+    result = InitializeICUWithDataInternal(AAsset_getBuffer(g_icudtl_asset_file));
+  } else
+#endif
+  {
+    (void)InitializeICUWithDataInternal;
+    LazyInitIcuDataFile();
+    result = InitializeICUWithFileDescriptorInternal(g_icudtl_pf, g_icudtl_region);
+  }
 
   int debug_icu_load = g_debug_icu_load;
   Alias(&debug_icu_load);

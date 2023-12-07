@@ -1755,6 +1755,42 @@ endif()
 link_libraries(${SYSTEM_LIBS})
 
 # *****************************************************************************************
+#           native_app_glue Library (Android)
+# *****************************************************************************************
+
+if (ANDROID AND GUI)
+  add_library(native_app_glue STATIC
+    third_party/android_toolchain/sources/android/native_app_glue/android_native_app_glue.c
+    third_party/android_toolchain/sources/android/native_app_glue/android_native_app_glue.h)
+  target_compile_options(native_app_glue PRIVATE -Wno-error)
+  target_include_directories(native_app_glue PUBLIC
+    third_party/android_toolchain/sources/android/native_app_glue)
+  target_link_libraries(native_app_glue PRIVATE android log)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
+endif()
+
+# *****************************************************************************************
+#           imgui Library (Android)
+# *****************************************************************************************
+
+if (ANDROID AND GUI)
+  add_library(imgui_android STATIC
+    third_party/imgui/imgui.cpp
+    third_party/imgui/imgui_draw.cpp
+    third_party/imgui/imgui_tables.cpp
+    third_party/imgui/imgui_widgets.cpp
+    third_party/imgui/backends/imgui_impl_android.cpp
+    third_party/imgui/backends/imgui_impl_opengl3.cpp)
+  target_compile_definitions(imgui_android PUBLIC IMGUI_IMPL_OPENGL_ES3)
+  target_compile_options(imgui_android PRIVATE -Wno-error)
+  target_include_directories(imgui_android PUBLIC
+    third_party/imgui
+    third_party/imgui/backends
+  )
+  target_link_libraries(imgui_android PRIVATE android EGL GLESv3 log)
+endif()
+
+# *****************************************************************************************
 #           GUI Support Libraries
 # *****************************************************************************************
 
@@ -1765,7 +1801,7 @@ if (ANDROID AND GUI)
   set(GUI_DEFINITIONS "")
   set(GUI_C_CXX_FLAGS "")
   set(GUI_LIBRARY_DIRS "")
-  set(GUI_LIBRARIES native_app_glue)
+  set(GUI_LIBRARIES imgui_android native_app_glue)
 elseif (WIN32 AND GUI)
   message(STATUS "Compiling with GUI support: Windows")
   set(GUI_FLAVOUR "windows")
@@ -1940,21 +1976,6 @@ else()
   ## but /EHsc wasn't included in the compiler options
   ## https://docs.microsoft.com/en-us/cpp/build/reference/eh-exception-handling-model?view=msvc-170
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
-endif()
-
-# *****************************************************************************************
-#           native_app_glue Library (Android)
-# *****************************************************************************************
-
-if (ANDROID)
-  add_library(native_app_glue STATIC
-    third_party/android_toolchain/sources/android/native_app_glue/android_native_app_glue.c
-    third_party/android_toolchain/sources/android/native_app_glue/android_native_app_glue.h)
-  target_compile_options(native_app_glue PRIVATE -Wno-error)
-  target_include_directories(native_app_glue PUBLIC
-    third_party/android_toolchain/sources/android/native_app_glue)
-  target_link_libraries(native_app_glue PRIVATE android log)
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
 endif()
 
 # *****************************************************************************************
@@ -3790,6 +3811,7 @@ if(NOT CMAKE_SKIP_INSTALL_RULES)
   file(READ third_party/boringssl/src/LICENSE               _BORINGSSL_LICENSE)
   file(READ third_party/googleurl/LICENSE                   _GOOGLEURL_LICENSE)
   file(READ third_party/icu/LICENSE                         _ICU_LICENSE)
+  file(READ third_party/imgui/LICENSE.txt                   _IMGUI_LICENSE)
   file(READ third_party/json/LICENSE.MIT                    _JSON_LICENSE)
   file(READ third_party/leveldb/LICENSE                     _LEVELDB_LICENSE)
   file(READ third_party/libc++/trunk/LICENSE.TXT            _LIBCXX_LICENSE)

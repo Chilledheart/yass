@@ -39,7 +39,12 @@ def extract_zipfile(tar, sysroot=".", filters=[], dir_filters=[]):
   safe_archive_names = [ 'libatomic.a', 'libgcc.a', 'libgcc_real.a',
                          'libcompiler_rt-extras.a', 'libandroid_support.a', 'libunwind.a',
                          'libandroid.so', 'libc.so', 'libdl.so', 'liblog.so', 'libm.so',
-                         'libc++.so', 'libc++.a', 'libc++_shared.so', 'libc++_static.a']
+                         'libc++.so', 'libc++.a', 'libc++_shared.so',
+                         'libc++_static.a', 'libstdc++.so', 'libcamera2ndk.so',
+                         'libEGL.so', 'libGLESv1_CM.so',
+                         'libGLESv2.so', 'libGLESv3.so',
+                         'libjnigraphics.so', 'libvulkan.so', 'libz.so',
+                       ]
   with zipfile.ZipFile(tar, 'r') as package_tar:
     members = package_tar.namelist()
     filtered_members = []
