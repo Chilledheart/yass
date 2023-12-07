@@ -12,6 +12,9 @@ import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.inputmethod.InputMethodManager;
 
+import java.io.FileDescriptor;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Formatter;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -47,6 +50,7 @@ public class YassActivity extends NativeActivity {
     public boolean dispatchKeyEvent(KeyEvent event) {
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
             unicodeCharacterQueue.offer(event.getUnicodeChar(event.getMetaState()));
+            notifyNativeThread();
         }
         return super.dispatchKeyEvent(event);
     }
@@ -60,4 +64,6 @@ public class YassActivity extends NativeActivity {
         WifiManager wm = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         return wm.getConnectionInfo().getIpAddress();
     }
+
+    private native void notifyNativeThread();
 }

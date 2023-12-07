@@ -38,6 +38,7 @@ static EGLContext           g_EglContext = EGL_NO_CONTEXT;
 static struct android_app*  g_App = nullptr;
 static bool                 g_Initialized = false;
 static std::string          g_IniFilename = "";
+static int                  g_NotifyFd[2] = {-1, -1};
 
 // Forward declarations of helper functions
 static void Init(struct android_app* app);
@@ -48,6 +49,9 @@ static int PollUnicodeChars();
 static int GetAssetData(const char* filename, void** out_data);
 // returning in host byte order
 static int32_t GetIpAddress();
+
+extern "C"
+JNIEXPORT void JNICALL Java_it_gui_yass_YassActivity_notifyNativeThread(JNIEnv *env, jobject obj);
 
 static Worker g_worker;
 
@@ -156,15 +160,40 @@ static int32_t handleInputEvent(struct android_app* app, AInputEvent* inputEvent
   return ImGui_ImplAndroid_HandleInputEvent(inputEvent);
 }
 
+/* Invoked by ALooper to process a message */
+static int messagepipe_cb(int fd, int events, void* user) {
+  while (true) {
+    char msg;
+    ssize_t ret = read(fd, &msg, sizeof(msg));
+    if (ret < 0 && errno == EINTR)
+      continue;
+    if (ret < 0) {
+      break;
+    }
+  }
+
+  return 1;
+}
+
 void Init(struct android_app* app) {
   if (g_Initialized)
     return;
-  LOG(INFO) << "imgui: Initialize";
+  g_App = app;
+  DCHECK_EQ(g_App, a_app);
+
   config::ReadConfigFileOption(0, nullptr);
   config::ReadConfig();
 
-  g_App = app;
-  DCHECK_EQ(g_App, a_app);
+  /* Call this from your main thread to set up the callback pipe. */
+  int ret = pipe2(g_NotifyFd, O_NONBLOCK | O_CLOEXEC);
+  CHECK_NE(ret, -1);
+
+  /* Register the file descriptor to listen on. */
+  ALooper_addFd(g_App->looper, g_NotifyFd[0], LOOPER_ID_USER,
+                ALOOPER_EVENT_INPUT, messagepipe_cb, nullptr);
+
+  LOG(INFO) << "imgui: Initialize";
+
   ANativeWindow_acquire(g_App->window);
 
   // Initialize EGL
@@ -421,6 +450,14 @@ void Shutdown()
   g_EglSurface = EGL_NO_SURFACE;
   ANativeWindow_release(g_App->window);
 
+  /* UnRegister the file descriptor to listen on. */
+  ALooper_removeFd(g_App->looper, g_NotifyFd[0]);
+
+  close(g_NotifyFd[0]);
+  close(g_NotifyFd[1]);
+  g_NotifyFd[0] = -1;
+  g_NotifyFd[1] = -1;
+
   g_Initialized = false;
 }
 
@@ -539,6 +576,16 @@ static int32_t GetIpAddress()
     return 0;
 
   return ntohl(ip_address);
+}
+
+JNIEXPORT void JNICALL Java_it_gui_yass_YassActivity_notifyNativeThread(JNIEnv *env, jobject obj) {
+  while (g_Initialized) {
+    char byte;
+    ssize_t ret = write(g_NotifyFd[1], &byte, sizeof(byte));
+    if (ret < 0 && (errno == EINTR || errno == EAGAIN))
+      continue;
+    break;
+  }
 }
 
 void android_main(android_app* app) {
