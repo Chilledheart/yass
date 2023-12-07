@@ -29,6 +29,7 @@
 #include "i18n/icu_util.hpp"
 #include "core/utils.hpp"
 #include "cli/cli_worker.hpp"
+#include "config/config.hpp"
 
 // Data
 static EGLDisplay           g_EglDisplay = EGL_NO_DISPLAY;
@@ -79,6 +80,7 @@ static void ToggleWorker() {
           g_state = STOPPED;
         } else {
           LOG(WARNING) << "Started";
+          config::SaveConfig();
           g_state = STARTED;
         }
       });
@@ -155,6 +157,8 @@ void Init(struct android_app* app) {
   if (g_Initialized)
     return;
   LOG(INFO) << "imgui: Initialize";
+  config::ReadConfigFileOption(0, nullptr);
+  config::ReadConfig();
 
   g_App = app;
   DCHECK_EQ(g_App, a_app);
@@ -291,7 +295,7 @@ CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
     };
     static char server_host[140];
-    static char server_port[140];
+    static int server_port;
     static char username[140];
     static char password[140];
     static int method_idx = [&](cipher_method method) -> int {
@@ -302,43 +306,44 @@ CIPHER_METHOD_VALID_MAP(XX)
       return it - methods_idxes.begin();
     }(absl::GetFlag(FLAGS_method).method);
     static char local_host[140];
-    static char local_port[140];
-    static char timeout[140];
+    static int local_port;
+    static int timeout;
     static bool _init = [&]() -> bool {
       strcpy(server_host, absl::GetFlag(FLAGS_server_host).c_str());
-      strcpy(server_port, std::to_string(absl::GetFlag(FLAGS_server_port)).c_str());
+      server_port = absl::GetFlag(FLAGS_server_port);
       strcpy(username, absl::GetFlag(FLAGS_username).c_str());
       strcpy(password, absl::GetFlag(FLAGS_password).c_str());
       strcpy(local_host, absl::GetFlag(FLAGS_local_host).c_str());
-      strcpy(local_port, std::to_string(absl::GetFlag(FLAGS_local_port)).c_str());
-      strcpy(timeout, std::to_string(absl::GetFlag(FLAGS_connect_timeout)).c_str());
+      local_port = absl::GetFlag(FLAGS_local_port);
+      timeout = absl::GetFlag(FLAGS_connect_timeout);
       return true;
     }();
 
     ImGui::Begin("Yet Another Shadow Socket");
 
     ImGui::InputText("server_host", server_host, IM_ARRAYSIZE(server_host));
-    ImGui::InputText("server_port", server_port, IM_ARRAYSIZE(server_port));
+    ImGui::InputInt("server_port", &server_port);
     ImGui::InputText("username", username, IM_ARRAYSIZE(username));
-    ImGui::InputText("password", password, IM_ARRAYSIZE(password));
+    ImGui::InputText("password", password, IM_ARRAYSIZE(password),
+                     ImGuiInputTextFlags_Password);
 
-    ImGui::ListBox("##account-method-box", &method_idx,
+    ImGui::ListBox("cipher", &method_idx,
                    &methods[0], static_cast<int>(methods.size()), 2);
     ImGui::InputText("local_host", local_host, IM_ARRAYSIZE(local_host));
-    ImGui::InputText("local_port", local_port, IM_ARRAYSIZE(local_port));
-    ImGui::InputText("timeout", timeout, IM_ARRAYSIZE(timeout));
+    ImGui::InputInt("local_port", &local_port);
+    ImGui::InputInt("timeout", &timeout);
 
     ImGui::Checkbox("Option Window", &show_option_window);
 
     if (ImGui::Button("Toggle Service")) {
       absl::SetFlag(&FLAGS_server_host, server_host);
-      absl::SetFlag(&FLAGS_server_port, StringToIntegerU(server_port).value_or(3000));
+      absl::SetFlag(&FLAGS_server_port, server_port);
       absl::SetFlag(&FLAGS_username, username);
       absl::SetFlag(&FLAGS_password, password);
       absl::SetFlag(&FLAGS_method, methods_idxes[method_idx]);
       absl::SetFlag(&FLAGS_local_host, local_host);
-      absl::SetFlag(&FLAGS_local_port, StringToIntegerU(local_port).value_or(3000));
-      absl::SetFlag(&FLAGS_connect_timeout, StringToIntegerU(local_port).value_or(0));
+      absl::SetFlag(&FLAGS_local_port, local_port);
+      absl::SetFlag(&FLAGS_connect_timeout, timeout);
 
       ToggleWorker();
     }
@@ -351,10 +356,24 @@ CIPHER_METHOD_VALID_MAP(XX)
 
   if (show_option_window)
   {
-    ImGui::Begin("Another Window", &show_option_window);
-    ImGui::Text("Hello from another window!");
-    if (ImGui::Button("Close Me"))
+    static bool tcp_keep_alive = absl::GetFlag(FLAGS_tcp_keep_alive);
+    static int tcp_keep_alive_cnt = absl::GetFlag(FLAGS_tcp_keep_alive_cnt);
+    static int tcp_keep_alive_idle_timeout = absl::GetFlag(FLAGS_tcp_keep_alive_idle_timeout);
+    static int tcp_keep_alive_interval = absl::GetFlag(FLAGS_tcp_keep_alive_interval);
+
+    ImGui::Begin("Options Window", &show_option_window);
+    ImGui::Checkbox("TCP keep alive", &tcp_keep_alive);
+    ImGui::InputInt("The number of TCP keep-alive probes", &tcp_keep_alive_cnt);
+    ImGui::InputInt("TCP keep alive after idle", &tcp_keep_alive_idle_timeout);
+    ImGui::InputInt("TCP keep alive interval", &tcp_keep_alive_interval);
+    if (ImGui::Button("Close Me")) {
+      absl::SetFlag(&FLAGS_tcp_keep_alive, tcp_keep_alive);
+      absl::SetFlag(&FLAGS_tcp_keep_alive_cnt, tcp_keep_alive_cnt);
+      absl::SetFlag(&FLAGS_tcp_keep_alive_idle_timeout, tcp_keep_alive_idle_timeout);
+      absl::SetFlag(&FLAGS_tcp_keep_alive_interval, tcp_keep_alive_interval);
+
       show_option_window = false;
+    }
     ImGui::End();
   }
 
