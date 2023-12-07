@@ -37,7 +37,7 @@ public class YassActivity extends NativeActivity {
     }
 
     // Queue for the Unicode characters to be polled from native code (via pollUnicodeChar())
-    private LinkedBlockingQueue<Integer> unicodeCharacterQueue = new LinkedBlockingQueue<Integer>();
+    private final LinkedBlockingQueue<Integer> unicodeCharacterQueue = new LinkedBlockingQueue<Integer>();
 
     // We assume dispatchKeyEvent() of the NativeActivity is actually called for every
     // KeyEvent and not consumed by any View before it reaches here
