@@ -90,7 +90,7 @@ jobs:
           path: |
             ${{ env.SDK_ROOT }}
             qemu-user-static*.deb
-          key: android-ndk-${{ matrix.arch }}-with-qemu-v1
+          key: android-ndk-${{ matrix.arch }}-with-qemu-v2
       - name: Cache sysroot
         id: sysroot-cache
         uses: actions/cache@v3
