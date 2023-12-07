@@ -326,7 +326,7 @@ CIPHER_METHOD_VALID_MAP(XX)
     ImGui::InputText("username", username, IM_ARRAYSIZE(username));
     ImGui::InputText("password", password, IM_ARRAYSIZE(password));
 
-    ImGui::ListBox("##account-method-box", &method_idx,
+    ImGui::ListBox("cipher", &method_idx,
                    &methods[0], static_cast<int>(methods.size()), 2);
     ImGui::InputText("local_host", local_host, IM_ARRAYSIZE(local_host));
     ImGui::InputText("local_port", local_port, IM_ARRAYSIZE(local_port));
@@ -342,7 +342,7 @@ CIPHER_METHOD_VALID_MAP(XX)
       absl::SetFlag(&FLAGS_method, methods_idxes[method_idx]);
       absl::SetFlag(&FLAGS_local_host, local_host);
       absl::SetFlag(&FLAGS_local_port, StringToIntegerU(local_port).value_or(3000));
-      absl::SetFlag(&FLAGS_connect_timeout, StringToIntegerU(local_port).value_or(0));
+      absl::SetFlag(&FLAGS_connect_timeout, StringToIntegerU(timeout).value_or(0));
 
       ToggleWorker();
     }
