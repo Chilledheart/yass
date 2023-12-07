@@ -7,10 +7,15 @@ package it.gui.yass;
 
 import android.app.NativeActivity;
 import android.content.Context;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.inputmethod.InputMethodManager;
 
+import java.io.FileDescriptor;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Formatter;
 import java.util.concurrent.LinkedBlockingQueue;
 
 
@@ -37,7 +42,7 @@ public class YassActivity extends NativeActivity {
     }
 
     // Queue for the Unicode characters to be polled from native code (via pollUnicodeChar())
-    private LinkedBlockingQueue<Integer> unicodeCharacterQueue = new LinkedBlockingQueue<Integer>();
+    private final LinkedBlockingQueue<Integer> unicodeCharacterQueue = new LinkedBlockingQueue<Integer>();
 
     // We assume dispatchKeyEvent() of the NativeActivity is actually called for every
     // KeyEvent and not consumed by any View before it reaches here
@@ -45,6 +50,7 @@ public class YassActivity extends NativeActivity {
     public boolean dispatchKeyEvent(KeyEvent event) {
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
             unicodeCharacterQueue.offer(event.getUnicodeChar(event.getMetaState()));
+            notifyNativeThread();
         }
         return super.dispatchKeyEvent(event);
     }
@@ -54,4 +60,10 @@ public class YassActivity extends NativeActivity {
         return poll != null ? poll.intValue() : 0;
     }
 
+    public int getIpAddress() {
+        WifiManager wm = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+        return wm.getConnectionInfo().getIpAddress();
+    }
+
+    private native void notifyNativeThread();
 }

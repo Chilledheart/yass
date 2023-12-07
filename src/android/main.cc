@@ -37,8 +37,8 @@ static EGLSurface           g_EglSurface = EGL_NO_SURFACE;
 static EGLContext           g_EglContext = EGL_NO_CONTEXT;
 static struct android_app*  g_App = nullptr;
 static bool                 g_Initialized = false;
-static char                 g_LogTag[] = "ImGuiExample";
 static std::string          g_IniFilename = "";
+static int                  g_NotifyFd[2] = {-1, -1};
 
 // Forward declarations of helper functions
 static void Init(struct android_app* app);
@@ -47,8 +47,14 @@ static void MainLoopStep();
 static int ShowSoftKeyboardInput();
 static int PollUnicodeChars();
 static int GetAssetData(const char* filename, void** out_data);
+// returning in host byte order
+static int32_t GetIpAddress();
+
+extern "C"
+JNIEXPORT void JNICALL Java_it_gui_yass_YassActivity_notifyNativeThread(JNIEnv *env, jobject obj);
 
 static Worker g_worker;
+
 enum StartState {
   STOPPED = 0,
   STOPPING,
@@ -108,7 +114,8 @@ static void WorkFunc() {
     int events;
     struct android_poll_source* source;
 
-    while ((ident=ALooper_pollAll(g_Initialized ? 0 : -1, nullptr, &events,
+    while ((ident=ALooper_pollAll(g_Initialized ? 67 /* limit to 15 fps */ : -1,
+                                  nullptr, &events,
                                   (void**)&source)) >= 0) {
 
       // Process this event.
@@ -153,15 +160,40 @@ static int32_t handleInputEvent(struct android_app* app, AInputEvent* inputEvent
   return ImGui_ImplAndroid_HandleInputEvent(inputEvent);
 }
 
+/* Invoked by ALooper to process a message */
+static int messagepipe_cb(int fd, int events, void* user) {
+  while (true) {
+    char msg;
+    ssize_t ret = read(fd, &msg, sizeof(msg));
+    if (ret < 0 && errno == EINTR)
+      continue;
+    if (ret < 0) {
+      break;
+    }
+  }
+
+  return 1;
+}
+
 void Init(struct android_app* app) {
   if (g_Initialized)
     return;
-  LOG(INFO) << "imgui: Initialize";
+  g_App = app;
+  DCHECK_EQ(g_App, a_app);
+
   config::ReadConfigFileOption(0, nullptr);
   config::ReadConfig();
 
-  g_App = app;
-  DCHECK_EQ(g_App, a_app);
+  /* Call this from your main thread to set up the callback pipe. */
+  int ret = pipe2(g_NotifyFd, O_NONBLOCK | O_CLOEXEC);
+  CHECK_NE(ret, -1);
+
+  /* Register the file descriptor to listen on. */
+  ALooper_addFd(g_App->looper, g_NotifyFd[0], LOOPER_ID_USER,
+                ALOOPER_EVENT_INPUT, messagepipe_cb, nullptr);
+
+  LOG(INFO) << "imgui: Initialize";
+
   ANativeWindow_acquire(g_App->window);
 
   // Initialize EGL
@@ -308,6 +340,7 @@ CIPHER_METHOD_VALID_MAP(XX)
     static char local_host[140];
     static int local_port;
     static int timeout;
+    static std::string ipaddress = asio::ip::make_address_v4(GetIpAddress()).to_string();
     static bool _init = [&]() -> bool {
       strcpy(server_host, absl::GetFlag(FLAGS_server_host).c_str());
       server_port = absl::GetFlag(FLAGS_server_port);
@@ -332,6 +365,7 @@ CIPHER_METHOD_VALID_MAP(XX)
     ImGui::InputText("local_host", local_host, IM_ARRAYSIZE(local_host));
     ImGui::InputInt("local_port", &local_port);
     ImGui::InputInt("timeout", &timeout);
+    ImGui::Text("Current Ip Address: %s", ipaddress.c_str());
 
     ImGui::Checkbox("Option Window", &show_option_window);
 
@@ -415,6 +449,14 @@ void Shutdown()
   g_EglContext = EGL_NO_CONTEXT;
   g_EglSurface = EGL_NO_SURFACE;
   ANativeWindow_release(g_App->window);
+
+  /* UnRegister the file descriptor to listen on. */
+  ALooper_removeFd(g_App->looper, g_NotifyFd[0]);
+
+  close(g_NotifyFd[0]);
+  close(g_NotifyFd[1]);
+  g_NotifyFd[0] = -1;
+  g_NotifyFd[1] = -1;
 
   g_Initialized = false;
 }
@@ -504,6 +546,46 @@ static int GetAssetData(const char* filename, void** outData)
     IM_ASSERT(num_bytes_read == num_bytes);
   }
   return num_bytes;
+}
+
+static int32_t GetIpAddress()
+{
+  JavaVM* java_vm = g_App->activity->vm;
+  JNIEnv* java_env = nullptr;
+
+  jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
+  if (jni_return == JNI_ERR)
+    return 0;
+
+  jni_return = java_vm->AttachCurrentThread(&java_env, nullptr);
+  if (jni_return != JNI_OK)
+    return 0;
+
+  jclass native_activity_clazz = java_env->GetObjectClass(g_App->activity->clazz);
+  if (native_activity_clazz == nullptr)
+    return 0;
+
+  jmethodID method_id = java_env->GetMethodID(native_activity_clazz, "getIpAddress", "()I");
+  if (method_id == nullptr)
+    return 0;
+
+  jint ip_address = java_env->CallIntMethod(g_App->activity->clazz, method_id);
+
+  jni_return = java_vm->DetachCurrentThread();
+  if (jni_return != JNI_OK)
+    return 0;
+
+  return ntohl(ip_address);
+}
+
+JNIEXPORT void JNICALL Java_it_gui_yass_YassActivity_notifyNativeThread(JNIEnv *env, jobject obj) {
+  while (g_Initialized) {
+    char byte;
+    ssize_t ret = write(g_NotifyFd[1], &byte, sizeof(byte));
+    if (ret < 0 && (errno == EINTR || errno == EAGAIN))
+      continue;
+    break;
+  }
 }
 
 void android_main(android_app* app) {
