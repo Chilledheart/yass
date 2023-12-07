@@ -37,7 +37,6 @@ static EGLSurface           g_EglSurface = EGL_NO_SURFACE;
 static EGLContext           g_EglContext = EGL_NO_CONTEXT;
 static struct android_app*  g_App = nullptr;
 static bool                 g_Initialized = false;
-static char                 g_LogTag[] = "ImGuiExample";
 static std::string          g_IniFilename = "";
 
 // Forward declarations of helper functions
@@ -49,6 +48,7 @@ static int PollUnicodeChars();
 static int GetAssetData(const char* filename, void** out_data);
 
 static Worker g_worker;
+
 enum StartState {
   STOPPED = 0,
   STOPPING,
