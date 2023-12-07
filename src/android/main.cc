@@ -29,6 +29,7 @@
 #include "i18n/icu_util.hpp"
 #include "core/utils.hpp"
 #include "cli/cli_worker.hpp"
+#include "config/config.hpp"
 
 // Data
 static EGLDisplay           g_EglDisplay = EGL_NO_DISPLAY;
@@ -79,6 +80,7 @@ static void ToggleWorker() {
           g_state = STOPPED;
         } else {
           LOG(WARNING) << "Started";
+          config::SaveConfig();
           g_state = STARTED;
         }
       });
@@ -155,6 +157,8 @@ void Init(struct android_app* app) {
   if (g_Initialized)
     return;
   LOG(INFO) << "imgui: Initialize";
+  config::ReadConfigFileOption(0, nullptr);
+  config::ReadConfig();
 
   g_App = app;
   DCHECK_EQ(g_App, a_app);

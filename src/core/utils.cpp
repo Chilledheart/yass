@@ -152,7 +152,18 @@ std::string ExpandUser(const std::string& file_path) {
   std::string real_path = file_path;
 
   if (!real_path.empty() && real_path[0] == '~') {
-    std::string home = ::getenv("HOME");
+    std::string home;
+    {
+      const char* home_str = ::getenv("HOME");
+      if (home_str)  {
+        home = home_str;
+      }
+    }
+#ifdef __ANDROID__
+    if (a_app) {
+      home = a_app->activity->internalDataPath;
+    }
+#endif
     if (home.empty()) {
 #ifdef _WIN32
       home = absl::StrCat(::getenv("HOMEDRIVE"), ::getenv("HOMEPATH"));

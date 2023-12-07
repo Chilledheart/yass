@@ -3,6 +3,7 @@
 #include "config/config_impl.hpp"
 
 #include <absl/flags/flag.h>
+#include <absl/strings/str_cat.h>
 #include <stdint.h>
 
 #include "config/config_impl_apple.hpp"
@@ -38,6 +39,12 @@ std::unique_ptr<ConfigImpl> ConfigImpl::Create() {
   fprintf(stderr, "using option from defaults database\n");
   fflush(stderr);
   return std::make_unique<ConfigImplApple>();
+#elif defined(__ANDROID__)
+  DCHECK(a_app);
+  std::string configfile = absl::StrCat(a_app->activity->internalDataPath, "/", "config.json");
+  fprintf(stderr, "using option from file: %s\n", configfile.c_str());
+  fflush(stderr);
+  return std::make_unique<ConfigImplLocal>(configfile);
 #else
   const char* configfile = "~/.yass/config.json";
   fprintf(stderr, "using option from file: %s\n", configfile);
