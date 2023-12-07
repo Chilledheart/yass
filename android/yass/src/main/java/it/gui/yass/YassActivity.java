@@ -7,10 +7,12 @@ package it.gui.yass;
 
 import android.app.NativeActivity;
 import android.content.Context;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.inputmethod.InputMethodManager;
 
+import java.util.Formatter;
 import java.util.concurrent.LinkedBlockingQueue;
 
 
@@ -54,4 +56,8 @@ public class YassActivity extends NativeActivity {
         return poll != null ? poll.intValue() : 0;
     }
 
+    public int getIpAddress() {
+        WifiManager wm = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+        return wm.getConnectionInfo().getIpAddress();
+    }
 }

@@ -46,6 +46,8 @@ static void MainLoopStep();
 static int ShowSoftKeyboardInput();
 static int PollUnicodeChars();
 static int GetAssetData(const char* filename, void** out_data);
+// returning in host byte order
+static int32_t GetIpAddress();
 
 static Worker g_worker;
 
@@ -309,6 +311,7 @@ CIPHER_METHOD_VALID_MAP(XX)
     static char local_host[140];
     static int local_port;
     static int timeout;
+    static std::string ipaddress = asio::ip::make_address_v4(GetIpAddress()).to_string();
     static bool _init = [&]() -> bool {
       strcpy(server_host, absl::GetFlag(FLAGS_server_host).c_str());
       server_port = absl::GetFlag(FLAGS_server_port);
@@ -333,6 +336,7 @@ CIPHER_METHOD_VALID_MAP(XX)
     ImGui::InputText("local_host", local_host, IM_ARRAYSIZE(local_host));
     ImGui::InputInt("local_port", &local_port);
     ImGui::InputInt("timeout", &timeout);
+    ImGui::Text("Current Ip Address: %s", ipaddress.c_str());
 
     ImGui::Checkbox("Option Window", &show_option_window);
 
@@ -505,6 +509,36 @@ static int GetAssetData(const char* filename, void** outData)
     IM_ASSERT(num_bytes_read == num_bytes);
   }
   return num_bytes;
+}
+
+static int32_t GetIpAddress()
+{
+  JavaVM* java_vm = g_App->activity->vm;
+  JNIEnv* java_env = nullptr;
+
+  jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
+  if (jni_return == JNI_ERR)
+    return 0;
+
+  jni_return = java_vm->AttachCurrentThread(&java_env, nullptr);
+  if (jni_return != JNI_OK)
+    return 0;
+
+  jclass native_activity_clazz = java_env->GetObjectClass(g_App->activity->clazz);
+  if (native_activity_clazz == nullptr)
+    return 0;
+
+  jmethodID method_id = java_env->GetMethodID(native_activity_clazz, "getIpAddress", "()I");
+  if (method_id == nullptr)
+    return 0;
+
+  jint ip_address = java_env->CallIntMethod(g_App->activity->clazz, method_id);
+
+  jni_return = java_vm->DetachCurrentThread();
+  if (jni_return != JNI_OK)
+    return 0;
+
+  return ntohl(ip_address);
 }
 
 void android_main(android_app* app) {
