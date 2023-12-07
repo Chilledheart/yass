@@ -108,7 +108,8 @@ static void WorkFunc() {
     int events;
     struct android_poll_source* source;
 
-    while ((ident=ALooper_pollAll(g_Initialized ? 0 : -1, nullptr, &events,
+    while ((ident=ALooper_pollAll(g_Initialized ? 67 /* limit to 15 fps */ : -1,
+                                  nullptr, &events,
                                   (void**)&source)) >= 0) {
 
       // Process this event.
