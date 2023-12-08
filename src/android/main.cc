@@ -9,19 +9,20 @@
 #include <absl/flags/parse.h>
 #include <absl/flags/usage.h>
 #include <absl/strings/str_format.h>
-#include <openssl/crypto.h>
+#include <base/posix/eintr_wrapper.h>
 #include <imgui.h>
 #include <imgui_impl_android.h>
 #include <imgui_impl_opengl3.h>
-
-#include <atomic>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
+#include <openssl/crypto.h>
 
 #include <android/log.h>
 #include <android_native_app_glue.h>
 #include <android/asset_manager.h>
+#include <atomic>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <deque>
 #include <EGL/egl.h>
 #include <GLES3/gl3.h>
 
@@ -38,20 +39,19 @@ static EGLContext           g_EglContext = EGL_NO_CONTEXT;
 static struct android_app*  g_App = nullptr;
 static bool                 g_Initialized = false;
 static std::string          g_IniFilename = "";
-static int                  g_NotifyFd[2] = {-1, -1};
+static int                  g_NotifyUnicodeFd[2] = {-1, -1};
 
 // Forward declarations of helper functions
 static void Init(struct android_app* app);
 static void Shutdown();
 static void MainLoopStep();
 static int ShowSoftKeyboardInput();
-static int PollUnicodeChars();
 static int GetAssetData(const char* filename, void** out_data);
 // returning in host byte order
 static int32_t GetIpAddress();
 
 extern "C"
-JNIEXPORT void JNICALL Java_it_gui_yass_YassActivity_notifyNativeThread(JNIEnv *env, jobject obj);
+JNIEXPORT void JNICALL Java_it_gui_yass_YassActivity_notifyUnicodeChar(JNIEnv *env, jobject obj, jint unicode);
 
 static Worker g_worker;
 
@@ -160,15 +160,35 @@ static int32_t handleInputEvent(struct android_app* app, AInputEvent* inputEvent
   return ImGui_ImplAndroid_HandleInputEvent(inputEvent);
 }
 
-/* Invoked by ALooper to process a message */
-static int messagepipe_cb(int fd, int events, void* user) {
+static void ReadSequentialFromFd(int fd, std::deque<char> *out_vec) {
+  std::array<char, 140> buf;
   while (true) {
-    char msg;
-    ssize_t ret = read(fd, &msg, sizeof(msg));
+    ssize_t ret = read(fd, buf.data(), buf.size());
     if (ret < 0 && errno == EINTR)
       continue;
+    // system error
     if (ret < 0) {
       break;
+    }
+    // EOF, impossible
+    if (ret == 0) {
+      break;
+    }
+    out_vec->insert(out_vec->end(), buf.begin(), buf.begin() + ret);
+  }
+}
+
+/* Invoked by ALooper to process a message */
+// called from main thread
+static int receiveUnicodeCharCallback(int fd, int events, void* user) {
+  ImGuiIO& io = ImGui::GetIO();
+  static std::deque<char> buffer;
+  ReadSequentialFromFd(fd, &buffer);
+  while (buffer.size() >= sizeof(jint)) {
+    auto unicode_character = reinterpret_cast<jint*>(&*buffer.begin());
+    io.AddInputCharacter(*unicode_character);
+    for (unsigned int i = 0; i < sizeof(jint); ++i) {
+      buffer.pop_front();
     }
   }
 
@@ -185,12 +205,12 @@ void Init(struct android_app* app) {
   config::ReadConfig();
 
   /* Call this from your main thread to set up the callback pipe. */
-  int ret = pipe2(g_NotifyFd, O_NONBLOCK | O_CLOEXEC);
-  CHECK_NE(ret, -1);
+  int ret = pipe2(g_NotifyUnicodeFd, O_NONBLOCK | O_CLOEXEC);
+  CHECK_NE(ret, -1) << "create unicode char notify fd failed";
 
   /* Register the file descriptor to listen on. */
-  ALooper_addFd(g_App->looper, g_NotifyFd[0], LOOPER_ID_USER,
-                ALOOPER_EVENT_INPUT, messagepipe_cb, nullptr);
+  CHECK_EQ(1, ALooper_addFd(g_App->looper, g_NotifyUnicodeFd[0], LOOPER_ID_USER,
+                            ALOOPER_EVENT_INPUT, receiveUnicodeCharCallback, nullptr));
 
   LOG(INFO) << "imgui: Initialize";
 
@@ -298,10 +318,6 @@ void MainLoopStep()
   // (we use static, which essentially makes the variable globals, as a convenience to keep the example code easy to follow)
   static bool show_option_window = false;
   static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
-  // Poll Unicode characters via JNI
-  // FIXME: do not call this every frame because of JNI overhead
-  PollUnicodeChars();
 
   // Open on-screen (soft) input if requested by Dear ImGui
   static bool WantTextInputLast = false;
@@ -451,12 +467,12 @@ void Shutdown()
   ANativeWindow_release(g_App->window);
 
   /* UnRegister the file descriptor to listen on. */
-  ALooper_removeFd(g_App->looper, g_NotifyFd[0]);
+  CHECK_EQ(1, ALooper_removeFd(g_App->looper, g_NotifyUnicodeFd[0]));
 
-  close(g_NotifyFd[0]);
-  close(g_NotifyFd[1]);
-  g_NotifyFd[0] = -1;
-  g_NotifyFd[1] = -1;
+  IGNORE_EINTR(close(g_NotifyUnicodeFd[0]));
+  IGNORE_EINTR(close(g_NotifyUnicodeFd[1]));
+  g_NotifyUnicodeFd[0] = -1;
+  g_NotifyUnicodeFd[1] = -1;
 
   g_Initialized = false;
 }
@@ -487,43 +503,6 @@ static int ShowSoftKeyboardInput()
     return -4;
 
   java_env->CallVoidMethod(g_App->activity->clazz, method_id);
-
-  jni_return = java_vm->DetachCurrentThread();
-  if (jni_return != JNI_OK)
-    return -5;
-
-  return 0;
-}
-
-// Unfortunately, the native KeyEvent implementation has no getUnicodeChar() function.
-// Therefore, we implement the processing of KeyEvents in MainActivity.kt and poll
-// the resulting Unicode characters here via JNI and send them to Dear ImGui.
-static int PollUnicodeChars()
-{
-  JavaVM* java_vm = g_App->activity->vm;
-  JNIEnv* java_env = nullptr;
-
-  jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
-  if (jni_return == JNI_ERR)
-    return -1;
-
-  jni_return = java_vm->AttachCurrentThread(&java_env, nullptr);
-  if (jni_return != JNI_OK)
-    return -2;
-
-  jclass native_activity_clazz = java_env->GetObjectClass(g_App->activity->clazz);
-  if (native_activity_clazz == nullptr)
-    return -3;
-
-  jmethodID method_id = java_env->GetMethodID(native_activity_clazz, "pollUnicodeChar", "()I");
-  if (method_id == nullptr)
-    return -4;
-
-  // Send the actual characters to Dear ImGui
-  ImGuiIO& io = ImGui::GetIO();
-  jint unicode_character;
-  while ((unicode_character = java_env->CallIntMethod(g_App->activity->clazz, method_id)) != 0)
-    io.AddInputCharacter(unicode_character);
 
   jni_return = java_vm->DetachCurrentThread();
   if (jni_return != JNI_OK)
@@ -578,12 +557,21 @@ static int32_t GetIpAddress()
   return ntohl(ip_address);
 }
 
-JNIEXPORT void JNICALL Java_it_gui_yass_YassActivity_notifyNativeThread(JNIEnv *env, jobject obj) {
-  while (g_Initialized) {
-    char byte;
-    ssize_t ret = write(g_NotifyFd[1], &byte, sizeof(byte));
-    if (ret < 0 && (errno == EINTR || errno == EAGAIN))
+// called from java thread
+JNIEXPORT void JNICALL Java_it_gui_yass_YassActivity_notifyUnicodeChar(JNIEnv *env, jobject obj, jint unicode) {
+  const uint8_t *remaining_buffer = reinterpret_cast<uint8_t*>(&unicode);
+  ssize_t remaining_length = sizeof(unicode);
+  while (g_Initialized && remaining_length > 0) {
+    ssize_t written = write(g_NotifyUnicodeFd[1], remaining_buffer, remaining_length);
+    if (written < 0 && (errno == EINTR || errno == EAGAIN))
       continue;
+    if (written < 0) {
+      PLOG(WARNING) << "notifyUnicode write error";
+      break;
+    }
+    DCHECK_LE(written, remaining_length);
+    remaining_buffer += written;
+    remaining_length -= written;
     break;
   }
 }

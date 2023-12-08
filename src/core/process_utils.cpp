@@ -66,15 +66,15 @@ int ExecuteProcess(const std::vector<std::string>& params,
     return ret;
   }
   if ((ret = Pipe2(stdout_pipe))) {
-    close(stdin_pipe[0]);
-    close(stdin_pipe[1]);
+    IGNORE_EINTR(close(stdin_pipe[0]));
+    IGNORE_EINTR(close(stdin_pipe[1]));
     return ret;
   }
   if ((ret = Pipe2(stderr_pipe))) {
-    close(stdin_pipe[0]);
-    close(stdin_pipe[1]);
-    close(stdout_pipe[0]);
-    close(stdout_pipe[1]);
+    IGNORE_EINTR(close(stdin_pipe[0]));
+    IGNORE_EINTR(close(stdin_pipe[1]));
+    IGNORE_EINTR(close(stdout_pipe[0]));
+    IGNORE_EINTR(close(stdout_pipe[1]));
     return ret;
   }
 
