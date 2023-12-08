@@ -83,7 +83,7 @@ jobs:
         with:
           path: |
             third_party/crashpad
-          key: ${{ runner.os }}-msvc-perarch-crashpad-build-stage-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-msvc-perarch-crashpad-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}-v1
       - name: Cache golang (tools only)
         uses: actions/cache@v3
         with:
