@@ -72,6 +72,26 @@ task copyTask {
         into 'libs/arm64-v8a'
         rename('libyass.so', 'libnative-lib.so')
     }
+    copy {
+        from '../../build-android24-x86/crashpad_handler'
+        into 'libs/x86'
+        rename('crashpad_handler', 'libcrashpad_handler.so')
+    }
+    copy {
+        from '../../build-android24-x64/crashpad_handler'
+        into 'libs/x86_64'
+        rename('crashpad_handler', 'libcrashpad_handler.so')
+    }
+    copy {
+        from '../../build-android24-arm/crashpad_handler'
+        into 'libs/armeabi-v7a'
+        rename('crashpad_handler', 'libcrashpad_handler.so')
+    }
+    copy {
+        from '../../build-android24-arm64/crashpad_handler'
+        into 'libs/arm64-v8a'
+        rename('crashpad_handler', 'libcrashpad_handler.so')
+    }
 }
 
 preBuild.dependsOn copyTask

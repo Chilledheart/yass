@@ -83,6 +83,17 @@ if [ "$WITH_CPU" ]; then
 target_cpu=\"$WITH_CPU\""
 fi
 
+case "$WITH_OS" in
+  android)
+  os_suffix="-android"
+  flags="$flags
+android_api_level=24
+android_ndk_root=\"$ANDROID_NDK_ROOT\""
+   ;;
+  *)
+   ;;
+esac
+
 if [ "$WITH_OS" ]; then
   flags="$flags
 target_os=\"$WITH_OS\""
@@ -97,8 +108,8 @@ bin_flags="$flags
 extra_cflags_cc=\"\"
 extra_cflags_objcc=\"\""
 
-out="$PWD/crashpad/crashpad/out/Default-${WITH_CPU}"
-bin_out="$PWD/crashpad/crashpad/out/Binary-${WITH_CPU}"
+out="$PWD/crashpad/crashpad/out/Default-${WITH_CPU}${os_suffix}"
+bin_out="$PWD/crashpad/crashpad/out/Binary-${WITH_CPU}${os_suffix}"
 
 export DEPOT_TOOLS_WIN_TOOLCHAIN=0
 
