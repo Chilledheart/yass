@@ -89,9 +89,9 @@ case "$WITH_OS" in
   flags="$flags
 android_api_level=24
 android_ndk_root=\"$ANDROID_NDK_ROOT\""
-   ;;
+    ;;
   *)
-   ;;
+    ;;
 esac
 
 if [ "$WITH_OS" ]; then
@@ -108,6 +108,17 @@ bin_flags="$flags
 extra_cflags_cc=\"\"
 extra_cflags_objcc=\"\""
 
+case "$WITH_OS" in
+  android)
+  os_suffix="-android"
+  bin_flags="$bin_flags
+extra_cflags_cc=\"-stdlib=libc++\"
+extra_ldflags=\"-stdlib=libc++ -static-libstdc++\""
+    ;;
+  *)
+    ;;
+esac
+
 out="$PWD/crashpad/crashpad/out/Default-${WITH_CPU}${os_suffix}"
 bin_out="$PWD/crashpad/crashpad/out/Binary-${WITH_CPU}${os_suffix}"
 
@@ -117,6 +128,7 @@ mkdir -p crashpad
 cd crashpad
 fetch --nohistory crashpad || true
 cd crashpad
+git fetch origin 5613499bbda780dfa663344ea6253844e82c88c4
 git checkout -f 5613499bbda780dfa663344ea6253844e82c88c4
 git reset --hard
 gclient sync -f
