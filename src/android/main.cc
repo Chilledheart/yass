@@ -31,6 +31,7 @@
 #include "core/utils.hpp"
 #include "cli/cli_worker.hpp"
 #include "config/config.hpp"
+#include "crashpad_helper.hpp"
 
 // Data
 static EGLDisplay           g_EglDisplay = EGL_NO_DISPLAY;
@@ -53,6 +54,8 @@ static int32_t GetIpAddress();
 static int SetJavaThreadName(const std::string& thread_name);
 [[maybe_unused]]
 static int GetJavaThreadName(std::string* thread_name);
+[[maybe_unused]]
+static int GetNativeLibraryDirectory(std::string* result);
 
 extern "C"
 JNIEXPORT void JNICALL Java_it_gui_yass_YassActivity_notifyUnicodeChar(JNIEnv *env, jobject obj, jint unicode);
@@ -208,11 +211,11 @@ void Init(struct android_app* app) {
   g_App = app;
   DCHECK_EQ(g_App, a_app);
 
-  SetJavaThreadName("Native Thread");
-#ifndef NDEBUG
-  std::string thread_name;
-  GetJavaThreadName(&thread_name);
-  LOG(INFO) << "Current Java Thread Name: " << thread_name;
+#ifdef HAVE_CRASHPAD
+  // FIXME correct the path
+  std::string lib_path;
+  CHECK_EQ(0, GetNativeLibraryDirectory(&lib_path));
+  CHECK(InitializeCrashpad(lib_path + "/libnative-lib.so"));
 #endif
 
 #ifdef HAVE_ICU
@@ -223,6 +226,13 @@ void Init(struct android_app* app) {
 #endif
 
   CRYPTO_library_init();
+
+  SetJavaThreadName("Native Thread");
+#ifndef NDEBUG
+  std::string thread_name;
+  GetJavaThreadName(&thread_name);
+  LOG(INFO) << "Current Java Thread Name: " << thread_name;
+#endif
 
   config::ReadConfigFileOption(0, nullptr);
   config::ReadConfig();
@@ -678,6 +688,46 @@ int GetJavaThreadName(std::string* thread_name) {
   jni_return = java_vm->DetachCurrentThread();
   if (jni_return != JNI_OK)
     return -8;
+
+  return 0;
+}
+
+int GetNativeLibraryDirectory(std::string* thread_name) {
+  JavaVM* java_vm = g_App->activity->vm;
+  JNIEnv* java_env = nullptr;
+
+  jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
+  if (jni_return == JNI_ERR)
+    return -1;
+
+  jni_return = java_vm->AttachCurrentThread(&java_env, nullptr);
+  if (jni_return != JNI_OK)
+    return -2;
+
+  jclass native_activity_clazz = java_env->GetObjectClass(g_App->activity->clazz);
+  if (native_activity_clazz == nullptr)
+    return -3;
+
+  jmethodID method_id = java_env->GetMethodID(native_activity_clazz, "getNativeLibraryDirectory", "()Ljava/lang/String;");
+  if (method_id == nullptr)
+    return -4;
+
+  jobject name = java_env->CallObjectMethod(g_App->activity->clazz, method_id);
+  if (name == nullptr)
+    return -5;
+
+  const char* name_str;
+  name_str = java_env->GetStringUTFChars((jstring)name, nullptr);
+  if (name_str == nullptr)
+    return -6;
+
+  *thread_name = name_str;
+
+  java_env->ReleaseStringUTFChars((jstring)name, name_str);
+
+  jni_return = java_vm->DetachCurrentThread();
+  if (jni_return != JNI_OK)
+    return -7;
 
   return 0;
 }

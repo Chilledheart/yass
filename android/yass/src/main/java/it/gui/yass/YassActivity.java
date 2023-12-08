@@ -5,8 +5,10 @@
  */
 package it.gui.yass;
 
+import android.app.Activity;
 import android.app.NativeActivity;
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.view.KeyEvent;
@@ -50,6 +52,16 @@ public class YassActivity extends NativeActivity {
     public int getIpAddress() {
         WifiManager wm = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         return wm.getConnectionInfo().getIpAddress();
+    }
+
+    private String getNativeLibraryDirectory() {
+        ApplicationInfo ai = this.getApplicationContext().getApplicationInfo();
+        if ((ai.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
+                || (ai.flags & ApplicationInfo.FLAG_SYSTEM) == 0) {
+            return ai.nativeLibraryDir;
+        }
+
+        return "/system/lib/";
     }
 
     private native void notifyUnicodeChar(int unicode);

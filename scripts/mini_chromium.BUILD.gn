@@ -24,6 +24,9 @@ if (mini_chromium_is_mac) {
   import("../ios/ios_sdk.gni")
 } else if (mini_chromium_is_android) {
   declare_args() {
+    # Path to the Clang toolchain. If unset, uses the system-installed Clang.
+    clang_path = ""
+
     android_ndk_root = ""
     android_api_level = 21
   }
@@ -431,16 +434,6 @@ toolchain("gcc_like_toolchain") {
     } else if (host_os == "win") {
       ndk_host_arch = "windows-x86_64"
     }
-    ndk_bin_dir = string_join("/",
-                              [
-                                android_ndk_root,
-                                "toolchains",
-                                "llvm",
-                                "prebuilt",
-                                ndk_host_arch,
-                                "bin",
-                                "",
-                              ])
 
     if (target_cpu == "arm") {
       tool_prefix = "arm-linux-androideabi"
@@ -460,12 +453,45 @@ toolchain("gcc_like_toolchain") {
       clang_prefix = tool_prefix + android_api_level
     }
 
-    cc = ndk_bin_dir + clang_prefix + "-clang"
-    cxx = ndk_bin_dir + clang_prefix + "-clang++"
-    asm = cxx
-    ld = cxx
-    ar = ndk_bin_dir + tool_prefix + "-ar"
-    extra_ldflags = "-fuse-ld=lld"
+    if (clang_path != "") {
+      ndk_sysroot_dir = string_join("/",
+                                [
+                                  android_ndk_root,
+                                  "toolchains",
+                                  "llvm",
+                                  "prebuilt",
+                                  ndk_host_arch,
+                                  "sysroot",
+                                  "",
+                                ])
+
+      cc = rebase_path(clang_path, root_build_dir) + "/bin/clang"
+      cxx = rebase_path(clang_path, root_build_dir) + "/bin/clang++"
+      asm = cxx
+      ld = cxx
+      ar = rebase_path(clang_path, root_build_dir) + "/bin/llvm-ar"
+      extra_cflags = "-target " + clang_prefix + " --sysroot=" + ndk_sysroot_dir
+      extra_ldflags = "-target " + clang_prefix + " --sysroot=" + ndk_sysroot_dir
+    } else {
+      ndk_bin_dir = string_join("/",
+                                [
+                                  android_ndk_root,
+                                  "toolchains",
+                                  "llvm",
+                                  "prebuilt",
+                                  ndk_host_arch,
+                                  "bin",
+                                  "",
+                                ])
+
+      cc = ndk_bin_dir + clang_prefix + "-clang"
+      cxx = ndk_bin_dir + clang_prefix + "-clang++"
+      asm = cxx
+      ld = cxx
+      ar = ndk_bin_dir + tool_prefix + "-ar"
+      extra_ldflags = ""
+    }
+    extra_ldflags += " -fuse-ld=lld"
   } else {
     if (clang_path != "") {
       cc = rebase_path(clang_path, root_build_dir) + "/bin/clang"
