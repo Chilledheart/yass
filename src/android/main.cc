@@ -37,7 +37,7 @@ static EGLDisplay           g_EglDisplay = EGL_NO_DISPLAY;
 static EGLSurface           g_EglSurface = EGL_NO_SURFACE;
 static EGLContext           g_EglContext = EGL_NO_CONTEXT;
 static struct android_app*  g_App = nullptr;
-static bool                 g_Initialized = false;
+static std::atomic_bool     g_Initialized = false;
 static std::string          g_IniFilename = "";
 static int                  g_NotifyUnicodeFd[2] = {-1, -1};
 
@@ -53,7 +53,7 @@ static int32_t GetIpAddress();
 extern "C"
 JNIEXPORT void JNICALL Java_it_gui_yass_YassActivity_notifyUnicodeChar(JNIEnv *env, jobject obj, jint unicode);
 
-static Worker g_worker;
+static std::unique_ptr<Worker> g_worker;
 
 enum StartState {
   STOPPED = 0,
@@ -80,7 +80,7 @@ static void ToggleWorker() {
   switch(g_state) {
     case STOPPED:
       g_state = STARTING;
-      g_worker.Start([&](asio::error_code ec) {
+      g_worker->Start([&](asio::error_code ec) {
         if (ec) {
           LOG(WARNING) << "Start Failed: " << ec;
           g_state = STOPPED;
@@ -99,7 +99,7 @@ static void ToggleWorker() {
       break;
     case STARTED:
       g_state = STOPPING;
-      g_worker.Stop([&]() {
+      g_worker->Stop([&]() {
         LOG(WARNING) << "Stopped";
         g_state = STOPPED;
       });
@@ -198,11 +198,26 @@ static int receiveUnicodeCharCallback(int fd, int events, void* user) {
 void Init(struct android_app* app) {
   if (g_Initialized)
     return;
+
+  LOG(INFO) << "android: Initialize";
+
   g_App = app;
   DCHECK_EQ(g_App, a_app);
 
+#ifdef HAVE_ICU
+  if (!InitializeICU()) {
+    LOG(WARNING) << "Failed to initialize icu component";
+    return;
+  }
+#endif
+
+  CRYPTO_library_init();
+
   config::ReadConfigFileOption(0, nullptr);
   config::ReadConfig();
+
+  // Create Yass Worker after ReadConfig
+  g_worker = std::make_unique<Worker>();
 
   /* Call this from your main thread to set up the callback pipe. */
   int ret = pipe2(g_NotifyUnicodeFd, O_NONBLOCK | O_CLOEXEC);
@@ -211,8 +226,6 @@ void Init(struct android_app* app) {
   /* Register the file descriptor to listen on. */
   CHECK_EQ(1, ALooper_addFd(g_App->looper, g_NotifyUnicodeFd[0], LOOPER_ID_USER,
                             ALOOPER_EVENT_INPUT, receiveUnicodeCharCallback, nullptr));
-
-  LOG(INFO) << "imgui: Initialize";
 
   ANativeWindow_acquire(g_App->window);
 
@@ -306,6 +319,8 @@ void Init(struct android_app* app) {
   ImGui::GetStyle().ScaleAllSizes(3.0f);
 
   g_Initialized = true;
+
+  LOG(INFO) << "android: Initialized";
 }
 
 void MainLoopStep()
@@ -440,8 +455,9 @@ void Shutdown()
 {
   if (!g_Initialized)
     return;
+  LOG(INFO) << "android: Shutdown";
 
-  LOG(INFO) << "imgui: Shutdown";
+  g_Initialized = false;
 
   // Cleanup
   ImGui_ImplOpenGL3_Shutdown();
@@ -474,7 +490,9 @@ void Shutdown()
   g_NotifyUnicodeFd[0] = -1;
   g_NotifyUnicodeFd[1] = -1;
 
-  g_Initialized = false;
+  g_worker.reset();
+
+  LOG(INFO) << "android: Shutdown finished";
 }
 
 // Helper functions
@@ -581,15 +599,6 @@ void android_main(android_app* app) {
   app->onAppCmd = handleAppCmd;
   app->onInputEvent = handleInputEvent;
   a_app = app;
-
-#ifdef HAVE_ICU
-  if (!InitializeICU()) {
-    LOG(WARNING) << "Failed to initialize icu component";
-    return;
-  }
-#endif
-
-  CRYPTO_library_init();
 
   WorkFunc();
 }
