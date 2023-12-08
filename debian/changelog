@@ -1,16 +1,21 @@
+yass (1.5.3-1) UNRELEASED; urgency=low
+
+  * Fix linux thread name setting.
+
+ -- Chilledheart <keeyou-cn@outout.com>  Fri, 8 Dec 2023 14:56:17 +0800
 yass (1.5.2-1) UNRELEASED; urgency=medium
 
   * Bump to chromium 121 dependents (updated).
   * Fix RPM releases.
 
- -- Chilledheart <hukeyue@hotmail.com>  Tue, 5 Dec 2023 20:07:51 +0800
+ -- Chilledheart <keeyou-cn@outout.com>  Tue, 5 Dec 2023 20:07:51 +0800
 yass (1.5.1-1) UNRELEASED; urgency=medium
 
   * Bump to chromium 121 dependents.
   * Fix use cached configuration issue.
   * Fix crash in resume from previous failure.
 
- -- Chilledheart <hukeyue@hotmail.com>  Mon, 4 Dec 2023 20:06:54 +0800
+ -- Chilledheart <keeyou-cn@outout.com>  Mon, 4 Dec 2023 20:06:54 +0800
 yass (1.5.0-1) UNRELEASED; urgency=low
 
   * New major release.
