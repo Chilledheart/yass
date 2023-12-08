@@ -18,6 +18,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <deque>
 
 #include <android/log.h>
 #include <android_native_app_glue.h>
@@ -159,22 +160,36 @@ static int32_t handleInputEvent(struct android_app* app, AInputEvent* inputEvent
   return ImGui_ImplAndroid_HandleInputEvent(inputEvent);
 }
 
+static void ReadSequentialFromFd(int fd, std::deque<char> *out_vec) {
+  std::array<char, 140> buf;
+  while (true) {
+    ssize_t ret = read(fd, buf.data(), buf.size());
+    if (ret < 0 && errno == EINTR)
+      continue;
+    // system error
+    if (ret < 0) {
+      break;
+    }
+    // EOF, impossible
+    if (ret == 0) {
+      break;
+    }
+    out_vec->insert(out_vec->end(), buf.begin(), buf.begin() + ret);
+  }
+}
+
 /* Invoked by ALooper to process a message */
 // called from main thread
 static int receiveUnicodeCharCallback(int fd, int events, void* user) {
   ImGuiIO& io = ImGui::GetIO();
-  while (true) {
-    // FIXME what if partial read happens?
-    jint unicode_character;
-    ssize_t ret = read(fd, &unicode_character, sizeof(unicode_character));
-    if (ret < 0 && errno == EINTR)
-      continue;
-    if (ret < 0) {
-      break;
+  static std::deque<char> buffer;
+  ReadSequentialFromFd(fd, &buffer);
+  while (buffer.size() >= sizeof(jint)) {
+    auto unicode_character = reinterpret_cast<jint*>(&*buffer.begin());
+    io.AddInputCharacter(*unicode_character);
+    for (unsigned int i = 0; i < sizeof(jint); ++i) {
+      buffer.pop_front();
     }
-    CHECK_EQ((size_t)ret, sizeof(jint));
-
-    io.AddInputCharacter(unicode_character);
   }
 
   return 1;
