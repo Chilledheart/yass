@@ -9,20 +9,20 @@
 #include <absl/flags/parse.h>
 #include <absl/flags/usage.h>
 #include <absl/strings/str_format.h>
-#include <openssl/crypto.h>
+#include <base/posix/eintr_wrapper.h>
 #include <imgui.h>
 #include <imgui_impl_android.h>
 #include <imgui_impl_opengl3.h>
+#include <openssl/crypto.h>
 
+#include <android/log.h>
+#include <android_native_app_glue.h>
+#include <android/asset_manager.h>
 #include <atomic>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <deque>
-
-#include <android/log.h>
-#include <android_native_app_glue.h>
-#include <android/asset_manager.h>
 #include <EGL/egl.h>
 #include <GLES3/gl3.h>
 
@@ -206,7 +206,7 @@ void Init(struct android_app* app) {
 
   /* Call this from your main thread to set up the callback pipe. */
   int ret = pipe2(g_NotifyUnicodeFd, O_NONBLOCK | O_CLOEXEC);
-  CHECK_NE(ret, -1);
+  CHECK_NE(ret, -1) << "create unicode char notify fd failed";
 
   /* Register the file descriptor to listen on. */
   CHECK_EQ(1, ALooper_addFd(g_App->looper, g_NotifyUnicodeFd[0], LOOPER_ID_USER,
@@ -469,8 +469,8 @@ void Shutdown()
   /* UnRegister the file descriptor to listen on. */
   CHECK_EQ(1, ALooper_removeFd(g_App->looper, g_NotifyUnicodeFd[0]));
 
-  close(g_NotifyUnicodeFd[0]);
-  close(g_NotifyUnicodeFd[1]);
+  IGNORE_EINTR(close(g_NotifyUnicodeFd[0]));
+  IGNORE_EINTR(close(g_NotifyUnicodeFd[1]));
   g_NotifyUnicodeFd[0] = -1;
   g_NotifyUnicodeFd[1] = -1;
 
