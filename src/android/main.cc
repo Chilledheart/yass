@@ -49,6 +49,7 @@ static int ShowSoftKeyboardInput();
 static int GetAssetData(const char* filename, void** out_data);
 // returning in host byte order
 static int32_t GetIpAddress();
+static int SetJavaThreadName(const std::string& thread_name);
 
 extern "C"
 JNIEXPORT void JNICALL Java_it_gui_yass_YassActivity_notifyUnicodeChar(JNIEnv *env, jobject obj, jint unicode);
@@ -203,6 +204,8 @@ void Init(struct android_app* app) {
 
   g_App = app;
   DCHECK_EQ(g_App, a_app);
+
+  SetJavaThreadName("Native Thread");
 
 #ifdef HAVE_ICU
   if (!InitializeICU()) {
@@ -573,6 +576,49 @@ static int32_t GetIpAddress()
     return 0;
 
   return ntohl(ip_address);
+}
+
+// Set native thread name inside
+int SetJavaThreadName(const std::string& thread_name) {
+  JavaVM* java_vm = g_App->activity->vm;
+  JNIEnv* java_env = nullptr;
+
+  jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
+  if (jni_return == JNI_ERR)
+    return -1;
+
+  jni_return = java_vm->AttachCurrentThread(&java_env, nullptr);
+  if (jni_return != JNI_OK)
+    return -2;
+
+  jclass thread_clazz = java_env->FindClass("java/lang/Thread");
+  if (thread_clazz == nullptr )
+    return -3;
+
+  jmethodID method_id = java_env->GetStaticMethodID(thread_clazz, "currentThread", "()Ljava/lang/Thread;");
+  if (method_id == nullptr)
+    return -4;
+
+  jobject thread_obj = java_env->CallStaticObjectMethod(thread_clazz, method_id);
+
+  if (thread_obj == nullptr)
+    return -5;
+
+  jstring thread_name_obj = java_env->NewStringUTF(thread_name.c_str());
+  if (thread_name_obj == nullptr)
+    return -6;
+
+  jmethodID set_method_id = java_env->GetMethodID(thread_clazz, "setName", "(Ljava/lang/String;)V");
+  if (set_method_id == nullptr)
+    return -7;
+
+  java_env->CallVoidMethod(thread_obj, set_method_id, thread_name_obj);
+
+  jni_return = java_vm->DetachCurrentThread();
+  if (jni_return != JNI_OK)
+    return -8;
+
+  return 0;
 }
 
 // called from java thread

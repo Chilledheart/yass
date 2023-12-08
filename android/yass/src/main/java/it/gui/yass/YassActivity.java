@@ -24,11 +24,13 @@ public class YassActivity extends NativeActivity {
         super.onCreate(savedInstanceState);
     }
 
+    @SuppressWarnings("unused")
     public void showSoftInput() {
         InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         inputMethodManager.showSoftInput(this.getWindow().getDecorView(), 0);
     }
 
+    @SuppressWarnings("unused")
     public void hideSoftInput() {
         InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         inputMethodManager.hideSoftInputFromWindow(this.getWindow().getDecorView().getWindowToken(), 0);
@@ -44,6 +46,7 @@ public class YassActivity extends NativeActivity {
         return super.dispatchKeyEvent(event);
     }
 
+    @SuppressWarnings("unused")
     public int getIpAddress() {
         WifiManager wm = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         return wm.getConnectionInfo().getIpAddress();
