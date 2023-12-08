@@ -12,13 +12,6 @@ import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.inputmethod.InputMethodManager;
 
-import java.io.FileDescriptor;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Formatter;
-import java.util.concurrent.LinkedBlockingQueue;
-
-
 public class YassActivity extends NativeActivity {
 
     static {
@@ -41,23 +34,14 @@ public class YassActivity extends NativeActivity {
         inputMethodManager.hideSoftInputFromWindow(this.getWindow().getDecorView().getWindowToken(), 0);
     }
 
-    // Queue for the Unicode characters to be polled from native code (via pollUnicodeChar())
-    private final LinkedBlockingQueue<Integer> unicodeCharacterQueue = new LinkedBlockingQueue<Integer>();
-
     // We assume dispatchKeyEvent() of the NativeActivity is actually called for every
     // KeyEvent and not consumed by any View before it reaches here
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
-            unicodeCharacterQueue.offer(event.getUnicodeChar(event.getMetaState()));
-            notifyNativeThread();
+            notifyUnicodeChar(event.getUnicodeChar(event.getMetaState()));
         }
         return super.dispatchKeyEvent(event);
-    }
-
-    public int pollUnicodeChar() {
-        Integer poll = unicodeCharacterQueue.poll();
-        return poll != null ? poll.intValue() : 0;
     }
 
     public int getIpAddress() {
@@ -65,5 +49,5 @@ public class YassActivity extends NativeActivity {
         return wm.getConnectionInfo().getIpAddress();
     }
 
-    private native void notifyNativeThread();
+    private native void notifyUnicodeChar(int unicode);
 }
