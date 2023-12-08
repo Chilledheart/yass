@@ -48,6 +48,7 @@ static void MainLoopStep();
 static int ShowSoftKeyboardInput();
 static int GetAssetData(const char* filename, void** out_data);
 // returning in host byte order
+[[nodiscard]]
 static int32_t GetIpAddress();
 static int SetJavaThreadName(const std::string& thread_name);
 
@@ -383,6 +384,10 @@ CIPHER_METHOD_VALID_MAP(XX)
       strcpy(local_host, absl::GetFlag(FLAGS_local_host).c_str());
       local_port = absl::GetFlag(FLAGS_local_port);
       timeout = absl::GetFlag(FLAGS_connect_timeout);
+
+      // FIXME the thread don't set correctly if it is done after
+      // GetIpAddress call
+      SetJavaThreadName("Native Thread");
       return true;
     }();
 
