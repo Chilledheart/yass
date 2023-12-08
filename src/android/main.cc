@@ -51,6 +51,8 @@ static int GetAssetData(const char* filename, void** out_data);
 [[nodiscard]]
 static int32_t GetIpAddress();
 static int SetJavaThreadName(const std::string& thread_name);
+[[maybe_unused]]
+static int GetJavaThreadName(std::string* thread_name);
 
 extern "C"
 JNIEXPORT void JNICALL Java_it_gui_yass_YassActivity_notifyUnicodeChar(JNIEnv *env, jobject obj, jint unicode);
@@ -207,6 +209,11 @@ void Init(struct android_app* app) {
   DCHECK_EQ(g_App, a_app);
 
   SetJavaThreadName("Native Thread");
+#ifndef NDEBUG
+  std::string thread_name;
+  GetJavaThreadName(&thread_name);
+  LOG(INFO) << "Current Java Thread Name: " << thread_name;
+#endif
 
 #ifdef HAVE_ICU
   if (!InitializeICU()) {
@@ -618,6 +625,55 @@ int SetJavaThreadName(const std::string& thread_name) {
     return -7;
 
   java_env->CallVoidMethod(thread_obj, set_method_id, thread_name_obj);
+
+  jni_return = java_vm->DetachCurrentThread();
+  if (jni_return != JNI_OK)
+    return -8;
+
+  return 0;
+}
+
+int GetJavaThreadName(std::string* thread_name) {
+  JavaVM* java_vm = g_App->activity->vm;
+  JNIEnv* java_env = nullptr;
+
+  jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
+  if (jni_return == JNI_ERR)
+    return -1;
+
+  jni_return = java_vm->AttachCurrentThread(&java_env, nullptr);
+  if (jni_return != JNI_OK)
+    return -2;
+
+  jclass thread_clazz = java_env->FindClass("java/lang/Thread");
+  if (thread_clazz == nullptr )
+    return -3;
+
+  jmethodID method_id = java_env->GetStaticMethodID(thread_clazz, "currentThread", "()Ljava/lang/Thread;");
+  if (method_id == nullptr)
+    return -4;
+
+  jobject thread_obj = java_env->CallStaticObjectMethod(thread_clazz, method_id);
+
+  if (thread_obj == nullptr)
+    return -5;
+
+  jmethodID get_method_id = java_env->GetMethodID(thread_clazz, "getName", "()Ljava/lang/String;");
+  if (get_method_id == nullptr)
+    return -6;
+
+  jobject name = java_env->CallObjectMethod(thread_obj, get_method_id);
+  if (name == nullptr)
+    return -7;
+
+  const char* name_str;
+  name_str = java_env->GetStringUTFChars((jstring)name, nullptr);
+  if (name_str == nullptr)
+    return -8;
+
+  *thread_name = name_str;
+
+  java_env->ReleaseStringUTFChars((jstring)name, name_str);
 
   jni_return = java_vm->DetachCurrentThread();
   if (jni_return != JNI_OK)
