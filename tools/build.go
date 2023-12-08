@@ -1302,7 +1302,7 @@ func postStateArchives() map[string][]string {
 	archiveSuffix := fmt.Sprintf(archiveFormat, "", "", "")
 	archiveSuffix = archiveSuffix[1:]
 	if systemNameFlag == "android" && variantFlag == "gui" {
-		archive = fmt.Sprintf(archiveFormat, APPNAME, archFlag, ".apk")
+		archive = fmt.Sprintf(archiveFormat, APPNAME, "", ".apk")
 	}
 	if systemNameFlag == "darwin" {
 		archive = fmt.Sprintf(archiveFormat, APPNAME, "", ".dmg")
