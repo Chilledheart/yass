@@ -5,6 +5,7 @@
     <application
         android:label="Yet Another Shadow Socket"
         android:icon="@drawable/icon"
+        android:extractNativeLibs="true"
         android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
         <activity android:name="it.gui.yass.YassActivity"
             android:screenOrientation="landscape"

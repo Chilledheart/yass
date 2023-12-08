@@ -54,6 +54,7 @@ public class YassActivity extends NativeActivity {
         return wm.getConnectionInfo().getIpAddress();
     }
 
+    @SuppressWarnings("unused")
     private String getNativeLibraryDirectory() {
         ApplicationInfo ai = this.getApplicationContext().getApplicationInfo();
         if ((ai.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
