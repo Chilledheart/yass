@@ -58,8 +58,6 @@ var msvcAllowXpFlag bool
 
 var freebsdAbiFlag int
 
-var androidSdkDir string
-
 var systemNameFlag string
 var subSystemNameFlag string
 var sysrootFlag string
@@ -70,6 +68,9 @@ var variantFlag string
 var androidAppAbi string
 var androidAbiTarget string
 var androidApiLevel int
+
+var androidSdkDir string
+var androidNdkDir string
 
 func getAppName() string {
 	if systemNameFlag == "windows" {
@@ -146,7 +147,6 @@ func InitFlag() {
 	flag.BoolVar(&msvcAllowXpFlag, "msvc-allow-xp", getEnvBool("MSVC_ALLOW_XP", false), "Enable Windows XP Build")
 
 	flag.IntVar(&freebsdAbiFlag, "freebsd-abi", getFreebsdABI(11), "Select FreeBSD ABI")
-	flag.StringVar(&androidSdkDir, "android-sdk-dir", "", "Android SDK Home Path")
 
 	flag.StringVar(&systemNameFlag, "system", runtime.GOOS, "Specify host system name")
 	flag.StringVar(&subSystemNameFlag, "subsystem", "", "Specify host subsystem name")
@@ -156,6 +156,8 @@ func InitFlag() {
 	flag.StringVar(&variantFlag, "variant", "gui", "Specify variant, available: gui, cli, server")
 
 	flag.IntVar(&androidApiLevel, "android-api", 24, "Select Android API Level")
+	flag.StringVar(&androidSdkDir, "android-sdk-dir", getEnv("ANDROID_SDK_ROOT", ""), "Android SDK Home Path")
+	flag.StringVar(&androidNdkDir, "android-ndk-dir", getEnv("ANDROID_NDK_ROOT", ""), "Android NDK Home Path")
 
 	flag.Parse()
 
@@ -1146,6 +1148,9 @@ func archiveMainFile(output string, prefix string, paths []string) {
 		if (androidSdkDir != "") {
 			glog.Infof("android sdk dir to %s", androidSdkDir)
 			localProperties := fmt.Sprintf("sdk.dir=%s\n", androidSdkDir)
+			if (androidNdkDir != "") {
+				localProperties += fmt.Sprintf("ndk.dir=%s\n", androidNdkDir)
+			}
 			err = ioutil.WriteFile("local.properties", []byte(localProperties), 0666)
 			if err != nil {
 				glog.Fatalf("%v", err)

@@ -139,7 +139,7 @@ jobs:
           echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
       - name: Build TGZ packages
         run: |
-          ./tools/build --variant gui --arch ${{ matrix.arch }} --system android --cmake-build-type MinSizeRel -build-benchmark -build-test -android-sdk-dir "${ANDROID_HOME}"
+          ./tools/build --variant gui --arch ${{ matrix.arch }} --system android --cmake-build-type MinSizeRel -build-benchmark -build-test -android-sdk-dir "${ANDROID_HOME}" -android-ndk-dir "${ANDROID_NDK_HOME}"
       - name: "Install dependency: android sysroot (test purpose)"
         if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
         run: |
