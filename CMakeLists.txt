@@ -606,7 +606,7 @@ endif()
 
 if (NOT MSVC)
   # Necessary for clone().
-  if (ANDROID)
+  if (ANDROID OR OHOS)
     add_definitions(-D__GNU_SOURCE=1)
   endif()
 
@@ -898,7 +898,7 @@ if (LTO AND COMPILER_CLANG AND USE_MOLD)
     endif()
   endif()
 
-  if (NOT ANDROID AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR APPLE))
+  if (NOT ANDROID AND NOT OHOS AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR APPLE))
     set(CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fwhole-program-vtables")
     set(CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fwhole-program-vtables")
     if (NOT MSVC)
@@ -986,7 +986,7 @@ if (LTO AND COMPILER_CLANG AND USE_LLD)
     endif()
   endif()
 
-  if (NOT ANDROID AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR APPLE))
+  if (NOT ANDROID AND NOT OHOS AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR APPLE))
     set(CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fwhole-program-vtables")
     set(CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fwhole-program-vtables")
     if (NOT MSVC)
@@ -1027,7 +1027,7 @@ if (LTO AND COMPILER_CLANG AND USE_GOLD)
   set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,-mllvm,-import-instr-limit=${import_instr_limit}")
   set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,-mllvm,-import-instr-limit=${import_instr_limit}")
 
-  if (NOT ANDROID AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR APPLE))
+  if (NOT ANDROID AND NOT OHOS AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR APPLE))
     set(CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fwhole-program-vtables")
     set(CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fwhole-program-vtables")
     if (NOT MSVC)
@@ -1158,7 +1158,7 @@ if (UNIX AND NOT APPLE)
   # _FILE_OFFSET_BITS=64 should not be set on Android in order to maintain
   # the behavior of the Android NDK from earlier versions.
   # See https://android-developers.googleblog.com/2017/09/introducing-android-native-development.html
-  if (NOT ANDROID)
+  if (NOT ANDROID AND NOT OHOS)
     add_definitions(-D_FILE_OFFSET_BITS=64)
     add_definitions(-D_LARGEFILE_SOURCE)
     add_definitions(-D_LARGEFILE64_SOURCE)
@@ -1171,7 +1171,7 @@ endif()
 
 # Linux/Android/Fuchsia common flags setup.
 # ---------------------------------
-if ((UNIX AND NOT APPLE) OR ANDROID)
+if ((UNIX AND NOT APPLE) OR ANDROID OR OHOS)
   # Enable position-independent code globally. This is needed because
   # some library targets are OBJECT libraries.
   set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
@@ -1203,7 +1203,7 @@ if ((UNIX AND NOT APPLE) AND USE_LLD)
 elseif (USE_GOLD)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=gold")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=gold")
-  if (NOT ANDROID)
+  if (NOT ANDROID AND NOT OHOS)
     # On Android, this isn't needed.  gcc in the NDK knows to look next to
     # it with -fuse-ld=gold, and clang gets a --gcc-toolchain flag passed
     # above.
@@ -1743,7 +1743,7 @@ int main() {
   endif()
 
   # linux-syscall-support
-  if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR ANDROID)
+  if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR ANDROID OR OHOS)
     include_directories(third_party/lss)
   endif()
   if (APPLE AND COMPILER_CLANG)
@@ -1992,7 +1992,7 @@ if (MINGW AND USE_LIBCXX)
   # force c++11 thread model
   add_definitions(-DABSL_FORCE_THREAD_IDENTITY_MODE=ABSL_THREAD_IDENTITY_MODE_USE_CPP11)
 endif()
-if (ANDROID)
+if (ANDROID OR OHOS)
   set(LIBRT "OFF" CACHE BOOL "")
 endif()
 if (ABSL_BUILD_TESTING)
@@ -2382,7 +2382,7 @@ if (USE_BUILTIN_CA_BUNDLE_CRT)
     set(ASIO_CA_BUNDLE_CRT_SRC "third_party/ca-certificates/ca-bundle.crt.win.s")
   endif()
 
-  if (ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+  if (OHOS OR ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
     enable_language(ASM)
     if (COMPILER_CLANG)
       set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wno-unused-command-line-argument")
@@ -3383,7 +3383,7 @@ if (CLI)
   if (NOT CMAKE_SKIP_INSTALL_RULES AND NOT WIN32)
     install(TARGETS yass_cli RUNTIME DESTINATION bin)
     # TODO add freebsd rc files
-    if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID)
+    if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID AND NOT OHOS)
       install(FILES yass.json.sample RENAME config.json DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/yass)
       install(FILES yass.service RENAME yass.service DESTINATION lib/systemd/system)
 
@@ -3423,7 +3423,7 @@ if (SERVER)
 
   if (NOT CMAKE_SKIP_INSTALL_RULES AND NOT WIN32)
     install(TARGETS yass_server RUNTIME DESTINATION bin)
-    if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID)
+    if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID AND NOT OHOS)
       install(FILES yass-server.json.sample RENAME server.json DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/yass)
       install(FILES yass-server.service RENAME yass-server.service DESTINATION lib/systemd/system)
     endif()
