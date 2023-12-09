@@ -866,6 +866,16 @@ func postStateStripBinaries() {
 		cmdRun([]string{objcopy, "--strip-debug", getAppName()}, false)
 		// to add a link to the debugging info into the stripped executable.
 		cmdRun([]string{objcopy, "--add-gnu-debuglink=" + getAppName() + ".dbg", getAppName()}, false)
+
+		// strip crashpad_handler as well if any
+		hasCrashpad := true
+		crashpadPath := "crashpad_handler"
+		if _, err := os.Stat(crashpadPath); errors.Is(err, os.ErrNotExist) {
+			hasCrashpad = false
+		}
+		if hasCrashpad {
+			cmdRun([]string{objcopy, "--strip-debug", crashpadPath}, false)
+		}
 	} else if systemNameFlag == "darwin" {
 		cmdRun([]string{"dsymutil", filepath.Join(getAppName(), "Contents", "MacOS", APPNAME),
 			"--statistics", "--papertrail", "-o", getAppName() + ".dSYM"}, false)
