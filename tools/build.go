@@ -72,6 +72,11 @@ var androidApiLevel int
 var androidSdkDir string
 var androidNdkDir string
 
+var harmonyAppAbi string
+var harmonyAbiTarget string
+
+var harmonyNdkDir string
+
 func getAppName() string {
 	if systemNameFlag == "windows" {
 		return APPNAME + ".exe"
@@ -158,6 +163,8 @@ func InitFlag() {
 	flag.IntVar(&androidApiLevel, "android-api", 24, "Select Android API Level")
 	flag.StringVar(&androidSdkDir, "android-sdk-dir", getEnv("ANDROID_SDK_ROOT", ""), "Android SDK Home Path")
 	flag.StringVar(&androidNdkDir, "android-ndk-dir", getEnv("ANDROID_NDK_ROOT", ""), "Android NDK Home Path")
+
+	flag.StringVar(&harmonyNdkDir, "harmony-ndk-dir", getEnv("HARMONY_NDK_ROOT", ""), "OpenHarmony NDK Home Path")
 
 	flag.Parse()
 
@@ -334,6 +341,20 @@ func getAndroidTargetAndAppAbi(arch string) (string, string) {
 	return "", ""
 }
 
+// ohos.toolchain.cmake
+func getHarmonyTargetAndAppAbi(arch string) (string, string) {
+	if arch == "x64" {
+		return "x86_64-linux-ohos", "x86_64"
+	} else if arch == "arm64" {
+		return "aarch64-linux-ohos", "arm64-v8a"
+	} else if arch == "arm" {
+		// armeabi for armv6
+		return "arm-linux-ohos", "armeabi-v7a"
+	}
+	glog.Fatalf("Invalid arch: %s", arch)
+	return "", ""
+}
+
 // https://docs.rust-embedded.org/embedonomicon/compiler-support.html
 func getGNUTargetTypeAndArch(arch string, subsystem string) (string, string) {
 	if arch == "amd64" || arch == "x86_64" {
@@ -391,7 +412,40 @@ func getGNUTargetTypeAndArch(arch string, subsystem string) (string, string) {
 	return "", ""
 }
 
-func getAndFixLibunwind() {
+func getAndFixAndroidLibunwind() {
+	getAndFixLibunwind("../third_party/android_toolchain/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.7/lib/linux", "linux")
+}
+
+func getAndFixHarmonyLibunwind() {
+	// FIX Runtime
+	getAndFixLibunwind(fmt.Sprintf("%s/native/llvm/lib/clang/12.0.1/lib", harmonyNdkDir), "")
+	// FIX libunwind
+	target_path := fmt.Sprintf("../third_party/llvm-build/Release+Asserts/lib")
+	source_path := fmt.Sprintf("%s/native/llvm/lib", harmonyNdkDir)
+	entries, err := os.ReadDir(source_path)
+	if err != nil {
+		glog.Fatalf("%v", err)
+	}
+	for _, entry := range entries {
+		if !strings.Contains(entry.Name(), "-ohos") {
+			continue;
+		}
+		if _, err = os.Stat(filepath.Join(target_path, entry.Name())); err == nil {
+			err = os.Remove(filepath.Join(target_path, entry.Name()))
+			if err != nil {
+				glog.Fatalf("%v", err)
+			}
+		}
+		err = os.Symlink(filepath.Join(source_path, entry.Name()),
+				filepath.Join(target_path, entry.Name()))
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
+		glog.Info("Created symbolic links at ", filepath.Join(target_path, entry.Name()))
+	}
+}
+
+func getAndFixLibunwind(source_path string, subdir string) {
 	// ln -sf $PWD/third_party/android_toolchain/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.7/lib/linux/i386 third_party/llvm-build/Release+Asserts/lib/clang/18/lib/linux
 	entries, err := os.ReadDir("../third_party/llvm-build/Release+Asserts/lib/clang")
 	if err != nil {
@@ -404,17 +458,19 @@ func getAndFixLibunwind() {
 	if llvm_version == "" {
 		glog.Fatalf("toolchain not found")
 	}
-	source_path := "../third_party/android_toolchain/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.7/lib/linux"
 	source_path, err = filepath.Abs(source_path)
 	if err != nil {
 		glog.Fatalf("%v", err)
 	}
-	target_path := fmt.Sprintf("../third_party/llvm-build/Release+Asserts/lib/clang/%s/lib/linux", llvm_version)
+	target_path := fmt.Sprintf("../third_party/llvm-build/Release+Asserts/lib/clang/%s/lib/%s", llvm_version, subdir)
 	entries, err = os.ReadDir(source_path)
 	if err != nil {
 		glog.Fatalf("%v", err)
 	}
 	for _, entry := range entries {
+		if subdir == "" && entry.Name() == "linux" {
+			continue;
+		}
 		if _, err = os.Stat(filepath.Join(target_path, entry.Name())); err == nil {
 			err = os.Remove(filepath.Join(target_path, entry.Name()))
 			if err != nil {
@@ -668,7 +724,17 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSTEM_PROCESSOR=%s", androidAppAbi))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_TARGET=%s%d", androidAbiTarget, androidApiLevel))
 		// FIXME patch llvm toolchain to find libunwind.a
-		getAndFixLibunwind();
+		getAndFixAndroidLibunwind();
+	}
+
+	if systemNameFlag == "harmony" {
+		harmonyAbiTarget, harmonyAppAbi = getHarmonyTargetAndAppAbi(archFlag)
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/Harmony.cmake", buildDir))
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DOHOS_ARCH=%s", harmonyAppAbi))
+
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DOHOS_SDK_NATIVE=%s/native", harmonyNdkDir))
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DLLVM_SYSROOT=%s/../third_party/llvm-build/Release+Asserts", buildDir))
+		getAndFixHarmonyLibunwind()
 	}
 
 	if systemNameFlag == "linux" && sysrootFlag != "" {
@@ -789,7 +855,7 @@ func postStateStripBinaries() {
 	if systemNameFlag == "windows" {
 		return
 	}
-	if systemNameFlag == "android" || systemNameFlag == "linux" || systemNameFlag == "freebsd" {
+	if systemNameFlag == "harmony" || systemNameFlag == "android" || systemNameFlag == "linux" || systemNameFlag == "freebsd" {
 		objcopy := filepath.Join("..", "third_party", "llvm-build", "Release+Asserts", "bin", "llvm-objcopy")
 		if _, err := os.Stat(objcopy); errors.Is(err, os.ErrNotExist) {
 			objcopy = "objcopy"
@@ -800,6 +866,16 @@ func postStateStripBinaries() {
 		cmdRun([]string{objcopy, "--strip-debug", getAppName()}, false)
 		// to add a link to the debugging info into the stripped executable.
 		cmdRun([]string{objcopy, "--add-gnu-debuglink=" + getAppName() + ".dbg", getAppName()}, false)
+
+		// strip crashpad_handler as well if any
+		hasCrashpad := true
+		crashpadPath := "crashpad_handler"
+		if _, err := os.Stat(crashpadPath); errors.Is(err, os.ErrNotExist) {
+			hasCrashpad = false
+		}
+		if hasCrashpad {
+			cmdRun([]string{objcopy, "--strip-debug", crashpadPath}, false)
+		}
 	} else if systemNameFlag == "darwin" {
 		cmdRun([]string{"dsymutil", filepath.Join(getAppName(), "Contents", "MacOS", APPNAME),
 			"--statistics", "--papertrail", "-o", getAppName() + ".dSYM"}, false)
@@ -1293,7 +1369,7 @@ func postStateArchives() map[string][]string {
 
 	ext := ".zip"
 
-	if systemNameFlag == "android" || systemNameFlag == "linux" || systemNameFlag == "freebsd" {
+	if systemNameFlag == "harmony" || systemNameFlag == "android" || systemNameFlag == "linux" || systemNameFlag == "freebsd" {
 		ext = ".tgz"
 	}
 
@@ -1370,7 +1446,7 @@ func postStateArchives() map[string][]string {
 	if systemNameFlag == "windows" {
 		archiveFiles(debugArchive, archivePrefix, []string{APPNAME + ".pdb"})
 		dbgPaths = append(dbgPaths, APPNAME+".pdb")
-	} else if systemNameFlag == "android" || systemNameFlag == "linux" || systemNameFlag == "freebsd" {
+	} else if systemNameFlag == "harmony" || systemNameFlag == "android" || systemNameFlag == "linux" || systemNameFlag == "freebsd" {
 		archiveFiles(debugArchive, archivePrefix, []string{getAppName() + ".dbg"})
 		dbgPaths = append(dbgPaths, APPNAME+".dbg")
 	} else if systemNameFlag == "darwin" {
