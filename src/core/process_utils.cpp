@@ -117,9 +117,13 @@ int ExecuteProcess(const std::vector<std::string>& params,
   close(stderr_pipe[1]);
 
   // Post Stage
-  fcntl(stdin_pipe[1], F_SETFD, FD_CLOEXEC | O_NONBLOCK);
-  fcntl(stdout_pipe[0], F_SETFD, FD_CLOEXEC | O_NONBLOCK);
-  fcntl(stderr_pipe[0], F_SETFD, FD_CLOEXEC | O_NONBLOCK);
+  fcntl(stdin_pipe[1], F_SETFD, FD_CLOEXEC);
+  fcntl(stdout_pipe[0], F_SETFD, FD_CLOEXEC);
+  fcntl(stderr_pipe[0], F_SETFD, FD_CLOEXEC);
+
+  fcntl(stdin_pipe[1], F_SETFL, O_NONBLOCK | fcntl(stdin_pipe[1], F_GETFL));
+  fcntl(stdout_pipe[0], F_SETFL, O_NONBLOCK | fcntl(stdout_pipe[0], F_GETFL));
+  fcntl(stderr_pipe[0], F_SETFL, O_NONBLOCK | fcntl(stderr_pipe[0], F_GETFL));
   std::ostringstream stdout_ss, stderr_ss;
   int wstatus;
 
