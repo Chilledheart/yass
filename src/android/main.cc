@@ -54,6 +54,11 @@ static int GetCurrentLocale(JNIEnv *env, std::string* result);
 static int OpenApkAsset(const std::string& file_path,
                         gurl_base::MemoryMappedFile::Region* region);
 
+[[maybe_unused]]
+static int CallOnNativeStarted(int error_code);
+[[maybe_unused]]
+static int CallOnNativeStopped(int error_code);
+
 extern "C"
 JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeCreate(JNIEnv *env, jobject obj);
 extern "C"
@@ -71,31 +76,14 @@ JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getCipher(JNIEnv *env, jobj
 extern "C"
 JNIEXPORT jobjectArray JNICALL Java_it_gui_yass_MainActivity_getCipherStrings(JNIEnv *env, jobject obj);
 
+extern "C"
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStart(JNIEnv *env, jobject obj);
+extern "C"
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStop(JNIEnv *env, jobject obj);
+
 static std::unique_ptr<Worker> g_worker;
 
-enum StartState {
-  STOPPED = 0,
-  STOPPING,
-  STARTING,
-  STARTED,
-};
-
-static std::atomic<StartState> g_state(STOPPED);
-
 #if 0
-static const char* state_to_str(StartState state) {
-  switch(state) {
-    case STOPPED:
-      return "STOPPED";
-    case STOPPING:
-      return "STOPPING";
-    case STARTING:
-      return "STARTING";
-    case STARTED:
-      return "STARTED";
-  }
-}
-
 static void ToggleWorker() {
   switch(g_state) {
     case STOPPED:
@@ -543,6 +531,64 @@ int OpenApkAsset(const std::string& file_path,
   return fd;
 }
 
+static int CallOnNativeStarted(int error_code) {
+  JavaVM* java_vm = g_jvm;
+  JNIEnv* java_env = nullptr;
+
+  jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
+  if (jni_return == JNI_ERR)
+    return -1;
+
+  jni_return = java_vm->AttachCurrentThread(&java_env, nullptr);
+  if (jni_return != JNI_OK)
+    return -1;
+
+  jclass activity_clazz = java_env->GetObjectClass(g_obj);
+  if (activity_clazz == nullptr)
+    return -1;
+
+  jmethodID method_id = java_env->GetMethodID(activity_clazz, "onNativeStarted", "(I)V");
+  if (method_id == nullptr)
+    return -1;
+
+  java_env->CallVoidMethod(g_obj, method_id, error_code);
+
+  jni_return = java_vm->DetachCurrentThread();
+  if (jni_return != JNI_OK)
+    return -1;
+
+  return 0;
+}
+
+static int CallOnNativeStopped() {
+  JavaVM* java_vm = g_jvm;
+  JNIEnv* java_env = nullptr;
+
+  jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
+  if (jni_return == JNI_ERR)
+    return -1;
+
+  jni_return = java_vm->AttachCurrentThread(&java_env, nullptr);
+  if (jni_return != JNI_OK)
+    return -1;
+
+  jclass activity_clazz = java_env->GetObjectClass(g_obj);
+  if (activity_clazz == nullptr)
+    return -1;
+
+  jmethodID method_id = java_env->GetMethodID(activity_clazz, "onNativeStopped", "()V");
+  if (method_id == nullptr)
+    return -1;
+
+  java_env->CallVoidMethod(g_obj, method_id);
+
+  jni_return = java_vm->DetachCurrentThread();
+  if (jni_return != JNI_OK)
+    return -1;
+
+  return 0;
+}
+
 // called from java thread
 JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeCreate(JNIEnv *env, jobject obj) {
   jint jni_return = env->GetJavaVM(&g_jvm);
@@ -577,11 +623,13 @@ JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeCreate(JNIEnv *env,
   Init(env);
 
   g_env = nullptr;
+  g_obj = env->NewGlobalRef(obj);
 }
 
 // called from java thread
 JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeDestroy(JNIEnv *env, jobject obj) {
   Shutdown();
+  env->DeleteGlobalRef(g_obj);
   g_jvm = nullptr;
   g_obj = nullptr;
   g_env = nullptr;
@@ -632,6 +680,24 @@ CIPHER_METHOD_VALID_MAP(XX)
     env->SetObjectArrayElement(jarray, i, env->NewStringUTF(methods[i]));
   }
   return jarray;
+}
+
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStart(JNIEnv *env, jobject obj) {
+  g_worker->Start([&](asio::error_code ec) {
+    if (ec) {
+      LOG(WARNING) << "Start Failed: " << ec;
+    } else {
+      LOG(WARNING) << "Started";
+      config::SaveConfig();
+    }
+    CallOnNativeStarted(ec.value());
+  });
+}
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStop(JNIEnv *env, jobject obj) {
+  g_worker->Stop([&]() {
+    LOG(WARNING) << "Stopped";
+    CallOnNativeStopped();
+  });
 }
 
 #endif // __ANDROID__

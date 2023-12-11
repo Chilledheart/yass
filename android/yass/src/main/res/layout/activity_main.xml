@@ -84,12 +84,14 @@
             android:id="@+id/startButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:onClick="onStartClicked"
             android:text="Start" />
 
         <Button
             android:id="@+id/stopButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:onClick="onStopClicked"
             android:text="Stop" />
 
     </LinearLayout>

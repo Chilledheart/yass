@@ -5,10 +5,12 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.Button;
 import android.widget.Spinner;
+import android.widget.TextView;
 
 import it.gui.yass.databinding.ActivityMainBinding;
 
@@ -67,7 +69,83 @@ public class MainActivity extends Activity {
     private native String getPassword();
 
     private native int getCipher();
+
     private native String[] getCipherStrings();
+
+    enum NativeMachineState {
+        STOPPED,
+        STOPPING,
+      STARTING,
+      STARTED,
+    };
+
+    private NativeMachineState state = NativeMachineState.STOPPED;
+
+    public void onStartClicked(View view) {
+        if (state == NativeMachineState.STOPPED) {
+            Button startButton = findViewById(R.id.startButton);
+            startButton.setEnabled(false);
+
+            TextView statusTextView = findViewById(R.id.statusTextView);
+            statusTextView.setText("STARTING");
+            state = NativeMachineState.STARTING;
+            nativeStart();
+        }
+
+    }
+
+    public void onStopClicked(View view) {
+        if (state == NativeMachineState.STARTED) {
+            Button stopButton = findViewById(R.id.stopButton);
+            stopButton.setEnabled(false);
+
+            TextView statusTextView = findViewById(R.id.statusTextView);
+            statusTextView.setText("STOPPING");
+            state = NativeMachineState.STOPPING;
+            nativeStop();
+        }
+    }
+
+    private native void nativeStart();
+
+    @SuppressWarnings("unused")
+    private void onNativeStarted(int error_code) {
+        this.runOnUiThread(new Runnable() {
+            public void run() {
+                if (error_code != 0) {
+                    state = NativeMachineState.STOPPED;
+                    Button startButton = findViewById(R.id.startButton);
+                    startButton.setEnabled(true);
+
+                    TextView statusTextView = findViewById(R.id.statusTextView);
+                    statusTextView.setText("STOPPED error:" + error_code);
+                } else {
+                    state = NativeMachineState.STARTED;
+                    Button stopButton = findViewById(R.id.stopButton);
+                    stopButton.setEnabled(true);
+
+                    TextView statusTextView = findViewById(R.id.statusTextView);
+                    statusTextView.setText("STARTED");
+                }
+            }
+        });
+    }
+
+    private native void nativeStop();
+
+    @SuppressWarnings("unused")
+    private void onNativeStopped() {
+        this.runOnUiThread(new Runnable() {
+            public void run() {
+                state = NativeMachineState.STOPPED;
+                Button startButton = findViewById(R.id.startButton);
+                startButton.setEnabled(true);
+
+                TextView statusTextView = findViewById(R.id.statusTextView);
+                statusTextView.setText("STOPPED");
+            }
+        });
+    }
 
     @SuppressWarnings("unused")
     public int getIpAddress() {
