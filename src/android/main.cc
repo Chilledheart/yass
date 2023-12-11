@@ -59,7 +59,17 @@ JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeCreate(JNIEnv *env,
 extern "C"
 JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeDestroy(JNIEnv *env, jobject obj);
 extern "C"
-JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_notifyUnicodeChar(JNIEnv *env, jobject obj, jint unicode);
+JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getServerHost(JNIEnv *env, jobject obj);
+extern "C"
+JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getServerPort(JNIEnv *env, jobject obj);
+extern "C"
+JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getUsername(JNIEnv *env, jobject obj);
+extern "C"
+JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getPassword(JNIEnv *env, jobject obj);
+extern "C"
+JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getCipher(JNIEnv *env, jobject obj);
+extern "C"
+JNIEXPORT jobjectArray JNICALL Java_it_gui_yass_MainActivity_getCipherStrings(JNIEnv *env, jobject obj);
 
 static std::unique_ptr<Worker> g_worker;
 
@@ -575,6 +585,53 @@ JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeDestroy(JNIEnv *env
   g_jvm = nullptr;
   g_obj = nullptr;
   g_env = nullptr;
+}
+
+JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getServerHost(JNIEnv *env, jobject obj) {
+  return env->NewStringUTF(absl::GetFlag(FLAGS_server_host).c_str());
+}
+
+JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getServerPort(JNIEnv *env, jobject obj) {
+  return absl::GetFlag(FLAGS_server_port);
+}
+
+JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getUsername(JNIEnv *env, jobject obj) {
+  return env->NewStringUTF(absl::GetFlag(FLAGS_username).c_str());
+}
+
+JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getPassword(JNIEnv *env, jobject obj) {
+  return env->NewStringUTF(absl::GetFlag(FLAGS_password).c_str());
+}
+
+JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getCipher(JNIEnv *env, jobject obj) {
+  std::vector<cipher_method> methods_idxes = {
+#define XX(num, name, string) CRYPTO_##name,
+CIPHER_METHOD_VALID_MAP(XX)
+#undef XX
+  };
+  int method_idx = [&](cipher_method method) -> int {
+    auto it = std::find(methods_idxes.begin(), methods_idxes.end(), method);
+    if (it == methods_idxes.end()) {
+      return 0;
+    }
+    return it - methods_idxes.begin();
+  }(absl::GetFlag(FLAGS_method).method);
+  return method_idx;
+}
+
+JNIEXPORT jobjectArray JNICALL Java_it_gui_yass_MainActivity_getCipherStrings(JNIEnv *env, jobject obj) {
+  std::vector<const char*> methods = {
+#define XX(num, name, string) CRYPTO_##name##_STR,
+CIPHER_METHOD_VALID_MAP(XX)
+#undef XX
+  };
+  jobjectArray jarray = env->NewObjectArray(methods.size(),
+                                            env->FindClass("java/lang/String"),
+                                            env->NewStringUTF(""));
+  for (unsigned int i = 0; i < methods.size(); ++i) {
+    env->SetObjectArrayElement(jarray, i, env->NewStringUTF(methods[i]));
+  }
+  return jarray;
 }
 
 #endif // __ANDROID__

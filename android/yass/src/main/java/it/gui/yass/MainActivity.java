@@ -5,6 +5,10 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.widget.ArrayAdapter;
+import android.widget.EditText;
+import android.widget.Button;
+import android.widget.Spinner;
 
 import it.gui.yass.databinding.ActivityMainBinding;
 
@@ -19,7 +23,29 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+
         onNativeCreate();
+
+        EditText serverHostEditText = findViewById(R.id.serverHostEditText);
+        serverHostEditText.setText(getServerHost());
+        EditText serverPortEditText = findViewById(R.id.serverPortEditText);
+        serverPortEditText.setText(Integer.toString(getServerPort()));
+        EditText usernameEditText = findViewById(R.id.usernameEditText);
+        usernameEditText.setText(getUsername());
+        EditText passwordEditText = findViewById(R.id.passwordEditText);
+        passwordEditText.setText(getPassword());
+
+        Spinner cipherSpinner = findViewById(R.id.cipherSpinner);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
+                android.R.layout.simple_spinner_item, getCipherStrings());
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        cipherSpinner.setAdapter(adapter);
+        cipherSpinner.setSelection(getCipher());
+
+        Button stopButton = findViewById(R.id.stopButton);
+        stopButton.setEnabled(false);
     }
 
     @Override
@@ -31,6 +57,17 @@ public class MainActivity extends Activity {
     private native void onNativeCreate();
 
     private native void onNativeDestroy();
+
+    private native String getServerHost();
+
+    private native int getServerPort();
+
+    private native String getUsername();
+
+    private native String getPassword();
+
+    private native int getCipher();
+    private native String[] getCipherStrings();
 
     @SuppressWarnings("unused")
     public int getIpAddress() {
