@@ -65,5 +65,15 @@ public class YassActivity extends NativeActivity {
         return "/system/lib/";
     }
 
+    @SuppressWarnings("unused")
+    private String getCacheLibraryDirectory() {
+        return this.getApplicationContext().getCacheDir().toString();
+    }
+
+    @SuppressWarnings("unused")
+    private String getDataLibraryDirectory() {
+        return this.getApplicationContext().getDir("data", MODE_PRIVATE).toString();
+    }
+
     private native void notifyUnicodeChar(int unicode);
 }

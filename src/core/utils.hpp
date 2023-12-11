@@ -21,6 +21,8 @@
 
 #ifdef __ANDROID__
 extern android_app *a_app;
+extern std::string a_cache_dir;
+extern std::string a_data_dir;
 #endif
 
 using gurl_base::PlatformFile;

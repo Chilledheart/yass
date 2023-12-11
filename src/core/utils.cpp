@@ -25,6 +25,8 @@
 
 #ifdef __ANDROID__
 android_app *a_app = nullptr;
+std::string a_cache_dir;
+std::string a_data_dir;
 #endif
 
 std::optional<int> StringToInteger(const std::string& value) {
@@ -247,16 +249,19 @@ bool GetTempDir(std::string *path) {
     *path = tmp;
     return true;
   }
-#if 0 // BUILDFLAG(IS_ANDROID)
-  return PathService::Get(DIR_CACHE, path);
-#else
+#if BUILDFLAG(IS_ANDROID)
+  // return PathService::Get(DIR_CACHE, path);
+  if (!a_cache_dir.empty()) {
+    *path = a_cache_dir;
+    return true;
+  }
+#endif
 #if defined(__ANDROID__)
   *path = "/data/local/tmp";
 #else
   *path = "/tmp";
 #endif
   return true;
-#endif
 }
 
 std::string GetHomeDir() {
