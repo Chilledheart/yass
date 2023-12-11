@@ -14,6 +14,8 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import it.gui.yass.databinding.ActivityMainBinding;
 
@@ -99,6 +101,8 @@ public class MainActivity extends Activity {
 
     public void onStopClicked(View view) {
         if (state == NativeMachineState.STARTED) {
+            stopRefreshPoll();
+
             Button stopButton = findViewById(R.id.stopButton);
             stopButton.setEnabled(false);
 
@@ -130,6 +134,8 @@ public class MainActivity extends Activity {
 
                     TextView statusTextView = findViewById(R.id.statusTextView);
                     statusTextView.setText(R.string.status_started);
+
+                    startRefreshPoll();
                 }
             }
         });
@@ -146,9 +152,38 @@ public class MainActivity extends Activity {
                 startButton.setEnabled(true);
 
                 TextView statusTextView = findViewById(R.id.statusTextView);
-                statusTextView.setText(R.string.status_stopped);
+                Resources res = getResources();
+                statusTextView.setText(String.format(res.getString(R.string.status_stopped), getServerHost(), getServerPort()));
             }
         });
+    }
+
+    // first connection number, then rx rate, then tx rate
+
+    private native double[] getRealtimeTransferRate();
+
+    private Timer mRefreshTimer;
+    private TimerTask mRefreshTimerTask;
+
+    private void startRefreshPoll() {
+        mRefreshTimer = new Timer();
+        mRefreshTimerTask = new TimerTask() {
+            @Override
+            public void run() {
+                double[] result = getRealtimeTransferRate();
+                TextView statusTextView = findViewById(R.id.statusTextView);
+                Resources res = getResources();
+                statusTextView.setText(String.format(res.getString(R.string.status_started_with_rate), (int) result[0], result[1], result[2]));
+            }
+        };
+        mRefreshTimer.schedule(mRefreshTimerTask, 0, 1000L);
+    }
+
+    private void stopRefreshPoll() {
+        if (mRefreshTimer != null) {
+            mRefreshTimer.cancel();
+            mRefreshTimer.purge();
+        }
     }
 
     @SuppressWarnings("unused")

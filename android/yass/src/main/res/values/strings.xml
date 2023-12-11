@@ -8,11 +8,13 @@
     <string name="label_username">Username</string>
     <string name="label_password">Password</string>
     <string name="label_cipher">Cipher/Method</string>
-    <string name="status_stopped">STOPPED</string>
-    <string name="status_started">STARTED</string>
+    <string name="status_stopped">Disconnected with %s:%d</string>
+    <string name="status_started">Connected with conns: 0</string>
     <string name="status_stopping">STOPPING</string>
     <string name="status_starting">STARTING</string>
-    <string name="status_started_with_error">STOPPED error: %d</string>
+    <string name="status_started_with_error">Failed to connect due to %d</string>
+    <string name="status_started_with_rate">Connected with conns: %d rx rate: %f tx rate: %f</string>
     <string name="button_start">START</string>
     <string name="button_stop">STOP</string>
+    <string name="status_ready">READY</string>
 </resources>

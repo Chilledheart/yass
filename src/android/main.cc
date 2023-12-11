@@ -22,6 +22,7 @@
 #include "core/logging.hpp"
 #include "i18n/icu_util.hpp"
 #include "core/utils.hpp"
+#include "cli/cli_connection_stats.hpp"
 #include "cli/cli_worker.hpp"
 #include "config/config.hpp"
 #include "crashpad_helper.hpp"
@@ -80,6 +81,9 @@ extern "C"
 JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStart(JNIEnv *env, jobject obj);
 extern "C"
 JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStop(JNIEnv *env, jobject obj);
+
+extern "C"
+JNIEXPORT jdoubleArray JNICALL Java_it_gui_yass_MainActivity_getRealtimeTransferRate(JNIEnv *env, jobject obj);
 
 static std::unique_ptr<Worker> g_worker;
 
@@ -682,7 +686,15 @@ CIPHER_METHOD_VALID_MAP(XX)
   return jarray;
 }
 
+static uint64_t g_last_sync_time;
+static uint64_t g_last_tx_bytes;
+static uint64_t g_last_rx_bytes;
+
 JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStart(JNIEnv *env, jobject obj) {
+  g_last_sync_time = GetMonotonicTime();
+  g_last_tx_bytes = 0;
+  g_last_rx_bytes = 0;
+
   g_worker->Start([&](asio::error_code ec) {
     if (ec) {
       LOG(WARNING) << "Start Failed: " << ec;
@@ -693,11 +705,35 @@ JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStart(JNIEnv *env, jo
     CallOnNativeStarted(ec.value());
   });
 }
+
 JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStop(JNIEnv *env, jobject obj) {
   g_worker->Stop([&]() {
     LOG(WARNING) << "Stopped";
     CallOnNativeStopped();
   });
+}
+
+JNIEXPORT jdoubleArray JNICALL Java_it_gui_yass_MainActivity_getRealtimeTransferRate(JNIEnv *env, jobject obj) {
+  uint64_t sync_time = GetMonotonicTime();
+  uint64_t delta_time = sync_time - g_last_sync_time;
+  static double rx_rate = 0;
+  static double tx_rate = 0;
+  if (delta_time > NS_PER_SECOND) {
+    uint64_t rx_bytes = cli::total_rx_bytes;
+    uint64_t tx_bytes = cli::total_tx_bytes;
+    rx_rate = static_cast<double>(rx_bytes - g_last_rx_bytes) / delta_time *
+               NS_PER_SECOND;
+    tx_rate = static_cast<double>(tx_bytes - g_last_tx_bytes) / delta_time *
+               NS_PER_SECOND;
+    g_last_sync_time = sync_time;
+    g_last_rx_bytes = rx_bytes;
+    g_last_tx_bytes = tx_bytes;
+  }
+  double dresult[3] = { g_worker->currentConnections(), rx_rate, tx_rate };
+  auto result = env->NewDoubleArray(3);
+  env->SetDoubleArrayRegion(result, 0, 3, dresult);
+  LOG(INFO) << "polling: rx rate " << rx_rate << " tx rate " << tx_rate;
+  return result;
 }
 
 #endif // __ANDROID__

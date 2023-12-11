@@ -78,7 +78,7 @@
             android:id="@+id/statusTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/status_stopped" />
+            android:text="@string/status_ready" />
 
         <Button
             android:id="@+id/startButton"
