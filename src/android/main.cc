@@ -59,6 +59,8 @@ static int GetNativeLibraryDirectory(std::string* result);
 static int GetCacheLibraryDirectory(std::string* result);
 [[maybe_unused]]
 static int GetDataLibraryDirectory(std::string* result);
+[[maybe_unused]]
+static int GetCurrentLocale(std::string* result);
 
 extern "C"
 JNIEXPORT void JNICALL Java_it_gui_yass_YassActivity_notifyUnicodeChar(JNIEnv *env, jobject obj, jint unicode);
@@ -812,6 +814,46 @@ int GetDataLibraryDirectory(std::string* data_dir) {
   return 0;
 }
 
+int GetCurrentLocale(std::string* locale_name) {
+  JavaVM* java_vm = a_app->activity->vm;
+  JNIEnv* java_env = nullptr;
+
+  jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
+  if (jni_return == JNI_ERR)
+    return -1;
+
+  jni_return = java_vm->AttachCurrentThread(&java_env, nullptr);
+  if (jni_return != JNI_OK)
+    return -2;
+
+  jclass native_activity_clazz = java_env->GetObjectClass(a_app->activity->clazz);
+  if (native_activity_clazz == nullptr)
+    return -3;
+
+  jmethodID method_id = java_env->GetMethodID(native_activity_clazz, "getCurrentLocale", "()Ljava/lang/String;");
+  if (method_id == nullptr)
+    return -4;
+
+  jobject name = java_env->CallObjectMethod(a_app->activity->clazz, method_id);
+  if (name == nullptr)
+    return -5;
+
+  const char* name_str;
+  name_str = java_env->GetStringUTFChars((jstring)name, nullptr);
+  if (name_str == nullptr)
+    return -6;
+
+  *locale_name = name_str;
+
+  java_env->ReleaseStringUTFChars((jstring)name, name_str);
+
+  jni_return = java_vm->DetachCurrentThread();
+  if (jni_return != JNI_OK)
+    return -7;
+
+  return 0;
+}
+
 // called from java thread
 JNIEXPORT void JNICALL Java_it_gui_yass_YassActivity_notifyUnicodeChar(JNIEnv *env, jobject obj, jint unicode) {
   const uint8_t *remaining_buffer = reinterpret_cast<uint8_t*>(&unicode);
@@ -854,6 +896,11 @@ void android_main(android_app* app) {
   LOG(INFO) << "cache dir: " << cache_path;
   LOG(INFO) << "data dir: " << data_path;
   LOG(INFO) << "internal data path: " << a_app->activity->internalDataPath;
+
+  // possible values: en_US, zh_SG_#Hans, zh_CN_#Hans, zh_HK_#Hant
+  std::string locale_name;
+  CHECK_EQ(0, GetCurrentLocale(&locale_name));
+  LOG(INFO) << "current locale: " << locale_name;
 
   WorkFunc();
 }
