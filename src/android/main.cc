@@ -410,17 +410,17 @@ CIPHER_METHOD_VALID_MAP(XX)
 
     ImGui::Begin("Yet Another Shadow Socket");
 
-    ImGui::InputText("server_host", server_host, IM_ARRAYSIZE(server_host));
-    ImGui::InputInt("server_port", &server_port);
-    ImGui::InputText("username", username, IM_ARRAYSIZE(username));
-    ImGui::InputText("password", password, IM_ARRAYSIZE(password),
+    ImGui::InputText("Server Host", server_host, IM_ARRAYSIZE(server_host));
+    ImGui::InputInt("Server Port", &server_port);
+    ImGui::InputText("Username", username, IM_ARRAYSIZE(username));
+    ImGui::InputText("Password", password, IM_ARRAYSIZE(password),
                      ImGuiInputTextFlags_Password);
 
-    ImGui::ListBox("cipher", &method_idx,
+    ImGui::ListBox("Cipher", &method_idx,
                    &methods[0], static_cast<int>(methods.size()), 2);
-    ImGui::InputText("local_host", local_host, IM_ARRAYSIZE(local_host));
-    ImGui::InputInt("local_port", &local_port);
-    ImGui::InputInt("timeout", &timeout);
+    ImGui::InputText("Local Host", local_host, IM_ARRAYSIZE(local_host));
+    ImGui::InputInt("Local Port", &local_port);
+    ImGui::InputInt("Timeout", &timeout);
     ImGui::Text("Current Ip Address: %s", ipaddress.c_str());
 
     ImGui::Checkbox("Option Window", &show_option_window);
