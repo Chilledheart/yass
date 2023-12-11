@@ -3,4 +3,16 @@
     <string name="title_home">Home</string>
     <string name="title_dashboard">Dashboard</string>
     <string name="title_notifications">Notifications</string>
+    <string name="label_server_host">Server Host</string>
+    <string name="label_server_port">Server Port</string>
+    <string name="label_username">Username</string>
+    <string name="label_password">Password</string>
+    <string name="label_cipher">Cipher/Method</string>
+    <string name="status_stopped">STOPPED</string>
+    <string name="status_started">STARTED</string>
+    <string name="status_stopping">STOPPING</string>
+    <string name="status_starting">STARTING</string>
+    <string name="status_started_with_error">STOPPED error: %d</string>
+    <string name="button_start">START</string>
+    <string name="button_stop">STOP</string>
 </resources>

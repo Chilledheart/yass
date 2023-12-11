@@ -3,6 +3,7 @@ package it.gui.yass;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
+import android.content.res.Resources;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.view.View;
@@ -11,6 +12,8 @@ import android.widget.EditText;
 import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
+
+import java.util.Locale;
 
 import it.gui.yass.databinding.ActivityMainBinding;
 
@@ -33,14 +36,14 @@ public class MainActivity extends Activity {
         EditText serverHostEditText = findViewById(R.id.serverHostEditText);
         serverHostEditText.setText(getServerHost());
         EditText serverPortEditText = findViewById(R.id.serverPortEditText);
-        serverPortEditText.setText(Integer.toString(getServerPort()));
+        serverPortEditText.setText(String.format(getLocale(), "%d", getServerPort()));
         EditText usernameEditText = findViewById(R.id.usernameEditText);
         usernameEditText.setText(getUsername());
         EditText passwordEditText = findViewById(R.id.passwordEditText);
         passwordEditText.setText(getPassword());
 
         Spinner cipherSpinner = findViewById(R.id.cipherSpinner);
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
                 android.R.layout.simple_spinner_item, getCipherStrings());
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         cipherSpinner.setAdapter(adapter);
@@ -75,9 +78,9 @@ public class MainActivity extends Activity {
     enum NativeMachineState {
         STOPPED,
         STOPPING,
-      STARTING,
-      STARTED,
-    };
+        STARTING,
+        STARTED,
+    }
 
     private NativeMachineState state = NativeMachineState.STOPPED;
 
@@ -87,7 +90,7 @@ public class MainActivity extends Activity {
             startButton.setEnabled(false);
 
             TextView statusTextView = findViewById(R.id.statusTextView);
-            statusTextView.setText("STARTING");
+            statusTextView.setText(R.string.status_starting);
             state = NativeMachineState.STARTING;
             nativeStart();
         }
@@ -100,7 +103,7 @@ public class MainActivity extends Activity {
             stopButton.setEnabled(false);
 
             TextView statusTextView = findViewById(R.id.statusTextView);
-            statusTextView.setText("STOPPING");
+            statusTextView.setText(R.string.status_stopping);
             state = NativeMachineState.STOPPING;
             nativeStop();
         }
@@ -118,14 +121,15 @@ public class MainActivity extends Activity {
                     startButton.setEnabled(true);
 
                     TextView statusTextView = findViewById(R.id.statusTextView);
-                    statusTextView.setText("STOPPED error:" + error_code);
+                    Resources res = getResources();
+                    statusTextView.setText(String.format(res.getString(R.string.status_started_with_error), error_code));
                 } else {
                     state = NativeMachineState.STARTED;
                     Button stopButton = findViewById(R.id.stopButton);
                     stopButton.setEnabled(true);
 
                     TextView statusTextView = findViewById(R.id.statusTextView);
-                    statusTextView.setText("STARTED");
+                    statusTextView.setText(R.string.status_started);
                 }
             }
         });
@@ -142,7 +146,7 @@ public class MainActivity extends Activity {
                 startButton.setEnabled(true);
 
                 TextView statusTextView = findViewById(R.id.statusTextView);
-                statusTextView.setText("STOPPED");
+                statusTextView.setText(R.string.status_stopped);
             }
         });
     }
@@ -177,6 +181,10 @@ public class MainActivity extends Activity {
     @SuppressWarnings("unused")
     private String getCurrentLocale() {
         return this.getApplicationContext().getResources().getConfiguration().getLocales().get(0).toString();
+    }
+
+    private Locale getLocale() {
+        return this.getApplicationContext().getResources().getConfiguration().getLocales().get(0);
     }
 
     @SuppressWarnings("unused")
