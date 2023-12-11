@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">YASS</string>
+    <string name="title_home">Home</string>
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_notifications">Notifications</string>
+    <string name="label_server_host">服务器域名</string>
+    <string name="label_server_port">服务器端口号</string>
+    <string name="label_username">用户名</string>
+    <string name="label_password">密码</string>
+    <string name="label_cipher">加密方式</string>
+    <string name="status_stopped">断开连接于服务器 %s:%d</string>
+    <string name="status_started">已产生连接: 0</string>
+    <string name="status_stopping">停止中</string>
+    <string name="status_starting">启动中</string>
+    <string name="status_started_with_error">无法连接因: %d</string>
+    <string name="button_start">启动</string>
+    <string name="button_stop">停止</string>
+    <string name="status_started_with_rate">已产生连接:  %d  上传速率:  %f  下载速率:  %f</string>
+    <string name="status_ready">就绪</string>
+    <string name="label_timeout">超时时间</string>
+</resources>

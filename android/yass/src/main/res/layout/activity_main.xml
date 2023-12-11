@@ -15,7 +15,7 @@
             android:id="@+id/serverHostTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Server Host" />
+            android:text="@string/label_server_host" />
 
         <EditText
             android:id="@+id/serverHostEditText"
@@ -28,7 +28,7 @@
             android:id="@+id/serverPortTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Server Port" />
+            android:text="@string/label_server_port" />
 
         <EditText
             android:id="@+id/serverPortEditText"
@@ -41,7 +41,7 @@
             android:id="@+id/usernameTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Username" />
+            android:text="@string/label_username" />
 
         <EditText
             android:id="@+id/usernameEditText"
@@ -54,7 +54,7 @@
             android:id="@+id/passwordTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Password" />
+            android:text="@string/label_password" />
 
         <EditText
             android:id="@+id/passwordEditText"
@@ -67,7 +67,7 @@
             android:id="@+id/cipherTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Cipher" />
+            android:text="@string/label_cipher" />
 
         <Spinner
             android:id="@+id/cipherSpinner"
@@ -75,22 +75,37 @@
             android:layout_height="wrap_content" />
 
         <TextView
+            android:id="@+id/timeoutTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/label_timeout" />
+
+        <EditText
+            android:id="@+id/timeoutEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:inputType="number" />
+
+        <TextView
             android:id="@+id/statusTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="STOPPED" />
+            android:text="@string/status_ready" />
 
         <Button
             android:id="@+id/startButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Start" />
+            android:onClick="onStartClicked"
+            android:text="@string/button_start" />
 
         <Button
             android:id="@+id/stopButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Stop" />
+            android:onClick="onStopClicked"
+            android:text="@string/button_stop" />
 
     </LinearLayout>
 </android.support.constraint.ConstraintLayout>

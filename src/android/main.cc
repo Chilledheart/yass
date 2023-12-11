@@ -22,6 +22,7 @@
 #include "core/logging.hpp"
 #include "i18n/icu_util.hpp"
 #include "core/utils.hpp"
+#include "cli/cli_connection_stats.hpp"
 #include "cli/cli_worker.hpp"
 #include "config/config.hpp"
 #include "crashpad_helper.hpp"
@@ -54,6 +55,11 @@ static int GetCurrentLocale(JNIEnv *env, std::string* result);
 static int OpenApkAsset(const std::string& file_path,
                         gurl_base::MemoryMappedFile::Region* region);
 
+[[maybe_unused]]
+static int CallOnNativeStarted(int error_code);
+[[maybe_unused]]
+static int CallOnNativeStopped(int error_code);
+
 extern "C"
 JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeCreate(JNIEnv *env, jobject obj);
 extern "C"
@@ -70,32 +76,33 @@ extern "C"
 JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getCipher(JNIEnv *env, jobject obj);
 extern "C"
 JNIEXPORT jobjectArray JNICALL Java_it_gui_yass_MainActivity_getCipherStrings(JNIEnv *env, jobject obj);
+extern "C"
+JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getTimeout(JNIEnv *env, jobject obj);
+
+extern "C"
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setServerHost(JNIEnv *env, jobject obj, jobject value);
+extern "C"
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setServerPort(JNIEnv *env, jobject obj, jint value);
+extern "C"
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setUsername(JNIEnv *env, jobject obj, jobject value);
+extern "C"
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setPassword(JNIEnv *env, jobject obj, jobject value);
+extern "C"
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setCipher(JNIEnv *env, jobject obj, jint value);
+extern "C"
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setTimeout(JNIEnv *env, jobject obj, jint value);
+
+extern "C"
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStart(JNIEnv *env, jobject obj);
+extern "C"
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStop(JNIEnv *env, jobject obj);
+
+extern "C"
+JNIEXPORT jdoubleArray JNICALL Java_it_gui_yass_MainActivity_getRealtimeTransferRate(JNIEnv *env, jobject obj);
 
 static std::unique_ptr<Worker> g_worker;
 
-enum StartState {
-  STOPPED = 0,
-  STOPPING,
-  STARTING,
-  STARTED,
-};
-
-static std::atomic<StartState> g_state(STOPPED);
-
 #if 0
-static const char* state_to_str(StartState state) {
-  switch(state) {
-    case STOPPED:
-      return "STOPPED";
-    case STOPPING:
-      return "STOPPING";
-    case STARTING:
-      return "STARTING";
-    case STARTED:
-      return "STARTED";
-  }
-}
-
 static void ToggleWorker() {
   switch(g_state) {
     case STOPPED:
@@ -543,6 +550,64 @@ int OpenApkAsset(const std::string& file_path,
   return fd;
 }
 
+static int CallOnNativeStarted(int error_code) {
+  JavaVM* java_vm = g_jvm;
+  JNIEnv* java_env = nullptr;
+
+  jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
+  if (jni_return == JNI_ERR)
+    return -1;
+
+  jni_return = java_vm->AttachCurrentThread(&java_env, nullptr);
+  if (jni_return != JNI_OK)
+    return -1;
+
+  jclass activity_clazz = java_env->GetObjectClass(g_obj);
+  if (activity_clazz == nullptr)
+    return -1;
+
+  jmethodID method_id = java_env->GetMethodID(activity_clazz, "onNativeStarted", "(I)V");
+  if (method_id == nullptr)
+    return -1;
+
+  java_env->CallVoidMethod(g_obj, method_id, error_code);
+
+  jni_return = java_vm->DetachCurrentThread();
+  if (jni_return != JNI_OK)
+    return -1;
+
+  return 0;
+}
+
+static int CallOnNativeStopped() {
+  JavaVM* java_vm = g_jvm;
+  JNIEnv* java_env = nullptr;
+
+  jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
+  if (jni_return == JNI_ERR)
+    return -1;
+
+  jni_return = java_vm->AttachCurrentThread(&java_env, nullptr);
+  if (jni_return != JNI_OK)
+    return -1;
+
+  jclass activity_clazz = java_env->GetObjectClass(g_obj);
+  if (activity_clazz == nullptr)
+    return -1;
+
+  jmethodID method_id = java_env->GetMethodID(activity_clazz, "onNativeStopped", "()V");
+  if (method_id == nullptr)
+    return -1;
+
+  java_env->CallVoidMethod(g_obj, method_id);
+
+  jni_return = java_vm->DetachCurrentThread();
+  if (jni_return != JNI_OK)
+    return -1;
+
+  return 0;
+}
+
 // called from java thread
 JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeCreate(JNIEnv *env, jobject obj) {
   jint jni_return = env->GetJavaVM(&g_jvm);
@@ -577,11 +642,13 @@ JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeCreate(JNIEnv *env,
   Init(env);
 
   g_env = nullptr;
+  g_obj = env->NewGlobalRef(obj);
 }
 
 // called from java thread
 JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeDestroy(JNIEnv *env, jobject obj) {
   Shutdown();
+  env->DeleteGlobalRef(g_obj);
   g_jvm = nullptr;
   g_obj = nullptr;
   g_env = nullptr;
@@ -632,6 +699,96 @@ CIPHER_METHOD_VALID_MAP(XX)
     env->SetObjectArrayElement(jarray, i, env->NewStringUTF(methods[i]));
   }
   return jarray;
+}
+
+JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getTimeout(JNIEnv *env, jobject obj) {
+  return absl::GetFlag(FLAGS_connect_timeout);
+}
+
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setServerHost(JNIEnv *env, jobject obj, jobject value) {
+  const char* value_str = env->GetStringUTFChars((jstring)value, nullptr);
+  absl::SetFlag(&FLAGS_server_host, value_str);
+  env->ReleaseStringUTFChars((jstring)value, value_str);
+}
+
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setServerPort(JNIEnv *env, jobject obj, jint value) {
+  absl::SetFlag(&FLAGS_server_port, value);
+}
+
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setUsername(JNIEnv *env, jobject obj, jobject value) {
+  const char* value_str = env->GetStringUTFChars((jstring)value, nullptr);
+  absl::SetFlag(&FLAGS_username, value_str);
+  env->ReleaseStringUTFChars((jstring)value, value_str);
+}
+
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setPassword(JNIEnv *env, jobject obj, jobject value) {
+  const char* value_str = env->GetStringUTFChars((jstring)value, nullptr);
+  absl::SetFlag(&FLAGS_password, value_str);
+  env->ReleaseStringUTFChars((jstring)value, value_str);
+}
+
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setCipher(JNIEnv *env, jobject obj, jint value) {
+  std::vector<cipher_method> methods_idxes = {
+#define XX(num, name, string) CRYPTO_##name,
+CIPHER_METHOD_VALID_MAP(XX)
+#undef XX
+  };
+  DCHECK_LT((uint32_t)value, methods_idxes.size());
+  absl::SetFlag(&FLAGS_method, methods_idxes[value]);
+}
+
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setTimeout(JNIEnv *env, jobject obj, jint value) {
+  absl::SetFlag(&FLAGS_connect_timeout, value);
+}
+
+static uint64_t g_last_sync_time;
+static uint64_t g_last_tx_bytes;
+static uint64_t g_last_rx_bytes;
+
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStart(JNIEnv *env, jobject obj) {
+  g_last_sync_time = GetMonotonicTime();
+  g_last_tx_bytes = 0;
+  g_last_rx_bytes = 0;
+
+  g_worker->Start([&](asio::error_code ec) {
+    if (ec) {
+      LOG(WARNING) << "Start Failed: " << ec;
+    } else {
+      LOG(WARNING) << "Started";
+      config::SaveConfig();
+    }
+    CallOnNativeStarted(ec.value());
+  });
+}
+
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStop(JNIEnv *env, jobject obj) {
+  g_worker->Stop([&]() {
+    LOG(WARNING) << "Stopped";
+    CallOnNativeStopped();
+  });
+}
+
+JNIEXPORT jdoubleArray JNICALL Java_it_gui_yass_MainActivity_getRealtimeTransferRate(JNIEnv *env, jobject obj) {
+  uint64_t sync_time = GetMonotonicTime();
+  uint64_t delta_time = sync_time - g_last_sync_time;
+  static double rx_rate = 0;
+  static double tx_rate = 0;
+  if (delta_time > NS_PER_SECOND) {
+    uint64_t rx_bytes = cli::total_rx_bytes;
+    uint64_t tx_bytes = cli::total_tx_bytes;
+    rx_rate = static_cast<double>(rx_bytes - g_last_rx_bytes) / delta_time *
+               NS_PER_SECOND;
+    tx_rate = static_cast<double>(tx_bytes - g_last_tx_bytes) / delta_time *
+               NS_PER_SECOND;
+    g_last_sync_time = sync_time;
+    g_last_rx_bytes = rx_bytes;
+    g_last_tx_bytes = tx_bytes;
+  }
+  double dresult[3] = { g_worker->currentConnections(), rx_rate, tx_rate };
+  auto result = env->NewDoubleArray(3);
+  env->SetDoubleArrayRegion(result, 0, 3, dresult);
+  LOG(INFO) << "polling: rx rate " << rx_rate << " tx rate " << tx_rate;
+  return result;
 }
 
 #endif // __ANDROID__
