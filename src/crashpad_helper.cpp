@@ -13,14 +13,14 @@
 #include "version.h"
 
 #ifdef __ANDROID__
-#include <android_native_app_glue.h>
 extern struct android_app *a_app;
+extern std::string a_data_dir;
 #endif
 
 bool InitializeCrashpad(const std::string& exe_path) {
   std::filesystem::path exeDir = std::filesystem::path(exe_path).parent_path();
 #ifdef __ANDROID__
-  std::filesystem::path tempDir = std::string(a_app->activity->internalDataPath);
+  std::filesystem::path tempDir = a_data_dir;
 #else
   std::filesystem::path tempDir = std::filesystem::temp_directory_path();
 #endif

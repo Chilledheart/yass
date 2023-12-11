@@ -37,7 +37,6 @@
 static EGLDisplay           g_EglDisplay = EGL_NO_DISPLAY;
 static EGLSurface           g_EglSurface = EGL_NO_SURFACE;
 static EGLContext           g_EglContext = EGL_NO_CONTEXT;
-static struct android_app*  g_App = nullptr;
 static std::atomic_bool     g_Initialized = false;
 static std::string          g_IniFilename = "";
 static int                  g_NotifyUnicodeFd[2] = {-1, -1};
@@ -56,6 +55,12 @@ static int SetJavaThreadName(const std::string& thread_name);
 static int GetJavaThreadName(std::string* thread_name);
 [[maybe_unused]]
 static int GetNativeLibraryDirectory(std::string* result);
+[[maybe_unused]]
+static int GetCacheLibraryDirectory(std::string* result);
+[[maybe_unused]]
+static int GetDataLibraryDirectory(std::string* result);
+[[maybe_unused]]
+static int GetCurrentLocale(std::string* result);
 
 extern "C"
 JNIEXPORT void JNICALL Java_it_gui_yass_YassActivity_notifyUnicodeChar(JNIEnv *env, jobject obj, jint unicode);
@@ -208,9 +213,6 @@ void Init(struct android_app* app) {
 
   LOG(INFO) << "android: Initialize";
 
-  g_App = app;
-  DCHECK_EQ(g_App, a_app);
-
 #ifdef HAVE_CRASHPAD
   // FIXME correct the path
   std::string lib_path;
@@ -245,10 +247,10 @@ void Init(struct android_app* app) {
   CHECK_NE(ret, -1) << "create unicode char notify fd failed";
 
   /* Register the file descriptor to listen on. */
-  CHECK_EQ(1, ALooper_addFd(g_App->looper, g_NotifyUnicodeFd[0], LOOPER_ID_USER,
+  CHECK_EQ(1, ALooper_addFd(a_app->looper, g_NotifyUnicodeFd[0], LOOPER_ID_USER,
                             ALOOPER_EVENT_INPUT, receiveUnicodeCharCallback, nullptr));
 
-  ANativeWindow_acquire(g_App->window);
+  ANativeWindow_acquire(a_app->window);
 
   // Initialize EGL
   // This is mostly boilerplate code for EGL...
@@ -272,7 +274,7 @@ void Init(struct android_app* app) {
     eglChooseConfig(g_EglDisplay, egl_attributes, &egl_config, 1, &num_configs);
     EGLint egl_format;
     eglGetConfigAttrib(g_EglDisplay, egl_config, EGL_NATIVE_VISUAL_ID, &egl_format);
-    ANativeWindow_setBuffersGeometry(g_App->window, 0, 0, egl_format);
+    ANativeWindow_setBuffersGeometry(a_app->window, 0, 0, egl_format);
 
     const EGLint egl_context_attributes[] = { EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE };
     g_EglContext = eglCreateContext(g_EglDisplay, egl_config, EGL_NO_CONTEXT, egl_context_attributes);
@@ -280,7 +282,7 @@ void Init(struct android_app* app) {
     if (g_EglContext == EGL_NO_CONTEXT)
       LOG(ERROR) << "eglCreateContext() returned EGL_NO_CONTEXT";
 
-    g_EglSurface = eglCreateWindowSurface(g_EglDisplay, egl_config, g_App->window, nullptr);
+    g_EglSurface = eglCreateWindowSurface(g_EglDisplay, egl_config, a_app->window, nullptr);
     eglMakeCurrent(g_EglDisplay, g_EglSurface, g_EglSurface, g_EglContext);
   }
 
@@ -299,7 +301,7 @@ void Init(struct android_app* app) {
   //ImGui::StyleColorsLight();
 
   // Setup Platform/Renderer backends
-  ImGui_ImplAndroid_Init(g_App->window);
+  ImGui_ImplAndroid_Init(a_app->window);
   ImGui_ImplOpenGL3_Init("#version 300 es");
 
   // Load Fonts
@@ -505,10 +507,10 @@ void Shutdown()
   g_EglDisplay = EGL_NO_DISPLAY;
   g_EglContext = EGL_NO_CONTEXT;
   g_EglSurface = EGL_NO_SURFACE;
-  ANativeWindow_release(g_App->window);
+  ANativeWindow_release(a_app->window);
 
   /* UnRegister the file descriptor to listen on. */
-  CHECK_EQ(1, ALooper_removeFd(g_App->looper, g_NotifyUnicodeFd[0]));
+  CHECK_EQ(1, ALooper_removeFd(a_app->looper, g_NotifyUnicodeFd[0]));
 
   IGNORE_EINTR(close(g_NotifyUnicodeFd[0]));
   IGNORE_EINTR(close(g_NotifyUnicodeFd[1]));
@@ -526,7 +528,7 @@ void Shutdown()
 // Therefore, we call ShowSoftKeyboardInput() of the main activity implemented in MainActivity.kt via JNI.
 static int ShowSoftKeyboardInput()
 {
-  JavaVM* java_vm = g_App->activity->vm;
+  JavaVM* java_vm = a_app->activity->vm;
   JNIEnv* java_env = nullptr;
 
   jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
@@ -537,7 +539,7 @@ static int ShowSoftKeyboardInput()
   if (jni_return != JNI_OK)
     return -2;
 
-  jclass native_activity_clazz = java_env->GetObjectClass(g_App->activity->clazz);
+  jclass native_activity_clazz = java_env->GetObjectClass(a_app->activity->clazz);
   if (native_activity_clazz == nullptr)
     return -3;
 
@@ -545,7 +547,7 @@ static int ShowSoftKeyboardInput()
   if (method_id == nullptr)
     return -4;
 
-  java_env->CallVoidMethod(g_App->activity->clazz, method_id);
+  java_env->CallVoidMethod(a_app->activity->clazz, method_id);
 
   jni_return = java_vm->DetachCurrentThread();
   if (jni_return != JNI_OK)
@@ -558,7 +560,7 @@ static int ShowSoftKeyboardInput()
 static int GetAssetData(const char* filename, void** outData)
 {
   int num_bytes = 0;
-  AAsset* asset_descriptor = AAssetManager_open(g_App->activity->assetManager, filename, AASSET_MODE_BUFFER);
+  AAsset* asset_descriptor = AAssetManager_open(a_app->activity->assetManager, filename, AASSET_MODE_BUFFER);
   if (asset_descriptor)
   {
     num_bytes = AAsset_getLength(asset_descriptor);
@@ -572,7 +574,7 @@ static int GetAssetData(const char* filename, void** outData)
 
 static int32_t GetIpAddress()
 {
-  JavaVM* java_vm = g_App->activity->vm;
+  JavaVM* java_vm = a_app->activity->vm;
   JNIEnv* java_env = nullptr;
 
   jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
@@ -583,7 +585,7 @@ static int32_t GetIpAddress()
   if (jni_return != JNI_OK)
     return 0;
 
-  jclass native_activity_clazz = java_env->GetObjectClass(g_App->activity->clazz);
+  jclass native_activity_clazz = java_env->GetObjectClass(a_app->activity->clazz);
   if (native_activity_clazz == nullptr)
     return 0;
 
@@ -591,7 +593,7 @@ static int32_t GetIpAddress()
   if (method_id == nullptr)
     return 0;
 
-  jint ip_address = java_env->CallIntMethod(g_App->activity->clazz, method_id);
+  jint ip_address = java_env->CallIntMethod(a_app->activity->clazz, method_id);
 
   jni_return = java_vm->DetachCurrentThread();
   if (jni_return != JNI_OK)
@@ -602,7 +604,7 @@ static int32_t GetIpAddress()
 
 // Set native thread name inside
 int SetJavaThreadName(const std::string& thread_name) {
-  JavaVM* java_vm = g_App->activity->vm;
+  JavaVM* java_vm = a_app->activity->vm;
   JNIEnv* java_env = nullptr;
 
   jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
@@ -644,7 +646,7 @@ int SetJavaThreadName(const std::string& thread_name) {
 }
 
 int GetJavaThreadName(std::string* thread_name) {
-  JavaVM* java_vm = g_App->activity->vm;
+  JavaVM* java_vm = a_app->activity->vm;
   JNIEnv* java_env = nullptr;
 
   jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
@@ -692,8 +694,8 @@ int GetJavaThreadName(std::string* thread_name) {
   return 0;
 }
 
-int GetNativeLibraryDirectory(std::string* thread_name) {
-  JavaVM* java_vm = g_App->activity->vm;
+int GetNativeLibraryDirectory(std::string* lib_path) {
+  JavaVM* java_vm = a_app->activity->vm;
   JNIEnv* java_env = nullptr;
 
   jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
@@ -704,7 +706,7 @@ int GetNativeLibraryDirectory(std::string* thread_name) {
   if (jni_return != JNI_OK)
     return -2;
 
-  jclass native_activity_clazz = java_env->GetObjectClass(g_App->activity->clazz);
+  jclass native_activity_clazz = java_env->GetObjectClass(a_app->activity->clazz);
   if (native_activity_clazz == nullptr)
     return -3;
 
@@ -712,7 +714,7 @@ int GetNativeLibraryDirectory(std::string* thread_name) {
   if (method_id == nullptr)
     return -4;
 
-  jobject name = java_env->CallObjectMethod(g_App->activity->clazz, method_id);
+  jobject name = java_env->CallObjectMethod(a_app->activity->clazz, method_id);
   if (name == nullptr)
     return -5;
 
@@ -721,7 +723,127 @@ int GetNativeLibraryDirectory(std::string* thread_name) {
   if (name_str == nullptr)
     return -6;
 
-  *thread_name = name_str;
+  *lib_path = name_str;
+
+  java_env->ReleaseStringUTFChars((jstring)name, name_str);
+
+  jni_return = java_vm->DetachCurrentThread();
+  if (jni_return != JNI_OK)
+    return -7;
+
+  return 0;
+}
+
+int GetCacheLibraryDirectory(std::string* cache_dir) {
+  JavaVM* java_vm = a_app->activity->vm;
+  JNIEnv* java_env = nullptr;
+
+  jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
+  if (jni_return == JNI_ERR)
+    return -1;
+
+  jni_return = java_vm->AttachCurrentThread(&java_env, nullptr);
+  if (jni_return != JNI_OK)
+    return -2;
+
+  jclass native_activity_clazz = java_env->GetObjectClass(a_app->activity->clazz);
+  if (native_activity_clazz == nullptr)
+    return -3;
+
+  jmethodID method_id = java_env->GetMethodID(native_activity_clazz, "getCacheLibraryDirectory", "()Ljava/lang/String;");
+  if (method_id == nullptr)
+    return -4;
+
+  jobject name = java_env->CallObjectMethod(a_app->activity->clazz, method_id);
+  if (name == nullptr)
+    return -5;
+
+  const char* name_str;
+  name_str = java_env->GetStringUTFChars((jstring)name, nullptr);
+  if (name_str == nullptr)
+    return -6;
+
+  *cache_dir = name_str;
+
+  java_env->ReleaseStringUTFChars((jstring)name, name_str);
+
+  jni_return = java_vm->DetachCurrentThread();
+  if (jni_return != JNI_OK)
+    return -7;
+
+  return 0;
+}
+
+int GetDataLibraryDirectory(std::string* data_dir) {
+  JavaVM* java_vm = a_app->activity->vm;
+  JNIEnv* java_env = nullptr;
+
+  jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
+  if (jni_return == JNI_ERR)
+    return -1;
+
+  jni_return = java_vm->AttachCurrentThread(&java_env, nullptr);
+  if (jni_return != JNI_OK)
+    return -2;
+
+  jclass native_activity_clazz = java_env->GetObjectClass(a_app->activity->clazz);
+  if (native_activity_clazz == nullptr)
+    return -3;
+
+  jmethodID method_id = java_env->GetMethodID(native_activity_clazz, "getDataLibraryDirectory", "()Ljava/lang/String;");
+  if (method_id == nullptr)
+    return -4;
+
+  jobject name = java_env->CallObjectMethod(a_app->activity->clazz, method_id);
+  if (name == nullptr)
+    return -5;
+
+  const char* name_str;
+  name_str = java_env->GetStringUTFChars((jstring)name, nullptr);
+  if (name_str == nullptr)
+    return -6;
+
+  *data_dir = name_str;
+
+  java_env->ReleaseStringUTFChars((jstring)name, name_str);
+
+  jni_return = java_vm->DetachCurrentThread();
+  if (jni_return != JNI_OK)
+    return -7;
+
+  return 0;
+}
+
+int GetCurrentLocale(std::string* locale_name) {
+  JavaVM* java_vm = a_app->activity->vm;
+  JNIEnv* java_env = nullptr;
+
+  jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
+  if (jni_return == JNI_ERR)
+    return -1;
+
+  jni_return = java_vm->AttachCurrentThread(&java_env, nullptr);
+  if (jni_return != JNI_OK)
+    return -2;
+
+  jclass native_activity_clazz = java_env->GetObjectClass(a_app->activity->clazz);
+  if (native_activity_clazz == nullptr)
+    return -3;
+
+  jmethodID method_id = java_env->GetMethodID(native_activity_clazz, "getCurrentLocale", "()Ljava/lang/String;");
+  if (method_id == nullptr)
+    return -4;
+
+  jobject name = java_env->CallObjectMethod(a_app->activity->clazz, method_id);
+  if (name == nullptr)
+    return -5;
+
+  const char* name_str;
+  name_str = java_env->GetStringUTFChars((jstring)name, nullptr);
+  if (name_str == nullptr)
+    return -6;
+
+  *locale_name = name_str;
 
   java_env->ReleaseStringUTFChars((jstring)name, name_str);
 
@@ -756,6 +878,29 @@ void android_main(android_app* app) {
   app->onAppCmd = handleAppCmd;
   app->onInputEvent = handleInputEvent;
   a_app = app;
+
+  // before any log calls
+  std::string cache_path;
+  CHECK_EQ(0, GetCacheLibraryDirectory(&cache_path));
+  a_cache_dir = cache_path;
+
+  std::string exe_path;
+  GetExecutablePath(&exe_path);
+  SetExecutablePath(exe_path);
+
+  std::string data_path;
+  CHECK_EQ(0, GetDataLibraryDirectory(&data_path));
+  a_data_dir = data_path;
+
+  LOG(INFO) << "exe path: " << exe_path;
+  LOG(INFO) << "cache dir: " << cache_path;
+  LOG(INFO) << "data dir: " << data_path;
+  LOG(INFO) << "internal data path: " << a_app->activity->internalDataPath;
+
+  // possible values: en_US, zh_SG_#Hans, zh_CN_#Hans, zh_HK_#Hant
+  std::string locale_name;
+  CHECK_EQ(0, GetCurrentLocale(&locale_name));
+  LOG(INFO) << "current locale: " << locale_name;
 
   WorkFunc();
 }
