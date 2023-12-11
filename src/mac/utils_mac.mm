@@ -176,6 +176,8 @@ void AddToLoginItems(const std::string& app_bundle_file_path,
   if (!new_item.get()) {
     DLOG(ERROR) << "Couldn't insert current app into Login Items list.";
   }
+
+  VLOG(1) << "[autostart] written autostart entry: " << app_bundle_file_path;
 }
 
 void RemoveFromLoginItems() {
@@ -199,6 +201,8 @@ void RemoveFromLoginItems(const std::string& app_bundle_file_path) {
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
   LSSharedFileListItemRemove(login_items.GetLoginFileList(), item);
 #pragma clang diagnostic pop
+
+  VLOG(1) << "[autostart] removed autostart entry: " << app_bundle_file_path;
 }
 
 bool WasLaunchedAsLoginOrResumeItem() {
