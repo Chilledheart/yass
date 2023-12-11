@@ -37,6 +37,9 @@ android {
     buildFeatures {
         viewBinding true
     }
+    aaptOptions {
+        noCompress 'icudtl.dat'
+    }
 }
 
 task copyTask {

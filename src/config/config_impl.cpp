@@ -40,8 +40,7 @@ std::unique_ptr<ConfigImpl> ConfigImpl::Create() {
   fflush(stderr);
   return std::make_unique<ConfigImplApple>();
 #elif defined(__ANDROID__)
-  DCHECK(a_app);
-  std::string configfile = absl::StrCat(a_app->activity->internalDataPath, "/", "config.json");
+  std::string configfile = absl::StrCat(a_data_dir, "/", "config.json");
   fprintf(stderr, "using option from file: %s\n", configfile.c_str());
   fflush(stderr);
   return std::make_unique<ConfigImplLocal>(configfile);

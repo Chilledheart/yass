@@ -1755,42 +1755,6 @@ endif()
 link_libraries(${SYSTEM_LIBS})
 
 # *****************************************************************************************
-#           native_app_glue Library (Android)
-# *****************************************************************************************
-
-if (ANDROID AND GUI)
-  add_library(native_app_glue STATIC
-    third_party/android_toolchain/sources/android/native_app_glue/android_native_app_glue.c
-    third_party/android_toolchain/sources/android/native_app_glue/android_native_app_glue.h)
-  target_compile_options(native_app_glue PRIVATE -Wno-error)
-  target_include_directories(native_app_glue PUBLIC
-    third_party/android_toolchain/sources/android/native_app_glue)
-  target_link_libraries(native_app_glue PRIVATE android log)
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
-endif()
-
-# *****************************************************************************************
-#           imgui Library (Android)
-# *****************************************************************************************
-
-if (ANDROID AND GUI)
-  add_library(imgui_android STATIC
-    third_party/imgui/imgui.cpp
-    third_party/imgui/imgui_draw.cpp
-    third_party/imgui/imgui_tables.cpp
-    third_party/imgui/imgui_widgets.cpp
-    third_party/imgui/backends/imgui_impl_android.cpp
-    third_party/imgui/backends/imgui_impl_opengl3.cpp)
-  target_compile_definitions(imgui_android PUBLIC IMGUI_IMPL_OPENGL_ES3)
-  target_compile_options(imgui_android PRIVATE -Wno-error)
-  target_include_directories(imgui_android PUBLIC
-    third_party/imgui
-    third_party/imgui/backends
-  )
-  target_link_libraries(imgui_android PRIVATE android EGL GLESv3 log)
-endif()
-
-# *****************************************************************************************
 #           GUI Support Libraries
 # *****************************************************************************************
 
@@ -1801,7 +1765,7 @@ if (ANDROID AND GUI)
   set(GUI_DEFINITIONS "")
   set(GUI_C_CXX_FLAGS "")
   set(GUI_LIBRARY_DIRS "")
-  set(GUI_LIBRARIES imgui_android native_app_glue)
+  set(GUI_LIBRARIES "")
 elseif (WIN32 AND GUI)
   message(STATUS "Compiling with GUI support: Windows")
   set(GUI_FLAVOUR "windows")
@@ -2228,9 +2192,6 @@ if ((${CMAKE_BUILD_TYPE} MATCHES MinSizeRel OR ${CMAKE_BUILD_TYPE} MATCHES Relea
   )
   target_link_libraries(yass_crashpad PRIVATE crashpad_client crashpad_common crashpad_util mini_chromium_base)
   set(SUPPORT_LIBS yass_crashpad ${SUPPORT_LIBS})
-  if (ANDROID)
-    target_link_libraries(yass_crashpad PRIVATE native_app_glue)
-  endif()
   if (APPLE)
     add_library(crashpad_util_mig STATIC IMPORTED)
     set_property(TARGET crashpad_util_mig PROPERTY
@@ -2356,10 +2317,6 @@ target_link_libraries(asio PUBLIC
   url
   crypto
   ssl)
-
-if (ANDROID)
-  target_link_libraries(asio PUBLIC native_app_glue)
-endif()
 
 if (APPLE)
   find_library(SECURITY_FRAMEWORK Security REQUIRED)
