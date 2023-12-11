@@ -35,28 +35,12 @@ public class MainActivity extends Activity {
 
         onNativeCreate();
 
-        EditText serverHostEditText = findViewById(R.id.serverHostEditText);
-        serverHostEditText.setText(getServerHost());
-        EditText serverPortEditText = findViewById(R.id.serverPortEditText);
-        serverPortEditText.setText(String.format(getLocale(), "%d", getServerPort()));
-        EditText usernameEditText = findViewById(R.id.usernameEditText);
-        usernameEditText.setText(getUsername());
-        EditText passwordEditText = findViewById(R.id.passwordEditText);
-        passwordEditText.setText(getPassword());
-
-        Spinner cipherSpinner = findViewById(R.id.cipherSpinner);
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_spinner_item, getCipherStrings());
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        cipherSpinner.setAdapter(adapter);
-        cipherSpinner.setSelection(getCipher());
-
-        Button stopButton = findViewById(R.id.stopButton);
-        stopButton.setEnabled(false);
+        loadSettingsFromNative();
     }
 
     @Override
     protected void onDestroy() {
+        stopRefreshPoll();
         onNativeDestroy();
         super.onDestroy();
     }
@@ -77,6 +61,62 @@ public class MainActivity extends Activity {
 
     private native String[] getCipherStrings();
 
+    private native int getTimeout();
+
+    private void loadSettingsFromNative() {
+        EditText serverHostEditText = findViewById(R.id.serverHostEditText);
+        serverHostEditText.setText(getServerHost());
+        EditText serverPortEditText = findViewById(R.id.serverPortEditText);
+        serverPortEditText.setText(String.format(getLocale(), "%d", getServerPort()));
+        EditText usernameEditText = findViewById(R.id.usernameEditText);
+        usernameEditText.setText(getUsername());
+        EditText passwordEditText = findViewById(R.id.passwordEditText);
+        passwordEditText.setText(getPassword());
+
+        Spinner cipherSpinner = findViewById(R.id.cipherSpinner);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_item, getCipherStrings());
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        cipherSpinner.setAdapter(adapter);
+        cipherSpinner.setSelection(getCipher());
+
+        EditText timeoutEditText = findViewById(R.id.timeoutEditText);
+        timeoutEditText.setText(String.format(getLocale(), "%d", getTimeout()));
+
+        Button stopButton = findViewById(R.id.stopButton);
+        stopButton.setEnabled(false);
+    }
+
+    private native void setServerHost(String serverHost);
+
+    private native void setServerPort(int serverPort);
+
+    private native void setUsername(String username);
+
+    private native void setPassword(String password);
+
+    private native void setCipher(int cipher_idx);
+
+    private native void setTimeout(int timeout);
+
+    private void saveSettingsIntoNative() {
+        EditText serverHostEditText = findViewById(R.id.serverHostEditText);
+        setServerHost(serverHostEditText.getText().toString());
+
+        EditText serverPortEditText = findViewById(R.id.serverPortEditText);
+        setServerPort(Integer.parseInt(serverPortEditText.getText().toString()));
+        EditText usernameEditText = findViewById(R.id.usernameEditText);
+        setUsername(usernameEditText.getText().toString());
+        EditText passwordEditText = findViewById(R.id.passwordEditText);
+        setPassword(passwordEditText.getText().toString());
+
+        Spinner cipherSpinner = findViewById(R.id.cipherSpinner);
+        setCipher(cipherSpinner.getSelectedItemPosition());
+
+        EditText timeoutEditText = findViewById(R.id.timeoutEditText);
+        setTimeout(Integer.parseInt(timeoutEditText.getText().toString()));
+    }
+
     enum NativeMachineState {
         STOPPED,
         STOPPING,
@@ -88,6 +128,8 @@ public class MainActivity extends Activity {
 
     public void onStartClicked(View view) {
         if (state == NativeMachineState.STOPPED) {
+            saveSettingsIntoNative();
+
             Button startButton = findViewById(R.id.startButton);
             startButton.setEnabled(false);
 
@@ -163,11 +205,10 @@ public class MainActivity extends Activity {
     private native double[] getRealtimeTransferRate();
 
     private Timer mRefreshTimer;
-    private TimerTask mRefreshTimerTask;
 
     private void startRefreshPoll() {
         mRefreshTimer = new Timer();
-        mRefreshTimerTask = new TimerTask() {
+        TimerTask mRefreshTimerTask = new TimerTask() {
             @Override
             public void run() {
                 double[] result = getRealtimeTransferRate();
