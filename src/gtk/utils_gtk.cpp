@@ -98,6 +98,7 @@ void Utils::EnableAutoStart(bool on) {
       PLOG(WARNING)
           << "Internal error: unable to remove autostart file";
     }
+    VLOG(1) << "[autostart] removed autostart entry: " << autostart_desktop_path;
   } else {
     if (!CreateDirectories(GetAutostartDirectory())) {
       PLOG(WARNING)
@@ -115,6 +116,17 @@ void Utils::EnableAutoStart(bool on) {
     if (!WriteFileWithContent(autostart_desktop_path, kAutoStartFileContent))  {
       PLOG(WARNING) << "Internal error: unable to create autostart file";
     }
+
+    VLOG(1) << "[autostart] written autostart entry: " << autostart_desktop_path;
+  }
+
+  // Update Desktop Database
+  std::string _;
+  std::vector<std::string> params = {"update-desktop-database", ExpandUser("~/.local/share/applications")};
+  if (ExecuteProcess(params, &_, &_) != 0) {
+    PLOG(WARNING) << "update-desktop-database failed";
+  } else {
+    VLOG(1) << "[autostart] refreshed desktop database";
   }
 }
 
