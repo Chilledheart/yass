@@ -14,15 +14,13 @@
 
 #include <base/strings/sys_string_conversions.h>
 #include <base/files/platform_file.h>
+#include <base/files/memory_mapped_file.h>
 
 #ifdef __ANDROID__
-#include <android_native_app_glue.h>
-#endif
-
-#ifdef __ANDROID__
-extern android_app *a_app;
 extern std::string a_cache_dir;
 extern std::string a_data_dir;
+typedef int (*OpenApkAssetType)(const std::string&, gurl_base::MemoryMappedFile::Region*);
+extern OpenApkAssetType a_open_apk_asset;
 #endif
 
 using gurl_base::PlatformFile;

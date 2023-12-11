@@ -24,9 +24,13 @@
 #endif
 
 #ifdef __ANDROID__
-android_app *a_app = nullptr;
+#include <android/log.h>
+#endif
+
+#ifdef __ANDROID__
 std::string a_cache_dir;
 std::string a_data_dir;
+OpenApkAssetType a_open_apk_asset = nullptr;
 #endif
 
 std::optional<int> StringToInteger(const std::string& value) {
@@ -162,8 +166,8 @@ std::string ExpandUser(const std::string& file_path) {
       }
     }
 #ifdef __ANDROID__
-    if (a_app) {
-      home = a_app->activity->internalDataPath;
+    if (!a_data_dir.empty()) {
+      home = a_data_dir;
     }
 #endif
     if (home.empty()) {

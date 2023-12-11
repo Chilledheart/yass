@@ -10,21 +10,14 @@
 #include <absl/flags/usage.h>
 #include <absl/strings/str_format.h>
 #include <base/posix/eintr_wrapper.h>
-#include <imgui.h>
-#include <imgui_impl_android.h>
-#include <imgui_impl_opengl3.h>
 #include <openssl/crypto.h>
 
 #include <android/log.h>
-#include <android_native_app_glue.h>
-#include <android/asset_manager.h>
 #include <atomic>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <deque>
-#include <EGL/egl.h>
-#include <GLES3/gl3.h>
 
 #include "core/logging.hpp"
 #include "i18n/icu_util.hpp"
@@ -34,36 +27,49 @@
 #include "crashpad_helper.hpp"
 
 // Data
-static EGLDisplay           g_EglDisplay = EGL_NO_DISPLAY;
-static EGLSurface           g_EglSurface = EGL_NO_SURFACE;
-static EGLContext           g_EglContext = EGL_NO_CONTEXT;
 static std::atomic_bool     g_Initialized = false;
-static std::string          g_IniFilename = "";
-static int                  g_NotifyUnicodeFd[2] = {-1, -1};
+static JavaVM              *g_jvm = nullptr;
+static JNIEnv              *g_env = nullptr;
+static jobject              g_obj = nullptr;
 
 // Forward declarations of helper functions
-static void Init(struct android_app* app);
+static void Init(JNIEnv *env);
 static void Shutdown();
-static void MainLoopStep();
-static int ShowSoftKeyboardInput();
-static int GetAssetData(const char* filename, void** out_data);
 // returning in host byte order
-[[nodiscard]]
-static int32_t GetIpAddress();
+[[nodiscard]] [[maybe_unused]]
+static int32_t GetIpAddress(JNIEnv *env);
+[[maybe_unused]]
 static int SetJavaThreadName(const std::string& thread_name);
 [[maybe_unused]]
 static int GetJavaThreadName(std::string* thread_name);
 [[maybe_unused]]
-static int GetNativeLibraryDirectory(std::string* result);
+static int GetNativeLibraryDirectory(JNIEnv *env, std::string* result);
 [[maybe_unused]]
-static int GetCacheLibraryDirectory(std::string* result);
+static int GetCacheLibraryDirectory(JNIEnv *env, std::string* result);
 [[maybe_unused]]
-static int GetDataLibraryDirectory(std::string* result);
+static int GetDataLibraryDirectory(JNIEnv *env, std::string* result);
 [[maybe_unused]]
-static int GetCurrentLocale(std::string* result);
+static int GetCurrentLocale(JNIEnv *env, std::string* result);
+[[maybe_unused]]
+static int OpenApkAsset(const std::string& file_path,
+                        gurl_base::MemoryMappedFile::Region* region);
 
 extern "C"
-JNIEXPORT void JNICALL Java_it_gui_yass_YassActivity_notifyUnicodeChar(JNIEnv *env, jobject obj, jint unicode);
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeCreate(JNIEnv *env, jobject obj);
+extern "C"
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeDestroy(JNIEnv *env, jobject obj);
+extern "C"
+JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getServerHost(JNIEnv *env, jobject obj);
+extern "C"
+JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getServerPort(JNIEnv *env, jobject obj);
+extern "C"
+JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getUsername(JNIEnv *env, jobject obj);
+extern "C"
+JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getPassword(JNIEnv *env, jobject obj);
+extern "C"
+JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getCipher(JNIEnv *env, jobject obj);
+extern "C"
+JNIEXPORT jobjectArray JNICALL Java_it_gui_yass_MainActivity_getCipherStrings(JNIEnv *env, jobject obj);
 
 static std::unique_ptr<Worker> g_worker;
 
@@ -74,6 +80,9 @@ enum StartState {
   STARTED,
 };
 
+static std::atomic<StartState> g_state(STOPPED);
+
+#if 0
 static const char* state_to_str(StartState state) {
   switch(state) {
     case STOPPED:
@@ -86,7 +95,6 @@ static const char* state_to_str(StartState state) {
       return "STARTED";
   }
 }
-static std::atomic<StartState> g_state(STOPPED);
 
 static void ToggleWorker() {
   switch(g_state) {
@@ -118,96 +126,9 @@ static void ToggleWorker() {
       break;
   }
 }
+#endif
 
-static void WorkFunc() {
-  while (true) {
-    // Read all pending events.
-    int ident;
-    int events;
-    struct android_poll_source* source;
-
-    while ((ident=ALooper_pollAll(g_Initialized ? 67 /* limit to 15 fps */ : -1,
-                                  nullptr, &events,
-                                  (void**)&source)) >= 0) {
-
-      // Process this event.
-      if (source != nullptr) {
-        source->process(a_app, source);
-      }
-
-      if (ident == LOOPER_ID_USER) {
-        LOG(INFO) << "LOOPER_ID_USER";
-      }
-
-      // Check if we are exiting.
-      if (a_app->destroyRequested != 0) {
-        return;
-      }
-    }
-
-    // Initiate a new frame
-    MainLoopStep();
-  }
-}
-
-// Main code
-static void handleAppCmd(struct android_app* app, int32_t appCmd) {
-  switch (appCmd)
-  {
-  case APP_CMD_SAVE_STATE:
-    break;
-  case APP_CMD_INIT_WINDOW:
-    Init(app);
-    break;
-  case APP_CMD_TERM_WINDOW:
-    Shutdown();
-    break;
-  case APP_CMD_GAINED_FOCUS:
-  case APP_CMD_LOST_FOCUS:
-    break;
-  }
-}
-
-static int32_t handleInputEvent(struct android_app* app, AInputEvent* inputEvent) {
-  return ImGui_ImplAndroid_HandleInputEvent(inputEvent);
-}
-
-static void ReadSequentialFromFd(int fd, std::deque<char> *out_vec) {
-  std::array<char, 140> buf;
-  while (true) {
-    ssize_t ret = read(fd, buf.data(), buf.size());
-    if (ret < 0 && errno == EINTR)
-      continue;
-    // system error
-    if (ret < 0) {
-      break;
-    }
-    // EOF, impossible
-    if (ret == 0) {
-      break;
-    }
-    out_vec->insert(out_vec->end(), buf.begin(), buf.begin() + ret);
-  }
-}
-
-/* Invoked by ALooper to process a message */
-// called from main thread
-static int receiveUnicodeCharCallback(int fd, int events, void* user) {
-  ImGuiIO& io = ImGui::GetIO();
-  static std::deque<char> buffer;
-  ReadSequentialFromFd(fd, &buffer);
-  while (buffer.size() >= sizeof(jint)) {
-    auto unicode_character = reinterpret_cast<jint*>(&*buffer.begin());
-    io.AddInputCharacter(*unicode_character);
-    for (unsigned int i = 0; i < sizeof(jint); ++i) {
-      buffer.pop_front();
-    }
-  }
-
-  return 1;
-}
-
-void Init(struct android_app* app) {
+void Init(JNIEnv *env) {
   if (g_Initialized)
     return;
 
@@ -216,7 +137,7 @@ void Init(struct android_app* app) {
 #ifdef HAVE_CRASHPAD
   // FIXME correct the path
   std::string lib_path;
-  CHECK_EQ(0, GetNativeLibraryDirectory(&lib_path));
+  CHECK_EQ(0, GetNativeLibraryDirectory(env, &lib_path));
   CHECK(InitializeCrashpad(lib_path + "/libnative-lib.so"));
 #endif
 
@@ -229,145 +150,20 @@ void Init(struct android_app* app) {
 
   CRYPTO_library_init();
 
-  SetJavaThreadName("Native Thread");
-#ifndef NDEBUG
-  std::string thread_name;
-  GetJavaThreadName(&thread_name);
-  LOG(INFO) << "Current Java Thread Name: " << thread_name;
-#endif
-
   config::ReadConfigFileOption(0, nullptr);
   config::ReadConfig();
 
-  // Create Yass Worker after ReadConfig
+  // Create Main Worker after ReadConfig
   g_worker = std::make_unique<Worker>();
-
-  /* Call this from your main thread to set up the callback pipe. */
-  int ret = pipe2(g_NotifyUnicodeFd, O_NONBLOCK | O_CLOEXEC);
-  CHECK_NE(ret, -1) << "create unicode char notify fd failed";
-
-  /* Register the file descriptor to listen on. */
-  CHECK_EQ(1, ALooper_addFd(a_app->looper, g_NotifyUnicodeFd[0], LOOPER_ID_USER,
-                            ALOOPER_EVENT_INPUT, receiveUnicodeCharCallback, nullptr));
-
-  ANativeWindow_acquire(a_app->window);
-
-  // Initialize EGL
-  // This is mostly boilerplate code for EGL...
-  {
-    g_EglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-    if (g_EglDisplay == EGL_NO_DISPLAY)
-      LOG(ERROR) << "eglGetDisplay(EGL_DEFAULT_DISPLAY) returned EGL_NO_DISPLAY";
-
-    if (eglInitialize(g_EglDisplay, 0, 0) != EGL_TRUE)
-      LOG(ERROR) << "eglInitialize() returned with an error";
-
-    const EGLint egl_attributes[] = { EGL_BLUE_SIZE, 8, EGL_GREEN_SIZE, 8, EGL_RED_SIZE, 8, EGL_DEPTH_SIZE, 24, EGL_SURFACE_TYPE, EGL_WINDOW_BIT, EGL_NONE };
-    EGLint num_configs = 0;
-    if (eglChooseConfig(g_EglDisplay, egl_attributes, nullptr, 0, &num_configs) != EGL_TRUE)
-      LOG(ERROR) << "eglChooseConfig() returned with an error";
-    if (num_configs == 0)
-      LOG(ERROR) << "eglChooseConfig() returned 0 matching config";
-
-    // Get the first matching config
-    EGLConfig egl_config;
-    eglChooseConfig(g_EglDisplay, egl_attributes, &egl_config, 1, &num_configs);
-    EGLint egl_format;
-    eglGetConfigAttrib(g_EglDisplay, egl_config, EGL_NATIVE_VISUAL_ID, &egl_format);
-    ANativeWindow_setBuffersGeometry(a_app->window, 0, 0, egl_format);
-
-    const EGLint egl_context_attributes[] = { EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE };
-    g_EglContext = eglCreateContext(g_EglDisplay, egl_config, EGL_NO_CONTEXT, egl_context_attributes);
-
-    if (g_EglContext == EGL_NO_CONTEXT)
-      LOG(ERROR) << "eglCreateContext() returned EGL_NO_CONTEXT";
-
-    g_EglSurface = eglCreateWindowSurface(g_EglDisplay, egl_config, a_app->window, nullptr);
-    eglMakeCurrent(g_EglDisplay, g_EglSurface, g_EglSurface, g_EglContext);
-  }
-
-  // Setup Dear ImGui context
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
-  ImGuiIO& io = ImGui::GetIO();
-
-  // Redirect loading/saving of .ini file to our location.
-  // Make sure 'g_IniFilename' persists while we use Dear ImGui.
-  g_IniFilename = std::string(app->activity->internalDataPath) + "/imgui.ini";
-  io.IniFilename = g_IniFilename.c_str();;
-
-  // Setup Dear ImGui style
-  ImGui::StyleColorsDark();
-  //ImGui::StyleColorsLight();
-
-  // Setup Platform/Renderer backends
-  ImGui_ImplAndroid_Init(a_app->window);
-  ImGui_ImplOpenGL3_Init("#version 300 es");
-
-  // Load Fonts
-  // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
-  // - If the file cannot be loaded, the function will return a nullptr. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-  // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
-  // - Read 'docs/FONTS.md' for more instructions and details.
-  // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
-  // - Android: The TTF files have to be placed into the assets/ directory (android/app/src/main/assets), we use our GetAssetData() helper to retrieve them.
-
-  // We load the default font with increased size to improve readability on many devices with "high" DPI.
-  // FIXME: Put some effort into DPI awareness.
-  // Important: when calling AddFontFromMemoryTTF(), ownership of font_data is transfered by Dear ImGui by default (deleted is handled by Dear ImGui), unless we set FontDataOwnedByAtlas=false in ImFontConfig
-  //ImFontConfig font_cfg;
-  //font_cfg.SizePixels = 22.0f;
-  //io.Fonts->AddFontDefault(&font_cfg);
-  void* font_data;
-  int font_data_size;
-  ImFont* font;
-  //font_data_size = GetAssetData("segoeui.ttf", &font_data);
-  //font = io.Fonts->AddFontFromMemoryTTF(font_data, font_data_size, 16.0f);
-  //IM_ASSERT(font != nullptr);
-  font_data_size = GetAssetData("DroidSans.ttf", &font_data);
-  font = io.Fonts->AddFontFromMemoryTTF(font_data, font_data_size, 16.0f * 3.0f);
-  IM_ASSERT(font != nullptr);
-  //font_data_size = GetAssetData("Roboto-Medium.ttf", &font_data);
-  //font = io.Fonts->AddFontFromMemoryTTF(font_data, font_data_size, 16.0f);
-  //IM_ASSERT(font != nullptr);
-  //font_data_size = GetAssetData("Cousine-Regular.ttf", &font_data);
-  //font = io.Fonts->AddFontFromMemoryTTF(font_data, font_data_size, 15.0f);
-  //IM_ASSERT(font != nullptr);
-  //font_data_size = GetAssetData("ArialUni.ttf", &font_data);
-  //font = io.Fonts->AddFontFromMemoryTTF(font_data, font_data_size, 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
-  //IM_ASSERT(font != nullptr);
-
-  // Arbitrary scale-up
-  // FIXME: Put some effort into DPI awareness
-  ImGui::GetStyle().ScaleAllSizes(3.0f);
 
   g_Initialized = true;
 
   LOG(INFO) << "android: Initialized";
 }
 
+#if 0
 void MainLoopStep()
 {
-  ImGuiIO& io = ImGui::GetIO();
-  if (g_EglDisplay == EGL_NO_DISPLAY)
-    return;
-
-  // Our state
-  // (we use static, which essentially makes the variable globals, as a convenience to keep the example code easy to follow)
-  static bool show_option_window = false;
-  static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
-  // Open on-screen (soft) input if requested by Dear ImGui
-  static bool WantTextInputLast = false;
-  if (io.WantTextInput && !WantTextInputLast)
-    ShowSoftKeyboardInput();
-  WantTextInputLast = io.WantTextInput;
-
-  // Start the Dear ImGui frame
-  ImGui_ImplOpenGL3_NewFrame();
-  ImGui_ImplAndroid_NewFrame();
-  ImGui::NewFrame();
-
   {
     std::vector<const char*> methods = {
 #define XX(num, name, string) CRYPTO_##name##_STR,
@@ -468,15 +264,8 @@ CIPHER_METHOD_VALID_MAP(XX)
     }
     ImGui::End();
   }
-
-  // Rendering
-  ImGui::Render();
-  glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-  glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
-  glClear(GL_COLOR_BUFFER_BIT);
-  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-  eglSwapBuffers(g_EglDisplay, g_EglSurface);
 }
+#endif
 
 void Shutdown()
 {
@@ -486,125 +275,31 @@ void Shutdown()
 
   g_Initialized = false;
 
-  // Cleanup
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplAndroid_Shutdown();
-  ImGui::DestroyContext();
-
-  if (g_EglDisplay != EGL_NO_DISPLAY)
-  {
-    eglMakeCurrent(g_EglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-
-    if (g_EglContext != EGL_NO_CONTEXT)
-      eglDestroyContext(g_EglDisplay, g_EglContext);
-
-    if (g_EglSurface != EGL_NO_SURFACE)
-      eglDestroySurface(g_EglDisplay, g_EglSurface);
-
-    eglTerminate(g_EglDisplay);
-  }
-
-  g_EglDisplay = EGL_NO_DISPLAY;
-  g_EglContext = EGL_NO_CONTEXT;
-  g_EglSurface = EGL_NO_SURFACE;
-  ANativeWindow_release(a_app->window);
-
-  /* UnRegister the file descriptor to listen on. */
-  CHECK_EQ(1, ALooper_removeFd(a_app->looper, g_NotifyUnicodeFd[0]));
-
-  IGNORE_EINTR(close(g_NotifyUnicodeFd[0]));
-  IGNORE_EINTR(close(g_NotifyUnicodeFd[1]));
-  g_NotifyUnicodeFd[0] = -1;
-  g_NotifyUnicodeFd[1] = -1;
-
   g_worker.reset();
 
   LOG(INFO) << "android: Shutdown finished";
 }
 
-// Helper functions
-
-// Unfortunately, there is no way to show the on-screen input from native code.
-// Therefore, we call ShowSoftKeyboardInput() of the main activity implemented in MainActivity.kt via JNI.
-static int ShowSoftKeyboardInput()
+static int32_t GetIpAddress(JNIEnv *env)
 {
-  JavaVM* java_vm = a_app->activity->vm;
-  JNIEnv* java_env = nullptr;
+  JavaVM* java_vm = g_jvm;
 
-  jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
-  if (jni_return == JNI_ERR)
-    return -1;
-
-  jni_return = java_vm->AttachCurrentThread(&java_env, nullptr);
-  if (jni_return != JNI_OK)
-    return -2;
-
-  jclass native_activity_clazz = java_env->GetObjectClass(a_app->activity->clazz);
-  if (native_activity_clazz == nullptr)
-    return -3;
-
-  jmethodID method_id = java_env->GetMethodID(native_activity_clazz, "showSoftInput", "()V");
-  if (method_id == nullptr)
-    return -4;
-
-  java_env->CallVoidMethod(a_app->activity->clazz, method_id);
-
-  jni_return = java_vm->DetachCurrentThread();
-  if (jni_return != JNI_OK)
-    return -5;
-
-  return 0;
-}
-
-// Helper to retrieve data placed into the assets/ directory (android/app/src/main/assets)
-static int GetAssetData(const char* filename, void** outData)
-{
-  int num_bytes = 0;
-  AAsset* asset_descriptor = AAssetManager_open(a_app->activity->assetManager, filename, AASSET_MODE_BUFFER);
-  if (asset_descriptor)
-  {
-    num_bytes = AAsset_getLength(asset_descriptor);
-    *outData = IM_ALLOC(num_bytes);
-    int64_t num_bytes_read = AAsset_read(asset_descriptor, *outData, num_bytes);
-    AAsset_close(asset_descriptor);
-    IM_ASSERT(num_bytes_read == num_bytes);
-  }
-  return num_bytes;
-}
-
-static int32_t GetIpAddress()
-{
-  JavaVM* java_vm = a_app->activity->vm;
-  JNIEnv* java_env = nullptr;
-
-  jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
-  if (jni_return == JNI_ERR)
+  jclass activity_clazz = env->GetObjectClass(g_obj);
+  if (activity_clazz == nullptr)
     return 0;
 
-  jni_return = java_vm->AttachCurrentThread(&java_env, nullptr);
-  if (jni_return != JNI_OK)
-    return 0;
-
-  jclass native_activity_clazz = java_env->GetObjectClass(a_app->activity->clazz);
-  if (native_activity_clazz == nullptr)
-    return 0;
-
-  jmethodID method_id = java_env->GetMethodID(native_activity_clazz, "getIpAddress", "()I");
+  jmethodID method_id = env->GetMethodID(activity_clazz, "getIpAddress", "()I");
   if (method_id == nullptr)
     return 0;
 
-  jint ip_address = java_env->CallIntMethod(a_app->activity->clazz, method_id);
-
-  jni_return = java_vm->DetachCurrentThread();
-  if (jni_return != JNI_OK)
-    return 0;
+  jint ip_address = env->CallIntMethod(g_obj, method_id);
 
   return ntohl(ip_address);
 }
 
 // Set native thread name inside
 int SetJavaThreadName(const std::string& thread_name) {
-  JavaVM* java_vm = a_app->activity->vm;
+  JavaVM* java_vm = g_jvm;
   JNIEnv* java_env = nullptr;
 
   jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
@@ -646,7 +341,7 @@ int SetJavaThreadName(const std::string& thread_name) {
 }
 
 int GetJavaThreadName(std::string* thread_name) {
-  JavaVM* java_vm = a_app->activity->vm;
+  JavaVM* java_vm = g_jvm;
   JNIEnv* java_env = nullptr;
 
   jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
@@ -694,194 +389,172 @@ int GetJavaThreadName(std::string* thread_name) {
   return 0;
 }
 
-int GetNativeLibraryDirectory(std::string* lib_path) {
-  JavaVM* java_vm = a_app->activity->vm;
-  JNIEnv* java_env = nullptr;
+int GetNativeLibraryDirectory(JNIEnv* env, std::string* lib_path) {
+  JavaVM* java_vm = g_jvm;
 
-  jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
-  if (jni_return == JNI_ERR)
+  jclass activity_clazz = env->GetObjectClass(g_obj);
+  if (activity_clazz == nullptr)
     return -1;
 
-  jni_return = java_vm->AttachCurrentThread(&java_env, nullptr);
-  if (jni_return != JNI_OK)
+  jmethodID method_id = env->GetMethodID(activity_clazz, "getNativeLibraryDirectory", "()Ljava/lang/String;");
+  if (method_id == nullptr)
     return -2;
 
-  jclass native_activity_clazz = java_env->GetObjectClass(a_app->activity->clazz);
-  if (native_activity_clazz == nullptr)
+  jobject name = env->CallObjectMethod(g_obj, method_id);
+  if (name == nullptr)
     return -3;
 
-  jmethodID method_id = java_env->GetMethodID(native_activity_clazz, "getNativeLibraryDirectory", "()Ljava/lang/String;");
-  if (method_id == nullptr)
-    return -4;
-
-  jobject name = java_env->CallObjectMethod(a_app->activity->clazz, method_id);
-  if (name == nullptr)
-    return -5;
-
   const char* name_str;
-  name_str = java_env->GetStringUTFChars((jstring)name, nullptr);
+  name_str = env->GetStringUTFChars((jstring)name, nullptr);
   if (name_str == nullptr)
-    return -6;
+    return -4;
 
   *lib_path = name_str;
 
-  java_env->ReleaseStringUTFChars((jstring)name, name_str);
-
-  jni_return = java_vm->DetachCurrentThread();
-  if (jni_return != JNI_OK)
-    return -7;
+  env->ReleaseStringUTFChars((jstring)name, name_str);
 
   return 0;
 }
 
-int GetCacheLibraryDirectory(std::string* cache_dir) {
-  JavaVM* java_vm = a_app->activity->vm;
-  JNIEnv* java_env = nullptr;
-
-  jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
-  if (jni_return == JNI_ERR)
+int GetCacheLibraryDirectory(JNIEnv *env, std::string* cache_dir) {
+  jclass activity_clazz = env->GetObjectClass(g_obj);
+  if (activity_clazz == nullptr)
     return -1;
 
-  jni_return = java_vm->AttachCurrentThread(&java_env, nullptr);
-  if (jni_return != JNI_OK)
+  jmethodID method_id = env->GetMethodID(activity_clazz, "getCacheLibraryDirectory", "()Ljava/lang/String;");
+  if (method_id == nullptr)
     return -2;
 
-  jclass native_activity_clazz = java_env->GetObjectClass(a_app->activity->clazz);
-  if (native_activity_clazz == nullptr)
+  jobject name = env->CallObjectMethod(g_obj, method_id);
+  if (name == nullptr)
     return -3;
 
-  jmethodID method_id = java_env->GetMethodID(native_activity_clazz, "getCacheLibraryDirectory", "()Ljava/lang/String;");
-  if (method_id == nullptr)
-    return -4;
-
-  jobject name = java_env->CallObjectMethod(a_app->activity->clazz, method_id);
-  if (name == nullptr)
-    return -5;
-
   const char* name_str;
-  name_str = java_env->GetStringUTFChars((jstring)name, nullptr);
+  name_str = env->GetStringUTFChars((jstring)name, nullptr);
   if (name_str == nullptr)
-    return -6;
+    return -4;
 
   *cache_dir = name_str;
 
-  java_env->ReleaseStringUTFChars((jstring)name, name_str);
-
-  jni_return = java_vm->DetachCurrentThread();
-  if (jni_return != JNI_OK)
-    return -7;
+  env->ReleaseStringUTFChars((jstring)name, name_str);
 
   return 0;
 }
 
-int GetDataLibraryDirectory(std::string* data_dir) {
-  JavaVM* java_vm = a_app->activity->vm;
-  JNIEnv* java_env = nullptr;
-
-  jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
-  if (jni_return == JNI_ERR)
+int GetDataLibraryDirectory(JNIEnv *env, std::string* data_dir) {
+  jclass activity_clazz = env->GetObjectClass(g_obj);
+  if (activity_clazz == nullptr)
     return -1;
 
-  jni_return = java_vm->AttachCurrentThread(&java_env, nullptr);
-  if (jni_return != JNI_OK)
+  jmethodID method_id = env->GetMethodID(activity_clazz, "getDataLibraryDirectory", "()Ljava/lang/String;");
+  if (method_id == nullptr)
     return -2;
 
-  jclass native_activity_clazz = java_env->GetObjectClass(a_app->activity->clazz);
-  if (native_activity_clazz == nullptr)
+  jobject name = env->CallObjectMethod(g_obj, method_id);
+  if (name == nullptr)
     return -3;
 
-  jmethodID method_id = java_env->GetMethodID(native_activity_clazz, "getDataLibraryDirectory", "()Ljava/lang/String;");
-  if (method_id == nullptr)
-    return -4;
-
-  jobject name = java_env->CallObjectMethod(a_app->activity->clazz, method_id);
-  if (name == nullptr)
-    return -5;
-
   const char* name_str;
-  name_str = java_env->GetStringUTFChars((jstring)name, nullptr);
+  name_str = env->GetStringUTFChars((jstring)name, nullptr);
   if (name_str == nullptr)
-    return -6;
+    return -4;
 
   *data_dir = name_str;
 
-  java_env->ReleaseStringUTFChars((jstring)name, name_str);
-
-  jni_return = java_vm->DetachCurrentThread();
-  if (jni_return != JNI_OK)
-    return -7;
+  env->ReleaseStringUTFChars((jstring)name, name_str);
 
   return 0;
 }
 
-int GetCurrentLocale(std::string* locale_name) {
-  JavaVM* java_vm = a_app->activity->vm;
-  JNIEnv* java_env = nullptr;
-
-  jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
-  if (jni_return == JNI_ERR)
+int GetCurrentLocale(JNIEnv *env, std::string* locale_name) {
+  jclass activity_clazz = env->GetObjectClass(g_obj);
+  if (activity_clazz == nullptr)
     return -1;
 
-  jni_return = java_vm->AttachCurrentThread(&java_env, nullptr);
-  if (jni_return != JNI_OK)
+  jmethodID method_id = env->GetMethodID(activity_clazz, "getCurrentLocale", "()Ljava/lang/String;");
+  if (method_id == nullptr)
     return -2;
 
-  jclass native_activity_clazz = java_env->GetObjectClass(a_app->activity->clazz);
-  if (native_activity_clazz == nullptr)
+  jobject name = env->CallObjectMethod(g_obj, method_id);
+  if (name == nullptr)
     return -3;
 
-  jmethodID method_id = java_env->GetMethodID(native_activity_clazz, "getCurrentLocale", "()Ljava/lang/String;");
-  if (method_id == nullptr)
-    return -4;
-
-  jobject name = java_env->CallObjectMethod(a_app->activity->clazz, method_id);
-  if (name == nullptr)
-    return -5;
-
   const char* name_str;
-  name_str = java_env->GetStringUTFChars((jstring)name, nullptr);
+  name_str = env->GetStringUTFChars((jstring)name, nullptr);
   if (name_str == nullptr)
-    return -6;
+    return -4;
 
   *locale_name = name_str;
 
-  java_env->ReleaseStringUTFChars((jstring)name, name_str);
-
-  jni_return = java_vm->DetachCurrentThread();
-  if (jni_return != JNI_OK)
-    return -7;
+  env->ReleaseStringUTFChars((jstring)name, name_str);
 
   return 0;
 }
 
-// called from java thread
-JNIEXPORT void JNICALL Java_it_gui_yass_YassActivity_notifyUnicodeChar(JNIEnv *env, jobject obj, jint unicode) {
-  const uint8_t *remaining_buffer = reinterpret_cast<uint8_t*>(&unicode);
-  ssize_t remaining_length = sizeof(unicode);
-  while (g_Initialized && remaining_length > 0) {
-    ssize_t written = write(g_NotifyUnicodeFd[1], remaining_buffer, remaining_length);
-    if (written < 0 && (errno == EINTR || errno == EAGAIN))
-      continue;
-    if (written < 0) {
-      PLOG(WARNING) << "notifyUnicode write error";
-      break;
-    }
-    DCHECK_LE(written, remaining_length);
-    remaining_buffer += written;
-    remaining_length -= written;
-    break;
-  }
+int OpenApkAsset(const std::string& file_path,
+                 gurl_base::MemoryMappedFile::Region* region) {
+  // The AssetManager API of the NDK does not expose a method for accessing raw
+  // resources :(
+
+  JavaVM* java_vm = g_jvm;
+  JNIEnv* java_env = g_env;
+
+  jint jni_return = g_env ? JNI_OK : java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
+  if (jni_return == JNI_ERR)
+    return -1;
+
+  jni_return = g_env ? JNI_OK : java_vm->AttachCurrentThread(&java_env, nullptr);
+  if (jni_return != JNI_OK)
+    return -1;
+
+  jclass activity_clazz = java_env->GetObjectClass(g_obj);
+  if (activity_clazz == nullptr)
+    return -1;
+
+  jstring file_path_obj = java_env->NewStringUTF(file_path.c_str());
+  if (file_path_obj == nullptr)
+    return -1;
+
+  jmethodID method_id = java_env->GetMethodID(activity_clazz, "openApkAssets", "(Ljava/lang/String;)[J");
+  if (method_id == nullptr)
+    return -1;
+
+  jlongArray array = (jlongArray)java_env->CallObjectMethod(g_obj, method_id, file_path_obj);
+  if (array == nullptr)
+    return -1;
+
+  jsize array_num = java_env->GetArrayLength(array);
+
+  CHECK_EQ(3, array_num);
+
+  jlong* results = java_env->GetLongArrayElements(array, nullptr);
+
+  int fd = static_cast<int>(results[0]);
+  region->offset = results[1];
+  // Not a checked_cast because open() may return -1.
+  region->size = static_cast<size_t>(results[2]);
+
+  java_env->ReleaseLongArrayElements(array, results, JNI_ABORT);
+
+  jni_return = g_env ? JNI_OK : java_vm->DetachCurrentThread();
+  if (jni_return != JNI_OK)
+    return -1;
+
+  return fd;
 }
 
-void android_main(android_app* app) {
-  CHECK(app);
-  app->onAppCmd = handleAppCmd;
-  app->onInputEvent = handleInputEvent;
-  a_app = app;
+// called from java thread
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeCreate(JNIEnv *env, jobject obj) {
+  jint jni_return = env->GetJavaVM(&g_jvm);
+  CHECK_NE(jni_return, JNI_ERR) << "jvm not found";
+  g_obj = obj;
+  g_env = env;
+
+  a_open_apk_asset = OpenApkAsset;
 
   // before any log calls
   std::string cache_path;
-  CHECK_EQ(0, GetCacheLibraryDirectory(&cache_path));
+  CHECK_EQ(0, GetCacheLibraryDirectory(env, &cache_path));
   a_cache_dir = cache_path;
 
   std::string exe_path;
@@ -889,20 +562,76 @@ void android_main(android_app* app) {
   SetExecutablePath(exe_path);
 
   std::string data_path;
-  CHECK_EQ(0, GetDataLibraryDirectory(&data_path));
+  CHECK_EQ(0, GetDataLibraryDirectory(env, &data_path));
   a_data_dir = data_path;
 
   LOG(INFO) << "exe path: " << exe_path;
   LOG(INFO) << "cache dir: " << cache_path;
   LOG(INFO) << "data dir: " << data_path;
-  LOG(INFO) << "internal data path: " << a_app->activity->internalDataPath;
 
   // possible values: en_US, zh_SG_#Hans, zh_CN_#Hans, zh_HK_#Hant
   std::string locale_name;
-  CHECK_EQ(0, GetCurrentLocale(&locale_name));
+  CHECK_EQ(0, GetCurrentLocale(env, &locale_name));
   LOG(INFO) << "current locale: " << locale_name;
 
-  WorkFunc();
+  Init(env);
+
+  g_env = nullptr;
+}
+
+// called from java thread
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeDestroy(JNIEnv *env, jobject obj) {
+  Shutdown();
+  g_jvm = nullptr;
+  g_obj = nullptr;
+  g_env = nullptr;
+}
+
+JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getServerHost(JNIEnv *env, jobject obj) {
+  return env->NewStringUTF(absl::GetFlag(FLAGS_server_host).c_str());
+}
+
+JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getServerPort(JNIEnv *env, jobject obj) {
+  return absl::GetFlag(FLAGS_server_port);
+}
+
+JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getUsername(JNIEnv *env, jobject obj) {
+  return env->NewStringUTF(absl::GetFlag(FLAGS_username).c_str());
+}
+
+JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getPassword(JNIEnv *env, jobject obj) {
+  return env->NewStringUTF(absl::GetFlag(FLAGS_password).c_str());
+}
+
+JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getCipher(JNIEnv *env, jobject obj) {
+  std::vector<cipher_method> methods_idxes = {
+#define XX(num, name, string) CRYPTO_##name,
+CIPHER_METHOD_VALID_MAP(XX)
+#undef XX
+  };
+  int method_idx = [&](cipher_method method) -> int {
+    auto it = std::find(methods_idxes.begin(), methods_idxes.end(), method);
+    if (it == methods_idxes.end()) {
+      return 0;
+    }
+    return it - methods_idxes.begin();
+  }(absl::GetFlag(FLAGS_method).method);
+  return method_idx;
+}
+
+JNIEXPORT jobjectArray JNICALL Java_it_gui_yass_MainActivity_getCipherStrings(JNIEnv *env, jobject obj) {
+  std::vector<const char*> methods = {
+#define XX(num, name, string) CRYPTO_##name##_STR,
+CIPHER_METHOD_VALID_MAP(XX)
+#undef XX
+  };
+  jobjectArray jarray = env->NewObjectArray(methods.size(),
+                                            env->FindClass("java/lang/String"),
+                                            env->NewStringUTF(""));
+  for (unsigned int i = 0; i < methods.size(); ++i) {
+    env->SetObjectArrayElement(jarray, i, env->NewStringUTF(methods[i]));
+  }
+  return jarray;
 }
 
 #endif // __ANDROID__
