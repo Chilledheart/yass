@@ -93,6 +93,12 @@
             android:layout_height="wrap_content"
             android:text="@string/status_ready" />
 
+        <TextView
+            android:id="@+id/currentIpTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/status_current_ip_address" />
+
         <Button
             android:id="@+id/startButton"
             android:layout_width="match_parent"

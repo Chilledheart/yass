@@ -8,11 +8,15 @@ import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
-import android.widget.EditText;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -25,12 +29,13 @@ public class MainActivity extends Activity {
         System.loadLibrary("native-lib");
     }
 
-    private ActivityMainBinding binding;
+    private NativeMachineState state = NativeMachineState.STOPPED;
+    private Timer mRefreshTimer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        it.gui.yass.databinding.ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         onNativeCreate();
@@ -51,17 +56,29 @@ public class MainActivity extends Activity {
 
     private native String getServerHost();
 
+    private native void setServerHost(String serverHost);
+
     private native int getServerPort();
+
+    private native void setServerPort(int serverPort);
 
     private native String getUsername();
 
+    private native void setUsername(String username);
+
     private native String getPassword();
 
+    private native void setPassword(String password);
+
     private native int getCipher();
+
+    private native void setCipher(int cipher_idx);
 
     private native String[] getCipherStrings();
 
     private native int getTimeout();
+
+    private native void setTimeout(int timeout);
 
     private void loadSettingsFromNative() {
         EditText serverHostEditText = findViewById(R.id.serverHostEditText);
@@ -83,21 +100,25 @@ public class MainActivity extends Activity {
         EditText timeoutEditText = findViewById(R.id.timeoutEditText);
         timeoutEditText.setText(String.format(getLocale(), "%d", getTimeout()));
 
+        TextView currentIpTextView = findViewById(R.id.currentIpTextView);
+
+        String currentIp = "?";
+        try {
+            byte[] ipAddress = ByteBuffer.wrap(new byte[4])
+                    .order(ByteOrder.nativeOrder())
+                    .putInt(getIpAddress())
+                    .array();
+            InetAddress addr = InetAddress.getByAddress(ipAddress);
+            currentIp = addr.toString();
+        } catch (UnknownHostException e) {
+            // nop
+        }
+        Resources res = getResources();
+        currentIpTextView.setText(String.format(res.getString(R.string.status_current_ip_address), currentIp));
+
         Button stopButton = findViewById(R.id.stopButton);
         stopButton.setEnabled(false);
     }
-
-    private native void setServerHost(String serverHost);
-
-    private native void setServerPort(int serverPort);
-
-    private native void setUsername(String username);
-
-    private native void setPassword(String password);
-
-    private native void setCipher(int cipher_idx);
-
-    private native void setTimeout(int timeout);
 
     private void saveSettingsIntoNative() {
         EditText serverHostEditText = findViewById(R.id.serverHostEditText);
@@ -116,15 +137,6 @@ public class MainActivity extends Activity {
         EditText timeoutEditText = findViewById(R.id.timeoutEditText);
         setTimeout(Integer.parseInt(timeoutEditText.getText().toString()));
     }
-
-    enum NativeMachineState {
-        STOPPED,
-        STOPPING,
-        STARTING,
-        STARTED,
-    }
-
-    private NativeMachineState state = NativeMachineState.STOPPED;
 
     public void onStartClicked(View view) {
         if (state == NativeMachineState.STOPPED) {
@@ -204,8 +216,6 @@ public class MainActivity extends Activity {
 
     private native double[] getRealtimeTransferRate();
 
-    private Timer mRefreshTimer;
-
     private void startRefreshPoll() {
         mRefreshTimer = new Timer();
         TimerTask mRefreshTimerTask = new TimerTask() {
@@ -266,5 +276,12 @@ public class MainActivity extends Activity {
     @SuppressWarnings("unused")
     public long[] openApkAssets(String fileName) {
         return ApkAssets.open(this.getApplicationContext(), fileName);
+    }
+
+    enum NativeMachineState {
+        STOPPED,
+        STOPPING,
+        STARTING,
+        STARTED,
     }
 }
