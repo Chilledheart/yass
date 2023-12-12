@@ -66,5 +66,6 @@ yass.spec
 /android/yass/assets
 /android/yass/build
 /android/yass/libs
-/android/yass/src/main/res/drawable
+/android/yass/src/main/res/drawable/icon.png
 local.properties
+/.gradle

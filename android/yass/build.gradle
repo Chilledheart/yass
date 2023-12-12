@@ -54,11 +54,6 @@ task copyTask {
         include 'icudtl.dat'
     }
     copy {
-        from '../../third_party/imgui/misc/fonts'
-        into 'assets'
-        include 'DroidSans.ttf'
-    }
-    copy {
         from '../../build-android24-x86/libyass.so'
         into 'libs/x86'
         rename('libyass.so', 'libnative-lib.so')
