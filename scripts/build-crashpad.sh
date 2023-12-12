@@ -37,33 +37,6 @@ esac
 flags="$flags"'
 use_sysroot=false'
 
-case "$ARCH" in
-  Darwin)
-    flags="$flags
-mac_deployment_target=\"10.14\""
-  ;;
-esac
-
-case "$ARCH" in
-  Darwin)
-    flags="$flags
-clang_path=\"$PWD/llvm-build/Release+Asserts\"
-extra_cflags_cc=\"-nostdinc++ -I $PWD/libc++ -I $PWD/libc++/trunk/include -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\"
-extra_cflags_objcc=\"-nostdinc++ -I $PWD/libc++ -I $PWD/libc++/trunk/include -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\""
-  ;;
-  Linux)
-    flags="$flags
-clang_path=\"$PWD/llvm-build/Release+Asserts\"
-extra_cflags_cc=\"-nostdinc++ -I $PWD/libc++ -I $PWD/libc++/trunk/include -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\""
-  ;;
-  Windows)
-    flags="$flags
-clang_path=\"$(cygpath -m $PWD)/llvm-build/Release+Asserts\"
-extra_cflags=\"/MT\"
-extra_cflags_cc=\"-I $(cygpath -m $PWD)/libc++ -I $(cygpath -m $PWD)/libc++/trunk/include -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\""
-  ;;
-esac
-
 case "$MACHINE" in
   x86|i586|i686)
     WITH_CPU_DEFAULT="x86"
@@ -83,7 +56,54 @@ if [ "$WITH_CPU" ]; then
 target_cpu=\"$WITH_CPU\""
 fi
 
+case "$ARCH" in
+  Darwin)
+    WITH_OS_DEFAULT="mac"
+    ;;
+  Linux)
+    WITH_OS_DEFAULT="linux"
+    ;;
+  Windows)
+    WITH_OS_DEFAULT="win"
+    ;;
+esac
+
+WITH_OS=${WITH_OS:-${WITH_OS_DEFAULT}}
+
+if [ "$WITH_OS" ]; then
+  flags="$flags
+target_os=\"$WITH_OS\""
+fi
+
 case "$WITH_OS" in
+  mac)
+    flags="$flags
+clang_path=\"$PWD/llvm-build/Release+Asserts\"
+extra_cflags_cc=\"-nostdinc++ -I $PWD/libc++ -I $PWD/libc++/trunk/include -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\"
+extra_cflags_objcc=\"-nostdinc++ -I $PWD/libc++ -I $PWD/libc++/trunk/include -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\""
+    ;;
+  linux|android)
+    flags="$flags
+clang_path=\"$PWD/llvm-build/Release+Asserts\"
+extra_cflags_cc=\"-nostdinc++ -I $PWD/libc++ -I $PWD/libc++/trunk/include -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\""
+    ;;
+  win)
+    flags="$flags
+clang_path=\"$(cygpath -m $PWD)/llvm-build/Release+Asserts\"
+extra_cflags=\"/MT\"
+extra_cflags_cc=\"-I $(cygpath -m $PWD)/libc++ -I $(cygpath -m $PWD)/libc++/trunk/include -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\""
+    ;;
+  *)
+    echo "Unsupported OS ${WITH_OS}"
+    exit 1
+    ;;
+esac
+
+case "$WITH_OS" in
+  mac)
+    flags="$flags
+mac_deployment_target=\"10.14\""
+    ;;
   android)
   os_suffix="-android"
   flags="$flags
@@ -93,11 +113,6 @@ android_ndk_root=\"$ANDROID_NDK_ROOT\""
   *)
     ;;
 esac
-
-if [ "$WITH_OS" ]; then
-  flags="$flags
-target_os=\"$WITH_OS\""
-fi
 
 if [ "$WITH_SYSROOT" ]; then
   flags="$flags

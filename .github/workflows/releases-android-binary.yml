@@ -87,7 +87,7 @@ jobs:
         with:
           path: |
             third_party/crashpad
-          key: ${{ runner.os }}-android-perarch-crashpad-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}-v1
+          key: ${{ runner.os }}-android-perarch-crashpad-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}-v2
       - name: Cache golang
         uses: actions/cache@v3
         with:
