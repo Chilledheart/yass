@@ -40,6 +40,11 @@ android {
     aaptOptions {
         noCompress 'icudtl.dat'
     }
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
 }
 
 task copyTask {
