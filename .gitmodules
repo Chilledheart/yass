@@ -65,6 +65,3 @@
 [submodule "third_party/zstd"]
 	path = third_party/zstd
 	url = https://github.com/Chilledheart/zstd
-[submodule "third_party/imgui"]
-	path = third_party/imgui
-	url = https://github.com/ocornut/imgui
