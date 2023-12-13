@@ -30,20 +30,6 @@
 #  define _BASE_GCC_VER (__GNUC__ * 100 + __GNUC_MINOR__)
 #endif
 
-// Annotate a function indicating the caller must examine the return value.
-// Use like:
-//   int foo() WARN_UNUSED_RESULT;
-// To explicitly ignore a result, see |ignore_result()| in base/macros.h.
-#undef WARN_UNUSED_RESULT
-#if defined(COMPILER_GCC) || defined(__clang__)
-#define WARN_UNUSED_RESULT __attribute__((warn_unused_result))
-#elif (defined(_MSVC_LANG) && _MSVC_LANG > 201703) || \
-  (defined(__cplusplus) && __cplusplus >= 201703L)
-#define WARN_UNUSED_RESULT [[nodiscard]]
-#else
-#define WARN_UNUSED_RESULT
-#endif
-
 // MemorySanitizer annotations.
 #if defined(__has_feature)
 #  if __has_feature(memory_sanitizer)

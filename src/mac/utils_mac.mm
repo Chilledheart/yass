@@ -37,7 +37,7 @@ class LoginItemsFileList {
   LoginItemsFileList& operator=(const LoginItemsFileList&) = delete;
   ~LoginItemsFileList() = default;
 
-  WARN_UNUSED_RESULT bool Initialize() {
+  [[nodiscard]] bool Initialize() {
     DCHECK(!login_items_.get()) << __func__ << " called more than once.";
     // The LSSharedFileList suite of functions has been deprecated. Instead,
     // a LoginItems helper should be registered with SMLoginItemSetEnabled()
