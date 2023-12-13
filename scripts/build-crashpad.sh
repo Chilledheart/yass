@@ -27,12 +27,17 @@ case "$ARCH" in
       "/c/Program Files/7-Zip/7z.exe" x ../depot_tools.zip -aoa
       "/c/Program Files/7-Zip/7z.exe" x ../ninja-win.zip -aoa
       rm -f ninja ninja.bat
+      # avoid calling to git.bat
+      sed -i 's|git.bat|git.exe|g' git_cache.py
       popd
       rm -f depot_tools.zip ninja-win.zip
     fi
     export PATH="$PWD/depot_tools:$PATH"
   ;;
 esac
+
+# Ensure that the "depot_tools" has its self-update capability disabled.
+"$PYTHON" depot_tools/update_depot_tools_toggle.py --disable
 
 flags="$flags"'
 use_sysroot=false'

@@ -80,7 +80,7 @@ jobs:
         with:
           path: |
             third_party/depot_tools
-          key: ${{ runner.os }}-depot_tools
+          key: ${{ runner.os }}-depot_tools-v1
       - name: Cache crashpad build stage
         id: crashpad-cache
         uses: actions/cache@v3
