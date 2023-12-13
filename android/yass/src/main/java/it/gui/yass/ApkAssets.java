@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright (c) 2023 Chilledheart  */
 package it.gui.yass;
 
 import android.content.Context;
