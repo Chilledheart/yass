@@ -6,8 +6,11 @@
 
 #include <iosfwd>
 
+// Included NOMERGE fix
 #include "core/compiler_specific.hpp"
 #include "core/immediate_crash.hpp"
+
+#include <base/dcheck_is_on.h>
 
 namespace yass {
 

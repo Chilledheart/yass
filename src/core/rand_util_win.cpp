@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <limits>
 
+#include <build/build_config.h>
 #include "core/logging.hpp"
 
 void RandBytes(void* output, size_t output_length) {

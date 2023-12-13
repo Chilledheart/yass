@@ -9,9 +9,10 @@
 #include <base/strings/string_util.h>
 #include <base/posix/eintr_wrapper.h>
 
+// Include NOINLINE fixes
 #include "core/compiler_specific.hpp"
-#include "core/utils.hpp"
 #include "core/logging.hpp"
+#include "core/utils.hpp"
 
 // This is a widely included header and its size has significant impact on
 // build time. Try not to raise this limit unless absolutely necessary. See

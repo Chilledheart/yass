@@ -16,17 +16,17 @@
 #include <sys/xattr.h>
 
 #include "config/config.hpp"
-#include "core/compiler_specific.hpp"
 #include "core/logging.hpp"
 #include "core/process_utils.hpp"
 #include "core/utils.hpp"
 
+#include <absl/strings/string_view.h>
+#include <absl/strings/str_split.h>
 #include <base/apple/scoped_cftyperef.h>
 #include <base/apple/foundation_util.h>
 #include <base/mac/scoped_ioobject.h>
-#include <absl/strings/string_view.h>
-#include <absl/strings/str_split.h>
 #include <base/strings/sys_string_conversions.h>
+#include <build/build_config.h>
 
 namespace {
 

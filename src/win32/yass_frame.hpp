@@ -5,7 +5,7 @@
 #define YASS_WIN32_FRAME
 
 #include "crypto/crypter_export.hpp"
-#include "core/compiler_specific.hpp"
+#include <build/build_config.h>
 
 #include <string>
 #include <windows.h>

@@ -17,8 +17,9 @@
 
 #include <absl/flags/declare.h>
 #include <absl/flags/flag.h>
-
-#include "core/compiler_specific.hpp"
+#include <base/compiler_specific.h>
+#include <base/dcheck_is_on.h>
+#include <build/build_config.h>
 
 #ifdef OS_WIN
 #include <malloc.h>
@@ -415,17 +416,13 @@ class LogMessage {
   // 2005 if you are deriving from a type in the Standard C++ Library"
   // http://msdn.microsoft.com/en-us/library/3tdb471s(VS.80).aspx
   // Let's just ignore the warning.
-  MSVC_PUSH_DISABLE_WARNING(4275)
   class LogStream : public std::ostream {
-    MSVC_POP_WARNING()
    public:
     // 'this' : used in base member initializer
-    MSVC_PUSH_DISABLE_WARNING(4355)
     LogStream(char* buf, int len, uint64_t ctr)
         : std::ostream(NULL), streambuf_(buf, len), ctr_(ctr), self_(this) {
       rdbuf(&streambuf_);
     }
-    MSVC_POP_WARNING()
 
     uint64_t ctr() const { return ctr_; }
     void set_ctr(uint64_t ctr) { ctr_ = ctr; }

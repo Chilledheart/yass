@@ -5,8 +5,6 @@
 
 #include <cstring>
 
-#include "core/compiler_specific.hpp"
-
 #define HASH_BLOCK_SIZE 128
 #define HASH_BLOCK_SIZE_256 64
 

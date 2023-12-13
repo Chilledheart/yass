@@ -10,8 +10,7 @@
 #include <wchar.h>
 #include <optional>
 
-#include "core/compiler_specific.hpp"
-
+#include <base/compiler_specific.h>
 #include <base/strings/sys_string_conversions.h>
 #include <base/files/platform_file.h>
 #include <base/files/memory_mapped_file.h>

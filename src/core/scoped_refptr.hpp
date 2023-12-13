@@ -11,7 +11,7 @@
 #include <utility>
 
 #include "core/check.hpp"
-#include "core/compiler_specific.hpp"
+#include <base/compiler_specific.h>
 
 template <class T>
 class scoped_refptr;

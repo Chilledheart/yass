@@ -9,7 +9,6 @@
 #pragma clang max_tokens_here 17000
 
 #include "core/check_op.hpp"
-#include "core/compiler_specific.hpp"
 #include "core/logging.hpp"
 
 namespace yass {
