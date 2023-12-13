@@ -3,7 +3,8 @@
 
 #ifndef CORE_IMMEDIATE_CRASH_H
 #define CORE_IMMEDIATE_CRASH_H
-#include "core/compiler_specific.hpp"
+
+#include <build/build_config.h>
 
 // Crashes in the fastest possible way with no attempt at logging.
 // There are several constraints; see http://crbug.com/664209 for more context.

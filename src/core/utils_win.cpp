@@ -8,7 +8,6 @@
 
 #include "core/utils.hpp"
 
-#include "core/compiler_specific.hpp"
 #include "core/logging.hpp"
 
 struct IUnknown;
@@ -17,6 +16,8 @@ struct IUnknown;
 #include <shlobj.h>
 
 #include <absl/flags/internal/program_name.h>
+#include <base/compiler_specific.h>
+#include <build/build_config.h>
 
 #define MAKE_WIN_VER(major, minor, build_number) \
     (((major) << 24) | ((minor) << 16) | (build_number))

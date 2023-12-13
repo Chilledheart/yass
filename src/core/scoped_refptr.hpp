@@ -11,7 +11,7 @@
 #include <utility>
 
 #include "core/check.hpp"
-#include "core/compiler_specific.hpp"
+#include <base/compiler_specific.h>
 
 template <class T>
 class scoped_refptr;
@@ -249,7 +249,7 @@ class TRIVIAL_ABI scoped_refptr {
 
   // Returns the owned pointer (if any), releasing ownership to the caller. The
   // caller is responsible for managing the lifetime of the reference.
-  WARN_UNUSED_RESULT T* release();
+  [[nodiscard]] T* release();
 
   void swap(scoped_refptr& r) noexcept { std::swap(ptr_, r.ptr_); }
 

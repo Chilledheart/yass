@@ -15,7 +15,6 @@
 #include "config/config.hpp"
 #include "connection.hpp"
 #include "core/asio.hpp"
-#include "core/compiler_specific.hpp"
 #include "core/logging.hpp"
 #include "core/scoped_refptr.hpp"
 #include "core/utils.hpp"

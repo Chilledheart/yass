@@ -6,7 +6,7 @@
 
 #include <atomic>
 
-#include "core/compiler_specific.hpp"
+#include <base/compiler_specific.h>
 
 // A helper class alongside macros to be used to verify assumptions about thread
 // safety of a class.

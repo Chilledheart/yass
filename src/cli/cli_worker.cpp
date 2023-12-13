@@ -11,8 +11,6 @@
 #include <ws2tcpip.h>
 #endif
 
-#include "core/compiler_specific.hpp"
-
 using namespace cli;
 
 class WorkerPrivate {

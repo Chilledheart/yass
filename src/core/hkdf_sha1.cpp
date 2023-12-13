@@ -6,7 +6,6 @@
 
 #include <cstring>
 
-#include "core/compiler_specific.hpp"
 #include "core/hmac_sha1.hpp"
 
 #define MAX_MD_SIZE SHA512_DIGEST_LENGTH /* longest known is SHA512 */

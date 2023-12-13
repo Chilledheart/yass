@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 #include <gtest/gtest-message.h>
 #include <absl/flags/flag.h>
+#include <build/build_config.h>
 
 #include <gmock/gmock.h>
 
@@ -13,7 +14,6 @@
 #include "core/process_utils.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
-#include "core/compiler_specific.hpp"
 
 #ifdef OS_ANDROID
 ABSL_FLAG(bool, no_exec_proc_tests, true, "skip execute_process tests");

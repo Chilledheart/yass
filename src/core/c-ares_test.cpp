@@ -6,12 +6,12 @@
 #include <gtest/gtest.h>
 #include <gtest/gtest-message.h>
 #include <absl/flags/flag.h>
+#include <build/build_config.h>
 
 #include <gmock/gmock.h>
 
 #include "test_util.hpp"
 #include "core/c-ares.hpp"
-#include "core/compiler_specific.hpp"
 
 #ifdef OS_ANDROID
 ABSL_FLAG(bool, no_cares_tests, true, "skip c-ares tests");

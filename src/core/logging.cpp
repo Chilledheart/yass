@@ -11,9 +11,12 @@
 #include <base/strings/string_util.h>
 #include <base/strings/sys_string_conversions.h>
 #include <base/posix/eintr_wrapper.h>
+#include <build/build_config.h>
 
 #include "core/logging.hpp"
 #include "core/process_utils.hpp"
+// Include for NO_SANITIZE_MEMORY
+#include "core/compiler_specific.hpp"
 
 #define _GNU_SOURCE 1  // needed for O_NOFOLLOW and pread()/pwrite()
 
@@ -63,7 +66,6 @@
 #include <dirent.h>  // for automatic removal of old logs
 #endif
 
-#include "core/compiler_specific.hpp"
 #include "core/debug.hpp"
 #include "core/safe_strerror.hpp"
 #include "core/utils.hpp"
@@ -2629,12 +2631,10 @@ std::string StrError(int err) {
 LogMessageFatal::LogMessageFatal(const char* file, int line)
     : LogMessage(file, line, LOGGING_FATAL) {}
 
-MSVC_PUSH_DISABLE_WARNING(4722)
 LogMessageFatal::~LogMessageFatal() {
   Flush();
   LogMessage::Fail();
 }
-MSVC_POP_WARNING()
 
 // Broken out from logging.cc by Soren Lassen
 // logging_unittest.cc covers the functionality herein
