@@ -27,6 +27,8 @@ case "$ARCH" in
       "/c/Program Files/7-Zip/7z.exe" x ../depot_tools.zip -aoa
       "/c/Program Files/7-Zip/7z.exe" x ../ninja-win.zip -aoa
       rm -f ninja ninja.bat
+      # avoid calling to git.bat
+      sed -i 's|git.bat|git.exe|g' git_cache.py
       popd
       rm -f depot_tools.zip ninja-win.zip
     fi
