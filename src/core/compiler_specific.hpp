@@ -31,42 +31,11 @@
 #endif
 
 // MemorySanitizer annotations.
-#if defined(__has_feature)
-#  if __has_feature(memory_sanitizer)
-#    define MEMORY_SANITIZER 1
-#  endif
-#endif
-
 #if defined(MEMORY_SANITIZER) && !defined(OS_NACL)
-#undef MSAN_UNPOISON
-#undef MSAN_CHECK_MEM_IS_INITIALIZED
-
-#include <sanitizer/msan_interface.h>
-
-// Mark a memory region fully initialized.
-// Use this to annotate code that deliberately reads uninitialized data, for
-// example a GC scavenging root set pointers from the stack.
-#define MSAN_UNPOISON(p, size) __msan_unpoison(p, size)
-
-// Check a memory region for initializedness, as if it was being used here.
-// If any bits are uninitialized, crash with an MSan report.
-// Use this to sanitize data which MSan won't be able to track, e.g. before
-// passing data to another process via shared memory.
-#define MSAN_CHECK_MEM_IS_INITIALIZED(p, size) \
-  __msan_check_mem_is_initialized(p, size)
-
 #define NO_SANITIZE_MEMORY NO_SANITIZE("memory")
 #else  // MEMORY_SANITIZER
-#define MSAN_UNPOISON(p, size)
-#define MSAN_CHECK_MEM_IS_INITIALIZED(p, size)
-
 #define NO_SANITIZE_MEMORY
 #endif  // MEMORY_SANITIZER
-
-#if HAS_FEATURE(thread_sanitizer) || __SANITIZE_THREAD__
-#define _SANITIZE_THREAD 1
-#define THREAD_SANITIZER 1
-#endif
 
 // Use nomerge attribute to disable optimization of merging multiple same calls.
 #if defined(__clang__) && HAS_ATTRIBUTE(nomerge) && ((defined(_BASE_APPLE_CLANG_VER) && _BASE_APPLE_CLANG_VER >= 1300) || (defined(_BASE_CLANG_VER) && _BASE_CLANG_VER >= 1200))

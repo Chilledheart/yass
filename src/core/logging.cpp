@@ -15,6 +15,8 @@
 
 #include "core/logging.hpp"
 #include "core/process_utils.hpp"
+// Include for NO_SANITIZE_MEMORY
+#include "core/compiler_specific.hpp"
 
 #define _GNU_SOURCE 1  // needed for O_NOFOLLOW and pread()/pwrite()
 
