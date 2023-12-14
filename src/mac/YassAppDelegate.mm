@@ -42,6 +42,7 @@
 
   // https://developer.apple.com/documentation/apple-silicon/tuning-your-code-s-performance-for-apple-silicon
   pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
+  [NSApp activateIgnoringOtherApps:true];
 }
 
 - (void)applicationWillTerminate:(NSNotification*)aNotification {
