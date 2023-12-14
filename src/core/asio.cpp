@@ -22,6 +22,13 @@ struct IUnknown;
 #include <Security/Security.h>
 #endif
 
+#ifdef _WIN32
+#include "core/windows/dirent.h"
+#include <filesystem>
+#else
+#include <dirent.h>
+#endif
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
 #pragma GCC diagnostic ignored "-Wsign-compare"
@@ -127,27 +134,78 @@ out:
 }
 #endif // HAVE_BUILTIN_CA_BUNDLE_CRT
 
+static int load_ca_to_ssl_ctx_path(SSL_CTX* ssl_ctx, const std::string &dir_path) {
+  int count = 0;
+
+#ifdef _WIN32
+  std::wstring wdir_path = SysUTF8ToWide(dir_path);
+  _WDIR *dir;
+  struct _wdirent *dent;
+  dir = _wopendir(wdir_path.c_str());
+  if (dir != nullptr) {
+    while((dent=_wreaddir(dir))!=nullptr) {
+      if (dent->d_type != DT_REG) {
+        continue;
+      }
+      std::filesystem::path wca_bundle = std::filesystem::path(wdir_path) / dent->d_name;
+      std::string ca_bundle = SysWideToUTF8(wca_bundle);
+      int result = SSL_CTX_load_verify_locations(ssl_ctx, ca_bundle.c_str(), nullptr);
+      if (result == 1) {
+        VLOG(1) << "Loading ca cert from: " << ca_bundle;
+        ++count;
+      }
+    }
+    _wclosedir(dir);
+  }
+#else
+  DIR *dir;
+  struct dirent *dent;
+  dir = opendir(dir_path.c_str());
+  if (dir != nullptr) {
+    while((dent=readdir(dir))!=nullptr) {
+      if (dent->d_type != DT_REG) {
+        continue;
+      }
+      std::string ca_bundle = dir_path + "/" + dent->d_name;
+      int result = SSL_CTX_load_verify_locations(ssl_ctx, ca_bundle.c_str(), nullptr);
+      if (result == 1) {
+        VLOG(1) << "Loading ca cert from: " << ca_bundle;
+        ++count;
+      }
+    }
+    closedir(dir);
+  }
+#endif
+
+  return count;
+}
+
 static int load_ca_to_ssl_ctx_cacert(SSL_CTX* ssl_ctx) {
+  int count = 0;
   std::string ca_bundle = absl::GetFlag(FLAGS_cacert);
   if (!ca_bundle.empty()) {
     int result = SSL_CTX_load_verify_locations(ssl_ctx, ca_bundle.c_str(), nullptr);
     if (result == 1) {
       LOG(INFO) << "Loading ca bundle from: " << ca_bundle;
+      count += result;
     } else {
       print_openssl_error();
     }
-    return result > 0;
+    return result;
   }
   std::string ca_path = absl::GetFlag(FLAGS_capath);
   if (!ca_path.empty()) {
-    int result = SSL_CTX_load_verify_locations(ssl_ctx, nullptr, ca_path.c_str());
-    if (result == 1) {
-      LOG(INFO) << "Loading ca path from location: " << ca_path;
-    } else {
-      print_openssl_error();
+
+    int result = load_ca_to_ssl_ctx_path(ssl_ctx, ca_path);
+    if (result > 0) {
+      LOG(INFO) << "Loading ca from directory: " << ca_path << " " << result << " certificates";
+      count += result;
     }
-    return result > 0;
   }
+  return count;
+}
+
+static int load_ca_to_ssl_ctx_yass_ca_bundle(SSL_CTX* ssl_ctx) {
 #ifdef _WIN32
 #define CA_BUNDLE "yass-ca-bundle.crt"
   // The windows version will automatically look for a CA certs file named 'ca-bundle.crt',
@@ -312,7 +370,7 @@ out:
 #else
   int count = 0;
   // cert list copied from golang src/crypto/x509/root_unix.go
-  const char *ca_bundle_paths[] = {
+  static const char *ca_bundle_paths[] = {
     "/etc/ssl/certs/ca-certificates.crt",     // Debian/Ubuntu/Gentoo etc.
     "/etc/pki/tls/certs/ca-bundle.crt",       // Fedora/RHEL
     "/etc/ssl/ca-bundle.pem",                 // OpenSUSE
@@ -322,7 +380,6 @@ out:
     "/etc/pki/tls/cacert.pem",                // OpenELEC
     "/etc/certs/ca-certificates.crt",         // Solaris 11.2+
   };
-  asio::error_code ec;
   for (auto ca_bundle : ca_bundle_paths) {
     int result = SSL_CTX_load_verify_locations(ssl_ctx, ca_bundle, nullptr);
     if (result == 1) {
@@ -330,23 +387,43 @@ out:
       LOG(INFO) << "Loading ca bundle from: " << ca_bundle;
     }
   }
+  static const char *ca_paths[] = {
+    "/etc/ssl/certs",               // SLES10/SLES11, https://golang.org/issue/12139
+    "/etc/pki/tls/certs",           // Fedora/RHEL
+    "/system/etc/security/cacerts", // Android
+  };
+
+  for (auto ca_path : ca_paths) {
+    int result = load_ca_to_ssl_ctx_path(ssl_ctx, ca_path);
+    if (result > 0) {
+      LOG(INFO) << "Loading ca from directory: " << ca_path << " " << result << " certificates";
+      count += result;
+    }
+  }
   return count;
 #endif
 }
 
+// loading ca certificates:
+// 1. load --capath and --cacert certificates
+// 2. load ca bundle from in sequence
+//    - builtin ca bundle if specified
+//    - yass-ca-bundle.crt if present (windows)
+//    - system ca certificates
+// 3. force fallback to builtin ca bundle if step 2 failes
 void load_ca_to_ssl_ctx(SSL_CTX* ssl_ctx) {
+  load_ca_to_ssl_ctx_cacert(ssl_ctx);
+
 #ifdef HAVE_BUILTIN_CA_BUNDLE_CRT
-  if (absl::GetFlag(FLAGS_cacert).empty() && absl::GetFlag(FLAGS_use_ca_bundle_crt)) {
+  if (absl::GetFlag(FLAGS_use_ca_bundle_crt)) {
     std::string_view ca_bundle_content(_binary_ca_bundle_crt_start, _binary_ca_bundle_crt_end - _binary_ca_bundle_crt_start);
     load_ca_to_ssl_ctx_from_mem(ssl_ctx, ca_bundle_content);
     LOG(WARNING) << "Builtin ca bundle loaded";
     return;
   }
 #endif // HAVE_BUILTIN_CA_BUNDLE_CRT
-  if (load_ca_to_ssl_ctx_cacert(ssl_ctx) > 0) {
-    return;
-  }
-  if (load_ca_to_ssl_ctx_system(ssl_ctx) == 0) {
+
+  if (load_ca_to_ssl_ctx_yass_ca_bundle(ssl_ctx) == 0 && load_ca_to_ssl_ctx_system(ssl_ctx) == 0) {
     LOG(WARNING) << "No ceritifcates from system keychain loaded, trying builtin ca bundle";
 
 #ifdef HAVE_BUILTIN_CA_BUNDLE_CRT
