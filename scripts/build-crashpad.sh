@@ -106,6 +106,7 @@ mkdir -p crashpad
 cd crashpad
 fetch --nohistory crashpad || true
 cd crashpad
+git fetch origin 5613499bbda780dfa663344ea6253844e82c88c4
 git checkout -f 5613499bbda780dfa663344ea6253844e82c88c4
 gclient sync -f
 
