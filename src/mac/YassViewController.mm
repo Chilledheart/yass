@@ -150,6 +150,12 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   YassAppDelegate* appDelegate =
       (YassAppDelegate*)NSApplication.sharedApplication.delegate;
   [self.startButton setEnabled:FALSE];
+
+  last_sync_time_ = GetMonotonicTime();
+  last_rx_bytes_ = 0U;
+  last_tx_bytes_ = 0U;
+  cli::total_rx_bytes = 0U;
+  cli::total_tx_bytes = 0U;
   [appDelegate OnStart:FALSE];
 }
 
