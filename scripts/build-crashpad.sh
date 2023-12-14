@@ -34,6 +34,9 @@ case "$ARCH" in
   ;;
 esac
 
+# Ensure that the "depot_tools" has its self-update capability disabled.
+"$PYTHON" depot_tools/update_depot_tools_toggle.py --disable
+
 flags="$flags"'
 use_sysroot=false'
 
