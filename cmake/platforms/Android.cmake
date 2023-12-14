@@ -15,7 +15,7 @@ set(CMAKE_CXX_COMPILER_AR "${LLVM_SYSROOT}/bin/llvm-ar" CACHE FILEPATH "")
 set(CMAKE_RANLIB "${LLVM_SYSROOT}/bin/llvm-ranlib" CACHE FILEPATH "")
 set(CMAKE_CXX_COMPILER_RANLIB "${LLVM_SYSROOT}/bin/llvm-ranlib" CACHE FILEPATH "")
 
-set(CMAKE_SYSROOT "${CMAKE_CURRENT_SOURCE_DIR}/third_party/android_toolchain/toolchains/llvm/prebuilt/linux-x86_64/sysroot" CACHE STRING "")
+set(CMAKE_SYSROOT "${CMAKE_CURRENT_SOURCE_DIR}/third_party/android_toolchain/toolchains/llvm/prebuilt/${CURRENT_OS}-x86_64/sysroot" CACHE STRING "")
 
 # set CMAKE_ANDROID_STL_TYPE to none manually
 # following /usr/share/cmake/Modules/Platform/Android-Common.cmake

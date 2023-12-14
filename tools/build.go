@@ -413,7 +413,7 @@ func getGNUTargetTypeAndArch(arch string, subsystem string) (string, string) {
 }
 
 func getAndFixAndroidLibunwind() {
-	getAndFixLibunwind("../third_party/android_toolchain/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.7/lib/linux", "linux")
+	getAndFixLibunwind(fmt.Sprintf("../third_party/android_toolchain/toolchains/llvm/prebuilt/%s-x86_64/lib64/clang/14.0.7/lib/linux", runtime.GOOS), "linux")
 }
 
 func getAndFixHarmonyLibunwind() {
@@ -466,6 +466,12 @@ func getAndFixLibunwind(source_path string, subdir string) {
 	entries, err = os.ReadDir(source_path)
 	if err != nil {
 		glog.Fatalf("%v", err)
+	}
+	if _, err = os.Stat(target_path); err != nil {
+		err = os.Mkdir(target_path, 0777);
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
 	}
 	for _, entry := range entries {
 		if subdir == "" && entry.Name() == "linux" {
@@ -723,6 +729,7 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DLLVM_SYSROOT=%s/../third_party/llvm-build/Release+Asserts", buildDir))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSTEM_PROCESSOR=%s", androidAppAbi))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_TARGET=%s%d", androidAbiTarget, androidApiLevel))
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCURRENT_OS=%s", runtime.GOOS))
 		// FIXME patch llvm toolchain to find libunwind.a
 		getAndFixAndroidLibunwind();
 	}
