@@ -1038,6 +1038,12 @@ LRESULT CYassFrame::OnDPIChanged(WPARAM w, LPARAM l) {
 
 void CYassFrame::OnStartButtonClicked() {
   EnableWindow(start_button_, FALSE);
+
+  last_sync_time_ = GetMonotonicTime();
+  last_rx_bytes_ = 0U;
+  last_tx_bytes_ = 0U;
+  cli::total_rx_bytes = 0U;
+  cli::total_tx_bytes = 0U;
   mApp->OnStart();
 }
 
