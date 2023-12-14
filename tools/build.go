@@ -1138,7 +1138,7 @@ func archiveFiles(output string, prefix string, paths []string) {
 		glog.Infof("generating tgz file %s", output)
 		// use below if tar supports gnu style
 		// cmd := []string{"tar", "caf", output, "--xform", fmt.Sprintf("s,^,%s/,", prefix)}
-		cmd := []string{"mkdir", prefix}
+		cmd := []string{"mkdir", "-p", prefix}
 		cmdRun(cmd, true)
 		cmd = []string{"cp", "-rf"}
 		cmd = append(cmd, paths...)
