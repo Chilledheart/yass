@@ -53,10 +53,10 @@ jobs:
         with:
           path: |
             docker/dummy
-          key: ${{ runner.os }}-docker-${{ matrix.container }}-${{ hashFiles('docker/**') }}-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-docker-${{ matrix.container }}-${{ hashFiles('docker/**') }}-v${{ env.CACHE_EPOCH }}-v1
       - name: Login to GitHub Container Registry
         if: ${{ steps.docker-cache.outputs.cache-hit != 'true' }}
-        uses: docker/login-action@v1
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
