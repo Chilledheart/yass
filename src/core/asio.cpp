@@ -100,7 +100,7 @@ static bool load_ca_to_x509_trust(X509_STORE* store, const uint8_t *data, size_t
 }
 
 static const char kEndCertificateMark[] = "-----END CERTIFICATE-----\n";
-static void load_ca_to_ssl_ctx_from_mem(SSL_CTX* ssl_ctx, const std::string_view& cadata) {
+static int load_ca_to_ssl_ctx_from_mem(SSL_CTX* ssl_ctx, const std::string_view& cadata) {
   X509_STORE* store = nullptr;
   int count = 0;
   store = SSL_CTX_get_cert_store(ssl_ctx);
@@ -122,37 +122,31 @@ static void load_ca_to_ssl_ctx_from_mem(SSL_CTX* ssl_ctx, const std::string_view
   }
 
 out:
-  VLOG(1) << "Loading ca from memory: " << count << " certificates";
+  LOG(INFO) << "Loading ca from memory: " << count << " certificates";
+  return count;
 }
 #endif // HAVE_BUILTIN_CA_BUNDLE_CRT
 
-static bool load_ca_to_ssl_ctx_override(SSL_CTX* ssl_ctx) {
-#ifdef HAVE_BUILTIN_CA_BUNDLE_CRT
-  if (absl::GetFlag(FLAGS_cacert).empty() && absl::GetFlag(FLAGS_use_ca_bundle_crt)) {
-    std::string_view ca_bundle_content(_binary_ca_bundle_crt_start, _binary_ca_bundle_crt_end - _binary_ca_bundle_crt_start);
-    load_ca_to_ssl_ctx_from_mem(ssl_ctx, ca_bundle_content);
-    return true;
-  }
-#endif // HAVE_BUILTIN_CA_BUNDLE_CRT
+static int load_ca_to_ssl_ctx_cacert(SSL_CTX* ssl_ctx) {
   std::string ca_bundle = absl::GetFlag(FLAGS_cacert);
   if (!ca_bundle.empty()) {
     int result = SSL_CTX_load_verify_locations(ssl_ctx, ca_bundle.c_str(), nullptr);
     if (result == 1) {
-      VLOG(1) << "Loading ca bundle: " << ca_bundle;
+      LOG(INFO) << "Loading ca bundle from: " << ca_bundle;
     } else {
       print_openssl_error();
     }
-    return true;
+    return result > 0;
   }
   std::string ca_path = absl::GetFlag(FLAGS_capath);
   if (!ca_path.empty()) {
     int result = SSL_CTX_load_verify_locations(ssl_ctx, nullptr, ca_path.c_str());
     if (result == 1) {
-      VLOG(1) << "Loading ca path: " << ca_bundle;
+      LOG(INFO) << "Loading ca path from location: " << ca_path;
     } else {
       print_openssl_error();
     }
-    return true;
+    return result > 0;
   }
 #ifdef _WIN32
 #define CA_BUNDLE "yass-ca-bundle.crt"
@@ -186,19 +180,16 @@ static bool load_ca_to_ssl_ctx_override(SSL_CTX* ssl_ctx) {
   for (const auto &ca_bundle : ca_bundles) {
     int result = SSL_CTX_load_verify_locations(ssl_ctx, ca_bundle.c_str(), nullptr);
     if (result == 1) {
-      VLOG(1) << "Loading ca bundle: " << ca_bundle;
-      return true;
+      LOG(INFO) << "Loading ca bundle from: " << ca_bundle;
+      return result;
     }
   }
 #endif
 
-  return false;
+  return 0;
 }
 
-void load_ca_to_ssl_ctx(SSL_CTX* ssl_ctx) {
-  if (load_ca_to_ssl_ctx_override(ssl_ctx)) {
-    return;
-  }
+static int load_ca_to_ssl_ctx_system(SSL_CTX* ssl_ctx) {
 #ifdef _WIN32
   HCERTSTORE cert_store = NULL;
   asio::error_code ec;
@@ -255,7 +246,8 @@ out:
   if (cert_store) {
     CertCloseStore(cert_store, CERT_CLOSE_STORE_FORCE_FLAG);
   }
-  VLOG(1) << "Loading ca from SChannel: " << count << " certificates";
+  LOG(INFO) << "Loading ca from SChannel: " << count << " certificates";
+  return count;
 #elif defined(__APPLE__)
   SecTrustSettingsDomain domain = kSecTrustSettingsDomainSystem;
   CFArrayRef certs;
@@ -315,8 +307,10 @@ out:
   }
 out:
   CFRelease(certs);
-  VLOG(1) << "Loading ca from Sec: " << count << " certificates";
+  LOG(INFO) << "Loading ca from Sec: " << count << " certificates";
+  return count;
 #else
+  int count = 0;
   // cert list copied from golang src/crypto/x509/root_unix.go
   const char *ca_bundle_paths[] = {
     "/etc/ssl/certs/ca-certificates.crt",     // Debian/Ubuntu/Gentoo etc.
@@ -332,8 +326,35 @@ out:
   for (auto ca_bundle : ca_bundle_paths) {
     int result = SSL_CTX_load_verify_locations(ssl_ctx, ca_bundle, nullptr);
     if (result == 1) {
-      VLOG(1) << "Loading ca bundle: " << ca_bundle;
+      ++count;
+      LOG(INFO) << "Loading ca bundle from: " << ca_bundle;
     }
   }
+  return count;
 #endif
+}
+
+void load_ca_to_ssl_ctx(SSL_CTX* ssl_ctx) {
+#ifdef HAVE_BUILTIN_CA_BUNDLE_CRT
+  if (absl::GetFlag(FLAGS_cacert).empty() && absl::GetFlag(FLAGS_use_ca_bundle_crt)) {
+    std::string_view ca_bundle_content(_binary_ca_bundle_crt_start, _binary_ca_bundle_crt_end - _binary_ca_bundle_crt_start);
+    load_ca_to_ssl_ctx_from_mem(ssl_ctx, ca_bundle_content);
+    LOG(WARNING) << "Builtin ca bundle loaded";
+    return;
+  }
+#endif // HAVE_BUILTIN_CA_BUNDLE_CRT
+  if (load_ca_to_ssl_ctx_cacert(ssl_ctx) > 0) {
+    return;
+  }
+  if (load_ca_to_ssl_ctx_system(ssl_ctx) == 0) {
+    LOG(WARNING) << "No ceritifcates from system keychain loaded, trying builtin ca bundle";
+
+#ifdef HAVE_BUILTIN_CA_BUNDLE_CRT
+    std::string_view ca_bundle_content(_binary_ca_bundle_crt_start, _binary_ca_bundle_crt_end - _binary_ca_bundle_crt_start);
+    load_ca_to_ssl_ctx_from_mem(ssl_ctx, ca_bundle_content);
+    LOG(WARNING) << "Builtin ca bundle loaded";
+#else
+    LOG(WARNING) << "Builtin ca bundle not available";
+#endif
+  }
 }
