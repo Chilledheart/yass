@@ -1,3 +1,9 @@
+yass (1.4.12-1) UNRELEASED; urgency=medium
+
+  * Fix bad F_SETFD calls.
+  * gtk: update desktop database.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Thu, 14 Dec 2023 13:17:40 +0800
 yass (1.4.11-1) UNRELEASED; urgency=medium
 
   * Bump Clang.
