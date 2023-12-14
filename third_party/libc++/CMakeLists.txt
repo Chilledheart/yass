@@ -253,6 +253,8 @@ set(libcxx_SOURCES
   trunk/src/valarray.cpp
   trunk/src/vector.cpp
   trunk/src/verbose_abort.cpp
+  trunk/src/filesystem/path.cpp
+  trunk/src/filesystem/filesystem_error.cpp
 )
 
 # TODO move to base
@@ -260,9 +262,7 @@ if (NOT WIN32 OR NOT ALLOW_XP)
   set(libcxx_SOURCES
     ${libcxx_SOURCES}
     trunk/src/filesystem/directory_iterator.cpp
-    trunk/src/filesystem/filesystem_error.cpp
     trunk/src/filesystem/operations.cpp
-    trunk/src/filesystem/path.cpp
     )
 endif()
 
