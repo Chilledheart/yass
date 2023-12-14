@@ -3400,7 +3400,13 @@ if (GUI)
     set(SRC_FILES)
     if (GUI_FLAVOUR STREQUAL "android")
         list(APPEND SRC_FILES
-          src/android/main.cc)
+          src/android/yass.cpp
+          src/android/yass.hpp
+          src/android/jni.cpp
+          src/android/jni.hpp
+          src/android/utils.hpp
+          src/android/utils.cpp
+        )
     elseif (GUI_FLAVOUR STREQUAL "windows")
         set(APP_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass.manifest")
         configure_file("src/win32/yass.manifest.in" "${APP_MSVC_MANIFEST}" @ONLY)
