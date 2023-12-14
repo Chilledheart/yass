@@ -226,7 +226,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   }
 
   std::ostringstream ss;
-  NSString *message = NSLocalizedString(@"CONNECTED", @"Connected:");
+  NSString *message = [appDelegate getStatus];
   ss << gurl_base::SysNSStringToUTF8(message);
   message = NSLocalizedString(@"TXRATE", @" tx rate: ");
   ss << gurl_base::SysNSStringToUTF8(message);
