@@ -467,7 +467,7 @@ func getAndFixLibunwind(source_path string, subdir string) {
 	if err != nil {
 		glog.Fatalf("%v", err)
 	}
-	if _, err = os.Stat(target_path); err != nil {
+	if _, err = os.Stat(target_path); errors.Is(err, os.ErrNotExist) {
 		err = os.Mkdir(target_path, 0777);
 		if err != nil {
 			glog.Fatalf("%v", err)
