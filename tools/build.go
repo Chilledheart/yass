@@ -720,6 +720,9 @@ func buildStageGenerateBuildScript() {
 	}
 
 	if systemNameFlag == "android" {
+		if _, err := os.Stat("../third_party/android_toolchain"); errors.Is(err, os.ErrNotExist) {
+			glog.Fatalf("Android Ndk Directory at third_party/android_toolchain demanded");
+		}
 		androidAbiTarget, androidAppAbi = getAndroidTargetAndAppAbi(archFlag)
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/Android.cmake", buildDir))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DANDROID_ABI=%s", androidAppAbi))
@@ -735,6 +738,9 @@ func buildStageGenerateBuildScript() {
 	}
 
 	if systemNameFlag == "harmony" {
+		if harmonyNdkDir == "" {
+			glog.Fatalf("Harmony Ndk Directory demanded");
+		}
 		harmonyAbiTarget, harmonyAppAbi = getHarmonyTargetAndAppAbi(archFlag)
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/Harmony.cmake", buildDir))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DOHOS_ARCH=%s", harmonyAppAbi))
