@@ -84,14 +84,20 @@ jobs:
           key: ${{ runner.os }}-go-docker-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-docker-
+      - name: Cache qemu-user-static
+        id: qemu-user-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            qemu-user-static*.deb
+          key: ${{ runner.os }}-qemu-v1
       - name: Cache sysroot
         id: sysroot-cache
         uses: actions/cache@v3
         with:
           path: |
             ${{ env.SDK_ROOT }}
-            qemu-user-static*.deb
-          key: ${{ runner.os }}-sysroot-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-with-qemu-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-sysroot-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-v${{ env.CACHE_EPOCH }}
       - name: Build build tool
         run: |
           cd tools
@@ -101,11 +107,14 @@ jobs:
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
+      - name: "Install dependency: qemu user cache"
+        if: ${{ steps.qemu-user-cache.outputs.cache-hit != 'true' }}
+        run: |
+          wget http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-static_8.1.2+ds-1_amd64.deb
       - name: "Install dependency: sysroot"
         if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
         run: |
           ./scripts/install-sysroot.py --arch ${{ env.ARCH }}
-          wget http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-static_8.1.2+ds-1_amd64.deb
       - name: Change ubuntu mirror
         run: |
           sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
