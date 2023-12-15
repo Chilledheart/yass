@@ -53,7 +53,6 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       ARCH: ${{ matrix.arch }}
-      SDK_ROOT: ${{ github.workspace }}/third_party/android_toolchain
       SYSROOT: ${{ github.workspace }}/android-sysroot-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v4
@@ -102,14 +101,13 @@ jobs:
         with:
           path: ~/.gradle
           key: ${{ runner.os }}-gradle-${{ hashFiles('android/**/*.gradle') }}
-      - name: Cache sdk root
-        id: ndk-cache
+      - name: Cache qemu-user-static
+        id: qemu-user-cache
         uses: actions/cache@v3
         with:
           path: |
-            ${{ env.SDK_ROOT }}
             qemu-user-static*.deb
-          key: android-ndk-multiarches-with-qemu-v2
+          key: ${{ runner.os }}-qemu-v1
       - name: Cache sysroot
         id: sysroot-cache
         uses: actions/cache@v3
@@ -130,10 +128,9 @@ jobs:
         if: ${{ steps.depot-cache.outputs.cache-hit != 'true' || steps.crashpad-cache.outputs.cache-hit != 'true' }}
         run: |
           WITH_OS=android WITH_CPU=${{ matrix.arch }} ./scripts/build-crashpad.sh
-      - name: "Install dependency: android ndk"
-        if: ${{ steps.ndk-cache.outputs.cache-hit != 'true' }}
+      - name: "Install dependency: qemu user cache"
+        if: ${{ steps.qemu-user-cache.outputs.cache-hit != 'true' }}
         run: |
-          ./scripts/install-sysroot-android.py
           wget http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-static_8.1.2+ds-1_amd64.deb
       - name: Change ubuntu mirror
         run: |

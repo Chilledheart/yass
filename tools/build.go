@@ -162,7 +162,7 @@ func InitFlag() {
 
 	flag.IntVar(&androidApiLevel, "android-api", 24, "Select Android API Level")
 	flag.StringVar(&androidSdkDir, "android-sdk-dir", getEnv("ANDROID_SDK_ROOT", ""), "Android SDK Home Path")
-	flag.StringVar(&androidNdkDir, "android-ndk-dir", getEnv("ANDROID_NDK_ROOT", ""), "Android NDK Home Path")
+	flag.StringVar(&androidNdkDir, "android-ndk-dir", getEnv("ANDROID_NDK_ROOT", "../third_party/android_toolchain"), "Android NDK Home Path")
 
 	flag.StringVar(&harmonyNdkDir, "harmony-ndk-dir", getEnv("HARMONY_NDK_ROOT", ""), "OpenHarmony NDK Home Path")
 
@@ -412,8 +412,8 @@ func getGNUTargetTypeAndArch(arch string, subsystem string) (string, string) {
 	return "", ""
 }
 
-func getAndFixAndroidLibunwind() {
-	getAndFixLibunwind(fmt.Sprintf("../third_party/android_toolchain/toolchains/llvm/prebuilt/%s-x86_64/lib64/clang/14.0.7/lib/linux", runtime.GOOS), "linux")
+func getAndFixAndroidLibunwind(ndkDir string) {
+	getAndFixLibunwind(fmt.Sprintf("%s/toolchains/llvm/prebuilt/%s-x86_64/lib64/clang/14.0.7/lib/linux", ndkDir, runtime.GOOS), "linux")
 }
 
 func getAndFixHarmonyLibunwind() {
@@ -430,7 +430,7 @@ func getAndFixHarmonyLibunwind() {
 		if !strings.Contains(entry.Name(), "-ohos") {
 			continue;
 		}
-		if _, err = os.Stat(filepath.Join(target_path, entry.Name())); err == nil {
+		if _, err = os.Lstat(filepath.Join(target_path, entry.Name())); err == nil {
 			err = os.Remove(filepath.Join(target_path, entry.Name()))
 			if err != nil {
 				glog.Fatalf("%v", err)
@@ -477,7 +477,7 @@ func getAndFixLibunwind(source_path string, subdir string) {
 		if subdir == "" && entry.Name() == "linux" {
 			continue;
 		}
-		if _, err = os.Stat(filepath.Join(target_path, entry.Name())); err == nil {
+		if _, err = os.Lstat(filepath.Join(target_path, entry.Name())); err == nil {
 			err = os.Remove(filepath.Join(target_path, entry.Name()))
 			if err != nil {
 				glog.Fatalf("%v", err)
@@ -720,21 +720,23 @@ func buildStageGenerateBuildScript() {
 	}
 
 	if systemNameFlag == "android" {
-		if _, err := os.Stat("../third_party/android_toolchain"); errors.Is(err, os.ErrNotExist) {
-			glog.Fatalf("Android Ndk Directory at third_party/android_toolchain demanded");
+		if _, err := os.Stat(androidNdkDir); errors.Is(err, os.ErrNotExist) {
+			glog.Fatalf("Android Ndk Directory at %s demanded", androidNdkDir);
 		}
+		glog.Infof("Using android ndk dir %s", androidNdkDir);
 		androidAbiTarget, androidAppAbi = getAndroidTargetAndAppAbi(archFlag)
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/Android.cmake", buildDir))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DANDROID_ABI=%s", androidAppAbi))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DANDROID_ABI_TARGET=%s", androidAbiTarget))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DANDROID_API_VERSION=%d", androidApiLevel))
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DANDROID_NDK_ROOT=%s", androidNdkDir))
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DANDROID_CURRENT_OS=%s", runtime.GOOS))
 
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DLLVM_SYSROOT=%s/../third_party/llvm-build/Release+Asserts", buildDir))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSTEM_PROCESSOR=%s", androidAppAbi))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_TARGET=%s%d", androidAbiTarget, androidApiLevel))
-		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCURRENT_OS=%s", runtime.GOOS))
 		// FIXME patch llvm toolchain to find libunwind.a
-		getAndFixAndroidLibunwind();
+		getAndFixAndroidLibunwind(androidNdkDir);
 	}
 
 	if systemNameFlag == "harmony" {
