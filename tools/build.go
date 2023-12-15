@@ -1247,13 +1247,13 @@ func archiveMainFile(output string, prefix string, paths []string) {
 		}
 		_, abi := getAndroidTargetAndAppAbi(archFlag)
 		if cmakeBuildTypeFlag == "Release" || cmakeBuildTypeFlag == "MinSizeRel" {
-			cmdRun([]string{"./gradlew", "yass:assembleRelease"}, true)
+			cmdRun([]string{"./gradlew", "yass:assembleRelease", "--info"}, true)
 			err = os.Rename(fmt.Sprintf("./yass/build/outputs/apk/release/yass-%s-release-unsigned.apk", abi), output)
 			if err != nil {
 				glog.Fatalf("%v", err)
 			}
 		} else {
-			cmdRun([]string{"./gradlew", "yass:assembleDebug"}, true)
+			cmdRun([]string{"./gradlew", "yass:assembleDebug", "--info"}, true)
 			err = os.Rename(fmt.Sprintf("./yass/build/outputs/apk/debug/yass-%s-release-unsigned.apk", abi), output)
 			if err != nil {
 				glog.Fatalf("%v", err)
