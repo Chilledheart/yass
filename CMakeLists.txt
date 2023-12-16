@@ -1659,7 +1659,7 @@ if (HAVE_FLOCK)
   add_definitions(-DHAVE_FLOCK)
 endif()
 
-if (NOT WIN32)
+if (NOT WIN32 AND NOT APPLE)
   check_library_exists(c pipe2 "" HAVE_PIPE2)
   check_library_exists(c dup3 "" HAVE_DUP3)
 endif()
@@ -1783,7 +1783,7 @@ elseif (WIN32 AND GUI)
   else()
     set(GUI_LIBRARIES rasapi32 wininet shlwapi winmm gdi32 comdlg32 ole32 comctl32 shell32)
   endif()
-elseif (APPLE AND GUI AND COMPILER_CLANG)
+elseif (APPLE AND GUI AND NOT IOS)
   message(STATUS "Compiling with GUI support: Cocoa")
   find_library(COCOA_LIBRARY Cocoa REQUIRED)
   # Locate Interface Builder Tool, needed to build things like Storyboards outside of Xcode.
@@ -3341,7 +3341,7 @@ if (CLI)
     yass_base
     )
 
-  if (NOT CMAKE_SKIP_INSTALL_RULES AND NOT WIN32)
+  if (NOT CMAKE_SKIP_INSTALL_RULES AND NOT WIN32 AND NOT IOS)
     install(TARGETS yass_cli RUNTIME DESTINATION bin)
     # TODO add freebsd rc files
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID AND NOT OHOS)
@@ -3382,7 +3382,7 @@ if (SERVER)
     yass_base
     )
 
-  if (NOT CMAKE_SKIP_INSTALL_RULES AND NOT WIN32)
+  if (NOT CMAKE_SKIP_INSTALL_RULES AND NOT WIN32 AND NOT IOS)
     install(TARGETS yass_server RUNTIME DESTINATION bin)
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID AND NOT OHOS)
       install(FILES yass-server.json.sample RENAME server.json DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/yass)
