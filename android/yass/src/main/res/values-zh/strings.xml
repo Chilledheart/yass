@@ -16,7 +16,7 @@
     <string name="status_started_with_error">无法连接因: %d</string>
     <string name="button_start">启动</string>
     <string name="button_stop">停止</string>
-    <string name="status_started_with_rate">已产生连接:  %d  上传速率:  %f  下载速率:  %f</string>
+    <string name="status_started_with_rate">已产生连接:  %d  上传速率:  %.02f  下载速率:  %.02f</string>
     <string name="status_ready">就绪</string>
     <string name="label_timeout">超时时间</string>
     <string name="status_current_ip_address">本地IP地址: %s</string>
