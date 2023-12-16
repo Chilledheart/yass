@@ -52,6 +52,8 @@ var macosxVersionMinFlag string
 var macosxUniversalBuildFlag bool
 var macosxCodeSignIdentityFlag string
 
+var iosVersionMinFlag string
+
 var msvcTargetArchFlag string
 var msvcCrtLinkageFlag string
 var msvcAllowXpFlag bool
@@ -146,6 +148,8 @@ func InitFlag() {
 	flag.StringVar(&macosxVersionMinFlag, "macosx-version-min", getEnv("MACOSX_DEPLOYMENT_TARGET", "10.14"), "Set Mac OS X deployment target, such as 10.15")
 	flag.BoolVar(&macosxUniversalBuildFlag, "macosx-universal-build", getEnvBool("ENABLE_OSX_UNIVERSAL_BUILD", true), "Enable Mac OS X Universal Build")
 	flag.StringVar(&macosxCodeSignIdentityFlag, "macosx-codesign-identity", getEnv("CODESIGN_IDENTITY", "-"), "Set Mac OS X CodeSign Identity")
+
+	flag.StringVar(&iosVersionMinFlag, "ios-version-min", getEnv("MACOSX_DEPLOYMENT_TARGET", "13.0"), "Set iOS deployment target, such as 13.0")
 
 	flag.StringVar(&msvcTargetArchFlag, "msvc-tgt-arch", getEnv("VSCMD_ARG_TGT_ARCH", "x64"), "Set Visual C++ Target Achitecture")
 	flag.StringVar(&msvcCrtLinkageFlag, "msvc-crt-linkage", getEnv("MSVC_CRT_LINKAGE", "static"), "Set Visual C++ CRT Linkage")
@@ -265,6 +269,11 @@ func prebuildFindSourceDirectory() {
 		buildDir = fmt.Sprintf("build-%s%d-%s", systemNameFlag, freebsdAbiFlag, archFlag)
 	} else if systemNameFlag == "android" {
 		buildDir = fmt.Sprintf("build-%s%d-%s", systemNameFlag, androidApiLevel, archFlag)
+	} else if systemNameFlag == "ios" {
+		buildDir = fmt.Sprintf("build-%s-%s", systemNameFlag, archFlag)
+		if subSystemNameFlag != "" {
+			buildDir = fmt.Sprintf("build-%s-%s-%s", systemNameFlag, subSystemNameFlag, archFlag)
+		}
 	} else {
 		arch := archFlag
 		if systemNameFlag == "darwin" && macosxUniversalBuildFlag {
@@ -717,6 +726,35 @@ func buildStageGenerateBuildScript() {
 		if macosxUniversalBuildFlag {
 			cmakeArgs = append(cmakeArgs, "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64")
 		}
+	}
+
+	if systemNameFlag == "ios" {
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/ios.toolchain.cmake", buildDir))
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DDEPLOYMENT_TARGET=%s", iosVersionMinFlag))
+		platform := "OS"
+		if subSystemNameFlag == "simulator" {
+			if archFlag == "x86" {
+				platform = "SIMULATOR"
+			} else if archFlag == "x86_64" {
+				platform = "SIMULATOR64"
+			} else if archFlag == "arm64" {
+				platform = "SIMULATORARM64"
+			} else {
+				glog.Fatalf("Invalid archFlag: %s", archFlag);
+			}
+		} else if subSystemNameFlag != "" {
+			glog.Fatalf("Invalid subSystemNameFlag: %s", subSystemNameFlag);
+		} else {
+			if archFlag == "arm" {
+				platform = "OS"
+			} else if archFlag == "arm64" {
+				platform = "OS64"
+			} else {
+				glog.Fatalf("Invalid archFlag: %s", archFlag);
+			}
+		}
+
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DPLATFORM=%s", platform))
 	}
 
 	if systemNameFlag == "android" {

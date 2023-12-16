@@ -18,7 +18,7 @@ struct IUnknown;
 #endif
 #include <wincrypt.h>
 #undef X509_NAME
-#elif defined(__APPLE__)
+#elif BUILDFLAG(IS_MAC)
 #include <Security/Security.h>
 #endif
 
@@ -306,7 +306,9 @@ out:
   }
   LOG(INFO) << "Loading ca from SChannel: " << count << " certificates";
   return count;
-#elif defined(__APPLE__)
+#elif BUILDFLAG(IS_IOS)
+  return 0;
+#elif BUILDFLAG(IS_MAC)
   SecTrustSettingsDomain domain = kSecTrustSettingsDomainSystem;
   CFArrayRef certs;
   OSStatus status;
