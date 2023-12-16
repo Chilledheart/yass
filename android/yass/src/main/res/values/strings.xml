@@ -13,10 +13,10 @@
     <string name="status_stopping">STOPPING</string>
     <string name="status_starting">STARTING</string>
     <string name="status_started_with_error">Failed to connect due to %d</string>
-    <string name="status_started_with_rate">Connected with conns: %d rx rate: %f tx rate: %f</string>
+    <string name="status_started_with_rate">Connected with conns: %d rx rate: %.02f tx rate: %.02f</string>
     <string name="button_start">START</string>
     <string name="button_stop">STOP</string>
     <string name="status_ready">READY</string>
     <string name="label_timeout" >Timeout</string>
-    <string name="status_current_ip_address">Local IP Address: %s</string>
+    <string name="status_current_ip_address">Local IP Address: %s:3000</string>
 </resources>
