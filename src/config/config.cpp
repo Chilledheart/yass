@@ -157,11 +157,19 @@ ABSL_FLAG(int32_t,
           "Port number which remote server listens to");
 ABSL_FLAG(std::string,
           local_host,
+#ifdef __ANDROID__
+          "0.0.0.0",
+#else
           "127.0.0.1",
+#endif
           "Host address which local server listens to");
 ABSL_FLAG(int32_t,
           local_port,
+#ifdef __ANDROID__
+          3000,
+#else
           8000,
+#endif
           "Port number which local server listens to");
 
 ABSL_FLAG(std::string, username, "<default-user>", "Username");
