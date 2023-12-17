@@ -727,8 +727,10 @@ func buildStageGenerateBuildScript() {
 			cmakeArgs = append(cmakeArgs, "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64")
 		} else {
 			if archFlag == "x64" || archFlag == "x86_64" || archFlag == "amd64" {
+				cmakeArgs = append(cmakeArgs, "-DCMAKE_SYSTEM_PROCESSOR=x86_64")
 				cmakeArgs = append(cmakeArgs, "-DCMAKE_OSX_ARCHITECTURES=x86_64")
 			} else if archFlag == "arm64" {
+				cmakeArgs = append(cmakeArgs, "-DCMAKE_SYSTEM_PROCESSOR=arm64")
 				cmakeArgs = append(cmakeArgs, "-DCMAKE_OSX_ARCHITECTURES=arm64")
 			} else if archFlag == "" {
 				// nop
