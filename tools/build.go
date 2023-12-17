@@ -735,7 +735,7 @@ func buildStageGenerateBuildScript() {
 		if subSystemNameFlag == "simulator" {
 			if archFlag == "x86" {
 				platform = "SIMULATOR"
-			} else if archFlag == "x86_64" {
+			} else if archFlag == "x64" || archFlag == "x86_64" || archFlag == "amd64" {
 				platform = "SIMULATOR64"
 			} else if archFlag == "arm64" {
 				platform = "SIMULATORARM64"
