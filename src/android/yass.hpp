@@ -8,10 +8,6 @@
 #include <memory>
 #include <jni.h>
 
-extern JavaVM                 *g_jvm;
-extern JNIEnv                 *g_env;
-extern jobject                 g_activity_obj;
-
 extern "C"
 JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeCreate(JNIEnv *env, jobject obj);
 extern "C"
