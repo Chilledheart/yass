@@ -250,10 +250,10 @@ JNIEXPORT jlongArray JNICALL Java_it_gui_yass_MainActivity_getRealtimeTransferRa
   std::stringstream ss;
   ss << "polling " << dresult[0] << " connections";
 
-  ss << " tx rate: ";
+  ss << " rx rate: ";
   humanReadableByteCountBin(&ss, dresult[1]);
   ss << "/s";
-  ss << " rx rate: ";
+  ss << " tx rate: ";
   humanReadableByteCountBin(&ss, dresult[2]);
   ss << "/s";
 
