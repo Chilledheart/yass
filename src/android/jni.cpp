@@ -4,9 +4,22 @@
 #ifdef __ANDROID__
 
 #include "android/jni.hpp"
+#include "android/yass.hpp"
 
 #include "config/config.hpp"
 #include "crypto/crypter_export.hpp"
+
+JavaVM                     *g_jvm = nullptr;
+jobject                     g_activity_obj = nullptr;
+
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
+  g_jvm = vm;
+  return JNI_VERSION_1_6;
+}
+
+JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved) {
+  g_jvm = nullptr;
+}
 
 JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getServerHost(JNIEnv *env, jobject obj) {
   return env->NewStringUTF(absl::GetFlag(FLAGS_server_host).c_str());

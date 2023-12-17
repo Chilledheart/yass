@@ -7,7 +7,11 @@
 
 #include <arpa/inet.h>
 
-#include "android/yass.hpp"
+#ifdef HAVE_C_ARES
+#include <ares.h>
+#endif
+
+#include "android/jni.hpp"
 #include "core/logging.hpp"
 
 int32_t GetIpAddress(JNIEnv *env) {
@@ -236,13 +240,15 @@ int OpenApkAsset(const std::string& file_path,
   // resources :(
 
   JavaVM* java_vm = g_jvm;
-  JNIEnv* java_env = g_env;
+  JNIEnv* java_env = nullptr;
 
-  jint jni_return = g_env ? JNI_OK : java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
+  jint jni_return = java_vm->GetEnv((void**)&java_env, JNI_VERSION_1_6);
   if (jni_return == JNI_ERR)
     return -1;
 
-  jni_return = g_env ? JNI_OK : java_vm->AttachCurrentThread(&java_env, nullptr);
+  bool detached  = jni_return == JNI_EDETACHED;
+
+  jni_return = detached ? java_vm->AttachCurrentThread(&java_env, nullptr) : JNI_OK;
   if (jni_return != JNI_OK)
     return -1;
 
@@ -275,11 +281,35 @@ int OpenApkAsset(const std::string& file_path,
 
   java_env->ReleaseLongArrayElements(array, results, JNI_ABORT);
 
-  jni_return = g_env ? JNI_OK : java_vm->DetachCurrentThread();
+  jni_return = detached ? java_vm->DetachCurrentThread() : JNI_OK;
   if (jni_return != JNI_OK)
     return -1;
 
   return fd;
 }
+
+#ifdef HAVE_C_ARES
+int InitializeCares(JNIEnv *env, jobject activity_obj) {
+  DCHECK(g_jvm) << "jvm not available";
+  DCHECK(g_activity_obj) << "activity not available";
+
+  JavaVM* java_vm = g_jvm;
+
+  jclass activity_clazz = env->GetObjectClass(g_activity_obj);
+  if (activity_clazz == nullptr)
+    return -1;
+
+  jmethodID method_id = env->GetMethodID(activity_clazz, "getConnectivityManager", "()Landroid/net/ConnectivityManager;");
+  if (method_id == nullptr)
+    return -2;
+
+  jobject cm = env->CallObjectMethod(g_activity_obj, method_id);
+  if (cm == nullptr)
+    return -3;
+
+  ares_library_init_jvm(java_vm);
+  return ares_library_init_android(cm);
+}
+#endif // HAVE_C_ARES
 
 #endif // __ANDROID__

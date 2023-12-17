@@ -6,6 +6,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.res.Resources;
+import android.net.ConnectivityManager;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.view.View;
@@ -254,6 +255,11 @@ public class MainActivity extends Activity {
             mRefreshTimer.cancel();
             mRefreshTimer.purge();
         }
+    }
+
+    @SuppressWarnings("unused")
+    public ConnectivityManager getConnectivityManager() {
+        return (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
     }
 
     @SuppressWarnings("unused")

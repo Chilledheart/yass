@@ -16,12 +16,10 @@
 #include "cli/cli_connection_stats.hpp"
 #include "crashpad_helper.hpp"
 #include "android/utils.hpp"
+#include "android/jni.hpp"
 
 // Data
 static bool                 g_Initialized = false;
-JavaVM                     *g_jvm = nullptr;
-JNIEnv                     *g_env = nullptr;
-jobject                     g_activity_obj = nullptr;
 
 // Forward declarations of helper functions
 static void Init(JNIEnv *env, jobject activity_obj);
@@ -37,6 +35,10 @@ void Init(JNIEnv *env, jobject activity_obj) {
     return;
 
   LOG(INFO) << "android: Initialize";
+
+#ifdef HAVE_C_ARES
+  CHECK_EQ(0, InitializeCares(env, activity_obj));
+#endif
 
 #ifdef HAVE_CRASHPAD
   // FIXME correct the path
@@ -138,10 +140,8 @@ static int CallOnNativeStopped(JavaVM* jvm, jobject activity_obj) {
 
 // called from java thread
 JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeCreate(JNIEnv *env, jobject obj) {
-  jint jni_return = env->GetJavaVM(&g_jvm);
-  CHECK_NE(jni_return, JNI_ERR) << "jvm not found";
+  CHECK(g_jvm) << "jvm not found";
   g_activity_obj = obj;
-  g_env = env;
 
   a_open_apk_asset = OpenApkAsset;
 
@@ -169,7 +169,6 @@ JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeCreate(JNIEnv *env,
 
   Init(env, obj);
 
-  g_env = nullptr;
   g_activity_obj = env->NewGlobalRef(obj);
 }
 
@@ -179,7 +178,6 @@ JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeDestroy(JNIEnv *env
   env->DeleteGlobalRef(g_activity_obj);
   g_jvm = nullptr;
   g_activity_obj = nullptr;
-  g_env = nullptr;
 }
 
 static uint64_t g_last_sync_time;
@@ -250,10 +248,10 @@ JNIEXPORT jlongArray JNICALL Java_it_gui_yass_MainActivity_getRealtimeTransferRa
   std::stringstream ss;
   ss << "polling " << dresult[0] << " connections";
 
-  ss << " tx rate: ";
+  ss << " rx rate: ";
   humanReadableByteCountBin(&ss, dresult[1]);
   ss << "/s";
-  ss << " rx rate: ";
+  ss << " tx rate: ";
   humanReadableByteCountBin(&ss, dresult[2]);
   ss << "/s";
 
