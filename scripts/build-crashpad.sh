@@ -7,6 +7,7 @@ cd $PWD/..
 ARCH=$(uname -s)
 MACHINE=$(uname -m)
 PYTHON=$(which python3 2>/dev/null || which python 2>/dev/null)
+CRASHPAD_COMMIT=$(< CRASHPAD_COMMIT)
 
 cd third_party
 
@@ -148,8 +149,8 @@ mkdir -p crashpad
 cd crashpad
 fetch --nohistory crashpad || true
 cd crashpad
-git fetch origin 5613499bbda780dfa663344ea6253844e82c88c4
-git checkout -f 5613499bbda780dfa663344ea6253844e82c88c4
+git fetch origin $CRASHPAD_COMMIT
+git checkout -f $CRASHPAD_COMMIT
 git reset --hard
 gclient sync -f
 
