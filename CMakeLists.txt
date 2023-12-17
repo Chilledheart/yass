@@ -1805,6 +1805,17 @@ elseif (APPLE AND GUI AND NOT IOS)
   set(GUI_C_CXX_FLAGS "")
   set(GUI_LIBRARY_DIRS "")
   set(GUI_LIBRARIES "${COCOA_LIBRARY}")
+elseif (IOS AND GUI)
+  message(STATUS "Compiling with GUI support: IOS (dummy)")
+  find_library(UIKIT_LIBRARY UIKit REQUIRED)
+
+  set(GUI_FLAVOUR "ios")
+  set(GUI_USE_FILE "")
+  set(GUI_INCLUDE_DIRS "")
+  set(GUI_DEFINITIONS "")
+  set(GUI_C_CXX_FLAGS "")
+  set(GUI_LIBRARY_DIRS "")
+  set(GUI_LIBRARIES "${UIKIT_LIBRARY}")
 elseif (GUI)
   message(STATUS "Compiling with GUI support: GTK+")
   find_package(PkgConfig)
@@ -2148,7 +2159,15 @@ if (MSVC AND ${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS "${_CRASHPAD_PREFIX}
   install(FILES "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler.exe" DESTINATION bin)
 endif()
 
-if (NOT OSX_CROSS_ARCHITECTURES_COUNT)
+if (IOS)
+  if (SDK_NAME STREQUAL iphoneos)
+    set(_CRASHPAD_OS "-ios")
+    set(_CRASHPAD_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
+  else()
+    set(_CRASHPAD_OS "-ios-simulator")
+    set(_CRASHPAD_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
+  endif()
+elseif (NOT OSX_CROSS_ARCHITECTURES_COUNT)
   set(_CRASHPAD_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
 elseif (OSX_CROSS_ARCHITECTURES_COUNT EQUAL 1)
   set(_CRASHPAD_ARCH "${CMAKE_OSX_ARCHITECTURES}")
@@ -2196,6 +2215,34 @@ if ((${CMAKE_BUILD_TYPE} MATCHES MinSizeRel OR ${CMAKE_BUILD_TYPE} MATCHES Relea
   )
   target_link_libraries(yass_crashpad PRIVATE crashpad_client crashpad_common crashpad_util mini_chromium_base)
   set(SUPPORT_LIBS yass_crashpad ${SUPPORT_LIBS})
+  if (IOS)
+    add_library(crashpad_handler_common STATIC IMPORTED)
+    set_property(TARGET crashpad_handler_common PROPERTY
+                 IMPORTED_LOCATION "${_CRASHPAD_PREFIX}/obj/handler/libcommon.a")
+    target_link_libraries(yass_crashpad PRIVATE crashpad_handler_common)
+
+    add_library(crashpad_minidump STATIC IMPORTED)
+    set_property(TARGET crashpad_minidump PROPERTY
+                 IMPORTED_LOCATION "${_CRASHPAD_PREFIX}/obj/minidump/libminidump.a")
+    target_link_libraries(yass_crashpad PRIVATE crashpad_minidump)
+
+    add_library(crashpad_snapshot STATIC IMPORTED)
+    set_property(TARGET crashpad_snapshot PROPERTY
+                 IMPORTED_LOCATION "${_CRASHPAD_PREFIX}/obj/snapshot/libsnapshot.a")
+    target_link_libraries(yass_crashpad PRIVATE crashpad_snapshot)
+
+    add_library(crashpad_snapshot_context STATIC IMPORTED)
+    set_property(TARGET crashpad_snapshot_context PROPERTY
+                 IMPORTED_LOCATION "${_CRASHPAD_PREFIX}/obj/snapshot/libcontext.a")
+    target_link_libraries(yass_crashpad PRIVATE crashpad_snapshot_context)
+
+    add_library(crashpad_util_net STATIC IMPORTED)
+    set_property(TARGET crashpad_util_net PROPERTY
+                 IMPORTED_LOCATION "${_CRASHPAD_PREFIX}/obj/util/libnet.a")
+    target_link_libraries(yass_crashpad PRIVATE crashpad_util_net)
+
+    target_link_libraries(yass_crashpad PRIVATE z)
+  endif()
   if (APPLE)
     add_library(crashpad_util_mig STATIC IMPORTED)
     set_property(TARGET crashpad_util_mig PROPERTY
@@ -2203,8 +2250,10 @@ if ((${CMAKE_BUILD_TYPE} MATCHES MinSizeRel OR ${CMAKE_BUILD_TYPE} MATCHES Relea
     target_link_libraries(yass_crashpad PRIVATE crashpad_util_mig bsm)
   endif()
 
-  file(COPY "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler" DESTINATION ${CMAKE_BINARY_DIR})
-  set(_CRASHPAD_BINARY "${CMAKE_BINARY_DIR}/crashpad_handler")
+  if (NOT IOS)
+    file(COPY "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler" DESTINATION ${CMAKE_BINARY_DIR})
+    set(_CRASHPAD_BINARY "${CMAKE_BINARY_DIR}/crashpad_handler")
+  endif()
 endif()
 
 # *****************************************************************************************
@@ -3467,6 +3516,9 @@ if (GUI)
           src/mac/utils.h
           src/mac/utils_mac.mm
           src/mac/main.mm)
+    elseif (GUI_FLAVOUR STREQUAL "ios")
+        list(APPEND SRC_FILES
+          src/ios/main.mm)
     elseif(GUI_FLAVOUR STREQUAL "gtk3")
         list(APPEND SRC_FILES
           src/gtk/yass.cpp
@@ -3505,7 +3557,7 @@ if (GUI)
     # target_link_directories requires cmake 3.13
     link_directories(${GUI_LIBRARY_DIRS})
 
-    if (GUI_FLAVOUR STREQUAL "cocoa")
+    if (GUI_FLAVOUR STREQUAL "ios" OR GUI_FLAVOUR STREQUAL "cocoa")
       set(GUI_OPTIONS MACOSX_BUNDLE)
     endif()
 
@@ -3537,6 +3589,9 @@ if (GUI)
     elseif(GUI_FLAVOUR STREQUAL "cocoa")
       target_include_directories(${APP_NAME} PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/src/mac)
+    elseif(GUI_FLAVOUR STREQUAL "ios")
+      target_include_directories(${APP_NAME} PRIVATE
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/ios)
     elseif(GUI_FLAVOUR STREQUAL "gtk3")
       target_include_directories(${APP_NAME} PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk)
