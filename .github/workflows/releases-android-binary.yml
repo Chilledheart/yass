@@ -124,6 +124,12 @@ jobs:
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
+      - name: Build TGZ packages (no build, for patching)
+        run: |
+          # FIXME required by next step, need to copy to current clang with ndk's libunwind.a
+          ./tools/build --variant gui --arch ${{ matrix.arch }} --system android \
+            -cmake-build-type MinSizeRel -no-build -no-configure \
+            -android-sdk-dir "${ANDROID_HOME}" -android-ndk-dir "${ANDROID_NDK_HOME}"
       - name: Download and Build Crashpad (include depot_tools)
         if: ${{ steps.depot-cache.outputs.cache-hit != 'true' || steps.crashpad-cache.outputs.cache-hit != 'true' }}
         run: |
