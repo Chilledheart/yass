@@ -23,7 +23,7 @@ extern "C"
 JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStop(JNIEnv *env, jobject obj);
 
 extern "C"
-JNIEXPORT jdoubleArray JNICALL Java_it_gui_yass_MainActivity_getRealtimeTransferRate(JNIEnv *env, jobject obj);
+JNIEXPORT jlongArray JNICALL Java_it_gui_yass_MainActivity_getRealtimeTransferRate(JNIEnv *env, jobject obj);
 
 #endif // __ANDROID__
 
