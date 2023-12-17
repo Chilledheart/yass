@@ -4,7 +4,6 @@
 #ifdef __ANDROID__
 
 #include "android/jni.hpp"
-#include "android/yass.hpp"
 
 #include "config/config.hpp"
 #include "crypto/crypter_export.hpp"
