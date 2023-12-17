@@ -7,6 +7,10 @@
 
 #include <arpa/inet.h>
 
+#ifdef HAVE_C_ARES
+#include <ares.h>
+#endif
+
 #include "android/yass.hpp"
 #include "core/logging.hpp"
 
@@ -281,5 +285,29 @@ int OpenApkAsset(const std::string& file_path,
 
   return fd;
 }
+
+#ifdef HAVE_C_ARES
+int InitializeCares(JNIEnv *env, jobject activity_obj) {
+  DCHECK(g_jvm) << "jvm not available";
+  DCHECK(g_activity_obj) << "activity not available";
+
+  JavaVM* java_vm = g_jvm;
+
+  jclass activity_clazz = env->GetObjectClass(g_activity_obj);
+  if (activity_clazz == nullptr)
+    return -1;
+
+  jmethodID method_id = env->GetMethodID(activity_clazz, "getConnectivityManager", "()Landroid/net/ConnectivityManager;");
+  if (method_id == nullptr)
+    return -2;
+
+  jobject cm = env->CallObjectMethod(g_activity_obj, method_id);
+  if (cm == nullptr)
+    return -3;
+
+  ares_library_init_jvm(java_vm);
+  return ares_library_init_android(cm);
+}
+#endif // HAVE_C_ARES
 
 #endif // __ANDROID__

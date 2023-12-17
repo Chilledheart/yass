@@ -21,6 +21,9 @@ int GetDataLibraryDirectory(JNIEnv *env, jobject activity_obj, std::string* resu
 int GetCurrentLocale(JNIEnv *env, jobject activity_obj, std::string* result);
 int OpenApkAsset(const std::string& file_path,
                  gurl_base::MemoryMappedFile::Region* region);
+#ifdef HAVE_C_ARES
+int InitializeCares(JNIEnv *env, jobject activity_obj);
+#endif // HAVE_C_ARES
 
 #endif // __ANDROID__
 

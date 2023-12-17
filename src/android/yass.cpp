@@ -38,6 +38,10 @@ void Init(JNIEnv *env, jobject activity_obj) {
 
   LOG(INFO) << "android: Initialize";
 
+#ifdef HAVE_C_ARES
+  CHECK_EQ(0, InitializeCares(env, activity_obj));
+#endif
+
 #ifdef HAVE_CRASHPAD
   // FIXME correct the path
   std::string lib_path;
