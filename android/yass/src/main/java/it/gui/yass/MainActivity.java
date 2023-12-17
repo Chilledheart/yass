@@ -216,17 +216,34 @@ public class MainActivity extends Activity {
 
     // first connection number, then rx rate, then tx rate
 
-    private native double[] getRealtimeTransferRate();
+    private native long[] getRealtimeTransferRate();
+
+    private static String humanReadableByteCountBin(long bytes) {
+        if (bytes < 1024) {
+            return String.format("%d B/s", bytes);
+        }
+        long value = bytes;
+        String ci = "KMGTPE";
+        int cPos = 0;
+        for (int i = 40; i >= 0 && bytes > 0xfffccccccccccccL >> i; i -= 10) {
+            value >>= 10;
+            ++cPos;
+        }
+        return String.format("%5.2f %c/s", value / 1024.0, ci.charAt(cPos));
+    }
 
     private void startRefreshPoll() {
         mRefreshTimer = new Timer();
         TimerTask mRefreshTimerTask = new TimerTask() {
             @Override
             public void run() {
-                double[] result = getRealtimeTransferRate();
+                long[] result = getRealtimeTransferRate();
                 TextView statusTextView = findViewById(R.id.statusTextView);
                 Resources res = getResources();
-                statusTextView.setText(String.format(res.getString(R.string.status_started_with_rate), (int) result[0], result[1], result[2]));
+                statusTextView.setText(String.format(res.getString(R.string.status_started_with_rate),
+                        result[0],
+                        humanReadableByteCountBin(result[1]),
+                        humanReadableByteCountBin(result[2])));
             }
         };
         mRefreshTimer.schedule(mRefreshTimerTask, 0, 1000L);

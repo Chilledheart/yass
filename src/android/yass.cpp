@@ -5,6 +5,7 @@
 
 #include "android/yass.hpp"
 
+#include <iomanip>
 #include <jni.h>
 #include <openssl/crypto.h>
 
@@ -210,11 +211,27 @@ JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStop(JNIEnv *env, job
   });
 }
 
-JNIEXPORT jdoubleArray JNICALL Java_it_gui_yass_MainActivity_getRealtimeTransferRate(JNIEnv *env, jobject obj) {
+static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
+  if (bytes < 1024) {
+    *ss << bytes << " B";
+    return;
+  }
+  uint64_t value = bytes;
+  char ci[] = {"KMGTPE"};
+  const char* c = ci;
+  for (int i = 40; i >= 0 && bytes > 0xfffccccccccccccLU >> i; i -= 10) {
+    value >>= 10;
+    ++c;
+  }
+  *ss << std::fixed << std::setw(5) << std::setprecision(2) << value / 1024.0
+      << " " << *c;
+}
+
+JNIEXPORT jlongArray JNICALL Java_it_gui_yass_MainActivity_getRealtimeTransferRate(JNIEnv *env, jobject obj) {
   uint64_t sync_time = GetMonotonicTime();
   uint64_t delta_time = sync_time - g_last_sync_time;
-  static double rx_rate = 0;
-  static double tx_rate = 0;
+  static uint64_t rx_rate = 0;
+  static uint64_t tx_rate = 0;
   if (delta_time > NS_PER_SECOND) {
     uint64_t rx_bytes = cli::total_rx_bytes;
     uint64_t tx_bytes = cli::total_tx_bytes;
@@ -226,10 +243,21 @@ JNIEXPORT jdoubleArray JNICALL Java_it_gui_yass_MainActivity_getRealtimeTransfer
     g_last_rx_bytes = rx_bytes;
     g_last_tx_bytes = tx_bytes;
   }
-  double dresult[3] = { g_worker->currentConnections(), rx_rate, tx_rate };
-  auto result = env->NewDoubleArray(3);
-  env->SetDoubleArrayRegion(result, 0, 3, dresult);
-  LOG(INFO) << "polling: rx rate " << rx_rate << " tx rate " << tx_rate;
+  jlong dresult[3] = { g_worker->currentConnections(), rx_rate, tx_rate };
+  auto result = env->NewLongArray(3);
+  env->SetLongArrayRegion(result, 0, 3, dresult);
+
+  std::stringstream ss;
+  ss << "polling " << dresult[0] << " connections";
+
+  ss << " tx rate: ";
+  humanReadableByteCountBin(&ss, dresult[1]);
+  ss << "/s";
+  ss << " rx rate: ";
+  humanReadableByteCountBin(&ss, dresult[2]);
+  ss << "/s";
+
+  LOG(INFO) << ss.str();
   return result;
 }
 
