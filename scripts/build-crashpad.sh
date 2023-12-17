@@ -7,6 +7,7 @@ cd $PWD/..
 ARCH=$(uname -s)
 MACHINE=$(uname -m)
 PYTHON=$(which python3 2>/dev/null || which python 2>/dev/null)
+CRASHPAD_COMMIT=$(< CRASHPAD_COMMIT)
 
 cd third_party
 
@@ -81,11 +82,11 @@ target_os=\"$WITH_OS\""
 fi
 
 case "$WITH_OS" in
-  mac)
+  mac|ios)
     flags="$flags
 clang_path=\"$PWD/llvm-build/Release+Asserts\"
 extra_cflags_cc=\"-nostdinc++ -I $PWD/libc++ -I $PWD/libc++/trunk/include -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\"
-extra_cflags_objcc=\"-nostdinc++ -I $PWD/libc++ -I $PWD/libc++/trunk/include -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\""
+extra_cflags_objcc=\"-nostdinc++ -I $PWD/libc++ -I $PWD/libc++/trunk/include -I $PWD/libc++abi/trunk/include -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\""
     ;;
   linux|android)
     flags="$flags
@@ -109,6 +110,12 @@ case "$WITH_OS" in
     flags="$flags
 mac_deployment_target=\"10.14\""
     ;;
+  ios)
+    flags="$flags
+target_environment=\"device\"
+ios_code_signing_identity=\"-\"
+ios_deployment_target=\"13.0\""
+    ;;
   android)
   os_suffix="-android"
   flags="$flags
@@ -129,6 +136,13 @@ extra_cflags_cc=\"\"
 extra_cflags_objcc=\"\""
 
 case "$WITH_OS" in
+  ios)
+  os_suffix="-ios"
+  bin_flags="$bin_flags
+extra_cflags_cc=\"-stdlib=libc++\"
+extra_cflags_objcc=\"-stdlib=libc++\"
+extra_ldflags=\"-stdlib=libc++ -static-libstdc++\""
+    ;;
   android)
   os_suffix="-android"
   bin_flags="$bin_flags
@@ -148,8 +162,8 @@ mkdir -p crashpad
 cd crashpad
 fetch --nohistory crashpad || true
 cd crashpad
-git fetch origin 5613499bbda780dfa663344ea6253844e82c88c4
-git checkout -f 5613499bbda780dfa663344ea6253844e82c88c4
+git fetch origin $CRASHPAD_COMMIT
+git checkout -f $CRASHPAD_COMMIT
 git reset --hard
 gclient sync -f
 
@@ -173,6 +187,14 @@ mkdir -p "$out"
 echo "$flags" > "$out/args.gn"
 gn gen "$out" --script-executable="$PYTHON" --export-compile-comman
 ninja -C "$out" client
+
+case "$WITH_OS" in
+  ios)
+    exit 0
+    ;;
+  **)
+    ;;
+esac
 
 rm -rf "$bin_out"
 mkdir -p "$bin_out"

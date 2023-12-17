@@ -21,6 +21,10 @@ if (mini_chromium_is_mac) {
     mac_deployment_target = "10.9"
   }
 } else if (mini_chromium_is_ios) {
+  declare_args() {
+    # Path to the Clang toolchain. If unset, uses the system-installed Clang.
+    clang_path = ""
+  }
   import("../ios/ios_sdk.gni")
 } else if (mini_chromium_is_android) {
   declare_args() {

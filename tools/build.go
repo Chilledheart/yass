@@ -31,6 +31,8 @@ var fullTagFlag string
 
 var dryRunFlag bool
 var preCleanFlag bool
+var noBuildFlag bool
+var noConfigureFlag bool
 var noPackagingFlag bool
 var buildBenchmarkFlag bool
 var runBenchmarkFlag bool
@@ -128,6 +130,8 @@ func InitFlag() {
 	flag.BoolVar(&dryRunFlag, "dry-run", false, "Generate build script but without actually running it")
 	flag.BoolVar(&preCleanFlag, "pre-clean", true, "Clean the source tree before building")
 	flag.BoolVar(&flagNoPreClean, "nc", false, "Don't Clean the source tree before building")
+	flag.BoolVar(&noBuildFlag, "no-build", false, "Skip build step")
+	flag.BoolVar(&noConfigureFlag, "no-configure", false, "Skip configure step")
 	flag.BoolVar(&noPackagingFlag, "no-packaging", false, "Skip packaging step")
 	flag.BoolVar(&buildBenchmarkFlag, "build-benchmark", false, "Build benchmarks")
 	flag.BoolVar(&runBenchmarkFlag, "run-benchmark", false, "Build and run benchmarks")
@@ -727,8 +731,10 @@ func buildStageGenerateBuildScript() {
 			cmakeArgs = append(cmakeArgs, "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64")
 		} else {
 			if archFlag == "x64" || archFlag == "x86_64" || archFlag == "amd64" {
+				cmakeArgs = append(cmakeArgs, "-DCMAKE_SYSTEM_PROCESSOR=x86_64")
 				cmakeArgs = append(cmakeArgs, "-DCMAKE_OSX_ARCHITECTURES=x86_64")
 			} else if archFlag == "arm64" {
+				cmakeArgs = append(cmakeArgs, "-DCMAKE_SYSTEM_PROCESSOR=arm64")
 				cmakeArgs = append(cmakeArgs, "-DCMAKE_OSX_ARCHITECTURES=arm64")
 			} else if archFlag == "" {
 				// nop
@@ -850,6 +856,9 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_TARGET=%s", llvmTarget))
 	}
 	cmakeCmd := append([]string{"cmake", ".."}, cmakeArgs...)
+	if noConfigureFlag {
+		return
+	}
 	cmdRun(cmakeCmd, true)
 }
 
@@ -1564,6 +1573,9 @@ func main() {
 	prebuildFindSourceDirectory()
 	// BuildStage Generate Build Script
 	buildStageGenerateBuildScript()
+	if noConfigureFlag || noBuildFlag {
+		return
+	}
 	// BuildStage Execute Build Script
 	buildStageExecuteBuildScript()
 	if noPackagingFlag {
