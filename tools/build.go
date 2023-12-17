@@ -146,7 +146,7 @@ func InitFlag() {
 	flag.StringVar(&clangTidyExecutablePathFlag, "clang-tidy-executable-path", getEnv("CLANG_TIDY_EXECUTABLE", ""), "Path to clang-tidy, only used by Clang Tidy Build")
 
 	flag.StringVar(&macosxVersionMinFlag, "macosx-version-min", getEnv("MACOSX_DEPLOYMENT_TARGET", "10.14"), "Set Mac OS X deployment target, such as 10.15")
-	flag.BoolVar(&macosxUniversalBuildFlag, "macosx-universal-build", getEnvBool("ENABLE_OSX_UNIVERSAL_BUILD", true), "Enable Mac OS X Universal Build")
+	flag.BoolVar(&macosxUniversalBuildFlag, "macosx-universal-build", getEnvBool("ENABLE_OSX_UNIVERSAL_BUILD", false), "Enable Mac OS X Universal Build")
 	flag.StringVar(&macosxCodeSignIdentityFlag, "macosx-codesign-identity", getEnv("CODESIGN_IDENTITY", "-"), "Set Mac OS X CodeSign Identity")
 
 	flag.StringVar(&iosVersionMinFlag, "ios-version-min", getEnv("MACOSX_DEPLOYMENT_TARGET", "13.0"), "Set iOS deployment target, such as 13.0")
@@ -725,6 +725,16 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_OSX_DEPLOYMENT_TARGET=%s", macosxVersionMinFlag))
 		if macosxUniversalBuildFlag {
 			cmakeArgs = append(cmakeArgs, "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64")
+		} else {
+			if archFlag == "x64" || archFlag == "x86_64" || archFlag == "amd64" {
+				cmakeArgs = append(cmakeArgs, "-DCMAKE_OSX_ARCHITECTURES=x86_64")
+			} else if archFlag == "arm64" {
+				cmakeArgs = append(cmakeArgs, "-DCMAKE_OSX_ARCHITECTURES=arm64")
+			} else if archFlag == "" {
+				// nop
+			} else {
+				glog.Fatalf("Invalid archFlag: %s", archFlag);
+			}
 		}
 	}
 
@@ -735,7 +745,7 @@ func buildStageGenerateBuildScript() {
 		if subSystemNameFlag == "simulator" {
 			if archFlag == "x86" {
 				platform = "SIMULATOR"
-			} else if archFlag == "x86_64" {
+			} else if archFlag == "x64" || archFlag == "x86_64" || archFlag == "amd64" {
 				platform = "SIMULATOR64"
 			} else if archFlag == "arm64" {
 				platform = "SIMULATORARM64"

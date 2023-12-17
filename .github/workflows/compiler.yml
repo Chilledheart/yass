@@ -442,7 +442,7 @@ jobs:
           sudo xcode-select -s /Applications/Xcode_15.0.1.app
       - name: Build
         run: |
-          ./tools/build -no-packaging -macosx-universal-build=false -build-test
+          ./tools/build -no-packaging -build-test
       - name: Run tests
         run: |
           cd build-darwin-amd64
