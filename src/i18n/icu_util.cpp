@@ -4,9 +4,7 @@
 #ifdef HAVE_ICU
 
 #include "i18n/icu_util.hpp"
-#include "core/debug.hpp"
-#include "core/logging.hpp"
-#include "core/utils.hpp"
+
 #include "third_party/icu/source/common/unicode/putil.h"
 #include "third_party/icu/source/common/unicode/udata.h"
 #include "third_party/icu/source/common/unicode/utrace.h"
@@ -19,7 +17,15 @@
 #include "third_party/icu/source/i18n/unicode/timezone.h"
 #endif
 
+#ifdef __APPLE__
+#include <base/apple/foundation_util.h>
+#endif
+
 #include <filesystem>
+
+#include "core/debug.hpp"
+#include "core/logging.hpp"
+#include "core/utils.hpp"
 
 namespace {
 
@@ -77,44 +83,6 @@ void LazyInitIcuDataFile() {
     }
   }
 #endif  // defined(ANDROID)
-#if 0
-  // For unit tests, data file is located on disk, so try there as a fallback.
-#if !defined(__APPLE__)
-  FilePath data_path;
-  if (!PathService::Get(DIR_ASSETS, &data_path)) {
-    LOG(ERROR) << "Can't find " << kIcuDataFileName;
-    return;
-  }
-#if defined(_WIN32)
-  // TODO(brucedawson): http://crbug.com/445616
-  wchar_t tmp_buffer[_MAX_PATH] = {0};
-  wcscpy_s(tmp_buffer, data_path.value().c_str());
-  Alias(tmp_buffer);
-#endif
-  data_path = data_path.AppendASCII(kIcuDataFileName);
-
-#if defined(_WIN32)
-  // TODO(brucedawson): http://crbug.com/445616
-  wchar_t tmp_buffer2[_MAX_PATH] = {0};
-  wcscpy_s(tmp_buffer2, data_path.value().c_str());
-  Alias(tmp_buffer2);
-#endif
-
-#else  // !defined(__APPLE__)
-  // Assume it is in the framework bundle's Resources directory.
-  FilePath data_path = apple::PathForFrameworkBundleResource(kIcuDataFileName);
-#if 0 // BUILDFLAG(IS_IOS)
-  FilePath override_data_path = ios::FilePathOfEmbeddedICU();
-  if (!override_data_path.empty()) {
-    data_path = override_data_path;
-  }
-#endif  // !BUILDFLAG(IS_IOS)
-  if (data_path.empty()) {
-    LOG(ERROR) << kIcuDataFileName << " not found in bundle";
-    return;
-  }
-#endif  // !defined(__APPLE__)
-#else // 0
 #ifdef _WIN32
   std::wstring exe_path, data_path;
 #else // _WIN32
@@ -124,8 +92,10 @@ void LazyInitIcuDataFile() {
   std::filesystem::path exe_dir = std::filesystem::path(exe_path).parent_path();
   PlatformFile pf = kInvalidPlatformFile;
 #ifdef __APPLE__
-  data_path = exe_dir.parent_path() / "Resources" / kIcuDataFileName;
-  pf = OpenReadFile(data_path);
+  data_path = gurl_base::apple::PathForFrameworkBundleResource(kIcuDataFileName);
+  if (!data_path.empty()) {
+    pf = OpenReadFile(data_path);
+  }
 #endif //  __APPLE__
   if (pf == kInvalidPlatformFile && exe_dir.has_filename() && exe_dir.filename() == "bin") {
     data_path = exe_dir.parent_path() / "share" / "yass" / kIcuDataFileName;
@@ -135,7 +105,6 @@ void LazyInitIcuDataFile() {
     data_path = exe_dir / kIcuDataFileName;
     pf = OpenReadFile(data_path);
   }
-#endif // 0
   if (pf != kInvalidPlatformFile) {
     // TODO(brucedawson): http://crbug.com/445616.
     g_debug_icu_pf_last_error = 0;
