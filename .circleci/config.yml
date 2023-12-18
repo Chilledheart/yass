@@ -159,6 +159,7 @@ commands:
     steps:
       - run:
           command: |
+            ./build/yass_test --version
             ./build/yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=5 --gtest_throw_on_failure
             # somehow inside the container DNS hosts file resolves localhost to 127.0.0.1 only not ::1
             # due to the incompleteness
