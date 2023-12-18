@@ -640,7 +640,7 @@ target_compile_options(cxx PRIVATE ${libcxx_CFLAGS})
 # We need to link with libatomic on systems that do not have builtin atomics, or
 # don't have builtin support for 8 byte atomics
 set(libcxx_LINK_LIBATOMIC FALSE)
-if (NOT MSVC AND NOT USE_COMPILER_RT)
+if (NOT MSVC)
   include(CheckCSourceCompiles)
   set(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
   set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} ${libcxx_PUBLIC_LIBRARIES}")

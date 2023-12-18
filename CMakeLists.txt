@@ -1718,6 +1718,13 @@ if (USE_LIBCXX)
   link_libraries(cxx ${libcxx_PUBLIC_LIBRARIES})
   set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} ${libcxx_PUBLIC_LIBRARIES}")
   list(APPEND YASS_APP_FEATURES "libc++")
+
+  if (MINGW_MSVCRT100)
+    list(APPEND YASS_APP_FEATURES "msvcrt100")
+  endif()
+  if (MINGW_WORKAROUND)
+    list(APPEND YASS_APP_FEATURES "mingw atexit workaround")
+  endif()
 endif()
 
 # *****************************************************************************************
