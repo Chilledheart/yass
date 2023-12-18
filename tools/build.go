@@ -852,6 +852,7 @@ func buildStageGenerateBuildScript() {
 		if err := os.Setenv("PKG_CONFIG_PATH", pkgConfigPath); err != nil {
 			glog.Fatalf("%v", err)
 		}
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DFREEBSD_ABI_VERSION=%d", freebsdAbiFlag))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DLLVM_SYSROOT=%s/../third_party/llvm-build/Release+Asserts", buildDir))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSROOT=%s", sysrootFlag))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSTEM_PROCESSOR=%s", llvmArch))

@@ -228,7 +228,19 @@ elseif(MINGW)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   list(APPEND YASS_APP_FEATURES "linux")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
-  list(APPEND YASS_APP_FEATURES "freebsd")
+  if (NOT CMAKE_CROSSCOMPILING)
+    execute_process(COMMAND
+      uname -r
+      OUTPUT_VARIABLE _ABI_VERSION_STRING
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+    string(REGEX REPLACE "([0-9]+)\.[0-9]-.*" "\\1" FREEBSD_ABI_VERSION "${_ABI_VERSION_STRING}")
+  endif()
+
+  if (FREEBSD_ABI_VERSION)
+    list(APPEND YASS_APP_FEATURES "freebsd ${FREEBSD_ABI_VERSION}")
+  else()
+    list(APPEND YASS_APP_FEATURES "freebsd")
+  endif()
 else()
   list(APPEND YASS_APP_FEATURES "system ${CMAKE_SYSTEM_NAME}")
 endif()
@@ -239,31 +251,41 @@ if (MSVC)
   if (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "x86")
     set(OS_X86 TRUE)
   endif()
+  if (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "arm64")
+    set(OS_AARCH64 TRUE)
+  endif()
   list(APPEND YASS_APP_FEATURES "msvc architecture: ${MSVC_PROCESSOR_ARCHITECTURE}")
   list(APPEND YASS_APP_FEATURES "msvc crt linkage: ${MSVC_CRT_LINKAGE}")
 elseif(APPLE)
   message(STATUS "Build with target architecture: ${CMAKE_OSX_ARCHITECTURES}")
   list(APPEND YASS_APP_FEATURES "apple architecture: ${CMAKE_OSX_ARCHITECTURES}")
 else()
-  message(STATUS "Build with target architecture: ${CMAKE_SYSTEM_PROCESSOR}")
-  list(APPEND YASS_APP_FEATURES "system architecture: ${CMAKE_SYSTEM_PROCESSOR}")
-  if (NOT CMAKE_CROSSCOMPILING AND
-      (CMAKE_SYSTEM_PROCESSOR STREQUAL "i386" OR
-       CMAKE_SYSTEM_PROCESSOR STREQUAL "i486" OR
-       CMAKE_SYSTEM_PROCESSOR STREQUAL "i586" OR
-       CMAKE_SYSTEM_PROCESSOR STREQUAL "i686"))
-    set(OS_X86 TRUE)
-  endif()
-  if (CMAKE_CROSSCOMPILING AND
-      (CMAKE_C_COMPILER_TARGET MATCHES "^i386-.*" OR
+  if ((CMAKE_C_COMPILER_TARGET MATCHES "^i386-.*" OR
        CMAKE_C_COMPILER_TARGET MATCHES "^i486-.*" OR
        CMAKE_C_COMPILER_TARGET MATCHES "^i586-.*" OR
        CMAKE_C_COMPILER_TARGET MATCHES "^i686-.*"))
     set(OS_X86 TRUE)
   endif()
-  if (MINGW AND CMAKE_SIZEOF_VOID_P EQUAL 4)
-    set(OS_X86 TRUE)
+  if ((CMAKE_C_COMPILER_TARGET MATCHES "^arm64-.*" OR
+       CMAKE_C_COMPILER_TARGET MATCHES "^aarch64-.*"))
+    set(OS_AARCH64 TRUE)
   endif()
+  # Fix MINGW (native mingw)'s CMAKE_SYSTEM_PROCESSOR
+  if (MINGW)
+    if (OS_X86)
+      set(CMAKE_SYSTEM_NAME Windows)
+      set(CMAKE_SYSTEM_PROCESSOR "i686")
+    elseif(OS_AARCH64)
+      set(CMAKE_SYSTEM_NAME Windows)
+      set(CMAKE_SYSTEM_PROCESSOR "aarch64")
+    else()
+      set(CMAKE_SYSTEM_NAME Windows)
+      set(CMAKE_SYSTEM_PROCESSOR "x86_64")
+    endif()
+  endif()
+
+  message(STATUS "Build with target architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+  list(APPEND YASS_APP_FEATURES "system architecture: ${CMAKE_SYSTEM_PROCESSOR}")
 endif()
 
 if (OS_X86)
@@ -1846,6 +1868,9 @@ elseif (WIN32 AND GUI)
   set(GUI_LIBRARY_DIRS "")
   if (MSVC)
     set(GUI_LIBRARIES RASAPI32 wininet ShLwApi WinMM Gdi32 ComDlg32 Ole32 ComCtl32 shell32)
+  elseif (MINGW AND OS_AARCH64)
+    # FIXME missing RasEnumEntriesW symbol from mingw
+    set(GUI_LIBRARIES wininet shlwapi winmm gdi32 comdlg32 ole32 comctl32 shell32)
   else()
     set(GUI_LIBRARIES rasapi32 wininet shlwapi winmm gdi32 comdlg32 ole32 comctl32 shell32)
   endif()
@@ -2455,12 +2480,12 @@ endif()
 if (USE_BUILTIN_CA_BUNDLE_CRT)
   set(ASIO_CA_BUNDLE_CRT_SRC)
 
-  if (WIN32 AND NOT MSVC_PROCESSOR_ARCHITECTURE STREQUAL "arm64")
+  if (WIN32 AND NOT OS_AARCH64)
     enable_language(ASM_NASM)
     set(ASIO_CA_BUNDLE_CRT_SRC "third_party/ca-certificates/ca-bundle.crt.asm")
   endif()
 
-  if (WIN32 AND MSVC_PROCESSOR_ARCHITECTURE STREQUAL "arm64")
+  if (WIN32 AND OS_AARCH64)
     enable_language(ASM)
     if (COMPILER_CLANG)
       set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wno-unused-command-line-argument")
