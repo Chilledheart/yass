@@ -228,7 +228,19 @@ elseif(MINGW)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   list(APPEND YASS_APP_FEATURES "linux")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
-  list(APPEND YASS_APP_FEATURES "freebsd")
+  if (NOT CMAKE_CROSSCOMPILING)
+    execute_process(COMMAND
+      uname -r
+      OUTPUT_VARIABLE _ABI_VERSION_STRING
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+    string(REGEX REPLACE "([0-9]+)\.[0-9]-.*" "\\1" FREEBSD_ABI_VERSION "${_ABI_VERSION_STRING}")
+  endif()
+
+  if (FREEBSD_ABI_VERSION)
+    list(APPEND YASS_APP_FEATURES "freebsd ${FREEBSD_ABI_VERSION}")
+  else()
+    list(APPEND YASS_APP_FEATURES "freebsd")
+  endif()
 else()
   list(APPEND YASS_APP_FEATURES "system ${CMAKE_SYSTEM_NAME}")
 endif()
