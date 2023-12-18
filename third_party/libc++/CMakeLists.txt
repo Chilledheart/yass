@@ -137,7 +137,7 @@ else()
       ${libcxx_PUBLIC_LIBRARIES}
       pthread c gcc_s m rt
       )
-  elseif (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6.0 AND NOT (MINGW AND NOT OS_AARCH64))
+  elseif (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6.0 AND NOT (MINGW AND MINGW_MSVCRT100))
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nostdlib++")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -nostdlib++")
   else()
@@ -170,22 +170,13 @@ else()
           gcc_s rt
           )
       endif()
-    elseif (MINGW)
-      if (USE_LIBUNWIND AND USE_COMPILER_RT)
-        set(libcxx_PUBLIC_LIBRARIES
-          ${libcxx_PUBLIC_LIBRARIES}
-           mingw32 ${COMPILER_RT_PATH} unwind moldname mingwex msvcr100
-           advapi32 shell32 user32 kernel32
-           mingw32 ${COMPILER_RT_PATH} unwind moldname mingwex msvcr100 kernel32
-          )
-      else()
-        set(libcxx_PUBLIC_LIBRARIES
-          ${libcxx_PUBLIC_LIBRARIES}
-           mingw32 gcc_eh gcc moldname mingwex msvcr100
-           advapi32 shell32 user32 kernel32
-           mingw32 gcc_eh gcc moldname mingwex msvcr100 kernel32
-          )
-      endif()
+    elseif (MINGW AND MINGW_MSVCRT100)
+      set(libcxx_PUBLIC_LIBRARIES
+        ${libcxx_PUBLIC_LIBRARIES}
+         mingw32 gcc_eh gcc moldname mingwex msvcr100
+         advapi32 shell32 user32 kernel32
+         mingw32 gcc_eh gcc moldname mingwex msvcr100 kernel32
+        )
     endif()
   endif()
 endif()
