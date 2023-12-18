@@ -251,31 +251,41 @@ if (MSVC)
   if (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "x86")
     set(OS_X86 TRUE)
   endif()
+  if (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "arm64")
+    set(OS_AARCH64 TRUE)
+  endif()
   list(APPEND YASS_APP_FEATURES "msvc architecture: ${MSVC_PROCESSOR_ARCHITECTURE}")
   list(APPEND YASS_APP_FEATURES "msvc crt linkage: ${MSVC_CRT_LINKAGE}")
 elseif(APPLE)
   message(STATUS "Build with target architecture: ${CMAKE_OSX_ARCHITECTURES}")
   list(APPEND YASS_APP_FEATURES "apple architecture: ${CMAKE_OSX_ARCHITECTURES}")
 else()
-  message(STATUS "Build with target architecture: ${CMAKE_SYSTEM_PROCESSOR}")
-  list(APPEND YASS_APP_FEATURES "system architecture: ${CMAKE_SYSTEM_PROCESSOR}")
-  if (NOT CMAKE_CROSSCOMPILING AND
-      (CMAKE_SYSTEM_PROCESSOR STREQUAL "i386" OR
-       CMAKE_SYSTEM_PROCESSOR STREQUAL "i486" OR
-       CMAKE_SYSTEM_PROCESSOR STREQUAL "i586" OR
-       CMAKE_SYSTEM_PROCESSOR STREQUAL "i686"))
-    set(OS_X86 TRUE)
-  endif()
-  if (CMAKE_CROSSCOMPILING AND
-      (CMAKE_C_COMPILER_TARGET MATCHES "^i386-.*" OR
+  if ((CMAKE_C_COMPILER_TARGET MATCHES "^i386-.*" OR
        CMAKE_C_COMPILER_TARGET MATCHES "^i486-.*" OR
        CMAKE_C_COMPILER_TARGET MATCHES "^i586-.*" OR
        CMAKE_C_COMPILER_TARGET MATCHES "^i686-.*"))
     set(OS_X86 TRUE)
   endif()
-  if (MINGW AND CMAKE_SIZEOF_VOID_P EQUAL 4)
-    set(OS_X86 TRUE)
+  if ((CMAKE_C_COMPILER_TARGET MATCHES "^arm64-.*" OR
+       CMAKE_C_COMPILER_TARGET MATCHES "^aarch64-.*"))
+    set(OS_AARCH64 TRUE)
   endif()
+  # Fix MINGW (native mingw)'s CMAKE_SYSTEM_PROCESSOR
+  if (MINGW)
+    if (OS_X86)
+      set(CMAKE_SYSTEM_NAME Windows)
+      set(CMAKE_SYSTEM_PROCESSOR "i686")
+    elseif(OS_AARCH64)
+      set(CMAKE_SYSTEM_NAME Windows)
+      set(CMAKE_SYSTEM_PROCESSOR "aarch64")
+    else()
+      set(CMAKE_SYSTEM_NAME Windows)
+      set(CMAKE_SYSTEM_PROCESSOR "x86_64")
+    endif()
+  endif()
+
+  message(STATUS "Build with target architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+  list(APPEND YASS_APP_FEATURES "system architecture: ${CMAKE_SYSTEM_PROCESSOR}")
 endif()
 
 if (OS_X86)
