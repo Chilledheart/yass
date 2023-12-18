@@ -38,9 +38,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [i686, x86_64]
-        build_type: [Release]
-        variant: [standard]
+        include:
+          - arch: i686
+            mingw_dir: mingw32
+            build_type: Release
+            gcc_ver: 7.5.0
+          - arch: x86_64
+            mingw_dir: mingw64
+            build_type: Release
+            gcc_ver: 7.5.0
     defaults:
       run:
         shell: cmd
@@ -105,27 +111,24 @@ jobs:
         run: |
           set CC=clang
           set CXX=clang++
-          set MINGWDIR=mingw32
-          set GCC_VER=7.5.0
-          if "${{ matrix.arch }}"=="x86_64" set MINGWDIR=mingw64
-          set "CFLAGS=--sysroot %CD%\third_party\%MINGWDIR%\${{ matrix.arch }}-w64-mingw32 -I %CD%\third_party\%MINGWDIR%\lib\gcc\${{ matrix.arch }}-w64-mingw32\%GCC_VER%\include"
-          set "CXXFLAGS=--sysroot %CD%\third_party\%MINGWDIR%\${{ matrix.arch }}-w64-mingw32 -I %CD%\third_party\%MINGWDIR%\lib\gcc\${{ matrix.arch }}-w64-mingw32\%GCC_VER%\include"
-          set "LDFLAGS=--sysroot %CD%\third_party\%MINGWDIR%\${{ matrix.arch }}-w64-mingw32 -Wl,-L%CD%\third_party\%MINGWDIR%\lib -Wl,-L%CD%\third_party\%MINGWDIR%\lib\gcc\${{ matrix.arch }}-w64-mingw32\%GCC_VER%"
+          set "CFLAGS=-I %CD%\third_party\${{ matrix.mingw_dir }}\lib\gcc\${{ matrix.arch }}-w64-mingw32\${{ matrix.gcc_ver }}\include"
+          set "CXXFLAGS=-I %CD%\third_party\${{ matrix.mingw_dir }}\lib\gcc\${{ matrix.arch }}-w64-mingw32\${{ matrix.gcc_ver }}\include"
+          set "LDFLAGS=-Wl,-L%CD%\third_party\${{ matrix.mingw_dir }}\lib -Wl,-L%CD%\third_party\${{ matrix.mingw_dir }}\lib\gcc\${{ matrix.arch }}-w64-mingw32\${{ matrix.gcc_ver }}"
           set "Path=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;%Path%"
-          set "Path=%CD%\third_party\%MINGWDIR%\bin;%Path%"
+          set "Path=%CD%\third_party\${{ matrix.mingw_dir }}\bin;%Path%"
           set "Path=%CD%\third_party\nasm;%Path%"
           REM for clang.exe and clang++.exe
           REM set "Path=C:\Program Files\LLVM\bin;%Path%"
 
           REM remove conflicting heaaders
-          del "%CD%\third_party\%MINGWDIR%\lib\gcc\${{ matrix.arch }}-w64-mingw32\%GCC_VER%\include\std*.h"
-          del "%CD%\third_party\%MINGWDIR%\lib\gcc\${{ matrix.arch }}-w64-mingw32\%GCC_VER%\include\*intrin.h"
-          del "%CD%\third_party\%MINGWDIR%\lib\gcc\${{ matrix.arch }}-w64-mingw32\%GCC_VER%\include\mm3dnow.h"
+          del "%CD%\third_party\${{ matrix.mingw_dir }}\lib\gcc\${{ matrix.arch }}-w64-mingw32\${{ matrix.gcc_ver }}\include\std*.h"
+          del "%CD%\third_party\${{ matrix.mingw_dir }}\lib\gcc\${{ matrix.arch }}-w64-mingw32\${{ matrix.gcc_ver }}\include\*intrin.h"
+          del "%CD%\third_party\${{ matrix.mingw_dir }}\lib\gcc\${{ matrix.arch }}-w64-mingw32\${{ matrix.gcc_ver }}\include\mm3dnow.h"
 
           REM start to build with workaround
           mkdir build-mingw
           cd build-mingw
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DMINGW_WORKAROUND=on -DUSE_ICU=off .. ${{ env.CMAKE_OPTIONS }} -DCMAKE_C_COMPILER_TARGET=${{ matrix.arch }}-pc-windows-gnu -DCMAKE_CXX_COMPILER_TARGET=${{ matrix.arch }}-pc-windows-gnu -DCMAKE_ASM_COMPILER_TARGET=${{ matrix.arch }}-pc-windows-gnu -DMINGW_MSVCRT100=on
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DMINGW_MSVCRT100=on -DMINGW_WORKAROUND=on -DUSE_ICU=off .. ${{ env.CMAKE_OPTIONS }} -DCMAKE_C_COMPILER_TARGET=${{ matrix.arch }}-pc-windows-gnu -DCMAKE_CXX_COMPILER_TARGET=${{ matrix.arch }}-pc-windows-gnu -DCMAKE_ASM_COMPILER_TARGET=${{ matrix.arch }}-pc-windows-gnu -DCMAKE_SYSROOT="%CD%\..\third_party\${{ matrix.mingw_dir }}\${{ matrix.arch }}-w64-mingw32"
           ninja yass yass_benchmark yass_test
       - name: Packaging
         shell: bash
