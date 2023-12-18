@@ -12,6 +12,7 @@
 #include <absl/flags/internal/program_name.h>
 
 #include "core/cipher.hpp"
+#include "feature.h"
 #include "version.h"
 
 bool AbslParseFlag(absl::string_view text, CipherMethodFlag* flag,
@@ -268,6 +269,7 @@ void ReadConfigFileOption(int argc, const char** argv) {
       fprintf(stdout, "%s %s\n", absl::flags_internal::ShortProgramInvocationName().c_str(),
               YASS_APP_TAG);
       fprintf(stdout, "Last Change: %s\n", YASS_APP_LAST_CHANGE);
+      fprintf(stdout, "Features: %s\n", YASS_APP_FEATURES);
 #ifndef NDEBUG
       fprintf(stdout, "Debug build (NDEBUG not #defined)\n");
 #endif
@@ -281,6 +283,7 @@ void ReadConfigFileOption(int argc, const char** argv) {
 
   LOG(WARNING) << "Application starting: " << YASS_APP_TAG;
   LOG(WARNING) << "Last Change: " << YASS_APP_LAST_CHANGE;
+  LOG(WARNING) << "Features: " << YASS_APP_FEATURES;
 #ifndef NDEBUG
   LOG(WARNING) << "Debug build (NDEBUG not #defined)\n";
 #endif
