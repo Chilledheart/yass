@@ -43,6 +43,7 @@ freebsd_task:
     - sysctl net.inet.tcp.blackhole
     # make sure we don't run blackhole != 0
     - sudo sysctl net.inet.tcp.blackhole=0
+    - ./build/yass_test --version
     - ninja -C build check
     - ninja -C build check_boringssl
 
@@ -79,6 +80,7 @@ macos_task:
     - ninja -C build yass yass_test all_tests bssl_shim handshaker
     - ninja -C build
   test_script:
+    - ./build/yass_test --version
     - ninja -C build check
     - ninja -C build check_boringssl
     - ctest --test-dir build/third_party/abseil-cpp || :
