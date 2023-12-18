@@ -151,7 +151,7 @@ jobs:
         with:
           path: |
             llvm-mingw-*.tar.xz
-          key: ${{ runner.os }}-mingw64-llvm-20230614-and-ucrt
+          key: ${{ runner.os }}-mingw64-llvm-20230614-ucrt
       - name: Cache mingw64 curl
         id: curl-cache
         uses: actions/cache@v3
@@ -186,7 +186,6 @@ jobs:
       - name: "Download dependency: llvm-mingw"
         if: ${{ steps.mingw-cache.outputs.cache-hit != 'true' }}
         run: |
-          curl -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20230614/llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64.tar.xz
           curl -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20230614/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64.tar.xz
       - name: "Download dependency: curl"
         if: ${{ steps.curl-cache.outputs.cache-hit != 'true' }}
@@ -199,17 +198,10 @@ jobs:
           curl -L -O https://curl.se/windows/dl-8.4.0_7/curl-8.4.0_7-win32-mingw.zip
           7z x curl-8.4.0_7-win32-mingw.zip -aoa
           rm -vf curl*.zip
-      - name: Specify mingw variant
-        run: |
-          if [ "${{ matrix.arch }}" = "i686" ] || [ "${{ matrix.arch }}" = "x86_64" ]; then
-            echo "VARIANT=msvcrt" >> $GITHUB_ENV
-          else
-            echo "VARIANT=ucrt" >> $GITHUB_ENV
-          fi
       - name: Populate llvm-mingw
         run: |
-          sudo tar -C /opt -xvf llvm-mingw-20230614-${{ env.VARIANT }}-ubuntu-20.04-x86_64.tar.xz
-          sudo ln -sf libclang_rt.builtins-i386.a /opt/llvm-mingw-20230614-${{ env.VARIANT }}-ubuntu-20.04-x86_64/lib/clang/16/lib/windows/libclang_rt.builtins-i686.a
+          sudo tar -C /opt -xvf llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64.tar.xz
+          sudo ln -sf libclang_rt.builtins-i386.a /opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64/lib/clang/16/lib/windows/libclang_rt.builtins-i686.a
       - name: Populate depedencies
         run: |
           sudo apt-get update -qq
@@ -241,21 +233,21 @@ jobs:
           set(CMAKE_EXE_LINKER_FLAGS "--rtlib=compiler-rt --unwindlib=libunwind")
 
           # cross compilers to use for C and C++
-          set(CMAKE_C_COMPILER "/opt/llvm-mingw-20230614-${{ env.VARIANT }}-ubuntu-20.04-x86_64/bin/clang")
-          set(CMAKE_CXX_COMPILER "/opt/llvm-mingw-20230614-${{ env.VARIANT }}-ubuntu-20.04-x86_64/bin/clang++")
-          set(CMAKE_LINKER "/opt/llvm-mingw-20230614-${{ env.VARIANT }}-ubuntu-20.04-x86_64/bin/ld.lld")
-          set(CMAKE_AR "/opt/llvm-mingw-20230614-${{ env.VARIANT }}-ubuntu-20.04-x86_64/bin/llvm-ar")
-          set(CMAKE_CXX_COMPILER_AR "/opt/llvm-mingw-20230614-${{ env.VARIANT }}-ubuntu-20.04-x86_64/bin/llvm-ar")
-          set(CMAKE_RANLIB "/opt/llvm-mingw-20230614-${{ env.VARIANT }}-ubuntu-20.04-x86_64/bin/llvm-ranlib")
-          set(CMAKE_CXX_COMPILER_RANLIB "/opt/llvm-mingw-20230614-${{ env.VARIANT }}-ubuntu-20.04-x86_64/bin/llvm-ranlib")
+          set(CMAKE_C_COMPILER "/opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64/bin/clang")
+          set(CMAKE_CXX_COMPILER "/opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64/bin/clang++")
+          set(CMAKE_LINKER "/opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64/bin/ld.lld")
+          set(CMAKE_AR "/opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64/bin/llvm-ar")
+          set(CMAKE_CXX_COMPILER_AR "/opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64/bin/llvm-ar")
+          set(CMAKE_RANLIB "/opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64/bin/llvm-ranlib")
+          set(CMAKE_CXX_COMPILER_RANLIB "/opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64/bin/llvm-ranlib")
           # disabled because it is missing from binary
-          # set(CMAKE_RC_COMPILER "/opt/llvm-mingw-20230614-${{ env.VARIANT }}-ubuntu-20.04-x86_64/bin/llvm-rc")
-          set(CMAKE_RC_COMPILER "/opt/llvm-mingw-20230614-${{ env.VARIANT }}-ubuntu-20.04-x86_64/bin/\${GNU_TARGET}-windres")
+          # set(CMAKE_RC_COMPILER "/opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64/bin/llvm-rc")
+          set(CMAKE_RC_COMPILER "/opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64/bin/\${GNU_TARGET}-windres")
 
-          set(CMAKE_SYSROOT "/opt/llvm-mingw-20230614-${{ env.VARIANT }}-ubuntu-20.04-x86_64/\${GNU_TARGET}" CACHE STRING "")
+          set(CMAKE_SYSROOT "/opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64/\${GNU_TARGET}" CACHE STRING "")
 
           # target environment on the build host system
-          set(CMAKE_FIND_ROOT_PATH /opt/llvm-mingw-20230614-${{ env.VARIANT }}-ubuntu-20.04-x86_64/\${GNU_TARGET})
+          set(CMAKE_FIND_ROOT_PATH /opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64/\${GNU_TARGET})
 
           # modify default behavior of FIND_XXX() commands
           set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
