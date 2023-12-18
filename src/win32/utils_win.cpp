@@ -1034,6 +1034,11 @@ bool SetSystemProxy(bool enable,
 }
 
 bool GetAllRasConnection(std::vector<std::wstring> *result) {
+// FIXME Mingw's aarch doesn't contain this api
+#if defined(__MINGW32__) && defined(_M_ARM64)
+  result->clear();
+  return true;
+#else
   DWORD dwCb = 0;
   DWORD dwRet = ERROR_SUCCESS;
   DWORD dwEntries = 0;
@@ -1095,6 +1100,7 @@ bool GetAllRasConnection(std::vector<std::wstring> *result) {
     LOG(INFO) << "RasEnumEntries: there were no RAS entry names found";
   }
   return dwRet == ERROR_SUCCESS;
+#endif
 }
 
 #endif  // _WIN32
