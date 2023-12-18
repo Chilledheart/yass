@@ -799,6 +799,8 @@ func buildStageGenerateBuildScript() {
 		}
 		harmonyAbiTarget, harmonyAppAbi = getHarmonyTargetAndAppAbi(archFlag)
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/Harmony.cmake", buildDir))
+		// hard-coded
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DOHOS_APILEVEL=%s", "9"))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DOHOS_ARCH=%s", harmonyAppAbi))
 
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DOHOS_SDK_NATIVE=%s/native", harmonyNdkDir))
