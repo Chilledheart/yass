@@ -239,9 +239,6 @@ jobs:
           set(CMAKE_CXX_FLAGS "--rtlib=compiler-rt -stdlib=libc++ -Wno-unused-command-line-argument")
           set(CMAKE_SHARED_LINKER_FLAGS "--rtlib=compiler-rt --unwindlib=libunwind")
           set(CMAKE_EXE_LINKER_FLAGS "--rtlib=compiler-rt --unwindlib=libunwind")
-          set(USE_COMPILER_RT TRUE)
-          set(USE_LIBUNWIND TRUE)
-          set(COMPILER_RT_PATH "/opt/llvm-mingw-20230614-${{ env.VARIANT }}-ubuntu-20.04-x86_64/lib/clang/16/lib/windows/libclang_rt.builtins-${{ matrix.arch }}.a")
 
           # cross compilers to use for C and C++
           set(CMAKE_C_COMPILER "/opt/llvm-mingw-20230614-${{ env.VARIANT }}-ubuntu-20.04-x86_64/bin/clang")
