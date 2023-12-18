@@ -176,7 +176,6 @@ JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeCreate(JNIEnv *env,
 JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeDestroy(JNIEnv *env, jobject obj) {
   Shutdown();
   env->DeleteGlobalRef(g_activity_obj);
-  g_jvm = nullptr;
   g_activity_obj = nullptr;
 }
 
