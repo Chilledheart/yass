@@ -128,6 +128,8 @@ configure_file("src/version.h.in" "${APP_VERSION_HEADER}" @ONLY)
 # for version.h
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
+set(YASS_APP_FEATURES)
+
 if(MSVC)
   # On Windows, prefer cl over gcc if both are available. By default most of
   # the CMake generators prefer gcc, even on Windows.
@@ -208,16 +210,40 @@ if (MSVC)
   endif()
 endif()
 
+if (IOS)
+  list(APPEND YASS_APP_FEATURES "ios")
+elseif(APPLE)
+  list(APPEND YASS_APP_FEATURES "mac")
+elseif(OHOS)
+  list(APPEND YASS_APP_FEATURES "ohos")
+elseif(ANDROID)
+  list(APPEND YASS_APP_FEATURES "android")
+elseif(MSVC)
+  list(APPEND YASS_APP_FEATURES "msvc")
+elseif(MINGW)
+  list(APPEND YASS_APP_FEATURES "mingw")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  list(APPEND YASS_APP_FEATURES "linux")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+  list(APPEND YASS_APP_FEATURES "freebsd")
+else()
+  list(APPEND YASS_APP_FEATURES "system ${CMAKE_SYSTEM_NAME}")
+endif()
+
 if (MSVC)
   message(STATUS "Build with MSVC target architecture: ${MSVC_PROCESSOR_ARCHITECTURE}")
   message(STATUS "Build with MSVC ${MSVC_CRT_LINKAGE} CRT library")
   if (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "x86")
     set(OS_X86 TRUE)
   endif()
+  list(APPEND YASS_APP_FEATURES "msvc architecture: ${MSVC_PROCESSOR_ARCHITECTURE}")
+  list(APPEND YASS_APP_FEATURES "msvc crt linkage: ${MSVC_CRT_LINKAGE}")
 elseif(APPLE)
   message(STATUS "Build with target architecture: ${CMAKE_OSX_ARCHITECTURES}")
+  list(APPEND YASS_APP_FEATURES "apple architecture: ${CMAKE_OSX_ARCHITECTURES}")
 else()
   message(STATUS "Build with target architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+  list(APPEND YASS_APP_FEATURES "system architecture: ${CMAKE_SYSTEM_PROCESSOR}")
   if (NOT CMAKE_CROSSCOMPILING AND
       (CMAKE_SYSTEM_PROCESSOR STREQUAL "i386" OR
        CMAKE_SYSTEM_PROCESSOR STREQUAL "i486" OR
@@ -235,6 +261,10 @@ else()
   if (MINGW AND CMAKE_SIZEOF_VOID_P EQUAL 4)
     set(OS_X86 TRUE)
   endif()
+endif()
+
+if (OS_X86)
+  list(APPEND YASS_APP_FEATURES "x86")
 endif()
 
 # handling bug with cmake+clang-cl
@@ -352,6 +382,7 @@ if (ENABLE_LTO AND IS_RELEASE_BUILD)
 
   if (LTO)
     message(STATUS "Compiling with ${LTO_FLAVOUR} LTO")
+    list(APPEND YASS_APP_FEATURES "lto ${LTO_FLAVOUR}")
   endif()
 endif()
 
@@ -384,6 +415,7 @@ if (CMAKE_CROSSCOMPILING OR (OPTIMIZED_PROTOC AND CMAKE_CONFIGURATION_TYPES))
 endif()
 
 if (CMAKE_CROSSCOMPILING AND CMAKE_SYSROOT)
+  list(APPEND YASS_APP_FEATURES "crosscompiling")
   if (NOT EXISTS ${CMAKE_SYSROOT})
     message(FATAL_ERROR "Invalid sysroot ${CMAKE_SYSROOT}")
   endif()
@@ -507,6 +539,7 @@ if(MSAN)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer")
   endif()
   add_definitions(-DMEMORY_SANITIZER)
+  list(APPEND YASS_APP_FEATURES "msan")
 endif()
 
 if(ASAN)
@@ -526,6 +559,7 @@ if(ASAN)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer")
   endif()
   add_definitions(-DADDRESS_SANITIZER)
+  list(APPEND YASS_APP_FEATURES "asan")
 endif()
 
 if(CFI)
@@ -539,6 +573,7 @@ if(CFI)
   # with -flto. That, in turn, can't handle -ggdb.
   string(REPLACE "-ggdb" "-g" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
   string(REPLACE "-ggdb" "-g" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  list(APPEND YASS_APP_FEATURES "cfi")
 endif()
 
 if(TSAN)
@@ -558,6 +593,7 @@ if(TSAN)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=thread")
   endif()
   add_definitions(-DTHREAD_SANITIZER)
+  list(APPEND YASS_APP_FEATURES "tsan")
 endif()
 
 if(UBSAN)
@@ -576,6 +612,7 @@ if(UBSAN)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined")
   endif()
   add_definitions(-DUNDEFINED_SANITIZER)
+  list(APPEND YASS_APP_FEATURES "ubsan")
 endif()
 
 # apply sanitizer blacklist
@@ -595,6 +632,7 @@ if(GCOV)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-arcs -ftest-coverage")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
   endif()
+  list(APPEND YASS_APP_FEATURES "coverage")
 endif()
 
 if (NOT MSAN AND NOT ASAN AND NOT TSAN AND NOT UBSAN)
@@ -835,6 +873,8 @@ else()
   ## Remove unreferenced data
   set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /OPT:REF /OPT:ICF /INCREMENTAL:NO /FIXED:NO")
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /OPT:REF /OPT:ICF /INCREMENTAL:NO /FIXED:NO")
+
+  list(APPEND YASS_APP_FEATURES "ldflags icf")
 
   # Tell linker to include FIXUP information symbol data
   set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /PROFILE")
@@ -1125,11 +1165,13 @@ if (NOT MSVC)
   if (USE_MOLD)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=mold")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=mold")
+    list(APPEND YASS_APP_FEATURES "linker mold")
   endif()
 
   if (USE_LLD)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
+    list(APPEND YASS_APP_FEATURES "linker lld")
   endif()
 
   # Linker warnings.
@@ -1207,6 +1249,7 @@ if ((UNIX AND NOT APPLE) AND USE_LLD)
 elseif (USE_GOLD)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=gold")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=gold")
+  list(APPEND YASS_APP_FEATURES "linker gold")
   if (NOT ANDROID AND NOT OHOS)
     # On Android, this isn't needed.  gcc in the NDK knows to look next to
     # it with -fuse-ld=gold, and clang gets a --gcc-toolchain flag passed
@@ -1236,6 +1279,7 @@ if (USE_ICF AND (NOT APPLE OR COMPILER_CLANG))
   # Landed upstream Fri, 21 Oct 2016 - is in 2.28, such as CentOS 7
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--icf=all")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--icf=all")
+  list(APPEND YASS_APP_FEATURES "ldflags icf")
 endif()
 
 if (UNIX AND NOT APPLE)
@@ -1469,10 +1513,12 @@ if (WIN32)
     if (NOT MINGW)
       include_directories(third_party/xp-compatible SYSTEM)
     endif()
+    list(APPEND YASS_APP_FEATURES "winxp")
   else()
     message(STATUS "Build with Windows 8.1 support")
     add_definitions(-D_WIN32_WINNT=0x0603)
     add_definitions(-DWINVER=0x0603)
+    list(APPEND YASS_APP_FEATURES "win8.1")
   endif()
 
   # add missing definitions in some sdks
@@ -1630,6 +1676,7 @@ if (USE_LIBCXX)
   add_subdirectory(third_party/libc++)
   link_libraries(cxx ${libcxx_PUBLIC_LIBRARIES})
   set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} ${libcxx_PUBLIC_LIBRARIES}")
+  list(APPEND YASS_APP_FEATURES "libc++")
 endif()
 
 # *****************************************************************************************
@@ -2013,6 +2060,7 @@ if (ABSL_BUILD_TESTING)
 endif()
 add_subdirectory(third_party/abseil-cpp)
 
+list(APPEND YASS_APP_FEATURES "abseil-cpp")
 set(SUPPORT_LIBS
   absl::base
   absl::core_headers
@@ -2070,6 +2118,7 @@ if (USE_TCMALLOC)
 
   add_subdirectory(third_party/tcmalloc)
 
+  list(APPEND YASS_APP_FEATURES "tcmalloc")
   set(SUPPORT_DEFINITIONS
     HAVE_TCMALLOC
     ${SUPPORT_DEFINITIONS}
@@ -2097,6 +2146,7 @@ endif()
 if (USE_ICU)
   message(STATUS "Compiling with bundled icu library")
   add_subdirectory(third_party/icu)
+  list(APPEND YASS_APP_FEATURES "icu")
   set(SUPPORT_DEFINITIONS
     HAVE_ICU
     ${SUPPORT_DEFINITIONS}
@@ -2110,6 +2160,7 @@ endif()
 
 message(STATUS "Compiling with bundled re2 library")
 add_subdirectory(third_party)
+list(APPEND YASS_APP_FEATURES "re2")
 set(SUPPORT_LIBS re2 ${SUPPORT_LIBS})
 
 # *****************************************************************************************
@@ -2117,6 +2168,7 @@ set(SUPPORT_LIBS re2 ${SUPPORT_LIBS})
 # *****************************************************************************************
 
 message(STATUS "Compiling with bundled googleurl library")
+list(APPEND YASS_APP_FEATURES "googleurl")
 set(SUPPORT_LIBS url ${SUPPORT_LIBS})
 
 # *****************************************************************************************
@@ -2152,6 +2204,7 @@ if (MSVC AND ${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS "${_CRASHPAD_PREFIX}
     src
   )
   target_link_libraries(yass_crashpad PRIVATE crashpad_client crashpad_common crashpad_util mini_chromium_base)
+  list(APPEND YASS_APP_FEATURES "crashpad")
   set(SUPPORT_LIBS yass_crashpad ${SUPPORT_LIBS})
 
   file(COPY "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler.exe" DESTINATION ${CMAKE_BINARY_DIR})
@@ -2214,6 +2267,7 @@ if ((${CMAKE_BUILD_TYPE} MATCHES MinSizeRel OR ${CMAKE_BUILD_TYPE} MATCHES Relea
     src
   )
   target_link_libraries(yass_crashpad PRIVATE crashpad_client crashpad_common crashpad_util mini_chromium_base)
+  list(APPEND YASS_APP_FEATURES "crashpad")
   set(SUPPORT_LIBS yass_crashpad ${SUPPORT_LIBS})
   if (IOS)
     add_library(crashpad_handler_common STATIC IMPORTED)
@@ -2273,6 +2327,7 @@ if (MINGW AND USE_LIBCXX)
   set(CMAKE_C_FLAGS "${PREVIOUS_CMAKE_C_FLAGS}")
   set(CMAKE_CXX_FLAGS "${PREVIOUS_CMAKE_CXX_FLAGS}")
 endif()
+list(APPEND YASS_APP_FEATURES "boringssl")
 set(SUPPORT_DEFINITIONS
   HAVE_BORINGSSL
   ${SUPPORT_DEFINITIONS}
@@ -2310,6 +2365,7 @@ endif()
 
 if (USE_SYSTEM_MBEDTLS AND USE_MBEDTLS)
   message(STATUS "Compiling with system mbedtls library")
+  list(APPEND YASS_APP_FEATURES "system mbedtls")
   set(SUPPORT_DEFINITIONS
     HAVE_MBEDTLS
     ${SUPPORT_DEFINITIONS}
@@ -2332,6 +2388,7 @@ elseif (USE_MBEDTLS)
 
   add_subdirectory(third_party/mbedtls)
 
+  list(APPEND YASS_APP_FEATURES "mbedtls")
   set(SUPPORT_DEFINITIONS
     HAVE_MBEDTLS
     ${SUPPORT_DEFINITIONS}
@@ -2416,9 +2473,11 @@ if (USE_BUILTIN_CA_BUNDLE_CRT)
   target_compile_definitions(asio_ca_bundle_crt PUBLIC HAVE_BUILTIN_CA_BUNDLE_CRT=1)
   target_include_directories(asio_ca_bundle_crt PRIVATE third_party/ca-certificates)
 
+  list(APPEND YASS_APP_FEATURES "builtin ca-bundle")
   target_link_libraries(asio PRIVATE asio_ca_bundle_crt)
 endif()
 
+list(APPEND YASS_APP_FEATURES "asio")
 set(SUPPORT_LIBS asio ${SUPPORT_LIBS})
 
 # *****************************************************************************************
@@ -2439,8 +2498,10 @@ endif()
 
 if (USE_SYSTEM_JSON)
   message(STATUS "Compiling with system nlohmann json library")
+  list(APPEND YASS_APP_FEATURES "system nlohmann json")
 else()
   message(STATUS "Compiling with bundled nlohmann json library")
+  list(APPEND YASS_APP_FEATURES "nlohmann json")
   set(SUPPORT_INCLUDE_DIRS
     third_party/json/include
     ${SUPPORT_INCLUDE_DIRS}
@@ -2567,6 +2628,7 @@ if (USE_SYSTEM_XXHASH)
   message(STATUS "Compiling with system xxhash")
   # ignore broken pkg-config output
   set(SUPPORT_LIBS xxhash ${SUPPORT_LIBS})
+  list(APPEND YASS_APP_FEATURES "system xxhash")
 else()
   message(STATUS "Compiling with bundled xxhash")
   add_library(xxhash STATIC third_party/xxhash/xxhash.c)
@@ -2575,6 +2637,8 @@ else()
   if (COMPILER_MSVC)
     target_compile_options(xxhash PRIVATE "/wd4255")
   endif()
+
+  list(APPEND YASS_APP_FEATURES "xxhash")
   set(SUPPORT_LIBS xxhash ${SUPPORT_LIBS})
 endif()
 
@@ -2594,6 +2658,7 @@ set(protobuf_WITH_ZLIB "OFF" CACHE STRING "")
 set(protobuf_BUILD_SHARED_LIBS "OFF" CACHE STRING "")
 add_subdirectory(third_party/protobuf)
 # required because it is not bound with libproto/libproto-lite targets
+list(APPEND YASS_APP_FEATURES "protobuf")
 set(SUPPORT_DEFINITIONS
   GOOGLE_PROTOBUF_NO_RTTI=1
   PROTOBUF_USE_EXCEPTIONS=0
@@ -2633,9 +2698,11 @@ if (USE_SYSTEM_ZLIB)
   include_directories(${ZLIB_INCLUDE_DIRS})
   link_directories(${ZLIB_LIBRARY_DIRS})
   link_libraries(${ZLIB_LIBRARIES})
+  list(APPEND YASS_APP_FEATURES "system zlib")
 else()
   message(STATUS "Compiling with bundled zlib")
   add_subdirectory(third_party/zlib)
+  list(APPEND YASS_APP_FEATURES "zlib")
   set(SUPPORT_LIBS zlib ${SUPPORT_LIBS})
 endif()
 
@@ -2656,6 +2723,7 @@ endif()
 
 if (USE_SYSTEM_CARES AND USE_CARES)
   message(STATUS "Compiling with system cares")
+  list(APPEND YASS_APP_FEATURES "system c-ares")
   set(SUPPORT_DEFINITIONS
     HAVE_C_ARES
     ${SUPPORT_DEFINITIONS}
@@ -2665,6 +2733,7 @@ if (USE_SYSTEM_CARES AND USE_CARES)
   link_libraries(${CARES_LIBRARIES})
 elseif (USE_CARES)
   message(STATUS "Compiling with bundled cares")
+  list(APPEND YASS_APP_FEATURES "c-ares")
   set(SUPPORT_DEFINITIONS
     HAVE_C_ARES
     ${SUPPORT_DEFINITIONS}
@@ -2697,6 +2766,7 @@ endif()
 
 if (USE_SYSTEM_NGHTTP2 AND USE_NGHTTP2)
   message(STATUS "Compiling with system libnghttp2")
+  list(APPEND YASS_APP_FEATURES "system nghttp2")
   set(SUPPORT_DEFINITIONS
     HAVE_NGHTTP2
     ${SUPPORT_DEFINITIONS}
@@ -2729,6 +2799,7 @@ elseif (USE_NGHTTP2)
     target_compile_options(nghttp2_static PRIVATE -Wno-covered-switch-default)
   endif()
   set(NGHTTP2_LIBRARIES nghttp2_static)
+  list(APPEND YASS_APP_FEATURES "nghttp2")
   set(SUPPORT_DEFINITIONS
     HAVE_NGHTTP2
     ${SUPPORT_DEFINITIONS}
@@ -2751,6 +2822,7 @@ endif()
 # include both of googleurl and quiche
 # TODO:Uncomment the below line out
 add_subdirectory(third_party/quiche)
+list(APPEND YASS_APP_FEATURES "quiche")
 set(SUPPORT_DEFINITIONS
   HAVE_QUICHE
   ${SUPPORT_DEFINITIONS}
@@ -2771,6 +2843,7 @@ endif()
 
 if (USE_SYSTEM_HTTP_PARSER AND NOT USE_BALSA_HTTP_PARSER)
   message(STATUS "Compiling with system http-parser")
+  list(APPEND YASS_APP_FEATURES "system http parser")
   set(SUPPORT_LIBS http_parser ${SUPPORT_LIBS})
 elseif(NOT USE_BALSA_HTTP_PARSER)
   message(STATUS "Compiling with bundled http-parser")
@@ -2779,11 +2852,13 @@ elseif(NOT USE_BALSA_HTTP_PARSER)
     third_party/http_parser/http_parser.c
     )
   target_include_directories(http_parser PUBLIC third_party/http_parser)
+  list(APPEND YASS_APP_FEATURES "nodejs http parser")
   set(SUPPORT_LIBS http_parser ${SUPPORT_LIBS})
 endif()
 
 if (USE_BALSA_HTTP_PARSER)
   message(STATUS "Compiling with balsa http parser")
+  list(APPEND YASS_APP_FEATURES "balsa http parser")
   set(SUPPORT_DEFINITIONS
     HAVE_BALSA_HTTP_PARSER
     ${SUPPORT_DEFINITIONS}
@@ -2834,6 +2909,7 @@ if (USE_LEVELDB)
   set(HAVE_ZSTD 1)
   set(HAVE_TCMALLOC 0)
   add_subdirectory(third_party/leveldb)
+  list(APPEND YASS_APP_FEATURES "leveldb")
   set(SUPPORT_DEFINITIONS
     HAVE_LEVELDB
     ${SUPPORT_DEFINITIONS}
@@ -2848,6 +2924,7 @@ endif()
 if (USE_SQLITE)
   message(STATUS "Compiling with bundled sqlite3 library")
   add_subdirectory(third_party/sqlite)
+  list(APPEND YASS_APP_FEATURES "sqlite3")
   set(SUPPORT_DEFINITIONS
     HAVE_SQLITE
     ${SUPPORT_DEFINITIONS}
@@ -3440,6 +3517,9 @@ if (SERVER)
   endif()
 endif()
 
+set(APP_FEATURE_HEADER "${CMAKE_CURRENT_BINARY_DIR}/feature.h")
+configure_file("src/feature.h.in" "${APP_FEATURE_HEADER}" @ONLY)
+
 # *****************************************************************************************
 #           Source code: GUI part
 # *****************************************************************************************
@@ -3519,6 +3599,10 @@ if (GUI)
     elseif (GUI_FLAVOUR STREQUAL "ios")
         list(APPEND SRC_FILES
           src/ios/main.mm)
+        if (USE_ICU)
+          list(APPEND SRC_FILES
+            ${ICU_DATAFILE})
+        endif()
     elseif(GUI_FLAVOUR STREQUAL "gtk3")
         list(APPEND SRC_FILES
           src/gtk/yass.cpp
@@ -3797,6 +3881,39 @@ if (GUI)
               XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/yass.entitlements
           )
         endif()
+    elseif(GUI_FLAVOUR STREQUAL "ios")
+        get_target_property(_APP_COMPILE_FLAGS ${APP_NAME} COMPILE_FLAGS)
+        if (NOT _APP_COMPILE_FLAGS)
+          set(_APP_COMPILE_FLAGS "")
+        endif()
+        set_target_properties(${APP_NAME} PROPERTIES
+            COMPILE_FLAGS "${_APP_COMPILE_FLAGS} -fobjc-arc")
+
+        # For iOS Apple uses a flat bundle layout where no Resources folder exist.
+        # Therefore CMake strips the Resources folder name from the specified location.
+        set_source_files_properties("src/mac/yass.icns" PROPERTIES
+          MACOSX_PACKAGE_LOCATION "Resources")
+        if (USE_ICU)
+          set_source_files_properties("${ICU_DATAFILE}" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
+        endif()
+
+        set_target_properties(${APP_NAME} PROPERTIES
+            RESOURCE "yass.icns"
+            MACOSX_BUNDLE_ICON_FILE yass.icns
+            MACOSX_BUNDLE_COPYRIGHT "${YASS_APP_COPYRIGHT}"
+            MACOSX_BUNDLE_GUI_IDENTIFIER "it.gui.yass"
+            MACOSX_BUNDLE_BUNDLE_NAME ${PACKAGE_NAME}
+            MACOSX_BUNDLE_INFO_PLIST ${APP_MACOSX_BUNDLE_INFO}
+            XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
+            XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
+            XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++"
+            XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS "YES"
+            XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
+            #XCODE_ATTRIBUTE_ENABLE_HARDENED_RUNTIME "YES"
+            #XCODE_ATTRIBUTE_CODE_SIGN_INJECT_BASE_ENTITLEMENTS "NO"
+            #XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME ${ASSET_CATALOG_ASSETS}
+          )
     endif()
 
     if (NOT CMAKE_SKIP_INSTALL_RULES)

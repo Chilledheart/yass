@@ -1,0 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright (c) 2023 Chilledheart  */
+
+#ifndef YASS_FEATURE_H
+#define YASS_FEATURE_H
+
+#define YASS_APP_FEATURES "@YASS_APP_FEATURES@"
+
+#endif // YASS_FEATURE_H
