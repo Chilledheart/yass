@@ -158,9 +158,10 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
+            third_party/curl-8.4.0_7-win64a-mingw
             third_party/curl-8.4.0_7-win64-mingw
             third_party/curl-8.4.0_7-win32-mingw
-          key: ${{ runner.os }}-mingw64-curl-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-mingw64-curl-and-aarch64-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
         uses: actions/cache@v3
         with:
@@ -191,6 +192,8 @@ jobs:
         if: ${{ steps.curl-cache.outputs.cache-hit != 'true' }}
         run: |
           cd third_party
+          curl -L -O https://curl.se/windows/dl-8.4.0_7/curl-8.4.0_7-win64a-mingw.zip
+          7z x curl-8.4.0_7-win64a-mingw.zip -aoa
           curl -L -O https://curl.se/windows/dl-8.4.0_7/curl-8.4.0_7-win64-mingw.zip
           7z x curl-8.4.0_7-win64-mingw.zip -aoa
           curl -L -O https://curl.se/windows/dl-8.4.0_7/curl-8.4.0_7-win32-mingw.zip
