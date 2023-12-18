@@ -3599,6 +3599,10 @@ if (GUI)
     elseif (GUI_FLAVOUR STREQUAL "ios")
         list(APPEND SRC_FILES
           src/ios/main.mm)
+        if (USE_ICU)
+          list(APPEND SRC_FILES
+            ${ICU_DATAFILE})
+        endif()
     elseif(GUI_FLAVOUR STREQUAL "gtk3")
         list(APPEND SRC_FILES
           src/gtk/yass.cpp
@@ -3877,6 +3881,39 @@ if (GUI)
               XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/yass.entitlements
           )
         endif()
+    elseif(GUI_FLAVOUR STREQUAL "ios")
+        get_target_property(_APP_COMPILE_FLAGS ${APP_NAME} COMPILE_FLAGS)
+        if (NOT _APP_COMPILE_FLAGS)
+          set(_APP_COMPILE_FLAGS "")
+        endif()
+        set_target_properties(${APP_NAME} PROPERTIES
+            COMPILE_FLAGS "${_APP_COMPILE_FLAGS} -fobjc-arc")
+
+        # For iOS Apple uses a flat bundle layout where no Resources folder exist.
+        # Therefore CMake strips the Resources folder name from the specified location.
+        set_source_files_properties("src/mac/yass.icns" PROPERTIES
+          MACOSX_PACKAGE_LOCATION "Resources")
+        if (USE_ICU)
+          set_source_files_properties("${ICU_DATAFILE}" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
+        endif()
+
+        set_target_properties(${APP_NAME} PROPERTIES
+            RESOURCE "yass.icns"
+            MACOSX_BUNDLE_ICON_FILE yass.icns
+            MACOSX_BUNDLE_COPYRIGHT "${YASS_APP_COPYRIGHT}"
+            MACOSX_BUNDLE_GUI_IDENTIFIER "it.gui.yass"
+            MACOSX_BUNDLE_BUNDLE_NAME ${PACKAGE_NAME}
+            MACOSX_BUNDLE_INFO_PLIST ${APP_MACOSX_BUNDLE_INFO}
+            XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
+            XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
+            XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++"
+            XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS "YES"
+            XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
+            #XCODE_ATTRIBUTE_ENABLE_HARDENED_RUNTIME "YES"
+            #XCODE_ATTRIBUTE_CODE_SIGN_INJECT_BASE_ENTITLEMENTS "NO"
+            #XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME ${ASSET_CATALOG_ASSETS}
+          )
     endif()
 
     if (NOT CMAKE_SKIP_INSTALL_RULES)
