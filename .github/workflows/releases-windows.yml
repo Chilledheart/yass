@@ -142,11 +142,6 @@ jobs:
         run: |
           build-msvc-${{ matrix.arch }}-${{ matrix.crt-linkage }}\yass_test || exit /b
           build-msvc-${{ matrix.arch }}-${{ matrix.crt-linkage }}\yass_benchmark || exit /b
-
-          exit /b 0
-
-          :SetNewVCToolsVersion
-          set VCToolsVersion=
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:

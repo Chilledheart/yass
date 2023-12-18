@@ -123,6 +123,9 @@ set(YASS_APP_VERSION_TWEAK ${PACKAGE_VERSION_TWEAK})
 set(YASS_APP_FULL_VERSION ${PACKAGE_VERSION}.${PACKAGE_VERSION_TWEAK})
 set(YASS_APP_COPYRIGHT "Copyright 2019-2023 Chilledheart. All rights reserved.")
 
+message(STATUS "Source Tag: ${YASS_APP_TAG}-${YASS_APP_SUBTAG}")
+message(STATUS "Source LastChange: ${YASS_APP_LAST_CHANGE}")
+
 set(APP_VERSION_HEADER "${CMAKE_CURRENT_BINARY_DIR}/version.h")
 configure_file("src/version.h.in" "${APP_VERSION_HEADER}" @ONLY)
 # for version.h
@@ -3535,6 +3538,7 @@ endif()
 
 set(APP_FEATURE_HEADER "${CMAKE_CURRENT_BINARY_DIR}/feature.h")
 configure_file("src/feature.h.in" "${APP_FEATURE_HEADER}" @ONLY)
+message(STATUS "Enabled Feature: ${YASS_APP_FEATURES}")
 
 # *****************************************************************************************
 #           Source code: GUI part

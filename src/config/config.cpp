@@ -265,7 +265,7 @@ void ReadConfigFileOption(int argc, const char** argv) {
       argv[pos+1] = "";
       pos += 2;
       continue;
-    } else if (arg == "--version") {
+    } else if (arg == "-version" || arg == "--version") {
       fprintf(stdout, "%s %s\n", absl::flags_internal::ShortProgramInvocationName().c_str(),
               YASS_APP_TAG);
       fprintf(stdout, "Last Change: %s\n", YASS_APP_LAST_CHANGE);

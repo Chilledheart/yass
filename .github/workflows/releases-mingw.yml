@@ -170,8 +170,8 @@ jobs:
       - name: Run unittests
         run: |
           cd build-mingw
-          yass_benchmark
           yass_test
+          yass_benchmark
       - name: Upload dist tarball
         if: ${{ github.event_name == 'release' }}
         env:
