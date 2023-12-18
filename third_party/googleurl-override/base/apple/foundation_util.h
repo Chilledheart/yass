@@ -25,6 +25,9 @@
 
 namespace gurl_base::apple {
 
+// Returns the path to a resource within the framework bundle.
+BASE_EXPORT std::string PathForFrameworkBundleResource(const char* resource_name);
+
 #define TYPE_NAME_FOR_CF_TYPE_DECL(TypeCF) \
   BASE_EXPORT std::string TypeNameForCFType(TypeCF##Ref)
 

@@ -28,6 +28,17 @@ CFTypeID SecKeyGetTypeID();
 
 namespace gurl_base::apple {
 
+std::string PathForFrameworkBundleResource(const char* resource_name) {
+  NSBundle* bundle = [NSBundle mainBundle];
+  NSURL* resource_url = [bundle URLForResource:@(resource_name)
+                                 withExtension:nil];
+  const char* path = nullptr;
+  if (resource_url && resource_url.fileURL) {
+    path = resource_url.path.fileSystemRepresentation;
+  }
+  return path ? path : std::string();
+}
+
 #define TYPE_NAME_FOR_CF_TYPE_DEFN(TypeCF)     \
   std::string TypeNameForCFType(TypeCF##Ref) { \
     return #TypeCF;                            \
