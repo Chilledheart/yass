@@ -68,6 +68,7 @@ override_dh_auto_test:
 ifneq ($(filter nocheck,$(DEB_BUILD_PROFILES)),)
 	echo 'test skipped'
 else
+	./build-debian/yass_test --version
 	./build-debian/yass_test
 	./build-debian/yass_benchmark
 endif

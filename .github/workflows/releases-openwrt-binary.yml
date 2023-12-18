@@ -146,6 +146,9 @@ jobs:
             --cmake-build-type MinSizeRel -build-benchmark -build-test -nc
           ./tools/build --variant server --arch ${{ matrix.subarch }} --system linux --subsystem openwrt --sysroot ${{ env.SDK_ROOT }} \
             --cmake-build-type MinSizeRel -build-benchmark -build-test -nc
+      - name: Cat Features
+        run: |
+          cat ./build-linux-openwrt-${{ matrix.subarch }}/feature.h
       - name: Run tests (x86 and x86_64)
         if: ${{ matrix.arch == 'x86' || matrix.arch == 'x86_64' }}
         run: |

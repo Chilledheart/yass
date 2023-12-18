@@ -167,11 +167,15 @@ jobs:
           curl -L -O https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x64.exe
           vcredist_x64.exe /install /quiet /norestart
           del vcredist_x64.exe
+      - name: Run tests (version)
+        run: |
+          cd build-mingw
+          yass_test --version
       - name: Run unittests
         run: |
           cd build-mingw
-          yass_benchmark
           yass_test
+          yass_benchmark
       - name: Upload dist tarball
         if: ${{ github.event_name == 'release' }}
         env:

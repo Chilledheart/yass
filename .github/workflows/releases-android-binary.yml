@@ -163,6 +163,9 @@ jobs:
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system android --cmake-build-type MinSizeRel \
             -build-benchmark -build-test -use-icu \
             -android-sdk-dir "${ANDROID_HOME}" -android-ndk-dir "${ANDROID_NDK_HOME}"
+      - name: Cat Features
+        run: |
+          cat ./build-android${{ matrix.apilevel }}-${{ matrix.arch }}/feature.h
       - name: "Install dependency: android sysroot (test purpose)"
         if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
         run: |

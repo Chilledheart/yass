@@ -112,6 +112,10 @@ jobs:
 
           :SetNewVCToolsVersion
           set VCToolsVersion=
+      - name: Run tests (version)
+        run: |
+          cd build-msvc-${{ matrix.arch }}-${{ matrix.crt-linkage }}
+          yass_test --version
       - name: Run tests
         run: |
           cd build-msvc-${{ matrix.arch }}-${{ matrix.crt-linkage }}
@@ -296,6 +300,10 @@ jobs:
           # copy curl dll required by yass_test
           cp -v third_party/curl-8.4.0_7-win64-mingw/bin/libcurl-x64.dll build-mingw
           sudo apt-get update -qq && sudo apt-get install -y wine wine64
+      - name: Run tests (version)
+        run: |
+          cd build-mingw
+          wine yass_test.exe --version
       - name: Run tests
         run: |
           cd build-mingw
@@ -382,6 +390,10 @@ jobs:
       - name: Build
         run: |
           ./tools/build -no-packaging ${{ env.build_opts }} -build-test
+      - name: Run tests (version)
+        run: |
+          cd build-linux-amd64
+          ./yass_test --version
       - name: Run tests
         run: |
           cd build-linux-amd64
@@ -443,6 +455,10 @@ jobs:
       - name: Build
         run: |
           ./tools/build -no-packaging -build-test
+      - name: Run tests (version)
+        run: |
+          cd build-darwin-amd64
+          ./yass_test --version
       - name: Run tests
         run: |
           cd build-darwin-amd64

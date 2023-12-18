@@ -107,6 +107,9 @@ jobs:
       - name: Build TGZ packages
         run: |
           ./tools/build --arch ${{ matrix.arch }} --system freebsd --freebsd-abi ${{ matrix.abi }} --sysroot $PWD/freebsd-${{ matrix.abi }}-toolchain -build-benchmark -build-test
+      - name: Cat Features
+        run: |
+          cat ./build-freebsd${{ matrix.abi }}-${{ matrix.arch }}/feature.h
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:

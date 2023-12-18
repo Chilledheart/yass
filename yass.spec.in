@@ -127,6 +127,7 @@ cd ..
 
 %check
 cd build
+./yass_test --version
 ./yass_test %yass_test_opt
 ./yass_benchmark
 cd ..
