@@ -41,7 +41,17 @@ Set the \fIusername\fR\. The server and the client should use the same username\
 Set the \fIpassword\fR\. The server and the client should use the same password\.
 .TP
 \fB\-\-method\fR \fImethod\fR
-Method of encrypt \fImethod\fR as required field\. Allow cipher method depends on your build flags\. Possible values are: one of aes\-256\-gcm, chacha20\-ietf\-poly1305, xchacha20\-ietf\-poly1305, chacha20\-ietf\-poly1305\-evp, xchacha20\-ietf\-poly1305\-evp, aes\-128\-gcm\-evp, aes\-128\-gcm12\-evp, aes\-192\-gcm\-evp, aes\-256\-gcm\-evp, aes\-128\-cfb, aes\-192\-cfb, aes\-256\-cfb, aes\-128\-ctr, aes\-192\-ctr, aes\-256\-ctr, camellia\-128\-cfb, camellia\-192\-cfb, camellia\-256\-cfb, https, http2\-plaintext and http2\. The default cipher method is http2\.
+Method of encrypt \fImethod\fR as required field\. Allow cipher method depends on your build flags\. Possible values are:
+.IP
+\fIlibsodium\fR compatible AEAD Cipher: \fBaes\-256\-gcm\fR, \fBchacha20\-ietf\-poly1305\fR, \fBxchacha20\-ietf\-poly1305\fR
+.IP
+\fIboringssl\fR compatible AEAD Cipher: \fBchacha20\-ietf\-poly1305\-evp\fR, \fBxchacha20\-ietf\-poly1305\-evp\fR, \fBaes\-128\-gcm\-evp\fR, \fBaes\-128\-gcm12\-evp\fR, \fBaes\-192\-gcm\-evp\fR, \fBaes\-256\-gcm\-evp\fR
+.IP
+\fImbedtls\fR compatible STREAM Cipher: \fBaes\-128\-cfb\fR, \fBaes\-192\-cfb\fR, \fBaes\-256\-cfb\fR, \fBaes\-128\-ctr\fR, \fBaes\-192\-ctr\fR, \fBaes\-256\-ctr\fR, \fBcamellia\-128\-cfb\fR, \fBcamellia\-192\-cfb\fR, \fBcamellia\-256\-cfb\fR
+.IP
+\fInaiveproxy\fR compatible Cipher Method: \fBhttps\fR, \fBhttp2\-plaintext\fR, \fBhttp2\fR
+.IP
+The default cipher method is \fBhttp2\fR\.
 .TP
 \fB\-\-connect_timeout\fR \fInumber\fR
 Connect timeout is \fInumber\fR in seconds\.
@@ -88,4 +98,4 @@ Use as the path of ca\-bundle\.crt file\. Same effect with \fB\-\-cacert\fR \fIf
 .SH "COPYRIGHT"
 Copyright (C) 2019\-2023 Chilledheart\. All rights reserved\.
 .SH "SEE ALSO"
-\fBiptables\fR(8)
+\fBopenssl\fR(1)

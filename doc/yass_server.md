@@ -50,8 +50,21 @@ See <https://github.com/Chilledheart/yass/wiki/Usage>.
 * `--method` _method_:
   Method of encrypt _method_ as required field.
   Allow cipher method depends on your build flags.
-  Possible values are: one of aes-256-gcm, chacha20-ietf-poly1305, xchacha20-ietf-poly1305, chacha20-ietf-poly1305-evp, xchacha20-ietf-poly1305-evp, aes-128-gcm-evp, aes-128-gcm12-evp, aes-192-gcm-evp, aes-256-gcm-evp, aes-128-cfb, aes-192-cfb, aes-256-cfb, aes-128-ctr, aes-192-ctr, aes-256-ctr, camellia-128-cfb, camellia-192-cfb, camellia-256-cfb, https, http2-plaintext and http2.
-  The default cipher method is http2.
+  Possible values are:
+
+  _libsodium_ compatible AEAD Cipher:
+  `aes-256-gcm`, `chacha20-ietf-poly1305`, `xchacha20-ietf-poly1305`
+
+  _boringssl_ compatible AEAD Cipher:
+  `chacha20-ietf-poly1305-evp`, `xchacha20-ietf-poly1305-evp`, `aes-128-gcm-evp`, `aes-128-gcm12-evp`, `aes-192-gcm-evp`, `aes-256-gcm-evp`
+
+  _mbedtls_ compatible STREAM Cipher:
+  `aes-128-cfb`, `aes-192-cfb`, `aes-256-cfb`, `aes-128-ctr`, `aes-192-ctr`, `aes-256-ctr`, `camellia-128-cfb`, `camellia-192-cfb`, `camellia-256-cfb`
+
+  _naiveproxy_ compatible Cipher Method:
+  `https`, `http2-plaintext`, `http2`
+
+  The default cipher method is `http2`.
 
 * `--connect_timeout` _number_:
   Connect timeout is _number_ in seconds.
@@ -103,4 +116,4 @@ Copyright (C) 2019-2023 Chilledheart. All rights reserved.
 
 ## SEE ALSO
 
-`iptables`(8)
+`openssl`(1)
