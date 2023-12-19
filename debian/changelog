@@ -1,32 +1,32 @@
-yass (1.5.5-1) UNRELEASED; urgency=low
+yass (1.5.6-1) UNRELEASED; urgency=low
 
-  * ssl: use builtin ca bundle if system keystore fails.
+  * man: add yass_cli and yass_server man pages.
 
- -- Chilledheart <keeyou-cn@outout.com>  Thu, 14 Dec 2023 14:10:00 +0800
+ -- Chilledheart <keeyou-cn@outlook.com>  Tue, 19 Dec 2023 15:12:58 +0800
 yass (1.5.4-1) UNRELEASED; urgency=low
 
   * Fix bad F_SETFD calls.
   * gtk: update desktop database.
 
- -- Chilledheart <keeyou-cn@outout.com>  Wed, 13 Dec 2023 10:54:38 +0800
+ -- Chilledheart <keeyou-cn@outlook.com>  Wed, 13 Dec 2023 10:54:38 +0800
 yass (1.5.3-1) UNRELEASED; urgency=low
 
   * Fix linux thread name setting.
 
- -- Chilledheart <keeyou-cn@outout.com>  Fri, 8 Dec 2023 14:56:17 +0800
+ -- Chilledheart <keeyou-cn@outlook.com>  Fri, 8 Dec 2023 14:56:17 +0800
 yass (1.5.2-1) UNRELEASED; urgency=medium
 
   * Bump to chromium 121 dependents (updated).
   * Fix RPM releases.
 
- -- Chilledheart <keeyou-cn@outout.com>  Tue, 5 Dec 2023 20:07:51 +0800
+ -- Chilledheart <keeyou-cn@outlook.com>  Tue, 5 Dec 2023 20:07:51 +0800
 yass (1.5.1-1) UNRELEASED; urgency=medium
 
   * Bump to chromium 121 dependents.
   * Fix use cached configuration issue.
   * Fix crash in resume from previous failure.
 
- -- Chilledheart <keeyou-cn@outout.com>  Mon, 4 Dec 2023 20:06:54 +0800
+ -- Chilledheart <keeyou-cn@outlook.com>  Mon, 4 Dec 2023 20:06:54 +0800
 yass (1.5.0-1) UNRELEASED; urgency=low
 
   * New major release.
