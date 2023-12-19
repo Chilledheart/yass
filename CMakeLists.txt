@@ -2925,6 +2925,7 @@ if (USE_LEVELDB)
   message(STATUS "Compiling with bundled snappy library")
   add_subdirectory(third_party/snappy)
   include_directories(third_party/snappy/src)
+  list(APPEND YASS_APP_FEATURES "snappy")
 endif()
 
 # *****************************************************************************************
@@ -2943,6 +2944,7 @@ if (USE_LEVELDB)
   set(ZSTD_LEGACY_SUPPORT "OFF" CACHE STRING "")
   add_subdirectory(third_party/zstd/build/cmake)
   include_directories(third_party/zstd/lib)
+  list(APPEND YASS_APP_FEATURES "zstd")
 endif()
 
 # *****************************************************************************************
