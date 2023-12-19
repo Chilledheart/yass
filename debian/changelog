@@ -3,6 +3,11 @@ yass (1.5.6-1) UNRELEASED; urgency=low
   * man: add yass_cli and yass_server man pages.
 
  -- Chilledheart <keeyou-cn@outlook.com>  Tue, 19 Dec 2023 15:12:58 +0800
+yass (1.5.5-1) UNRELEASED; urgency=low
+
+  * ssl: use builtin ca bundle if system keystore fails.
+
+ -- Chilledheart <keeyou-cn@outout.com>  Thu, 14 Dec 2023 14:10:00 +0800
 yass (1.5.4-1) UNRELEASED; urgency=low
 
   * Fix bad F_SETFD calls.
