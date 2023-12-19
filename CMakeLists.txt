@@ -2925,6 +2925,7 @@ if (USE_LEVELDB)
   message(STATUS "Compiling with bundled snappy library")
   add_subdirectory(third_party/snappy)
   include_directories(third_party/snappy/src)
+  list(APPEND YASS_APP_FEATURES "snappy")
 endif()
 
 # *****************************************************************************************
@@ -2943,6 +2944,7 @@ if (USE_LEVELDB)
   set(ZSTD_LEGACY_SUPPORT "OFF" CACHE STRING "")
   add_subdirectory(third_party/zstd/build/cmake)
   include_directories(third_party/zstd/lib)
+  list(APPEND YASS_APP_FEATURES "zstd")
 endif()
 
 # *****************************************************************************************
@@ -3520,6 +3522,7 @@ if (CLI)
 
   if (NOT CMAKE_SKIP_INSTALL_RULES AND NOT WIN32 AND NOT IOS)
     install(TARGETS yass_cli RUNTIME DESTINATION bin)
+    install(FILES doc/yass_cli.1 DESTINATION share/man/man1)
     # TODO add freebsd rc files
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID AND NOT OHOS)
       install(FILES yass.json.sample RENAME config.json DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/yass)
@@ -3561,6 +3564,7 @@ if (SERVER)
 
   if (NOT CMAKE_SKIP_INSTALL_RULES AND NOT WIN32 AND NOT IOS)
     install(TARGETS yass_server RUNTIME DESTINATION bin)
+    install(FILES doc/yass_server.1 DESTINATION share/man/man1)
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID AND NOT OHOS)
       install(FILES yass-server.json.sample RENAME server.json DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/yass)
       install(FILES yass-server.service RENAME yass-server.service DESTINATION lib/systemd/system)
