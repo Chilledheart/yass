@@ -254,11 +254,11 @@ if (MSVC)
   if (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "arm64")
     set(OS_AARCH64 TRUE)
   endif()
-  list(APPEND YASS_APP_FEATURES "msvc architecture: ${MSVC_PROCESSOR_ARCHITECTURE}")
-  list(APPEND YASS_APP_FEATURES "msvc crt linkage: ${MSVC_CRT_LINKAGE}")
+  list(APPEND YASS_APP_FEATURES "arch: ${MSVC_PROCESSOR_ARCHITECTURE}")
+  list(APPEND YASS_APP_FEATURES "${MSVC_CRT_LINKAGE} crt")
 elseif(APPLE)
   message(STATUS "Build with target architecture: ${CMAKE_OSX_ARCHITECTURES}")
-  list(APPEND YASS_APP_FEATURES "apple architecture: ${CMAKE_OSX_ARCHITECTURES}")
+  list(APPEND YASS_APP_FEATURES "arch: ${CMAKE_OSX_ARCHITECTURES}")
 else()
   if ((CMAKE_C_COMPILER_TARGET MATCHES "^i386-.*" OR
        CMAKE_C_COMPILER_TARGET MATCHES "^i486-.*" OR
@@ -285,7 +285,7 @@ else()
   endif()
 
   message(STATUS "Build with target architecture: ${CMAKE_SYSTEM_PROCESSOR}")
-  list(APPEND YASS_APP_FEATURES "system architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+  list(APPEND YASS_APP_FEATURES "arch: ${CMAKE_SYSTEM_PROCESSOR}")
 endif()
 
 if (OS_X86)
