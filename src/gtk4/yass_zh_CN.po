@@ -126,6 +126,10 @@ msgstr "断开连接于服务器 "
 msgid "Last Change: "
 msgstr "最后改动: "
 
+#: yass.cpp:392
+msgid "Enabled Feature: "
+msgstr "启用功能: "
+
 #: yass.cpp:383
 msgid "official-site"
 msgstr "官方网站"

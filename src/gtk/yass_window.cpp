@@ -14,6 +14,7 @@
 #include "gtk/option_dialog.hpp"
 #include "gtk/utils.hpp"
 #include "gtk/yass.hpp"
+#include "feature.h"
 #include "version.h"
 
 static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
@@ -444,6 +445,9 @@ void YASSWindow::OnAbout() {
   gtk_about_dialog_set_authors(about_dialog, authors);
   std::string comments = _("Last Change: ");
   comments += YASS_APP_LAST_CHANGE;
+  comments += "\n";
+  comments += _("Enabled Feature: ");
+  comments += YASS_APP_FEATURES;
   gtk_about_dialog_set_comments(about_dialog, comments.c_str());
   gtk_about_dialog_set_copyright(about_dialog, YASS_APP_COPYRIGHT);
   gtk_about_dialog_set_license_type(about_dialog, GTK_LICENSE_GPL_2_0);

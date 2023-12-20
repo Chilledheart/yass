@@ -21,6 +21,7 @@
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
 #include "gtk4/yass_window.hpp"
+#include "feature.h"
 #include "version.h"
 #include "gtk4/option_dialog.hpp"
 #include "crashpad_helper.hpp"
@@ -387,6 +388,9 @@ void YASSApp::OnAbout() {
   gtk_about_dialog_set_authors(about_dialog, authors);
   std::string comments = _("Last Change: ");
   comments += YASS_APP_LAST_CHANGE;
+  comments += _("\n");
+  comments += _("Enabled Feature: ");
+  comments += YASS_APP_FEATURES;
   gtk_about_dialog_set_comments(about_dialog, comments.c_str());
   gtk_about_dialog_set_copyright(about_dialog, YASS_APP_COPYRIGHT);
   gtk_about_dialog_set_license_type(about_dialog, GTK_LICENSE_GPL_2_0);

@@ -125,6 +125,10 @@ msgstr "Disconnected with "
 msgid "Last Change: "
 msgstr "Last Change: "
 
+#: yass.cpp:392
+msgid "Enabled Feature: "
+msgstr "Enabled Feature: "
+
 #: yass.cpp:383
 msgid "official-site"
 msgstr "official-site"

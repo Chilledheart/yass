@@ -130,6 +130,10 @@ msgstr "YASS 选项"
 msgid "Last Change: "
 msgstr "最后改动: "
 
+#: yass_window.cpp:448
+msgid "Enabled Feature: "
+msgstr "启用功能: "
+
 #: yass_window.cpp:446
 msgid "official-site"
 msgstr "官方网站"
