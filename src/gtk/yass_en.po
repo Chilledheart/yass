@@ -129,6 +129,10 @@ msgstr "YASS Option"
 msgid "Last Change: "
 msgstr "Last Change: "
 
+#: yass_window.cpp:448
+msgid "Enabled Feature: "
+msgstr "Enabled Feature: "
+
 #: yass_window.cpp:446
 msgid "official-site"
 msgstr "official-site"
