@@ -25,6 +25,7 @@ set(CMAKE_CXX_COMPILER_RANLIB "${LLVM_SYSROOT}/bin/llvm-ranlib")
 # disabled because it is missing from binary
 # set(CMAKE_RC_COMPILER "${LLVM_SYSROOT}/bin/llvm-rc")
 set(CMAKE_RC_COMPILER "${MINGW_SYSROOT}/bin/${GCC_TARGET}-windres")
+set(CMAKE_RC_COMPILER_ARG1 "--codepage 65001")
 
 set(CMAKE_SYSROOT "${MINGW_SYSROOT}/${GCC_TARGET}" CACHE STRING "")
 
