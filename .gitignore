@@ -25,6 +25,7 @@ sscxx
 /third_party/curl-8.4.0_7-win64a-mingw
 /third_party/llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64
 /third_party/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64
+/third_party/llvm-mingw-20230614-ucrt-macos-universal
 /third_party/crashpad
 /third_party/depot_tools
 *.aps
