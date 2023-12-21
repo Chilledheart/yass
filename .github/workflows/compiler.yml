@@ -206,70 +206,15 @@ jobs:
           sudo apt-get install -y cmake ninja-build nasm zip
           # required by mbedtls build
           sudo apt-get install -y python3-jsonschema python3-jinja2
-      - name: Set toolchain cmake files
-        run: |
-          cat > MinGW.cmake << EOF
-          # Sample toolchain file for building for Windows from an Ubuntu Linux system.
-          #
-          # Typical usage:
-          #    *) install cross compiler: sudo apt-get install mingw-w64
-          #    *) cd build
-          #    *) cmake -DCMAKE_TOOLCHAIN_FILE=~/mingw-w64-x86_64.cmake ..
-
-          set(CMAKE_SYSTEM_NAME Windows)
-          set(CMAKE_SYSTEM_PROCESSOR ${{ matrix.arch }})
-          set(GNU_TARGET ${{ matrix.arch }}-w64-mingw32)
-
-          set(CMAKE_C_COMPILER_TARGET \${GNU_TARGET} CACHE STRING "")
-          set(CMAKE_CXX_COMPILER_TARGET \${GNU_TARGET} CACHE STRING "")
-          set(CMAKE_ASM_COMPILER_TARGET \${GNU_TARGET} CACHE STRING "")
-
-          set(CMAKE_ASM_FLAGS "--rtlib=compiler-rt")
-          set(CMAKE_C_FLAGS "--rtlib=compiler-rt -Wno-unused-command-line-argument")
-          set(CMAKE_CXX_FLAGS "--rtlib=compiler-rt -stdlib=libc++ -Wno-unused-command-line-argument")
-          set(CMAKE_SHARED_LINKER_FLAGS "--rtlib=compiler-rt --unwindlib=libunwind")
-          set(CMAKE_EXE_LINKER_FLAGS "--rtlib=compiler-rt --unwindlib=libunwind")
-
-          # cross compilers to use for C and C++
-          set(CMAKE_C_COMPILER "/opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64/bin/clang")
-          set(CMAKE_CXX_COMPILER "/opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64/bin/clang++")
-          set(CMAKE_LINKER "/opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64/bin/ld.lld")
-          set(CMAKE_AR "/opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64/bin/llvm-ar")
-          set(CMAKE_CXX_COMPILER_AR "/opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64/bin/llvm-ar")
-          set(CMAKE_RANLIB "/opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64/bin/llvm-ranlib")
-          set(CMAKE_CXX_COMPILER_RANLIB "/opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64/bin/llvm-ranlib")
-          # disabled because it is missing from binary
-          # set(CMAKE_RC_COMPILER "/opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64/bin/llvm-rc")
-          set(CMAKE_RC_COMPILER "/opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64/bin/\${GNU_TARGET}-windres")
-
-          set(CMAKE_SYSROOT "/opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64/\${GNU_TARGET}" CACHE STRING "")
-
-          # target environment on the build host system
-          set(CMAKE_FIND_ROOT_PATH /opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64/\${GNU_TARGET})
-
-          # modify default behavior of FIND_XXX() commands
-          set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-          set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-          set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-          EOF
-          cat > Native.cmake << EOF
-          set(CMAKE_C_COMPILER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang")
-          set(CMAKE_CXX_COMPILER "${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++")
-          EOF
       - name: Build
         run: |
-          mkdir build-mingw
-          cd build-mingw
-          cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DUSE_ICU=off .. \
-            -DCMAKE_TOOLCHAIN_FILE="$PWD/../MinGW.cmake" -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DCROSS_TOOLCHAIN_FLAGS_TOOLCHAIN_FILE=\"$PWD/../Native.cmake\" \
-            ${{ env.CMAKE_OPTIONS }}
-          ninja yass yass_test
+          ./tools/build --variant gui --arch ${{ matrix.arch }} --system mingw -build-test -cmake-build-type ${{ matrix.build_type }} \
+            --clang-path /opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64 -nc
       - name: Populate depedencies (Tests-i686)
         if: ${{ matrix.arch == 'i686' }}
         run: |
           # copy curl dll required by yass_test
-          cp -v third_party/curl-8.4.0_7-win32-mingw/bin/libcurl.dll build-mingw
+          cp -v third_party/curl-8.4.0_7-win32-mingw/bin/libcurl.dll build-mingw-${{ matrix.arch }}/
           # fix for missing i386 deb packages from deb.sury.org repository
           sudo add-apt-repository ppa:ondrej/php
           # alternative fix is to downgrade overloaded libpcre2 versions with five locally installed packages which are PHP-related and came from deb.sury.org repository.
@@ -279,12 +224,12 @@ jobs:
         if: ${{ matrix.arch == 'x86_64' }}
         run: |
           # copy curl dll required by yass_test
-          cp -v third_party/curl-8.4.0_7-win64-mingw/bin/libcurl-x64.dll build-mingw
+          cp -v third_party/curl-8.4.0_7-win64-mingw/bin/libcurl-x64.dll build-mingw-${{ matrix.arch }}/
           sudo apt-get update -qq && sudo apt-get install -y wine wine64
       - name: Run tests
         if: ${{ matrix.arch == 'i686' || matrix.arch == 'x86_64' }}
         run: |
-          cd build-mingw
+          cd build-mingw-${{ matrix.arch }}
           wine yass_test.exe -logtostderr -v 1 --gtest_shuffle --gtest_repeat=25 --gtest_throw_on_failure
           wine yass_test.exe -logtostderr -v 1 --gtest_shuffle --gtest_repeat=25 --gtest_throw_on_failure --ipv6_mode
 
