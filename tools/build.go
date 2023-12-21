@@ -87,6 +87,8 @@ func getAppName() string {
 		return APPNAME + ".exe"
 	} else if systemNameFlag == "darwin" {
 		return APPNAME + ".app"
+	} else if systemNameFlag == "mingw" {
+		return APPNAME + ".exe"
 	} else if systemNameFlag == "android" {
 		if APPNAME == "yass" {
 			return "lib" + APPNAME + ".so"
@@ -334,6 +336,18 @@ func getLLVMTargetTripleMSVC(msvcTargetArch string) string {
 	}
 	glog.Fatalf("Invalid msvcTargetArch: %s", msvcTargetArch)
 	return ""
+}
+
+func getMinGWTargetAndAppAbi(arch string) (string, string) {
+	if arch == "x86" || arch == "i686" {
+		return "i686-w64-mingw32", "i686"
+	} else if arch == "x64" || arch == "x86_64" || arch == "amd64" {
+		return "x86_64-w64-mingw32", "x86_64"
+	} else if arch == "arm64" || arch == "aarch64" {
+		return "aarch64-w64-mingw32", "aarch64"
+	}
+	glog.Fatalf("Invalid MinGW arch: %s", arch)
+	return "", ""
 }
 
 // build/config/android/abi.gni
@@ -770,6 +784,26 @@ func buildStageGenerateBuildScript() {
 		}
 	}
 
+	if systemNameFlag == "mingw" {
+		glog.Infof("Using llvm-mingw dir %s", clangPath);
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCROSS_TOOLCHAIN_FLAGS_TOOLCHAIN_FILE=%s/Native.cmake", buildDir))
+
+		ccCompiler := os.Getenv("CC")
+		cxxCompiler := os.Getenv("CXX")
+		nativeToolChainContent := strings.Replace(fmt.Sprintf("set(CMAKE_C_COMPILER \"%s\")\n", ccCompiler), "\\", "/", -1)
+		nativeToolChainContent += strings.Replace(fmt.Sprintf("set(CMAKE_CXX_COMPILER \"%s\")\n", cxxCompiler), "\\", "/", -1)
+		err := ioutil.WriteFile("Native.cmake", []byte(nativeToolChainContent), 0666)
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
+
+		targetTriple, targetAbi := getMinGWTargetAndAppAbi(archFlag)
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/MinGW.cmake", buildDir))
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DLLVM_SYSROOT=%s", clangPath))
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSTEM_PROCESSOR=%s", targetAbi))
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_TARGET=%s", targetTriple))
+	}
+
 	if systemNameFlag == "ios" {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/ios.toolchain.cmake", buildDir))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DDEPLOYMENT_TARGET=%s", iosVersionMinFlag))
@@ -956,7 +990,7 @@ func postStateStripBinaries() {
 	if systemNameFlag == "windows" {
 		return
 	}
-	if systemNameFlag == "harmony" || systemNameFlag == "android" || systemNameFlag == "linux" || systemNameFlag == "freebsd" {
+	if systemNameFlag == "mingw" || systemNameFlag == "android" || systemNameFlag == "harmony" || systemNameFlag == "linux" || systemNameFlag == "freebsd" {
 		objcopy := filepath.Join(clangPath, "bin", "llvm-objcopy")
 		if _, err := os.Stat(objcopy); errors.Is(err, os.ErrNotExist) {
 			objcopy = "objcopy"
@@ -1470,7 +1504,7 @@ func postStateArchives() map[string][]string {
 
 	ext := ".zip"
 
-	if systemNameFlag == "harmony" || systemNameFlag == "android" || systemNameFlag == "linux" || systemNameFlag == "freebsd" {
+	if systemNameFlag == "android" || systemNameFlag == "harmony" || systemNameFlag == "linux" || systemNameFlag == "freebsd" {
 		ext = ".tgz"
 	}
 
@@ -1547,7 +1581,7 @@ func postStateArchives() map[string][]string {
 	if systemNameFlag == "windows" {
 		archiveFiles(debugArchive, archivePrefix, []string{APPNAME + ".pdb"})
 		dbgPaths = append(dbgPaths, APPNAME+".pdb")
-	} else if systemNameFlag == "harmony" || systemNameFlag == "android" || systemNameFlag == "linux" || systemNameFlag == "freebsd" {
+	} else if systemNameFlag == "mingw" || systemNameFlag == "android" || systemNameFlag == "harmony" || systemNameFlag == "linux" || systemNameFlag == "freebsd" {
 		archiveFiles(debugArchive, archivePrefix, []string{getAppName() + ".dbg"})
 		dbgPaths = append(dbgPaths, APPNAME+".dbg")
 	} else if systemNameFlag == "darwin" {
