@@ -68,9 +68,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            third_party/llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64
-            third_party/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64
-          key: ${{ runner.os }}-mingw64-third_party-llvm-20230614-msvcrt-and-ucrt
+            third_party/llvm-mingw-20230614-${{ matrix.variant }}-ubuntu-20.04-x86_64
+          key: ${{ runner.os }}-mingw64-third_party-llvm-20230614-${{ matrix.variant }}
       - name: Cache mingw64 curl
         id: curl-cache
         uses: actions/cache@v3
@@ -106,10 +105,8 @@ jobs:
         if: ${{ steps.mingw-cache.outputs.cache-hit != 'true' }}
         run: |
           pushd third_party
-          curl -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20230614/llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64.tar.xz
-          curl -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20230614/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64.tar.xz
-          tar -xf llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64.tar.xz
-          tar -xf llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64.tar.xz
+          curl -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20230614/llvm-mingw-20230614-${{ matrix.variant }}-ubuntu-20.04-x86_64.tar.xz
+          tar -xf llvm-mingw-20230614-${{ matrix.variant }}-ubuntu-20.04-x86_64.tar.xz
           rm -vf llvm-mingw-*.xz
           popd
       - name: "Download dependency: curl"
