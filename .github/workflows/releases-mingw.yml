@@ -142,7 +142,7 @@ jobs:
           # to add a link to the debugging info into the stripped executable.
           llvm-objcopy --add-gnu-debuglink=yass.exe.dbg yass.exe
 
-          export PREFIX=yass-win-mingw64-${{ matrix.arch }}-${{ matrix.variant }}-${{ github.event.release.tag_name }}
+          export PREFIX=yass-win-mingw64-${{ matrix.arch }}-${{ github.event.release.tag_name }}
           # generate archive
           rm -rf $PREFIX
           mkdir $PREFIX
