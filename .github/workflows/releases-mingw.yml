@@ -1,4 +1,4 @@
-name: Build Artifacts (MinGW)
+name: OnDemand Build Artifacts (Old MinGW)
 on:
   workflow_dispatch:
     inputs:
@@ -15,20 +15,6 @@ on:
         description: 'Test scenario tags'
         required: false
         type: boolean
-  pull_request:
-    branches: [master, develop]
-    paths-ignore:
-    - '**/*.md'
-    - '.circleci/**'
-    - '.cirrus.yml'
-  push:
-    branches: [master, develop]
-    paths-ignore:
-    - '**/*.md'
-    - '.circleci/**'
-    - '.cirrus.yml'
-  release:
-    types: [published]
 env:
   CACHE_EPOCH: 121-2
   GOPROXY: direct

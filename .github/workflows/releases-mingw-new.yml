@@ -1,0 +1,178 @@
+name: Build Artifacts (MinGW)
+on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+        type: choice
+        options:
+        - info
+        - warning
+        - debug
+      tags:
+        description: 'Test scenario tags'
+        required: false
+        type: boolean
+  pull_request:
+    branches: [master, develop]
+    paths-ignore:
+    - '**/*.md'
+    - '.circleci/**'
+    - '.cirrus.yml'
+  push:
+    branches: [master, develop]
+    paths-ignore:
+    - '**/*.md'
+    - '.circleci/**'
+    - '.cirrus.yml'
+  release:
+    types: [published]
+env:
+  CACHE_EPOCH: 121-2
+  GOPROXY: direct
+jobs:
+  mingw64-release:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: i686
+            variant: msvcrt
+          - arch: x86_64
+            variant: msvcrt
+          - arch: aarch64
+            variant: ucrt
+    env:
+      BUILD_TYPE: 'Release'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
+      - name: Cache clang, nasm and wixtoolset 3
+        id: clang-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            third_party/nasm
+            third_party/llvm-build/Release+Asserts
+            third_party/wix311
+          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+      - name: Cache mingw64 llvm
+        id: mingw-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            third_party/llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64
+            third_party/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64
+          key: ${{ runner.os }}-mingw64-third_party-llvm-20230614-msvcrt-and-ucrt
+      - name: Cache mingw64 curl
+        id: curl-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            third_party/curl-8.4.0_7-win64a-mingw
+            third_party/curl-8.4.0_7-win64-mingw
+            third_party/curl-8.4.0_7-win32-mingw
+          key: ${{ runner.os }}-mingw64-curl-and-aarch64-v${{ env.CACHE_EPOCH }}
+      - name: Cache golang
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Build build tool
+        run: |
+          cd tools
+          go build
+      - name: Change ubuntu mirror
+        run: |
+          sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
+          sudo apt-get update -qq
+      - name: "Install dependency: prebuilt clang and clang-tidy binaries"
+        if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
+        run: |
+          ./scripts/download-clang-prebuilt-binaries.py
+          rm -f third_party/llvm-build/Release+Asserts/*.tgz
+      - name: "Download dependency: llvm-mingw"
+        if: ${{ steps.mingw-cache.outputs.cache-hit != 'true' }}
+        run: |
+          pushd third_party
+          curl -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20230614/llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64.tar.xz
+          curl -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20230614/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64.tar.xz
+          tar -xf llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64.tar.xz
+          tar -xf llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64.tar.xz
+          rm -vf llvm-mingw-*.xz
+          popd
+      - name: "Download dependency: curl"
+        if: ${{ steps.curl-cache.outputs.cache-hit != 'true' }}
+        run: |
+          cd third_party
+          curl -L -O https://curl.se/windows/dl-8.4.0_7/curl-8.4.0_7-win64a-mingw.zip
+          7z x curl-8.4.0_7-win64a-mingw.zip -aoa
+          curl -L -O https://curl.se/windows/dl-8.4.0_7/curl-8.4.0_7-win64-mingw.zip
+          7z x curl-8.4.0_7-win64-mingw.zip -aoa
+          curl -L -O https://curl.se/windows/dl-8.4.0_7/curl-8.4.0_7-win32-mingw.zip
+          7z x curl-8.4.0_7-win32-mingw.zip -aoa
+          rm -vf curl*.zip
+      - name: Populate depedencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cmake ninja-build nasm zip
+          # required by mbedtls build
+          sudo apt-get install -y python3-jsonschema python3-jinja2
+      - name: Patch libcxx for windows xp
+        if: ${{ matrix.arch == 'i686' || matrix.arch == 'x86_64' }}
+        run: |
+          pushd third_party/libc++/trunk
+          patch -p1 < ../winxp.patch
+          popd
+          pushd third_party/libc++abi/trunk
+          patch -p1 < ../winxp.patch
+          popd
+          pushd third_party/benchmark
+          patch -p1 < ../benchmark-winxp-fix.patch
+          popd
+          echo "BUILD_OPTIONS=-mingw-allow-xp" >> $GITHUB_ENV
+      - name: Build
+        run: |
+          ./tools/build --variant gui --arch ${{ matrix.arch }} --system mingw \
+            -build-test -build-benchmark \
+            -mingw-dir $PWD/third_party/llvm-mingw-20230614-${{ matrix.variant }}-ubuntu-20.04-x86_64 \
+            ${{ env.BUILD_OPTIONS }}
+      - name: Populate depedencies (Tests-i686)
+        if: ${{ matrix.arch == 'i686' }}
+        run: |
+          # copy curl dll required by yass_test
+          cp -v third_party/curl-8.4.0_7-win32-mingw/bin/libcurl.dll build-mingw-winxp-${{ matrix.arch }}/
+          # fix for missing i386 deb packages from deb.sury.org repository
+          sudo add-apt-repository ppa:ondrej/php
+          # alternative fix is to downgrade overloaded libpcre2 versions with five locally installed packages which are PHP-related and came from deb.sury.org repository.
+          # sudo apt-get install -y --allow-downgrades libpcre2-8-0=10.34-7ubuntu0.1 libpcre2-16-0=10.34-7ubuntu0.1 libpcre2-32-0=10.34-7ubuntu0.1 libpcre2-dev=10.34-7ubuntu0.1 libgd3=2.2.5-5.2ubuntu2.1
+          sudo dpkg --add-architecture i386 && sudo apt-get update -qq && sudo apt-get install -y wine wine32
+      - name: Populate depedencies (Tests-x86_64)
+        if: ${{ matrix.arch == 'x86_64' }}
+        run: |
+          # copy curl dll required by yass_test
+          cp -v third_party/curl-8.4.0_7-win64-mingw/bin/libcurl-x64.dll build-mingw-winxp-${{ matrix.arch }}/
+          sudo apt-get update -qq && sudo apt-get install -y wine wine64
+      - name: Run tests
+        if: ${{ matrix.arch == 'i686' || matrix.arch == 'x86_64' }}
+        run: |
+          cd build-mingw-winxp-${{ matrix.arch }}
+          wine yass_test.exe
+          wine yass_benchmark.exe
+      - name: Upload dist tarball
+        if: ${{ github.event_name == 'release' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} *.zip
