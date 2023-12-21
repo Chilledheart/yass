@@ -1631,10 +1631,11 @@ endif()
 if (WIN32)
   # FIXME for mingw, CMAKE_SYSTEM_PROCESSOR can't tell which target it is building,
   # it needs to exclude arm64 build correctly.
-  if (MINGW OR MSVC_PROCESSOR_ARCHITECTURE STREQUAL "x86" OR MSVC_PROCESSOR_ARCHITECTURE STREQUAL "amd64")
+  if ((MINGW AND NOT OS_AARCH64) OR MSVC_PROCESSOR_ARCHITECTURE STREQUAL "x86" OR MSVC_PROCESSOR_ARCHITECTURE STREQUAL "amd64")
     message(STATUS "Built with sse3 support")
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -msse3")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3")
+    list(APPEND YASS_APP_FEATURES "sse3")
   endif()
 endif()
 
