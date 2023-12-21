@@ -171,12 +171,21 @@ else()
           )
       endif()
     elseif (MINGW AND MINGW_MSVCRT100)
-      set(libcxx_PUBLIC_LIBRARIES
-        ${libcxx_PUBLIC_LIBRARIES}
-         mingw32 gcc_eh gcc moldname mingwex msvcr100
-         advapi32 shell32 user32 kernel32
-         mingw32 gcc_eh gcc moldname mingwex msvcr100 kernel32
-        )
+      if (MINGW_COMPILER_RT)
+        set(libcxx_PUBLIC_LIBRARIES
+          ${libcxx_PUBLIC_LIBRARIES}
+           ${CMAKE_SYSROOT}/lib/libmingw32.a ${MINGW_COMPILER_RT} unwind moldname mingwex msvcr100
+           advapi32 shell32 user32 kernel32
+           ${CMAKE_SYSROOT}/lib/libmingw32.a ${MINGW_COMPILER_RT} unwind moldname mingwex msvcr100 kernel32
+          )
+      else()
+        set(libcxx_PUBLIC_LIBRARIES
+          ${libcxx_PUBLIC_LIBRARIES}
+           mingw32 gcc_eh gcc moldname mingwex msvcr100
+           advapi32 shell32 user32 kernel32
+           mingw32 gcc_eh gcc moldname mingwex msvcr100 kernel32
+          )
+      endif()
     endif()
   endif()
 endif()

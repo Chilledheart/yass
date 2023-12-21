@@ -32,13 +32,13 @@ env:
   GOPROXY: direct
 jobs:
   win-compiler-compatible-2022:
-    runs-on: windows-2022
     strategy:
       fail-fast: false
       matrix:
         arch: [x64, x86]
         crt-linkage: [static]
         build_type: [Debug, Release]
+    runs-on: windows-2022
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
     defaults:
@@ -123,12 +123,14 @@ jobs:
           yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks5h --ipv6_mode
           yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type http --ipv6_mode
   mingw64-compiler-compatible-crosscompiling:
-    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
         arch: [i686, x86_64, aarch64]
         build_type: [Debug, Release]
+    runs-on: ubuntu-20.04
+    env:
+      BUILD_TYPE: '${{ matrix.build_type }}'
     steps:
       - uses: actions/checkout@v4
       - name: Checkout with shallow submodules
@@ -199,7 +201,6 @@ jobs:
       - name: Populate llvm-mingw
         run: |
           sudo tar -C /opt -xvf llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64.tar.xz
-          sudo ln -sf libclang_rt.builtins-i386.a /opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64/lib/clang/16/lib/windows/libclang_rt.builtins-i686.a
       - name: Populate depedencies
         run: |
           sudo apt-get update -qq
@@ -208,7 +209,7 @@ jobs:
           sudo apt-get install -y python3-jsonschema python3-jinja2
       - name: Build
         run: |
-          ./tools/build --variant gui --arch ${{ matrix.arch }} --system mingw -build-test -cmake-build-type ${{ matrix.build_type }} \
+          ./tools/build --variant gui --arch ${{ matrix.arch }} --system mingw -build-test \
             --clang-path /opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64 -nc
       - name: Populate depedencies (Tests-i686)
         if: ${{ matrix.arch == 'i686' }}
@@ -243,13 +244,13 @@ jobs:
           wine yass_test.exe -logtostderr -v 1 --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks5h --ipv6_mode
           wine yass_test.exe -logtostderr -v 1 --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type http --ipv6_mode
   linux-compiler-compatible:
-    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
         compiler: [clang]
         build_type: [Debug, Release]
         cxxruntime: [libc++]
+    runs-on: ubuntu-22.04
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
     steps:

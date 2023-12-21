@@ -70,6 +70,9 @@ var archFlag string
 
 var variantFlag string
 
+var mingwDir string
+var mingwAllowXpFlag bool
+
 var androidAppAbi string
 var androidAbiTarget string
 var androidApiLevel int
@@ -174,6 +177,9 @@ func InitFlag() {
 
 	flag.StringVar(&variantFlag, "variant", "gui", "Specify variant, available: gui, cli, server")
 
+	flag.StringVar(&mingwDir, "mingw-dir", "", "MinGW Dir Path")
+	flag.BoolVar(&mingwAllowXpFlag, "mingw-allow-xp", false, "Enable Windows XP Build")
+
 	flag.IntVar(&androidApiLevel, "android-api", 24, "Select Android API Level")
 	flag.StringVar(&androidSdkDir, "android-sdk-dir", getEnv("ANDROID_SDK_ROOT", ""), "Android SDK Home Path")
 	flag.StringVar(&androidNdkDir, "android-ndk-dir", getEnv("ANDROID_NDK_ROOT", "../third_party/android_toolchain"), "Android NDK Home Path")
@@ -275,6 +281,12 @@ func prebuildFindSourceDirectory() {
 			osSuffix = "-winxp"
 		}
 		buildDir = fmt.Sprintf("build-msvc%s-%s-%s", osSuffix, msvcTargetArchFlag, msvcCrtLinkageFlag)
+	} else if systemNameFlag == "mingw" {
+		osSuffix := ""
+		if mingwAllowXpFlag {
+			osSuffix = "-winxp"
+		}
+		buildDir = fmt.Sprintf("build-%s%s-%s", systemNameFlag, osSuffix, archFlag)
 	} else if systemNameFlag == "freebsd" {
 		buildDir = fmt.Sprintf("build-%s%d-%s", systemNameFlag, freebsdAbiFlag, archFlag)
 	} else if systemNameFlag == "android" {
@@ -441,6 +453,25 @@ func getGNUTargetTypeAndArch(arch string, subsystem string) (string, string) {
 	}
 	glog.Fatalf("Invalid arch: %s", arch)
 	return "", ""
+}
+
+func getLLVMVersion() string {
+	entries, err := os.ReadDir(filepath.Join(clangPath, "lib", "clang"))
+	if err != nil {
+		glog.Fatalf("%v", err)
+	}
+	var llvm_version string
+	for _, entry := range entries {
+		llvm_version = entry.Name()
+	}
+	if llvm_version == "" {
+		glog.Fatalf("toolchain not found")
+	}
+	return llvm_version
+}
+
+func getAndFixMinGWLibunwind(mingwDir string) {
+	getAndFixLibunwind(fmt.Sprintf("%s/lib/clang/16/lib/windows", mingwDir), "windows")
 }
 
 func getAndFixAndroidLibunwind(ndkDir string) {
@@ -785,7 +816,14 @@ func buildStageGenerateBuildScript() {
 	}
 
 	if systemNameFlag == "mingw" {
-		glog.Infof("Using llvm-mingw dir %s", clangPath);
+		if (mingwDir != "") {
+			glog.Infof("Using llvm-mingw dir %s", mingwDir);
+			glog.Infof("Using clang dir %s", clangPath);
+		} else {
+			mingwDir = clangPath
+			glog.Infof("Using llvm-mingw dir %s", clangPath);
+			glog.Infof("Using clang inside llvm-mingw dir %s", mingwDir);
+		}
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCROSS_TOOLCHAIN_FLAGS_TOOLCHAIN_FILE=%s/Native.cmake", buildDir))
 
 		ccCompiler := os.Getenv("CC")
@@ -800,8 +838,27 @@ func buildStageGenerateBuildScript() {
 		targetTriple, targetAbi := getMinGWTargetAndAppAbi(archFlag)
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/MinGW.cmake", buildDir))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DLLVM_SYSROOT=%s", clangPath))
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DMINGW_SYSROOT=%s", mingwDir))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSTEM_PROCESSOR=%s", targetAbi))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_TARGET=%s", targetTriple))
+
+		if mingwAllowXpFlag {
+			cmakeArgs = append(cmakeArgs, "-DALLOW_XP=ON")
+			cmakeArgs = append(cmakeArgs, "-DMINGW_MSVCRT100=ON")
+			cmakeArgs = append(cmakeArgs, "-DMINGW_WORKAROUND=ON")
+			llvm_version := getLLVMVersion()
+			clang_rt_suffix := targetAbi
+			if (targetAbi == "i686") {
+				clang_rt_suffix = "i386"
+			}
+			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DMINGW_COMPILER_RT=%s/lib/clang/%s/lib/windows/libclang_rt.builtins-%s.a", clangPath, llvm_version, clang_rt_suffix))
+		} else {
+			cmakeArgs = append(cmakeArgs, "-DALLOW_XP=OFF")
+		}
+
+		if (mingwDir != clangPath) {
+			getAndFixMinGWLibunwind(mingwDir)
+		}
 	}
 
 	if systemNameFlag == "ios" {
@@ -1486,6 +1543,12 @@ func postStateArchives() map[string][]string {
 			osName = "winxp"
 		}
 		archiveFormat = fmt.Sprintf("%%s-%s-release-%s-%s-%s%%s%%s", osName, msvcTargetArchFlag, msvcCrtLinkageFlag, tag)
+	} else if systemNameFlag == "mingw" {
+		osName := "mingw"
+		if mingwAllowXpFlag {
+			osName = "mingw-winxp"
+		}
+		archiveFormat = fmt.Sprintf("%%s-%s-release-%s-%s%%s%%s", osName, archFlag, tag)
 	} else if systemNameFlag == "darwin" {
 		osName := "macos"
 		arch := archFlag
