@@ -1,4 +1,4 @@
-name: Clang Tidy (On Demand)
+name: OnDemand Clang Tidy
 on:
   workflow_dispatch:
     inputs:

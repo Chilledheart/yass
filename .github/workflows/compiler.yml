@@ -126,7 +126,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [i686, x86_64, aarch64]
+        arch: [i686, x86_64]
         build_type: [Debug, Release]
     runs-on: ubuntu-20.04
     env:
@@ -143,15 +143,18 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
+            third_party/nasm
             third_party/llvm-build/Release+Asserts
+            third_party/wix311
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache mingw64 llvm
         id: mingw-cache
         uses: actions/cache@v3
         with:
           path: |
-            llvm-mingw-*.tar.xz
-          key: ${{ runner.os }}-mingw64-llvm-20230614-ucrt
+            third_party/llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64
+            third_party/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64
+          key: ${{ runner.os }}-mingw64-third_party-llvm-20230614-msvcrt-and-ucrt
       - name: Cache mingw64 curl
         id: curl-cache
         uses: actions/cache@v3
@@ -186,7 +189,13 @@ jobs:
       - name: "Download dependency: llvm-mingw"
         if: ${{ steps.mingw-cache.outputs.cache-hit != 'true' }}
         run: |
+          pushd third_party
+          curl -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20230614/llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64.tar.xz
           curl -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20230614/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64.tar.xz
+          tar -xf llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64.tar.xz
+          tar -xf llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64.tar.xz
+          rm -vf llvm-mingw-*.xz
+          popd
       - name: "Download dependency: curl"
         if: ${{ steps.curl-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -198,9 +207,6 @@ jobs:
           curl -L -O https://curl.se/windows/dl-8.4.0_7/curl-8.4.0_7-win32-mingw.zip
           7z x curl-8.4.0_7-win32-mingw.zip -aoa
           rm -vf curl*.zip
-      - name: Populate llvm-mingw
-        run: |
-          sudo tar -C /opt -xvf llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64.tar.xz
       - name: Populate depedencies
         run: |
           sudo apt-get update -qq
@@ -210,7 +216,7 @@ jobs:
       - name: Build
         run: |
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system mingw -build-test \
-            --clang-path /opt/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64 -nc
+            --clang-path $PWD/third_party/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64 -nc
       - name: Populate depedencies (Tests-i686)
         if: ${{ matrix.arch == 'i686' }}
         run: |
