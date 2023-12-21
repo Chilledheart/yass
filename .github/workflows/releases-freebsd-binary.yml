@@ -100,10 +100,6 @@ jobs:
           sudo apt-get install -y python3-jsonschema python3-jinja2
           # required by unpacking pkg file
           sudo apt-get install -y zstd
-      - name: Set clang environment
-        run: |
-          echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
-          echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
       - name: Build TGZ packages
         run: |
           ./tools/build --arch ${{ matrix.arch }} --system freebsd --freebsd-abi ${{ matrix.abi }} --sysroot $PWD/freebsd-${{ matrix.abi }}-toolchain -build-benchmark -build-test

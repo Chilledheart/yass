@@ -122,8 +122,6 @@ jobs:
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
-          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set Platform=${{ matrix.arch }}
 
           set "Path=%CD%\third_party\nasm;%Path%"
@@ -216,8 +214,6 @@ jobs:
           set "WindowsSdkDir=C:\Program Files (x86)\Windows Kits\10"
           set "PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;%PATH%"
 
-          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set Platform=${{ matrix.arch }}
           set VSCMD_ARG_TGT_ARCH=${{ matrix.arch }}
 
