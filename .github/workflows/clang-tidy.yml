@@ -68,7 +68,7 @@ jobs:
           scripts\download-toolchain.bat
       - name: Build
         run: |
-          set VCToolsVersion=14.16
+          set VCToolsVersion=14.29
           set Winsdk=10.0.19041.0
           set "WindowsSDKVersion=%Winsdk%\"
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
