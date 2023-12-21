@@ -154,10 +154,6 @@ jobs:
           sudo dpkg -i qemu-user-static_*.deb
           # required by mbedtls build
           sudo apt-get install -y python3-jsonschema python3-jinja2
-      - name: Set clang environment
-        run: |
-          echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
-          echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
       - name: Build TGZ packages
         run: |
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system android --cmake-build-type MinSizeRel \

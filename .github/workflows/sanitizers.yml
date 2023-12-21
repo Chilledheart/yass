@@ -60,10 +60,6 @@ jobs:
           sudo apt-get update -qq
       - name: Populate depedencies
         run: sudo apt-get update -qq && sudo apt-get install -y cmake ninja-build llvm libcurl4-openssl-dev
-      - name: Set clang environment
-        run: |
-          echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
-          echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
       - name: Build Unittests
         run: |
           mkdir build

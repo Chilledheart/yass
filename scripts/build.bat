@@ -48,8 +48,6 @@ REM
 REM Generate static x86 binary
 REM
 set "VSCMD_START_DIR=%CD%"
-set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set Platform=x86
 set MSVC_CRT_LINKAGE=static
 
@@ -62,8 +60,6 @@ REM
 REM Generate static x64 binary
 REM
 set "VSCMD_START_DIR=%CD%"
-set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set Platform=x64
 set MSVC_CRT_LINKAGE=static
 
@@ -80,8 +76,6 @@ REM Generate static arm binary
 REM
 set VCToolsVersion=
 set "VSCMD_START_DIR=%CD%"
-set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set Platform=arm
 set MSVC_CRT_LINKAGE=static
 
@@ -100,8 +94,6 @@ REM Use Visual Studio 2019's toolchain for ARM64 target
 set VCToolsVersion=
 
 set "VSCMD_START_DIR=%CD%"
-set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set Platform=arm64
 set MSVC_CRT_LINKAGE=static
 

@@ -97,8 +97,6 @@ jobs:
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
           set vsdevcmd=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
-          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set Platform=${{ matrix.arch }}
 
           set "Path=%CD%\third_party\nasm;%Path%"
@@ -430,6 +428,8 @@ jobs:
           sudo xcode-select -s /Applications/Xcode_15.0.1.app
       - name: Build
         run: |
+          export CC=$(xcrun --find clang)
+          export CXX=$(xcrun --find clang++)
           ./tools/build -no-packaging -build-test
       - name: Run tests
         run: |

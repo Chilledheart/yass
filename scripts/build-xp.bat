@@ -38,8 +38,6 @@ cd ..
 REM
 REM Generate static x86 binary
 REM
-set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
 set Platform=x86
 set VSCMD_ARG_TGT_ARCH=x86
 set MSVC_CRT_LINKAGE=static

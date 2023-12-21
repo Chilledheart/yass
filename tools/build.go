@@ -43,6 +43,7 @@ var verboseFlag int
 var cmakeBuildTypeFlag string
 var cmakeBuildConcurrencyFlag int
 
+var clangPath string
 var useLibCxxFlag bool
 var enableLtoFlag bool
 var useIcuFlag bool
@@ -141,6 +142,9 @@ func InitFlag() {
 
 	flag.StringVar(&cmakeBuildTypeFlag, "cmake-build-type", getEnv("BUILD_TYPE", "Release"), "Set cmake build configuration")
 	flag.IntVar(&cmakeBuildConcurrencyFlag, "cmake-build-concurrency", runtime.NumCPU(), "Set cmake build concurrency")
+
+	builtClangPath, _ := filepath.Abs(filepath.Join(projectDir, "third_party", "llvm-build", "Release+Asserts"))
+	flag.StringVar(&clangPath, "clang-path", builtClangPath, "Compiler clang's path")
 
 	flag.BoolVar(&useLibCxxFlag, "use-libcxx", true, "Use Custom libc++")
 	flag.BoolVar(&enableLtoFlag, "enable-lto", true, "Enable lto")
@@ -433,7 +437,7 @@ func getAndFixHarmonyLibunwind() {
 	// FIX Runtime
 	getAndFixLibunwind(fmt.Sprintf("%s/native/llvm/lib/clang/12.0.1/lib", harmonyNdkDir), "")
 	// FIX libunwind
-	target_path := fmt.Sprintf("../third_party/llvm-build/Release+Asserts/lib")
+	target_path := fmt.Sprintf(filepath.Join(clangPath, "lib"))
 	source_path := fmt.Sprintf("%s/native/llvm/lib", harmonyNdkDir)
 	entries, err := os.ReadDir(source_path)
 	if err != nil {
@@ -460,7 +464,7 @@ func getAndFixHarmonyLibunwind() {
 
 func getAndFixLibunwind(source_path string, subdir string) {
 	// ln -sf $PWD/third_party/android_toolchain/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.7/lib/linux/i386 third_party/llvm-build/Release+Asserts/lib/clang/18/lib/linux
-	entries, err := os.ReadDir("../third_party/llvm-build/Release+Asserts/lib/clang")
+	entries, err := os.ReadDir(filepath.Join(clangPath, "lib", "clang"))
 	if err != nil {
 		glog.Fatalf("%v", err)
 	}
@@ -475,7 +479,7 @@ func getAndFixLibunwind(source_path string, subdir string) {
 	if err != nil {
 		glog.Fatalf("%v", err)
 	}
-	target_path := fmt.Sprintf("../third_party/llvm-build/Release+Asserts/lib/clang/%s/lib/%s", llvm_version, subdir)
+	target_path := fmt.Sprintf(filepath.Join(clangPath, "lib", "clang", llvm_version, "lib", subdir))
 	entries, err = os.ReadDir(source_path)
 	if err != nil {
 		glog.Fatalf("%v", err)
@@ -626,6 +630,28 @@ func buildStageGenerateBuildScript() {
 	glog.Info("BuildStage -- Generate Build Script")
 	glog.Info("======================================================================")
 	var cmakeArgs []string
+	if (os.Getenv("CC") != "") {
+		glog.Infof("Using overrided compiler %s", os.Getenv("CC"))
+	} else if (clangPath != "") {
+		if systemNameFlag == "windows" {
+			_clangClPath := filepath.Join(clangPath, "bin", "clang-cl.exe")
+			if _, err := os.Stat(_clangClPath); errors.Is(err, os.ErrNotExist) {
+				glog.Fatalf("Compiler %s not found", _clangClPath)
+			}
+			os.Setenv("CC", _clangClPath)
+			os.Setenv("CXX", _clangClPath)
+			glog.Infof("Using compiler %s", _clangClPath)
+		} else {
+			_clangPath := filepath.Join(clangPath, "bin", "clang")
+			_clangCxxPath := filepath.Join(clangPath, "bin", "clang++")
+			if _, err := os.Stat(_clangPath); errors.Is(err, os.ErrNotExist) {
+				glog.Fatalf("Compiler %s not found", _clangPath)
+			}
+			os.Setenv("CC", _clangPath)
+			os.Setenv("CXX", _clangCxxPath)
+			glog.Infof("Using compiler %s", _clangPath)
+		}
+	}
 	cmakeArgs = append(cmakeArgs, "-DGUI=ON", "-DCLI=ON", "-DSERVER=ON")
 	cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_BUILD_TYPE=%s", cmakeBuildTypeFlag))
 	cmakeArgs = append(cmakeArgs, "-G", "Ninja")
@@ -786,7 +812,7 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DANDROID_NDK_ROOT=%s", androidNdkDir))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DANDROID_CURRENT_OS=%s", runtime.GOOS))
 
-		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DLLVM_SYSROOT=%s/../third_party/llvm-build/Release+Asserts", buildDir))
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DLLVM_SYSROOT=%s", clangPath))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSTEM_PROCESSOR=%s", androidAppAbi))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_TARGET=%s%d", androidAbiTarget, androidApiLevel))
 		// FIXME patch llvm toolchain to find libunwind.a
@@ -804,7 +830,7 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DOHOS_ARCH=%s", harmonyAppAbi))
 
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DOHOS_SDK_NATIVE=%s/native", harmonyNdkDir))
-		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DLLVM_SYSROOT=%s/../third_party/llvm-build/Release+Asserts", buildDir))
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DLLVM_SYSROOT=%s", clangPath))
 		getAndFixHarmonyLibunwind()
 	}
 
@@ -820,7 +846,7 @@ func buildStageGenerateBuildScript() {
 		if err := os.Setenv("PKG_CONFIG_PATH", pkgConfigPath); err != nil {
 			glog.Fatalf("%v", err)
 		}
-		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DLLVM_SYSROOT=%s/../third_party/llvm-build/Release+Asserts", buildDir))
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DLLVM_SYSROOT=%s", clangPath))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSROOT=%s", sysrootFlag))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSTEM_PROCESSOR=%s", gnuArch))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_TARGET=%s", gnuType))
@@ -853,7 +879,7 @@ func buildStageGenerateBuildScript() {
 			glog.Fatalf("%v", err)
 		}
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DFREEBSD_ABI_VERSION=%d", freebsdAbiFlag))
-		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DLLVM_SYSROOT=%s/../third_party/llvm-build/Release+Asserts", buildDir))
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DLLVM_SYSROOT=%s", clangPath))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSROOT=%s", sysrootFlag))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSTEM_PROCESSOR=%s", llvmArch))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_TARGET=%s", llvmTarget))
@@ -931,7 +957,7 @@ func postStateStripBinaries() {
 		return
 	}
 	if systemNameFlag == "harmony" || systemNameFlag == "android" || systemNameFlag == "linux" || systemNameFlag == "freebsd" {
-		objcopy := filepath.Join("..", "third_party", "llvm-build", "Release+Asserts", "bin", "llvm-objcopy")
+		objcopy := filepath.Join(clangPath, "bin", "llvm-objcopy")
 		if _, err := os.Stat(objcopy); errors.Is(err, os.ErrNotExist) {
 			objcopy = "objcopy"
 		}
