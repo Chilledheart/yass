@@ -17,6 +17,8 @@
 #include "mac/OptionViewController.h"
 #include "mac/YassViewController.h"
 #include "mac/utils.h"
+#include "version.h"
+#include "feature.h"
 
 @interface YassAppDelegate ()
 - (void)SaveConfig;
@@ -54,6 +56,23 @@
   return YES;
 }
 
+- (IBAction)OnAboutMenuClicked:(id)sender {
+  NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
+  paragraphStyle.alignment = NSTextAlignmentCenter;
+
+  NSDictionary<NSAboutPanelOptionKey, id> *dict = @{
+    NSAboutPanelOptionApplicationName : @(YASS_APP_PRODUCT_NAME),
+    NSAboutPanelOptionApplicationVersion : @(YASS_APP_PRODUCT_VERSION),
+    NSAboutPanelOptionVersion : @(YASS_APP_LAST_CHANGE),
+    NSAboutPanelOptionCredits: [[NSAttributedString alloc]
+      initWithString:@("Enabled Features: " YASS_APP_FEATURES)
+      attributes: @{NSForegroundColorAttributeName : [NSColor labelColor],
+        NSFontAttributeName: [NSFont systemFontOfSize:[NSFont labelFontSize]],
+        NSParagraphStyleAttributeName:paragraphStyle}],
+  };
+  [[NSApplication sharedApplication] orderFrontStandardAboutPanelWithOptions:dict];
+}
+
 - (IBAction)OnOptionMenuClicked:(id)sender {
   NSStoryboard* storyboard = [NSStoryboard storyboardWithName:@"Main"
                                                        bundle:nil];
@@ -64,6 +83,10 @@
       (YassViewController*)
           NSApplication.sharedApplication.mainWindow.contentViewController;
   [viewController presentViewControllerAsModalWindow:optionViewController];
+}
+
+- (IBAction)OnQuitMenuClicked:(id)sender {
+  [[NSApplication sharedApplication] terminate:nil];
 }
 
 - (enum YASSState)getState {
