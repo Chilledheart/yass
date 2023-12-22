@@ -255,9 +255,10 @@ static int load_ca_to_ssl_ctx_system(SSL_CTX* ssl_ctx) {
   X509_STORE* store = nullptr;
   int count = 0;
 
-  cert_store = CertOpenSystemStoreW(0, L"ROOT");
+  cert_store = CertOpenStore(CERT_STORE_PROV_SYSTEM, 0, NULL,
+                             CERT_SYSTEM_STORE_CURRENT_USER, L"ROOT");
   if (!cert_store) {
-    PLOG(WARNING) << "CertOpenSystemStoreW failed";
+    PLOG(WARNING) << "CertOpenStore failed";
     goto out;
   }
 
