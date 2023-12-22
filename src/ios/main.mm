@@ -23,6 +23,7 @@
 #include "version.h"
 #include "crashpad_helper.hpp"
 #include "i18n/icu_util.hpp"
+#include "ios/YassAppDelegate.h"
 
 int main(int argc, const char** argv) {
   SetExecutablePath(argv[0]);
@@ -71,5 +72,10 @@ int main(int argc, const char** argv) {
 
   CRYPTO_library_init();
 
-  return UIApplicationMain(argc, (char**)argv, nil, nil);
+  NSString * appDelegateClassName;
+  @autoreleasepool {
+    // Setup code that might create autoreleased objects goes here.
+    appDelegateClassName = NSStringFromClass([YassAppDelegate class]);
+  }
+  return UIApplicationMain(argc, (char**)argv, nil, appDelegateClassName);
 }

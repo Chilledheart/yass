@@ -1911,7 +1911,7 @@ elseif (APPLE AND GUI AND NOT IOS)
   set(GUI_LIBRARY_DIRS "")
   set(GUI_LIBRARIES "${COCOA_LIBRARY}")
 elseif (IOS AND GUI)
-  message(STATUS "Compiling with GUI support: IOS (dummy)")
+  message(STATUS "Compiling with GUI support: IOS")
   find_library(UIKIT_LIBRARY UIKit REQUIRED)
 
   set(GUI_FLAVOUR "ios")
@@ -3677,12 +3677,28 @@ if (GUI)
           src/mac/utils_mac.mm
           src/mac/main.mm)
     elseif (GUI_FLAVOUR STREQUAL "ios")
+        set(MAIN_STORYBOARD ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/Main.storyboard)
+        set(ASSET_CATALOG src/ios/Assets.xcassets)
+        set(ASSET_CATALOG_ASSETS Assets)
         list(APPEND SRC_FILES
-          src/ios/main.mm)
+          ${MAIN_STORYBOARD}
+          )
+        list(APPEND SRC_FILES
+          ${ASSET_CATALOG})
         if (USE_ICU)
           list(APPEND SRC_FILES
             ${ICU_DATAFILE})
         endif()
+        list(APPEND SRC_FILES
+          src/ios/yass.icns)
+        list(APPEND SRC_FILES
+          src/ios/YassAppDelegate.mm
+          src/ios/YassAppDelegate.h
+          src/ios/YassViewController.mm
+          src/ios/YassViewController.h
+          src/ios/YassSceneDelegate.h
+          src/ios/YassSceneDelegate.mm
+          src/ios/main.mm)
     elseif(GUI_FLAVOUR STREQUAL "gtk3")
         list(APPEND SRC_FILES
           src/gtk/yass.cpp
@@ -3969,14 +3985,35 @@ if (GUI)
         set_target_properties(${APP_NAME} PROPERTIES
             COMPILE_FLAGS "${_APP_COMPILE_FLAGS} -fobjc-arc")
 
+        if(NOT ${CMAKE_GENERATOR} MATCHES "^Xcode.*")
+          # Compile the storyboard file with the ibtool.
+          add_custom_command(TARGET ${APP_NAME} POST_BUILD
+            COMMAND ${IBTOOL}
+            --errors
+            --warnings
+            --notices
+            --output-format human-readable-text
+            --compile ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.app/Base.lproj/Main.storyboardc
+            ${MAIN_STORYBOARD}
+            COMMENT "Compiling Main storyboard")
+        endif()
+
         # For iOS Apple uses a flat bundle layout where no Resources folder exist.
         # Therefore CMake strips the Resources folder name from the specified location.
-        set_source_files_properties("src/mac/yass.icns" PROPERTIES
+        set_source_files_properties("src/ios/yass.icns" PROPERTIES
+          MACOSX_PACKAGE_LOCATION "Resources")
+        set_source_files_properties("${MAIN_STORYBOARD}" PROPERTIES
+          MACOSX_PACKAGE_LOCATION "Resources")
+        set_source_files_properties("${ASSET_CATALOG}" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")
         if (USE_ICU)
           set_source_files_properties("${ICU_DATAFILE}" PROPERTIES
             MACOSX_PACKAGE_LOCATION "Resources")
         endif()
+
+        # Fixme
+        set(APP_MACOSX_BUNDLE_INFO "${CMAKE_CURRENT_BINARY_DIR}/Info.plist")
+        configure_file("src/ios/Info.plist.in" "${APP_MACOSX_BUNDLE_INFO}" @ONLY)
 
         set_target_properties(${APP_NAME} PROPERTIES
             RESOURCE "yass.icns"
