@@ -1314,7 +1314,7 @@ elseif (USE_GOLD)
   #}
 endif()
 
-if (USE_ICF AND (NOT APPLE OR COMPILER_CLANG))
+if (USE_ICF AND (NOT APPLE OR COMPILER_CLANG) AND NOT MSVC)
   # Gold doesn't respect section alignment and breaks gcc builds with icf
   # https://sourceware.org/bugzilla/show_bug.cgi?id=17704
   # Landed upstream Fri, 21 Oct 2016 - is in 2.28, such as CentOS 7
@@ -1672,6 +1672,8 @@ if (ANDROID)
   # buildtools/third_party/libunwind will be built and used directly.
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --unwindlib=none")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --unwindlib=none")
+
+  list(APPEND YASS_APP_FEATURES "libunwind")
 
   # for arm 32-bit v7, use correct march
   # following https://developer.android.com/ndk/guides/abis#v7a
