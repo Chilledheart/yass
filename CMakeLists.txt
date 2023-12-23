@@ -1913,6 +1913,17 @@ elseif (APPLE AND GUI AND NOT IOS)
 elseif (IOS AND GUI)
   message(STATUS "Compiling with GUI support: IOS")
   find_library(UIKIT_LIBRARY UIKit REQUIRED)
+  # Locate Interface Builder Tool, needed to build things like Storyboards outside of Xcode.
+  if(NOT ${CMAKE_GENERATOR} MATCHES "^Xcode.*")
+    # Make sure we can find the 'ibtool' program. If we can NOT find it we skip generation of this project.
+    find_program(IBTOOL ibtool HINTS "/usr/bin")
+    if(${IBTOOL} STREQUAL "IBTOOL-NOTFOUND")
+      message(WARNING "ibtool can not be found and is needed to compile the .xib files. "
+                         "It should have been installed with the Apple developer tools. ")
+      set(GUI off)
+      message(WARNING "ibtool not found in path, disabling GUI build")
+    endif()
+  endif()
 
   set(GUI_FLAVOUR "ios")
   set(GUI_USE_FILE "")
