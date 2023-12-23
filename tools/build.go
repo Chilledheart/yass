@@ -88,7 +88,7 @@ var harmonyNdkDir string
 func getAppName() string {
 	if systemNameFlag == "windows" {
 		return APPNAME + ".exe"
-	} else if systemNameFlag == "darwin" {
+	} else if systemNameFlag == "darwin" || systemNameFlag == "ios" {
 		return APPNAME + ".app"
 	} else if systemNameFlag == "mingw" {
 		return APPNAME + ".exe"
@@ -1082,6 +1082,10 @@ func postStateStripBinaries() {
 		if hasCrashpad {
 			cmdRun([]string{"strip", "-S", "-x", "-v", crashpadPath}, false)
 		}
+	} else if systemNameFlag == "ios" {
+		cmdRun([]string{"dsymutil", filepath.Join(getAppName(), APPNAME),
+			"--statistics", "--papertrail", "-o", getAppName() + ".dSYM"}, false)
+		cmdRun([]string{"strip", "-S", "-x", "-v", filepath.Join(getAppName(), APPNAME)}, false)
 	} else {
 		glog.Warningf("not supported in platform %s", systemNameFlag)
 	}
@@ -1090,7 +1094,7 @@ func postStateStripBinaries() {
 func postStateCodeSign() {
 	glog.Info("PostState -- Code Sign")
 	glog.Info("======================================================================")
-	if cmakeBuildTypeFlag != "Release" || systemNameFlag != "darwin" {
+	if cmakeBuildTypeFlag != "Release" || (systemNameFlag != "darwin" && systemNameFlag != "ios") {
 		return
 	}
 
@@ -1581,6 +1585,9 @@ func postStateArchives() map[string][]string {
 	if systemNameFlag == "darwin" {
 		archive = fmt.Sprintf(archiveFormat, APPNAME, "", ".dmg")
 	}
+	if systemNameFlag == "ios" {
+		archive = fmt.Sprintf(archiveFormat, APPNAME, "", ".zip")
+	}
 	hasCrashpad := true
 	if _, err := os.Stat("crashpad_handler.exe"); errors.Is(err, os.ErrNotExist) {
 		hasCrashpad = false
@@ -1647,7 +1654,7 @@ func postStateArchives() map[string][]string {
 	} else if systemNameFlag == "mingw" || systemNameFlag == "android" || systemNameFlag == "harmony" || systemNameFlag == "linux" || systemNameFlag == "freebsd" {
 		archiveFiles(debugArchive, archivePrefix, []string{getAppName() + ".dbg"})
 		dbgPaths = append(dbgPaths, APPNAME+".dbg")
-	} else if systemNameFlag == "darwin" {
+	} else if systemNameFlag == "darwin" || systemNameFlag == "ios" {
 		archiveFiles(debugArchive, archivePrefix, []string{getAppName() + ".dSYM"})
 		dbgPaths = append(dbgPaths, getAppName()+".dSYM")
 	}
