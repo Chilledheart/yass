@@ -14,6 +14,7 @@
 #include "base/apple/scoped_cftyperef.h"
 #include "base/numerics/safe_conversions.h"
 #include "base/strings/string_piece.h"
+#include "base/apple/bridging.h"
 
 namespace gurl_base {
 
@@ -163,14 +164,14 @@ std::string SysNSStringToUTF8(NSString* nsstring) {
   if (!nsstring) {
     return std::string();
   }
-  return SysCFStringRefToUTF8(reinterpret_cast<CFStringRef>(nsstring));
+  return SysCFStringRefToUTF8(apple::NSToCFPtrCast(nsstring));
 }
 
 std::u16string SysNSStringToUTF16(NSString* nsstring) {
   if (!nsstring) {
     return std::u16string();
   }
-  return SysCFStringRefToUTF16(reinterpret_cast<CFStringRef>(nsstring));
+  return SysCFStringRefToUTF16(apple::NSToCFPtrCast(nsstring));
 }
 
 } // gurl_base namespace

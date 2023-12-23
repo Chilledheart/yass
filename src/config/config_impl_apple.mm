@@ -43,7 +43,7 @@ bool ConfigImplApple::OpenImpl(bool dontread) {
     for (NSString* key in root) {
       id value = root[key];
       gurl_base::apple::ScopedCFTypeRef<CFStringRef> cf_key((CFStringRef)CFBridgingRetain(key));
-      CFDictionarySetValue(mutable_root, cf_key, value);
+      CFDictionarySetValue(mutable_root, cf_key, (void*)value);
     }
   }
 
