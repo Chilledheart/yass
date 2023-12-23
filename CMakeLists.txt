@@ -3014,6 +3014,10 @@ if (COMPILER_GCC OR COMPILER_CLANG)
   # primarily on our normal Clang one.
   set(C_CXX_FLAGS "-Werror -Wformat=2 -Wsign-compare -Wmissing-field-initializers -Wwrite-strings -Wvla -Wno-shadow")
 
+  if (COMPILER_APPLE_CLANG)
+    set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wno-error=shorten-64-to-32")
+  endif()
+
   if (MSVC)
     # clang-cl sets different default warnings than clang. It also treats -Wall
     # as -Weverything, to match MSVC. Instead -W3 is the alias for -Wall.
