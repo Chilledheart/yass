@@ -3644,11 +3644,20 @@ if (GUI)
           src/win32/utils_win.cpp)
     elseif (GUI_FLAVOUR STREQUAL "cocoa")
         set(MAIN_STORYBOARD ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/Base.lproj/Main.storyboard)
+        set(ALLRESOURCES src/mac/yass.icns)
+        if (${CMAKE_GENERATOR} MATCHES "^Xcode.*")
+          set(ALLRESOURCES
+            ${ALLRESOURCES}
+            ${MAIN_STORYBOARD}
+            src/mac/en.lproj/Localizable.strings
+            src/mac/en.lproj/Main.strings
+            src/mac/zh-Hans.lproj/Localizable.strings
+            src/mac/zh-Hans.lproj/Main.strings
+          )
+        endif()
         set(ASSET_CATALOG src/mac/Assets.xcassets)
         set(ASSET_CATALOG_ASSETS Assets)
-        list(APPEND SRC_FILES
-          ${MAIN_STORYBOARD}
-          )
+        list(APPEND SRC_FILES ${ALLRESOURCES})
         list(APPEND SRC_FILES
           ${ASSET_CATALOG})
         if (USE_ICU)
@@ -3677,14 +3686,22 @@ if (GUI)
           src/mac/utils_mac.mm
           src/mac/main.mm)
     elseif (GUI_FLAVOUR STREQUAL "ios")
-        set(MAIN_STORYBOARD ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/Main.storyboard)
-        set(LAUNCH_STORYBOARD ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/LaunchScreen.storyboard)
+        set(MAIN_STORYBOARD ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/Base.lproj/Main.storyboard)
+        set(LAUNCH_STORYBOARD ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/Base.lproj/LaunchScreen.storyboard)
+        set(ALLRESOURCES src/ios/yass.icns)
+        if (${CMAKE_GENERATOR} MATCHES "^Xcode.*")
+          set(ALLRESOURCES
+            ${ALLRESOURCES}
+            ${MAIN_STORYBOARD}
+            ${LAUNCH_STORYBOARD}
+            src/ios/en.lproj/Localizable.strings
+            src/ios/en.lproj/Main.strings
+            src/ios/zh-Hans.lproj/Localizable.strings
+            src/ios/zh-Hans.lproj/Main.strings)
+        endif()
         set(ASSET_CATALOG src/ios/Assets.xcassets)
         set(ASSET_CATALOG_ASSETS Assets)
-        list(APPEND SRC_FILES
-          ${MAIN_STORYBOARD}
-          ${LAUNCH_STORYBOARD}
-          )
+        list(APPEND SRC_FILES ${ALLRESOURCES})
         list(APPEND SRC_FILES
           ${ASSET_CATALOG})
         if (USE_ICU)
@@ -3937,12 +3954,21 @@ if (GUI)
               COMMENT "Copying language file: ${_LANG}")
             endif()
           endforeach()
+        else()
+          set_source_files_properties("${MAIN_STORYBOARD}" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources/Base.lproj")
+          set_source_files_properties("src/mac/en.lproj/Localizable.strings" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
+          set_source_files_properties("src/mac/en.lproj/Main.strings" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
+          set_source_files_properties("src/mac/zh-Hans.lproj/Localizable.strings" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
+          set_source_files_properties("src/mac/zh-Hans.lproj/Main.strings" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
         endif()
 
         # adds to Copy Bundle Resources build phase
         set_source_files_properties("src/mac/yass.icns" PROPERTIES
-          MACOSX_PACKAGE_LOCATION "Resources")
-        set_source_files_properties("${MAIN_STORYBOARD}" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")
         set_source_files_properties("${ASSET_CATALOG}" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")
@@ -3959,7 +3985,7 @@ if (GUI)
         configure_file("src/mac/Info.plist.in" "${APP_MACOSX_BUNDLE_INFO}" @ONLY)
 
         set_target_properties(${APP_NAME} PROPERTIES
-            RESOURCE "yass.icns"
+            RESOURCE "${ALLRESOURCES}"
             MACOSX_BUNDLE_ICON_FILE yass.icns
             MACOSX_BUNDLE_COPYRIGHT "${YASS_APP_COPYRIGHT}"
             MACOSX_BUNDLE_GUI_IDENTIFIER "it.gui.yass"
@@ -4007,15 +4033,38 @@ if (GUI)
             --compile ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.app/Base.lproj/LaunchScreen.storyboardc
             ${LAUNCH_STORYBOARD}
             COMMENT "Compiling LaunchScreen storyboard")
+
+          set(YASS_LANGS)
+          file(GLOB YASS_LPROJS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/ "${CMAKE_CURRENT_SOURCE_DIR}/src/ios/*.lproj")
+          foreach(LPROJ ${YASS_LPROJS})
+            string(REGEX REPLACE "^.*/([a-z]+)\\.lproj/.*$" "\\1" _LANG ${LPROJ})
+            list(FIND YASS_LANGS "${_LANG}" _INDEX)
+            if(_INDEX EQUAL -1 AND NOT _LANG STREQUAL "Base.lproj")
+              list(APPEND YASS_LANGS ${_LANG})
+              add_custom_command(TARGET ${APP_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.app
+                COMMAND cp -r ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/${_LANG} ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.app
+              COMMENT "Copying language file: ${_LANG}")
+            endif()
+          endforeach()
+        else()
+          set_source_files_properties("${MAIN_STORYBOARD}" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources/Base.lproj")
+          set_source_files_properties("${LAUNCH_STORYBOARD}" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources/Base.lproj")
+          set_source_files_properties("src/ios/en.lproj/Localizable.strings" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
+          set_source_files_properties("src/ios/en.lproj/Main.strings" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
+          set_source_files_properties("src/ios/zh-Hans.lproj/Localizable.strings" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
+          set_source_files_properties("src/ios/zh-Hans.lproj/Main.strings" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
         endif()
 
         # For iOS Apple uses a flat bundle layout where no Resources folder exist.
         # Therefore CMake strips the Resources folder name from the specified location.
         set_source_files_properties("src/ios/yass.icns" PROPERTIES
-          MACOSX_PACKAGE_LOCATION "Resources")
-        set_source_files_properties("${MAIN_STORYBOARD}" PROPERTIES
-          MACOSX_PACKAGE_LOCATION "Resources")
-        set_source_files_properties("${LAUNCH_STORYBOARD}" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")
         set_source_files_properties("${ASSET_CATALOG}" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")
@@ -4029,12 +4078,13 @@ if (GUI)
         configure_file("src/ios/Info.plist.in" "${APP_MACOSX_BUNDLE_INFO}" @ONLY)
 
         set_target_properties(${APP_NAME} PROPERTIES
-            RESOURCE "yass.icns"
+            RESOURCE "${ALLRESOURCES}"
             MACOSX_BUNDLE_ICON_FILE yass.icns
             MACOSX_BUNDLE_COPYRIGHT "${YASS_APP_COPYRIGHT}"
             MACOSX_BUNDLE_GUI_IDENTIFIER "it.gui.yass"
             MACOSX_BUNDLE_BUNDLE_NAME ${PACKAGE_NAME}
             MACOSX_BUNDLE_INFO_PLIST ${APP_MACOSX_BUNDLE_INFO}
+            #XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon"
             XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
             XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
             XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++"
