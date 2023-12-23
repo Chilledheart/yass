@@ -56,6 +56,8 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 #undef XX
   ];
   current_cipher_method_ = nil;
+  [self.cipherMethod setDelegate:self];
+  [self.cipherMethod setDataSource:self];
   [self.cipherMethod reloadAllComponents];
 
   [self LoadChanges];

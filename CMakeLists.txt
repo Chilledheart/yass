@@ -3678,10 +3678,12 @@ if (GUI)
           src/mac/main.mm)
     elseif (GUI_FLAVOUR STREQUAL "ios")
         set(MAIN_STORYBOARD ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/Main.storyboard)
+        set(LAUNCH_STORYBOARD ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/LaunchScreen.storyboard)
         set(ASSET_CATALOG src/ios/Assets.xcassets)
         set(ASSET_CATALOG_ASSETS Assets)
         list(APPEND SRC_FILES
           ${MAIN_STORYBOARD}
+          ${LAUNCH_STORYBOARD}
           )
         list(APPEND SRC_FILES
           ${ASSET_CATALOG})
@@ -3996,6 +3998,15 @@ if (GUI)
             --compile ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.app/Base.lproj/Main.storyboardc
             ${MAIN_STORYBOARD}
             COMMENT "Compiling Main storyboard")
+          add_custom_command(TARGET ${APP_NAME} POST_BUILD
+            COMMAND ${IBTOOL}
+            --errors
+            --warnings
+            --notices
+            --output-format human-readable-text
+            --compile ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.app/Base.lproj/LaunchScreen.storyboardc
+            ${LAUNCH_STORYBOARD}
+            COMMENT "Compiling LaunchScreen storyboard")
         endif()
 
         # For iOS Apple uses a flat bundle layout where no Resources folder exist.
@@ -4003,6 +4014,8 @@ if (GUI)
         set_source_files_properties("src/ios/yass.icns" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")
         set_source_files_properties("${MAIN_STORYBOARD}" PROPERTIES
+          MACOSX_PACKAGE_LOCATION "Resources")
+        set_source_files_properties("${LAUNCH_STORYBOARD}" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")
         set_source_files_properties("${ASSET_CATALOG}" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")

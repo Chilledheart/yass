@@ -57,5 +57,13 @@
             </array>
         </dict>
     </dict>
+    <key>UILaunchScreen</key>
+    <dict>
+        <key>UILaunchScreen</key>
+        <dict>
+            <key>LaunchScreen</key>
+            <true/>
+        </dict>
+    </dict>
 </dict>
 </plist>
