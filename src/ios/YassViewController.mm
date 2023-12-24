@@ -65,6 +65,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   [self UpdateStatusBar];
   [self.startButton setEnabled:TRUE];
   [self.stopButton setEnabled:FALSE];
+  (void)connectedToNetwork();
 }
 
 - (void)viewWillAppear {
@@ -217,6 +218,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   auto cipherMethod = absl::GetFlag(FLAGS_method).method;
   NSUInteger row = [cipher_methods_ indexOfObject:gurl_base::SysUTF8ToNSString(to_cipher_method_str(cipherMethod))];
   if (row != NSNotFound) {
+    current_cipher_method_ = gurl_base::SysUTF8ToNSString(to_cipher_method_str(cipherMethod));
     [self.cipherMethod selectRow:row inComponent:0 animated:NO];
   }
 
