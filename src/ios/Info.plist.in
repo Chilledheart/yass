@@ -11,7 +11,7 @@
     <key>CFBundleIconFile</key>
     <string>yass</string>
     <key>CFBundleIdentifier</key>
-    <string>it.gui.yass</string>
+    <string>it.gui.ios.yass</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleLongVersionString</key>

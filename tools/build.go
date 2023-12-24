@@ -58,6 +58,7 @@ var macosxCodeSignIdentityFlag string
 var iosVersionMinFlag string
 var iosCodeSignIdentityFlag string
 var iosDevelopmentTeamFlag string
+var iosTestDeviceNameFlag string
 
 var msvcTargetArchFlag string
 var msvcCrtLinkageFlag string
@@ -167,6 +168,7 @@ func InitFlag() {
 	flag.StringVar(&iosVersionMinFlag, "ios-version-min", getEnv("MACOSX_DEPLOYMENT_TARGET", "13.0"), "Set iOS deployment target, such as 13.0")
 	flag.StringVar(&iosCodeSignIdentityFlag, "ios-codesign-identity", getEnv("CODESIGN_IDENTITY", "-"), "Set iOS CodeSign Identity")
 	flag.StringVar(&iosDevelopmentTeamFlag, "ios-development-team", getEnv("DEVELOPMENT_TEAM", ""), "Set iOS deployment team")
+	flag.StringVar(&iosTestDeviceNameFlag, "ios-test-device-name", getEnv("IPHONE_NAME", ""), "Set iOS test device name")
 
 	flag.StringVar(&msvcTargetArchFlag, "msvc-tgt-arch", getEnv("VSCMD_ARG_TGT_ARCH", "x64"), "Set Visual C++ Target Achitecture")
 	flag.StringVar(&msvcCrtLinkageFlag, "msvc-crt-linkage", getEnv("MSVC_CRT_LINKAGE", "static"), "Set Visual C++ CRT Linkage")
@@ -1060,11 +1062,23 @@ func buildStageExecuteBuildScript() {
 		}
 	}
 	if runTestFlag {
-		checkCmd := []string{"./yass_test"}
-		if verboseFlag > 0 {
-			checkCmd = []string{"./yass_test", "-v", fmt.Sprintf("%d", verboseFlag), "-logtostderr"}
+		if systemNameFlag == "ios" && subSystemNameFlag == "simulator" {
+			xcodeCmd := []string{"xcodebuild", "test", "-configuration", cmakeBuildTypeFlag,
+				"-jobs", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag),
+				"-scheme", "yass", "-destination", "platform=iOS Simulator,name=iPhone 15 Pro"}
+			cmdRun(xcodeCmd, true)
+		} else if systemNameFlag == "ios" {
+			xcodeCmd := []string{"xcodebuild", "test", "-configuration", cmakeBuildTypeFlag,
+				"-jobs", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag),
+				"-scheme", "yass", "-destination", "platform=iOS,name=" + iosTestDeviceNameFlag}
+			cmdRun(xcodeCmd, true)
+		} else {
+			checkCmd := []string{"./yass_test"}
+			if verboseFlag > 0 {
+				checkCmd = []string{"./yass_test", "-v", fmt.Sprintf("%d", verboseFlag), "-logtostderr"}
+			}
+			cmdRun(checkCmd, true)
 		}
-		cmdRun(checkCmd, true)
 	}
 	// FIXME move to cmake (required by Xcode generator)
 	if systemNameFlag == "darwin" {

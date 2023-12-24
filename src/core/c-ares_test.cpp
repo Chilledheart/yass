@@ -13,7 +13,7 @@
 #include "test_util.hpp"
 #include "core/c-ares.hpp"
 
-#ifdef OS_ANDROID
+#if BUILDFLAG(IS_IOS) || BUILDFLAG(IS_ANDROID)
 ABSL_FLAG(bool, no_cares_tests, true, "skip c-ares tests");
 #else
 ABSL_FLAG(bool, no_cares_tests, false, "skip c-ares tests");
