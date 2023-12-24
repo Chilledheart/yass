@@ -61,6 +61,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   [self.cipherMethod reloadAllComponents];
 
   [self LoadChanges];
+  [self UpdateStatusBar];
   [self.startButton setEnabled:TRUE];
   [self.stopButton setEnabled:FALSE];
 }
