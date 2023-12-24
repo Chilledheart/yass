@@ -876,6 +876,8 @@ func buildStageGenerateBuildScript() {
 	if systemNameFlag == "ios" {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/ios.toolchain.cmake", buildDir))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DDEPLOYMENT_TARGET=%s", iosVersionMinFlag))
+		// FIXME ios doens't support c-ares
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_CARES=%s", "OFF"))
 		platform := "OS"
 		if subSystemNameFlag == "simulator" {
 			if archFlag == "x86" {

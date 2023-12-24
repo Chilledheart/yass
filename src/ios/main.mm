@@ -58,6 +58,10 @@ int main(int argc, const char** argv) {
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
 
+  absl::SetFlag(&FLAGS_v, 0);
+  absl::SetFlag(&FLAGS_log_thread_id, 1);
+  absl::SetFlag(&FLAGS_logtostderr, true);
+
 #if 0
   if (!MemoryLockAll()) {
     LOG(WARNING) << "Failed to set memory lock";
