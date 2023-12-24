@@ -2091,8 +2091,9 @@ if (MINGW AND USE_LIBCXX)
   # force c++11 thread model
   add_definitions(-DABSL_FORCE_THREAD_IDENTITY_MODE=ABSL_THREAD_IDENTITY_MODE_USE_CPP11)
 endif()
-if (ANDROID OR OHOS)
+if (ANDROID OR OHOS OR IOS)
   set(LIBRT "OFF" CACHE BOOL "")
+  set(HAVE_LIB_RT "OFF" CACHE BOOL "")
 endif()
 if (ABSL_BUILD_TESTING)
   set(ABSL_USE_EXTERNAL_GOOGLETEST "ON" CACHE BOOL "")
@@ -4109,7 +4110,7 @@ if (GUI)
             #XCODE_ATTRIBUTE_CODE_SIGN_INJECT_BASE_ENTITLEMENTS "NO"
             #XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME ${ASSET_CATALOG_ASSETS}
           )
-          if (XCODE_CODESIGN_IDENTITY OR XCODE_DEPLOYMENT_TEAM)
+          if ((NOT XCODE_CODESIGN_IDENTITY STREQUAL "-") OR XCODE_DEPLOYMENT_TEAM)
             set_target_properties(${APP_NAME} PROPERTIES
               XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${XCODE_CODESIGN_IDENTITY}"
               XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${XCODE_DEPLOYMENT_TEAM}"
@@ -4209,9 +4210,9 @@ if (BUILD_TESTS)
       src/ss_test.mm
       ${yass_test_SOURCE})
 
-    xctest_add_test(XCTest.${APP_NAME} yass_test)
+    xctest_add_test(XCTest.yass_test yass_test)
 
-    if (XCODE_CODESIGN_IDENTITY OR XCODE_DEPLOYMENT_TEAM)
+    if ((NOT XCODE_CODESIGN_IDENTITY STREQUAL "-") OR XCODE_DEPLOYMENT_TEAM)
       set_target_properties(yass_test PROPERTIES
         XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${XCODE_CODESIGN_IDENTITY}"
         XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${XCODE_DEPLOYMENT_TEAM}"
@@ -4316,8 +4317,29 @@ if (BUILD_TESTS)
 endif()
 
 if (BUILD_BENCHMARKS)
-  add_executable(yass_benchmark
-    src/ss_benchmark.cpp)
+  set(yass_benchmark_SOURCE
+    src/ss_benchmark.cpp
+    )
+  if (IOS)
+    enable_testing()
+    find_package(XCTest REQUIRED)
+
+    xctest_add_bundle(yass_benchmark ${APP_NAME}
+      src/ss_benchmark.mm
+      ${yass_benchmark_SOURCE})
+
+    xctest_add_test(XCTest.yass_benchmark yass_benchmark)
+
+    if ((NOT XCODE_CODESIGN_IDENTITY STREQUAL "-") OR XCODE_DEPLOYMENT_TEAM)
+      set_target_properties(yass_benchmark PROPERTIES
+        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${XCODE_CODESIGN_IDENTITY}"
+        XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${XCODE_DEPLOYMENT_TEAM}"
+        XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Auto")
+    endif()
+  else()
+    add_executable(yass_benchmark
+      ${yass_benchmark_SOURCE})
+  endif()
   target_include_directories(yass_benchmark PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src
       ${CMAKE_CURRENT_SOURCE_DIR}/src/cli
