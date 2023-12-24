@@ -56,6 +56,8 @@ var macosxUniversalBuildFlag bool
 var macosxCodeSignIdentityFlag string
 
 var iosVersionMinFlag string
+var iosCodeSignIdentityFlag string
+var iosDevelopmentTeamFlag string
 
 var msvcTargetArchFlag string
 var msvcCrtLinkageFlag string
@@ -163,6 +165,8 @@ func InitFlag() {
 	flag.StringVar(&macosxCodeSignIdentityFlag, "macosx-codesign-identity", getEnv("CODESIGN_IDENTITY", "-"), "Set Mac OS X CodeSign Identity")
 
 	flag.StringVar(&iosVersionMinFlag, "ios-version-min", getEnv("MACOSX_DEPLOYMENT_TARGET", "13.0"), "Set iOS deployment target, such as 13.0")
+	flag.StringVar(&iosCodeSignIdentityFlag, "ios-codesign-identity", getEnv("CODESIGN_IDENTITY", "-"), "Set iOS CodeSign Identity")
+	flag.StringVar(&iosDevelopmentTeamFlag, "ios-development-team", getEnv("DEVELOPMENT_TEAM", ""), "Set iOS deployment team")
 
 	flag.StringVar(&msvcTargetArchFlag, "msvc-tgt-arch", getEnv("VSCMD_ARG_TGT_ARCH", "x64"), "Set Visual C++ Target Achitecture")
 	flag.StringVar(&msvcCrtLinkageFlag, "msvc-crt-linkage", getEnv("MSVC_CRT_LINKAGE", "static"), "Set Visual C++ CRT Linkage")
@@ -677,6 +681,8 @@ func buildStageGenerateBuildScript() {
 	var cmakeArgs []string
 	if (os.Getenv("CC") != "") {
 		glog.Infof("Using overrided compiler %s", os.Getenv("CC"))
+	} else if systemNameFlag == "ios" {
+		glog.Infof("Using xcode's builtin compiler")
 	} else if (clangPath != "") {
 		if systemNameFlag == "windows" {
 			_clangClPath := filepath.Join(clangPath, "bin", "clang-cl.exe")
@@ -699,7 +705,11 @@ func buildStageGenerateBuildScript() {
 	}
 	cmakeArgs = append(cmakeArgs, "-DGUI=ON", "-DCLI=ON", "-DSERVER=ON")
 	cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_BUILD_TYPE=%s", cmakeBuildTypeFlag))
-	cmakeArgs = append(cmakeArgs, "-G", "Ninja")
+	if systemNameFlag == "ios" {
+		cmakeArgs = append(cmakeArgs, "-G", "Xcode")
+	} else {
+		cmakeArgs = append(cmakeArgs, "-G", "Ninja")
+	}
 	if systemNameFlag != runtime.GOOS || sysrootFlag != "" || msvcTargetArchFlag != "x64" {
 		cmakeArgs = append(cmakeArgs, "-DUSE_HOST_TOOLS=on")
 	}
@@ -875,6 +885,8 @@ func buildStageGenerateBuildScript() {
 			} else {
 				glog.Fatalf("Invalid archFlag: %s", archFlag);
 			}
+			glog.Info("No Packaging supported for simulator, disabling...")
+			noPackagingFlag = true
 		} else if subSystemNameFlag != "" {
 			glog.Fatalf("Invalid subSystemNameFlag: %s", subSystemNameFlag);
 		} else {
@@ -885,6 +897,8 @@ func buildStageGenerateBuildScript() {
 			} else {
 				glog.Fatalf("Invalid archFlag: %s", archFlag);
 			}
+			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DXCODE_CODESIGN_IDENTITY=%s", iosCodeSignIdentityFlag))
+			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DXCODE_DEPLOYMENT_TEAM=%s", iosDevelopmentTeamFlag))
 		}
 
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DPLATFORM=%s", platform))
@@ -996,11 +1010,25 @@ func renameByUnlink(src string, dst string) error {
 func buildStageExecuteBuildScript() {
 	glog.Info("BuildStage -- Execute Build Script")
 	glog.Info("======================================================================")
-	ninjaCmd := []string{"ninja", "-j", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), APPNAME}
-	cmdRun(ninjaCmd, true)
-	if buildBenchmarkFlag || runBenchmarkFlag {
-		ninjaCmd := []string{"ninja", "-j", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "yass_benchmark"}
+	if systemNameFlag == "ios" {
+		xcodeCmd := []string{"xcodebuild", "archive", "-configuration", cmakeBuildTypeFlag,
+		"-jobs", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag),
+		"-target", APPNAME, "-scheme", APPNAME,
+		"-archivePath", cmakeBuildTypeFlag + ".xcarchive"}
+		cmdRun(xcodeCmd, true)
+	} else {
+		ninjaCmd := []string{"ninja", "-j", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), APPNAME}
 		cmdRun(ninjaCmd, true)
+	}
+	if buildBenchmarkFlag || runBenchmarkFlag {
+		if systemNameFlag == "ios" {
+			xcodeCmd := []string{"xcodebuild", "build", "-configuration", cmakeBuildTypeFlag,
+			"-jobs", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "-target", "yass_benchmark"}
+			cmdRun(xcodeCmd, true)
+		} else {
+			ninjaCmd := []string{"ninja", "-j", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "yass_benchmark"}
+			cmdRun(ninjaCmd, true)
+		}
 	}
 	if runBenchmarkFlag {
 		benchmarkCmd := []string{"./yass_benchmark"}
@@ -1010,8 +1038,14 @@ func buildStageExecuteBuildScript() {
 		cmdRun(benchmarkCmd, true)
 	}
 	if buildTestFlag || runTestFlag {
-		ninjaCmd := []string{"ninja", "-j", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "yass_test"}
-		cmdRun(ninjaCmd, true)
+		if systemNameFlag == "ios" {
+			xcodeCmd := []string{"xcodebuild", "build", "-configuration", cmakeBuildTypeFlag,
+			"-jobs", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "-target", "yass_test"}
+			cmdRun(xcodeCmd, true)
+		} else {
+			ninjaCmd := []string{"ninja", "-j", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "yass_test"}
+			cmdRun(ninjaCmd, true)
+		}
 	}
 	if runTestFlag {
 		checkCmd := []string{"./yass_test"}
@@ -1045,6 +1079,10 @@ func postStateStripBinaries() {
 	glog.Info("PostState -- Strip Binaries")
 	glog.Info("======================================================================")
 	if systemNameFlag == "windows" {
+		return
+	}
+	if systemNameFlag == "ios" {
+		glog.Info("Done in xcodebuild")
 		return
 	}
 	if systemNameFlag == "mingw" || systemNameFlag == "android" || systemNameFlag == "harmony" || systemNameFlag == "linux" || systemNameFlag == "freebsd" {
@@ -1094,6 +1132,10 @@ func postStateStripBinaries() {
 func postStateCodeSign() {
 	glog.Info("PostState -- Code Sign")
 	glog.Info("======================================================================")
+	if systemNameFlag == "ios" {
+		glog.Info("Done in xcodebuild")
+		return
+	}
 	if cmakeBuildTypeFlag != "Release" || (systemNameFlag != "darwin" && systemNameFlag != "ios") {
 		return
 	}
@@ -1411,6 +1453,15 @@ func archiveMainFile(output string, prefix string, paths []string) {
 			"--copy", "../macos/.DS_Store:/.DS_Store",
 			"--copy", "../macos/.background:/",
 			"--symlink", "/Applications:/Applications"}, true)
+	} else if systemNameFlag == "ios" {
+		cmdRun([]string{"xcodebuild", "-exportArchive",
+			"-archivePath", cmakeBuildTypeFlag + ".xcarchive",
+			"-exportPath", ".",
+			"-exportOptionsPlist", "../tools/development.plist"}, true)
+		err := os.Rename("yass.ipa", output)
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
 	} else if systemNameFlag == "android" && variantFlag == "gui" {
 		androidDir := "../android"
 		err := os.Chdir(androidDir)
@@ -1586,7 +1637,7 @@ func postStateArchives() map[string][]string {
 		archive = fmt.Sprintf(archiveFormat, APPNAME, "", ".dmg")
 	}
 	if systemNameFlag == "ios" {
-		archive = fmt.Sprintf(archiveFormat, APPNAME, "", ".zip")
+		archive = fmt.Sprintf(archiveFormat, APPNAME, "", ".ipa")
 	}
 	hasCrashpad := true
 	if _, err := os.Stat("crashpad_handler.exe"); errors.Is(err, os.ErrNotExist) {
@@ -1654,7 +1705,15 @@ func postStateArchives() map[string][]string {
 	} else if systemNameFlag == "mingw" || systemNameFlag == "android" || systemNameFlag == "harmony" || systemNameFlag == "linux" || systemNameFlag == "freebsd" {
 		archiveFiles(debugArchive, archivePrefix, []string{getAppName() + ".dbg"})
 		dbgPaths = append(dbgPaths, APPNAME+".dbg")
-	} else if systemNameFlag == "darwin" || systemNameFlag == "ios" {
+	} else if systemNameFlag == "darwin" {
+		archiveFiles(debugArchive, archivePrefix, []string{getAppName() + ".dSYM"})
+	} else if systemNameFlag == "ios" {
+		cmdRun([]string{"rm", "-rf", getAppName() + ".dSYM"}, true)
+		buildSubdir := cmakeBuildTypeFlag + "-iphoneos"
+		if subSystemNameFlag == "simulator" {
+			buildSubdir = cmakeBuildTypeFlag + "-iphonesimulator"
+		}
+		cmdRun([]string{"cp", "-r", filepath.Join(buildSubdir, getAppName() + ".dSYM") , getAppName() + ".dSYM"}, true)
 		archiveFiles(debugArchive, archivePrefix, []string{getAppName() + ".dSYM"})
 		dbgPaths = append(dbgPaths, getAppName()+".dSYM")
 	}
@@ -1678,7 +1737,7 @@ func get7zPath() string {
 func inspectArchive(file string, files []string) {
 	if strings.HasSuffix(file, ".dmg") {
 		cmdRun([]string{"hdiutil", "imageinfo", file}, false)
-	} else if strings.HasSuffix(file, ".zip") || strings.HasSuffix(file, ".msi") || strings.HasSuffix(file, ".exe") || strings.HasSuffix(file, ".apk") {
+	} else if strings.HasSuffix(file, ".zip") || strings.HasSuffix(file, ".msi") || strings.HasSuffix(file, ".exe") || strings.HasSuffix(file, ".apk") || strings.HasSuffix(file, ".ipa") {
 		p7z := get7zPath()
 		cmdRun([]string{p7z, "l", file}, false)
 	} else if strings.HasSuffix(file, ".tgz") {

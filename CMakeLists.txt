@@ -173,6 +173,10 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
   set(COMPILER_APPLE_CLANG TRUE)
 endif()
 
+if (${CMAKE_GENERATOR} MATCHES "^Xcode.*")
+  set(COMPILER_APPLE_CLANG TRUE)
+endif()
+
 if (COMPILER_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5.0)
   message(FATAL_ERROR "Requires Clang 5.0 or newer to compile")
 endif()
@@ -340,7 +344,7 @@ option(ENABLE_LTO "Enable build with LTO" ON)
 option(ENABLE_LLD "Enable build with LLD" ON)
 option(ENABLE_GOLD "Enable build with GOLD" ON)
 
-if (ENABLE_LLD AND (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR LINKER_LLD))
+if (ENABLE_LLD AND (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR LINKER_LLD) AND NOT COMPILER_APPLE_CLANG)
   # skipping apple clang
   set(USE_LLD ON)
   set(USE_GOLD OFF)
@@ -3024,7 +3028,6 @@ if (COMPILER_GCC OR COMPILER_CLANG)
   # Note clang-cl is odd and sets both CLANG and MSVC. We base our configuration
   # primarily on our normal Clang one.
   set(C_CXX_FLAGS "-Werror -Wformat=2 -Wsign-compare -Wmissing-field-initializers -Wwrite-strings -Wvla -Wno-shadow")
-
   if (COMPILER_APPLE_CLANG)
     set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wno-error=shorten-64-to-32")
   endif()
@@ -4095,6 +4098,7 @@ if (GUI)
             MACOSX_BUNDLE_GUI_IDENTIFIER "it.gui.yass"
             MACOSX_BUNDLE_BUNDLE_NAME ${PACKAGE_NAME}
             MACOSX_BUNDLE_INFO_PLIST ${APP_MACOSX_BUNDLE_INFO}
+            XCODE_GENERATE_SCHEME "TRUE"
             XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon"
             XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
             XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
@@ -4104,6 +4108,18 @@ if (GUI)
             #XCODE_ATTRIBUTE_ENABLE_HARDENED_RUNTIME "YES"
             #XCODE_ATTRIBUTE_CODE_SIGN_INJECT_BASE_ENTITLEMENTS "NO"
             #XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME ${ASSET_CATALOG_ASSETS}
+          )
+          if (XCODE_CODESIGN_IDENTITY OR XCODE_DEPLOYMENT_TEAM)
+            set_target_properties(${APP_NAME} PROPERTIES
+              XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${XCODE_CODESIGN_IDENTITY}"
+              XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${XCODE_DEPLOYMENT_TEAM}"
+              XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Auto")
+          endif()
+          # Workaround for https://gitlab.kitware.com/cmake/cmake/-/issues/15183
+          # Apps must have install step enabled
+          set_target_properties(${APP_NAME} PROPERTIES
+             XCODE_ATTRIBUTE_SKIP_INSTALL  NO
+             XCODE_ATTRIBUTE_INSTALL_PATH  "$(LOCAL_APPS_DIR)"
           )
     endif()
 
