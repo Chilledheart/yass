@@ -134,13 +134,11 @@
       (YassViewController*)
           UIApplication.sharedApplication.keyWindow.rootViewController;
   [viewController StartFailed];
-#if 0
-  NSAlert* alert = [[NSAlert alloc] init];
-  alert.messageText = @(error_msg.c_str());
-  alert.icon = [NSImage imageNamed:NSImageNameCaution];
-  alert.alertStyle = NSAlertStyleWarning;
-  [alert runModal];
-#endif
+
+  UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"Start Failed" message:@(error_msg.c_str()) preferredStyle:UIAlertControllerStyleAlert];
+  UIAlertAction* action = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction* action) {}];
+  [alert addAction:action];
+  [viewController presentViewController:alert animated:YES completion:nil];
 }
 
 - (void)OnStopped {
