@@ -590,7 +590,14 @@ BENCHMARK_DEFINE_F(ASIOFixture, PlainIO)(benchmark::State& state)  {
 
 BENCHMARK_REGISTER_F(ASIOFixture, PlainIO)->Range(4096, 1*1024*1024)->UseManualTime();
 
-int main(int argc, char** argv) {
+#if BUILDFLAG(IS_IOS)
+extern "C" int xc_main();
+int xc_main() {
+  int argc = 1;
+  char *argv[] = {(char*)"xc_main", nullptr};
+#else
+int main(int argc, char **argv) {
+#endif
   SetExecutablePath(argv[0]);
   std::string exec_path;
   if (!GetExecutablePath(&exec_path)) {

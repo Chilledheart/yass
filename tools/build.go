@@ -1030,32 +1030,56 @@ func buildStageExecuteBuildScript() {
 		if systemNameFlag == "ios" && subSystemNameFlag == "simulator" {
 			xcodeCmd := []string{"xcodebuild", "build", "-configuration", cmakeBuildTypeFlag,
 			"-jobs", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "-target", "yass_benchmark"}
-			cmdRun(xcodeCmd, true)
+			if (!runBenchmarkFlag) {
+				cmdRun(xcodeCmd, true)
+			}
 		} else if systemNameFlag == "ios" {
 			xcodeCmd := []string{"xcodebuild", "build", "-configuration", cmakeBuildTypeFlag,
 			"-jobs", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "-target", "yass_benchmark"}
-			cmdRun(xcodeCmd, true)
+			if (!runBenchmarkFlag) {
+				cmdRun(xcodeCmd, true)
+			}
 		} else {
 			ninjaCmd := []string{"ninja", "-j", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "yass_benchmark"}
 			cmdRun(ninjaCmd, true)
 		}
 	}
 	if runBenchmarkFlag {
-		benchmarkCmd := []string{"./yass_benchmark"}
-		if verboseFlag > 0 {
-			benchmarkCmd = []string{"./yass_benchmark", "-v", fmt.Sprintf("%d", verboseFlag), "-logtostderr"}
+		if systemNameFlag == "ios" && subSystemNameFlag == "simulator" {
+			xcodeCmd := []string{"xcodebuild", "test", "-configuration", cmakeBuildTypeFlag,
+				"-jobs", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag),
+				"-scheme", "yass", "-destination", "platform=iOS Simulator,name=iPhone 15 Pro"}
+			if (!runTestFlag) {
+				cmdRun(xcodeCmd, true)
+			}
+		} else if systemNameFlag == "ios" {
+			xcodeCmd := []string{"xcodebuild", "test", "-configuration", cmakeBuildTypeFlag,
+				"-jobs", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag),
+				"-scheme", "yass", "-destination", "platform=iOS,name=" + iosTestDeviceNameFlag}
+			if (!runTestFlag) {
+				cmdRun(xcodeCmd, true)
+			}
+		} else {
+			checkCmd := []string{"./yass_benchmark"}
+			if verboseFlag > 0 {
+				checkCmd = []string{"./yass_benchmark", "-v", fmt.Sprintf("%d", verboseFlag), "-logtostderr"}
+			}
+			cmdRun(checkCmd, true)
 		}
-		cmdRun(benchmarkCmd, true)
 	}
 	if buildTestFlag || runTestFlag {
 		if systemNameFlag == "ios" && subSystemNameFlag == "simulator" {
 			xcodeCmd := []string{"xcodebuild", "build", "-configuration", cmakeBuildTypeFlag,
 			"-jobs", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "-target", "yass_test"}
-			cmdRun(xcodeCmd, true)
+			if (!runTestFlag) {
+				cmdRun(xcodeCmd, true)
+			}
 		} else if systemNameFlag == "ios" {
 			xcodeCmd := []string{"xcodebuild", "build", "-configuration", cmakeBuildTypeFlag,
 			"-jobs", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "-target", "yass_test"}
-			cmdRun(xcodeCmd, true)
+			if (!runTestFlag) {
+				cmdRun(xcodeCmd, true)
+			}
 		} else {
 			ninjaCmd := []string{"ninja", "-j", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "yass_test"}
 			cmdRun(ninjaCmd, true)
