@@ -1010,7 +1010,11 @@ func renameByUnlink(src string, dst string) error {
 func buildStageExecuteBuildScript() {
 	glog.Info("BuildStage -- Execute Build Script")
 	glog.Info("======================================================================")
-	if systemNameFlag == "ios" {
+	if systemNameFlag == "ios" && subSystemNameFlag == "simulator" {
+		xcodeCmd := []string{"xcodebuild", "build", "-configuration", cmakeBuildTypeFlag,
+		"-jobs", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "-target", APPNAME}
+		cmdRun(xcodeCmd, true)
+	} else if systemNameFlag == "ios" {
 		xcodeCmd := []string{"xcodebuild", "archive", "-configuration", cmakeBuildTypeFlag,
 		"-jobs", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag),
 		"-target", APPNAME, "-scheme", APPNAME,
@@ -1021,7 +1025,11 @@ func buildStageExecuteBuildScript() {
 		cmdRun(ninjaCmd, true)
 	}
 	if buildBenchmarkFlag || runBenchmarkFlag {
-		if systemNameFlag == "ios" {
+		if systemNameFlag == "ios" && subSystemNameFlag == "simulator" {
+			xcodeCmd := []string{"xcodebuild", "build", "-configuration", cmakeBuildTypeFlag,
+			"-jobs", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "-target", "yass_benchmark"}
+			cmdRun(xcodeCmd, true)
+		} else if systemNameFlag == "ios" {
 			xcodeCmd := []string{"xcodebuild", "build", "-configuration", cmakeBuildTypeFlag,
 			"-jobs", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "-target", "yass_benchmark"}
 			cmdRun(xcodeCmd, true)
@@ -1038,7 +1046,11 @@ func buildStageExecuteBuildScript() {
 		cmdRun(benchmarkCmd, true)
 	}
 	if buildTestFlag || runTestFlag {
-		if systemNameFlag == "ios" {
+		if systemNameFlag == "ios" && subSystemNameFlag == "simulator" {
+			xcodeCmd := []string{"xcodebuild", "build", "-configuration", cmakeBuildTypeFlag,
+			"-jobs", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "-target", "yass_test"}
+			cmdRun(xcodeCmd, true)
+		} else if systemNameFlag == "ios" {
 			xcodeCmd := []string{"xcodebuild", "build", "-configuration", cmakeBuildTypeFlag,
 			"-jobs", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "-target", "yass_test"}
 			cmdRun(xcodeCmd, true)
