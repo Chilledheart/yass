@@ -4095,7 +4095,7 @@ if (GUI)
             RESOURCE "${ALLRESOURCES}"
             MACOSX_BUNDLE_ICON_FILE yass.icns
             MACOSX_BUNDLE_COPYRIGHT "${YASS_APP_COPYRIGHT}"
-            MACOSX_BUNDLE_GUI_IDENTIFIER "it.gui.yass"
+            MACOSX_BUNDLE_GUI_IDENTIFIER "it.gui.ios.yass"
             MACOSX_BUNDLE_BUNDLE_NAME ${PACKAGE_NAME}
             MACOSX_BUNDLE_INFO_PLIST ${APP_MACOSX_BUNDLE_INFO}
             XCODE_GENERATE_SCHEME "TRUE"
@@ -4189,7 +4189,7 @@ endif()
 # *****************************************************************************************
 
 if (BUILD_TESTS)
-  add_executable(yass_test
+  set(yass_test_SOURCE
     src/test_util.cpp
     src/network_test.cpp
     src/ss_test.cpp
@@ -4200,6 +4200,26 @@ if (BUILD_TESTS)
     src/core/process_utils_test.cpp
     src/core/utils_test.cpp
     )
+
+  if (IOS)
+    enable_testing()
+    find_package(XCTest REQUIRED)
+
+    xctest_add_bundle(yass_test ${APP_NAME}
+      src/ss_test.mm
+      ${yass_test_SOURCE})
+
+    xctest_add_test(XCTest.${APP_NAME} yass_test)
+
+    if (XCODE_CODESIGN_IDENTITY OR XCODE_DEPLOYMENT_TEAM)
+      set_target_properties(yass_test PROPERTIES
+        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${XCODE_CODESIGN_IDENTITY}"
+        XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${XCODE_DEPLOYMENT_TEAM}"
+        XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Auto")
+    endif()
+  else()
+    add_executable(yass_test ${yass_test_SOURCE})
+  endif()
   if (USE_LEVELDB)
     target_sources(yass_test PRIVATE third_party/leveldb_test.cc)
   endif()

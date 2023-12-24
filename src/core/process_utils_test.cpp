@@ -15,7 +15,7 @@
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 
-#ifdef OS_ANDROID
+#if BUILDFLAG(IS_IOS) || BUILDFLAG(IS_ANDROID)
 ABSL_FLAG(bool, no_exec_proc_tests, true, "skip execute_process tests");
 #else
 ABSL_FLAG(bool, no_exec_proc_tests, false, "skip execute_process tests");

@@ -734,7 +734,14 @@ INSTANTIATE_TEST_SUITE_P(Ss, EndToEndTest, ::testing::ValuesIn(kCiphers),
                            return to_cipher_method_name(info.param);
                          });
 
+#if BUILDFLAG(IS_IOS)
+extern "C" int xc_main();
+int xc_main() {
+  int argc = 1;
+  char *argv[] = {(char*)"xc_main", nullptr};
+#else
 int main(int argc, char **argv) {
+#endif
   SetExecutablePath(argv[0]);
   std::string exec_path;
   if (!GetExecutablePath(&exec_path)) {
