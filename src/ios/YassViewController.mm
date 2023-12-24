@@ -15,6 +15,7 @@
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
 #include "ios/YassAppDelegate.h"
+#include "ios/utils.h"
 
 static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   if (bytes < 1024) {
@@ -221,6 +222,10 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 
   self.timeout.text =
     gurl_base::SysUTF8ToNSString(std::to_string(absl::GetFlag(FLAGS_connect_timeout)));
+  auto ip_addresses = GetIpAddress();
+  if (!ip_addresses.empty()) {
+    self.currentIP.text = gurl_base::SysUTF8ToNSString(ip_addresses[0] + ":3000");
+  }
 }
 
 @end
