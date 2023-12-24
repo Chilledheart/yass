@@ -3732,6 +3732,8 @@ if (GUI)
           src/ios/YassViewController.h
           src/ios/YassSceneDelegate.h
           src/ios/YassSceneDelegate.mm
+          src/ios/utils.h
+          src/ios/utils.mm
           src/ios/main.mm)
     elseif(GUI_FLAVOUR STREQUAL "gtk3")
         list(APPEND SRC_FILES

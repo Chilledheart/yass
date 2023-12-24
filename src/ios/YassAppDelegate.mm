@@ -32,6 +32,8 @@
 }
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary<UIApplicationLaunchOptionsKey,id> *)launchOptions {
+  state_ = STOPPED;
+  pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
   return YES;
 }
 
