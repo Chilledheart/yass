@@ -87,6 +87,13 @@ jobs:
           path: |
             third_party/crashpad
           key: ${{ runner.os }}-android-${{ matrix.arch }}-crashpad-${{ hashFiles('CRASHPAD_COMMIT') }}-v${{ env.CACHE_EPOCH }}
+      - name: Cache cargo build stage
+        id: cargo-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo
+          key: ${{ runner.os }}-android-cargo-${{ hashFiles('third_party/tun2proxy/Cargo.toml') }}-${{ hashFiles('third_party/tun2proxy/Cargo.lock') }}
       - name: Cache golang
         uses: actions/cache@v3
         with:
@@ -119,6 +126,10 @@ jobs:
         run: |
           cd tools
           go build
+      - name: "Install dependency: tun2proxy"
+        run: |
+          ./scripts/setup-android-rust.sh
+          WITH_OS=android WITH_CPU=${{ matrix.arch }} ./scripts/build-tun2proxy.sh
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
