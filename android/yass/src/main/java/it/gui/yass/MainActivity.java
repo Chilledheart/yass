@@ -4,11 +4,13 @@ package it.gui.yass;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.res.Resources;
 import android.net.ConnectivityManager;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.os.ParcelFileDescriptor;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -16,6 +18,7 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -50,6 +53,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         stopRefreshPoll();
+        tun2ProxyStop();
         onNativeDestroy();
         super.onDestroy();
     }
@@ -142,37 +146,82 @@ public class MainActivity extends Activity {
         setTimeout(Integer.parseInt(timeoutEditText.getText().toString()));
     }
 
+    private final YassVpnService vpnService = new YassVpnService();
+
+    private ParcelFileDescriptor tunFd = null;
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == VPN_SERVICE_CODE && resultCode == RESULT_OK) {
+            onStartVpn();
+            return;
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private final int VPN_SERVICE_CODE = 10000;
+    private Thread tun2proxyThread;
+    private void onStartVpn() {
+        tunFd = vpnService.connect(getApplicationContext());
+        if (tunFd == null) {
+            return;
+        }
+        tun2proxyThread = new Thread(){
+            public void run() {
+                tun2ProxyStart("socks5://127.0.0.1:3000", tunFd.getFd(), vpnService.DEFAULT_MTU, true, true);
+            }
+        };
+        tun2proxyThread.start();
+
+        Button startButton = findViewById(R.id.startButton);
+        startButton.setEnabled(false);
+
+        TextView statusTextView = findViewById(R.id.statusTextView);
+        statusTextView.setText(R.string.status_starting);
+        state = NativeMachineState.STARTING;
+        nativeStart();
+    }
+
     public void onStartClicked(View view) {
         if (state == NativeMachineState.STOPPED) {
             saveSettingsIntoNative();
 
-            if (tun2ProxyStart("socks5://127.0.0.1:3000", -1, 1500, true, true) != 0) {
-                return;
+            Intent intent = YassVpnService.prepare(getApplicationContext());
+            if (intent == null) {
+                onActivityResult(VPN_SERVICE_CODE, RESULT_OK, null);
+            } else {
+                startActivityForResult(intent, VPN_SERVICE_CODE);
             }
-
-            Button startButton = findViewById(R.id.startButton);
-            startButton.setEnabled(false);
-
-            TextView statusTextView = findViewById(R.id.statusTextView);
-            statusTextView.setText(R.string.status_starting);
-            state = NativeMachineState.STARTING;
-            nativeStart();
         }
-
     }
 
+    private void onStopVpn() {
+        try {
+            tunFd.close();
+        } catch (IOException e) {
+            //nop
+        }
+        tunFd = null;
+
+        tun2ProxyStop();
+        try {
+            tun2proxyThread.join();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        nativeStop();
+
+        Button stopButton = findViewById(R.id.stopButton);
+        stopButton.setEnabled(false);
+
+        TextView statusTextView = findViewById(R.id.statusTextView);
+        statusTextView.setText(R.string.status_stopping);
+        state = NativeMachineState.STOPPING;
+    }
     public void onStopClicked(View view) {
         if (state == NativeMachineState.STARTED) {
             stopRefreshPoll();
-            tun2ProxyStop();
-
-            Button stopButton = findViewById(R.id.stopButton);
-            stopButton.setEnabled(false);
-
-            TextView statusTextView = findViewById(R.id.statusTextView);
-            statusTextView.setText(R.string.status_stopping);
-            state = NativeMachineState.STOPPING;
-            nativeStop();
+            onStopVpn();
         }
     }
 
