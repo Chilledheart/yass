@@ -53,6 +53,15 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         stopRefreshPoll();
+        if (tunFd != null) {
+          // stop tun and tun2proxy
+          try {
+              tunFd.close();
+          } catch (IOException e) {
+              //nop
+          }
+          tunFd = null;
+        }
         tun2ProxyStop();
         onNativeDestroy();
         super.onDestroy();
@@ -168,7 +177,7 @@ public class MainActivity extends Activity {
         }
         tun2proxyThread = new Thread(){
             public void run() {
-                tun2ProxyStart("socks5://127.0.0.1:3000", tunFd.getFd(), vpnService.DEFAULT_MTU, true, true);
+                tun2ProxyStart("socks5://127.0.0.1:3000", tunFd.getFd(), vpnService.DEFAULT_MTU, false, true);
             }
         };
         tun2proxyThread.start();
@@ -207,7 +216,7 @@ public class MainActivity extends Activity {
         try {
             tun2proxyThread.join();
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            // nop
         }
         nativeStop();
 
@@ -232,6 +241,21 @@ public class MainActivity extends Activity {
         this.runOnUiThread(new Runnable() {
             public void run() {
                 if (error_code != 0) {
+                    // stop tun and tun2proxy
+                    try {
+                        tunFd.close();
+                    } catch (IOException e) {
+                        //nop
+                    }
+                    tunFd = null;
+
+                    tun2ProxyStop();
+                    try {
+                        tun2proxyThread.join();
+                    } catch (InterruptedException e) {
+                        // nop
+                    }
+
                     state = NativeMachineState.STOPPED;
                     Button startButton = findViewById(R.id.startButton);
                     startButton.setEnabled(true);
