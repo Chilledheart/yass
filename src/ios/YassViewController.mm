@@ -33,7 +33,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
       << " " << *c;
 }
 
-@interface YassViewController () <UIPickerViewDataSource, UIPickerViewDelegate>
+@interface YassViewController () <UIPickerViewDataSource, UIPickerViewDelegate, UITextFieldDelegate>
 - (NSString*)getStatusMessage;
 @end
 
@@ -60,6 +60,11 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   [self.cipherMethod setDelegate:self];
   [self.cipherMethod setDataSource:self];
   [self.cipherMethod reloadAllComponents];
+  [self.serverHost setDelegate:self];
+  [self.serverPort setDelegate:self];
+  [self.username setDelegate:self];
+  [self.password setDelegate:self];
+  [self.timeout setDelegate:self];
 
   [self LoadChanges];
   [self UpdateStatusBar];
@@ -75,6 +80,28 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 
 - (NSString*)getCipher {
   return current_cipher_method_;
+}
+
+- (BOOL)textFieldShouldReturn:(UITextField *)textField {
+  [textField resignFirstResponder];
+  return NO;
+}
+
+- (BOOL)textFieldShouldEndEditing:(UITextField *)textField {
+  if (textField == self.serverHost) {
+    if (textField.text.length > _POSIX_HOST_NAME_MAX) {
+      return NO;
+    }
+  }
+  if (textField == self.serverPort) {
+    auto port = StringToInteger(gurl_base::SysNSStringToUTF8(textField.text));
+    return port.has_value() && port.value() > 0 && port.value() < 65536 ? YES : NO;
+  }
+  if (textField == self.timeout) {
+    auto port = StringToInteger(gurl_base::SysNSStringToUTF8(textField.text));
+    return port.has_value() && port.value() >= 0 ? YES : NO;
+  }
+  return YES;
 }
 
 - (NSInteger)numberOfComponentsInPickerView:(UIPickerView *)pickerView {
