@@ -1014,15 +1014,11 @@ func renameByUnlink(src string, dst string) error {
 func buildStageExecuteBuildScript() {
 	glog.Info("BuildStage -- Execute Build Script")
 	glog.Info("======================================================================")
-	if systemNameFlag == "ios" && subSystemNameFlag == "simulator" {
-		xcodeCmd := []string{"xcodebuild", "build", "-configuration", cmakeBuildTypeFlag,
-		"-jobs", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), "-target", APPNAME}
-		cmdRun(xcodeCmd, true)
-	} else if systemNameFlag == "ios" {
-		xcodeCmd := []string{"xcodebuild", "archive", "-configuration", cmakeBuildTypeFlag,
-		"-jobs", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag),
-		"-target", APPNAME, "-scheme", APPNAME,
-		"-archivePath", cmakeBuildTypeFlag + ".xcarchive"}
+	if systemNameFlag == "ios" {
+		xcodeCmd := []string{"xcodebuild", "build",
+			"-configuration", cmakeBuildTypeFlag,
+			"-jobs", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag),
+			"-target", APPNAME}
 		cmdRun(xcodeCmd, true)
 	} else {
 		ninjaCmd := []string{"ninja", "-j", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag), APPNAME}
@@ -1506,6 +1502,12 @@ func archiveMainFile(output string, prefix string, paths []string) {
 			"--copy", "../macos/.background:/",
 			"--symlink", "/Applications:/Applications"}, true)
 	} else if systemNameFlag == "ios" {
+		cmdRun([]string{"xcodebuild", "archive",
+			"-archivePath", cmakeBuildTypeFlag + ".xcarchive",
+			"-configuration", cmakeBuildTypeFlag,
+			"-jobs", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag),
+			"-target", APPNAME, "-scheme", APPNAME}, true)
+
 		cmdRun([]string{"xcodebuild", "-exportArchive",
 			"-archivePath", cmakeBuildTypeFlag + ".xcarchive",
 			"-exportPath", ".",
