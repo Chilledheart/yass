@@ -30,6 +30,7 @@ public class MainActivity extends Activity {
     static {
         // Load native library
         System.loadLibrary("native-lib");
+        System.loadLibrary("tun2proxy");
     }
 
     private NativeMachineState state = NativeMachineState.STOPPED;
@@ -145,6 +146,10 @@ public class MainActivity extends Activity {
         if (state == NativeMachineState.STOPPED) {
             saveSettingsIntoNative();
 
+            if (tun2ProxyStart("socks5://127.0.0.1:3000", -1, 1500, true, true) != 0) {
+                return;
+            }
+
             Button startButton = findViewById(R.id.startButton);
             startButton.setEnabled(false);
 
@@ -159,6 +164,7 @@ public class MainActivity extends Activity {
     public void onStopClicked(View view) {
         if (state == NativeMachineState.STARTED) {
             stopRefreshPoll();
+            tun2ProxyStop();
 
             Button stopButton = findViewById(R.id.stopButton);
             stopButton.setEnabled(false);
@@ -214,6 +220,9 @@ public class MainActivity extends Activity {
             }
         });
     }
+
+    private native int tun2ProxyStart(String proxy_url, int tun_fd, int tun_mtu, boolean verbose, boolean dns_over_tcp);
+    private native int tun2ProxyStop();
 
     // first connection number, then rx rate, then tx rate
 

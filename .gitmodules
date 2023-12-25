@@ -65,3 +65,6 @@
 [submodule "third_party/zstd"]
 	path = third_party/zstd
 	url = https://github.com/Chilledheart/zstd
+[submodule "third_party/tun2proxy"]
+	path = third_party/tun2proxy
+	url = https://github.com/Chilledheart/tun2proxy
