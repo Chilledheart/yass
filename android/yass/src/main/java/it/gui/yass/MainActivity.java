@@ -181,6 +181,7 @@ public class MainActivity extends Activity {
                 tun2ProxyStart("socks5://127.0.0.1:3000", tunFd.getFd(), vpnService.DEFAULT_MTU, false, true);
             }
         };
+        tun2proxyThread.setName("tun2proxy");
         tun2proxyThread.start();
 
         Button startButton = findViewById(R.id.startButton);
