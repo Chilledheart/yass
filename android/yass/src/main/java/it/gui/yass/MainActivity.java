@@ -10,6 +10,7 @@ import android.content.res.Resources;
 import android.net.ConnectivityManager;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.ParcelFileDescriptor;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -315,18 +316,25 @@ public class MainActivity extends Activity {
         return String.format("%5.2f %c/s", value / 1024.0, ci.charAt(cPos));
     }
 
+    private final Handler handler = new Handler();
     private void startRefreshPoll() {
         mRefreshTimer = new Timer();
         TimerTask mRefreshTimerTask = new TimerTask() {
             @Override
             public void run() {
-                long[] result = getRealtimeTransferRate();
-                TextView statusTextView = findViewById(R.id.statusTextView);
-                Resources res = getResources();
-                statusTextView.setText(String.format(res.getString(R.string.status_started_with_rate),
-                        result[0],
-                        humanReadableByteCountBin(result[1]),
-                        humanReadableByteCountBin(result[2])));
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        long[] result = getRealtimeTransferRate();
+                        TextView statusTextView = findViewById(R.id.statusTextView);
+                        Resources res = getResources();
+                        statusTextView.setText(String.format(res.getString(R.string.status_started_with_rate),
+                                result[0],
+                                humanReadableByteCountBin(result[1]),
+                                humanReadableByteCountBin(result[2])));
+                    }
+                });
+
             }
         };
         mRefreshTimer.schedule(mRefreshTimerTask, 0, 1000L);
