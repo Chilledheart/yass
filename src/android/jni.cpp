@@ -101,6 +101,8 @@ CIPHER_METHOD_VALID_MAP(XX)
   };
   DCHECK_LT((uint32_t)value, methods_idxes.size());
   absl::SetFlag(&FLAGS_method, methods_idxes[value]);
+  absl::SetFlag(&FLAGS_local_host, "0.0.0.0");
+  absl::SetFlag(&FLAGS_local_port, 3000);
 }
 
 JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setTimeout(JNIEnv *env, jobject obj, jint value) {
