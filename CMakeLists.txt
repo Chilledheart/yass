@@ -2405,6 +2405,31 @@ if (UNIX AND (${CMAKE_BUILD_TYPE} MATCHES MinSizeRel OR ${CMAKE_BUILD_TYPE} MATC
 endif()
 
 # *****************************************************************************************
+#           tun2proxy Library
+# *****************************************************************************************
+
+if (ANDROID)
+  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64-v8a")
+    set(_TUN2PROXY_TARGET "aarch64-linux-android")
+  elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "armeabi-v7a")
+    set(_TUN2PROXY_TARGET "armv7-linux-androideabi")
+  elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86")
+    set(_TUN2PROXY_TARGET "i686-linux-android")
+  elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+    set(_TUN2PROXY_TARGET "x86_64-linux-android")
+  elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "riscv64")
+    set(_TUN2PROXY_TARGET "riscv64-linux-android")
+  else()
+    message(FATAL_ERROR "tun2proxy: unsupported android architecture ${CMAKE_SYSTEM_PROCESSOR}")
+  endif()
+  set(TUN2PROXY_LIB third_party/tun2proxy/target/${_TUN2PROXY_TARGET}/release/libtun2proxy.so)
+endif()
+
+if (TUN2PROXY_LIB)
+  file(COPY "${TUN2PROXY_LIB}" DESTINATION ${CMAKE_BINARY_DIR})
+endif()
+
+# *****************************************************************************************
 #           boringssl Library
 # *****************************************************************************************
 

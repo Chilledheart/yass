@@ -33,7 +33,7 @@ import it.gui.yass.databinding.ActivityMainBinding;
 public class MainActivity extends Activity {
     static {
         // Load native library
-        System.loadLibrary("native-lib");
+        System.loadLibrary("yass");
         System.loadLibrary("tun2proxy");
     }
 

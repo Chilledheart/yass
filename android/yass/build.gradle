@@ -61,22 +61,18 @@ task copyTask {
     copy {
         from '../../build-android24-x86/libyass.so'
         into 'libs/x86'
-        rename('libyass.so', 'libnative-lib.so')
     }
     copy {
         from '../../build-android24-x64/libyass.so'
         into 'libs/x86_64'
-        rename('libyass.so', 'libnative-lib.so')
     }
     copy {
         from '../../build-android24-arm/libyass.so'
         into 'libs/armeabi-v7a'
-        rename('libyass.so', 'libnative-lib.so')
     }
     copy {
         from '../../build-android24-arm64/libyass.so'
         into 'libs/arm64-v8a'
-        rename('libyass.so', 'libnative-lib.so')
     }
     copy {
         from '../../build-android24-x86/crashpad_handler'
@@ -99,19 +95,19 @@ task copyTask {
         rename('crashpad_handler', 'libcrashpad_handler.so')
     }
     copy {
-        from '../../third_party/tun2proxy/target/i686-linux-android/release/libtun2proxy.so'
+        from '../../build-android24-x86/libtun2proxy.so'
         into 'libs/x86'
     }
     copy {
-        from '../../third_party/tun2proxy/target/x86_64-linux-android/release/libtun2proxy.so'
+        from '../../build-android24-x64/libtun2proxy.so'
         into 'libs/x86_64'
     }
     copy {
-        from '../../third_party/tun2proxy/target/armv7-linux-androideabi/release/libtun2proxy.so'
+        from '../../build-android24-arm/libtun2proxy.so'
         into 'libs/armeabi-v7a'
     }
     copy {
-        from '../../third_party/tun2proxy/target/aarch64-linux-android/release/libtun2proxy.so'
+        from '../../build-android24-arm64/libtun2proxy.so'
         into 'libs/arm64-v8a'
     }
 }
