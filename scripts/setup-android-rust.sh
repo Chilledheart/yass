@@ -27,23 +27,40 @@ fi
 
 echo "Patching cargo config..."
 
+ARCH=$(uname -s)
+case "$ARCH" in
+  Linux)
+    HOST_OS="linux"
+    ;;
+  Darwin)
+    HOST_OS="darwin"
+    ;;
+  MINGW*|MSYS*)
+    HOST_OS="windows"
+    ;;
+  *)
+    echo "Unsupported OS ${ARCH}"
+    exit 1
+    ;;
+esac
+
 cat >> ~/.cargo/config << EOF
 
 [target.aarch64-linux-android]
-ar = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
-linker = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang"
+ar = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/llvm-ar"
+linker = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/aarch64-linux-android24-clang"
 
 [target.armv7-linux-androideabi]
-ar = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
-linker = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi24-clang"
+ar = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/llvm-ar"
+linker = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/armv7a-linux-androideabi24-clang"
 
 [target.i686-linux-android]
-ar = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
-linker = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android24-clang"
+ar = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/llvm-ar"
+linker = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/i686-linux-android24-clang"
 
 [target.x86_64-linux-android]
-ar = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
-linker = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android24-clang"
+ar = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/llvm-ar"
+linker = "$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/${HOST_OS}-x86_64/bin/x86_64-linux-android24-clang"
 EOF
 
 echo "Patching cargo config...done"
