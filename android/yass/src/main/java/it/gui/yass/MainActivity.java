@@ -12,6 +12,7 @@ import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.ParcelFileDescriptor;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -36,6 +37,7 @@ public class MainActivity extends Activity {
         System.loadLibrary("yass");
         System.loadLibrary("tun2proxy");
     }
+    private static final String TAG = "MainActivity";
 
     private NativeMachineState state = NativeMachineState.STOPPED;
     private Timer mRefreshTimer;
@@ -47,23 +49,24 @@ public class MainActivity extends Activity {
         setContentView(binding.getRoot());
 
         onNativeCreate();
-
         loadSettingsFromNative();
     }
 
     @Override
     protected void onDestroy() {
         stopRefreshPoll();
-        if (tunFd != null) {
-          // stop tun and tun2proxy
-          try {
-              tunFd.close();
-          } catch (IOException e) {
-              //nop
-          }
-          tunFd = null;
+        int ret = tun2ProxyStop();
+        if (ret != 0) {
+            Log.e(TAG, String.format("Unable to run tun2ProxyStop: %d", ret));
         }
-        tun2ProxyStop();
+        if (tun2proxyThread != null) {
+            try {
+                tun2proxyThread.join();
+            } catch (InterruptedException e) {
+                // nop
+            }
+            tun2proxyThread = null;
+        }
         onNativeDestroy();
         super.onDestroy();
     }
@@ -158,12 +161,17 @@ public class MainActivity extends Activity {
 
     private final YassVpnService vpnService = new YassVpnService();
 
-    private ParcelFileDescriptor tunFd = null;
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == VPN_SERVICE_CODE && resultCode == RESULT_OK) {
             onStartVpn();
+            return;
+        }
+        if (requestCode == VPN_SERVICE_CODE) {
+            Log.e(TAG, "vpn service intent not allowed");
+            TextView statusTextView = findViewById(R.id.statusTextView);
+            Resources res = getResources();
+            statusTextView.setText(String.format(res.getString(R.string.status_started_with_errormsg), "No permission to create VPN service"));
             return;
         }
         super.onActivityResult(requestCode, resultCode, data);
@@ -172,16 +180,28 @@ public class MainActivity extends Activity {
     private final int VPN_SERVICE_CODE = 10000;
     private Thread tun2proxyThread;
     private void onStartVpn() {
-        tunFd = vpnService.connect(getApplicationContext());
+        ParcelFileDescriptor tunFd = vpnService.connect(getApplicationContext());
         if (tunFd == null) {
+            Log.e(TAG, "Unable to run create tunFd");
+            TextView statusTextView = findViewById(R.id.statusTextView);
+            Resources res = getResources();
+            statusTextView.setText(String.format(res.getString(R.string.status_started_with_errormsg), "Unable to run create tunFd"));
             return;
         }
+        int fd = tunFd.getFd();
+        tunFd.detachFd();
         tun2proxyThread = new Thread(){
             public void run() {
-                tun2ProxyStart("socks5://127.0.0.1:3000", tunFd.getFd(), vpnService.DEFAULT_MTU, false, true);
+                Log.v(TAG, "tun2proxy thr started");
+                int ret = tun2ProxyStart("socks5://127.0.0.1:3000", fd, vpnService.DEFAULT_MTU, false, true);
+                if (ret != 0) {
+                    // TODO should we handle this error?
+                    Log.e(TAG, String.format("Unable to run tun2ProxyStart: %d", ret));
+                }
+                Log.v(TAG, "tun2proxy thr stopped");
             }
         };
-        tun2proxyThread.setName("tun2proxy");
+        tun2proxyThread.setName("tun2proxy thr");
         tun2proxyThread.start();
 
         Button startButton = findViewById(R.id.startButton);
@@ -207,19 +227,16 @@ public class MainActivity extends Activity {
     }
 
     private void onStopVpn() {
-        try {
-            tunFd.close();
-        } catch (IOException e) {
-            //nop
+        int ret = tun2ProxyStop();
+        if (ret != 0) {
+            Log.e(TAG, String.format("Unable to run tun2ProxyStop: %d", ret));
         }
-        tunFd = null;
-
-        tun2ProxyStop();
         try {
             tun2proxyThread.join();
         } catch (InterruptedException e) {
             // nop
         }
+        tun2proxyThread = null;
         nativeStop();
 
         Button stopButton = findViewById(R.id.stopButton);
@@ -238,42 +255,48 @@ public class MainActivity extends Activity {
 
     private native void nativeStart();
 
+    private void onNativeStartedOnUIThread() {
+        Log.v(TAG, "native thr started");
+        state = NativeMachineState.STARTED;
+        Button stopButton = findViewById(R.id.stopButton);
+        stopButton.setEnabled(true);
+
+        TextView statusTextView = findViewById(R.id.statusTextView);
+        statusTextView.setText(R.string.status_started);
+
+        startRefreshPoll();
+    }
+
+    private void onNativeStartFailedOnUIThread(int error_code) {
+        Log.e(TAG, String.format("native thr start failed: %d", error_code));
+        int ret = tun2ProxyStop();
+        if (ret != 0) {
+            Log.e(TAG, String.format("Unable to run tun2ProxyStop: %d", ret));
+        }
+        try {
+            tun2proxyThread.join();
+        } catch (InterruptedException e) {
+            // nop
+        }
+        tun2proxyThread = null;
+
+        state = NativeMachineState.STOPPED;
+        Button startButton = findViewById(R.id.startButton);
+        startButton.setEnabled(true);
+
+        TextView statusTextView = findViewById(R.id.statusTextView);
+        Resources res = getResources();
+        statusTextView.setText(String.format(res.getString(R.string.status_started_with_error), error_code));
+    }
+
     @SuppressWarnings("unused")
     private void onNativeStarted(int error_code) {
         this.runOnUiThread(new Runnable() {
             public void run() {
                 if (error_code != 0) {
-                    // stop tun and tun2proxy
-                    try {
-                        tunFd.close();
-                    } catch (IOException e) {
-                        //nop
-                    }
-                    tunFd = null;
-
-                    tun2ProxyStop();
-                    try {
-                        tun2proxyThread.join();
-                    } catch (InterruptedException e) {
-                        // nop
-                    }
-
-                    state = NativeMachineState.STOPPED;
-                    Button startButton = findViewById(R.id.startButton);
-                    startButton.setEnabled(true);
-
-                    TextView statusTextView = findViewById(R.id.statusTextView);
-                    Resources res = getResources();
-                    statusTextView.setText(String.format(res.getString(R.string.status_started_with_error), error_code));
+                    onNativeStartFailedOnUIThread(error_code);
                 } else {
-                    state = NativeMachineState.STARTED;
-                    Button stopButton = findViewById(R.id.stopButton);
-                    stopButton.setEnabled(true);
-
-                    TextView statusTextView = findViewById(R.id.statusTextView);
-                    statusTextView.setText(R.string.status_started);
-
-                    startRefreshPoll();
+                    onNativeStartedOnUIThread();
                 }
             }
         });
@@ -320,6 +343,7 @@ public class MainActivity extends Activity {
     private final Handler handler = new Handler();
     private void startRefreshPoll() {
         mRefreshTimer = new Timer();
+        Log.v(TAG, "refresh polling timer started");
         TimerTask mRefreshTimerTask = new TimerTask() {
             @Override
             public void run() {
@@ -342,6 +366,7 @@ public class MainActivity extends Activity {
     }
 
     private void stopRefreshPoll() {
+        Log.v(TAG, "refresh polling timer stopped");
         if (mRefreshTimer != null) {
             mRefreshTimer.cancel();
             mRefreshTimer.purge();

@@ -19,4 +19,5 @@
     <string name="status_ready">READY</string>
     <string name="label_timeout" >Timeout</string>
     <string name="status_current_ip_address">Local IP Address: %s:3000</string>
+    <string name="status_started_with_errormsg">Failed to connect due to %s</string>
 </resources>
