@@ -24,6 +24,7 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatDelegate;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -201,15 +202,20 @@ public class MainActivity extends Activity {
             statusTextView.setText(String.format(res.getString(R.string.status_started_with_error_msg), "Unable to run create tunFd"));
             return;
         }
-        int fd = tunFd.getFd();
-        tunFd.detachFd();
+
         tun2proxyThread = new Thread(){
             public void run() {
                 Log.v(TAG, "tun2proxy thr started");
-                int ret = tun2ProxyStart("socks5://127.0.0.1:3000", fd, vpnService.DEFAULT_MTU, false, true);
+                int fd = tunFd.getFd();
+                int ret = tun2ProxyStart("socks5://127.0.0.1:3000", fd, vpnService.DEFAULT_MTU, true, true);
                 if (ret != 0) {
                     // TODO should we handle this error?
                     Log.e(TAG, String.format("Unable to run tun2ProxyStart: %d", ret));
+                }
+                try {
+                    tunFd.close();
+                } catch (IOException e) {
+                    // nop
                 }
                 Log.v(TAG, "tun2proxy thr stopped");
             }
