@@ -13,12 +13,11 @@
     <string name="status_started">已产生连接: 0</string>
     <string name="status_stopping">停止中</string>
     <string name="status_starting">启动中</string>
-    <string name="status_started_with_error">无法连接因: %d</string>
     <string name="button_start">启动</string>
     <string name="button_stop">停止</string>
     <string name="status_started_with_rate">已产生连接:  %d  上传速率:  %s 下载速率:  %s</string>
     <string name="status_ready">就绪</string>
     <string name="label_timeout">超时时间</string>
     <string name="status_current_ip_address">本地IP地址: %s:3000</string>
-    <string name="status_started_with_errormsg">无法连接因: %s</string>
+    <string name="status_started_with_error_msg">无法连接因: %s</string>
 </resources>
