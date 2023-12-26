@@ -258,7 +258,7 @@ JNIEXPORT jlongArray JNICALL Java_it_gui_yass_MainActivity_getRealtimeTransferRa
   humanReadableByteCountBin(&ss, dresult[2]);
   ss << "/s";
 
-  LOG(INFO) << ss.str();
+  VLOG(1) << ss.str();
   return result;
 }
 
