@@ -20,4 +20,5 @@
     <string name="status_ready">就绪</string>
     <string name="label_timeout">超时时间</string>
     <string name="status_current_ip_address">本地IP地址: %s:3000</string>
+    <string name="status_started_with_errormsg">无法连接因: %s</string>
 </resources>
