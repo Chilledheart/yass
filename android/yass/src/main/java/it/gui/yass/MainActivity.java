@@ -42,6 +42,7 @@ public class MainActivity extends Activity {
         System.loadLibrary("tun2proxy");
     }
     private static final String TAG = "MainActivity";
+    private static final String TUN2PROXY_TAG = "tun2proxy";
 
     private NativeMachineState state = NativeMachineState.STOPPED;
     private Timer mRefreshTimer;
@@ -205,9 +206,22 @@ public class MainActivity extends Activity {
 
         tun2proxyThread = new Thread(){
             public void run() {
-                Log.v(TAG, "tun2proxy thr started");
+                Log.v(TUN2PROXY_TAG, "tun2proxy thr started");
                 int fd = tunFd.getFd();
-                int ret = tun2ProxyStart("socks5://127.0.0.1:3000", fd, vpnService.DEFAULT_MTU, true, true);
+                int log_level = 0;
+                if (Log.isLoggable(TUN2PROXY_TAG, Log.VERBOSE)) {
+                    log_level = 5;
+                } else if (Log.isLoggable(TUN2PROXY_TAG, Log.DEBUG)) {
+                    log_level = 4;
+                } else if (Log.isLoggable(TUN2PROXY_TAG, Log.INFO)) {
+                    log_level = 3;
+                } else if (Log.isLoggable(TUN2PROXY_TAG, Log.WARN)) {
+                    log_level = 2;
+                } else if (Log.isLoggable(TUN2PROXY_TAG, Log.ERROR)) {
+                    log_level = 1;
+                }
+
+                int ret = tun2ProxyStart("socks5://127.0.0.1:3000", fd, vpnService.DEFAULT_MTU, log_level, true);
                 if (ret != 0) {
                     // TODO should we handle this error?
                     Log.e(TAG, String.format("Unable to run tun2ProxyStart: %d", ret));
@@ -217,7 +231,7 @@ public class MainActivity extends Activity {
                 } catch (IOException e) {
                     // nop
                 }
-                Log.v(TAG, "tun2proxy thr stopped");
+                Log.v(TUN2PROXY_TAG, "tun2proxy thr stopped");
             }
         };
         tun2proxyThread.setName("tun2proxy thr");
@@ -338,7 +352,7 @@ public class MainActivity extends Activity {
         });
     }
 
-    private native int tun2ProxyStart(String proxy_url, int tun_fd, int tun_mtu, boolean verbose, boolean dns_over_tcp);
+    private native int tun2ProxyStart(String proxy_url, int tun_fd, int tun_mtu, int log_level, boolean dns_over_tcp);
     private native int tun2ProxyStop();
 
     // first connection number, then rx rate, then tx rate
