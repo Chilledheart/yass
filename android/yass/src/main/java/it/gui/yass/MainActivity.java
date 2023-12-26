@@ -171,7 +171,7 @@ public class MainActivity extends Activity {
             Log.e(TAG, "vpn service intent not allowed");
             TextView statusTextView = findViewById(R.id.statusTextView);
             Resources res = getResources();
-            statusTextView.setText(String.format(res.getString(R.string.status_started_with_errormsg), "No permission to create VPN service"));
+            statusTextView.setText(String.format(res.getString(R.string.status_started_with_error_msg), "No permission to create VPN service"));
             return;
         }
         super.onActivityResult(requestCode, resultCode, data);
@@ -185,7 +185,7 @@ public class MainActivity extends Activity {
             Log.e(TAG, "Unable to run create tunFd");
             TextView statusTextView = findViewById(R.id.statusTextView);
             Resources res = getResources();
-            statusTextView.setText(String.format(res.getString(R.string.status_started_with_errormsg), "Unable to run create tunFd"));
+            statusTextView.setText(String.format(res.getString(R.string.status_started_with_error_msg), "Unable to run create tunFd"));
             return;
         }
         int fd = tunFd.getFd();
@@ -267,8 +267,8 @@ public class MainActivity extends Activity {
         startRefreshPoll();
     }
 
-    private void onNativeStartFailedOnUIThread(int error_code) {
-        Log.e(TAG, String.format("native thr start failed: %d", error_code));
+    private void onNativeStartFailedOnUIThread(String error_msg) {
+        Log.e(TAG, String.format("native thr start failed: %s", error_msg));
         int ret = tun2ProxyStop();
         if (ret != 0) {
             Log.e(TAG, String.format("Unable to run tun2ProxyStop: %d", ret));
@@ -286,15 +286,15 @@ public class MainActivity extends Activity {
 
         TextView statusTextView = findViewById(R.id.statusTextView);
         Resources res = getResources();
-        statusTextView.setText(String.format(res.getString(R.string.status_started_with_error), error_code));
+        statusTextView.setText(String.format(res.getString(R.string.status_started_with_error_msg), error_msg));
     }
 
     @SuppressWarnings("unused")
-    private void onNativeStarted(int error_code) {
+    private void onNativeStarted(String error_msg) {
         this.runOnUiThread(new Runnable() {
             public void run() {
-                if (error_code != 0) {
-                    onNativeStartFailedOnUIThread(error_code);
+                if (error_msg != null) {
+                    onNativeStartFailedOnUIThread(error_msg);
                 } else {
                     onNativeStartedOnUIThread();
                 }
