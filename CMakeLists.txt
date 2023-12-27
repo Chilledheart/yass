@@ -2884,6 +2884,10 @@ elseif (USE_NGHTTP2)
     target_compile_options(nghttp2_static PRIVATE -Wno-extra-semi-stmt)
     target_compile_options(nghttp2_static PRIVATE -Wno-covered-switch-default)
   endif()
+  set(NGHTTP2_INCLUDE_DIRS
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/nghttp2/lib/includes
+    ${CMAKE_CURRENT_BINARY_DIR}/third_party/nghttp2/lib/includes
+    )
   set(NGHTTP2_LIBRARIES nghttp2_static)
   list(APPEND YASS_APP_FEATURES "nghttp2")
   set(SUPPORT_DEFINITIONS
@@ -2891,8 +2895,7 @@ elseif (USE_NGHTTP2)
     ${SUPPORT_DEFINITIONS}
   )
   set(SUPPORT_INCLUDE_DIRS
-    third_party/nghttp2/lib/includes
-    ${CMAKE_CURRENT_BINARY_DIR}/third_party/nghttp2/lib/includes
+    ${NGHTTP2_INCLUDE_DIRS}
     ${SUPPORT_INCLUDE_DIRS}
   )
   set(SUPPORT_LIBS
