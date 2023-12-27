@@ -1,3 +1,8 @@
+yass (1.5.7-1) UNRELEASED; urgency=medium
+
+  * ca-certificates: update for 20230311.3.93 release.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Wed, 27 Dec 2023 10:55:48 +0800
 yass (1.5.6-1) UNRELEASED; urgency=low
 
   * man: add yass_cli and yass_server man pages.

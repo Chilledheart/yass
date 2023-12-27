@@ -2729,39 +2729,6 @@ int main() {
 endif()
 
 # *****************************************************************************************
-#           xxhash Library
-# *****************************************************************************************
-
-if (USE_SYSTEM_XXHASH)
-  find_package(PkgConfig)
-  if (PKG_CONFIG_FOUND)
-    pkg_check_modules(XXHASH libxxhash)
-  endif()
-  if(NOT XXHASH_FOUND)
-    message(STATUS "System xxhash not found, using bundled one")
-    set(USE_SYSTEM_XXHASH FALSE)
-  endif()
-endif()
-
-if (USE_SYSTEM_XXHASH)
-  message(STATUS "Compiling with system xxhash")
-  # ignore broken pkg-config output
-  set(SUPPORT_LIBS xxhash ${SUPPORT_LIBS})
-  list(APPEND YASS_APP_FEATURES "system xxhash")
-else()
-  message(STATUS "Compiling with bundled xxhash")
-  add_library(xxhash STATIC third_party/xxhash/xxhash.c)
-  target_include_directories(xxhash PUBLIC third_party/xxhash)
-
-  if (COMPILER_MSVC)
-    target_compile_options(xxhash PRIVATE "/wd4255")
-  endif()
-
-  list(APPEND YASS_APP_FEATURES "xxhash")
-  set(SUPPORT_LIBS xxhash ${SUPPORT_LIBS})
-endif()
-
-# *****************************************************************************************
 #           Protobuf Library
 # *****************************************************************************************
 
@@ -3399,7 +3366,6 @@ set(files
     src/core/scoped_clear_last_error_win.cpp
     src/core/ref_counted.cpp
     src/core/base64.cpp
-    src/core/hash.cpp
     src/core/thread_collision_warner.hpp
     src/core/thread_collision_warner.cpp
     src/crypto/aead_base_decrypter.cpp
@@ -3473,7 +3439,6 @@ set(hfiles
     src/core/check.hpp
     src/core/atomic_ref_count.hpp
     src/core/ref_counted.hpp
-    src/core/hash.hpp
     src/core/base64.hpp
     src/crypto/aead_base_decrypter.hpp
     src/crypto/aead_base_encrypter.hpp
@@ -4197,7 +4162,7 @@ if(NOT CMAKE_SKIP_INSTALL_RULES)
   file(READ third_party/snappy/src/COPYING                  _SNAPPY_LICENSE)
   file(READ third_party/sqlite/LICENSE                      _SQLITE_LICENSE)
   file(READ third_party/tcmalloc/src/LICENSE                _TCMALLOC_LICENSE)
-  file(READ third_party/xxhash/LICENSE                      _XXHASH_LICENSE)
+  file(READ third_party/tun2proxy/LICENSE                   _TUN2PROXY_LICENSE)
   file(READ third_party/zlib/LICENSE                        _ZLIB_LICENSE)
 
   set(LICENSE_FILE "${CMAKE_CURRENT_BINARY_DIR}/LICENSE")
