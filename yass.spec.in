@@ -87,7 +87,6 @@ BuildRequires: mbedtls-devel
 %if 0%{?fedora} || 0%{?rhel}
 BuildRequires: json-devel
 %endif
-BuildRequires: xxhash-devel
 BuildRequires: zlib-devel
 BuildRequires: libnghttp2-devel
 BuildRequires: gcc, gcc-c++, golang >= 1.4
@@ -119,7 +118,6 @@ cd build
    -DUSE_TCMALLOC=on \
    -DUSE_SYSTEM_ZLIB=on -DUSE_SYSTEM_NGHTTP2=on \
    -DUSE_SYSTEM_MBEDTLS=on -DUSE_SYSTEM_JSON="%enable_system_json_opt" \
-   -DUSE_SYSTEM_XXHASH=on \
    -DUSE_SYSTEM_CARES="%enable_system_cares_opt" -DUSE_LIBCXX="%enable_libcxx_opt" \
    -DENABLE_LLD="%enable_lld_opt" -DUSE_BUILTIN_CA_BUNDLE_CRT=off ..
 ninja

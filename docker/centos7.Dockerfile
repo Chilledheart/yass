@@ -25,6 +25,6 @@ RUN yum clean all && \
     rpm-build rpm-devel rpmlint diffutils patch rpmdevtools \
     cmake3 ninja-build pkgconfig perl golang \
     gtk3-devel zlib-devel c-ares-devel libnghttp2-devel curl-devel \
-    http-parser-devel xxhash-devel json-devel mbedtls-devel && \
+    http-parser-devel json-devel mbedtls-devel && \
   yum clean all && \
   rm -rf /var/cache/yum && rm -rf /var/cache/dnf
