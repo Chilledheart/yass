@@ -741,7 +741,7 @@ target_link_libraries(quiche PUBLIC
   crypto
   ssl
   url
-  yass_base
+  asio
   absl::container_common
   absl::btree
   absl::flat_hash_map
@@ -768,6 +768,8 @@ target_link_libraries(quiche PUBLIC
   )
 
 if (USE_NGHTTP2)
+  target_include_directories(quiche PUBLIC ${NGHTTP2_INCLUDE_DIRS})
+  target_link_directories(quiche PUBLIC ${NGHTTP2_LIBRARY_DIRS})
   target_link_libraries(quiche PUBLIC ${NGHTTP2_LIBRARIES})
 endif()
 
