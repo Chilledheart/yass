@@ -16,10 +16,12 @@ supporting http/socks4/socks4a/socks5 protocol. The server side is experimental.
 More Information refers to [wiki](https://github.com/Chilledheart/yass/wiki)
 
 ## Supported Operating System
+- Android (VpnService support)
 - Windows
 - macOS
-- Linux (including Android and OpenWRT, Ubuntu, CentOS and etc)
+- Linux (including OpenWRT, Ubuntu, CentOS, OpenSUSE Leap, Alpine Linux and etc)
 - FreeBSD
+- iPhone/iPad (iOS, incoming)
 
 ## Build from Source
 Take a look at [BUILDING.md] for more instructions.
