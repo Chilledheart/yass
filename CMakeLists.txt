@@ -4197,6 +4197,7 @@ if(NOT CMAKE_SKIP_INSTALL_RULES)
   file(READ third_party/snappy/src/COPYING                  _SNAPPY_LICENSE)
   file(READ third_party/sqlite/LICENSE                      _SQLITE_LICENSE)
   file(READ third_party/tcmalloc/src/LICENSE                _TCMALLOC_LICENSE)
+  file(READ third_party/tun2proxy/LICENSE                   _TUN2PROXY_LICENSE)
   file(READ third_party/xxhash/LICENSE                      _XXHASH_LICENSE)
   file(READ third_party/zlib/LICENSE                        _ZLIB_LICENSE)
 
