@@ -21,8 +21,8 @@ class Utils {
   static bool SetMixedThreadDpiHostingBehavior();
   // Determine the DPI to use, according to the DPI awareness mode
   static unsigned int GetDpiForWindowOrSystem(HWND hWnd);
-  static bool EnableNonClientDpiScaling(HWND hWnd);
-  static bool SystemParametersInfoForDpi(UINT uiAction, UINT uiParam, PVOID pvParam, UINT fWinIni, UINT dpi);
+  static bool EnableNonClientDpiScalingInt(HWND hWnd);
+  static bool SystemParametersInfoForDpiInt(UINT uiAction, UINT uiParam, PVOID pvParam, UINT fWinIni, UINT dpi);
   static bool GetUserDefaultLocaleName(std::wstring* localeName);
 
   static bool GetAutoStart();

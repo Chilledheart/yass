@@ -106,7 +106,7 @@ static void UpdateFontForDpi(HWND hWnd, UINT uDpi) {
   // Send a new font to all child controls (the 'plugin' content is subclassed to ignore WM_SETFONT)
   HFONT hFontOld = GetWindowFont(hWnd);
   LOGFONTW lfText = {};
-  if (!Utils::SystemParametersInfoForDpi(SPI_GETICONTITLELOGFONT, sizeof(lfText), &lfText, FALSE, uDpi)) {
+  if (!Utils::SystemParametersInfoForDpiInt(SPI_GETICONTITLELOGFONT, sizeof(lfText), &lfText, FALSE, uDpi)) {
     ApplyDefaultSystemFont(hWnd, uDpi);
     return;
   }
@@ -568,7 +568,7 @@ LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam,
       // for this via a call to EnableNonClientDpiScaling. Windows 10 (1703)
       // supports this automatically when the DPI_AWARENESS_CONTEXT is
       // DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2.
-      if (!Utils::EnableNonClientDpiScaling(hWnd)) {
+      if (!Utils::EnableNonClientDpiScalingInt(hWnd)) {
         PLOG(WARNING) << "Internal error: EnableNonClientDpiScaling failed";
       }
 
