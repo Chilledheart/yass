@@ -277,6 +277,9 @@ string(REPLACE ";" " " COMPILE_FLAGS "${COMPILE_FLAGS}")
 # The assignments to the _INITIAL cache variables don't use FORCE, so they'll
 # only be populated on the initial configure, and their values won't change
 # afterward.
+set(_CMAKE_ASM_FLAGS_INITIAL "${CMAKE_ASM_FLAGS}" CACHE STRING "")
+set(CMAKE_ASM_FLAGS "${_CMAKE_ASM_FLAGS_INITIAL} ${COMPILE_FLAGS}" CACHE STRING "" FORCE)
+
 set(_CMAKE_C_FLAGS_INITIAL "${CMAKE_C_FLAGS}" CACHE STRING "")
 set(CMAKE_C_FLAGS "${_CMAKE_C_FLAGS_INITIAL} ${COMPILE_FLAGS}" CACHE STRING "" FORCE)
 
