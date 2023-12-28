@@ -65,7 +65,11 @@ ABSL_FLAG(bool, use_ca_bundle_crt,
 #endif // HAVE_BUILTIN_CA_BUNDLE_CRT
 
 std::ostream& operator<<(std::ostream& o, asio::error_code ec) {
+#ifdef _WIN32
+  return o << ec.message() << " value: " << ec.value();
+#else
   return o << ec.message();
+#endif
 }
 
 static void print_openssl_error() {

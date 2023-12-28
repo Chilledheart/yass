@@ -247,17 +247,11 @@ class SsEndToEndBM : public benchmark::Fixture {
     asio::post(io_context_, [this, &m, &done]() {
       std::lock_guard<std::mutex> lk(m);
       auto ec = StartContentProvider(GetReusableEndpoint(), SOMAXCONN);
-      if (ec) {
-        return;
-      }
+      CHECK(!ec) << "Connection (content-provider) start cp failed " << ec;
       ec = StartServer(GetReusableEndpoint(), SOMAXCONN);
-      if (ec) {
-        return;
-      }
+      CHECK(!ec) << "Connection (content-provider) start yass server failed " << ec;
       ec = StartLocal(server_endpoint_, GetReusableEndpoint(), SOMAXCONN);
-      if (ec) {
-        return;
-      }
+      CHECK(!ec) << "Connection (content-provider) start yass local failed " << ec;
       done = true;
     });
     while (true) {
