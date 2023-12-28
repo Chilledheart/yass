@@ -4,6 +4,20 @@
 // We use dynamic loading for below functions
 #define GetDeviceCaps GetDeviceCapsHidden
 #define SetProcessDPIAware SetProcessDPIAwareHidden
+#define GetDpiForMonitor GetDpiForMonitorHidden
+#define GetThreadDpiAwarenessContext GetThreadDpiAwarenessContextHidden
+#define GetWindowDpiAwarenessContext GetWindowDpiAwarenessContextHidden
+#define GetAwarenessFromDpiAwarenessContext GetAwarenessFromDpiAwarenessContextHidden
+#define SetProcessDpiAwarenessContext SetProcessDpiAwarenessContextHidden
+#define SetThreadDpiAwarenessContext SetThreadDpiAwarenessContextHidden
+#define IsValidDpiAwarenessContext IsValidDpiAwarenessContextHidden
+#define AreDpiAwarenessContextsEqual AreDpiAwarenessContextsEqualHidden
+#define GetDpiForSystem GetDpiForSystemHidden
+#define GetDpiForWindow GetDpiForWindowHidden
+#define GetDpiFromDpiAwarenessContext GetDpiFromDpiAwarenessContextHidden
+#define SetThreadDpiHostingBehavior SetThreadDpiHostingBehaviorHidden
+#define EnableNonClientDpiScaling EnableNonClientDpiScalingHidden
+#define SystemParametersInfoForDpi SystemParametersInfoForDpiHidden
 
 #include "win32/utils.hpp"
 
@@ -162,6 +176,20 @@ typedef int(__stdcall* PFNGETUSERDEFAULTLOCALENAME)(LPWSTR lpLocaleName, int cch
 // We use dynamic loading for below functions
 #undef GetDeviceCaps
 #undef SetProcessDPIAware
+#undef GetDpiForMonitor
+#undef GetThreadDpiAwarenessContext
+#undef GetWindowDpiAwarenessContext
+#undef GetAwarenessFromDpiAwarenessContext
+#undef SetProcessDpiAwarenessContext
+#undef SetThreadDpiAwarenessContext
+#undef IsValidDpiAwarenessContext
+#undef AreDpiAwarenessContextsEqual
+#undef GetDpiForSystem
+#undef GetDpiForWindow
+#undef GetDpiFromDpiAwarenessContext
+#undef SetThreadDpiHostingBehavior
+#undef EnableNonClientDpiScaling
+#undef SystemParametersInfoForDpi
 
 namespace {
 
@@ -689,11 +717,11 @@ unsigned int Utils::GetDpiForWindowOrSystem(HWND hWnd) {
   return ydpi;
 }
 
-bool Utils::EnableNonClientDpiScaling(HWND hWnd) {
+bool Utils::EnableNonClientDpiScalingInt(HWND hWnd) {
   return ::EnableNonClientDpiScaling(hWnd) == TRUE;
 }
 
-bool Utils::SystemParametersInfoForDpi(UINT uiAction, UINT uiParam, PVOID pvParam, UINT fWinIni, UINT dpi) {
+bool Utils::SystemParametersInfoForDpiInt(UINT uiAction, UINT uiParam, PVOID pvParam, UINT fWinIni, UINT dpi) {
   return ::SystemParametersInfoForDpi(uiAction, uiParam, pvParam, fWinIni, dpi) == TRUE;
 }
 
