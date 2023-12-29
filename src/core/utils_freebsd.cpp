@@ -48,7 +48,7 @@ uint64_t GetMonotonicTime() {
   if (!started) {
     ret = clock_gettime(CLOCK_MONOTONIC, &start_ts);
     if (ret < 0) {
-      LOG(WARNING) << "clock_gettime failed";
+      PLOG(WARNING) << "clock_gettime failed";
       return 0;
     }
     started = true;
@@ -57,7 +57,7 @@ uint64_t GetMonotonicTime() {
 
   ret = clock_gettime(CLOCK_MONOTONIC, &ts);
   if (ret < 0) {
-    LOG(WARNING) << "clock_gettime failed";
+    PLOG(WARNING) << "clock_gettime failed";
     return 0;
   }
   return static_cast<double>(ts.tv_sec - start_ts.tv_sec) * NS_PER_SECOND +
