@@ -5,6 +5,7 @@
 
 #include "core/cipher.hpp"
 
+#include <atomic>
 #include <memory>
 #include <thread>
 
@@ -55,6 +56,7 @@ class Worker {
 
   WorkerPrivate *private_;
   std::vector<asio::ip::tcp::endpoint> endpoints_;
+  std::atomic_bool in_destroy_ = false;
 };
 
 #endif  // YASS_CLI_WORKER

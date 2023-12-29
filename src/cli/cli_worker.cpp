@@ -39,28 +39,9 @@ Worker::Worker()
 #endif
 
   CRYPTO_library_init();
-}
 
-Worker::~Worker() {
-  start_callback_ = nullptr;
-  stop_callback_ = nullptr;
-  Stop(nullptr);
-
-  if (thread_ && thread_->joinable())
-    thread_->join();
-
-  delete private_;
-}
-
-void Worker::Start(absl::AnyInvocable<void(asio::error_code)> &&callback) {
-  if (thread_ && thread_->joinable())
-    thread_->join();
-  DCHECK(!start_callback_);
-  start_callback_ = std::move(callback);
-  DCHECK_EQ(private_->cli_server.get(), nullptr);
-
-  /// listen in the worker thread
   thread_ = std::make_unique<std::thread>([this] { WorkFunc(); });
+
   asio::post(io_context_, [this]() {
     if (!SetThreadName(thread_->native_handle(), "background")) {
       PLOG(WARNING) << "failed to set thread name";
@@ -69,7 +50,27 @@ void Worker::Start(absl::AnyInvocable<void(asio::error_code)> &&callback) {
       PLOG(WARNING) << "failed to set thread priority";
     }
   });
+}
+
+Worker::~Worker() {
+  start_callback_ = nullptr;
+  stop_callback_ = nullptr;
+  in_destroy_ = true;
+
+  Stop(nullptr);
+  thread_->join();
+
+  delete private_;
+}
+
+void Worker::Start(absl::AnyInvocable<void(asio::error_code)> &&callback) {
+  DCHECK(!start_callback_);
+  start_callback_ = std::move(callback);
+
+  /// listen in the worker thread
   asio::post(io_context_, [this]() {
+    DCHECK_EQ(private_->cli_server.get(), nullptr);
+
     std::string host_name = absl::GetFlag(FLAGS_local_host);
     uint16_t port = absl::GetFlag(FLAGS_local_port);
 
@@ -100,12 +101,6 @@ void Worker::Stop(absl::AnyInvocable<void()> &&callback) {
   DCHECK(!stop_callback_);
   stop_callback_ = std::move(callback);
   /// stop in the worker thread
-  if (!thread_) {
-    if (auto cb = std::move(stop_callback_)) {
-      cb();
-    }
-    return;
-  }
   asio::post(io_context_ ,[this]() {
 #ifdef HAVE_C_ARES
     resolver_->Cancel();
@@ -114,8 +109,10 @@ void Worker::Stop(absl::AnyInvocable<void()> &&callback) {
 #endif
 
     if (private_->cli_server) {
+      LOG(INFO) << "tcp server stops listen";
       private_->cli_server->stop();
     }
+
     work_guard_.reset();
   });
 }
@@ -135,23 +132,22 @@ std::string Worker::GetRemoteDomain() const {
 }
 
 void Worker::WorkFunc() {
-  asio::error_code ec;
-  LOG(INFO) << "native thread started";
+  LOG(INFO) << "background thread started";
+  while (!in_destroy_) {
+    work_guard_ = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context_.get_executor());
+    io_context_.run();
+    io_context_.restart();
+    private_->cli_server.reset();
 
-  work_guard_ = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context_.get_executor());
-  io_context_.run();
-  io_context_.restart();
-  private_->cli_server.reset();
-
-  auto callback = std::move(stop_callback_);
-  if (callback) {
-    callback();
+    auto callback = std::move(stop_callback_);
+    DCHECK(!stop_callback_);
+    if (callback) {
+      callback();
+    }
+    LOG(INFO) << "background thread finished cleanup";
   }
-  DCHECK(!stop_callback_);
-
-  LOG(INFO) << "native thread stopped";
+  LOG(INFO) << "background thread stopped";
 }
-
 void Worker::on_resolve_local(asio::error_code ec,
                               asio::ip::tcp::resolver::results_type results) {
   auto callback = std::move(start_callback_);
@@ -178,10 +174,11 @@ void Worker::on_resolve_local(asio::error_code ec,
       break;
     }
     endpoint = private_->cli_server->endpoint();
-    LOG(WARNING) << "tcp server listening at " << endpoint;
+    LOG(INFO) << "tcp server listening at " << endpoint;
   }
 
   if (ec) {
+    LOG(WARNING) << "tcp server stops listen due to error: " << ec;
     private_->cli_server->stop();
     work_guard_.reset();
   }
