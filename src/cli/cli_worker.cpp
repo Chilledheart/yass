@@ -101,6 +101,9 @@ void Worker::Stop(absl::AnyInvocable<void()> &&callback) {
   stop_callback_ = std::move(callback);
   /// stop in the worker thread
   if (!thread_) {
+    if (auto cb = std::move(stop_callback_)) {
+      cb();
+    }
     return;
   }
   asio::post(io_context_ ,[this]() {
@@ -133,7 +136,7 @@ std::string Worker::GetRemoteDomain() const {
 
 void Worker::WorkFunc() {
   asio::error_code ec;
-  VLOG(1) << "background thread started";
+  LOG(INFO) << "native thread started";
 
   work_guard_ = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context_.get_executor());
   io_context_.run();
@@ -146,7 +149,7 @@ void Worker::WorkFunc() {
   }
   DCHECK(!stop_callback_);
 
-  VLOG(1) << "background thread stopped";
+  LOG(INFO) << "native thread stopped";
 }
 
 void Worker::on_resolve_local(asio::error_code ec,

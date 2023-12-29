@@ -8,21 +8,23 @@ import android.net.ProxyInfo;
 import android.net.VpnService;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
+import android.util.Log;
 
 public class YassVpnService extends VpnService {
+    private static final String TAG = "YassVpnService";
     public int DEFAULT_MTU = 1500;
     private String PRIVATE_VLAN4_CLIENT = "172.19.0.1";
     private String PRIVATE_VLAN4_GATEWAY = "172.19.0.2";
     private String PRIVATE_VLAN6_CLIENT = "fdfe:dcba:9876::1";
     private String PRIVATE_VLAN6_GATEWAY = "fdfe:dcba:9876::2";
 
-    public ParcelFileDescriptor connect(Context context) {
+    public ParcelFileDescriptor connect(String session_name, Context context) {
         Builder builder = new Builder();
 
         builder.setConfigureIntent(PendingIntent.getActivity(context, 0,
                 new Intent(context, MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT),
                 PendingIntent.FLAG_IMMUTABLE));
-        builder.setSession("session");
+        builder.setSession(session_name);
         builder.setMtu(DEFAULT_MTU);
         builder.addAddress(PRIVATE_VLAN4_CLIENT, 30);
         builder.addAddress(PRIVATE_VLAN6_CLIENT, 126);
@@ -36,8 +38,9 @@ public class YassVpnService extends VpnService {
             builder.setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", 3000));
         }
         try {
-            builder.addDisallowedApplication("it.gui.yass");
+            builder.addDisallowedApplication(context.getPackageName());
         } catch (PackageManager.NameNotFoundException e) {
+            Log.e(TAG, "Cannot add self to disallowed package list");
             // nop
         }
 
