@@ -7,7 +7,6 @@ import android.app.UiModeManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
-import android.content.res.Resources;
 import android.net.ConnectivityManager;
 import android.net.wifi.WifiManager;
 import android.os.Build;
@@ -42,6 +41,7 @@ public class MainActivity extends Activity {
         System.loadLibrary("tun2proxy");
     }
     private static final String TAG = "MainActivity";
+    private static final String YASS_TAG = "yass";
     private static final String TUN2PROXY_TAG = "tun2proxy";
 
     private NativeMachineState state = NativeMachineState.STOPPED;
@@ -64,26 +64,18 @@ public class MainActivity extends Activity {
         } else {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
         }
-
+        Log.i(TAG, "onCreate done");
     }
 
     @Override
     protected void onDestroy() {
         stopRefreshPoll();
-        int ret = tun2ProxyStop();
-        if (ret != 0) {
-            Log.e(TAG, String.format("Unable to run tun2ProxyStop: %d", ret));
-        }
-        if (tun2proxyThread != null) {
-            try {
-                tun2proxyThread.join();
-            } catch (InterruptedException e) {
-                // nop
-            }
-            tun2proxyThread = null;
+        if (state == NativeMachineState.STARTED || state == NativeMachineState.STARTING) {
+            onStopVpn();
         }
         onNativeDestroy();
         super.onDestroy();
+        Log.i(TAG, "onDestroy done");
     }
 
     private native void onNativeCreate();
@@ -149,8 +141,7 @@ public class MainActivity extends Activity {
         } catch (UnknownHostException e) {
             // nop
         }
-        Resources res = getResources();
-        currentIpTextView.setText(String.format(res.getString(R.string.status_current_ip_address), currentIp));
+        currentIpTextView.setText(String.format(getString(R.string.status_current_ip_address), currentIp));
 
         Button stopButton = findViewById(R.id.stopButton);
         stopButton.setEnabled(false);
@@ -178,29 +169,27 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == VPN_SERVICE_CODE && resultCode == RESULT_OK) {
+        if (requestCode == VPN_REQUEST_CODE && resultCode == RESULT_OK) {
             onStartVpn();
             return;
         }
-        if (requestCode == VPN_SERVICE_CODE) {
+        if (requestCode == VPN_REQUEST_CODE) {
             Log.e(TAG, "vpn service intent not allowed");
             TextView statusTextView = findViewById(R.id.statusTextView);
-            Resources res = getResources();
-            statusTextView.setText(String.format(res.getString(R.string.status_started_with_error_msg), "No permission to create VPN service"));
+            statusTextView.setText(String.format(getString(R.string.status_started_with_error_msg), "No permission to create VPN service"));
             return;
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-    private final int VPN_SERVICE_CODE = 10000;
+    private final int VPN_REQUEST_CODE = 10000;
     private Thread tun2proxyThread;
     private void onStartVpn() {
-        ParcelFileDescriptor tunFd = vpnService.connect(getApplicationContext());
+        ParcelFileDescriptor tunFd = vpnService.connect(getString(R.string.app_name), getApplicationContext());
         if (tunFd == null) {
             Log.e(TAG, "Unable to run create tunFd");
             TextView statusTextView = findViewById(R.id.statusTextView);
-            Resources res = getResources();
-            statusTextView.setText(String.format(res.getString(R.string.status_started_with_error_msg), "Unable to run create tunFd"));
+            statusTextView.setText(String.format(getString(R.string.status_started_with_error_msg), "Unable to run create tunFd"));
             return;
         }
 
@@ -224,7 +213,7 @@ public class MainActivity extends Activity {
                 int ret = tun2ProxyStart("socks5://127.0.0.1:3000", fd, vpnService.DEFAULT_MTU, log_level, true);
                 if (ret != 0) {
                     // TODO should we handle this error?
-                    Log.e(TAG, String.format("Unable to run tun2ProxyStart: %d", ret));
+                    Log.e(TUN2PROXY_TAG, String.format("Unable to run tun2ProxyStart: %d", ret));
                 }
                 try {
                     tunFd.close();
@@ -252,9 +241,9 @@ public class MainActivity extends Activity {
 
             Intent intent = YassVpnService.prepare(getApplicationContext());
             if (intent == null) {
-                onActivityResult(VPN_SERVICE_CODE, RESULT_OK, null);
+                onActivityResult(VPN_REQUEST_CODE, RESULT_OK, null);
             } else {
-                startActivityForResult(intent, VPN_SERVICE_CODE);
+                startActivityForResult(intent, VPN_REQUEST_CODE);
             }
         }
     }
@@ -262,7 +251,7 @@ public class MainActivity extends Activity {
     private void onStopVpn() {
         int ret = tun2ProxyStop();
         if (ret != 0) {
-            Log.e(TAG, String.format("Unable to run tun2ProxyStop: %d", ret));
+            Log.e(TUN2PROXY_TAG, String.format("Unable to run tun2ProxyStop: %d", ret));
         }
         try {
             tun2proxyThread.join();
@@ -289,7 +278,7 @@ public class MainActivity extends Activity {
     private native void nativeStart();
 
     private void onNativeStartedOnUIThread() {
-        Log.v(TAG, "native thr started");
+
         state = NativeMachineState.STARTED;
         Button stopButton = findViewById(R.id.stopButton);
         stopButton.setEnabled(true);
@@ -301,7 +290,6 @@ public class MainActivity extends Activity {
     }
 
     private void onNativeStartFailedOnUIThread(String error_msg) {
-        Log.e(TAG, String.format("native thr start failed: %s", error_msg));
         int ret = tun2ProxyStop();
         if (ret != 0) {
             Log.e(TAG, String.format("Unable to run tun2ProxyStop: %d", ret));
@@ -318,12 +306,16 @@ public class MainActivity extends Activity {
         startButton.setEnabled(true);
 
         TextView statusTextView = findViewById(R.id.statusTextView);
-        Resources res = getResources();
-        statusTextView.setText(String.format(res.getString(R.string.status_started_with_error_msg), error_msg));
+        statusTextView.setText(String.format(getString(R.string.status_started_with_error_msg), error_msg));
     }
 
     @SuppressWarnings("unused")
     private void onNativeStarted(String error_msg) {
+        if (error_msg != null) {
+            Log.e(YASS_TAG, String.format("yass thr start failed: %s", error_msg));
+        } else {
+            Log.v(YASS_TAG, "yass thr started");
+        }
         this.runOnUiThread(new Runnable() {
             public void run() {
                 if (error_msg != null) {
@@ -339,6 +331,7 @@ public class MainActivity extends Activity {
 
     @SuppressWarnings("unused")
     private void onNativeStopped() {
+        Log.v(YASS_TAG, "yass thr stopped");
         this.runOnUiThread(new Runnable() {
             public void run() {
                 state = NativeMachineState.STOPPED;
@@ -346,8 +339,7 @@ public class MainActivity extends Activity {
                 startButton.setEnabled(true);
 
                 TextView statusTextView = findViewById(R.id.statusTextView);
-                Resources res = getResources();
-                statusTextView.setText(String.format(res.getString(R.string.status_stopped), getServerHost(), getServerPort()));
+                statusTextView.setText(String.format(getString(R.string.status_stopped), getServerHost(), getServerPort()));
             }
         });
     }
@@ -385,8 +377,7 @@ public class MainActivity extends Activity {
                     public void run() {
                         long[] result = getRealtimeTransferRate();
                         TextView statusTextView = findViewById(R.id.statusTextView);
-                        Resources res = getResources();
-                        statusTextView.setText(String.format(res.getString(R.string.status_started_with_rate),
+                        statusTextView.setText(String.format(getString(R.string.status_started_with_rate),
                                 result[0],
                                 humanReadableByteCountBin(result[1]),
                                 humanReadableByteCountBin(result[2])));

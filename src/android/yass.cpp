@@ -191,10 +191,7 @@ JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStart(JNIEnv *env, jo
   cli::total_rx_bytes = 0;
 
   g_worker->Start([&](asio::error_code ec) {
-    if (ec) {
-      LOG(WARNING) << "Start Failed: " << ec;
-    } else {
-      LOG(WARNING) << "Started";
+    if (!ec) {
       config::SaveConfig();
     }
     std::ostringstream ss;
@@ -207,7 +204,6 @@ JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStart(JNIEnv *env, jo
 
 JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStop(JNIEnv *env, jobject obj) {
   g_worker->Stop([&]() {
-    LOG(WARNING) << "Stopped";
     CallOnNativeStopped(g_jvm, g_activity_obj);
   });
 }

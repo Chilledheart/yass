@@ -17,6 +17,7 @@
 #include "core/process_utils.hpp"
 // Include for NO_SANITIZE_MEMORY
 #include "core/compiler_specific.hpp"
+#include "version.h"
 
 #define _GNU_SOURCE 1  // needed for O_NOFOLLOW and pread()/pwrite()
 
@@ -1162,7 +1163,7 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
         priority = ANDROID_LOG_FATAL;
         break;
     }
-    constexpr char kLogTag[] = "yass";
+    constexpr char kLogTag[] = YASS_APP_NAME;
 
 #if DCHECK_IS_ON()
     // Split the output by new lines to prevent the Android system from
@@ -2149,9 +2150,11 @@ void LogMessage::Flush() {
   LogDestination::WaitForSinks(data_);
 
 #if defined(OS_ANDROID)
+  constexpr char kLogTag[] = YASS_APP_NAME;
+
   const int level = AndroidLogLevel(data_->severity_);
   const std::string text = std::string(data_->message_text_);
-  __android_log_write(level, "native",
+  __android_log_write(level, kLogTag,
                       text.substr(0, data_->num_chars_to_log_).c_str());
 #endif  // defined(OS_ANDROID)
 
