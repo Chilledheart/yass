@@ -148,7 +148,7 @@ static int load_ca_to_ssl_ctx_path(SSL_CTX* ssl_ctx, const std::string &dir_path
   dir = _wopendir(wdir_path.c_str());
   if (dir != nullptr) {
     while((dent=_wreaddir(dir))!=nullptr) {
-      if (dent->d_type != DT_REG) {
+      if (dent->d_type != DT_REG && dent->d_type != DT_LNK) {
         continue;
       }
       std::filesystem::path wca_bundle = std::filesystem::path(wdir_path) / dent->d_name;
@@ -167,7 +167,7 @@ static int load_ca_to_ssl_ctx_path(SSL_CTX* ssl_ctx, const std::string &dir_path
   dir = opendir(dir_path.c_str());
   if (dir != nullptr) {
     while((dent=readdir(dir))!=nullptr) {
-      if (dent->d_type != DT_REG) {
+      if (dent->d_type != DT_REG && dent->d_type != DT_LNK) {
         continue;
       }
       std::string ca_bundle = dir_path + "/" + dent->d_name;
