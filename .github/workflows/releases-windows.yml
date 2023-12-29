@@ -29,6 +29,8 @@ on:
     - '.cirrus.yml'
   release:
     types: [published]
+  schedule:
+    - cron: '0 0 * * *'
 defaults:
   run:
     shell: cmd

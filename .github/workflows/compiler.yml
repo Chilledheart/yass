@@ -27,6 +27,8 @@ on:
     - '**/*.md'
     - '.circleci/**'
     - '.cirrus.yml'
+  schedule:
+    - cron: '0 0 * * *'
 env:
   CACHE_EPOCH: 121-2
   GOPROXY: direct

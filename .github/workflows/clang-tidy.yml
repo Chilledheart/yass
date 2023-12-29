@@ -15,6 +15,8 @@ on:
         description: 'Test scenario tags'
         required: false
         type: boolean
+  schedule:
+    - cron: '0 0 * * *'
 env:
   CACHE_EPOCH: 121-2
   GOPROXY: direct

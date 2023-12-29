@@ -29,6 +29,8 @@ on:
     - '.cirrus.yml'
   release:
     types: [published]
+  schedule:
+    - cron: '0 0 * * *'
 env:
   CACHE_EPOCH: 121-2
   GOPROXY: direct
