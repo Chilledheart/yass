@@ -15,6 +15,8 @@
 #include "gtk4/yass.hpp"
 #include "version.h"
 
+#include <gtk/gtkwindow.h>
+
 static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   if (bytes < 1024) {
     *ss << bytes << " B";
@@ -116,6 +118,9 @@ YASSWindow::YASSWindow(GApplication *app)
   gtk_window_set_icon_name(GTK_WINDOW(impl_), "yass");
 
   static YASSWindow* window = this;
+
+  // forward to hide event
+  gtk_window_set_hide_on_close(GTK_WINDOW(impl_), TRUE);
 
   auto hide_callback = []() { window->OnClose(); };
   g_signal_connect(G_OBJECT(impl_), "hide",
