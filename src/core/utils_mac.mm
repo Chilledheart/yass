@@ -15,13 +15,13 @@
 #include <locale.h>
 #include <mach/mach_init.h>
 #include <mach/mach_port.h>
-#include <mach/mach_time.h>
 #include <mach/vm_map.h>
 #include <mach-o/dyld.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <sys/mman.h>  // For mlock.
 #include <sys/resource.h>
+#include <time.h>
 
 #include <base/strings/sys_string_conversions.h>
 #include "core/logging.hpp"
@@ -76,20 +76,6 @@ bool SetThreadName(std::thread::native_handle_type handle,
   // pthread_setname() fails (harmlessly) in the sandbox, ignore when it does.
   // See http://crbug.com/47058
   return pthread_setname_np(name.c_str()) == 0;
-}
-
-static uint64_t MachTimeToNanoseconds(uint64_t machTime) {
-  uint64_t nanoseconds = 0;
-  static mach_timebase_info_data_t sTimebase;
-  if (sTimebase.denom == 0) {
-    kern_return_t mtiStatus = mach_timebase_info(&sTimebase);
-    assert(mtiStatus == KERN_SUCCESS && "mach_timebase_info failure");
-    (void)mtiStatus;
-  }
-
-  nanoseconds = ((machTime * sTimebase.numer) / sTimebase.denom);
-
-  return nanoseconds;
 }
 
 static std::string protection_str(vm_prot_t prot) {
@@ -484,8 +470,12 @@ bool MemoryLockAll() {
 }
 
 uint64_t GetMonotonicTime() {
-  uint64_t now = mach_absolute_time();
-  return MachTimeToNanoseconds(now);
+  // https://www.manpagez.com/man/3/clock_gettime_nsec_np/
+  // CLOCK_UPTIME_RAW is the same with mach_absolute_time();
+  // but CLOCK_UPTIME_RAW does not increment while the system is asleep.
+  //
+  // use CLOCK_MONOTONIC_RAW here for continuing to increment while the system is asleep
+  return clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
 }
 
 // TBD
