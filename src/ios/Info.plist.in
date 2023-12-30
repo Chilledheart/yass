@@ -31,7 +31,7 @@
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
     <key>NSHumanReadableCopyright</key>
-    <string>Copyright 2023 Chilledheart. All rights reserved.</string>
+    <string>@YASS_APP_COPYRIGHT@</string>
     <key>UIMainStoryboardFile</key>
     <string>Main</string>
     <key>LSApplicationCategoryType</key>
