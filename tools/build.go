@@ -1991,6 +1991,10 @@ func postStateArchives() map[string][]string {
 		}
 	}
 
+	// copying manpages if any
+	if (variantFlag == "cli" || variantFlag == "server") && (systemNameFlag == "linux" || systemNameFlag == "freebsd") {
+		paths = append(paths, fmt.Sprintf("../doc/%s.1", APPNAME))
+	}
 	// copying dependent crashpad handler if any
 	if hasCrashpad {
 		paths = append(paths, "crashpad_handler.exe")
