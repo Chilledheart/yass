@@ -17,7 +17,7 @@ endif()
 # config that is applied to all targets. It is here to separate out the logic
 # that is specific to libc++. Please see that target for advice on what should
 # go in :runtime_library vs. :compiler.
-if (BUILD_SHARED_LIBS OR MSVC_CRT_LINKAGE STREQUAL "dynamic")
+if (BUILD_SHARED_LIBS)
   set(libcxx_SHARED ON)
 else()
   set(libcxx_SHARED OFF)

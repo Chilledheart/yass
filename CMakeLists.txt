@@ -2264,7 +2264,7 @@ set(SUPPORT_LIBS url ${SUPPORT_LIBS})
 
 set(_CRASHPAD_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/third_party/crashpad/crashpad/out/Default-${MSVC_C_ARCHITECTURE_ID}")
 set(_CRASHPAD_BINARY_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/third_party/crashpad/crashpad/out/Binary-${MSVC_C_ARCHITECTURE_ID}")
-if (MSVC AND NOT ALLOW_XP AND ${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS "${_CRASHPAD_PREFIX}/obj/client/client.lib")
+if (MSVC AND MSVC_CRT_LINKAGE STREQUAL "static" AND NOT ALLOW_XP AND ${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS "${_CRASHPAD_PREFIX}/obj/client/client.lib")
   message(STATUS "Compiling with bundled crashpad client library")
   add_library(crashpad_common STATIC IMPORTED)
   set_property(TARGET crashpad_common PROPERTY
