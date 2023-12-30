@@ -16,7 +16,7 @@ on:
         required: false
         type: boolean
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 16 * * *'
 env:
   CACHE_EPOCH: 121-2
   GOPROXY: direct
