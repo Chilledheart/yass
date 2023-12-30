@@ -16,6 +16,8 @@ import (
 	"strconv"
 	"strings"
 	"bytes"
+	"reflect"
+	"regexp"
 
 	"github.com/golang/glog"
 	"github.com/google/uuid"
@@ -1088,10 +1090,276 @@ func buildStageExecuteBuildScript() {
 	}
 }
 
+func GetWin32SearchPath() []string {
+	// no search when using libc++,
+	// TODO test under shaded libc++
+
+	// VCToolsVersion:PlatformToolchainversion:VisualStudioVersion
+	//  14.30-14.3?:v143:Visual Studio 2022
+	//  14.20-14.29:v142:Visual Studio 2019
+	//  14.10-14.19:v141:Visual Studio 2017
+	//  14.00-14.00:v140:Visual Studio 2015
+	//
+	//  From wiki: https://en.wikipedia.org/wiki/Microsoft_Visual_C%2B%2B
+	//  https://docs.microsoft.com/en-us/cpp/preprocessor/predefined-macros?view=msvc-170#microsoft-specific-predefined-macros
+	//  6.00    Visual Studio 6.0                          1200
+	//  7.00    Visual Studio .NET 2002 (7.0)              1300
+	//  7.10    Visual Studio .NET 2003 (7.1)              1310
+	//  8.00    Visual Studio 2005 (8.0)                   1400
+	//  9.00    Visual Studio 2008 (9.0)                   1500
+	//  10.00   Visual Studio 2010 (10.0)                  1600
+	//  12.00   Visual Studio 2013 (12.0)                  1800
+	//  14.00   Visual Studio 2015 (14.0)                  1900
+	//  14.10   Visual Studio 2017 RTW (15.0)              1910
+	//  14.11   Visual Studio 2017 version 15.3            1911
+	//  14.12   Visual Studio 2017 version 15.5            1912
+	//  14.13   Visual Studio 2017 version 15.6            1913
+	//  14.14   Visual Studio 2017 version 15.7            1914
+	//  14.15   Visual Studio 2017 version 15.8            1915
+	//  14.16   Visual Studio 2017 version 15.9            1916
+	//  14.20   Visual Studio 2019 RTW (16.0)              1920
+	//  14.21   Visual Studio 2019 version 16.1            1921
+	//  14.22   Visual Studio 2019 version 16.2            1922
+	//  14.23   Visual Studio 2019 version 16.3            1923
+	//  14.24   Visual Studio 2019 version 16.4            1924
+	//  14.25   Visual Studio 2019 version 16.5            1925
+	//  14.26   Visual Studio 2019 version 16.6            1926
+	//  14.27   Visual Studio 2019 version 16.7            1927
+	//  14.28   Visual Studio 2019 version 16.8, 16.9      1928
+	//  14.29   Visual Studio 2019 version 16.10, 16.11    1929
+	//  14.30   Visual Studio 2022 RTW (17.0)              1930
+	//  14.31   Visual Studio 2022 version 17.1            1931
+	//
+	//  Visual Studio 2015 is not supported by this script due to
+	//  the missing environment variable VCToolsVersion
+	vctoolsVersionStr := os.Getenv("VCToolsVersion")
+	var vctoolsVersion float64
+	if len(vctoolsVersionStr) >= 4 {
+		// for vc141 or above, VCToolsVersion=14.??.xxxx
+		vctoolsVersion, _ = strconv.ParseFloat(vctoolsVersionStr[:5], 32)
+	} else {
+		// for vc140 or below, VCToolsVersion=14.0
+		vctoolsVersion, _ = strconv.ParseFloat(vctoolsVersionStr, 32)
+	}
+
+	var platformToolchainVersion string
+	if vctoolsVersion >= 14.30 {
+		platformToolchainVersion = "143"
+	} else if vctoolsVersion >= 14.20 && vctoolsVersion < 14.30 {
+		platformToolchainVersion = "142"
+	} else if vctoolsVersion >= 14.10 && vctoolsVersion < 14.20 {
+		platformToolchainVersion = "141"
+	} else if vctoolsVersion >= 14.00 && vctoolsVersion < 14.10 {
+		platformToolchainVersion = "140"
+	} else {
+		glog.Fatalf("unsupported vctoolchain version %f", vctoolsVersion)
+	}
+
+	// Environment variable VCToolsRedistDir isn't correct when it doesn't match
+	// Visual Studio's default toolchain.
+	// according to microsoft's design issue, don't use it.
+	//
+	// for example:
+	//
+	// VCINSTALLDIR=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\
+	// VCToolsInstallDir=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.16.27023\
+	// VCToolsRedistDir=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\14.30.30704\
+	//
+	// for vc140 it's:
+	// C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\redist
+	var vcredistDir string
+	if vctoolsVersion >= 14.30 {
+		vcredistDir = os.Getenv("VCToolsRedistDir")
+	} else if vctoolsVersion >= 14.20 && vctoolsVersion < 14.30 {
+		vcredistDir = filepath.Join(os.Getenv("VCINSTALLDIR"), "Redist", "MSVC", os.Getenv("VCToolsVersion"))
+		// fallback
+		if _, err := os.Stat(vcredistDir); errors.Is(err, os.ErrNotExist) {
+			vcredistDir = filepath.Join(os.Getenv("VCINSTALLDIR"), "Redist", "MSVC", "14.29.30133")
+		}
+	} else if vctoolsVersion >= 14.10 && vctoolsVersion < 14.20 {
+		vcredistDir = filepath.Join(os.Getenv("VCINSTALLDIR"), "Redist", "MSVC", os.Getenv("VCToolsVersion"))
+		// fallback
+		if _, err := os.Stat(vcredistDir); errors.Is(err, os.ErrNotExist) {
+			vcredistDir = filepath.Join(os.Getenv("VCINSTALLDIR"), "Redist", "MSVC", "14.16.27012")
+		}
+	} else if vctoolsVersion >= 14.00 && vctoolsVersion < 14.10 {
+		vcredistDir = filepath.Join(os.Getenv("VCINSTALLDIR"), "redist")
+	} else {
+		vcredistDir = ""
+	}
+
+	// Search Path (VC Runtime and MFC) (vctoolsVersion newer than v140)
+	// C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\14.30.30704\debug_nonredist\x86\Microsoft.VC143.DebugMFC
+	// C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\14.30.30704\debug_nonredist\x86\Microsoft.VC143.DebugCRT
+	// C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\14.30.30704\x86\Microsoft.VC143.MFCLOC
+	// C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\14.30.30704\x86\Microsoft.VC143.MFC
+	// C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\14.30.30704\x86\Microsoft.VC143.CRT
+	searchDirs := []string{
+		filepath.Join(vcredistDir, "debug_nonredist", msvcTargetArchFlag, fmt.Sprintf("Microsoft.VC%s.DebugMFC", platformToolchainVersion)),
+		filepath.Join(vcredistDir, "debug_nonredist", msvcTargetArchFlag, fmt.Sprintf("Microsoft.VC%s.DebugCRT", platformToolchainVersion)),
+		filepath.Join(vcredistDir, msvcTargetArchFlag, fmt.Sprintf("Microsoft.VC%s.MFCLOC", platformToolchainVersion)),
+		filepath.Join(vcredistDir, msvcTargetArchFlag, fmt.Sprintf("Microsoft.VC%s.MFC", platformToolchainVersion)),
+		filepath.Join(vcredistDir, msvcTargetArchFlag, fmt.Sprintf("Microsoft.VC%s.CRT", platformToolchainVersion)),
+	}
+
+	// remove the trailing slash
+	sdkVersionInt := os.Getenv("WindowsSDKVersion")
+	sdkVersion := sdkVersionInt[:len(sdkVersionInt)-1]
+	sdkBaseDir := os.Getenv("WindowsSdkDir")
+
+	// Search Path (UCRT)
+	//
+	// Please note The UCRT files are not redistributable for ARM64 Win32.
+	// https://chromium.googlesource.com/chromium/src/+/lkgr/build/win/BUILD.gn
+	// C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x86\ucrt
+	// C:\Program Files (x86)\Windows Kits\10\Redist\10.0.19041.0\ucrt\DLLS\x86
+	// C:\Program Files (x86)\Windows Kits\10\ExtensionSDKs\Microsoft.UniversalCRT.Debug\10.0.19041.0\Redist\Debug\x86
+	searchDirs = append(searchDirs, filepath.Join(sdkBaseDir, "bin", sdkVersion, msvcTargetArchFlag, "ucrt"))
+	searchDirs = append(searchDirs, filepath.Join(sdkBaseDir, "Redist", sdkVersion, "ucrt", "DLLS", msvcTargetArchFlag))
+	searchDirs = append(searchDirs, filepath.Join(sdkBaseDir, "ExtensionSDKs", "Microsoft.UniversalCRT.Debug", sdkVersion, "Redist", "Debug", msvcTargetArchFlag))
+
+	// Fallback search path for XP (v140_xp, v141_xp)
+	// Refer to #27, https://github.com/Chilledheart/yass/issues/27
+	// $project_root\third_party\vcredist\x86
+	if vctoolsVersion >= 14.00 && vctoolsVersion < 14.20 {
+		path, _ := filepath.Abs(filepath.Join("..", "third_party", "vcredist", msvcTargetArchFlag))
+		searchDirs = append(searchDirs, path)
+	}
+	return searchDirs
+}
+
+// The output of dumpbin /dependents is like below:
+// Microsoft (R) COFF/PE Dumper Version 14.30.30709.0
+// Copyright (C) Microsoft Corporation.  All rights reserved.
+// Dump of file arm64-windows-yass.exe
+// File Type: EXECUTABLE IMAGE
+//   Image has the following dependencies:
+//     WS2_32.dll
+//     GDI32.dll
+//     SHELL32.dll
+//     KERNEL32.dll
+//     USER32.dll
+//     ADVAPI32.dll
+//     MSVCP140.dll
+//     MSWSOCK.dll
+//     mfc140u.dll
+//     dbghelp.dll
+//     VCRUNTIME140.dll
+//     api-ms-win-crt-runtime-l1-1-0.dll
+//     api-ms-win-crt-heap-l1-1-0.dll
+//     api-ms-win-crt-stdio-l1-1-0.dll
+//     api-ms-win-crt-math-l1-1-0.dll
+//     api-ms-win-crt-time-l1-1-0.dll
+//     api-ms-win-crt-filesystem-l1-1-0.dll
+//     api-ms-win-crt-convert-l1-1-0.dll
+//     api-ms-win-crt-environment-l1-1-0.dll
+//     api-ms-win-crt-string-l1-1-0.dll
+//     api-ms-win-crt-locale-l1-1-0.dll
+//   Summary
+//        15000 .data
+//         4000 .pdata
+//        2C000 .rdata
+//         2000 .reloc
+//        12000 .rsrc
+//        71000 .text
+//
+func GetDependenciesByDumpbin(path string, searchDirs []string) ([]string, []string) {
+	lines := strings.Split(cmdCheckOutput([]string{"dumpbin", "/nologo", "/dependents", path}), "\n")
+	dlls := []string{}
+	resolvedDlls := []string{}
+	unresolvedDlls := []string{}
+	systemDlls := []string {"WS2_32.dll", "GDI32.dll", "SHELL32.dll", "USER32.dll",
+		"ADVAPI32.dll", "MSWSOCK.dll", "dbghelp.dll", "KERNEL32.dll",
+		"ole32.dll", "OLEAUT32.dll", "SHLWAPI.dll", "IMM32.dll",
+		"UxTheme.dll", "PROPSYS.dll", "dwmapi.dll", "WININET.dll",
+		"OLEACC.dll", "ODBC32.dll", "oledlg.dll", "urlmon.dll",
+		"MSIMG32.dll", "WINMM.dll", "CRYPT32.dll", "gdiplus.dll",
+		"COMCTL32.dll", "RASAPI32.dll", "IPHLPAPI.DLL",
+	}
+	systemDllsMap := make(map[string]struct{})
+	for _, dll := range(systemDlls) {
+		systemDllsMap[strings.ToLower(dll)] = struct{}{}
+	}
+
+	p := regexp.MustCompile("(?i)    (\\S+.dll)")
+	for _, line := range(lines) {
+		matches := p.FindStringSubmatch(line)
+		if len(matches) > 1 {
+			_, ok := systemDllsMap[strings.ToLower(matches[1])]
+			if !ok {
+				dlls = append(dlls, matches[1])
+			}
+		}
+	}
+	for _, dll := range(dlls) {
+		resolved := false
+		for _, searchDir := range(searchDirs) {
+			d := filepath.Join(searchDir, dll)
+			if _, err := os.Stat(d); !errors.Is(err, os.ErrNotExist) {
+				resolvedDlls = append(resolvedDlls, d)
+				resolved = true;
+				break
+			}
+		}
+		if !resolved {
+			unresolvedDlls = append(unresolvedDlls, dll)
+		}
+	}
+	return resolvedDlls, unresolvedDlls
+}
+
 func postStateCopyDependedLibraries() {
 	glog.Info("PostState -- Copy Depended Libraries")
 	glog.Info("======================================================================")
+	searchDirs := []string{}
+	if systemNameFlag == "windows" {
+		searchDirs = append(searchDirs, GetWin32SearchPath()...)
+		for _, searchDir := range(searchDirs) {
+			glog.Infof("--- %s", searchDir)
+		}
+		deps, unresolvedDeps := GetDependenciesByDumpbin(getAppName(), searchDirs)
+		depsMap := make(map[string]struct{})
+		for _, dep := range(deps) {
+			depsMap[dep] = struct{}{}
+		}
+		for true {
+			depsExtended := deps
+			for _, dep := range(deps) {
+				depDeps, depUnresolvedDeps := GetDependenciesByDumpbin(dep, searchDirs)
+				depsExtended = append(depsExtended, depDeps...)
+				unresolvedDeps = append(unresolvedDeps, depUnresolvedDeps...)
+			}
+			depsExtendedMap := make(map[string]struct{})
+			for _, dep := range(depsExtended) {
+				depsExtendedMap[dep] = struct{}{}
+			}
+			if reflect.DeepEqual(depsMap, depsExtendedMap) {
+				break;
+			}
+			depsExtended = []string{}
+			for dep := range(depsExtendedMap) {
+				depsExtended = append(depsExtended, dep)
+			}
+			deps = depsExtended
+		}
+		unresolvedDepsMap := make(map[string]struct{})
+		for _, unresolvedDep := range(unresolvedDeps) {
+			unresolvedDepsMap[unresolvedDep] = struct{}{}
+		}
+		glog.Infof("--- Dependent dll")
+		for _, dep := range(deps) {
+			glog.Infof("--- --- %s", dep)
+			err := copyFile(dep, filepath.Base(dep))
+			if err != nil {
+				glog.Fatalf("Copy file %s failed :%v", dep, err)
+			}
+		}
+		glog.Infof("--- Missing dependent dll")
+		for unresolvedDep, _ := range(unresolvedDepsMap) {
+			glog.Infof("--- --- %s", unresolvedDep)
+		}
 	// TBD
+	}
 }
 
 func postStateFixRPath() {
@@ -1578,13 +1846,21 @@ func generateMsi(output string, dllPaths []string, licensePaths []string, hasCra
 	cmdRun([]string{"light.exe", "-ext", "WixUIExtension", "-out", output, "-cultures:en-US", "-sice:ICE03", "-sice:ICE57", "-sice:ICE61", "yass.wixobj"}, true)
 }
 
-func generateNSIS(output string) {
+func generateNSIS(output string, dllPaths []string) {
 	nsiTemplate, err := ioutil.ReadFile(filepath.Join("..", "yass.nsi"))
 	if err != nil {
 		glog.Fatalf("%v", err)
 	}
 	nsiContent := string(nsiTemplate)
 	nsiContent = strings.Replace(nsiContent, "yass-installer.exe", output, 1)
+
+	dllReplacement := ""
+	for _, dllPath := range dllPaths {
+		dllReplacement += fmt.Sprintf("File \"%s\"\n", dllPath)
+	}
+
+	nsiContent = strings.Replace(nsiContent, "# DLL PLACEHOLDER", dllReplacement, 1)
+
 	err = ioutil.WriteFile("yass.nsi", []byte(nsiContent), 0666)
 	if err != nil {
 		glog.Fatalf("%v", err)
@@ -1704,6 +1980,17 @@ func postStateArchives() map[string][]string {
 	var dllPaths []string
 	var dbgPaths []string
 
+	if systemNameFlag == "windows" {
+		entries, _ := os.ReadDir("./")
+		for _, entry := range(entries) {
+			name := entry.Name()
+			iname := strings.ToLower(name)
+			if strings.HasSuffix(iname, ".dll") {
+				dllPaths = append(dllPaths, name)
+			}
+		}
+	}
+
 	// copying dependent crashpad handler if any
 	if hasCrashpad {
 		paths = append(paths, "crashpad_handler.exe")
@@ -1732,7 +2019,7 @@ func postStateArchives() map[string][]string {
 	}
 	// nsis installer
 	if systemNameFlag == "windows" && msvcTargetArchFlag != "arm64" {
-		generateNSIS(nsisArchive)
+		generateNSIS(nsisArchive, dllPaths)
 		archives[nsisArchive] = []string{nsisArchive}
 		generateNSISSystemInstaller(nsisSystemArchive)
 		archives[nsisSystemArchive] = []string{nsisSystemArchive}
