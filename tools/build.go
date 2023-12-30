@@ -1722,7 +1722,7 @@ func archiveFiles(output string, prefix string, paths []string) {
 	}
 }
 
-func archiveMainFile(output string, prefix string, paths []string) {
+func archiveMainFile(output string, prefix string, paths []string, dllPaths []string) {
 	if systemNameFlag == "darwin" {
 		var eulaRtf []byte
 		eulaTemplate, err := ioutil.ReadFile("../src/mac/eula.xml")
@@ -1805,6 +1805,7 @@ func archiveMainFile(output string, prefix string, paths []string) {
 			glog.Fatalf("%v", err)
 		}
 	} else {
+		paths = append(paths, dllPaths...)
 		archiveFiles(output, prefix, paths)
 	}
 }
@@ -2005,7 +2006,7 @@ func postStateArchives() map[string][]string {
 	paths = append(paths, licensePaths...)
 
 	// main bundle
-	archiveMainFile(archive, archivePrefix, paths)
+	archiveMainFile(archive, archivePrefix, paths, dllPaths)
 	archives[archive] = paths
 
 	// msi installer
