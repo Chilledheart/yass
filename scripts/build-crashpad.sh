@@ -96,7 +96,7 @@ extra_cflags_cc=\"-nostdinc++ -I $PWD/libc++ -I $PWD/libc++/trunk/include -D_LIB
   win)
     flags="$flags
 clang_path=\"$(cygpath -m $PWD)/llvm-build/Release+Asserts\"
-extra_cflags=\"/MT\"
+extra_cflags=\"/MD\"
 extra_cflags_cc=\"-I $(cygpath -m $PWD)/libc++ -I $(cygpath -m $PWD)/libc++/trunk/include -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS -D_LIBCPP_OVERRIDABLE_FUNC_VIS='__attribute__((__visibility__(\\\"default\\\")))'\""
     ;;
   *)

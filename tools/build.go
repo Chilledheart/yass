@@ -1275,6 +1275,7 @@ func GetDependenciesByDumpbin(path string, searchDirs []string) ([]string, []str
 		"OLEACC.dll", "ODBC32.dll", "oledlg.dll", "urlmon.dll",
 		"MSIMG32.dll", "WINMM.dll", "CRYPT32.dll", "gdiplus.dll",
 		"COMCTL32.dll", "RASAPI32.dll", "IPHLPAPI.DLL",
+		"WINHTTP.dll", "VERSION.dll", "POWRPROF.dll",
 	}
 	systemDllsMap := make(map[string]struct{})
 	for _, dll := range(systemDlls) {
@@ -1318,6 +1319,15 @@ func postStateCopyDependedLibraries() {
 			glog.Infof("--- %s", searchDir)
 		}
 		deps, unresolvedDeps := GetDependenciesByDumpbin(getAppName(), searchDirs)
+
+		hasCrashpad := true
+		if _, err := os.Stat("crashpad_handler.exe"); errors.Is(err, os.ErrNotExist) {
+			hasCrashpad = false
+		}
+		if hasCrashpad {
+			deps = append(deps, "crashpad_handler.exe")
+		}
+
 		depsMap := make(map[string]struct{})
 		for _, dep := range(deps) {
 			depsMap[dep] = struct{}{}
@@ -1341,6 +1351,7 @@ func postStateCopyDependedLibraries() {
 				depsExtended = append(depsExtended, dep)
 			}
 			deps = depsExtended
+			depsMap = depsExtendedMap
 		}
 		unresolvedDepsMap := make(map[string]struct{})
 		for _, unresolvedDep := range(unresolvedDeps) {
@@ -1722,7 +1733,7 @@ func archiveFiles(output string, prefix string, paths []string) {
 	}
 }
 
-func archiveMainFile(output string, prefix string, paths []string) {
+func archiveMainFile(output string, prefix string, paths []string, dllPaths []string) {
 	if systemNameFlag == "darwin" {
 		var eulaRtf []byte
 		eulaTemplate, err := ioutil.ReadFile("../src/mac/eula.xml")
@@ -1805,6 +1816,7 @@ func archiveMainFile(output string, prefix string, paths []string) {
 			glog.Fatalf("%v", err)
 		}
 	} else {
+		paths = append(paths, dllPaths...)
 		archiveFiles(output, prefix, paths)
 	}
 }
@@ -2005,7 +2017,7 @@ func postStateArchives() map[string][]string {
 	paths = append(paths, licensePaths...)
 
 	// main bundle
-	archiveMainFile(archive, archivePrefix, paths)
+	archiveMainFile(archive, archivePrefix, paths, dllPaths)
 	archives[archive] = paths
 
 	// msi installer
