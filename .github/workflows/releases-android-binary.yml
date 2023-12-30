@@ -170,7 +170,7 @@ jobs:
       - name: Build TGZ packages
         run: |
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system android --cmake-build-type MinSizeRel \
-            -build-benchmark -build-test -use-icu \
+            -build-benchmark -build-test \
             -android-sdk-dir "${ANDROID_HOME}" -android-ndk-dir "${ANDROID_NDK_HOME}"
       - name: "Install dependency: android sysroot (test purpose)"
         if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
