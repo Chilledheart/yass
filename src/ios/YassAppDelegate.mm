@@ -2,6 +2,8 @@
 /* Copyright (c) 2023 Chilledheart  */
 #import "ios/YassAppDelegate.h"
 
+#import <NetworkExtension/NetworkExtension.h>
+
 #include "cli/cli_worker.hpp"
 
 #include <pthread.h>
@@ -29,6 +31,7 @@
   enum YASSState state_;
   std::string error_msg_;
   Worker worker_;
+  NETunnelProviderManager *vpn_manager_;
 }
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary<UIApplicationLaunchOptionsKey,id> *)launchOptions {
@@ -118,11 +121,36 @@
 - (void)OnStarted {
   state_ = STARTED;
   config::SaveConfig();
-
-  YassViewController* viewController =
-      (YassViewController*)
-          UIApplication.sharedApplication.keyWindow.rootViewController;
-  [viewController Started];
+  
+  [NETunnelProviderManager loadAllFromPreferencesWithCompletionHandler:^(NSArray<NETunnelProviderManager *> * _Nullable managers, NSError * _Nullable error) {
+    if (error) {
+      std::string err_msg = gurl_base::SysNSStringToUTF8([error localizedDescription]);
+      [self OnStop:true];
+      [self OnStartFailed:err_msg];
+      return;
+    }
+    vpn_manager_ = managers[0];
+    NETunnelProviderProtocol* tunnelProtocol = [[NETunnelProviderProtocol alloc] init];
+    tunnelProtocol.serverAddress = @"";
+    tunnelProtocol.providerBundleIdentifier = @"it.gui.ios.PacketTunnel";
+    tunnelProtocol.providerConfiguration = @{};
+    tunnelProtocol.username = @"";
+    // tunnelProtocol.passwordReference = @"";
+    vpn_manager_.protocolConfiguration = tunnelProtocol;
+    vpn_manager_.localizedDescription = @"YASS VPN";
+    vpn_manager_.enabled = TRUE;
+    BOOL ret = [vpn_manager_.connection startVPNTunnelAndReturnError:&error];
+    if (ret == TRUE) {
+      YassViewController* viewController =
+          (YassViewController*)
+              UIApplication.sharedApplication.keyWindow.rootViewController;
+      [viewController Started];
+    } else {
+      std::string err_msg = gurl_base::SysNSStringToUTF8([error localizedDescription]);
+      [self OnStop:true];
+      [self OnStartFailed:err_msg];
+    }
+  }];
 }
 
 - (void)OnStartFailed:(std::string)error_msg {

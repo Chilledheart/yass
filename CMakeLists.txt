@@ -4107,6 +4107,8 @@ if (GUI)
           )
           if ((NOT XCODE_CODESIGN_IDENTITY STREQUAL "-") OR XCODE_DEPLOYMENT_TEAM)
             set_target_properties(${APP_NAME} PROPERTIES
+              XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/yass.entitlements
+              XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/extensions/PacketTunnel.entitlements
               XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${XCODE_CODESIGN_IDENTITY}"
               XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${XCODE_DEPLOYMENT_TEAM}"
               XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic")
@@ -4148,10 +4150,12 @@ if (GUI)
             MACOSX_BUNDLE_GUI_IDENTIFIER "it.gui.ios.yass.PacketTunnel"
             XCODE_ATTRIBUTE_PRODUCT_NAME "PacketTunnel"
             XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "it.gui.ios.yass.PacketTunnel"
-            XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path"
             XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "YES"
-            XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++11"
+            XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++20";
             XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++"
+            XCODE_ATTRIBUTE_CLANG_ENABLE_MODULES YES
+            XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
+            XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_WEAK YES
             XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER ""
             )
 
@@ -4169,6 +4173,13 @@ if (GUI)
              XCODE_ATTRIBUTE_SKIP_INSTALL  NO
              XCODE_ATTRIBUTE_INSTALL_PATH  "$(LOCAL_APPS_DIR)"
           )
+
+          add_custom_command(TARGET ${APP_NAME} PRE_BUILD
+              COMMAND ${CMAKE_COMMAND} -E copy_directory $<TARGET_FILE_DIR:PacketTunnel>ex $<TARGET_FILE_DIR:${APP_NAME}>/Frameworks/PacketTunnel.appex
+              DEPENDS PacketTunnel
+          )
+
+          target_link_libraries(${APP_NAME} PRIVATE ${NetworkExtension_LIBRARY})
     endif()
 
     if (NOT CMAKE_SKIP_INSTALL_RULES)

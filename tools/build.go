@@ -891,6 +891,8 @@ func buildStageGenerateBuildScript() {
 			} else {
 				glog.Fatalf("Invalid archFlag: %s", archFlag);
 			}
+			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DXCODE_CODESIGN_IDENTITY=%s", iosCodeSignIdentityFlag))
+			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DXCODE_DEPLOYMENT_TEAM=%s", iosDevelopmentTeamFlag))
 			glog.Info("No Packaging supported for simulator, disabling...")
 			noPackagingFlag = true
 		} else if subSystemNameFlag != "" {
