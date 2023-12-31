@@ -3738,6 +3738,8 @@ if (GUI)
           src/ios/YassViewController.h
           src/ios/YassSceneDelegate.h
           src/ios/YassSceneDelegate.mm
+          src/ios/tun2proxy.h
+          src/ios/tun2proxy.mm
           src/ios/utils.h
           src/ios/utils.mm
           src/ios/main.mm)
