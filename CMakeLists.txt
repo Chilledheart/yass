@@ -4094,6 +4094,7 @@ if (GUI)
             MACOSX_BUNDLE_BUNDLE_NAME ${PACKAGE_NAME}
             MACOSX_BUNDLE_INFO_PLIST ${APP_MACOSX_BUNDLE_INFO}
             XCODE_GENERATE_SCHEME "TRUE"
+            XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "it.gui.ios.yass"
             XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon"
             XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
             XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
@@ -4108,11 +4109,63 @@ if (GUI)
             set_target_properties(${APP_NAME} PROPERTIES
               XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${XCODE_CODESIGN_IDENTITY}"
               XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${XCODE_DEPLOYMENT_TEAM}"
-              XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Auto")
+              XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic")
           endif()
           # Workaround for https://gitlab.kitware.com/cmake/cmake/-/issues/15183
           # Apps must have install step enabled
           set_target_properties(${APP_NAME} PROPERTIES
+             XCODE_ATTRIBUTE_SKIP_INSTALL  NO
+             XCODE_ATTRIBUTE_INSTALL_PATH  "$(LOCAL_APPS_DIR)"
+          )
+
+          # =======================
+          # PacketTunnel extensions
+          # =======================
+          find_library(NetworkExtension_LIBRARY NetworkExtension REQUIRED)
+
+          set(PLUGIN_SRC
+            src/ios/tun2proxy.h
+            src/ios/tun2proxy.mm
+            src/ios/extensions/PacketTunnelProvider.h
+            src/ios/extensions/PacketTunnelProvider.mm
+            src/ios/extensions/PacketTunnel.entitlements
+            )
+
+          add_executable(PacketTunnel MACOSX_BUNDLE ${PLUGIN_SRC})
+
+          target_include_directories(PacketTunnel PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/extensions)
+          target_compile_options(PacketTunnel PRIVATE -fapplication-extension -fmodules -gmodules -fobjc-arc -fobjc-weak)
+          target_link_libraries(PacketTunnel PRIVATE ${NetworkExtension_LIBRARY})
+          set_target_properties(PacketTunnel PROPERTIES LINK_OPTIONS -fapplication-extension -e _NSExtensionMain -fobjc-arc -fobjc-link-runtime)
+
+          set_target_properties(PacketTunnel PROPERTIES
+            OUTPUT_NAME "PacketTunnel"
+            MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/extensions/Info.plist
+            XCODE_PRODUCT_TYPE com.apple.product-type.app-extension
+            XCODE_GENERATE_SCHEME "TRUE"
+            MACOSX_BUNDLE_GUI_IDENTIFIER "it.gui.ios.yass.PacketTunnel"
+            XCODE_ATTRIBUTE_PRODUCT_NAME "PacketTunnel"
+            XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "it.gui.ios.yass.PacketTunnel"
+            XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path"
+            XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "YES"
+            XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++11"
+            XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++"
+            XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER ""
+            )
+
+          if ((NOT XCODE_CODESIGN_IDENTITY STREQUAL "-") OR XCODE_DEPLOYMENT_TEAM)
+            set_target_properties(PacketTunnel PROPERTIES
+              XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/extensions/PacketTunnel.entitlements
+              XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${XCODE_CODESIGN_IDENTITY}"
+              XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${XCODE_DEPLOYMENT_TEAM}"
+              XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic")
+          endif()
+
+          # Workaround for https://gitlab.kitware.com/cmake/cmake/-/issues/15183
+          # Apps must have install step enabled
+          set_target_properties(PacketTunnel PROPERTIES
              XCODE_ATTRIBUTE_SKIP_INSTALL  NO
              XCODE_ATTRIBUTE_INSTALL_PATH  "$(LOCAL_APPS_DIR)"
           )
@@ -4210,7 +4263,7 @@ if (BUILD_TESTS)
       set_target_properties(yass_test PROPERTIES
         XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${XCODE_CODESIGN_IDENTITY}"
         XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${XCODE_DEPLOYMENT_TEAM}"
-        XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Auto")
+        XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic")
     endif()
   else()
     add_executable(yass_test ${yass_test_SOURCE})
@@ -4328,7 +4381,7 @@ if (BUILD_BENCHMARKS)
       set_target_properties(yass_benchmark PROPERTIES
         XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${XCODE_CODESIGN_IDENTITY}"
         XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${XCODE_DEPLOYMENT_TEAM}"
-        XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Auto")
+        XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic")
     endif()
   else()
     add_executable(yass_benchmark
