@@ -4244,7 +4244,7 @@ if (BUILD_TESTS)
   )
 
   if (USE_CURL)
-    if (MSVC AND MSVC_CRT_LINKAGE STREQUAL "static")
+    if (MSVC AND MSVC_CRT_LINKAGE STREQUAL "dynamic")
       if("${MSVC_PROCESSOR_ARCHITECTURE}" STREQUAL "arm64")
         set(CURL_MSVC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libcurl-vc16-arm64-release-static-ipv6-sspi-schannel")
       elseif("${MSVC_PROCESSOR_ARCHITECTURE}" STREQUAL "amd64")

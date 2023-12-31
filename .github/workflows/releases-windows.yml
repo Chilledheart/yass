@@ -55,9 +55,10 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
+            third_party/libcurl-vc16-arm64-release-static-ipv6-sspi-schannel
             third_party/libcurl-vc16-x64-release-static-ipv6-sspi-schannel
             third_party/libcurl-vc16-x86-release-static-ipv6-sspi-schannel
-          key: ${{ runner.os }}-msvc-curl-vc16-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-msvc-dynamic-curl-vc16-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
       - name: Cache depot_tools
         id: depot-cache
         uses: actions/cache@v3
