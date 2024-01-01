@@ -4120,7 +4120,7 @@ if (GUI)
           )
 
           # =======================
-          # PacketTunnel extensions
+          # YassPacketTunnel extensions
           # =======================
           find_library(NetworkExtension_LIBRARY NetworkExtension REQUIRED)
 
@@ -4132,22 +4132,22 @@ if (GUI)
             src/ios/extensions/PacketTunnel.entitlements
             )
 
-          add_executable(PacketTunnel MACOSX_BUNDLE ${PLUGIN_SRC})
+          add_executable(YassPacketTunnel MACOSX_BUNDLE ${PLUGIN_SRC})
 
-          target_include_directories(PacketTunnel PRIVATE
+          target_include_directories(YassPacketTunnel PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/src
             ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/extensions)
-          target_compile_options(PacketTunnel PRIVATE -fapplication-extension -fmodules -gmodules -fobjc-arc -fobjc-weak)
-          target_link_libraries(PacketTunnel PRIVATE ${NetworkExtension_LIBRARY})
-          set_target_properties(PacketTunnel PROPERTIES LINK_OPTIONS -fapplication-extension -e _NSExtensionMain -fobjc-arc -fobjc-link-runtime)
+          target_compile_options(YassPacketTunnel PRIVATE -fapplication-extension -fmodules -gmodules -fobjc-arc -fobjc-weak)
+          target_link_libraries(YassPacketTunnel PRIVATE ${NetworkExtension_LIBRARY})
+          set_target_properties(YassPacketTunnel PROPERTIES LINK_OPTIONS -fapplication-extension -e _NSExtensionMain -fobjc-arc -fobjc-link-runtime)
 
-          set_target_properties(PacketTunnel PROPERTIES
-            OUTPUT_NAME "PacketTunnel"
+          set_target_properties(YassPacketTunnel PROPERTIES
+            OUTPUT_NAME "YassPacketTunnel"
             MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/extensions/Info.plist
             XCODE_PRODUCT_TYPE com.apple.product-type.app-extension
             XCODE_GENERATE_SCHEME "TRUE"
             MACOSX_BUNDLE_GUI_IDENTIFIER "it.gui.ios.yass.PacketTunnel"
-            XCODE_ATTRIBUTE_PRODUCT_NAME "PacketTunnel"
+            XCODE_ATTRIBUTE_PRODUCT_NAME "YassPacketTunnel"
             XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "it.gui.ios.yass.PacketTunnel"
             XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "YES"
             XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++20";
@@ -4159,7 +4159,7 @@ if (GUI)
             )
 
           if ((NOT XCODE_CODESIGN_IDENTITY STREQUAL "-") OR XCODE_DEPLOYMENT_TEAM)
-            set_target_properties(PacketTunnel PROPERTIES
+            set_target_properties(YassPacketTunnel PROPERTIES
               XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/extensions/PacketTunnel.entitlements
               XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${XCODE_CODESIGN_IDENTITY}"
               XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${XCODE_DEPLOYMENT_TEAM}"
@@ -4168,14 +4168,14 @@ if (GUI)
 
           # Workaround for https://gitlab.kitware.com/cmake/cmake/-/issues/15183
           # Apps must have install step enabled
-          set_target_properties(PacketTunnel PROPERTIES
+          set_target_properties(YassPacketTunnel PROPERTIES
              XCODE_ATTRIBUTE_SKIP_INSTALL  NO
              XCODE_ATTRIBUTE_INSTALL_PATH  "$(LOCAL_APPS_DIR)"
           )
 
           add_custom_command(TARGET ${APP_NAME} PRE_BUILD
-              COMMAND ${CMAKE_COMMAND} -E copy_directory $<TARGET_FILE_DIR:PacketTunnel>ex $<TARGET_FILE_DIR:${APP_NAME}>/PlugIns/PacketTunnel.appex
-              DEPENDS PacketTunnel
+              COMMAND ${CMAKE_COMMAND} -E copy_directory $<TARGET_FILE_DIR:YassPacketTunnel>ex $<TARGET_FILE_DIR:${APP_NAME}>/PlugIns/YassPacketTunnel.appex
+              DEPENDS YassPacketTunnel
           )
 
           target_link_libraries(${APP_NAME} PRIVATE ${NetworkExtension_LIBRARY})

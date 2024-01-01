@@ -5,9 +5,9 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleDisplayName</key>
-    <string>PacketTunnel</string>
+    <string>YassPacketTunnel</string>
     <key>CFBundleExecutable</key>
-    <string>PacketTunnel</string>
+    <string>YassPacketTunnel</string>
     <key>CFBundleIdentifier</key>
     <string>it.gui.ios.yass.PacketTunnel</string>
     <key>CFBundleInfoDictionaryVersion</key>
