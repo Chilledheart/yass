@@ -4115,8 +4115,8 @@ if (GUI)
           # Workaround for https://gitlab.kitware.com/cmake/cmake/-/issues/15183
           # Apps must have install step enabled
           set_target_properties(${APP_NAME} PROPERTIES
-             XCODE_ATTRIBUTE_SKIP_INSTALL  NO
-             XCODE_ATTRIBUTE_INSTALL_PATH  "$(LOCAL_APPS_DIR)"
+            XCODE_ATTRIBUTE_SKIP_INSTALL  NO
+            XCODE_ATTRIBUTE_INSTALL_PATH  "$(LOCAL_APPS_DIR)"
           )
 
           # =======================
@@ -4166,16 +4166,9 @@ if (GUI)
               XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic")
           endif()
 
-          # Workaround for https://gitlab.kitware.com/cmake/cmake/-/issues/15183
-          # Apps must have install step enabled
-          set_target_properties(YassPacketTunnel PROPERTIES
-             XCODE_ATTRIBUTE_SKIP_INSTALL  NO
-             XCODE_ATTRIBUTE_INSTALL_PATH  "$(LOCAL_APPS_DIR)"
-          )
-
-          add_custom_command(TARGET ${APP_NAME} PRE_BUILD
-              COMMAND ${CMAKE_COMMAND} -E copy_directory $<TARGET_FILE_DIR:YassPacketTunnel>ex $<TARGET_FILE_DIR:${APP_NAME}>/PlugIns/YassPacketTunnel.appex
-              DEPENDS YassPacketTunnel
+          set_target_properties(${APP_NAME} PROPERTIES
+            XCODE_EMBED_APP_EXTENSIONS YassPacketTunnel
+            XCODE_EMBED_APP_EXTENSIONS_CODE_SIGN_ON_COPY TRUE
           )
 
           target_link_libraries(${APP_NAME} PRIVATE ${NetworkExtension_LIBRARY})
