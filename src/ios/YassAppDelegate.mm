@@ -106,6 +106,11 @@
 
 - (void)OnStop:(BOOL)quiet {
   state_ = STOPPING;
+  
+  if (vpn_manager_ != nil) {
+    [vpn_manager_.connection stopVPNTunnel];
+    vpn_manager_ = nil;
+  }
 
   absl::AnyInvocable<void()> callback;
   if (!quiet) {
@@ -129,15 +134,55 @@
       [self OnStartFailed:err_msg];
       return;
     }
-    vpn_manager_ = managers[0];
-    NETunnelProviderProtocol* tunnelProtocol = [[NETunnelProviderProtocol alloc] init];
-    tunnelProtocol.serverAddress = @"";
-    tunnelProtocol.providerBundleIdentifier = @"it.gui.ios.PacketTunnel";
-    tunnelProtocol.providerConfiguration = @{};
-    tunnelProtocol.username = @"";
-    // tunnelProtocol.passwordReference = @"";
-    vpn_manager_.protocolConfiguration = tunnelProtocol;
-    vpn_manager_.localizedDescription = @"YASS VPN";
+    if ([managers count] != 0) {
+      vpn_manager_ = managers[0];
+    } else {
+      vpn_manager_ = [[NETunnelProviderManager alloc] init];
+      NETunnelProviderProtocol* tunnelProtocol = [[NETunnelProviderProtocol alloc] init];
+      tunnelProtocol.serverAddress = @"";
+      tunnelProtocol.providerBundleIdentifier = @"it.gui.ios.PacketTunnel";
+      tunnelProtocol.providerConfiguration = @{
+        @"ip": @"127.0.0.1",
+        @"port": @3000,
+      };
+      tunnelProtocol.username = @"Yet Another Shadow Socket";
+      tunnelProtocol.identityDataPassword = @"password";
+      vpn_manager_.protocolConfiguration = tunnelProtocol;
+      vpn_manager_.localizedDescription = @"YASS VPN";
+      [vpn_manager_ saveToPreferencesWithCompletionHandler:^(NSError * _Nullable error) {
+        if (error != nil) {
+          vpn_manager_ = nil;
+          std::string err_msg = gurl_base::SysNSStringToUTF8([error localizedDescription]);
+          [self OnStop:true];
+          [self OnStartFailed:err_msg];
+          return;
+        }
+        [vpn_manager_ loadFromPreferencesWithCompletionHandler:^(NSError * _Nullable error) {
+          if (error != nil) {
+            vpn_manager_ = nil;
+            std::string err_msg = gurl_base::SysNSStringToUTF8([error localizedDescription]);
+            [self OnStop:true];
+            [self OnStartFailed:err_msg];
+            return;
+          }
+          vpn_manager_.enabled = TRUE;
+          BOOL ret = [vpn_manager_.connection startVPNTunnelAndReturnError:&error];
+          if (ret == TRUE) {
+            YassViewController* viewController =
+                (YassViewController*)
+                    UIApplication.sharedApplication.keyWindow.rootViewController;
+            [viewController Started];
+          } else {
+            vpn_manager_ = nil;
+            std::string err_msg = gurl_base::SysNSStringToUTF8([error localizedDescription]);
+            [self OnStop:true];
+            [self OnStartFailed:err_msg];
+          }
+        }];
+      }];
+      return;
+    }
+    
     vpn_manager_.enabled = TRUE;
     BOOL ret = [vpn_manager_.connection startVPNTunnelAndReturnError:&error];
     if (ret == TRUE) {
@@ -146,6 +191,7 @@
               UIApplication.sharedApplication.keyWindow.rootViewController;
       [viewController Started];
     } else {
+      vpn_manager_ = nil;
       std::string err_msg = gurl_base::SysNSStringToUTF8([error localizedDescription]);
       [self OnStop:true];
       [self OnStartFailed:err_msg];

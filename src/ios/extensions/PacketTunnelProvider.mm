@@ -7,6 +7,7 @@
 
 - (void)startTunnelWithOptions:(NSDictionary *)options completionHandler:(void (^)(NSError *))completionHandler {
     // Add code here to start the process of connecting the tunnel.
+    completionHandler(nil);
 }
 
 - (void)stopTunnelWithReason:(NEProviderStopReason)reason completionHandler:(void (^)(void))completionHandler {
