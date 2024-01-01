@@ -4175,7 +4175,7 @@ if (GUI)
           )
 
           add_custom_command(TARGET ${APP_NAME} PRE_BUILD
-              COMMAND ${CMAKE_COMMAND} -E copy_directory $<TARGET_FILE_DIR:PacketTunnel>ex $<TARGET_FILE_DIR:${APP_NAME}>/Frameworks/PacketTunnel.appex
+              COMMAND ${CMAKE_COMMAND} -E copy_directory $<TARGET_FILE_DIR:PacketTunnel>ex $<TARGET_FILE_DIR:${APP_NAME}>/PlugIns/PacketTunnel.appex
               DEPENDS PacketTunnel
           )
 
