@@ -1430,6 +1430,10 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+if (${CMAKE_GENERATOR} MATCHES "^Xcode.*")
+  set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++20")
+  set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
+endif()
 
 # https://chromium.googlesource.com/chromium/src/build/config/+/refs/heads/main/compiler/BUILD.gn
 if (UNIX AND NOT APPLE)
@@ -4009,7 +4013,6 @@ if (GUI)
             MACOSX_BUNDLE_INFO_PLIST ${APP_MACOSX_BUNDLE_INFO}
             XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
             XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
-            XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++"
             XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS "YES"
             XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
             #XCODE_ATTRIBUTE_ENABLE_HARDENED_RUNTIME "YES"
@@ -4087,91 +4090,105 @@ if (GUI)
         configure_file("src/ios/Info.plist.in" "${APP_MACOSX_BUNDLE_INFO}" @ONLY)
 
         set_target_properties(${APP_NAME} PROPERTIES
-            RESOURCE "${ALLRESOURCES}"
-            MACOSX_BUNDLE_ICON_FILE yass.icns
-            MACOSX_BUNDLE_COPYRIGHT "${YASS_APP_COPYRIGHT}"
-            MACOSX_BUNDLE_GUI_IDENTIFIER "it.gui.ios.yass"
-            MACOSX_BUNDLE_BUNDLE_NAME ${PACKAGE_NAME}
-            MACOSX_BUNDLE_INFO_PLIST ${APP_MACOSX_BUNDLE_INFO}
-            XCODE_GENERATE_SCHEME "TRUE"
-            XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "it.gui.ios.yass"
-            XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon"
-            XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
-            XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
-            XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++"
-            XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS "YES"
-            XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
-            #XCODE_ATTRIBUTE_ENABLE_HARDENED_RUNTIME "YES"
-            #XCODE_ATTRIBUTE_CODE_SIGN_INJECT_BASE_ENTITLEMENTS "NO"
-            #XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME ${ASSET_CATALOG_ASSETS}
-          )
-          if ((NOT XCODE_CODESIGN_IDENTITY STREQUAL "-") OR XCODE_DEPLOYMENT_TEAM)
-            set_target_properties(${APP_NAME} PROPERTIES
-              XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/yass.entitlements
-              XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${XCODE_CODESIGN_IDENTITY}"
-              XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${XCODE_DEPLOYMENT_TEAM}"
-              XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic")
-          endif()
+          RESOURCE "${ALLRESOURCES}"
+          OUTPUT_NAME "${APP_NAME}"
+          MACOSX_BUNDLE ON
+          MACOSX_BUNDLE_INFO_PLIST ${APP_MACOSX_BUNDLE_INFO}
+          MACOSX_BUNDLE_BUNDLE_NAME ${PACKAGE_FULL_NAME}
+          MACOSX_BUNDLE_BUNDLE_VERSION ${PACKAGE_VERSION}
+          MACOSX_BUNDLE_COPYRIGHT "${YASS_APP_COPYRIGHT}"
+          MACOSX_BUNDLE_GUI_IDENTIFIER "it.gui.ios.yass"
+          MACOSX_BUNDLE_INFO_STRING "${APP_NAME}"
+          MACOSX_BUNDLE_LONG_VERSION_STRING "${YASS_APP_TAG}-${YASS_APP_SUBTAG}"
+          MACOSX_BUNDLE_SHORT_VERSION_STRING "${YASS_APP_TAG}"
+          MACOSX_BUNDLE_ICON_FILE "AppIcon"
+          XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "it.gui.ios.yass"
+          XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/yass.entitlements
+          XCODE_ATTRIBUTE_MARKETING_VERSION "${YASS_APP_VERSION}"
+          XCODE_ATTRIBUTE_PRODUCT_NAME "${PACKAGE_NAME}"
+          XCODE_GENERATE_SCHEME "TRUE"
+          XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon"
           # Workaround for https://gitlab.kitware.com/cmake/cmake/-/issues/15183
           # Apps must have install step enabled
+          XCODE_ATTRIBUTE_INSTALL_PATH  "$(LOCAL_APPS_DIR)"
+          XCODE_ATTRIBUTE_SKIP_INSTALL  NO
+          XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
+          XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/Frameworks"
+          XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
+          XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
+          XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS "YES"
+          #XCODE_ATTRIBUTE_ENABLE_HARDENED_RUNTIME "YES"
+        )
+        if ((NOT XCODE_CODESIGN_IDENTITY STREQUAL "-") OR XCODE_DEPLOYMENT_TEAM)
           set_target_properties(${APP_NAME} PROPERTIES
-            XCODE_ATTRIBUTE_SKIP_INSTALL  NO
-            XCODE_ATTRIBUTE_INSTALL_PATH  "$(LOCAL_APPS_DIR)"
+            XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${XCODE_CODESIGN_IDENTITY}"
+            XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${XCODE_DEPLOYMENT_TEAM}"
+            XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic")
+        endif()
+
+        # =======================
+        # YassPacketTunnel extensions
+        # =======================
+        find_library(NetworkExtension_LIBRARY NetworkExtension REQUIRED)
+
+        set(PLUGIN_SRC
+          src/ios/tun2proxy.h
+          src/ios/tun2proxy.mm
+          src/ios/extensions/PacketTunnelProvider.h
+          src/ios/extensions/PacketTunnelProvider.mm
+          src/ios/extensions/PacketTunnel.entitlements
           )
 
-          # =======================
-          # YassPacketTunnel extensions
-          # =======================
-          find_library(NetworkExtension_LIBRARY NetworkExtension REQUIRED)
+        add_executable(YassPacketTunnel MACOSX_BUNDLE ${PLUGIN_SRC})
 
-          set(PLUGIN_SRC
-            src/ios/tun2proxy.h
-            src/ios/tun2proxy.mm
-            src/ios/extensions/PacketTunnelProvider.h
-            src/ios/extensions/PacketTunnelProvider.mm
-            src/ios/extensions/PacketTunnel.entitlements
-            )
+        target_include_directories(YassPacketTunnel PRIVATE
+          ${CMAKE_CURRENT_SOURCE_DIR}/src
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/extensions)
+        target_compile_options(YassPacketTunnel PRIVATE -fapplication-extension -fmodules -gmodules -fobjc-arc -fobjc-weak)
+        target_link_libraries(YassPacketTunnel PRIVATE ${NetworkExtension_LIBRARY})
+        set_target_properties(YassPacketTunnel PROPERTIES LINK_OPTIONS -fapplication-extension -e _NSExtensionMain -fobjc-arc -fobjc-link-runtime)
 
-          add_executable(YassPacketTunnel MACOSX_BUNDLE ${PLUGIN_SRC})
+        set_target_properties(YassPacketTunnel PROPERTIES
+          OUTPUT_NAME "YassPacketTunnel"
+          XCODE_PRODUCT_TYPE com.apple.product-type.app-extension
+          BUNDLE_EXTENSION appex
+          MACOSX_BUNDLE ON
+          MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/extensions/Info.plist
+          MACOSX_BUNDLE_BUNDLE_NAME "YassPacketTunnel"
+          MACOSX_BUNDLE_BUNDLE_VERSION ${PACKAGE_VERSION}
+          MACOSX_BUNDLE_COPYRIGHT "${YASS_APP_COPYRIGHT}"
+          MACOSX_BUNDLE_GUI_IDENTIFIER "it.gui.ios.yass.PacketTunnel"
+          MACOSX_BUNDLE_INFO_STRING "YassPacketTunnel"
+          MACOSX_BUNDLE_LONG_VERSION_STRING "${YASS_APP_TAG}-${YASS_APP_SUBTAG}"
+          MACOSX_BUNDLE_SHORT_VERSION_STRING "${YASS_APP_TAG}"
+          XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "it.gui.ios.yass.PacketTunnel"
+          XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/extensions/PacketTunnel.entitlements
+          XCODE_ATTRIBUTE_MARKETING_VERSION "${YASS_APP_VERSION}"
+          XCODE_ATTRIBUTE_PRODUCT_NAME "YassPacketTunnel"
+          XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "YES"
+          XCODE_ATTRIBUTE_CLANG_ENABLE_MODULES YES
+          XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
+          XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_WEAK YES
+          XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER ""
+          XCODE_ATTRIBUTE_APPLICATION_EXTENSION_API_ONLY "YES"
+          XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/../../Frameworks"
+          )
 
-          target_include_directories(YassPacketTunnel PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/src
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/extensions)
-          target_compile_options(YassPacketTunnel PRIVATE -fapplication-extension -fmodules -gmodules -fobjc-arc -fobjc-weak)
-          target_link_libraries(YassPacketTunnel PRIVATE ${NetworkExtension_LIBRARY})
-          set_target_properties(YassPacketTunnel PROPERTIES LINK_OPTIONS -fapplication-extension -e _NSExtensionMain -fobjc-arc -fobjc-link-runtime)
-
+        if ((NOT XCODE_CODESIGN_IDENTITY STREQUAL "-") OR XCODE_DEPLOYMENT_TEAM)
           set_target_properties(YassPacketTunnel PROPERTIES
-            OUTPUT_NAME "YassPacketTunnel"
-            MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/extensions/Info.plist
-            XCODE_PRODUCT_TYPE com.apple.product-type.app-extension
-            XCODE_GENERATE_SCHEME "TRUE"
-            MACOSX_BUNDLE_GUI_IDENTIFIER "it.gui.ios.yass.PacketTunnel"
-            XCODE_ATTRIBUTE_PRODUCT_NAME "YassPacketTunnel"
-            XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "it.gui.ios.yass.PacketTunnel"
-            XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "YES"
-            XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++20";
-            XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++"
-            XCODE_ATTRIBUTE_CLANG_ENABLE_MODULES YES
-            XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
-            XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_WEAK YES
-            XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER ""
-            )
+            XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${XCODE_CODESIGN_IDENTITY}"
+            XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${XCODE_DEPLOYMENT_TEAM}"
+            XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic")
+        endif()
 
-          if ((NOT XCODE_CODESIGN_IDENTITY STREQUAL "-") OR XCODE_DEPLOYMENT_TEAM)
-            set_target_properties(YassPacketTunnel PROPERTIES
-              XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/extensions/PacketTunnel.entitlements
-              XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${XCODE_CODESIGN_IDENTITY}"
-              XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${XCODE_DEPLOYMENT_TEAM}"
-              XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic")
-          endif()
+        add_dependencies(${APP_NAME} YassPacketTunnel)
+        set_target_properties(${APP_NAME} PROPERTIES
+          XCODE_EMBED_APP_EXTENSIONS YassPacketTunnel
+          XCODE_EMBED_APP_EXTENSIONS_REMOVE_HEADERS_ON_COPY "YES"
+          XCODE_EMBED_APP_EXTENSIONS_CODE_SIGN_ON_COPY "YES"
+        )
 
-          set_target_properties(${APP_NAME} PROPERTIES
-            XCODE_EMBED_APP_EXTENSIONS YassPacketTunnel
-            XCODE_EMBED_APP_EXTENSIONS_CODE_SIGN_ON_COPY TRUE
-          )
-
-          target_link_libraries(${APP_NAME} PRIVATE ${NetworkExtension_LIBRARY})
+        target_link_libraries(${APP_NAME} PRIVATE ${NetworkExtension_LIBRARY})
     endif()
 
     if (NOT CMAKE_SKIP_INSTALL_RULES)

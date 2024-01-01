@@ -5,37 +5,38 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleDisplayName</key>
-    <string>@YASS_APP_FULL_NAME@</string>
+    <string>${PRODUCT_NAME}</string>
     <key>CFBundleExecutable</key>
-    <string>yass</string>
-    <key>CFBundleIconFile</key>
-    <string>yass</string>
+    <string>${MACOSX_BUNDLE_EXECUTABLE_NAME}</string>
     <key>CFBundleIdentifier</key>
-    <string>it.gui.ios.yass</string>
+    <string>${MACOSX_BUNDLE_GUI_IDENTIFIER}</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
-    <key>CFBundleLongVersionString</key>
-    <string></string>
     <key>CFBundleName</key>
-    <string>yass</string>
+    <string>${MACOSX_BUNDLE_BUNDLE_NAME}</string>
+    <key>CFBundleDisplayName</key>
+    <string>${MACOSX_BUNDLE_BUNDLE_NAME}</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>@YASS_APP_VERSION@</string>
+    <string>${MACOSX_BUNDLE_SHORT_VERSION_STRING}</string>
     <key>CFBundleVersion</key>
-    <string>@YASS_APP_VERSION@</string>
-    <key>CFBundleSignature</key>
-    <string>????</string>
+    <string>${MACOSX_BUNDLE_BUNDLE_VERSION}</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>@YASS_APP_COPYRIGHT@</string>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+         <string>UIInterfaceOrientationPortraitUpsideDown</string>
+         <string>UIInterfaceOrientationPortrait</string>
+    </array>
     <key>CSResourcesFileMapped</key>
     <true/>
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
-    <key>NSHumanReadableCopyright</key>
-    <string>@YASS_APP_COPYRIGHT@</string>
     <key>UIMainStoryboardFile</key>
     <string>Main</string>
-    <key>LSApplicationCategoryType</key>
-    <string>public.app-category.utilities</string>
     <key>NSPrincipalClass</key>
     <string>UIApplication</string>
     <key>UIApplicationSceneManifest</key>
