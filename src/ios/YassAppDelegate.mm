@@ -23,8 +23,7 @@
 @interface YassAppDelegate ()
 - (void)SaveConfig;
 - (void)OnStarted;
-- (void)OnStartNewInstance;
-- (void)OnStartExistInstance:(NETunnelProviderManager*)vpn_manager;
+- (void)OnStartSaveAndLoadInstance:(NETunnelProviderManager*)vpn_manager;
 - (void)OnStartInstanceFailed:(NSError* _Nullable)error;
 - (void)OnStartFailed:(std::string)error_msg;
 - (void)OnStopped;
@@ -136,20 +135,32 @@
       [self OnStartInstanceFailed: error];
       return;
     }
+    NETunnelProviderManager* vpn_manager;
     if ([managers count] == 0) {
-      [self OnStartNewInstance];
-      return;
+      vpn_manager = [[NETunnelProviderManager alloc] init];
+    } else {
+      vpn_manager = managers[0];
     }
 
-    [self OnStartExistInstance:managers[0]];
+    [self OnStartSaveAndLoadInstance:vpn_manager];
   }];
 }
 
-- (void)OnStartNewInstance {
-  NETunnelProviderManager* vpn_manager = [[NETunnelProviderManager alloc] init];
+- (void)OnStartSaveAndLoadInstance:(NETunnelProviderManager*) vpn_manager  {
   NETunnelProviderProtocol* tunnelProtocol = [[NETunnelProviderProtocol alloc] init];
-  tunnelProtocol.serverAddress = @"Yet Another Shadow Socket";
   tunnelProtocol.providerBundleIdentifier = @"it.gui.ios.PacketTunnel";
+  tunnelProtocol.disconnectOnSleep = FALSE;
+  tunnelProtocol.serverAddress = @"Yet Another Shadow Socket";
+  if (@available(iOS 15.1, *)) {
+    LOG(INFO) << "Activating includeAllNetworks";
+    tunnelProtocol.includeAllNetworks = TRUE;
+    tunnelProtocol.excludeLocalNetworks = TRUE;
+    if (@available(iOS 16.4, *)) {
+      // By default, APNs are excluded from the VPN tunnel on 16.4 and later
+      tunnelProtocol.excludeAPNs = false;
+    }
+  }
+
   tunnelProtocol.providerConfiguration = @{
     @"ip": @"127.0.0.1",
     @"port": @3000,
@@ -168,27 +179,22 @@
         [self OnStartInstanceFailed: error];
         return;
       }
-      [self OnStartExistInstance:vpn_manager];
+      vpn_manager.enabled = TRUE;
+      vpn_manager_ = vpn_manager;
+      BOOL ret = [vpn_manager.connection startVPNTunnelAndReturnError:&error];
+      if (ret == TRUE) {
+        [self didChangeVpnStatus: nil];
+
+        YassViewController* viewController =
+            (YassViewController*)
+                UIApplication.sharedApplication.keyWindow.rootViewController;
+        [viewController Started];
+      } else {
+        vpn_manager_ = nil;
+        [self OnStartInstanceFailed:error];
+      }
     }];
   }];
-}
-
-- (void)OnStartExistInstance:(NETunnelProviderManager*)vpn_manager {
-  NSError * error;
-  vpn_manager.enabled = TRUE;
-  vpn_manager_ = vpn_manager;
-  BOOL ret = [vpn_manager.connection startVPNTunnelAndReturnError:&error];
-  if (ret == TRUE) {
-    [self didChangeVpnStatus: nil];
-
-    YassViewController* viewController =
-        (YassViewController*)
-            UIApplication.sharedApplication.keyWindow.rootViewController;
-    [viewController Started];
-  } else {
-    vpn_manager_ = nil;
-    [self OnStartInstanceFailed:error];
-  }
 }
 
 - (void)OnStartInstanceFailed:(NSError* _Nullable)error {
