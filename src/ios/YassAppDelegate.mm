@@ -148,7 +148,7 @@
 
 - (void)OnStartSaveAndLoadInstance:(NETunnelProviderManager*) vpn_manager  {
   NETunnelProviderProtocol* tunnelProtocol = [[NETunnelProviderProtocol alloc] init];
-  tunnelProtocol.providerBundleIdentifier = @"it.gui.ios.PacketTunnel";
+  tunnelProtocol.providerBundleIdentifier = @"it.gui.ios.yass.network-extension";
   tunnelProtocol.disconnectOnSleep = FALSE;
   tunnelProtocol.serverAddress = @"Yet Another Shadow Socket";
   if (@available(iOS 15.1, *)) {
@@ -169,6 +169,8 @@
   tunnelProtocol.identityDataPassword = @"";
   vpn_manager.protocolConfiguration = tunnelProtocol;
   vpn_manager.localizedDescription = @"YASS VPN";
+  vpn_manager.enabled = TRUE;
+
   [vpn_manager saveToPreferencesWithCompletionHandler:^(NSError * _Nullable error) {
     if (error != nil) {
       [self OnStartInstanceFailed: error];
@@ -179,7 +181,6 @@
         [self OnStartInstanceFailed: error];
         return;
       }
-      vpn_manager.enabled = TRUE;
       vpn_manager_ = vpn_manager;
       BOOL ret = [vpn_manager.connection startVPNTunnelAndReturnError:&error];
       if (ret == TRUE) {
