@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2023 Chilledheart  */
 
-#import "PacketTunnelProvider.h"
+#import "YassPacketTunnelProvider.h"
 
-@implementation PacketTunnelProvider
+@implementation YassPacketTunnelProvider
 
 - (void)startTunnelWithOptions:(NSDictionary *)options completionHandler:(void (^)(NSError *))completionHandler {
+  completionHandler(nil);
     // Add code here to start the process of connecting the tunnel.
-    completionHandler(nil);
 }
 
 - (void)stopTunnelWithReason:(NEProviderStopReason)reason completionHandler:(void (^)(void))completionHandler {

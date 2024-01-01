@@ -4134,8 +4134,8 @@ if (GUI)
         set(PLUGIN_SRC
           src/ios/tun2proxy.h
           src/ios/tun2proxy.mm
-          src/ios/extensions/PacketTunnelProvider.h
-          src/ios/extensions/PacketTunnelProvider.mm
+          src/ios/extensions/YassPacketTunnelProvider.h
+          src/ios/extensions/YassPacketTunnelProvider.mm
           src/ios/extensions/PacketTunnel.entitlements
           )
 

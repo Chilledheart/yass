@@ -3,6 +3,6 @@
 
 #import <NetworkExtension/NetworkExtension.h>
 
-@interface PacketTunnelProvider : NEPacketTunnelProvider
+@interface YassPacketTunnelProvider : NEPacketTunnelProvider
 
 @end

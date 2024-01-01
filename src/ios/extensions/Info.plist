@@ -26,12 +26,14 @@
     <array>
         <string>arm64</string>
     </array>
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
     <key>NSExtension</key>
     <dict>
         <key>NSExtensionPointIdentifier</key>
         <string>com.apple.networkextension.packet-tunnel</string>
         <key>NSExtensionPrincipalClass</key>
-        <string>PacketTunnelProvider</string>
+        <string>$(PRODUCT_MODULE_NAME).YassPacketTunnelProvider</string>
     </dict>
 </dict>
 </plist>

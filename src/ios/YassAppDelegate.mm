@@ -40,6 +40,7 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary<UIApplicationLaunchOptionsKey,id> *)launchOptions {
   state_ = STOPPED;
   pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
+  [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(didChangeVpnStatus:) name:NEVPNStatusDidChangeNotification object:nil];
   return YES;
 }
 
@@ -147,14 +148,14 @@
 - (void)OnStartNewInstance {
   NETunnelProviderManager* vpn_manager = [[NETunnelProviderManager alloc] init];
   NETunnelProviderProtocol* tunnelProtocol = [[NETunnelProviderProtocol alloc] init];
-  tunnelProtocol.serverAddress = @"";
+  tunnelProtocol.serverAddress = @"Yet Another Shadow Socket";
   tunnelProtocol.providerBundleIdentifier = @"it.gui.ios.PacketTunnel";
   tunnelProtocol.providerConfiguration = @{
     @"ip": @"127.0.0.1",
     @"port": @3000,
   };
-  tunnelProtocol.username = @"Yet Another Shadow Socket";
-  tunnelProtocol.identityDataPassword = @"password";
+  tunnelProtocol.username = @"";
+  tunnelProtocol.identityDataPassword = @"";
   vpn_manager.protocolConfiguration = tunnelProtocol;
   vpn_manager.localizedDescription = @"YASS VPN";
   [vpn_manager saveToPreferencesWithCompletionHandler:^(NSError * _Nullable error) {
@@ -175,17 +176,18 @@
 - (void)OnStartExistInstance:(NETunnelProviderManager*)vpn_manager {
   NSError * error;
   vpn_manager.enabled = TRUE;
+  vpn_manager_ = vpn_manager;
   BOOL ret = [vpn_manager.connection startVPNTunnelAndReturnError:&error];
   if (ret == TRUE) {
-    vpn_manager_ = vpn_manager;
+    [self didChangeVpnStatus: nil];
+
     YassViewController* viewController =
         (YassViewController*)
             UIApplication.sharedApplication.keyWindow.rootViewController;
     [viewController Started];
   } else {
-    std::string err_msg = gurl_base::SysNSStringToUTF8([error localizedDescription]);
-    [self OnStop:true];
-    [self OnStartFailed:err_msg];
+    vpn_manager_ = nil;
+    [self OnStartInstanceFailed:error];
   }
 }
 
@@ -195,6 +197,36 @@
   [self OnStop:true];
   [self OnStartFailed:err_msg];
 }
+
+#pragma mark - Notification
+- (void)didChangeVpnStatus:(NSNotification *)notification {
+  NEVPNStatus status = vpn_manager_.connection.status;
+
+  switch (status) {
+    case NEVPNStatusConnecting:
+      NSLog(@"Connecting...");
+      break;
+    case NEVPNStatusConnected:
+      NSLog(@"Connected...");
+      break;
+    case NEVPNStatusDisconnecting:
+      NSLog(@"Disconnecting...");
+      break;
+    case NEVPNStatusDisconnected:
+      NSLog(@"Disconnected...");
+      break;
+    case NEVPNStatusInvalid:
+      NSLog(@"Invalid");
+      break;
+    case NEVPNStatusReasserting:
+      NSLog(@"Reasserting...");
+      break;
+    default:
+      NSLog(@"Unknown status... %@", @(status));
+      break;
+  }
+}
+
 
 - (void)OnStartFailed:(std::string)error_msg {
   state_ = START_FAILED;
