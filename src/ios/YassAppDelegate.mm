@@ -151,15 +151,17 @@
   tunnelProtocol.providerBundleIdentifier = @"it.gui.ios.yass.network-extension";
   tunnelProtocol.disconnectOnSleep = FALSE;
   tunnelProtocol.serverAddress = @"Yet Another Shadow Socket";
+#if 0
   if (@available(iOS 15.1, *)) {
     LOG(INFO) << "Activating includeAllNetworks";
     tunnelProtocol.includeAllNetworks = TRUE;
     tunnelProtocol.excludeLocalNetworks = TRUE;
     if (@available(iOS 16.4, *)) {
       // By default, APNs are excluded from the VPN tunnel on 16.4 and later
-      tunnelProtocol.excludeAPNs = false;
+      tunnelProtocol.excludeAPNs = FALSE;
     }
   }
+#endif
 
   tunnelProtocol.providerConfiguration = @{
     @"ip": @"127.0.0.1",
