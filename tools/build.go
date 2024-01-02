@@ -2117,6 +2117,7 @@ func postStateArchives() map[string][]string {
 		archiveFiles(debugArchive, archivePrefix, []string{getAppName() + ".dbg"})
 		dbgPaths = append(dbgPaths, APPNAME+".dbg")
 	} else if systemNameFlag == "android" {
+		archiveFiles(debugArchive, archivePrefix, []string{getAppName() + ".dbg"})
 		dbgPaths = append(dbgPaths, APPNAME+".dbg")
 	} else if systemNameFlag == "darwin" {
 		archiveFiles(debugArchive, archivePrefix, []string{getAppName() + ".dSYM"})
