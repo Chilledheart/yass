@@ -4214,7 +4214,7 @@ if (GUI)
 
         add_custom_command(TARGET ${APP_NAME} PRE_BUILD
           COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:${APP_NAME}>/Frameworks
-          COMMAND ${CMAKE_COMMAND} -E copy tun2proxy.dylib $<TARGET_FILE_DIR:${APP_NAME}>/Frameworks/tun2proxy.dylib
+          COMMAND ${CMAKE_COMMAND} -E copy libtun2proxy.dylib $<TARGET_FILE_DIR:${APP_NAME}>/Frameworks/libtun2proxy.dylib
           DEPENDS tun2proxy
         )
 
