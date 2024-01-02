@@ -23,8 +23,9 @@
                       userInfo:@{@"Error reason": @"tun2proxy init failure"}]);
     return;
   }
-  worker_thread_ = std::make_unique<std::thread>([]{
-    Tun2Proxy_Run(context_);
+  Tun2Proxy_InitContext *context = context_;
+  worker_thread_ = std::make_unique<std::thread>([context]{
+    Tun2Proxy_Run(context);
   });
   [self readPackets];
   completionHandler(nil);
@@ -46,7 +47,7 @@
 
 - (void)stopTunnelWithReason:(NEProviderStopReason)reason completionHandler:(void (^)(void))completionHandler {
   stopped_ = true;
-  Tun2Proxy_Destroy();
+  Tun2Proxy_Destroy(context_);
   worker_thread_->join();
   worker_thread_.reset();
   completionHandler();

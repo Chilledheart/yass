@@ -2457,10 +2457,6 @@ endif()
 
 if (TUN2PROXY_LIB)
   file(COPY "${TUN2PROXY_LIB}" DESTINATION ${CMAKE_BINARY_DIR})
-
-  add_library(tun2proxy SHARED IMPORTED)
-  set_property(TARGET tun2proxy PROPERTY
-               IMPORTED_LOCATION "${TUN2PROXY_LIB_BASENAME}")
 endif()
 
 # *****************************************************************************************
@@ -4166,6 +4162,9 @@ if (GUI)
         add_executable(YassPacketTunnel MACOSX_BUNDLE ${PLUGIN_SRC})
 
         target_include_directories(YassPacketTunnel PRIVATE
+          ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl-override
+          ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl/polyfills
+          ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl
           ${CMAKE_CURRENT_SOURCE_DIR}/src
           ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/extensions)
         target_compile_options(YassPacketTunnel PRIVATE -fapplication-extension -fmodules -gmodules -fobjc-arc -fobjc-weak)
@@ -4218,6 +4217,7 @@ if (GUI)
           DEPENDS tun2proxy
         )
 
+        target_link_directories(YassPacketTunnel PRIVATE ${CMAKE_BINARY_DIR})
         target_link_libraries(YassPacketTunnel PRIVATE tun2proxy)
 
         target_link_libraries(${APP_NAME} PRIVATE ${NetworkExtension_LIBRARY})

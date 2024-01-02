@@ -7,7 +7,6 @@
 #include <unistd.h>
 
 #include <base/posix/eintr_wrapper.h>
-#include "core/logging.hpp"
 
 struct Tun2Proxy_InitContext {
   __weak NEPacketTunnelFlow *packetFlow;
@@ -29,7 +28,7 @@ static size_t GetReadPacketContextSize(void *context, void* packet) {
   return data.length;
 }
 
-static size_t FreeReadPacketContext(void *context, void* packet) {
+static void FreeReadPacketContext(void *context, void* packet) {
   auto packet_context = reinterpret_cast<ReadPacketContext*>(packet);
   packet_context->data = nil;
   delete packet_context;
@@ -92,7 +91,10 @@ Tun2Proxy_InitContext* Tun2Proxy_Init(NEPacketTunnelFlow *packetFlow,
   auto context = new Tun2Proxy_InitContext;
   context->packetFlow = packetFlow;
   int fds[2] = {-1, -1};
-  CHECK_EQ(0, pipe(fds));
+  if (pipe(fds) < 0) {
+    delete context;
+    return nullptr;
+  }
   fcntl(fds[0], F_SETFD, FD_CLOEXEC); // read end
   fcntl(fds[1], F_SETFD, FD_CLOEXEC); // write end
   fcntl(fds[0], F_SETFL, O_NONBLOCK | fcntl(fds[0], F_GETFL));
