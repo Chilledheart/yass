@@ -1294,6 +1294,78 @@ func GetDependenciesByDumpbin(path string, searchDirs []string) ([]string, []str
 			}
 		}
 	}
+
+	// append crt dlls
+	if msvcCrtLinkageFlag == "dynamic" {
+		vctoolsVersionStr := os.Getenv("VCToolsVersion")
+		var vctoolsVersion float64
+		if len(vctoolsVersionStr) >= 4 {
+			// for vc141 or above, VCToolsVersion=14.??.xxxx
+			vctoolsVersion, _ = strconv.ParseFloat(vctoolsVersionStr[:5], 32)
+		} else {
+			// for vc140 or below, VCToolsVersion=14.0
+			vctoolsVersion, _ = strconv.ParseFloat(vctoolsVersionStr, 32)
+		}
+
+		if vctoolsVersion >= 14.30 {
+			if msvcTargetArchFlag == "x64" || msvcTargetArchFlag == "arm64" {
+				dlls = append(dlls, "concrt140.dll", "msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll",
+							"msvcp140_atomic_wait.dll", "msvcp140_codecvt_ids.dll", "vccorlib140.dll", "vcruntime140.dll", "vcruntime140_1.dll")
+			} else if msvcTargetArchFlag == "x86" {
+				dlls = append(dlls, "concrt140.dll", "msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll",
+							"msvcp140_atomic_wait.dll", "msvcp140_codecvt_ids.dll", "vccorlib140.dll", "vcruntime140.dll")
+			}
+		} else if vctoolsVersion >= 14.20 && vctoolsVersion < 14.30 {
+			if msvcTargetArchFlag == "x64" || msvcTargetArchFlag == "arm64" {
+				dlls = append(dlls, "concrt140.dll", "msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll",
+							"msvcp140_atomic_wait.dll", "msvcp140_codecvt_ids.dll", "vccorlib140.dll", "vcruntime140.dll", "vcruntime140_1.dll")
+			} else if msvcTargetArchFlag == "x86" {
+				dlls = append(dlls, "concrt140.dll", "msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll",
+							"msvcp140_atomic_wait.dll", "msvcp140_codecvt_ids.dll", "vccorlib140.dll", "vcruntime140.dll")
+			}
+		} else if vctoolsVersion >= 14.10 && vctoolsVersion < 14.20 {
+			if msvcTargetArchFlag == "x64" {
+				dlls = append(dlls, "concrt140.dll", "msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll",
+							"vccorlib140.dll", "vcruntime140.dll")
+			} else if msvcTargetArchFlag == "x86" {
+				dlls = append(dlls, "concrt140.dll", "msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll",
+							"vccorlib140.dll", "vcruntime140.dll")
+			}
+		} else if vctoolsVersion >= 14.00 && vctoolsVersion < 14.10 {
+			if msvcTargetArchFlag == "x64" {
+				dlls = append(dlls, "concrt140.dll", "msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll",
+							"vccorlib140.dll", "vcruntime140.dll")
+			} else if msvcTargetArchFlag == "x86" {
+				dlls = append(dlls, "concrt140.dll", "msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll",
+							"vccorlib140.dll", "vcruntime140.dll")
+			}
+		} else {
+			// nop
+		}
+
+		if cmakeBuildTypeFlag == "Debug" {
+			dlls = append(dlls, "ucrtbased.dll")
+		} else {
+			dlls = append(dlls, "ucrtbase.dll")
+			dlls = append(dlls, "api-ms-win-crt-conio-l1-1-0.dll",
+					"api-ms-win-crt-convert-l1-1-0.dll",
+					"api-ms-win-crt-environment-l1-1-0.dll",
+					"api-ms-win-crt-filesystem-l1-1-0.dll",
+					"api-ms-win-crt-heap-l1-1-0.dll",
+					"api-ms-win-crt-locale-l1-1-0.dll",
+					"api-ms-win-crt-math-l1-1-0.dll",
+					"api-ms-win-crt-multibyte-l1-1-0.dll",
+					"api-ms-win-crt-private-l1-1-0.dll",
+					"api-ms-win-crt-process-l1-1-0.dll",
+					"api-ms-win-crt-runtime-l1-1-0.dll",
+					"api-ms-win-crt-stdio-l1-1-0.dll",
+					"api-ms-win-crt-string-l1-1-0.dll",
+					"api-ms-win-crt-time-l1-1-0.dll",
+					"api-ms-win-crt-utility-l1-1-0.dll")
+		}
+
+	}
+
 	for _, dll := range(dlls) {
 		resolved := false
 		for _, searchDir := range(searchDirs) {
