@@ -4113,15 +4113,11 @@ if (GUI)
             MACOSX_PACKAGE_LOCATION "Resources")
         endif()
 
-        # Fixme
-        set(APP_MACOSX_BUNDLE_INFO "${CMAKE_CURRENT_BINARY_DIR}/Info.plist")
-        configure_file("src/ios/Info.plist.in" "${APP_MACOSX_BUNDLE_INFO}" @ONLY)
-
         set_target_properties(${APP_NAME} PROPERTIES
           RESOURCE "${ALLRESOURCES}"
           OUTPUT_NAME "${APP_NAME}"
           MACOSX_BUNDLE ON
-          MACOSX_BUNDLE_INFO_PLIST ${APP_MACOSX_BUNDLE_INFO}
+          MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/Info.plist.in
           MACOSX_BUNDLE_BUNDLE_NAME ${PACKAGE_FULL_NAME}
           MACOSX_BUNDLE_BUNDLE_VERSION ${PACKAGE_VERSION}
           MACOSX_BUNDLE_COPYRIGHT "${YASS_APP_COPYRIGHT}"
@@ -4184,7 +4180,7 @@ if (GUI)
           XCODE_PRODUCT_TYPE com.apple.product-type.app-extension
           BUNDLE_EXTENSION appex
           MACOSX_BUNDLE ON
-          MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/extensions/Info.plist
+          MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/extensions/Info.plist.in
           MACOSX_BUNDLE_BUNDLE_NAME "YassPacketTunnel"
           MACOSX_BUNDLE_BUNDLE_VERSION ${PACKAGE_VERSION}
           MACOSX_BUNDLE_COPYRIGHT "${YASS_APP_COPYRIGHT}"
