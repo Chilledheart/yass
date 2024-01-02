@@ -2307,7 +2307,7 @@ if (IOS)
   if (SDK_NAME STREQUAL iphoneos)
     set(_CRASHPAD_OS "-ios")
     set(_CRASHPAD_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
-  else()
+  elseif (SDK_NAME STREQUAL iphonesimulator)
     set(_CRASHPAD_OS "-ios-simulator")
     set(_CRASHPAD_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
   endif()
@@ -2433,10 +2433,34 @@ if (ANDROID)
     message(FATAL_ERROR "tun2proxy: unsupported android architecture ${CMAKE_SYSTEM_PROCESSOR}")
   endif()
   set(TUN2PROXY_LIB third_party/tun2proxy/target/${_TUN2PROXY_TARGET}/release/libtun2proxy.so)
+  set(TUN2PROXY_LIB_BASENAME libtun2proxy.so)
+endif()
+
+if (IOS)
+  if (SDK_NAME STREQUAL iphoneos)
+    if (CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
+      set(_TUN2PROXY_TARGET "aarch64-apple-ios")
+    endif()
+  elseif (SDK_NAME STREQUAL iphonesimulator)
+    if (CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
+      set(_TUN2PROXY_TARGET "aarch64-apple-ios-sim")
+    endif()
+    if (CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
+      set(_TUN2PROXY_TARGET "x86_64-apple-ios")
+    endif()
+  endif()
+  if (_TUN2PROXY_TARGET)
+    set(TUN2PROXY_LIB third_party/tun2proxy/target/${_TUN2PROXY_TARGET}/release/libtun2proxy.dylib)
+    set(TUN2PROXY_LIB_BASENAME libtun2proxy.dylib)
+  endif()
 endif()
 
 if (TUN2PROXY_LIB)
   file(COPY "${TUN2PROXY_LIB}" DESTINATION ${CMAKE_BINARY_DIR})
+
+  add_library(tun2proxy SHARED IMPORTED)
+  set_property(TARGET tun2proxy PROPERTY
+               IMPORTED_LOCATION "${TUN2PROXY_LIB_BASENAME}")
 endif()
 
 # *****************************************************************************************
@@ -4166,9 +4190,9 @@ if (GUI)
           XCODE_ATTRIBUTE_MARKETING_VERSION "${YASS_APP_VERSION}"
           XCODE_ATTRIBUTE_PRODUCT_NAME "YassPacketTunnel"
           XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "YES"
-          XCODE_ATTRIBUTE_CLANG_ENABLE_MODULES YES
-          XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
-          XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_WEAK YES
+          XCODE_ATTRIBUTE_CLANG_ENABLE_MODULES "YES"
+          XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "YES"
+          XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_WEAK "YES"
           XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER ""
           XCODE_ATTRIBUTE_APPLICATION_EXTENSION_API_ONLY "YES"
           XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/../../Frameworks"
@@ -4186,6 +4210,12 @@ if (GUI)
           XCODE_EMBED_APP_EXTENSIONS YassPacketTunnel
           XCODE_EMBED_APP_EXTENSIONS_REMOVE_HEADERS_ON_COPY "YES"
           XCODE_EMBED_APP_EXTENSIONS_CODE_SIGN_ON_COPY "YES"
+        )
+
+        add_custom_command(TARGET ${APP_NAME} PRE_BUILD
+          COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:${APP_NAME}>/Frameworks
+          COMMAND ${CMAKE_COMMAND} -E copy tun2proxy.dylib $<TARGET_FILE_DIR:${APP_NAME}>/Frameworks/tun2proxy.dylib
+          DEPENDS tun2proxy
         )
 
         target_link_libraries(${APP_NAME} PRIVATE ${NetworkExtension_LIBRARY})
