@@ -3,36 +3,36 @@
 #include "ios/tun2proxy.h"
 
 #import <NetworkExtension/NetworkExtension.h>
+#include <fcntl.h>
+#include <unistd.h>
 
-struct InitContent {
+#include <base/posix/eintr_wrapper.h>
+#include "core/logging.hpp"
+
+struct Tun2Proxy_InitContext {
   __weak NEPacketTunnelFlow *packetFlow;
+  int read_fd;
 };
 
-struct ReadPacketContent {
-  NSArray<NEPacket *> *packets;
+struct ReadPacketContext {
+  NSData *data;
 };
 
-static size_t GetPacketCount(void *content, void* packets) {
-  NSArray<NEPacket *> *array = reinterpret_cast<ReadPacketContent*>(packets)->packets;
-  return [array count];
-}
-
-static const void* GetPacketDataAtIndex(void *content, void* packets, int index) {
-  NSArray<NEPacket *> *array = reinterpret_cast<ReadPacketContent*>(packets)->packets;
-  NEPacket *packet = array[index];
-  uint32_t prefix = CFSwapInt32HostToBig((uint32_t)packet.protocolFamily);
-  // Prepend data with network protocol. It should be done because on tun2proxy
-  // uses uint32_t prefixes containing network protocol.
-  NSMutableData *data = [[NSMutableData alloc] initWithCapacity:sizeof(prefix) + packet.data.length];
-  [data appendBytes:&prefix length:sizeof(prefix)];
-  [data appendData:packet.data];
+static const void* GetReadPacketContextData(void *context, void* packet) {
+  NSData *data = reinterpret_cast<ReadPacketContext*>(packet)->data;
 
   return data.bytes;
 }
 
-static size_t GetPacketSizeAtIndex(void *content, void* packets, int index) {
-  NSArray<NEPacket *> *array = reinterpret_cast<ReadPacketContent*>(packets)->packets;
-  return sizeof(uint32_t) + [[array[index] data] length];
+static size_t GetReadPacketContextSize(void *context, void* packet) {
+  NSData *data = reinterpret_cast<ReadPacketContext*>(packet)->data;
+  return data.length;
+}
+
+static size_t FreeReadPacketContext(void *context, void* packet) {
+  auto packet_context = reinterpret_cast<ReadPacketContext*>(packet);
+  packet_context->data = nil;
+  delete packet_context;
 }
 
 static NEPacket *packetFromData(NSData *data) {
@@ -53,9 +53,9 @@ static NEPacket *packetFromData(NSData *data) {
   return [[NEPacket alloc] initWithData:packetData protocolFamily:protocol];
 }
 
-static void WritePackets(void* content, void** packets, size_t* packetLengths,
+static void WritePackets(void* context, const void** packets, const size_t* packetLengths,
                          int packetsCount) {
-  InitContent *c = reinterpret_cast<InitContent*>(content);
+  Tun2Proxy_InitContext *c = reinterpret_cast<Tun2Proxy_InitContext*>(context);
   NEPacketTunnelFlow* packetFlow = c->packetFlow;;
   NSMutableArray *packetsArray = [NSMutableArray array];
   for (int i = 0; i < packetsCount; ++i) {
@@ -67,30 +67,64 @@ static void WritePackets(void* content, void** packets, size_t* packetLengths,
 }
 
 extern "C"
-void tun2proxy_init(void* content, decltype(WritePackets));
+int tun2proxy_init(void* context,
+                   int fd,
+                   decltype(GetReadPacketContextData),
+                   decltype(GetReadPacketContextSize),
+                   decltype(FreeReadPacketContext),
+                   decltype(WritePackets),
+                   const char* proxy_url,
+                   int tun_mtu,
+                   int log_level,
+                   int dns_over_tcp);
 
 extern "C"
-void tun2proxy_read_packets(void* packets, decltype(GetPacketCount),
-                            decltype(GetPacketDataAtIndex),
-                            decltype(GetPacketSizeAtIndex));
+int tun2proxy_destroy();
 
-extern "C"
-void* tun2proxy_destroy();
-
-void Tun2Proxy_Init(NEPacketTunnelFlow *packetFlow) {
-  InitContent *c = new InitContent;
-  c->packetFlow = packetFlow;
-  tun2proxy_init(c, WritePackets);
+Tun2Proxy_InitContext* Tun2Proxy_Init(NEPacketTunnelFlow *packetFlow,
+                                      const std::string& proxy_url,
+                                      int tun_mtu,
+                                      int log_level,
+                                      bool dns_over_tcp) {
+  auto context = new Tun2Proxy_InitContext;
+  context->packetFlow = packetFlow;
+  int fds[2] = {-1, -1};
+  CHECK_EQ(0, pipe(fds));
+  fcntl(fds[0], F_SETFD, FD_CLOEXEC); // read end
+  fcntl(fds[1], F_SETFD, FD_CLOEXEC); // write end
+  fcntl(fds[0], F_SETFL, O_NONBLOCK | fcntl(fds[0], F_GETFL));
+  context->read_fd = fds[1]; // save write end
+  tun2proxy_init(context, fds[0],
+                 GetReadPacketContextData, GetReadPacketContextSize,
+                 FreeReadPacketContext, WritePackets,
+                 proxy_url.c_str(),
+                 tun_mtu,
+                 log_level,
+                 dns_over_tcp ? 1 : 0);
+  return context;
 }
 
-void Tun2Proxy_ForwardReadPackets(NSArray<NEPacket *> *packets) {
-  ReadPacketContent p;
-  p.packets = packets;
-  tun2proxy_read_packets(&p, GetPacketCount, GetPacketDataAtIndex,
-                         GetPacketSizeAtIndex);
+void Tun2Proxy_ForwardReadPackets(Tun2Proxy_InitContext* context, NSArray<NEPacket *> *packets) {
+  for (NEPacket *packet in packets) {
+    uint32_t prefix = CFSwapInt32HostToBig((uint32_t)packet.protocolFamily);
+    // Prepend data with network protocol. It should be done because on tun2proxy
+    // uses uint32_t prefixes containing network protocol.
+    NSMutableData *data = [[NSMutableData alloc] initWithCapacity:sizeof(prefix) + packet.data.length];
+    [data appendBytes:&prefix length:sizeof(prefix)];
+    [data appendData:packet.data];
+
+    ReadPacketContext *p = new ReadPacketContext;
+    p->data = data;
+    int ret = HANDLE_EINTR(write(context->read_fd, &p, sizeof(p)));
+    if (ret < 0) {
+      break;
+    }
+  }
 }
 
-void Tun2Proxy_Destroy() {
-  InitContent *c = reinterpret_cast<InitContent*>(tun2proxy_destroy());
-  delete c;
+void Tun2Proxy_Destroy(Tun2Proxy_InitContext* context) {
+  tun2proxy_destroy();
+  context->packetFlow = nil;
+  IGNORE_EINTR(close(context->read_fd));
+  delete context;
 }
