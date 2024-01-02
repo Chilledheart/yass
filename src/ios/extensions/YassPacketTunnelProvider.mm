@@ -8,6 +8,12 @@
 #include <atomic>
 #include <thread>
 
+static constexpr int DEFAULT_MTU = 1500;
+static const char PRIVATE_VLAN4_CLIENT[] = "172.19.0.1";
+static const char PRIVATE_VLAN4_GATEWAY[] = "172.19.0.2";
+static const char PRIVATE_VLAN6_CLIENT[] = "fdfe:dcba:9876::1";
+static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
+
 @implementation YassPacketTunnelProvider {
   std::atomic_bool stopped_;
   std::unique_ptr<std::thread> worker_thread_;
@@ -16,7 +22,10 @@
 
 - (void)startTunnelWithOptions:(NSDictionary *)options completionHandler:(void (^)(NSError *))completionHandler {
   stopped_ = false;
-  // TODO get local server and port from self.protocolConfiguration
+
+  NETunnelProviderProtocol *protocolConfiguration = (NETunnelProviderProtocol*)self.protocolConfiguration;
+  NSString* ip = protocolConfiguration.providerConfiguration[@"ip"];
+  NSNumber* port = protocolConfiguration.providerConfiguration[@"port"];
   context_ = Tun2Proxy_Init(self.packetFlow, "socks5://127.0.0.1:3000", 1500, 0, true);
   if (!context_) {
     completionHandler([NSError errorWithDomain:@"it.gui.ios.yass" code:200
@@ -27,8 +36,27 @@
   worker_thread_ = std::make_unique<std::thread>([context]{
     Tun2Proxy_Run(context);
   });
+
+  NEPacketTunnelNetworkSettings *tunnelNetworkSettings = [[NEPacketTunnelNetworkSettings alloc] initWithTunnelRemoteAddress:@(PRIVATE_VLAN4_GATEWAY)];
+  tunnelNetworkSettings.MTU = [NSNumber numberWithInteger:DEFAULT_MTU];
+  tunnelNetworkSettings.IPv4Settings = [[NEIPv4Settings alloc]
+    initWithAddresses:[NSArray arrayWithObjects:@(PRIVATE_VLAN4_CLIENT), nil]
+    subnetMasks:[NSArray arrayWithObjects:@("255.255.255.224"), nil]];
+  tunnelNetworkSettings.IPv4Settings.includedRoutes = @[[NEIPv4Route defaultRoute]];
+
+#if 0
+  NEIPv4Route *excludeRoute = [[NEIPv4Route alloc] initWithDestinationAddress:@"10.12.23.90" subnetMask:@"255.255.255.255"];
+  tunnelNetworkSettings.IPv4Settings.excludedRoutes = @[excludeRoute];
+#endif
+  [self setTunnelNetworkSettings:tunnelNetworkSettings
+               completionHandler:^(NSError * _Nullable error) {
+    if (error) {
+      completionHandler(error);
+      return;
+    }
+    completionHandler(nil);
+  }];
   [self readPackets];
-  completionHandler(nil);
 }
 
 - (void)readPackets {
