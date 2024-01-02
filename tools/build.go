@@ -1434,6 +1434,9 @@ func postStateCopyDependedLibraries() {
 		glog.Infof("--- Dependent dll")
 		for _, dep := range(deps) {
 			glog.Infof("--- --- %s", dep)
+			if !strings.HasSuffix(strings.ToLower(dep), ".dll") {
+				continue;
+			}
 			err := copyFile(dep, filepath.Base(dep))
 			if err != nil {
 				glog.Fatalf("Copy file %s failed :%v", dep, err)
