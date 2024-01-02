@@ -4218,6 +4218,8 @@ if (GUI)
           DEPENDS tun2proxy
         )
 
+        target_link_libraries(YassPacketTunnel PRIVATE tun2proxy)
+
         target_link_libraries(${APP_NAME} PRIVATE ${NetworkExtension_LIBRARY})
     endif()
 

@@ -15,6 +15,7 @@ Tun2Proxy_InitContext* Tun2Proxy_Init(NEPacketTunnelFlow *flow,
                                       int tun_mtu,
                                       int log_level,
                                       bool dns_over_tcp);
+int Tun2Proxy_Run(Tun2Proxy_InitContext* context);
 void Tun2Proxy_ForwardReadPackets(Tun2Proxy_InitContext* context, NSArray<NEPacket *> *packets);
 void Tun2Proxy_Destroy(Tun2Proxy_InitContext* context);
 

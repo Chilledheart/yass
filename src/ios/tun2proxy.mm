@@ -79,6 +79,9 @@ int tun2proxy_init(void* context,
                    int dns_over_tcp);
 
 extern "C"
+int tun2proxy_run();
+
+extern "C"
 int tun2proxy_destroy();
 
 Tun2Proxy_InitContext* Tun2Proxy_Init(NEPacketTunnelFlow *packetFlow,
@@ -94,14 +97,24 @@ Tun2Proxy_InitContext* Tun2Proxy_Init(NEPacketTunnelFlow *packetFlow,
   fcntl(fds[1], F_SETFD, FD_CLOEXEC); // write end
   fcntl(fds[0], F_SETFL, O_NONBLOCK | fcntl(fds[0], F_GETFL));
   context->read_fd = fds[1]; // save write end
-  tun2proxy_init(context, fds[0],
-                 GetReadPacketContextData, GetReadPacketContextSize,
-                 FreeReadPacketContext, WritePackets,
-                 proxy_url.c_str(),
-                 tun_mtu,
-                 log_level,
-                 dns_over_tcp ? 1 : 0);
+  int ret = tun2proxy_init(context, fds[0],
+                           GetReadPacketContextData, GetReadPacketContextSize,
+                           FreeReadPacketContext, WritePackets,
+                           proxy_url.c_str(),
+                           tun_mtu,
+                           log_level,
+                           dns_over_tcp ? 1 : 0);
+  if (ret < 0) {
+    IGNORE_EINTR(close(fds[0]));
+    IGNORE_EINTR(close(fds[1]));
+    delete context;
+    return nullptr;
+  }
   return context;
+}
+
+int Tun2Proxy_Run(Tun2Proxy_InitContext* context) {
+  return tun2proxy_run();
 }
 
 void Tun2Proxy_ForwardReadPackets(Tun2Proxy_InitContext* context, NSArray<NEPacket *> *packets) {
