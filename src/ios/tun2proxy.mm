@@ -18,17 +18,20 @@ struct ReadPacketContext {
 };
 
 static const void* GetReadPacketContextData(void *context, void* packet) {
+  NSLog(@"tun2proxy: get packet data - %p", packet);
   NSData *data = reinterpret_cast<ReadPacketContext*>(packet)->data;
 
   return data.bytes;
 }
 
 static size_t GetReadPacketContextSize(void *context, void* packet) {
+  NSLog(@"tun2proxy: get packet size - %p", packet);
   NSData *data = reinterpret_cast<ReadPacketContext*>(packet)->data;
   return data.length;
 }
 
 static void FreeReadPacketContext(void *context, void* packet) {
+  NSLog(@"tun2proxy: freed packet - %p", packet);
   auto packet_context = reinterpret_cast<ReadPacketContext*>(packet);
   packet_context->data = nil;
   delete packet_context;
@@ -54,6 +57,7 @@ static NEPacket *packetFromData(NSData *data) {
 
 static void WritePackets(void* context, const void** packets, const size_t* packetLengths,
                          int packetsCount) {
+  NSLog(@"tun2proxy: write packet count - %d", packetsCount);
   Tun2Proxy_InitContext *c = reinterpret_cast<Tun2Proxy_InitContext*>(context);
   NEPacketTunnelFlow* packetFlow = c->packetFlow;;
   NSMutableArray *packetsArray = [NSMutableArray array];
