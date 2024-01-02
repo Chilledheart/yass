@@ -1487,14 +1487,6 @@ func postStateStripBinaries() {
 		if hasCrashpad {
 			cmdRun([]string{objcopy, "--strip-debug", crashpadPath}, false)
 		}
-
-		// strip tun2proxy as well if any
-		if systemNameFlag == "android" {
-			tun2proxyPath := "libtun2proxy.so"
-			cmdRun([]string{objcopy, "--only-keep-debug", tun2proxyPath, tun2proxyPath + ".dbg"}, false)
-			cmdRun([]string{objcopy, "--strip-debug", tun2proxyPath}, false)
-			cmdRun([]string{objcopy, "--add-gnu-debuglink=" + tun2proxyPath + ".dbg", tun2proxyPath}, false)
-		}
 	} else if systemNameFlag == "darwin" {
 		cmdRun([]string{"dsymutil", filepath.Join(getAppName(), "Contents", "MacOS", APPNAME),
 			"--statistics", "--papertrail", "-o", getAppName() + ".dSYM"}, false)
@@ -2125,8 +2117,6 @@ func postStateArchives() map[string][]string {
 		archiveFiles(debugArchive, archivePrefix, []string{getAppName() + ".dbg"})
 		dbgPaths = append(dbgPaths, APPNAME+".dbg")
 	} else if systemNameFlag == "android" {
-		tun2proxyPath := "libtun2proxy.so"
-		archiveFiles(debugArchive, archivePrefix, []string{getAppName() + ".dbg", tun2proxyPath + ".dbg"})
 		dbgPaths = append(dbgPaths, APPNAME+".dbg")
 	} else if systemNameFlag == "darwin" {
 		archiveFiles(debugArchive, archivePrefix, []string{getAppName() + ".dSYM"})

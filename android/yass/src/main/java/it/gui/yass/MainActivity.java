@@ -38,7 +38,6 @@ public class MainActivity extends Activity {
     static {
         // Load native library
         System.loadLibrary("yass");
-        System.loadLibrary("tun2proxy");
     }
     private static final String TAG = "MainActivity";
     private static final String YASS_TAG = "yass";

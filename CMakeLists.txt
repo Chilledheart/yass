@@ -2432,8 +2432,8 @@ if (ANDROID)
   else()
     message(FATAL_ERROR "tun2proxy: unsupported android architecture ${CMAKE_SYSTEM_PROCESSOR}")
   endif()
-  set(TUN2PROXY_LIB third_party/tun2proxy/target/${_TUN2PROXY_TARGET}/release/libtun2proxy.so)
-  set(TUN2PROXY_LIB_BASENAME libtun2proxy.so)
+  set(TUN2PROXY_LIB third_party/tun2proxy/target/${_TUN2PROXY_TARGET}/release/libtun2proxy.a)
+  set(TUN2PROXY_LIB_BASENAME libtun2proxy.a)
 endif()
 
 if (IOS)
@@ -2450,13 +2450,17 @@ if (IOS)
     endif()
   endif()
   if (_TUN2PROXY_TARGET)
-    set(TUN2PROXY_LIB third_party/tun2proxy/target/${_TUN2PROXY_TARGET}/release/libtun2proxy.dylib)
-    set(TUN2PROXY_LIB_BASENAME libtun2proxy.dylib)
+    set(TUN2PROXY_LIB third_party/tun2proxy/target/${_TUN2PROXY_TARGET}/release/libtun2proxy.a)
+    set(TUN2PROXY_LIB_BASENAME libtun2proxy.a)
   endif()
 endif()
 
 if (TUN2PROXY_LIB)
   file(COPY "${TUN2PROXY_LIB}" DESTINATION ${CMAKE_BINARY_DIR})
+
+  add_library(tun2proxy STATIC IMPORTED)
+  set_property(TARGET tun2proxy PROPERTY
+    IMPORTED_LOCATION "${CMAKE_BINARY_DIR}/${TUN2PROXY_LIB_BASENAME}")
 endif()
 
 # *****************************************************************************************
@@ -3812,6 +3816,10 @@ if (GUI)
           ${SRC_FILES}
           ${GUI_USE_FILE}
           )
+
+      target_link_libraries(${APP_NAME} PRIVATE tun2proxy)
+      set_target_properties(${APP_NAME} PROPERTIES
+        LINK_FLAGS "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/src/android/export.lds -u Java_it_gui_yass_MainActivity_tun2ProxyStart -u Java_it_gui_yass_MainActivity_tun2ProxyStop")
     else()
       add_executable(${APP_NAME} WIN32 ${GUI_OPTIONS}
           ${SRC_FILES}
@@ -4211,14 +4219,10 @@ if (GUI)
           XCODE_EMBED_APP_EXTENSIONS_CODE_SIGN_ON_COPY "YES"
         )
 
-        add_custom_command(TARGET ${APP_NAME} PRE_BUILD
-          COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:${APP_NAME}>/Frameworks
-          COMMAND ${CMAKE_COMMAND} -E copy libtun2proxy.dylib $<TARGET_FILE_DIR:${APP_NAME}>/Frameworks/libtun2proxy.dylib
-          DEPENDS tun2proxy
-        )
-
+        find_library(Security_LIBRARY Security REQUIRED)
         target_link_directories(YassPacketTunnel PRIVATE ${CMAKE_BINARY_DIR})
-        target_link_libraries(YassPacketTunnel PRIVATE tun2proxy)
+        target_link_libraries(YassPacketTunnel PRIVATE -Wl,-hidden-ltun2proxy)
+        target_link_libraries(YassPacketTunnel PRIVATE ${Security_LIBRARY})
 
         target_link_libraries(${APP_NAME} PRIVATE ${NetworkExtension_LIBRARY})
     endif()

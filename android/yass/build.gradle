@@ -94,22 +94,6 @@ task copyTask {
         into 'libs/arm64-v8a'
         rename('crashpad_handler', 'libcrashpad_handler.so')
     }
-    copy {
-        from '../../build-android24-x86/libtun2proxy.so'
-        into 'libs/x86'
-    }
-    copy {
-        from '../../build-android24-x64/libtun2proxy.so'
-        into 'libs/x86_64'
-    }
-    copy {
-        from '../../build-android24-arm/libtun2proxy.so'
-        into 'libs/armeabi-v7a'
-    }
-    copy {
-        from '../../build-android24-arm64/libtun2proxy.so'
-        into 'libs/arm64-v8a'
-    }
 }
 
 dependencies {
