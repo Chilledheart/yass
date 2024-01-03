@@ -8,7 +8,7 @@
 #include <atomic>
 #include <thread>
 
-static constexpr int DEFAULT_MTU = 1400;
+static constexpr int DEFAULT_MTU = 1500;
 static const char PRIVATE_VLAN4_CLIENT[] = "172.19.0.1";
 static const char PRIVATE_VLAN4_GATEWAY[] = "172.19.0.2";
 static const char PRIVATE_VLAN6_CLIENT[] = "fdfe:dcba:9876::1";
@@ -110,9 +110,7 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
   if (stopped_) {
     return;
   }
-  NSLog(@"tun2proxy: read packet begin");
   [self.packetFlow readPacketObjectsWithCompletionHandler:^(NSArray<NEPacket *> *packets) {
-    NSLog(@"tun2proxy: read packet - %@", packets);
     {
       __typeof__(self) strongSelf = weakSelf;
       Tun2Proxy_ForwardReadPackets(context_, packets);

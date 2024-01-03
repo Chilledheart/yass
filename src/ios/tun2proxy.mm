@@ -18,46 +18,32 @@ struct ReadPacketContext {
 };
 
 static const void* GetReadPacketContextData(void *context, void* packet) {
-  NSLog(@"tun2proxy: get packet data - %p", packet);
   NSData *data = reinterpret_cast<ReadPacketContext*>(packet)->data;
 
   return data.bytes;
 }
 
 static size_t GetReadPacketContextSize(void *context, void* packet) {
-  NSLog(@"tun2proxy: get packet size - %p", packet);
   NSData *data = reinterpret_cast<ReadPacketContext*>(packet)->data;
   return data.length;
 }
 
 static void FreeReadPacketContext(void *context, void* packet) {
-  NSLog(@"tun2proxy: freed packet - %p", packet);
   auto packet_context = reinterpret_cast<ReadPacketContext*>(packet);
   packet_context->data = nil;
   delete packet_context;
 }
 
 static NEPacket *packetFromData(NSData *data) {
-  // Get network protocol from prefix
-  NSUInteger prefixSize = sizeof(uint32_t);
-
-  if (data.length < prefixSize) {
-    return nil;
-  }
-
-  uint32_t protocol = PF_UNSPEC;
-  [data getBytes:&protocol length:prefixSize];
-  protocol = CFSwapInt32BigToHost(protocol);
-
-  NSRange range = NSMakeRange(prefixSize, data.length - prefixSize);
-  NSData *packetData = [data subdataWithRange:range];
-
-  return [[NEPacket alloc] initWithData:packetData protocolFamily:protocol];
+  uint8_t version_ih = 0;
+  [data getBytes:&version_ih length:sizeof(version_ih)];
+  uint8_t version = version_ih >> 4;
+  assert((version == 4 || version == 6) && "unsupported ip hdr");
+  return [[NEPacket alloc] initWithData:data protocolFamily:version == 6 ? AF_INET6 : AF_INET];
 }
 
 static void WritePackets(void* context, const void** packets, const size_t* packetLengths,
                          int packetsCount) {
-  NSLog(@"tun2proxy: write packet count - %d", packetsCount);
   Tun2Proxy_InitContext *c = reinterpret_cast<Tun2Proxy_InitContext*>(context);
   NEPacketTunnelFlow* packetFlow = c->packetFlow;;
   NSMutableArray *packetsArray = [NSMutableArray array];
@@ -125,15 +111,8 @@ int Tun2Proxy_Run(Tun2Proxy_InitContext* context) {
 
 void Tun2Proxy_ForwardReadPackets(Tun2Proxy_InitContext* context, NSArray<NEPacket *> *packets) {
   for (NEPacket *packet in packets) {
-    uint32_t prefix = CFSwapInt32HostToBig((uint32_t)packet.protocolFamily);
-    // Prepend data with network protocol. It should be done because on tun2proxy
-    // uses uint32_t prefixes containing network protocol.
-    NSMutableData *data = [[NSMutableData alloc] initWithCapacity:sizeof(prefix) + packet.data.length];
-    [data appendBytes:&prefix length:sizeof(prefix)];
-    [data appendData:packet.data];
-
     ReadPacketContext *p = new ReadPacketContext;
-    p->data = data;
+    p->data = packet.data;
     int ret = HANDLE_EINTR(write(context->read_fd, &p, sizeof(p)));
     if (ret < 0) {
       break;
