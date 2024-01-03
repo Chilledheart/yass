@@ -1,4 +1,5 @@
-// SPDX-License-Identifier: GPL-2.0 Copyright (c) 2019-2023 Chilledheart  */
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright (c) 2019-2024 Chilledheart  */
 
 #ifndef H_CONTENT_SERVER
 #define H_CONTENT_SERVER
@@ -38,7 +39,8 @@ class ContentServer {
 
  public:
   explicit ContentServer(asio::io_context &io_context,
-                         const std::string& remote_host_name = {},
+                         const std::string& remote_host_ips = {},
+                         const std::string& remote_host_sni = {},
                          uint16_t remote_port = {},
                          const std::string& upstream_certificate = {},
                          const std::string& certificate = {},
@@ -46,7 +48,8 @@ class ContentServer {
                          ContentServer::Delegate *delegate = nullptr)
     : io_context_(io_context),
       work_guard_(std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context_.get_executor())),
-      remote_host_name_(remote_host_name),
+      remote_host_ips_(remote_host_ips),
+      remote_host_sni_(remote_host_sni),
       remote_port_(remote_port),
       upstream_https_fallback_(absl::GetFlag(FLAGS_method).method == CRYPTO_HTTPS),
       https_fallback_(absl::GetFlag(FLAGS_method).method == CRYPTO_HTTPS),
@@ -230,7 +233,7 @@ class ContentServer {
             setup_ssl_ctx_tlsext_cb(tlsext_ctx);
           }
           scoped_refptr<ConnectionType> conn = factory_.Create(
-            io_context_, remote_host_name_, remote_port_,
+            io_context_, remote_host_ips_, remote_host_sni_, remote_port_,
             upstream_https_fallback_, https_fallback_,
             enable_upstream_tls_, enable_tls_,
             &upstream_ssl_ctx_, &ssl_ctx_);
@@ -547,7 +550,8 @@ class ContentServer {
   /// stopping the io_context from running out of work
   std::unique_ptr<asio::executor_work_guard<asio::io_context::executor_type>> work_guard_;
 
-  std::string remote_host_name_;
+  std::string remote_host_ips_;
+  std::string remote_host_sni_;
   uint16_t remote_port_;
 
   bool upstream_https_fallback_;

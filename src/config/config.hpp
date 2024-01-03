@@ -24,6 +24,7 @@ struct CipherMethodFlag {
 ABSL_DECLARE_FLAG(bool, ipv6_mode);
 
 ABSL_DECLARE_FLAG(std::string, server_host);
+ABSL_DECLARE_FLAG(std::string, server_sni);
 ABSL_DECLARE_FLAG(int32_t, server_port);
 ABSL_DECLARE_FLAG(std::string, username);
 ABSL_DECLARE_FLAG(std::string, password);

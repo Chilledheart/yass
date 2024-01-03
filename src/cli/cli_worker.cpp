@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022-2023 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 #include "cli/cli_worker.hpp"
 #include "cli/cli_server.hpp"
 
 #include <absl/flags/flag.h>
 #include <absl/strings/str_cat.h>
+#include <absl/strings/str_join.h>
 #include <openssl/crypto.h>
 
 #ifdef _WIN32
@@ -71,8 +72,12 @@ void Worker::Start(absl::AnyInvocable<void(asio::error_code)> &&callback) {
   asio::post(io_context_, [this]() {
     DCHECK_EQ(private_->cli_server.get(), nullptr);
 
-    std::string host_name = absl::GetFlag(FLAGS_local_host);
-    uint16_t port = absl::GetFlag(FLAGS_local_port);
+    std::string host_name = absl::GetFlag(FLAGS_server_host);
+    uint16_t port = absl::GetFlag(FLAGS_server_port);
+    remote_server_sni_ = absl::GetFlag(FLAGS_server_host);
+    if (!absl::GetFlag(FLAGS_server_sni).empty()) {
+      remote_server_sni_ = absl::GetFlag(FLAGS_server_sni);
+    }
 
     asio::error_code ec;
     auto addr = asio::ip::make_address(host_name.c_str(), ec);
@@ -81,7 +86,7 @@ void Worker::Start(absl::AnyInvocable<void(asio::error_code)> &&callback) {
       asio::ip::tcp::endpoint endpoint(addr, port);
       auto results = asio::ip::tcp::resolver::results_type::create(
         endpoint, host_name, std::to_string(port));
-      on_resolve_local(ec, results);
+      on_resolve_remote(ec, results);
       return;
     }
 #ifdef HAVE_C_ARES
@@ -92,7 +97,7 @@ void Worker::Start(absl::AnyInvocable<void(asio::error_code)> &&callback) {
 #endif
       [this](const asio::error_code& ec,
              asio::ip::tcp::resolver::results_type results) {
-        on_resolve_local(ec, results);
+        on_resolve_remote(ec, results);
     });
   });
 }
@@ -148,13 +153,56 @@ void Worker::WorkFunc() {
   }
   LOG(INFO) << "background thread stopped";
 }
-void Worker::on_resolve_local(asio::error_code ec,
-                              asio::ip::tcp::resolver::results_type results) {
-  auto callback = std::move(start_callback_);
+
+void Worker::on_resolve_remote(asio::error_code ec,
+                               asio::ip::tcp::resolver::results_type results) {
   if (ec) {
     LOG(WARNING) << "local resolved host:" << absl::GetFlag(FLAGS_local_host)
       << " failed due to: " << ec;
-    if (callback) {
+    if (auto callback = std::move(start_callback_)) {
+      callback(ec);
+    }
+    work_guard_.reset();
+    return;
+  }
+
+  std::vector<std::string> server_ips;
+  for (auto result : results) {
+    server_ips.push_back(result.endpoint().address().to_string());
+  }
+  remote_server_ips_ = absl::StrJoin(server_ips, ";");
+  LOG(INFO) << "resolved server ips: " << remote_server_ips_;
+
+  std::string host_name = absl::GetFlag(FLAGS_local_host);
+  uint16_t port = absl::GetFlag(FLAGS_local_port);
+
+  auto addr = asio::ip::make_address(host_name.c_str(), ec);
+  bool host_is_ip_address = !ec;
+  if (host_is_ip_address) {
+    asio::ip::tcp::endpoint endpoint(addr, port);
+    auto results = asio::ip::tcp::resolver::results_type::create(
+      endpoint, host_name, std::to_string(port));
+    on_resolve_local(ec, results);
+    return;
+  }
+#ifdef HAVE_C_ARES
+  resolver_->AsyncResolve(host_name, std::to_string(port),
+#else
+  resolver_.async_resolve(Net_ipv6works() ? asio::ip::tcp::unspec() : asio::ip::tcp::v4(),
+                          host_name, std::to_string(port),
+#endif
+    [this](const asio::error_code& ec,
+           asio::ip::tcp::resolver::results_type results) {
+      on_resolve_local(ec, results);
+  });
+}
+
+void Worker::on_resolve_local(asio::error_code ec,
+                              asio::ip::tcp::resolver::results_type results) {
+  if (ec) {
+    LOG(WARNING) << "local resolved host:" << absl::GetFlag(FLAGS_local_host)
+      << " failed due to: " << ec;
+    if (auto callback = std::move(start_callback_)) {
       callback(ec);
     }
     work_guard_.reset();
@@ -163,8 +211,15 @@ void Worker::on_resolve_local(asio::error_code ec,
   endpoints_.clear();
   endpoints_.insert(endpoints_.end(), std::begin(results), std::end(results));
 
+  std::vector<std::string> local_ips;
+  for (auto result : results) {
+    local_ips.push_back(result.endpoint().address().to_string());
+  }
+  LOG(INFO) << "resolved local ips: " << absl::StrJoin(local_ips, ";");
+
   private_->cli_server = std::make_unique<CliServer>(io_context_,
-                                                     absl::GetFlag(FLAGS_server_host),
+                                                     remote_server_ips_,
+                                                     remote_server_sni_,
                                                      absl::GetFlag(FLAGS_server_port)
                                                      );
 
@@ -183,7 +238,7 @@ void Worker::on_resolve_local(asio::error_code ec,
     work_guard_.reset();
   }
 
-  if (callback) {
+  if (auto callback = std::move(start_callback_)) {
     callback(ec);
   }
 }

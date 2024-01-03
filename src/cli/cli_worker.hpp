@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022-2023 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 #ifndef YASS_CLI_WORKER
 #define YASS_CLI_WORKER
 
@@ -36,6 +36,9 @@ class Worker {
  private:
   void WorkFunc();
 
+  void on_resolve_remote(asio::error_code ec,
+                         asio::ip::tcp::resolver::results_type results);
+
   void on_resolve_local(asio::error_code ec,
                         asio::ip::tcp::resolver::results_type results);
 
@@ -55,6 +58,8 @@ class Worker {
   absl::AnyInvocable<void()> stop_callback_;
 
   WorkerPrivate *private_;
+  std::string remote_server_ips_;
+  std::string remote_server_sni_;
   std::vector<asio::ip::tcp::endpoint> endpoints_;
   std::atomic_bool in_destroy_ = false;
 };

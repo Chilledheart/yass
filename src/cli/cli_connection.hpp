@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2023 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 
 #ifndef H_CLI_CONNECTION
 #define H_CLI_CONNECTION
@@ -121,7 +121,8 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   /// Construct the service with io context and socket
   ///
   /// \param io_context the io context associated with the service
-  /// \param remote_host_name the sni name used with remote endpoint
+  /// \param remote_host_ips the ip addresses used with remote endpoint
+  /// \param remote_host_sni the sni name used with remote endpoint
   /// \param remote_port the port used with remote endpoint
   /// \param upstream_https_fallback the data channel (upstream) falls back to https (alpn)
   /// \param https_fallback the data channel falls back to https (alpn)
@@ -130,7 +131,8 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   /// \param upstream_ssl_ctx the ssl context object for tls data transfer (upstream)
   /// \param ssl_ctx the ssl context object for tls data transfer
   CliConnection(asio::io_context& io_context,
-                const std::string& remote_host_name,
+                const std::string& remote_host_ips,
+                const std::string& remote_host_sni,
                 uint16_t remote_port,
                 bool upstream_https_fallback,
                 bool https_fallback,

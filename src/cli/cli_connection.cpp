@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2023 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 
 #include "cli/cli_connection.hpp"
 
@@ -147,7 +147,8 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
 }
 
 CliConnection::CliConnection(asio::io_context& io_context,
-                             const std::string& remote_host_name,
+                             const std::string& remote_host_ips,
+                             const std::string& remote_host_sni,
                              uint16_t remote_port,
                              bool upstream_https_fallback,
                              bool https_fallback,
@@ -155,7 +156,7 @@ CliConnection::CliConnection(asio::io_context& io_context,
                              bool enable_tls,
                              asio::ssl::context *upstream_ssl_ctx,
                              asio::ssl::context *ssl_ctx)
-    : Connection(io_context, remote_host_name, remote_port,
+    : Connection(io_context, remote_host_ips, remote_host_sni, remote_port,
                  upstream_https_fallback, https_fallback,
                  enable_upstream_tls, enable_tls,
                  upstream_ssl_ctx, ssl_ctx),
@@ -1471,13 +1472,17 @@ void CliConnection::OnConnect() {
   // create lazy
   if (enable_upstream_tls_) {
     channel_ = ssl_stream::create(*io_context_,
-                                  remote_host_name_, remote_port_,
+                                  remote_host_ips_,
+                                  remote_host_sni_,
+                                  remote_port_,
                                   this, upstream_https_fallback_,
                                   upstream_ssl_ctx_);
 
   } else {
     channel_ = stream::create(*io_context_,
-                              remote_host_name_, remote_port_,
+                              remote_host_ips_,
+                              remote_host_sni_,
+                              remote_port_,
                               this);
   }
   channel_->async_connect([this, self](asio::error_code ec){

@@ -18,21 +18,23 @@ class ssl_stream : public stream {
   /// construct a ssl stream object with ss protocol
   ///
   /// \param io_context the io context associated with the service
-  /// \param host_name the sni name used with endpoint
+  /// \param host_ips the ip addresses used with endpoint
+  /// \param host_sni the sni name used with endpoint
   /// \param port the sni port used with endpoint
   /// \param channel the underlying data channel used in stream
   /// \param https_fallback the data channel falls back to https (alpn)
   /// \param ssl_ctx the ssl context object for tls data transfer
   ssl_stream(asio::io_context& io_context,
-             const std::string& host_name,
+             const std::string& host_ips,
+             const std::string& host_sni,
              uint16_t port,
              Channel* channel,
              bool https_fallback,
              asio::ssl::context *ssl_ctx)
-      : stream(io_context, host_name, port, channel),
+      : stream(io_context, host_ips, host_sni, port, channel),
         https_fallback_(https_fallback),
         enable_tls_(true),
-        ssl_socket_(net::SSLSocket::Create(&io_context, &socket_, ssl_ctx->native_handle(), https_fallback, host_name)) {
+        ssl_socket_(net::SSLSocket::Create(&io_context, &socket_, ssl_ctx->native_handle(), https_fallback, host_sni)) {
   }
 
   ~ssl_stream() override {}
