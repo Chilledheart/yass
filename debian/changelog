@@ -1,3 +1,8 @@
+yass (1.5.9-1) UNRELEASED; urgency=medium
+
+  * ca-certificates: load symbolic link as cert files.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Wed, 3 Jan 2024 20:41:47 +0800
 yass (1.5.8-1) UNRELEASED; urgency=medium
 
   * ca-certificates: load symbolic link as cert files.
