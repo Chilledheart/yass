@@ -194,6 +194,8 @@ for embedded devices and low end boxes.
 %{_mandir}/man1/yass_cli.1*
 
 %changelog
+* Wed Jan 3 2023 Chilledheart <keeyou-cn@outlook.com> - 1.5.8-1
+  - ca-certificates: load symbolic link as cert files.
 * Wed Dec 27 2023 Chilledheart <keeyou-cn@outlook.com> - 1.5.7-1
   - ca-certificates: update for 20230311.3.93 release.
 * Tue Dec 19 2023 Chilledheart <keeyou-cn@outlook.com> - 1.5.6-1
