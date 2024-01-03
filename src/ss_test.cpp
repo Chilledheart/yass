@@ -672,7 +672,7 @@ class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
     asio::error_code ec;
 
     local_server_ = std::make_unique<cli::CliServer>(io_context_,
-                                                     std::string(),
+                                                     absl::GetFlag(FLAGS_ipv6_mode) ?  "::1" : "127.0.0.1",
                                                      "localhost",
                                                      remote_endpoint.port(),
                                                      kCertificate);
