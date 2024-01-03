@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2023 Chilledheart  */
+/* Copyright (c) 2023-2024 Chilledheart  */
 
 #ifndef YASS_IOS_APP_DELEGATE
 #define YASS_IOS_APP_DELEGATE
