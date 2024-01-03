@@ -104,7 +104,7 @@ class stream : public RefCountedThreadSafe<stream> {
       if (endpoints_.empty()) {
         LOG(WARNING) << "invalid ip addresses: " << host_ips_;
         closed_ = true;
-        on_async_connect_callback(asio::error::timed_out);
+        on_async_connect_callback(asio::error::host_not_found);
       } else {
         on_try_next_endpoint(channel);
       }
