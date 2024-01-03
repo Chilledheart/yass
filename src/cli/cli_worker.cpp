@@ -126,6 +126,14 @@ size_t Worker::currentConnections() const {
   return private_->cli_server ? private_->cli_server->num_of_connections() : 0;
 }
 
+std::vector<std::string> Worker::GetRemoteIpsV4() const {
+  return remote_server_ips_v4_;
+}
+
+std::vector<std::string> Worker::GetRemoteIpsV6() const {
+  return remote_server_ips_v6_;
+}
+
 std::string Worker::GetDomain() const {
   return absl::StrCat(absl::GetFlag(FLAGS_local_host),
                       ":", std::to_string(absl::GetFlag(FLAGS_local_port)));
@@ -169,6 +177,11 @@ void Worker::on_resolve_remote(asio::error_code ec,
   std::vector<std::string> server_ips;
   for (auto result : results) {
     server_ips.push_back(result.endpoint().address().to_string());
+    if (result.endpoint().address().is_v4()) {
+      remote_server_ips_v4_.push_back(result.endpoint().address().to_string());
+    } else {
+      remote_server_ips_v6_.push_back(result.endpoint().address().to_string());
+    }
   }
   remote_server_ips_ = absl::StrJoin(server_ips, ";");
   LOG(INFO) << "resolved server ips: " << remote_server_ips_;

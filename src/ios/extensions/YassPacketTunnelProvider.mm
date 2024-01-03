@@ -26,6 +26,8 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
   NETunnelProviderProtocol *protocolConfiguration = (NETunnelProviderProtocol*)self.protocolConfiguration;
   NSString* ip = protocolConfiguration.providerConfiguration[@"ip"];
   NSNumber* port = protocolConfiguration.providerConfiguration[@"port"];
+  NSArray* remote_ips_v4 = protocolConfiguration.providerConfiguration[@"remote_ips_v4"];
+  NSArray* remote_ips_v6 = protocolConfiguration.providerConfiguration[@"remote_ips_v6"];
   context_ = Tun2Proxy_Init(self.packetFlow, "socks5://127.0.0.1:3000", DEFAULT_MTU, 0, true);
   if (!context_) {
     completionHandler([NSError errorWithDomain:@"it.gui.ios.yass" code:200
@@ -40,17 +42,55 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
     NSLog(@"tun2proxy: worker thread done");
   });
 
-  NEPacketTunnelNetworkSettings *tunnelNetworkSettings = [[NEPacketTunnelNetworkSettings alloc] initWithTunnelRemoteAddress:@(PRIVATE_VLAN4_GATEWAY)];
+  NEPacketTunnelNetworkSettings *tunnelNetworkSettings = [[NEPacketTunnelNetworkSettings alloc] initWithTunnelRemoteAddress:remote_ips_v4[0]];
   tunnelNetworkSettings.MTU = [NSNumber numberWithInteger:DEFAULT_MTU];
+
+  // Setting IPv4 Route
   tunnelNetworkSettings.IPv4Settings = [[NEIPv4Settings alloc]
     initWithAddresses:[NSArray arrayWithObjects:@(PRIVATE_VLAN4_CLIENT), nil]
     subnetMasks:[NSArray arrayWithObjects:@("255.255.255.224"), nil]];
-  tunnelNetworkSettings.IPv4Settings.includedRoutes = @[[NEIPv4Route defaultRoute]];
+  NEIPv4Route *ipv4route = [NEIPv4Route defaultRoute];
+  ipv4route.gatewayAddress = @(PRIVATE_VLAN4_GATEWAY);
+  tunnelNetworkSettings.IPv4Settings.includedRoutes = @[ipv4route];
 
-#if 0
-  NEIPv4Route *excludeRoute = [[NEIPv4Route alloc] initWithDestinationAddress:@"10.12.23.90" subnetMask:@"255.255.255.255"];
-  tunnelNetworkSettings.IPv4Settings.excludedRoutes = @[excludeRoute];
-#endif
+  NSMutableArray *excludeRoutes = [NSMutableArray alloc] init];
+  for (NSString *ip : remote_ips_v4) {
+    NEIPv4Route *excludeRoute = [[NEIPv4Route alloc]
+      initWithDestinationAddress:ip subnetMask:@"255.255.255.255"];
+    [excludeRoutes addObject:excludeRoute];
+  }
+  tunnelNetworkSettings.IPv4Settings.excludedRoutes = excludeRoutes;
+
+  // Setting IPv6 Route
+  tunnelNetworkSettings.IPv6Settings = [[NEIPv6Settings alloc]
+    initWithAddresses:[NSArray arrayWithObjects:@(PRIVATE_VLAN6_CLIENT), nil]
+    networkPrefixLengths:[NSArray arrayWithObjects:@126, nil]];
+  NEIPv6Route *ipv6route = [NEIPv6Route defaultRoute];
+  ipv6route.gatewayAddress = @(PRIVATE_VLAN6_GATEWAY);
+  tunnelNetworkSettings.IPv6Settings.includedRoutes = @[ipv6route];
+
+  NSMutableArray *excludeRoutes = [NSMutableArray alloc] init];
+  for (NSString *ip : remote_ips_v6) {
+    NEIPv6Route *excludeRoute = [[NEIPv6Route alloc]
+      initWithDestinationAddress:ip subnetMask:@"255.255.255.255"];
+    [excludeRoutes addObject:excludeRoute];
+  }
+  tunnelNetworkSettings.IPv6Settings.excludedRoutes = excludeRoutes;
+
+  // Setting DNS Settings
+  NEDNSSettings *dnsSettings = [[NEDNSSettings alloc]
+    initWithServers: [NSArray arrayWithObjects:@(PRIVATE_VLAN4_CLIENT), @(PRIVATE_VLAN6_CLIENT), nil]];
+  dnsSettings.searchDomains = @"";
+  tunnelNetworkSettings.DNSSettings = dnsSettings;
+
+  // Setting Proxy Settings
+  NEProxySettings *proxySettings = [[NEProxySettings alloc] init];
+  proxySettings.HTTPServer = [[NEProxyServer alloc] initWithAddress:ip port:port];
+  proxySettings.HTTPEnabled = TRUE;
+  proxySettings.HTTPSServer = [[NEProxyServer alloc] initWithAddress:ip port:port];
+  proxySettings.HTTPSEnabled = TRUE;
+  tunnelNetworkSettings.proxySettings = proxySettings;
+
   [self setTunnelNetworkSettings:tunnelNetworkSettings
                completionHandler:^(NSError * _Nullable error) {
     if (error) {
@@ -75,7 +115,7 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
       __typeof__(self) strongSelf = weakSelf;
       Tun2Proxy_ForwardReadPackets(context_, packets);
     }
-    
+
     [weakSelf readPackets];
   }];
 }

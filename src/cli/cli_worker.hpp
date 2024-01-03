@@ -8,6 +8,7 @@
 #include <atomic>
 #include <memory>
 #include <thread>
+#include <vector>
 
 #include <absl/functional/any_invocable.h>
 
@@ -28,6 +29,8 @@ class Worker {
   void Start(absl::AnyInvocable<void(asio::error_code)> &&callback);
   void Stop(absl::AnyInvocable<void()> &&callback);
 
+  std::vector<std::string> GetRemoteIpsV4() const;
+  std::vector<std::string> GetRemoteIpsV6() const;
   std::string GetDomain() const;
   std::string GetRemoteDomain() const;
 
@@ -59,6 +62,8 @@ class Worker {
 
   WorkerPrivate *private_;
   std::string remote_server_ips_;
+  std::vector<std::string> remote_server_ips_v4_;
+  std::vector<std::string> remote_server_ips_v6_;
   std::string remote_server_sni_;
   std::vector<asio::ip::tcp::endpoint> endpoints_;
   std::atomic_bool in_destroy_ = false;
