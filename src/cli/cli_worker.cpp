@@ -165,7 +165,7 @@ void Worker::WorkFunc() {
 void Worker::on_resolve_remote(asio::error_code ec,
                                asio::ip::tcp::resolver::results_type results) {
   if (ec) {
-    LOG(WARNING) << "local resolved host:" << absl::GetFlag(FLAGS_local_host)
+    LOG(WARNING) << "remote resolved host:" << absl::GetFlag(FLAGS_server_host)
       << " failed due to: " << ec;
     if (auto callback = std::move(start_callback_)) {
       callback(ec);
