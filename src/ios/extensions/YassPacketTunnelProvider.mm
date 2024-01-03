@@ -80,7 +80,7 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
   // Setting DNS Settings
   NEDNSSettings *dnsSettings = [[NEDNSSettings alloc]
     initWithServers: [NSArray arrayWithObjects:@(PRIVATE_VLAN4_CLIENT), @(PRIVATE_VLAN6_CLIENT), nil]];
-  dnsSettings.searchDomains = @"";
+  dnsSettings.matchDomains = [NSArray arrayWithObjects:@"", nil];
   tunnelNetworkSettings.DNSSettings = dnsSettings;
 
   // Setting Proxy Settings
@@ -89,6 +89,7 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
   proxySettings.HTTPEnabled = TRUE;
   proxySettings.HTTPSServer = [[NEProxyServer alloc] initWithAddress:ip port:port];
   proxySettings.HTTPSEnabled = TRUE;
+  proxySettings.exceptionList = [NSArray arrayWithObjects:@"127.0.0.1", @"localhost", @"*.local", nil]
   tunnelNetworkSettings.proxySettings = proxySettings;
 
   [self setTunnelNetworkSettings:tunnelNetworkSettings
