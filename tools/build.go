@@ -1845,7 +1845,7 @@ func archiveMainFile(output string, prefix string, paths []string, dllPaths []st
 			"-archivePath", cmakeBuildTypeFlag + ".xcarchive",
 			"-exportPath", ".",
 			"-exportOptionsPlist", "../tools/development.plist"}, true)
-		err := os.Rename("yass.ipa", output)
+		err := os.Rename("Yet Another Shadow Socket.ipa", output)
 		if err != nil {
 			glog.Fatalf("%v", err)
 		}
