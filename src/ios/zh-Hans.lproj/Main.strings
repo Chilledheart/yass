@@ -2,10 +2,10 @@
 "bEh-We-3bh.text" = "密码";
 
 /* Class = "UIButton"; text = "Stop"; ObjectID = "JYa-MA-4KH"; */
-"MGs-Nl-c5G.text" = "停止";
+"MGs-Nl-c5G.normalTitle" = "停止";
 
 /* Class = "UIButton"; text = "Start"; ObjectID = "KPU-2Q-dN7"; */
-"mgH-S8-WUJ.text" = "启动";
+"mgH-S8-WUJ.normalTitle" = "启动";
 
 /* Class = "UILabel"; text = "Username"; ObjectID = "QRy-PK-jJT"; */
 "dFn-KS-gx8.text" = "用户名";
