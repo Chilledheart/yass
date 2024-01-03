@@ -13,6 +13,7 @@
 #include "core/rand_util.hpp"
 #include "core/utils.hpp"
 
+#include <build/build_config.h>
 #include <quiche/spdy/core/hpack/hpack_constants.h>
 
 static std::vector<http2::adapter::Header> GenerateHeaders(
@@ -79,7 +80,7 @@ namespace cli {
 const char CliConnection::http_connect_reply_[] =
     "HTTP/1.1 200 Connection established\r\n\r\n";
 
-#ifdef __APPLE__
+#if BUILDFLAG(IS_MAC)
 #include <xnu_private/net_pfvar.h>
 #endif
 #ifdef __linux__
@@ -480,7 +481,7 @@ void CliConnection::ReadSocks5Handshake() {
 
 asio::error_code CliConnection::OnReadRedirHandshake(
   std::shared_ptr<IOBuf> buf) {
-#ifdef __APPLE__
+#if BUILDFLAG(IS_MAC)
   if (!absl::GetFlag(FLAGS_redir_mode)) {
     return asio::error::operation_not_supported;
   }
