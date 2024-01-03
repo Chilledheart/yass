@@ -25,7 +25,8 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
 
   NETunnelProviderProtocol *protocolConfiguration = (NETunnelProviderProtocol*)self.protocolConfiguration;
   NSString* ip = protocolConfiguration.providerConfiguration[@"ip"];
-  NSNumber* port = protocolConfiguration.providerConfiguration[@"port"];
+  NSNumber* portNum = protocolConfiguration.providerConfiguration[@"port"];
+  NSInteger port = [portNum integerValue];
   NSArray* remote_ips_v4 = protocolConfiguration.providerConfiguration[@"remote_ips_v4"];
   NSArray* remote_ips_v6 = protocolConfiguration.providerConfiguration[@"remote_ips_v6"];
   context_ = Tun2Proxy_Init(self.packetFlow, "socks5://127.0.0.1:3000", DEFAULT_MTU, 0, true);
@@ -53,7 +54,7 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
   ipv4route.gatewayAddress = @(PRIVATE_VLAN4_GATEWAY);
   tunnelNetworkSettings.IPv4Settings.includedRoutes = @[ipv4route];
 
-  NSMutableArray *excludeRoutes = [NSMutableArray alloc] init];
+  NSMutableArray *excludeRoutes = [[NSMutableArray alloc] init];
   for (NSString *ip : remote_ips_v4) {
     NEIPv4Route *excludeRoute = [[NEIPv4Route alloc]
       initWithDestinationAddress:ip subnetMask:@"255.255.255.255"];
@@ -69,13 +70,13 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
   ipv6route.gatewayAddress = @(PRIVATE_VLAN6_GATEWAY);
   tunnelNetworkSettings.IPv6Settings.includedRoutes = @[ipv6route];
 
-  NSMutableArray *excludeRoutes = [NSMutableArray alloc] init];
+  NSMutableArray *ipv6_excludeRoutes = [[NSMutableArray alloc] init];
   for (NSString *ip : remote_ips_v6) {
     NEIPv6Route *excludeRoute = [[NEIPv6Route alloc]
-      initWithDestinationAddress:ip subnetMask:@"255.255.255.255"];
-    [excludeRoutes addObject:excludeRoute];
+      initWithDestinationAddress:ip networkPrefixLength:@126];
+    [ipv6_excludeRoutes addObject:excludeRoute];
   }
-  tunnelNetworkSettings.IPv6Settings.excludedRoutes = excludeRoutes;
+  tunnelNetworkSettings.IPv6Settings.excludedRoutes = ipv6_excludeRoutes;
 
   // Setting DNS Settings
   NEDNSSettings *dnsSettings = [[NEDNSSettings alloc]
@@ -89,7 +90,7 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
   proxySettings.HTTPEnabled = TRUE;
   proxySettings.HTTPSServer = [[NEProxyServer alloc] initWithAddress:ip port:port];
   proxySettings.HTTPSEnabled = TRUE;
-  proxySettings.exceptionList = [NSArray arrayWithObjects:@"127.0.0.1", @"localhost", @"*.local", nil]
+  proxySettings.exceptionList = [NSArray arrayWithObjects:@"127.0.0.1", @"localhost", @"*.local", nil];
   tunnelNetworkSettings.proxySettings = proxySettings;
 
   [self setTunnelNetworkSettings:tunnelNetworkSettings
