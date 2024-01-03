@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2023 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 
 #ifndef H_CONNECTION
 #define H_CONNECTION
@@ -179,7 +179,8 @@ class Connection {
   /// Construct the connection with io context
   ///
   /// \param io_context the io context associated with the service
-  /// \param remote_host_name the sni name used with remote endpoint
+  /// \param remote_host_ips the ip addresses used with remote endpoint
+  /// \param remote_host_sni the sni name used with remote endpoint
   /// \param remote_port the port used with remote endpoint
   /// \param upstream_https_fallback the data channel (upstream) falls back to https (alpn)
   /// \param https_fallback the data channel falls back to https (alpn)
@@ -188,7 +189,8 @@ class Connection {
   /// \param upstream_ssl_ctx the ssl context object for tls data transfer (upstream)
   /// \param ssl_ctx the ssl context object for tls data transfer
   Connection(asio::io_context& io_context,
-             const std::string& remote_host_name,
+             const std::string& remote_host_ips,
+             const std::string& remote_host_sni,
              uint16_t remote_port,
              bool upstream_https_fallback,
              bool https_fallback,
@@ -197,7 +199,8 @@ class Connection {
              asio::ssl::context *upstream_ssl_ctx,
              asio::ssl::context *ssl_ctx)
       : io_context_(&io_context),
-        remote_host_name_(remote_host_name),
+        remote_host_ips_(remote_host_ips),
+        remote_host_sni_(remote_host_sni),
         remote_port_(remote_port),
         upstream_https_fallback_(upstream_https_fallback),
         enable_upstream_tls_(enable_upstream_tls),
@@ -290,8 +293,10 @@ class Connection {
  protected:
   /// the io context associated with
   asio::io_context* io_context_;
-  /// the upstream host name to be established with
-  std::string remote_host_name_;
+  /// the upstream ip to be established with
+  std::string remote_host_ips_;
+  /// the upstream sni to be established with
+  std::string remote_host_sni_;
   /// the upstream port to be established with
   uint16_t remote_port_;
 

@@ -23,6 +23,7 @@
 
 #include <absl/functional/any_invocable.h>
 #include <absl/strings/str_cat.h>
+#include <absl/strings/str_split.h>
 #include <absl/time/time.h>
 
 /// the class to describe the traffic between given node (endpoint)
@@ -40,11 +41,13 @@ class stream : public RefCountedThreadSafe<stream> {
   /// construct a stream object with ss protocol
   ///
   /// \param io_context the io context associated with the service
-  /// \param host_name the sni name used with endpoint
+  /// \param host_ips the ip addresses used with endpoint
+  /// \param host_sni the sni name used with endpoint
   /// \param port the sni port used with endpoint
   /// \param channel the underlying data channel used in stream
   stream(asio::io_context& io_context,
-         const std::string& host_name,
+         const std::string& host_ips,
+         const std::string& host_sni,
          uint16_t port,
          Channel* channel)
 #ifdef HAVE_C_ARES
@@ -52,7 +55,8 @@ class stream : public RefCountedThreadSafe<stream> {
 #else
       : resolver_(io_context),
 #endif
-        host_name_(host_name),
+        host_ips_(host_ips),
+        host_sni_(host_sni),
         port_(port),
         io_context_(io_context),
         socket_(io_context),
@@ -85,8 +89,30 @@ class stream : public RefCountedThreadSafe<stream> {
     DCHECK(callback);
     user_connect_callback_ = std::move(callback);
 
+    if (!host_ips_.empty()) {
+      auto host_ips = absl::StrSplit(host_ips_, ';');
+      for (const auto& host_ip : host_ips) {
+        asio::error_code ec;
+        auto addr = asio::ip::make_address(host_ip, ec);
+        if (ec) {
+          LOG(WARNING) << "invalid ip address: " << host_ip;
+          continue;
+        }
+        LOG(INFO) << "found ip address: " << addr;
+        endpoints_.emplace_back(addr, port_);
+      }
+      if (endpoints_.empty()) {
+        LOG(WARNING) << "invalid ip addresses: " << host_ips_;
+        closed_ = true;
+        on_async_connect_callback(asio::error::timed_out);
+      } else {
+        on_try_next_endpoint(channel);
+      }
+      return;
+    }
+
     asio::error_code ec;
-    auto addr = asio::ip::make_address(host_name_.c_str(), ec);
+    auto addr = asio::ip::make_address(host_sni_.c_str(), ec);
     bool host_is_ip_address = !ec;
     if (host_is_ip_address) {
       VLOG(2) << "resolved ip-like address: " << domain();
@@ -97,10 +123,10 @@ class stream : public RefCountedThreadSafe<stream> {
 
     scoped_refptr<stream> self(this);
 #ifdef HAVE_C_ARES
-    resolver_->AsyncResolve(host_name_, std::to_string(port_),
+    resolver_->AsyncResolve(host_sni_, std::to_string(port_),
 #else
     resolver_.async_resolve(Net_ipv6works() ? asio::ip::tcp::unspec() : asio::ip::tcp::v4(),
-                            host_name_, std::to_string(port_),
+                            host_sni_, std::to_string(port_),
 #endif
       [this, channel, self](const asio::error_code& ec,
                             asio::ip::tcp::resolver::results_type results) {
@@ -126,7 +152,7 @@ class stream : public RefCountedThreadSafe<stream> {
   }
 
   std::string domain() {
-    return absl::StrCat(host_name_, ":", std::to_string(port_));
+    return absl::StrCat(host_sni_, ":", std::to_string(port_));
   }
 
   bool connected() const { return connected_; }
@@ -477,9 +503,9 @@ class stream : public RefCountedThreadSafe<stream> {
 #else
   asio::ip::tcp::resolver resolver_;
 #endif
-
  protected:
-  std::string host_name_;
+  std::string host_ips_;
+  std::string host_sni_;
   uint16_t port_;
   asio::ip::tcp::endpoint endpoint_;
   asio::io_context& io_context_;

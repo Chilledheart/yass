@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2023 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 
 #include "config/config.hpp"
 #include "config/config_impl.hpp"
@@ -152,25 +152,21 @@ ABSL_FLAG(std::string,
           server_host,
           "0.0.0.0",
           "Host address which remote server listens to");
+ABSL_FLAG(std::string,
+          server_sni,
+          "",
+          "Override host address SNI which remote server listens to (Client Only)");
 ABSL_FLAG(int32_t,
           server_port,
           8443,
           "Port number which remote server listens to");
 ABSL_FLAG(std::string,
           local_host,
-#ifdef __ANDROID__
-          "0.0.0.0",
-#else
           "127.0.0.1",
-#endif
           "Host address which local server listens to");
 ABSL_FLAG(int32_t,
           local_port,
-#ifdef __ANDROID__
-          3000,
-#else
           8000,
-#endif
           "Port number which local server listens to");
 
 ABSL_FLAG(std::string, username, "<default-user>", "Username");
@@ -315,6 +311,8 @@ bool ReadConfig() {
   }
 
   /* optional fields */
+  config_impl->Read("server_sni", &FLAGS_server_sni);
+
   config_impl->Read("fast_open", &FLAGS_tcp_fastopen);
   config_impl->Read("fast_open_connect", &FLAGS_tcp_fastopen_connect);
 
@@ -360,6 +358,7 @@ bool SaveConfig() {
   }
 
   all_fields_written &= config_impl->Write("server", FLAGS_server_host);
+  all_fields_written &= config_impl->Write("server_sni", FLAGS_server_sni);
   all_fields_written &= config_impl->Write("server_port", FLAGS_server_port);
   all_fields_written &= config_impl->Write("method", FLAGS_method);
   all_fields_written &= config_impl->Write("username", FLAGS_username);

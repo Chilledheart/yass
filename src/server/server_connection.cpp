@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2023 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 
 #include "server_connection.hpp"
 
@@ -129,7 +129,8 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
 }
 
 ServerConnection::ServerConnection(asio::io_context& io_context,
-                                   const std::string& remote_host_name,
+                                   const std::string& remote_host_ips,
+                                   const std::string& remote_host_sni,
                                    uint16_t remote_port,
                                    bool upstream_https_fallback,
                                    bool https_fallback,
@@ -137,7 +138,7 @@ ServerConnection::ServerConnection(asio::io_context& io_context,
                                    bool enable_tls,
                                    asio::ssl::context *upstream_ssl_ctx,
                                    asio::ssl::context *ssl_ctx)
-    : Connection(io_context, remote_host_name, remote_port,
+    : Connection(io_context, remote_host_ips, remote_host_sni, remote_port,
                  upstream_https_fallback, https_fallback,
                  enable_upstream_tls, enable_tls,
                  upstream_ssl_ctx, ssl_ctx),
@@ -1156,13 +1157,13 @@ void ServerConnection::OnConnect() {
   }
   if (enable_upstream_tls_) {
     channel_ = ssl_stream::create(*io_context_,
-                                  host_name, port,
+                                  std::string(), host_name, port,
                                   this, upstream_https_fallback_,
                                   upstream_ssl_ctx_);
 
   } else {
     channel_ = stream::create(*io_context_,
-                              host_name, port,
+                              std::string(), host_name, port,
                               this);
   }
   channel_->async_connect([this, self](asio::error_code ec){

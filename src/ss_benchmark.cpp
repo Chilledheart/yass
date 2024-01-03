@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2023 Chilledheart  */
+/* Copyright (c) 2023-2024 Chilledheart  */
 
 #include <benchmark/benchmark.h>
 
@@ -86,7 +86,8 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
                                    public Connection {
  public:
   ContentProviderConnection(asio::io_context& io_context,
-                            const std::string& remote_host_name,
+                            const std::string& remote_host_ips,
+                            const std::string& remote_host_sni,
                             uint16_t remote_port,
                             bool upstream_https_fallback,
                             bool https_fallback,
@@ -94,7 +95,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
                             bool enable_tls,
                             asio::ssl::context *upstream_ssl_ctx,
                             asio::ssl::context *ssl_ctx)
-      : Connection(io_context, remote_host_name, remote_port,
+      : Connection(io_context, remote_host_ips, remote_host_sni, remote_port,
                    upstream_https_fallback, https_fallback,
                    enable_upstream_tls, enable_tls,
                    upstream_ssl_ctx, ssl_ctx) {}
@@ -426,6 +427,7 @@ class SsEndToEndBM : public benchmark::Fixture {
     asio::error_code ec;
     server_server_ = std::make_unique<server::ServerServer>(io_context_,
                                                             std::string(),
+                                                            std::string(),
                                                             uint16_t(),
                                                             std::string(),
                                                             std::string(kCertificate),
@@ -455,6 +457,7 @@ class SsEndToEndBM : public benchmark::Fixture {
     asio::error_code ec;
 
     local_server_ = std::make_unique<cli::CliServer>(io_context_,
+                                                     std::string(),
                                                      "localhost",
                                                      remote_endpoint.port(),
                                                      kCertificate);
