@@ -3819,7 +3819,7 @@ if (GUI)
 
       target_link_libraries(${APP_NAME} PRIVATE tun2proxy)
       set_target_properties(${APP_NAME} PROPERTIES
-        LINK_FLAGS "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/src/android/export.lds -u Java_it_gui_yass_MainActivity_tun2ProxyStart -u Java_it_gui_yass_MainActivity_tun2ProxyStop")
+        LINK_FLAGS "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/src/android/export.lds -u Java_it_gui_yass_MainActivity_tun2ProxyInit -u Java_it_gui_yass_MainActivity_tun2ProxyRun -u Java_it_gui_yass_MainActivity_tun2ProxyDestroy")
     else()
       add_executable(${APP_NAME} WIN32 ${GUI_OPTIONS}
           ${SRC_FILES}
