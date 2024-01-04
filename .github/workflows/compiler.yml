@@ -369,11 +369,11 @@ jobs:
           # brew update
           # brew install ninja cmake p7zip
           brew install ninja
-      - name: Set up Xcode to 15.0.1 (macos 13)
+      - name: Set up Xcode to 15.1 (macos 13)
         if: ${{ matrix.os == 'macos-13' }}
         run: |
           # ignore buggy apple clang 13 from Xcode 13
-          sudo xcode-select -s /Applications/Xcode_15.0.1.app
+          sudo xcode-select -s /Applications/Xcode_15.1.app
       - name: Build
         run: |
           export CC=$(xcrun --find clang)
