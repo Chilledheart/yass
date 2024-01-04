@@ -98,7 +98,7 @@ class stream : public RefCountedThreadSafe<stream> {
           LOG(WARNING) << "invalid ip address: " << host_ip;
           continue;
         }
-        LOG(INFO) << "found ip address: " << addr;
+        VLOG(1) << "found ip address (pre-resolved): " << addr;
         endpoints_.emplace_back(addr, port_);
       }
       if (endpoints_.empty()) {
@@ -115,7 +115,7 @@ class stream : public RefCountedThreadSafe<stream> {
     auto addr = asio::ip::make_address(host_sni_.c_str(), ec);
     bool host_is_ip_address = !ec;
     if (host_is_ip_address) {
-      VLOG(2) << "resolved ip-like address: " << domain();
+      VLOG(1) << "resolved ip-like address (post-resolved): " << addr.to_string();
       endpoints_.emplace_back(addr, port_);
       on_try_next_endpoint(channel);
       return;
@@ -144,6 +144,7 @@ class stream : public RefCountedThreadSafe<stream> {
       }
       for (auto iter = std::begin(results); iter != std::end(results); ++iter) {
         endpoints_.push_back(*iter);
+        VLOG(1) << "found ip address (post-resolved): " << endpoints_.back().address().to_string();
       }
       DCHECK(!endpoints_.empty());
 
