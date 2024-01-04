@@ -1022,7 +1022,9 @@ func buildStageExecuteBuildScript() {
 		"--config", cmakeBuildTypeFlag,
 		"--parallel", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag),
 		"--target", APPNAME}
-	cmdRun(cmakeCmd, true)
+	if !(systemNameFlag == "ios" && (runBenchmarkFlag || runTestFlag)) {
+		cmdRun(cmakeCmd, true)
+	}
 	if buildBenchmarkFlag || runBenchmarkFlag {
 		cmakeCmd := []string{"cmake", "--build", ".",
 			"--config", cmakeBuildTypeFlag,
