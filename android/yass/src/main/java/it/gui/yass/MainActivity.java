@@ -192,27 +192,36 @@ public class MainActivity extends Activity {
             return;
         }
 
+        int log_level = 0;
+        if (Log.isLoggable(TUN2PROXY_TAG, Log.VERBOSE)) {
+            log_level = 5;
+        } else if (Log.isLoggable(TUN2PROXY_TAG, Log.DEBUG)) {
+            log_level = 4;
+        } else if (Log.isLoggable(TUN2PROXY_TAG, Log.INFO)) {
+            log_level = 3;
+        } else if (Log.isLoggable(TUN2PROXY_TAG, Log.WARN)) {
+            log_level = 2;
+        } else if (Log.isLoggable(TUN2PROXY_TAG, Log.ERROR)) {
+            log_level = 1;
+        }
+
+        int ret = tun2ProxyInit("socks5://127.0.0.1:3000", tunFd.getFd(), vpnService.DEFAULT_MTU, log_level, true);
+        if (ret != 0) {
+            Log.e(TUN2PROXY_TAG, String.format("Unable to run tun2ProxyInit: %d", ret));
+            try {
+                tunFd.close();
+            } catch (IOException e) {
+                // nop
+            }
+            return;
+        }
         tun2proxyThread = new Thread(){
             public void run() {
                 Log.v(TUN2PROXY_TAG, "tun2proxy thr started");
-                int fd = tunFd.getFd();
-                int log_level = 0;
-                if (Log.isLoggable(TUN2PROXY_TAG, Log.VERBOSE)) {
-                    log_level = 5;
-                } else if (Log.isLoggable(TUN2PROXY_TAG, Log.DEBUG)) {
-                    log_level = 4;
-                } else if (Log.isLoggable(TUN2PROXY_TAG, Log.INFO)) {
-                    log_level = 3;
-                } else if (Log.isLoggable(TUN2PROXY_TAG, Log.WARN)) {
-                    log_level = 2;
-                } else if (Log.isLoggable(TUN2PROXY_TAG, Log.ERROR)) {
-                    log_level = 1;
-                }
-
-                int ret = tun2ProxyStart("socks5://127.0.0.1:3000", fd, vpnService.DEFAULT_MTU, log_level, true);
+                int ret = tun2ProxyRun();
                 if (ret != 0) {
                     // TODO should we handle this error?
-                    Log.e(TUN2PROXY_TAG, String.format("Unable to run tun2ProxyStart: %d", ret));
+                    Log.e(TUN2PROXY_TAG, String.format("Unable to run tun2ProxyRun: %d", ret));
                 }
                 try {
                     tunFd.close();
@@ -248,9 +257,9 @@ public class MainActivity extends Activity {
     }
 
     private void onStopVpn() {
-        int ret = tun2ProxyStop();
+        int ret = tun2ProxyDestroy();
         if (ret != 0) {
-            Log.e(TUN2PROXY_TAG, String.format("Unable to run tun2ProxyStop: %d", ret));
+            Log.e(TUN2PROXY_TAG, String.format("Unable to run tun2ProxyDestroy: %d", ret));
         }
         try {
             tun2proxyThread.join();
@@ -289,9 +298,9 @@ public class MainActivity extends Activity {
     }
 
     private void onNativeStartFailedOnUIThread(String error_msg) {
-        int ret = tun2ProxyStop();
+        int ret = tun2ProxyDestroy();
         if (ret != 0) {
-            Log.e(TAG, String.format("Unable to run tun2ProxyStop: %d", ret));
+            Log.e(TAG, String.format("Unable to run tun2ProxyDestroy: %d", ret));
         }
         try {
             tun2proxyThread.join();
@@ -343,8 +352,9 @@ public class MainActivity extends Activity {
         });
     }
 
-    private native int tun2ProxyStart(String proxy_url, int tun_fd, int tun_mtu, int log_level, boolean dns_over_tcp);
-    private native int tun2ProxyStop();
+    private native int tun2ProxyInit(String proxy_url, int tun_fd, int tun_mtu, int log_level, boolean dns_over_tcp);
+    private native int tun2ProxyRun();
+    private native int tun2ProxyDestroy();
 
     // first connection number, then rx rate, then tx rate
 
