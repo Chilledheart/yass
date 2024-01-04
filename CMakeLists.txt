@@ -2432,8 +2432,8 @@ if (ANDROID)
   else()
     message(FATAL_ERROR "tun2proxy: unsupported android architecture ${CMAKE_SYSTEM_PROCESSOR}")
   endif()
-  set(TUN2PROXY_LIB third_party/tun2proxy/target/${_TUN2PROXY_TARGET}/release/libtun2proxy.a)
-  set(TUN2PROXY_LIB_BASENAME libtun2proxy.a)
+  set(TUN2PROXY_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/tun2proxy/target/${_TUN2PROXY_TARGET}/release)
+  set(TUN2PROXY_LIB ${TUN2PROXY_LIB_DIR}/libtun2proxy.a)
 endif()
 
 if (IOS)
@@ -2450,17 +2450,14 @@ if (IOS)
     endif()
   endif()
   if (_TUN2PROXY_TARGET)
-    set(TUN2PROXY_LIB third_party/tun2proxy/target/${_TUN2PROXY_TARGET}/release/libtun2proxy.a)
-    set(TUN2PROXY_LIB_BASENAME libtun2proxy.a)
+    set(TUN2PROXY_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/tun2proxy/target/${_TUN2PROXY_TARGET}/release)
+    set(TUN2PROXY_LIB ${TUN2PROXY_LIB_DIR}/libtun2proxy.a)
   endif()
 endif()
 
 if (TUN2PROXY_LIB)
-  file(COPY "${TUN2PROXY_LIB}" DESTINATION ${CMAKE_BINARY_DIR})
-
   add_library(tun2proxy STATIC IMPORTED)
-  set_property(TARGET tun2proxy PROPERTY
-    IMPORTED_LOCATION "${CMAKE_BINARY_DIR}/${TUN2PROXY_LIB_BASENAME}")
+  set_property(TARGET tun2proxy PROPERTY IMPORTED_LOCATION "${TUN2PROXY_LIB}")
 endif()
 
 # *****************************************************************************************
@@ -4216,7 +4213,7 @@ if (GUI)
         )
 
         find_library(Security_LIBRARY Security REQUIRED)
-        target_link_directories(YassPacketTunnel PRIVATE ${CMAKE_BINARY_DIR})
+        target_link_directories(YassPacketTunnel PRIVATE ${TUN2PROXY_LIB_DIR})
         target_link_libraries(YassPacketTunnel PRIVATE -Wl,-hidden-ltun2proxy)
         target_link_libraries(YassPacketTunnel PRIVATE ${Security_LIBRARY})
 
