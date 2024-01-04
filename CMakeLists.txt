@@ -4206,11 +4206,15 @@ if (GUI)
         endif()
 
         add_dependencies(${APP_NAME} YassPacketTunnel)
-        set_target_properties(${APP_NAME} PROPERTIES
-          XCODE_EMBED_APP_EXTENSIONS YassPacketTunnel
-          XCODE_EMBED_APP_EXTENSIONS_REMOVE_HEADERS_ON_COPY "YES"
-          XCODE_EMBED_APP_EXTENSIONS_CODE_SIGN_ON_COPY "YES"
-        )
+
+        # FIXME conflicts with XCTest bundle creation
+        if (SDK_NAME STREQUAL iphoneos)
+          set_target_properties(${APP_NAME} PROPERTIES
+            XCODE_EMBED_APP_EXTENSIONS YassPacketTunnel
+            XCODE_EMBED_APP_EXTENSIONS_REMOVE_HEADERS_ON_COPY "YES"
+            XCODE_EMBED_APP_EXTENSIONS_CODE_SIGN_ON_COPY "YES"
+          )
+        endif()
 
         find_library(Security_LIBRARY Security REQUIRED)
         target_link_directories(YassPacketTunnel PRIVATE ${TUN2PROXY_LIB_DIR})
