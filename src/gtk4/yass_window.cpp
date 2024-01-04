@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2023 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 
 #include "gtk4/yass_window.hpp"
 
@@ -150,13 +150,13 @@ YASSWindow::YASSWindow(GApplication *app)
 
   static const char* const method_names[] = {
 #define XX(num, name, string) string,
-      CIPHER_METHOD_MAP(XX)
+      CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   };
 
   GtkComboBoxText *method = GTK_COMBO_BOX_TEXT(impl_->method);
 
-  for (uint32_t i = 1; i < sizeof(method_names) / sizeof(method_names[0]);
+  for (uint32_t i = 0; i < sizeof(method_names) / sizeof(method_names[0]);
        ++i) {
     gtk_combo_box_text_append_text(method, method_names[i]);
   }
@@ -343,16 +343,16 @@ void YASSWindow::LoadChanges() {
 
   static const int method_ids[] = {
 #define XX(num, name, string) num,
-      CIPHER_METHOD_MAP(XX)
+      CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   };
   uint32_t i;
-  for (i = 1; i < sizeof(method_ids) / sizeof(method_ids[0]); ++i) {
+  for (i = 0; i < sizeof(method_ids) / sizeof(method_ids[0]); ++i) {
     if (cipher_method == method_ids[i])
       break;
   }
 
-  gtk_combo_box_set_active(GTK_COMBO_BOX(impl_->method), i - 1);
+  gtk_combo_box_set_active(GTK_COMBO_BOX(impl_->method), i);
 
   gtk_editable_set_text(GTK_EDITABLE(impl_->local_host), local_host_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->local_port), local_port_str.c_str());

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 
 #import "mac/YassViewController.h"
 
@@ -55,15 +55,15 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   [self.cipherMethod removeAllItems];
   NSString* methodStrings[] = {
 #define XX(num, name, string) @string,
-      CIPHER_METHOD_MAP(XX)
+      CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   };
-  for (uint32_t i = 1; i < sizeof(methodStrings) / sizeof(methodStrings[0]);
+  for (uint32_t i = 0; i < sizeof(methodStrings) / sizeof(methodStrings[0]);
        ++i) {
     [self.cipherMethod addItemWithObjectValue:methodStrings[i]];
   }
   self.cipherMethod.numberOfVisibleItems =
-      sizeof(methodStrings) / sizeof(methodStrings[0]) - 1;
+      sizeof(methodStrings) / sizeof(methodStrings[0]);
 
   [self.autoStart
       setState:(CheckLoginItemStatus(nullptr) ? NSControlStateValueOn
