@@ -6,9 +6,20 @@ cd $PWD/..
 
 MACHINE=$(uname -m)
 
+function patch_ios_bpf {
+  REGISTRIES=($(ls -d $HOME/.cargo/registry/src/*/))
+  for REGISTRY in "${REGISTRIES[@]}"
+  do
+    if [ -f $REGISTRY/smoltcp-0.10.0/src/phy/sys/bpf.rs ]; then
+      cp -fv ../../scripts/bpf.rs $REGISTRY/smoltcp-0.10.0/src/phy/sys/bpf.rs
+    fi
+  done
+}
+
 function build_ios {
 case "$WITH_CPU" in
   arm64)
+    cargo build --target aarch64-apple-ios --release --lib || patch_ios_bpf
     cargo build --target aarch64-apple-ios --release --lib
     ;;
   *)
@@ -21,9 +32,11 @@ esac
 function build_ios_sim {
 case "$WITH_CPU" in
   x64)
+    cargo build --target x86_64-apple-ios --release --lib || patch_ios_bpf
     cargo build --target x86_64-apple-ios --release --lib
     ;;
   arm64)
+    cargo build --target aarch64-apple-ios-sim --release --lib || patch_ios_bpf
     cargo build --target aarch64-apple-ios-sim --release --lib
     ;;
   *)
