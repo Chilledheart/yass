@@ -85,6 +85,11 @@ jobs:
         run: |
           # ignore buggy apple clang 13 from Xcode 13
           sudo xcode-select -s /Applications/Xcode_15.1.app
-      - name: Build
+      - name: Build and Run tests (x64)
+        if: ${{ matrix.arch == 'x64' }}
         run: |
-          ./tools/build --system ios --subsystem simulator --arch ${{ matrix.arch }}
+          ./tools/build --system ios --subsystem simulator --arch ${{ matrix.arch }} -run-test
+      - name: Build (non-x64)
+        if: ${{ matrix.arch != 'x64' }}
+        run: |
+          ./tools/build --system ios --subsystem simulator --arch ${{ matrix.arch }} -build-test
