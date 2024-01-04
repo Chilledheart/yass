@@ -1632,11 +1632,11 @@ if (WIN32)
         set(SUBSYSTEM_VERSION_SUFFIX ",5.02")
       endif()
     elseif(OS_AARCH64)
-      # Windows ARM64 requires Windows 10
-      set(SUBSYSTEM_VERSION_SUFFIX ",10.0")
-    else()
-      # 6.02 = Windows 8.1
+      # default value for arm64
       set(SUBSYSTEM_VERSION_SUFFIX ",6.02")
+    else()
+      # default value for x86 and x64
+      set(SUBSYSTEM_VERSION_SUFFIX ",6.00")
     endif()
   endif()
   if (MSVC)
