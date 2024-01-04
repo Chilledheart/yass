@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2022 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 
 #include "gtk/yass_window.hpp"
 
@@ -175,13 +175,13 @@ YASSWindow::YASSWindow()
   password_ = GTK_ENTRY(gtk_entry_new());
   static const char* const method_names[] = {
 #define XX(num, name, string) string,
-      CIPHER_METHOD_MAP(XX)
+      CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   };
 
   method_ = GTK_COMBO_BOX_TEXT(gtk_combo_box_text_new());
 
-  for (uint32_t i = 1; i < sizeof(method_names) / sizeof(method_names[0]);
+  for (uint32_t i = 0; i < sizeof(method_names) / sizeof(method_names[0]);
        ++i) {
     gtk_combo_box_text_append_text(method_, method_names[i]);
   }
@@ -410,16 +410,16 @@ void YASSWindow::LoadChanges() {
 
   static const int method_ids[] = {
 #define XX(num, name, string) num,
-      CIPHER_METHOD_MAP(XX)
+      CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   };
   uint32_t i;
-  for (i = 1; i < sizeof(method_ids) / sizeof(method_ids[0]); ++i) {
+  for (i = 0; i < sizeof(method_ids) / sizeof(method_ids[0]); ++i) {
     if (cipher_method == method_ids[i])
       break;
   }
 
-  gtk_combo_box_set_active(GTK_COMBO_BOX(method_), i - 1);
+  gtk_combo_box_set_active(GTK_COMBO_BOX(method_), i);
 
   gtk_entry_set_text(local_host_, local_host_str.c_str());
   gtk_entry_set_text(local_port_, local_port_str.c_str());

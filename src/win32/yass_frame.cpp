@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 
 #include "win32/yass_frame.hpp"
 
@@ -402,12 +402,12 @@ int CYassFrame::Create(const wchar_t* className,
   // Right Panel
   const wchar_t* method_strings[] = {
 #define XX(num, name, string) L##string,
-      CIPHER_METHOD_MAP(XX)
+      CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   };
   DWORD method_nums[] = {
 #define XX(num, name, string) static_cast<DWORD>(num),
-      CIPHER_METHOD_MAP(XX)
+      CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   };
 
@@ -449,10 +449,10 @@ int CYassFrame::Create(const wchar_t* className,
   method_combo_box_ = CreateComboBox(CBS_DROPDOWNLIST, m_hWnd,
                                      IDC_COMBOBOX_METHOD, hInstance);
 
-  int method_count = sizeof(method_strings) / sizeof(method_strings[0]) - 1;
+  int method_count = sizeof(method_strings) / sizeof(method_strings[0]);
   for (int i = 0; i < method_count; ++i) {
-    ComboBox_AddString(method_combo_box_, method_strings[i + 1]);
-    ComboBox_SetItemData(method_combo_box_, i, method_nums[i + 1]);
+    ComboBox_AddString(method_combo_box_, method_strings[i]);
+    ComboBox_SetItemData(method_combo_box_, i, method_nums[i]);
   }
 
   ComboBox_SetMinVisible(method_combo_box_, method_count);

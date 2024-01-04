@@ -53,7 +53,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 
   cipher_methods_ = @[
 #define XX(num, name, string) @string,
-      CIPHER_METHOD_MAP(XX)
+      CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   ];
   current_cipher_method_ = nil;

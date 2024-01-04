@@ -164,13 +164,11 @@
 #endif
   auto ips_v4 = worker_.GetRemoteIpsV4();
   NSMutableArray *remote_ips_v4 = [[NSMutableArray alloc] init];
-  [remote_ips_v4 addObject: @"127.0.0.1"];
   for (const auto & ip_v4 : ips_v4) {
     [remote_ips_v4 addObject:@(ip_v4.c_str())];
   }
   auto ips_v6 = worker_.GetRemoteIpsV6();
   NSMutableArray *remote_ips_v6 = [[NSMutableArray alloc] init];
-  [remote_ips_v6 addObject: @"::1"];
   for (const auto & ip_v6 : ips_v6) {
     [remote_ips_v6 addObject:@(ip_v6.c_str())];
   }
