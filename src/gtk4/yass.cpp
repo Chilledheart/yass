@@ -276,7 +276,10 @@ std::string YASSApp::GetStatus() const {
 
 void YASSApp::OnStart(bool quiet) {
   state_ = STARTING;
-  SaveConfig();
+  if (!SaveConfig()) {
+    OnStartFailed("Invalid Config");
+    return;
+  }
 
   absl::AnyInvocable<void(asio::error_code)> callback;
   if (!quiet) {
@@ -353,7 +356,7 @@ void YASSApp::OnDispatch() {
     OnStopped();
 }
 
-void YASSApp::SaveConfig() {
+bool YASSApp::SaveConfig() {
   auto server_host = main_window_->GetServerHost();
   auto server_port = StringToIntegerU(main_window_->GetServerPort());
   auto username = main_window_->GetUsername();
@@ -367,7 +370,7 @@ void YASSApp::SaveConfig() {
   if (!server_port.has_value() || method == CRYPTO_INVALID || !local_port.has_value() ||
       !connect_timeout.has_value()) {
     LOG(WARNING) << "invalid options";
-    return;
+    return false;
   }
 
   absl::SetFlag(&FLAGS_server_host, server_host);
@@ -378,6 +381,8 @@ void YASSApp::SaveConfig() {
   absl::SetFlag(&FLAGS_local_host, local_host);
   absl::SetFlag(&FLAGS_local_port, local_port.value());
   absl::SetFlag(&FLAGS_connect_timeout, connect_timeout.value());
+
+  return true;
 }
 
 void YASSApp::OnAbout() {

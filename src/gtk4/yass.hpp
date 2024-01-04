@@ -70,7 +70,7 @@ class YASSApp {
   void OnDispatch();
 
  private:
-  void SaveConfig();
+  bool SaveConfig();
 
  public:
   void OnAbout();

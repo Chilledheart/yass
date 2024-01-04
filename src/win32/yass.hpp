@@ -40,7 +40,7 @@ class CYassApp {
 
  private:
   BOOL CheckFirstInstance();
-  void SaveConfig();
+  bool SaveConfig();
 
  private:
   YASSState state_;

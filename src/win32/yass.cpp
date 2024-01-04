@@ -294,7 +294,10 @@ std::wstring CYassApp::GetStatus() const {
 void CYassApp::OnStart(bool quiet) {
   DWORD main_thread_id = GetCurrentThreadId();
   state_ = STARTING;
-  SaveConfig();
+  if (!SaveConfig()) {
+    OnStartFailed(0, reinterpret_cast<LPARAM>(new std::string("Invalid Config")));
+    return;
+  }
 
   absl::AnyInvocable<void(asio::error_code)> callback;
   if (!quiet) {
@@ -387,7 +390,7 @@ BOOL CYassApp::CheckFirstInstance() {
   return TRUE;
 }
 
-void CYassApp::SaveConfig() {
+bool CYassApp::SaveConfig() {
   auto server_host = frame_->GetServerHost();
   auto server_port = StringToIntegerU(frame_->GetServerPort());
   auto username = frame_->GetUsername();
@@ -400,7 +403,7 @@ void CYassApp::SaveConfig() {
   if (!server_port.has_value() || method == CRYPTO_INVALID || !local_port.has_value() ||
       !connect_timeout.has_value()) {
     LOG(WARNING) << "invalid options";
-    return;
+    return false;
   }
 
   absl::SetFlag(&FLAGS_server_host, server_host);
@@ -411,4 +414,6 @@ void CYassApp::SaveConfig() {
   absl::SetFlag(&FLAGS_local_host, local_host);
   absl::SetFlag(&FLAGS_local_port, local_port.value());
   absl::SetFlag(&FLAGS_connect_timeout, connect_timeout.value());
+
+  return true;
 }
