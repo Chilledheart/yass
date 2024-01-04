@@ -21,7 +21,7 @@
 #include "feature.h"
 
 @interface YassAppDelegate ()
-- (void)SaveConfig;
+- (BOOL)SaveConfig;
 - (void)OnStarted;
 - (void)OnStartSaveAndLoadInstance:(NETunnelProviderManager*)vpn_manager;
 - (void)OnStartInstanceFailed:(NSError* _Nullable)error;
@@ -80,7 +80,10 @@
 
 - (void)OnStart:(BOOL)quiet {
   state_ = STARTING;
-  [self SaveConfig];
+  if ([self SaveConfig] == FALSE) {
+    [self OnStartFailed:"Invalid Config"];
+    return;
+  }
 
   absl::AnyInvocable<void(asio::error_code)> callback;
   if (!quiet) {
@@ -273,7 +276,7 @@
   [viewController Stopped];
 }
 
-- (void)SaveConfig {
+- (BOOL)SaveConfig {
   YassViewController* viewController =
       (YassViewController*)
           UIApplication.sharedApplication.keyWindow.rootViewController;
@@ -290,7 +293,7 @@
   if (method == CRYPTO_INVALID || !server_port.has_value() ||
       !connect_timeout.has_value()) {
     LOG(WARNING) << "invalid options";
-    return;
+    return FALSE;
   }
 
   absl::SetFlag(&FLAGS_server_host, server_host);
@@ -301,6 +304,7 @@
   absl::SetFlag(&FLAGS_local_host, "0.0.0.0");
   absl::SetFlag(&FLAGS_local_port, 3000);
   absl::SetFlag(&FLAGS_connect_timeout, connect_timeout.value());
+  return TRUE;
 }
 
 @end

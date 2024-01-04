@@ -21,7 +21,7 @@
 #include "feature.h"
 
 @interface YassAppDelegate ()
-- (void)SaveConfig;
+- (BOOL)SaveConfig;
 - (void)OnStarted;
 - (void)OnStartFailed:(std::string)error_msg;
 - (void)OnStopped;
@@ -111,7 +111,10 @@
 
 - (void)OnStart:(BOOL)quiet {
   state_ = STARTING;
-  [self SaveConfig];
+  if ([self SaveConfig] == FALSE) {
+    [self OnStartFailed:"Invalid Config"];
+    return;
+  }
 
   absl::AnyInvocable<void(asio::error_code)> callback;
   if (!quiet) {
@@ -186,34 +189,37 @@
   [viewController Stopped];
 }
 
-- (void)SaveConfig {
+- (BOOL)SaveConfig {
   YassViewController* viewController =
       (YassViewController*)
           NSApplication.sharedApplication.mainWindow.contentViewController;
   auto server_host = gurl_base::SysNSStringToUTF8(viewController.serverHost.stringValue);
-  auto server_port = viewController.serverPort.intValue;
+  auto server_port = StringToInteger(gurl_base::SysNSStringToUTF8(viewController.serverPort.stringValue));
   auto username = gurl_base::SysNSStringToUTF8(viewController.username.stringValue);
   auto password = gurl_base::SysNSStringToUTF8(viewController.password.stringValue);
   auto method_string =
       gurl_base::SysNSStringToUTF8(viewController.cipherMethod.stringValue);
   auto method = to_cipher_method(method_string);
   auto local_host = gurl_base::SysNSStringToUTF8(viewController.localHost.stringValue);
-  auto local_port = viewController.localPort.intValue;
-  auto connect_timeout = viewController.timeout.intValue;
+  auto local_port = StringToInteger(gurl_base::SysNSStringToUTF8(viewController.localPort.stringValue));
+  auto connect_timeout = StringToInteger(gurl_base::SysNSStringToUTF8(viewController.timeout.stringValue));
 
-  if (method == CRYPTO_INVALID) {
+  if (method == CRYPTO_INVALID || !server_port.has_value() ||
+      !connect_timeout.has_value() || !local_port.has_value()) {
     LOG(WARNING) << "invalid options";
-    return;
+    return FALSE;
   }
 
   absl::SetFlag(&FLAGS_server_host, server_host);
-  absl::SetFlag(&FLAGS_server_port, server_port);
+  absl::SetFlag(&FLAGS_server_port, server_port.value());
   absl::SetFlag(&FLAGS_username, username);
   absl::SetFlag(&FLAGS_password, password);
   absl::SetFlag(&FLAGS_method, method);
   absl::SetFlag(&FLAGS_local_host, local_host);
-  absl::SetFlag(&FLAGS_local_port, local_port);
-  absl::SetFlag(&FLAGS_connect_timeout, connect_timeout);
+  absl::SetFlag(&FLAGS_local_port, local_port.value());
+  absl::SetFlag(&FLAGS_connect_timeout, connect_timeout.value());
+
+  return TRUE;
 }
 
 @end
