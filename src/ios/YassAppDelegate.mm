@@ -150,8 +150,14 @@
   }];
 }
 
-- (void)OnStartSaveAndLoadInstance:(NETunnelProviderManager*) vpn_manager  {
-  NETunnelProviderProtocol* tunnelProtocol = [[NETunnelProviderProtocol alloc] init];
+- (void)OnStartSaveAndLoadInstance:(NETunnelProviderManager*) vpn_manager {
+  NETunnelProviderProtocol* tunnelProtocol;
+  if (!vpn_manager.protocolConfiguration) {
+    tunnelProtocol = [[NETunnelProviderProtocol alloc] init];
+  } else {
+    tunnelProtocol = (NETunnelProviderProtocol*)vpn_manager.protocolConfiguration;
+  }
+
   tunnelProtocol.providerBundleIdentifier = @"it.gui.ios.yass.network-extension";
   tunnelProtocol.disconnectOnSleep = FALSE;
   tunnelProtocol.serverAddress = @"Yet Another Shadow Socket";

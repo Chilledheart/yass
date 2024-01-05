@@ -164,7 +164,7 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
       completionHandler(error);
       return;
     }
-    NSLog(@"tun2proxy: start completion %@", dict);
+    NSLog(@"tun2proxy: start completion");
     completionHandler(nil);
   }];
   [self readPackets];
