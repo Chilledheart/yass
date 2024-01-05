@@ -1,3 +1,8 @@
+yass (1.5.10-1) UNRELEASED; urgency=medium
+
+  * gtk: add server sni support.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Fri, 5 Jan 2024 14:38:50 +0800
 yass (1.5.9-1) UNRELEASED; urgency=medium
 
   * ca-certificates: load symbolic link as cert files.

@@ -194,6 +194,8 @@ for embedded devices and low end boxes.
 %{_mandir}/man1/yass_cli.1*
 
 %changelog
+* Fri Jan 5 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.10-1
+  - gtk: add server sni support.
 * Wed Jan 3 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.9-1
   - ca-certificates: load symbolic link as cert files.
 * Wed Jan 3 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.8-1
