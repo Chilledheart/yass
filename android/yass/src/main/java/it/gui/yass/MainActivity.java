@@ -83,33 +83,29 @@ public class MainActivity extends Activity {
 
     private native String getServerHost();
 
-    private native void setServerHost(String serverHost);
+    private native String getServerSNI();
 
     private native int getServerPort();
 
-    private native void setServerPort(int serverPort);
-
     private native String getUsername();
-
-    private native void setUsername(String username);
 
     private native String getPassword();
 
-    private native void setPassword(String password);
-
     private native int getCipher();
-
-    private native void setCipher(int cipher_idx);
 
     private native String[] getCipherStrings();
 
     private native int getTimeout();
 
-    private native void setTimeout(int timeout);
+    private native String saveConfig(String serverHost, String serverSNI, String serverPort,
+                                     String username, String password, int cipher,
+                                     String timeout);
 
     private void loadSettingsFromNative() {
         EditText serverHostEditText = findViewById(R.id.serverHostEditText);
         serverHostEditText.setText(getServerHost());
+        EditText serverSNIEditText = findViewById(R.id.serverSNIEditText);
+        serverSNIEditText.setText(getServerSNI());
         EditText serverPortEditText = findViewById(R.id.serverPortEditText);
         serverPortEditText.setText(String.format(getLocale(), "%d", getServerPort()));
         EditText usernameEditText = findViewById(R.id.usernameEditText);
@@ -146,22 +142,22 @@ public class MainActivity extends Activity {
         stopButton.setEnabled(false);
     }
 
-    private void saveSettingsIntoNative() {
+    private String saveSettingsIntoNative() {
         EditText serverHostEditText = findViewById(R.id.serverHostEditText);
-        setServerHost(serverHostEditText.getText().toString());
-
+        EditText serverSNIEditText = findViewById(R.id.serverSNIEditText);
         EditText serverPortEditText = findViewById(R.id.serverPortEditText);
-        setServerPort(Integer.parseInt(serverPortEditText.getText().toString()));
         EditText usernameEditText = findViewById(R.id.usernameEditText);
-        setUsername(usernameEditText.getText().toString());
         EditText passwordEditText = findViewById(R.id.passwordEditText);
-        setPassword(passwordEditText.getText().toString());
-
         Spinner cipherSpinner = findViewById(R.id.cipherSpinner);
-        setCipher(cipherSpinner.getSelectedItemPosition());
-
         EditText timeoutEditText = findViewById(R.id.timeoutEditText);
-        setTimeout(Integer.parseInt(timeoutEditText.getText().toString()));
+
+        return saveConfig(serverHostEditText.getText().toString(),
+                          serverSNIEditText.getText().toString(),
+                          serverPortEditText.getText().toString(),
+                          usernameEditText.getText().toString(),
+                          passwordEditText.getText().toString(),
+                          cipherSpinner.getSelectedItemPosition(),
+                          timeoutEditText.getText().toString());
     }
 
     private final YassVpnService vpnService = new YassVpnService();
@@ -245,7 +241,11 @@ public class MainActivity extends Activity {
 
     public void onStartClicked(View view) {
         if (state == NativeMachineState.STOPPED) {
-            saveSettingsIntoNative();
+            String error_msg = saveSettingsIntoNative();
+            if (error_msg != null) {
+                onNativeStartFailedOnUIThread(error_msg);
+                return;
+            }
 
             Intent intent = YassVpnService.prepare(getApplicationContext());
             if (intent == null) {
@@ -298,16 +298,18 @@ public class MainActivity extends Activity {
     }
 
     private void onNativeStartFailedOnUIThread(String error_msg) {
-        int ret = tun2ProxyDestroy();
-        if (ret != 0) {
-            Log.e(TAG, String.format("Unable to run tun2ProxyDestroy: %d", ret));
+        if (tun2proxyThread != null) {
+            int ret = tun2ProxyDestroy();
+            if (ret != 0) {
+                Log.e(TAG, String.format("Unable to run tun2ProxyDestroy: %d", ret));
+            }
+            try {
+                tun2proxyThread.join();
+            } catch (InterruptedException e) {
+                // nop
+            }
+            tun2proxyThread = null;
         }
-        try {
-            tun2proxyThread.join();
-        } catch (InterruptedException e) {
-            // nop
-        }
-        tun2proxyThread = null;
 
         state = NativeMachineState.STOPPED;
         Button startButton = findViewById(R.id.startButton);

@@ -6,6 +6,7 @@
 #include "android/jni.hpp"
 
 #include "config/config.hpp"
+#include "cli/cli_worker.hpp"
 #include "crypto/crypter_export.hpp"
 
 JavaVM                     *g_jvm = nullptr;
@@ -24,6 +25,10 @@ JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getServerHost(JNIEnv *en
   return env->NewStringUTF(absl::GetFlag(FLAGS_server_host).c_str());
 }
 
+JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getServerSNI(JNIEnv *env, jobject obj) {
+  return env->NewStringUTF(absl::GetFlag(FLAGS_server_sni).c_str());
+}
+
 JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getServerPort(JNIEnv *env, jobject obj) {
   return absl::GetFlag(FLAGS_server_port);
 }
@@ -37,7 +42,7 @@ JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getPassword(JNIEnv *env,
 }
 
 JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getCipher(JNIEnv *env, jobject obj) {
-  std::vector<cipher_method> methods_idxes = {
+  static std::vector<cipher_method> methods_idxes = {
 #define XX(num, name, string) CRYPTO_##name,
 CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
@@ -71,42 +76,57 @@ JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getTimeout(JNIEnv *env, job
   return absl::GetFlag(FLAGS_connect_timeout);
 }
 
-JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setServerHost(JNIEnv *env, jobject obj, jobject value) {
-  const char* value_str = env->GetStringUTFChars((jstring)value, nullptr);
-  absl::SetFlag(&FLAGS_server_host, value_str);
-  env->ReleaseStringUTFChars((jstring)value, value_str);
-}
+JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_saveConfig(JNIEnv *env, jobject obj,
+                                                                   jobject _server_host,
+                                                                   jobject _server_sni,
+                                                                   jobject _server_port,
+                                                                   jobject _username,
+                                                                   jobject _password,
+                                                                   jint _method_idx,
+                                                                   jobject _timeout) {
+  const char* server_host_str = env->GetStringUTFChars((jstring)_server_host, nullptr);
+  std::string server_host = server_host_str != nullptr ? server_host_str : std::string();
+  env->ReleaseStringUTFChars((jstring)_server_host, server_host_str);
 
-JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setServerPort(JNIEnv *env, jobject obj, jint value) {
-  absl::SetFlag(&FLAGS_server_port, value);
-}
+  const char* server_sni_str = env->GetStringUTFChars((jstring)_server_sni, nullptr);
+  std::string server_sni = server_sni_str != nullptr ? server_sni_str : std::string();
+  env->ReleaseStringUTFChars((jstring)_server_sni, server_sni_str);
 
-JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setUsername(JNIEnv *env, jobject obj, jobject value) {
-  const char* value_str = env->GetStringUTFChars((jstring)value, nullptr);
-  absl::SetFlag(&FLAGS_username, value_str);
-  env->ReleaseStringUTFChars((jstring)value, value_str);
-}
+  const char* server_port_str = env->GetStringUTFChars((jstring)_server_port, nullptr);
+  std::string server_port = server_port_str != nullptr ? server_port_str : std::string();
+  env->ReleaseStringUTFChars((jstring)_server_port, server_port_str);
 
-JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setPassword(JNIEnv *env, jobject obj, jobject value) {
-  const char* value_str = env->GetStringUTFChars((jstring)value, nullptr);
-  absl::SetFlag(&FLAGS_password, value_str);
-  env->ReleaseStringUTFChars((jstring)value, value_str);
-}
+  const char* username_str = env->GetStringUTFChars((jstring)_username, nullptr);
+  std::string username = username_str != nullptr ? username_str : std::string();
+  env->ReleaseStringUTFChars((jstring)_username, username_str);
 
-JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setCipher(JNIEnv *env, jobject obj, jint value) {
-  std::vector<cipher_method> methods_idxes = {
+  const char* password_str = env->GetStringUTFChars((jstring)_password, nullptr);
+  std::string password = password_str != nullptr ? password_str : std::string();
+  env->ReleaseStringUTFChars((jstring)_password, password_str);
+
+  static std::vector<cipher_method> methods_idxes = {
 #define XX(num, name, string) CRYPTO_##name,
 CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   };
-  DCHECK_LT((uint32_t)value, methods_idxes.size());
-  absl::SetFlag(&FLAGS_method, methods_idxes[value]);
-  absl::SetFlag(&FLAGS_local_host, "0.0.0.0");
-  absl::SetFlag(&FLAGS_local_port, 3000);
-}
+  DCHECK_LT((uint32_t)_method_idx, methods_idxes.size());
+  auto method = methods_idxes[_method_idx];
 
-JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setTimeout(JNIEnv *env, jobject obj, jint value) {
-  absl::SetFlag(&FLAGS_connect_timeout, value);
+  std::string local_host = "0.0.0.0";
+  std::string local_port = "3000";
+
+  const char* timeout_str = env->GetStringUTFChars((jstring)_timeout, nullptr);
+  std::string timeout = timeout_str != nullptr ? timeout_str : std::string();
+  env->ReleaseStringUTFChars((jstring)_timeout, timeout_str);
+
+  std::string err_msg = Worker::SaveConfig(server_host, server_sni, server_port,
+                                           username, password, method,
+                                           local_host, local_port, timeout);
+
+  if (err_msg.empty()) {
+    return nullptr;
+  }
+  return env->NewStringUTF(err_msg.c_str());
 }
 
 #endif // __ANDROID__

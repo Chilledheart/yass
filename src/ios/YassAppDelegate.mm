@@ -21,7 +21,7 @@
 #include "feature.h"
 
 @interface YassAppDelegate ()
-- (BOOL)SaveConfig;
+- (std::string)SaveConfig;
 - (void)OnStarted;
 - (void)OnStartSaveAndLoadInstance:(NETunnelProviderManager*)vpn_manager;
 - (void)OnStartInstanceFailed:(NSError* _Nullable)error;
@@ -80,8 +80,9 @@
 
 - (void)OnStart:(BOOL)quiet {
   state_ = STARTING;
-  if ([self SaveConfig] == FALSE) {
-    [self OnStartFailed:"Invalid Config"];
+  auto err_msg = [self SaveConfig];
+  if (!err_msg.empty()) {
+    [self OnStartFailed:err_msg];
     return;
   }
 
@@ -276,35 +277,21 @@
   [viewController Stopped];
 }
 
-- (BOOL)SaveConfig {
+- (std::string)SaveConfig {
   YassViewController* viewController =
       (YassViewController*)
           UIApplication.sharedApplication.keyWindow.rootViewController;
   auto server_host = gurl_base::SysNSStringToUTF8(viewController.serverHost.text);
-  auto server_port =
-    StringToInteger(gurl_base::SysNSStringToUTF8(viewController.serverPort.text));
+  auto server_port = gurl_base::SysNSStringToUTF8(viewController.serverPort.text);
   auto username = gurl_base::SysNSStringToUTF8(viewController.username.text);
   auto password = gurl_base::SysNSStringToUTF8(viewController.password.text);
   auto method_string = gurl_base::SysNSStringToUTF8([viewController getCipher]);
-  auto method = to_cipher_method(method_string);
-  auto connect_timeout =
-    StringToInteger(gurl_base::SysNSStringToUTF8(viewController.timeout.text));
+  auto connect_timeout = gurl_base::SysNSStringToUTF8(viewController.timeout.text);
 
-  if (method == CRYPTO_INVALID || !server_port.has_value() ||
-      !connect_timeout.has_value()) {
-    LOG(WARNING) << "invalid options";
-    return FALSE;
-  }
-
-  absl::SetFlag(&FLAGS_server_host, server_host);
-  absl::SetFlag(&FLAGS_server_port, server_port.value());
-  absl::SetFlag(&FLAGS_username, username);
-  absl::SetFlag(&FLAGS_password, password);
-  absl::SetFlag(&FLAGS_method, method);
-  absl::SetFlag(&FLAGS_local_host, "0.0.0.0");
-  absl::SetFlag(&FLAGS_local_port, 3000);
-  absl::SetFlag(&FLAGS_connect_timeout, connect_timeout.value());
-  return TRUE;
+  return Worker::SaveConfig(server_host, "" /*server_sni*/, server_port,
+                            username, password, method_string,
+                            "0.0.0.0", "3000",
+                            connect_timeout);
 }
 
 @end

@@ -12,6 +12,8 @@ extern jobject                 g_activity_obj;
 extern "C"
 JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getServerHost(JNIEnv *env, jobject obj);
 extern "C"
+JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getServerSNI(JNIEnv *env, jobject obj);
+extern "C"
 JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getServerPort(JNIEnv *env, jobject obj);
 extern "C"
 JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getUsername(JNIEnv *env, jobject obj);
@@ -25,17 +27,13 @@ extern "C"
 JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getTimeout(JNIEnv *env, jobject obj);
 
 extern "C"
-JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setServerHost(JNIEnv *env, jobject obj, jobject value);
-extern "C"
-JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setServerPort(JNIEnv *env, jobject obj, jint value);
-extern "C"
-JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setUsername(JNIEnv *env, jobject obj, jobject value);
-extern "C"
-JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setPassword(JNIEnv *env, jobject obj, jobject value);
-extern "C"
-JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setCipher(JNIEnv *env, jobject obj, jint value);
-extern "C"
-JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setTimeout(JNIEnv *env, jobject obj, jint value);
-
+JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_saveConfig(JNIEnv *env, jobject obj,
+                                                                   jobject server_host,
+                                                                   jobject server_sni,
+                                                                   jobject server_port,
+                                                                   jobject username,
+                                                                   jobject password,
+                                                                   jint method_idx,
+                                                                   jobject connect_timeout);
 
 #endif // YASS_ANDROID_JNI_HPP

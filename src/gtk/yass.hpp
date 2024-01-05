@@ -63,7 +63,7 @@ class YASSApp {
   void OnDispatch();
 
  private:
-  bool SaveConfig();
+  std::string SaveConfig();
 
  private:
   YASSState state_ = STOPPED;
