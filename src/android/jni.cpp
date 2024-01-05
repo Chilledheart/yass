@@ -24,6 +24,10 @@ JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getServerHost(JNIEnv *en
   return env->NewStringUTF(absl::GetFlag(FLAGS_server_host).c_str());
 }
 
+JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getServerSNI(JNIEnv *env, jobject obj) {
+  return env->NewStringUTF(absl::GetFlag(FLAGS_server_sni).c_str());
+}
+
 JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getServerPort(JNIEnv *env, jobject obj) {
   return absl::GetFlag(FLAGS_server_port);
 }
@@ -74,6 +78,12 @@ JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getTimeout(JNIEnv *env, job
 JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setServerHost(JNIEnv *env, jobject obj, jobject value) {
   const char* value_str = env->GetStringUTFChars((jstring)value, nullptr);
   absl::SetFlag(&FLAGS_server_host, value_str);
+  env->ReleaseStringUTFChars((jstring)value, value_str);
+}
+
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setServerSNI(JNIEnv *env, jobject obj, jobject value) {
+  const char* value_str = env->GetStringUTFChars((jstring)value, nullptr);
+  absl::SetFlag(&FLAGS_server_sni, value_str);
   env->ReleaseStringUTFChars((jstring)value, value_str);
 }
 

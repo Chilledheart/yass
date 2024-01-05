@@ -20,4 +20,5 @@
     <string name="label_timeout">超时时间</string>
     <string name="status_current_ip_address">本地IP地址: %s:3000</string>
     <string name="status_started_with_error_msg">无法连接因: %s</string>
+    <string name="label_server_sni">服务器名称指示</string>
 </resources>

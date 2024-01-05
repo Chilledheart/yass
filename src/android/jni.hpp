@@ -12,6 +12,8 @@ extern jobject                 g_activity_obj;
 extern "C"
 JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getServerHost(JNIEnv *env, jobject obj);
 extern "C"
+JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getServerSNI(JNIEnv *env, jobject obj);
+extern "C"
 JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getServerPort(JNIEnv *env, jobject obj);
 extern "C"
 JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getUsername(JNIEnv *env, jobject obj);
@@ -26,6 +28,8 @@ JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getTimeout(JNIEnv *env, job
 
 extern "C"
 JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setServerHost(JNIEnv *env, jobject obj, jobject value);
+extern "C"
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setServerSNI(JNIEnv *env, jobject obj, jobject value);
 extern "C"
 JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_setServerPort(JNIEnv *env, jobject obj, jint value);
 extern "C"

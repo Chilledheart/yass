@@ -85,6 +85,10 @@ public class MainActivity extends Activity {
 
     private native void setServerHost(String serverHost);
 
+    private native String getServerSNI();
+
+    private native void setServerSNI(String serverSNI);
+
     private native int getServerPort();
 
     private native void setServerPort(int serverPort);
@@ -110,6 +114,8 @@ public class MainActivity extends Activity {
     private void loadSettingsFromNative() {
         EditText serverHostEditText = findViewById(R.id.serverHostEditText);
         serverHostEditText.setText(getServerHost());
+        EditText serverSNIEditText = findViewById(R.id.serverSNIEditText);
+        serverSNIEditText.setText(getServerSNI());
         EditText serverPortEditText = findViewById(R.id.serverPortEditText);
         serverPortEditText.setText(String.format(getLocale(), "%d", getServerPort()));
         EditText usernameEditText = findViewById(R.id.usernameEditText);
@@ -149,7 +155,8 @@ public class MainActivity extends Activity {
     private void saveSettingsIntoNative() {
         EditText serverHostEditText = findViewById(R.id.serverHostEditText);
         setServerHost(serverHostEditText.getText().toString());
-
+        EditText serverSNIEditText = findViewById(R.id.serverSNIEditText);
+        setServerSNI(serverSNIEditText.getText().toString());
         EditText serverPortEditText = findViewById(R.id.serverPortEditText);
         setServerPort(Integer.parseInt(serverPortEditText.getText().toString()));
         EditText usernameEditText = findViewById(R.id.usernameEditText);

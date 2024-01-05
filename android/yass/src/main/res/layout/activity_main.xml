@@ -32,6 +32,19 @@
             android:inputType="text" />
 
         <TextView
+            android:id="@+id/serverSNITextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/label_server_sni" />
+
+        <EditText
+            android:id="@+id/serverSNIEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:inputType="text" />
+
+        <TextView
             android:id="@+id/serverPortTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
