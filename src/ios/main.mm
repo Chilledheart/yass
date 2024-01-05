@@ -81,5 +81,7 @@ int main(int argc, const char** argv) {
     // Setup code that might create autoreleased objects goes here.
     appDelegateClassName = NSStringFromClass([YassAppDelegate class]);
   }
+  absl::SetFlag(&FLAGS_logtostderr, false);
+  absl::SetFlag(&FLAGS_stderrthreshold, LOGGING_VERBOSE);
   return UIApplicationMain(argc, (char**)argv, nil, appDelegateClassName);
 }
