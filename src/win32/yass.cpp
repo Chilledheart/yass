@@ -294,8 +294,9 @@ std::wstring CYassApp::GetStatus() const {
 void CYassApp::OnStart(bool quiet) {
   DWORD main_thread_id = GetCurrentThreadId();
   state_ = STARTING;
-  if (!SaveConfig()) {
-    OnStartFailed(0, reinterpret_cast<LPARAM>(new std::string("Invalid Config")));
+  std::string err_msg = SaveConfig();
+  if (!err_msg.empty()) {
+    OnStartFailed(0, reinterpret_cast<LPARAM>(new std::string(err_msg)));
     return;
   }
 
@@ -390,32 +391,19 @@ BOOL CYassApp::CheckFirstInstance() {
   return TRUE;
 }
 
-bool CYassApp::SaveConfig() {
+std::string CYassApp::SaveConfig() {
   auto server_host = frame_->GetServerHost();
   auto server_sni = frame_->GetServerSNI();
-  auto server_port = StringToIntegerU(frame_->GetServerPort());
+  auto server_port = frame_->GetServerPort();
   auto username = frame_->GetUsername();
   auto password = frame_->GetPassword();
   auto method = frame_->GetMethod();
   auto local_host = frame_->GetLocalHost();
-  auto local_port = StringToIntegerU(frame_->GetLocalPort());
-  auto connect_timeout = StringToIntegerU(frame_->GetTimeout());
+  auto local_port = frame_->GetLocalPort();
+  auto connect_timeout = frame_->GetTimeout();
 
-  if (!server_port.has_value() || method == CRYPTO_INVALID || !local_port.has_value() ||
-      !connect_timeout.has_value()) {
-    LOG(WARNING) << "invalid options";
-    return false;
-  }
-
-  absl::SetFlag(&FLAGS_server_host, server_host);
-  absl::SetFlag(&FLAGS_server_sni, server_sni);
-  absl::SetFlag(&FLAGS_server_port, server_port.value());
-  absl::SetFlag(&FLAGS_username, username);
-  absl::SetFlag(&FLAGS_password, password);
-  absl::SetFlag(&FLAGS_method, method);
-  absl::SetFlag(&FLAGS_local_host, local_host);
-  absl::SetFlag(&FLAGS_local_port, local_port.value());
-  absl::SetFlag(&FLAGS_connect_timeout, connect_timeout.value());
-
-  return true;
+  return Worker::SaveConfig(server_host, server_sni, server_port,
+                            username, password, method,
+                            local_host, local_port,
+                            connect_timeout);
 }

@@ -276,8 +276,9 @@ std::string YASSApp::GetStatus() const {
 
 void YASSApp::OnStart(bool quiet) {
   state_ = STARTING;
-  if (!SaveConfig()) {
-    OnStartFailed("Invalid Config");
+  std::string err_msg = SaveConfig();
+  if (!err_msg.empty()) {
+    OnStartFailed(err_msg);
     return;
   }
 
@@ -356,35 +357,21 @@ void YASSApp::OnDispatch() {
     OnStopped();
 }
 
-bool YASSApp::SaveConfig() {
+std::string YASSApp::SaveConfig() {
   auto server_host = main_window_->GetServerHost();
   auto server_sni = main_window_->GetServerSNI();
-  auto server_port = StringToIntegerU(main_window_->GetServerPort());
+  auto server_port = main_window_->GetServerPort();
   auto username = main_window_->GetUsername();
   auto password = main_window_->GetPassword();
   auto method_string = main_window_->GetMethod();
-  auto method = to_cipher_method(method_string);
   auto local_host = main_window_->GetLocalHost();
-  auto local_port = StringToIntegerU(main_window_->GetLocalPort());
-  auto connect_timeout = StringToIntegerU(main_window_->GetTimeout());
+  auto local_port = main_window_->GetLocalPort();
+  auto connect_timeout = main_window_->GetTimeout();
 
-  if (!server_port.has_value() || method == CRYPTO_INVALID || !local_port.has_value() ||
-      !connect_timeout.has_value()) {
-    LOG(WARNING) << "invalid options";
-    return false;
-  }
-
-  absl::SetFlag(&FLAGS_server_host, server_host);
-  absl::SetFlag(&FLAGS_server_sni, server_sni);
-  absl::SetFlag(&FLAGS_server_port, server_port.value());
-  absl::SetFlag(&FLAGS_username, username);
-  absl::SetFlag(&FLAGS_password, password);
-  absl::SetFlag(&FLAGS_method, method);
-  absl::SetFlag(&FLAGS_local_host, local_host);
-  absl::SetFlag(&FLAGS_local_port, local_port.value());
-  absl::SetFlag(&FLAGS_connect_timeout, connect_timeout.value());
-
-  return true;
+  return Worker::SaveConfig(server_host, server_sni, server_port,
+                            username, password, method_string,
+                            local_host, local_port,
+                            connect_timeout);
 }
 
 void YASSApp::OnAbout() {
