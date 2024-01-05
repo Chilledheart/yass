@@ -4165,19 +4165,19 @@ if (GUI)
           src/ios/extensions/PacketTunnel.entitlements
           )
 
-        add_executable(YassPacketTunnel MACOSX_BUNDLE ${PLUGIN_SRC})
+        add_executable(network-extension MACOSX_BUNDLE ${PLUGIN_SRC})
 
-        target_include_directories(YassPacketTunnel PRIVATE
+        target_include_directories(network-extension PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl-override
           ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl/polyfills
           ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl
           ${CMAKE_CURRENT_SOURCE_DIR}/src
           ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/extensions)
-        target_compile_options(YassPacketTunnel PRIVATE -fapplication-extension -fmodules -gmodules -fobjc-arc -fobjc-weak)
-        target_link_libraries(YassPacketTunnel PRIVATE ${NetworkExtension_LIBRARY})
-        set_target_properties(YassPacketTunnel PROPERTIES LINK_OPTIONS -fapplication-extension -e _NSExtensionMain -fobjc-arc -fobjc-link-runtime)
+        target_compile_options(network-extension PRIVATE -fapplication-extension -fmodules -gmodules -fobjc-arc -fobjc-weak)
+        target_link_libraries(network-extension PRIVATE ${NetworkExtension_LIBRARY})
+        set_target_properties(network-extension PROPERTIES LINK_OPTIONS -fapplication-extension -e _NSExtensionMain -fobjc-arc -fobjc-link-runtime)
 
-        set_target_properties(YassPacketTunnel PROPERTIES
+        set_target_properties(network-extension PROPERTIES
           OUTPUT_NAME "YassPacketTunnel"
           XCODE_PRODUCT_TYPE com.apple.product-type.app-extension
           BUNDLE_EXTENSION appex
@@ -4204,27 +4204,27 @@ if (GUI)
           )
 
         if ((NOT XCODE_CODESIGN_IDENTITY STREQUAL "-") OR XCODE_DEPLOYMENT_TEAM)
-          set_target_properties(YassPacketTunnel PROPERTIES
+          set_target_properties(network-extension PROPERTIES
             XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${XCODE_CODESIGN_IDENTITY}"
             XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${XCODE_DEPLOYMENT_TEAM}"
             XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic")
         endif()
 
-        add_dependencies(${APP_NAME} YassPacketTunnel)
+        add_dependencies(${APP_NAME} network-extension)
 
         # FIXME conflicts with XCTest bundle creation
         if (SDK_NAME STREQUAL iphoneos)
           set_target_properties(${APP_NAME} PROPERTIES
-            XCODE_EMBED_APP_EXTENSIONS YassPacketTunnel
+            XCODE_EMBED_APP_EXTENSIONS network-extension
             XCODE_EMBED_APP_EXTENSIONS_REMOVE_HEADERS_ON_COPY "YES"
             XCODE_EMBED_APP_EXTENSIONS_CODE_SIGN_ON_COPY "YES"
           )
         endif()
 
         find_library(Security_LIBRARY Security REQUIRED)
-        target_link_directories(YassPacketTunnel PRIVATE ${TUN2PROXY_LIB_DIR})
-        target_link_libraries(YassPacketTunnel PRIVATE -Wl,-hidden-ltun2proxy)
-        target_link_libraries(YassPacketTunnel PRIVATE ${Security_LIBRARY})
+        target_link_directories(network-extension PRIVATE ${TUN2PROXY_LIB_DIR})
+        target_link_libraries(network-extension PRIVATE -Wl,-hidden-ltun2proxy)
+        target_link_libraries(network-extension PRIVATE ${Security_LIBRARY})
 
         target_link_libraries(${APP_NAME} PRIVATE ${NetworkExtension_LIBRARY})
     endif()
