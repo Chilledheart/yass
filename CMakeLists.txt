@@ -4225,6 +4225,7 @@ if (GUI)
         target_link_directories(network-extension PRIVATE ${TUN2PROXY_LIB_DIR})
         target_link_libraries(network-extension PRIVATE -Wl,-hidden-ltun2proxy)
         target_link_libraries(network-extension PRIVATE ${Security_LIBRARY})
+        target_link_libraries(network-extension PRIVATE yass_cli_lib)
 
         target_link_libraries(${APP_NAME} PRIVATE ${NetworkExtension_LIBRARY})
     endif()

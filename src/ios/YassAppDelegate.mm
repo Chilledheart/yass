@@ -166,22 +166,20 @@
     }
   }
 #endif
-  auto ips_v4 = worker_.GetRemoteIpsV4();
-  NSMutableArray *remote_ips_v4 = [[NSMutableArray alloc] init];
-  for (const auto & ip_v4 : ips_v4) {
-    [remote_ips_v4 addObject:@(ip_v4.c_str())];
-  }
-  auto ips_v6 = worker_.GetRemoteIpsV6();
-  NSMutableArray *remote_ips_v6 = [[NSMutableArray alloc] init];
-  for (const auto & ip_v6 : ips_v6) {
-    [remote_ips_v6 addObject:@(ip_v6.c_str())];
-  }
+
+  YassViewController* viewController =
+      (YassViewController*)
+          UIApplication.sharedApplication.keyWindow.rootViewController;
 
   tunnelProtocol.providerConfiguration = @{
-    @"ip": @"127.0.0.1",
-    @"port": @3000,
-    @"remote_ips_v4": remote_ips_v4,
-    @"remote_ips_v6": remote_ips_v6,
+    @"server_host": viewController.serverHost.text,
+    @"server_port": viewController.serverPort.text,
+    @"username": viewController.username.text,
+    @"password": viewController.password.text,
+    @"method_string": [viewController getCipher],
+    @"local_host": @"127.0.0.1",
+    @"local_port": @"2999",
+    @"connect_timeout": viewController.timeout.text,
   };
   tunnelProtocol.username = @"";
   tunnelProtocol.identityDataPassword = @"";
