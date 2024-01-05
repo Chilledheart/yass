@@ -42,6 +42,7 @@ class CYassFrame {
 
  public:
   std::string GetServerHost();
+  std::string GetServerSNI();
   std::string GetServerPort();
   std::string GetUsername();
   std::string GetPassword();
@@ -66,6 +67,7 @@ class CYassFrame {
  protected:
 
   HWND server_host_label_;
+  HWND server_sni_label_;
   HWND server_port_label_;
   HWND username_label_;
   HWND password_label_;
@@ -77,6 +79,7 @@ class CYassFrame {
   HWND systemproxy_label_;
 
   HWND server_host_edit_;
+  HWND server_sni_edit_;
   HWND server_port_edit_;
   HWND username_edit_;
   HWND password_edit_;

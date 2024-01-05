@@ -176,7 +176,7 @@ BOOL CYassApp::InitInstance() {
   std::wstring frame_name = LoadStringStdW(m_hInstance, IDS_APP_TITLE);
 
   UINT uDpi = Utils::GetDpiForWindowOrSystem(nullptr);
-  RECT rect{0, 0, MULDIVDPI(500), MULDIVDPI(420)};
+  RECT rect{0, 0, MULDIVDPI(500), MULDIVDPI(450)};
 
   // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow
   int nCmdShow = absl::GetFlag(FLAGS_background) ? SW_HIDE : SW_SHOW;
@@ -392,6 +392,7 @@ BOOL CYassApp::CheckFirstInstance() {
 
 bool CYassApp::SaveConfig() {
   auto server_host = frame_->GetServerHost();
+  auto server_sni = frame_->GetServerSNI();
   auto server_port = StringToIntegerU(frame_->GetServerPort());
   auto username = frame_->GetUsername();
   auto password = frame_->GetPassword();
@@ -407,6 +408,7 @@ bool CYassApp::SaveConfig() {
   }
 
   absl::SetFlag(&FLAGS_server_host, server_host);
+  absl::SetFlag(&FLAGS_server_sni, server_sni);
   absl::SetFlag(&FLAGS_server_port, server_port.value());
   absl::SetFlag(&FLAGS_username, username);
   absl::SetFlag(&FLAGS_password, password);
