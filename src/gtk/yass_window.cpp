@@ -148,6 +148,7 @@ YASSWindow::YASSWindow()
   gtk_container_add(GTK_CONTAINER(hbox), GTK_WIDGET(left_box));
 
   auto server_host_label_ = gtk_label_new(_("Server Host"));
+  auto server_sni_label_ = gtk_label_new(_("Server SNI"));
   auto server_port_label_ = gtk_label_new(_("Server Port"));
   auto username_label_ = gtk_label_new(_("Username"));
   auto password_label_ = gtk_label_new(_("Password"));
@@ -159,17 +160,19 @@ YASSWindow::YASSWindow()
   auto systemproxy_label_ = gtk_label_new(_("System Proxy"));
 
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_host_label_), 0, 0, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_port_label_), 0, 1, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(username_label_), 0, 2, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(password_label_), 0, 3, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(method_label_), 0, 4, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_host_label_), 0, 5, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_port_label_), 0, 6, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_label_), 0, 7, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_label_), 0, 8, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(systemproxy_label_), 0, 9, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_sni_label_), 0, 1, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_port_label_), 0, 2, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(username_label_), 0, 3, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(password_label_), 0, 4, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(method_label_), 0, 5, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_host_label_), 0, 6, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_port_label_), 0, 7, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_label_), 0, 8, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_label_), 0, 9, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(systemproxy_label_), 0, 10, 1, 1);
 
   server_host_ = GTK_ENTRY(gtk_entry_new());
+  server_sni_ = GTK_ENTRY(gtk_entry_new());
   server_port_ = GTK_ENTRY(gtk_entry_new());
   username_ = GTK_ENTRY(gtk_entry_new());
   password_ = GTK_ENTRY(gtk_entry_new());
@@ -212,15 +215,16 @@ YASSWindow::YASSWindow()
   gtk_entry_set_visibility(password_, false);
 
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_host_), 1, 0, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_port_), 1, 1, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(username_), 1, 2, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(password_), 1, 3, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(method_), 1, 4, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_host_), 1, 5, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_port_), 1, 6, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_), 1, 7, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_), 1, 8, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(systemproxy_), 1, 9, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_sni_), 1, 1, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_port_), 1, 2, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(username_), 1, 3, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(password_), 1, 4, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(method_), 1, 5, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_host_), 1, 6, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_port_), 1, 7, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_), 1, 8, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_), 1, 9, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(systemproxy_), 1, 10, 1, 1);
 
 #if GTK_CHECK_VERSION(3, 12, 0)
   gtk_widget_set_margin_start(GTK_WIDGET(right_panel_grid), 10);
@@ -282,6 +286,10 @@ void YASSWindow::OnSystemProxyClicked() {
 
 std::string YASSWindow::GetServerHost() {
   return gtk_entry_get_text(server_host_);
+}
+
+std::string YASSWindow::GetServerSNI() {
+  return gtk_entry_get_text(server_sni_);
 }
 
 std::string YASSWindow::GetServerPort() {
@@ -347,6 +355,7 @@ std::string YASSWindow::GetStatusMessage() {
 void YASSWindow::Started() {
   UpdateStatusBar();
   gtk_widget_set_sensitive(GTK_WIDGET(server_host_), false);
+  gtk_widget_set_sensitive(GTK_WIDGET(server_sni_), false);
   gtk_widget_set_sensitive(GTK_WIDGET(server_port_), false);
   gtk_widget_set_sensitive(GTK_WIDGET(username_), false);
   gtk_widget_set_sensitive(GTK_WIDGET(password_), false);
@@ -361,6 +370,7 @@ void YASSWindow::Started() {
 void YASSWindow::StartFailed() {
   UpdateStatusBar();
   gtk_widget_set_sensitive(GTK_WIDGET(server_host_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(server_sni_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(server_port_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(username_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(password_), true);
@@ -382,6 +392,7 @@ void YASSWindow::StartFailed() {
 void YASSWindow::Stopped() {
   UpdateStatusBar();
   gtk_widget_set_sensitive(GTK_WIDGET(server_host_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(server_sni_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(server_port_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(username_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(password_), true);
@@ -395,6 +406,7 @@ void YASSWindow::Stopped() {
 
 void YASSWindow::LoadChanges() {
   auto server_host_str = absl::GetFlag(FLAGS_server_host);
+  auto server_sni_str = absl::GetFlag(FLAGS_server_sni);
   auto server_port_str = std::to_string(absl::GetFlag(FLAGS_server_port));
   auto username_str = absl::GetFlag(FLAGS_username);
   auto password_str = absl::GetFlag(FLAGS_password);
@@ -404,6 +416,7 @@ void YASSWindow::LoadChanges() {
   auto timeout_str = std::to_string(absl::GetFlag(FLAGS_connect_timeout));
 
   gtk_entry_set_text(server_host_, server_host_str.c_str());
+  gtk_entry_set_text(server_sni_, server_sni_str.c_str());
   gtk_entry_set_text(server_port_, server_port_str.c_str());
   gtk_entry_set_text(username_, username_str.c_str());
   gtk_entry_set_text(password_, password_str.c_str());
