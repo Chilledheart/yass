@@ -73,6 +73,10 @@ msgstr "Stop"
 msgid "Server Host"
 msgstr "Server Host"
 
+#: yass_window.cpp:149
+msgid "Server SNI"
+msgstr "Server SNI"
+
 #: yass_window.cpp:150
 msgid "Server Port"
 msgstr "Server Port"

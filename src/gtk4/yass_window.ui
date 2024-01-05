@@ -38,7 +38,7 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">Server Port:</property>
+                <property name="label" translatable="yes">Server SNI:</property>
                 <property name="xalign">1</property>
                 <layout>
                   <property name="column">1</property>
@@ -48,7 +48,7 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">Username:</property>
+                <property name="label" translatable="yes">Server Port:</property>
                 <property name="xalign">1</property>
                 <layout>
                   <property name="column">1</property>
@@ -58,7 +58,7 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">Password:</property>
+                <property name="label" translatable="yes">Username:</property>
                 <property name="xalign">1</property>
                 <layout>
                   <property name="column">1</property>
@@ -68,7 +68,7 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">Cipher/Method:</property>
+                <property name="label" translatable="yes">Password:</property>
                 <property name="xalign">1</property>
                 <layout>
                   <property name="column">1</property>
@@ -78,7 +78,7 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">Local Host:</property>
+                <property name="label" translatable="yes">Cipher/Method:</property>
                 <property name="xalign">1</property>
                 <layout>
                   <property name="column">1</property>
@@ -88,7 +88,7 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">Local Port:</property>
+                <property name="label" translatable="yes">Local Host:</property>
                 <property name="xalign">1</property>
                 <layout>
                   <property name="column">1</property>
@@ -98,7 +98,7 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">Timeout:</property>
+                <property name="label" translatable="yes">Local Port:</property>
                 <property name="xalign">1</property>
                 <layout>
                   <property name="column">1</property>
@@ -108,7 +108,7 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">Auto Start:</property>
+                <property name="label" translatable="yes">Timeout:</property>
                 <property name="xalign">1</property>
                 <layout>
                   <property name="column">1</property>
@@ -118,11 +118,21 @@
             </child>
             <child>
               <object class="GtkLabel">
-                <property name="label" translatable="yes">System Proxy:</property>
+                <property name="label" translatable="yes">Auto Start:</property>
                 <property name="xalign">1</property>
                 <layout>
                   <property name="column">1</property>
                   <property name="row">9</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel">
+                <property name="label" translatable="yes">System Proxy:</property>
+                <property name="xalign">1</property>
+                <layout>
+                  <property name="column">1</property>
+                  <property name="row">10</property>
                 </layout>
               </object>
             </child>
@@ -135,7 +145,7 @@
               </object>
             </child>
             <child>
-              <object class="GtkEntry" id="server_port">
+              <object class="GtkEntry" id="server_sni">
                 <layout>
                   <property name="column">2</property>
                   <property name="row">1</property>
@@ -143,7 +153,7 @@
               </object>
             </child>
             <child>
-              <object class="GtkEntry" id="username">
+              <object class="GtkEntry" id="server_port">
                 <layout>
                   <property name="column">2</property>
                   <property name="row">2</property>
@@ -151,7 +161,7 @@
               </object>
             </child>
             <child>
-              <object class="GtkEntry" id="password">
+              <object class="GtkEntry" id="username">
                 <layout>
                   <property name="column">2</property>
                   <property name="row">3</property>
@@ -159,7 +169,7 @@
               </object>
             </child>
             <child>
-              <object class="GtkComboBoxText" id="method">
+              <object class="GtkEntry" id="password">
                 <layout>
                   <property name="column">2</property>
                   <property name="row">4</property>
@@ -167,7 +177,7 @@
               </object>
             </child>
             <child>
-              <object class="GtkEntry" id="local_host">
+              <object class="GtkComboBoxText" id="method">
                 <layout>
                   <property name="column">2</property>
                   <property name="row">5</property>
@@ -175,7 +185,7 @@
               </object>
             </child>
             <child>
-              <object class="GtkEntry" id="local_port">
+              <object class="GtkEntry" id="local_host">
                 <layout>
                   <property name="column">2</property>
                   <property name="row">6</property>
@@ -183,7 +193,7 @@
               </object>
             </child>
             <child>
-              <object class="GtkEntry" id="timeout">
+              <object class="GtkEntry" id="local_port">
                 <layout>
                   <property name="column">2</property>
                   <property name="row">7</property>
@@ -191,7 +201,7 @@
               </object>
             </child>
             <child>
-              <object class="GtkCheckButton" id="autostart">
+              <object class="GtkEntry" id="timeout">
                 <layout>
                   <property name="column">2</property>
                   <property name="row">8</property>
@@ -199,10 +209,18 @@
               </object>
             </child>
             <child>
-              <object class="GtkCheckButton" id="systemproxy">
+              <object class="GtkCheckButton" id="autostart">
                 <layout>
                   <property name="column">2</property>
                   <property name="row">9</property>
+                </layout>
+              </object>
+            </child>
+            <child>
+              <object class="GtkCheckButton" id="systemproxy">
+                <layout>
+                  <property name="column">2</property>
+                  <property name="row">10</property>
                 </layout>
               </object>
             </child>

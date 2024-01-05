@@ -39,6 +39,7 @@ class YASSWindow {
 
  public:
   std::string GetServerHost();
+  std::string GetServerSNI();
   std::string GetServerPort();
   std::string GetUsername();
   std::string GetPassword();

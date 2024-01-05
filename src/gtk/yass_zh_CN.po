@@ -74,6 +74,10 @@ msgstr "停止"
 msgid "Server Host"
 msgstr "服务器域名"
 
+#: yass_window.cpp:149
+msgid "Server SNI"
+msgstr "服务器名称指示"
+
 #: yass_window.cpp:150
 msgid "Server Port"
 msgstr "服务器端口号"

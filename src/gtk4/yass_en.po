@@ -53,6 +53,10 @@ msgstr "Yet Another Shadow Socket"
 msgid "Server Host:"
 msgstr "Server Host:"
 
+#: yass_window.ui:31
+msgid "Server SNI:"
+msgstr "Server SNI:"
+
 #: yass_window.ui:41
 msgid "Server Port:"
 msgstr "Server Port:"

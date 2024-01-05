@@ -49,6 +49,7 @@ struct _YASSGtkWindow
 
   // Right Panel
   GtkWidget* server_host;
+  GtkWidget* server_sni;
   GtkWidget* server_port;
   GtkWidget* username;
   GtkWidget* password;
@@ -89,6 +90,7 @@ yass_window_class_init (YASSGtkWindowClass *cls)
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, stop_button);
 
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, server_host);
+  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, server_sni);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, server_port);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, username);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, password);
@@ -218,6 +220,10 @@ std::string YASSWindow::GetServerHost() {
   return gtk_editable_get_text(GTK_EDITABLE(impl_->server_host));
 }
 
+std::string YASSWindow::GetServerSNI() {
+  return gtk_editable_get_text(GTK_EDITABLE(impl_->server_sni));
+}
+
 std::string YASSWindow::GetServerPort() {
   return gtk_editable_get_text(GTK_EDITABLE(impl_->server_port));
 }
@@ -281,6 +287,7 @@ std::string YASSWindow::GetStatusMessage() {
 void YASSWindow::Started() {
   UpdateStatusBar();
   gtk_widget_set_sensitive(impl_->server_host, false);
+  gtk_widget_set_sensitive(impl_->server_sni, false);
   gtk_widget_set_sensitive(impl_->server_port, false);
   gtk_widget_set_sensitive(impl_->username, false);
   gtk_widget_set_sensitive(impl_->password, false);
@@ -295,6 +302,7 @@ void YASSWindow::Started() {
 void YASSWindow::StartFailed() {
   UpdateStatusBar();
   gtk_widget_set_sensitive(impl_->server_host, true);
+  gtk_widget_set_sensitive(impl_->server_sni, true);
   gtk_widget_set_sensitive(impl_->server_port, true);
   gtk_widget_set_sensitive(impl_->username, true);
   gtk_widget_set_sensitive(impl_->password, true);
@@ -315,6 +323,7 @@ void YASSWindow::StartFailed() {
 void YASSWindow::Stopped() {
   UpdateStatusBar();
   gtk_widget_set_sensitive(impl_->server_host, true);
+  gtk_widget_set_sensitive(impl_->server_sni, true);
   gtk_widget_set_sensitive(impl_->server_port, true);
   gtk_widget_set_sensitive(impl_->username, true);
   gtk_widget_set_sensitive(impl_->password, true);
@@ -328,6 +337,7 @@ void YASSWindow::Stopped() {
 
 void YASSWindow::LoadChanges() {
   auto server_host_str = absl::GetFlag(FLAGS_server_host);
+  auto server_sni_str = absl::GetFlag(FLAGS_server_sni);
   auto server_port_str = std::to_string(absl::GetFlag(FLAGS_server_port));
   auto username_str = absl::GetFlag(FLAGS_username);
   auto password_str = absl::GetFlag(FLAGS_password);
@@ -337,6 +347,7 @@ void YASSWindow::LoadChanges() {
   auto timeout_str = std::to_string(absl::GetFlag(FLAGS_connect_timeout));
 
   gtk_editable_set_text(GTK_EDITABLE(impl_->server_host), server_host_str.c_str());
+  gtk_editable_set_text(GTK_EDITABLE(impl_->server_sni), server_sni_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->server_port), server_port_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->username), username_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->password), password_str.c_str());
