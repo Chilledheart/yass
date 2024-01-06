@@ -123,8 +123,13 @@ public class MainActivity extends Activity {
         EditText timeoutEditText = findViewById(R.id.timeoutEditText);
         timeoutEditText.setText(String.format(getLocale(), "%d", getTimeout()));
 
-        TextView currentIpTextView = findViewById(R.id.currentIpTextView);
+        loadSettingsFromNativeCurrentIp();
 
+        Button stopButton = findViewById(R.id.stopButton);
+        stopButton.setEnabled(false);
+    }
+
+    private void loadSettingsFromNativeCurrentIp() {
         String currentIp = "?";
         try {
             byte[] ipAddress = ByteBuffer.wrap(new byte[4])
@@ -136,10 +141,9 @@ public class MainActivity extends Activity {
         } catch (UnknownHostException e) {
             // nop
         }
-        currentIpTextView.setText(String.format(getString(R.string.status_current_ip_address), currentIp));
 
-        Button stopButton = findViewById(R.id.stopButton);
-        stopButton.setEnabled(false);
+        TextView currentIpTextView = findViewById(R.id.currentIpTextView);
+        currentIpTextView.setText(String.format(getString(R.string.status_current_ip_address), currentIp, nativeLocalPort));
     }
 
     private String saveSettingsIntoNative() {
@@ -162,153 +166,41 @@ public class MainActivity extends Activity {
 
     private final YassVpnService vpnService = new YassVpnService();
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == VPN_REQUEST_CODE && resultCode == RESULT_OK) {
-            onStartVpn();
-            return;
-        }
-        if (requestCode == VPN_REQUEST_CODE) {
-            Log.e(TAG, "vpn service intent not allowed");
-            TextView statusTextView = findViewById(R.id.statusTextView);
-            statusTextView.setText(String.format(getString(R.string.status_started_with_error_msg), "No permission to create VPN service"));
-            return;
-        }
-        super.onActivityResult(requestCode, resultCode, data);
-    }
-
-    private final int VPN_REQUEST_CODE = 10000;
-    private Thread tun2proxyThread;
-    private void onStartVpn() {
-        ParcelFileDescriptor tunFd = vpnService.connect(getString(R.string.app_name), getApplicationContext());
-        if (tunFd == null) {
-            Log.e(TAG, "Unable to run create tunFd");
-            TextView statusTextView = findViewById(R.id.statusTextView);
-            statusTextView.setText(String.format(getString(R.string.status_started_with_error_msg), "Unable to run create tunFd"));
-            return;
-        }
-
-        int log_level = 0;
-        if (Log.isLoggable(TUN2PROXY_TAG, Log.VERBOSE)) {
-            log_level = 5;
-        } else if (Log.isLoggable(TUN2PROXY_TAG, Log.DEBUG)) {
-            log_level = 4;
-        } else if (Log.isLoggable(TUN2PROXY_TAG, Log.INFO)) {
-            log_level = 3;
-        } else if (Log.isLoggable(TUN2PROXY_TAG, Log.WARN)) {
-            log_level = 2;
-        } else if (Log.isLoggable(TUN2PROXY_TAG, Log.ERROR)) {
-            log_level = 1;
-        }
-
-        int ret = tun2ProxyInit("socks5://127.0.0.1:3000", tunFd.getFd(), vpnService.DEFAULT_MTU, log_level, true);
-        if (ret != 0) {
-            Log.e(TUN2PROXY_TAG, String.format("Unable to run tun2ProxyInit: %d", ret));
-            try {
-                tunFd.close();
-            } catch (IOException e) {
-                // nop
-            }
-            return;
-        }
-        tun2proxyThread = new Thread(){
-            public void run() {
-                Log.v(TUN2PROXY_TAG, "tun2proxy thr started");
-                int ret = tun2ProxyRun();
-                if (ret != 0) {
-                    // TODO should we handle this error?
-                    Log.e(TUN2PROXY_TAG, String.format("Unable to run tun2ProxyRun: %d", ret));
-                }
-                try {
-                    tunFd.close();
-                } catch (IOException e) {
-                    // nop
-                }
-                Log.v(TUN2PROXY_TAG, "tun2proxy thr stopped");
-            }
-        };
-        tun2proxyThread.setName("tun2proxy thr");
-        tun2proxyThread.start();
-
-        Button startButton = findViewById(R.id.startButton);
-        startButton.setEnabled(false);
-
-        TextView statusTextView = findViewById(R.id.statusTextView);
-        statusTextView.setText(R.string.status_starting);
-        state = NativeMachineState.STARTING;
-        nativeStart();
-    }
 
     public void onStartClicked(View view) {
         if (state == NativeMachineState.STOPPED) {
             String error_msg = saveSettingsIntoNative();
             if (error_msg != null) {
-                onNativeStartFailedOnUIThread(error_msg);
+                onNativeStartFailedOnUIThread(error_msg, false);
                 return;
             }
 
-            Intent intent = YassVpnService.prepare(getApplicationContext());
-            if (intent == null) {
-                onActivityResult(VPN_REQUEST_CODE, RESULT_OK, null);
-            } else {
-                startActivityForResult(intent, VPN_REQUEST_CODE);
-            }
-        }
-    }
+            Button startButton = findViewById(R.id.startButton);
+            startButton.setEnabled(false);
 
-    private void onStopVpn() {
-        int ret = tun2ProxyDestroy();
-        if (ret != 0) {
-            Log.e(TUN2PROXY_TAG, String.format("Unable to run tun2ProxyDestroy: %d", ret));
-        }
-        try {
-            tun2proxyThread.join();
-        } catch (InterruptedException e) {
-            // nop
-        }
-        tun2proxyThread = null;
-        nativeStop();
-
-        Button stopButton = findViewById(R.id.stopButton);
-        stopButton.setEnabled(false);
-
-        TextView statusTextView = findViewById(R.id.statusTextView);
-        statusTextView.setText(R.string.status_stopping);
-        state = NativeMachineState.STOPPING;
-    }
-    public void onStopClicked(View view) {
-        if (state == NativeMachineState.STARTED) {
-            stopRefreshPoll();
-            onStopVpn();
+            TextView statusTextView = findViewById(R.id.statusTextView);
+            statusTextView.setText(R.string.status_starting);
+            state = NativeMachineState.STARTING;
+            nativeStart();
         }
     }
 
     private native void nativeStart();
 
-    private void onNativeStartedOnUIThread() {
+    private void onNativeStartedOnUIThread(int local_port) {
+        nativeLocalPort = local_port;
+        Intent intent = YassVpnService.prepare(getApplicationContext());
 
-        state = NativeMachineState.STARTED;
-        Button stopButton = findViewById(R.id.stopButton);
-        stopButton.setEnabled(true);
-
-        TextView statusTextView = findViewById(R.id.statusTextView);
-        statusTextView.setText(R.string.status_started);
-
-        startRefreshPoll();
+        if (intent == null) {
+            onActivityResult(VPN_REQUEST_CODE, RESULT_OK, null);
+        } else {
+            startActivityForResult(intent, VPN_REQUEST_CODE);
+        }
     }
 
-    private void onNativeStartFailedOnUIThread(String error_msg) {
-        if (tun2proxyThread != null) {
-            int ret = tun2ProxyDestroy();
-            if (ret != 0) {
-                Log.e(TAG, String.format("Unable to run tun2ProxyDestroy: %d", ret));
-            }
-            try {
-                tun2proxyThread.join();
-            } catch (InterruptedException e) {
-                // nop
-            }
-            tun2proxyThread = null;
+    private void onNativeStartFailedOnUIThread(String error_msg, boolean stop_native) {
+        if (stop_native) {
+            nativeStop();
         }
 
         state = NativeMachineState.STOPPED;
@@ -319,19 +211,20 @@ public class MainActivity extends Activity {
         statusTextView.setText(String.format(getString(R.string.status_started_with_error_msg), error_msg));
     }
 
+    private int nativeLocalPort = 0;
     @SuppressWarnings("unused")
-    private void onNativeStarted(String error_msg) {
+    private void onNativeStarted(String error_msg, int local_port) {
         if (error_msg != null) {
             Log.e(YASS_TAG, String.format("yass thr start failed: %s", error_msg));
         } else {
-            Log.v(YASS_TAG, "yass thr started");
+            Log.v(YASS_TAG, String.format("yass thr started with port %d", local_port));
         }
         this.runOnUiThread(new Runnable() {
             public void run() {
                 if (error_msg != null) {
-                    onNativeStartFailedOnUIThread(error_msg);
+                    onNativeStartFailedOnUIThread(error_msg, false);
                 } else {
-                    onNativeStartedOnUIThread();
+                    onNativeStartedOnUIThread(local_port);
                 }
             }
         });
@@ -352,6 +245,117 @@ public class MainActivity extends Activity {
                 statusTextView.setText(String.format(getString(R.string.status_stopped), getServerHost(), getServerPort()));
             }
         });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == VPN_REQUEST_CODE && resultCode == RESULT_OK) {
+            onStartVpn();
+            return;
+        }
+        if (requestCode == VPN_REQUEST_CODE) {
+            Log.e(TAG, "vpn service intent not allowed");
+            onNativeStartFailedOnUIThread(String.format(getString(R.string.status_started_with_error_msg), "No permission to create VPN service"), true);
+            return;
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private final int VPN_REQUEST_CODE = 10000;
+    private Thread tun2proxyThread;
+    private void onStartVpn() {
+        ParcelFileDescriptor tunFd = vpnService.connect(getString(R.string.app_name), getApplicationContext(), nativeLocalPort);
+        if (tunFd == null) {
+            Log.e(TAG, "Unable to run create tunFd");
+            onNativeStartFailedOnUIThread(String.format(getString(R.string.status_started_with_error_msg), "Unable to run create tunFd"), true);
+            return;
+        }
+
+        int log_level = 0;
+        if (Log.isLoggable(TUN2PROXY_TAG, Log.VERBOSE)) {
+            log_level = 5;
+        } else if (Log.isLoggable(TUN2PROXY_TAG, Log.DEBUG)) {
+            log_level = 4;
+        } else if (Log.isLoggable(TUN2PROXY_TAG, Log.INFO)) {
+            log_level = 3;
+        } else if (Log.isLoggable(TUN2PROXY_TAG, Log.WARN)) {
+            log_level = 2;
+        } else if (Log.isLoggable(TUN2PROXY_TAG, Log.ERROR)) {
+            log_level = 1;
+        }
+
+        String proxyUrl = String.format(Locale.getDefault(), "socks5://127.0.0.1:%d", nativeLocalPort);
+        int ret = tun2ProxyInit(proxyUrl, tunFd.getFd(), vpnService.DEFAULT_MTU, log_level, true);
+        if (ret != 0) {
+            Log.e(TUN2PROXY_TAG, String.format("Unable to run tun2ProxyInit: %d", ret));
+            try {
+                tunFd.close();
+            } catch (IOException e) {
+                // nop
+            }
+            onNativeStartFailedOnUIThread(String.format(getString(R.string.status_started_with_error_msg), "Unable to run tun2ProxyInit"), true);
+            return;
+        }
+        Log.v(TUN2PROXY_TAG, String.format("Init with proxy url: %s", proxyUrl));
+        tun2proxyThread = new Thread(){
+            public void run() {
+                Log.v(TUN2PROXY_TAG, "tun2proxy thr started");
+                int ret = tun2ProxyRun();
+                if (ret != 0) {
+                    // TODO should we handle this error?
+                    Log.e(TUN2PROXY_TAG, String.format("Unable to run tun2ProxyRun: %d", ret));
+                }
+                try {
+                    tunFd.close();
+                } catch (IOException e) {
+                    // nop
+                }
+                Log.v(TUN2PROXY_TAG, "tun2proxy thr stopped");
+            }
+        };
+        tun2proxyThread.setName("tun2proxy thr");
+        tun2proxyThread.start();
+
+        state = NativeMachineState.STARTED;
+        Button stopButton = findViewById(R.id.stopButton);
+        stopButton.setEnabled(true);
+
+        TextView statusTextView = findViewById(R.id.statusTextView);
+        statusTextView.setText(R.string.status_started);
+
+        loadSettingsFromNativeCurrentIp();
+
+        startRefreshPoll();
+    }
+
+    private void onStopVpn() {
+        int ret = tun2ProxyDestroy();
+        if (ret != 0) {
+            Log.e(TUN2PROXY_TAG, String.format("Unable to run tun2ProxyDestroy: %d", ret));
+        }
+        try {
+            tun2proxyThread.join();
+        } catch (InterruptedException e) {
+            // nop
+        }
+        tun2proxyThread = null;
+        nativeStop();
+
+        Button stopButton = findViewById(R.id.stopButton);
+        stopButton.setEnabled(false);
+
+        nativeLocalPort = 0;
+        loadSettingsFromNativeCurrentIp();
+
+        TextView statusTextView = findViewById(R.id.statusTextView);
+        statusTextView.setText(R.string.status_stopping);
+        state = NativeMachineState.STOPPING;
+    }
+    public void onStopClicked(View view) {
+        if (state == NativeMachineState.STARTED) {
+            stopRefreshPoll();
+            onStopVpn();
+        }
     }
 
     private native int tun2ProxyInit(String proxy_url, int tun_fd, int tun_mtu, int log_level, boolean dns_over_tcp);

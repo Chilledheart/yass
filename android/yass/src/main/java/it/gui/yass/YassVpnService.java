@@ -18,7 +18,7 @@ public class YassVpnService extends VpnService {
     private String PRIVATE_VLAN6_CLIENT = "fdfe:dcba:9876::1";
     private String PRIVATE_VLAN6_GATEWAY = "fdfe:dcba:9876::2";
 
-    public ParcelFileDescriptor connect(String session_name, Context context) {
+    public ParcelFileDescriptor connect(String session_name, Context context, int local_port) {
         Builder builder = new Builder();
 
         builder.setConfigureIntent(PendingIntent.getActivity(context, 0,
@@ -35,7 +35,7 @@ public class YassVpnService extends VpnService {
         builder.addDnsServer(PRIVATE_VLAN4_GATEWAY);
         builder.addDnsServer(PRIVATE_VLAN6_GATEWAY);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            builder.setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", 3000));
+            builder.setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", local_port));
         }
         try {
             builder.addDisallowedApplication(context.getPackageName());

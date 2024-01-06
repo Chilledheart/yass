@@ -113,7 +113,7 @@ CIPHER_METHOD_VALID_MAP(XX)
   auto method = methods_idxes[_method_idx];
 
   std::string local_host = "0.0.0.0";
-  std::string local_port = "3000";
+  std::string local_port = "0";
 
   const char* timeout_str = env->GetStringUTFChars((jstring)_timeout, nullptr);
   std::string timeout = timeout_str != nullptr ? timeout_str : std::string();
