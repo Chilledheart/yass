@@ -2130,8 +2130,9 @@ func postStateArchives() map[string][]string {
 			buildSubdir = cmakeBuildTypeFlag + "-iphonesimulator"
 		}
 		cmdRun([]string{"cp", "-r", filepath.Join(buildSubdir, getAppName() + ".dSYM") , getAppName() + ".dSYM"}, true)
-		archiveFiles(debugArchive, archivePrefix, []string{getAppName() + ".dSYM"})
-		dbgPaths = append(dbgPaths, getAppName()+".dSYM")
+		cmdRun([]string{"cp", "-r", filepath.Join(buildSubdir, "YassPacketTunnel.appex.dSYM") , "YassPacketTunnel.appex.dSYM"}, true)
+		archiveFiles(debugArchive, archivePrefix, []string{getAppName() + ".dSYM", "YassPacketTunnel.appex.dSYM"})
+		dbgPaths = append(dbgPaths, getAppName()+".dSYM", "YassPacketTunnel.appex.dSYM")
 	}
 	archives[debugArchive] = dbgPaths
 
