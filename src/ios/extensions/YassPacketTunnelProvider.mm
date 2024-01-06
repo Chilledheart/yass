@@ -3,12 +3,15 @@
 
 #import "YassPacketTunnelProvider.h"
 
+#include <atomic>
+#include <thread>
+
+#include <absl/strings/str_format.h>
+
 #include "ios/tun2proxy.h"
 #include "cli/cli_worker.hpp"
 #include "core/utils.hpp"
-
-#include <atomic>
-#include <thread>
+#include "network.hpp"
 
 static constexpr int DEFAULT_MTU = 1500;
 static const char PRIVATE_VLAN4_CLIENT[] = "172.19.0.1";
@@ -31,6 +34,10 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
 #else
   absl::SetFlag(&FLAGS_stderrthreshold, LOGGING_VERBOSE);
 #endif
+
+  RateFlag rate(10u << 20);
+  NSLog(@"tunnel: rate limit: %04.2lfm/s", rate.rate / 1024.0 / 1024.0);
+  absl::SetFlag(&FLAGS_limit_rate, rate);
 
   NETunnelProviderProtocol *protocolConfiguration = (NETunnelProviderProtocol*)self.protocolConfiguration;
   NSDictionary* dict = protocolConfiguration.providerConfiguration;
@@ -93,13 +100,17 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
     [remote_ips_v6 addObject:@(ip_v6.c_str())];
   }
 
-  context_ = Tun2Proxy_Init(self.packetFlow, "socks5://127.0.0.1:2999", DEFAULT_MTU, 0, true);
+  std::string proxy_url = absl::StrFormat("socks5://%s:%s",
+                                          gurl_base::SysNSStringToUTF8(local_host),
+                                          gurl_base::SysNSStringToUTF8(local_port));
+
+  context_ = Tun2Proxy_Init(self.packetFlow, proxy_url, DEFAULT_MTU, 0, true);
   if (!context_) {
     completionHandler([NSError errorWithDomain:@"it.gui.ios.yass" code:200
                       userInfo:@{@"Error reason": @"tun2proxy init failure"}]);
     return;
   }
-  NSLog(@"tun2proxy: init");
+  NSLog(@"tun2proxy: inited with %s mtu %d dns_proxy %s", proxy_url.c_str(), DEFAULT_MTU, "true");
   Tun2Proxy_InitContext *context = context_;
   worker_thread_ = std::make_unique<std::thread>([context]{
     NSLog(@"tun2proxy: worker thread begin");
@@ -128,6 +139,9 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
 
   // Save some memory
 #if 0
+  NSLog(@"tunnel: disable ip v6 route");
+#else
+  NSLog(@"tunnel: init ip v6 route");
   // Setting IPv6 Route
   tunnelNetworkSettings.IPv6Settings = [[NEIPv6Settings alloc]
     initWithAddresses:[NSArray arrayWithObjects:@(PRIVATE_VLAN6_CLIENT), nil]
@@ -151,8 +165,11 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
   dnsSettings.matchDomains = [NSArray arrayWithObjects:@"", nil];
   tunnelNetworkSettings.DNSSettings = dnsSettings;
 
-#if 0
   // Setting Proxy Settings
+#if 0
+  NSLog(@"tunnel: disable proxy settings");
+#else
+  NSLog(@"tunnel: init proxy settings");
   NSString* ip = local_host;
   NSInteger port = [local_port integerValue];
   NEProxySettings *proxySettings = [[NEProxySettings alloc] init];
@@ -170,7 +187,7 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
       completionHandler(error);
       return;
     }
-    NSLog(@"tun2proxy: start completion");
+    NSLog(@"tunnel: start");
     completionHandler(nil);
   }];
   [self readPackets];
@@ -192,10 +209,12 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
 }
 
 - (void)stopTunnelWithReason:(NEProviderStopReason)reason completionHandler:(void (^)(void))completionHandler {
-  NSLog(@"tun2proxy: stop with reason %ld", reason);
+  NSLog(@"tunnel: stop with reason %ld", reason);
   stopped_ = true;
   worker_.Stop([=]{
+    NSLog(@"yass: stopped");
     Tun2Proxy_Destroy(context_);
+    NSLog(@"tun2proxy: destroyed");
     worker_thread_->join();
     worker_thread_.reset();
     completionHandler();
