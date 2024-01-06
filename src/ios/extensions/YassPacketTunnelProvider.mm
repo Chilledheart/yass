@@ -138,7 +138,7 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
   tunnelNetworkSettings.IPv4Settings.excludedRoutes = excludeRoutes;
 
   // Save some memory
-#if 1
+#if 0
   NSLog(@"tunnel: disable ip v6 route");
 #else
   NSLog(@"tunnel: init ip v6 route");
@@ -166,7 +166,7 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
   tunnelNetworkSettings.DNSSettings = dnsSettings;
 
   // Setting Proxy Settings
-#if 1
+#if 0
   NSLog(@"tunnel: disable proxy settings");
 #else
   NSLog(@"tunnel: init proxy settings");
