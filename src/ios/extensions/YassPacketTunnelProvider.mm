@@ -26,7 +26,11 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
 - (void)startTunnelWithOptions:(NSDictionary *)options completionHandler:(void (^)(NSError *))completionHandler {
   stopped_ = false;
   absl::SetFlag(&FLAGS_logtostderr, false);
+#ifdef NDEBUG
+  absl::SetFlag(&FLAGS_stderrthreshold, LOGGING_WARNING);
+#else
   absl::SetFlag(&FLAGS_stderrthreshold, LOGGING_VERBOSE);
+#endif
 
   NETunnelProviderProtocol *protocolConfiguration = (NETunnelProviderProtocol*)self.protocolConfiguration;
   NSDictionary* dict = protocolConfiguration.providerConfiguration;

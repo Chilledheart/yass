@@ -82,6 +82,10 @@ int main(int argc, const char** argv) {
     appDelegateClassName = NSStringFromClass([YassAppDelegate class]);
   }
   absl::SetFlag(&FLAGS_logtostderr, false);
+#ifdef NDEBUG
+  absl::SetFlag(&FLAGS_stderrthreshold, LOGGING_WARNING);
+#else
   absl::SetFlag(&FLAGS_stderrthreshold, LOGGING_VERBOSE);
+#endif
   return UIApplicationMain(argc, (char**)argv, nil, appDelegateClassName);
 }
