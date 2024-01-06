@@ -144,8 +144,38 @@
       vpn_manager = [[NETunnelProviderManager alloc] init];
     } else {
       vpn_manager = managers[0];
-    }
+#if 0
+      // Compare the configuration with new one
+      // Remove old one once the configuration is changed (to prevent stall configuration).
+      NETunnelProviderProtocol* tunnelProtocol = (NETunnelProviderProtocol*)vpn_manager.protocolConfiguration;
 
+      YassViewController* viewController =
+          (YassViewController*)
+              UIApplication.sharedApplication.keyWindow.rootViewController;
+
+      NSDictionary* new_configuration = @{
+        @"server_host": viewController.serverHost.text,
+        @"server_port": viewController.serverPort.text,
+        @"username": viewController.username.text,
+        @"password": viewController.password.text,
+        @"method_string": [viewController getCipher],
+        @"local_host": @"127.0.0.1",
+        @"local_port": @"2999",
+        @"connect_timeout": viewController.timeout.text,
+      };
+
+      if (![new_configuration isEqualToDictionary:tunnelProtocol.providerConfiguration]) {
+        [vpn_manager removeFromPreferencesWithCompletionHandler:^(NSError * _Nullable error) {
+          if (error) {
+            [self OnStartInstanceFailed: error];
+            return;
+          }
+          [self OnStartSaveAndLoadInstance:vpn_manager];
+        }];
+        return;
+      }
+#endif
+    }
     [self OnStartSaveAndLoadInstance:vpn_manager];
   }];
 }
