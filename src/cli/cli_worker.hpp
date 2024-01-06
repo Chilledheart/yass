@@ -33,6 +33,7 @@ class Worker {
   std::vector<std::string> GetRemoteIpsV6() const;
   std::string GetDomain() const;
   std::string GetRemoteDomain() const;
+  int GetLocalPort() const;
 
   size_t currentConnections() const;
 
@@ -88,6 +89,7 @@ class Worker {
   std::vector<std::string> remote_server_ips_v4_;
   std::vector<std::string> remote_server_ips_v6_;
   std::string remote_server_sni_;
+  int local_port_;
   std::vector<asio::ip::tcp::endpoint> endpoints_;
   std::atomic_bool in_destroy_ = false;
 };

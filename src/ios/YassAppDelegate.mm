@@ -129,8 +129,6 @@
         @"username": viewController.username.text,
         @"password": viewController.password.text,
         @"method_string": [viewController getCipher],
-        @"local_host": @"127.0.0.1",
-        @"local_port": @"2999",
         @"connect_timeout": viewController.timeout.text,
       };
 
@@ -183,8 +181,6 @@
     @"username": viewController.username.text,
     @"password": viewController.password.text,
     @"method_string": [viewController getCipher],
-    @"local_host": @"127.0.0.1",
-    @"local_port": @"2999",
     @"connect_timeout": viewController.timeout.text,
   };
   tunnelProtocol.username = @"";
