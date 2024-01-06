@@ -45,8 +45,8 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
   auto server_port = gurl_base::SysNSStringToUTF8(dict[@"server_port"]);
   auto username = gurl_base::SysNSStringToUTF8(dict[@"username"]);
   auto password = gurl_base::SysNSStringToUTF8(dict[@"password"]);
-  auto local_host = gurl_base::SysNSStringToUTF8(dict[@"local_host"]);
-  auto local_port = gurl_base::SysNSStringToUTF8(dict[@"local_port"]);
+  auto local_host = std::string("127.0.0.1");
+  auto local_port = std::string("0");
   auto method_string = gurl_base::SysNSStringToUTF8(dict[@"method_string"]);
   auto connect_timeout = gurl_base::SysNSStringToUTF8(dict[@"connect_timeout"]);
 
@@ -86,8 +86,8 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
   NETunnelProviderProtocol *protocolConfiguration = (NETunnelProviderProtocol*)self.protocolConfiguration;
 
   NSDictionary* dict = protocolConfiguration.providerConfiguration;
-  NSString* local_host = protocolConfiguration.providerConfiguration[@"local_host"];
-  NSString* local_port = protocolConfiguration.providerConfiguration[@"local_port"];
+  NSString* local_host = @"127.0.0.1";
+  int local_port = worker_.GetLocalPort();
 
   auto ips_v4 = worker_.GetRemoteIpsV4();
   NSMutableArray *remote_ips_v4 = [[NSMutableArray alloc] init];
@@ -100,9 +100,9 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
     [remote_ips_v6 addObject:@(ip_v6.c_str())];
   }
 
-  std::string proxy_url = absl::StrFormat("socks5://%s:%s",
+  std::string proxy_url = absl::StrFormat("socks5://%s:%d",
                                           gurl_base::SysNSStringToUTF8(local_host),
-                                          gurl_base::SysNSStringToUTF8(local_port));
+                                          local_port);
 
   context_ = Tun2Proxy_Init(self.packetFlow, proxy_url, DEFAULT_MTU, 0, true);
   if (!context_) {
@@ -170,12 +170,10 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
   NSLog(@"tunnel: disable proxy settings");
 #else
   NSLog(@"tunnel: init proxy settings");
-  NSString* ip = local_host;
-  NSInteger port = [local_port integerValue];
   NEProxySettings *proxySettings = [[NEProxySettings alloc] init];
-  proxySettings.HTTPServer = [[NEProxyServer alloc] initWithAddress:ip port:port];
+  proxySettings.HTTPServer = [[NEProxyServer alloc] initWithAddress:local_host port:local_port];
   proxySettings.HTTPEnabled = TRUE;
-  proxySettings.HTTPSServer = [[NEProxyServer alloc] initWithAddress:ip port:port];
+  proxySettings.HTTPSServer = [[NEProxyServer alloc] initWithAddress:local_host port:local_port];
   proxySettings.HTTPSEnabled = TRUE;
   proxySettings.exceptionList = [NSArray arrayWithObjects:@"127.0.0.1", @"localhost", @"*.local", nil];
   tunnelNetworkSettings.proxySettings = proxySettings;

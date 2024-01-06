@@ -25,7 +25,7 @@ static bool                 g_Initialized = false;
 static void Init(JNIEnv *env, jobject activity_obj);
 static void Shutdown();
 
-static int CallOnNativeStarted(JavaVM* jvm, jobject activity_obj, const std::string &errmsg);
+static int CallOnNativeStarted(JavaVM* jvm, jobject activity_obj, const std::string &errmsg, jint port);
 static int CallOnNativeStopped(JavaVM* jvm, jobject activity_obj);
 
 static std::unique_ptr<Worker> g_worker;
@@ -80,7 +80,7 @@ void Shutdown() {
   LOG(INFO) << "android: Shutdown finished";
 }
 
-static int CallOnNativeStarted(JavaVM* jvm, jobject activity_obj, const std::string &errmsg) {
+static int CallOnNativeStarted(JavaVM* jvm, jobject activity_obj, const std::string &errmsg, jint port) {
   JavaVM* java_vm = jvm;
   JNIEnv* java_env = nullptr;
 
@@ -96,11 +96,12 @@ static int CallOnNativeStarted(JavaVM* jvm, jobject activity_obj, const std::str
   if (activity_clazz == nullptr)
     return -1;
 
-  jmethodID method_id = java_env->GetMethodID(activity_clazz, "onNativeStarted", "(Ljava/lang/String;)V");
+  jmethodID method_id = java_env->GetMethodID(activity_clazz, "onNativeStarted", "(Ljava/lang/String;I)V");
   if (method_id == nullptr)
     return -1;
 
-  java_env->CallVoidMethod(activity_obj, method_id, errmsg.empty() ? nullptr : java_env->NewStringUTF(errmsg.c_str()));
+  java_env->CallVoidMethod(activity_obj, method_id, errmsg.empty() ? nullptr : java_env->NewStringUTF(errmsg.c_str()),
+                           port);
 
   jni_return = java_vm->DetachCurrentThread();
   if (jni_return != JNI_OK)
@@ -198,7 +199,8 @@ JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStart(JNIEnv *env, jo
     if (ec) {
       ss << ec;
     }
-    CallOnNativeStarted(g_jvm, g_activity_obj, ss.str());
+    int port = ec ? 0 : g_worker->GetLocalPort();
+    CallOnNativeStarted(g_jvm, g_activity_obj, ss.str(), port);
   });
 }
 

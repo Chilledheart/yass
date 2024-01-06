@@ -149,6 +149,10 @@ std::string Worker::GetRemoteDomain() const {
                       ":", std::to_string(absl::GetFlag(FLAGS_server_port)));
 }
 
+int Worker::GetLocalPort() const {
+  return local_port_;
+}
+
 std::string
 Worker::SaveConfig(const std::string& server_host,
                    const std::string& server_sni,
@@ -362,12 +366,14 @@ void Worker::on_resolve_local(asio::error_code ec,
                                                      absl::GetFlag(FLAGS_server_port)
                                                      );
 
+  local_port_ = 0;
   for (auto &endpoint : endpoints_) {
     private_->cli_server->listen(endpoint, std::string(), SOMAXCONN, ec);
     if (ec) {
       break;
     }
     endpoint = private_->cli_server->endpoint();
+    local_port_ = endpoint.port();
     LOG(INFO) << "tcp server listening at " << endpoint;
   }
 
