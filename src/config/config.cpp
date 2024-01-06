@@ -186,7 +186,7 @@ ABSL_FLAG(uint32_t,
 
 ABSL_FLAG(RateFlag,
           limit_rate,
-          RateFlag(),
+          RateFlag(0),
           "Limits the rate of response transmission to a client. Uint is byte per second");
 
 namespace config {

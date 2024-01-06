@@ -11,6 +11,7 @@
 #include "ios/tun2proxy.h"
 #include "cli/cli_worker.hpp"
 #include "core/utils.hpp"
+#include "network.hpp"
 
 static constexpr int DEFAULT_MTU = 1500;
 static const char PRIVATE_VLAN4_CLIENT[] = "172.19.0.1";
@@ -33,6 +34,10 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
 #else
   absl::SetFlag(&FLAGS_stderrthreshold, LOGGING_VERBOSE);
 #endif
+
+  RateFlag rate(10u << 20);
+  NSLog(@"tunnel: rate limit: %04.2lfm/s", rate.rate / 1024.0 / 1024.0);
+  absl::SetFlag(&FLAGS_limit_rate, rate);
 
   NETunnelProviderProtocol *protocolConfiguration = (NETunnelProviderProtocol*)self.protocolConfiguration;
   NSDictionary* dict = protocolConfiguration.providerConfiguration;
