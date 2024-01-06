@@ -17,24 +17,7 @@
 #include "ios/YassAppDelegate.h"
 #include "ios/utils.h"
 
-static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
-  if (bytes < 1024) {
-    *ss << bytes << " B";
-    return;
-  }
-  uint64_t value = bytes;
-  char ci[] = {"KMGTPE"};
-  const char* c = ci;
-  for (int i = 40; i >= 0 && bytes > 0xfffccccccccccccLU >> i; i -= 10) {
-    value >>= 10;
-    ++c;
-  }
-  *ss << std::fixed << std::setw(5) << std::setprecision(2) << value / 1024.0
-      << " " << *c;
-}
-
 @interface YassViewController () <UIPickerViewDataSource, UIPickerViewDelegate, UITextFieldDelegate>
-- (NSString*)getStatusMessage;
 @end
 
 @implementation YassViewController {
@@ -74,8 +57,19 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 }
 
 - (void)viewWillAppear {
-  [self refreshTimerExceeded];
+  refresh_timer_ =
+      [NSTimer scheduledTimerWithTimeInterval:NSTimeInterval(0.2)
+                                       target:self
+                                     selector:@selector(UpdateStatusBar)
+                                     userInfo:nil
+                                      repeats:YES];
   [self.view.window center];
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+  [refresh_timer_ invalidate];
+  refresh_timer_ = nil;
+  [super viewWillDisappear:animated];
 }
 
 - (NSString*)getCipher {
@@ -126,20 +120,6 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 
 - (IBAction)OnStopButtonClicked:(id)sender {
   [self OnStop];
-}
-
-- (void)refreshTimerExceeded {
-  if (refresh_timer_) {
-    [refresh_timer_ invalidate];
-    [self UpdateStatusBar];
-  }
-
-  refresh_timer_ =
-      [NSTimer scheduledTimerWithTimeInterval:NSTimeInterval(0.2)
-                                       target:self
-                                     selector:@selector(refreshTimerExceeded)
-                                     userInfo:nil
-                                      repeats:NO];
 }
 
 - (void)OnStart {
@@ -195,43 +175,10 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   [self.startButton setEnabled:TRUE];
 }
 
-- (NSString*)getStatusMessage {
+- (void)UpdateStatusBar {
   YassAppDelegate* appDelegate =
       (YassAppDelegate*)UIApplication.sharedApplication.delegate;
-  if ([appDelegate getState] != STARTED) {
-    return [appDelegate getStatus];
-  }
-  uint64_t sync_time = GetMonotonicTime();
-  uint64_t delta_time = sync_time - last_sync_time_;
-  if (delta_time > NS_PER_SECOND) {
-    uint64_t rx_bytes = cli::total_rx_bytes;
-    uint64_t tx_bytes = cli::total_tx_bytes;
-    rx_rate_ = static_cast<double>(rx_bytes - last_rx_bytes_) / delta_time *
-               NS_PER_SECOND;
-    tx_rate_ = static_cast<double>(tx_bytes - last_tx_bytes_) / delta_time *
-               NS_PER_SECOND;
-    last_sync_time_ = sync_time;
-    last_rx_bytes_ = rx_bytes;
-    last_tx_bytes_ = tx_bytes;
-  }
-
-  std::ostringstream ss;
-  NSString *message = [appDelegate getStatus];
-  ss << gurl_base::SysNSStringToUTF8(message);
-  message = NSLocalizedString(@"TXRATE", @" tx rate: ");
-  ss << gurl_base::SysNSStringToUTF8(message);
-  humanReadableByteCountBin(&ss, rx_rate_);
-  ss << "/s";
-  message = NSLocalizedString(@"RXRATE", @" rx rate: ");
-  ss << gurl_base::SysNSStringToUTF8(message);
-  humanReadableByteCountBin(&ss, tx_rate_);
-  ss << "/s";
-
-  return gurl_base::SysUTF8ToNSString(ss.str());
-}
-
-- (void)UpdateStatusBar {
-  self.status.text = [self getStatusMessage];
+  self.status.text = [appDelegate getStatus];
 }
 
 - (void)LoadChanges {
@@ -251,10 +198,6 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 
   self.timeout.text =
     gurl_base::SysUTF8ToNSString(std::to_string(absl::GetFlag(FLAGS_connect_timeout)));
-  auto ip_addresses = GetIpAddress();
-  if (!ip_addresses.empty()) {
-    self.currentIP.text = gurl_base::SysUTF8ToNSString(ip_addresses[0] + ":3000");
-  }
 }
 
 @end

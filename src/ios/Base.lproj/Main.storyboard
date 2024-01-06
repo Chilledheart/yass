@@ -21,7 +21,7 @@
                                 <rect key="frame" x="20" y="48" width="374" height="870"/>
                                 <subviews>
                                     <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="EMh-aI-fmy">
-                                        <rect key="frame" x="0.0" y="0.0" width="374" height="825.5"/>
+                                        <rect key="frame" x="0.0" y="0.0" width="374" height="760.5"/>
                                         <subviews>
                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Server Host" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1EK-58-4Tb">
                                                 <rect key="frame" x="0.0" y="0.0" width="374" height="20.5"/>
@@ -87,26 +87,14 @@
                                                 <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                                 <textInputTraits key="textInputTraits"/>
                                             </textField>
-                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Current IP" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="yg8-lk-vMp">
-                                                <rect key="frame" x="0.0" y="653" width="374" height="20.5"/>
-                                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
-                                                <nil key="textColor"/>
-                                                <nil key="highlightedColor"/>
-                                            </label>
-                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="0.0.0.0" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="e9s-1Y-S5l">
-                                                <rect key="frame" x="0.0" y="685.5" width="374" height="20.5"/>
-                                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
-                                                <nil key="textColor"/>
-                                                <nil key="highlightedColor"/>
-                                            </label>
                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="READY" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="wp5-6B-wJp">
-                                                <rect key="frame" x="0.0" y="718" width="374" height="14.5"/>
+                                                <rect key="frame" x="0.0" y="653" width="374" height="14.5"/>
                                                 <fontDescription key="fontDescription" name=".AppleSystemUIFont" family=".AppleSystemUIFont" pointSize="12"/>
                                                 <nil key="textColor"/>
                                                 <nil key="highlightedColor"/>
                                             </label>
                                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="mgH-S8-WUJ">
-                                                <rect key="frame" x="0.0" y="744.5" width="374" height="34.5"/>
+                                                <rect key="frame" x="0.0" y="679.5" width="374" height="34.5"/>
                                                 <state key="normal" title="Button"/>
                                                 <buttonConfiguration key="configuration" style="plain" title="Start"/>
                                                 <connections>
@@ -114,7 +102,7 @@
                                                 </connections>
                                             </button>
                                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="MGs-Nl-c5G">
-                                                <rect key="frame" x="0.0" y="791" width="374" height="34.5"/>
+                                                <rect key="frame" x="0.0" y="726" width="374" height="34.5"/>
                                                 <state key="normal" title="Button"/>
                                                 <buttonConfiguration key="configuration" style="plain" title="Stop"/>
                                                 <connections>
@@ -146,7 +134,6 @@
                     </view>
                     <connections>
                         <outlet property="cipherMethod" destination="lHf-f6-QZT" id="8Z3-eA-8Al"/>
-                        <outlet property="currentIP" destination="e9s-1Y-S5l" id="zlF-OK-gLC"/>
                         <outlet property="password" destination="pfU-fE-5kl" id="x6M-3I-sMa"/>
                         <outlet property="serverHost" destination="GsR-Z4-fTf" id="mJM-Ny-yXp"/>
                         <outlet property="serverPort" destination="1hy-kK-Mai" id="oWU-M2-gfa"/>

@@ -4,8 +4,6 @@
 
 #import <NetworkExtension/NetworkExtension.h>
 
-#include "cli/cli_worker.hpp"
-
 #include <pthread.h>
 #include <stdexcept>
 #include <string>
@@ -19,6 +17,8 @@
 #include "ios/YassViewController.h"
 #include "version.h"
 #include "feature.h"
+#include "config/config.hpp"
+#include "cli/cli_worker.hpp"
 
 @interface YassAppDelegate ()
 - (std::string)SaveConfig;
@@ -31,8 +31,8 @@
 
 @implementation YassAppDelegate {
   enum YASSState state_;
+  NSString* status_;
   std::string error_msg_;
-  Worker worker_;
   NETunnelProviderManager *vpn_manager_;
 }
 
@@ -66,13 +66,13 @@
   std::ostringstream ss;
   if (state_ == STARTED) {
     NSString *prefixMessage = NSLocalizedString(@"CONNECTED_WITH_CONNS", @"Connected with conns: ");
-    ss << gurl_base::SysNSStringToUTF8(prefixMessage) << worker_.currentConnections();
+    ss << gurl_base::SysNSStringToUTF8(prefixMessage) << gurl_base::SysNSStringToUTF8(status_);
   } else if (state_ == START_FAILED) {
     NSString *prefixMessage = NSLocalizedString(@"FAILED_TO_CONNECT_DUE_TO", @"Failed to connect due to ");
     ss << gurl_base::SysNSStringToUTF8(prefixMessage) << error_msg_.c_str();
   } else {
     NSString *prefixMessage = NSLocalizedString(@"DISCONNECTED_WITH", @"Disconnected with ");
-    ss << gurl_base::SysNSStringToUTF8(prefixMessage) << worker_.GetRemoteDomain();
+    ss << gurl_base::SysNSStringToUTF8(prefixMessage) << absl::GetFlag(FLAGS_server_host);
   }
 
   return gurl_base::SysUTF8ToNSString(ss.str());
@@ -86,29 +86,7 @@
     return;
   }
 
-  absl::AnyInvocable<void(asio::error_code)> callback;
-  if (!quiet) {
-    callback = [=](asio::error_code ec) {
-      bool successed = false;
-      std::string msg;
-
-      if (ec) {
-        msg = ec.message();
-        successed = false;
-      } else {
-        successed = true;
-      }
-
-      dispatch_async(dispatch_get_main_queue(), ^{
-        if (successed) {
-          [self OnStarted];
-        } else {
-          [self OnStartFailed:msg];
-        }
-      });
-    };
-  }
-  worker_.Start(std::move(callback));
+  [self OnStarted];
 }
 
 - (void)OnStop:(BOOL)quiet {
@@ -119,15 +97,7 @@
     vpn_manager_ = nil;
   }
 
-  absl::AnyInvocable<void()> callback;
-  if (!quiet) {
-    callback = [=]() {
-      dispatch_async(dispatch_get_main_queue(), ^{
-        [self OnStopped];
-      });
-    };
-  }
-  worker_.Stop(std::move(callback));
+  [self OnStopped];
 }
 
 - (void)OnStarted {
@@ -264,26 +234,37 @@
   switch (status) {
     case NEVPNStatusConnecting:
       NSLog(@"Connecting...");
+      status_ = NSLocalizedString(@"CONNECTING", @"Connecting");
       break;
     case NEVPNStatusConnected:
       NSLog(@"Connected...");
+      status_ = NSLocalizedString(@"CONNECTED", @"Connected");
       break;
     case NEVPNStatusDisconnecting:
       NSLog(@"Disconnecting...");
+      status_ = NSLocalizedString(@"DISCONNECTING", @"Disconnecting");
       break;
     case NEVPNStatusDisconnected:
       NSLog(@"Disconnected...");
+      status_ = NSLocalizedString(@"DISCONNECTED", @"Disconnected");
       break;
     case NEVPNStatusInvalid:
       NSLog(@"Invalid");
+      status_ = NSLocalizedString(@"INVALID", @"Invalid");
       break;
     case NEVPNStatusReasserting:
       NSLog(@"Reasserting...");
+      status_ = NSLocalizedString(@"REASSERTING", @"Reasserting");
       break;
     default:
       NSLog(@"Unknown status... %@", @(status));
+      status_ = NSLocalizedString(@"UNKNOWN", @"Unknown");
       break;
   }
+  YassViewController* viewController =
+      (YassViewController*)
+          UIApplication.sharedApplication.keyWindow.rootViewController;
+  [viewController UpdateStatusBar];
 }
 
 

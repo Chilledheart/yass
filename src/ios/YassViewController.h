@@ -12,6 +12,7 @@
 - (void)Started;
 - (void)StartFailed;
 - (void)Stopped;
+- (void)UpdateStatusBar;
 @property (weak, nonatomic) IBOutlet UIButton *startButton;
 @property (weak, nonatomic) IBOutlet UIButton *stopButton;
 @property (weak, nonatomic) IBOutlet UITextField *serverHost;
@@ -22,7 +23,6 @@
 @property (weak, nonatomic) IBOutlet UITextField *timeout;
 - (NSString*)getCipher;
 
-@property (weak, nonatomic) IBOutlet UILabel *currentIP;
 @property (weak, nonatomic) IBOutlet UILabel *status;
 
 

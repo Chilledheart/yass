@@ -21,6 +21,3 @@
 
 /* Class = "UILabel"; text = "Timeout"; ObjectID = "zY6-tD-aUd"; */
 "3S5-0B-efx.text" = "超时时间";
-
-/* Class = "UILabel"; text = "Current IP"; ObjectID = "zY6-tD-aUd"; */
-"yg8-lk-vMp.text" = "本机IP地址";

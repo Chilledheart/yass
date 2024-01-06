@@ -6,7 +6,6 @@
 #include <string>
 #include <vector>
 
-std::vector<std::string> GetIpAddress();
 bool connectedToNetwork();
 
 #endif //  YASS_IOS_UTILS
