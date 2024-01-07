@@ -220,12 +220,6 @@ class ContentServer {
             work_guard_.reset();
             return;
           }
-          // FIXME should we handle it more gracefully?
-          if (connection_map_.size() >= absl::GetFlag(FLAGS_worker_connections)) {
-            socket.close(ec);
-            accept(listen_ctx_num);
-            return;
-          }
           tlsext_ctx_t* tlsext_ctx = nullptr;
           if (enable_tls_) {
             tlsext_ctx = new tlsext_ctx_t{this, next_connection_id_, listen_ctx_num};
@@ -238,6 +232,14 @@ class ContentServer {
             enable_upstream_tls_, enable_tls_,
             &upstream_ssl_ctx_, &ssl_ctx_);
           on_accept(conn, std::move(socket), listen_ctx_num, tlsext_ctx);
+          if (in_shutdown_) {
+            return;
+          }
+          if (connection_map_.size() >= absl::GetFlag(FLAGS_worker_connections)) {
+            LOG(INFO) << "Disabling accepting new connection: " << listen_ctxs_[listen_ctx_num].endpoint;
+            pending_next_listen_ctxes_.push_back(listen_ctx_num);
+            return;
+          }
           accept(listen_ctx_num);
         });
   }
@@ -288,6 +290,7 @@ class ContentServer {
     }
     // reset guard to quit io loop if in shutdown
     if (in_shutdown_) {
+      pending_next_listen_ctxes_.clear();
       if (connection_map_.empty()) {
         LOG(WARNING) << "No more connections alive... ready to stop";
         work_guard_.reset();
@@ -295,6 +298,11 @@ class ContentServer {
       } else {
         LOG(WARNING) << "Waiting for remaining connects: " << connection_map_.size();
       }
+    }
+    auto listen_ctxes = std::move(pending_next_listen_ctxes_);
+    for (int listen_ctx_num : listen_ctxes) {
+      LOG(INFO) << "Resuming accepting new connection: " << listen_ctxs_[listen_ctx_num].endpoint;
+      accept(listen_ctx_num);
     }
   }
 
@@ -575,6 +583,7 @@ class ContentServer {
   };
   std::array<ListenCtx, MAX_LISTEN_ADDRESSES> listen_ctxs_;
   int next_listen_ctx_ = 0;
+  std::vector<int> pending_next_listen_ctxes_;
   bool in_shutdown_ = false;
 
   absl::flat_hash_map<int, scoped_refptr<ConnectionType>> connection_map_;
