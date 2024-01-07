@@ -49,11 +49,10 @@ REM Generate static x86 binary
 REM
 set "VSCMD_START_DIR=%CD%"
 set Platform=x86
-set MSVC_CRT_LINKAGE=static
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-tools\build -alsologtostderr -v 2 "-msvc-tgt-arch=%Platform%" "-msvc-crt-linkage=%MSVC_CRT_LINKAGE%"
+tools\build -alsologtostderr -v 2 "-msvc-tgt-arch=%Platform%"
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 
 REM
@@ -61,11 +60,10 @@ REM Generate static x64 binary
 REM
 set "VSCMD_START_DIR=%CD%"
 set Platform=x64
-set MSVC_CRT_LINKAGE=static
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-tools\build -alsologtostderr -v 2 "-msvc-tgt-arch=%Platform%" "-msvc-crt-linkage=%MSVC_CRT_LINKAGE%"
+tools\build -alsologtostderr -v 2 "-msvc-tgt-arch=%Platform%"
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 
 REM skip ARM build
@@ -77,11 +75,10 @@ REM
 set VCToolsVersion=
 set "VSCMD_START_DIR=%CD%"
 set Platform=arm
-set MSVC_CRT_LINKAGE=static
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-tools\build -alsologtostderr -v 2 "-msvc-tgt-arch=%Platform%" "-msvc-crt-linkage=%MSVC_CRT_LINKAGE%"
+tools\build -alsologtostderr -v 2 "-msvc-tgt-arch=%Platform%"
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 
 :BuildARM64
@@ -95,11 +92,10 @@ set VCToolsVersion=
 
 set "VSCMD_START_DIR=%CD%"
 set Platform=arm64
-set MSVC_CRT_LINKAGE=static
 
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
-tools\build -alsologtostderr -v 2 "-msvc-tgt-arch=%Platform%" "-msvc-crt-linkage=%MSVC_CRT_LINKAGE%"
+tools\build -alsologtostderr -v 2 "-msvc-tgt-arch=%Platform%"
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 
 goto :eof

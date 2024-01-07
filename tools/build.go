@@ -173,7 +173,7 @@ func InitFlag() {
 	flag.StringVar(&iosTestDeviceNameFlag, "ios-test-device-name", getEnv("IPHONE_NAME", ""), "Set iOS test device name")
 
 	flag.StringVar(&msvcTargetArchFlag, "msvc-tgt-arch", getEnv("VSCMD_ARG_TGT_ARCH", "x64"), "Set Visual C++ Target Achitecture")
-	flag.StringVar(&msvcCrtLinkageFlag, "msvc-crt-linkage", getEnv("MSVC_CRT_LINKAGE", "static"), "Set Visual C++ CRT Linkage")
+	flag.StringVar(&msvcCrtLinkageFlag, "msvc-crt-linkage", getEnv("MSVC_CRT_LINKAGE", "dynamic"), "Set Visual C++ CRT Linkage")
 	flag.BoolVar(&msvcAllowXpFlag, "msvc-allow-xp", getEnvBool("MSVC_ALLOW_XP", false), "Enable Windows XP Build")
 
 	flag.IntVar(&freebsdAbiFlag, "freebsd-abi", getFreebsdABI(11), "Select FreeBSD ABI")

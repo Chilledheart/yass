@@ -42,7 +42,7 @@ if(POLICY CMP0118)
 endif()
 
 # https://docs.microsoft.com/en-us/cpp/c-runtime-library/crt-library-features?redirectedfrom=MSDN&view=msvc-170
-set(MSVC_CRT_LINKAGE "static" CACHE STRING "")
+set(MSVC_CRT_LINKAGE "dynamic" CACHE STRING "")
 if (NOT MSVC_CRT_LINKAGE STREQUAL "static" AND NOT MSVC_CRT_LINKAGE STREQUAL "dynamic")
   message(FATAL_ERROR "MSVC_CRT_LINKAGE only accepts: dynamic or static")
 endif()
