@@ -26,6 +26,12 @@ sscxx
 /third_party/llvm-mingw-20230614-msvcrt-ubuntu-20.04-x86_64
 /third_party/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64
 /third_party/llvm-mingw-20230614-ucrt-macos-universal
+/third_party/llvm-mingw-20231128-ucrt-i686
+/third_party/llvm-mingw-20231128-ucrt-x86_64
+/third_party/llvm-mingw-20231128-ucrt-aarch64
+/third_party/llvm-mingw-20231128-ucrt-ubuntu-20.04-aarch64
+/third_party/llvm-mingw-20231128-ucrt-ubuntu-20.04-x86_64
+/third_party/llvm-mingw-20231128-ucrt-macos-universal
 /third_party/crashpad
 /third_party/depot_tools
 *.aps
