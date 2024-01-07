@@ -58,27 +58,11 @@ case "$ARCH" in
     ;;
 esac
 
-export PATH="${LLVM_BASE}/bin:$PATH"
-rm -rf build-mingw-${WITH_CPU}
-mkdir build-mingw-${WITH_CPU}
-cd build-mingw-${WITH_CPU}
-export CC=clang
-export CXX=clang++
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCLI=off -DSERVER=off -DGUI=on .. \
-  -DBUILD_TESTS=on -DBUILD_BENCHMARKS=on \
-  -DCMAKE_C_COMPILER_TARGET=${WITH_CPU}-w64-mingw32 -DCMAKE_CXX_COMPILER_TARGET=${WITH_CPU}-w64-mingw32 -DCMAKE_ASM_COMPILER_TARGET=${WITH_CPU}-w64-mingw32 \
-  -DCMAKE_SYSTEM_NAME=Windows \
-  -DCMAKE_SYSTEM_PROCESSOR=${WITH_CPU} \
-  -DCMAKE_ASM_FLAGS="--start-no-unused-arguments -rtlib=compiler-rt -fuse-ld=lld --end-no-unused-arguments" \
-  -DCMAKE_C_FLAGS="--start-no-unused-arguments -rtlib=compiler-rt -fuse-ld=lld --end-no-unused-arguments" \
-  -DCMAKE_CXX_FLAGS="--start-no-unused-arguments -rtlib=compiler-rt -stdlib=libc++ -fuse-ld=lld --end-no-unused-arguments" \
-  -DCMAKE_SHARED_LINKER_FLAGS="-rtlib=compiler-rt -unwindlib=libunwind -fuse-ld=lld" \
-  -DCMAKE_EXE_LINKER_FLAGS="-rtlib=compiler-rt -unwindlib=libunwind -fuse-ld=lld" \
-  -DCMAKE_RC_COMPILER="${LLVM_BASE}/bin/${WITH_CPU}-w64-mingw32-windres" -DCMAKE_RC_COMPILER_ARG1="--codepage 65001"
-ninja yass yass_test yass_benchmark
+pushd tools
+go build
+popd
 
-llvm-objcopy --only-keep-debug yass.exe yass.exe.dbg
-# stripped executable.
-llvm-objcopy --strip-debug yass.exe
-# to add a link to the debugging info into the stripped executable.
-llvm-objcopy --add-gnu-debuglink=yass.exe.dbg yass.exe
+export PATH="${LLVM_BASE}/bin:$PATH"
+
+./tools/build --variant gui --arch ${WITH_CPU} --system mingw \
+  -build-test -build-benchmark -mingw-dir ${LLVM_BASE} -clang-path ${LLVM_BASE}

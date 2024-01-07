@@ -516,6 +516,9 @@ func getAndFixHarmonyLibunwind() {
 }
 
 func getAndFixLibunwind(source_path string, subdir string) {
+	if runtime.GOOS == "windows" {
+		glog.Fatalf("Symbolic link is not supported on windows")
+	}
 	// ln -sf $PWD/third_party/android_toolchain/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.7/lib/linux/i386 third_party/llvm-build/Release+Asserts/lib/clang/18/lib/linux
 	entries, err := os.ReadDir(filepath.Join(clangPath, "lib", "clang"))
 	if err != nil {
@@ -696,9 +699,20 @@ func buildStageGenerateBuildScript() {
 			os.Setenv("CC", _clangClPath)
 			os.Setenv("CXX", _clangClPath)
 			glog.Infof("Using compiler %s", _clangClPath)
+		} else if runtime.GOOS == "windows" {
+			_clangPath := filepath.Join(clangPath, "bin", "clang.exe")
+			_clangCxxPath := filepath.Join(clangPath, "bin", "clang++.exe")
+
+			if _, err := os.Stat(_clangPath); errors.Is(err, os.ErrNotExist) {
+				glog.Fatalf("Compiler %s not found", _clangPath)
+			}
+			os.Setenv("CC", _clangPath)
+			os.Setenv("CXX", _clangCxxPath)
+			glog.Infof("Using compiler %s", _clangPath)
 		} else {
 			_clangPath := filepath.Join(clangPath, "bin", "clang")
 			_clangCxxPath := filepath.Join(clangPath, "bin", "clang++")
+
 			if _, err := os.Stat(_clangPath); errors.Is(err, os.ErrNotExist) {
 				glog.Fatalf("Compiler %s not found", _clangPath)
 			}
@@ -850,6 +864,7 @@ func buildStageGenerateBuildScript() {
 		}
 
 		targetTriple, targetAbi := getMinGWTargetAndAppAbi(archFlag)
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DHOST_OS=%s", runtime.GOOS))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/MinGW.cmake", buildDir))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DLLVM_SYSROOT=%s", clangPath))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DMINGW_SYSROOT=%s", mingwDir))
@@ -1470,6 +1485,9 @@ func postStateStripBinaries() {
 	}
 	if systemNameFlag == "mingw" || systemNameFlag == "android" || systemNameFlag == "harmony" || systemNameFlag == "linux" || systemNameFlag == "freebsd" {
 		objcopy := filepath.Join(clangPath, "bin", "llvm-objcopy")
+		if runtime.GOOS == "windows" {
+			objcopy = filepath.Join(clangPath, "bin", "llvm-objcopy.exe")
+		}
 		if _, err := os.Stat(objcopy); errors.Is(err, os.ErrNotExist) {
 			objcopy = "objcopy"
 		}
@@ -2144,7 +2162,7 @@ func postStateArchives() map[string][]string {
 }
 
 func get7zPath() string {
-	if systemNameFlag == "windows" {
+	if runtime.GOOS == "windows" {
 		return "C:\\Program Files\\7-Zip\\7z.exe"
 	} else {
 		return "7z"
