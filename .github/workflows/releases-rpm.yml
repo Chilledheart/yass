@@ -41,10 +41,10 @@ jobs:
       matrix:
         container:
         - 'centos7'
+        - 'centos8'
         - 'fedora38'
         - 'alpine318'
         - 'opensuse15'
-        # - 'centos8'
         # - 'centos9'
     runs-on: ubuntu-22.04
     steps:
@@ -82,9 +82,9 @@ jobs:
       matrix:
         container:
         - 'centos7'
+        - 'centos8'
         - 'fedora38'
         - 'opensuse15'
-        # - 'centos8'
         # - 'centos9'
     runs-on: ubuntu-22.04
     needs: docker_publish
