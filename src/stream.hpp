@@ -201,6 +201,26 @@ class stream : public RefCountedThreadSafe<stream> {
       }
     }
 
+#if BUILDFLAG(IS_IOS)
+    if (yield) {
+      scoped_refptr<stream> self(this);
+      // Every full mtu 1500 bytes packet arrives in every 100us
+      // the maximum traffer rate is 1500 b / 100 us = 14.3 MB/s
+      read_delay_timer_.expires_after(std::chrono::microseconds(100));
+      wait_read_callback_ = std::move(callback);
+      read_delay_timer_.async_wait([this, self](asio::error_code ec) {
+        auto callback = std::move(wait_read_callback_);
+        DCHECK(!wait_read_callback_);
+        // Cancelled, safe to ignore
+        if (UNLIKELY(ec == asio::error::operation_aborted)) {
+          return;
+        }
+        wait_read(std::move(callback), false);
+      });
+      return;
+    }
+#endif
+
     read_inprogress_ = true;
     wait_read_callback_ = std::move(callback);
     scoped_refptr<stream> self(this);
