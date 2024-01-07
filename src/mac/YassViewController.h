@@ -15,6 +15,7 @@
 @property (weak) IBOutlet NSButton *startButton;
 @property (weak) IBOutlet NSButton *stopButton;
 @property (weak) IBOutlet NSTextField *serverHost;
+@property (weak) IBOutlet NSTextField *serverSNI;
 @property (weak) IBOutlet NSTextField *serverPort;
 @property (weak) IBOutlet NSTextField *username;
 @property (weak) IBOutlet NSSecureTextField *password;

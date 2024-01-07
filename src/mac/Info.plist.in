@@ -4,26 +4,28 @@
 <dict>
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
-    <key>CFBundleDisplayName</key>
-    <string>@YASS_APP_FULL_NAME@</string>
     <key>CFBundleExecutable</key>
     <string>yass</string>
-    <key>CFBundleIconFile</key>
-    <string>yass</string>
     <key>CFBundleIdentifier</key>
-    <string>it.gui.yass</string>
+    <string>${MACOSX_BUNDLE_GUI_IDENTIFIER}</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
-    <key>CFBundleLongVersionString</key>
-    <string></string>
     <key>CFBundleName</key>
-    <string>yass</string>
+    <string>${MACOSX_BUNDLE_BUNDLE_NAME}</string>
+    <key>CFBundleDisplayName</key>
+    <string>${MACOSX_BUNDLE_BUNDLE_NAME}</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
+    <key>CFBundleLongVersionString</key>
+    <string>${MACOSX_BUNDLE_LONG_VERSION_STRING}</string>
     <key>CFBundleShortVersionString</key>
-    <string>@YASS_APP_VERSION@</string>
+    <string>${MACOSX_BUNDLE_SHORT_VERSION_STRING}</string>
     <key>CFBundleVersion</key>
-    <string>@YASS_APP_VERSION@</string>
+    <string>${MACOSX_BUNDLE_BUNDLE_VERSION}</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>${MACOSX_BUNDLE_COPYRIGHT}</string>
+    <key>CFBundleIconFile</key>
+    <string>yass</string>
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleSupportedPlatforms</key>
@@ -46,8 +48,6 @@
         <string>arm64</string>
         <string>x86_64</string>
     </array>
-    <key>NSHumanReadableCopyright</key>
-    <string>@YASS_APP_COPYRIGHT@</string>
     <key>NSMainStoryboardFile</key>
     <string>Main</string>
     <key>LSApplicationCategoryType</key>
