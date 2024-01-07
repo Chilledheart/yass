@@ -169,6 +169,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 - (void)Started {
   [self UpdateStatusBar];
   [self.serverHost setEditable:FALSE];
+  [self.serverSNI setEditable:FALSE];
   [self.serverPort setEditable:FALSE];
   [self.username setEditable:FALSE];
   [self.password setEditable:FALSE];
@@ -182,6 +183,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 - (void)StartFailed {
   [self UpdateStatusBar];
   [self.serverHost setEditable:TRUE];
+  [self.serverSNI setEditable:TRUE];
   [self.serverPort setEditable:TRUE];
   [self.username setEditable:TRUE];
   [self.password setEditable:TRUE];
@@ -195,6 +197,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 - (void)Stopped {
   [self UpdateStatusBar];
   [self.serverHost setEditable:TRUE];
+  [self.serverSNI setEditable:TRUE];
   [self.serverPort setEditable:TRUE];
   [self.username setEditable:TRUE];
   [self.password setEditable:TRUE];
@@ -247,6 +250,8 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 - (void)LoadChanges {
   self.serverHost.stringValue =
       gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_server_host));
+  self.serverSNI.stringValue =
+      gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_server_sni));
   self.serverPort.intValue = absl::GetFlag(FLAGS_server_port);
   self.username.stringValue = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_username));
   self.password.stringValue = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_password));

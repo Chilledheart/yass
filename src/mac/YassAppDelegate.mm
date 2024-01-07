@@ -195,6 +195,7 @@
       (YassViewController*)
           NSApplication.sharedApplication.mainWindow.contentViewController;
   auto server_host = gurl_base::SysNSStringToUTF8(viewController.serverHost.stringValue);
+  auto server_sni = gurl_base::SysNSStringToUTF8(viewController.serverSNI.stringValue);
   auto server_port = gurl_base::SysNSStringToUTF8(viewController.serverPort.stringValue);
   auto username = gurl_base::SysNSStringToUTF8(viewController.username.stringValue);
   auto password = gurl_base::SysNSStringToUTF8(viewController.password.stringValue);
@@ -203,7 +204,7 @@
   auto local_port = gurl_base::SysNSStringToUTF8(viewController.localPort.stringValue);
   auto connect_timeout = gurl_base::SysNSStringToUTF8(viewController.timeout.stringValue);
 
-  return Worker::SaveConfig(server_host, "" /*server_sni*/, server_port,
+  return Worker::SaveConfig(server_host, server_sni, server_port,
                             username, password, method_string,
                             local_host, local_port,
                             connect_timeout);
