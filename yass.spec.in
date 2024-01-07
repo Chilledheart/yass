@@ -194,6 +194,8 @@ for embedded devices and low end boxes.
 %{_mandir}/man1/yass_cli.1*
 
 %changelog
+* Sun Jan 7 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.13-1
+  - gtk: add server sni support.
 * Sun Jan 7 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.12-1
   - gtk: add server sni support.
 * Sat Jan 6 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.11-1

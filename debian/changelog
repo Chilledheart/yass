@@ -1,3 +1,8 @@
+yass (1.5.13-1) UNRELEASED; urgency=medium
+
+  * gtk: add server sni support.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Sun, 7 Jan 2024 23:57:24 +0800
 yass (1.5.12-1) UNRELEASED; urgency=medium
 
   * gtk: add server sni support.
