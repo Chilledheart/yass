@@ -80,8 +80,9 @@ jobs:
           scripts\download-toolchain-mingw.bat ${{ matrix.arch }}
       - name: "Download dependency: curl"
         if: ${{ steps.curl-cache.outputs.cache-hit != 'true' }}
+        shell: bash
         run: |
-          scripts\download-curl-mingw.bat ${{ matrix.arch }}
+          ./scripts/download-curl-mingw.sh ${{ matrix.arch }}
       - name: Patch libcxx for windows xp
         shell: bash
         run: |
