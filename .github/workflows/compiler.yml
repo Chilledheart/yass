@@ -199,14 +199,9 @@ jobs:
       - name: "Download dependency: curl"
         if: ${{ steps.curl-cache.outputs.cache-hit != 'true' }}
         run: |
-          cd third_party
-          curl -L -O https://curl.se/windows/dl-8.4.0_7/curl-8.4.0_7-win64a-mingw.zip
-          7z x curl-8.4.0_7-win64a-mingw.zip -aoa
-          curl -L -O https://curl.se/windows/dl-8.4.0_7/curl-8.4.0_7-win64-mingw.zip
-          7z x curl-8.4.0_7-win64-mingw.zip -aoa
-          curl -L -O https://curl.se/windows/dl-8.4.0_7/curl-8.4.0_7-win32-mingw.zip
-          7z x curl-8.4.0_7-win32-mingw.zip -aoa
-          rm -vf curl*.zip
+          ./scripts/download-curl-mingw.sh i686
+          ./scripts/download-curl-mingw.sh x86_64
+          ./scripts/download-curl-mingw.sh aarch64
       - name: Populate depedencies
         run: |
           sudo apt-get update -qq
