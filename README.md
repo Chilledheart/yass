@@ -1,8 +1,11 @@
 # Yet Another Shadow Socket
 
-[![License][license-svg]][license-link]
+[![License](https://img.shields.io/github/license/Chilledheart/yass)][license-link]
+![GitHub release (latest by SemVer including pre-releases)](https://img.shields.io/github/downloads/Chilledheart/yass/latest/total)
+
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Chilledheart/yass)](https://github.com/Chilledheart/yass/releases)
-[![GitHub all downloads](https://img.shields.io/github/downloads/Chilledheart/yass/total)](https://github.com/Chilledheart/yass/releases)
+[![aur yass-proxy](https://img.shields.io/aur/version/yass-proxy)](https://aur.archlinux.org/packages/yass-proxy)
+[![aur yass-proxy-cli](https://img.shields.io/aur/version/yass-proxy-cli)](https://aur.archlinux.org/packages/yass-proxy-cli)
 
 yass is client-server model based and efficient forward proxy
 supporting http/socks4/socks4a/socks5 protocol. The server side is experimental.
@@ -56,7 +59,6 @@ Please visit to [wiki](https://github.com/Chilledheart/yass/wiki) such as [Usage
 [![MSVC Build](https://github.com/Chilledheart/yass/actions/workflows/releases-windows.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/releases-windows.yml)
 [![Old MinGW Build](https://github.com/Chilledheart/yass/actions/workflows/releases-mingw.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/releases-mingw.yml)
 
-[license-svg]: https://img.shields.io/badge/license-GPL2-lightgrey.svg
 [license-link]: LICENSE
 
 [HTTP2]: https://datatracker.ietf.org/doc/html/rfc9113
