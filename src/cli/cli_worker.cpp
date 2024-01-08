@@ -306,6 +306,15 @@ void Worker::on_resolve_remote(asio::error_code ec,
 
   std::vector<std::string> server_ips;
   for (auto result : results) {
+    if (result.endpoint().address().is_unspecified()) {
+      LOG(WARNING) << "Unspecified remote address: " << absl::GetFlag(FLAGS_server_host);
+      ec = asio::error::connection_refused;
+      if (auto callback = std::move(start_callback_)) {
+        callback(ec);
+      }
+      work_guard_.reset();
+      return;
+    }
     server_ips.push_back(result.endpoint().address().to_string());
     if (result.endpoint().address().is_v4()) {
       remote_server_ips_v4_.push_back(result.endpoint().address().to_string());
