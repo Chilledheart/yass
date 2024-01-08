@@ -62,6 +62,7 @@ class stream : public RefCountedThreadSafe<stream> {
         socket_(io_context),
         connect_timer_(io_context),
         channel_(channel),
+        read_yield_timer_(io_context),
         limit_rate_(absl::GetFlag(FLAGS_limit_rate).rate),
         read_delay_timer_(io_context),
         write_delay_timer_(io_context) {
@@ -174,6 +175,10 @@ class stream : public RefCountedThreadSafe<stream> {
       return;
     }
 
+    read_inprogress_ = true;
+    wait_read_callback_ = std::move(callback);
+    scoped_refptr<stream> self(this);
+
     if (limit_rate_) {
       auto delta = absl::ToInt64Seconds(absl::Now() - read_start_);
       int64_t clicks = delta + 1;
@@ -185,58 +190,36 @@ class stream : public RefCountedThreadSafe<stream> {
       }
       int64_t limit = estimated_transferred - rbytes_transferred_;
       if (limit <= 0) {
-        scoped_refptr<stream> self(this);
         read_delay_timer_.expires_after(std::chrono::milliseconds(-limit * 1000 / limit_rate_+1));
-        wait_read_callback_ = std::move(callback);
         read_delay_timer_.async_wait([this, self](asio::error_code ec) {
-          auto callback = std::move(wait_read_callback_);
-          DCHECK(!wait_read_callback_);
-          // Cancelled, safe to ignore
           if (UNLIKELY(ec == asio::error::operation_aborted)) {
             return;
           }
+          auto callback = std::move(wait_read_callback_);
+          DCHECK(!wait_read_callback_);
+          read_inprogress_ = false;
+          // Cancelled, safe to ignore
           wait_read(std::move(callback), false);
         });
         return;
       }
     }
 
-#if BUILDFLAG(IS_IOS)
     if (yield) {
-      scoped_refptr<stream> self(this);
-      // Every full mtu 1500 bytes packet arrives in every 100us
-      // the maximum traffer rate is 1500 b / 100 us = 14.3 MB/s
-      read_delay_timer_.expires_after(std::chrono::microseconds(100));
-      wait_read_callback_ = std::move(callback);
-      read_delay_timer_.async_wait([this, self](asio::error_code ec) {
-        auto callback = std::move(wait_read_callback_);
-        DCHECK(!wait_read_callback_);
-        // Cancelled, safe to ignore
+      read_yield_timer_.expires_after(std::chrono::microseconds(kReadYieldIntervalUs));
+      read_yield_timer_.async_wait([this, self](asio::error_code ec) {
         if (UNLIKELY(ec == asio::error::operation_aborted)) {
           return;
         }
-        wait_read(std::move(callback), false);
-      });
-      return;
-    }
-#endif
-
-    read_inprogress_ = true;
-    wait_read_callback_ = std::move(callback);
-    scoped_refptr<stream> self(this);
-    if (yield) {
-      asio::post(io_context_, [this, self]() {
         auto callback = std::move(wait_read_callback_);
-        wait_read_callback_ = nullptr;
+        DCHECK(!wait_read_callback_);
         read_inprogress_ = false;
         if (UNLIKELY(!connected_ || closed_)) {
           DCHECK(!user_connect_callback_);
           return;
         }
-        if (UNLIKELY(!callback)) {
-          return;
-        }
-        callback(asio::error_code());
+        // Cancelled, safe to ignore
+        wait_read(std::move(callback), false);
       });
       return;
     }
@@ -246,7 +229,7 @@ class stream : public RefCountedThreadSafe<stream> {
         return;
       }
       handle_t callback = std::move(wait_read_callback_);
-      wait_read_callback_ = nullptr;
+      DCHECK(!wait_read_callback_);
       read_inprogress_ = false;
       if (UNLIKELY(!connected_ || closed_)) {
         DCHECK(!user_connect_callback_);
@@ -297,12 +280,12 @@ class stream : public RefCountedThreadSafe<stream> {
         scoped_refptr<stream> self(this);
         write_delay_timer_.expires_after(std::chrono::milliseconds(-limit * 1000 / limit_rate_+1));
         wait_write_callback_ = std::move(callback);
+        DCHECK(!wait_write_callback_);
         write_delay_timer_.async_wait([this, self](asio::error_code ec) {
-          auto callback = std::move(wait_write_callback_);
-          // Cancelled, safe to ignore
           if (UNLIKELY(ec == asio::error::operation_aborted)) {
             return;
           }
+          auto callback = std::move(wait_write_callback_);
           wait_write(std::move(callback));
         });
         return;
@@ -318,7 +301,7 @@ class stream : public RefCountedThreadSafe<stream> {
         return;
       }
       handle_t callback = std::move(wait_write_callback_);
-      wait_write_callback_ = nullptr;
+      DCHECK(!wait_write_callback_);
       write_inprogress_ = false;
       if (UNLIKELY(!connected_ || closed_)) {
         DCHECK(!user_connect_callback_);
@@ -359,6 +342,8 @@ class stream : public RefCountedThreadSafe<stream> {
       VLOG(2) << "close() error: " << ec;
     }
     read_delay_timer_.cancel();
+    write_delay_timer_.cancel();
+    read_yield_timer_.cancel();
     connect_timer_.cancel();
 #ifdef HAVE_C_ARES
     resolver_->Cancel();
@@ -549,6 +534,16 @@ class stream : public RefCountedThreadSafe<stream> {
   // statistics
   size_t rbytes_transferred_ = 0;
   size_t wbytes_transferred_ = 0;
+
+  // post yield
+  asio::steady_timer read_yield_timer_;
+#if BUILDFLAG(IS_IOS)
+  // Every full mtu 1500 bytes packet arrives in every 100us
+  // the maximum traffer rate is 1500 b / 100 us = 14.3 MB/s
+  static constexpr uint64_t kReadYieldIntervalUs = 100;
+#else
+  static constexpr uint64_t kReadYieldIntervalUs = 10;
+#endif
 
   // rate limiter
   const uint64_t limit_rate_;
