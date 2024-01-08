@@ -1,7 +1,7 @@
 # Yet Another Shadow Socket
 
 [![License](https://img.shields.io/github/license/Chilledheart/yass)][license-link]
-![GitHub release (latest by SemVer including pre-releases)](https://img.shields.io/github/downloads/Chilledheart/yass/latest/total)
+[![GitHub release (latest by SemVer)](https://img.shields.io/github/downloads/Chilledheart/yass/latest/total)](https://github.com/Chilledheart/yass/releases/latest)
 
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Chilledheart/yass)](https://github.com/Chilledheart/yass/releases)
 [![aur yass-proxy](https://img.shields.io/aur/version/yass-proxy)](https://aur.archlinux.org/packages/yass-proxy)
