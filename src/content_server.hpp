@@ -321,6 +321,8 @@ class ContentServer {
       return;
     }
 
+    SSL_CTX_set_session_cache_mode(ssl_ctx_.native_handle(), SSL_SESS_CACHE_SERVER);
+
     // Load Certificate Chain Files
     if (private_key_.empty()) {
       private_key_ = g_private_key_content;
@@ -548,10 +550,26 @@ class ContentServer {
     }
     VLOG(1) << "Alpn support (client) enabled";
 
+#if 0
+    // Disable the internal session cache. Session caching is handled
+    // externally (i.e. by SSLClientSessionCache).
+    SSL_CTX_set_session_cache_mode(upstream_ssl_ctx_.native_handle(),
+                                   SSL_SESS_CACHE_CLIENT | SSL_SESS_CACHE_NO_INTERNAL);
+    SSL_CTX_sess_set_new_cb(upstream_ssl_ctx_.native_handle(), NewSessionCallback);
+#endif
+
     SSL_CTX_set_timeout(upstream_ssl_ctx_.native_handle(), 1 * 60 * 60 /* one hour */);
 
     SSL_CTX_set_grease_enabled(upstream_ssl_ctx_.native_handle(), 1);
   }
+
+#if 0
+ private:
+  static int NewSessionCallback(SSL* ssl, SSL_SESSION* session) {
+    SSLClientSocketImpl* socket = GetInstance()->GetClientSocketFromSSL(ssl);
+    return socket->NewSessionCallback(session);
+  }
+#endif
 
  private:
   asio::io_context &io_context_;
