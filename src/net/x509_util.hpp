@@ -7,11 +7,11 @@
 #include <openssl/base.h>
 #include <openssl/pool.h>
 
-namespace x509_util {
+namespace net::x509_util {
 
 // Returns a CRYPTO_BUFFER_POOL for deduplicating certificates.
 CRYPTO_BUFFER_POOL* GetBufferPool();
 
-} // namespace x509_util
+} // namespace net::x509_util
 
 #endif // H_NET_X509_UTIL

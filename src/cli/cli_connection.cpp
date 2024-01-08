@@ -1472,7 +1472,8 @@ void CliConnection::OnConnect() {
             << " connect " << remote_domain();
   // create lazy
   if (enable_upstream_tls_) {
-    channel_ = ssl_stream::create(*io_context_,
+    channel_ = ssl_stream::create(ssl_socket_data_index(),
+                                  *io_context_,
                                   remote_host_ips_,
                                   remote_host_sni_,
                                   remote_port_,

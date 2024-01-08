@@ -22,6 +22,7 @@
 #include "crypto/crypter_export.hpp"
 #include "network.hpp"
 #include "net/x509_util.hpp"
+#include "net/ssl_socket.hpp"
 
 #define MAX_LISTEN_ADDRESSES 30
 
@@ -73,6 +74,7 @@ class ContentServer {
   }
 
   ~ContentServer() {
+    client_instance_ = nullptr;
     work_guard_.reset();
   }
 
@@ -259,7 +261,7 @@ class ContentServer {
     SetTCPKeepAlive(socket.native_handle(), ec);
     SetSocketTcpNoDelay(&socket, ec);
     conn->on_accept(std::move(socket), ctx.endpoint, ctx.peer_endpoint,
-                    connection_id, tlsext_ctx);
+                    connection_id, tlsext_ctx, ssl_socket_data_index_);
     conn->set_disconnect_cb(
         [this, conn]() mutable { on_disconnect(conn); });
     connection_map_.insert(std::make_pair(connection_id, conn));
@@ -400,7 +402,7 @@ class ContentServer {
     // SSL_CTX_set1_ech_keys
 
     // Deduplicate all certificates minted from the SSL_CTX in memory.
-    SSL_CTX_set0_buffer_pool(ssl_ctx_.native_handle(), x509_util::GetBufferPool());
+    SSL_CTX_set0_buffer_pool(ssl_ctx_.native_handle(), net::x509_util::GetBufferPool());
   }
 
   void setup_ssl_ctx_alpn_cb(tlsext_ctx_t *tlsext_ctx) {
@@ -554,29 +556,38 @@ class ContentServer {
     }
     VLOG(1) << "Alpn support (client) enabled";
 
-#if 0
+    client_instance_ = this;
+    ssl_socket_data_index_ = SSL_get_ex_new_index(0, nullptr, nullptr, nullptr, nullptr);
+
     // Disable the internal session cache. Session caching is handled
     // externally (i.e. by SSLClientSessionCache).
     SSL_CTX_set_session_cache_mode(upstream_ssl_ctx_.native_handle(),
                                    SSL_SESS_CACHE_CLIENT | SSL_SESS_CACHE_NO_INTERNAL);
     SSL_CTX_sess_set_new_cb(upstream_ssl_ctx_.native_handle(), NewSessionCallback);
-#endif
 
     SSL_CTX_set_timeout(upstream_ssl_ctx_.native_handle(), 1 * 60 * 60 /* one hour */);
 
     SSL_CTX_set_grease_enabled(upstream_ssl_ctx_.native_handle(), 1);
 
     // Deduplicate all certificates minted from the SSL_CTX in memory.
-    SSL_CTX_set0_buffer_pool(upstream_ssl_ctx_.native_handle(), x509_util::GetBufferPool());
+    SSL_CTX_set0_buffer_pool(upstream_ssl_ctx_.native_handle(), net::x509_util::GetBufferPool());
   }
 
-#if 0
  private:
+  int ssl_socket_data_index_ = -1;
+  static ContentServer<T> *client_instance_;
+  static ContentServer *GetInstance() { return client_instance_; }
+  net::SSLSocket* GetClientSocketFromSSL(const SSL* ssl) {
+    DCHECK(ssl);
+    net::SSLSocket* socket = static_cast<net::SSLSocket*>(SSL_get_ex_data(ssl, ssl_socket_data_index_));
+    DCHECK(socket);
+    return socket;
+  }
+
   static int NewSessionCallback(SSL* ssl, SSL_SESSION* session) {
-    SSLClientSocketImpl* socket = GetInstance()->GetClientSocketFromSSL(ssl);
+    net::SSLSocket* socket = GetInstance()->GetClientSocketFromSSL(ssl);
     return socket->NewSessionCallback(session);
   }
-#endif
 
  private:
   asio::io_context &io_context_;
@@ -618,5 +629,8 @@ class ContentServer {
 
   T factory_;
 };
+
+template<typename T>
+ContentServer<T> *ContentServer<T>::client_instance_ = nullptr;
 
 #endif  // H_CONTENT_SERVER

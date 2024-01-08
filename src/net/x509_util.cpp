@@ -3,7 +3,7 @@
 
 #include "net/x509_util.hpp"
 
-namespace x509_util {
+namespace net::x509_util {
 
 namespace {
 
@@ -24,4 +24,4 @@ CRYPTO_BUFFER_POOL* GetBufferPool() {
   return g_buffer_pool_singleton.pool();
 }
 
-} // namespace x509_util
+} // namespace net::x509_util

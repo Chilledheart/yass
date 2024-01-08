@@ -1,3 +1,9 @@
+yass (1.5.14-1) UNRELEASED; urgency=medium
+
+  * ssl: enable client-side ssl session cache.
+  * ssl: deduplicate all ceritificates.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Mon, 8 Jan 2024 20:41:54 +0800
 yass (1.5.13-1) UNRELEASED; urgency=medium
 
   * gtk: add server sni support.
