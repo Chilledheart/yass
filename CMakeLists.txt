@@ -3380,6 +3380,7 @@ endif()
 
 set(files
     src/network.cpp
+    src/net/x509_util.cpp
     src/net/ssl_socket.cpp
     src/net/ssl_server_socket.cpp
     src/net/openssl_util.cpp
@@ -3445,6 +3446,7 @@ set(files
 
 set(hfiles
     src/network.hpp
+    src/net/x509_util.hpp
     src/net/ssl_socket.hpp
     src/net/ssl_server_socket.hpp
     src/net/net_errors.hpp

@@ -21,6 +21,7 @@
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
 #include "network.hpp"
+#include "net/x509_util.hpp"
 
 #define MAX_LISTEN_ADDRESSES 30
 
@@ -397,6 +398,9 @@ class ContentServer {
     // SSL_CTX_set_ocsp_response
     // SSL_CTX_set_signed_cert_timestamp_list
     // SSL_CTX_set1_ech_keys
+
+    // Deduplicate all certificates minted from the SSL_CTX in memory.
+    SSL_CTX_set0_buffer_pool(ssl_ctx_.native_handle(), x509_util::GetBufferPool());
   }
 
   void setup_ssl_ctx_alpn_cb(tlsext_ctx_t *tlsext_ctx) {
@@ -561,6 +565,9 @@ class ContentServer {
     SSL_CTX_set_timeout(upstream_ssl_ctx_.native_handle(), 1 * 60 * 60 /* one hour */);
 
     SSL_CTX_set_grease_enabled(upstream_ssl_ctx_.native_handle(), 1);
+
+    // Deduplicate all certificates minted from the SSL_CTX in memory.
+    SSL_CTX_set0_buffer_pool(upstream_ssl_ctx_.native_handle(), x509_util::GetBufferPool());
   }
 
 #if 0
