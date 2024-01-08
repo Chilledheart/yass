@@ -136,6 +136,10 @@ int main(int argc, const char* argv[]) {
   } else {
     std::vector<std::string> remote_ips;
     for (auto result : results) {
+      if (result.endpoint().address().is_unspecified()) {
+        LOG(WARNING) << "Unspecified remote address: " << remote_host_name;
+        return -1;
+      }
       remote_ips.push_back(result.endpoint().address().to_string());
     }
     remote_host_ips = absl::StrJoin(remote_ips, ";");
