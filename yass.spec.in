@@ -194,6 +194,9 @@ for embedded devices and low end boxes.
 %{_mandir}/man1/yass_cli.1*
 
 %changelog
+* Mon Jan 8 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.14-1
+  - ssl: enable client-side ssl session cache.
+  - ssl: deduplicate all ceritificates.
 * Sun Jan 7 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.13-1
   - gtk: add server sni support.
 * Sun Jan 7 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.12-1
