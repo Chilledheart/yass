@@ -14,9 +14,15 @@
 #include "core/asio.hpp"
 #include "core/iobuf.hpp"
 #include "core/logging.hpp"
+#include <build/build_config.h>
 
-#define SOCKET_BUF_SIZE (16384*2)
-#define SOCKET_DEBUF_SIZE (16384)
+#if BUILDFLAG(IS_IOS)
+#define SOCKET_BUF_SIZE (1500)
+#define SOCKET_DEBUF_SIZE (1500)
+#else
+#define SOCKET_BUF_SIZE (8192)
+#define SOCKET_DEBUF_SIZE (8192)
+#endif
 #define SS_FRAME_SIZE (16384-128)
 
 #ifndef NDEBUG
