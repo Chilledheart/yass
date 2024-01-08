@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2023 Chilledheart  */
+/* Copyright (c) 2023-2024 Chilledheart  */
 
 #ifndef H_NET_SSL_SOCKET
 #define H_NET_SSL_SOCKET
@@ -46,7 +46,8 @@ using WaitCallback = absl::AnyInvocable<void(asio::error_code ec)>;
 
 class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
  public:
-  SSLSocket(asio::io_context *io_context,
+  SSLSocket(int ssl_socket_data_index,
+            asio::io_context *io_context,
             asio::ip::tcp::socket* socket,
             SSL_CTX* ssl_ctx,
             bool https_fallback,
@@ -78,6 +79,9 @@ class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
   const std::string& negotiated_protocol() const {
     return negotiated_protocol_;
   }
+
+  int NewSessionCallback(SSL_SESSION* session);
+
  protected:
   void OnWaitRead(asio::error_code ec);
   void OnWaitWrite(asio::error_code ec);
@@ -101,6 +105,7 @@ class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
   int MapLastOpenSSLError(int ssl_error);
 
  private:
+  int ssl_socket_data_index_;
   asio::io_context* io_context_;
   asio::ip::tcp::socket* stream_socket_;
 

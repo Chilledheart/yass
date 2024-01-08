@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2023 Chilledheart  */
+/* Copyright (c) 2023-2024 Chilledheart  */
 
 #ifndef H_SSL_STREAM
 #define H_SSL_STREAM
@@ -17,6 +17,7 @@ class ssl_stream : public stream {
 
   /// construct a ssl stream object with ss protocol
   ///
+  /// \param ssl_socket_data_index the ssl client data index
   /// \param io_context the io context associated with the service
   /// \param host_ips the ip addresses used with endpoint
   /// \param host_sni the sni name used with endpoint
@@ -24,7 +25,8 @@ class ssl_stream : public stream {
   /// \param channel the underlying data channel used in stream
   /// \param https_fallback the data channel falls back to https (alpn)
   /// \param ssl_ctx the ssl context object for tls data transfer
-  ssl_stream(asio::io_context& io_context,
+  ssl_stream(int ssl_socket_data_index,
+             asio::io_context& io_context,
              const std::string& host_ips,
              const std::string& host_sni,
              uint16_t port,
@@ -34,7 +36,7 @@ class ssl_stream : public stream {
       : stream(io_context, host_ips, host_sni, port, channel),
         https_fallback_(https_fallback),
         enable_tls_(true),
-        ssl_socket_(net::SSLSocket::Create(&io_context, &socket_, ssl_ctx->native_handle(), https_fallback, host_sni)) {
+        ssl_socket_(net::SSLSocket::Create(ssl_socket_data_index, &io_context, &socket_, ssl_ctx->native_handle(), https_fallback, host_sni)) {
   }
 
   ~ssl_stream() override {}

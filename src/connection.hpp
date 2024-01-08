@@ -233,16 +233,19 @@ class Connection {
   /// \param peer_endpoint the peer endpoint
   /// \param the number of connection id
   /// \param the pointer of tlsext ctx
+  /// \param the ssl client data index
   void on_accept(asio::ip::tcp::socket&& socket,
                  const asio::ip::tcp::endpoint& endpoint,
                  const asio::ip::tcp::endpoint& peer_endpoint,
                  int connection_id,
-                 tlsext_ctx_t *tlsext_ctx) {
+                 tlsext_ctx_t *tlsext_ctx,
+                 int ssl_socket_data_index) {
     downlink_->on_accept(std::move(socket));
     endpoint_ = endpoint;
     peer_endpoint_ = peer_endpoint;
     connection_id_ = connection_id;
     tlsext_ctx_.reset(tlsext_ctx);
+    ssl_socket_data_index_ = ssl_socket_data_index;
   }
 
   /// Enter the start phase, begin to read requests
@@ -284,6 +287,10 @@ class Connection {
     return *tlsext_ctx_;
   }
 
+  int ssl_socket_data_index() const {
+    return ssl_socket_data_index_;
+  }
+
  protected:
   /// the peek current io
   bool DoPeek() {
@@ -308,6 +315,8 @@ class Connection {
   int connection_id_ = -1;
   /// the tlsext ctx
   std::unique_ptr<tlsext_ctx_t> tlsext_ctx_;
+  /// the ssl client data index
+  int ssl_socket_data_index_ = -1;
 
   /// if https fallback
   bool upstream_https_fallback_;
