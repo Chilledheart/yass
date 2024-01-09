@@ -8,6 +8,13 @@
 %global cmake_alias cmake
 %endif
 
+# on centos, nghttp2 sits in epel repo
+%if 0%{?fedora} || 0%{?sle_version}
+%global enable_system_nghttp2_opt on
+%else
+%global enable_system_nghttp2_opt off
+%endif
+
 # on centos, mbedtls sits in epel repo
 %if 0%{?fedora} || 0%{?sle_version}
 %global enable_system_mbedtls_opt on
@@ -16,7 +23,7 @@
 %endif
 
 # requires nlohman json
-%if 0%{?fedora} || 0%{?rhel}
+%if 0%{?fedora}
 %global enable_system_json_opt on
 %else
 %global enable_system_json_opt off
@@ -93,11 +100,13 @@ BuildRequires: c-ares-devel
 %if 0%{?fedora} || 0%{?sle_version}
 BuildRequires: mbedtls-devel
 %endif
-%if 0%{?fedora} || 0%{?rhel}
+%if 0%{?fedora}
 BuildRequires: json-devel
 %endif
 BuildRequires: zlib-devel
+%if 0%{?fedora} || 0%{?sle_version}
 BuildRequires: libnghttp2-devel
+%endif
 BuildRequires: gcc, gcc-c++, golang >= 1.4
 %if 0%{?sle_version}
 BuildRequires: ninja
@@ -125,7 +134,8 @@ cd build
 %cmake_alias -G Ninja -DCMAKE_BUILD_TYPE=Release \
    -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DCLI=on -DSERVER=on \
    -DUSE_TCMALLOC=on \
-   -DUSE_SYSTEM_ZLIB=on -DUSE_SYSTEM_NGHTTP2=on \
+   -DUSE_SYSTEM_ZLIB=on \
+   -DUSE_SYSTEM_NGHTTP2="%enable_system_nghttp2_opt" \
    -DUSE_SYSTEM_MBEDTLS="%enable_system_mbedtls_opt" \
    -DUSE_SYSTEM_JSON="%enable_system_json_opt" \
    -DUSE_SYSTEM_CARES="%enable_system_cares_opt" -DUSE_LIBCXX="%enable_libcxx_opt" \
