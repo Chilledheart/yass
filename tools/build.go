@@ -2147,8 +2147,10 @@ func postStateArchives() map[string][]string {
 		if subSystemNameFlag == "simulator" {
 			buildSubdir = cmakeBuildTypeFlag + "-iphonesimulator"
 		}
-		cmdRun([]string{"cp", "-r", filepath.Join(buildSubdir, getAppName() + ".dSYM") , getAppName() + ".dSYM"}, true)
-		cmdRun([]string{"cp", "-r", filepath.Join(buildSubdir, "YassPacketTunnel.appex.dSYM") , "YassPacketTunnel.appex.dSYM"}, true)
+		cmdRun([]string{"rm", "-rf", getAppName() + ".dSYM"}, true)
+		cmdRun([]string{"rm", "-rf", "YassPacketTunnel.appex.dSYM"}, true)
+		cmdRun([]string{"cp", "-r", filepath.Join(buildSubdir, getAppName() + ".dSYM"), getAppName() + ".dSYM"}, true)
+		cmdRun([]string{"cp", "-r", filepath.Join(buildSubdir, "YassPacketTunnel.appex.dSYM"), "YassPacketTunnel.appex.dSYM"}, true)
 		archiveFiles(debugArchive, archivePrefix, []string{getAppName() + ".dSYM", "YassPacketTunnel.appex.dSYM"})
 		dbgPaths = append(dbgPaths, getAppName()+".dSYM", "YassPacketTunnel.appex.dSYM")
 	}
