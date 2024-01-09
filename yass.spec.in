@@ -8,6 +8,13 @@
 %global cmake_alias cmake
 %endif
 
+# on centos, mbedtls sits in epel repo
+%if 0%{?fedora} || 0%{?sle_version}
+%global enable_system_mbedtls_opt on
+%else
+%global enable_system_mbedtls_opt off
+%endif
+
 # requires nlohman json
 %if 0%{?fedora} || 0%{?rhel}
 %global enable_system_json_opt on
@@ -83,7 +90,9 @@ BuildRequires: cmake3 >= 3.12, pkgconfig
 BuildRequires: clang, lld
 BuildRequires: c-ares-devel
 %endif
+%if 0%{?fedora} || 0%{?sle_version}
 BuildRequires: mbedtls-devel
+%endif
 %if 0%{?fedora} || 0%{?rhel}
 BuildRequires: json-devel
 %endif
@@ -117,7 +126,8 @@ cd build
    -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DCLI=on -DSERVER=on \
    -DUSE_TCMALLOC=on \
    -DUSE_SYSTEM_ZLIB=on -DUSE_SYSTEM_NGHTTP2=on \
-   -DUSE_SYSTEM_MBEDTLS=on -DUSE_SYSTEM_JSON="%enable_system_json_opt" \
+   -DUSE_SYSTEM_MBEDTLS="%enable_system_mbedtls_opt" \
+   -DUSE_SYSTEM_JSON="%enable_system_json_opt" \
    -DUSE_SYSTEM_CARES="%enable_system_cares_opt" -DUSE_LIBCXX="%enable_libcxx_opt" \
    -DENABLE_LLD="%enable_lld_opt" -DUSE_BUILTIN_CA_BUNDLE_CRT=off ..
 ninja
