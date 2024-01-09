@@ -186,7 +186,7 @@
   tunnelProtocol.username = @"";
   tunnelProtocol.identityDataPassword = @"";
   vpn_manager.protocolConfiguration = tunnelProtocol;
-  vpn_manager.localizedDescription = @"YASS VPN";
+  vpn_manager.localizedDescription = @"YASS";
   vpn_manager.enabled = TRUE;
 
   [vpn_manager saveToPreferencesWithCompletionHandler:^(NSError * _Nullable error) {
