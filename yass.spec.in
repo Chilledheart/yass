@@ -176,6 +176,15 @@ for embedded devices and low end boxes.
 %dir /usr/share/man/man1/
 %{_mandir}/man1/yass_server.1*
 
+%post server
+%systemd_post yass-server.service
+
+%preun server
+%systemd_preun yass-server.service
+
+%postun server
+%systemd_postun_with_restart yass-server.service
+
 %package client
 Summary: Lightweight and Secure http/socks4/socks5 Proxy (Client Side)
 
@@ -192,6 +201,18 @@ for embedded devices and low end boxes.
 %{_unitdir}/yass-redir.service
 %dir /usr/share/man/man1/
 %{_mandir}/man1/yass_cli.1*
+
+%post client
+%systemd_post yass.service
+%systemd_post yass-redir.service
+
+%preun client
+%systemd_preun yass.service
+%systemd_preun yass-redir.service
+
+%postun client
+%systemd_postun_with_restart yass.service
+%systemd_postun_with_restart yass-redir.service
 
 %changelog
 * Mon Jan 8 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.14-1
