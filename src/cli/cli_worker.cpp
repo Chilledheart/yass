@@ -66,21 +66,23 @@ Worker::~Worker() {
 void Worker::Start(absl::AnyInvocable<void(asio::error_code)> &&callback) {
   DCHECK(!start_callback_);
 
-#ifdef HAVE_C_ARES
-  resolver_ = CAresResolver::Create(io_context_);
-  int ret = resolver_->Init(5000);
-  if (ret < 0) {
-    LOG(WARNING) << "CAresResolver::Init failed";
-    callback(asio::error::connection_refused);
-    return;
-  }
-#endif
-
   start_callback_ = std::move(callback);
 
   /// listen in the worker thread
   asio::post(io_context_, [this]() {
     DCHECK_EQ(private_->cli_server.get(), nullptr);
+
+#ifdef HAVE_C_ARES
+    resolver_ = CAresResolver::Create(io_context_);
+    int ret = resolver_->Init(5000);
+    if (ret < 0) {
+      LOG(WARNING) << "CAresResolver::Init failed";
+      if (auto callback = std::move(start_callback_)) {
+        callback(asio::error::connection_refused);
+      }
+      return;
+    }
+#endif
 
     std::string host_name = absl::GetFlag(FLAGS_server_host);
     uint16_t port = absl::GetFlag(FLAGS_server_port);
@@ -288,6 +290,10 @@ void Worker::WorkFunc() {
     io_context_.run();
     io_context_.restart();
     private_->cli_server.reset();
+
+#ifdef HAVE_C_ARES
+    resolver_.reset();
+#endif
 
     auto callback = std::move(stop_callback_);
     DCHECK(!stop_callback_);
