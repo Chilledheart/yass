@@ -26,6 +26,7 @@
 #include "config/config.hpp"
 
 #include <sstream>
+#include <absl/strings/ascii.h>
 
 #ifdef _WIN32
 
@@ -851,7 +852,7 @@ static int get_yass_auto_start() {
 
   VLOG(2) << "[autostart] previous autostart entry: " << SysWideToUTF8(output);
 
-  if (GetAutoStartCmdline() != output) {
+  if (absl::AsciiStrToLower(SysWideToUTF8(GetAutoStartCmdline())) != absl::AsciiStrToLower(SysWideToUTF8(output))) {
     return -1;
   }
 
