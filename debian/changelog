@@ -1,3 +1,8 @@
+yass (1.5.15-1) UNRELEASED; urgency=medium
+
+  * gcc: fix lto build under gold.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Wed, 10 Jan 2024 10:25:22 +0800
 yass (1.5.14-1) UNRELEASED; urgency=medium
 
   * ssl: enable client-side ssl session cache.
