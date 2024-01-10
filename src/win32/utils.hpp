@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022-2023 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 #ifndef YASS_WIN32_UTILS
 #define YASS_WIN32_UTILS
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <functional>
 
 #include <windows.h>
 
@@ -54,5 +55,7 @@ bool SetSystemProxy(bool enable,
                     const std::wstring &conn_name);
 
 bool GetAllRasConnection(std::vector<std::wstring> *result);
+
+void WaitNetworkUp(std::function<void()> callback);
 
 #endif  // YASS_WIN32_UTILS

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2021-2023 Chilledheart  */
+/* Copyright (c) 2021-2024 Chilledheart  */
 
 // We use dynamic loading for below functions
 #define GetDeviceCaps GetDeviceCapsHidden
@@ -25,6 +25,8 @@
 #include "core/utils.hpp"
 #include "config/config.hpp"
 
+#include <array>
+#include <vector>
 #include <sstream>
 #include <absl/strings/ascii.h>
 
@@ -43,6 +45,16 @@ static constexpr size_t kRegReadMaximumSize = 1024 * 1024;
 #include <wininet.h>
 #include <ras.h>
 #include <raserror.h>
+#if _WIN32_WINNT < 0x600
+#define _WIN32_WINNT_ROLLBACK _WIN32_WINNT
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x600
+#endif
+#include <iphlpapi.h>
+#ifdef _WIN32_WINNT_ROLLBACK
+#undef _WIN32_WINNT
+#define _WIN32_WINNT _WIN32_WINNT_ROLLBACK
+#endif
 
 // https://docs.microsoft.com/en-us/windows/win32/winprog/using-the-windows-headers
 //
@@ -1130,6 +1142,175 @@ bool GetAllRasConnection(std::vector<std::wstring> *result) {
   }
   return dwRet == ERROR_SUCCESS;
 #endif
+}
+
+#ifndef GAA_FLAG_INCLUDE_GATEWAYS
+#define GAA_FLAG_INCLUDE_GATEWAYS 0x0080
+#endif
+
+#ifndef GAA_FLAG_INCLUDE_ALL_INTERFACES
+#define GAA_FLAG_INCLUDE_ALL_INTERFACES 0x0100
+#endif
+
+static asio::ip::address SocketAddressToAsio(const SOCKET_ADDRESS &Address) {
+  if (sizeof(struct sockaddr_in) == Address.iSockaddrLength) {
+    const auto *addr = &((struct sockaddr_in*)Address.lpSockaddr)->sin_addr;
+    return asio::ip::address_v4(htonl(addr->s_addr));
+  } else if (sizeof(struct sockaddr_in6) == Address.iSockaddrLength) {
+    auto scoped_id = ((struct sockaddr_in6*)Address.lpSockaddr)->sin6_scope_id;
+    const auto *addr = &((struct sockaddr_in6*)Address.lpSockaddr)->sin6_addr;
+    std::array<uint8_t, 16> bytes = {
+      addr->s6_addr[0], addr->s6_addr[1], addr->s6_addr[2], addr->s6_addr[3],
+      addr->s6_addr[4], addr->s6_addr[5], addr->s6_addr[6], addr->s6_addr[7],
+      addr->s6_addr[8], addr->s6_addr[9], addr->s6_addr[10], addr->s6_addr[11],
+      addr->s6_addr[12], addr->s6_addr[13], addr->s6_addr[14], addr->s6_addr[15]
+    };
+    return asio::ip::address_v6(bytes, scoped_id);
+  }
+  return {};
+}
+
+#if _WIN32_WINNT < 0x600
+static bool IsNetworkAdapterUpVista() {
+#else
+static bool IsNetworkAdapterUp() {
+#endif
+  ULONG nFlags = 0;
+  nFlags |= GAA_FLAG_INCLUDE_GATEWAYS | GAA_FLAG_INCLUDE_ALL_INTERFACES;
+
+  // during system initialization, GetAdaptersAddresses may return ERROR_BUFFER_OVERFLOW and supply nLen,
+  // but in a subsequent call it may return ERROR_BUFFER_OVERFLOW and supply greater nLen !
+  ULONG nLen = sizeof(IP_ADAPTER_ADDRESSES_LH);
+  std::vector<BYTE> pBuf;
+  DWORD nErr = 0;
+  do {
+    pBuf.resize(nLen);
+    nErr = ::GetAdaptersAddresses(AF_UNSPEC, nFlags, NULL, (IP_ADAPTER_ADDRESSES*)pBuf.data(), &nLen);
+  } while (ERROR_BUFFER_OVERFLOW == nErr);
+
+  if (NO_ERROR != nErr) {
+    PLOG(WARNING) << "GetAdaptersAddresses failed: " << nErr;
+    return false;
+  }
+
+  bool iface_up = false;
+  for (const IP_ADAPTER_ADDRESSES_LH* pCurrAddresses = (IP_ADAPTER_ADDRESSES_LH*)pBuf.data();
+       pCurrAddresses; pCurrAddresses = pCurrAddresses->Next) {
+    if (pCurrAddresses->IfType == IF_TYPE_SOFTWARE_LOOPBACK) {
+      continue;
+    }
+    IF_OPER_STATUS Stat = pCurrAddresses->OperStatus;
+    if (Stat == IfOperStatusUp) {
+      std::vector<asio::ip::address> gateway_addresses;
+      std::vector<asio::ip::address> dns_v4_servers;
+      std::vector<asio::ip::address> dns_v6_servers;
+      for (auto pGatewayAddress = pCurrAddresses->FirstGatewayAddress; pGatewayAddress; pGatewayAddress = pGatewayAddress->Next) {
+        auto gateway_address = SocketAddressToAsio(pGatewayAddress->Address);
+        gateway_addresses.push_back(gateway_address);
+      }
+      for (auto pDnsServerAddress = pCurrAddresses->FirstDnsServerAddress; pDnsServerAddress; pDnsServerAddress = pDnsServerAddress->Next) {
+        auto dns_address = SocketAddressToAsio(pDnsServerAddress->Address);
+        if (dns_address.is_v4()) {
+          dns_v4_servers.push_back(dns_address);
+        } else if (dns_address.is_v6()) {
+          dns_v6_servers.push_back(dns_address);
+        }
+      }
+      if (nFlags & GAA_FLAG_INCLUDE_GATEWAYS) {
+        if (gateway_addresses.empty()) {
+          continue;
+        }
+        LOG(INFO) << "Adapter \"" << SysWideToUTF8(pCurrAddresses->FriendlyName) << "\" with Gateway: " << gateway_addresses[0] << " is up";
+      } else {
+        if (dns_v4_servers.empty()) {
+          continue;
+        }
+        LOG(INFO) << "Adapter \"" << SysWideToUTF8(pCurrAddresses->FriendlyName) << "\" with DNS Server (IPv4): " << dns_v4_servers[0] << " is up";
+      }
+      iface_up = true;
+    }
+  }
+  return iface_up;
+}
+
+#if _WIN32_WINNT < 0x600
+static bool IsNetworkAdapterUpXp() {
+  ULONG nFlags = 0;
+
+  // during system initialization, GetAdaptersAddresses may return ERROR_BUFFER_OVERFLOW and supply nLen,
+  // but in a subsequent call it may return ERROR_BUFFER_OVERFLOW and supply greater nLen !
+  ULONG nLen = sizeof(IP_ADAPTER_ADDRESSES_XP);
+  std::vector<BYTE> pBuf;
+  DWORD nErr = 0;
+  do {
+    pBuf.resize(nLen);
+    nErr = ::GetAdaptersAddresses(AF_UNSPEC, nFlags, NULL, (IP_ADAPTER_ADDRESSES*)pBuf.data(), &nLen);
+  } while (ERROR_BUFFER_OVERFLOW == nErr);
+
+  if (NO_ERROR != nErr) {
+    PLOG(WARNING) << "GetAdaptersAddresses failed: " << nErr;
+    return false;
+  }
+
+  bool iface_up = false;
+  for (const IP_ADAPTER_ADDRESSES_XP* pCurrAddresses = (IP_ADAPTER_ADDRESSES_XP*)pBuf.data();
+       pCurrAddresses; pCurrAddresses = pCurrAddresses->Next) {
+    if (pCurrAddresses->IfType == IF_TYPE_SOFTWARE_LOOPBACK) {
+      continue;
+    }
+    IF_OPER_STATUS Stat = pCurrAddresses->OperStatus;
+    if (Stat == IfOperStatusUp) {
+      std::vector<asio::ip::address> dns_v4_servers;
+      std::vector<asio::ip::address> dns_v6_servers;
+      for (auto pDnsServerAddress = pCurrAddresses->FirstDnsServerAddress; pDnsServerAddress; pDnsServerAddress = pDnsServerAddress->Next) {
+        auto dns_address = SocketAddressToAsio(pDnsServerAddress->Address);
+        if (dns_address.is_v4()) {
+          dns_v4_servers.push_back(dns_address);
+        } else if (dns_address.is_v6()) {
+          dns_v6_servers.push_back(dns_address);
+        }
+      }
+      if (dns_v4_servers.empty()) {
+        continue;
+      }
+      LOG(INFO) << "Adapter \"" << SysWideToUTF8(pCurrAddresses->FriendlyName) << "\" with DNS Server (IPv4): " << dns_v4_servers[0] << " is up";
+      iface_up = true;
+    }
+  }
+  return iface_up;
+}
+
+static bool IsNetworkAdapterUp() {
+  if (IsWindowsVersionBNOrGreater(6, 0, 0)) {
+    return IsNetworkAdapterUpVista();
+  } else {
+    return IsNetworkAdapterUpXp();
+  }
+}
+#endif // _WIN32_WINNT < 0x600
+
+void WaitNetworkUp(std::function<void()> callback) {
+  bool iface_up = IsNetworkAdapterUp();
+  if (iface_up) {
+    callback();
+    return;
+  }
+  std::thread t([=]() {
+    while(true) {
+      DWORD nErr = NotifyAddrChange(nullptr, nullptr);
+      if (nErr != 0) {
+        PLOG(WARNING) << "NotifyAddrChange failed: " << nErr;
+        break;
+      }
+      LOG(INFO) << "Ethernet address changed";
+      bool iface_up = IsNetworkAdapterUp();
+      if (iface_up) {
+        callback();
+        break;
+      }
+    }
+  });
+  t.detach();
 }
 
 #endif  // _WIN32

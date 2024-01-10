@@ -57,5 +57,6 @@ extern CYassApp* mApp;
 #define WM_MYAPP_STARTED (WM_USER + 100)
 #define WM_MYAPP_START_FAILED (WM_USER + 101)
 #define WM_MYAPP_STOPPED (WM_USER + 102)
+#define WM_MYAPP_NETWORK_UP (WM_USER + 103)
 
 #endif  // YASS_WIN32_APP
