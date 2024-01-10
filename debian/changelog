@@ -1,3 +1,8 @@
+yass (1.5.16-1) UNRELEASED; urgency=medium
+
+  * c-ares: defer c-ares init.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Wed, 10 Jan 2024 22:04:19 +0800
 yass (1.5.15-1) UNRELEASED; urgency=medium
 
   * gcc: fix lto build under gold.
