@@ -26,17 +26,11 @@ class WorkerPrivate {
 
 Worker::Worker()
 #ifdef HAVE_C_ARES
-    : resolver_(CAresResolver::Create(io_context_)),
+    : resolver_(nullptr),
 #else
     : resolver_(io_context_),
 #endif
       private_(new WorkerPrivate) {
-#ifdef HAVE_C_ARES
-  int ret = resolver_->Init(5000);
-  CHECK_EQ(ret, 0) << "c-ares initialize failure";
-  static_cast<void>(ret);
-#endif
-
 #ifdef _WIN32
   int iResult = 0;
   WSADATA wsaData = {0};
@@ -71,6 +65,17 @@ Worker::~Worker() {
 
 void Worker::Start(absl::AnyInvocable<void(asio::error_code)> &&callback) {
   DCHECK(!start_callback_);
+
+#ifdef HAVE_C_ARES
+  resolver_ = CAresResolver::Create(io_context_);
+  int ret = resolver_->Init(5000);
+  if (ret < 0) {
+    LOG(WARNING) << "CAresResolver::Init failed";
+    callback(asio::error::connection_refused);
+    return;
+  }
+#endif
+
   start_callback_ = std::move(callback);
 
   /// listen in the worker thread
@@ -113,7 +118,9 @@ void Worker::Stop(absl::AnyInvocable<void()> &&callback) {
   /// stop in the worker thread
   asio::post(io_context_ ,[this]() {
 #ifdef HAVE_C_ARES
-    resolver_->Cancel();
+    if (resolver_) {
+      resolver_->Cancel();
+    }
 #else
     resolver_.cancel();
 #endif

@@ -189,7 +189,18 @@ BOOL CYassApp::InitInstance() {
   }
 
   if (Utils::GetAutoStart()) {
-    frame_->OnStartButtonClicked();
+    if (absl::GetFlag(FLAGS_background)) {
+      DWORD main_thread_id = GetCurrentThreadId();
+      WaitNetworkUp([=](){
+        bool ret;
+        ret = PostThreadMessageW(main_thread_id, WM_MYAPP_NETWORK_UP, 0, 0);
+        if (!ret) {
+          PLOG(WARNING) << "Internal error: PostThreadMessage";
+        }
+      });
+    } else {
+      frame_->OnStartButtonClicked();
+    }
   }
 
   return TRUE;
@@ -274,6 +285,11 @@ BOOL CYassApp::HandleThreadMessage(UINT message, WPARAM w, LPARAM l) {
       return TRUE;
     case WM_MYAPP_STOPPED:
       OnStopped(w, l);
+      return TRUE;
+    case WM_MYAPP_NETWORK_UP:
+      if (state_ == STOPPED) {
+        frame_->OnStartButtonClicked();
+      }
       return TRUE;
   }
   return FALSE;
