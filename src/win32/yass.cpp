@@ -418,8 +418,8 @@ std::string CYassApp::SaveConfig() {
   auto local_port = frame_->GetLocalPort();
   auto connect_timeout = frame_->GetTimeout();
 
-  return Worker::SaveConfig(server_host, server_sni, server_port,
-                            username, password, method,
-                            local_host, local_port,
-                            connect_timeout);
+  return config::ReadConfigFromArgument(server_host, server_sni, server_port,
+                                        username, password, method,
+                                        local_host, local_port,
+                                        connect_timeout);
 }

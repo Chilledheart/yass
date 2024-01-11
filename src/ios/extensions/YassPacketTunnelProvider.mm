@@ -9,6 +9,7 @@
 #include <absl/strings/str_format.h>
 
 #include "tun2proxy.h"
+#include "config/config.hpp"
 #include "cli/cli_worker.hpp"
 #include "core/utils.hpp"
 #include "network.hpp"
@@ -56,9 +57,9 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
   auto method_string = gurl_base::SysNSStringToUTF8(dict[@"method_string"]);
   auto connect_timeout = gurl_base::SysNSStringToUTF8(dict[@"connect_timeout"]);
 
-  auto err_msg = Worker::SaveConfig(server_host, "" /*server_sni*/, server_port,
-                                    username, password, method_string,
-                                    local_host, local_port, connect_timeout);
+  auto err_msg = config::ReadConfigFromArgument(server_host, "" /*server_sni*/, server_port,
+                                                username, password, method_string,
+                                                local_host, local_port, connect_timeout);
   if (!err_msg.empty()) {
     completionHandler([NSError errorWithDomain:@"it.gui.ios.yass" code:200
                       userInfo:@{@"Error reason": @(err_msg.c_str())}]);

@@ -7,14 +7,9 @@
 #include <absl/strings/str_cat.h>
 #include <absl/strings/str_join.h>
 #include <openssl/crypto.h>
-#include <sstream>
 
 #ifdef _WIN32
 #include <ws2tcpip.h>
-#endif
-
-#ifndef _POSIX_HOST_NAME_MAX
-#define _POSIX_HOST_NAME_MAX 255
 #endif
 
 using namespace cli;
@@ -160,127 +155,6 @@ std::string Worker::GetRemoteDomain() const {
 
 int Worker::GetLocalPort() const {
   return local_port_;
-}
-
-std::string
-Worker::SaveConfig(const std::string& server_host,
-                   const std::string& server_sni,
-                   const std::string& _server_port,
-                   const std::string& username,
-                   const std::string& password,
-                   cipher_method method,
-                   const std::string& local_host,
-                   const std::string& _local_port,
-                   const std::string& _timeout) {
-  std::ostringstream err_msg;
-
-  if (server_host.empty() || server_host.size() >= _POSIX_HOST_NAME_MAX) {
-    err_msg << ",Invalid Server Host: " << server_host;
-  }
-
-  if (server_sni.size() >= _POSIX_HOST_NAME_MAX) {
-    err_msg << ",Invalid Server Host: " << server_sni;
-  }
-
-  auto server_port = StringToIntegerU(_server_port);
-  if (!server_port.has_value() || server_port.value() > 65535u) {
-    err_msg << ",Invalid Server Port: " << _server_port;
-  }
-
-  if (method == CRYPTO_INVALID) {
-    err_msg << ",Invalid Cipher: " << to_cipher_method_str(method);
-  }
-
-  if (local_host.empty() || local_host.size() >= _POSIX_HOST_NAME_MAX) {
-    err_msg << ",Invalid Local Host: " << local_host;
-  }
-
-  auto local_port = StringToIntegerU(_local_port);
-  if (!local_port.has_value() || local_port.value() > 65535u) {
-    err_msg << ",Invalid Local Port: " << _local_port;
-  }
-
-  auto timeout = StringToIntegerU(_timeout);
-  if (!timeout.has_value()) {
-    err_msg << ",Invalid Connect Timeout: " << _timeout;
-  }
-
-  std::string ret = err_msg.str();
-  if (ret.empty()) {
-    absl::SetFlag(&FLAGS_server_host, server_host);
-    absl::SetFlag(&FLAGS_server_sni, server_sni);
-    absl::SetFlag(&FLAGS_server_port, server_port.value());
-    absl::SetFlag(&FLAGS_username, username);
-    absl::SetFlag(&FLAGS_password, password);
-    absl::SetFlag(&FLAGS_method, method);
-    absl::SetFlag(&FLAGS_local_host, local_host);
-    absl::SetFlag(&FLAGS_local_port, local_port.value());
-    absl::SetFlag(&FLAGS_connect_timeout, timeout.value());
-  } else {
-    ret = ret.substr(1);
-  }
-  return ret;
-}
-
-std::string
-Worker::SaveConfig(const std::string& server_host,
-                   const std::string& server_sni,
-                   const std::string& _server_port,
-                   const std::string& username,
-                   const std::string& password,
-                   const std::string& method_string,
-                   const std::string& local_host,
-                   const std::string& _local_port,
-                   const std::string& _timeout) {
-  std::ostringstream err_msg;
-
-  if (server_host.empty() || server_host.size() >= _POSIX_HOST_NAME_MAX) {
-    err_msg << ",Invalid Server Host: " << server_host;
-  }
-
-  if (server_sni.size() >= _POSIX_HOST_NAME_MAX) {
-    err_msg << ",Invalid Server Host: " << server_sni;
-  }
-
-  auto server_port = StringToIntegerU(_server_port);
-  if (!server_port.has_value() || server_port.value() > 65535u) {
-    err_msg << ",Invalid Server Port: " << _server_port;
-  }
-
-  auto method = to_cipher_method(method_string);
-  if (method == CRYPTO_INVALID) {
-    err_msg << ",Invalid Cipher: " << method_string;
-  }
-
-  if (local_host.empty() || local_host.size() >= _POSIX_HOST_NAME_MAX) {
-    err_msg << ",Invalid Local Host: " << local_host;
-  }
-
-  auto local_port = StringToIntegerU(_local_port);
-  if (!local_port.has_value() || local_port.value() > 65535u) {
-    err_msg << ",Invalid Local Port: " << _local_port;
-  }
-
-  auto timeout = StringToIntegerU(_timeout);
-  if (!timeout.has_value()) {
-    err_msg << ",Invalid Connect Timeout: " << _timeout;
-  }
-
-  std::string ret = err_msg.str();
-  if (ret.empty()) {
-    absl::SetFlag(&FLAGS_server_host, server_host);
-    absl::SetFlag(&FLAGS_server_sni, server_sni);
-    absl::SetFlag(&FLAGS_server_port, server_port.value());
-    absl::SetFlag(&FLAGS_username, username);
-    absl::SetFlag(&FLAGS_password, password);
-    absl::SetFlag(&FLAGS_method, method);
-    absl::SetFlag(&FLAGS_local_host, local_host);
-    absl::SetFlag(&FLAGS_local_port, local_port.value());
-    absl::SetFlag(&FLAGS_connect_timeout, timeout.value());
-  } else {
-    ret = ret.substr(1);
-  }
-  return ret;
 }
 
 void Worker::WorkFunc() {
