@@ -1869,6 +1869,22 @@ func archiveMainFile(output string, prefix string, paths []string, dllPaths []st
 		if err != nil {
 			glog.Fatalf("%v", err)
 		}
+		// cleanup after exportArchive
+		//
+		buildSubdir := cmakeBuildTypeFlag + "-iphoneos"
+		if subSystemNameFlag == "simulator" {
+			buildSubdir = cmakeBuildTypeFlag + "-iphonesimulator"
+		}
+		err = os.Chdir(buildSubdir)
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
+		cmdRun([]string{"rm", "-f", "YassPacketTunnel.appex", "libasio.a",
+			"libyass_crashpad.a", "libyass_base.a", "yass.app"}, true)
+		err = os.Chdir(buildDir)
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
 	} else if systemNameFlag == "android" && variantFlag == "gui" {
 		androidDir := "../android"
 		err := os.Chdir(androidDir)
