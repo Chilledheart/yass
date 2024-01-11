@@ -1033,13 +1033,6 @@ func renameByUnlink(src string, dst string) error {
 func buildStageExecuteBuildScript() {
 	glog.Info("BuildStage -- Execute Build Script")
 	glog.Info("======================================================================")
-	if systemNameFlag == "ios" {
-		buildSubdir := cmakeBuildTypeFlag + "-iphoneos"
-		if subSystemNameFlag == "simulator" {
-			buildSubdir = cmakeBuildTypeFlag + "-iphonesimulator"
-		}
-		cmdRun([]string{"rm", "-rf", buildSubdir}, true)
-	}
 	cmakeCmd := []string{"cmake", "--build", ".",
 		"--config", cmakeBuildTypeFlag,
 		"--parallel", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag),
