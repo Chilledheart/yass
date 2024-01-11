@@ -8,7 +8,7 @@
 
 #include <absl/strings/str_format.h>
 
-#include "ios/tun2proxy.h"
+#include "tun2proxy.h"
 #include "cli/cli_worker.hpp"
 #include "core/utils.hpp"
 #include "network.hpp"
