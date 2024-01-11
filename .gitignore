@@ -80,3 +80,4 @@ yass.spec
 local.properties
 /.gradle
 *.apk
+*.ipa
