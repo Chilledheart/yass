@@ -13,6 +13,8 @@
 #include "cli/cli_worker.hpp"
 #include "core/utils.hpp"
 #include "network.hpp"
+#include "ios/utils.h"
+#include "cli/cli_connection_stats.hpp"
 
 static constexpr int DEFAULT_MTU = 1500;
 static const char PRIVATE_VLAN4_CLIENT[] = "172.19.0.1";
@@ -86,6 +88,8 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
                         userInfo:@{@"Error reason": @(err_msg.c_str())}]);
     }
   };
+  cli::total_rx_bytes = 0;
+  cli::total_tx_bytes = 0;
   worker_.Start(std::move(callback));
 }
 
@@ -227,7 +231,12 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
 }
 
 - (void)handleAppMessage:(NSData *)messageData completionHandler:(void (^)(NSData *))completionHandler {
-  // Add code here to handle the message.
+  NSString *requestData = [[NSString alloc] initWithData:messageData encoding:NSUTF8StringEncoding];
+  if ([requestData isEqualToString:@(kAppMessageGetTelemetry)]) {
+    std::string data = serializeTelemetryJson(cli::total_rx_bytes, cli::total_tx_bytes);
+    NSData *responseData = [NSData dataWithBytes:data.c_str() length:data.size()+1];
+    completionHandler(responseData);
+  }
 }
 
 - (void)sleepWithCompletionHandler:(void (^)(void))completionHandler {

@@ -7,6 +7,7 @@
 #include <pthread.h>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 
 #include <absl/flags/flag.h>
 #include <base/strings/sys_string_conversions.h>
@@ -34,6 +35,7 @@
   NSString* status_;
   std::string error_msg_;
   NETunnelProviderManager *vpn_manager_;
+  NSTimer* refresh_timer_;
 }
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary<UIApplicationLaunchOptionsKey,id> *)launchOptions {
@@ -65,8 +67,7 @@
 - (NSString*)getStatus {
   std::ostringstream ss;
   if (state_ == STARTED) {
-    NSString *prefixMessage = NSLocalizedString(@"CONNECTED_WITH_CONNS", @"Connected with conns: ");
-    ss << gurl_base::SysNSStringToUTF8(prefixMessage) << gurl_base::SysNSStringToUTF8(status_);
+    ss << gurl_base::SysNSStringToUTF8(status_) << ":";
   } else if (state_ == START_FAILED) {
     NSString *prefixMessage = NSLocalizedString(@"FAILED_TO_CONNECT_DUE_TO", @"Failed to connect due to ");
     ss << gurl_base::SysNSStringToUTF8(prefixMessage) << error_msg_.c_str();
@@ -105,9 +106,50 @@
   [self OnStopped];
 }
 
+- (void)FetchTelemetryData {
+  if (vpn_manager_ != nil) {
+    NETunnelProviderSession* session = (NETunnelProviderSession*)vpn_manager_.connection;
+    NSData *data = [@(kAppMessageGetTelemetry) dataUsingEncoding:NSUTF8StringEncoding];
+    NSError *error;
+    [session sendProviderMessage:data returnError:&error responseHandler:^(NSData * _Nullable responseData) {
+      if (!responseData) {
+        return;
+      }
+      std::string_view resp((const char*)responseData.bytes, responseData.length);
+      uint64_t rx_bytes;
+      uint64_t tx_bytes;
+      if (!parseTelemetryJson(resp, &rx_bytes, &tx_bytes)) {
+        LOG(WARNING) << "telemetry: Invalid response: " << resp;
+        return;
+      }
+      dispatch_async(dispatch_get_main_queue(), ^{
+        // non atomic write
+        self.total_rx_bytes = rx_bytes;
+        self.total_tx_bytes = tx_bytes;
+        YassViewController* viewController =
+            (YassViewController*)
+                UIApplication.sharedApplication.keyWindow.rootViewController;
+        [viewController UpdateStatusBar];
+      });
+
+    }];
+    if (error) {
+      std::string err_msg = gurl_base::SysNSStringToUTF8([error localizedDescription]);
+      LOG(WARNING) << "telemetry: send Request failed: " << err_msg;
+    }
+  }
+}
+
 - (void)OnStarted {
   state_ = STARTED;
   config::SaveConfig();
+
+  refresh_timer_ =
+      [NSTimer scheduledTimerWithTimeInterval:NSTimeInterval(1.0)
+                                       target:self
+                                     selector:@selector(FetchTelemetryData)
+                                     userInfo:nil
+                                      repeats:YES];
 
   [NETunnelProviderManager loadAllFromPreferencesWithCompletionHandler:^(NSArray<NETunnelProviderManager *> * _Nullable managers, NSError * _Nullable error) {
     if (error) {
@@ -283,6 +325,8 @@
   UIAlertAction* action = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction* action) {}];
   [alert addAction:action];
   [viewController presentViewController:alert animated:YES completion:nil];
+  [refresh_timer_ invalidate];
+  refresh_timer_ = nil;
 }
 
 - (void)OnStopped {
@@ -291,6 +335,8 @@
       (YassViewController*)
           UIApplication.sharedApplication.keyWindow.rootViewController;
   [viewController Stopped];
+  [refresh_timer_ invalidate];
+  refresh_timer_ = nil;
 }
 
 - (std::string)SaveConfig {
