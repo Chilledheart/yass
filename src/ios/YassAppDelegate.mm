@@ -60,8 +60,38 @@
   // Use this method to release any resources that were specific to the discarded scenes, as they will not return.
 }
 
+#pragma mark - Application
+
 - (enum YASSState)getState {
   return state_;
+}
+
+- (YassViewController*)getRootViewController {
+  NSSet<UIScene *> *scenes = [[UIApplication sharedApplication] connectedScenes];
+  for (UIScene* scene : scenes) {
+    if (![scene isKindOfClass:[UIWindowScene class]]) {
+      continue;
+    }
+    UIWindowScene* windowScene = (UIWindowScene*) scene;
+    UIWindow *keyWindow = nil;
+    if (@available(iOS 15.0, *)) {
+      keyWindow = windowScene.keyWindow;
+    } else {
+      NSArray<UIWindow *> *windows = windowScene.windows;
+      for (UIWindow *window : windows) {
+        if (window.isKeyWindow) {
+          keyWindow = window;
+          break;
+        }
+      }
+    }
+    UIViewController* viewController = keyWindow.rootViewController;
+    if (![viewController isKindOfClass:[YassViewController class]]) {
+      continue;
+    }
+    return (YassViewController*)viewController;
+  }
+  return nil;
 }
 
 - (NSString*)getStatus {
@@ -126,9 +156,7 @@
         // non atomic write
         self.total_rx_bytes = rx_bytes;
         self.total_tx_bytes = tx_bytes;
-        YassViewController* viewController =
-            (YassViewController*)
-                UIApplication.sharedApplication.keyWindow.rootViewController;
+        YassViewController* viewController = [self getRootViewController];
         [viewController UpdateStatusBar];
       });
 
@@ -166,9 +194,7 @@
       // Remove old one once the configuration is changed (to prevent stall configuration).
       NETunnelProviderProtocol* tunnelProtocol = (NETunnelProviderProtocol*)vpn_manager.protocolConfiguration;
 
-      YassViewController* viewController =
-          (YassViewController*)
-              UIApplication.sharedApplication.keyWindow.rootViewController;
+      YassViewController* viewController = [self getRootViewController];
 
       NSDictionary* new_configuration = @{
         @"server_host": viewController.serverHost.text,
@@ -218,9 +244,7 @@
   }
 #endif
 
-  YassViewController* viewController =
-      (YassViewController*)
-          UIApplication.sharedApplication.keyWindow.rootViewController;
+  YassViewController* viewController = [self getRootViewController];
 
   tunnelProtocol.providerConfiguration = @{
     @"server_host": viewController.serverHost.text,
@@ -251,9 +275,7 @@
       if (ret == TRUE) {
         [self didChangeVpnStatus: nil];
 
-        YassViewController* viewController =
-            (YassViewController*)
-                UIApplication.sharedApplication.keyWindow.rootViewController;
+        YassViewController* viewController = [self getRootViewController];
         [viewController Started];
       } else {
         vpn_manager_ = nil;
@@ -304,9 +326,7 @@
       status_ = NSLocalizedString(@"UNKNOWN", @"Unknown");
       break;
   }
-  YassViewController* viewController =
-      (YassViewController*)
-          UIApplication.sharedApplication.keyWindow.rootViewController;
+  YassViewController* viewController = [self getRootViewController];
   [viewController UpdateStatusBar];
 }
 
@@ -316,9 +336,7 @@
 
   error_msg_ = error_msg;
   LOG(ERROR) << "worker failed due to: " << error_msg_;
-  YassViewController* viewController =
-      (YassViewController*)
-          UIApplication.sharedApplication.keyWindow.rootViewController;
+  YassViewController* viewController = [self getRootViewController];
   [viewController StartFailed];
 
   UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"Start Failed" message:@(error_msg.c_str()) preferredStyle:UIAlertControllerStyleAlert];
@@ -331,18 +349,14 @@
 
 - (void)OnStopped {
   state_ = STOPPED;
-  YassViewController* viewController =
-      (YassViewController*)
-          UIApplication.sharedApplication.keyWindow.rootViewController;
+  YassViewController* viewController = [self getRootViewController];
   [viewController Stopped];
   [refresh_timer_ invalidate];
   refresh_timer_ = nil;
 }
 
 - (std::string)SaveConfig {
-  YassViewController* viewController =
-      (YassViewController*)
-          UIApplication.sharedApplication.keyWindow.rootViewController;
+  YassViewController* viewController = [self getRootViewController];
   auto server_host = gurl_base::SysNSStringToUTF8(viewController.serverHost.text);
   auto server_port = gurl_base::SysNSStringToUTF8(viewController.serverPort.text);
   auto username = gurl_base::SysNSStringToUTF8(viewController.username.text);
