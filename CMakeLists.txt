@@ -3775,6 +3775,7 @@ if (GUI)
           src/ios/YassSceneDelegate.mm
           src/ios/utils.h
           src/ios/utils.mm
+          src/ios/utils.cpp
           src/ios/main.mm)
     elseif(GUI_FLAVOUR STREQUAL "gtk3")
         list(APPEND SRC_FILES
@@ -4169,6 +4170,8 @@ if (GUI)
         find_library(NetworkExtension_LIBRARY NetworkExtension REQUIRED)
 
         set(PLUGIN_SRC
+          src/ios/utils.h
+          src/ios/utils.cpp
           src/ios/extensions/tun2proxy.h
           src/ios/extensions/tun2proxy.mm
           src/ios/extensions/YassPacketTunnelProvider.h
@@ -4184,7 +4187,7 @@ if (GUI)
           ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl
           ${CMAKE_CURRENT_SOURCE_DIR}/src
           ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/extensions)
-        target_compile_options(network-extension PRIVATE -fapplication-extension -fmodules -gmodules -fobjc-arc -fobjc-weak)
+        target_compile_options(network-extension PRIVATE -fapplication-extension -fmodules -gmodules -fobjc-arc --start-no-unused-arguments -fobjc-weak --end-no-unused-arguments)
         target_link_libraries(network-extension PRIVATE ${NetworkExtension_LIBRARY})
         set_target_properties(network-extension PROPERTIES LINK_OPTIONS -fapplication-extension -e _NSExtensionMain -fobjc-arc -fobjc-link-runtime)
 

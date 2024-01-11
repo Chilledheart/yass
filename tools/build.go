@@ -1033,13 +1033,6 @@ func renameByUnlink(src string, dst string) error {
 func buildStageExecuteBuildScript() {
 	glog.Info("BuildStage -- Execute Build Script")
 	glog.Info("======================================================================")
-	if systemNameFlag == "ios" {
-		buildSubdir := cmakeBuildTypeFlag + "-iphoneos"
-		if subSystemNameFlag == "simulator" {
-			buildSubdir = cmakeBuildTypeFlag + "-iphonesimulator"
-		}
-		cmdRun([]string{"rm", "-rf", buildSubdir}, true)
-	}
 	cmakeCmd := []string{"cmake", "--build", ".",
 		"--config", cmakeBuildTypeFlag,
 		"--parallel", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag),
@@ -1873,6 +1866,22 @@ func archiveMainFile(output string, prefix string, paths []string, dllPaths []st
 			"-exportPath", ".",
 			"-exportOptionsPlist", "../tools/development.plist"}, true)
 		err := os.Rename("Yet Another Shadow Socket.ipa", output)
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
+		// cleanup after exportArchive
+		//
+		buildSubdir := cmakeBuildTypeFlag + "-iphoneos"
+		if subSystemNameFlag == "simulator" {
+			buildSubdir = cmakeBuildTypeFlag + "-iphonesimulator"
+		}
+		err = os.Chdir(buildSubdir)
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
+		cmdRun([]string{"rm", "-f", "YassPacketTunnel.appex", "libasio.a",
+			"libyass_crashpad.a", "libyass_base.a", "yass.app"}, true)
+		err = os.Chdir(buildDir)
 		if err != nil {
 			glog.Fatalf("%v", err)
 		}
