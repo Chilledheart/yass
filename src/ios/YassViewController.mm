@@ -15,7 +15,6 @@
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
 #include "ios/YassAppDelegate.h"
-#include "ios/utils.h"
 
 @interface YassViewController () <UIPickerViewDataSource, UIPickerViewDelegate, UITextFieldDelegate>
 @end
@@ -53,7 +52,6 @@
   [self UpdateStatusBar];
   [self.startButton setEnabled:TRUE];
   [self.stopButton setEnabled:FALSE];
-  (void)connectedToNetwork();
 }
 
 - (void)viewWillAppear {

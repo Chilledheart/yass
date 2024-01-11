@@ -19,6 +19,7 @@
 #include "feature.h"
 #include "config/config.hpp"
 #include "cli/cli_worker.hpp"
+#include "ios/utils.h"
 
 @interface YassAppDelegate ()
 - (std::string)SaveConfig;
@@ -80,6 +81,11 @@
 
 - (void)OnStart:(BOOL)quiet {
   state_ = STARTING;
+  if (!connectedToNetwork()) {
+    NSString *message = NSLocalizedString(@"NETWORK_UNREACHABLE", @"Network unreachable");
+    [self OnStartFailed:gurl_base::SysNSStringToUTF8(message)];
+    return;
+  }
   auto err_msg = [self SaveConfig];
   if (!err_msg.empty()) {
     [self OnStartFailed:err_msg];
