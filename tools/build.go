@@ -1880,7 +1880,7 @@ func archiveMainFile(output string, prefix string, paths []string, dllPaths []st
 			glog.Fatalf("%v", err)
 		}
 		cmdRun([]string{"rm", "-f", "YassPacketTunnel.appex", "libasio.a",
-			"libyass_crashpad.a", "libyass_base.a", "yass.app"}, true)
+			"libyass_crashpad.a", "libyass_core.a", "libyass_net.a", "yass.app"}, true)
 		err = os.Chdir(buildDir)
 		if err != nil {
 			glog.Fatalf("%v", err)

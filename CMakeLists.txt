@@ -3381,15 +3381,83 @@ endif()
 #           Source code
 # *****************************************************************************************
 
-set(files
+add_library(yass_core STATIC
+    src/config/config.cpp
+    src/config/config_tls.cpp
+    src/config/config_impl.cpp
+    src/config/config.hpp
+    src/config/config_impl.hpp
+    src/config/config_impl_local.hpp
+    src/config/config_impl_windows.hpp
+    src/core/logging.cpp
+    src/core/logging.hpp
+    src/core/check_op.cpp
+    src/core/check_op.hpp
+    src/core/check.cpp
+    src/core/check.hpp
+    src/core/process_utils.hpp
+    src/core/process_utils.cpp
+    src/crypto/crypter_export.cpp
+    src/crypto/crypter_export.hpp
+    src/network.hpp
     src/network.cpp
+    src/core/utils.cpp
+    src/core/utils_fs.cpp
+    src/core/utils.hpp
+    src/core/utils_fs.hpp
+    src/core/safe_strerror.cpp
+    src/core/safe_strerror.hpp
+    src/core/debug.cpp
+    src/core/debug.hpp
+    src/core/rand_util.cpp
+    src/core/rand_util.hpp
+  )
+
+if (WIN32)
+  target_sources(yass_core PRIVATE src/core/rand_util_win.cpp)
+  target_sources(yass_core PRIVATE src/core/utils_win.cpp)
+elseif (APPLE)
+  target_sources(yass_core PRIVATE src/config/config_impl_apple.hpp)
+  target_sources(yass_core PRIVATE src/config/config_impl_apple.mm)
+  target_sources(yass_core PRIVATE src/core/rand_util_posix.cpp)
+  target_sources(yass_core PRIVATE src/core/utils_mac.mm)
+else()
+  target_sources(yass_core PRIVATE src/core/rand_util_posix.cpp)
+  target_sources(yass_core PRIVATE src/core/utils_linux.cpp)
+  target_sources(yass_core PRIVATE src/core/utils_freebsd.cpp)
+endif()
+
+target_link_libraries(yass_core PUBLIC url asio
+  absl::flags
+  absl::flags_parse
+  absl::flags_marshalling
+  absl::failure_signal_handler)
+
+if (USE_TCMALLOC)
+  target_link_libraries(yass_core PUBLIC tcmalloc)
+endif()
+
+target_include_directories(yass_core PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl-override
+  ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl/polyfills
+  ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl
+  ${SUPPORT_INCLUDE_DIRS})
+
+target_include_directories(yass_core PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+target_compile_definitions(yass_core PUBLIC
+  ${SUPPORT_DEFINITIONS})
+
+set(SUPPORT_LIBS
+  yass_core
+  ${SUPPORT_LIBS})
+
+set(files
     src/net/x509_util.cpp
     src/net/ssl_socket.cpp
     src/net/ssl_server_socket.cpp
     src/net/openssl_util.cpp
-    src/config/config.cpp
-    src/config/config_tls.cpp
-    src/config/config_impl.cpp
     src/core/cipher.cpp
     src/core/hkdf_sha1.cpp
     src/core/hmac_sha1.cpp
@@ -3397,15 +3465,6 @@ set(files
     src/core/socks4_request_parser.cpp
     src/core/socks5_request_parser.cpp
     src/core/ss_request_parser.cpp
-    src/core/process_utils.cpp
-    src/core/rand_util.cpp
-    src/core/logging.cpp
-    src/core/utils.cpp
-    src/core/utils_fs.cpp
-    src/core/safe_strerror.cpp
-    src/core/debug.cpp
-    src/core/check_op.cpp
-    src/core/check.cpp
     src/core/scoped_clear_last_error_win.cpp
     src/core/ref_counted.cpp
     src/core/base64.cpp
@@ -3434,7 +3493,6 @@ set(files
     src/crypto/chacha20_poly1305_sodium_decrypter.cpp
     src/crypto/chacha20_poly1305_sodium_encrypter.cpp
     src/crypto/crypter.cpp
-    src/crypto/crypter_export.cpp
     src/crypto/decrypter.cpp
     src/crypto/encrypter.cpp
     src/crypto/xchacha20_poly1305_evp_decrypter.cpp
@@ -3448,17 +3506,12 @@ set(files
     )
 
 set(hfiles
-    src/network.hpp
     src/net/x509_util.hpp
     src/net/ssl_socket.hpp
     src/net/ssl_server_socket.hpp
     src/net/net_errors.hpp
     src/net/net_error_list.hpp
     src/net/openssl_util.hpp
-    src/config/config.hpp
-    src/config/config_impl.hpp
-    src/config/config_impl_local.hpp
-    src/config/config_impl_windows.hpp
     src/core/cipher.hpp
     src/core/hkdf_sha1.hpp
     src/core/hmac_sha1.hpp
@@ -3472,15 +3525,6 @@ set(hfiles
     src/core/ss.hpp
     src/core/ss_request.hpp
     src/core/ss_request_parser.hpp
-    src/core/process_utils.hpp
-    src/core/rand_util.hpp
-    src/core/logging.hpp
-    src/core/utils.hpp
-    src/core/utils_fs.hpp
-    src/core/safe_strerror.hpp
-    src/core/debug.hpp
-    src/core/check_op.hpp
-    src/core/check.hpp
     src/core/atomic_ref_count.hpp
     src/core/ref_counted.hpp
     src/core/base64.hpp
@@ -3507,7 +3551,6 @@ set(hfiles
     src/crypto/chacha20_poly1305_sodium_decrypter.hpp
     src/crypto/chacha20_poly1305_sodium_encrypter.hpp
     src/crypto/crypter.hpp
-    src/crypto/crypter_export.hpp
     src/crypto/decrypter.hpp
     src/crypto/encrypter.hpp
     src/crypto/xchacha20_poly1305_evp_decrypter.hpp
@@ -3520,53 +3563,36 @@ set(hfiles
     src/core/http_parser.hpp
     )
 
-if (WIN32)
-  list(APPEND files src/core/rand_util_win.cpp)
-  list(APPEND files src/core/utils_win.cpp)
-elseif (APPLE AND COMPILER_CLANG)
-  list(APPEND files src/config/config_impl_apple.hpp)
-  list(APPEND files src/config/config_impl_apple.mm)
-  list(APPEND files src/core/rand_util_posix.cpp)
-  list(APPEND files src/core/utils_mac.mm)
-else()
-  if (APPLE)
-    list(APPEND files src/core/utils_mac.mm)
-  endif()
-  list(APPEND files src/core/rand_util_posix.cpp)
-  list(APPEND files src/core/utils_linux.cpp)
-  list(APPEND files src/core/utils_freebsd.cpp)
-endif()
-
 if (USE_ICU)
   list(APPEND files src/i18n/icu_util.cpp)
   list(APPEND hfiles src/i18n/icu_util.hpp)
 endif()
 
-add_library(yass_base STATIC
+add_library(yass_net STATIC
   ${files} ${hfiles}
   )
 
-target_include_directories(yass_base PUBLIC
+target_include_directories(yass_net PUBLIC
   ${SUPPORT_INCLUDE_DIRS})
 
-target_include_directories(yass_base PRIVATE
+target_include_directories(yass_net PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-target_include_directories(yass_base PUBLIC
+target_include_directories(yass_net PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
 
-target_compile_definitions(yass_base PUBLIC
+target_compile_definitions(yass_net PUBLIC
   ${SUPPORT_DEFINITIONS})
 
-target_link_libraries(yass_base PUBLIC ${SUPPORT_LIBS})
+target_link_libraries(yass_net PUBLIC ${SUPPORT_LIBS})
 
 if (USE_LIBCXX)
-  target_link_libraries(yass_base PUBLIC
+  target_link_libraries(yass_net PUBLIC
     cxx ${libcxx_PUBLIC_LIBRARIES})
 endif()
 
 if (ANDROID)
-  target_link_libraries(yass_base PUBLIC log)
+  target_link_libraries(yass_net PUBLIC log)
 endif()
 
 add_library(yass_cli_lib OBJECT
@@ -3579,7 +3605,7 @@ add_library(yass_cli_lib OBJECT
 target_include_directories(yass_cli_lib PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-target_link_libraries(yass_cli_lib PUBLIC yass_base)
+target_link_libraries(yass_cli_lib PUBLIC yass_net)
 
 if (CLI)
   add_executable(yass_cli
@@ -3597,7 +3623,7 @@ if (CLI)
 
   target_link_libraries(yass_cli PUBLIC
     yass_cli_lib
-    yass_base
+    yass_net
     )
 
   if (NOT CMAKE_SKIP_INSTALL_RULES AND NOT WIN32 AND NOT IOS)
@@ -3621,7 +3647,7 @@ add_library(yass_server_lib OBJECT
 target_include_directories(yass_server_lib PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-target_link_libraries(yass_server_lib PUBLIC yass_base)
+target_link_libraries(yass_server_lib PUBLIC yass_net)
 
 if (SERVER)
   add_executable(yass_server
@@ -3639,7 +3665,7 @@ if (SERVER)
 
   target_link_libraries(yass_server PUBLIC
     yass_server_lib
-    yass_base
+    yass_net
     )
 
   if (NOT CMAKE_SKIP_INSTALL_RULES AND NOT WIN32 AND NOT IOS)
@@ -3869,12 +3895,12 @@ if (GUI)
     target_compile_options(${APP_NAME} PRIVATE ${GUI_C_CXX_FLAGS})
 
     if (NOT IOS)
-      target_link_libraries(${APP_NAME} PUBLIC yass_cli_lib)
+      target_link_libraries(${APP_NAME} PUBLIC yass_cli_lib yass_net)
     endif()
 
     target_link_libraries(${APP_NAME} PUBLIC
       ${GUI_LIBRARIES}
-      yass_base
+      yass_core
     )
 
     if (GUI_FLAVOUR STREQUAL "windows" AND MSVC)
@@ -4182,9 +4208,6 @@ if (GUI)
         add_executable(network-extension MACOSX_BUNDLE ${PLUGIN_SRC})
 
         target_include_directories(network-extension PRIVATE
-          ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl-override
-          ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl/polyfills
-          ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl
           ${CMAKE_CURRENT_SOURCE_DIR}/src
           ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/extensions)
         target_compile_options(network-extension PRIVATE -fapplication-extension -fmodules -gmodules -fobjc-arc --start-no-unused-arguments -fobjc-weak --end-no-unused-arguments)
