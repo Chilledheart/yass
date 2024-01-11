@@ -119,9 +119,9 @@ CIPHER_METHOD_VALID_MAP(XX)
   std::string timeout = timeout_str != nullptr ? timeout_str : std::string();
   env->ReleaseStringUTFChars((jstring)_timeout, timeout_str);
 
-  std::string err_msg = Worker::SaveConfig(server_host, server_sni, server_port,
-                                           username, password, method,
-                                           local_host, local_port, timeout);
+  std::string err_msg = config::ReadConfigFromArgument(server_host, server_sni, server_port,
+                                                       username, password, method,
+                                                       local_host, local_port, timeout);
 
   if (err_msg.empty()) {
     return nullptr;

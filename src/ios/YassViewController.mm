@@ -9,24 +9,17 @@
 #include <absl/flags/flag.h>
 #include <base/strings/sys_string_conversions.h>
 
-#include "cli/cli_connection_stats.hpp"
 #include "config/config.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
 #include "ios/YassAppDelegate.h"
-#include "ios/utils.h"
 
 @interface YassViewController () <UIPickerViewDataSource, UIPickerViewDelegate, UITextFieldDelegate>
 @end
 
 @implementation YassViewController {
   NSTimer* refresh_timer_;
-  uint64_t last_sync_time_;
-  uint64_t last_rx_bytes_;
-  uint64_t last_tx_bytes_;
-  uint64_t rx_rate_;
-  uint64_t tx_rate_;
   NSArray* cipher_methods_;
   NSString* current_cipher_method_;
 }
@@ -53,7 +46,6 @@
   [self UpdateStatusBar];
   [self.startButton setEnabled:TRUE];
   [self.stopButton setEnabled:FALSE];
-  (void)connectedToNetwork();
 }
 
 - (void)viewWillAppear {
@@ -126,12 +118,6 @@
   YassAppDelegate* appDelegate =
       (YassAppDelegate*)UIApplication.sharedApplication.delegate;
   [self.startButton setEnabled:FALSE];
-
-  last_sync_time_ = GetMonotonicTime();
-  last_rx_bytes_ = 0U;
-  last_tx_bytes_ = 0U;
-  cli::total_rx_bytes = 0U;
-  cli::total_tx_bytes = 0U;
   [appDelegate OnStart:FALSE];
 }
 

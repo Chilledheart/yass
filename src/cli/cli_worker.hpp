@@ -37,29 +37,6 @@ class Worker {
 
   size_t currentConnections() const;
 
- public:
-  static
-  std::string SaveConfig(const std::string& server_host,
-                         const std::string& server_sni,
-                         const std::string& server_port,
-                         const std::string& username,
-                         const std::string& password,
-                         cipher_method method,
-                         const std::string& local_host,
-                         const std::string& local_port,
-                         const std::string& connect_timeout);
-
-  static
-  std::string SaveConfig(const std::string& server_host,
-                         const std::string& server_sni,
-                         const std::string& server_port,
-                         const std::string& username,
-                         const std::string& password,
-                         const std::string& method_string,
-                         const std::string& local_host,
-                         const std::string& local_port,
-                         const std::string& connect_timeout);
-
  private:
   void WorkFunc();
 

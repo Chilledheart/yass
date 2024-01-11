@@ -291,8 +291,8 @@ std::string YASSApp::SaveConfig() {
   auto local_port = main_window_->GetLocalPort();
   auto connect_timeout = main_window_->GetTimeout();
 
-  return Worker::SaveConfig(server_host, server_sni, server_port,
-                            username, password, method_string,
-                            local_host, local_port,
-                            connect_timeout);
+  return config::ReadConfigFromArgument(server_host, server_sni, server_port,
+                                        username, password, method_string,
+                                        local_host, local_port,
+                                        connect_timeout);
 }

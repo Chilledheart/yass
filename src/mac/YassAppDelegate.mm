@@ -204,10 +204,10 @@
   auto local_port = gurl_base::SysNSStringToUTF8(viewController.localPort.stringValue);
   auto connect_timeout = gurl_base::SysNSStringToUTF8(viewController.timeout.stringValue);
 
-  return Worker::SaveConfig(server_host, server_sni, server_port,
-                            username, password, method_string,
-                            local_host, local_port,
-                            connect_timeout);
+  return config::ReadConfigFromArgument(server_host, server_sni, server_port,
+                                        username, password, method_string,
+                                        local_host, local_port,
+                                        connect_timeout);
 }
 
 @end

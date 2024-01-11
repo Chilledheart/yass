@@ -3867,8 +3867,11 @@ if (GUI)
 
     target_compile_options(${APP_NAME} PRIVATE ${GUI_C_CXX_FLAGS})
 
+    if (NOT IOS)
+      target_link_libraries(${APP_NAME} PUBLIC yass_cli_lib)
+    endif()
+
     target_link_libraries(${APP_NAME} PUBLIC
-      yass_cli_lib
       ${GUI_LIBRARIES}
       yass_base
     )
@@ -4166,8 +4169,8 @@ if (GUI)
         find_library(NetworkExtension_LIBRARY NetworkExtension REQUIRED)
 
         set(PLUGIN_SRC
-          src/ios/tun2proxy.h
-          src/ios/tun2proxy.mm
+          src/ios/extensions/tun2proxy.h
+          src/ios/extensions/tun2proxy.mm
           src/ios/extensions/YassPacketTunnelProvider.h
           src/ios/extensions/YassPacketTunnelProvider.mm
           src/ios/extensions/PacketTunnel.entitlements

@@ -18,7 +18,7 @@
 #include "version.h"
 #include "feature.h"
 #include "config/config.hpp"
-#include "cli/cli_worker.hpp"
+#include "ios/utils.h"
 
 @interface YassAppDelegate ()
 - (std::string)SaveConfig;
@@ -80,6 +80,11 @@
 
 - (void)OnStart:(BOOL)quiet {
   state_ = STARTING;
+  if (!connectedToNetwork()) {
+    NSString *message = NSLocalizedString(@"NETWORK_UNREACHABLE", @"Network unreachable");
+    [self OnStartFailed:gurl_base::SysNSStringToUTF8(message)];
+    return;
+  }
   auto err_msg = [self SaveConfig];
   if (!err_msg.empty()) {
     [self OnStartFailed:err_msg];
@@ -299,10 +304,10 @@
   auto method_string = gurl_base::SysNSStringToUTF8([viewController getCipher]);
   auto connect_timeout = gurl_base::SysNSStringToUTF8(viewController.timeout.text);
 
-  return Worker::SaveConfig(server_host, "" /*server_sni*/, server_port,
-                            username, password, method_string,
-                            "0.0.0.0", "3000",
-                            connect_timeout);
+  return config::ReadConfigFromArgument(server_host, "" /*server_sni*/, server_port,
+                                        username, password, method_string,
+                                        "127.0.0.1", "0",
+                                        connect_timeout);
 }
 
 @end
