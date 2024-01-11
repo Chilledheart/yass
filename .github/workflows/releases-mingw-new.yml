@@ -135,7 +135,7 @@ jobs:
           pushd third_party/benchmark
           patch -p1 < ../benchmark-winxp-fix.patch
           popd
-          echo "BUILD_OPTIONS=-mingw-allow-xp" >> $GITHUB_ENV
+          echo "BUILD_OPTIONS=-mingw-allow-xp -enable-lto=false" >> $GITHUB_ENV
       - name: Build
         run: |
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system mingw \
