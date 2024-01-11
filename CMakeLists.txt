@@ -3867,8 +3867,11 @@ if (GUI)
 
     target_compile_options(${APP_NAME} PRIVATE ${GUI_C_CXX_FLAGS})
 
+    if (NOT IOS)
+      target_link_libraries(${APP_NAME} PUBLIC yass_cli_lib)
+    endif()
+
     target_link_libraries(${APP_NAME} PUBLIC
-      yass_cli_lib
       ${GUI_LIBRARIES}
       yass_base
     )
