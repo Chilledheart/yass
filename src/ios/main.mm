@@ -14,7 +14,6 @@
 #include <absl/flags/parse.h>
 #include <absl/flags/usage.h>
 #include <absl/strings/str_cat.h>
-#include <openssl/crypto.h>
 
 #include "config/config.hpp"
 #include "core/logging.hpp"
@@ -73,8 +72,6 @@ int main(int argc, const char** argv) {
     LOG(WARNING) << "Failed to initialize icu component";
   }
 #endif
-
-  CRYPTO_library_init();
 
   NSString * appDelegateClassName;
   @autoreleasepool {

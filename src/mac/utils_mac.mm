@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022-2023 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 
 #include "mac/utils.h"
 
@@ -19,6 +19,7 @@
 #include "core/logging.hpp"
 #include "core/process_utils.hpp"
 #include "core/utils.hpp"
+#include "net/asio.hpp"
 
 #include <absl/strings/string_view.h>
 #include <absl/strings/str_split.h>

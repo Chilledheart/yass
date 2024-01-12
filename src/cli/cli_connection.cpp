@@ -7,14 +7,17 @@
 #include <absl/strings/str_cat.h>
 
 #include "config/config.hpp"
-#include "core/asio.hpp"
-#include "core/base64.hpp"
-#include "core/http_parser.hpp"
+#include "net/asio.hpp"
+#include "net/base64.hpp"
+#include "net/http_parser.hpp"
+#include "net/padding.hpp"
 #include "core/rand_util.hpp"
 #include "core/utils.hpp"
 
 #include <build/build_config.h>
 #include <quiche/spdy/core/hpack/hpack_constants.h>
+
+using namespace net;
 
 static std::vector<http2::adapter::Header> GenerateHeaders(
   std::vector<std::pair<std::string, std::string>> headers, int status = 0) {

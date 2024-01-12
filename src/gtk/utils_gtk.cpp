@@ -8,6 +8,7 @@
 #include "core/utils_fs.hpp"
 #include "core/process_utils.hpp"
 #include "config/config.hpp"
+#include "net/asio.hpp"
 
 #include <string_view>
 #include <absl/strings/str_cat.h>

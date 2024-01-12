@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2023 Chilledheart  */
+/* Copyright (c) 2023-2024 Chilledheart  */
 
 #include "config/config.hpp"
+
+#include <absl/flags/flag.h>
 
 std::string g_certificate_chain_content;
 std::string g_private_key_content;

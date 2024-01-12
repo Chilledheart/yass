@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2023 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 #include "config/config_impl.hpp"
 
 #include <absl/flags/flag.h>
@@ -10,7 +10,7 @@
 #include "config/config_impl_local.hpp"
 #include "config/config_impl_windows.hpp"
 #include "core/logging.hpp"
-#include "core/cipher.hpp"
+#include "crypto/crypter_export.hpp"
 
 struct CipherMethodFlag {
   explicit CipherMethodFlag(cipher_method m) : method(m) {}
