@@ -23,9 +23,9 @@ More Information refers to [wiki](https://github.com/Chilledheart/yass/wiki)
 - Android (VpnService support) [download apk](https://github.com/Chilledheart/yass/releases/download/1.5.17/yass-android-release-arm64-1.5.17.apk)
 - iOS (Packet Tunnel support, iPhone/iPad) [TestFlight Invite URL](https://testflight.apple.com/join/6AkiEq09)
 - Windows [download zip](https://github.com/Chilledheart/yass/releases/download/1.5.17/yass-mingw-winxp-release-i686-1.5.17.zip)
-- macOS [intel dmg](https://github.com/Chilledheart/yass/releases/download/1.5.17/yass-macos-release-x64-1.5.17.dmg) or [apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.5.17/yass-macos-release-arm64-1.5.17.dmg)
-- Linux (including OpenWRT, Ubuntu, CentOS, OpenSUSE Leap, Alpine Linux and etc) [download gtk](https://github.com/Chilledheart/yass/releases/download/1.5.17/yass-linux-release-amd64-1.5.17.tgz) [download ipk](https://github.com/Chilledheart/yass/releases/download/1.5.17/yass-cli_linux-openwrt-release-x86_64-1.5.17-1_x86_64.ipk)
-- FreeBSD [download gtk for freebsd 14](https://github.com/Chilledheart/yass/releases/download/1.5.17/yass-freebsd14-release-amd64-1.5.17.tgz)
+- macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.5.17/yass-macos-release-x64-1.5.17.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.5.17/yass-macos-release-arm64-1.5.17.dmg)
+- Linux (including Ubuntu, RHEL/CentOS, OpenSUSE Leap, Alpine Linux and OpenWRT) [download rpm](https://github.com/Chilledheart/yass/releases/download/1.5.17/yass-centos-7.el7.x86_64.1.5.17-0.rpm) [download deb](https://github.com/Chilledheart/yass/releases/download/1.5.17/yass-client-ubuntu-16.04-xenial_amd64.1.5.17.deb)
+- FreeBSD [download for freebsd 14](https://github.com/Chilledheart/yass/releases/download/1.5.17/yass-freebsd14-release-amd64-1.5.17.tgz)
 
 ## Build from Source
 Take a look at [BUILDING.md] for more instructions.
