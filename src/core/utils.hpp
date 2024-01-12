@@ -3,9 +3,9 @@
 #ifndef YASS_UTILS
 #define YASS_UTILS
 
-
 #include <stdint.h>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <wchar.h>
 #include <optional>
@@ -171,7 +171,7 @@ using ssize_t = ptrdiff_t;
 #endif
 
 ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len);
-ssize_t WriteFileWithBuffer(const std::string& path, const char* buf, size_t buf_len);
+ssize_t WriteFileWithBuffer(const std::string& path, std::string_view buf);
 PlatformFile OpenReadFile(const std::string &path);
 #ifdef _WIN32
 PlatformFile OpenReadFile(const std::wstring& path);
