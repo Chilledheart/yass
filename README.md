@@ -24,7 +24,7 @@ More Information refers to [wiki](https://github.com/Chilledheart/yass/wiki)
 - iOS (Packet Tunnel support, iPhone/iPad) [join via TestFlight](https://testflight.apple.com/join/6AkiEq09) or [download ipa](https://github.com/Chilledheart/yass/releases/download/1.5.17/yass-ios-release-arm64-1.5.17.ipa)
 - Windows [download zip](https://github.com/Chilledheart/yass/releases/download/1.5.17/yass-mingw-winxp-release-i686-1.5.17.zip)
 - macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.5.17/yass-macos-release-x64-1.5.17.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.5.17/yass-macos-release-arm64-1.5.17.dmg)
-- Linux (including Ubuntu, RHEL/CentOS, OpenSUSE Leap, Alpine Linux and OpenWRT) [download rpm](https://github.com/Chilledheart/yass/releases/download/1.5.17/yass-centos-7.el7.x86_64.1.5.17-0.rpm) [download deb](https://github.com/Chilledheart/yass/releases/download/1.5.17/yass-client-ubuntu-16.04-xenial_amd64.1.5.17.deb)
+- Linux (including Ubuntu, RHEL/CentOS, OpenSUSE Leap, Alpine Linux and OpenWRT) [download rpm](https://github.com/Chilledheart/yass/releases/download/1.5.17/yass-centos-7.el7.x86_64.1.5.17-0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.5.17/yass-client-ubuntu-16.04-xenial_amd64.1.5.17.deb)
 - FreeBSD [download for freebsd 14](https://github.com/Chilledheart/yass/releases/download/1.5.17/yass-freebsd14-release-amd64-1.5.17.tgz)
 
 ## Build from Source
