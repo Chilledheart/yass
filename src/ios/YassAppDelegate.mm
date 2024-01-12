@@ -139,23 +139,23 @@
 - (void)FetchTelemetryData {
   if (vpn_manager_ != nil) {
     NETunnelProviderSession* session = (NETunnelProviderSession*)vpn_manager_.connection;
-    NSData *data = [@(kAppMessageGetTelemetry) dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *requestData = [@(kAppMessageGetTelemetry) dataUsingEncoding:NSUTF8StringEncoding];
     NSError *error;
-    [session sendProviderMessage:data returnError:&error responseHandler:^(NSData * _Nullable responseData) {
+    [session sendProviderMessage:requestData returnError:&error responseHandler:^(NSData * _Nullable responseData) {
       if (!responseData) {
         return;
       }
-      std::string_view resp((const char*)responseData.bytes, responseData.length);
-      uint64_t rx_bytes;
-      uint64_t tx_bytes;
-      if (!parseTelemetryJson(resp, &rx_bytes, &tx_bytes)) {
-        LOG(WARNING) << "telemetry: Invalid response: " << resp;
+      std::string_view response((const char*)responseData.bytes, responseData.length);
+      uint64_t total_rx_bytes;
+      uint64_t total_tx_bytes;
+      if (!parseTelemetryJson(response, &total_rx_bytes, &total_tx_bytes)) {
+        LOG(WARNING) << "telemetry: Invalid response: " << response;
         return;
       }
       dispatch_async(dispatch_get_main_queue(), ^{
         // non atomic write
-        self.total_rx_bytes = rx_bytes;
-        self.total_tx_bytes = tx_bytes;
+        self.total_rx_bytes = total_rx_bytes;
+        self.total_tx_bytes = total_tx_bytes;
         YassViewController* viewController = [self getRootViewController];
         [viewController UpdateStatusBar];
       });

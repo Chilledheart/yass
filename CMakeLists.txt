@@ -4197,6 +4197,7 @@ if (GUI)
 
         set(PLUGIN_SRC
           src/ios/utils.h
+          src/ios/utils.mm
           src/ios/utils.cpp
           src/ios/extensions/tun2proxy.h
           src/ios/extensions/tun2proxy.mm

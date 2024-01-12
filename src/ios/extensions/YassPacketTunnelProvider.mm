@@ -231,10 +231,10 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
 }
 
 - (void)handleAppMessage:(NSData *)messageData completionHandler:(void (^)(NSData *))completionHandler {
-  NSString *requestData = [[NSString alloc] initWithData:messageData encoding:NSUTF8StringEncoding];
-  if ([requestData isEqualToString:@(kAppMessageGetTelemetry)]) {
-    std::string data = serializeTelemetryJson(cli::total_rx_bytes, cli::total_tx_bytes);
-    NSData *responseData = [NSData dataWithBytes:data.c_str() length:data.size()+1];
+  NSString *request = [[NSString alloc] initWithData:messageData encoding:NSUTF8StringEncoding];
+  if ([request isEqualToString:@(kAppMessageGetTelemetry)]) {
+    std::string response = serializeTelemetryJson(cli::total_rx_bytes, cli::total_tx_bytes);
+    NSData *responseData = [NSData dataWithBytes:response.c_str() length:response.size()+1];
     completionHandler(responseData);
   }
 }

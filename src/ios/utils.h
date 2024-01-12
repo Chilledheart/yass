@@ -8,8 +8,8 @@
 #include <vector>
 
 bool connectedToNetwork();
-std::string serializeTelemetryJson(uint64_t rx_bytes, uint64_t tx_bytes);
-bool parseTelemetryJson(std::string_view resp, uint64_t *rx_bytes, uint64_t *tx_bytes);
+std::string serializeTelemetryJson(uint64_t total_rx_bytes, uint64_t total_tx_bytes);
+bool parseTelemetryJson(std::string_view resp, uint64_t *total_rx_bytes, uint64_t *total_tx_bytes);
 
 constexpr char kAppMessageGetTelemetry[] = "__get_telemetry";
 

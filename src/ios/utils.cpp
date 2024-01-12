@@ -39,25 +39,25 @@ bool connectedToNetwork() {
   return (isReachable && !needsConnection) ? true : false;
 }
 
-std::string serializeTelemetryJson(uint64_t rx_bytes, uint64_t tx_bytes) {
+std::string serializeTelemetryJson(uint64_t total_rx_bytes, uint64_t total_tx_bytes) {
   json j;
-  j["total_rx_bytes"] = rx_bytes;
-  j["total_tx_bytes"] = tx_bytes;
+  j["total_rx_bytes"] = total_rx_bytes;
+  j["total_tx_bytes"] = total_tx_bytes;
   return j.dump(4);
 }
 
-bool parseTelemetryJson(std::string_view resp, uint64_t *rx_bytes, uint64_t *tx_bytes) {
+bool parseTelemetryJson(std::string_view resp, uint64_t *total_rx_bytes, uint64_t *total_tx_bytes) {
   auto root = json::parse(resp, nullptr, false);
   if (root.is_discarded() || !root.is_object()) {
     return false;
   }
-  *rx_bytes = 0;
+  *total_rx_bytes = 0;
   if (root.contains("total_rx_bytes") && root["total_rx_bytes"].is_number_unsigned()) {
-    *rx_bytes = root["total_rx_bytes"].get<uint64_t>();
+    *total_rx_bytes = root["total_rx_bytes"].get<uint64_t>();
   }
-  *tx_bytes = 0;
+  *total_tx_bytes = 0;
   if (root.contains("total_tx_bytes") && root["total_tx_bytes"].is_number_unsigned()) {
-    *tx_bytes = root["total_tx_bytes"].get<uint64_t>();
+    *total_tx_bytes = root["total_tx_bytes"].get<uint64_t>();
   }
   return true;
 }
