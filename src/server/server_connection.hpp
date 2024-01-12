@@ -4,20 +4,20 @@
 #ifndef H_SS_CONNECTION
 #define H_SS_CONNECTION
 
-#include "channel.hpp"
-#include "connection.hpp"
-#include "core/cipher.hpp"
-#include "core/iobuf.hpp"
-#include "core/io_queue.hpp"
 #include "core/logging.hpp"
 #include "core/ref_counted.hpp"
 #include "core/scoped_refptr.hpp"
-#include "core/ss.hpp"
-#include "core/ss_request.hpp"
-#include "core/ss_request_parser.hpp"
-#include "protocol.hpp"
-#include "stream.hpp"
-#include "ssl_stream.hpp"
+#include "net/channel.hpp"
+#include "net/connection.hpp"
+#include "net/cipher.hpp"
+#include "net/iobuf.hpp"
+#include "net/io_queue.hpp"
+#include "net/ss.hpp"
+#include "net/ss_request.hpp"
+#include "net/ss_request_parser.hpp"
+#include "net/protocol.hpp"
+#include "net/stream.hpp"
+#include "net/ssl_stream.hpp"
 
 #include <absl/container/flat_hash_map.h>
 #include <absl/strings/string_view.h>
@@ -32,6 +32,11 @@
 
 class cipher;
 namespace server {
+
+using IOBuf = net::IOBuf;
+using cipher = net::cipher;
+using IoQueue = net::IoQueue;
+
 using StreamId = http2::adapter::Http2StreamId;
 template <typename T>
 using StreamMap = absl::flat_hash_map<StreamId, T>;
@@ -79,9 +84,9 @@ class DataFrameSource
 /// The ultimate service class to deliever the network traffic to the remote
 /// endpoint
 class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
-                         public Channel,
-                         public Connection,
-                         public cipher_visitor_interface,
+                         public net::Channel,
+                         public net::Connection,
+                         public net::cipher_visitor_interface,
                          public http2::adapter::Http2VisitorInterface {
  public:
   /// The state of service
@@ -290,9 +295,9 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   state state_;
 
   /// parser of handshake request
-  ss::request_parser request_parser_;
+  net::ss::request_parser request_parser_;
   /// copy of handshake request
-  ss::request request_;
+  net::ss::request request_;
 
   /// copy of parsed connect host or host field
   std::string http_host_;
@@ -310,7 +315,7 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
 
   std::string remote_domain() const {
     std::ostringstream ss;
-    if (request_.address_type() == ss::domain) {
+    if (request_.address_type() == net::ss::domain) {
       ss << request_.domain_name() << ":" << request_.port();
     } else {
       ss << request_.endpoint();
@@ -359,7 +364,7 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   uint64_t yield_upstream_after_time_ = 0U;
 
   /// the upstream the service bound with
-  scoped_refptr<stream> channel_;
+  scoped_refptr<net::stream> channel_;
 
   /// the http2 upstream adapter
 #ifdef HAVE_NGHTTP2
@@ -411,7 +416,7 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   friend class DataFrameSource;
 };
 
-class ServerConnectionFactory : public ConnectionFactory {
+class ServerConnectionFactory : public net::ConnectionFactory {
  public:
    using ConnectionType = ServerConnection;
    template<typename... Args>

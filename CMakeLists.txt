@@ -2305,6 +2305,7 @@ if (MSVC AND MSVC_CRT_LINKAGE STREQUAL "dynamic" AND NOT ALLOW_XP AND ${CMAKE_BU
   target_link_libraries(yass_crashpad PRIVATE crashpad_client crashpad_common crashpad_util mini_chromium_base)
   list(APPEND YASS_APP_FEATURES "crashpad")
   set(SUPPORT_LIBS yass_crashpad ${SUPPORT_LIBS})
+  set(USE_CRASHPAD ON)
 
   file(COPY "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler.exe" DESTINATION ${CMAKE_BINARY_DIR})
 
@@ -2381,6 +2382,7 @@ if (UNIX AND (${CMAKE_BUILD_TYPE} MATCHES MinSizeRel OR ${CMAKE_BUILD_TYPE} MATC
   target_link_libraries(yass_crashpad PRIVATE crashpad_client crashpad_common crashpad_util mini_chromium_base)
   list(APPEND YASS_APP_FEATURES "crashpad")
   set(SUPPORT_LIBS yass_crashpad ${SUPPORT_LIBS})
+  set(USE_CRASHPAD ON)
   if (IOS)
     add_library(crashpad_handler_common STATIC IMPORTED)
     set_property(TARGET crashpad_handler_common PROPERTY
@@ -2559,8 +2561,10 @@ endif()
 # *****************************************************************************************
 
 add_library(asio STATIC
-  src/core/asio.hpp
-  src/core/asio.cpp)
+  src/net/asio.hpp
+  src/net/asio.cpp
+  src/net/asio_throw_exceptions.hpp
+)
 target_include_directories(asio PUBLIC
   src)
 target_include_directories(asio PUBLIC
@@ -3383,6 +3387,7 @@ endif()
 
 add_library(yass_core STATIC
     src/config/config.cpp
+    src/config/config_network.cpp
     src/config/config_tls.cpp
     src/config/config_impl.cpp
     src/config/config.hpp
@@ -3399,8 +3404,6 @@ add_library(yass_core STATIC
     src/core/process_utils.cpp
     src/crypto/crypter_export.cpp
     src/crypto/crypter_export.hpp
-    src/network.hpp
-    src/network.cpp
     src/core/utils.cpp
     src/core/utils_fs.cpp
     src/core/utils.hpp
@@ -3411,6 +3414,12 @@ add_library(yass_core STATIC
     src/core/debug.hpp
     src/core/rand_util.cpp
     src/core/rand_util.hpp
+    src/core/scoped_clear_last_error_win.cpp
+    src/core/ref_counted.cpp
+    src/core/ref_counted.hpp
+    src/core/thread_collision_warner.hpp
+    src/core/thread_collision_warner.cpp
+    src/core/atomic_ref_count.hpp
   )
 
 if (WIN32)
@@ -3427,11 +3436,21 @@ else()
   target_sources(yass_core PRIVATE src/core/utils_freebsd.cpp)
 endif()
 
-target_link_libraries(yass_core PUBLIC url asio
+target_link_libraries(yass_core PUBLIC url
   absl::flags
   absl::flags_parse
   absl::flags_marshalling
   absl::failure_signal_handler)
+
+if (USE_CRASHPAD)
+  target_link_libraries(yass_core PUBLIC yass_crashpad)
+endif()
+
+if (USE_ICU)
+  target_sources(yass_core PRIVATE src/i18n/icu_util.cpp)
+  target_sources(yass_core PRIVATE src/i18n/icu_util.hpp)
+  target_link_libraries(yass_core PUBLIC icuuc icui18n)
+endif()
 
 if (USE_TCMALLOC)
   target_link_libraries(yass_core PUBLIC tcmalloc)
@@ -3454,22 +3473,22 @@ set(SUPPORT_LIBS
   ${SUPPORT_LIBS})
 
 set(files
+    src/net/network.cpp
     src/net/x509_util.cpp
     src/net/ssl_socket.cpp
     src/net/ssl_server_socket.cpp
     src/net/openssl_util.cpp
-    src/core/cipher.cpp
-    src/core/hkdf_sha1.cpp
-    src/core/hmac_sha1.cpp
-    src/core/iobuf.cpp
-    src/core/socks4_request_parser.cpp
-    src/core/socks5_request_parser.cpp
-    src/core/ss_request_parser.cpp
-    src/core/scoped_clear_last_error_win.cpp
-    src/core/ref_counted.cpp
-    src/core/base64.cpp
-    src/core/thread_collision_warner.hpp
-    src/core/thread_collision_warner.cpp
+    src/net/base64.cpp
+    src/net/cipher.cpp
+    src/net/iobuf.cpp
+    src/net/hkdf_sha1.cpp
+    src/net/hmac_sha1.cpp
+    src/net/socks4_request_parser.cpp
+    src/net/socks5_request_parser.cpp
+    src/net/ss_request_parser.cpp
+    src/net/c-ares.cpp
+    src/net/http_parser.cpp
+    src/net/padding.cpp
     src/crypto/aead_base_decrypter.cpp
     src/crypto/aead_base_encrypter.cpp
     src/crypto/aead_evp_decrypter.cpp
@@ -3500,34 +3519,40 @@ set(files
     src/crypto/xchacha20_poly1305_sodium_decrypter.cpp
     src/crypto/xchacha20_poly1305_sodium_encrypter.cpp
     src/crypto/mbedtls_common.cpp
-
-    src/core/c-ares.cpp
-    src/core/http_parser.cpp
     )
 
 set(hfiles
+    src/net/network.hpp
+    src/net/channel.hpp
+    src/net/connection.hpp
+    src/net/content_server.hpp
+    src/net/protocol.hpp
+    src/net/stream.hpp
+    src/net/ssl_stream.hpp
     src/net/x509_util.hpp
     src/net/ssl_socket.hpp
     src/net/ssl_server_socket.hpp
     src/net/net_errors.hpp
     src/net/net_error_list.hpp
     src/net/openssl_util.hpp
-    src/core/cipher.hpp
-    src/core/hkdf_sha1.hpp
-    src/core/hmac_sha1.hpp
-    src/core/iobuf.hpp
-    src/core/socks4.hpp
-    src/core/socks4_request.hpp
-    src/core/socks4_request_parser.hpp
-    src/core/socks5.hpp
-    src/core/socks5_request.hpp
-    src/core/socks5_request_parser.hpp
-    src/core/ss.hpp
-    src/core/ss_request.hpp
-    src/core/ss_request_parser.hpp
-    src/core/atomic_ref_count.hpp
-    src/core/ref_counted.hpp
-    src/core/base64.hpp
+    src/net/base64.hpp
+    src/net/cipher.hpp
+    src/net/iobuf.hpp
+    src/net/hkdf_sha1.hpp
+    src/net/hmac_sha1.hpp
+    src/net/socks4.hpp
+    src/net/socks4_request.hpp
+    src/net/socks4_request_parser.hpp
+    src/net/socks5.hpp
+    src/net/socks5_request.hpp
+    src/net/socks5_request_parser.hpp
+    src/net/ss.hpp
+    src/net/ss_request.hpp
+    src/net/ss_request_parser.hpp
+    src/net/io_queue.hpp
+    src/net/c-ares.hpp
+    src/net/http_parser.hpp
+    src/net/padding.hpp
     src/crypto/aead_base_decrypter.hpp
     src/crypto/aead_base_encrypter.hpp
     src/crypto/aead_evp_decrypter.hpp
@@ -3558,15 +3583,7 @@ set(hfiles
     src/crypto/xchacha20_poly1305_sodium_decrypter.hpp
     src/crypto/xchacha20_poly1305_sodium_encrypter.hpp
     src/crypto/mbedtls_common.hpp
-
-    src/core/c-ares.hpp
-    src/core/http_parser.hpp
     )
-
-if (USE_ICU)
-  list(APPEND files src/i18n/icu_util.cpp)
-  list(APPEND hfiles src/i18n/icu_util.hpp)
-endif()
 
 add_library(yass_net STATIC
   ${files} ${hfiles}
@@ -4336,14 +4353,14 @@ endif()
 if (BUILD_TESTS)
   set(yass_test_SOURCE
     src/test_util.cpp
-    src/network_test.cpp
     src/ss_test.cpp
     src/compiler_test.cpp
     src/config/config_test.cpp
-    src/core/cipher_test.cpp
-    src/core/c-ares_test.cpp
     src/core/process_utils_test.cpp
     src/core/utils_test.cpp
+    src/net/cipher_test.cpp
+    src/net/c-ares_test.cpp
+    src/net/padding_test.cpp
     )
 
   if (IOS)

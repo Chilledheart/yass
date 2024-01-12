@@ -3,8 +3,6 @@
 #ifndef YASS_CLI_WORKER
 #define YASS_CLI_WORKER
 
-#include "core/cipher.hpp"
-
 #include <atomic>
 #include <memory>
 #include <thread>
@@ -12,17 +10,22 @@
 
 #include <absl/functional/any_invocable.h>
 
+#include "crypto/crypter_export.hpp"
 #include "config/config.hpp"
-#include "core/asio.hpp"
+#include "net/asio.hpp"
 #include "core/logging.hpp"
 
 #ifdef HAVE_C_ARES
-#include "core/c-ares.hpp"
+#include "net/c-ares.hpp"
 #endif
 
 class WorkerPrivate;
 class Worker {
  public:
+#ifdef HAVE_C_ARES
+  using CAresResolver = net::CAresResolver;
+#endif
+
   Worker();
   ~Worker();
 

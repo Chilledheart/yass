@@ -3,7 +3,7 @@
 #include "crypto/aead_mbedtls_decrypter.hpp"
 
 #include "core/logging.hpp"
-#include "protocol.hpp"
+#include "net/protocol.hpp"
 
 #ifdef HAVE_MBEDTLS
 

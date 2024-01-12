@@ -2,7 +2,7 @@
 /* Copyright (c) 2019-2024 Chilledheart  */
 
 #include "config/config.hpp"
-#include "core/cipher.hpp"
+#include "crypto/crypter_export.hpp"
 #include "cli/cli_server.hpp"
 
 #include <absl/debugging/failure_signal_handler.h>
@@ -25,7 +25,7 @@
 #include <netdb.h>
 #endif
 
-#include "core/asio.hpp"
+#include "net/asio.hpp"
 #include "core/logging.hpp"
 #include "crypto/crypter_export.hpp"
 #include "version.h"

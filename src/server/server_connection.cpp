@@ -9,14 +9,17 @@
 #include <base/strings/string_util.h>
 
 #include "config/config.hpp"
-#include "core/asio.hpp"
-#include "core/base64.hpp"
-#include "core/http_parser.hpp"
+#include "net/asio.hpp"
+#include "net/base64.hpp"
+#include "net/http_parser.hpp"
+#include "net/padding.hpp"
 #include "core/rand_util.hpp"
 #include "core/utils.hpp"
 
 ABSL_FLAG(bool, hide_via, true, "If true, the Via heaeder will not be added.");
 ABSL_FLAG(bool, hide_ip, true, "If true, the Forwarded header will not be augmented with your IP address.");
+
+using namespace net;
 
 using gurl_base::ToLowerASCII;
 

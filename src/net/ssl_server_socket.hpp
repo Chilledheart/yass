@@ -7,8 +7,8 @@
 #include <absl/functional/any_invocable.h>
 #include <openssl/ssl.h>
 
-#include "core/asio.hpp"
-#include "core/iobuf.hpp"
+#include "net/asio.hpp"
+#include "net/iobuf.hpp"
 #include "core/ref_counted.hpp"
 #include "core/scoped_refptr.hpp"
 #include "net/openssl_util.hpp"

@@ -11,7 +11,7 @@
 #include <absl/strings/str_cat.h>
 #include <absl/flags/internal/program_name.h>
 
-#include "core/cipher.hpp"
+#include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "feature.h"
 #include "version.h"

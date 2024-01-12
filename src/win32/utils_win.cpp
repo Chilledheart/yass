@@ -24,6 +24,7 @@
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "config/config.hpp"
+#include "net/asio.hpp"
 
 #include <array>
 #include <vector>

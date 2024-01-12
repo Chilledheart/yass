@@ -28,8 +28,8 @@ ABSL_FLAG(std::string, proxy_type, "http", "proxy type, available: socks4, socks
 
 #include "cli/cli_server.hpp"
 #include "config/config.hpp"
-#include "core/cipher.hpp"
-#include "core/iobuf.hpp"
+#include "net/cipher.hpp"
+#include "net/iobuf.hpp"
 #include "core/rand_util.hpp"
 #include "core/ref_counted.hpp"
 #include "core/scoped_refptr.hpp"
@@ -37,6 +37,8 @@ ABSL_FLAG(std::string, proxy_type, "http", "proxy type, available: socks4, socks
 #include "i18n/icu_util.hpp"
 
 #include "test_util.hpp"
+
+using namespace net;
 
 namespace {
 

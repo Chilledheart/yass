@@ -12,7 +12,6 @@
 #include "config/config.hpp"
 #include "cli/cli_worker.hpp"
 #include "core/utils.hpp"
-#include "network.hpp"
 #include "ios/utils.h"
 #include "cli/cli_connection_stats.hpp"
 
