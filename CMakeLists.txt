@@ -3787,7 +3787,7 @@ if (GUI)
     elseif (GUI_FLAVOUR STREQUAL "ios")
         set(MAIN_STORYBOARD ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/Base.lproj/Main.storyboard)
         set(LAUNCH_STORYBOARD ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/Base.lproj/LaunchScreen.storyboard)
-        set(ALLRESOURCES src/ios/yass.icns)
+        set(ALLRESOURCES)
         if (${CMAKE_GENERATOR} MATCHES "^Xcode.*")
           set(ALLRESOURCES
             ${ALLRESOURCES}
@@ -3807,8 +3807,6 @@ if (GUI)
           list(APPEND SRC_FILES
             ${ICU_DATAFILE})
         endif()
-        list(APPEND SRC_FILES
-          src/ios/yass.icns)
         list(APPEND SRC_FILES
           src/ios/YassAppDelegate.mm
           src/ios/YassAppDelegate.h
@@ -4161,8 +4159,6 @@ if (GUI)
 
         # For iOS Apple uses a flat bundle layout where no Resources folder exist.
         # Therefore CMake strips the Resources folder name from the specified location.
-        set_source_files_properties("src/ios/yass.icns" PROPERTIES
-          MACOSX_PACKAGE_LOCATION "Resources")
         set_source_files_properties("${ASSET_CATALOG}" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")
         if (USE_ICU)
