@@ -27,9 +27,6 @@ More Information refers to [wiki](https://github.com/Chilledheart/yass/wiki)
 - Linux (including Ubuntu, RHEL/CentOS, OpenSUSE Leap, Alpine Linux and OpenWRT) [download rpm](https://github.com/Chilledheart/yass/releases/download/1.5.17/yass-centos-7.el7.x86_64.1.5.17-0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.5.17/yass-client-ubuntu-16.04-xenial_amd64.1.5.17.deb)
 - FreeBSD [download for freebsd 14](https://github.com/Chilledheart/yass/releases/download/1.5.17/yass-freebsd14-release-amd64-1.5.17.tgz)
 
-For comnandline client usage, please refer to [manpage](https://github.com/Chilledheart/yass/blob/develop/doc/yass_cli.1).
-For commandline server usage, please refer to [server wiki](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup).
-
 ## Build from Source
 Take a look at [BUILDING.md] for more instructions.
 
@@ -40,7 +37,7 @@ Please visit [the pages site](https://letshack.info).
 It is licensed with [GPLv2][license-link].
 
 ## Usages
-Please visit to [wiki](https://github.com/Chilledheart/yass/wiki) such as [Usages](https://github.com/Chilledheart/yass/wiki/Usage) and [Server Usage](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup)
+Please visit to [wiki](https://github.com/Chilledheart/yass/wiki) such as [Usages](https://github.com/Chilledheart/yass/wiki/Usage) and [Server Usage](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup).
 
 ## Build Status
 
