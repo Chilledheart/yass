@@ -348,16 +348,14 @@ static bool WriteFileDescriptor(int fd, std::string_view data) {
 }
 
 ssize_t WriteFileWithBuffer(const std::string& path,
-                            const char* buf,
-                            size_t buf_len) {
+                            std::string_view buf) {
   int fd = HANDLE_EINTR(::open(path.c_str(), O_WRONLY | O_TRUNC | O_CREAT,
                                S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
   if (fd < 0) {
     return false;
   }
 
-  ssize_t ret = WriteFileDescriptor(fd, std::string_view(buf, buf_len))
-    ? buf_len : -1;
+  ssize_t ret = WriteFileDescriptor(fd, buf) ? buf.length() : -1;
 
   if (IGNORE_EINTR(close(fd)) < 0) {
     return -1;

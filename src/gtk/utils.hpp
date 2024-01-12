@@ -60,6 +60,4 @@ private:
 
 void SetUpGLibLogHandler();
 
-#define DEFAULT_AUTOSTART_NAME "yass"
-
 #endif  // YASS_GUI_UTILS

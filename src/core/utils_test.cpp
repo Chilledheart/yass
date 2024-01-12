@@ -123,7 +123,7 @@ TEST(UtilsTest, ReadFileAndWrite4K) {
   std::string tmp = tmp_dir / tmp_name;
 #endif
 
-  ASSERT_TRUE(WriteFileWithBuffer(tmp, buf.c_str(), buf.size()));
+  ASSERT_TRUE(WriteFileWithBuffer(tmp, buf));
   ASSERT_TRUE(ReadFileToBuffer(tmp, buf2.data(), buf2.size()+1));
   ASSERT_EQ(buf, buf2);
 

@@ -9,7 +9,9 @@
 #include "core/process_utils.hpp"
 #include "config/config.hpp"
 
+#include <string_view>
 #include <absl/strings/str_cat.h>
+#include <absl/strings/str_format.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -26,35 +28,19 @@
 
 using namespace yass;
 
-static const char* kAutoStartFileContent =
+static constexpr char kDefaultAutoStartName[] = "yass";
+
+static constexpr std::string_view kAutoStartFileContent =
 "[Desktop Entry]\n"
 "Type=Application\n"
 "Name=yass\n"
 "Comment=Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for embedded devices and low end boxes.\n"
 "Icon=yass\n"
-"Exec=yass --background\n"
+"Exec=%s --background\n"
 "Terminal=false\n"
 "Categories=Network;GTK;Utility\n";
 
 namespace {
-
-bool WriteFileWithContent(const std::string& path, std::string_view context) {
-  int fd = ::open(path.c_str(), O_WRONLY | O_TRUNC | O_CREAT,
-                  S_IRUSR | S_IWUSR);
-  if (fd < 0) {
-    return false;
-  }
-  ssize_t written = ::write(fd, context.data(), context.size());
-
-  if (written != static_cast<long>(context.size())) {
-    ::close(fd);
-    return false;
-  }
-  if (::close(fd) < 0) {
-    return false;
-  }
-  return true;
-}
 
 // followed https://github.com/qt/qtbase/blob/7fe1198f6edb40de2299272c7523d85d7486598b/src/corelib/io/qstandardpaths_unix.cpp#L218
 std::string GetConfigDir() {
@@ -82,15 +68,15 @@ bool IsKDE() {
 
 bool Utils::GetAutoStart() {
   std::string autostart_desktop_path =
-    absl::StrCat(GetAutostartDirectory(), "/" ,
-                 DEFAULT_AUTOSTART_NAME , ".desktop");
+    absl::StrCat(GetAutostartDirectory(), "/",
+                 kDefaultAutoStartName, ".desktop");
   return IsFile(autostart_desktop_path);
 }
 
 void Utils::EnableAutoStart(bool on) {
   std::string autostart_desktop_path =
-    absl::StrCat(GetAutostartDirectory(), "/" ,
-                 DEFAULT_AUTOSTART_NAME , ".desktop");
+    absl::StrCat(GetAutostartDirectory(), "/",
+                 kDefaultAutoStartName, ".desktop");
   if (!on) {
     if (!RemoveFile(autostart_desktop_path)) {
       PLOG(WARNING)
@@ -111,7 +97,10 @@ void Utils::EnableAutoStart(bool on) {
     }
 
     // write to target
-    if (!WriteFileWithContent(autostart_desktop_path, kAutoStartFileContent))  {
+    std::string executable_path = "yass";
+    GetExecutablePath(&executable_path);
+    std::string desktop_entry = absl::StrFormat(kAutoStartFileContent, executable_path);
+    if (!WriteFileWithBuffer(autostart_desktop_path, desktop_entry))  {
       PLOG(WARNING) << "Internal error: unable to create autostart file";
     }
 

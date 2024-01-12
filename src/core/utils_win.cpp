@@ -783,10 +783,9 @@ ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len) {
   return read;
 }
 
-ssize_t WriteFileWithBuffer(const std::string& path,
-                            const char* buf,
-                            size_t buf_len) {
+ssize_t WriteFileWithBuffer(const std::string& path, std::string_view buf) {
   DWORD written;
+  const size_t buf_len = buf.size();
   HANDLE hFile = ::CreateFileW(SysUTF8ToWide(path).c_str(), GENERIC_WRITE,
                                0, nullptr, CREATE_ALWAYS, 0, nullptr);
   if (hFile == INVALID_HANDLE_VALUE) {
@@ -794,7 +793,7 @@ ssize_t WriteFileWithBuffer(const std::string& path,
     return -1;
   }
 
-  if (!::WriteFile(hFile, buf, buf_len, &written, nullptr)) {
+  if (!::WriteFile(hFile, buf.data(), buf_len, &written, nullptr)) {
     // WriteFile failed.
     DPLOG(WARNING) << "writing file " << path << " failed";
     ::CloseHandle(hFile);
