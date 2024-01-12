@@ -138,6 +138,8 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 
 - (void)Started {
   last_sync_time_ = GetMonotonicTime();
+  last_rx_bytes_ = 0;
+  last_tx_bytes_ = 0;
   [self UpdateStatusBar];
   [self.serverHost setUserInteractionEnabled:FALSE];
   [self.serverPort setUserInteractionEnabled:FALSE];
