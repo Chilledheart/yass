@@ -10,8 +10,8 @@ function patch_ios_bpf {
   REGISTRIES=($(ls -d $HOME/.cargo/registry/src/*/))
   for REGISTRY in "${REGISTRIES[@]}"
   do
-    if [ -f $REGISTRY/smoltcp-0.10.0/src/phy/sys/bpf.rs ]; then
-      cp -fv ../../scripts/bpf.rs $REGISTRY/smoltcp-0.10.0/src/phy/sys/bpf.rs
+    if [ -f $REGISTRY/smoltcp-0.11.0/src/phy/sys/bpf.rs ]; then
+      cp -fv ../../scripts/bpf.rs $REGISTRY/smoltcp-0.11.0/src/phy/sys/bpf.rs
     fi
   done
 }
