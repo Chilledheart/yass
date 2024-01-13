@@ -96,8 +96,8 @@
 - (NSString*)getStatus {
   std::ostringstream ss;
   if (state_ == STARTED) {
-    NSString *prefixMessage = NSLocalizedString(@"CONNECTED_WITH_CONNS", @"Connected with conns: ");
-    ss << gurl_base::SysNSStringToUTF8(prefixMessage) << worker_.currentConnections();
+    NSString *prefixMessage = NSLocalizedString(@"CONNECTED", @"Connected");
+    ss << gurl_base::SysNSStringToUTF8(prefixMessage) << ":";
   } else if (state_ == START_FAILED) {
     NSString *prefixMessage = NSLocalizedString(@"FAILED_TO_CONNECT_DUE_TO", @"Failed to connect due to ");
     ss << gurl_base::SysNSStringToUTF8(prefixMessage) << error_msg_.c_str();
