@@ -22,7 +22,7 @@ More Information refers to [wiki](https://github.com/Chilledheart/yass/wiki)
 ## Supported Operating System
 - Android (VpnService support) [download apk](https://github.com/Chilledheart/yass/releases/download/1.5.18/yass-android-release-arm64-1.5.18.apk)
 - iOS (Packet Tunnel support, iPhone/iPad) [join via TestFlight](https://testflight.apple.com/join/6AkiEq09) or [download ipa](https://github.com/Chilledheart/yass/releases/download/1.5.18/yass-ios-release-arm64-1.5.18.ipa)
-- Windows [download zip](https://github.com/Chilledheart/yass/releases/download/1.5.18/yass-mingw-winxp-release-i686-1.5.18.zip) and [download woa zip](https://github.com/Chilledheart/yass/releases/download/1.5.18/yass-mingw-release-aarch64-1.5.18.zip)
+- Windows [download zip](https://github.com/Chilledheart/yass/releases/download/1.5.18/yass-mingw-winxp-release-i686-1.5.18.zip) or [download woa zip](https://github.com/Chilledheart/yass/releases/download/1.5.18/yass-mingw-release-aarch64-1.5.18.zip)
 - macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.5.18/yass-macos-release-x64-1.5.18.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.5.18/yass-macos-release-arm64-1.5.18.dmg)
 - Linux (including Ubuntu, RHEL/CentOS, OpenSUSE Leap, Alpine Linux, ArchLinux AUR and OpenWRT) [download rpm](https://github.com/Chilledheart/yass/releases/download/1.5.18/yass-centos-7.el7.x86_64.1.5.18-0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.5.18/yass-client-ubuntu-16.04-xenial_amd64.1.5.18.deb)
 - FreeBSD [download for freebsd 14](https://github.com/Chilledheart/yass/releases/download/1.5.18/yass-freebsd14-release-amd64-1.5.18.tgz)
