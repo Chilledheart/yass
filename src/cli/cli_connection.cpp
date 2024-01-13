@@ -791,6 +791,7 @@ void CliConnection::WriteMethodSelect() {
 
 void CliConnection::WriteHandshake() {
   scoped_refptr<CliConnection> self(this);
+
   switch (CurrentState()) {
     case state_method_select:  // impossible
     case state_socks5_handshake:
@@ -1369,31 +1370,31 @@ void CliConnection::ProcessReceivedData(
         break;
       case state_socks5_handshake:
         ec = PerformCmdOpsV5(&s5_request_, &s5_reply_);
+        if (ec) {
+          break;
+        }
         WriteHandshake();
         VLOG(2) << "Connection (client) " << connection_id()
                 << " socks5 handshake finished: ec: " << ec;
-        if (CurrentState() == state_stream) {
-          goto handle_stream;
-        }
-        break;
+        goto handle_stream;
       case state_socks4_handshake:
         ec = PerformCmdOpsV4(&s4_request_, &s4_reply_);
+        if (ec) {
+          break;
+        }
         WriteHandshake();
         VLOG(2) << "Connection (client) " << connection_id()
                 << " socks4 handshake finished: ec:" << ec;
-        if (CurrentState() == state_stream) {
-          goto handle_stream;
-        }
-        break;
+        goto handle_stream;
       case state_http_handshake:
         ec = PerformCmdOpsHttp();
+        if (ec) {
+          break;
+        }
         WriteHandshake();
         VLOG(2) << "Connection (client) " << connection_id()
                 << " http handshake finished: ec: " << ec;
-        if (CurrentState() == state_stream) {
-          goto handle_stream;
-        }
-        break;
+        goto handle_stream;
       case state_stream:
       handle_stream:
         if (buf->length()) {
