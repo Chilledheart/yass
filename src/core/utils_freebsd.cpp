@@ -14,17 +14,12 @@
 #include <time.h> // For clock_gettime
 
 // TBD
-bool SetThreadPriority(std::thread::native_handle_type /*handle*/,
-                       ThreadPriority /*priority*/) {
+bool SetCurrentThreadPriority(ThreadPriority /*priority*/) {
   return true;
 }
 
-bool SetThreadName(std::thread::native_handle_type handle,
-                   const std::string& name) {
-  if (handle == 0) {
-    handle = pthread_self();
-  }
-  pthread_set_name_np(handle, name.c_str());
+bool SetCurrentThreadName(const std::string& name) {
+  pthread_set_name_np(pthread_self(), name.c_str());
   return true;
 }
 

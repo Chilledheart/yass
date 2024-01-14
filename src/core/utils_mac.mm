@@ -37,8 +37,7 @@
 #define VM_MEMORY_BTINFO 105
 #endif  // VM_MEMORY_BTINFO
 
-bool SetThreadPriority(std::thread::native_handle_type handle,
-                       ThreadPriority priority) {
+bool SetCurrentThreadPriority(ThreadPriority priority) {
   // Changing the priority of the main thread causes performance regressions.
   // https://crbug.com/601270
   DCHECK(!pthread_main_np());
@@ -71,8 +70,7 @@ bool SetThreadPriority(std::thread::native_handle_type handle,
 
 }
 
-bool SetThreadName(std::thread::native_handle_type handle,
-                   const std::string& name) {
+bool SetCurrentThreadName(const std::string& name) {
   // pthread_setname() fails (harmlessly) in the sandbox, ignore when it does.
   // See http://crbug.com/47058
   return pthread_setname_np(name.c_str()) == 0;

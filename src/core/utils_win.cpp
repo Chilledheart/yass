@@ -86,14 +86,8 @@ void SetNameInternal(DWORD thread_id, const char* name) {
 } // namespace
 #endif  // COMPILER_MSVC
 
-#ifdef COMPILER_MSVC
-bool SetThreadPriority(std::thread::native_handle_type handle,
-                       ThreadPriority priority) {
-#else
-bool SetThreadPriority(std::thread::native_handle_type,
-                       ThreadPriority priority) {
+bool SetCurrentThreadPriority(ThreadPriority priority) {
   HANDLE handle = ::GetCurrentThread();
-#endif  // COMPILER_MSVC
   int desired_priority = THREAD_PRIORITY_ERROR_RETURN;
   switch (priority) {
     case ThreadPriority::BACKGROUND:
@@ -149,14 +143,8 @@ bool SetThreadPriority(std::thread::native_handle_type,
   return ret;
 }
 
-#ifdef COMPILER_MSVC
-bool SetThreadName(std::thread::native_handle_type handle,
-                   const std::string& name) {
-#else
-bool SetThreadName(std::thread::native_handle_type,
-                   const std::string& name) {
+bool SetCurrentThreadName(const std::string& name) {
   HANDLE handle = ::GetCurrentThread();
-#endif  // COMPILER_MSVC
   if (!IsWindowsVersionBNOrGreater(10, 0, 14393)) {
     return true;
   }
@@ -165,10 +153,6 @@ bool SetThreadName(std::thread::native_handle_type,
       reinterpret_cast<void*>(::GetProcAddress(
           ::GetModuleHandleW(L"Kernel32.dll"), "SetThreadDescription")));
   HRESULT ret = E_NOTIMPL;
-
-  if (handle == HANDLE() || handle == INVALID_HANDLE_VALUE) {
-    handle = ::GetCurrentThread();
-  }
 
   if (fPointer) {
     ret = fPointer(handle, SysUTF8ToWide(name).c_str());
@@ -182,11 +166,7 @@ bool SetThreadName(std::thread::native_handle_type,
 #ifdef COMPILER_MSVC
   // https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getcurrentthreadid
   // https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getthreadid
-#if _WIN32_WINNT < 0x0600
   SetNameInternal(::GetCurrentThreadId(), name.c_str());
-#else
-  SetNameInternal(::GetThreadId(handle), name.c_str());
-#endif
 #endif  // COMPILER_MSVC
   return SUCCEEDED(ret);
 }

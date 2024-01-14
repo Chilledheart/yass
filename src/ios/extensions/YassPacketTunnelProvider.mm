@@ -24,7 +24,7 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
 @implementation YassPacketTunnelProvider {
   std::atomic_bool stopped_;
   Worker worker_;
-  std::unique_ptr<std::thread> worker_thread_;
+  std::unique_ptr<std::thread> tun2proxy_thread_;
   struct Tun2Proxy_InitContext *context_;
 }
 
@@ -80,7 +80,7 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
     }
 
     if (successed) {
-      NSLog(@"yass: init");
+      NSLog(@"worker started");
       [self startTunnelWithOptionsOnCallback:completionHandler];
     } else {
       completionHandler([NSError errorWithDomain:@"it.gui.ios.yass" code:200
@@ -120,12 +120,18 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
                       userInfo:@{@"Error reason": @"tun2proxy init failure"}]);
     return;
   }
-  NSLog(@"tun2proxy: inited with %s mtu %d dns_proxy %s", proxy_url.c_str(), DEFAULT_MTU, "true");
+  NSLog(@"tun2proxy inited with %s mtu %d dns_proxy %s", proxy_url.c_str(), DEFAULT_MTU, "true");
   Tun2Proxy_InitContext *context = context_;
-  worker_thread_ = std::make_unique<std::thread>([context]{
-    NSLog(@"tun2proxy: worker thread begin");
+  tun2proxy_thread_ = std::make_unique<std::thread>([context]{
+    if (!SetCurrentThreadName("tun2proxy")) {
+      PLOG(WARNING) << "failed to set thread name";
+    }
+    if (!SetCurrentThreadPriority(ThreadPriority::ABOVE_NORMAL)) {
+      PLOG(WARNING) << "failed to set thread priority";
+    }
+    NSLog(@"tun2proxy thread begin");
     Tun2Proxy_Run(context);
-    NSLog(@"tun2proxy: worker thread done");
+    NSLog(@"tun2proxy thread done");
   });
 
   NEPacketTunnelNetworkSettings *tunnelNetworkSettings = [[NEPacketTunnelNetworkSettings alloc] initWithTunnelRemoteAddress:remote_ips_v4[0]];
@@ -220,11 +226,11 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
   NSLog(@"tunnel: stop with reason %ld", reason);
   stopped_ = true;
   worker_.Stop([=]{
-    NSLog(@"yass: stopped");
+    NSLog(@"worker stopped");
     Tun2Proxy_Destroy(context_);
-    NSLog(@"tun2proxy: destroyed");
-    worker_thread_->join();
-    worker_thread_.reset();
+    NSLog(@"tun2proxy destroyed");
+    tun2proxy_thread_->join();
+    tun2proxy_thread_.reset();
     completionHandler();
   });
 }

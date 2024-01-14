@@ -37,11 +37,9 @@ enum class ThreadPriority : int {
   TIME_CRITICAL,
 };
 
-bool SetThreadPriority(std::thread::native_handle_type handle,
-                       ThreadPriority priority);
+bool SetCurrentThreadPriority(ThreadPriority priority);
 
-bool SetThreadName(std::thread::native_handle_type handle,
-                   const std::string& name);
+bool SetCurrentThreadName(const std::string& name);
 
 // Lock memory to avoid page fault
 bool MemoryLockAll();

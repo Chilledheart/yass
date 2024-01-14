@@ -4,7 +4,6 @@
 
 #import <NetworkExtension/NetworkExtension.h>
 
-#include <pthread.h>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -40,7 +39,6 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary<UIApplicationLaunchOptionsKey,id> *)launchOptions {
   state_ = STOPPED;
-  pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
   [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(didChangeVpnStatus:) name:NEVPNStatusDidChangeNotification object:nil];
   return YES;
 }

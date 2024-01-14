@@ -366,23 +366,18 @@ class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
 
   void StartWorkThread() {
     thread_ = std::make_unique<std::thread>([this]() {
-      asio::error_code ec;
-      VLOG(1) << "background thread started";
+      if (!SetCurrentThreadName("background")) {
+        PLOG(WARNING) << "failed to set thread name";
+      }
+      if (!SetCurrentThreadPriority(ThreadPriority::ABOVE_NORMAL)) {
+        PLOG(WARNING) << "failed to set thread priority";
+      }
 
+      VLOG(1) << "background thread started";
       work_guard_ = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context_.get_executor());
       io_context_.run();
       io_context_.restart();
-
       VLOG(1) << "background thread stopped";
-    });
-
-    asio::post(io_context_, [this]() {
-      if (!SetThreadName(thread_->native_handle(), "background")) {
-        PLOG(WARNING) << "failed to set thread name";
-      }
-      if (!SetThreadPriority(thread_->native_handle(), ThreadPriority::ABOVE_NORMAL)) {
-        PLOG(WARNING) << "failed to set thread priority";
-      }
     });
   }
 
