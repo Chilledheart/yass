@@ -16,18 +16,13 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-bool SetThreadPriority(std::thread::native_handle_type /*handle*/,
-                       ThreadPriority /*priority*/) {
+bool SetCurrentThreadPriority(ThreadPriority /*priority*/) {
   // TBD: can be implemented with cgroup
   return true;
 }
 
-bool SetThreadName(std::thread::native_handle_type handle,
-                   const std::string& name) {
-  if (handle == 0) {
-    handle = pthread_self();
-  }
-  return pthread_setname_np(handle, name.c_str()) == 0;
+bool SetCurrentThreadName(const std::string& name) {
+  return pthread_setname_np(pthread_self(), name.c_str()) == 0;
 }
 
 bool MemoryLockAll() {

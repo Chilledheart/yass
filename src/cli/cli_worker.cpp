@@ -36,15 +36,6 @@ Worker::Worker()
   CRYPTO_library_init();
 
   thread_ = std::make_unique<std::thread>([this] { WorkFunc(); });
-
-  asio::post(io_context_, [this]() {
-    if (!SetThreadName(thread_->native_handle(), "background")) {
-      PLOG(WARNING) << "failed to set thread name";
-    }
-    if (!SetThreadPriority(thread_->native_handle(), ThreadPriority::ABOVE_NORMAL)) {
-      PLOG(WARNING) << "failed to set thread priority";
-    }
-  });
 }
 
 Worker::~Worker() {
@@ -158,6 +149,13 @@ int Worker::GetLocalPort() const {
 }
 
 void Worker::WorkFunc() {
+  if (!SetCurrentThreadName("background")) {
+    PLOG(WARNING) << "failed to set thread name";
+  }
+  if (!SetCurrentThreadPriority(ThreadPriority::ABOVE_NORMAL)) {
+    PLOG(WARNING) << "failed to set thread priority";
+  }
+
   LOG(INFO) << "background thread started";
   while (!in_destroy_) {
     work_guard_ = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context_.get_executor());
