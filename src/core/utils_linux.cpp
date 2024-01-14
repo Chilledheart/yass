@@ -15,6 +15,7 @@
 #include <sys/mman.h> // For mlockall.
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <sys/prctl.h>
 
 bool SetCurrentThreadPriority(ThreadPriority /*priority*/) {
   // TBD: can be implemented with cgroup
@@ -22,7 +23,22 @@ bool SetCurrentThreadPriority(ThreadPriority /*priority*/) {
 }
 
 bool SetCurrentThreadName(const std::string& name) {
-  return pthread_setname_np(pthread_self(), name.c_str()) == 0;
+  // On linux we can get the thread names to show up in the debugger by setting
+  // the process name for the LWP.  We don't want to do this for the main
+  // thread because that would rename the process, causing tools like killall
+  // to stop working.
+  if (static_cast<pid_t>(pthread_self()) == getpid())
+    return true;
+  // http://0pointer.de/blog/projects/name-your-threads.html
+  // Set the name for the LWP (which gets truncated to 15 characters).
+  // Note that glibc also has a 'pthread_setname_np' api, but it may not be
+  // available everywhere and it's only benefit over using prctl directly is
+  // that it can set the name of threads other than the current thread.
+  int err = prctl(PR_SET_NAME, name.c_str());
+  // We expect EPERM failures in sandboxed processes, just ignore those.
+  if (err < 0 && errno != EPERM)
+    PLOG(ERROR) << "prctl(PR_SET_NAME)";
+  return err == 0;
 }
 
 bool MemoryLockAll() {
