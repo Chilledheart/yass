@@ -11,8 +11,6 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <syscall.h>  // For syscall.
-#include <sys/mman.h> // For mlockall.
-#include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/prctl.h>
 
@@ -167,18 +165,6 @@ bool SetCurrentThreadName(const std::string& name) {
   if (err < 0 && errno != EPERM)
     PLOG(ERROR) << "prctl(PR_SET_NAME)";
   return err == 0;
-}
-
-bool MemoryLockAll() {
-  if (mlockall(MCL_CURRENT) == 0)
-    return true;
-  PLOG(WARNING) << "Failed to call mlockall";
-  struct rlimit rlim;
-  if (errno == ENOMEM && ::getrlimit(RLIMIT_MEMLOCK, &rlim) == 0) {
-    LOG(WARNING) << "Please Increase RLIMIT_MEMLOCK, soft limit: "
-      << rlim.rlim_cur << ", hard limit: " << rlim.rlim_max;
-  }
-  return false;
 }
 
 uint64_t GetMonotonicTime() {
