@@ -33,11 +33,12 @@ static constexpr char kDefaultAutoStartName[] = "yass";
 
 static constexpr std::string_view kAutoStartFileContent =
 "[Desktop Entry]\n"
+"Version=1.0\n"
 "Type=Application\n"
 "Name=yass\n"
 "Comment=Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for embedded devices and low end boxes.\n"
 "Icon=yass\n"
-"Exec=%s --background\n"
+"Exec=\"%s\" --background\n"
 "Terminal=false\n"
 "Categories=Network;GTK;Utility\n";
 
