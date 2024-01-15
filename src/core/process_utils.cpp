@@ -222,7 +222,7 @@ static_assert(sizeof(pid_t) >= sizeof(DWORD), "");
 
 // Keep the same implementation with chromium
 
-#if defined(OS_LINUX) && !defined(OS_ANDROID)
+#if defined(OS_LINUX) && !defined(OS_ANDROID) && !defined(OS_OHOS)
 
 // Store the thread ids in local storage since calling the SWI can be
 // expensive and PlatformThread::CurrentId is used liberally. Clear
@@ -244,7 +244,7 @@ class InitAtFork {
   InitAtFork() { pthread_atfork(nullptr, nullptr, ClearTidCache); }
 };
 
-#endif  // defined(OS_LINUX) && !defined(OS_ANDROID)
+#endif  // defined(OS_LINUX) && !defined(OS_ANDROID) && !defined(OS_OHOS)
 
 pid_t GetPID() {
   // Pthreads doesn't have the concept of a thread ID, so we have to reach down
@@ -264,7 +264,7 @@ pid_t GetTID() {
 #if defined(OS_APPLE)
   return pthread_mach_thread_np(pthread_self());
   // On Linux and MacOSX, we try to use gettid().
-#elif defined(OS_LINUX) && !defined(OS_ANDROID)
+#elif defined(OS_LINUX) && !defined(OS_ANDROID) && !defined(OS_OHOS)
   static InitAtFork init_at_fork;
   if (g_thread_id == -1) {
     g_thread_id = syscall(__NR_gettid);
@@ -275,7 +275,7 @@ pid_t GetTID() {
            "through fork().";
   }
   return g_thread_id;
-#elif defined(OS_ANDROID)
+#elif defined(OS_ANDROID) || defined(OS_OHOS)
   // Note: do not cache the return value inside a thread_local variable on
   // Android (as above). The reasons are:
   // - thread_local is slow on Android (goes through emutls)

@@ -35,7 +35,7 @@
 #include <sys/types.h>
 #include <climits>
 #include <csignal>
-#if defined(OS_APPLE) || defined(OS_LINUX) || defined(OS_ANDROID)
+#if defined(OS_APPLE) || defined(OS_LINUX) || defined(OS_ANDROID) || defined(OS_OHOS)
 #include <sys/utsname.h>  // For uname.
 #endif
 #if defined(OS_LINUX)
@@ -162,7 +162,7 @@ static StringType CFStringToSTLStringWithEncodingT(CFStringRef cfstring,
 
 #define safe_write(fd, buf, count) write(fd, buf, count)
 
-#elif defined(OS_LINUX) || defined(OS_ANDROID)
+#elif defined(OS_LINUX) || defined(OS_ANDROID) || defined(OS_OHOS)
 #include <time.h>
 #define safe_write(fd, buf, count) syscall(SYS_write, fd, buf, count)
 #else
@@ -284,7 +284,7 @@ ABSL_FLAG(bool,
           false,
           "color messages logged to stderr (if supported by terminal)");
 
-#if defined(OS_LINUX) || defined(OS_ANDROID)
+#if defined(OS_LINUX) || defined(OS_ANDROID) || defined(OS_OHOS)
 ABSL_FLAG(bool,
           drop_log_memory,
           true,
@@ -1630,7 +1630,7 @@ void LogFileObject::Write(bool force_flush,
   if (force_flush || (bytes_since_flush_ >= 1000000) ||
       (CycleClock_Now() >= next_flush_time_)) {
     FlushUnlocked();
-#if defined(OS_LINUX) || defined(OS_ANDROID)
+#if defined(OS_LINUX) || defined(OS_ANDROID) || defined(OS_OHOS)
     // Only consider files >= 3MiB
     if (absl::GetFlag(FLAGS_drop_log_memory) && file_length_ >= (3 << 20)) {
       // Don't evict the most recent 1-2MiB so as not to impact a tailer
