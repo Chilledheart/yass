@@ -77,12 +77,12 @@ popd
 
 # under centos 7, some commands might fail because it doesn't separate debuginfo
 # for sub package: https://fedoraproject.org/wiki/Changes/SubpackageAndSourceDebuginfo
-cp -vf "$HOME/rpmbuild/RPMS/${ARCH}/yass-${RPM_VERSION}-${RPM_SUBVERSION}${SUFFIX}.${ARCH}.rpm" "yass-${DISTRO}${REAL_SUFFIX}.${ARCH}.${RPM_VERSION}-${RPM_SUBVERSION}.rpm"
-cp -vf "$HOME/rpmbuild/RPMS/${ARCH}/yass-debuginfo-${RPM_VERSION}-${RPM_SUBVERSION}${SUFFIX}.${ARCH}.rpm" "yass-${DISTRO}-debuginfo${REAL_SUFFIX}.${ARCH}.${RPM_VERSION}-${RPM_SUBVERSION}.rpm" || true
-cp -vf "$HOME/rpmbuild/RPMS/${ARCH}/yass-server-${RPM_VERSION}-${RPM_SUBVERSION}${SUFFIX}.${ARCH}.rpm" "yass-server-${DISTRO}${REAL_SUFFIX}.${ARCH}.${RPM_VERSION}-${RPM_SUBVERSION}.rpm"
-cp -vf "$HOME/rpmbuild/RPMS/${ARCH}/yass-server-debuginfo-${RPM_VERSION}-${RPM_SUBVERSION}${SUFFIX}.${ARCH}.rpm" "yass-server-${DISTRO}-debuginfo${REAL_SUFFIX}.${ARCH}.${RPM_VERSION}-${RPM_SUBVERSION}.rpm" || true
-cp -vf "$HOME/rpmbuild/RPMS/${ARCH}/yass-client-${RPM_VERSION}-${RPM_SUBVERSION}${SUFFIX}.${ARCH}.rpm" "yass-client-${DISTRO}${REAL_SUFFIX}.${ARCH}.${RPM_VERSION}-${RPM_SUBVERSION}.rpm"
-cp -vf "$HOME/rpmbuild/RPMS/${ARCH}/yass-client-debuginfo-${RPM_VERSION}-${RPM_SUBVERSION}${SUFFIX}.${ARCH}.rpm" "yass-client-${DISTRO}-debuginfo${REAL_SUFFIX}.${ARCH}.${RPM_VERSION}-${RPM_SUBVERSION}.rpm" || true
+cp -vf "$HOME/rpmbuild/RPMS/${ARCH}/yass-${RPM_VERSION}-${RPM_SUBVERSION}${SUFFIX}.${ARCH}.rpm" "yass${REAL_SUFFIX}.${ARCH}.${RPM_VERSION}-${RPM_SUBVERSION}.rpm"
+cp -vf "$HOME/rpmbuild/RPMS/${ARCH}/yass-debuginfo-${RPM_VERSION}-${RPM_SUBVERSION}${SUFFIX}.${ARCH}.rpm" "yass-debuginfo${REAL_SUFFIX}.${ARCH}.${RPM_VERSION}-${RPM_SUBVERSION}.rpm" || true
+cp -vf "$HOME/rpmbuild/RPMS/${ARCH}/yass-server-${RPM_VERSION}-${RPM_SUBVERSION}${SUFFIX}.${ARCH}.rpm" "yass-server${REAL_SUFFIX}.${ARCH}.${RPM_VERSION}-${RPM_SUBVERSION}.rpm"
+cp -vf "$HOME/rpmbuild/RPMS/${ARCH}/yass-server-debuginfo-${RPM_VERSION}-${RPM_SUBVERSION}${SUFFIX}.${ARCH}.rpm" "yass-server-debuginfo${REAL_SUFFIX}.${ARCH}.${RPM_VERSION}-${RPM_SUBVERSION}.rpm" || true
+cp -vf "$HOME/rpmbuild/RPMS/${ARCH}/yass-client-${RPM_VERSION}-${RPM_SUBVERSION}${SUFFIX}.${ARCH}.rpm" "yass-client${REAL_SUFFIX}.${ARCH}.${RPM_VERSION}-${RPM_SUBVERSION}.rpm"
+cp -vf "$HOME/rpmbuild/RPMS/${ARCH}/yass-client-debuginfo-${RPM_VERSION}-${RPM_SUBVERSION}${SUFFIX}.${ARCH}.rpm" "yass-client-debuginfo${REAL_SUFFIX}.${ARCH}.${RPM_VERSION}-${RPM_SUBVERSION}.rpm" || true
 
 echo "Generated rpms: "
 for rpm in *.rpm; do
