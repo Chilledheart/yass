@@ -61,12 +61,6 @@ int main(int argc, const char** argv) {
   absl::SetFlag(&FLAGS_log_thread_id, 1);
   absl::SetFlag(&FLAGS_logtostderr, true);
 
-#if 0
-  if (!MemoryLockAll()) {
-    LOG(WARNING) << "Failed to set memory lock";
-  }
-#endif
-
 #ifdef HAVE_ICU
   if (!InitializeICU()) {
     LOG(WARNING) << "Failed to initialize icu component";

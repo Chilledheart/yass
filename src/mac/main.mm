@@ -72,12 +72,6 @@ int main(int argc, const char** argv) {
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
 
-#if 0
-  if (!MemoryLockAll()) {
-    LOG(WARNING) << "Failed to set memory lock";
-  }
-#endif
-
 #ifdef HAVE_ICU
   if (!InitializeICU()) {
     LOG(WARNING) << "Failed to initialize icu component";

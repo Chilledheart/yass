@@ -99,14 +99,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   config::ReadConfig();
   absl::ParseCommandLine(argv.size(), const_cast<char**>(&argv[0]));
 
-  // FIXME problem with static build
-  // in dynamic build, it may be scanned as virus ???
-#if 0
-  if (!MemoryLockAll()) {
-    LOG(WARNING) << "Failed to set memory lock";
-  }
-#endif
-
 #ifdef HAVE_ICU
   if (!InitializeICU()) {
     LOG(WARNING) << "Failed to initialize icu component";
