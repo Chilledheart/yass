@@ -218,10 +218,8 @@ static bool IsHandleConsole(HANDLE handle) {
          GetConsoleMode(handle, &mode);
 }
 
-bool IsProgramConsole() {
-  return IsHandleConsole(GetStdHandle(STD_INPUT_HANDLE)) ||
-    IsHandleConsole(GetStdHandle(STD_OUTPUT_HANDLE)) ||
-    IsHandleConsole(GetStdHandle(STD_ERROR_HANDLE));
+bool IsProgramConsole(HANDLE handle) {
+  return IsHandleConsole(handle);
 }
 
 #ifndef CP_UTF8
@@ -231,7 +229,7 @@ bool IsProgramConsole() {
 bool SetUTF8Locale() {
   bool success = false;
 
-  bool is_console = IsProgramConsole();
+  bool is_console = false /* IsProgramConsole() */;
 
   if (is_console) {
     // Calling SetConsoleCP

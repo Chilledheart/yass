@@ -2269,7 +2269,7 @@ void LogMessage::SendToLog() ABSL_EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
     LogDestination::WaitForSinks(data_);
 
 #ifdef OS_WIN
-    if (!IsProgramConsole()) {
+    if (!IsProgramConsole(GetStdHandle(STD_ERROR_HANDLE))) {
       std::wstring message = SysUTF8ToWide(data_->message_text_);
       MessageBoxW(nullptr, message.c_str(), L"Fatal Error", MB_ICONERROR);
       // Ignore errors.

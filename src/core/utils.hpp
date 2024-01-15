@@ -45,7 +45,15 @@ uint64_t GetMonotonicTime();
 
 #define NS_PER_SECOND (1000 * 1000 * 1000)
 
-bool IsProgramConsole();
+namespace internal {
+#ifdef _WIN32
+  using fd_t = HANDLE;
+#else
+  using fd_t = int;
+#endif
+} // namespace internal
+
+bool IsProgramConsole(internal::fd_t fd);
 
 bool SetUTF8Locale();
 

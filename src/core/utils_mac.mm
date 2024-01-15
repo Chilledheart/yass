@@ -69,11 +69,6 @@ uint64_t GetMonotonicTime() {
   return clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
 }
 
-// TBD
-bool IsProgramConsole() {
-  return true;
-}
-
 bool SetUTF8Locale() {
   // C.UTF-8 doesn't exists on macOS
   if (setlocale(LC_ALL, "en_US.UTF-8") == nullptr)
