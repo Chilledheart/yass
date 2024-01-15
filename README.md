@@ -25,7 +25,9 @@ More Information refers to [wiki](https://github.com/Chilledheart/yass/wiki)
 - Windows [download zip](https://github.com/Chilledheart/yass/releases/download/1.5.18/yass-mingw-winxp-release-i686-1.5.18.zip) or [download woa zip](https://github.com/Chilledheart/yass/releases/download/1.5.18/yass-mingw-release-aarch64-1.5.18.zip)
 - macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.5.18/yass-macos-release-x64-1.5.18.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.5.18/yass-macos-release-arm64-1.5.18.dmg)
 - Linux (including Ubuntu, RHEL/CentOS, OpenSUSE Leap, Alpine Linux, ArchLinux AUR and OpenWRT) [download rpm](https://github.com/Chilledheart/yass/releases/download/1.5.18/yass-centos-7.el7.x86_64.1.5.18-0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.5.18/yass-client-ubuntu-16.04-xenial_amd64.1.5.18.deb)
-- FreeBSD [download for freebsd 14](https://github.com/Chilledheart/yass/releases/download/1.5.18/yass-freebsd14-release-amd64-1.5.18.tgz)
+- FreeBSD
+
+Visit [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-of-Package-Store)
 
 ## Build from Source
 Take a look at [BUILDING.md] for more instructions.
