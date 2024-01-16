@@ -2072,7 +2072,7 @@ func postStateArchives() map[string][]string {
 		archive = fmt.Sprintf(archiveFormat, APPNAME, "", ".apk")
 	}
 	if systemNameFlag == "darwin" {
-		archive = fmt.Sprintf(archiveFormat, APPNAME, "", ".dmg")
+		archive = fmt.Sprintf(archiveFormat, APPNAME, "-unsigned", ".dmg")
 	}
 	if systemNameFlag == "ios" {
 		archive = fmt.Sprintf(archiveFormat, APPNAME, "", ".ipa")

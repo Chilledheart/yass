@@ -1,3 +1,8 @@
+yass (1.5.19-1) UNRELEASED; urgency=medium
+
+  * gtk: quote the exec entry in autostart.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Tue, 16 Jan 2024 19:06:55 +0800
 yass (1.5.18-1) UNRELEASED; urgency=medium
 
   * net: code refactor.
