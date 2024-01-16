@@ -318,7 +318,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 option(CLI "Build with cli." ON)
 option(SERVER "Build with server." ON)
 option(GUI "Build against GUI." OFF)
-option(GUI_SANDBOX "Build against GUI sandbox (MAC Only)." OFF)
 option(BUILD_TESTS "Build with test." OFF)
 option(BUILD_BENCHMARKS "Build with benchmark." OFF)
 option(OPTIMIZED_PROTOC "Force protobuf compiler to be built with optimization" OFF)
@@ -3767,10 +3766,6 @@ if (GUI)
           list(APPEND SRC_FILES
             ${_CRASHPAD_BINARY})
         endif()
-        if (GUI_SANDBOX)
-          list(APPEND SRC_FILES
-            src/mac/yass.entitlements)
-        endif()
         list(APPEND SRC_FILES
           src/mac/yass.icns)
 
@@ -4102,11 +4097,6 @@ if (GUI)
           #XCODE_ATTRIBUTE_CODE_SIGN_INJECT_BASE_ENTITLEMENTS "NO"
           #XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME ${ASSET_CATALOG_ASSETS}
           )
-        if (GUI_SANDBOX)
-          set_target_properties(${APP_NAME} PROPERTIES
-              XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/yass.entitlements
-          )
-        endif()
     elseif(GUI_FLAVOUR STREQUAL "ios")
         if(NOT ${CMAKE_GENERATOR} MATCHES "^Xcode.*")
           # Compile the storyboard file with the ibtool.
