@@ -55,6 +55,7 @@ var clangTidyExecutablePathFlag string
 
 var macosxVersionMinFlag string
 var macosxUniversalBuildFlag bool
+var macosxKeychainPathFlag string
 var macosxCodeSignIdentityFlag string
 
 var iosVersionMinFlag string
@@ -165,6 +166,7 @@ func InitFlag() {
 
 	flag.StringVar(&macosxVersionMinFlag, "macosx-version-min", getEnv("MACOSX_DEPLOYMENT_TARGET", "10.14"), "Set Mac OS X deployment target, such as 10.15")
 	flag.BoolVar(&macosxUniversalBuildFlag, "macosx-universal-build", getEnvBool("ENABLE_OSX_UNIVERSAL_BUILD", false), "Enable Mac OS X Universal Build")
+	flag.StringVar(&macosxKeychainPathFlag, "macosx-keychain-path", getEnv("KEYCHAIN_PATH", ""), "During signing, only search for the signing identity in the keychain file specified")
 	flag.StringVar(&macosxCodeSignIdentityFlag, "macosx-codesign-identity", getEnv("CODESIGN_IDENTITY", "-"), "Set Mac OS X CodeSign Identity")
 
 	flag.StringVar(&iosVersionMinFlag, "ios-version-min", getEnv("MACOSX_DEPLOYMENT_TARGET", "13.0"), "Set iOS deployment target, such as 13.0")
@@ -1540,33 +1542,37 @@ func postStateCodeSign() {
 	if cmakeBuildTypeFlag != "Release" || (systemNameFlag != "darwin" && systemNameFlag != "ios") {
 		return
 	}
-
 	// reference https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/resolving_common_notarization_issues?language=objc
 	// Hardened runtime is available in the Capabilities pane of Xcode 10 or later
-	//
 	// code sign crashpad_handler as well if any
 	hasCrashpad := true
 	crashpadPath := filepath.Join(getAppName(), "Contents", "Resources", "crashpad_handler")
 	if _, err := os.Stat(crashpadPath); errors.Is(err, os.ErrNotExist) {
 		hasCrashpad = false
 	}
-	// FIXME crashpad require more entitlements as below
-	// see https://github.com/electron-userland/electron-builder/issues/3989
-	//    <key>com.apple.security.cs.allow-dyld-environment-variables</key><true/>
-	//    <key>com.apple.security.files.user-selected.read-write</key><true/>
-	//    <key>com.apple.security.network.client</key><true/>
-	//    <key>com.apple.security.network.server</key><true/>
+	codesignCmd := []string{
+		"codesign", "-s", macosxCodeSignIdentityFlag,
+		"--deep", "--force", "--options=runtime", "--timestamp",
+		"--entitlements=" + filepath.Join(projectDir, "src", "mac", "entitlements.plist"),
+	}
+	if (macosxKeychainPathFlag != "") {
+		codesignCmd = append(codesignCmd, "--keychain", macosxKeychainPathFlag)
+	}
+
 	if hasCrashpad {
-		cmdRun([]string{"codesign", "--timestamp=none", "--preserve-metadata=entitlements", "--force", "--deep", "--sign", macosxCodeSignIdentityFlag, crashpadPath}, true)
-		cmdRun([]string{"codesign", "-dv", "--deep", "--strict", "--verbose=4",
-			crashpadPath}, true)
+		codesignCmd := append(codesignCmd, crashpadPath)
+		cmdRun(codesignCmd, true)
+	}
+
+	codesignCmd = append(codesignCmd, getAppName())
+	cmdRun(codesignCmd, true)
+	cmdRun([]string{"codesign", "-dv", "--deep", "--strict", "--verbose=4", getAppName()}, true)
+	cmdRun([]string{"codesign", "-d", "--entitlements", ":-", getAppName()}, true)
+
+	if hasCrashpad {
 		cmdRun([]string{"codesign", "-d", "--entitlements", ":-", crashpadPath}, true)
 	}
-	cmdRun([]string{"codesign", "--timestamp=none", "--preserve-metadata=entitlements", "--options=runtime", "--force", "--deep",
-		"--sign", macosxCodeSignIdentityFlag, getAppName()}, true)
-	cmdRun([]string{"codesign", "-dv", "--deep", "--strict", "--verbose=4",
-		getAppName()}, true)
-	cmdRun([]string{"codesign", "-d", "--entitlements", ":-", getAppName()}, true)
+	cmdRun([]string{"spctl", "-a", "-vvv", "--type", "install", getAppName()}, false)
 }
 
 // Main returns the file name excluding extension.
