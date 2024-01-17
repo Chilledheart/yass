@@ -29,6 +29,13 @@ More Information refers to [wiki](https://github.com/Chilledheart/yass/wiki)
 
 Visit [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-of-Package-Store)
 
+#### Status of NaïveProxy Protocol Support
+It refers to [http2 cipher](https://github.com/Chilledheart/yass/wiki/Supported-Operating-System#screenshot-on-na%C3%AFveproxy-support) as NaïveProxy-compatible protocol support.
+#### Experimental ios packet tunnel support
+iOS release has been updated to add packet tunnel support. You need a PC (with iTune) or a mac (through Finder) to install ipa directly or wait for app store release.
+#### Experimental android vpn service support
+Android release has been updated to add vpn service support. 
+
 ## Build from Source
 Take a look at [BUILDING.md] for more instructions.
 
