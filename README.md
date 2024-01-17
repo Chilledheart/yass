@@ -51,8 +51,10 @@ macOS Releases from 1.5.19 are [notarized](https://developer.apple.com/documenta
 #### Experimental ios packet tunnel support
 iOS release has been updated to add packet tunnel support.
 #### Experimental android vpn service support
-Android release has been updated to add vpn service support. 
-#### MSVC build(previous windows built) prebuilt binaries removed
+Android release has been updated to add vpn service support.
+#### MinGW Build (alias Window Build)
+Please install Visual C++ 2010 runtime before use. Depending the your system's architecture, use [x86 installer][vs2010_x86] or [x64 installer][vs2010_x64].
+#### MSVC Build(previous Windows Build) prebuilt binaries removed
 Due to the fact of possibly violating GPL license by linking static Visual C++ Runtime or distribute the CRT dll files
 we are still supporting MSVC builds, but the prebuilt binaries are removed from the release page. 
 You can build MSVC binaries by yourself or switch to MinGW builds.
@@ -87,5 +89,6 @@ It is licensed with [GPLv2][license-link].
 [license-link]: LICENSE
 [naiveproxy]: https://github.com/klzgrad/naiveproxy
 [HTTP2]: https://datatracker.ietf.org/doc/html/rfc9113
-
+[vs2010_x64]: https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x64.exe
+[vs2010_x86]: https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x86.exe
 [BUILDING.md]: BUILDING.md
