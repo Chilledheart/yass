@@ -60,5 +60,7 @@
     <true/>
     <key>NSSupportsSuddenTermination</key>
     <false/>
+    <key>LSBackgroundOnly</key>
+    <true/>
 </dict>
 </plist>

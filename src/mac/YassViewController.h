@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 
 #ifndef YASS_MAC_VIEW_CONTROLLER
 #define YASS_MAC_VIEW_CONTROLLER
