@@ -49,9 +49,9 @@ It refers to [http2 cipher](https://github.com/Chilledheart/yass/wiki/Supported-
 #### Notarized macOS releases 
 macOS Releases from 1.5.19 are [notarized](https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution). Please note the dmg suffixed with `-unsigned` is not.
 #### Experimental ios packet tunnel support
-iOS release has been updated to add packet tunnel support.
+iOS release has been updated to add [Packet tunnel](https://developer.apple.com/documentation/networkextension/packet_tunnel_provider?language=objc) support.
 #### Experimental android vpn service support
-Android release has been updated to add vpn service support.
+Android release has been updated to add [VpnService](https://developer.android.com/reference/android/net/VpnService) support.
 #### MinGW Build (alias Window Build)
 Please install Visual C++ 2010 runtime before use. Depending the your system's architecture, use [x86 installer][vs2010_x86] or [x64 installer][vs2010_x64].
 #### MSVC Build(previous Windows Build) prebuilt binaries removed
