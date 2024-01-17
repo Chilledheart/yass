@@ -3774,6 +3774,8 @@ if (GUI)
           src/mac/YassAppDelegate.h
           src/mac/YassViewController.mm
           src/mac/YassViewController.h
+          src/mac/YassWindowController.mm
+          src/mac/YassWindowController.h
           src/mac/OptionViewController.mm
           src/mac/OptionViewController.h
           src/mac/utils.h

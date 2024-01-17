@@ -615,3 +615,19 @@ bool SetSystemProxy(bool enable,
 
   return true;
 }
+
+void SetDockIconStyle(bool hidden) {
+  ProcessSerialNumber psn = { 0, kCurrentProcess };
+  OSStatus err;
+  if (hidden) {
+    err = TransformProcessType(&psn, kProcessTransformToBackgroundApplication);
+  } else {
+    err = TransformProcessType(&psn, kProcessTransformToForegroundApplication);
+  }
+  if (err != noErr) {
+    NSError *error = [NSError errorWithDomain:NSOSStatusErrorDomain
+      code:err userInfo:nil];
+    LOG(WARNING) << "SetDockIconStyle failed: " <<
+      gurl_base::SysNSStringToUTF8([error localizedDescription]);
+  }
+}

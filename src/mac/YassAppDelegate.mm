@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 #import "mac/YassAppDelegate.h"
 
 #include "cli/cli_worker.hpp"
@@ -15,6 +15,7 @@
 #include "crypto/crypter_export.hpp"
 #include "mac/OptionViewController.h"
 #include "mac/YassViewController.h"
+#include "mac/YassWindowController.h"
 #include "mac/utils.h"
 #include "version.h"
 #include "feature.h"
@@ -41,6 +42,7 @@
     [viewController OnStart];
   }
 
+  SetDockIconStyle(false);
   [NSApp activateIgnoringOtherApps:true];
 }
 
@@ -157,10 +159,10 @@
   state_ = STARTED;
   config::SaveConfig();
 
-  YassViewController* viewController =
-      (YassViewController*)
-          NSApplication.sharedApplication.mainWindow.contentViewController;
-  [viewController Started];
+  YassWindowController* windowController =
+      (YassWindowController*)
+          NSApplication.sharedApplication.mainWindow.windowController;
+  [windowController Started];
 }
 
 - (void)OnStartFailed:(std::string)error_msg {
@@ -168,10 +170,10 @@
 
   error_msg_ = error_msg;
   LOG(ERROR) << "worker failed due to: " << error_msg_;
-  YassViewController* viewController =
-      (YassViewController*)
-          NSApplication.sharedApplication.mainWindow.contentViewController;
-  [viewController StartFailed];
+  YassWindowController* windowController =
+      (YassWindowController*)
+          NSApplication.sharedApplication.mainWindow.windowController;
+  [windowController StartFailed];
   NSAlert* alert = [[NSAlert alloc] init];
   alert.messageText = @(error_msg.c_str());
   alert.icon = [NSImage imageNamed:NSImageNameCaution];
@@ -181,10 +183,10 @@
 
 - (void)OnStopped {
   state_ = STOPPED;
-  YassViewController* viewController =
-      (YassViewController*)
-          NSApplication.sharedApplication.mainWindow.contentViewController;
-  [viewController Stopped];
+  YassWindowController* windowController =
+      (YassWindowController*)
+          NSApplication.sharedApplication.mainWindow.windowController;
+  [windowController Stopped];
 }
 
 - (std::string)SaveConfig {

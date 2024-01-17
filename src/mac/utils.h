@@ -205,4 +205,6 @@ bool SetSystemProxy(bool enable,
                     int32_t server_port,
                     const std::string &bypass_addr);
 
+void SetDockIconStyle(bool hidden);
+
 #endif  // YASS_MAC_UTILS
