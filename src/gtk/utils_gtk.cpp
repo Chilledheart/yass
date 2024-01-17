@@ -29,7 +29,7 @@
 
 using namespace yass;
 
-static constexpr char kDefaultAutoStartName[] = "yass";
+static constexpr char kDefaultAutoStartName[] = "it.gui.yass";
 
 static constexpr std::string_view kAutoStartFileContent =
 "[Desktop Entry]\n"

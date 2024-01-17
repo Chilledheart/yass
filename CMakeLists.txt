@@ -4279,7 +4279,7 @@ if (GUI)
 
       if (GUI_FLAVOUR STREQUAL "gtk3" OR GUI_FLAVOUR STREQUAL "gtk4")
         install(FILES
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/yass.desktop
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/it.gui.yass.desktop
           DESTINATION share/applications)
 
         install(FILES
