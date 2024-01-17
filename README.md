@@ -19,34 +19,49 @@ supporting http/socks4/socks4a/socks5 protocol. The server side is experimental.
 
 More Information refers to [wiki](https://github.com/Chilledheart/yass/wiki)
 
-## Supported Operating System
-- Android (VpnService support) [download apk](https://github.com/Chilledheart/yass/releases/download/1.5.19/yass-android-release-arm64-1.5.19.apk)
-- iOS (Packet Tunnel support, iPhone/iPad) [join via TestFlight](https://testflight.apple.com/join/6AkiEq09) or [download ipa](https://github.com/Chilledheart/yass/releases/download/1.5.19/yass-ios-release-arm64-1.5.19.ipa)
+## Usages
+
+### Prebuilt binaries
+- Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.5.19/yass-android-release-arm64-1.5.19.apk)
+- iOS [join via TestFlight](https://testflight.apple.com/join/6AkiEq09) or [download ipa](https://github.com/Chilledheart/yass/releases/download/1.5.19/yass-ios-release-arm64-1.5.19.ipa)
 - Windows [download zip](https://github.com/Chilledheart/yass/releases/download/1.5.19/yass-mingw-winxp-release-i686-1.5.19.zip) or [download woa zip](https://github.com/Chilledheart/yass/releases/download/1.5.19/yass-mingw-release-aarch64-1.5.19.zip)
 - macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.5.19/yass-macos-release-x64-1.5.19.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.5.19/yass-macos-release-arm64-1.5.19.dmg)
-- Linux (including Ubuntu, RHEL/CentOS, OpenSUSE Leap, Alpine Linux, ArchLinux AUR and OpenWRT) [download rpm](https://github.com/Chilledheart/yass/releases/download/1.5.19/yass-centos-7.el7.x86_64.1.5.19-0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.5.19/yass-client-ubuntu-16.04-xenial_amd64.1.5.19.deb)
-- FreeBSD
+- Linux [download rpm](https://github.com/Chilledheart/yass/releases/download/1.5.19/yass-centos-7.el7.x86_64.1.5.19-0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.5.19/yass-client-ubuntu-16.04-xenial_amd64.1.5.19.deb)
 
-Visit [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-of-Package-Store)
+View more at [release page](https://github.com/Chilledheart/yass/releases/tag/1.5.19)
 
-#### Status of NaïveProxy Protocol Support
-It refers to [http2 cipher](https://github.com/Chilledheart/yass/wiki/Supported-Operating-System#screenshot-on-na%C3%AFveproxy-support) as NaïveProxy-compatible protocol support.
+### Status of Package Store
+Visit wiki's [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-of-Package-Store)
+
+### Build from Source
+Take a look at [BUILDING.md] for more instructions.
+
+### Screenshots
+Visit wiki's [Supported Operating System](https://github.com/Chilledheart/yass/wiki/Supported-Operating-System)
+
+### Usages
+Visit wiki's [Usages](https://github.com/Chilledheart/yass/wiki/Usage) and [Server Usage](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup).
+
+### Important notes before use
+
+#### NaïveProxy Protocol Support
+It refers to [http2 cipher](https://github.com/Chilledheart/yass/wiki/Supported-Operating-System#screenshot-on-na%C3%AFveproxy-support) as [NaïveProxy][naiveproxy]-compatible protocol support.
+#### Notarized macOS releases 
+macOS Releases from 1.5.19 are [notarized](https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution). Please note the dmg suffixed with `-unsigned` is not.
 #### Experimental ios packet tunnel support
-iOS release has been updated to add packet tunnel support. You need a PC (with iTune) or a mac (through Finder) to install ipa directly or wait for app store release.
+iOS release has been updated to add packet tunnel support.
 #### Experimental android vpn service support
 Android release has been updated to add vpn service support. 
-
-## Build from Source
-Take a look at [BUILDING.md] for more instructions.
+#### MSVC build(previous windows built) prebuilt binaries removed
+Due to the fact of possibly violating GPL license by linking static Visual C++ Runtime or distribute the CRT dll files
+we are still supporting MSVC builds, but the prebuilt binaries are removed from the release page. 
+You can build MSVC binaries by yourself or switch to MinGW builds.
 
 ## Sponsor Me
 Please visit [the pages site](https://letshack.info).
 
 ## License
 It is licensed with [GPLv2][license-link].
-
-## Usages
-Please visit to [wiki](https://github.com/Chilledheart/yass/wiki) such as [Usages](https://github.com/Chilledheart/yass/wiki/Usage) and [Server Usage](https://github.com/Chilledheart/yass/wiki/Usage:-server-setup).
 
 ## Build Status
 
@@ -70,7 +85,7 @@ Please visit to [wiki](https://github.com/Chilledheart/yass/wiki) such as [Usage
 [![Old MinGW Build](https://github.com/Chilledheart/yass/actions/workflows/releases-mingw.yml/badge.svg)](https://github.com/Chilledheart/yass/actions/workflows/releases-mingw.yml)
 
 [license-link]: LICENSE
-
+[naiveproxy]: https://github.com/klzgrad/naiveproxy
 [HTTP2]: https://datatracker.ietf.org/doc/html/rfc9113
 
 [BUILDING.md]: BUILDING.md
