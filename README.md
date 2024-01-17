@@ -17,7 +17,7 @@ supporting http/socks4/socks4a/socks5 protocol. The server side is experimental.
 - Easier to maintain and adopt new features.
 - Safe memory layout.
 
-More Information refers to [wiki](https://github.com/Chilledheart/yass/wiki)
+More Information refers to [wiki](https://github.com/Chilledheart/yass/wiki) and [NaïveProxy][naiveproxy]-compatible protocol support.
 
 ## Usages
 
