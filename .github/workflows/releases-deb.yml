@@ -29,8 +29,6 @@ on:
     - '.cirrus.yml'
   release:
     types: [published]
-  schedule:
-    - cron: '0 16 * * *'
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
