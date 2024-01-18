@@ -254,7 +254,11 @@ set(quiche_SRCS
   src/quiche/spdy/core/zero_copy_output_buffer.h
   src/quiche/web_transport/complete_buffer_visitor.cc
   src/quiche/web_transport/complete_buffer_visitor.h
+  src/quiche/web_transport/encapsulated/encapsulated_web_transport.cc
+  src/quiche/web_transport/encapsulated/encapsulated_web_transport.h
   src/quiche/web_transport/web_transport.h
+  src/quiche/web_transport/web_transport_headers.cc
+  src/quiche/web_transport/web_transport_headers.h
   )
 
 set(quiche_quic_SOURCES
@@ -737,7 +741,7 @@ target_link_libraries(quiche PUBLIC
   crypto
   ssl
   url
-  yass_base
+  asio
   absl::container_common
   absl::btree
   absl::flat_hash_map
@@ -764,6 +768,8 @@ target_link_libraries(quiche PUBLIC
   )
 
 if (USE_NGHTTP2)
+  target_include_directories(quiche PUBLIC ${NGHTTP2_INCLUDE_DIRS})
+  target_link_directories(quiche PUBLIC ${NGHTTP2_LIBRARY_DIRS})
   target_link_libraries(quiche PUBLIC ${NGHTTP2_LIBRARIES})
 endif()
 

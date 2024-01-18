@@ -42,7 +42,7 @@ if(POLICY CMP0118)
 endif()
 
 # https://docs.microsoft.com/en-us/cpp/c-runtime-library/crt-library-features?redirectedfrom=MSDN&view=msvc-170
-set(MSVC_CRT_LINKAGE "static" CACHE STRING "")
+set(MSVC_CRT_LINKAGE "dynamic" CACHE STRING "")
 if (NOT MSVC_CRT_LINKAGE STREQUAL "static" AND NOT MSVC_CRT_LINKAGE STREQUAL "dynamic")
   message(FATAL_ERROR "MSVC_CRT_LINKAGE only accepts: dynamic or static")
 endif()
@@ -121,12 +121,17 @@ set(YASS_APP_VERSION_MINOR ${PACKAGE_VERSION_MINOR})
 set(YASS_APP_VERSION_PATCH ${PACKAGE_VERSION_PATCH})
 set(YASS_APP_VERSION_TWEAK ${PACKAGE_VERSION_TWEAK})
 set(YASS_APP_FULL_VERSION ${PACKAGE_VERSION}.${PACKAGE_VERSION_TWEAK})
-set(YASS_APP_COPYRIGHT "Copyright 2019-2023 Chilledheart. All rights reserved.")
+set(YASS_APP_COPYRIGHT "Copyright 2019-2024 Chilledheart. All rights reserved.")
+
+message(STATUS "Source Tag: ${YASS_APP_TAG}-${YASS_APP_SUBTAG}")
+message(STATUS "Source LastChange: ${YASS_APP_LAST_CHANGE}")
 
 set(APP_VERSION_HEADER "${CMAKE_CURRENT_BINARY_DIR}/version.h")
 configure_file("src/version.h.in" "${APP_VERSION_HEADER}" @ONLY)
 # for version.h
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+set(YASS_APP_FEATURES)
 
 if(MSVC)
   # On Windows, prefer cl over gcc if both are available. By default most of
@@ -140,8 +145,12 @@ if(MSVC)
   set(CMAKE_CXX_COMPILER_ARCHITECTURE_ID "${CMAKE_CXX_COMPILER_TARGET}" CACHE STRING "")
 endif()
 
-if (APPLE AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
+if (APPLE AND NOT IOS AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
   set(CMAKE_OSX_DEPLOYMENT_TARGET "10.14")
+endif()
+
+if (APPLE AND NOT CMAKE_OSX_ARCHITECTURES)
+  set(CMAKE_OSX_ARCHITECTURES ${CMAKE_SYSTEM_PROCESSOR})
 endif()
 
 enable_language(C)
@@ -162,7 +171,10 @@ endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
   set(COMPILER_APPLE_CLANG TRUE)
-  add_definitions(-DHAVE_APPLE_CLANG)
+endif()
+
+if (${CMAKE_GENERATOR} MATCHES "^Xcode.*")
+  set(COMPILER_APPLE_CLANG TRUE)
 endif()
 
 if (COMPILER_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5.0)
@@ -209,33 +221,83 @@ if (MSVC)
   endif()
 endif()
 
+if (IOS)
+  list(APPEND YASS_APP_FEATURES "${SDK_NAME} ${DEPLOYMENT_TARGET}")
+elseif(APPLE)
+  list(APPEND YASS_APP_FEATURES "mac ${CMAKE_OSX_DEPLOYMENT_TARGET}")
+elseif(OHOS)
+  list(APPEND YASS_APP_FEATURES "ohos ${OHOS_APILEVEL}")
+elseif(ANDROID)
+  list(APPEND YASS_APP_FEATURES "android ${ANDROID_API_VERSION}")
+elseif(MSVC)
+  list(APPEND YASS_APP_FEATURES "msvc")
+elseif(MINGW)
+  list(APPEND YASS_APP_FEATURES "mingw")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  list(APPEND YASS_APP_FEATURES "linux")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+  if (NOT CMAKE_CROSSCOMPILING)
+    execute_process(COMMAND
+      uname -r
+      OUTPUT_VARIABLE _ABI_VERSION_STRING
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+    string(REGEX REPLACE "([0-9]+)\.[0-9]-.*" "\\1" FREEBSD_ABI_VERSION "${_ABI_VERSION_STRING}")
+  endif()
+
+  if (FREEBSD_ABI_VERSION)
+    list(APPEND YASS_APP_FEATURES "freebsd ${FREEBSD_ABI_VERSION}")
+  else()
+    list(APPEND YASS_APP_FEATURES "freebsd")
+  endif()
+else()
+  list(APPEND YASS_APP_FEATURES "system ${CMAKE_SYSTEM_NAME}")
+endif()
+
 if (MSVC)
   message(STATUS "Build with MSVC target architecture: ${MSVC_PROCESSOR_ARCHITECTURE}")
   message(STATUS "Build with MSVC ${MSVC_CRT_LINKAGE} CRT library")
   if (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "x86")
     set(OS_X86 TRUE)
   endif()
+  if (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "arm64")
+    set(OS_AARCH64 TRUE)
+  endif()
+  list(APPEND YASS_APP_FEATURES "arch: ${MSVC_PROCESSOR_ARCHITECTURE}")
+  list(APPEND YASS_APP_FEATURES "${MSVC_CRT_LINKAGE} crt")
 elseif(APPLE)
   message(STATUS "Build with target architecture: ${CMAKE_OSX_ARCHITECTURES}")
+  list(APPEND YASS_APP_FEATURES "arch: ${CMAKE_OSX_ARCHITECTURES}")
 else()
-  message(STATUS "Build with target architecture: ${CMAKE_SYSTEM_PROCESSOR}")
-  if (NOT CMAKE_CROSSCOMPILING AND
-      (CMAKE_SYSTEM_PROCESSOR STREQUAL "i386" OR
-       CMAKE_SYSTEM_PROCESSOR STREQUAL "i486" OR
-       CMAKE_SYSTEM_PROCESSOR STREQUAL "i586" OR
-       CMAKE_SYSTEM_PROCESSOR STREQUAL "i686"))
-    set(OS_X86 TRUE)
-  endif()
-  if (CMAKE_CROSSCOMPILING AND
-      (CMAKE_C_COMPILER_TARGET MATCHES "^i386-.*" OR
+  if ((CMAKE_C_COMPILER_TARGET MATCHES "^i386-.*" OR
        CMAKE_C_COMPILER_TARGET MATCHES "^i486-.*" OR
        CMAKE_C_COMPILER_TARGET MATCHES "^i586-.*" OR
        CMAKE_C_COMPILER_TARGET MATCHES "^i686-.*"))
     set(OS_X86 TRUE)
   endif()
-  if (MINGW AND CMAKE_SIZEOF_VOID_P EQUAL 4)
-    set(OS_X86 TRUE)
+  if ((CMAKE_C_COMPILER_TARGET MATCHES "^arm64-.*" OR
+       CMAKE_C_COMPILER_TARGET MATCHES "^aarch64-.*"))
+    set(OS_AARCH64 TRUE)
   endif()
+  # Fix MINGW (native mingw)'s CMAKE_SYSTEM_PROCESSOR
+  if (MINGW)
+    if (OS_X86)
+      set(CMAKE_SYSTEM_NAME Windows)
+      set(CMAKE_SYSTEM_PROCESSOR "i686")
+    elseif(OS_AARCH64)
+      set(CMAKE_SYSTEM_NAME Windows)
+      set(CMAKE_SYSTEM_PROCESSOR "aarch64")
+    else()
+      set(CMAKE_SYSTEM_NAME Windows)
+      set(CMAKE_SYSTEM_PROCESSOR "x86_64")
+    endif()
+  endif()
+
+  message(STATUS "Build with target architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+  list(APPEND YASS_APP_FEATURES "arch: ${CMAKE_SYSTEM_PROCESSOR}")
+endif()
+
+if (OS_X86)
+  list(APPEND YASS_APP_FEATURES "x86")
 endif()
 
 # handling bug with cmake+clang-cl
@@ -256,7 +318,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 option(CLI "Build with cli." ON)
 option(SERVER "Build with server." ON)
 option(GUI "Build against GUI." OFF)
-option(GUI_SANDBOX "Build against GUI sandbox (MAC Only)." OFF)
 option(BUILD_TESTS "Build with test." OFF)
 option(BUILD_BENCHMARKS "Build with benchmark." OFF)
 option(OPTIMIZED_PROTOC "Force protobuf compiler to be built with optimization" OFF)
@@ -282,7 +343,7 @@ option(ENABLE_LTO "Enable build with LTO" ON)
 option(ENABLE_LLD "Enable build with LLD" ON)
 option(ENABLE_GOLD "Enable build with GOLD" ON)
 
-if (ENABLE_LLD AND (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR LINKER_LLD))
+if (ENABLE_LLD AND (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR LINKER_LLD) AND NOT COMPILER_APPLE_CLANG)
   # skipping apple clang
   set(USE_LLD ON)
   set(USE_GOLD OFF)
@@ -316,6 +377,23 @@ if (CMAKE_BUILD_TYPE)
 else()
   string(TOUPPER "Debug" upper_CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Debug")
+endif()
+
+string(TOLOWER ${CMAKE_BUILD_TYPE} lower_CMAKE_BUILD_TYPE)
+list(APPEND YASS_APP_FEATURES "${lower_CMAKE_BUILD_TYPE}")
+
+if (COMPILER_MSVC)
+  list(APPEND YASS_APP_FEATURES "msvc ${CMAKE_CXX_COMPILER_VERSION}")
+elseif(COMPILER_GCC)
+  list(APPEND YASS_APP_FEATURES "gcc ${CMAKE_CXX_COMPILER_VERSION}")
+elseif(COMPILER_APPLE_CLANG)
+  list(APPEND YASS_APP_FEATURES "appleclang ${CMAKE_CXX_COMPILER_VERSION}")
+elseif(COMPILER_CLANG)
+  list(APPEND YASS_APP_FEATURES "clang ${CMAKE_CXX_COMPILER_VERSION}")
+endif()
+
+if (CMAKE_CROSSCOMPILING)
+  list(APPEND YASS_APP_FEATURES "crosscompile")
 endif()
 
 if (${CMAKE_BUILD_TYPE} MATCHES Release OR ${CMAKE_BUILD_TYPE} MATCHES MinSizeRel OR ${CMAKE_BUILD_TYPE} MATCHES RelWithDebInfo)
@@ -353,6 +431,7 @@ if (ENABLE_LTO AND IS_RELEASE_BUILD)
 
   if (LTO)
     message(STATUS "Compiling with ${LTO_FLAVOUR} LTO")
+    list(APPEND YASS_APP_FEATURES "lto ${LTO_FLAVOUR}")
   endif()
 endif()
 
@@ -361,6 +440,13 @@ if (COMPILER_MSVC AND USE_LIBCXX)
 endif()
 
 include(config-ix)
+
+# see "Announcement: ARC is default for Objective-C code"
+# https://groups.google.com/a/chromium.org/g/embedder-dev/c/13hNC6w2gGA?pli=1
+if (APPLE)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fobjc-arc -fno-objc-arc-exceptions")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fobjc-arc -fno-objc-arc-exceptions")
+endif()
 
 # set default _MSC_VER
 if (MSVC AND COMPILER_CLANG)
@@ -384,16 +470,21 @@ if (CMAKE_CROSSCOMPILING OR (OPTIMIZED_PROTOC AND CMAKE_CONFIGURATION_TYPES))
   set(USE_HOST_TOOLS ON)
 endif()
 
-if (CMAKE_CROSSCOMPILING AND CMAKE_SYSROOT)
-  if (NOT EXISTS ${CMAKE_SYSROOT})
-    message(FATAL_ERROR "Invalid sysroot ${CMAKE_SYSROOT}")
+if (CMAKE_CROSSCOMPILING AND (CMAKE_SYSROOT OR CMAKE_OSX_SYSROOT))
+  if (CMAKE_OSX_SYSROOT)
+    set(_SYSROOT ${CMAKE_OSX_SYSROOT})
+  else()
+    set(_SYSROOT ${CMAKE_SYSROOT})
+  endif()
+  if (NOT EXISTS ${_SYSROOT})
+    message(FATAL_ERROR "Invalid sysroot ${_SYSROOT}")
   endif()
   set(ENV{PKG_CONFIG_DIR} "")
-  set(ENV{PKG_CONFIG_LIBDIR} "${CMAKE_SYSROOT}/usr/lib/pkgconfig:${CMAKE_SYSROOT}/lib/pkgconfig:${CMAKE_SYSROOT}/usr/share/pkgconfig")
+  set(ENV{PKG_CONFIG_LIBDIR} "${_SYSROOT}/usr/lib/pkgconfig:${_SYSROOT}/lib/pkgconfig:${_SYSROOT}/usr/share/pkgconfig")
   if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
-    set(ENV{PKG_CONFIG_LIBDIR} "${CMAKE_SYSROOT}/usr/libdata/pkgconfig:${CMAKE_SYSROOT}/usr/local/libdata/pkgconfig")
+    set(ENV{PKG_CONFIG_LIBDIR} "${_SYSROOT}/usr/libdata/pkgconfig:${_SYSROOT}/usr/local/libdata/pkgconfig")
   endif()
-  set(ENV{PKG_CONFIG_SYSROOT_DIR} ${CMAKE_SYSROOT})
+  set(ENV{PKG_CONFIG_SYSROOT_DIR} ${_SYSROOT})
 endif()
 
 # cross-compiling mingw and freebsd don't like --gcc-install-dir (non-gnu style)
@@ -507,6 +598,8 @@ if(MSAN)
     set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=memory -fsanitize-memory-track-origins -fno-omit-frame-pointer")
   endif()
+  add_definitions(-DMEMORY_SANITIZER)
+  list(APPEND YASS_APP_FEATURES "msan")
 endif()
 
 if(ASAN)
@@ -525,6 +618,8 @@ if(ASAN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer")
   endif()
+  add_definitions(-DADDRESS_SANITIZER)
+  list(APPEND YASS_APP_FEATURES "asan")
 endif()
 
 if(CFI)
@@ -538,6 +633,7 @@ if(CFI)
   # with -flto. That, in turn, can't handle -ggdb.
   string(REPLACE "-ggdb" "-g" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
   string(REPLACE "-ggdb" "-g" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  list(APPEND YASS_APP_FEATURES "cfi")
 endif()
 
 if(TSAN)
@@ -556,6 +652,8 @@ if(TSAN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=thread")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=thread")
   endif()
+  add_definitions(-DTHREAD_SANITIZER)
+  list(APPEND YASS_APP_FEATURES "tsan")
 endif()
 
 if(UBSAN)
@@ -573,6 +671,8 @@ if(UBSAN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined")
   endif()
+  add_definitions(-DUNDEFINED_SANITIZER)
+  list(APPEND YASS_APP_FEATURES "ubsan")
 endif()
 
 # apply sanitizer blacklist
@@ -592,6 +692,7 @@ if(GCOV)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-arcs -ftest-coverage")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
   endif()
+  list(APPEND YASS_APP_FEATURES "coverage")
 endif()
 
 if (NOT MSAN AND NOT ASAN AND NOT TSAN AND NOT UBSAN)
@@ -607,7 +708,7 @@ endif()
 
 if (NOT MSVC)
   # Necessary for clone().
-  if (ANDROID)
+  if (ANDROID OR OHOS)
     add_definitions(-D__GNU_SOURCE=1)
   endif()
 
@@ -833,6 +934,8 @@ else()
   set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /OPT:REF /OPT:ICF /INCREMENTAL:NO /FIXED:NO")
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /OPT:REF /OPT:ICF /INCREMENTAL:NO /FIXED:NO")
 
+  list(APPEND YASS_APP_FEATURES "ldflags icf")
+
   # Tell linker to include FIXUP information symbol data
   set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /PROFILE")
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /PROFILE")
@@ -899,7 +1002,7 @@ if (LTO AND COMPILER_CLANG AND USE_MOLD)
     endif()
   endif()
 
-  if (NOT ANDROID AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR APPLE))
+  if (NOT ANDROID AND NOT OHOS AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR APPLE))
     set(CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fwhole-program-vtables")
     set(CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fwhole-program-vtables")
     if (NOT MSVC)
@@ -987,7 +1090,7 @@ if (LTO AND COMPILER_CLANG AND USE_LLD)
     endif()
   endif()
 
-  if (NOT ANDROID AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR APPLE))
+  if (NOT ANDROID AND NOT OHOS AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR APPLE))
     set(CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fwhole-program-vtables")
     set(CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fwhole-program-vtables")
     if (NOT MSVC)
@@ -1028,7 +1131,7 @@ if (LTO AND COMPILER_CLANG AND USE_GOLD)
   set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,-mllvm,-import-instr-limit=${import_instr_limit}")
   set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wl,-mllvm,-import-instr-limit=${import_instr_limit}")
 
-  if (NOT ANDROID AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR APPLE))
+  if (NOT ANDROID AND NOT OHOS AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR APPLE))
     set(CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_C_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fwhole-program-vtables")
     set(CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_CXX_FLAGS_${upper_CMAKE_BUILD_TYPE}} -fwhole-program-vtables")
     if (NOT MSVC)
@@ -1122,11 +1225,13 @@ if (NOT MSVC)
   if (USE_MOLD)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=mold")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=mold")
+    list(APPEND YASS_APP_FEATURES "linker mold")
   endif()
 
   if (USE_LLD)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
+    list(APPEND YASS_APP_FEATURES "linker lld")
   endif()
 
   # Linker warnings.
@@ -1159,7 +1264,7 @@ if (UNIX AND NOT APPLE)
   # _FILE_OFFSET_BITS=64 should not be set on Android in order to maintain
   # the behavior of the Android NDK from earlier versions.
   # See https://android-developers.googleblog.com/2017/09/introducing-android-native-development.html
-  if (NOT ANDROID)
+  if (NOT ANDROID AND NOT OHOS)
     add_definitions(-D_FILE_OFFSET_BITS=64)
     add_definitions(-D_LARGEFILE_SOURCE)
     add_definitions(-D_LARGEFILE64_SOURCE)
@@ -1172,7 +1277,7 @@ endif()
 
 # Linux/Android/Fuchsia common flags setup.
 # ---------------------------------
-if ((UNIX AND NOT APPLE) OR ANDROID)
+if ((UNIX AND NOT APPLE) OR ANDROID OR OHOS)
   # Enable position-independent code globally. This is needed because
   # some library targets are OBJECT libraries.
   set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
@@ -1204,7 +1309,8 @@ if ((UNIX AND NOT APPLE) AND USE_LLD)
 elseif (USE_GOLD)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=gold")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=gold")
-  if (NOT ANDROID)
+  list(APPEND YASS_APP_FEATURES "linker gold")
+  if (NOT ANDROID AND NOT OHOS)
     # On Android, this isn't needed.  gcc in the NDK knows to look next to
     # it with -fuse-ld=gold, and clang gets a --gcc-toolchain flag passed
     # above.
@@ -1227,12 +1333,13 @@ elseif (USE_GOLD)
   #}
 endif()
 
-if (USE_ICF AND (NOT APPLE OR COMPILER_CLANG))
+if (USE_ICF AND (NOT APPLE OR COMPILER_CLANG) AND NOT MSVC)
   # Gold doesn't respect section alignment and breaks gcc builds with icf
   # https://sourceware.org/bugzilla/show_bug.cgi?id=17704
   # Landed upstream Fri, 21 Oct 2016 - is in 2.28, such as CentOS 7
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--icf=all")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--icf=all")
+  list(APPEND YASS_APP_FEATURES "ldflags icf")
 endif()
 
 if (UNIX AND NOT APPLE)
@@ -1324,9 +1431,13 @@ endif()
 # C11/C++17 compiler flags setup.
 # --------------------------
 set(CMAKE_C_STANDARD 99)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+if (${CMAKE_GENERATOR} MATCHES "^Xcode.*")
+  set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++20")
+  set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
+endif()
 
 # https://chromium.googlesource.com/chromium/src/build/config/+/refs/heads/main/compiler/BUILD.gn
 if (UNIX AND NOT APPLE)
@@ -1466,10 +1577,17 @@ if (WIN32)
     if (NOT MINGW)
       include_directories(third_party/xp-compatible SYSTEM)
     endif()
+    list(APPEND YASS_APP_FEATURES "winxp")
+  elseif(OS_AARCH64)
+    message(STATUS "Build with Windows 10 support")
+    add_definitions(-D_WIN32_WINNT=0x0A00)
+    add_definitions(-DWINVER=0x0A00)
+    list(APPEND YASS_APP_FEATURES "win10")
   else()
     message(STATUS "Build with Windows 8.1 support")
     add_definitions(-D_WIN32_WINNT=0x0603)
     add_definitions(-DWINVER=0x0603)
+    list(APPEND YASS_APP_FEATURES "win8.1")
   endif()
 
   # add missing definitions in some sdks
@@ -1502,21 +1620,22 @@ if (WIN32)
   endif()
 
   # set linker for subsystem
-  # Windows ARM64 requires Windows 10
-  if (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "arm64")
-    set(SUBSYSTEM_VERSION_SUFFIX ",10.0")
-  elseif (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "amd64")
-    # 5.02 = Windows Server 2003/XP SP2
-    set(SUBSYSTEM_VERSION_SUFFIX ",5.02")
-  elseif (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "x86")
-    # 5.01 = Windows XP
-    set(SUBSYSTEM_VERSION_SUFFIX ",5.01")
-  endif()
-  if (MINGW AND USE_LLD)
-    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-      set(SUBSYSTEM_VERSION_SUFFIX ",5.02")
+  # https://learn.microsoft.com/en-us/cpp/build/reference/subsystem-specify-subsystem?view=msvc-170
+  if (MSVC OR (MINGW AND USE_LLD))
+    if (ALLOW_XP)
+      # 5.01 = Windows XP (minimum for x86 build)
+      # 5.02 = Windows Server 2003/XP SP2 (minimum for x64 build)
+      if (OS_X86)
+        set(SUBSYSTEM_VERSION_SUFFIX ",5.01")
+      else()
+        set(SUBSYSTEM_VERSION_SUFFIX ",5.02")
+      endif()
+    elseif(OS_AARCH64)
+      # default value for arm64
+      set(SUBSYSTEM_VERSION_SUFFIX ",6.02")
     else()
-      set(SUBSYSTEM_VERSION_SUFFIX ",5.01")
+      # default value for x86 and x64
+      set(SUBSYSTEM_VERSION_SUFFIX ",6.00")
     endif()
   endif()
   if (MSVC)
@@ -1541,10 +1660,11 @@ endif()
 if (WIN32)
   # FIXME for mingw, CMAKE_SYSTEM_PROCESSOR can't tell which target it is building,
   # it needs to exclude arm64 build correctly.
-  if (MINGW OR MSVC_PROCESSOR_ARCHITECTURE STREQUAL "x86" OR MSVC_PROCESSOR_ARCHITECTURE STREQUAL "amd64")
+  if ((MINGW AND NOT OS_AARCH64) OR MSVC_PROCESSOR_ARCHITECTURE STREQUAL "x86" OR MSVC_PROCESSOR_ARCHITECTURE STREQUAL "amd64")
     message(STATUS "Built with sse3 support")
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -msse3")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3")
+    list(APPEND YASS_APP_FEATURES "sse3")
   endif()
 endif()
 
@@ -1581,6 +1701,8 @@ if (ANDROID)
   # buildtools/third_party/libunwind will be built and used directly.
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --unwindlib=none")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --unwindlib=none")
+
+  list(APPEND YASS_APP_FEATURES "libunwind")
 
   # for arm 32-bit v7, use correct march
   # following https://developer.android.com/ndk/guides/abis#v7a
@@ -1627,6 +1749,14 @@ if (USE_LIBCXX)
   add_subdirectory(third_party/libc++)
   link_libraries(cxx ${libcxx_PUBLIC_LIBRARIES})
   set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} ${libcxx_PUBLIC_LIBRARIES}")
+  list(APPEND YASS_APP_FEATURES "libc++")
+
+  if (MINGW_MSVCRT100)
+    list(APPEND YASS_APP_FEATURES "msvcrt100")
+  endif()
+  if (MINGW_WORKAROUND)
+    list(APPEND YASS_APP_FEATURES "mingw atexit workaround")
+  endif()
 endif()
 
 # *****************************************************************************************
@@ -1656,7 +1786,7 @@ if (HAVE_FLOCK)
   add_definitions(-DHAVE_FLOCK)
 endif()
 
-if (NOT WIN32)
+if (NOT WIN32 AND NOT APPLE)
   check_library_exists(c pipe2 "" HAVE_PIPE2)
   check_library_exists(c dup3 "" HAVE_DUP3)
 endif()
@@ -1678,9 +1808,9 @@ if (WIN32)
   set(CMAKE_CXX_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
 
   if (MSVC)
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} Crypt32 WS2_32 bcrypt User32 kernel32)
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} Crypt32 WS2_32 bcrypt User32 shell32 kernel32)
   else()
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} crypt32 ws2_32 mswsock bcrypt user32 kernel32)
+    set(SYSTEM_LIBS ${SYSTEM_LIBS} crypt32 ws2_32 mswsock bcrypt user32 shell32 kernel32)
   endif()
 
   # Don't use it even if we are compiling with gnu extensions
@@ -1744,7 +1874,7 @@ int main() {
   endif()
 
   # linux-syscall-support
-  if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR ANDROID)
+  if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR ANDROID OR OHOS)
     include_directories(third_party/lss)
   endif()
   if (APPLE AND COMPILER_CLANG)
@@ -1759,7 +1889,15 @@ link_libraries(${SYSTEM_LIBS})
 #           GUI Support Libraries
 # *****************************************************************************************
 
-if (WIN32 AND GUI)
+if (ANDROID AND GUI)
+  set(GUI_FLAVOUR "android")
+  set(GUI_USE_FILE "")
+  set(GUI_INCLUDE_DIRS "")
+  set(GUI_DEFINITIONS "")
+  set(GUI_C_CXX_FLAGS "")
+  set(GUI_LIBRARY_DIRS "")
+  set(GUI_LIBRARIES "")
+elseif (WIN32 AND GUI)
   message(STATUS "Compiling with GUI support: Windows")
   set(GUI_FLAVOUR "windows")
   set(GUI_USE_FILE "")
@@ -1769,10 +1907,13 @@ if (WIN32 AND GUI)
   set(GUI_LIBRARY_DIRS "")
   if (MSVC)
     set(GUI_LIBRARIES RASAPI32 wininet ShLwApi WinMM Gdi32 ComDlg32 Ole32 ComCtl32 shell32)
+  elseif (MINGW AND OS_AARCH64)
+    # FIXME missing RasEnumEntriesW symbol from mingw
+    set(GUI_LIBRARIES wininet shlwapi winmm gdi32 comdlg32 ole32 comctl32 shell32)
   else()
     set(GUI_LIBRARIES rasapi32 wininet shlwapi winmm gdi32 comdlg32 ole32 comctl32 shell32)
   endif()
-elseif (APPLE AND GUI AND COMPILER_CLANG)
+elseif (APPLE AND GUI AND NOT IOS)
   message(STATUS "Compiling with GUI support: Cocoa")
   find_library(COCOA_LIBRARY Cocoa REQUIRED)
   # Locate Interface Builder Tool, needed to build things like Storyboards outside of Xcode.
@@ -1794,6 +1935,28 @@ elseif (APPLE AND GUI AND COMPILER_CLANG)
   set(GUI_C_CXX_FLAGS "")
   set(GUI_LIBRARY_DIRS "")
   set(GUI_LIBRARIES "${COCOA_LIBRARY}")
+elseif (IOS AND GUI)
+  message(STATUS "Compiling with GUI support: IOS")
+  find_library(UIKIT_LIBRARY UIKit REQUIRED)
+  # Locate Interface Builder Tool, needed to build things like Storyboards outside of Xcode.
+  if(NOT ${CMAKE_GENERATOR} MATCHES "^Xcode.*")
+    # Make sure we can find the 'ibtool' program. If we can NOT find it we skip generation of this project.
+    find_program(IBTOOL ibtool HINTS "/usr/bin")
+    if(${IBTOOL} STREQUAL "IBTOOL-NOTFOUND")
+      message(WARNING "ibtool can not be found and is needed to compile the .xib files. "
+                         "It should have been installed with the Apple developer tools. ")
+      set(GUI off)
+      message(WARNING "ibtool not found in path, disabling GUI build")
+    endif()
+  endif()
+
+  set(GUI_FLAVOUR "ios")
+  set(GUI_USE_FILE "")
+  set(GUI_INCLUDE_DIRS "")
+  set(GUI_DEFINITIONS "")
+  set(GUI_C_CXX_FLAGS "")
+  set(GUI_LIBRARY_DIRS "")
+  set(GUI_LIBRARIES "${UIKIT_LIBRARY}")
 elseif (GUI)
   message(STATUS "Compiling with GUI support: GTK+")
   find_package(PkgConfig)
@@ -1949,11 +2112,50 @@ if (MINGW AND USE_LIBCXX)
   # force c++11 thread model
   add_definitions(-DABSL_FORCE_THREAD_IDENTITY_MODE=ABSL_THREAD_IDENTITY_MODE_USE_CPP11)
 endif()
-if (ANDROID)
+if (ANDROID OR OHOS OR IOS)
   set(LIBRT "OFF" CACHE BOOL "")
+  set(HAVE_LIB_RT "OFF" CACHE BOOL "")
+endif()
+if (ABSL_BUILD_TESTING)
+  set(ABSL_USE_EXTERNAL_GOOGLETEST "ON" CACHE BOOL "")
+  add_library(absl_gtest STATIC
+    third_party/googletest/googletest/src/gtest-all.cc)
+  target_include_directories(absl_gtest PRIVATE
+    third_party/googletest/googletest)
+  target_include_directories(absl_gtest PUBLIC
+    third_party/googletest/googletest/include)
+  add_library(absl_gtest_main STATIC
+    third_party/googletest/googletest/src/gtest_main.cc)
+  add_library(GTest::gtest ALIAS absl_gtest)
+  add_library(GTest::gtest_main ALIAS absl_gtest_main)
+
+  add_library(absl_gmock STATIC
+    third_party/googletest/googlemock/src/gmock-all.cc)
+  target_include_directories(absl_gmock PRIVATE
+    third_party/googletest/googlemock)
+  target_include_directories(absl_gmock PUBLIC
+    third_party/googletest/googletest/include
+    third_party/googletest/googlemock/include)
+  add_library(absl_gmock_main STATIC
+    third_party/googletest/googlemock/src/gmock_main.cc)
+  add_library(GTest::gmock ALIAS absl_gmock)
+  add_library(GTest::gmock_main ALIAS absl_gmock_main)
+  target_link_libraries(absl_gmock PUBLIC absl_gtest)
+
+  target_link_libraries(absl_gtest_main PUBLIC absl_gtest absl_gmock)
+  target_link_libraries(absl_gmock_main PUBLIC absl_gtest absl_gmock)
+
+  set(GTEST_LIBRARY absl_gtest)
+  set(GTEST_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googletest/googletest)
+  set(GTEST_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googletest/googletest/include)
+  set(GTEST_MAIN_LIBRARY absl_gtest_main)
+  set(GMOCK_LIBRARY absl_gmock)
+  set(GMOCK_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googletest/googlemock/include)
+  set(GMOCK_MAIN_LIBRARY absl_gmock_main)
 endif()
 add_subdirectory(third_party/abseil-cpp)
 
+list(APPEND YASS_APP_FEATURES "abseil-cpp")
 set(SUPPORT_LIBS
   absl::base
   absl::core_headers
@@ -2011,6 +2213,7 @@ if (USE_TCMALLOC)
 
   add_subdirectory(third_party/tcmalloc)
 
+  list(APPEND YASS_APP_FEATURES "tcmalloc")
   set(SUPPORT_DEFINITIONS
     HAVE_TCMALLOC
     ${SUPPORT_DEFINITIONS}
@@ -2024,9 +2227,12 @@ if (USE_TCMALLOC)
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12.0)
       set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
       set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
-    else()
+    elseif (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 13.0)
       set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch")
       set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch")
+    else()
+      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch -Wno-odr -Wno-error=uninitialized")
+      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch -Wno-odr -Wno-error=uninitialized")
     endif()
   endif()
 endif()
@@ -2038,6 +2244,7 @@ endif()
 if (USE_ICU)
   message(STATUS "Compiling with bundled icu library")
   add_subdirectory(third_party/icu)
+  list(APPEND YASS_APP_FEATURES "icu")
   set(SUPPORT_DEFINITIONS
     HAVE_ICU
     ${SUPPORT_DEFINITIONS}
@@ -2051,6 +2258,7 @@ endif()
 
 message(STATUS "Compiling with bundled re2 library")
 add_subdirectory(third_party)
+list(APPEND YASS_APP_FEATURES "re2")
 set(SUPPORT_LIBS re2 ${SUPPORT_LIBS})
 
 # *****************************************************************************************
@@ -2058,6 +2266,7 @@ set(SUPPORT_LIBS re2 ${SUPPORT_LIBS})
 # *****************************************************************************************
 
 message(STATUS "Compiling with bundled googleurl library")
+list(APPEND YASS_APP_FEATURES "googleurl")
 set(SUPPORT_LIBS url ${SUPPORT_LIBS})
 
 # *****************************************************************************************
@@ -2066,7 +2275,7 @@ set(SUPPORT_LIBS url ${SUPPORT_LIBS})
 
 set(_CRASHPAD_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/third_party/crashpad/crashpad/out/Default-${MSVC_C_ARCHITECTURE_ID}")
 set(_CRASHPAD_BINARY_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/third_party/crashpad/crashpad/out/Binary-${MSVC_C_ARCHITECTURE_ID}")
-if (MSVC AND ${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS "${_CRASHPAD_PREFIX}/obj/client/client.lib")
+if (MSVC AND MSVC_CRT_LINKAGE STREQUAL "dynamic" AND NOT ALLOW_XP AND ${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS "${_CRASHPAD_PREFIX}/obj/client/client.lib")
   message(STATUS "Compiling with bundled crashpad client library")
   add_library(crashpad_common STATIC IMPORTED)
   set_property(TARGET crashpad_common PROPERTY
@@ -2093,12 +2302,40 @@ if (MSVC AND ${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS "${_CRASHPAD_PREFIX}
     src
   )
   target_link_libraries(yass_crashpad PRIVATE crashpad_client crashpad_common crashpad_util mini_chromium_base)
+  list(APPEND YASS_APP_FEATURES "crashpad")
   set(SUPPORT_LIBS yass_crashpad ${SUPPORT_LIBS})
+  set(USE_CRASHPAD ON)
 
   file(COPY "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler.exe" DESTINATION ${CMAKE_BINARY_DIR})
+
+  install(FILES "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler.exe" DESTINATION bin)
 endif()
 
-if (NOT OSX_CROSS_ARCHITECTURES_COUNT)
+if (IOS)
+  if (SDK_NAME STREQUAL iphoneos)
+    set(_CRASHPAD_OS "-ios")
+    set(_CRASHPAD_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
+  elseif (SDK_NAME STREQUAL iphonesimulator)
+    set(_CRASHPAD_OS "-ios-simulator")
+    set(_CRASHPAD_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
+  endif()
+elseif (ANDROID)
+  set(_CRASHPAD_OS "-android")
+  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64-v8a")
+    set(_CRASHPAD_ARCH "arm64")
+  elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "armeabi-v7a")
+    set(_CRASHPAD_ARCH "arm")
+  elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86")
+    set(_CRASHPAD_ARCH "x86")
+  elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+    set(_CRASHPAD_ARCH "x64")
+  elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "riscv64")
+    set(_CRASHPAD_ARCH "riscv64")
+  else()
+    message(WARNING "crashpad: unsupported android architecture ${CMAKE_SYSTEM_PROCESSOR}")
+    set(_CRASHPAD_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
+  endif()
+elseif (NOT OSX_CROSS_ARCHITECTURES_COUNT)
   set(_CRASHPAD_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
 elseif (OSX_CROSS_ARCHITECTURES_COUNT EQUAL 1)
   set(_CRASHPAD_ARCH "${CMAKE_OSX_ARCHITECTURES}")
@@ -2113,9 +2350,9 @@ elseif (_CRASHPAD_ARCH STREQUAL "i386" OR _CRASHPAD_ARCH STREQUAL "i586" OR _CRA
 elseif (_CRASHPAD_ARCH STREQUAL "aarch64")
   set(_CRASHPAD_ARCH "arm64")
 endif()
-set(_CRASHPAD_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/third_party/crashpad/crashpad/out/Default-${_CRASHPAD_ARCH}")
-set(_CRASHPAD_BINARY_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/third_party/crashpad/crashpad/out/Binary-${_CRASHPAD_ARCH}")
-if (${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS "${_CRASHPAD_PREFIX}/obj/client/libclient.a")
+set(_CRASHPAD_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/third_party/crashpad/crashpad/out/Default-${_CRASHPAD_ARCH}${_CRASHPAD_OS}")
+set(_CRASHPAD_BINARY_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/third_party/crashpad/crashpad/out/Binary-${_CRASHPAD_ARCH}${_CRASHPAD_OS}")
+if (UNIX AND (${CMAKE_BUILD_TYPE} MATCHES MinSizeRel OR ${CMAKE_BUILD_TYPE} MATCHES Release) AND EXISTS "${_CRASHPAD_PREFIX}/obj/client/libclient.a")
   message(STATUS "Compiling with bundled crashpad client library")
   add_library(crashpad_common STATIC IMPORTED)
   set_property(TARGET crashpad_common PROPERTY
@@ -2142,7 +2379,37 @@ if (${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS "${_CRASHPAD_PREFIX}/obj/clie
     src
   )
   target_link_libraries(yass_crashpad PRIVATE crashpad_client crashpad_common crashpad_util mini_chromium_base)
+  list(APPEND YASS_APP_FEATURES "crashpad")
   set(SUPPORT_LIBS yass_crashpad ${SUPPORT_LIBS})
+  set(USE_CRASHPAD ON)
+  if (IOS)
+    add_library(crashpad_handler_common STATIC IMPORTED)
+    set_property(TARGET crashpad_handler_common PROPERTY
+                 IMPORTED_LOCATION "${_CRASHPAD_PREFIX}/obj/handler/libcommon.a")
+    target_link_libraries(yass_crashpad PRIVATE crashpad_handler_common)
+
+    add_library(crashpad_minidump STATIC IMPORTED)
+    set_property(TARGET crashpad_minidump PROPERTY
+                 IMPORTED_LOCATION "${_CRASHPAD_PREFIX}/obj/minidump/libminidump.a")
+    target_link_libraries(yass_crashpad PRIVATE crashpad_minidump)
+
+    add_library(crashpad_snapshot STATIC IMPORTED)
+    set_property(TARGET crashpad_snapshot PROPERTY
+                 IMPORTED_LOCATION "${_CRASHPAD_PREFIX}/obj/snapshot/libsnapshot.a")
+    target_link_libraries(yass_crashpad PRIVATE crashpad_snapshot)
+
+    add_library(crashpad_snapshot_context STATIC IMPORTED)
+    set_property(TARGET crashpad_snapshot_context PROPERTY
+                 IMPORTED_LOCATION "${_CRASHPAD_PREFIX}/obj/snapshot/libcontext.a")
+    target_link_libraries(yass_crashpad PRIVATE crashpad_snapshot_context)
+
+    add_library(crashpad_util_net STATIC IMPORTED)
+    set_property(TARGET crashpad_util_net PROPERTY
+                 IMPORTED_LOCATION "${_CRASHPAD_PREFIX}/obj/util/libnet.a")
+    target_link_libraries(yass_crashpad PRIVATE crashpad_util_net)
+
+    target_link_libraries(yass_crashpad PRIVATE z)
+  endif()
   if (APPLE)
     add_library(crashpad_util_mig STATIC IMPORTED)
     set_property(TARGET crashpad_util_mig PROPERTY
@@ -2150,8 +2417,56 @@ if (${CMAKE_BUILD_TYPE} MATCHES Release AND EXISTS "${_CRASHPAD_PREFIX}/obj/clie
     target_link_libraries(yass_crashpad PRIVATE crashpad_util_mig bsm)
   endif()
 
-  file(COPY "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler" DESTINATION ${CMAKE_BINARY_DIR})
-  set(_CRASHPAD_BINARY "${CMAKE_BINARY_DIR}/crashpad_handler")
+  if (NOT IOS)
+    file(COPY "${_CRASHPAD_BINARY_PREFIX}/crashpad_handler" DESTINATION ${CMAKE_BINARY_DIR})
+    set(_CRASHPAD_BINARY "${CMAKE_BINARY_DIR}/crashpad_handler")
+  endif()
+endif()
+
+# *****************************************************************************************
+#           tun2proxy Library
+# *****************************************************************************************
+
+if (ANDROID)
+  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64-v8a")
+    set(_TUN2PROXY_TARGET "aarch64-linux-android")
+  elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "armeabi-v7a")
+    set(_TUN2PROXY_TARGET "armv7-linux-androideabi")
+  elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86")
+    set(_TUN2PROXY_TARGET "i686-linux-android")
+  elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+    set(_TUN2PROXY_TARGET "x86_64-linux-android")
+  elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "riscv64")
+    set(_TUN2PROXY_TARGET "riscv64-linux-android")
+  else()
+    message(FATAL_ERROR "tun2proxy: unsupported android architecture ${CMAKE_SYSTEM_PROCESSOR}")
+  endif()
+  set(TUN2PROXY_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/tun2proxy/target/${_TUN2PROXY_TARGET}/release)
+  set(TUN2PROXY_LIB ${TUN2PROXY_LIB_DIR}/libtun2proxy.a)
+endif()
+
+if (IOS)
+  if (SDK_NAME STREQUAL iphoneos)
+    if (CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
+      set(_TUN2PROXY_TARGET "aarch64-apple-ios")
+    endif()
+  elseif (SDK_NAME STREQUAL iphonesimulator)
+    if (CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
+      set(_TUN2PROXY_TARGET "aarch64-apple-ios-sim")
+    endif()
+    if (CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
+      set(_TUN2PROXY_TARGET "x86_64-apple-ios")
+    endif()
+  endif()
+  if (_TUN2PROXY_TARGET)
+    set(TUN2PROXY_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/tun2proxy/target/${_TUN2PROXY_TARGET}/release)
+    set(TUN2PROXY_LIB ${TUN2PROXY_LIB_DIR}/libtun2proxy.a)
+  endif()
+endif()
+
+if (TUN2PROXY_LIB)
+  add_library(tun2proxy STATIC IMPORTED)
+  set_property(TARGET tun2proxy PROPERTY IMPORTED_LOCATION "${TUN2PROXY_LIB}")
 endif()
 
 # *****************************************************************************************
@@ -2171,6 +2486,7 @@ if (MINGW AND USE_LIBCXX)
   set(CMAKE_C_FLAGS "${PREVIOUS_CMAKE_C_FLAGS}")
   set(CMAKE_CXX_FLAGS "${PREVIOUS_CMAKE_CXX_FLAGS}")
 endif()
+list(APPEND YASS_APP_FEATURES "boringssl")
 set(SUPPORT_DEFINITIONS
   HAVE_BORINGSSL
   ${SUPPORT_DEFINITIONS}
@@ -2208,6 +2524,7 @@ endif()
 
 if (USE_SYSTEM_MBEDTLS AND USE_MBEDTLS)
   message(STATUS "Compiling with system mbedtls library")
+  list(APPEND YASS_APP_FEATURES "system mbedtls")
   set(SUPPORT_DEFINITIONS
     HAVE_MBEDTLS
     ${SUPPORT_DEFINITIONS}
@@ -2230,6 +2547,7 @@ elseif (USE_MBEDTLS)
 
   add_subdirectory(third_party/mbedtls)
 
+  list(APPEND YASS_APP_FEATURES "mbedtls")
   set(SUPPORT_DEFINITIONS
     HAVE_MBEDTLS
     ${SUPPORT_DEFINITIONS}
@@ -2242,8 +2560,10 @@ endif()
 # *****************************************************************************************
 
 add_library(asio STATIC
-  src/core/asio.hpp
-  src/core/asio.cpp)
+  src/net/asio.hpp
+  src/net/asio.cpp
+  src/net/asio_throw_exceptions.hpp
+)
 target_include_directories(asio PUBLIC
   src)
 target_include_directories(asio PUBLIC
@@ -2275,28 +2595,27 @@ if (APPLE)
 endif()
 
 if (USE_BUILTIN_CA_BUNDLE_CRT)
-  target_compile_definitions(asio PRIVATE HAVE_BUILTIN_CA_BUNDLE_CRT=1)
-  target_include_directories(asio PRIVATE third_party/ca-certificates)
+  set(ASIO_CA_BUNDLE_CRT_SRC)
 
-  if (WIN32 AND NOT MSVC_PROCESSOR_ARCHITECTURE STREQUAL "arm64")
+  if (WIN32 AND NOT OS_AARCH64)
     enable_language(ASM_NASM)
-    target_sources(asio PRIVATE "third_party/ca-certificates/ca-bundle.crt.asm")
+    set(ASIO_CA_BUNDLE_CRT_SRC "third_party/ca-certificates/ca-bundle.crt.asm")
   endif()
 
-  if (WIN32 AND MSVC_PROCESSOR_ARCHITECTURE STREQUAL "arm64")
+  if (WIN32 AND OS_AARCH64)
     enable_language(ASM)
     if (COMPILER_CLANG)
       set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wno-unused-command-line-argument")
     endif()
-    target_sources(asio PRIVATE "third_party/ca-certificates/ca-bundle.crt.win.s")
+    set(ASIO_CA_BUNDLE_CRT_SRC "third_party/ca-certificates/ca-bundle.crt.win.s")
   endif()
 
-  if (ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+  if (OHOS OR ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
     enable_language(ASM)
     if (COMPILER_CLANG)
       set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wno-unused-command-line-argument")
     endif()
-    target_sources(asio PRIVATE "third_party/ca-certificates/ca-bundle.crt.s")
+    set(ASIO_CA_BUNDLE_CRT_SRC "third_party/ca-certificates/ca-bundle.crt.s")
   endif()
 
   if (APPLE)
@@ -2304,10 +2623,22 @@ if (USE_BUILTIN_CA_BUNDLE_CRT)
     if (COMPILER_CLANG)
       set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wno-unused-command-line-argument")
     endif()
-    target_sources(asio PRIVATE "third_party/ca-certificates/ca-bundle.crt.apple.s")
+    set(ASIO_CA_BUNDLE_CRT_SRC "third_party/ca-certificates/ca-bundle.crt.apple.s")
   endif()
+
+  if (NOT ASIO_CA_BUNDLE_CRT_SRC)
+    message(FATAL_ERROR "builtin ca bundle crt missing implementation")
+  endif()
+
+  add_library(asio_ca_bundle_crt OBJECT ${ASIO_CA_BUNDLE_CRT_SRC})
+  target_compile_definitions(asio_ca_bundle_crt PUBLIC HAVE_BUILTIN_CA_BUNDLE_CRT=1)
+  target_include_directories(asio_ca_bundle_crt PRIVATE third_party/ca-certificates)
+
+  list(APPEND YASS_APP_FEATURES "builtin ca-bundle")
+  target_link_libraries(asio PRIVATE asio_ca_bundle_crt)
 endif()
 
+list(APPEND YASS_APP_FEATURES "asio")
 set(SUPPORT_LIBS asio ${SUPPORT_LIBS})
 
 # *****************************************************************************************
@@ -2328,8 +2659,10 @@ endif()
 
 if (USE_SYSTEM_JSON)
   message(STATUS "Compiling with system nlohmann json library")
+  list(APPEND YASS_APP_FEATURES "system nlohmann json")
 else()
   message(STATUS "Compiling with bundled nlohmann json library")
+  list(APPEND YASS_APP_FEATURES "nlohmann json")
   set(SUPPORT_INCLUDE_DIRS
     third_party/json/include
     ${SUPPORT_INCLUDE_DIRS}
@@ -2438,36 +2771,6 @@ int main() {
 endif()
 
 # *****************************************************************************************
-#           xxhash Library
-# *****************************************************************************************
-
-if (USE_SYSTEM_XXHASH)
-  find_package(PkgConfig)
-  if (PKG_CONFIG_FOUND)
-    pkg_check_modules(XXHASH libxxhash)
-  endif()
-  if(NOT XXHASH_FOUND)
-    message(STATUS "System xxhash not found, using bundled one")
-    set(USE_SYSTEM_XXHASH FALSE)
-  endif()
-endif()
-
-if (USE_SYSTEM_XXHASH)
-  message(STATUS "Compiling with system xxhash")
-  # ignore broken pkg-config output
-  set(SUPPORT_LIBS xxhash ${SUPPORT_LIBS})
-else()
-  message(STATUS "Compiling with bundled xxhash")
-  add_library(xxhash STATIC third_party/xxhash/xxhash.c)
-  target_include_directories(xxhash PUBLIC third_party/xxhash)
-
-  if (COMPILER_MSVC)
-    target_compile_options(xxhash PRIVATE "/wd4255")
-  endif()
-  set(SUPPORT_LIBS xxhash ${SUPPORT_LIBS})
-endif()
-
-# *****************************************************************************************
 #           Protobuf Library
 # *****************************************************************************************
 
@@ -2483,6 +2786,7 @@ set(protobuf_WITH_ZLIB "OFF" CACHE STRING "")
 set(protobuf_BUILD_SHARED_LIBS "OFF" CACHE STRING "")
 add_subdirectory(third_party/protobuf)
 # required because it is not bound with libproto/libproto-lite targets
+list(APPEND YASS_APP_FEATURES "protobuf")
 set(SUPPORT_DEFINITIONS
   GOOGLE_PROTOBUF_NO_RTTI=1
   PROTOBUF_USE_EXCEPTIONS=0
@@ -2522,9 +2826,11 @@ if (USE_SYSTEM_ZLIB)
   include_directories(${ZLIB_INCLUDE_DIRS})
   link_directories(${ZLIB_LIBRARY_DIRS})
   link_libraries(${ZLIB_LIBRARIES})
+  list(APPEND YASS_APP_FEATURES "system zlib")
 else()
   message(STATUS "Compiling with bundled zlib")
   add_subdirectory(third_party/zlib)
+  list(APPEND YASS_APP_FEATURES "zlib")
   set(SUPPORT_LIBS zlib ${SUPPORT_LIBS})
 endif()
 
@@ -2545,6 +2851,7 @@ endif()
 
 if (USE_SYSTEM_CARES AND USE_CARES)
   message(STATUS "Compiling with system cares")
+  list(APPEND YASS_APP_FEATURES "system c-ares")
   set(SUPPORT_DEFINITIONS
     HAVE_C_ARES
     ${SUPPORT_DEFINITIONS}
@@ -2554,6 +2861,7 @@ if (USE_SYSTEM_CARES AND USE_CARES)
   link_libraries(${CARES_LIBRARIES})
 elseif (USE_CARES)
   message(STATUS "Compiling with bundled cares")
+  list(APPEND YASS_APP_FEATURES "c-ares")
   set(SUPPORT_DEFINITIONS
     HAVE_C_ARES
     ${SUPPORT_DEFINITIONS}
@@ -2586,6 +2894,7 @@ endif()
 
 if (USE_SYSTEM_NGHTTP2 AND USE_NGHTTP2)
   message(STATUS "Compiling with system libnghttp2")
+  list(APPEND YASS_APP_FEATURES "system nghttp2")
   set(SUPPORT_DEFINITIONS
     HAVE_NGHTTP2
     ${SUPPORT_DEFINITIONS}
@@ -2595,6 +2904,9 @@ if (USE_SYSTEM_NGHTTP2 AND USE_NGHTTP2)
   link_libraries(${NGHTTP2_LIBRARIES})
 elseif (USE_NGHTTP2)
   message(STATUS "Compiling with bundled libnghttp2")
+  set(ENABLE_APP OFF CACHE BOOL "")
+  set(ENABLE_HPACK_TOOLS OFF CACHE BOOL "")
+  set(ENABLE_EXAMPLES OFF CACHE BOOL "")
   set(ENABLE_LIB_ONLY ON CACHE BOOL "")
   set(ENABLE_SHARED_LIB OFF CACHE BOOL "")
   set(ENABLE_STATIC_LIB ON CACHE BOOL "")
@@ -2614,14 +2926,18 @@ elseif (USE_NGHTTP2)
     target_compile_options(nghttp2_static PRIVATE -Wno-extra-semi-stmt)
     target_compile_options(nghttp2_static PRIVATE -Wno-covered-switch-default)
   endif()
+  set(NGHTTP2_INCLUDE_DIRS
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/nghttp2/lib/includes
+    ${CMAKE_CURRENT_BINARY_DIR}/third_party/nghttp2/lib/includes
+    )
   set(NGHTTP2_LIBRARIES nghttp2_static)
+  list(APPEND YASS_APP_FEATURES "nghttp2")
   set(SUPPORT_DEFINITIONS
     HAVE_NGHTTP2
     ${SUPPORT_DEFINITIONS}
   )
   set(SUPPORT_INCLUDE_DIRS
-    third_party/nghttp2/lib/includes
-    ${CMAKE_CURRENT_BINARY_DIR}/third_party/nghttp2/lib/includes
+    ${NGHTTP2_INCLUDE_DIRS}
     ${SUPPORT_INCLUDE_DIRS}
   )
   set(SUPPORT_LIBS
@@ -2637,6 +2953,7 @@ endif()
 # include both of googleurl and quiche
 # TODO:Uncomment the below line out
 add_subdirectory(third_party/quiche)
+list(APPEND YASS_APP_FEATURES "quiche")
 set(SUPPORT_DEFINITIONS
   HAVE_QUICHE
   ${SUPPORT_DEFINITIONS}
@@ -2657,6 +2974,7 @@ endif()
 
 if (USE_SYSTEM_HTTP_PARSER AND NOT USE_BALSA_HTTP_PARSER)
   message(STATUS "Compiling with system http-parser")
+  list(APPEND YASS_APP_FEATURES "system http parser")
   set(SUPPORT_LIBS http_parser ${SUPPORT_LIBS})
 elseif(NOT USE_BALSA_HTTP_PARSER)
   message(STATUS "Compiling with bundled http-parser")
@@ -2665,11 +2983,13 @@ elseif(NOT USE_BALSA_HTTP_PARSER)
     third_party/http_parser/http_parser.c
     )
   target_include_directories(http_parser PUBLIC third_party/http_parser)
+  list(APPEND YASS_APP_FEATURES "nodejs http parser")
   set(SUPPORT_LIBS http_parser ${SUPPORT_LIBS})
 endif()
 
 if (USE_BALSA_HTTP_PARSER)
   message(STATUS "Compiling with balsa http parser")
+  list(APPEND YASS_APP_FEATURES "balsa http parser")
   set(SUPPORT_DEFINITIONS
     HAVE_BALSA_HTTP_PARSER
     ${SUPPORT_DEFINITIONS}
@@ -2685,6 +3005,7 @@ if (USE_LEVELDB)
   message(STATUS "Compiling with bundled snappy library")
   add_subdirectory(third_party/snappy)
   include_directories(third_party/snappy/src)
+  list(APPEND YASS_APP_FEATURES "snappy")
 endif()
 
 # *****************************************************************************************
@@ -2703,6 +3024,7 @@ if (USE_LEVELDB)
   set(ZSTD_LEGACY_SUPPORT "OFF" CACHE STRING "")
   add_subdirectory(third_party/zstd/build/cmake)
   include_directories(third_party/zstd/lib)
+  list(APPEND YASS_APP_FEATURES "zstd")
 endif()
 
 # *****************************************************************************************
@@ -2720,6 +3042,7 @@ if (USE_LEVELDB)
   set(HAVE_ZSTD 1)
   set(HAVE_TCMALLOC 0)
   add_subdirectory(third_party/leveldb)
+  list(APPEND YASS_APP_FEATURES "leveldb")
   set(SUPPORT_DEFINITIONS
     HAVE_LEVELDB
     ${SUPPORT_DEFINITIONS}
@@ -2734,6 +3057,7 @@ endif()
 if (USE_SQLITE)
   message(STATUS "Compiling with bundled sqlite3 library")
   add_subdirectory(third_party/sqlite)
+  list(APPEND YASS_APP_FEATURES "sqlite3")
   set(SUPPORT_DEFINITIONS
     HAVE_SQLITE
     ${SUPPORT_DEFINITIONS}
@@ -2749,6 +3073,9 @@ if (COMPILER_GCC OR COMPILER_CLANG)
   # Note clang-cl is odd and sets both CLANG and MSVC. We base our configuration
   # primarily on our normal Clang one.
   set(C_CXX_FLAGS "-Werror -Wformat=2 -Wsign-compare -Wmissing-field-initializers -Wwrite-strings -Wvla -Wno-shadow")
+  if (COMPILER_APPLE_CLANG)
+    set(C_CXX_FLAGS "${C_CXX_FLAGS} -Wno-error=shorten-64-to-32")
+  endif()
 
   if (MSVC)
     # clang-cl sets different default warnings than clang. It also treats -Wall
@@ -3057,40 +3384,110 @@ endif()
 #           Source code
 # *****************************************************************************************
 
+add_library(yass_core STATIC
+    src/config/config.cpp
+    src/config/config_network.cpp
+    src/config/config_tls.cpp
+    src/config/config_impl.cpp
+    src/config/config.hpp
+    src/config/config_impl.hpp
+    src/config/config_impl_local.hpp
+    src/config/config_impl_windows.hpp
+    src/core/logging.cpp
+    src/core/logging.hpp
+    src/core/check_op.cpp
+    src/core/check_op.hpp
+    src/core/check.cpp
+    src/core/check.hpp
+    src/core/process_utils.hpp
+    src/core/process_utils.cpp
+    src/crypto/crypter_export.cpp
+    src/crypto/crypter_export.hpp
+    src/core/utils.cpp
+    src/core/utils_fs.cpp
+    src/core/utils.hpp
+    src/core/utils_fs.hpp
+    src/core/safe_strerror.cpp
+    src/core/safe_strerror.hpp
+    src/core/debug.cpp
+    src/core/debug.hpp
+    src/core/rand_util.cpp
+    src/core/rand_util.hpp
+    src/core/scoped_clear_last_error_win.cpp
+    src/core/ref_counted.cpp
+    src/core/ref_counted.hpp
+    src/core/thread_collision_warner.hpp
+    src/core/thread_collision_warner.cpp
+    src/core/atomic_ref_count.hpp
+  )
+
+if (WIN32)
+  target_sources(yass_core PRIVATE src/core/rand_util_win.cpp)
+  target_sources(yass_core PRIVATE src/core/utils_win.cpp)
+elseif (APPLE)
+  target_sources(yass_core PRIVATE src/config/config_impl_apple.hpp)
+  target_sources(yass_core PRIVATE src/config/config_impl_apple.mm)
+  target_sources(yass_core PRIVATE src/core/rand_util_posix.cpp)
+  target_sources(yass_core PRIVATE src/core/utils_mac.mm)
+else()
+  target_sources(yass_core PRIVATE src/core/rand_util_posix.cpp)
+  target_sources(yass_core PRIVATE src/core/utils_linux.cpp)
+  target_sources(yass_core PRIVATE src/core/utils_freebsd.cpp)
+endif()
+
+target_link_libraries(yass_core PUBLIC url
+  absl::flags
+  absl::flags_parse
+  absl::flags_marshalling
+  absl::failure_signal_handler)
+
+if (USE_CRASHPAD)
+  target_link_libraries(yass_core PUBLIC yass_crashpad)
+endif()
+
+if (USE_ICU)
+  target_sources(yass_core PRIVATE src/i18n/icu_util.cpp)
+  target_sources(yass_core PRIVATE src/i18n/icu_util.hpp)
+  target_link_libraries(yass_core PUBLIC icuuc icui18n)
+endif()
+
+if (USE_TCMALLOC)
+  target_link_libraries(yass_core PUBLIC tcmalloc)
+endif()
+
+target_include_directories(yass_core PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl-override
+  ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl/polyfills
+  ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl
+  ${SUPPORT_INCLUDE_DIRS})
+
+target_include_directories(yass_core PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+target_compile_definitions(yass_core PUBLIC
+  ${SUPPORT_DEFINITIONS})
+
+set(SUPPORT_LIBS
+  yass_core
+  ${SUPPORT_LIBS})
+
 set(files
-    src/network.cpp
+    src/net/network.cpp
+    src/net/x509_util.cpp
     src/net/ssl_socket.cpp
     src/net/ssl_server_socket.cpp
     src/net/openssl_util.cpp
-    src/config/config.cpp
-    src/config/config_tls.cpp
-    src/config/config_impl.cpp
-    src/core/cipher.cpp
-    src/core/hkdf_sha1.cpp
-    src/core/hmac_sha1.cpp
-    src/core/iobuf.cpp
-    src/core/socks4_request_parser.cpp
-    src/core/socks5_request_parser.cpp
-    src/core/ss_request_parser.cpp
-    src/core/process_utils.cpp
-    src/core/rand_util.cpp
-    src/core/logging.cpp
-    src/core/utils.cpp
-    src/core/utils_fs.cpp
-    src/core/safe_strerror.cpp
-    src/core/debug.cpp
-    src/core/string_util.cpp
-    src/core/check_op.cpp
-    src/core/check.cpp
-    src/core/scoped_clear_last_error_win.cpp
-    src/core/string_util_constants.cpp
-    src/core/ref_counted.cpp
-    src/core/utf_string_conversion_utils.cpp
-    src/core/base64.cpp
-    src/core/hash.cpp
-    src/core/atl_throw.cpp
-    src/core/thread_collision_warner.hpp
-    src/core/thread_collision_warner.cpp
+    src/net/base64.cpp
+    src/net/cipher.cpp
+    src/net/iobuf.cpp
+    src/net/hkdf_sha1.cpp
+    src/net/hmac_sha1.cpp
+    src/net/socks4_request_parser.cpp
+    src/net/socks5_request_parser.cpp
+    src/net/ss_request_parser.cpp
+    src/net/c-ares.cpp
+    src/net/http_parser.cpp
+    src/net/padding.cpp
     src/crypto/aead_base_decrypter.cpp
     src/crypto/aead_base_encrypter.cpp
     src/crypto/aead_evp_decrypter.cpp
@@ -3114,7 +3511,6 @@ set(files
     src/crypto/chacha20_poly1305_sodium_decrypter.cpp
     src/crypto/chacha20_poly1305_sodium_encrypter.cpp
     src/crypto/crypter.cpp
-    src/crypto/crypter_export.cpp
     src/crypto/decrypter.cpp
     src/crypto/encrypter.cpp
     src/crypto/xchacha20_poly1305_evp_decrypter.cpp
@@ -3122,54 +3518,40 @@ set(files
     src/crypto/xchacha20_poly1305_sodium_decrypter.cpp
     src/crypto/xchacha20_poly1305_sodium_encrypter.cpp
     src/crypto/mbedtls_common.cpp
-
-    src/core/c-ares.cpp
-    src/core/http_parser.cpp
     )
 
 set(hfiles
-    src/network.hpp
+    src/net/network.hpp
+    src/net/channel.hpp
+    src/net/connection.hpp
+    src/net/content_server.hpp
+    src/net/protocol.hpp
+    src/net/stream.hpp
+    src/net/ssl_stream.hpp
+    src/net/x509_util.hpp
     src/net/ssl_socket.hpp
     src/net/ssl_server_socket.hpp
     src/net/net_errors.hpp
     src/net/net_error_list.hpp
     src/net/openssl_util.hpp
-    src/config/config.hpp
-    src/config/config_impl.hpp
-    src/config/config_impl_local.hpp
-    src/config/config_impl_windows.hpp
-    src/core/cipher.hpp
-    src/core/hkdf_sha1.hpp
-    src/core/hmac_sha1.hpp
-    src/core/iobuf.hpp
-    src/core/socks4.hpp
-    src/core/socks4_request.hpp
-    src/core/socks4_request_parser.hpp
-    src/core/socks5.hpp
-    src/core/socks5_request.hpp
-    src/core/socks5_request_parser.hpp
-    src/core/ss.hpp
-    src/core/ss_request.hpp
-    src/core/ss_request_parser.hpp
-    src/core/process_utils.hpp
-    src/core/rand_util.hpp
-    src/core/logging.hpp
-    src/core/utils.hpp
-    src/core/utils_fs.hpp
-    src/core/safe_strerror.hpp
-    src/core/debug.hpp
-    src/core/string_util.hpp
-    src/core/check_op.hpp
-    src/core/check.hpp
-    src/core/atomic_ref_count.hpp
-    src/core/gtest_prod_util.hpp
-    src/core/ref_counted.hpp
-    src/core/utf_string_conversion_utils.hpp
-    src/core/hash.hpp
-    src/core/base64.hpp
-    src/core/cxx20_to_address.hpp
-    src/core/atl_throw.hpp
-    src/core/atl.hpp
+    src/net/base64.hpp
+    src/net/cipher.hpp
+    src/net/iobuf.hpp
+    src/net/hkdf_sha1.hpp
+    src/net/hmac_sha1.hpp
+    src/net/socks4.hpp
+    src/net/socks4_request.hpp
+    src/net/socks4_request_parser.hpp
+    src/net/socks5.hpp
+    src/net/socks5_request.hpp
+    src/net/socks5_request_parser.hpp
+    src/net/ss.hpp
+    src/net/ss_request.hpp
+    src/net/ss_request_parser.hpp
+    src/net/io_queue.hpp
+    src/net/c-ares.hpp
+    src/net/http_parser.hpp
+    src/net/padding.hpp
     src/crypto/aead_base_decrypter.hpp
     src/crypto/aead_base_encrypter.hpp
     src/crypto/aead_evp_decrypter.hpp
@@ -3193,7 +3575,6 @@ set(hfiles
     src/crypto/chacha20_poly1305_sodium_decrypter.hpp
     src/crypto/chacha20_poly1305_sodium_encrypter.hpp
     src/crypto/crypter.hpp
-    src/crypto/crypter_export.hpp
     src/crypto/decrypter.hpp
     src/crypto/encrypter.hpp
     src/crypto/xchacha20_poly1305_evp_decrypter.hpp
@@ -3201,59 +3582,33 @@ set(hfiles
     src/crypto/xchacha20_poly1305_sodium_decrypter.hpp
     src/crypto/xchacha20_poly1305_sodium_encrypter.hpp
     src/crypto/mbedtls_common.hpp
-
-    src/core/c-ares.hpp
-    src/core/http_parser.hpp
     )
 
-if (WIN32)
-  list(APPEND files src/core/rand_util_win.cpp)
-  list(APPEND files src/core/utils_win.cpp)
-elseif (APPLE AND COMPILER_CLANG)
-  list(APPEND files src/config/config_impl_apple.hpp)
-  list(APPEND files src/config/config_impl_apple.mm)
-  list(APPEND files src/core/rand_util_posix.cpp)
-  list(APPEND files src/core/utils_mac.mm)
-  list(APPEND files src/core/foundation_util.mm)
-else()
-  if (APPLE)
-    list(APPEND files src/core/utils_mac.mm)
-  endif()
-  list(APPEND files src/core/rand_util_posix.cpp)
-  list(APPEND files src/core/utils_linux.cpp)
-  list(APPEND files src/core/utils_freebsd.cpp)
-endif()
-
-if (USE_ICU)
-  list(APPEND files src/i18n/icu_util.cpp)
-  list(APPEND hfiles src/i18n/icu_util.hpp)
-endif()
-
-add_library(yass_base STATIC
+add_library(yass_net STATIC
   ${files} ${hfiles}
   )
 
-target_include_directories(yass_base PUBLIC
+target_include_directories(yass_net PUBLIC
   ${SUPPORT_INCLUDE_DIRS})
 
-target_include_directories(yass_base PRIVATE
+target_include_directories(yass_net PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-target_include_directories(yass_base PUBLIC
+target_include_directories(yass_net PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
 
-target_compile_definitions(yass_base PUBLIC
+target_compile_definitions(yass_net PUBLIC
   ${SUPPORT_DEFINITIONS})
 
-target_link_libraries(yass_base PUBLIC ${SUPPORT_LIBS})
+target_link_libraries(yass_net PUBLIC ${SUPPORT_LIBS})
 
 if (USE_LIBCXX)
-  target_link_libraries(yass_base PUBLIC
+  target_link_libraries(yass_net PUBLIC
     cxx ${libcxx_PUBLIC_LIBRARIES})
 endif()
 
 if (ANDROID)
-  target_link_libraries(yass_base PUBLIC log)
+  target_link_libraries(yass_net PUBLIC log)
 endif()
 
 add_library(yass_cli_lib OBJECT
@@ -3266,12 +3621,12 @@ add_library(yass_cli_lib OBJECT
 target_include_directories(yass_cli_lib PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-target_link_libraries(yass_cli_lib PUBLIC yass_base)
+target_link_libraries(yass_cli_lib PUBLIC yass_net)
 
 if (CLI)
   add_executable(yass_cli
     src/cli/cli.cpp
-    )
+  )
 
   if (WIN32)
     set(CLI_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass_cli.manifest")
@@ -3284,13 +3639,14 @@ if (CLI)
 
   target_link_libraries(yass_cli PUBLIC
     yass_cli_lib
-    yass_base
+    yass_net
     )
 
-  if (NOT CMAKE_SKIP_INSTALL_RULES)
+  if (NOT CMAKE_SKIP_INSTALL_RULES AND NOT WIN32 AND NOT IOS)
     install(TARGETS yass_cli RUNTIME DESTINATION bin)
+    install(FILES doc/yass_cli.1 DESTINATION share/man/man1)
     # TODO add freebsd rc files
-    if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID)
+    if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID AND NOT OHOS)
       install(FILES yass.json.sample RENAME config.json DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/yass)
       install(FILES yass.service RENAME yass.service DESTINATION lib/systemd/system)
 
@@ -3307,7 +3663,7 @@ add_library(yass_server_lib OBJECT
 target_include_directories(yass_server_lib PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-target_link_libraries(yass_server_lib PUBLIC yass_base)
+target_link_libraries(yass_server_lib PUBLIC yass_net)
 
 if (SERVER)
   add_executable(yass_server
@@ -3325,17 +3681,22 @@ if (SERVER)
 
   target_link_libraries(yass_server PUBLIC
     yass_server_lib
-    yass_base
+    yass_net
     )
 
-  if (NOT CMAKE_SKIP_INSTALL_RULES)
+  if (NOT CMAKE_SKIP_INSTALL_RULES AND NOT WIN32 AND NOT IOS)
     install(TARGETS yass_server RUNTIME DESTINATION bin)
-    if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID)
+    install(FILES doc/yass_server.1 DESTINATION share/man/man1)
+    if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID AND NOT OHOS)
       install(FILES yass-server.json.sample RENAME server.json DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/yass)
       install(FILES yass-server.service RENAME yass-server.service DESTINATION lib/systemd/system)
     endif()
   endif()
 endif()
+
+set(APP_FEATURE_HEADER "${CMAKE_CURRENT_BINARY_DIR}/feature.h")
+configure_file("src/feature.h.in" "${APP_FEATURE_HEADER}" @ONLY)
+message(STATUS "Enabled Feature: ${YASS_APP_FEATURES}")
 
 # *****************************************************************************************
 #           Source code: GUI part
@@ -3344,8 +3705,16 @@ endif()
 if (GUI)
     set(APP_NAME yass)
     set(SRC_FILES)
-
-    if (GUI_FLAVOUR STREQUAL "windows")
+    if (GUI_FLAVOUR STREQUAL "android")
+        list(APPEND SRC_FILES
+          src/android/yass.cpp
+          src/android/yass.hpp
+          src/android/jni.cpp
+          src/android/jni.hpp
+          src/android/utils.hpp
+          src/android/utils.cpp
+        )
+    elseif (GUI_FLAVOUR STREQUAL "windows")
         set(APP_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass.manifest")
         configure_file("src/win32/yass.manifest.in" "${APP_MSVC_MANIFEST}" @ONLY)
 
@@ -3373,11 +3742,20 @@ if (GUI)
           src/win32/utils_win.cpp)
     elseif (GUI_FLAVOUR STREQUAL "cocoa")
         set(MAIN_STORYBOARD ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/Base.lproj/Main.storyboard)
+        set(ALLRESOURCES src/mac/yass.icns)
+        if (${CMAKE_GENERATOR} MATCHES "^Xcode.*")
+          set(ALLRESOURCES
+            ${ALLRESOURCES}
+            ${MAIN_STORYBOARD}
+            src/mac/en.lproj/Localizable.strings
+            src/mac/en.lproj/Main.strings
+            src/mac/zh-Hans.lproj/Localizable.strings
+            src/mac/zh-Hans.lproj/Main.strings
+          )
+        endif()
         set(ASSET_CATALOG src/mac/Assets.xcassets)
         set(ASSET_CATALOG_ASSETS Assets)
-        list(APPEND SRC_FILES
-          ${MAIN_STORYBOARD}
-          )
+        list(APPEND SRC_FILES ${ALLRESOURCES})
         list(APPEND SRC_FILES
           ${ASSET_CATALOG})
         if (USE_ICU)
@@ -3388,10 +3766,6 @@ if (GUI)
           list(APPEND SRC_FILES
             ${_CRASHPAD_BINARY})
         endif()
-        if (GUI_SANDBOX)
-          list(APPEND SRC_FILES
-            src/mac/yass.entitlements)
-        endif()
         list(APPEND SRC_FILES
           src/mac/yass.icns)
 
@@ -3400,11 +3774,47 @@ if (GUI)
           src/mac/YassAppDelegate.h
           src/mac/YassViewController.mm
           src/mac/YassViewController.h
+          src/mac/YassWindowController.mm
+          src/mac/YassWindowController.h
           src/mac/OptionViewController.mm
           src/mac/OptionViewController.h
           src/mac/utils.h
           src/mac/utils_mac.mm
           src/mac/main.mm)
+    elseif (GUI_FLAVOUR STREQUAL "ios")
+        set(MAIN_STORYBOARD ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/Base.lproj/Main.storyboard)
+        set(LAUNCH_STORYBOARD ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/Base.lproj/LaunchScreen.storyboard)
+        set(ALLRESOURCES)
+        if (${CMAKE_GENERATOR} MATCHES "^Xcode.*")
+          set(ALLRESOURCES
+            ${ALLRESOURCES}
+            ${MAIN_STORYBOARD}
+            ${LAUNCH_STORYBOARD}
+            src/ios/en.lproj/Localizable.strings
+            src/ios/en.lproj/Main.strings
+            src/ios/zh-Hans.lproj/Localizable.strings
+            src/ios/zh-Hans.lproj/Main.strings)
+        endif()
+        set(ASSET_CATALOG src/ios/Assets.xcassets)
+        set(ASSET_CATALOG_ASSETS Assets)
+        list(APPEND SRC_FILES ${ALLRESOURCES})
+        list(APPEND SRC_FILES
+          ${ASSET_CATALOG})
+        if (USE_ICU)
+          list(APPEND SRC_FILES
+            ${ICU_DATAFILE})
+        endif()
+        list(APPEND SRC_FILES
+          src/ios/YassAppDelegate.mm
+          src/ios/YassAppDelegate.h
+          src/ios/YassViewController.mm
+          src/ios/YassViewController.h
+          src/ios/YassSceneDelegate.h
+          src/ios/YassSceneDelegate.mm
+          src/ios/utils.h
+          src/ios/utils.mm
+          src/ios/utils.cpp
+          src/ios/main.mm)
     elseif(GUI_FLAVOUR STREQUAL "gtk3")
         list(APPEND SRC_FILES
           src/gtk/yass.cpp
@@ -3443,14 +3853,25 @@ if (GUI)
     # target_link_directories requires cmake 3.13
     link_directories(${GUI_LIBRARY_DIRS})
 
-    if (GUI_FLAVOUR STREQUAL "cocoa")
+    if (GUI_FLAVOUR STREQUAL "ios" OR GUI_FLAVOUR STREQUAL "cocoa")
       set(GUI_OPTIONS MACOSX_BUNDLE)
     endif()
 
-    add_executable(${APP_NAME} WIN32 ${GUI_OPTIONS}
-        ${SRC_FILES}
-        ${GUI_USE_FILE}
-        )
+    if (GUI_FLAVOUR STREQUAL "android")
+      add_library(${APP_NAME} SHARED ${GUI_OPTIONS}
+          ${SRC_FILES}
+          ${GUI_USE_FILE}
+          )
+
+      target_link_libraries(${APP_NAME} PRIVATE tun2proxy)
+      set_target_properties(${APP_NAME} PROPERTIES
+        LINK_FLAGS "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/src/android/export.lds -u Java_it_gui_yass_MainActivity_tun2ProxyInit -u Java_it_gui_yass_MainActivity_tun2ProxyRun -u Java_it_gui_yass_MainActivity_tun2ProxyDestroy")
+    else()
+      add_executable(${APP_NAME} WIN32 ${GUI_OPTIONS}
+          ${SRC_FILES}
+          ${GUI_USE_FILE}
+          )
+    endif()
 
     target_include_directories(${APP_NAME} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -3459,12 +3880,18 @@ if (GUI)
     target_include_directories(${APP_NAME} SYSTEM PRIVATE
         ${GUI_INCLUDE_DIRS})
 
-    if (GUI_FLAVOUR STREQUAL "windows")
+    if (GUI_FLAVOUR STREQUAL "android")
+      target_include_directories(${APP_NAME} PRIVATE
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/android)
+    elseif (GUI_FLAVOUR STREQUAL "windows")
       target_include_directories(${APP_NAME} PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/src/win32)
     elseif(GUI_FLAVOUR STREQUAL "cocoa")
       target_include_directories(${APP_NAME} PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/src/mac)
+    elseif(GUI_FLAVOUR STREQUAL "ios")
+      target_include_directories(${APP_NAME} PRIVATE
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/ios)
     elseif(GUI_FLAVOUR STREQUAL "gtk3")
       target_include_directories(${APP_NAME} PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk)
@@ -3479,10 +3906,13 @@ if (GUI)
 
     target_compile_options(${APP_NAME} PRIVATE ${GUI_C_CXX_FLAGS})
 
+    if (NOT IOS)
+      target_link_libraries(${APP_NAME} PUBLIC yass_cli_lib yass_net)
+    endif()
+
     target_link_libraries(${APP_NAME} PUBLIC
-      yass_cli_lib
       ${GUI_LIBRARIES}
-      yass_base
+      yass_core
     )
 
     if (GUI_FLAVOUR STREQUAL "windows" AND MSVC)
@@ -3595,13 +4025,6 @@ if (GUI)
     endif()
 
     if (GUI_FLAVOUR STREQUAL "cocoa")
-        get_target_property(_APP_COMPILE_FLAGS ${APP_NAME} COMPILE_FLAGS)
-        if (NOT _APP_COMPILE_FLAGS)
-          set(_APP_COMPILE_FLAGS "")
-        endif()
-        set_target_properties(${APP_NAME} PROPERTIES
-            COMPILE_FLAGS "${_APP_COMPILE_FLAGS} -fobjc-arc")
-
         # Handle the Storyboard ourselves
         if(NOT ${CMAKE_GENERATOR} MATCHES "^Xcode.*")
           # Compile the storyboard file with the ibtool.
@@ -3628,12 +4051,21 @@ if (GUI)
               COMMENT "Copying language file: ${_LANG}")
             endif()
           endforeach()
+        else()
+          set_source_files_properties("${MAIN_STORYBOARD}" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources/Base.lproj")
+          set_source_files_properties("src/mac/en.lproj/Localizable.strings" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
+          set_source_files_properties("src/mac/en.lproj/Main.strings" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
+          set_source_files_properties("src/mac/zh-Hans.lproj/Localizable.strings" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
+          set_source_files_properties("src/mac/zh-Hans.lproj/Main.strings" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
         endif()
 
         # adds to Copy Bundle Resources build phase
         set_source_files_properties("src/mac/yass.icns" PROPERTIES
-          MACOSX_PACKAGE_LOCATION "Resources")
-        set_source_files_properties("${MAIN_STORYBOARD}" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")
         set_source_files_properties("${ASSET_CATALOG}" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")
@@ -3646,30 +4078,199 @@ if (GUI)
             MACOSX_PACKAGE_LOCATION "Resources")
         endif()
 
-        set(APP_MACOSX_BUNDLE_INFO "${CMAKE_CURRENT_BINARY_DIR}/Info.plist")
-        configure_file("src/mac/Info.plist.in" "${APP_MACOSX_BUNDLE_INFO}" @ONLY)
+        set_target_properties(${APP_NAME} PROPERTIES
+          RESOURCE "${ALLRESOURCES}"
+          OUTPUT_NAME "${APP_NAME}"
+          MACOSX_BUNDLE ON
+          MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/Info.plist.in
+          MACOSX_BUNDLE_BUNDLE_NAME ${PACKAGE_FULL_NAME}
+          MACOSX_BUNDLE_BUNDLE_VERSION ${PACKAGE_VERSION}
+          MACOSX_BUNDLE_COPYRIGHT "${YASS_APP_COPYRIGHT}"
+          MACOSX_BUNDLE_GUI_IDENTIFIER "it.gui.yass"
+          MACOSX_BUNDLE_INFO_STRING "${APP_NAME}"
+          MACOSX_BUNDLE_LONG_VERSION_STRING "${YASS_APP_TAG}-${YASS_APP_SUBTAG}"
+          MACOSX_BUNDLE_SHORT_VERSION_STRING "${YASS_APP_TAG}"
+          MACOSX_BUNDLE_ICON_FILE yass.icns
+          XCODE_GENERATE_SCHEME "TRUE"
+          XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
+          XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
+          XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS "YES"
+          #XCODE_ATTRIBUTE_ENABLE_HARDENED_RUNTIME "YES"
+          #XCODE_ATTRIBUTE_CODE_SIGN_INJECT_BASE_ENTITLEMENTS "NO"
+          #XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME ${ASSET_CATALOG_ASSETS}
+          )
+    elseif(GUI_FLAVOUR STREQUAL "ios")
+        if(NOT ${CMAKE_GENERATOR} MATCHES "^Xcode.*")
+          # Compile the storyboard file with the ibtool.
+          add_custom_command(TARGET ${APP_NAME} POST_BUILD
+            COMMAND ${IBTOOL}
+            --errors
+            --warnings
+            --notices
+            --output-format human-readable-text
+            --compile ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.app/Base.lproj/Main.storyboardc
+            ${MAIN_STORYBOARD}
+            COMMENT "Compiling Main storyboard")
+          add_custom_command(TARGET ${APP_NAME} POST_BUILD
+            COMMAND ${IBTOOL}
+            --errors
+            --warnings
+            --notices
+            --output-format human-readable-text
+            --compile ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.app/Base.lproj/LaunchScreen.storyboardc
+            ${LAUNCH_STORYBOARD}
+            COMMENT "Compiling LaunchScreen storyboard")
+
+          set(YASS_LANGS)
+          file(GLOB YASS_LPROJS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/ "${CMAKE_CURRENT_SOURCE_DIR}/src/ios/*.lproj")
+          foreach(LPROJ ${YASS_LPROJS})
+            string(REGEX REPLACE "^.*/([a-z]+)\\.lproj/.*$" "\\1" _LANG ${LPROJ})
+            list(FIND YASS_LANGS "${_LANG}" _INDEX)
+            if(_INDEX EQUAL -1 AND NOT _LANG STREQUAL "Base.lproj")
+              list(APPEND YASS_LANGS ${_LANG})
+              add_custom_command(TARGET ${APP_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.app
+                COMMAND cp -r ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/${_LANG} ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.app
+              COMMENT "Copying language file: ${_LANG}")
+            endif()
+          endforeach()
+        else()
+          set_source_files_properties("${MAIN_STORYBOARD}" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources/Base.lproj")
+          set_source_files_properties("${LAUNCH_STORYBOARD}" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources/Base.lproj")
+          set_source_files_properties("src/ios/en.lproj/Localizable.strings" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
+          set_source_files_properties("src/ios/en.lproj/Main.strings" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
+          set_source_files_properties("src/ios/zh-Hans.lproj/Localizable.strings" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
+          set_source_files_properties("src/ios/zh-Hans.lproj/Main.strings" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
+        endif()
+
+        # For iOS Apple uses a flat bundle layout where no Resources folder exist.
+        # Therefore CMake strips the Resources folder name from the specified location.
+        set_source_files_properties("${ASSET_CATALOG}" PROPERTIES
+          MACOSX_PACKAGE_LOCATION "Resources")
+        if (USE_ICU)
+          set_source_files_properties("${ICU_DATAFILE}" PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
+        endif()
 
         set_target_properties(${APP_NAME} PROPERTIES
-            RESOURCE "yass.icns"
-            MACOSX_BUNDLE_ICON_FILE yass.icns
-            MACOSX_BUNDLE_COPYRIGHT "${YASS_APP_COPYRIGHT}"
-            MACOSX_BUNDLE_GUI_IDENTIFIER "it.gui.yass"
-            MACOSX_BUNDLE_BUNDLE_NAME ${PACKAGE_NAME}
-            MACOSX_BUNDLE_INFO_PLIST ${APP_MACOSX_BUNDLE_INFO}
-            XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
-            XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
-            XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++"
-            XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS "YES"
-            XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
-            #XCODE_ATTRIBUTE_ENABLE_HARDENED_RUNTIME "YES"
-            #XCODE_ATTRIBUTE_CODE_SIGN_INJECT_BASE_ENTITLEMENTS "NO"
-            #XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME ${ASSET_CATALOG_ASSETS}
-          )
-        if (GUI_SANDBOX)
+          RESOURCE "${ALLRESOURCES}"
+          OUTPUT_NAME "${APP_NAME}"
+          MACOSX_BUNDLE ON
+          MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/Info.plist.in
+          MACOSX_BUNDLE_BUNDLE_NAME ${PACKAGE_FULL_NAME}
+          MACOSX_BUNDLE_BUNDLE_VERSION ${PACKAGE_VERSION}
+          MACOSX_BUNDLE_COPYRIGHT "${YASS_APP_COPYRIGHT}"
+          MACOSX_BUNDLE_GUI_IDENTIFIER "it.gui.ios.yass"
+          MACOSX_BUNDLE_INFO_STRING "${APP_NAME}"
+          MACOSX_BUNDLE_LONG_VERSION_STRING "${YASS_APP_TAG}-${YASS_APP_SUBTAG}"
+          MACOSX_BUNDLE_SHORT_VERSION_STRING "${YASS_APP_TAG}"
+          MACOSX_BUNDLE_ICON_FILE "AppIcon"
+          XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "it.gui.ios.yass"
+          XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/yass.entitlements
+          XCODE_ATTRIBUTE_MARKETING_VERSION "${YASS_APP_VERSION}"
+          XCODE_ATTRIBUTE_PRODUCT_NAME "${PACKAGE_NAME}"
+          XCODE_GENERATE_SCHEME "TRUE"
+          XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon"
+          # Workaround for https://gitlab.kitware.com/cmake/cmake/-/issues/15183
+          # Apps must have install step enabled
+          XCODE_ATTRIBUTE_INSTALL_PATH  "$(LOCAL_APPS_DIR)"
+          XCODE_ATTRIBUTE_SKIP_INSTALL  NO
+          XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
+          XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/Frameworks"
+          XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
+          XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
+          XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS "YES"
+          #XCODE_ATTRIBUTE_ENABLE_HARDENED_RUNTIME "YES"
+        )
+        if ((NOT XCODE_CODESIGN_IDENTITY STREQUAL "-") OR XCODE_DEPLOYMENT_TEAM)
           set_target_properties(${APP_NAME} PROPERTIES
-              XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS ${CMAKE_CURRENT_SOURCE_DIR}/src/mac/yass.entitlements
+            XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${XCODE_CODESIGN_IDENTITY}"
+            XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${XCODE_DEPLOYMENT_TEAM}"
+            XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic")
+        endif()
+
+        # =======================
+        # YassPacketTunnel extensions
+        # =======================
+        find_library(NetworkExtension_LIBRARY NetworkExtension REQUIRED)
+
+        set(PLUGIN_SRC
+          src/ios/utils.h
+          src/ios/utils.mm
+          src/ios/utils.cpp
+          src/ios/extensions/tun2proxy.h
+          src/ios/extensions/tun2proxy.mm
+          src/ios/extensions/YassPacketTunnelProvider.h
+          src/ios/extensions/YassPacketTunnelProvider.mm
+          src/ios/extensions/PacketTunnel.entitlements
+          )
+
+        add_executable(network-extension MACOSX_BUNDLE ${PLUGIN_SRC})
+
+        target_include_directories(network-extension PRIVATE
+          ${CMAKE_CURRENT_SOURCE_DIR}/src
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/extensions)
+        target_compile_options(network-extension PRIVATE -fapplication-extension -fmodules -gmodules -fobjc-arc --start-no-unused-arguments -fobjc-weak --end-no-unused-arguments)
+        target_link_libraries(network-extension PRIVATE ${NetworkExtension_LIBRARY})
+        set_target_properties(network-extension PROPERTIES LINK_OPTIONS -fapplication-extension -e _NSExtensionMain -fobjc-arc -fobjc-link-runtime)
+
+        set_target_properties(network-extension PROPERTIES
+          OUTPUT_NAME "YassPacketTunnel"
+          XCODE_PRODUCT_TYPE com.apple.product-type.app-extension
+          BUNDLE_EXTENSION appex
+          MACOSX_BUNDLE ON
+          MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/extensions/Info.plist.in
+          MACOSX_BUNDLE_BUNDLE_NAME "YassPacketTunnel"
+          MACOSX_BUNDLE_BUNDLE_VERSION ${PACKAGE_VERSION}
+          MACOSX_BUNDLE_COPYRIGHT "${YASS_APP_COPYRIGHT}"
+          MACOSX_BUNDLE_GUI_IDENTIFIER "it.gui.ios.yass.network-extension"
+          MACOSX_BUNDLE_INFO_STRING "YassPacketTunnel"
+          MACOSX_BUNDLE_LONG_VERSION_STRING "${YASS_APP_TAG}-${YASS_APP_SUBTAG}"
+          MACOSX_BUNDLE_SHORT_VERSION_STRING "${YASS_APP_TAG}"
+          XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "it.gui.ios.yass.network-extension"
+          XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS ${CMAKE_CURRENT_SOURCE_DIR}/src/ios/extensions/PacketTunnel.entitlements
+          XCODE_ATTRIBUTE_MARKETING_VERSION "${YASS_APP_VERSION}"
+          XCODE_ATTRIBUTE_PRODUCT_NAME "YassPacketTunnel"
+          XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "YES"
+          XCODE_ATTRIBUTE_CLANG_ENABLE_MODULES "YES"
+          XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "YES"
+          XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_WEAK "YES"
+          XCODE_ATTRIBUTE_PROVISIONING_PROFILE_SPECIFIER ""
+          XCODE_ATTRIBUTE_APPLICATION_EXTENSION_API_ONLY "YES"
+          XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/../../Frameworks"
+          )
+
+        if ((NOT XCODE_CODESIGN_IDENTITY STREQUAL "-") OR XCODE_DEPLOYMENT_TEAM)
+          set_target_properties(network-extension PROPERTIES
+            XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${XCODE_CODESIGN_IDENTITY}"
+            XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${XCODE_DEPLOYMENT_TEAM}"
+            XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic")
+        endif()
+
+        add_dependencies(${APP_NAME} network-extension)
+
+        # FIXME conflicts with XCTest bundle creation
+        if (SDK_NAME STREQUAL iphoneos)
+          set_target_properties(${APP_NAME} PROPERTIES
+            XCODE_EMBED_APP_EXTENSIONS network-extension
+            XCODE_EMBED_APP_EXTENSIONS_REMOVE_HEADERS_ON_COPY "YES"
+            XCODE_EMBED_APP_EXTENSIONS_CODE_SIGN_ON_COPY "YES"
           )
         endif()
+
+        find_library(Security_LIBRARY Security REQUIRED)
+        target_link_directories(network-extension PRIVATE ${TUN2PROXY_LIB_DIR})
+        target_link_libraries(network-extension PRIVATE -Wl,-hidden-ltun2proxy)
+        target_link_libraries(network-extension PRIVATE ${Security_LIBRARY})
+        target_link_libraries(network-extension PRIVATE yass_cli_lib)
+
+        target_link_libraries(${APP_NAME} PRIVATE ${NetworkExtension_LIBRARY})
     endif()
 
     if (NOT CMAKE_SKIP_INSTALL_RULES)
@@ -3680,7 +4281,7 @@ if (GUI)
 
       if (GUI_FLAVOUR STREQUAL "gtk3" OR GUI_FLAVOUR STREQUAL "gtk4")
         install(FILES
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/yass.desktop
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/gtk/it.gui.yass.desktop
           DESTINATION share/applications)
 
         install(FILES
@@ -3705,7 +4306,7 @@ endif()
 #           Source code: LICENSE part
 # *****************************************************************************************
 
-if(NOT CMAKE_SKIP_INSTALL_RULES AND GUI)
+if(NOT CMAKE_SKIP_INSTALL_RULES)
   file(READ LICENSE                                         _YASS_LICENSE)
   file(READ third_party/abseil-cpp/LICENSE                  _ABSEIL_CPP_LICENSE)
   file(READ third_party/asio/asio/LICENSE_1_0.txt           _ASIO_LICENSE)
@@ -3719,14 +4320,13 @@ if(NOT CMAKE_SKIP_INSTALL_RULES AND GUI)
   file(READ third_party/libunwind/trunk/LICENSE.TXT         _LIBUNWIND_LICENSE)
   file(READ third_party/lss/LICENSE                         _LSS_LICENSE)
   file(READ third_party/mbedtls/LICENSE                     _MBEDTLS_LICENSE)
-  file(READ third_party/url/third_party/mozilla/LICENSE.txt _MOZILLA_LICENSE)
   file(READ third_party/protobuf/LICENSE                    _PROTOBUF_LICENSE)
   file(READ third_party/quiche/src/LICENSE                  _QUICHE_LICENSE)
   file(READ third_party/re2/LICENSE                         _RE2_LICENSE)
   file(READ third_party/snappy/src/COPYING                  _SNAPPY_LICENSE)
   file(READ third_party/sqlite/LICENSE                      _SQLITE_LICENSE)
   file(READ third_party/tcmalloc/src/LICENSE                _TCMALLOC_LICENSE)
-  file(READ third_party/xxhash/LICENSE                      _XXHASH_LICENSE)
+  file(READ third_party/tun2proxy/LICENSE                   _TUN2PROXY_LICENSE)
   file(READ third_party/zlib/LICENSE                        _ZLIB_LICENSE)
 
   set(LICENSE_FILE "${CMAKE_CURRENT_BINARY_DIR}/LICENSE")
@@ -3739,17 +4339,37 @@ endif()
 # *****************************************************************************************
 
 if (BUILD_TESTS)
-  add_executable(yass_test
+  set(yass_test_SOURCE
     src/test_util.cpp
-    src/network_test.cpp
     src/ss_test.cpp
     src/compiler_test.cpp
     src/config/config_test.cpp
-    src/core/cipher_test.cpp
-    src/core/c-ares_test.cpp
     src/core/process_utils_test.cpp
     src/core/utils_test.cpp
+    src/net/cipher_test.cpp
+    src/net/c-ares_test.cpp
+    src/net/padding_test.cpp
     )
+
+  if (IOS)
+    enable_testing()
+    find_package(XCTest REQUIRED)
+
+    xctest_add_bundle(yass_test ${APP_NAME}
+      src/ss_test.mm
+      ${yass_test_SOURCE})
+
+    xctest_add_test(XCTest.yass_test yass_test)
+
+    if ((NOT XCODE_CODESIGN_IDENTITY STREQUAL "-") OR XCODE_DEPLOYMENT_TEAM)
+      set_target_properties(yass_test PROPERTIES
+        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${XCODE_CODESIGN_IDENTITY}"
+        XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${XCODE_DEPLOYMENT_TEAM}"
+        XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic")
+    endif()
+  else()
+    add_executable(yass_test ${yass_test_SOURCE})
+  endif()
   if (USE_LEVELDB)
     target_sources(yass_test PRIVATE third_party/leveldb_test.cc)
   endif()
@@ -3779,7 +4399,7 @@ if (BUILD_TESTS)
   )
 
   if (USE_CURL)
-    if (MSVC AND MSVC_CRT_LINKAGE STREQUAL "static")
+    if (MSVC AND MSVC_CRT_LINKAGE STREQUAL "dynamic")
       if("${MSVC_PROCESSOR_ARCHITECTURE}" STREQUAL "arm64")
         set(CURL_MSVC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libcurl-vc16-arm64-release-static-ipv6-sspi-schannel")
       elseif("${MSVC_PROCESSOR_ARCHITECTURE}" STREQUAL "amd64")
@@ -3792,6 +4412,9 @@ if (BUILD_TESTS)
       endif()
       if (MSVC_CURL_EXIST)
         message(STATUS "Using existing curl binary: ${CURL_MSVC_DIR}")
+        add_library(libcurl_a STATIC IMPORTED)
+        set_property(TARGET libcurl_a PROPERTY
+                     IMPORTED_LOCATION "${CURL_MSVC_DIR}/lib/libcurl_a.lib")
         set(CURL_FOUND TRUE)
         set(CURL_CFLAGS /DCURL_STATICLIB)
         set(CURL_INCLUDE_DIRS ${CURL_MSVC_DIR}/include)
@@ -3801,17 +4424,23 @@ if (BUILD_TESTS)
       endif()
     endif()
     if (MINGW)
-      if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(CURL_MINGW_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/curl-8.4.0_7-win64-mingw")
-      else()
+      if (OS_AARCH64)
+        set(CURL_MINGW_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/curl-8.4.0_7-win64a-mingw")
+      elseif(OS_X86)
         set(CURL_MINGW_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/curl-8.4.0_7-win32-mingw")
+      else()
+        set(CURL_MINGW_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/curl-8.4.0_7-win64-mingw")
       endif()
       if (EXISTS ${CURL_MINGW_DIR}/include/curl/curl.h)
         set(MINGW_CURL_EXIST TRUE)
       endif()
       if (MINGW_CURL_EXIST)
         message(STATUS "Using existing curl binary: ${CURL_MINGW_DIR}")
+        add_library(curl STATIC IMPORTED)
+        set_property(TARGET curl PROPERTY
+                     IMPORTED_LOCATION "${CURL_MINGW_DIR}/lib/libcurl.dll.a")
         set(CURL_FOUND TRUE)
+        #set(CURL_CFLAGS -DCURL_STATICLIB)
         set(CURL_INCLUDE_DIRS ${CURL_MINGW_DIR}/include)
         set(CURL_LIBRARY_DIRS ${CURL_MINGW_DIR}/lib)
         set(CURL_LIBRARIES curl)
@@ -3837,8 +4466,29 @@ if (BUILD_TESTS)
 endif()
 
 if (BUILD_BENCHMARKS)
-  add_executable(yass_benchmark
-    src/ss_benchmark.cpp)
+  set(yass_benchmark_SOURCE
+    src/ss_benchmark.cpp
+    )
+  if (IOS)
+    enable_testing()
+    find_package(XCTest REQUIRED)
+
+    xctest_add_bundle(yass_benchmark ${APP_NAME}
+      src/ss_benchmark.mm
+      ${yass_benchmark_SOURCE})
+
+    xctest_add_test(XCTest.yass_benchmark yass_benchmark)
+
+    if ((NOT XCODE_CODESIGN_IDENTITY STREQUAL "-") OR XCODE_DEPLOYMENT_TEAM)
+      set_target_properties(yass_benchmark PROPERTIES
+        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${XCODE_CODESIGN_IDENTITY}"
+        XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "${XCODE_DEPLOYMENT_TEAM}"
+        XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic")
+    endif()
+  else()
+    add_executable(yass_benchmark
+      ${yass_benchmark_SOURCE})
+  endif()
   target_include_directories(yass_benchmark PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/src
       ${CMAKE_CURRENT_SOURCE_DIR}/src/cli
@@ -3855,3 +4505,39 @@ if (BUILD_BENCHMARKS)
     target_sources(yass_benchmark PRIVATE ${BENCHMARK_MSVC_MANIFEST})
   endif()
 endif()
+
+# Configure CPack.
+if(NOT DEFINED CPACK_PACKAGE_INSTALL_DIRECTORY)
+  set(CPACK_PACKAGE_INSTALL_DIRECTORY "yass")
+endif()
+if(NOT DEFINED CPACK_PACKAGE_VENDOR)
+  set(CPACK_PACKAGE_VENDOR "yass")
+endif()
+set(CPACK_PACKAGE_VERSION_MAJOR ${PACKAGE_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${PACKAGE_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${PACKAGE_VERSION_PATCH})
+set(CPACK_PACKAGE_VERSION ${PACKAGE_VERSION})
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/GPL-2.0.rtf")
+if(WIN32 AND NOT UNIX)
+  set(CPACK_NSIS_COMPRESSOR "/SOLID lzma \r\n SetCompressorDictSize 32")
+  if(NOT DEFINED CPACK_PACKAGE_INSTALL_REGISTRY_KEY)
+    set(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "yass")
+  endif()
+  #set(CPACK_PACKAGE_ICON "${CMAKE_CURRENT_SOURCE_DIR}\\\\cmake\\\\nsis_logo.bmp")
+  set(CPACK_NSIS_PACKAGE_NAME "Yet Another Shadow Socket")
+  set(CPACK_NSIS_MUI_ICON "${CMAKE_CURRENT_SOURCE_DIR}\\\\src\\\\win32\\\\yass.ico")
+  set(CPACK_NSIS_MUI_UNIICON "${CMAKE_CURRENT_SOURCE_DIR}\\\\src\\\\win32\\\\yass.ico")
+  set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL "ON")
+  if( CMAKE_CL_64 )
+    if(NOT DEFINED CPACK_NSIS_INSTALL_ROOT)
+      set(CPACK_NSIS_INSTALL_ROOT "$PROGRAMFILES64")
+    endif()
+  endif()
+  set(CPACK_NSIS_CREATE_ICONS_EXTRA
+      "CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\yass.lnk' '$INSTDIR\\\\bin\\\\yass.exe'"
+  )
+  set(CPACK_NSIS_DELETE_ICONS_EXTRA
+      "Delete '$SMPROGRAMS\\\\$START_MENU\\\\yass.lnk'"
+  )
+endif()
+include(CPack)

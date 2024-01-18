@@ -1,22 +1,27 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2023 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 
 #include "server_connection.hpp"
 
 #include <absl/base/attributes.h>
 #include <absl/strings/str_cat.h>
 #include <cstdlib>
+#include <base/strings/string_util.h>
 
 #include "config/config.hpp"
-#include "core/asio.hpp"
-#include "core/base64.hpp"
-#include "core/http_parser.hpp"
+#include "net/asio.hpp"
+#include "net/base64.hpp"
+#include "net/http_parser.hpp"
+#include "net/padding.hpp"
 #include "core/rand_util.hpp"
-#include "core/string_util.hpp"
 #include "core/utils.hpp"
 
 ABSL_FLAG(bool, hide_via, true, "If true, the Via heaeder will not be added.");
 ABSL_FLAG(bool, hide_ip, true, "If true, the Forwarded header will not be augmented with your IP address.");
+
+using namespace net;
+
+using gurl_base::ToLowerASCII;
 
 static void SplitHostPort(std::string *out_hostname, std::string *out_port,
                           const std::string &hostname_and_port) {
@@ -127,7 +132,8 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
 }
 
 ServerConnection::ServerConnection(asio::io_context& io_context,
-                                   const std::string& remote_host_name,
+                                   const std::string& remote_host_ips,
+                                   const std::string& remote_host_sni,
                                    uint16_t remote_port,
                                    bool upstream_https_fallback,
                                    bool https_fallback,
@@ -135,7 +141,7 @@ ServerConnection::ServerConnection(asio::io_context& io_context,
                                    bool enable_tls,
                                    asio::ssl::context *upstream_ssl_ctx,
                                    asio::ssl::context *ssl_ctx)
-    : Connection(io_context, remote_host_name, remote_port,
+    : Connection(io_context, remote_host_ips, remote_host_sni, remote_port,
                  upstream_https_fallback, https_fallback,
                  enable_upstream_tls, enable_tls,
                  upstream_ssl_ctx, ssl_ctx),
@@ -200,11 +206,7 @@ void ServerConnection::close() {
   if (channel_) {
     channel_->close();
   }
-  auto cb = std::move(disconnect_cb_);
-  disconnect_cb_ = nullptr;
-  if (cb) {
-    cb();
-  }
+  on_disconnect();
 }
 
 void ServerConnection::Start() {
@@ -1157,14 +1159,15 @@ void ServerConnection::OnConnect() {
     host_name = request_.endpoint().address().to_string();
   }
   if (enable_upstream_tls_) {
-    channel_ = ssl_stream::create(*io_context_,
-                                  host_name, port,
+    channel_ = ssl_stream::create(ssl_socket_data_index(),
+                                  *io_context_,
+                                  std::string(), host_name, port,
                                   this, upstream_https_fallback_,
                                   upstream_ssl_ctx_);
 
   } else {
     channel_ = stream::create(*io_context_,
-                              host_name, port,
+                              std::string(), host_name, port,
                               this);
   }
   channel_->async_connect([this, self](asio::error_code ec){

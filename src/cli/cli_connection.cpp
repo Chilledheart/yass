@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2023 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 
 #include "cli/cli_connection.hpp"
 
@@ -7,13 +7,17 @@
 #include <absl/strings/str_cat.h>
 
 #include "config/config.hpp"
-#include "core/asio.hpp"
-#include "core/base64.hpp"
-#include "core/http_parser.hpp"
+#include "net/asio.hpp"
+#include "net/base64.hpp"
+#include "net/http_parser.hpp"
+#include "net/padding.hpp"
 #include "core/rand_util.hpp"
 #include "core/utils.hpp"
 
+#include <build/build_config.h>
 #include <quiche/spdy/core/hpack/hpack_constants.h>
+
+using namespace net;
 
 static std::vector<http2::adapter::Header> GenerateHeaders(
   std::vector<std::pair<std::string, std::string>> headers, int status = 0) {
@@ -79,7 +83,7 @@ namespace cli {
 const char CliConnection::http_connect_reply_[] =
     "HTTP/1.1 200 Connection established\r\n\r\n";
 
-#ifdef __APPLE__
+#if BUILDFLAG(IS_MAC)
 #include <xnu_private/net_pfvar.h>
 #endif
 #ifdef __linux__
@@ -147,7 +151,8 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
 }
 
 CliConnection::CliConnection(asio::io_context& io_context,
-                             const std::string& remote_host_name,
+                             const std::string& remote_host_ips,
+                             const std::string& remote_host_sni,
                              uint16_t remote_port,
                              bool upstream_https_fallback,
                              bool https_fallback,
@@ -155,7 +160,7 @@ CliConnection::CliConnection(asio::io_context& io_context,
                              bool enable_tls,
                              asio::ssl::context *upstream_ssl_ctx,
                              asio::ssl::context *ssl_ctx)
-    : Connection(io_context, remote_host_name, remote_port,
+    : Connection(io_context, remote_host_ips, remote_host_sni, remote_port,
                  upstream_https_fallback, https_fallback,
                  enable_upstream_tls, enable_tls,
                  upstream_ssl_ctx, ssl_ctx),
@@ -202,11 +207,7 @@ void CliConnection::close() {
     }
     channel_->close();
   }
-  auto cb = std::move(disconnect_cb_);
-  disconnect_cb_ = nullptr;
-  if (cb) {
-    cb();
-  }
+  on_disconnect();
 }
 
 void CliConnection::SendIfNotProcessing() {
@@ -483,7 +484,7 @@ void CliConnection::ReadSocks5Handshake() {
 
 asio::error_code CliConnection::OnReadRedirHandshake(
   std::shared_ptr<IOBuf> buf) {
-#ifdef __APPLE__
+#if BUILDFLAG(IS_MAC)
   if (!absl::GetFlag(FLAGS_redir_mode)) {
     return asio::error::operation_not_supported;
   }
@@ -790,6 +791,7 @@ void CliConnection::WriteMethodSelect() {
 
 void CliConnection::WriteHandshake() {
   scoped_refptr<CliConnection> self(this);
+
   switch (CurrentState()) {
     case state_method_select:  // impossible
     case state_socks5_handshake:
@@ -1368,31 +1370,31 @@ void CliConnection::ProcessReceivedData(
         break;
       case state_socks5_handshake:
         ec = PerformCmdOpsV5(&s5_request_, &s5_reply_);
+        if (ec) {
+          break;
+        }
         WriteHandshake();
         VLOG(2) << "Connection (client) " << connection_id()
                 << " socks5 handshake finished: ec: " << ec;
-        if (CurrentState() == state_stream) {
-          goto handle_stream;
-        }
-        break;
+        goto handle_stream;
       case state_socks4_handshake:
         ec = PerformCmdOpsV4(&s4_request_, &s4_reply_);
+        if (ec) {
+          break;
+        }
         WriteHandshake();
         VLOG(2) << "Connection (client) " << connection_id()
                 << " socks4 handshake finished: ec:" << ec;
-        if (CurrentState() == state_stream) {
-          goto handle_stream;
-        }
-        break;
+        goto handle_stream;
       case state_http_handshake:
         ec = PerformCmdOpsHttp();
+        if (ec) {
+          break;
+        }
         WriteHandshake();
         VLOG(2) << "Connection (client) " << connection_id()
                 << " http handshake finished: ec: " << ec;
-        if (CurrentState() == state_stream) {
-          goto handle_stream;
-        }
-        break;
+        goto handle_stream;
       case state_stream:
       handle_stream:
         if (buf->length()) {
@@ -1474,14 +1476,19 @@ void CliConnection::OnConnect() {
             << " connect " << remote_domain();
   // create lazy
   if (enable_upstream_tls_) {
-    channel_ = ssl_stream::create(*io_context_,
-                                  remote_host_name_, remote_port_,
+    channel_ = ssl_stream::create(ssl_socket_data_index(),
+                                  *io_context_,
+                                  remote_host_ips_,
+                                  remote_host_sni_,
+                                  remote_port_,
                                   this, upstream_https_fallback_,
                                   upstream_ssl_ctx_);
 
   } else {
     channel_ = stream::create(*io_context_,
-                              remote_host_name_, remote_port_,
+                              remote_host_ips_,
+                              remote_host_sni_,
+                              remote_port_,
                               this);
   }
   channel_->async_connect([this, self](asio::error_code ec){

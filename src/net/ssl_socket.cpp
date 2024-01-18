@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2023 Chilledheart  */
+/* Copyright (c) 2023-2024 Chilledheart  */
 
 #include "net/ssl_socket.hpp"
-#include "network.hpp"
+#include "config/config.hpp"
+
+#include <absl/container/flat_hash_map.h>
 
 namespace net {
 
@@ -17,16 +19,22 @@ const int kCertVerifyPending = 1;
 const int kDefaultOpenSSLBufferSize = 17 * 1024;
 } // namespace
 
-SSLSocket::SSLSocket(asio::io_context *io_context,
+static constexpr int kMaximumSSLCache = 1024;
+static absl::flat_hash_map<asio::ip::address, bssl::UniquePtr<SSL_SESSION>> g_ssl_lru_cache;
+
+SSLSocket::SSLSocket(int ssl_socket_data_index,
+                     asio::io_context *io_context,
                      asio::ip::tcp::socket* socket,
                      SSL_CTX* ssl_ctx,
                      bool https_fallback,
                      const std::string& host_name)
-    : io_context_(io_context), stream_socket_(socket),
+    : ssl_socket_data_index_(ssl_socket_data_index),
+      io_context_(io_context), stream_socket_(socket),
       early_data_enabled_(absl::GetFlag(FLAGS_tls13_early_data)),
       pending_read_error_(kSSLClientSocketNoPendingResult) {
   DCHECK(!ssl_);
   ssl_.reset(SSL_new(ssl_ctx));
+  CHECK_NE(0, SSL_set_ex_data(ssl_.get(), ssl_socket_data_index_, this));
 
   // TODO: reuse SSL session
 
@@ -151,6 +159,7 @@ int SSLSocket::Connect(CompletionOnceCallback callback) {
 }
 
 SSLSocket::~SSLSocket() {
+  CHECK_NE(0, SSL_set_ex_data(ssl_.get(), ssl_socket_data_index_, nullptr));
   VLOG(1) << "SSLSocket " << this << " freed memory";
 }
 
@@ -214,7 +223,7 @@ int SSLSocket::ConfirmHandshake(CompletionOnceCallback callback) {
   return rv > OK ? OK : rv;
 }
 
-int SSLSocket::Shutdown(WaitCallback callback, bool force) {
+int SSLSocket::Shutdown(WaitCallback &&callback, bool force) {
   DCHECK(callback);
   DCHECK(!wait_shutdown_callback_ && "Recursively SSL Shutdown isn't allowed");
   if (SSL_in_init(ssl_.get())) {
@@ -246,13 +255,7 @@ int SSLSocket::Shutdown(WaitCallback callback, bool force) {
       scoped_refptr<SSLSocket> self(this);
       VLOG(2) << "Shutdown ... (demand more reading)";
 
-      wait_shutdown_callback_ = [this, self, callback](asio::error_code ec) {
-        if (ec) {
-          callback(ec);
-          return;
-        }
-        Shutdown(callback);
-      };
+      wait_shutdown_callback_ = std::move(callback);
 
       if (!wait_read_callback_) {
         stream_socket_->async_wait(asio::ip::tcp::socket::wait_read,
@@ -266,13 +269,7 @@ int SSLSocket::Shutdown(WaitCallback callback, bool force) {
       scoped_refptr<SSLSocket> self(this);
       VLOG(2) << "Shutdown ... (demand more writing)";
 
-      wait_shutdown_callback_ = [this, self, callback](asio::error_code ec) {
-        if (ec) {
-          callback(ec);
-          return;
-        }
-        Shutdown(callback);
-      };
+      wait_shutdown_callback_ = std::move(callback);
 
       if (!wait_write_callback_) {
         stream_socket_->async_wait(asio::ip::tcp::socket::wait_write,
@@ -341,9 +338,9 @@ size_t SSLSocket::Write(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
   return rv;
 }
 
-void SSLSocket::WaitRead(std::function<void(asio::error_code ec)> cb) {
+void SSLSocket::WaitRead(WaitCallback &&cb) {
   DCHECK(!wait_read_callback_ && "Multiple calls into Wait Read");
-  wait_read_callback_ = cb;
+  wait_read_callback_ = std::move(cb);
   scoped_refptr<SSLSocket> self(this);
   if (pending_read_error_ != kSSLClientSocketNoPendingResult) {
     OnWaitRead(asio::error_code());
@@ -363,14 +360,37 @@ void SSLSocket::WaitRead(std::function<void(asio::error_code ec)> cb) {
   });
 }
 
-void SSLSocket::WaitWrite(std::function<void(asio::error_code ec)> cb) {
+void SSLSocket::WaitWrite(WaitCallback &&cb) {
   DCHECK(!wait_write_callback_ && "Multiple calls into Wait Write");
-  wait_write_callback_ = cb;
+  wait_write_callback_ = std::move(cb);
   scoped_refptr<SSLSocket> self(this);
   stream_socket_->async_wait(asio::ip::tcp::socket::wait_write,
     [this, self](asio::error_code ec){
     OnWaitWrite(ec);
   });
+}
+
+int SSLSocket::NewSessionCallback(SSL_SESSION* session) {
+  asio::ip::address ip_addr;
+  if (SSL_CIPHER_get_kx_nid(SSL_SESSION_get0_cipher(session)) == NID_kx_rsa) {
+    // If RSA key exchange was used, additionally key the cache with the
+    // destination IP address. Of course, if a proxy is being used, the
+    // semantics of this are a little complex, but we're doing our best. See
+    // https://crbug.com/969684
+    asio::error_code ec;
+    auto ip_endpoint = stream_socket_->remote_endpoint(ec);
+    if (ec) {
+      return 0;
+    }
+    ip_addr = ip_endpoint.address();
+  }
+
+  // OpenSSL optionally passes ownership of |session|. Returning one signals
+  // that this function has claimed it.
+  g_ssl_lru_cache[ip_addr] = bssl::UniquePtr<SSL_SESSION>(session);
+  if (g_ssl_lru_cache.size() >= kMaximumSSLCache)
+    g_ssl_lru_cache.clear();
+  return 1;
 }
 
 void SSLSocket::OnWaitRead(asio::error_code ec) {
@@ -382,12 +402,12 @@ void SSLSocket::OnWaitRead(asio::error_code ec) {
     wait_shutdown_callback_ = nullptr;
     return;
   }
-  if (auto cb = std::move(wait_shutdown_callback_)) {
-    wait_shutdown_callback_ = nullptr;
-    cb(ec);
+  if (wait_shutdown_callback_) {
+    OnDoWaitShutdown(ec);
+    DCHECK(!wait_shutdown_callback_);
   }
   if (auto cb = std::move(wait_read_callback_)) {
-    wait_read_callback_ = nullptr;
+    DCHECK(!wait_read_callback_);
     cb(ec);
   }
 }
@@ -401,12 +421,12 @@ void SSLSocket::OnWaitWrite(asio::error_code ec) {
     wait_shutdown_callback_ = nullptr;
     return;
   }
-  if (auto cb = std::move(wait_shutdown_callback_)) {
-    wait_shutdown_callback_ = nullptr;
-    cb(ec);
+  if (wait_shutdown_callback_) {
+    OnDoWaitShutdown(ec);
+    DCHECK(!wait_shutdown_callback_);
   }
   if (auto cb = std::move(wait_write_callback_)) {
-    wait_write_callback_ = nullptr;
+    DCHECK(!wait_write_callback_);
     cb(ec);
   }
 }
@@ -421,6 +441,17 @@ void SSLSocket::OnWriteReady() {
   // During a renegotiation, either Read or Write calls may be blocked on a
   // transport read.
   RetryAllOperations();
+}
+
+void SSLSocket::OnDoWaitShutdown(asio::error_code ec) {
+  DCHECK(wait_shutdown_callback_);
+  auto callback = std::move(wait_shutdown_callback_);
+  DCHECK(!wait_shutdown_callback_);
+  if (ec) {
+    callback(ec);
+    return;
+  }
+  Shutdown(std::move(callback));
 }
 
 int SSLSocket::DoHandshake() {

@@ -8,8 +8,11 @@
 #include "core/utils_fs.hpp"
 #include "core/process_utils.hpp"
 #include "config/config.hpp"
+#include "net/asio.hpp"
 
+#include <string_view>
 #include <absl/strings/str_cat.h>
+#include <absl/strings/str_format.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -19,8 +22,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "core/cxx17_backports.hpp"
-
 // Available in 2.58
 #ifndef G_SOURCE_FUNC
 #define G_SOURCE_FUNC(f) ((GSourceFunc) (void (*)(void)) (f))
@@ -28,35 +29,20 @@
 
 using namespace yass;
 
-static const char* kAutoStartFileContent =
+static constexpr char kDefaultAutoStartName[] = "it.gui.yass";
+
+static constexpr std::string_view kAutoStartFileContent =
 "[Desktop Entry]\n"
+"Version=1.0\n"
 "Type=Application\n"
 "Name=yass\n"
 "Comment=Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for embedded devices and low end boxes.\n"
 "Icon=yass\n"
-"Exec=yass --background\n"
+"Exec=\"%s\" --background\n"
 "Terminal=false\n"
 "Categories=Network;GTK;Utility\n";
 
 namespace {
-
-bool WriteFileWithContent(const std::string& path, std::string_view context) {
-  int fd = ::open(path.c_str(), O_WRONLY | O_TRUNC | O_CREAT,
-                  S_IRUSR | S_IWUSR);
-  if (fd < 0) {
-    return false;
-  }
-  ssize_t written = ::write(fd, context.data(), context.size());
-
-  if (written != static_cast<long>(context.size())) {
-    ::close(fd);
-    return false;
-  }
-  if (::close(fd) < 0) {
-    return false;
-  }
-  return true;
-}
 
 // followed https://github.com/qt/qtbase/blob/7fe1198f6edb40de2299272c7523d85d7486598b/src/corelib/io/qstandardpaths_unix.cpp#L218
 std::string GetConfigDir() {
@@ -84,15 +70,15 @@ bool IsKDE() {
 
 bool Utils::GetAutoStart() {
   std::string autostart_desktop_path =
-    absl::StrCat(GetAutostartDirectory(), "/" ,
-                 DEFAULT_AUTOSTART_NAME , ".desktop");
+    absl::StrCat(GetAutostartDirectory(), "/",
+                 kDefaultAutoStartName, ".desktop");
   return IsFile(autostart_desktop_path);
 }
 
 void Utils::EnableAutoStart(bool on) {
   std::string autostart_desktop_path =
-    absl::StrCat(GetAutostartDirectory(), "/" ,
-                 DEFAULT_AUTOSTART_NAME , ".desktop");
+    absl::StrCat(GetAutostartDirectory(), "/",
+                 kDefaultAutoStartName, ".desktop");
   if (!on) {
     if (!RemoveFile(autostart_desktop_path)) {
       PLOG(WARNING)
@@ -113,7 +99,10 @@ void Utils::EnableAutoStart(bool on) {
     }
 
     // write to target
-    if (!WriteFileWithContent(autostart_desktop_path, kAutoStartFileContent))  {
+    std::string executable_path = "yass";
+    GetExecutablePath(&executable_path);
+    std::string desktop_entry = absl::StrFormat(kAutoStartFileContent, executable_path);
+    if (!WriteFileWithBuffer(autostart_desktop_path, desktop_entry))  {
       PLOG(WARNING) << "Internal error: unable to create autostart file";
     }
 
@@ -409,8 +398,7 @@ bool Dispatcher::Init(std::function<void()> callback) {
                           gpointer user_data) -> gboolean {
     auto self = reinterpret_cast<Dispatcher*>(user_data);
     if (condition & G_IO_ERR || condition & G_IO_HUP) {
-      VLOG(2) << "Dispatcher: " << self << " pipe hup";
-      self->Destroy();
+      LOG(WARNING) << "Dispatcher: " << self << " pipe hup";
       return G_SOURCE_REMOVE;
     }
     return self->ReadCallback();
@@ -423,7 +411,7 @@ bool Dispatcher::Init(std::function<void()> callback) {
   g_source_unref(source_);
 
   callback_ = callback;
-  VLOG(2) << "Dispatcher: " << this << " Inited";
+  LOG(INFO) << "Dispatcher: " << this << " Inited";
   return true;
 }
 
@@ -432,6 +420,7 @@ bool Dispatcher::Destroy() {
     return true;
   g_source_destroy(source_);
   source_ = nullptr;
+  callback_ = nullptr;
   bool failure_on_close = ::close(fds_[0]) != 0;
   failure_on_close |= ::close(fds_[1]) != 0;
   if (failure_on_close) {
@@ -440,7 +429,7 @@ bool Dispatcher::Destroy() {
   }
   fds_[0] = -1;
   fds_[1] = -1;
-  VLOG(2) << "Dispatcher: " << this << " Destroyed";
+  LOG(INFO) << "Dispatcher: " << this << " Destroyed";
   return true;
 }
 
@@ -484,6 +473,9 @@ bool Dispatcher::ReadCallback() {
     size -= ret;
   }
 
+  if (!callback_) {
+    return G_SOURCE_REMOVE;
+  }
   callback_();
 
   return G_SOURCE_CONTINUE;

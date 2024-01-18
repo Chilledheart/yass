@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2023 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 
 #include "gtk4/yass_window.hpp"
 
@@ -14,6 +14,8 @@
 #include "gtk/utils.hpp"
 #include "gtk4/yass.hpp"
 #include "version.h"
+
+#include <gtk/gtkwindow.h>
 
 static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   if (bytes < 1024) {
@@ -47,6 +49,7 @@ struct _YASSGtkWindow
 
   // Right Panel
   GtkWidget* server_host;
+  GtkWidget* server_sni;
   GtkWidget* server_port;
   GtkWidget* username;
   GtkWidget* password;
@@ -87,6 +90,7 @@ yass_window_class_init (YASSGtkWindowClass *cls)
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, stop_button);
 
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, server_host);
+  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, server_sni);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, server_port);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, username);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, password);
@@ -117,6 +121,9 @@ YASSWindow::YASSWindow(GApplication *app)
 
   static YASSWindow* window = this;
 
+  // forward to hide event
+  gtk_window_set_hide_on_close(GTK_WINDOW(impl_), TRUE);
+
   auto hide_callback = []() { window->OnClose(); };
   g_signal_connect(G_OBJECT(impl_), "hide",
                    G_CALLBACK(hide_callback), this);
@@ -145,13 +152,13 @@ YASSWindow::YASSWindow(GApplication *app)
 
   static const char* const method_names[] = {
 #define XX(num, name, string) string,
-      CIPHER_METHOD_MAP(XX)
+      CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   };
 
   GtkComboBoxText *method = GTK_COMBO_BOX_TEXT(impl_->method);
 
-  for (uint32_t i = 1; i < sizeof(method_names) / sizeof(method_names[0]);
+  for (uint32_t i = 0; i < sizeof(method_names) / sizeof(method_names[0]);
        ++i) {
     gtk_combo_box_text_append_text(method, method_names[i]);
   }
@@ -184,6 +191,11 @@ void YASSWindow::present() {
 void YASSWindow::OnStartButtonClicked() {
   gtk_widget_set_sensitive(GTK_WIDGET(impl_->start_button), false);
 
+  last_sync_time_ = GetMonotonicTime();
+  last_rx_bytes_ = 0U;
+  last_tx_bytes_ = 0U;
+  cli::total_rx_bytes = 0U;
+  cli::total_tx_bytes = 0U;
   mApp->OnStart();
 }
 
@@ -206,6 +218,10 @@ void YASSWindow::OnSystemProxyClicked() {
 
 std::string YASSWindow::GetServerHost() {
   return gtk_editable_get_text(GTK_EDITABLE(impl_->server_host));
+}
+
+std::string YASSWindow::GetServerSNI() {
+  return gtk_editable_get_text(GTK_EDITABLE(impl_->server_sni));
 }
 
 std::string YASSWindow::GetServerPort() {
@@ -271,6 +287,7 @@ std::string YASSWindow::GetStatusMessage() {
 void YASSWindow::Started() {
   UpdateStatusBar();
   gtk_widget_set_sensitive(impl_->server_host, false);
+  gtk_widget_set_sensitive(impl_->server_sni, false);
   gtk_widget_set_sensitive(impl_->server_port, false);
   gtk_widget_set_sensitive(impl_->username, false);
   gtk_widget_set_sensitive(impl_->password, false);
@@ -285,6 +302,7 @@ void YASSWindow::Started() {
 void YASSWindow::StartFailed() {
   UpdateStatusBar();
   gtk_widget_set_sensitive(impl_->server_host, true);
+  gtk_widget_set_sensitive(impl_->server_sni, true);
   gtk_widget_set_sensitive(impl_->server_port, true);
   gtk_widget_set_sensitive(impl_->username, true);
   gtk_widget_set_sensitive(impl_->password, true);
@@ -305,6 +323,7 @@ void YASSWindow::StartFailed() {
 void YASSWindow::Stopped() {
   UpdateStatusBar();
   gtk_widget_set_sensitive(impl_->server_host, true);
+  gtk_widget_set_sensitive(impl_->server_sni, true);
   gtk_widget_set_sensitive(impl_->server_port, true);
   gtk_widget_set_sensitive(impl_->username, true);
   gtk_widget_set_sensitive(impl_->password, true);
@@ -318,6 +337,7 @@ void YASSWindow::Stopped() {
 
 void YASSWindow::LoadChanges() {
   auto server_host_str = absl::GetFlag(FLAGS_server_host);
+  auto server_sni_str = absl::GetFlag(FLAGS_server_sni);
   auto server_port_str = std::to_string(absl::GetFlag(FLAGS_server_port));
   auto username_str = absl::GetFlag(FLAGS_username);
   auto password_str = absl::GetFlag(FLAGS_password);
@@ -327,22 +347,23 @@ void YASSWindow::LoadChanges() {
   auto timeout_str = std::to_string(absl::GetFlag(FLAGS_connect_timeout));
 
   gtk_editable_set_text(GTK_EDITABLE(impl_->server_host), server_host_str.c_str());
+  gtk_editable_set_text(GTK_EDITABLE(impl_->server_sni), server_sni_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->server_port), server_port_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->username), username_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->password), password_str.c_str());
 
   static const int method_ids[] = {
 #define XX(num, name, string) num,
-      CIPHER_METHOD_MAP(XX)
+      CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   };
   uint32_t i;
-  for (i = 1; i < sizeof(method_ids) / sizeof(method_ids[0]); ++i) {
+  for (i = 0; i < sizeof(method_ids) / sizeof(method_ids[0]); ++i) {
     if (cipher_method == method_ids[i])
       break;
   }
 
-  gtk_combo_box_set_active(GTK_COMBO_BOX(impl_->method), i - 1);
+  gtk_combo_box_set_active(GTK_COMBO_BOX(impl_->method), i);
 
   gtk_editable_set_text(GTK_EDITABLE(impl_->local_host), local_host_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->local_port), local_port_str.c_str());

@@ -53,6 +53,10 @@ msgstr "Yet Another Shadow Socket"
 msgid "Server Host:"
 msgstr "Server Host:"
 
+#: yass_window.ui:31
+msgid "Server SNI:"
+msgstr "Server SNI:"
+
 #: yass_window.ui:41
 msgid "Server Port:"
 msgstr "Server Port:"
@@ -124,6 +128,10 @@ msgstr "Disconnected with "
 #: yass.cpp:374
 msgid "Last Change: "
 msgstr "Last Change: "
+
+#: yass.cpp:392
+msgid "Enabled Feature: "
+msgstr "Enabled Feature: "
 
 #: yass.cpp:383
 msgid "official-site"

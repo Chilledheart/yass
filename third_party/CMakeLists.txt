@@ -89,7 +89,6 @@ add_library(url STATIC
   googleurl/base/containers/span.h
   googleurl/base/containers/util.h
   googleurl/base/cxx20_is_constant_evaluated.h
-  googleurl/base/cxx20_to_address.h
   googleurl/base/debug/crash_logging.h
   googleurl/base/debug/leak_annotations.h
   googleurl/base/functional/identity.h
@@ -113,9 +112,8 @@ add_library(url STATIC
   googleurl/base/ranges/ranges.h
   googleurl/base/stl_util.h
   googleurl/base/template_util.h
-  googleurl/base/strings/string_piece_forward.h
+  googleurl/base/types/supports_ostream_operator.h
   googleurl/base/strings/string_piece.h
-  googleurl/base/strings/string_util.h
   googleurl/base/strings/to_string.h
   googleurl/base/strings/string_util_impl_helpers.h
   googleurl/base/strings/string_util_internal.h
@@ -127,7 +125,10 @@ add_library(url STATIC
   googleurl/base/strings/utf_string_conversion_utils.h
   googleurl/base/win/win_handle_types.h
   googleurl/base/debug/crash_logging.cc
-  googleurl/base/strings/string_util.cc
+  #googleurl/base/strings/string_util.h
+  #googleurl/base/strings/string_util.cc
+  googleurl-override/base/strings/string_util.h # overrided
+  googleurl-override/base/strings/string_util.cc # overrided
   googleurl/base/strings/string_util_constants.cc
   # FIXME vs2022 doesn't even compile
   # googleurl/base/strings/utf_ostream_operators.cc
@@ -172,6 +173,15 @@ if (WIN32)
 elseif(NOT APPLE)
   target_sources(url PRIVATE
     googleurl/base/strings/sys_string_conversions_posix.cc)
+else()
+  target_sources(url PRIVATE
+    googleurl-override/base/apple/scoped_cftyperef.h
+    googleurl-override/base/apple/scoped_typeref.h
+    googleurl-override/base/apple/foundation_util.mm
+    googleurl-override/base/apple/foundation_util.h
+    googleurl-override/base/mac/scoped_ioobject.h
+    googleurl-override/base/strings/sys_string_conversions_apple.mm
+  )
   # missing apple part
 endif()
 

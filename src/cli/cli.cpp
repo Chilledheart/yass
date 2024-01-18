@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 
 #include "config/config.hpp"
-#include "core/cipher.hpp"
+#include "crypto/crypter_export.hpp"
 #include "cli/cli_server.hpp"
 
 #include <absl/debugging/failure_signal_handler.h>
@@ -25,13 +25,45 @@
 #include <netdb.h>
 #endif
 
-#include "core/asio.hpp"
+#include "net/asio.hpp"
 #include "core/logging.hpp"
 #include "crypto/crypter_export.hpp"
 #include "version.h"
 #include "i18n/icu_util.hpp"
 
 using namespace cli;
+
+static asio::ip::tcp::resolver::results_type
+ResolveAddress(const std::string& domain_name, int port) {
+  asio::error_code ec;
+  auto addr = asio::ip::make_address(domain_name.c_str(), ec);
+  bool host_is_ip_address = !ec;
+  if (host_is_ip_address) {
+    asio::ip::tcp::endpoint endpoint(addr, port);
+    auto results = asio::ip::tcp::resolver::results_type::create(
+      endpoint, domain_name, std::to_string(port));
+    return results;
+  } else {
+    struct addrinfo hints = {}, *addrinfo;
+    hints.ai_flags = AI_CANONNAME | AI_NUMERICSERV;
+    hints.ai_family = Net_ipv6works() ? AF_UNSPEC : AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = 0;
+    int ret = ::getaddrinfo(domain_name.c_str(), std::to_string(port).c_str(), &hints, &addrinfo);
+    auto results = asio::ip::tcp::resolver::results_type::create(addrinfo, domain_name.c_str(), std::to_string(port));
+    ::freeaddrinfo(addrinfo);
+    if (ret) {
+      LOG(WARNING) << "resolved domain name:" << domain_name
+#ifdef _WIN32
+        << " failed due to: " << gai_strerrorA(ret);
+#else
+        << " failed due to: " << gai_strerror(ret);
+#endif
+      return {};
+    }
+    return results;
+  }
+}
 
 int main(int argc, const char* argv[]) {
   SetExecutablePath(argv[0]);
@@ -90,42 +122,50 @@ int main(int argc, const char* argv[]) {
   asio::io_context io_context;
   auto work_guard = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context.get_executor());
 
-  std::vector<asio::ip::tcp::endpoint> endpoints;
-  std::string host_name = absl::GetFlag(FLAGS_local_host);
-  uint16_t port = absl::GetFlag(FLAGS_local_port);
+  std::string remote_host_name = absl::GetFlag(FLAGS_server_host);
+  std::string remote_host_sni = remote_host_name;
+  if (!absl::GetFlag(FLAGS_server_sni).empty()) {
+    remote_host_sni = absl::GetFlag(FLAGS_server_sni);
+  }
+  std::string remote_host_ips;
+  uint16_t remote_port = absl::GetFlag(FLAGS_server_port);
 
-  asio::error_code ec;
-  auto addr = asio::ip::make_address(host_name.c_str(), ec);
-  bool host_is_ip_address = !ec;
-  if (host_is_ip_address) {
-    endpoints.emplace_back(addr, port);
+  auto results = ResolveAddress(remote_host_name, remote_port);
+  if (results.empty()) {
+    return -1;
   } else {
-    struct addrinfo hints = {}, *addrinfo;
-    hints.ai_flags = AI_CANONNAME | AI_NUMERICSERV;
-    hints.ai_family = Net_ipv6works() ? AF_UNSPEC : AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = 0;
-    int ret = ::getaddrinfo(host_name.c_str(), std::to_string(port).c_str(), &hints, &addrinfo);
-    auto results = asio::ip::tcp::resolver::results_type::create(addrinfo, host_name.c_str(), std::to_string(port));
-    ::freeaddrinfo(addrinfo);
-    if (ret) {
-      LOG(WARNING) << "local resolved host:" << host_name
-#ifdef _WIN32
-        << " failed due to: " << gai_strerrorA(ret);
-#else
-        << " failed due to: " << gai_strerror(ret);
-#endif
-      return -1;
+    std::vector<std::string> remote_ips;
+    for (auto result : results) {
+      if (result.endpoint().address().is_unspecified()) {
+        LOG(WARNING) << "Unspecified remote address: " << remote_host_name;
+        return -1;
+      }
+      remote_ips.push_back(result.endpoint().address().to_string());
     }
-    endpoints.insert(endpoints.end(), std::begin(results), std::end(results));
+    remote_host_ips = absl::StrJoin(remote_ips, ";");
+    LOG(INFO) << "resolved server ips: " << remote_host_ips << " from " << remote_host_name;
   }
 
-  std::string remote_domain = absl::StrCat(
-    absl::GetFlag(FLAGS_server_host), ":", absl::GetFlag(FLAGS_server_port));
+  std::vector<asio::ip::tcp::endpoint> endpoints;
+  std::string local_host_name = absl::GetFlag(FLAGS_local_host);
+  uint16_t local_port = absl::GetFlag(FLAGS_local_port);
 
+  results = ResolveAddress(local_host_name, local_port);
 
-  CliServer server(io_context, absl::GetFlag(FLAGS_server_host),
-                   absl::GetFlag(FLAGS_server_port));
+  if (results.empty()) {
+    return -1;
+  } else {
+    endpoints.insert(endpoints.end(), std::begin(results), std::end(results));
+
+    std::vector<std::string> local_ips;
+    for (auto result : results) {
+      local_ips.push_back(result.endpoint().address().to_string());
+    }
+    LOG(INFO) << "resolved local ips: " << absl::StrJoin(local_ips, ";") << " from " << local_host_name;
+  }
+
+  asio::error_code ec;
+  CliServer server(io_context, remote_host_ips, remote_host_sni, remote_port);
   for (auto &endpoint : endpoints) {
     server.listen(endpoint, std::string(), SOMAXCONN, ec);
     if (ec) {
@@ -136,7 +176,8 @@ int main(int argc, const char* argv[]) {
     }
     endpoint = server.endpoint();
     LOG(WARNING) << "tcp server listening at " << endpoint
-      << " with upstream " << remote_domain;
+      << " with upstream sni: " << remote_host_sni << ":" << remote_port
+      <<  " (ip " << remote_host_ips << " )";
   }
 
   asio::signal_set signals(io_context);

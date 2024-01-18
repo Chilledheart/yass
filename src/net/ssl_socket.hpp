@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2023 Chilledheart  */
+/* Copyright (c) 2023-2024 Chilledheart  */
 
 #ifndef H_NET_SSL_SOCKET
 #define H_NET_SSL_SOCKET
 
+#include <absl/functional/any_invocable.h>
 #include <openssl/ssl.h>
 
-#include "core/asio.hpp"
-#include "core/iobuf.hpp"
+#include "net/asio.hpp"
+#include "net/iobuf.hpp"
 #include "core/ref_counted.hpp"
 #include "core/scoped_refptr.hpp"
 #include "net/openssl_util.hpp"
@@ -40,12 +41,13 @@ enum class SSLHandshakeDetails {
 
 // A OnceCallback specialization that takes a single int parameter. Usually this
 // is used to report a byte count or network error code.
-using CompletionOnceCallback = std::function<void(int)>;
-using WaitCallback = std::function<void(asio::error_code ec)>;
+using CompletionOnceCallback = absl::AnyInvocable<void(int)>;
+using WaitCallback = absl::AnyInvocable<void(asio::error_code ec)>;
 
 class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
  public:
-  SSLSocket(asio::io_context *io_context,
+  SSLSocket(int ssl_socket_data_index,
+            asio::io_context *io_context,
             asio::ip::tcp::socket* socket,
             SSL_CTX* ssl_ctx,
             bool https_fallback,
@@ -64,24 +66,28 @@ class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
   int Connect(CompletionOnceCallback callback);
   void Disconnect();
   int ConfirmHandshake(CompletionOnceCallback callback);
-  int Shutdown(WaitCallback cb, bool force = false);
+  int Shutdown(WaitCallback &&cb, bool force = false);
 
   SSL* native_handle() { return ssl_.get(); }
 
   // Socket implementation.
   size_t Read(std::shared_ptr<IOBuf> buf, asio::error_code &ec);
   size_t Write(std::shared_ptr<IOBuf> buf, asio::error_code &ec);
-  void WaitRead(WaitCallback cb);
-  void WaitWrite(WaitCallback cb);
+  void WaitRead(WaitCallback &&cb);
+  void WaitWrite(WaitCallback &&cb);
 
   const std::string& negotiated_protocol() const {
     return negotiated_protocol_;
   }
+
+  int NewSessionCallback(SSL_SESSION* session);
+
  protected:
   void OnWaitRead(asio::error_code ec);
   void OnWaitWrite(asio::error_code ec);
   void OnReadReady();
   void OnWriteReady();
+  void OnDoWaitShutdown(asio::error_code ec);
 
  private:
   int DoHandshake();
@@ -99,6 +105,7 @@ class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
   int MapLastOpenSSLError(int ssl_error);
 
  private:
+  int ssl_socket_data_index_;
   asio::io_context* io_context_;
   asio::ip::tcp::socket* stream_socket_;
 

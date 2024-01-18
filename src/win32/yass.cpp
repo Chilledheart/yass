@@ -99,14 +99,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   config::ReadConfig();
   absl::ParseCommandLine(argv.size(), const_cast<char**>(&argv[0]));
 
-  // FIXME problem with static build
-  // in dynamic build, it may be scanned as virus ???
-#if 0
-  if (!MemoryLockAll()) {
-    LOG(WARNING) << "Failed to set memory lock";
-  }
-#endif
-
 #ifdef HAVE_ICU
   if (!InitializeICU()) {
     LOG(WARNING) << "Failed to initialize icu component";
@@ -176,7 +168,7 @@ BOOL CYassApp::InitInstance() {
   std::wstring frame_name = LoadStringStdW(m_hInstance, IDS_APP_TITLE);
 
   UINT uDpi = Utils::GetDpiForWindowOrSystem(nullptr);
-  RECT rect{0, 0, MULDIVDPI(500), MULDIVDPI(420)};
+  RECT rect{0, 0, MULDIVDPI(500), MULDIVDPI(450)};
 
   // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow
   int nCmdShow = absl::GetFlag(FLAGS_background) ? SW_HIDE : SW_SHOW;
@@ -189,7 +181,18 @@ BOOL CYassApp::InitInstance() {
   }
 
   if (Utils::GetAutoStart()) {
-    frame_->OnStartButtonClicked();
+    if (absl::GetFlag(FLAGS_background)) {
+      DWORD main_thread_id = GetCurrentThreadId();
+      WaitNetworkUp([=](){
+        bool ret;
+        ret = PostThreadMessageW(main_thread_id, WM_MYAPP_NETWORK_UP, 0, 0);
+        if (!ret) {
+          PLOG(WARNING) << "Internal error: PostThreadMessage";
+        }
+      });
+    } else {
+      frame_->OnStartButtonClicked();
+    }
   }
 
   return TRUE;
@@ -275,6 +278,11 @@ BOOL CYassApp::HandleThreadMessage(UINT message, WPARAM w, LPARAM l) {
     case WM_MYAPP_STOPPED:
       OnStopped(w, l);
       return TRUE;
+    case WM_MYAPP_NETWORK_UP:
+      if (state_ == STOPPED) {
+        frame_->OnStartButtonClicked();
+      }
+      return TRUE;
   }
   return FALSE;
 }
@@ -294,9 +302,13 @@ std::wstring CYassApp::GetStatus() const {
 void CYassApp::OnStart(bool quiet) {
   DWORD main_thread_id = GetCurrentThreadId();
   state_ = STARTING;
-  SaveConfig();
+  std::string err_msg = SaveConfig();
+  if (!err_msg.empty()) {
+    OnStartFailed(0, reinterpret_cast<LPARAM>(new std::string(err_msg)));
+    return;
+  }
 
-  std::function<void(asio::error_code)> callback;
+  absl::AnyInvocable<void(asio::error_code)> callback;
   if (!quiet) {
     callback = [main_thread_id](asio::error_code ec) {
       bool successed = false;
@@ -320,13 +332,13 @@ void CYassApp::OnStart(bool quiet) {
       }
     };
   }
-  worker_.Start(callback);
+  worker_.Start(std::move(callback));
 }
 
 void CYassApp::OnStop(bool quiet) {
   DWORD main_thread_id = GetCurrentThreadId();
   state_ = STOPPING;
-  std::function<void()> callback;
+  absl::AnyInvocable<void()> callback;
   if (!quiet) {
     callback = [main_thread_id]() {
       bool ret;
@@ -336,7 +348,7 @@ void CYassApp::OnStop(bool quiet) {
       }
     };
   }
-  worker_.Stop(callback);
+  worker_.Stop(std::move(callback));
 }
 
 // https://docs.microsoft.com/en-us/windows/win32/winprog/windows-data-types?redirectedfrom=MSDN
@@ -387,28 +399,19 @@ BOOL CYassApp::CheckFirstInstance() {
   return TRUE;
 }
 
-void CYassApp::SaveConfig() {
+std::string CYassApp::SaveConfig() {
   auto server_host = frame_->GetServerHost();
-  auto server_port = StringToIntegerU(frame_->GetServerPort());
+  auto server_sni = frame_->GetServerSNI();
+  auto server_port = frame_->GetServerPort();
   auto username = frame_->GetUsername();
   auto password = frame_->GetPassword();
   auto method = frame_->GetMethod();
   auto local_host = frame_->GetLocalHost();
-  auto local_port = StringToIntegerU(frame_->GetLocalPort());
-  auto connect_timeout = StringToIntegerU(frame_->GetTimeout());
+  auto local_port = frame_->GetLocalPort();
+  auto connect_timeout = frame_->GetTimeout();
 
-  if (!server_port.ok() || method == CRYPTO_INVALID || !local_port.ok() ||
-      !connect_timeout.ok()) {
-    LOG(WARNING) << "invalid options";
-    return;
-  }
-
-  absl::SetFlag(&FLAGS_server_host, server_host);
-  absl::SetFlag(&FLAGS_server_port, server_port.value());
-  absl::SetFlag(&FLAGS_username, username);
-  absl::SetFlag(&FLAGS_password, password);
-  absl::SetFlag(&FLAGS_method, method);
-  absl::SetFlag(&FLAGS_local_host, local_host);
-  absl::SetFlag(&FLAGS_local_port, local_port.value());
-  absl::SetFlag(&FLAGS_connect_timeout, connect_timeout.value());
+  return config::ReadConfigFromArgument(server_host, server_sni, server_port,
+                                        username, password, method,
+                                        local_host, local_port,
+                                        connect_timeout);
 }

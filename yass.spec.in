@@ -8,8 +8,22 @@
 %global cmake_alias cmake
 %endif
 
+# on centos, nghttp2 sits in epel repo
+%if 0%{?fedora} || 0%{?sle_version}
+%global enable_system_nghttp2_opt on
+%else
+%global enable_system_nghttp2_opt off
+%endif
+
+# on centos, mbedtls sits in epel repo
+%if 0%{?fedora} || 0%{?sle_version}
+%global enable_system_mbedtls_opt on
+%else
+%global enable_system_mbedtls_opt off
+%endif
+
 # requires nlohman json
-%if 0%{?fedora} || 0%{?rhel}
+%if 0%{?fedora}
 %global enable_system_json_opt on
 %else
 %global enable_system_json_opt off
@@ -83,13 +97,16 @@ BuildRequires: cmake3 >= 3.12, pkgconfig
 BuildRequires: clang, lld
 BuildRequires: c-ares-devel
 %endif
+%if 0%{?fedora} || 0%{?sle_version}
 BuildRequires: mbedtls-devel
-%if 0%{?fedora} || 0%{?rhel}
+%endif
+%if 0%{?fedora}
 BuildRequires: json-devel
 %endif
-BuildRequires: xxhash-devel
 BuildRequires: zlib-devel
+%if 0%{?fedora} || 0%{?sle_version}
 BuildRequires: libnghttp2-devel
+%endif
 BuildRequires: gcc, gcc-c++, golang >= 1.4
 %if 0%{?sle_version}
 BuildRequires: ninja
@@ -117,9 +134,10 @@ cd build
 %cmake_alias -G Ninja -DCMAKE_BUILD_TYPE=Release \
    -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DCLI=on -DSERVER=on \
    -DUSE_TCMALLOC=on \
-   -DUSE_SYSTEM_ZLIB=on -DUSE_SYSTEM_NGHTTP2=on \
-   -DUSE_SYSTEM_MBEDTLS=on -DUSE_SYSTEM_JSON="%enable_system_json_opt" \
-   -DUSE_SYSTEM_XXHASH=on \
+   -DUSE_SYSTEM_ZLIB=on \
+   -DUSE_SYSTEM_NGHTTP2="%enable_system_nghttp2_opt" \
+   -DUSE_SYSTEM_MBEDTLS="%enable_system_mbedtls_opt" \
+   -DUSE_SYSTEM_JSON="%enable_system_json_opt" \
    -DUSE_SYSTEM_CARES="%enable_system_cares_opt" -DUSE_LIBCXX="%enable_libcxx_opt" \
    -DENABLE_LLD="%enable_lld_opt" -DUSE_BUILTIN_CA_BUNDLE_CRT=off ..
 ninja
@@ -139,7 +157,7 @@ rm -rf %{buildroot}
 ninja install
 rm -rf %{buildroot}/%{_datadir}/doc
 cd ..
-desktop-file-validate %{buildroot}%{_datadir}/applications/yass.desktop
+desktop-file-validate %{buildroot}%{_datadir}/applications/it.gui.yass.desktop
 %find_lang %{name}
 
 %post
@@ -152,7 +170,7 @@ update-desktop-database
 %dir /usr/share/applications/
 %dir /usr/share/pixmaps/
 %{_bindir}/yass
-%{_datadir}/applications/yass.desktop
+%{_datadir}/applications/it.gui.yass.desktop
 %{_datadir}/pixmaps/yass.png
 %{_datadir}/icons/hicolor/16x16/apps/yass.png
 %{_datadir}/icons/hicolor/22x22/apps/yass.png
@@ -175,6 +193,17 @@ for embedded devices and low end boxes.
 %{_bindir}/yass_server
 %{_sysconfdir}/yass/server.json
 %{_unitdir}/yass-server.service
+%dir /usr/share/man/man1/
+%{_mandir}/man1/yass_server.1*
+
+%post server
+%systemd_post yass-server.service
+
+%preun server
+%systemd_preun yass-server.service
+
+%postun server
+%systemd_postun_with_restart yass-server.service
 
 %package client
 Summary: Lightweight and Secure http/socks4/socks5 Proxy (Client Side)
@@ -190,16 +219,78 @@ for embedded devices and low end boxes.
 %{_sysconfdir}/yass/redir.json
 %{_unitdir}/yass.service
 %{_unitdir}/yass-redir.service
+%dir /usr/share/man/man1/
+%{_mandir}/man1/yass_cli.1*
+
+%post client
+%systemd_post yass.service
+%systemd_post yass-redir.service
+
+%preun client
+%systemd_preun yass.service
+%systemd_preun yass-redir.service
+
+%postun client
+%systemd_postun_with_restart yass.service
+%systemd_postun_with_restart yass-redir.service
 
 %changelog
-* Thu Dec 14 2023 Chilledheart <keeyou-cn@outlook.com> - 1.4.12-1
+* Thu Jan 18 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.20-1
+  - ca-certificates: update for 20230311.3.95 release.
+* Tue Jan 16 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.19-1
+  - gtk: quote the exec entry in autostart.
+* Fri Jan 12 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.18-1
+  - net: code refactor.
+* Thu Jan 11 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.17-1
+  - c-ares: defer c-ares init.
+* Wed Jan 10 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.16-1
+  - c-ares: defer c-ares init.
+* Wed Jan 10 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.15-1
+  - gcc: fix lto build under gold.
+  - rpm: handle systemd scriptlet operations.
+* Mon Jan 8 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.14-1
+  - ssl: enable client-side ssl session cache.
+  - ssl: deduplicate all ceritificates.
+* Sun Jan 7 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.13-1
+  - gtk: add server sni support.
+* Sun Jan 7 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.12-1
+  - gtk: add server sni support.
+* Sat Jan 6 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.11-1
+  - gtk: add server sni support.
+* Fri Jan 5 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.10-1
+  - gtk: add server sni support.
+* Wed Jan 3 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.9-1
+  - ca-certificates: load symbolic link as cert files.
+* Wed Jan 3 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.8-1
+  - ca-certificates: load symbolic link as cert files.
+* Wed Dec 27 2023 Chilledheart <keeyou-cn@outlook.com> - 1.5.7-1
+  - ca-certificates: update for 20230311.3.93 release.
+* Tue Dec 19 2023 Chilledheart <keeyou-cn@outlook.com> - 1.5.6-1
+  - man: add yass_cli and yass_server man pages.
+* Thu Dec 14 2023 Chilledheart <keeyou-cn@outlook.com> - 1.5.5-1
+  - ssl: use builtin ca bundle if system keystore fails.
+* Wed Dec 13 2023 Chilledheart <keeyou-cn@outlook.com> - 1.5.4-1
   - Fix bad F_SETFD calls.
   - gtk: update desktop database.
-* Mon Dec 4 2023 Chilledheart <keeyou-cn@outlook.com> - 1.4.11-1
+* Fri Dec 8 2023 Chilledheart <keeyou-cn@outlook.com> - 1.5.3-1
+  - Fix linux thread name setting.
+* Tue Dec 5 2023 Chilledheart <keeyou-cn@outlook.com> - 1.5.2-1
+  - Bump to chromium 121 dependents (updated).
+  - Fix RPM releases.
+* Mon Dec 4 2023 Chilledheart <keeyou-cn@outlook.com> - 1.5.1-1
+  - Bump to chromium 121 dependents.
+  - Fix use cached configuration issue.
+  - Fix crash in resume from previous failure.
+* Mon Dec 4 2023 Chilledheart <keeyou-cn@outlook.com> - 1.5.0-1
+  - New major release.
+* Sat Dec 2 2023 Chilledheart <keeyou-cn@outlook.com> - 1.4.12-1
+  - Fix bad F_SETFD calls.
+  - gtk: update desktop database.
+* Sat Dec 2 2023 Chilledheart <keeyou-cn@outlook.com> - 1.4.11-1
   - Bump Clang.
   - Fix use cached configuration issue.
   - Fix crash in resume from previous failure.
-* Sat Dec 2 2023 Chilledheart <hukeyue@hotmail.com> - 1.4.10-1
+* Sat Dec 2 2023 Chilledheart <keeyou-cn@outlook.com> - 1.4.10-1
   - Bump Clang and Abseil-Cpp.
   - Use tcmalloc be default.
   - Misc fixes.

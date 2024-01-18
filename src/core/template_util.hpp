@@ -10,7 +10,7 @@
 #include <type_traits>
 #include <utility>
 
-#include "core/compiler_specific.hpp"
+#include <base/compiler_specific.h>
 
 template <class T>
 struct is_non_const_reference : std::false_type {};

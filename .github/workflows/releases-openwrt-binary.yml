@@ -29,6 +29,11 @@ on:
     - '.cirrus.yml'
   release:
     types: [published]
+  schedule:
+    - cron: '0 16 * * *'
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 env:
   CACHE_EPOCH: 121-2
   GOPROXY: direct
@@ -136,10 +141,6 @@ jobs:
           sudo apt remove libc6-i386
           # required by mbedtls build
           sudo apt-get install -y python3-jsonschema python3-jinja2
-      - name: Set clang environment
-        run: |
-          echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
-          echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
       - name: Build TGZ packages
         run: |
           ./tools/build --variant cli --arch ${{ matrix.subarch }} --system linux --subsystem openwrt --sysroot ${{ env.SDK_ROOT }} \

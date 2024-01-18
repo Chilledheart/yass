@@ -41,7 +41,7 @@ set Platform=x86
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
 cd curl-8.4.0\winbuild
-nmake /f Makefile.vc mode=static MACHINE=x86 RTLIBCFG=static debug=no VC=16 ENABLE_UNICODE=yes
+nmake /f Makefile.vc mode=static MACHINE=x86 RTLIBCFG=dynamic debug=no VC=16 ENABLE_UNICODE=yes
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 cd ..\builds
 "C:\Program Files\7-Zip\7z.exe" a -tzip libcurl-vc16-x86-release-static-ipv6-sspi-schannel.zip libcurl-vc16-x86-release-static-ipv6-sspi-schannel
@@ -59,7 +59,7 @@ set Platform=x64
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
 cd curl-8.4.0\winbuild
-nmake /f Makefile.vc mode=static MACHINE=x64 RTLIBCFG=static debug=no VC=16 ENABLE_UNICODE=yes
+nmake /f Makefile.vc mode=static MACHINE=x64 RTLIBCFG=dynamic debug=no VC=16 ENABLE_UNICODE=yes
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 cd ..\builds
 "C:\Program Files\7-Zip\7z.exe" a -tzip libcurl-vc16-x64-release-static-ipv6-sspi-schannel.zip libcurl-vc16-x64-release-static-ipv6-sspi-schannel
@@ -76,7 +76,7 @@ REM
 set Platform=arm64
 call "%vsdevcmd%" -arch=%Platform% -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 cd curl-8.4.0\winbuild
-nmake /f Makefile.vc mode=static MACHINE=arm64 RTLIBCFG=static debug=no VC=16 ENABLE_UNICODE=yes
+nmake /f Makefile.vc mode=static MACHINE=arm64 RTLIBCFG=dynamic debug=no VC=16 ENABLE_UNICODE=yes
 if %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
 cd ..\builds
 "C:\Program Files\7-Zip\7z.exe" a -tzip libcurl-vc16-arm64-release-static-ipv6-sspi-schannel.zip libcurl-vc16-arm64-release-static-ipv6-sspi-schannel

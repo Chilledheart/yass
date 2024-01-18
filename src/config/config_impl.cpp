@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2023 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 #include "config/config_impl.hpp"
 
 #include <absl/flags/flag.h>
+#include <absl/strings/str_cat.h>
 #include <stdint.h>
 
 #include "config/config_impl_apple.hpp"
 #include "config/config_impl_local.hpp"
 #include "config/config_impl_windows.hpp"
 #include "core/logging.hpp"
-#include "core/cipher.hpp"
+#include "crypto/crypter_export.hpp"
 
 struct CipherMethodFlag {
   explicit CipherMethodFlag(cipher_method m) : method(m) {}
@@ -38,6 +39,11 @@ std::unique_ptr<ConfigImpl> ConfigImpl::Create() {
   fprintf(stderr, "using option from defaults database\n");
   fflush(stderr);
   return std::make_unique<ConfigImplApple>();
+#elif defined(__ANDROID__)
+  std::string configfile = absl::StrCat(a_data_dir, "/", "config.json");
+  fprintf(stderr, "using option from file: %s\n", configfile.c_str());
+  fflush(stderr);
+  return std::make_unique<ConfigImplLocal>(configfile);
 #else
   const char* configfile = "~/.yass/config.json";
   fprintf(stderr, "using option from file: %s\n", configfile);

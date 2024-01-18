@@ -1,4 +1,4 @@
-name: Build Artifacts (Windows)
+name: OnDemand Build Artifacts (MSVC)
 on:
   workflow_dispatch:
     inputs:
@@ -15,20 +15,11 @@ on:
         description: 'Test scenario tags'
         required: false
         type: boolean
-  pull_request:
-    branches: [master, develop]
-    paths-ignore:
-    - '**/*.md'
-    - '.circleci/**'
-    - '.cirrus.yml'
-  push:
-    branches: [master, develop]
-    paths-ignore:
-    - '**/*.md'
-    - '.circleci/**'
-    - '.cirrus.yml'
-  release:
-    types: [published]
+  schedule:
+    - cron: '0 16 * * *'
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 defaults:
   run:
     shell: cmd
@@ -42,7 +33,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x64, x86, arm64]
-        crt-linkage: [static]
+        crt-linkage: [dynamic]
         build_type: [Release]
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
@@ -67,23 +58,24 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
+            third_party/libcurl-vc16-arm64-release-static-ipv6-sspi-schannel
             third_party/libcurl-vc16-x64-release-static-ipv6-sspi-schannel
             third_party/libcurl-vc16-x86-release-static-ipv6-sspi-schannel
-          key: ${{ runner.os }}-msvc-curl-vc16-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-msvc-dynamic-curl-vc16-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
       - name: Cache depot_tools
         id: depot-cache
         uses: actions/cache@v3
         with:
           path: |
             third_party/depot_tools
-          key: ${{ runner.os }}-depot_tools
+          key: ${{ runner.os }}-depot_tools-v1
       - name: Cache crashpad build stage
         id: crashpad-cache
         uses: actions/cache@v3
         with:
           path: |
             third_party/crashpad
-          key: ${{ runner.os }}-msvc-perarch-crashpad-build-stage-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-msvc-dynamic-${{ matrix.arch }}-crashpad-${{ hashFiles('CRASHPAD_COMMIT') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang (tools only)
         uses: actions/cache@v3
         with:
@@ -122,8 +114,6 @@ jobs:
           if "${{ matrix.arch }}" == "arm64" (call :SetNewVCToolsVersion)
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
-          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set Platform=${{ matrix.arch }}
 
           set "Path=%CD%\third_party\nasm;%Path%"
@@ -142,11 +132,6 @@ jobs:
         run: |
           build-msvc-${{ matrix.arch }}-${{ matrix.crt-linkage }}\yass_test || exit /b
           build-msvc-${{ matrix.arch }}-${{ matrix.crt-linkage }}\yass_benchmark || exit /b
-
-          exit /b 0
-
-          :SetNewVCToolsVersion
-          set VCToolsVersion=
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
@@ -221,8 +206,6 @@ jobs:
           set "WindowsSdkDir=C:\Program Files (x86)\Windows Kits\10"
           set "PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;%PATH%"
 
-          set "CC=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
-          set "CXX=%CD%\third_party\llvm-build\Release+Asserts\bin\clang-cl.exe"
           set Platform=${{ matrix.arch }}
           set VSCMD_ARG_TGT_ARCH=${{ matrix.arch }}
 
@@ -231,7 +214,7 @@ jobs:
 
           call "scripts\callxp-%Platform%.cmd"
 
-          tools\build -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -msvc-allow-xp -build-test -build-benchmark || exit /b
+          tools\build -msvc-tgt-arch=${{ matrix.arch }} -msvc-crt-linkage=${{ matrix.crt-linkage }} -msvc-allow-xp -build-test -build-benchmark -use-icu=false || exit /b
 
           goto :eof
       - name: Run tests

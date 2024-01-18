@@ -3,63 +3,78 @@
 
 #include "core/utils.hpp"
 
-#include "base/strings/string_number_conversions.h"
+#include "core/logging.hpp"
 #include "config/config.hpp"
 
 #ifndef _WIN32
-#include <pwd.h>
-#include <unistd.h>
-#include <sys/socket.h>
+#include <fcntl.h>
 #include <netinet/in.h>
+#include <pwd.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #else
 #include <winsock2.h>
 #endif
 
+#include <absl/flags/flag.h>
 #include <absl/flags/internal/program_name.h>
 #include <absl/strings/str_cat.h>
+#include <base/posix/eintr_wrapper.h>
+#include <base/strings/string_number_conversions.h>
 
 #ifdef HAVE_TCMALLOC
 #include <tcmalloc/malloc_extension.h>
 #endif
 
-absl::StatusOr<int> StringToInteger(const std::string& value) {
+#ifdef __ANDROID__
+#include <android/log.h>
+#endif
+
+#ifdef __ANDROID__
+std::string a_cache_dir;
+std::string a_data_dir;
+OpenApkAssetType a_open_apk_asset = nullptr;
+#endif
+
+std::optional<int> StringToInteger(const std::string& value) {
   int result;
 
   if (gurl_base::StringToInt(value, &result)) {
     return result;
   }
 
-  return absl::InvalidArgumentError("bad integer");
+  return std::nullopt;
 }
 
-absl::StatusOr<unsigned> StringToIntegerU(const std::string& value) {
+std::optional<unsigned> StringToIntegerU(const std::string& value) {
   unsigned result;
 
   if (gurl_base::StringToUint(value, &result)) {
     return result;
   }
 
-  return absl::InvalidArgumentError("bad integer");
+  return std::nullopt;
 }
 
-absl::StatusOr<int64_t> StringToInteger64(const std::string& value) {
+std::optional<int64_t> StringToInteger64(const std::string& value) {
   int64_t result;
 
   if (gurl_base::StringToInt64(value, &result)) {
     return result;
   }
 
-  return absl::InvalidArgumentError("bad integer");
+  return std::nullopt;
 }
 
-absl::StatusOr<uint64_t> StringToIntegerU64(const std::string& value) {
+std::optional<uint64_t> StringToIntegerU64(const std::string& value) {
   uint64_t result;
 
   if (gurl_base::StringToUint64(value, &result)) {
     return result;
   }
 
-  return absl::InvalidArgumentError("bad integer");
+  return std::nullopt;
 }
 
 #ifdef _WIN32
@@ -68,11 +83,97 @@ const char kSeparators[] = "/\\";
 const char kSeparators[] = "/";
 #endif
 
+std::string_view Dirname(std::string_view path) {
+  // trim the extra trailing slash
+  auto first_non_slash_at_end_pos = path.find_last_not_of(kSeparators);
+
+  // path is in the root directory
+  if (first_non_slash_at_end_pos == std::string_view::npos) {
+    return path.empty() ? "/" : path.substr(0, 1);
+  }
+
+  auto last_slash_pos =
+      path.find_last_of(kSeparators, first_non_slash_at_end_pos);
+
+  // path is in the current directory.
+  if (last_slash_pos == std::string_view::npos) {
+    return ".";
+  }
+
+  // trim the extra trailing slash
+  first_non_slash_at_end_pos =
+      path.find_last_not_of(kSeparators, last_slash_pos);
+
+  // path is in the root directory
+  if (first_non_slash_at_end_pos == std::string_view::npos) {
+    return path.substr(0, 1);
+  }
+
+  return path.substr(0, first_non_slash_at_end_pos + 1);
+}
+
+// A portable interface that returns the basename of the filename passed as an
+// argument. It is similar to basename(3)
+// <https://linux.die.net/man/3/basename>.
+// For example:
+//     Basename("a/b/prog/file.cc")
+// returns "file.cc"
+//     Basename("a/b/prog//")
+// returns "prog"
+//     Basename("file.cc")
+// returns "file.cc"
+//     Basename("/file.cc")
+// returns "file.cc"
+//     Basename("//file.cc")
+// returns "file.cc"
+//     Basename("/dir//file.cc")
+// returns "file.cc"
+//     Basename("////")
+// returns "/"
+//     Basename("c/")
+// returns "c"
+//     Basename("/a/b/c")
+// returns "c"
+//
+// TODO: handle with driver letter under windows
+std::string_view Basename(std::string_view path) {
+  // trim the extra trailing slash
+  auto first_non_slash_at_end_pos = path.find_last_not_of(kSeparators);
+
+  // path is in the root directory
+  if (first_non_slash_at_end_pos == std::string_view::npos) {
+    return path.empty() ? "" : path.substr(0, 1);
+  }
+
+  auto last_slash_pos =
+      path.find_last_of(kSeparators, first_non_slash_at_end_pos);
+
+  // path is in the current directory
+  if (last_slash_pos == std::string_view::npos) {
+    return path.substr(0, first_non_slash_at_end_pos + 1);
+  }
+
+  // path is in the root directory
+  return path.substr(last_slash_pos + 1,
+                     first_non_slash_at_end_pos - last_slash_pos);
+}
+
 std::string ExpandUser(const std::string& file_path) {
   std::string real_path = file_path;
 
   if (!real_path.empty() && real_path[0] == '~') {
-    std::string home = ::getenv("HOME");
+    std::string home;
+    {
+      const char* home_str = ::getenv("HOME");
+      if (home_str)  {
+        home = home_str;
+      }
+    }
+#ifdef __ANDROID__
+    if (!a_data_dir.empty()) {
+      home = a_data_dir;
+    }
+#endif
     if (home.empty()) {
 #ifdef _WIN32
       home = absl::StrCat(::getenv("HOMEDRIVE"), ::getenv("HOMEPATH"));
@@ -149,6 +250,44 @@ void SetExecutablePath(const std::string& exe_path) {
   GetExecutablePath(&new_exe_path);
   absl::flags_internal::SetProgramInvocationName(new_exe_path);
 }
+
+bool GetTempDir(std::string *path) {
+  const char* tmp = getenv("TMPDIR");
+  if (tmp) {
+    *path = tmp;
+    return true;
+  }
+#if BUILDFLAG(IS_ANDROID)
+  // return PathService::Get(DIR_CACHE, path);
+  if (!a_cache_dir.empty()) {
+    *path = a_cache_dir;
+    return true;
+  }
+#endif
+#if defined(__ANDROID__)
+  *path = "/data/local/tmp";
+#else
+  *path = "/tmp";
+#endif
+  return true;
+}
+
+std::string GetHomeDir() {
+  const char* home_dir = getenv("HOME");
+  if (home_dir && home_dir[0]) {
+    return home_dir;
+  }
+#if defined(__ANDROID__)
+  DLOG(WARNING) << "OS_ANDROID: Home directory lookup not yet implemented.";
+#endif
+  // Fall back on temp dir if no home directory is defined.
+  std::string rv;
+  if (GetTempDir(&rv)) {
+    return rv;
+  }
+  // Last resort.
+  return "/tmp";
+}
 #endif
 
 /*
@@ -183,37 +322,59 @@ bool Net_ipv6works() {
 
 #ifndef _WIN32
 ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len) {
-  int fd = ::open(path.c_str(), O_RDONLY);
+  int fd = HANDLE_EINTR(::open(path.c_str(), O_RDONLY));
   if (fd < 0) {
     return -1;
   }
-  ssize_t ret = ::read(fd, buf, buf_len - 1);
+  ssize_t ret = HANDLE_EINTR(::read(fd, buf, buf_len - 1));
 
-  if (ret < 0 || close(fd) < 0) {
+  if (IGNORE_EINTR(close(fd)) < 0) {
     return -1;
   }
   buf[ret] = '\0';
   return ret;
 }
 
+static bool WriteFileDescriptor(int fd, std::string_view data) {
+  // Allow for partial writes.
+  ssize_t bytes_written_total = 0;
+  ssize_t size = static_cast<ssize_t>(data.size());
+  DCHECK_LE(data.size(), static_cast<size_t>(SSIZE_MAX)); // checked_cast
+  for (ssize_t bytes_written_partial = 0; bytes_written_total < size;
+       bytes_written_total += bytes_written_partial) {
+    bytes_written_partial =
+        HANDLE_EINTR(::write(fd, data.data() + bytes_written_total,
+                             static_cast<size_t>(size - bytes_written_total)));
+    if (bytes_written_partial < 0)
+      return false;
+  }
+  return true;
+}
+
 ssize_t WriteFileWithBuffer(const std::string& path,
-                            const char* buf,
-                            size_t buf_len) {
-  int fd = ::open(path.c_str(), O_WRONLY | O_TRUNC | O_CREAT,
-                  S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+                            std::string_view buf) {
+  int fd = HANDLE_EINTR(::open(path.c_str(), O_WRONLY | O_TRUNC | O_CREAT,
+                               S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
   if (fd < 0) {
     return false;
   }
-  ssize_t ret = ::write(fd, buf, buf_len);
 
-  if (ret < 0 || close(fd) < 0) {
+  ssize_t ret = WriteFileDescriptor(fd, buf) ? buf.length() : -1;
+
+  if (IGNORE_EINTR(close(fd)) < 0) {
     return -1;
   }
   return ret;
 }
 
 PlatformFile OpenReadFile(const std::string &path) {
-  return ::open(path.c_str(), O_RDONLY);
+  return HANDLE_EINTR(::open(path.c_str(), O_RDONLY));
+}
+#endif
+
+#ifndef _WIN32
+bool IsProgramConsole(int fd) {
+  return isatty(fd) == 1;
 }
 #endif
 

@@ -1,12 +1,31 @@
 # Building Instruments
 
-## Windows
+## Build Binary
 
-1. Make sure you use [Visual Studio][visualstudio] 2019 (or 2022).
+### Windows (MinGW llvm-mingw)
 
-  * Make sure you have `Visual Studio with C++` selected from download page.
+1. Make sure you have [Git for Windows][gitforwindows] installed.
+2. Make sure you have [Perl], [CMake] (3.12 or later), [Ninja], [Golang] and [NASM] installed and put them in `PATH`.
 
-2. Make sure you have Perl, [CMake] (3.12 or later), [Ninja], [Golang] and [NASM] installed and put them in `PATH`.
+  * A recent version of Perl is required.
+    On Windows, [Active State Perl](http://www.activestate.com/activeperl/) has been reported to work, as has MSYS Perl.
+    [Strawberry Perl](http://strawberryperl.com/) also works but it adds [GCC] to `PATH`,
+    which can confuse some build tools when identifying the compiler
+    (removing `C:\Strawberry\c\bin` from `PATH` should resolve any problems).
+3. Open `Git Bash` from Start Menu and run
+
+```
+git clone https://github.com/Chilledheart/yass
+cd yass
+./scripts/build-mingw.sh
+```
+
+4. Enjoy
+
+### Windows (MSVC)
+
+1. Make sure you have [Git for Windows][gitforwindows] installed.
+2. Make sure you have [Perl], [CMake] (3.12 or later), [Ninja], [Golang] and [NASM] installed and put them in `PATH`.
 
   * A recent version of Perl is required.
     On Windows, [Active State Perl](http://www.activestate.com/activeperl/) has been reported to work, as has MSYS Perl.
@@ -14,17 +33,23 @@
     which can confuse some build tools when identifying the compiler
     (removing `C:\Strawberry\c\bin` from `PATH` should resolve any problems).
 
-3. Make sure you have `clang-cl` in `PATH`:
+3. Make sure you use [Visual Studio][visualstudio] 2019 (or 2022).
+
+  * Make sure you have `Visual Studio with C++` selected from download page.
+
+4. Make sure you have `clang-cl` in `PATH`:
 
   * Download and Run [LLVM installer][llvm-win64] from GitHub Binary download page.
 
   * Choose `Add LLVM to System Path`.
 
-4. Run `x64 Native Tools Command Prompt for VS 2019 (or 2022)` in Start Menu.
+5. Run `x64 Native Tools Command Prompt for VS 2019 (or 2022)` in Start Menu.
 
-5. Compile the program with Release configuration.
+6. Compile the program with Release configuration.
 
 ```
+git clone https://github.com/Chilledheart/yass
+cd yass
 mkdir build
 cd build
 set CC=clang-cl
@@ -33,7 +58,7 @@ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
 ninja yass
 ```
 
-## Mingw-w64
+### Windows (MinGW MSYS2)
 
 1. Install MSYS2 Package from [official site][msys2].
 2. Run MSYS2 CLANG64 in Start Menu.
@@ -58,15 +83,16 @@ export GOPATH=/clang64
 
 4. Compiling the program.
 ```
+git clone https://github.com/Chilledheart/yass
+cd yass
 mkdir build
 cd build
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
 ninja yass
 ```
 5. Enjoy
-6. Same way with 32-bit build by replacing `clang64` with `clang32` and `x86_64` with `i686`.
 
-## macOS/Mac OS X
+### macOS
 
 1. Make sure you have [Xcode Command Line Tools][xcode-commandline] installed ([Xcode] if possible):
 
@@ -127,6 +153,8 @@ export PATH="/usr/local/go/bin:${PATH}"
 
 3. Compile the program with Release configuration.
 ```
+git clone https://github.com/Chilledheart/yass
+cd yass
 mkdir build
 cd build
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
@@ -134,10 +162,10 @@ ninja yass
 ```
 
 
-## Debian/Ubuntu
+### Debian/Ubuntu
 1. Install GNU C++ Compiler:
 ```
-sudo apt-get install -y build-essential
+sudo apt-get install -y build-essential git
 ```
 2. Install required dependencies:
 ```
@@ -169,17 +197,19 @@ export PATH="/usr/local/go/bin:${PATH}"
 ```
 4. Compile the program with Release configuration.
 ```
+git clone https://github.com/Chilledheart/yass
+cd yass
 mkdir build
 cd build
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
 ninja yass
 ```
 
-## Fedora/RHEL/CentOS/AlmaLinux/Rocky Linux
+### Fedora/RHEL/CentOS/AlmaLinux/Rocky Linux
 1. Install GNU C++ Compiler:
 ```
 sudo yum install -y gcc gcc-c++ \
-    make python bash coreutils diffutils patch
+    make python bash coreutils diffutils patch git
 ```
 2. Install required dependencies:
 ```
@@ -216,25 +246,28 @@ subscription-manager repos --enable rhel-*-optional-rpms \
 
 3. Compile the program with Release configuration.
 ```
+git clone https://github.com/Chilledheart/yass
+cd yass
 mkdir build
 cd build
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
 ninja yass
 ```
 
-## FreeBSD
+### FreeBSD
 1. Install Clang Compiler (Optional):
 
 It is impossible to upgrade system compiler without upgrading OS,
 so you can install latest [Clang]:
 ```
-pkg install llvm16-lite
+pkg install llvm17-lite
 ```
 Notes: please make sure you have [Clang] (12.0 or above) and [CMake] (3.12 or above).
 
 2. Install required dependencies:
 ```
 pkg install -y \
+    git \
     cmake \
     ninja \
     pkgconf \
@@ -256,7 +289,9 @@ Notes: Not required since FreeBSD 13.1
 
 3. Compile the program with Release configuration.
 ```
-export PATH="/usr/local/llvm16/bin:$PATH"
+git clone https://github.com/Chilledheart/yass
+cd yass
+export PATH="/usr/local/llvm17/bin:$PATH"
 export CC=clang
 export CXX=clang++
 mkdir build
@@ -265,7 +300,9 @@ cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGUI=on ..
 ninja yass
 ```
 
-## Windows/Packaging
+## Build Packaging
+
+### Windows (MSVC)/Packaging
 
 Make sure you have [Golang] installed on your system.
 
@@ -277,7 +314,7 @@ cd ..
 ./tools/build
 ```
 
-## macOS/Packaging
+### macOS/Packaging
 
 Make sure you have [Golang] installed on your system.
 
@@ -289,7 +326,7 @@ cd ..
 ./tools/build
 ```
 
-## Debian/Packaging
+### Debian/Packaging
 
 1. Install Packaging Tools
 ```
@@ -305,7 +342,7 @@ export CXX=clang++
 ./scripts/build-deb.sh
 ```
 
-## Fedora/RHEL/CentOS/AlmaLinux/Rocky Linux Packaging
+### Fedora/RHEL/CentOS/AlmaLinux/Rocky Linux Packaging
 
 1. Install Packaging Tools
 ```
@@ -322,7 +359,7 @@ export CXX=clang++
 ./scripts/build-rpm.sh
 ```
 
-## FreeBSD/Packaging
+### FreeBSD/Packaging
 
 Make sure you have [Golang] installed on your system.
 
@@ -334,6 +371,17 @@ cd ..
 ./tools/build
 ```
 
+### Android/Packaging
+Make sure you have Android Studio installed on your system.
+
+TBD
+
+### iOS/Packaging
+Make sure you have Xcode installed on your system.
+
+TBD
+
+[gitforwindows]: https://gitforwindows.org/
 [visualstudio]: https://visualstudio.microsoft.com/downloads/
 [Perl]: https://www.perl.org/get.html
 [Clang]: https://clang.llvm.org/

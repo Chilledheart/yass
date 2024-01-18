@@ -1,3 +1,4 @@
 usr/bin/yass_server
 etc/yass/server.json
 usr/lib/systemd/system/yass-server.service
+usr/share/man/man1/yass_server.1

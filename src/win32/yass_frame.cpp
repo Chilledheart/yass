@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 
 #include "win32/yass_frame.hpp"
 
@@ -106,7 +106,7 @@ static void UpdateFontForDpi(HWND hWnd, UINT uDpi) {
   // Send a new font to all child controls (the 'plugin' content is subclassed to ignore WM_SETFONT)
   HFONT hFontOld = GetWindowFont(hWnd);
   LOGFONTW lfText = {};
-  if (!Utils::SystemParametersInfoForDpi(SPI_GETICONTITLELOGFONT, sizeof(lfText), &lfText, FALSE, uDpi)) {
+  if (!Utils::SystemParametersInfoForDpiInt(SPI_GETICONTITLELOGFONT, sizeof(lfText), &lfText, FALSE, uDpi)) {
     ApplyDefaultSystemFont(hWnd, uDpi);
     return;
   }
@@ -402,12 +402,12 @@ int CYassFrame::Create(const wchar_t* className,
   // Right Panel
   const wchar_t* method_strings[] = {
 #define XX(num, name, string) L##string,
-      CIPHER_METHOD_MAP(XX)
+      CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   };
   DWORD method_nums[] = {
 #define XX(num, name, string) static_cast<DWORD>(num),
-      CIPHER_METHOD_MAP(XX)
+      CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   };
 
@@ -419,6 +419,7 @@ int CYassFrame::Create(const wchar_t* className,
   // Column 2
 
   std::wstring server_host_name = LoadStringStdW(hInstance, IDS_SERVER_HOST_LABEL);
+  std::wstring server_sni_name = LoadStringStdW(hInstance, IDS_SERVER_SNI_LABEL);
   std::wstring server_port_name = LoadStringStdW(hInstance, IDS_SERVER_PORT_LABEL);
   std::wstring username_name = LoadStringStdW(hInstance, IDS_USERNAME_LABEL);
   std::wstring password_name = LoadStringStdW(hInstance, IDS_PASSWORD_LABEL);
@@ -430,6 +431,7 @@ int CYassFrame::Create(const wchar_t* className,
   std::wstring systemproxy_name = LoadStringStdW(hInstance, IDS_SYSTEMPROXY_LABEL);
 
   server_host_label_ = CreateStatic(server_host_name.c_str(), m_hWnd, 0, hInstance);
+  server_sni_label_ = CreateStatic(server_sni_name.c_str(), m_hWnd, 0, hInstance);
   server_port_label_ = CreateStatic(server_port_name.c_str(), m_hWnd, 0, hInstance);
   username_label_ = CreateStatic(username_name.c_str(), m_hWnd, 0, hInstance);
   password_label_ = CreateStatic(password_name.c_str(), m_hWnd, 0, hInstance);
@@ -442,6 +444,7 @@ int CYassFrame::Create(const wchar_t* className,
 
   // Column 3
   server_host_edit_ = CreateEdit(0, m_hWnd, IDC_EDIT_SERVER_HOST, hInstance);
+  server_sni_edit_ = CreateEdit(0, m_hWnd, IDC_EDIT_SERVER_SNI, hInstance);
   server_port_edit_ = CreateEdit(ES_NUMBER, m_hWnd, IDC_EDIT_SERVER_PORT, hInstance);
   username_edit_ = CreateEdit(0, m_hWnd, IDC_EDIT_USERNAME, hInstance);
   password_edit_ = CreateEdit(ES_PASSWORD, m_hWnd, IDC_EDIT_PASSWORD, hInstance);
@@ -449,10 +452,10 @@ int CYassFrame::Create(const wchar_t* className,
   method_combo_box_ = CreateComboBox(CBS_DROPDOWNLIST, m_hWnd,
                                      IDC_COMBOBOX_METHOD, hInstance);
 
-  int method_count = sizeof(method_strings) / sizeof(method_strings[0]) - 1;
+  int method_count = sizeof(method_strings) / sizeof(method_strings[0]);
   for (int i = 0; i < method_count; ++i) {
-    ComboBox_AddString(method_combo_box_, method_strings[i + 1]);
-    ComboBox_SetItemData(method_combo_box_, i, method_nums[i + 1]);
+    ComboBox_AddString(method_combo_box_, method_strings[i]);
+    ComboBox_SetItemData(method_combo_box_, i, method_nums[i]);
   }
 
   ComboBox_SetMinVisible(method_combo_box_, method_count);
@@ -479,12 +482,12 @@ int CYassFrame::Create(const wchar_t* className,
   status_bar_ = CreateStatusBar(m_hWnd, ID_APP_MSG, hInstance, 1);
 
   if (!start_button_ || !stop_button_ ||
-      !server_host_label_|| !server_port_label_||
+      !server_host_label_|| !server_sni_label_|| !server_port_label_||
       !username_label_|| !password_label_||
       !method_label_||
       !local_host_label_|| !local_port_label_||
       !timeout_label_|| !autostart_label_|| !systemproxy_label_ ||
-      !server_host_edit_|| !server_port_edit_||
+      !server_host_edit_|| !server_sni_edit_|| !server_port_edit_||
       !username_edit_|| !password_edit_||
       !method_combo_box_||
       !local_host_edit_|| !local_port_edit_||
@@ -568,7 +571,7 @@ LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam,
       // for this via a call to EnableNonClientDpiScaling. Windows 10 (1703)
       // supports this automatically when the DPI_AWARENESS_CONTEXT is
       // DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2.
-      if (!Utils::EnableNonClientDpiScaling(hWnd)) {
+      if (!Utils::EnableNonClientDpiScalingInt(hWnd)) {
         PLOG(WARNING) << "Internal error: EnableNonClientDpiScaling failed";
       }
 
@@ -706,6 +709,10 @@ std::string CYassFrame::GetServerHost() {
   return GetWindowTextStd(server_host_edit_);
 }
 
+std::string CYassFrame::GetServerSNI() {
+  return GetWindowTextStd(server_sni_edit_);
+}
+
 std::string CYassFrame::GetServerPort() {
   return GetWindowTextStd(server_port_edit_);
 }
@@ -768,6 +775,7 @@ std::wstring CYassFrame::GetStatusMessage() {
 
 void CYassFrame::OnStarted() {
   EnableWindow(server_host_edit_, FALSE);
+  EnableWindow(server_sni_edit_, FALSE);
   EnableWindow(server_port_edit_, FALSE);
   EnableWindow(username_edit_, FALSE);
   EnableWindow(password_edit_, FALSE);
@@ -781,6 +789,7 @@ void CYassFrame::OnStarted() {
 
 void CYassFrame::OnStartFailed() {
   EnableWindow(server_host_edit_, TRUE);
+  EnableWindow(server_sni_edit_, TRUE);
   EnableWindow(server_port_edit_, TRUE);
   EnableWindow(username_edit_, TRUE);
   EnableWindow(password_edit_, TRUE);
@@ -797,6 +806,7 @@ void CYassFrame::OnStartFailed() {
 
 void CYassFrame::OnStopped() {
   EnableWindow(server_host_edit_, TRUE);
+  EnableWindow(server_sni_edit_, TRUE);
   EnableWindow(server_port_edit_, TRUE);
   EnableWindow(username_edit_, TRUE);
   EnableWindow(password_edit_, TRUE);
@@ -810,6 +820,7 @@ void CYassFrame::OnStopped() {
 
 void CYassFrame::LoadConfig() {
   std::string server_host(absl::GetFlag(FLAGS_server_host));
+  std::string server_sni(absl::GetFlag(FLAGS_server_sni));
   std::string server_port(std::to_string(absl::GetFlag(FLAGS_server_port)));
   std::string username(absl::GetFlag(FLAGS_username));
   std::string password(absl::GetFlag(FLAGS_password));
@@ -818,6 +829,7 @@ void CYassFrame::LoadConfig() {
   std::string timeout(std::to_string(absl::GetFlag(FLAGS_connect_timeout)));
 
   SetWindowTextStd(server_host_edit_, server_host);
+  SetWindowTextStd(server_sni_edit_, server_sni);
   SetWindowTextStd(server_port_edit_, server_port);
   SetWindowTextStd(username_edit_, username);
   SetWindowTextStd(password_edit_, password);
@@ -870,46 +882,51 @@ void CYassFrame::UpdateLayoutForDpi(UINT uDpi) {
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 2;
-  SetWindowPos(server_port_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
+  SetWindowPos(server_sni_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
                LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 3;
-  SetWindowPos(username_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
+  SetWindowPos(server_port_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
                LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 4;
-  SetWindowPos(password_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
+  SetWindowPos(username_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
                LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 5;
-  SetWindowPos(method_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
+  SetWindowPos(password_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
                LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 6;
-  SetWindowPos(local_host_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
+  SetWindowPos(method_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
                LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 7;
-  SetWindowPos(local_port_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
+  SetWindowPos(local_host_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
                LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 8;
-  SetWindowPos(timeout_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
+  SetWindowPos(local_port_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
                LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 9;
-  SetWindowPos(autostart_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
+  SetWindowPos(timeout_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
                LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 10;
+  SetWindowPos(autostart_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
+               LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+
+  rect.left = client_rect.left + COLUMN_TWO_LEFT;
+  rect.top = client_rect.top + VERTICAL_HEIGHT * 11;
   SetWindowPos(systemproxy_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
                LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
@@ -921,46 +938,51 @@ void CYassFrame::UpdateLayoutForDpi(UINT uDpi) {
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 2;
-  SetWindowPos(server_port_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
+  SetWindowPos(server_sni_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
                EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 3;
-  SetWindowPos(username_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
+  SetWindowPos(server_port_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
                EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 4;
-  SetWindowPos(password_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
+  SetWindowPos(username_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
                EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 5;
-  SetWindowPos(method_combo_box_, nullptr, rect.left, rect.top, EDIT_WIDTH,
+  SetWindowPos(password_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
                EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 6;
-  SetWindowPos(local_host_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
+  SetWindowPos(method_combo_box_, nullptr, rect.left, rect.top, EDIT_WIDTH,
                EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 7;
-  SetWindowPos(local_port_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
+  SetWindowPos(local_host_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
                EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 8;
-  SetWindowPos(timeout_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
+  SetWindowPos(local_port_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
                EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 9;
-  SetWindowPos(autostart_button_, nullptr, rect.left, rect.top, EDIT_WIDTH,
+  SetWindowPos(timeout_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
                EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 10;
+  SetWindowPos(autostart_button_, nullptr, rect.left, rect.top, EDIT_WIDTH,
+               EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+
+  rect.left = client_rect.left + COLUMN_THREE_LEFT;
+  rect.top = client_rect.top + VERTICAL_HEIGHT * 11;
   SetWindowPos(systemproxy_button_, nullptr, rect.left, rect.top, EDIT_WIDTH,
                EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
@@ -1038,6 +1060,12 @@ LRESULT CYassFrame::OnDPIChanged(WPARAM w, LPARAM l) {
 
 void CYassFrame::OnStartButtonClicked() {
   EnableWindow(start_button_, FALSE);
+
+  last_sync_time_ = GetMonotonicTime();
+  last_rx_bytes_ = 0U;
+  last_tx_bytes_ = 0U;
+  cli::total_rx_bytes = 0U;
+  cli::total_tx_bytes = 0U;
   mApp->OnStart();
 }
 

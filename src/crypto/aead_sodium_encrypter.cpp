@@ -3,7 +3,7 @@
 #include "crypto/aead_sodium_encrypter.hpp"
 
 #include "core/logging.hpp"
-#include "protocol.hpp"
+#include "net/protocol.hpp"
 
 #ifdef HAVE_BORINGSSL
 #include <openssl/crypto.h>

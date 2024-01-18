@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022-2023 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 #ifndef YASS_WIN32_UTILS
 #define YASS_WIN32_UTILS
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <functional>
 
 #include <windows.h>
 
@@ -21,8 +22,8 @@ class Utils {
   static bool SetMixedThreadDpiHostingBehavior();
   // Determine the DPI to use, according to the DPI awareness mode
   static unsigned int GetDpiForWindowOrSystem(HWND hWnd);
-  static bool EnableNonClientDpiScaling(HWND hWnd);
-  static bool SystemParametersInfoForDpi(UINT uiAction, UINT uiParam, PVOID pvParam, UINT fWinIni, UINT dpi);
+  static bool EnableNonClientDpiScalingInt(HWND hWnd);
+  static bool SystemParametersInfoForDpiInt(UINT uiAction, UINT uiParam, PVOID pvParam, UINT fWinIni, UINT dpi);
   static bool GetUserDefaultLocaleName(std::wstring* localeName);
 
   static bool GetAutoStart();
@@ -54,5 +55,7 @@ bool SetSystemProxy(bool enable,
                     const std::wstring &conn_name);
 
 bool GetAllRasConnection(std::vector<std::wstring> *result);
+
+void WaitNetworkUp(std::function<void()> callback);
 
 #endif  // YASS_WIN32_UTILS

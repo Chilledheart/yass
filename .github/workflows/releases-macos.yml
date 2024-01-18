@@ -29,6 +29,11 @@ on:
     - '.cirrus.yml'
   release:
     types: [published]
+  schedule:
+    - cron: '0 16 * * *'
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 env:
   CACHE_EPOCH: 121-2
   GOPROXY: direct
@@ -38,6 +43,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        arch: [x64, arm64]
         build_type: [Release]
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
@@ -61,14 +67,14 @@ jobs:
         with:
           path: |
             third_party/depot_tools
-          key: ${{ runner.os }}-depot_tools
+          key: ${{ runner.os }}-depot_tools-v1
       - name: Cache crashpad build stage
         id: crashpad-cache
         uses: actions/cache@v3
         with:
           path: |
             third_party/crashpad
-          key: ${{ runner.os }}-mac-perarch-crashpad-build-stage-universal-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-mac-${{ matrix.arch }}-crashpad-${{ hashFiles('CRASHPAD_COMMIT') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang (tools only)
         uses: actions/cache@v3
         with:
@@ -99,23 +105,50 @@ jobs:
           brew link --force --overwrite python@3.11
           ln -sf $(brew --prefix)/opt/python@3.11/libexec/bin/python /usr/local/bin/python
           ln -sf $(brew --prefix)/opt/python@3.11/libexec/bin/python /usr/local/bin/python3
-      - name: Set clang environment
-        run: |
-          echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
-          echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
       - name: Download and Build Crashpad (include depot_tools)
         if: ${{ steps.depot-cache.outputs.cache-hit != 'true' || steps.crashpad-cache.outputs.cache-hit != 'true' }}
         shell: bash
         run: |
-          WITH_CPU=x64 ./scripts/build-crashpad.sh
-          WITH_CPU=arm64 ./scripts/build-crashpad.sh
+          WITH_CPU=${{ matrix.arch }} ./scripts/build-crashpad.sh
+      - name: Install the Apple certificate
+        if: ${{ github.event_name == 'release' }}
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # create variables
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+          # import certificate and provisioning profile from secrets
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+
+          # create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # import certificate to keychain
+          security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          echo "CODESIGN_IDENTITY=Developer ID Application" >> $GITHUB_ENV
+          echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> $GITHUB_ENV
       - name: Build
         run: |
-          ./tools/build -build-benchmark -build-test
-      - name: Run tests
+          ./tools/build --arch ${{ matrix.arch }} -build-benchmark -build-test
+      - name: Clean up keychain and provisioning profile
+        if: ${{ always() }}
         run: |
-          ./build-darwin-universal/yass_test
-          ./build-darwin-universal/yass_benchmark
+          if [ ! -z $KEYCHAIN_PATH ]; then
+            security delete-keychain $KEYCHAIN_PATH
+          fi
+      - name: Run tests
+        if: ${{ matrix.arch == 'x64' }}
+        run: |
+          ./build-darwin-${{ matrix.arch }}/yass_test
+          ./build-darwin-${{ matrix.arch }}/yass_benchmark
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:

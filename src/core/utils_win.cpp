@@ -1,18 +1,23 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2022 Chilledheart  */
 
+#ifdef _WIN32
 
 // We use dynamic loading for below functions
 #define GetProductInfo GetProductInfoHidden
 
 #include "core/utils.hpp"
 
-#include "core/compiler_specific.hpp"
 #include "core/logging.hpp"
 
-#include <absl/flags/internal/program_name.h>
+struct IUnknown;
+#include <windows.h>
+#include <shellapi.h>
+#include <shlobj.h>
 
-#ifdef _WIN32
+#include <absl/flags/internal/program_name.h>
+#include <base/compiler_specific.h>
+#include <build/build_config.h>
 
 #define MAKE_WIN_VER(major, minor, build_number) \
     (((major) << 24) | ((minor) << 16) | (build_number))
@@ -81,14 +86,8 @@ void SetNameInternal(DWORD thread_id, const char* name) {
 } // namespace
 #endif  // COMPILER_MSVC
 
-#ifdef COMPILER_MSVC
-bool SetThreadPriority(std::thread::native_handle_type handle,
-                       ThreadPriority priority) {
-#else
-bool SetThreadPriority(std::thread::native_handle_type,
-                       ThreadPriority priority) {
+bool SetCurrentThreadPriority(ThreadPriority priority) {
   HANDLE handle = ::GetCurrentThread();
-#endif  // COMPILER_MSVC
   int desired_priority = THREAD_PRIORITY_ERROR_RETURN;
   switch (priority) {
     case ThreadPriority::BACKGROUND:
@@ -144,14 +143,8 @@ bool SetThreadPriority(std::thread::native_handle_type,
   return ret;
 }
 
-#ifdef COMPILER_MSVC
-bool SetThreadName(std::thread::native_handle_type handle,
-                   const std::string& name) {
-#else
-bool SetThreadName(std::thread::native_handle_type,
-                   const std::string& name) {
+bool SetCurrentThreadName(const std::string& name) {
   HANDLE handle = ::GetCurrentThread();
-#endif  // COMPILER_MSVC
   if (!IsWindowsVersionBNOrGreater(10, 0, 14393)) {
     return true;
   }
@@ -160,10 +153,6 @@ bool SetThreadName(std::thread::native_handle_type,
       reinterpret_cast<void*>(::GetProcAddress(
           ::GetModuleHandleW(L"Kernel32.dll"), "SetThreadDescription")));
   HRESULT ret = E_NOTIMPL;
-
-  if (handle == HANDLE() || handle == INVALID_HANDLE_VALUE) {
-    handle = ::GetCurrentThread();
-  }
 
   if (fPointer) {
     ret = fPointer(handle, SysUTF8ToWide(name).c_str());
@@ -177,150 +166,9 @@ bool SetThreadName(std::thread::native_handle_type,
 #ifdef COMPILER_MSVC
   // https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getcurrentthreadid
   // https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getthreadid
-#if _WIN32_WINNT < 0x0600
   SetNameInternal(::GetCurrentThreadId(), name.c_str());
-#else
-  SetNameInternal(::GetThreadId(handle), name.c_str());
-#endif
 #endif  // COMPILER_MSVC
   return SUCCEEDED(ret);
-}
-
-static std::string protect_str(DWORD protect) {
-  std::string ret;
-  switch (protect & 0xf) {
-    case PAGE_NOACCESS:
-      ret += "noaccess";
-      break;
-    case PAGE_READONLY:
-      ret += "readonly";
-      break;
-    case PAGE_READWRITE:
-      ret += "readwrite";
-      break;
-    case PAGE_WRITECOPY:
-      ret += "writecopy";
-      break;
-#ifdef PAGE_TARGETS_INVALID
-    case PAGE_TARGETS_INVALID:
-      ret += "targets-invalid";
-      break;
-    // case PAGE_TARGETS_NO_UPDATE:
-#endif
-    default:
-      ret += "?";
-  }
-  if (protect & 0xf0) {
-    ret += ",";
-    switch (protect & 0xf0) {
-      case PAGE_EXECUTE:
-        ret += "execute";
-        break;
-      case PAGE_EXECUTE_READ:
-        ret += "execute-read";
-        break;
-      case PAGE_EXECUTE_READWRITE:
-        ret += "execute-readwrite";
-        break;
-      case PAGE_EXECUTE_WRITECOPY:
-        ret += "execute-writecopy";
-        break;
-      default:
-        ret += "execute-?";
-    }
-  }
-  if (protect & 0xf00) {
-    ret += ",";
-    switch (protect & 0xf00) {
-      case PAGE_GUARD:
-        ret += "guard";
-        break;
-      case PAGE_NOCACHE:
-        ret += "nocache";
-        break;
-      case PAGE_WRITECOMBINE:
-        ret += "write-combine";
-        break;
-      default:
-        ret += "protect-?";
-    }
-  }
-  return ret;
-}
-
-static const char* state_str(DWORD state) {
-  switch (state) {
-    case 0:
-      return "none";
-    case MEM_COMMIT:
-      return "commit";
-    case MEM_FREE:
-      return "free";
-    case MEM_RESERVE:
-      return "reserve";
-    default:
-      return "?";
-  }
-}
-
-
-static const char* type_str(DWORD type) {
-  switch (type) {
-    case 0:
-      return "none";
-    case MEM_IMAGE:
-      return "image";
-    case MEM_MAPPED:
-      return "mapped";
-    case MEM_PRIVATE:
-      return "private";
-    default:
-      return "?";
-  }
-}
-
-bool MemoryLockAll() {
-#ifdef ARCH_CPU_64_BITS
-  DWORD size = 15 * 1024 * 1024; /* 15MB */
-#else
-  DWORD size = 5 * 1024 * 1024; /* 5MB */
-#endif
-  HANDLE process = ::GetCurrentProcess();
-  if (!::SetProcessWorkingSetSize(process, size, size)) {
-    PLOG(WARNING) << "Failed to set working set";
-    return false;
-  }
-  MEMORY_BASIC_INFORMATION memInfo {};
-  uintptr_t *address = nullptr;
-  bool failed = false;
-  while (::VirtualQueryEx(process, address, &memInfo, sizeof(memInfo))) {
-    bool lockable = memInfo.State == MEM_COMMIT &&
-      !(memInfo.Protect & PAGE_NOACCESS) &&
-      !(memInfo.Protect & PAGE_GUARD);
-
-    VLOG(4) << "Calling VirtualLock on address: " << memInfo.BaseAddress
-            << " AllocationBase: " << memInfo.AllocationBase
-            << " AllocationProtect: " << protect_str(memInfo.AllocationProtect)
-#if defined(_WIN64) && defined(COMPILER_MSVC)
-            << " PartitionId: " << memInfo.PartitionId
-#endif
-            << " RegionSize: " << memInfo.RegionSize
-            << " State: " << state_str(memInfo.State)
-            << " Protect: " << protect_str(memInfo.Protect)
-            << " Type: " << type_str(memInfo.Type);
-
-    if (lockable && !::VirtualLock(memInfo.BaseAddress, memInfo.RegionSize)) {
-      PLOG(WARNING) << "Failed to call VirtualLock on address: "
-                    << memInfo.BaseAddress
-                    << " State:" << state_str(memInfo.State)
-                    << " Protect: " << protect_str(memInfo.Protect)
-                    << " Type: " << type_str(memInfo.Type);
-      failed = true;
-    }
-    // Move to the next region
-    address += memInfo.RegionSize;
-  }
-  return !failed;
 }
 
 uint64_t GetMonotonicTime() {
@@ -370,10 +218,8 @@ static bool IsHandleConsole(HANDLE handle) {
          GetConsoleMode(handle, &mode);
 }
 
-bool IsProgramConsole() {
-  return IsHandleConsole(GetStdHandle(STD_INPUT_HANDLE)) ||
-    IsHandleConsole(GetStdHandle(STD_OUTPUT_HANDLE)) ||
-    IsHandleConsole(GetStdHandle(STD_ERROR_HANDLE));
+bool IsProgramConsole(HANDLE handle) {
+  return IsHandleConsole(handle);
 }
 
 #ifndef CP_UTF8
@@ -383,7 +229,7 @@ bool IsProgramConsole() {
 bool SetUTF8Locale() {
   bool success = false;
 
-  bool is_console = IsProgramConsole();
+  bool is_console = false /* IsProgramConsole() */;
 
   if (is_console) {
     // Calling SetConsoleCP
@@ -658,29 +504,17 @@ bool IsWindowsVersionBNOrGreater(int wMajorVersion,
 static std::string main_exe_path = "UNKNOWN";
 
 bool GetExecutablePath(std::string* exe_path) {
-  DWORD len;
+  std::wstring wexe_path;
   exe_path->clear();
-  // Windows XP:  The string is truncated to nSize characters and is not
-  // null-terminated.
-  exe_path->resize(_MAX_PATH + 1, '\0');
-  len = ::GetModuleFileNameA(nullptr, const_cast<char*>(exe_path->data()),
-                             _MAX_PATH);
-  exe_path->resize(len);
-
-  // A zero return value indicates a failure other than insufficient space.
-
-  // Insufficient space is determined by a return value equal to the size of
-  // the buffer passed in.
-  if (len == 0 || len == _MAX_PATH) {
-    PLOG(WARNING) << "Internal error: GetModuleFileNameA failed";
-    *exe_path = main_exe_path;
+  if (!GetExecutablePath(&wexe_path)) {
     return false;
   }
+  *exe_path = SysWideToUTF8(wexe_path);
 
   return true;
 }
 
-bool GetExecutablePathW(std::wstring* exe_path) {
+bool GetExecutablePath(std::wstring* exe_path) {
   DWORD len;
   exe_path->clear();
   // Windows XP:  The string is truncated to nSize characters and is not
@@ -688,6 +522,9 @@ bool GetExecutablePathW(std::wstring* exe_path) {
   exe_path->resize(_MAX_PATH + 1, L'\0');
   len = ::GetModuleFileNameW(nullptr, const_cast<wchar_t*>(exe_path->data()),
                              _MAX_PATH);
+  // If the function succeeds, the return value is the length of the string
+  // that is copied to the buffer, in characters,
+  // not including the terminating null character.
   exe_path->resize(len);
 
   // A zero return value indicates a failure other than insufficient space.
@@ -711,12 +548,61 @@ void SetExecutablePath(const std::string& exe_path) {
   absl::flags_internal::SetProgramInvocationName(new_exe_path);
 }
 
-void SetExecutablePathW(const std::wstring& exe_path) {
+void SetExecutablePath(const std::wstring& exe_path) {
   main_exe_path = SysWideToUTF8(exe_path);
 
   std::string new_exe_path;
   GetExecutablePath(&new_exe_path);
   absl::flags_internal::SetProgramInvocationName(new_exe_path);
+}
+
+bool GetTempDir(std::string *path) {
+  std::wstring wpath;
+  path->clear();
+  if (!GetTempDir(&wpath)) {
+    return false;
+  }
+  *path = SysWideToUTF8(wpath);
+  return true;
+}
+
+bool GetTempDir(std::wstring *path) {
+  wchar_t temp_path[MAX_PATH + 1];
+  DWORD path_len = ::GetTempPathW(MAX_PATH, temp_path);
+  // If the function succeeds, the return value is the length,
+  // in TCHARs, of the string copied to lpBuffer,
+  // not including the terminating null character.
+  if (path_len >= MAX_PATH || path_len <= 0)
+    return false;
+  // TODO(evanm): the old behavior of this function was to always strip the
+  // trailing slash.  We duplicate this here, but it shouldn't be necessary
+  // when everyone is using the appropriate FilePath APIs.
+  if (temp_path[path_len-1] == L'\\') {
+    temp_path[path_len-1] = L'\0';
+    --path_len;
+  }
+  *path = std::wstring(temp_path, path_len);
+  DCHECK_NE((*path)[path_len-1], L'\0');
+  return true;
+}
+
+std::string GetHomeDir() {
+  return SysWideToUTF8(GetHomeDirW());
+}
+
+std::wstring GetHomeDirW() {
+  wchar_t result[MAX_PATH];
+  if (SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_PROFILE, NULL, SHGFP_TYPE_CURRENT,
+                                 result)) && result[0]) {
+    return result;
+  }
+  // Fall back to the temporary directory on failure.
+  std::wstring rv;
+  if (GetTempDir(&rv)) {
+    return rv;
+  }
+  // Last resort.
+  return L"C:\\";
 }
 
 ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len) {
@@ -738,17 +624,27 @@ ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len) {
   return read;
 }
 
-ssize_t WriteFileWithBuffer(const std::string& path,
-                            const char* buf,
-                            size_t buf_len) {
+ssize_t WriteFileWithBuffer(const std::string& path, std::string_view buf) {
   DWORD written;
+  const size_t buf_len = buf.size();
   HANDLE hFile = ::CreateFileW(SysUTF8ToWide(path).c_str(), GENERIC_WRITE,
                                0, nullptr, CREATE_ALWAYS, 0, nullptr);
   if (hFile == INVALID_HANDLE_VALUE) {
+    DPLOG(WARNING) << "WriteFile failed for path " << path;
     return -1;
   }
 
-  if (!::WriteFile(hFile, buf, buf_len, &written, nullptr) || written != buf_len) {
+  if (!::WriteFile(hFile, buf.data(), buf_len, &written, nullptr)) {
+    // WriteFile failed.
+    DPLOG(WARNING) << "writing file " << path << " failed";
+    ::CloseHandle(hFile);
+    return -1;
+  }
+
+  if (written != buf_len) {
+    // Didn't write all the bytes.
+    DLOG(WARNING) << "wrote" << written << " bytes to " << path
+                  << " expected " << buf_len;
     ::CloseHandle(hFile);
     return -1;
   }
@@ -763,7 +659,7 @@ PlatformFile OpenReadFile(const std::string &path) {
                        FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
 }
 
-PlatformFile OpenReadFileW(const std::wstring &path) {
+PlatformFile OpenReadFile(const std::wstring &path) {
   return ::CreateFileW(path.c_str(), GENERIC_READ,
                        FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
 }

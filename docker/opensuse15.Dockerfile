@@ -9,5 +9,5 @@ RUN zypper cc -a && \
     rpm-build rpm-devel rpmlint diffutils patch rpmdevtools \
     cmake ninja pkg-config perl golang \
     gtk4-devel zlib-devel c-ares-devel libnghttp2-devel curl-devel \
-    http-parser-devel xxhash-devel mbedtls-devel && \
+    http-parser-devel mbedtls-devel && \
   zypper cc -a

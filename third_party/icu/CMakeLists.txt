@@ -1086,3 +1086,8 @@ set(data_bundle "${data_bundle_prefix}.dat")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/${data_dir}/${data_bundle}" DESTINATION ${CMAKE_BINARY_DIR})
 
 set(ICU_DATAFILE "${CMAKE_BINARY_DIR}/${data_bundle}" PARENT_SCOPE)
+
+if (NOT CMAKE_SKIP_INSTALL_RULES)
+  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/${data_dir}/${data_bundle}"
+    DESTINATION share/yass)
+endif()

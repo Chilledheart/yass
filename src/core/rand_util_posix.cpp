@@ -11,12 +11,13 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#include "core/common_posix.hpp"
+#include <base/posix/eintr_wrapper.h>
+
 #include "core/logging.hpp"
 
 #if defined(__linux__) || defined(__ANDROID__)
 #include "linux_syscall_support.h"
-#elif defined(__APPLE__)
+#elif BUILDFLAG(IS_MAC)
 // TODO(crbug.com/995996): Waiting for this header to appear in the iOS SDK.
 // (See below.)
 #include <sys/random.h>
@@ -26,6 +27,7 @@
 #include <AvailabilityMacros.h>
 #endif
 
+// Inlcude MSAN_UNPOISON fixes
 #include "core/compiler_specific.hpp"
 
 // TODO: move to file_utils.cpp
@@ -85,15 +87,13 @@ void RandBytes(void* output, size_t output_length) {
     MSAN_UNPOISON(output, output_length);
     return;
   }
-#elif defined(__APPLE__)
-#if (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_12)
+#elif BUILDFLAG(IS_MAC)
   // TODO(crbug.com/995996): Enable this on iOS too, when sys/random.h arrives
   // in its SDK.
   if (getentropy(output, output_length) == 0) {
     return;
   }
 #endif
-#endif  // defined(__APPLE__)
 
   // If the OS-specific mechanisms didn't work, fall through to reading from
   // urandom.

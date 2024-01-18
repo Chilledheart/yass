@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022-2023 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 
 #include <gtest/gtest.h>
 #include <gtest/gtest-message.h>
@@ -28,8 +28,8 @@ ABSL_FLAG(std::string, proxy_type, "http", "proxy type, available: socks4, socks
 
 #include "cli/cli_server.hpp"
 #include "config/config.hpp"
-#include "core/cipher.hpp"
-#include "core/iobuf.hpp"
+#include "net/cipher.hpp"
+#include "net/iobuf.hpp"
 #include "core/rand_util.hpp"
 #include "core/ref_counted.hpp"
 #include "core/scoped_refptr.hpp"
@@ -37,6 +37,8 @@ ABSL_FLAG(std::string, proxy_type, "http", "proxy type, available: socks4, socks
 #include "i18n/icu_util.hpp"
 
 #include "test_util.hpp"
+
+using namespace net;
 
 namespace {
 
@@ -95,7 +97,8 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
                                    public Connection {
  public:
   ContentProviderConnection(asio::io_context& io_context,
-                            const std::string& remote_host_name,
+                            const std::string& remote_host_ips,
+                            const std::string& remote_host_sni,
                             uint16_t remote_port,
                             bool upstream_https_fallback,
                             bool https_fallback,
@@ -103,7 +106,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
                             bool enable_tls,
                             asio::ssl::context *upstream_ssl_ctx,
                             asio::ssl::context *ssl_ctx)
-      : Connection(io_context, remote_host_name, remote_port,
+      : Connection(io_context, remote_host_ips, remote_host_sni, remote_port,
                    upstream_https_fallback, https_fallback,
                    enable_upstream_tls, enable_tls,
                    upstream_ssl_ctx, ssl_ctx) {}
@@ -131,11 +134,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
             << " disconnected";
     asio::error_code ec;
     downlink_->socket_.close(ec);
-    auto cb = std::move(disconnect_cb_);
-    disconnect_cb_ = nullptr;
-    if (cb) {
-      cb();
-    }
+    on_disconnect();
   }
 
  private:
@@ -367,23 +366,18 @@ class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
 
   void StartWorkThread() {
     thread_ = std::make_unique<std::thread>([this]() {
-      asio::error_code ec;
-      VLOG(1) << "background thread started";
+      if (!SetCurrentThreadName("background")) {
+        PLOG(WARNING) << "failed to set thread name";
+      }
+      if (!SetCurrentThreadPriority(ThreadPriority::ABOVE_NORMAL)) {
+        PLOG(WARNING) << "failed to set thread priority";
+      }
 
+      VLOG(1) << "background thread started";
       work_guard_ = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context_.get_executor());
       io_context_.run();
       io_context_.restart();
-
       VLOG(1) << "background thread stopped";
-    });
-
-    asio::post(io_context_, [this]() {
-      if (!SetThreadName(thread_->native_handle(), "background")) {
-        PLOG(WARNING) << "failed to set thread name";
-      }
-      if (!SetThreadPriority(thread_->native_handle(), ThreadPriority::ABOVE_NORMAL)) {
-        PLOG(WARNING) << "failed to set thread priority";
-      }
     });
   }
 
@@ -645,6 +639,7 @@ class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
     asio::error_code ec;
     server_server_ = std::make_unique<server::ServerServer>(io_context_,
                                                             std::string(),
+                                                            std::string(),
                                                             uint16_t(),
                                                             std::string(),
                                                             std::string(kCertificate),
@@ -674,6 +669,7 @@ class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
     asio::error_code ec;
 
     local_server_ = std::make_unique<cli::CliServer>(io_context_,
+                                                     absl::GetFlag(FLAGS_ipv6_mode) ?  "::1" : "127.0.0.1",
                                                      "localhost",
                                                      remote_endpoint.port(),
                                                      kCertificate);
@@ -738,7 +734,14 @@ INSTANTIATE_TEST_SUITE_P(Ss, EndToEndTest, ::testing::ValuesIn(kCiphers),
                            return to_cipher_method_name(info.param);
                          });
 
+#if BUILDFLAG(IS_IOS)
+extern "C" int xc_main();
+int xc_main() {
+  int argc = 1;
+  char *argv[] = {(char*)"xc_main", nullptr};
+#else
 int main(int argc, char **argv) {
+#endif
   SetExecutablePath(argv[0]);
   std::string exec_path;
   if (!GetExecutablePath(&exec_path)) {

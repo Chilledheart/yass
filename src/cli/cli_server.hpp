@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2023 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 
 #ifndef H_CLI_SERVER
 #define H_CLI_SERVER
 
+#include "net/content_server.hpp"
 #include "cli/cli_connection.hpp"
-#include "content_server.hpp"
 
 namespace cli {
 
-typedef ContentServer<CliConnectionFactory> CliServer;
+typedef net::ContentServer<CliConnectionFactory> CliServer;
 
 } // namespace cli
 

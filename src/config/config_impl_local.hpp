@@ -79,7 +79,7 @@ class ConfigImplLocal : public ConfigImpl {
 
     std::string json_content = root_.dump(4);
     if (static_cast<ssize_t>(json_content.size()) !=
-        WriteFileWithBuffer(path_, json_content.c_str(), json_content.size())) {
+        WriteFileWithBuffer(path_, json_content)) {
       LOG(WARNING) << "failed to write to path: \"" << path_
                    << " with content \"" << json_content;
       return false;

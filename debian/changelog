@@ -1,16 +1,126 @@
+yass (1.5.20-1) UNRELEASED; urgency=medium
+
+  * ca-certificates: update for 20230311.3.95 release.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Thu, 18 Jan 2024 16:56:37 +0800
+yass (1.5.19-1) UNRELEASED; urgency=medium
+
+  * gtk: quote the exec entry in autostart.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Tue, 16 Jan 2024 19:06:55 +0800
+yass (1.5.18-1) UNRELEASED; urgency=medium
+
+  * net: code refactor.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Fri, 12 Jan 2024 16:52:26 +0800
+yass (1.5.17-1) UNRELEASED; urgency=medium
+
+  * c-ares: defer c-ares init.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Thu, 11 Jan 2024 19:15:43 +0800
+yass (1.5.16-1) UNRELEASED; urgency=medium
+
+  * c-ares: defer c-ares init.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Wed, 10 Jan 2024 22:04:19 +0800
+yass (1.5.15-1) UNRELEASED; urgency=medium
+
+  * gcc: fix lto build under gold.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Wed, 10 Jan 2024 10:25:22 +0800
+yass (1.5.14-1) UNRELEASED; urgency=medium
+
+  * ssl: enable client-side ssl session cache.
+  * ssl: deduplicate all ceritificates.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Mon, 8 Jan 2024 20:41:54 +0800
+yass (1.5.13-1) UNRELEASED; urgency=medium
+
+  * gtk: add server sni support.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Sun, 7 Jan 2024 23:57:24 +0800
+yass (1.5.12-1) UNRELEASED; urgency=medium
+
+  * gtk: add server sni support.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Sun, 7 Jan 2024 08:45:45 +0800
+yass (1.5.11-1) UNRELEASED; urgency=medium
+
+  * gtk: add server sni support.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Sat, 6 Jan 2024 09:45:10 +0800
+yass (1.5.10-1) UNRELEASED; urgency=medium
+
+  * gtk: add server sni support.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Fri, 5 Jan 2024 14:38:50 +0800
+yass (1.5.9-1) UNRELEASED; urgency=medium
+
+  * ca-certificates: load symbolic link as cert files.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Wed, 3 Jan 2024 20:41:47 +0800
+yass (1.5.8-1) UNRELEASED; urgency=medium
+
+  * ca-certificates: load symbolic link as cert files.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Wed, 3 Jan 2024 20:08:06 +0800
+yass (1.5.7-1) UNRELEASED; urgency=medium
+
+  * ca-certificates: update for 20230311.3.93 release.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Wed, 27 Dec 2023 10:55:48 +0800
+yass (1.5.6-1) UNRELEASED; urgency=low
+
+  * man: add yass_cli and yass_server man pages.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Tue, 19 Dec 2023 15:12:58 +0800
+yass (1.5.5-1) UNRELEASED; urgency=low
+
+  * ssl: use builtin ca bundle if system keystore fails.
+
+ -- Chilledheart <keeyou-cn@outout.com>  Thu, 14 Dec 2023 14:10:00 +0800
+yass (1.5.4-1) UNRELEASED; urgency=low
+
+  * Fix bad F_SETFD calls.
+  * gtk: update desktop database.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Wed, 13 Dec 2023 10:54:38 +0800
+yass (1.5.3-1) UNRELEASED; urgency=low
+
+  * Fix linux thread name setting.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Fri, 8 Dec 2023 14:56:17 +0800
+yass (1.5.2-1) UNRELEASED; urgency=medium
+
+  * Bump to chromium 121 dependents (updated).
+  * Fix RPM releases.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Tue, 5 Dec 2023 20:07:51 +0800
+yass (1.5.1-1) UNRELEASED; urgency=medium
+
+  * Bump to chromium 121 dependents.
+  * Fix use cached configuration issue.
+  * Fix crash in resume from previous failure.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Mon, 4 Dec 2023 20:06:54 +0800
+yass (1.5.0-1) UNRELEASED; urgency=low
+
+  * New major release.
+
+ -- Chilledheart <hukeyue@hotmail.com>  Sat, 2 Dec 2023 15:47:47 +0800
 yass (1.4.12-1) UNRELEASED; urgency=medium
 
   * Fix bad F_SETFD calls.
   * gtk: update desktop database.
 
- -- Chilledheart <keeyou-cn@outlook.com>  Thu, 14 Dec 2023 13:17:40 +0800
+ -- Chilledheart <hukeyue@hotmail.com>  Sat, 2 Dec 2023 15:47:47 +0800
 yass (1.4.11-1) UNRELEASED; urgency=medium
 
   * Bump Clang.
   * Fix use cached configuration issue.
   * Fix crash in resume from previous failure.
 
- -- Chilledheart <hukeyue@hotmail.com>  Mon, 4 Dec 2023 19:47:54 +0800
+ -- Chilledheart <hukeyue@hotmail.com>  Sat, 2 Dec 2023 15:47:47 +0800
 yass (1.4.10-1) UNRELEASED; urgency=medium
 
   * Bump Clang and Abseil-Cpp.

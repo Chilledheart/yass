@@ -1,0 +1,101 @@
+.\" generated with Ronn-NG/v0.9.1
+.\" http://github.com/apjanke/ronn-ng/tree/0.9.1
+.TH "YASS_SEREVR" "1" "December 2023" ""
+.SH "NAME"
+\fByass_serevr\fR \- a lightweight and efficient, socks5/http forward proxy
+.SH "SYNOPSIS"
+\fByass_serevr\fR [\fIoption\fR\|\.\|\.\|\.]
+.br
+\fByass_serevr\fR \fB\-c\fR \fIfile\fR [\fIoption\fR\|\.\|\.\|\.]
+.SH "DESCRIPTION"
+\fByass\fR is initiated as C++ rewrite of the outdated shadowsocks\-libev package and provide the similar functionalities\. During the recent development, it also supports naiveproxy protocol which is more efficient protocol\. Compared with shadowsocks\-libev, it not only contains the client cli command and server cli command, but also it contains a gtk3/gtk4 (both are supported) graphical interface which is more friendly to the new users\.
+.SS "How to use"
+See \fIhttps://github\.com/Chilledheart/yass/wiki/Usage\fR\.
+.SH "OPTIONS"
+.TP
+\fB\-c\fR \fIfile\fR, \fB\-\-configfile\fR \fIfile\fR
+Use specified \fIfile\fR as config file\.
+.TP
+\fB\-\-limit_rate\fR \fIrate\fR
+Limits the \fIrate\fR of response transmission to a client\. Uint can be \fB(none)\fR, \fBk\fR, \fBm\fR\.
+.TP
+\fB\-\-ipv6_mode\fR
+Enable IPv6 support\.
+.TP
+\fB\-\-server_host\fR \fIhost\fR
+Set the server\'s hostname or IP\.
+.TP
+\fB\-\-server_port\fR \fIport\fR
+Set the server\'s port number\.
+.TP
+\fB\-\-local_host\fR \fIhost\fR
+Set the local hostname or IP\.
+.TP
+\fB\-\-local_port\fR \fIport\fR
+Set the local port number\.
+.TP
+\fB\-\-username\fR \fIusername\fR
+Set the \fIusername\fR\. The server and the client should use the same username\.
+.TP
+\fB\-\-password\fR \fIpassword\fR
+Set the \fIpassword\fR\. The server and the client should use the same password\.
+.TP
+\fB\-\-method\fR \fImethod\fR
+Method of encrypt \fImethod\fR as required field\. Allow cipher method depends on your build flags\. Possible values are:
+.IP
+\fIlibsodium\fR compatible AEAD Cipher: \fBaes\-256\-gcm\fR, \fBchacha20\-ietf\-poly1305\fR, \fBxchacha20\-ietf\-poly1305\fR
+.IP
+\fIboringssl\fR compatible AEAD Cipher: \fBchacha20\-ietf\-poly1305\-evp\fR, \fBxchacha20\-ietf\-poly1305\-evp\fR, \fBaes\-128\-gcm\-evp\fR, \fBaes\-128\-gcm12\-evp\fR, \fBaes\-192\-gcm\-evp\fR, \fBaes\-256\-gcm\-evp\fR
+.IP
+\fImbedtls\fR compatible STREAM Cipher: \fBaes\-128\-cfb\fR, \fBaes\-192\-cfb\fR, \fBaes\-256\-cfb\fR, \fBaes\-128\-ctr\fR, \fBaes\-192\-ctr\fR, \fBaes\-256\-ctr\fR, \fBcamellia\-128\-cfb\fR, \fBcamellia\-192\-cfb\fR, \fBcamellia\-256\-cfb\fR
+.IP
+\fInaiveproxy\fR compatible Cipher Method: \fBhttps\fR, \fBhttp2\-plaintext\fR, \fBhttp2\fR
+.IP
+The default cipher method is \fBhttp2\fR\.
+.TP
+\fB\-\-connect_timeout\fR \fInumber\fR
+Connect timeout is \fInumber\fR in seconds\.
+.TP
+\fB\-\-worker_connections\fR \fInumber\fR
+Maximum number of accepted connection is \fInumber\fR\.
+.TP
+\fB\-\-padding_support\fR
+Enable padding support\.
+.TP
+\fB\-\-use_ca_bundle_crt\fR
+Use internal ca\-bundle\.crt instead of system CA store\.
+.TP
+\fB\-\-cacert\fR \fIfile\fR
+Tells where to use the specified certificate \fIfile\fR to verify the peer\.
+.TP
+\fB\-\-capath\fR \fIdir\fR
+Tells where to use the specified certificate \fIdir\fR to verify the peer\.
+.TP
+\fB\-\-certificate_chain_file\fR \fIfile\fR
+Certificate Chain \fIfile\fR (required by https and http2)\.
+.TP
+\fB\-\-private_key_file\fR \fIfile\fR
+Private Key \fIfile\fR (required by https and http2)\.
+.TP
+\fB\-\-private_key_password\fR \fIpassword\fR
+Private Key \fIpassword\fR (required by https and http2)\.
+.TP
+\fB\-\-user\fR \fIuser\fR
+Set non\-privileged user for worker\.
+.TP
+\fB\-\-group\fR \fIgroup\fR
+Set non\-privileged group for worker\.
+.TP
+\fB\-\-hide_ip\fR
+If true, the Forwarded header will not be augmented with your IP address\.
+.TP
+\fB\-\-hide_via\fR
+If true, the Via header will not be added\.
+.SH "ENVIRONMENT VARIABLES"
+.TP
+\fBYASS_CA_BUNDLE\fR
+Use as the path of ca\-bundle\.crt file\. Same effect with \fB\-\-cacert\fR \fIfile\fR\.
+.SH "COPYRIGHT"
+Copyright (C) 2019\-2023 Chilledheart\. All rights reserved\.
+.SH "SEE ALSO"
+\fBopenssl\fR(1)

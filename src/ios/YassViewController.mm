@@ -1,0 +1,233 @@
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright (c) 2023-2024 Chilledheart  */
+
+#import "ios/YassViewController.h"
+
+#include <iomanip>
+#include <sstream>
+
+#include <absl/flags/flag.h>
+#include <base/strings/sys_string_conversions.h>
+
+#include "config/config.hpp"
+#include "core/logging.hpp"
+#include "core/utils.hpp"
+#include "crypto/crypter_export.hpp"
+#include "ios/YassAppDelegate.h"
+
+static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
+  if (bytes < 1024) {
+    *ss << bytes << " B";
+    return;
+  }
+  uint64_t value = bytes;
+  char ci[] = {"KMGTPE"};
+  const char* c = ci;
+  for (int i = 40; i >= 0 && bytes > 0xfffccccccccccccLU >> i; i -= 10) {
+    value >>= 10;
+    ++c;
+  }
+  *ss << std::fixed << std::setw(5) << std::setprecision(2) << value / 1024.0
+      << " " << *c;
+}
+
+@interface YassViewController () <UIPickerViewDataSource, UIPickerViewDelegate, UITextFieldDelegate>
+@end
+
+@implementation YassViewController {
+  NSArray* cipher_methods_;
+  NSString* current_cipher_method_;
+  uint64_t last_sync_time_;
+  uint64_t last_rx_bytes_;
+  uint64_t last_tx_bytes_;
+  uint64_t rx_rate_;
+  uint64_t tx_rate_;
+}
+
+- (void)viewDidLoad {
+  [super viewDidLoad];
+
+  cipher_methods_ = @[
+#define XX(num, name, string) @string,
+      CIPHER_METHOD_VALID_MAP(XX)
+#undef XX
+  ];
+  current_cipher_method_ = nil;
+  [self.cipherMethod setDelegate:self];
+  [self.cipherMethod setDataSource:self];
+  [self.cipherMethod reloadAllComponents];
+  [self.serverHost setDelegate:self];
+  [self.serverPort setDelegate:self];
+  [self.username setDelegate:self];
+  [self.password setDelegate:self];
+  [self.timeout setDelegate:self];
+
+  [self LoadChanges];
+  [self UpdateStatusBar];
+  [self.startButton setEnabled:TRUE];
+  [self.stopButton setEnabled:FALSE];
+}
+
+- (void)viewWillAppear {
+  [self.view.window center];
+}
+
+- (NSString*)getCipher {
+  return current_cipher_method_;
+}
+
+- (BOOL)textFieldShouldReturn:(UITextField *)textField {
+  [textField resignFirstResponder];
+  return NO;
+}
+
+- (BOOL)textFieldShouldEndEditing:(UITextField *)textField {
+  if (textField == self.serverHost) {
+    if (textField.text.length > _POSIX_HOST_NAME_MAX) {
+      return NO;
+    }
+  }
+  if (textField == self.serverPort) {
+    auto port = StringToInteger(gurl_base::SysNSStringToUTF8(textField.text));
+    return port.has_value() && port.value() > 0 && port.value() < 65536 ? YES : NO;
+  }
+  if (textField == self.timeout) {
+    auto port = StringToInteger(gurl_base::SysNSStringToUTF8(textField.text));
+    return port.has_value() && port.value() >= 0 ? YES : NO;
+  }
+  return YES;
+}
+
+- (NSInteger)numberOfComponentsInPickerView:(UIPickerView *)pickerView {
+  return 1;
+}
+
+- (NSInteger)pickerView:(UIPickerView *)pickerView numberOfRowsInComponent:(NSInteger)component {
+  return [cipher_methods_ count];
+}
+
+- (NSString *)pickerView:(UIPickerView *)pickerView titleForRow:(NSInteger)row forComponent:(NSInteger)component {
+  return [cipher_methods_ objectAtIndex:row];
+}
+
+- (void)pickerView:(UIPickerView *)pickerView didSelectRow:(NSInteger)row inComponent:(NSInteger)component {
+  current_cipher_method_ = [cipher_methods_ objectAtIndex:row];
+}
+
+- (IBAction)OnStartButtonClicked:(id)sender {
+  [self OnStart];
+}
+
+- (IBAction)OnStopButtonClicked:(id)sender {
+  [self OnStop];
+}
+
+- (void)OnStart {
+  YassAppDelegate* appDelegate =
+      (YassAppDelegate*)UIApplication.sharedApplication.delegate;
+  [self.startButton setEnabled:FALSE];
+  [appDelegate OnStart:FALSE];
+}
+
+- (void)OnStop {
+  YassAppDelegate* appDelegate =
+      (YassAppDelegate*)UIApplication.sharedApplication.delegate;
+  [self.stopButton setEnabled:FALSE];
+  [appDelegate OnStop:FALSE];
+}
+
+- (void)Started {
+  last_sync_time_ = GetMonotonicTime();
+  last_rx_bytes_ = 0;
+  last_tx_bytes_ = 0;
+  [self UpdateStatusBar];
+  [self.serverHost setUserInteractionEnabled:FALSE];
+  [self.serverPort setUserInteractionEnabled:FALSE];
+  [self.username setUserInteractionEnabled:FALSE];
+  [self.password setUserInteractionEnabled:FALSE];
+  [self.cipherMethod setUserInteractionEnabled:FALSE];
+  [self.timeout setUserInteractionEnabled:FALSE];
+  [self.stopButton setEnabled:TRUE];
+}
+
+- (void)StartFailed {
+  [self UpdateStatusBar];
+  [self.serverHost setUserInteractionEnabled:TRUE];
+  [self.serverPort setUserInteractionEnabled:TRUE];
+  [self.username setUserInteractionEnabled:TRUE];
+  [self.password setUserInteractionEnabled:TRUE];
+  [self.cipherMethod setUserInteractionEnabled:TRUE];
+  [self.timeout setUserInteractionEnabled:TRUE];
+  [self.startButton setEnabled:TRUE];
+}
+
+- (void)Stopped {
+  [self UpdateStatusBar];
+  [self.serverHost setUserInteractionEnabled:TRUE];
+  [self.serverPort setUserInteractionEnabled:TRUE];
+  [self.username setUserInteractionEnabled:TRUE];
+  [self.password setUserInteractionEnabled:TRUE];
+  [self.cipherMethod setUserInteractionEnabled:TRUE];
+  [self.timeout setUserInteractionEnabled:TRUE];
+  [self.startButton setEnabled:TRUE];
+}
+
+- (NSString*)getStatusMessage {
+  YassAppDelegate* appDelegate =
+      (YassAppDelegate*)UIApplication.sharedApplication.delegate;
+  if ([appDelegate getState] != STARTED) {
+    return [appDelegate getStatus];
+  }
+  uint64_t sync_time = GetMonotonicTime();
+  uint64_t delta_time = sync_time - last_sync_time_;
+  if (delta_time > NS_PER_SECOND) {
+    uint64_t rx_bytes = appDelegate.total_rx_bytes;
+    uint64_t tx_bytes = appDelegate.total_tx_bytes;
+    rx_rate_ = static_cast<double>(rx_bytes - last_rx_bytes_) / delta_time *
+               NS_PER_SECOND;
+    tx_rate_ = static_cast<double>(tx_bytes - last_tx_bytes_) / delta_time *
+               NS_PER_SECOND;
+    last_sync_time_ = sync_time;
+    last_rx_bytes_ = rx_bytes;
+    last_tx_bytes_ = tx_bytes;
+  }
+
+  std::ostringstream ss;
+  NSString *message = [appDelegate getStatus];
+  ss << gurl_base::SysNSStringToUTF8(message);
+  message = NSLocalizedString(@"TXRATE", @" tx rate: ");
+  ss << gurl_base::SysNSStringToUTF8(message);
+  humanReadableByteCountBin(&ss, rx_rate_);
+  ss << "/s";
+  message = NSLocalizedString(@"RXRATE", @" rx rate: ");
+  ss << gurl_base::SysNSStringToUTF8(message);
+  humanReadableByteCountBin(&ss, tx_rate_);
+  ss << "/s";
+
+  return gurl_base::SysUTF8ToNSString(ss.str());
+}
+
+- (void)UpdateStatusBar {
+  self.status.text = [self getStatusMessage];
+}
+
+- (void)LoadChanges {
+  self.serverHost.text =
+      gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_server_host));
+  self.serverPort.text =
+    gurl_base::SysUTF8ToNSString(std::to_string(absl::GetFlag(FLAGS_server_port)));
+  self.username.text = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_username));
+  self.password.text = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_password));
+
+  auto cipherMethod = absl::GetFlag(FLAGS_method).method;
+  NSUInteger row = [cipher_methods_ indexOfObject:gurl_base::SysUTF8ToNSString(to_cipher_method_str(cipherMethod))];
+  if (row != NSNotFound) {
+    current_cipher_method_ = gurl_base::SysUTF8ToNSString(to_cipher_method_str(cipherMethod));
+    [self.cipherMethod selectRow:row inComponent:0 animated:NO];
+  }
+
+  self.timeout.text =
+    gurl_base::SysUTF8ToNSString(std::to_string(absl::GetFlag(FLAGS_connect_timeout)));
+}
+
+@end

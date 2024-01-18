@@ -5,7 +5,7 @@
 
 #ifdef HAVE_BORINGSSL
 #include <openssl/aead.h>
-#include "core/cipher.hpp"
+#include "crypto/crypter_export.hpp"
 
 static const size_t kKeySize = 24;
 static const size_t kNonceSize = 12;

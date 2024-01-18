@@ -1,0 +1,23 @@
+/* Class = "UILabel"; text = "Password"; ObjectID = "9N4-Lw-6Ob"; */
+"bEh-We-3bh.text" = "Password";
+
+/* Class = "UIButton"; text = "Stop"; ObjectID = "JYa-MA-4KH"; */
+"MGs-Nl-c5G.normalTitle" = "Stop";
+
+/* Class = "UIButton"; text = "Start"; ObjectID = "KPU-2Q-dN7"; */
+"mgH-S8-WUJ.normalTitle" = "Start";
+
+/* Class = "UILabel"; text = "Username"; ObjectID = "QRy-PK-jJT"; */
+"dFn-KS-gx8.text" = "Username";
+
+/* Class = "UILabel"; text = "Server Host"; ObjectID = "g3k-Ab-Oin"; */
+"1EK-58-4Tb.text" = "Server Host";
+
+/* Class = "UILabel"; text = "Server Port"; ObjectID = "mcp-Vm-U1E"; */
+"h37-oZ-p8D.text" = "Server Port";
+
+/* Class = "UILabel"; text = "Cipher/Method"; ObjectID = "tOi-q9-yJY"; */
+"ENX-yq-A0k.text" = "Cipher/Method";
+
+/* Class = "UILabel"; text = "Timeout"; ObjectID = "zY6-tD-aUd"; */
+"3S5-0B-efx.text" = "Timeout";

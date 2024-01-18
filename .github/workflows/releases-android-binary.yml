@@ -29,6 +29,11 @@ on:
     - '.cirrus.yml'
   release:
     types: [published]
+  schedule:
+    - cron: '0 16 * * *'
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 env:
   CACHE_EPOCH: 121-2
   GOPROXY: direct
@@ -53,7 +58,6 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       ARCH: ${{ matrix.arch }}
-      SDK_ROOT: ${{ github.workspace }}/third_party/android_toolchain
       SYSROOT: ${{ github.workspace }}/android-sysroot-${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v4
@@ -74,6 +78,27 @@ jobs:
           path: |
             third_party/llvm-build/Release+Asserts
           key: ${{ runner.os }}-android-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+      - name: Cache depot_tools
+        id: depot-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            third_party/depot_tools
+          key: ${{ runner.os }}-depot_tools-v1
+      - name: Cache crashpad build stage
+        id: crashpad-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            third_party/crashpad
+          key: ${{ runner.os }}-android-${{ matrix.arch }}-crashpad-${{ hashFiles('CRASHPAD_COMMIT') }}-v${{ env.CACHE_EPOCH }}
+      - name: Cache cargo build stage
+        id: cargo-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo
+          key: ${{ runner.os }}-android-cargo-${{ hashFiles('third_party/tun2proxy/Cargo.toml') }}-${{ hashFiles('third_party/tun2proxy/Cargo.lock') }}
       - name: Cache golang
         uses: actions/cache@v3
         with:
@@ -83,35 +108,52 @@ jobs:
           key: ${{ runner.os }}-go-docker-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-docker-
-      - name: Cache sdk root
-        id: ndk-cache
+      - name: Gradle cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('android/**/*.gradle') }}
+      - name: Cache qemu-user-static
+        id: qemu-user-cache
         uses: actions/cache@v3
         with:
           path: |
-            ${{ env.SDK_ROOT }}
             qemu-user-static*.deb
-          key: android-ndk-${{ matrix.arch }}-with-qemu-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-qemu-8.2.0-ds4
       - name: Cache sysroot
         id: sysroot-cache
         uses: actions/cache@v3
         with:
           path: |
             ${{ env.SYSROOT }}
-          key: android-sysroot-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
+          key: android-sysroot-${{ matrix.arch }}-v1
       - name: Build build tool
         run: |
           cd tools
           go build
+      - name: "Install dependency: tun2proxy"
+        run: |
+          ./scripts/setup-android-rust.sh
+          WITH_OS=android WITH_CPU=${{ matrix.arch }} ./scripts/build-tun2proxy.sh
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |
           ./scripts/download-clang-prebuilt-binaries.py
           rm -f third_party/llvm-build/Release+Asserts/*.tgz
-      - name: "Install dependency: android ndk"
-        if: ${{ steps.ndk-cache.outputs.cache-hit != 'true' }}
+      - name: Build TGZ packages (no build, for patching)
         run: |
-          ./scripts/install-sysroot-android.py
-          wget http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-static_8.1.2+ds-1_amd64.deb
+          # FIXME required by next step, need to copy to current clang with ndk's libunwind.a
+          ./tools/build --variant gui --arch ${{ matrix.arch }} --system android \
+            -cmake-build-type MinSizeRel -no-build -no-configure \
+            -android-sdk-dir "${ANDROID_HOME}" -android-ndk-dir "${ANDROID_NDK_HOME}"
+      - name: Download and Build Crashpad (include depot_tools)
+        if: ${{ steps.depot-cache.outputs.cache-hit != 'true' || steps.crashpad-cache.outputs.cache-hit != 'true' }}
+        run: |
+          WITH_OS=android WITH_CPU=${{ matrix.arch }} ./scripts/build-crashpad.sh
+      - name: "Install dependency: qemu user cache"
+        if: ${{ steps.qemu-user-cache.outputs.cache-hit != 'true' }}
+        run: |
+          wget http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-static_8.2.0+ds-4_amd64.deb
       - name: Change ubuntu mirror
         run: |
           sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
@@ -128,13 +170,11 @@ jobs:
           sudo dpkg -i qemu-user-static_*.deb
           # required by mbedtls build
           sudo apt-get install -y python3-jsonschema python3-jinja2
-      - name: Set clang environment
-        run: |
-          echo "CC=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang" >> $GITHUB_ENV
-          echo "CXX=${{ github.workspace }}/third_party/llvm-build/Release+Asserts/bin/clang++" >> $GITHUB_ENV
       - name: Build TGZ packages
         run: |
-          ./tools/build --variant cli --arch ${{ matrix.arch }} --system android -build-benchmark -build-test -nc
+          ./tools/build --variant gui --arch ${{ matrix.arch }} --system android --cmake-build-type MinSizeRel \
+            -build-benchmark -build-test \
+            -android-sdk-dir "${ANDROID_HOME}" -android-ndk-dir "${ANDROID_NDK_HOME}"
       - name: "Install dependency: android sysroot (test purpose)"
         if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -145,6 +185,7 @@ jobs:
           # android sysimg doesn't like resolv.conf
           mkdir -p $SYSROOT/dev $SYSROOT/proc $SYSROOT/data/local/tmp
           bwrap --die-with-parent --bind $SYSROOT / \
+            --ro-bind /sys /sys \
             --proc /proc --dev /dev \
             --unshare-all \
             --bind $PWD/build-android${{ matrix.apilevel }}-${{ matrix.arch }} /data/local/tmp \
@@ -162,4 +203,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} yass*.tgz
+          gh release upload ${{ github.event.release.tag_name }} yass*.tgz yass*.apk

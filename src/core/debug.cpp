@@ -4,12 +4,15 @@
 #include "core/debug.hpp"
 #include "core/check_op.hpp"
 
+#include <iterator>
 #include <string_view>
+#include <base/strings/string_util.h>
+#include <base/posix/eintr_wrapper.h>
 
-#include "core/common_posix.hpp"
+// Include NOINLINE fixes
 #include "core/compiler_specific.hpp"
-#include "core/utils.hpp"
 #include "core/logging.hpp"
+#include "core/utils.hpp"
 
 // This is a widely included header and its size has significant impact on
 // build time. Try not to raise this limit unless absolutely necessary. See
@@ -23,7 +26,7 @@ NOINLINE void Alias(const void* /*var*/) {}
 static bool is_debug_ui_suppressed = false;
 
 bool WaitForDebugger(int wait_seconds, bool silent) {
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(OS_OHOS)
   // The pid from which we know which process to attach to are not output by
   // android ddms, so we have to print it out explicitly.
   DLOG(INFO) << "DebugUtil::WaitForDebugger(pid=" << static_cast<int>(getpid())
@@ -84,9 +87,6 @@ void VerifyDebugger() {}
 
 #include <memory>
 
-#include "core/cxx17_backports.hpp"
-#include "core/string_util.hpp"
-
 #if defined(__GLIBCXX__)
 #include <cxxabi.h>
 #endif
@@ -146,14 +146,14 @@ bool BeingDebugged() {
   size_t info_size = sizeof(info);
 
 #if defined(OS_OPENBSD)
-  if (sysctl(mib, base::size(mib), NULL, &info_size, NULL, 0) < 0)
+  if (sysctl(mib, std::size(mib), NULL, &info_size, NULL, 0) < 0)
     return -1;
 
   mib[5] = (info_size / sizeof(struct kinfo_proc));
 #endif
 
   int sysctl_result =
-      sysctl(mib, internal::size(mib), &info, &info_size, nullptr, 0);
+    sysctl(mib, std::size(mib), &info, &info_size, nullptr, 0);
   DCHECK_EQ(sysctl_result, 0);
   if (sysctl_result != 0) {
     is_set = true;
@@ -215,7 +215,7 @@ static pid_t GetDebuggerProcess() {
 
   std::string pid_str(buf + pid_index, pid_end_index - pid_index);
   auto pid = StringToIntegerU64(pid_str);
-  if (!pid.ok())
+  if (!pid.has_value())
     return -1;
 
   return pid.value();

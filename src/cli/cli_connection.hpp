@@ -1,28 +1,28 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2023 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 
 #ifndef H_CLI_CONNECTION
 #define H_CLI_CONNECTION
 
-#include "channel.hpp"
-#include "cli/cli_connection_stats.hpp"
-#include "connection.hpp"
-#include "core/cipher.hpp"
-#include "core/iobuf.hpp"
-#include "core/io_queue.hpp"
 #include "core/logging.hpp"
 #include "core/ref_counted.hpp"
 #include "core/scoped_refptr.hpp"
-#include "core/socks4.hpp"
-#include "core/socks4_request.hpp"
-#include "core/socks4_request_parser.hpp"
-#include "core/socks5.hpp"
-#include "core/socks5_request.hpp"
-#include "core/socks5_request_parser.hpp"
-#include "core/ss_request.hpp"
-#include "protocol.hpp"
-#include "stream.hpp"
-#include "ssl_stream.hpp"
+#include "net/channel.hpp"
+#include "cli/cli_connection_stats.hpp"
+#include "net/connection.hpp"
+#include "net/cipher.hpp"
+#include "net/iobuf.hpp"
+#include "net/io_queue.hpp"
+#include "net/socks4.hpp"
+#include "net/socks4_request.hpp"
+#include "net/socks4_request_parser.hpp"
+#include "net/socks5.hpp"
+#include "net/socks5_request.hpp"
+#include "net/socks5_request_parser.hpp"
+#include "net/ss_request.hpp"
+#include "net/protocol.hpp"
+#include "net/stream.hpp"
+#include "net/ssl_stream.hpp"
 
 #include <absl/container/flat_hash_map.h>
 #include <absl/strings/str_cat.h>
@@ -36,6 +36,10 @@
 #endif
 
 namespace cli {
+
+using IOBuf = net::IOBuf;
+using cipher = net::cipher;
+using IoQueue = net::IoQueue;
 
 using StreamId = http2::adapter::Http2StreamId;
 template <typename T>
@@ -84,9 +88,9 @@ class DataFrameSource
 /// The ultimate service class to deliever the network traffic to the remote
 /// endpoint
 class CliConnection : public RefCountedThreadSafe<CliConnection>,
-                      public Channel,
-                      public Connection,
-                      public cipher_visitor_interface,
+                      public net::Channel,
+                      public net::Connection,
+                      public net::cipher_visitor_interface,
                       public http2::adapter::Http2VisitorInterface {
  public:
   /// The state of service
@@ -121,7 +125,8 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   /// Construct the service with io context and socket
   ///
   /// \param io_context the io context associated with the service
-  /// \param remote_host_name the sni name used with remote endpoint
+  /// \param remote_host_ips the ip addresses used with remote endpoint
+  /// \param remote_host_sni the sni name used with remote endpoint
   /// \param remote_port the port used with remote endpoint
   /// \param upstream_https_fallback the data channel (upstream) falls back to https (alpn)
   /// \param https_fallback the data channel falls back to https (alpn)
@@ -130,7 +135,8 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   /// \param upstream_ssl_ctx the ssl context object for tls data transfer (upstream)
   /// \param ssl_ctx the ssl context object for tls data transfer
   CliConnection(asio::io_context& io_context,
-                const std::string& remote_host_name,
+                const std::string& remote_host_ips,
+                const std::string& remote_host_sni,
                 uint16_t remote_port,
                 bool upstream_https_fallback,
                 bool https_fallback,
@@ -310,14 +316,14 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   /// dispatch the command to delegate
   /// \param command command type
   /// \param reply reply to given command type
-  asio::error_code PerformCmdOpsV5(const socks5::request* request,
-                                   socks5::reply* reply);
+  asio::error_code PerformCmdOpsV5(const net::socks5::request* request,
+                                   net::socks5::reply* reply);
 
   /// dispatch the command to delegate
   /// \param command command type
   /// \param reply reply to given command type
-  asio::error_code PerformCmdOpsV4(const socks4::request* request,
-                                   socks4::reply* reply);
+  asio::error_code PerformCmdOpsV4(const net::socks4::request* request,
+                                   net::socks4::reply* reply);
 
   /// dispatch the command to delegate
   /// \param command command type
@@ -340,27 +346,27 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   state state_;
 
   /// parser of method select request
-  socks5::method_select_request_parser method_select_request_parser_;
+  net::socks5::method_select_request_parser method_select_request_parser_;
   /// copy of method select request
-  socks5::method_select_request method_select_request_;
+  net::socks5::method_select_request method_select_request_;
 
   /// parser of handshake request
-  socks5::request_parser request_parser_;
+  net::socks5::request_parser request_parser_;
   /// copy of handshake request
-  socks5::request s5_request_;
+  net::socks5::request s5_request_;
 
   /// copy of method select response
-  socks5::method_select_response method_select_reply_;
+  net::socks5::method_select_response method_select_reply_;
   /// copy of handshake response
-  socks5::reply s5_reply_;
+  net::socks5::reply s5_reply_;
 
   /// parser of handshake request
-  socks4::request_parser s4_request_parser_;
+  net::socks4::request_parser s4_request_parser_;
   /// copy of handshake request
-  socks4::request s4_request_;
+  net::socks4::request s4_request_;
 
   /// copy of handshake response
-  socks4::reply s4_reply_;
+  net::socks4::reply s4_reply_;
 
   /// copy of parsed connect host or host field
   std::string http_host_;
@@ -372,7 +378,7 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   static const char http_connect_reply_[];
 
   /// copy of upstream request
-  std::unique_ptr<ss::request> ss_request_;
+  std::unique_ptr<net::ss::request> ss_request_;
   /// copy of padding support
   bool padding_support_ = false;
   int num_padding_send_ = 0;
@@ -384,7 +390,7 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
 
   std::string remote_domain() const {
     std::ostringstream ss;
-    if (ss_request_->address_type() == ss::domain) {
+    if (ss_request_->address_type() == net::ss::domain) {
       ss << ss_request_->domain_name() << ":" << ss_request_->port();
     } else {
       ss << ss_request_->endpoint();
@@ -435,7 +441,7 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   uint64_t yield_upstream_after_time_ = 0U;
 
   /// the upstream the service bound with
-  scoped_refptr<stream> channel_;
+  scoped_refptr<net::stream> channel_;
 
   /// the http2 upstream adapter
 #ifdef HAVE_NGHTTP2
@@ -490,7 +496,7 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   friend class DataFrameSource;
 };
 
-class CliConnectionFactory : public ConnectionFactory {
+class CliConnectionFactory : public net::ConnectionFactory {
  public:
    using ConnectionType = CliConnection;
    template<typename... Args>

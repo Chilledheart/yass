@@ -1,29 +1,12 @@
 set(CMAKE_CXX_STANDARD 20)
 
 ## Setup compiler informations
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
-    CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-  set(COMPILER_CLANG TRUE)
-else()
-  set(COMPILER_CLANG FALSE)
-endif()
-
-if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-  set(COMPILER_APPLE_CLANG TRUE)
-endif()
-
-if (COMPILER_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15.0)
-  message(FATAL_ERROR "Requires Clang 15.0 or newer to compile libc++ from source")
-endif()
-
 if (COMPILER_APPLE_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15.0)
   message(FATAL_ERROR "Requires Apple Clang 15.0 or newer to compile libc++ from source")
 endif()
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  set(COMPILER_GCC TRUE)
-else()
-  set(COMPILER_GCC FALSE)
+if (COMPILER_CLANG AND NOT COMPILER_APPLE_CLANG AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16.0)
+  message(FATAL_ERROR "Requires Clang 16.0 or newer to compile libc++ from source")
 endif()
 
 if (COMPILER_GCC AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13.0)
@@ -34,7 +17,7 @@ endif()
 # config that is applied to all targets. It is here to separate out the logic
 # that is specific to libc++. Please see that target for advice on what should
 # go in :runtime_library vs. :compiler.
-if (BUILD_SHARED_LIBS OR MSVC_CRT_LINKAGE STREQUAL "dynamic")
+if (BUILD_SHARED_LIBS)
   set(libcxx_SHARED ON)
 else()
   set(libcxx_SHARED OFF)
@@ -76,7 +59,7 @@ foreach(CompilerFlag ${CompilerFlags})
   string(REPLACE "-stdlib=libc++" "" ${CompilerFlag} "${${CompilerFlag}}")
 endforeach()
 
-set(libcxx_CR "84fb809dd6dae36d556dc0bb702c6cc2ce9d4b80")
+set(libcxx_CR "caccdb0407e84357ca6490165e88dcad64e47d17")
 # Fixed libc++ configuration macros are in
 # buildtools/third_party/libc++/__config_site. This config only has defines
 # that vary depending on gn args, and non-define flags.
@@ -101,11 +84,11 @@ endif()
 if (${CMAKE_BUILD_TYPE} MATCHES Debug)
  set(libcxx_PUBLIC_DEFINITIONS
    ${libcxx_PUBLIC_DEFINITIONS}
-   "_LIBCPP_ENABLE_DEBUG_MODE")
+   "_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG")
 else()
  set(libcxx_PUBLIC_DEFINITIONS
    ${libcxx_PUBLIC_DEFINITIONS}
-   "_LIBCPP_ENABLE_SAFE_MODE=1")
+   "_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE")
 endif()
 
 set(libcxx_PUBLIC_DEFINITIONS
@@ -154,7 +137,7 @@ else()
       ${libcxx_PUBLIC_LIBRARIES}
       pthread c gcc_s m rt
       )
-  elseif (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6.0 AND NOT MINGW)
+  elseif (COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 6.0 AND NOT (MINGW AND MINGW_MSVCRT100))
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nostdlib++")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -nostdlib++")
   else()
@@ -187,13 +170,13 @@ else()
           gcc_s rt
           )
       endif()
-    elseif (MINGW)
-      if (USE_LIBUNWIND AND USE_COMPILER_RT)
+    elseif (MINGW AND MINGW_MSVCRT100)
+      if (MINGW_COMPILER_RT)
         set(libcxx_PUBLIC_LIBRARIES
           ${libcxx_PUBLIC_LIBRARIES}
-           mingw32 ${COMPILER_RT_PATH} unwind moldname mingwex msvcr100
+           ${CMAKE_SYSROOT}/lib/libmingw32.a ${MINGW_COMPILER_RT} unwind moldname mingwex msvcr100
            advapi32 shell32 user32 kernel32
-           mingw32 ${COMPILER_RT_PATH} unwind moldname mingwex msvcr100 kernel32
+           ${CMAKE_SYSROOT}/lib/libmingw32.a ${MINGW_COMPILER_RT} unwind moldname mingwex msvcr100 kernel32
           )
       else()
         set(libcxx_PUBLIC_LIBRARIES
@@ -217,6 +200,7 @@ set(libcxx_SOURCES
   trunk/src/atomic.cpp
   trunk/src/barrier.cpp
   trunk/src/bind.cpp
+  trunk/src/call_once.cpp
   trunk/src/charconv.cpp
   trunk/src/chrono.cpp
   trunk/src/condition_variable.cpp
@@ -665,7 +649,7 @@ target_compile_options(cxx PRIVATE ${libcxx_CFLAGS})
 # We need to link with libatomic on systems that do not have builtin atomics, or
 # don't have builtin support for 8 byte atomics
 set(libcxx_LINK_LIBATOMIC FALSE)
-if (NOT MSVC AND NOT USE_COMPILER_RT)
+if (NOT MSVC)
   include(CheckCSourceCompiles)
   set(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
   set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} ${libcxx_PUBLIC_LIBRARIES}")

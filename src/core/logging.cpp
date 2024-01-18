@@ -3,13 +3,21 @@
 
 #if defined(__SANITIZE_THREAD__)
 #define DYNAMIC_ANNOTATIONS_ENABLED 1
-#include <absl/base/dynamic_annotations.h>
 #include <absl/base/config.h>
 #endif
+#include <absl/base/dynamic_annotations.h>
 #include <absl/base/thread_annotations.h>
+#include <absl/strings/str_format.h>
+#include <base/strings/string_util.h>
+#include <base/strings/sys_string_conversions.h>
+#include <base/posix/eintr_wrapper.h>
+#include <build/build_config.h>
 
 #include "core/logging.hpp"
 #include "core/process_utils.hpp"
+// Include for NO_SANITIZE_MEMORY
+#include "core/compiler_specific.hpp"
+#include "version.h"
 
 #define _GNU_SOURCE 1  // needed for O_NOFOLLOW and pread()/pwrite()
 
@@ -27,7 +35,7 @@
 #include <sys/types.h>
 #include <climits>
 #include <csignal>
-#if defined(OS_APPLE) || defined(OS_LINUX) || defined(OS_ANDROID)
+#if defined(OS_APPLE) || defined(OS_LINUX) || defined(OS_ANDROID) || defined(OS_OHOS)
 #include <sys/utsname.h>  // For uname.
 #endif
 #if defined(OS_LINUX)
@@ -59,11 +67,8 @@
 #include <dirent.h>  // for automatic removal of old logs
 #endif
 
-#include "core/common_posix.hpp"
-#include "core/compiler_specific.hpp"
 #include "core/debug.hpp"
 #include "core/safe_strerror.hpp"
-#include "core/string_util.hpp"
 #include "core/utils.hpp"
 
 #ifdef _MSC_VER
@@ -157,7 +162,7 @@ static StringType CFStringToSTLStringWithEncodingT(CFStringRef cfstring,
 
 #define safe_write(fd, buf, count) write(fd, buf, count)
 
-#elif defined(OS_LINUX) || defined(OS_ANDROID)
+#elif defined(OS_LINUX) || defined(OS_ANDROID) || defined(OS_OHOS)
 #include <time.h>
 #define safe_write(fd, buf, count) syscall(SYS_write, fd, buf, count)
 #else
@@ -279,7 +284,7 @@ ABSL_FLAG(bool,
           false,
           "color messages logged to stderr (if supported by terminal)");
 
-#if defined(OS_LINUX) || defined(OS_ANDROID)
+#if defined(OS_LINUX) || defined(OS_ANDROID) || defined(OS_OHOS)
 ABSL_FLAG(bool,
           drop_log_memory,
           true,
@@ -417,7 +422,7 @@ const char* const_basename(const char* filepath);
 
 void DumpStackTraceToString(std::string* stacktrace);
 
-static void NORETURN DumpStackTraceAndExit();
+[[noreturn]] static void DumpStackTraceAndExit();
 
 struct CrashReason {
   const char* filename = nullptr;
@@ -1039,7 +1044,7 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
       CFStringRef main_bundle_id_cf =
           main_bundle ? CFBundleGetIdentifier(main_bundle) : nullptr;
       std::string main_bundle_id = main_bundle_id_cf
-                                       ? SysCFStringRefToUTF8(main_bundle_id_cf)
+                                       ? gurl_base::SysCFStringRefToUTF8(main_bundle_id_cf)
                                        : std::string("");
 #if defined(USE_ASL)
       // The facility is set to the main bundle ID if available. Otherwise,
@@ -1158,7 +1163,7 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
         priority = ANDROID_LOG_FATAL;
         break;
     }
-    constexpr char kLogTag[] = "yass";
+    constexpr char kLogTag[] = YASS_APP_NAME;
 
 #if DCHECK_IS_ON()
     // Split the output by new lines to prevent the Android system from
@@ -1625,7 +1630,7 @@ void LogFileObject::Write(bool force_flush,
   if (force_flush || (bytes_since_flush_ >= 1000000) ||
       (CycleClock_Now() >= next_flush_time_)) {
     FlushUnlocked();
-#if defined(OS_LINUX) || defined(OS_ANDROID)
+#if defined(OS_LINUX) || defined(OS_ANDROID) || defined(OS_OHOS)
     // Only consider files >= 3MiB
     if (absl::GetFlag(FLAGS_drop_log_memory) && file_length_ >= (3 << 20)) {
       // Don't evict the most recent 1-2MiB so as not to impact a tailer
@@ -2145,9 +2150,11 @@ void LogMessage::Flush() {
   LogDestination::WaitForSinks(data_);
 
 #if defined(OS_ANDROID)
+  constexpr char kLogTag[] = YASS_APP_NAME;
+
   const int level = AndroidLogLevel(data_->severity_);
   const std::string text = std::string(data_->message_text_);
-  __android_log_write(level, "native",
+  __android_log_write(level, kLogTag,
                       text.substr(0, data_->num_chars_to_log_).c_str());
 #endif  // defined(OS_ANDROID)
 
@@ -2262,7 +2269,7 @@ void LogMessage::SendToLog() ABSL_EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
     LogDestination::WaitForSinks(data_);
 
 #ifdef OS_WIN
-    if (!IsProgramConsole()) {
+    if (!IsProgramConsole(GetStdHandle(STD_ERROR_HANDLE))) {
       std::wstring message = SysUTF8ToWide(data_->message_text_);
       MessageBoxW(nullptr, message.c_str(), L"Fatal Error", MB_ICONERROR);
       // Ignore errors.
@@ -2627,12 +2634,10 @@ std::string StrError(int err) {
 LogMessageFatal::LogMessageFatal(const char* file, int line)
     : LogMessage(file, line, LOGGING_FATAL) {}
 
-MSVC_PUSH_DISABLE_WARNING(4722)
 LogMessageFatal::~LogMessageFatal() {
   Flush();
   LogMessage::Fail();
 }
-MSVC_POP_WARNING()
 
 // Broken out from logging.cc by Soren Lassen
 // logging_unittest.cc covers the functionality herein
@@ -3071,7 +3076,7 @@ std::string SystemErrorCodeToString(SystemErrorCode error_code) {
                              sizeof(msgbuf) / sizeof(msgbuf[0]), nullptr);
   if (len) {
     // Messages returned by system end with line breaks.
-    return CollapseWhitespaceASCII(msgbuf, true) +
+    return gurl_base::CollapseWhitespaceASCII(msgbuf, true) +
       absl::StrFormat(" (0x%lX)", error_code);
   }
   return absl::StrFormat("Error (0x%lX) while retrieving error. (0x%lX)",

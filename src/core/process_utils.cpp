@@ -24,6 +24,8 @@ extern "C" char **environ;
 
 #include <sstream>
 
+#include <base/posix/eintr_wrapper.h>
+
 static int Pipe2(int pipe_fds[2]) {
   int ret;
 #ifdef HAVE_PIPE2
@@ -64,15 +66,15 @@ int ExecuteProcess(const std::vector<std::string>& params,
     return ret;
   }
   if ((ret = Pipe2(stdout_pipe))) {
-    close(stdin_pipe[0]);
-    close(stdin_pipe[1]);
+    IGNORE_EINTR(close(stdin_pipe[0]));
+    IGNORE_EINTR(close(stdin_pipe[1]));
     return ret;
   }
   if ((ret = Pipe2(stderr_pipe))) {
-    close(stdin_pipe[0]);
-    close(stdin_pipe[1]);
-    close(stdout_pipe[0]);
-    close(stdout_pipe[1]);
+    IGNORE_EINTR(close(stdin_pipe[0]));
+    IGNORE_EINTR(close(stdin_pipe[1]));
+    IGNORE_EINTR(close(stdout_pipe[0]));
+    IGNORE_EINTR(close(stdout_pipe[1]));
     return ret;
   }
 
@@ -112,9 +114,9 @@ int ExecuteProcess(const std::vector<std::string>& params,
   }
   // In Parent Process
   DCHECK(pid) << "Invalid pid in parent process";
-  close(stdin_pipe[0]);
-  close(stdout_pipe[1]);
-  close(stderr_pipe[1]);
+  IGNORE_EINTR(close(stdin_pipe[0]));
+  IGNORE_EINTR(close(stdout_pipe[1]));
+  IGNORE_EINTR(close(stderr_pipe[1]));
 
   // Post Stage
   fcntl(stdin_pipe[1], F_SETFD, FD_CLOEXEC);
@@ -128,7 +130,7 @@ int ExecuteProcess(const std::vector<std::string>& params,
   int wstatus;
 
   // mark write end as eof
-  close(stdin_pipe[1]);
+  IGNORE_EINTR(close(stdin_pipe[1]));
 
   // polling stdout and stderr
   int mfd = std::max(stdout_pipe[0], stderr_pipe[0]) + 1;
@@ -190,14 +192,14 @@ int ExecuteProcess(const std::vector<std::string>& params,
 done:
   // already closed
   // close(stdin_pipe[1]);
-  close(stdout_pipe[0]);
-  close(stderr_pipe[0]);
+  IGNORE_EINTR(close(stdout_pipe[0]));
+  IGNORE_EINTR(close(stderr_pipe[0]));
 
   if (ret) {
     LOG(INFO) << "process " << command_line << " killed with SIGKILL";
     kill(pid, SIGKILL);
   }
-  ret = waitpid(pid, &wstatus, 0);
+  ret = HANDLE_EINTR(waitpid(pid, &wstatus, 0));
   if (ret >= 0) {
     ret = WEXITSTATUS(wstatus);
     VLOG(1) << "process " << command_line << " exited with ret: " << ret;
@@ -220,7 +222,7 @@ static_assert(sizeof(pid_t) >= sizeof(DWORD), "");
 
 // Keep the same implementation with chromium
 
-#if defined(OS_LINUX) && !defined(OS_ANDROID)
+#if defined(OS_LINUX) && !defined(OS_ANDROID) && !defined(OS_OHOS)
 
 // Store the thread ids in local storage since calling the SWI can be
 // expensive and PlatformThread::CurrentId is used liberally. Clear
@@ -242,7 +244,7 @@ class InitAtFork {
   InitAtFork() { pthread_atfork(nullptr, nullptr, ClearTidCache); }
 };
 
-#endif  // defined(OS_LINUX) && !defined(OS_ANDROID)
+#endif  // defined(OS_LINUX) && !defined(OS_ANDROID) && !defined(OS_OHOS)
 
 pid_t GetPID() {
   // Pthreads doesn't have the concept of a thread ID, so we have to reach down
@@ -262,7 +264,7 @@ pid_t GetTID() {
 #if defined(OS_APPLE)
   return pthread_mach_thread_np(pthread_self());
   // On Linux and MacOSX, we try to use gettid().
-#elif defined(OS_LINUX) && !defined(OS_ANDROID)
+#elif defined(OS_LINUX) && !defined(OS_ANDROID) && !defined(OS_OHOS)
   static InitAtFork init_at_fork;
   if (g_thread_id == -1) {
     g_thread_id = syscall(__NR_gettid);
@@ -273,7 +275,7 @@ pid_t GetTID() {
            "through fork().";
   }
   return g_thread_id;
-#elif defined(OS_ANDROID)
+#elif defined(OS_ANDROID) || defined(OS_OHOS)
   // Note: do not cache the return value inside a thread_local variable on
   // Android (as above). The reasons are:
   // - thread_local is slow on Android (goes through emutls)

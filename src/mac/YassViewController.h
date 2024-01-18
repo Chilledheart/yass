@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 
 #ifndef YASS_MAC_VIEW_CONTROLLER
 #define YASS_MAC_VIEW_CONTROLLER
@@ -15,6 +15,7 @@
 @property (weak) IBOutlet NSButton *startButton;
 @property (weak) IBOutlet NSButton *stopButton;
 @property (weak) IBOutlet NSTextField *serverHost;
+@property (weak) IBOutlet NSTextField *serverSNI;
 @property (weak) IBOutlet NSTextField *serverPort;
 @property (weak) IBOutlet NSTextField *username;
 @property (weak) IBOutlet NSSecureTextField *password;

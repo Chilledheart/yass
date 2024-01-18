@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2022 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 
 #include "gtk/yass_window.hpp"
 
@@ -14,6 +14,7 @@
 #include "gtk/option_dialog.hpp"
 #include "gtk/utils.hpp"
 #include "gtk/yass.hpp"
+#include "feature.h"
 #include "version.h"
 
 static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
@@ -147,6 +148,7 @@ YASSWindow::YASSWindow()
   gtk_container_add(GTK_CONTAINER(hbox), GTK_WIDGET(left_box));
 
   auto server_host_label_ = gtk_label_new(_("Server Host"));
+  auto server_sni_label_ = gtk_label_new(_("Server SNI"));
   auto server_port_label_ = gtk_label_new(_("Server Port"));
   auto username_label_ = gtk_label_new(_("Username"));
   auto password_label_ = gtk_label_new(_("Password"));
@@ -158,29 +160,31 @@ YASSWindow::YASSWindow()
   auto systemproxy_label_ = gtk_label_new(_("System Proxy"));
 
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_host_label_), 0, 0, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_port_label_), 0, 1, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(username_label_), 0, 2, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(password_label_), 0, 3, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(method_label_), 0, 4, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_host_label_), 0, 5, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_port_label_), 0, 6, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_label_), 0, 7, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_label_), 0, 8, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(systemproxy_label_), 0, 9, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_sni_label_), 0, 1, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_port_label_), 0, 2, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(username_label_), 0, 3, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(password_label_), 0, 4, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(method_label_), 0, 5, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_host_label_), 0, 6, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_port_label_), 0, 7, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_label_), 0, 8, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_label_), 0, 9, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(systemproxy_label_), 0, 10, 1, 1);
 
   server_host_ = GTK_ENTRY(gtk_entry_new());
+  server_sni_ = GTK_ENTRY(gtk_entry_new());
   server_port_ = GTK_ENTRY(gtk_entry_new());
   username_ = GTK_ENTRY(gtk_entry_new());
   password_ = GTK_ENTRY(gtk_entry_new());
   static const char* const method_names[] = {
 #define XX(num, name, string) string,
-      CIPHER_METHOD_MAP(XX)
+      CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   };
 
   method_ = GTK_COMBO_BOX_TEXT(gtk_combo_box_text_new());
 
-  for (uint32_t i = 1; i < sizeof(method_names) / sizeof(method_names[0]);
+  for (uint32_t i = 0; i < sizeof(method_names) / sizeof(method_names[0]);
        ++i) {
     gtk_combo_box_text_append_text(method_, method_names[i]);
   }
@@ -211,15 +215,16 @@ YASSWindow::YASSWindow()
   gtk_entry_set_visibility(password_, false);
 
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_host_), 1, 0, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_port_), 1, 1, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(username_), 1, 2, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(password_), 1, 3, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(method_), 1, 4, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_host_), 1, 5, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_port_), 1, 6, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_), 1, 7, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_), 1, 8, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(systemproxy_), 1, 9, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_sni_), 1, 1, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(server_port_), 1, 2, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(username_), 1, 3, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(password_), 1, 4, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(method_), 1, 5, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_host_), 1, 6, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_port_), 1, 7, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_), 1, 8, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_), 1, 9, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(systemproxy_), 1, 10, 1, 1);
 
 #if GTK_CHECK_VERSION(3, 12, 0)
   gtk_widget_set_margin_start(GTK_WIDGET(right_panel_grid), 10);
@@ -255,6 +260,12 @@ void YASSWindow::present() {
 
 void YASSWindow::OnStartButtonClicked() {
   gtk_widget_set_sensitive(GTK_WIDGET(start_button_), false);
+
+  last_sync_time_ = GetMonotonicTime();
+  last_rx_bytes_ = 0U;
+  last_tx_bytes_ = 0U;
+  cli::total_rx_bytes = 0U;
+  cli::total_tx_bytes = 0U;
   mApp->OnStart();
 }
 
@@ -275,6 +286,10 @@ void YASSWindow::OnSystemProxyClicked() {
 
 std::string YASSWindow::GetServerHost() {
   return gtk_entry_get_text(server_host_);
+}
+
+std::string YASSWindow::GetServerSNI() {
+  return gtk_entry_get_text(server_sni_);
 }
 
 std::string YASSWindow::GetServerPort() {
@@ -340,6 +355,7 @@ std::string YASSWindow::GetStatusMessage() {
 void YASSWindow::Started() {
   UpdateStatusBar();
   gtk_widget_set_sensitive(GTK_WIDGET(server_host_), false);
+  gtk_widget_set_sensitive(GTK_WIDGET(server_sni_), false);
   gtk_widget_set_sensitive(GTK_WIDGET(server_port_), false);
   gtk_widget_set_sensitive(GTK_WIDGET(username_), false);
   gtk_widget_set_sensitive(GTK_WIDGET(password_), false);
@@ -354,6 +370,7 @@ void YASSWindow::Started() {
 void YASSWindow::StartFailed() {
   UpdateStatusBar();
   gtk_widget_set_sensitive(GTK_WIDGET(server_host_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(server_sni_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(server_port_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(username_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(password_), true);
@@ -375,6 +392,7 @@ void YASSWindow::StartFailed() {
 void YASSWindow::Stopped() {
   UpdateStatusBar();
   gtk_widget_set_sensitive(GTK_WIDGET(server_host_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(server_sni_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(server_port_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(username_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(password_), true);
@@ -388,6 +406,7 @@ void YASSWindow::Stopped() {
 
 void YASSWindow::LoadChanges() {
   auto server_host_str = absl::GetFlag(FLAGS_server_host);
+  auto server_sni_str = absl::GetFlag(FLAGS_server_sni);
   auto server_port_str = std::to_string(absl::GetFlag(FLAGS_server_port));
   auto username_str = absl::GetFlag(FLAGS_username);
   auto password_str = absl::GetFlag(FLAGS_password);
@@ -397,22 +416,23 @@ void YASSWindow::LoadChanges() {
   auto timeout_str = std::to_string(absl::GetFlag(FLAGS_connect_timeout));
 
   gtk_entry_set_text(server_host_, server_host_str.c_str());
+  gtk_entry_set_text(server_sni_, server_sni_str.c_str());
   gtk_entry_set_text(server_port_, server_port_str.c_str());
   gtk_entry_set_text(username_, username_str.c_str());
   gtk_entry_set_text(password_, password_str.c_str());
 
   static const int method_ids[] = {
 #define XX(num, name, string) num,
-      CIPHER_METHOD_MAP(XX)
+      CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   };
   uint32_t i;
-  for (i = 1; i < sizeof(method_ids) / sizeof(method_ids[0]); ++i) {
+  for (i = 0; i < sizeof(method_ids) / sizeof(method_ids[0]); ++i) {
     if (cipher_method == method_ids[i])
       break;
   }
 
-  gtk_combo_box_set_active(GTK_COMBO_BOX(method_), i - 1);
+  gtk_combo_box_set_active(GTK_COMBO_BOX(method_), i);
 
   gtk_entry_set_text(local_host_, local_host_str.c_str());
   gtk_entry_set_text(local_port_, local_port_str.c_str());
@@ -438,6 +458,9 @@ void YASSWindow::OnAbout() {
   gtk_about_dialog_set_authors(about_dialog, authors);
   std::string comments = _("Last Change: ");
   comments += YASS_APP_LAST_CHANGE;
+  comments += "\n";
+  comments += _("Enabled Feature: ");
+  comments += YASS_APP_FEATURES;
   gtk_about_dialog_set_comments(about_dialog, comments.c_str());
   gtk_about_dialog_set_copyright(about_dialog, YASS_APP_COPYRIGHT);
   gtk_about_dialog_set_license_type(about_dialog, GTK_LICENSE_GPL_2_0);

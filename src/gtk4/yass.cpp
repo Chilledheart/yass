@@ -19,9 +19,9 @@
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
-#include "core/cxx17_backports.hpp"
 #include "crypto/crypter_export.hpp"
 #include "gtk4/yass_window.hpp"
+#include "feature.h"
 #include "version.h"
 #include "gtk4/option_dialog.hpp"
 #include "crashpad_helper.hpp"
@@ -156,12 +156,6 @@ int main(int argc, const char** argv) {
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
 
-#if 0
-  if (!MemoryLockAll()) {
-    LOG(WARNING) << "Failed to set memory lock";
-  }
-#endif
-
 #ifdef HAVE_ICU
   if (!InitializeICU()) {
     LOG(WARNING) << "Failed to initialize icu component";
@@ -276,9 +270,13 @@ std::string YASSApp::GetStatus() const {
 
 void YASSApp::OnStart(bool quiet) {
   state_ = STARTING;
-  SaveConfig();
+  std::string err_msg = SaveConfig();
+  if (!err_msg.empty()) {
+    OnStartFailed(err_msg);
+    return;
+  }
 
-  std::function<void(asio::error_code)> callback;
+  absl::AnyInvocable<void(asio::error_code)> callback;
   if (!quiet) {
     callback = [this](asio::error_code ec) {
       bool successed = false;
@@ -299,13 +297,13 @@ void YASSApp::OnStart(bool quiet) {
       dispatcher_.Emit();
     };
   }
-  worker_.Start(callback);
+  worker_.Start(std::move(callback));
 }
 
 void YASSApp::OnStop(bool quiet) {
   state_ = STOPPING;
 
-  std::function<void()> callback;
+  absl::AnyInvocable<void()> callback;
   if (!quiet) {
     callback = [this]() {
       {
@@ -316,7 +314,7 @@ void YASSApp::OnStop(bool quiet) {
       dispatcher_.Emit();
     };
   }
-  worker_.Stop(callback);
+  worker_.Stop(std::move(callback));
 }
 
 void YASSApp::OnStarted() {
@@ -353,31 +351,21 @@ void YASSApp::OnDispatch() {
     OnStopped();
 }
 
-void YASSApp::SaveConfig() {
+std::string YASSApp::SaveConfig() {
   auto server_host = main_window_->GetServerHost();
-  auto server_port = StringToIntegerU(main_window_->GetServerPort());
+  auto server_sni = main_window_->GetServerSNI();
+  auto server_port = main_window_->GetServerPort();
   auto username = main_window_->GetUsername();
   auto password = main_window_->GetPassword();
   auto method_string = main_window_->GetMethod();
-  auto method = to_cipher_method(method_string);
   auto local_host = main_window_->GetLocalHost();
-  auto local_port = StringToIntegerU(main_window_->GetLocalPort());
-  auto connect_timeout = StringToIntegerU(main_window_->GetTimeout());
+  auto local_port = main_window_->GetLocalPort();
+  auto connect_timeout = main_window_->GetTimeout();
 
-  if (!server_port.ok() || method == CRYPTO_INVALID || !local_port.ok() ||
-      !connect_timeout.ok()) {
-    LOG(WARNING) << "invalid options";
-    return;
-  }
-
-  absl::SetFlag(&FLAGS_server_host, server_host);
-  absl::SetFlag(&FLAGS_server_port, server_port.value());
-  absl::SetFlag(&FLAGS_username, username);
-  absl::SetFlag(&FLAGS_password, password);
-  absl::SetFlag(&FLAGS_method, method);
-  absl::SetFlag(&FLAGS_local_host, local_host);
-  absl::SetFlag(&FLAGS_local_port, local_port.value());
-  absl::SetFlag(&FLAGS_connect_timeout, connect_timeout.value());
+  return config::ReadConfigFromArgument(server_host, server_sni, server_port,
+                                        username, password, method_string,
+                                        local_host, local_port,
+                                        connect_timeout);
 }
 
 void YASSApp::OnAbout() {
@@ -388,6 +376,9 @@ void YASSApp::OnAbout() {
   gtk_about_dialog_set_authors(about_dialog, authors);
   std::string comments = _("Last Change: ");
   comments += YASS_APP_LAST_CHANGE;
+  comments += _("\n");
+  comments += _("Enabled Feature: ");
+  comments += YASS_APP_FEATURES;
   gtk_about_dialog_set_comments(about_dialog, comments.c_str());
   gtk_about_dialog_set_copyright(about_dialog, YASS_APP_COPYRIGHT);
   gtk_about_dialog_set_license_type(about_dialog, GTK_LICENSE_GPL_2_0);

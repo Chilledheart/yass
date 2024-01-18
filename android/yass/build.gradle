@@ -1,0 +1,108 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId 'it.gui.yass'
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 1
+        versionName '1.0'
+    }
+    sourceSets {
+        main {
+            assets.srcDirs = ['assets']
+            jni.srcDirs = [] // disable automatic ndk-build call
+            jniLibs.srcDirs = ['libs'] // add your jni .so file path
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    // https://developer.android.com/build/configure-apk-splits
+    splits {
+        abi {
+            enable true
+            // Resets the list of ABIs for Gradle to create APKs for to none.
+            reset()
+            // Specifies a list of ABIs for Gradle to create APKs for.
+            include "x86", "x86_64", "armeabi-v7a", "arm64-v8a"
+            // Specifies that you don't want to also generate a universal APK that includes all ABIs.
+            universalApk false
+        }
+    }
+    buildFeatures {
+        viewBinding true
+    }
+    aaptOptions {
+        noCompress 'icudtl.dat'
+    }
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+}
+
+task copyTask {
+    copy {
+        from '../common/res/drawable'
+        into 'src/main/res/drawable'
+        include 'icon.png'
+    }
+    copy {
+        from '../../third_party/icu/android'
+        into 'assets'
+        include 'icudtl.dat'
+    }
+    copy {
+        from '../../build-android24-x86/libyass.so'
+        into 'libs/x86'
+    }
+    copy {
+        from '../../build-android24-x64/libyass.so'
+        into 'libs/x86_64'
+    }
+    copy {
+        from '../../build-android24-arm/libyass.so'
+        into 'libs/armeabi-v7a'
+    }
+    copy {
+        from '../../build-android24-arm64/libyass.so'
+        into 'libs/arm64-v8a'
+    }
+    copy {
+        from '../../build-android24-x86/crashpad_handler'
+        into 'libs/x86'
+        rename('crashpad_handler', 'libcrashpad_handler.so')
+    }
+    copy {
+        from '../../build-android24-x64/crashpad_handler'
+        into 'libs/x86_64'
+        rename('crashpad_handler', 'libcrashpad_handler.so')
+    }
+    copy {
+        from '../../build-android24-arm/crashpad_handler'
+        into 'libs/armeabi-v7a'
+        rename('crashpad_handler', 'libcrashpad_handler.so')
+    }
+    copy {
+        from '../../build-android24-arm64/crashpad_handler'
+        into 'libs/arm64-v8a'
+        rename('crashpad_handler', 'libcrashpad_handler.so')
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.lifecycle:lifecycle-livedata:2.6.2'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel:2.6.2'
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'androidx.compose.material3:material3:1.1.2'
+}
+
+preBuild.dependsOn copyTask

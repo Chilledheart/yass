@@ -1,0 +1,23 @@
+/* Class = "UILabel"; text = "Password"; ObjectID = "9N4-Lw-6Ob"; */
+"bEh-We-3bh.text" = "密码";
+
+/* Class = "UIButton"; text = "Stop"; ObjectID = "JYa-MA-4KH"; */
+"MGs-Nl-c5G.normalTitle" = "停止";
+
+/* Class = "UIButton"; text = "Start"; ObjectID = "KPU-2Q-dN7"; */
+"mgH-S8-WUJ.normalTitle" = "启动";
+
+/* Class = "UILabel"; text = "Username"; ObjectID = "QRy-PK-jJT"; */
+"dFn-KS-gx8.text" = "用户名";
+
+/* Class = "UILabel"; text = "Server Host"; ObjectID = "g3k-Ab-Oin"; */
+"1EK-58-4Tb.text" = "服务器域名";
+
+/* Class = "UILabel"; text = "Server Port"; ObjectID = "mcp-Vm-U1E"; */
+"h37-oZ-p8D.text" = "服务器端口号";
+
+/* Class = "UILabel"; text = "Cipher/Method"; ObjectID = "tOi-q9-yJY"; */
+"ENX-yq-A0k.text" = "加密方式";
+
+/* Class = "UILabel"; text = "Timeout"; ObjectID = "zY6-tD-aUd"; */
+"3S5-0B-efx.text" = "超时时间";

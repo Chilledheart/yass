@@ -54,6 +54,10 @@ msgstr "YASS"
 msgid "Server Host:"
 msgstr "服务器域名:"
 
+#: yass_window.ui:31
+msgid "Server SNI:"
+msgstr "服务器名称指示:"
+
 #: yass_window.ui:41
 msgid "Server Port:"
 msgstr "服务器端口号:"
@@ -125,6 +129,10 @@ msgstr "断开连接于服务器 "
 #: yass.cpp:374
 msgid "Last Change: "
 msgstr "最后改动: "
+
+#: yass.cpp:392
+msgid "Enabled Feature: "
+msgstr "启用功能: "
 
 #: yass.cpp:383
 msgid "official-site"

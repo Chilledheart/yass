@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2023 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 
 #include "config/config.hpp"
 #include "config/config_impl.hpp"
@@ -11,8 +11,14 @@
 #include <absl/strings/str_cat.h>
 #include <absl/flags/internal/program_name.h>
 
-#include "core/cipher.hpp"
+#include "core/logging.hpp"
+#include "core/utils.hpp"
+#include "feature.h"
 #include "version.h"
+
+#ifndef _POSIX_HOST_NAME_MAX
+#define _POSIX_HOST_NAME_MAX 255
+#endif
 
 bool AbslParseFlag(absl::string_view text, CipherMethodFlag* flag,
                    std::string* err);
@@ -151,6 +157,10 @@ ABSL_FLAG(std::string,
           server_host,
           "0.0.0.0",
           "Host address which remote server listens to");
+ABSL_FLAG(std::string,
+          server_sni,
+          "",
+          "Override host address SNI which remote server listens to (Client Only)");
 ABSL_FLAG(int32_t,
           server_port,
           8443,
@@ -181,7 +191,7 @@ ABSL_FLAG(uint32_t,
 
 ABSL_FLAG(RateFlag,
           limit_rate,
-          RateFlag(),
+          RateFlag(0),
           "Limits the rate of response transmission to a client. Uint is byte per second");
 
 namespace config {
@@ -256,10 +266,11 @@ void ReadConfigFileOption(int argc, const char** argv) {
       argv[pos+1] = "";
       pos += 2;
       continue;
-    } else if (arg == "--version") {
+    } else if (arg == "-version" || arg == "--version") {
       fprintf(stdout, "%s %s\n", absl::flags_internal::ShortProgramInvocationName().c_str(),
               YASS_APP_TAG);
       fprintf(stdout, "Last Change: %s\n", YASS_APP_LAST_CHANGE);
+      fprintf(stdout, "Features: %s\n", YASS_APP_FEATURES);
 #ifndef NDEBUG
       fprintf(stdout, "Debug build (NDEBUG not #defined)\n");
 #endif
@@ -273,6 +284,7 @@ void ReadConfigFileOption(int argc, const char** argv) {
 
   LOG(WARNING) << "Application starting: " << YASS_APP_TAG;
   LOG(WARNING) << "Last Change: " << YASS_APP_LAST_CHANGE;
+  LOG(WARNING) << "Features: " << YASS_APP_FEATURES;
 #ifndef NDEBUG
   LOG(WARNING) << "Debug build (NDEBUG not #defined)\n";
 #endif
@@ -304,6 +316,8 @@ bool ReadConfig() {
   }
 
   /* optional fields */
+  config_impl->Read("server_sni", &FLAGS_server_sni);
+
   config_impl->Read("fast_open", &FLAGS_tcp_fastopen);
   config_impl->Read("fast_open_connect", &FLAGS_tcp_fastopen_connect);
 
@@ -349,6 +363,7 @@ bool SaveConfig() {
   }
 
   all_fields_written &= config_impl->Write("server", FLAGS_server_host);
+  all_fields_written &= config_impl->Write("server_sni", FLAGS_server_sni);
   all_fields_written &= config_impl->Write("server_port", FLAGS_server_port);
   all_fields_written &= config_impl->Write("method", FLAGS_method);
   all_fields_written &= config_impl->Write("username", FLAGS_username);
@@ -381,5 +396,127 @@ bool SaveConfig() {
 
   return all_fields_written;
 }
+
+std::string
+ReadConfigFromArgument(const std::string& server_host,
+                       const std::string& server_sni,
+                       const std::string& _server_port,
+                       const std::string& username,
+                       const std::string& password,
+                       cipher_method method,
+                       const std::string& local_host,
+                       const std::string& _local_port,
+                       const std::string& _timeout) {
+  std::ostringstream err_msg;
+
+  if (server_host.empty() || server_host.size() >= _POSIX_HOST_NAME_MAX) {
+    err_msg << ",Invalid Server Host: " << server_host;
+  }
+
+  if (server_sni.size() >= _POSIX_HOST_NAME_MAX) {
+    err_msg << ",Invalid Server Host: " << server_sni;
+  }
+
+  auto server_port = StringToIntegerU(_server_port);
+  if (!server_port.has_value() || server_port.value() > 65535u) {
+    err_msg << ",Invalid Server Port: " << _server_port;
+  }
+
+  if (method == CRYPTO_INVALID) {
+    err_msg << ",Invalid Cipher: " << to_cipher_method_str(method);
+  }
+
+  if (local_host.empty() || local_host.size() >= _POSIX_HOST_NAME_MAX) {
+    err_msg << ",Invalid Local Host: " << local_host;
+  }
+
+  auto local_port = StringToIntegerU(_local_port);
+  if (!local_port.has_value() || local_port.value() > 65535u) {
+    err_msg << ",Invalid Local Port: " << _local_port;
+  }
+
+  auto timeout = StringToIntegerU(_timeout);
+  if (!timeout.has_value()) {
+    err_msg << ",Invalid Connect Timeout: " << _timeout;
+  }
+
+  std::string ret = err_msg.str();
+  if (ret.empty()) {
+    absl::SetFlag(&FLAGS_server_host, server_host);
+    absl::SetFlag(&FLAGS_server_sni, server_sni);
+    absl::SetFlag(&FLAGS_server_port, server_port.value());
+    absl::SetFlag(&FLAGS_username, username);
+    absl::SetFlag(&FLAGS_password, password);
+    absl::SetFlag(&FLAGS_method, method);
+    absl::SetFlag(&FLAGS_local_host, local_host);
+    absl::SetFlag(&FLAGS_local_port, local_port.value());
+    absl::SetFlag(&FLAGS_connect_timeout, timeout.value());
+  } else {
+    ret = ret.substr(1);
+  }
+  return ret;
+}
+
+std::string
+ReadConfigFromArgument(const std::string& server_host,
+                       const std::string& server_sni,
+                       const std::string& _server_port,
+                       const std::string& username,
+                       const std::string& password,
+                       const std::string& method_string,
+                       const std::string& local_host,
+                       const std::string& _local_port,
+                       const std::string& _timeout) {
+  std::ostringstream err_msg;
+
+  if (server_host.empty() || server_host.size() >= _POSIX_HOST_NAME_MAX) {
+    err_msg << ",Invalid Server Host: " << server_host;
+  }
+
+  if (server_sni.size() >= _POSIX_HOST_NAME_MAX) {
+    err_msg << ",Invalid Server Host: " << server_sni;
+  }
+
+  auto server_port = StringToIntegerU(_server_port);
+  if (!server_port.has_value() || server_port.value() > 65535u) {
+    err_msg << ",Invalid Server Port: " << _server_port;
+  }
+
+  auto method = to_cipher_method(method_string);
+  if (method == CRYPTO_INVALID) {
+    err_msg << ",Invalid Cipher: " << method_string;
+  }
+
+  if (local_host.empty() || local_host.size() >= _POSIX_HOST_NAME_MAX) {
+    err_msg << ",Invalid Local Host: " << local_host;
+  }
+
+  auto local_port = StringToIntegerU(_local_port);
+  if (!local_port.has_value() || local_port.value() > 65535u) {
+    err_msg << ",Invalid Local Port: " << _local_port;
+  }
+
+  auto timeout = StringToIntegerU(_timeout);
+  if (!timeout.has_value()) {
+    err_msg << ",Invalid Connect Timeout: " << _timeout;
+  }
+
+  std::string ret = err_msg.str();
+  if (ret.empty()) {
+    absl::SetFlag(&FLAGS_server_host, server_host);
+    absl::SetFlag(&FLAGS_server_sni, server_sni);
+    absl::SetFlag(&FLAGS_server_port, server_port.value());
+    absl::SetFlag(&FLAGS_username, username);
+    absl::SetFlag(&FLAGS_password, password);
+    absl::SetFlag(&FLAGS_method, method);
+    absl::SetFlag(&FLAGS_local_host, local_host);
+    absl::SetFlag(&FLAGS_local_port, local_port.value());
+    absl::SetFlag(&FLAGS_connect_timeout, timeout.value());
+  } else {
+    ret = ret.substr(1);
+  }
+  return ret;
+}
+
 
 }  // namespace config
