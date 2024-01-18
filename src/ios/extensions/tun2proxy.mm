@@ -42,17 +42,21 @@ static NEPacket *packetFromData(NSData *data) {
   return [[NEPacket alloc] initWithData:data protocolFamily:version == 6 ? AF_INET6 : AF_INET];
 }
 
-static void WritePackets(void* context, const void** packets, const size_t* packetLengths,
+static void WritePackets(void* context, void** packets, const size_t* packetLengths,
                          int packetsCount) {
   Tun2Proxy_InitContext *c = reinterpret_cast<Tun2Proxy_InitContext*>(context);
-  NEPacketTunnelFlow* packetFlow = c->packetFlow;;
-  NSMutableArray *packetsArray = [NSMutableArray array];
+  NEPacketTunnelFlow* packetFlow = c->packetFlow;
+  NSMutableArray *packetsArray = [NSMutableArray arrayWithCapacity:packetsCount];
   for (int i = 0; i < packetsCount; ++i) {
-    NSData *data = [NSData dataWithBytes:packets[i] length:packetLengths[i]];
+    NSData *data = [NSData dataWithBytesNoCopy:packets[i]
+                                        length:packetLengths[i]
+                                  freeWhenDone:NO];
     NEPacket *packet = packetFromData(data);
     [packetsArray addObject:packet];
   }
-  [packetFlow writePacketObjects:packetsArray];
+  if (![packetFlow writePacketObjects:packetsArray]) {
+    NSLog(@"writePacketObjects failed");
+  }
 }
 
 extern "C"
