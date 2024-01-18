@@ -209,16 +209,16 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
 
 - (void)readPackets {
   __weak YassPacketTunnelProvider *weakSelf = self;
-  if (stopped_) {
-    return;
-  }
   [self.packetFlow readPacketObjectsWithCompletionHandler:^(NSArray<NEPacket *> *packets) {
-    {
-      __typeof__(self) strongSelf = weakSelf;
-      Tun2Proxy_ForwardReadPackets(context_, packets);
+    __typeof__(self) strongSelf = weakSelf;
+    if (strongSelf == nil) {
+      return;
     }
-
-    [weakSelf readPackets];
+    if (strongSelf->stopped_) {
+      return;
+    }
+    Tun2Proxy_ForwardReadPackets(strongSelf->context_, packets);
+    [strongSelf readPackets];
   }];
 }
 
