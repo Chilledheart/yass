@@ -1,3 +1,8 @@
+yass (1.5.20-1) UNRELEASED; urgency=medium
+
+  * ca-certificates: update for 20230311.3.95 release.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Thu, 18 Jan 2024 16:56:37 +0800
 yass (1.5.19-1) UNRELEASED; urgency=medium
 
   * gtk: quote the exec entry in autostart.

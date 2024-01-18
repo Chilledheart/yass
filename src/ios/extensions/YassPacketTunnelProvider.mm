@@ -218,6 +218,10 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
       return;
     }
     Tun2Proxy_ForwardReadPackets(strongSelf->context_, packets);
+    if (worker_.currentConnections() > 12) {
+      NSLog(@"tunnel: sched_yield after %zu connection", worker_.currentConnections());
+      sched_yield(); // wait for up to 10ms
+    }
     [strongSelf readPackets];
   }];
 }
