@@ -87,8 +87,6 @@ static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
                         userInfo:@{@"Error reason": @(err_msg.c_str())}]);
     }
   };
-  cli::total_rx_bytes = 0;
-  cli::total_tx_bytes = 0;
   worker_.Start(std::move(callback));
 }
 
