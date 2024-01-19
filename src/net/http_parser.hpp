@@ -63,10 +63,8 @@ class HttpRequestParser : public quiche::BalsaVisitorInterface {
   void OnRawBodyInput(std::string_view input) override;
   void OnBodyChunkInput(std::string_view input) override;
   void OnHeaderInput(std::string_view input) override;
-  void OnHeader(std::string_view key, std::string_view value) override;
   void OnTrailerInput(std::string_view input) override;
   void ProcessHeaders(const quiche::BalsaHeaders& headers) override;
-  void ProcessTrailers(const quiche::BalsaHeaders& trailer) override;
   void OnTrailers(std::unique_ptr<quiche::BalsaHeaders> trailers) override;
   void OnRequestFirstLineInput(std::string_view line_input, std::string_view method_input,
                                std::string_view request_uri,
