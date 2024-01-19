@@ -245,7 +245,6 @@ void HttpRequestParser::OnBodyChunkInput(std::string_view /*input*/) {}
 
 void HttpRequestParser::OnHeaderInput(std::string_view /*input*/) {}
 void HttpRequestParser::OnTrailerInput(std::string_view /*input*/) {}
-void HttpRequestParser::OnHeader(std::string_view /*key*/, std::string_view /*value*/) {}
 
 void HttpRequestParser::ProcessHeaders(const quiche::BalsaHeaders& headers) {
   for (const std::pair<std::string_view, std::string_view>& key_value : headers.lines()) {
@@ -281,8 +280,6 @@ void HttpRequestParser::ProcessHeaders(const quiche::BalsaHeaders& headers) {
     }
   }
 }
-
-void HttpRequestParser::ProcessTrailers(const quiche::BalsaHeaders& /*trailer*/) {}
 
 void HttpRequestParser::OnTrailers(std::unique_ptr<quiche::BalsaHeaders> /*trailers*/) {}
 
