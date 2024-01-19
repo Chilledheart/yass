@@ -697,13 +697,21 @@ endif()
 
 include_directories(trunk/include)
 
+set(libcxx_PUBLIC_INCLUDES
+  ${CMAKE_CURRENT_SOURCE_DIR}/__config_site
+  ${CMAKE_CURRENT_SOURCE_DIR}/__assertion_handler)
+
 # export to parent project
 set(libcxx_PUBLIC_INCLUDES ${libcxx_PUBLIC_INCLUDES} PARENT_SCOPE)
 set(libcxx_PUBLIC_DEFINITIONS ${libcxx_PUBLIC_DEFINITIONS} PARENT_SCOPE)
 set(libcxx_PUBLIC_LIBRARIES ${libcxx_PUBLIC_LIBRARIES} PARENT_SCOPE)
 
-foreach(IncludeDir ${libcxx_PUBLIC_INCLUDES})
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I${IncludeDir}")
+foreach(IncludeHeader ${libcxx_PUBLIC_INCLUDES})
+  if (MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FI ${IncludeHeader}")
+  else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -include ${IncludeHeader}")
+  endif()
 endforeach()
 
 foreach(Definition ${libcxx_PUBLIC_DEFINITIONS})

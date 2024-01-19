@@ -11,7 +11,6 @@
 //    on Windows, the increase is great enough that we go above the 4GB size
 //    limit for PDBs (https://crbug.com/1327710#c5). To fix this, we set
 //    _LIBCPP_ABI_NAMESPACE to a shorter value.
-
 #define _LIBCPP_ABI_NAMESPACE __Cr
 #define _LIBCPP_ABI_VERSION 2
 
@@ -33,6 +32,14 @@
 /* #undef _LIBCPP_HAS_NO_RANDOM_DEVICE */
 /* #undef _LIBCPP_HAS_NO_LOCALIZATION */
 /* #undef _LIBCPP_HAS_NO_WIDE_CHARACTERS */
+
+// TODO(thakis): Is this right?
+/* #undef _LIBCPP_HAS_NO_STD_MODULES */
+
+// TODO(thakis): Is this right?
+/* #undef _LIBCPP_HAS_NO_TIME_ZONE_DATABASE */
+
+#define _LIBCPP_INSTRUMENTED_WITH_ASAN
 
 // PSTL backends
 /* #undef _LIBCPP_PSTL_CPU_BACKEND_SERIAL */
@@ -63,6 +70,12 @@
 // function because by default, this macro will does not call the verbose
 // termination function on Apple platforms.
 #define _LIBCPP_VERBOSE_ABORT(...) ::std::__libcpp_verbose_abort(__VA_ARGS__)
+
+// TODO(crbug.com/1455923) Link against compiler-rt's builtins library to
+// enable 128-arithmetic.
+#if defined(_WIN32)
+#define _LIBCPP_HAS_NO_INT128
+#endif
 
 // TODO(thakis): Remove this after LLVM 19's libc++ is rolled in.
 #define _LIBCPP_CHAR_TRAITS_REMOVE_BASE_SPECIALIZATION
