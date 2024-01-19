@@ -46,7 +46,7 @@ jobs:
         - 'centos7'
         - 'centos8'
         - 'fedora38'
-        - 'alpine318'
+        - 'alpine319'
         - 'opensuse15'
         # - 'centos9'
     runs-on: ubuntu-22.04
@@ -164,7 +164,7 @@ jobs:
       fail-fast: false
       matrix:
         container:
-        - 'alpine318'
+        - 'alpine319'
     runs-on: ubuntu-22.04
     needs: docker_publish
     container:
