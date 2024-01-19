@@ -9,8 +9,10 @@
 @interface YassViewController : UIViewController
 - (void)OnStart;
 - (void)OnStop;
+- (void)Starting;
 - (void)Started;
 - (void)StartFailed;
+- (void)Stopping;
 - (void)Stopped;
 - (void)UpdateStatusBar;
 @property (weak, nonatomic) IBOutlet UIButton *startButton;
