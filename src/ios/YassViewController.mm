@@ -68,8 +68,11 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   [self.stopButton setEnabled:FALSE];
 }
 
-- (void)viewWillAppear {
-  [self.view.window center];
+- (void)viewWillAppear:(BOOL)animated {
+  YassAppDelegate* appDelegate =
+      (YassAppDelegate*)UIApplication.sharedApplication.delegate;
+  [appDelegate reloadState];
+  [super viewWillAppear:animated];
 }
 
 - (NSString*)getCipher {
@@ -125,21 +128,16 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 - (void)OnStart {
   YassAppDelegate* appDelegate =
       (YassAppDelegate*)UIApplication.sharedApplication.delegate;
-  [self.startButton setEnabled:FALSE];
   [appDelegate OnStart:FALSE];
 }
 
 - (void)OnStop {
   YassAppDelegate* appDelegate =
       (YassAppDelegate*)UIApplication.sharedApplication.delegate;
-  [self.stopButton setEnabled:FALSE];
   [appDelegate OnStop:FALSE];
 }
 
-- (void)Started {
-  last_sync_time_ = GetMonotonicTime();
-  last_rx_bytes_ = 0;
-  last_tx_bytes_ = 0;
+- (void)Starting {
   [self UpdateStatusBar];
   [self.serverHost setUserInteractionEnabled:FALSE];
   [self.serverPort setUserInteractionEnabled:FALSE];
@@ -147,6 +145,19 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   [self.password setUserInteractionEnabled:FALSE];
   [self.cipherMethod setUserInteractionEnabled:FALSE];
   [self.timeout setUserInteractionEnabled:FALSE];
+  [self.startButton setEnabled:FALSE];
+  [self.stopButton setEnabled:FALSE];
+}
+
+- (void)Started {
+  [self UpdateStatusBar];
+  [self.serverHost setUserInteractionEnabled:FALSE];
+  [self.serverPort setUserInteractionEnabled:FALSE];
+  [self.username setUserInteractionEnabled:FALSE];
+  [self.password setUserInteractionEnabled:FALSE];
+  [self.cipherMethod setUserInteractionEnabled:FALSE];
+  [self.timeout setUserInteractionEnabled:FALSE];
+  [self.startButton setEnabled:FALSE];
   [self.stopButton setEnabled:TRUE];
 }
 
@@ -159,6 +170,19 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   [self.cipherMethod setUserInteractionEnabled:TRUE];
   [self.timeout setUserInteractionEnabled:TRUE];
   [self.startButton setEnabled:TRUE];
+  [self.stopButton setEnabled:FALSE];
+}
+
+- (void)Stopping {
+  [self UpdateStatusBar];
+  [self.serverHost setUserInteractionEnabled:FALSE];
+  [self.serverPort setUserInteractionEnabled:FALSE];
+  [self.username setUserInteractionEnabled:FALSE];
+  [self.password setUserInteractionEnabled:FALSE];
+  [self.cipherMethod setUserInteractionEnabled:FALSE];
+  [self.timeout setUserInteractionEnabled:FALSE];
+  [self.startButton setEnabled:FALSE];
+  [self.stopButton setEnabled:FALSE];
 }
 
 - (void)Stopped {
@@ -170,6 +194,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   [self.cipherMethod setUserInteractionEnabled:TRUE];
   [self.timeout setUserInteractionEnabled:TRUE];
   [self.startButton setEnabled:TRUE];
+  [self.stopButton setEnabled:FALSE];
 }
 
 - (NSString*)getStatusMessage {

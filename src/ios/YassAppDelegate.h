@@ -9,6 +9,7 @@
 enum YASSState { STARTED, STARTING, START_FAILED, STOPPING, STOPPED };
 
 @interface YassAppDelegate : UIResponder <UIApplicationDelegate>
+- (void) reloadState;
 - (enum YASSState) getState;
 - (NSString*) getStatus;
 - (void) OnStart:(BOOL) quiet;
