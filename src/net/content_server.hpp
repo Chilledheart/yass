@@ -401,6 +401,9 @@ class ContentServer {
     // SSL_CTX_set_signed_cert_timestamp_list
     // SSL_CTX_set1_ech_keys
 
+    uint8_t session_ctx_id = 0;
+    SSL_CTX_set_session_id_context(ssl_ctx_.native_handle(), &session_ctx_id,
+                                   sizeof(session_ctx_id));
     // Deduplicate all certificates minted from the SSL_CTX in memory.
     SSL_CTX_set0_buffer_pool(ssl_ctx_.native_handle(), x509_util::GetBufferPool());
 
