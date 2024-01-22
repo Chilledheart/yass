@@ -22,13 +22,13 @@ More Information refers to [wiki](https://github.com/Chilledheart/yass/wiki) and
 ## Usages
 
 ### Prebuilt binaries
-- Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.5.20/yass-android-release-arm64-1.5.20.apk)
-- iOS [join via TestFlight](https://testflight.apple.com/join/6AkiEq09) or [download ipa](https://github.com/Chilledheart/yass/releases/download/1.5.20/yass-ios-release-arm64-1.5.20.ipa)
-- Windows [download zip](https://github.com/Chilledheart/yass/releases/download/1.5.20/yass-mingw-winxp-release-i686-1.5.20.zip) or [download woa zip](https://github.com/Chilledheart/yass/releases/download/1.5.20/yass-mingw-release-aarch64-1.5.20.zip)
-- macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.5.20/yass-macos-release-x64-1.5.20.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.5.20/yass-macos-release-arm64-1.5.20.dmg)
-- Linux [download rpm](https://github.com/Chilledheart/yass/releases/download/1.5.20/yass-centos-7.el7.x86_64.1.5.20-0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.5.20/yass-client-ubuntu-16.04-xenial_amd64.1.5.20.deb)
+- Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.5.21/yass-android-release-arm64-1.5.21.apk)
+- iOS [join via TestFlight](https://testflight.apple.com/join/6AkiEq09) or [download ipa](https://github.com/Chilledheart/yass/releases/download/1.5.21/yass-ios-release-arm64-1.5.21.ipa)
+- Windows [download zip](https://github.com/Chilledheart/yass/releases/download/1.5.21/yass-mingw-winxp-release-i686-1.5.21.zip) or [download woa zip](https://github.com/Chilledheart/yass/releases/download/1.5.21/yass-mingw-release-aarch64-1.5.21.zip)
+- macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.5.21/yass-macos-release-x64-1.5.21.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.5.21/yass-macos-release-arm64-1.5.21.dmg)
+- Linux [download rpm](https://github.com/Chilledheart/yass/releases/download/1.5.21/yass-centos-7.el7.x86_64.1.5.21-0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.5.21/yass-client-ubuntu-16.04-xenial_amd64.1.5.21.deb)
 
-View more at [release page](https://github.com/Chilledheart/yass/releases/tag/1.5.20)
+View more at [release page](https://github.com/Chilledheart/yass/releases/tag/1.5.21)
 
 ### Status of Package Store
 Visit wiki's [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-of-Package-Store)
@@ -49,9 +49,9 @@ It refers to [http2 cipher](https://github.com/Chilledheart/yass/wiki/Supported-
 #### Notarized macOS releases
 macOS Releases from 1.5.19 are [notarized](https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution). Please note the dmg suffixed with `-unsigned` is not.
 #### Experimental ios packet tunnel support
-iOS release has been updated to add [Packet tunnel](https://developer.apple.com/documentation/networkextension/packet_tunnel_provider?language=objc) support.
+iOS releases from 1.5.21 are fixed memory pressure crash and have been updated to add [Packet tunnel](https://developer.apple.com/documentation/networkextension/packet_tunnel_provider?language=objc) support.
 #### Experimental android vpn service support
-Android release has been updated to add [VpnService](https://developer.android.com/reference/android/net/VpnService) support.
+Android releases have been updated to add [VpnService](https://developer.android.com/reference/android/net/VpnService) support.
 #### MinGW Build (alias Window Build)
 Please install Visual C++ 2010 runtime before use. Depending the your system's architecture, use [x86 installer][vs2010_x86] or [x64 installer][vs2010_x64].
 #### MSVC Build(previous Windows Build) prebuilt binaries removed

@@ -235,6 +235,8 @@ for embedded devices and low end boxes.
 %systemd_postun_with_restart yass-redir.service
 
 %changelog
+* Mon Jan 22 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.21-1
+  - ssl: deduplicate all ceritificates.
 * Thu Jan 18 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.20-1
   - ca-certificates: update for 20230311.3.95 release.
 * Tue Jan 16 2024 Chilledheart <keeyou-cn@outlook.com> - 1.5.19-1
