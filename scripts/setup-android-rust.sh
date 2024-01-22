@@ -12,6 +12,13 @@ if [ -z "$ANDROID_NDK_ROOT" ]; then
   exit -1
 fi
 
+echo "Adding rustup toolchain..."
+
+rustup toolchain install 1.75.0
+rustup default 1.75.0
+
+echo "Adding rustup toolchain...done"
+
 echo "Adding rustup android target..."
 
 rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
