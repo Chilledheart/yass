@@ -1,3 +1,8 @@
+yass (1.5.21-1) UNRELEASED; urgency=medium
+
+  * ssl: deduplicate all ceritificates.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Mon, 22 Jan 2024 16:39:44 +0800
 yass (1.5.20-1) UNRELEASED; urgency=medium
 
   * ca-certificates: update for 20230311.3.95 release.
