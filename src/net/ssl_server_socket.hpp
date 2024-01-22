@@ -58,13 +58,13 @@ class SSLServerSocket : public RefCountedThreadSafe<SSLServerSocket> {
   void OnDoWaitShutdown(asio::error_code ec);
 
  private:
-  int DoHandshake();
+  int DoHandshake(int *openssl_result);
   void DoHandshakeCallback(int result);
 
   void OnVerifyComplete(int result);
-  void OnHandshakeIOComplete(int result);
+  void OnHandshakeIOComplete(int result, int openssl_result);
 
-  int DoHandshakeLoop(int last_io_result);
+  int DoHandshakeLoop(int last_io_result, int last_openssl_result);
   int DoPayloadRead(std::shared_ptr<IOBuf> buf, int buf_len);
   int DoPayloadWrite(std::shared_ptr<IOBuf> buf, int buf_len);
   int MapLastOpenSSLError(int ssl_error);
