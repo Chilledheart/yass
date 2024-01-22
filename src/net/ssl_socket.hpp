@@ -90,15 +90,15 @@ class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
   void OnDoWaitShutdown(asio::error_code ec);
 
  private:
-  int DoHandshake();
+  int DoHandshake(int *openssl_result);
   int DoHandshakeComplete(int result);
   void DoConnectCallback(int result);
 
   void OnVerifyComplete(int result);
-  void OnHandshakeIOComplete(int result);
+  void OnHandshakeIOComplete(int result, int openssl_result);
   void RetryAllOperations();
 
-  int DoHandshakeLoop(int last_io_result);
+  int DoHandshakeLoop(int last_io_result, int last_openssl_result);
   int DoPayloadRead(std::shared_ptr<IOBuf> buf, int buf_len);
   int DoPayloadWrite(std::shared_ptr<IOBuf> buf, int buf_len);
   void DoPeek();

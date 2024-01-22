@@ -539,13 +539,7 @@ class stream : public RefCountedThreadSafe<stream> {
 
   // post yield
   asio::steady_timer read_yield_timer_;
-#if BUILDFLAG(IS_IOS)
-  // Every full mtu 1500 bytes packet arrives in every 100us
-  // the maximum traffer rate is 1500 b / 100 us = 14.3 MB/s
-  static constexpr uint64_t kReadYieldIntervalUs = 100;
-#else
   static constexpr uint64_t kReadYieldIntervalUs = 10;
-#endif
 
   // rate limiter
   const uint64_t limit_rate_;

@@ -51,7 +51,7 @@ int SSLServerSocket::Handshake(CompletionOnceCallback callback) {
   SSL_set_accept_state(ssl_.get());
 
   GotoState(STATE_HANDSHAKE);
-  int rv = DoHandshakeLoop(OK);
+  int rv = DoHandshakeLoop(OK, SSL_ERROR_NONE);
   if (rv == ERR_IO_PENDING) {
     user_handshake_callback_ = std::move(callback);
   } else {
@@ -257,7 +257,7 @@ void SSLServerSocket::OnReadReady() {
     return;
   if (next_handshake_state_ == STATE_HANDSHAKE) {
     // In handshake phase. The parameter to OnHandshakeIOComplete is unused.
-    OnHandshakeIOComplete(OK);
+    OnHandshakeIOComplete(OK, SSL_ERROR_NONE);
     return;
   }
 }
@@ -267,7 +267,7 @@ void SSLServerSocket::OnWriteReady() {
     return;
   if (next_handshake_state_ == STATE_HANDSHAKE) {
     // In handshake phase. The parameter to OnHandshakeIOComplete is unused.
-    OnHandshakeIOComplete(OK);
+    OnHandshakeIOComplete(OK, SSL_ERROR_NONE);
     return;
   }
 }
@@ -283,8 +283,8 @@ void SSLServerSocket::OnDoWaitShutdown(asio::error_code ec) {
   Shutdown(std::move(callback));
 }
 
-void SSLServerSocket::OnHandshakeIOComplete(int result) {
-  int rv = DoHandshakeLoop(result);
+void SSLServerSocket::OnHandshakeIOComplete(int result, int openssl_result) {
+  int rv = DoHandshakeLoop(result, openssl_result);
   if (rv == ERR_IO_PENDING)
     return;
 
@@ -295,9 +295,10 @@ void SSLServerSocket::OnHandshakeIOComplete(int result) {
     DoHandshakeCallback(rv);
 }
 
-int SSLServerSocket::DoHandshake() {
+int SSLServerSocket::DoHandshake(int *openssl_result) {
   int net_error = OK;
   int rv = SSL_do_handshake(ssl_.get());
+  *openssl_result = SSL_ERROR_NONE;
   if (rv == 1) {
 #if 0
     const STACK_OF(CRYPTO_BUFFER)* certs =
@@ -328,6 +329,7 @@ int SSLServerSocket::DoHandshake() {
     completed_handshake_ = true;
   } else {
     int ssl_error = SSL_get_error(ssl_.get(), rv);
+    *openssl_result = ssl_error;
 
     if (ssl_error == SSL_ERROR_WANT_PRIVATE_KEY_OPERATION) {
 #if 0
@@ -370,8 +372,9 @@ void SSLServerSocket::DoHandshakeCallback(int rv) {
   user_handshake_callback_ = nullptr;
 }
 
-int SSLServerSocket::DoHandshakeLoop(int last_io_result) {
+int SSLServerSocket::DoHandshakeLoop(int last_io_result, int last_sslerr) {
   int rv = last_io_result;
+  int sslerr = last_sslerr;
   do {
     // Default to STATE_NONE for next state.
     // (This is a quirk carried over from the windows
@@ -382,7 +385,7 @@ int SSLServerSocket::DoHandshakeLoop(int last_io_result) {
     GotoState(STATE_NONE);
     switch (state) {
       case STATE_HANDSHAKE:
-        rv = DoHandshake();
+        rv = DoHandshake(&sslerr);
         break;
       case STATE_NONE:
       default:
@@ -393,20 +396,25 @@ int SSLServerSocket::DoHandshakeLoop(int last_io_result) {
   } while (rv != ERR_IO_PENDING && next_handshake_state_ != STATE_NONE);
   if (rv == ERR_IO_PENDING) {
     scoped_refptr<SSLServerSocket> self(this);
-    stream_socket_->async_wait(asio::ip::tcp::socket::wait_read,
-      [this, self](asio::error_code ec){
-      if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
-        return;
-      }
-      OnReadReady();
-    });
-    stream_socket_->async_wait(asio::ip::tcp::socket::wait_write,
-      [this, self](asio::error_code ec){
-      if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
-        return;
-      }
-      OnWriteReady();
-    });
+    if (sslerr == SSL_ERROR_WANT_READ) {
+      stream_socket_->async_wait(asio::ip::tcp::socket::wait_read,
+        [this, self](asio::error_code ec){
+        if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+          return;
+        }
+        OnReadReady();
+      });
+    } else if (sslerr == SSL_ERROR_WANT_WRITE) {
+      stream_socket_->async_wait(asio::ip::tcp::socket::wait_write,
+        [this, self](asio::error_code ec){
+        if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+          return;
+        }
+        OnWriteReady();
+      });
+    } else {
+      DLOG(FATAL) << "ERR_IO_PENDING without next sslerr: " << sslerr;
+    }
   }
   return rv;
 }
