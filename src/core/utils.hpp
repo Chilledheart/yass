@@ -184,4 +184,13 @@ PlatformFile OpenReadFile(const std::wstring& path);
 void PrintTcmallocStats();
 #endif
 
+#ifdef __APPLE__
+#if BUILDFLAG(IS_IOS)
+#include <MacTypes.h>
+#else
+#include <libkern/OSTypes.h>
+#endif
+std::string DescriptionFromOSStatus(OSStatus err);
+#endif // __APPLE__
+
 #endif  // YASS_UTILS
