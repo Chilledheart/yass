@@ -5,6 +5,7 @@
 
 #include "core/utils.hpp"
 #include "config/config.hpp"
+#include "net/x509_util.hpp"
 
 #include <absl/strings/str_split.h>
 #include <string>
@@ -84,9 +85,8 @@ static void print_openssl_error() {
 }
 
 #ifdef HAVE_BUILTIN_CA_BUNDLE_CRT
-static bool load_ca_to_x509_trust(X509_STORE* store, const uint8_t *data, size_t len) {
-  bssl::UniquePtr<BIO> bio(BIO_new(BIO_s_mem()));
-  BIO_write(bio.get(), data, len);
+static bool load_ca_to_x509_trust(X509_STORE* store, const char *data, size_t len) {
+  bssl::UniquePtr<BIO> bio(BIO_new_mem_buf(data, len));
   bssl::UniquePtr<X509> cert(PEM_read_bio_X509(bio.get(), nullptr, 0, nullptr));
   if (!cert) {
     print_openssl_error();
@@ -127,7 +127,7 @@ static int load_ca_to_ssl_ctx_from_mem(SSL_CTX* ssl_ctx, const std::string_view&
     end += sizeof(kEndCertificateMark) -1;
 
     std::string_view cacert(cadata.data() + pos, end - pos);
-    if (load_ca_to_x509_trust(store, (const uint8_t*)cacert.data(), cacert.size())) {
+    if (load_ca_to_x509_trust(store, cacert.data(), cacert.size())) {
       ++count;
     }
   }
@@ -275,7 +275,9 @@ static int load_ca_to_ssl_ctx_system(SSL_CTX* ssl_ctx) {
   while((cert = CertEnumCertificatesInStore(cert_store, cert))) {
     const char* data = (const char *)cert->pbCertEncoded;
     size_t len = cert->cbCertEncoded;
-    bssl::UniquePtr<X509> cert(d2i_X509(nullptr, (const unsigned char**)&data, len));
+    bssl::UniquePtr<CRYPTO_BUFFER> buffer = net::x509_util::CreateCryptoBuffer(
+        std::string_view(data, len));
+    bssl::UniquePtr<X509> cert(X509_parse_from_buffer(buffer.get()));
     if (!cert) {
       print_openssl_error();
       continue;
@@ -346,7 +348,9 @@ out:
     } else {
       const char* data = (const char *)CFDataGetBytePtr(data_ref);
       CFIndex len = CFDataGetLength(data_ref);
-      bssl::UniquePtr<X509> cert(d2i_X509(nullptr, (const unsigned char**)&data, len));
+      bssl::UniquePtr<CRYPTO_BUFFER> buffer = net::x509_util::CreateCryptoBuffer(
+          std::string_view(data, len));
+      bssl::UniquePtr<X509> cert(X509_parse_from_buffer(buffer.get()));
       if (!cert) {
         print_openssl_error();
         continue;

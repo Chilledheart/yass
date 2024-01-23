@@ -24,4 +24,10 @@ CRYPTO_BUFFER_POOL* GetBufferPool() {
   return g_buffer_pool_singleton.pool();
 }
 
+bssl::UniquePtr<CRYPTO_BUFFER> CreateCryptoBuffer(std::string_view data) {
+  return bssl::UniquePtr<CRYPTO_BUFFER>(
+      CRYPTO_BUFFER_new(reinterpret_cast<const uint8_t*>(data.data()),
+                        data.size(), GetBufferPool()));
+}
+
 } // namespace net::x509_util
