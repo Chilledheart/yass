@@ -2587,7 +2587,8 @@ target_link_libraries(asio PUBLIC
   absl::flags
   url
   crypto
-  ssl)
+  ssl
+  pki)
 
 if (APPLE)
   find_library(SECURITY_FRAMEWORK Security REQUIRED)

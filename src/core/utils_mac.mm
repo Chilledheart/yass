@@ -136,4 +136,11 @@ std::string GetHomeDir() {
   // Last resort.
   return "/tmp";
 }
+
+std::string DescriptionFromOSStatus(OSStatus err) {
+  NSError* error = [NSError errorWithDomain:NSOSStatusErrorDomain
+                                       code:err
+                                   userInfo:nil];
+  return error.description.UTF8String;
+}
 #endif  // __APPLE__
