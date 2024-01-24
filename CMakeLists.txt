@@ -3436,6 +3436,10 @@ else()
   target_sources(yass_core PRIVATE src/core/utils_freebsd.cpp)
 endif()
 
+if (OHOS)
+  target_link_libraries(yass_core PUBLIC libhilog_ndk.z.so)
+endif()
+
 target_link_libraries(yass_core PUBLIC url
   absl::flags
   absl::flags_parse
