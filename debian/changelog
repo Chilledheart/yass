@@ -1,3 +1,8 @@
+yass (1.6.1-1) UNRELEASED; urgency=medium
+
+  * bump to chromium 122 dependents.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Wed, 24 Jan 2024 17:41:55 +0800
 yass (1.6.0-1) UNRELEASED; urgency=medium
 
   * bump to chromium 122 dependents.
