@@ -226,7 +226,7 @@ if (IOS)
 elseif(APPLE)
   list(APPEND YASS_APP_FEATURES "mac ${CMAKE_OSX_DEPLOYMENT_TARGET}")
 elseif(OHOS)
-  list(APPEND YASS_APP_FEATURES "ohos ${OHOS_APILEVEL}")
+  list(APPEND YASS_APP_FEATURES "harmony ${OHOS_APILEVEL}")
 elseif(ANDROID)
   list(APPEND YASS_APP_FEATURES "android ${ANDROID_API_VERSION}")
 elseif(MSVC)
@@ -1897,6 +1897,14 @@ if (ANDROID AND GUI)
   set(GUI_C_CXX_FLAGS "")
   set(GUI_LIBRARY_DIRS "")
   set(GUI_LIBRARIES "")
+elseif (OHOS AND GUI)
+  set(GUI_FLAVOUR "harmony")
+  set(GUI_USE_FILE "")
+  set(GUI_INCLUDE_DIRS "")
+  set(GUI_DEFINITIONS "")
+  set(GUI_C_CXX_FLAGS "")
+  set(GUI_LIBRARY_DIRS "")
+  set(GUI_LIBRARIES "libace_napi.z.so")
 elseif (WIN32 AND GUI)
   message(STATUS "Compiling with GUI support: Windows")
   set(GUI_FLAVOUR "windows")
@@ -3719,6 +3727,10 @@ if (GUI)
           src/android/utils.hpp
           src/android/utils.cpp
         )
+    elseif (GUI_FLAVOUR STREQUAL "harmony")
+        list(APPEND SRC_FILES
+          src/harmony/yass.cpp
+        )
     elseif (GUI_FLAVOUR STREQUAL "windows")
         set(APP_MSVC_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/yass.manifest")
         configure_file("src/win32/yass.manifest.in" "${APP_MSVC_MANIFEST}" @ONLY)
@@ -3871,6 +3883,15 @@ if (GUI)
       target_link_libraries(${APP_NAME} PRIVATE tun2proxy)
       set_target_properties(${APP_NAME} PROPERTIES
         LINK_FLAGS "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/src/android/export.lds -u Java_it_gui_yass_MainActivity_tun2ProxyInit -u Java_it_gui_yass_MainActivity_tun2ProxyRun -u Java_it_gui_yass_MainActivity_tun2ProxyDestroy")
+    elseif (GUI_FLAVOUR STREQUAL "harmony")
+      add_library(${APP_NAME} SHARED ${GUI_OPTIONS}
+          ${SRC_FILES}
+          ${GUI_USE_FILE}
+          )
+
+      # target_link_libraries(${APP_NAME} PRIVATE tun2proxy)
+      set_target_properties(${APP_NAME} PROPERTIES
+        LINK_FLAGS "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/src/harmony/export.lds -u RegisterEntryModule")
     else()
       add_executable(${APP_NAME} WIN32 ${GUI_OPTIONS}
           ${SRC_FILES}
@@ -3888,6 +3909,9 @@ if (GUI)
     if (GUI_FLAVOUR STREQUAL "android")
       target_include_directories(${APP_NAME} PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/src/android)
+    elseif (GUI_FLAVOUR STREQUAL "harmony")
+      target_include_directories(${APP_NAME} PRIVATE
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/harmony)
     elseif (GUI_FLAVOUR STREQUAL "windows")
       target_include_directories(${APP_NAME} PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/src/win32)

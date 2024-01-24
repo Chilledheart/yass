@@ -17,6 +17,10 @@
 #include "net/ssl_socket.hpp"
 #include "net/protocol.hpp"
 
+#ifdef __OHOS__
+#include "harmony/yass.hpp"
+#endif
+
 #ifdef HAVE_C_ARES
 #include "net/c-ares.hpp"
 #endif
@@ -382,6 +386,9 @@ class stream : public RefCountedThreadSafe<stream> {
       on_async_connect_callback(ec);
       return;
     }
+#ifdef __OHOS__
+    setProtectFd(socket_.native_handle());
+#endif
     SetTCPFastOpenConnect(socket_.native_handle(), ec);
     socket_.native_non_blocking(true, ec);
     socket_.non_blocking(true, ec);
