@@ -81,3 +81,5 @@ local.properties
 /.gradle
 *.apk
 *.ipa
+/rustc-1.75.0-src
+/third_party/rust-ohos

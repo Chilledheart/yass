@@ -68,6 +68,7 @@ esac
 }
 
 function build_ohos {
+export PATH=$PWD/../../third_party/rust-ohos/bin:$PATH
 case "$WITH_CPU" in
   x64)
     cargo build --target x86_64-unknown-linux-ohos --release --lib
