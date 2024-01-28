@@ -67,6 +67,21 @@ case "$WITH_CPU" in
 esac
 }
 
+function build_ohos {
+case "$WITH_CPU" in
+  x64)
+    cargo build --target x86_64-unknown-linux-ohos --release --lib
+    ;;
+  arm64)
+    cargo build --target aarch64-unknown-linux-ohos --release --lib
+    ;;
+  *)
+    echo "Invalid WITH_CPU: $WITH_CPU"
+    exit -1
+    ;;
+esac
+}
+
 case "$MACHINE" in
   x86|i586|i686)
     WITH_CPU_DEFAULT="x86"
@@ -95,6 +110,9 @@ case "$WITH_OS" in
     ;;
   android)
     build_android
+    ;;
+  harmony|ohos)
+    build_ohos
     ;;
   **)
     echo "Unsupported OS ${WITH_OS}"
