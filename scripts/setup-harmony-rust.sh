@@ -16,11 +16,10 @@ fi
 
 echo "Adding rustup toolchain..."
 
-rustup toolchain install nightly
-rustup component add rust-src --toolchain nightly
-rustup default nightly
-# cargo +nightly run -Z build-std --target aarch64-unknown-linux-ohos
-# cargo +nightly run -Z build-std --target x86_64-unknown-linux-ohos
+if [ ! -f third_party/rust-ohos/bin/rustc ]; then
+  echo "Not found rustc under rust-ohos directory"
+  exit -1
+fi
 
 echo "Adding rustup toolchain...done"
 
