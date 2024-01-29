@@ -9,11 +9,13 @@
 #include <js_native_api_types.h>
 #include <napi/native_api.h>
 
+#include <iomanip>
 #include <memory>
 #include <thread>
 #include <unistd.h>
 
 #include "cli/cli_worker.hpp"
+#include "cli/cli_connection_stats.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "harmony/tun2proxy.h"
@@ -751,6 +753,87 @@ static napi_value stopWorker(napi_env env, napi_callback_info info) {
   return nullptr;
 }
 
+static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
+  if (bytes < 1024) {
+    *ss << bytes << " B";
+    return;
+  }
+  uint64_t value = bytes;
+  char ci[] = {"KMGTPE"};
+  const char* c = ci;
+  for (int i = 40; i >= 0 && bytes > 0xfffccccccccccccLU >> i; i -= 10) {
+    value >>= 10;
+    ++c;
+  }
+  *ss << std::fixed << std::setw(5) << std::setprecision(2) << value / 1024.0
+      << " " << *c;
+}
+
+static uint64_t g_last_sync_time;
+static uint64_t g_last_tx_bytes;
+static uint64_t g_last_rx_bytes;
+
+// return { rx_rate, tx_rate }
+static napi_value getTransferRate(napi_env env, napi_callback_info info) {
+  uint64_t sync_time = GetMonotonicTime();
+  uint64_t delta_time = sync_time - g_last_sync_time;
+  static uint64_t rx_rate = 0;
+  static uint64_t tx_rate = 0;
+  if (delta_time > NS_PER_SECOND) {
+    uint64_t rx_bytes = cli::total_rx_bytes;
+    uint64_t tx_bytes = cli::total_tx_bytes;
+    rx_rate = static_cast<double>(rx_bytes - g_last_rx_bytes) / delta_time *
+               NS_PER_SECOND;
+    tx_rate = static_cast<double>(tx_bytes - g_last_tx_bytes) / delta_time *
+               NS_PER_SECOND;
+    g_last_sync_time = sync_time;
+    g_last_rx_bytes = rx_bytes;
+    g_last_tx_bytes = tx_bytes;
+  }
+
+  std::stringstream rx_ss, tx_ss;
+  humanReadableByteCountBin(&rx_ss, rx_rate);
+  rx_ss << "/s";
+
+  napi_value rx_rate_value;
+  auto status = napi_create_string_utf8(env, rx_ss.str().c_str(), NAPI_AUTO_LENGTH, &rx_rate_value);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_create_string_utf8 failed");
+    return nullptr;
+  }
+
+  humanReadableByteCountBin(&tx_ss, tx_rate);
+  tx_ss << "/s";
+
+  napi_value tx_rate_value;
+  status = napi_create_string_utf8(env, tx_ss.str().c_str(), NAPI_AUTO_LENGTH, &tx_rate_value);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_create_string_utf8 failed");
+    return nullptr;
+  }
+
+  napi_value results;
+  status = napi_create_array_with_length(env, 2, &results);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_create_array_with_length failed");
+    return nullptr;
+  }
+
+  status = napi_set_element(env, results, 0, rx_rate_value);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_set_element failed");
+    return nullptr;
+  }
+
+  status = napi_set_element(env, results, 1, tx_rate_value);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_set_element failed");
+    return nullptr;
+  }
+
+  return results;
+}
+
 static napi_value Init(napi_env env, napi_value exports) {
   napi_property_descriptor desc[] = {
     {"setProtectFdCallback", nullptr, setProtectFdCallback, nullptr, nullptr, nullptr, napi_default, nullptr},
@@ -760,6 +843,7 @@ static napi_value Init(napi_env env, napi_value exports) {
     {"stopTun2proxy", nullptr, stopTun2proxy, nullptr, nullptr, nullptr, napi_default, nullptr},
     {"startWorker", nullptr, startWorker, nullptr, nullptr, nullptr, napi_default, nullptr},
     {"stopWorker", nullptr, stopWorker, nullptr, nullptr, nullptr, napi_default, nullptr},
+    {"getTransferRate", nullptr, getTransferRate, nullptr, nullptr, nullptr, napi_default, nullptr},
   };
   napi_define_properties(env, exports, std::size(desc), desc);
   return exports;
