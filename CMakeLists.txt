@@ -2453,6 +2453,18 @@ if (ANDROID)
   set(TUN2PROXY_LIB ${TUN2PROXY_LIB_DIR}/libtun2proxy.a)
 endif()
 
+if (OHOS)
+  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64-v8a")
+    set(_TUN2PROXY_TARGET "aarch64-unknown-linux-ohos")
+  elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+    set(_TUN2PROXY_TARGET "x86_64-unknown-linux-ohos")
+  else()
+    message(FATAL_ERROR "tun2proxy: unsupported android architecture ${CMAKE_SYSTEM_PROCESSOR}")
+  endif()
+  set(TUN2PROXY_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/tun2proxy/target/${_TUN2PROXY_TARGET}/release)
+  set(TUN2PROXY_LIB ${TUN2PROXY_LIB_DIR}/libtun2proxy.a)
+endif()
+
 if (IOS)
   if (SDK_NAME STREQUAL iphoneos)
     if (CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
@@ -3889,7 +3901,7 @@ if (GUI)
           ${GUI_USE_FILE}
           )
 
-      # target_link_libraries(${APP_NAME} PRIVATE tun2proxy)
+      target_link_libraries(${APP_NAME} PRIVATE tun2proxy)
       set_target_properties(${APP_NAME} PROPERTIES
         LINK_FLAGS "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/src/harmony/export.lds -u RegisterEntryModule")
     else()

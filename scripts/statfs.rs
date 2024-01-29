@@ -34,7 +34,7 @@ pub type fsid_t = libc::__fsid_t;
 pub type fsid_t = libc::fsid_t;
 
 cfg_if! {
-    if #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux", target_env = "ohos"))] {
+    if #[cfg(any(target_os = "android", target_os = "fuchsia", target_os = "linux"))] {
         type type_of_statfs = libc::statfs64;
         const LIBC_FSTATFS: unsafe extern fn
             (fd: libc::c_int, buf: *mut type_of_statfs) -> libc::c_int
