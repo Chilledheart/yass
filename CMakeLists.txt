@@ -2454,7 +2454,7 @@ if (ANDROID)
 endif()
 
 if (OHOS)
-  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64-v8a")
+  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
     set(_TUN2PROXY_TARGET "aarch64-unknown-linux-ohos")
   elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
     set(_TUN2PROXY_TARGET "x86_64-unknown-linux-ohos")
