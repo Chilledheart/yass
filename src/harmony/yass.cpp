@@ -834,6 +834,72 @@ static napi_value getTransferRate(napi_env env, napi_callback_info info) {
   return results;
 }
 
+// Passing argument in a array
+// server_host
+// server_sni
+// server_port
+// username
+// password
+// method
+// timeout
+static napi_value saveConfig(napi_env env, napi_callback_info info) {
+
+  napi_value args[7] {};
+  size_t argc = std::size(args);
+  auto status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+  if (status != napi_ok || argc != std::size(args)) {
+    napi_throw_error(env, nullptr, "napi_get_cb_info failed");
+    return nullptr;
+  }
+
+  napi_valuetype type;
+  std::vector<std::string> argList;
+
+  for (napi_value arg : args) {
+    status = napi_typeof(env, arg, &type);
+    if (status != napi_ok) {
+      napi_throw_error(env, nullptr, "napi_typeof failed");
+      return nullptr;
+    }
+
+    if (type != napi_string) {
+      napi_throw_error(env, nullptr, "mismatched argument type, expected: napi_string");
+      return nullptr;
+    }
+    char buf[256];
+    size_t result;
+    status = napi_get_value_string_utf8(env, arg, buf, sizeof(buf), &result);
+    if (status != napi_ok) {
+      napi_throw_error(env, nullptr, "napi_get_value_string_utf8 failed");
+      return nullptr;
+    }
+    argList.push_back(std::string(buf, result));
+  }
+
+  std::string server_host = argList[0];
+  std::string server_sni = argList[1];
+  std::string server_port = argList[2];
+  std::string username = argList[3];
+  std::string password = argList[4];
+  std::string method = argList[5];
+  std::string timeout = argList[6];
+
+  std::string local_host = "0.0.0.0";
+  std::string local_port = "0";
+
+  std::string err_msg = config::ReadConfigFromArgument(server_host, server_sni, server_port,
+                                                       username, password, method,
+                                                       local_host, local_port, timeout);
+
+  if (err_msg.empty()) {
+    return nullptr;
+  }
+
+  // should me use throw?
+  napi_throw_error(env, nullptr, err_msg.c_str());
+  return nullptr;
+}
+
 static napi_value Init(napi_env env, napi_value exports) {
   napi_property_descriptor desc[] = {
     {"setProtectFdCallback", nullptr, setProtectFdCallback, nullptr, nullptr, nullptr, napi_default, nullptr},
@@ -844,6 +910,7 @@ static napi_value Init(napi_env env, napi_value exports) {
     {"startWorker", nullptr, startWorker, nullptr, nullptr, nullptr, napi_default, nullptr},
     {"stopWorker", nullptr, stopWorker, nullptr, nullptr, nullptr, napi_default, nullptr},
     {"getTransferRate", nullptr, getTransferRate, nullptr, nullptr, nullptr, napi_default, nullptr},
+    {"saveConfig", nullptr, saveConfig, nullptr, nullptr, nullptr, napi_default, nullptr},
   };
   napi_define_properties(env, exports, std::size(desc), desc);
   return exports;
