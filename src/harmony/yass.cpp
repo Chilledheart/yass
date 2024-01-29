@@ -4,14 +4,33 @@
 
 #include "harmony/yass.hpp"
 
-#include "core/logging.hpp"
 #include <base/posix/eintr_wrapper.h>
-
-#include <napi/native_api.h>
 #include <js_native_api.h>
 #include <js_native_api_types.h>
+#include <napi/native_api.h>
 
+#include <memory>
+#include <thread>
 #include <unistd.h>
+
+#include "core/logging.hpp"
+#include "core/utils.hpp"
+#include "harmony/tun2proxy.h"
+#include "version.h"
+
+typedef enum {
+  HILOG_LOG_DEBUG = 3,
+  HILOG_LOG_INFO = 4,
+  HILOG_LOG_WARN = 5,
+  HILOG_LOG_ERROR = 6,
+  HILOG_LOG_FATAL = 7,
+} HILOG_LogLevel;
+
+extern "C"
+bool OH_LOG_IsLoggable(unsigned int domain, const char *tag, HILOG_LogLevel level);
+
+static constexpr char kLogTag[] = YASS_APP_NAME;
+static constexpr unsigned int kLogDomain = 0x15b0;
 
 static napi_env setProtectFdCallbackEnv = nullptr;
 static napi_threadsafe_function setProtectFdCallbackFunc = nullptr;
@@ -264,12 +283,160 @@ static napi_value setProtectFdCallbackCleanup(napi_env env, napi_callback_info i
   return nullptr;
 }
 
+static std::unique_ptr<std::thread> g_tun2proxy_thread;
+
+// 4 arguments:
+//
+// proxy_url
+// tun_fd
+// tun_mtu
+// dns_over_tcp
+static napi_value startTun2proxy(napi_env env, napi_callback_info info) {
+  napi_value args[4] {};
+  size_t argc = std::size(args);
+  auto status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+  if (status != napi_ok || argc != 4) {
+    napi_throw_error(env, nullptr, "napi_get_cb_info failed");
+    return nullptr;
+  }
+
+  napi_value proxy_url = args[0];
+  napi_value tun_fd = args[1];
+  napi_value tun_mtu = args[2];
+  napi_value dns_over_tcp = args[3];
+
+  napi_valuetype type;
+  status = napi_typeof(env, proxy_url, &type);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_typeof failed");
+    return nullptr;
+  }
+
+  if (type != napi_string) {
+    napi_throw_error(env, nullptr, "mismatched argument type, expected: napi_string");
+    return nullptr;
+  }
+
+  char proxy_url_buf[256];
+  size_t result;
+  status = napi_get_value_string_utf8(env, proxy_url, proxy_url_buf, sizeof(proxy_url_buf), &result);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_get_value_string_utf8 failed");
+    return nullptr;
+  }
+
+  status = napi_typeof(env, tun_fd, &type);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_typeof failed");
+    return nullptr;
+  }
+
+  if (type != napi_number) {
+    napi_throw_error(env, nullptr, "mismatched argument type, expected: napi_number");
+    return nullptr;
+  }
+
+  int64_t tun_fd_int;
+  status = napi_get_value_int64(env, tun_fd, &tun_fd_int);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_get_value_int64 failed");
+    return nullptr;
+  }
+
+  status = napi_typeof(env, tun_mtu, &type);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_typeof failed");
+    return nullptr;
+  }
+
+  if (type != napi_number) {
+    napi_throw_error(env, nullptr, "mismatched argument type, expected: napi_number");
+    return nullptr;
+  }
+
+  int64_t tun_mtu_int;
+  status = napi_get_value_int64(env, tun_mtu, &tun_mtu_int);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_get_value_int64 failed");
+    return nullptr;
+  }
+
+  int log_level = 0; // stands for rust log level, 0 stands for no log output
+
+  if (OH_LOG_IsLoggable(kLogDomain, kLogTag, HILOG_LOG_DEBUG)) {
+    log_level = 5; // TRACE
+  } else if (OH_LOG_IsLoggable(kLogDomain, kLogTag, HILOG_LOG_DEBUG)) {
+    log_level = 4; // DEBUG
+  } else if (OH_LOG_IsLoggable(kLogDomain, kLogTag, HILOG_LOG_INFO)) {
+    log_level = 3; // INFO
+  } else if (OH_LOG_IsLoggable(kLogDomain, kLogTag, HILOG_LOG_WARN)) {
+    log_level = 2; // WARN
+  } else if (OH_LOG_IsLoggable(kLogDomain, kLogTag, HILOG_LOG_ERROR)) {
+    log_level = 1; // ERROR
+  }
+
+  status = napi_typeof(env, dns_over_tcp, &type);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_typeof failed");
+    return nullptr;
+  }
+
+  if (type != napi_boolean) {
+    napi_throw_error(env, nullptr, "mismatched argument type, expected: napi_boolean");
+    return nullptr;
+  }
+
+  bool dns_over_tcp_int;
+  status = napi_get_value_bool(env, dns_over_tcp, &dns_over_tcp_int);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_get_value_bool failed");
+    return nullptr;
+  }
+
+  int ret = tun2proxy_init(proxy_url_buf, tun_fd_int, tun_mtu_int, log_level, dns_over_tcp_int);
+  if (ret != 0) {
+    LOG(WARNING) << "tun2proxy_run failed: " << ret;
+  }
+  return nullptr;
+}
+
+static napi_value runTun2proxy(napi_env env, napi_callback_info info) {
+  g_tun2proxy_thread = std::make_unique<std::thread>([]{
+    if (!SetCurrentThreadName("tun2proxy")) {
+      PLOG(WARNING) << "failed to set thread name";
+    }
+    if (!SetCurrentThreadPriority(ThreadPriority::ABOVE_NORMAL)) {
+      PLOG(WARNING) << "failed to set thread priority";
+    }
+    int ret = tun2proxy_run();
+    if (ret != 0) {
+      LOG(WARNING) << "tun2proxy_run failed: " << ret;
+    }
+  });
+  return nullptr;
+}
+
+static napi_value stopTun2proxy(napi_env env, napi_callback_info info) {
+  if (!g_tun2proxy_thread) {
+    return nullptr;
+  }
+  int ret = tun2proxy_destroy();
+  if (ret != 0) {
+    LOG(WARNING) << "tun2proxy_destroy failed: " << ret;
+  }
+  g_tun2proxy_thread->join();
+  return nullptr;
+}
+
 static napi_value Init(napi_env env, napi_value exports) {
   napi_property_descriptor desc[] = {
     {"setProtectFdCallback", nullptr, setProtectFdCallback, nullptr, nullptr, nullptr, napi_default, nullptr},
     {"setProtectFdCallbackCleanup", nullptr, setProtectFdCallbackCleanup, nullptr, nullptr, nullptr, napi_default, nullptr},
+    {"startTun2proxy", nullptr, startTun2proxy, nullptr, nullptr, nullptr, napi_default, nullptr},
+    {"runTun2proxy", nullptr, runTun2proxy, nullptr, nullptr, nullptr, napi_default, nullptr},
+    {"stopTun2proxy", nullptr, stopTun2proxy, nullptr, nullptr, nullptr, napi_default, nullptr},
   };
-  napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
+  napi_define_properties(env, exports, std::size(desc), desc);
   return exports;
 }
 
