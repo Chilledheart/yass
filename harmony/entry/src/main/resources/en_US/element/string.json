@@ -1,0 +1,76 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "This module template implements YASS functions."
+    },
+    {
+      "name": "ability_desc",
+      "value": "This ability loads YASS."
+    },
+    {
+      "name": "ability_label",
+      "value": "Yet Another Shadow Socket"
+    },
+    {
+      "name": "title_name",
+      "value": "About"
+    },
+    {
+      "name": "icon_name",
+      "value": "YASS Application"
+    },
+    {
+      "name": "version_label",
+      "value": "Version: %s"
+    },
+    {
+      "name": "about_us",
+      "value": "About us"
+    },
+    {
+      "name": "copyright",
+      "value": "Copyright © 2022-2023 xx company all rights reserved"
+    },
+    {
+      "name": "detail_item_title",
+      "value": "Title"
+    },
+    {
+      "name": "server_host",
+      "value": "Server Host"
+    },
+    {
+      "name": "server_sni",
+      "value": "Server SNI"
+    },
+    {
+      "name": "server_port",
+      "value": "Server Port"
+    },
+    {
+      "name": "username",
+      "value": "Username"
+    },
+    {
+      "name": "password",
+      "value": "Password"
+    },
+    {
+      "name": "cipher",
+      "value": "Cipher/Method"
+    },
+    {
+      "name": "timeout",
+      "value": "Timeout"
+    },
+    {
+      "name": "start_button",
+      "value": "Start"
+    },
+    {
+      "name": "stop_button",
+      "value": "Stop"
+    }
+  ]
+}

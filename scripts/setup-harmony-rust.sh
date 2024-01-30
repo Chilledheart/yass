@@ -37,6 +37,10 @@ cat >> ~/.cargo/config << EOF
 ar = "$HARMONY_NDK_ROOT/native/llvm/bin/llvm-ar"
 linker = "$PWD/scripts/aarch64-unknown-linux-ohos-clang.sh"
 
+[target.armv7-unknown-linux-ohos]
+ar = "$HARMONY_NDK_ROOT/native/llvm/bin/llvm-ar"
+linker = "$PWD/scripts/armv7-unknown-linux-ohos-clang.sh"
+
 [target.x86_64-unknown-linux-ohos]
 ar = "$HARMONY_NDK_ROOT/native/llvm/bin/llvm-ar"
 linker = "$PWD/scripts/x86_64-unknown-linux-ohos-clang.sh"

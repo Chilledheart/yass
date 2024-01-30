@@ -1,0 +1,13 @@
+{
+  "name": "yass",
+  "version": "1.6.0",
+  "description": "lightweight and efficient, socks5/http packet proxy.",
+  "main": "",
+  "author": "Chilledheart",
+  "license": "GPT-2",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "@ohos/hypium": "1.0.11"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "entry",
+  "version": "1.6.0",
+  "description": "lightweight and efficient, socks5/http packet proxy.",
+  "main": "",
+  "author": "Chilledheart",
+  "license": "GPL-2",
+  "dependencies": {
+    "libyass.so": "file:./src/main/cpp/types/libyass"
+  }
+}
+

@@ -28,7 +28,7 @@ profiler = false
 extended = true
 cargo = "$HOME/.cargo/bin/cargo"
 rustc = "$HOME/.cargo/bin/rustc"
-target = ["$DEFAULT_TARGET", "aarch64-unknown-linux-ohos", "x86_64-unknown-linux-ohos"]
+target = ["$DEFAULT_TARGET", "aarch64-unknown-linux-ohos", "armv7-unknown-linux-ohos", "x86_64-unknown-linux-ohos"]
 docs = false
 
 [install]
@@ -41,6 +41,13 @@ cxx = "$PWD/scripts/aarch64-unknown-linux-ohos-clang++.sh"
 ar = "$HARMONY_NDK_ROOT/native/llvm/bin/llvm-ar"
 ranlib = "$HARMONY_NDK_ROOT/native/llvm/bin/llvm-ranlib"
 linker = "$PWD/scripts/aarch64-unknown-linux-ohos-clang.sh"
+
+[target.armv7-unknown-linux-ohos]
+cc = "$PWD/scripts/armv7-unknown-linux-ohos-clang.sh"
+cxx = "$PWD/scripts/armv7-unknown-linux-ohos-clang++.sh"
+ar = "$HARMONY_NDK_ROOT/native/llvm/bin/llvm-ar"
+ranlib = "$HARMONY_NDK_ROOT/native/llvm/bin/llvm-ranlib"
+linker = "$PWD/scripts/armv7-unknown-linux-ohos-clang.sh"
 
 [target.x86_64-unknown-linux-ohos]
 cc = "$PWD/scripts/x86_64-unknown-linux-ohos-clang.sh"
