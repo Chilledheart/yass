@@ -433,15 +433,8 @@ static napi_value stopTun2proxy(napi_env env, napi_callback_info info) {
 
 static constexpr char kAsyncStartWorkerResourceName[] = "Thread-safe StartWorker";
 
-struct AsyncStartWorkerEx_t {
-  napi_threadsafe_function ts_func;
-  napi_async_work work_item;
-  int error_code;
-};
-
 static void startWorkerCallingJS(napi_env env, napi_value js_cb, void *context, void *data) {
-  // This parameter is not used.
-  (void)context;
+  napi_ref thiz_ref = reinterpret_cast<napi_ref>(context);
 
   int err_code = reinterpret_cast<uintptr_t>(data);
 
@@ -450,10 +443,10 @@ static void startWorkerCallingJS(napi_env env, napi_value js_cb, void *context, 
     return;
   }
 
-  napi_value undefined;
-  napi_status status = napi_get_undefined(env, &undefined);
+  napi_value thiz;
+  napi_status status = napi_get_reference_value(env, thiz_ref, &thiz);
   if (status != napi_ok) {
-    LOG(WARNING) << "napi_get_undefined: " << status;
+    LOG(WARNING) << "napi_get_reference_value: " << status;
     return;
   }
 
@@ -464,56 +457,18 @@ static void startWorkerCallingJS(napi_env env, napi_value js_cb, void *context, 
     return;
   }
 
+  napi_value result;
   napi_value argv[] = { error_code };
-  status = napi_call_function(env, undefined, js_cb, std::size(argv), argv, nullptr);
+  status = napi_call_function(env, thiz, js_cb, std::size(argv), argv, &result);
   if (status != napi_ok) {
     LOG(WARNING) << "napi_call_function: " << status;
     return;
   }
-}
 
-static void startWorkerExecuteWork(napi_env env, void *data) {
-  AsyncStartWorkerEx_t *async_start_worker_ex = (AsyncStartWorkerEx_t *)data;
-  napi_threadsafe_function startWorkerCallbackFunc = async_start_worker_ex->ts_func;
-
-  void* ctx = (void*)(uintptr_t)async_start_worker_ex->error_code;
-
-  auto status = napi_acquire_threadsafe_function(startWorkerCallbackFunc);
+  status = napi_delete_reference(env, thiz_ref);
   if (status != napi_ok) {
-    LOG(WARNING) << "napi_acquire_threadsafe_function: " << status;
+    LOG(WARNING) << "napi_delete_reference: " << status;
     return;
-  }
-
-  status = napi_call_threadsafe_function(startWorkerCallbackFunc, ctx, napi_tsfn_blocking);
-  if (status != napi_ok) {
-    LOG(WARNING) << "napi_call_threadsafe_function: " << status;
-    return;
-  }
-
-  status = napi_release_threadsafe_function(startWorkerCallbackFunc, napi_tsfn_release);
-
-  if (status != napi_ok) {
-    LOG(WARNING) << "napi_release_threadsafe_function: " << status;
-    return;
-  }
-}
-
-// This function runs on the main thread after `ExecuteWork` exited.
-static void startWorkerOnWorkComplete(napi_env env, napi_status status, void *data) {
-  AsyncStartWorkerEx_t *async_start_worker_ex = (AsyncStartWorkerEx_t *)data;
-  napi_async_work work_item = async_start_worker_ex->work_item;
-  napi_threadsafe_function startWorkerCallbackFunc = async_start_worker_ex->ts_func;
-  delete async_start_worker_ex;
-
-  status = napi_delete_async_work(env, work_item);
-  if (status != napi_ok) {
-    LOG(WARNING) << "napi_delete_async_work: " << status;
-  }
-
-  // Clean up the thread-safe function and the work item associated with this
-  status = napi_release_threadsafe_function(startWorkerCallbackFunc, napi_tsfn_release);
-  if (status != napi_ok) {
-    LOG(WARNING) << "napi_release_threadsafe_function: " << status;
   }
 }
 
@@ -522,10 +477,11 @@ static std::unique_ptr<Worker> g_worker;
 static napi_value startWorker(napi_env env, napi_callback_info info) {
   napi_status status;
 
-  size_t argc = 1;
-  napi_value args[1] = {nullptr};
-  status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-  if (status != napi_ok || argc != 1) {
+  napi_value args[1] {};
+  size_t argc = std::size(args);
+  napi_value thiz;
+  status = napi_get_cb_info(env, info, &argc, args, &thiz, nullptr);
+  if (status != napi_ok || argc != std::size(args)) {
     napi_throw_error(env, nullptr, "napi_get_cb_info failed");
     return nullptr;
   }
@@ -540,6 +496,13 @@ static napi_value startWorker(napi_env env, napi_callback_info info) {
 
   if (type != napi_function) {
     napi_throw_error(env, nullptr, "mismatched argument type, expected: napi_function");
+    return nullptr;
+  }
+
+  napi_ref thiz_ref;
+  status = napi_create_reference(env, thiz, 1, &thiz_ref);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_create_reference failed");
     return nullptr;
   }
 
@@ -555,7 +518,7 @@ static napi_value startWorker(napi_env env, napi_callback_info info) {
 
   // Create a thread-safe N-API callback function correspond to the C/C++ callback function
   status = napi_create_threadsafe_function(env, cb, nullptr, work_name, 0, 1, nullptr,
-      nullptr, nullptr, startWorkerCallingJS, // the C/C++ callback function
+      nullptr, thiz_ref, startWorkerCallingJS, // the C/C++ callback function
       &startWorkerCallbackFunc // out: the asynchronous thread-safe JavaScript function
   );
   if (status != napi_ok) {
@@ -563,41 +526,24 @@ static napi_value startWorker(napi_env env, napi_callback_info info) {
     return nullptr;
   }
 
-  g_worker->Start([env, startWorkerCallbackFunc](asio::error_code ec) {
+  g_worker->Start([startWorkerCallbackFunc](asio::error_code ec) {
     if (!ec) {
       config::SaveConfig();
     }
 
-    AsyncStartWorkerEx_t *async_start_worker_ex = new AsyncStartWorkerEx_t;
-    napi_async_work work_item;
-
-    napi_value work_name;
-    // Specify a name to describe this asynchronous operation.
-    auto status = napi_create_string_utf8(env, kAsyncStartWorkerResourceName, NAPI_AUTO_LENGTH, &work_name);
+    auto status = napi_acquire_threadsafe_function(startWorkerCallbackFunc);
     if (status != napi_ok) {
-      LOG(WARNING) << "napi_create_string_utf8: " << status;
-      return;
+      LOG(WARNING) << "napi_acquire_threadsafe_function: " << status;
     }
 
-    status = napi_create_async_work(env, nullptr, work_name,
-      startWorkerExecuteWork, startWorkerOnWorkComplete, async_start_worker_ex,
-      &work_item); // OUT: THE handle to the async work item
+    status = napi_call_threadsafe_function(startWorkerCallbackFunc, (void*)(uintptr_t)ec.value(), napi_tsfn_blocking);
     if (status != napi_ok) {
-      delete async_start_worker_ex;
-      LOG(WARNING) << "napi_create_async_work: " << status;
-      return;
+      LOG(WARNING) << "napi_call_threadsafe_function: " << status;
     }
 
-    async_start_worker_ex->ts_func = startWorkerCallbackFunc;
-    async_start_worker_ex->work_item = work_item;
-    async_start_worker_ex->error_code = ec.value();
-
-    // Queue the work item for execution.
-    status = napi_queue_async_work(env, work_item);
+    status = napi_release_threadsafe_function(startWorkerCallbackFunc, napi_tsfn_release);
     if (status != napi_ok) {
-      delete async_start_worker_ex; // TODO better cleanup?
-      LOG(WARNING) << "napi_create_async_work: " << status;
-      return;
+      LOG(WARNING) << "napi_release_threadsafe_function: " << status;
     }
   });
   return nullptr;
@@ -605,86 +551,42 @@ static napi_value startWorker(napi_env env, napi_callback_info info) {
 
 static constexpr char kAsyncStopWorkerResourceName[] = "Thread-safe StopWorker";
 
-struct AsyncStopWorkerEx_t {
-  napi_threadsafe_function ts_func;
-  napi_async_work work_item;
-};
-
 static void stopWorkerCallingJS(napi_env env, napi_value js_cb, void *context, void *data) {
-  // This parameter is not used.
-  (void)context;
+  napi_ref thiz_ref = reinterpret_cast<napi_ref>(context);
 
   if (env == nullptr) {
     LOG(WARNING) << "null env";
     return;
   }
 
-  napi_value undefined;
-  napi_status status = napi_get_undefined(env, &undefined);
+  napi_value thiz;
+  napi_status status = napi_get_reference_value(env, thiz_ref, &thiz);
   if (status != napi_ok) {
-    LOG(WARNING) << "napi_get_undefined: " << status;
+    LOG(WARNING) << "napi_get_reference_value: " << status;
     return;
   }
 
-  status = napi_call_function(env, undefined, js_cb, 0, nullptr, nullptr);
+  status = napi_call_function(env, thiz, js_cb, 0, nullptr, nullptr);
   if (status != napi_ok) {
     LOG(WARNING) << "napi_call_function: " << status;
     return;
   }
-}
 
-static void stopWorkerExecuteWork(napi_env env, void *data) {
-  AsyncStopWorkerEx_t *async_stop_worker_ex = (AsyncStopWorkerEx_t *)data;
-  napi_threadsafe_function stopWorkerCallbackFunc = async_stop_worker_ex->ts_func;
-
-  void* ctx = nullptr;
-
-  auto status = napi_acquire_threadsafe_function(stopWorkerCallbackFunc);
+  status = napi_delete_reference(env, thiz_ref);
   if (status != napi_ok) {
-    LOG(WARNING) << "napi_acquire_threadsafe_function: " << status;
+    LOG(WARNING) << "napi_delete_reference: " << status;
     return;
-  }
-
-  status = napi_call_threadsafe_function(stopWorkerCallbackFunc, ctx, napi_tsfn_blocking);
-  if (status != napi_ok) {
-    LOG(WARNING) << "napi_call_threadsafe_function: " << status;
-    return;
-  }
-
-  status = napi_release_threadsafe_function(stopWorkerCallbackFunc, napi_tsfn_release);
-
-  if (status != napi_ok) {
-    LOG(WARNING) << "napi_release_threadsafe_function: " << status;
-    return;
-  }
-}
-
-// This function runs on the main thread after `ExecuteWork` exited.
-static void stopWorkerOnWorkComplete(napi_env env, napi_status status, void *data) {
-  AsyncStopWorkerEx_t *async_stop_worker_ex = (AsyncStopWorkerEx_t *)data;
-  napi_async_work work_item = async_stop_worker_ex->work_item;
-  napi_threadsafe_function stopWorkerCallbackFunc = async_stop_worker_ex->ts_func;
-  delete async_stop_worker_ex;
-
-  status = napi_delete_async_work(env, work_item);
-  if (status != napi_ok) {
-    LOG(WARNING) << "napi_delete_async_work: " << status;
-  }
-
-  // Clean up the thread-safe function and the work item associated with this
-  status = napi_release_threadsafe_function(stopWorkerCallbackFunc, napi_tsfn_release);
-  if (status != napi_ok) {
-    LOG(WARNING) << "napi_release_threadsafe_function: " << status;
   }
 }
 
 static napi_value stopWorker(napi_env env, napi_callback_info info) {
   napi_status status;
 
-  size_t argc = 1;
-  napi_value args[1] = {nullptr};
-  status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-  if (status != napi_ok || argc != 1) {
+  napi_value args[1] {};
+  size_t argc = std::size(args);
+  napi_value thiz;
+  status = napi_get_cb_info(env, info, &argc, args, &thiz, nullptr);
+  if (status != napi_ok || argc != std::size(args)) {
     napi_throw_error(env, nullptr, "napi_get_cb_info failed");
     return nullptr;
   }
@@ -702,6 +604,13 @@ static napi_value stopWorker(napi_env env, napi_callback_info info) {
     return nullptr;
   }
 
+  napi_ref thiz_ref;
+  status = napi_create_reference(env, thiz, 1, &thiz_ref);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_create_reference failed");
+    return nullptr;
+  }
+
   napi_value work_name;
   // Specify a name to describe this asynchronous operation.
   status = napi_create_string_utf8(env, kAsyncStopWorkerResourceName, NAPI_AUTO_LENGTH, &work_name);
@@ -714,7 +623,7 @@ static napi_value stopWorker(napi_env env, napi_callback_info info) {
 
   // Create a thread-safe N-API callback function correspond to the C/C++ callback function
   status = napi_create_threadsafe_function(env, cb, nullptr, work_name, 0, 1, nullptr,
-      nullptr, nullptr, stopWorkerCallingJS, // the C/C++ callback function
+      nullptr, thiz_ref, stopWorkerCallingJS, // the C/C++ callback function
       &stopWorkerCallbackFunc // out: the asynchronous thread-safe JavaScript function
   );
   if (status != napi_ok) {
@@ -722,36 +631,20 @@ static napi_value stopWorker(napi_env env, napi_callback_info info) {
     return nullptr;
   }
 
-  g_worker->Stop([env, stopWorkerCallbackFunc]() {
-    AsyncStopWorkerEx_t *async_stop_worker_ex = new AsyncStopWorkerEx_t;
-    napi_async_work work_item;
-
-    napi_value work_name;
-    // Specify a name to describe this asynchronous operation.
-    auto status = napi_create_string_utf8(env, kAsyncStopWorkerResourceName, NAPI_AUTO_LENGTH, &work_name);
+  g_worker->Stop([stopWorkerCallbackFunc]() {
+    auto status = napi_acquire_threadsafe_function(stopWorkerCallbackFunc);
     if (status != napi_ok) {
-      LOG(WARNING) << "napi_create_string_utf8: " << status;
-      return;
+      LOG(WARNING) << "napi_acquire_threadsafe_function: " << status;
     }
 
-    status = napi_create_async_work(env, nullptr, work_name,
-      stopWorkerExecuteWork, stopWorkerOnWorkComplete, async_stop_worker_ex,
-      &work_item); // OUT: THE handle to the async work item
+    status = napi_call_threadsafe_function(stopWorkerCallbackFunc, nullptr, napi_tsfn_blocking);
     if (status != napi_ok) {
-      delete async_stop_worker_ex;
-      LOG(WARNING) << "napi_create_async_work: " << status;
-      return;
+      LOG(WARNING) << "napi_call_threadsafe_function: " << status;
     }
 
-    async_stop_worker_ex->ts_func = stopWorkerCallbackFunc;
-    async_stop_worker_ex->work_item = work_item;
-
-    // Queue the work item for execution.
-    status = napi_queue_async_work(env, work_item);
+    status = napi_release_threadsafe_function(stopWorkerCallbackFunc, napi_tsfn_release);
     if (status != napi_ok) {
-      delete async_stop_worker_ex; // TODO better cleanup?
-      LOG(WARNING) << "napi_create_async_work: " << status;
-      return;
+      LOG(WARNING) << "napi_release_threadsafe_function: " << status;
     }
   });
   return nullptr;
