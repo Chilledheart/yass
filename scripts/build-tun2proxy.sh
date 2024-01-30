@@ -93,6 +93,10 @@ case "$WITH_CPU" in
     cargo build --target x86_64-unknown-linux-ohos --release --lib || patch_ohos
     cargo build --target x86_64-unknown-linux-ohos --release --lib
     ;;
+  arm)
+    cargo build --target armv7-unknown-linux-ohos --release --lib || patch_ohos
+    cargo build --target armv7-unknown-linux-ohos --release --lib
+    ;;
   arm64)
     cargo build --target aarch64-unknown-linux-ohos --release --lib || patch_ohos
     cargo build --target aarch64-unknown-linux-ohos --release --lib
