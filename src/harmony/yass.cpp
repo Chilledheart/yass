@@ -1014,6 +1014,8 @@ static napi_value getTimeout(napi_env env, napi_callback_info info) {
 }
 
 static napi_value initRoutine(napi_env env, napi_callback_info info) {
+  LOG(INFO) << "yass: init";
+
   CRYPTO_library_init();
 
   config::ReadConfigFileOption(0, nullptr);
@@ -1025,6 +1027,8 @@ static napi_value initRoutine(napi_env env, napi_callback_info info) {
 }
 
 static napi_value destroyRoutine(napi_env env, napi_callback_info info) {
+  LOG(INFO) << "yass: deinit";
+
   g_worker.reset();
 
   return nullptr;

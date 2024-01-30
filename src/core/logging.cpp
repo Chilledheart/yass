@@ -189,8 +189,7 @@ typedef enum {
 } HILOG_LogLevel;
 
 extern "C"
-int OH_LOG_Print(HILOG_LogType type, HILOG_LogLevel level, unsigned int domain, const char *tag, const char *fmt, ...)
-    __attribute__((__format__(os_log, 5, 6)));
+int OH_LOG_Print(HILOG_LogType type, HILOG_LogLevel level, unsigned int domain, const char *tag, const char *fmt, ...);
 #endif
 
 #if defined(OS_POSIX)
@@ -1214,17 +1213,17 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
         break;
     }
     constexpr char kLogTag[] = YASS_APP_NAME;
-    constexpr unsigned int kLogDomain = 0x15b0;
+    constexpr unsigned int kLogDomain = 0x0;
 #if DCHECK_IS_ON()
     // Split the output by new lines to prevent the OHOS system from
     // truncating the log.
     std::vector<std::string> lines =
         absl::StrSplit(message + prefix_len, "\n", absl::SkipWhitespace());
     for (const auto& line : lines)
-      OH_LOG_Print(HILOG_LOG_APP, log_level, kLogDomain, kLogTag, "%s", line.c_str());
+      OH_LOG_Print(HILOG_LOG_APP, log_level, kLogDomain, kLogTag, line.c_str());
 #else
     // The OHOS system may truncate the string if it's too long.
-    OH_LOG_Print(HILOG_LOG_APP, log_level, kLogDomain, kLogTag, "%s", message + prefix_len);
+    OH_LOG_Print(HILOG_LOG_APP, log_level, kLogDomain, kLogTag, message + prefix_len);
 #endif  // DCHECK_IS_ON
 #endif  // OS_OHOS
 
@@ -2229,11 +2228,11 @@ void LogMessage::Flush() {
                       text.substr(0, data_->num_chars_to_log_).c_str());
 #elif defined(OS_OHOS)
   constexpr char kLogTag[] = YASS_APP_NAME;
-  constexpr unsigned int kLogDomain = 0x15b0;
+  constexpr unsigned int kLogDomain = 0x0;
 
   const HILOG_LogLevel level = OHOSLogLevel(data_->severity_);
   const std::string text = std::string(data_->message_text_);
-  OH_LOG_Print(HILOG_LOG_APP, level, kLogDomain, kLogTag, "%s",
+  OH_LOG_Print(HILOG_LOG_APP, level, kLogDomain, kLogTag,
                text.substr(0, data_->num_chars_to_log_).c_str());
 #endif  // defined(OS_OHOS)
 
