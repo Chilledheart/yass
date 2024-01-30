@@ -517,7 +517,7 @@ static void startWorkerOnWorkComplete(napi_env env, napi_status status, void *da
   }
 }
 
-static Worker g_worker;
+static std::unique_ptr<Worker> g_worker;
 
 static napi_value startWorker(napi_env env, napi_callback_info info) {
   napi_status status;
@@ -563,7 +563,11 @@ static napi_value startWorker(napi_env env, napi_callback_info info) {
     return nullptr;
   }
 
-  g_worker.Start([env, startWorkerCallbackFunc](asio::error_code ec) {
+  g_worker->Start([env, startWorkerCallbackFunc](asio::error_code ec) {
+    if (!ec) {
+      config::SaveConfig();
+    }
+
     AsyncStartWorkerEx_t *async_start_worker_ex = new AsyncStartWorkerEx_t;
     napi_async_work work_item;
 
@@ -718,7 +722,7 @@ static napi_value stopWorker(napi_env env, napi_callback_info info) {
     return nullptr;
   }
 
-  g_worker.Stop([env, stopWorkerCallbackFunc]() {
+  g_worker->Stop([env, stopWorkerCallbackFunc]() {
     AsyncStopWorkerEx_t *async_stop_worker_ex = new AsyncStopWorkerEx_t;
     napi_async_work work_item;
 
@@ -900,6 +904,132 @@ static napi_value saveConfig(napi_env env, napi_callback_info info) {
   return nullptr;
 }
 
+static napi_value getServerHost(napi_env env, napi_callback_info info) {
+  napi_value value;
+  auto status = napi_create_string_utf8(env, absl::GetFlag(FLAGS_server_host).c_str(), NAPI_AUTO_LENGTH, &value);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_create_string_utf8 failed");
+    return nullptr;
+  }
+
+  return value;
+}
+
+static napi_value getServerSNI(napi_env env, napi_callback_info info) {
+  napi_value value;
+  auto status = napi_create_string_utf8(env, absl::GetFlag(FLAGS_server_sni).c_str(), NAPI_AUTO_LENGTH, &value);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_create_string_utf8 failed");
+    return nullptr;
+  }
+
+  return value;
+}
+
+static napi_value getServerPort(napi_env env, napi_callback_info info) {
+  napi_value value;
+  auto status = napi_create_int32(env, absl::GetFlag(FLAGS_server_port), &value);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_create_int32 failed");
+    return nullptr;
+  }
+
+  return value;
+}
+
+static napi_value getUsername(napi_env env, napi_callback_info info) {
+  napi_value value;
+  auto status = napi_create_string_utf8(env, absl::GetFlag(FLAGS_username).c_str(), NAPI_AUTO_LENGTH, &value);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_create_string_utf8 failed");
+    return nullptr;
+  }
+
+  return value;
+}
+
+static napi_value getPassword(napi_env env, napi_callback_info info) {
+  napi_value value;
+  auto status = napi_create_string_utf8(env, absl::GetFlag(FLAGS_password).c_str(), NAPI_AUTO_LENGTH, &value);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_create_string_utf8 failed");
+    return nullptr;
+  }
+
+  return value;
+}
+
+static napi_value getCipher(napi_env env, napi_callback_info info) {
+  napi_value value;
+  auto status = napi_create_string_utf8(env, to_cipher_method_str(absl::GetFlag(FLAGS_method).method), NAPI_AUTO_LENGTH, &value);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_create_string_utf8 failed");
+    return nullptr;
+  }
+
+  return value;
+}
+
+static napi_value getCipherStrings(napi_env env, napi_callback_info info) {
+  std::vector<const char*> methods = {
+#define XX(num, name, string) CRYPTO_##name##_STR,
+CIPHER_METHOD_VALID_MAP(XX)
+#undef XX
+  };
+
+  napi_value results;
+  auto status = napi_create_array_with_length(env, methods.size(), &results);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_create_array_with_length failed");
+    return nullptr;
+  }
+
+  for (size_t i = 0; i < methods.size(); ++i) {
+    napi_value value;
+    auto status = napi_create_string_utf8(env, methods[i], NAPI_AUTO_LENGTH, &value);
+    if (status != napi_ok) {
+      napi_throw_error(env, nullptr, "napi_create_string_utf8 failed");
+      return nullptr;
+    }
+
+    status = napi_set_element(env, results, i, value);
+    if (status != napi_ok) {
+      napi_throw_error(env, nullptr, "napi_set_element failed");
+      return nullptr;
+    }
+  }
+
+  return results;
+}
+
+static napi_value getTimeout(napi_env env, napi_callback_info info) {
+  napi_value value;
+  auto status = napi_create_int32(env, absl::GetFlag(FLAGS_connect_timeout), &value);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_create_int32 failed");
+    return nullptr;
+  }
+
+  return value;
+}
+
+static napi_value initRoutine(napi_env env, napi_callback_info info) {
+  CRYPTO_library_init();
+
+  config::ReadConfigFileOption(0, nullptr);
+  config::ReadConfig();
+
+  g_worker = std::make_unique<Worker>();
+
+  return nullptr;
+}
+
+static napi_value destroyRoutine(napi_env env, napi_callback_info info) {
+  g_worker.reset();
+
+  return nullptr;
+}
+
 static napi_value Init(napi_env env, napi_value exports) {
   napi_property_descriptor desc[] = {
     {"setProtectFdCallback", nullptr, setProtectFdCallback, nullptr, nullptr, nullptr, napi_default, nullptr},
@@ -911,6 +1041,16 @@ static napi_value Init(napi_env env, napi_value exports) {
     {"stopWorker", nullptr, stopWorker, nullptr, nullptr, nullptr, napi_default, nullptr},
     {"getTransferRate", nullptr, getTransferRate, nullptr, nullptr, nullptr, napi_default, nullptr},
     {"saveConfig", nullptr, saveConfig, nullptr, nullptr, nullptr, napi_default, nullptr},
+    {"getServerHost", nullptr, getServerHost, nullptr, nullptr, nullptr, napi_default, nullptr},
+    {"getServerSNI", nullptr, getServerSNI, nullptr, nullptr, nullptr, napi_default, nullptr},
+    {"getServerPort", nullptr, getServerPort, nullptr, nullptr, nullptr, napi_default, nullptr},
+    {"getUsername", nullptr, getUsername, nullptr, nullptr, nullptr, napi_default, nullptr},
+    {"getPassword", nullptr, getPassword, nullptr, nullptr, nullptr, napi_default, nullptr},
+    {"getCipher", nullptr, getCipher, nullptr, nullptr, nullptr, napi_default, nullptr},
+    {"getCipherStrings", nullptr, getCipherStrings, nullptr, nullptr, nullptr, napi_default, nullptr},
+    {"getTimeout", nullptr, getTimeout, nullptr, nullptr, nullptr, napi_default, nullptr},
+    {"init", nullptr, initRoutine, nullptr, nullptr, nullptr, napi_default, nullptr},
+    {"destroy", nullptr, destroyRoutine, nullptr, nullptr, nullptr, napi_default, nullptr},
   };
   napi_define_properties(env, exports, std::size(desc), desc);
   return exports;

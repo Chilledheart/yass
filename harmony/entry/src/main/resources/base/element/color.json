@@ -1,0 +1,32 @@
+{
+  "color": [
+    {
+      "name": "start_window_background",
+      "value": "#FFFFFF"
+    },
+    {
+      "name": "title",
+      "value": "#FF000000"
+    },
+    {
+      "name": "text",
+      "value": "#182431"
+    },
+    {
+      "name": "text_opacity",
+      "value": "#99182431"
+    },
+    {
+      "name": "text_link",
+      "value": "#FF007DFF"
+    },
+    {
+      "name": "page_background",
+      "value": "#F1F3F5"
+    },
+    {
+      "name": "divider",
+      "value": "#0D182431"
+    }
+  ]
+}

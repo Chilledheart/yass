@@ -1,0 +1,76 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "该模板实现了YASS功能"
+    },
+    {
+      "name": "ability_desc",
+      "value": "该Ability加载显示YASS的内容"
+    },
+    {
+      "name": "ability_label",
+      "value": "YASS"
+    },
+    {
+      "name": "title_name",
+      "value": "关于"
+    },
+    {
+      "name": "icon_name",
+      "value": "YASS 应用"
+    },
+    {
+      "name": "version_label",
+      "value": "版本: %s"
+    },
+    {
+      "name": "about_us",
+      "value": "关于我们"
+    },
+    {
+      "name": "copyright",
+      "value": "版权所有 ©2022-2023 xx公司保留一切权利"
+    },
+    {
+      "name": "detail_item_title",
+      "value": "标题"
+    },
+    {
+      "name": "server_host",
+      "value": "服务器域名"
+    },
+    {
+      "name": "server_sni",
+      "value": "服务器名称指示"
+    },
+    {
+      "name": "server_port",
+      "value": "服务器端口号"
+    },
+    {
+      "name": "username",
+      "value": "用户名"
+    },
+    {
+      "name": "password",
+      "value": "密码"
+    },
+    {
+      "name": "cipher",
+      "value": "加密方式"
+    },
+    {
+      "name": "timeout",
+      "value": "超时时间"
+    },
+    {
+      "name": "start_button",
+      "value": "启动"
+    },
+    {
+      "name": "stop_button",
+      "value": "停止"
+    }
+  ]
+}
