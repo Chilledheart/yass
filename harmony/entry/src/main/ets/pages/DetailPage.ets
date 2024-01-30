@@ -3,15 +3,26 @@ import { DetailListComponent } from '../view/DetailListComponent';
 import { CommonConstants } from '../constants/CommonConstants';
 import { DataItem } from '../viewmodel/DataItem';
 import AboutViewModel from '../viewmodel/AboutViewModel';
+import hilog from '@ohos.hilog';
+import yass from 'libyass.so';
 
 /**
  * Detail page. Click the item on about page to jump to the detail page.
  */
+enum StartState {
+  STOPPED,
+  STOPPING,
+  STARTED,
+  STARTING
+}
+
 @Entry
 @Component
 struct DetailPage {
   private titleParam: Resource = $r('app.string.title_name');
   private dataParam: Array<DataItem>;
+
+  private state: StartState = StartState.STOPPED;
 
   aboutToAppear() {
     let appInfo: DataItem[] = AboutViewModel.getYassInfo()
@@ -52,9 +63,19 @@ struct DetailPage {
         right: $r('app.float.grid_row_margin_right')
       })
       Row() {
-        Button($r('app.string.start_button'))
+        Button($r('app.string.start_button'), { type: ButtonType.Capsule,
+          stateEffect: this.state == StartState.STOPPED }).onClick((event: ClickEvent) => {
+          if (this.state == StartState.STOPPED) {
+            this.onStartClicked();
+          }
+        })
         Blank()
-        Button($r('app.string.stop_button'))
+        Button($r('app.string.stop_button'), { type: ButtonType.Capsule,
+          stateEffect:  this.state == StartState.STARTED }).onClick((event: ClickEvent) => {
+          if (this.state == StartState.STARTED) {
+            this.onStopClicked();
+          }
+        })
       }
     }
     .width(CommonConstants.DETAIL_COLUMN_WIDTH_PERCENT)
@@ -82,5 +103,28 @@ struct DetailPage {
     }
     .width(CommonConstants.FULL_WIDTH_PERCENT)
     .height($r('app.float.title_height'))
+  }
+
+  onStartClicked() {
+    this.state = StartState.STARTING;
+    yass.startWorker((error_code: number) => {
+      hilog.info(0x0000, 'yass', 'started %d', error_code);
+      if (error_code == 0) {
+        this.state = StartState.STARTED;
+        AlertDialog.show({ message: 'The start is successful' })
+      } else {
+        this.state = StartState.STOPPED;
+        AlertDialog.show({ message: 'The start failed' })
+      }
+    })
+  }
+
+  onStopClicked() {
+    this.state = StartState.STOPPING;
+    yass.stopWorker(() => {
+      hilog.info(0x0000, 'yass', 'stopped %d');
+      this.state = StartState.STOPPED;
+      AlertDialog.show({ message: 'The stop is successful' })
+    })
   }
 }
