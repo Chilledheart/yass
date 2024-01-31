@@ -707,7 +707,7 @@ static uint64_t g_last_sync_time;
 static uint64_t g_last_tx_bytes;
 static uint64_t g_last_rx_bytes;
 
-// return { rx_rate, tx_rate }
+// return { tx_rate, rx_rate }
 static napi_value getTransferRate(napi_env env, napi_callback_info info) {
   uint64_t sync_time = GetMonotonicTime();
   uint64_t delta_time = sync_time - g_last_sync_time;
@@ -767,8 +767,8 @@ static napi_value getTransferRate(napi_env env, napi_callback_info info) {
 
   std::stringstream ss;
   ss << "Connected connections";
-  ss << " rx rate: " << rx_rate;
-  ss << " tx rate: " << tx_rate;
+  ss << " tx rate: " << rx_rate;
+  ss << " rx rate: " << tx_rate;
 
   VLOG(1) << ss.str();
 

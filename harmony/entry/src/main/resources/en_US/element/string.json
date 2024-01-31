@@ -78,7 +78,7 @@
     },
     {
       "name": "status_started_with_rate",
-      "value": "Connected rx rate: %s tx rate: %s"
+      "value": "Connected tx rate: %s rx rate: %s"
     },
     {
       "name": "status_started_with_error_msg",
