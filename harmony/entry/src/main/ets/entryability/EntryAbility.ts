@@ -11,7 +11,8 @@ import yass from 'libyass.so';
 export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     hilog.info(0x0000, 'yass', '%{public}s', 'Ability onCreate');
-    yass.init();
+    /* see https://ost.51cto.com/posts/23034 */
+    yass.init(this.context.tempDir, this.context.preferencesDir);
   }
 
   onDestroy(): void {

@@ -949,6 +949,67 @@ static napi_value getTimeout(napi_env env, napi_callback_info info) {
 }
 
 static napi_value initRoutine(napi_env env, napi_callback_info info) {
+  napi_value args[2] {};
+  size_t argc = std::size(args);
+  auto status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+  if (status != napi_ok || argc != std::size(args)) {
+    napi_throw_error(env, nullptr, "napi_get_cb_info failed");
+    return nullptr;
+  }
+
+  napi_value cache_path = args[0];
+  napi_value data_path = args[1];
+
+  napi_valuetype type;
+  status = napi_typeof(env, cache_path, &type);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_typeof failed");
+    return nullptr;
+  }
+
+  if (type != napi_string) {
+    napi_throw_error(env, nullptr, "mismatched argument type, expected: napi_string");
+    return nullptr;
+  }
+
+  status = napi_typeof(env, data_path, &type);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_typeof failed");
+    return nullptr;
+  }
+
+  if (type != napi_string) {
+    napi_throw_error(env, nullptr, "mismatched argument type, expected: napi_string");
+    return nullptr;
+  }
+
+  char cache_path_buf[PATH_MAX+1];
+  size_t cache_path_size;
+  status = napi_get_value_string_utf8(env, cache_path, cache_path_buf, sizeof(cache_path_buf), &cache_path_size);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_get_value_string_utf8 failed");
+    return nullptr;
+  }
+
+  char data_path_buf[PATH_MAX+1];
+  size_t data_path_size;
+  status = napi_get_value_string_utf8(env, data_path, data_path_buf, sizeof(data_path_buf), &data_path_size);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_get_value_string_utf8 failed");
+    return nullptr;
+  }
+
+  std::string exe_path;
+  GetExecutablePath(&exe_path);
+  SetExecutablePath(exe_path);
+
+  h_cache_dir = std::string(cache_path_buf, cache_path_size);
+  h_data_dir = std::string(data_path_buf, data_path_size);
+
+  LOG(INFO) << "exe path: " << exe_path;
+  LOG(INFO) << "cache dir: " << h_cache_dir;
+  LOG(INFO) << "data dir: " << h_data_dir;
+
   LOG(INFO) << "yass: init";
 
   CRYPTO_library_init();

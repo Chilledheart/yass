@@ -7,7 +7,7 @@ export const getPassword: () => string;
 export const getCipher: () => string;
 export const getCipherStrings: () => string[];
 export const getTimeout: () => number;
-export const init: () => void;
+export const init: (temp_dir: string, data_dir: string) => void;
 export const destroy: () => void;
 export const startWorker: (cb: (err_msg: string) => void) => void;
 export const stopWorker: (cb: () => void) => void;
