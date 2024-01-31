@@ -9,5 +9,5 @@ export const getCipherStrings: () => string[];
 export const getTimeout: () => number;
 export const init: () => void;
 export const destroy: () => void;
-export const startWorker: (cb: (err_code: number) => void) => void;
+export const startWorker: (cb: (err_msg: string) => void) => void;
 export const stopWorker: (cb: () => void) => void;

@@ -107,14 +107,14 @@ struct DetailPage {
 
   onStartClicked() {
     this.state = StartState.STARTING;
-    yass.startWorker((error_code: number) => {
-      hilog.info(0x0000, 'yass', 'started %d', error_code);
-      if (error_code == 0) {
+    yass.startWorker((err_msg: string) => {
+      hilog.info(0x0000, 'yass', 'started %s', err_msg);
+      if (err_msg == '') {
         this.state = StartState.STARTED;
         AlertDialog.show({ message: 'The start is successful' })
       } else {
         this.state = StartState.STOPPED;
-        AlertDialog.show({ message: 'The start failed' })
+        AlertDialog.show({ message: 'The start failed: ' + err_msg })
       }
     })
   }
