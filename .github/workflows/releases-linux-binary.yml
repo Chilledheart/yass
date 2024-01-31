@@ -75,13 +75,13 @@ jobs:
           patch -p1 < v8-6.7.17-fix-gcc-unwind-header.patch
       - name: Cache clang
         id: clang-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/llvm-build/Release+Asserts
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/go-build
@@ -91,14 +91,14 @@ jobs:
             ${{ runner.os }}-go-docker-
       - name: Cache qemu-user-static
         id: qemu-user-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             qemu-user-static*.deb
           key: ${{ runner.os }}-qemu-8.2.0-ds-5
       - name: Cache sysroot
         id: sysroot-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ${{ env.SDK_ROOT }}

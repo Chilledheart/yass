@@ -47,7 +47,7 @@ jobs:
           git submodule update --init --depth 1
       - name: Cache clang, nasm and wixtoolset 3
         id: clang-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/nasm
@@ -56,7 +56,7 @@ jobs:
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache mingw64 toolchain
         id: mingw64-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/mingw64
@@ -64,7 +64,7 @@ jobs:
           key: ${{ runner.os }}-mingw64-${{ matrix.arch }}-toolchain-v${{ env.CACHE_EPOCH }}
       - name: Cache mingw64 curl
         id: curl-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/curl-8.4.0_7-win64-mingw

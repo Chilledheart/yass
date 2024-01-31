@@ -46,7 +46,7 @@ jobs:
           git submodule update --init --depth 1
       - name: Cache clang, nasm and wixtoolset 3
         id: clang-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/nasm
@@ -55,7 +55,7 @@ jobs:
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache msvc curl
         id: curl-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/libcurl-vc16-arm64-release-static-ipv6-sspi-schannel
@@ -64,20 +64,20 @@ jobs:
           key: ${{ runner.os }}-msvc-dynamic-curl-vc16-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
       - name: Cache depot_tools
         id: depot-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/depot_tools
           key: ${{ runner.os }}-depot_tools-v1
       - name: Cache crashpad build stage
         id: crashpad-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/crashpad
           key: ${{ runner.os }}-msvc-dynamic-${{ matrix.arch }}-crashpad-${{ hashFiles('CRASHPAD_COMMIT') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang (tools only)
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             %LocalAppData%\go-build
@@ -165,7 +165,7 @@ jobs:
           git submodule update --init --depth 1
       - name: Cache clang, nasm and wixtoolset 3
         id: clang-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/nasm
@@ -173,7 +173,7 @@ jobs:
             third_party/wix311
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             %LocalAppData%\go-build
