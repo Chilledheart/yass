@@ -84,18 +84,8 @@
 
 - (void)OnStart {
   [self.startButton setEnabled:FALSE];
-
-  YassWindowController* windowController = (YassWindowController*)self.view.window.windowController;
-  [windowController OnStart];
-}
-
-- (void)OnStop {
   [self.stopButton setEnabled:FALSE];
-  YassWindowController* windowController = (YassWindowController*)self.view.window.windowController;
-  [windowController OnStop];
-}
 
-- (void)Started {
   [self.serverHost setEditable:FALSE];
   [self.serverSNI setEditable:FALSE];
   [self.serverPort setEditable:FALSE];
@@ -105,10 +95,28 @@
   [self.localHost setEditable:FALSE];
   [self.localPort setEditable:FALSE];
   [self.timeout setEditable:FALSE];
+
+  YassWindowController* windowController = (YassWindowController*)self.view.window.windowController;
+  [windowController OnStart];
+}
+
+- (void)OnStop {
+  [self.startButton setEnabled:FALSE];
+  [self.stopButton setEnabled:FALSE];
+
+  YassWindowController* windowController = (YassWindowController*)self.view.window.windowController;
+  [windowController OnStop];
+}
+
+- (void)Started {
+  [self.startButton setEnabled:FALSE];
   [self.stopButton setEnabled:TRUE];
 }
 
 - (void)StartFailed {
+  [self.startButton setEnabled:TRUE];
+  [self.stopButton setEnabled:FALSE];
+
   [self.serverHost setEditable:TRUE];
   [self.serverSNI setEditable:TRUE];
   [self.serverPort setEditable:TRUE];
@@ -118,10 +126,12 @@
   [self.localHost setEditable:TRUE];
   [self.localPort setEditable:TRUE];
   [self.timeout setEditable:TRUE];
-  [self.startButton setEnabled:TRUE];
 }
 
 - (void)Stopped {
+  [self.startButton setEnabled:TRUE];
+  [self.stopButton setEnabled:FALSE];
+
   [self.serverHost setEditable:TRUE];
   [self.serverSNI setEditable:TRUE];
   [self.serverPort setEditable:TRUE];
@@ -131,7 +141,6 @@
   [self.localHost setEditable:TRUE];
   [self.localPort setEditable:TRUE];
   [self.timeout setEditable:TRUE];
-  [self.startButton setEnabled:TRUE];
 }
 
 - (void)LoadChanges {
