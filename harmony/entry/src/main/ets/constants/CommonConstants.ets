@@ -178,6 +178,11 @@ export class CommonConstants {
   static readonly DETAIL_LIST_WIDTH_PERCENT: string = '93.3%';
 
   /**
+   * Detail column input width percentage setting.
+   */
+  static readonly DETAIL_INPUT_WIDTH_PERCENT: string = '50.0%';
+
+  /**
    * Divider stroke width.
    */
   static readonly DIVIDER_STROKE_WIDTH: string = '0.5vp';

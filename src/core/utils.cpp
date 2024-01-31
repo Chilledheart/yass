@@ -37,6 +37,11 @@ std::string a_data_dir;
 OpenApkAssetType a_open_apk_asset = nullptr;
 #endif
 
+#ifdef __OHOS__
+std::string h_cache_dir;
+std::string h_data_dir;
+#endif
+
 std::optional<int> StringToInteger(const std::string& value) {
   int result;
 
@@ -264,7 +269,13 @@ bool GetTempDir(std::string *path) {
     return true;
   }
 #endif
-#if defined(__ANDROID__)
+#if BUILDFLAG(IS_OHOS)
+  if (!h_cache_dir.empty()) {
+    *path = h_cache_dir;
+    return true;
+  }
+#endif
+#if defined(__ANDROID) || defined(__OHOS__)
   *path = "/data/local/tmp";
 #else
   *path = "/tmp";

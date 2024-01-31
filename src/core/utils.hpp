@@ -22,6 +22,11 @@ typedef int (*OpenApkAssetType)(const std::string&, gurl_base::MemoryMappedFile:
 extern OpenApkAssetType a_open_apk_asset;
 #endif
 
+#ifdef __OHOS__
+extern std::string h_cache_dir;
+extern std::string h_data_dir;
+#endif
+
 using gurl_base::PlatformFile;
 
 // Valid values for priority of Thread::Options and SimpleThread::Options, and
