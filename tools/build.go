@@ -953,6 +953,8 @@ func buildStageGenerateBuildScript() {
 		if harmonyNdkDir == "" {
 			glog.Fatalf("Harmony Ndk Directory demanded");
 		}
+		// FIXME harmony doens't support c-ares
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_CARES=%s", "OFF"))
 		harmonyAbiTarget, harmonyAppAbi = getHarmonyTargetAndAppAbi(archFlag)
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/Harmony.cmake", buildDir))
 		// hard-coded
