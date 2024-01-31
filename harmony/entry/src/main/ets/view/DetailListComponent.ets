@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright (c) 2024 Chilledheart  */
+
 import { CommonConstants } from '../constants/CommonConstants';
 import { YassDataItem } from '../viewmodel/YassDataItem';
 import yass from 'libyass.so';

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright (c) 2024 Chilledheart  */
+
 import router from '@ohos.router';
 import { DetailListComponent } from '../view/DetailListComponent';
 import { CommonConstants } from '../constants/CommonConstants';
@@ -167,7 +170,6 @@ struct DetailPage {
   onUpdateTransferRate() {
     let rates = yass.getTransferRate();
     this.status = $r('app.string.status_started_with_rate', rates[0], rates[1]);
-    hilog.warn(0x0000, 'yass', '%{public}s', 'on refresh: ' + this.status);
     this.timer_id = setTimeout(() => {
       this.onUpdateTransferRate();
     }, 1000);

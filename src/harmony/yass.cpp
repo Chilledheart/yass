@@ -33,18 +33,11 @@ extern "C"
 bool OH_LOG_IsLoggable(unsigned int domain, const char *tag, HILOG_LogLevel level);
 
 static constexpr char kLogTag[] = YASS_APP_NAME;
-static constexpr unsigned int kLogDomain = 0x15b0;
+static constexpr unsigned int kLogDomain = 0x0;
 
-static napi_env setProtectFdCallbackEnv = nullptr;
 static napi_threadsafe_function setProtectFdCallbackFunc = nullptr;
 
 struct AsyncProtectFdEx_t {
-  napi_async_work work_item;
-  int fd;
-  int write_end;
-};
-
-struct SetProtectFdEx_t {
   int fd;
   int write_end;
 };
@@ -58,97 +51,35 @@ static void setProtectFdWriteResult(int fd, napi_status status) {
   }
 }
 
-static void setProtectFdExecuteWork(napi_env env, void *data) {
-  AsyncProtectFdEx_t *async_protect_fd_ex = (AsyncProtectFdEx_t *)data;
-
-  auto ctx = new SetProtectFdEx_t;
-  if (ctx == nullptr) {
-    LOG(WARNING) << "failed to allocate new ctx";
-    setProtectFdWriteResult(async_protect_fd_ex->fd, napi_queue_full);
-    return;
-  }
-
-  ctx->fd = async_protect_fd_ex->fd;
-  ctx->write_end = async_protect_fd_ex->write_end;
-
-  auto status = napi_acquire_threadsafe_function(setProtectFdCallbackFunc);
-  if (status != napi_ok) {
-    LOG(WARNING) << "napi_acquire_threadsafe_function: " << status;
-    setProtectFdWriteResult(async_protect_fd_ex->fd, status);
-    return;
-  }
-
-  status = napi_call_threadsafe_function(setProtectFdCallbackFunc, ctx, napi_tsfn_blocking);
-  if (status != napi_ok) {
-    LOG(WARNING) << "napi_call_threadsafe_function: " << status;
-    setProtectFdWriteResult(async_protect_fd_ex->fd, status);
-    return;
-  }
-
-  status = napi_release_threadsafe_function(setProtectFdCallbackFunc, napi_tsfn_release);
-
-  if (status != napi_ok) {
-    LOG(WARNING) << "napi_release_threadsafe_function: " << status;
-    setProtectFdWriteResult(async_protect_fd_ex->fd, status);
-    return;
-  }
-}
-
-// This function runs on the main thread after `ExecuteWork` exited.
-static void setProtectFdOnWorkComplete(napi_env env, napi_status status, void *data) {
-  AsyncProtectFdEx_t *async_protect_fd_ex = (AsyncProtectFdEx_t *)data;
-
-  status = napi_delete_async_work(env, async_protect_fd_ex->work_item);
-  if (status != napi_ok) {
-    LOG(WARNING) << "napi_delete_async_work: " << status;
-    return;
-  }
-
-  delete async_protect_fd_ex;
-}
-
 int setProtectFd(int fd) {
-  napi_env env = setProtectFdCallbackEnv;
-  if (env == nullptr) {
-    LOG(WARNING) << "null env";
-    return -1;
-  }
-
-  napi_value work_name;
-  // Specify a name to describe this asynchronous operation.
-  auto status = napi_create_string_utf8(env, kAsyncResourceName, NAPI_AUTO_LENGTH, &work_name);
-  if (status != napi_ok) {
-    LOG(WARNING) << "napi_create_string_utf8: " << status;
-    return -1;
-  }
-  AsyncProtectFdEx_t *async_protect_fd_ex = new AsyncProtectFdEx_t;
-  napi_async_work work_item;
-
-  status = napi_create_async_work(env, nullptr, work_name,
-    setProtectFdExecuteWork, setProtectFdOnWorkComplete, async_protect_fd_ex,
-    &work_item); // OUT: THE handle to the async work item
-  if (status != napi_ok) {
-    delete async_protect_fd_ex;
-    LOG(WARNING) << "napi_create_async_work: " << status;
-    return -1;
-  }
-
   int pipefd[2] = {-1, -1};
   if (pipe(pipefd) == -1) {
     PLOG(WARNING) << "create pipe failed";
     return -1;
   };
   int read_end = pipefd[0];
-  async_protect_fd_ex->work_item = work_item;
-  async_protect_fd_ex->fd = fd;
-  async_protect_fd_ex->write_end = pipefd[1];
 
-  // Queue the work item for execution.
-  status = napi_queue_async_work(env, work_item);
+  auto ctx = std::make_unique<AsyncProtectFdEx_t>();
+  ctx->fd = fd;
+  ctx->write_end = pipefd[1];
+
+  auto status = napi_acquire_threadsafe_function(setProtectFdCallbackFunc);
   if (status != napi_ok) {
-    IGNORE_EINTR(close(pipefd[0]));
-    IGNORE_EINTR(close(pipefd[1]));
-    LOG(WARNING) << "napi_create_async_work: " << status;
+    LOG(WARNING) << "napi_acquire_threadsafe_function: " << status;
+    return -1;
+  }
+
+  auto ctx_raw = ctx.release();
+  status = napi_call_threadsafe_function(setProtectFdCallbackFunc, ctx_raw, napi_tsfn_blocking);
+  if (status != napi_ok) {
+    LOG(WARNING) << "napi_call_threadsafe_function: " << status;
+    delete ctx_raw;
+    return -1;
+  }
+
+  status = napi_release_threadsafe_function(setProtectFdCallbackFunc, napi_tsfn_release);
+  if (status != napi_ok) {
+    LOG(WARNING) << "napi_release_threadsafe_function: " << status;
     return -1;
   }
 
@@ -179,24 +110,45 @@ static napi_value setProtectFdCallingJSCallback(napi_env env, napi_callback_info
   return nullptr;
 }
 
-static void setProtectFdCallingJS(napi_env env, napi_value js_cb, void *context, void *data) {
-  // This parameter is not used.
-  (void)context;
-
-  auto ctx = reinterpret_cast<SetProtectFdEx_t*>(data);
+static void setProtectFdCallingJS(napi_env env, napi_value /*js_cb*/, void *context, void *data) {
+  std::unique_ptr<AsyncProtectFdEx_t> ctx(reinterpret_cast<AsyncProtectFdEx_t*>(data));
   int fd_value = ctx->fd;
   int write_end = ctx->write_end;
-  delete ctx;
 
-  if (env == nullptr) {
-    LOG(WARNING) << "null env";
+  auto cb_ref = reinterpret_cast<napi_ref>(context);
+
+  napi_value cb;
+  auto status = napi_get_reference_value(env, cb_ref, &cb);
+  if (status != napi_ok) {
+    LOG(WARNING) << "napi_get_reference_value: " << status;
+    setProtectFdWriteResult(fd_value, status);
     return;
   }
 
-  napi_value undefined;
-  napi_status status = napi_get_undefined(env, &undefined);
+  napi_valuetype type;
+  status = napi_typeof(env, cb, &type);
   if (status != napi_ok) {
-    LOG(WARNING) << "napi_get_undefined: " << status;
+    LOG(WARNING) << "napi_typeof failed: " << status;
+    setProtectFdWriteResult(fd_value, status);
+    return;
+  }
+
+  if (type != napi_function) {
+    LOG(WARNING) << "napi_typeof unexpected: " << type;
+    setProtectFdWriteResult(fd_value, status);
+    return;
+  }
+
+  if (env == nullptr) {
+    LOG(WARNING) << "null env";
+    setProtectFdWriteResult(fd_value, status);
+    return;
+  }
+
+  napi_value global;
+  status = napi_get_global(env, &global);
+  if (status != napi_ok) {
+    LOG(WARNING) << "napi_get_global: " << status;
     setProtectFdWriteResult(fd_value, status);
     return;
   }
@@ -218,12 +170,21 @@ static void setProtectFdCallingJS(napi_env env, napi_value js_cb, void *context,
   }
 
   napi_value argv[] = { fd, callback };
-  status = napi_call_function(env, undefined, js_cb, std::size(argv), argv, nullptr);
+  status = napi_call_function(env, global, cb, std::size(argv), argv, nullptr);
   if (status != napi_ok) {
     LOG(WARNING) << "napi_call_function: " << status;
     setProtectFdWriteResult(fd_value, status);
     return;
   }
+
+  status = napi_delete_reference(env, cb_ref);
+  if (status != napi_ok) {
+    LOG(WARNING) << "napi_delete_reference: " << status;
+    setProtectFdWriteResult(fd_value, status);
+    return;
+  }
+
+  setProtectFdWriteResult(fd_value, status);
 }
 
 static napi_value setProtectFdCallback(napi_env env, napi_callback_info info) {
@@ -250,6 +211,13 @@ static napi_value setProtectFdCallback(napi_env env, napi_callback_info info) {
     return nullptr;
   }
 
+  napi_ref cb_ref;
+  status = napi_create_reference(env, cb, 1, &cb_ref);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_create_reference failed");
+    return nullptr;
+  }
+
   napi_value work_name;
   // Specify a name to describe this asynchronous operation.
   status = napi_create_string_utf8(env, kAsyncResourceName, NAPI_AUTO_LENGTH, &work_name);
@@ -260,15 +228,13 @@ static napi_value setProtectFdCallback(napi_env env, napi_callback_info info) {
 
   // Create a thread-safe N-API callback function correspond to the C/C++ callback function
   status = napi_create_threadsafe_function(env, cb, nullptr, work_name, 0, 1, nullptr,
-      nullptr, nullptr, setProtectFdCallingJS, // the C/C++ callback function
+      nullptr, cb_ref, setProtectFdCallingJS, // the C/C++ callback function
       &setProtectFdCallbackFunc // out: the asynchronous thread-safe JavaScript function
   );
   if (status != napi_ok) {
     napi_throw_error(env, nullptr, "napi_create_threadsafe_function failed");
     return nullptr;
   }
-
-  setProtectFdCallbackEnv = env;
 
   return nullptr;
 }
@@ -585,6 +551,12 @@ static napi_value startWorker(napi_env env, napi_callback_info info) {
     if (status != napi_ok) {
       LOG(WARNING) << "napi_release_threadsafe_function: " << status;
     }
+
+    // release callback
+    status = napi_release_threadsafe_function(startWorkerCallbackFunc, napi_tsfn_release);
+    if (status != napi_ok) {
+      LOG(WARNING) << "napi_release_threadsafe_function: " << status;
+    }
   });
   return nullptr;
 }
@@ -705,6 +677,12 @@ static napi_value stopWorker(napi_env env, napi_callback_info info) {
     if (status != napi_ok) {
       LOG(WARNING) << "napi_release_threadsafe_function: " << status;
     }
+
+    // release callback
+    status = napi_release_threadsafe_function(stopWorkerCallbackFunc, napi_tsfn_release);
+    if (status != napi_ok) {
+      LOG(WARNING) << "napi_release_threadsafe_function: " << status;
+    }
   });
   return nullptr;
 }
@@ -786,6 +764,13 @@ static napi_value getTransferRate(napi_env env, napi_callback_info info) {
     napi_throw_error(env, nullptr, "napi_set_element failed");
     return nullptr;
   }
+
+  std::stringstream ss;
+  ss << "Connected connections";
+  ss << " rx rate: " << rx_rate;
+  ss << " tx rate: " << tx_rate;
+
+  VLOG(1) << ss.str();
 
   return results;
 }
