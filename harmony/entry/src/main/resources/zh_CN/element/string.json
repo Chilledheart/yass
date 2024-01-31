@@ -30,7 +30,7 @@
     },
     {
       "name": "copyright",
-      "value": "版权所有 ©2022-2023 xx公司保留一切权利"
+      "value": "版权所有 ©2024 Chilledheart 保留一切权利"
     },
     {
       "name": "detail_item_title",
@@ -71,6 +71,30 @@
     {
       "name": "stop_button",
       "value": "停止"
+    },
+    {
+      "name": "current_ip",
+      "value": "本地IP地址: %s:%d"
+    },
+    {
+      "name": "status_started_with_rate",
+      "value": "已连接  上传速率:  %s 下载速率:  %s"
+    },
+    {
+      "name": "status_started_with_error_msg",
+      "value": "无法连接因: %s"
+    },
+    {
+      "name": "status_stopping",
+      "value": "停止中"
+    },
+    {
+      "name": "status_starting",
+      "value": "启动中"
+    },
+    {
+      "name": "status_stopped",
+      "value": "断开连接于服务器 %s:%d"
     }
   ]
 }

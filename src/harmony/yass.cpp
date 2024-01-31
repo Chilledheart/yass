@@ -432,16 +432,21 @@ static napi_value stopTun2proxy(napi_env env, napi_callback_info info) {
 }
 
 static constexpr char kAsyncStartWorkerResourceName[] = "Thread-safe StartWorker";
+struct AsyncStartCtx {
+  asio::error_code ec;
+  int port_num;
+};
 
 static void startWorkerCallingJS(napi_env env, napi_value /*js_cb*/, void *context, void *data) {
   napi_ref cb_ref = reinterpret_cast<napi_ref>(context);
 
-  std::unique_ptr<asio::error_code> ec(reinterpret_cast<asio::error_code*>(data));
+  std::unique_ptr<AsyncStartCtx> ctx(reinterpret_cast<AsyncStartCtx*>(data));
   std::ostringstream ss;
-  if (*ec) {
-    ss << *ec;
+  if (ctx->ec) {
+    ss << ctx->ec;
   }
   std::string ec_str = ss.str();
+  int port_num = ctx->port_num;
 
   if (env == nullptr) {
     LOG(WARNING) << "null env";
@@ -477,12 +482,19 @@ static void startWorkerCallingJS(napi_env env, napi_value /*js_cb*/, void *conte
   napi_value err_msg;
   status = napi_create_string_utf8(env, ec_str.c_str(), NAPI_AUTO_LENGTH, &err_msg);
   if (status != napi_ok) {
+    LOG(WARNING) << "napi_create_string_utf8: " << status;
+    return;
+  }
+
+  napi_value port;
+  status = napi_create_int32(env, port_num, &port);
+  if (status != napi_ok) {
     LOG(WARNING) << "napi_create_int32: " << status;
     return;
   }
 
   napi_value result;
-  napi_value argv[] = { err_msg };
+  napi_value argv[] = { err_msg, port };
   status = napi_call_function(env, global, cb, std::size(argv), argv, &result);
   if (status != napi_ok) {
     LOG(WARNING) << "napi_call_function: " << status;
@@ -553,15 +565,20 @@ static napi_value startWorker(napi_env env, napi_callback_info info) {
     if (!ec) {
       config::SaveConfig();
     }
+    std::unique_ptr<AsyncStartCtx> ctx = std::make_unique<AsyncStartCtx>();
+    ctx->ec = ec;
+    ctx->port_num = ec ? 0 : g_worker->GetLocalPort();
 
     auto status = napi_acquire_threadsafe_function(startWorkerCallbackFunc);
     if (status != napi_ok) {
       LOG(WARNING) << "napi_acquire_threadsafe_function: " << status;
     }
 
-    status = napi_call_threadsafe_function(startWorkerCallbackFunc, new asio::error_code(ec), napi_tsfn_blocking);
+    auto ctx_raw = ctx.release();
+    status = napi_call_threadsafe_function(startWorkerCallbackFunc, ctx_raw, napi_tsfn_blocking);
     if (status != napi_ok) {
       LOG(WARNING) << "napi_call_threadsafe_function: " << status;
+      delete ctx_raw;
     }
 
     status = napi_release_threadsafe_function(startWorkerCallbackFunc, napi_tsfn_release);
