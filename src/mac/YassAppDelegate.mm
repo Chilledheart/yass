@@ -108,7 +108,7 @@
   return gurl_base::SysUTF8ToNSString(ss.str());
 }
 
-- (void)OnStart:(BOOL)quiet {
+- (void)OnStart {
   state_ = STARTING;
   auto err_msg = [self SaveConfig];
   if (!err_msg.empty()) {
@@ -117,27 +117,25 @@
   }
 
   absl::AnyInvocable<void(asio::error_code)> callback;
-  if (!quiet) {
-    callback = [=](asio::error_code ec) {
-      bool successed = false;
-      std::string msg;
+  callback = [=](asio::error_code ec) {
+    bool successed = false;
+    std::string msg;
 
-      if (ec) {
-        msg = ec.message();
-        successed = false;
+    if (ec) {
+      msg = ec.message();
+      successed = false;
+    } else {
+      successed = true;
+    }
+
+    dispatch_async(dispatch_get_main_queue(), ^{
+      if (successed) {
+        [self OnStarted];
       } else {
-        successed = true;
+        [self OnStartFailed:msg];
       }
-
-      dispatch_async(dispatch_get_main_queue(), ^{
-        if (successed) {
-          [self OnStarted];
-        } else {
-          [self OnStartFailed:msg];
-        }
-      });
-    };
-  }
+    });
+  };
   worker_.Start(std::move(callback));
 }
 
