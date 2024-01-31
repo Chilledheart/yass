@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright (c) 2024 Chilledheart  */
+
 import AbilityStage from '@ohos.app.ability.AbilityStage';
 
 export default class EntryAbilityStage extends AbilityStage {
