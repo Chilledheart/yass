@@ -1,3 +1,8 @@
+yass (1.5.23-1) UNRELEASED; urgency=medium
+
+  * ssl: fix memory consumption turbo on handshaking.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Wed, 31 Jan 2024 19:29:23 +0800
 yass (1.5.22-1) UNRELEASED; urgency=medium
 
   * ssl: fix memory consumption turbo on handshaking.
