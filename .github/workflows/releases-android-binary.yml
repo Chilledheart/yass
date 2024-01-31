@@ -73,34 +73,34 @@ jobs:
           patch -p1 < v8-6.7.17-fix-gcc-unwind-header.patch
       - name: Cache clang
         id: clang-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/llvm-build/Release+Asserts
           key: ${{ runner.os }}-android-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache depot_tools
         id: depot-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/depot_tools
           key: ${{ runner.os }}-depot_tools-v1
       - name: Cache crashpad build stage
         id: crashpad-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/crashpad
           key: ${{ runner.os }}-android-${{ matrix.arch }}-crashpad-${{ hashFiles('CRASHPAD_COMMIT') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache cargo build stage
         id: cargo-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo
           key: ${{ runner.os }}-android-cargo-${{ hashFiles('third_party/tun2proxy/Cargo.toml') }}-${{ hashFiles('third_party/tun2proxy/Cargo.lock') }}
       - name: Cache golang
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/go-build
@@ -109,20 +109,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-docker-
       - name: Gradle cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.gradle
           key: ${{ runner.os }}-gradle-${{ hashFiles('android/**/*.gradle') }}
       - name: Cache qemu-user-static
         id: qemu-user-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             qemu-user-static*.deb
           key: ${{ runner.os }}-qemu-8.2.0-ds-5
       - name: Cache sysroot
         id: sysroot-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ${{ env.SYSROOT }}

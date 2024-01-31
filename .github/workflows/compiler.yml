@@ -58,7 +58,7 @@ jobs:
           git submodule update --init --depth 1
       - name: Cache clang, nasm and wixtoolset 3
         id: clang-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/nasm
@@ -67,7 +67,7 @@ jobs:
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache msvc curl
         id: curl-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/libcurl-vc16-arm64-release-static-ipv6-sspi-schannel
@@ -75,7 +75,7 @@ jobs:
             third_party/libcurl-vc16-x86-release-static-ipv6-sspi-schannel
           key: ${{ runner.os }}-msvc-dynamic-curl-vc16-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             %LocalAppData%\go-build
@@ -146,7 +146,7 @@ jobs:
           git submodule update --init --depth 1
       - name: Cache clang
         id: clang-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/nasm
@@ -155,14 +155,14 @@ jobs:
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache mingw64 llvm
         id: mingw-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64
           key: ${{ runner.os }}-mingw64-third_party-llvm-20230614-ucrt
       - name: Cache mingw64 curl
         id: curl-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/curl-8.4.0_7-win64a-mingw
@@ -170,7 +170,7 @@ jobs:
             third_party/curl-8.4.0_7-win32-mingw
           key: ${{ runner.os }}-mingw64-curl-and-aarch64-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/go-build
@@ -266,13 +266,13 @@ jobs:
           git submodule update --init --depth 1
       - name: Cache clang (v16.0.4)
         id: clang16-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/clang+llvm-16.0.4-x86_64-linux-gnu-ubuntu-22.04
           key: ${{ runner.os }}-toolchain-clang16-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/go-build
@@ -350,7 +350,7 @@ jobs:
         with:
           go-version: '>=1.19.0'
       - name: Cache golang
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/Library/Caches/go-build
