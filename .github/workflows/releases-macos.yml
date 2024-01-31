@@ -56,27 +56,27 @@ jobs:
           git submodule update --init --depth 1
       - name: Cache clang
         id: clang-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/llvm-build/Release+Asserts
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache depot_tools
         id: depot-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/depot_tools
           key: ${{ runner.os }}-depot_tools-v1
       - name: Cache crashpad build stage
         id: crashpad-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/crashpad
           key: ${{ runner.os }}-mac-${{ matrix.arch }}-crashpad-${{ hashFiles('CRASHPAD_COMMIT') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang (tools only)
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/Library/Caches/go-build

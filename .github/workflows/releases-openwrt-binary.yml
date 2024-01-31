@@ -68,13 +68,13 @@ jobs:
           patch -p1 < v8-6.7.17-fix-gcc-unwind-header.patch
       - name: Cache clang
         id: clang-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/llvm-build/Release+Asserts
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/go-build
@@ -84,7 +84,7 @@ jobs:
             ${{ runner.os }}-go-docker-
       - name: Cache openwrt sdk home
         id: openwrt-sdkhome-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             openwrt-sdk-*.Linux-x86_64

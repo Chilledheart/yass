@@ -44,7 +44,7 @@ jobs:
           git submodule update --init --depth 1
       - name: Cache clang, nasm and wixtoolset 3
         id: clang-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/nasm
@@ -52,7 +52,7 @@ jobs:
             third_party/wix311
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             %LocalAppData%\go-build
@@ -107,13 +107,13 @@ jobs:
           git submodule update --init --depth 1
       - name: Cache clang
         id: clang-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/llvm-build/Release+Asserts
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/Library/Caches/go-build
@@ -153,13 +153,13 @@ jobs:
           git submodule update --init --depth 1
       - name: Cache clang
         id: clang-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/llvm-build/Release+Asserts
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/go-build

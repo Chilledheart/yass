@@ -81,13 +81,13 @@ jobs:
           patch -p1 < v8-6.7.17-fix-gcc-unwind-header.patch
       - name: Cache clang
         id: clang-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             third_party/llvm-build/Release+Asserts
           key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             /tmp/.cache/go-build
@@ -158,14 +158,12 @@ jobs:
           sudo chown -R $USER:sbuild /etc/schroot/chroot.d /var/lib/schroot/chroots
       - name: Cache schroot
         id: schroot-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             /etc/schroot/chroot.d
             /var/lib/schroot/chroots
           key: ${{ runner.os }}-22.04-schroot-${{ env.HOST_DISTRO }}-${{ env.HOST_ARCH }}-v${{ env.CACHE_EPOCH}}
-          restore-keys: |
-            ${{ runner.os }}-22.04-schroot-${{ env.HOST_DISTRO }}-${{ env.HOST_ARCH }}-
       - name: Fix schroot permissions (restore root permissions)
         run: |
           sudo chown -R root:root /etc/schroot/chroot.d /var/lib/schroot/chroots
