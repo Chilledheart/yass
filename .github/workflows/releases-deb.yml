@@ -164,8 +164,6 @@ jobs:
             /etc/schroot/chroot.d
             /var/lib/schroot/chroots
           key: ${{ runner.os }}-22.04-schroot-${{ env.HOST_DISTRO }}-${{ env.HOST_ARCH }}-v${{ env.CACHE_EPOCH}}
-          restore-keys: |
-            ${{ runner.os }}-22.04-schroot-${{ env.HOST_DISTRO }}-${{ env.HOST_ARCH }}-
       - name: Fix schroot permissions (restore root permissions)
         run: |
           sudo chown -R root:root /etc/schroot/chroot.d /var/lib/schroot/chroots
