@@ -830,13 +830,13 @@ static napi_value saveConfig(napi_env env, napi_callback_info info) {
                                                        username, password, method,
                                                        local_host, local_port, timeout);
 
-  if (err_msg.empty()) {
+  napi_value result;
+  status = napi_create_string_utf8(env, err_msg.c_str(), err_msg.size(), &result);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_create_string_utf8 failed");
     return nullptr;
   }
-
-  // should me use throw?
-  napi_throw_error(env, nullptr, err_msg.c_str());
-  return nullptr;
+  return result;
 }
 
 static napi_value getServerHost(napi_env env, napi_callback_info info) {

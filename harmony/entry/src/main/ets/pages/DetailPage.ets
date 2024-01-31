@@ -1,8 +1,8 @@
 import router from '@ohos.router';
 import { DetailListComponent } from '../view/DetailListComponent';
 import { CommonConstants } from '../constants/CommonConstants';
-import { DataItem } from '../viewmodel/DataItem';
-import AboutViewModel from '../viewmodel/AboutViewModel';
+import { YassDataItem } from '../viewmodel/YassDataItem';
+import YassViewModel from '../viewmodel/YassViewModel';
 import hilog from '@ohos.hilog';
 import yass from 'libyass.so';
 
@@ -20,14 +20,15 @@ enum StartState {
 @Component
 struct DetailPage {
   private titleParam: Resource = $r('app.string.title_name');
-  private dataParam: Array<DataItem>;
+  @State private dataParam: YassDataItem = new YassDataItem;
 
   private state: StartState = StartState.STOPPED;
+  @State private status: string = "";
 
   aboutToAppear() {
-    let appInfo: DataItem[] = AboutViewModel.getYassInfo()
-    this.titleParam = appInfo[0].title
-    this.dataParam = appInfo
+    this.titleParam = $r('app.string.title_name');
+    this.dataParam = YassViewModel.getYassData();
+    this.status = "Disconnected with " + this.dataParam.serverHost;
   }
 
   build() {
@@ -54,7 +55,7 @@ struct DetailPage {
             lg: CommonConstants.OFFSET_LG
           }
         }) {
-          DetailListComponent({ detailList: this.dataParam })
+          DetailListComponent({ dataItem: $dataParam })
         }
       }
 
@@ -71,11 +72,16 @@ struct DetailPage {
         })
         Blank()
         Button($r('app.string.stop_button'), { type: ButtonType.Capsule,
-          stateEffect:  this.state == StartState.STARTED }).onClick((event: ClickEvent) => {
+          stateEffect: this.state == StartState.STARTED }).onClick((event: ClickEvent) => {
           if (this.state == StartState.STARTED) {
             this.onStopClicked();
           }
         })
+      }
+      Row() {
+        Text(this.status)
+          .fontSize($r('app.float.name_text_size'))
+          .fontColor($r('app.color.text'))
       }
     }
     .width(CommonConstants.DETAIL_COLUMN_WIDTH_PERCENT)
@@ -107,24 +113,40 @@ struct DetailPage {
 
   onStartClicked() {
     this.state = StartState.STARTING;
+    this.status = "Starting";
+
+    let err_msg = yass.saveConfig(this.dataParam.serverHost, this.dataParam.serverSNI, this.dataParam.serverPort.toString(),
+        this.dataParam.username, this.dataParam.password, this.dataParam.cipher, this.dataParam.timeout.toString());
+    if (err_msg != '') {
+      this.onStartFailedWithMsg(err_msg);
+      return;
+    }
+
     yass.startWorker((err_msg: string) => {
       hilog.info(0x0000, 'yass', 'started %s', err_msg);
       if (err_msg == '') {
         this.state = StartState.STARTED;
-        AlertDialog.show({ message: 'The start is successful' })
+        let rates = yass.getTransferRate();
+        this.status = "Connected rx rate " + rates[0] + " tx rate " + rates[1];
       } else {
-        this.state = StartState.STOPPED;
-        AlertDialog.show({ message: 'The start failed: ' + err_msg })
+        this.onStartFailedWithMsg(err_msg);
       }
     })
   }
 
+  onStartFailedWithMsg(err_msg) {
+    this.state = StartState.STOPPED;
+    this.status = "Failed to start due to " + err_msg;
+    AlertDialog.show({ message: 'The start failed: ' + err_msg })
+  }
+
   onStopClicked() {
     this.state = StartState.STOPPING;
+    this.status = "Stopping"
     yass.stopWorker(() => {
       hilog.info(0x0000, 'yass', 'stopped %d');
       this.state = StartState.STOPPED;
-      AlertDialog.show({ message: 'The stop is successful' })
+      this.status = "Disconnected with " + this.dataParam.serverHost;
     })
   }
 }
