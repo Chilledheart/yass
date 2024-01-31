@@ -25,6 +25,8 @@ struct DetailPage {
   private state: StartState = StartState.STOPPED;
   @State private status: string = "";
 
+  private timer_id: number;
+
   aboutToAppear() {
     this.titleParam = $r('app.string.title_name');
     this.dataParam = YassViewModel.getYassData();
@@ -126,12 +128,20 @@ struct DetailPage {
       hilog.info(0x0000, 'yass', 'started %s', err_msg);
       if (err_msg == '') {
         this.state = StartState.STARTED;
-        let rates = yass.getTransferRate();
-        this.status = "Connected rx rate " + rates[0] + " tx rate " + rates[1];
+        this.onUpdateTransferRate();
       } else {
         this.onStartFailedWithMsg(err_msg);
       }
     })
+  }
+
+  onUpdateTransferRate() {
+    let rates = yass.getTransferRate();
+    this.status = "Connected rx rate " + rates[0] + " tx rate " + rates[1];
+    hilog.warn(0x0000, 'yass', '%{public}s', 'on refresh: ' + this.status);
+    this.timer_id = setTimeout(() => {
+      this.onUpdateTransferRate();
+    }, 1000);
   }
 
   onStartFailedWithMsg(err_msg) {
@@ -143,6 +153,7 @@ struct DetailPage {
   onStopClicked() {
     this.state = StartState.STOPPING;
     this.status = "Stopping"
+    clearTimeout(this.timer_id);
     yass.stopWorker(() => {
       hilog.info(0x0000, 'yass', 'stopped %d');
       this.state = StartState.STOPPED;
