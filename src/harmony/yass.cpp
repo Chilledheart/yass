@@ -608,7 +608,8 @@ static void stopWorkerCallingJS(napi_env env, napi_value /*js_cb*/, void *contex
     return;
   }
 
-  status = napi_call_function(env, global, cb, 0, nullptr, nullptr);
+  napi_value result;
+  status = napi_call_function(env, global, cb, 0, nullptr, &result);
   if (status != napi_ok) {
     LOG(WARNING) << "napi_call_function: " << status;
     return;
