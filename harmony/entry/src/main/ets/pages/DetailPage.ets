@@ -5,6 +5,9 @@ import { YassDataItem } from '../viewmodel/YassDataItem';
 import YassViewModel from '../viewmodel/YassViewModel';
 import hilog from '@ohos.hilog';
 import yass from 'libyass.so';
+// import wifiManager from '@ohos.wifiManager';
+import wifi from '@ohos.wifi';
+import UIAbility from '@ohos.app.ability.UIAbility';
 
 /**
  * Detail page. Click the item on about page to jump to the detail page.
@@ -23,14 +26,16 @@ struct DetailPage {
   @State private dataParam: YassDataItem = new YassDataItem;
 
   private state: StartState = StartState.STOPPED;
-  @State private status: string = "";
+  @State private status: Resource = $r('app.string.status_stopped', 'localhost', 0);
+  @State private wifi_status: Resource = $r('app.string.current_ip', '0.0.0.0', 0);
 
   private timer_id: number;
 
   aboutToAppear() {
     this.titleParam = $r('app.string.title_name');
     this.dataParam = YassViewModel.getYassData();
-    this.status = "Disconnected with " + this.dataParam.serverHost;
+    this.status = $r('app.string.status_stopped', this.dataParam.serverHost, this.dataParam.serverPort);
+    this.wifi_status = $r('app.string.current_ip', this.getWifiAddress(), 0)
   }
 
   build() {
@@ -66,25 +71,48 @@ struct DetailPage {
         right: $r('app.float.grid_row_margin_right')
       })
       Row() {
+        Text(this.status)
+          .width(CommonConstants.DETAIL_LIST_WIDTH_PERCENT)
+          .fontSize($r('app.float.name_text_size'))
+          .fontColor($r('app.color.text'))
+      }
+      .margin({
+        left: $r('app.float.grid_row_margin_left'),
+        right: $r('app.float.grid_row_margin_right')
+      })
+      Row() {
+        Text(this.wifi_status)
+          .width(CommonConstants.DETAIL_LIST_WIDTH_PERCENT)
+          .fontSize($r('app.float.name_text_size'))
+          .fontColor($r('app.color.text'))
+      }
+      .margin({
+        left: $r('app.float.grid_row_margin_left'),
+        right: $r('app.float.grid_row_margin_right')
+      })
+      Row() {
         Button($r('app.string.start_button'), { type: ButtonType.Capsule,
-          stateEffect: this.state == StartState.STOPPED }).onClick((event: ClickEvent) => {
+          stateEffect: this.state == StartState.STOPPED })
+          .width(CommonConstants.DETAIL_INPUT_WIDTH_PERCENT)
+          .onClick((event: ClickEvent) => {
           if (this.state == StartState.STOPPED) {
             this.onStartClicked();
           }
         })
         Blank()
         Button($r('app.string.stop_button'), { type: ButtonType.Capsule,
-          stateEffect: this.state == StartState.STARTED }).onClick((event: ClickEvent) => {
+          stateEffect: this.state == StartState.STARTED })
+          .width(CommonConstants.DETAIL_INPUT_WIDTH_PERCENT)
+          .onClick((event: ClickEvent) => {
           if (this.state == StartState.STARTED) {
             this.onStopClicked();
           }
         })
       }
-      Row() {
-        Text(this.status)
-          .fontSize($r('app.float.name_text_size'))
-          .fontColor($r('app.color.text'))
-      }
+      .margin({
+        left: $r('app.float.grid_row_margin_left'),
+        right: $r('app.float.grid_row_margin_right')
+      })
     }
     .width(CommonConstants.DETAIL_COLUMN_WIDTH_PERCENT)
     .height(CommonConstants.DETAIL_COLUMN_HEIGHT_PERCENT)
@@ -115,7 +143,7 @@ struct DetailPage {
 
   onStartClicked() {
     this.state = StartState.STARTING;
-    this.status = "Starting";
+    this.status = $r('app.string.status_starting');
 
     let err_msg = yass.saveConfig(this.dataParam.serverHost, this.dataParam.serverSNI, this.dataParam.serverPort.toString(),
         this.dataParam.username, this.dataParam.password, this.dataParam.cipher, this.dataParam.timeout.toString());
@@ -124,10 +152,11 @@ struct DetailPage {
       return;
     }
 
-    yass.startWorker((err_msg: string) => {
+    yass.startWorker((err_msg: string, port: number) => {
       hilog.info(0x0000, 'yass', 'started %s', err_msg);
       if (err_msg == '') {
         this.state = StartState.STARTED;
+        this.wifi_status = $r('app.string.current_ip', this.getWifiAddress(), port);
         this.onUpdateTransferRate();
       } else {
         this.onStartFailedWithMsg(err_msg);
@@ -137,7 +166,7 @@ struct DetailPage {
 
   onUpdateTransferRate() {
     let rates = yass.getTransferRate();
-    this.status = "Connected rx rate " + rates[0] + " tx rate " + rates[1];
+    this.status = $r('app.string.status_started_with_rate', rates[0], rates[1]);
     hilog.warn(0x0000, 'yass', '%{public}s', 'on refresh: ' + this.status);
     this.timer_id = setTimeout(() => {
       this.onUpdateTransferRate();
@@ -146,18 +175,30 @@ struct DetailPage {
 
   onStartFailedWithMsg(err_msg) {
     this.state = StartState.STOPPED;
-    this.status = "Failed to start due to " + err_msg;
-    AlertDialog.show({ message: 'The start failed: ' + err_msg })
+    this.status = $r('app.string.status_started_with_error_msg', err_msg);
+    AlertDialog.show({ message: 'The start failed: ' + err_msg });
   }
 
   onStopClicked() {
     this.state = StartState.STOPPING;
-    this.status = "Stopping"
+    this.status = $r('app.string.status_stopping');
     clearTimeout(this.timer_id);
     yass.stopWorker(() => {
       hilog.info(0x0000, 'yass', 'stopped %d');
       this.state = StartState.STOPPED;
-      this.status = "Disconnected with " + this.dataParam.serverHost;
+      this.status = $r('app.string.status_stopped', this.dataParam.serverHost, this.dataParam.serverPort);
     })
+  }
+
+  getWifiAddress() {
+    if (wifi.isConnected()) {
+      return wifi.getIpInfo().ipAddress.toString();
+    }
+    /* FIXME crash on emulator
+    if (wifiManager.isConnected()) {
+      return wifiManager.getIpInfo().ipAddress.toString();
+    }
+    */
+    return "0.0.0.0";
   }
 }
