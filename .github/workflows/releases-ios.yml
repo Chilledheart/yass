@@ -54,7 +54,7 @@ jobs:
           path: |
             ~/.cargo
           key: ${{ runner.os }}-ios-cargo-${{ hashFiles('third_party/tun2proxy/Cargo.toml') }}-${{ hashFiles('third_party/tun2proxy/Cargo.lock') }}
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: '>=1.19.0'
       - name: Cache golang (tools only)
