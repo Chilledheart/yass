@@ -18,106 +18,170 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <TextView
-            android:id="@+id/serverHostTextView"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/label_server_host" />
+            android:orientation="horizontal">
 
-        <EditText
-            android:id="@+id/serverHostEditText"
+            <TextView
+                android:id="@+id/serverHostTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/label_server_host" />
+
+            <EditText
+                android:id="@+id/serverHostEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:inputType="text"
+                android:textAlignment="center" />
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:ems="10"
-            android:inputType="text" />
+            android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/serverSNITextView"
+            <TextView
+                android:id="@+id/serverSNITextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/label_server_sni" />
+
+            <EditText
+                android:id="@+id/serverSNIEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:inputType="text"
+                android:textAlignment="center" />
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/label_server_sni" />
+            android:orientation="horizontal">
 
-        <EditText
-            android:id="@+id/serverSNIEditText"
+            <TextView
+                android:id="@+id/serverPortTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/label_server_port" />
+
+            <EditText
+                android:id="@+id/serverPortEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:inputType="number"
+                android:textAlignment="center" />
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:ems="10"
-            android:inputType="text" />
+            android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/serverPortTextView"
+            <TextView
+                android:id="@+id/usernameTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/label_username" />
+
+            <EditText
+                android:id="@+id/usernameEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:inputType="text"
+                android:textAlignment="center" />
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/label_server_port" />
+            android:orientation="horizontal">
 
-        <EditText
-            android:id="@+id/serverPortEditText"
+            <TextView
+                android:id="@+id/passwordTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/label_password" />
+
+            <EditText
+                android:id="@+id/passwordEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:inputType="textPassword"
+                android:textAlignment="center" />
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:ems="10"
-            android:inputType="number" />
+            android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/usernameTextView"
+            <TextView
+                android:id="@+id/cipherTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/label_cipher" />
+
+            <Spinner
+                android:id="@+id/cipherSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/label_username" />
+            android:orientation="horizontal">
 
-        <EditText
-            android:id="@+id/usernameEditText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ems="10"
-            android:inputType="text" />
+            <TextView
+                android:id="@+id/timeoutTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/label_timeout" />
 
-        <TextView
-            android:id="@+id/passwordTextView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/label_password" />
-
-        <EditText
-            android:id="@+id/passwordEditText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ems="10"
-            android:inputType="textPassword" />
-
-        <TextView
-            android:id="@+id/cipherTextView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/label_cipher" />
-
-        <Spinner
-            android:id="@+id/cipherSpinner"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <TextView
-            android:id="@+id/timeoutTextView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/label_timeout" />
-
-        <EditText
-            android:id="@+id/timeoutEditText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ems="10"
-            android:inputType="number" />
+            <EditText
+                android:id="@+id/timeoutEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:inputType="number"
+                android:textAlignment="center" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/statusTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/status_ready" />
+            android:text="@string/status_ready"
+            android:textAlignment="center" />
 
         <TextView
             android:id="@+id/currentIpTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/status_current_ip_address" />
+            android:text="@string/status_current_ip_address"
+            android:textAlignment="center" />
 
         <Button
             android:id="@+id/startButton"
