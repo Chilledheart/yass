@@ -334,7 +334,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-13]
+        os: [macos-14]
         build_type: [Debug, Release]
     runs-on: ${{ matrix.os }}
     env:
@@ -346,7 +346,7 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: '>=1.19.0'
       - name: Cache golang
@@ -367,11 +367,10 @@ jobs:
           # brew update
           # brew install ninja cmake p7zip
           brew install ninja
-      - name: Set up Xcode to 15.1 (macos 13)
-        if: ${{ matrix.os == 'macos-13' }}
+      - name: Set up Xcode to 15.2 (macos 14)
+        if: ${{ matrix.os == 'macos-14' }}
         run: |
-          # ignore buggy apple clang 13 from Xcode 13
-          sudo xcode-select -s /Applications/Xcode_15.1.app
+          sudo xcode-select -s /Applications/Xcode_15.2.app
       - name: Build
         run: |
           export CC=$(xcrun --find clang)
@@ -379,7 +378,7 @@ jobs:
           ./tools/build -no-packaging -build-test
       - name: Run tests
         run: |
-          cd build-darwin-amd64
+          cd build-darwin-arm64
           ./yass_test --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks4
           ./yass_test --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks4a
           ./yass_test --gtest_shuffle --gtest_repeat=10 --gtest_throw_on_failure --proxy_type socks5

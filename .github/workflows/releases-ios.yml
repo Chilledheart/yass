@@ -25,7 +25,7 @@ env:
   GOPROXY: direct
 jobs:
   ios-simulator-release:
-    runs-on: macos-13
+    runs-on: macos-14
     strategy:
       fail-fast: false
       matrix:
@@ -46,7 +46,7 @@ jobs:
         with:
           path: |
             third_party/llvm-build/Release+Asserts
-          key: ${{ runner.os }}-toolchain-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-toolchain-arm64-${{ hashFiles('CLANG_REVISION') }}-v${{ env.CACHE_EPOCH }}
       - name: Cache cargo build stage
         id: cargo-cache
         uses: actions/cache@v4
@@ -54,7 +54,7 @@ jobs:
           path: |
             ~/.cargo
           key: ${{ runner.os }}-ios-cargo-${{ hashFiles('third_party/tun2proxy/Cargo.toml') }}-${{ hashFiles('third_party/tun2proxy/Cargo.lock') }}
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: '>=1.19.0'
       - name: Cache golang (tools only)
@@ -72,6 +72,12 @@ jobs:
           go build
       - name: "Install dependency: tun2proxy"
         run: |
+          # required by m1 runner
+          # https://github.com/actions/runner-images/blob/main/images/macos/scripts/build/install-rust.sh
+          rm -rf $HOME/.cargo
+          brew install rustup-init
+          rustup-init -y --no-modify-path --default-toolchain=stable --profile=minimal
+          source "$HOME/.cargo/env"
           ./scripts/setup-ios-rust.sh
           WITH_OS=ios-sim WITH_CPU=${{ matrix.arch }} ./scripts/build-tun2proxy.sh
       - name: "Install dependency: prebuilt clang and clang-tidy binaries"
@@ -84,15 +90,14 @@ jobs:
           # brew update
           # brew install ninja cmake p7zip
           brew install ninja
-      - name: Set up Xcode to 15.1 (macos 13)
+      - name: Set up Xcode to 15.2 (macos 14)
         run: |
-          # ignore buggy apple clang 13 from Xcode 13
-          sudo xcode-select -s /Applications/Xcode_15.1.app
-      - name: Build and Run tests (x64)
-        if: ${{ matrix.arch == 'x64' }}
+          sudo xcode-select -s /Applications/Xcode_15.2.app
+      - name: Build and Run tests (arm64)
+        if: ${{ matrix.arch == 'arm64' }}
         run: |
           ./tools/build --system ios --subsystem simulator --arch ${{ matrix.arch }} -run-test
-      - name: Build (non-x64)
-        if: ${{ matrix.arch != 'x64' }}
+      - name: Build (non-arm64)
+        if: ${{ matrix.arch != 'arm64' }}
         run: |
           ./tools/build --system ios --subsystem simulator --arch ${{ matrix.arch }} -build-test
