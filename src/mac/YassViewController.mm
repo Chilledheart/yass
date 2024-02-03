@@ -84,54 +84,63 @@
 
 - (void)OnStart {
   [self.startButton setEnabled:FALSE];
+  [self.stopButton setEnabled:FALSE];
+
+  [self.serverHost setEnabled:FALSE];
+  [self.serverSNI setEnabled:FALSE];
+  [self.serverPort setEnabled:FALSE];
+  [self.username setEnabled:FALSE];
+  [self.password setEnabled:FALSE];
+  [self.cipherMethod setEnabled:FALSE];
+  [self.localHost setEnabled:FALSE];
+  [self.localPort setEnabled:FALSE];
+  [self.timeout setEnabled:FALSE];
 
   YassWindowController* windowController = (YassWindowController*)self.view.window.windowController;
   [windowController OnStart];
 }
 
 - (void)OnStop {
+  [self.startButton setEnabled:FALSE];
   [self.stopButton setEnabled:FALSE];
+
   YassWindowController* windowController = (YassWindowController*)self.view.window.windowController;
   [windowController OnStop];
 }
 
 - (void)Started {
-  [self.serverHost setEditable:FALSE];
-  [self.serverSNI setEditable:FALSE];
-  [self.serverPort setEditable:FALSE];
-  [self.username setEditable:FALSE];
-  [self.password setEditable:FALSE];
-  [self.cipherMethod setEditable:FALSE];
-  [self.localHost setEditable:FALSE];
-  [self.localPort setEditable:FALSE];
-  [self.timeout setEditable:FALSE];
+  [self.startButton setEnabled:FALSE];
   [self.stopButton setEnabled:TRUE];
 }
 
 - (void)StartFailed {
-  [self.serverHost setEditable:TRUE];
-  [self.serverSNI setEditable:TRUE];
-  [self.serverPort setEditable:TRUE];
-  [self.username setEditable:TRUE];
-  [self.password setEditable:TRUE];
-  [self.cipherMethod setEditable:TRUE];
-  [self.localHost setEditable:TRUE];
-  [self.localPort setEditable:TRUE];
-  [self.timeout setEditable:TRUE];
   [self.startButton setEnabled:TRUE];
+  [self.stopButton setEnabled:FALSE];
+
+  [self.serverHost setEnabled:TRUE];
+  [self.serverSNI setEnabled:TRUE];
+  [self.serverPort setEnabled:TRUE];
+  [self.username setEnabled:TRUE];
+  [self.password setEnabled:TRUE];
+  [self.cipherMethod setEnabled:TRUE];
+  [self.localHost setEnabled:TRUE];
+  [self.localPort setEnabled:TRUE];
+  [self.timeout setEnabled:TRUE];
 }
 
 - (void)Stopped {
-  [self.serverHost setEditable:TRUE];
-  [self.serverSNI setEditable:TRUE];
-  [self.serverPort setEditable:TRUE];
-  [self.username setEditable:TRUE];
-  [self.password setEditable:TRUE];
-  [self.cipherMethod setEditable:TRUE];
-  [self.localHost setEditable:TRUE];
-  [self.localPort setEditable:TRUE];
-  [self.timeout setEditable:TRUE];
   [self.startButton setEnabled:TRUE];
+  [self.stopButton setEnabled:FALSE];
+
+  [self.serverHost setEnabled:TRUE];
+  [self.serverSNI setEnabled:TRUE];
+  [self.serverPort setEnabled:TRUE];
+  [self.username setEnabled:TRUE];
+  [self.password setEnabled:TRUE];
+  [self.cipherMethod setEnabled:TRUE];
+  [self.localHost setEnabled:TRUE];
+  [self.localPort setEnabled:TRUE];
+  [self.timeout setEnabled:TRUE];
 }
 
 - (void)LoadChanges {

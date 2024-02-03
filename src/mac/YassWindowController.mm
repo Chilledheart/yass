@@ -151,7 +151,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   last_tx_bytes_ = 0U;
   cli::total_rx_bytes = 0U;
   cli::total_tx_bytes = 0U;
-  [appDelegate OnStart:FALSE];
+  [appDelegate OnStart];
 }
 
 - (void)OnStop {
