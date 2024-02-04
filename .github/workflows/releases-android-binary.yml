@@ -170,11 +170,30 @@ jobs:
           sudo dpkg -i qemu-user-static_*.deb
           # required by mbedtls build
           sudo apt-get install -y python3-jsonschema python3-jinja2
+      - name: Install the Release certificate
+        if: ${{ github.event_name == 'release' }}
+        env:
+          SIGNING_STORE_BASE64: ${{ secrets.SIGNING_STORE_BASE64 }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          echo -n "$SIGNING_STORE_BASE64" | base64 --decode > $RUNNER_TEMP/release.jks
+          echo "SIGNING_STORE_PATH=$RUNNER_TEMP/release.jks" >> $GITHUB_ENV
+          echo "SIGNING_STORE_PASSWORD=$SIGNING_STORE_PASSWORD" >> $GITHUB_ENV
+          echo "SIGNING_KEY_ALIAS=$SIGNING_KEY_ALIAS" >> $GITHUB_ENV
+          echo "SIGNING_KEY_PASSWORD=$SIGNING_KEY_PASSWORD" >> $GITHUB_ENV
       - name: Build TGZ packages
         run: |
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system android --cmake-build-type MinSizeRel \
             -build-benchmark -build-test \
             -android-sdk-dir "${ANDROID_HOME}" -android-ndk-dir "${ANDROID_NDK_HOME}"
+      - name: Clean up keychain and provisioning profile
+        if: ${{ always() }}
+        run: |
+          if [ ! -z $SIGNING_STORE_PATH ]; then
+            rm -f $SIGNING_STORE_PATH
+          fi
       - name: "Install dependency: android sysroot (test purpose)"
         if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
         run: |
