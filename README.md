@@ -22,7 +22,7 @@ More Information refers to [wiki](https://github.com/Chilledheart/yass/wiki) and
 ## Usages
 
 ### Prebuilt binaries
-- Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.5.24/yass-android-release-arm64-1.5.24.apk)
+- Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.5.24/yass-android-release-arm64-1.5.24.apk) or [download 32-bit apk](https://github.com/Chilledheart/yass/releases/download/1.5.24/yass-android-release-arm-1.5.24.apk)
 - iOS [join via TestFlight](https://testflight.apple.com/join/6AkiEq09) or [download ipa](https://github.com/Chilledheart/yass/releases/download/1.5.24/yass-ios-release-arm64-1.5.24.ipa)
 - Windows [download zip](https://github.com/Chilledheart/yass/releases/download/1.5.24/yass-mingw-winxp-release-i686-1.5.24.zip) or [download woa zip](https://github.com/Chilledheart/yass/releases/download/1.5.24/yass-mingw-release-aarch64-1.5.24.zip)
 - macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.5.24/yass-macos-release-x64-1.5.24.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.5.24/yass-macos-release-arm64-1.5.24.dmg)
