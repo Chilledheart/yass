@@ -16,8 +16,30 @@ android {
             jniLibs.srcDirs = ['libs'] // add your jni .so file path
         }
     }
+    signingConfigs {
+        release {
+            def keystorePath = System.getenv("SIGNING_STORE_PATH")
+
+            if (keystorePath == null) {
+                keystorePath = "../keystore/debug_keystore.jks"
+                storePassword = "abc123"
+                keyAlias = "key0"
+                keyPassword = "abc123"
+            } else {
+                storePassword = System.getenv("SIGNING_STORE_PASSWORD")
+                keyAlias = System.getenv("SIGNING_KEY_ALIAS")
+                keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
+            }
+
+            storeFile = file(keystorePath)
+            storePassword storePassword
+            keyAlias keyAlias
+            keyPassword keyPassword
+        }
+    }
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
