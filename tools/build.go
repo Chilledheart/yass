@@ -1905,6 +1905,12 @@ func archiveMainFile(output string, prefix string, paths []string, dllPaths []st
 			if (androidNdkDir != "") {
 				localProperties += fmt.Sprintf("ndk.dir=%s\n", androidNdkDir)
 			}
+			tagVersionStrs := strings.Split(tagFlag, ".")
+			tagMajorVer, _ := strconv.Atoi(tagVersionStrs[0])
+			tagMinorVer, _ := strconv.Atoi(tagVersionStrs[1])
+			tagPatchVer, _ := strconv.Atoi(tagVersionStrs[2])
+			localProperties += fmt.Sprintf("YASS_VERSION=%d\n", tagMajorVer * 1000000 + tagMinorVer * 1000 + tagPatchVer)
+			localProperties += fmt.Sprintf("YASS_VERSION_NAME=%s\n", tagFlag)
 			err = ioutil.WriteFile("local.properties", []byte(localProperties), 0666)
 			if err != nil {
 				glog.Fatalf("%v", err)
