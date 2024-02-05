@@ -1922,6 +1922,8 @@ func archiveMainFile(output string, prefix string, paths []string, dllPaths []st
 				glog.Fatalf("%v", err)
 			}
 		}
+		// stop gradle daemon after build
+		cmdRun([]string{"./gradlew", "--stop"}, true)
 		err = os.Chdir(buildDir)
 		if err != nil {
 			glog.Fatalf("%v", err)
