@@ -2,12 +2,16 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
+
+    def Properties properties = new Properties()
+    properties.load(project.rootProject.file("local.properties").newDataInputStream())
+
     defaultConfig {
         applicationId 'it.gui.yass'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName '1.0'
+        versionCode properties.getProperty("YASS_VERSION", "1").trim().toInteger()
+        versionName properties.getProperty("YASS_VERSION_NAME", "1.0").trim()
     }
     sourceSets {
         main {
