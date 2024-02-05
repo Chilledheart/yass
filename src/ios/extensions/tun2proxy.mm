@@ -42,7 +42,7 @@ static NEPacket *packetFromData(NSData *data) {
   return [[NEPacket alloc] initWithData:data protocolFamily:version == 6 ? AF_INET6 : AF_INET];
 }
 
-static void WritePackets(void* context, void** packets, const size_t* packetLengths,
+static void WritePackets(void* context, void* const* packets, const size_t* packetLengths,
                          int packetsCount) {
   Tun2Proxy_InitContext *c = reinterpret_cast<Tun2Proxy_InitContext*>(context);
   NEPacketTunnelFlow* packetFlow = c->packetFlow;
