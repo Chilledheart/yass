@@ -51,34 +51,3 @@ macos_task:
     '.circleci/**',
     '.github/**'
     )"
-
-  name: macOS arm64
-  macos_instance:
-    image: ghcr.io/cirruslabs/macos-ventura-xcode:latest
-
-  matrix:
-    - name: macOS arm64 release
-      env:
-        configure: -DCMAKE_BUILD_TYPE=Release
-
-  env:
-    CIRRUS_CLONE_DEPTH: 10
-
-  pkginstall_script:
-    - echo ninja cmake go p7zip ${install_packages} | xargs -Ix -n1 echo brew '"x"' > /tmp/Brewfile
-    - "while [[ $? == 0 ]]; do for i in 1 2 3; do brew update && brew bundle install --no-lock --file /tmp/Brewfile && break 2 || { echo Error: wait to try again; sleep 10; } done; false Too many retries; done"
-  submodules_script:
-    # unshallow must come first otherwise submodule may be get unshallowed
-    - git fetch --tags --unshallow
-    - git submodule update --init --depth 1
-  configure_script:
-    - mkdir build
-    - cd build
-    - cmake -G Ninja -DGUI=on -DBUILD_TESTS=on -DBORINGSSL_BUILD_TESTS=on ${configure} ..
-  compile_script:
-    - ninja -C build yass yass_test all_tests bssl_shim handshaker
-    - ninja -C build
-  test_script:
-    - ninja -C build check
-    - ninja -C build check_boringssl
-    - ctest --test-dir build/third_party/abseil-cpp || :
