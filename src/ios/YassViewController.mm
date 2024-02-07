@@ -105,7 +105,23 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 }
 
 - (BOOL)textFieldShouldReturn:(UITextField *)textField {
-  [textField resignFirstResponder];
+  if (textField == self.serverHost) {
+    [textField resignFirstResponder];
+    [self.serverPort becomeFirstResponder];
+  } else if (textField == self.serverPort) {
+    [textField resignFirstResponder];
+    [self.username becomeFirstResponder];
+  } else if (textField == self.username) {
+    [textField resignFirstResponder];
+    [self.password becomeFirstResponder];
+  } else if (textField == self.password) {
+    [textField resignFirstResponder];
+    [self.timeout becomeFirstResponder];
+  } else if (textField == self.timeout) {
+    [textField resignFirstResponder];
+    [self OnStart];
+  }
+
   return NO;
 }
 
