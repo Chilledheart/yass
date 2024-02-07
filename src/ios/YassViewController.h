@@ -26,6 +26,8 @@
 - (NSString*)getCipher;
 
 @property (weak, nonatomic) IBOutlet UILabel *status;
+@property (weak, nonatomic) IBOutlet NSLayoutConstraint *bottomConstraint;
+@property (weak, nonatomic) IBOutlet UIScrollView *contentView;
 
 
 @end

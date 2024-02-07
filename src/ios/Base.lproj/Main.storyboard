@@ -163,7 +163,9 @@
                         </constraints>
                     </view>
                     <connections>
+                        <outlet property="bottomConstraint" destination="jt2-ZP-qgJ" id="nnY-MI-aZ1"/>
                         <outlet property="cipherMethod" destination="lHf-f6-QZT" id="8Z3-eA-8Al"/>
+                        <outlet property="contentView" destination="SS9-hV-cEA" id="IGX-hT-btt"/>
                         <outlet property="password" destination="pfU-fE-5kl" id="x6M-3I-sMa"/>
                         <outlet property="serverHost" destination="GsR-Z4-fTf" id="mJM-Ny-yXp"/>
                         <outlet property="serverPort" destination="1hy-kK-Mai" id="oWU-M2-gfa"/>
