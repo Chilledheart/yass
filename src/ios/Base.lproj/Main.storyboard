@@ -35,7 +35,7 @@
                                                     <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" textAlignment="center" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="GsR-Z4-fTf">
                                                         <rect key="frame" x="187" y="0.0" width="187" height="34"/>
                                                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                                        <textInputTraits key="textInputTraits" textContentType="url"/>
+                                                        <textInputTraits key="textInputTraits" returnKeyType="next" textContentType="url"/>
                                                     </textField>
                                                 </subviews>
                                             </stackView>
@@ -51,7 +51,7 @@
                                                     <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" verticalCompressionResistancePriority="749" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" textAlignment="center" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="1hy-kK-Mai">
                                                         <rect key="frame" x="187" y="0.0" width="187" height="34"/>
                                                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                                        <textInputTraits key="textInputTraits" textContentType="url"/>
+                                                        <textInputTraits key="textInputTraits" returnKeyType="next" textContentType="url"/>
                                                     </textField>
                                                 </subviews>
                                             </stackView>
@@ -67,7 +67,7 @@
                                                     <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" textAlignment="center" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="mfn-dW-cAI">
                                                         <rect key="frame" x="187" y="0.0" width="187" height="34"/>
                                                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                                        <textInputTraits key="textInputTraits" textContentType="username"/>
+                                                        <textInputTraits key="textInputTraits" returnKeyType="next" textContentType="username"/>
                                                     </textField>
                                                 </subviews>
                                             </stackView>
@@ -83,7 +83,7 @@
                                                     <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" textAlignment="center" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="pfU-fE-5kl">
                                                         <rect key="frame" x="187" y="0.0" width="187" height="34"/>
                                                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                                        <textInputTraits key="textInputTraits" secureTextEntry="YES" textContentType="password"/>
+                                                        <textInputTraits key="textInputTraits" returnKeyType="next" secureTextEntry="YES" textContentType="password"/>
                                                     </textField>
                                                 </subviews>
                                             </stackView>
@@ -108,7 +108,7 @@
                                                     <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" textAlignment="center" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="mMz-Er-D0n">
                                                         <rect key="frame" x="187" y="0.0" width="187" height="34"/>
                                                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                                        <textInputTraits key="textInputTraits" textContentType="url"/>
+                                                        <textInputTraits key="textInputTraits" returnKeyType="go" textContentType="url"/>
                                                     </textField>
                                                 </subviews>
                                             </stackView>
