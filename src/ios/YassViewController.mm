@@ -72,6 +72,31 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   YassAppDelegate* appDelegate =
       (YassAppDelegate*)UIApplication.sharedApplication.delegate;
   [appDelegate reloadState];
+  [[NSNotificationCenter defaultCenter] addObserverForName:UIKeyboardWillShowNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification * _Nonnull notification) {
+    NSDictionary *userInfo = notification.userInfo;
+    NSTimeInterval duration = [userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue];
+    CGRect keyboardEndFrame = [self.view convertRect:[userInfo[UIKeyboardFrameEndUserInfoKey] CGRectValue] toView:self.view.window];
+
+    CGRect windowFrame = [self.view convertRect:self.view.window.frame toView:self.view.window];
+    CGFloat heightOffset = (windowFrame.size.height - keyboardEndFrame.origin.y) - self.view.frame.origin.y;
+
+    self.bottomConstraint.constant = heightOffset + 20;
+
+    [UIView animateWithDuration:duration
+                     animations:^{
+      [self.view layoutIfNeeded];
+    }];
+  }];
+
+  [[NSNotificationCenter defaultCenter] addObserverForName:UIKeyboardWillHideNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification * _Nonnull notification) {
+    NSDictionary *userInfo = notification.userInfo;
+    NSTimeInterval duration = [userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue];
+    self.bottomConstraint.constant =  20;
+    [UIView animateWithDuration:duration
+                     animations:^{
+      [self.view layoutIfNeeded];
+    }];
+  }];
   [super viewWillAppear:animated];
 }
 
