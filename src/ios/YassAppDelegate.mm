@@ -353,8 +353,8 @@
   YassViewController* viewController = [self getRootViewController];
   [viewController StartFailed];
 
-  UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"Start Failed" message:@(error_msg.c_str()) preferredStyle:UIAlertControllerStyleAlert];
-  UIAlertAction* action = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction* action) {}];
+  UIAlertController* alert = [UIAlertController alertControllerWithTitle:NSLocalizedString(@"START_FAILED", @"Start Failed") message:@(error_msg.c_str()) preferredStyle:UIAlertControllerStyleAlert];
+  UIAlertAction* action = [UIAlertAction actionWithTitle:NSLocalizedString(@"OK", @"OK") style:UIAlertActionStyleDefault handler:^(UIAlertAction* action) {}];
   [alert addAction:action];
   [viewController presentViewController:alert animated:YES completion:nil];
 }
