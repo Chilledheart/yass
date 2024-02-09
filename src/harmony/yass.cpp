@@ -9,7 +9,6 @@
 #include <js_native_api_types.h>
 #include <napi/native_api.h>
 
-#include <iomanip>
 #include <memory>
 #include <thread>
 #include <unistd.h>
@@ -687,22 +686,6 @@ static napi_value stopWorker(napi_env env, napi_callback_info info) {
   return nullptr;
 }
 
-static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
-  if (bytes < 1024) {
-    *ss << bytes << " B";
-    return;
-  }
-  uint64_t value = bytes;
-  char ci[] = {"KMGTPE"};
-  const char* c = ci;
-  for (int i = 40; i >= 0 && bytes > 0xfffccccccccccccLU >> i; i -= 10) {
-    value >>= 10;
-    ++c;
-  }
-  *ss << std::fixed << std::setw(5) << std::setprecision(2) << value / 1024.0
-      << " " << *c;
-}
-
 static uint64_t g_last_sync_time;
 static uint64_t g_last_tx_bytes;
 static uint64_t g_last_rx_bytes;
@@ -726,7 +709,7 @@ static napi_value getTransferRate(napi_env env, napi_callback_info info) {
   }
 
   std::stringstream rx_ss, tx_ss;
-  humanReadableByteCountBin(&rx_ss, rx_rate);
+  HumanReadableByteCountBin(&rx_ss, rx_rate);
   rx_ss << "/s";
 
   napi_value rx_rate_value;
@@ -736,7 +719,7 @@ static napi_value getTransferRate(napi_env env, napi_callback_info info) {
     return nullptr;
   }
 
-  humanReadableByteCountBin(&tx_ss, tx_rate);
+  HumanReadableByteCountBin(&tx_ss, tx_rate);
   tx_ss << "/s";
 
   napi_value tx_rate_value;

@@ -4,7 +4,6 @@
 #include "win32/yass_frame.hpp"
 
 #include <absl/flags/flag.h>
-#include <iomanip>
 #include <sstream>
 
 #include <commctrl.h>
@@ -66,22 +65,6 @@ __CRT_UUID_DECL(TrayIcon, 0x4324603D, 0x4274, 0x47AA, 0xBA, 0xD5, 0x7C, 0xF6, 0x
 #define EDIT_HEIGHT MulDiv(INITIAL_EDIT_HEIGHT, uDpi, 96)
 
 #define STATUS_BAR_HEIGHT MulDiv(INITIAL_STATUS_BAR_HEIGHT, uDpi, 96)
-
-static void humanReadableByteCountBin(std::wostream* ss, uint64_t bytes) {
-  if (bytes < 1024) {
-    *ss << bytes << " B";
-    return;
-  }
-  uint64_t value = bytes;
-  char ci[] = {"KMGTPE"};
-  const char* c = ci;
-  for (int i = 40; i >= 0 && bytes > 0xfffccccccccccccLU >> i; i -= 10) {
-    value >>= 10;
-    ++c;
-  }
-  *ss << std::fixed << std::setw(5) << std::setprecision(2)
-      << static_cast<double>(value) / 1024.0 << " " << *c;
-}
 
 static std::string GetWindowTextStd(HWND hWnd) {
   std::wstring text;
@@ -764,10 +747,10 @@ std::wstring CYassFrame::GetStatusMessage() {
   std::wostringstream ss;
   ss << mApp->GetStatus();
   ss << LoadStringStdW(m_hInstance, IDS_STATUS_TX_RATE); // " tx rate: ";
-  humanReadableByteCountBin(&ss, rx_rate_);
+  HumanReadableByteCountBin(&ss, rx_rate_);
   ss << "/s";
   ss << LoadStringStdW(m_hInstance, IDS_STATUS_RX_RATE); // " rx rate: ";
-  humanReadableByteCountBin(&ss, tx_rate_);
+  HumanReadableByteCountBin(&ss, tx_rate_);
   ss << "/s";
 
   return ss.str();
