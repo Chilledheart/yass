@@ -9,6 +9,7 @@
 #include <thread>
 #include <wchar.h>
 #include <optional>
+#include <iosfwd>
 
 #include <base/compiler_specific.h>
 #include <base/strings/sys_string_conversions.h>
@@ -197,5 +198,10 @@ void PrintTcmallocStats();
 #endif
 std::string DescriptionFromOSStatus(OSStatus err);
 #endif // __APPLE__
+
+void HumanReadableByteCountBin(std::ostream* ss, uint64_t bytes);
+#ifdef _WIN32
+void HumanReadableByteCountBin(std::wostream* ss, uint64_t bytes);
+#endif
 
 #endif  // YASS_UTILS

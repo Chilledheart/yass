@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022-2023 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 
 #include "core/utils.hpp"
 
@@ -22,6 +22,8 @@
 #include <absl/strings/str_cat.h>
 #include <base/posix/eintr_wrapper.h>
 #include <base/strings/string_number_conversions.h>
+#include <iomanip>
+#include <sstream>
 
 #ifdef HAVE_TCMALLOC
 #include <tcmalloc/malloc_extension.h>
@@ -406,5 +408,32 @@ void PrintTcmallocStats() {
       LOG(INFO) << "TCMALLOC: " << property << " = " << *size << " bytes";
     }
   }
+}
+#endif
+
+template<typename T>
+static void HumanReadableByteCountBinT(T* ss, uint64_t bytes) {
+  if (bytes < 1024) {
+    *ss << bytes << " B";
+    return;
+  }
+  uint64_t value = bytes;
+  char ci[] = {"KMGTPE"};
+  const char* c = ci;
+  for (int i = 40; i >= 0 && bytes > 0xfffccccccccccccLU >> i; i -= 10) {
+    value >>= 10;
+    ++c;
+  }
+  *ss << std::fixed << std::setw(5) << std::setprecision(2)
+      << static_cast<double>(value) / 1024.0 << " " << *c;
+}
+
+void HumanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
+  HumanReadableByteCountBinT(ss, bytes);
+}
+
+#ifdef _WIN32
+void HumanReadableByteCountBin(std::wostream* ss, uint64_t bytes) {
+  HumanReadableByteCountBinT(ss, bytes);
 }
 #endif

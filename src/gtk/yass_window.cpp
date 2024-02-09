@@ -3,7 +3,6 @@
 
 #include "gtk/yass_window.hpp"
 
-#include <iomanip>
 #include <sstream>
 
 #include <absl/flags/flag.h>
@@ -16,22 +15,6 @@
 #include "gtk/yass.hpp"
 #include "feature.h"
 #include "version.h"
-
-static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
-  if (bytes < 1024) {
-    *ss << bytes << " B";
-    return;
-  }
-  uint64_t value = bytes;
-  char ci[] = {"KMGTPE"};
-  const char* c = ci;
-  for (int i = 40; i >= 0 && bytes > 0xfffccccccccccccLU >> i; i -= 10) {
-    value >>= 10;
-    ++c;
-  }
-  *ss << std::fixed << std::setw(5) << std::setprecision(2) << value / 1024.0
-      << " " << *c;
-}
 
 YASSWindow::YASSWindow()
     : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))) {
@@ -343,10 +326,10 @@ std::string YASSWindow::GetStatusMessage() {
   std::ostringstream ss;
   ss << mApp->GetStatus();
   ss << _(" tx rate: ");
-  humanReadableByteCountBin(&ss, rx_rate_);
+  HumanReadableByteCountBin(&ss, rx_rate_);
   ss << "/s";
   ss << _(" rx rate: ");
-  humanReadableByteCountBin(&ss, tx_rate_);
+  HumanReadableByteCountBin(&ss, tx_rate_);
   ss << "/s";
 
   return ss.str();
