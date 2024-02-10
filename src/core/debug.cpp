@@ -196,7 +196,7 @@ static pid_t GetDebuggerProcess() {
   char buf[1024];
 
   ssize_t num_read = HANDLE_EINTR(read(status_fd, buf, sizeof(buf)));
-  if (IGNORE_EINTR(close(status_fd)) < 0)
+  if (HANDLE_EINTR(close(status_fd)) < 0)
     return -1;
 
   if (num_read <= 0)

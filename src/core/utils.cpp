@@ -316,7 +316,7 @@ bool Net_ipv6works() {
   using fd_t = int;
 #endif
   /* probe to see if we have a working IPv6 stack */
-  fd_t s = socket(AF_INET6, SOCK_DGRAM, 0);
+  fd_t s = ::socket(AF_INET6, SOCK_DGRAM, 0);
 #ifndef _WIN32
   if (s < 0) {
 #else
@@ -325,9 +325,9 @@ bool Net_ipv6works() {
     return false;
   } else {
 #ifndef _WIN32
-    close(s);
+    IGNORE_EINTR(::close(s));
 #else
-    closesocket(s);
+    ::closesocket(s);
 #endif
     return true;
   }
@@ -341,7 +341,7 @@ ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len) {
   }
   ssize_t ret = HANDLE_EINTR(::read(fd, buf, buf_len - 1));
 
-  if (IGNORE_EINTR(close(fd)) < 0) {
+  if (HANDLE_EINTR(close(fd)) < 0) {
     return -1;
   }
   buf[ret] = '\0';
@@ -374,7 +374,7 @@ ssize_t WriteFileWithBuffer(const std::string& path,
 
   ssize_t ret = WriteFileDescriptor(fd, buf) ? buf.length() : -1;
 
-  if (IGNORE_EINTR(close(fd)) < 0) {
+  if (HANDLE_EINTR(close(fd)) < 0) {
     return -1;
   }
   return ret;
