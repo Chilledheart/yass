@@ -59,7 +59,7 @@ class URandomFd {
     CHECK(fd_ >= 0) << "Cannot open /dev/urandom";
   }
 
-  ~URandomFd() { close(fd_); }
+  ~URandomFd() { IGNORE_EINTR(::close(fd_)); }
 
   int fd() const { return fd_; }
 

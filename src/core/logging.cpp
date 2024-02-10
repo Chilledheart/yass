@@ -1423,7 +1423,7 @@ bool LogFileObject::CreateLogfile(const std::string& time_pid_string) {
 
   int wlock_ret = fcntl(fd, F_SETLK, &w_lock);
   if (wlock_ret == -1) {
-    close(fd);  // as we are failing already, do not check errors here
+    IGNORE_EINTR(::close(fd));  // as we are failing already, do not check errors here
     return false;
   }
 #endif
@@ -1431,7 +1431,7 @@ bool LogFileObject::CreateLogfile(const std::string& time_pid_string) {
   // fdopen in append mode so if the file exists it will fseek to the end
   file_ = fdopen(fd, "a");  // Make a FILE*.
   if (file_ == nullptr) {   // Man, we're screwed!
-    close(fd);
+    IGNORE_EINTR(::close(fd));
     if (absl::GetFlag(FLAGS_tick_counts_in_logfile_name)) {
       unlink(filename);  // Erase the half-baked evidence: an unusable log file,
                          // only if we just created it.
@@ -2683,7 +2683,7 @@ void TruncateLogFile(const char* path, int64_t limit, int64_t keep) {
   }
 
 out_close_fd:
-  close(fd);
+  IGNORE_EINTR(::close(fd));
 #else
   LOG(ERROR) << "No log truncation support.";
 #endif
