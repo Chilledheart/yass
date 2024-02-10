@@ -175,7 +175,7 @@ bool BeingDebugged() {
 
 void VerifyDebugger() {}
 
-#elif defined(OS_LINUX) || defined(OS_ANDROID) || defined(OS_AIX)
+#elif defined(OS_LINUX) || defined(OS_ANDROID) || defined(OS_OHOS) || defined(OS_AIX)
 
 // We can look in /proc/self/status for TracerPid.  We are likely used in crash
 // handling, so we are careful not to use the heap or have side effects.
@@ -263,7 +263,7 @@ void VerifyDebugger() {}
 #define DEBUG_BREAK_ASM() asm("int3")
 #endif
 
-#if defined(NDEBUG) && !defined(OS_APPLE) && !defined(OS_ANDROID)
+#if defined(NDEBUG) && !defined(OS_APPLE) && !defined(OS_ANDROID) && !defined(OS_OHOS)
 #define DEBUG_BREAK() abort()
 #elif !defined(OS_APPLE)
 // Though Android has a "helpful" process called debuggerd to catch native
@@ -311,7 +311,7 @@ void BreakDebuggerAsyncSafe() {
   Alias(&static_variable_to_make_this_function_unique);
 
   DEBUG_BREAK();
-#if defined(OS_ANDROID)
+#if defined(OS_ANDROID) || defined(OS_OHOS)
   // For Android development we always build release (debug builds are
   // unmanageably large), so the unofficial build is used for debugging. It is
   // helpful to be able to insert BreakDebugger() statements in the source,
