@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2023 Chilledheart  */
+/* Copyright (c) 2023-2024 Chilledheart  */
 
 #include <gtest/gtest.h>
 
@@ -128,4 +128,63 @@ TEST(UtilsTest, ReadFileAndWrite4K) {
   ASSERT_EQ(buf, buf2);
 
   ASSERT_TRUE(RemoveFile(tmp));
+}
+
+TEST(UtilsTest, HumanReadableByteCountBin) {
+  std::ostringstream ss;
+
+  ss.str("");
+  ss.clear();
+  HumanReadableByteCountBin(&ss, 1);
+  EXPECT_EQ(ss.str(), "1 B");
+
+  ss.str("");
+  ss.clear();
+  HumanReadableByteCountBin(&ss, 1 << 10);
+  EXPECT_EQ(ss.str(), " 1.00 K");
+
+  ss.str("");
+  ss.clear();
+  HumanReadableByteCountBin(&ss, 1 << 20);
+  EXPECT_EQ(ss.str(), " 1.00 M");
+
+  ss.str("");
+  ss.clear();
+  HumanReadableByteCountBin(&ss, 1 << 30);
+  EXPECT_EQ(ss.str(), " 1.00 G");
+
+  ss.str("");
+  ss.clear();
+  HumanReadableByteCountBin(&ss, 1ULL << 40);
+  EXPECT_EQ(ss.str(), " 1.00 T");
+
+  ss.str("");
+  ss.clear();
+  HumanReadableByteCountBin(&ss, 1ULL << 50);
+  EXPECT_EQ(ss.str(), " 1.00 P");
+
+  ss.str("");
+  ss.clear();
+  HumanReadableByteCountBin(&ss, 1ULL << 60);
+  EXPECT_EQ(ss.str(), " 1.00 E");
+
+  ss.str("");
+  ss.clear();
+  HumanReadableByteCountBin(&ss, 8ULL << 60);
+  EXPECT_EQ(ss.str(), " 8.00 E");
+
+  ss.str("");
+  ss.clear();
+  HumanReadableByteCountBin(&ss, 15 * (1ULL << 60));
+  EXPECT_EQ(ss.str(), "15.00 E");
+
+  ss.str("");
+  ss.clear();
+  HumanReadableByteCountBin(&ss, 15.99 * (1ULL << 60));
+  EXPECT_EQ(ss.str(), "15.99 E");
+
+  ss.str("");
+  ss.clear();
+  HumanReadableByteCountBin(&ss, ~0ULL);
+  EXPECT_EQ(ss.str(), "16.00 E");
 }
