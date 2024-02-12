@@ -219,7 +219,7 @@ static napi_value setProtectFdCallback(napi_env env, napi_callback_info info) {
 
   napi_value work_name;
   // Specify a name to describe this asynchronous operation.
-  status = napi_create_string_utf8(env, kAsyncResourceName, NAPI_AUTO_LENGTH, &work_name);
+  status = napi_create_string_utf8(env, kAsyncResourceName, sizeof(kAsyncResourceName) - 1, &work_name);
   if (status != napi_ok) {
     napi_throw_error(env, nullptr, "napi_create_string_utf8 failed");
     return nullptr;
@@ -445,7 +445,7 @@ static void startWorkerCallingJS(napi_env env, napi_value /*js_cb*/, void *conte
   }
 
   napi_value err_msg;
-  status = napi_create_string_utf8(env, ec_str.c_str(), NAPI_AUTO_LENGTH, &err_msg);
+  status = napi_create_string_utf8(env, ec_str.c_str(), ec_str.size(), &err_msg);
   if (status != napi_ok) {
     LOG(WARNING) << "napi_create_string_utf8: " << status;
     return;
@@ -508,7 +508,7 @@ static napi_value startWorker(napi_env env, napi_callback_info info) {
 
   napi_value work_name;
   // Specify a name to describe this asynchronous operation.
-  status = napi_create_string_utf8(env, kAsyncStartWorkerResourceName, NAPI_AUTO_LENGTH, &work_name);
+  status = napi_create_string_utf8(env, kAsyncStartWorkerResourceName, sizeof(kAsyncStartWorkerResourceName) - 1, &work_name);
   if (status != napi_ok) {
     napi_throw_error(env, nullptr, "napi_create_string_utf8 failed");
     return nullptr;
@@ -643,7 +643,7 @@ static napi_value stopWorker(napi_env env, napi_callback_info info) {
 
   napi_value work_name;
   // Specify a name to describe this asynchronous operation.
-  status = napi_create_string_utf8(env, kAsyncStopWorkerResourceName, NAPI_AUTO_LENGTH, &work_name);
+  status = napi_create_string_utf8(env, kAsyncStopWorkerResourceName, sizeof(kAsyncStopWorkerResourceName) - 1, &work_name);
   if (status != napi_ok) {
     napi_throw_error(env, nullptr, "napi_create_string_utf8 failed");
     return nullptr;
@@ -712,8 +712,9 @@ static napi_value getTransferRate(napi_env env, napi_callback_info info) {
   HumanReadableByteCountBin(&rx_ss, rx_rate);
   rx_ss << "/s";
 
+  std::string rx_ss_str = rx_ss.str();
   napi_value rx_rate_value;
-  auto status = napi_create_string_utf8(env, rx_ss.str().c_str(), NAPI_AUTO_LENGTH, &rx_rate_value);
+  auto status = napi_create_string_utf8(env, rx_ss_str.c_str(), rx_ss_str.size(), &rx_rate_value);
   if (status != napi_ok) {
     napi_throw_error(env, nullptr, "napi_create_string_utf8 failed");
     return nullptr;
@@ -722,8 +723,9 @@ static napi_value getTransferRate(napi_env env, napi_callback_info info) {
   HumanReadableByteCountBin(&tx_ss, tx_rate);
   tx_ss << "/s";
 
+  std::string tx_ss_str = tx_ss.str();
   napi_value tx_rate_value;
-  status = napi_create_string_utf8(env, tx_ss.str().c_str(), NAPI_AUTO_LENGTH, &tx_rate_value);
+  status = napi_create_string_utf8(env, tx_ss_str.c_str(), tx_ss_str.size(), &tx_rate_value);
   if (status != napi_ok) {
     napi_throw_error(env, nullptr, "napi_create_string_utf8 failed");
     return nullptr;
@@ -826,7 +828,8 @@ static napi_value saveConfig(napi_env env, napi_callback_info info) {
 
 static napi_value getServerHost(napi_env env, napi_callback_info info) {
   napi_value value;
-  auto status = napi_create_string_utf8(env, absl::GetFlag(FLAGS_server_host).c_str(), NAPI_AUTO_LENGTH, &value);
+  std::string str = absl::GetFlag(FLAGS_server_host);
+  auto status = napi_create_string_utf8(env, str.c_str(), str.size(), &value);
   if (status != napi_ok) {
     napi_throw_error(env, nullptr, "napi_create_string_utf8 failed");
     return nullptr;
@@ -837,7 +840,8 @@ static napi_value getServerHost(napi_env env, napi_callback_info info) {
 
 static napi_value getServerSNI(napi_env env, napi_callback_info info) {
   napi_value value;
-  auto status = napi_create_string_utf8(env, absl::GetFlag(FLAGS_server_sni).c_str(), NAPI_AUTO_LENGTH, &value);
+  std::string str = absl::GetFlag(FLAGS_server_sni);
+  auto status = napi_create_string_utf8(env, str.c_str(), str.size(), &value);
   if (status != napi_ok) {
     napi_throw_error(env, nullptr, "napi_create_string_utf8 failed");
     return nullptr;
@@ -859,7 +863,8 @@ static napi_value getServerPort(napi_env env, napi_callback_info info) {
 
 static napi_value getUsername(napi_env env, napi_callback_info info) {
   napi_value value;
-  auto status = napi_create_string_utf8(env, absl::GetFlag(FLAGS_username).c_str(), NAPI_AUTO_LENGTH, &value);
+  std::string str = absl::GetFlag(FLAGS_username);
+  auto status = napi_create_string_utf8(env, str.c_str(), str.size(), &value);
   if (status != napi_ok) {
     napi_throw_error(env, nullptr, "napi_create_string_utf8 failed");
     return nullptr;
@@ -870,7 +875,8 @@ static napi_value getUsername(napi_env env, napi_callback_info info) {
 
 static napi_value getPassword(napi_env env, napi_callback_info info) {
   napi_value value;
-  auto status = napi_create_string_utf8(env, absl::GetFlag(FLAGS_password).c_str(), NAPI_AUTO_LENGTH, &value);
+  std::string str = absl::GetFlag(FLAGS_password);
+  auto status = napi_create_string_utf8(env, str.c_str(), str.size(), &value);
   if (status != napi_ok) {
     napi_throw_error(env, nullptr, "napi_create_string_utf8 failed");
     return nullptr;
