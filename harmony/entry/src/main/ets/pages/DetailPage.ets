@@ -31,6 +31,8 @@ struct DetailPage {
   private state: StartState = StartState.STOPPED;
   @State private status: Resource = $r('app.string.status_stopped', 'localhost', 0);
   @State private wifi_status: Resource = $r('app.string.current_ip', '0.0.0.0', 0);
+  @State private start_btn_status: boolean = true;
+  @State private stop_btn_status: boolean = false;
 
   private timer_id: number;
 
@@ -39,6 +41,8 @@ struct DetailPage {
     this.dataParam = YassViewModel.getYassData();
     this.status = $r('app.string.status_stopped', this.dataParam.serverHost, this.dataParam.serverPort);
     this.wifi_status = $r('app.string.current_ip', this.getWifiAddress(), 0)
+    this.start_btn_status = true;
+    this.stop_btn_status = false;
   }
 
   build() {
@@ -95,7 +99,7 @@ struct DetailPage {
       })
       Row() {
         Button($r('app.string.start_button'), { type: ButtonType.Capsule,
-          stateEffect: this.state == StartState.STOPPED })
+          stateEffect: this.start_btn_status })
           .width(CommonConstants.DETAIL_INPUT_WIDTH_PERCENT)
           .onClick((event: ClickEvent) => {
           if (this.state == StartState.STOPPED) {
@@ -104,7 +108,7 @@ struct DetailPage {
         })
         Blank()
         Button($r('app.string.stop_button'), { type: ButtonType.Capsule,
-          stateEffect: this.state == StartState.STARTED })
+          stateEffect: this.stop_btn_status })
           .width(CommonConstants.DETAIL_INPUT_WIDTH_PERCENT)
           .onClick((event: ClickEvent) => {
           if (this.state == StartState.STARTED) {
@@ -147,6 +151,8 @@ struct DetailPage {
   onStartClicked() {
     this.state = StartState.STARTING;
     this.status = $r('app.string.status_starting');
+    this.start_btn_status = false;
+    this.stop_btn_status = false;
 
     let err_msg = yass.saveConfig(this.dataParam.serverHost, this.dataParam.serverSNI, this.dataParam.serverPort.toString(),
         this.dataParam.username, this.dataParam.password, this.dataParam.cipher, this.dataParam.timeout.toString());
@@ -160,6 +166,8 @@ struct DetailPage {
       if (err_msg == '') {
         this.state = StartState.STARTED;
         this.wifi_status = $r('app.string.current_ip', this.getWifiAddress(), port);
+        this.start_btn_status = false;
+        this.stop_btn_status = true;
         this.onUpdateTransferRate();
       } else {
         this.onStartFailedWithMsg(err_msg);
@@ -178,17 +186,23 @@ struct DetailPage {
   onStartFailedWithMsg(err_msg) {
     this.state = StartState.STOPPED;
     this.status = $r('app.string.status_started_with_error_msg', err_msg);
+    this.start_btn_status = true;
+    this.stop_btn_status = false;
     AlertDialog.show({ message: 'The start failed: ' + err_msg });
   }
 
   onStopClicked() {
     this.state = StartState.STOPPING;
     this.status = $r('app.string.status_stopping');
+    this.start_btn_status = false;
+    this.stop_btn_status = false;
     clearTimeout(this.timer_id);
     yass.stopWorker(() => {
       hilog.info(0x0000, 'yass', 'stopped %d');
       this.state = StartState.STOPPED;
       this.status = $r('app.string.status_stopped', this.dataParam.serverHost, this.dataParam.serverPort);
+      this.start_btn_status = true;
+      this.stop_btn_status = false;
     })
   }
 
