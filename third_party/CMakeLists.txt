@@ -239,27 +239,25 @@ target_include_directories(url PUBLIC
 
 target_link_libraries(url PUBLIC absl::optional)
 
-if (USE_ICU)
+target_sources(url PRIVATE
+  googleurl-override/base/files/memory_mapped_file.h
+  googleurl-override/base/files/memory_mapped_file.cc
+  googleurl-override/base/location.h
+  googleurl-override/base/location.cc
+)
+if (WIN32)
   target_sources(url PRIVATE
-    googleurl-override/base/files/memory_mapped_file.h
-    googleurl-override/base/files/memory_mapped_file.cc
-    googleurl-override/base/location.h
-    googleurl-override/base/location.cc
+    googleurl-override/base/win/pe_image.cc
+    googleurl-override/base/win/pe_image.h
+    googleurl-override/base/win/scoped_handle.cc
+    googleurl-override/base/win/scoped_handle.h
+    googleurl-override/base/win/windows_types.h
+    googleurl-override/base/win/win_handle_types.h
+    googleurl-override/base/files/memory_mapped_file_win.cc
   )
-  if (WIN32)
-    target_sources(url PRIVATE
-      googleurl-override/base/win/pe_image.cc
-      googleurl-override/base/win/pe_image.h
-      googleurl-override/base/win/scoped_handle.cc
-      googleurl-override/base/win/scoped_handle.h
-      googleurl-override/base/win/windows_types.h
-      googleurl-override/base/win/win_handle_types.h
-      googleurl-override/base/files/memory_mapped_file_win.cc
-    )
-    target_link_libraries(url PRIVATE delayimp)
-  else()
-    target_sources(url PRIVATE
-      googleurl-override/base/files/memory_mapped_file_posix.cc
-    )
-  endif()
+  target_link_libraries(url PRIVATE delayimp)
+else()
+  target_sources(url PRIVATE
+    googleurl-override/base/files/memory_mapped_file_posix.cc
+  )
 endif()
