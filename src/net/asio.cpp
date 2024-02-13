@@ -3,20 +3,23 @@
 
 #include "net/asio.hpp"
 
+#ifdef _WIN32
+#include "core/windows/dirent.h"
+#else
+#include <dirent.h>
+#endif
+
+#include <filesystem>
+#include <string>
+#include <absl/strings/str_split.h>
+#include <base/files/platform_file.h>
+#include <base/files/memory_mapped_file.h>
+
 #include "core/utils.hpp"
 #include "config/config.hpp"
 #include "net/x509_util.hpp"
 
-#include <absl/strings/str_split.h>
-#include <string>
-
 #ifdef _WIN32
-#if _WIN32_WINNT >= 0x0602 && !defined(__MINGW32__)
-#include <pathcch.h>
-#else
-struct IUnknown;
-#include <shlwapi.h>
-#endif
 #include <wincrypt.h>
 #undef X509_NAME
 #elif BUILDFLAG(IS_MAC)
@@ -28,13 +31,6 @@ struct IUnknown;
 #include "third_party/boringssl/src/pki/parse_name.h"
 #include "third_party/boringssl/src/pki/parsed_certificate.h"
 #include "third_party/boringssl/src/pki/trust_store.h"
-#endif
-
-#ifdef _WIN32
-#include "core/windows/dirent.h"
-#include <filesystem>
-#else
-#include <dirent.h>
 #endif
 
 #pragma GCC diagnostic push
@@ -297,7 +293,6 @@ static void print_openssl_error() {
   }
 }
 
-#ifdef HAVE_BUILTIN_CA_BUNDLE_CRT
 static bool load_ca_to_x509_trust(X509_STORE* store, const char *data, size_t len) {
   bssl::UniquePtr<BIO> bio(BIO_new_mem_buf(data, len));
   bssl::UniquePtr<X509> cert(PEM_read_bio_X509(bio.get(), nullptr, 0, nullptr));
@@ -346,10 +341,26 @@ static int load_ca_to_ssl_ctx_from_mem(SSL_CTX* ssl_ctx, const std::string_view&
   }
 
 out:
-  LOG(INFO) << "Loading ca from memory: " << count << " certificates";
+  VLOG(2) << "Loading ca from memory: " << count << " certificates";
   return count;
 }
-#endif // HAVE_BUILTIN_CA_BUNDLE_CRT
+
+static int load_ca_to_ssl_ctx_bundle(SSL_CTX* ssl_ctx, const std::string &bundle_path) {
+  PlatformFile pf = OpenReadFile(bundle_path);
+  if (pf == gurl_base::kInvalidPlatformFile) {
+    return 0;
+  }
+  gurl_base::MemoryMappedFile mappedFile;
+  // take ownship of pf
+  if (!(mappedFile.Initialize(pf, gurl_base::MemoryMappedFile::Region::kWholeFile))) {
+    LOG(ERROR) << "Couldn't mmap file: " << bundle_path;
+    return 0;  // To debug http://crbug.com/445616.
+  }
+
+  std::string_view buffer(reinterpret_cast<const char*>(mappedFile.data()), mappedFile.length());
+
+  return load_ca_to_ssl_ctx_from_mem(ssl_ctx, buffer);
+}
 
 static int load_ca_to_ssl_ctx_path(SSL_CTX* ssl_ctx, const std::string &dir_path) {
   int count = 0;
@@ -366,10 +377,10 @@ static int load_ca_to_ssl_ctx_path(SSL_CTX* ssl_ctx, const std::string &dir_path
       }
       std::filesystem::path wca_bundle = std::filesystem::path(wdir_path) / dent->d_name;
       std::string ca_bundle = SysWideToUTF8(wca_bundle);
-      int result = SSL_CTX_load_verify_locations(ssl_ctx, ca_bundle.c_str(), nullptr);
-      if (result == 1) {
-        VLOG(1) << "Loading ca cert from: " << ca_bundle;
-        ++count;
+      int result = load_ca_to_ssl_ctx_bundle(ssl_ctx, ca_bundle);
+      if (result > 0) {
+        VLOG(1) << "Loading ca cert from: " << ca_bundle << " with " << result << " certificates";
+        count += result;
       }
     }
     _wclosedir(dir);
@@ -384,10 +395,10 @@ static int load_ca_to_ssl_ctx_path(SSL_CTX* ssl_ctx, const std::string &dir_path
         continue;
       }
       std::string ca_bundle = dir_path + "/" + dent->d_name;
-      int result = SSL_CTX_load_verify_locations(ssl_ctx, ca_bundle.c_str(), nullptr);
-      if (result == 1) {
-        VLOG(1) << "Loading ca cert from: " << ca_bundle;
-        ++count;
+      int result = load_ca_to_ssl_ctx_bundle(ssl_ctx, ca_bundle);
+      if (result > 0) {
+        VLOG(1) << "Loading ca cert from: " << ca_bundle << " with " << result << " certificates";
+        count += result;
       }
     }
     closedir(dir);
@@ -401,9 +412,9 @@ static int load_ca_to_ssl_ctx_cacert(SSL_CTX* ssl_ctx) {
   int count = 0;
   std::string ca_bundle = absl::GetFlag(FLAGS_cacert);
   if (!ca_bundle.empty()) {
-    int result = SSL_CTX_load_verify_locations(ssl_ctx, ca_bundle.c_str(), nullptr);
-    if (result == 1) {
-      LOG(INFO) << "Loading ca bundle from: " << ca_bundle;
+    int result = load_ca_to_ssl_ctx_bundle(ssl_ctx, ca_bundle);
+    if (result > 0) {
+      LOG(INFO) << "Loading ca bundle from: " << ca_bundle << " with " << result << " certificates";
       count += result;
     } else {
       print_openssl_error();
@@ -415,7 +426,7 @@ static int load_ca_to_ssl_ctx_cacert(SSL_CTX* ssl_ctx) {
 
     int result = load_ca_to_ssl_ctx_path(ssl_ctx, ca_path);
     if (result > 0) {
-      LOG(INFO) << "Loading ca from directory: " << ca_path << " " << result << " certificates";
+      LOG(INFO) << "Loading ca from directory: " << ca_path << " with " << result << " certificates";
       count += result;
     }
   }
@@ -424,41 +435,64 @@ static int load_ca_to_ssl_ctx_cacert(SSL_CTX* ssl_ctx) {
 
 static int load_ca_to_ssl_ctx_yass_ca_bundle(SSL_CTX* ssl_ctx) {
 #ifdef _WIN32
-#define CA_BUNDLE "yass-ca-bundle.crt"
+#define CA_BUNDLE L"yass-ca-bundle.crt"
   // The windows version will automatically look for a CA certs file named 'ca-bundle.crt',
-  // either in the same directory as yass.exe, or in the Current Working Directory, or in any folder along your PATH.
+  // either in the same directory as yass.exe, or in the Current Working Directory,
+  // or in any folder along your PATH.
 
-  std::vector<std::string> ca_bundles;
+  std::vector<std::filesystem::path> ca_bundles;
 
-  // search under executable directory
-  std::string exe_path;
+  // 1. search under executable directory
+  std::wstring exe_path;
   CHECK(GetExecutablePath(&exe_path));
-  auto pos = exe_path.find_last_of('\\');
-  if (pos != std::string::npos) {
-    exe_path.resize(pos);
-  } else {
-    exe_path = "C:\\";
+  std::filesystem::path exe_dir = std::filesystem::path(exe_path).parent_path();
+
+  ca_bundles.push_back(exe_dir / CA_BUNDLE);
+
+  // 2. search under current directory
+  std::wstring current_dir;
+  {
+    wchar_t buf[32767];
+    DWORD ret = GetCurrentDirectoryW(sizeof(buf), buf);
+    if (ret == 0) {
+      PLOG(FATAL) << "GetCurrentDirectoryW failed";
+    }
+    // the return value specifies the number of characters that are written to
+    // the buffer, not including the terminating null character.
+    current_dir = std::wstring(buf, ret);
   }
 
-  ca_bundles.push_back(std::string(exe_path) + "\\" + CA_BUNDLE);
+  ca_bundles.push_back(std::filesystem::path(current_dir) / CA_BUNDLE);
 
-  // search under current directory
-  ca_bundles.push_back(CA_BUNDLE);
-
-  // search under path directory
-  std::string path = getenv("PATH");
+  // 3. search under path directory
+  std::string path;
+  {
+    wchar_t buf[32767];
+    DWORD ret = GetEnvironmentVariableW(L"PATH", buf, sizeof(buf));
+    if (ret == 0) {
+      PLOG(FATAL) << "GetEnvironmentVariableW failed on PATH";
+    }
+    // the return value is the number of characters stored in the buffer pointed
+    // to by lpBuffer, not including the terminating null character.
+    path = SysWideToUTF8(std::wstring(buf, ret));
+  }
   std::vector<std::string> paths = absl::StrSplit(path, ';');
   for (const auto& path : paths) {
-    ca_bundles.push_back(path + "\\" + CA_BUNDLE);
+    if (path.empty())
+      continue;
+    ca_bundles.push_back(std::filesystem::path(path) / CA_BUNDLE);
   }
 
-  for (const auto &ca_bundle : ca_bundles) {
-    int result = SSL_CTX_load_verify_locations(ssl_ctx, ca_bundle.c_str(), nullptr);
-    if (result == 1) {
-      LOG(INFO) << "Loading ca bundle from: " << ca_bundle;
+  for (const auto &wca_bundle : ca_bundles) {
+    auto ca_bundle = SysWideToUTF8(wca_bundle);
+    VLOG(1) << "Trying to load ca bundle from: " << ca_bundle;
+    int result = load_ca_to_ssl_ctx_bundle(ssl_ctx, ca_bundle);
+    if (result > 0) {
+      LOG(INFO) << "Loading ca bundle from: " << ca_bundle << " with " << result << " certificates";
       return result;
     }
   }
+#undef CA_BUNDLE
 #endif
 
   return 0;
@@ -632,10 +666,10 @@ out:
     "/etc/certs/ca-certificates.crt",         // Solaris 11.2+
   };
   for (auto ca_bundle : ca_bundle_paths) {
-    int result = SSL_CTX_load_verify_locations(ssl_ctx, ca_bundle, nullptr);
-    if (result == 1) {
-      ++count;
-      LOG(INFO) << "Loading ca bundle from: " << ca_bundle;
+    int result = load_ca_to_ssl_ctx_bundle(ssl_ctx, ca_bundle);
+    if (result > 0) {
+      LOG(INFO) << "Loading ca bundle from: " << ca_bundle << " with " << result << " certificates";
+      count += result;
     }
   }
   static const char *ca_paths[] = {
@@ -647,7 +681,7 @@ out:
   for (auto ca_path : ca_paths) {
     int result = load_ca_to_ssl_ctx_path(ssl_ctx, ca_path);
     if (result > 0) {
-      LOG(INFO) << "Loading ca from directory: " << ca_path << " " << result << " certificates";
+      LOG(INFO) << "Loading ca from directory: " << ca_path << " with " << result << " certificates";
       count += result;
     }
   }
@@ -668,8 +702,8 @@ void load_ca_to_ssl_ctx(SSL_CTX* ssl_ctx) {
 #ifdef HAVE_BUILTIN_CA_BUNDLE_CRT
   if (absl::GetFlag(FLAGS_use_ca_bundle_crt)) {
     std::string_view ca_bundle_content(_binary_ca_bundle_crt_start, _binary_ca_bundle_crt_end - _binary_ca_bundle_crt_start);
-    load_ca_to_ssl_ctx_from_mem(ssl_ctx, ca_bundle_content);
-    LOG(WARNING) << "Builtin ca bundle loaded";
+    int result = load_ca_to_ssl_ctx_from_mem(ssl_ctx, ca_bundle_content);
+    LOG(WARNING) << "Builtin ca bundle loaded: " << result << " ceritificates";
     return;
   }
 #endif // HAVE_BUILTIN_CA_BUNDLE_CRT
@@ -679,8 +713,8 @@ void load_ca_to_ssl_ctx(SSL_CTX* ssl_ctx) {
 
 #ifdef HAVE_BUILTIN_CA_BUNDLE_CRT
     std::string_view ca_bundle_content(_binary_ca_bundle_crt_start, _binary_ca_bundle_crt_end - _binary_ca_bundle_crt_start);
-    load_ca_to_ssl_ctx_from_mem(ssl_ctx, ca_bundle_content);
-    LOG(WARNING) << "Builtin ca bundle loaded";
+    int result = load_ca_to_ssl_ctx_from_mem(ssl_ctx, ca_bundle_content);
+    LOG(WARNING) << "Builtin ca bundle loaded: " << result << " ceritificates";
 #else
     LOG(WARNING) << "Builtin ca bundle not available";
 #endif

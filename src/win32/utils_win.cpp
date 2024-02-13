@@ -212,10 +212,6 @@ typedef int(__stdcall* PFNGETUSERDEFAULTLOCALENAME)(LPWSTR lpLocaleName, int cch
 
 namespace {
 
-HANDLE EnsureRasapi32Loaded() {
-  return LoadLibraryExW(L"rasapi32.dll", nullptr, 0);
-}
-
 HANDLE EnsureUser32Loaded() {
   return LoadLibraryExW(L"User32.dll", nullptr, 0);
 }
@@ -232,18 +228,26 @@ HANDLE EnsureKernel32Loaded() {
   return LoadLibraryExW(L"Kernel32.dll", nullptr, 0);
 }
 
-static
+HMODULE LoadRasapi32Library() {
+  return LoadLibraryExW(L"rasapi32.dll", nullptr, 0);
+}
+
 DWORD WINAPI RasEnumEntriesW(LPCWSTR unnamedParam1, LPCWSTR unnamedParam2, LPRASENTRYNAMEW unnamedParam3,
                              LPDWORD unnamedParam4, LPDWORD unnamedParam5) {
+  HMODULE raspi32Module = LoadRasapi32Library();
+
   static const auto fPointer = reinterpret_cast<PFNRASENUMENTRIESW>(
-      reinterpret_cast<void*>(::GetProcAddress(
-          static_cast<HMODULE>(EnsureRasapi32Loaded()), "RasEnumEntriesW")));
+      reinterpret_cast<void*>(::GetProcAddress(raspi32Module, "RasEnumEntriesW")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return FALSE;
   }
 
-  return fPointer(unnamedParam1, unnamedParam2, unnamedParam3, unnamedParam4, unnamedParam5);
+  DWORD ret = fPointer(unnamedParam1, unnamedParam2, unnamedParam3, unnamedParam4, unnamedParam5);
+
+  ::FreeLibrary(raspi32Module);
+
+  return ret;
 }
 
 // https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-getdevicecaps
