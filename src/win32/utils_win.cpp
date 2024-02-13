@@ -2,6 +2,7 @@
 /* Copyright (c) 2021-2024 Chilledheart  */
 
 // We use dynamic loading for below functions
+#define RasEnumEntriesW RasEnumEntriesWHidden
 #define GetDeviceCaps GetDeviceCapsHidden
 #define SetProcessDPIAware SetProcessDPIAwareHidden
 #define GetDpiForMonitor GetDpiForMonitorHidden
@@ -89,6 +90,9 @@ static constexpr size_t kRegReadMaximumSize = 1024 * 1024;
 #else
 #include <sdkddkver.h>
 #endif  //  COMPILER_MSVC
+
+// from ras.h, starting from Windows 2000
+typedef DWORD (__stdcall *PFNRASENUMENTRIESW)(LPCWSTR,LPCWSTR,LPRASENTRYNAMEW,LPDWORD,LPDWORD);
 
 // from wingdi.h, starting from Windows 2000
 typedef int(__stdcall* PFNGETDEVICECAPS)(HDC, int);
@@ -188,6 +192,7 @@ typedef BOOL(__stdcall* PFNSYSTEMPARAMETERSINFOFORDPI)(UINT uiAction, UINT uiPar
 typedef int(__stdcall* PFNGETUSERDEFAULTLOCALENAME)(LPWSTR lpLocaleName, int cchLocaleName);
 
 // We use dynamic loading for below functions
+#undef RasEnumEntriesW
 #undef GetDeviceCaps
 #undef SetProcessDPIAware
 #undef GetDpiForMonitor
@@ -221,6 +226,28 @@ HANDLE EnsureShcoreLoaded() {
 
 HANDLE EnsureKernel32Loaded() {
   return LoadLibraryExW(L"Kernel32.dll", nullptr, 0);
+}
+
+HMODULE LoadRasapi32Library() {
+  return LoadLibraryExW(L"rasapi32.dll", nullptr, 0);
+}
+
+DWORD WINAPI RasEnumEntriesW(LPCWSTR unnamedParam1, LPCWSTR unnamedParam2, LPRASENTRYNAMEW unnamedParam3,
+                             LPDWORD unnamedParam4, LPDWORD unnamedParam5) {
+  HMODULE raspi32Module = LoadRasapi32Library();
+
+  static const auto fPointer = reinterpret_cast<PFNRASENUMENTRIESW>(
+      reinterpret_cast<void*>(::GetProcAddress(raspi32Module, "RasEnumEntriesW")));
+  if (fPointer == nullptr) {
+    ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
+    return FALSE;
+  }
+
+  DWORD ret = fPointer(unnamedParam1, unnamedParam2, unnamedParam3, unnamedParam4, unnamedParam5);
+
+  ::FreeLibrary(raspi32Module);
+
+  return ret;
 }
 
 // https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-getdevicecaps
@@ -1076,11 +1103,6 @@ bool SetSystemProxy(bool enable,
 }
 
 bool GetAllRasConnection(std::vector<std::wstring> *result) {
-// FIXME Mingw's aarch doesn't contain this api
-#if defined(__MINGW32__) && defined(_M_ARM64)
-  result->clear();
-  return true;
-#else
   DWORD dwCb = 0;
   DWORD dwRet = ERROR_SUCCESS;
   DWORD dwEntries = 0;
@@ -1122,6 +1144,7 @@ bool GetAllRasConnection(std::vector<std::wstring> *result) {
 
     // If successful, print the RAS entry names
     if (dwRet == ERROR_SUCCESS){
+      LOG(INFO) << "RasEnumEntries success found: " << dwEntries << " entries";
       for (DWORD i = 0; i < dwEntries; i++){
         result->emplace_back(lpRasEntryName[i].szEntryName);
       }
@@ -1132,6 +1155,7 @@ bool GetAllRasConnection(std::vector<std::wstring> *result) {
     free(lpRasEntryName);
     lpRasEntryName = nullptr;
   } else if (dwRet == ERROR_SUCCESS) {
+    LOG(INFO) << "RasEnumEntries success found: " << dwEntries << " entries";
     for (DWORD i = 0; i < dwEntries; i++){
       result->emplace_back(lpRasEntryName[i].szEntryName);
     }
@@ -1142,7 +1166,6 @@ bool GetAllRasConnection(std::vector<std::wstring> *result) {
     LOG(INFO) << "RasEnumEntries: there were no RAS entry names found";
   }
   return dwRet == ERROR_SUCCESS;
-#endif
 }
 
 #ifndef GAA_FLAG_INCLUDE_GATEWAYS
