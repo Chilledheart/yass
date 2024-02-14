@@ -1,0 +1,12 @@
+.section __DATA_CONST,__const
+.private_extern __binary_supplementary_ca_bundle_crt_start
+.global __binary_supplementary_ca_bundle_crt
+.private_extern __binary_supplementary_ca_bundle_crt_end
+.global __binary_supplementary_ca_bundle_crt_end
+.p2align  6
+
+__binary_supplementary_ca_bundle_crt_start:
+.incbin "supplementary-ca-bundle.crt"
+
+__binary_supplementary_ca_bundle_crt_end:
+.previous
