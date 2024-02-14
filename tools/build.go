@@ -930,6 +930,8 @@ func buildStageGenerateBuildScript() {
 	}
 
 	if systemNameFlag == "android" {
+		// see #751
+		cmakeArgs = append(cmakeArgs, "-DUSE_BUILTIN_CA_BUNDLE_CRT=off")
 		if _, err := os.Stat(androidNdkDir); errors.Is(err, os.ErrNotExist) {
 			glog.Fatalf("Android Ndk Directory at %s demanded", androidNdkDir);
 		}
@@ -950,6 +952,7 @@ func buildStageGenerateBuildScript() {
 	}
 
 	if systemNameFlag == "harmony" {
+		cmakeArgs = append(cmakeArgs, "-DUSE_BUILTIN_CA_BUNDLE_CRT=off")
 		if harmonyNdkDir == "" {
 			glog.Fatalf("Harmony Ndk Directory demanded");
 		}
@@ -970,6 +973,9 @@ func buildStageGenerateBuildScript() {
 		subsystem := subSystemNameFlag
 		if subSystemNameFlag == "openwrt" {
 			subsystem = "musl"
+		}
+		if subsystem == "musl" {
+			cmakeArgs = append(cmakeArgs, "-DUSE_BUILTIN_CA_BUNDLE_CRT=off")
 		}
 		gnuType, gnuArch := getGNUTargetTypeAndArch(archFlag, subsystem)
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/Linux.cmake", buildDir))
