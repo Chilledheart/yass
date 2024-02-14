@@ -68,6 +68,9 @@ ABSL_FLAG(bool, use_ca_bundle_crt,
 
 #endif // HAVE_BUILTIN_CA_BUNDLE_CRT
 
+extern "C" const char _binary_supplementary_ca_bundle_crt_start[];
+extern "C" const char _binary_supplementary_ca_bundle_crt_end[];
+
 std::ostream& operator<<(std::ostream& o, asio::error_code ec) {
 #ifdef _WIN32
   return o << ec.message() << " value: " << ec.value();
@@ -282,6 +285,9 @@ bool IsNotAcceptableIntermediate(const bssl::ParsedCertificate* cert,
 } // namespace
 #endif
 
+static bool found_isrg_root_x1 = false;
+static bool found_isrg_root_x2 = false;
+
 static void print_openssl_error() {
   const char* file;
   int line;
@@ -293,20 +299,38 @@ static void print_openssl_error() {
   }
 }
 
-static bool load_ca_to_x509_trust(X509_STORE* store, const char *data, size_t len) {
-  bssl::UniquePtr<BIO> bio(BIO_new_mem_buf(data, len));
-  bssl::UniquePtr<X509> cert(PEM_read_bio_X509(bio.get(), nullptr, 0, nullptr));
-  if (!cert) {
-    print_openssl_error();
-    return false;
-  }
+static bool load_ca_cert_to_x509_trust(X509_STORE* store, bssl::UniquePtr<X509> cert) {
+  char buf[4096] = {};
+  const char* const subject_name = X509_NAME_oneline(X509_get_subject_name(cert.get()), buf, sizeof(buf));
+
   if (X509_cmp_current_time(X509_get0_notBefore(cert.get())) < 0 &&
       X509_cmp_current_time(X509_get0_notAfter(cert.get())) >= 0) {
-    char buf[4096] = {};
-    const char* const subject_name = X509_NAME_oneline(X509_get_subject_name(cert.get()), buf, sizeof(buf));
+
+    // look at the CN field for ISRG Root X1 and ISRG_Root X2 ca certificates
+    int lastpos = -1;
+    for (;;) {
+      lastpos = X509_NAME_get_index_by_NID(X509_get_subject_name(cert.get()), NID_commonName, lastpos);
+      if (lastpos == -1) {
+          break;
+      }
+
+      X509_NAME_ENTRY *entry = X509_NAME_get_entry(X509_get_subject_name(cert.get()), lastpos);
+
+      const ASN1_STRING *value = X509_NAME_ENTRY_get_data(entry);
+      std::string commonName((const char*)ASN1_STRING_get0_data(value), ASN1_STRING_length(value));
+      // TODO check commonName with "ISRG Root X1" and "ISRG Root X2"
+      if (commonName == "ISRG Root X1") {
+        LOG(INFO) << "Loading ISRG Root X1 CA";
+        found_isrg_root_x1 = true;
+      }
+      if (commonName == "ISRG Root X2") {
+        LOG(INFO) << "Loading ISRG Root X2 CA";
+        found_isrg_root_x2 = true;
+      }
+    }
 
     if (X509_STORE_add_cert(store, cert.get()) == 1) {
-      VLOG(2) << "Loading ca: " << subject_name;
+      VLOG(2) << "Loaded ca: " << subject_name;
       return true;
     } else {
       unsigned long err = ERR_get_error();
@@ -314,8 +338,20 @@ static bool load_ca_to_x509_trust(X509_STORE* store, const char *data, size_t le
       ERR_error_string_n(err, buf, sizeof(buf));
       LOG(WARNING) << "Loading ca failure: " << buf << " at "<< subject_name;
     }
+  } else {
+    LOG(WARNING) << "Ignore inactive cert: " << subject_name;
   }
   return false;
+}
+
+static bool load_ca_content_to_x509_trust(X509_STORE* store, std::string_view cacert) {
+  bssl::UniquePtr<BIO> bio(BIO_new_mem_buf(cacert.data(), cacert.size()));
+  bssl::UniquePtr<X509> cert(PEM_read_bio_X509(bio.get(), nullptr, 0, nullptr));
+  if (!cert) {
+    print_openssl_error();
+    return false;
+  }
+  return load_ca_cert_to_x509_trust(store, std::move(cert));
 }
 
 static const char kEndCertificateMark[] = "-----END CERTIFICATE-----\n";
@@ -335,13 +371,13 @@ static int load_ca_to_ssl_ctx_from_mem(SSL_CTX* ssl_ctx, const std::string_view&
     end += sizeof(kEndCertificateMark) -1;
 
     std::string_view cacert(cadata.data() + pos, end - pos);
-    if (load_ca_to_x509_trust(store, cacert.data(), cacert.size())) {
+    if (load_ca_content_to_x509_trust(store, cacert)) {
       ++count;
     }
   }
 
 out:
-  VLOG(2) << "Loading ca from memory: " << count << " certificates";
+  VLOG(2) << "Loaded ca from memory: " << count << " certificates";
   return count;
 }
 
@@ -379,7 +415,7 @@ static int load_ca_to_ssl_ctx_path(SSL_CTX* ssl_ctx, const std::string &dir_path
       std::string ca_bundle = SysWideToUTF8(wca_bundle);
       int result = load_ca_to_ssl_ctx_bundle(ssl_ctx, ca_bundle);
       if (result > 0) {
-        VLOG(1) << "Loading ca cert from: " << ca_bundle << " with " << result << " certificates";
+        VLOG(1) << "Loaded cert from: " << ca_bundle << " with " << result << " certificates";
         count += result;
       }
     }
@@ -397,7 +433,7 @@ static int load_ca_to_ssl_ctx_path(SSL_CTX* ssl_ctx, const std::string &dir_path
       std::string ca_bundle = dir_path + "/" + dent->d_name;
       int result = load_ca_to_ssl_ctx_bundle(ssl_ctx, ca_bundle);
       if (result > 0) {
-        VLOG(1) << "Loading ca cert from: " << ca_bundle << " with " << result << " certificates";
+        VLOG(1) << "Loaded ca cert from: " << ca_bundle << " with " << result << " certificates";
         count += result;
       }
     }
@@ -414,7 +450,7 @@ static int load_ca_to_ssl_ctx_cacert(SSL_CTX* ssl_ctx) {
   if (!ca_bundle.empty()) {
     int result = load_ca_to_ssl_ctx_bundle(ssl_ctx, ca_bundle);
     if (result > 0) {
-      LOG(INFO) << "Loading ca bundle from: " << ca_bundle << " with " << result << " certificates";
+      LOG(INFO) << "Loaded ca bundle from: " << ca_bundle << " with " << result << " certificates";
       count += result;
     } else {
       print_openssl_error();
@@ -426,7 +462,7 @@ static int load_ca_to_ssl_ctx_cacert(SSL_CTX* ssl_ctx) {
 
     int result = load_ca_to_ssl_ctx_path(ssl_ctx, ca_path);
     if (result > 0) {
-      LOG(INFO) << "Loading ca from directory: " << ca_path << " with " << result << " certificates";
+      LOG(INFO) << "Loaded ca from directory: " << ca_path << " with " << result << " certificates";
       count += result;
     }
   }
@@ -488,7 +524,7 @@ static int load_ca_to_ssl_ctx_yass_ca_bundle(SSL_CTX* ssl_ctx) {
     VLOG(1) << "Trying to load ca bundle from: " << ca_bundle;
     int result = load_ca_to_ssl_ctx_bundle(ssl_ctx, ca_bundle);
     if (result > 0) {
-      LOG(INFO) << "Loading ca bundle from: " << ca_bundle << " with " << result << " certificates";
+      LOG(INFO) << "Loaded ca bundle from: " << ca_bundle << " with " << result << " certificates";
       return result;
     }
   }
@@ -529,28 +565,8 @@ static int load_ca_to_ssl_ctx_system(SSL_CTX* ssl_ctx) {
       print_openssl_error();
       continue;
     }
-    if (X509_cmp_current_time(X509_get0_notBefore(cert.get())) < 0 &&
-        X509_cmp_current_time(X509_get0_notAfter(cert.get())) >= 0) {
-      char buf[4096] = {};
-      const char* const subject_name = X509_NAME_oneline(X509_get_subject_name(cert.get()), buf, sizeof(buf));
-
-      bssl::UniquePtr<BIO> bio(BIO_new(BIO_s_mem()));
-      PEM_write_bio_X509(bio.get(), cert.get());
-      int ret = BIO_mem_contents(bio.get(), reinterpret_cast<const uint8_t**>(&data), &len);
-      if (ret == 0) {
-        LOG(WARNING) << "Loading ca failure: Internal Error at "<< subject_name;
-        continue;
-      }
-      if (X509_STORE_add_cert(store, cert.get()) == 1) {
-        VLOG(2) << "Loading ca: " << subject_name;
-        ++count;
-      } else {
-        unsigned long err = ERR_get_error();
-        char buf[120];
-        ERR_error_string_n(err, buf, sizeof(buf));
-        LOG(WARNING) << "Loading ca failure: " << buf << " at "<< subject_name;
-        continue;
-      }
+    if (load_ca_cert_to_x509_trust(store, std::move(cert))) {
+      ++count;
     }
   }
 
@@ -558,7 +574,7 @@ out:
   if (cert_store) {
     CertCloseStore(cert_store, CERT_CLOSE_STORE_FORCE_FLAG);
   }
-  LOG(INFO) << "Loading ca from SChannel: " << count << " certificates";
+  LOG(INFO) << "Loaded ca from SChannel: " << count << " certificates";
   return count;
 #elif BUILDFLAG(IS_IOS)
   return 0;
@@ -632,25 +648,13 @@ out:
       continue;
     }
 
-    if (X509_cmp_current_time(X509_get0_notBefore(cert.get())) < 0 &&
-        X509_cmp_current_time(X509_get0_notAfter(cert.get())) >= 0) {
-      if (X509_STORE_add_cert(store, cert.get()) == 1) {
-        ++count;
-        VLOG(2) << "Loading ca: " << subject_name;
-      } else {
-        unsigned long err = ERR_get_error();
-        char buf[120];
-        ERR_error_string_n(err, buf, sizeof(buf));
-        LOG(WARNING) << "Loading ca failure: " << buf << " at "<< subject_name;
-        continue;
-      }
-    } else {
-      LOG(WARNING) << "Ignore inactive cert: " << subject_name;
+    if (load_ca_cert_to_x509_trust(store, std::move(cert))) {
+      ++count;
     }
   }
 out:
   CFRelease(certs);
-  LOG(INFO) << "Loading ca from Sec: " << count << " certificates";
+  LOG(INFO) << "Loaded ca from Sec: " << count << " certificates";
   return count;
 #else
   int count = 0;
@@ -668,7 +672,7 @@ out:
   for (auto ca_bundle : ca_bundle_paths) {
     int result = load_ca_to_ssl_ctx_bundle(ssl_ctx, ca_bundle);
     if (result > 0) {
-      LOG(INFO) << "Loading ca bundle from: " << ca_bundle << " with " << result << " certificates";
+      LOG(INFO) << "Loaded ca bundle from: " << ca_bundle << " with " << result << " certificates";
       count += result;
     }
   }
@@ -681,7 +685,7 @@ out:
   for (auto ca_path : ca_paths) {
     int result = load_ca_to_ssl_ctx_path(ssl_ctx, ca_path);
     if (result > 0) {
-      LOG(INFO) << "Loading ca from directory: " << ca_path << " with " << result << " certificates";
+      LOG(INFO) << "Loaded ca from directory: " << ca_path << " with " << result << " certificates";
       count += result;
     }
   }
@@ -697,6 +701,8 @@ out:
 //    - system ca certificates
 // 3. force fallback to builtin ca bundle if step 2 failes
 void load_ca_to_ssl_ctx(SSL_CTX* ssl_ctx) {
+  found_isrg_root_x1 = false;
+  found_isrg_root_x2 = false;
   load_ca_to_ssl_ctx_cacert(ssl_ctx);
 
 #ifdef HAVE_BUILTIN_CA_BUNDLE_CRT
@@ -714,9 +720,22 @@ void load_ca_to_ssl_ctx(SSL_CTX* ssl_ctx) {
 #ifdef HAVE_BUILTIN_CA_BUNDLE_CRT
     std::string_view ca_bundle_content(_binary_ca_bundle_crt_start, _binary_ca_bundle_crt_end - _binary_ca_bundle_crt_start);
     int result = load_ca_to_ssl_ctx_from_mem(ssl_ctx, ca_bundle_content);
-    LOG(WARNING) << "Builtin ca bundle loaded: " << result << " ceritificates";
+    LOG(WARNING) << "Loaded builtin ca bundle with " << result << " ceritificates";
 #else
-    LOG(WARNING) << "Builtin ca bundle not available";
+    LOG(WARNING) << "Attempted to load builtin ca bundle not available";
 #endif
+  }
+
+  // TODO we can add the missing CA if required
+  if (!found_isrg_root_x1 || !found_isrg_root_x2) {
+    if (!found_isrg_root_x1) {
+      LOG(WARNING) << "Missing ISRG Root X1 CA";
+    }
+    if (!found_isrg_root_x2) {
+      LOG(WARNING) << "Missing ISRG Root X2 CA";
+    }
+    std::string_view ca_content(_binary_supplementary_ca_bundle_crt_start, _binary_supplementary_ca_bundle_crt_end - _binary_supplementary_ca_bundle_crt_start);
+    int result = load_ca_to_ssl_ctx_from_mem(ssl_ctx, ca_content);
+    LOG(INFO) << "Loaded supplementary ca bundle with " << result << " certificates";
   }
 }
