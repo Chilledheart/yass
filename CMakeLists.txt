@@ -2614,6 +2614,9 @@ if (APPLE)
   target_link_libraries(asio PRIVATE ${SECURITY_FRAMEWORK})
 endif()
 
+#
+# optional builtin ca-bundle crt support
+#
 if (USE_BUILTIN_CA_BUNDLE_CRT)
   set(ASIO_CA_BUNDLE_CRT_SRC)
 
@@ -2657,6 +2660,49 @@ if (USE_BUILTIN_CA_BUNDLE_CRT)
   list(APPEND YASS_APP_FEATURES "builtin ca-bundle")
   target_link_libraries(asio PRIVATE asio_ca_bundle_crt)
 endif()
+
+#
+# required supplementary ca-bundle crt support
+#
+set(ASIO_SUPPLEMENARY_CA_BUNDLE_CRT_SRC)
+
+if (WIN32 AND NOT OS_AARCH64)
+  enable_language(ASM_NASM)
+  set(ASIO_SUPPLEMENARY_CA_BUNDLE_CRT_SRC "third_party/ca-certificates/supplementary-ca-bundle.crt.asm")
+endif()
+
+if (WIN32 AND OS_AARCH64)
+  enable_language(ASM)
+  if (COMPILER_CLANG)
+    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wno-unused-command-line-argument")
+  endif()
+  set(ASIO_SUPPLEMENARY_CA_BUNDLE_CRT_SRC "third_party/ca-certificates/supplementary-ca-bundle.crt.win.s")
+endif()
+
+if (OHOS OR ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+  enable_language(ASM)
+  if (COMPILER_CLANG)
+    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wno-unused-command-line-argument")
+  endif()
+  set(ASIO_SUPPLEMENARY_CA_BUNDLE_CRT_SRC "third_party/ca-certificates/supplementary-ca-bundle.crt.s")
+endif()
+
+if (APPLE)
+  enable_language(ASM)
+  if (COMPILER_CLANG)
+    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wno-unused-command-line-argument")
+  endif()
+  set(ASIO_SUPPLEMENARY_CA_BUNDLE_CRT_SRC "third_party/ca-certificates/supplementary-ca-bundle.crt.apple.s")
+endif()
+
+if (NOT ASIO_SUPPLEMENARY_CA_BUNDLE_CRT_SRC)
+  message(FATAL_ERROR "supplementary ca bundle crt missing implementation")
+endif()
+
+add_library(asio_supplementary_ca_bundle_crt OBJECT ${ASIO_SUPPLEMENARY_CA_BUNDLE_CRT_SRC})
+target_include_directories(asio_supplementary_ca_bundle_crt PRIVATE third_party/ca-certificates)
+
+target_link_libraries(asio PRIVATE asio_supplementary_ca_bundle_crt)
 
 list(APPEND YASS_APP_FEATURES "asio")
 set(SUPPORT_LIBS asio ${SUPPORT_LIBS})
