@@ -54,6 +54,8 @@ macOS Releases from 1.5.19 are [notarized](https://developer.apple.com/documenta
 iOS releases from 1.5.22 are fixed memory pressure crash and have been updated to add [Packet tunnel](https://developer.apple.com/documentation/networkextension/packet_tunnel_provider?language=objc) support.
 #### MinGW Build (alias Window Build)
 Please install Visual C++ 2010 runtime before use. Depending the your system's architecture, use [x86 installer][vs2010_x86] or [x64 installer][vs2010_x64].
+#### Supplementary support for missing ISRG (Let's Encrypt Root) on some Windows 11 Installation and Android prior to 7.1.1
+Releases from 1.5.25 and 1.6.4 fixes an issue that ISRG Root 1 and ISRG Root 2 might be missing in some machines and that causes troubles.
 #### MSVC Build(previous Windows Build) prebuilt binaries removed
 Due to the fact of possibly violating GPL license by linking static Visual C++ Runtime or distribute the CRT dll files
 we are still supporting MSVC builds, but the prebuilt binaries are removed from the release page.
