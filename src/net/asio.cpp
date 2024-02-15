@@ -24,6 +24,13 @@
 #undef X509_NAME
 #elif BUILDFLAG(IS_MAC)
 #include <Security/Security.h>
+#include "base/apple/foundation_util.h"
+#include "third_party/boringssl/src/pki/cert_errors.h"
+#include "third_party/boringssl/src/pki/cert_issuer_source_static.h"
+#include "third_party/boringssl/src/pki/extended_key_usage.h"
+#include "third_party/boringssl/src/pki/parse_name.h"
+#include "third_party/boringssl/src/pki/parsed_certificate.h"
+#include "third_party/boringssl/src/pki/trust_store.h"
 #endif
 
 #pragma GCC diagnostic push
@@ -71,6 +78,212 @@ std::ostream& operator<<(std::ostream& o, asio::error_code ec) {
   return o << ec.message();
 #endif
 }
+
+#if BUILDFLAG(IS_MAC)
+
+namespace {
+
+// The rules for interpreting trust settings are documented at:
+// https://developer.apple.com/reference/security/1400261-sectrustsettingscopytrustsetting?language=objc
+
+// Indicates the trust status of a certificate.
+enum class TrustStatus {
+  // Trust status is unknown / uninitialized.
+  UNKNOWN,
+  // Certificate inherits trust value from its issuer. If the certificate is the
+  // root of the chain, this implies distrust.
+  UNSPECIFIED,
+  // Certificate is a trust anchor.
+  TRUSTED,
+  // Certificate is blocked / explicitly distrusted.
+  DISTRUSTED
+};
+
+// Returns trust status of usage constraints dictionary |trust_dict| for a
+// certificate that |is_self_issued|.
+TrustStatus IsTrustDictionaryTrustedForPolicy(
+    CFDictionaryRef trust_dict,
+    bool is_self_issued,
+    const CFStringRef target_policy_oid) {
+  // An empty trust dict should be interpreted as
+  // kSecTrustSettingsResultTrustRoot. This is handled by falling through all
+  // the conditions below with the default value of |trust_settings_result|.
+
+  // Trust settings may be scoped to a single application, by checking that the
+  // code signing identity of the current application matches the serialized
+  // code signing identity in the kSecTrustSettingsApplication key.
+  // As this is not presently supported, skip any trust settings scoped to the
+  // application.
+  if (CFDictionaryContainsKey(trust_dict, kSecTrustSettingsApplication))
+    return TrustStatus::UNSPECIFIED;
+
+  // Trust settings may be scoped using policy-specific constraints. For
+  // example, SSL trust settings might be scoped to a single hostname, or EAP
+  // settings specific to a particular WiFi network.
+  // As this is not presently supported, skip any policy-specific trust
+  // settings.
+  if (CFDictionaryContainsKey(trust_dict, kSecTrustSettingsPolicyString))
+    return TrustStatus::UNSPECIFIED;
+
+  // Ignoring kSecTrustSettingsKeyUsage for now; it does not seem relevant to
+  // the TLS case.
+
+  // If the trust settings are scoped to a specific policy (via
+  // kSecTrustSettingsPolicy), ensure that the policy is the same policy as
+  // |target_policy_oid|. If there is no kSecTrustSettingsPolicy key, it's
+  // considered a match for all policies.
+  if (CFDictionaryContainsKey(trust_dict, kSecTrustSettingsPolicy)) {
+    SecPolicyRef policy_ref = gurl_base::apple::GetValueFromDictionary<SecPolicyRef>(
+        trust_dict, kSecTrustSettingsPolicy);
+    if (!policy_ref) {
+      return TrustStatus::UNSPECIFIED;
+    }
+    gurl_base::apple::ScopedCFTypeRef<CFDictionaryRef> policy_dict(
+        SecPolicyCopyProperties(policy_ref));
+
+    // kSecPolicyOid is guaranteed to be present in the policy dictionary.
+    CFStringRef policy_oid = gurl_base::apple::GetValueFromDictionary<CFStringRef>(
+        policy_dict.get(), kSecPolicyOid);
+
+    if (!CFEqual(policy_oid, target_policy_oid))
+      return TrustStatus::UNSPECIFIED;
+  }
+
+  // If kSecTrustSettingsResult is not present in the trust dict,
+  // kSecTrustSettingsResultTrustRoot is assumed.
+  int trust_settings_result = kSecTrustSettingsResultTrustRoot;
+  if (CFDictionaryContainsKey(trust_dict, kSecTrustSettingsResult)) {
+    CFNumberRef trust_settings_result_ref =
+        gurl_base::apple::GetValueFromDictionary<CFNumberRef>(
+            trust_dict, kSecTrustSettingsResult);
+    if (!trust_settings_result_ref ||
+        !CFNumberGetValue(trust_settings_result_ref, kCFNumberIntType,
+                          &trust_settings_result)) {
+      return TrustStatus::UNSPECIFIED;
+    }
+  }
+
+  if (trust_settings_result == kSecTrustSettingsResultDeny)
+    return TrustStatus::DISTRUSTED;
+
+  // This is a bit of a hack: if the cert is self-issued allow either
+  // kSecTrustSettingsResultTrustRoot or kSecTrustSettingsResultTrustAsRoot on
+  // the basis that SecTrustSetTrustSettings should not allow creating an
+  // invalid trust record in the first place. (The spec is that
+  // kSecTrustSettingsResultTrustRoot can only be applied to root(self-signed)
+  // certs and kSecTrustSettingsResultTrustAsRoot is used for other certs.)
+  // This hack avoids having to check the signature on the cert which is slow
+  // if using the platform APIs, and may require supporting MD5 signature
+  // algorithms on some older OSX versions or locally added roots, which is
+  // undesirable in the built-in signature verifier.
+  if (is_self_issued) {
+    return (trust_settings_result == kSecTrustSettingsResultTrustRoot ||
+            trust_settings_result == kSecTrustSettingsResultTrustAsRoot)
+               ? TrustStatus::TRUSTED
+               : TrustStatus::UNSPECIFIED;
+  }
+
+  // kSecTrustSettingsResultTrustAsRoot can only be applied to non-root certs.
+  return (trust_settings_result == kSecTrustSettingsResultTrustAsRoot)
+             ? TrustStatus::TRUSTED
+             : TrustStatus::UNSPECIFIED;
+}
+
+// Returns true if the trust settings array |trust_settings| for a certificate
+// that |is_self_issued| should be treated as a trust anchor.
+TrustStatus IsTrustSettingsTrustedForPolicy(CFArrayRef trust_settings,
+                                            bool is_self_issued,
+                                            const CFStringRef policy_oid) {
+  // An empty trust settings array (that is, the trust_settings parameter
+  // returns a valid but empty CFArray) means "always trust this certificate"
+  // with an overall trust setting for the certificate of
+  // kSecTrustSettingsResultTrustRoot.
+  if (CFArrayGetCount(trust_settings) == 0) {
+    return is_self_issued ? TrustStatus::TRUSTED : TrustStatus::UNSPECIFIED;
+  }
+
+  for (CFIndex i = 0, settings_count = CFArrayGetCount(trust_settings);
+       i < settings_count; ++i) {
+    CFDictionaryRef trust_dict = reinterpret_cast<CFDictionaryRef>(
+        const_cast<void*>(CFArrayGetValueAtIndex(trust_settings, i)));
+    TrustStatus trust = IsTrustDictionaryTrustedForPolicy(
+        trust_dict, is_self_issued, policy_oid);
+    if (trust != TrustStatus::UNSPECIFIED)
+      return trust;
+  }
+  return TrustStatus::UNSPECIFIED;
+}
+
+TrustStatus IsCertificateTrustedForPolicy(const bssl::ParsedCertificate* cert,
+                                          SecCertificateRef cert_handle,
+                                          const CFStringRef policy_oid) {
+  const bool is_self_issued =
+      cert->normalized_subject() == cert->normalized_issuer();
+
+  // Evaluate user trust domain, then admin. User settings can override
+  // admin (and both override the system domain, but we don't check that).
+  for (const auto& trust_domain :
+       {kSecTrustSettingsDomainUser, kSecTrustSettingsDomainAdmin}) {
+    gurl_base::apple::ScopedCFTypeRef<CFArrayRef> trust_settings;
+    OSStatus err;
+    err = SecTrustSettingsCopyTrustSettings(cert_handle, trust_domain,
+                                            trust_settings.InitializeInto());
+    if (err != errSecSuccess) {
+      if (err == errSecItemNotFound) {
+        // No trust settings for that domain.. try the next.
+        continue;
+      }
+      // OSSTATUS_LOG(ERROR, err) << "SecTrustSettingsCopyTrustSettings error";
+      LOG(ERROR) << "SecTrustSettingsCopyTrustSettings error: " << DescriptionFromOSStatus(err);
+      continue;
+    }
+    TrustStatus trust = IsTrustSettingsTrustedForPolicy(
+        trust_settings.get(), is_self_issued, policy_oid);
+    if (trust != TrustStatus::UNSPECIFIED)
+      return trust;
+  }
+
+  // No trust settings, or none of the settings were for the correct policy, or
+  // had the correct trust result.
+  return TrustStatus::UNSPECIFIED;
+}
+
+// Helper method to check if an EKU is present in a std::vector of EKUs.
+bool HasEKU(const std::vector<bssl::der::Input>& list, const bssl::der::Input& eku) {
+  for (const auto& oid : list) {
+    if (oid == eku)
+      return true;
+  }
+  return false;
+}
+
+// Returns true if |cert| would never be a valid intermediate. (A return
+// value of false does not imply that it is valid.) This is an optimization
+// to avoid using memory for caching certs that would never lead to a valid
+// chain. It's not intended to exhaustively test everything that
+// VerifyCertificateChain does, just to filter out some of the most obviously
+// unusable certs.
+bool IsNotAcceptableIntermediate(const bssl::ParsedCertificate* cert,
+                                 const CFStringRef policy_oid) {
+  if (!cert->has_basic_constraints() || !cert->basic_constraints().is_ca) {
+    return true;
+  }
+
+  // EKU filter is only implemented for TLS server auth since that's all we
+  // actually care about.
+  if (cert->has_extended_key_usage() &&
+      CFEqual(policy_oid, kSecPolicyAppleSSL) &&
+      !HasEKU(cert->extended_key_usage(), bssl::der::Input(bssl::kAnyEKU)) &&
+      !HasEKU(cert->extended_key_usage(), bssl::der::Input(bssl::kServerAuth))) {
+    return true;
+  }
+
+  // TODO(mattm): filter on other things too? (key usage, ...?)
+  return false;
+}
+
+} // namespace
+#endif
 
 static bool found_isrg_root_x1 = false;
 static bool found_isrg_root_x2 = false;
@@ -366,16 +579,18 @@ out:
 #elif BUILDFLAG(IS_IOS)
   return 0;
 #elif BUILDFLAG(IS_MAC)
-  SecTrustSettingsDomain domain = kSecTrustSettingsDomainSystem;
+  const SecTrustSettingsDomain domain = kSecTrustSettingsDomainSystem;
+  const CFStringRef policy_oid = kSecPolicyAppleSSL;
   CFArrayRef certs;
-  OSStatus status;
+  OSStatus err;
   asio::error_code ec;
   CFIndex size;
   X509_STORE* store = nullptr;
   int count = 0;
 
-  status = SecTrustSettingsCopyCertificates(domain, &certs);
-  if (status != errSecSuccess) {
+  err = SecTrustSettingsCopyCertificates(domain, &certs);
+  if (err != errSecSuccess) {
+    LOG(ERROR) << "SecTrustSettingsCopyCertificates error: " << DescriptionFromOSStatus(err);
     goto out;
   }
 
@@ -387,28 +602,54 @@ out:
 
   size = CFArrayGetCount(certs);
   for (CFIndex i = 0; i < size; ++i) {
-    SecCertificateRef cert = (SecCertificateRef)CFArrayGetValueAtIndex(certs, i);
-    // TODO copy if trusted
-    CFDataRef data_ref;
-    data_ref = SecCertificateCopyData(cert);
+    SecCertificateRef sec_cert = (SecCertificateRef)CFArrayGetValueAtIndex(certs, i);
+    gurl_base::apple::ScopedCFTypeRef<CFDataRef> der_data(SecCertificateCopyData(sec_cert));
 
-    if (data_ref == NULL) {
-      LOG(WARNING) << "Empty data from Security framework";
-      goto out;
-    } else {
-      const char* data = (const char *)CFDataGetBytePtr(data_ref);
-      CFIndex len = CFDataGetLength(data_ref);
-      bssl::UniquePtr<CRYPTO_BUFFER> buffer = net::x509_util::CreateCryptoBuffer(
-          std::string_view(data, len));
-      bssl::UniquePtr<X509> cert(X509_parse_from_buffer(buffer.get()));
-      if (!cert) {
-        print_openssl_error();
-        continue;
-      }
-      if (load_ca_cert_to_x509_trust(store, std::move(cert))) {
-        ++count;
-      }
-      CFRelease(data_ref);
+    if (!der_data) {
+      LOG(ERROR) << "SecCertificateCopyData error";
+      continue;
+    }
+    const char* data = (const char *)CFDataGetBytePtr(der_data.get());
+    CFIndex len = CFDataGetLength(der_data.get());
+
+    bssl::UniquePtr<CRYPTO_BUFFER> buffer = net::x509_util::CreateCryptoBuffer(
+        std::string_view(data, len));
+
+    // keep reference to buffer
+    bssl::UniquePtr<X509> cert(X509_parse_from_buffer(buffer.get()));
+    if (!cert) {
+      print_openssl_error();
+      continue;
+    }
+
+    char buf[4096] = {};
+    const char* const subject_name = X509_NAME_oneline(X509_get_subject_name(cert.get()), buf, sizeof(buf));
+
+    bssl::CertErrors errors;
+    bssl::ParseCertificateOptions options;
+    options.allow_invalid_serial_numbers = true;
+    std::shared_ptr<const bssl::ParsedCertificate> parsed_cert =
+        bssl::ParsedCertificate::Create(std::move(buffer), options, &errors);
+    if (!parsed_cert) {
+      LOG(ERROR) << "Error parsing certificate:\n" << errors.ToDebugString();
+      continue;
+    }
+
+    TrustStatus trust_status = IsCertificateTrustedForPolicy(
+      parsed_cert.get(), sec_cert, policy_oid);
+
+    if (trust_status == TrustStatus::DISTRUSTED) {
+      LOG(WARNING) << "Ignore distrusted cert: " << subject_name;
+      continue;
+    }
+
+    if (IsNotAcceptableIntermediate(parsed_cert.get(), policy_oid)) {
+      LOG(WARNING) << "Ignore Unacceptable cert: " << subject_name;
+      continue;
+    }
+
+    if (load_ca_cert_to_x509_trust(store, std::move(cert))) {
+      ++count;
     }
   }
 out:

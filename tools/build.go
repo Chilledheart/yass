@@ -74,6 +74,8 @@ var subSystemNameFlag string
 var sysrootFlag string
 var archFlag string
 
+var armCpuFlag string
+
 var variantFlag string
 
 var mingwDir string
@@ -184,6 +186,8 @@ func InitFlag() {
 	flag.StringVar(&subSystemNameFlag, "subsystem", "", "Specify host subsystem name")
 	flag.StringVar(&sysrootFlag, "sysroot", "", "Specify host sysroot, used in cross-compiling")
 	flag.StringVar(&archFlag, "arch", runtime.GOARCH, "Specify host architecture")
+
+	flag.StringVar(&armCpuFlag, "arm-cpu", "", "Specify ARM CPU Model Name if any")
 
 	flag.StringVar(&variantFlag, "variant", "gui", "Specify variant, available: gui, cli, server")
 
@@ -930,6 +934,8 @@ func buildStageGenerateBuildScript() {
 	}
 
 	if systemNameFlag == "android" {
+		// see #751
+		cmakeArgs = append(cmakeArgs, "-DUSE_BUILTIN_CA_BUNDLE_CRT=off")
 		if _, err := os.Stat(androidNdkDir); errors.Is(err, os.ErrNotExist) {
 			glog.Fatalf("Android Ndk Directory at %s demanded", androidNdkDir);
 		}
@@ -950,9 +956,12 @@ func buildStageGenerateBuildScript() {
 	}
 
 	if systemNameFlag == "harmony" {
+		cmakeArgs = append(cmakeArgs, "-DUSE_BUILTIN_CA_BUNDLE_CRT=off")
 		if harmonyNdkDir == "" {
 			glog.Fatalf("Harmony Ndk Directory demanded");
 		}
+		// FIXME harmony doens't support c-ares
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_CARES=%s", "OFF"))
 		harmonyAbiTarget, harmonyAppAbi = getHarmonyTargetAndAppAbi(archFlag)
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/Harmony.cmake", buildDir))
 		// hard-coded
@@ -969,6 +978,9 @@ func buildStageGenerateBuildScript() {
 		if subSystemNameFlag == "openwrt" {
 			subsystem = "musl"
 		}
+		if subsystem == "musl" {
+			cmakeArgs = append(cmakeArgs, "-DUSE_BUILTIN_CA_BUNDLE_CRT=off")
+		}
 		gnuType, gnuArch := getGNUTargetTypeAndArch(archFlag, subsystem)
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/Linux.cmake", buildDir))
 		var pkgConfigPath = filepath.Join(sysrootFlag, "usr", "lib", "pkgconfig")
@@ -980,6 +992,9 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSROOT=%s", sysrootFlag))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSTEM_PROCESSOR=%s", gnuArch))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_TARGET=%s", gnuType))
+		if (archFlag == "arm64" || archFlag == "aarch64") && armCpuFlag != "" {
+			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DARM_CPU=%s", armCpuFlag))
+		}
 		if subsystem == "" {
 			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_TCMALLOC=on"))
 		}
@@ -1903,6 +1918,12 @@ func archiveMainFile(output string, prefix string, paths []string, dllPaths []st
 			if (androidNdkDir != "") {
 				localProperties += fmt.Sprintf("ndk.dir=%s\n", androidNdkDir)
 			}
+			tagVersionStrs := strings.Split(tagFlag, ".")
+			tagMajorVer, _ := strconv.Atoi(tagVersionStrs[0])
+			tagMinorVer, _ := strconv.Atoi(tagVersionStrs[1])
+			tagPatchVer, _ := strconv.Atoi(tagVersionStrs[2])
+			localProperties += fmt.Sprintf("YASS_VERSION=%d\n", tagMajorVer * 1000000 + tagMinorVer * 1000 + tagPatchVer)
+			localProperties += fmt.Sprintf("YASS_VERSION_NAME=%s\n", tagFlag)
 			err = ioutil.WriteFile("local.properties", []byte(localProperties), 0666)
 			if err != nil {
 				glog.Fatalf("%v", err)
@@ -2057,6 +2078,9 @@ func postStateArchives() map[string][]string {
 		archiveFormat = fmt.Sprintf("%%s-%s-release-%s-%s%%s%%s", systemNameFlag, archFlag, tag)
 		if subSystemNameFlag != "" {
 			archiveFormat = fmt.Sprintf("%%s-%s-%s-release-%s-%s%%s%%s", systemNameFlag, subSystemNameFlag, archFlag, tag)
+			if armCpuFlag != "" {
+				archiveFormat = fmt.Sprintf("%%s-%s-%s-release-%s-%s-%s%%s%%s", systemNameFlag, subSystemNameFlag, archFlag, armCpuFlag, tag)
+			}
 		}
 	}
 

@@ -3,7 +3,6 @@
 
 #import "ios/YassViewController.h"
 
-#include <iomanip>
 #include <sstream>
 
 #include <absl/flags/flag.h>
@@ -15,28 +14,11 @@
 #include "crypto/crypter_export.hpp"
 #include "ios/YassAppDelegate.h"
 
-static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
-  if (bytes < 1024) {
-    *ss << bytes << " B";
-    return;
-  }
-  uint64_t value = bytes;
-  char ci[] = {"KMGTPE"};
-  const char* c = ci;
-  for (int i = 40; i >= 0 && bytes > 0xfffccccccccccccLU >> i; i -= 10) {
-    value >>= 10;
-    ++c;
-  }
-  *ss << std::fixed << std::setw(5) << std::setprecision(2) << value / 1024.0
-      << " " << *c;
-}
-
 @interface YassViewController () <UIPickerViewDataSource, UIPickerViewDelegate, UITextFieldDelegate>
 @end
 
 @implementation YassViewController {
   NSArray* cipher_methods_;
-  NSString* current_cipher_method_;
   uint64_t last_sync_time_;
   uint64_t last_rx_bytes_;
   uint64_t last_tx_bytes_;
@@ -52,7 +34,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
       CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   ];
-  current_cipher_method_ = nil;
+  self.currentCiphermethod = @(CRYPTO_HTTP2_STR);
   [self.cipherMethod setDelegate:self];
   [self.cipherMethod setDataSource:self];
   [self.cipherMethod reloadAllComponents];
@@ -98,10 +80,6 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
     }];
   }];
   [super viewWillAppear:animated];
-}
-
-- (NSString*)getCipher {
-  return current_cipher_method_;
 }
 
 - (BOOL)textFieldShouldReturn:(UITextField *)textField {
@@ -155,7 +133,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
 }
 
 - (void)pickerView:(UIPickerView *)pickerView didSelectRow:(NSInteger)row inComponent:(NSInteger)component {
-  current_cipher_method_ = [cipher_methods_ objectAtIndex:row];
+  self.currentCiphermethod = [cipher_methods_ objectAtIndex:row];
 }
 
 - (IBAction)OnStartButtonClicked:(id)sender {
@@ -263,11 +241,11 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   ss << gurl_base::SysNSStringToUTF8(message);
   message = NSLocalizedString(@"TXRATE", @" tx rate: ");
   ss << gurl_base::SysNSStringToUTF8(message);
-  humanReadableByteCountBin(&ss, rx_rate_);
+  HumanReadableByteCountBin(&ss, rx_rate_);
   ss << "/s";
   message = NSLocalizedString(@"RXRATE", @" rx rate: ");
   ss << gurl_base::SysNSStringToUTF8(message);
-  humanReadableByteCountBin(&ss, tx_rate_);
+  HumanReadableByteCountBin(&ss, tx_rate_);
   ss << "/s";
 
   return gurl_base::SysUTF8ToNSString(ss.str());
@@ -288,7 +266,7 @@ static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
   auto cipherMethod = absl::GetFlag(FLAGS_method).method;
   NSUInteger row = [cipher_methods_ indexOfObject:gurl_base::SysUTF8ToNSString(to_cipher_method_str(cipherMethod))];
   if (row != NSNotFound) {
-    current_cipher_method_ = gurl_base::SysUTF8ToNSString(to_cipher_method_str(cipherMethod));
+    self.currentCiphermethod = gurl_base::SysUTF8ToNSString(to_cipher_method_str(cipherMethod));
     [self.cipherMethod selectRow:row inComponent:0 animated:NO];
   }
 

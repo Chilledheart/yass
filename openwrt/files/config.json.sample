@@ -1,8 +1,9 @@
 {
     "local": "127.0.0.1",
-    "local_port": 8000,
+    "local_port": 1080,
     "method": "http2",
-    "server": "example.com",
+    "server": "http2.github.io",
+    "server_sni": "",
     "server_port": 443,
     "timeout": 0,
     "username": "username",

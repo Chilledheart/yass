@@ -4,7 +4,6 @@
 #include "config/config.hpp"
 #include "config/config_impl.hpp"
 
-#include <iomanip>
 #include <sstream>
 
 #include <absl/flags/flag.h>
@@ -155,7 +154,7 @@ ABSL_FLAG(bool, ipv6_mode, true, "Enable IPv6 support");
 
 ABSL_FLAG(std::string,
           server_host,
-          "0.0.0.0",
+          "http2.github.io",
           "Host address which remote server listens to");
 ABSL_FLAG(std::string,
           server_sni,
@@ -163,7 +162,7 @@ ABSL_FLAG(std::string,
           "Override host address SNI which remote server listens to (Client Only)");
 ABSL_FLAG(int32_t,
           server_port,
-          8443,
+          443,
           "Port number which remote server listens to");
 ABSL_FLAG(std::string,
           local_host,
@@ -171,11 +170,11 @@ ABSL_FLAG(std::string,
           "Host address which local server listens to");
 ABSL_FLAG(int32_t,
           local_port,
-          8000,
+          1080,
           "Port number which local server listens to");
 
-ABSL_FLAG(std::string, username, "<default-user>", "Username");
-ABSL_FLAG(std::string, password, "<default-pass>", "Password pharsal");
+ABSL_FLAG(std::string, username, "username", "Username");
+ABSL_FLAG(std::string, password, "password", "Password pharsal");
 static const std::string kCipherMethodHelpMessage =
     absl::StrCat("Method of encrypt, one of ",
                  absl::string_view(kCipherMethodsStr, strlen(kCipherMethodsStr)-2));

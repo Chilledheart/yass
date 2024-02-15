@@ -1,8 +1,8 @@
 diff --git a/include/__config b/include/__config
-index ee7730516..f7e1ceef2 100644
+index ee272a627..a943aa164 100644
 --- a/include/__config
 +++ b/include/__config
-@@ -1042,6 +1042,7 @@ __sanitizer_verify_double_ended_contiguous_container(const void*, const void*, c
+@@ -1071,6 +1071,7 @@ __sanitizer_verify_double_ended_contiguous_container(const void*, const void*, c
          defined(__GNU__) ||                                                                                            \
          defined(__APPLE__) ||                                                                                          \
          defined(__MVS__) ||                                                                                            \
@@ -10,7 +10,7 @@ index ee7730516..f7e1ceef2 100644
          defined(_AIX) ||                                                                                               \
          defined(__EMSCRIPTEN__)
  // clang-format on
-@@ -1121,7 +1122,7 @@ __sanitizer_verify_double_ended_contiguous_container(const void*, const void*, c
+@@ -1145,7 +1146,7 @@ __sanitizer_verify_double_ended_contiguous_container(const void*, const void*, c
  #  endif
  
  #  if defined(__BIONIC__) || defined(__NuttX__) || defined(__Fuchsia__) || defined(__wasi__) ||                        \
@@ -20,16 +20,16 @@ index ee7730516..f7e1ceef2 100644
  #  endif
  
 diff --git a/include/__locale b/include/__locale
-index eda81976d..8b3ca41b0 100644
+index 3ba7ac18b..ce0d69adf 100644
 --- a/include/__locale
 +++ b/include/__locale
 @@ -49,6 +49,9 @@
  #elif defined(__wasi__)
  // WASI libc uses musl's locales support.
- # include <__support/musl/xlocale.h>
+ #  include <__support/musl/xlocale.h>
 +#elif defined(__LITEOS__) || defined(__OHOS__)
 +// LiteOS libc uses musl's locales support.
-+# include <__support/musl/xlocale.h>
++#  include <__support/musl/xlocale.h>
  #elif defined(_LIBCPP_HAS_MUSL_LIBC)
- # include <__support/musl/xlocale.h>
+ #  include <__support/musl/xlocale.h>
  #endif

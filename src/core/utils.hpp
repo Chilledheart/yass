@@ -9,6 +9,7 @@
 #include <thread>
 #include <wchar.h>
 #include <optional>
+#include <iosfwd>
 
 #include <base/compiler_specific.h>
 #include <base/strings/sys_string_conversions.h>
@@ -20,6 +21,11 @@ extern std::string a_cache_dir;
 extern std::string a_data_dir;
 typedef int (*OpenApkAssetType)(const std::string&, gurl_base::MemoryMappedFile::Region*);
 extern OpenApkAssetType a_open_apk_asset;
+#endif
+
+#ifdef __OHOS__
+extern std::string h_cache_dir;
+extern std::string h_data_dir;
 #endif
 
 using gurl_base::PlatformFile;
@@ -182,6 +188,20 @@ PlatformFile OpenReadFile(const std::wstring& path);
 
 #ifdef HAVE_TCMALLOC
 void PrintTcmallocStats();
+#endif
+
+#ifdef __APPLE__
+#if BUILDFLAG(IS_IOS)
+#include <MacTypes.h>
+#else
+#include <libkern/OSTypes.h>
+#endif
+std::string DescriptionFromOSStatus(OSStatus err);
+#endif // __APPLE__
+
+void HumanReadableByteCountBin(std::ostream* ss, uint64_t bytes);
+#ifdef _WIN32
+void HumanReadableByteCountBin(std::wostream* ss, uint64_t bytes);
 #endif
 
 #endif  // YASS_UTILS

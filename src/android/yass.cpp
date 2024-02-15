@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2023 Chilledheart  */
+/* Copyright (c) 2023-2024 Chilledheart  */
 
 #ifdef __ANDROID__
 
 #include "android/yass.hpp"
 
-#include <iomanip>
 #include <jni.h>
 #include <openssl/crypto.h>
 
@@ -210,22 +209,6 @@ JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStop(JNIEnv *env, job
   });
 }
 
-static void humanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
-  if (bytes < 1024) {
-    *ss << bytes << " B";
-    return;
-  }
-  uint64_t value = bytes;
-  char ci[] = {"KMGTPE"};
-  const char* c = ci;
-  for (int i = 40; i >= 0 && bytes > 0xfffccccccccccccLU >> i; i -= 10) {
-    value >>= 10;
-    ++c;
-  }
-  *ss << std::fixed << std::setw(5) << std::setprecision(2) << value / 1024.0
-      << " " << *c;
-}
-
 JNIEXPORT jlongArray JNICALL Java_it_gui_yass_MainActivity_getRealtimeTransferRate(JNIEnv *env, jobject obj) {
   uint64_t sync_time = GetMonotonicTime();
   uint64_t delta_time = sync_time - g_last_sync_time;
@@ -250,10 +233,10 @@ JNIEXPORT jlongArray JNICALL Java_it_gui_yass_MainActivity_getRealtimeTransferRa
   ss << "polling " << dresult[0] << " connections";
 
   ss << " rx rate: ";
-  humanReadableByteCountBin(&ss, dresult[1]);
+  HumanReadableByteCountBin(&ss, dresult[1]);
   ss << "/s";
   ss << " tx rate: ";
-  humanReadableByteCountBin(&ss, dresult[2]);
+  HumanReadableByteCountBin(&ss, dresult[2]);
   ss << "/s";
 
   VLOG(1) << ss.str();

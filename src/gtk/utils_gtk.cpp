@@ -13,6 +13,7 @@
 #include <string_view>
 #include <absl/strings/str_cat.h>
 #include <absl/strings/str_format.h>
+#include <base/posix/eintr_wrapper.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -382,8 +383,8 @@ bool Dispatcher::Init(std::function<void()> callback) {
   }
   if (::fcntl(fds_[0], F_SETFL, ::fcntl(fds_[0], F_GETFL) | O_NONBLOCK | O_CLOEXEC) != 0 ||
       ::fcntl(fds_[1], F_SETFL, ::fcntl(fds_[1], F_GETFL) | O_NONBLOCK | O_CLOEXEC) != 0) {
-    ::close(fds_[0]);
-    ::close(fds_[1]);
+    IGNORE_EINTR(::close(fds_[0]));
+    IGNORE_EINTR(::close(fds_[1]));
     PLOG(WARNING) << "Dispatcher: set non-block failure";
     return false;
   }
@@ -421,8 +422,8 @@ bool Dispatcher::Destroy() {
   g_source_destroy(source_);
   source_ = nullptr;
   callback_ = nullptr;
-  bool failure_on_close = ::close(fds_[0]) != 0;
-  failure_on_close |= ::close(fds_[1]) != 0;
+  bool failure_on_close = HANDLE_EINTR(::close(fds_[0])) != 0;
+  failure_on_close |= HANDLE_EINTR(::close(fds_[1])) != 0;
   if (failure_on_close) {
     PLOG(WARNING) << "Dispatcher: close failure";
     return false;

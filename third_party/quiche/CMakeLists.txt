@@ -32,6 +32,8 @@ set(quiche_SRCS
   src/quiche/common/capsule.cc
   src/quiche/common/http/http_header_block.cc
   src/quiche/common/http/http_header_storage.cc
+  src/quiche/common/masque/connect_ip_datagram_payload.cc
+  src/quiche/common/masque/connect_udp_datagram_payload.cc
   src/quiche/common/platform/api/quiche_bug_tracker.h
   src/quiche/common/platform/api/quiche_client_stats.h
   src/quiche/common/platform/api/quiche_containers.h
@@ -242,13 +244,8 @@ set(quiche_SRCS
   src/quiche/spdy/core/spdy_framer.cc
   src/quiche/spdy/core/spdy_framer.h
   src/quiche/spdy/core/spdy_headers_handler_interface.h
-  src/quiche/spdy/core/spdy_intrusive_list.h
   src/quiche/spdy/core/spdy_no_op_visitor.cc
   src/quiche/spdy/core/spdy_no_op_visitor.h
-  src/quiche/spdy/core/spdy_pinnable_buffer_piece.cc
-  src/quiche/spdy/core/spdy_pinnable_buffer_piece.h
-  src/quiche/spdy/core/spdy_prefixed_buffer_reader.cc
-  src/quiche/spdy/core/spdy_prefixed_buffer_reader.h
   src/quiche/spdy/core/spdy_protocol.cc
   src/quiche/spdy/core/spdy_protocol.h
   src/quiche/spdy/core/zero_copy_output_buffer.h
@@ -259,6 +256,8 @@ set(quiche_SRCS
   src/quiche/web_transport/web_transport.h
   src/quiche/web_transport/web_transport_headers.cc
   src/quiche/web_transport/web_transport_headers.h
+  src/quiche/web_transport/web_transport_priority_scheduler.cc
+  src/quiche/web_transport/web_transport_priority_scheduler.h
   )
 
 set(quiche_quic_SOURCES
@@ -487,6 +486,8 @@ set(quiche_quic_SOURCES
   src/quiche/quic/core/http/spdy_utils.h
   src/quiche/quic/core/http/web_transport_http3.cc
   src/quiche/quic/core/http/web_transport_http3.h
+  src/quiche/quic/core/internet_checksum.cc
+  src/quiche/quic/core/internet_checksum.h
   src/quiche/quic/core/http/web_transport_stream_adapter.cc
   src/quiche/quic/core/http/web_transport_stream_adapter.h
   src/quiche/quic/core/legacy_quic_stream_id_manager.cc

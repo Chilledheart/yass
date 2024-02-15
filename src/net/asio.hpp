@@ -29,6 +29,9 @@
 #define ASIO_ENABLE_HANDLER_TRACKING
 #endif
 
+#ifdef __MINGW32__
+#undef _POSIX_THREADS
+#endif
 #include <asio.hpp>
 #include <asio/ssl.hpp>
 #include "net/asio_throw_exceptions.hpp"

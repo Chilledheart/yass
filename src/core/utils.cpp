@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022-2023 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 
 #include "core/utils.hpp"
 
@@ -22,6 +22,8 @@
 #include <absl/strings/str_cat.h>
 #include <base/posix/eintr_wrapper.h>
 #include <base/strings/string_number_conversions.h>
+#include <iomanip>
+#include <sstream>
 
 #ifdef HAVE_TCMALLOC
 #include <tcmalloc/malloc_extension.h>
@@ -35,6 +37,11 @@
 std::string a_cache_dir;
 std::string a_data_dir;
 OpenApkAssetType a_open_apk_asset = nullptr;
+#endif
+
+#ifdef __OHOS__
+std::string h_cache_dir;
+std::string h_data_dir;
 #endif
 
 std::optional<int> StringToInteger(const std::string& value) {
@@ -264,7 +271,13 @@ bool GetTempDir(std::string *path) {
     return true;
   }
 #endif
-#if defined(__ANDROID__)
+#if BUILDFLAG(IS_OHOS)
+  if (!h_cache_dir.empty()) {
+    *path = h_cache_dir;
+    return true;
+  }
+#endif
+#if defined(__ANDROID) || defined(__OHOS__)
   *path = "/data/local/tmp";
 #else
   *path = "/tmp";
@@ -303,7 +316,7 @@ bool Net_ipv6works() {
   using fd_t = int;
 #endif
   /* probe to see if we have a working IPv6 stack */
-  fd_t s = socket(AF_INET6, SOCK_DGRAM, 0);
+  fd_t s = ::socket(AF_INET6, SOCK_DGRAM, 0);
 #ifndef _WIN32
   if (s < 0) {
 #else
@@ -312,9 +325,9 @@ bool Net_ipv6works() {
     return false;
   } else {
 #ifndef _WIN32
-    close(s);
+    IGNORE_EINTR(::close(s));
 #else
-    closesocket(s);
+    ::closesocket(s);
 #endif
     return true;
   }
@@ -328,7 +341,7 @@ ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len) {
   }
   ssize_t ret = HANDLE_EINTR(::read(fd, buf, buf_len - 1));
 
-  if (IGNORE_EINTR(close(fd)) < 0) {
+  if (HANDLE_EINTR(close(fd)) < 0) {
     return -1;
   }
   buf[ret] = '\0';
@@ -361,7 +374,7 @@ ssize_t WriteFileWithBuffer(const std::string& path,
 
   ssize_t ret = WriteFileDescriptor(fd, buf) ? buf.length() : -1;
 
-  if (IGNORE_EINTR(close(fd)) < 0) {
+  if (HANDLE_EINTR(close(fd)) < 0) {
     return -1;
   }
   return ret;
@@ -395,5 +408,32 @@ void PrintTcmallocStats() {
       LOG(INFO) << "TCMALLOC: " << property << " = " << *size << " bytes";
     }
   }
+}
+#endif
+
+template<typename T>
+static void HumanReadableByteCountBinT(T* ss, uint64_t bytes) {
+  if (bytes < 1024) {
+    *ss << bytes << " B";
+    return;
+  }
+  uint64_t value = bytes;
+  char ci[] = {"KMGTPE"};
+  const char* c = ci;
+  for (int i = 40; i >= 0 && bytes > 0xfffccccccccccccLU >> i; i -= 10) {
+    value >>= 10;
+    ++c;
+  }
+  *ss << std::fixed << std::setw(5) << std::setprecision(2)
+      << static_cast<double>(value) / 1024.0 << " " << *c;
+}
+
+void HumanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {
+  HumanReadableByteCountBinT(ss, bytes);
+}
+
+#ifdef _WIN32
+void HumanReadableByteCountBin(std::wostream* ss, uint64_t bytes) {
+  HumanReadableByteCountBinT(ss, bytes);
 }
 #endif

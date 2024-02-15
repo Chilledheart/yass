@@ -37,6 +37,13 @@
   std::string error_msg_;
   NETunnelProviderManager *vpn_manager_;
   NSTimer* refresh_timer_;
+
+  NSString* server_host_;
+  NSString* server_port_;
+  NSString* username_;
+  NSString* password_;
+  NSString* method_string_;
+  NSString* connect_timeout_;
 }
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary<UIApplicationLaunchOptionsKey,id> *)launchOptions {
@@ -229,15 +236,13 @@
   }
 #endif
 
-  YassViewController* viewController = [self getRootViewController];
-
   tunnelProtocol.providerConfiguration = @{
-    @"server_host": viewController.serverHost.text,
-    @"server_port": viewController.serverPort.text,
-    @"username": viewController.username.text,
-    @"password": viewController.password.text,
-    @"method_string": [viewController getCipher],
-    @"connect_timeout": viewController.timeout.text,
+    @(kServerHostFieldName): server_host_,
+    @(kServerPortFieldName): server_port_,
+    @(kUsernameFieldName): username_,
+    @(kPasswordFieldName): password_,
+    @(kMethodStringFieldName): method_string_,
+    @(kConnectTimeoutFieldName): connect_timeout_,
   };
   tunnelProtocol.username = @"";
   tunnelProtocol.identityDataPassword = @"";
@@ -348,8 +353,8 @@
   YassViewController* viewController = [self getRootViewController];
   [viewController StartFailed];
 
-  UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"Start Failed" message:@(error_msg.c_str()) preferredStyle:UIAlertControllerStyleAlert];
-  UIAlertAction* action = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction* action) {}];
+  UIAlertController* alert = [UIAlertController alertControllerWithTitle:NSLocalizedString(@"START_FAILED", @"Start Failed") message:@(error_msg.c_str()) preferredStyle:UIAlertControllerStyleAlert];
+  UIAlertAction* action = [UIAlertAction actionWithTitle:NSLocalizedString(@"OK", @"OK") style:UIAlertActionStyleDefault handler:^(UIAlertAction* action) {}];
   [alert addAction:action];
   [viewController presentViewController:alert animated:YES completion:nil];
 }
@@ -373,12 +378,19 @@
 
 - (std::string)SaveConfig {
   YassViewController* viewController = [self getRootViewController];
-  auto server_host = gurl_base::SysNSStringToUTF8(viewController.serverHost.text);
-  auto server_port = gurl_base::SysNSStringToUTF8(viewController.serverPort.text);
-  auto username = gurl_base::SysNSStringToUTF8(viewController.username.text);
-  auto password = gurl_base::SysNSStringToUTF8(viewController.password.text);
-  auto method_string = gurl_base::SysNSStringToUTF8([viewController getCipher]);
-  auto connect_timeout = gurl_base::SysNSStringToUTF8(viewController.timeout.text);
+  server_host_ = viewController.serverHost.text;
+  server_port_ = viewController.serverPort.text;
+  username_ = viewController.username.text;
+  password_ = viewController.password.text;
+  method_string_ = viewController.currentCiphermethod;
+  connect_timeout_ = viewController.timeout.text;
+
+  auto server_host = gurl_base::SysNSStringToUTF8(server_host_);
+  auto server_port = gurl_base::SysNSStringToUTF8(server_port_);
+  auto username = gurl_base::SysNSStringToUTF8(username_);
+  auto password = gurl_base::SysNSStringToUTF8(password_);
+  auto method_string = gurl_base::SysNSStringToUTF8(method_string_);
+  auto connect_timeout = gurl_base::SysNSStringToUTF8(connect_timeout_);
 
   return config::ReadConfigFromArgument(server_host, "" /*server_sni*/, server_port,
                                         username, password, method_string,

@@ -44,6 +44,11 @@ std::unique_ptr<ConfigImpl> ConfigImpl::Create() {
   fprintf(stderr, "using option from file: %s\n", configfile.c_str());
   fflush(stderr);
   return std::make_unique<ConfigImplLocal>(configfile);
+#elif defined(__OHOS__)
+  std::string configfile = absl::StrCat(h_data_dir, "/", "config.json");
+  fprintf(stderr, "using option from file: %s\n", configfile.c_str());
+  fflush(stderr);
+  return std::make_unique<ConfigImplLocal>(configfile);
 #else
   const char* configfile = "~/.yass/config.json";
   fprintf(stderr, "using option from file: %s\n", configfile);

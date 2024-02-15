@@ -67,6 +67,47 @@ case "$WITH_CPU" in
 esac
 }
 
+function patch_ohos {
+  REGISTRIES=($(ls -d $HOME/.cargo/registry/src/*/))
+  for REGISTRY in "${REGISTRIES[@]}"
+  do
+    if [ -f $REGISTRY/socket2-0.5.5/src/sys/unix.rs ]; then
+      cp -fv ../../scripts/unix.rs $REGISTRY/socket2-0.5.5/src/sys/unix.rs
+    fi
+    if [ -f $REGISTRY/nix-0.27.1/src/fcntl.rs ]; then
+      cp -fv ../../scripts/fcntl.rs $REGISTRY/nix-0.27.1/src/fcntl.rs
+    fi
+    if [ -f $REGISTRY/nix-0.27.1/src/sys/statfs.rs ]; then
+      cp -fv ../../scripts/statfs.rs $REGISTRY/nix-0.27.1/src/sys/statfs.rs
+    fi
+    if [ -f $REGISTRY/nix-0.27.1/src/sys/statvfs.rs ]; then
+      cp -fv ../../scripts/statvfs.rs $REGISTRY/nix-0.27.1/src/sys/statvfs.rs
+    fi
+  done
+}
+
+function build_ohos {
+export PATH=$PWD/../../third_party/rust-ohos/bin:$PATH
+case "$WITH_CPU" in
+  x64)
+    cargo build --target x86_64-unknown-linux-ohos --release --lib || patch_ohos
+    cargo build --target x86_64-unknown-linux-ohos --release --lib
+    ;;
+  arm)
+    cargo build --target armv7-unknown-linux-ohos --release --lib || patch_ohos
+    cargo build --target armv7-unknown-linux-ohos --release --lib
+    ;;
+  arm64)
+    cargo build --target aarch64-unknown-linux-ohos --release --lib || patch_ohos
+    cargo build --target aarch64-unknown-linux-ohos --release --lib
+    ;;
+  *)
+    echo "Invalid WITH_CPU: $WITH_CPU"
+    exit -1
+    ;;
+esac
+}
+
 case "$MACHINE" in
   x86|i586|i686)
     WITH_CPU_DEFAULT="x86"
@@ -95,6 +136,9 @@ case "$WITH_OS" in
     ;;
   android)
     build_android
+    ;;
+  harmony|ohos)
+    build_ohos
     ;;
   **)
     echo "Unsupported OS ${WITH_OS}"

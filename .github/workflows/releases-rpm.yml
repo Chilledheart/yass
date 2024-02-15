@@ -35,7 +35,7 @@ concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 env:
-  CACHE_EPOCH: 121-2
+  CACHE_EPOCH: 122-5
   GOPROXY: direct
 jobs:
   docker_publish:
@@ -46,7 +46,7 @@ jobs:
         - 'centos7'
         - 'centos8'
         - 'fedora38'
-        - 'alpine318'
+        - 'alpine319'
         - 'opensuse15'
         # - 'centos9'
     runs-on: ubuntu-22.04
@@ -164,7 +164,7 @@ jobs:
       fail-fast: false
       matrix:
         container:
-        - 'alpine318'
+        - 'alpine319'
     runs-on: ubuntu-22.04
     needs: docker_publish
     container:

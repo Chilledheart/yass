@@ -50,14 +50,14 @@ static constexpr uint32_t kYieldConcurrencyOfConnections = 12u;
 
   NETunnelProviderProtocol *protocolConfiguration = (NETunnelProviderProtocol*)self.protocolConfiguration;
   NSDictionary* dict = protocolConfiguration.providerConfiguration;
-  auto server_host = gurl_base::SysNSStringToUTF8(dict[@"server_host"]);
-  auto server_port = gurl_base::SysNSStringToUTF8(dict[@"server_port"]);
-  auto username = gurl_base::SysNSStringToUTF8(dict[@"username"]);
-  auto password = gurl_base::SysNSStringToUTF8(dict[@"password"]);
+  auto server_host = gurl_base::SysNSStringToUTF8(dict[@(kServerHostFieldName)]);
+  auto server_port = gurl_base::SysNSStringToUTF8(dict[@(kServerPortFieldName)]);
+  auto username = gurl_base::SysNSStringToUTF8(dict[@(kUsernameFieldName)]);
+  auto password = gurl_base::SysNSStringToUTF8(dict[@(kPasswordFieldName)]);
   auto local_host = std::string("127.0.0.1");
   auto local_port = std::string("0");
-  auto method_string = gurl_base::SysNSStringToUTF8(dict[@"method_string"]);
-  auto connect_timeout = gurl_base::SysNSStringToUTF8(dict[@"connect_timeout"]);
+  auto method_string = gurl_base::SysNSStringToUTF8(dict[@(kMethodStringFieldName)]);
+  auto connect_timeout = gurl_base::SysNSStringToUTF8(dict[@(kConnectTimeoutFieldName)]);
 
   auto err_msg = config::ReadConfigFromArgument(server_host, "" /*server_sni*/, server_port,
                                                 username, password, method_string,

@@ -1,0 +1,100 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "This module template implements YASS functions."
+    },
+    {
+      "name": "ability_desc",
+      "value": "This ability loads YASS."
+    },
+    {
+      "name": "ability_label",
+      "value": "Yet Another Shadow Socket"
+    },
+    {
+      "name": "title_name",
+      "value": "YASS"
+    },
+    {
+      "name": "icon_name",
+      "value": "YASS Application"
+    },
+    {
+      "name": "version_label",
+      "value": "Version: %s"
+    },
+    {
+      "name": "about_us",
+      "value": "About us"
+    },
+    {
+      "name": "copyright",
+      "value": "Copyright © 2024 Chilledheart all rights reserved"
+    },
+    {
+      "name": "detail_item_title",
+      "value": "Title"
+    },
+    {
+      "name": "server_host",
+      "value": "Server Host"
+    },
+    {
+      "name": "server_sni",
+      "value": "Server SNI"
+    },
+    {
+      "name": "server_port",
+      "value": "Server Port"
+    },
+    {
+      "name": "username",
+      "value": "Username"
+    },
+    {
+      "name": "password",
+      "value": "Password"
+    },
+    {
+      "name": "cipher",
+      "value": "Cipher/Method"
+    },
+    {
+      "name": "timeout",
+      "value": "Timeout"
+    },
+    {
+      "name": "start_button",
+      "value": "Start"
+    },
+    {
+      "name": "stop_button",
+      "value": "Stop"
+    },
+    {
+      "name": "current_ip",
+      "value": "Current IP: %s:%d"
+    },
+    {
+      "name": "status_started_with_rate",
+      "value": "Connected tx rate: %s rx rate: %s"
+    },
+    {
+      "name": "status_started_with_error_msg",
+      "value": "Failed to connect due to %s"
+    },
+    {
+      "name": "status_stopping",
+      "value": "STOPPING"
+    },
+    {
+      "name": "status_starting",
+      "value": "STARTING"
+    },
+    {
+      "name": "status_stopped",
+      "value": "Disconnected with %s:%d"
+    }
+  ]
+}

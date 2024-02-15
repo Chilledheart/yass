@@ -173,6 +173,25 @@ static StringType CFStringToSTLStringWithEncodingT(CFStringRef cfstring,
 #include <android/log.h>
 #endif
 
+#if defined(OS_OHOS)
+// #include <hilog/log.h>
+
+typedef enum {
+  /** Third-party application logs */
+  HILOG_LOG_APP = 0,
+} HILOG_LogType;
+typedef enum {
+  HILOG_LOG_DEBUG = 3,
+  HILOG_LOG_INFO = 4,
+  HILOG_LOG_WARN = 5,
+  HILOG_LOG_ERROR = 6,
+  HILOG_LOG_FATAL = 7,
+} HILOG_LogLevel;
+
+extern "C"
+int OH_LOG_Print(HILOG_LogType type, HILOG_LogLevel level, unsigned int domain, const char *tag, const char *fmt, ...);
+#endif
+
 #if defined(OS_POSIX)
 #include <errno.h>
 #include <paths.h>
@@ -1176,7 +1195,37 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
     // The Android system may truncate the string if it's too long.
     __android_log_write(priority, kLogTag, message + prefix_len);
 #endif  // DCHECK_IS_ON
-#endif  // OS_ANDROID
+#elif defined(OS_OHOS)
+    HILOG_LogLevel log_level =
+        (severity < 0) ? HILOG_LOG_DEBUG : HILOG_LOG_INFO;
+    switch (severity) {
+      case LOG_INFO:
+        log_level = HILOG_LOG_INFO;
+        break;
+      case LOG_WARNING:
+        log_level = HILOG_LOG_WARN;
+        break;
+      case LOG_ERROR:
+        log_level = HILOG_LOG_ERROR;
+        break;
+      case LOG_FATAL:
+        log_level = HILOG_LOG_FATAL;
+        break;
+    }
+    constexpr char kLogTag[] = YASS_APP_NAME;
+    constexpr unsigned int kLogDomain = 0x0;
+#if DCHECK_IS_ON()
+    // Split the output by new lines to prevent the OHOS system from
+    // truncating the log.
+    std::vector<std::string> lines =
+        absl::StrSplit(message + prefix_len, "\n", absl::SkipWhitespace());
+    for (const auto& line : lines)
+      OH_LOG_Print(HILOG_LOG_APP, log_level, kLogDomain, kLogTag, line.c_str());
+#else
+    // The OHOS system may truncate the string if it's too long.
+    OH_LOG_Print(HILOG_LOG_APP, log_level, kLogDomain, kLogTag, message + prefix_len);
+#endif  // DCHECK_IS_ON
+#endif  // OS_OHOS
 
     ColoredWriteToStderr(severity, message, message_len);
   }
@@ -1374,7 +1423,7 @@ bool LogFileObject::CreateLogfile(const std::string& time_pid_string) {
 
   int wlock_ret = fcntl(fd, F_SETLK, &w_lock);
   if (wlock_ret == -1) {
-    close(fd);  // as we are failing already, do not check errors here
+    IGNORE_EINTR(::close(fd));  // as we are failing already, do not check errors here
     return false;
   }
 #endif
@@ -1382,7 +1431,7 @@ bool LogFileObject::CreateLogfile(const std::string& time_pid_string) {
   // fdopen in append mode so if the file exists it will fseek to the end
   file_ = fdopen(fd, "a");  // Make a FILE*.
   if (file_ == nullptr) {   // Man, we're screwed!
-    close(fd);
+    IGNORE_EINTR(::close(fd));
     if (absl::GetFlag(FLAGS_tick_counts_in_logfile_name)) {
       unlink(filename);  // Erase the half-baked evidence: an unusable log file,
                          // only if we just created it.
@@ -2112,6 +2161,27 @@ int AndroidLogLevel(const int severity) {
   }
 }
 #endif  // defined(OS_ANDROID)
+#if defined(OS_OHOS)
+HILOG_LogLevel OHOSLogLevel(const int severity) {
+  HILOG_LogLevel log_level =
+      (severity < 0) ? HILOG_LOG_DEBUG : HILOG_LOG_INFO;
+  switch (severity) {
+    case LOG_INFO:
+      log_level = HILOG_LOG_INFO;
+      break;
+    case LOG_WARNING:
+      log_level = HILOG_LOG_WARN;
+      break;
+    case LOG_ERROR:
+      log_level = HILOG_LOG_ERROR;
+      break;
+    case LOG_FATAL:
+      log_level = HILOG_LOG_FATAL;
+      break;
+  }
+  return log_level;
+}
+#endif  // defined(OS_OHOS)
 }  // namespace
 
 // Flush buffered message, called by the destructor, or any other function
@@ -2156,7 +2226,15 @@ void LogMessage::Flush() {
   const std::string text = std::string(data_->message_text_);
   __android_log_write(level, kLogTag,
                       text.substr(0, data_->num_chars_to_log_).c_str());
-#endif  // defined(OS_ANDROID)
+#elif defined(OS_OHOS)
+  constexpr char kLogTag[] = YASS_APP_NAME;
+  constexpr unsigned int kLogDomain = 0x0;
+
+  const HILOG_LogLevel level = OHOSLogLevel(data_->severity_);
+  const std::string text = std::string(data_->message_text_);
+  OH_LOG_Print(HILOG_LOG_APP, level, kLogDomain, kLogTag,
+               text.substr(0, data_->num_chars_to_log_).c_str());
+#endif  // defined(OS_OHOS)
 
   if (append_newline) {
     // Fix the ostrstream back how it was before we screwed with it.
@@ -2605,7 +2683,7 @@ void TruncateLogFile(const char* path, int64_t limit, int64_t keep) {
   }
 
 out_close_fd:
-  close(fd);
+  IGNORE_EINTR(::close(fd));
 #else
   LOG(ERROR) << "No log truncation support.";
 #endif

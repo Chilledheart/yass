@@ -43,7 +43,7 @@ class ConfigImplLocal : public ConfigImpl {
       ssize_t size =
           ReadFileToBuffer(path_, read_buffer_, sizeof(read_buffer_));
       if (size < 0) {
-        LOG(WARNING) << "configure file failed to read: " << path_;
+        PLOG(WARNING) << "configure file failed to read: " << path_;
         break;
       }
       root_ = json::parse(read_buffer_, nullptr, false);
@@ -80,12 +80,12 @@ class ConfigImplLocal : public ConfigImpl {
     std::string json_content = root_.dump(4);
     if (static_cast<ssize_t>(json_content.size()) !=
         WriteFileWithBuffer(path_, json_content)) {
-      LOG(WARNING) << "failed to write to path: \"" << path_
-                   << " with content \"" << json_content;
+      PLOG(WARNING) << "failed to write to path: \"" << path_
+                    << " with content \"" << json_content;
       return false;
     }
 
-    VLOG(2) << "written from config file " << path_;
+    LOG(INFO) << "written config file at " << path_;
 
     path_.clear();
     return true;
