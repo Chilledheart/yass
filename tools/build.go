@@ -74,6 +74,8 @@ var subSystemNameFlag string
 var sysrootFlag string
 var archFlag string
 
+var armCpuFlag string
+
 var variantFlag string
 
 var mingwDir string
@@ -184,6 +186,8 @@ func InitFlag() {
 	flag.StringVar(&subSystemNameFlag, "subsystem", "", "Specify host subsystem name")
 	flag.StringVar(&sysrootFlag, "sysroot", "", "Specify host sysroot, used in cross-compiling")
 	flag.StringVar(&archFlag, "arch", runtime.GOARCH, "Specify host architecture")
+
+	flag.StringVar(&armCpuFlag, "arm-cpu", "", "Specify ARM CPU Model Name if any")
 
 	flag.StringVar(&variantFlag, "variant", "gui", "Specify variant, available: gui, cli, server")
 
@@ -988,6 +992,9 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSROOT=%s", sysrootFlag))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSTEM_PROCESSOR=%s", gnuArch))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_TARGET=%s", gnuType))
+		if (archFlag == "arm64" || archFlag == "aarch64") && armCpuFlag != "" {
+			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DARM_CPU=%s", armCpuFlag))
+		}
 		if subsystem == "" {
 			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_TCMALLOC=on"))
 		}
@@ -2071,6 +2078,9 @@ func postStateArchives() map[string][]string {
 		archiveFormat = fmt.Sprintf("%%s-%s-release-%s-%s%%s%%s", systemNameFlag, archFlag, tag)
 		if subSystemNameFlag != "" {
 			archiveFormat = fmt.Sprintf("%%s-%s-%s-release-%s-%s%%s%%s", systemNameFlag, subSystemNameFlag, archFlag, tag)
+			if armCpuFlag != "" {
+				archiveFormat = fmt.Sprintf("%%s-%s-%s-release-%s-%s-%s%%s%%s", systemNameFlag, subSystemNameFlag, archFlag, armCpuFlag, tag)
+			}
 		}
 	}
 
