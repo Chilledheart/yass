@@ -372,9 +372,7 @@ cd ..
 ```
 
 ### Android/Packaging
-Make sure you have Android Studio installed on your system.
-
-TBD
+See [android's README.md](android/README.md)
 
 ### iOS/Packaging
 Make sure you have Xcode installed on your system.
