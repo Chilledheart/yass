@@ -374,6 +374,9 @@ cd ..
 ### Android/Packaging
 See [android's README.md](android/README.md)
 
+### HarmonyOS/Packaging
+See [harmonyOS's README.md](harmony/README.md)
+
 ### iOS/Packaging
 Make sure you have Xcode installed on your system.
 
