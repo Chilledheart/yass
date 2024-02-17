@@ -8,7 +8,7 @@
 
 #include "abort_message.h"
 #include "cxxabi.h"
-#include <__threading_support>
+#include <__thread/support.h>
 
 #include <stdlib.h>
 
