@@ -9,7 +9,7 @@
 // Bridge gcc's __thread keyword to libc++ implementation
 // useful when many mingw64 implementations changed to posix thread model (slow on window)
 
-#include <__threading_support>
+#include <__thread/support.h>
 
 extern "C" {
 void __cdecl __attribute__((noreturn)) abort(void);
