@@ -34,7 +34,7 @@
   QUIC_PROTOCOL_FLAG_MACRO_CHOOSER(__VA_ARGS__)(__VA_ARGS__)
 #endif
 
-#include "quiche/quic/core/quic_protocol_flags_list.h"
+#include "quiche/quic/core/quic_flags_list.h"
 
 #undef QUIC_PROTOCOL_FLAG
 #undef QUIC_PROTOCOL_FLAG_MACRO_CHOOSER

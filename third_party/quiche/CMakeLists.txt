@@ -434,6 +434,8 @@ set(quiche_quic_SOURCES
   src/quiche/quic/core/frames/quic_path_response_frame.h
   src/quiche/quic/core/frames/quic_ping_frame.cc
   src/quiche/quic/core/frames/quic_ping_frame.h
+  src/quiche/quic/core/frames/quic_reset_stream_at_frame.h
+  src/quiche/quic/core/frames/quic_reset_stream_at_frame.cc
   src/quiche/quic/core/frames/quic_retire_connection_id_frame.cc
   src/quiche/quic/core/frames/quic_retire_connection_id_frame.h
   src/quiche/quic/core/frames/quic_rst_stream_frame.cc
@@ -613,7 +615,6 @@ set(quiche_quic_SOURCES
   src/quiche/quic/core/quic_path_validator.h
   src/quiche/quic/core/quic_ping_manager.cc
   src/quiche/quic/core/quic_ping_manager.h
-  src/quiche/quic/core/quic_protocol_flags_list.h
   src/quiche/quic/core/quic_received_packet_manager.cc
   src/quiche/quic/core/quic_received_packet_manager.h
   src/quiche/quic/core/quic_sent_packet_manager.cc
