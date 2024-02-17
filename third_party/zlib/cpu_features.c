@@ -79,6 +79,20 @@ void ZLIB_INTERNAL cpu_check_features(void)
 #elif defined(ARMV8_OS_WINDOWS) || defined(X86_WINDOWS)
 
 #if _WIN32_WINNT < 0x0600
+#ifndef __MINGW32__
+typedef RTL_RUN_ONCE INIT_ONCE;
+typedef PRTL_RUN_ONCE PINIT_ONCE;
+typedef PRTL_RUN_ONCE LPINIT_ONCE;
+
+#define INIT_ONCE_STATIC_INIT   RTL_RUN_ONCE_INIT
+typedef
+BOOL
+(WINAPI *PINIT_ONCE_FN) (
+    _Inout_ PINIT_ONCE InitOnce,
+    _Inout_opt_ PVOID Parameter,
+    _Outptr_opt_result_maybenull_ PVOID *Context
+    );
+#endif // __MINGW32__
 static
 BOOL InitOnceExecuteOnce(PINIT_ONCE InitOnce,
                          PINIT_ONCE_FN InitFn,
