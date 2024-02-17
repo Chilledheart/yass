@@ -77,6 +77,59 @@ void ZLIB_INTERNAL cpu_check_features(void)
 #endif
 }
 #elif defined(ARMV8_OS_WINDOWS) || defined(X86_WINDOWS)
+
+#if _WIN32_WINNT < 0x0600
+static
+BOOL InitOnceExecuteOnce(PINIT_ONCE InitOnce,
+                         PINIT_ONCE_FN InitFn,
+                         PVOID         Parameter,
+                         LPVOID        *Context) {
+  /* This assumes that reading *once has acquire semantics. This should be true
+   * on x86 and x86-64, where we expect Windows to run. */
+#if !defined(_M_IX86) && !defined(_M_X64) && !defined(_M_ARM64)
+#error "Windows once code may not work on other platforms." \
+       "You can use InitOnceBeginInitialize on >=Vista"
+#endif
+
+  volatile LONG* __once = (volatile LONG*)InitOnce;
+
+  _Static_assert(sizeof(*InitOnce) >= sizeof(*__once),
+                "exec_once_flag must contains at least a LONG variable");
+
+  if (*__once == 1) {
+    return 0;
+  }
+
+  for (;;) {
+    switch (InterlockedCompareExchange(__once, 2, 0)) {
+      case 0:
+        /* The value was zero so we are the first thread to call once
+         * on it. */
+        InitFn(InitOnce, Parameter, Context);
+        /* Write one to indicate that initialisation is complete. */
+        InterlockedExchange(__once, 1);
+        return 0;
+
+      case 1:
+        /* Another thread completed initialisation between our fast-path check
+         * and |InterlockedCompareExchange|. */
+        return 0;
+
+      case 2:
+        /* Another thread is running the initialisation. Switch to it then try
+         * again. */
+        SwitchToThread();
+        break;
+
+      default:
+        abort();
+    }
+  }
+  return 0;
+}
+
+#endif // _WIN32_WINNT < 0x0600
+
 static INIT_ONCE cpu_check_inited_once = INIT_ONCE_STATIC_INIT;
 static BOOL CALLBACK _cpu_check_features_forwarder(PINIT_ONCE once, PVOID param, PVOID* context)
 {
