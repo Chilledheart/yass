@@ -1,8 +1,8 @@
 diff --git a/include/__config b/include/__config
-index ee272a627..a943aa164 100644
+index 0797880cb..0ba96186e 100644
 --- a/include/__config
 +++ b/include/__config
-@@ -1071,6 +1071,7 @@ __sanitizer_verify_double_ended_contiguous_container(const void*, const void*, c
+@@ -1109,6 +1109,7 @@ __sanitizer_verify_double_ended_contiguous_container(const void*, const void*, c
          defined(__GNU__) ||                                                                                            \
          defined(__APPLE__) ||                                                                                          \
          defined(__MVS__) ||                                                                                            \
@@ -10,7 +10,7 @@ index ee272a627..a943aa164 100644
          defined(_AIX) ||                                                                                               \
          defined(__EMSCRIPTEN__)
  // clang-format on
-@@ -1145,7 +1146,7 @@ __sanitizer_verify_double_ended_contiguous_container(const void*, const void*, c
+@@ -1183,7 +1184,7 @@ __sanitizer_verify_double_ended_contiguous_container(const void*, const void*, c
  #  endif
  
  #  if defined(__BIONIC__) || defined(__NuttX__) || defined(__Fuchsia__) || defined(__wasi__) ||                        \
@@ -19,17 +19,16 @@ index ee272a627..a943aa164 100644
  #    define _LIBCPP_PROVIDES_DEFAULT_RUNE_TABLE
  #  endif
  
-diff --git a/include/__locale b/include/__locale
-index 3ba7ac18b..ce0d69adf 100644
---- a/include/__locale
-+++ b/include/__locale
-@@ -49,6 +49,9 @@
- #elif defined(__wasi__)
- // WASI libc uses musl's locales support.
- #  include <__support/musl/xlocale.h>
+diff --git a/include/__locale_dir/locale_base_api.h b/include/__locale_dir/locale_base_api.h
+index 2355b4a84..5a9427cfd 100644
+--- a/include/__locale_dir/locale_base_api.h
++++ b/include/__locale_dir/locale_base_api.h
+@@ -25,6 +25,8 @@
+ #  include <__locale_dir/locale_base_api/fuchsia.h>
+ #elif defined(__wasi__) || defined(_LIBCPP_HAS_MUSL_LIBC)
+ #  include <__locale_dir/locale_base_api/musl.h>
 +#elif defined(__LITEOS__) || defined(__OHOS__)
-+// LiteOS libc uses musl's locales support.
-+#  include <__support/musl/xlocale.h>
- #elif defined(_LIBCPP_HAS_MUSL_LIBC)
- #  include <__support/musl/xlocale.h>
++#  include <__locale_dir/locale_base_api/musl.h>
+ #elif defined(__APPLE__) || defined(__FreeBSD__)
+ #  include <xlocale.h>
  #endif
