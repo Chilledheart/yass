@@ -127,6 +127,8 @@ WITH_OS=${WITH_OS:-${WITH_OS_DEFAULT}}
 
 pushd third_party/tun2proxy
 
+cargo update
+
 case "$WITH_OS" in
   ios)
     build_ios
