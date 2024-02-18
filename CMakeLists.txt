@@ -3864,6 +3864,7 @@ if (GUI)
             ${ALLRESOURCES}
             ${MAIN_STORYBOARD}
             ${LAUNCH_STORYBOARD}
+            src/ios/PrivacyInfo.xcprivacy
             src/ios/en.lproj/Localizable.strings
             src/ios/en.lproj/Main.strings
             src/ios/zh-Hans.lproj/Localizable.strings
@@ -4237,6 +4238,8 @@ if (GUI)
 
         # For iOS Apple uses a flat bundle layout where no Resources folder exist.
         # Therefore CMake strips the Resources folder name from the specified location.
+        set_source_files_properties("src/ios/PrivacyInfo.xcprivacy" PROPERTIES
+          MACOSX_PACKAGE_LOCATION "Resources")
         set_source_files_properties("${ASSET_CATALOG}" PROPERTIES
           MACOSX_PACKAGE_LOCATION "Resources")
         if (USE_ICU)
