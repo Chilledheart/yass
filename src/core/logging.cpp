@@ -414,7 +414,7 @@ uint64_t MonotoicTickCount() {
 #if defined(OS_WIN)
   return GetTickCount();
 #elif defined(OS_APPLE)
-  return mach_absolute_time();
+  return clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
 #elif defined(OS_POSIX)
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
