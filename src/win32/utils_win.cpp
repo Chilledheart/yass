@@ -612,17 +612,18 @@ bool Utils::SetDpiAwareness(DpiAwarenessType awareness_type) {
 
   if (IsValidDpiAwarenessContext(awareness_context)) {
     if (SetThreadDpiAwarenessContext(awareness_context)) {
-      VLOG(2) << "Win10 style's ThreadDpiAwareness is set up";
+      VLOG(1) << "[dpi] Win10 style's ThreadDpiAwareness is set up";
+      Utils::SetMixedThreadDpiHostingBehavior();
       return true;
     }
-    VLOG(2) << "ThreadDpiAwareness is not set, falling back...";
+    VLOG(2) << "[dpi] ThreadDpiAwareness is not set, falling back...";
 
     if (SetProcessDpiAwarenessContext(awareness_context)) {
-      VLOG(2) << "Win10 style's ProcessDpiAwareness (all threads) is set up";
+      VLOG(1) << "[dpi] Win10 style's ProcessDpiAwareness (all threads) is set up";
       return true;
     }
   }
-  VLOG(2) << "ProcessDpiAwareness is not set, falling back...";
+  VLOG(2) << "[dpi] ProcessDpiAwareness is not set, falling back...";
 
   PROCESS_DPI_AWARENESS dpi_awareness = PROCESS_DPI_UNAWARE;
   switch (awareness_type) {
@@ -645,18 +646,18 @@ bool Utils::SetDpiAwareness(DpiAwarenessType awareness_type) {
 
   HRESULT hr = SetProcessDpiAwareness(dpi_awareness);
   if (SUCCEEDED(hr)) {
-    VLOG(2) << "Win8.1 style's ProcessDpiAwareness (all threads) is set up";
+    VLOG(1) << "[dpi] Win8.1 style's ProcessDpiAwareness (all threads) is set up";
     return true;
   }
 
-  VLOG(2) << "SetProcessDpiAwareness failed, falling back...";
+  VLOG(2) << "[dpi] SetProcessDpiAwareness failed, falling back...";
 
   if (SetProcessDPIAware()) {
-    VLOG(2) << "Vista style's ProcessDPIAware is set up";
+    VLOG(1) << "[dpi] Vista style's ProcessDPIAware is set up";
     return true;
   }
 
-  VLOG(2) << "all SetDpiAwareness methods tried, no support for HiDpi";
+  VLOG(1) << "[dpi] all SetDpiAwareness methods tried, no support for HiDpi";
 
   return false;
 }
@@ -664,10 +665,10 @@ bool Utils::SetDpiAwareness(DpiAwarenessType awareness_type) {
 bool Utils::SetMixedThreadDpiHostingBehavior() {
   if (SetThreadDpiHostingBehavior(DPI_HOSTING_BEHAVIOR_MIXED) ==
       DPI_HOSTING_BEHAVIOR_INVALID) {
-    VLOG(2) << "Mixed DPI hosting behavior not applied.";
+    VLOG(2) << "[dpi] Mixed DPI hosting behavior not applied.";
     return false;
   }
-  VLOG(2) << "Mixed DPI hosting behavior applied.";
+  VLOG(1) << "[dpi] Mixed DPI hosting behavior applied.";
   return true;
 }
 
@@ -677,35 +678,39 @@ unsigned int Utils::GetDpiForWindowOrSystem(HWND hWnd) {
   DPI_AWARENESS_CONTEXT awareness_context = GetWindowDpiAwarenessContext(hWnd);
   if (!IsValidDpiAwarenessContext(awareness_context)) {
     // Get the DPI awareness of the thread
-    VLOG(2) << "Window's DpiAwareness Context is not found, falling back...";
+    VLOG(2) << "[dpi] Window's DpiAwareness Context is not found, falling back...";
     awareness_context = GetThreadDpiAwarenessContext();
+
+    if (IsValidDpiAwarenessContext(awareness_context)) {
+      VLOG(2) << "[dpi] Thread's DpiAwareness Context is found, setting up...";
+    }
+  } else {
+    VLOG(2) << "[dpi] Windows's DpiAwareness Context is found, setting up...";
   }
 
   if (IsValidDpiAwarenessContext(awareness_context)) {
-    VLOG(2) << "Thread's DpiAwareness Context is found, setting up...";
-
     if (UINT uDpi = GetDpiFromDpiAwarenessContext(awareness_context)) {
-      VLOG(2) << "DPI: Use Dpi in Awareness Context";
+      VLOG(1) << "[dpi] Use Dpi associated with Awareness Context: " << uDpi;
       return uDpi;
     }
 
     if (AreDpiAwarenessContextsEqual(awareness_context,
                                      DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED)) {
-      VLOG(2) << "DPI Awareness: Unware GPIScaled found";
+      VLOG(2) << "[dpi] DPI Awareness: Unware GPIScaled found";
     } else if (AreDpiAwarenessContextsEqual(
                    awareness_context,
                    DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)) {
-      VLOG(2) << "DPI Awareness: Per Monitor Aware v2 found";
+      VLOG(2) << "[dpi] DPI Awareness: Per Monitor Aware v2 found";
     } else if (AreDpiAwarenessContextsEqual(
                    awareness_context,
                    DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE)) {
-      VLOG(2) << "DPI Awareness: Per Monitor Aware found";
+      VLOG(2) << "[dpi] DPI Awareness: Per Monitor Aware found";
     } else if (AreDpiAwarenessContextsEqual(
                    awareness_context, DPI_AWARENESS_CONTEXT_SYSTEM_AWARE)) {
-      VLOG(2) << "DPI Awareness: System Aware found";
+      VLOG(2) << "[dpi] DPI Awareness: System Aware found";
     } else if (AreDpiAwarenessContextsEqual(awareness_context,
                                             DPI_AWARENESS_CONTEXT_UNAWARE)) {
-      VLOG(2) << "DPI Awareness: Unaware found";
+      VLOG(2) << "[dpi] DPI Awareness: Unaware found";
     }
 
     DPI_AWARENESS dpi_awareness =
@@ -715,7 +720,7 @@ unsigned int Utils::GetDpiForWindowOrSystem(HWND hWnd) {
       // Scale the window to the system DPI
       case DPI_AWARENESS_SYSTEM_AWARE:
         if (UINT uDpi = GetDpiForSystem()) {
-          VLOG(2) << "DPI: Use Dpi in System Awareness";
+          VLOG(1) << "[dpi] Use Dpi for System in System Aware: " << uDpi;
           return uDpi;
         }
         break;
@@ -723,37 +728,38 @@ unsigned int Utils::GetDpiForWindowOrSystem(HWND hWnd) {
       // Scale the window to the monitor DPI
       case DPI_AWARENESS_PER_MONITOR_AWARE:
         if (UINT uDpi = GetDpiForWindow(hWnd)) {
-          VLOG(2) << "DPI: Use Dpi in Per Monitor Aware";
+          VLOG(1) << "[dpi] Use Dpi for Window in Per Monitor Aware: " << uDpi;
           return uDpi;
         }
         break;
       case DPI_AWARENESS_UNAWARE:
-        VLOG(2) << "DPI: Use Dpi in Unware";
+        VLOG(2) << "[dpi] Use Dpi in Unware";
         return USER_DEFAULT_SCREEN_DPI;
-        break;
       case DPI_AWARENESS_INVALID:
-        VLOG(2) << "DPI: Dpi in Invalid";
+        VLOG(2) << "[dpi] Dpi in Invalid Aware";
         break;
       default:
-        VLOG(2) << "DPI: Dpi in Unknown";
+        VLOG(2) << "[dpi] Dpi in Unknown Aware: " << dpi_awareness;
         break;
     }
   }
 
-  VLOG(2) << "DpiAwarenessContext is not found, falling back...";
+  VLOG(2) << "[dpi] DpiAwarenessContext is not found, falling back...";
   UINT xdpi, ydpi;
   HMONITOR hMonitor = ::MonitorFromWindow(hWnd, MONITOR_DEFAULTTONULL);
   if (hMonitor &&
       SUCCEEDED(GetDpiForMonitor(hMonitor, MDT_EFFECTIVE_DPI, &xdpi, &ydpi))) {
-    VLOG(2) << "DPI: Use Dpi in Monitor";
+    VLOG(1) << "[dpi] Use Dpi for Default Monitor: " << ydpi;
     return static_cast<unsigned int>(ydpi);
   }
 
-  VLOG(2) << "DpiAwarenessMonitor is not found, falling back...";
+  VLOG(2) << "[dpi] DpiAwarenessMonitor is not found, falling back...";
 
   HDC hDC = ::GetDC(hWnd);
   ydpi = GetDeviceCaps(hDC, LOGPIXELSY);
   ::ReleaseDC(nullptr, hDC);
+
+  VLOG(1) << "[dpi] GetDeviceCaps: " << ydpi;
 
   return ydpi;
 }
