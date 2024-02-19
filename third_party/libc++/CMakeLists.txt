@@ -401,9 +401,16 @@ if (NOT libcxx_SHARED)
     # specified in the C++ spec 3.7.4p2, which makes them always have default
     # visibility.  This option is needed to force hidden visibility since
     # -fvisibility=hidden doesn't have the desired effect.
-    set(libcxx_CFLAGS ${libcxx_CFLAGS}
-      "-fvisibility-global-new-delete-hidden"
-    )
+    # FIXME remove this once apple clang is updated to TOT
+    if (COMPILER_APPLE_CLANG)
+      set(libcxx_CFLAGS ${libcxx_CFLAGS}
+        "-fvisibility-global-new-delete-hidden"
+      )
+    else()
+      set(libcxx_CFLAGS ${libcxx_CFLAGS}
+        "-fvisibility-global-new-delete=force-hidden"
+      )
+    endif()
   else ()
     # This resets the visibility to default only for the various
     # flavors of operator new and operator delete.  These symbols
