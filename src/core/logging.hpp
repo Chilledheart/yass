@@ -21,7 +21,7 @@
 #include <base/dcheck_is_on.h>
 #include <build/build_config.h>
 
-#ifdef OS_WIN
+#if BUILDFLAG(IS_WIN)
 #include <malloc.h>
 #endif
 
@@ -43,7 +43,7 @@ class ScopedClearLastErrorBase {
   const int last_errno_;
 };
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 
 // Windows specific implementation of ScopedClearLastError.
 class ScopedClearLastError : public ScopedClearLastErrorBase {
@@ -57,11 +57,11 @@ class ScopedClearLastError : public ScopedClearLastErrorBase {
   const unsigned long last_system_error_;
 };
 
-#elif defined(OS_POSIX)
+#elif BUILDFLAG(IS_POSIX)
 
 using ScopedClearLastError = ScopedClearLastErrorBase;
 
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
 
 using LogSeverity = int;
 constexpr LogSeverity LOGGING_VERBOSE = -1;  // This is level 1 verbosity
@@ -114,7 +114,7 @@ constexpr LogSeverity LOG_DFATAL = LOGGING_DFATAL;
 #define COMPACT_LOGGING_DFATAL COMPACT_LOGGING_EX_DFATAL(LogMessage)
 #define COMPACT_LOGGING_DCHECK COMPACT_LOGGING_EX_DCHECK(LogMessage)
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 // wingdi.h defines ERROR to be 0. When we call LOG(ERROR), it gets
 // substituted with 0, and it expands to COMPACT_LOGGING_0. To allow us
 // to keep using this syntax, we define this macro to do the same thing
@@ -184,12 +184,12 @@ constexpr LogSeverity LOGGING_0 = LOGGING_ERROR;
   LAZY_STREAM(VLOG_STREAM(verbose_level), \
               VLOG_IS_ON(verbose_level) && (condition))
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #define VPLOG_STREAM(verbose_level)                          \
   ::yass::Win32ErrorLogMessage(__FILE__, __LINE__, -(verbose_level), \
                        ::yass::GetLastSystemErrorCode())             \
       .stream()
-#elif defined(OS_POSIX)
+#elif BUILDFLAG(IS_POSIX)
 #define VPLOG_STREAM(verbose_level)                     \
   ::yass::ErrnoLogMessage(__FILE__, __LINE__, -(verbose_level), \
                   ::yass::GetLastSystemErrorCode())             \
@@ -209,12 +209,12 @@ constexpr LogSeverity LOGGING_0 = LOGGING_ERROR;
   LOG_IF(FATAL, !(ABSL_PREDICT_TRUE(condition))) \
       << "Assert failed: " #condition ". "
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #define PLOG_STREAM(severity)                             \
   COMPACT_LOGGING_EX_##severity(Win32ErrorLogMessage,     \
                                 ::yass::GetLastSystemErrorCode()) \
       .stream()
-#elif defined(OS_POSIX)
+#elif BUILDFLAG(IS_POSIX)
 #define PLOG_STREAM(severity)                                              \
   COMPACT_LOGGING_EX_##severity(ErrnoLogMessage, ::yass::GetLastSystemErrorCode()) \
       .stream()
@@ -290,7 +290,7 @@ ABSL_DECLARE_FLAG(bool, tick_counts_in_logfile_name);
 ABSL_DECLARE_FLAG(bool, logtostderr);
 ABSL_DECLARE_FLAG(bool, alsologtostderr);
 ABSL_DECLARE_FLAG(bool, colorlogtostderr);
-#if defined(OS_POSIX)
+#if BUILDFLAG(IS_POSIX)
 ABSL_DECLARE_FLAG(bool, drop_log_memory);
 #endif
 
@@ -590,9 +590,9 @@ class LogMessageVoidify {
   void operator&(std::ostream&) {}
 };
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 typedef unsigned long SystemErrorCode;
-#elif defined(OS_POSIX)
+#elif BUILDFLAG(IS_POSIX)
 typedef int SystemErrorCode;
 #endif
 
@@ -601,7 +601,7 @@ typedef int SystemErrorCode;
 SystemErrorCode GetLastSystemErrorCode();
 std::string SystemErrorCodeToString(SystemErrorCode error_code);
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 // Appends a formatted system message of the GetLastError() type.
 class Win32ErrorLogMessage : public LogMessage {
  public:
@@ -617,7 +617,7 @@ class Win32ErrorLogMessage : public LogMessage {
  private:
   SystemErrorCode err_;
 };
-#elif defined(OS_POSIX)
+#elif BUILDFLAG(IS_POSIX)
 // Appends a formatted system message of the errno type
 class ErrnoLogMessage : public LogMessage {
  public:
@@ -633,7 +633,7 @@ class ErrnoLogMessage : public LogMessage {
  private:
   SystemErrorCode err_;
 };
-#endif  // OS_WIN
+#endif
 
 // Flushes all log files that contains messages that are at least of
 // the specified severity level.  Thread-safe.

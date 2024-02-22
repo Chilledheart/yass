@@ -90,13 +90,13 @@ using gurl_base::SysWideToNativeMB;
 using gurl_base::SysNativeMBToWide;
 
 // Windows-specific ------------------------------------------------------------
-#ifdef OS_WIN
+#ifdef _WIN32
 // Converts between 8-bit and wide strings, using the given code page. The
 // code page identifier is one accepted by the Windows function
 // MultiByteToWideChar().
 using gurl_base::SysMultiByteToWide;
 using gurl_base::SysWideToMultiByte;
-#endif // OS_WIN
+#endif // _WIN32
 
 extern const char kSeparators[];
 

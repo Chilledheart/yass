@@ -11,6 +11,7 @@
 #include <absl/flags/parse.h>
 #include <absl/flags/usage.h>
 #include <absl/strings/str_cat.h>
+#include <build/build_config.h>
 #include <locale.h>
 #include <openssl/crypto.h>
 
@@ -72,7 +73,7 @@ int main(int argc, const char* argv[]) {
     return -1;
   }
 
-#ifdef OS_WIN
+#ifdef _WIN32
   if (!EnableSecureDllLoading()) {
     return -1;
   }
