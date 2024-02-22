@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022-2023 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 #ifndef CORE_COMPILER_SPECIFIC_H
 #define CORE_COMPILER_SPECIFIC_H
 
@@ -31,7 +31,7 @@
 #endif
 
 // MemorySanitizer annotations.
-#if defined(MEMORY_SANITIZER) && !defined(OS_NACL)
+#if defined(MEMORY_SANITIZER)
 #define NO_SANITIZE_MEMORY NO_SANITIZE("memory")
 #else  // MEMORY_SANITIZER
 #define NO_SANITIZE_MEMORY

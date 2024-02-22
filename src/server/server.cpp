@@ -49,7 +49,7 @@ int main(int argc, const char* argv[]) {
     return -1;
   }
 
-#ifdef OS_WIN
+#ifdef _WIN32
   if (!EnableSecureDllLoading()) {
     return -1;
   }
