@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 
 #ifndef CORE_IMMEDIATE_CRASH_H
 #define CORE_IMMEDIATE_CRASH_H
@@ -40,7 +40,7 @@
 
 #if defined(COMPILER_GCC)
 
-#if defined(OS_NACL)
+#if BUILDFLAG(IS_NACL)
 
 // Crash report accuracy is not guaranteed on NaCl.
 #define TRAP_SEQUENCE1_() __builtin_trap()
@@ -54,13 +54,13 @@
 // to continue after SIGTRAP.
 #define TRAP_SEQUENCE1_() asm volatile("int3")
 
-#if defined(OS_APPLE)
+#if BUILDFLAG(IS_APPLE)
 // Intentionally empty: __builtin_unreachable() is always part of the sequence
 // (see IMMEDIATE_CRASH below) and already emits a ud2 on Mac.
 #define TRAP_SEQUENCE2_() asm volatile("")
 #else
 #define TRAP_SEQUENCE2_() asm volatile("ud2")
-#endif  // defined(OS_APPLE)
+#endif  // BUILDFLAG(IS_APPLE)
 
 #elif defined(ARCH_CPU_ARMEL) && (__ARM_ARCH >= 5)
 

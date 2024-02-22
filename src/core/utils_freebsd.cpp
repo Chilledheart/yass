@@ -3,9 +3,11 @@
 
 #include "core/utils.hpp"
 
+#include <build/build_config.h>
+
 #include "core/logging.hpp"
 
-#ifdef OS_FREEBSD
+#if BUILDFLAG(IS_FREEBSD)
 
 #include <locale.h>
 #include <pthread_np.h>
@@ -52,4 +54,5 @@ bool SetUTF8Locale() {
     return false;
   return true;
 }
-#endif
+
+#endif // BUILDFLAG(IS_FREEBSD)
