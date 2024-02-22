@@ -28,23 +28,23 @@
 #include <cassert>
 #include <iomanip>
 #include <string>
-#ifndef OS_WIN
+#if !BUILDFLAG(IS_WIN)
 #include <unistd.h>  // For _exit.
 #endif
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <climits>
 #include <csignal>
-#if defined(OS_APPLE) || defined(OS_LINUX) || defined(OS_ANDROID) || defined(OS_OHOS)
+#if BUILDFLAG(IS_APPLE) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
 #include <sys/utsname.h>  // For uname.
 #endif
-#if defined(OS_LINUX)
+#if BUILDFLAG(IS_LINUX)
 #include <syscall.h>  // For syscall.
 #endif
-#if defined(OS_APPLE)
+#if BUILDFLAG(IS_APPLE)
 #include <sys/syscall.h>  // For syscall.
 #endif
-#if defined(OS_FREEBSD)
+#if BUILDFLAG(IS_FREEBSD)
 #include <sys/utsname.h>  // For utsname.
 #endif
 #include <fcntl.h>  // For O_WRONLY, O_CREAT, O_CREAT
@@ -61,7 +61,7 @@
 #include <mutex>
 #include <sstream>
 #include <vector>
-#ifdef OS_WIN
+#if BUILDFLAG(IS_WIN)
 #include "core/windows/dirent.h"
 #else
 #include <dirent.h>  // for automatic removal of old logs
@@ -77,7 +77,7 @@
 #define strcasecmp _stricmp
 #endif
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include <io.h>
 #include <process.h>
 #include <windows.h>
@@ -87,7 +87,7 @@ typedef HANDLE FileHandle;
   _write(fd, buf, static_cast<unsigned int>(count))
 // Windows doesn't define STDERR_FILENO.  Define it here.
 #define STDERR_FILENO 2
-#elif defined(OS_APPLE)
+#elif BUILDFLAG(IS_APPLE)
 // Only include TargetConditionals after testing ANDROID as some Android builds
 // on the Mac have this header available and it's not needed unless the target
 // is really an Apple platform.
@@ -162,18 +162,18 @@ static StringType CFStringToSTLStringWithEncodingT(CFStringRef cfstring,
 
 #define safe_write(fd, buf, count) write(fd, buf, count)
 
-#elif defined(OS_LINUX) || defined(OS_ANDROID) || defined(OS_OHOS)
+#elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
 #include <time.h>
 #define safe_write(fd, buf, count) syscall(SYS_write, fd, buf, count)
 #else
 #define safe_write(fd, buf, count) write(fd, buf, count)
 #endif
 
-#if defined(OS_ANDROID)
+#if BUILDFLAG(IS_ANDROID)
 #include <android/log.h>
 #endif
 
-#if defined(OS_OHOS)
+#if BUILDFLAG(IS_OHOS)
 // #include <hilog/log.h>
 
 typedef enum {
@@ -192,7 +192,7 @@ extern "C"
 int OH_LOG_Print(HILOG_LogType type, HILOG_LogLevel level, unsigned int domain, const char *tag, const char *fmt, ...);
 #endif
 
-#if defined(OS_POSIX)
+#if BUILDFLAG(IS_POSIX)
 #include <errno.h>
 #include <paths.h>
 #include <stdio.h>
@@ -235,7 +235,7 @@ ABSL_FLAG(bool,
 
 ABSL_FLAG(bool,
           log_thread_id,
-          false,
+          true,
           "Prepend the thread id to the start of each log line");
 
 ABSL_FLAG(bool,
@@ -253,7 +253,7 @@ ABSL_FLAG(std::string,
           std::string(),
           "Prepend the log prefix to the start of each log line");
 
-#if defined(OS_APPLE)
+#if BUILDFLAG(IS_APPLE)
 // Notes:
 // * Xcode's clang did not support `thread_local` until version 8, and
 //   even then not for all iOS < 9.0.
@@ -303,7 +303,7 @@ ABSL_FLAG(bool,
           false,
           "color messages logged to stderr (if supported by terminal)");
 
-#if defined(OS_LINUX) || defined(OS_ANDROID) || defined(OS_OHOS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
 ABSL_FLAG(bool,
           drop_log_memory,
           true,
@@ -411,11 +411,11 @@ namespace yass {
 static uint64_t MonotoicTickCount();
 
 uint64_t MonotoicTickCount() {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   return GetTickCount();
-#elif defined(OS_APPLE)
+#elif BUILDFLAG(IS_APPLE)
   return clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
-#elif defined(OS_POSIX)
+#elif BUILDFLAG(IS_POSIX)
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
 
@@ -457,14 +457,14 @@ struct CrashReason {
 bool SetCrashReason(const CrashReason* r);
 
 static void GetHostName(std::string* hostname) {
-#if defined(OS_POSIX)
+#if BUILDFLAG(IS_POSIX)
   struct utsname buf;
   if (0 != uname(&buf)) {
     // ensure null termination on failure
     *buf.nodename = '\0';
   }
   *hostname = buf.nodename;
-#elif defined(OS_WIN)
+#elif BUILDFLAG(IS_WIN)
   char buf[MAX_COMPUTERNAME_LENGTH + 1];
   DWORD len = MAX_COMPUTERNAME_LENGTH + 1;
   if (GetComputerNameA(buf, &len)) {
@@ -481,7 +481,7 @@ static void GetHostName(std::string* hostname) {
 // Returns true iff terminal supports using colors in output.
 static bool TerminalSupportsColor() {
   bool term_supports_color = false;
-#ifdef OS_WIN
+#if BUILDFLAG(IS_WIN)
   // on Windows TERM variable is usually not set, but the console does
   // support colors.
   term_supports_color = true;
@@ -540,7 +540,7 @@ const char* log_severity_name(int severity) {
 
 }  // namespace
 
-#ifdef OS_WIN
+#if BUILDFLAG(IS_WIN)
 
 // Returns the character attribute for the given color.
 static WORD GetColorAttribute(LogColor color) {
@@ -573,7 +573,7 @@ static const char* GetAnsiColorCode(LogColor color) {
   return nullptr;  // stop warning about return type.
 }
 
-#endif  // OS_WIN
+#endif  // BUILDFLAG(IS_WIN)
 
 // Safely get max_log_size, overriding to 1 if it somehow gets defined as 0
 static uint32_t MaxLogSize() {
@@ -718,7 +718,7 @@ class LogCleaner {
   bool enabled_ = false;
   int overdue_days_ = 7;
   char dir_delim_ =  // filepath delimiter ('/' or '\\')
-#ifdef OS_WIN
+#if BUILDFLAG(IS_WIN)
       '\\';
 #else
       '/';
@@ -953,7 +953,7 @@ static void ColoredWriteToStderr(LogSeverity severity,
     fwrite(message, len, 1, stderr);
     return;
   }
-#ifdef OS_WIN
+#if BUILDFLAG(IS_WIN)
   const HANDLE stderr_handle = GetStdHandle(STD_ERROR_HANDLE);
   if (stderr_handle == nullptr || stderr_handle == INVALID_HANDLE_VALUE) {
     // Can't print anything, so just die
@@ -994,7 +994,7 @@ static void ColoredWriteToStderr(LogSeverity severity,
   fprintf(stderr, "\033[0;3%sm", GetAnsiColorCode(color));
   fwrite(message, len, 1, stderr);
   fprintf(stderr, "\033[m");  // Resets the terminal to default.
-#endif  // OS_WIN
+#endif
 }
 
 static void WriteToStderr(const char* message, size_t len) {
@@ -1013,10 +1013,10 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
   if (severity >= kAlwaysPrintErrorLevel ||
       severity >= absl::GetFlag(FLAGS_stderrthreshold) ||
       absl::GetFlag(FLAGS_alsologtostderr)) {
-#ifdef OS_WIN
+#if BUILDFLAG(IS_WIN)
     // On Windows, also output to the debugger
     ::OutputDebugStringA(message);
-#elif defined(OS_APPLE) && defined(__clang__)
+#elif BUILDFLAG(IS_APPLE) && defined(__clang__)
     // In LOG_TO_SYSTEM_DEBUG_LOG mode, log messages are always written to
     // stderr. If stderr is /dev/null, also log via ASL (Apple System Log) or
     // its successor OS_LOG. If there's something weird about stderr, assume
@@ -1165,7 +1165,7 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
       os_log_with_type(log.get(), os_log_type, "%{public}s", message);
 #endif  // defined(USE_ASL)
     }
-#elif defined(OS_ANDROID)
+#elif BUILDFLAG(IS_ANDROID)
     android_LogPriority priority =
         (severity < 0) ? ANDROID_LOG_VERBOSE : ANDROID_LOG_UNKNOWN;
     switch (severity) {
@@ -1195,7 +1195,7 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
     // The Android system may truncate the string if it's too long.
     __android_log_write(priority, kLogTag, message + prefix_len);
 #endif  // DCHECK_IS_ON
-#elif defined(OS_OHOS)
+#elif BUILDFLAG(IS_OHOS)
     HILOG_LogLevel log_level =
         (severity < 0) ? HILOG_LOG_DEBUG : HILOG_LOG_INFO;
     switch (severity) {
@@ -1438,7 +1438,7 @@ bool LogFileObject::CreateLogfile(const std::string& time_pid_string) {
     }
     return false;
   }
-#ifdef OS_WIN
+#if BUILDFLAG(IS_WIN)
   // https://github.com/golang/go/issues/27638 - make sure we seek to the end to
   // append empirically replicated with wine over mingw build
   if (!absl::GetFlag(FLAGS_tick_counts_in_logfile_name)) {
@@ -1464,7 +1464,7 @@ bool LogFileObject::CreateLogfile(const std::string& time_pid_string) {
     linkpath += linkname;
     unlink(linkpath.c_str());  // delete old one if it exists
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
     // TODO(hamaji): Create lnk file on Windows?
 #else
     // We must have unistd.h.
@@ -1537,7 +1537,7 @@ void LogFileObject::Write(bool force_flush,
 
     time_t timestamp = WallTime_Now();
     struct ::tm tm_time;
-#ifdef OS_WIN
+#if BUILDFLAG(IS_WIN)
     localtime_s(&tm_time, &timestamp);
 #else
     localtime_r(&timestamp, &tm_time);
@@ -1679,7 +1679,7 @@ void LogFileObject::Write(bool force_flush,
   if (force_flush || (bytes_since_flush_ >= 1000000) ||
       (CycleClock_Now() >= next_flush_time_)) {
     FlushUnlocked();
-#if defined(OS_LINUX) || defined(OS_ANDROID) || defined(OS_OHOS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
     // Only consider files >= 3MiB
     if (absl::GetFlag(FLAGS_drop_log_memory) && file_length_ >= (3 << 20)) {
       // Don't evict the most recent 1-2MiB so as not to impact a tailer
@@ -1689,7 +1689,7 @@ void LogFileObject::Write(bool force_flush,
       uint32_t this_drop_length = total_drop_length - dropped_mem_length_;
       if (this_drop_length >= (2 << 20)) {
         // Only advise when >= 2MiB to drop
-#if defined(OS_ANDROID) && defined(__ANDROID_API__) && (__ANDROID_API__ < 21)
+#if BUILDFLAG(IS_ANDROID) && defined(__ANDROID_API__) && (__ANDROID_API__ < 21)
         // 'posix_fadvise' introduced in API 21:
         // * https://android.googlesource.com/platform/bionic/+/6880f936173081297be0dc12f687d341b86a4cfa/libc/libc.map.txt#732
 #else
@@ -2078,7 +2078,7 @@ void LogMessage::Init(const char* file,
     if (log_thread_id)
       stream() << GetTID() << ':';
     if (log_timestamp) {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
       SYSTEMTIME local_time;
       GetLocalTime(&local_time);
       stream() << std::setfill('0') << std::setw(2) << local_time.wMonth
@@ -2086,7 +2086,7 @@ void LogMessage::Init(const char* file,
                << local_time.wHour << std::setw(2) << local_time.wMinute
                << std::setw(2) << local_time.wSecond << '.' << std::setw(3)
                << local_time.wMilliseconds << ':';
-#elif defined(OS_POSIX) || defined(OS_FUCHSIA)
+#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
       timeval tv;
       gettimeofday(&tv, nullptr);
       time_t t = tv.tv_sec;
@@ -2147,7 +2147,7 @@ std::ostream& LogMessage::stream() {
 }
 
 namespace {
-#if defined(OS_ANDROID)
+#if BUILDFLAG(IS_ANDROID)
 int AndroidLogLevel(const int severity) {
   switch (severity) {
     case 3:
@@ -2160,8 +2160,8 @@ int AndroidLogLevel(const int severity) {
       return ANDROID_LOG_INFO;
   }
 }
-#endif  // defined(OS_ANDROID)
-#if defined(OS_OHOS)
+#endif  // BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_OHOS)
 HILOG_LogLevel OHOSLogLevel(const int severity) {
   HILOG_LogLevel log_level =
       (severity < 0) ? HILOG_LOG_DEBUG : HILOG_LOG_INFO;
@@ -2181,7 +2181,7 @@ HILOG_LogLevel OHOSLogLevel(const int severity) {
   }
   return log_level;
 }
-#endif  // defined(OS_OHOS)
+#endif  // BUILDFLAG(IS_OHOS)
 }  // namespace
 
 // Flush buffered message, called by the destructor, or any other function
@@ -2219,14 +2219,14 @@ void LogMessage::Flush() {
   }
   LogDestination::WaitForSinks(data_);
 
-#if defined(OS_ANDROID)
+#if BUILDFLAG(IS_ANDROID)
   constexpr char kLogTag[] = YASS_APP_NAME;
 
   const int level = AndroidLogLevel(data_->severity_);
   const std::string text = std::string(data_->message_text_);
   __android_log_write(level, kLogTag,
                       text.substr(0, data_->num_chars_to_log_).c_str());
-#elif defined(OS_OHOS)
+#elif BUILDFLAG(IS_OHOS)
   constexpr char kLogTag[] = YASS_APP_NAME;
   constexpr unsigned int kLogDomain = 0x0;
 
@@ -2234,7 +2234,7 @@ void LogMessage::Flush() {
   const std::string text = std::string(data_->message_text_);
   OH_LOG_Print(HILOG_LOG_APP, level, kLogDomain, kLogTag,
                text.substr(0, data_->num_chars_to_log_).c_str());
-#endif  // defined(OS_OHOS)
+#endif  // BUILDFLAG(IS_OHOS)
 
   if (append_newline) {
     // Fix the ostrstream back how it was before we screwed with it.
@@ -2346,7 +2346,7 @@ void LogMessage::SendToLog() ABSL_EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
     log_mutex.Unlock();
     LogDestination::WaitForSinks(data_);
 
-#ifdef OS_WIN
+#if BUILDFLAG(IS_WIN)
     if (!IsProgramConsole(GetStdHandle(STD_ERROR_HANDLE))) {
       std::wstring message = SysUTF8ToWide(data_->message_text_);
       MessageBoxW(nullptr, message.c_str(), L"Fatal Error", MB_ICONERROR);
@@ -2520,7 +2520,7 @@ void SetExitOnDFatal(bool value) {
 
 static void GetTempDirectories(std::vector<std::string>* list) {
   list->clear();
-#ifdef OS_WIN
+#if BUILDFLAG(IS_WIN)
   // On windows we'll try to find a directory in this order:
   //   C:/Documents & Settings/whomever/TEMP (or whatever GetTempPath() is)
   //   C:/TMP/
@@ -2578,7 +2578,7 @@ const std::vector<std::string>& GetLoggingDirectories() {
       logging_directories_list->push_back(absl::GetFlag(FLAGS_log_dir));
     } else {
       GetTempDirectories(logging_directories_list);
-#ifdef OS_WIN
+#if BUILDFLAG(IS_WIN)
       char tmp[MAX_PATH];
       if (GetWindowsDirectoryA(tmp, MAX_PATH)) {
         logging_directories_list->push_back(tmp);
@@ -2607,7 +2607,7 @@ void GetExistingTempDirectories(std::vector<std::string>* list) {
 }
 
 void TruncateLogFile(const char* path, int64_t limit, int64_t keep) {
-#ifndef OS_WIN
+#if !BUILDFLAG(IS_WIN)
   struct stat statbuf;
   const int kCopyBlockSize = 8 << 10;
   char copybuf[kCopyBlockSize];
@@ -2615,7 +2615,7 @@ void TruncateLogFile(const char* path, int64_t limit, int64_t keep) {
   // Don't follow symlinks unless they're our own fd symlinks in /proc
   int flags = O_RDWR;
   // TODO(hamaji): Support other environments.
-#ifdef OS_LINUX
+#if BUILDFLAG(IS_LINUX)
   const char* procfd_prefix = "/proc/self/fd/";
   if (strncmp(procfd_prefix, path, strlen(procfd_prefix)))
     flags |= O_NOFOLLOW;
@@ -2690,7 +2690,7 @@ out_close_fd:
 }
 
 void TruncateStdoutStderr() {
-#ifndef OS_WIN
+#if !BUILDFLAG(IS_WIN)
   int64_t limit = MaxLogSize() << 20;
   int64_t keep = 1 << 20;
   TruncateLogFile("/proc/self/fd/1", limit, keep);
@@ -2884,7 +2884,7 @@ bool InitVLOG3__(absl::Flag<int32_t>** site_flag,
   // Get basename for file
   const char* base = strrchr(fname, '/');
 
-#ifdef OS_WIN
+#if BUILDFLAG(IS_WIN)
   if (!base) {
     base = strrchr(fname, '\\');
   }
@@ -2998,15 +2998,15 @@ void DumpStackTraceAndExit() {
   // TODO(hamaji): Use signal instead of sigaction?
   // Set the default signal handler for SIGABRT, to avoid invoking our
   // own signal handler installed by InstallFailureSignalHandler().
-#if defined(OS_POSIX)
+#if BUILDFLAG(IS_POSIX)
   struct sigaction sig_action;
   memset(&sig_action, 0, sizeof(sig_action));
   sigemptyset(&sig_action.sa_mask);
   sig_action.sa_handler = SIG_DFL;
   sigaction(SIGABRT, &sig_action, nullptr);
-#elif defined(OS_WIN)
+#elif BUILDFLAG(IS_WIN)
   signal(SIGABRT, SIG_DFL);
-#endif  // defined(OS_POSIX)
+#endif  // BUILDFLAG(IS_POSIX)
 
   abort();
 }
@@ -3054,7 +3054,7 @@ WallTime WallTime_Now() {
 
 const char* const_basename(const char* filepath) {
   const char* base = strrchr(filepath, '/');
-#ifdef OS_WIN  // Look for either path separator in Windows
+#if BUILDFLAG(IS_WIN)  // Look for either path separator in Windows
   if (!base)
     base = strrchr(filepath, '\\');
 #endif
@@ -3072,7 +3072,7 @@ const std::string& MyUserName() {
 
 void MyUserNameInitializer() {
   // TODO(hamaji): Probably this is not portable.
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   const char* user = getenv("USERNAME");
 #else
   const char* user = getenv("USER");
@@ -3080,7 +3080,7 @@ void MyUserNameInitializer() {
   if (user != nullptr) {
     g_my_user_name = user;
   } else {
-#if defined(HAVE_PWD_H) && !defined(OS_WIN)
+#if defined(HAVE_PWD_H) && !BUILDFLAG(IS_WIN)
     struct passwd pwd;
     struct passwd* result = nullptr;
     char buffer[1024] = {'\0'};
@@ -3130,7 +3130,7 @@ bool ShouldCreateLogMessage(LogSeverity severity) {
   return true;
 }
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 // This has already been defined in the header, but defining it again as DWORD
 // ensures that the type used in the header is equivalent to DWORD. If not,
 // the redefinition is a compile error.
@@ -3138,15 +3138,15 @@ typedef DWORD SystemErrorCode;
 #endif
 
 SystemErrorCode GetLastSystemErrorCode() {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   return ::GetLastError();
-#elif defined(OS_POSIX)
+#elif BUILDFLAG(IS_POSIX)
   return errno;
 #endif
 }
 
 std::string SystemErrorCodeToString(SystemErrorCode error_code) {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   const int kErrorMessageBufferSize = 256;
   char msgbuf[kErrorMessageBufferSize];
   DWORD flags = FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
@@ -3159,12 +3159,12 @@ std::string SystemErrorCodeToString(SystemErrorCode error_code) {
   }
   return absl::StrFormat("Error (0x%lX) while retrieving error. (0x%lX)",
                          GetLastError(), error_code);
-#elif defined(OS_POSIX)
+#elif BUILDFLAG(IS_POSIX)
   return safe_strerror(error_code) + absl::StrFormat(" (%d)", error_code);
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
 }
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 Win32ErrorLogMessage::Win32ErrorLogMessage(const char* file,
                                            int line,
                                            LogSeverity severity,
@@ -3178,7 +3178,7 @@ Win32ErrorLogMessage::~Win32ErrorLogMessage() {
   DWORD last_error = err_;
   Alias(&last_error);
 }
-#elif defined(OS_POSIX)
+#elif BUILDFLAG(IS_POSIX)
 ErrnoLogMessage::ErrnoLogMessage(const char* file,
                                  int line,
                                  LogSeverity severity,
@@ -3192,7 +3192,7 @@ ErrnoLogMessage::~ErrnoLogMessage() {
   int last_error = err_;
   Alias(&last_error);
 }
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
 
 void RawLog(int level, const char* message) {
   if (level >= absl::GetFlag(FLAGS_minloglevel) && message) {

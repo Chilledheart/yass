@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 
 #include "core/check.hpp"
 
@@ -53,10 +53,10 @@ CheckError CheckError::PCheck(const char* file,
                               int line,
                               const char* condition) {
   SystemErrorCode err_code = GetLastSystemErrorCode();
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   CheckError check_error(
       new Win32ErrorLogMessage(file, line, LOGGING_FATAL, err_code));
-#elif defined(OS_POSIX)
+#elif BUILDFLAG(IS_POSIX)
   CheckError check_error(
       new ErrnoLogMessage(file, line, LOGGING_FATAL, err_code));
 #endif
@@ -72,10 +72,10 @@ CheckError CheckError::DPCheck(const char* file,
                                int line,
                                const char* condition) {
   SystemErrorCode err_code = GetLastSystemErrorCode();
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   CheckError check_error(
       new Win32ErrorLogMessage(file, line, LOGGING_DCHECK, err_code));
-#elif defined(OS_POSIX)
+#elif BUILDFLAG(IS_POSIX)
   CheckError check_error(
       new ErrnoLogMessage(file, line, LOGGING_DCHECK, err_code));
 #endif
