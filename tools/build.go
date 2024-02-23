@@ -879,7 +879,10 @@ func buildStageGenerateBuildScript() {
 
 		if mingwAllowXpFlag {
 			cmakeArgs = append(cmakeArgs, "-DALLOW_XP=ON")
-			cmakeArgs = append(cmakeArgs, "-DMINGW_MSVCRT100=ON")
+			// we need msvcrt runtime for windows xp build
+			if targetAbi == "i686" {
+				cmakeArgs = append(cmakeArgs, "-DMINGW_MSVCRT100=ON")
+			}
 			cmakeArgs = append(cmakeArgs, "-DMINGW_WORKAROUND=ON")
 			llvm_version := getLLVMVersion()
 			clang_rt_suffix := targetAbi
