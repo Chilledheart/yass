@@ -151,7 +151,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [x86]
+        arch: [x64, x86]
         crt-linkage: [static]
         build_type: [Release]
     env:
