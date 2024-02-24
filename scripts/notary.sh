@@ -18,6 +18,7 @@ function notarize {
   xcrun notarytool submit $SIGNED_DMG --keychain-profile notary --wait
   xcrun stapler staple $SIGNED_DMG
   gh release upload $TAG $SIGNED_DMG
+  gh release delete-asset -y $TAG $UNSIGNED_DMG
 }
 
 notarize $1 x64
