@@ -58,7 +58,7 @@ jobs:
         with:
           path: |
             docker/dummy
-          key: ${{ runner.os }}-docker-${{ matrix.container }}-${{ hashFiles('docker/**') }}-v${{ env.CACHE_EPOCH }}-v1
+          key: ${{ runner.os }}-docker-${{ matrix.container }}-${{ hashFiles('docker/**') }}-v1
       - name: Login to GitHub Container Registry
         if: ${{ steps.docker-cache.outputs.cache-hit != 'true' }}
         uses: docker/login-action@v3
@@ -71,7 +71,6 @@ jobs:
         run: |
           cd docker
           docker build --cache-from ghcr.io/chilledheart/${{ matrix.container }} \
-            --build-arg CACHE_EPOCH=${{ env.CACHE_EPOCH }} \
             -f ${{ matrix.container }}.Dockerfile \
             -t ghcr.io/chilledheart/${{ matrix.container }} \
             .
