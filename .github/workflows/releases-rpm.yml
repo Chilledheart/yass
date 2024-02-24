@@ -58,7 +58,7 @@ jobs:
         with:
           path: |
             docker/dummy
-          key: ${{ runner.os }}-docker-${{ matrix.container }}-${{ hashFiles('docker/**') }}-v1
+          key: ${{ runner.os }}-docker-${{ matrix.container }}-${{ hashFiles(format('docker/{0}.Dockerfile', matrix.container)) }}-v1
       - name: Login to GitHub Container Registry
         if: ${{ steps.docker-cache.outputs.cache-hit != 'true' }}
         uses: docker/login-action@v3
