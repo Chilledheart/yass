@@ -1,3 +1,8 @@
+yass (1.6.5-1) UNRELEASED; urgency=medium
+
+  * cli: turn off redir mode by default
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Sat, 24 Feb 2024 13:26:57 +0800
 yass (1.6.4-1) UNRELEASED; urgency=medium
 
   * ssl: add supplementary ca bundle support.
