@@ -381,11 +381,18 @@ bool Dispatcher::Init(std::function<void()> callback) {
     PLOG(WARNING) << "Dispatcher: socketpair failure";
     return false;
   }
-  if (::fcntl(fds_[0], F_SETFL, ::fcntl(fds_[0], F_GETFL) | O_NONBLOCK | O_CLOEXEC) != 0 ||
-      ::fcntl(fds_[1], F_SETFL, ::fcntl(fds_[1], F_GETFL) | O_NONBLOCK | O_CLOEXEC) != 0) {
+  if (::fcntl(fds_[0], F_SETFD, FD_CLOEXEC) != 0 ||
+      ::fcntl(fds_[1], F_SETFD, FD_CLOEXEC) != 0) {
     IGNORE_EINTR(::close(fds_[0]));
     IGNORE_EINTR(::close(fds_[1]));
-    PLOG(WARNING) << "Dispatcher: set non-block failure";
+    PLOG(WARNING) << "Dispatcher: set cloexec file descriptor flags failure";
+    return false;
+  }
+  if (::fcntl(fds_[0], F_SETFL, ::fcntl(fds_[0], F_GETFL) | O_NONBLOCK) != 0 ||
+      ::fcntl(fds_[1], F_SETFL, ::fcntl(fds_[1], F_GETFL) | O_NONBLOCK) != 0) {
+    IGNORE_EINTR(::close(fds_[0]));
+    IGNORE_EINTR(::close(fds_[1]));
+    PLOG(WARNING) << "Dispatcher: set non-block file status flags failure";
     return false;
   }
 #endif

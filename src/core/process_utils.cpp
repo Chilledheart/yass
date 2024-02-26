@@ -39,8 +39,13 @@ static int Pipe2(int pipe_fds[2]) {
     PLOG(WARNING) << "pipe failure";
     return ret;
   }
-  fcntl(pipe_fds[0], F_SETFD, FD_CLOEXEC);
-  fcntl(pipe_fds[1], F_SETFD, FD_CLOEXEC);
+  if ((ret = fcntl(pipe_fds[0], F_SETFD, FD_CLOEXEC)) != 0 ||
+      (ret = fcntl(pipe_fds[1], F_SETFD, FD_CLOEXEC)) != 0) {
+    IGNORE_EINTR(close(pipe_fds[0]));
+    IGNORE_EINTR(close(pipe_fds[1]));
+    PLOG(WARNING) << "fcntl F_SETFD failure";
+    return ret;
+  }
 #endif
   return ret;
 }
@@ -86,14 +91,19 @@ int ExecuteProcess(const std::vector<std::string>& params,
   }
   // In Child Process
   if (ret == 0) {
+    // The two file descriptors do not share file descriptor flags (the close-on-exec flag)
 #ifdef HAVE_DUP3
-    dup3(stdin_pipe[0], STDIN_FILENO, 0);
-    dup3(stdout_pipe[1], STDOUT_FILENO, 0);
-    dup3(stderr_pipe[1], STDERR_FILENO, 0);
+    if (dup3(stdin_pipe[0], STDIN_FILENO, 0) < 0 ||
+        dup3(stdout_pipe[1], STDOUT_FILENO, 0) < 0 ||
+        dup3(stderr_pipe[1], STDERR_FILENO, 0) < 0) {
+      LOG(FATAL) << "dup3 on std file descriptors failure";
+    }
 #else
-    dup2(stdin_pipe[0], STDIN_FILENO);
-    dup2(stdout_pipe[1], STDOUT_FILENO);
-    dup2(stderr_pipe[1], STDERR_FILENO);
+    if (dup2(stdin_pipe[0], STDIN_FILENO) < 0 ||
+        dup2(stdout_pipe[1], STDOUT_FILENO) < 0 ||
+        dup2(stderr_pipe[1], STDERR_FILENO) < 0) {
+      LOG(FATAL) << "dup2 on std file descriptors failure";
+    }
 #endif
 
     std::vector<char*> _params;
@@ -111,7 +121,7 @@ int ExecuteProcess(const std::vector<std::string>& params,
     if (ret < 0) {
       _exit(ret);
     }
-    LOG(FATAL) << "non reachable";
+    LOG(FATAL) << "non reachable: execvp: " << ret;
   }
   // In Parent Process
   DCHECK(pid) << "Invalid pid in parent process";
@@ -120,16 +130,19 @@ int ExecuteProcess(const std::vector<std::string>& params,
   IGNORE_EINTR(close(stderr_pipe[1]));
 
   // Post Stage
-  fcntl(stdin_pipe[1], F_SETFD, FD_CLOEXEC);
-  fcntl(stdout_pipe[0], F_SETFD, FD_CLOEXEC);
-  fcntl(stderr_pipe[0], F_SETFD, FD_CLOEXEC);
-
-  fcntl(stdin_pipe[1], F_SETFL, O_NONBLOCK | fcntl(stdin_pipe[1], F_GETFL));
-  fcntl(stdout_pipe[0], F_SETFL, O_NONBLOCK | fcntl(stdout_pipe[0], F_GETFL));
-  fcntl(stderr_pipe[0], F_SETFL, O_NONBLOCK | fcntl(stderr_pipe[0], F_GETFL));
+  if ((ret = fcntl(stdin_pipe[1], F_SETFL, O_NONBLOCK | fcntl(stdin_pipe[1], F_GETFL))) != 0 ||
+      (ret = fcntl(stdout_pipe[0], F_SETFL, O_NONBLOCK | fcntl(stdout_pipe[0], F_GETFL))) != 0 ||
+      (ret = fcntl(stderr_pipe[0], F_SETFL, O_NONBLOCK | fcntl(stderr_pipe[0], F_GETFL))) != 0) {
+    IGNORE_EINTR(close(stdin_pipe[1]));
+    IGNORE_EINTR(close(stdout_pipe[0]));
+    IGNORE_EINTR(close(stderr_pipe[0]));
+    PLOG(WARNING) << "fcntl: set non-block file status flags failure";
+    return ret;
+  }
   std::ostringstream stdout_ss, stderr_ss;
   int wstatus;
 
+  // TODO implement write input
   // mark write end as eof
   IGNORE_EINTR(close(stdin_pipe[1]));
 
