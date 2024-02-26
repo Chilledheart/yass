@@ -2612,36 +2612,50 @@ elseif (USE_MBEDTLS)
 endif()
 
 # *****************************************************************************************
-#           asio Library
+#           asio_core Library
 # *****************************************************************************************
 
-add_library(asio STATIC
+add_library(asio_core STATIC
   src/net/asio.hpp
   src/net/asio.cpp
   src/net/asio_throw_exceptions.hpp
 )
-target_include_directories(asio PUBLIC
+target_include_directories(asio_core PUBLIC
   src)
-target_include_directories(asio PUBLIC
-  third_party/googleurl/polyfills
-  third_party/asio/asio/include)
-target_compile_definitions(asio PUBLIC ASIO_STANDALONE)
-target_compile_definitions(asio PUBLIC ASIO_NO_TYPEID)
-target_compile_definitions(asio PUBLIC ASIO_NO_EXCEPTIONS)
-target_compile_definitions(asio PUBLIC ASIO_NO_TS_EXECUTORS)
-target_compile_definitions(asio PUBLIC ASIO_SEPARATE_COMPILATION)
-target_compile_definitions(asio PUBLIC ASIO_NO_DEPRECATED)
+target_include_directories(asio_core PUBLIC
+  third_party/asio/asio/include
+  third_party/googleurl/polyfills)
+target_compile_definitions(asio_core PUBLIC ASIO_STANDALONE)
+target_compile_definitions(asio_core PUBLIC ASIO_NO_TYPEID)
+target_compile_definitions(asio_core PUBLIC ASIO_NO_EXCEPTIONS)
+target_compile_definitions(asio_core PUBLIC ASIO_NO_TS_EXECUTORS)
+target_compile_definitions(asio_core PUBLIC ASIO_SEPARATE_COMPILATION)
+target_compile_definitions(asio_core PUBLIC ASIO_NO_DEPRECATED)
+target_compile_definitions(asio_core PRIVATE ASIO_NO_SSL)
 # forward libcxx present
 # we control the visiblity
-target_compile_definitions(asio PUBLIC ASIO_DISABLE_VISIBILITY)
+target_compile_definitions(asio_core PUBLIC ASIO_DISABLE_VISIBILITY)
 # both of asio and quiche use std::allocator<void>
 if (MSVC AND NOT USE_LIBCXX)
-  target_compile_definitions(asio PUBLIC _SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
-  target_compile_definitions(asio PUBLIC _SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING)
+  target_compile_definitions(asio_core PUBLIC _SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
+  target_compile_definitions(asio_core PUBLIC _SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING)
 endif()
-target_link_libraries(asio PUBLIC
+
+target_link_libraries(asio_core PUBLIC
   absl::flags
   url
+  )
+
+# *****************************************************************************************
+#           asio Library
+# *****************************************************************************************
+
+add_library(asio STATIC
+  src/net/asio_ssl.cpp
+)
+target_link_libraries(asio PUBLIC
+  asio_core
+  absl::flags
   crypto
   ssl
   pki)
@@ -3546,7 +3560,9 @@ target_link_libraries(yass_core PUBLIC url
   absl::flags
   absl::flags_parse
   absl::flags_marshalling
-  absl::failure_signal_handler)
+  absl::failure_signal_handler
+  asio_core
+  )
 
 if (USE_CRASHPAD)
   target_link_libraries(yass_core PUBLIC yass_crashpad)
@@ -3566,6 +3582,7 @@ target_include_directories(yass_core PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl-override
   ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl/polyfills
   ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl
+  third_party/asio/asio/include
   ${SUPPORT_INCLUDE_DIRS})
 
 target_include_directories(yass_core PRIVATE

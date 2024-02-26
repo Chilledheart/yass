@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2023 Chilledheart  */
+/* Copyright (c) 2023-2024 Chilledheart  */
 
 #include "core/process_utils.hpp"
+
 #include "core/logging.hpp"
 #include <build/buildflag.h>
 
@@ -23,9 +24,11 @@ extern "C" char **environ;
 #include <sys/select.h>
 #include <sys/wait.h>
 
+#include <base/posix/eintr_wrapper.h>
 #include <sstream>
 
-#include <base/posix/eintr_wrapper.h>
+#define ASIO_NO_SSL
+#include "net/asio.hpp"
 
 static int Pipe2(int pipe_fds[2]) {
   int ret;
@@ -49,6 +52,115 @@ static int Pipe2(int pipe_fds[2]) {
 #endif
   return ret;
 }
+
+namespace {
+
+class ProcessInOutReader {
+ public:
+  ProcessInOutReader(const std::string& command_line, int stdout_pipe, int stderr_pipe)
+    : command_line_(command_line),
+    out_(io_context_, stdout_pipe),
+    err_(io_context_, stderr_pipe) {
+  }
+
+  ~ProcessInOutReader() {
+    asio::error_code ec;
+    out_.close(ec);
+    if (ec) {
+      LOG(WARNING) << "process " << command_line_ << " close: error: " << ec;
+    }
+    err_.close(ec);
+    if (ec) {
+      LOG(WARNING) << "process " << command_line_ << " close: error: " << ec;
+    }
+  }
+
+  void run() {
+    work_guard_ = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context_.get_executor());
+    ScheduleStdoutRead();
+    ScheduleStderrRead();
+    io_context_.run();
+  }
+
+  int ret() const {
+    return ret_;
+  }
+
+  std::string out() const {
+    return stdout_ss_.str();
+  }
+
+  std::string err() const {
+    return stderr_ss_.str();
+  }
+
+ private:
+  void ScheduleStdoutRead() {
+    asio::async_read(out_, asio::mutable_buffer(out_buffer_, sizeof(out_buffer_)),
+      [this](asio::error_code ec, size_t bytes_transferred) {
+      if (bytes_transferred) {
+        stdout_ss_ << std::string_view(out_buffer_, bytes_transferred);
+      }
+      if (ec == asio::error::eof) {
+        VLOG(2) << "process " << command_line_ << " reached stdout eof";
+        stdout_eof_ = true;
+        if (stdout_eof_ && stderr_eof_) {
+          work_guard_.reset();
+        }
+        return;
+      }
+      if (ec) {
+        LOG(WARNING) << "process " << command_line_ << " reading stdout error: " << ec;
+        ret_ = -1;
+        work_guard_.reset();
+        return;
+      }
+      ScheduleStdoutRead();
+    });
+  }
+
+  void ScheduleStderrRead() {
+    asio::async_read(err_, asio::mutable_buffer(err_buffer_, sizeof(err_buffer_)),
+      [this](asio::error_code ec, size_t bytes_transferred) {
+      if (bytes_transferred) {
+        stderr_ss_ << std::string_view(err_buffer_, bytes_transferred);
+      }
+      if (ec == asio::error::eof) {
+        VLOG(2) << "process " << command_line_ << " reached stderr eof";
+        stderr_eof_ = true;
+        if (stdout_eof_ && stderr_eof_) {
+          work_guard_.reset();
+        }
+        return;
+      }
+      if (ec) {
+        LOG(WARNING) << "process " << command_line_ << " reading stderr error: " << ec;
+        ret_ = -1;
+        work_guard_.reset();
+        return;
+      }
+      ScheduleStderrRead();
+    });
+  }
+
+ private:
+  const std::string& command_line_;
+  asio::io_context io_context_;
+  asio::posix::stream_descriptor out_;
+  asio::posix::stream_descriptor err_;
+  int ret_ = 0;
+  char out_buffer_[4096];
+  bool stdout_eof_ = false;
+  char err_buffer_[4096];
+  bool stderr_eof_ = false;
+
+  std::unique_ptr<asio::executor_work_guard<asio::io_context::executor_type>> work_guard_;
+
+  std::ostringstream stdout_ss_;
+  std::ostringstream stderr_ss_;
+};
+
+} // namespace
 
 int ExecuteProcess(const std::vector<std::string>& params,
                    std::string* output,
@@ -139,80 +251,26 @@ int ExecuteProcess(const std::vector<std::string>& params,
     PLOG(WARNING) << "fcntl: set non-block file status flags failure";
     return ret;
   }
-  std::ostringstream stdout_ss, stderr_ss;
-  int wstatus;
 
   // TODO implement write input
   // mark write end as eof
   IGNORE_EINTR(close(stdin_pipe[1]));
 
   // polling stdout and stderr
-  int mfd = std::max(stdout_pipe[0], stderr_pipe[0]) + 1;
-  bool stdout_eof = false, stderr_eof = false;
-  while (true) {
-    if (stdout_eof && stderr_eof) {
-      break;
-    }
-    fd_set rfds;
-    FD_ZERO(&rfds);
-    if (!stdout_eof) {
-      FD_SET(stdout_pipe[0], &rfds);
-    }
-    if (!stderr_eof) {
-      FD_SET(stderr_pipe[0], &rfds);
-    }
-    ret = select(mfd, &rfds, nullptr, nullptr, nullptr);
-    if (ret < 0) {
-      PLOG(WARNING) << "failure on polling process output: " << command_line;
-      goto done;
-    }
-    DCHECK(ret) << "select returns zero event";
-    if (FD_ISSET(stdout_pipe[0], &rfds)) {
-      char buf[4096];
-      ret = read(stdout_pipe[0], buf, sizeof(buf));
-      if (ret < 0 && (errno == EAGAIN && errno == EINTR))
-        continue;
-      if (ret < 0) {
-        PLOG(WARNING) << "read failure on polling process output: " << command_line;
-        goto done;
-      }
-      // EOF
-      if (ret == 0) {
-        VLOG(2) << "process " << command_line << " stdout eof";
-        stdout_eof = true;
-        continue;
-      }
-      stdout_ss << std::string_view(buf, ret);
-    }
-    if (FD_ISSET(stderr_pipe[0], &rfds)) {
-      char buf[4096];
-      ret = read(stderr_pipe[0], buf, sizeof(buf));
-      if (ret < 0 && (errno == EAGAIN && errno == EINTR))
-        continue;
-      if (ret < 0) {
-        PLOG(WARNING) << "read failure on polling process output: " << command_line;
-        goto done;
-      }
-      // EOF
-      if (ret == 0) {
-        VLOG(2) << "process " << command_line << " stderr eof";
-        stderr_eof = true;
-        continue;
-      }
-      stderr_ss << std::string_view(buf, ret);
-    }
-  }
+  {
+    ProcessInOutReader reader(command_line, stdout_pipe[0], stderr_pipe[0]);
+    reader.run();
 
-done:
-  // already closed
-  // close(stdin_pipe[1]);
-  IGNORE_EINTR(close(stdout_pipe[0]));
-  IGNORE_EINTR(close(stderr_pipe[0]));
+    ret = reader.ret();
+    *output = reader.out();
+    *error = reader.err();
+  }
 
   if (ret) {
     LOG(INFO) << "process " << command_line << " killed with SIGKILL";
     kill(pid, SIGKILL);
   }
+  int wstatus;
   ret = HANDLE_EINTR(waitpid(pid, &wstatus, 0));
   if (ret >= 0) {
     ret = WEXITSTATUS(wstatus);
@@ -220,9 +278,6 @@ done:
   } else {
     PLOG(WARNING) << "waitpid failed on process: " << command_line;
   }
-
-  *output = stdout_ss.str();
-  *error = stderr_ss.str();
   return ret;
 }
 
