@@ -73,7 +73,7 @@ jobs:
             third_party/libcurl-vc16-arm64-release-static-ipv6-sspi-schannel
             third_party/libcurl-vc16-x64-release-static-ipv6-sspi-schannel
             third_party/libcurl-vc16-x86-release-static-ipv6-sspi-schannel
-          key: ${{ runner.os }}-msvc-dynamic-curl-vc16-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-msvc-dynamic-curl-vc16-${{ matrix.arch }}-v1
       - name: Cache golang
         uses: actions/cache@v4
         with:
@@ -168,7 +168,7 @@ jobs:
             third_party/curl-8.4.0_7-win64a-mingw
             third_party/curl-8.4.0_7-win64-mingw
             third_party/curl-8.4.0_7-win32-mingw
-          key: ${{ runner.os }}-mingw64-curl-and-aarch64-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-mingw64-curl-and-aarch64-v1
       - name: Cache golang
         uses: actions/cache@v4
         with:
