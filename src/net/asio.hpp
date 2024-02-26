@@ -33,7 +33,9 @@
 #undef _POSIX_THREADS
 #endif
 #include <asio.hpp>
+#ifndef ASIO_NO_SSL
 #include <asio/ssl.hpp>
+#endif
 #include "net/asio_throw_exceptions.hpp"
 
 #pragma GCC diagnostic pop
@@ -71,6 +73,8 @@ inline asio::ASIO_CONST_BUFFER const_buffer(const net::IOBuf& io_buf) ASIO_NOEXC
   return asio::ASIO_CONST_BUFFER(io_buf.data(), io_buf.length());
 }
 
+#ifndef ASIO_NO_SSL
 void load_ca_to_ssl_ctx(SSL_CTX* ssl_ctx);
+#endif
 
 #endif  // H_NET_ASIO
