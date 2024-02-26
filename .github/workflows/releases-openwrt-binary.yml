@@ -106,7 +106,7 @@ jobs:
             openwrt-sdk-*.Linux-x86_64
             ${{ env.SDK_ROOT }}
             ${{ env.SDK_HOME }}
-          key: openwrt-sdkhome-v0-${{ matrix.arch_name }}-v${{ env.CACHE_EPOCH }}
+          key: openwrt-sdkhome-v0-${{ matrix.arch_name }}-v1
       - name: Build build tool
         run: |
           cd tools
