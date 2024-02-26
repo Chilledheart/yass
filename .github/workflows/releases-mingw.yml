@@ -61,7 +61,7 @@ jobs:
           path: |
             third_party/mingw64
             third_party/mingw32
-          key: ${{ runner.os }}-mingw64-${{ matrix.arch }}-toolchain-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-mingw64-${{ matrix.arch }}-toolchain-v1
       - name: Cache mingw64 curl
         id: curl-cache
         uses: actions/cache@v4
@@ -69,7 +69,7 @@ jobs:
           path: |
             third_party/curl-8.4.0_7-win64-mingw
             third_party/curl-8.4.0_7-win32-mingw
-          key: ${{ runner.os }}-mingw64-curl-${{ matrix.arch }}-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-mingw64-curl-${{ matrix.arch }}-v1
       - name: "Download dependency: clang, nasm and wixtoolset 3"
         if: ${{ steps.clang-cache.outputs.cache-hit != 'true' }}
         run: |

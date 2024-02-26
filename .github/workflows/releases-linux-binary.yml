@@ -102,7 +102,7 @@ jobs:
         with:
           path: |
             ${{ env.SDK_ROOT }}
-          key: ${{ runner.os }}-sysroot-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-sysroot-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-v1
       - name: Build build tool
         run: |
           cd tools

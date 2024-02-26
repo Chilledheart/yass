@@ -83,7 +83,7 @@ jobs:
             third_party/curl-8.4.0_7-win64a-mingw
             third_party/curl-8.4.0_7-win64-mingw
             third_party/curl-8.4.0_7-win32-mingw
-          key: ${{ runner.os }}-mingw64-curl-and-aarch64-v${{ env.CACHE_EPOCH }}
+          key: ${{ runner.os }}-mingw64-curl-and-aarch64-v1
       - name: Cache golang
         uses: actions/cache@v4
         with:
