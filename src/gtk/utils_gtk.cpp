@@ -444,12 +444,13 @@ bool Dispatcher::Destroy() {
 bool Dispatcher::Emit() {
   DCHECK(source_);
   DCHECK_NE(fds_[1], -1);
-  VLOG(2) << "Dispatcher: " << this << " Emiting";
-  int32_t data = 0;
+  VLOG(2) << "Dispatcher: " << this << " Emiting Event";
+  char data = 0;
   const char* ptr = reinterpret_cast<char*>(&data);
-  uint32_t size = sizeof(data);
+  size_t size = sizeof(data);
   while (size) {
     int written = ::write(fds_[1], ptr, size);
+    DCHECK(written);
     if (written < 0 && (errno == EINTR || errno == EAGAIN))
       continue;
     if (written < 0) {
@@ -465,16 +466,19 @@ bool Dispatcher::Emit() {
 bool Dispatcher::ReadCallback() {
   DCHECK(source_);
   DCHECK_NE(fds_[0], -1);
-  VLOG(2) << "Dispatcher: " << this << " Reading";
-  int32_t data = 0;
+  char data = 0;
   char* ptr = reinterpret_cast<char*>(&data);
-  uint32_t size = sizeof(data);
+  size_t size = sizeof(data);
   while (size) {
     int ret = ::read(fds_[0], ptr, size);
     if (ret < 0 && (errno == EINTR || errno == EAGAIN))
       continue;
     if (ret < 0) {
       PLOG(WARNING) << "Dispatcher: read failure";
+      return G_SOURCE_REMOVE;
+    }
+    if (ret == 0) {
+      LOG(WARNING) << "Dispatcher: read eof immaturely";
       return G_SOURCE_REMOVE;
     }
     ptr += ret;
@@ -484,6 +488,9 @@ bool Dispatcher::ReadCallback() {
   if (!callback_) {
     return G_SOURCE_REMOVE;
   }
+
+  VLOG(2) << "Dispatcher: " << this << " Received Event";
+
   callback_();
 
   return G_SOURCE_CONTINUE;
