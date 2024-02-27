@@ -3582,7 +3582,6 @@ target_include_directories(yass_core PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl-override
   ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl/polyfills
   ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googleurl
-  third_party/asio/asio/include
   ${SUPPORT_INCLUDE_DIRS})
 
 target_include_directories(yass_core PRIVATE
