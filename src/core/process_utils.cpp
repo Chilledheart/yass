@@ -16,13 +16,10 @@
 
 #ifndef _WIN32
 
-extern "C" char **environ;
-
-#include <fcntl.h>
-#include <unistd.h>
-#include <signal.h>
-#include <sys/select.h>
-#include <sys/wait.h>
+#include <fcntl.h> // For pipe2 and fcntl
+#include <unistd.h> // For pipe
+#include <signal.h> // For kill
+#include <sys/wait.h> // For waitpid
 
 #include <base/posix/eintr_wrapper.h>
 #include <sstream>
@@ -241,17 +238,6 @@ int ExecuteProcess(const std::vector<std::string>& params,
   IGNORE_EINTR(close(stdout_pipe[1]));
   IGNORE_EINTR(close(stderr_pipe[1]));
 
-  // Post Stage
-  if ((ret = fcntl(stdin_pipe[1], F_SETFL, O_NONBLOCK | fcntl(stdin_pipe[1], F_GETFL))) != 0 ||
-      (ret = fcntl(stdout_pipe[0], F_SETFL, O_NONBLOCK | fcntl(stdout_pipe[0], F_GETFL))) != 0 ||
-      (ret = fcntl(stderr_pipe[0], F_SETFL, O_NONBLOCK | fcntl(stderr_pipe[0], F_GETFL))) != 0) {
-    IGNORE_EINTR(close(stdin_pipe[1]));
-    IGNORE_EINTR(close(stdout_pipe[0]));
-    IGNORE_EINTR(close(stderr_pipe[0]));
-    PLOG(WARNING) << "fcntl: set non-block file status flags failure";
-    return ret;
-  }
-
   // TODO implement write input
   // mark write end as eof
   IGNORE_EINTR(close(stdin_pipe[1]));
@@ -281,7 +267,7 @@ int ExecuteProcess(const std::vector<std::string>& params,
   return ret;
 }
 
-#endif
+#endif // _WIN32
 
 #ifdef _MSC_VER
 static_assert(sizeof(uint32_t) == sizeof(DWORD), "");
