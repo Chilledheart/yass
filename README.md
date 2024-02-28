@@ -22,13 +22,13 @@ More Information refers to [wiki](https://github.com/Chilledheart/yass/wiki) and
 ## Usages
 
 ### Prebuilt binaries
-- Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.6.5/yass-android-release-arm64-1.6.5.apk) or [download 32-bit apk](https://github.com/Chilledheart/yass/releases/download/1.6.5/yass-android-release-arm-1.6.5.apk)
-- iOS [join via TestFlight](https://testflight.apple.com/join/6AkiEq09) or [download ipa](https://github.com/Chilledheart/yass/releases/download/1.6.5/yass-ios-release-arm64-1.6.5.ipa)
-- Windows [download zip](https://github.com/Chilledheart/yass/releases/download/1.6.5/yass-mingw-winxp-release-x86_64-1.6.5.zip) or [download 32-bit zip (require runtime)](https://github.com/Chilledheart/yass/releases/download/1.6.5/yass-mingw-winxp-release-i686-1.6.5.zip) or [download woa arm64 zip](https://github.com/Chilledheart/yass/releases/download/1.6.5/yass-mingw-release-aarch64-1.6.5.zip)
-- macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.6.5/yass-macos-release-x64-1.6.5.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.6.5/yass-macos-release-arm64-1.6.5.dmg)
-- Linux [download rpm](https://github.com/Chilledheart/yass/releases/download/1.6.5/yass.el7.x86_64.1.6.5-0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.6.5/yass-client-ubuntu-16.04-xenial_amd64.1.6.5.deb)
+- Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.7.1/yass-android-release-arm64-1.7.1.apk) or [download 32-bit apk](https://github.com/Chilledheart/yass/releases/download/1.7.1/yass-android-release-arm-1.7.1.apk)
+- iOS [join via TestFlight](https://testflight.apple.com/join/6AkiEq09) or [download ipa](https://github.com/Chilledheart/yass/releases/download/1.7.1/yass-ios-release-arm64-1.7.1.ipa)
+- Windows [download zip](https://github.com/Chilledheart/yass/releases/download/1.7.1/yass-mingw-winxp-release-x86_64-1.7.1.zip) or [download 32-bit zip (require runtime)](https://github.com/Chilledheart/yass/releases/download/1.7.1/yass-mingw-winxp-release-i686-1.7.1.zip) or [download woa arm64 zip](https://github.com/Chilledheart/yass/releases/download/1.7.1/yass-mingw-release-aarch64-1.7.1.zip)
+- macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.7.1/yass-macos-release-x64-1.7.1.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.7.1/yass-macos-release-arm64-1.7.1.dmg)
+- Linux [download rpm](https://github.com/Chilledheart/yass/releases/download/1.7.1/yass.el7.x86_64.1.7.1-0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.7.1/yass-client-ubuntu-16.04-xenial_amd64.1.7.1.deb)
 
-View more at [release page](https://github.com/Chilledheart/yass/releases/tag/1.6.5)
+View more at [release page](https://github.com/Chilledheart/yass/releases/tag/1.7.1)
 
 ### Status of Package Store
 Visit wiki's [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-of-Package-Store)
