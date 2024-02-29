@@ -43,6 +43,8 @@ cd yass
 
   * Choose `Add LLVM to System Path`.
 
+Notes: please make sure you have [LLVM][llvm-win64] (16.0 or above).
+
 5. Run `x64 Native Tools Command Prompt for VS 2019 (or 2022)` in Start Menu.
 
 6. Compile the program with Release configuration.
@@ -178,7 +180,7 @@ sudo apt-get install -y \
     libgtk-3-dev
 ```
 
-Notes: please make sure you have [GCC] (7.1 or above) or [Clang] (12.0 or above) and [CMake] (3.12 or above).
+Notes: please make sure you have [GCC] (7.1 or above) or [Clang] (16.0 or above) and [CMake] (3.12 or above).
 
 For [GCC], cmake argument `-DUSE_LIBCXX=off` should be passed to disable libc++ build under gcc.
 
@@ -223,7 +225,7 @@ sudo yum install -y \
     golang
 ```
 
-Notes: please make sure you have [GCC] (7.1 or above) or [Clang] (12.0 or above) and [CMake] (3.12 or above).
+Notes: please make sure you have [GCC] (7.1 or above) or [Clang] (16.0 or above) and [CMake] (3.12 or above).
 
 For [GCC], cmake argument `-DUSE_LIBCXX=off` should be passed to disable libc++ build under gcc.
 
@@ -262,7 +264,7 @@ so you can install latest [Clang]:
 ```
 pkg install llvm17-lite
 ```
-Notes: please make sure you have [Clang] (12.0 or above) and [CMake] (3.12 or above).
+Notes: please make sure you have [Clang] (16.0 or above) and [CMake] (3.12 or above).
 
 2. Install required dependencies:
 ```
@@ -396,6 +398,6 @@ TBD
 [MacPorts]: https://www.macports.org/install.php
 [HomeBrew]: https://docs.brew.sh/Installation
 [python]: https://www.python.org/downloads/
-[llvm-win64]: https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.6/LLVM-15.0.6-win64.exe
+[llvm-win64]: https://github.com/llvm/llvm-project/releases/download/llvmorg-17.0.6/LLVM-17.0.6-win64.exe
 [msys2]: https://www.msys2.org/
 [EPEL]: https://docs.fedoraproject.org/en-US/epel
