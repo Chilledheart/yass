@@ -304,16 +304,13 @@ ninja yass
 
 ## Build Packaging
 
-### Windows (MSVC)/Packaging
+### MinGW/Packaging
 
 Make sure you have [Golang] installed on your system.
 
-Run in `x64 Native Tools Command Prompt for VS 2019 (or 2022)` in Start Menu:
+Run in `Git Bash` in Start Menu:
 ```
-cd tools
-go build
-cd ..
-./tools/build
+./scripts/build-mingw.sh
 ```
 
 ### macOS/Packaging
