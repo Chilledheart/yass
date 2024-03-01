@@ -157,8 +157,8 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
 
   method_ = GTK_COMBO_BOX_TEXT(gtk_combo_box_text_new());
 
-  for (uint32_t i = 0; i < sizeof(method_names) / sizeof(method_names[0]); ++i) {
-    gtk_combo_box_text_append_text(method_, method_names[i]);
+  for (const char* method_name : method_names) {
+    gtk_combo_box_text_append_text(method_, method_name);
   }
   local_host_ = GTK_ENTRY(gtk_entry_new());
   local_port_ = GTK_ENTRY(gtk_entry_new());
@@ -390,7 +390,7 @@ void YASSWindow::LoadChanges() {
 #undef XX
   };
   uint32_t i;
-  for (i = 0; i < sizeof(method_ids) / sizeof(method_ids[0]); ++i) {
+  for (i = 0; i < std::size(method_ids); ++i) {
     if (cipher_method == method_ids[i])
       break;
   }

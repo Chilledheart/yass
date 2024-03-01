@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2023 Chilledheart  */
+/* Copyright (c) 2023-2024 Chilledheart  */
 
 #ifdef __ANDROID__
 
@@ -8,6 +8,8 @@
 #include "cli/cli_worker.hpp"
 #include "config/config.hpp"
 #include "crypto/crypter_export.hpp"
+
+#include <vector>
 
 JavaVM* g_jvm = nullptr;
 jobject g_activity_obj = nullptr;

@@ -48,6 +48,6 @@ bool is_valid_cipher_method(enum cipher_method method) {
 }
 
 #define XX(num, name, string) string ", "
-const char kCipherMethodsStr[] = CIPHER_METHOD_VALID_MAP(XX)
+constexpr const char kCipherMethodsStr[] = CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
     ;

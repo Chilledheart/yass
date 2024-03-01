@@ -2,9 +2,7 @@
 /* Copyright (c) 2019-2024 Chilledheart  */
 #include "net/ss_request_parser.hpp"
 
-namespace net {
-
-namespace ss {
+namespace net::ss {
 
 request_parser::request_parser() {
   reset();
@@ -14,6 +12,4 @@ void request_parser::reset() {
   state_ = request_address_start;
 }
 
-}  // namespace ss
-
-}  // namespace net
+}  // namespace net::ss

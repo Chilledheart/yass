@@ -42,7 +42,7 @@ TEST(UtilsTest, Basename) {
 #ifdef _WIN32
 TEST(UtilsTest, ExpandUserFromStringImpl) {
   wchar_t path[] = L"C:/path/to/directory";
-  size_t path_len = sizeof(path) / sizeof(path[0]);
+  size_t path_len = std::size(path);
   // the return value is the REQUIRED number of TCHARs,
   // including the terminating NULL character.
   DWORD required_size = ::ExpandEnvironmentStringsW(path, nullptr, 0);
@@ -63,10 +63,10 @@ TEST(UtilsTest, ExpandUserFromStringImpl) {
 
 TEST(UtilsTest, ExpandUserFromString) {
   wchar_t path[] = L"%TEMP%/path/to/directory";
-  size_t path_len = sizeof(path) / sizeof(path[0]);
+  size_t path_len = std::size(path);
 
   wchar_t temp[32767];
-  DWORD temp_len = GetEnvironmentVariableW(L"TEMP", temp, sizeof(temp) / sizeof(temp[0]));
+  DWORD temp_len = GetEnvironmentVariableW(L"TEMP", temp, std::size(temp));
   // GetEnvironmentVariableW: the return value is the number of characters
   // stored in the buffer pointed to by lpBuffer, not including the terminating null character.
   ASSERT_NE(0u, temp_len);

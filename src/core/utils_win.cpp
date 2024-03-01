@@ -558,7 +558,7 @@ std::string GetHomeDir() {
 
 std::wstring GetHomeDirW() {
   wchar_t result[MAX_PATH];
-  if (SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_PROFILE, NULL, SHGFP_TYPE_CURRENT, result)) && result[0]) {
+  if (SUCCEEDED(SHGetFolderPathW(nullptr, CSIDL_PROFILE, nullptr, SHGFP_TYPE_CURRENT, result)) && result[0]) {
     return result;
   }
   // Fall back to the temporary directory on failure.

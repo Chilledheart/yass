@@ -1137,7 +1137,7 @@ static bool IsNetworkAdapterUp() {
   DWORD nErr = 0;
   do {
     pBuf.resize(nLen);
-    nErr = ::GetAdaptersAddresses(AF_UNSPEC, nFlags, NULL, (IP_ADAPTER_ADDRESSES*)pBuf.data(), &nLen);
+    nErr = ::GetAdaptersAddresses(AF_UNSPEC, nFlags, nullptr, (IP_ADAPTER_ADDRESSES*)pBuf.data(), &nLen);
   } while (ERROR_BUFFER_OVERFLOW == nErr);
 
   if (NO_ERROR != nErr) {

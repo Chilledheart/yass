@@ -118,7 +118,7 @@ YASSWindow::YASSWindow(GApplication* app) : impl_(yass_window_new(YASSGtk_APP(ap
 
   g_signal_connect(G_OBJECT(impl_->systemproxy), "toggled", G_CALLBACK(systemproxy_callback), nullptr);
 
-  static const char* const method_names[] = {
+  static constexpr const char* const method_names[] = {
 #define XX(num, name, string) string,
       CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
@@ -126,8 +126,8 @@ YASSWindow::YASSWindow(GApplication* app) : impl_(yass_window_new(YASSGtk_APP(ap
 
   GtkComboBoxText* method = GTK_COMBO_BOX_TEXT(impl_->method);
 
-  for (uint32_t i = 0; i < sizeof(method_names) / sizeof(method_names[0]); ++i) {
-    gtk_combo_box_text_append_text(method, method_names[i]);
+  for (const char* method_name : method_names) {
+    gtk_combo_box_text_append_text(method, method_name);
   }
 
   gtk_check_button_set_active(GTK_CHECK_BUTTON(impl_->autostart), Utils::GetAutoStart());
@@ -310,13 +310,13 @@ void YASSWindow::LoadChanges() {
   gtk_editable_set_text(GTK_EDITABLE(impl_->username), username_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->password), password_str.c_str());
 
-  static const int method_ids[] = {
+  static constexpr const int method_ids[] = {
 #define XX(num, name, string) num,
       CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   };
   uint32_t i;
-  for (i = 0; i < sizeof(method_ids) / sizeof(method_ids[0]); ++i) {
+  for (i = 0; i < std::size(method_ids); ++i) {
     if (cipher_method == method_ids[i])
       break;
   }

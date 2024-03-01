@@ -31,8 +31,8 @@
       CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   };
-  for (uint32_t i = 0; i < sizeof(methodStrings) / sizeof(methodStrings[0]); ++i) {
-    [self.cipherMethod addItemWithObjectValue:methodStrings[i]];
+  for (NSString* methodString : methodStrings) {
+    [self.cipherMethod addItemWithObjectValue:methodString];
   }
   self.cipherMethod.numberOfVisibleItems = sizeof(methodStrings) / sizeof(methodStrings[0]);
 
