@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2023 Chilledheart  */
 
-#include <gtest/gtest.h>
 #include <gtest/gtest-message.h>
+#include <gtest/gtest.h>
 
 #include <absl/flags/flag.h>
 #include <gmock/gmock.h>
-#include "config/config_impl.hpp"
 #include <cstdlib>
+#include "config/config_impl.hpp"
 
 ABSL_FLAG(bool, test_bool, true, "Test bool value");
 ABSL_FLAG(int32_t, test_signed_val, 0, "Test int32_t value");

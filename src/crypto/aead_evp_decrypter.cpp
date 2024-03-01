@@ -35,8 +35,7 @@ AeadEvpDecrypter::AeadEvpDecrypter(const EVP_AEAD* (*aead_getter)(),
                                    size_t key_size,
                                    size_t auth_tag_size,
                                    size_t nonce_size)
-    : AeadBaseDecrypter(key_size, auth_tag_size, nonce_size),
-      aead_alg_(InitAndCall(aead_getter)) {
+    : AeadBaseDecrypter(key_size, auth_tag_size, nonce_size), aead_alg_(InitAndCall(aead_getter)) {
   DCHECK_EQ(EVP_AEAD_key_length(aead_alg_), key_size);
   DCHECK_EQ(EVP_AEAD_nonce_length(aead_alg_), nonce_size);
   DCHECK_GE(EVP_AEAD_max_tag_len(aead_alg_), auth_tag_size);
@@ -49,8 +48,7 @@ bool AeadEvpDecrypter::SetKey(const char* key, size_t key_len) {
     return false;
   }
   EVP_AEAD_CTX_cleanup(ctx_.get());
-  if (!EVP_AEAD_CTX_init(ctx_.get(), aead_alg_, key_, key_size_, auth_tag_size_,
-                         nullptr)) {
+  if (!EVP_AEAD_CTX_init(ctx_.get(), aead_alg_, key_, key_size_, auth_tag_size_, nullptr)) {
     DLogOpenSslErrors();
     return false;
   }
@@ -80,12 +78,9 @@ bool AeadEvpDecrypter::DecryptPacket(uint64_t packet_number,
 
   DumpHex("DE-NONCE", nonce, nonce_size_);
 
-  if (!EVP_AEAD_CTX_open(ctx_.get(), reinterpret_cast<uint8_t*>(output),
-                         output_length, max_output_length, nonce, nonce_size_,
-                         reinterpret_cast<const uint8_t*>(ciphertext),
-                         ciphertext_len,
-                         reinterpret_cast<const uint8_t*>(associated_data),
-                         associated_data_len)) {
+  if (!EVP_AEAD_CTX_open(ctx_.get(), reinterpret_cast<uint8_t*>(output), output_length, max_output_length, nonce,
+                         nonce_size_, reinterpret_cast<const uint8_t*>(ciphertext), ciphertext_len,
+                         reinterpret_cast<const uint8_t*>(associated_data), associated_data_len)) {
     DLogOpenSslErrors();
     return false;
   }

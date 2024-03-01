@@ -6,8 +6,8 @@
 
 #include <stdint.h>
 
-#include "net/asio.hpp"
 #include "core/logging.hpp"
+#include "net/asio.hpp"
 
 namespace net {
 
@@ -75,5 +75,5 @@ struct address_type_header {
 
 }  // namespace ss
 
-} // namespace net
+}  // namespace net
 #endif  // H_NET_SS

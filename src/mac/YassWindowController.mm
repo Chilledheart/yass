@@ -8,13 +8,13 @@
 #include <absl/flags/flag.h>
 #include <base/strings/sys_string_conversions.h>
 
-#import "mac/YassViewController.h"
 #include "cli/cli_connection_stats.hpp"
 #include "config/config.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
 #include "mac/YassAppDelegate.h"
+#import "mac/YassViewController.h"
 #include "mac/utils.h"
 
 @interface YassWindowController ()
@@ -41,14 +41,15 @@
   y_status_bar_item_.button.title = @"Y";
   y_status_bar_item_.button.target = self;
   y_status_bar_item_.button.action = @selector(statusItemClicked);
-  [y_status_bar_item_.button sendActionOn:NSEventMaskLeftMouseDown | NSEventMaskRightMouseDown | NSEventMaskOtherMouseDown];
+  [y_status_bar_item_.button
+      sendActionOn:NSEventMaskLeftMouseDown | NSEventMaskRightMouseDown | NSEventMaskOtherMouseDown];
 
   status_bar_item_ = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
 
   hide_on_closed_ = FALSE;
 }
 
-- (BOOL)windowShouldClose:(NSWindow *)sender {
+- (BOOL)windowShouldClose:(NSWindow*)sender {
   if (sender != self.window) {
     return TRUE;
   }
@@ -66,9 +67,7 @@
   }
 
   NSWindow* window = self.window;
-  [window performSelector:@selector(orderFrontRegardless)
-               withObject:nil
-               afterDelay:0.10];
+  [window performSelector:@selector(orderFrontRegardless) withObject:nil afterDelay:0.10];
   [window makeKeyAndOrderFront:nil];
 }
 
@@ -77,8 +76,7 @@
 }
 
 - (NSString*)getStatusMessage {
-  YassAppDelegate* appDelegate =
-      (YassAppDelegate*)NSApplication.sharedApplication.delegate;
+  YassAppDelegate* appDelegate = (YassAppDelegate*)NSApplication.sharedApplication.delegate;
   if ([appDelegate getState] != STARTED) {
     return [appDelegate getStatus];
   }
@@ -87,17 +85,15 @@
   if (delta_time > NS_PER_SECOND) {
     uint64_t rx_bytes = cli::total_rx_bytes;
     uint64_t tx_bytes = cli::total_tx_bytes;
-    rx_rate_ = static_cast<double>(rx_bytes - last_rx_bytes_) / delta_time *
-               NS_PER_SECOND;
-    tx_rate_ = static_cast<double>(tx_bytes - last_tx_bytes_) / delta_time *
-               NS_PER_SECOND;
+    rx_rate_ = static_cast<double>(rx_bytes - last_rx_bytes_) / delta_time * NS_PER_SECOND;
+    tx_rate_ = static_cast<double>(tx_bytes - last_tx_bytes_) / delta_time * NS_PER_SECOND;
     last_sync_time_ = sync_time;
     last_rx_bytes_ = rx_bytes;
     last_tx_bytes_ = tx_bytes;
   }
 
   std::ostringstream ss;
-  NSString *message = [appDelegate getStatus];
+  NSString* message = [appDelegate getStatus];
   ss << gurl_base::SysNSStringToUTF8(message);
   message = NSLocalizedString(@"TXRATE", @" tx rate: ");
   ss << gurl_base::SysNSStringToUTF8(message);
@@ -117,17 +113,15 @@
     [self UpdateStatusBar];
   }
 
-  refresh_timer_ =
-      [NSTimer scheduledTimerWithTimeInterval:NSTimeInterval(0.2)
-                                       target:self
-                                     selector:@selector(refreshTimerExceeded)
-                                     userInfo:nil
-                                      repeats:NO];
+  refresh_timer_ = [NSTimer scheduledTimerWithTimeInterval:NSTimeInterval(0.2)
+                                                    target:self
+                                                  selector:@selector(refreshTimerExceeded)
+                                                  userInfo:nil
+                                                   repeats:NO];
 }
 
 - (void)OnStart {
-  YassAppDelegate* appDelegate =
-      (YassAppDelegate*)NSApplication.sharedApplication.delegate;
+  YassAppDelegate* appDelegate = (YassAppDelegate*)NSApplication.sharedApplication.delegate;
 
   last_sync_time_ = GetMonotonicTime();
   last_rx_bytes_ = 0U;
@@ -138,26 +132,25 @@
 }
 
 - (void)OnStop {
-  YassAppDelegate* appDelegate =
-      (YassAppDelegate*)NSApplication.sharedApplication.delegate;
+  YassAppDelegate* appDelegate = (YassAppDelegate*)NSApplication.sharedApplication.delegate;
   [appDelegate OnStop:FALSE];
 }
 
 - (void)Started {
   [self UpdateStatusBar];
-  YassViewController *viewController = (YassViewController*)self.contentViewController;
+  YassViewController* viewController = (YassViewController*)self.contentViewController;
   [viewController Started];
 }
 
 - (void)StartFailed {
   [self UpdateStatusBar];
-  YassViewController *viewController = (YassViewController*)self.contentViewController;
+  YassViewController* viewController = (YassViewController*)self.contentViewController;
   [viewController StartFailed];
 }
 
 - (void)Stopped {
   [self UpdateStatusBar];
-  YassViewController *viewController = (YassViewController*)self.contentViewController;
+  YassViewController* viewController = (YassViewController*)self.contentViewController;
   [viewController Stopped];
 }
 

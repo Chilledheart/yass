@@ -22,8 +22,7 @@
 
 namespace net {
 
-void SetSOReusePort(asio::ip::tcp::acceptor::native_handle_type handle,
-                    asio::error_code& ec) {
+void SetSOReusePort(asio::ip::tcp::acceptor::native_handle_type handle, asio::error_code& ec) {
   (void)handle;
   ec = asio::error_code();
   // https://lwn.net/Articles/542629/
@@ -42,8 +41,7 @@ void SetSOReusePort(asio::ip::tcp::acceptor::native_handle_type handle,
 #endif  // SO_REUSEPORT
 }
 
-void SetTCPCongestion(asio::ip::tcp::acceptor::native_handle_type handle,
-                      asio::error_code& ec) {
+void SetTCPCongestion(asio::ip::tcp::acceptor::native_handle_type handle, asio::error_code& ec) {
   (void)handle;
   ec = asio::error_code();
 #if defined(TCP_CONGESTION)
@@ -59,11 +57,9 @@ void SetTCPCongestion(asio::ip::tcp::acceptor::native_handle_type handle,
   }
   if (buf != absl::GetFlag(FLAGS_congestion_algorithm)) {
     len = absl::GetFlag(FLAGS_congestion_algorithm).size();
-    ret = setsockopt(fd, IPPROTO_TCP, TCP_CONGESTION,
-                     absl::GetFlag(FLAGS_congestion_algorithm).c_str(), len);
+    ret = setsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, absl::GetFlag(FLAGS_congestion_algorithm).c_str(), len);
     if (ret < 0) {
-      VLOG(2) << "Congestion algorithm \""
-              << absl::GetFlag(FLAGS_congestion_algorithm)
+      VLOG(2) << "Congestion algorithm \"" << absl::GetFlag(FLAGS_congestion_algorithm)
               << "\" is not supported on this platform";
       VLOG(2) << "Current congestion: " << buf;
       absl::SetFlag(&FLAGS_congestion_algorithm, buf);
@@ -71,8 +67,7 @@ void SetTCPCongestion(asio::ip::tcp::acceptor::native_handle_type handle,
       return;
     } else {
       VLOG(3) << "Previous congestion: " << buf;
-      VLOG(3) << "Applied current congestion algorithm: "
-              << absl::GetFlag(FLAGS_congestion_algorithm);
+      VLOG(3) << "Applied current congestion algorithm: " << absl::GetFlag(FLAGS_congestion_algorithm);
     }
   }
   len = sizeof(buf);
@@ -86,8 +81,7 @@ void SetTCPCongestion(asio::ip::tcp::acceptor::native_handle_type handle,
 #endif  // TCP_CONGESTION
 }
 
-void SetTCPFastOpen(asio::ip::tcp::acceptor::native_handle_type handle,
-                    asio::error_code& ec) {
+void SetTCPFastOpen(asio::ip::tcp::acceptor::native_handle_type handle, asio::error_code& ec) {
   (void)handle;
   ec = asio::error_code();
   if (!absl::GetFlag(FLAGS_tcp_fastopen)) {
@@ -117,8 +111,7 @@ void SetTCPFastOpen(asio::ip::tcp::acceptor::native_handle_type handle,
 #endif  // TCP_FASTOPEN
 }
 
-void SetTCPFastOpenConnect(asio::ip::tcp::socket::native_handle_type handle,
-                           asio::error_code& ec) {
+void SetTCPFastOpenConnect(asio::ip::tcp::socket::native_handle_type handle, asio::error_code& ec) {
   (void)handle;
   ec = asio::error_code();
   if (!absl::GetFlag(FLAGS_tcp_fastopen_connect)) {
@@ -129,8 +122,7 @@ void SetTCPFastOpenConnect(asio::ip::tcp::socket::native_handle_type handle,
   // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=19f6d3f3c8422d65b5e3d2162e30ef07c6e21ea2
   int fd = handle;
   int opt = 1;
-  int ret =
-      setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN_CONNECT, &opt, sizeof(opt));
+  int ret = setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN_CONNECT, &opt, sizeof(opt));
   if (ret < 0 && (errno == EPROTONOSUPPORT || errno == ENOPROTOOPT)) {
     ec = asio::error_code(errno, asio::error::get_system_category());
     VLOG(2) << "TCP Fast Open Connect is not supported on this platform";
@@ -141,8 +133,7 @@ void SetTCPFastOpenConnect(asio::ip::tcp::socket::native_handle_type handle,
 #endif  // TCP_FASTOPEN_CONNECT
 }
 
-void SetTCPKeepAlive(asio::ip::tcp::acceptor::native_handle_type handle,
-                     asio::error_code& ec) {
+void SetTCPKeepAlive(asio::ip::tcp::acceptor::native_handle_type handle, asio::error_code& ec) {
   (void)handle;
   ec = asio::error_code();
   int fd = handle;
@@ -162,33 +153,30 @@ void SetTCPKeepAlive(asio::ip::tcp::acceptor::native_handle_type handle,
     VLOG(2) << "TCP Keep Alive is not supported on this platform " << ec;
     return;
   } else {
-    VLOG(3) << "Applied SO socket_option: so_keepalive "
-            << absl::GetFlag(FLAGS_tcp_keep_alive);
+    VLOG(3) << "Applied SO socket_option: so_keepalive " << absl::GetFlag(FLAGS_tcp_keep_alive);
   }
   if (!absl::GetFlag(FLAGS_tcp_keep_alive)) {
     return;
   }
 #ifdef _WIN32
   struct tcp_keepalive {
-      u_long  onoff;
-      u_long  keepalivetime;
-      u_long  keepaliveinterval;
+    u_long onoff;
+    u_long keepalivetime;
+    u_long keepaliveinterval;
   };
   tcp_keepalive optVals;
   DWORD cbBytesReturned = 0;
   optVals.onoff = opt;
   optVals.keepalivetime = 1000 * absl::GetFlag(FLAGS_tcp_keep_alive_idle_timeout);
   optVals.keepaliveinterval = 1000 * absl::GetFlag(FLAGS_tcp_keep_alive_interval);
-  ret = WSAIoctl(handle, SIO_KEEPALIVE_VALS, &optVals, sizeof(optVals),
-                 nullptr, 0, &cbBytesReturned, nullptr, nullptr);
+  ret = WSAIoctl(handle, SIO_KEEPALIVE_VALS, &optVals, sizeof(optVals), nullptr, 0, &cbBytesReturned, nullptr, nullptr);
   if (ret < 0) {
     ec = asio::error_code(WSAGetLastError(), asio::error::get_system_category());
     VLOG(2) << "TCP Keep Alive Vals is not supported on this platform: " << ec;
   } else {
     VLOG(3) << "Applied current tcp_option: tcp_keep_alive_idle_timeout "
             << absl::GetFlag(FLAGS_tcp_keep_alive_idle_timeout);
-    VLOG(3) << "Applied current tcp_option: tcp_keep_alive_interval "
-            << absl::GetFlag(FLAGS_tcp_keep_alive_interval);
+    VLOG(3) << "Applied current tcp_option: tcp_keep_alive_interval " << absl::GetFlag(FLAGS_tcp_keep_alive_interval);
   }
 #else
   fd = handle;
@@ -202,12 +190,10 @@ void SetTCPKeepAlive(asio::ip::tcp::acceptor::native_handle_type handle,
     ec = asio::error_code(errno, asio::error::get_system_category());
     VLOG(2) << "TCP Keep Alive is not supported on this platform";
   } else {
-    VLOG(3) << "Applied current tcp_option: tcp_keep_alive_cnt "
-            << absl::GetFlag(FLAGS_tcp_keep_alive_cnt);
+    VLOG(3) << "Applied current tcp_option: tcp_keep_alive_cnt " << absl::GetFlag(FLAGS_tcp_keep_alive_cnt);
     VLOG(3) << "Applied current tcp_option: tcp_keep_alive_idle_timeout "
             << absl::GetFlag(FLAGS_tcp_keep_alive_idle_timeout);
-    VLOG(3) << "Applied current tcp_option: tcp_keep_alive_interval "
-            << absl::GetFlag(FLAGS_tcp_keep_alive_interval);
+    VLOG(3) << "Applied current tcp_option: tcp_keep_alive_interval " << absl::GetFlag(FLAGS_tcp_keep_alive_interval);
   }
 #endif
 }
@@ -227,4 +213,4 @@ void SetSocketTcpNoDelay(asio::ip::tcp::socket* socket, asio::error_code& ec) {
   }
 }
 
-} // namespace net
+}  // namespace net

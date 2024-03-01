@@ -22,8 +22,7 @@ namespace crypto {
 
 Encrypter::~Encrypter() = default;
 
-std::unique_ptr<Encrypter> Encrypter::CreateFromCipherSuite(
-    uint32_t cipher_suite) {
+std::unique_ptr<Encrypter> Encrypter::CreateFromCipherSuite(uint32_t cipher_suite) {
   switch (cipher_suite) {
 #ifdef HAVE_BORINGSSL
     case CRYPTO_AES256GCMSHA256:
@@ -65,13 +64,12 @@ std::unique_ptr<Encrypter> Encrypter::CreateFromCipherSuite(
       auto evp = mbedtls_create_evp(static_cast<cipher_method>(cipher_suite));
       auto key_len = mbedtls_get_key_size(static_cast<cipher_method>(cipher_suite));
       auto nonce_len = mbedtls_get_nonce_size(static_cast<cipher_method>(cipher_suite));
-      return std::make_unique<AeadMbedtlsEncrypter>(static_cast<cipher_method>(cipher_suite),
-                                                    evp, key_len, 0, nonce_len);
+      return std::make_unique<AeadMbedtlsEncrypter>(static_cast<cipher_method>(cipher_suite), evp, key_len, 0,
+                                                    nonce_len);
     }
 #endif
     default:
-      LOG(FATAL) << "Unsupported cipher created: "
-        << to_cipher_method_str(static_cast<cipher_method>(cipher_suite));
+      LOG(FATAL) << "Unsupported cipher created: " << to_cipher_method_str(static_cast<cipher_method>(cipher_suite));
       return nullptr;
   }
 }

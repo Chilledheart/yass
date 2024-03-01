@@ -52,12 +52,10 @@ class VoidifyStream {
 
 // Helper macro which avoids evaluating the arguents to a stream if the
 // condition is false.
-#define LAZY_CHECK_STREAM(stream, condition) \
-  !(condition) ? (void)0 : ::yass::VoidifyStream() & (stream)
+#define LAZY_CHECK_STREAM(stream, condition) !(condition) ? (void)0 : ::yass::VoidifyStream() & (stream)
 
 // Macro which uses but does not evaluate expr and any stream parameters.
-#define EAT_CHECK_STREAM_PARAMS(expr) \
-  true ? (void)0 : ::yass::VoidifyStream(expr) & (*::yass::g_swallow_stream)
+#define EAT_CHECK_STREAM_PARAMS(expr) true ? (void)0 : ::yass::VoidifyStream(expr) & (*::yass::g_swallow_stream)
 
 extern std::ostream* g_swallow_stream;
 
@@ -78,9 +76,7 @@ class CheckError {
 
   static CheckError DPCheck(const char* file, int line, const char* condition);
 
-  static CheckError NotImplemented(const char* file,
-                                   int line,
-                                   const char* function);
+  static CheckError NotImplemented(const char* file, int line, const char* function);
 
   // Stream for adding optional details to the error message.
   std::ostream& stream();
@@ -105,38 +101,32 @@ class CheckError {
 // This is not calling BreakDebugger since this is called frequently, and
 // calling an out-of-line function instead of a noreturn inline macro prevents
 // compiler optimizations.
-#define CHECK(condition) \
-  UNLIKELY(!(condition)) ? IMMEDIATE_CRASH() : EAT_CHECK_STREAM_PARAMS()
+#define CHECK(condition) UNLIKELY(!(condition)) ? IMMEDIATE_CRASH() : EAT_CHECK_STREAM_PARAMS()
 
-#define PCHECK(condition)                                            \
-  LAZY_CHECK_STREAM(::yass::CheckError::PCheck(__FILE__, __LINE__).stream(), \
-                    UNLIKELY(!(condition)))
+#define PCHECK(condition) \
+  LAZY_CHECK_STREAM(::yass::CheckError::PCheck(__FILE__, __LINE__).stream(), UNLIKELY(!(condition)))
 
 #else
 
-#define CHECK(condition)                                          \
-  LAZY_CHECK_STREAM(                                              \
-      ::yass::CheckError::Check(__FILE__, __LINE__, #condition).stream(), \
-      !ANALYZER_ASSUME_TRUE(condition))
+#define CHECK(condition)                                                                \
+  LAZY_CHECK_STREAM(::yass::CheckError::Check(__FILE__, __LINE__, #condition).stream(), \
+                    !ANALYZER_ASSUME_TRUE(condition))
 
-#define PCHECK(condition)                                          \
-  LAZY_CHECK_STREAM(                                               \
-      ::yass::CheckError::PCheck(__FILE__, __LINE__, #condition).stream(), \
-      !ANALYZER_ASSUME_TRUE(condition))
+#define PCHECK(condition)                                                                \
+  LAZY_CHECK_STREAM(::yass::CheckError::PCheck(__FILE__, __LINE__, #condition).stream(), \
+                    !ANALYZER_ASSUME_TRUE(condition))
 
 #endif
 
 #if DCHECK_IS_ON()
 
-#define DCHECK(condition)                                          \
-  LAZY_CHECK_STREAM(                                               \
-      ::yass::CheckError::DCheck(__FILE__, __LINE__, #condition).stream(), \
-      !ANALYZER_ASSUME_TRUE(condition))
+#define DCHECK(condition)                                                                \
+  LAZY_CHECK_STREAM(::yass::CheckError::DCheck(__FILE__, __LINE__, #condition).stream(), \
+                    !ANALYZER_ASSUME_TRUE(condition))
 
-#define DPCHECK(condition)                                          \
-  LAZY_CHECK_STREAM(                                                \
-      ::yass::CheckError::DPCheck(__FILE__, __LINE__, #condition).stream(), \
-      !ANALYZER_ASSUME_TRUE(condition))
+#define DPCHECK(condition)                                                                \
+  LAZY_CHECK_STREAM(::yass::CheckError::DPCheck(__FILE__, __LINE__, #condition).stream(), \
+                    !ANALYZER_ASSUME_TRUE(condition))
 
 #else
 
@@ -160,8 +150,7 @@ void RawError(const char* message);
 // implemented yet. If output spam is a serious concern,
 // NOTIMPLEMENTED_LOG_ONCE can be used.
 #if DCHECK_IS_ON()
-#define NOTIMPLEMENTED() \
-  CheckError::NotImplemented(__FILE__, __LINE__, __PRETTY_FUNCTION__).stream()
+#define NOTIMPLEMENTED() CheckError::NotImplemented(__FILE__, __LINE__, __PRETTY_FUNCTION__).stream()
 #else
 #define NOTIMPLEMENTED() EAT_CHECK_STREAM_PARAMS()
 #endif
@@ -176,6 +165,6 @@ void RawError(const char* message);
   }                                  \
   EAT_CHECK_STREAM_PARAMS()
 
-} // namespace yass
+}  // namespace yass
 
 #endif  // CORE_CHECK_H_

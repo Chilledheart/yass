@@ -22,20 +22,19 @@
 
 #include "win32/utils.hpp"
 
+#include "config/config.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
-#include "config/config.hpp"
 #include "net/asio.hpp"
 
-#include <array>
-#include <vector>
-#include <sstream>
 #include <absl/strings/ascii.h>
+#include <array>
+#include <sstream>
+#include <vector>
 
 #ifdef _WIN32
 
-#define DEFAULT_AUTOSTART_KEY \
-  L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"
+#define DEFAULT_AUTOSTART_KEY L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"
 static constexpr size_t kRegReadMaximumSize = 1024 * 1024;
 
 #ifdef COMPILER_MSVC
@@ -43,10 +42,10 @@ static constexpr size_t kRegReadMaximumSize = 1024 * 1024;
 #else
 #include <tchar.h>
 #endif  // COMPILER_MSVC
-#include <windows.h>
-#include <wininet.h>
 #include <ras.h>
 #include <raserror.h>
+#include <windows.h>
+#include <wininet.h>
 #if _WIN32_WINNT < 0x600
 #define _WIN32_WINNT_ROLLBACK _WIN32_WINNT
 #undef _WIN32_WINNT
@@ -92,7 +91,7 @@ static constexpr size_t kRegReadMaximumSize = 1024 * 1024;
 #endif  //  COMPILER_MSVC
 
 // from ras.h, starting from Windows 2000
-typedef DWORD (__stdcall *PFNRASENUMENTRIESW)(LPCWSTR,LPCWSTR,LPRASENTRYNAMEW,LPDWORD,LPDWORD);
+typedef DWORD(__stdcall* PFNRASENUMENTRIESW)(LPCWSTR, LPCWSTR, LPRASENTRYNAMEW, LPDWORD, LPDWORD);
 
 // from wingdi.h, starting from Windows 2000
 typedef int(__stdcall* PFNGETDEVICECAPS)(HDC, int);
@@ -122,10 +121,7 @@ typedef enum MONITOR_DPI_TYPE {
 // from shellscalingapi.h, starting from Windows 8.1
 typedef HRESULT(__stdcall* PFNSETPROCESSDPIAWARENESS)(PROCESS_DPI_AWARENESS);
 // from shellscalingapi.h, starting from Windows 8.1
-typedef HRESULT(__stdcall* PFNGETDPIFORMONITOR)(HMONITOR,
-                                                MONITOR_DPI_TYPE,
-                                                UINT*,
-                                                UINT*);
+typedef HRESULT(__stdcall* PFNGETDPIFORMONITOR)(HMONITOR, MONITOR_DPI_TYPE, UINT*, UINT*);
 
 // from windef.h, starting from Windows 10, version 1607
 #if !defined(NTDDI_WIN10_RS1) || (defined(__MINGW64_VERSION_MAJOR) && __MINGW64_VERSION_MAJOR < 8)
@@ -161,32 +157,28 @@ typedef DPI_AWARENESS_CONTEXT(__stdcall* PFNGETTHREADDPIAWARENESSCONTEXT)(void);
 // from winuser.h, starting from Windows 10, version 1607
 typedef DPI_AWARENESS_CONTEXT(__stdcall* PFNGETWINDOWDPIAWARENESSCONTEXT)(HWND);
 // from winuser.h, starting from Windows 10, version 1607
-typedef DPI_AWARENESS(__stdcall* PFNGETAWARENESSFROMDPIAWARENESSCONTEXT)(
-    DPI_AWARENESS_CONTEXT);
+typedef DPI_AWARENESS(__stdcall* PFNGETAWARENESSFROMDPIAWARENESSCONTEXT)(DPI_AWARENESS_CONTEXT);
 // from winuser.h, starting from Windows 10, version 1703
-typedef BOOL(__stdcall* PFNSETPROCESSDPIAWARENESSCONTEXT)(
-    DPI_AWARENESS_CONTEXT);
+typedef BOOL(__stdcall* PFNSETPROCESSDPIAWARENESSCONTEXT)(DPI_AWARENESS_CONTEXT);
 // from winuser.h, starting from Windows 10, version 1607
 typedef BOOL(__stdcall* PFNSETTHREADDPIAWARENESSCONTEXT)(DPI_AWARENESS_CONTEXT);
 // from winuser.h, starting from Windows 10, version 1607
 typedef BOOL(__stdcall* PFNISVALIDDPIAWARENESScONTEXT)(DPI_AWARENESS_CONTEXT);
 // from winuser.h, starting from Windows 10, version 1607
-typedef BOOL(__stdcall* PFNAREDPIAWARENESSCONTEXTSEQUAL)(DPI_AWARENESS_CONTEXT,
-                                                         DPI_AWARENESS_CONTEXT);
+typedef BOOL(__stdcall* PFNAREDPIAWARENESSCONTEXTSEQUAL)(DPI_AWARENESS_CONTEXT, DPI_AWARENESS_CONTEXT);
 // from winuser.h, starting from Windows 10, version 1607
 typedef UINT(__stdcall* PFNGETDPIFORSYSTEM)(void);
 // from winuser.h, starting from Windows 10, version 1607
 typedef UINT(__stdcall* PFNGETDPIFORWINDOW)(HWND);
 // from winuser.h, starting from Windows 10, version 1803
-typedef UINT(__stdcall* PFNGETDPIFROMDPIAWARENESSCONTEXT)(
-    DPI_AWARENESS_CONTEXT);
+typedef UINT(__stdcall* PFNGETDPIFROMDPIAWARENESSCONTEXT)(DPI_AWARENESS_CONTEXT);
 // from winuser.h, starting from Windows 10, version 1803
-typedef DPI_HOSTING_BEHAVIOR(__stdcall* PFNSETTHREADDPIHOSTINGBEHAVIOR)(
-    DPI_HOSTING_BEHAVIOR);
+typedef DPI_HOSTING_BEHAVIOR(__stdcall* PFNSETTHREADDPIHOSTINGBEHAVIOR)(DPI_HOSTING_BEHAVIOR);
 // from winuser.h, starting from Windows 10, version 1607
 typedef BOOL(__stdcall* PFNENABLENONCLIENTDPISCALING)(HWND);
 // from winuser.h, starting from Windows 10, version 1607
-typedef BOOL(__stdcall* PFNSYSTEMPARAMETERSINFOFORDPI)(UINT uiAction, UINT uiParam, PVOID pvParam, UINT fWinIni, UINT dpi);
+typedef BOOL(
+    __stdcall* PFNSYSTEMPARAMETERSINFOFORDPI)(UINT uiAction, UINT uiParam, PVOID pvParam, UINT fWinIni, UINT dpi);
 
 // from winnls.h, starting from Windows Vista
 typedef int(__stdcall* PFNGETUSERDEFAULTLOCALENAME)(LPWSTR lpLocaleName, int cchLocaleName);
@@ -232,12 +224,15 @@ HMODULE LoadRasapi32Library() {
   return LoadLibraryExW(L"rasapi32.dll", nullptr, 0);
 }
 
-DWORD WINAPI RasEnumEntriesW(LPCWSTR unnamedParam1, LPCWSTR unnamedParam2, LPRASENTRYNAMEW unnamedParam3,
-                             LPDWORD unnamedParam4, LPDWORD unnamedParam5) {
+DWORD WINAPI RasEnumEntriesW(LPCWSTR unnamedParam1,
+                             LPCWSTR unnamedParam2,
+                             LPRASENTRYNAMEW unnamedParam3,
+                             LPDWORD unnamedParam4,
+                             LPDWORD unnamedParam5) {
   HMODULE raspi32Module = LoadRasapi32Library();
 
-  static const auto fPointer = reinterpret_cast<PFNRASENUMENTRIESW>(
-      reinterpret_cast<void*>(::GetProcAddress(raspi32Module, "RasEnumEntriesW")));
+  static const auto fPointer =
+      reinterpret_cast<PFNRASENUMENTRIESW>(reinterpret_cast<void*>(::GetProcAddress(raspi32Module, "RasEnumEntriesW")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return FALSE;
@@ -253,8 +248,7 @@ DWORD WINAPI RasEnumEntriesW(LPCWSTR unnamedParam1, LPCWSTR unnamedParam2, LPRAS
 // https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-getdevicecaps
 int GetDeviceCaps(HDC hdc, int index) {
   static const auto fPointer = reinterpret_cast<PFNGETDEVICECAPS>(
-      reinterpret_cast<void*>(::GetProcAddress(
-          static_cast<HMODULE>(EnsureGdi32Loaded()), "GetDeviceCaps")));
+      reinterpret_cast<void*>(::GetProcAddress(static_cast<HMODULE>(EnsureGdi32Loaded()), "GetDeviceCaps")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return USER_DEFAULT_SCREEN_DPI;
@@ -266,8 +260,7 @@ int GetDeviceCaps(HDC hdc, int index) {
 // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setprocessdpiaware
 BOOL SetProcessDPIAware() {
   static const auto fPointer = reinterpret_cast<PFNSETPROCESSDPIAWARE>(
-      reinterpret_cast<void*>(::GetProcAddress(
-          static_cast<HMODULE>(EnsureUser32Loaded()), "SetProcessDPIAware")));
+      reinterpret_cast<void*>(::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()), "SetProcessDPIAware")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return FALSE;
@@ -277,10 +270,8 @@ BOOL SetProcessDPIAware() {
 }
 
 HRESULT SetProcessDpiAwareness(PROCESS_DPI_AWARENESS value) {
-  static const auto fPointer =
-      reinterpret_cast<PFNSETPROCESSDPIAWARENESS>(reinterpret_cast<void*>(
-          ::GetProcAddress(static_cast<HMODULE>(EnsureShcoreLoaded()),
-                           "SetProcessDpiAwareness")));
+  static const auto fPointer = reinterpret_cast<PFNSETPROCESSDPIAWARENESS>(
+      reinterpret_cast<void*>(::GetProcAddress(static_cast<HMODULE>(EnsureShcoreLoaded()), "SetProcessDpiAwareness")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return E_NOTIMPL;
@@ -289,13 +280,9 @@ HRESULT SetProcessDpiAwareness(PROCESS_DPI_AWARENESS value) {
   return fPointer(value);
 }
 
-HRESULT GetDpiForMonitor(HMONITOR hmonitor,
-                         MONITOR_DPI_TYPE dpiType,
-                         UINT* dpiX,
-                         UINT* dpiY) {
+HRESULT GetDpiForMonitor(HMONITOR hmonitor, MONITOR_DPI_TYPE dpiType, UINT* dpiX, UINT* dpiY) {
   static const auto fPointer = reinterpret_cast<PFNGETDPIFORMONITOR>(
-      reinterpret_cast<void*>(::GetProcAddress(
-          static_cast<HMODULE>(EnsureShcoreLoaded()), "GetDpiForMonitor")));
+      reinterpret_cast<void*>(::GetProcAddress(static_cast<HMODULE>(EnsureShcoreLoaded()), "GetDpiForMonitor")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return E_NOTIMPL;
@@ -305,10 +292,8 @@ HRESULT GetDpiForMonitor(HMONITOR hmonitor,
 }
 
 DPI_AWARENESS_CONTEXT GetThreadDpiAwarenessContext() {
-  static const auto fPointer =
-      reinterpret_cast<PFNGETTHREADDPIAWARENESSCONTEXT>(reinterpret_cast<void*>(
-          ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()),
-                           "GetThreadDpiAwarenessContext")));
+  static const auto fPointer = reinterpret_cast<PFNGETTHREADDPIAWARENESSCONTEXT>(reinterpret_cast<void*>(
+      ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()), "GetThreadDpiAwarenessContext")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return DPI_AWARENESS_CONTEXT_UNAWARE;
@@ -317,10 +302,8 @@ DPI_AWARENESS_CONTEXT GetThreadDpiAwarenessContext() {
 }
 
 DPI_AWARENESS_CONTEXT GetWindowDpiAwarenessContext(HWND hwnd) {
-  static const auto fPointer =
-      reinterpret_cast<PFNGETWINDOWDPIAWARENESSCONTEXT>(reinterpret_cast<void*>(
-          ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()),
-                           "GetWindowDpiAwarenessContext")));
+  static const auto fPointer = reinterpret_cast<PFNGETWINDOWDPIAWARENESSCONTEXT>(reinterpret_cast<void*>(
+      ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()), "GetWindowDpiAwarenessContext")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return DPI_AWARENESS_CONTEXT_UNAWARE;
@@ -329,11 +312,8 @@ DPI_AWARENESS_CONTEXT GetWindowDpiAwarenessContext(HWND hwnd) {
 }
 
 DPI_AWARENESS GetAwarenessFromDpiAwarenessContext(DPI_AWARENESS_CONTEXT value) {
-  static const auto fPointer =
-      reinterpret_cast<PFNGETAWARENESSFROMDPIAWARENESSCONTEXT>(
-          reinterpret_cast<void*>(
-              ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()),
-                               "GetAwarenessFromDpiAwarenessContext")));
+  static const auto fPointer = reinterpret_cast<PFNGETAWARENESSFROMDPIAWARENESSCONTEXT>(reinterpret_cast<void*>(
+      ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()), "GetAwarenessFromDpiAwarenessContext")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return DPI_AWARENESS_INVALID;
@@ -342,11 +322,8 @@ DPI_AWARENESS GetAwarenessFromDpiAwarenessContext(DPI_AWARENESS_CONTEXT value) {
 }
 
 BOOL SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT value) {
-  static const auto fPointer =
-      reinterpret_cast<PFNSETPROCESSDPIAWARENESSCONTEXT>(
-          reinterpret_cast<void*>(
-              ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()),
-                               "SetProcessDpiAwarenessContext")));
+  static const auto fPointer = reinterpret_cast<PFNSETPROCESSDPIAWARENESSCONTEXT>(reinterpret_cast<void*>(
+      ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()), "SetProcessDpiAwarenessContext")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return FALSE;
@@ -355,10 +332,8 @@ BOOL SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT value) {
 }
 
 BOOL SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT value) {
-  static const auto fPointer =
-      reinterpret_cast<PFNSETTHREADDPIAWARENESSCONTEXT>(reinterpret_cast<void*>(
-          ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()),
-                           "SetThreadDpiAwarenessContext")));
+  static const auto fPointer = reinterpret_cast<PFNSETTHREADDPIAWARENESSCONTEXT>(reinterpret_cast<void*>(
+      ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()), "SetThreadDpiAwarenessContext")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return FALSE;
@@ -369,10 +344,8 @@ BOOL SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT value) {
 // Determines if a specified DPI_AWARENESS_CONTEXT is valid and supported
 // by the current system.
 BOOL IsValidDpiAwarenessContext(DPI_AWARENESS_CONTEXT value) {
-  static const auto fPointer =
-      reinterpret_cast<PFNISVALIDDPIAWARENESScONTEXT>(reinterpret_cast<void*>(
-          ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()),
-                           "IsValidDpiAwarenessContext")));
+  static const auto fPointer = reinterpret_cast<PFNISVALIDDPIAWARENESScONTEXT>(reinterpret_cast<void*>(
+      ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()), "IsValidDpiAwarenessContext")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return FALSE;
@@ -382,12 +355,9 @@ BOOL IsValidDpiAwarenessContext(DPI_AWARENESS_CONTEXT value) {
 
 // Determines if a specified DPI_AWARENESS_CONTEXT is valid and supported
 // by the current system.
-BOOL AreDpiAwarenessContextsEqual(DPI_AWARENESS_CONTEXT dpiContextA,
-                                  DPI_AWARENESS_CONTEXT dpiContextB) {
-  static const auto fPointer =
-      reinterpret_cast<PFNAREDPIAWARENESSCONTEXTSEQUAL>(reinterpret_cast<void*>(
-          ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()),
-                           "AreDpiAwarenessContextsEqual")));
+BOOL AreDpiAwarenessContextsEqual(DPI_AWARENESS_CONTEXT dpiContextA, DPI_AWARENESS_CONTEXT dpiContextB) {
+  static const auto fPointer = reinterpret_cast<PFNAREDPIAWARENESSCONTEXTSEQUAL>(reinterpret_cast<void*>(
+      ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()), "AreDpiAwarenessContextsEqual")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return FALSE;
@@ -402,8 +372,7 @@ BOOL AreDpiAwarenessContextsEqual(DPI_AWARENESS_CONTEXT dpiContextA,
 // the return value will be the actual system DPI.
 UINT GetDpiForSystem() {
   static const auto fPointer = reinterpret_cast<PFNGETDPIFORSYSTEM>(
-      reinterpret_cast<void*>(::GetProcAddress(
-          static_cast<HMODULE>(EnsureUser32Loaded()), "GetDpiForSystem")));
+      reinterpret_cast<void*>(::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()), "GetDpiForSystem")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return 0;
@@ -421,8 +390,7 @@ UINT GetDpiForSystem() {
 // clang-format on
 UINT GetDpiForWindow(HWND hwnd) {
   static const auto fPointer = reinterpret_cast<PFNGETDPIFORWINDOW>(
-      reinterpret_cast<void*>(::GetProcAddress(
-          static_cast<HMODULE>(EnsureUser32Loaded()), "GetDpiForWindow")));
+      reinterpret_cast<void*>(::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()), "GetDpiForWindow")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return 0;
@@ -435,11 +403,8 @@ UINT GetDpiForWindow(HWND hwnd) {
 // DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 will return a value of 0 for
 // their DPI.
 UINT GetDpiFromDpiAwarenessContext(DPI_AWARENESS_CONTEXT value) {
-  static const auto fPointer =
-      reinterpret_cast<PFNGETDPIFROMDPIAWARENESSCONTEXT>(
-          reinterpret_cast<void*>(
-              ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()),
-                               "GetDpiFromDpiAwarenessContext")));
+  static const auto fPointer = reinterpret_cast<PFNGETDPIFROMDPIAWARENESSCONTEXT>(reinterpret_cast<void*>(
+      ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()), "GetDpiFromDpiAwarenessContext")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return 0;
@@ -450,10 +415,8 @@ UINT GetDpiFromDpiAwarenessContext(DPI_AWARENESS_CONTEXT value) {
 // Sets the thread's DPI_HOSTING_BEHAVIOR. This behavior allows windows created
 // in the thread to host child windows with a different DPI_AWARENESS_CONTEXT.
 DPI_HOSTING_BEHAVIOR SetThreadDpiHostingBehavior(DPI_HOSTING_BEHAVIOR value) {
-  static const auto fPointer =
-      reinterpret_cast<PFNSETTHREADDPIHOSTINGBEHAVIOR>(reinterpret_cast<void*>(
-          ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()),
-                           "SetThreadDpiHostingBehavior")));
+  static const auto fPointer = reinterpret_cast<PFNSETTHREADDPIHOSTINGBEHAVIOR>(reinterpret_cast<void*>(
+      ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()), "SetThreadDpiHostingBehavior")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return DPI_HOSTING_BEHAVIOR_INVALID;
@@ -467,10 +430,8 @@ DPI_HOSTING_BEHAVIOR SetThreadDpiHostingBehavior(DPI_HOSTING_BEHAVIOR value) {
 // area portions of the specified top-level window.
 // Must be called during the initialization of that window.
 BOOL EnableNonClientDpiScaling(HWND hwnd) {
-  static const auto fPointer = reinterpret_cast<PFNENABLENONCLIENTDPISCALING>(
-      reinterpret_cast<void*>(::GetProcAddress(
-          static_cast<HMODULE>(EnsureUser32Loaded()),
-          "EnableNonClientDpiScaling")));
+  static const auto fPointer = reinterpret_cast<PFNENABLENONCLIENTDPISCALING>(reinterpret_cast<void*>(
+      ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()), "EnableNonClientDpiScaling")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return FALSE;
@@ -481,10 +442,8 @@ BOOL EnableNonClientDpiScaling(HWND hwnd) {
 // https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-systemparametersinfofordpi
 // Retrieves the value of one of the system-wide parameters, taking into account the provided DPI value.
 BOOL SystemParametersInfoForDpi(UINT uiAction, UINT uiParam, PVOID pvParam, UINT fWinIni, UINT dpi) {
-  static const auto fPointer = reinterpret_cast<PFNSYSTEMPARAMETERSINFOFORDPI>(
-      reinterpret_cast<void*>(::GetProcAddress(
-          static_cast<HMODULE>(EnsureUser32Loaded()),
-          "SystemParametersInfoForDpi")));
+  static const auto fPointer = reinterpret_cast<PFNSYSTEMPARAMETERSINFOFORDPI>(reinterpret_cast<void*>(
+      ::GetProcAddress(static_cast<HMODULE>(EnsureUser32Loaded()), "SystemParametersInfoForDpi")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return FALSE;
@@ -496,10 +455,8 @@ BOOL SystemParametersInfoForDpi(UINT uiAction, UINT uiParam, PVOID pvParam, UINT
 // Retrieves the user default locale name.
 #if _WIN32_WINNT < 0x0600
 int GetUserDefaultLocaleName(LPWSTR lpLocaleName, int cchLocaleName) {
-  static const auto fPointer = reinterpret_cast<PFNGETUSERDEFAULTLOCALENAME>(
-      reinterpret_cast<void*>(::GetProcAddress(
-          static_cast<HMODULE>(EnsureKernel32Loaded()),
-          "GetUserDefaultLocaleName")));
+  static const auto fPointer = reinterpret_cast<PFNGETUSERDEFAULTLOCALENAME>(reinterpret_cast<void*>(
+      ::GetProcAddress(static_cast<HMODULE>(EnsureKernel32Loaded()), "GetUserDefaultLocaleName")));
   if (fPointer == nullptr) {
     ::SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return 0;
@@ -510,32 +467,30 @@ int GetUserDefaultLocaleName(LPWSTR lpLocaleName, int cchLocaleName) {
 
 class ScopedHKEY {
  public:
-   explicit ScopedHKEY(HKEY hkey) : hkey_(hkey) {}
-   ~ScopedHKEY() {
-     if (hkey_) {
-       ::RegCloseKey(hkey_);
-     }
-   }
+  explicit ScopedHKEY(HKEY hkey) : hkey_(hkey) {}
+  ~ScopedHKEY() {
+    if (hkey_) {
+      ::RegCloseKey(hkey_);
+    }
+  }
 
  private:
-   HKEY hkey_;
+  HKEY hkey_;
 };
 
 }  // namespace
 
-static bool OpenKey(HKEY *hkey, bool isWrite) {
+static bool OpenKey(HKEY* hkey, bool isWrite) {
   DWORD disposition;
   const wchar_t* subkey = DEFAULT_AUTOSTART_KEY;
   REGSAM samDesired = (isWrite ? KEY_SET_VALUE : KEY_QUERY_VALUE);
 
   // Creates the specified registry key. If the key already exists, the
   // function opens it. Note that key names are not case sensitive.
-  if (::RegCreateKeyExW(
-      HKEY_CURRENT_USER /* HKEY */, subkey /* lpSubKey */, 0 /* Reserved */,
-      nullptr /*lpClass*/, REG_OPTION_NON_VOLATILE /* dwOptions */,
-      samDesired /* samDesired */, nullptr /* lpSecurityAttributes */,
-      hkey /* phkResult */,
-      &disposition /* lpdwDisposition */) == ERROR_SUCCESS) {
+  if (::RegCreateKeyExW(HKEY_CURRENT_USER /* HKEY */, subkey /* lpSubKey */, 0 /* Reserved */, nullptr /*lpClass*/,
+                        REG_OPTION_NON_VOLATILE /* dwOptions */, samDesired /* samDesired */,
+                        nullptr /* lpSecurityAttributes */, hkey /* phkResult */,
+                        &disposition /* lpdwDisposition */) == ERROR_SUCCESS) {
     if (disposition == REG_CREATED_NEW_KEY) {
     } else if (disposition == REG_OPENED_EXISTING_KEY) {
     }
@@ -544,14 +499,13 @@ static bool OpenKey(HKEY *hkey, bool isWrite) {
   return false;
 }
 
-static bool OpenReadableKey(HKEY *hkey) {
+static bool OpenReadableKey(HKEY* hkey) {
   return OpenKey(hkey, false);
 }
 
-static bool OpenWritableKey(HKEY *hkey) {
+static bool OpenWritableKey(HKEY* hkey) {
   return OpenKey(hkey, true);
 }
-
 
 // https://docs.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows
 // https://docs.microsoft.com/en-us/windows/win32/hidpi/setting-the-default-dpi-awareness-for-a-process
@@ -663,8 +617,7 @@ bool Utils::SetDpiAwareness(DpiAwarenessType awareness_type) {
 }
 
 bool Utils::SetMixedThreadDpiHostingBehavior() {
-  if (SetThreadDpiHostingBehavior(DPI_HOSTING_BEHAVIOR_MIXED) ==
-      DPI_HOSTING_BEHAVIOR_INVALID) {
+  if (SetThreadDpiHostingBehavior(DPI_HOSTING_BEHAVIOR_MIXED) == DPI_HOSTING_BEHAVIOR_INVALID) {
     VLOG(2) << "[dpi] Mixed DPI hosting behavior not applied.";
     return false;
   }
@@ -694,27 +647,19 @@ unsigned int Utils::GetDpiForWindowOrSystem(HWND hWnd) {
       return uDpi;
     }
 
-    if (AreDpiAwarenessContextsEqual(awareness_context,
-                                     DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED)) {
+    if (AreDpiAwarenessContextsEqual(awareness_context, DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED)) {
       VLOG(2) << "[dpi] DPI Awareness: Unware GPIScaled found";
-    } else if (AreDpiAwarenessContextsEqual(
-                   awareness_context,
-                   DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)) {
+    } else if (AreDpiAwarenessContextsEqual(awareness_context, DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)) {
       VLOG(2) << "[dpi] DPI Awareness: Per Monitor Aware v2 found";
-    } else if (AreDpiAwarenessContextsEqual(
-                   awareness_context,
-                   DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE)) {
+    } else if (AreDpiAwarenessContextsEqual(awareness_context, DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE)) {
       VLOG(2) << "[dpi] DPI Awareness: Per Monitor Aware found";
-    } else if (AreDpiAwarenessContextsEqual(
-                   awareness_context, DPI_AWARENESS_CONTEXT_SYSTEM_AWARE)) {
+    } else if (AreDpiAwarenessContextsEqual(awareness_context, DPI_AWARENESS_CONTEXT_SYSTEM_AWARE)) {
       VLOG(2) << "[dpi] DPI Awareness: System Aware found";
-    } else if (AreDpiAwarenessContextsEqual(awareness_context,
-                                            DPI_AWARENESS_CONTEXT_UNAWARE)) {
+    } else if (AreDpiAwarenessContextsEqual(awareness_context, DPI_AWARENESS_CONTEXT_UNAWARE)) {
       VLOG(2) << "[dpi] DPI Awareness: Unaware found";
     }
 
-    DPI_AWARENESS dpi_awareness =
-        GetAwarenessFromDpiAwarenessContext(awareness_context);
+    DPI_AWARENESS dpi_awareness = GetAwarenessFromDpiAwarenessContext(awareness_context);
 
     switch (dpi_awareness) {
       // Scale the window to the system DPI
@@ -747,8 +692,7 @@ unsigned int Utils::GetDpiForWindowOrSystem(HWND hWnd) {
   VLOG(2) << "[dpi] DpiAwarenessContext is not found, falling back...";
   UINT xdpi, ydpi;
   HMONITOR hMonitor = ::MonitorFromWindow(hWnd, MONITOR_DEFAULTTONULL);
-  if (hMonitor &&
-      SUCCEEDED(GetDpiForMonitor(hMonitor, MDT_EFFECTIVE_DPI, &xdpi, &ydpi))) {
+  if (hMonitor && SUCCEEDED(GetDpiForMonitor(hMonitor, MDT_EFFECTIVE_DPI, &xdpi, &ydpi))) {
     VLOG(1) << "[dpi] Use Dpi for Default Monitor: " << ydpi;
     return static_cast<unsigned int>(ydpi);
   }
@@ -775,7 +719,7 @@ bool Utils::SystemParametersInfoForDpiInt(UINT uiAction, UINT uiParam, PVOID pvP
 bool Utils::GetUserDefaultLocaleName(std::wstring* localeName) {
   wchar_t localeNameBuf[LOCALE_NAME_MAX_LENGTH];
   // Returns the size of the buffer containing the locale name, including the terminating null character, if successful.
-  int localNameLen = ::GetUserDefaultLocaleName(localeNameBuf, sizeof(localeNameBuf)/sizeof(localeNameBuf[0]));
+  int localNameLen = ::GetUserDefaultLocaleName(localeNameBuf, sizeof(localeNameBuf) / sizeof(localeNameBuf[0]));
   if (localNameLen == 0 || localNameLen == 1) {
     localeName->clear();
     return false;
@@ -796,12 +740,8 @@ static int add_to_auto_start(const wchar_t* appname_w, const std::wstring& cmdli
   // If the data is of type REG_SZ, REG_EXPAND_SZ, or REG_MULTI_SZ,
   // cbData must include the size of the terminating null character or characters.
   DWORD n = sizeof(wchar_t) * (cmdline.size() + 1);
-  LSTATUS result = ::RegSetValueExW(hkey      /* HKEY */,
-                                    appname_w /* lpValueName */,
-                                    0         /* Reserved */,
-                                    REG_SZ    /* dwType */,
-                                    reinterpret_cast<const BYTE*>(cmdline.c_str()) /* lpData */,
-                                    n         /* cbData */);
+  LSTATUS result = ::RegSetValueExW(hkey /* HKEY */, appname_w /* lpValueName */, 0 /* Reserved */, REG_SZ /* dwType */,
+                                    reinterpret_cast<const BYTE*>(cmdline.c_str()) /* lpData */, n /* cbData */);
 
   if (result != ERROR_SUCCESS) {
     return -1;
@@ -861,26 +801,20 @@ static int get_yass_auto_start() {
   // ERROR_SUCCESS and stores the size of the data, in bytes, in the variable
   // pointed to by lpcbData. This enables an application to determine the best
   // way to allocate a buffer for the value's data.
-  if (::RegQueryValueExW(hkey /* HKEY */, valueName /* lpValueName */,
-                         nullptr /* lpReserved */, &type /* lpType */,
-                         nullptr /* lpData */,
-                         &BufferSize /* lpcbData */) != ERROR_SUCCESS) {
+  if (::RegQueryValueExW(hkey /* HKEY */, valueName /* lpValueName */, nullptr /* lpReserved */, &type /* lpType */,
+                         nullptr /* lpData */, &BufferSize /* lpcbData */) != ERROR_SUCCESS) {
     /* yass applet auto start no set  */
     VLOG(1) << "[autostart] no auto start entry set";
     return -1;
   }
 
-  if (type != REG_SZ || BufferSize > kRegReadMaximumSize ||
-      BufferSize % sizeof(wchar_t) != 0) {
+  if (type != REG_SZ || BufferSize > kRegReadMaximumSize || BufferSize % sizeof(wchar_t) != 0) {
     VLOG(1) << "[autostart] mistyped auto start entry set";
     return -1;
   }
 
   output.resize(BufferSize / sizeof(wchar_t) + 2);
-  if (::RegQueryValueExW(hkey /* HKEY */,
-                         valueName /* lpValueName */,
-                         nullptr /* lpReserved */,
-                         &type /* lpType */,
+  if (::RegQueryValueExW(hkey /* HKEY */, valueName /* lpValueName */, nullptr /* lpReserved */, &type /* lpType */,
                          reinterpret_cast<BYTE*>(output.data()) /* lpData */,
                          &BufferSize /* lpcbData */) != ERROR_SUCCESS) {
     VLOG(1) << "[autostart] failed to fetch auto start entry";
@@ -893,7 +827,7 @@ static int get_yass_auto_start() {
   output.reserve(BufferSize / sizeof(wchar_t));
   // removing trailing space
   while (!output.empty() && output.back() == L'\0') {
-    output.resize(output.size()-1);
+    output.resize(output.size() - 1);
   }
 
   VLOG(2) << "[autostart] previous autostart entry: " << SysWideToUTF8(output);
@@ -932,10 +866,10 @@ bool Utils::GetSystemProxy() {
   bool enabled;
   std::string server_addr, bypass_addr;
   if (!QuerySystemProxy(&enabled, &server_addr, &bypass_addr)) {
-      return false;
+    return false;
   }
-  VLOG(2) << "[system proxy] previous enabled: " << std::boolalpha << enabled
-    << " server addr: " << server_addr << " bypass addr: " << bypass_addr;
+  VLOG(2) << "[system proxy] previous enabled: " << std::boolalpha << enabled << " server addr: " << server_addr
+          << " bypass addr: " << bypass_addr;
   return enabled && server_addr == GetLocalAddr();
 }
 
@@ -985,9 +919,7 @@ std::wstring LoadStringStdW(HINSTANCE hInstance, UINT uID) {
   return str;
 }
 
-bool QuerySystemProxy(bool *enabled,
-                      std::string *server_addr,
-                      std::string *bypass_addr) {
+bool QuerySystemProxy(bool* enabled, std::string* server_addr, std::string* bypass_addr) {
   std::vector<INTERNET_PER_CONN_OPTIONW> options;
   options.resize(3);
   options[0].dwOption = INTERNET_PER_CONN_FLAGS_UI;
@@ -1004,13 +936,11 @@ bool QuerySystemProxy(bool *enabled,
   option_list.pOptions = &options[0];
   DWORD option_list_size = sizeof(option_list);
 
-  if (!::InternetQueryOptionW(nullptr, INTERNET_OPTION_PER_CONNECTION_OPTION,
-                              &option_list, &option_list_size)) {
+  if (!::InternetQueryOptionW(nullptr, INTERNET_OPTION_PER_CONNECTION_OPTION, &option_list, &option_list_size)) {
     option_list_size = sizeof(option_list);
     options[0].dwOption = INTERNET_PER_CONN_FLAGS;
-    if (!::InternetQueryOptionW(nullptr, INTERNET_OPTION_PER_CONNECTION_OPTION,
-                                &option_list, &option_list_size)) {
-      PLOG(WARNING)<< "Failed to query system proxy";
+    if (!::InternetQueryOptionW(nullptr, INTERNET_OPTION_PER_CONNECTION_OPTION, &option_list, &option_list_size)) {
+      PLOG(WARNING) << "Failed to query system proxy";
       return false;
     }
   }
@@ -1032,9 +962,7 @@ bool QuerySystemProxy(bool *enabled,
   return true;
 }
 
-bool SetSystemProxy(bool enable,
-                    const std::string &server_addr,
-                    const std::string &bypass_addr) {
+bool SetSystemProxy(bool enable, const std::string& server_addr, const std::string& bypass_addr) {
   std::vector<std::wstring> conn_names;
   if (!::GetAllRasConnection(&conn_names)) {
     return false;
@@ -1049,9 +977,9 @@ bool SetSystemProxy(bool enable,
 }
 
 bool SetSystemProxy(bool enable,
-                    const std::string &server_addr,
-                    const std::string &bypass_addr,
-                    const std::wstring &wconn_name) {
+                    const std::string& server_addr,
+                    const std::string& bypass_addr,
+                    const std::wstring& wconn_name) {
   std::wstring wserver_addr = SysUTF8ToWide(server_addr);
   std::wstring wbypass_addr = SysUTF8ToWide(bypass_addr);
 
@@ -1079,36 +1007,32 @@ bool SetSystemProxy(bool enable,
   if (conn_name.empty()) {
     conn_name = "(empty)";
   }
-  if (!::InternetSetOptionW(nullptr, INTERNET_OPTION_PER_CONNECTION_OPTION,
-                            &option_list, sizeof(option_list))) {
-    PLOG(WARNING)<< "Failed to set system proxy"
-      << " in connection \"" << conn_name << "\".";
+  if (!::InternetSetOptionW(nullptr, INTERNET_OPTION_PER_CONNECTION_OPTION, &option_list, sizeof(option_list))) {
+    PLOG(WARNING) << "Failed to set system proxy"
+                  << " in connection \"" << conn_name << "\".";
     return false;
   }
-  if (!::InternetSetOptionW(nullptr, INTERNET_OPTION_PROXY_SETTINGS_CHANGED,
-                            nullptr, 0)) {
-    PLOG(WARNING)<< "Failed to refresh system proxy"
-      << " in connection \"" << conn_name << "\".";
+  if (!::InternetSetOptionW(nullptr, INTERNET_OPTION_PROXY_SETTINGS_CHANGED, nullptr, 0)) {
+    PLOG(WARNING) << "Failed to refresh system proxy"
+                  << " in connection \"" << conn_name << "\".";
     return false;
   }
-  if (!::InternetSetOptionW(nullptr, INTERNET_OPTION_REFRESH,
-                            nullptr, 0)) {
-    PLOG(WARNING)<< "Failed to reload via system proxy"
-      << " in connection \"" << conn_name << "\".";
+  if (!::InternetSetOptionW(nullptr, INTERNET_OPTION_REFRESH, nullptr, 0)) {
+    PLOG(WARNING) << "Failed to reload via system proxy"
+                  << " in connection \"" << conn_name << "\".";
     return false;
   }
   if (enable) {
-    LOG(INFO) << "Set system proxy to " << server_addr
-      << " by pass " << bypass_addr
-      << " in connection \"" << conn_name << "\".";
+    LOG(INFO) << "Set system proxy to " << server_addr << " by pass " << bypass_addr << " in connection \"" << conn_name
+              << "\".";
   } else {
     LOG(INFO) << "Set system proxy disabled"
-      << " in connection \"" << conn_name << "\".";
+              << " in connection \"" << conn_name << "\".";
   }
   return true;
 }
 
-bool GetAllRasConnection(std::vector<std::wstring> *result) {
+bool GetAllRasConnection(std::vector<std::wstring>* result) {
   DWORD dwCb = 0;
   DWORD dwRet = ERROR_SUCCESS;
   DWORD dwEntries = 0;
@@ -1136,7 +1060,7 @@ bool GetAllRasConnection(std::vector<std::wstring> *result) {
     }
     // Allocate the memory needed for the array of RAS entry names.
     lpRasEntryName = reinterpret_cast<RASENTRYNAMEW*>(malloc(sizeof(RASENTRYNAMEW) * dwEntries));
-    if (lpRasEntryName == nullptr){
+    if (lpRasEntryName == nullptr) {
       LOG(WARNING) << "RasEnumEntries: not enough memory";
       return false;
     }
@@ -1149,9 +1073,9 @@ bool GetAllRasConnection(std::vector<std::wstring> *result) {
     dwRet = RasEnumEntriesW(nullptr, nullptr, lpRasEntryName, &dwCb, &dwEntries);
 
     // If successful, print the RAS entry names
-    if (dwRet == ERROR_SUCCESS){
+    if (dwRet == ERROR_SUCCESS) {
       LOG(INFO) << "RasEnumEntries success found: " << dwEntries << " entries";
-      for (DWORD i = 0; i < dwEntries; i++){
+      for (DWORD i = 0; i < dwEntries; i++) {
         result->emplace_back(lpRasEntryName[i].szEntryName);
       }
     } else {
@@ -1162,7 +1086,7 @@ bool GetAllRasConnection(std::vector<std::wstring> *result) {
     lpRasEntryName = nullptr;
   } else if (dwRet == ERROR_SUCCESS) {
     LOG(INFO) << "RasEnumEntries success found: " << dwEntries << " entries";
-    for (DWORD i = 0; i < dwEntries; i++){
+    for (DWORD i = 0; i < dwEntries; i++) {
       result->emplace_back(lpRasEntryName[i].szEntryName);
     }
   } else {
@@ -1182,19 +1106,17 @@ bool GetAllRasConnection(std::vector<std::wstring> *result) {
 #define GAA_FLAG_INCLUDE_ALL_INTERFACES 0x0100
 #endif
 
-static asio::ip::address SocketAddressToAsio(const SOCKET_ADDRESS &Address) {
+static asio::ip::address SocketAddressToAsio(const SOCKET_ADDRESS& Address) {
   if (sizeof(struct sockaddr_in) == Address.iSockaddrLength) {
-    const auto *addr = &((struct sockaddr_in*)Address.lpSockaddr)->sin_addr;
+    const auto* addr = &((struct sockaddr_in*)Address.lpSockaddr)->sin_addr;
     return asio::ip::address_v4(htonl(addr->s_addr));
   } else if (sizeof(struct sockaddr_in6) == Address.iSockaddrLength) {
     auto scoped_id = ((struct sockaddr_in6*)Address.lpSockaddr)->sin6_scope_id;
-    const auto *addr = &((struct sockaddr_in6*)Address.lpSockaddr)->sin6_addr;
-    std::array<uint8_t, 16> bytes = {
-      addr->s6_addr[0], addr->s6_addr[1], addr->s6_addr[2], addr->s6_addr[3],
-      addr->s6_addr[4], addr->s6_addr[5], addr->s6_addr[6], addr->s6_addr[7],
-      addr->s6_addr[8], addr->s6_addr[9], addr->s6_addr[10], addr->s6_addr[11],
-      addr->s6_addr[12], addr->s6_addr[13], addr->s6_addr[14], addr->s6_addr[15]
-    };
+    const auto* addr = &((struct sockaddr_in6*)Address.lpSockaddr)->sin6_addr;
+    std::array<uint8_t, 16> bytes = {addr->s6_addr[0],  addr->s6_addr[1],  addr->s6_addr[2],  addr->s6_addr[3],
+                                     addr->s6_addr[4],  addr->s6_addr[5],  addr->s6_addr[6],  addr->s6_addr[7],
+                                     addr->s6_addr[8],  addr->s6_addr[9],  addr->s6_addr[10], addr->s6_addr[11],
+                                     addr->s6_addr[12], addr->s6_addr[13], addr->s6_addr[14], addr->s6_addr[15]};
     return asio::ip::address_v6(bytes, scoped_id);
   }
   return {};
@@ -1215,7 +1137,7 @@ static bool IsNetworkAdapterUp() {
   DWORD nErr = 0;
   do {
     pBuf.resize(nLen);
-    nErr = ::GetAdaptersAddresses(AF_UNSPEC, nFlags, NULL, (IP_ADAPTER_ADDRESSES*)pBuf.data(), &nLen);
+    nErr = ::GetAdaptersAddresses(AF_UNSPEC, nFlags, nullptr, (IP_ADAPTER_ADDRESSES*)pBuf.data(), &nLen);
   } while (ERROR_BUFFER_OVERFLOW == nErr);
 
   if (NO_ERROR != nErr) {
@@ -1224,8 +1146,8 @@ static bool IsNetworkAdapterUp() {
   }
 
   bool iface_up = false;
-  for (const IP_ADAPTER_ADDRESSES_LH* pCurrAddresses = (IP_ADAPTER_ADDRESSES_LH*)pBuf.data();
-       pCurrAddresses; pCurrAddresses = pCurrAddresses->Next) {
+  for (const IP_ADAPTER_ADDRESSES_LH* pCurrAddresses = (IP_ADAPTER_ADDRESSES_LH*)pBuf.data(); pCurrAddresses;
+       pCurrAddresses = pCurrAddresses->Next) {
     if (pCurrAddresses->IfType == IF_TYPE_SOFTWARE_LOOPBACK) {
       continue;
     }
@@ -1234,11 +1156,13 @@ static bool IsNetworkAdapterUp() {
       std::vector<asio::ip::address> gateway_addresses;
       std::vector<asio::ip::address> dns_v4_servers;
       std::vector<asio::ip::address> dns_v6_servers;
-      for (auto pGatewayAddress = pCurrAddresses->FirstGatewayAddress; pGatewayAddress; pGatewayAddress = pGatewayAddress->Next) {
+      for (auto pGatewayAddress = pCurrAddresses->FirstGatewayAddress; pGatewayAddress;
+           pGatewayAddress = pGatewayAddress->Next) {
         auto gateway_address = SocketAddressToAsio(pGatewayAddress->Address);
         gateway_addresses.push_back(gateway_address);
       }
-      for (auto pDnsServerAddress = pCurrAddresses->FirstDnsServerAddress; pDnsServerAddress; pDnsServerAddress = pDnsServerAddress->Next) {
+      for (auto pDnsServerAddress = pCurrAddresses->FirstDnsServerAddress; pDnsServerAddress;
+           pDnsServerAddress = pDnsServerAddress->Next) {
         auto dns_address = SocketAddressToAsio(pDnsServerAddress->Address);
         if (dns_address.is_v4()) {
           dns_v4_servers.push_back(dns_address);
@@ -1250,12 +1174,14 @@ static bool IsNetworkAdapterUp() {
         if (gateway_addresses.empty()) {
           continue;
         }
-        LOG(INFO) << "Adapter \"" << SysWideToUTF8(pCurrAddresses->FriendlyName) << "\" with Gateway: " << gateway_addresses[0] << " is up";
+        LOG(INFO) << "Adapter \"" << SysWideToUTF8(pCurrAddresses->FriendlyName)
+                  << "\" with Gateway: " << gateway_addresses[0] << " is up";
       } else {
         if (dns_v4_servers.empty()) {
           continue;
         }
-        LOG(INFO) << "Adapter \"" << SysWideToUTF8(pCurrAddresses->FriendlyName) << "\" with DNS Server (IPv4): " << dns_v4_servers[0] << " is up";
+        LOG(INFO) << "Adapter \"" << SysWideToUTF8(pCurrAddresses->FriendlyName)
+                  << "\" with DNS Server (IPv4): " << dns_v4_servers[0] << " is up";
       }
       iface_up = true;
     }
@@ -1283,8 +1209,8 @@ static bool IsNetworkAdapterUpXp() {
   }
 
   bool iface_up = false;
-  for (const IP_ADAPTER_ADDRESSES_XP* pCurrAddresses = (IP_ADAPTER_ADDRESSES_XP*)pBuf.data();
-       pCurrAddresses; pCurrAddresses = pCurrAddresses->Next) {
+  for (const IP_ADAPTER_ADDRESSES_XP* pCurrAddresses = (IP_ADAPTER_ADDRESSES_XP*)pBuf.data(); pCurrAddresses;
+       pCurrAddresses = pCurrAddresses->Next) {
     if (pCurrAddresses->IfType == IF_TYPE_SOFTWARE_LOOPBACK) {
       continue;
     }
@@ -1292,7 +1218,8 @@ static bool IsNetworkAdapterUpXp() {
     if (Stat == IfOperStatusUp) {
       std::vector<asio::ip::address> dns_v4_servers;
       std::vector<asio::ip::address> dns_v6_servers;
-      for (auto pDnsServerAddress = pCurrAddresses->FirstDnsServerAddress; pDnsServerAddress; pDnsServerAddress = pDnsServerAddress->Next) {
+      for (auto pDnsServerAddress = pCurrAddresses->FirstDnsServerAddress; pDnsServerAddress;
+           pDnsServerAddress = pDnsServerAddress->Next) {
         auto dns_address = SocketAddressToAsio(pDnsServerAddress->Address);
         if (dns_address.is_v4()) {
           dns_v4_servers.push_back(dns_address);
@@ -1303,7 +1230,8 @@ static bool IsNetworkAdapterUpXp() {
       if (dns_v4_servers.empty()) {
         continue;
       }
-      LOG(INFO) << "Adapter \"" << SysWideToUTF8(pCurrAddresses->FriendlyName) << "\" with DNS Server (IPv4): " << dns_v4_servers[0] << " is up";
+      LOG(INFO) << "Adapter \"" << SysWideToUTF8(pCurrAddresses->FriendlyName)
+                << "\" with DNS Server (IPv4): " << dns_v4_servers[0] << " is up";
       iface_up = true;
     }
   }
@@ -1317,7 +1245,7 @@ static bool IsNetworkAdapterUp() {
     return IsNetworkAdapterUpXp();
   }
 }
-#endif // _WIN32_WINNT < 0x600
+#endif  // _WIN32_WINNT < 0x600
 
 void WaitNetworkUp(std::function<void()> callback) {
   bool iface_up = IsNetworkAdapterUp();
@@ -1326,7 +1254,7 @@ void WaitNetworkUp(std::function<void()> callback) {
     return;
   }
   std::thread t([=]() {
-    while(true) {
+    while (true) {
       DWORD nErr = NotifyAddrChange(nullptr, nullptr);
       if (nErr != 0) {
         PLOG(WARNING) << "NotifyAddrChange failed: " << nErr;

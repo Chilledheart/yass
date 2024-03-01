@@ -9,11 +9,11 @@
 #include <absl/flags/flag.h>
 #include <base/strings/sys_string_conversions.h>
 
-#include "mac/YassWindowController.h"
 #include "config/config.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
+#include "mac/YassWindowController.h"
 #include "mac/utils.h"
 
 @interface YassViewController ()
@@ -28,21 +28,16 @@
   [self.cipherMethod removeAllItems];
   NSString* methodStrings[] = {
 #define XX(num, name, string) @string,
-    CIPHER_METHOD_VALID_MAP(XX)
+      CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   };
-  for (uint32_t i = 0; i < sizeof(methodStrings) / sizeof(methodStrings[0]);
-       ++i) {
-    [self.cipherMethod addItemWithObjectValue:methodStrings[i]];
+  for (NSString* methodString : methodStrings) {
+    [self.cipherMethod addItemWithObjectValue:methodString];
   }
-  self.cipherMethod.numberOfVisibleItems =
-  sizeof(methodStrings) / sizeof(methodStrings[0]);
+  self.cipherMethod.numberOfVisibleItems = sizeof(methodStrings) / sizeof(methodStrings[0]);
 
-  [self.autoStart
-   setState:(CheckLoginItemStatus(nullptr) ? NSControlStateValueOn
-             : NSControlStateValueOff)];
-  [self.systemProxy
-   setState:(GetSystemProxy() ? NSControlStateValueOn : NSControlStateValueOff)];
+  [self.autoStart setState:(CheckLoginItemStatus(nullptr) ? NSControlStateValueOn : NSControlStateValueOff)];
+  [self.systemProxy setState:(GetSystemProxy() ? NSControlStateValueOn : NSControlStateValueOff)];
   [self LoadChanges];
   [self.startButton setEnabled:TRUE];
   [self.stopButton setEnabled:FALSE];
@@ -73,12 +68,11 @@
   bool enable = self.systemProxy.state == NSControlStateValueOn;
   [self.systemProxy setEnabled:FALSE];
   // this operation might be slow, moved to background
-  dispatch_async(
-    dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-      SetSystemProxy(enable);
-      dispatch_async(dispatch_get_main_queue(), ^{
-        [self.systemProxy setEnabled:TRUE];
-      });
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    SetSystemProxy(enable);
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [self.systemProxy setEnabled:TRUE];
+    });
   });
 }
 
@@ -144,18 +138,14 @@
 }
 
 - (void)LoadChanges {
-  self.serverHost.stringValue =
-      gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_server_host));
-  self.serverSNI.stringValue =
-      gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_server_sni));
+  self.serverHost.stringValue = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_server_host));
+  self.serverSNI.stringValue = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_server_sni));
   self.serverPort.intValue = absl::GetFlag(FLAGS_server_port);
   self.username.stringValue = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_username));
   self.password.stringValue = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_password));
   auto cipherMethod = absl::GetFlag(FLAGS_method).method;
-  self.cipherMethod.stringValue =
-      gurl_base::SysUTF8ToNSString(to_cipher_method_str(cipherMethod));
-  self.localHost.stringValue =
-      gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_local_host));
+  self.cipherMethod.stringValue = gurl_base::SysUTF8ToNSString(to_cipher_method_str(cipherMethod));
+  self.localHost.stringValue = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_local_host));
   self.localPort.intValue = absl::GetFlag(FLAGS_local_port);
   self.timeout.intValue = absl::GetFlag(FLAGS_connect_timeout);
 }

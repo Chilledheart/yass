@@ -9,12 +9,12 @@
 #include <js_native_api_types.h>
 #include <napi/native_api.h>
 
+#include <unistd.h>
 #include <memory>
 #include <thread>
-#include <unistd.h>
 
-#include "cli/cli_worker.hpp"
 #include "cli/cli_connection_stats.hpp"
+#include "cli/cli_worker.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "harmony/tun2proxy.h"
@@ -28,8 +28,7 @@ typedef enum {
   HILOG_LOG_FATAL = 7,
 } HILOG_LogLevel;
 
-extern "C"
-bool OH_LOG_IsLoggable(unsigned int domain, const char *tag, HILOG_LogLevel level);
+extern "C" bool OH_LOG_IsLoggable(unsigned int domain, const char* tag, HILOG_LogLevel level);
 
 static constexpr char kLogTag[] = YASS_APP_NAME;
 static constexpr unsigned int kLogDomain = 0x0;
@@ -109,7 +108,7 @@ static napi_value setProtectFdCallingJSCallback(napi_env env, napi_callback_info
   return nullptr;
 }
 
-static void setProtectFdCallingJS(napi_env env, napi_value /*js_cb*/, void *context, void *data) {
+static void setProtectFdCallingJS(napi_env env, napi_value /*js_cb*/, void* context, void* data) {
   std::unique_ptr<AsyncProtectFdEx_t> ctx(reinterpret_cast<AsyncProtectFdEx_t*>(data));
   int fd_value = ctx->fd;
   int write_end = ctx->write_end;
@@ -168,7 +167,7 @@ static void setProtectFdCallingJS(napi_env env, napi_value /*js_cb*/, void *cont
     return;
   }
 
-  napi_value argv[] = { fd, callback };
+  napi_value argv[] = {fd, callback};
   status = napi_call_function(env, global, cb, std::size(argv), argv, nullptr);
   if (status != napi_ok) {
     LOG(WARNING) << "napi_call_function: " << status;
@@ -226,9 +225,10 @@ static napi_value setProtectFdCallback(napi_env env, napi_callback_info info) {
   }
 
   // Create a thread-safe N-API callback function correspond to the C/C++ callback function
-  status = napi_create_threadsafe_function(env, cb, nullptr, work_name, 0, 1, nullptr,
-      nullptr, cb_ref, setProtectFdCallingJS, // the C/C++ callback function
-      &setProtectFdCallbackFunc // out: the asynchronous thread-safe JavaScript function
+  status = napi_create_threadsafe_function(
+      env, cb, nullptr, work_name, 0, 1, nullptr, nullptr, cb_ref,
+      setProtectFdCallingJS,     // the C/C++ callback function
+      &setProtectFdCallbackFunc  // out: the asynchronous thread-safe JavaScript function
   );
   if (status != napi_ok) {
     napi_throw_error(env, nullptr, "napi_create_threadsafe_function failed");
@@ -260,7 +260,7 @@ static std::unique_ptr<std::thread> g_tun2proxy_thread;
 // tun_mtu
 // dns_over_tcp
 static napi_value startTun2proxy(napi_env env, napi_callback_info info) {
-  napi_value args[4] {};
+  napi_value args[4]{};
   size_t argc = std::size(args);
   auto status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
   if (status != napi_ok || argc != 4) {
@@ -329,18 +329,18 @@ static napi_value startTun2proxy(napi_env env, napi_callback_info info) {
     return nullptr;
   }
 
-  int log_level = 0; // stands for rust log level, 0 stands for no log output
+  int log_level = 0;  // stands for rust log level, 0 stands for no log output
 
   if (OH_LOG_IsLoggable(kLogDomain, kLogTag, HILOG_LOG_DEBUG)) {
-    log_level = 5; // TRACE
+    log_level = 5;  // TRACE
   } else if (OH_LOG_IsLoggable(kLogDomain, kLogTag, HILOG_LOG_DEBUG)) {
-    log_level = 4; // DEBUG
+    log_level = 4;  // DEBUG
   } else if (OH_LOG_IsLoggable(kLogDomain, kLogTag, HILOG_LOG_INFO)) {
-    log_level = 3; // INFO
+    log_level = 3;  // INFO
   } else if (OH_LOG_IsLoggable(kLogDomain, kLogTag, HILOG_LOG_WARN)) {
-    log_level = 2; // WARN
+    log_level = 2;  // WARN
   } else if (OH_LOG_IsLoggable(kLogDomain, kLogTag, HILOG_LOG_ERROR)) {
-    log_level = 1; // ERROR
+    log_level = 1;  // ERROR
   }
 
   status = napi_typeof(env, dns_over_tcp, &type);
@@ -369,7 +369,7 @@ static napi_value startTun2proxy(napi_env env, napi_callback_info info) {
 }
 
 static napi_value runTun2proxy(napi_env env, napi_callback_info info) {
-  g_tun2proxy_thread = std::make_unique<std::thread>([]{
+  g_tun2proxy_thread = std::make_unique<std::thread>([] {
     if (!SetCurrentThreadName("tun2proxy")) {
       PLOG(WARNING) << "failed to set thread name";
     }
@@ -402,7 +402,7 @@ struct AsyncStartCtx {
   int port_num;
 };
 
-static void startWorkerCallingJS(napi_env env, napi_value /*js_cb*/, void *context, void *data) {
+static void startWorkerCallingJS(napi_env env, napi_value /*js_cb*/, void* context, void* data) {
   napi_ref cb_ref = reinterpret_cast<napi_ref>(context);
 
   std::unique_ptr<AsyncStartCtx> ctx(reinterpret_cast<AsyncStartCtx*>(data));
@@ -459,7 +459,7 @@ static void startWorkerCallingJS(napi_env env, napi_value /*js_cb*/, void *conte
   }
 
   napi_value result;
-  napi_value argv[] = { err_msg, port };
+  napi_value argv[] = {err_msg, port};
   status = napi_call_function(env, global, cb, std::size(argv), argv, &result);
   if (status != napi_ok) {
     LOG(WARNING) << "napi_call_function: " << status;
@@ -478,7 +478,7 @@ static std::unique_ptr<Worker> g_worker;
 static napi_value startWorker(napi_env env, napi_callback_info info) {
   napi_status status;
 
-  napi_value args[1] {};
+  napi_value args[1]{};
   size_t argc = std::size(args);
   status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
   if (status != napi_ok || argc != std::size(args)) {
@@ -508,7 +508,8 @@ static napi_value startWorker(napi_env env, napi_callback_info info) {
 
   napi_value work_name;
   // Specify a name to describe this asynchronous operation.
-  status = napi_create_string_utf8(env, kAsyncStartWorkerResourceName, sizeof(kAsyncStartWorkerResourceName) - 1, &work_name);
+  status = napi_create_string_utf8(env, kAsyncStartWorkerResourceName, sizeof(kAsyncStartWorkerResourceName) - 1,
+                                   &work_name);
   if (status != napi_ok) {
     napi_throw_error(env, nullptr, "napi_create_string_utf8 failed");
     return nullptr;
@@ -517,9 +518,9 @@ static napi_value startWorker(napi_env env, napi_callback_info info) {
   napi_threadsafe_function startWorkerCallbackFunc;
 
   // Create a thread-safe N-API callback function correspond to the C/C++ callback function
-  status = napi_create_threadsafe_function(env, cb, nullptr, work_name, 0, 1, nullptr,
-      nullptr, cb_ref, startWorkerCallingJS, // the C/C++ callback function
-      &startWorkerCallbackFunc // out: the asynchronous thread-safe JavaScript function
+  status = napi_create_threadsafe_function(
+      env, cb, nullptr, work_name, 0, 1, nullptr, nullptr, cb_ref, startWorkerCallingJS,  // the C/C++ callback function
+      &startWorkerCallbackFunc  // out: the asynchronous thread-safe JavaScript function
   );
   if (status != napi_ok) {
     napi_throw_error(env, nullptr, "napi_create_threadsafe_function failed");
@@ -562,7 +563,7 @@ static napi_value startWorker(napi_env env, napi_callback_info info) {
 
 static constexpr char kAsyncStopWorkerResourceName[] = "Thread-safe StopWorker";
 
-static void stopWorkerCallingJS(napi_env env, napi_value /*js_cb*/, void *context, void *data) {
+static void stopWorkerCallingJS(napi_env env, napi_value /*js_cb*/, void* context, void* data) {
   napi_ref cb_ref = reinterpret_cast<napi_ref>(context);
 
   if (env == nullptr) {
@@ -613,7 +614,7 @@ static void stopWorkerCallingJS(napi_env env, napi_value /*js_cb*/, void *contex
 static napi_value stopWorker(napi_env env, napi_callback_info info) {
   napi_status status;
 
-  napi_value args[1] {};
+  napi_value args[1]{};
   size_t argc = std::size(args);
   status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
   if (status != napi_ok || argc != std::size(args)) {
@@ -643,7 +644,8 @@ static napi_value stopWorker(napi_env env, napi_callback_info info) {
 
   napi_value work_name;
   // Specify a name to describe this asynchronous operation.
-  status = napi_create_string_utf8(env, kAsyncStopWorkerResourceName, sizeof(kAsyncStopWorkerResourceName) - 1, &work_name);
+  status =
+      napi_create_string_utf8(env, kAsyncStopWorkerResourceName, sizeof(kAsyncStopWorkerResourceName) - 1, &work_name);
   if (status != napi_ok) {
     napi_throw_error(env, nullptr, "napi_create_string_utf8 failed");
     return nullptr;
@@ -652,9 +654,9 @@ static napi_value stopWorker(napi_env env, napi_callback_info info) {
   napi_threadsafe_function stopWorkerCallbackFunc;
 
   // Create a thread-safe N-API callback function correspond to the C/C++ callback function
-  status = napi_create_threadsafe_function(env, cb, nullptr, work_name, 0, 1, nullptr,
-      nullptr, cb_ref, stopWorkerCallingJS, // the C/C++ callback function
-      &stopWorkerCallbackFunc // out: the asynchronous thread-safe JavaScript function
+  status = napi_create_threadsafe_function(
+      env, cb, nullptr, work_name, 0, 1, nullptr, nullptr, cb_ref, stopWorkerCallingJS,  // the C/C++ callback function
+      &stopWorkerCallbackFunc  // out: the asynchronous thread-safe JavaScript function
   );
   if (status != napi_ok) {
     napi_throw_error(env, nullptr, "napi_create_threadsafe_function failed");
@@ -699,10 +701,8 @@ static napi_value getTransferRate(napi_env env, napi_callback_info info) {
   if (delta_time > NS_PER_SECOND) {
     uint64_t rx_bytes = cli::total_rx_bytes;
     uint64_t tx_bytes = cli::total_tx_bytes;
-    rx_rate = static_cast<double>(rx_bytes - g_last_rx_bytes) / delta_time *
-               NS_PER_SECOND;
-    tx_rate = static_cast<double>(tx_bytes - g_last_tx_bytes) / delta_time *
-               NS_PER_SECOND;
+    rx_rate = static_cast<double>(rx_bytes - g_last_rx_bytes) / delta_time * NS_PER_SECOND;
+    tx_rate = static_cast<double>(tx_bytes - g_last_tx_bytes) / delta_time * NS_PER_SECOND;
     g_last_sync_time = sync_time;
     g_last_rx_bytes = rx_bytes;
     g_last_tx_bytes = tx_bytes;
@@ -769,8 +769,7 @@ static napi_value getTransferRate(napi_env env, napi_callback_info info) {
 // method
 // timeout
 static napi_value saveConfig(napi_env env, napi_callback_info info) {
-
-  napi_value args[7] {};
+  napi_value args[7]{};
   size_t argc = std::size(args);
   auto status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
   if (status != napi_ok || argc != std::size(args)) {
@@ -813,8 +812,7 @@ static napi_value saveConfig(napi_env env, napi_callback_info info) {
   std::string local_host = "0.0.0.0";
   std::string local_port = "0";
 
-  std::string err_msg = config::ReadConfigFromArgument(server_host, server_sni, server_port,
-                                                       username, password, method,
+  std::string err_msg = config::ReadConfigFromArgument(server_host, server_sni, server_port, username, password, method,
                                                        local_host, local_port, timeout);
 
   napi_value result;
@@ -887,7 +885,8 @@ static napi_value getPassword(napi_env env, napi_callback_info info) {
 
 static napi_value getCipher(napi_env env, napi_callback_info info) {
   napi_value value;
-  auto status = napi_create_string_utf8(env, to_cipher_method_str(absl::GetFlag(FLAGS_method).method), NAPI_AUTO_LENGTH, &value);
+  auto status =
+      napi_create_string_utf8(env, to_cipher_method_str(absl::GetFlag(FLAGS_method).method), NAPI_AUTO_LENGTH, &value);
   if (status != napi_ok) {
     napi_throw_error(env, nullptr, "napi_create_string_utf8 failed");
     return nullptr;
@@ -899,7 +898,7 @@ static napi_value getCipher(napi_env env, napi_callback_info info) {
 static napi_value getCipherStrings(napi_env env, napi_callback_info info) {
   std::vector<const char*> methods = {
 #define XX(num, name, string) CRYPTO_##name##_STR,
-CIPHER_METHOD_VALID_MAP(XX)
+      CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   };
 
@@ -940,7 +939,7 @@ static napi_value getTimeout(napi_env env, napi_callback_info info) {
 }
 
 static napi_value initRoutine(napi_env env, napi_callback_info info) {
-  napi_value args[2] {};
+  napi_value args[2]{};
   size_t argc = std::size(args);
   auto status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
   if (status != napi_ok || argc != std::size(args)) {
@@ -974,7 +973,7 @@ static napi_value initRoutine(napi_env env, napi_callback_info info) {
     return nullptr;
   }
 
-  char cache_path_buf[PATH_MAX+1];
+  char cache_path_buf[PATH_MAX + 1];
   size_t cache_path_size;
   status = napi_get_value_string_utf8(env, cache_path, cache_path_buf, sizeof(cache_path_buf), &cache_path_size);
   if (status != napi_ok) {
@@ -982,7 +981,7 @@ static napi_value initRoutine(napi_env env, napi_callback_info info) {
     return nullptr;
   }
 
-  char data_path_buf[PATH_MAX+1];
+  char data_path_buf[PATH_MAX + 1];
   size_t data_path_size;
   status = napi_get_value_string_utf8(env, data_path, data_path_buf, sizeof(data_path_buf), &data_path_size);
   if (status != napi_ok) {
@@ -1023,42 +1022,43 @@ static napi_value destroyRoutine(napi_env env, napi_callback_info info) {
 
 static napi_value Init(napi_env env, napi_value exports) {
   napi_property_descriptor desc[] = {
-    {"setProtectFdCallback", nullptr, setProtectFdCallback, nullptr, nullptr, nullptr, napi_default, nullptr},
-    {"setProtectFdCallbackCleanup", nullptr, setProtectFdCallbackCleanup, nullptr, nullptr, nullptr, napi_default, nullptr},
-    {"startTun2proxy", nullptr, startTun2proxy, nullptr, nullptr, nullptr, napi_default, nullptr},
-    {"runTun2proxy", nullptr, runTun2proxy, nullptr, nullptr, nullptr, napi_default, nullptr},
-    {"stopTun2proxy", nullptr, stopTun2proxy, nullptr, nullptr, nullptr, napi_default, nullptr},
-    {"startWorker", nullptr, startWorker, nullptr, nullptr, nullptr, napi_default, nullptr},
-    {"stopWorker", nullptr, stopWorker, nullptr, nullptr, nullptr, napi_default, nullptr},
-    {"getTransferRate", nullptr, getTransferRate, nullptr, nullptr, nullptr, napi_default, nullptr},
-    {"saveConfig", nullptr, saveConfig, nullptr, nullptr, nullptr, napi_default, nullptr},
-    {"getServerHost", nullptr, getServerHost, nullptr, nullptr, nullptr, napi_default, nullptr},
-    {"getServerSNI", nullptr, getServerSNI, nullptr, nullptr, nullptr, napi_default, nullptr},
-    {"getServerPort", nullptr, getServerPort, nullptr, nullptr, nullptr, napi_default, nullptr},
-    {"getUsername", nullptr, getUsername, nullptr, nullptr, nullptr, napi_default, nullptr},
-    {"getPassword", nullptr, getPassword, nullptr, nullptr, nullptr, napi_default, nullptr},
-    {"getCipher", nullptr, getCipher, nullptr, nullptr, nullptr, napi_default, nullptr},
-    {"getCipherStrings", nullptr, getCipherStrings, nullptr, nullptr, nullptr, napi_default, nullptr},
-    {"getTimeout", nullptr, getTimeout, nullptr, nullptr, nullptr, napi_default, nullptr},
-    {"init", nullptr, initRoutine, nullptr, nullptr, nullptr, napi_default, nullptr},
-    {"destroy", nullptr, destroyRoutine, nullptr, nullptr, nullptr, napi_default, nullptr},
+      {"setProtectFdCallback", nullptr, setProtectFdCallback, nullptr, nullptr, nullptr, napi_default, nullptr},
+      {"setProtectFdCallbackCleanup", nullptr, setProtectFdCallbackCleanup, nullptr, nullptr, nullptr, napi_default,
+       nullptr},
+      {"startTun2proxy", nullptr, startTun2proxy, nullptr, nullptr, nullptr, napi_default, nullptr},
+      {"runTun2proxy", nullptr, runTun2proxy, nullptr, nullptr, nullptr, napi_default, nullptr},
+      {"stopTun2proxy", nullptr, stopTun2proxy, nullptr, nullptr, nullptr, napi_default, nullptr},
+      {"startWorker", nullptr, startWorker, nullptr, nullptr, nullptr, napi_default, nullptr},
+      {"stopWorker", nullptr, stopWorker, nullptr, nullptr, nullptr, napi_default, nullptr},
+      {"getTransferRate", nullptr, getTransferRate, nullptr, nullptr, nullptr, napi_default, nullptr},
+      {"saveConfig", nullptr, saveConfig, nullptr, nullptr, nullptr, napi_default, nullptr},
+      {"getServerHost", nullptr, getServerHost, nullptr, nullptr, nullptr, napi_default, nullptr},
+      {"getServerSNI", nullptr, getServerSNI, nullptr, nullptr, nullptr, napi_default, nullptr},
+      {"getServerPort", nullptr, getServerPort, nullptr, nullptr, nullptr, napi_default, nullptr},
+      {"getUsername", nullptr, getUsername, nullptr, nullptr, nullptr, napi_default, nullptr},
+      {"getPassword", nullptr, getPassword, nullptr, nullptr, nullptr, napi_default, nullptr},
+      {"getCipher", nullptr, getCipher, nullptr, nullptr, nullptr, napi_default, nullptr},
+      {"getCipherStrings", nullptr, getCipherStrings, nullptr, nullptr, nullptr, napi_default, nullptr},
+      {"getTimeout", nullptr, getTimeout, nullptr, nullptr, nullptr, napi_default, nullptr},
+      {"init", nullptr, initRoutine, nullptr, nullptr, nullptr, napi_default, nullptr},
+      {"destroy", nullptr, destroyRoutine, nullptr, nullptr, nullptr, napi_default, nullptr},
   };
   napi_define_properties(env, exports, std::size(desc), desc);
   return exports;
 }
 
 static napi_module yassModule = {
-  .nm_version = 1,
-  .nm_flags = 0,
-  .nm_filename = nullptr,
-  .nm_register_func = Init,
-  .nm_modname = "entry",
-  .nm_priv = ((void *)0),
-  .reserved = {0},
+    .nm_version = 1,
+    .nm_flags = 0,
+    .nm_filename = nullptr,
+    .nm_register_func = Init,
+    .nm_modname = "entry",
+    .nm_priv = ((void*)0),
+    .reserved = {0},
 };
 
 extern "C" __attribute__((constructor)) void RegisterEntryModule(void) {
   napi_module_register(&yassModule);
 }
 
-#endif // __OHOS__
+#endif  // __OHOS__

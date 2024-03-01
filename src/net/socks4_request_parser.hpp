@@ -29,9 +29,7 @@ class request_parser {
   /// required. The InputIterator return value indicates how much of the input
   /// has been consumed.
   template <typename InputIterator>
-  std::tuple<result_type, InputIterator> parse(request& req,
-                                               InputIterator begin,
-                                               InputIterator end) {
+  std::tuple<result_type, InputIterator> parse(request& req, InputIterator begin, InputIterator end) {
     InputIterator i = begin;
     switch (state_) {
       case request_start:
@@ -42,11 +40,9 @@ class request_parser {
         if (req.version() != version) {
           return std::make_tuple(bad, i);
         }
-        VLOG(3) << "socks4: anom request:" << std::hex << " ver: 0x"
-                << (int)req.version() << " cmd: 0x" << (int)req.command()
-                << std::dec << " addr: " << req.endpoint()
-                << " is_socks4a: " << std::boolalpha << req.is_socks4a()
-                << std::dec;
+        VLOG(3) << "socks4: anom request:" << std::hex << " ver: 0x" << (int)req.version() << " cmd: 0x"
+                << (int)req.command() << std::dec << " addr: " << req.endpoint() << " is_socks4a: " << std::boolalpha
+                << req.is_socks4a() << std::dec;
 
         i += sizeof(request_header);
         state_ = request_userid_start;
@@ -93,6 +89,6 @@ class request_parser {
 
 }  // namespace socks4
 
-} // namespace net
+}  // namespace net
 
 #endif  // H_NET_SOCKS4_REQUEST_PARSER

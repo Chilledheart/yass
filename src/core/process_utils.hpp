@@ -4,14 +4,12 @@
 #ifndef CORE_PROCESS_UTIL
 #define CORE_PROCESS_UTIL
 
-#include <vector>
-#include <string>
 #include <stdint.h>
+#include <string>
+#include <vector>
 
 #ifndef _WIN32
-int ExecuteProcess(const std::vector<std::string>& params,
-                   std::string* output,
-                   std::string* error);
+int ExecuteProcess(const std::vector<std::string>& params, std::string* output, std::string* error);
 #endif
 
 #ifdef _MSC_VER
@@ -28,4 +26,4 @@ pid_t GetTID();
 pid_t GetMainThreadPid();
 bool PidHasChanged();
 
-#endif // CORE_PROCESS_UTIL
+#endif  // CORE_PROCESS_UTIL

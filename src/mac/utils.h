@@ -28,8 +28,7 @@ void AddToLoginItems(bool hide_on_startup);
 // as "Options->Open on Login".
 // Does nothing if the application is already set up as Login Item with
 // specified hide flag.
-void AddToLoginItems(const std::string& app_bundle_file_path,
-                     bool hide_on_startup);
+void AddToLoginItems(const std::string& app_bundle_file_path, bool hide_on_startup);
 
 // Removes the current application from the list Of Login Items.
 void RemoveFromLoginItems();
@@ -176,10 +175,7 @@ std::string GetModelIdentifier();
 
 // Parse a model identifier string; for example, into ("MacBookPro", 6, 1).
 // If any error occurs, none of the input pointers are touched.
-bool ParseModelIdentifier(const std::string& ident,
-                                      std::string* type,
-                                      int32_t* major,
-                                      int32_t* minor);
+bool ParseModelIdentifier(const std::string& ident, std::string* type, int32_t* major, int32_t* minor);
 
 // Returns an OS name + version string. e.g.:
 //
@@ -195,15 +191,9 @@ std::string GetPlatformSerialNumber();
 bool GetSystemProxy();
 bool SetSystemProxy(bool on);
 
-bool QuerySystemProxy(bool *enabled,
-                      std::string *server_addr,
-                      int32_t *server_port,
-                      std::string *bypass_addr);
+bool QuerySystemProxy(bool* enabled, std::string* server_addr, int32_t* server_port, std::string* bypass_addr);
 
-bool SetSystemProxy(bool enable,
-                    const std::string &server_addr,
-                    int32_t server_port,
-                    const std::string &bypass_addr);
+bool SetSystemProxy(bool enable, const std::string& server_addr, int32_t server_port, const std::string& bypass_addr);
 
 void SetDockIconStyle(bool hidden);
 

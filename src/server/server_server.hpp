@@ -11,6 +11,6 @@ namespace server {
 
 typedef net::ContentServer<ServerConnectionFactory> ServerServer;
 
-} // namespace server
+}  // namespace server
 
 #endif  // H_SS_SERVER

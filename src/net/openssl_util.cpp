@@ -38,7 +38,7 @@ class OpenSSLNetErrorLibSingleton {
   int net_error_lib_;
 };
 
-} // namespace
+}  // namespace
 
 int OpenSSLNetErrorLib() {
   static OpenSSLNetErrorLibSingleton g_openssl_net_error_lib = {};
@@ -56,15 +56,13 @@ void OpenSSLPutNetError(const char* file, int line, int err) {
   ERR_put_error(OpenSSLNetErrorLib(), 0 /* unused */, err, file, line);
 }
 
-
 int MapOpenSSLErrorSSL(uint32_t error_code) {
   DCHECK_EQ(ERR_LIB_SSL, ERR_GET_LIB(error_code));
 
 #if DCHECK_IS_ON()
   char buf[ERR_ERROR_STRING_BUF_LEN];
   ERR_error_string_n(error_code, buf, sizeof(buf));
-  DVLOG(1) << "OpenSSL SSL error, reason: " << ERR_GET_REASON(error_code)
-           << ", name: " << buf;
+  DVLOG(1) << "OpenSSL SSL error, reason: " << ERR_GET_REASON(error_code) << ", name: " << buf;
 #endif
 
   switch (ERR_GET_REASON(error_code)) {
@@ -142,8 +140,7 @@ int MapOpenSSLErrorWithDetails(int err) {
       while (true) {
         const char* file;
         int line;
-        int error_code =
-            ERR_get_error_line(&file, &line);
+        int error_code = ERR_get_error_line(&file, &line);
         if (error_code == 0) {
           // Map errors to ERR_SSL_PROTOCOL_ERROR by default, reporting the most
           // recent error in |*out_error_info|.
@@ -166,4 +163,4 @@ int MapOpenSSLErrorWithDetails(int err) {
   }
 }
 
-} // namespace net
+}  // namespace net

@@ -82,8 +82,7 @@ char* CheckOpValueStr(double v) {
   return strdup(buf);
 }
 
-char* StreamValToStr(const void* v,
-                     void (*stream_func)(std::ostream&, const void*)) {
+char* StreamValToStr(const void* v, void (*stream_func)(std::ostream&, const void*)) {
   std::ostringstream ss;
   stream_func(ss, v);
   return strdup(ss.str().c_str());
@@ -97,4 +96,4 @@ CheckOpResult::CheckOpResult(const char* expr_str, char* v1_str, char* v2_str) {
   free(v2_str);
 }
 
-} // namespace yass
+}  // namespace yass

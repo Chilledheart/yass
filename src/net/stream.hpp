@@ -9,13 +9,13 @@
 
 #include "channel.hpp"
 #include "config/config.hpp"
-#include "net/asio.hpp"
 #include "core/logging.hpp"
 #include "core/scoped_refptr.hpp"
 #include "core/utils.hpp"
+#include "net/asio.hpp"
 #include "net/network.hpp"
-#include "net/ssl_socket.hpp"
 #include "net/protocol.hpp"
+#include "net/ssl_socket.hpp"
 
 #ifdef __OHOS__
 #include "harmony/yass.hpp"
@@ -39,7 +39,7 @@ class stream : public RefCountedThreadSafe<stream> {
   using handle_t = absl::AnyInvocable<void(asio::error_code)>;
 
   /// construct a stream object
-  template<typename... Args>
+  template <typename... Args>
   static scoped_refptr<stream> create(Args&&... args) {
     return MakeRefCounted<stream>(std::forward<Args>(args)...);
   }
@@ -80,9 +80,7 @@ class stream : public RefCountedThreadSafe<stream> {
 #endif
   }
 
-  virtual ~stream() {
-    close();
-  }
+  virtual ~stream() { close(); }
 
   void on_async_connect_callback(asio::error_code ec) {
     if (auto cb = std::move(user_connect_callback_)) {
@@ -130,46 +128,42 @@ class stream : public RefCountedThreadSafe<stream> {
 
     scoped_refptr<stream> self(this);
 #ifdef HAVE_C_ARES
-    resolver_->AsyncResolve(host_sni_, std::to_string(port_),
+    resolver_->AsyncResolve(
+        host_sni_, std::to_string(port_),
 #else
-    resolver_.async_resolve(Net_ipv6works() ? asio::ip::tcp::unspec() : asio::ip::tcp::v4(),
-                            host_sni_, std::to_string(port_),
+    resolver_.async_resolve(
+        Net_ipv6works() ? asio::ip::tcp::unspec() : asio::ip::tcp::v4(), host_sni_, std::to_string(port_),
 #endif
-      [this, channel, self](const asio::error_code& ec,
-                            asio::ip::tcp::resolver::results_type results) {
-      // Cancelled, safe to ignore
-      if (UNLIKELY(ec == asio::error::operation_aborted)) {
-        return;
-      }
-      if (closed_) {
-        DCHECK(!user_connect_callback_);
-        return;
-      }
-      if (ec) {
-        on_async_connected(channel, ec);
-        return;
-      }
-      for (auto iter = std::begin(results); iter != std::end(results); ++iter) {
-        endpoints_.push_back(*iter);
-        VLOG(1) << "found ip address (post-resolved): " << endpoints_.back().address().to_string();
-      }
-      DCHECK(!endpoints_.empty());
+        [this, channel, self](const asio::error_code& ec, asio::ip::tcp::resolver::results_type results) {
+          // Cancelled, safe to ignore
+          if (UNLIKELY(ec == asio::error::operation_aborted)) {
+            return;
+          }
+          if (closed_) {
+            DCHECK(!user_connect_callback_);
+            return;
+          }
+          if (ec) {
+            on_async_connected(channel, ec);
+            return;
+          }
+          for (auto iter = std::begin(results); iter != std::end(results); ++iter) {
+            endpoints_.push_back(*iter);
+            VLOG(1) << "found ip address (post-resolved): " << endpoints_.back().address().to_string();
+          }
+          DCHECK(!endpoints_.empty());
 
-      on_try_next_endpoint(channel);
-    });
+          on_try_next_endpoint(channel);
+        });
   }
 
-  std::string domain() {
-    return absl::StrCat(host_sni_, ":", std::to_string(port_));
-  }
+  std::string domain() { return absl::StrCat(host_sni_, ":", std::to_string(port_)); }
 
   bool connected() const { return connected_; }
 
   bool eof() const { return eof_; }
 
-  bool read_inprogress() const {
-    return read_inprogress_;
-  }
+  bool read_inprogress() const { return read_inprogress_; }
 
   /// wait read routine
   ///
@@ -196,7 +190,7 @@ class stream : public RefCountedThreadSafe<stream> {
       }
       int64_t limit = estimated_transferred - rbytes_transferred_;
       if (limit <= 0) {
-        read_delay_timer_.expires_after(std::chrono::milliseconds(-limit * 1000 / limit_rate_+1));
+        read_delay_timer_.expires_after(std::chrono::milliseconds(-limit * 1000 / limit_rate_ + 1));
         read_delay_timer_.async_wait([this, self](asio::error_code ec) {
           if (UNLIKELY(ec == asio::error::operation_aborted)) {
             return;
@@ -248,7 +242,7 @@ class stream : public RefCountedThreadSafe<stream> {
     });
   }
 
-  size_t read_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
+  size_t read_some(std::shared_ptr<IOBuf> buf, asio::error_code& ec) {
     DCHECK(!closed_ && "I/O on closed upstream connection");
     size_t read = s_read_some(buf, ec);
     rbytes_transferred_ += read;
@@ -258,9 +252,7 @@ class stream : public RefCountedThreadSafe<stream> {
     return read;
   }
 
-  bool write_inprogress() const {
-    return write_inprogress_;
-  }
+  bool write_inprogress() const { return write_inprogress_; }
 
   /// wait write routine
   ///
@@ -284,7 +276,7 @@ class stream : public RefCountedThreadSafe<stream> {
       int64_t limit = estimated_transferred - wbytes_transferred_;
       if (limit <= 0) {
         scoped_refptr<stream> self(this);
-        write_delay_timer_.expires_after(std::chrono::milliseconds(-limit * 1000 / limit_rate_+1));
+        write_delay_timer_.expires_after(std::chrono::milliseconds(-limit * 1000 / limit_rate_ + 1));
         wait_write_callback_ = std::move(callback);
         DCHECK(!wait_write_callback_);
         write_delay_timer_.async_wait([this, self](asio::error_code ec) {
@@ -320,7 +312,7 @@ class stream : public RefCountedThreadSafe<stream> {
     });
   }
 
-  size_t write_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
+  size_t write_some(std::shared_ptr<IOBuf> buf, asio::error_code& ec) {
     DCHECK(!closed_ && "I/O on closed upstream connection");
     size_t written = s_write_some(buf, ec);
     wbytes_transferred_ += written;
@@ -395,8 +387,7 @@ class stream : public RefCountedThreadSafe<stream> {
     scoped_refptr<stream> self(this);
     if (auto connect_timeout = absl::GetFlag(FLAGS_connect_timeout)) {
       connect_timer_.expires_after(std::chrono::seconds(connect_timeout));
-      connect_timer_.async_wait(
-        [this, channel, self](asio::error_code ec) {
+      connect_timer_.async_wait([this, channel, self](asio::error_code ec) {
         // Cancelled, safe to ignore
         if (UNLIKELY(ec == asio::error::operation_aborted)) {
           return;
@@ -404,8 +395,7 @@ class stream : public RefCountedThreadSafe<stream> {
         on_async_connect_expired(channel, ec);
       });
     }
-    socket_.async_connect(endpoint_,
-      [this, channel, self](asio::error_code ec) {
+    socket_.async_connect(endpoint_, [this, channel, self](asio::error_code ec) {
       // Cancelled, safe to ignore
       if (UNLIKELY(ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted)) {
         return;
@@ -438,8 +428,7 @@ class stream : public RefCountedThreadSafe<stream> {
   }
 
  private:
-  void on_async_connect_expired(Channel* channel,
-                                asio::error_code ec) {
+  void on_async_connect_expired(Channel* channel, asio::error_code ec) {
     // Rarely happens, cancel fails but expire still there
     if (connected_) {
       DCHECK(!user_connect_callback_);
@@ -453,11 +442,9 @@ class stream : public RefCountedThreadSafe<stream> {
     on_async_connect_callback(ec);
   }
 
-  void on_disconnect(Channel* channel,
-                     asio::error_code ec) {
+  void on_disconnect(Channel* channel, asio::error_code ec) {
     if (ec) {
-      VLOG(2) << "data transfer failed with " << endpoint_ << " due to "
-              << ec << " stats: readed "
+      VLOG(2) << "data transfer failed with " << endpoint_ << " due to " << ec << " stats: readed "
               << rbytes_transferred_ << " written: " << wbytes_transferred_;
 #ifndef NDEBUG
       const char* file;
@@ -465,47 +452,38 @@ class stream : public RefCountedThreadSafe<stream> {
       while (uint32_t error = ERR_get_error_line(&file, &line)) {
         char buf[120];
         ERR_error_string_n(error, buf, sizeof(buf));
-        ::yass::LogMessage(file, line, LOGGING_ERROR).stream()
-          << "OpenSSL error: " << buf;
+        ::yass::LogMessage(file, line, LOGGING_ERROR).stream() << "OpenSSL error: " << buf;
       }
 #endif
     } else {
-      VLOG(2) << "data transfer closed with: " << endpoint_ << " stats: readed "
-              << rbytes_transferred_ << " written: " << wbytes_transferred_;
+      VLOG(2) << "data transfer closed with: " << endpoint_ << " stats: readed " << rbytes_transferred_
+              << " written: " << wbytes_transferred_;
     }
     channel->disconnected(ec);
   }
 
  protected:
-  virtual void s_wait_read(handle_t &&cb) {
-    socket_.async_wait(asio::ip::tcp::socket::wait_read, std::move(cb));
-  }
+  virtual void s_wait_read(handle_t&& cb) { socket_.async_wait(asio::ip::tcp::socket::wait_read, std::move(cb)); }
 
-  virtual size_t s_read_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
+  virtual size_t s_read_some(std::shared_ptr<IOBuf> buf, asio::error_code& ec) {
     return socket_.read_some(tail_buffer(*buf), ec);
   }
 
-  virtual void s_wait_write(handle_t &&cb) {
-    socket_.async_wait(asio::ip::tcp::socket::wait_write, std::move(cb));
-  }
+  virtual void s_wait_write(handle_t&& cb) { socket_.async_wait(asio::ip::tcp::socket::wait_write, std::move(cb)); }
 
-  virtual size_t s_write_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
+  virtual size_t s_write_some(std::shared_ptr<IOBuf> buf, asio::error_code& ec) {
     return socket_.write_some(const_buffer(*buf), ec);
   }
 
-  virtual void s_async_shutdown(handle_t &&cb) {
+  virtual void s_async_shutdown(handle_t&& cb) {
     asio::error_code ec;
     socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
     cb(ec);
   }
 
-  virtual void s_shutdown(asio::error_code &ec) {
-    socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
-  }
+  virtual void s_shutdown(asio::error_code& ec) { socket_.shutdown(asio::ip::tcp::socket::shutdown_send, ec); }
 
-  virtual void s_close(asio::error_code &ec) {
-    socket_.close(ec);
-  }
+  virtual void s_close(asio::error_code& ec) { socket_.close(ec); }
 
  public:
   size_t rbytes_transferred() const { return rbytes_transferred_; }
@@ -557,6 +535,6 @@ class stream : public RefCountedThreadSafe<stream> {
   asio::steady_timer write_delay_timer_;
 };
 
-} // namespace net
+}  // namespace net
 
 #endif  // H_STREAM

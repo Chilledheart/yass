@@ -3,8 +3,8 @@
 
 #include "core/process_utils.hpp"
 
-#include "core/logging.hpp"
 #include <build/buildflag.h>
+#include "core/logging.hpp"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -16,10 +16,10 @@
 
 #ifndef _WIN32
 
-#include <fcntl.h> // For pipe2 and fcntl
-#include <unistd.h> // For pipe
-#include <signal.h> // For kill
-#include <sys/wait.h> // For waitpid
+#include <fcntl.h>     // For pipe2 and fcntl
+#include <signal.h>    // For kill
+#include <sys/wait.h>  // For waitpid
+#include <unistd.h>    // For pipe
 
 #include <base/posix/eintr_wrapper.h>
 #include <sstream>
@@ -39,8 +39,7 @@ static int Pipe2(int pipe_fds[2]) {
     PLOG(WARNING) << "pipe failure";
     return ret;
   }
-  if ((ret = fcntl(pipe_fds[0], F_SETFD, FD_CLOEXEC)) != 0 ||
-      (ret = fcntl(pipe_fds[1], F_SETFD, FD_CLOEXEC)) != 0) {
+  if ((ret = fcntl(pipe_fds[0], F_SETFD, FD_CLOEXEC)) != 0 || (ret = fcntl(pipe_fds[1], F_SETFD, FD_CLOEXEC)) != 0) {
     IGNORE_EINTR(close(pipe_fds[0]));
     IGNORE_EINTR(close(pipe_fds[1]));
     PLOG(WARNING) << "fcntl F_SETFD failure";
@@ -55,10 +54,7 @@ namespace {
 class ProcessInOutReader {
  public:
   ProcessInOutReader(const std::string& command_line, int stdout_pipe, int stderr_pipe)
-    : command_line_(command_line),
-    out_(io_context_, stdout_pipe),
-    err_(io_context_, stderr_pipe) {
-  }
+      : command_line_(command_line), out_(io_context_, stdout_pipe), err_(io_context_, stderr_pipe) {}
 
   ~ProcessInOutReader() {
     asio::error_code ec;
@@ -73,71 +69,66 @@ class ProcessInOutReader {
   }
 
   void run() {
-    work_guard_ = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context_.get_executor());
+    work_guard_ =
+        std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context_.get_executor());
     ScheduleStdoutRead();
     ScheduleStderrRead();
     io_context_.run();
   }
 
-  int ret() const {
-    return ret_;
-  }
+  int ret() const { return ret_; }
 
-  std::string out() const {
-    return stdout_ss_.str();
-  }
+  std::string out() const { return stdout_ss_.str(); }
 
-  std::string err() const {
-    return stderr_ss_.str();
-  }
+  std::string err() const { return stderr_ss_.str(); }
 
  private:
   void ScheduleStdoutRead() {
     asio::async_read(out_, asio::mutable_buffer(out_buffer_, sizeof(out_buffer_)),
-      [this](asio::error_code ec, size_t bytes_transferred) {
-      if (bytes_transferred) {
-        stdout_ss_ << std::string_view(out_buffer_, bytes_transferred);
-      }
-      if (ec == asio::error::eof) {
-        VLOG(2) << "process " << command_line_ << " reached stdout eof";
-        stdout_eof_ = true;
-        if (stdout_eof_ && stderr_eof_) {
-          work_guard_.reset();
-        }
-        return;
-      }
-      if (ec) {
-        LOG(WARNING) << "process " << command_line_ << " reading stdout error: " << ec;
-        ret_ = -1;
-        work_guard_.reset();
-        return;
-      }
-      ScheduleStdoutRead();
-    });
+                     [this](asio::error_code ec, size_t bytes_transferred) {
+                       if (bytes_transferred) {
+                         stdout_ss_ << std::string_view(out_buffer_, bytes_transferred);
+                       }
+                       if (ec == asio::error::eof) {
+                         VLOG(2) << "process " << command_line_ << " reached stdout eof";
+                         stdout_eof_ = true;
+                         if (stdout_eof_ && stderr_eof_) {
+                           work_guard_.reset();
+                         }
+                         return;
+                       }
+                       if (ec) {
+                         LOG(WARNING) << "process " << command_line_ << " reading stdout error: " << ec;
+                         ret_ = -1;
+                         work_guard_.reset();
+                         return;
+                       }
+                       ScheduleStdoutRead();
+                     });
   }
 
   void ScheduleStderrRead() {
     asio::async_read(err_, asio::mutable_buffer(err_buffer_, sizeof(err_buffer_)),
-      [this](asio::error_code ec, size_t bytes_transferred) {
-      if (bytes_transferred) {
-        stderr_ss_ << std::string_view(err_buffer_, bytes_transferred);
-      }
-      if (ec == asio::error::eof) {
-        VLOG(2) << "process " << command_line_ << " reached stderr eof";
-        stderr_eof_ = true;
-        if (stdout_eof_ && stderr_eof_) {
-          work_guard_.reset();
-        }
-        return;
-      }
-      if (ec) {
-        LOG(WARNING) << "process " << command_line_ << " reading stderr error: " << ec;
-        ret_ = -1;
-        work_guard_.reset();
-        return;
-      }
-      ScheduleStderrRead();
-    });
+                     [this](asio::error_code ec, size_t bytes_transferred) {
+                       if (bytes_transferred) {
+                         stderr_ss_ << std::string_view(err_buffer_, bytes_transferred);
+                       }
+                       if (ec == asio::error::eof) {
+                         VLOG(2) << "process " << command_line_ << " reached stderr eof";
+                         stderr_eof_ = true;
+                         if (stdout_eof_ && stderr_eof_) {
+                           work_guard_.reset();
+                         }
+                         return;
+                       }
+                       if (ec) {
+                         LOG(WARNING) << "process " << command_line_ << " reading stderr error: " << ec;
+                         ret_ = -1;
+                         work_guard_.reset();
+                         return;
+                       }
+                       ScheduleStderrRead();
+                     });
   }
 
  private:
@@ -157,16 +148,14 @@ class ProcessInOutReader {
   std::ostringstream stderr_ss_;
 };
 
-} // namespace
+}  // namespace
 
-int ExecuteProcess(const std::vector<std::string>& params,
-                   std::string* output,
-                   std::string* error) {
+int ExecuteProcess(const std::vector<std::string>& params, std::string* output, std::string* error) {
   DCHECK(!params.empty()) << "ExecuteProcess empty parameters";
   output->clear();
   error->clear();
   std::string command_line = "'";
-  for (const auto &param : params) {
+  for (const auto& param : params) {
     command_line += param;
     command_line += " ";
   }
@@ -202,14 +191,12 @@ int ExecuteProcess(const std::vector<std::string>& params,
   if (ret == 0) {
     // The two file descriptors do not share file descriptor flags (the close-on-exec flag)
 #ifdef HAVE_DUP3
-    if (dup3(stdin_pipe[0], STDIN_FILENO, 0) < 0 ||
-        dup3(stdout_pipe[1], STDOUT_FILENO, 0) < 0 ||
+    if (dup3(stdin_pipe[0], STDIN_FILENO, 0) < 0 || dup3(stdout_pipe[1], STDOUT_FILENO, 0) < 0 ||
         dup3(stderr_pipe[1], STDERR_FILENO, 0) < 0) {
       LOG(FATAL) << "dup3 on std file descriptors failure";
     }
 #else
-    if (dup2(stdin_pipe[0], STDIN_FILENO) < 0 ||
-        dup2(stdout_pipe[1], STDOUT_FILENO) < 0 ||
+    if (dup2(stdin_pipe[0], STDIN_FILENO) < 0 || dup2(stdout_pipe[1], STDOUT_FILENO) < 0 ||
         dup2(stderr_pipe[1], STDERR_FILENO) < 0) {
       LOG(FATAL) << "dup2 on std file descriptors failure";
     }
@@ -267,7 +254,7 @@ int ExecuteProcess(const std::vector<std::string>& params,
   return ret;
 }
 
-#endif // _WIN32
+#endif  // _WIN32
 
 #ifdef _MSC_VER
 static_assert(sizeof(uint32_t) == sizeof(DWORD), "");
@@ -299,7 +286,7 @@ class InitAtFork {
   InitAtFork() { pthread_atfork(nullptr, nullptr, ClearTidCache); }
 };
 
-#endif // BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_OHOS)
+#endif  // BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_OHOS)
 
 pid_t GetPID() {
   // Pthreads doesn't have the concept of a thread ID, so we have to reach down
@@ -359,4 +346,3 @@ bool PidHasChanged() {
   g_main_thread_pid = pid;
   return true;
 }
-

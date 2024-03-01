@@ -18,8 +18,7 @@
 - (void)viewDidLoad {
   [super viewDidLoad];
 
-  [self.tcpKeepAlive
-      setState:(absl::GetFlag(FLAGS_tcp_keep_alive) ? NSControlStateValueOn : NSControlStateValueOff)];
+  [self.tcpKeepAlive setState:(absl::GetFlag(FLAGS_tcp_keep_alive) ? NSControlStateValueOn : NSControlStateValueOff)];
   self.tcpKeepAliveCnt.intValue = absl::GetFlag(FLAGS_tcp_keep_alive_cnt);
   self.tcpKeepAliveIdleTimeout.intValue = absl::GetFlag(FLAGS_tcp_keep_alive_idle_timeout);
   self.tcpKeepAliveInterval.intValue = absl::GetFlag(FLAGS_tcp_keep_alive_interval);

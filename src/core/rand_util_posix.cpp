@@ -36,8 +36,7 @@ static bool ReadFromFD(int fd, char* buffer, size_t bytes);
 bool ReadFromFD(int fd, char* buffer, size_t bytes) {
   size_t total_read = 0;
   while (total_read < bytes) {
-    ssize_t bytes_read =
-        HANDLE_EINTR(read(fd, buffer + total_read, bytes - total_read));
+    ssize_t bytes_read = HANDLE_EINTR(read(fd, buffer + total_read, bytes - total_read));
     if (bytes_read <= 0)
       break;
     total_read += bytes_read;
@@ -55,9 +54,7 @@ static constexpr int kOpenFlags = O_RDONLY | O_CLOEXEC;
 // we can use a static-local variable to handle opening it on the first access.
 class URandomFd {
  public:
-  URandomFd() : fd_(HANDLE_EINTR(open("/dev/urandom", kOpenFlags))) {
-    CHECK(fd_ >= 0) << "Cannot open /dev/urandom";
-  }
+  URandomFd() : fd_(HANDLE_EINTR(open("/dev/urandom", kOpenFlags))) { CHECK(fd_ >= 0) << "Cannot open /dev/urandom"; }
 
   ~URandomFd() { IGNORE_EINTR(::close(fd_)); }
 
@@ -101,8 +98,7 @@ void RandBytes(void* output, size_t output_length) {
   // TODO(crbug.com/995996): When we no longer need to support old Linux
   // kernels, we can get rid of this /dev/urandom branch altogether.
   const int urandom_fd = GetUrandomFD();
-  const bool success =
-      ReadFromFD(urandom_fd, static_cast<char*>(output), output_length);
+  const bool success = ReadFromFD(urandom_fd, static_cast<char*>(output), output_length);
   CHECK(success) << "urandom read failure";
 }
 

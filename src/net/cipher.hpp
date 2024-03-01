@@ -4,8 +4,8 @@
 #ifndef H_NET_CIPHER
 #define H_NET_CIPHER
 
-#include <memory>
 #include <stdint.h>
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -13,8 +13,8 @@
 #include <malloc.h>
 #endif
 
-#include "net/iobuf.hpp"
 #include "crypto/crypter_export.hpp"
+#include "net/iobuf.hpp"
 #include "net/protocol.hpp"
 
 namespace net {
@@ -73,32 +73,24 @@ class cipher {
   cipher(const std::string& key,
          const std::string& password,
          enum cipher_method method,
-         cipher_visitor_interface *visitor,
+         cipher_visitor_interface* visitor,
          bool enc = false);
   ~cipher();
 
   void process_bytes(std::shared_ptr<IOBuf> ciphertext);
 
-  void encrypt(const uint8_t* plaintext_data,
-               size_t plaintext_size,
-               std::shared_ptr<IOBuf> ciphertext);
+  void encrypt(const uint8_t* plaintext_data, size_t plaintext_size, std::shared_ptr<IOBuf> ciphertext);
 
  private:
   void decrypt_salt(IOBuf* chunk);
 
   void encrypt_salt(IOBuf* chunk);
 
-  int chunk_decrypt_frame_aead(uint64_t* counter,
-                               IOBuf* plaintext,
-                               IOBuf* ciphertext) const;
+  int chunk_decrypt_frame_aead(uint64_t* counter, IOBuf* plaintext, IOBuf* ciphertext) const;
 
-  int chunk_decrypt_frame_stream(uint64_t* counter,
-                                 IOBuf* plaintext,
-                                 IOBuf* ciphertext) const;
+  int chunk_decrypt_frame_stream(uint64_t* counter, IOBuf* plaintext, IOBuf* ciphertext) const;
 
-  int chunk_decrypt_frame(uint64_t* counter,
-                          IOBuf* plaintext,
-                          IOBuf* ciphertext) const;
+  int chunk_decrypt_frame(uint64_t* counter, IOBuf* plaintext, IOBuf* ciphertext) const;
 
   int chunk_encrypt_frame_aead(uint64_t* counter,
                                const uint8_t* plaintext_data,
@@ -132,9 +124,9 @@ class cipher {
   bool init_;
   std::unique_ptr<IOBuf> chunk_;
 
-  cipher_visitor_interface *visitor_;
+  cipher_visitor_interface* visitor_;
 };
 
-} // namespace net
+}  // namespace net
 
 #endif  // H_NET_CIPHER

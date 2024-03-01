@@ -19,13 +19,11 @@ namespace socks4 {
 const uint8_t version = 0x04;
 
 #ifdef __GNUC__
-#define PACK(__Declaration__) \
-  __Declaration__ __attribute__((packed, aligned(1)))
+#define PACK(__Declaration__) __Declaration__ __attribute__((packed, aligned(1)))
 #endif
 
 #ifdef _MSC_VER
-#define PACK(__Declaration__) \
-  __pragma(pack(push, 1)) __Declaration__ __pragma(pack(pop))
+#define PACK(__Declaration__) __pragma(pack(push, 1)) __Declaration__ __pragma(pack(pop))
 #endif
 
 // CD is the SOCKS command code and should be 1 for CONNECT or 2 for BIND.
@@ -69,8 +67,7 @@ class reply {
   reply() : null_byte_(0), status_() {}
 
   std::array<asio::mutable_buffer, 5> buffers() {
-    return {{asio::buffer(&null_byte_, 1), asio::buffer(&status_, 1),
-             asio::buffer(&port_high_byte_, 1),
+    return {{asio::buffer(&null_byte_, 1), asio::buffer(&status_, 1), asio::buffer(&port_high_byte_, 1),
              asio::buffer(&port_low_byte_, 1), asio::buffer(address_)}};
   }
 
@@ -121,6 +118,6 @@ class reply {
 
 }  // namespace socks4
 
-} // namespace net
+}  // namespace net
 
 #endif  // H_NET_SOCKS4

@@ -19,4 +19,3 @@ TEST(CompilerRegression, ClangLibCppBoolalpha) {
   }
 }
 #endif
-

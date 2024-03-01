@@ -6,12 +6,12 @@
 // We use dynamic loading for below functions
 #define GetProductInfo GetProductInfoHidden
 
-#include "core/utils.hpp"
-
-#include "core/logging.hpp"
-
 struct IUnknown;
 #include <windows.h>
+
+#if _WIN32_WINNT > 0x0601
+#include <processthreadsapi.h>
+#endif
 #include <shellapi.h>
 #include <shlobj.h>
 
@@ -19,14 +19,10 @@ struct IUnknown;
 #include <base/compiler_specific.h>
 #include <build/build_config.h>
 
-#define MAKE_WIN_VER(major, minor, build_number) \
-    (((major) << 24) | ((minor) << 16) | (build_number))
+#define MAKE_WIN_VER(major, minor, build_number) (((major) << 24) | ((minor) << 16) | (build_number))
 
-#include <windows.h>
-
-#if _WIN32_WINNT > 0x0601
-#include <processthreadsapi.h>
-#endif
+#include "core/logging.hpp"
+#include "core/utils.hpp"
 
 // use our dynamic version of GetProductInfo
 #undef GetProductInfo
@@ -49,18 +45,17 @@ constexpr int kWinNormalPriority2 = 6;
 // a MSDN article: http://msdn2.microsoft.com/en-us/library/xcb2z8hs.aspx
 // https://docs.microsoft.com/en-us/visualstudio/debugger/how-to-set-a-thread-name-in-native-code?view=vs-2022
 const DWORD kVCThreadNameException = 0x406D1388;
-#pragma pack(push,8)
+#pragma pack(push, 8)
 typedef struct tagTHREADNAME_INFO {
-  DWORD dwType;  // Must be 0x1000.
-  LPCSTR szName;  // Pointer to name (in user addr space).
+  DWORD dwType;      // Must be 0x1000.
+  LPCSTR szName;     // Pointer to name (in user addr space).
   DWORD dwThreadID;  // Thread ID (-1=caller thread).
-  DWORD dwFlags;  // Reserved for future use, must be zero.
+  DWORD dwFlags;     // Reserved for future use, must be zero.
 } THREADNAME_INFO;
 #pragma pack(pop)
 
 // The SetThreadDescription API was brought in version 1607 of Windows 10.
-typedef HRESULT(WINAPI* PFNSETTHREADDESCRIPTION)(HANDLE hThread,
-                                                 PCWSTR lpThreadDescription);
+typedef HRESULT(WINAPI* PFNSETTHREADDESCRIPTION)(HANDLE hThread, PCWSTR lpThreadDescription);
 
 #ifdef COMPILER_MSVC
 namespace {
@@ -74,16 +69,15 @@ void SetNameInternal(DWORD thread_id, const char* name) {
 
   // https://docs.microsoft.com/en-us/windows/win32/debug/using-an-exception-handler
 #pragma warning(push)
-#pragma warning(disable: 6320 6322)
+#pragma warning(disable : 6320 6322)
   __try {
-    RaiseException(kVCThreadNameException, 0, sizeof(info) / sizeof(DWORD),
-                   reinterpret_cast<ULONG_PTR*>(&info));
+    RaiseException(kVCThreadNameException, 0, sizeof(info) / sizeof(DWORD), reinterpret_cast<ULONG_PTR*>(&info));
   } __except (EXCEPTION_EXECUTE_HANDLER) {
   }
 #pragma warning(pop)
 }
 
-} // namespace
+}  // namespace
 #endif  // COMPILER_MSVC
 
 bool SetCurrentThreadPriority(ThreadPriority priority) {
@@ -131,8 +125,7 @@ bool SetCurrentThreadPriority(ThreadPriority priority) {
     // -6 when THREAD_MODE_BACKGROUND_* is used. THREAD_PRIORITY_IDLE,
     // THREAD_PRIORITY_LOWEST and THREAD_PRIORITY_BELOW_NORMAL are other
     // possible negative values.
-    if (desired_priority < THREAD_PRIORITY_NORMAL ||
-        desired_priority == kWin7BackgroundThreadModePriority) {
+    if (desired_priority < THREAD_PRIORITY_NORMAL || desired_priority == kWin7BackgroundThreadModePriority) {
       ret = ::SetThreadPriority(handle, THREAD_PRIORITY_LOWEST);
       // Make sure that using THREAD_PRIORITY_LOWEST didn't affect the memory
       // priority set by THREAD_MODE_BACKGROUND_BEGIN. There is no practical
@@ -150,8 +143,7 @@ bool SetCurrentThreadName(const std::string& name) {
   }
   // The SetThreadDescription API works even if no debugger is attached.
   static const auto fPointer = reinterpret_cast<PFNSETTHREADDESCRIPTION>(
-      reinterpret_cast<void*>(::GetProcAddress(
-          ::GetModuleHandleW(L"Kernel32.dll"), "SetThreadDescription")));
+      reinterpret_cast<void*>(::GetProcAddress(::GetModuleHandleW(L"Kernel32.dll"), "SetThreadDescription")));
   HRESULT ret = E_NOTIMPL;
 
   if (fPointer) {
@@ -205,8 +197,7 @@ uint64_t GetMonotonicTime() {
   //
 
   ElapsedNanoseconds.QuadPart =
-      static_cast<double>(ElapsedNanoseconds.QuadPart) * NS_PER_SECOND /
-      static_cast<double>(Frequency.QuadPart);
+      static_cast<double>(ElapsedNanoseconds.QuadPart) * NS_PER_SECOND / static_cast<double>(Frequency.QuadPart);
 
   return ElapsedNanoseconds.QuadPart;
 }
@@ -214,8 +205,7 @@ uint64_t GetMonotonicTime() {
 static bool IsHandleConsole(HANDLE handle) {
   DWORD mode;
   return handle != HANDLE() && handle != INVALID_HANDLE_VALUE &&
-         (GetFileType(handle) & ~FILE_TYPE_REMOTE) == FILE_TYPE_CHAR &&
-         GetConsoleMode(handle, &mode);
+         (GetFileType(handle) & ~FILE_TYPE_REMOTE) == FILE_TYPE_CHAR && GetConsoleMode(handle, &mode);
 }
 
 bool IsProgramConsole(HANDLE handle) {
@@ -224,7 +214,7 @@ bool IsProgramConsole(HANDLE handle) {
 
 #ifndef CP_UTF8
 #define CP_UTF8 65001
-#endif // CP_UTF8
+#endif  // CP_UTF8
 
 bool SetUTF8Locale() {
   bool success = false;
@@ -274,79 +264,75 @@ bool SetUTF8Locale() {
   return success;
 }
 
-static const wchar_t *kDllWhiteList [] = {
+static const wchar_t* kDllWhiteList[] = {
 #ifndef _LIBCPP_MSVCRT
-// msvc runtime, still searched current directory
-// under dll search security mode
-  L"MSVCP140.dll",
-  L"msvcp140_1.dll",
-  L"msvcp140_2.dll",
-  L"msvcp140_atomic_wait.dll",
-  L"msvcp140_codecvt_ids.dll",
-  L"VCRUNTIME140.dll",
-  L"VCRUNTIME140_1.dll",
-  L"CONCRT140.dll",
-// ucrt
-  L"api-ms-win-core-console-l1-1-0.dll",
-  L"api-ms-win-core-datetime-l1-1-0.dll",
-  L"api-ms-win-core-debug-l1-1-0.dll",
-  L"api-ms-win-core-errorhandling-l1-1-0.dll",
-  L"api-ms-win-core-file-l1-1-0.dll",
-  L"api-ms-win-core-file-l1-2-0.dll",
-  L"api-ms-win-core-file-l2-1-0.dll",
-  L"api-ms-win-core-handle-l1-1-0.dll",
-  L"api-ms-win-core-heap-l1-1-0.dll",
-  L"api-ms-win-core-interlocked-l1-1-0.dll",
-  L"api-ms-win-core-libraryloader-l1-1-0.dll",
-  L"api-ms-win-core-localization-l1-2-0.dll",
-  L"api-ms-win-core-memory-l1-1-0.dll",
-  L"api-ms-win-core-namedpipe-l1-1-0.dll",
-  L"api-ms-win-core-processenvironment-l1-1-0.dll",
-  L"api-ms-win-core-processthreads-l1-1-0.dll",
-  L"api-ms-win-core-processthreads-l1-1-1.dll",
-  L"api-ms-win-core-profile-l1-1-0.dll",
-  L"api-ms-win-core-rtlsupport-l1-1-0.dll",
-  L"api-ms-win-core-string-l1-1-0.dll",
-  L"api-ms-win-core-synch-l1-1-0.dll",
-  L"api-ms-win-core-synch-l1-2-0.dll",
-  L"api-ms-win-core-sysinfo-l1-1-0.dll",
-  L"api-ms-win-core-timezone-l1-1-0.dll",
-  L"api-ms-win-core-util-l1-1-0.dll",
-  L"api-ms-win-crt-conio-l1-1-0.dll",
-  L"api-ms-win-crt-convert-l1-1-0.dll",
-  L"api-ms-win-crt-environment-l1-1-0.dll",
-  L"api-ms-win-crt-filesystem-l1-1-0.dll",
-  L"api-ms-win-crt-heap-l1-1-0.dll",
-  L"api-ms-win-crt-locale-l1-1-0.dll",
-  L"api-ms-win-crt-math-l1-1-0.dll",
-  L"api-ms-win-crt-multibyte-l1-1-0.dll",
-  L"api-ms-win-crt-private-l1-1-0.dll",
-  L"api-ms-win-crt-process-l1-1-0.dll",
-  L"api-ms-win-crt-runtime-l1-1-0.dll",
-  L"api-ms-win-crt-stdio-l1-1-0.dll",
-  L"api-ms-win-crt-string-l1-1-0.dll",
-  L"api-ms-win-crt-time-l1-1-0.dll",
-  L"api-ms-win-crt-utility-l1-1-0.dll",
-  L"ucrtbase.dll",
+    // msvc runtime, still searched current directory
+    // under dll search security mode
+    L"MSVCP140.dll",
+    L"msvcp140_1.dll",
+    L"msvcp140_2.dll",
+    L"msvcp140_atomic_wait.dll",
+    L"msvcp140_codecvt_ids.dll",
+    L"VCRUNTIME140.dll",
+    L"VCRUNTIME140_1.dll",
+    L"CONCRT140.dll",
+    // ucrt
+    L"api-ms-win-core-console-l1-1-0.dll",
+    L"api-ms-win-core-datetime-l1-1-0.dll",
+    L"api-ms-win-core-debug-l1-1-0.dll",
+    L"api-ms-win-core-errorhandling-l1-1-0.dll",
+    L"api-ms-win-core-file-l1-1-0.dll",
+    L"api-ms-win-core-file-l1-2-0.dll",
+    L"api-ms-win-core-file-l2-1-0.dll",
+    L"api-ms-win-core-handle-l1-1-0.dll",
+    L"api-ms-win-core-heap-l1-1-0.dll",
+    L"api-ms-win-core-interlocked-l1-1-0.dll",
+    L"api-ms-win-core-libraryloader-l1-1-0.dll",
+    L"api-ms-win-core-localization-l1-2-0.dll",
+    L"api-ms-win-core-memory-l1-1-0.dll",
+    L"api-ms-win-core-namedpipe-l1-1-0.dll",
+    L"api-ms-win-core-processenvironment-l1-1-0.dll",
+    L"api-ms-win-core-processthreads-l1-1-0.dll",
+    L"api-ms-win-core-processthreads-l1-1-1.dll",
+    L"api-ms-win-core-profile-l1-1-0.dll",
+    L"api-ms-win-core-rtlsupport-l1-1-0.dll",
+    L"api-ms-win-core-string-l1-1-0.dll",
+    L"api-ms-win-core-synch-l1-1-0.dll",
+    L"api-ms-win-core-synch-l1-2-0.dll",
+    L"api-ms-win-core-sysinfo-l1-1-0.dll",
+    L"api-ms-win-core-timezone-l1-1-0.dll",
+    L"api-ms-win-core-util-l1-1-0.dll",
+    L"api-ms-win-crt-conio-l1-1-0.dll",
+    L"api-ms-win-crt-convert-l1-1-0.dll",
+    L"api-ms-win-crt-environment-l1-1-0.dll",
+    L"api-ms-win-crt-filesystem-l1-1-0.dll",
+    L"api-ms-win-crt-heap-l1-1-0.dll",
+    L"api-ms-win-crt-locale-l1-1-0.dll",
+    L"api-ms-win-crt-math-l1-1-0.dll",
+    L"api-ms-win-crt-multibyte-l1-1-0.dll",
+    L"api-ms-win-crt-private-l1-1-0.dll",
+    L"api-ms-win-crt-process-l1-1-0.dll",
+    L"api-ms-win-crt-runtime-l1-1-0.dll",
+    L"api-ms-win-crt-stdio-l1-1-0.dll",
+    L"api-ms-win-crt-string-l1-1-0.dll",
+    L"api-ms-win-crt-time-l1-1-0.dll",
+    L"api-ms-win-crt-utility-l1-1-0.dll",
+    L"ucrtbase.dll",
 #endif
-  nullptr,
+    nullptr,
 };
 
 static void CheckDynamicLibraries() {
   std::wstring exe(_MAX_PATH, L'\0');
-  const auto exeLength = GetModuleFileNameW(
-    nullptr,
-    const_cast<wchar_t*>(exe.c_str()),
-    exe.size() + 1);
+  const auto exeLength = GetModuleFileNameW(nullptr, const_cast<wchar_t*>(exe.c_str()), exe.size() + 1);
   if (!exeLength || exeLength >= exe.size() + 1) {
     PLOG(FATAL) << "Could not get executable path!";
   }
   exe.resize(exeLength);
   const auto last1 = exe.find_last_of('\\');
   const auto last2 = exe.find_last_of('/');
-  const auto last = std::max(
-    (last1 == std::wstring::npos) ? -1 : static_cast<int>(last1),
-    (last2 == std::wstring::npos) ? -1 : static_cast<int>(last2));
+  const auto last = std::max((last1 == std::wstring::npos) ? -1 : static_cast<int>(last1),
+                             (last2 == std::wstring::npos) ? -1 : static_cast<int>(last2));
   if (last < 0) {
     LOG(FATAL) << "Could not get executable directory!";
   }
@@ -362,14 +348,11 @@ static void CheckDynamicLibraries() {
   FINDEX_INFO_LEVELS fInfoLevel = FindExInfoStandard;
   // FindExInfoBasic:
   // This value is not supported until Windows Server 2008 R2 and Windows 7.
-  if (IsWindowsVersionBNOrGreater(HIBYTE(_WIN32_WINNT_WIN7),
-                                  LOBYTE(_WIN32_WINNT_WIN7), 0)) {
+  if (IsWindowsVersionBNOrGreater(HIBYTE(_WIN32_WINNT_WIN7), LOBYTE(_WIN32_WINNT_WIN7), 0)) {
     fInfoLevel = FindExInfoBasic;
   }
 
-  HANDLE findHandle = FindFirstFileExW(search.c_str(), fInfoLevel,
-                                       &findData, FindExSearchNameMatch,
-                                       nullptr, 0);
+  HANDLE findHandle = FindFirstFileExW(search.c_str(), fInfoLevel, &findData, FindExSearchNameMatch, nullptr, 0);
 
   if (findHandle == INVALID_HANDLE_VALUE) {
     DWORD error = GetLastError();
@@ -384,20 +367,17 @@ static void CheckDynamicLibraries() {
       continue;
     }
     const auto me = exe.substr(last + 1);
-    if (std::end(kDllWhiteList) != std::find_if(
-      std::begin(kDllWhiteList), std::end(kDllWhiteList),
-      [&findData](const wchar_t* dll) {
-        return _wcsicmp(dll, findData.cFileName) == 0;
-      })) {
+    if (std::end(kDllWhiteList) !=
+        std::find_if(std::begin(kDllWhiteList), std::end(kDllWhiteList),
+                     [&findData](const wchar_t* dll) { return _wcsicmp(dll, findData.cFileName) == 0; })) {
       continue;
     }
     std::wostringstream os;
-    os << L"\nUnknown DLL library \""<< findData.cFileName
-      << L"\" found in the directory with " << me << L".\n\n"
-      << L"This may be a virus or a malicious program. \n\n"
-      << L"Please remove all DLL libraries from this directory:\n\n"
-      << exe.substr(0, last) << L"\n\n"
-      << "Alternatively, you can move " << me << L" to a new directory.";
+    os << L"\nUnknown DLL library \"" << findData.cFileName << L"\" found in the directory with " << me << L".\n\n"
+       << L"This may be a virus or a malicious program. \n\n"
+       << L"Please remove all DLL libraries from this directory:\n\n"
+       << exe.substr(0, last) << L"\n\n"
+       << "Alternatively, you can move " << me << L" to a new directory.";
     LOG(FATAL) << SysWideToUTF8(os.str());
   } while (FindNextFileW(findHandle, &findData));
   FindClose(findHandle);
@@ -405,15 +385,12 @@ static void CheckDynamicLibraries() {
 
 #ifndef LOAD_LIBRARY_SEARCH_SYSTEM32
 #define LOAD_LIBRARY_SEARCH_SYSTEM32 0x00000800
-#endif //  LOAD_LIBRARY_SEARCH_SYSTEM32
+#endif  //  LOAD_LIBRARY_SEARCH_SYSTEM32
 
 bool EnableSecureDllLoading() {
   typedef BOOL(WINAPI * SetDefaultDllDirectoriesFunction)(DWORD flags);
-  SetDefaultDllDirectoriesFunction set_default_dll_directories =
-      reinterpret_cast<SetDefaultDllDirectoriesFunction>(
-          reinterpret_cast<void*>(::GetProcAddress(
-                  ::GetModuleHandleW(L"kernel32.dll"),
-                  "SetDefaultDllDirectories")));
+  SetDefaultDllDirectoriesFunction set_default_dll_directories = reinterpret_cast<SetDefaultDllDirectoriesFunction>(
+      reinterpret_cast<void*>(::GetProcAddress(::GetModuleHandleW(L"kernel32.dll"), "SetDefaultDllDirectories")));
   if (!set_default_dll_directories) {
     // Don't assert because this is known to be missing on Windows 7 without
     // KB2533623.
@@ -436,27 +413,21 @@ static bool GetProductInfo(DWORD dwOSMajorVersion,
                            DWORD dwSpMajorVersion,
                            DWORD dwSpMinorVersion,
                            PDWORD pdwReturnedProductType) {
-  typedef BOOL(WINAPI * GetProductInfoFunction)(
-      DWORD dwOSMajorVersion, DWORD dwOSMinorVersion, DWORD dwSpMajorVersion,
-      DWORD dwSpMinorVersion, PDWORD pdwReturnedProductType);
-  GetProductInfoFunction get_product_info =
-      reinterpret_cast<GetProductInfoFunction>(
-          reinterpret_cast<void*>(::GetProcAddress(
-                  ::GetModuleHandleW(L"kernel32.dll"), "GetProductInfo")));
+  typedef BOOL(WINAPI * GetProductInfoFunction)(DWORD dwOSMajorVersion, DWORD dwOSMinorVersion, DWORD dwSpMajorVersion,
+                                                DWORD dwSpMinorVersion, PDWORD pdwReturnedProductType);
+  GetProductInfoFunction get_product_info = reinterpret_cast<GetProductInfoFunction>(
+      reinterpret_cast<void*>(::GetProcAddress(::GetModuleHandleW(L"kernel32.dll"), "GetProductInfo")));
   if (!get_product_info) {
     *pdwReturnedProductType = 0;
     return false;
   }
-  return get_product_info(dwOSMajorVersion, dwOSMinorVersion, dwSpMajorVersion,
-                          dwSpMinorVersion, pdwReturnedProductType) != 0;
+  return get_product_info(dwOSMajorVersion, dwOSMinorVersion, dwSpMajorVersion, dwSpMinorVersion,
+                          pdwReturnedProductType) != 0;
 }
 
 // https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-osversioninfoexa
-void GetWindowsVersion(int* major,
-                       int* minor,
-                       int* build_number,
-                       int* os_type) {
-  OSVERSIONINFOW version_info {};
+void GetWindowsVersion(int* major, int* minor, int* build_number, int* os_type) {
+  OSVERSIONINFOW version_info{};
   version_info.dwOSVersionInfoSize = sizeof(version_info);
   // GetVersionEx() is deprecated, and the suggested replacement are
   // the IsWindows*OrGreater() functions in VersionHelpers.h. We can't
@@ -483,20 +454,16 @@ void GetWindowsVersion(int* major,
 
   DWORD dwOsType;
   // https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getproductinfo
-  if (!GetProductInfo(version_info.dwMajorVersion, version_info.dwMinorVersion,
-                      0, 0, &dwOsType)) {
+  if (!GetProductInfo(version_info.dwMajorVersion, version_info.dwMinorVersion, 0, 0, &dwOsType)) {
     PLOG(WARNING) << "Interal error: GetProductInfo failed";
   }
 
   *os_type = dwOsType;
 }
 
-bool IsWindowsVersionBNOrGreater(int wMajorVersion,
-                                 int wMinorVersion,
-                                 int wBuildNumber) {
+bool IsWindowsVersionBNOrGreater(int wMajorVersion, int wMinorVersion, int wBuildNumber) {
   int current_major, current_minor, current_build_number, os_type;
-  GetWindowsVersion(&current_major, &current_minor, &current_build_number,
-                    &os_type);
+  GetWindowsVersion(&current_major, &current_minor, &current_build_number, &os_type);
   return MAKE_WIN_VER(current_major, current_minor, current_build_number) >=
          MAKE_WIN_VER(wMajorVersion, wMinorVersion, wBuildNumber);
 }
@@ -520,8 +487,7 @@ bool GetExecutablePath(std::wstring* exe_path) {
   // Windows XP:  The string is truncated to nSize characters and is not
   // null-terminated.
   exe_path->resize(_MAX_PATH + 1, L'\0');
-  len = ::GetModuleFileNameW(nullptr, const_cast<wchar_t*>(exe_path->data()),
-                             _MAX_PATH);
+  len = ::GetModuleFileNameW(nullptr, const_cast<wchar_t*>(exe_path->data()), _MAX_PATH);
   // If the function succeeds, the return value is the length of the string
   // that is copied to the buffer, in characters,
   // not including the terminating null character.
@@ -556,7 +522,7 @@ void SetExecutablePath(const std::wstring& exe_path) {
   absl::flags_internal::SetProgramInvocationName(new_exe_path);
 }
 
-bool GetTempDir(std::string *path) {
+bool GetTempDir(std::string* path) {
   std::wstring wpath;
   path->clear();
   if (!GetTempDir(&wpath)) {
@@ -566,7 +532,7 @@ bool GetTempDir(std::string *path) {
   return true;
 }
 
-bool GetTempDir(std::wstring *path) {
+bool GetTempDir(std::wstring* path) {
   wchar_t temp_path[MAX_PATH + 1];
   DWORD path_len = ::GetTempPathW(MAX_PATH, temp_path);
   // If the function succeeds, the return value is the length,
@@ -577,12 +543,12 @@ bool GetTempDir(std::wstring *path) {
   // TODO(evanm): the old behavior of this function was to always strip the
   // trailing slash.  We duplicate this here, but it shouldn't be necessary
   // when everyone is using the appropriate FilePath APIs.
-  if (temp_path[path_len-1] == L'\\') {
-    temp_path[path_len-1] = L'\0';
+  if (temp_path[path_len - 1] == L'\\') {
+    temp_path[path_len - 1] = L'\0';
     --path_len;
   }
   *path = std::wstring(temp_path, path_len);
-  DCHECK_NE((*path)[path_len-1], L'\0');
+  DCHECK_NE((*path)[path_len - 1], L'\0');
   return true;
 }
 
@@ -592,8 +558,7 @@ std::string GetHomeDir() {
 
 std::wstring GetHomeDirW() {
   wchar_t result[MAX_PATH];
-  if (SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_PROFILE, NULL, SHGFP_TYPE_CURRENT,
-                                 result)) && result[0]) {
+  if (SUCCEEDED(SHGetFolderPathW(nullptr, CSIDL_PROFILE, nullptr, SHGFP_TYPE_CURRENT, result)) && result[0]) {
     return result;
   }
   // Fall back to the temporary directory on failure.
@@ -607,8 +572,8 @@ std::wstring GetHomeDirW() {
 
 ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len) {
   DWORD read;
-  HANDLE hFile = ::CreateFileW(SysUTF8ToWide(path).c_str(), GENERIC_READ,
-                               FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
+  HANDLE hFile =
+      ::CreateFileW(SysUTF8ToWide(path).c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
   if (hFile == INVALID_HANDLE_VALUE) {
     return -1;
   }
@@ -627,8 +592,7 @@ ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len) {
 ssize_t WriteFileWithBuffer(const std::string& path, std::string_view buf) {
   DWORD written;
   const size_t buf_len = buf.size();
-  HANDLE hFile = ::CreateFileW(SysUTF8ToWide(path).c_str(), GENERIC_WRITE,
-                               0, nullptr, CREATE_ALWAYS, 0, nullptr);
+  HANDLE hFile = ::CreateFileW(SysUTF8ToWide(path).c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, 0, nullptr);
   if (hFile == INVALID_HANDLE_VALUE) {
     DPLOG(WARNING) << "WriteFile failed for path " << path;
     return -1;
@@ -643,8 +607,7 @@ ssize_t WriteFileWithBuffer(const std::string& path, std::string_view buf) {
 
   if (written != buf_len) {
     // Didn't write all the bytes.
-    DLOG(WARNING) << "wrote" << written << " bytes to " << path
-                  << " expected " << buf_len;
+    DLOG(WARNING) << "wrote" << written << " bytes to " << path << " expected " << buf_len;
     ::CloseHandle(hFile);
     return -1;
   }
@@ -654,14 +617,12 @@ ssize_t WriteFileWithBuffer(const std::string& path, std::string_view buf) {
   return written;
 }
 
-PlatformFile OpenReadFile(const std::string &path) {
-  return ::CreateFileW(SysUTF8ToWide(path).c_str(), GENERIC_READ,
-                       FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
+PlatformFile OpenReadFile(const std::string& path) {
+  return ::CreateFileW(SysUTF8ToWide(path).c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
 }
 
-PlatformFile OpenReadFile(const std::wstring &path) {
-  return ::CreateFileW(path.c_str(), GENERIC_READ,
-                       FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
+PlatformFile OpenReadFile(const std::wstring& path) {
+  return ::CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
 }
 
 std::wstring ExpandUserFromString(const wchar_t* path, size_t path_len) {

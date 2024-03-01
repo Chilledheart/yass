@@ -94,18 +94,12 @@ constexpr LogSeverity LOG_DFATAL = LOGGING_DFATAL;
 // A few definitions of macros that don't generate much code. These are used
 // by LOG() and LOG_IF, etc. Since these are used all over our code, it's
 // better to have compact code for these operations.
-#define COMPACT_LOGGING_EX_INFO(ClassName, ...) \
-  ::yass::ClassName(__FILE__, __LINE__, LOGGING_INFO, ##__VA_ARGS__)
-#define COMPACT_LOGGING_EX_WARNING(ClassName, ...) \
-  ::yass::ClassName(__FILE__, __LINE__, LOGGING_WARNING, ##__VA_ARGS__)
-#define COMPACT_LOGGING_EX_ERROR(ClassName, ...) \
-  ::yass::ClassName(__FILE__, __LINE__, LOGGING_ERROR, ##__VA_ARGS__)
-#define COMPACT_LOGGING_EX_FATAL(ClassName, ...) \
-  ::yass::ClassName(__FILE__, __LINE__, LOGGING_FATAL, ##__VA_ARGS__)
-#define COMPACT_LOGGING_EX_DFATAL(ClassName, ...) \
-  ::yass::ClassName(__FILE__, __LINE__, LOGGING_DFATAL, ##__VA_ARGS__)
-#define COMPACT_LOGGING_EX_DCHECK(ClassName, ...) \
-  ::yass::ClassName(__FILE__, __LINE__, LOGGING_DCHECK, ##__VA_ARGS__)
+#define COMPACT_LOGGING_EX_INFO(ClassName, ...) ::yass::ClassName(__FILE__, __LINE__, LOGGING_INFO, ##__VA_ARGS__)
+#define COMPACT_LOGGING_EX_WARNING(ClassName, ...) ::yass::ClassName(__FILE__, __LINE__, LOGGING_WARNING, ##__VA_ARGS__)
+#define COMPACT_LOGGING_EX_ERROR(ClassName, ...) ::yass::ClassName(__FILE__, __LINE__, LOGGING_ERROR, ##__VA_ARGS__)
+#define COMPACT_LOGGING_EX_FATAL(ClassName, ...) ::yass::ClassName(__FILE__, __LINE__, LOGGING_FATAL, ##__VA_ARGS__)
+#define COMPACT_LOGGING_EX_DFATAL(ClassName, ...) ::yass::ClassName(__FILE__, __LINE__, LOGGING_DFATAL, ##__VA_ARGS__)
+#define COMPACT_LOGGING_EX_DCHECK(ClassName, ...) ::yass::ClassName(__FILE__, __LINE__, LOGGING_DCHECK, ##__VA_ARGS__)
 
 #define COMPACT_LOGGING_INFO COMPACT_LOGGING_EX_INFO(LogMessage)
 #define COMPACT_LOGGING_WARNING COMPACT_LOGGING_EX_WARNING(LogMessage)
@@ -121,8 +115,7 @@ constexpr LogSeverity LOG_DFATAL = LOGGING_DFATAL;
 // as COMPACT_LOGGING_ERROR, and also define ERROR the same way that
 // the Windows SDK does for consistency.
 #define ERROR 0
-#define COMPACT_LOGGING_EX_0(ClassName, ...) \
-  COMPACT_LOGGING_EX_ERROR(ClassName, ##__VA_ARGS__)
+#define COMPACT_LOGGING_EX_0(ClassName, ...) COMPACT_LOGGING_EX_ERROR(ClassName, ##__VA_ARGS__)
 #define COMPACT_LOGGING_0 COMPACT_LOGGING_ERROR
 // Needed for LOG_IS_ON(ERROR).
 constexpr LogSeverity LOGGING_0 = LOGGING_ERROR;
@@ -140,13 +133,12 @@ constexpr LogSeverity LOGGING_0 = LOGGING_ERROR;
 // it's either FLAGS_v or an appropriate internal variable
 // matching the current source file that represents results of
 // parsing of --vmodule flag and/or SetVLOGLevel calls.
-#define VLOG_IS_ON(verboselevel)                                       \
-  __extension__({                                                      \
-    static absl::Flag<int32_t>* vlocal__ = NULL;                       \
-    int32_t verbose_level__ = (verboselevel);                          \
-    (vlocal__ == NULL                                                  \
-         ? ::yass::InitVLOG3__(&vlocal__, &FLAGS_v, __FILE__, verbose_level__) \
-         : absl::GetFlag(*vlocal__) >= verbose_level__);               \
+#define VLOG_IS_ON(verboselevel)                                                            \
+  __extension__({                                                                           \
+    static absl::Flag<int32_t>* vlocal__ = NULL;                                            \
+    int32_t verbose_level__ = (verboselevel);                                               \
+    (vlocal__ == NULL ? ::yass::InitVLOG3__(&vlocal__, &FLAGS_v, __FILE__, verbose_level__) \
+                      : absl::GetFlag(*vlocal__) >= verbose_level__);                       \
   })
 #else
 // GNU extensions not available, so we do not support --vmodule.
@@ -156,8 +148,7 @@ constexpr LogSeverity LOGGING_0 = LOGGING_ERROR;
 
 // Helper macro which avoids evaluating the arguments to a stream if
 // the condition doesn't hold. Condition is evaluated once and only once.
-#define LAZY_STREAM(stream, condition) \
-  !(condition) ? (void)0 : ::yass::LogMessageVoidify() & (stream)
+#define LAZY_STREAM(stream, condition) !(condition) ? (void)0 : ::yass::LogMessageVoidify() & (stream)
 
 // We use the preprocessor's merging operator, "##", so that, e.g.,
 // LOG(INFO) becomes the token COMPACT_LOGGING_INFO.  There's some funny
@@ -170,64 +161,47 @@ constexpr LogSeverity LOGGING_0 = LOGGING_ERROR;
 #define LOG_STREAM(severity) COMPACT_LOGGING_##severity.stream()
 
 #define LOG(severity) LAZY_STREAM(LOG_STREAM(severity), LOG_IS_ON(severity))
-#define LOG_IF(severity, condition) \
-  LAZY_STREAM(LOG_STREAM(severity), LOG_IS_ON(severity) && (condition))
+#define LOG_IF(severity, condition) LAZY_STREAM(LOG_STREAM(severity), LOG_IS_ON(severity) && (condition))
 
 // The VLOG macros log with negative verbosities.
-#define VLOG_STREAM(verbose_level) \
-  ::yass::LogMessage(__FILE__, __LINE__, -(verbose_level)).stream()
+#define VLOG_STREAM(verbose_level) ::yass::LogMessage(__FILE__, __LINE__, -(verbose_level)).stream()
 
-#define VLOG(verbose_level) \
-  LAZY_STREAM(VLOG_STREAM(verbose_level), VLOG_IS_ON(verbose_level))
+#define VLOG(verbose_level) LAZY_STREAM(VLOG_STREAM(verbose_level), VLOG_IS_ON(verbose_level))
 
 #define VLOG_IF(verbose_level, condition) \
-  LAZY_STREAM(VLOG_STREAM(verbose_level), \
-              VLOG_IS_ON(verbose_level) && (condition))
+  LAZY_STREAM(VLOG_STREAM(verbose_level), VLOG_IS_ON(verbose_level) && (condition))
 
 #if BUILDFLAG(IS_WIN)
-#define VPLOG_STREAM(verbose_level)                          \
-  ::yass::Win32ErrorLogMessage(__FILE__, __LINE__, -(verbose_level), \
-                       ::yass::GetLastSystemErrorCode())             \
-      .stream()
+#define VPLOG_STREAM(verbose_level) \
+  ::yass::Win32ErrorLogMessage(__FILE__, __LINE__, -(verbose_level), ::yass::GetLastSystemErrorCode()).stream()
 #elif BUILDFLAG(IS_POSIX)
-#define VPLOG_STREAM(verbose_level)                     \
-  ::yass::ErrnoLogMessage(__FILE__, __LINE__, -(verbose_level), \
-                  ::yass::GetLastSystemErrorCode())             \
-      .stream()
+#define VPLOG_STREAM(verbose_level) \
+  ::yass::ErrnoLogMessage(__FILE__, __LINE__, -(verbose_level), ::yass::GetLastSystemErrorCode()).stream()
 #endif
 
-#define VPLOG(verbose_level) \
-  LAZY_STREAM(VPLOG_STREAM(verbose_level), VLOG_IS_ON(verbose_level))
+#define VPLOG(verbose_level) LAZY_STREAM(VPLOG_STREAM(verbose_level), VLOG_IS_ON(verbose_level))
 
 #define VPLOG_IF(verbose_level, condition) \
-  LAZY_STREAM(VPLOG_STREAM(verbose_level), \
-              VLOG_IS_ON(verbose_level) && (condition))
+  LAZY_STREAM(VPLOG_STREAM(verbose_level), VLOG_IS_ON(verbose_level) && (condition))
 
 // TODO(akalin): Add more VLOG variants, e.g. VPLOG.
 
-#define LOG_ASSERT(condition)                    \
-  LOG_IF(FATAL, !(ABSL_PREDICT_TRUE(condition))) \
-      << "Assert failed: " #condition ". "
+#define LOG_ASSERT(condition) LOG_IF(FATAL, !(ABSL_PREDICT_TRUE(condition))) << "Assert failed: " #condition ". "
 
 #if BUILDFLAG(IS_WIN)
-#define PLOG_STREAM(severity)                             \
-  COMPACT_LOGGING_EX_##severity(Win32ErrorLogMessage,     \
-                                ::yass::GetLastSystemErrorCode()) \
-      .stream()
+#define PLOG_STREAM(severity) \
+  COMPACT_LOGGING_EX_##severity(Win32ErrorLogMessage, ::yass::GetLastSystemErrorCode()).stream()
 #elif BUILDFLAG(IS_POSIX)
-#define PLOG_STREAM(severity)                                              \
-  COMPACT_LOGGING_EX_##severity(ErrnoLogMessage, ::yass::GetLastSystemErrorCode()) \
-      .stream()
+#define PLOG_STREAM(severity) COMPACT_LOGGING_EX_##severity(ErrnoLogMessage, ::yass::GetLastSystemErrorCode()).stream()
 #endif
 
 #define PLOG(severity) LAZY_STREAM(PLOG_STREAM(severity), LOG_IS_ON(severity))
 
-#define PLOG_IF(severity, condition) \
-  LAZY_STREAM(PLOG_STREAM(severity), LOG_IS_ON(severity) && (condition))
+#define PLOG_IF(severity, condition) LAZY_STREAM(PLOG_STREAM(severity), LOG_IS_ON(severity) && (condition))
 
 namespace yass {
 extern std::ostream* g_swallow_stream;
-} // namespace yass
+}  // namespace yass
 
 // Note that g_swallow_stream is used instead of an arbitrary LOG() stream to
 // avoid the creation of an object with a non-trivial destructor (LogMessage).
@@ -241,8 +215,7 @@ extern std::ostream* g_swallow_stream;
 // they become defined-but-unreferenced functions. A reinterpret_cast of 0 to an
 // ostream* also is not suitable, because some compilers warn of undefined
 // behavior.
-#define EAT_STREAM_PARAMETERS \
-  true ? (void)0 : ::yass::LogMessageVoidify() & (*::yass::g_swallow_stream)
+#define EAT_STREAM_PARAMETERS true ? (void)0 : ::yass::LogMessageVoidify() & (*::yass::g_swallow_stream)
 
 // Definitions for DLOG et al.
 
@@ -357,14 +330,10 @@ class LogSink;  // defined below
 //   LogSink* sink;
 //   LogSeverity severity;
 // The cast is to disambiguate NULL arguments.
-#define LOG_TO_SINK(sink, severity)                  \
-  LogMessage(__FILE__, __LINE__, LOGGING_##severity, \
-             static_cast<LogSink*>(sink), true)      \
-      .stream()
+#define LOG_TO_SINK(sink, severity) \
+  LogMessage(__FILE__, __LINE__, LOGGING_##severity, static_cast<LogSink*>(sink), true).stream()
 #define LOG_TO_SINK_BUT_NOT_TO_LOGFILE(sink, severity) \
-  LogMessage(__FILE__, __LINE__, LOGGING_##severity,   \
-             static_cast<LogSink*>(sink), false)       \
-      .stream()
+  LogMessage(__FILE__, __LINE__, LOGGING_##severity, static_cast<LogSink*>(sink), false).stream()
 
 #if defined(_SANITIZE_THREAD)
 #define _IFDEF_THREAD_SANITIZER(X) X
@@ -419,8 +388,7 @@ class LogMessage {
   class LogStream : public std::ostream {
    public:
     // 'this' : used in base member initializer
-    LogStream(char* buf, int len, uint64_t ctr)
-        : std::ostream(NULL), streambuf_(buf, len), ctr_(ctr), self_(this) {
+    LogStream(char* buf, int len, uint64_t ctr) : std::ostream(NULL), streambuf_(buf, len), ctr_(ctr), self_(this) {
       rdbuf(&streambuf_);
     }
 
@@ -445,11 +413,7 @@ class LogMessage {
   // icc 8 requires this typedef to avoid an internal compiler error.
   typedef void (LogMessage::*SendMethod)();
 
-  LogMessage(const char* file,
-             int line,
-             LogSeverity severity,
-             uint64_t ctr,
-             SendMethod send_method);
+  LogMessage(const char* file, int line, LogSeverity severity, uint64_t ctr, SendMethod send_method);
 
   // Used for LOG(severity).
   LogMessage(const char* file, int line, LogSeverity severity);
@@ -477,27 +441,17 @@ class LogMessage {
   // Constructor to log this message to a specified sink (if not NULL).
   // Implied are: ctr = 0, send_method = &LogMessage::SendToSinkAndLog if
   // also_send_to_log is true, send_method = &LogMessage::SendToSink otherwise.
-  LogMessage(const char* file,
-             int line,
-             LogSeverity severity,
-             LogSink* sink,
-             bool also_send_to_log);
+  LogMessage(const char* file, int line, LogSeverity severity, LogSink* sink, bool also_send_to_log);
 
   // Constructor where we also give a vector<string> pointer
   // for storing the messages (if the pointer is not NULL).
   // Implied are: ctr = 0, send_method = &LogMessage::SaveOrSendToLog.
-  LogMessage(const char* file,
-             int line,
-             LogSeverity severity,
-             std::vector<std::string>* outvec);
+  LogMessage(const char* file, int line, LogSeverity severity, std::vector<std::string>* outvec);
 
   // Constructor where we also give a string pointer for storing the
   // message (if the pointer is not NULL).  Implied are: ctr = 0,
   // send_method = &LogMessage::WriteToStringAndLog.
-  LogMessage(const char* file,
-             int line,
-             LogSeverity severity,
-             std::string* message);
+  LogMessage(const char* file, int line, LogSeverity severity, std::string* message);
 
   // Flush a buffered message to the sink set in the constructor.  Always
   // called by the destructor, it may also be called from elsewhere if
@@ -532,10 +486,7 @@ class LogMessage {
 
   void SaveOrSendToLog();  // Save to stringvec if provided, else to logs
 
-  void Init(const char* file,
-            int line,
-            LogSeverity severity,
-            void (LogMessage::*send_method)());
+  void Init(const char* file, int line, LogSeverity severity, void (LogMessage::*send_method)());
 
   // Used to fill in crash information during LOG(FATAL) failures.
   void RecordCrashReason(CrashReason* reason);
@@ -605,10 +556,7 @@ std::string SystemErrorCodeToString(SystemErrorCode error_code);
 // Appends a formatted system message of the GetLastError() type.
 class Win32ErrorLogMessage : public LogMessage {
  public:
-  Win32ErrorLogMessage(const char* file,
-                       int line,
-                       LogSeverity severity,
-                       SystemErrorCode err);
+  Win32ErrorLogMessage(const char* file, int line, LogSeverity severity, SystemErrorCode err);
   Win32ErrorLogMessage(const Win32ErrorLogMessage&) = delete;
   Win32ErrorLogMessage& operator=(const Win32ErrorLogMessage&) = delete;
   // Appends the error message before destructing the encapsulated class.
@@ -621,10 +569,7 @@ class Win32ErrorLogMessage : public LogMessage {
 // Appends a formatted system message of the errno type
 class ErrnoLogMessage : public LogMessage {
  public:
-  ErrnoLogMessage(const char* file,
-                  int line,
-                  LogSeverity severity,
-                  SystemErrorCode err);
+  ErrnoLogMessage(const char* file, int line, LogSeverity severity, SystemErrorCode err);
   ErrnoLogMessage(const ErrnoLogMessage&) = delete;
   ErrnoLogMessage& operator=(const ErrnoLogMessage&) = delete;
   // Appends the error message before destructing the encapsulated class.
@@ -797,10 +742,7 @@ class Logger {
   // appropriate by the higher level logging facility.  For example,
   // textual log messages already contain tick_counts, and the
   // file:linenumber header.
-  virtual void Write(bool force_flush,
-                     uint64_t tick_counts,
-                     const char* message,
-                     int message_len) = 0;
+  virtual void Write(bool force_flush, uint64_t tick_counts, const char* message, int message_len) = 0;
 
   // Flush any buffered messages
   virtual void Flush() = 0;
@@ -882,7 +824,7 @@ void RawLog(int level, const char* message);
 
 #define RAW_LOG(level, message) RawLog(LOGGING_##level, message)
 
-} // namespace yass
+}  // namespace yass
 
 #include "core/check_op.hpp"
 

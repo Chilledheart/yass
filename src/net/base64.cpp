@@ -16,16 +16,14 @@ std::string Base64Encode(const uint8_t* data, size_t length) {
   output.resize(out_len);
 
   // modp_b64_encode_len() returns at least 1, so output[0] is safe to use.
-  const size_t output_size =
-      EVP_EncodeBlock(reinterpret_cast<uint8_t*>(&(output[0])), data, length);
+  const size_t output_size = EVP_EncodeBlock(reinterpret_cast<uint8_t*>(&(output[0])), data, length);
 
   output.resize(output_size);
   return output;
 }
 
 void Base64Encode(std::string_view input, std::string* output) {
-  *output = Base64Encode(reinterpret_cast<const uint8_t*>(&*input.begin()),
-                         input.size());
+  *output = Base64Encode(reinterpret_cast<const uint8_t*>(&*input.begin()), input.size());
 }
 
 bool Base64Decode(std::string_view input, std::string* output) {
@@ -36,9 +34,8 @@ bool Base64Decode(std::string_view input, std::string* output) {
 
   // does not null terminate result since result is binary data!
   size_t input_size = input.size();
-  int output_size = EVP_DecodeBase64(
-      reinterpret_cast<uint8_t*>(&(temp[0])), &out_len, out_len,
-      reinterpret_cast<const uint8_t*>(input.data()), input_size);
+  int output_size = EVP_DecodeBase64(reinterpret_cast<uint8_t*>(&(temp[0])), &out_len, out_len,
+                                     reinterpret_cast<const uint8_t*>(input.data()), input_size);
   if (output_size <= 0)
     return false;
 
@@ -54,9 +51,8 @@ absl::optional<std::vector<uint8_t>> Base64Decode(std::string_view input) {
   ret.resize(out_len);
 
   size_t input_size = input.size();
-  int output_size = EVP_DecodeBase64(
-      ret.data(), &out_len, out_len,
-      reinterpret_cast<const uint8_t*>(input.data()), input_size);
+  int output_size =
+      EVP_DecodeBase64(ret.data(), &out_len, out_len, reinterpret_cast<const uint8_t*>(input.data()), input_size);
   if (output_size <= 0)
     return absl::nullopt;
 
@@ -64,4 +60,4 @@ absl::optional<std::vector<uint8_t>> Base64Decode(std::string_view input) {
   return ret;
 }
 
-} // namespace net
+}  // namespace net

@@ -7,12 +7,12 @@
 #include <absl/functional/any_invocable.h>
 #include <openssl/ssl.h>
 
-#include "net/asio.hpp"
-#include "net/iobuf.hpp"
 #include "core/ref_counted.hpp"
 #include "core/scoped_refptr.hpp"
-#include "net/openssl_util.hpp"
+#include "net/asio.hpp"
+#include "net/iobuf.hpp"
 #include "net/net_errors.hpp"
+#include "net/openssl_util.hpp"
 
 namespace net {
 
@@ -23,21 +23,19 @@ using WaitCallback = absl::AnyInvocable<void(asio::error_code ec)>;
 
 class SSLServerSocket : public RefCountedThreadSafe<SSLServerSocket> {
  public:
-  SSLServerSocket(asio::io_context *io_context,
-                  asio::ip::tcp::socket* socket,
-                  SSL_CTX* ssl_ctx);
+  SSLServerSocket(asio::io_context* io_context, asio::ip::tcp::socket* socket, SSL_CTX* ssl_ctx);
   ~SSLServerSocket();
 
   SSLServerSocket(SSLServerSocket&&) = delete;
   SSLServerSocket& operator=(SSLServerSocket&&) = delete;
 
-  template<typename... Args>
+  template <typename... Args>
   static scoped_refptr<SSLServerSocket> Create(Args&&... args) {
     return MakeRefCounted<SSLServerSocket>(std::forward<Args>(args)...);
   }
 
   int Handshake(CompletionOnceCallback callback);
-  int Shutdown(WaitCallback &&callback, bool force = false);
+  int Shutdown(WaitCallback&& callback, bool force = false);
 
   // StreamSocket implementation
   void Disconnect();
@@ -45,10 +43,10 @@ class SSLServerSocket : public RefCountedThreadSafe<SSLServerSocket> {
   SSL* native_handle() { return ssl_.get(); }
 
   // Socket implementation.
-  size_t Read(std::shared_ptr<IOBuf> buf, asio::error_code &ec);
-  size_t Write(std::shared_ptr<IOBuf> buf, asio::error_code &ec);
-  void WaitRead(WaitCallback &&cb);
-  void WaitWrite(WaitCallback &&cb);
+  size_t Read(std::shared_ptr<IOBuf> buf, asio::error_code& ec);
+  size_t Write(std::shared_ptr<IOBuf> buf, asio::error_code& ec);
+  void WaitRead(WaitCallback&& cb);
+  void WaitWrite(WaitCallback&& cb);
 
  protected:
   void OnWaitRead(asio::error_code ec);
@@ -58,7 +56,7 @@ class SSLServerSocket : public RefCountedThreadSafe<SSLServerSocket> {
   void OnDoWaitShutdown(asio::error_code ec);
 
  private:
-  int DoHandshake(int *openssl_result);
+  int DoHandshake(int* openssl_result);
   void DoHandshakeCallback(int result);
 
   void OnVerifyComplete(int result);
@@ -100,7 +98,6 @@ class SSLServerSocket : public RefCountedThreadSafe<SSLServerSocket> {
   bool disconnected_ = false;
 };
 
-} // namespace net
+}  // namespace net
 
-#endif // H_NET_SSL_SERVER_SOCKET
-
+#endif  // H_NET_SSL_SERVER_SOCKET

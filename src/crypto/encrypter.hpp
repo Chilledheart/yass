@@ -17,8 +17,7 @@ class Encrypter : public Crypter {
  public:
   virtual ~Encrypter();
 
-  static std::unique_ptr<Encrypter> CreateFromCipherSuite(
-      uint32_t cipher_suite);
+  static std::unique_ptr<Encrypter> CreateFromCipherSuite(uint32_t cipher_suite);
 
   // Writes encrypted |plaintext| and a MAC over |plaintext| and
   // |associated_data| into output. Sets |output_length| to the number of

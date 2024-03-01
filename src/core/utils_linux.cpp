@@ -7,18 +7,18 @@
 
 #include <errno.h>
 #include <locale.h>
-#include <time.h>
 #include <pthread.h>
-#include <unistd.h>
-#include <syscall.h>  // For syscall.
-#include <sys/resource.h>
 #include <sys/prctl.h>
+#include <sys/resource.h>
+#include <syscall.h>  // For syscall.
+#include <time.h>
+#include <unistd.h>
 
 #include <filesystem>
 
 #include "core/logging.hpp"
-#include "core/utils_fs.hpp"
 #include "core/process_utils.hpp"
+#include "core/utils_fs.hpp"
 
 using std::filesystem::path;
 using namespace yass;
@@ -32,8 +32,7 @@ namespace {
 
 const path kCgroupDirectory = "/sys/fs/cgroup";
 
-path ThreadPriorityToCgroupDirectory(const path& cgroup_filepath,
-                                     ThreadPriority priority) {
+path ThreadPriorityToCgroupDirectory(const path& cgroup_filepath, ThreadPriority priority) {
   switch (priority) {
     case ThreadPriority::BACKGROUND:
       return cgroup_filepath / "non-urgent";
@@ -48,8 +47,7 @@ path ThreadPriorityToCgroupDirectory(const path& cgroup_filepath,
   return path();
 }
 
-void SetThreadCgroup(pid_t thread_id,
-                     const path& cgroup_directory) {
+void SetThreadCgroup(pid_t thread_id, const path& cgroup_directory) {
   path tasks_filepath = cgroup_directory / "tasks";
   std::string tid = std::to_string(thread_id);
   // TODO(crbug.com/1333521): Remove cast.
@@ -60,12 +58,9 @@ void SetThreadCgroup(pid_t thread_id,
   }
 }
 
-void SetThreadCgroupForThreadPriority(pid_t thread_id,
-                                      const path& cgroup_filepath,
-                                      ThreadPriority priority) {
+void SetThreadCgroupForThreadPriority(pid_t thread_id, const path& cgroup_filepath, ThreadPriority priority) {
   // Append "yass" suffix.
-  path cgroup_directory = ThreadPriorityToCgroupDirectory(
-      cgroup_filepath / "yass", priority);
+  path cgroup_directory = ThreadPriorityToCgroupDirectory(cgroup_filepath / "yass", priority);
 
   // Silently ignore request if cgroup directory doesn't exist.
   if (!IsDirectory(cgroup_directory))
@@ -108,9 +103,7 @@ int ThreadPriorityToNiceValue(ThreadPriority priority) {
   return 0;
 }
 
-void SetThreadPriority(pid_t process_id,
-                       pid_t thread_id,
-                       ThreadPriority priority) {
+void SetThreadPriority(pid_t process_id, pid_t thread_id, ThreadPriority priority) {
   SetThreadCgroupsForThreadPriority(thread_id, priority);
 
   // Some scheduler syscalls require thread ID of 0 for current thread.
@@ -122,8 +115,7 @@ void SetThreadPriority(pid_t process_id,
   }
 
   if (priority == ThreadPriority::TIME_CRITICAL) {
-    if (sched_setscheduler(syscall_tid, SCHED_RR,
-                           &kRealTimeAudioPrio) == 0) {
+    if (sched_setscheduler(syscall_tid, SCHED_RR, &kRealTimeAudioPrio) == 0) {
       return;
     }
     // If failed to set to RT, fallback to setpriority to set nice value.
@@ -132,8 +124,7 @@ void SetThreadPriority(pid_t process_id,
 
   const int nice_setting = ThreadPriorityToNiceValue(priority);
   if (setpriority(PRIO_PROCESS, static_cast<id_t>(syscall_tid), nice_setting)) {
-    VPLOG(1) << "Failed to set nice value of thread (" << thread_id << ") to "
-             << nice_setting;
+    VPLOG(1) << "Failed to set nice value of thread (" << thread_id << ") to " << nice_setting;
   }
 }
 
@@ -187,8 +178,7 @@ uint64_t GetMonotonicTime() {
     PLOG(WARNING) << "clock_gettime failed";
     return 0;
   }
-  return static_cast<double>(ts.tv_sec - start_ts.tv_sec) * NS_PER_SECOND +
-         ts.tv_nsec - start_ts.tv_nsec;
+  return static_cast<double>(ts.tv_sec - start_ts.tv_sec) * NS_PER_SECOND + ts.tv_nsec - start_ts.tv_nsec;
 }
 
 bool SetUTF8Locale() {
@@ -199,4 +189,4 @@ bool SetUTF8Locale() {
   return true;
 }
 
-#endif // __linux__
+#endif  // __linux__

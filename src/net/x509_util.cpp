@@ -17,7 +17,7 @@ class BufferPoolSingleton {
   CRYPTO_BUFFER_POOL* pool_;
 };
 
-} // namespace
+}  // namespace
 
 CRYPTO_BUFFER_POOL* GetBufferPool() {
   static BufferPoolSingleton g_buffer_pool_singleton;
@@ -26,8 +26,7 @@ CRYPTO_BUFFER_POOL* GetBufferPool() {
 
 bssl::UniquePtr<CRYPTO_BUFFER> CreateCryptoBuffer(std::string_view data) {
   return bssl::UniquePtr<CRYPTO_BUFFER>(
-      CRYPTO_BUFFER_new(reinterpret_cast<const uint8_t*>(data.data()),
-                        data.size(), GetBufferPool()));
+      CRYPTO_BUFFER_new(reinterpret_cast<const uint8_t*>(data.data()), data.size(), GetBufferPool()));
 }
 
-} // namespace net::x509_util
+}  // namespace net::x509_util

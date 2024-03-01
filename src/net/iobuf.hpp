@@ -16,8 +16,7 @@ namespace net {
 class ByteRange {
  public:
   ByteRange(const uint8_t* data, size_t size) : data_(data), size_(size) {}
-  ByteRange(const uint8_t* start, const uint8_t* end)
-      : data_(start), size_(end - start) {}
+  ByteRange(const uint8_t* start, const uint8_t* end) : data_(start), size_(end - start) {}
   const uint8_t* data() { return data_; }
   size_t size() const { return size_; }
 
@@ -60,20 +59,11 @@ class IOBuf {
                                            std::size_t size,
                                            std::size_t headroom = 0,
                                            std::size_t minTailroom = 0);
-  static std::unique_ptr<IOBuf> copyBuffer(ByteRange br,
-                                           std::size_t headroom = 0,
-                                           std::size_t minTailroom = 0) {
+  static std::unique_ptr<IOBuf> copyBuffer(ByteRange br, std::size_t headroom = 0, std::size_t minTailroom = 0) {
     return copyBuffer(br.data(), br.size(), headroom, minTailroom);
   }
-  IOBuf(CopyBufferOp op,
-        const void* buf,
-        std::size_t size,
-        std::size_t headroom = 0,
-        std::size_t minTailroom = 0);
-  IOBuf(CopyBufferOp op,
-        ByteRange br,
-        std::size_t headroom = 0,
-        std::size_t minTailroom = 0);
+  IOBuf(CopyBufferOp op, const void* buf, std::size_t size, std::size_t headroom = 0, std::size_t minTailroom = 0);
+  IOBuf(CopyBufferOp op, ByteRange br, std::size_t headroom = 0, std::size_t minTailroom = 0);
 
   /**
    * Convenience function to create a new IOBuf object that copies data from a
@@ -89,10 +79,7 @@ class IOBuf {
   static std::unique_ptr<IOBuf> copyBuffer(const std::string& buf,
                                            std::size_t headroom = 0,
                                            std::size_t minTailroom = 0);
-  IOBuf(CopyBufferOp op,
-        const std::string& buf,
-        std::size_t headroom = 0,
-        std::size_t minTailroom = 0)
+  IOBuf(CopyBufferOp op, const std::string& buf, std::size_t headroom = 0, std::size_t minTailroom = 0)
       : IOBuf(op, buf.data(), buf.size(), headroom, minTailroom) {}
 
   virtual ~IOBuf();
@@ -164,9 +151,7 @@ class IOBuf {
   uint8_t* mutable_tail() { return data_ + length_; }
 
   size_t headroom() const { return size_t(data_ - buf_); }
-  size_t tailroom() const {
-    return size_t(buf_ + capacity_ - (data_ + length_));
-  }
+  size_t tailroom() const { return size_t(buf_ + capacity_ - (data_ + length_)); }
 
   /**
    * Shift the data forwards in the buffer.
@@ -325,11 +310,7 @@ class IOBuf {
    * reference count.
    */
   struct InternalConstructor {};  // avoid conflicts
-  IOBuf(InternalConstructor,
-        uint8_t* buf,
-        std::size_t capacity,
-        uint8_t* data,
-        std::size_t length) noexcept;
+  IOBuf(InternalConstructor, uint8_t* buf, std::size_t capacity, uint8_t* data, std::size_t length) noexcept;
 
  protected:
   uint8_t* buf_ = nullptr;
@@ -352,12 +333,10 @@ inline std::unique_ptr<IOBuf> IOBuf::copyBuffer(const void* data,
   return buf;
 }
 
-inline std::unique_ptr<IOBuf> IOBuf::copyBuffer(const std::string& buf,
-                                                std::size_t headroom,
-                                                std::size_t minTailroom) {
+inline std::unique_ptr<IOBuf> IOBuf::copyBuffer(const std::string& buf, std::size_t headroom, std::size_t minTailroom) {
   return copyBuffer(buf.data(), buf.size(), headroom, minTailroom);
 }
 
-} // namespace net
+}  // namespace net
 
 #endif  // H_NET_IOBUF

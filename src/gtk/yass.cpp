@@ -19,12 +19,12 @@
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
+#include "crashpad_helper.hpp"
 #include "crypto/crypter_export.hpp"
 #include "gtk/utils.hpp"
 #include "gtk/yass_window.hpp"
-#include "version.h"
-#include "crashpad_helper.hpp"
 #include "i18n/icu_util.hpp"
+#include "version.h"
 
 ABSL_FLAG(bool, background, false, "start up backgroundd");
 
@@ -59,16 +59,14 @@ int main(int argc, const char** argv) {
   absl::InstallFailureSignalHandler(failure_handle_options);
 #endif
 
-  absl::SetProgramUsageMessage(
-      absl::StrCat("Usage: ", Basename(exec_path), " [options ...]\n",
-                   " -c, --configfile <file> Use specified config file\n",
-                   " --server_host <host> Host address which remote server listens to\n",
-                   " --server_port <port> Port number which remote server listens to\n",
-                   " --local_host <host> Host address which local server listens to\n"
-                   " --local_port <port> Port number which local server listens to\n"
-                   " --username <username> Username\n",
-                   " --password <pasword> Password pharsal\n",
-                   " --method <method> Method of encrypt"));
+  absl::SetProgramUsageMessage(absl::StrCat(
+      "Usage: ", Basename(exec_path), " [options ...]\n", " -c, --configfile <file> Use specified config file\n",
+      " --server_host <host> Host address which remote server listens to\n",
+      " --server_port <port> Port number which remote server listens to\n",
+      " --local_host <host> Host address which local server listens to\n"
+      " --local_port <port> Port number which local server listens to\n"
+      " --username <username> Username\n",
+      " --password <pasword> Password pharsal\n", " --method <method> Method of encrypt"));
   config::ReadConfigFileOption(argc, argv);
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
@@ -285,8 +283,6 @@ std::string YASSApp::SaveConfig() {
   auto local_port = main_window_->GetLocalPort();
   auto connect_timeout = main_window_->GetTimeout();
 
-  return config::ReadConfigFromArgument(server_host, server_sni, server_port,
-                                        username, password, method_string,
-                                        local_host, local_port,
-                                        connect_timeout);
+  return config::ReadConfigFromArgument(server_host, server_sni, server_port, username, password, method_string,
+                                        local_host, local_port, connect_timeout);
 }

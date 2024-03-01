@@ -28,8 +28,7 @@ static_assert(sizeof(BYTE) == sizeof(uint8_t),
 
 // documented in
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-dtyp/262627d8-3418-4627-9218-4ffe110850b2
-static_assert(sizeof(DWORD) == sizeof(uint32_t),
-              "A DWORD is a 32-bit unsigned integer.");
+static_assert(sizeof(DWORD) == sizeof(uint32_t), "A DWORD is a 32-bit unsigned integer.");
 
 // depends on Windows SDK
 #ifndef QWORD
@@ -38,13 +37,9 @@ typedef unsigned __int64 QWORD;
 
 // documented in
 // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-dtyp/ac050bbf-a821-4fab-bccf-d95d892f428f
-static_assert(sizeof(QWORD) == sizeof(uint64_t),
-              "A QWORD is a 64-bit unsigned integer.");
+static_assert(sizeof(QWORD) == sizeof(uint64_t), "A QWORD is a 64-bit unsigned integer.");
 
-bool ReadValue(HKEY hkey,
-               const std::string& value,
-               DWORD* type,
-               std::vector<BYTE>* output) {
+bool ReadValue(HKEY hkey, const std::string& value, DWORD* type, std::vector<BYTE>* output) {
   DWORD BufferSize;
   std::wstring wvalue = SysUTF8ToWide(value);
 
@@ -52,10 +47,8 @@ bool ReadValue(HKEY hkey,
   // ERROR_SUCCESS and stores the size of the data, in bytes, in the variable
   // pointed to by lpcbData. This enables an application to determine the best
   // way to allocate a buffer for the value's data.
-  if (::RegQueryValueExW(hkey /* HKEY */, wvalue.c_str() /* lpValueName */,
-                         nullptr /* lpReserved */, type /* lpType */,
-                         nullptr /* lpData */,
-                         &BufferSize /* lpcbData */) != ERROR_SUCCESS) {
+  if (::RegQueryValueExW(hkey /* HKEY */, wvalue.c_str() /* lpValueName */, nullptr /* lpReserved */, type /* lpType */,
+                         nullptr /* lpData */, &BufferSize /* lpcbData */) != ERROR_SUCCESS) {
     return false;
   }
 
@@ -69,10 +62,8 @@ bool ReadValue(HKEY hkey,
   // application should ensure that the string is properly terminated before
   // using it; otherwise, it may overwrite a buffer.
   output->resize(BufferSize);
-  if (::RegQueryValueExW(hkey /* HKEY */, wvalue.c_str() /* lpValueName */,
-                         nullptr /* lpReserved */, type /* lpType */,
-                         output->data() /* lpData */,
-                         &BufferSize /* lpcbData */) != ERROR_SUCCESS) {
+  if (::RegQueryValueExW(hkey /* HKEY */, wvalue.c_str() /* lpValueName */, nullptr /* lpReserved */, type /* lpType */,
+                         output->data() /* lpData */, &BufferSize /* lpcbData */) != ERROR_SUCCESS) {
     return false;
   }
   output->resize(BufferSize);
@@ -85,7 +76,7 @@ bool ReadValue(HKEY hkey,
 namespace config {
 class ConfigImplWindows : public ConfigImpl {
  public:
-  ~ConfigImplWindows() override{}
+  ~ConfigImplWindows() override {}
 
  protected:
   bool OpenImpl(bool dontread) override {
@@ -105,20 +96,16 @@ class ConfigImplWindows : public ConfigImpl {
     // https://docs.microsoft.com/en-us/troubleshoot/windows-client/deployment/view-system-registry-with-64-bit-windows
 
     // And no need the reg change notifications or operate on reg subkey
-    REGSAM samDesired =
-        KEY_WOW64_64KEY | (dontread ? KEY_SET_VALUE : KEY_QUERY_VALUE);
+    REGSAM samDesired = KEY_WOW64_64KEY | (dontread ? KEY_SET_VALUE : KEY_QUERY_VALUE);
 
     // Creates the specified registry key. If the key already exists, the
     // function opens it. Note that key names are not case sensitive.
-    if (::RegCreateKeyExW(
-            HKEY_CURRENT_USER /*hKey*/, subkey /* lpSubKey */, 0 /* Reserved */,
-            nullptr /*lpClass*/, REG_OPTION_NON_VOLATILE /* dwOptions */,
-            samDesired /* samDesired */, nullptr /*lpSecurityAttributes*/,
-            &hkey_ /* phkResult */,
-            &disposition /* lpdwDisposition*/) == ERROR_SUCCESS) {
+    if (::RegCreateKeyExW(HKEY_CURRENT_USER /*hKey*/, subkey /* lpSubKey */, 0 /* Reserved */, nullptr /*lpClass*/,
+                          REG_OPTION_NON_VOLATILE /* dwOptions */, samDesired /* samDesired */,
+                          nullptr /*lpSecurityAttributes*/, &hkey_ /* phkResult */,
+                          &disposition /* lpdwDisposition*/) == ERROR_SUCCESS) {
       if (disposition == REG_CREATED_NEW_KEY) {
-        VLOG(2) << "The key did not exist and was created: HKEY_CURRENT_USER/"
-                << SysWideToUTF8(subkey);
+        VLOG(2) << "The key did not exist and was created: HKEY_CURRENT_USER/" << SysWideToUTF8(subkey);
       } else if (disposition == REG_OPENED_EXISTING_KEY) {
         VLOG(2) << "The key existed and was simply opened without being "
                    "changed: HKEY_CURRENT_USER/"
@@ -176,8 +163,7 @@ class ConfigImplWindows : public ConfigImpl {
     DWORD type;
     std::vector<BYTE> output;
 
-    if (ReadValue(hkey_, key, &type, &output) &&
-        (type == REG_DWORD || type == REG_BINARY) &&
+    if (ReadValue(hkey_, key, &type, &output) && (type == REG_DWORD || type == REG_BINARY) &&
         output.size() == sizeof(DWORD)) {
       *value = *reinterpret_cast<uint32_t*>(output.data());
       return true;
@@ -195,8 +181,7 @@ class ConfigImplWindows : public ConfigImpl {
     DWORD type;
     std::vector<BYTE> output;
 
-    if (ReadValue(hkey_, key, &type, &output) &&
-        (type == REG_QWORD || type == REG_BINARY) &&
+    if (ReadValue(hkey_, key, &type, &output) && (type == REG_QWORD || type == REG_BINARY) &&
         output.size() == sizeof(*value)) {
       *value = *reinterpret_cast<uint64_t*>(output.data());
       return true;
@@ -214,16 +199,12 @@ class ConfigImplWindows : public ConfigImpl {
     std::wstring wkey = SysUTF8ToWide(key);
     std::wstring wvalue = SysUTF8ToWide(value);
 
-    if (::RegSetValueExW(
-            hkey_ /* hKey*/, wkey.c_str() /*lpValueName*/, 0 /*Reserved*/,
-            REG_SZ /*dwType*/,
-            reinterpret_cast<const BYTE*>(wvalue.c_str()) /*lpData*/,
-            (wvalue.size() + 1) * sizeof(wchar_t) /*cbData*/) ==
-        ERROR_SUCCESS) {
+    if (::RegSetValueExW(hkey_ /* hKey*/, wkey.c_str() /*lpValueName*/, 0 /*Reserved*/, REG_SZ /*dwType*/,
+                         reinterpret_cast<const BYTE*>(wvalue.c_str()) /*lpData*/,
+                         (wvalue.size() + 1) * sizeof(wchar_t) /*cbData*/) == ERROR_SUCCESS) {
       return true;
     }
-    LOG(WARNING) << "failed to write field: " << key << " with content "
-                 << value;
+    LOG(WARNING) << "failed to write field: " << key << " with content " << value;
     return false;
   }
 
@@ -234,14 +215,11 @@ class ConfigImplWindows : public ConfigImpl {
 
   bool WriteImpl(const std::string& key, uint32_t value) override {
     std::wstring wkey = SysUTF8ToWide(key);
-    if (::RegSetValueExW(hkey_ /* hKey*/, wkey.c_str() /*lpValueName*/,
-                         0 /*Reserved*/, REG_DWORD /*dwType*/,
-                         reinterpret_cast<const BYTE*>(&value) /*lpData*/,
-                         sizeof(value) /*cbData*/) == ERROR_SUCCESS) {
+    if (::RegSetValueExW(hkey_ /* hKey*/, wkey.c_str() /*lpValueName*/, 0 /*Reserved*/, REG_DWORD /*dwType*/,
+                         reinterpret_cast<const BYTE*>(&value) /*lpData*/, sizeof(value) /*cbData*/) == ERROR_SUCCESS) {
       return true;
     }
-    LOG(WARNING) << "failed to write field: " << key << " with content "
-                 << value;
+    LOG(WARNING) << "failed to write field: " << key << " with content " << value;
     return false;
   }
 
@@ -251,10 +229,8 @@ class ConfigImplWindows : public ConfigImpl {
 
   bool WriteImpl(const std::string& key, uint64_t value) override {
     std::wstring wkey = SysUTF8ToWide(key);
-    if (::RegSetValueExW(hkey_ /* hKey*/, wkey.c_str() /*lpValueName*/,
-                         0 /*Reserved*/, REG_QWORD /*dwType*/,
-                         reinterpret_cast<const BYTE*>(&value) /*lpData*/,
-                         sizeof(value) /*cbData*/) == ERROR_SUCCESS) {
+    if (::RegSetValueExW(hkey_ /* hKey*/, wkey.c_str() /*lpValueName*/, 0 /*Reserved*/, REG_QWORD /*dwType*/,
+                         reinterpret_cast<const BYTE*>(&value) /*lpData*/, sizeof(value) /*cbData*/) == ERROR_SUCCESS) {
       return true;
     }
     return false;
@@ -266,8 +242,7 @@ class ConfigImplWindows : public ConfigImpl {
 
   bool DeleteImpl(const std::string& key) override {
     std::wstring wkey = SysUTF8ToWide(key);
-    if (::RegDeleteValueW(hkey_ /*hKey*/, wkey.c_str() /*lpValueName*/)
-        == ERROR_SUCCESS) {
+    if (::RegDeleteValueW(hkey_ /*hKey*/, wkey.c_str() /*lpValueName*/) == ERROR_SUCCESS) {
       return true;
     }
     return false;

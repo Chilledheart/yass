@@ -4,17 +4,17 @@
 
 #ifdef HAVE_CRASHPAD
 
-#include <map>
-#include <filesystem>
-#include "client/crashpad_client.h"
-#include "client/crash_report_database.h"
-#include "client/settings.h"
 #include <build/build_config.h>
+#include <filesystem>
+#include <map>
+#include "client/crash_report_database.h"
+#include "client/crashpad_client.h"
+#include "client/settings.h"
 
 #include "version.h"
 
 #ifdef __ANDROID__
-extern struct android_app *a_app;
+extern struct android_app* a_app;
 extern std::string a_data_dir;
 #endif
 
@@ -30,17 +30,17 @@ bool InitializeCrashpad(const std::string& exe_path) {
 
   // Metadata that will be posted to the server with the crash report map
   std::map<std::string, std::string> annotations;
-  annotations["format"] = "minidump";          // Required: Crashpad setting to save crash as a minidump
-  annotations["product"] = "yassCrashpadCrasher";// Required: BugSplat appName
-  annotations["version"] = YASS_APP_TAG "-" YASS_APP_SUBTAG;// Required: BugSplat appVersion
-  annotations["key"] = YASS_APP_LAST_CHANGE;           // Optional: BugSplat key field
-  annotations["user"] = "yass@bugsplat.com";   // Optional: BugSplat user email
-  annotations["list_annotations"] = "Optional comment"; // Optional: BugSplat crash description
+  annotations["format"] = "minidump";                         // Required: Crashpad setting to save crash as a minidump
+  annotations["product"] = "yassCrashpadCrasher";             // Required: BugSplat appName
+  annotations["version"] = YASS_APP_TAG "-" YASS_APP_SUBTAG;  // Required: BugSplat appVersion
+  annotations["key"] = YASS_APP_LAST_CHANGE;                  // Optional: BugSplat key field
+  annotations["user"] = "yass@bugsplat.com";                  // Optional: BugSplat user email
+  annotations["list_annotations"] = "Optional comment";       // Optional: BugSplat crash description
 
   // Start crash handler
-  crashpad::CrashpadClient *client = new crashpad::CrashpadClient();
-  bool ret = client->StartCrashpadInProcessHandler(reportsDir, url, annotations,
-    crashpad::CrashpadClient::ProcessPendingReportsObservationCallback());
+  crashpad::CrashpadClient* client = new crashpad::CrashpadClient();
+  bool ret = client->StartCrashpadInProcessHandler(
+      reportsDir, url, annotations, crashpad::CrashpadClient::ProcessPendingReportsObservationCallback());
   if (ret) {
     g_database = crashpad::CrashReportDatabase::Initialize(reportsDir);
   }
@@ -77,12 +77,12 @@ bool InitializeCrashpad(const std::string& exe_path) {
 
   // Metadata that will be posted to the server with the crash report map
   std::map<std::string, std::string> annotations;
-  annotations["format"] = "minidump";          // Required: Crashpad setting to save crash as a minidump
-  annotations["product"] = "yassCrashpadCrasher";// Required: BugSplat appName
-  annotations["version"] = YASS_APP_TAG "-" YASS_APP_SUBTAG;// Required: BugSplat appVersion
-  annotations["key"] = YASS_APP_LAST_CHANGE;           // Optional: BugSplat key field
-  annotations["user"] = "yass@bugsplat.com";   // Optional: BugSplat user email
-  annotations["list_annotations"] = "Optional comment"; // Optional: BugSplat crash description
+  annotations["format"] = "minidump";                         // Required: Crashpad setting to save crash as a minidump
+  annotations["product"] = "yassCrashpadCrasher";             // Required: BugSplat appName
+  annotations["version"] = YASS_APP_TAG "-" YASS_APP_SUBTAG;  // Required: BugSplat appVersion
+  annotations["key"] = YASS_APP_LAST_CHANGE;                  // Optional: BugSplat key field
+  annotations["user"] = "yass@bugsplat.com";                  // Optional: BugSplat user email
+  annotations["list_annotations"] = "Optional comment";       // Optional: BugSplat crash description
 
   // Disable crashpad rate limiting so that all crashes have dmp files
   std::vector<std::string> arguments;
@@ -90,7 +90,8 @@ bool InitializeCrashpad(const std::string& exe_path) {
 
   // Initialize Crashpad database
   std::unique_ptr<crashpad::CrashReportDatabase> database = crashpad::CrashReportDatabase::Initialize(reportsDir);
-  if (database == NULL) return false;
+  if (database == NULL)
+    return false;
 
 #if 0
   // Enable automated crash uploads
@@ -100,9 +101,8 @@ bool InitializeCrashpad(const std::string& exe_path) {
 #endif
 
   // Start crash handler
-  crashpad::CrashpadClient *client = new crashpad::CrashpadClient();
-  bool status = client->StartHandler(handler, reportsDir, metricsDir, url,
-                                     annotations, arguments, true, true);
+  crashpad::CrashpadClient* client = new crashpad::CrashpadClient();
+  bool status = client->StartHandler(handler, reportsDir, metricsDir, url, annotations, arguments, true, true);
   return status;
 }
 

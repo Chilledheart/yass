@@ -15,22 +15,21 @@
 - (void)Stopping;
 - (void)Stopped;
 - (void)UpdateStatusBar;
-@property (weak, nonatomic) IBOutlet UIButton *startButton;
-@property (weak, nonatomic) IBOutlet UIButton *stopButton;
-@property (weak, nonatomic) IBOutlet UITextField *serverHost;
-@property (weak, nonatomic) IBOutlet UITextField *serverPort;
-@property (weak, nonatomic) IBOutlet UITextField *username;
-@property (weak, nonatomic) IBOutlet UITextField *password;
-@property (weak, nonatomic) IBOutlet UIPickerView *cipherMethod;
-@property (weak, nonatomic) IBOutlet UITextField *timeout;
+@property(weak, nonatomic) IBOutlet UIButton* startButton;
+@property(weak, nonatomic) IBOutlet UIButton* stopButton;
+@property(weak, nonatomic) IBOutlet UITextField* serverHost;
+@property(weak, nonatomic) IBOutlet UITextField* serverPort;
+@property(weak, nonatomic) IBOutlet UITextField* username;
+@property(weak, nonatomic) IBOutlet UITextField* password;
+@property(weak, nonatomic) IBOutlet UIPickerView* cipherMethod;
+@property(weak, nonatomic) IBOutlet UITextField* timeout;
 
-@property (strong, nonatomic) NSString* currentCiphermethod;
+@property(strong, nonatomic) NSString* currentCiphermethod;
 
-@property (weak, nonatomic) IBOutlet UILabel *status;
-@property (weak, nonatomic) IBOutlet NSLayoutConstraint *bottomConstraint;
-@property (weak, nonatomic) IBOutlet UIScrollView *contentView;
-
+@property(weak, nonatomic) IBOutlet UILabel* status;
+@property(weak, nonatomic) IBOutlet NSLayoutConstraint* bottomConstraint;
+@property(weak, nonatomic) IBOutlet UIScrollView* contentView;
 
 @end
 
-#endif // YASS_IOS_VIEW_CONTROLLER
+#endif  // YASS_IOS_VIEW_CONTROLLER

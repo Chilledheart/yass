@@ -42,7 +42,7 @@ TEST(UtilsTest, Basename) {
 #ifdef _WIN32
 TEST(UtilsTest, ExpandUserFromStringImpl) {
   wchar_t path[] = L"C:/path/to/directory";
-  size_t path_len = sizeof(path) / sizeof(path[0]);
+  size_t path_len = std::size(path);
   // the return value is the REQUIRED number of TCHARs,
   // including the terminating NULL character.
   DWORD required_size = ::ExpandEnvironmentStringsW(path, nullptr, 0);
@@ -52,21 +52,21 @@ TEST(UtilsTest, ExpandUserFromStringImpl) {
   ASSERT_NE(0u, required_size);
 
   std::wstring expanded_path;
-  expanded_path.resize(required_size-1);
+  expanded_path.resize(required_size - 1);
   ASSERT_EQ(path_len, required_size);
   /* the buffer size should be the string length plus the terminating null character */
   ::ExpandEnvironmentStringsW(path, &expanded_path[0], required_size);
 
   ASSERT_STREQ(path, expanded_path.c_str());
-  ASSERT_EQ(std::wstring(path, path_len-1), expanded_path);
+  ASSERT_EQ(std::wstring(path, path_len - 1), expanded_path);
 }
 
 TEST(UtilsTest, ExpandUserFromString) {
   wchar_t path[] = L"%TEMP%/path/to/directory";
-  size_t path_len = sizeof(path) / sizeof(path[0]);
+  size_t path_len = std::size(path);
 
   wchar_t temp[32767];
-  DWORD temp_len = GetEnvironmentVariableW(L"TEMP", temp, sizeof(temp) / sizeof(temp[0]));
+  DWORD temp_len = GetEnvironmentVariableW(L"TEMP", temp, std::size(temp));
   // GetEnvironmentVariableW: the return value is the number of characters
   // stored in the buffer pointed to by lpBuffer, not including the terminating null character.
   ASSERT_NE(0u, temp_len);
@@ -124,7 +124,7 @@ TEST(UtilsTest, ReadFileAndWrite4K) {
 #endif
 
   ASSERT_TRUE(WriteFileWithBuffer(tmp, buf));
-  ASSERT_TRUE(ReadFileToBuffer(tmp, buf2.data(), buf2.size()+1));
+  ASSERT_TRUE(ReadFileToBuffer(tmp, buf2.data(), buf2.size() + 1));
   ASSERT_EQ(buf, buf2);
 
   ASSERT_TRUE(RemoveFile(tmp));

@@ -11,6 +11,7 @@ Standard: Cpp11
 #   IPC_MESSAGE_HANDLER(WidgetHostViewHost_Update, OnUpdate)
 # IPC_END_MESSAGE_MAP()
 # gets correctly indented.
+ColumnLimit: 120
 MacroBlockBegin: "^\
 BEGIN_MESSAGE_MAP|\
 BEGIN_EVENT_TABLE|\

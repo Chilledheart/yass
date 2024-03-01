@@ -20,11 +20,11 @@
 
 #include "cli/cli_server.hpp"
 #include "config/config.hpp"
-#include "net/cipher.hpp"
-#include "net/iobuf.hpp"
 #include "core/rand_util.hpp"
 #include "core/ref_counted.hpp"
 #include "core/scoped_refptr.hpp"
+#include "net/cipher.hpp"
+#include "net/iobuf.hpp"
 #include "server/server_server.hpp"
 
 using namespace net;
@@ -40,36 +40,36 @@ const int kIOLoopCount = 1;
 
 // openssl req -newkey rsa:1024 -keyout pkey.pem -x509 -out cert.crt -days 3650 -nodes -subj /C=XX
 const char kCertificate[] =
-"-----BEGIN CERTIFICATE-----\n"
-"MIIB9jCCAV+gAwIBAgIUM03bTKd+A2WwrfolXJC+L9AsxI8wDQYJKoZIhvcNAQEL\n"
-"BQAwDTELMAkGA1UEBhMCWFgwHhcNMjMwMTI5MjA1MDU5WhcNMzMwMTI2MjA1MDU5\n"
-"WjANMQswCQYDVQQGEwJYWDCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEA3GGZ\n"
-"pQbdPh22uCMIes5GUJfDqsAda5I7JeUt1Uq0KebsQ1rxM9QUgzsvVktYqKGxZW57\n"
-"djPlcWthfUGlUQAPpZ3/njWter81vy7oj/SfiEvZXk9LyrEA7vf9XIpFJhVrucpI\n"
-"wzX1KmQAJdpc0yYmVvG+59PNI9SF6mGUWDGBhukCAwEAAaNTMFEwHQYDVR0OBBYE\n"
-"FPFt885ocZzO8rQ7gu6vr+i/nrEEMB8GA1UdIwQYMBaAFPFt885ocZzO8rQ7gu6v\n"
-"r+i/nrEEMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADgYEApAMdus13\n"
-"9A4wGjtSmI1qsh/+nBeVrQWUOQH8eb0Oe7dDYg58EtzjhlvpLQ7nAOVO8fsioja7\n"
-"Hine/sjADd7nGUrsIP+JIxplayLXcrP37KwaWxyRHoh/Bqa+7D3RpCv0SrNsIvlt\n"
-"yyvnIm8njIJSin7Vf4tD1PfY6Obyc8ygUSw=\n"
-"-----END CERTIFICATE-----\n";
+    "-----BEGIN CERTIFICATE-----\n"
+    "MIIB9jCCAV+gAwIBAgIUM03bTKd+A2WwrfolXJC+L9AsxI8wDQYJKoZIhvcNAQEL\n"
+    "BQAwDTELMAkGA1UEBhMCWFgwHhcNMjMwMTI5MjA1MDU5WhcNMzMwMTI2MjA1MDU5\n"
+    "WjANMQswCQYDVQQGEwJYWDCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEA3GGZ\n"
+    "pQbdPh22uCMIes5GUJfDqsAda5I7JeUt1Uq0KebsQ1rxM9QUgzsvVktYqKGxZW57\n"
+    "djPlcWthfUGlUQAPpZ3/njWter81vy7oj/SfiEvZXk9LyrEA7vf9XIpFJhVrucpI\n"
+    "wzX1KmQAJdpc0yYmVvG+59PNI9SF6mGUWDGBhukCAwEAAaNTMFEwHQYDVR0OBBYE\n"
+    "FPFt885ocZzO8rQ7gu6vr+i/nrEEMB8GA1UdIwQYMBaAFPFt885ocZzO8rQ7gu6v\n"
+    "r+i/nrEEMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADgYEApAMdus13\n"
+    "9A4wGjtSmI1qsh/+nBeVrQWUOQH8eb0Oe7dDYg58EtzjhlvpLQ7nAOVO8fsioja7\n"
+    "Hine/sjADd7nGUrsIP+JIxplayLXcrP37KwaWxyRHoh/Bqa+7D3RpCv0SrNsIvlt\n"
+    "yyvnIm8njIJSin7Vf4tD1PfY6Obyc8ygUSw=\n"
+    "-----END CERTIFICATE-----\n";
 const char kPrivateKey[] =
-"-----BEGIN PRIVATE KEY-----\n"
-"MIICdQIBADANBgkqhkiG9w0BAQEFAASCAl8wggJbAgEAAoGBANxhmaUG3T4dtrgj\n"
-"CHrORlCXw6rAHWuSOyXlLdVKtCnm7ENa8TPUFIM7L1ZLWKihsWVue3Yz5XFrYX1B\n"
-"pVEAD6Wd/541rXq/Nb8u6I/0n4hL2V5PS8qxAO73/VyKRSYVa7nKSMM19SpkACXa\n"
-"XNMmJlbxvufTzSPUhephlFgxgYbpAgMBAAECgYBprRuB+NKqcJEnpxTv3m31Q3D+\n"
-"NfVlmc9nEohx2MqftS3h9n/m/HGBpCXE2YiABFkObHYjbis9weITsCDXwJG/UtEO\n"
-"yv8DqTEVcFYAg7fBu6dRaPsAvuDt4MDnk82/M9ZbtXqG7REp7hMxk3uKSThUfMoR\n"
-"lIJiUhu2TCHHsw25IQJBAPzNPtn4peug9wXQcd7n1fFXOvjELHX011JFgAYQRoJu\n"
-"Jmdfpz0+mzqLaagIPEENqwfGAMYkfOSPJWQhfcpeq70CQQDfK1qNNCqJzciGD/K7\n"
-"xBEliKFGTKBI0Ru5FVPJQjEzorez/sIjsPqqEvfenJ6LyyfKgeaoWpsB5sRnn+Li\n"
-"ZESdAkANa3vVqFxueLoERf91fMsfp6jKwec2T8wKYwQbzktf6ycAv9Qp7SPiZLo0\n"
-"IFPKhEY7AGjUG+XBYFP0z85UqtflAkBSp8r8+3I54dbAGI4NjzvOjAE3eU/wSEqd\n"
-"TVHf+70fY8foSZX8BCOC9E2LzLRIEHFnZp9YgV5h4OejfatZsEtdAkAZU+hVlaJD\n"
-"GxqmgkJNSUluJFKduxyhdSB/cPmN0N/CFPxgfMEuRuJW3+POWfzQvLCxQ6m1+BpG\n"
-"kMmiIVi25B8z\n"
-"-----END PRIVATE KEY-----\n";
+    "-----BEGIN PRIVATE KEY-----\n"
+    "MIICdQIBADANBgkqhkiG9w0BAQEFAASCAl8wggJbAgEAAoGBANxhmaUG3T4dtrgj\n"
+    "CHrORlCXw6rAHWuSOyXlLdVKtCnm7ENa8TPUFIM7L1ZLWKihsWVue3Yz5XFrYX1B\n"
+    "pVEAD6Wd/541rXq/Nb8u6I/0n4hL2V5PS8qxAO73/VyKRSYVa7nKSMM19SpkACXa\n"
+    "XNMmJlbxvufTzSPUhephlFgxgYbpAgMBAAECgYBprRuB+NKqcJEnpxTv3m31Q3D+\n"
+    "NfVlmc9nEohx2MqftS3h9n/m/HGBpCXE2YiABFkObHYjbis9weITsCDXwJG/UtEO\n"
+    "yv8DqTEVcFYAg7fBu6dRaPsAvuDt4MDnk82/M9ZbtXqG7REp7hMxk3uKSThUfMoR\n"
+    "lIJiUhu2TCHHsw25IQJBAPzNPtn4peug9wXQcd7n1fFXOvjELHX011JFgAYQRoJu\n"
+    "Jmdfpz0+mzqLaagIPEENqwfGAMYkfOSPJWQhfcpeq70CQQDfK1qNNCqJzciGD/K7\n"
+    "xBEliKFGTKBI0Ru5FVPJQjEzorez/sIjsPqqEvfenJ6LyyfKgeaoWpsB5sRnn+Li\n"
+    "ZESdAkANa3vVqFxueLoERf91fMsfp6jKwec2T8wKYwQbzktf6ycAv9Qp7SPiZLo0\n"
+    "IFPKhEY7AGjUG+XBYFP0z85UqtflAkBSp8r8+3I54dbAGI4NjzvOjAE3eU/wSEqd\n"
+    "TVHf+70fY8foSZX8BCOC9E2LzLRIEHFnZp9YgV5h4OejfatZsEtdAkAZU+hVlaJD\n"
+    "GxqmgkJNSUluJFKduxyhdSB/cPmN0N/CFPxgfMEuRuJW3+POWfzQvLCxQ6m1+BpG\n"
+    "kMmiIVi25B8z\n"
+    "-----END PRIVATE KEY-----\n";
 
 void GenerateRandContent(int size) {
   g_send_buffer.clear();
@@ -84,8 +84,7 @@ void GenerateRandContent(int size) {
   g_recv_buffer = IOBuf::create(size);
 }
 
-class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderConnection>,
-                                   public Connection {
+class ContentProviderConnection : public RefCountedThreadSafe<ContentProviderConnection>, public Connection {
  public:
   ContentProviderConnection(asio::io_context& io_context,
                             const std::string& remote_host_ips,
@@ -95,12 +94,18 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
                             bool https_fallback,
                             bool enable_upstream_tls,
                             bool enable_tls,
-                            asio::ssl::context *upstream_ssl_ctx,
-                            asio::ssl::context *ssl_ctx)
-      : Connection(io_context, remote_host_ips, remote_host_sni, remote_port,
-                   upstream_https_fallback, https_fallback,
-                   enable_upstream_tls, enable_tls,
-                   upstream_ssl_ctx, ssl_ctx) {}
+                            asio::ssl::context* upstream_ssl_ctx,
+                            asio::ssl::context* ssl_ctx)
+      : Connection(io_context,
+                   remote_host_ips,
+                   remote_host_sni,
+                   remote_port,
+                   upstream_https_fallback,
+                   https_fallback,
+                   enable_upstream_tls,
+                   enable_tls,
+                   upstream_ssl_ctx,
+                   ssl_ctx) {}
 
   ~ContentProviderConnection() override {
     VLOG(1) << "Connection (content-provider) " << connection_id() << " freed memory";
@@ -121,8 +126,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
   }
 
   void close() override {
-    VLOG(1) << "Connection (content-provider) " << connection_id()
-            << " disconnected";
+    VLOG(1) << "Connection (content-provider) " << connection_id() << " disconnected";
     asio::error_code ec;
     downlink_->socket_.close(ec);
     on_disconnect();
@@ -138,39 +142,39 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
     g_in_provider_mutex.lock();
 
     asio::async_write(downlink_->socket_, const_buffer(g_send_buffer),
-      [this, self](asio::error_code ec, size_t bytes_transferred) {
-        if (ec.value() == asio::error::bad_descriptor || ec.value() == asio::error::operation_aborted) {
-          goto done;
-        }
-        if (ec || bytes_transferred != g_send_buffer.length()) {
-          LOG(WARNING) << "Connection (content-provider) " << connection_id()
-                       << " Failed to transfer data: " << ec.value();
-        } else {
-          VLOG(1) << "Connection (content-provider) " << connection_id()
-                  << " written: " << bytes_transferred << " bytes";
-        }
-      done:
-        done_[0] = true;
-        shutdown(ec);
-    });
+                      [this, self](asio::error_code ec, size_t bytes_transferred) {
+                        if (ec.value() == asio::error::bad_descriptor || ec.value() == asio::error::operation_aborted) {
+                          goto done;
+                        }
+                        if (ec || bytes_transferred != g_send_buffer.length()) {
+                          LOG(WARNING) << "Connection (content-provider) " << connection_id()
+                                       << " Failed to transfer data: " << ec.value();
+                        } else {
+                          VLOG(1) << "Connection (content-provider) " << connection_id()
+                                  << " written: " << bytes_transferred << " bytes";
+                        }
+                      done:
+                        done_[0] = true;
+                        shutdown(ec);
+                      });
 
     asio::async_read(downlink_->socket_, mutable_buffer(*g_recv_buffer),
-      [this, self](asio::error_code ec, size_t bytes_transferred) {
-        if (ec.value() == asio::error::bad_descriptor || ec.value() == asio::error::operation_aborted) {
-          goto done;
-        }
-        if (ec || bytes_transferred != g_send_buffer.length()) {
-          LOG(WARNING) << "Connection (content-provider) " << connection_id()
-                       << " Failed to transfer data: " << ec;
-        } else {
-          VLOG(1) << "Connection (content-provider) " << connection_id()
-                  << " read: " << bytes_transferred << " bytes";
-        }
-        g_recv_buffer->append(bytes_transferred);
-      done:
-        done_[1] = true;
-        shutdown(ec);
-    });
+                     [this, self](asio::error_code ec, size_t bytes_transferred) {
+                       if (ec.value() == asio::error::bad_descriptor || ec.value() == asio::error::operation_aborted) {
+                         goto done;
+                       }
+                       if (ec || bytes_transferred != g_send_buffer.length()) {
+                         LOG(WARNING) << "Connection (content-provider) " << connection_id()
+                                      << " Failed to transfer data: " << ec;
+                       } else {
+                         VLOG(1) << "Connection (content-provider) " << connection_id()
+                                 << " read: " << bytes_transferred << " bytes";
+                       }
+                       g_recv_buffer->append(bytes_transferred);
+                     done:
+                       done_[1] = true;
+                       shutdown(ec);
+                     });
   }
 
   void shutdown(asio::error_code ec) {
@@ -187,9 +191,7 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
   void shutdown_impl() {
     if (!g_in_consumer_mutex.try_lock()) {
       scoped_refptr<ContentProviderConnection> self(this);
-      asio::post(*io_context_, [this, self]() {
-        shutdown_impl();
-      });
+      asio::post(*io_context_, [this, self]() { shutdown_impl(); });
       return;
     }
     // consumer locked
@@ -197,43 +199,44 @@ class ContentProviderConnection  : public RefCountedThreadSafe<ContentProviderCo
     g_in_consumer_mutex.unlock();
   }
 
-  bool done_[2] = { false, false };
+  bool done_[2] = {false, false};
 };
 
 class ContentProviderConnectionFactory : public ConnectionFactory {
  public:
-   using ConnectionType = ContentProviderConnection;
-   template<typename... Args>
-   scoped_refptr<ConnectionType> Create(Args&&... args) {
-     return MakeRefCounted<ConnectionType>(std::forward<Args>(args)...);
-   }
-   const char* Name() override { return "content-provider"; }
-   const char* ShortName() override { return "cp"; }
+  using ConnectionType = ContentProviderConnection;
+  template <typename... Args>
+  scoped_refptr<ConnectionType> Create(Args&&... args) {
+    return MakeRefCounted<ConnectionType>(std::forward<Args>(args)...);
+  }
+  const char* Name() override { return "content-provider"; }
+  const char* ShortName() override { return "cp"; }
 };
 
 typedef ContentServer<ContentProviderConnectionFactory> ContentProviderServer;
 
-void GenerateConnectRequest(std::string host, int port_num, IOBuf *buf) {
+void GenerateConnectRequest(std::string host, int port_num, IOBuf* buf) {
   std::string request_header = absl::StrFormat(
       "CONNECT %s:%d HTTP/1.1\r\n"
       "Host: packages.endpointdev.com:443\r\n"
       "User-Agent: curl/7.77.0\r\n"
       "Proxy-Connection: Keep-Alive\r\n"
-      "\r\n", host.c_str(), port_num);
+      "\r\n",
+      host.c_str(), port_num);
   buf->reserve(request_header.size(), 0);
   memcpy(buf->mutable_buffer(), request_header.c_str(), request_header.size());
   buf->prepend(request_header.size());
 }
 
-#define XX(num, name, string) \
-struct CryptoTraits##name { \
-  static constexpr cipher_method value = CRYPTO_##name; \
-};
+#define XX(num, name, string)                             \
+  struct CryptoTraits##name {                             \
+    static constexpr cipher_method value = CRYPTO_##name; \
+  };
 CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
 
 // [content provider] <== [ss server] <== [ss local] <== [content consumer]
-template<typename T>
+template <typename T>
 class SsEndToEndBM : public benchmark::Fixture {
  public:
   void SetUp(::benchmark::State& state) override {
@@ -277,14 +280,11 @@ class SsEndToEndBM : public benchmark::Fixture {
   }
 
  protected:
-  asio::ip::tcp::endpoint GetReusableEndpoint() const {
-    return GetEndpoint(0);
-  }
+  asio::ip::tcp::endpoint GetReusableEndpoint() const { return GetEndpoint(0); }
 
   asio::ip::tcp::endpoint GetEndpoint(int port_num) const {
     asio::error_code ec;
-    auto addr = asio::ip::make_address(
-        absl::GetFlag(FLAGS_ipv6_mode) ?  "::1" : "127.0.0.1", ec);
+    auto addr = asio::ip::make_address(absl::GetFlag(FLAGS_ipv6_mode) ? "::1" : "127.0.0.1", ec);
     CHECK(!ec) << ec;
     asio::ip::tcp::endpoint endpoint;
     endpoint.address(addr);
@@ -302,7 +302,8 @@ class SsEndToEndBM : public benchmark::Fixture {
       }
 
       VLOG(1) << "background thread started";
-      work_guard_ = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context_.get_executor());
+      work_guard_ =
+          std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context_.get_executor());
       io_context_.run();
       io_context_.restart();
       VLOG(1) << "background thread stopped";
@@ -317,8 +318,7 @@ class SsEndToEndBM : public benchmark::Fixture {
     s.connect(endpoint, ec);
     CHECK(!ec) << "Connection (content-consumer) connect failure " << ec;
     auto request_buf = IOBuf::create(SOCKET_BUF_SIZE);
-    GenerateConnectRequest("localhost", content_provider_endpoint_.port(),
-                           request_buf.get());
+    GenerateConnectRequest("localhost", content_provider_endpoint_.port(), request_buf.get());
 
     size_t written = asio::write(s, const_buffer(*request_buf), ec);
     VLOG(1) << "Connection (content-consumer) written: " << written << " bytes";
@@ -350,13 +350,13 @@ class SsEndToEndBM : public benchmark::Fixture {
       g_in_provider_mutex.unlock();
     }
     std::lock_guard<std::mutex> done_lk(g_in_consumer_mutex);
-    auto work_guard = std::make_shared<asio::executor_work_guard<asio::io_context::executor_type>>(io_context.get_executor());
+    auto work_guard =
+        std::make_shared<asio::executor_work_guard<asio::io_context::executor_type>>(io_context.get_executor());
 
     auto start = std::chrono::high_resolution_clock::now();
 
     VLOG(1) << "Connection (content-consumer) start to do IO";
-    asio::async_write(s, const_buffer(g_send_buffer),
-      [work_guard](asio::error_code ec, size_t written) {
+    asio::async_write(s, const_buffer(g_send_buffer), [work_guard](asio::error_code ec, size_t written) {
       VLOG(1) << "Connection (content-consumer) written: " << written << " bytes";
       CHECK(!ec) << "Connection (content-consumer) write failure " << ec;
       CHECK_EQ(written, g_send_buffer.length()) << "Partial written";
@@ -364,8 +364,7 @@ class SsEndToEndBM : public benchmark::Fixture {
 
     IOBuf resp_buffer;
     resp_buffer.reserve(0, g_send_buffer.length());
-    asio::async_read(s, tail_buffer(resp_buffer),
-      [work_guard, &resp_buffer](asio::error_code ec, size_t read) {
+    asio::async_read(s, tail_buffer(resp_buffer), [work_guard, &resp_buffer](asio::error_code ec, size_t read) {
       VLOG(1) << "Connection (content-consumer) read: " << read << " bytes";
       resp_buffer.append(read);
       CHECK(!ec) << "Connection (content-consumer) read failure " << ec;
@@ -387,8 +386,7 @@ class SsEndToEndBM : public benchmark::Fixture {
     }
 
     auto end = std::chrono::high_resolution_clock::now();
-    auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(
-        end - start);
+    auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
     state.SetIterationTime(elapsed_seconds.count());
   }
 
@@ -422,13 +420,9 @@ class SsEndToEndBM : public benchmark::Fixture {
 
   asio::error_code StartServer(asio::ip::tcp::endpoint endpoint, int backlog) {
     asio::error_code ec;
-    server_server_ = std::make_unique<server::ServerServer>(io_context_,
-                                                            std::string(),
-                                                            std::string(),
-                                                            uint16_t(),
-                                                            std::string(),
-                                                            std::string(kCertificate),
-                                                            std::string(kPrivateKey));
+    server_server_ =
+        std::make_unique<server::ServerServer>(io_context_, std::string(), std::string(), uint16_t(), std::string(),
+                                               std::string(kCertificate), std::string(kPrivateKey));
     server_server_->listen(endpoint, "localhost", backlog, ec);
 
     if (ec) {
@@ -448,16 +442,11 @@ class SsEndToEndBM : public benchmark::Fixture {
     }
   }
 
-  asio::error_code StartLocal(asio::ip::tcp::endpoint remote_endpoint,
-                              asio::ip::tcp::endpoint endpoint,
-                              int backlog) {
+  asio::error_code StartLocal(asio::ip::tcp::endpoint remote_endpoint, asio::ip::tcp::endpoint endpoint, int backlog) {
     asio::error_code ec;
 
-    local_server_ = std::make_unique<cli::CliServer>(io_context_,
-                                                     std::string(),
-                                                     "localhost",
-                                                     remote_endpoint.port(),
-                                                     kCertificate);
+    local_server_ =
+        std::make_unique<cli::CliServer>(io_context_, std::string(), "localhost", remote_endpoint.port(), kCertificate);
     local_server_->listen(endpoint, std::string(), backlog, ec);
 
     if (ec) {
@@ -490,23 +479,25 @@ class SsEndToEndBM : public benchmark::Fixture {
   std::unique_ptr<cli::CliServer> local_server_;
   asio::ip::tcp::endpoint local_endpoint_;
 };
-} // namespace
+}  // namespace
 
 // Register the function as a benchmark
 
-#define XX(num, name, string) \
-  BENCHMARK_TEMPLATE_DEFINE_F(SsEndToEndBM, name, CryptoTraits##name)(benchmark::State& state) { \
-    asio::io_context io_context;                                        \
-    asio::ip::tcp::socket s(io_context);                                \
-    SendRequestAndCheckResponse_Pre(s);                                 \
-    for (auto _ : state) {                                              \
-      SendRequestAndCheckResponse(s, io_context, state);                \
-    }                                                                   \
-    SendRequestAndCheckResponse_Post(s);                                \
-    state.SetBytesProcessed(int64_t(state.iterations()) * int64_t(state.range(0))); \
-  }                                                                     \
-  BENCHMARK_REGISTER_F(SsEndToEndBM, name)              \
-    ->Name("SsEndToEndBM_FullDuplex_" # name)->Range(4096, 1*1024*1024)->UseManualTime();
+#define XX(num, name, string)                                                                     \
+  BENCHMARK_TEMPLATE_DEFINE_F(SsEndToEndBM, name, CryptoTraits##name)(benchmark::State & state) { \
+    asio::io_context io_context;                                                                  \
+    asio::ip::tcp::socket s(io_context);                                                          \
+    SendRequestAndCheckResponse_Pre(s);                                                           \
+    for (auto _ : state) {                                                                        \
+      SendRequestAndCheckResponse(s, io_context, state);                                          \
+    }                                                                                             \
+    SendRequestAndCheckResponse_Post(s);                                                          \
+    state.SetBytesProcessed(int64_t(state.iterations()) * int64_t(state.range(0)));               \
+  }                                                                                               \
+  BENCHMARK_REGISTER_F(SsEndToEndBM, name)                                                        \
+      ->Name("SsEndToEndBM_FullDuplex_" #name)                                                    \
+      ->Range(4096, 1 * 1024 * 1024)                                                              \
+      ->UseManualTime();
 CIPHER_METHOD_MAP_SODIUM(XX)
 CIPHER_METHOD_MAP_HTTP(XX)
 CIPHER_METHOD_MAP_HTTP2(XX)
@@ -537,9 +528,10 @@ class ASIOFixture : public benchmark::Fixture {
   asio::readable_pipe s2;
 };
 
-BENCHMARK_DEFINE_F(ASIOFixture, PlainIO)(benchmark::State& state)  {
+BENCHMARK_DEFINE_F(ASIOFixture, PlainIO)(benchmark::State& state) {
   for (auto _ : state) {
-    auto work_guard = std::make_shared<asio::executor_work_guard<asio::io_context::executor_type>>(io_context.get_executor());
+    auto work_guard =
+        std::make_shared<asio::executor_work_guard<asio::io_context::executor_type>>(io_context.get_executor());
 
     IOBuf req_buffer;
     req_buffer.reserve(0, g_send_buffer.length());
@@ -554,14 +546,12 @@ BENCHMARK_DEFINE_F(ASIOFixture, PlainIO)(benchmark::State& state)  {
     //
     auto start = std::chrono::high_resolution_clock::now();
 
-    asio::async_write(s1, const_buffer(req_buffer),
-      [work_guard](asio::error_code ec, size_t written) {
+    asio::async_write(s1, const_buffer(req_buffer), [work_guard](asio::error_code ec, size_t written) {
       CHECK(!ec) << "Connection (content-provider) written failure " << ec;
       VLOG(1) << "Connection (content-provider) written: " << written;
     });
 
-    asio::async_read(s2, mutable_buffer(*g_recv_buffer),
-      [work_guard](asio::error_code ec, size_t read) {
+    asio::async_read(s2, mutable_buffer(*g_recv_buffer), [work_guard](asio::error_code ec, size_t read) {
       CHECK(!ec) << "Connection (content-provider) read failure " << ec;
       VLOG(1) << "Connection (content-provider) read: " << read;
     });
@@ -574,23 +564,22 @@ BENCHMARK_DEFINE_F(ASIOFixture, PlainIO)(benchmark::State& state)  {
     // END
     //
     auto end = std::chrono::high_resolution_clock::now();
-    auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(
-        end - start);
+    auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
     state.SetIterationTime(elapsed_seconds.count());
   }
 
   state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) * static_cast<int64_t>(state.range(0)));
 }
 
-BENCHMARK_REGISTER_F(ASIOFixture, PlainIO)->Range(4096, 1*1024*1024)->UseManualTime();
+BENCHMARK_REGISTER_F(ASIOFixture, PlainIO)->Range(4096, 1 * 1024 * 1024)->UseManualTime();
 
 #if BUILDFLAG(IS_IOS)
 extern "C" int xc_main();
 int xc_main() {
   int argc = 1;
-  char *argv[] = {(char*)"xc_main", nullptr};
+  char* argv[] = {(char*)"xc_main", nullptr};
 #else
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 #endif
   SetExecutablePath(argv[0]);
   std::string exec_path;

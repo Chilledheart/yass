@@ -8,9 +8,8 @@
 // synchronous call
 int setProtectFd(int fd);
 
-__attribute__((visibility ("default")))
-extern "C" void RegisterEntryModule(void);
+__attribute__((visibility("default"))) extern "C" void RegisterEntryModule(void);
 
-#endif // __OHOS__
+#endif  // __OHOS__
 
-#endif //  _H_HARMONY_YASS_HPP
+#endif  //  _H_HARMONY_YASS_HPP

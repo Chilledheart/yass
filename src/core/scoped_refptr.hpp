@@ -10,8 +10,8 @@
 #include <type_traits>
 #include <utility>
 
-#include "core/check.hpp"
 #include <base/compiler_specific.h>
+#include "core/check.hpp"
 
 template <class T>
 class scoped_refptr;
@@ -39,16 +39,13 @@ enum StartRefCountFromZeroTag { kStartRefCountFromZeroTag };
 enum StartRefCountFromOneTag { kStartRefCountFromOneTag };
 
 template <typename T, typename U, typename V>
-constexpr bool IsRefCountPreferenceOverridden(const T*,
-                                              const RefCounted<U, V>*) {
+constexpr bool IsRefCountPreferenceOverridden(const T*, const RefCounted<U, V>*) {
   return !std::is_same<std::decay_t<decltype(T::kRefCountPreference)>,
                        std::decay_t<decltype(U::kRefCountPreference)>>::value;
 }
 
 template <typename T, typename U, typename V>
-constexpr bool IsRefCountPreferenceOverridden(
-    const T*,
-    const RefCountedThreadSafe<U, V>*) {
+constexpr bool IsRefCountPreferenceOverridden(const T*, const RefCountedThreadSafe<U, V>*) {
   return !std::is_same<std::decay_t<decltype(T::kRefCountPreference)>,
                        std::decay_t<decltype(U::kRefCountPreference)>>::value;
 }
@@ -191,9 +188,7 @@ class TRIVIAL_ABI scoped_refptr {
   scoped_refptr(const scoped_refptr& r) : scoped_refptr(r.ptr_) {}
 
   // Copy conversion constructor.
-  template <typename U,
-            typename = typename std::enable_if<
-                std::is_convertible<U*, T*>::value>::type>
+  template <typename U, typename = typename std::enable_if<std::is_convertible<U*, T*>::value>::type>
   scoped_refptr(const scoped_refptr<U>& r) : scoped_refptr(r.ptr_) {}
 
   // Move constructor. This is required in addition to the move conversion
@@ -201,16 +196,13 @@ class TRIVIAL_ABI scoped_refptr {
   scoped_refptr(scoped_refptr&& r) noexcept : ptr_(r.ptr_) { r.ptr_ = nullptr; }
 
   // Move conversion constructor.
-  template <typename U,
-            typename = typename std::enable_if<
-                std::is_convertible<U*, T*>::value>::type>
+  template <typename U, typename = typename std::enable_if<std::is_convertible<U*, T*>::value>::type>
   scoped_refptr(scoped_refptr<U>&& r) noexcept : ptr_(r.ptr_) {
     r.ptr_ = nullptr;
   }
 
   ~scoped_refptr() {
-    static_assert(!subtle::IsRefCountPreferenceOverridden(
-                      static_cast<T*>(nullptr), static_cast<T*>(nullptr)),
+    static_assert(!subtle::IsRefCountPreferenceOverridden(static_cast<T*>(nullptr), static_cast<T*>(nullptr)),
                   "It's unsafe to override the ref count preference."
                   " Please remove REQUIRE_ADOPTION_FOR_REFCOUNTED_TYPE"
                   " from subclasses.");

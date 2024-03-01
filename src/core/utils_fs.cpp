@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2023 Chilledheart  */
-#include "core/utils.hpp"
 #include "core/utils_fs.hpp"
+#include "core/utils.hpp"
 
 #include <filesystem>
 
 #ifdef _WIN32
 #include <windows.h>
 #else
-#include <unistd.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #endif
 
 namespace yass {
@@ -61,8 +61,7 @@ bool CreateDirectories(const std::string& path) {
 bool IsFile(const std::string& path) {
   std::wstring wpath = SysUTF8ToWide(path);
   DWORD dwAttrib = ::GetFileAttributesW(wpath.c_str());
-  return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
-           !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+  return (dwAttrib != INVALID_FILE_ATTRIBUTES && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 }
 
 bool IsDirectory(const std::string& path) {
@@ -71,8 +70,7 @@ bool IsDirectory(const std::string& path) {
   }
   std::wstring wpath = SysUTF8ToWide(path);
   DWORD dwAttrib = ::GetFileAttributesW(wpath.c_str());
-  return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
-           (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+  return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 }
 
 bool CreateDir(const std::string& path) {
@@ -109,10 +107,7 @@ bool RemoveFile(const std::string& path) {
 // to delete an item in the filesystem).
 static DWORD ReturnLastErrorOrSuccessOnNotFound() {
   const DWORD error_code = ::GetLastError();
-  return (error_code == ERROR_FILE_NOT_FOUND ||
-          error_code == ERROR_PATH_NOT_FOUND)
-             ? ERROR_SUCCESS
-             : error_code;
+  return (error_code == ERROR_FILE_NOT_FOUND || error_code == ERROR_PATH_NOT_FOUND) ? ERROR_SUCCESS : error_code;
 }
 
 bool RemoveFile(const std::string& path) {
@@ -122,20 +117,16 @@ bool RemoveFile(const std::string& path) {
     return ReturnLastErrorOrSuccessOnNotFound() == ERROR_SUCCESS;
   // Clear the read-only bit if it is set.
   if ((attr & FILE_ATTRIBUTE_READONLY) &&
-      !::SetFileAttributesW(wpath.c_str(),
-                            attr & ~DWORD{FILE_ATTRIBUTE_READONLY})) {
+      !::SetFileAttributesW(wpath.c_str(), attr & ~DWORD{FILE_ATTRIBUTE_READONLY})) {
     // It's possible for |path| to be gone now under a race with other deleters.
     return ReturnLastErrorOrSuccessOnNotFound() == ERROR_SUCCESS;
   }
   if (attr & FILE_ATTRIBUTE_DIRECTORY) {
-    return ::RemoveDirectoryW(wpath.c_str()) == TRUE ? true :
-      ReturnLastErrorOrSuccessOnNotFound() == ERROR_SUCCESS;
+    return ::RemoveDirectoryW(wpath.c_str()) == TRUE ? true : ReturnLastErrorOrSuccessOnNotFound() == ERROR_SUCCESS;
   } else {
-    return ::DeleteFileW(wpath.c_str()) == TRUE ? true :
-      ReturnLastErrorOrSuccessOnNotFound() == ERROR_SUCCESS;
+    return ::DeleteFileW(wpath.c_str()) == TRUE ? true : ReturnLastErrorOrSuccessOnNotFound() == ERROR_SUCCESS;
   }
 }
 #endif
 
-} // yass namespace
-
+}  // namespace yass

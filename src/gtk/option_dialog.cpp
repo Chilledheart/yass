@@ -11,22 +11,19 @@
 #include "core/utils.hpp"
 #include "gtk/utils.hpp"
 
-OptionDialog::OptionDialog(const std::string& title,
-                           GtkWindow* parent,
-                           bool modal)
-    : impl_(GTK_DIALOG(gtk_dialog_new_with_buttons(
-          title.c_str(),
-          parent,
-          (modal ? GTK_DIALOG_MODAL : GTK_DIALOG_DESTROY_WITH_PARENT),
-          nullptr,
-          nullptr))) {
+OptionDialog::OptionDialog(const std::string& title, GtkWindow* parent, bool modal)
+    : impl_(GTK_DIALOG(gtk_dialog_new_with_buttons(title.c_str(),
+                                                   parent,
+                                                   (modal ? GTK_DIALOG_MODAL : GTK_DIALOG_DESTROY_WITH_PARENT),
+                                                   nullptr,
+                                                   nullptr))) {
   gtk_window_set_default_size(GTK_WINDOW(impl_), 400, 200);
   gtk_window_set_position(GTK_WINDOW(impl_), GTK_WIN_POS_CENTER);
 
   static OptionDialog* window;
   window = this;
 
-  GtkGrid *grid = GTK_GRID(gtk_grid_new());
+  GtkGrid* grid = GTK_GRID(gtk_grid_new());
   gtk_grid_set_row_homogeneous(grid, true);
   gtk_grid_set_column_homogeneous(grid, true);
 
@@ -58,19 +55,16 @@ OptionDialog::OptionDialog(const std::string& title,
 
   auto okay_callback = []() { window->OnOkayButtonClicked(); };
 
-  g_signal_connect(G_OBJECT(okay_button_), "clicked",
-                   G_CALLBACK(okay_callback), nullptr);
+  g_signal_connect(G_OBJECT(okay_button_), "clicked", G_CALLBACK(okay_callback), nullptr);
 
   auto cancel_callback = []() { window->OnCancelButtonClicked(); };
 
-  g_signal_connect(G_OBJECT(cancel_button_), "clicked",
-                   G_CALLBACK(cancel_callback), nullptr);
+  g_signal_connect(G_OBJECT(cancel_button_), "clicked", G_CALLBACK(cancel_callback), nullptr);
 
   gtk_grid_attach(grid, GTK_WIDGET(okay_button_), 0, 4, 1, 1);
   gtk_grid_attach(grid, GTK_WIDGET(cancel_button_), 1, 4, 1, 1);
 
-  gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(impl_)),
-                    GTK_WIDGET(grid));
+  gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(impl_)), GTK_WIDGET(grid));
 
   LoadChanges();
 
@@ -95,30 +89,22 @@ gint OptionDialog::run() {
 }
 
 void OptionDialog::LoadChanges() {
-  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(tcp_keep_alive_),
-                               absl::GetFlag(FLAGS_tcp_keep_alive));
-  auto tcp_keep_alive_cnt_str =
-      std::to_string(absl::GetFlag(FLAGS_tcp_keep_alive_cnt));
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(tcp_keep_alive_), absl::GetFlag(FLAGS_tcp_keep_alive));
+  auto tcp_keep_alive_cnt_str = std::to_string(absl::GetFlag(FLAGS_tcp_keep_alive_cnt));
   gtk_entry_set_text(tcp_keep_alive_cnt_, tcp_keep_alive_cnt_str.c_str());
-  auto tcp_keep_alive_idle_timeout_str =
-      std::to_string(absl::GetFlag(FLAGS_tcp_keep_alive_idle_timeout));
+  auto tcp_keep_alive_idle_timeout_str = std::to_string(absl::GetFlag(FLAGS_tcp_keep_alive_idle_timeout));
   gtk_entry_set_text(tcp_keep_alive_idle_timeout_, tcp_keep_alive_idle_timeout_str.c_str());
-  auto tcp_keep_alive_interval_str =
-      std::to_string(absl::GetFlag(FLAGS_tcp_keep_alive_interval));
+  auto tcp_keep_alive_interval_str = std::to_string(absl::GetFlag(FLAGS_tcp_keep_alive_interval));
   gtk_entry_set_text(tcp_keep_alive_interval_, tcp_keep_alive_interval_str.c_str());
 }
 
 void OptionDialog::OnSave() {
   auto tcp_keep_alive = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(tcp_keep_alive_));
-  auto tcp_keep_alive_cnt =
-      StringToIntegerU(gtk_entry_get_text(tcp_keep_alive_cnt_));
-  auto tcp_keep_alive_idle_timeout =
-      StringToIntegerU(gtk_entry_get_text(tcp_keep_alive_idle_timeout_));
-  auto tcp_keep_alive_interval =
-      StringToIntegerU(gtk_entry_get_text(tcp_keep_alive_interval_));
+  auto tcp_keep_alive_cnt = StringToIntegerU(gtk_entry_get_text(tcp_keep_alive_cnt_));
+  auto tcp_keep_alive_idle_timeout = StringToIntegerU(gtk_entry_get_text(tcp_keep_alive_idle_timeout_));
+  auto tcp_keep_alive_interval = StringToIntegerU(gtk_entry_get_text(tcp_keep_alive_interval_));
 
-  if (!tcp_keep_alive_cnt.has_value() ||
-      !tcp_keep_alive_idle_timeout.has_value() ||
+  if (!tcp_keep_alive_cnt.has_value() || !tcp_keep_alive_idle_timeout.has_value() ||
       !tcp_keep_alive_interval.has_value()) {
     LOG(WARNING) << "invalid options";
     return;

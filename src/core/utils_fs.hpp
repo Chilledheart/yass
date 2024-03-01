@@ -12,5 +12,5 @@ bool CreateDir(const std::string& path);
 bool CreateDirectories(const std::string& path);
 bool RemoveFile(const std::string& path);
 
-} // yass namespace
-#endif // YASS_FS_UTILS
+}  // namespace yass
+#endif  // YASS_FS_UTILS

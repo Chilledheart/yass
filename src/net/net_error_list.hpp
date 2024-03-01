@@ -816,8 +816,7 @@ NET_ERROR(INCONSISTENT_IP_ADDRESS_SPACE, -383)
 
 // The IP address space of the cached remote endpoint is blocked by private
 // network access check.
-NET_ERROR(CACHED_IP_ADDRESS_SPACE_BLOCKED_BY_PRIVATE_NETWORK_ACCESS_POLICY,
-          -384)
+NET_ERROR(CACHED_IP_ADDRESS_SPACE_BLOCKED_BY_PRIVATE_NETWORK_ACCESS_POLICY, -384)
 
 // The cache does not have the requested entry.
 NET_ERROR(CACHE_MISS, -400)

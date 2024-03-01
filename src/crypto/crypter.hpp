@@ -11,9 +11,7 @@
 
 namespace crypto {
 
-inline void PacketNumberToNonceSodium(uint8_t* nonce,
-                                      size_t /*nonce_size*/,
-                                      uint64_t packet_number) {
+inline void PacketNumberToNonceSodium(uint8_t* nonce, size_t /*nonce_size*/, uint64_t packet_number) {
   uint8_t pn_1 = packet_number & 0xff;
   uint8_t pn_2 = (packet_number & 0xff00) >> 8;
   uint8_t pn_3 = (packet_number & 0xff0000) >> 16;
@@ -24,9 +22,7 @@ inline void PacketNumberToNonceSodium(uint8_t* nonce,
   *nonce = pn_4;
 }
 
-inline void PacketNumberToNonceEvp(uint8_t* nonce,
-                                   size_t nonce_size,
-                                   uint64_t packet_number) {
+inline void PacketNumberToNonceEvp(uint8_t* nonce, size_t nonce_size, uint64_t packet_number) {
   size_t prefix_len = nonce_size - sizeof(packet_number);
   memcpy(nonce + prefix_len, &packet_number, sizeof(packet_number));
 }
@@ -57,8 +53,7 @@ class Crypter {
   //
   // The security of the nonce format requires that QUIC never reuse a
   // packet number, even when retransmitting a lost packet.
-  virtual bool SetNoncePrefix(const char* nonce_prefix,
-                              size_t nonce_prefix_len) = 0;
+  virtual bool SetNoncePrefix(const char* nonce_prefix, size_t nonce_prefix_len) = 0;
 
   // Sets |iv| as the initialization vector to use when constructing the nonce.
   // Returns true on success, false on failure. This method must only be used

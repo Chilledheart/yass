@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2019-2024 Chilledheart  */
 
+#include "cli/cli_server.hpp"
 #include "config/config.hpp"
 #include "crypto/crypter_export.hpp"
-#include "cli/cli_server.hpp"
 
 #include <absl/debugging/failure_signal_handler.h>
 #include <absl/debugging/symbolize.h>
@@ -18,31 +18,29 @@
 #ifdef _WIN32
 #include <ws2tcpip.h>
 #ifndef AI_NUMERICSERV
-#define AI_NUMERICSERV  0x00000008
+#define AI_NUMERICSERV 0x00000008
 #endif
 #else
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <netdb.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 #endif
 
-#include "net/asio.hpp"
 #include "core/logging.hpp"
 #include "crypto/crypter_export.hpp"
-#include "version.h"
 #include "i18n/icu_util.hpp"
+#include "net/asio.hpp"
+#include "version.h"
 
 using namespace cli;
 
-static asio::ip::tcp::resolver::results_type
-ResolveAddress(const std::string& domain_name, int port) {
+static asio::ip::tcp::resolver::results_type ResolveAddress(const std::string& domain_name, int port) {
   asio::error_code ec;
   auto addr = asio::ip::make_address(domain_name.c_str(), ec);
   bool host_is_ip_address = !ec;
   if (host_is_ip_address) {
     asio::ip::tcp::endpoint endpoint(addr, port);
-    auto results = asio::ip::tcp::resolver::results_type::create(
-      endpoint, domain_name, std::to_string(port));
+    auto results = asio::ip::tcp::resolver::results_type::create(endpoint, domain_name, std::to_string(port));
     return results;
   } else {
     struct addrinfo hints = {}, *addrinfo;
@@ -56,9 +54,9 @@ ResolveAddress(const std::string& domain_name, int port) {
     if (ret) {
       LOG(WARNING) << "resolved domain name:" << domain_name
 #ifdef _WIN32
-        << " failed due to: " << gai_strerrorA(ret);
+                   << " failed due to: " << gai_strerrorA(ret);
 #else
-        << " failed due to: " << gai_strerror(ret);
+                   << " failed due to: " << gai_strerror(ret);
 #endif
       return {};
     }
@@ -89,16 +87,14 @@ int main(int argc, const char* argv[]) {
   absl::FailureSignalHandlerOptions failure_handle_options;
   absl::InstallFailureSignalHandler(failure_handle_options);
 
-  absl::SetProgramUsageMessage(
-      absl::StrCat("Usage: ", Basename(exec_path), " [options ...]\n",
-                   " -c, --configfile <file> Use specified config file\n",
-                   " --server_host <host> Host address which remote server listens to\n",
-                   " --server_port <port> Port number which remote server listens to\n",
-                   " --local_host <host> Host address which local server listens to\n"
-                   " --local_port <port> Port number which local server listens to\n"
-                   " --username <username> Username\n",
-                   " --password <pasword> Password pharsal\n",
-                   " --method <method> Method of encrypt"));
+  absl::SetProgramUsageMessage(absl::StrCat(
+      "Usage: ", Basename(exec_path), " [options ...]\n", " -c, --configfile <file> Use specified config file\n",
+      " --server_host <host> Host address which remote server listens to\n",
+      " --server_port <port> Port number which remote server listens to\n",
+      " --local_host <host> Host address which local server listens to\n"
+      " --local_port <port> Port number which local server listens to\n"
+      " --username <username> Username\n",
+      " --password <pasword> Password pharsal\n", " --method <method> Method of encrypt"));
 
   config::ReadConfigFileOption(argc, argv);
   config::ReadConfig();
@@ -121,7 +117,8 @@ int main(int argc, const char* argv[]) {
 
   // Start Io Context
   asio::io_context io_context;
-  auto work_guard = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context.get_executor());
+  auto work_guard =
+      std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context.get_executor());
 
   std::string remote_host_name = absl::GetFlag(FLAGS_server_host);
   std::string remote_host_sni = remote_host_name;
@@ -167,7 +164,7 @@ int main(int argc, const char* argv[]) {
 
   asio::error_code ec;
   CliServer server(io_context, remote_host_ips, remote_host_sni, remote_port);
-  for (auto &endpoint : endpoints) {
+  for (auto& endpoint : endpoints) {
     server.listen(endpoint, std::string(), SOMAXCONN, ec);
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec;
@@ -176,9 +173,8 @@ int main(int argc, const char* argv[]) {
       return -1;
     }
     endpoint = server.endpoint();
-    LOG(WARNING) << "tcp server listening at " << endpoint
-      << " with upstream sni: " << remote_host_sni << ":" << remote_port
-      <<  " (ip " << remote_host_ips << " )";
+    LOG(WARNING) << "tcp server listening at " << endpoint << " with upstream sni: " << remote_host_sni << ":"
+                 << remote_port << " (ip " << remote_host_ips << " )";
   }
 
   asio::signal_set signals(io_context);

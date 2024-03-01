@@ -14,6 +14,6 @@ extern std::atomic<uint64_t> total_rx_bytes;
 /// statistics of total sent bytes (non-encoded)
 extern std::atomic<uint64_t> total_tx_bytes;
 
-} // namespace cli
+}  // namespace cli
 
 #endif  // H_CLI_CONNECTION_STATS
