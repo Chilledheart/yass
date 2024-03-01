@@ -7,8 +7,8 @@
 
 namespace testing {
 
-void hexdump(FILE *fp, const char *msg, const void *in, size_t len) {
-  const uint8_t *data = reinterpret_cast<const uint8_t*>(in);
+void hexdump(FILE* fp, const char* msg, const void* in, size_t len) {
+  const uint8_t* data = reinterpret_cast<const uint8_t*>(in);
 
   fputs(msg, fp);
   for (size_t i = 0; i < len; i++) {
@@ -17,7 +17,7 @@ void hexdump(FILE *fp, const char *msg, const void *in, size_t len) {
   fputs("\n", fp);
 }
 
-static bool FromHexDigit(uint8_t *out, char c) {
+static bool FromHexDigit(uint8_t* out, char c) {
   if ('0' <= c && c <= '9') {
     *out = c - '0';
     return true;
@@ -33,7 +33,7 @@ static bool FromHexDigit(uint8_t *out, char c) {
   return false;
 }
 
-bool DecodeHex(std::vector<uint8_t> *out, const std::string &in) {
+bool DecodeHex(std::vector<uint8_t>* out, const std::string& in) {
   out->clear();
   if (in.size() % 2 != 0) {
     return false;
@@ -41,8 +41,7 @@ bool DecodeHex(std::vector<uint8_t> *out, const std::string &in) {
   out->reserve(in.size() / 2);
   for (size_t i = 0; i < in.size(); i += 2) {
     uint8_t hi, lo;
-    if (!FromHexDigit(&hi, in[i]) ||
-        !FromHexDigit(&lo, in[i + 1])) {
+    if (!FromHexDigit(&hi, in[i]) || !FromHexDigit(&lo, in[i + 1])) {
       return false;
     }
     out->push_back((hi << 4) | lo);
@@ -61,7 +60,7 @@ std::string EncodeHex(span<const uint8_t> in) {
   return ret;
 }
 
-std::ostream &operator<<(std::ostream &os, ::testing::Bytes in) {
+std::ostream& operator<<(std::ostream& os, ::testing::Bytes in) {
   if (in.span_.empty()) {
     return os << "<empty Bytes>";
   }
@@ -72,4 +71,3 @@ std::ostream &operator<<(std::ostream &os, ::testing::Bytes in) {
 }
 
 }  // namespace testing
-

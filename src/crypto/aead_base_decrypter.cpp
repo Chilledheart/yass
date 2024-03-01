@@ -9,13 +9,8 @@
 
 namespace crypto {
 
-AeadBaseDecrypter::AeadBaseDecrypter(size_t key_size,
-                                     size_t auth_tag_size,
-                                     size_t nonce_size)
-    : key_size_(key_size),
-      auth_tag_size_(auth_tag_size),
-      nonce_size_(nonce_size),
-      have_preliminary_key_(false) {
+AeadBaseDecrypter::AeadBaseDecrypter(size_t key_size, size_t auth_tag_size, size_t nonce_size)
+    : key_size_(key_size), auth_tag_size_(auth_tag_size), nonce_size_(nonce_size), have_preliminary_key_(false) {
   DCHECK_LE(key_size_, sizeof(key_));
   DCHECK_LE(nonce_size_, sizeof(iv_));
   DCHECK_GE(kMaxNonceSize, nonce_size_);
@@ -35,8 +30,7 @@ bool AeadBaseDecrypter::SetKey(const char* key, size_t key_len) {
   return true;
 }
 
-bool AeadBaseDecrypter::SetNoncePrefix(const char* nonce_prefix,
-                                       size_t nonce_prefix_len) {
+bool AeadBaseDecrypter::SetNoncePrefix(const char* nonce_prefix, size_t nonce_prefix_len) {
   DCHECK_EQ(nonce_prefix_len, nonce_size_ - sizeof(uint64_t));
   if (nonce_prefix_len != nonce_size_ - sizeof(uint64_t)) {
     return false;

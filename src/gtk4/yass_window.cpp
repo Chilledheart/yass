@@ -18,11 +18,10 @@
 
 extern "C" {
 
-struct _YASSGtkWindow
-{
+struct _YASSGtkWindow {
   GtkApplicationWindow parent;
 
-  GtkWidget *gears;
+  GtkWidget* gears;
 
   GtkWidget* status_bar;
 
@@ -44,58 +43,49 @@ struct _YASSGtkWindow
   GtkWidget* systemproxy;
 };
 
-G_DEFINE_TYPE (YASSGtkWindow, yass_window, GTK_TYPE_APPLICATION_WINDOW)
+G_DEFINE_TYPE(YASSGtkWindow, yass_window, GTK_TYPE_APPLICATION_WINDOW)
 
-static void
-yass_window_init (YASSGtkWindow *win)
-{
-  GtkBuilder *builder;
-  GMenuModel *menu;
+static void yass_window_init(YASSGtkWindow* win) {
+  GtkBuilder* builder;
+  GMenuModel* menu;
 
   gtk_widget_init_template(GTK_WIDGET(win));
 
   builder = gtk_builder_new_from_resource("/it/gui/yass/menu.ui");
   menu = G_MENU_MODEL(gtk_builder_get_object(builder, "menu"));
-  gtk_menu_button_set_menu_model(GTK_MENU_BUTTON (win->gears), menu);
+  gtk_menu_button_set_menu_model(GTK_MENU_BUTTON(win->gears), menu);
   g_object_unref(builder);
 }
 
-static void
-yass_window_class_init (YASSGtkWindowClass *cls)
-{
-  gtk_widget_class_set_template_from_resource(GTK_WIDGET_CLASS (cls),
-                                              "/it/gui/yass/yass_window.ui");
-  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, gears);
+static void yass_window_class_init(YASSGtkWindowClass* cls) {
+  gtk_widget_class_set_template_from_resource(GTK_WIDGET_CLASS(cls), "/it/gui/yass/yass_window.ui");
+  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, gears);
 
-  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, status_bar);
+  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, status_bar);
 
-  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, start_button);
-  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, stop_button);
+  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, start_button);
+  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, stop_button);
 
-  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, server_host);
-  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, server_sni);
-  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, server_port);
-  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, username);
-  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, password);
-  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, method);
-  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, local_host);
-  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, local_port);
-  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, timeout);
-  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, autostart);
-  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS (cls), YASSGtkWindow, systemproxy);
+  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, server_host);
+  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, server_sni);
+  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, server_port);
+  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, username);
+  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, password);
+  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, method);
+  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, local_host);
+  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, local_port);
+  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, timeout);
+  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, autostart);
+  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, systemproxy);
 }
 
-YASSGtkWindow *
-yass_window_new (YASSGtkApp *app)
-{
-  return YASSGtk_WINDOW(g_object_new(yass_window_get_type(),
-                                     "application", app, NULL));
+YASSGtkWindow* yass_window_new(YASSGtkApp* app) {
+  return YASSGtk_WINDOW(g_object_new(yass_window_get_type(), "application", app, NULL));
 }
 
-} // extern "C"
+}  // extern "C"
 
-YASSWindow::YASSWindow(GApplication *app)
-    : impl_(yass_window_new (YASSGtk_APP (app))) {
+YASSWindow::YASSWindow(GApplication* app) : impl_(yass_window_new(YASSGtk_APP(app))) {
 #if 0
   gtk_window_set_position(GTK_WINDOW(impl_), GTK_WIN_POS_CENTER);
 #endif
@@ -108,30 +98,25 @@ YASSWindow::YASSWindow(GApplication *app)
   gtk_window_set_hide_on_close(GTK_WINDOW(impl_), TRUE);
 
   auto hide_callback = []() { window->OnClose(); };
-  g_signal_connect(G_OBJECT(impl_), "hide",
-                   G_CALLBACK(hide_callback), this);
+  g_signal_connect(G_OBJECT(impl_), "hide", G_CALLBACK(hide_callback), this);
 
   auto start_callback = []() { window->OnStartButtonClicked(); };
 
-  g_signal_connect(G_OBJECT(impl_->start_button), "clicked",
-                   G_CALLBACK(start_callback), nullptr);
+  g_signal_connect(G_OBJECT(impl_->start_button), "clicked", G_CALLBACK(start_callback), nullptr);
 
   auto stop_callback = []() { window->OnStopButtonClicked(); };
 
-  g_signal_connect(G_OBJECT(impl_->stop_button), "clicked",
-                   G_CALLBACK(stop_callback), nullptr);
+  g_signal_connect(G_OBJECT(impl_->stop_button), "clicked", G_CALLBACK(stop_callback), nullptr);
 
   gtk_widget_set_sensitive(GTK_WIDGET(impl_->stop_button), false);
 
   auto autostart_callback = []() { window->OnAutoStartClicked(); };
 
-  g_signal_connect(G_OBJECT(impl_->autostart), "toggled",
-                   G_CALLBACK(autostart_callback), nullptr);
+  g_signal_connect(G_OBJECT(impl_->autostart), "toggled", G_CALLBACK(autostart_callback), nullptr);
 
   auto systemproxy_callback = []() { window->OnSystemProxyClicked(); };
 
-  g_signal_connect(G_OBJECT(impl_->systemproxy), "toggled",
-                   G_CALLBACK(systemproxy_callback), nullptr);
+  g_signal_connect(G_OBJECT(impl_->systemproxy), "toggled", G_CALLBACK(systemproxy_callback), nullptr);
 
   static const char* const method_names[] = {
 #define XX(num, name, string) string,
@@ -139,22 +124,19 @@ YASSWindow::YASSWindow(GApplication *app)
 #undef XX
   };
 
-  GtkComboBoxText *method = GTK_COMBO_BOX_TEXT(impl_->method);
+  GtkComboBoxText* method = GTK_COMBO_BOX_TEXT(impl_->method);
 
-  for (uint32_t i = 0; i < sizeof(method_names) / sizeof(method_names[0]);
-       ++i) {
+  for (uint32_t i = 0; i < sizeof(method_names) / sizeof(method_names[0]); ++i) {
     gtk_combo_box_text_append_text(method, method_names[i]);
   }
 
-  gtk_check_button_set_active(GTK_CHECK_BUTTON(impl_->autostart),
-                              Utils::GetAutoStart());
+  gtk_check_button_set_active(GTK_CHECK_BUTTON(impl_->autostart), Utils::GetAutoStart());
 
-  gtk_check_button_set_active(GTK_CHECK_BUTTON(impl_->systemproxy),
-                              Utils::GetSystemProxy());
+  gtk_check_button_set_active(GTK_CHECK_BUTTON(impl_->systemproxy), Utils::GetSystemProxy());
 
   gtk_entry_set_visibility(GTK_ENTRY(impl_->password), false);
 
-  GtkStatusbar *status_bar = GTK_STATUSBAR(impl_->status_bar);
+  GtkStatusbar* status_bar = GTK_STATUSBAR(impl_->status_bar);
   gtk_statusbar_remove_all(status_bar, 0);
   gtk_statusbar_push(status_bar, 0, _("READY"));
 
@@ -188,15 +170,11 @@ void YASSWindow::OnStopButtonClicked() {
 }
 
 void YASSWindow::OnAutoStartClicked() {
-  Utils::EnableAutoStart(
-      gtk_check_button_get_active(GTK_CHECK_BUTTON(impl_->autostart))
-      );
+  Utils::EnableAutoStart(gtk_check_button_get_active(GTK_CHECK_BUTTON(impl_->autostart)));
 }
 
 void YASSWindow::OnSystemProxyClicked() {
-  Utils::SetSystemProxy(
-      gtk_check_button_get_active(GTK_CHECK_BUTTON(impl_->systemproxy))
-      );
+  Utils::SetSystemProxy(gtk_check_button_get_active(GTK_CHECK_BUTTON(impl_->systemproxy)));
 }
 
 std::string YASSWindow::GetServerHost() {
@@ -246,10 +224,8 @@ std::string YASSWindow::GetStatusMessage() {
   if (delta_time > NS_PER_SECOND) {
     uint64_t rx_bytes = cli::total_rx_bytes;
     uint64_t tx_bytes = cli::total_tx_bytes;
-    rx_rate_ = static_cast<double>(rx_bytes - last_rx_bytes_) / delta_time *
-               NS_PER_SECOND;
-    tx_rate_ = static_cast<double>(tx_bytes - last_tx_bytes_) / delta_time *
-               NS_PER_SECOND;
+    rx_rate_ = static_cast<double>(rx_bytes - last_rx_bytes_) / delta_time * NS_PER_SECOND;
+    tx_rate_ = static_cast<double>(tx_bytes - last_tx_bytes_) / delta_time * NS_PER_SECOND;
     last_sync_time_ = sync_time;
     last_rx_bytes_ = rx_bytes;
     last_tx_bytes_ = tx_bytes;
@@ -296,9 +272,8 @@ void YASSWindow::StartFailed() {
 
   gtk_widget_set_sensitive(impl_->start_button, true);
 
-  GtkDialog* dialog = GTK_DIALOG(
-      gtk_message_dialog_new(GTK_WINDOW(impl_), GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING,
-                             GTK_BUTTONS_CLOSE, "%s", mApp->GetStatus().c_str()));
+  GtkDialog* dialog = GTK_DIALOG(gtk_message_dialog_new(GTK_WINDOW(impl_), GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING,
+                                                        GTK_BUTTONS_CLOSE, "%s", mApp->GetStatus().c_str()));
 
   g_signal_connect(dialog, "response", G_CALLBACK(gtk_window_destroy), NULL);
 }

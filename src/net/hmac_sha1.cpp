@@ -10,11 +10,7 @@
 
 namespace net {
 
-int hmac_sha1_starts(SHA_CTX* ctx,
-                     unsigned char* ipad,
-                     unsigned char* opad,
-                     const unsigned char* key,
-                     size_t keylen) {
+int hmac_sha1_starts(SHA_CTX* ctx, unsigned char* ipad, unsigned char* opad, const unsigned char* key, size_t keylen) {
   int ret = 0;
   uint8_t sum[SHA_DIGEST_LENGTH];
   size_t i;
@@ -47,11 +43,7 @@ int hmac_sha1_starts(SHA_CTX* ctx,
   return ret;
 }
 
-int hmac_sha1_update(SHA_CTX* ctx,
-                     unsigned char* ipad,
-                     unsigned char* opad,
-                     const unsigned char* input,
-                     size_t ilen) {
+int hmac_sha1_update(SHA_CTX* ctx, unsigned char* ipad, unsigned char* opad, const unsigned char* input, size_t ilen) {
   if (ctx == nullptr || ipad == nullptr || opad == nullptr)
     return -1;
 
@@ -60,10 +52,7 @@ int hmac_sha1_update(SHA_CTX* ctx,
   return 0;
 }
 
-int hmac_sha1_finish(SHA_CTX* ctx,
-                     unsigned char* ipad,
-                     unsigned char* opad,
-                     unsigned char* output) {
+int hmac_sha1_finish(SHA_CTX* ctx, unsigned char* ipad, unsigned char* opad, unsigned char* output) {
   uint8_t tmp[SHA_DIGEST_LENGTH];
 
   if (ctx == nullptr || ipad == nullptr || opad == nullptr)
@@ -89,11 +78,7 @@ int hmac_sha1_reset(SHA_CTX* ctx, unsigned char* ipad, unsigned char* opad) {
   return 0;
 }
 
-int hmac_sha1(const unsigned char* key,
-              size_t keylen,
-              const unsigned char* input,
-              size_t ilen,
-              unsigned char* output) {
+int hmac_sha1(const unsigned char* key, size_t keylen, const unsigned char* input, size_t ilen, unsigned char* output) {
   SHA_CTX ctx;
   unsigned char ipad[HASH_BLOCK_SIZE_256], opad[HASH_BLOCK_SIZE_256];
   int ret;
@@ -112,4 +97,4 @@ cleanup:
   return ret;
 }
 
-} // namespace net
+}  // namespace net

@@ -16,8 +16,7 @@ AeadMbedtlsEncrypter::AeadMbedtlsEncrypter(cipher_method method,
                                            size_t key_size,
                                            size_t auth_tag_size,
                                            size_t nonce_size)
-    : AeadBaseEncrypter(key_size, auth_tag_size, nonce_size),
-      method_(method), evp_(evp) {
+    : AeadBaseEncrypter(key_size, auth_tag_size, nonce_size), method_(method), evp_(evp) {
 #if 0
   DCHECK_EQ(EVP_AEAD_key_length(aead_alg_), key_size);
   DCHECK_EQ(EVP_AEAD_nonce_length(aead_alg_), nonce_size);
@@ -57,10 +56,8 @@ bool AeadMbedtlsEncrypter::Encrypt(const uint8_t* nonce,
                                    size_t max_output_length) {
   DCHECK_EQ(nonce_len, nonce_size_);
 
-  if (mbedtls_cipher_update(evp_,
-                            reinterpret_cast<const uint8_t*>(plaintext),
-                            plaintext_len,
-                            output, output_length) != 0) {
+  if (mbedtls_cipher_update(evp_, reinterpret_cast<const uint8_t*>(plaintext), plaintext_len, output, output_length) !=
+      0) {
     return false;
   }
 
@@ -68,13 +65,13 @@ bool AeadMbedtlsEncrypter::Encrypt(const uint8_t* nonce,
 }
 
 bool AeadMbedtlsEncrypter::EncryptPacket(uint64_t packet_number,
-                                        const char* associated_data,
-                                        size_t associated_data_len,
-                                        const char* plaintext,
-                                        size_t plaintext_len,
-                                        char* output,
-                                        size_t* output_length,
-                                        size_t max_output_length) {
+                                         const char* associated_data,
+                                         size_t associated_data_len,
+                                         const char* plaintext,
+                                         size_t plaintext_len,
+                                         char* output,
+                                         size_t* output_length,
+                                         size_t max_output_length) {
   size_t ciphertext_size = GetCiphertextSize(plaintext_len);
   if (max_output_length < ciphertext_size) {
     return false;
@@ -84,9 +81,8 @@ bool AeadMbedtlsEncrypter::EncryptPacket(uint64_t packet_number,
 
   *output_length = max_output_length;
 
-  if (!Encrypt(nonce, nonce_size_, associated_data, associated_data_len,
-               plaintext, plaintext_len, reinterpret_cast<uint8_t*>(output),
-               output_length, max_output_length)) {
+  if (!Encrypt(nonce, nonce_size_, associated_data, associated_data_len, plaintext, plaintext_len,
+               reinterpret_cast<uint8_t*>(output), output_length, max_output_length)) {
     return false;
   }
 

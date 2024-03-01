@@ -12,14 +12,13 @@ namespace net {
 
 class IoQueue {
   using T = std::shared_ptr<IOBuf>;
+
  public:
   IoQueue() {}
   IoQueue(const IoQueue&) = default;
   IoQueue& operator=(const IoQueue&) = default;
 
-  bool empty() const {
-    return idx_ == end_idx_;
-  }
+  bool empty() const { return idx_ == end_idx_; }
 
   void push_back(T buf) {
     queue_[end_idx_] = buf;
@@ -27,9 +26,7 @@ class IoQueue {
     CHECK_NE(end_idx_, idx_) << "IO queue is full";
   }
 
-  void push_back(const char* data, size_t length) {
-    push_back(IOBuf::copyBuffer(data, length));
-  }
+  void push_back(const char* data, size_t length) { push_back(IOBuf::copyBuffer(data, length)); }
 
   T front() {
     DCHECK(!empty());
@@ -49,16 +46,14 @@ class IoQueue {
     return queue_[(end_idx_ + queue_.size() - 1) % queue_.size()];
   }
 
-  size_t length() const {
-    return (end_idx_ + queue_.size() - idx_) % queue_.size();
-  }
+  size_t length() const { return (end_idx_ + queue_.size() - idx_) % queue_.size(); }
 
   size_t byte_length() const {
-    if (empty())  {
+    if (empty()) {
       return 0u;
     }
     size_t ret = 0u;
-    for (int i = idx_; i != end_idx_; i = (i+1) % queue_.size())
+    for (int i = idx_; i != end_idx_; i = (i + 1) % queue_.size())
       ret += queue_[i]->length();
     return ret;
   }
@@ -70,6 +65,6 @@ class IoQueue {
   bool dirty_front_ = false;
 };
 
-} // namespace net
+}  // namespace net
 
-#endif // CORE_IO_QUEUE_HPP
+#endif  // CORE_IO_QUEUE_HPP

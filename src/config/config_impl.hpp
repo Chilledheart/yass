@@ -108,17 +108,13 @@ class ConfigImpl {
   ///
   /// \param key the key value
   /// \param value the value (string)
-  bool WriteImpl(const std::string& key, const std::string& value) {
-    return WriteImpl(key, std::string_view(value));
-  }
+  bool WriteImpl(const std::string& key, const std::string& value) { return WriteImpl(key, std::string_view(value)); }
 
   /// Write the key,value into ConfigTree
   ///
   /// \param key the key value
   /// \param value the value (c-style string)
-  bool WriteImpl(const std::string& key, const char* value) {
-    return WriteImpl(key, std::string_view(value));
-  }
+  bool WriteImpl(const std::string& key, const char* value) { return WriteImpl(key, std::string_view(value)); }
 
   /// Write the key,value into ConfigTree
   ///

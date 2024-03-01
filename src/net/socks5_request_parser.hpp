@@ -29,9 +29,7 @@ class method_select_request_parser {
   /// required. The InputIterator return value indicates how much of the input
   /// has been consumed.
   template <typename InputIterator>
-  std::tuple<result_type, InputIterator> parse(method_select_request& req,
-                                               InputIterator begin,
-                                               InputIterator end) {
+  std::tuple<result_type, InputIterator> parse(method_select_request& req, InputIterator begin, InputIterator end) {
     InputIterator i = begin;
     switch (state_) {
       case request_start:
@@ -90,9 +88,7 @@ class request_parser {
   /// required. The InputIterator return value indicates how much of the input
   /// has been consumed.
   template <typename InputIterator>
-  std::tuple<result_type, InputIterator> parse(request& req,
-                                               InputIterator begin,
-                                               InputIterator end) {
+  std::tuple<result_type, InputIterator> parse(request& req, InputIterator begin, InputIterator end) {
     InputIterator i = begin;
     switch (state_) {
       case request_start:
@@ -100,9 +96,8 @@ class request_parser {
           return std::make_tuple(indeterminate, i);
         }
         memcpy(&req.req_, &*i, sizeof(request_header));
-        VLOG(3) << "socks5: anom request:" << std::hex << " ver: 0x"
-                << (int)req.version() << " cmd: 0x" << (int)req.command()
-                << std::dec;
+        VLOG(3) << "socks5: anom request:" << std::hex << " ver: 0x" << (int)req.version() << " cmd: 0x"
+                << (int)req.command() << std::dec;
         if (req.version() != version) {
           return std::make_tuple(bad, i);
         }
@@ -116,8 +111,7 @@ class request_parser {
         }
         memcpy(&req.atyp_req_.address_type, &*i, sizeof(uint8_t));
         ++i;
-        if (req.address_type() != ipv4 && req.address_type() != domain &&
-            req.address_type() != ipv6) {
+        if (req.address_type() != ipv4 && req.address_type() != domain && req.address_type() != ipv6) {
           return std::make_tuple(bad, i);
         }
         size_t address_type_size = req.address_type_size();
@@ -127,8 +121,7 @@ class request_parser {
         /* deal with header, variable part */
         switch (req.address_type()) {
           case ipv4:
-            memcpy(&req.atyp_req_.address4, &*i,
-                   sizeof(asio::ip::address_v4::bytes_type));
+            memcpy(&req.atyp_req_.address4, &*i, sizeof(asio::ip::address_v4::bytes_type));
             i += sizeof(asio::ip::address_v4::bytes_type);
 
             memcpy(&req.atyp_req_.port_high_byte, &*i, sizeof(uint8_t));
@@ -138,14 +131,12 @@ class request_parser {
             break;
           case domain:
             memcpy(&req.atyp_req_.domain.domain_name_len, &*i, sizeof(uint8_t));
-            if (end - i < (int)req.atyp_req_.domain.domain_name_len +
-                              (int)sizeof(uint16_t)) {
+            if (end - i < (int)req.atyp_req_.domain.domain_name_len + (int)sizeof(uint16_t)) {
               return std::make_tuple(indeterminate, i);
             }
             i += sizeof(uint8_t);
 
-            memcpy(req.atyp_req_.domain.domain_name, &*i,
-                   req.atyp_req_.domain.domain_name_len);
+            memcpy(req.atyp_req_.domain.domain_name, &*i, req.atyp_req_.domain.domain_name_len);
             i += req.atyp_req_.domain.domain_name_len;
 
             memcpy(&req.atyp_req_.port_high_byte, &*i, sizeof(uint8_t));
@@ -154,8 +145,7 @@ class request_parser {
             i += sizeof(uint8_t);
             break;
           case ipv6:
-            memcpy(&req.atyp_req_.address6, &*i,
-                   sizeof(asio::ip::address_v6::bytes_type));
+            memcpy(&req.atyp_req_.address6, &*i, sizeof(asio::ip::address_v6::bytes_type));
             i += sizeof(asio::ip::address_v6::bytes_type);
 
             memcpy(&req.atyp_req_.port_high_byte, &*i, sizeof(uint8_t));
@@ -168,11 +158,11 @@ class request_parser {
         }
 
         if (req.address_type() == domain) {
-          VLOG(3) << "socks5: adt: 0x" << std::hex << (int)req.address_type()
-                  << std::dec << " addr: " << req.domain_name();
+          VLOG(3) << "socks5: adt: 0x" << std::hex << (int)req.address_type() << std::dec
+                  << " addr: " << req.domain_name();
         } else {
-          VLOG(3) << "socks5: adt: 0x" << std::hex << (int)req.address_type()
-                  << std::dec << " addr: " << req.endpoint();
+          VLOG(3) << "socks5: adt: 0x" << std::hex << (int)req.address_type() << std::dec
+                  << " addr: " << req.endpoint();
         }
         return std::make_tuple(good, i);
     }
@@ -188,6 +178,6 @@ class request_parser {
 
 }  // namespace socks5
 
-} // namespace net
+}  // namespace net
 
 #endif  // H_NET_SOCKS5_REQUEST_PARSER

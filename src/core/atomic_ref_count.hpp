@@ -9,8 +9,7 @@
 class AtomicRefCount {
  public:
   constexpr AtomicRefCount() : ref_count_(0) {}
-  explicit constexpr AtomicRefCount(int initial_value)
-      : ref_count_(initial_value) {}
+  explicit constexpr AtomicRefCount(int initial_value) : ref_count_(initial_value) {}
 
   // Increment a reference count.
   // Returns the previous value of the count.
@@ -18,9 +17,7 @@ class AtomicRefCount {
 
   // Increment a reference count by "increment", which must exceed 0.
   // Returns the previous value of the count.
-  int Increment(int increment) {
-    return ref_count_.fetch_add(increment, std::memory_order_relaxed);
-  }
+  int Increment(int increment) { return ref_count_.fetch_add(increment, std::memory_order_relaxed); }
 
   // Decrement a reference count, and return whether the result is non-zero.
   // Insert barriers to ensure that state written before the reference count
@@ -44,15 +41,11 @@ class AtomicRefCount {
   // Return whether the reference count is zero.  With conventional object
   // referencing counting, the object will be destroyed, so the reference count
   // should never be zero.  Hence this is generally used for a debug check.
-  bool IsZero() const {
-    return ref_count_.load(std::memory_order_acquire) == 0;
-  }
+  bool IsZero() const { return ref_count_.load(std::memory_order_acquire) == 0; }
 
   // Returns the current reference count (with no barriers). This is subtle, and
   // should be used only for debugging.
-  int SubtleRefCountForDebug() const {
-    return ref_count_.load(std::memory_order_relaxed);
-  }
+  int SubtleRefCountForDebug() const { return ref_count_.load(std::memory_order_relaxed); }
 
  private:
   std::atomic_int ref_count_;

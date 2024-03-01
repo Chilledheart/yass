@@ -25,8 +25,8 @@ inline int MapOpenSSLError(int err) {
   return MapOpenSSLErrorWithDetails(err);
 }
 
-} // namespace net
+}  // namespace net
 
 #define FROM_HERE __FILE__, __LINE__
 
-#endif // H_NET_OPENSSL_UTIL
+#endif  // H_NET_OPENSSL_UTIL

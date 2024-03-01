@@ -28,6 +28,6 @@ bool Base64Decode(std::string_view input, std::string* output);
 // Decodes the base64 input string. Returns `std::nullopt` if unsuccessful.
 std::optional<std::vector<uint8_t>> Base64Decode(std::string_view input);
 
-} // namespace net
+}  // namespace net
 
 #endif  // NET_BASE64_H_

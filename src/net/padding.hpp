@@ -16,8 +16,8 @@ constexpr int kPaddingHeaderSize = 3;
 constexpr int kMaxPaddingSize = 255;
 
 void AddPadding(std::shared_ptr<IOBuf> buf);
-std::shared_ptr<IOBuf> RemovePadding(std::shared_ptr<IOBuf> buf, asio::error_code &ec);
+std::shared_ptr<IOBuf> RemovePadding(std::shared_ptr<IOBuf> buf, asio::error_code& ec);
 
-} // namespace net
+}  // namespace net
 
-#endif // H_NET_PADDING
+#endif  // H_NET_PADDING

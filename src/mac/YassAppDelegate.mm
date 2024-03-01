@@ -13,12 +13,12 @@
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "crypto/crypter_export.hpp"
+#include "feature.h"
 #include "mac/OptionViewController.h"
 #include "mac/YassViewController.h"
 #include "mac/YassWindowController.h"
 #include "mac/utils.h"
 #include "version.h"
-#include "feature.h"
 
 @interface YassAppDelegate ()
 - (std::string)SaveConfig;
@@ -35,8 +35,7 @@
 
 - (void)applicationDidFinishLaunching:(NSNotification*)aNotification {
   YassViewController* viewController =
-      (YassViewController*)
-          NSApplication.sharedApplication.mainWindow.contentViewController;
+      (YassViewController*)NSApplication.sharedApplication.mainWindow.contentViewController;
   state_ = STOPPED;
   if (CheckLoginItemStatus(nullptr)) {
     [viewController OnStart];
@@ -56,31 +55,30 @@
 }
 
 - (IBAction)OnAboutMenuClicked:(id)sender {
-  NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
+  NSMutableParagraphStyle* paragraphStyle = [[NSMutableParagraphStyle alloc] init];
   paragraphStyle.alignment = NSTextAlignmentCenter;
 
-  NSDictionary<NSAboutPanelOptionKey, id> *dict = @{
+  NSDictionary<NSAboutPanelOptionKey, id>* dict = @{
     NSAboutPanelOptionApplicationName : @(YASS_APP_PRODUCT_NAME),
     NSAboutPanelOptionApplicationVersion : @(YASS_APP_PRODUCT_VERSION),
     NSAboutPanelOptionVersion : @(YASS_APP_LAST_CHANGE),
-    NSAboutPanelOptionCredits: [[NSAttributedString alloc]
-      initWithString:@("Enabled Features: " YASS_APP_FEATURES)
-      attributes: @{NSForegroundColorAttributeName : [NSColor labelColor],
-        NSFontAttributeName: [NSFont systemFontOfSize:[NSFont labelFontSize]],
-        NSParagraphStyleAttributeName:paragraphStyle}],
+    NSAboutPanelOptionCredits :
+        [[NSAttributedString alloc] initWithString:@("Enabled Features: " YASS_APP_FEATURES)
+                                        attributes:@{
+                                          NSForegroundColorAttributeName : [NSColor labelColor],
+                                          NSFontAttributeName : [NSFont systemFontOfSize:[NSFont labelFontSize]],
+                                          NSParagraphStyleAttributeName : paragraphStyle
+                                        }],
   };
   [[NSApplication sharedApplication] orderFrontStandardAboutPanelWithOptions:dict];
 }
 
 - (IBAction)OnOptionMenuClicked:(id)sender {
-  NSStoryboard* storyboard = [NSStoryboard storyboardWithName:@"Main"
-                                                       bundle:nil];
+  NSStoryboard* storyboard = [NSStoryboard storyboardWithName:@"Main" bundle:nil];
   OptionViewController* optionViewController =
-      (OptionViewController*)[storyboard
-          instantiateControllerWithIdentifier:@"OptionViewController"];
+      (OptionViewController*)[storyboard instantiateControllerWithIdentifier:@"OptionViewController"];
   YassViewController* viewController =
-      (YassViewController*)
-          NSApplication.sharedApplication.mainWindow.contentViewController;
+      (YassViewController*)NSApplication.sharedApplication.mainWindow.contentViewController;
   [viewController presentViewControllerAsModalWindow:optionViewController];
 }
 
@@ -95,13 +93,13 @@
 - (NSString*)getStatus {
   std::ostringstream ss;
   if (state_ == STARTED) {
-    NSString *prefixMessage = NSLocalizedString(@"CONNECTED", @"Connected");
+    NSString* prefixMessage = NSLocalizedString(@"CONNECTED", @"Connected");
     ss << gurl_base::SysNSStringToUTF8(prefixMessage) << ":";
   } else if (state_ == START_FAILED) {
-    NSString *prefixMessage = NSLocalizedString(@"FAILED_TO_CONNECT_DUE_TO", @"Failed to connect due to ");
+    NSString* prefixMessage = NSLocalizedString(@"FAILED_TO_CONNECT_DUE_TO", @"Failed to connect due to ");
     ss << gurl_base::SysNSStringToUTF8(prefixMessage) << error_msg_.c_str();
   } else {
-    NSString *prefixMessage = NSLocalizedString(@"DISCONNECTED_WITH", @"Disconnected with ");
+    NSString* prefixMessage = NSLocalizedString(@"DISCONNECTED_WITH", @"Disconnected with ");
     ss << gurl_base::SysNSStringToUTF8(prefixMessage) << worker_.GetRemoteDomain();
   }
 
@@ -158,8 +156,7 @@
   config::SaveConfig();
 
   YassWindowController* windowController =
-      (YassWindowController*)
-          NSApplication.sharedApplication.mainWindow.windowController;
+      (YassWindowController*)NSApplication.sharedApplication.mainWindow.windowController;
   [windowController Started];
 }
 
@@ -169,8 +166,7 @@
   error_msg_ = error_msg;
   LOG(ERROR) << "worker failed due to: " << error_msg_;
   YassWindowController* windowController =
-      (YassWindowController*)
-          NSApplication.sharedApplication.mainWindow.windowController;
+      (YassWindowController*)NSApplication.sharedApplication.mainWindow.windowController;
   [windowController StartFailed];
   NSAlert* alert = [[NSAlert alloc] init];
   alert.messageText = @(error_msg.c_str());
@@ -182,15 +178,13 @@
 - (void)OnStopped {
   state_ = STOPPED;
   YassWindowController* windowController =
-      (YassWindowController*)
-          NSApplication.sharedApplication.mainWindow.windowController;
+      (YassWindowController*)NSApplication.sharedApplication.mainWindow.windowController;
   [windowController Stopped];
 }
 
 - (std::string)SaveConfig {
   YassViewController* viewController =
-      (YassViewController*)
-          NSApplication.sharedApplication.mainWindow.contentViewController;
+      (YassViewController*)NSApplication.sharedApplication.mainWindow.contentViewController;
   auto server_host = gurl_base::SysNSStringToUTF8(viewController.serverHost.stringValue);
   auto server_sni = gurl_base::SysNSStringToUTF8(viewController.serverSNI.stringValue);
   auto server_port = gurl_base::SysNSStringToUTF8(viewController.serverPort.stringValue);
@@ -201,10 +195,8 @@
   auto local_port = gurl_base::SysNSStringToUTF8(viewController.localPort.stringValue);
   auto connect_timeout = gurl_base::SysNSStringToUTF8(viewController.timeout.stringValue);
 
-  return config::ReadConfigFromArgument(server_host, server_sni, server_port,
-                                        username, password, method_string,
-                                        local_host, local_port,
-                                        connect_timeout);
+  return config::ReadConfigFromArgument(server_host, server_sni, server_port, username, password, method_string,
+                                        local_host, local_port, connect_timeout);
 }
 
 @end

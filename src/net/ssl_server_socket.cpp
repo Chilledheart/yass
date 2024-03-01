@@ -3,8 +3,8 @@
 
 #include "net/ssl_server_socket.hpp"
 
-#include "net/openssl_util.hpp"
 #include <openssl/err.h>
+#include "net/openssl_util.hpp"
 
 #define GotoState(s) next_handshake_state_ = s
 
@@ -13,11 +13,9 @@ namespace net {
 namespace {
 // Default size of the internal BoringSSL buffers.
 const int kDefaultOpenSSLBufferSize = 17 * 1024;
-} // namespace
+}  // namespace
 
-SSLServerSocket::SSLServerSocket(asio::io_context *io_context,
-                                 asio::ip::tcp::socket* socket,
-                                 SSL_CTX* ssl_ctx)
+SSLServerSocket::SSLServerSocket(asio::io_context* io_context, asio::ip::tcp::socket* socket, SSL_CTX* ssl_ctx)
     : io_context_(io_context), stream_socket_(socket) {
   DCHECK(!ssl_);
   ssl_.reset(SSL_new(ssl_ctx));
@@ -64,7 +62,7 @@ int SSLServerSocket::Handshake(CompletionOnceCallback callback) {
   return rv > OK ? OK : rv;
 }
 
-int SSLServerSocket::Shutdown(WaitCallback &&callback, bool force) {
+int SSLServerSocket::Shutdown(WaitCallback&& callback, bool force) {
   DCHECK(callback);
   DCHECK(!wait_shutdown_callback_ && "Recursively SSL Shutdown isn't allowed");
   if (SSL_in_init(ssl_.get())) {
@@ -100,9 +98,7 @@ int SSLServerSocket::Shutdown(WaitCallback &&callback, bool force) {
 
       if (!wait_read_callback_) {
         stream_socket_->async_wait(asio::ip::tcp::socket::wait_read,
-          [self, this](asio::error_code ec){
-          OnWaitRead(ec);
-        });
+                                   [self, this](asio::error_code ec) { OnWaitRead(ec); });
       }
 
       return ERR_IO_PENDING;
@@ -114,9 +110,7 @@ int SSLServerSocket::Shutdown(WaitCallback &&callback, bool force) {
 
       if (!wait_write_callback_) {
         stream_socket_->async_wait(asio::ip::tcp::socket::wait_write,
-          [self, this](asio::error_code ec){
-          OnWaitWrite(ec);
-        });
+                                   [self, this](asio::error_code ec) { OnWaitWrite(ec); });
       }
 
       return ERR_IO_PENDING;
@@ -147,7 +141,7 @@ void SSLServerSocket::Disconnect() {
   stream_socket_->close(ec);
 }
 
-size_t SSLServerSocket::Read(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
+size_t SSLServerSocket::Read(std::shared_ptr<IOBuf> buf, asio::error_code& ec) {
   DCHECK(buf->tailroom());
   int buf_len = buf->tailroom();
   int rv = DoPayloadRead(buf, buf_len);
@@ -170,7 +164,7 @@ size_t SSLServerSocket::Read(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
   return rv;
 }
 
-size_t SSLServerSocket::Write(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
+size_t SSLServerSocket::Write(std::shared_ptr<IOBuf> buf, asio::error_code& ec) {
   DCHECK(buf->length());
 
   int rv = DoPayloadWrite(buf, buf->length());
@@ -188,7 +182,7 @@ size_t SSLServerSocket::Write(std::shared_ptr<IOBuf> buf, asio::error_code &ec) 
   return rv;
 }
 
-void SSLServerSocket::WaitRead(WaitCallback &&cb) {
+void SSLServerSocket::WaitRead(WaitCallback&& cb) {
   DCHECK(!wait_read_callback_ && "Multiple calls into Wait Read");
   wait_read_callback_ = std::move(cb);
   scoped_refptr<SSLServerSocket> self(this);
@@ -200,20 +194,14 @@ void SSLServerSocket::WaitRead(WaitCallback &&cb) {
     return;
   }
 #endif
-  stream_socket_->async_wait(asio::ip::tcp::socket::wait_read,
-    [this, self](asio::error_code ec){
-    OnWaitRead(ec);
-  });
+  stream_socket_->async_wait(asio::ip::tcp::socket::wait_read, [this, self](asio::error_code ec) { OnWaitRead(ec); });
 }
 
-void SSLServerSocket::WaitWrite(WaitCallback &&cb) {
+void SSLServerSocket::WaitWrite(WaitCallback&& cb) {
   DCHECK(!wait_write_callback_ && "Multiple calls into Wait Write");
   wait_write_callback_ = std::move(cb);
   scoped_refptr<SSLServerSocket> self(this);
-  stream_socket_->async_wait(asio::ip::tcp::socket::wait_write,
-    [this, self](asio::error_code ec){
-    OnWaitWrite(ec);
-  });
+  stream_socket_->async_wait(asio::ip::tcp::socket::wait_write, [this, self](asio::error_code ec) { OnWaitWrite(ec); });
 }
 
 void SSLServerSocket::OnWaitRead(asio::error_code ec) {
@@ -295,7 +283,7 @@ void SSLServerSocket::OnHandshakeIOComplete(int result, int openssl_result) {
     DoHandshakeCallback(rv);
 }
 
-int SSLServerSocket::DoHandshake(int *openssl_result) {
+int SSLServerSocket::DoHandshake(int* openssl_result) {
   int net_error = OK;
   int rv = SSL_do_handshake(ssl_.get());
   *openssl_result = SSL_ERROR_NONE;
@@ -355,8 +343,8 @@ int SSLServerSocket::DoHandshake(int *openssl_result) {
     if (net_error == ERR_IO_PENDING) {
       GotoState(STATE_HANDSHAKE);
     } else {
-      LOG(ERROR) << "handshake failed; returned " << rv << ", SSL error code "
-                 << ssl_error << ", net_error " << net_error;
+      LOG(ERROR) << "handshake failed; returned " << rv << ", SSL error code " << ssl_error << ", net_error "
+                 << net_error;
 #if 0
       NetLogOpenSSLError(net_log_, NetLogEventType::SSL_HANDSHAKE_ERROR,
                          net_error, ssl_error, error_info);
@@ -397,16 +385,14 @@ int SSLServerSocket::DoHandshakeLoop(int last_io_result, int last_sslerr) {
   if (rv == ERR_IO_PENDING) {
     scoped_refptr<SSLServerSocket> self(this);
     if (sslerr == SSL_ERROR_WANT_READ) {
-      stream_socket_->async_wait(asio::ip::tcp::socket::wait_read,
-        [this, self](asio::error_code ec){
+      stream_socket_->async_wait(asio::ip::tcp::socket::wait_read, [this, self](asio::error_code ec) {
         if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
           return;
         }
         OnReadReady();
       });
     } else if (sslerr == SSL_ERROR_WANT_WRITE) {
-      stream_socket_->async_wait(asio::ip::tcp::socket::wait_write,
-        [this, self](asio::error_code ec){
+      stream_socket_->async_wait(asio::ip::tcp::socket::wait_write, [this, self](asio::error_code ec) {
         if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
           return;
         }
@@ -460,8 +446,7 @@ int SSLServerSocket::DoPayloadWrite(std::shared_ptr<IOBuf> buf, int buf_len) {
   return net_error;
 }
 
-int SSLServerSocket::MapLastOpenSSLError(
-    int ssl_error) {
+int SSLServerSocket::MapLastOpenSSLError(int ssl_error) {
   int net_error = MapOpenSSLErrorWithDetails(ssl_error);
 
 #if 0
@@ -497,4 +482,4 @@ int SSLServerSocket::MapLastOpenSSLError(
   return net_error;
 }
 
-} // namespace net
+}  // namespace net

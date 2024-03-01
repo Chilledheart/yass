@@ -35,8 +35,7 @@ SodiumAeadEncrypter::SodiumAeadEncrypter(const EVP_AEAD* (*aead_getter)(),
                                          size_t key_size,
                                          size_t auth_tag_size,
                                          size_t nonce_size)
-    : AeadBaseEncrypter(key_size, auth_tag_size, nonce_size),
-      aead_alg_(InitAndCall(aead_getter)) {
+    : AeadBaseEncrypter(key_size, auth_tag_size, nonce_size), aead_alg_(InitAndCall(aead_getter)) {
   DCHECK_EQ(EVP_AEAD_key_length(aead_alg_), key_size);
   DCHECK_EQ(EVP_AEAD_nonce_length(aead_alg_), nonce_size);
   DCHECK_GE(EVP_AEAD_max_tag_len(aead_alg_), auth_tag_size);
@@ -49,8 +48,7 @@ bool SodiumAeadEncrypter::SetKey(const char* key, size_t key_len) {
     return false;
   }
   EVP_AEAD_CTX_cleanup(ctx_.get());
-  if (!EVP_AEAD_CTX_init(ctx_.get(), aead_alg_, key_, key_size_, auth_tag_size_,
-                         nullptr)) {
+  if (!EVP_AEAD_CTX_init(ctx_.get(), aead_alg_, key_, key_size_, auth_tag_size_, nullptr)) {
     DLogOpenSslErrors();
     return false;
   }
@@ -68,11 +66,9 @@ bool SodiumAeadEncrypter::Encrypt(const uint8_t* nonce,
                                   size_t max_output_length) {
   DCHECK_EQ(nonce_len, nonce_size_);
 
-  if (!EVP_AEAD_CTX_seal(
-          ctx_.get(), output, output_length, max_output_length,
-          nonce, nonce_len, reinterpret_cast<const uint8_t*>(plaintext),
-          plaintext_len, reinterpret_cast<const uint8_t*>(associated_data),
-          associated_data_len)) {
+  if (!EVP_AEAD_CTX_seal(ctx_.get(), output, output_length, max_output_length, nonce, nonce_len,
+                         reinterpret_cast<const uint8_t*>(plaintext), plaintext_len,
+                         reinterpret_cast<const uint8_t*>(associated_data), associated_data_len)) {
     DLogOpenSslErrors();
     return false;
   }
@@ -102,9 +98,8 @@ bool SodiumAeadEncrypter::EncryptPacket(uint64_t packet_number,
 
   *output_length = max_output_length;
 
-  if (!Encrypt(nonce, nonce_size_, associated_data, associated_data_len,
-               plaintext, plaintext_len, reinterpret_cast<uint8_t*>(output),
-               output_length, max_output_length)) {
+  if (!Encrypt(nonce, nonce_size_, associated_data, associated_data_len, plaintext, plaintext_len,
+               reinterpret_cast<uint8_t*>(output), output_length, max_output_length)) {
     return false;
   }
 

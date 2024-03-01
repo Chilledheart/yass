@@ -85,9 +85,9 @@ void LazyInitIcuDataFile() {
 #endif  // defined(ANDROID)
 #ifdef _WIN32
   std::wstring exe_path, data_path;
-#else // _WIN32
+#else   // _WIN32
   std::string exe_path, data_path;
-#endif // _WIN32
+#endif  // _WIN32
   CHECK(GetExecutablePath(&exe_path));
   std::filesystem::path exe_dir = std::filesystem::path(exe_path).parent_path();
   PlatformFile pf = kInvalidPlatformFile;
@@ -96,7 +96,7 @@ void LazyInitIcuDataFile() {
   if (!data_path.empty()) {
     pf = OpenReadFile(data_path);
   }
-#endif //  __APPLE__
+#endif  //  __APPLE__
   if (pf == kInvalidPlatformFile && exe_dir.has_filename() && exe_dir.filename() == "bin") {
     data_path = exe_dir.parent_path() / "share" / "yass" / kIcuDataFileName;
     pf = OpenReadFile(data_path);
@@ -147,20 +147,16 @@ int LoadIcuData(PlatformFile data_fd,
   }
 
   (*out_error_code) = U_ZERO_ERROR;
-  udata_setCommonData(const_cast<uint8_t*>((*out_mapped_data_file)->data()),
-                      out_error_code);
+  udata_setCommonData(const_cast<uint8_t*>((*out_mapped_data_file)->data()), out_error_code);
   if (U_FAILURE(*out_error_code)) {
-    LOG(ERROR) << "Failed to initialize ICU with data file: "
-               << u_errorName(*out_error_code);
+    LOG(ERROR) << "Failed to initialize ICU with data file: " << u_errorName(*out_error_code);
     return 3;  // To debug http://crbug.com/445616.
   }
 
   return 0;
 }
 
-bool InitializeICUWithFileDescriptorInternal(
-    PlatformFile data_fd,
-    const MemoryMappedFile::Region& data_region) {
+bool InitializeICUWithFileDescriptorInternal(PlatformFile data_fd, const MemoryMappedFile::Region& data_region) {
   // This can be called multiple times in tests.
   if (g_icudtl_mapped_file) {
     g_debug_icu_load = 0;  // To debug http://crbug.com/445616.
@@ -190,8 +186,7 @@ bool InitializeICUFromDataFile() {
   // Instead, we map the file in and hand off the data so the sandbox won't
   // cause any problems.
   LazyInitIcuDataFile();
-  bool result =
-      InitializeICUWithFileDescriptorInternal(g_icudtl_pf, g_icudtl_region);
+  bool result = InitializeICUWithFileDescriptorInternal(g_icudtl_pf, g_icudtl_region);
 
   int debug_icu_load = g_debug_icu_load;
   Alias(&debug_icu_load);
@@ -205,7 +200,7 @@ bool InitializeICUFromDataFile() {
   wchar_t debug_icu_pf_filename[_MAX_PATH] = {0};
   wcscpy_s(debug_icu_pf_filename, g_debug_icu_pf_filename);
   Alias(&debug_icu_pf_filename);
-#endif            // defined(_WIN32)
+#endif  // defined(_WIN32)
   CHECK(result);
   LOG(INFO) << "ICU Initialized";
 
@@ -225,8 +220,8 @@ void InitializeIcuTimeZone() {
   // actual use. See crbug.com/722821 and
   // https://ssl.icu-project.org/trac/ticket/13208 .
   std::u16string zone_id = android::GetDefaultTimeZoneId();
-  icu::TimeZone::adoptDefault(icu::TimeZone::createTimeZone(
-      icu::UnicodeString(false, zone_id.data(), zone_id.length())));
+  icu::TimeZone::adoptDefault(
+      icu::TimeZone::createTimeZone(icu::UnicodeString(false, zone_id.data(), zone_id.length())));
 #elif defined(__linux__)
   // To respond to the time zone change properly, the default time zone
   // cache in ICU has to be populated on starting up.
@@ -269,9 +264,7 @@ bool DoCommonInitialization() {
 }  // namespace
 
 #if (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
-bool InitializeICUWithFileDescriptor(
-    PlatformFile data_fd,
-    const MemoryMappedFile::Region& data_region) {
+bool InitializeICUWithFileDescriptor(PlatformFile data_fd, const MemoryMappedFile::Region& data_region) {
 #if DCHECK_IS_ON()
   DCHECK(!g_check_called_once || !g_called_once);
   g_called_once = true;
@@ -322,4 +315,4 @@ void AllowMultipleInitializeCallsForTesting() {
 #endif
 }
 
-#endif // HAVE_ICU
+#endif  // HAVE_ICU

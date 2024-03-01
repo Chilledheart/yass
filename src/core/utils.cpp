@@ -3,8 +3,8 @@
 
 #include "core/utils.hpp"
 
-#include "core/logging.hpp"
 #include "config/config.hpp"
+#include "core/logging.hpp"
 
 #ifndef _WIN32
 #include <fcntl.h>
@@ -99,8 +99,7 @@ std::string_view Dirname(std::string_view path) {
     return path.empty() ? "/" : path.substr(0, 1);
   }
 
-  auto last_slash_pos =
-      path.find_last_of(kSeparators, first_non_slash_at_end_pos);
+  auto last_slash_pos = path.find_last_of(kSeparators, first_non_slash_at_end_pos);
 
   // path is in the current directory.
   if (last_slash_pos == std::string_view::npos) {
@@ -108,8 +107,7 @@ std::string_view Dirname(std::string_view path) {
   }
 
   // trim the extra trailing slash
-  first_non_slash_at_end_pos =
-      path.find_last_not_of(kSeparators, last_slash_pos);
+  first_non_slash_at_end_pos = path.find_last_not_of(kSeparators, last_slash_pos);
 
   // path is in the root directory
   if (first_non_slash_at_end_pos == std::string_view::npos) {
@@ -152,8 +150,7 @@ std::string_view Basename(std::string_view path) {
     return path.empty() ? "" : path.substr(0, 1);
   }
 
-  auto last_slash_pos =
-      path.find_last_of(kSeparators, first_non_slash_at_end_pos);
+  auto last_slash_pos = path.find_last_of(kSeparators, first_non_slash_at_end_pos);
 
   // path is in the current directory
   if (last_slash_pos == std::string_view::npos) {
@@ -161,8 +158,7 @@ std::string_view Basename(std::string_view path) {
   }
 
   // path is in the root directory
-  return path.substr(last_slash_pos + 1,
-                     first_non_slash_at_end_pos - last_slash_pos);
+  return path.substr(last_slash_pos + 1, first_non_slash_at_end_pos - last_slash_pos);
 }
 
 std::string ExpandUser(const std::string& file_path) {
@@ -172,7 +168,7 @@ std::string ExpandUser(const std::string& file_path) {
     std::string home;
     {
       const char* home_str = ::getenv("HOME");
-      if (home_str)  {
+      if (home_str) {
         home = home_str;
       }
     }
@@ -258,7 +254,7 @@ void SetExecutablePath(const std::string& exe_path) {
   absl::flags_internal::SetProgramInvocationName(new_exe_path);
 }
 
-bool GetTempDir(std::string *path) {
+bool GetTempDir(std::string* path) {
   const char* tmp = getenv("TMPDIR");
   if (tmp) {
     *path = tmp;
@@ -352,22 +348,18 @@ static bool WriteFileDescriptor(int fd, std::string_view data) {
   // Allow for partial writes.
   ssize_t bytes_written_total = 0;
   ssize_t size = static_cast<ssize_t>(data.size());
-  DCHECK_LE(data.size(), static_cast<size_t>(SSIZE_MAX)); // checked_cast
-  for (ssize_t bytes_written_partial = 0; bytes_written_total < size;
-       bytes_written_total += bytes_written_partial) {
+  DCHECK_LE(data.size(), static_cast<size_t>(SSIZE_MAX));  // checked_cast
+  for (ssize_t bytes_written_partial = 0; bytes_written_total < size; bytes_written_total += bytes_written_partial) {
     bytes_written_partial =
-        HANDLE_EINTR(::write(fd, data.data() + bytes_written_total,
-                             static_cast<size_t>(size - bytes_written_total)));
+        HANDLE_EINTR(::write(fd, data.data() + bytes_written_total, static_cast<size_t>(size - bytes_written_total)));
     if (bytes_written_partial < 0)
       return false;
   }
   return true;
 }
 
-ssize_t WriteFileWithBuffer(const std::string& path,
-                            std::string_view buf) {
-  int fd = HANDLE_EINTR(::open(path.c_str(), O_WRONLY | O_TRUNC | O_CREAT,
-                               S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
+ssize_t WriteFileWithBuffer(const std::string& path, std::string_view buf) {
+  int fd = HANDLE_EINTR(::open(path.c_str(), O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
   if (fd < 0) {
     return false;
   }
@@ -380,7 +372,7 @@ ssize_t WriteFileWithBuffer(const std::string& path,
   return ret;
 }
 
-PlatformFile OpenReadFile(const std::string &path) {
+PlatformFile OpenReadFile(const std::string& path) {
   return HANDLE_EINTR(::open(path.c_str(), O_RDONLY));
 }
 #endif
@@ -394,16 +386,12 @@ bool IsProgramConsole(int fd) {
 #ifdef HAVE_TCMALLOC
 void PrintTcmallocStats() {
   std::vector<const char*> properties = {
-    "generic.current_allocated_bytes",
-    "generic.heap_size",
-    "tcmalloc.max_total_thread_cache_bytes",
-    "tcmalloc.current_total_thread_cache_bytes",
-    "tcmalloc.pageheap_free_bytes",
-    "tcmalloc.pageheap_unmapped_bytes",
+      "generic.current_allocated_bytes",       "generic.heap_size",
+      "tcmalloc.max_total_thread_cache_bytes", "tcmalloc.current_total_thread_cache_bytes",
+      "tcmalloc.pageheap_free_bytes",          "tcmalloc.pageheap_unmapped_bytes",
   };
   for (auto property : properties) {
-    absl::optional<size_t> size =
-        tcmalloc::MallocExtension::GetNumericProperty(property);
+    absl::optional<size_t> size = tcmalloc::MallocExtension::GetNumericProperty(property);
     if (size.has_value()) {
       LOG(INFO) << "TCMALLOC: " << property << " = " << *size << " bytes";
     }
@@ -411,7 +399,7 @@ void PrintTcmallocStats() {
 }
 #endif
 
-template<typename T>
+template <typename T>
 static void HumanReadableByteCountBinT(T* ss, uint64_t bytes) {
   if (bytes < 1024) {
     *ss << bytes << " B";
@@ -424,8 +412,7 @@ static void HumanReadableByteCountBinT(T* ss, uint64_t bytes) {
     value >>= 10;
     ++c;
   }
-  *ss << std::fixed << std::setw(5) << std::setprecision(2)
-      << static_cast<double>(value) / 1024.0 << " " << *c;
+  *ss << std::fixed << std::setw(5) << std::setprecision(2) << static_cast<double>(value) / 1024.0 << " " << *c;
 }
 
 void HumanReadableByteCountBin(std::ostream* ss, uint64_t bytes) {

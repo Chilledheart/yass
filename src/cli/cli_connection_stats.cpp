@@ -9,4 +9,4 @@ std::atomic<uint64_t> total_rx_bytes;
 
 std::atomic<uint64_t> total_tx_bytes;
 
-} // namespace cli
+}  // namespace cli

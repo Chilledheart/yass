@@ -4,8 +4,8 @@
 #ifndef H_NET_SOCKS5_REQUEST
 #define H_NET_SOCKS5_REQUEST
 
-#include "net/socks5.hpp"
 #include "net/protocol.hpp"
+#include "net/socks5.hpp"
 
 #include <stdint.h>
 
@@ -41,8 +41,7 @@ class request {
       case ipv4:
         return sizeof(asio::ip::address_v4::bytes_type) + sizeof(uint16_t);
       case domain:
-        return sizeof(uint8_t) + atyp_req_.domain.domain_name_len +
-               sizeof(uint16_t);
+        return sizeof(uint8_t) + atyp_req_.domain.domain_name_len + sizeof(uint16_t);
       case ipv6:
         return sizeof(asio::ip::address_v6::bytes_type) + sizeof(uint16_t);
       default:
@@ -50,9 +49,7 @@ class request {
     }
   }
 
-  size_t length() const {
-    return sizeof(req_) + sizeof(uint8_t) + address_type_size();
-  }
+  size_t length() const { return sizeof(req_) + sizeof(uint8_t) + address_type_size(); }
 
   asio::ip::tcp::endpoint endpoint() const {
     asio::ip::tcp::endpoint endpoint;
@@ -66,17 +63,12 @@ class request {
     return endpoint;
   }
 
-  const asio::ip::address_v4::bytes_type& address4() const {
-    return atyp_req_.address4;
-  }
+  const asio::ip::address_v4::bytes_type& address4() const { return atyp_req_.address4; }
 
-  const asio::ip::address_v6::bytes_type& address6() const {
-    return atyp_req_.address6;
-  }
+  const asio::ip::address_v6::bytes_type& address6() const { return atyp_req_.address6; }
 
   std::string domain_name() const {
-    return std::string((char*)atyp_req_.domain.domain_name,
-                       atyp_req_.domain.domain_name_len);
+    return std::string((char*)atyp_req_.domain.domain_name, atyp_req_.domain.domain_name_len);
   }
 
   uint16_t port() const {
@@ -93,6 +85,6 @@ class request {
 };
 }  // namespace socks5
 
-} // namespace net
+}  // namespace net
 
 #endif  // H_NET_SOCKS5_REQUEST

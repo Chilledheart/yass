@@ -14,4 +14,4 @@
 - (void)Stopped;
 @end
 
-#endif // YASS_MAC_WINDOW_CONTROLLER
+#endif  // YASS_MAC_WINDOW_CONTROLLER

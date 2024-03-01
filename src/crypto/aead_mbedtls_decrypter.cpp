@@ -16,8 +16,7 @@ AeadMbedtlsDecrypter::AeadMbedtlsDecrypter(cipher_method method,
                                            size_t key_size,
                                            size_t auth_tag_size,
                                            size_t nonce_size)
-    : AeadBaseDecrypter(key_size, auth_tag_size, nonce_size),
-      method_(method), evp_(evp) {
+    : AeadBaseDecrypter(key_size, auth_tag_size, nonce_size), method_(method), evp_(evp) {
 #if 0
   DCHECK_EQ(EVP_AEAD_key_length(aead_alg_), key_size);
   DCHECK_EQ(EVP_AEAD_nonce_length(aead_alg_), nonce_size);
@@ -46,13 +45,13 @@ bool AeadMbedtlsDecrypter::SetKey(const char* key, size_t key_len) {
 }
 
 bool AeadMbedtlsDecrypter::DecryptPacket(uint64_t packet_number,
-                                        const char* associated_data,
-                                        size_t associated_data_len,
-                                        const char* ciphertext,
-                                        size_t ciphertext_len,
-                                        char* output,
-                                        size_t* output_length,
-                                        size_t max_output_length) {
+                                         const char* associated_data,
+                                         size_t associated_data_len,
+                                         const char* ciphertext,
+                                         size_t ciphertext_len,
+                                         char* output,
+                                         size_t* output_length,
+                                         size_t max_output_length) {
   if (ciphertext_len < auth_tag_size_) {
     return false;
   }
@@ -65,9 +64,7 @@ bool AeadMbedtlsDecrypter::DecryptPacket(uint64_t packet_number,
   uint8_t nonce[kMaxNonceSize] = {};
   memcpy(nonce, iv_, nonce_size_);
 
-  if (mbedtls_cipher_update(evp_,
-                            reinterpret_cast<const uint8_t*>(ciphertext),
-                            ciphertext_len,
+  if (mbedtls_cipher_update(evp_, reinterpret_cast<const uint8_t*>(ciphertext), ciphertext_len,
                             reinterpret_cast<uint8_t*>(output), output_length) != 0) {
     return false;
   }

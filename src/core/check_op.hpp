@@ -45,8 +45,7 @@ char* CheckOpValueStr(double v);
 char* CheckOpValueStr(const std::string& v);
 
 // Convert a streamable value to string out-of-line to avoid <sstream>.
-char* StreamValToStr(const void* v,
-                     void (*stream_func)(std::ostream&, const void*));
+char* StreamValToStr(const void* v, void (*stream_func)(std::ostream&, const void*));
 
 #ifdef __has_builtin
 #define SUPPORTS_BUILTIN_ADDRESSOF (__has_builtin(__builtin_addressof))
@@ -55,24 +54,19 @@ char* StreamValToStr(const void* v,
 #endif
 
 template <typename T>
-inline typename std::enable_if<
-    internal::SupportsOstreamOperator<const T&>::value &&
-        !std::is_function<typename std::remove_pointer<T>::type>::value,
-    char*>::type
+inline typename std::enable_if<internal::SupportsOstreamOperator<const T&>::value &&
+                                   !std::is_function<typename std::remove_pointer<T>::type>::value,
+                               char*>::type
 CheckOpValueStr(const T& v) {
-  auto f = [](std::ostream& s, const void* p) {
-    s << *reinterpret_cast<const T*>(p);
-  };
+  auto f = [](std::ostream& s, const void* p) { s << *reinterpret_cast<const T*>(p); };
 
   // operator& might be overloaded, so do the std::addressof dance.
   // __builtin_addressof is preferred since it also handles Obj-C ARC pointers.
   // Some casting is still needed, because T might be volatile.
 #if SUPPORTS_BUILTIN_ADDRESSOF
-  const void* vp = const_cast<const void*>(
-      reinterpret_cast<const volatile void*>(__builtin_addressof(v)));
+  const void* vp = const_cast<const void*>(reinterpret_cast<const volatile void*>(__builtin_addressof(v)));
 #else
-  const void* vp = reinterpret_cast<const void*>(
-      const_cast<const char*>(&reinterpret_cast<const volatile char&>(v)));
+  const void* vp = reinterpret_cast<const void*>(const_cast<const char*>(&reinterpret_cast<const volatile char&>(v)));
 #endif
   return StreamValToStr(vp, f);
 }
@@ -81,10 +75,9 @@ CheckOpValueStr(const T& v) {
 
 // Overload for types that have no operator<< but do have .ToString() defined.
 template <typename T>
-inline typename std::enable_if<
-    !internal::SupportsOstreamOperator<const T&>::value &&
-        internal::SupportsToString<const T&>::value,
-    char*>::type
+inline typename std::enable_if<!internal::SupportsOstreamOperator<const T&>::value &&
+                                   internal::SupportsToString<const T&>::value,
+                               char*>::type
 CheckOpValueStr(const T& v) {
   // .ToString() may not return a std::string, e.g. blink::WTF::String.
   return CheckOpValueStr(v.ToString());
@@ -96,9 +89,7 @@ CheckOpValueStr(const T& v) {
 // standards-conforming here and converts function pointers to regular
 // pointers, so this is a no-op for MSVC.)
 template <typename T>
-inline typename std::enable_if<
-    std::is_function<typename std::remove_pointer<T>::type>::value,
-    char*>::type
+inline typename std::enable_if<std::is_function<typename std::remove_pointer<T>::type>::value, char*>::type
 CheckOpValueStr(const T& v) {
   return CheckOpValueStr(reinterpret_cast<const void*>(v));
 }
@@ -106,13 +97,10 @@ CheckOpValueStr(const T& v) {
 // We need overloads for enums that don't support operator<<.
 // (i.e. scoped enums where no operator<< overload was declared).
 template <typename T>
-inline typename std::enable_if<
-    !internal::SupportsOstreamOperator<const T&>::value &&
-        std::is_enum<T>::value,
-    char*>::type
-CheckOpValueStr(const T& v) {
-  return CheckOpValueStr(
-      static_cast<typename std::underlying_type<T>::type>(v));
+inline
+    typename std::enable_if<!internal::SupportsOstreamOperator<const T&>::value && std::is_enum<T>::value, char*>::type
+    CheckOpValueStr(const T& v) {
+  return CheckOpValueStr(static_cast<typename std::underlying_type<T>::type>(v));
 }
 
 // Captures the result of a CHECK_op and facilitates testing as a boolean.
@@ -147,42 +135,31 @@ class CheckOpResult {
 // macro is used in an 'if' clause such as:
 // if (a == 1)
 //   CHECK_EQ(2, a);
-#define CHECK_OP(name, op, val1, val2)                                  \
-  switch (0)                                                            \
-  case 0:                                                               \
-  default:                                                              \
-    if (::yass::CheckOpResult true_if_passed =                                  \
-            ::yass::Check##name##Impl((val1), (val2), #val1 " " #op " " #val2)) \
-      ;                                                                 \
-    else                                                                \
+#define CHECK_OP(name, op, val1, val2)                                                                             \
+  switch (0)                                                                                                       \
+  case 0:                                                                                                          \
+  default:                                                                                                         \
+    if (::yass::CheckOpResult true_if_passed = ::yass::Check##name##Impl((val1), (val2), #val1 " " #op " " #val2)) \
+      ;                                                                                                            \
+    else                                                                                                           \
       ::yass::CheckError::CheckOp(__FILE__, __LINE__, &true_if_passed).stream()
 
 #endif
 
 // The second overload avoids address-taking of static members for
 // fundamental types.
-#define DEFINE_CHECK_OP_IMPL(name, op)                                \
-  template <typename T, typename U,                                   \
-            std::enable_if_t<!std::is_fundamental<T>::value ||        \
-                                 !std::is_fundamental<U>::value,      \
-                             int> = 0>                                \
-  constexpr CheckOpResult Check##name##Impl(const T& v1, const U& v2, \
-                                            const char* expr_str) {   \
-    return ANALYZER_ASSUME_TRUE(v1 op v2)                             \
-               ? CheckOpResult()                                      \
-               : CheckOpResult(expr_str, CheckOpValueStr(v1),         \
-                               CheckOpValueStr(v2));                  \
-  }                                                                   \
-  template <typename T, typename U,                                   \
-            std::enable_if_t<std::is_fundamental<T>::value &&         \
-                                 std::is_fundamental<U>::value,       \
-                             int> = 0>                                \
-  constexpr CheckOpResult Check##name##Impl(T v1, U v2,               \
-                                            const char* expr_str) {   \
-    return ANALYZER_ASSUME_TRUE(v1 op v2)                             \
-               ? CheckOpResult()                                      \
-               : CheckOpResult(expr_str, CheckOpValueStr(v1),         \
-                               CheckOpValueStr(v2));                  \
+#define DEFINE_CHECK_OP_IMPL(name, op)                                                                         \
+  template <typename T, typename U,                                                                            \
+            std::enable_if_t<!std::is_fundamental<T>::value || !std::is_fundamental<U>::value, int> = 0>       \
+  constexpr CheckOpResult Check##name##Impl(const T& v1, const U& v2, const char* expr_str) {                  \
+    return ANALYZER_ASSUME_TRUE(v1 op v2) ? CheckOpResult()                                                    \
+                                          : CheckOpResult(expr_str, CheckOpValueStr(v1), CheckOpValueStr(v2)); \
+  }                                                                                                            \
+  template <typename T, typename U,                                                                            \
+            std::enable_if_t<std::is_fundamental<T>::value && std::is_fundamental<U>::value, int> = 0>         \
+  constexpr CheckOpResult Check##name##Impl(T v1, U v2, const char* expr_str) {                                \
+    return ANALYZER_ASSUME_TRUE(v1 op v2) ? CheckOpResult()                                                    \
+                                          : CheckOpResult(expr_str, CheckOpValueStr(v1), CheckOpValueStr(v2)); \
   }
 
 // clang-format off
@@ -203,22 +180,20 @@ DEFINE_CHECK_OP_IMPL(GT, > )
 
 #if DCHECK_IS_ON()
 
-#define DCHECK_OP(name, op, val1, val2)                                 \
-  switch (0)                                                            \
-  case 0:                                                               \
-  default:                                                              \
-    if (::yass::CheckOpResult true_if_passed =                                  \
-            ::yass::Check##name##Impl((val1), (val2), #val1 " " #op " " #val2)) \
-      ;                                                                 \
-    else                                                                \
+#define DCHECK_OP(name, op, val1, val2)                                                                            \
+  switch (0)                                                                                                       \
+  case 0:                                                                                                          \
+  default:                                                                                                         \
+    if (::yass::CheckOpResult true_if_passed = ::yass::Check##name##Impl((val1), (val2), #val1 " " #op " " #val2)) \
+      ;                                                                                                            \
+    else                                                                                                           \
       ::yass::CheckError::DCheckOp(__FILE__, __LINE__, &true_if_passed).stream()
 
 #else
 
 // Don't do any evaluation but still reference the same stuff as when enabled.
 #define DCHECK_OP(name, op, val1, val2) \
-  EAT_CHECK_STREAM_PARAMS(              \
-      (::yass::CheckOpValueStr(val1), ::yass::CheckOpValueStr(val2), (val1)op(val2)))
+  EAT_CHECK_STREAM_PARAMS((::yass::CheckOpValueStr(val1), ::yass::CheckOpValueStr(val2), (val1)op(val2)))
 
 #endif
 
@@ -231,6 +206,6 @@ DEFINE_CHECK_OP_IMPL(GT, > )
 #define DCHECK_GT(val1, val2) DCHECK_OP(GT, > , val1, val2)
 // clang-format on
 
-} // namespace yass
+}  // namespace yass
 
 #endif  // CORE_CHECK_OP_H_

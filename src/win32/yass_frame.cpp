@@ -148,54 +148,32 @@ static void ApplyDefaultSystemFont(HWND hWnd, UINT uDpi) {
 }
 
 namespace {
-HWND CreateStatic(const wchar_t* label,
-                  HWND pParentWnd,
-                  UINT nID,
-                  HINSTANCE hInstance) {
-  return CreateWindowExW(
-      0, WC_STATICW, label, WS_CHILD | WS_VISIBLE | SS_LEFT,
-      CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-      pParentWnd, reinterpret_cast<HMENU>(static_cast<UINT_PTR>(nID)), hInstance, nullptr);
+HWND CreateStatic(const wchar_t* label, HWND pParentWnd, UINT nID, HINSTANCE hInstance) {
+  return CreateWindowExW(0, WC_STATICW, label, WS_CHILD | WS_VISIBLE | SS_LEFT, CW_USEDEFAULT, CW_USEDEFAULT,
+                         CW_USEDEFAULT, CW_USEDEFAULT, pParentWnd, reinterpret_cast<HMENU>(static_cast<UINT_PTR>(nID)),
+                         hInstance, nullptr);
 }
 
-HWND CreateEdit(DWORD dwStyle,
-                HWND pParentWnd,
-                UINT nID,
-                HINSTANCE hInstance) {
-  return CreateWindowExW(
-      0, WC_EDITW, nullptr,
-      WS_TABSTOP | WS_CHILD | WS_VISIBLE | WS_BORDER | WS_BORDER | ES_LEFT | dwStyle,
-      CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-      pParentWnd, reinterpret_cast<HMENU>(static_cast<UINT_PTR>(nID)), hInstance, nullptr);
+HWND CreateEdit(DWORD dwStyle, HWND pParentWnd, UINT nID, HINSTANCE hInstance) {
+  return CreateWindowExW(0, WC_EDITW, nullptr,
+                         WS_TABSTOP | WS_CHILD | WS_VISIBLE | WS_BORDER | WS_BORDER | ES_LEFT | dwStyle, CW_USEDEFAULT,
+                         CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, pParentWnd,
+                         reinterpret_cast<HMENU>(static_cast<UINT_PTR>(nID)), hInstance, nullptr);
 }
 
-HWND CreateComboBox(DWORD dwStyle,
-                    HWND pParentWnd,
-                    UINT nID,
-                    HINSTANCE hInstance) {
-  return CreateWindowExW(
-      0, WC_COMBOBOXW, nullptr,
-      WS_TABSTOP | WS_CHILD | WS_VISIBLE | WS_VSCROLL | dwStyle,
-      CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-      pParentWnd, reinterpret_cast<HMENU>(static_cast<UINT_PTR>(nID)), hInstance, nullptr);
+HWND CreateComboBox(DWORD dwStyle, HWND pParentWnd, UINT nID, HINSTANCE hInstance) {
+  return CreateWindowExW(0, WC_COMBOBOXW, nullptr, WS_TABSTOP | WS_CHILD | WS_VISIBLE | WS_VSCROLL | dwStyle,
+                         CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, pParentWnd,
+                         reinterpret_cast<HMENU>(static_cast<UINT_PTR>(nID)), hInstance, nullptr);
 }
 
-HWND CreateButton(const wchar_t* label,
-                  DWORD dwStyle,
-                  HWND pParentWnd,
-                  UINT nID,
-                  HINSTANCE hInstance) {
-  return CreateWindowExW(
-      0, WC_BUTTONW, label,
-      WS_TABSTOP | WS_CHILD | WS_VISIBLE | dwStyle,
-      CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-      pParentWnd, reinterpret_cast<HMENU>(static_cast<UINT_PTR>(nID)), hInstance, nullptr);
+HWND CreateButton(const wchar_t* label, DWORD dwStyle, HWND pParentWnd, UINT nID, HINSTANCE hInstance) {
+  return CreateWindowExW(0, WC_BUTTONW, label, WS_TABSTOP | WS_CHILD | WS_VISIBLE | dwStyle, CW_USEDEFAULT,
+                         CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, pParentWnd,
+                         reinterpret_cast<HMENU>(static_cast<UINT_PTR>(nID)), hInstance, nullptr);
 }
 
-HWND CreateStatusBar(HWND pParentWnd,
-                     int idStatus,
-                     HINSTANCE hInstance,
-                     int cParts) {
+HWND CreateStatusBar(HWND pParentWnd, int idStatus, HINSTANCE hInstance, int cParts) {
   HWND hWnd;
   RECT rcClient;
   HLOCAL hloc;
@@ -203,15 +181,15 @@ HWND CreateStatusBar(HWND pParentWnd,
   int i, nWidth;
 
   // Create the status bar.
-  hWnd = CreateWindowEx(0,                      // no extended styles
-                        STATUSCLASSNAME,        // name of status bar class
-                        nullptr,                // no text when first created
-                        WS_CHILD | WS_VISIBLE,  // creates a visible child window
-                        0, 0, 0, 0,             // ignores size and position
-                        pParentWnd,             // handle to parent window
+  hWnd = CreateWindowEx(0,                                                        // no extended styles
+                        STATUSCLASSNAME,                                          // name of status bar class
+                        nullptr,                                                  // no text when first created
+                        WS_CHILD | WS_VISIBLE,                                    // creates a visible child window
+                        0, 0, 0, 0,                                               // ignores size and position
+                        pParentWnd,                                               // handle to parent window
                         reinterpret_cast<HMENU>(static_cast<INT_PTR>(idStatus)),  // child window identifier
-                        hInstance,  // handle to application instance
-                        nullptr);   // no window creation data
+                        hInstance,                                                // handle to application instance
+                        nullptr);                                                 // no window creation data
 
   // Get the coordinates of the parent window's client area.
   GetClientRect(pParentWnd, &rcClient);
@@ -269,9 +247,7 @@ BOOL UpdateNotificationIcon(HWND hwnd, HINSTANCE hInstance, bool isShow) {
   NOTIFYICONDATAW nid = {};
   nid.cbSize = sizeof(nid);
   nid.hWnd = hwnd;
-  std::wstring tip_name = LoadStringStdW(hInstance,
-                                         isShow ? IDS_HIDE_YASS_TIP :
-                                         IDS_SHOW_YASS_TIP);
+  std::wstring tip_name = LoadStringStdW(hInstance, isShow ? IDS_HIDE_YASS_TIP : IDS_SHOW_YASS_TIP);
 #if _WIN32_WINNT >= 0x0600
   nid.uFlags = NIF_TIP | NIF_SHOWTIP | NIF_GUID;
   nid.guidItem = __uuidof(TrayIcon);
@@ -291,8 +267,7 @@ BOOL UpdateNotificationIcon(HINSTANCE hInstance, UINT uDpi) {
   nid.cbSize = sizeof(nid);
   nid.uFlags = NIF_ICON | NIF_GUID;
   nid.guidItem = __uuidof(TrayIcon);
-  LoadIconMetric(hInstance, MAKEINTRESOURCEW(IDI_TRAYICON),
-                 uDpi > 96 ? LIM_LARGE : LIM_SMALL, &nid.hIcon);
+  LoadIconMetric(hInstance, MAKEINTRESOURCEW(IDI_TRAYICON), uDpi > 96 ? LIM_LARGE : LIM_SMALL, &nid.hIcon);
   return Shell_NotifyIconW(NIM_MODIFY, &nid);
 #else
   return TRUE;
@@ -330,7 +305,8 @@ void ShowContextMenu(HINSTANCE hInstance, HWND hwnd, POINT pt) {
   if (hMenu) {
     HMENU hSubMenu = GetSubMenu(hMenu, 0);
     if (hSubMenu) {
-      // our window must be foreground before calling TrackPopupMenu or the menu will not disappear when the user clicks away
+      // our window must be foreground before calling TrackPopupMenu or the menu will not disappear when the user clicks
+      // away
       SetForegroundWindow(hwnd);
 
       // respect menu drop alignment
@@ -347,7 +323,7 @@ void ShowContextMenu(HINSTANCE hInstance, HWND hwnd, POINT pt) {
   }
 }
 
-} // namespace
+}  // namespace
 
 static CYassFrame* mFrame;
 
@@ -364,9 +340,8 @@ int CYassFrame::Create(const wchar_t* className,
   mFrame = this;
 
   m_hInstance = hInstance;
-  m_hWnd = CreateWindowExW(0, className, title, dwStyle, rect.left, rect.top,
-                           rect.right - rect.left, rect.bottom - rect.top,
-                           nullptr, nullptr, hInstance, nullptr);
+  m_hWnd = CreateWindowExW(0, className, title, dwStyle, rect.left, rect.top, rect.right - rect.left,
+                           rect.bottom - rect.top, nullptr, nullptr, hInstance, nullptr);
 
   SetWindowLongPtrW(m_hWnd, GWLP_HINSTANCE, reinterpret_cast<LPARAM>(hInstance));
 
@@ -432,8 +407,7 @@ int CYassFrame::Create(const wchar_t* className,
   username_edit_ = CreateEdit(0, m_hWnd, IDC_EDIT_USERNAME, hInstance);
   password_edit_ = CreateEdit(ES_PASSWORD, m_hWnd, IDC_EDIT_PASSWORD, hInstance);
 
-  method_combo_box_ = CreateComboBox(CBS_DROPDOWNLIST, m_hWnd,
-                                     IDC_COMBOBOX_METHOD, hInstance);
+  method_combo_box_ = CreateComboBox(CBS_DROPDOWNLIST, m_hWnd, IDC_COMBOBOX_METHOD, hInstance);
 
   int method_count = sizeof(method_strings) / sizeof(method_strings[0]);
   for (int i = 0; i < method_count; ++i) {
@@ -448,34 +422,25 @@ int CYassFrame::Create(const wchar_t* className,
   timeout_edit_ = CreateEdit(ES_NUMBER, m_hWnd, IDC_EDIT_TIMEOUT, hInstance);
 
   std::wstring enable_name = LoadStringStdW(hInstance, IDS_ENABLE_LABEL);
-  autostart_button_ = CreateButton(enable_name.c_str(), BS_AUTOCHECKBOX | BS_LEFT,
-                                   m_hWnd, IDC_AUTOSTART_CHECKBOX, hInstance);
+  autostart_button_ =
+      CreateButton(enable_name.c_str(), BS_AUTOCHECKBOX | BS_LEFT, m_hWnd, IDC_AUTOSTART_CHECKBOX, hInstance);
 
-  systemproxy_button_ = CreateButton(enable_name.c_str(), BS_AUTOCHECKBOX | BS_LEFT,
-                                     m_hWnd, IDC_SYSTEMPROXY_CHECKBOX, hInstance);
+  systemproxy_button_ =
+      CreateButton(enable_name.c_str(), BS_AUTOCHECKBOX | BS_LEFT, m_hWnd, IDC_SYSTEMPROXY_CHECKBOX, hInstance);
 
-  Button_SetCheck(autostart_button_,
-                  Utils::GetAutoStart() ? BST_CHECKED : BST_UNCHECKED);
+  Button_SetCheck(autostart_button_, Utils::GetAutoStart() ? BST_CHECKED : BST_UNCHECKED);
 
-  Button_SetCheck(systemproxy_button_,
-                  Utils::GetSystemProxy() ? BST_CHECKED : BST_UNCHECKED);
+  Button_SetCheck(systemproxy_button_, Utils::GetSystemProxy() ? BST_CHECKED : BST_UNCHECKED);
 
   // Status Bar
   // https://docs.microsoft.com/en-us/windows/win32/controls/status-bars
   status_bar_ = CreateStatusBar(m_hWnd, ID_APP_MSG, hInstance, 1);
 
-  if (!start_button_ || !stop_button_ ||
-      !server_host_label_|| !server_sni_label_|| !server_port_label_||
-      !username_label_|| !password_label_||
-      !method_label_||
-      !local_host_label_|| !local_port_label_||
-      !timeout_label_|| !autostart_label_|| !systemproxy_label_ ||
-      !server_host_edit_|| !server_sni_edit_|| !server_port_edit_||
-      !username_edit_|| !password_edit_||
-      !method_combo_box_||
-      !local_host_edit_|| !local_port_edit_||
-      !timeout_edit_|| !autostart_button_|| !systemproxy_button_ ||
-      !status_bar_)
+  if (!start_button_ || !stop_button_ || !server_host_label_ || !server_sni_label_ || !server_port_label_ ||
+      !username_label_ || !password_label_ || !method_label_ || !local_host_label_ || !local_port_label_ ||
+      !timeout_label_ || !autostart_label_ || !systemproxy_label_ || !server_host_edit_ || !server_sni_edit_ ||
+      !server_port_edit_ || !username_edit_ || !password_edit_ || !method_combo_box_ || !local_host_edit_ ||
+      !local_port_edit_ || !timeout_edit_ || !autostart_button_ || !systemproxy_button_ || !status_bar_)
     return FALSE;
 
   ApplyDefaultSystemFont(m_hWnd, 92);
@@ -525,8 +490,7 @@ void CYassFrame::CentreWindow() {
     yTop = rcArea.top;
 
   // map screen coordinates to child coordinates
-  SetWindowPos(m_hWnd, nullptr, xLeft, yTop, -1, -1,
-               SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(m_hWnd, nullptr, xLeft, yTop, -1, -1, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
 }
 
 // https://docs.microsoft.com/en-us/windows/win32/winmsg/window-notifications
@@ -539,8 +503,7 @@ void CYassFrame::CentreWindow() {
 // https://docs.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged-beforeparent
 // https://docs.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged-afterparent
 // static
-LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam,
-                                     LPARAM lParam) {
+LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
   switch (msg) {
     case WM_CREATE:
       AddNotificationIcon(hWnd, mFrame->m_hInstance);
@@ -589,30 +552,30 @@ LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam,
       int wmId = LOWORD(wParam);
       // Parse the menu selections:
       switch (wmId) {
-      case ID_APP_OPTION:
-        mFrame->OnAppOption();
-        break;
-      case ID_APP_ABOUT:
-        mFrame->OnAppAbout();
-        break;
-      case ID_APP_EXIT:
-        mFrame->OnClose();
-        break;
-      // https://docs.microsoft.com/en-us/windows/win32/controls/bn-clicked
-      case IDC_START:
-        mFrame->OnStartButtonClicked();
-        break;
-      case IDC_STOP:
-        mFrame->OnStopButtonClicked();
-        break;
-      case IDC_AUTOSTART_CHECKBOX:
-        mFrame->OnCheckedAutoStartButtonClicked();
-        break;
-      case IDC_SYSTEMPROXY_CHECKBOX:
-        mFrame->OnCheckedSystemProxyButtonClicked();
-        break;
-      default:
-        return DefWindowProc(hWnd, msg, wParam, lParam);
+        case ID_APP_OPTION:
+          mFrame->OnAppOption();
+          break;
+        case ID_APP_ABOUT:
+          mFrame->OnAppAbout();
+          break;
+        case ID_APP_EXIT:
+          mFrame->OnClose();
+          break;
+        // https://docs.microsoft.com/en-us/windows/win32/controls/bn-clicked
+        case IDC_START:
+          mFrame->OnStartButtonClicked();
+          break;
+        case IDC_STOP:
+          mFrame->OnStopButtonClicked();
+          break;
+        case IDC_AUTOSTART_CHECKBOX:
+          mFrame->OnCheckedAutoStartButtonClicked();
+          break;
+        case IDC_SYSTEMPROXY_CHECKBOX:
+          mFrame->OnCheckedSystemProxyButtonClicked();
+          break;
+        default:
+          return DefWindowProc(hWnd, msg, wParam, lParam);
       }
       break;
     }
@@ -626,7 +589,7 @@ LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam,
       }
       break;
     case WMAPP_NOTIFYCALLBACK: {
-        switch(LOWORD(lParam)) {
+      switch (LOWORD(lParam)) {
 #if _WIN32_WINNT >= 0x0600
         case NIN_SELECT:
 #else
@@ -666,20 +629,17 @@ LRESULT CALLBACK CYassFrame::WndProc(HWND hWnd, UINT msg, WPARAM wParam,
           break;
 
 #if _WIN32_WINNT >= 0x0600
-        case WM_CONTEXTMENU:
-          {
-            POINT const pt = { LOWORD(wParam), HIWORD(wParam) };
+        case WM_CONTEXTMENU: {
+          POINT const pt = {LOWORD(wParam), HIWORD(wParam)};
 #else
-        case WM_RBUTTONUP:
-          {
-            POINT pt;
-            GetCursorPos(&pt);
+        case WM_RBUTTONUP: {
+          POINT pt;
+          GetCursorPos(&pt);
 #endif
-            ShowContextMenu(mFrame->m_hInstance, mFrame->m_hWnd, pt);
-          }
-          break;
-        }
-        break;
+          ShowContextMenu(mFrame->m_hInstance, mFrame->m_hWnd, pt);
+        } break;
+      }
+      break;
       break;
     }
     default:
@@ -709,8 +669,7 @@ std::string CYassFrame::GetPassword() {
 }
 
 cipher_method CYassFrame::GetMethod() {
-  int method = ComboBox_GetItemData(method_combo_box_,
-                                    ComboBox_GetCurSel(method_combo_box_));
+  int method = ComboBox_GetItemData(method_combo_box_, ComboBox_GetCurSel(method_combo_box_));
   return static_cast<enum cipher_method>(method);
 }
 
@@ -735,10 +694,8 @@ std::wstring CYassFrame::GetStatusMessage() {
   if (delta_time > NS_PER_SECOND) {
     uint64_t rx_bytes = cli::total_rx_bytes;
     uint64_t tx_bytes = cli::total_tx_bytes;
-    rx_rate_ = static_cast<double>(rx_bytes - last_rx_bytes_) /
-               static_cast<double>(delta_time) * NS_PER_SECOND;
-    tx_rate_ = static_cast<double>(tx_bytes - last_tx_bytes_) /
-               static_cast<double>(delta_time) * NS_PER_SECOND;
+    rx_rate_ = static_cast<double>(rx_bytes - last_rx_bytes_) / static_cast<double>(delta_time) * NS_PER_SECOND;
+    tx_rate_ = static_cast<double>(tx_bytes - last_tx_bytes_) / static_cast<double>(delta_time) * NS_PER_SECOND;
     last_sync_time_ = sync_time;
     last_rx_bytes_ = rx_bytes;
     last_tx_bytes_ = tx_bytes;
@@ -746,10 +703,10 @@ std::wstring CYassFrame::GetStatusMessage() {
 
   std::wostringstream ss;
   ss << mApp->GetStatus();
-  ss << LoadStringStdW(m_hInstance, IDS_STATUS_TX_RATE); // " tx rate: ";
+  ss << LoadStringStdW(m_hInstance, IDS_STATUS_TX_RATE);  // " tx rate: ";
   HumanReadableByteCountBin(&ss, rx_rate_);
   ss << "/s";
-  ss << LoadStringStdW(m_hInstance, IDS_STATUS_RX_RATE); // " rx rate: ";
+  ss << LoadStringStdW(m_hInstance, IDS_STATUS_RX_RATE);  // " rx rate: ";
   HumanReadableByteCountBin(&ss, tx_rate_);
   ss << "/s";
 
@@ -783,8 +740,7 @@ void CYassFrame::OnStartFailed() {
 
   EnableWindow(start_button_, TRUE);
   std::wstring start_failed_name = LoadStringStdW(m_hInstance, IDS_START_FAILED_MESSAGE);
-  MessageBoxW(m_hWnd, mApp->GetStatus().c_str(), start_failed_name.c_str(),
-              MB_ICONEXCLAMATION | MB_OK);
+  MessageBoxW(m_hWnd, mApp->GetStatus().c_str(), start_failed_name.c_str(), MB_ICONEXCLAMATION | MB_OK);
 }
 
 void CYassFrame::OnStopped() {
@@ -819,8 +775,7 @@ void CYassFrame::LoadConfig() {
 
   int32_t method = absl::GetFlag(FLAGS_method).method;
   for (int i = 0, cnt = ComboBox_GetCount(method_combo_box_); i < cnt; ++i) {
-    if (ComboBox_GetItemData(method_combo_box_, i) ==
-        static_cast<LRESULT>(method)) {
+    if (ComboBox_GetItemData(method_combo_box_, i) == static_cast<LRESULT>(method)) {
       ComboBox_SetCurSel(method_combo_box_, i);
       break;
     }
@@ -846,128 +801,112 @@ void CYassFrame::UpdateLayoutForDpi(UINT uDpi) {
   rect.left = client_rect.left + COLUMN_ONE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT;
 
-  SetWindowPos(start_button_, nullptr, rect.left, rect.top, BUTTON_WIDTH,
-               BUTTON_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(start_button_, nullptr, rect.left, rect.top, BUTTON_WIDTH, BUTTON_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect = client_rect;
 
   rect.left = client_rect.left + COLUMN_ONE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 5;
-  SetWindowPos(stop_button_, nullptr, rect.left, rect.top, BUTTON_WIDTH,
-               BUTTON_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(stop_button_, nullptr, rect.left, rect.top, BUTTON_WIDTH, BUTTON_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   // RIGHT Panel
   // Column 2
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT;
-  SetWindowPos(server_host_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
-               LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(server_host_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT,
+               SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 2;
-  SetWindowPos(server_sni_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
-               LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(server_sni_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT,
+               SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 3;
-  SetWindowPos(server_port_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
-               LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(server_port_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT,
+               SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 4;
-  SetWindowPos(username_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
-               LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(username_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 5;
-  SetWindowPos(password_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
-               LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(password_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 6;
-  SetWindowPos(method_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
-               LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(method_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 7;
-  SetWindowPos(local_host_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
-               LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(local_host_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT,
+               SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 8;
-  SetWindowPos(local_port_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
-               LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(local_port_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT,
+               SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 9;
-  SetWindowPos(timeout_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
-               LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(timeout_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 10;
-  SetWindowPos(autostart_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
-               LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(autostart_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT,
+               SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 11;
-  SetWindowPos(systemproxy_label_, nullptr, rect.left, rect.top, LABEL_WIDTH,
-               LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(systemproxy_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT,
+               SWP_NOZORDER | SWP_NOACTIVATE);
 
   // Column 3
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT;
-  SetWindowPos(server_host_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
-               EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(server_host_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 2;
-  SetWindowPos(server_sni_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
-               EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(server_sni_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 3;
-  SetWindowPos(server_port_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
-               EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(server_port_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 4;
-  SetWindowPos(username_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
-               EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(username_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 5;
-  SetWindowPos(password_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
-               EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(password_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 6;
-  SetWindowPos(method_combo_box_, nullptr, rect.left, rect.top, EDIT_WIDTH,
-               EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(method_combo_box_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 7;
-  SetWindowPos(local_host_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
-               EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(local_host_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 8;
-  SetWindowPos(local_port_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
-               EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(local_port_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 9;
-  SetWindowPos(timeout_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH,
-               EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(timeout_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 10;
-  SetWindowPos(autostart_button_, nullptr, rect.left, rect.top, EDIT_WIDTH,
-               EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(autostart_button_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 11;
-  SetWindowPos(systemproxy_button_, nullptr, rect.left, rect.top, EDIT_WIDTH,
-               EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(systemproxy_button_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT,
+               SWP_NOZORDER | SWP_NOACTIVATE);
 
   // Status Bar
   RECT rcClient, status_bar_rect;
@@ -975,10 +914,8 @@ void CYassFrame::UpdateLayoutForDpi(UINT uDpi) {
   GetClientRect(status_bar_, &status_bar_rect);
   status_bar_rect.top = rcClient.top - STATUS_BAR_HEIGHT;
   status_bar_rect.bottom = rcClient.bottom;
-  SetWindowPos(status_bar_, nullptr,
-               status_bar_rect.left, status_bar_rect.top,
-               status_bar_rect.right - status_bar_rect.left,
-               status_bar_rect.bottom - status_bar_rect.top,
+  SetWindowPos(status_bar_, nullptr, status_bar_rect.left, status_bar_rect.top,
+               status_bar_rect.right - status_bar_rect.left, status_bar_rect.bottom - status_bar_rect.top,
                SWP_NOZORDER | SWP_NOACTIVATE);
 
   UpdateFontForDpi(m_hWnd, uDpi);
@@ -1018,7 +955,7 @@ void CYassFrame::OnUpdateStatusBar() {
     return;
   previous_status_message_ = status_text;
   SendMessage(status_bar_, SB_SETTEXT,
-              /* WPARAM */0, reinterpret_cast<LPARAM>(status_text.c_str()));
+              /* WPARAM */ 0, reinterpret_cast<LPARAM>(status_text.c_str()));
   UpdateWindow(status_bar_);
 }
 
@@ -1031,10 +968,8 @@ LRESULT CYassFrame::OnDPIChanged(WPARAM w, LPARAM l) {
   // Resize the window
   auto lprcNewScale = reinterpret_cast<RECT*>(l);
 
-  SetWindowPos(m_hWnd, nullptr, lprcNewScale->left, lprcNewScale->top,
-               lprcNewScale->right - lprcNewScale->left,
-               lprcNewScale->bottom - lprcNewScale->top,
-               SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(m_hWnd, nullptr, lprcNewScale->left, lprcNewScale->top, lprcNewScale->right - lprcNewScale->left,
+               lprcNewScale->bottom - lprcNewScale->top, SWP_NOZORDER | SWP_NOACTIVATE);
 
   UpdateLayoutForDpi(uDpi);
   UpdateNotificationIcon(m_hInstance, uDpi);
@@ -1066,15 +1001,13 @@ void CYassFrame::OnCheckedSystemProxyButtonClicked() {
 }
 
 void CYassFrame::OnAppOption() {
-  DialogBoxParamW(m_hInstance, MAKEINTRESOURCEW(IDD_OPTIONBOX), m_hWnd,
-                  &CYassFrame::OnAppOptionMessage,
+  DialogBoxParamW(m_hInstance, MAKEINTRESOURCEW(IDD_OPTIONBOX), m_hWnd, &CYassFrame::OnAppOptionMessage,
                   reinterpret_cast<LPARAM>(this));
 }
 
 // static
 // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nc-winuser-dlgproc
-INT_PTR CALLBACK CYassFrame::OnAppOptionMessage(HWND hDlg, UINT message,
-                                                WPARAM wParam, LPARAM lParam) {
+INT_PTR CALLBACK CYassFrame::OnAppOptionMessage(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
   UNREFERENCED_PARAMETER(lParam);
 
   switch (message) {
@@ -1084,12 +1017,9 @@ INT_PTR CALLBACK CYassFrame::OnAppOptionMessage(HWND hDlg, UINT message,
       auto tcp_keep_alive = absl::GetFlag(FLAGS_tcp_keep_alive);
       auto tcp_keep_alive_timeout = absl::GetFlag(FLAGS_tcp_keep_alive_idle_timeout);
       auto tcp_keep_alive_interval = absl::GetFlag(FLAGS_tcp_keep_alive_interval);
-      CheckDlgButton(hDlg, IDC_CHECKBOX_TCP_KEEP_ALIVE,
-                     tcp_keep_alive ? BST_CHECKED : BST_UNCHECKED);
-      SetDlgItemInt(hDlg, IDC_EDIT_TCP_KEEP_ALIVE_TIMEOUT, tcp_keep_alive_timeout,
-                    FALSE);
-      SetDlgItemInt(hDlg, IDC_EDIT_TCP_KEEP_ALIVE_INTERVAL, tcp_keep_alive_interval,
-                    FALSE);
+      CheckDlgButton(hDlg, IDC_CHECKBOX_TCP_KEEP_ALIVE, tcp_keep_alive ? BST_CHECKED : BST_UNCHECKED);
+      SetDlgItemInt(hDlg, IDC_EDIT_TCP_KEEP_ALIVE_TIMEOUT, tcp_keep_alive_timeout, FALSE);
+      SetDlgItemInt(hDlg, IDC_EDIT_TCP_KEEP_ALIVE_INTERVAL, tcp_keep_alive_interval, FALSE);
       return static_cast<INT_PTR>(TRUE);
     }
     case WM_COMMAND:
@@ -1097,12 +1027,10 @@ INT_PTR CALLBACK CYassFrame::OnAppOptionMessage(HWND hDlg, UINT message,
         BOOL translated;
         // TODO prompt a fix-me tip
         auto tcp_keep_alive = IsDlgButtonChecked(hDlg, IDC_CHECKBOX_TCP_KEEP_ALIVE) == BST_CHECKED;
-        auto tcp_keep_alive_timeout = GetDlgItemInt(
-            hDlg, IDC_EDIT_TCP_KEEP_ALIVE_TIMEOUT, &translated, FALSE);
+        auto tcp_keep_alive_timeout = GetDlgItemInt(hDlg, IDC_EDIT_TCP_KEEP_ALIVE_TIMEOUT, &translated, FALSE);
         if (translated == FALSE)
           return static_cast<INT_PTR>(FALSE);
-        auto tcp_keep_alive_interval = GetDlgItemInt(
-            hDlg, IDC_EDIT_TCP_KEEP_ALIVE_INTERVAL, &translated, FALSE);
+        auto tcp_keep_alive_interval = GetDlgItemInt(hDlg, IDC_EDIT_TCP_KEEP_ALIVE_INTERVAL, &translated, FALSE);
         if (translated == FALSE)
           return static_cast<INT_PTR>(FALSE);
         absl::SetFlag(&FLAGS_tcp_keep_alive, tcp_keep_alive);
@@ -1121,13 +1049,11 @@ INT_PTR CALLBACK CYassFrame::OnAppOptionMessage(HWND hDlg, UINT message,
 }
 
 void CYassFrame::OnAppAbout() {
-  DialogBoxParamW(m_hInstance, MAKEINTRESOURCEW(IDD_ABOUTBOX), m_hWnd,
-                  &CYassFrame::OnAppAboutMessage, 0L);
+  DialogBoxParamW(m_hInstance, MAKEINTRESOURCEW(IDD_ABOUTBOX), m_hWnd, &CYassFrame::OnAppAboutMessage, 0L);
 }
 
 // static
-INT_PTR CALLBACK CYassFrame::OnAppAboutMessage(HWND hDlg, UINT message,
-                                               WPARAM wParam, LPARAM lParam) {
+INT_PTR CALLBACK CYassFrame::OnAppAboutMessage(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
   UNREFERENCED_PARAMETER(lParam);
   switch (message) {
     case WM_INITDIALOG:
@@ -1143,4 +1069,3 @@ INT_PTR CALLBACK CYassFrame::OnAppAboutMessage(HWND hDlg, UINT message,
   }
   return static_cast<INT_PTR>(FALSE);
 }
-

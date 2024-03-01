@@ -9,9 +9,7 @@
 
 class OptionDialog {
  public:
-  explicit OptionDialog(const std::string& title,
-                        GtkWindow* parent,
-                        bool modal = false);
+  explicit OptionDialog(const std::string& title, GtkWindow* parent, bool modal = false);
   ~OptionDialog();
 
   void OnOkayButtonClicked();

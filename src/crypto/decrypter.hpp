@@ -17,8 +17,7 @@ class Decrypter : public Crypter {
  public:
   virtual ~Decrypter();
 
-  static std::unique_ptr<Decrypter> CreateFromCipherSuite(
-      uint32_t cipher_suite);
+  static std::unique_ptr<Decrypter> CreateFromCipherSuite(uint32_t cipher_suite);
 
   // Sets the encryption key. Returns true on success, false on failure.
   // |DecryptPacket| may not be called until |SetDiversificationNonce| is

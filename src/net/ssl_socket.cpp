@@ -17,19 +17,20 @@ const int kSSLClientSocketNoPendingResult = 1;
 const int kCertVerifyPending = 1;
 // Default size of the internal BoringSSL buffers.
 const int kDefaultOpenSSLBufferSize = 17 * 1024;
-} // namespace
+}  // namespace
 
 static constexpr int kMaximumSSLCache = 1024;
 static absl::flat_hash_map<asio::ip::address, bssl::UniquePtr<SSL_SESSION>> g_ssl_lru_cache;
 
 SSLSocket::SSLSocket(int ssl_socket_data_index,
-                     asio::io_context *io_context,
+                     asio::io_context* io_context,
                      asio::ip::tcp::socket* socket,
                      SSL_CTX* ssl_ctx,
                      bool https_fallback,
                      const std::string& host_name)
     : ssl_socket_data_index_(ssl_socket_data_index),
-      io_context_(io_context), stream_socket_(socket),
+      io_context_(io_context),
+      stream_socket_(socket),
       early_data_enabled_(absl::GetFlag(FLAGS_tls13_early_data)),
       pending_read_error_(kSSLClientSocketNoPendingResult) {
   DCHECK(!ssl_);
@@ -97,13 +98,11 @@ SSLSocket::SSLSocket(int ssl_socket_data_index,
   }
 
   static const uint16_t kVerifyPrefs[] = {
-      SSL_SIGN_ECDSA_SECP256R1_SHA256, SSL_SIGN_RSA_PSS_RSAE_SHA256,
-      SSL_SIGN_RSA_PKCS1_SHA256,       SSL_SIGN_ECDSA_SECP384R1_SHA384,
-      SSL_SIGN_RSA_PSS_RSAE_SHA384,    SSL_SIGN_RSA_PKCS1_SHA384,
+      SSL_SIGN_ECDSA_SECP256R1_SHA256, SSL_SIGN_RSA_PSS_RSAE_SHA256, SSL_SIGN_RSA_PKCS1_SHA256,
+      SSL_SIGN_ECDSA_SECP384R1_SHA384, SSL_SIGN_RSA_PSS_RSAE_SHA384, SSL_SIGN_RSA_PKCS1_SHA384,
       SSL_SIGN_RSA_PSS_RSAE_SHA512,    SSL_SIGN_RSA_PKCS1_SHA512,
   };
-  if (!SSL_set_verify_algorithm_prefs(ssl_.get(), kVerifyPrefs,
-                                      std::size(kVerifyPrefs))) {
+  if (!SSL_set_verify_algorithm_prefs(ssl_.get(), kVerifyPrefs, std::size(kVerifyPrefs))) {
     LOG(FATAL) << "SSL_set_verify_algorithm_prefs failed";
   }
 
@@ -112,9 +111,8 @@ SSLSocket::SSLSocket(int ssl_socket_data_index,
   // Data might be empty.
   const char* proto_string = https_fallback ? "http/1.1" : "h2";
   std::vector<uint8_t> data;
-  SSL_add_application_settings(ssl_.get(),
-                               reinterpret_cast<const uint8_t*>(proto_string),
-                               strlen(proto_string), data.data(), data.size());
+  SSL_add_application_settings(ssl_.get(), reinterpret_cast<const uint8_t*>(proto_string), strlen(proto_string),
+                               data.data(), data.size());
 
   SSL_enable_signed_cert_timestamps(ssl_.get());
   SSL_enable_ocsp_stapling(ssl_.get());
@@ -223,7 +221,7 @@ int SSLSocket::ConfirmHandshake(CompletionOnceCallback callback) {
   return rv > OK ? OK : rv;
 }
 
-int SSLSocket::Shutdown(WaitCallback &&callback, bool force) {
+int SSLSocket::Shutdown(WaitCallback&& callback, bool force) {
   DCHECK(callback);
   DCHECK(!wait_shutdown_callback_ && "Recursively SSL Shutdown isn't allowed");
   if (SSL_in_init(ssl_.get())) {
@@ -259,9 +257,7 @@ int SSLSocket::Shutdown(WaitCallback &&callback, bool force) {
 
       if (!wait_read_callback_) {
         stream_socket_->async_wait(asio::ip::tcp::socket::wait_read,
-          [self, this](asio::error_code ec){
-          OnWaitRead(ec);
-        });
+                                   [self, this](asio::error_code ec) { OnWaitRead(ec); });
       }
 
       return ERR_IO_PENDING;
@@ -273,9 +269,7 @@ int SSLSocket::Shutdown(WaitCallback &&callback, bool force) {
 
       if (!wait_write_callback_) {
         stream_socket_->async_wait(asio::ip::tcp::socket::wait_write,
-          [self, this](asio::error_code ec){
-          OnWaitWrite(ec);
-        });
+                                   [self, this](asio::error_code ec) { OnWaitWrite(ec); });
       }
 
       return ERR_IO_PENDING;
@@ -294,7 +288,7 @@ int SSLSocket::Shutdown(WaitCallback &&callback, bool force) {
   return OK;
 }
 
-size_t SSLSocket::Read(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
+size_t SSLSocket::Read(std::shared_ptr<IOBuf> buf, asio::error_code& ec) {
   DCHECK(buf->tailroom());
   int buf_len = buf->tailroom();
   int rv = DoPayloadRead(buf, buf_len);
@@ -317,7 +311,7 @@ size_t SSLSocket::Read(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
   return rv;
 }
 
-size_t SSLSocket::Write(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
+size_t SSLSocket::Write(std::shared_ptr<IOBuf> buf, asio::error_code& ec) {
   DCHECK(buf->length());
 
   int rv = DoPayloadWrite(buf, buf->length());
@@ -338,7 +332,7 @@ size_t SSLSocket::Write(std::shared_ptr<IOBuf> buf, asio::error_code &ec) {
   return rv;
 }
 
-void SSLSocket::WaitRead(WaitCallback &&cb) {
+void SSLSocket::WaitRead(WaitCallback&& cb) {
   DCHECK(!wait_read_callback_ && "Multiple calls into Wait Read");
   wait_read_callback_ = std::move(cb);
   scoped_refptr<SSLSocket> self(this);
@@ -354,20 +348,14 @@ void SSLSocket::WaitRead(WaitCallback &&cb) {
     return;
   }
 #endif
-  stream_socket_->async_wait(asio::ip::tcp::socket::wait_read,
-    [this, self](asio::error_code ec){
-    OnWaitRead(ec);
-  });
+  stream_socket_->async_wait(asio::ip::tcp::socket::wait_read, [this, self](asio::error_code ec) { OnWaitRead(ec); });
 }
 
-void SSLSocket::WaitWrite(WaitCallback &&cb) {
+void SSLSocket::WaitWrite(WaitCallback&& cb) {
   DCHECK(!wait_write_callback_ && "Multiple calls into Wait Write");
   wait_write_callback_ = std::move(cb);
   scoped_refptr<SSLSocket> self(this);
-  stream_socket_->async_wait(asio::ip::tcp::socket::wait_write,
-    [this, self](asio::error_code ec){
-    OnWaitWrite(ec);
-  });
+  stream_socket_->async_wait(asio::ip::tcp::socket::wait_write, [this, self](asio::error_code ec) { OnWaitWrite(ec); });
 }
 
 int SSLSocket::NewSessionCallback(SSL_SESSION* session) {
@@ -454,7 +442,7 @@ void SSLSocket::OnDoWaitShutdown(asio::error_code ec) {
   Shutdown(std::move(callback));
 }
 
-int SSLSocket::DoHandshake(int *openssl_result) {
+int SSLSocket::DoHandshake(int* openssl_result) {
   int rv = SSL_do_handshake(ssl_.get());
   int net_error = OK;
   *openssl_result = SSL_ERROR_NONE;
@@ -487,8 +475,8 @@ int SSLSocket::DoHandshake(int *openssl_result) {
       return ERR_IO_PENDING;
     }
 
-    LOG(ERROR) << "handshake failed; returned " << rv << ", SSL error code "
-               << ssl_error << ", net_error " << net_error;
+    LOG(ERROR) << "handshake failed; returned " << rv << ", SSL error code " << ssl_error << ", net_error "
+               << net_error;
   }
 
   next_handshake_state_ = STATE_HANDSHAKE_COMPLETE;
@@ -550,13 +538,11 @@ int SSLSocket::DoHandshakeComplete(int result) {
       DCHECK(!used_hello_retry_request);
       details = SSLHandshakeDetails::kTLS13Early;
     } else if (SSL_session_reused(ssl_.get())) {
-      details = used_hello_retry_request
-                    ? SSLHandshakeDetails::kTLS13ResumeWithHelloRetryRequest
-                    : SSLHandshakeDetails::kTLS13Resume;
+      details = used_hello_retry_request ? SSLHandshakeDetails::kTLS13ResumeWithHelloRetryRequest
+                                         : SSLHandshakeDetails::kTLS13Resume;
     } else {
-      details = used_hello_retry_request
-                    ? SSLHandshakeDetails::kTLS13FullWithHelloRetryRequest
-                    : SSLHandshakeDetails::kTLS13Full;
+      details = used_hello_retry_request ? SSLHandshakeDetails::kTLS13FullWithHelloRetryRequest
+                                         : SSLHandshakeDetails::kTLS13Full;
     }
   }
   (void)details;
@@ -584,9 +570,7 @@ int SSLSocket::DoHandshakeComplete(int result) {
   //
   // TODO(https://crbug.com/958638): It is also a step in making TLS 1.3 client
   // certificate alerts less unreliable.
-  asio::post(*io_context_, [this]() {
-    DoPeek();
-  });
+  asio::post(*io_context_, [this]() { DoPeek(); });
 
   return OK;
 }
@@ -636,16 +620,14 @@ int SSLSocket::DoHandshakeLoop(int last_io_result, int last_sslerr) {
   if (rv == ERR_IO_PENDING) {
     scoped_refptr<SSLSocket> self(this);
     if (sslerr == SSL_ERROR_WANT_READ) {
-      stream_socket_->async_wait(asio::ip::tcp::socket::wait_read,
-        [this, self](asio::error_code ec){
+      stream_socket_->async_wait(asio::ip::tcp::socket::wait_read, [this, self](asio::error_code ec) {
         if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
           return;
         }
         OnReadReady();
       });
     } else if (sslerr == SSL_ERROR_WANT_WRITE) {
-      stream_socket_->async_wait(asio::ip::tcp::socket::wait_write,
-        [this, self](asio::error_code ec){
+      stream_socket_->async_wait(asio::ip::tcp::socket::wait_write, [this, self](asio::error_code ec) {
         if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
           return;
         }
@@ -682,8 +664,7 @@ int SSLSocket::DoPayloadRead(std::shared_ptr<IOBuf> buf, int buf_len) {
   int total_bytes_read = 0;
   int ssl_ret, ssl_err;
   do {
-    ssl_ret = SSL_read(ssl_.get(), buf->mutable_tail() + total_bytes_read,
-                       buf_len - total_bytes_read);
+    ssl_ret = SSL_read(ssl_.get(), buf->mutable_tail() + total_bytes_read, buf_len - total_bytes_read);
     ssl_err = SSL_get_error(ssl_.get(), ssl_ret);
     if (ssl_ret > 0) {
       total_bytes_read += ssl_ret;
@@ -703,11 +684,9 @@ int SSLSocket::DoPayloadRead(std::shared_ptr<IOBuf> buf, int buf_len) {
     pending_read_ssl_error_ = ssl_err;
     if (pending_read_ssl_error_ == SSL_ERROR_ZERO_RETURN) {
       pending_read_error_ = 0;
-    } else if (pending_read_ssl_error_ == SSL_ERROR_WANT_X509_LOOKUP &&
-               !send_client_cert_) {
+    } else if (pending_read_ssl_error_ == SSL_ERROR_WANT_X509_LOOKUP && !send_client_cert_) {
       pending_read_error_ = ERR_SSL_CLIENT_AUTH_CERT_NEEDED;
-    } else if (pending_read_ssl_error_ ==
-               SSL_ERROR_WANT_PRIVATE_KEY_OPERATION) {
+    } else if (pending_read_ssl_error_ == SSL_ERROR_WANT_PRIVATE_KEY_OPERATION) {
 #if 0
       DCHECK(client_private_key_);
       DCHECK_NE(kSSLClientSocketNoPendingResult, signature_result_);
@@ -806,8 +785,7 @@ void SSLSocket::DoPeek() {
     // On early data reject, clear early data on any other sessions in the
     // cache, so retries do not get stuck attempting 0-RTT. See
     // https://crbug.com/1066623.
-    if (err == ERR_EARLY_DATA_REJECTED ||
-        err == ERR_WRONG_VERSION_ON_EARLY_DATA) {
+    if (err == ERR_EARLY_DATA_REJECTED || err == ERR_WRONG_VERSION_ON_EARLY_DATA) {
       LOG(WARNING) << "Early data rejected";
 #if 0
       context_->ssl_client_session_cache()->ClearEarlyData(
@@ -835,8 +813,7 @@ void SSLSocket::DoPeek() {
   }
 }
 
-int SSLSocket::MapLastOpenSSLError(
-    int ssl_error) {
+int SSLSocket::MapLastOpenSSLError(int ssl_error) {
   int net_error = MapOpenSSLErrorWithDetails(ssl_error);
 
 #if 0
@@ -872,4 +849,4 @@ int SSLSocket::MapLastOpenSSLError(
   return net_error;
 }
 
-} // namespace net
+}  // namespace net

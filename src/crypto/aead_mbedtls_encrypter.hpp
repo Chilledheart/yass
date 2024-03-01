@@ -23,9 +23,7 @@ class AeadMbedtlsEncrypter : public AeadBaseEncrypter {
                        size_t nonce_size);
   ~AeadMbedtlsEncrypter() override;
 
-  uint32_t cipher_id() const override {
-    return method_;
-  }
+  uint32_t cipher_id() const override { return method_; }
 
   bool SetKey(const char* key, size_t key_len) override;
 

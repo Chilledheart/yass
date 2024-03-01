@@ -47,7 +47,7 @@ struct RateFlag {
   explicit RateFlag(uint64_t r) : rate(r) {}
   uint64_t rate;
 };
-ABSL_DECLARE_FLAG(RateFlag, limit_rate); //bytes per second
+ABSL_DECLARE_FLAG(RateFlag, limit_rate);  // bytes per second
 
 // config_network.cpp
 ABSL_DECLARE_FLAG(bool, reuse_port);

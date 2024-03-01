@@ -14,7 +14,7 @@
 #include "android/jni.hpp"
 #include "core/logging.hpp"
 
-int32_t GetIpAddress(JNIEnv *env) {
+int32_t GetIpAddress(JNIEnv* env) {
   DCHECK(g_jvm) << "jvm not available";
   DCHECK(g_activity_obj) << "activity not available";
 
@@ -49,7 +49,7 @@ int SetJavaThreadName(const std::string& thread_name) {
     return -2;
 
   jclass thread_clazz = java_env->FindClass("java/lang/Thread");
-  if (thread_clazz == nullptr )
+  if (thread_clazz == nullptr)
     return -3;
 
   jmethodID method_id = java_env->GetStaticMethodID(thread_clazz, "currentThread", "()Ljava/lang/Thread;");
@@ -93,7 +93,7 @@ int GetJavaThreadName(std::string* thread_name) {
     return -2;
 
   jclass thread_clazz = java_env->FindClass("java/lang/Thread");
-  if (thread_clazz == nullptr )
+  if (thread_clazz == nullptr)
     return -3;
 
   jmethodID method_id = java_env->GetStaticMethodID(thread_clazz, "currentThread", "()Ljava/lang/Thread;");
@@ -156,7 +156,7 @@ int GetNativeLibraryDirectory(JNIEnv* env, jobject activity_obj, std::string* li
   return 0;
 }
 
-int GetCacheLibraryDirectory(JNIEnv *env, jobject activity_obj, std::string* cache_dir) {
+int GetCacheLibraryDirectory(JNIEnv* env, jobject activity_obj, std::string* cache_dir) {
   jclass activity_clazz = env->GetObjectClass(activity_obj);
   if (activity_clazz == nullptr)
     return -1;
@@ -181,7 +181,7 @@ int GetCacheLibraryDirectory(JNIEnv *env, jobject activity_obj, std::string* cac
   return 0;
 }
 
-int GetDataLibraryDirectory(JNIEnv *env, jobject activity_obj, std::string* data_dir) {
+int GetDataLibraryDirectory(JNIEnv* env, jobject activity_obj, std::string* data_dir) {
   jclass activity_clazz = env->GetObjectClass(activity_obj);
   if (activity_clazz == nullptr)
     return -1;
@@ -206,7 +206,7 @@ int GetDataLibraryDirectory(JNIEnv *env, jobject activity_obj, std::string* data
   return 0;
 }
 
-int GetCurrentLocale(JNIEnv *env, jobject activity_obj, std::string* locale_name) {
+int GetCurrentLocale(JNIEnv* env, jobject activity_obj, std::string* locale_name) {
   jclass activity_clazz = env->GetObjectClass(activity_obj);
   if (activity_clazz == nullptr)
     return -1;
@@ -231,8 +231,7 @@ int GetCurrentLocale(JNIEnv *env, jobject activity_obj, std::string* locale_name
   return 0;
 }
 
-int OpenApkAsset(const std::string& file_path,
-                 gurl_base::MemoryMappedFile::Region* region) {
+int OpenApkAsset(const std::string& file_path, gurl_base::MemoryMappedFile::Region* region) {
   DCHECK(g_jvm) << "jvm not available";
   DCHECK(g_activity_obj) << "activity not available";
 
@@ -246,7 +245,7 @@ int OpenApkAsset(const std::string& file_path,
   if (jni_return == JNI_ERR)
     return -1;
 
-  bool detached  = jni_return == JNI_EDETACHED;
+  bool detached = jni_return == JNI_EDETACHED;
 
   jni_return = detached ? java_vm->AttachCurrentThread(&java_env, nullptr) : JNI_OK;
   if (jni_return != JNI_OK)
@@ -289,7 +288,7 @@ int OpenApkAsset(const std::string& file_path,
 }
 
 #ifdef HAVE_C_ARES
-int InitializeCares(JNIEnv *env, jobject activity_obj) {
+int InitializeCares(JNIEnv* env, jobject activity_obj) {
   DCHECK(g_jvm) << "jvm not available";
   DCHECK(g_activity_obj) << "activity not available";
 
@@ -299,7 +298,8 @@ int InitializeCares(JNIEnv *env, jobject activity_obj) {
   if (activity_clazz == nullptr)
     return -1;
 
-  jmethodID method_id = env->GetMethodID(activity_clazz, "getConnectivityManager", "()Landroid/net/ConnectivityManager;");
+  jmethodID method_id =
+      env->GetMethodID(activity_clazz, "getConnectivityManager", "()Landroid/net/ConnectivityManager;");
   if (method_id == nullptr)
     return -2;
 
@@ -310,6 +310,6 @@ int InitializeCares(JNIEnv *env, jobject activity_obj) {
   ares_library_init_jvm(java_vm);
   return ares_library_init_android(cm);
 }
-#endif // HAVE_C_ARES
+#endif  // HAVE_C_ARES
 
-#endif // __ANDROID__
+#endif  // __ANDROID__

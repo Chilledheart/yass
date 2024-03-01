@@ -31,8 +31,8 @@ namespace config {
 
 class ConfigImplLocal : public ConfigImpl {
  public:
-  ConfigImplLocal(const std::string &path) : path_(ExpandUser(path)) {}
-  ~ConfigImplLocal() override{}
+  ConfigImplLocal(const std::string& path) : path_(ExpandUser(path)) {}
+  ~ConfigImplLocal() override {}
 
  protected:
   bool OpenImpl(bool dontread) override {
@@ -40,16 +40,14 @@ class ConfigImplLocal : public ConfigImpl {
     dontread_ = dontread;
 
     do {
-      ssize_t size =
-          ReadFileToBuffer(path_, read_buffer_, sizeof(read_buffer_));
+      ssize_t size = ReadFileToBuffer(path_, read_buffer_, sizeof(read_buffer_));
       if (size < 0) {
         PLOG(WARNING) << "configure file failed to read: " << path_;
         break;
       }
       root_ = json::parse(read_buffer_, nullptr, false);
       if (root_.is_discarded() || !root_.is_object()) {
-        LOG(WARNING) << "bad config file: " << path_
-                     << " content: \"" << read_buffer_ << "\"";
+        LOG(WARNING) << "bad config file: " << path_ << " content: \"" << read_buffer_ << "\"";
         break;
       }
       VLOG(2) << "loaded from config file: " << path_;
@@ -78,10 +76,8 @@ class ConfigImplLocal : public ConfigImpl {
     }
 
     std::string json_content = root_.dump(4);
-    if (static_cast<ssize_t>(json_content.size()) !=
-        WriteFileWithBuffer(path_, json_content)) {
-      PLOG(WARNING) << "failed to write to path: \"" << path_
-                    << " with content \"" << json_content;
+    if (static_cast<ssize_t>(json_content.size()) != WriteFileWithBuffer(path_, json_content)) {
+      PLOG(WARNING) << "failed to write to path: \"" << path_ << " with content \"" << json_content;
       return false;
     }
 
@@ -110,8 +106,7 @@ class ConfigImplLocal : public ConfigImpl {
   }
 
   bool ReadImpl(const std::string& key, uint32_t* value) override {
-    if (root_.contains(key) && root_[key].is_number_unsigned() &&
-        root_[key].is_number_integer()) {
+    if (root_.contains(key) && root_[key].is_number_unsigned() && root_[key].is_number_integer()) {
       *value = root_[key].get<uint32_t>();
       return true;
     }
@@ -129,8 +124,7 @@ class ConfigImplLocal : public ConfigImpl {
   }
 
   bool ReadImpl(const std::string& key, uint64_t* value) override {
-    if (root_.contains(key) && root_[key].is_number_unsigned() &&
-        root_[key].is_number_integer()) {
+    if (root_.contains(key) && root_[key].is_number_unsigned() && root_[key].is_number_integer()) {
       *value = root_[key].get<uint64_t>();
       return true;
     }

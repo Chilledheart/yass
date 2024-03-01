@@ -10,15 +10,13 @@
 
 #include "cli/cli_connection_stats.hpp"
 #include "core/utils.hpp"
+#include "feature.h"
 #include "gtk/option_dialog.hpp"
 #include "gtk/utils.hpp"
 #include "gtk/yass.hpp"
-#include "feature.h"
 #include "version.h"
 
-YASSWindow::YASSWindow()
-    : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))) {
-
+YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))) {
   gtk_window_set_title(GTK_WINDOW(impl_), YASS_APP_PRODUCT_NAME);
   gtk_window_set_default_size(GTK_WINDOW(impl_), 450, 420);
   gtk_window_set_position(GTK_WINDOW(impl_), GTK_WIN_POS_CENTER);
@@ -28,21 +26,18 @@ YASSWindow::YASSWindow()
   static YASSWindow* window = this;
 
   auto show_callback = []() {
-    gdk_window_set_functions(
-        gtk_widget_get_window(GTK_WIDGET(window->impl_)),
-        static_cast<GdkWMFunction>(GDK_FUNC_MOVE | GDK_FUNC_MINIMIZE | GDK_FUNC_CLOSE));
+    gdk_window_set_functions(gtk_widget_get_window(GTK_WIDGET(window->impl_)),
+                             static_cast<GdkWMFunction>(GDK_FUNC_MOVE | GDK_FUNC_MINIMIZE | GDK_FUNC_CLOSE));
   };
-  g_signal_connect(G_OBJECT(impl_), "show",
-                   G_CALLBACK(show_callback), this);
+  g_signal_connect(G_OBJECT(impl_), "show", G_CALLBACK(show_callback), this);
 
   auto hide_callback = []() { window->OnClose(); };
-  g_signal_connect(G_OBJECT(impl_), "hide",
-                   G_CALLBACK(hide_callback), this);
+  g_signal_connect(G_OBJECT(impl_), "hide", G_CALLBACK(hide_callback), this);
 
   // vbox, hbox
-  GtkBox *vbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
-  GtkBox *hbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 20));
-  GtkBox *left_box = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
+  GtkBox* vbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
+  GtkBox* hbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 20));
+  GtkBox* left_box = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
   GtkGrid* right_panel_grid = GTK_GRID(gtk_grid_new());
 
   // gtkmm's MenuBar/Menu/MenuItem is binded to model
@@ -72,12 +67,10 @@ YASSWindow::YASSWindow()
   gtk_menu_shell_append(GTK_MENU_SHELL(menubar), file_menu_item);
 
   auto option_callback = []() { window->OnOption(); };
-  g_signal_connect(G_OBJECT(option_menu_item), "activate",
-                   G_CALLBACK(option_callback), nullptr);
+  g_signal_connect(G_OBJECT(option_menu_item), "activate", G_CALLBACK(option_callback), nullptr);
 
   auto exit_callback = []() { gtk_window_close(window->impl_); };
-  g_signal_connect(G_OBJECT(exit_menu_item), "activate",
-                   G_CALLBACK(exit_callback), nullptr);
+  g_signal_connect(G_OBJECT(exit_menu_item), "activate", G_CALLBACK(exit_callback), nullptr);
 
   help_menu = gtk_menu_new();
   help_menu_item = gtk_menu_item_new_with_label(_("Help"));
@@ -88,8 +81,7 @@ YASSWindow::YASSWindow()
   gtk_menu_shell_append(GTK_MENU_SHELL(menubar), help_menu_item);
 
   auto about_callback = []() { window->OnAbout(); };
-  g_signal_connect(G_OBJECT(about_menu_item), "activate",
-                   G_CALLBACK(about_callback), this);
+  g_signal_connect(G_OBJECT(about_menu_item), "activate", G_CALLBACK(about_callback), this);
 
   gtk_box_pack_start(vbox, menubar, FALSE, FALSE, 0);
 
@@ -110,13 +102,11 @@ YASSWindow::YASSWindow()
 
   auto start_callback = []() { window->OnStartButtonClicked(); };
 
-  g_signal_connect(G_OBJECT(start_button_), "clicked",
-                   G_CALLBACK(start_callback), nullptr);
+  g_signal_connect(G_OBJECT(start_button_), "clicked", G_CALLBACK(start_callback), nullptr);
 
   auto stop_callback = []() { window->OnStopButtonClicked(); };
 
-  g_signal_connect(G_OBJECT(stop_button_), "clicked",
-                   G_CALLBACK(stop_callback), nullptr);
+  g_signal_connect(G_OBJECT(stop_button_), "clicked", G_CALLBACK(stop_callback), nullptr);
 
   gtk_widget_set_sensitive(GTK_WIDGET(stop_button_), false);
 
@@ -167,8 +157,7 @@ YASSWindow::YASSWindow()
 
   method_ = GTK_COMBO_BOX_TEXT(gtk_combo_box_text_new());
 
-  for (uint32_t i = 0; i < sizeof(method_names) / sizeof(method_names[0]);
-       ++i) {
+  for (uint32_t i = 0; i < sizeof(method_names) / sizeof(method_names[0]); ++i) {
     gtk_combo_box_text_append_text(method_, method_names[i]);
   }
   local_host_ = GTK_ENTRY(gtk_entry_new());
@@ -177,23 +166,19 @@ YASSWindow::YASSWindow()
 
   autostart_ = GTK_CHECK_BUTTON(gtk_check_button_new());
 
-  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(autostart_),
-                               Utils::GetAutoStart());
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(autostart_), Utils::GetAutoStart());
 
   auto checked_auto_start_callback = []() { window->OnAutoStartClicked(); };
 
-  g_signal_connect(G_OBJECT(autostart_), "toggled",
-                   G_CALLBACK(checked_auto_start_callback), nullptr);
+  g_signal_connect(G_OBJECT(autostart_), "toggled", G_CALLBACK(checked_auto_start_callback), nullptr);
 
   systemproxy_ = GTK_CHECK_BUTTON(gtk_check_button_new());
 
-  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(systemproxy_),
-                               Utils::GetSystemProxy());
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(systemproxy_), Utils::GetSystemProxy());
 
   auto checked_system_proxy_callback = []() { window->OnSystemProxyClicked(); };
 
-  g_signal_connect(G_OBJECT(systemproxy_), "toggled",
-                   G_CALLBACK(checked_system_proxy_callback), nullptr);
+  g_signal_connect(G_OBJECT(systemproxy_), "toggled", G_CALLBACK(checked_system_proxy_callback), nullptr);
 
   gtk_entry_set_visibility(password_, false);
 
@@ -258,13 +243,11 @@ void YASSWindow::OnStopButtonClicked() {
 }
 
 void YASSWindow::OnAutoStartClicked() {
-  Utils::EnableAutoStart(
-      gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(autostart_)));
+  Utils::EnableAutoStart(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(autostart_)));
 }
 
 void YASSWindow::OnSystemProxyClicked() {
-  Utils::SetSystemProxy(
-      gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(systemproxy_)));
+  Utils::SetSystemProxy(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(systemproxy_)));
 }
 
 std::string YASSWindow::GetServerHost() {
@@ -314,10 +297,8 @@ std::string YASSWindow::GetStatusMessage() {
   if (delta_time > NS_PER_SECOND) {
     uint64_t rx_bytes = cli::total_rx_bytes;
     uint64_t tx_bytes = cli::total_tx_bytes;
-    rx_rate_ = static_cast<double>(rx_bytes - last_rx_bytes_) / delta_time *
-               NS_PER_SECOND;
-    tx_rate_ = static_cast<double>(tx_bytes - last_tx_bytes_) / delta_time *
-               NS_PER_SECOND;
+    rx_rate_ = static_cast<double>(rx_bytes - last_rx_bytes_) / delta_time * NS_PER_SECOND;
+    tx_rate_ = static_cast<double>(tx_bytes - last_tx_bytes_) / delta_time * NS_PER_SECOND;
     last_sync_time_ = sync_time;
     last_rx_bytes_ = rx_bytes;
     last_tx_bytes_ = tx_bytes;
@@ -364,9 +345,8 @@ void YASSWindow::StartFailed() {
 
   gtk_widget_set_sensitive(GTK_WIDGET(start_button_), true);
 
-  GtkDialog* alert_dialog = GTK_DIALOG(
-      gtk_message_dialog_new(impl_, GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING,
-                             GTK_BUTTONS_OK, "%s", mApp->GetStatus().c_str()));
+  GtkDialog* alert_dialog = GTK_DIALOG(gtk_message_dialog_new(impl_, GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING,
+                                                              GTK_BUTTONS_OK, "%s", mApp->GetStatus().c_str()));
 
   gtk_dialog_run(GTK_DIALOG(alert_dialog));
   gtk_widget_destroy(GTK_WIDGET(alert_dialog));

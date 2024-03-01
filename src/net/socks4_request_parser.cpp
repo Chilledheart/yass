@@ -16,4 +16,4 @@ void request_parser::reset() {
 
 }  // namespace socks4
 
-} // namespace net
+}  // namespace net

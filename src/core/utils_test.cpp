@@ -52,13 +52,13 @@ TEST(UtilsTest, ExpandUserFromStringImpl) {
   ASSERT_NE(0u, required_size);
 
   std::wstring expanded_path;
-  expanded_path.resize(required_size-1);
+  expanded_path.resize(required_size - 1);
   ASSERT_EQ(path_len, required_size);
   /* the buffer size should be the string length plus the terminating null character */
   ::ExpandEnvironmentStringsW(path, &expanded_path[0], required_size);
 
   ASSERT_STREQ(path, expanded_path.c_str());
-  ASSERT_EQ(std::wstring(path, path_len-1), expanded_path);
+  ASSERT_EQ(std::wstring(path, path_len - 1), expanded_path);
 }
 
 TEST(UtilsTest, ExpandUserFromString) {
@@ -124,7 +124,7 @@ TEST(UtilsTest, ReadFileAndWrite4K) {
 #endif
 
   ASSERT_TRUE(WriteFileWithBuffer(tmp, buf));
-  ASSERT_TRUE(ReadFileToBuffer(tmp, buf2.data(), buf2.size()+1));
+  ASSERT_TRUE(ReadFileToBuffer(tmp, buf2.data(), buf2.size() + 1));
   ASSERT_EQ(buf, buf2);
 
   ASSERT_TRUE(RemoveFile(tmp));

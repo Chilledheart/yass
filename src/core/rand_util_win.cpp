@@ -32,10 +32,9 @@
 void RandBytes(void* output, size_t output_length) {
   char* output_ptr = static_cast<char*>(output);
   while (output_length > 0) {
-    const ULONG output_bytes_this_pass = static_cast<ULONG>(std::min(
-        output_length, static_cast<size_t>(std::numeric_limits<ULONG>::max())));
-    const bool success =
-        RtlGenRandom(output_ptr, output_bytes_this_pass) != FALSE;
+    const ULONG output_bytes_this_pass =
+        static_cast<ULONG>(std::min(output_length, static_cast<size_t>(std::numeric_limits<ULONG>::max())));
+    const bool success = RtlGenRandom(output_ptr, output_bytes_this_pass) != FALSE;
     CHECK(success);
     output_length -= output_bytes_this_pass;
     output_ptr += output_bytes_this_pass;

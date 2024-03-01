@@ -15,10 +15,7 @@ static const size_t kNonceSize = 12;
 namespace crypto {
 
 Aes256GcmSodiumDecrypter::Aes256GcmSodiumDecrypter()
-    : AeadSodiumDecrypter(EVP_aead_aes_256_gcm,
-                          kKeySize,
-                          kAuthTagSize,
-                          kNonceSize) {
+    : AeadSodiumDecrypter(EVP_aead_aes_256_gcm, kKeySize, kAuthTagSize, kNonceSize) {
   static_assert(kKeySize <= kMaxKeySize, "key size too big");
   static_assert(kNonceSize <= kMaxNonceSize, "nonce size too big");
 }

@@ -11,7 +11,7 @@
 
 #include <locale.h>
 #include <pthread_np.h>
-#include <time.h> // For clock_gettime
+#include <time.h>  // For clock_gettime
 
 // TBD
 bool SetCurrentThreadPriority(ThreadPriority /*priority*/) {
@@ -43,8 +43,7 @@ uint64_t GetMonotonicTime() {
     PLOG(WARNING) << "clock_gettime failed";
     return 0;
   }
-  return static_cast<double>(ts.tv_sec - start_ts.tv_sec) * NS_PER_SECOND +
-         ts.tv_nsec - start_ts.tv_nsec;
+  return static_cast<double>(ts.tv_sec - start_ts.tv_sec) * NS_PER_SECOND + ts.tv_nsec - start_ts.tv_nsec;
 }
 
 bool SetUTF8Locale() {
@@ -55,4 +54,4 @@ bool SetUTF8Locale() {
   return true;
 }
 
-#endif // BUILDFLAG(IS_FREEBSD)
+#endif  // BUILDFLAG(IS_FREEBSD)

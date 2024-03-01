@@ -11,10 +11,10 @@
 #include <functional>
 #include <utility>
 
+#include <build/build_config.h>
+#include "core/logging.hpp"
 #include "net/asio.hpp"
 #include "net/iobuf.hpp"
-#include "core/logging.hpp"
-#include <build/build_config.h>
 
 #if BUILDFLAG(IS_IOS)
 #define SOCKET_BUF_SIZE (1500)
@@ -23,7 +23,7 @@
 #define SOCKET_BUF_SIZE (8192)
 #define SOCKET_DEBUF_SIZE (8192)
 #endif
-#define SS_FRAME_SIZE (16384-128)
+#define SS_FRAME_SIZE (16384 - 128)
 
 namespace net {
 
@@ -52,8 +52,7 @@ inline void DumpHex_Impl(const char* file, int line, const char* prefix, const u
       left_size -= written;
     }
 
-    written =
-        snprintf(message, left_size, "%02x%02x ", data[i * 2], data[i * 2 + 1]);
+    written = snprintf(message, left_size, "%02x%02x ", data[i * 2], data[i * 2 + 1]);
     if (written < 0 || written > left_size)
       goto done;
     message += written;
@@ -76,8 +75,7 @@ inline void DumpHex_Impl(const char* file, int line, const char* prefix, const u
 done:
   // ensure it is null-terminated
   hex_buffer[sizeof(hex_buffer) - 1] = '\0';
-  ::yass::LogMessage(file, line, -4).stream()
-    << hex_buffer;
+  ::yass::LogMessage(file, line, -4).stream() << hex_buffer;
 }
 
 inline void DumpHex_Impl(const char* file, int line, const char* prefix, const net::IOBuf* buf) {
@@ -85,9 +83,9 @@ inline void DumpHex_Impl(const char* file, int line, const char* prefix, const n
   uint32_t length = buf->length();
   DumpHex_Impl(file, line, prefix, data, length);
 }
-#endif // NDEBUG
+#endif  // NDEBUG
 
-} // namespace net
+}  // namespace net
 
 #ifndef NDEBUG
 #define DumpHex(...) ::net::DumpHex_Impl(__FILE__, __LINE__, __VA_ARGS__)

@@ -13,7 +13,7 @@
 #ifdef IDC_STATIC
 #undef IDC_STATIC
 #endif
-#define IDC_STATIC      (-1)
+#define IDC_STATIC (-1)
 
 /////////////////////////////////////////////////////////////////////////////
 // Standard app configurable strings
@@ -62,7 +62,7 @@
 #define IDS_STATUS_TX_RATE 0xE184
 #define IDS_STATUS_RX_RATE 0xE185
 
-#define WMAPP_NOTIFYCALLBACK (WM_APP+1)
+#define WMAPP_NOTIFYCALLBACK (WM_APP + 1)
 
 #define IDD_ABOUTBOX 100
 #define IDS_ABOUTBOX 101

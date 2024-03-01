@@ -33,41 +33,40 @@
 #endif
 
 #ifdef HAVE_MBEDTLS
-#define CIPHER_METHOD_MAP_MBEDTLS(XX)              \
-  XX(0x22U, AES_128_CFB, "aes-128-cfb")            \
-  XX(0x23U, AES_192_CFB, "aes-192-cfb")            \
-  XX(0x24U, AES_256_CFB, "aes-256-cfb")            \
-  XX(0x25U, AES_128_CTR, "aes-128-ctr")            \
-  XX(0x26U, AES_192_CTR, "aes-192-ctr")            \
-  XX(0x27U, AES_256_CTR, "aes-256-ctr")            \
-  XX(0x29U, CAMELLIA_128_CFB, "camellia-128-cfb")  \
-  XX(0x30U, CAMELLIA_192_CFB, "camellia-192-cfb")  \
+#define CIPHER_METHOD_MAP_MBEDTLS(XX)             \
+  XX(0x22U, AES_128_CFB, "aes-128-cfb")           \
+  XX(0x23U, AES_192_CFB, "aes-192-cfb")           \
+  XX(0x24U, AES_256_CFB, "aes-256-cfb")           \
+  XX(0x25U, AES_128_CTR, "aes-128-ctr")           \
+  XX(0x26U, AES_192_CTR, "aes-192-ctr")           \
+  XX(0x27U, AES_256_CTR, "aes-256-ctr")           \
+  XX(0x29U, CAMELLIA_128_CFB, "camellia-128-cfb") \
+  XX(0x30U, CAMELLIA_192_CFB, "camellia-192-cfb") \
   XX(0x31U, CAMELLIA_256_CFB, "camellia-256-cfb")
 #else
 #define CIPHER_METHOD_MAP_MBEDTLS(XX)
 #endif
 
-#define CIPHER_METHOD_MAP_HTTP(XX)                                    \
-  XX(0x110U, HTTPS, "https")
+#define CIPHER_METHOD_MAP_HTTP(XX) XX(0x110U, HTTPS, "https")
 
 #ifdef HAVE_QUICHE
-#define CIPHER_METHOD_MAP_HTTP2(XX)                                   \
-  XX(0x120U, HTTP2_PLAINTEXT, "http2-plaintext")                      \
+#define CIPHER_METHOD_MAP_HTTP2(XX)              \
+  XX(0x120U, HTTP2_PLAINTEXT, "http2-plaintext") \
   XX(0x121U, HTTP2, "http2")
-#define CIPHER_METHOD_MAP_FULL_HTTP2(XX)                              \
-  XX(0x120U, HTTP2_PLAINTEXT, "http2-plaintext")                      \
-  XX(0x121U, HTTP2, "http2")                                          \
-  XX(0x122U, HTTP2_INPLACE_2, "http2-2-protocol")                     \
-  XX(0x123U, HTTP2_INPLACE_3, "http2-3-protocol")                     \
-  XX(0x124U, HTTP2_INPLACE_4, "http2-4-protocol")                     \
+#define CIPHER_METHOD_MAP_FULL_HTTP2(XX)          \
+  XX(0x120U, HTTP2_PLAINTEXT, "http2-plaintext")  \
+  XX(0x121U, HTTP2, "http2")                      \
+  XX(0x122U, HTTP2_INPLACE_2, "http2-2-protocol") \
+  XX(0x123U, HTTP2_INPLACE_3, "http2-3-protocol") \
+  XX(0x124U, HTTP2_INPLACE_4, "http2-4-protocol") \
   XX(0x125U, HTTP2_INPLACE_5, "http2-5-protocol")
 #else
 #define CIPHER_METHOD_MAP_HTTP2(XX)
 #endif
 
-#define CIPHER_METHOD_OLD_MAP(XX)   \
-  CIPHER_METHOD_MAP_SODIUM(XX)      \
-  CIPHER_METHOD_MAP_BORINGSSL(XX)   \
+#define CIPHER_METHOD_OLD_MAP(XX) \
+  CIPHER_METHOD_MAP_SODIUM(XX)    \
+  CIPHER_METHOD_MAP_BORINGSSL(XX) \
   CIPHER_METHOD_MAP_MBEDTLS(XX)
 
 #define CIPHER_METHOD_VALID_MAP(XX) \

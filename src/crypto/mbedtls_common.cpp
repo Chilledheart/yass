@@ -9,12 +9,12 @@
 namespace crypto {
 
 mbedtls_cipher_context_t* mbedtls_create_evp(enum cipher_method method) {
-  const auto *info = mbedtls_get_cipher(method);
+  const auto* info = mbedtls_get_cipher(method);
   if (!info) {
     LOG(WARNING) << "mbedtls: setup failed";
     return nullptr;
   }
-  auto *evp = new mbedtls_cipher_context_t;
+  auto* evp = new mbedtls_cipher_context_t;
   mbedtls_cipher_init(evp);
   if (mbedtls_cipher_setup(evp, info) != 0) {
     LOG(WARNING) << "mbedtls: setup failed";
@@ -47,7 +47,7 @@ const mbedtls_cipher_info_t* mbedtls_get_cipher(enum cipher_method method) {
   //  "salsa20",
   //  "chacha20",
   //  "chacha20-ietf"
-  switch(method) {
+  switch (method) {
 #if 0
     case CRYPTO_RC4:
     case CRYPTO_RC4_MD5:
@@ -97,7 +97,7 @@ const mbedtls_cipher_info_t* mbedtls_get_cipher(enum cipher_method method) {
 uint8_t mbedtls_get_nonce_size(enum cipher_method method) {
   // TABLE, RC4, ..., CHACHA20_IETF
   // 0, 0, 16, 16, 16, 16, 16, 16, 16, 8, 16, 16, 16, 8, 8, 12
-  switch(method) {
+  switch (method) {
 #if 0
     case CRYPTO_RC4:
       return 0;
@@ -127,7 +127,7 @@ uint8_t mbedtls_get_nonce_size(enum cipher_method method) {
 uint8_t mbedtls_get_key_size(enum cipher_method method) {
   // TABLE, RC4, ..., CHACHA20_IETF
   // 0, 16, 16, 16, 24, 32, 16, 24, 32, 16, 16, 24, 32, 32, 32, 32
-  switch(method) {
+  switch (method) {
 #if 0
     case CRYPTO_RC4:
     case CRYPTO_RC4_MD5:
@@ -161,6 +161,6 @@ uint8_t mbedtls_get_key_size(enum cipher_method method) {
   }
 }
 
-} // namespace crypto
+}  // namespace crypto
 
-#endif // HAVE_MBEDTLS
+#endif  // HAVE_MBEDTLS

@@ -10,10 +10,10 @@
 
 #include <absl/functional/any_invocable.h>
 
-#include "crypto/crypter_export.hpp"
 #include "config/config.hpp"
-#include "net/asio.hpp"
 #include "core/logging.hpp"
+#include "crypto/crypter_export.hpp"
+#include "net/asio.hpp"
 
 #ifdef HAVE_C_ARES
 #include "net/c-ares.hpp"
@@ -29,8 +29,8 @@ class Worker {
   Worker();
   ~Worker();
 
-  void Start(absl::AnyInvocable<void(asio::error_code)> &&callback);
-  void Stop(absl::AnyInvocable<void()> &&callback);
+  void Start(absl::AnyInvocable<void(asio::error_code)>&& callback);
+  void Stop(absl::AnyInvocable<void()>&& callback);
 
   std::vector<std::string> GetRemoteIpsV4() const;
   std::vector<std::string> GetRemoteIpsV6() const;
@@ -43,11 +43,9 @@ class Worker {
  private:
   void WorkFunc();
 
-  void on_resolve_remote(asio::error_code ec,
-                         asio::ip::tcp::resolver::results_type results);
+  void on_resolve_remote(asio::error_code ec, asio::ip::tcp::resolver::results_type results);
 
-  void on_resolve_local(asio::error_code ec,
-                        asio::ip::tcp::resolver::results_type results);
+  void on_resolve_local(asio::error_code ec, asio::ip::tcp::resolver::results_type results);
 
   asio::io_context io_context_;
   /// stopping the io_context from running out of work
@@ -64,7 +62,7 @@ class Worker {
   absl::AnyInvocable<void(asio::error_code)> start_callback_;
   absl::AnyInvocable<void()> stop_callback_;
 
-  WorkerPrivate *private_;
+  WorkerPrivate* private_;
   std::string remote_server_ips_;
   std::vector<std::string> remote_server_ips_v4_;
   std::vector<std::string> remote_server_ips_v6_;

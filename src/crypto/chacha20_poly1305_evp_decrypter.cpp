@@ -15,10 +15,7 @@ static const size_t kNonceSize = 12;
 namespace crypto {
 
 ChaCha20Poly1305EvpDecrypter::ChaCha20Poly1305EvpDecrypter()
-    : AeadEvpDecrypter(EVP_aead_chacha20_poly1305,
-                       kKeySize,
-                       kAuthTagSize,
-                       kNonceSize) {
+    : AeadEvpDecrypter(EVP_aead_chacha20_poly1305, kKeySize, kAuthTagSize, kNonceSize) {
   static_assert(kKeySize <= kMaxKeySize, "key size too big");
   static_assert(kNonceSize <= kMaxNonceSize, "nonce size too big");
 }

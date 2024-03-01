@@ -18,8 +18,7 @@ class AeadBaseEncrypter : public Encrypter {
   virtual ~AeadBaseEncrypter();
 
   bool SetKey(const char* key, size_t key_len) override;
-  bool SetNoncePrefix(const char* nonce_prefix,
-                      size_t nonce_prefix_len) override;
+  bool SetNoncePrefix(const char* nonce_prefix, size_t nonce_prefix_len) override;
   bool SetIV(const char* iv, size_t iv_len) override;
 
   size_t GetKeySize() const override;

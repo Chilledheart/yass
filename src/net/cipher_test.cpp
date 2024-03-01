@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2024 Chilledheart  */
 
-#include <gtest/gtest.h>
 #include <gtest/gtest-message.h>
+#include <gtest/gtest.h>
 
 #include <absl/flags/flag.h>
 #include <gmock/gmock.h>
-#include "net/cipher.hpp"
 #include "core/rand_util.hpp"
+#include "net/cipher.hpp"
 
 #include "test_util.hpp"
 
@@ -22,17 +22,15 @@ std::unique_ptr<IOBuf> GenerateRandContent(int size) {
     memcpy(buf->mutable_data() + 256 * i, buf->data(), 256);
   }
   if (size % 256) {
-    memcpy(buf->mutable_data() + 256 * (size / 256),
-           buf->data(), std::min(256, size % 256));
+    memcpy(buf->mutable_data() + 256 * (size / 256), buf->data(), std::min(256, size % 256));
   }
   buf->append(size);
 
   return buf;
 }
-} // anonymous namespace
+}  // anonymous namespace
 
-class CipherTest : public ::testing::TestWithParam<size_t>,
-                   public cipher_visitor_interface {
+class CipherTest : public ::testing::TestWithParam<size_t>, public cipher_visitor_interface {
  public:
   void SetUp() override {}
   void TearDown() override {}
@@ -50,10 +48,7 @@ class CipherTest : public ::testing::TestWithParam<size_t>,
   void on_protocol_error() override { ec_ = asio::error::connection_aborted; }
 
  protected:
-  void EncodeAndDecode(const std::string& key,
-                       const std::string& password,
-                       cipher_method crypto_method,
-                       size_t size) {
+  void EncodeAndDecode(const std::string& key, const std::string& password, cipher_method crypto_method, size_t size) {
     auto encoder = std::make_unique<cipher>(key, password, crypto_method, this, true);
     auto decoder = std::make_unique<cipher>(key, password, crypto_method, this, false);
     auto send_buf = GenerateRandContent(size);
@@ -63,16 +58,15 @@ class CipherTest : public ::testing::TestWithParam<size_t>,
     ASSERT_EQ(ec_, asio::error_code());
 
     ASSERT_EQ(send_buf->length(), recv_buf_->length());
-    ASSERT_EQ(::testing::Bytes(send_buf->data(), size),
-              ::testing::Bytes(recv_buf_->data(), size));
+    ASSERT_EQ(::testing::Bytes(send_buf->data(), size), ::testing::Bytes(recv_buf_->data(), size));
   }
 
   asio::error_code ec_;
   std::shared_ptr<IOBuf> recv_buf_;
 };
 
-#define XX(num, name, string) \
-  TEST_P(CipherTest, name) { \
+#define XX(num, name, string)                                           \
+  TEST_P(CipherTest, name) {                                            \
     EncodeAndDecode("", "<dummy-password>", CRYPTO_##name, GetParam()); \
   }
 
@@ -81,7 +75,5 @@ CIPHER_METHOD_OLD_MAP(XX)
 
 INSTANTIATE_TEST_SUITE_P(SizedCipherTest,
                          CipherTest,
-                         ::testing::Values(16, 256, 512, 1024, 2048, 4096, 16 * 1024 -1),
-                         ::testing::PrintToStringParamName()
-);
-
+                         ::testing::Values(16, 256, 512, 1024, 2048, 4096, 16 * 1024 - 1),
+                         ::testing::PrintToStringParamName());

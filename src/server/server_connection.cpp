@@ -5,16 +5,16 @@
 
 #include <absl/base/attributes.h>
 #include <absl/strings/str_cat.h>
-#include <cstdlib>
 #include <base/strings/string_util.h>
+#include <cstdlib>
 
 #include "config/config.hpp"
+#include "core/rand_util.hpp"
+#include "core/utils.hpp"
 #include "net/asio.hpp"
 #include "net/base64.hpp"
 #include "net/http_parser.hpp"
 #include "net/padding.hpp"
-#include "core/rand_util.hpp"
-#include "core/utils.hpp"
 
 ABSL_FLAG(bool, hide_via, true, "If true, the Via heaeder will not be added.");
 ABSL_FLAG(bool, hide_ip, true, "If true, the Forwarded header will not be augmented with your IP address.");
@@ -23,15 +23,13 @@ using namespace net;
 
 using gurl_base::ToLowerASCII;
 
-static void SplitHostPort(std::string *out_hostname, std::string *out_port,
-                          const std::string &hostname_and_port) {
+static void SplitHostPort(std::string* out_hostname, std::string* out_port, const std::string& hostname_and_port) {
   size_t colon_offset = hostname_and_port.find_last_of(':');
   const size_t bracket_offset = hostname_and_port.find_last_of(']');
   std::string hostname, port;
 
   // An IPv6 literal may have colons internally, guarded by square brackets.
-  if (bracket_offset != std::string::npos &&
-      colon_offset != std::string::npos && bracket_offset > colon_offset) {
+  if (bracket_offset != std::string::npos && colon_offset != std::string::npos && bracket_offset > colon_offset) {
     colon_offset = std::string::npos;
   }
 
@@ -44,22 +42,19 @@ static void SplitHostPort(std::string *out_hostname, std::string *out_port,
   }
 }
 
-static std::vector<http2::adapter::Header> GenerateHeaders(
-  std::vector<std::pair<std::string, std::string>> headers, int status = 0) {
+static std::vector<http2::adapter::Header> GenerateHeaders(std::vector<std::pair<std::string, std::string>> headers,
+                                                           int status = 0) {
   std::vector<http2::adapter::Header> response_vector;
   if (status) {
-    response_vector.emplace_back(
-        http2::adapter::HeaderRep(std::string(":status")),
-        http2::adapter::HeaderRep(std::to_string(status)));
+    response_vector.emplace_back(http2::adapter::HeaderRep(std::string(":status")),
+                                 http2::adapter::HeaderRep(std::to_string(status)));
   }
   for (const auto& header : headers) {
     // Connection (and related) headers are considered malformed and will
     // result in a client error
     if (header.first == "Connection")
       continue;
-    response_vector.emplace_back(
-        http2::adapter::HeaderRep(header.first),
-        http2::adapter::HeaderRep(header.second));
+    response_vector.emplace_back(http2::adapter::HeaderRep(header.first), http2::adapter::HeaderRep(header.second));
   }
 
   return response_vector;
@@ -67,23 +62,20 @@ static std::vector<http2::adapter::Header> GenerateHeaders(
 
 static std::string GetProxyAuthorizationIdentity() {
   std::string result;
-  auto user_pass = absl::StrCat(absl::GetFlag(FLAGS_username), ":",
-                                absl::GetFlag(FLAGS_password));
+  auto user_pass = absl::StrCat(absl::GetFlag(FLAGS_username), ":", absl::GetFlag(FLAGS_password));
   Base64Encode(user_pass, &result);
   return result;
 }
 
 namespace server {
 
-const char ServerConnection::http_connect_reply_[] =
-    "HTTP/1.1 200 Connection established\r\n\r\n";
+const char ServerConnection::http_connect_reply_[] = "HTTP/1.1 200 Connection established\r\n\r\n";
 
-bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length)  {
+bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length) {
   std::string concatenated;
   if (payload_length) {
     DCHECK(!chunks_.empty());
-    absl::string_view payload(
-        reinterpret_cast<const char*>(chunks_.front()->data()), payload_length);
+    absl::string_view payload(reinterpret_cast<const char*>(chunks_.front()->data()), payload_length);
     concatenated = absl::StrCat(frame_header, payload);
   } else {
     concatenated = std::string{frame_header};
@@ -103,8 +95,7 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
 
   if (static_cast<size_t>(result) < concatenated.size()) {
     // Probably need to handle this better within this test class.
-    QUICHE_LOG(DFATAL)
-        << "DATA frame not fully flushed. Connection will be corrupt!";
+    QUICHE_LOG(DFATAL) << "DATA frame not fully flushed. Connection will be corrupt!";
     connection_->OnConnectionError(http2::adapter::Http2VisitorInterface::ConnectionError::kSendError);
     return false;
   }
@@ -139,12 +130,18 @@ ServerConnection::ServerConnection(asio::io_context& io_context,
                                    bool https_fallback,
                                    bool enable_upstream_tls,
                                    bool enable_tls,
-                                   asio::ssl::context *upstream_ssl_ctx,
-                                   asio::ssl::context *ssl_ctx)
-    : Connection(io_context, remote_host_ips, remote_host_sni, remote_port,
-                 upstream_https_fallback, https_fallback,
-                 enable_upstream_tls, enable_tls,
-                 upstream_ssl_ctx, ssl_ctx),
+                                   asio::ssl::context* upstream_ssl_ctx,
+                                   asio::ssl::context* ssl_ctx)
+    : Connection(io_context,
+                 remote_host_ips,
+                 remote_host_sni,
+                 remote_port,
+                 upstream_https_fallback,
+                 https_fallback,
+                 enable_upstream_tls,
+                 enable_tls,
+                 upstream_ssl_ctx,
+                 ssl_ctx),
       state_() {}
 
 ServerConnection::~ServerConnection() {
@@ -177,8 +174,7 @@ void ServerConnection::close() {
     return;
   }
   VLOG(1) << "Connection (server) " << connection_id()
-          << " disconnected with client at stage: "
-          << ServerConnection::state_to_str(CurrentState());
+          << " disconnected with client at stage: " << ServerConnection::state_to_str(CurrentState());
   asio::error_code ec;
   closing_ = true;
 
@@ -227,17 +223,12 @@ void ServerConnection::Start() {
     SetState(state_stream);
 
     // Send Upstream Settings (HTTP2 Only)
-    std::vector<http2::adapter::Http2Setting> settings {
-      { http2::adapter::Http2KnownSettingsId::HEADER_TABLE_SIZE,
-        kSpdyMaxHeaderTableSize },
-      { http2::adapter::Http2KnownSettingsId::MAX_CONCURRENT_STREAMS,
-        kSpdyMaxConcurrentPushedStreams },
-      { http2::adapter::Http2KnownSettingsId::INITIAL_WINDOW_SIZE,
-        H2_STREAM_WINDOW_SIZE },
-      { http2::adapter::Http2KnownSettingsId::MAX_HEADER_LIST_SIZE,
-        kSpdyMaxHeaderListSize },
-      { http2::adapter::Http2KnownSettingsId::ENABLE_PUSH,
-        kSpdyDisablePush },
+    std::vector<http2::adapter::Http2Setting> settings{
+        {http2::adapter::Http2KnownSettingsId::HEADER_TABLE_SIZE, kSpdyMaxHeaderTableSize},
+        {http2::adapter::Http2KnownSettingsId::MAX_CONCURRENT_STREAMS, kSpdyMaxConcurrentPushedStreams},
+        {http2::adapter::Http2KnownSettingsId::INITIAL_WINDOW_SIZE, H2_STREAM_WINDOW_SIZE},
+        {http2::adapter::Http2KnownSettingsId::MAX_HEADER_LIST_SIZE, kSpdyMaxHeaderListSize},
+        {http2::adapter::Http2KnownSettingsId::ENABLE_PUSH, kSpdyDisablePush},
     };
     adapter_->SubmitSettings(settings);
     SendIfNotProcessing();
@@ -249,12 +240,9 @@ void ServerConnection::Start() {
     // padding_support_ = absl::GetFlag(FLAGS_padding_support);
     ReadHandshakeViaHttps();
   } else {
-    encoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
-      absl::GetFlag(FLAGS_method).method,
-      this, true);
-    decoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
-      absl::GetFlag(FLAGS_method).method,
-      this);
+    encoder_ =
+        std::make_unique<cipher>("", absl::GetFlag(FLAGS_password), absl::GetFlag(FLAGS_method).method, this, true);
+    decoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password), absl::GetFlag(FLAGS_method).method, this);
     ReadHandshake();
   }
 }
@@ -288,8 +276,7 @@ bool ServerConnection::on_received_data(std::shared_ptr<IOBuf> buf) {
 }
 
 void ServerConnection::on_protocol_error() {
-  LOG(WARNING) << "Connection (server) " << connection_id()
-    << " Protocol error";
+  LOG(WARNING) << "Connection (server) " << connection_id() << " Protocol error";
   OnDisconnect(asio::error::connection_aborted);
 }
 
@@ -302,27 +289,23 @@ int64_t ServerConnection::OnReadyToSend(absl::string_view serialized) {
   return serialized.size();
 }
 
-http2::adapter::Http2VisitorInterface::OnHeaderResult
-ServerConnection::OnHeaderForStream(StreamId stream_id,
-                                    absl::string_view key,
-                                    absl::string_view value) {
+http2::adapter::Http2VisitorInterface::OnHeaderResult ServerConnection::OnHeaderForStream(StreamId stream_id,
+                                                                                          absl::string_view key,
+                                                                                          absl::string_view value) {
   request_map_[key] = std::string{value};
   return http2::adapter::Http2VisitorInterface::HEADER_OK;
 }
 
-bool ServerConnection::OnEndHeadersForStream(
-  http2::adapter::Http2StreamId stream_id) {
-
+bool ServerConnection::OnEndHeadersForStream(http2::adapter::Http2StreamId stream_id) {
   auto peer_endpoint = peer_endpoint_;
   if (request_map_[":method"] != "CONNECT") {
     LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
-      << " Unexpected method: " << request_map_[":method"];
+              << " Unexpected method: " << request_map_[":method"];
     return false;
   }
   auto auth = request_map_["proxy-authorization"];
   if (auth != "basic " + GetProxyAuthorizationIdentity()) {
-    LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
-      << " Unexpected auth token.";
+    LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint << " Unexpected auth token.";
     return false;
   }
   // https://datatracker.ietf.org/doc/html/rfc9113
@@ -333,12 +316,12 @@ bool ServerConnection::OnEndHeadersForStream(
     authority = request_map_["host"];
   } else if (!request_map_["host"].empty() && ToLowerASCII(authority) != ToLowerASCII(request_map_["host"])) {
     LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
-      << " Unmatched authority: " << authority << " with host: " << request_map_["host"];
+              << " Unmatched authority: " << authority << " with host: " << request_map_["host"];
     return false;
   }
   if (authority.empty()) {
     LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
-      << " Unexpected empty authority";
+              << " Unexpected empty authority";
     return false;
   }
 
@@ -346,8 +329,7 @@ bool ServerConnection::OnEndHeadersForStream(
   SplitHostPort(&hostname, &port, authority);
 
   // Handle IPv6 literals.
-  if (hostname.size() >= 2 && hostname[0] == '[' &&
-      hostname[hostname.size() - 1] == ']') {
+  if (hostname.size() >= 2 && hostname[0] == '[' && hostname[hostname.size() - 1] == ']') {
     hostname = hostname.substr(1, hostname.size() - 2);
   }
 
@@ -355,7 +337,7 @@ bool ServerConnection::OnEndHeadersForStream(
   const unsigned long portnum = strtoul(port.c_str(), &end, 10);
   if (*end != '\0' || portnum > UINT16_MAX || (errno == ERANGE && portnum == ULONG_MAX)) {
     LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
-      << " Unexpected authority: " << authority;
+              << " Unexpected authority: " << authority;
     return false;
   }
 
@@ -363,11 +345,9 @@ bool ServerConnection::OnEndHeadersForStream(
 
   bool padding_support = request_map_.find("padding") != request_map_.end();
   if (padding_support_ && padding_support) {
-    LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
-      << " Padding support enabled.";
+    LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint << " Padding support enabled.";
   } else {
-    VLOG(1) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
-      << " Padding support disabled.";
+    VLOG(1) << "Connection (server) " << connection_id() << " from: " << peer_endpoint << " Padding support disabled.";
     padding_support_ = false;
   }
 
@@ -388,8 +368,7 @@ bool ServerConnection::OnEndStream(StreamId stream_id) {
   return true;
 }
 
-bool ServerConnection::OnCloseStream(StreamId stream_id,
-                                     http2::adapter::Http2ErrorCode error_code) {
+bool ServerConnection::OnCloseStream(StreamId stream_id, http2::adapter::Http2ErrorCode error_code) {
   if (stream_id == stream_id_) {
     data_frame_ = nullptr;
     stream_id_ = 0;
@@ -401,10 +380,7 @@ void ServerConnection::OnConnectionError(ConnectionError /*error*/) {
   OnDisconnect(asio::error::connection_aborted);
 }
 
-bool ServerConnection::OnFrameHeader(StreamId stream_id,
-                                     size_t /*length*/,
-                                     uint8_t /*type*/,
-                                     uint8_t /*flags*/) {
+bool ServerConnection::OnFrameHeader(StreamId stream_id, size_t /*length*/, uint8_t /*type*/, uint8_t /*flags*/) {
   return true;
 }
 
@@ -418,13 +394,11 @@ bool ServerConnection::OnBeginHeadersForStream(StreamId stream_id) {
   return true;
 }
 
-bool ServerConnection::OnBeginDataForStream(StreamId stream_id,
-                                            size_t payload_length) {
+bool ServerConnection::OnBeginDataForStream(StreamId stream_id, size_t payload_length) {
   return true;
 }
 
-bool ServerConnection::OnDataForStream(StreamId stream_id,
-                                       absl::string_view data) {
+bool ServerConnection::OnDataForStream(StreamId stream_id, absl::string_view data) {
   if (padding_support_ && num_padding_recv_ < kFirstPaddings) {
     asio::error_code ec;
     // Append buf to in_middle_buf
@@ -459,14 +433,12 @@ bool ServerConnection::OnDataForStream(StreamId stream_id,
   return true;
 }
 
-bool ServerConnection::OnDataPaddingLength(StreamId stream_id,
-                                           size_t padding_length) {
+bool ServerConnection::OnDataPaddingLength(StreamId stream_id, size_t padding_length) {
   adapter_->MarkDataConsumedForStream(stream_id, padding_length);
   return true;
 }
 
-void ServerConnection::OnRstStream(StreamId stream_id,
-                                   http2::adapter::Http2ErrorCode error_code) {
+void ServerConnection::OnRstStream(StreamId stream_id, http2::adapter::Http2ErrorCode error_code) {
   OnDisconnect(asio::error::connection_reset);
 }
 
@@ -477,10 +449,7 @@ bool ServerConnection::OnGoAway(StreamId last_accepted_stream_id,
   return true;
 }
 
-int ServerConnection::OnBeforeFrameSent(uint8_t frame_type,
-                                        StreamId stream_id,
-                                        size_t length,
-                                        uint8_t flags) {
+int ServerConnection::OnBeforeFrameSent(uint8_t frame_type, StreamId stream_id, size_t length, uint8_t flags) {
   return 0;
 }
 
@@ -492,13 +461,11 @@ int ServerConnection::OnFrameSent(uint8_t frame_type,
   return 0;
 }
 
-bool ServerConnection::OnInvalidFrame(StreamId stream_id,
-                                      InvalidFrameError error) {
+bool ServerConnection::OnInvalidFrame(StreamId stream_id, InvalidFrameError error) {
   return true;
 }
 
-bool ServerConnection::OnMetadataForStream(StreamId stream_id,
-                                           absl::string_view metadata) {
+bool ServerConnection::OnMetadataForStream(StreamId stream_id, absl::string_view metadata) {
   return true;
 }
 
@@ -510,57 +477,56 @@ void ServerConnection::ReadHandshake() {
   scoped_refptr<ServerConnection> self(this);
 
   downlink_->async_read_some([this, self](asio::error_code ec) {
-      if (closed_ || closing_) {
-        return;
+    if (closed_ || closing_) {
+      return;
+    }
+    if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+      return;
+    }
+    if (ec) {
+      ProcessReceivedData(nullptr, ec, 0);
+      return;
+    }
+    std::shared_ptr<IOBuf> cipherbuf = IOBuf::create(SOCKET_DEBUF_SIZE);
+    size_t bytes_transferred;
+    do {
+      bytes_transferred = downlink_->read_some(cipherbuf, ec);
+      if (ec == asio::error::interrupted) {
+        continue;
       }
-      if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
-        return;
-      }
-      if (ec) {
-        ProcessReceivedData(nullptr, ec, 0);
-        return;
-      }
-      std::shared_ptr<IOBuf> cipherbuf = IOBuf::create(SOCKET_DEBUF_SIZE);
-      size_t bytes_transferred;
-      do {
-        bytes_transferred = downlink_->read_some(cipherbuf, ec);
-        if (ec == asio::error::interrupted) {
-          continue;
-        }
-      } while(false);
-      if (ec == asio::error::try_again || ec == asio::error::would_block) {
-        DCHECK_EQ(bytes_transferred, 0u);
-        ReadHandshake();
-        return;
-      }
-      if (ec) {
-        OnDisconnect(ec);
-        return;
-      }
-      cipherbuf->append(bytes_transferred);
-      decoder_->process_bytes(cipherbuf);
-      if (!handshake_) {
-        ReadHandshake();
-        return;
-      }
-      auto buf = handshake_;
+    } while (false);
+    if (ec == asio::error::try_again || ec == asio::error::would_block) {
+      DCHECK_EQ(bytes_transferred, 0u);
+      ReadHandshake();
+      return;
+    }
+    if (ec) {
+      OnDisconnect(ec);
+      return;
+    }
+    cipherbuf->append(bytes_transferred);
+    decoder_->process_bytes(cipherbuf);
+    if (!handshake_) {
+      ReadHandshake();
+      return;
+    }
+    auto buf = handshake_;
 
-      DumpHex("HANDSHAKE->", buf.get());
+    DumpHex("HANDSHAKE->", buf.get());
 
-      ss::request_parser::result_type result;
-      std::tie(result, std::ignore) = request_parser_.parse(
-          request_, buf->data(), buf->data() + bytes_transferred);
+    ss::request_parser::result_type result;
+    std::tie(result, std::ignore) = request_parser_.parse(request_, buf->data(), buf->data() + bytes_transferred);
 
-      if (result == ss::request_parser::good) {
-        buf->trimStart(request_.length());
-        buf->retreat(request_.length());
-        DCHECK_LE(request_.length(), bytes_transferred);
-        ProcessReceivedData(buf, ec, buf->length());
-      } else {
-        // FIXME better error code?
-        ec = asio::error::connection_refused;
-        OnDisconnect(ec);
-      }
+    if (result == ss::request_parser::good) {
+      buf->trimStart(request_.length());
+      buf->retreat(request_.length());
+      DCHECK_LE(request_.length(), bytes_transferred);
+      ProcessReceivedData(buf, ec, buf->length());
+    } else {
+      // FIXME better error code?
+      ec = asio::error::connection_refused;
+      OnDisconnect(ec);
+    }
   });
 }
 
@@ -596,7 +562,7 @@ void ServerConnection::OnReadHandshakeViaHttps() {
     if (ec == asio::error::interrupted) {
       continue;
     }
-  } while(false);
+  } while (false);
   if (ec == asio::error::try_again || ec == asio::error::would_block) {
     DCHECK_EQ(bytes_transferred, 0u);
     ReadHandshakeViaHttps();
@@ -616,8 +582,7 @@ void ServerConnection::OnReadHandshakeViaHttps() {
   int nparsed = parser.Parse(buf, &ok);
   if (nparsed) {
     VLOG(3) << "Connection (server) " << connection_id()
-            << " http: "
-            << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
+            << " http: " << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
   }
 
   if (ok) {
@@ -652,11 +617,9 @@ void ServerConnection::OnReadHandshakeViaHttps() {
       buf->reserve(header.size(), 0);
       buf->prepend(header.size());
       memcpy(buf->mutable_data(), header.c_str(), header.size());
-      VLOG(3) << "Connection (server) " << connection_id()
-              << " Host: " << http_host_ << " PORT: " << http_port_;
+      VLOG(3) << "Connection (server) " << connection_id() << " Host: " << http_host_ << " PORT: " << http_port_;
     } else {
-      VLOG(3) << "Connection (server) " << connection_id()
-              << " CONNECT: " << http_host_ << " PORT: " << http_port_;
+      VLOG(3) << "Connection (server) " << connection_id() << " CONNECT: " << http_host_ << " PORT: " << http_port_;
     }
     ProcessReceivedData(buf, ec, buf->length());
   } else {
@@ -714,18 +677,18 @@ void ServerConnection::WriteStream() {
   scoped_refptr<ServerConnection> self(this);
   write_inprogress_ = true;
   downlink_->async_write_some([this, self](asio::error_code ec) {
-      write_inprogress_ = false;
-      if (closed_ || closing_) {
-        return;
-      }
-      if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
-        return;
-      }
-      if (ec) {
-        ProcessSentData(ec, 0);
-        return;
-      }
-      WriteStreamInPipe();
+    write_inprogress_ = false;
+    if (closed_ || closing_) {
+      return;
+    }
+    if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+      return;
+    }
+    if (ec) {
+      ProcessSentData(ec, 0);
+      return;
+    }
+    WriteStreamInPipe();
   });
 }
 
@@ -760,7 +723,7 @@ void ServerConnection::WriteStreamInPipe() {
       if (ec == asio::error::interrupted) {
         continue;
       }
-    } while(false);
+    } while (false);
     buf->trimStart(written);
     bytes_downstream_passed_without_yield_ += written;
     wbytes_transferred += written;
@@ -794,16 +757,18 @@ void ServerConnection::WriteStreamInPipe() {
   if (try_again) {
     if (channel_ && channel_->connected() && !channel_->read_inprogress()) {
       scoped_refptr<ServerConnection> self(this);
-      channel_->wait_read([this, self](asio::error_code ec) {
-        if (UNLIKELY(closed_)) {
-          return;
-        }
-        if (UNLIKELY(ec)) {
-          disconnected(ec);
-          return;
-        }
-        received();
-      }, yield);
+      channel_->wait_read(
+          [this, self](asio::error_code ec) {
+            if (UNLIKELY(closed_)) {
+              return;
+            }
+            if (UNLIKELY(ec)) {
+              disconnected(ec);
+              return;
+            }
+            received();
+          },
+          yield);
     }
   }
   if (ec == asio::error::try_again || ec == asio::error::would_block) {
@@ -820,8 +785,7 @@ void ServerConnection::WriteStreamInPipe() {
   ProcessSentData(ec, wbytes_transferred);
 }
 
-std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code &ec,
-                                                              size_t* bytes_transferred) {
+std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code& ec, size_t* bytes_transferred) {
   if (!downstream_.empty()) {
     DCHECK(!downstream_.front()->empty());
     ec = asio::error_code();
@@ -852,7 +816,7 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code &
     if (ec == asio::error::interrupted) {
       continue;
     }
-  } while(false);
+  } while (false);
   buf->append(read);
   if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
     // handled in channel_->read_some func
@@ -860,8 +824,7 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code &
     goto out;
   }
   if (read) {
-    VLOG(2) << "Connection (server) " << connection_id()
-            << " upstream: received reply (pipe): " << read << " bytes."
+    VLOG(2) << "Connection (server) " << connection_id() << " upstream: received reply (pipe): " << read << " bytes."
             << " done: " << channel_->rbytes_transferred() << " bytes.";
   } else {
     goto out;
@@ -938,14 +901,13 @@ void ServerConnection::WriteUpstreamInPipe() {
       if (ec == asio::error::interrupted) {
         continue;
       }
-    } while(false);
+    } while (false);
     buf->trimStart(written);
     wbytes_transferred += written;
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
       break;
     }
-    VLOG(2) << "Connection (server) " << connection_id()
-            << " upstream: sent request (pipe): " << written << " bytes"
+    VLOG(2) << "Connection (server) " << connection_id() << " upstream: sent request (pipe): " << written << " bytes"
             << " done: " << channel_->wbytes_transferred() << " bytes."
             << " ec: " << ec;
     // continue to resume
@@ -984,8 +946,7 @@ void ServerConnection::WriteUpstreamInPipe() {
   }
 }
 
-std::shared_ptr<IOBuf> ServerConnection::GetNextUpstreamBuf(asio::error_code &ec,
-                                                            size_t* bytes_transferred) {
+std::shared_ptr<IOBuf> ServerConnection::GetNextUpstreamBuf(asio::error_code& ec, size_t* bytes_transferred) {
   if (!upstream_.empty()) {
     DCHECK(!upstream_.front()->empty());
     ec = asio::error_code();
@@ -1009,7 +970,7 @@ try_again:
     if (ec == asio::error::interrupted) {
       continue;
     }
-  } while(false);
+  } while (false);
   buf->append(read);
   if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
     /* safe to return, socket will handle this error later */
@@ -1019,16 +980,14 @@ try_again:
   *bytes_transferred += read;
   rbytes_transferred_ += read;
   if (read) {
-    VLOG(2) << "Connection (server) " << connection_id()
-            << " received data (pipe): " << read << " bytes."
+    VLOG(2) << "Connection (server) " << connection_id() << " received data (pipe): " << read << " bytes."
             << " done: " << rbytes_transferred_ << " bytes.";
   } else {
     goto out;
   }
 
   if (adapter_) {
-    absl::string_view remaining_buffer(
-        reinterpret_cast<const char*>(buf->data()), buf->length());
+    absl::string_view remaining_buffer(reinterpret_cast<const char*>(buf->data()), buf->length());
     while (!remaining_buffer.empty()) {
       int result = adapter_->ProcessBytes(remaining_buffer);
       if (result < 0) {
@@ -1066,12 +1025,9 @@ out:
   return upstream_.front();
 }
 
-void ServerConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf,
-                                           asio::error_code ec,
-                                           size_t bytes_transferred) {
+void ServerConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf, asio::error_code ec, size_t bytes_transferred) {
   rbytes_transferred_ += bytes_transferred;
-  VLOG(2) << "Connection (server) " << connection_id()
-          << " received data: " << bytes_transferred << " bytes"
+  VLOG(2) << "Connection (server) " << connection_id() << " received data: " << bytes_transferred << " bytes"
           << " done: " << rbytes_transferred_ << " bytes."
           << " ec: " << ec;
 
@@ -1100,8 +1056,7 @@ void ServerConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf,
         ec = std::make_error_code(std::errc::bad_message);
         break;
       default:
-        LOG(FATAL) << "Connection (server) " << connection_id()
-                   << " bad state 0x" << std::hex
+        LOG(FATAL) << "Connection (server) " << connection_id() << " bad state 0x" << std::hex
                    << static_cast<int>(CurrentState()) << std::dec;
     };
   }
@@ -1111,12 +1066,10 @@ void ServerConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf,
   }
 }
 
-void ServerConnection::ProcessSentData(asio::error_code ec,
-                                       size_t bytes_transferred) {
+void ServerConnection::ProcessSentData(asio::error_code ec, size_t bytes_transferred) {
   wbytes_transferred_ += bytes_transferred;
 
-  VLOG(2) << "Connection (server) " << connection_id()
-          << " sent data: " << bytes_transferred << " bytes."
+  VLOG(2) << "Connection (server) " << connection_id() << " sent data: " << bytes_transferred << " bytes."
           << " done: " << wbytes_transferred_ << " bytes."
           << " ec: " << ec;
 
@@ -1132,8 +1085,7 @@ void ServerConnection::ProcessSentData(asio::error_code ec,
         ec = std::make_error_code(std::errc::bad_message);
         break;
       default:
-        LOG(FATAL) << "Connection (server) " << connection_id()
-                   << " bad state 0x" << std::hex
+        LOG(FATAL) << "Connection (server) " << connection_id() << " bad state 0x" << std::hex
                    << static_cast<int>(CurrentState()) << std::dec;
     }
   }
@@ -1149,8 +1101,8 @@ void ServerConnection::OnConnect() {
   asio::error_code ec;
   auto peer_endpoint = peer_endpoint_;
   // TODO improve access log
-  LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
-    << " connect " << remote_domain();
+  LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint << " connect "
+            << remote_domain();
   std::string host_name;
   uint16_t port = request_.port();
   if (request_.address_type() == ss::domain) {
@@ -1159,18 +1111,13 @@ void ServerConnection::OnConnect() {
     host_name = request_.endpoint().address().to_string();
   }
   if (enable_upstream_tls_) {
-    channel_ = ssl_stream::create(ssl_socket_data_index(),
-                                  *io_context_,
-                                  std::string(), host_name, port,
-                                  this, upstream_https_fallback_,
-                                  upstream_ssl_ctx_);
+    channel_ = ssl_stream::create(ssl_socket_data_index(), *io_context_, std::string(), host_name, port, this,
+                                  upstream_https_fallback_, upstream_ssl_ctx_);
 
   } else {
-    channel_ = stream::create(*io_context_,
-                              std::string(), host_name, port,
-                              this);
+    channel_ = stream::create(*io_context_, std::string(), host_name, port, this);
   }
-  channel_->async_connect([this, self](asio::error_code ec){
+  channel_->async_connect([this, self](asio::error_code ec) {
     if (UNLIKELY(closed_)) {
       return;
     }
@@ -1182,8 +1129,7 @@ void ServerConnection::OnConnect() {
   });
   if (adapter_) {
     // stream is ready
-    std::unique_ptr<DataFrameSource> data_frame =
-      std::make_unique<DataFrameSource>(this, stream_id_);
+    std::unique_ptr<DataFrameSource> data_frame = std::make_unique<DataFrameSource>(this, stream_id_);
     data_frame_ = data_frame.get();
     std::vector<std::pair<std::string, std::string>> headers;
     // Send "Padding" header
@@ -1197,16 +1143,13 @@ void ServerConnection::OnConnect() {
       }
       headers.emplace_back("padding", padding);
     }
-    int submit_result = adapter_->SubmitResponse(stream_id_,
-                                                 GenerateHeaders(headers, 200),
-                                                 std::move(data_frame));
+    int submit_result = adapter_->SubmitResponse(stream_id_, GenerateHeaders(headers, 200), std::move(data_frame));
     SendIfNotProcessing();
     if (submit_result != 0) {
       OnDisconnect(asio::error::connection_aborted);
     }
   } else if (downlink_->https_fallback() && http_is_connect_) {
-    std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(
-        http_connect_reply_, sizeof(http_connect_reply_) - 1);
+    std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(http_connect_reply_, sizeof(http_connect_reply_) - 1);
     OnDownstreamWrite(buf);
   }
 }
@@ -1223,8 +1166,7 @@ void ServerConnection::OnStreamWrite() {
   /* shutdown the socket if upstream is eof and all remaining data sent */
   bool nodata = !data_frame_ || !data_frame_->SelectPayloadLength(1).first;
   if (channel_ && channel_->eof() && nodata && downstream_.empty() && !shutdown_) {
-    VLOG(2) << "Connection (server) " << connection_id()
-            << " last data sent: shutting down";
+    VLOG(2) << "Connection (server) " << connection_id() << " last data sent: shutting down";
     shutdown_ = true;
     if (data_frame_) {
       data_frame_->set_last_frame(true);
@@ -1244,8 +1186,7 @@ void ServerConnection::OnStreamWrite() {
         return;
       }
       if (ec) {
-        VLOG(1) << "Connection (server) " << connection_id()
-                << " erorr occured in shutdown: " << ec;
+        VLOG(1) << "Connection (server) " << connection_id() << " erorr occured in shutdown: " << ec;
         OnDisconnect(ec);
         return;
       }
@@ -1269,8 +1210,7 @@ void ServerConnection::OnDisconnect(asio::error_code ec) {
     ec = asio::error_code();
   }
 #endif
-  LOG(INFO) << "Connection (server) " << connection_id()
-            << " closed: " << ec;
+  LOG(INFO) << "Connection (server) " << connection_id() << " closed: " << ec;
   close();
 }
 
@@ -1317,13 +1257,12 @@ void ServerConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
 void ServerConnection::connected() {
   scoped_refptr<ServerConnection> self(this);
   VLOG(1) << "Connection (server) " << connection_id()
-          << " remote: established upstream connection with: "
-          << remote_domain();
+          << " remote: established upstream connection with: " << remote_domain();
   upstream_readable_ = true;
   upstream_writable_ = true;
 
   yield_upstream_after_time_ = yield_downstream_after_time_ =
-    GetMonotonicTime() + kYieldAfterDurationMilliseconds * 1000 * 1000;
+      GetMonotonicTime() + kYieldAfterDurationMilliseconds * 1000 * 1000;
 
   WriteStreamInPipe();
   WriteUpstreamInPipe();
@@ -1348,8 +1287,7 @@ void ServerConnection::sent() {
 
 void ServerConnection::disconnected(asio::error_code ec) {
   scoped_refptr<ServerConnection> self(this);
-  VLOG(1) << "Connection (server) " << connection_id()
-          << " upstream: lost connection with: " << remote_domain()
+  VLOG(1) << "Connection (server) " << connection_id() << " upstream: lost connection with: " << remote_domain()
           << " due to " << ec;
   upstream_readable_ = false;
   upstream_writable_ = false;
@@ -1357,8 +1295,7 @@ void ServerConnection::disconnected(asio::error_code ec) {
   /* delay the socket's close because downstream is buffered */
   bool nodata = !data_frame_ || !data_frame_->SelectPayloadLength(1).first;
   if (nodata && downstream_.empty() && !shutdown_) {
-    VLOG(2) << "Connection (server) " << connection_id()
-            << " upstream: last data sent: shutting down";
+    VLOG(2) << "Connection (server) " << connection_id() << " upstream: last data sent: shutting down";
     shutdown_ = true;
     if (data_frame_) {
       data_frame_->set_last_frame(true);
@@ -1378,8 +1315,7 @@ void ServerConnection::disconnected(asio::error_code ec) {
         return;
       }
       if (ec) {
-        VLOG(1) << "Connection (server) " << connection_id()
-                << " erorr occured in shutdown: " << ec;
+        VLOG(1) << "Connection (server) " << connection_id() << " erorr occured in shutdown: " << ec;
         OnDisconnect(ec);
         return;
       }
@@ -1389,8 +1325,7 @@ void ServerConnection::disconnected(asio::error_code ec) {
   }
 }
 
-void ServerConnection::EncryptData(IoQueue* queue,
-                                   std::shared_ptr<IOBuf> plaintext) {
+void ServerConnection::EncryptData(IoQueue* queue, std::shared_ptr<IOBuf> plaintext) {
   std::shared_ptr<IOBuf> cipherbuf;
   if (queue->empty()) {
     cipherbuf = IOBuf::create(SOCKET_DEBUF_SIZE);
@@ -1402,8 +1337,7 @@ void ServerConnection::EncryptData(IoQueue* queue,
 
   size_t plaintext_offset = 0;
   while (plaintext_offset < plaintext->length()) {
-    size_t plaintext_size = std::min<int>(plaintext->length() - plaintext_offset,
-                                          SS_FRAME_SIZE);
+    size_t plaintext_size = std::min<int>(plaintext->length() - plaintext_offset, SS_FRAME_SIZE);
     encoder_->encrypt(plaintext->data() + plaintext_offset, plaintext_size, cipherbuf);
     plaintext_offset += plaintext_size;
   }

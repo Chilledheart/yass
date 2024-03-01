@@ -6,8 +6,7 @@
 
 #include <windows.h>
 
-ScopedClearLastError::ScopedClearLastError()
-    : last_system_error_(GetLastError()) {
+ScopedClearLastError::ScopedClearLastError() : last_system_error_(GetLastError()) {
   SetLastError(0);
 }
 

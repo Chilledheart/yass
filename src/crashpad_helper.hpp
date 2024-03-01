@@ -9,4 +9,4 @@
 bool InitializeCrashpad(const std::string& exe_path);
 #endif
 
-#endif // H_CRASHPAD_HELPER_H
+#endif  // H_CRASHPAD_HELPER_H

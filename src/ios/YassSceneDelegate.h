@@ -8,8 +8,8 @@
 
 @interface YassSceneDelegate : UIResponder <UIWindowSceneDelegate>
 
-@property (strong, nonatomic) UIWindow * window;
+@property(strong, nonatomic) UIWindow* window;
 
 @end
 
-#endif // YASS_IOS_SCENE_DELEGATE
+#endif  // YASS_IOS_SCENE_DELEGATE

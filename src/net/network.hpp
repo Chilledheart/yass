@@ -12,20 +12,15 @@
 
 namespace net {
 
-void SetSOReusePort(asio::ip::tcp::acceptor::native_handle_type handle,
-                    asio::error_code&);
+void SetSOReusePort(asio::ip::tcp::acceptor::native_handle_type handle, asio::error_code&);
 
-void SetTCPCongestion(asio::ip::tcp::acceptor::native_handle_type handle,
-                      asio::error_code&);
+void SetTCPCongestion(asio::ip::tcp::acceptor::native_handle_type handle, asio::error_code&);
 
-void SetTCPFastOpen(asio::ip::tcp::acceptor::native_handle_type handle,
-                    asio::error_code&);
+void SetTCPFastOpen(asio::ip::tcp::acceptor::native_handle_type handle, asio::error_code&);
 
-void SetTCPFastOpenConnect(asio::ip::tcp::socket::native_handle_type handle,
-                           asio::error_code&);
+void SetTCPFastOpenConnect(asio::ip::tcp::socket::native_handle_type handle, asio::error_code&);
 
-void SetTCPKeepAlive(asio::ip::tcp::acceptor::native_handle_type handle,
-                     asio::error_code& ec);
+void SetTCPKeepAlive(asio::ip::tcp::acceptor::native_handle_type handle, asio::error_code& ec);
 
 void SetSocketLinger(asio::ip::tcp::socket* socket, asio::error_code&);
 
@@ -46,7 +41,7 @@ const uint32_t kSpdyDisablePush = 0;
 
 // followed by curl's nghttp adapter
 /* this is how much we want "in flight" for a stream */
-#define H2_STREAM_WINDOW_SIZE   (10 * 1024 * 1024)
+#define H2_STREAM_WINDOW_SIZE (10 * 1024 * 1024)
 #define HTTP2_HUGE_WINDOW_SIZE (100 * H2_STREAM_WINDOW_SIZE)
 
 // from net/spdy/spdy_session.h
@@ -66,6 +61,6 @@ const int kYieldAfterDurationMilliseconds = 20;
 // attacker from growing this queue unboundedly.
 const int kSpdySessionMaxQueuedCappedFrames = 10000;
 
-} // namespace net
+}  // namespace net
 
 #endif  // H_NET_NETWORK
