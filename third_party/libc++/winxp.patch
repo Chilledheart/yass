@@ -1,16 +1,16 @@
 diff --git a/include/__condition_variable/condition_variable.h b/include/__condition_variable/condition_variable.h
-index de35aaca1..af814798b 100644
+index de35aaca1..864134812 100644
 --- a/include/__condition_variable/condition_variable.h
 +++ b/include/__condition_variable/condition_variable.h
 @@ -43,7 +43,11 @@ class _LIBCPP_EXPORTED_FROM_ABI condition_variable {
    __libcpp_condvar_t __cv_ = _LIBCPP_CONDVAR_INITIALIZER;
  
  public:
-+#if !defined(_LIBCPP_HAS_THREAD_API_WIN32)
++#  if !defined(_LIBCPP_HAS_THREAD_API_WIN32)
    _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR condition_variable() _NOEXCEPT = default;
-+#else
++#  else
 +  condition_variable() _NOEXCEPT;
-+#endif
++#  endif
  
  #  ifdef _LIBCPP_HAS_TRIVIAL_CONDVAR_DESTRUCTION
    ~condition_variable() = default;
@@ -38,23 +38,23 @@ index 0797880cb..ae205a24c 100644
  #  endif
  
 diff --git a/include/__mutex/mutex.h b/include/__mutex/mutex.h
-index ddc85cf5a..ca05d0cbc 100644
+index ddc85cf5a..d8f9b0563 100644
 --- a/include/__mutex/mutex.h
 +++ b/include/__mutex/mutex.h
 @@ -25,7 +25,11 @@ class _LIBCPP_EXPORTED_FROM_ABI _LIBCPP_THREAD_SAFETY_ANNOTATION(capability("mut
    __libcpp_mutex_t __m_ = _LIBCPP_MUTEX_INITIALIZER;
  
  public:
-+#if !defined(_LIBCPP_HAS_THREAD_API_WIN32)
++#  if !defined(_LIBCPP_HAS_THREAD_API_WIN32)
    _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR mutex() = default;
-+#else
++#  else
 +  mutex() _NOEXCEPT;
-+#endif
++#  endif
  
    mutex(const mutex&)            = delete;
    mutex& operator=(const mutex&) = delete;
 diff --git a/include/__mutex/once_flag.h b/include/__mutex/once_flag.h
-index 9d7baecbc..644e0ce66 100644
+index 9d7baecbc..bf97d3f63 100644
 --- a/include/__mutex/once_flag.h
 +++ b/include/__mutex/once_flag.h
 @@ -12,6 +12,7 @@
@@ -82,86 +82,96 @@ index 9d7baecbc..644e0ce66 100644
    typedef uintptr_t _State_type;
  #else
    typedef unsigned long _State_type;
-@@ -118,6 +123,45 @@ void _LIBCPP_HIDE_FROM_ABI __call_once_proxy(void* __vp) {
+@@ -118,9 +123,41 @@ void _LIBCPP_HIDE_FROM_ABI __call_once_proxy(void* __vp) {
    (*__p)();
  }
  
 +#ifdef _LIBCPP_HAS_THREAD_API_WIN32
 +
-+#ifndef _LIBCPP_CXX03_LANG
++#  ifndef _LIBCPP_CXX03_LANG
 +
-+template<class _Callable, class... _Args>
-+inline _LIBCPP_HIDE_FROM_ABI
-+void
-+call_once(once_flag& __flag, _Callable&& __func, _Args&&... __args)
-+{
++template <class _Callable, class... _Args>
++inline _LIBCPP_HIDE_FROM_ABI void call_once(once_flag& __flag, _Callable&& __func, _Args&&... __args) {
 +  typedef tuple<_Callable&&, _Args&&...> _Gp;
 +  _Gp __f(std::forward<_Callable>(__func), std::forward<_Args>(__args)...);
 +  __call_once_param<_Gp> __p(__f);
 +  __libcpp_execute_once(reinterpret_cast<__libcpp_exec_once_flag*>(&__flag.__state_), &__p, &__call_once_proxy<_Gp>);
 +}
 +
-+#else  // _LIBCPP_CXX03_LANG
++#  else // _LIBCPP_CXX03_LANG
 +
-+template<class _Callable>
-+inline _LIBCPP_HIDE_FROM_ABI
-+void
-+call_once(once_flag& __flag, _Callable& __func)
-+{
-+   __call_once_param<_Callable> __p(__func);
-+   __libcpp_execute_once(reinterpret_cast<__libcpp_exec_once_flag*>(&__flag.__state_), &__p, &__call_once_proxy<_Callable>);
++template <class _Callable>
++inline _LIBCPP_HIDE_FROM_ABI void call_once(once_flag& __flag, _Callable& __func) {
++  __call_once_param<_Callable> __p(__func);
++  __libcpp_execute_once(
++      reinterpret_cast<__libcpp_exec_once_flag*>(&__flag.__state_), &__p, &__call_once_proxy<_Callable>);
 +}
 +
-+template<class _Callable>
-+inline _LIBCPP_HIDE_FROM_ABI
-+void
-+call_once(once_flag& __flag, const _Callable& __func)
-+{
++template <class _Callable>
++inline _LIBCPP_HIDE_FROM_ABI void call_once(once_flag& __flag, const _Callable& __func) {
 +  __call_once_param<const _Callable> __p(__func);
-+  ___libcpp_execute_once(reinterpret_cast<__libcpp_exec_once_flag*>(&__flag.__state_), &__p, &__call_once_proxy<const _Callable>);
++  ___libcpp_execute_once(
++      reinterpret_cast<__libcpp_exec_once_flag*>(&__flag.__state_), &__p, &__call_once_proxy<const _Callable>);
 +}
 +
-+#endif // _LIBCPP_CXX03_LANG
++#  endif // _LIBCPP_CXX03_LANG
 +
 +#else // _LIBCPP_HAS_THREAD_API_WIN32
 +
  _LIBCPP_EXPORTED_FROM_ABI void __call_once(volatile once_flag::_State_type&, void*, void (*)(void*));
  
- #ifndef _LIBCPP_CXX03_LANG
-@@ -152,6 +196,8 @@ inline _LIBCPP_HIDE_FROM_ABI void call_once(once_flag& __flag, const _Callable&
+-#ifndef _LIBCPP_CXX03_LANG
++#  ifndef _LIBCPP_CXX03_LANG
  
- #endif // _LIBCPP_CXX03_LANG
+ template <class _Callable, class... _Args>
+ inline _LIBCPP_HIDE_FROM_ABI void call_once(once_flag& __flag, _Callable&& __func, _Args&&... __args) {
+@@ -132,7 +169,7 @@ inline _LIBCPP_HIDE_FROM_ABI void call_once(once_flag& __flag, _Callable&& __fun
+   }
+ }
  
-+#endif // _LIBCPP_HAS_THREAD_API_WIN32
+-#else // _LIBCPP_CXX03_LANG
++#  else // _LIBCPP_CXX03_LANG
+ 
+ template <class _Callable>
+ inline _LIBCPP_HIDE_FROM_ABI void call_once(once_flag& __flag, _Callable& __func) {
+@@ -150,7 +187,9 @@ inline _LIBCPP_HIDE_FROM_ABI void call_once(once_flag& __flag, const _Callable&
+   }
+ }
+ 
+-#endif // _LIBCPP_CXX03_LANG
++#  endif // _LIBCPP_CXX03_LANG
 +
++#endif // _LIBCPP_HAS_THREAD_API_WIN32
+ 
  _LIBCPP_END_NAMESPACE_STD
  
- _LIBCPP_POP_MACROS
 diff --git a/include/__thread/support/windows.h b/include/__thread/support/windows.h
-index 5dc4fa14f..33cdfbbf7 100644
+index 5dc4fa14f..99d22cdb5 100644
 --- a/include/__thread/support/windows.h
 +++ b/include/__thread/support/windows.h
-@@ -25,8 +25,19 @@ using __libcpp_timespec_t = ::timespec;
+@@ -25,8 +25,20 @@ using __libcpp_timespec_t = ::timespec;
  //
  // Mutex
  //
 +#if _WIN32_WINNT >= 0x0600
  typedef void* __libcpp_mutex_t;
- #define _LIBCPP_MUTEX_INITIALIZER 0
+-#define _LIBCPP_MUTEX_INITIALIZER 0
++#  define _LIBCPP_MUTEX_INITIALIZER 0
 +#else
-+#if defined(_M_IX86) || defined(_M_ARM)
++#  if defined(_M_IX86) || defined(_M_ARM)
 +typedef void* __libcpp_mutex_t[6];
-+#elif defined(_M_AMD64) || defined(_M_ARM64)
++#  elif defined(_M_AMD64) || defined(_M_ARM64)
 +typedef void* __libcpp_mutex_t[5];
-+#else
-+#  error Unsupported architecture
-+#endif
-+#define _LIBCPP_MUTEX_INITIALIZER {}
++#  else
++#    error Unsupported architecture
++#  endif
++#  define _LIBCPP_MUTEX_INITIALIZER                                                                                    \
++    {}
 +#endif
  
  #if defined(_M_IX86) || defined(__i386__) || defined(_M_ARM) || defined(__arm__)
  typedef void* __libcpp_recursive_mutex_t[6];
-@@ -49,6 +60,8 @@ __libcpp_recursive_mutex_unlock(__libcpp_recursive_mutex_t* __m);
+@@ -49,6 +61,8 @@ __libcpp_recursive_mutex_unlock(__libcpp_recursive_mutex_t* __m);
  
  _LIBCPP_EXPORTED_FROM_ABI int __libcpp_recursive_mutex_destroy(__libcpp_recursive_mutex_t* __m);
  
@@ -170,42 +180,46 @@ index 5dc4fa14f..33cdfbbf7 100644
  _LIBCPP_EXPORTED_FROM_ABI _LIBCPP_NO_THREAD_SAFETY_ANALYSIS int __libcpp_mutex_lock(__libcpp_mutex_t* __m);
  
  _LIBCPP_EXPORTED_FROM_ABI _LIBCPP_NO_THREAD_SAFETY_ANALYSIS bool __libcpp_mutex_trylock(__libcpp_mutex_t* __m);
-@@ -60,8 +73,21 @@ _LIBCPP_EXPORTED_FROM_ABI int __libcpp_mutex_destroy(__libcpp_mutex_t* __m);
+@@ -60,8 +74,22 @@ _LIBCPP_EXPORTED_FROM_ABI int __libcpp_mutex_destroy(__libcpp_mutex_t* __m);
  //
  // Condition variable
  //
 +#if _WIN32_WINNT >= 0x0600
  typedef void* __libcpp_condvar_t;
- #define _LIBCPP_CONDVAR_INITIALIZER 0
+-#define _LIBCPP_CONDVAR_INITIALIZER 0
++#  define _LIBCPP_CONDVAR_INITIALIZER 0
 +#else
-+#if defined(_M_IX86)|| defined(_M_ARM)
-+typedef void* __libcpp_condvar_t[4+2+6];
-+#elif defined(_M_AMD64) || defined(_M_ARM64)
-+typedef void* __libcpp_condvar_t[2+2+5];
-+#else
-+#  error Unsupported architecture
-+#endif
-+#define _LIBCPP_CONDVAR_INITIALIZER {}
++#  if defined(_M_IX86) || defined(_M_ARM)
++typedef void* __libcpp_condvar_t[4 + 2 + 6];
++#  elif defined(_M_AMD64) || defined(_M_ARM64)
++typedef void* __libcpp_condvar_t[2 + 2 + 5];
++#  else
++#    error Unsupported architecture
++#  endif
++#  define _LIBCPP_CONDVAR_INITIALIZER                                                                                  \
++    {}
 +#endif
 +
 +_LIBCPP_EXPORTED_FROM_ABI int __libcpp_condvar_init(__libcpp_condvar_t* __cv);
  
  _LIBCPP_EXPORTED_FROM_ABI int __libcpp_condvar_signal(__libcpp_condvar_t* __cv);
  
-@@ -81,6 +107,7 @@ _LIBCPP_EXPORTED_FROM_ABI int __libcpp_condvar_destroy(__libcpp_condvar_t* __cv)
+@@ -81,6 +109,8 @@ _LIBCPP_EXPORTED_FROM_ABI int __libcpp_condvar_destroy(__libcpp_condvar_t* __cv)
  typedef void* __libcpp_exec_once_flag;
  #define _LIBCPP_EXEC_ONCE_INITIALIZER 0
  
-+_LIBCPP_EXPORTED_FROM_ABI int __libcpp_execute_once(__libcpp_exec_once_flag* __flag, void* arg, void (*__init_routine)(void*));
++_LIBCPP_EXPORTED_FROM_ABI int
++__libcpp_execute_once(__libcpp_exec_once_flag* __flag, void* arg, void (*__init_routine)(void*));
  _LIBCPP_EXPORTED_FROM_ABI int __libcpp_execute_once(__libcpp_exec_once_flag* __flag, void (*__init_routine)());
  
  //
-@@ -102,9 +129,9 @@ _LIBCPP_EXPORTED_FROM_ABI bool __libcpp_thread_isnull(const __libcpp_thread_t* _
+@@ -102,9 +132,10 @@ _LIBCPP_EXPORTED_FROM_ABI bool __libcpp_thread_isnull(const __libcpp_thread_t* _
  
  _LIBCPP_EXPORTED_FROM_ABI int __libcpp_thread_create(__libcpp_thread_t* __t, void* (*__func)(void*), void* __arg);
  
 -_LIBCPP_EXPORTED_FROM_ABI __libcpp_thread_id __libcpp_thread_get_current_id();
-+_LIBCPP_EXPORTED_FROM_ABI int __libcpp_thread_create(__libcpp_thread_t* __t, __libcpp_thread_id* __t_id, void* (*__func)(void*), void* __arg);
++_LIBCPP_EXPORTED_FROM_ABI int
++__libcpp_thread_create(__libcpp_thread_t* __t, __libcpp_thread_id* __t_id, void* (*__func)(void*), void* __arg);
  
 -_LIBCPP_EXPORTED_FROM_ABI __libcpp_thread_id __libcpp_thread_get_id(const __libcpp_thread_t* __t);
 +_LIBCPP_EXPORTED_FROM_ABI __libcpp_thread_id __libcpp_thread_get_current_id();
@@ -213,7 +227,7 @@ index 5dc4fa14f..33cdfbbf7 100644
  _LIBCPP_EXPORTED_FROM_ABI int __libcpp_thread_join(__libcpp_thread_t* __t);
  
 diff --git a/include/__thread/thread.h b/include/__thread/thread.h
-index 28c2e2160..ec970f6bc 100644
+index 28c2e2160..e337bd50f 100644
 --- a/include/__thread/thread.h
 +++ b/include/__thread/thread.h
 @@ -147,6 +147,9 @@ operator<<(basic_ostream<_CharT, _Traits>& __os, __thread_id __id) {
@@ -234,7 +248,7 @@ index 28c2e2160..ec970f6bc 100644
    _LIBCPP_HIDE_FROM_ABI thread(thread&& __t) _NOEXCEPT : __t_(__t.__t_) { __t.__t_ = _LIBCPP_NULL_THREAD; }
 +#else
 +  _LIBCPP_HIDE_FROM_ABI thread(thread&& __t) _NOEXCEPT : __t_(__t.__t_), __t_id_(__t.__t_id_) {
-+    __t.__t_ = _LIBCPP_NULL_THREAD;
++    __t.__t_    = _LIBCPP_NULL_THREAD;
 +    __t.__t_id_ = 0;
 +  }
 +#endif
@@ -251,17 +265,16 @@ index 28c2e2160..ec970f6bc 100644
 +  _LIBCPP_HIDE_FROM_ABI thread& operator=(thread&& __t) _NOEXCEPT {
 +    if (!__libcpp_thread_isnull(&__t_))
 +      terminate();
-+    __t_ = __t.__t_;
-+    __t_id_ = __t.__t_id_;
-+    __t.__t_ = _LIBCPP_NULL_THREAD;
++    __t_        = __t.__t_;
++    __t_id_     = __t.__t_id_;
++    __t.__t_    = _LIBCPP_NULL_THREAD;
 +    __t.__t_id_ = 0;
 +    return *this;
 +  }
 +#endif
  
--  _LIBCPP_HIDE_FROM_ABI void swap(thread& __t) _NOEXCEPT { std::swap(__t_, __t.__t_); }
 +#if !defined(_LIBCPP_HAS_THREAD_API_WIN32)
-+  _LIBCPP_HIDE_FROM_ABI void swap(thread& __t) _NOEXCEPT {std::swap(__t_, __t.__t_); }
+   _LIBCPP_HIDE_FROM_ABI void swap(thread& __t) _NOEXCEPT { std::swap(__t_, __t.__t_); }
 +#else
 +  _LIBCPP_HIDE_FROM_ABI void swap(thread& __t) _NOEXCEPT {
 +    std::swap(__t_, __t.__t_);
@@ -284,11 +297,11 @@ index 28c2e2160..ec970f6bc 100644
    _TSPtr __tsp(new __thread_struct);
    typedef tuple<_TSPtr, __decay_t<_Fp>, __decay_t<_Args>...> _Gp;
    unique_ptr<_Gp> __p(new _Gp(std::move(__tsp), std::forward<_Fp>(__f), std::forward<_Args>(__args)...));
-+#if !defined(_LIBCPP_HAS_THREAD_API_WIN32)
++#  if !defined(_LIBCPP_HAS_THREAD_API_WIN32)
    int __ec = std::__libcpp_thread_create(&__t_, &__thread_proxy<_Gp>, __p.get());
-+#else
++#  else
 +  int __ec = std::__libcpp_thread_create(&__t_, &__t_id_, &__thread_proxy<_Gp>, __p.get());
-+#endif
++#  endif
    if (__ec == 0)
      __p.release();
    else
@@ -296,64 +309,61 @@ index 28c2e2160..ec970f6bc 100644
    typedef __thread_invoke_pair<_Fp> _InvokePair;
    typedef unique_ptr<_InvokePair> _PairPtr;
    _PairPtr __pp(new _InvokePair(__f));
-+#if !defined(_LIBCPP_HAS_THREAD_API_WIN32)
++#  if !defined(_LIBCPP_HAS_THREAD_API_WIN32)
    int __ec = std::__libcpp_thread_create(&__t_, &__thread_proxy_cxx03<_InvokePair>, __pp.get());
-+#else
++#  else
 +  int __ec = std::__libcpp_thread_create(&__t_, &__t_id_, &__thread_proxy_cxx03<_InvokePair>, __pp.get());
-+#endif
++#  endif
    if (__ec == 0)
      __pp.release();
    else
 diff --git a/src/condition_variable.cpp b/src/condition_variable.cpp
-index db60571cf..ed4250adb 100644
+index db60571cf..9904a4760 100644
 --- a/src/condition_variable.cpp
 +++ b/src/condition_variable.cpp
-@@ -18,6 +18,13 @@ _LIBCPP_PUSH_MACROS
+@@ -18,6 +18,10 @@ _LIBCPP_PUSH_MACROS
  
  _LIBCPP_BEGIN_NAMESPACE_STD
  
 +#if defined(_LIBCPP_HAS_THREAD_API_WIN32)
-+condition_variable::condition_variable() _NOEXCEPT
-+{
-+    __libcpp_condvar_init(&__cv_);
-+}
++condition_variable::condition_variable() _NOEXCEPT { __libcpp_condvar_init(&__cv_); }
 +#endif
 +
  // ~condition_variable is defined elsewhere.
  
  void condition_variable::notify_one() noexcept { __libcpp_condvar_signal(&__cv_); }
 diff --git a/src/condition_variable_destructor.cpp b/src/condition_variable_destructor.cpp
-index 59811ed7f..0e819f0c5 100644
+index 59811ed7f..15de32f2e 100644
 --- a/src/condition_variable_destructor.cpp
 +++ b/src/condition_variable_destructor.cpp
 @@ -26,7 +26,11 @@ class _LIBCPP_EXPORTED_FROM_ABI condition_variable {
    __libcpp_condvar_t __cv_ = _LIBCPP_CONDVAR_INITIALIZER;
  
  public:
-+#if !defined(_LIBCPP_HAS_THREAD_API_WIN32)
++#  if !defined(_LIBCPP_HAS_THREAD_API_WIN32)
    _LIBCPP_HIDE_FROM_ABI constexpr condition_variable() noexcept = default;
-+#else
++#  else
 +  condition_variable() noexcept;
-+#endif
++#  endif
  
    ~condition_variable();
  
 diff --git a/src/filesystem/posix_compat.h b/src/filesystem/posix_compat.h
-index 760cdb65d..7af1f59ae 100644
+index 760cdb65d..7238a27bd 100644
 --- a/src/filesystem/posix_compat.h
 +++ b/src/filesystem/posix_compat.h
 @@ -47,6 +47,9 @@
  #include <time.h>
  
  #if defined(_LIBCPP_WIN32API)
-+#ifndef SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE
-+#define SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE 0x2
-+#endif
++#  ifndef SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE
++#    define SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE 0x2
++#  endif
  // This struct isn't defined in the normal Windows SDK, but only in the
  // Windows Driver Kit.
  struct LIBCPP_REPARSE_DATA_BUFFER {
 diff --git a/src/memory.cpp b/src/memory.cpp
-index 7a1c283d8..4b1bbfda2 100644
+index 7a1c283d8..84639e909 100644
 --- a/src/memory.cpp
 +++ b/src/memory.cpp
 @@ -109,7 +109,12 @@ static constinit __libcpp_mutex_t mut_back[__sp_mut_count] = {
@@ -362,104 +372,146 @@ index 7a1c283d8..4b1bbfda2 100644
  
 -constexpr __sp_mut::__sp_mut(void* p) noexcept : __lx_(p) {}
 +constexpr __sp_mut::__sp_mut(void* p) noexcept : __lx_(p) {
-+#if defined(_LIBCPP_HAS_THREAD_API_WIN32)
++#  if defined(_LIBCPP_HAS_THREAD_API_WIN32)
 +  auto m = static_cast<__libcpp_mutex_t*>(__lx_);
 +  __libcpp_mutex_init(m);
-+#endif
++#  endif
 +}
  
  void __sp_mut::lock() noexcept {
    auto m = static_cast<__libcpp_mutex_t*>(__lx_);
-@@ -119,7 +124,11 @@ void __sp_mut::lock() noexcept {
+@@ -119,12 +124,44 @@ void __sp_mut::lock() noexcept {
  void __sp_mut::unlock() noexcept { __libcpp_mutex_unlock(static_cast<__libcpp_mutex_t*>(__lx_)); }
  
  __sp_mut& __get_sp_mut(const void* p) {
-+#if defined(_LIBCPP_HAS_THREAD_API_WIN32)
++#  if defined(_LIBCPP_HAS_THREAD_API_WIN32)
 +  static __sp_mut muts[__sp_mut_count] = {
-+#else
++#  else
    static constinit __sp_mut muts[__sp_mut_count] = {
-+#endif
-       &mut_back[0],  &mut_back[1],  &mut_back[2],  &mut_back[3],  &mut_back[4],  &mut_back[5],  &mut_back[6],
-       &mut_back[7],  &mut_back[8],  &mut_back[9],  &mut_back[10], &mut_back[11], &mut_back[12], &mut_back[13],
-       &mut_back[14], &mut_back[15], &mut_back[16], &mut_back[17], &mut_back[18], &mut_back[19], &mut_back[20],
+-      &mut_back[0],  &mut_back[1],  &mut_back[2],  &mut_back[3],  &mut_back[4],  &mut_back[5],  &mut_back[6],
+-      &mut_back[7],  &mut_back[8],  &mut_back[9],  &mut_back[10], &mut_back[11], &mut_back[12], &mut_back[13],
+-      &mut_back[14], &mut_back[15], &mut_back[16], &mut_back[17], &mut_back[18], &mut_back[19], &mut_back[20],
+-      &mut_back[21], &mut_back[22], &mut_back[23], &mut_back[24], &mut_back[25], &mut_back[26], &mut_back[27],
+-      &mut_back[28], &mut_back[29], &mut_back[30], &mut_back[31]};
++#  endif
++    &mut_back[0],
++    &mut_back[1],
++    &mut_back[2],
++    &mut_back[3],
++    &mut_back[4],
++    &mut_back[5],
++    &mut_back[6],
++    &mut_back[7],
++    &mut_back[8],
++    &mut_back[9],
++    &mut_back[10],
++    &mut_back[11],
++    &mut_back[12],
++    &mut_back[13],
++    &mut_back[14],
++    &mut_back[15],
++    &mut_back[16],
++    &mut_back[17],
++    &mut_back[18],
++    &mut_back[19],
++    &mut_back[20],
++    &mut_back[21],
++    &mut_back[22],
++    &mut_back[23],
++    &mut_back[24],
++    &mut_back[25],
++    &mut_back[26],
++    &mut_back[27],
++    &mut_back[28],
++    &mut_back[29],
++    &mut_back[30],
++    &mut_back[31]
++  };
+   return muts[hash<const void*>()(p) & (__sp_mut_count - 1)];
+ }
+ 
 diff --git a/src/mutex.cpp b/src/mutex.cpp
-index 2f8504d60..9e4615bc5 100644
+index 2f8504d60..545c0a06c 100644
 --- a/src/mutex.cpp
 +++ b/src/mutex.cpp
-@@ -23,6 +23,13 @@ _LIBCPP_PUSH_MACROS
+@@ -23,6 +23,10 @@ _LIBCPP_PUSH_MACROS
  
  _LIBCPP_BEGIN_NAMESPACE_STD
  
 +#if defined(_LIBCPP_HAS_THREAD_API_WIN32)
-+mutex::mutex() _NOEXCEPT
-+{
-+    __libcpp_mutex_init(&__m_);
-+}
++mutex::mutex() _NOEXCEPT { __libcpp_mutex_init(&__m_); }
 +#endif
 +
  // ~mutex is defined elsewhere
  
  void mutex::lock() {
 diff --git a/src/mutex_destructor.cpp b/src/mutex_destructor.cpp
-index a6ceaaaf2..abf601384 100644
+index a6ceaaaf2..ca91d8980 100644
 --- a/src/mutex_destructor.cpp
 +++ b/src/mutex_destructor.cpp
-@@ -30,7 +30,11 @@ class _LIBCPP_EXPORTED_FROM_ABI mutex {
+@@ -30,9 +30,13 @@ class _LIBCPP_EXPORTED_FROM_ABI mutex {
    __libcpp_mutex_t __m_ = _LIBCPP_MUTEX_INITIALIZER;
  
  public:
-+#if !defined(_LIBCPP_HAS_THREAD_API_WIN32)
++#  if !defined(_LIBCPP_HAS_THREAD_API_WIN32)
    _LIBCPP_ALWAYS_INLINE _LIBCPP_HIDE_FROM_ABI constexpr mutex() = default;
-+#else
+-  mutex(const mutex&)                                           = delete;
+-  mutex& operator=(const mutex&)                                = delete;
++#  else
 +  mutex();
-+#endif
-   mutex(const mutex&)                                           = delete;
-   mutex& operator=(const mutex&)                                = delete;
++#  endif
++  mutex(const mutex&)            = delete;
++  mutex& operator=(const mutex&) = delete;
    ~mutex() noexcept;
+ };
+ 
 diff --git a/src/random_shuffle.cpp b/src/random_shuffle.cpp
-index 3aaf71d84..306f5651b 100644
+index 3aaf71d84..4fa2fc246 100644
 --- a/src/random_shuffle.cpp
 +++ b/src/random_shuffle.cpp
 @@ -25,6 +25,9 @@ unsigned __rs_default::__c_ = 0;
  
  __rs_default::__rs_default() {
  #ifndef _LIBCPP_HAS_NO_THREADS
-+#if defined(_LIBCPP_HAS_THREAD_API_WIN32)
++#  if defined(_LIBCPP_HAS_THREAD_API_WIN32)
 +  __libcpp_mutex_init(&__rs_mut);
-+#endif
++#  endif
    __libcpp_mutex_lock(&__rs_mut);
  #endif
    __c_ = 1;
 diff --git a/src/support/win32/thread_win32.cpp b/src/support/win32/thread_win32.cpp
-index a2585c0b8..09c71035f 100644
+index a2585c0b8..f7d025674 100644
 --- a/src/support/win32/thread_win32.cpp
 +++ b/src/support/win32/thread_win32.cpp
-@@ -13,21 +13,46 @@
+@@ -11,23 +11,48 @@
+ 
+ #define NOMINMAX
  #define WIN32_LEAN_AND_MEAN
- #include <windows.h>
+-#include <windows.h>
  #include <process.h>
 -#include <fibersapi.h>
++#include <windows.h>
 +
 +#if defined(_LIBCPP_HAS_THREAD_API_WIN32)
  
  _LIBCPP_BEGIN_NAMESPACE_STD
  
-+#if _WIN32_WINNT >= _WIN32_WINNT_VISTA
++#  if _WIN32_WINNT >= _WIN32_WINNT_VISTA
  static_assert(sizeof(__libcpp_mutex_t) == sizeof(SRWLOCK), "");
  static_assert(alignof(__libcpp_mutex_t) == alignof(SRWLOCK), "");
 -
-+#else
++#  else
 +static_assert(sizeof(__libcpp_mutex_t) == sizeof(CRITICAL_SECTION), "");
 +static_assert(alignof(__libcpp_mutex_t) == alignof(CRITICAL_SECTION), "");
-+#endif
++#  endif
  static_assert(sizeof(__libcpp_recursive_mutex_t) == sizeof(CRITICAL_SECTION), "");
  static_assert(alignof(__libcpp_recursive_mutex_t) == alignof(CRITICAL_SECTION), "");
  
-+#if _WIN32_WINNT >= _WIN32_WINNT_VISTA
++#  if _WIN32_WINNT >= _WIN32_WINNT_VISTA
  static_assert(sizeof(__libcpp_condvar_t) == sizeof(CONDITION_VARIABLE), "");
  static_assert(alignof(__libcpp_condvar_t) == alignof(CONDITION_VARIABLE), "");
 -
-+#else
++#  else
 +typedef struct {
 +  int nwaiters_blocked;
 +  int nwaiters_gone;
@@ -471,91 +523,80 @@ index a2585c0b8..09c71035f 100644
 +} __libcpp_condvar_do_t;
 +static_assert(sizeof(__libcpp_condvar_t) == sizeof(__libcpp_condvar_do_t), "");
 +static_assert(alignof(__libcpp_condvar_t) == alignof(__libcpp_condvar_do_t), "");
-+#define _LIBCPP_SEMAPHORE_MAX (::std::numeric_limits<long>::max())
-+#endif
++#    define _LIBCPP_SEMAPHORE_MAX (::std::numeric_limits<long>::max())
++#  endif
 +
-+#if _WIN32_WINNT >= _WIN32_WINNT_VISTA
++#  if _WIN32_WINNT >= _WIN32_WINNT_VISTA
  static_assert(sizeof(__libcpp_exec_once_flag) == sizeof(INIT_ONCE), "");
  static_assert(alignof(__libcpp_exec_once_flag) == alignof(INIT_ONCE), "");
-+#else
++#  else
 +static_assert(sizeof(__libcpp_exec_once_flag) >= sizeof(LONG), "");
 +static_assert(alignof(__libcpp_exec_once_flag) >= alignof(LONG), "");
-+#endif
++#  endif
  
  static_assert(sizeof(__libcpp_thread_id) == sizeof(DWORD), "");
  static_assert(alignof(__libcpp_thread_id) == alignof(DWORD), "");
-@@ -63,7 +88,14 @@ int __libcpp_recursive_mutex_destroy(__libcpp_recursive_mutex_t* __m) {
+@@ -63,6 +88,13 @@ int __libcpp_recursive_mutex_destroy(__libcpp_recursive_mutex_t* __m) {
    return 0;
  }
  
--int __libcpp_mutex_lock(__libcpp_mutex_t* __m) {
-+#if _WIN32_WINNT >= _WIN32_WINNT_WIN7
++#  if _WIN32_WINNT >= _WIN32_WINNT_WIN7
 +
-+int __libcpp_mutex_init(__libcpp_mutex_t *__m) {
++int __libcpp_mutex_init(__libcpp_mutex_t* __m) {
 +  *__m = _LIBCPP_MUTEX_INITIALIZER;
 +  return 0;
 +}
 +
-+int __libcpp_mutex_lock(__libcpp_mutex_t *__m) {
+ int __libcpp_mutex_lock(__libcpp_mutex_t* __m) {
    AcquireSRWLockExclusive((PSRWLOCK)__m);
    return 0;
- }
-@@ -80,8 +112,49 @@ int __libcpp_mutex_destroy(__libcpp_mutex_t* __m) {
+@@ -80,7 +112,41 @@ int __libcpp_mutex_destroy(__libcpp_mutex_t* __m) {
    return 0;
  }
  
-+#else // _WIN32_WINNT >= _WIN32_WINNT_WIN7
++#  else // _WIN32_WINNT >= _WIN32_WINNT_WIN7
 +
-+int __libcpp_mutex_init(__libcpp_mutex_t *__m)
-+{
++int __libcpp_mutex_init(__libcpp_mutex_t* __m) {
 +  InitializeCriticalSection((LPCRITICAL_SECTION)__m);
 +  return 0;
 +}
 +
-+int __libcpp_mutex_lock(__libcpp_mutex_t *__m)
-+{
++int __libcpp_mutex_lock(__libcpp_mutex_t* __m) {
 +  EnterCriticalSection((LPCRITICAL_SECTION)__m);
 +  return 0;
 +}
 +
-+bool __libcpp_mutex_trylock(__libcpp_mutex_t *__m)
-+{
-+  return TryEnterCriticalSection((LPCRITICAL_SECTION)__m) != 0;
-+}
++bool __libcpp_mutex_trylock(__libcpp_mutex_t* __m) { return TryEnterCriticalSection((LPCRITICAL_SECTION)__m) != 0; }
 +
-+int __libcpp_mutex_unlock(__libcpp_mutex_t *__m)
-+{
++int __libcpp_mutex_unlock(__libcpp_mutex_t* __m) {
 +  LeaveCriticalSection((LPCRITICAL_SECTION)__m);
 +  return 0;
 +}
 +
-+int __libcpp_mutex_destroy(__libcpp_mutex_t *__m)
-+{
++int __libcpp_mutex_destroy(__libcpp_mutex_t* __m) {
 +  DeleteCriticalSection((LPCRITICAL_SECTION)__m);
 +  return 0;
 +}
 +
-+#endif // _WIN32_WINNT >= _WIN32_WINNT_WIN7
++#  endif // _WIN32_WINNT >= _WIN32_WINNT_WIN7
 +
  // Condition Variable
--int __libcpp_condvar_signal(__libcpp_condvar_t* __cv) {
 +
-+#if _WIN32_WINNT >= _WIN32_WINNT_VISTA
++#  if _WIN32_WINNT >= _WIN32_WINNT_VISTA
 +
-+int __libcpp_condvar_init(__libcpp_condvar_t *__cv) {
++int __libcpp_condvar_init(__libcpp_condvar_t* __cv) {
 +  *__cv = _LIBCPP_CONDVAR_INITIALIZER;
 +  return 0;
 +}
 +
-+int __libcpp_condvar_signal(__libcpp_condvar_t *__cv) {
+ int __libcpp_condvar_signal(__libcpp_condvar_t* __cv) {
    WakeConditionVariable((PCONDITION_VARIABLE)__cv);
    return 0;
- }
-@@ -116,24 +189,265 @@ int __libcpp_condvar_destroy(__libcpp_condvar_t* __cv) {
+@@ -116,24 +182,238 @@ int __libcpp_condvar_destroy(__libcpp_condvar_t* __cv) {
    return 0;
  }
  
-+#else // _WIN32_WINNT >= _WIN32_WINNT_VISTA
++#  else // _WIN32_WINNT >= _WIN32_WINNT_VISTA
 +
 +/*
 +Note:
@@ -563,10 +604,7 @@ index a2585c0b8..09c71035f 100644
 +  See https://www.boost.org/doc/libs/1_53_0/boost/interprocess/sync/windows/condition.hpp
 +*/
 +
-+static inline _LIBCPP_HIDE_FROM_ABI void
-+__libcpp_condvar_do_signal(__libcpp_condvar_do_t *__cond,
-+                           bool __broadcast)
-+{
++static inline _LIBCPP_HIDE_FROM_ABI void __libcpp_condvar_do_signal(__libcpp_condvar_do_t* __cond, bool __broadcast) {
 +  int nsignal = 0;
 +
 +  EnterCriticalSection(&__cond->mtx_unblock_lock);
@@ -577,7 +615,7 @@ index a2585c0b8..09c71035f 100644
 +    }
 +    if (__broadcast) {
 +      __cond->nwaiters_to_unblock += nsignal = __cond->nwaiters_blocked;
-+      __cond->nwaiters_blocked = 0;
++      __cond->nwaiters_blocked               = 0;
 +    } else {
 +      nsignal = 1;
 +      __cond->nwaiters_to_unblock++;
@@ -591,7 +629,7 @@ index a2585c0b8..09c71035f 100644
 +    }
 +    if (__broadcast) {
 +      nsignal = __cond->nwaiters_to_unblock = __cond->nwaiters_blocked;
-+      __cond->nwaiters_blocked = 0;
++      __cond->nwaiters_blocked              = 0;
 +    } else {
 +      nsignal = __cond->nwaiters_to_unblock = 1;
 +      __cond->nwaiters_blocked--;
@@ -604,24 +642,19 @@ index a2585c0b8..09c71035f 100644
 +}
 +
 +static inline _LIBCPP_HIDE_FROM_ABI int
-+__libcpp_condvar_do_wait(__libcpp_condvar_do_t *__cond,
-+                         __libcpp_mutex_t *__m,
-+                         __libcpp_timespec_t *__ts)
-+{
++__libcpp_condvar_do_wait(__libcpp_condvar_do_t* __cond, __libcpp_mutex_t* __m, __libcpp_timespec_t* __ts) {
 +  using namespace std::chrono;
 +
 +  DWORD timeout_ms = INFINITE;
 +  if (__ts) {
 +    auto duration = seconds(__ts->tv_sec) + nanoseconds(__ts->tv_nsec);
-+    auto abstime =
-+        system_clock::time_point(duration_cast<system_clock::duration>(duration));
-+    timeout_ms = duration_cast<milliseconds>(
-+        abstime - system_clock::now()).count();
++    auto abstime  = system_clock::time_point(duration_cast<system_clock::duration>(duration));
++    timeout_ms    = duration_cast<milliseconds>(abstime - system_clock::now()).count();
 +  }
 +
-+  int nleft = 0;
++  int nleft          = 0;
 +  int nnwaiters_gone = 0;
-+  int timeout = 0;
++  int timeout        = 0;
 +  DWORD w;
 +
 +  WaitForSingleObject(__cond->sem_block_lock, INFINITE);
@@ -630,7 +663,7 @@ index a2585c0b8..09c71035f 100644
 +
 +  __libcpp_mutex_unlock(__m);
 +
-+  w = WaitForSingleObject(__cond->sem_block_queue, timeout_ms);
++  w       = WaitForSingleObject(__cond->sem_block_queue, timeout_ms);
 +  timeout = (w == WAIT_TIMEOUT);
 +
 +  EnterCriticalSection(&__cond->mtx_unblock_lock);
@@ -646,8 +679,7 @@ index a2585c0b8..09c71035f 100644
 +      if (__cond->nwaiters_blocked != 0) {
 +        ReleaseSemaphore(__cond->sem_block_lock, 1, nullptr);
 +        nleft = 0;
-+      }
-+      else if ((nnwaiters_gone = __cond->nwaiters_gone) != 0) {
++      } else if ((nnwaiters_gone = __cond->nwaiters_gone) != 0) {
 +        __cond->nwaiters_gone = 0;
 +      }
 +    }
@@ -669,49 +701,41 @@ index a2585c0b8..09c71035f 100644
 +  return timeout ? /* busy */ ETIMEDOUT : 0;
 +}
 +
-+int __libcpp_condvar_init(__libcpp_condvar_t *__cv)
-+{
-+  auto __cond = reinterpret_cast<__libcpp_condvar_do_t*>(__cv);
-+  __cond->nwaiters_blocked = 0;
-+  __cond->nwaiters_gone = 0;
++int __libcpp_condvar_init(__libcpp_condvar_t* __cv) {
++  auto __cond                 = reinterpret_cast<__libcpp_condvar_do_t*>(__cv);
++  __cond->nwaiters_blocked    = 0;
++  __cond->nwaiters_gone       = 0;
 +  __cond->nwaiters_to_unblock = 0;
-+  __cond->reserved = 0;
-+  __cond->sem_block_queue = CreateSemaphore(nullptr, 0, _LIBCPP_SEMAPHORE_MAX,
-+                                            nullptr);
-+  __cond->sem_block_lock = CreateSemaphore(nullptr, 1, 1, nullptr);
++  __cond->reserved            = 0;
++  __cond->sem_block_queue     = CreateSemaphore(nullptr, 0, _LIBCPP_SEMAPHORE_MAX, nullptr);
++  __cond->sem_block_lock      = CreateSemaphore(nullptr, 1, 1, nullptr);
 +  InitializeCriticalSection(&__cond->mtx_unblock_lock);
 +  return 0;
 +}
 +
-+int __libcpp_condvar_signal(__libcpp_condvar_t *__cv)
-+{
++int __libcpp_condvar_signal(__libcpp_condvar_t* __cv) {
 +  auto __do_cv = reinterpret_cast<__libcpp_condvar_do_t*>(__cv);
 +  __libcpp_condvar_do_signal(__do_cv, false);
 +  return 0;
 +}
 +
-+int __libcpp_condvar_broadcast(__libcpp_condvar_t *__cv)
-+{
++int __libcpp_condvar_broadcast(__libcpp_condvar_t* __cv) {
 +  auto __do_cv = reinterpret_cast<__libcpp_condvar_do_t*>(__cv);
 +  __libcpp_condvar_do_signal(__do_cv, true);
 +  return 0;
 +}
 +
-+int __libcpp_condvar_wait(__libcpp_condvar_t *__cv, __libcpp_mutex_t *__m)
-+{
++int __libcpp_condvar_wait(__libcpp_condvar_t* __cv, __libcpp_mutex_t* __m) {
 +  auto __do_cv = reinterpret_cast<__libcpp_condvar_do_t*>(__cv);
 +  return __libcpp_condvar_do_wait(__do_cv, __m, nullptr);
 +}
 +
-+int __libcpp_condvar_timedwait(__libcpp_condvar_t *__cv, __libcpp_mutex_t *__m,
-+                               __libcpp_timespec_t *__ts)
-+{
++int __libcpp_condvar_timedwait(__libcpp_condvar_t* __cv, __libcpp_mutex_t* __m, __libcpp_timespec_t* __ts) {
 +  auto __do_cv = reinterpret_cast<__libcpp_condvar_do_t*>(__cv);
 +  return __libcpp_condvar_do_wait(__do_cv, __m, __ts);
 +}
 +
-+int __libcpp_condvar_destroy(__libcpp_condvar_t *__cv)
-+{
++int __libcpp_condvar_destroy(__libcpp_condvar_t* __cv) {
 +  auto __cond = reinterpret_cast<__libcpp_condvar_do_t*>(__cv);
 +  CloseHandle(__cond->sem_block_queue);
 +  CloseHandle(__cond->sem_block_lock);
@@ -719,14 +743,13 @@ index a2585c0b8..09c71035f 100644
 +  return 0;
 +}
 +
-+#endif // _WIN32_WINNT >= _WIN32_WINNT_VISTA
++#  endif // _WIN32_WINNT >= _WIN32_WINNT_VISTA
 +
  // Execute Once
 -static inline _LIBCPP_HIDE_FROM_ABI BOOL CALLBACK
--__libcpp_init_once_execute_once_thunk(PINIT_ONCE __init_once, PVOID __parameter, PVOID* __context) {
-+int __libcpp_execute_once(__libcpp_exec_once_flag *__flag, void *arg, void (*__init_routine)(void));
++int __libcpp_execute_once(__libcpp_exec_once_flag* __flag, void* arg, void (*__init_routine)(void));
 +
-+#if _WIN32_WINNT >= _WIN32_WINNT_VISTA
++#  if _WIN32_WINNT >= _WIN32_WINNT_VISTA
 +
 +struct __libcpp_init_once_execute_context {
 +  void* arg;
@@ -734,7 +757,7 @@ index a2585c0b8..09c71035f 100644
 +};
 +
 +static _LIBCPP_HIDE_FROM_ABI BOOL CALLBACK
-+__libcpp_init_once_execute_once_thunk(PINIT_ONCE __init_once, PVOID __parameter, PVOID *__context) {
+ __libcpp_init_once_execute_once_thunk(PINIT_ONCE __init_once, PVOID __parameter, PVOID* __context) {
    static_cast<void>(__init_once);
    static_cast<void>(__context);
  
@@ -749,35 +772,29 @@ index a2585c0b8..09c71035f 100644
 -int __libcpp_execute_once(__libcpp_exec_once_flag* __flag, void (*__init_routine)(void)) {
 -  if (!InitOnceExecuteOnce(
 -          (PINIT_ONCE)__flag, __libcpp_init_once_execute_once_thunk, reinterpret_cast<void*>(__init_routine), NULL))
-+int __libcpp_execute_once(__libcpp_exec_once_flag *__flag, void *arg, void (*init_routine)(void*))
-+{
++int __libcpp_execute_once(__libcpp_exec_once_flag* __flag, void* arg, void (*init_routine)(void*)) {
 +  static_assert(sizeof(__libcpp_exec_once_flag) == sizeof(INIT_ONCE), "invalid size");
 +  __libcpp_init_once_execute_context __ctx;
-+  __ctx.arg = arg;
++  __ctx.arg          = arg;
 +  __ctx.init_routine = init_routine;
-+  if (!InitOnceExecuteOnce((PINIT_ONCE)__flag, __libcpp_init_once_execute_once_thunk,
-+                           &__ctx, nullptr))
++  if (!InitOnceExecuteOnce((PINIT_ONCE)__flag, __libcpp_init_once_execute_once_thunk, &__ctx, nullptr))
      return GetLastError();
    return 0;
  }
  
-+#else // _WIN32_WINNT >= _WIN32_WINNT_VISTA
++#  else // _WIN32_WINNT >= _WIN32_WINNT_VISTA
 +
-+int __libcpp_execute_once(__libcpp_exec_once_flag *__flag,
-+                          void *arg,
-+                          void (*__init_routine)(void*))
-+{
++int __libcpp_execute_once(__libcpp_exec_once_flag* __flag, void* arg, void (*__init_routine)(void*)) {
 +  /* This assumes that reading *once has acquire semantics. This should be true
 +   * on x86 and x86-64, where we expect Windows to run. */
-+#if !defined(_M_IX86) && !defined(_M_X64) && !defined(_M_ARM64)
-+#error "Windows once code may not work on other platforms." \
++#    if !defined(_M_IX86) && !defined(_M_X64) && !defined(_M_ARM64)
++#      error "Windows once code may not work on other platforms." \
 +       "You can use InitOnceBeginInitialize on >=Vista"
-+#endif
++#    endif
 +
 +  volatile LONG* __once = reinterpret_cast<volatile LONG*>(__flag);
 +
-+  static_assert(sizeof(*__flag) >= sizeof(*__once),
-+                "exec_once_flag must contains at least a LONG variable");
++  static_assert(sizeof(*__flag) >= sizeof(*__once), "exec_once_flag must contains at least a LONG variable");
 +
 +  if (*__once == 1) {
 +    return 0;
@@ -785,73 +802,62 @@ index a2585c0b8..09c71035f 100644
 +
 +  for (;;) {
 +    switch (InterlockedCompareExchange(__once, 2, 0)) {
-+      case 0:
-+        /* The value was zero so we are the first thread to call once
-+         * on it. */
-+        __init_routine(arg);
-+        /* Write one to indicate that initialisation is complete. */
-+        InterlockedExchange(__once, 1);
-+        return 0;
++    case 0:
++      /* The value was zero so we are the first thread to call once
++       * on it. */
++      __init_routine(arg);
++      /* Write one to indicate that initialisation is complete. */
++      InterlockedExchange(__once, 1);
++      return 0;
 +
-+      case 1:
-+        /* Another thread completed initialisation between our fast-path check
-+         * and |InterlockedCompareExchange|. */
-+        return 0;
++    case 1:
++      /* Another thread completed initialisation between our fast-path check
++       * and |InterlockedCompareExchange|. */
++      return 0;
 +
-+      case 2:
-+        /* Another thread is running the initialisation. Switch to it then try
-+         * again. */
-+        SwitchToThread();
-+        break;
++    case 2:
++      /* Another thread is running the initialisation. Switch to it then try
++       * again. */
++      SwitchToThread();
++      break;
 +
-+      default:
-+        abort();
++    default:
++      abort();
 +    }
 +  }
 +  return 0;
 +}
 +
-+#endif // _WIN32_WINNT >= _WIN32_WINNT_VISTA
++#  endif // _WIN32_WINNT >= _WIN32_WINNT_VISTA
 +
-+int __libcpp_execute_once(__libcpp_exec_once_flag *__flag,
-+                          void (*init_routine)())
-+{
-+  return __libcpp_execute_once(__flag, nullptr,
-+                               reinterpret_cast<void (*)(void*)>(init_routine));
++int __libcpp_execute_once(__libcpp_exec_once_flag* __flag, void (*init_routine)()) {
++  return __libcpp_execute_once(__flag, nullptr, reinterpret_cast<void (*)(void*)>(init_routine));
 +}
-+
 +
  // Thread ID
  bool __libcpp_thread_id_equal(__libcpp_thread_id __lhs, __libcpp_thread_id __rhs) { return __lhs == __rhs; }
  
-@@ -145,22 +459,46 @@ struct __libcpp_beginthreadex_thunk_data {
+@@ -145,6 +425,8 @@ struct __libcpp_beginthreadex_thunk_data {
    void* __arg;
  };
  
--static inline _LIBCPP_HIDE_FROM_ABI unsigned WINAPI __libcpp_beginthreadex_thunk(void* __raw_data) {
--  auto* __data = static_cast<__libcpp_beginthreadex_thunk_data*>(__raw_data);
--  auto* __func = __data->__func;
--  void* __arg  = __data->__arg;
-+#if _WIN32_WINNT >= _WIN32_WINNT_VISTA
++#  if _WIN32_WINNT >= _WIN32_WINNT_VISTA
 +
-+static inline _LIBCPP_HIDE_FROM_ABI unsigned WINAPI __libcpp_beginthreadex_thunk(void *__raw_data) {
-+  auto *__data = static_cast<__libcpp_beginthreadex_thunk_data *>(__raw_data);
-+  auto *__func = __data->__func;
-+  void *__arg = __data->__arg;
-   delete __data;
+ static inline _LIBCPP_HIDE_FROM_ABI unsigned WINAPI __libcpp_beginthreadex_thunk(void* __raw_data) {
+   auto* __data = static_cast<__libcpp_beginthreadex_thunk_data*>(__raw_data);
+   auto* __func = __data->__func;
+@@ -153,14 +435,35 @@ static inline _LIBCPP_HIDE_FROM_ABI unsigned WINAPI __libcpp_beginthreadex_thunk
    return static_cast<unsigned>(reinterpret_cast<uintptr_t>(__func(__arg)));
  }
  
--bool __libcpp_thread_isnull(const __libcpp_thread_t* __t) { return *__t == 0; }
-+#else // _WIN32_WINNT >= _WIN32_WINNT_VISTA
++#  else // _WIN32_WINNT >= _WIN32_WINNT_VISTA
 +
 +static inline _LIBCPP_HIDE_FROM_ABI void __libcpp_tls_tss_dor_invoke();
 +
-+static inline _LIBCPP_HIDE_FROM_ABI unsigned WINAPI __libcpp_beginthreadex_thunk(void *__raw_data) {
-+  auto *__data =
-+      static_cast<__libcpp_beginthreadex_thunk_data *>(__raw_data);
-+  auto *__func = __data->__func;
-+  void *__arg = __data->__arg;
++static inline _LIBCPP_HIDE_FROM_ABI unsigned WINAPI __libcpp_beginthreadex_thunk(void* __raw_data) {
++  auto* __data = static_cast<__libcpp_beginthreadex_thunk_data*>(__raw_data);
++  auto* __func = __data->__func;
++  void* __arg  = __data->__arg;
 +  delete __data;
 +  int ret;
 +  ret = static_cast<unsigned>(reinterpret_cast<uintptr_t>(__func(__arg)));
@@ -859,14 +865,13 @@ index a2585c0b8..09c71035f 100644
 +  return ret;
 +}
 +
-+#endif // _WIN32_WINNT >= _WIN32_WINNT_VISTA
++#  endif // _WIN32_WINNT >= _WIN32_WINNT_VISTA
++
+ bool __libcpp_thread_isnull(const __libcpp_thread_t* __t) { return *__t == 0; }
  
 -int __libcpp_thread_create(__libcpp_thread_t* __t, void* (*__func)(void*), void* __arg) {
--  auto* __data   = new __libcpp_beginthreadex_thunk_data;
-+bool __libcpp_thread_isnull(const __libcpp_thread_t *__t) { return *__t == 0; }
-+
-+int __libcpp_thread_create(__libcpp_thread_t *__t, __libcpp_thread_id* __t_id, void *(*__func)(void *), void *__arg) {
-+  auto *__data = new __libcpp_beginthreadex_thunk_data;
++int __libcpp_thread_create(__libcpp_thread_t* __t, __libcpp_thread_id* __t_id, void* (*__func)(void*), void* __arg) {
+   auto* __data   = new __libcpp_beginthreadex_thunk_data;
    __data->__func = __func;
    __data->__arg  = __arg;
  
@@ -879,46 +884,41 @@ index a2585c0b8..09c71035f 100644
  
    if (*__t)
      return 0;
-@@ -169,9 +507,7 @@ int __libcpp_thread_create(__libcpp_thread_t* __t, void* (*__func)(void*), void*
+@@ -169,8 +472,6 @@ int __libcpp_thread_create(__libcpp_thread_t* __t, void* (*__func)(void*), void*
  
  __libcpp_thread_id __libcpp_thread_get_current_id() { return GetCurrentThreadId(); }
  
 -__libcpp_thread_id __libcpp_thread_get_id(const __libcpp_thread_t* __t) { return GetThreadId(*__t); }
 -
--int __libcpp_thread_join(__libcpp_thread_t* __t) {
-+int __libcpp_thread_join(__libcpp_thread_t *__t) {
+ int __libcpp_thread_join(__libcpp_thread_t* __t) {
    if (WaitForSingleObjectEx(*__t, INFINITE, FALSE) == WAIT_FAILED)
      return GetLastError();
-   if (!CloseHandle(*__t))
-@@ -195,6 +531,7 @@ void __libcpp_thread_sleep_for(const chrono::nanoseconds& __ns) {
+@@ -195,6 +496,7 @@ void __libcpp_thread_sleep_for(const chrono::nanoseconds& __ns) {
  }
  
  // Thread Local Storage
-+#if _WIN32_WINNT >= _WIN32_WINNT_VISTA
++#  if _WIN32_WINNT >= _WIN32_WINNT_VISTA
  int __libcpp_tls_create(__libcpp_tls_key* __key, void(_LIBCPP_TLS_DESTRUCTOR_CC* __at_exit)(void*)) {
    DWORD index = FlsAlloc(__at_exit);
    if (index == FLS_OUT_OF_INDEXES)
-@@ -211,4 +548,76 @@ int __libcpp_tls_set(__libcpp_tls_key __key, void* __p) {
+@@ -211,4 +513,65 @@ int __libcpp_tls_set(__libcpp_tls_key __key, void* __p) {
    return 0;
  }
  
-+#else // _WIN32_WINNT >= _WIN32_WINNT_VISTA
++#  else // _WIN32_WINNT >= _WIN32_WINNT_VISTA
 +
 +// https://devblogs.microsoft.com/oldnewthing/20160613-00/?p=93655
 +// see also TLS_MINIMUM_AVAILABLE
-+#define EMULATED_THREADS_TSS_DTOR_SLOTNUM 1024
++#    define EMULATED_THREADS_TSS_DTOR_SLOTNUM 1024
 +
-+typedef void (*_LIBCPP_TLS_DESTRUCTOR_CC __libcpp_tls_dtor_t)(void *);
++typedef void (*_LIBCPP_TLS_DESTRUCTOR_CC __libcpp_tls_dtor_t)(void*);
 +
 +static struct __libcpp_tls_tss_dor_entry {
 +  __libcpp_tls_key key;
 +  __libcpp_tls_dtor_t dtor;
 +} __libcpp_tls_tss_dor_tbl[EMULATED_THREADS_TSS_DTOR_SLOTNUM];
 +
-+static inline _LIBCPP_HIDE_FROM_ABI int
-+__libcpp_tls_tss_dor_register(__libcpp_tls_key key,
-+                              __libcpp_tls_dtor_t dtor)
-+{
++static inline _LIBCPP_HIDE_FROM_ABI int __libcpp_tls_tss_dor_register(__libcpp_tls_key key, __libcpp_tls_dtor_t dtor) {
 +  int i;
 +  for (i = 0; i < EMULATED_THREADS_TSS_DTOR_SLOTNUM; i++) {
 +    if (!__libcpp_tls_tss_dor_tbl[i].dtor)
@@ -926,14 +926,12 @@ index a2585c0b8..09c71035f 100644
 +  }
 +  if (i == EMULATED_THREADS_TSS_DTOR_SLOTNUM)
 +    return 1;
-+  __libcpp_tls_tss_dor_tbl[i].key = key;
++  __libcpp_tls_tss_dor_tbl[i].key  = key;
 +  __libcpp_tls_tss_dor_tbl[i].dtor = dtor;
 +  return 0;
 +}
 +
-+static inline _LIBCPP_HIDE_FROM_ABI void
-+__libcpp_tls_tss_dor_invoke()
-+{
++static inline _LIBCPP_HIDE_FROM_ABI void __libcpp_tls_tss_dor_invoke() {
 +  int i;
 +  for (i = 0; i < EMULATED_THREADS_TSS_DTOR_SLOTNUM; i++) {
 +    if (__libcpp_tls_tss_dor_tbl[i].dtor) {
@@ -944,9 +942,7 @@ index a2585c0b8..09c71035f 100644
 +  }
 +}
 +
-+int __libcpp_tls_create(__libcpp_tls_key* __key,
-+                        void(_LIBCPP_TLS_DESTRUCTOR_CC* __at_exit)(void*))
-+{
++int __libcpp_tls_create(__libcpp_tls_key* __key, void(_LIBCPP_TLS_DESTRUCTOR_CC* __at_exit)(void*)) {
 +  DWORD index = TlsAlloc();
 +  if (index == TLS_OUT_OF_INDEXES)
 +    return GetLastError();
@@ -958,19 +954,15 @@ index a2585c0b8..09c71035f 100644
 +  return 0;
 +}
 +
-+void *__libcpp_tls_get(__libcpp_tls_key __key)
-+{
-+  return TlsGetValue(__key);
-+}
++void* __libcpp_tls_get(__libcpp_tls_key __key) { return TlsGetValue(__key); }
 +
-+int __libcpp_tls_set(__libcpp_tls_key __key, void *__p)
-+{
++int __libcpp_tls_set(__libcpp_tls_key __key, void* __p) {
 +  if (!TlsSetValue(__key, __p))
 +    return GetLastError();
 +  return 0;
 +}
 +
-+#endif // _WIN32_WINNT >= _WIN32_WINNT_VISTA
++#  endif // _WIN32_WINNT >= _WIN32_WINNT_VISTA
 +
  _LIBCPP_END_NAMESPACE_STD
 +
