@@ -23,6 +23,7 @@
 @implementation YassWindowController {
   NSStatusItem* y_status_bar_item_;
   NSStatusItem* status_bar_item_;
+  NSString* status_bar_text_;
   NSTimer* refresh_timer_;
   uint64_t last_sync_time_;
   uint64_t last_rx_bytes_;
@@ -72,7 +73,13 @@
 }
 
 - (void)UpdateStatusBar {
-  status_bar_item_.button.title = [self getStatusMessage];
+  NSString* next_status_bar_text = [self getStatusMessage];
+  // prevent deep copy on unchanged title
+  if ([next_status_bar_text isEqualToString:status_bar_text_]) {
+    return;
+  }
+  status_bar_text_ = next_status_bar_text;
+  status_bar_item_.button.title = next_status_bar_text;
 }
 
 - (NSString*)getStatusMessage {
