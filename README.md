@@ -48,10 +48,12 @@ Visit wiki's [Usages](https://github.com/Chilledheart/yass/wiki/Usage) and [Serv
 It refers to [http2 cipher](https://github.com/Chilledheart/yass/wiki/Supported-Operating-System#screenshot-on-na%C3%AFveproxy-support) as [NaïveProxy][naiveproxy]-compatible protocol support.
 #### Android vpn service support
 Android releases from 1.5.24 are signed and have been updated to add [VpnService](https://developer.android.com/reference/android/net/VpnService) support.
+#### iOS packet tunnel support
+iOS releases from 1.5.22 are fixed memory pressure crash and have been updated to add [Packet tunnel](https://developer.apple.com/documentation/networkextension/packet_tunnel_provider?language=objc) support.
+#### macOS packet tunnel support (M1/M2/M3 only)
+For Apple Silicon macOS Users such as M1/M2/M3, you can also install [Packet tunnel](https://developer.apple.com/documentation/networkextension/packet_tunnel_provider?language=objc) version via [TestFlight](https://testflight.apple.com/join/6AkiEq09).
 #### Notarized macOS releases
 macOS releases from 1.5.19 are [notarized](https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution). Please note the dmg suffixed with `-unsigned` is not.
-#### Experimental ios packet tunnel support
-iOS releases from 1.5.22 are fixed memory pressure crash and have been updated to add [Packet tunnel](https://developer.apple.com/documentation/networkextension/packet_tunnel_provider?language=objc) support.
 #### MinGW Build (alias Window Build)
 MinGW 64-bit releases from 1.6.5 and 1.7.1 no longer require Visual C++ 2010 Runtime.
 
