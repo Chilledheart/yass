@@ -120,6 +120,11 @@ BuildRequires: systemd
 Requires:      hicolor-icon-theme
 Requires:      ca-certificates
 
+# required by opensuse
+%if 0%{?sle_version}
+%debug_package
+%endif
+
 %description
 yass is a lightweight and secure http/socks proxy
 for embedded devices and low end boxes.
