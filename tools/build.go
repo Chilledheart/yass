@@ -464,6 +464,8 @@ func getGNUTargetTypeAndArch(arch string, subsystem string) (string, string) {
 			return "mips64el-linux-muslabi64", "mips64el"
 		}
 		return "mips64el-linux-gnuabi64", "mips64el"
+	} else if arch == "loongarch64" {
+		return "loongarch64-linux-gnu", "loongarch64"
 	}
 	glog.Fatalf("Invalid arch: %s", arch)
 	return "", ""
