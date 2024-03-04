@@ -49,7 +49,7 @@ It refers to [http2 cipher](https://github.com/Chilledheart/yass/wiki/Supported-
 #### Android vpn service support
 Android releases from 1.5.24 are signed and have been updated to add [VpnService](https://developer.android.com/reference/android/net/VpnService) support.
 #### iOS packet tunnel support
-iOS releases from 1.5.22 are fixed memory pressure crash and have been updated to add [Packet tunnel](https://developer.apple.com/documentation/networkextension/packet_tunnel_provider?language=objc) support.
+iOS releases from 1.5.22 have fixed memory pressure crashes and have been updated to add [Packet tunnel](https://developer.apple.com/documentation/networkextension/packet_tunnel_provider?language=objc) support.
 #### macOS packet tunnel support (M1/M2/M3 only)
 For Apple Silicon macOS Users such as M1/M2/M3, you can also install [Packet tunnel](https://developer.apple.com/documentation/networkextension/packet_tunnel_provider?language=objc) version via [TestFlight](https://testflight.apple.com/join/6AkiEq09).
 #### Notarized macOS releases
