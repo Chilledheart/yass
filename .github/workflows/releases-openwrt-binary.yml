@@ -205,6 +205,23 @@ jobs:
           pushd ${{ env.SDK_HOME }}
           make package/yass-cli/clean V=s
           popd
+      - name: Checksum IPK packages
+        run: |
+          echo "md5sum "
+          echo "======================================================================"
+          md5sum *.ipk
+
+          echo "sha1sum "
+          echo "======================================================================"
+          sha1sum *.ipk
+
+          echo "sha256sum "
+          echo "======================================================================"
+          sha256sum *.ipk
+
+          echo "sha512sum "
+          echo "======================================================================"
+          sha512sum *.ipk
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:
