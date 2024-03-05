@@ -7,6 +7,11 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"crypto/md5"
+	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/sha512"
+	"encoding/hex"
 	"io"
 	"io/ioutil"
 	"os"
@@ -1681,7 +1686,7 @@ func postCheckUniversalBuild() {
 }
 
 func copyFile(src string, dst string) error {
-	buf := make([]byte, 4096)
+	buf := make([]byte, 32768)
 
 	fin, err := os.Open(src)
 	if err != nil {
@@ -2239,6 +2244,130 @@ func inspectArchive(file string, files []string) {
 	}
 }
 
+func md5sum(src string) (error, string) {
+	buf := make([]byte, 32768)
+	fin, err := os.Open(src)
+	if err != nil {
+		return err, ""
+	}
+
+	defer func(fin *os.File) {
+		err := fin.Close()
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
+	}(fin)
+
+	hash := md5.New()
+
+	for {
+		n, err := fin.Read(buf)
+		if err != nil && err != io.EOF {
+			return err, ""
+		}
+
+		if n == 0 {
+			break
+		}
+
+		hash.Write(buf[:n])
+	}
+	return nil, hex.EncodeToString(hash.Sum(nil))
+}
+
+func sha1sum(src string) (error, string) {
+	buf := make([]byte, 32768)
+	fin, err := os.Open(src)
+	if err != nil {
+		return err, ""
+	}
+
+	defer func(fin *os.File) {
+		err := fin.Close()
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
+	}(fin)
+
+	hash := sha1.New()
+
+	for {
+		n, err := fin.Read(buf)
+		if err != nil && err != io.EOF {
+			return err, ""
+		}
+
+		if n == 0 {
+			break
+		}
+
+		hash.Write(buf[:n])
+	}
+	return nil, hex.EncodeToString(hash.Sum(nil))
+}
+
+func sha256sum(src string) (error, string) {
+	buf := make([]byte, 32768)
+	fin, err := os.Open(src)
+	if err != nil {
+		return err, ""
+	}
+
+	defer func(fin *os.File) {
+		err := fin.Close()
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
+	}(fin)
+
+	hash := sha256.New()
+
+	for {
+		n, err := fin.Read(buf)
+		if err != nil && err != io.EOF {
+			return err, ""
+		}
+
+		if n == 0 {
+			break
+		}
+
+		hash.Write(buf[:n])
+	}
+	return nil, hex.EncodeToString(hash.Sum(nil))
+}
+
+func sha512sum(src string) (error, string) {
+	buf := make([]byte, 32768)
+	fin, err := os.Open(src)
+	if err != nil {
+		return err, ""
+	}
+
+	defer func(fin *os.File) {
+		err := fin.Close()
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
+	}(fin)
+
+	hash := sha512.New()
+
+	for {
+		n, err := fin.Read(buf)
+		if err != nil && err != io.EOF {
+			return err, ""
+		}
+
+		if n == 0 {
+			break
+		}
+
+		hash.Write(buf[:n])
+	}
+	return nil, hex.EncodeToString(hash.Sum(nil))
+}
+
 func postStateInspectArchives(archives map[string][]string) {
 	glog.Info("PostState -- Inspect Archives")
 	glog.Info("======================================================================")
@@ -2246,6 +2375,42 @@ func postStateInspectArchives(archives map[string][]string) {
 		glog.Infof("------ %s:", filepath.Base(archive))
 		glog.Infof("======================================================================")
 		inspectArchive(archive, archives[archive])
+	}
+	glog.Info("md5sum")
+	glog.Info("======================================================================")
+	for archive := range archives {
+		err, md5sum := md5sum(archive)
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
+		glog.Infof("%s\t%s", md5sum, filepath.Base(archive))
+	}
+	glog.Info("sha1sum")
+	glog.Info("======================================================================")
+	for archive := range archives {
+		err, sha1sum := sha1sum(archive)
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
+		glog.Infof("%s\t%s", sha1sum, filepath.Base(archive))
+	}
+	glog.Info("sha256sum")
+	glog.Info("======================================================================")
+	for archive := range archives {
+		err, sha256sum := sha256sum(archive)
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
+		glog.Infof("%s\t%s", sha256sum, filepath.Base(archive))
+	}
+	glog.Info("sha512sum")
+	glog.Info("======================================================================")
+	for archive := range archives {
+		err, sha512sum := sha512sum(archive)
+		if err != nil {
+			glog.Fatalf("%v", err)
+		}
+		glog.Infof("%s\t%s", sha512sum, filepath.Base(archive))
 	}
 }
 
