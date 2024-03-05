@@ -3,26 +3,26 @@ package main
 import (
 	"archive/zip"
 	"bufio"
-	"encoding/base64"
-	"errors"
-	"flag"
-	"fmt"
+	"bytes"
 	"crypto/md5"
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/sha512"
+	"encoding/base64"
 	"encoding/hex"
+	"errors"
+	"flag"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
-	"bytes"
-	"reflect"
-	"regexp"
 
 	"github.com/golang/glog"
 	"github.com/google/uuid"
@@ -220,15 +220,15 @@ func InitFlag() {
 	// For compatiblity
 	systemNameFlag = strings.ToLower(systemNameFlag)
 
-	if (variantFlag == "gui") {
+	if variantFlag == "gui" {
 		APPNAME = "yass"
-	} else if (variantFlag == "cli") {
+	} else if variantFlag == "cli" {
 		APPNAME = "yass_cli"
-	} else if (variantFlag == "server") {
+	} else if variantFlag == "server" {
 		APPNAME = "yass_server"
-	} else if (variantFlag == "benchmark") {
+	} else if variantFlag == "benchmark" {
 		APPNAME = "yass_benchmark"
-	} else if (variantFlag == "test") {
+	} else if variantFlag == "test" {
 		APPNAME = "yass_test"
 	} else {
 		glog.Fatalf("Invalid variant: %s", variantFlag)
@@ -277,14 +277,14 @@ func prebuildFindSourceDirectory() {
 	}
 
 	if err != nil {
-		var subtagContent []byte;
+		var subtagContent []byte
 		subtagContent, err = ioutil.ReadFile("SUBTAG")
 		if err != nil {
 			glog.Fatalf("%v", err)
 		}
 		subtagFlag := strings.TrimSpace(string(subtagContent))
 
-		var lastChangeContent []byte;
+		var lastChangeContent []byte
 		lastChangeContent, err = ioutil.ReadFile("LAST_CHANGE")
 		if err != nil {
 			glog.Fatalf("%v", err)
@@ -511,7 +511,7 @@ func getAndFixHarmonyLibunwind() {
 	}
 	for _, entry := range entries {
 		if !strings.Contains(entry.Name(), "-ohos") {
-			continue;
+			continue
 		}
 		if _, err = os.Lstat(filepath.Join(target_path, entry.Name())); err == nil {
 			err = os.Remove(filepath.Join(target_path, entry.Name()))
@@ -520,7 +520,7 @@ func getAndFixHarmonyLibunwind() {
 			}
 		}
 		err = os.Symlink(filepath.Join(source_path, entry.Name()),
-				filepath.Join(target_path, entry.Name()))
+			filepath.Join(target_path, entry.Name()))
 		if err != nil {
 			glog.Fatalf("%v", err)
 		}
@@ -554,14 +554,14 @@ func getAndFixLibunwind(source_path string, subdir string) {
 		glog.Fatalf("%v", err)
 	}
 	if _, err = os.Stat(target_path); errors.Is(err, os.ErrNotExist) {
-		err = os.Mkdir(target_path, 0777);
+		err = os.Mkdir(target_path, 0777)
 		if err != nil {
 			glog.Fatalf("%v", err)
 		}
 	}
 	for _, entry := range entries {
 		if subdir == "" && entry.Name() == "linux" {
-			continue;
+			continue
 		}
 		if _, err = os.Lstat(filepath.Join(target_path, entry.Name())); err == nil {
 			err = os.Remove(filepath.Join(target_path, entry.Name()))
@@ -570,7 +570,7 @@ func getAndFixLibunwind(source_path string, subdir string) {
 			}
 		}
 		err = os.Symlink(filepath.Join(source_path, entry.Name()),
-				filepath.Join(target_path, entry.Name()))
+			filepath.Join(target_path, entry.Name()))
 		if err != nil {
 			glog.Fatalf("%v", err)
 		}
@@ -699,11 +699,11 @@ func buildStageGenerateBuildScript() {
 	glog.Info("BuildStage -- Generate Build Script")
 	glog.Info("======================================================================")
 	var cmakeArgs []string
-	if (os.Getenv("CC") != "") {
+	if os.Getenv("CC") != "" {
 		glog.Infof("Using overrided compiler %s", os.Getenv("CC"))
 	} else if systemNameFlag == "ios" {
 		glog.Infof("Using xcode's builtin compiler")
-	} else if (clangPath != "") {
+	} else if clangPath != "" {
 		if systemNameFlag == "windows" {
 			_clangClPath := filepath.Join(clangPath, "bin", "clang-cl.exe")
 			if _, err := os.Stat(_clangClPath); errors.Is(err, os.ErrNotExist) {
@@ -851,19 +851,19 @@ func buildStageGenerateBuildScript() {
 			} else if archFlag == "" {
 				// nop
 			} else {
-				glog.Fatalf("Invalid archFlag: %s", archFlag);
+				glog.Fatalf("Invalid archFlag: %s", archFlag)
 			}
 		}
 	}
 
 	if systemNameFlag == "mingw" {
-		if (mingwDir != "") {
-			glog.Infof("Using llvm-mingw dir %s", mingwDir);
-			glog.Infof("Using clang dir %s", clangPath);
+		if mingwDir != "" {
+			glog.Infof("Using llvm-mingw dir %s", mingwDir)
+			glog.Infof("Using clang dir %s", clangPath)
 		} else {
 			mingwDir = clangPath
-			glog.Infof("Using llvm-mingw dir %s", clangPath);
-			glog.Infof("Using clang inside llvm-mingw dir %s", mingwDir);
+			glog.Infof("Using llvm-mingw dir %s", clangPath)
+			glog.Infof("Using clang inside llvm-mingw dir %s", mingwDir)
 		}
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCROSS_TOOLCHAIN_FLAGS_TOOLCHAIN_FILE=%s/Native.cmake", buildDir))
 
@@ -893,7 +893,7 @@ func buildStageGenerateBuildScript() {
 			cmakeArgs = append(cmakeArgs, "-DMINGW_WORKAROUND=ON")
 			llvm_version := getLLVMVersion()
 			clang_rt_suffix := targetAbi
-			if (targetAbi == "i686") {
+			if targetAbi == "i686" {
 				clang_rt_suffix = "i386"
 			}
 			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DMINGW_COMPILER_RT=%s/lib/clang/%s/lib/windows/libclang_rt.builtins-%s.a", clangPath, llvm_version, clang_rt_suffix))
@@ -901,7 +901,7 @@ func buildStageGenerateBuildScript() {
 			cmakeArgs = append(cmakeArgs, "-DALLOW_XP=OFF")
 		}
 
-		if (mingwDir != clangPath) {
+		if mingwDir != clangPath {
 			getAndFixMinGWLibunwind(mingwDir)
 		}
 	}
@@ -920,21 +920,21 @@ func buildStageGenerateBuildScript() {
 			} else if archFlag == "arm64" {
 				platform = "SIMULATORARM64"
 			} else {
-				glog.Fatalf("Invalid archFlag: %s", archFlag);
+				glog.Fatalf("Invalid archFlag: %s", archFlag)
 			}
 			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DXCODE_CODESIGN_IDENTITY=%s", iosCodeSignIdentityFlag))
 			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DXCODE_DEPLOYMENT_TEAM=%s", iosDevelopmentTeamFlag))
 			glog.Info("No Packaging supported for simulator, disabling...")
 			noPackagingFlag = true
 		} else if subSystemNameFlag != "" {
-			glog.Fatalf("Invalid subSystemNameFlag: %s", subSystemNameFlag);
+			glog.Fatalf("Invalid subSystemNameFlag: %s", subSystemNameFlag)
 		} else {
 			if archFlag == "arm" {
 				platform = "OS"
 			} else if archFlag == "arm64" {
 				platform = "OS64"
 			} else {
-				glog.Fatalf("Invalid archFlag: %s", archFlag);
+				glog.Fatalf("Invalid archFlag: %s", archFlag)
 			}
 			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DXCODE_CODESIGN_IDENTITY=%s", iosCodeSignIdentityFlag))
 			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DXCODE_DEPLOYMENT_TEAM=%s", iosDevelopmentTeamFlag))
@@ -947,9 +947,9 @@ func buildStageGenerateBuildScript() {
 		// see #751
 		cmakeArgs = append(cmakeArgs, "-DUSE_BUILTIN_CA_BUNDLE_CRT=off")
 		if _, err := os.Stat(androidNdkDir); errors.Is(err, os.ErrNotExist) {
-			glog.Fatalf("Android Ndk Directory at %s demanded", androidNdkDir);
+			glog.Fatalf("Android Ndk Directory at %s demanded", androidNdkDir)
 		}
-		glog.Infof("Using android ndk dir %s", androidNdkDir);
+		glog.Infof("Using android ndk dir %s", androidNdkDir)
 		androidAbiTarget, androidAppAbi = getAndroidTargetAndAppAbi(archFlag)
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_TOOLCHAIN_FILE=%s/../cmake/platforms/Android.cmake", buildDir))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DANDROID_ABI=%s", androidAppAbi))
@@ -962,13 +962,13 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSTEM_PROCESSOR=%s", androidAppAbi))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_TARGET=%s%d", androidAbiTarget, androidApiLevel))
 		// FIXME patch llvm toolchain to find libunwind.a
-		getAndFixAndroidLibunwind(androidNdkDir);
+		getAndFixAndroidLibunwind(androidNdkDir)
 	}
 
 	if systemNameFlag == "harmony" {
 		cmakeArgs = append(cmakeArgs, "-DUSE_BUILTIN_CA_BUNDLE_CRT=off")
 		if harmonyNdkDir == "" {
-			glog.Fatalf("Harmony Ndk Directory demanded");
+			glog.Fatalf("Harmony Ndk Directory demanded")
 		}
 		// FIXME harmony doens't support c-ares
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_CARES=%s", "OFF"))
@@ -1081,14 +1081,14 @@ func buildStageExecuteBuildScript() {
 			xcodeCmd := []string{"xcodebuild", "test", "-configuration", cmakeBuildTypeFlag,
 				"-jobs", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag),
 				"-scheme", "yass", "-destination", "platform=iOS Simulator,name=iPhone 15 Pro"}
-			if (!runTestFlag) {
+			if !runTestFlag {
 				cmdRun(xcodeCmd, true)
 			}
 		} else if systemNameFlag == "ios" {
 			xcodeCmd := []string{"xcodebuild", "test", "-configuration", cmakeBuildTypeFlag,
 				"-jobs", fmt.Sprintf("%d", cmakeBuildConcurrencyFlag),
 				"-scheme", "yass", "-destination", "platform=iOS,name=" + iosTestDeviceNameFlag}
-			if (!runTestFlag) {
+			if !runTestFlag {
 				cmdRun(xcodeCmd, true)
 			}
 		} else {
@@ -1279,42 +1279,42 @@ func GetWin32SearchPath() []string {
 // Copyright (C) Microsoft Corporation.  All rights reserved.
 // Dump of file arm64-windows-yass.exe
 // File Type: EXECUTABLE IMAGE
-//   Image has the following dependencies:
-//     WS2_32.dll
-//     GDI32.dll
-//     SHELL32.dll
-//     KERNEL32.dll
-//     USER32.dll
-//     ADVAPI32.dll
-//     MSVCP140.dll
-//     MSWSOCK.dll
-//     mfc140u.dll
-//     dbghelp.dll
-//     VCRUNTIME140.dll
-//     api-ms-win-crt-runtime-l1-1-0.dll
-//     api-ms-win-crt-heap-l1-1-0.dll
-//     api-ms-win-crt-stdio-l1-1-0.dll
-//     api-ms-win-crt-math-l1-1-0.dll
-//     api-ms-win-crt-time-l1-1-0.dll
-//     api-ms-win-crt-filesystem-l1-1-0.dll
-//     api-ms-win-crt-convert-l1-1-0.dll
-//     api-ms-win-crt-environment-l1-1-0.dll
-//     api-ms-win-crt-string-l1-1-0.dll
-//     api-ms-win-crt-locale-l1-1-0.dll
-//   Summary
-//        15000 .data
-//         4000 .pdata
-//        2C000 .rdata
-//         2000 .reloc
-//        12000 .rsrc
-//        71000 .text
 //
+//	Image has the following dependencies:
+//	  WS2_32.dll
+//	  GDI32.dll
+//	  SHELL32.dll
+//	  KERNEL32.dll
+//	  USER32.dll
+//	  ADVAPI32.dll
+//	  MSVCP140.dll
+//	  MSWSOCK.dll
+//	  mfc140u.dll
+//	  dbghelp.dll
+//	  VCRUNTIME140.dll
+//	  api-ms-win-crt-runtime-l1-1-0.dll
+//	  api-ms-win-crt-heap-l1-1-0.dll
+//	  api-ms-win-crt-stdio-l1-1-0.dll
+//	  api-ms-win-crt-math-l1-1-0.dll
+//	  api-ms-win-crt-time-l1-1-0.dll
+//	  api-ms-win-crt-filesystem-l1-1-0.dll
+//	  api-ms-win-crt-convert-l1-1-0.dll
+//	  api-ms-win-crt-environment-l1-1-0.dll
+//	  api-ms-win-crt-string-l1-1-0.dll
+//	  api-ms-win-crt-locale-l1-1-0.dll
+//	Summary
+//	     15000 .data
+//	      4000 .pdata
+//	     2C000 .rdata
+//	      2000 .reloc
+//	     12000 .rsrc
+//	     71000 .text
 func GetDependenciesByDumpbin(path string, searchDirs []string) ([]string, []string) {
 	lines := strings.Split(cmdCheckOutput([]string{"dumpbin", "/nologo", "/dependents", path}), "\n")
 	dlls := []string{}
 	resolvedDlls := []string{}
 	unresolvedDlls := []string{}
-	systemDlls := []string {"WS2_32.dll", "GDI32.dll", "SHELL32.dll", "USER32.dll",
+	systemDlls := []string{"WS2_32.dll", "GDI32.dll", "SHELL32.dll", "USER32.dll",
 		"ADVAPI32.dll", "MSWSOCK.dll", "dbghelp.dll", "KERNEL32.dll",
 		"ole32.dll", "OLEAUT32.dll", "SHLWAPI.dll", "IMM32.dll",
 		"UxTheme.dll", "PROPSYS.dll", "dwmapi.dll", "WININET.dll",
@@ -1324,12 +1324,12 @@ func GetDependenciesByDumpbin(path string, searchDirs []string) ([]string, []str
 		"WINHTTP.dll", "VERSION.dll", "POWRPROF.dll",
 	}
 	systemDllsMap := make(map[string]struct{})
-	for _, dll := range(systemDlls) {
+	for _, dll := range systemDlls {
 		systemDllsMap[strings.ToLower(dll)] = struct{}{}
 	}
 
 	p := regexp.MustCompile("(?i)    (\\S+.dll)")
-	for _, line := range(lines) {
+	for _, line := range lines {
 		matches := p.FindStringSubmatch(line)
 		if len(matches) > 1 {
 			_, ok := systemDllsMap[strings.ToLower(matches[1])]
@@ -1354,34 +1354,34 @@ func GetDependenciesByDumpbin(path string, searchDirs []string) ([]string, []str
 		if vctoolsVersion >= 14.30 {
 			if msvcTargetArchFlag == "x64" || msvcTargetArchFlag == "arm64" {
 				dlls = append(dlls, "concrt140.dll", "msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll",
-							"msvcp140_atomic_wait.dll", "msvcp140_codecvt_ids.dll", "vccorlib140.dll", "vcruntime140.dll", "vcruntime140_1.dll")
+					"msvcp140_atomic_wait.dll", "msvcp140_codecvt_ids.dll", "vccorlib140.dll", "vcruntime140.dll", "vcruntime140_1.dll")
 			} else if msvcTargetArchFlag == "x86" {
 				dlls = append(dlls, "concrt140.dll", "msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll",
-							"msvcp140_atomic_wait.dll", "msvcp140_codecvt_ids.dll", "vccorlib140.dll", "vcruntime140.dll")
+					"msvcp140_atomic_wait.dll", "msvcp140_codecvt_ids.dll", "vccorlib140.dll", "vcruntime140.dll")
 			}
 		} else if vctoolsVersion >= 14.20 && vctoolsVersion < 14.30 {
 			if msvcTargetArchFlag == "x64" || msvcTargetArchFlag == "arm64" {
 				dlls = append(dlls, "concrt140.dll", "msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll",
-							"msvcp140_atomic_wait.dll", "msvcp140_codecvt_ids.dll", "vccorlib140.dll", "vcruntime140.dll", "vcruntime140_1.dll")
+					"msvcp140_atomic_wait.dll", "msvcp140_codecvt_ids.dll", "vccorlib140.dll", "vcruntime140.dll", "vcruntime140_1.dll")
 			} else if msvcTargetArchFlag == "x86" {
 				dlls = append(dlls, "concrt140.dll", "msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll",
-							"msvcp140_atomic_wait.dll", "msvcp140_codecvt_ids.dll", "vccorlib140.dll", "vcruntime140.dll")
+					"msvcp140_atomic_wait.dll", "msvcp140_codecvt_ids.dll", "vccorlib140.dll", "vcruntime140.dll")
 			}
 		} else if vctoolsVersion >= 14.10 && vctoolsVersion < 14.20 {
 			if msvcTargetArchFlag == "x64" {
 				dlls = append(dlls, "concrt140.dll", "msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll",
-							"vccorlib140.dll", "vcruntime140.dll")
+					"vccorlib140.dll", "vcruntime140.dll")
 			} else if msvcTargetArchFlag == "x86" {
 				dlls = append(dlls, "concrt140.dll", "msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll",
-							"vccorlib140.dll", "vcruntime140.dll")
+					"vccorlib140.dll", "vcruntime140.dll")
 			}
 		} else if vctoolsVersion >= 14.00 && vctoolsVersion < 14.10 {
 			if msvcTargetArchFlag == "x64" {
 				dlls = append(dlls, "concrt140.dll", "msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll",
-							"vccorlib140.dll", "vcruntime140.dll")
+					"vccorlib140.dll", "vcruntime140.dll")
 			} else if msvcTargetArchFlag == "x86" {
 				dlls = append(dlls, "concrt140.dll", "msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll",
-							"vccorlib140.dll", "vcruntime140.dll")
+					"vccorlib140.dll", "vcruntime140.dll")
 			}
 		} else {
 			// nop
@@ -1392,31 +1392,31 @@ func GetDependenciesByDumpbin(path string, searchDirs []string) ([]string, []str
 		} else {
 			dlls = append(dlls, "ucrtbase.dll")
 			dlls = append(dlls, "api-ms-win-crt-conio-l1-1-0.dll",
-					"api-ms-win-crt-convert-l1-1-0.dll",
-					"api-ms-win-crt-environment-l1-1-0.dll",
-					"api-ms-win-crt-filesystem-l1-1-0.dll",
-					"api-ms-win-crt-heap-l1-1-0.dll",
-					"api-ms-win-crt-locale-l1-1-0.dll",
-					"api-ms-win-crt-math-l1-1-0.dll",
-					"api-ms-win-crt-multibyte-l1-1-0.dll",
-					"api-ms-win-crt-private-l1-1-0.dll",
-					"api-ms-win-crt-process-l1-1-0.dll",
-					"api-ms-win-crt-runtime-l1-1-0.dll",
-					"api-ms-win-crt-stdio-l1-1-0.dll",
-					"api-ms-win-crt-string-l1-1-0.dll",
-					"api-ms-win-crt-time-l1-1-0.dll",
-					"api-ms-win-crt-utility-l1-1-0.dll")
+				"api-ms-win-crt-convert-l1-1-0.dll",
+				"api-ms-win-crt-environment-l1-1-0.dll",
+				"api-ms-win-crt-filesystem-l1-1-0.dll",
+				"api-ms-win-crt-heap-l1-1-0.dll",
+				"api-ms-win-crt-locale-l1-1-0.dll",
+				"api-ms-win-crt-math-l1-1-0.dll",
+				"api-ms-win-crt-multibyte-l1-1-0.dll",
+				"api-ms-win-crt-private-l1-1-0.dll",
+				"api-ms-win-crt-process-l1-1-0.dll",
+				"api-ms-win-crt-runtime-l1-1-0.dll",
+				"api-ms-win-crt-stdio-l1-1-0.dll",
+				"api-ms-win-crt-string-l1-1-0.dll",
+				"api-ms-win-crt-time-l1-1-0.dll",
+				"api-ms-win-crt-utility-l1-1-0.dll")
 		}
 
 	}
 
-	for _, dll := range(dlls) {
+	for _, dll := range dlls {
 		resolved := false
-		for _, searchDir := range(searchDirs) {
+		for _, searchDir := range searchDirs {
 			d := filepath.Join(searchDir, dll)
 			if _, err := os.Stat(d); !errors.Is(err, os.ErrNotExist) {
 				resolvedDlls = append(resolvedDlls, d)
-				resolved = true;
+				resolved = true
 				break
 			}
 		}
@@ -1433,7 +1433,7 @@ func postStateCopyDependedLibraries() {
 	searchDirs := []string{}
 	if systemNameFlag == "windows" {
 		searchDirs = append(searchDirs, GetWin32SearchPath()...)
-		for _, searchDir := range(searchDirs) {
+		for _, searchDir := range searchDirs {
 			glog.Infof("--- %s", searchDir)
 		}
 		deps, unresolvedDeps := GetDependenciesByDumpbin(getAppName(), searchDirs)
@@ -1447,39 +1447,39 @@ func postStateCopyDependedLibraries() {
 		}
 
 		depsMap := make(map[string]struct{})
-		for _, dep := range(deps) {
+		for _, dep := range deps {
 			depsMap[dep] = struct{}{}
 		}
 		for true {
 			depsExtended := deps
-			for _, dep := range(deps) {
+			for _, dep := range deps {
 				depDeps, depUnresolvedDeps := GetDependenciesByDumpbin(dep, searchDirs)
 				depsExtended = append(depsExtended, depDeps...)
 				unresolvedDeps = append(unresolvedDeps, depUnresolvedDeps...)
 			}
 			depsExtendedMap := make(map[string]struct{})
-			for _, dep := range(depsExtended) {
+			for _, dep := range depsExtended {
 				depsExtendedMap[dep] = struct{}{}
 			}
 			if reflect.DeepEqual(depsMap, depsExtendedMap) {
-				break;
+				break
 			}
 			depsExtended = []string{}
-			for dep := range(depsExtendedMap) {
+			for dep := range depsExtendedMap {
 				depsExtended = append(depsExtended, dep)
 			}
 			deps = depsExtended
 			depsMap = depsExtendedMap
 		}
 		unresolvedDepsMap := make(map[string]struct{})
-		for _, unresolvedDep := range(unresolvedDeps) {
+		for _, unresolvedDep := range unresolvedDeps {
 			unresolvedDepsMap[unresolvedDep] = struct{}{}
 		}
 		glog.Infof("--- Dependent dll")
-		for _, dep := range(deps) {
+		for _, dep := range deps {
 			glog.Infof("--- --- %s", dep)
 			if !strings.HasSuffix(strings.ToLower(dep), ".dll") {
-				continue;
+				continue
 			}
 			err := copyFile(dep, filepath.Base(dep))
 			if err != nil {
@@ -1487,10 +1487,10 @@ func postStateCopyDependedLibraries() {
 			}
 		}
 		glog.Infof("--- Missing dependent dll")
-		for unresolvedDep, _ := range(unresolvedDepsMap) {
+		for unresolvedDep, _ := range unresolvedDepsMap {
 			glog.Infof("--- --- %s", unresolvedDep)
 		}
-	// TBD
+		// TBD
 	}
 }
 
@@ -1580,7 +1580,7 @@ func postStateCodeSign() {
 		"--deep", "--force", "--options=runtime", "--timestamp",
 		"--entitlements=" + filepath.Join(projectDir, "src", "mac", "entitlements.plist"),
 	}
-	if (macosxKeychainPathFlag != "") {
+	if macosxKeychainPathFlag != "" {
 		codesignCmd = append(codesignCmd, "--keychain", macosxKeychainPathFlag)
 	}
 
@@ -1922,17 +1922,17 @@ func archiveMainFile(output string, prefix string, paths []string, dllPaths []st
 		if err != nil {
 			glog.Fatalf("%v", err)
 		}
-		if (androidSdkDir != "") {
+		if androidSdkDir != "" {
 			glog.Infof("android sdk dir to %s", androidSdkDir)
 			localProperties := fmt.Sprintf("sdk.dir=%s\n", androidSdkDir)
-			if (androidNdkDir != "") {
+			if androidNdkDir != "" {
 				localProperties += fmt.Sprintf("ndk.dir=%s\n", androidNdkDir)
 			}
 			tagVersionStrs := strings.Split(tagFlag, ".")
 			tagMajorVer, _ := strconv.Atoi(tagVersionStrs[0])
 			tagMinorVer, _ := strconv.Atoi(tagVersionStrs[1])
 			tagPatchVer, _ := strconv.Atoi(tagVersionStrs[2])
-			localProperties += fmt.Sprintf("YASS_VERSION=%d\n", tagMajorVer * 1000000 + tagMinorVer * 1000 + tagPatchVer)
+			localProperties += fmt.Sprintf("YASS_VERSION=%d\n", tagMajorVer*1000000+tagMinorVer*1000+tagPatchVer)
 			localProperties += fmt.Sprintf("YASS_VERSION_NAME=%s\n", tagFlag)
 			err = ioutil.WriteFile("local.properties", []byte(localProperties), 0666)
 			if err != nil {
@@ -1983,10 +1983,10 @@ func generateMsi(output string, dllPaths []string, licensePaths []string, hasCra
 		licenseReplacement += fmt.Sprintf("<File Name='%s' Source='%s' KeyPath='no' />\n", filepath.Base(licensePath), licensePath)
 	}
 	wxsXml = strings.Replace(wxsXml, "<!-- %LICENSEPLACEHOLDER% -->", licenseReplacement, 1)
-	if (hasCrashpad) {
+	if hasCrashpad {
 		wxsXml = strings.Replace(wxsXml, "<!-- %CRASHPAD_HANDLER_HOLDER% -->", "<File Name='crashpad_handler.exe' Source='crashpad_handler.exe' KeyPath='no'/>", 1)
 	}
-	if (hasIcuDataFile) {
+	if hasIcuDataFile {
 		wxsXml = strings.Replace(wxsXml, "<!-- %ICUDATAFILE_HOLDER% -->", "<File Name='icudtl.dat' Source='icudtl.dat' KeyPath='no'/>", 1)
 	}
 
@@ -2141,7 +2141,7 @@ func postStateArchives() map[string][]string {
 
 	if systemNameFlag == "windows" {
 		entries, _ := os.ReadDir("./")
-		for _, entry := range(entries) {
+		for _, entry := range entries {
 			name := entry.Name()
 			iname := strings.ToLower(name)
 			if strings.HasSuffix(iname, ".dll") {
@@ -2207,7 +2207,7 @@ func postStateArchives() map[string][]string {
 		}
 		cmdRun([]string{"rm", "-rf", getAppName() + ".dSYM"}, true)
 		cmdRun([]string{"rm", "-rf", "YassPacketTunnel.appex.dSYM"}, true)
-		cmdRun([]string{"cp", "-r", filepath.Join(buildSubdir, getAppName() + ".dSYM"), getAppName() + ".dSYM"}, true)
+		cmdRun([]string{"cp", "-r", filepath.Join(buildSubdir, getAppName()+".dSYM"), getAppName() + ".dSYM"}, true)
 		cmdRun([]string{"cp", "-r", filepath.Join(buildSubdir, "YassPacketTunnel.appex.dSYM"), "YassPacketTunnel.appex.dSYM"}, true)
 		archiveFiles(debugArchive, archivePrefix, []string{getAppName() + ".dSYM", "YassPacketTunnel.appex.dSYM"})
 		dbgPaths = append(dbgPaths, getAppName()+".dSYM", "YassPacketTunnel.appex.dSYM")
