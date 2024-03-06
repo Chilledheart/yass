@@ -214,7 +214,7 @@ jobs:
       - name: Build
         run: |
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system mingw -build-test \
-            --clang-path $PWD/third_party/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64 -nc
+            --clang-path $PWD/third_party/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64 -no-packaging
       - name: Populate depedencies (Tests-i686)
         if: ${{ matrix.arch == 'i686' }}
         run: |

@@ -477,7 +477,7 @@ func getGNUTargetTypeAndArch(arch string, subsystem string) (string, string) {
 }
 
 func getLLVMVersion() string {
-	entries, err := os.ReadDir(filepath.Join(clangPath, "lib", "clang"))
+	entries, err := ioutil.ReadDir(filepath.Join(clangPath, "lib", "clang"))
 	if err != nil {
 		glog.Fatalf("%v", err)
 	}
@@ -505,7 +505,7 @@ func getAndFixHarmonyLibunwind() {
 	// FIX libunwind
 	target_path := fmt.Sprintf(filepath.Join(clangPath, "lib"))
 	source_path := fmt.Sprintf("%s/native/llvm/lib", harmonyNdkDir)
-	entries, err := os.ReadDir(source_path)
+	entries, err := ioutil.ReadDir(source_path)
 	if err != nil {
 		glog.Fatalf("%v", err)
 	}
@@ -533,7 +533,7 @@ func getAndFixLibunwind(source_path string, subdir string) {
 		glog.Fatalf("Symbolic link is not supported on windows")
 	}
 	// ln -sf $PWD/third_party/android_toolchain/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.7/lib/linux/i386 third_party/llvm-build/Release+Asserts/lib/clang/18/lib/linux
-	entries, err := os.ReadDir(filepath.Join(clangPath, "lib", "clang"))
+	entries, err := ioutil.ReadDir(filepath.Join(clangPath, "lib", "clang"))
 	if err != nil {
 		glog.Fatalf("%v", err)
 	}
@@ -549,7 +549,7 @@ func getAndFixLibunwind(source_path string, subdir string) {
 		glog.Fatalf("%v", err)
 	}
 	target_path := fmt.Sprintf(filepath.Join(clangPath, "lib", "clang", llvm_version, "lib", subdir))
-	entries, err = os.ReadDir(source_path)
+	entries, err = ioutil.ReadDir(source_path)
 	if err != nil {
 		glog.Fatalf("%v", err)
 	}
@@ -2022,19 +2022,41 @@ func generateNSIS(output string, dllPaths []string) {
 		glog.Fatalf("%v", err)
 	}
 	glog.Info("Feeding NSIS compiler...")
-	cmdRun([]string{"C:\\Program Files (x86)\\NSIS\\makensis.exe", "/XSetCompressor /FINAL lzma", "yass.nsi"}, true)
+	if runtime.GOOS == "windows" {
+		cmdRun([]string{"C:\\Program Files (x86)\\NSIS\\makensis.exe", "/XSetCompressor /FINAL lzma", "yass.nsi"}, true)
+	} else {
+		cmdRun([]string{"makensis", "-XSetCompressor /FINAL lzma", "yass.nsi"}, true)
+	}
 }
 
 func generateNSISSystemInstaller(output string) {
 	glog.Info("Feeding CPack NSIS compiler...")
-	cmdRun([]string{"C:\\Program Files\\CMake\\bin\\cpack.exe"}, true)
-
-	if msvcTargetArchFlag == "x86" {
-		os.Rename(fmt.Sprintf("yass-%s-win32.exe", tagFlag), output)
-	} else if msvcTargetArchFlag == "x64" {
-		os.Rename(fmt.Sprintf("yass-%s-win64.exe", tagFlag), output)
+	if runtime.GOOS == "windows" {
+		cmdRun([]string{"C:\\Program Files\\CMake\\bin\\cpack.exe"}, true)
 	} else {
-		glog.Fatalf("Unsupported msvc arch: %s for nsis builder", msvcTargetArchFlag)
+		cmdRun([]string{"cpack"}, true)
+	}
+
+	if systemNameFlag == "windows" {
+		if msvcTargetArchFlag == "x86" {
+			os.Rename(fmt.Sprintf("yass-%s-win32.exe", tagFlag), output)
+		} else if msvcTargetArchFlag == "x64" {
+			os.Rename(fmt.Sprintf("yass-%s-win64.exe", tagFlag), output)
+		} else if msvcTargetArchFlag == "arm64" {
+			os.Rename(fmt.Sprintf("yass-%s-win64.exe", tagFlag), output)
+		} else {
+			glog.Fatalf("Unsupported msvc arch: %s for nsis builder", msvcTargetArchFlag)
+		}
+	} else if systemNameFlag == "mingw" {
+		if archFlag == "x86" || archFlag == "i686" {
+			os.Rename(fmt.Sprintf("yass-%s-win32.exe", tagFlag), output)
+		} else if archFlag == "x64" || archFlag == "x86_64" || archFlag == "amd64" {
+			os.Rename(fmt.Sprintf("yass-%s-win64.exe", tagFlag), output)
+		} else if archFlag == "arm64" || archFlag == "aarch64" {
+			os.Rename(fmt.Sprintf("yass-%s-win64.exe", tagFlag), output)
+		} else {
+			glog.Fatalf("Unsupported mingw arch: %s for nsis builder", archFlag)
+		}
 	}
 }
 
@@ -2140,7 +2162,7 @@ func postStateArchives() map[string][]string {
 	var dbgPaths []string
 
 	if systemNameFlag == "windows" {
-		entries, _ := os.ReadDir("./")
+		entries, _ := ioutil.ReadDir("./")
 		for _, entry := range entries {
 			name := entry.Name()
 			iname := strings.ToLower(name)
@@ -2181,7 +2203,7 @@ func postStateArchives() map[string][]string {
 		archives[msiArchive] = []string{msiArchive}
 	}
 	// nsis installer
-	if systemNameFlag == "windows" && msvcTargetArchFlag != "arm64" {
+	if systemNameFlag == "windows" || systemNameFlag == "mingw" {
 		generateNSIS(nsisArchive, dllPaths)
 		archives[nsisArchive] = []string{nsisArchive}
 		generateNSISSystemInstaller(nsisSystemArchive)
