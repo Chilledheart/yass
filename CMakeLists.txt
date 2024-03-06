@@ -4484,7 +4484,7 @@ if(NOT CMAKE_SKIP_INSTALL_RULES)
   file(READ third_party/zlib/LICENSE                        _ZLIB_LICENSE)
 
   set(LICENSE_FILE "${CMAKE_CURRENT_BINARY_DIR}/LICENSE")
-  configure_file("LICENSE.tmpl" "${LICENSE_FILE}" @ONLY)
+  configure_file("LICENSE.cmake.in" "${LICENSE_FILE}" @ONLY)
   install(FILES "${LICENSE_FILE}" DESTINATION ${CMAKE_INSTALL_DOCDIR})
 endif()
 
