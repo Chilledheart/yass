@@ -1,3 +1,8 @@
+yass (1.7.3-1) UNRELEASED; urgency=medium
+
+  * c-ares: fix CVE-2024-25629
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Thu, 7 Mar 2024 14:25:50 +0800
 yass (1.7.2-1) UNRELEASED; urgency=medium
 
   * c-ares: fix CVE-2024-25629
