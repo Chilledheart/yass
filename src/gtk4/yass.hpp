@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2023 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 #ifndef YASS_APP
 #define YASS_APP
 
@@ -33,6 +33,8 @@ class YASSApp {
  private:
   GApplication* impl_;
   GSource* idle_source_;
+  GSource* exit_int_source_;
+  GSource* exit_term_source_;
 
  public:
   void OnActivate();

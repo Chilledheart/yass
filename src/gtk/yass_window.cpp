@@ -16,6 +16,8 @@
 #include "gtk/yass.hpp"
 #include "version.h"
 
+YASSWindow* YASSWindow::window = nullptr;
+
 YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))) {
   gtk_window_set_title(GTK_WINDOW(impl_), YASS_APP_PRODUCT_NAME);
   gtk_window_set_default_size(GTK_WINDOW(impl_), 450, 420);
@@ -23,7 +25,7 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
   gtk_window_set_resizable(GTK_WINDOW(impl_), false);
   gtk_window_set_icon_name(GTK_WINDOW(impl_), "yass");
 
-  static YASSWindow* window = this;
+  window = this;
 
   auto show_callback = []() {
     gdk_window_set_functions(gtk_widget_get_window(GTK_WIDGET(window->impl_)),
@@ -224,6 +226,10 @@ void YASSWindow::show() {
 
 void YASSWindow::present() {
   gtk_window_present(GTK_WINDOW(impl_));
+}
+
+void YASSWindow::close() {
+  gtk_window_close(GTK_WINDOW(impl_));
 }
 
 void YASSWindow::OnStartButtonClicked() {

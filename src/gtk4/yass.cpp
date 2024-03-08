@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2023 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 #include "gtk4/yass.hpp"
 
 #include <stdexcept>
@@ -12,6 +12,7 @@
 #include <absl/flags/usage.h>
 #include <absl/strings/str_cat.h>
 #include <fontconfig/fontconfig.h>
+#include <glib-2.0/glib-unix.h>
 #include <glib/gi18n.h>
 #include <locale.h>
 #include <openssl/crypto.h>
@@ -150,7 +151,7 @@ YASSApp::YASSApp() : impl_(G_APPLICATION(yass_app_new())), idle_source_(g_timeou
   YASSGtk_APP(impl_)->thiz = this;
   g_set_application_name(kAppName);
 
-  auto idle = [](gpointer user_data) -> gboolean {
+  auto idle_handler = [](gpointer user_data) -> gboolean {
     if (!mApp) {
       return G_SOURCE_REMOVE;
     }
@@ -158,10 +159,32 @@ YASSApp::YASSApp() : impl_(G_APPLICATION(yass_app_new())), idle_source_(g_timeou
     return G_SOURCE_CONTINUE;
   };
   g_source_set_priority(idle_source_, G_PRIORITY_LOW);
-  g_source_set_callback(idle_source_, idle, this, nullptr);
+  g_source_set_callback(idle_source_, idle_handler, this, nullptr);
   g_source_set_name(idle_source_, "Idle Source");
   g_source_attach(idle_source_, nullptr);
   g_source_unref(idle_source_);
+
+  auto exit_handler = [](gpointer user_data) -> gboolean {
+    LOG(WARNING) << "Signal received";
+    if (!mApp) {
+      return G_SOURCE_REMOVE;
+    }
+    mApp->Exit();
+    return G_SOURCE_CONTINUE;
+  };
+  exit_int_source_ = g_unix_signal_source_new(SIGINT);
+  g_source_set_priority(exit_int_source_, G_PRIORITY_HIGH);
+  g_source_set_callback(exit_int_source_, exit_handler, this, nullptr);
+  g_source_set_name(exit_int_source_, "SIGINT Signal Source");
+  g_source_attach(exit_int_source_, nullptr);
+  g_source_unref(exit_int_source_);
+
+  exit_term_source_ = g_unix_signal_source_new(SIGTERM);
+  g_source_set_priority(exit_term_source_, G_PRIORITY_HIGH);
+  g_source_set_callback(exit_term_source_, exit_handler, this, nullptr);
+  g_source_set_name(exit_term_source_, "SIGTERM Signal Source");
+  g_source_attach(exit_term_source_, nullptr);
+  g_source_unref(exit_term_source_);
 }
 
 YASSApp::~YASSApp() = default;
@@ -213,6 +236,8 @@ void YASSApp::Exit() {
   }
   mApp = nullptr;
   g_source_destroy(idle_source_);
+  g_source_destroy(exit_int_source_);
+  g_source_destroy(exit_term_source_);
   g_application_quit(G_APPLICATION(impl_));
 }
 
