@@ -44,6 +44,7 @@ class YASSWindow {
   void OnSystemProxyClicked();
 
   GtkStatusbar* status_bar_;
+  std::string last_status_msg_;
 
  public:
   std::string GetServerHost();

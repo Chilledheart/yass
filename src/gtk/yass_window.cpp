@@ -423,8 +423,13 @@ void YASSWindow::LoadChanges() {
 }
 
 void YASSWindow::UpdateStatusBar() {
+  std::string status_msg = GetStatusMessage();
+  if (last_status_msg_ == status_msg) {
+    return;
+  }
+  last_status_msg_ = status_msg;
   gtk_statusbar_remove_all(status_bar_, 0);
-  gtk_statusbar_push(status_bar_, 0, GetStatusMessage().c_str());
+  gtk_statusbar_push(status_bar_, 0, last_status_msg_.c_str());
 }
 
 void YASSWindow::OnOption() {
