@@ -26,6 +26,7 @@ class YASSWindow {
 
  private:
   YASSGtkWindow* impl_;
+  std::string last_status_msg_;
 
  public:
   void show();
