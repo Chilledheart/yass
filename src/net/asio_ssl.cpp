@@ -317,10 +317,8 @@ static bool load_ca_cert_to_x509_trust(X509_STORE* store, bssl::UniquePtr<X509> 
       VLOG(2) << "Loaded ca: " << subject_name;
       return true;
     } else {
-      unsigned long err = ERR_get_error();
-      char buf[120];
-      ERR_error_string_n(err, buf, sizeof(buf));
-      LOG(WARNING) << "Loading ca failure: " << buf << " at " << subject_name;
+      print_openssl_error();
+      LOG(WARNING) << "Loading ca failure with: " << subject_name;
     }
   } else {
     LOG(WARNING) << "Ignore inactive cert: " << subject_name;
@@ -333,6 +331,7 @@ static bool load_ca_content_to_x509_trust(X509_STORE* store, std::string_view ca
   bssl::UniquePtr<X509> cert(PEM_read_bio_X509(bio.get(), nullptr, 0, nullptr));
   if (!cert) {
     print_openssl_error();
+    LOG(WARNING) << "Loading ca failure: with " << cacert;
     return false;
   }
   return load_ca_cert_to_x509_trust(store, std::move(cert));
@@ -438,6 +437,7 @@ static int load_ca_to_ssl_ctx_cacert(SSL_CTX* ssl_ctx) {
       count += result;
     } else {
       print_openssl_error();
+      LOG(WARNING) << "Loading ca bundle failure from: " << ca_bundle;
     }
     return result;
   }
@@ -544,6 +544,7 @@ static int load_ca_to_ssl_ctx_system(SSL_CTX* ssl_ctx) {
     bssl::UniquePtr<X509> cert(X509_parse_from_buffer(buffer.get()));
     if (!cert) {
       print_openssl_error();
+      LOG(WARNING) << "Loading ca failure from: cert store";
       continue;
     }
     if (load_ca_cert_to_x509_trust(store, std::move(cert))) {
@@ -599,6 +600,7 @@ out:
     bssl::UniquePtr<X509> cert(X509_parse_from_buffer(buffer.get()));
     if (!cert) {
       print_openssl_error();
+      LOG(WARNING) << "Loading ca failure from: SecTrust";
       continue;
     }
 
