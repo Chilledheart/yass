@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
 if (CMAKE_CURRENT_BINARY_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   message(FATAL_ERROR "In source-tree build not support")
@@ -3990,9 +3990,6 @@ if (GUI)
         list(APPEND SRC_FILES ${CMAKE_CURRENT_BINARY_DIR}/yass_zh_CN.gmo)
     endif()
 
-    # target_link_directories requires cmake 3.13
-    link_directories(${GUI_LIBRARY_DIRS})
-
     if (GUI_FLAVOUR STREQUAL "ios" OR GUI_FLAVOUR STREQUAL "cocoa")
       set(GUI_OPTIONS MACOSX_BUNDLE)
     endif()
@@ -4057,6 +4054,8 @@ if (GUI)
     endforeach()
 
     target_compile_options(${APP_NAME} PRIVATE ${GUI_C_CXX_FLAGS})
+
+    target_link_directories(${APP_NAME} PUBLIC ${GUI_LIBRARY_DIRS})
 
     if (NOT IOS)
       target_link_libraries(${APP_NAME} PUBLIC yass_cli_lib yass_net)
@@ -4411,6 +4410,8 @@ if (GUI)
 
         # FIXME conflicts with XCTest bundle creation
         if (SDK_NAME STREQUAL iphoneos)
+          # require Xcode 3.21 or later
+          # https://cmake.org/cmake/help/latest/prop_tgt/XCODE_EMBED_type.html
           set_target_properties(${APP_NAME} PROPERTIES
             XCODE_EMBED_APP_EXTENSIONS network-extension
             XCODE_EMBED_APP_EXTENSIONS_REMOVE_HEADERS_ON_COPY "YES"

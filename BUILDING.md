@@ -5,7 +5,7 @@
 ### Windows (MinGW llvm-mingw)
 
 1. Make sure you have [Git for Windows][gitforwindows] installed.
-2. Make sure you have [Perl], [CMake] (3.12 or later), [Ninja], [Golang] and [NASM] installed and put them in `PATH`.
+2. Make sure you have [Perl], [CMake] (3.13 or later), [Ninja], [Golang] and [NASM] installed and put them in `PATH`.
 
   * A recent version of Perl is required.
     On Windows, [Active State Perl](http://www.activestate.com/activeperl/) has been reported to work, as has MSYS Perl.
@@ -25,7 +25,7 @@ cd yass
 ### Windows (MSVC)
 
 1. Make sure you have [Git for Windows][gitforwindows] installed.
-2. Make sure you have [Perl], [CMake] (3.12 or later), [Ninja], [Golang] and [NASM] installed and put them in `PATH`.
+2. Make sure you have [Perl], [CMake] (3.13 or later), [Ninja], [Golang] and [NASM] installed and put them in `PATH`.
 
   * A recent version of Perl is required.
     On Windows, [Active State Perl](http://www.activestate.com/activeperl/) has been reported to work, as has MSYS Perl.
@@ -180,7 +180,7 @@ sudo apt-get install -y \
     libgtk-3-dev
 ```
 
-Notes: please make sure you have [GCC] (7.1 or above) or [Clang] (16.0 or above) and [CMake] (3.12 or above).
+Notes: please make sure you have [GCC] (7.1 or above) or [Clang] (16.0 or above) and [CMake] (3.13 or above).
 
 For [GCC], cmake argument `-DUSE_LIBCXX=off` should be passed to disable libc++ build under gcc.
 
@@ -225,7 +225,7 @@ sudo yum install -y \
     golang
 ```
 
-Notes: please make sure you have [GCC] (7.1 or above) or [Clang] (16.0 or above) and [CMake] (3.12 or above).
+Notes: please make sure you have [GCC] (7.1 or above) or [Clang] (16.0 or above) and [CMake] (3.13 or above).
 
 For [GCC], cmake argument `-DUSE_LIBCXX=off` should be passed to disable libc++ build under gcc.
 
@@ -264,7 +264,7 @@ so you can install latest [Clang]:
 ```
 pkg install llvm17-lite
 ```
-Notes: please make sure you have [Clang] (16.0 or above) and [CMake] (3.12 or above).
+Notes: please make sure you have [Clang] (16.0 or above) and [CMake] (3.13 or above).
 
 2. Install required dependencies:
 ```
