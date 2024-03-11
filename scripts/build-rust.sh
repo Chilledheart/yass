@@ -35,6 +35,7 @@ cargo = "$HOME/.cargo/bin/cargo"
 rustc = "$HOME/.cargo/bin/rustc"
 target = ["$DEFAULT_TARGET", "aarch64-unknown-linux-ohos", "armv7-unknown-linux-ohos", "x86_64-unknown-linux-ohos"]
 docs = false
+tools = ["cargo","clippy","rust-demangler","rustfmt","rust-analyzer","src"]
 
 [install]
 prefix = "$PWD/third_party/rust-ohos"
@@ -63,8 +64,9 @@ linker = "$PWD/scripts/x86_64-unknown-linux-ohos-clang.sh"
 EOF
 
 pushd rustc-$RUST_VER-src
-./configure --prefix $PWD/third_party/rust-ohos --tools=cargo,analysis,rust-demangler,src --enable-local-rust
+./configure --prefix $PWD/third_party/rust-ohos --tools=cargo,clippy,rust-demangler,rustfmt,rust-analyzer,src --enable-local-rust
 mv config.toml.in config.toml
 make
+rm -rf $PWD/third_party/rust-ohos
 make install
 popd
