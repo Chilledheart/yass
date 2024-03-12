@@ -149,7 +149,7 @@ std::string AbslUnparseFlag(const RateFlag& flag) {
 ABSL_FLAG(bool, ipv6_mode, true, "Resolve names to IPv6 addresses");
 
 ABSL_FLAG(std::string, server_host, "http2.github.io", "Remote server on given host");
-ABSL_FLAG(std::string, server_sni, "", "Remote server on given sni (Client Only)");
+ABSL_FLAG(std::string, server_sni, "", "Remote server on given sni");
 ABSL_FLAG(int32_t, server_port, 443, "Remote server on given port");
 ABSL_FLAG(std::string, local_host, "127.0.0.1", "Local proxy server on given host (Client Only)");
 ABSL_FLAG(int32_t, local_port, 1080, "Local proxy server on given port (Client Only)");

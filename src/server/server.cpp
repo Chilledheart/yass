@@ -134,6 +134,7 @@ int main(int argc, const char* argv[]) {
 
   std::vector<asio::ip::tcp::endpoint> endpoints;
   std::string host_name = absl::GetFlag(FLAGS_server_host);
+  std::string host_sni = host_name;
   uint16_t port = absl::GetFlag(FLAGS_server_port);
 
   asio::error_code ec;
@@ -141,6 +142,7 @@ int main(int argc, const char* argv[]) {
   bool host_is_ip_address = !ec;
   if (host_is_ip_address) {
     endpoints.emplace_back(addr, port);
+    host_sni = std::string();
   } else {
     struct addrinfo hints = {}, *addrinfo;
     hints.ai_flags = AI_CANONNAME | AI_NUMERICSERV;
@@ -161,9 +163,13 @@ int main(int argc, const char* argv[]) {
     endpoints.insert(endpoints.end(), std::begin(results), std::end(results));
   }
 
+  if (!absl::GetFlag(FLAGS_server_sni).empty()) {
+    host_sni = absl::GetFlag(FLAGS_server_sni);
+  }
+
   ServerServer server(io_context);
   for (auto& endpoint : endpoints) {
-    server.listen(endpoint, host_is_ip_address ? std::string() : host_name, SOMAXCONN, ec);
+    server.listen(endpoint, host_sni, SOMAXCONN, ec);
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec;
       server.stop();
