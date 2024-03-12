@@ -19,6 +19,10 @@
 #define _POSIX_HOST_NAME_MAX 255
 #endif
 
+bool AbslParseFlag(absl::string_view text, PortFlag* flag, std::string* err);
+
+std::string AbslUnparseFlag(const PortFlag&);
+
 bool AbslParseFlag(absl::string_view text, CipherMethodFlag* flag, std::string* err);
 
 std::string AbslUnparseFlag(const CipherMethodFlag&);
@@ -30,6 +34,22 @@ std::string AbslUnparseFlag(const RateFlag&);
 // Within the implementation, `AbslParseFlag()` will, in turn invoke
 // `absl::ParseFlag()` on its constituent `int` and `std::string` types
 // (which have built-in Abseil flag support.
+
+bool AbslParseFlag(absl::string_view text, PortFlag* flag, std::string* err) {
+  std::optional<uint64_t> p = StringToIntegerU64(std::string(text));
+  if (!p.has_value() || p.value() > UINT16_MAX) {
+    *err = "bad port number: " + std::string(text);
+    return false;
+  }
+  flag->port = static_cast<uint16_t>(p.value());
+  return true;
+}
+
+// Similarly, for unparsing, we can simply invoke `absl::UnparseFlag()` on
+// the constituent types.
+std::string AbslUnparseFlag(const PortFlag& flag) {
+  return std::to_string(flag.port);
+}
 
 bool AbslParseFlag(absl::string_view text, CipherMethodFlag* flag, std::string* err) {
   flag->method = to_cipher_method(std::string(text));
@@ -150,9 +170,9 @@ ABSL_FLAG(bool, ipv6_mode, true, "Resolve names to IPv6 addresses");
 
 ABSL_FLAG(std::string, server_host, "http2.github.io", "Remote server on given host");
 ABSL_FLAG(std::string, server_sni, "", "Remote server on given sni");
-ABSL_FLAG(int32_t, server_port, 443, "Remote server on given port");
+ABSL_FLAG(PortFlag, server_port, PortFlag(443), "Remote server on given port");
 ABSL_FLAG(std::string, local_host, "127.0.0.1", "Local proxy server on given host (Client Only)");
-ABSL_FLAG(int32_t, local_port, 1080, "Local proxy server on given port (Client Only)");
+ABSL_FLAG(PortFlag, local_port, PortFlag(1080), "Local proxy server on given port (Client Only)");
 
 ABSL_FLAG(std::string, username, "username", "Server user");
 ABSL_FLAG(std::string, password, "password", "Server password");
