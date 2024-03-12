@@ -41,7 +41,7 @@ ABSL_DECLARE_FLAG(bool, insecure_mode);
 ABSL_DECLARE_FLAG(std::string, cacert);
 ABSL_DECLARE_FLAG(std::string, capath);
 
-ABSL_DECLARE_FLAG(uint32_t, worker_connections);
+ABSL_DECLARE_FLAG(uint32_t, parallel_max);
 
 struct RateFlag {
   explicit RateFlag(uint64_t r) : rate(r) {}

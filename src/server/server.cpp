@@ -66,13 +66,13 @@ int main(int argc, const char* argv[]) {
   absl::InstallFailureSignalHandler(failure_handle_options);
 
   absl::SetProgramUsageMessage(absl::StrCat(
-      "Usage: ", Basename(exec_path), " [options ...]\n", " -c, --configfile <file> Use specified config file\n",
+      "Usage: ", Basename(exec_path), " [options ...]\n", " -K, --config <file> Read config from a file\n",
       " --certificate_chain_file <file> (TLS) Certificate Chain File Path\n",
       " --private_key_file <file> (TLS) Private Key File Path\n",
-      " --private_key_password <password> (TLS) Private Key Password\n",
-      " --server_host <host> Host address which the server listens to\n",
-      " --server_port <port> Port number which the server listens to\n", " --username <username> Username\n",
-      " --password <pasword> Password pharsal\n", " --method <method> Method of encrypt"));
+      " --private_key_password <password> (TLS) Private Key Password\n", " --server_host <host> Server on given host\n",
+      " --server_port <port> Server on given port\n", " --username <username> Server user\n",
+      " --password <pasword> Server password\n", " --method <method> Specify encrypt of method to use"));
+
   config::ReadConfigFileOption(argc, argv);
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));

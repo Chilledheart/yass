@@ -38,16 +38,6 @@ static constexpr uint32_t kYieldConcurrencyOfConnections = 12u;
   absl::SetFlag(&FLAGS_stderrthreshold, LOGGING_VERBOSE);
 #endif
 
-#if 0
-  RateFlag rate(10u << 20);
-  NSLog(@"tunnel: applying rate limit: %04.2lfm/s", rate.rate / 1024.0 / 1024.0);
-  absl::SetFlag(&FLAGS_limit_rate, rate);
-
-  int worker_limit = 12;
-  NSLog(@"tunnel: applying concurrent limit: %d", worker_limit);
-  absl::SetFlag(&FLAGS_worker_connections, worker_limit);
-#endif
-
   NETunnelProviderProtocol* protocolConfiguration = (NETunnelProviderProtocol*)self.protocolConfiguration;
   NSDictionary* dict = protocolConfiguration.providerConfiguration;
   auto server_host = gurl_base::SysNSStringToUTF8(dict[@(kServerHostFieldName)]);
