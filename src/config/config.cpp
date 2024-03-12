@@ -19,6 +19,10 @@
 #define _POSIX_HOST_NAME_MAX 255
 #endif
 
+bool AbslParseFlag(absl::string_view text, PortFlag* flag, std::string* err);
+
+std::string AbslUnparseFlag(const PortFlag&);
+
 bool AbslParseFlag(absl::string_view text, CipherMethodFlag* flag, std::string* err);
 
 std::string AbslUnparseFlag(const CipherMethodFlag&);
@@ -30,6 +34,22 @@ std::string AbslUnparseFlag(const RateFlag&);
 // Within the implementation, `AbslParseFlag()` will, in turn invoke
 // `absl::ParseFlag()` on its constituent `int` and `std::string` types
 // (which have built-in Abseil flag support.
+
+bool AbslParseFlag(absl::string_view text, PortFlag* flag, std::string* err) {
+  std::optional<uint64_t> p = StringToIntegerU64(std::string(text));
+  if (!p.has_value() || p.value() > UINT16_MAX) {
+    *err = "bad port number: " + std::string(text);
+    return false;
+  }
+  flag->port = static_cast<uint16_t>(p.value());
+  return true;
+}
+
+// Similarly, for unparsing, we can simply invoke `absl::UnparseFlag()` on
+// the constituent types.
+std::string AbslUnparseFlag(const PortFlag& flag) {
+  return std::to_string(flag.port);
+}
 
 bool AbslParseFlag(absl::string_view text, CipherMethodFlag* flag, std::string* err) {
   flag->method = to_cipher_method(std::string(text));
@@ -146,26 +166,24 @@ std::string AbslUnparseFlag(const RateFlag& flag) {
   return os.str();
 }
 
-ABSL_FLAG(bool, ipv6_mode, true, "Enable IPv6 support");
+ABSL_FLAG(bool, ipv6_mode, true, "Resolve names to IPv6 addresses");
 
-ABSL_FLAG(std::string, server_host, "http2.github.io", "Host address which remote server listens to");
-ABSL_FLAG(std::string, server_sni, "", "Override host address SNI which remote server listens to (Client Only)");
-ABSL_FLAG(int32_t, server_port, 443, "Port number which remote server listens to");
-ABSL_FLAG(std::string, local_host, "127.0.0.1", "Host address which local server listens to");
-ABSL_FLAG(int32_t, local_port, 1080, "Port number which local server listens to");
+ABSL_FLAG(std::string, server_host, "http2.github.io", "Remote server on given host");
+ABSL_FLAG(std::string, server_sni, "", "Remote server on given sni");
+ABSL_FLAG(PortFlag, server_port, PortFlag(443), "Remote server on given port");
+ABSL_FLAG(std::string, local_host, "127.0.0.1", "Local proxy server on given host (Client Only)");
+ABSL_FLAG(PortFlag, local_port, PortFlag(1080), "Local proxy server on given port (Client Only)");
 
-ABSL_FLAG(std::string, username, "username", "Username");
-ABSL_FLAG(std::string, password, "password", "Password pharsal");
+ABSL_FLAG(std::string, username, "username", "Server user");
+ABSL_FLAG(std::string, password, "password", "Server password");
 static const std::string kCipherMethodHelpMessage =
-    absl::StrCat("Method of encrypt, one of ", absl::string_view(kCipherMethodsStr, strlen(kCipherMethodsStr) - 2));
+    absl::StrCat("Specify encrypt of method to use, one of ",
+                 absl::string_view(kCipherMethodsStr, strlen(kCipherMethodsStr) - 2));
 ABSL_FLAG(CipherMethodFlag, method, CipherMethodFlag(CRYPTO_HTTP2), kCipherMethodHelpMessage);
 
-ABSL_FLAG(uint32_t, worker_connections, 512, "Maximum number of accepted connection");
+ABSL_FLAG(uint32_t, parallel_max, 512, "Maximum concurrency for parallel connections");
 
-ABSL_FLAG(RateFlag,
-          limit_rate,
-          RateFlag(0),
-          "Limits the rate of response transmission to a client. Uint is byte per second");
+ABSL_FLAG(RateFlag, limit_rate, RateFlag(0), "Limit transfer speed to RATE");
 
 namespace config {
 
@@ -184,6 +202,16 @@ void ReadConfigFileOption(int argc, const char** argv) {
       argv[pos] = "";
       argv[pos + 1] = "";
       pos += 2;
+      continue;
+    } else if (arg == "--ipv4") {
+      absl::SetFlag(&FLAGS_ipv6_mode, false);
+      argv[pos] = "";
+      pos += 1;
+      continue;
+    } else if (arg == "--ipv6") {
+      absl::SetFlag(&FLAGS_ipv6_mode, true);
+      argv[pos] = "";
+      pos += 1;
       continue;
     } else if (arg == "-logtostderr" || arg == "-logtostderr=true" || arg == "--logtostderr" ||
                arg == "--logtostderr=true") {
@@ -233,6 +261,13 @@ void ReadConfigFileOption(int argc, const char** argv) {
       pos += 1;
       continue;
     } else if (pos + 1 < argc && (arg == "-c" || arg == "--configfile")) {
+      /* deprecated */
+      g_configfile = argv[pos + 1];
+      argv[pos] = "";
+      argv[pos + 1] = "";
+      pos += 2;
+      continue;
+    } else if (pos + 1 < argc && (arg == "-K" || arg == "--config")) {
       g_configfile = argv[pos + 1];
       argv[pos] = "";
       argv[pos + 1] = "";

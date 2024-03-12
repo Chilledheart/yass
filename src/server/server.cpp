@@ -66,13 +66,13 @@ int main(int argc, const char* argv[]) {
   absl::InstallFailureSignalHandler(failure_handle_options);
 
   absl::SetProgramUsageMessage(absl::StrCat(
-      "Usage: ", Basename(exec_path), " [options ...]\n", " -c, --configfile <file> Use specified config file\n",
+      "Usage: ", Basename(exec_path), " [options ...]\n", " -K, --config <file> Read config from a file\n",
       " --certificate_chain_file <file> (TLS) Certificate Chain File Path\n",
       " --private_key_file <file> (TLS) Private Key File Path\n",
-      " --private_key_password <password> (TLS) Private Key Password\n",
-      " --server_host <host> Host address which the server listens to\n",
-      " --server_port <port> Port number which the server listens to\n", " --username <username> Username\n",
-      " --password <pasword> Password pharsal\n", " --method <method> Method of encrypt"));
+      " --private_key_password <password> (TLS) Private Key Password\n", " --server_host <host> Server on given host\n",
+      " --server_port <port> Server on given port\n", " --username <username> Server user\n",
+      " --password <pasword> Server password\n", " --method <method> Specify encrypt of method to use"));
+
   config::ReadConfigFileOption(argc, argv);
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
@@ -134,6 +134,7 @@ int main(int argc, const char* argv[]) {
 
   std::vector<asio::ip::tcp::endpoint> endpoints;
   std::string host_name = absl::GetFlag(FLAGS_server_host);
+  std::string host_sni = host_name;
   uint16_t port = absl::GetFlag(FLAGS_server_port);
 
   asio::error_code ec;
@@ -141,6 +142,7 @@ int main(int argc, const char* argv[]) {
   bool host_is_ip_address = !ec;
   if (host_is_ip_address) {
     endpoints.emplace_back(addr, port);
+    host_sni = std::string();
   } else {
     struct addrinfo hints = {}, *addrinfo;
     hints.ai_flags = AI_CANONNAME | AI_NUMERICSERV;
@@ -161,9 +163,13 @@ int main(int argc, const char* argv[]) {
     endpoints.insert(endpoints.end(), std::begin(results), std::end(results));
   }
 
+  if (!absl::GetFlag(FLAGS_server_sni).empty()) {
+    host_sni = absl::GetFlag(FLAGS_server_sni);
+  }
+
   ServerServer server(io_context);
   for (auto& endpoint : endpoints) {
-    server.listen(endpoint, host_is_ip_address ? std::string() : host_name, SOMAXCONN, ec);
+    server.listen(endpoint, host_sni, SOMAXCONN, ec);
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec;
       server.stop();

@@ -233,7 +233,7 @@ class ContentServer {
           if (in_shutdown_) {
             return;
           }
-          if (connection_map_.size() >= absl::GetFlag(FLAGS_worker_connections)) {
+          if (connection_map_.size() >= absl::GetFlag(FLAGS_parallel_max)) {
             LOG(INFO) << "Disabling accepting new connection: " << listen_ctxs_[listen_ctx_num].endpoint;
             pending_next_listen_ctxes_.push_back(listen_ctx_num);
             return;
