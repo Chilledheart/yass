@@ -82,4 +82,5 @@ local.properties
 *.apk
 *.ipa
 /rustc-1.75.0-src
+/rustc-1.76.0-src
 /third_party/rust-ohos
