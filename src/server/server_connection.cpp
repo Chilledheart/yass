@@ -130,8 +130,8 @@ ServerConnection::ServerConnection(asio::io_context& io_context,
                                    bool https_fallback,
                                    bool enable_upstream_tls,
                                    bool enable_tls,
-                                   asio::ssl::context* upstream_ssl_ctx,
-                                   asio::ssl::context* ssl_ctx)
+                                   SSL_CTX* upstream_ssl_ctx,
+                                   SSL_CTX* ssl_ctx)
     : Connection(io_context,
                  remote_host_ips,
                  remote_host_sni,

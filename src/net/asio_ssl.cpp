@@ -33,21 +33,6 @@
 #include "third_party/boringssl/src/pki/trust_store.h"
 #endif
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wshadow"
-#pragma GCC diagnostic ignored "-Wsign-compare"
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-#pragma GCC diagnostic ignored "-Wunused-result"
-// new in GCC 7, see
-// https://developers.redhat.com/blog/2017/03/10/wimplicit-fallthrough-in-gcc-7
-#if (defined(__GNUC__) && (__GNUC__ >= 7)) || defined(__clang__)
-#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
-#endif  // (defined(__GNUC__) && (__GNUC__ >= 7)) || defined(__clang__)
-
-#include "asio/ssl/impl/src.hpp"
-
-#pragma GCC diagnostic pop
-
 #ifdef HAVE_BUILTIN_CA_BUNDLE_CRT
 
 extern "C" const char _binary_ca_bundle_crt_start[];
@@ -274,7 +259,7 @@ bool IsNotAcceptableIntermediate(const bssl::ParsedCertificate* cert, const CFSt
 static bool found_isrg_root_x1 = false;
 static bool found_isrg_root_x2 = false;
 
-static void print_openssl_error() {
+void print_openssl_error() {
   const char* file;
   int line;
   while (uint32_t error = ERR_get_error_line(&file, &line)) {

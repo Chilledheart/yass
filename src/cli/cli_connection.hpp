@@ -137,8 +137,8 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
                 bool https_fallback,
                 bool enable_upstream_tls,
                 bool enable_tls,
-                asio::ssl::context* upstream_ssl_ctx,
-                asio::ssl::context* ssl_ctx);
+                SSL_CTX* upstream_ssl_ctx,
+                SSL_CTX* ssl_ctx);
 
   /// Destruct the service
   ~CliConnection() override;

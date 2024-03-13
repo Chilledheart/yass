@@ -34,7 +34,8 @@
 #endif
 #include <asio.hpp>
 #ifndef ASIO_NO_SSL
-#include <asio/ssl.hpp>
+void print_openssl_error();
+#include <openssl/ssl.h>
 #endif
 #include "net/asio_throw_exceptions.hpp"
 
