@@ -63,10 +63,10 @@ class ContentServer {
         enable_tls_(absl::GetFlag(FLAGS_method).method == CRYPTO_HTTPS ||
                     absl::GetFlag(FLAGS_method).method == CRYPTO_HTTP2),
         upstream_certificate_(upstream_certificate),
-        upstream_ssl_ctx_(asio::ssl::context::tls_client),
+        upstream_ssl_ctx_(nullptr),
         certificate_(certificate),
         private_key_(private_key),
-        ssl_ctx_(asio::ssl::context::tls_server),
+        ssl_ctx_(nullptr),
         delegate_(delegate) {
     upstream_https_fallback_ &= std::string(factory_.Name()) == "client";
     https_fallback_ &= std::string(factory_.Name()) == "server";
@@ -76,6 +76,13 @@ class ContentServer {
 
   ~ContentServer() {
     client_instance_ = nullptr;
+
+    if (ssl_ctx_) {
+      ::SSL_CTX_free(ssl_ctx_);
+    }
+    if (upstream_ssl_ctx_) {
+      ::SSL_CTX_free(upstream_ssl_ctx_);
+    }
     work_guard_.reset();
   }
 
@@ -228,7 +235,7 @@ class ContentServer {
           }
           scoped_refptr<ConnectionType> conn =
               factory_.Create(io_context_, remote_host_ips_, remote_host_sni_, remote_port_, upstream_https_fallback_,
-                              https_fallback_, enable_upstream_tls_, enable_tls_, &upstream_ssl_ctx_, &ssl_ctx_);
+                              https_fallback_, enable_upstream_tls_, enable_tls_, upstream_ssl_ctx_, ssl_ctx_);
           on_accept(conn, std::move(socket), listen_ctx_num, tlsext_ctx);
           if (in_shutdown_) {
             return;
@@ -301,18 +308,16 @@ class ContentServer {
   }
 
   void setup_ssl_ctx(asio::error_code& ec) {
-    ssl_ctx_.set_options(
-        asio::ssl::context::default_workarounds | asio::ssl::context::no_tlsv1 | asio::ssl::context::no_tlsv1_1, ec);
-    if (ec) {
+    SSL_CTX *ctx = ssl_ctx_ = ::SSL_CTX_new(::TLS_server_method());
+    if (!ctx) {
+      print_openssl_error();
+      ec = asio::error::no_memory;
       return;
     }
 
-    ssl_ctx_.set_verify_mode(asio::ssl::verify_peer, ec);
-    if (ec) {
-      return;
-    }
+    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, ::SSL_CTX_get_verify_callback(ctx));
 
-    SSL_CTX_set_session_cache_mode(ssl_ctx_.native_handle(), SSL_SESS_CACHE_SERVER);
+    SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_SERVER);
 
     // Load Certificate Chain Files
     if (private_key_.empty()) {
@@ -323,38 +328,59 @@ class ContentServer {
     // Load Certificates (if set)
     if (!private_key_.empty()) {
       CHECK(!certificate_.empty()) << "certificate buffer is not provided";
-      ssl_ctx_.use_certificate_chain(asio::const_buffer(certificate_.data(), certificate_.size()), ec);
-      if (ec) {
+
+      bssl::UniquePtr<BIO> bio(BIO_new_mem_buf(certificate_.data(), certificate_.size()));
+
+      // TODO implement private_key_password flag
+      pem_password_cb* callback = SSL_CTX_get_default_passwd_cb(ctx);
+      void* cb_userdata = SSL_CTX_get_default_passwd_cb_userdata(ctx);
+      bssl::UniquePtr<X509> cert(PEM_read_bio_X509_AUX(bio.get(), nullptr, callback, cb_userdata));
+      if (!cert) {
+        print_openssl_error();
+        ec = asio::error::bad_descriptor;
         return;
       }
+
+      ERR_clear_error();
+      int result = SSL_CTX_use_certificate(ctx, cert.get());
+      if (result == 0 || ::ERR_peek_error() != 0) {
+        print_openssl_error();
+        ec = asio::error::bad_descriptor;
+        return;
+      }
+
       VLOG(1) << "Using certificate (in-memory)";
-      ssl_ctx_.use_private_key(asio::const_buffer(private_key_.data(), private_key_.size()), asio::ssl::context::pem,
-                               ec);
-      if (ec) {
+      bio.reset(BIO_new_mem_buf(private_key_.data(), private_key_.size()));
+      bssl::UniquePtr<EVP_PKEY> pkey(PEM_read_bio_PrivateKey(bio.get(), nullptr, callback, cb_userdata));
+
+      if (SSL_CTX_use_PrivateKey(ctx, pkey.get()) != 1) {
+        print_openssl_error();
+        ec = asio::error::bad_descriptor;
         return;
       }
       VLOG(1) << "Using privated key (in-memory)";
     }
-    SSL_CTX_set_early_data_enabled(ssl_ctx_.native_handle(), absl::GetFlag(FLAGS_tls13_early_data));
+    SSL_CTX_set_early_data_enabled(ctx, absl::GetFlag(FLAGS_tls13_early_data));
 
-    CHECK(SSL_CTX_set_min_proto_version(ssl_ctx_.native_handle(), TLS1_2_VERSION));
-    CHECK(SSL_CTX_set_max_proto_version(ssl_ctx_.native_handle(), TLS1_3_VERSION));
+    CHECK(SSL_CTX_set_min_proto_version(ctx, TLS1_2_VERSION));
+    CHECK(SSL_CTX_set_max_proto_version(ctx, TLS1_3_VERSION));
 
     // OpenSSL defaults some options to on, others to off. To avoid ambiguity,
     // set everything we care about to an absolute value.
     SslSetClearMask options;
     options.ConfigureFlag(SSL_OP_NO_COMPRESSION, true);
+    options.ConfigureFlag(SSL_OP_ALL, true);
 
-    SSL_CTX_set_options(ssl_ctx_.native_handle(), options.set_mask);
-    SSL_CTX_clear_options(ssl_ctx_.native_handle(), options.clear_mask);
+    SSL_CTX_set_options(ctx, options.set_mask);
+    SSL_CTX_clear_options(ctx, options.clear_mask);
 
     // Same as above, this time for the SSL mode.
     SslSetClearMask mode;
 
     mode.ConfigureFlag(SSL_MODE_RELEASE_BUFFERS, true);
 
-    SSL_CTX_set_mode(ssl_ctx_.native_handle(), mode.set_mask);
-    SSL_CTX_clear_mode(ssl_ctx_.native_handle(), mode.clear_mask);
+    SSL_CTX_set_mode(ctx, mode.set_mask);
+    SSL_CTX_clear_mode(ctx, mode.clear_mask);
 
     // Use BoringSSL defaults, but disable 3DES and HMAC-SHA1 ciphers in ECDSA.
     // These are the remaining CBC-mode ECDSA ciphers.
@@ -375,7 +401,7 @@ class ContentServer {
     }
 #endif
 
-    CHECK(SSL_CTX_set_strict_cipher_list(ssl_ctx_.native_handle(), command.c_str()));
+    CHECK(SSL_CTX_set_strict_cipher_list(ctx, command.c_str()));
 
     // TODO: implement these SSL options
     // SSL_CTX_set_ocsp_response
@@ -383,15 +409,15 @@ class ContentServer {
     // SSL_CTX_set1_ech_keys
 
     uint8_t session_ctx_id = 0;
-    SSL_CTX_set_session_id_context(ssl_ctx_.native_handle(), &session_ctx_id, sizeof(session_ctx_id));
+    SSL_CTX_set_session_id_context(ctx, &session_ctx_id, sizeof(session_ctx_id));
     // Deduplicate all certificates minted from the SSL_CTX in memory.
-    SSL_CTX_set0_buffer_pool(ssl_ctx_.native_handle(), x509_util::GetBufferPool());
+    SSL_CTX_set0_buffer_pool(ctx, x509_util::GetBufferPool());
 
-    load_ca_to_ssl_ctx(ssl_ctx_.native_handle());
+    load_ca_to_ssl_ctx(ctx);
   }
 
   void setup_ssl_ctx_alpn_cb(tlsext_ctx_t* tlsext_ctx) {
-    SSL_CTX* ctx = ssl_ctx_.native_handle();
+    SSL_CTX* ctx = ssl_ctx_;
     SSL_CTX_set_alpn_select_cb(ctx, &ContentServer::on_alpn_select, tlsext_ctx);
     VLOG(1) << "Alpn support (server) enabled for connection " << next_connection_id_;
   }
@@ -438,7 +464,7 @@ class ContentServer {
   }
 
   void setup_ssl_ctx_tlsext_cb(tlsext_ctx_t* tlsext_ctx) {
-    SSL_CTX* ctx = ssl_ctx_.native_handle();
+    SSL_CTX* ctx = ssl_ctx_;
     SSL_CTX_set_tlsext_servername_callback(ctx, &ContentServer::on_tlsext);
     SSL_CTX_set_tlsext_servername_arg(ctx, tlsext_ctx);
 
@@ -480,17 +506,27 @@ class ContentServer {
   }
 
   void setup_upstream_ssl_ctx(asio::error_code& ec) {
-    upstream_ssl_ctx_.set_options(
-        asio::ssl::context::default_workarounds | asio::ssl::context::no_tlsv1 | asio::ssl::context::no_tlsv1_1, ec);
-    if (ec) {
+    SSL_CTX *ctx = upstream_ssl_ctx_ = ::SSL_CTX_new(::TLS_client_method());
+    if (!ctx) {
+      print_openssl_error();
+      ec = asio::error::no_memory;
       return;
     }
 
+    SslSetClearMask options;
+    options.ConfigureFlag(SSL_OP_ALL, true);
+
+    SSL_CTX_set_options(ctx, options.set_mask);
+    SSL_CTX_clear_options(ctx, options.clear_mask);
+
+    CHECK(SSL_CTX_set_min_proto_version(ctx, TLS1_2_VERSION));
+    CHECK(SSL_CTX_set_max_proto_version(ctx, TLS1_3_VERSION));
+
     if (absl::GetFlag(FLAGS_insecure_mode)) {
-      upstream_ssl_ctx_.set_verify_mode(asio::ssl::verify_none, ec);
+      SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, ::SSL_CTX_get_verify_callback(ctx));
     } else {
-      upstream_ssl_ctx_.set_verify_mode(asio::ssl::verify_peer, ec);
-      SSL_CTX_set_reverify_on_resume(upstream_ssl_ctx_.native_handle(), 1);
+      SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, ::SSL_CTX_get_verify_callback(ctx));
+      SSL_CTX_set_reverify_on_resume(ctx, 1);
     }
     if (ec) {
       return;
@@ -498,23 +534,46 @@ class ContentServer {
 
     std::string certificate_chain_file = absl::GetFlag(FLAGS_certificate_chain_file);
     if (!certificate_chain_file.empty()) {
-      upstream_ssl_ctx_.use_certificate_chain_file(certificate_chain_file, ec);
-
-      if (ec) {
+      if (SSL_CTX_use_certificate_chain_file(ctx, certificate_chain_file.c_str()) != 1) {
+        print_openssl_error();
+        ec = asio::error::bad_descriptor;
         return;
       }
+
       VLOG(1) << "Using upstream certificate file: " << certificate_chain_file;
     }
     const auto& cert = upstream_certificate_;
     if (!cert.empty()) {
-      upstream_ssl_ctx_.add_certificate_authority(asio::const_buffer(cert.data(), cert.size()), ec);
       if (ec) {
         return;
       }
+
+      bssl::UniquePtr<BIO> bio(BIO_new_mem_buf(cert.data(), cert.size()));
+
+      bssl::UniquePtr<X509> cert(PEM_read_bio_X509(bio.get(), nullptr, 0, nullptr));
+      if (!cert) {
+        print_openssl_error();
+        ec = asio::error::bad_descriptor;
+        return;
+      }
+      X509_STORE* store = SSL_CTX_get_cert_store(ctx);
+      if (!store) {
+        print_openssl_error();
+        ec = asio::error::no_memory;
+        return;
+      }
+
+      ERR_clear_error();
+
+      if (X509_STORE_add_cert(store, cert.get()) != 1) {
+        print_openssl_error();
+        ec = asio::error::bad_descriptor;
+        return;
+      }
+
       VLOG(1) << "Using upstream certificate (in-memory)";
     }
 
-    SSL_CTX* ctx = upstream_ssl_ctx_.native_handle();
     int ret;
     std::vector<unsigned char> alpn_vec = {2, 'h', '2', 8, 'h', 't', 't', 'p', '/', '1', '.', '1'};
     if (upstream_https_fallback_) {
@@ -524,6 +583,7 @@ class ContentServer {
     static_cast<void>(ret);
     DCHECK_EQ(ret, 0);
     if (ret) {
+      print_openssl_error();
       ec = asio::error::access_denied;
       return;
     }
@@ -534,18 +594,18 @@ class ContentServer {
 
     // Disable the internal session cache. Session caching is handled
     // externally (i.e. by SSLClientSessionCache).
-    SSL_CTX_set_session_cache_mode(upstream_ssl_ctx_.native_handle(),
+    SSL_CTX_set_session_cache_mode(ctx,
                                    SSL_SESS_CACHE_CLIENT | SSL_SESS_CACHE_NO_INTERNAL);
-    SSL_CTX_sess_set_new_cb(upstream_ssl_ctx_.native_handle(), NewSessionCallback);
+    SSL_CTX_sess_set_new_cb(ctx, NewSessionCallback);
 
-    SSL_CTX_set_timeout(upstream_ssl_ctx_.native_handle(), 1 * 60 * 60 /* one hour */);
+    SSL_CTX_set_timeout(ctx, 1 * 60 * 60 /* one hour */);
 
-    SSL_CTX_set_grease_enabled(upstream_ssl_ctx_.native_handle(), 1);
+    SSL_CTX_set_grease_enabled(ctx, 1);
 
     // Deduplicate all certificates minted from the SSL_CTX in memory.
-    SSL_CTX_set0_buffer_pool(upstream_ssl_ctx_.native_handle(), x509_util::GetBufferPool());
+    SSL_CTX_set0_buffer_pool(ctx, x509_util::GetBufferPool());
 
-    load_ca_to_ssl_ctx(upstream_ssl_ctx_.native_handle());
+    load_ca_to_ssl_ctx(ctx);
   }
 
  private:
@@ -578,11 +638,11 @@ class ContentServer {
   bool enable_upstream_tls_;
   bool enable_tls_;
   std::string upstream_certificate_;
-  asio::ssl::context upstream_ssl_ctx_;
+  SSL_CTX* upstream_ssl_ctx_;
 
   std::string certificate_;
   std::string private_key_;
-  asio::ssl::context ssl_ctx_;
+  SSL_CTX* ssl_ctx_;
 
   ContentServer::Delegate* delegate_;
 

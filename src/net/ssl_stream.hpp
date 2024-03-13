@@ -34,14 +34,14 @@ class ssl_stream : public stream {
              uint16_t port,
              Channel* channel,
              bool https_fallback,
-             asio::ssl::context* ssl_ctx)
+             SSL_CTX* ssl_ctx)
       : stream(io_context, host_ips, host_sni, port, channel),
         https_fallback_(https_fallback),
         enable_tls_(true),
         ssl_socket_(SSLSocket::Create(ssl_socket_data_index,
                                       &io_context,
                                       &socket_,
-                                      ssl_ctx->native_handle(),
+                                      ssl_ctx,
                                       https_fallback,
                                       host_sni)) {}
 

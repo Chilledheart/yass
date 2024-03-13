@@ -76,10 +76,10 @@ class Downlink {
 
 class SSLDownlink : public Downlink {
  public:
-  SSLDownlink(asio::io_context& io_context, bool https_fallback, asio::ssl::context* ssl_ctx)
+  SSLDownlink(asio::io_context& io_context, bool https_fallback, SSL_CTX* ssl_ctx)
       : Downlink(io_context),
         https_fallback_(https_fallback),
-        ssl_socket_(SSLServerSocket::Create(&io_context, &socket_, ssl_ctx->native_handle())) {}
+        ssl_socket_(SSLServerSocket::Create(&io_context, &socket_, ssl_ctx)) {}
 
   ~SSLDownlink() override { DCHECK(!handshake_callback_); }
 
@@ -165,8 +165,8 @@ class Connection {
              bool https_fallback,
              bool enable_upstream_tls,
              bool enable_tls,
-             asio::ssl::context* upstream_ssl_ctx,
-             asio::ssl::context* ssl_ctx)
+             SSL_CTX* upstream_ssl_ctx,
+             SSL_CTX* ssl_ctx)
       : io_context_(&io_context),
         remote_host_ips_(remote_host_ips),
         remote_host_sni_(remote_host_sni),
@@ -283,7 +283,7 @@ class Connection {
   bool enable_upstream_tls_;
   bool enable_tls_;
   std::string upstream_certificate_;
-  asio::ssl::context* upstream_ssl_ctx_;
+  SSL_CTX* upstream_ssl_ctx_;
 
   std::unique_ptr<Downlink> downlink_;
 
