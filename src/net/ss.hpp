@@ -4,9 +4,10 @@
 #ifndef H_NET_SS
 #define H_NET_SS
 
+#include "core/compiler_specific.hpp"
+
 #include <stdint.h>
 
-#include "core/logging.hpp"
 #include "net/asio.hpp"
 
 namespace net {

@@ -6,6 +6,14 @@
 #include <base/compiler_specific.h>
 #include <build/build_config.h>
 
+#ifdef __GNUC__
+#define PACK(__Declaration__) __Declaration__ __attribute__((packed, aligned(1)))
+#endif
+
+#ifdef _MSC_VER
+#define PACK(__Declaration__) __pragma(pack(push, 1)) __Declaration__ __pragma(pack(pop))
+#endif
+
 // clang 14 doesn't recognize the newer NOINLINE definitions
 #if defined(__clang__) && HAS_ATTRIBUTE(noinline) &&                      \
     ((defined(_BASE_APPLE_CLANG_VER) && _BASE_APPLE_CLANG_VER <= 1500) || \

@@ -4,6 +4,7 @@
 #ifndef H_NET_SOCKS4
 #define H_NET_SOCKS4
 
+#include "core/compiler_specific.hpp"
 #include "net/protocol.hpp"
 
 #include <stdint.h>
@@ -17,14 +18,6 @@ namespace socks4 {
 // see also: https://www.openssh.com/txt/socks4.protocol
 // VN is the SOCKS protocol version number and should be 4.
 const uint8_t version = 0x04;
-
-#ifdef __GNUC__
-#define PACK(__Declaration__) __Declaration__ __attribute__((packed, aligned(1)))
-#endif
-
-#ifdef _MSC_VER
-#define PACK(__Declaration__) __pragma(pack(push, 1)) __Declaration__ __pragma(pack(pop))
-#endif
 
 // CD is the SOCKS command code and should be 1 for CONNECT or 2 for BIND.
 // NULL is a byte of all zero bits.
@@ -113,8 +106,6 @@ class reply {
   uint8_t port_low_byte_;
   asio::ip::address_v4::bytes_type address_;
 };
-
-#undef PACK
 
 }  // namespace socks4
 
