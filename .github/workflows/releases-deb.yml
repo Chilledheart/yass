@@ -206,10 +206,6 @@ jobs:
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y fakeroot advancecomp apt-utils file build-essential pkg-config debhelper lockfile-progs optipng pkg-config tzdata ucf
-
-          # required by mbedtls build
-          sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
-            apt-get install -y python3-jsonschema python3-jinja2
       - name: Populate sysroot (amd64 runtime for clang)
         if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && env.HOST_ARCH == 'i386' }}
         run: |
