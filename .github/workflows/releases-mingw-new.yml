@@ -124,8 +124,6 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y cmake ninja-build nasm zip nsis locales-all
-          # required by mbedtls build
-          sudo apt-get install -y python3-jsonschema python3-jinja2
       - name: Patch libcxx for windows xp
         if: ${{ matrix.arch == 'i686' || matrix.arch == 'x86_64' }}
         run: |

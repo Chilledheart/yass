@@ -163,8 +163,6 @@ jobs:
           sudo apt install qemu-user
           sudo apt remove -y qemu-user-binfmt
           sudo dpkg -i qemu-user-static_*.deb
-          # required by mbedtls build
-          sudo apt-get install -y python3-jsonschema python3-jinja2
       - name: Build TGZ packages
         run: |
           ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --subsystem openwrt --sysroot ${{ env.SDK_ROOT }} \
