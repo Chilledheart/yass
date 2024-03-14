@@ -4,6 +4,8 @@
 #ifndef H_NET_SOCKS5
 #define H_NET_SOCKS5
 
+#include "core/compiler_specific.hpp"
+
 #include <stdint.h>
 #include <array>
 #include <string>
@@ -23,14 +25,6 @@ namespace socks5 {
 
 // see also: https://www.ietf.org/rfc/rfc1928.txt
 const uint8_t version = 0x05;
-
-#ifdef __GNUC__
-#define PACK(__Declaration__) __Declaration__ __attribute__((packed, aligned(1)))
-#endif
-
-#ifdef _MSC_VER
-#define PACK(__Declaration__) __pragma(pack(push, 1)) __Declaration__ __pragma(pack(pop))
-#endif
 
 //  X'00' NO AUTHENTICATION REQUIRED
 //  X'01' GSSAPI
@@ -257,8 +251,6 @@ class reply {
   uint8_t port_high_byte_;
   uint8_t port_low_byte_;
 };
-
-#undef PACK
 
 }  // namespace socks5
 

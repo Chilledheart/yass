@@ -38,12 +38,8 @@ class ssl_stream : public stream {
       : stream(io_context, host_ips, host_sni, port, channel),
         https_fallback_(https_fallback),
         enable_tls_(true),
-        ssl_socket_(SSLSocket::Create(ssl_socket_data_index,
-                                      &io_context,
-                                      &socket_,
-                                      ssl_ctx,
-                                      https_fallback,
-                                      host_sni)) {}
+        ssl_socket_(
+            SSLSocket::Create(ssl_socket_data_index, &io_context, &socket_, ssl_ctx, https_fallback, host_sni)) {}
 
   ~ssl_stream() override {}
 

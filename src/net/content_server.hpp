@@ -225,9 +225,9 @@ class ContentServer {
             setup_ssl_ctx_alpn_cb(tlsext_ctx);
             setup_ssl_ctx_tlsext_cb(tlsext_ctx);
           }
-          scoped_refptr<ConnectionType> conn =
-              factory_.Create(io_context_, remote_host_ips_, remote_host_sni_, remote_port_, upstream_https_fallback_,
-                              https_fallback_, enable_upstream_tls_, enable_tls_, upstream_ssl_ctx_.get(), ssl_ctx_.get());
+          scoped_refptr<ConnectionType> conn = factory_.Create(
+              io_context_, remote_host_ips_, remote_host_sni_, remote_port_, upstream_https_fallback_, https_fallback_,
+              enable_upstream_tls_, enable_tls_, upstream_ssl_ctx_.get(), ssl_ctx_.get());
           on_accept(conn, std::move(socket), listen_ctx_num, tlsext_ctx);
           if (in_shutdown_) {
             return;
@@ -301,7 +301,7 @@ class ContentServer {
 
   void setup_ssl_ctx(asio::error_code& ec) {
     ssl_ctx_.reset(::SSL_CTX_new(::TLS_server_method()));
-    SSL_CTX *ctx = ssl_ctx_.get();
+    SSL_CTX* ctx = ssl_ctx_.get();
     if (!ctx) {
       print_openssl_error();
       ec = asio::error::no_memory;
@@ -410,7 +410,7 @@ class ContentServer {
   }
 
   void setup_ssl_ctx_alpn_cb(tlsext_ctx_t* tlsext_ctx) {
-    SSL_CTX *ctx = ssl_ctx_.get();
+    SSL_CTX* ctx = ssl_ctx_.get();
     SSL_CTX_set_alpn_select_cb(ctx, &ContentServer::on_alpn_select, tlsext_ctx);
     VLOG(1) << "Alpn support (server) enabled for connection " << next_connection_id_;
   }
@@ -457,7 +457,7 @@ class ContentServer {
   }
 
   void setup_ssl_ctx_tlsext_cb(tlsext_ctx_t* tlsext_ctx) {
-    SSL_CTX *ctx = ssl_ctx_.get();
+    SSL_CTX* ctx = ssl_ctx_.get();
     SSL_CTX_set_tlsext_servername_callback(ctx, &ContentServer::on_tlsext);
     SSL_CTX_set_tlsext_servername_arg(ctx, tlsext_ctx);
 
@@ -500,7 +500,7 @@ class ContentServer {
 
   void setup_upstream_ssl_ctx(asio::error_code& ec) {
     upstream_ssl_ctx_.reset(::SSL_CTX_new(::TLS_client_method()));
-    SSL_CTX *ctx = upstream_ssl_ctx_.get();
+    SSL_CTX* ctx = upstream_ssl_ctx_.get();
     if (!ctx) {
       print_openssl_error();
       ec = asio::error::no_memory;
@@ -588,8 +588,7 @@ class ContentServer {
 
     // Disable the internal session cache. Session caching is handled
     // externally (i.e. by SSLClientSessionCache).
-    SSL_CTX_set_session_cache_mode(ctx,
-                                   SSL_SESS_CACHE_CLIENT | SSL_SESS_CACHE_NO_INTERNAL);
+    SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_CLIENT | SSL_SESS_CACHE_NO_INTERNAL);
     SSL_CTX_sess_set_new_cb(ctx, NewSessionCallback);
 
     SSL_CTX_set_timeout(ctx, 1 * 60 * 60 /* one hour */);

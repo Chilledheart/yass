@@ -3617,6 +3617,7 @@ set(files
     src/net/iobuf.cpp
     src/net/hkdf_sha1.cpp
     src/net/hmac_sha1.cpp
+    src/net/dns_message_response_parser.cpp
     src/net/socks4_request_parser.cpp
     src/net/socks5_request_parser.cpp
     src/net/ss_request_parser.cpp
@@ -3674,6 +3675,10 @@ set(hfiles
     src/net/iobuf.hpp
     src/net/hkdf_sha1.hpp
     src/net/hmac_sha1.hpp
+    src/net/dns_message.hpp
+    src/net/dns_message_request.hpp
+    src/net/dns_message_response.hpp
+    src/net/dns_message_response_parser.hpp
     src/net/socks4.hpp
     src/net/socks4_request.hpp
     src/net/socks4_request_parser.hpp
@@ -4504,6 +4509,7 @@ if (BUILD_TESTS)
     src/net/cipher_test.cpp
     src/net/c-ares_test.cpp
     src/net/padding_test.cpp
+    src/net/dns_message_test.cpp
     )
 
   if (IOS)
