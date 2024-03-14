@@ -113,6 +113,12 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y sbuild debhelper schroot debootstrap ubuntu-dev-tools qemu-user-static
+      - name: Populate depedencies (deboostrap update for sid fix)
+        if: ${{ env.HOST_DISTRO == 'sid' }}
+        run: |
+          curl -L -O http://mirrors.kernel.org/ubuntu/pool/main/d/debootstrap/debootstrap_1.0.132ubuntu1_all.deb
+          sudo apt-get update -qq && sudo apt-get install -f -y $PWD/debootstrap*.deb
+          rm -f *.deb
       - name: Copy sbuilrc
         run: |
           cp -fv sbuildrc ~/.sbuildrc
