@@ -3622,8 +3622,11 @@ set(files
     src/net/socks5_request_parser.cpp
     src/net/ss_request_parser.cpp
     src/net/c-ares.cpp
+    src/net/doh_request.cpp
+    src/net/doh_resolver.cpp
     src/net/http_parser.cpp
     src/net/padding.cpp
+    src/net/resolver.cpp
     src/crypto/aead_base_decrypter.cpp
     src/crypto/aead_base_encrypter.cpp
     src/crypto/aead_evp_decrypter.cpp
@@ -3690,8 +3693,11 @@ set(hfiles
     src/net/ss_request_parser.hpp
     src/net/io_queue.hpp
     src/net/c-ares.hpp
+    src/net/doh_resolver.hpp
+    src/net/doh_request.hpp
     src/net/http_parser.hpp
     src/net/padding.hpp
+    src/net/resolver.hpp
     src/crypto/aead_base_decrypter.hpp
     src/crypto/aead_base_encrypter.hpp
     src/crypto/aead_evp_decrypter.hpp
@@ -4510,6 +4516,7 @@ if (BUILD_TESTS)
     src/net/c-ares_test.cpp
     src/net/padding_test.cpp
     src/net/dns_message_test.cpp
+    src/net/doh_resolver_test.cpp
     )
 
   if (IOS)

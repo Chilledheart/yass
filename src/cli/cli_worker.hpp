@@ -14,18 +14,11 @@
 #include "core/logging.hpp"
 #include "crypto/crypter_export.hpp"
 #include "net/asio.hpp"
-
-#ifdef HAVE_C_ARES
-#include "net/c-ares.hpp"
-#endif
+#include "net/resolver.hpp"
 
 class WorkerPrivate;
 class Worker {
  public:
-#ifdef HAVE_C_ARES
-  using CAresResolver = net::CAresResolver;
-#endif
-
   Worker();
   ~Worker();
 
@@ -51,11 +44,7 @@ class Worker {
   /// stopping the io_context from running out of work
   std::unique_ptr<asio::executor_work_guard<asio::io_context::executor_type>> work_guard_;
   /// used to resolve local and remote endpoint
-#ifdef HAVE_C_ARES
-  scoped_refptr<CAresResolver> resolver_;
-#else
-  asio::ip::tcp::resolver resolver_;
-#endif
+  net::Resolver resolver_;
   /// used to do io in another thread
   std::unique_ptr<std::thread> thread_;
 
