@@ -121,7 +121,7 @@ JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_saveConfig(JNIEnv* env,
   env->ReleaseStringUTFChars((jstring)_timeout, timeout_str);
 
   std::string err_msg = config::ReadConfigFromArgument(server_host, server_sni, server_port, username, password, method,
-                                                       local_host, local_port, timeout);
+                                                       local_host, local_port, "", timeout);
 
   if (err_msg.empty()) {
     return nullptr;

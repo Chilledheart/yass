@@ -13,6 +13,7 @@
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "feature.h"
+#include "url/gurl.h"
 #include "version.h"
 
 #ifndef _POSIX_HOST_NAME_MAX
@@ -185,6 +186,8 @@ ABSL_FLAG(uint32_t, parallel_max, 512, "Maximum concurrency for parallel connect
 
 ABSL_FLAG(RateFlag, limit_rate, RateFlag(0), "Limit transfer speed to RATE");
 
+ABSL_FLAG(std::string, doh_url, "", "Resolve host names over DoH");
+
 namespace config {
 
 void ReadConfigFileOption(int argc, const char** argv) {
@@ -328,6 +331,7 @@ bool ReadConfig() {
   config_impl->Read("fast_open_connect", &FLAGS_tcp_fastopen_connect);
 
   config_impl->Read("congestion_algorithm", &FLAGS_congestion_algorithm);
+  config_impl->Read("doh_url", &FLAGS_doh_url);
   config_impl->Read("connect_timeout", &FLAGS_connect_timeout);
   config_impl->Read("tcp_nodelay", &FLAGS_tcp_nodelay);
 
@@ -377,6 +381,7 @@ bool SaveConfig() {
   all_fields_written &= config_impl->Write("fast_open_connect", FLAGS_tcp_fastopen_connect);
   static_cast<void>(config_impl->Delete("threads"));
   all_fields_written &= config_impl->Write("congestion_algorithm", FLAGS_congestion_algorithm);
+  all_fields_written &= config_impl->Write("doh_url", FLAGS_doh_url);
   all_fields_written &= config_impl->Write("timeout", FLAGS_connect_timeout);
   all_fields_written &= config_impl->Write("connect_timeout", FLAGS_connect_timeout);
   all_fields_written &= config_impl->Write("tcp_nodelay", FLAGS_tcp_nodelay);
@@ -399,6 +404,7 @@ std::string ReadConfigFromArgument(const std::string& server_host,
                                    cipher_method method,
                                    const std::string& local_host,
                                    const std::string& _local_port,
+                                   const std::string& doh_url,
                                    const std::string& _timeout) {
   std::ostringstream err_msg;
 
@@ -428,6 +434,13 @@ std::string ReadConfigFromArgument(const std::string& server_host,
     err_msg << ",Invalid Local Port: " << _local_port;
   }
 
+  if (!doh_url.empty()) {
+    GURL url(doh_url);
+    if (!url.is_valid() || !url.has_host() || !url.has_scheme() || url.scheme() != "https") {
+      err_msg << ",Invalid DoH URL: " << doh_url;
+    }
+  }
+
   auto timeout = StringToIntegerU(_timeout);
   if (!timeout.has_value()) {
     err_msg << ",Invalid Connect Timeout: " << _timeout;
@@ -443,6 +456,7 @@ std::string ReadConfigFromArgument(const std::string& server_host,
     absl::SetFlag(&FLAGS_method, method);
     absl::SetFlag(&FLAGS_local_host, local_host);
     absl::SetFlag(&FLAGS_local_port, local_port.value());
+    absl::SetFlag(&FLAGS_doh_url, doh_url);
     absl::SetFlag(&FLAGS_connect_timeout, timeout.value());
   } else {
     ret = ret.substr(1);
@@ -458,6 +472,7 @@ std::string ReadConfigFromArgument(const std::string& server_host,
                                    const std::string& method_string,
                                    const std::string& local_host,
                                    const std::string& _local_port,
+                                   const std::string& doh_url,
                                    const std::string& _timeout) {
   std::ostringstream err_msg;
 
@@ -488,6 +503,13 @@ std::string ReadConfigFromArgument(const std::string& server_host,
     err_msg << ",Invalid Local Port: " << _local_port;
   }
 
+  if (!doh_url.empty()) {
+    GURL url(doh_url);
+    if (!url.is_valid() || !url.has_host() || !url.has_scheme() || url.scheme() != "https") {
+      err_msg << ",Invalid DoH URL: " << doh_url;
+    }
+  }
+
   auto timeout = StringToIntegerU(_timeout);
   if (!timeout.has_value()) {
     err_msg << ",Invalid Connect Timeout: " << _timeout;
@@ -503,6 +525,7 @@ std::string ReadConfigFromArgument(const std::string& server_host,
     absl::SetFlag(&FLAGS_method, method);
     absl::SetFlag(&FLAGS_local_host, local_host);
     absl::SetFlag(&FLAGS_local_port, local_port.value());
+    absl::SetFlag(&FLAGS_doh_url, doh_url);
     absl::SetFlag(&FLAGS_connect_timeout, timeout.value());
   } else {
     ret = ret.substr(1);

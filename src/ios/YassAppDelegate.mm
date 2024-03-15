@@ -43,6 +43,7 @@
   NSString* username_;
   NSString* password_;
   NSString* method_string_;
+  NSString* doh_url_;
   NSString* connect_timeout_;
 }
 
@@ -251,6 +252,7 @@
     @(kUsernameFieldName) : username_,
     @(kPasswordFieldName) : password_,
     @(kMethodStringFieldName) : method_string_,
+    @(kDoHURLFieldName) : doh_url_,
     @(kConnectTimeoutFieldName) : connect_timeout_,
   };
   tunnelProtocol.username = @"";
@@ -397,6 +399,7 @@
   username_ = viewController.username.text;
   password_ = viewController.password.text;
   method_string_ = viewController.currentCiphermethod;
+  doh_url_ = viewController.dohURL.text;
   connect_timeout_ = viewController.timeout.text;
 
   auto server_host = gurl_base::SysNSStringToUTF8(server_host_);
@@ -404,10 +407,11 @@
   auto username = gurl_base::SysNSStringToUTF8(username_);
   auto password = gurl_base::SysNSStringToUTF8(password_);
   auto method_string = gurl_base::SysNSStringToUTF8(method_string_);
+  auto doh_url = gurl_base::SysNSStringToUTF8(doh_url_);
   auto connect_timeout = gurl_base::SysNSStringToUTF8(connect_timeout_);
 
   return config::ReadConfigFromArgument(server_host, "" /*server_sni*/, server_port, username, password, method_string,
-                                        "127.0.0.1", "0", connect_timeout);
+                                        "127.0.0.1", "0", doh_url, connect_timeout);
 }
 
 @end

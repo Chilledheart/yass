@@ -813,7 +813,7 @@ static napi_value saveConfig(napi_env env, napi_callback_info info) {
   std::string local_port = "0";
 
   std::string err_msg = config::ReadConfigFromArgument(server_host, server_sni, server_port, username, password, method,
-                                                       local_host, local_port, timeout);
+                                                       local_host, local_port, "", timeout);
 
   napi_value result;
   status = napi_create_string_utf8(env, err_msg.c_str(), err_msg.size(), &result);

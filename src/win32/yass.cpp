@@ -404,5 +404,5 @@ std::string CYassApp::SaveConfig() {
   auto connect_timeout = frame_->GetTimeout();
 
   return config::ReadConfigFromArgument(server_host, server_sni, server_port, username, password, method, local_host,
-                                        local_port, connect_timeout);
+                                        local_port, "", connect_timeout);
 }

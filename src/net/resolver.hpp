@@ -4,8 +4,6 @@
 #ifndef H_NET_RESOLVER_HPP
 #define H_NET_RESOLVER_HPP
 
-#include <absl/flags/declare.h>
-
 #include "core/utils.hpp"
 #include "net/asio.hpp"
 #include "net/doh_resolver.hpp"
@@ -14,26 +12,13 @@
 #include "net/c-ares.hpp"
 #endif
 
-ABSL_DECLARE_FLAG(std::string, doh_url);
-
 namespace net {
 
 class Resolver {
  public:
   Resolver(asio::io_context& io_context);
 
-  int Init() {
-    if (!doh_url_.empty()) {
-      doh_resolver_ = DoHResolver::Create(io_context_);
-      return doh_resolver_->Init(doh_url_, 5000);
-    }
-#ifdef HAVE_C_ARES
-    resolver_ = CAresResolver::Create(io_context_);
-    return resolver_->Init(5000);
-#else
-    return 0;
-#endif
-  }
+  int Init();
 
   void Cancel() {
     if (!doh_url_.empty()) {

@@ -19,5 +19,8 @@
 /* Class = "UILabel"; text = "Cipher/Method"; ObjectID = "tOi-q9-yJY"; */
 "ENX-yq-A0k.text" = "Cipher/Method";
 
+/* Class = "UILabel"; text = "DNS over HTTPS URL"; ObjectID = ""; */
+"Nki-Be-f2P.text" = "DNS over HTTPS (DoH) URL";
+
 /* Class = "UILabel"; text = "Timeout"; ObjectID = "zY6-tD-aUd"; */
 "3S5-0B-efx.text" = "Timeout";

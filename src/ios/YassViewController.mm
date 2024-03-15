@@ -42,6 +42,7 @@
   [self.serverPort setDelegate:self];
   [self.username setDelegate:self];
   [self.password setDelegate:self];
+  [self.dohURL setDelegate:self];
   [self.timeout setDelegate:self];
 
   [self LoadChanges];
@@ -102,6 +103,9 @@
     [self.password becomeFirstResponder];
   } else if (textField == self.password) {
     [textField resignFirstResponder];
+    [self.dohURL becomeFirstResponder];
+  } else if (textField == self.dohURL) {
+    [textField resignFirstResponder];
     [self.timeout becomeFirstResponder];
   } else if (textField == self.timeout) {
     [textField resignFirstResponder];
@@ -120,6 +124,10 @@
   if (textField == self.serverPort) {
     auto port = StringToInteger(gurl_base::SysNSStringToUTF8(textField.text));
     return port.has_value() && port.value() > 0 && port.value() < 65536 ? YES : NO;
+  }
+  if (textField == self.dohURL) {
+    NSURL* url = [NSURL URLWithString:textField.text];
+    return url && url.scheme && [url.scheme isEqualToString:@"https"] && url.host ? YES : NO;
   }
   if (textField == self.timeout) {
     auto port = StringToInteger(gurl_base::SysNSStringToUTF8(textField.text));
@@ -169,6 +177,7 @@
   [self.username setUserInteractionEnabled:FALSE];
   [self.password setUserInteractionEnabled:FALSE];
   [self.cipherMethod setUserInteractionEnabled:FALSE];
+  [self.dohURL setUserInteractionEnabled:FALSE];
   [self.timeout setUserInteractionEnabled:FALSE];
   [self.startButton setEnabled:FALSE];
   [self.stopButton setEnabled:FALSE];
@@ -181,6 +190,7 @@
   [self.username setUserInteractionEnabled:FALSE];
   [self.password setUserInteractionEnabled:FALSE];
   [self.cipherMethod setUserInteractionEnabled:FALSE];
+  [self.dohURL setUserInteractionEnabled:FALSE];
   [self.timeout setUserInteractionEnabled:FALSE];
   [self.startButton setEnabled:FALSE];
   [self.stopButton setEnabled:TRUE];
@@ -193,6 +203,7 @@
   [self.username setUserInteractionEnabled:TRUE];
   [self.password setUserInteractionEnabled:TRUE];
   [self.cipherMethod setUserInteractionEnabled:TRUE];
+  [self.dohURL setUserInteractionEnabled:TRUE];
   [self.timeout setUserInteractionEnabled:TRUE];
   [self.startButton setEnabled:TRUE];
   [self.stopButton setEnabled:FALSE];
@@ -205,6 +216,7 @@
   [self.username setUserInteractionEnabled:FALSE];
   [self.password setUserInteractionEnabled:FALSE];
   [self.cipherMethod setUserInteractionEnabled:FALSE];
+  [self.dohURL setUserInteractionEnabled:FALSE];
   [self.timeout setUserInteractionEnabled:FALSE];
   [self.startButton setEnabled:FALSE];
   [self.stopButton setEnabled:FALSE];
@@ -217,6 +229,7 @@
   [self.username setUserInteractionEnabled:TRUE];
   [self.password setUserInteractionEnabled:TRUE];
   [self.cipherMethod setUserInteractionEnabled:TRUE];
+  [self.dohURL setUserInteractionEnabled:TRUE];
   [self.timeout setUserInteractionEnabled:TRUE];
   [self.startButton setEnabled:TRUE];
   [self.stopButton setEnabled:FALSE];
@@ -271,6 +284,7 @@
     [self.cipherMethod selectRow:row inComponent:0 animated:NO];
   }
 
+  self.dohURL.text = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_doh_url));
   self.timeout.text = gurl_base::SysUTF8ToNSString(std::to_string(absl::GetFlag(FLAGS_connect_timeout)));
 }
 
