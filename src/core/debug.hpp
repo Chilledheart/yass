@@ -4,6 +4,7 @@
 #ifndef CORE_DEBUG_H_
 #define CORE_DEBUG_H_
 
+#include <base/debug/alias.h>
 #include <stddef.h>
 
 // Make the optimizer think that |var| is aliased. This can be used to inhibit
@@ -67,14 +68,6 @@ void Alias(const void* var);
 namespace internal {
 size_t strlcpy(char* dst, const char* src, size_t dst_size);
 }  // namespace internal
-
-// Convenience macro that copies the null-terminated string from |c_str| into a
-// stack-allocated char array named |var_name| that holds up to |char_count|
-// characters and should be preserved in memory dumps.
-#define DEBUG_ALIAS_FOR_CSTR(var_name, c_str, char_count) \
-  char var_name[char_count];                              \
-  internal::strlcpy(var_name, (c_str), sizeof(var_name)); \
-  Alias(var_name);
 
 // Code folding is a linker optimization whereby the linker identifies functions
 // that are bit-identical and overlays them. This saves space but it leads to

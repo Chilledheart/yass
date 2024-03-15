@@ -269,6 +269,18 @@ void HttpRequestParser::ProcessHeaders(const quiche::BalsaHeaders& headers) {
       http_host_ = hostname;
       http_port_ = portnum;
     }
+    if (key == "Content-Length") {
+      std::string length = std::string(value);
+
+      char* end;
+      const unsigned long lengthnum = strtoul(length.c_str(), &end, 10);
+      if (*end != '\0' || (errno == ERANGE && lengthnum == ULONG_MAX)) {
+        VLOG(1) << "parser failed: bad http field: content-length: " << length;
+        status_ = ParserStatus::Error;
+        break;
+      }
+      content_length_ = lengthnum;
+    }
   }
 }
 
@@ -518,6 +530,19 @@ int HttpRequestParser::OnReadHttpRequestHeaderValue(http_parser* parser, const c
     }
     self->http_host_ = hostname;
     self->http_port_ = portnum;
+  }
+
+  if (self->http_field_ == "Content-Length") {
+    std::string length = std::string(buf, len);
+
+    char* end;
+    const unsigned long lengthnum = strtoul(length.c_str(), &end, 10);
+    if (*end != '\0' || (errno == ERANGE && lengthnum == ULONG_MAX)) {
+      VLOG(1) << "parser failed: bad http field: content-length: " << length;
+      status_ = ParserStatus::Error;
+      break;
+    }
+    content_length_ = lengthnum;
   }
   return 0;
 }
