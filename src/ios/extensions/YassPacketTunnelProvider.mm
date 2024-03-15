@@ -47,10 +47,11 @@ static constexpr uint32_t kYieldConcurrencyOfConnections = 12u;
   auto local_host = std::string("127.0.0.1");
   auto local_port = std::string("0");
   auto method_string = gurl_base::SysNSStringToUTF8(dict[@(kMethodStringFieldName)]);
+  auto doh_url = gurl_base::SysNSStringToUTF8(dict[@(kDoHURLFieldName)]);
   auto connect_timeout = gurl_base::SysNSStringToUTF8(dict[@(kConnectTimeoutFieldName)]);
 
   auto err_msg = config::ReadConfigFromArgument(server_host, "" /*server_sni*/, server_port, username, password,
-                                                method_string, local_host, local_port, connect_timeout);
+                                                method_string, local_host, local_port, doh_url, connect_timeout);
   if (!err_msg.empty()) {
     completionHandler([NSError errorWithDomain:@"it.gui.ios.yass"
                                           code:200

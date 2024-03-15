@@ -18,6 +18,7 @@ constexpr char kServerPortFieldName[] = "server_port";
 constexpr char kUsernameFieldName[] = "username";
 constexpr char kPasswordFieldName[] = "password";
 constexpr char kMethodStringFieldName[] = "method_string";
+constexpr char kDoHURLFieldName[] = "doh_url";
 constexpr char kConnectTimeoutFieldName[] = "connect_timeout";
 
 #endif  //  YASS_IOS_UTILS

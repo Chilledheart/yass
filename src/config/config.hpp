@@ -73,6 +73,8 @@ ABSL_DECLARE_FLAG(int32_t, tcp_keep_alive_interval);
 ABSL_DECLARE_FLAG(bool, tls13_early_data);
 ABSL_DECLARE_FLAG(bool, redir_mode);
 
+ABSL_DECLARE_FLAG(std::string, doh_url);
+
 namespace config {
 void ReadConfigFileOption(int argc, const char** argv);
 bool ReadConfig();
@@ -86,6 +88,7 @@ std::string ReadConfigFromArgument(const std::string& server_host,
                                    cipher_method method,
                                    const std::string& local_host,
                                    const std::string& local_port,
+                                   const std::string& doh_url,
                                    const std::string& connect_timeout);
 
 std::string ReadConfigFromArgument(const std::string& server_host,
@@ -96,6 +99,7 @@ std::string ReadConfigFromArgument(const std::string& server_host,
                                    const std::string& method_string,
                                    const std::string& local_host,
                                    const std::string& local_port,
+                                   const std::string& doh_url,
                                    const std::string& connect_timeout);
 }  // namespace config
 

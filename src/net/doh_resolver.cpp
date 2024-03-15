@@ -99,6 +99,9 @@ void DoHResolver::SetupSSLContext(asio::error_code& ec) {
 }
 
 void DoHResolver::Cancel() {
+  if (!init_) {
+    return;
+  }
   DCHECK(init_);
   resolver_.cancel();
   resolve_timer_.cancel();
@@ -141,6 +144,12 @@ void DoHResolver::AsyncResolve(const std::string& host, int port, AsyncResolveCa
   if (host_is_ip_address) {
     VLOG(1) << "resolved ip-like address (post-resolved): " << addr.to_string();
     endpoints_.emplace_back(addr, doh_port_);
+    DoRequest(Net_ipv6works(), endpoints_.front());
+    return;
+  }
+
+  // use cached dns resolve results
+  if (!endpoints_.empty()) {
     DoRequest(Net_ipv6works(), endpoints_.front());
     return;
   }
