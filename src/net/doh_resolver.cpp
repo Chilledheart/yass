@@ -148,6 +148,12 @@ void DoHResolver::AsyncResolve(const std::string& host, int port, AsyncResolveCa
     return;
   }
 
+  // use cached dns resolve results
+  if (!endpoints_.empty()) {
+    DoRequest(Net_ipv6works(), endpoints_.front());
+    return;
+  }
+
   resolver_.async_resolve(
       Net_ipv6works() ? asio::ip::tcp::unspec() : asio::ip::tcp::v4(), doh_host_, std::to_string(doh_port_),
       [this, self](const asio::error_code& ec, asio::ip::tcp::resolver::results_type results) {
