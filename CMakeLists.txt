@@ -3626,6 +3626,7 @@ set(files
     src/net/doh_resolver.cpp
     src/net/http_parser.cpp
     src/net/padding.cpp
+    src/net/resolver.cpp
     src/crypto/aead_base_decrypter.cpp
     src/crypto/aead_base_encrypter.cpp
     src/crypto/aead_evp_decrypter.cpp
@@ -3696,6 +3697,7 @@ set(hfiles
     src/net/doh_request.hpp
     src/net/http_parser.hpp
     src/net/padding.hpp
+    src/net/resolver.hpp
     src/crypto/aead_base_decrypter.hpp
     src/crypto/aead_base_encrypter.hpp
     src/crypto/aead_evp_decrypter.hpp

@@ -15,14 +15,11 @@
 #include "net/asio.hpp"
 #include "net/network.hpp"
 #include "net/protocol.hpp"
+#include "net/resolver.hpp"
 #include "net/ssl_socket.hpp"
 
 #ifdef __OHOS__
 #include "harmony/yass.hpp"
-#endif
-
-#ifdef HAVE_C_ARES
-#include "net/c-ares.hpp"
 #endif
 
 #include <absl/functional/any_invocable.h>
@@ -56,11 +53,7 @@ class stream : public RefCountedThreadSafe<stream> {
          const std::string& host_sni,
          uint16_t port,
          Channel* channel)
-#ifdef HAVE_C_ARES
-      : resolver_(CAresResolver::Create(io_context)),
-#else
       : resolver_(io_context),
-#endif
         host_ips_(host_ips),
         host_sni_(host_sni),
         port_(port),
@@ -73,11 +66,9 @@ class stream : public RefCountedThreadSafe<stream> {
         read_delay_timer_(io_context),
         write_delay_timer_(io_context) {
     CHECK(channel && "channel must defined to use with stream");
-#ifdef HAVE_C_ARES
-    int ret = resolver_->Init(5000);
-    CHECK_EQ(ret, 0) << "c-ares initialize failure";
+    int ret = resolver_.Init();
+    CHECK_EQ(ret, 0) << "resolver initialize failure";
     static_cast<void>(ret);
-#endif
   }
 
   virtual ~stream() { close(); }
@@ -127,13 +118,8 @@ class stream : public RefCountedThreadSafe<stream> {
     }
 
     scoped_refptr<stream> self(this);
-#ifdef HAVE_C_ARES
-    resolver_->AsyncResolve(
-        host_sni_, std::to_string(port_),
-#else
-    resolver_.async_resolve(
-        Net_ipv6works() ? asio::ip::tcp::unspec() : asio::ip::tcp::v4(), host_sni_, std::to_string(port_),
-#endif
+    resolver_.AsyncResolve(
+        host_sni_, port_,
         [this, channel, self](const asio::error_code& ec, asio::ip::tcp::resolver::results_type results) {
           // Cancelled, safe to ignore
           if (UNLIKELY(ec == asio::error::operation_aborted)) {
@@ -343,11 +329,7 @@ class stream : public RefCountedThreadSafe<stream> {
     write_delay_timer_.cancel();
     read_yield_timer_.cancel();
     connect_timer_.cancel();
-#ifdef HAVE_C_ARES
-    resolver_->Cancel();
-#else
-    resolver_.cancel();
-#endif
+    resolver_.Cancel();
   }
 
   virtual bool https_fallback() const { return false; }
@@ -491,11 +473,8 @@ class stream : public RefCountedThreadSafe<stream> {
 
  private:
   /// used to resolve local and remote endpoint
-#ifdef HAVE_C_ARES
-  scoped_refptr<CAresResolver> resolver_;
-#else
-  asio::ip::tcp::resolver resolver_;
-#endif
+  net::Resolver resolver_;
+
  protected:
   std::string host_ips_;
   std::string host_sni_;

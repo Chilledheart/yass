@@ -19,13 +19,7 @@ class WorkerPrivate {
   std::unique_ptr<CliServer> cli_server;
 };
 
-Worker::Worker()
-#ifdef HAVE_C_ARES
-    : resolver_(nullptr),
-#else
-    : resolver_(io_context_),
-#endif
-      private_(new WorkerPrivate) {
+Worker::Worker() : resolver_(io_context_), private_(new WorkerPrivate) {
 #ifdef _WIN32
   int iResult = 0;
   WSADATA wsaData = {0};
@@ -58,9 +52,7 @@ void Worker::Start(absl::AnyInvocable<void(asio::error_code)>&& callback) {
   asio::post(io_context_, [this]() {
     DCHECK_EQ(private_->cli_server.get(), nullptr);
 
-#ifdef HAVE_C_ARES
-    resolver_ = CAresResolver::Create(io_context_);
-    int ret = resolver_->Init(5000);
+    int ret = resolver_.Init();
     if (ret < 0) {
       LOG(WARNING) << "CAresResolver::Init failed";
       if (auto callback = std::move(start_callback_)) {
@@ -68,7 +60,6 @@ void Worker::Start(absl::AnyInvocable<void(asio::error_code)>&& callback) {
       }
       return;
     }
-#endif
 
     std::string host_name = absl::GetFlag(FLAGS_server_host);
     uint16_t port = absl::GetFlag(FLAGS_server_port);
@@ -86,15 +77,10 @@ void Worker::Start(absl::AnyInvocable<void(asio::error_code)>&& callback) {
       on_resolve_remote(ec, results);
       return;
     }
-#ifdef HAVE_C_ARES
-    resolver_->AsyncResolve(host_name, std::to_string(port),
-#else
-    resolver_.async_resolve(Net_ipv6works() ? asio::ip::tcp::unspec() : asio::ip::tcp::v4(),
-                            host_name, std::to_string(port),
-#endif
-                            [this](const asio::error_code& ec, asio::ip::tcp::resolver::results_type results) {
-                              on_resolve_remote(ec, results);
-                            });
+    resolver_.AsyncResolve(host_name, port,
+                           [this](const asio::error_code& ec, asio::ip::tcp::resolver::results_type results) {
+                             on_resolve_remote(ec, results);
+                           });
   });
 }
 
@@ -103,13 +89,7 @@ void Worker::Stop(absl::AnyInvocable<void()>&& callback) {
   stop_callback_ = std::move(callback);
   /// stop in the worker thread
   asio::post(io_context_, [this]() {
-#ifdef HAVE_C_ARES
-    if (resolver_) {
-      resolver_->Cancel();
-    }
-#else
-    resolver_.cancel();
-#endif
+    resolver_.Cancel();
 
     if (private_->cli_server) {
       LOG(INFO) << "tcp server stops listen";
@@ -160,9 +140,7 @@ void Worker::WorkFunc() {
     io_context_.restart();
     private_->cli_server.reset();
 
-#ifdef HAVE_C_ARES
-    resolver_.reset();
-#endif
+    resolver_.Reset();
 
     auto callback = std::move(stop_callback_);
     DCHECK(!stop_callback_);
@@ -216,15 +194,10 @@ void Worker::on_resolve_remote(asio::error_code ec, asio::ip::tcp::resolver::res
     on_resolve_local(ec, results);
     return;
   }
-#ifdef HAVE_C_ARES
-  resolver_->AsyncResolve(host_name, std::to_string(port),
-#else
-  resolver_.async_resolve(Net_ipv6works() ? asio::ip::tcp::unspec() : asio::ip::tcp::v4(), host_name,
-                          std::to_string(port),
-#endif
-                          [this](const asio::error_code& ec, asio::ip::tcp::resolver::results_type results) {
-                            on_resolve_local(ec, results);
-                          });
+  resolver_.AsyncResolve(host_name, port,
+                         [this](const asio::error_code& ec, asio::ip::tcp::resolver::results_type results) {
+                           on_resolve_local(ec, results);
+                         });
 }
 
 void Worker::on_resolve_local(asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
