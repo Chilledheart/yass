@@ -4373,9 +4373,14 @@ if (GUI)
           src/ios/extensions/YassPacketTunnelProvider.h
           src/ios/extensions/YassPacketTunnelProvider.mm
           src/ios/extensions/PacketTunnel.entitlements
+
+          src/ios/extensions/PrivacyInfo.xcprivacy
           )
 
         add_executable(network-extension MACOSX_BUNDLE ${PLUGIN_SRC})
+
+        set_source_files_properties("src/ios/extensions/PrivacyInfo.xcprivacy" PROPERTIES
+          MACOSX_PACKAGE_LOCATION "Resources")
 
         target_include_directories(network-extension PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/src
