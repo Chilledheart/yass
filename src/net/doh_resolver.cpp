@@ -99,6 +99,9 @@ void DoHResolver::SetupSSLContext(asio::error_code& ec) {
 }
 
 void DoHResolver::Cancel() {
+  if (!init_) {
+    return;
+  }
   DCHECK(init_);
   resolver_.cancel();
   resolve_timer_.cancel();

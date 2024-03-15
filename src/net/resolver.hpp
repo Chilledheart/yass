@@ -37,7 +37,9 @@ class Resolver {
 
   void Cancel() {
     if (!doh_url_.empty()) {
-      doh_resolver_->Cancel();
+      if (doh_resolver_) {
+        doh_resolver_->Cancel();
+      }
       return;
     }
 #ifdef HAVE_C_ARES
