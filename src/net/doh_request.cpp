@@ -291,6 +291,8 @@ void DoHRequest::OnParseDnsResponse() {
 void DoHRequest::OnDoneRequest(asio::error_code ec, struct addrinfo* addrinfo) {
   if (auto cb = std::move(cb_)) {
     cb(ec, addrinfo);
+  } else {
+    addrinfo_freedup(addrinfo);
   }
 }
 
