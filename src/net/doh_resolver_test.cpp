@@ -89,7 +89,7 @@ TEST(DOH_TEST, Timeout) {
   asio::io_context io_context;
 
   auto resolver = DoHResolver::Create(io_context);
-  int ret = resolver->Init("https://1.1.1.1/dns-query", 1);
+  int ret = resolver->Init("https://2.2.2.2/dns-query", 1);
   ASSERT_EQ(ret, 0);
 
   auto work_guard =

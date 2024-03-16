@@ -103,11 +103,15 @@ void DoHResolver::Cancel() {
     return;
   }
   DCHECK(init_);
+  cb_ = nullptr;
+
   resolver_.cancel();
   resolve_timer_.cancel();
 
-  cb_ = nullptr;
-  reqs_.clear();
+  auto reqs = std::move(reqs_);
+  for (auto req : reqs) {
+    req->close();
+  }
 }
 
 void DoHResolver::Destroy() {
@@ -190,6 +194,7 @@ void DoHResolver::DoRequest(bool enable_ipv6, const asio::ip::tcp::endpoint& end
                    [this, self](const asio::error_code& ec, asio::ip::tcp::resolver::results_type results) {
                      OnDoneRequest(ec, results);
                    });
+    reqs_.push_back(req);
   }
 }
 
@@ -202,7 +207,10 @@ void DoHResolver::OnDoneRequest(asio::error_code ec, asio::ip::tcp::resolver::re
     cb(ec, results);
   }
   resolve_timer_.cancel();
-  reqs_.clear();
+  auto reqs = std::move(reqs_);
+  for (auto req : reqs) {
+    req->close();
+  }
   // FIXME handle ipv6
 }
 
