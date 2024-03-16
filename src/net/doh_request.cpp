@@ -106,6 +106,10 @@ namespace net {
 using namespace dns_message;
 
 void DoHRequest::close() {
+  if (closed_) {
+    return;
+  }
+  closed_ = true;
   cb_ = nullptr;
   if (ssl_socket_) {
     ssl_socket_->Disconnect();

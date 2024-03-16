@@ -73,6 +73,7 @@ class DoHRequest : public RefCountedThreadSafe<DoHRequest> {
   const int ssl_socket_data_index_;
   SSL_CTX* ssl_ctx_;
 
+  bool closed_ = false;
   dns_message::DNStype dns_type_;
   std::string host_;
   int port_;
