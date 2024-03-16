@@ -50,7 +50,7 @@ class DoHResolver : public RefCountedThreadSafe<DoHResolver> {
   int timeout_ms_ = 0;
   asio::steady_timer resolve_timer_;
 
-  bool done_ = false;
+  bool done_ = true;
   std::deque<asio::ip::tcp::endpoint> endpoints_;
   std::string host_;
   int port_;

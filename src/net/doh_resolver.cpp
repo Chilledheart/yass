@@ -127,6 +127,7 @@ void DoHResolver::Destroy() {
 
 void DoHResolver::AsyncResolve(const std::string& host, int port, AsyncResolveCallback cb) {
   DCHECK(init_) << "Init should be called before use";
+  DCHECK(done_) << "Another resolve is in progress";
 
   host_ = host;
   port_ = port;
@@ -190,9 +191,12 @@ void DoHResolver::DoRequest(bool enable_ipv6, const asio::ip::tcp::endpoint& end
   req->DoRequest(DNS_TYPE_A, host_, port_, [this, self](const asio::error_code& ec, struct addrinfo* addrinfo) {
     /* ipv4 address comes first */
     if (addrinfo) {
-      struct addrinfo* previous_addrinfo = addrinfo_;
-      addrinfo->ai_next = previous_addrinfo;
+      struct addrinfo* next_addrinfo = addrinfo_;
       addrinfo_ = addrinfo;
+      while (addrinfo->ai_next) {
+        addrinfo = addrinfo->ai_next;
+      }
+      addrinfo->ai_next = next_addrinfo;
     }
     reqs_.pop_front();
     OnDoneRequest(ec);
@@ -204,7 +208,11 @@ void DoHResolver::DoRequest(bool enable_ipv6, const asio::ip::tcp::endpoint& end
     req->DoRequest(DNS_TYPE_AAAA, host_, port_, [this, self](const asio::error_code& ec, struct addrinfo* addrinfo) {
       /* ipv6 address comes later */
       if (addrinfo_) {
-        addrinfo_->ai_next = addrinfo;
+        struct addrinfo* prev_addrinfo = addrinfo_;
+        while (prev_addrinfo->ai_next) {
+          prev_addrinfo = prev_addrinfo->ai_next;
+        }
+        prev_addrinfo->ai_next = addrinfo;
       } else {
         addrinfo_ = addrinfo;
       }

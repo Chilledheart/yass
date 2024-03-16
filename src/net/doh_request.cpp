@@ -27,7 +27,7 @@ static struct addrinfo* addrinfo_dup(bool is_ipv6, const net::dns_message::respo
   // If hints.ai_flags includes the AI_CANONNAME flag, then the
   // ai_canonname field of the first of the addrinfo structures in the
   // returned list is set to point to the official name of the host.
-  const char* canon_name = !response.cname().empty() ? response.cname().front().c_str() : nullptr;
+  char* canon_name = !response.cname().empty() ? strdup(response.cname().front().c_str()) : nullptr;
 
   // Iterate the output
   struct addrinfo* next_addrinfo = addrinfo;
@@ -40,7 +40,7 @@ static struct addrinfo* addrinfo_dup(bool is_ipv6, const net::dns_message::respo
       next_addrinfo->ai_family = AF_INET6;
       next_addrinfo->ai_socktype = SOCK_STREAM;
       next_addrinfo->ai_protocol = 0;
-      next_addrinfo->ai_canonname = (char*)canon_name;
+      next_addrinfo->ai_canonname = canon_name;
 
       struct sockaddr_in6* in6 = new struct sockaddr_in6;
 
@@ -80,6 +80,10 @@ static struct addrinfo* addrinfo_dup(bool is_ipv6, const net::dns_message::respo
       canon_name = nullptr;
     }
   }
+  if (canon_name) {
+    free(canon_name);
+  }
+
   struct addrinfo* prev_addrinfo = addrinfo;
   addrinfo = addrinfo->ai_next;
   delete prev_addrinfo;
@@ -90,7 +94,6 @@ static struct addrinfo* addrinfo_dup(bool is_ipv6, const net::dns_message::respo
 void addrinfo_freedup(struct addrinfo* addrinfo) {
   struct addrinfo* next_addrinfo;
   while (addrinfo) {
-    next_addrinfo = addrinfo->ai_next;
     if (addrinfo->ai_family == AF_INET6) {
       struct sockaddr_in6* in6 = (struct sockaddr_in6*)addrinfo->ai_addr;
       delete in6;
@@ -98,6 +101,10 @@ void addrinfo_freedup(struct addrinfo* addrinfo) {
       struct sockaddr_in* in = (struct sockaddr_in*)addrinfo->ai_addr;
       delete in;
     }
+    if (addrinfo->ai_canonname) {
+      free(addrinfo->ai_canonname);
+    }
+    next_addrinfo = addrinfo->ai_next;
     delete addrinfo;
     addrinfo = next_addrinfo;
   }
