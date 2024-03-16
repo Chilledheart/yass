@@ -14,10 +14,7 @@ namespace crypto {
 
 class EvpAeadEncrypter : public AeadBaseEncrypter {
  public:
-  EvpAeadEncrypter(const EVP_AEAD* (*aead_getter)(),
-                   size_t key_size,
-                   size_t auth_tag_size,
-                   size_t nonce_size);
+  EvpAeadEncrypter(const EVP_AEAD* (*aead_getter)(), size_t key_size, size_t auth_tag_size, size_t nonce_size);
   ~EvpAeadEncrypter() override;
 
   bool SetKey(const char* key, size_t key_len) override;

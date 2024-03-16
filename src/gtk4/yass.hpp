@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2023 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 #ifndef YASS_APP
 #define YASS_APP
 
@@ -14,9 +14,9 @@
 
 extern "C" {
 #define YASS_APP_TYPE (yass_app_get_type ()))
-G_DECLARE_FINAL_TYPE (YASSGtkApp, yass_app, YASSGtk, APP, GtkApplication)
+G_DECLARE_FINAL_TYPE(YASSGtkApp, yass_app, YASSGtk, APP, GtkApplication)
 
-YASSGtkApp     *yass_app_new         (void);
+YASSGtkApp* yass_app_new(void);
 }
 
 class YASSWindow;
@@ -31,8 +31,10 @@ class YASSApp {
   static std::unique_ptr<YASSApp> create();
 
  private:
-  GApplication *impl_;
-  GSource *idle_source_;
+  GApplication* impl_;
+  GSource* idle_source_;
+  GSource* exit_int_source_;
+  GSource* exit_term_source_;
 
  public:
   void OnActivate();
@@ -50,14 +52,7 @@ class YASSApp {
   void OnStop(bool quiet = false);
 
   std::string GetStatus() const;
-  enum YASSState {
-    STARTED,
-    STARTING,
-    START_FAILED,
-    STOPPING,
-    STOPPED,
-    MAX_STATE
-  };
+  enum YASSState { STARTED, STARTING, START_FAILED, STOPPING, STOPPED, MAX_STATE };
   YASSState GetState() const { return state_; }
 
  private:

@@ -15,10 +15,7 @@ static const size_t kNonceSize = 12;
 namespace crypto {
 
 Aes128Gcm12EvpDecrypter::Aes128Gcm12EvpDecrypter()
-    : AeadEvpDecrypter(EVP_aead_aes_128_gcm,
-                       kKeySize,
-                       kAuthTagSize,
-                       kNonceSize) {
+    : AeadEvpDecrypter(EVP_aead_aes_128_gcm, kKeySize, kAuthTagSize, kNonceSize) {
   static_assert(kKeySize <= kMaxKeySize, "key size too big");
   static_assert(kNonceSize <= kMaxNonceSize, "nonce size too big");
 }

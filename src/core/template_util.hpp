@@ -44,16 +44,13 @@ namespace internal {
 template <typename T, typename = void>
 struct SupportsOstreamOperator : std::false_type {};
 template <typename T>
-struct SupportsOstreamOperator<T,
-                               decltype(void(std::declval<std::ostream&>()
-                                             << std::declval<T>()))>
-    : std::true_type {};
+struct SupportsOstreamOperator<T, decltype(void(std::declval<std::ostream&>() << std::declval<T>()))> : std::true_type {
+};
 
 template <typename T, typename = void>
 struct SupportsToString : std::false_type {};
 template <typename T>
-struct SupportsToString<T, decltype(void(std::declval<T>().ToString()))>
-    : std::true_type {};
+struct SupportsToString<T, decltype(void(std::declval<T>().ToString()))> : std::true_type {};
 
 // Used to detech whether the given type is an iterator.  This is normally used
 // with std::enable_if to provide disambiguation for functions that take
@@ -62,9 +59,7 @@ template <typename T, typename = void>
 struct is_iterator : std::false_type {};
 
 template <typename T>
-struct is_iterator<T,
-                   void_t<typename std::iterator_traits<T>::iterator_category>>
-    : std::true_type {};
+struct is_iterator<T, void_t<typename std::iterator_traits<T>::iterator_category>> : std::true_type {};
 
 // Helper to express preferences in an overload set. If more than one overload
 // are available for a given set of parameters the overload with the higher
@@ -124,9 +119,7 @@ template <typename B1>
 struct conjunction<B1> : B1 {};
 
 template <typename B1, typename... Bn>
-struct conjunction<B1, Bn...>
-    : std::conditional_t<static_cast<bool>(B1::value), conjunction<Bn...>, B1> {
-};
+struct conjunction<B1, Bn...> : std::conditional_t<static_cast<bool>(B1::value), conjunction<Bn...>, B1> {};
 
 // C++14 implementation of C++17's std::disjunction.
 //
@@ -139,9 +132,7 @@ template <typename B1>
 struct disjunction<B1> : B1 {};
 
 template <typename B1, typename... Bn>
-struct disjunction<B1, Bn...>
-    : std::conditional_t<static_cast<bool>(B1::value), B1, disjunction<Bn...>> {
-};
+struct disjunction<B1, Bn...> : std::conditional_t<static_cast<bool>(B1::value), B1, disjunction<Bn...>> {};
 
 // C++14 implementation of C++17's std::negation.
 //
@@ -180,8 +171,7 @@ struct IsInvocableImpl : std::false_type {};
 // `std::is_void<R>`.
 template <typename InvokeResult, typename R>
 struct IsInvocableImpl<InvokeResult, R, void_t<typename InvokeResult::type>>
-    : disjunction<std::is_void<R>,
-                  std::is_convertible<typename InvokeResult::type, R>> {};
+    : disjunction<std::is_void<R>, std::is_convertible<typename InvokeResult::type, R>> {};
 
 }  // namespace internal
 
@@ -192,8 +182,7 @@ struct IsInvocableImpl<InvokeResult, R, void_t<typename InvokeResult::type>>
 //
 // Reference: https://wg21.link/meta.rel#lib:is_invocable_r
 template <typename R, typename F, typename... Args>
-struct is_invocable_r
-    : internal::IsInvocableImpl<invoke_result<F, Args...>, R> {};
+struct is_invocable_r : internal::IsInvocableImpl<invoke_result<F, Args...>, R> {};
 
 // Implementation of C++17's std::is_invocable.
 //
@@ -260,8 +249,7 @@ constexpr bool is_constant_evaluated() noexcept {
 //
 // Reference: https://wg21.link/readable.traits#2
 template <typename Iter>
-using iter_value_t =
-    typename std::iterator_traits<remove_cvref_t<Iter>>::value_type;
+using iter_value_t = typename std::iterator_traits<remove_cvref_t<Iter>>::value_type;
 
 // Simplified implementation of C++20's std::iter_reference_t.
 // As opposed to std::iter_reference_t, this implementation does not restrict
@@ -286,9 +274,7 @@ using indirect_result_t = invoke_result_t<Func, iter_reference_t<Iters>...>;
 // friendliness.
 //
 // Reference: https://wg21.link/projected
-template <typename Iter,
-          typename Proj,
-          typename IndirectResultT = indirect_result_t<Proj, Iter>>
+template <typename Iter, typename Proj, typename IndirectResultT = indirect_result_t<Proj, Iter>>
 struct projected {
   using value_type = remove_cvref_t<IndirectResultT>;
 

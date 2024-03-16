@@ -3,17 +3,17 @@
 
 #ifndef _WIN32
 
-#include <gtest/gtest.h>
-#include <gtest/gtest-message.h>
 #include <absl/flags/flag.h>
 #include <build/build_config.h>
+#include <gtest/gtest-message.h>
+#include <gtest/gtest.h>
 
 #include <gmock/gmock.h>
 
-#include "test_util.hpp"
-#include "core/process_utils.hpp"
 #include "core/logging.hpp"
+#include "core/process_utils.hpp"
 #include "core/utils.hpp"
+#include "test_util.hpp"
 
 #if BUILDFLAG(IS_IOS) || BUILDFLAG(IS_ANDROID)
 ABSL_FLAG(bool, no_exec_proc_tests, true, "skip execute_process tests");
@@ -36,4 +36,4 @@ TEST(PROCESS_TEST, ExecuteProcessBasic) {
   EXPECT_EQ(error, "");
 }
 
-#endif // _WIN32
+#endif  // _WIN32

@@ -35,7 +35,7 @@ concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 env:
-  CACHE_EPOCH: 122-5
+  CACHE_EPOCH: 123-5
   GOPROXY: direct
 jobs:
   openwrt-binary-release:
@@ -163,8 +163,6 @@ jobs:
           sudo apt install qemu-user
           sudo apt remove -y qemu-user-binfmt
           sudo dpkg -i qemu-user-static_*.deb
-          # required by mbedtls build
-          sudo apt-get install -y python3-jsonschema python3-jinja2
       - name: Build TGZ packages
         run: |
           ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --subsystem openwrt --sysroot ${{ env.SDK_ROOT }} \
@@ -205,6 +203,23 @@ jobs:
           pushd ${{ env.SDK_HOME }}
           make package/yass-cli/clean V=s
           popd
+      - name: Checksum IPK packages
+        run: |
+          echo "md5sum "
+          echo "======================================================================"
+          md5sum *.ipk
+
+          echo "sha1sum "
+          echo "======================================================================"
+          sha1sum *.ipk
+
+          echo "sha256sum "
+          echo "======================================================================"
+          sha256sum *.ipk
+
+          echo "sha512sum "
+          echo "======================================================================"
+          sha512sum *.ipk
       - name: Upload dist tarball (including debuginfo)
         if: ${{ github.event_name == 'release' }}
         env:

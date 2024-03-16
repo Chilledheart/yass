@@ -15,10 +15,7 @@ static const size_t kNonceSize = 24;
 namespace crypto {
 
 XChaCha20Poly1305SodiumEncrypter::XChaCha20Poly1305SodiumEncrypter()
-    : SodiumAeadEncrypter(EVP_aead_xchacha20_poly1305,
-                          kKeySize,
-                          kAuthTagSize,
-                          kNonceSize) {
+    : SodiumAeadEncrypter(EVP_aead_xchacha20_poly1305, kKeySize, kAuthTagSize, kNonceSize) {
   static_assert(kKeySize <= kMaxKeySize, "key size too big");
   static_assert(kNonceSize <= kMaxNonceSize, "nonce size too big");
 }

@@ -8,28 +8,28 @@
 #include <jni.h>
 #include <openssl/crypto.h>
 
-#include "core/logging.hpp"
-#include "i18n/icu_util.hpp"
-#include "core/utils.hpp"
-#include "cli/cli_worker.hpp"
-#include "cli/cli_connection_stats.hpp"
-#include "crashpad_helper.hpp"
-#include "android/utils.hpp"
 #include "android/jni.hpp"
+#include "android/utils.hpp"
+#include "cli/cli_connection_stats.hpp"
+#include "cli/cli_worker.hpp"
+#include "core/logging.hpp"
+#include "core/utils.hpp"
+#include "crashpad_helper.hpp"
+#include "i18n/icu_util.hpp"
 
 // Data
-static bool                 g_Initialized = false;
+static bool g_Initialized = false;
 
 // Forward declarations of helper functions
-static void Init(JNIEnv *env, jobject activity_obj);
+static void Init(JNIEnv* env, jobject activity_obj);
 static void Shutdown();
 
-static int CallOnNativeStarted(JavaVM* jvm, jobject activity_obj, const std::string &errmsg, jint port);
+static int CallOnNativeStarted(JavaVM* jvm, jobject activity_obj, const std::string& errmsg, jint port);
 static int CallOnNativeStopped(JavaVM* jvm, jobject activity_obj);
 
 static std::unique_ptr<Worker> g_worker;
 
-void Init(JNIEnv *env, jobject activity_obj) {
+void Init(JNIEnv* env, jobject activity_obj) {
   if (g_Initialized)
     return;
 
@@ -79,7 +79,7 @@ void Shutdown() {
   LOG(INFO) << "android: Shutdown finished";
 }
 
-static int CallOnNativeStarted(JavaVM* jvm, jobject activity_obj, const std::string &errmsg, jint port) {
+static int CallOnNativeStarted(JavaVM* jvm, jobject activity_obj, const std::string& errmsg, jint port) {
   JavaVM* java_vm = jvm;
   JNIEnv* java_env = nullptr;
 
@@ -139,7 +139,7 @@ static int CallOnNativeStopped(JavaVM* jvm, jobject activity_obj) {
 }
 
 // called from java thread
-JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeCreate(JNIEnv *env, jobject obj) {
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeCreate(JNIEnv* env, jobject obj) {
   CHECK(g_jvm) << "jvm not found";
   g_activity_obj = obj;
 
@@ -173,7 +173,7 @@ JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeCreate(JNIEnv *env,
 }
 
 // called from java thread
-JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeDestroy(JNIEnv *env, jobject obj) {
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_onNativeDestroy(JNIEnv* env, jobject obj) {
   Shutdown();
   env->DeleteGlobalRef(g_activity_obj);
   g_activity_obj = nullptr;
@@ -183,7 +183,7 @@ static uint64_t g_last_sync_time;
 static uint64_t g_last_tx_bytes;
 static uint64_t g_last_rx_bytes;
 
-JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStart(JNIEnv *env, jobject obj) {
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStart(JNIEnv* env, jobject obj) {
   g_last_sync_time = GetMonotonicTime();
   g_last_tx_bytes = 0;
   g_last_rx_bytes = 0;
@@ -203,13 +203,11 @@ JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStart(JNIEnv *env, jo
   });
 }
 
-JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStop(JNIEnv *env, jobject obj) {
-  g_worker->Stop([&]() {
-    CallOnNativeStopped(g_jvm, g_activity_obj);
-  });
+JNIEXPORT void JNICALL Java_it_gui_yass_MainActivity_nativeStop(JNIEnv* env, jobject obj) {
+  g_worker->Stop([&]() { CallOnNativeStopped(g_jvm, g_activity_obj); });
 }
 
-JNIEXPORT jlongArray JNICALL Java_it_gui_yass_MainActivity_getRealtimeTransferRate(JNIEnv *env, jobject obj) {
+JNIEXPORT jlongArray JNICALL Java_it_gui_yass_MainActivity_getRealtimeTransferRate(JNIEnv* env, jobject obj) {
   uint64_t sync_time = GetMonotonicTime();
   uint64_t delta_time = sync_time - g_last_sync_time;
   static uint64_t rx_rate = 0;
@@ -217,15 +215,13 @@ JNIEXPORT jlongArray JNICALL Java_it_gui_yass_MainActivity_getRealtimeTransferRa
   if (delta_time > NS_PER_SECOND) {
     uint64_t rx_bytes = cli::total_rx_bytes;
     uint64_t tx_bytes = cli::total_tx_bytes;
-    rx_rate = static_cast<double>(rx_bytes - g_last_rx_bytes) / delta_time *
-               NS_PER_SECOND;
-    tx_rate = static_cast<double>(tx_bytes - g_last_tx_bytes) / delta_time *
-               NS_PER_SECOND;
+    rx_rate = static_cast<double>(rx_bytes - g_last_rx_bytes) / delta_time * NS_PER_SECOND;
+    tx_rate = static_cast<double>(tx_bytes - g_last_tx_bytes) / delta_time * NS_PER_SECOND;
     g_last_sync_time = sync_time;
     g_last_rx_bytes = rx_bytes;
     g_last_tx_bytes = tx_bytes;
   }
-  jlong dresult[3] = { g_worker->currentConnections(), rx_rate, tx_rate };
+  jlong dresult[3] = {g_worker->currentConnections(), rx_rate, tx_rate};
   auto result = env->NewLongArray(3);
   env->SetLongArrayRegion(result, 0, 3, dresult);
 
@@ -243,4 +239,4 @@ JNIEXPORT jlongArray JNICALL Java_it_gui_yass_MainActivity_getRealtimeTransferRa
   return result;
 }
 
-#endif // __ANDROID__
+#endif  // __ANDROID__

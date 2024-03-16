@@ -22,13 +22,13 @@ More Information refers to [wiki](https://github.com/Chilledheart/yass/wiki) and
 ## Usages
 
 ### Prebuilt binaries
-- Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.6.4/yass-android-release-arm64-1.6.4.apk) or [download 32-bit apk](https://github.com/Chilledheart/yass/releases/download/1.6.4/yass-android-release-arm-1.6.4.apk)
-- iOS [join via TestFlight](https://testflight.apple.com/join/6AkiEq09) or [download ipa](https://github.com/Chilledheart/yass/releases/download/1.6.4/yass-ios-release-arm64-1.6.4.ipa)
-- Windows [download zip](https://github.com/Chilledheart/yass/releases/download/1.6.4/yass-mingw-winxp-release-i686-1.6.4.zip) or [download woa zip](https://github.com/Chilledheart/yass/releases/download/1.6.4/yass-mingw-release-aarch64-1.6.4.zip)
-- macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.6.4/yass-macos-release-x64-1.6.4.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.6.4/yass-macos-release-arm64-1.6.4.dmg)
-- Linux [download rpm](https://github.com/Chilledheart/yass/releases/download/1.6.4/yass.el7.x86_64.1.6.4-0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.6.4/yass-client-ubuntu-16.04-xenial_amd64.1.6.4.deb)
+- Android [download apk](https://github.com/Chilledheart/yass/releases/download/1.7.3/yass-android-release-arm64-1.7.3.apk) or [download 32-bit apk](https://github.com/Chilledheart/yass/releases/download/1.7.3/yass-android-release-arm-1.7.3.apk)
+- iOS [join via TestFlight](https://testflight.apple.com/join/6AkiEq09) or [download ipa](https://github.com/Chilledheart/yass/releases/download/1.7.3/yass-ios-release-arm64-1.7.3.ipa)
+- Windows [download installer](https://github.com/Chilledheart/yass/releases/download/1.7.3/yass-mingw-winxp-release-x86_64-1.7.3-system-installer.exe) or [download 32-bit installer (require runtime)](https://github.com/Chilledheart/yass/releases/download/1.7.3/yass-mingw-winxp-release-i686-1.7.3-system-installer.exe) or [download woa arm64 installer](https://github.com/Chilledheart/yass/releases/download/1.7.3/yass-mingw-release-aarch64-1.7.3-system-installer.exe)
+- macOS [download intel dmg](https://github.com/Chilledheart/yass/releases/download/1.7.3/yass-macos-release-x64-1.7.3.dmg) or [download apple silicon dmg](https://github.com/Chilledheart/yass/releases/download/1.7.3/yass-macos-release-arm64-1.7.3.dmg)
+- Linux [download rpm](https://github.com/Chilledheart/yass/releases/download/1.7.3/yass.el7.x86_64.1.7.3-0.rpm) or [download deb](https://github.com/Chilledheart/yass/releases/download/1.7.3/yass-client-ubuntu-16.04-xenial_amd64.1.7.3.deb)
 
-View more at [release page](https://github.com/Chilledheart/yass/releases/tag/1.6.4)
+View more at [release page](https://github.com/Chilledheart/yass/releases/tag/1.7.3)
 
 ### Status of Package Store
 Visit wiki's [Status of Package Store](https://github.com/Chilledheart/yass/wiki/Status-of-Package-Store)
@@ -48,12 +48,17 @@ Visit wiki's [Usages](https://github.com/Chilledheart/yass/wiki/Usage) and [Serv
 It refers to [http2 cipher](https://github.com/Chilledheart/yass/wiki/Supported-Operating-System#screenshot-on-na%C3%AFveproxy-support) as [NaïveProxy][naiveproxy]-compatible protocol support.
 #### Android vpn service support
 Android releases from 1.5.24 are signed and have been updated to add [VpnService](https://developer.android.com/reference/android/net/VpnService) support.
+#### iOS packet tunnel support
+iOS releases from 1.5.22 have fixed memory pressure crashes and have been updated to add [Packet tunnel](https://developer.apple.com/documentation/networkextension/packet_tunnel_provider?language=objc) support.
+#### macOS packet tunnel support (M1/M2/M3 only)
+For Apple Silicon macOS Users such as M1/M2/M3, you can also install [Packet tunnel](https://developer.apple.com/documentation/networkextension/packet_tunnel_provider?language=objc) version via [TestFlight](https://testflight.apple.com/join/6AkiEq09).
 #### Notarized macOS releases
-macOS Releases from 1.5.19 are [notarized](https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution). Please note the dmg suffixed with `-unsigned` is not.
-#### Experimental ios packet tunnel support
-iOS releases from 1.5.22 are fixed memory pressure crash and have been updated to add [Packet tunnel](https://developer.apple.com/documentation/networkextension/packet_tunnel_provider?language=objc) support.
+macOS releases from 1.5.19 are [notarized](https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution). Please note the dmg suffixed with `-unsigned` is not.
 #### MinGW Build (alias Window Build)
-Please install Visual C++ 2010 runtime before use. Depending the your system's architecture, use [x86 installer][vs2010_x86] or [x64 installer][vs2010_x64].
+MinGW 64-bit releases from 1.6.5 and 1.7.1 no longer require Visual C++ 2010 Runtime.
+
+For Windows XP Users, please make Visual C++ 2010 Runtime installed and use 32-bit releases.
+Depending the your system's architecture, use [x86 installer][vs2010_x86] or [x64 installer][vs2010_x64].
 #### Supplementary support for missing ISRG (Let's Encrypt Root) on some Windows 11 Installation and Android prior to 7.1.1
 Releases from 1.5.25 and 1.6.4 fixes an issue that ISRG Root 1 and ISRG Root 2 might be missing in some machines and that causes troubles.
 #### MSVC Build(previous Windows Build) prebuilt binaries removed

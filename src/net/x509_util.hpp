@@ -4,9 +4,9 @@
 #ifndef H_NET_X509_UTIL
 #define H_NET_X509_UTIL
 
-#include <string_view>
 #include <openssl/base.h>
 #include <openssl/pool.h>
+#include <string_view>
 
 namespace net::x509_util {
 
@@ -15,6 +15,6 @@ CRYPTO_BUFFER_POOL* GetBufferPool();
 
 bssl::UniquePtr<CRYPTO_BUFFER> CreateCryptoBuffer(std::string_view data);
 
-} // namespace net::x509_util
+}  // namespace net::x509_util
 
-#endif // H_NET_X509_UTIL
+#endif  // H_NET_X509_UTIL

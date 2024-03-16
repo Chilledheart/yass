@@ -11,20 +11,19 @@
 #include "gtk4/yass.hpp"
 
 extern "C" {
-#define YASS_WINDOW_TYPE (yass_window_get_type ())
-G_DECLARE_FINAL_TYPE (YASSGtkWindow, yass_window, YASSGtk, WINDOW, GtkApplicationWindow)
+#define YASS_WINDOW_TYPE (yass_window_get_type())
+G_DECLARE_FINAL_TYPE(YASSGtkWindow, yass_window, YASSGtk, WINDOW, GtkApplicationWindow)
 
-YASSGtkWindow       *yass_window_new          (YASSGtkApp *app);
+YASSGtkWindow* yass_window_new(YASSGtkApp* app);
 }
 
 class YASSWindow {
  public:
-  YASSWindow(GApplication *app);
+  YASSWindow(GApplication* app);
   ~YASSWindow();
 
-  YASSGtkWindow* impl() {
-    return impl_;
-  }
+  YASSGtkWindow* impl() { return impl_; }
+
  private:
   YASSGtkWindow* impl_;
   std::string last_status_msg_;

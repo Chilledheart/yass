@@ -14,10 +14,7 @@ namespace crypto {
 
 class AeadSodiumDecrypter : public AeadBaseDecrypter {
  public:
-  AeadSodiumDecrypter(const EVP_AEAD* (*aead_getter)(),
-                      size_t key_size,
-                      size_t auth_tag_size,
-                      size_t nonce_size);
+  AeadSodiumDecrypter(const EVP_AEAD* (*aead_getter)(), size_t key_size, size_t auth_tag_size, size_t nonce_size);
   ~AeadSodiumDecrypter() override;
 
   bool SetKey(const char* key, size_t key_len) override;

@@ -8,12 +8,12 @@
 #include <openssl/base64.h>
 #include <openssl/md5.h>
 
-#include "net/hkdf_sha1.hpp"
 #include "core/logging.hpp"
 #include "core/rand_util.hpp"
 #include "core/sys_byteorder.h"
 #include "crypto/decrypter.hpp"
 #include "crypto/encrypter.hpp"
+#include "net/hkdf_sha1.hpp"
 
 #define CHUNK_SIZE_LEN 2U
 #define CHUNK_SIZE_MASK 0x3FFFU
@@ -42,9 +42,7 @@ class cipher_impl {
     }
     std::unique_ptr<uint8_t[]> out = std::make_unique<uint8_t[]>(out_len);
 
-    out_len =
-        EVP_DecodeBase64(out.get(), &out_len, out_len,
-                         reinterpret_cast<const uint8_t*>(base64), base64_len);
+    out_len = EVP_DecodeBase64(out.get(), &out_len, out_len, reinterpret_cast<const uint8_t*>(base64), base64_len);
     if (out_len > 0 && out_len >= skey_len) {
       memcpy(skey, out.get(), skey_len);
       return skey_len;
@@ -55,9 +53,7 @@ class cipher_impl {
   /// The master key can be input directly from user or generated from a
   /// password. The key derivation is still following EVP_BytesToKey(3) in
   /// OpenSSL.
-  static int derive_key(const std::string& key,
-                        uint8_t* skey,
-                        size_t skey_len) {
+  static int derive_key(const std::string& key, uint8_t* skey, size_t skey_len) {
     const char* pass = key.c_str();
     size_t datal = key.size();
     MD5_CTX c;
@@ -94,15 +90,10 @@ class cipher_impl {
   /// a non-secret nonce, a message, and produces ciphertext and authentication
   /// tag. Nonce (NoncePrefix + packet_number, or vice versa) must be unique for
   /// a given key in each invocation.
-  int EncryptPacket(uint64_t packet_number,
-                    uint8_t* c,
-                    size_t* clen,
-                    const uint8_t* m,
-                    size_t mlen) {
+  int EncryptPacket(uint64_t packet_number, uint8_t* c, size_t* clen, const uint8_t* m, size_t mlen) {
     int err = 0;
 
-    if (!encrypter->EncryptPacket(packet_number, nullptr, 0U,
-                                  reinterpret_cast<const char*>(m), mlen,
+    if (!encrypter->EncryptPacket(packet_number, nullptr, 0U, reinterpret_cast<const char*>(m), mlen,
                                   reinterpret_cast<char*>(c), clen, *clen)) {
       err = -1;
     }
@@ -113,15 +104,10 @@ class cipher_impl {
   /// DecryptPacket is a function that takes a secret key,
   /// non-secret nonce, ciphertext, authentication tag, and produces original
   /// message. If any of the input is tampered with, decryption will fail.
-  int DecryptPacket(uint64_t packet_number,
-                    uint8_t* p,
-                    size_t* plen,
-                    const uint8_t* m,
-                    size_t mlen) {
+  int DecryptPacket(uint64_t packet_number, uint8_t* p, size_t* plen, const uint8_t* m, size_t mlen) {
     int err = 0;
 
-    if (!decrypter->DecryptPacket(packet_number, nullptr, 0U,
-                                  reinterpret_cast<const char*>(m), mlen,
+    if (!decrypter->DecryptPacket(packet_number, nullptr, 0U, reinterpret_cast<const char*>(m), mlen,
                                   reinterpret_cast<char*>(p), plen, *plen)) {
       err = -1;
     }
@@ -141,14 +127,12 @@ class cipher_impl {
 
   bool SetNoncePrefix(const uint8_t* nonce_prefix, size_t nonce_prefix_len) {
     if (encrypter) {
-      return encrypter->SetNoncePrefix(
-          reinterpret_cast<const char*>(nonce_prefix),
-          std::min(nonce_prefix_len, encrypter->GetNoncePrefixSize()));
+      return encrypter->SetNoncePrefix(reinterpret_cast<const char*>(nonce_prefix),
+                                       std::min(nonce_prefix_len, encrypter->GetNoncePrefixSize()));
     }
     if (decrypter) {
-      return decrypter->SetNoncePrefix(
-          reinterpret_cast<const char*>(nonce_prefix),
-          std::min(nonce_prefix_len, decrypter->GetNoncePrefixSize()));
+      return decrypter->SetNoncePrefix(reinterpret_cast<const char*>(nonce_prefix),
+                                       std::min(nonce_prefix_len, decrypter->GetNoncePrefixSize()));
     }
     return false;
   }
@@ -163,34 +147,22 @@ class cipher_impl {
     return false;
   }
 
-  size_t GetKeySize() const {
-    return encrypter ? encrypter->GetKeySize() : decrypter->GetKeySize();
-  }
+  size_t GetKeySize() const { return encrypter ? encrypter->GetKeySize() : decrypter->GetKeySize(); }
 
   size_t GetNoncePrefixSize() const {
-    return encrypter ? encrypter->GetNoncePrefixSize()
-                     : decrypter->GetNoncePrefixSize();
+    return encrypter ? encrypter->GetNoncePrefixSize() : decrypter->GetNoncePrefixSize();
   }
 
-  size_t GetIVSize() const {
-    return encrypter ? encrypter->GetIVSize() : decrypter->GetIVSize();
-  }
+  size_t GetIVSize() const { return encrypter ? encrypter->GetIVSize() : decrypter->GetIVSize(); }
 
-  size_t GetTagSize() const {
-    return encrypter ? encrypter->GetTagSize() : decrypter->GetTagSize();
-  }
+  size_t GetTagSize() const { return encrypter ? encrypter->GetTagSize() : decrypter->GetTagSize(); }
 
-  const uint8_t* GetKey() const {
-    return encrypter ? encrypter->GetKey() : decrypter->GetKey();
-  }
+  const uint8_t* GetKey() const { return encrypter ? encrypter->GetKey() : decrypter->GetKey(); }
 
-  const uint8_t* GetIV() const {
-    return encrypter ? encrypter->GetIV() : decrypter->GetIV();
-  }
+  const uint8_t* GetIV() const { return encrypter ? encrypter->GetIV() : decrypter->GetIV(); }
 
   const uint8_t* GetNoncePrefix() const {
-    return encrypter ? encrypter->GetNoncePrefix()
-                     : decrypter->GetNoncePrefix();
+    return encrypter ? encrypter->GetNoncePrefix() : decrypter->GetNoncePrefix();
   }
 
   uint32_t cipher_id() const {
@@ -210,19 +182,17 @@ class cipher_impl {
 cipher::cipher(const std::string& key,
                const std::string& password,
                enum cipher_method method,
-               cipher_visitor_interface *visitor,
+               cipher_visitor_interface* visitor,
                bool enc)
     : salt_(), key_(), counter_(), init_(false), visitor_(visitor) {
   DCHECK(is_valid_cipher_method(method));
-  VLOG(3) << "cipher: " << (enc ? "encoder" : "decoder")
-          << " create with key \"" << key << "\" password \"" << password
+  VLOG(3) << "cipher: " << (enc ? "encoder" : "decoder") << " create with key \"" << key << "\" password \"" << password
           << "\" cipher_method: " << to_cipher_method_str(method);
 
   impl_ = std::make_unique<cipher_impl>(method, enc);
   key_bitlen_ = impl_->GetKeySize() * 8;
-  key_len_ = !key.empty()
-                 ? cipher_impl::parse_key(key, key_, key_bitlen_ / 8)
-                 : cipher_impl::derive_key(password, key_, key_bitlen_ / 8);
+  key_len_ = !key.empty() ? cipher_impl::parse_key(key, key_, key_bitlen_ / 8)
+                          : cipher_impl::derive_key(password, key_, key_bitlen_ / 8);
 
 #ifndef NDEBUG
   DumpHex("cipher: KEY", key_, key_len_);
@@ -276,9 +246,7 @@ void cipher::process_bytes(std::shared_ptr<IOBuf> ciphertext) {
   chunk_->retreat(chunk_->headroom());
 }
 
-void cipher::encrypt(const uint8_t* plaintext_data,
-                     size_t plaintext_size,
-                     std::shared_ptr<IOBuf> ciphertext) {
+void cipher::encrypt(const uint8_t* plaintext_data, size_t plaintext_size, std::shared_ptr<IOBuf> ciphertext) {
   DCHECK(ciphertext);
 
   if (!init_) {
@@ -295,8 +263,7 @@ void cipher::encrypt(const uint8_t* plaintext_data,
   counter = counter_;
 
   // TBD better to apply MTU-like things
-  int ret = chunk_encrypt_frame(&counter, plaintext_data,
-                                plaintext_size, ciphertext.get());
+  int ret = chunk_encrypt_frame(&counter, plaintext_data, plaintext_size, ciphertext.get());
   if (ret < 0) {
     visitor_->on_protocol_error();
     return;
@@ -370,9 +337,7 @@ void cipher::encrypt_salt(IOBuf* chunk) {
 #endif
 }
 
-int cipher::chunk_decrypt_frame(uint64_t* counter,
-                                IOBuf* plaintext,
-                                IOBuf* ciphertext) const {
+int cipher::chunk_decrypt_frame(uint64_t* counter, IOBuf* plaintext, IOBuf* ciphertext) const {
 #ifdef HAVE_MBEDTLS
   if (impl_->cipher_id() >= CRYPTO_AES_128_CFB && impl_->cipher_id() <= CRYPTO_CAMELLIA_256_CFB) {
     return chunk_decrypt_frame_stream(counter, plaintext, ciphertext);
@@ -384,17 +349,14 @@ int cipher::chunk_decrypt_frame(uint64_t* counter,
 #endif
 }
 
-int cipher::chunk_decrypt_frame_aead(uint64_t* counter,
-                                     IOBuf* plaintext,
-                                     IOBuf* ciphertext) const {
+int cipher::chunk_decrypt_frame_aead(uint64_t* counter, IOBuf* plaintext, IOBuf* ciphertext) const {
   int err;
   size_t mlen;
   size_t tlen = tag_len_;
   size_t plen = 0;
   size_t clen = CHUNK_SIZE_LEN + tlen;
 
-  VLOG(4) << "decrypt: 1st chunk: origin: " << CHUNK_SIZE_LEN
-          << " encrypted: " << clen
+  VLOG(4) << "decrypt: 1st chunk: origin: " << CHUNK_SIZE_LEN << " encrypted: " << clen
           << " actual: " << ciphertext->length();
 
   if (ciphertext->length() < tlen + CHUNK_SIZE_LEN + tlen) {
@@ -410,8 +372,7 @@ int cipher::chunk_decrypt_frame_aead(uint64_t* counter,
 
   plen = sizeof(len.cover);
 
-  err = impl_->DecryptPacket(*counter, len.buf, &plen, ciphertext->data(),
-                             clen);
+  err = impl_->DecryptPacket(*counter, len.buf, &plen, ciphertext->data(), clen);
 
   if (err) {
     return -EBADMSG;
@@ -431,9 +392,7 @@ int cipher::chunk_decrypt_frame_aead(uint64_t* counter,
 
   clen = tlen + mlen;
 
-  VLOG(4) << "decrypt: 2nd chunk: origin: " << mlen
-          << " encrypted: " << clen
-          << " actual: " << ciphertext->length();
+  VLOG(4) << "decrypt: 2nd chunk: origin: " << mlen << " encrypted: " << clen << " actual: " << ciphertext->length();
 
   if (ciphertext->length() < clen) {
     ciphertext->prepend(CHUNK_SIZE_LEN + tlen);
@@ -443,8 +402,7 @@ int cipher::chunk_decrypt_frame_aead(uint64_t* counter,
   (*counter)++;
 
   plen = plaintext->capacity();
-  err = impl_->DecryptPacket(*counter, plaintext->mutable_tail(), &plen,
-                             ciphertext->data(), clen);
+  err = impl_->DecryptPacket(*counter, plaintext->mutable_tail(), &plen, ciphertext->data(), clen);
   if (err) {
     ciphertext->prepend(CHUNK_SIZE_LEN + tlen);
     return -EBADMSG;
@@ -461,18 +419,14 @@ int cipher::chunk_decrypt_frame_aead(uint64_t* counter,
   return 0;
 }
 
-int cipher::chunk_decrypt_frame_stream(uint64_t* counter,
-                                       IOBuf* plaintext,
-                                       IOBuf* ciphertext) const {
+int cipher::chunk_decrypt_frame_stream(uint64_t* counter, IOBuf* plaintext, IOBuf* ciphertext) const {
   int err;
   size_t plen = ciphertext->length();
   plaintext->reserve(0, ciphertext->length());
 
-  VLOG(4) << "decrypt: stream chunk: origin: " << plen
-          << " actual: " << ciphertext->length();
+  VLOG(4) << "decrypt: stream chunk: origin: " << plen << " actual: " << ciphertext->length();
 
-  err = impl_->DecryptPacket(*counter, plaintext->mutable_tail(), &plen,
-                             ciphertext->data(), ciphertext->length());
+  err = impl_->DecryptPacket(*counter, plaintext->mutable_tail(), &plen, ciphertext->data(), ciphertext->length());
   if (err) {
     return -EBADMSG;
   }
@@ -517,13 +471,11 @@ int cipher::chunk_encrypt_frame_aead(uint64_t* counter,
 
   len.cover = htons(plaintext_size & CHUNK_SIZE_MASK);
 
-  VLOG(4) << "encrypt: 1st chunk: origin: " << CHUNK_SIZE_LEN
-          << " encrypted: " << clen;
+  VLOG(4) << "encrypt: 1st chunk: origin: " << CHUNK_SIZE_LEN << " encrypted: " << clen;
 
   ciphertext->reserve(0, clen);
 
-  err = impl_->EncryptPacket(*counter, ciphertext->mutable_tail(), &clen,
-                             len.buf, CHUNK_SIZE_LEN);
+  err = impl_->EncryptPacket(*counter, ciphertext->mutable_tail(), &clen, len.buf, CHUNK_SIZE_LEN);
   if (err) {
     return -EBADMSG;
   }
@@ -536,15 +488,13 @@ int cipher::chunk_encrypt_frame_aead(uint64_t* counter,
 
   clen = plaintext_size + tlen;
 
-  VLOG(4) << "encrypt: 2nd chunk: origin: " << plaintext_size
-          << " encrypted: " << clen;
+  VLOG(4) << "encrypt: 2nd chunk: origin: " << plaintext_size << " encrypted: " << clen;
 
   ciphertext->reserve(0, clen);
   // FIXME it is a bug with crypto layer
   memset(ciphertext->mutable_tail(), 0, clen);
 
-  err = impl_->EncryptPacket(*counter, ciphertext->mutable_tail(), &clen,
-                             plaintext_data, plaintext_size);
+  err = impl_->EncryptPacket(*counter, ciphertext->mutable_tail(), &clen, plaintext_data, plaintext_size);
   if (err) {
     ciphertext->trimEnd(CHUNK_SIZE_LEN + tlen);
     return -EBADMSG;
@@ -567,11 +517,9 @@ int cipher::chunk_encrypt_frame_stream(uint64_t* counter,
   size_t clen = plaintext_size;
   ciphertext->reserve(0, clen);
 
-  VLOG(4) << "encrypt: stream chunk: origin: " << plaintext_size
-          << " actual: " << clen;
+  VLOG(4) << "encrypt: stream chunk: origin: " << plaintext_size << " actual: " << clen;
 
-  err = impl_->EncryptPacket(*counter, ciphertext->mutable_tail(), &clen,
-                             plaintext_data, plaintext_size);
+  err = impl_->EncryptPacket(*counter, ciphertext->mutable_tail(), &clen, plaintext_data, plaintext_size);
   if (err) {
     return -EBADMSG;
   }
@@ -601,8 +549,7 @@ void cipher::set_key_stream(const uint8_t* nonce, size_t nonce_len) {
 void cipher::set_key_aead(const uint8_t* salt, size_t salt_len) {
   DCHECK_EQ(salt_len, key_len_);
   uint8_t skey[MAX_KEY_LENGTH] = {};
-  int err = crypto_hkdf(salt, salt_len, key_, key_len_,
-                        reinterpret_cast<const uint8_t*>(SUBKEY_INFO),
+  int err = crypto_hkdf(salt, salt_len, key_, key_len_, reinterpret_cast<const uint8_t*>(SUBKEY_INFO),
                         sizeof(SUBKEY_INFO) - 1, skey, key_len_);
   if (err) {
     LOG(FATAL) << "Unable to generate subkey";
@@ -625,4 +572,4 @@ void cipher::set_key_aead(const uint8_t* salt, size_t salt_len) {
 #endif
 }
 
-} // namespace net
+}  // namespace net

@@ -59,11 +59,7 @@ IOBuf::IOBuf(CreateOp, std::size_t capacity) {
   data_ = buf_;
 }
 
-IOBuf::IOBuf(CopyBufferOp /* op */,
-             const void* buf,
-             std::size_t size,
-             std::size_t headroom,
-             std::size_t minTailroom)
+IOBuf::IOBuf(CopyBufferOp /* op */, const void* buf, std::size_t size, std::size_t headroom, std::size_t minTailroom)
     : IOBuf(CREATE, headroom + size + minTailroom) {
   advance(headroom);
   if (size > 0) {
@@ -73,10 +69,7 @@ IOBuf::IOBuf(CopyBufferOp /* op */,
   }
 }
 
-IOBuf::IOBuf(CopyBufferOp op,
-             ByteRange br,
-             std::size_t headroom,
-             std::size_t minTailroom)
+IOBuf::IOBuf(CopyBufferOp op, ByteRange br, std::size_t headroom, std::size_t minTailroom)
     : IOBuf(op, br.data(), br.size(), headroom, minTailroom) {}
 
 IOBuf::~IOBuf() {
@@ -100,10 +93,7 @@ IOBuf IOBuf::cloneAsValue() const {
 IOBuf::IOBuf() noexcept = default;
 
 IOBuf::IOBuf(IOBuf&& other) noexcept
-    : buf_(other.buf_),
-      data_(other.data_),
-      length_(other.length_),
-      capacity_(other.capacity_) {
+    : buf_(other.buf_), data_(other.data_), length_(other.length_), capacity_(other.capacity_) {
   // Reset other so it is a clean state to be destroyed.
   other.buf_ = nullptr;
   other.data_ = nullptr;
@@ -115,11 +105,7 @@ IOBuf::IOBuf(const IOBuf& other) {
   *this = other.cloneAsValue();
 }
 
-IOBuf::IOBuf(InternalConstructor,
-             uint8_t* buf,
-             std::size_t capacity,
-             uint8_t* data,
-             std::size_t length) noexcept
+IOBuf::IOBuf(InternalConstructor, uint8_t* buf, std::size_t capacity, uint8_t* data, std::size_t length) noexcept
     : buf_(buf), data_(data), length_(length), capacity_(capacity) {
   DCHECK(data >= buf);
   DCHECK(data + length <= buf + capacity);
@@ -212,4 +198,4 @@ void IOBuf::reserveSlow(std::size_t minHeadroom, std::size_t minTailroom) {
   data_ = newBuffer + newHeadroom;
 }
 
-} // namespace net
+}  // namespace net

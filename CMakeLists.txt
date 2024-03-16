@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
 if (CMAKE_CURRENT_BINARY_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   message(FATAL_ERROR "In source-tree build not support")
@@ -259,6 +259,9 @@ if (MSVC)
   if (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "x86")
     set(OS_X86 TRUE)
   endif()
+  if (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "amd64")
+    set(OS_X64 TRUE)
+  endif()
   if (MSVC_PROCESSOR_ARCHITECTURE STREQUAL "arm64")
     set(OS_AARCH64 TRUE)
   endif()
@@ -266,6 +269,17 @@ if (MSVC)
   list(APPEND YASS_APP_FEATURES "${MSVC_CRT_LINKAGE} crt")
 elseif(APPLE)
   message(STATUS "Build with target architecture: ${CMAKE_OSX_ARCHITECTURES}")
+  list(LENGTH CMAKE_OSX_ARCHITECTURES OSX_CROSS_ARCHITECTURES_COUNT)
+  if (OSX_CROSS_ARCHITECTURES_COUNT EQUAL 1 AND CMAKE_OSX_ARCHITECTURES STREQUAL "x86_64")
+    set(OS_X64 TRUE)
+  elseif (OSX_CROSS_ARCHITECTURES_COUNT EQUAL 0 AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+    set(OS_X64 TRUE)
+  endif()
+  if (OSX_CROSS_ARCHITECTURES_COUNT EQUAL 1 AND CMAKE_OSX_ARCHITECTURES STREQUAL "arm64")
+    set(OS_AARCH64 TRUE)
+  elseif (OSX_CROSS_ARCHITECTURES_COUNT EQUAL 0 AND CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
+    set(OS_AARCH64 TRUE)
+  endif()
   list(APPEND YASS_APP_FEATURES "arch: ${CMAKE_OSX_ARCHITECTURES}")
 else()
   if ((CMAKE_C_COMPILER_TARGET MATCHES "^i386-.*" OR
@@ -273,6 +287,21 @@ else()
        CMAKE_C_COMPILER_TARGET MATCHES "^i586-.*" OR
        CMAKE_C_COMPILER_TARGET MATCHES "^i686-.*"))
     set(OS_X86 TRUE)
+  endif()
+
+  if ((CMAKE_C_COMPILER_TARGET MATCHES "^amd64*" OR
+       CMAKE_C_COMPILER_TARGET MATCHES "^x86_64*" OR
+       CMAKE_C_COMPILER_TARGET MATCHES "^x64*"))
+    set(OS_X64 TRUE)
+  endif()
+  if (NOT CMAKE_C_COMPILER_TARGET AND
+      (CMAKE_SYSTEM_PROCESSOR MATCHES "^amd64*" OR
+       CMAKE_SYSTEM_PROCESSOR MATCHES "^x86_64*" OR
+       CMAKE_SYSTEM_PROCESSOR MATCHES "^x64*"))
+    set(OS_X64 TRUE)
+  endif()
+  if (CMAKE_C_COMPILER_TARGET MATCHES "^arm-.*")
+    set(OS_ARM TRUE)
   endif()
   if ((CMAKE_C_COMPILER_TARGET MATCHES "^arm64-.*" OR
        CMAKE_C_COMPILER_TARGET MATCHES "^aarch64-.*"))
@@ -491,6 +520,10 @@ endif()
 if (UNIX AND CMAKE_CROSSCOMPILING AND CMAKE_SYSROOT AND COMPILER_CLANG AND NOT CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
   if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16.0)
     file(GLOB _GCC_SYSROOT "${CMAKE_SYSROOT}/lib/gcc/*/*.*.*")
+    # fix up for loongarch sysroot
+    if (CMAKE_SYSTEM_PROCESSOR STREQUAL "loongarch64")
+      file(GLOB _GCC_SYSROOT "${CMAKE_SYSROOT}/../../lib/gcc/*/*.*.*")
+    endif()
     if (_GCC_SYSROOT)
       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --gcc-install-dir=${_GCC_SYSROOT}")
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --gcc-install-dir=${_GCC_SYSROOT}")
@@ -500,6 +533,10 @@ if (UNIX AND CMAKE_CROSSCOMPILING AND CMAKE_SYSROOT AND COMPILER_CLANG AND NOT C
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --gcc-toolchain=${CMAKE_SYSROOT}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --gcc-toolchain=${CMAKE_SYSROOT}")
   endif()
+endif()
+
+if (CMAKE_SYSTEM_PROCESSOR STREQUAL "loongarch64")
+  add_definitions(-D_LOONGARCH_SZLONG=64)
 endif()
 
 include(CrossCompile)
@@ -1568,7 +1605,7 @@ if (WIN32)
   # not targeting Windows Runtime
   add_definitions(-DWINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP)
 
-  if (ALLOW_XP)
+  if (ALLOW_XP AND OS_X86)
     message(STATUS "Build with Windows XP support")
     add_definitions(-D_USING_V110_SDK71_)
     add_definitions(-D_WIN32_WINNT=0x0501)
@@ -1578,6 +1615,16 @@ if (WIN32)
       include_directories(third_party/xp-compatible SYSTEM)
     endif()
     list(APPEND YASS_APP_FEATURES "winxp")
+  elseif (ALLOW_XP)
+    message(STATUS "Build with Windows 7 support")
+    add_definitions(-D_USING_V110_SDK71_)
+    add_definitions(-D_WIN32_WINNT=0x0601)
+    add_definitions(-DWINVER=0x0601)
+    # for winapifamily.h
+    if (NOT MINGW)
+      include_directories(third_party/xp-compatible SYSTEM)
+    endif()
+    list(APPEND YASS_APP_FEATURES "win7")
   elseif(OS_AARCH64)
     message(STATUS "Build with Windows 10 support")
     add_definitions(-D_WIN32_WINNT=0x0A00)
@@ -1622,14 +1669,9 @@ if (WIN32)
   # set linker for subsystem
   # https://learn.microsoft.com/en-us/cpp/build/reference/subsystem-specify-subsystem?view=msvc-170
   if (MSVC OR (MINGW AND USE_LLD))
-    if (ALLOW_XP)
+    if (ALLOW_XP AND OS_X86)
       # 5.01 = Windows XP (minimum for x86 build)
-      # 5.02 = Windows Server 2003/XP SP2 (minimum for x64 build)
-      if (OS_X86)
-        set(SUBSYSTEM_VERSION_SUFFIX ",5.01")
-      else()
-        set(SUBSYSTEM_VERSION_SUFFIX ",5.02")
-      endif()
+      set(SUBSYSTEM_VERSION_SUFFIX ",5.01")
     elseif(OS_AARCH64)
       # default value for arm64
       set(SUBSYSTEM_VERSION_SUFFIX ",6.02")
@@ -1678,6 +1720,9 @@ if (ANDROID)
   # The NDK has these things, but doesn't define the constants to say that it
   # does. Define them here instead.
   add_definitions(-DHAVE_SYS_UIO_H=1)
+  # silence macro re-defined warning in c-ares
+  set(HAVE_SYS_UIO_H FALSE)
+  set(HAVE_WRITEV TRUE)
 
   # Forces full rebuilds on NDK rolls. To rebuild everything when NDK version
   # stays the same, increment the suffix number.
@@ -2205,6 +2250,10 @@ if (USE_TCMALLOC)
     message(WARNING "tcmalloc: 32-bit arm is not supported, disabling...")
     set(USE_TCMALLOC OFF)
   endif()
+  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "loongarch64")
+    message(WARNING "tcmalloc: loongarch64 is not supported, disabling...")
+    set(USE_TCMALLOC OFF)
+  endif()
 endif()
 
 # tunings:
@@ -2575,36 +2624,50 @@ elseif (USE_MBEDTLS)
 endif()
 
 # *****************************************************************************************
-#           asio Library
+#           asio_core Library
 # *****************************************************************************************
 
-add_library(asio STATIC
+add_library(asio_core STATIC
   src/net/asio.hpp
   src/net/asio.cpp
   src/net/asio_throw_exceptions.hpp
 )
-target_include_directories(asio PUBLIC
+target_include_directories(asio_core PUBLIC
   src)
-target_include_directories(asio PUBLIC
-  third_party/googleurl/polyfills
-  third_party/asio/asio/include)
-target_compile_definitions(asio PUBLIC ASIO_STANDALONE)
-target_compile_definitions(asio PUBLIC ASIO_NO_TYPEID)
-target_compile_definitions(asio PUBLIC ASIO_NO_EXCEPTIONS)
-target_compile_definitions(asio PUBLIC ASIO_NO_TS_EXECUTORS)
-target_compile_definitions(asio PUBLIC ASIO_SEPARATE_COMPILATION)
-target_compile_definitions(asio PUBLIC ASIO_NO_DEPRECATED)
+target_include_directories(asio_core PUBLIC
+  third_party/asio/asio/include
+  third_party/googleurl/polyfills)
+target_compile_definitions(asio_core PUBLIC ASIO_STANDALONE)
+target_compile_definitions(asio_core PUBLIC ASIO_NO_TYPEID)
+target_compile_definitions(asio_core PUBLIC ASIO_NO_EXCEPTIONS)
+target_compile_definitions(asio_core PUBLIC ASIO_NO_TS_EXECUTORS)
+target_compile_definitions(asio_core PUBLIC ASIO_SEPARATE_COMPILATION)
+target_compile_definitions(asio_core PUBLIC ASIO_NO_DEPRECATED)
+target_compile_definitions(asio_core PRIVATE ASIO_NO_SSL)
 # forward libcxx present
 # we control the visiblity
-target_compile_definitions(asio PUBLIC ASIO_DISABLE_VISIBILITY)
+target_compile_definitions(asio_core PUBLIC ASIO_DISABLE_VISIBILITY)
 # both of asio and quiche use std::allocator<void>
 if (MSVC AND NOT USE_LIBCXX)
-  target_compile_definitions(asio PUBLIC _SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
-  target_compile_definitions(asio PUBLIC _SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING)
+  target_compile_definitions(asio_core PUBLIC _SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
+  target_compile_definitions(asio_core PUBLIC _SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING)
 endif()
-target_link_libraries(asio PUBLIC
+
+target_link_libraries(asio_core PUBLIC
   absl::flags
   url
+  )
+
+# *****************************************************************************************
+#           asio Library
+# *****************************************************************************************
+
+add_library(asio STATIC
+  src/net/asio_ssl.cpp
+)
+target_link_libraries(asio PUBLIC
+  asio_core
+  absl::flags
   crypto
   ssl
   pki)
@@ -3509,7 +3572,9 @@ target_link_libraries(yass_core PUBLIC url
   absl::flags
   absl::flags_parse
   absl::flags_marshalling
-  absl::failure_signal_handler)
+  absl::failure_signal_handler
+  asio_core
+  )
 
 if (USE_CRASHPAD)
   target_link_libraries(yass_core PUBLIC yass_crashpad)
@@ -3552,12 +3617,16 @@ set(files
     src/net/iobuf.cpp
     src/net/hkdf_sha1.cpp
     src/net/hmac_sha1.cpp
+    src/net/dns_message_response_parser.cpp
     src/net/socks4_request_parser.cpp
     src/net/socks5_request_parser.cpp
     src/net/ss_request_parser.cpp
     src/net/c-ares.cpp
+    src/net/doh_request.cpp
+    src/net/doh_resolver.cpp
     src/net/http_parser.cpp
     src/net/padding.cpp
+    src/net/resolver.cpp
     src/crypto/aead_base_decrypter.cpp
     src/crypto/aead_base_encrypter.cpp
     src/crypto/aead_evp_decrypter.cpp
@@ -3609,6 +3678,10 @@ set(hfiles
     src/net/iobuf.hpp
     src/net/hkdf_sha1.hpp
     src/net/hmac_sha1.hpp
+    src/net/dns_message.hpp
+    src/net/dns_message_request.hpp
+    src/net/dns_message_response.hpp
+    src/net/dns_message_response_parser.hpp
     src/net/socks4.hpp
     src/net/socks4_request.hpp
     src/net/socks4_request_parser.hpp
@@ -3620,8 +3693,11 @@ set(hfiles
     src/net/ss_request_parser.hpp
     src/net/io_queue.hpp
     src/net/c-ares.hpp
+    src/net/doh_resolver.hpp
+    src/net/doh_request.hpp
     src/net/http_parser.hpp
     src/net/padding.hpp
+    src/net/resolver.hpp
     src/crypto/aead_base_decrypter.hpp
     src/crypto/aead_base_encrypter.hpp
     src/crypto/aead_evp_decrypter.hpp
@@ -3925,9 +4001,6 @@ if (GUI)
         list(APPEND SRC_FILES ${CMAKE_CURRENT_BINARY_DIR}/yass_zh_CN.gmo)
     endif()
 
-    # target_link_directories requires cmake 3.13
-    link_directories(${GUI_LIBRARY_DIRS})
-
     if (GUI_FLAVOUR STREQUAL "ios" OR GUI_FLAVOUR STREQUAL "cocoa")
       set(GUI_OPTIONS MACOSX_BUNDLE)
     endif()
@@ -3992,6 +4065,8 @@ if (GUI)
     endforeach()
 
     target_compile_options(${APP_NAME} PRIVATE ${GUI_C_CXX_FLAGS})
+
+    target_link_directories(${APP_NAME} PUBLIC ${GUI_LIBRARY_DIRS})
 
     if (NOT IOS)
       target_link_libraries(${APP_NAME} PUBLIC yass_cli_lib yass_net)
@@ -4298,9 +4373,14 @@ if (GUI)
           src/ios/extensions/YassPacketTunnelProvider.h
           src/ios/extensions/YassPacketTunnelProvider.mm
           src/ios/extensions/PacketTunnel.entitlements
+
+          src/ios/extensions/PrivacyInfo.xcprivacy
           )
 
         add_executable(network-extension MACOSX_BUNDLE ${PLUGIN_SRC})
+
+        set_source_files_properties("src/ios/extensions/PrivacyInfo.xcprivacy" PROPERTIES
+          MACOSX_PACKAGE_LOCATION "Resources")
 
         target_include_directories(network-extension PRIVATE
           ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -4346,6 +4426,8 @@ if (GUI)
 
         # FIXME conflicts with XCTest bundle creation
         if (SDK_NAME STREQUAL iphoneos)
+          # require Xcode 3.21 or later
+          # https://cmake.org/cmake/help/latest/prop_tgt/XCODE_EMBED_type.html
           set_target_properties(${APP_NAME} PROPERTIES
             XCODE_EMBED_APP_EXTENSIONS network-extension
             XCODE_EMBED_APP_EXTENSIONS_REMOVE_HEADERS_ON_COPY "YES"
@@ -4419,7 +4501,7 @@ if(NOT CMAKE_SKIP_INSTALL_RULES)
   file(READ third_party/zlib/LICENSE                        _ZLIB_LICENSE)
 
   set(LICENSE_FILE "${CMAKE_CURRENT_BINARY_DIR}/LICENSE")
-  configure_file("LICENSE.tmpl" "${LICENSE_FILE}" @ONLY)
+  configure_file("LICENSE.cmake.in" "${LICENSE_FILE}" @ONLY)
   install(FILES "${LICENSE_FILE}" DESTINATION ${CMAKE_INSTALL_DOCDIR})
 endif()
 
@@ -4438,6 +4520,8 @@ if (BUILD_TESTS)
     src/net/cipher_test.cpp
     src/net/c-ares_test.cpp
     src/net/padding_test.cpp
+    src/net/dns_message_test.cpp
+    src/net/doh_resolver_test.cpp
     )
 
   if (IOS)

@@ -31,7 +31,7 @@
 
   cipher_methods_ = @[
 #define XX(num, name, string) @string,
-      CIPHER_METHOD_VALID_MAP(XX)
+    CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   ];
   self.currentCiphermethod = @(CRYPTO_HTTP2_STR);
@@ -42,6 +42,7 @@
   [self.serverPort setDelegate:self];
   [self.username setDelegate:self];
   [self.password setDelegate:self];
+  [self.dohURL setDelegate:self];
   [self.timeout setDelegate:self];
 
   [self LoadChanges];
@@ -51,38 +52,46 @@
 }
 
 - (void)viewWillAppear:(BOOL)animated {
-  YassAppDelegate* appDelegate =
-      (YassAppDelegate*)UIApplication.sharedApplication.delegate;
+  YassAppDelegate* appDelegate = (YassAppDelegate*)UIApplication.sharedApplication.delegate;
   [appDelegate reloadState];
-  [[NSNotificationCenter defaultCenter] addObserverForName:UIKeyboardWillShowNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification * _Nonnull notification) {
-    NSDictionary *userInfo = notification.userInfo;
-    NSTimeInterval duration = [userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue];
-    CGRect keyboardEndFrame = [self.view convertRect:[userInfo[UIKeyboardFrameEndUserInfoKey] CGRectValue] toView:self.view.window];
+  [[NSNotificationCenter defaultCenter]
+      addObserverForName:UIKeyboardWillShowNotification
+                  object:nil
+                   queue:[NSOperationQueue mainQueue]
+              usingBlock:^(NSNotification* _Nonnull notification) {
+                NSDictionary* userInfo = notification.userInfo;
+                NSTimeInterval duration = [userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue];
+                CGRect keyboardEndFrame = [self.view convertRect:[userInfo[UIKeyboardFrameEndUserInfoKey] CGRectValue]
+                                                          toView:self.view.window];
 
-    CGRect windowFrame = [self.view convertRect:self.view.window.frame toView:self.view.window];
-    CGFloat heightOffset = (windowFrame.size.height - keyboardEndFrame.origin.y) - self.view.frame.origin.y;
+                CGRect windowFrame = [self.view convertRect:self.view.window.frame toView:self.view.window];
+                CGFloat heightOffset = (windowFrame.size.height - keyboardEndFrame.origin.y) - self.view.frame.origin.y;
 
-    self.bottomConstraint.constant = heightOffset + 20;
+                self.bottomConstraint.constant = heightOffset + 20;
 
-    [UIView animateWithDuration:duration
-                     animations:^{
-      [self.view layoutIfNeeded];
-    }];
-  }];
+                [UIView animateWithDuration:duration
+                                 animations:^{
+                                   [self.view layoutIfNeeded];
+                                 }];
+              }];
 
-  [[NSNotificationCenter defaultCenter] addObserverForName:UIKeyboardWillHideNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification * _Nonnull notification) {
-    NSDictionary *userInfo = notification.userInfo;
-    NSTimeInterval duration = [userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue];
-    self.bottomConstraint.constant =  20;
-    [UIView animateWithDuration:duration
-                     animations:^{
-      [self.view layoutIfNeeded];
-    }];
-  }];
+  [[NSNotificationCenter defaultCenter] addObserverForName:UIKeyboardWillHideNotification
+                                                    object:nil
+                                                     queue:[NSOperationQueue mainQueue]
+                                                usingBlock:^(NSNotification* _Nonnull notification) {
+                                                  NSDictionary* userInfo = notification.userInfo;
+                                                  NSTimeInterval duration =
+                                                      [userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue];
+                                                  self.bottomConstraint.constant = 20;
+                                                  [UIView animateWithDuration:duration
+                                                                   animations:^{
+                                                                     [self.view layoutIfNeeded];
+                                                                   }];
+                                                }];
   [super viewWillAppear:animated];
 }
 
-- (BOOL)textFieldShouldReturn:(UITextField *)textField {
+- (BOOL)textFieldShouldReturn:(UITextField*)textField {
   if (textField == self.serverHost) {
     [textField resignFirstResponder];
     [self.serverPort becomeFirstResponder];
@@ -94,6 +103,9 @@
     [self.password becomeFirstResponder];
   } else if (textField == self.password) {
     [textField resignFirstResponder];
+    [self.dohURL becomeFirstResponder];
+  } else if (textField == self.dohURL) {
+    [textField resignFirstResponder];
     [self.timeout becomeFirstResponder];
   } else if (textField == self.timeout) {
     [textField resignFirstResponder];
@@ -103,7 +115,7 @@
   return NO;
 }
 
-- (BOOL)textFieldShouldEndEditing:(UITextField *)textField {
+- (BOOL)textFieldShouldEndEditing:(UITextField*)textField {
   if (textField == self.serverHost) {
     if (textField.text.length > _POSIX_HOST_NAME_MAX) {
       return NO;
@@ -113,6 +125,10 @@
     auto port = StringToInteger(gurl_base::SysNSStringToUTF8(textField.text));
     return port.has_value() && port.value() > 0 && port.value() < 65536 ? YES : NO;
   }
+  if (textField == self.dohURL) {
+    NSURL* url = [NSURL URLWithString:textField.text];
+    return url && url.scheme && [url.scheme isEqualToString:@"https"] && url.host ? YES : NO;
+  }
   if (textField == self.timeout) {
     auto port = StringToInteger(gurl_base::SysNSStringToUTF8(textField.text));
     return port.has_value() && port.value() >= 0 ? YES : NO;
@@ -120,19 +136,19 @@
   return YES;
 }
 
-- (NSInteger)numberOfComponentsInPickerView:(UIPickerView *)pickerView {
+- (NSInteger)numberOfComponentsInPickerView:(UIPickerView*)pickerView {
   return 1;
 }
 
-- (NSInteger)pickerView:(UIPickerView *)pickerView numberOfRowsInComponent:(NSInteger)component {
+- (NSInteger)pickerView:(UIPickerView*)pickerView numberOfRowsInComponent:(NSInteger)component {
   return [cipher_methods_ count];
 }
 
-- (NSString *)pickerView:(UIPickerView *)pickerView titleForRow:(NSInteger)row forComponent:(NSInteger)component {
+- (NSString*)pickerView:(UIPickerView*)pickerView titleForRow:(NSInteger)row forComponent:(NSInteger)component {
   return [cipher_methods_ objectAtIndex:row];
 }
 
-- (void)pickerView:(UIPickerView *)pickerView didSelectRow:(NSInteger)row inComponent:(NSInteger)component {
+- (void)pickerView:(UIPickerView*)pickerView didSelectRow:(NSInteger)row inComponent:(NSInteger)component {
   self.currentCiphermethod = [cipher_methods_ objectAtIndex:row];
 }
 
@@ -145,14 +161,12 @@
 }
 
 - (void)OnStart {
-  YassAppDelegate* appDelegate =
-      (YassAppDelegate*)UIApplication.sharedApplication.delegate;
+  YassAppDelegate* appDelegate = (YassAppDelegate*)UIApplication.sharedApplication.delegate;
   [appDelegate OnStart:FALSE];
 }
 
 - (void)OnStop {
-  YassAppDelegate* appDelegate =
-      (YassAppDelegate*)UIApplication.sharedApplication.delegate;
+  YassAppDelegate* appDelegate = (YassAppDelegate*)UIApplication.sharedApplication.delegate;
   [appDelegate OnStop:FALSE];
 }
 
@@ -163,6 +177,7 @@
   [self.username setUserInteractionEnabled:FALSE];
   [self.password setUserInteractionEnabled:FALSE];
   [self.cipherMethod setUserInteractionEnabled:FALSE];
+  [self.dohURL setUserInteractionEnabled:FALSE];
   [self.timeout setUserInteractionEnabled:FALSE];
   [self.startButton setEnabled:FALSE];
   [self.stopButton setEnabled:FALSE];
@@ -175,6 +190,7 @@
   [self.username setUserInteractionEnabled:FALSE];
   [self.password setUserInteractionEnabled:FALSE];
   [self.cipherMethod setUserInteractionEnabled:FALSE];
+  [self.dohURL setUserInteractionEnabled:FALSE];
   [self.timeout setUserInteractionEnabled:FALSE];
   [self.startButton setEnabled:FALSE];
   [self.stopButton setEnabled:TRUE];
@@ -187,6 +203,7 @@
   [self.username setUserInteractionEnabled:TRUE];
   [self.password setUserInteractionEnabled:TRUE];
   [self.cipherMethod setUserInteractionEnabled:TRUE];
+  [self.dohURL setUserInteractionEnabled:TRUE];
   [self.timeout setUserInteractionEnabled:TRUE];
   [self.startButton setEnabled:TRUE];
   [self.stopButton setEnabled:FALSE];
@@ -199,6 +216,7 @@
   [self.username setUserInteractionEnabled:FALSE];
   [self.password setUserInteractionEnabled:FALSE];
   [self.cipherMethod setUserInteractionEnabled:FALSE];
+  [self.dohURL setUserInteractionEnabled:FALSE];
   [self.timeout setUserInteractionEnabled:FALSE];
   [self.startButton setEnabled:FALSE];
   [self.stopButton setEnabled:FALSE];
@@ -211,14 +229,14 @@
   [self.username setUserInteractionEnabled:TRUE];
   [self.password setUserInteractionEnabled:TRUE];
   [self.cipherMethod setUserInteractionEnabled:TRUE];
+  [self.dohURL setUserInteractionEnabled:TRUE];
   [self.timeout setUserInteractionEnabled:TRUE];
   [self.startButton setEnabled:TRUE];
   [self.stopButton setEnabled:FALSE];
 }
 
 - (NSString*)getStatusMessage {
-  YassAppDelegate* appDelegate =
-      (YassAppDelegate*)UIApplication.sharedApplication.delegate;
+  YassAppDelegate* appDelegate = (YassAppDelegate*)UIApplication.sharedApplication.delegate;
   if ([appDelegate getState] != STARTED) {
     return [appDelegate getStatus];
   }
@@ -227,17 +245,15 @@
   if (delta_time > NS_PER_SECOND) {
     uint64_t rx_bytes = appDelegate.total_rx_bytes;
     uint64_t tx_bytes = appDelegate.total_tx_bytes;
-    rx_rate_ = static_cast<double>(rx_bytes - last_rx_bytes_) / delta_time *
-               NS_PER_SECOND;
-    tx_rate_ = static_cast<double>(tx_bytes - last_tx_bytes_) / delta_time *
-               NS_PER_SECOND;
+    rx_rate_ = static_cast<double>(rx_bytes - last_rx_bytes_) / delta_time * NS_PER_SECOND;
+    tx_rate_ = static_cast<double>(tx_bytes - last_tx_bytes_) / delta_time * NS_PER_SECOND;
     last_sync_time_ = sync_time;
     last_rx_bytes_ = rx_bytes;
     last_tx_bytes_ = tx_bytes;
   }
 
   std::ostringstream ss;
-  NSString *message = [appDelegate getStatus];
+  NSString* message = [appDelegate getStatus];
   ss << gurl_base::SysNSStringToUTF8(message);
   message = NSLocalizedString(@"TXRATE", @" tx rate: ");
   ss << gurl_base::SysNSStringToUTF8(message);
@@ -256,10 +272,8 @@
 }
 
 - (void)LoadChanges {
-  self.serverHost.text =
-      gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_server_host));
-  self.serverPort.text =
-    gurl_base::SysUTF8ToNSString(std::to_string(absl::GetFlag(FLAGS_server_port)));
+  self.serverHost.text = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_server_host));
+  self.serverPort.text = gurl_base::SysUTF8ToNSString(std::to_string(absl::GetFlag(FLAGS_server_port)));
   self.username.text = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_username));
   self.password.text = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_password));
 
@@ -270,8 +284,8 @@
     [self.cipherMethod selectRow:row inComponent:0 animated:NO];
   }
 
-  self.timeout.text =
-    gurl_base::SysUTF8ToNSString(std::to_string(absl::GetFlag(FLAGS_connect_timeout)));
+  self.dohURL.text = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_doh_url));
+  self.timeout.text = gurl_base::SysUTF8ToNSString(std::to_string(absl::GetFlag(FLAGS_connect_timeout)));
 }
 
 @end

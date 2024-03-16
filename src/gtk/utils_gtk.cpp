@@ -3,29 +3,28 @@
 
 #include "gtk/utils.hpp"
 
+#include "config/config.hpp"
 #include "core/logging.hpp"
+#include "core/process_utils.hpp"
 #include "core/utils.hpp"
 #include "core/utils_fs.hpp"
-#include "core/process_utils.hpp"
-#include "config/config.hpp"
 #include "net/asio.hpp"
 
-#include <string_view>
 #include <absl/strings/str_cat.h>
 #include <absl/strings/str_format.h>
 #include <base/posix/eintr_wrapper.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <stdlib.h>
-#include <string_view>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <string_view>
 
 // Available in 2.58
 #ifndef G_SOURCE_FUNC
-#define G_SOURCE_FUNC(f) ((GSourceFunc) (void (*)(void)) (f))
+#define G_SOURCE_FUNC(f) ((GSourceFunc)(void (*)(void))(f))
 #endif
 
 using namespace yass;
@@ -33,21 +32,23 @@ using namespace yass;
 static constexpr char kDefaultAutoStartName[] = "it.gui.yass";
 
 static constexpr std::string_view kAutoStartFileContent =
-"[Desktop Entry]\n"
-"Version=1.0\n"
-"Type=Application\n"
-"Name=yass\n"
-"Comment=Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for embedded devices and low end boxes.\n"
-"Icon=yass\n"
-"Exec=\"%s\" --background\n"
-"Terminal=false\n"
-"Categories=Network;GTK;Utility\n";
+    "[Desktop Entry]\n"
+    "Version=1.0\n"
+    "Type=Application\n"
+    "Name=yass\n"
+    "Comment=Yet Another Shadow Socket is a lightweight and secure http/socks4/socks5 proxy for embedded devices and "
+    "low end boxes.\n"
+    "Icon=yass\n"
+    "Exec=\"%s\" --background\n"
+    "Terminal=false\n"
+    "Categories=Network;GTK;Utility\n";
 
 namespace {
 
-// followed https://github.com/qt/qtbase/blob/7fe1198f6edb40de2299272c7523d85d7486598b/src/corelib/io/qstandardpaths_unix.cpp#L218
+// followed
+// https://github.com/qt/qtbase/blob/7fe1198f6edb40de2299272c7523d85d7486598b/src/corelib/io/qstandardpaths_unix.cpp#L218
 std::string GetConfigDir() {
-  const char *config_dir_ptr = getenv("XDG_CONFIG_HOME");
+  const char* config_dir_ptr = getenv("XDG_CONFIG_HOME");
   std::string config_dir;
   // spec says relative paths should be ignored
   if (config_dir_ptr == nullptr || config_dir_ptr[0] != '/') {
@@ -70,40 +71,32 @@ bool IsKDE() {
 }  // namespace
 
 bool Utils::GetAutoStart() {
-  std::string autostart_desktop_path =
-    absl::StrCat(GetAutostartDirectory(), "/",
-                 kDefaultAutoStartName, ".desktop");
+  std::string autostart_desktop_path = absl::StrCat(GetAutostartDirectory(), "/", kDefaultAutoStartName, ".desktop");
   return IsFile(autostart_desktop_path);
 }
 
 void Utils::EnableAutoStart(bool on) {
-  std::string autostart_desktop_path =
-    absl::StrCat(GetAutostartDirectory(), "/",
-                 kDefaultAutoStartName, ".desktop");
+  std::string autostart_desktop_path = absl::StrCat(GetAutostartDirectory(), "/", kDefaultAutoStartName, ".desktop");
   if (!on) {
     if (!RemoveFile(autostart_desktop_path)) {
-      PLOG(WARNING)
-          << "Internal error: unable to remove autostart file";
+      PLOG(WARNING) << "Internal error: unable to remove autostart file";
     }
     VLOG(1) << "[autostart] removed autostart entry: " << autostart_desktop_path;
   } else {
     if (!CreateDirectories(GetAutostartDirectory())) {
-      PLOG(WARNING)
-          << "Internal error: unable to create config directory";
+      PLOG(WARNING) << "Internal error: unable to create config directory";
     }
 
     // force update, delete first
-    if (IsFile(autostart_desktop_path) &&
-        !RemoveFile(autostart_desktop_path)) {
-      PLOG(WARNING)
-          << "Internal error: unable to remove previous autostart file";
+    if (IsFile(autostart_desktop_path) && !RemoveFile(autostart_desktop_path)) {
+      PLOG(WARNING) << "Internal error: unable to remove previous autostart file";
     }
 
     // write to target
     std::string executable_path = "yass";
     GetExecutablePath(&executable_path);
     std::string desktop_entry = absl::StrFormat(kAutoStartFileContent, executable_path);
-    if (!WriteFileWithBuffer(autostart_desktop_path, desktop_entry))  {
+    if (!WriteFileWithBuffer(autostart_desktop_path, desktop_entry)) {
       PLOG(WARNING) << "Internal error: unable to create autostart file";
     }
 
@@ -184,10 +177,7 @@ std::string Utils::GetLocalAddr() {
   return ss.str();
 }
 
-bool QuerySystemProxy(bool *enabled,
-                      std::string *server_host,
-                      std::string *server_port,
-                      std::string *bypass_addr) {
+bool QuerySystemProxy(bool* enabled, std::string* server_host, std::string* server_port, std::string* bypass_addr) {
   std::string output, _;
   std::vector<std::string> params = {"gsettings", "get", "org.gnome.system.proxy", "mode"};
   if (ExecuteProcess(params, &output, &_) != 0) {
@@ -232,23 +222,23 @@ bool QuerySystemProxy(bool *enabled,
 }
 
 bool SetSystemProxy(bool enable,
-                    const std::string &server_host,
-                    const std::string &server_port,
-                    const std::string &bypass_addr) {
+                    const std::string& server_host,
+                    const std::string& server_port,
+                    const std::string& bypass_addr) {
   std::string _;
   std::vector<std::string> params = {"gsettings", "set", "org.gnome.system.proxy", "mode",
-    enable ?  "'manual'" : "'none'"};
+                                     enable ? "'manual'" : "'none'"};
   if (ExecuteProcess(params, &_, &_) != 0) {
     return false;
   }
 
   static const char* kProtocol[] = {
-    "org.gnome.system.proxy.http",
-    "org.gnome.system.proxy.https",
-    "org.gnome.system.proxy.ftp",
-    "org.gnome.system.proxy.socks",
+      "org.gnome.system.proxy.http",
+      "org.gnome.system.proxy.https",
+      "org.gnome.system.proxy.ftp",
+      "org.gnome.system.proxy.socks",
   };
-  for (const char * protocol: kProtocol) {
+  for (const char* protocol : kProtocol) {
     params = {"gsettings", "set", protocol, "host", server_host};
     if (ExecuteProcess(params, &_, &_) != 0) {
       return false;
@@ -270,23 +260,20 @@ bool SetSystemProxy(bool enable,
     return false;
   }
 
-  params = {"gsettings", "set", "org.gnome.system.proxy", "mode",
-    enable ?  "'manual'" : "'none'"};
+  params = {"gsettings", "set", "org.gnome.system.proxy", "mode", enable ? "'manual'" : "'none'"};
   if (ExecuteProcess(params, &_, &_) != 0) {
     return false;
   }
   return true;
 }
 
-bool QuerySystemProxy_KDE(bool *enabled,
-                          std::string *server_addr,
-                          std::string *bypass_addr) {
+bool QuerySystemProxy_KDE(bool* enabled, std::string* server_addr, std::string* bypass_addr) {
   bypass_addr->clear();
 
   std::string config_dir = GetConfigDir();
   std::string output, _;
-  std::vector<std::string> params = {"kreadconfig5", "--file", config_dir + "/kioslaverc",
-    "--group", "Proxy Settings", "--key" , "ProxyType"};
+  std::vector<std::string> params = {
+      "kreadconfig5", "--file", config_dir + "/kioslaverc", "--group", "Proxy Settings", "--key", "ProxyType"};
   if (ExecuteProcess(params, &output, &_) != 0) {
     return false;
   }
@@ -296,8 +283,7 @@ bool QuerySystemProxy_KDE(bool *enabled,
   }
   *enabled = output == "1";
 
-  params = {"kreadconfig5", "--file", config_dir + "/kioslaverc",
-    "--group", "Proxy Settings", "--key" , "httpProxy"};
+  params = {"kreadconfig5", "--file", config_dir + "/kioslaverc", "--group", "Proxy Settings", "--key", "httpProxy"};
   if (ExecuteProcess(params, &output, &_) != 0) {
     return false;
   }
@@ -307,8 +293,7 @@ bool QuerySystemProxy_KDE(bool *enabled,
   }
   *server_addr = output;
 
-  params = {"kreadconfig5", "--file", config_dir + "/kioslaverc",
-    "--group", "Proxy Settings", "--key" , "NoProxyFor"};
+  params = {"kreadconfig5", "--file", config_dir + "/kioslaverc", "--group", "Proxy Settings", "--key", "NoProxyFor"};
   if (ExecuteProcess(params, &output, &_) != 0) {
     return false;
   }
@@ -321,40 +306,39 @@ bool QuerySystemProxy_KDE(bool *enabled,
   return true;
 }
 
-bool SetSystemProxy_KDE(bool enable,
-                        const std::string &server_addr,
-                        const std::string &bypass_addr) {
+bool SetSystemProxy_KDE(bool enable, const std::string& server_addr, const std::string& bypass_addr) {
   std::string config_dir = GetConfigDir();
   std::string _;
-  std::vector<std::string> params = {"kwriteconfig5", "--file", config_dir + "/kioslaverc",
-    "--group", "Proxy Settings", "--key" , "ProxyType", enable ? "1" : "0"};
+  std::vector<std::string> params = {"kwriteconfig5", "--file",          config_dir + "/kioslaverc",
+                                     "--group",       "Proxy Settings",  "--key",
+                                     "ProxyType",     enable ? "1" : "0"};
   if (ExecuteProcess(params, &_, &_) != 0) {
     return false;
   }
 
   static const char* kProtocol[] = {
-    "httpProxy",
-    "httpsProxy",
-    "ftpProxy",
-    "socksProxy",
+      "httpProxy",
+      "httpsProxy",
+      "ftpProxy",
+      "socksProxy",
   };
 
-  for (const char * protocol: kProtocol) {
-    params = {"kwriteconfig5", "--file", config_dir + "/kioslaverc",
-      "--group", "Proxy Settings", "--key" , protocol, server_addr};
+  for (const char* protocol : kProtocol) {
+    params = {"kwriteconfig5", "--file",   config_dir + "/kioslaverc", "--group", "Proxy Settings", "--key",
+              protocol,        server_addr};
     if (ExecuteProcess(params, &_, &_) != 0) {
       return false;
     }
   }
 
-  params = {"kwriteconfig5", "--file", config_dir + "/kioslaverc",
-    "--group", "Proxy Settings", "--key" , "NoProxyFor", bypass_addr};
+  params = {"kwriteconfig5", "--file",   config_dir + "/kioslaverc", "--group", "Proxy Settings", "--key",
+            "NoProxyFor",    bypass_addr};
   if (ExecuteProcess(params, &_, &_) != 0) {
     return false;
   }
 
-  params = {"dbus-send", "--type=signal", "/KIO/Scheduler",
-    "org.kde.KIO.Scheduler.reparseSlaveConfiguration", "string:''"};
+  params = {"dbus-send", "--type=signal", "/KIO/Scheduler", "org.kde.KIO.Scheduler.reparseSlaveConfiguration",
+            "string:''"};
   if (ExecuteProcess(params, &_, &_) != 0) {
     return false;
   }
@@ -371,8 +355,7 @@ bool Dispatcher::Init(std::function<void()> callback) {
   if (!callback)
     return false;
 #ifdef SOCK_NONBLOCK
-  if (::socketpair(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC,
-                   0, fds_) != 0) {
+  if (::socketpair(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0, fds_) != 0) {
     PLOG(WARNING) << "Dispatcher: socketpair failure";
     return false;
   }
@@ -381,8 +364,7 @@ bool Dispatcher::Init(std::function<void()> callback) {
     PLOG(WARNING) << "Dispatcher: socketpair failure";
     return false;
   }
-  if (::fcntl(fds_[0], F_SETFD, FD_CLOEXEC) != 0 ||
-      ::fcntl(fds_[1], F_SETFD, FD_CLOEXEC) != 0) {
+  if (::fcntl(fds_[0], F_SETFD, FD_CLOEXEC) != 0 || ::fcntl(fds_[1], F_SETFD, FD_CLOEXEC) != 0) {
     IGNORE_EINTR(::close(fds_[0]));
     IGNORE_EINTR(::close(fds_[1]));
     PLOG(WARNING) << "Dispatcher: set cloexec file descriptor flags failure";
@@ -397,13 +379,11 @@ bool Dispatcher::Init(std::function<void()> callback) {
   }
 #endif
   GIOChannel* channel = g_io_channel_unix_new(fds_[0]);
-  source_ =
-      g_io_create_watch(channel, static_cast<GIOCondition>(G_IO_IN | G_IO_HUP | G_IO_ERR));
+  source_ = g_io_create_watch(channel, static_cast<GIOCondition>(G_IO_IN | G_IO_HUP | G_IO_ERR));
   g_io_channel_unref(channel);
 
   g_source_set_priority(source_, G_PRIORITY_LOW);
-  auto read_callback = [](GIOChannel* source, GIOCondition condition,
-                          gpointer user_data) -> gboolean {
+  auto read_callback = [](GIOChannel* source, GIOCondition condition, gpointer user_data) -> gboolean {
     auto self = reinterpret_cast<Dispatcher*>(user_data);
     if (condition & G_IO_ERR || condition & G_IO_HUP) {
       LOG(WARNING) << "Dispatcher: " << self << " pipe hup";
@@ -412,8 +392,7 @@ bool Dispatcher::Init(std::function<void()> callback) {
     return self->ReadCallback();
   };
 
-  g_source_set_callback(source_, G_SOURCE_FUNC((GIOFunc)read_callback), this,
-                        nullptr);
+  g_source_set_callback(source_, G_SOURCE_FUNC((GIOFunc)read_callback), this, nullptr);
   g_source_set_name(source_, "Dispatcher");
   g_source_attach(source_, nullptr);
   g_source_unref(source_);
@@ -444,12 +423,13 @@ bool Dispatcher::Destroy() {
 bool Dispatcher::Emit() {
   DCHECK(source_);
   DCHECK_NE(fds_[1], -1);
-  VLOG(2) << "Dispatcher: " << this << " Emiting";
-  int32_t data = 0;
+  VLOG(2) << "Dispatcher: " << this << " Emiting Event";
+  char data = 0;
   const char* ptr = reinterpret_cast<char*>(&data);
-  uint32_t size = sizeof(data);
+  size_t size = sizeof(data);
   while (size) {
     int written = ::write(fds_[1], ptr, size);
+    DCHECK(written);
     if (written < 0 && (errno == EINTR || errno == EAGAIN))
       continue;
     if (written < 0) {
@@ -465,16 +445,19 @@ bool Dispatcher::Emit() {
 bool Dispatcher::ReadCallback() {
   DCHECK(source_);
   DCHECK_NE(fds_[0], -1);
-  VLOG(2) << "Dispatcher: " << this << " Reading";
-  int32_t data = 0;
+  char data = 0;
   char* ptr = reinterpret_cast<char*>(&data);
-  uint32_t size = sizeof(data);
+  size_t size = sizeof(data);
   while (size) {
     int ret = ::read(fds_[0], ptr, size);
     if (ret < 0 && (errno == EINTR || errno == EAGAIN))
       continue;
     if (ret < 0) {
       PLOG(WARNING) << "Dispatcher: read failure";
+      return G_SOURCE_REMOVE;
+    }
+    if (ret == 0) {
+      LOG(WARNING) << "Dispatcher: read eof immaturely";
       return G_SOURCE_REMOVE;
     }
     ptr += ret;
@@ -484,6 +467,9 @@ bool Dispatcher::ReadCallback() {
   if (!callback_) {
     return G_SOURCE_REMOVE;
   }
+
+  VLOG(2) << "Dispatcher: " << this << " Received Event";
+
   callback_();
 
   return G_SOURCE_CONTINUE;
@@ -500,18 +486,12 @@ bool Dispatcher::ReadCallback() {
 // A few definitions of macros that don't generate much code. These are used
 // by LOG() and LOG_IF, etc. Since these are used all over our code, it's
 // better to have compact code for these operations.
-#define GLIB_LOGGING_EX_INFO(ClassName, ...) \
-  ClassName(file, atoi(line), LOGGING_INFO, ##__VA_ARGS__)
-#define GLIB_LOGGING_EX_WARNING(ClassName, ...) \
-  ClassName(file, atoi(line), LOGGING_WARNING, ##__VA_ARGS__)
-#define GLIB_LOGGING_EX_ERROR(ClassName, ...) \
-  ClassName(file, atoi(line), LOGGING_ERROR, ##__VA_ARGS__)
-#define GLIB_LOGGING_EX_FATAL(ClassName, ...) \
-  ClassName(file, atoi(line), LOGGING_FATAL, ##__VA_ARGS__)
-#define GLIB_LOGGING_EX_DFATAL(ClassName, ...) \
-  ClassName(file, atoi(line), LOGGING_DFATAL, ##__VA_ARGS__)
-#define GLIB_LOGGING_EX_DCHECK(ClassName, ...) \
-  ClassName(file, atoi(line), LOGGING_DCHECK, ##__VA_ARGS__)
+#define GLIB_LOGGING_EX_INFO(ClassName, ...) ClassName(file, atoi(line), LOGGING_INFO, ##__VA_ARGS__)
+#define GLIB_LOGGING_EX_WARNING(ClassName, ...) ClassName(file, atoi(line), LOGGING_WARNING, ##__VA_ARGS__)
+#define GLIB_LOGGING_EX_ERROR(ClassName, ...) ClassName(file, atoi(line), LOGGING_ERROR, ##__VA_ARGS__)
+#define GLIB_LOGGING_EX_FATAL(ClassName, ...) ClassName(file, atoi(line), LOGGING_FATAL, ##__VA_ARGS__)
+#define GLIB_LOGGING_EX_DFATAL(ClassName, ...) ClassName(file, atoi(line), LOGGING_DFATAL, ##__VA_ARGS__)
+#define GLIB_LOGGING_EX_DCHECK(ClassName, ...) ClassName(file, atoi(line), LOGGING_DCHECK, ##__VA_ARGS__)
 
 #define GLIB_LOGGING_INFO GLIB_LOGGING_EX_INFO(LogMessage)
 #define GLIB_LOGGING_WARNING GLIB_LOGGING_EX_WARNING(LogMessage)
@@ -530,7 +510,7 @@ static GLogWriterOutput GLibLogWriter(GLogLevelFlags log_level,
                                       gpointer userdata) {
   const char *key, *value;
   gsize i;
-  char *message;
+  char* message;
   const char *file = "(?)", *line = "0", *func = "(?)";
 
   // Follow the freedesktop spec
@@ -573,7 +553,7 @@ static GLogWriterOutput GLibLogWriter(GLogLevelFlags log_level,
   return G_LOG_WRITER_HANDLED;
 }
 
-#endif // GLIB_HAS_STRUCTURE_LOG
+#endif  // GLIB_HAS_STRUCTURE_LOG
 
 static void GLibLogHandler(const gchar* log_domain,
                            GLogLevelFlags log_level,
@@ -586,8 +566,7 @@ static void GLibLogHandler(const gchar* log_domain,
 
   GLogLevelFlags always_fatal_flags = g_log_set_always_fatal(G_LOG_LEVEL_MASK);
   g_log_set_always_fatal(always_fatal_flags);
-  GLogLevelFlags fatal_flags =
-      g_log_set_fatal_mask(log_domain, G_LOG_LEVEL_MASK);
+  GLogLevelFlags fatal_flags = g_log_set_fatal_mask(log_domain, G_LOG_LEVEL_MASK);
   g_log_set_fatal_mask(log_domain, fatal_flags);
   if ((always_fatal_flags | fatal_flags) & log_level) {
     LOG(DFATAL) << log_domain << ": " << message;
@@ -609,19 +588,16 @@ static void GLibLogHandler(const gchar* log_domain,
 
 void SetUpGLibLogHandler() {
   // Register GLib-handled assertions to go through our logging system.
-  const char* const kLogDomains[] = {nullptr, "Gtk", "Gdk", "GLib",
-                                     "GLib-GObject"};
+  const char* const kLogDomains[] = {nullptr, "Gtk", "Gdk", "GLib", "GLib-GObject"};
   for (auto logDomain : kLogDomains) {
-    g_log_set_handler(
-        logDomain,
-        static_cast<GLogLevelFlags>(G_LOG_FLAG_RECURSION | G_LOG_FLAG_FATAL |
-                                    G_LOG_LEVEL_ERROR | G_LOG_LEVEL_CRITICAL |
-                                    G_LOG_LEVEL_WARNING),
-        GLibLogHandler, nullptr);
+    g_log_set_handler(logDomain,
+                      static_cast<GLogLevelFlags>(G_LOG_FLAG_RECURSION | G_LOG_FLAG_FATAL | G_LOG_LEVEL_ERROR |
+                                                  G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_WARNING),
+                      GLibLogHandler, nullptr);
   }
 
 #ifdef GLIB_HAS_STRUCTURE_LOG
   // Register GLib-handled structure logging to go through our logging system.
   g_log_set_writer_func(GLibLogWriter, nullptr, nullptr);
-#endif // GLIB_HAS_STRUCTURE_LOG
+#endif  // GLIB_HAS_STRUCTURE_LOG
 }

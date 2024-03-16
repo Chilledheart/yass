@@ -3,10 +3,10 @@
 
 #import <Cocoa/Cocoa.h>
 
+#include <locale.h>
 #include <mach-o/dyld.h>
 #include <stdexcept>
 #include <string>
-#include <locale.h>
 
 #include <absl/debugging/failure_signal_handler.h>
 #include <absl/debugging/symbolize.h>
@@ -19,10 +19,10 @@
 #include "config/config.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
-#include "crypto/crypter_export.hpp"
-#include "version.h"
 #include "crashpad_helper.hpp"
+#include "crypto/crypter_export.hpp"
 #include "i18n/icu_util.hpp"
+#include "version.h"
 
 #if defined(ARCH_CPU_X86_64)
 // This is for https://crbug.com/1300598, and more generally,
@@ -58,16 +58,14 @@ int main(int argc, const char** argv) {
   absl::InstallFailureSignalHandler(failure_handle_options);
 #endif
 
-  absl::SetProgramUsageMessage(
-      absl::StrCat("Usage: ", Basename(exec_path), " [options ...]\n",
-                   " -c, --configfile <file> Use specified config file\n",
-                   " --server_host <host> Host address which remote server listens to\n",
-                   " --server_port <port> Port number which remote server listens to\n",
-                   " --local_host <host> Host address which local server listens to\n"
-                   " --local_port <port> Port number which local server listens to\n"
-                   " --username <username> Username\n",
-                   " --password <pasword> Password pharsal\n",
-                   " --method <method> Method of encrypt"));
+  absl::SetProgramUsageMessage(absl::StrCat(
+      "Usage: ", Basename(exec_path), " [options ...]\n", " -K, --config <file> Read config from a file\n",
+      " --server_host <host> Remote server on given host\n", " --server_port <port> Remote server on given port\n",
+      " --local_host <host> Local proxy server on given host\n"
+      " --local_port <port> Local proxy server on given port\n"
+      " --username <username> Server user\n",
+      " --password <pasword> Server password\n", " --method <method> Specify encrypt of method to use"));
+
   config::ReadConfigFileOption(argc, argv);
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));

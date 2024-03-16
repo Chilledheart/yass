@@ -35,7 +35,7 @@ void AddPadding(std::shared_ptr<net::IOBuf> buf) {
 /// p[0] << 8 + p[1]       p[2]           *         *
 /// output:
 ///                                       *
-std::shared_ptr<net::IOBuf> RemovePadding(std::shared_ptr<net::IOBuf> buf, asio::error_code &ec) {
+std::shared_ptr<net::IOBuf> RemovePadding(std::shared_ptr<net::IOBuf> buf, asio::error_code& ec) {
   if (buf->length() < kPaddingHeaderSize) {
     ec = asio::error::try_again;
     return nullptr;
@@ -55,4 +55,4 @@ std::shared_ptr<net::IOBuf> RemovePadding(std::shared_ptr<net::IOBuf> buf, asio:
   return result;
 }
 
-} // namespace net
+}  // namespace net

@@ -4,10 +4,11 @@
 #ifndef H_NET_SS
 #define H_NET_SS
 
+#include "core/compiler_specific.hpp"
+
 #include <stdint.h>
 
 #include "net/asio.hpp"
-#include "core/logging.hpp"
 
 namespace net {
 
@@ -75,5 +76,5 @@ struct address_type_header {
 
 }  // namespace ss
 
-} // namespace net
+}  // namespace net
 #endif  // H_NET_SS

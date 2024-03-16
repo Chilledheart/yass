@@ -14,11 +14,15 @@ class YASSWindow {
   ~YASSWindow();
 
  private:
+  static YASSWindow* window;
+
+ private:
   GtkWindow* impl_;
 
  public:
   void show();
   void present();
+  void close();
 
   // Left Panel
   GtkButton* start_button_;

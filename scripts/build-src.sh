@@ -32,3 +32,19 @@ SUBVERSION=1
 
 /usr/bin/git ls-files --recurse-submodules | \
   bsdtar caf yass-${VERSION}.zip -s ",^,yass-${VERSION}/," -T -
+
+echo "md5sum "
+echo "======================================================================"
+md5sum *.tar.gz *.zip
+
+echo "sha1sum "
+echo "======================================================================"
+sha1sum *.tar.gz *.zip
+
+echo "sha256sum "
+echo "======================================================================"
+sha256sum *.tar.gz *.zip
+
+echo "sha512sum "
+echo "======================================================================"
+sha512sum *.tar.gz *.zip

@@ -7,12 +7,12 @@
 #include <absl/functional/any_invocable.h>
 #include <openssl/ssl.h>
 
-#include "net/asio.hpp"
-#include "net/iobuf.hpp"
 #include "core/ref_counted.hpp"
 #include "core/scoped_refptr.hpp"
-#include "net/openssl_util.hpp"
+#include "net/asio.hpp"
+#include "net/iobuf.hpp"
 #include "net/net_errors.hpp"
+#include "net/openssl_util.hpp"
 
 namespace net {
 
@@ -47,7 +47,7 @@ using WaitCallback = absl::AnyInvocable<void(asio::error_code ec)>;
 class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
  public:
   SSLSocket(int ssl_socket_data_index,
-            asio::io_context *io_context,
+            asio::io_context* io_context,
             asio::ip::tcp::socket* socket,
             SSL_CTX* ssl_ctx,
             bool https_fallback,
@@ -57,7 +57,7 @@ class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
   SSLSocket(SSLSocket&&) = delete;
   SSLSocket& operator=(SSLSocket&&) = delete;
 
-  template<typename... Args>
+  template <typename... Args>
   static scoped_refptr<SSLSocket> Create(Args&&... args) {
     return MakeRefCounted<SSLSocket>(std::forward<Args>(args)...);
   }
@@ -66,19 +66,17 @@ class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
   int Connect(CompletionOnceCallback callback);
   void Disconnect();
   int ConfirmHandshake(CompletionOnceCallback callback);
-  int Shutdown(WaitCallback &&cb, bool force = false);
+  int Shutdown(WaitCallback&& cb, bool force = false);
 
   SSL* native_handle() { return ssl_.get(); }
 
   // Socket implementation.
-  size_t Read(std::shared_ptr<IOBuf> buf, asio::error_code &ec);
-  size_t Write(std::shared_ptr<IOBuf> buf, asio::error_code &ec);
-  void WaitRead(WaitCallback &&cb);
-  void WaitWrite(WaitCallback &&cb);
+  size_t Read(std::shared_ptr<IOBuf> buf, asio::error_code& ec);
+  size_t Write(std::shared_ptr<IOBuf> buf, asio::error_code& ec);
+  void WaitRead(WaitCallback&& cb);
+  void WaitWrite(WaitCallback&& cb);
 
-  const std::string& negotiated_protocol() const {
-    return negotiated_protocol_;
-  }
+  const std::string& negotiated_protocol() const { return negotiated_protocol_; }
 
   int NewSessionCallback(SSL_SESSION* session);
 
@@ -90,7 +88,7 @@ class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
   void OnDoWaitShutdown(asio::error_code ec);
 
  private:
-  int DoHandshake(int *openssl_result);
+  int DoHandshake(int* openssl_result);
   int DoHandshakeComplete(int result);
   void DoConnectCallback(int result);
 
@@ -190,6 +188,6 @@ class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
   bool stapled_ocsp_response_received_ = false;
 };
 
-} // namespace net
+}  // namespace net
 
-#endif // H_NET_SSL_SOCKET
+#endif  // H_NET_SSL_SOCKET

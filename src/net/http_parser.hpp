@@ -42,18 +42,17 @@ class HttpRequestParser : public quiche::BalsaVisitorInterface {
  public:
   HttpRequestParser(bool is_request = true);
 
-  int Parse(std::shared_ptr<IOBuf> buf, bool *ok);
+  int Parse(std::shared_ptr<IOBuf> buf, bool* ok);
 
   const std::string& host() const { return http_host_; }
   uint16_t port() const { return http_port_; }
   bool is_connect() const { return http_is_connect_; }
+  uint64_t content_length() const { return content_length_; }
 
-  void ReforgeHttpRequest(std::string *header,
-                          const absl::flat_hash_map<std::string, std::string> *additional_headers = nullptr);
+  void ReforgeHttpRequest(std::string* header,
+                          const absl::flat_hash_map<std::string, std::string>* additional_headers = nullptr);
 
-  const char* ErrorMessage() {
-    return error_message_.empty() ? "" : error_message_.data();
-  }
+  const char* ErrorMessage() { return error_message_.empty() ? "" : error_message_.data(); }
 
   int status_code() const { return status_code_; }
 
@@ -66,10 +65,12 @@ class HttpRequestParser : public quiche::BalsaVisitorInterface {
   void OnTrailerInput(std::string_view input) override;
   void ProcessHeaders(const quiche::BalsaHeaders& headers) override;
   void OnTrailers(std::unique_ptr<quiche::BalsaHeaders> trailers) override;
-  void OnRequestFirstLineInput(std::string_view line_input, std::string_view method_input,
+  void OnRequestFirstLineInput(std::string_view line_input,
+                               std::string_view method_input,
                                std::string_view request_uri,
                                std::string_view version_input) override;
-  void OnResponseFirstLineInput(std::string_view line_input, std::string_view version_input,
+  void OnResponseFirstLineInput(std::string_view line_input,
+                                std::string_view version_input,
                                 std::string_view status_input,
                                 std::string_view reason_input) override;
   void OnChunkLength(size_t chunk_length) override;
@@ -96,6 +97,8 @@ class HttpRequestParser : public quiche::BalsaVisitorInterface {
   absl::flat_hash_map<std::string, std::string> http_headers_;
   /// copy of connect method
   bool http_is_connect_ = false;
+  /// copy of content length
+  uint64_t content_length_ = 0;
 
   bool first_byte_processed_ = false;
   bool headers_done_ = false;
@@ -106,8 +109,8 @@ class HttpRequestParser : public quiche::BalsaVisitorInterface {
 };
 
 class HttpResponseParser : public HttpRequestParser {
-  public:
-    HttpResponseParser();
+ public:
+  HttpResponseParser();
 };
 #else
 class HttpRequestParser {
@@ -115,16 +118,17 @@ class HttpRequestParser {
   HttpRequestParser(bool is_request = true);
   virtual ~HttpRequestParser();
 
-  int Parse(std::shared_ptr<IOBuf> buf, bool *ok);
+  int Parse(std::shared_ptr<IOBuf> buf, bool* ok);
 
-  void ReforgeHttpRequest(std::string *header,
-                          const absl::flat_hash_map<std::string, std::string> *additional_headers = nullptr);
+  void ReforgeHttpRequest(std::string* header,
+                          const absl::flat_hash_map<std::string, std::string>* additional_headers = nullptr);
 
   const char* ErrorMessage() const;
 
   const std::string& host() const { return http_host_; }
   uint16_t port() const { return http_port_; }
   bool is_connect() const { return http_is_connect_; }
+  uint64_t content_length() const { return content_length_; }
 
   int status_code() const;
 
@@ -132,13 +136,9 @@ class HttpRequestParser {
   /// Callback to read http handshake request's URL field
   static int OnReadHttpRequestURL(http_parser* p, const char* buf, size_t len);
   /// Callback to read http handshake request's header field
-  static int OnReadHttpRequestHeaderField(http_parser* parser,
-                                          const char* buf,
-                                          size_t len);
+  static int OnReadHttpRequestHeaderField(http_parser* parser, const char* buf, size_t len);
   /// Callback to read http handshake request's headers done
-  static int OnReadHttpRequestHeaderValue(http_parser* parser,
-                                          const char* buf,
-                                          size_t len);
+  static int OnReadHttpRequestHeaderValue(http_parser* parser, const char* buf, size_t len);
   /// Callback to read http handshake request's headers done
   static int OnReadHttpRequestHeadersDone(http_parser* parser);
 
@@ -158,16 +158,17 @@ class HttpRequestParser {
   absl::flat_hash_map<std::string, std::string> http_headers_;
   /// copy of connect method
   bool http_is_connect_ = false;
+  /// copy of content length
+  uint64_t content_length_ = 0;
 };
 
 class HttpResponseParser : public HttpRequestParser {
  public:
   HttpResponseParser();
   ~HttpResponseParser() override {}
-
 };
-#endif // HAVE_BALSA_HTTP_PARSER
+#endif  // HAVE_BALSA_HTTP_PARSER
 
-} // namespace net
+}  // namespace net
 
-#endif // H_NET_HTTP_PARSER_HPP
+#endif  // H_NET_HTTP_PARSER_HPP

@@ -47,6 +47,6 @@ int crypto_hkdf(const unsigned char* salt,
                 unsigned char* okm,
                 int okm_len);
 
-} // namespace net
+}  // namespace net
 
 #endif  // H_NET_HKDF_SHA1

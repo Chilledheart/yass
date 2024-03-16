@@ -10,9 +10,8 @@
 
 namespace net {
 
-#define MAX_MD_SIZE SHA512_DIGEST_LENGTH /* longest known is SHA512 */
-#define MD_MAX_SIZE_256 \
-  SHA256_DIGEST_LENGTH /* longest known is SHA256 or less */
+#define MAX_MD_SIZE SHA512_DIGEST_LENGTH     /* longest known is SHA512 */
+#define MD_MAX_SIZE_256 SHA256_DIGEST_LENGTH /* longest known is SHA256 or less */
 
 int crypto_hkdf(const unsigned char* salt,
                 int salt_len,
@@ -25,8 +24,7 @@ int crypto_hkdf(const unsigned char* salt,
   unsigned char prk[MD_MAX_SIZE_256];
 
   return crypto_hkdf_extract(salt, salt_len, ikm, ikm_len, prk) ||
-         crypto_hkdf_expand(prk, OUTPUT_SIZE_SHA1, info, info_len, okm,
-                            okm_len);
+         crypto_hkdf_expand(prk, OUTPUT_SIZE_SHA1, info, info_len, okm, okm_len);
 }
 
 /* HKDF-Extract(salt, IKM) -> PRK */
@@ -96,20 +94,18 @@ int crypto_hkdf_expand(const unsigned char* prk,
   for (i = 1; i <= N; i++) {
     unsigned char c = i;
 
-    ret = hmac_sha1_starts(&ctx, ipad, opad, prk, prk_len) ||
-          hmac_sha1_update(&ctx, ipad, opad, T, T_len) ||
+    ret = hmac_sha1_starts(&ctx, ipad, opad, prk, prk_len) || hmac_sha1_update(&ctx, ipad, opad, T, T_len) ||
           hmac_sha1_update(&ctx, ipad, opad, info, info_len) ||
           /* The constant concatenated to the end of each T(n) is a single
            * octet. */
-          hmac_sha1_update(&ctx, ipad, opad, &c, 1) ||
-          hmac_sha1_finish(&ctx, ipad, opad, T);
+          hmac_sha1_update(&ctx, ipad, opad, &c, 1) || hmac_sha1_finish(&ctx, ipad, opad, T);
 
     if (ret != 0) {
       goto cleanup;
     }
 
     memcpy(okm + where, T, (i != N) ? hash_len : (okm_len - where));
-        where += hash_len;
+    where += hash_len;
     T_len = hash_len;
   }
 
@@ -118,4 +114,4 @@ cleanup:
   return 0;
 }
 
-} // namespace net
+}  // namespace net

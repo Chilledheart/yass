@@ -23,6 +23,6 @@ class Channel {
   virtual void disconnected(asio::error_code error) = 0;
 };
 
-} // namespace net
+}  // namespace net
 
 #endif  // H_NET_CHANNEL

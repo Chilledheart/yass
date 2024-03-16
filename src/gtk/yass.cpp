@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2022 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 #include "gtk/yass.hpp"
 
 #include <stdexcept>
@@ -12,6 +12,7 @@
 #include <absl/flags/usage.h>
 #include <absl/strings/str_cat.h>
 #include <fontconfig/fontconfig.h>
+#include <glib-2.0/glib-unix.h>
 #include <glib/gi18n.h>
 #include <locale.h>
 #include <openssl/crypto.h>
@@ -19,12 +20,12 @@
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
+#include "crashpad_helper.hpp"
 #include "crypto/crypter_export.hpp"
 #include "gtk/utils.hpp"
 #include "gtk/yass_window.hpp"
-#include "version.h"
-#include "crashpad_helper.hpp"
 #include "i18n/icu_util.hpp"
+#include "version.h"
 
 ABSL_FLAG(bool, background, false, "start up backgroundd");
 
@@ -59,16 +60,14 @@ int main(int argc, const char** argv) {
   absl::InstallFailureSignalHandler(failure_handle_options);
 #endif
 
-  absl::SetProgramUsageMessage(
-      absl::StrCat("Usage: ", Basename(exec_path), " [options ...]\n",
-                   " -c, --configfile <file> Use specified config file\n",
-                   " --server_host <host> Host address which remote server listens to\n",
-                   " --server_port <port> Port number which remote server listens to\n",
-                   " --local_host <host> Host address which local server listens to\n"
-                   " --local_port <port> Port number which local server listens to\n"
-                   " --username <username> Username\n",
-                   " --password <pasword> Password pharsal\n",
-                   " --method <method> Method of encrypt"));
+  absl::SetProgramUsageMessage(absl::StrCat(
+      "Usage: ", Basename(exec_path), " [options ...]\n", " -K, --config <file> Read config from a file\n",
+      " --server_host <host> Remote server on given host\n", " --server_port <port> Remote server on given port\n",
+      " --local_host <host> Local proxy server on given host\n"
+      " --local_port <port> Local proxy server on given port\n"
+      " --username <username> Server user\n",
+      " --password <pasword> Server password\n", " --method <method> Specify encrypt of method to use"));
+
   config::ReadConfigFileOption(argc, argv);
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
@@ -112,7 +111,7 @@ YASSApp::YASSApp()
   auto activate = []() { mApp->OnActivate(); };
   g_signal_connect(impl_, "activate", G_CALLBACK(activate), NULL);
 
-  auto idle = [](gpointer user_data) -> gboolean {
+  auto idle_handler = [](gpointer user_data) -> gboolean {
     if (!mApp) {
       return G_SOURCE_REMOVE;
     }
@@ -120,10 +119,32 @@ YASSApp::YASSApp()
     return G_SOURCE_CONTINUE;
   };
   g_source_set_priority(idle_source_, G_PRIORITY_LOW);
-  g_source_set_callback(idle_source_, idle, this, nullptr);
+  g_source_set_callback(idle_source_, idle_handler, this, nullptr);
   g_source_set_name(idle_source_, "Idle Source");
   g_source_attach(idle_source_, nullptr);
   g_source_unref(idle_source_);
+
+  auto exit_handler = [](gpointer user_data) -> gboolean {
+    LOG(WARNING) << "Signal received";
+    if (!mApp) {
+      return G_SOURCE_REMOVE;
+    }
+    mApp->main_window_->close();
+    return G_SOURCE_CONTINUE;
+  };
+  exit_int_source_ = g_unix_signal_source_new(SIGINT);
+  g_source_set_priority(exit_int_source_, G_PRIORITY_HIGH);
+  g_source_set_callback(exit_int_source_, exit_handler, this, nullptr);
+  g_source_set_name(exit_int_source_, "SIGINT Signal Source");
+  g_source_attach(exit_int_source_, nullptr);
+  g_source_unref(exit_int_source_);
+
+  exit_term_source_ = g_unix_signal_source_new(SIGTERM);
+  g_source_set_priority(exit_term_source_, G_PRIORITY_HIGH);
+  g_source_set_callback(exit_term_source_, exit_handler, this, nullptr);
+  g_source_set_name(exit_term_source_, "SIGTERM Signal Source");
+  g_source_attach(exit_term_source_, nullptr);
+  g_source_unref(exit_term_source_);
 }
 
 YASSApp::~YASSApp() = default;
@@ -173,6 +194,8 @@ void YASSApp::Exit() {
   }
   mApp = nullptr;
   g_source_destroy(idle_source_);
+  g_source_destroy(exit_int_source_);
+  g_source_destroy(exit_term_source_);
 }
 
 void YASSApp::OnIdle() {
@@ -285,8 +308,6 @@ std::string YASSApp::SaveConfig() {
   auto local_port = main_window_->GetLocalPort();
   auto connect_timeout = main_window_->GetTimeout();
 
-  return config::ReadConfigFromArgument(server_host, server_sni, server_port,
-                                        username, password, method_string,
-                                        local_host, local_port,
-                                        connect_timeout);
+  return config::ReadConfigFromArgument(server_host, server_sni, server_port, username, password, method_string,
+                                        local_host, local_port, "", connect_timeout);
 }

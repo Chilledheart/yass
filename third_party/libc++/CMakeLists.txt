@@ -59,7 +59,7 @@ foreach(CompilerFlag ${CompilerFlags})
   string(REPLACE "-stdlib=libc++" "" ${CompilerFlag} "${${CompilerFlag}}")
 endforeach()
 
-set(libcxx_CR "24cb5545a9a648f580ef7ce7b758689578f0a2a7")
+set(libcxx_CR "834e97d73f13a166af65952fb681071eec87a2c4")
 # Fixed libc++ configuration macros are in
 # buildtools/third_party/libc++/__config_site. This config only has defines
 # that vary depending on gn args, and non-define flags.
@@ -242,7 +242,7 @@ set(libcxx_SOURCES
 )
 
 # TODO move to base
-if (NOT WIN32 OR NOT ALLOW_XP)
+if (NOT (WIN32 AND ALLOW_XP AND OS_X86))
   set(libcxx_SOURCES
     ${libcxx_SOURCES}
     trunk/src/filesystem/directory_iterator.cpp
@@ -339,10 +339,15 @@ if (WIN32)
   # Explicitly set version macros to Windows 7 to prevent libc++ from adding a
   # hard dependency on GetSystemTimePreciseAsFileTime, which was introduced in
   # Windows 8.
-  if (ALLOW_XP)
+  if (ALLOW_XP AND OS_X86)
     set(libcxx_DEFINITIONS
       ${libcxx_DEFINITIONS}
       "NTDDI_VERSION=NTDDI_WINXP"
+    )
+  elseif(OS_AARCH64)
+    set(libcxx_DEFINITIONS
+      ${libcxx_DEFINITIONS}
+      "NTDDI_VERSION=NTDDI_WIN10"
     )
   else()
     set(libcxx_DEFINITIONS
@@ -401,9 +406,16 @@ if (NOT libcxx_SHARED)
     # specified in the C++ spec 3.7.4p2, which makes them always have default
     # visibility.  This option is needed to force hidden visibility since
     # -fvisibility=hidden doesn't have the desired effect.
-    set(libcxx_CFLAGS ${libcxx_CFLAGS}
-      "-fvisibility-global-new-delete-hidden"
-    )
+    # FIXME remove this once apple clang is updated to TOT
+    if (COMPILER_APPLE_CLANG)
+      set(libcxx_CFLAGS ${libcxx_CFLAGS}
+        "-fvisibility-global-new-delete-hidden"
+      )
+    else()
+      set(libcxx_CFLAGS ${libcxx_CFLAGS}
+        "-fvisibility-global-new-delete=force-hidden"
+      )
+    endif()
   else ()
     # This resets the visibility to default only for the various
     # flavors of operator new and operator delete.  These symbols

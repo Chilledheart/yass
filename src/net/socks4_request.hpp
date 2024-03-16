@@ -4,8 +4,8 @@
 #ifndef H_NET_SOCKS4_REQUEST
 #define H_NET_SOCKS4_REQUEST
 
-#include "net/socks4.hpp"
 #include "net/protocol.hpp"
+#include "net/socks4.hpp"
 
 #include <stdint.h>
 
@@ -33,9 +33,7 @@ class request {
   uint8_t version() const { return req_.version; }
   uint8_t command() const { return req_.command; }
 
-  const asio::ip::address_v4::bytes_type& address() const {
-    return req_.address;
-  }
+  const asio::ip::address_v4::bytes_type& address() const { return req_.address; }
 
   asio::ip::tcp::endpoint endpoint() const {
     asio::ip::address_v4 address(req_.address);
@@ -72,6 +70,6 @@ class request {
 
 }  // namespace socks4
 
-} // namespace net
+}  // namespace net
 
 #endif  // H_NET_SOCKS4_REQUEST

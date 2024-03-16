@@ -4,9 +4,9 @@
 #include "mac/utils.h"
 
 #import <Cocoa/Cocoa.h>
-#import <SystemConfiguration/SystemConfiguration.h>
 #include <CoreServices/CoreServices.h>
 #import <IOKit/IOKitLib.h>
+#import <SystemConfiguration/SystemConfiguration.h>
 #include <errno.h>
 #include <stddef.h>
 #include <string.h>
@@ -21,10 +21,10 @@
 #include "core/utils.hpp"
 #include "net/asio.hpp"
 
-#include <absl/strings/string_view.h>
 #include <absl/strings/str_split.h>
-#include <base/apple/scoped_cftyperef.h>
+#include <absl/strings/string_view.h>
 #include <base/apple/foundation_util.h>
+#include <base/apple/scoped_cftyperef.h>
 #include <base/mac/scoped_ioobject.h>
 #include <base/strings/sys_string_conversions.h>
 #include <build/build_config.h>
@@ -45,8 +45,7 @@ class LoginItemsFileList {
     // https://crbug.com/1154377.
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    login_items_.reset(LSSharedFileListCreate(
-        nullptr, kLSSharedFileListSessionLoginItems, nullptr));
+    login_items_.reset(LSSharedFileListCreate(nullptr, kLSSharedFileListSessionLoginItems, nullptr));
 #pragma clang diagnostic pop
     DLOG_IF(ERROR, !login_items_.get()) << "Couldn't get a Login Items list.";
     return login_items_.get();
@@ -64,29 +63,26 @@ class LoginItemsFileList {
   gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> GetLoginItemForApp(NSURL* url) {
     DCHECK(login_items_.get()) << "Initialize() failed or not called.";
 
-  gurl_base::apple::ScopedCFTypeRef<CFURLRef> cfurl((CFURLRef)(CFBridgingRetain(url)));
+    gurl_base::apple::ScopedCFTypeRef<CFURLRef> cfurl((CFURLRef)(CFBridgingRetain(url)));
 
 #pragma clang diagnostic push  // https://crbug.com/1154377
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    NSArray* login_items_array(
-        CFBridgingRelease(LSSharedFileListCopySnapshot(login_items_, nullptr)));
+    NSArray* login_items_array(CFBridgingRelease(LSSharedFileListCopySnapshot(login_items_, nullptr)));
 #pragma clang diagnostic pop
 
     for (id login_item in login_items_array) {
-      LSSharedFileListItemRef item =
-          (LSSharedFileListItemRef)CFBridgingRetain(login_item);
+      LSSharedFileListItemRef item = (LSSharedFileListItemRef)CFBridgingRetain(login_item);
 #pragma clang diagnostic push  // https://crbug.com/1154377
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
       // kLSSharedFileListDoNotMountVolumes is used so that we don't trigger
       // mounting when it's not expected by a user. Just listing the login
       // items should not cause any side-effects.
-      gurl_base::apple::ScopedCFTypeRef<CFURLRef> item_url(LSSharedFileListItemCopyResolvedURL(
-          item, kLSSharedFileListDoNotMountVolumes, nullptr));
+      gurl_base::apple::ScopedCFTypeRef<CFURLRef> item_url(
+          LSSharedFileListItemCopyResolvedURL(item, kLSSharedFileListDoNotMountVolumes, nullptr));
 #pragma clang diagnostic pop
 
       if (item_url && CFEqual(item_url.get(), cfurl.get())) {
-        return gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef>(item,
-                                                                          gurl_base::scoped_policy::RETAIN);
+        return gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef>(item, gurl_base::scoped_policy::RETAIN);
       }
     }
 
@@ -105,10 +101,8 @@ class LoginItemsFileList {
 bool IsHiddenLoginItem(LSSharedFileListItemRef item) {
 #pragma clang diagnostic push  // https://crbug.com/1154377
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-  gurl_base::apple::ScopedCFTypeRef<CFBooleanRef> hidden(
-      reinterpret_cast<CFBooleanRef>(LSSharedFileListItemCopyProperty(
-          item,
-          reinterpret_cast<CFStringRef>(kLSSharedFileListLoginItemHidden))));
+  gurl_base::apple::ScopedCFTypeRef<CFBooleanRef> hidden(reinterpret_cast<CFBooleanRef>(
+      LSSharedFileListItemCopyProperty(item, reinterpret_cast<CFStringRef>(kLSSharedFileListLoginItemHidden))));
 #pragma clang diagnostic pop
 
   return hidden && hidden == kCFBooleanTrue;
@@ -121,8 +115,7 @@ bool CheckLoginItemStatus(bool* is_hidden) {
   if (!login_items.Initialize())
     return false;
 
-  gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> item(
-      login_items.GetLoginItemForMainApp());
+  gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> item(login_items.GetLoginItemForMainApp());
   if (!item.get())
     return false;
 
@@ -137,8 +130,7 @@ void AddToLoginItems(bool hide_on_startup) {
   AddToLoginItems(gurl_base::SysNSStringToUTF8([bundle bundlePath]), hide_on_startup);
 }
 
-void AddToLoginItems(const std::string& app_bundle_file_path,
-                     bool hide_on_startup) {
+void AddToLoginItems(const std::string& app_bundle_file_path, bool hide_on_startup) {
   LoginItemsFileList login_items;
   if (!login_items.Initialize())
     return;
@@ -164,13 +156,11 @@ void AddToLoginItems(const std::string& app_bundle_file_path,
 #pragma clang diagnostic push  // https://crbug.com/1154377
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
   BOOL hide = hide_on_startup ? YES : NO;
-  NSDictionary* properties =
-      @{CFBridgingRelease(CFRetain(kLSSharedFileListLoginItemHidden)) : @(hide)};
+  NSDictionary* properties = @{CFBridgingRelease(CFRetain(kLSSharedFileListLoginItemHidden)) : @(hide)};
   gurl_base::apple::ScopedCFTypeRef<CFDictionaryRef> cfproperties((CFDictionaryRef)CFBridgingRetain(properties));
 
   gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> new_item(
-      LSSharedFileListInsertItemURL(login_items.GetLoginFileList(),
-                                    kLSSharedFileListItemLast, nullptr, nullptr,
+      LSSharedFileListInsertItemURL(login_items.GetLoginFileList(), kLSSharedFileListItemLast, nullptr, nullptr,
                                     cf_app_bundle_url, cfproperties, nullptr));
 #pragma clang diagnostic pop
 
@@ -191,10 +181,8 @@ void RemoveFromLoginItems(const std::string& app_bundle_file_path) {
   if (!login_items.Initialize())
     return;
 
-  NSURL* app_bundle_url =
-      [NSURL fileURLWithPath:@(app_bundle_file_path.c_str())];
-  gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> item(
-      login_items.GetLoginItemForApp(app_bundle_url));
+  NSURL* app_bundle_url = [NSURL fileURLWithPath:@(app_bundle_file_path.c_str())];
+  gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> item(login_items.GetLoginItemForApp(app_bundle_url));
   if (!item.get())
     return;
 
@@ -238,8 +226,7 @@ bool WasLaunchedAsLoginItemRestoreState() {
 
   CFStringRef app = CFSTR("com.apple.loginwindow");
   CFStringRef save_state = CFSTR("TALLogoutSavesState");
-  gurl_base::apple::ScopedCFTypeRef<CFPropertyListRef> plist(
-      CFPreferencesCopyAppValue(save_state, app));
+  gurl_base::apple::ScopedCFTypeRef<CFPropertyListRef> plist(CFPreferencesCopyAppValue(save_state, app));
   // According to documentation, com.apple.loginwindow.plist does not exist on a
   // fresh installation until the user changes a login window setting.  The
   // "reopen windows" option is checked by default, so the plist would exist had
@@ -262,8 +249,7 @@ bool WasLaunchedAsHiddenLoginItem() {
   if (!login_items.Initialize())
     return false;
 
-  gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> item(
-      login_items.GetLoginItemForMainApp());
+  gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> item(login_items.GetLoginItemForMainApp());
   if (!item.get()) {
     // OS X can launch items for the resume feature.
     return false;
@@ -384,34 +370,27 @@ CPUType GetCPUType() {
 
 std::string GetModelIdentifier() {
   std::string return_string;
-  gurl_base::mac::ScopedIOObject<io_service_t> platform_expert(IOServiceGetMatchingService(
-      kIOMasterPortDefault, IOServiceMatching("IOPlatformExpertDevice")));
+  gurl_base::mac::ScopedIOObject<io_service_t> platform_expert(
+      IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching("IOPlatformExpertDevice")));
   if (platform_expert) {
-    gurl_base::apple::ScopedCFTypeRef<CFDataRef> model_data(
-        static_cast<CFDataRef>(IORegistryEntryCreateCFProperty(
-            platform_expert, CFSTR("model"), kCFAllocatorDefault, 0)));
+    gurl_base::apple::ScopedCFTypeRef<CFDataRef> model_data(static_cast<CFDataRef>(
+        IORegistryEntryCreateCFProperty(platform_expert, CFSTR("model"), kCFAllocatorDefault, 0)));
     if (model_data) {
-      return_string =
-          reinterpret_cast<const char*>(CFDataGetBytePtr(model_data));
+      return_string = reinterpret_cast<const char*>(CFDataGetBytePtr(model_data));
     }
   }
   return return_string;
 }
 
-bool ParseModelIdentifier(const std::string& ident,
-                          std::string* type,
-                          int32_t* major,
-                          int32_t* minor) {
+bool ParseModelIdentifier(const std::string& ident, std::string* type, int32_t* major, int32_t* minor) {
   size_t number_loc = ident.find_first_of("0123456789");
   if (number_loc == std::string::npos)
     return false;
   size_t comma_loc = ident.find(',', number_loc);
   if (comma_loc == std::string::npos)
     return false;
-  auto major_tmp = StringToInteger(
-      std::string(ident.c_str() + number_loc, comma_loc - number_loc));
-  auto minor_tmp =
-      StringToInteger(std::string(ident.c_str() + comma_loc + 1));
+  auto major_tmp = StringToInteger(std::string(ident.c_str() + number_loc, comma_loc - number_loc));
+  auto minor_tmp = StringToInteger(std::string(ident.c_str() + comma_loc + 1));
   if (!major_tmp.has_value() || !minor_tmp.has_value())
     return false;
   *type = ident.substr(0, number_loc);
@@ -426,22 +405,20 @@ std::string GetOSDisplayName() {
     os_name = "OS X";
   else
     os_name = "macOS";
-  std::string version_string = gurl_base::SysNSStringToUTF8(
-      [[NSProcessInfo processInfo] operatingSystemVersionString]);
+  std::string version_string = gurl_base::SysNSStringToUTF8([[NSProcessInfo processInfo] operatingSystemVersionString]);
   return os_name + " " + version_string;
 }
 
 std::string GetPlatformSerialNumber() {
-  gurl_base::mac::ScopedIOObject<io_service_t> expert_device(IOServiceGetMatchingService(
-      kIOMasterPortDefault, IOServiceMatching("IOPlatformExpertDevice")));
+  gurl_base::mac::ScopedIOObject<io_service_t> expert_device(
+      IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching("IOPlatformExpertDevice")));
   if (!expert_device) {
     DLOG(ERROR) << "Error retrieving the machine serial number.";
     return std::string();
   }
 
-  gurl_base::apple::ScopedCFTypeRef<CFTypeRef> serial_number(IORegistryEntryCreateCFProperty(
-      expert_device, CFSTR(kIOPlatformSerialNumberKey), kCFAllocatorDefault,
-      0));
+  gurl_base::apple::ScopedCFTypeRef<CFTypeRef> serial_number(
+      IORegistryEntryCreateCFProperty(expert_device, CFSTR(kIOPlatformSerialNumberKey), kCFAllocatorDefault, 0));
   CFStringRef serial_number_cfstring = CFCast<CFStringRef>(serial_number);
   if (!serial_number_cfstring) {
     DLOG(ERROR) << "Error retrieving the machine serial number.";
@@ -493,31 +470,25 @@ bool SetSystemProxy(bool on) {
   return ::SetSystemProxy(on, server_addr, server_port, bypass_addr);
 }
 
-bool QuerySystemProxy(bool *enabled,
-                      std::string *server_addr,
-                      int32_t *server_port,
-                      std::string *bypass_addr) {
+bool QuerySystemProxy(bool* enabled, std::string* server_addr, int32_t* server_port, std::string* bypass_addr) {
   *enabled = false;
   server_addr->clear();
   *server_port = 0;
   bypass_addr->clear();
 
-  gurl_base::apple::ScopedCFTypeRef<CFDictionaryRef> proxies {SCDynamicStoreCopyProxies(nullptr)};
+  gurl_base::apple::ScopedCFTypeRef<CFDictionaryRef> proxies{SCDynamicStoreCopyProxies(nullptr)};
 
   {
     CFNumberRef obj;
-    if (CFDictionaryGetValueIfPresent(proxies, kSCPropNetProxiesHTTPEnable,
-            (const void**)&obj) &&
-        CFGetTypeID(obj) == CFNumberGetTypeID() &&
-        CFNumberGetValue(obj, kCFNumberSInt8Type, enabled)) {
+    if (CFDictionaryGetValueIfPresent(proxies, kSCPropNetProxiesHTTPEnable, (const void**)&obj) &&
+        CFGetTypeID(obj) == CFNumberGetTypeID() && CFNumberGetValue(obj, kCFNumberSInt8Type, enabled)) {
       LOG(INFO) << "QuerySystemProxy: enabled " << *enabled;
     }
   }
 
   {
     CFStringRef obj;
-    if (CFDictionaryGetValueIfPresent(proxies, kSCPropNetProxiesHTTPProxy,
-            (const void**)&obj) &&
+    if (CFDictionaryGetValueIfPresent(proxies, kSCPropNetProxiesHTTPProxy, (const void**)&obj) &&
         CFGetTypeID(obj) == CFStringGetTypeID()) {
       *server_addr = gurl_base::SysCFStringRefToUTF8(obj);
       LOG(INFO) << "QuerySystemProxy: server_addr " << *server_addr;
@@ -526,18 +497,15 @@ bool QuerySystemProxy(bool *enabled,
 
   {
     CFNumberRef obj;
-    if (CFDictionaryGetValueIfPresent(proxies, kSCPropNetProxiesHTTPPort,
-            (const void**)&obj) &&
-        CFGetTypeID(obj) == CFNumberGetTypeID() &&
-        CFNumberGetValue(obj, kCFNumberSInt32Type, server_port)) {
+    if (CFDictionaryGetValueIfPresent(proxies, kSCPropNetProxiesHTTPPort, (const void**)&obj) &&
+        CFGetTypeID(obj) == CFNumberGetTypeID() && CFNumberGetValue(obj, kCFNumberSInt32Type, server_port)) {
       LOG(INFO) << "QuerySystemProxy: server_port " << *server_port;
     }
   }
 
   {
     CFArrayRef obj;
-    if (CFDictionaryGetValueIfPresent(proxies, kSCPropNetProxiesExceptionsList,
-            (const void**)&obj) &&
+    if (CFDictionaryGetValueIfPresent(proxies, kSCPropNetProxiesExceptionsList, (const void**)&obj) &&
         CFGetTypeID(obj) == CFArrayGetTypeID()) {
       CFIndex array_count = CFArrayGetCount(obj);
       for (CFIndex i = 0; i < array_count; ++i) {
@@ -553,10 +521,7 @@ bool QuerySystemProxy(bool *enabled,
   return true;
 }
 
-bool SetSystemProxy(bool enable,
-                    const std::string &server_addr,
-                    int32_t server_port,
-                    const std::string &bypass_addr) {
+bool SetSystemProxy(bool enable, const std::string& server_addr, int32_t server_port, const std::string& bypass_addr) {
   std::string output, _;
   std::vector<std::string> params = {"/usr/sbin/networksetup", "-listallnetworkservices"};
   if (ExecuteProcess(params, &output, &_) != 0) {
@@ -564,7 +529,7 @@ bool SetSystemProxy(bool enable,
   }
   std::vector<std::string> services = absl::StrSplit(output, '\n');
 
-  for (const auto& service: services) {
+  for (const auto& service : services) {
     if (service.empty()) {
       continue;
     }
@@ -573,40 +538,34 @@ bool SetSystemProxy(bool enable,
     }
     LOG(INFO) << "Found service: " << service;
     if (!enable) {
-      params = {"/usr/sbin/networksetup", "-setwebproxystate",
-        service, "off"};
+      params = {"/usr/sbin/networksetup", "-setwebproxystate", service, "off"};
       if (ExecuteProcess(params, &_, &_) != 0) {
         return false;
       }
     } else {
-      params = {"/usr/sbin/networksetup", "-setwebproxy",
-        service, server_addr, std::to_string(server_port)};
+      params = {"/usr/sbin/networksetup", "-setwebproxy", service, server_addr, std::to_string(server_port)};
       if (ExecuteProcess(params, &_, &_) != 0) {
         return false;
       }
     }
     if (!enable) {
-      params = {"/usr/sbin/networksetup", "-setsecurewebproxystate",
-        service, "off"};
+      params = {"/usr/sbin/networksetup", "-setsecurewebproxystate", service, "off"};
       if (ExecuteProcess(params, &_, &_) != 0) {
         return false;
       }
     } else {
-      params = {"/usr/sbin/networksetup", "-setsecurewebproxy",
-        service, server_addr, std::to_string(server_port)};
+      params = {"/usr/sbin/networksetup", "-setsecurewebproxy", service, server_addr, std::to_string(server_port)};
       if (ExecuteProcess(params, &_, &_) != 0) {
         return false;
       }
     }
     if (!enable) {
-      params = {"/usr/sbin/networksetup", "-setsocksfirewallproxystate",
-        service, "off"};
+      params = {"/usr/sbin/networksetup", "-setsocksfirewallproxystate", service, "off"};
       if (ExecuteProcess(params, &_, &_) != 0) {
         return false;
       }
     } else {
-      params = {"/usr/sbin/networksetup", "-setsocksfirewallproxy",
-        service, server_addr, std::to_string(server_port)};
+      params = {"/usr/sbin/networksetup", "-setsocksfirewallproxy", service, server_addr, std::to_string(server_port)};
       if (ExecuteProcess(params, &_, &_) != 0) {
         return false;
       }
@@ -617,7 +576,7 @@ bool SetSystemProxy(bool enable,
 }
 
 void SetDockIconStyle(bool hidden) {
-  ProcessSerialNumber psn = { 0, kCurrentProcess };
+  ProcessSerialNumber psn = {0, kCurrentProcess};
   OSStatus err;
   if (hidden) {
     err = TransformProcessType(&psn, kProcessTransformToBackgroundApplication);
@@ -625,9 +584,7 @@ void SetDockIconStyle(bool hidden) {
     err = TransformProcessType(&psn, kProcessTransformToForegroundApplication);
   }
   if (err != noErr) {
-    NSError *error = [NSError errorWithDomain:NSOSStatusErrorDomain
-      code:err userInfo:nil];
-    LOG(WARNING) << "SetDockIconStyle failed: " <<
-      gurl_base::SysNSStringToUTF8([error localizedDescription]);
+    NSError* error = [NSError errorWithDomain:NSOSStatusErrorDomain code:err userInfo:nil];
+    LOG(WARNING) << "SetDockIconStyle failed: " << gurl_base::SysNSStringToUTF8([error localizedDescription]);
   }
 }

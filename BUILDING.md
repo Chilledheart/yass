@@ -5,7 +5,7 @@
 ### Windows (MinGW llvm-mingw)
 
 1. Make sure you have [Git for Windows][gitforwindows] installed.
-2. Make sure you have [Perl], [CMake] (3.12 or later), [Ninja], [Golang] and [NASM] installed and put them in `PATH`.
+2. Make sure you have [Perl], [CMake] (3.13 or later), [Ninja], [Golang] and [NASM] installed and put them in `PATH`.
 
   * A recent version of Perl is required.
     On Windows, [Active State Perl](http://www.activestate.com/activeperl/) has been reported to work, as has MSYS Perl.
@@ -25,7 +25,7 @@ cd yass
 ### Windows (MSVC)
 
 1. Make sure you have [Git for Windows][gitforwindows] installed.
-2. Make sure you have [Perl], [CMake] (3.12 or later), [Ninja], [Golang] and [NASM] installed and put them in `PATH`.
+2. Make sure you have [Perl], [CMake] (3.13 or later), [Ninja], [Golang] and [NASM] installed and put them in `PATH`.
 
   * A recent version of Perl is required.
     On Windows, [Active State Perl](http://www.activestate.com/activeperl/) has been reported to work, as has MSYS Perl.
@@ -42,6 +42,8 @@ cd yass
   * Download and Run [LLVM installer][llvm-win64] from GitHub Binary download page.
 
   * Choose `Add LLVM to System Path`.
+
+Notes: please make sure you have [LLVM][llvm-win64] (16.0 or above).
 
 5. Run `x64 Native Tools Command Prompt for VS 2019 (or 2022)` in Start Menu.
 
@@ -178,7 +180,7 @@ sudo apt-get install -y \
     libgtk-3-dev
 ```
 
-Notes: please make sure you have [GCC] (7.1 or above) or [Clang] (12.0 or above) and [CMake] (3.12 or above).
+Notes: please make sure you have [GCC] (7.1 or above) or [Clang] (16.0 or above) and [CMake] (3.13 or above).
 
 For [GCC], cmake argument `-DUSE_LIBCXX=off` should be passed to disable libc++ build under gcc.
 
@@ -223,7 +225,7 @@ sudo yum install -y \
     golang
 ```
 
-Notes: please make sure you have [GCC] (7.1 or above) or [Clang] (12.0 or above) and [CMake] (3.12 or above).
+Notes: please make sure you have [GCC] (7.1 or above) or [Clang] (16.0 or above) and [CMake] (3.13 or above).
 
 For [GCC], cmake argument `-DUSE_LIBCXX=off` should be passed to disable libc++ build under gcc.
 
@@ -262,7 +264,7 @@ so you can install latest [Clang]:
 ```
 pkg install llvm17-lite
 ```
-Notes: please make sure you have [Clang] (12.0 or above) and [CMake] (3.12 or above).
+Notes: please make sure you have [Clang] (16.0 or above) and [CMake] (3.13 or above).
 
 2. Install required dependencies:
 ```
@@ -302,16 +304,13 @@ ninja yass
 
 ## Build Packaging
 
-### Windows (MSVC)/Packaging
+### MinGW/Packaging
 
 Make sure you have [Golang] installed on your system.
 
-Run in `x64 Native Tools Command Prompt for VS 2019 (or 2022)` in Start Menu:
+Run in `Git Bash` in Start Menu:
 ```
-cd tools
-go build
-cd ..
-./tools/build
+./scripts/build-mingw.sh
 ```
 
 ### macOS/Packaging
@@ -372,9 +371,10 @@ cd ..
 ```
 
 ### Android/Packaging
-Make sure you have Android Studio installed on your system.
+See [android's README.md](android/README.md)
 
-TBD
+### HarmonyOS/Packaging
+See [harmonyOS's README.md](harmony/README.md)
 
 ### iOS/Packaging
 Make sure you have Xcode installed on your system.
@@ -395,6 +395,6 @@ TBD
 [MacPorts]: https://www.macports.org/install.php
 [HomeBrew]: https://docs.brew.sh/Installation
 [python]: https://www.python.org/downloads/
-[llvm-win64]: https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.6/LLVM-15.0.6-win64.exe
+[llvm-win64]: https://github.com/llvm/llvm-project/releases/download/llvmorg-17.0.6/LLVM-17.0.6-win64.exe
 [msys2]: https://www.msys2.org/
 [EPEL]: https://docs.fedoraproject.org/en-US/epel

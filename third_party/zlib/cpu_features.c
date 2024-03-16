@@ -1,6 +1,6 @@
 /* cpu_features.c -- Processor features detection.
  *
- * Copyright 2018 The Chromium Authors. All rights reserved.
+ * Copyright 2018 The Chromium Authors
  * Use of this source code is governed by a BSD-style license that can be
  * found in the Chromium source repository LICENSE file.
  */
@@ -18,20 +18,24 @@
 /* TODO(cavalcantii): remove checks for x86_flags on deflate.
  */
 #if defined(ARMV8_OS_MACOS)
-/* crc32 is a baseline feature in ARMv8.1-A, and macOS running on arm64 is new
- * enough that this can be assumed without runtime detection. */
+/* Crypto extensions (crc32/pmull) are a baseline feature in ARMv8.1-A, and
+ * OSX running on arm64 is new enough that these can be assumed without
+ * runtime detection.
+ */
 int ZLIB_INTERNAL arm_cpu_enable_crc32 = 1;
+int ZLIB_INTERNAL arm_cpu_enable_pmull = 1;
 #else
 int ZLIB_INTERNAL arm_cpu_enable_crc32 = 0;
-#endif
 int ZLIB_INTERNAL arm_cpu_enable_pmull = 0;
+#endif
 int ZLIB_INTERNAL x86_cpu_enable_sse2 = 0;
 int ZLIB_INTERNAL x86_cpu_enable_ssse3 = 0;
 int ZLIB_INTERNAL x86_cpu_enable_simd = 0;
+int ZLIB_INTERNAL x86_cpu_enable_avx512 = 0;
 
 #ifndef CPU_NO_SIMD
 
-#if defined(ARMV8_OS_ANDROID) || defined(ARMV8_OS_LINUX) || defined(ARMV8_OS_FUCHSIA)
+#if defined(ARMV8_OS_ANDROID) || defined(ARMV8_OS_LINUX) || defined(ARMV8_OS_FUCHSIA) || defined(ARMV8_OS_IOS)
 #include <pthread.h>
 #endif
 
@@ -46,17 +50,19 @@ int ZLIB_INTERNAL x86_cpu_enable_simd = 0;
 #include <zircon/types.h>
 #elif defined(ARMV8_OS_WINDOWS) || defined(X86_WINDOWS)
 #include <windows.h>
+#elif defined(ARMV8_OS_IOS)
+#include <sys/sysctl.h>
 #elif !defined(_MSC_VER)
 #include <pthread.h>
 #else
 #error cpu_features.c CPU feature detection in not defined for your platform
 #endif
 
-#if !defined(CPU_NO_SIMD) && !defined(ARMV8_OS_MACOS) && !defined(ARM_OS_IOS)
+#if !defined(CPU_NO_SIMD) && !defined(ARMV8_OS_MACOS)
 static void _cpu_check_features(void);
 #endif
 
-#if defined(ARMV8_OS_ANDROID) || defined(ARMV8_OS_LINUX) || defined(ARMV8_OS_MACOS) || defined(ARMV8_OS_FUCHSIA) || defined(X86_NOT_WINDOWS)
+#if defined(ARMV8_OS_ANDROID) || defined(ARMV8_OS_LINUX) || defined(ARMV8_OS_MACOS) || defined(ARMV8_OS_FUCHSIA) || defined(X86_NOT_WINDOWS) || defined(ARMV8_OS_IOS)
 #if !defined(ARMV8_OS_MACOS)
 // _cpu_check_features() doesn't need to do anything on mac/arm since all
 // features are known at build time, so don't call it.
@@ -71,6 +77,73 @@ void ZLIB_INTERNAL cpu_check_features(void)
 #endif
 }
 #elif defined(ARMV8_OS_WINDOWS) || defined(X86_WINDOWS)
+
+#if _WIN32_WINNT < 0x0600
+#ifndef __MINGW32__
+typedef RTL_RUN_ONCE INIT_ONCE;
+typedef PRTL_RUN_ONCE PINIT_ONCE;
+typedef PRTL_RUN_ONCE LPINIT_ONCE;
+
+#define INIT_ONCE_STATIC_INIT   RTL_RUN_ONCE_INIT
+typedef
+BOOL
+(WINAPI *PINIT_ONCE_FN) (
+    _Inout_ PINIT_ONCE InitOnce,
+    _Inout_opt_ PVOID Parameter,
+    _Outptr_opt_result_maybenull_ PVOID *Context
+    );
+#endif // __MINGW32__
+static
+BOOL InitOnceExecuteOnce(PINIT_ONCE InitOnce,
+                         PINIT_ONCE_FN InitFn,
+                         PVOID         Parameter,
+                         LPVOID        *Context) {
+  /* This assumes that reading *once has acquire semantics. This should be true
+   * on x86 and x86-64, where we expect Windows to run. */
+#if !defined(_M_IX86) && !defined(_M_X64) && !defined(_M_ARM64)
+#error "Windows once code may not work on other platforms." \
+       "You can use InitOnceBeginInitialize on >=Vista"
+#endif
+
+  volatile LONG* __once = (volatile LONG*)InitOnce;
+
+  _Static_assert(sizeof(*InitOnce) >= sizeof(*__once),
+                "exec_once_flag must contains at least a LONG variable");
+
+  if (*__once == 1) {
+    return 0;
+  }
+
+  for (;;) {
+    switch (InterlockedCompareExchange(__once, 2, 0)) {
+      case 0:
+        /* The value was zero so we are the first thread to call once
+         * on it. */
+        InitFn(InitOnce, Parameter, Context);
+        /* Write one to indicate that initialisation is complete. */
+        InterlockedExchange(__once, 1);
+        return 0;
+
+      case 1:
+        /* Another thread completed initialisation between our fast-path check
+         * and |InterlockedCompareExchange|. */
+        return 0;
+
+      case 2:
+        /* Another thread is running the initialisation. Switch to it then try
+         * again. */
+        SwitchToThread();
+        break;
+
+      default:
+        abort();
+    }
+  }
+  return 0;
+}
+
+#endif // _WIN32_WINNT < 0x0600
+
 static INIT_ONCE cpu_check_inited_once = INIT_ONCE_STATIC_INIT;
 static BOOL CALLBACK _cpu_check_features_forwarder(PINIT_ONCE once, PVOID param, PVOID* context)
 {
@@ -85,11 +158,7 @@ void ZLIB_INTERNAL cpu_check_features(void)
 #endif
 
 #if (defined(__ARM_NEON__) || defined(__ARM_NEON))
-/*
- * iOS@ARM is a special case where we always have NEON but don't check
- * for crypto extensions.
- */
-#if !defined(ARMV8_OS_MACOS) && !defined(ARM_OS_IOS)
+#if !defined(ARMV8_OS_MACOS)
 /*
  * See http://bit.ly/2CcoEsr for run-time detection of ARM features and also
  * crbug.com/931275 for android_getCpuFeatures() use in the Android sandbox.
@@ -123,6 +192,18 @@ static void _cpu_check_features(void)
 #elif defined(ARMV8_OS_WINDOWS)
     arm_cpu_enable_crc32 = IsProcessorFeaturePresent(PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE);
     arm_cpu_enable_pmull = IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE);
+#elif defined(ARMV8_OS_IOS)
+    // Determine what features are supported dynamically. This code is applicable to macOS
+    // as well if we wish to do that dynamically on that platform in the future.
+    // See https://developer.apple.com/documentation/kernel/1387446-sysctlbyname/determining_instruction_set_characteristics
+    int val = 0;
+    size_t len = sizeof(val);
+    arm_cpu_enable_crc32 = sysctlbyname("hw.optional.armv8_crc32", &val, &len, 0, 0) == 0
+               && val != 0;
+    val = 0;
+    len = sizeof(val);
+    arm_cpu_enable_pmull = sysctlbyname("hw.optional.arm.FEAT_PMULL", &val, &len, 0, 0) == 0
+               && val != 0;
 #endif
 }
 #endif
@@ -135,6 +216,10 @@ static void _cpu_check_features(void)
 /* On x86 we simply use a instruction to check the CPU features.
  * (i.e. CPUID).
  */
+#ifdef CRC32_SIMD_AVX512_PCLMUL
+#include <immintrin.h>
+#include <xsaveintrin.h>
+#endif
 static void _cpu_check_features(void)
 {
     int x86_cpu_has_sse2;
@@ -161,6 +246,10 @@ static void _cpu_check_features(void)
     x86_cpu_enable_simd = x86_cpu_has_sse2 &&
                           x86_cpu_has_sse42 &&
                           x86_cpu_has_pclmulqdq;
+
+#ifdef CRC32_SIMD_AVX512_PCLMUL
+    x86_cpu_enable_avx512 = _xgetbv(0) & 0x00000040;
+#endif
 }
 #endif
 #endif

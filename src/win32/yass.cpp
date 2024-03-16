@@ -19,13 +19,13 @@
 #include "core/debug.hpp"
 #include "core/logging.hpp"
 #include "core/utils.hpp"
+#include "crashpad_helper.hpp"
 #include "crypto/crypter_export.hpp"
+#include "i18n/icu_util.hpp"
 #include "version.h"
 #include "win32/resource.hpp"
 #include "win32/utils.hpp"
 #include "win32/yass_frame.hpp"
-#include "crashpad_helper.hpp"
-#include "i18n/icu_util.hpp"
 
 ABSL_FLAG(bool, background, false, "start up backgroundd");
 
@@ -58,16 +58,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     LOG(WARNING) << "Failed to set up utf-8 locale";
   }
 
-  absl::SetProgramUsageMessage(
-      absl::StrCat("Usage: ", Basename(exec_path), " [options ...]\n",
-                   " -c, --configfile <file> Use specified config file\n",
-                   " --server_host <host> Host address which remote server listens to\n",
-                   " --server_port <port> Port number which remote server listens to\n",
-                   " --local_host <host> Host address which local server listens to\n"
-                   " --local_port <port> Port number which local server listens to\n"
-                   " --username <username> Username\n",
-                   " --password <pasword> Password pharsal\n",
-                   " --method <method> Method of encrypt"));
+  absl::SetProgramUsageMessage(absl::StrCat(
+      "Usage: ", Basename(exec_path), " [options ...]\n", " -K, --config <file> Read config from a file\n",
+      " --server_host <host> Remote server on given host\n", " --server_port <port> Remote server on given port\n",
+      " --local_host <host> Local proxy server on given host\n"
+      " --local_port <port> Local proxy server on given port\n"
+      " --username <username> Server user\n",
+      " --password <pasword> Server password\n", " --method <method> Specify encrypt of method to use"));
+
   absl::InitializeSymbolizer(exec_path.c_str());
 #ifdef HAVE_CRASHPAD
   CHECK(InitializeCrashpad(exec_path));
@@ -84,8 +82,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   const wchar_t* cmdline = GetCommandLineW();
   int argc = 0;
 
-  std::unique_ptr<wchar_t*[], decltype(&LocalFree)> wargv(
-      CommandLineToArgvW(cmdline, &argc), &LocalFree);
+  std::unique_ptr<wchar_t*[], decltype(&LocalFree)> wargv(CommandLineToArgvW(cmdline, &argc), &LocalFree);
   std::vector<std::string> argv_store(argc);
   std::vector<const char*> argv(argc, nullptr);
   for (int i = 0; i != argc; ++i) {
@@ -172,9 +169,8 @@ BOOL CYassApp::InitInstance() {
 
   // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow
   int nCmdShow = absl::GetFlag(FLAGS_background) ? SW_HIDE : SW_SHOW;
-  if (!frame_->Create(className, frame_name.c_str(),
-                      WS_MINIMIZEBOX | WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
-                      rect, m_hInstance, nCmdShow)) {
+  if (!frame_->Create(className, frame_name.c_str(), WS_MINIMIZEBOX | WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU, rect,
+                      m_hInstance, nCmdShow)) {
     LOG(WARNING) << "Failed to create main frame";
     delete frame_;
     return FALSE;
@@ -183,7 +179,7 @@ BOOL CYassApp::InitInstance() {
   if (Utils::GetAutoStart()) {
     if (absl::GetFlag(FLAGS_background)) {
       DWORD main_thread_id = GetCurrentThreadId();
-      WaitNetworkUp([=](){
+      WaitNetworkUp([=]() {
         bool ret;
         ret = PostThreadMessageW(main_thread_id, WM_MYAPP_NETWORK_UP, 0, 0);
         if (!ret) {
@@ -207,8 +203,7 @@ int CYassApp::ExitInstance() {
 int CYassApp::RunMainLoop() {
   MSG msg;
 
-  HACCEL hAccelTable = LoadAcceleratorsW(m_hInstance,
-                                         MAKEINTRESOURCEW(IDC_YASS));
+  HACCEL hAccelTable = LoadAcceleratorsW(m_hInstance, MAKEINTRESOURCEW(IDC_YASS));
 
   if (!InitInstance()) {
     return -1;
@@ -225,8 +220,7 @@ int CYassApp::RunMainLoop() {
       DWORD wait_flags = MWMO_INPUTAVAILABLE;
       // Tell the optimizer to retain these values to simplify analyzing hangs.
       Alias(&wait_flags);
-      DWORD result = MsgWaitForMultipleObjectsEx(0, nullptr, INFINITE,
-                                                 QS_ALLINPUT, wait_flags);
+      DWORD result = MsgWaitForMultipleObjectsEx(0, nullptr, INFINITE, QS_ALLINPUT, wait_flags);
 
       if (result == WAIT_OBJECT_0) {
         // A WM_* message is available.
@@ -324,9 +318,8 @@ void CYassApp::OnStart(bool quiet) {
       }
 
       // if the gui library exits, no more need to handle
-      ret = PostThreadMessageW(
-          main_thread_id, successed ? WM_MYAPP_STARTED : WM_MYAPP_START_FAILED,
-          0, reinterpret_cast<LPARAM>(message));
+      ret = PostThreadMessageW(main_thread_id, successed ? WM_MYAPP_STARTED : WM_MYAPP_START_FAILED, 0,
+                               reinterpret_cast<LPARAM>(message));
       if (!ret) {
         PLOG(WARNING) << "Internal error: PostThreadMessage";
       }
@@ -410,8 +403,6 @@ std::string CYassApp::SaveConfig() {
   auto local_port = frame_->GetLocalPort();
   auto connect_timeout = frame_->GetTimeout();
 
-  return config::ReadConfigFromArgument(server_host, server_sni, server_port,
-                                        username, password, method,
-                                        local_host, local_port,
-                                        connect_timeout);
+  return config::ReadConfigFromArgument(server_host, server_sni, server_port, username, password, method, local_host,
+                                        local_port, "", connect_timeout);
 }

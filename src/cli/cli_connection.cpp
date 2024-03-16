@@ -7,34 +7,31 @@
 #include <absl/strings/str_cat.h>
 
 #include "config/config.hpp"
+#include "core/rand_util.hpp"
+#include "core/utils.hpp"
 #include "net/asio.hpp"
 #include "net/base64.hpp"
 #include "net/http_parser.hpp"
 #include "net/padding.hpp"
-#include "core/rand_util.hpp"
-#include "core/utils.hpp"
 
 #include <build/build_config.h>
 #include <quiche/spdy/core/hpack/hpack_constants.h>
 
 using namespace net;
 
-static std::vector<http2::adapter::Header> GenerateHeaders(
-  std::vector<std::pair<std::string, std::string>> headers, int status = 0) {
+static std::vector<http2::adapter::Header> GenerateHeaders(std::vector<std::pair<std::string, std::string>> headers,
+                                                           int status = 0) {
   std::vector<http2::adapter::Header> response_vector;
   if (status) {
-    response_vector.emplace_back(
-        http2::adapter::HeaderRep(std::string(":status")),
-        http2::adapter::HeaderRep(std::to_string(status)));
+    response_vector.emplace_back(http2::adapter::HeaderRep(std::string(":status")),
+                                 http2::adapter::HeaderRep(std::to_string(status)));
   }
   for (const auto& header : headers) {
     // Connection (and related) headers are considered malformed and will
     // result in a client error
     if (header.first == "Connection")
       continue;
-    response_vector.emplace_back(
-        http2::adapter::HeaderRep(header.first),
-        http2::adapter::HeaderRep(header.second));
+    response_vector.emplace_back(http2::adapter::HeaderRep(header.first), http2::adapter::HeaderRep(header.second));
   }
 
   return response_vector;
@@ -42,8 +39,7 @@ static std::vector<http2::adapter::Header> GenerateHeaders(
 
 static std::string GetProxyAuthorizationIdentity() {
   std::string result;
-  auto user_pass = absl::StrCat(absl::GetFlag(FLAGS_username), ":",
-                                absl::GetFlag(FLAGS_password));
+  auto user_pass = absl::StrCat(absl::GetFlag(FLAGS_username), ":", absl::GetFlag(FLAGS_password));
   Base64Encode(user_pass, &result);
   return result;
 }
@@ -80,8 +76,7 @@ static void FillNonindexHeaderValue(uint64_t unique_bits, char* buf, int len) {
 
 namespace cli {
 
-const char CliConnection::http_connect_reply_[] =
-    "HTTP/1.1 200 Connection established\r\n\r\n";
+const char CliConnection::http_connect_reply_[] = "HTTP/1.1 200 Connection established\r\n\r\n";
 
 #if BUILDFLAG(IS_MAC)
 #include <xnu_private/net_pfvar.h>
@@ -96,12 +91,11 @@ static bool IsIPv4MappedIPv6(const asio::ip::tcp::endpoint& address) {
 }
 #endif
 
-bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length)  {
+bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length) {
   std::string concatenated;
   if (payload_length) {
     DCHECK(!chunks_.empty());
-    absl::string_view payload(
-        reinterpret_cast<const char*>(chunks_.front()->data()), payload_length);
+    absl::string_view payload(reinterpret_cast<const char*>(chunks_.front()->data()), payload_length);
     concatenated = absl::StrCat(frame_header, payload);
   } else {
     concatenated = std::string{frame_header};
@@ -122,8 +116,7 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
 
   if (static_cast<size_t>(result) < concatenated.size()) {
     // Probably need to handle this better within this test class.
-    QUICHE_LOG(DFATAL)
-        << "DATA frame not fully flushed. Connection will be corrupt!";
+    QUICHE_LOG(DFATAL) << "DATA frame not fully flushed. Connection will be corrupt!";
     connection_->OnConnectionError(http2::adapter::Http2VisitorInterface::ConnectionError::kSendError);
     return false;
   }
@@ -158,12 +151,18 @@ CliConnection::CliConnection(asio::io_context& io_context,
                              bool https_fallback,
                              bool enable_upstream_tls,
                              bool enable_tls,
-                             asio::ssl::context *upstream_ssl_ctx,
-                             asio::ssl::context *ssl_ctx)
-    : Connection(io_context, remote_host_ips, remote_host_sni, remote_port,
-                 upstream_https_fallback, https_fallback,
-                 enable_upstream_tls, enable_tls,
-                 upstream_ssl_ctx, ssl_ctx),
+                             SSL_CTX* upstream_ssl_ctx,
+                             SSL_CTX* ssl_ctx)
+    : Connection(io_context,
+                 remote_host_ips,
+                 remote_host_sni,
+                 remote_port,
+                 upstream_https_fallback,
+                 https_fallback,
+                 enable_upstream_tls,
+                 enable_tls,
+                 upstream_ssl_ctx,
+                 ssl_ctx),
       state_() {}
 
 CliConnection::~CliConnection() {
@@ -183,8 +182,7 @@ void CliConnection::close() {
     return;
   }
   VLOG(1) << "Connection (client) " << connection_id()
-          << " disconnected with client at stage: "
-          << CliConnection::state_to_str(CurrentState());
+          << " disconnected with client at stage: " << CliConnection::state_to_str(CurrentState());
   asio::error_code ec;
   closed_ = true;
   downlink_->close(ec);
@@ -227,8 +225,7 @@ bool CliConnection::on_received_data(std::shared_ptr<IOBuf> buf) {
 }
 
 void CliConnection::on_protocol_error() {
-  LOG(WARNING) << "Connection (client) " << connection_id()
-    << " Protocol error";
+  LOG(WARNING) << "Connection (client) " << connection_id() << " Protocol error";
   disconnected(asio::error::connection_aborted);
 }
 
@@ -241,23 +238,19 @@ int64_t CliConnection::OnReadyToSend(absl::string_view serialized) {
   return serialized.size();
 }
 
-http2::adapter::Http2VisitorInterface::OnHeaderResult
-CliConnection::OnHeaderForStream(StreamId stream_id,
-                                 absl::string_view key,
-                                 absl::string_view value) {
+http2::adapter::Http2VisitorInterface::OnHeaderResult CliConnection::OnHeaderForStream(StreamId stream_id,
+                                                                                       absl::string_view key,
+                                                                                       absl::string_view value) {
   request_map_[key] = std::string{value};
   return http2::adapter::Http2VisitorInterface::HEADER_OK;
 }
 
-bool CliConnection::OnEndHeadersForStream(
-  http2::adapter::Http2StreamId stream_id) {
+bool CliConnection::OnEndHeadersForStream(http2::adapter::Http2StreamId stream_id) {
   bool padding_support = request_map_.find("padding") != request_map_.end();
   if (padding_support_ && padding_support) {
-    LOG(INFO) << "Connection (client) " << connection_id() << " for "
-      << remote_domain() << " Padding support enabled.";
+    LOG(INFO) << "Connection (client) " << connection_id() << " for " << remote_domain() << " Padding support enabled.";
   } else {
-    VLOG(1) << "Connection (client) " << connection_id() << " for "
-      << remote_domain() <<  " Padding support disabled.";
+    VLOG(1) << "Connection (client) " << connection_id() << " for " << remote_domain() << " Padding support disabled.";
     padding_support_ = false;
   }
   return true;
@@ -275,8 +268,7 @@ bool CliConnection::OnEndStream(StreamId stream_id) {
   return true;
 }
 
-bool CliConnection::OnCloseStream(StreamId stream_id,
-                                  http2::adapter::Http2ErrorCode error_code) {
+bool CliConnection::OnCloseStream(StreamId stream_id, http2::adapter::Http2ErrorCode error_code) {
   if (stream_id == stream_id_) {
     data_frame_ = nullptr;
     stream_id_ = 0;
@@ -288,10 +280,7 @@ void CliConnection::OnConnectionError(ConnectionError /*error*/) {
   disconnected(asio::error::connection_aborted);
 }
 
-bool CliConnection::OnFrameHeader(StreamId stream_id,
-                                  size_t /*length*/,
-                                  uint8_t /*type*/,
-                                  uint8_t /*flags*/) {
+bool CliConnection::OnFrameHeader(StreamId stream_id, size_t /*length*/, uint8_t /*type*/, uint8_t /*flags*/) {
   return true;
 }
 
@@ -302,13 +291,11 @@ bool CliConnection::OnBeginHeadersForStream(StreamId stream_id) {
   return true;
 }
 
-bool CliConnection::OnBeginDataForStream(StreamId stream_id,
-                                         size_t payload_length) {
+bool CliConnection::OnBeginDataForStream(StreamId stream_id, size_t payload_length) {
   return true;
 }
 
-bool CliConnection::OnDataForStream(StreamId stream_id,
-                                    absl::string_view data) {
+bool CliConnection::OnDataForStream(StreamId stream_id, absl::string_view data) {
   if (padding_support_ && num_padding_recv_ < kFirstPaddings) {
     asio::error_code ec;
     // Append buf to in_middle_buf
@@ -343,14 +330,12 @@ bool CliConnection::OnDataForStream(StreamId stream_id,
   return true;
 }
 
-bool CliConnection::OnDataPaddingLength(StreamId stream_id,
-                                        size_t padding_length) {
+bool CliConnection::OnDataPaddingLength(StreamId stream_id, size_t padding_length) {
   adapter_->MarkDataConsumedForStream(stream_id, padding_length);
   return true;
 }
 
-void CliConnection::OnRstStream(StreamId stream_id,
-                                http2::adapter::Http2ErrorCode error_code) {
+void CliConnection::OnRstStream(StreamId stream_id, http2::adapter::Http2ErrorCode error_code) {
   disconnected(asio::error::connection_reset);
 }
 
@@ -361,10 +346,7 @@ bool CliConnection::OnGoAway(StreamId last_accepted_stream_id,
   return true;
 }
 
-int CliConnection::OnBeforeFrameSent(uint8_t frame_type,
-                                     StreamId stream_id,
-                                     size_t length,
-                                     uint8_t flags) {
+int CliConnection::OnBeforeFrameSent(uint8_t frame_type, StreamId stream_id, size_t length, uint8_t flags) {
   return 0;
 }
 
@@ -376,13 +358,11 @@ int CliConnection::OnFrameSent(uint8_t frame_type,
   return 0;
 }
 
-bool CliConnection::OnInvalidFrame(StreamId stream_id,
-                                   InvalidFrameError error) {
+bool CliConnection::OnInvalidFrame(StreamId stream_id, InvalidFrameError error) {
   return true;
 }
 
-bool CliConnection::OnMetadataForStream(StreamId stream_id,
-                                        absl::string_view metadata) {
+bool CliConnection::OnMetadataForStream(StreamId stream_id, absl::string_view metadata) {
   return true;
 }
 
@@ -394,50 +374,50 @@ void CliConnection::ReadMethodSelect() {
   scoped_refptr<CliConnection> self(this);
 
   downlink_->async_read_some([this, self](asio::error_code ec) {
-      if (closed_) {
-        return;
+    if (closed_) {
+      return;
+    }
+    if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+      return;
+    }
+    if (ec) {
+      ProcessReceivedData(nullptr, ec, 0);
+      return;
+    }
+    std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
+    size_t bytes_transferred;
+    do {
+      bytes_transferred = downlink_->read_some(buf, ec);
+      if (ec == asio::error::interrupted) {
+        continue;
       }
-      if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
-        return;
-      }
-      if (ec) {
-        ProcessReceivedData(nullptr, ec, 0);
-        return;
-      }
-      std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
-      size_t bytes_transferred;
-      do {
-        bytes_transferred = downlink_->read_some(buf, ec);
-        if (ec == asio::error::interrupted) {
-          continue;
-        }
-      } while(false);
-      if (ec == asio::error::try_again || ec == asio::error::would_block) {
-        ReadMethodSelect();
-        return;
-      }
-      if (ec) {
-        OnDisconnect(ec);
-        return;
-      }
-      buf->append(bytes_transferred);
-      DumpHex("HANDSHAKE/METHOD_SELECT->", buf.get());
+    } while (false);
+    if (ec == asio::error::try_again || ec == asio::error::would_block) {
+      ReadMethodSelect();
+      return;
+    }
+    if (ec) {
+      OnDisconnect(ec);
+      return;
+    }
+    buf->append(bytes_transferred);
+    DumpHex("HANDSHAKE/METHOD_SELECT->", buf.get());
 
-      ec = OnReadRedirHandshake(buf);
-      if (ec) {
-        ec = OnReadSocks5MethodSelect(buf);
-      }
-      if (ec) {
-        ec = OnReadSocks4Handshake(buf);
-      }
-      if (ec) {
-        ec = OnReadHttpRequest(buf);
-      }
-      if (ec) {
-        OnDisconnect(ec);
-      } else {
-        ProcessReceivedData(buf, ec, buf->length());
-      }
+    ec = OnReadRedirHandshake(buf);
+    if (ec) {
+      ec = OnReadSocks5MethodSelect(buf);
+    }
+    if (ec) {
+      ec = OnReadSocks4Handshake(buf);
+    }
+    if (ec) {
+      ec = OnReadHttpRequest(buf);
+    }
+    if (ec) {
+      OnDisconnect(ec);
+    } else {
+      ProcessReceivedData(buf, ec, buf->length());
+    }
   });
 }
 
@@ -445,51 +425,49 @@ void CliConnection::ReadSocks5Handshake() {
   scoped_refptr<CliConnection> self(this);
 
   downlink_->async_read_some([this, self](asio::error_code ec) {
-      if (closed_) {
-        return;
+    if (closed_) {
+      return;
+    }
+    if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
+      return;
+    }
+    if (ec) {
+      ProcessReceivedData(nullptr, ec, 0);
+      return;
+    }
+    std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
+    size_t bytes_transferred;
+    do {
+      bytes_transferred = downlink_->read_some(buf, ec);
+      if (ec == asio::error::interrupted) {
+        continue;
       }
-      if (ec == asio::error::bad_descriptor || ec == asio::error::operation_aborted) {
-        return;
-      }
-      if (ec) {
-        ProcessReceivedData(nullptr, ec, 0);
-        return;
-      }
-      std::shared_ptr<IOBuf> buf = IOBuf::create(SOCKET_BUF_SIZE);
-      size_t bytes_transferred;
-      do {
-        bytes_transferred = downlink_->read_some(buf, ec);
-        if (ec == asio::error::interrupted) {
-          continue;
-        }
-      } while(false);
-      if (ec == asio::error::try_again || ec == asio::error::would_block) {
-        ReadSocks5Handshake();
-        return;
-      }
-      if (ec) {
-        OnDisconnect(ec);
-        return;
-      }
-      buf->append(bytes_transferred);
-      DumpHex("HANDSHAKE->", buf.get());
-      ec = OnReadSocks5Handshake(buf);
-      if (ec) {
-        OnDisconnect(ec);
-      } else {
-        ProcessReceivedData(buf, ec, buf->length());
-      }
+    } while (false);
+    if (ec == asio::error::try_again || ec == asio::error::would_block) {
+      ReadSocks5Handshake();
+      return;
+    }
+    if (ec) {
+      OnDisconnect(ec);
+      return;
+    }
+    buf->append(bytes_transferred);
+    DumpHex("HANDSHAKE->", buf.get());
+    ec = OnReadSocks5Handshake(buf);
+    if (ec) {
+      OnDisconnect(ec);
+    } else {
+      ProcessReceivedData(buf, ec, buf->length());
+    }
   });
 }
 
-asio::error_code CliConnection::OnReadRedirHandshake(
-  std::shared_ptr<IOBuf> buf) {
+asio::error_code CliConnection::OnReadRedirHandshake(std::shared_ptr<IOBuf> buf) {
 #if BUILDFLAG(IS_MAC)
   if (!absl::GetFlag(FLAGS_redir_mode)) {
     return asio::error::operation_not_supported;
   }
-  VLOG(2) << "Connection (client) " << connection_id()
-          << " try redir handshake";
+  VLOG(2) << "Connection (client) " << connection_id() << " try redir handshake";
   scoped_refptr<CliConnection> self(this);
   const bool ipv4_compatible = peer_endpoint_.address().is_v4();
 
@@ -549,8 +527,7 @@ asio::error_code CliConnection::OnReadRedirHandshake(
     memcpy(&in6->sin6_addr.s6_addr, &pnl.rdaddr.v6addr, sizeof pnl.rdaddr.v6addr);
     in6->sin6_port = pnl.rdxport.port;
   }
-  VLOG(2) << "Connection (client) " << connection_id()
-          << " redir stream from " << endpoint_ << " to " << endpoint;
+  VLOG(2) << "Connection (client) " << connection_id() << " redir stream from " << endpoint_ << " to " << endpoint;
   OnCmdConnect(endpoint);
 
   asio::error_code ec;
@@ -565,19 +542,16 @@ asio::error_code CliConnection::OnReadRedirHandshake(
   if (!absl::GetFlag(FLAGS_redir_mode)) {
     return asio::error::operation_not_supported;
   }
-  VLOG(2) << "Connection (client) " << connection_id()
-          << " try redir handshake";
+  VLOG(2) << "Connection (client) " << connection_id() << " try redir handshake";
   scoped_refptr<CliConnection> self(this);
   struct sockaddr_storage ss = {};
   socklen_t ss_len = sizeof(struct sockaddr_in6);
   asio::ip::tcp::endpoint endpoint;
   int ret;
   if (peer_endpoint_.address().is_v4() || IsIPv4MappedIPv6(peer_endpoint_))
-    ret = getsockopt(downlink_->socket_.native_handle(), SOL_IP, SO_ORIGINAL_DST, &ss,
-                     &ss_len);
+    ret = getsockopt(downlink_->socket_.native_handle(), SOL_IP, SO_ORIGINAL_DST, &ss, &ss_len);
   else
-    ret = getsockopt(downlink_->socket_.native_handle(), SOL_IPV6, SO_ORIGINAL_DST, &ss,
-                     &ss_len);
+    ret = getsockopt(downlink_->socket_.native_handle(), SOL_IPV6, SO_ORIGINAL_DST, &ss, &ss_len);
   if (ret == 0) {
     endpoint.resize(ss_len);
     memcpy(endpoint.data(), &ss, ss_len);
@@ -590,25 +564,19 @@ asio::error_code CliConnection::OnReadRedirHandshake(
     char hostname[NI_MAXHOST];
     char service[NI_MAXSERV];
     uint16_t port = endpoint.port();
-    int ret = getnameinfo(reinterpret_cast<const struct sockaddr*>(endpoint.data()),
-                          endpoint.size(),
-                          hostname, sizeof(hostname), service, sizeof(service),
-                          NI_NAMEREQD);
+    int ret = getnameinfo(reinterpret_cast<const struct sockaddr*>(endpoint.data()), endpoint.size(), hostname,
+                          sizeof(hostname), service, sizeof(service), NI_NAMEREQD);
     if (ret == 0 && strlen(hostname) != 0) {
-      VLOG(2) << "Connection (client) " << connection_id()
-              << " redir stream from " << hostname << ":" << port
-              << " to " << endpoint;
+      VLOG(2) << "Connection (client) " << connection_id() << " redir stream from " << hostname << ":" << port << " to "
+              << endpoint;
       OnCmdConnect(hostname, port);
     } else {
       if (ret) {
-        VLOG(3) << "Connection (client) " << connection_id()
-                << " redir getnameinfo failure: " << gai_strerror(ret);
+        VLOG(3) << "Connection (client) " << connection_id() << " redir getnameinfo failure: " << gai_strerror(ret);
       } else {
-        VLOG(3) << "Connection (client) " << connection_id()
-                << " redir getnameinfo failure: truncated host name";
+        VLOG(3) << "Connection (client) " << connection_id() << " redir getnameinfo failure: truncated host name";
       }
-      VLOG(2) << "Connection (client) " << connection_id()
-              << " redir stream from " << endpoint_ << " to " << endpoint;
+      VLOG(2) << "Connection (client) " << connection_id() << " redir stream from " << endpoint_ << " to " << endpoint;
       OnCmdConnect(endpoint);
     }
 
@@ -625,12 +593,11 @@ asio::error_code CliConnection::OnReadRedirHandshake(
   return std::make_error_code(std::errc::network_unreachable);
 }
 
-asio::error_code CliConnection::OnReadSocks5MethodSelect(
-  std::shared_ptr<IOBuf> buf) {
+asio::error_code CliConnection::OnReadSocks5MethodSelect(std::shared_ptr<IOBuf> buf) {
   scoped_refptr<CliConnection> self(this);
   socks5::method_select_request_parser::result_type result;
-  std::tie(result, std::ignore) = method_select_request_parser_.parse(
-      method_select_request_, buf->data(), buf->data() + buf->length());
+  std::tie(result, std::ignore) =
+      method_select_request_parser_.parse(method_select_request_, buf->data(), buf->data() + buf->length());
 
   if (result == socks5::method_select_request_parser::good) {
     DCHECK_LE(method_select_request_.length(), buf->length());
@@ -638,20 +605,16 @@ asio::error_code CliConnection::OnReadSocks5MethodSelect(
     buf->retreat(method_select_request_.length());
     SetState(state_method_select);
 
-    VLOG(2) << "Connection (client) " << connection_id()
-            << " socks5 method select";
+    VLOG(2) << "Connection (client) " << connection_id() << " socks5 method select";
     return asio::error_code();
   }
   return std::make_error_code(std::errc::bad_message);
 }
 
-asio::error_code CliConnection::OnReadSocks5Handshake(
-  std::shared_ptr<IOBuf> buf) {
-  VLOG(2) << "Connection (client) " << connection_id()
-          << " try socks5 handshake";
+asio::error_code CliConnection::OnReadSocks5Handshake(std::shared_ptr<IOBuf> buf) {
+  VLOG(2) << "Connection (client) " << connection_id() << " try socks5 handshake";
   socks5::request_parser::result_type result;
-  std::tie(result, std::ignore) = request_parser_.parse(
-      s5_request_, buf->data(), buf->data() + buf->length());
+  std::tie(result, std::ignore) = request_parser_.parse(s5_request_, buf->data(), buf->data() + buf->length());
 
   if (result == socks5::request_parser::good) {
     DCHECK_LE(s5_request_.length(), buf->length());
@@ -659,38 +622,31 @@ asio::error_code CliConnection::OnReadSocks5Handshake(
     buf->retreat(s5_request_.length());
     SetState(state_socks5_handshake);
 
-    VLOG(2) << "Connection (client) " << connection_id()
-            << " socks5 handshake began";
+    VLOG(2) << "Connection (client) " << connection_id() << " socks5 handshake began";
     return asio::error_code();
   }
   return std::make_error_code(std::errc::bad_message);
 }
 
-asio::error_code CliConnection::OnReadSocks4Handshake(
-  std::shared_ptr<IOBuf> buf) {
-  VLOG(2) << "Connection (client) " << connection_id()
-          << " try socks4 handshake";
+asio::error_code CliConnection::OnReadSocks4Handshake(std::shared_ptr<IOBuf> buf) {
+  VLOG(2) << "Connection (client) " << connection_id() << " try socks4 handshake";
 
   socks4::request_parser::result_type result;
-  std::tie(result, std::ignore) = s4_request_parser_.parse(
-      s4_request_, buf->data(), buf->data() + buf->length());
+  std::tie(result, std::ignore) = s4_request_parser_.parse(s4_request_, buf->data(), buf->data() + buf->length());
   if (result == socks4::request_parser::good) {
     DCHECK_LE(s4_request_.length(), buf->length());
     buf->trimStart(s4_request_.length());
     buf->retreat(s4_request_.length());
     SetState(state_socks4_handshake);
 
-    VLOG(2) << "Connection (client) " << connection_id()
-            << " socks4 handshake began";
+    VLOG(2) << "Connection (client) " << connection_id() << " socks4 handshake began";
     return asio::error_code();
   }
   return std::make_error_code(std::errc::bad_message);
 }
 
-asio::error_code CliConnection::OnReadHttpRequest(
-  std::shared_ptr<IOBuf> buf) {
-  VLOG(2) << "Connection (client) " << connection_id()
-          << " try http handshake";
+asio::error_code CliConnection::OnReadHttpRequest(std::shared_ptr<IOBuf> buf) {
+  VLOG(2) << "Connection (client) " << connection_id() << " try http handshake";
 
   HttpRequestParser parser;
 
@@ -698,8 +654,7 @@ asio::error_code CliConnection::OnReadHttpRequest(
   int nparsed = parser.Parse(buf, &ok);
   if (nparsed) {
     VLOG(3) << "Connection (client) " << connection_id()
-            << " http: "
-            << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
+            << " http: " << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
   }
 
   if (ok) {
@@ -716,23 +671,18 @@ asio::error_code CliConnection::OnReadHttpRequest(
       buf->reserve(header.size(), 0);
       buf->prepend(header.size());
       memcpy(buf->mutable_data(), header.c_str(), header.size());
-      VLOG(3) << "Connection (client) " << connection_id()
-              << " Host: " << http_host_ << " PORT: " << http_port_;
+      VLOG(3) << "Connection (client) " << connection_id() << " Host: " << http_host_ << " PORT: " << http_port_;
     } else {
-      VLOG(3) << "Connection (client) " << connection_id()
-              << " CONNECT: " << http_host_ << " PORT: " << http_port_;
+      VLOG(3) << "Connection (client) " << connection_id() << " CONNECT: " << http_host_ << " PORT: " << http_port_;
     }
 
     SetState(state_http_handshake);
-    VLOG(2) << "Connection (client) " << connection_id()
-            << " http handshake began";
+    VLOG(2) << "Connection (client) " << connection_id() << " http handshake began";
     return asio::error_code();
   }
 
-  LOG(WARNING) << "Connection (client) " << connection_id()
-               << " " << parser.ErrorMessage() << ": "
-               << std::string(reinterpret_cast<const char*>(buf->data()),
-                              nparsed);
+  LOG(WARNING) << "Connection (client) " << connection_id() << " " << parser.ErrorMessage() << ": "
+               << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
   return std::make_error_code(std::errc::bad_message);
 }
 
@@ -779,14 +729,13 @@ void CliConnection::ReadStream(bool yield) {
 void CliConnection::WriteMethodSelect() {
   scoped_refptr<CliConnection> self(this);
   method_select_reply_ = socks5::method_select_response_stock_reply();
-  asio::async_write(downlink_->socket_,
-    asio::buffer(&method_select_reply_, sizeof(method_select_reply_)),
-    [this, self](asio::error_code ec, size_t bytes_transferred) {
-      if (closed_) {
-        return;
-      }
-      ProcessSentData(ec, bytes_transferred);
-  });
+  asio::async_write(downlink_->socket_, asio::buffer(&method_select_reply_, sizeof(method_select_reply_)),
+                    [this, self](asio::error_code ec, size_t bytes_transferred) {
+                      if (closed_) {
+                        return;
+                      }
+                      ProcessSentData(ec, bytes_transferred);
+                    });
 }
 
 void CliConnection::WriteHandshake() {
@@ -797,29 +746,28 @@ void CliConnection::WriteHandshake() {
     case state_socks5_handshake:
       SetState(state_stream);
       asio::async_write(downlink_->socket_, s5_reply_.buffers(),
-        [this, self](asio::error_code ec, size_t bytes_transferred) {
-          if (closed_) {
-            return;
-          }
-          ProcessSentData(ec, bytes_transferred);
-      });
+                        [this, self](asio::error_code ec, size_t bytes_transferred) {
+                          if (closed_) {
+                            return;
+                          }
+                          ProcessSentData(ec, bytes_transferred);
+                        });
       break;
     case state_socks4_handshake:
       SetState(state_stream);
       asio::async_write(downlink_->socket_, s4_reply_.buffers(),
-        [this, self](asio::error_code ec, size_t bytes_transferred) {
-          if (closed_) {
-            return;
-          }
-          ProcessSentData(ec, bytes_transferred);
-      });
+                        [this, self](asio::error_code ec, size_t bytes_transferred) {
+                          if (closed_) {
+                            return;
+                          }
+                          ProcessSentData(ec, bytes_transferred);
+                        });
       break;
     case state_http_handshake:
       SetState(state_stream);
       /// reply on CONNECT request
       if (http_is_connect_) {
-        std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(
-            http_connect_reply_, sizeof(http_connect_reply_) - 1);
+        std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(http_connect_reply_, sizeof(http_connect_reply_) - 1);
         OnDownstreamWrite(buf);
       }
       break;
@@ -828,8 +776,7 @@ void CliConnection::WriteHandshake() {
     case state_stream:
       break;
     default:
-      LOG(FATAL) << "Connection (client) " << connection_id()
-                 << "bad state 0x" << std::hex
+      LOG(FATAL) << "Connection (client) " << connection_id() << "bad state 0x" << std::hex
                  << static_cast<int>(CurrentState()) << std::dec;
   }
 }
@@ -857,7 +804,7 @@ void CliConnection::WriteStream() {
       if (UNLIKELY(ec == asio::error::interrupted)) {
         continue;
       }
-    } while(false);
+    } while (false);
     buf->trimStart(written);
     bytes_downstream_passed_without_yield_ += written;
     wbytes_transferred += written;
@@ -887,7 +834,7 @@ void CliConnection::WriteStream() {
       }
       break;
     }
-  } while(true);
+  } while (true);
 
   if (try_again) {
     if (channel_ && channel_->connected() && !channel_->read_inprogress()) {
@@ -957,7 +904,7 @@ void CliConnection::ReadUpstream() {
       break;
     }
     WriteStream();
-  } while(false);
+  } while (false);
 
   if (try_again) {
     if (channel_ && channel_->connected() && !channel_->read_inprogress()) {
@@ -974,20 +921,21 @@ void CliConnection::ReadUpstreamAsync(bool yield) {
   }
 
   scoped_refptr<CliConnection> self(this);
-  channel_->wait_read([this, self](asio::error_code ec) {
-    if (UNLIKELY(closed_)) {
-      return;
-    }
-    if (UNLIKELY(ec)) {
-      disconnected(ec);
-      return;
-    }
-    received();
-  }, yield);
+  channel_->wait_read(
+      [this, self](asio::error_code ec) {
+        if (UNLIKELY(closed_)) {
+          return;
+        }
+        if (UNLIKELY(ec)) {
+          disconnected(ec);
+          return;
+        }
+        received();
+      },
+      yield);
 }
 
-std::shared_ptr<IOBuf> CliConnection::GetNextDownstreamBuf(asio::error_code &ec,
-                                                           size_t *bytes_transferred) {
+std::shared_ptr<IOBuf> CliConnection::GetNextDownstreamBuf(asio::error_code& ec, size_t* bytes_transferred) {
   if (!downstream_.empty()) {
     DCHECK(!downstream_.front()->empty());
     ec = asio::error_code();
@@ -1016,7 +964,7 @@ try_again:
     if (ec == asio::error::interrupted) {
       continue;
     }
-  } while(false);
+  } while (false);
   buf->append(read);
   if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
     // handled in channel_->read_some func
@@ -1024,8 +972,7 @@ try_again:
     goto out;
   }
   if (read) {
-    VLOG(2) << "Connection (client) " << connection_id()
-            << " upstream: received reply (pipe): " << read << " bytes."
+    VLOG(2) << "Connection (client) " << connection_id() << " upstream: received reply (pipe): " << read << " bytes."
             << " done: " << channel_->rbytes_transferred() << " bytes.";
   } else {
     goto out;
@@ -1033,8 +980,7 @@ try_again:
   *bytes_transferred += read;
 
   if (adapter_) {
-    absl::string_view remaining_buffer(
-        reinterpret_cast<const char*>(buf->data()), buf->length());
+    absl::string_view remaining_buffer(reinterpret_cast<const char*>(buf->data()), buf->length());
     while (!remaining_buffer.empty()) {
       int result = adapter_->ProcessBytes(remaining_buffer);
       if (result < 0) {
@@ -1058,8 +1004,7 @@ try_again:
 
       if (nparsed) {
         VLOG(3) << "Connection (client) " << connection_id()
-                << " http: "
-                << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
+                << " http: " << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
       }
       if (ok && parser.status_code() == 200) {
         buf->trimStart(nparsed);
@@ -1071,10 +1016,8 @@ try_again:
       } else {
         if (!ok) {
           LOG(WARNING) << "Connection (client) " << connection_id()
-                       << " upstream server unhandled: "
-                       << parser.ErrorMessage() << ": "
-                       << std::string(reinterpret_cast<const char*>(buf->data()),
-                                      nparsed);
+                       << " upstream server unhandled: " << parser.ErrorMessage() << ": "
+                       << std::string(reinterpret_cast<const char*>(buf->data()), nparsed);
         } else {
           LOG(WARNING) << "Connection (client) " << connection_id()
                        << " upstream server returns: " << parser.status_code();
@@ -1144,15 +1087,14 @@ void CliConnection::WriteUpstreamInPipe() {
       if (ec == asio::error::interrupted) {
         continue;
       }
-    } while(false);
+    } while (false);
     buf->trimStart(written);
     wbytes_transferred += written;
     bytes_upstream_passed_without_yield_ += written;
     if (ec == asio::error::try_again || ec == asio::error::would_block) {
       break;
     }
-    VLOG(2) << "Connection (client) " << connection_id()
-            << " upstream: sent request (pipe): " << written << " bytes"
+    VLOG(2) << "Connection (client) " << connection_id() << " upstream: sent request (pipe): " << written << " bytes"
             << " done: " << channel_->wbytes_transferred() << " bytes."
             << " ec: " << ec;
     // continue to resume
@@ -1192,8 +1134,7 @@ void CliConnection::WriteUpstreamInPipe() {
   }
 }
 
-std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code &ec,
-                                                         size_t* bytes_transferred) {
+std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code& ec, size_t* bytes_transferred) {
   if (!upstream_.empty()) {
     DCHECK(!upstream_.front()->empty());
     ec = asio::error_code();
@@ -1216,7 +1157,7 @@ std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code &ec,
     if (ec == asio::error::interrupted) {
       continue;
     }
-  } while(false);
+  } while (false);
   buf->append(read);
   if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
     /* safe to return, socket will handle this error later */
@@ -1227,8 +1168,7 @@ std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code &ec,
   total_rx_bytes += read;
   *bytes_transferred += read;
   if (read) {
-    VLOG(2) << "Connection (client) " << connection_id()
-            << " received data (pipe): " << read << " bytes."
+    VLOG(2) << "Connection (client) " << connection_id() << " received data (pipe): " << read << " bytes."
             << " done: " << rbytes_transferred_ << " bytes.";
   } else {
     goto out;
@@ -1274,9 +1214,7 @@ out:
   return upstream_.front();
 }
 
-asio::error_code CliConnection::PerformCmdOpsV5(
-  const socks5::request* request,
-  socks5::reply* reply) {
+asio::error_code CliConnection::PerformCmdOpsV5(const socks5::request* request, socks5::reply* reply) {
   asio::error_code ec;
 
   switch (request->command()) {
@@ -1300,8 +1238,7 @@ asio::error_code CliConnection::PerformCmdOpsV5(
     case socks5::cmd_udp_associate:
     default:
       // NOT IMPLETMENTED
-      LOG(WARNING) << "Connection (client) " << connection_id()
-                   << " not supported command 0x" << std::hex
+      LOG(WARNING) << "Connection (client) " << connection_id() << " not supported command 0x" << std::hex
                    << static_cast<int>(request->command()) << std::dec;
       reply->mutable_status() = socks5::reply::request_failed_cmd_not_supported;
       ec = asio::error::invalid_argument;
@@ -1310,9 +1247,7 @@ asio::error_code CliConnection::PerformCmdOpsV5(
   return ec;
 }
 
-asio::error_code CliConnection::PerformCmdOpsV4(
-  const socks4::request* request,
-  socks4::reply* reply) {
+asio::error_code CliConnection::PerformCmdOpsV4(const socks4::request* request, socks4::reply* reply) {
   asio::error_code ec;
 
   switch (request->command()) {
@@ -1330,8 +1265,7 @@ asio::error_code CliConnection::PerformCmdOpsV4(
     case socks4::cmd_bind:
     default:
       // NOT IMPLETMENTED
-      LOG(WARNING) << "Connection (client) " << connection_id()
-                   << " not supported command 0x" << std::hex
+      LOG(WARNING) << "Connection (client) " << connection_id() << " not supported command 0x" << std::hex
                    << static_cast<int>(request->command()) << std::dec;
       reply->mutable_status() = socks4::reply::request_failed;
       ec = asio::error::invalid_argument;
@@ -1346,13 +1280,8 @@ asio::error_code CliConnection::PerformCmdOpsHttp() {
   return asio::error_code();
 }
 
-void CliConnection::ProcessReceivedData(
-    std::shared_ptr<IOBuf> buf,
-    asio::error_code ec,
-    size_t bytes_transferred) {
-
-  VLOG(2) << "Connection (client) " << connection_id()
-          << " received data: " << bytes_transferred << " bytes"
+void CliConnection::ProcessReceivedData(std::shared_ptr<IOBuf> buf, asio::error_code ec, size_t bytes_transferred) {
+  VLOG(2) << "Connection (client) " << connection_id() << " received data: " << bytes_transferred << " bytes"
           << " done: " << rbytes_transferred_ << " bytes."
           << " ec: " << ec;
 
@@ -1374,8 +1303,7 @@ void CliConnection::ProcessReceivedData(
           break;
         }
         WriteHandshake();
-        VLOG(2) << "Connection (client) " << connection_id()
-                << " socks5 handshake finished: ec: " << ec;
+        VLOG(2) << "Connection (client) " << connection_id() << " socks5 handshake finished: ec: " << ec;
         goto handle_stream;
       case state_socks4_handshake:
         ec = PerformCmdOpsV4(&s4_request_, &s4_reply_);
@@ -1383,8 +1311,7 @@ void CliConnection::ProcessReceivedData(
           break;
         }
         WriteHandshake();
-        VLOG(2) << "Connection (client) " << connection_id()
-                << " socks4 handshake finished: ec:" << ec;
+        VLOG(2) << "Connection (client) " << connection_id() << " socks4 handshake finished: ec:" << ec;
         goto handle_stream;
       case state_http_handshake:
         ec = PerformCmdOpsHttp();
@@ -1392,8 +1319,7 @@ void CliConnection::ProcessReceivedData(
           break;
         }
         WriteHandshake();
-        VLOG(2) << "Connection (client) " << connection_id()
-                << " http handshake finished: ec: " << ec;
+        VLOG(2) << "Connection (client) " << connection_id() << " http handshake finished: ec: " << ec;
         goto handle_stream;
       case state_stream:
       handle_stream:
@@ -1408,8 +1334,7 @@ void CliConnection::ProcessReceivedData(
         ec = std::make_error_code(std::errc::bad_message);
         break;
       default:
-        LOG(FATAL) << "Connection (client) " << connection_id()
-                   << " bad state 0x" << std::hex
+        LOG(FATAL) << "Connection (client) " << connection_id() << " bad state 0x" << std::hex
                    << static_cast<int>(CurrentState()) << std::dec;
     };
   }
@@ -1419,13 +1344,11 @@ void CliConnection::ProcessReceivedData(
   }
 }
 
-void CliConnection::ProcessSentData(asio::error_code ec,
-                                    size_t bytes_transferred) {
+void CliConnection::ProcessSentData(asio::error_code ec, size_t bytes_transferred) {
   wbytes_transferred_ += bytes_transferred;
   total_tx_bytes += bytes_transferred;
 
-  VLOG(2) << "Connection (client) " << connection_id()
-          << " sent data: " << bytes_transferred << " bytes."
+  VLOG(2) << "Connection (client) " << connection_id() << " sent data: " << bytes_transferred << " bytes."
           << " done: " << wbytes_transferred_ << " bytes."
           << " ec: " << ec;
 
@@ -1448,8 +1371,7 @@ void CliConnection::ProcessSentData(asio::error_code ec,
         ec = std::make_error_code(std::errc::bad_message);
         break;
       default:
-        LOG(FATAL) << "Connection (client) " << connection_id()
-                   << " bad state 0x" << std::hex
+        LOG(FATAL) << "Connection (client) " << connection_id() << " bad state 0x" << std::hex
                    << static_cast<int>(CurrentState()) << std::dec;
     }
   }
@@ -1472,26 +1394,16 @@ void CliConnection::OnCmdConnect(const std::string& domain_name, uint16_t port) 
 
 void CliConnection::OnConnect() {
   scoped_refptr<CliConnection> self(this);
-  LOG(INFO) << "Connection (client) " << connection_id()
-            << " connect " << remote_domain();
+  LOG(INFO) << "Connection (client) " << connection_id() << " connect " << remote_domain();
   // create lazy
   if (enable_upstream_tls_) {
-    channel_ = ssl_stream::create(ssl_socket_data_index(),
-                                  *io_context_,
-                                  remote_host_ips_,
-                                  remote_host_sni_,
-                                  remote_port_,
-                                  this, upstream_https_fallback_,
-                                  upstream_ssl_ctx_);
+    channel_ = ssl_stream::create(ssl_socket_data_index(), *io_context_, remote_host_ips_, remote_host_sni_,
+                                  remote_port_, this, upstream_https_fallback_, upstream_ssl_ctx_);
 
   } else {
-    channel_ = stream::create(*io_context_,
-                              remote_host_ips_,
-                              remote_host_sni_,
-                              remote_port_,
-                              this);
+    channel_ = stream::create(*io_context_, remote_host_ips_, remote_host_sni_, remote_port_, this);
   }
-  channel_->async_connect([this, self](asio::error_code ec){
+  channel_->async_connect([this, self](asio::error_code ec) {
     if (UNLIKELY(closed_)) {
       return;
     }
@@ -1507,8 +1419,7 @@ void CliConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
   if (!channel_ || !channel_->connected()) {
     constexpr size_t kMaxHeaderSize = 1024 * 1024 + 1024;
     if (pending_data_.byte_length() + buf->length() > kMaxHeaderSize) {
-      LOG(WARNING) << "Connection (client) " << connection_id()
-                   << " too much data in incoming";
+      LOG(WARNING) << "Connection (client) " << connection_id() << " too much data in incoming";
       OnDisconnect(asio::error::connection_reset);
       return;
     }
@@ -1542,8 +1453,7 @@ void CliConnection::OnStreamWrite() {
 
   /* shutdown the socket if upstream is eof and all remaining data sent */
   if (channel_->eof() && downstream_.empty() && !shutdown_) {
-    VLOG(2) << "Connection (client) " << connection_id()
-            << " last data sent: shutting down";
+    VLOG(2) << "Connection (client) " << connection_id() << " last data sent: shutting down";
     shutdown_ = true;
     asio::error_code ec;
     downlink_->shutdown(ec);
@@ -1561,8 +1471,7 @@ void CliConnection::OnDisconnect(asio::error_code ec) {
     ec = asio::error_code();
   }
 #endif
-  LOG(INFO) << "Connection (client) " << connection_id()
-            << " closed: " << ec;
+  LOG(INFO) << "Connection (client) " << connection_id() << " closed: " << ec;
   close();
 }
 
@@ -1579,8 +1488,7 @@ void CliConnection::OnDownstreamWrite(std::shared_ptr<IOBuf> buf) {
   }
   if (!downstream_.empty() && !write_inprogress_) {
     if (CurrentState() == state_error) {
-      VLOG(1) << "Connection (client) " << connection_id()
-              << " failed to sending " << (buf ? buf->length() : 0u)
+      VLOG(1) << "Connection (client) " << connection_id() << " failed to sending " << (buf ? buf->length() : 0u)
               << " bytes.";
       return;
     }
@@ -1594,8 +1502,8 @@ void CliConnection::OnUpstreamWriteFlush() {
 
 void CliConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
   if (buf && !buf->empty()) {
-    VLOG(2) << "Connection (client) " << connection_id()
-            << " upstream: ready to send request: " << buf->length() << " bytes.";
+    VLOG(2) << "Connection (client) " << connection_id() << " upstream: ready to send request: " << buf->length()
+            << " bytes.";
     upstream_.push_back(buf);
   }
   if (!upstream_.empty() && upstream_writable_) {
@@ -1617,8 +1525,7 @@ void CliConnection::OnUpstreamWrite(std::shared_ptr<IOBuf> buf) {
 void CliConnection::connected() {
   scoped_refptr<CliConnection> self(this);
   VLOG(2) << "Connection (client) " << connection_id()
-          << " remote: established upstream connection with: "
-          << remote_domain();
+          << " remote: established upstream connection with: " << remote_domain();
 
   bool http2 = absl::GetFlag(FLAGS_method).method == CRYPTO_HTTP2_PLAINTEXT;
   http2 |= (absl::GetFlag(FLAGS_method).method == CRYPTO_HTTP2);
@@ -1642,27 +1549,19 @@ void CliConnection::connected() {
     // TODO should we support it?
     // padding_support_ = absl::GetFlag(FLAGS_padding_support);
   } else {
-    encoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
-      absl::GetFlag(FLAGS_method).method,
-      this, true);
-    decoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password),
-      absl::GetFlag(FLAGS_method).method,
-      this);
+    encoder_ =
+        std::make_unique<cipher>("", absl::GetFlag(FLAGS_password), absl::GetFlag(FLAGS_method).method, this, true);
+    decoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password), absl::GetFlag(FLAGS_method).method, this);
   }
 
   // Send Upstream Settings (HTTP2 Only)
   if (adapter_) {
-    std::vector<http2::adapter::Http2Setting> settings {
-      { http2::adapter::Http2KnownSettingsId::HEADER_TABLE_SIZE,
-        kSpdyMaxHeaderTableSize },
-      { http2::adapter::Http2KnownSettingsId::MAX_CONCURRENT_STREAMS,
-        kSpdyMaxConcurrentPushedStreams },
-      { http2::adapter::Http2KnownSettingsId::INITIAL_WINDOW_SIZE,
-        H2_STREAM_WINDOW_SIZE },
-      { http2::adapter::Http2KnownSettingsId::MAX_HEADER_LIST_SIZE,
-        kSpdyMaxHeaderListSize },
-      { http2::adapter::Http2KnownSettingsId::ENABLE_PUSH,
-        kSpdyDisablePush },
+    std::vector<http2::adapter::Http2Setting> settings{
+        {http2::adapter::Http2KnownSettingsId::HEADER_TABLE_SIZE, kSpdyMaxHeaderTableSize},
+        {http2::adapter::Http2KnownSettingsId::MAX_CONCURRENT_STREAMS, kSpdyMaxConcurrentPushedStreams},
+        {http2::adapter::Http2KnownSettingsId::INITIAL_WINDOW_SIZE, H2_STREAM_WINDOW_SIZE},
+        {http2::adapter::Http2KnownSettingsId::MAX_HEADER_LIST_SIZE, kSpdyMaxHeaderListSize},
+        {http2::adapter::Http2KnownSettingsId::ENABLE_PUSH, kSpdyDisablePush},
     };
     adapter_->SubmitSettings(settings);
     SendIfNotProcessing();
@@ -1690,8 +1589,7 @@ void CliConnection::connected() {
       hostname_and_port = "[" + host + "]" + ":" + std::to_string(port);
     }
 
-    std::unique_ptr<DataFrameSource> data_frame =
-      std::make_unique<DataFrameSource>(this);
+    std::unique_ptr<DataFrameSource> data_frame = std::make_unique<DataFrameSource>(this);
     data_frame_ = data_frame.get();
     std::vector<std::pair<std::string, std::string>> headers;
     headers.emplace_back(":method", "CONNECT");
@@ -1708,8 +1606,7 @@ void CliConnection::connected() {
       FillNonindexHeaderValue(RandUint64(), &padding[0], padding.size());
       headers.emplace_back("padding", padding);
     }
-    stream_id_ = adapter_->SubmitRequest(GenerateHeaders(headers),
-                                         std::move(data_frame), nullptr);
+    stream_id_ = adapter_->SubmitRequest(GenerateHeaders(headers), std::move(data_frame), nullptr);
     data_frame_->set_stream_id(stream_id_);
     SendIfNotProcessing();
   } else if (upstream_https_fallback_) {
@@ -1737,7 +1634,8 @@ void CliConnection::connected() {
         "CONNECT %s HTTP/1.1\r\n"
         "Host: %s\r\n"
         "Proxy-Connection: Keep-Alive\r\n"
-        "\r\n", hostname_and_port.c_str(), hostname_and_port.c_str());
+        "\r\n",
+        hostname_and_port.c_str(), hostname_and_port.c_str());
     // write variable address directly as https header
     upstream_.push_back(hdr.data(), hdr.size());
   } else {
@@ -1750,7 +1648,7 @@ void CliConnection::connected() {
   // Re-process the read data in pending
   if (!pending_data_.empty()) {
     auto queue = std::move(pending_data_);
-    while(!queue.empty()) {
+    while (!queue.empty()) {
       auto buf = queue.front();
       queue.pop_front();
       OnStreamRead(buf);
@@ -1762,7 +1660,7 @@ void CliConnection::connected() {
   upstream_writable_ = true;
 
   yield_upstream_after_time_ = yield_downstream_after_time_ =
-    GetMonotonicTime() + kYieldAfterDurationMilliseconds * 1000 * 1000;
+      GetMonotonicTime() + kYieldAfterDurationMilliseconds * 1000 * 1000;
 
   ReadUpstream();
   WriteUpstreamInPipe();
@@ -1791,8 +1689,7 @@ void CliConnection::sent() {
 
 void CliConnection::disconnected(asio::error_code ec) {
   scoped_refptr<CliConnection> self(this);
-  VLOG(1) << "Connection (client) " << connection_id()
-          << " upstream: lost connection with: " << remote_domain()
+  VLOG(1) << "Connection (client) " << connection_id() << " upstream: lost connection with: " << remote_domain()
           << " due to " << ec;
   if (data_frame_) {
     data_frame_->set_last_frame(true);
@@ -1807,8 +1704,7 @@ void CliConnection::disconnected(asio::error_code ec) {
   channel_->close();
   /* delay the socket's close because downstream is buffered */
   if (downstream_.empty() && !shutdown_) {
-    VLOG(2) << "Connection (client) " << connection_id()
-            << " last data sent: shutting down";
+    VLOG(2) << "Connection (client) " << connection_id() << " last data sent: shutting down";
     shutdown_ = true;
     downlink_->shutdown(ec);
   } else {
@@ -1816,8 +1712,7 @@ void CliConnection::disconnected(asio::error_code ec) {
   }
 }
 
-void CliConnection::EncryptData(IoQueue* queue,
-                                std::shared_ptr<IOBuf> plaintext) {
+void CliConnection::EncryptData(IoQueue* queue, std::shared_ptr<IOBuf> plaintext) {
   std::shared_ptr<IOBuf> cipherbuf;
   if (queue->empty()) {
     cipherbuf = IOBuf::create(SOCKET_DEBUF_SIZE);
@@ -1829,11 +1724,10 @@ void CliConnection::EncryptData(IoQueue* queue,
 
   size_t plaintext_offset = 0;
   while (plaintext_offset < plaintext->length()) {
-    size_t plaintext_size = std::min<int>(plaintext->length() - plaintext_offset,
-                                          SS_FRAME_SIZE);
+    size_t plaintext_size = std::min<int>(plaintext->length() - plaintext_offset, SS_FRAME_SIZE);
     encoder_->encrypt(plaintext->data() + plaintext_offset, plaintext_size, cipherbuf);
     plaintext_offset += plaintext_size;
   }
 }
 
-} // namespace cli
+}  // namespace cli

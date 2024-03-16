@@ -33,7 +33,10 @@
 #undef _POSIX_THREADS
 #endif
 #include <asio.hpp>
-#include <asio/ssl.hpp>
+#ifndef ASIO_NO_SSL
+void print_openssl_error();
+#include <openssl/ssl.h>
+#endif
 #include "net/asio_throw_exceptions.hpp"
 
 #pragma GCC diagnostic pop
@@ -48,8 +51,7 @@ extern std::ostream& operator<<(std::ostream& o, asio::error_code);
 /**
  * @returns <tt>mutable_buffer(tail, tailroom)</tt>.
  */
-inline asio::ASIO_MUTABLE_BUFFER tail_buffer(net::IOBuf& io_buf, uint32_t max_length = UINT32_MAX) ASIO_NOEXCEPT
-{
+inline asio::ASIO_MUTABLE_BUFFER tail_buffer(net::IOBuf& io_buf, uint32_t max_length = UINT32_MAX) ASIO_NOEXCEPT {
   return asio::ASIO_MUTABLE_BUFFER(io_buf.mutable_tail(), std::min<uint32_t>(io_buf.tailroom(), max_length));
 }
 
@@ -57,8 +59,7 @@ inline asio::ASIO_MUTABLE_BUFFER tail_buffer(net::IOBuf& io_buf, uint32_t max_le
 /**
  * @returns <tt>mutable_buffer(data, capacity)</tt>.
  */
-inline asio::ASIO_MUTABLE_BUFFER mutable_buffer(net::IOBuf& io_buf) ASIO_NOEXCEPT
-{
+inline asio::ASIO_MUTABLE_BUFFER mutable_buffer(net::IOBuf& io_buf) ASIO_NOEXCEPT {
   return asio::ASIO_MUTABLE_BUFFER(io_buf.mutable_data(), io_buf.capacity());
 }
 
@@ -66,11 +67,12 @@ inline asio::ASIO_MUTABLE_BUFFER mutable_buffer(net::IOBuf& io_buf) ASIO_NOEXCEP
 /**
  * @returns <tt>const_buffer(data, length)</tt>.
  */
-inline asio::ASIO_CONST_BUFFER const_buffer(const net::IOBuf& io_buf) ASIO_NOEXCEPT
-{
+inline asio::ASIO_CONST_BUFFER const_buffer(const net::IOBuf& io_buf) ASIO_NOEXCEPT {
   return asio::ASIO_CONST_BUFFER(io_buf.data(), io_buf.length());
 }
 
+#ifndef ASIO_NO_SSL
 void load_ca_to_ssl_ctx(SSL_CTX* ssl_ctx);
+#endif
 
 #endif  // H_NET_ASIO

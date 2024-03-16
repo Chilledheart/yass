@@ -20,7 +20,7 @@ enum cipher_method to_cipher_method(const std::string& method) {
 const char* to_cipher_method_name(enum cipher_method method) {
 #define XX(num, name, string) \
   if (method == num) {        \
-    return #name;            \
+    return #name;             \
   }
   CIPHER_METHOD_MAP(XX)
 #undef XX
@@ -48,7 +48,6 @@ bool is_valid_cipher_method(enum cipher_method method) {
 }
 
 #define XX(num, name, string) string ", "
-const char kCipherMethodsStr[] =
-CIPHER_METHOD_VALID_MAP(XX)
+constexpr const char kCipherMethodsStr[] = CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
-  ;
+    ;

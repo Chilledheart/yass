@@ -10,7 +10,7 @@
 #endif
 
 #ifndef HTTP_MAX_HEADER_SIZE
-# define HTTP_MAX_HEADER_SIZE (80*1024)
+#define HTTP_MAX_HEADER_SIZE (80 * 1024)
 #endif
 
 namespace net {
@@ -21,7 +21,7 @@ namespace net {
 // including removal of Proxy-Connection header
 static void ReforgeHttpRequestImpl(std::string* header,
                                    const char* method_str,
-                                   const absl::flat_hash_map<std::string, std::string> *additional_headers,
+                                   const absl::flat_hash_map<std::string, std::string>* additional_headers,
                                    const std::string& uri,
                                    const absl::flat_hash_map<std::string, std::string>& headers) {
   std::ostringstream ss;
@@ -56,15 +56,13 @@ static void ReforgeHttpRequestImpl(std::string* header,
   *header = ss.str();
 }
 
-static void SplitHostPort(std::string *out_hostname, std::string *out_port,
-                          const std::string &hostname_and_port) {
+static void SplitHostPort(std::string* out_hostname, std::string* out_port, const std::string& hostname_and_port) {
   size_t colon_offset = hostname_and_port.find_last_of(':');
   const size_t bracket_offset = hostname_and_port.find_last_of(']');
   std::string hostname, port;
 
   // An IPv6 literal may have colons internally, guarded by square brackets.
-  if (bracket_offset != std::string::npos &&
-      colon_offset != std::string::npos && bracket_offset > colon_offset) {
+  if (bracket_offset != std::string::npos && colon_offset != std::string::npos && bracket_offset > colon_offset) {
     colon_offset = std::string::npos;
   }
 
@@ -102,26 +100,23 @@ bool isMethodValid(std::string_view method, bool allow_custom_methods) {
     // Allowed characters in method according to RFC 9110,
     // https://www.rfc-editor.org/rfc/rfc9110.html#section-5.1.
     static constexpr char kValidCharacters[] = {
-        '!', '#', '$', '%', '&', '\'', '*', '+', '-', '.', '0', '1', '2', '3', '4', '5',
-        '6', '7', '8', '9', 'A', 'B',  'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
-        'M', 'N', 'O', 'P', 'Q', 'R',  'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '^', '_',
-        '`', 'a', 'b', 'c', 'd', 'e',  'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
-        'p', 'q', 'r', 's', 't', 'u',  'v', 'w', 'x', 'y', 'z', '|', '~'};
+        '!', '#', '$', '%', '&', '\'', '*', '+', '-', '.', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+        'A', 'B', 'C', 'D', 'E', 'F',  'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
+        'U', 'V', 'W', 'X', 'Y', 'Z',  '^', '_', '`', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
+        'l', 'm', 'n', 'o', 'p', 'q',  'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '|', '~'};
     const auto* begin = &kValidCharacters[0];
     const auto* end = &kValidCharacters[ABSL_ARRAYSIZE(kValidCharacters) - 1] + 1;
 
-    return !method.empty() &&
-           std::all_of(method.begin(), method.end(), [begin, end](std::string_view::value_type c) {
-             return std::binary_search(begin, end, c);
-           });
+    return !method.empty() && std::all_of(method.begin(), method.end(), [begin, end](std::string_view::value_type c) {
+      return std::binary_search(begin, end, c);
+    });
   }
 
   static constexpr std::string_view kValidMethods[] = {
-      "ACL",       "BIND",    "CHECKOUT", "CONNECT", "COPY",       "DELETE",     "GET",
-      "HEAD",      "LINK",    "LOCK",     "MERGE",   "MKACTIVITY", "MKCALENDAR", "MKCOL",
-      "MOVE",      "MSEARCH", "NOTIFY",   "OPTIONS", "PATCH",      "POST",       "PROPFIND",
-      "PROPPATCH", "PURGE",   "PUT",      "REBIND",  "REPORT",     "SEARCH",     "SOURCE",
-      "SUBSCRIBE", "TRACE",   "UNBIND",   "UNLINK",  "UNLOCK",     "UNSUBSCRIBE"};
+      "ACL",    "BIND",      "CHECKOUT",   "CONNECT",    "COPY",   "DELETE", "GET",        "HEAD",   "LINK",
+      "LOCK",   "MERGE",     "MKACTIVITY", "MKCALENDAR", "MKCOL",  "MOVE",   "MSEARCH",    "NOTIFY", "OPTIONS",
+      "PATCH",  "POST",      "PROPFIND",   "PROPPATCH",  "PURGE",  "PUT",    "REBIND",     "REPORT", "SEARCH",
+      "SOURCE", "SUBSCRIBE", "TRACE",      "UNBIND",     "UNLINK", "UNLOCK", "UNSUBSCRIBE"};
 
   const auto* begin = &kValidMethods[0];
   const auto* end = &kValidMethods[ABSL_ARRAYSIZE(kValidMethods) - 1] + 1;
@@ -135,9 +130,7 @@ bool isUrlValid(std::string_view url, bool is_connect) {
   }
 
   // Same set of characters are allowed for path and query.
-  const auto is_valid_path_query_char = [](char c) {
-    return c == 9 || c == 12 || ('!' <= c && c <= 126);
-  };
+  const auto is_valid_path_query_char = [](char c) { return c == 9 || c == 12 || ('!' <= c && c <= 126); };
 
   // The URL may start with a path.
   if (auto it = url.begin(); *it == '/' || *it == '*') {
@@ -174,10 +167,9 @@ bool isUrlValid(std::string_view url, bool is_connect) {
   const std::string_view path_query = url.substr(path_query_begin - url.begin());
 
   const auto valid_host_char = [](char c) {
-    return std::isalnum(c) || c == '!' || c == '$' || c == '%' || c == '&' || c == '\'' ||
-           c == '(' || c == ')' || c == '*' || c == '+' || c == ',' || c == '-' || c == '.' ||
-           c == ':' || c == ';' || c == '=' || c == '@' || c == '[' || c == ']' || c == '_' ||
-           c == '~';
+    return std::isalnum(c) || c == '!' || c == '$' || c == '%' || c == '&' || c == '\'' || c == '(' || c == ')' ||
+           c == '*' || c == '+' || c == ',' || c == '-' || c == '.' || c == ':' || c == ';' || c == '=' || c == '@' ||
+           c == '[' || c == ']' || c == '_' || c == '~';
   };
 
   // Match http-parser's quirk of allowing any number of '@' characters in host
@@ -205,7 +197,7 @@ bool isVersionValid(std::string_view version_input) {
 #endif
 }
 
-} // anonymous namespace
+}  // anonymous namespace
 
 HttpRequestParser::HttpRequestParser(bool is_request) {
   quiche::HttpValidationPolicy http_validation_policy;
@@ -228,14 +220,14 @@ HttpRequestParser::HttpRequestParser(bool is_request) {
   framer_.set_is_request(is_request);
 }
 
-int HttpRequestParser::Parse(std::shared_ptr<IOBuf> buf, bool *ok) {
+int HttpRequestParser::Parse(std::shared_ptr<IOBuf> buf, bool* ok) {
   int processed = framer_.ProcessInput(reinterpret_cast<const char*>(buf->data()), buf->length());
   *ok = status_ == ParserStatus::Ok;
   return processed;
 }
 
-void HttpRequestParser::ReforgeHttpRequest(std::string *header,
-                                           const absl::flat_hash_map<std::string, std::string> *additional_headers) {
+void HttpRequestParser::ReforgeHttpRequest(std::string* header,
+                                           const absl::flat_hash_map<std::string, std::string>* additional_headers) {
   ReforgeHttpRequestImpl(header, method_.c_str(), additional_headers, http_url_, http_headers_);
 }
 
@@ -262,21 +254,32 @@ void HttpRequestParser::ProcessHeaders(const quiche::BalsaHeaders& headers) {
       SplitHostPort(&hostname, &port, authority);
 
       // Handle IPv6 literals.
-      if (hostname.size() >= 2 && hostname[0] == '[' &&
-          hostname[hostname.size() - 1] == ']') {
+      if (hostname.size() >= 2 && hostname[0] == '[' && hostname[hostname.size() - 1] == ']') {
         hostname = hostname.substr(1, hostname.size() - 2);
       }
 
       char* end;
       const unsigned long portnum = strtoul(port.c_str(), &end, 10);
       if (*end != '\0' || portnum > UINT16_MAX || (errno == ERANGE && portnum == ULONG_MAX)) {
-        VLOG(1) << "parser failed: bad http field: Host: " << authority
-          << " hostname: " << hostname << " port: " << port;
+        VLOG(1) << "parser failed: bad http field: Host: " << authority << " hostname: " << hostname
+                << " port: " << port;
         status_ = ParserStatus::Error;
         break;
       }
       http_host_ = hostname;
       http_port_ = portnum;
+    }
+    if (key == "Content-Length") {
+      std::string length = std::string(value);
+
+      char* end;
+      const unsigned long lengthnum = strtoul(length.c_str(), &end, 10);
+      if (*end != '\0' || (errno == ERANGE && lengthnum == ULONG_MAX)) {
+        VLOG(1) << "parser failed: bad http field: content-length: " << length;
+        status_ = ParserStatus::Error;
+        break;
+      }
+      content_length_ = lengthnum;
     }
   }
 }
@@ -310,16 +313,14 @@ void HttpRequestParser::OnRequestFirstLineInput(std::string_view /*line_input*/,
     SplitHostPort(&hostname, &port, authority);
 
     // Handle IPv6 literals.
-    if (hostname.size() >= 2 && hostname[0] == '[' &&
-        hostname[hostname.size() - 1] == ']') {
+    if (hostname.size() >= 2 && hostname[0] == '[' && hostname[hostname.size() - 1] == ']') {
       hostname = hostname.substr(1, hostname.size() - 2);
     }
 
     char* end;
     const unsigned long portnum = strtoul(port.c_str(), &end, 10);
     if (*end != '\0' || portnum > UINT16_MAX || (errno == ERANGE && portnum == ULONG_MAX)) {
-      VLOG(1) << "parser failed: bad http field: Host: " << authority
-        << " hostname: " << hostname << " port: " << port;
+      VLOG(1) << "parser failed: bad http field: Host: " << authority << " hostname: " << hostname << " port: " << port;
       status_ = ParserStatus::Error;
       error_message_ = "HPE_INVALID_URL";
       return;
@@ -387,26 +388,26 @@ void HttpRequestParser::MessageDone() {
 void HttpRequestParser::HandleError(BalsaFrameEnums::ErrorCode error_code) {
   status_ = ParserStatus::Error;
   switch (error_code) {
-  case BalsaFrameEnums::UNKNOWN_TRANSFER_ENCODING:
-    error_message_ = "unsupported transfer encoding";
-    break;
-  case BalsaFrameEnums::INVALID_CHUNK_LENGTH:
-    error_message_ = "HPE_INVALID_CHUNK_SIZE";
-    break;
-  case BalsaFrameEnums::HEADERS_TOO_LONG:
-    error_message_ = "headers size exceeds limit";
-    break;
-  case BalsaFrameEnums::TRAILER_TOO_LONG:
-    error_message_ = "trailers size exceeds limit";
-    break;
-  case BalsaFrameEnums::TRAILER_MISSING_COLON:
-    error_message_ = "HPE_INVALID_HEADER_TOKEN";
-    break;
-  case BalsaFrameEnums::INVALID_HEADER_CHARACTER:
-    error_message_ = "header value contains invalid chars";
-    break;
-  default:
-    error_message_ = BalsaFrameEnums::ErrorCodeToString(error_code);
+    case BalsaFrameEnums::UNKNOWN_TRANSFER_ENCODING:
+      error_message_ = "unsupported transfer encoding";
+      break;
+    case BalsaFrameEnums::INVALID_CHUNK_LENGTH:
+      error_message_ = "HPE_INVALID_CHUNK_SIZE";
+      break;
+    case BalsaFrameEnums::HEADERS_TOO_LONG:
+      error_message_ = "headers size exceeds limit";
+      break;
+    case BalsaFrameEnums::TRAILER_TOO_LONG:
+      error_message_ = "trailers size exceeds limit";
+      break;
+    case BalsaFrameEnums::TRAILER_MISSING_COLON:
+      error_message_ = "HPE_INVALID_HEADER_TOKEN";
+      break;
+    case BalsaFrameEnums::INVALID_HEADER_CHARACTER:
+      error_message_ = "header value contains invalid chars";
+      break;
+    default:
+      error_message_ = BalsaFrameEnums::ErrorCodeToString(error_code);
   }
 }
 
@@ -421,7 +422,7 @@ HttpResponseParser::HttpResponseParser() : HttpRequestParser(false) {}
 #else
 
 HttpRequestParser::HttpRequestParser(bool is_request) : parser_(new http_parser) {
-  ::http_parser_init(parser_, is_request ? HTTP_REQUEST: HTTP_RESPONSE);
+  ::http_parser_init(parser_, is_request ? HTTP_REQUEST : HTTP_RESPONSE);
   parser_->data = this;
 }
 
@@ -429,52 +430,48 @@ HttpRequestParser::~HttpRequestParser() {
   delete parser_;
 }
 
-int HttpRequestParser::Parse(std::shared_ptr<IOBuf> buf, bool *ok) {
-  struct http_parser_settings settings_connect = {
-      //.on_message_begin
-      nullptr,
-      //.on_url
-      &HttpRequestParser::OnReadHttpRequestURL,
-      //.on_status
-      nullptr,
-      //.on_header_field
-      &HttpRequestParser::OnReadHttpRequestHeaderField,
-      //.on_header_value
-      &HttpRequestParser::OnReadHttpRequestHeaderValue,
-      //.on_headers_complete
-      HttpRequestParser::OnReadHttpRequestHeadersDone,
-      //.on_body
-      nullptr,
-      //.on_message_complete
-      nullptr,
-      //.on_chunk_header
-      nullptr,
-      //.on_chunk_complete
-      nullptr};
+int HttpRequestParser::Parse(std::shared_ptr<IOBuf> buf, bool* ok) {
+  struct http_parser_settings settings_connect = {//.on_message_begin
+                                                  nullptr,
+                                                  //.on_url
+                                                  &HttpRequestParser::OnReadHttpRequestURL,
+                                                  //.on_status
+                                                  nullptr,
+                                                  //.on_header_field
+                                                  &HttpRequestParser::OnReadHttpRequestHeaderField,
+                                                  //.on_header_value
+                                                  &HttpRequestParser::OnReadHttpRequestHeaderValue,
+                                                  //.on_headers_complete
+                                                  HttpRequestParser::OnReadHttpRequestHeadersDone,
+                                                  //.on_body
+                                                  nullptr,
+                                                  //.on_message_complete
+                                                  nullptr,
+                                                  //.on_chunk_header
+                                                  nullptr,
+                                                  //.on_chunk_complete
+                                                  nullptr};
   size_t nparsed;
-  nparsed = http_parser_execute(parser_, &settings_connect,
-                                reinterpret_cast<const char*>(buf->data()),
-                                buf->length());
+  nparsed = http_parser_execute(parser_, &settings_connect, reinterpret_cast<const char*>(buf->data()), buf->length());
   *ok = HTTP_PARSER_ERRNO(parser_) == HPE_OK;
   return nparsed;
 }
 
-void HttpRequestParser::ReforgeHttpRequest(std::string *header,
-                        const absl::flat_hash_map<std::string, std::string> *additional_headers) {
-  ReforgeHttpRequestImpl(header, http_method_str((http_method)parser_->method), additional_headers, http_url_, http_headers_);
+void HttpRequestParser::ReforgeHttpRequest(std::string* header,
+                                           const absl::flat_hash_map<std::string, std::string>* additional_headers) {
+  ReforgeHttpRequestImpl(header, http_method_str((http_method)parser_->method), additional_headers, http_url_,
+                         http_headers_);
 }
 
 const char* HttpRequestParser::ErrorMessage() const {
   return http_errno_description(HTTP_PARSER_ERRNO(parser_));
 }
 
-int HttpRequestParser::status_code() const { return parser_->status_code; }
+int HttpRequestParser::status_code() const {
+  return parser_->status_code;
+}
 
-static int OnHttpRequestParseUrl(const char* buf,
-                                 size_t len,
-                                 std::string* host,
-                                 uint16_t* port,
-                                 int is_connect) {
+static int OnHttpRequestParseUrl(const char* buf, size_t len, std::string* host, uint16_t* port, int is_connect) {
   struct http_parser_url url;
 
   if (0 != ::http_parser_parse_url(buf, len, is_connect, &url)) {
@@ -483,8 +480,7 @@ static int OnHttpRequestParseUrl(const char* buf,
   }
 
   if (url.field_set & (1 << (UF_HOST))) {
-    *host = std::string(buf + url.field_data[UF_HOST].off,
-                        url.field_data[UF_HOST].len);
+    *host = std::string(buf + url.field_data[UF_HOST].off, url.field_data[UF_HOST].len);
   }
 
   if (url.field_set & (1 << (UF_PORT))) {
@@ -494,14 +490,11 @@ static int OnHttpRequestParseUrl(const char* buf,
   return 0;
 }
 
-int HttpRequestParser::OnReadHttpRequestURL(http_parser* p,
-                                            const char* buf,
-                                            size_t len) {
+int HttpRequestParser::OnReadHttpRequestURL(http_parser* p, const char* buf, size_t len) {
   HttpRequestParser* self = reinterpret_cast<HttpRequestParser*>(p->data);
   self->http_url_ = std::string(buf, len);
   if (p->method == HTTP_CONNECT) {
-    if (0 != OnHttpRequestParseUrl(buf, len, &self->http_host_,
-                                   &self->http_port_, 1)) {
+    if (0 != OnHttpRequestParseUrl(buf, len, &self->http_host_, &self->http_port_, 1)) {
       return 1;
     }
     self->http_is_connect_ = true;
@@ -509,17 +502,13 @@ int HttpRequestParser::OnReadHttpRequestURL(http_parser* p,
   return 0;
 }
 
-int HttpRequestParser::OnReadHttpRequestHeaderField(http_parser* parser,
-                                                    const char* buf,
-                                                    size_t len) {
+int HttpRequestParser::OnReadHttpRequestHeaderField(http_parser* parser, const char* buf, size_t len) {
   HttpRequestParser* self = reinterpret_cast<HttpRequestParser*>(parser->data);
   self->http_field_ = std::string(buf, len);
   return 0;
 }
 
-int HttpRequestParser::OnReadHttpRequestHeaderValue(http_parser* parser,
-                                                    const char* buf,
-                                                    size_t len) {
+int HttpRequestParser::OnReadHttpRequestHeaderValue(http_parser* parser, const char* buf, size_t len) {
   HttpRequestParser* self = reinterpret_cast<HttpRequestParser*>(parser->data);
   self->http_value_ = std::string(buf, len);
   self->http_headers_[self->http_field_] = self->http_value_;
@@ -529,20 +518,31 @@ int HttpRequestParser::OnReadHttpRequestHeaderValue(http_parser* parser,
     SplitHostPort(&hostname, &port, authority);
 
     // Handle IPv6 literals.
-    if (hostname.size() >= 2 && hostname[0] == '[' &&
-        hostname[hostname.size() - 1] == ']') {
+    if (hostname.size() >= 2 && hostname[0] == '[' && hostname[hostname.size() - 1] == ']') {
       hostname = hostname.substr(1, hostname.size() - 2);
     }
 
     char* end;
     const unsigned long portnum = strtoul(port.c_str(), &end, 10);
     if (*end != '\0' || portnum > UINT16_MAX || (errno == ERANGE && portnum == ULONG_MAX)) {
-      VLOG(1) << "parser failed: bad http field: Host: " << authority
-        << " hostname: " << hostname << " port: " << port;
+      VLOG(1) << "parser failed: bad http field: Host: " << authority << " hostname: " << hostname << " port: " << port;
       return -1;
     }
     self->http_host_ = hostname;
     self->http_port_ = portnum;
+  }
+
+  if (self->http_field_ == "Content-Length") {
+    std::string length = std::string(buf, len);
+
+    char* end;
+    const unsigned long lengthnum = strtoul(length.c_str(), &end, 10);
+    if (*end != '\0' || (errno == ERANGE && lengthnum == ULONG_MAX)) {
+      VLOG(1) << "parser failed: bad http field: content-length: " << length;
+      status_ = ParserStatus::Error;
+      break;
+    }
+    content_length_ = lengthnum;
   }
   return 0;
 }
@@ -555,6 +555,6 @@ int HttpRequestParser::OnReadHttpRequestHeadersDone(http_parser*) {
 
 HttpResponseParser::HttpResponseParser() : HttpRequestParser(false) {}
 
-#endif // HAVE_BALSA_HTTP_PARSER
+#endif  // HAVE_BALSA_HTTP_PARSER
 
-} // namespace net
+}  // namespace net

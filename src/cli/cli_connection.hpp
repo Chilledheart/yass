@@ -4,15 +4,16 @@
 #ifndef H_CLI_CONNECTION
 #define H_CLI_CONNECTION
 
+#include "cli/cli_connection_stats.hpp"
 #include "core/logging.hpp"
 #include "core/ref_counted.hpp"
 #include "core/scoped_refptr.hpp"
 #include "net/channel.hpp"
-#include "cli/cli_connection_stats.hpp"
-#include "net/connection.hpp"
 #include "net/cipher.hpp"
-#include "net/iobuf.hpp"
+#include "net/connection.hpp"
 #include "net/io_queue.hpp"
+#include "net/iobuf.hpp"
+#include "net/protocol.hpp"
 #include "net/socks4.hpp"
 #include "net/socks4_request.hpp"
 #include "net/socks4_request_parser.hpp"
@@ -20,14 +21,13 @@
 #include "net/socks5_request.hpp"
 #include "net/socks5_request_parser.hpp"
 #include "net/ss_request.hpp"
-#include "net/protocol.hpp"
-#include "net/stream.hpp"
 #include "net/ssl_stream.hpp"
+#include "net/stream.hpp"
 
 #include <absl/container/flat_hash_map.h>
 #include <absl/strings/str_cat.h>
-#include <deque>
 #include <absl/strings/string_view.h>
+#include <deque>
 
 #ifdef HAVE_NGHTTP2
 #include <quiche/http2/adapter/nghttp2_adapter.h>
@@ -46,11 +46,9 @@ template <typename T>
 using StreamMap = absl::flat_hash_map<StreamId, T>;
 
 class CliConnection;
-class DataFrameSource
-    : public http2::adapter::DataFrameSource {
+class DataFrameSource : public http2::adapter::DataFrameSource {
  public:
-  explicit DataFrameSource(CliConnection* connection)
-      : connection_(connection) {}
+  explicit DataFrameSource(CliConnection* connection) : connection_(connection) {}
   ~DataFrameSource() override = default;
   DataFrameSource(const DataFrameSource&) = delete;
   DataFrameSource& operator=(const DataFrameSource&) = delete;
@@ -61,8 +59,7 @@ class DataFrameSource
     if (chunks_.empty())
       return {kBlocked, last_frame_};
 
-    bool finished = (chunks_.size() <= 1) &&
-                    (chunks_.front()->length() <= max_length) && last_frame_;
+    bool finished = (chunks_.size() <= 1) && (chunks_.front()->length() <= max_length) && last_frame_;
 
     return {std::min(chunks_.front()->length(), max_length), finished};
   }
@@ -73,9 +70,7 @@ class DataFrameSource
 
   void AddChunk(std::shared_ptr<IOBuf> chunk) { chunks_.push_back(std::move(chunk)); }
   void set_last_frame(bool last_frame) { last_frame_ = last_frame; }
-  void SetSendCompletionCallback(std::function<void()> callback) {
-    send_completion_callback_ = std::move(callback);
-  }
+  void SetSendCompletionCallback(std::function<void()> callback) { send_completion_callback_ = std::move(callback); }
 
  private:
   CliConnection* const connection_;
@@ -142,8 +137,8 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
                 bool https_fallback,
                 bool enable_upstream_tls,
                 bool enable_tls,
-                asio::ssl::context *upstream_ssl_ctx,
-                asio::ssl::context *ssl_ctx);
+                SSL_CTX* upstream_ssl_ctx,
+                SSL_CTX* ssl_ctx);
 
   /// Destruct the service
   ~CliConnection() override;
@@ -194,19 +189,13 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   // OnEndHeadersForStream(1)
   // OnEndStream(1)
   int64_t OnReadyToSend(absl::string_view serialized) override;
-  OnHeaderResult OnHeaderForStream(StreamId stream_id,
-                                   absl::string_view key,
-                                   absl::string_view value) override;
+  OnHeaderResult OnHeaderForStream(StreamId stream_id, absl::string_view key, absl::string_view value) override;
   bool OnEndHeadersForStream(StreamId stream_id) override;
   bool OnEndStream(StreamId stream_id) override;
-  bool OnCloseStream(StreamId stream_id,
-                     http2::adapter::Http2ErrorCode error_code) override;
+  bool OnCloseStream(StreamId stream_id, http2::adapter::Http2ErrorCode error_code) override;
   // Unused functions
   void OnConnectionError(ConnectionError /*error*/) override;
-  bool OnFrameHeader(StreamId /*stream_id*/,
-                     size_t /*length*/,
-                     uint8_t /*type*/,
-                     uint8_t /*flags*/) override;
+  bool OnFrameHeader(StreamId /*stream_id*/, size_t /*length*/, uint8_t /*type*/, uint8_t /*flags*/) override;
   void OnSettingsStart() override {}
   void OnSetting(http2::adapter::Http2Setting setting) override {}
   void OnSettingsEnd() override {}
@@ -215,33 +204,19 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   bool OnBeginDataForStream(StreamId stream_id, size_t payload_length) override;
   bool OnDataForStream(StreamId stream_id, absl::string_view data) override;
   bool OnDataPaddingLength(StreamId stream_id, size_t padding_length) override;
-  void OnRstStream(StreamId stream_id,
-                   http2::adapter::Http2ErrorCode error_code) override;
-  void OnPriorityForStream(StreamId stream_id,
-                           StreamId parent_stream_id,
-                           int weight,
-                           bool exclusive) override {}
+  void OnRstStream(StreamId stream_id, http2::adapter::Http2ErrorCode error_code) override;
+  void OnPriorityForStream(StreamId stream_id, StreamId parent_stream_id, int weight, bool exclusive) override {}
   void OnPing(http2::adapter::Http2PingId ping_id, bool is_ack) override {}
-  void OnPushPromiseForStream(StreamId stream_id,
-                              StreamId promised_stream_id) override {}
+  void OnPushPromiseForStream(StreamId stream_id, StreamId promised_stream_id) override {}
   bool OnGoAway(StreamId last_accepted_stream_id,
                 http2::adapter::Http2ErrorCode error_code,
                 absl::string_view opaque_data) override;
   void OnWindowUpdate(StreamId stream_id, int window_increment) override {}
-  int OnBeforeFrameSent(uint8_t frame_type,
-                        StreamId stream_id,
-                        size_t length,
-                        uint8_t flags) override;
-  int OnFrameSent(uint8_t frame_type,
-                  StreamId stream_id,
-                  size_t length,
-                  uint8_t flags,
-                  uint32_t error_code) override;
+  int OnBeforeFrameSent(uint8_t frame_type, StreamId stream_id, size_t length, uint8_t flags) override;
+  int OnFrameSent(uint8_t frame_type, StreamId stream_id, size_t length, uint8_t flags, uint32_t error_code) override;
   bool OnInvalidFrame(StreamId stream_id, InvalidFrameError error) override;
-  void OnBeginMetadataForStream(StreamId stream_id,
-                                size_t payload_length) override {}
-  bool OnMetadataForStream(StreamId stream_id,
-                           absl::string_view metadata) override;
+  void OnBeginMetadataForStream(StreamId stream_id, size_t payload_length) override {}
+  bool OnMetadataForStream(StreamId stream_id, absl::string_view metadata) override;
   bool OnMetadataEndForStream(StreamId stream_id) override;
   void OnErrorDebug(absl::string_view message) override {}
 #ifdef HAVE_NGHTTP2
@@ -304,26 +279,22 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   void ReadUpstreamAsync(bool yield);
 
   /// Get next remaining buffer to stream
-  std::shared_ptr<IOBuf> GetNextDownstreamBuf(asio::error_code &ec,
-                                              size_t *bytes_transferred);
+  std::shared_ptr<IOBuf> GetNextDownstreamBuf(asio::error_code& ec, size_t* bytes_transferred);
 
   /// Write remaining buffers to channel
   void WriteUpstreamInPipe();
   /// Get next remaining buffer to channel
-  std::shared_ptr<IOBuf> GetNextUpstreamBuf(asio::error_code &ec,
-                                            size_t *bytes_transferred);
+  std::shared_ptr<IOBuf> GetNextUpstreamBuf(asio::error_code& ec, size_t* bytes_transferred);
 
   /// dispatch the command to delegate
   /// \param command command type
   /// \param reply reply to given command type
-  asio::error_code PerformCmdOpsV5(const net::socks5::request* request,
-                                   net::socks5::reply* reply);
+  asio::error_code PerformCmdOpsV5(const net::socks5::request* request, net::socks5::reply* reply);
 
   /// dispatch the command to delegate
   /// \param command command type
   /// \param reply reply to given command type
-  asio::error_code PerformCmdOpsV4(const net::socks4::request* request,
-                                   net::socks4::reply* reply);
+  asio::error_code PerformCmdOpsV4(const net::socks4::request* request, net::socks4::reply* reply);
 
   /// dispatch the command to delegate
   /// \param command command type
@@ -334,14 +305,11 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   /// \param buf pointer to received buffer
   /// \param error the error state
   /// \param bytes_transferred transferred bytes
-  void ProcessReceivedData(std::shared_ptr<IOBuf> buf,
-                           asio::error_code error,
-                           size_t bytes_transferred);
+  void ProcessReceivedData(std::shared_ptr<IOBuf> buf, asio::error_code error, size_t bytes_transferred);
   /// Process the sent data
   /// \param error the error state
   /// \param bytes_transferred transferred bytes
-  void ProcessSentData(asio::error_code error,
-                       size_t bytes_transferred);
+  void ProcessSentData(asio::error_code error, size_t bytes_transferred);
   /// state machine
   state state_;
 
@@ -482,8 +450,7 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   IoQueue pending_data_;
 
   /// encrypt data
-  void EncryptData(IoQueue* queue,
-                   std::shared_ptr<IOBuf> plaintext);
+  void EncryptData(IoQueue* queue, std::shared_ptr<IOBuf> plaintext);
 
   /// encode cipher to perform data encoder for upstream
   std::unique_ptr<cipher> encoder_;
@@ -498,15 +465,15 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
 
 class CliConnectionFactory : public net::ConnectionFactory {
  public:
-   using ConnectionType = CliConnection;
-   template<typename... Args>
-   scoped_refptr<ConnectionType> Create(Args&&... args) {
-     return MakeRefCounted<ConnectionType>(std::forward<Args>(args)...);
-   }
-   const char* Name() override { return "client"; }
-   const char* ShortName() override { return "client"; }
+  using ConnectionType = CliConnection;
+  template <typename... Args>
+  scoped_refptr<ConnectionType> Create(Args&&... args) {
+    return MakeRefCounted<ConnectionType>(std::forward<Args>(args)...);
+  }
+  const char* Name() override { return "client"; }
+  const char* ShortName() override { return "client"; }
 };
 
-} // namespace cli
+}  // namespace cli
 
 #endif  // H_CLI_CONNECTION

@@ -4,11 +4,11 @@
 #ifndef YASS_WIN32_FRAME
 #define YASS_WIN32_FRAME
 
-#include "crypto/crypter_export.hpp"
 #include <build/build_config.h>
+#include "crypto/crypter_export.hpp"
 
-#include <string>
 #include <windows.h>
+#include <string>
 
 #ifdef COMPILER_MSVC
 #include <CommCtrl.h>
@@ -30,8 +30,7 @@ class CYassFrame {
 
   void CentreWindow();
 
-  static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam,
-                                  LPARAM lParam);
+  static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
  public:
   HWND Wnd() { return m_hWnd; }
@@ -65,7 +64,6 @@ class CYassFrame {
 
   // Right Panel
  protected:
-
   HWND server_host_label_;
   HWND server_sni_label_;
   HWND server_port_label_;
@@ -114,15 +112,9 @@ class CYassFrame {
 
  public:
   void OnAppOption();
-  static INT_PTR CALLBACK OnAppOptionMessage(HWND hDlg,
-                                             UINT message,
-                                             WPARAM wParam,
-                                             LPARAM lParam);
+  static INT_PTR CALLBACK OnAppOptionMessage(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
   void OnAppAbout();
-  static INT_PTR CALLBACK OnAppAboutMessage(HWND hDlg,
-                                            UINT message,
-                                            WPARAM wParam,
-                                            LPARAM lParam);
+  static INT_PTR CALLBACK OnAppAboutMessage(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 
  private:
   friend class CYassApp;

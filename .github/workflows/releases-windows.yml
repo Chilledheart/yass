@@ -24,7 +24,7 @@ defaults:
   run:
     shell: cmd
 env:
-  CACHE_EPOCH: 122-5
+  CACHE_EPOCH: 123-5
   GOPROXY: direct
 jobs:
   windows-release:
@@ -138,20 +138,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          gh release upload ${{ github.event.release.tag_name }} *.zip
+          gh release upload ${{ github.event.release.tag_name }} *.zip *.exe
       - name: Upload dist installers
         if: ${{ github.event_name == 'release' && matrix.arch != 'arm64' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          gh release upload ${{ github.event.release.tag_name }} *.msi *.exe
+          gh release upload ${{ github.event.release.tag_name }} *.msi
   windows-xp-release:
     runs-on: windows-2019
     strategy:
       fail-fast: false
       matrix:
-        arch: [x86]
+        arch: [x64, x86]
         crt-linkage: [static]
         build_type: [Release]
     env:

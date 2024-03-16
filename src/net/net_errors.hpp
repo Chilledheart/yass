@@ -12,7 +12,7 @@ enum Error {
   // No error. Change NetError.template after changing value.
   OK = 0,
 
-#define NET_ERROR(label, value) ERR_ ## label = value,
+#define NET_ERROR(label, value) ERR_##label = value,
 #include "net/net_error_list.hpp"
 #undef NET_ERROR
 

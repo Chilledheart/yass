@@ -12,7 +12,7 @@ namespace net {
 class ssl_stream : public stream {
  public:
   /// construct a ssl_stream object
-  template<typename... Args>
+  template <typename... Args>
   static scoped_refptr<ssl_stream> create(Args&&... args) {
     return MakeRefCounted<ssl_stream>(std::forward<Args>(args)...);
   }
@@ -34,45 +34,34 @@ class ssl_stream : public stream {
              uint16_t port,
              Channel* channel,
              bool https_fallback,
-             asio::ssl::context *ssl_ctx)
+             SSL_CTX* ssl_ctx)
       : stream(io_context, host_ips, host_sni, port, channel),
         https_fallback_(https_fallback),
         enable_tls_(true),
-        ssl_socket_(SSLSocket::Create(ssl_socket_data_index, &io_context, &socket_, ssl_ctx->native_handle(), https_fallback, host_sni)) {
-  }
+        ssl_socket_(
+            SSLSocket::Create(ssl_socket_data_index, &io_context, &socket_, ssl_ctx, https_fallback, host_sni)) {}
 
   ~ssl_stream() override {}
 
   bool https_fallback() const override { return https_fallback_; }
 
  protected:
+  void s_wait_read(handle_t&& cb) override { ssl_socket_->WaitRead(std::move(cb)); }
 
-  void s_wait_read(handle_t && cb) override {
-    ssl_socket_->WaitRead(std::move(cb));
-  }
+  size_t s_read_some(std::shared_ptr<IOBuf> buf, asio::error_code& ec) override { return ssl_socket_->Read(buf, ec); }
 
-  size_t s_read_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) override {
-    return ssl_socket_->Read(buf, ec);
-  }
+  void s_wait_write(handle_t&& cb) override { ssl_socket_->WaitWrite(std::move(cb)); }
 
-  void s_wait_write(handle_t &&cb) override {
-    ssl_socket_->WaitWrite(std::move(cb));
-  }
+  size_t s_write_some(std::shared_ptr<IOBuf> buf, asio::error_code& ec) override { return ssl_socket_->Write(buf, ec); }
 
-  size_t s_write_some(std::shared_ptr<IOBuf> buf, asio::error_code &ec) override {
-    return ssl_socket_->Write(buf, ec);
-  }
+  void s_async_shutdown(handle_t&& cb) override { ssl_socket_->Shutdown(std::move(cb)); }
 
-  void s_async_shutdown(handle_t &&cb) override {
-    ssl_socket_->Shutdown(std::move(cb));
-  }
-
-  void s_shutdown(asio::error_code &ec) override {
+  void s_shutdown(asio::error_code& ec) override {
     ec = asio::error_code();
-    ssl_socket_->Shutdown([](asio::error_code ec){}, true);
+    ssl_socket_->Shutdown([](asio::error_code ec) {}, true);
   }
 
-  void s_close(asio::error_code &ec) override {
+  void s_close(asio::error_code& ec) override {
     ec = asio::error_code();
     ssl_socket_->Disconnect();
   }
@@ -108,7 +97,7 @@ class ssl_stream : public stream {
 
       scoped_refptr<stream> self(this);
       // Also queue a ConfirmHandshake. It should also be blocked on ServerHello.
-      auto cb = [this, self, channel](int rv){
+      auto cb = [this, self, channel](int rv) {
         if (closed_) {
           DCHECK(!user_connect_callback_);
           return;
@@ -127,9 +116,8 @@ class ssl_stream : public stream {
   bool https_fallback_;
   const bool enable_tls_;
   scoped_refptr<SSLSocket> ssl_socket_;
-
 };
 
-} // namespace net
+}  // namespace net
 
-#endif // H_NET_SSL_STREAM
+#endif  // H_NET_SSL_STREAM

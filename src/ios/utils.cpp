@@ -3,12 +3,12 @@
 
 #include "ios/utils.h"
 
+#include <SystemConfiguration/SCNetworkReachability.h>
 #include <arpa/inet.h>
+#include <ifaddrs.h>
 #include <net/if.h>
 #include <netdb.h>
-#include <ifaddrs.h>
 #include <sys/socket.h>
-#include <SystemConfiguration/SCNetworkReachability.h>
 
 #include <nlohmann/json.hpp>
 
@@ -22,14 +22,14 @@ bool connectedToNetwork() {
   zeroAddress.sin_family = AF_INET;
 
   // Recover reachability flags
-  SCNetworkReachabilityRef defaultRouteReachability = SCNetworkReachabilityCreateWithAddress(NULL, (struct sockaddr *)&zeroAddress);
+  SCNetworkReachabilityRef defaultRouteReachability =
+      SCNetworkReachabilityCreateWithAddress(NULL, (struct sockaddr*)&zeroAddress);
   SCNetworkReachabilityFlags flags;
 
   Boolean didRetrieveFlags = SCNetworkReachabilityGetFlags(defaultRouteReachability, &flags);
   CFRelease(defaultRouteReachability);
 
-  if (!didRetrieveFlags)
-  {
+  if (!didRetrieveFlags) {
     return false;
   }
 
@@ -46,7 +46,7 @@ std::string serializeTelemetryJson(uint64_t total_rx_bytes, uint64_t total_tx_by
   return j.dump(4);
 }
 
-bool parseTelemetryJson(std::string_view resp, uint64_t *total_rx_bytes, uint64_t *total_tx_bytes) {
+bool parseTelemetryJson(std::string_view resp, uint64_t* total_rx_bytes, uint64_t* total_tx_bytes) {
   auto root = json::parse(resp, nullptr, false);
   if (root.is_discarded() || !root.is_object()) {
     return false;

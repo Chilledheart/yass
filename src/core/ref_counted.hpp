@@ -121,8 +121,7 @@ class RefCountedBase {
 #endif
 
   mutable uint32_t ref_count_ = 0;
-  static_assert(std::is_unsigned<decltype(ref_count_)>::value,
-                "ref_count_ must be an unsigned type.");
+  static_assert(std::is_unsigned<decltype(ref_count_)>::value, "ref_count_ must be an unsigned type.");
 
 #if DCHECK_IS_ON()
   mutable bool needs_adopt_ref_ = false;
@@ -142,8 +141,7 @@ class RefCountedThreadSafeBase {
 
  protected:
   explicit constexpr RefCountedThreadSafeBase(StartRefCountFromZeroTag) {}
-  explicit constexpr RefCountedThreadSafeBase(StartRefCountFromOneTag)
-      : ref_count_(1) {
+  explicit constexpr RefCountedThreadSafeBase(StartRefCountFromOneTag) : ref_count_(1) {
 #if DCHECK_IS_ON()
     needs_adopt_ref_ = true;
 #endif
@@ -293,34 +291,28 @@ class ScopedAllowCrossThreadRefCountAccess final {
 //    And start-from-one ref count is a step to merge WTF::RefCounted into
 //    RefCounted.
 //
-#define REQUIRE_ADOPTION_FOR_REFCOUNTED_TYPE()             \
-  static constexpr ::subtle::StartRefCountFromOneTag \
-      kRefCountPreference = ::subtle::kStartRefCountFromOneTag
+#define REQUIRE_ADOPTION_FOR_REFCOUNTED_TYPE() \
+  static constexpr ::subtle::StartRefCountFromOneTag kRefCountPreference = ::subtle::kStartRefCountFromOneTag
 
 template <class T, typename Traits>
 class RefCounted;
 
 template <typename T>
 struct DefaultRefCountedTraits {
-  static void Destruct(const T* x) {
-    RefCounted<T, DefaultRefCountedTraits>::DeleteInternal(x);
-  }
+  static void Destruct(const T* x) { RefCounted<T, DefaultRefCountedTraits>::DeleteInternal(x); }
 };
 
 template <class T, typename Traits = DefaultRefCountedTraits<T>>
 class RefCounted : public subtle::RefCountedBase {
  public:
-  static constexpr subtle::StartRefCountFromZeroTag kRefCountPreference =
-      subtle::kStartRefCountFromZeroTag;
+  static constexpr subtle::StartRefCountFromZeroTag kRefCountPreference = subtle::kStartRefCountFromZeroTag;
 
   RefCounted() : subtle::RefCountedBase(T::kRefCountPreference) {}
 
   RefCounted(const RefCounted&) = delete;
   RefCounted& operator=(const RefCounted&) = delete;
 
-  void AddRef() const {
-    subtle::RefCountedBase::AddRef();
-  }
+  void AddRef() const { subtle::RefCountedBase::AddRef(); }
 
   void Release() const {
     if (subtle::RefCountedBase::Release()) {
@@ -345,18 +337,18 @@ class RefCounted : public subtle::RefCountedBase {
 };
 
 // Forward declaration.
-template <class T, typename Traits> class RefCountedThreadSafe;
+template <class T, typename Traits>
+class RefCountedThreadSafe;
 
 // Default traits for RefCountedThreadSafe<T>.  Deletes the object when its ref
 // count reaches 0.  Overload to delete it on a different thread etc.
-template<typename T>
+template <typename T>
 struct DefaultRefCountedThreadSafeTraits {
   static void Destruct(const T* x) {
     // Delete through RefCountedThreadSafe to make child classes only need to be
     // friend with RefCountedThreadSafe instead of this struct, which is an
     // implementation detail.
-    RefCountedThreadSafe<T,
-                         DefaultRefCountedThreadSafeTraits>::DeleteInternal(x);
+    RefCountedThreadSafe<T, DefaultRefCountedThreadSafeTraits>::DeleteInternal(x);
   }
 };
 
@@ -375,14 +367,12 @@ struct DefaultRefCountedThreadSafeTraits {
 //
 // We can use REQUIRE_ADOPTION_FOR_REFCOUNTED_TYPE() with RefCountedThreadSafe
 // too. See the comment above the RefCounted definition for details.
-template <class T, typename Traits = DefaultRefCountedThreadSafeTraits<T> >
+template <class T, typename Traits = DefaultRefCountedThreadSafeTraits<T>>
 class RefCountedThreadSafe : public subtle::RefCountedThreadSafeBase {
  public:
-  static constexpr subtle::StartRefCountFromZeroTag kRefCountPreference =
-      subtle::kStartRefCountFromZeroTag;
+  static constexpr subtle::StartRefCountFromZeroTag kRefCountPreference = subtle::kStartRefCountFromZeroTag;
 
-  explicit RefCountedThreadSafe()
-      : subtle::RefCountedThreadSafeBase(T::kRefCountPreference) {}
+  explicit RefCountedThreadSafe() : subtle::RefCountedThreadSafeBase(T::kRefCountPreference) {}
 
   RefCountedThreadSafe(const RefCountedThreadSafe&) = delete;
   RefCountedThreadSafe& operator=(const RefCountedThreadSafe&) = delete;
@@ -406,34 +396,28 @@ class RefCountedThreadSafe : public subtle::RefCountedThreadSafeBase {
     delete x;
   }
 
-  void AddRefImpl(subtle::StartRefCountFromZeroTag) const {
-    subtle::RefCountedThreadSafeBase::AddRef();
-  }
+  void AddRefImpl(subtle::StartRefCountFromZeroTag) const { subtle::RefCountedThreadSafeBase::AddRef(); }
 
-  void AddRefImpl(subtle::StartRefCountFromOneTag) const {
-    subtle::RefCountedThreadSafeBase::AddRefWithCheck();
-  }
+  void AddRefImpl(subtle::StartRefCountFromOneTag) const { subtle::RefCountedThreadSafeBase::AddRefWithCheck(); }
 };
 
 //
 // A thread-safe wrapper for some piece of data so we can place other
 // things in scoped_refptrs<>.
 //
-template<typename T>
-class RefCountedData
-    : public RefCountedThreadSafe< RefCountedData<T> > {
+template <typename T>
+class RefCountedData : public RefCountedThreadSafe<RefCountedData<T>> {
  public:
   RefCountedData() : data() {}
   RefCountedData(const T& in_value) : data(in_value) {}
   RefCountedData(T&& in_value) : data(std::move(in_value)) {}
   template <typename... Args>
-  explicit RefCountedData(in_place_t, Args&&... args)
-      : data(std::forward<Args>(args)...) {}
+  explicit RefCountedData(in_place_t, Args&&... args) : data(std::forward<Args>(args)...) {}
 
   T data;
 
  private:
-  friend class RefCountedThreadSafe<RefCountedData<T> >;
+  friend class RefCountedThreadSafe<RefCountedData<T>>;
   ~RefCountedData() = default;
 };
 

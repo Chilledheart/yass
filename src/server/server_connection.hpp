@@ -8,20 +8,20 @@
 #include "core/ref_counted.hpp"
 #include "core/scoped_refptr.hpp"
 #include "net/channel.hpp"
-#include "net/connection.hpp"
 #include "net/cipher.hpp"
-#include "net/iobuf.hpp"
+#include "net/connection.hpp"
 #include "net/io_queue.hpp"
+#include "net/iobuf.hpp"
+#include "net/protocol.hpp"
 #include "net/ss.hpp"
 #include "net/ss_request.hpp"
 #include "net/ss_request_parser.hpp"
-#include "net/protocol.hpp"
-#include "net/stream.hpp"
 #include "net/ssl_stream.hpp"
+#include "net/stream.hpp"
 
 #include <absl/container/flat_hash_map.h>
-#include <absl/strings/string_view.h>
 #include <absl/strings/str_cat.h>
+#include <absl/strings/string_view.h>
 #include <deque>
 
 #ifdef HAVE_NGHTTP2
@@ -43,11 +43,9 @@ using StreamMap = absl::flat_hash_map<StreamId, T>;
 
 class ServerConnection;
 
-class DataFrameSource
-    : public http2::adapter::DataFrameSource {
+class DataFrameSource : public http2::adapter::DataFrameSource {
  public:
-  explicit DataFrameSource(ServerConnection* connection,
-                           const StreamId& stream_id)
+  explicit DataFrameSource(ServerConnection* connection, const StreamId& stream_id)
       : connection_(connection), stream_id_(stream_id) {}
   ~DataFrameSource() override = default;
   DataFrameSource(const DataFrameSource&) = delete;
@@ -57,8 +55,7 @@ class DataFrameSource
     if (chunks_.empty())
       return {kBlocked, last_frame_};
 
-    bool finished = (chunks_.size() <= 1) &&
-                    (chunks_.front()->length() <= max_length) && last_frame_;
+    bool finished = (chunks_.size() <= 1) && (chunks_.front()->length() <= max_length) && last_frame_;
 
     return {std::min(chunks_.front()->length(), max_length), finished};
   }
@@ -69,9 +66,7 @@ class DataFrameSource
 
   void AddChunk(std::shared_ptr<IOBuf> chunk) { chunks_.push_back(std::move(chunk)); }
   void set_last_frame(bool last_frame) { last_frame_ = last_frame; }
-  void SetSendCompletionCallback(std::function<void()> callback) {
-    send_completion_callback_ = std::move(callback);
-  }
+  void SetSendCompletionCallback(std::function<void()> callback) { send_completion_callback_ = std::move(callback); }
 
  private:
   ServerConnection* const connection_;
@@ -129,8 +124,8 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
                    bool https_fallback,
                    bool enable_upstream_tls,
                    bool enable_tls,
-                   asio::ssl::context *upstream_ssl_ctx,
-                   asio::ssl::context *ssl_ctx);
+                   SSL_CTX* upstream_ssl_ctx,
+                   SSL_CTX* ssl_ctx);
 
   /// Destruct the service
   ~ServerConnection() override;
@@ -187,19 +182,13 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   // OnFrameSent(DATA, 1, _, 0x0, 0)
   // OnConnectionError(ConnectionError::kSendError)
   int64_t OnReadyToSend(absl::string_view serialized) override;
-  OnHeaderResult OnHeaderForStream(StreamId stream_id,
-                                   absl::string_view key,
-                                   absl::string_view value) override;
+  OnHeaderResult OnHeaderForStream(StreamId stream_id, absl::string_view key, absl::string_view value) override;
   bool OnEndHeadersForStream(StreamId stream_id) override;
   bool OnEndStream(StreamId stream_id) override;
-  bool OnCloseStream(StreamId stream_id,
-                     http2::adapter::Http2ErrorCode error_code) override;
+  bool OnCloseStream(StreamId stream_id, http2::adapter::Http2ErrorCode error_code) override;
   // Unused functions
   void OnConnectionError(ConnectionError /*error*/) override;
-  bool OnFrameHeader(StreamId /*stream_id*/,
-                     size_t /*length*/,
-                     uint8_t /*type*/,
-                     uint8_t /*flags*/) override;
+  bool OnFrameHeader(StreamId /*stream_id*/, size_t /*length*/, uint8_t /*type*/, uint8_t /*flags*/) override;
   void OnSettingsStart() override {}
   void OnSetting(http2::adapter::Http2Setting setting) override {}
   void OnSettingsEnd() override {}
@@ -208,33 +197,19 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   bool OnBeginDataForStream(StreamId stream_id, size_t payload_length) override;
   bool OnDataForStream(StreamId stream_id, absl::string_view data) override;
   bool OnDataPaddingLength(StreamId stream_id, size_t padding_length) override;
-  void OnRstStream(StreamId stream_id,
-                   http2::adapter::Http2ErrorCode error_code) override;
-  void OnPriorityForStream(StreamId stream_id,
-                           StreamId parent_stream_id,
-                           int weight,
-                           bool exclusive) override {}
+  void OnRstStream(StreamId stream_id, http2::adapter::Http2ErrorCode error_code) override;
+  void OnPriorityForStream(StreamId stream_id, StreamId parent_stream_id, int weight, bool exclusive) override {}
   void OnPing(http2::adapter::Http2PingId ping_id, bool is_ack) override {}
-  void OnPushPromiseForStream(StreamId stream_id,
-                              StreamId promised_stream_id) override {}
+  void OnPushPromiseForStream(StreamId stream_id, StreamId promised_stream_id) override {}
   bool OnGoAway(StreamId last_accepted_stream_id,
                 http2::adapter::Http2ErrorCode error_code,
                 absl::string_view opaque_data) override;
   void OnWindowUpdate(StreamId stream_id, int window_increment) override {}
-  int OnBeforeFrameSent(uint8_t frame_type,
-                        StreamId stream_id,
-                        size_t length,
-                        uint8_t flags) override;
-  int OnFrameSent(uint8_t frame_type,
-                  StreamId stream_id,
-                  size_t length,
-                  uint8_t flags,
-                  uint32_t error_code) override;
+  int OnBeforeFrameSent(uint8_t frame_type, StreamId stream_id, size_t length, uint8_t flags) override;
+  int OnFrameSent(uint8_t frame_type, StreamId stream_id, size_t length, uint8_t flags, uint32_t error_code) override;
   bool OnInvalidFrame(StreamId stream_id, InvalidFrameError error) override;
-  void OnBeginMetadataForStream(StreamId stream_id,
-                                size_t payload_length) override {}
-  bool OnMetadataForStream(StreamId stream_id,
-                           absl::string_view metadata) override;
+  void OnBeginMetadataForStream(StreamId stream_id, size_t payload_length) override {}
+  bool OnMetadataForStream(StreamId stream_id, absl::string_view metadata) override;
   bool OnMetadataEndForStream(StreamId stream_id) override;
   void OnErrorDebug(absl::string_view message) override {}
 
@@ -270,27 +245,22 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   /// Write remaining buffers to stream
   void WriteStreamInPipe();
   /// Get next remaining buffer to stream
-  std::shared_ptr<IOBuf> GetNextDownstreamBuf(asio::error_code &ec,
-                                              size_t* bytes_transferred);
+  std::shared_ptr<IOBuf> GetNextDownstreamBuf(asio::error_code& ec, size_t* bytes_transferred);
 
   /// Write remaining buffers to channel
   void WriteUpstreamInPipe();
   /// Get next remaining buffer to channel
-  std::shared_ptr<IOBuf> GetNextUpstreamBuf(asio::error_code &ec,
-                                            size_t* bytes_transferred);
+  std::shared_ptr<IOBuf> GetNextUpstreamBuf(asio::error_code& ec, size_t* bytes_transferred);
 
   /// Process the recevied data
   /// \param buf pointer to received buffer
   /// \param error the error state
   /// \param bytes_transferred transferred bytes
-  void ProcessReceivedData(std::shared_ptr<IOBuf> buf,
-                           asio::error_code ec,
-                           size_t bytes_transferred);
+  void ProcessReceivedData(std::shared_ptr<IOBuf> buf, asio::error_code ec, size_t bytes_transferred);
   /// Process the sent data
   /// \param error the error state
   /// \param bytes_transferred transferred bytes
-  void ProcessSentData(asio::error_code ec,
-                       size_t bytes_transferred);
+  void ProcessSentData(asio::error_code ec, size_t bytes_transferred);
   /// state machine
   state state_;
 
@@ -402,8 +372,7 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
 
  private:
   /// encrypt data
-  void EncryptData(IoQueue* queue,
-                   std::shared_ptr<IOBuf> plaintext);
+  void EncryptData(IoQueue* queue, std::shared_ptr<IOBuf> plaintext);
 
   /// encode cipher to perform data encoder for upstream
   std::unique_ptr<cipher> encoder_;
@@ -418,13 +387,13 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
 
 class ServerConnectionFactory : public net::ConnectionFactory {
  public:
-   using ConnectionType = ServerConnection;
-   template<typename... Args>
-   scoped_refptr<ConnectionType> Create(Args&&... args) {
-     return MakeRefCounted<ConnectionType>(std::forward<Args>(args)...);
-   }
-   const char* Name() override { return "server"; }
-   const char* ShortName() override { return "server"; }
+  using ConnectionType = ServerConnection;
+  template <typename... Args>
+  scoped_refptr<ConnectionType> Create(Args&&... args) {
+    return MakeRefCounted<ConnectionType>(std::forward<Args>(args)...);
+  }
+  const char* Name() override { return "server"; }
+  const char* ShortName() override { return "server"; }
 };
 
 }  // namespace server

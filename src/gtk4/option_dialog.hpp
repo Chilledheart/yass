@@ -8,18 +8,15 @@
 #include <string>
 
 extern "C" {
-#define OPTION_DIALOG_TYPE (option_dialog_get_type ())
-G_DECLARE_FINAL_TYPE (OptionGtkDialog, option_dialog, OPTIONGtk, DIALOG, GtkDialog)
+#define OPTION_DIALOG_TYPE (option_dialog_get_type())
+G_DECLARE_FINAL_TYPE(OptionGtkDialog, option_dialog, OPTIONGtk, DIALOG, GtkDialog)
 
-OptionGtkDialog     *option_dialog_new        (const gchar* title, GtkWindow* parent,
-                                               GtkDialogFlags flags);
+OptionGtkDialog* option_dialog_new(const gchar* title, GtkWindow* parent, GtkDialogFlags flags);
 }
 
 class OptionDialog {
  public:
-  explicit OptionDialog(const std::string& title,
-                        GtkWindow* parent,
-                        bool modal = false);
+  explicit OptionDialog(const std::string& title, GtkWindow* parent, bool modal = false);
   ~OptionDialog();
 
   void OnOkayButtonClicked();

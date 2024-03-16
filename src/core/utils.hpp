@@ -4,17 +4,17 @@
 #define YASS_UTILS
 
 #include <stdint.h>
+#include <wchar.h>
+#include <iosfwd>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <thread>
-#include <wchar.h>
-#include <optional>
-#include <iosfwd>
 
 #include <base/compiler_specific.h>
-#include <base/strings/sys_string_conversions.h>
-#include <base/files/platform_file.h>
 #include <base/files/memory_mapped_file.h>
+#include <base/files/platform_file.h>
+#include <base/strings/sys_string_conversions.h>
 
 #ifdef __ANDROID__
 extern std::string a_cache_dir;
@@ -53,11 +53,11 @@ uint64_t GetMonotonicTime();
 
 namespace internal {
 #ifdef _WIN32
-  using fd_t = HANDLE;
+using fd_t = HANDLE;
 #else
-  using fd_t = int;
+using fd_t = int;
 #endif
-} // namespace internal
+}  // namespace internal
 
 bool IsProgramConsole(internal::fd_t fd);
 
@@ -73,21 +73,19 @@ bool EnableSecureDllLoading();
 
 void GetWindowsVersion(int* major, int* minor, int* build_number, int* os_type);
 
-bool IsWindowsVersionBNOrGreater(int wMajorVersion,
-                                 int wMinorVersion,
-                                 int wBuildNumber);
+bool IsWindowsVersionBNOrGreater(int wMajorVersion, int wMinorVersion, int wBuildNumber);
 #endif
 
 // Converts between wide and UTF-8 representations of a string. On error, the
 // result is system-dependent.
-using gurl_base::SysWideToUTF8;
 using gurl_base::SysUTF8ToWide;
+using gurl_base::SysWideToUTF8;
 
 // Converts between wide and the system multi-byte representations of a string.
 // DANGER: This will lose information and can change (on Windows, this can
 // change between reboots).
-using gurl_base::SysWideToNativeMB;
 using gurl_base::SysNativeMBToWide;
+using gurl_base::SysWideToNativeMB;
 
 // Windows-specific ------------------------------------------------------------
 #ifdef _WIN32
@@ -96,7 +94,7 @@ using gurl_base::SysNativeMBToWide;
 // MultiByteToWideChar().
 using gurl_base::SysMultiByteToWide;
 using gurl_base::SysWideToMultiByte;
-#endif // _WIN32
+#endif  // _WIN32
 
 extern const char kSeparators[];
 
@@ -162,9 +160,9 @@ void SetExecutablePath(const std::string& exe_path);
 void SetExecutablePath(const std::wstring& exe_path);
 #endif
 
-bool GetTempDir(std::string *path);
+bool GetTempDir(std::string* path);
 #ifdef _WIN32
-bool GetTempDir(std::wstring *path);
+bool GetTempDir(std::wstring* path);
 #endif
 
 std::string GetHomeDir();
@@ -181,7 +179,7 @@ using ssize_t = ptrdiff_t;
 
 ssize_t ReadFileToBuffer(const std::string& path, char* buf, size_t buf_len);
 ssize_t WriteFileWithBuffer(const std::string& path, std::string_view buf);
-PlatformFile OpenReadFile(const std::string &path);
+PlatformFile OpenReadFile(const std::string& path);
 #ifdef _WIN32
 PlatformFile OpenReadFile(const std::wstring& path);
 #endif
@@ -197,7 +195,7 @@ void PrintTcmallocStats();
 #include <libkern/OSTypes.h>
 #endif
 std::string DescriptionFromOSStatus(OSStatus err);
-#endif // __APPLE__
+#endif  // __APPLE__
 
 void HumanReadableByteCountBin(std::ostream* ss, uint64_t bytes);
 #ifdef _WIN32

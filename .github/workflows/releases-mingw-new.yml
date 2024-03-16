@@ -35,7 +35,7 @@ concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 env:
-  CACHE_EPOCH: 122-5
+  CACHE_EPOCH: 123-5
   GOPROXY: direct
 jobs:
   mingw64-release:
@@ -123,9 +123,7 @@ jobs:
       - name: Populate depedencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y cmake ninja-build nasm zip
-          # required by mbedtls build
-          sudo apt-get install -y python3-jsonschema python3-jinja2
+          sudo apt-get install -y cmake ninja-build nasm zip nsis locales-all
       - name: Patch libcxx for windows xp
         if: ${{ matrix.arch == 'i686' || matrix.arch == 'x86_64' }}
         run: |
@@ -141,6 +139,9 @@ jobs:
           echo "BUILD_OPTIONS=-mingw-allow-xp -enable-lto=false" >> $GITHUB_ENV
       - name: Build
         run: |
+          # fix cpack error on C.UTF-8 locale
+          # see https://github.com/lightspark/lightspark/discussions/604#discussioncomment-1034262
+          export LC_ALL=en_US.UTF-8
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system mingw \
             -build-test -build-benchmark \
             -mingw-dir $PWD/third_party/llvm-mingw-20230614-${{ matrix.variant }}-ubuntu-20.04-x86_64 \
@@ -172,4 +173,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} *.zip
+          gh release upload ${{ github.event.release.tag_name }} *.zip *.exe

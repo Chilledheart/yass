@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2022 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 #ifndef YASS_APP
 #define YASS_APP
 
@@ -24,8 +24,10 @@ class YASSApp {
   static std::unique_ptr<YASSApp> create();
 
  private:
-  GtkApplication *impl_;
-  GSource *idle_source_;
+  GtkApplication* impl_;
+  GSource* idle_source_;
+  GSource* exit_int_source_;
+  GSource* exit_term_source_;
 
  public:
   void OnActivate();
@@ -43,14 +45,7 @@ class YASSApp {
   void OnStop(bool quiet = false);
 
   std::string GetStatus() const;
-  enum YASSState {
-    STARTED,
-    STARTING,
-    START_FAILED,
-    STOPPING,
-    STOPPED,
-    MAX_STATE
-  };
+  enum YASSState { STARTED, STARTING, START_FAILED, STOPPING, STOPPED, MAX_STATE };
   YASSState GetState() const { return state_; }
 
  private:

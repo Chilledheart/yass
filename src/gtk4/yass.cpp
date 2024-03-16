@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2023 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 #include "gtk4/yass.hpp"
 
 #include <stdexcept>
@@ -12,6 +12,7 @@
 #include <absl/flags/usage.h>
 #include <absl/strings/str_cat.h>
 #include <fontconfig/fontconfig.h>
+#include <glib-2.0/glib-unix.h>
 #include <glib/gi18n.h>
 #include <locale.h>
 #include <openssl/crypto.h>
@@ -19,13 +20,13 @@
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
-#include "crypto/crypter_export.hpp"
-#include "gtk4/yass_window.hpp"
-#include "feature.h"
-#include "version.h"
-#include "gtk4/option_dialog.hpp"
 #include "crashpad_helper.hpp"
+#include "crypto/crypter_export.hpp"
+#include "feature.h"
+#include "gtk4/option_dialog.hpp"
+#include "gtk4/yass_window.hpp"
 #include "i18n/icu_util.hpp"
+#include "version.h"
 
 ABSL_FLAG(bool, background, false, "start up backgroundd");
 
@@ -36,85 +37,53 @@ static const char* kAppName = YASS_APP_PRODUCT_NAME;
 
 extern "C" {
 
-struct _YASSGtkApp
-{
+struct _YASSGtkApp {
   GtkApplication parent;
-  YASSApp *thiz;
+  YASSApp* thiz;
 };
 
 G_DEFINE_TYPE(YASSGtkApp, yass_app, GTK_TYPE_APPLICATION)
 
-static void
-yass_app_init(YASSGtkApp *app)
-{
-}
+static void yass_app_init(YASSGtkApp* app) {}
 
-static void
-option_activated (GSimpleAction *action,
-                  GVariant      *parameter,
-                  gpointer       app)
-{
+static void option_activated(GSimpleAction* action, GVariant* parameter, gpointer app) {
   YASSGtk_APP(app)->thiz->OnOption();
 }
 
-static void
-about_activated (GSimpleAction *action,
-                 GVariant      *parameter,
-                 gpointer       app)
-{
+static void about_activated(GSimpleAction* action, GVariant* parameter, gpointer app) {
   YASSGtk_APP(app)->thiz->OnAbout();
 }
 
-static void
-quit_activated (GSimpleAction *action,
-                GVariant      *parameter,
-                gpointer       app)
-{
+static void quit_activated(GSimpleAction* action, GVariant* parameter, gpointer app) {
   YASSGtk_APP(app)->thiz->Exit();
 }
 
-static GActionEntry app_entries[] =
-{
-  { "option", option_activated, NULL, NULL, NULL },
-  { "about", about_activated, NULL, NULL, NULL },
-  { "quit", quit_activated, NULL, NULL, NULL }
-};
+static GActionEntry app_entries[] = {{"option", option_activated, NULL, NULL, NULL},
+                                     {"about", about_activated, NULL, NULL, NULL},
+                                     {"quit", quit_activated, NULL, NULL, NULL}};
 
-static void
-yass_app_startup (GApplication *app)
-{
-  const char *quit_accels[2] = { "<Ctrl>Q", NULL };
+static void yass_app_startup(GApplication* app) {
+  const char* quit_accels[2] = {"<Ctrl>Q", NULL};
 
   G_APPLICATION_CLASS(yass_app_parent_class)->startup(app);
 
-  g_action_map_add_action_entries(G_ACTION_MAP(app),
-                                  app_entries, G_N_ELEMENTS (app_entries),
-                                  app);
-  gtk_application_set_accels_for_action(GTK_APPLICATION(app),
-                                        "app.quit",
-                                        quit_accels);
+  g_action_map_add_action_entries(G_ACTION_MAP(app), app_entries, G_N_ELEMENTS(app_entries), app);
+  gtk_application_set_accels_for_action(GTK_APPLICATION(app), "app.quit", quit_accels);
 }
 
-static void
-yass_app_activate(GApplication *app)
-{
+static void yass_app_activate(GApplication* app) {
   YASSGtk_APP(app)->thiz->OnActivate();
 }
 
-static void
-yass_app_class_init(YASSGtkAppClass *cls)
-{
+static void yass_app_class_init(YASSGtkAppClass* cls) {
   G_APPLICATION_CLASS(cls)->startup = yass_app_startup;
   G_APPLICATION_CLASS(cls)->activate = yass_app_activate;
 }
 
-YASSGtkApp*
-yass_app_new (void)
-{
-  return YASSGtk_APP(g_object_new (yass_app_get_type(),
-                                   "application-id", kAppId, NULL));
+YASSGtkApp* yass_app_new(void) {
+  return YASSGtk_APP(g_object_new(yass_app_get_type(), "application-id", kAppId, NULL));
 }
-} // extern "C"
+}  // extern "C"
 
 int main(int argc, const char** argv) {
   SetExecutablePath(argv[0]);
@@ -142,16 +111,14 @@ int main(int argc, const char** argv) {
   absl::InstallFailureSignalHandler(failure_handle_options);
 #endif
 
-  absl::SetProgramUsageMessage(
-      absl::StrCat("Usage: ", Basename(exec_path), " [options ...]\n",
-                   " -c, --configfile <file> Use specified config file\n",
-                   " --server_host <host> Host address which remote server listens to\n",
-                   " --server_port <port> Port number which remote server listens to\n",
-                   " --local_host <host> Host address which local server listens to\n"
-                   " --local_port <port> Port number which local server listens to\n"
-                   " --username <username> Username\n",
-                   " --password <pasword> Password pharsal\n",
-                   " --method <method> Method of encrypt"));
+  absl::SetProgramUsageMessage(absl::StrCat(
+      "Usage: ", Basename(exec_path), " [options ...]\n", " -K, --config <file> Read config from a file\n",
+      " --server_host <host> Remote server on given host\n", " --server_port <port> Remote server on given port\n",
+      " --local_host <host> Local proxy server on given host\n"
+      " --local_port <port> Local proxy server on given port\n"
+      " --username <username> Server user\n",
+      " --password <pasword> Server password\n", " --method <method> Specify encrypt of method to use"));
+
   config::ReadConfigFileOption(argc, argv);
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
@@ -180,13 +147,11 @@ int main(int argc, const char** argv) {
   return app->ApplicationRun(1, const_cast<char**>(argv));
 }
 
-YASSApp::YASSApp()
-    : impl_(G_APPLICATION(yass_app_new())),
-      idle_source_(g_timeout_source_new(200)) {
+YASSApp::YASSApp() : impl_(G_APPLICATION(yass_app_new())), idle_source_(g_timeout_source_new(200)) {
   YASSGtk_APP(impl_)->thiz = this;
   g_set_application_name(kAppName);
 
-  auto idle = [](gpointer user_data) -> gboolean {
+  auto idle_handler = [](gpointer user_data) -> gboolean {
     if (!mApp) {
       return G_SOURCE_REMOVE;
     }
@@ -194,10 +159,32 @@ YASSApp::YASSApp()
     return G_SOURCE_CONTINUE;
   };
   g_source_set_priority(idle_source_, G_PRIORITY_LOW);
-  g_source_set_callback(idle_source_, idle, this, nullptr);
+  g_source_set_callback(idle_source_, idle_handler, this, nullptr);
   g_source_set_name(idle_source_, "Idle Source");
   g_source_attach(idle_source_, nullptr);
   g_source_unref(idle_source_);
+
+  auto exit_handler = [](gpointer user_data) -> gboolean {
+    LOG(WARNING) << "Signal received";
+    if (!mApp) {
+      return G_SOURCE_REMOVE;
+    }
+    mApp->Exit();
+    return G_SOURCE_CONTINUE;
+  };
+  exit_int_source_ = g_unix_signal_source_new(SIGINT);
+  g_source_set_priority(exit_int_source_, G_PRIORITY_HIGH);
+  g_source_set_callback(exit_int_source_, exit_handler, this, nullptr);
+  g_source_set_name(exit_int_source_, "SIGINT Signal Source");
+  g_source_attach(exit_int_source_, nullptr);
+  g_source_unref(exit_int_source_);
+
+  exit_term_source_ = g_unix_signal_source_new(SIGTERM);
+  g_source_set_priority(exit_term_source_, G_PRIORITY_HIGH);
+  g_source_set_callback(exit_term_source_, exit_handler, this, nullptr);
+  g_source_set_name(exit_term_source_, "SIGTERM Signal Source");
+  g_source_attach(exit_term_source_, nullptr);
+  g_source_unref(exit_term_source_);
 }
 
 YASSApp::~YASSApp() = default;
@@ -249,6 +236,8 @@ void YASSApp::Exit() {
   }
   mApp = nullptr;
   g_source_destroy(idle_source_);
+  g_source_destroy(exit_int_source_);
+  g_source_destroy(exit_term_source_);
   g_application_quit(G_APPLICATION(impl_));
 }
 
@@ -362,10 +351,8 @@ std::string YASSApp::SaveConfig() {
   auto local_port = main_window_->GetLocalPort();
   auto connect_timeout = main_window_->GetTimeout();
 
-  return config::ReadConfigFromArgument(server_host, server_sni, server_port,
-                                        username, password, method_string,
-                                        local_host, local_port,
-                                        connect_timeout);
+  return config::ReadConfigFromArgument(server_host, server_sni, server_port, username, password, method_string,
+                                        local_host, local_port, "", connect_timeout);
 }
 
 void YASSApp::OnAbout() {
@@ -392,8 +379,7 @@ void YASSApp::OnAbout() {
 }
 
 void YASSApp::OnOption() {
-  auto dialog = new OptionDialog(_("YASS Option"),
-                                 GTK_WINDOW(main_window_->impl()), true);
+  auto dialog = new OptionDialog(_("YASS Option"), GTK_WINDOW(main_window_->impl()), true);
 
   dialog->run();
 }

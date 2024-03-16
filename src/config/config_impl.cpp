@@ -12,6 +12,12 @@
 #include "core/logging.hpp"
 #include "crypto/crypter_export.hpp"
 
+struct PortFlag {
+  explicit PortFlag(uint16_t p) : port(p) {}
+  operator uint16_t() const { return port; }
+  uint16_t port;
+};
+
 struct CipherMethodFlag {
   explicit CipherMethodFlag(cipher_method m) : method(m) {}
   cipher_method method;
@@ -92,12 +98,27 @@ bool ConfigImpl::Read(const std::string& key, absl::Flag<T>* value) {
   return true;
 }
 
-template bool ConfigImpl::Read(const std::string& key,
-                               absl::Flag<std::string>* value);
+template bool ConfigImpl::Read(const std::string& key, absl::Flag<std::string>* value);
 
-template<>
-bool ConfigImpl::Read(const std::string& key,
-                      absl::Flag<CipherMethodFlag>* value) {
+template <>
+bool ConfigImpl::Read(const std::string& key, absl::Flag<PortFlag>* value) {
+  alignas(std::string) alignas(8) uint64_t real_value;
+  if (!ReadImpl(key, &real_value)) {
+    LOG(WARNING) << "failed to load option " << key;
+    return false;
+  }
+  if (real_value > UINT16_MAX) {
+    LOG(WARNING) << "invalid value for key: " << key << " value: " << real_value;
+    return false;
+  }
+  PortFlag p(static_cast<uint16_t>(real_value));
+  absl::SetFlag(value, p);
+  VLOG(1) << "loaded option " << key << ": " << real_value;
+  return true;
+}
+
+template <>
+bool ConfigImpl::Read(const std::string& key, absl::Flag<CipherMethodFlag>* value) {
   alignas(std::string) alignas(8) std::string real_value;
   if (!ReadImpl(key, &real_value)) {
     LOG(WARNING) << "failed to load option " << key;
@@ -129,17 +150,13 @@ bool ConfigImpl::Read(const std::string& key, absl::Flag<bool>* value) {
   return true;
 }
 
-template bool ConfigImpl::Read(const std::string& key,
-                               absl::Flag<uint32_t>* value);
+template bool ConfigImpl::Read(const std::string& key, absl::Flag<uint32_t>* value);
 
-template bool ConfigImpl::Read(const std::string& key,
-                               absl::Flag<int32_t>* value);
+template bool ConfigImpl::Read(const std::string& key, absl::Flag<int32_t>* value);
 
-template bool ConfigImpl::Read(const std::string& key,
-                               absl::Flag<uint64_t>* value);
+template bool ConfigImpl::Read(const std::string& key, absl::Flag<uint64_t>* value);
 
-template bool ConfigImpl::Read(const std::string& key,
-                               absl::Flag<int64_t>* value);
+template bool ConfigImpl::Read(const std::string& key, absl::Flag<int64_t>* value);
 
 template <typename T>
 bool ConfigImpl::Write(const std::string& key, const absl::Flag<T>& value) {
@@ -152,8 +169,18 @@ bool ConfigImpl::Write(const std::string& key, const absl::Flag<T>& value) {
   return true;
 }
 
-template bool ConfigImpl::Write(const std::string& key,
-                                const absl::Flag<std::string>& value);
+template bool ConfigImpl::Write(const std::string& key, const absl::Flag<std::string>& value);
+
+template <>
+bool ConfigImpl::Write(const std::string& key, const absl::Flag<PortFlag>& value) {
+  uint64_t real_value = absl::GetFlag(value);
+  if (!WriteImpl(key, real_value)) {
+    LOG(WARNING) << "failed to saved option " << key << ": " << real_value;
+    return false;
+  }
+  VLOG(1) << "saved option " << key << ": " << real_value;
+  return true;
+}
 
 template <>
 bool ConfigImpl::Write(const std::string& key, const absl::Flag<CipherMethodFlag>& value) {
@@ -179,17 +206,13 @@ bool ConfigImpl::Write(const std::string& key, const absl::Flag<bool>& value) {
   return true;
 }
 
-template bool ConfigImpl::Write(const std::string& key,
-                                const absl::Flag<uint32_t>& value);
+template bool ConfigImpl::Write(const std::string& key, const absl::Flag<uint32_t>& value);
 
-template bool ConfigImpl::Write(const std::string& key,
-                                const absl::Flag<int32_t>& value);
+template bool ConfigImpl::Write(const std::string& key, const absl::Flag<int32_t>& value);
 
-template bool ConfigImpl::Write(const std::string& key,
-                                const absl::Flag<uint64_t>& value);
+template bool ConfigImpl::Write(const std::string& key, const absl::Flag<uint64_t>& value);
 
-template bool ConfigImpl::Write(const std::string& key,
-                                const absl::Flag<int64_t>& value);
+template bool ConfigImpl::Write(const std::string& key, const absl::Flag<int64_t>& value);
 
 bool ConfigImpl::Delete(const std::string& key) {
   if (DeleteImpl(key)) {

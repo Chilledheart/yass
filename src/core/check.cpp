@@ -13,17 +13,13 @@
 
 namespace yass {
 
-CheckError CheckError::Check(const char* file,
-                             int line,
-                             const char* condition) {
+CheckError CheckError::Check(const char* file, int line, const char* condition) {
   CheckError check_error(new LogMessage(file, line, LOGGING_FATAL));
   check_error.stream() << "Check failed: " << condition << ". ";
   return check_error;
 }
 
-CheckError CheckError::CheckOp(const char* file,
-                               int line,
-                               CheckOpResult* check_op_result) {
+CheckError CheckError::CheckOp(const char* file, int line, CheckOpResult* check_op_result) {
   CheckError check_error(new LogMessage(file, line, LOGGING_FATAL));
   check_error.stream() << "Check failed: " << check_op_result->message_;
   free(check_op_result->message_);
@@ -31,17 +27,13 @@ CheckError CheckError::CheckOp(const char* file,
   return check_error;
 }
 
-CheckError CheckError::DCheck(const char* file,
-                              int line,
-                              const char* condition) {
+CheckError CheckError::DCheck(const char* file, int line, const char* condition) {
   CheckError check_error(new LogMessage(file, line, LOGGING_DCHECK));
   check_error.stream() << "Check failed: " << condition << ". ";
   return check_error;
 }
 
-CheckError CheckError::DCheckOp(const char* file,
-                                int line,
-                                CheckOpResult* check_op_result) {
+CheckError CheckError::DCheckOp(const char* file, int line, CheckOpResult* check_op_result) {
   CheckError check_error(new LogMessage(file, line, LOGGING_DCHECK));
   check_error.stream() << "Check failed: " << check_op_result->message_;
   free(check_op_result->message_);
@@ -49,16 +41,12 @@ CheckError CheckError::DCheckOp(const char* file,
   return check_error;
 }
 
-CheckError CheckError::PCheck(const char* file,
-                              int line,
-                              const char* condition) {
+CheckError CheckError::PCheck(const char* file, int line, const char* condition) {
   SystemErrorCode err_code = GetLastSystemErrorCode();
 #if BUILDFLAG(IS_WIN)
-  CheckError check_error(
-      new Win32ErrorLogMessage(file, line, LOGGING_FATAL, err_code));
+  CheckError check_error(new Win32ErrorLogMessage(file, line, LOGGING_FATAL, err_code));
 #elif BUILDFLAG(IS_POSIX)
-  CheckError check_error(
-      new ErrnoLogMessage(file, line, LOGGING_FATAL, err_code));
+  CheckError check_error(new ErrnoLogMessage(file, line, LOGGING_FATAL, err_code));
 #endif
   check_error.stream() << "Check failed: " << condition << ". ";
   return check_error;
@@ -68,24 +56,18 @@ CheckError CheckError::PCheck(const char* file, int line) {
   return PCheck(file, line, "");
 }
 
-CheckError CheckError::DPCheck(const char* file,
-                               int line,
-                               const char* condition) {
+CheckError CheckError::DPCheck(const char* file, int line, const char* condition) {
   SystemErrorCode err_code = GetLastSystemErrorCode();
 #if BUILDFLAG(IS_WIN)
-  CheckError check_error(
-      new Win32ErrorLogMessage(file, line, LOGGING_DCHECK, err_code));
+  CheckError check_error(new Win32ErrorLogMessage(file, line, LOGGING_DCHECK, err_code));
 #elif BUILDFLAG(IS_POSIX)
-  CheckError check_error(
-      new ErrnoLogMessage(file, line, LOGGING_DCHECK, err_code));
+  CheckError check_error(new ErrnoLogMessage(file, line, LOGGING_DCHECK, err_code));
 #endif
   check_error.stream() << "Check failed: " << condition << ". ";
   return check_error;
 }
 
-CheckError CheckError::NotImplemented(const char* file,
-                                      int line,
-                                      const char* function) {
+CheckError CheckError::NotImplemented(const char* file, int line, const char* function) {
   CheckError check_error(new LogMessage(file, line, LOGGING_ERROR));
   check_error.stream() << "Not implemented reached in " << function;
   return check_error;
@@ -112,4 +94,4 @@ void RawError(const char* message) {
   RawLog(LOGGING_ERROR, message);
 }
 
-} // namespace yass
+}  // namespace yass

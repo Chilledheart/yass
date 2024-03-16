@@ -15,6 +15,12 @@
 
 #include "crypto/crypter_export.hpp"
 
+struct PortFlag {
+  explicit PortFlag(uint16_t p) : port(p) {}
+  operator uint16_t() const { return port; }
+  uint16_t port;
+};
+
 struct CipherMethodFlag {
   explicit CipherMethodFlag(cipher_method m) : method(m) {}
   cipher_method method;
@@ -24,12 +30,12 @@ ABSL_DECLARE_FLAG(bool, ipv6_mode);
 
 ABSL_DECLARE_FLAG(std::string, server_host);
 ABSL_DECLARE_FLAG(std::string, server_sni);
-ABSL_DECLARE_FLAG(int32_t, server_port);
+ABSL_DECLARE_FLAG(PortFlag, server_port);
 ABSL_DECLARE_FLAG(std::string, username);
 ABSL_DECLARE_FLAG(std::string, password);
 ABSL_DECLARE_FLAG(CipherMethodFlag, method);
 ABSL_DECLARE_FLAG(std::string, local_host);
-ABSL_DECLARE_FLAG(int32_t, local_port);
+ABSL_DECLARE_FLAG(PortFlag, local_port);
 
 // config_tls.cpp
 extern std::string g_certificate_chain_content;
@@ -41,13 +47,13 @@ ABSL_DECLARE_FLAG(bool, insecure_mode);
 ABSL_DECLARE_FLAG(std::string, cacert);
 ABSL_DECLARE_FLAG(std::string, capath);
 
-ABSL_DECLARE_FLAG(uint32_t, worker_connections);
+ABSL_DECLARE_FLAG(uint32_t, parallel_max);
 
 struct RateFlag {
   explicit RateFlag(uint64_t r) : rate(r) {}
   uint64_t rate;
 };
-ABSL_DECLARE_FLAG(RateFlag, limit_rate); //bytes per second
+ABSL_DECLARE_FLAG(RateFlag, limit_rate);  // bytes per second
 
 // config_network.cpp
 ABSL_DECLARE_FLAG(bool, reuse_port);
@@ -67,6 +73,8 @@ ABSL_DECLARE_FLAG(int32_t, tcp_keep_alive_interval);
 ABSL_DECLARE_FLAG(bool, tls13_early_data);
 ABSL_DECLARE_FLAG(bool, redir_mode);
 
+ABSL_DECLARE_FLAG(std::string, doh_url);
+
 namespace config {
 void ReadConfigFileOption(int argc, const char** argv);
 bool ReadConfig();
@@ -80,6 +88,7 @@ std::string ReadConfigFromArgument(const std::string& server_host,
                                    cipher_method method,
                                    const std::string& local_host,
                                    const std::string& local_port,
+                                   const std::string& doh_url,
                                    const std::string& connect_timeout);
 
 std::string ReadConfigFromArgument(const std::string& server_host,
@@ -90,6 +99,7 @@ std::string ReadConfigFromArgument(const std::string& server_host,
                                    const std::string& method_string,
                                    const std::string& local_host,
                                    const std::string& local_port,
+                                   const std::string& doh_url,
                                    const std::string& connect_timeout);
 }  // namespace config
 

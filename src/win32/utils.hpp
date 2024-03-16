@@ -3,9 +3,9 @@
 #ifndef YASS_WIN32_UTILS
 #define YASS_WIN32_UTILS
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <vector>
-#include <functional>
 
 #include <windows.h>
 
@@ -17,8 +17,7 @@ class Utils {
     DpiAwarenessPerMonitor,
     DpiAwarenessPerMonitorV2,
   };
-  static bool SetDpiAwareness(
-      DpiAwarenessType awareness_type = DpiAwarenessPerMonitorV2);
+  static bool SetDpiAwareness(DpiAwarenessType awareness_type = DpiAwarenessPerMonitorV2);
   static bool SetMixedThreadDpiHostingBehavior();
   // Determine the DPI to use, according to the DPI awareness mode
   static unsigned int GetDpiForWindowOrSystem(HWND hWnd);
@@ -41,20 +40,16 @@ std::wstring LoadStringStdW(HINSTANCE hInstance, UINT uID);
 // server_addr and bypass_addr should be something like
 // server_addr http://127.0.0.1:1081 bypass_addr <local>
 // server_addr http=127.0.0.1:1081;https=127.0.0.1:1081;ftp=127.0.0.1:1081;socks=127.0.0.1:1081 bypass_addr <local>
-bool QuerySystemProxy(bool *enabled,
-                      std::string *server_addr,
-                      std::string *bypass_addr);
+bool QuerySystemProxy(bool* enabled, std::string* server_addr, std::string* bypass_addr);
+
+bool SetSystemProxy(bool enable, const std::string& server_addr, const std::string& bypass_addr);
 
 bool SetSystemProxy(bool enable,
-                    const std::string &server_addr,
-                    const std::string &bypass_addr);
+                    const std::string& server_addr,
+                    const std::string& bypass_addr,
+                    const std::wstring& conn_name);
 
-bool SetSystemProxy(bool enable,
-                    const std::string &server_addr,
-                    const std::string &bypass_addr,
-                    const std::wstring &conn_name);
-
-bool GetAllRasConnection(std::vector<std::wstring> *result);
+bool GetAllRasConnection(std::vector<std::wstring>* result);
 
 void WaitNetworkUp(std::function<void()> callback);
 
