@@ -194,6 +194,7 @@ void DoHResolver::DoRequest(bool enable_ipv6, const asio::ip::tcp::endpoint& end
                    [this, self](const asio::error_code& ec, asio::ip::tcp::resolver::results_type results) {
                      OnDoneRequest(ec, results);
                    });
+    reqs_.push_back(req);
   }
 }
 
