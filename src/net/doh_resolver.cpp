@@ -237,6 +237,10 @@ void DoHResolver::OnDoneRequest(asio::error_code ec) {
   auto results = asio::ip::tcp::resolver::results_type::create(addrinfo, host_, std::to_string(port_));
   addrinfo_freedup(addrinfo);
 
+  if (results.empty() && !ec) {
+    ec = asio::error::host_not_found;
+  }
+
   for (auto iter = std::begin(results); iter != std::end(results); ++iter) {
     VLOG(1) << "DoH Resolve result: " << iter->endpoint();
   }
