@@ -42,7 +42,7 @@ class DoHRequest : public RefCountedThreadSafe<DoHRequest> {
 
   void close();
 
-  using AsyncResolveCallback = absl::AnyInvocable<void(asio::error_code ec, asio::ip::tcp::resolver::results_type)>;
+  using AsyncResolveCallback = absl::AnyInvocable<void(asio::error_code ec, struct addrinfo* addrinfo)>;
   void DoRequest(dns_message::DNStype dns_type, const std::string& host, int port, AsyncResolveCallback cb);
 
  private:
@@ -59,7 +59,7 @@ class DoHRequest : public RefCountedThreadSafe<DoHRequest> {
   void OnSSLReadable(asio::error_code ec);
   void OnReadResult();
   void OnParseDnsResponse();
-  void OnDoneRequest(asio::error_code ec, asio::ip::tcp::resolver::results_type results);
+  void OnDoneRequest(asio::error_code ec, struct addrinfo* addrinfo);
 
  private:
   asio::io_context& io_context_;
@@ -82,6 +82,8 @@ class DoHRequest : public RefCountedThreadSafe<DoHRequest> {
   std::shared_ptr<IOBuf> buf_;
   std::shared_ptr<IOBuf> recv_buf_;
 };
+
+void addrinfo_freedup(struct addrinfo* addrinfo);
 
 }  // namespace net
 
