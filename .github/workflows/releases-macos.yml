@@ -106,8 +106,8 @@ jobs:
           brew unlink python@3.11
           brew unlink python@3.12
           brew link --force --overwrite python@3.11
-          ln -sf $(brew --prefix)/opt/python@3.11/libexec/bin/python /usr/local/bin/python
-          ln -sf $(brew --prefix)/opt/python@3.11/libexec/bin/python /usr/local/bin/python3
+          ln -sf $(brew --prefix)/opt/python@3.11/libexec/bin/python /opt/homebrew/bin/python
+          ln -sf $(brew --prefix)/opt/python@3.11/libexec/bin/python /opt/homebrew/bin/python3
       - name: Download and Build Crashpad (include depot_tools)
         if: ${{ steps.depot-cache.outputs.cache-hit != 'true' || steps.crashpad-cache.outputs.cache-hit != 'true' }}
         shell: bash
