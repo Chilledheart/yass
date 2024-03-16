@@ -101,6 +101,18 @@ static constexpr uint32_t kYieldConcurrencyOfConnections = 12u;
     [remote_ips_v6 addObject:@(ip_v6.c_str())];
   }
 
+  NSString* remoteIp = nullptr;
+  if ([remote_ips_v4 count]) {
+    remoteIp = remote_ips_v4[0];
+  } else if ([remote_ips_v6 count]) {
+    remoteIp = remote_ips_v6[0];
+  } else {
+    completionHandler([NSError errorWithDomain:@"it.gui.ios.yass"
+                                          code:200
+                                      userInfo:@{@"Error reason" : @"invalid IP address"}]);
+    return;
+  }
+
   std::string proxy_url = absl::StrFormat("socks5://%s:%d", gurl_base::SysNSStringToUTF8(local_host), local_port);
 
   context_ = Tun2Proxy_Init(self.packetFlow, proxy_url, DEFAULT_MTU, 0, true);
@@ -110,7 +122,7 @@ static constexpr uint32_t kYieldConcurrencyOfConnections = 12u;
                                       userInfo:@{@"Error reason" : @"tun2proxy init failure"}]);
     return;
   }
-  NSLog(@"tun2proxy inited with %s mtu %d dns_proxy %s", proxy_url.c_str(), DEFAULT_MTU, "true");
+  NSLog(@"tun2proxy inited with %s remote ip %@ mtu %d dns_proxy %s", proxy_url.c_str(), remoteIp, DEFAULT_MTU, "true");
   Tun2Proxy_InitContext* context = context_;
   tun2proxy_thread_ = std::make_unique<std::thread>([context] {
     if (!SetCurrentThreadName("tun2proxy")) {
@@ -125,9 +137,10 @@ static constexpr uint32_t kYieldConcurrencyOfConnections = 12u;
   });
 
   NEPacketTunnelNetworkSettings* tunnelNetworkSettings =
-      [[NEPacketTunnelNetworkSettings alloc] initWithTunnelRemoteAddress:remote_ips_v4[0]];
+      [[NEPacketTunnelNetworkSettings alloc] initWithTunnelRemoteAddress:remoteIp];
   tunnelNetworkSettings.MTU = [NSNumber numberWithInteger:DEFAULT_MTU];
 
+  NSLog(@"tunnel: init ip v4 route");
   // Setting IPv4 Route
   tunnelNetworkSettings.IPv4Settings =
       [[NEIPv4Settings alloc] initWithAddresses:[NSArray arrayWithObjects:@(PRIVATE_VLAN4_CLIENT), nil]
@@ -144,9 +157,6 @@ static constexpr uint32_t kYieldConcurrencyOfConnections = 12u;
   tunnelNetworkSettings.IPv4Settings.excludedRoutes = excludeRoutes;
 
   // Save some memory
-#if 0
-  NSLog(@"tunnel: disable ip v6 route");
-#else
   NSLog(@"tunnel: init ip v6 route");
   // Setting IPv6 Route
   tunnelNetworkSettings.IPv6Settings =
@@ -162,7 +172,6 @@ static constexpr uint32_t kYieldConcurrencyOfConnections = 12u;
     [ipv6_excludeRoutes addObject:excludeRoute];
   }
   tunnelNetworkSettings.IPv6Settings.excludedRoutes = ipv6_excludeRoutes;
-#endif
 
   // Setting DNS Settings
   NEDNSSettings* dnsSettings =
