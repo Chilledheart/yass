@@ -88,6 +88,7 @@
   [self.cipherMethod setEnabled:FALSE];
   [self.localHost setEnabled:FALSE];
   [self.localPort setEnabled:FALSE];
+  [self.dohURL setEnabled:FALSE];
   [self.timeout setEnabled:FALSE];
 
   YassWindowController* windowController = (YassWindowController*)self.view.window.windowController;
@@ -119,6 +120,7 @@
   [self.cipherMethod setEnabled:TRUE];
   [self.localHost setEnabled:TRUE];
   [self.localPort setEnabled:TRUE];
+  [self.dohURL setEnabled:TRUE];
   [self.timeout setEnabled:TRUE];
 }
 
@@ -134,6 +136,7 @@
   [self.cipherMethod setEnabled:TRUE];
   [self.localHost setEnabled:TRUE];
   [self.localPort setEnabled:TRUE];
+  [self.dohURL setEnabled:TRUE];
   [self.timeout setEnabled:TRUE];
 }
 
@@ -147,6 +150,7 @@
   self.cipherMethod.stringValue = gurl_base::SysUTF8ToNSString(to_cipher_method_str(cipherMethod));
   self.localHost.stringValue = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_local_host));
   self.localPort.intValue = absl::GetFlag(FLAGS_local_port);
+  self.dohURL.stringValue = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_doh_url));
   self.timeout.intValue = absl::GetFlag(FLAGS_connect_timeout);
 }
 
