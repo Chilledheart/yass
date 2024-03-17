@@ -52,6 +52,8 @@ void Worker::Start(absl::AnyInvocable<void(asio::error_code)>&& callback) {
   asio::post(io_context_, [this]() {
     DCHECK_EQ(private_->cli_server.get(), nullptr);
 
+    // FIXME handle doh_url as well
+#if 0
     // cached dns results
     bool cache_hit = absl::GetFlag(FLAGS_server_host) == cached_server_host_ &&
                      absl::GetFlag(FLAGS_server_sni) == cached_server_sni_ &&
@@ -65,6 +67,7 @@ void Worker::Start(absl::AnyInvocable<void(asio::error_code)>&& callback) {
       on_resolve_done({});
       return;
     }
+#endif
 
     // overwrite cached entry
     cached_server_host_ = absl::GetFlag(FLAGS_server_host);
