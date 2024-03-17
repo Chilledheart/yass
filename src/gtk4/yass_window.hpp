@@ -46,6 +46,7 @@ class YASSWindow {
   std::string GetMethod();
   std::string GetLocalHost();
   std::string GetLocalPort();
+  std::string GetDoHUrl();
   std::string GetTimeout();
   std::string GetStatusMessage();
 

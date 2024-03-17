@@ -22,6 +22,7 @@
 @property(weak) IBOutlet NSComboBox* cipherMethod;
 @property(weak) IBOutlet NSTextField* localHost;
 @property(weak) IBOutlet NSTextField* localPort;
+@property(weak) IBOutlet NSTextField* dohURL;
 @property(weak) IBOutlet NSTextField* timeout;
 @property(weak) IBOutlet NSButton* autoStart;
 @property(weak) IBOutlet NSButton* systemProxy;

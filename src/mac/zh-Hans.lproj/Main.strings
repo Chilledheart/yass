@@ -83,6 +83,9 @@
 /* Class = "NSTextFieldCell"; title = "TCP Keep Alive"; ObjectID = "z0q-m8-6KJ"; */
 "z0q-m8-6KJ.title" = "TCP 保活";
 
+/* Class = "NSTextFieldCell"; title = "DNS over HTTPS URL"; ObjectID = "yxt-ql-TD8"; */
+"yxt-ql-TD8.title" = "基于 HTTPS 的 DNS (DoH) URL";
+
 /* Class = "NSTextFieldCell"; title = "Timeout"; ObjectID = "zY6-tD-aUd"; */
 "zY6-tD-aUd.title" = "超时时间";
 

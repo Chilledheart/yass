@@ -102,6 +102,10 @@ msgid "Local Port"
 msgstr "Local Port"
 
 #: yass_window.cpp:156
+msgid "DNS over HTTPS URL"
+msgstr "DNS over HTTPS URL"
+
+#: yass_window.cpp:156
 msgid "Timeout"
 msgstr "Timeout"
 

@@ -44,7 +44,7 @@ __CRT_UUID_DECL(TrayIcon, 0x4324603D, 0x4274, 0x47AA, 0xBA, 0xD5, 0x7C, 0xF6, 0x
 #define INITIAL_BUTTON_WIDTH 75
 #define INITIAL_BUTTON_HEIGHT 30
 
-#define INITIAL_LABEL_WIDTH 100
+#define INITIAL_LABEL_WIDTH 130
 #define INITIAL_LABEL_HEIGHT 25
 #define INITIAL_EDIT_WIDTH 220
 #define INITIAL_EDIT_HEIGHT 25
@@ -384,6 +384,7 @@ int CYassFrame::Create(const wchar_t* className,
   std::wstring method_name = LoadStringStdW(hInstance, IDS_METHOD_LABEL);
   std::wstring local_host_name = LoadStringStdW(hInstance, IDS_LOCAL_HOST_LABEL);
   std::wstring local_port_name = LoadStringStdW(hInstance, IDS_LOCAL_PORT_LABEL);
+  std::wstring doh_url_name = LoadStringStdW(hInstance, IDS_DOH_URL_LABEL);
   std::wstring timeout_name = LoadStringStdW(hInstance, IDS_TIMEOUT_LABEL);
   std::wstring autostart_name = LoadStringStdW(hInstance, IDS_AUTOSTART_LABEL);
   std::wstring systemproxy_name = LoadStringStdW(hInstance, IDS_SYSTEMPROXY_LABEL);
@@ -396,6 +397,7 @@ int CYassFrame::Create(const wchar_t* className,
   method_label_ = CreateStatic(method_name.c_str(), m_hWnd, 0, hInstance);
   local_host_label_ = CreateStatic(local_host_name.c_str(), m_hWnd, 0, hInstance);
   local_port_label_ = CreateStatic(local_port_name.c_str(), m_hWnd, 0, hInstance);
+  doh_url_label_ = CreateStatic(doh_url_name.c_str(), m_hWnd, 0, hInstance);
   timeout_label_ = CreateStatic(timeout_name.c_str(), m_hWnd, 0, hInstance);
   autostart_label_ = CreateStatic(autostart_name.c_str(), m_hWnd, 0, hInstance);
   systemproxy_label_ = CreateStatic(systemproxy_name.c_str(), m_hWnd, 0, hInstance);
@@ -419,6 +421,7 @@ int CYassFrame::Create(const wchar_t* className,
 
   local_host_edit_ = CreateEdit(0, m_hWnd, IDC_EDIT_LOCAL_HOST, hInstance);
   local_port_edit_ = CreateEdit(ES_NUMBER, m_hWnd, IDC_EDIT_LOCAL_PORT, hInstance);
+  doh_url_edit_ = CreateEdit(0, m_hWnd, IDC_EDIT_DOH_URL, hInstance);
   timeout_edit_ = CreateEdit(ES_NUMBER, m_hWnd, IDC_EDIT_TIMEOUT, hInstance);
 
   std::wstring enable_name = LoadStringStdW(hInstance, IDS_ENABLE_LABEL);
@@ -438,9 +441,10 @@ int CYassFrame::Create(const wchar_t* className,
 
   if (!start_button_ || !stop_button_ || !server_host_label_ || !server_sni_label_ || !server_port_label_ ||
       !username_label_ || !password_label_ || !method_label_ || !local_host_label_ || !local_port_label_ ||
-      !timeout_label_ || !autostart_label_ || !systemproxy_label_ || !server_host_edit_ || !server_sni_edit_ ||
-      !server_port_edit_ || !username_edit_ || !password_edit_ || !method_combo_box_ || !local_host_edit_ ||
-      !local_port_edit_ || !timeout_edit_ || !autostart_button_ || !systemproxy_button_ || !status_bar_)
+      !doh_url_label_ || !timeout_label_ || !autostart_label_ || !systemproxy_label_ || !server_host_edit_ ||
+      !server_sni_edit_ || !server_port_edit_ || !username_edit_ || !password_edit_ || !method_combo_box_ ||
+      !local_host_edit_ || !local_port_edit_ || !doh_url_edit_ || !timeout_edit_ || !autostart_button_ ||
+      !systemproxy_button_ || !status_bar_)
     return FALSE;
 
   ApplyDefaultSystemFont(m_hWnd, 92);
@@ -681,6 +685,10 @@ std::string CYassFrame::GetLocalPort() {
   return GetWindowTextStd(local_port_edit_);
 }
 
+std::string CYassFrame::GetDoHURL() {
+  return GetWindowTextStd(doh_url_edit_);
+}
+
 std::string CYassFrame::GetTimeout() {
   return GetWindowTextStd(timeout_edit_);
 }
@@ -722,6 +730,7 @@ void CYassFrame::OnStarted() {
   EnableWindow(method_combo_box_, FALSE);
   EnableWindow(local_host_edit_, FALSE);
   EnableWindow(local_port_edit_, FALSE);
+  EnableWindow(doh_url_edit_, FALSE);
   EnableWindow(timeout_edit_, FALSE);
 
   EnableWindow(stop_button_, TRUE);
@@ -736,6 +745,7 @@ void CYassFrame::OnStartFailed() {
   EnableWindow(method_combo_box_, TRUE);
   EnableWindow(local_host_edit_, TRUE);
   EnableWindow(local_port_edit_, TRUE);
+  EnableWindow(doh_url_edit_, TRUE);
   EnableWindow(timeout_edit_, TRUE);
 
   EnableWindow(start_button_, TRUE);
@@ -752,6 +762,7 @@ void CYassFrame::OnStopped() {
   EnableWindow(method_combo_box_, TRUE);
   EnableWindow(local_host_edit_, TRUE);
   EnableWindow(local_port_edit_, TRUE);
+  EnableWindow(doh_url_edit_, TRUE);
   EnableWindow(timeout_edit_, TRUE);
 
   EnableWindow(start_button_, TRUE);
@@ -765,6 +776,7 @@ void CYassFrame::LoadConfig() {
   std::string password(absl::GetFlag(FLAGS_password));
   std::string local_host(absl::GetFlag(FLAGS_local_host));
   std::string local_port(std::to_string(absl::GetFlag(FLAGS_local_port)));
+  std::string doh_url(absl::GetFlag(FLAGS_doh_url));
   std::string timeout(std::to_string(absl::GetFlag(FLAGS_connect_timeout)));
 
   SetWindowTextStd(server_host_edit_, server_host);
@@ -783,6 +795,7 @@ void CYassFrame::LoadConfig() {
 
   SetWindowTextStd(local_host_edit_, local_host);
   SetWindowTextStd(local_port_edit_, local_port);
+  SetWindowTextStd(doh_url_edit_, doh_url);
   SetWindowTextStd(timeout_edit_, timeout);
 }
 
@@ -850,15 +863,19 @@ void CYassFrame::UpdateLayoutForDpi(UINT uDpi) {
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 9;
-  SetWindowPos(timeout_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(doh_url_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 10;
+  SetWindowPos(timeout_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+
+  rect.left = client_rect.left + COLUMN_TWO_LEFT;
+  rect.top = client_rect.top + VERTICAL_HEIGHT * 11;
   SetWindowPos(autostart_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT,
                SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_TWO_LEFT;
-  rect.top = client_rect.top + VERTICAL_HEIGHT * 11;
+  rect.top = client_rect.top + VERTICAL_HEIGHT * 12;
   SetWindowPos(systemproxy_label_, nullptr, rect.left, rect.top, LABEL_WIDTH, LABEL_HEIGHT,
                SWP_NOZORDER | SWP_NOACTIVATE);
 
@@ -897,14 +914,18 @@ void CYassFrame::UpdateLayoutForDpi(UINT uDpi) {
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 9;
-  SetWindowPos(timeout_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(doh_url_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 10;
-  SetWindowPos(autostart_button_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+  SetWindowPos(timeout_edit_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
 
   rect.left = client_rect.left + COLUMN_THREE_LEFT;
   rect.top = client_rect.top + VERTICAL_HEIGHT * 11;
+  SetWindowPos(autostart_button_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT, SWP_NOZORDER | SWP_NOACTIVATE);
+
+  rect.left = client_rect.left + COLUMN_THREE_LEFT;
+  rect.top = client_rect.top + VERTICAL_HEIGHT * 12;
   SetWindowPos(systemproxy_button_, nullptr, rect.left, rect.top, EDIT_WIDTH, EDIT_HEIGHT,
                SWP_NOZORDER | SWP_NOACTIVATE);
 
