@@ -40,6 +40,7 @@ class YASSWindow {
   GtkComboBoxText* method_;
   GtkEntry* local_host_;
   GtkEntry* local_port_;
+  GtkEntry* doh_url_;
   GtkEntry* timeout_;
   GtkCheckButton* autostart_;
   GtkCheckButton* systemproxy_;
@@ -59,6 +60,7 @@ class YASSWindow {
   std::string GetMethod();
   std::string GetLocalHost();
   std::string GetLocalPort();
+  std::string GetDoHUrl();
   std::string GetTimeout();
   std::string GetStatusMessage();
 

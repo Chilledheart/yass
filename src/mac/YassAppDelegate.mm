@@ -193,10 +193,11 @@
   auto method_string = gurl_base::SysNSStringToUTF8(viewController.cipherMethod.stringValue);
   auto local_host = gurl_base::SysNSStringToUTF8(viewController.localHost.stringValue);
   auto local_port = gurl_base::SysNSStringToUTF8(viewController.localPort.stringValue);
+  auto doh_url = gurl_base::SysNSStringToUTF8(viewController.dohURL.stringValue);
   auto connect_timeout = gurl_base::SysNSStringToUTF8(viewController.timeout.stringValue);
 
   return config::ReadConfigFromArgument(server_host, server_sni, server_port, username, password, method_string,
-                                        local_host, local_port, "", connect_timeout);
+                                        local_host, local_port, doh_url, connect_timeout);
 }
 
 @end

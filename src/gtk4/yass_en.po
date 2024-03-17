@@ -82,6 +82,10 @@ msgid "Local Port:"
 msgstr "Local Port:"
 
 #: yass_window.ui:101
+msgid "DNS over HTTPS URL:"
+msgstr "DNS over HTTPS URL:"
+
+#: yass_window.ui:101
 msgid "Timeout:"
 msgstr "Timeout:"
 

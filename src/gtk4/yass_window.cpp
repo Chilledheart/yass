@@ -38,6 +38,7 @@ struct _YASSGtkWindow {
   GtkWidget* method;
   GtkWidget* local_host;
   GtkWidget* local_port;
+  GtkWidget* doh_url;
   GtkWidget* timeout;
   GtkWidget* autostart;
   GtkWidget* systemproxy;
@@ -74,6 +75,7 @@ static void yass_window_class_init(YASSGtkWindowClass* cls) {
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, method);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, local_host);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, local_port);
+  gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, doh_url);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, timeout);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, autostart);
   gtk_widget_class_bind_template_child(GTK_WIDGET_CLASS(cls), YASSGtkWindow, systemproxy);
@@ -211,6 +213,10 @@ std::string YASSWindow::GetLocalPort() {
   return gtk_editable_get_text(GTK_EDITABLE(impl_->local_port));
 }
 
+std::string YASSWindow::GetDoHUrl() {
+  return gtk_editable_get_text(GTK_EDITABLE(impl_->doh_url));
+}
+
 std::string YASSWindow::GetTimeout() {
   return gtk_editable_get_text(GTK_EDITABLE(impl_->timeout));
 }
@@ -253,6 +259,7 @@ void YASSWindow::Started() {
   gtk_widget_set_sensitive(impl_->method, false);
   gtk_widget_set_sensitive(impl_->local_host, false);
   gtk_widget_set_sensitive(impl_->local_port, false);
+  gtk_widget_set_sensitive(impl_->doh_url, false);
   gtk_widget_set_sensitive(impl_->timeout, false);
 
   gtk_widget_set_sensitive(impl_->stop_button, true);
@@ -268,6 +275,7 @@ void YASSWindow::StartFailed() {
   gtk_widget_set_sensitive(impl_->method, true);
   gtk_widget_set_sensitive(impl_->local_host, true);
   gtk_widget_set_sensitive(impl_->local_port, true);
+  gtk_widget_set_sensitive(impl_->doh_url, true);
   gtk_widget_set_sensitive(impl_->timeout, true);
 
   gtk_widget_set_sensitive(impl_->start_button, true);
@@ -288,6 +296,7 @@ void YASSWindow::Stopped() {
   gtk_widget_set_sensitive(impl_->method, true);
   gtk_widget_set_sensitive(impl_->local_host, true);
   gtk_widget_set_sensitive(impl_->local_port, true);
+  gtk_widget_set_sensitive(impl_->doh_url, true);
   gtk_widget_set_sensitive(impl_->timeout, true);
 
   gtk_widget_set_sensitive(impl_->start_button, true);
@@ -302,6 +311,7 @@ void YASSWindow::LoadChanges() {
   int32_t cipher_method = absl::GetFlag(FLAGS_method).method;
   auto local_host_str = absl::GetFlag(FLAGS_local_host);
   auto local_port_str = std::to_string(absl::GetFlag(FLAGS_local_port));
+  auto doh_url_str = absl::GetFlag(FLAGS_doh_url);
   auto timeout_str = std::to_string(absl::GetFlag(FLAGS_connect_timeout));
 
   gtk_editable_set_text(GTK_EDITABLE(impl_->server_host), server_host_str.c_str());
@@ -325,6 +335,7 @@ void YASSWindow::LoadChanges() {
 
   gtk_editable_set_text(GTK_EDITABLE(impl_->local_host), local_host_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->local_port), local_port_str.c_str());
+  gtk_editable_set_text(GTK_EDITABLE(impl_->doh_url), doh_url_str.c_str());
   gtk_editable_set_text(GTK_EDITABLE(impl_->timeout), timeout_str.c_str());
 }
 

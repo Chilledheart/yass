@@ -40,6 +40,8 @@ class Worker {
 
   void on_resolve_local(asio::error_code ec, asio::ip::tcp::resolver::results_type results);
 
+  void on_resolve_done(asio::error_code ec);
+
   asio::io_context io_context_;
   /// stopping the io_context from running out of work
   std::unique_ptr<asio::executor_work_guard<asio::io_context::executor_type>> work_guard_;
@@ -51,12 +53,20 @@ class Worker {
   absl::AnyInvocable<void(asio::error_code)> start_callback_;
   absl::AnyInvocable<void()> stop_callback_;
 
+  // cached entry
+  std::string cached_server_host_;
+  std::string cached_server_sni_;
+  uint16_t cached_server_port_;
+  std::string cached_local_host_;
+  uint16_t cached_local_port_;
+
   WorkerPrivate* private_;
   std::string remote_server_ips_;
   std::vector<std::string> remote_server_ips_v4_;
   std::vector<std::string> remote_server_ips_v6_;
   std::string remote_server_sni_;
-  int local_port_;
+  std::string local_server_ips_;
+  uint16_t local_port_;
   std::vector<asio::ip::tcp::endpoint> endpoints_;
   std::atomic_bool in_destroy_ = false;
 };

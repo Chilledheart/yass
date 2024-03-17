@@ -52,20 +52,42 @@ void Worker::Start(absl::AnyInvocable<void(asio::error_code)>&& callback) {
   asio::post(io_context_, [this]() {
     DCHECK_EQ(private_->cli_server.get(), nullptr);
 
+    // FIXME handle doh_url as well
+#if 0
+    // cached dns results
+    bool cache_hit = absl::GetFlag(FLAGS_server_host) == cached_server_host_ &&
+                     absl::GetFlag(FLAGS_server_sni) == cached_server_sni_ &&
+                     absl::GetFlag(FLAGS_server_port) == cached_server_port_ &&
+                     absl::GetFlag(FLAGS_local_host) == cached_local_host_ &&
+                     absl::GetFlag(FLAGS_local_port) == cached_local_port_;
+
+    if (cache_hit && !remote_server_ips_.empty() && !endpoints_.empty()) {
+      DCHECK(!endpoints_.empty());
+      LOG(INFO) << "worker: using cached remote ip: " << remote_server_ips_ << " local ip: " << local_server_ips_;
+      on_resolve_done({});
+      return;
+    }
+#endif
+
+    // overwrite cached entry
+    cached_server_host_ = absl::GetFlag(FLAGS_server_host);
+    cached_server_sni_ = absl::GetFlag(FLAGS_server_sni);
+    cached_server_port_ = absl::GetFlag(FLAGS_server_port);
+    cached_local_host_ = absl::GetFlag(FLAGS_local_host);
+    cached_local_port_ = absl::GetFlag(FLAGS_local_port);
+
     int ret = resolver_.Init();
     if (ret < 0) {
-      LOG(WARNING) << "CAresResolver::Init failed";
-      if (auto callback = std::move(start_callback_)) {
-        callback(asio::error::connection_refused);
-      }
+      LOG(WARNING) << "worker: resolver::Init failed";
+      on_resolve_done(asio::error::connection_refused);
       return;
     }
 
-    std::string host_name = absl::GetFlag(FLAGS_server_host);
-    uint16_t port = absl::GetFlag(FLAGS_server_port);
-    remote_server_sni_ = absl::GetFlag(FLAGS_server_host);
-    if (!absl::GetFlag(FLAGS_server_sni).empty()) {
-      remote_server_sni_ = absl::GetFlag(FLAGS_server_sni);
+    std::string host_name = cached_server_host_;
+    uint16_t port = cached_server_port_;
+    remote_server_sni_ = cached_server_host_;
+    if (!cached_server_sni_.empty()) {
+      remote_server_sni_ = cached_server_sni_;
     }
 
     asio::error_code ec;
@@ -92,7 +114,7 @@ void Worker::Stop(absl::AnyInvocable<void()>&& callback) {
     resolver_.Cancel();
 
     if (private_->cli_server) {
-      LOG(INFO) << "tcp server stops listen";
+      LOG(INFO) << "worker: tcp server stops listen";
       private_->cli_server->stop();
     }
 
@@ -113,11 +135,11 @@ std::vector<std::string> Worker::GetRemoteIpsV6() const {
 }
 
 std::string Worker::GetDomain() const {
-  return absl::StrCat(absl::GetFlag(FLAGS_local_host), ":", std::to_string(absl::GetFlag(FLAGS_local_port)));
+  return absl::StrCat(cached_local_host_, ":", std::to_string(cached_local_port_));
 }
 
 std::string Worker::GetRemoteDomain() const {
-  return absl::StrCat(absl::GetFlag(FLAGS_server_host), ":", std::to_string(absl::GetFlag(FLAGS_server_port)));
+  return absl::StrCat(cached_server_host_, ":", std::to_string(cached_server_port_));
 }
 
 int Worker::GetLocalPort() const {
@@ -126,13 +148,13 @@ int Worker::GetLocalPort() const {
 
 void Worker::WorkFunc() {
   if (!SetCurrentThreadName("background")) {
-    PLOG(WARNING) << "failed to set thread name";
+    PLOG(WARNING) << "worker: failed to set thread name";
   }
   if (!SetCurrentThreadPriority(ThreadPriority::ABOVE_NORMAL)) {
-    PLOG(WARNING) << "failed to set thread priority";
+    PLOG(WARNING) << "worker: failed to set thread priority";
   }
 
-  LOG(INFO) << "background thread started";
+  LOG(INFO) << "worker: background thread started";
   while (!in_destroy_) {
     work_guard_ =
         std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context_.get_executor());
@@ -147,30 +169,23 @@ void Worker::WorkFunc() {
     if (callback) {
       callback();
     }
-    LOG(INFO) << "background thread finished cleanup";
+    LOG(INFO) << "worker: background thread finished cleanup";
   }
-  LOG(INFO) << "background thread stopped";
+  LOG(INFO) << "worker: background thread stopped";
 }
 
 void Worker::on_resolve_remote(asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
   if (ec) {
-    LOG(WARNING) << "remote resolved host:" << absl::GetFlag(FLAGS_server_host) << " failed due to: " << ec;
-    if (auto callback = std::move(start_callback_)) {
-      callback(ec);
-    }
-    work_guard_.reset();
+    LOG(WARNING) << "worker: remote resolved host: " << cached_server_host_ << " failed due to: " << ec;
+    on_resolve_done(ec);
     return;
   }
 
   std::vector<std::string> server_ips;
   for (auto result : results) {
     if (result.endpoint().address().is_unspecified()) {
-      LOG(WARNING) << "Unspecified remote address: " << absl::GetFlag(FLAGS_server_host);
-      ec = asio::error::connection_refused;
-      if (auto callback = std::move(start_callback_)) {
-        callback(ec);
-      }
-      work_guard_.reset();
+      LOG(WARNING) << "worker: unspecified remote address: " << cached_server_host_;
+      on_resolve_done(asio::error::connection_refused);
       return;
     }
     server_ips.push_back(result.endpoint().address().to_string());
@@ -181,10 +196,10 @@ void Worker::on_resolve_remote(asio::error_code ec, asio::ip::tcp::resolver::res
     }
   }
   remote_server_ips_ = absl::StrJoin(server_ips, ";");
-  LOG(INFO) << "resolved server ips: " << remote_server_ips_;
+  LOG(INFO) << "worker: resolved server ips: " << remote_server_ips_;
 
-  std::string host_name = absl::GetFlag(FLAGS_local_host);
-  uint16_t port = absl::GetFlag(FLAGS_local_port);
+  std::string host_name = cached_local_host_;
+  uint16_t port = cached_local_port_;
 
   auto addr = asio::ip::make_address(host_name.c_str(), ec);
   bool host_is_ip_address = !ec;
@@ -202,11 +217,8 @@ void Worker::on_resolve_remote(asio::error_code ec, asio::ip::tcp::resolver::res
 
 void Worker::on_resolve_local(asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
   if (ec) {
-    LOG(WARNING) << "local resolved host:" << absl::GetFlag(FLAGS_local_host) << " failed due to: " << ec;
-    if (auto callback = std::move(start_callback_)) {
-      callback(ec);
-    }
-    work_guard_.reset();
+    LOG(WARNING) << "worker: local resolved host: " << cached_local_host_ << " failed due to: " << ec;
+    on_resolve_done(ec);
     return;
   }
   endpoints_.clear();
@@ -216,10 +228,23 @@ void Worker::on_resolve_local(asio::error_code ec, asio::ip::tcp::resolver::resu
   for (auto result : results) {
     local_ips.push_back(result.endpoint().address().to_string());
   }
-  LOG(INFO) << "resolved local ips: " << absl::StrJoin(local_ips, ";");
+  local_server_ips_ = absl::StrJoin(local_ips, ";");
+  LOG(INFO) << "worker: resolved local ips: " << local_server_ips_;
 
-  private_->cli_server = std::make_unique<CliServer>(io_context_, remote_server_ips_, remote_server_sni_,
-                                                     absl::GetFlag(FLAGS_server_port));
+  on_resolve_done({});
+}
+
+void Worker::on_resolve_done(asio::error_code ec) {
+  if (ec) {
+    if (auto callback = std::move(start_callback_)) {
+      callback(ec);
+    }
+    work_guard_.reset();
+    return;
+  }
+
+  private_->cli_server =
+      std::make_unique<CliServer>(io_context_, remote_server_ips_, remote_server_sni_, cached_server_port_);
 
   local_port_ = 0;
   for (auto& endpoint : endpoints_) {
@@ -229,11 +254,11 @@ void Worker::on_resolve_local(asio::error_code ec, asio::ip::tcp::resolver::resu
     }
     endpoint = private_->cli_server->endpoint();
     local_port_ = endpoint.port();
-    LOG(INFO) << "tcp server listening at " << endpoint;
+    LOG(INFO) << "worker: tcp server listening at " << endpoint;
   }
 
   if (ec) {
-    LOG(WARNING) << "tcp server stops listen due to error: " << ec;
+    LOG(WARNING) << "worker: tcp server stops listen due to error: " << ec;
     private_->cli_server->stop();
     work_guard_.reset();
   }

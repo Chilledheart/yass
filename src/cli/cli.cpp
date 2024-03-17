@@ -15,21 +15,11 @@
 #include <locale.h>
 #include <openssl/crypto.h>
 
-#ifdef _WIN32
-#include <ws2tcpip.h>
-#ifndef AI_NUMERICSERV
-#define AI_NUMERICSERV 0x00000008
-#endif
-#else
-#include <netdb.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#endif
-
 #include "core/logging.hpp"
 #include "crypto/crypter_export.hpp"
 #include "i18n/icu_util.hpp"
 #include "net/asio.hpp"
+#include "net/resolver.hpp"
 #include "version.h"
 
 using namespace cli;
@@ -43,23 +33,25 @@ static asio::ip::tcp::resolver::results_type ResolveAddress(const std::string& d
     auto results = asio::ip::tcp::resolver::results_type::create(endpoint, domain_name, std::to_string(port));
     return results;
   } else {
-    struct addrinfo hints = {}, *addrinfo;
-    hints.ai_flags = AI_CANONNAME | AI_NUMERICSERV;
-    hints.ai_family = Net_ipv6works() ? AF_UNSPEC : AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = 0;
-    int ret = ::getaddrinfo(domain_name.c_str(), std::to_string(port).c_str(), &hints, &addrinfo);
-    auto results = asio::ip::tcp::resolver::results_type::create(addrinfo, domain_name.c_str(), std::to_string(port));
-    ::freeaddrinfo(addrinfo);
-    if (ret) {
-      LOG(WARNING) << "resolved domain name:" << domain_name
-#ifdef _WIN32
-                   << " failed due to: " << gai_strerrorA(ret);
-#else
-                   << " failed due to: " << gai_strerror(ret);
-#endif
+    asio::io_context io_context;
+    auto work_guard =
+        std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(io_context.get_executor());
+    net::Resolver resolver(io_context);
+    if (resolver.Init() < 0) {
+      LOG(WARNING) << "Resolver: Init failure";
       return {};
     }
+    asio::ip::tcp::resolver::results_type results;
+    resolver.AsyncResolve(domain_name, port, [&](asio::error_code ec, asio::ip::tcp::resolver::results_type _results) {
+      work_guard.reset();
+      if (ec) {
+        LOG(WARNING) << "resolved domain name: " << domain_name << " failed due to: " << ec;
+        return;
+      }
+      results = std::move(_results);
+    });
+    io_context.run();
+
     return results;
   }
 }

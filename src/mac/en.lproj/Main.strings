@@ -83,6 +83,9 @@
 /* Class = "NSTextFieldCell"; title = "TCP Keep Alive"; ObjectID = "z0q-m8-6KJ"; */
 "z0q-m8-6KJ.title" = "TCP Keep Alive";
 
+/* Class = "NSTextFieldCell"; title = "DNS over HTTPS URL"; ObjectID = "yxt-ql-TD8"; */
+"yxt-ql-TD8.title" = "DNS over HTTPS URL";
+
 /* Class = "NSTextFieldCell"; title = "Timeout"; ObjectID = "zY6-tD-aUd"; */
 "zY6-tD-aUd.title" = "Timeout";
 

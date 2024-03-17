@@ -66,9 +66,6 @@ class stream : public RefCountedThreadSafe<stream> {
         read_delay_timer_(io_context),
         write_delay_timer_(io_context) {
     CHECK(channel && "channel must defined to use with stream");
-    int ret = resolver_.Init();
-    CHECK_EQ(ret, 0) << "resolver initialize failure";
-    static_cast<void>(ret);
   }
 
   virtual ~stream() { close(); }
@@ -114,6 +111,14 @@ class stream : public RefCountedThreadSafe<stream> {
       VLOG(1) << "resolved ip-like address (post-resolved): " << addr.to_string();
       endpoints_.emplace_back(addr, port_);
       on_try_next_endpoint(channel);
+      return;
+    }
+
+    int ret = resolver_.Init();
+    if (ret < 0) {
+      LOG(WARNING) << "resolver initialize failure";
+      closed_ = true;
+      on_async_connect_callback(asio::error::host_not_found);
       return;
     }
 
