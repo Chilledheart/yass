@@ -95,10 +95,12 @@ public class MainActivity extends Activity {
 
     private native String[] getCipherStrings();
 
+    private native String getDoHUrl();
+
     private native int getTimeout();
 
     private native String saveConfig(String serverHost, String serverSNI, String serverPort,
-                                     String username, String password, int cipher,
+                                     String username, String password, int cipher, String doh_url,
                                      String timeout);
 
     private void loadSettingsFromNative() {
@@ -119,6 +121,9 @@ public class MainActivity extends Activity {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         cipherSpinner.setAdapter(adapter);
         cipherSpinner.setSelection(getCipher());
+
+        EditText dohUrlEditText = findViewById(R.id.dohUrlEditText);
+        dohUrlEditText.setText(String.format(getLocale(), "%s", getDoHUrl()));
 
         EditText timeoutEditText = findViewById(R.id.timeoutEditText);
         timeoutEditText.setText(String.format(getLocale(), "%d", getTimeout()));
@@ -153,6 +158,7 @@ public class MainActivity extends Activity {
         EditText usernameEditText = findViewById(R.id.usernameEditText);
         EditText passwordEditText = findViewById(R.id.passwordEditText);
         Spinner cipherSpinner = findViewById(R.id.cipherSpinner);
+        EditText dohUrlEditText = findViewById(R.id.dohUrlEditText);
         EditText timeoutEditText = findViewById(R.id.timeoutEditText);
 
         return saveConfig(serverHostEditText.getText().toString(),
@@ -161,6 +167,7 @@ public class MainActivity extends Activity {
                           usernameEditText.getText().toString(),
                           passwordEditText.getText().toString(),
                           cipherSpinner.getSelectedItemPosition(),
+                          dohUrlEditText.getText().toString(),
                           timeoutEditText.getText().toString());
     }
 
