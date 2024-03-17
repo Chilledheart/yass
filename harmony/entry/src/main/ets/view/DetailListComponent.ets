@@ -106,6 +106,21 @@ export struct DetailListComponent {
       .width(CommonConstants.ROW_WIDTH_PERCENT)
       .height($r('app.float.list_height'))
       Row() {
+        Text($r('app.string.doh_url'))
+          .fontSize($r('app.float.name_text_size'))
+          .fontColor($r('app.color.text'))
+        Blank()
+        TextInput({text: this.dataItem.dohUrl})
+          .width(CommonConstants.DETAIL_INPUT_WIDTH_PERCENT)
+          .fontSize($r('app.float.app_info_sub_title_size'))
+          .fontColor($r('app.color.text_opacity'))
+          .onChange((value: string) => {
+            this.dataItem.dohUrl = value;
+          })
+      }
+      .width(CommonConstants.ROW_WIDTH_PERCENT)
+      .height($r('app.float.list_height'))
+      Row() {
         Text($r('app.string.timeout'))
           .fontSize($r('app.float.name_text_size'))
           .fontColor($r('app.color.text'))

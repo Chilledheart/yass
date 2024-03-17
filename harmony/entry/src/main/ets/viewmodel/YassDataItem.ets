@@ -11,5 +11,6 @@ export class YassDataItem {
   username: string = '';
   password: string = '';
   cipher: string = '';
+  dohUrl: string = '';
   timeout: number = 0;
 }

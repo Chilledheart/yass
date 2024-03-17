@@ -95,6 +95,10 @@
     {
       "name": "status_stopped",
       "value": "断开连接于服务器 %s:%d"
+    },
+    {
+      "name": "doh_url",
+      "value": "基于 HTTPS 的 DNS (DoH) URL"
     }
   ]
 }

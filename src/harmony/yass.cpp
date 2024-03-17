@@ -767,9 +767,10 @@ static napi_value getTransferRate(napi_env env, napi_callback_info info) {
 // username
 // password
 // method
+// doh_url
 // timeout
 static napi_value saveConfig(napi_env env, napi_callback_info info) {
-  napi_value args[7]{};
+  napi_value args[8]{};
   size_t argc = std::size(args);
   auto status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
   if (status != napi_ok || argc != std::size(args)) {
@@ -807,13 +808,14 @@ static napi_value saveConfig(napi_env env, napi_callback_info info) {
   std::string username = argList[3];
   std::string password = argList[4];
   std::string method = argList[5];
-  std::string timeout = argList[6];
+  std::string doh_url = argList[6];
+  std::string timeout = argList[7];
 
   std::string local_host = "0.0.0.0";
   std::string local_port = "0";
 
   std::string err_msg = config::ReadConfigFromArgument(server_host, server_sni, server_port, username, password, method,
-                                                       local_host, local_port, "", timeout);
+                                                       local_host, local_port, doh_url, timeout);
 
   napi_value result;
   status = napi_create_string_utf8(env, err_msg.c_str(), err_msg.size(), &result);
@@ -925,6 +927,18 @@ static napi_value getCipherStrings(napi_env env, napi_callback_info info) {
   }
 
   return results;
+}
+
+static napi_value getDoHUrl(napi_env env, napi_callback_info info) {
+  napi_value value;
+  std::string str = absl::GetFlag(FLAGS_doh_url);
+  auto status = napi_create_string_utf8(env, str.c_str(), str.size(), &value);
+  if (status != napi_ok) {
+    napi_throw_error(env, nullptr, "napi_create_string_utf8 failed");
+    return nullptr;
+  }
+
+  return value;
 }
 
 static napi_value getTimeout(napi_env env, napi_callback_info info) {
@@ -1039,6 +1053,7 @@ static napi_value Init(napi_env env, napi_value exports) {
       {"getPassword", nullptr, getPassword, nullptr, nullptr, nullptr, napi_default, nullptr},
       {"getCipher", nullptr, getCipher, nullptr, nullptr, nullptr, napi_default, nullptr},
       {"getCipherStrings", nullptr, getCipherStrings, nullptr, nullptr, nullptr, napi_default, nullptr},
+      {"getDoHUrl", nullptr, getDoHUrl, nullptr, nullptr, nullptr, napi_default, nullptr},
       {"getTimeout", nullptr, getTimeout, nullptr, nullptr, nullptr, napi_default, nullptr},
       {"init", nullptr, initRoutine, nullptr, nullptr, nullptr, napi_default, nullptr},
       {"destroy", nullptr, destroyRoutine, nullptr, nullptr, nullptr, napi_default, nullptr},
