@@ -130,7 +130,8 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
   auto method_label_ = gtk_label_new(_("Cipher/Method"));
   auto local_host_label_ = gtk_label_new(_("Local Host"));
   auto local_port_label_ = gtk_label_new(_("Local Port"));
-  auto timeout_label_ = gtk_label_new(_("Timeout"));
+  auto doh_url_label_ = gtk_label_new(_("Timeout"));
+  auto timeout_label_ = gtk_label_new(_("DNS over HTTPS URL"));
   auto autostart_label_ = gtk_label_new(_("Auto Start"));
   auto systemproxy_label_ = gtk_label_new(_("System Proxy"));
 
@@ -142,9 +143,10 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(method_label_), 0, 5, 1, 1);
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_host_label_), 0, 6, 1, 1);
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_port_label_), 0, 7, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_label_), 0, 8, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_label_), 0, 9, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(systemproxy_label_), 0, 10, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(doh_url_label_), 0, 8, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_label_), 0, 9, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_label_), 0, 10, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(systemproxy_label_), 0, 11, 1, 1);
 
   server_host_ = GTK_ENTRY(gtk_entry_new());
   server_sni_ = GTK_ENTRY(gtk_entry_new());
@@ -164,6 +166,7 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
   }
   local_host_ = GTK_ENTRY(gtk_entry_new());
   local_port_ = GTK_ENTRY(gtk_entry_new());
+  doh_url_ = GTK_ENTRY(gtk_entry_new());
   timeout_ = GTK_ENTRY(gtk_entry_new());
 
   autostart_ = GTK_CHECK_BUTTON(gtk_check_button_new());
@@ -192,9 +195,10 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(method_), 1, 5, 1, 1);
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_host_), 1, 6, 1, 1);
   gtk_grid_attach(right_panel_grid, GTK_WIDGET(local_port_), 1, 7, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_), 1, 8, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_), 1, 9, 1, 1);
-  gtk_grid_attach(right_panel_grid, GTK_WIDGET(systemproxy_), 1, 10, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(doh_url_), 1, 8, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(timeout_), 1, 9, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(autostart_), 1, 10, 1, 1);
+  gtk_grid_attach(right_panel_grid, GTK_WIDGET(systemproxy_), 1, 11, 1, 1);
 
 #if GTK_CHECK_VERSION(3, 12, 0)
   gtk_widget_set_margin_start(GTK_WIDGET(right_panel_grid), 10);
@@ -290,6 +294,10 @@ std::string YASSWindow::GetLocalPort() {
   return gtk_entry_get_text(local_port_);
 }
 
+std::string YASSWindow::GetDoHUrl() {
+  return gtk_entry_get_text(doh_url_);
+}
+
 std::string YASSWindow::GetTimeout() {
   return gtk_entry_get_text(timeout_);
 }
@@ -332,6 +340,7 @@ void YASSWindow::Started() {
   gtk_widget_set_sensitive(GTK_WIDGET(method_), false);
   gtk_widget_set_sensitive(GTK_WIDGET(local_host_), false);
   gtk_widget_set_sensitive(GTK_WIDGET(local_port_), false);
+  gtk_widget_set_sensitive(GTK_WIDGET(doh_url_), false);
   gtk_widget_set_sensitive(GTK_WIDGET(timeout_), false);
 
   gtk_widget_set_sensitive(GTK_WIDGET(stop_button_), true);
@@ -347,6 +356,7 @@ void YASSWindow::StartFailed() {
   gtk_widget_set_sensitive(GTK_WIDGET(method_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(local_host_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(local_port_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(doh_url_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(timeout_), true);
 
   gtk_widget_set_sensitive(GTK_WIDGET(start_button_), true);
@@ -368,6 +378,7 @@ void YASSWindow::Stopped() {
   gtk_widget_set_sensitive(GTK_WIDGET(method_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(local_host_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(local_port_), true);
+  gtk_widget_set_sensitive(GTK_WIDGET(doh_url_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(timeout_), true);
 
   gtk_widget_set_sensitive(GTK_WIDGET(start_button_), true);
@@ -382,6 +393,7 @@ void YASSWindow::LoadChanges() {
   int32_t cipher_method = absl::GetFlag(FLAGS_method).method;
   auto local_host_str = absl::GetFlag(FLAGS_local_host);
   auto local_port_str = std::to_string(absl::GetFlag(FLAGS_local_port));
+  auto doh_url_str = absl::GetFlag(FLAGS_doh_url);
   auto timeout_str = std::to_string(absl::GetFlag(FLAGS_connect_timeout));
 
   gtk_entry_set_text(server_host_, server_host_str.c_str());
@@ -405,6 +417,7 @@ void YASSWindow::LoadChanges() {
 
   gtk_entry_set_text(local_host_, local_host_str.c_str());
   gtk_entry_set_text(local_port_, local_port_str.c_str());
+  gtk_entry_set_text(doh_url_, doh_url_str.c_str());
   gtk_entry_set_text(timeout_, timeout_str.c_str());
 }
 

@@ -103,6 +103,10 @@ msgid "Local Port"
 msgstr "本地端口号"
 
 #: yass_window.cpp:156
+msgid "DNS over HTTPS URL"
+msgstr "基于 HTTPS 的 DNS (DoH) URL"
+
+#: yass_window.cpp:156
 msgid "Timeout"
 msgstr "超时时间"
 
