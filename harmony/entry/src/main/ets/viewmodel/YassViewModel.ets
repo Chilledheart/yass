@@ -16,6 +16,7 @@ class YassViewModel {
     yassData.username = yass.getUsername();
     yassData.password = yass.getPassword();
     yassData.cipher = yass.getCipher();
+    yassData.dohUrl = yass.getDoHUrl();
     yassData.timeout = yass.getTimeout();
     return yassData;
   }
