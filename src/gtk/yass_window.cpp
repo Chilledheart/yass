@@ -153,7 +153,7 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
   server_port_ = GTK_ENTRY(gtk_entry_new());
   username_ = GTK_ENTRY(gtk_entry_new());
   password_ = GTK_ENTRY(gtk_entry_new());
-  static const char* const method_names[] = {
+  static constexpr const char* const method_names[] = {
 #define XX(num, name, string) string,
       CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
@@ -390,7 +390,7 @@ void YASSWindow::LoadChanges() {
   auto server_port_str = std::to_string(absl::GetFlag(FLAGS_server_port));
   auto username_str = absl::GetFlag(FLAGS_username);
   auto password_str = absl::GetFlag(FLAGS_password);
-  int32_t cipher_method = absl::GetFlag(FLAGS_method).method;
+  uint32_t cipher_method = absl::GetFlag(FLAGS_method).method;
   auto local_host_str = absl::GetFlag(FLAGS_local_host);
   auto local_port_str = std::to_string(absl::GetFlag(FLAGS_local_port));
   auto doh_url_str = absl::GetFlag(FLAGS_doh_url);
@@ -402,12 +402,12 @@ void YASSWindow::LoadChanges() {
   gtk_entry_set_text(username_, username_str.c_str());
   gtk_entry_set_text(password_, password_str.c_str());
 
-  static const int method_ids[] = {
+  static const uint32_t method_ids[] = {
 #define XX(num, name, string) num,
       CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   };
-  uint32_t i;
+  unsigned int i;
   for (i = 0; i < std::size(method_ids); ++i) {
     if (cipher_method == method_ids[i])
       break;

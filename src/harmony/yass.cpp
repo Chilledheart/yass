@@ -30,8 +30,8 @@ typedef enum {
 
 extern "C" bool OH_LOG_IsLoggable(unsigned int domain, const char* tag, HILOG_LogLevel level);
 
-static constexpr char kLogTag[] = YASS_APP_NAME;
-static constexpr unsigned int kLogDomain = 0x0;
+static constexpr const char kLogTag[] = YASS_APP_NAME;
+static constexpr const unsigned int kLogDomain = 0x0;
 
 static napi_threadsafe_function setProtectFdCallbackFunc = nullptr;
 
@@ -40,7 +40,7 @@ struct AsyncProtectFdEx_t {
   int write_end;
 };
 
-static constexpr char kAsyncResourceName[] = "Thread-safe SetProtectFd";
+static constexpr const char kAsyncResourceName[] = "Thread-safe SetProtectFd";
 
 static void setProtectFdWriteResult(int fd, napi_status status) {
   int result = status;
@@ -396,7 +396,7 @@ static napi_value stopTun2proxy(napi_env env, napi_callback_info info) {
   return nullptr;
 }
 
-static constexpr char kAsyncStartWorkerResourceName[] = "Thread-safe StartWorker";
+static constexpr const char kAsyncStartWorkerResourceName[] = "Thread-safe StartWorker";
 struct AsyncStartCtx {
   asio::error_code ec;
   int port_num;
@@ -561,7 +561,7 @@ static napi_value startWorker(napi_env env, napi_callback_info info) {
   return nullptr;
 }
 
-static constexpr char kAsyncStopWorkerResourceName[] = "Thread-safe StopWorker";
+static constexpr const char kAsyncStopWorkerResourceName[] = "Thread-safe StopWorker";
 
 static void stopWorkerCallingJS(napi_env env, napi_value /*js_cb*/, void* context, void* data) {
   napi_ref cb_ref = reinterpret_cast<napi_ref>(context);
@@ -898,22 +898,22 @@ static napi_value getCipher(napi_env env, napi_callback_info info) {
 }
 
 static napi_value getCipherStrings(napi_env env, napi_callback_info info) {
-  std::vector<const char*> methods = {
-#define XX(num, name, string) CRYPTO_##name##_STR,
+  static constexpr const char* const method_names[] = {
+#define XX(num, name, string) string,
       CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   };
 
   napi_value results;
-  auto status = napi_create_array_with_length(env, methods.size(), &results);
+  auto status = napi_create_array_with_length(env, std::size(method_names), &results);
   if (status != napi_ok) {
     napi_throw_error(env, nullptr, "napi_create_array_with_length failed");
     return nullptr;
   }
 
-  for (size_t i = 0; i < methods.size(); ++i) {
+  for (size_t i = 0; i < std::size(method_names); ++i) {
     napi_value value;
-    auto status = napi_create_string_utf8(env, methods[i], NAPI_AUTO_LENGTH, &value);
+    auto status = napi_create_string_utf8(env, method_names[i], NAPI_AUTO_LENGTH, &value);
     if (status != napi_ok) {
       napi_throw_error(env, nullptr, "napi_create_string_utf8 failed");
       return nullptr;

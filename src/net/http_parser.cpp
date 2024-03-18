@@ -78,13 +78,13 @@ static void SplitHostPort(std::string* out_hostname, std::string* out_port, cons
 #ifdef HAVE_BALSA_HTTP_PARSER
 using quiche::BalsaFrameEnums;
 namespace {
-constexpr std::string_view kColonSlashSlash = "://";
+constexpr const std::string_view kColonSlashSlash = "://";
 // Response must start with "HTTP".
-constexpr char kResponseFirstByte = 'H';
+constexpr const char kResponseFirstByte = 'H';
 
 #if 0
 bool isFirstCharacterOfValidMethod(char c) {
-  static constexpr char kValidFirstCharacters[] = {'A', 'B', 'C', 'D', 'G', 'H', 'L', 'M',
+  static constexpr const char kValidFirstCharacters[] = {'A', 'B', 'C', 'D', 'G', 'H', 'L', 'M',
                                                    'N', 'O', 'P', 'R', 'S', 'T', 'U'};
 
   const auto* begin = &kValidFirstCharacters[0];
@@ -99,7 +99,7 @@ bool isMethodValid(std::string_view method, bool allow_custom_methods) {
   if (allow_custom_methods) {
     // Allowed characters in method according to RFC 9110,
     // https://www.rfc-editor.org/rfc/rfc9110.html#section-5.1.
-    static constexpr char kValidCharacters[] = {
+    static constexpr const char kValidCharacters[] = {
         '!', '#', '$', '%', '&', '\'', '*', '+', '-', '.', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
         'A', 'B', 'C', 'D', 'E', 'F',  'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
         'U', 'V', 'W', 'X', 'Y', 'Z',  '^', '_', '`', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
@@ -112,7 +112,7 @@ bool isMethodValid(std::string_view method, bool allow_custom_methods) {
     });
   }
 
-  static constexpr std::string_view kValidMethods[] = {
+  static constexpr const std::string_view kValidMethods[] = {
       "ACL",    "BIND",      "CHECKOUT",   "CONNECT",    "COPY",   "DELETE", "GET",        "HEAD",   "LINK",
       "LOCK",   "MERGE",     "MKACTIVITY", "MKCALENDAR", "MKCOL",  "MOVE",   "MSEARCH",    "NOTIFY", "OPTIONS",
       "PATCH",  "POST",      "PROPFIND",   "PROPPATCH",  "PURGE",  "PUT",    "REBIND",     "REPORT", "SEARCH",

@@ -15,12 +15,12 @@
 #include "ios/utils.h"
 #include "tun2proxy.h"
 
-static constexpr int DEFAULT_MTU = 1500;
+static constexpr const int DEFAULT_MTU = 1500;
 static const char PRIVATE_VLAN4_CLIENT[] = "172.19.0.1";
 static const char PRIVATE_VLAN4_GATEWAY[] = "172.19.0.2";
 static const char PRIVATE_VLAN6_CLIENT[] = "fdfe:dcba:9876::1";
 static const char PRIVATE_VLAN6_GATEWAY[] = "fdfe:dcba:9876::2";
-static constexpr uint32_t kYieldConcurrencyOfConnections = 12u;
+static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
 
 @implementation YassPacketTunnelProvider {
   std::atomic_bool stopped_;

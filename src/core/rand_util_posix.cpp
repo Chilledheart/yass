@@ -46,7 +46,7 @@ bool ReadFromFD(int fd, char* buffer, size_t bytes) {
 
 namespace {
 
-static constexpr int kOpenFlags = O_RDONLY | O_CLOEXEC;
+static constexpr const int kOpenFlags = O_RDONLY | O_CLOEXEC;
 
 // We keep the file descriptor for /dev/urandom around so we don't need to
 // reopen it (which is expensive), and since we may not even be able to reopen
