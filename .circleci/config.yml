@@ -157,6 +157,9 @@ commands:
     steps:
       - run:
           command: |
+            # TODO remove this once upstream fix is available
+            # msan fix is here https://github.com/llvm/llvm-project/pull/85142
+            sudo sysctl -w vm.mmap_rnd_bits=28
             ./build/yass_test -logtostderr -v 1 --gtest_shuffle --gtest_repeat=5 --gtest_throw_on_failure
             # somehow inside the container DNS hosts file resolves localhost to 127.0.0.1 only not ::1
             # due to the incompleteness
