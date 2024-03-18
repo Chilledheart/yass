@@ -75,6 +75,11 @@ jobs:
             ${{ matrix.sanitizer.cmake_options }} ..
           ninja yass_test
           cd ..
+      - name: Memory layout fix for old clang
+        run: |
+          # TODO remove this once upstream fix is available
+          # msan fix is here https://github.com/llvm/llvm-project/pull/85142
+          sudo sysctl -w vm.mmap_rnd_bits=28
       - name: Run tests
         run: |
           cd build
