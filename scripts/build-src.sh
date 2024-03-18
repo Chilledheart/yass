@@ -23,8 +23,15 @@ SUBVERSION=$SUBTAG
 # FIXME deb cannot pickup subtag correctly
 SUBVERSION=1
 
+rm -f yass-${VERSION}.tar yass-${VERSION}.tar.gz yass-${VERSION}.tar.bz2
+
 /usr/bin/git ls-files --recurse-submodules | \
-  tar caf yass-${VERSION}.tar.gz --xform="s,^,yass-${VERSION}/," -T -
+  tar caf yass-${VERSION}.tar --xform="s,^,yass-${VERSION}/," -T -
+
+gzip -9 --keep yass-${VERSION}.tar
+bzip2 -9 --keep yass-${VERSION}.tar
+
+rm -f yass-${VERSION}.tar
 
 # doesn't work because zip cannot create prefix
 # /usr/bin/git ls-files --recurse-submodules | \
@@ -35,16 +42,16 @@ SUBVERSION=1
 
 echo "md5sum "
 echo "======================================================================"
-md5sum *.tar.gz *.zip
+md5sum *.tar.gz *.tar.bz2 *.zip
 
 echo "sha1sum "
 echo "======================================================================"
-sha1sum *.tar.gz *.zip
+sha1sum *.tar.gz *.tar.bz2 *.zip
 
 echo "sha256sum "
 echo "======================================================================"
-sha256sum *.tar.gz *.zip
+sha256sum *.tar.gz *.tar.bz2 *.zip
 
 echo "sha512sum "
 echo "======================================================================"
-sha512sum *.tar.gz *.zip
+sha512sum *.tar.gz *.tar.bz2 *.zip

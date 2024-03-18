@@ -56,6 +56,7 @@ sscxx
 *.xz
 *.tgz
 *.gz
+*.bz2
 *.rpm
 *.deb
 /tools/build
