@@ -1,3 +1,8 @@
+yass (1.7.5-1) UNRELEASED; urgency=medium
+
+  * net: add doh support
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Mon, 18 Mar 2024 16:31:44 +0800
 yass (1.7.4-1) UNRELEASED; urgency=medium
 
   * net: add doh support
