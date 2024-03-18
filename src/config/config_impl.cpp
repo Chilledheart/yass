@@ -102,12 +102,12 @@ template bool ConfigImpl::Read(const std::string& key, absl::Flag<std::string>* 
 
 template <>
 bool ConfigImpl::Read(const std::string& key, absl::Flag<PortFlag>* value) {
-  alignas(std::string) alignas(8) uint64_t real_value;
+  alignas(std::string) alignas(8) int32_t real_value;
   if (!ReadImpl(key, &real_value)) {
     LOG(WARNING) << "failed to load option " << key;
     return false;
   }
-  if (real_value > UINT16_MAX) {
+  if (real_value < 0 || real_value > UINT16_MAX) {
     LOG(WARNING) << "invalid value for key: " << key << " value: " << real_value;
     return false;
   }
@@ -173,7 +173,7 @@ template bool ConfigImpl::Write(const std::string& key, const absl::Flag<std::st
 
 template <>
 bool ConfigImpl::Write(const std::string& key, const absl::Flag<PortFlag>& value) {
-  uint64_t real_value = absl::GetFlag(value);
+  int32_t real_value = absl::GetFlag(value);
   if (!WriteImpl(key, real_value)) {
     LOG(WARNING) << "failed to saved option " << key << ": " << real_value;
     return false;
