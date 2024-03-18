@@ -172,7 +172,7 @@ commands:
 executors:
   ubuntu:
     machine:
-      image: ubuntu-2204:2023.07.2
+      image: ubuntu-2204:2024.01.1
 
 jobs:
   basic:
