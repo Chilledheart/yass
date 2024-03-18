@@ -35,7 +35,7 @@
 #ifdef _WIN32
 
 #define DEFAULT_AUTOSTART_KEY L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"
-static constexpr size_t kRegReadMaximumSize = 1024 * 1024;
+static constexpr const size_t kRegReadMaximumSize = 1024 * 1024;
 
 #ifdef COMPILER_MSVC
 #include <Tchar.h>
@@ -1037,7 +1037,7 @@ bool GetAllRasConnection(std::vector<std::wstring>* result) {
   DWORD dwRet = ERROR_SUCCESS;
   DWORD dwEntries = 0;
   LPRASENTRYNAMEW lpRasEntryName = nullptr;
-  constexpr int kStaticRasEntryNumber = 30;
+  constexpr const int kStaticRasEntryNumber = 30;
 
   RASENTRYNAMEW rasEntryNames[kStaticRasEntryNumber] = {};
   dwCb = sizeof(RASENTRYNAMEW) * kStaticRasEntryNumber;

@@ -29,16 +29,16 @@ struct IUnknown;
 
 // The most common value returned by ::GetThreadPriority() after background
 // thread mode is enabled on Windows 7.
-constexpr int kWin7BackgroundThreadModePriority = 4;
+constexpr const int kWin7BackgroundThreadModePriority = 4;
 
 #if 0
 // Value sometimes returned by ::GetThreadPriority() after thread priority is
 // set to normal on Windows 7.
-constexpr int kWin7NormalPriority = 3;
+constexpr const int kWin7NormalPriority = 3;
 
 // These values are sometimes returned by ::GetThreadPriority().
-constexpr int kWinNormalPriority1 = 5;
-constexpr int kWinNormalPriority2 = 6;
+constexpr const int kWinNormalPriority1 = 5;
+constexpr const int kWinNormalPriority2 = 6;
 #endif
 
 // The information on how to set the thread name comes from

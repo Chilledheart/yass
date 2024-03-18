@@ -508,7 +508,7 @@ class stream : public RefCountedThreadSafe<stream> {
 
   // post yield
   asio::steady_timer read_yield_timer_;
-  static constexpr uint64_t kReadYieldIntervalUs = 10;
+  static constexpr const uint64_t kReadYieldIntervalUs = 10;
 
   // rate limiter
   const uint64_t limit_rate_;

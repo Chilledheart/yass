@@ -19,7 +19,7 @@ const int kCertVerifyPending = 1;
 const int kDefaultOpenSSLBufferSize = 17 * 1024;
 }  // namespace
 
-static constexpr int kMaximumSSLCache = 1024;
+static constexpr const int kMaximumSSLCache = 1024;
 static absl::flat_hash_map<asio::ip::address, bssl::UniquePtr<SSL_SESSION>> g_ssl_lru_cache;
 
 SSLSocket::SSLSocket(int ssl_socket_data_index,

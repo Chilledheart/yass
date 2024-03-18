@@ -45,10 +45,10 @@ namespace {
 IOBuf g_send_buffer;
 std::mutex g_in_provider_mutex;
 std::unique_ptr<IOBuf> g_recv_buffer;
-constexpr char kConnectResponse[] = "HTTP/1.1 200 Connection established\r\n\r\n";
+constexpr const char kConnectResponse[] = "HTTP/1.1 200 Connection established\r\n\r\n";
 
 // openssl req -newkey rsa:1024 -keyout pkey.pem -x509 -out cert.crt -days 3650 -nodes -subj /C=XX
-constexpr char kCertificate[] =
+constexpr const char kCertificate[] =
     "-----BEGIN CERTIFICATE-----\n"
     "MIIB9jCCAV+gAwIBAgIUM03bTKd+A2WwrfolXJC+L9AsxI8wDQYJKoZIhvcNAQEL\n"
     "BQAwDTELMAkGA1UEBhMCWFgwHhcNMjMwMTI5MjA1MDU5WhcNMzMwMTI2MjA1MDU5\n"
@@ -487,7 +487,7 @@ class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
     EXPECT_EQ(written, request_buf->length());
 
     // Read proxy response
-    constexpr int response_len = sizeof(kConnectResponse) - 1;
+    constexpr const int response_len = sizeof(kConnectResponse) - 1;
     IOBuf response_buf;
     response_buf.reserve(0, response_len);
     size_t read = asio::read(s, asio::mutable_buffer(response_buf.mutable_tail(), response_len), ec);
@@ -706,7 +706,7 @@ TEST_P(EndToEndTest, 1M) {
   SendRequestAndCheckResponse();
 }
 
-static constexpr cipher_method kCiphers[] = {
+static constexpr const cipher_method kCiphers[] = {
 #define XX(num, name, string) CRYPTO_##name,
     CIPHER_METHOD_VALID_MAP(XX)
 #undef XX

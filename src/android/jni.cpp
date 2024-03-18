@@ -44,30 +44,31 @@ JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getPassword(JNIEnv* env,
 }
 
 JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getCipher(JNIEnv* env, jobject obj) {
-  static std::vector<cipher_method> methods_idxes = {
-#define XX(num, name, string) CRYPTO_##name,
+  static constexpr const uint32_t method_ids[] = {
+#define XX(num, name, string) num,
       CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   };
-  int method_idx = [&](cipher_method method) -> int {
-    auto it = std::find(methods_idxes.begin(), methods_idxes.end(), method);
-    if (it == methods_idxes.end()) {
+  int method_idx = [&](uint32_t method) -> int {
+    auto it = std::find(std::begin(method_ids), std::end(method_ids), method);
+    if (it == std::end(method_ids)) {
       return 0;
     }
-    return it - methods_idxes.begin();
+    return it - std::begin(method_ids);
   }(absl::GetFlag(FLAGS_method).method);
   return method_idx;
 }
 
 JNIEXPORT jobjectArray JNICALL Java_it_gui_yass_MainActivity_getCipherStrings(JNIEnv* env, jobject obj) {
-  std::vector<const char*> methods = {
-#define XX(num, name, string) CRYPTO_##name##_STR,
+  static constexpr const char* const method_names[] = {
+#define XX(num, name, string) string,
       CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   };
-  jobjectArray jarray = env->NewObjectArray(methods.size(), env->FindClass("java/lang/String"), env->NewStringUTF(""));
-  for (unsigned int i = 0; i < methods.size(); ++i) {
-    env->SetObjectArrayElement(jarray, i, env->NewStringUTF(methods[i]));
+  jobjectArray jarray =
+      env->NewObjectArray(std::size(method_names), env->FindClass("java/lang/String"), env->NewStringUTF(""));
+  for (unsigned int i = 0; i < std::size(method_names); ++i) {
+    env->SetObjectArrayElement(jarray, i, env->NewStringUTF(method_names[i]));
   }
   return jarray;
 }
