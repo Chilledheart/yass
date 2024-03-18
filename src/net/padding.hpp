@@ -11,9 +11,9 @@ ABSL_DECLARE_FLAG(bool, padding_support);
 
 namespace net {
 
-constexpr int kFirstPaddings = 8;
-constexpr int kPaddingHeaderSize = 3;
-constexpr int kMaxPaddingSize = 255;
+constexpr const int kFirstPaddings = 8;
+constexpr const int kPaddingHeaderSize = 3;
+constexpr const int kMaxPaddingSize = 255;
 
 void AddPadding(std::shared_ptr<IOBuf> buf);
 std::shared_ptr<IOBuf> RemovePadding(std::shared_ptr<IOBuf> buf, asio::error_code& ec);

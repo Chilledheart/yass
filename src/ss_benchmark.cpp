@@ -228,9 +228,9 @@ void GenerateConnectRequest(std::string host, int port_num, IOBuf* buf) {
   buf->prepend(request_header.size());
 }
 
-#define XX(num, name, string)                             \
-  struct CryptoTraits##name {                             \
-    static constexpr cipher_method value = CRYPTO_##name; \
+#define XX(num, name, string)                                   \
+  struct CryptoTraits##name {                                   \
+    static constexpr const cipher_method value = CRYPTO_##name; \
   };
 CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
@@ -324,7 +324,7 @@ class SsEndToEndBM : public benchmark::Fixture {
     VLOG(1) << "Connection (content-consumer) written: " << written << " bytes";
     CHECK(!ec) << "Connection (content-consumer) write failure " << ec;
 
-    constexpr int response_len = sizeof(kConnectResponse) - 1;
+    constexpr const int response_len = sizeof(kConnectResponse) - 1;
     IOBuf response_buf;
     response_buf.reserve(0, response_len);
     size_t read = asio::read(s, asio::mutable_buffer(response_buf.mutable_tail(), response_len), ec);

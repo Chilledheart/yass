@@ -1105,7 +1105,7 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
         priority = ANDROID_LOG_FATAL;
         break;
     }
-    constexpr char kLogTag[] = YASS_APP_NAME;
+    constexpr const char kLogTag[] = YASS_APP_NAME;
 
 #if DCHECK_IS_ON()
     // Split the output by new lines to prevent the Android system from
@@ -1133,8 +1133,8 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
         log_level = HILOG_LOG_FATAL;
         break;
     }
-    constexpr char kLogTag[] = YASS_APP_NAME;
-    constexpr unsigned int kLogDomain = 0x0;
+    constexpr const char kLogTag[] = YASS_APP_NAME;
+    constexpr const unsigned int kLogDomain = 0x0;
 #if DCHECK_IS_ON()
     // Split the output by new lines to prevent the OHOS system from
     // truncating the log.
@@ -2083,14 +2083,14 @@ void LogMessage::Flush() {
   LogDestination::WaitForSinks(data_);
 
 #if BUILDFLAG(IS_ANDROID)
-  constexpr char kLogTag[] = YASS_APP_NAME;
+  constexpr const char kLogTag[] = YASS_APP_NAME;
 
   const int level = AndroidLogLevel(data_->severity_);
   const std::string text = std::string(data_->message_text_);
   __android_log_write(level, kLogTag, text.substr(0, data_->num_chars_to_log_).c_str());
 #elif BUILDFLAG(IS_OHOS)
-  constexpr char kLogTag[] = YASS_APP_NAME;
-  constexpr unsigned int kLogDomain = 0x0;
+  constexpr const char kLogTag[] = YASS_APP_NAME;
+  constexpr const unsigned int kLogDomain = 0x0;
 
   const HILOG_LogLevel level = OHOSLogLevel(data_->severity_);
   const std::string text = std::string(data_->message_text_);

@@ -358,12 +358,12 @@ int CYassFrame::Create(const wchar_t* className,
   EnableWindow(stop_button_, FALSE);
 
   // Right Panel
-  constexpr const wchar_t* method_strings[] = {
+  constexpr const wchar_t* const method_strings[] = {
 #define XX(num, name, string) L##string,
       CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   };
-  constexpr DWORD method_nums[] = {
+  constexpr const DWORD method_nums[] = {
 #define XX(num, name, string) static_cast<DWORD>(num),
       CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
@@ -411,7 +411,7 @@ int CYassFrame::Create(const wchar_t* className,
 
   method_combo_box_ = CreateComboBox(CBS_DROPDOWNLIST, m_hWnd, IDC_COMBOBOX_METHOD, hInstance);
 
-  constexpr int method_count = std::size(method_strings);
+  constexpr const int method_count = std::size(method_strings);
   for (int i = 0; i < method_count; ++i) {
     ComboBox_AddString(method_combo_box_, method_strings[i]);
     ComboBox_SetItemData(method_combo_box_, i, method_nums[i]);

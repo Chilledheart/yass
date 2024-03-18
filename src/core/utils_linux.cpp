@@ -23,8 +23,8 @@
 using std::filesystem::path;
 using namespace yass;
 
-static constexpr struct sched_param kRealTimeAudioPrio = {8};
-static constexpr struct sched_param kRealTimeDisplayPrio = {6};
+static constexpr const struct sched_param kRealTimeAudioPrio = {8};
+static constexpr const struct sched_param kRealTimeDisplayPrio = {6};
 
 namespace {
 

@@ -29,9 +29,9 @@
 
 using namespace yass;
 
-static constexpr char kDefaultAutoStartName[] = "it.gui.yass";
+static constexpr const char kDefaultAutoStartName[] = "it.gui.yass";
 
-static constexpr std::string_view kAutoStartFileContent =
+static constexpr const std::string_view kAutoStartFileContent =
     "[Desktop Entry]\n"
     "Version=1.0\n"
     "Type=Application\n"
