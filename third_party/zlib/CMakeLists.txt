@@ -68,6 +68,11 @@ if ((OS_ARM AND ANDROID) OR OS_AARCH64)
   set(ZLIB_USE_ARM_NEON TRUE)
 endif()
 
+if (OS_RISCV64)
+  message(STATUS "zlib: use riscv64 rvv optimization")
+  set(ZLIB_USE_RISCV64_OPTIMIZATIONS TRUE)
+endif()
+
 if (ZLIB_USE_X86_X64_OPTIMIZATIONS)
   # zlib_adler32_simd
   target_compile_definitions(zlib PUBLIC "ADLER32_SIMD_SSSE3")
@@ -151,7 +156,13 @@ elseif(ZLIB_USE_ARM_NEON)
     crc32_simd.c
     crc32_simd.h
   )
+elseif (ZLIB_USE_RISCV64_OPTIMIZATIONS)
+  target_compile_definitions(zlib PUBLIC "RISCV_RVV")
+  target_compile_definitions(zlib PUBLIC "DEFLATE_SLIDE_HASH_RVV")
+  target_compile_definitions(zlib PUBLIC "ADLER32_SIMD_RVV")
+  target_compile_options(zlib PRIVATE "-march=rv64gcv")
+  target_sources(zlib PRIVATE inflate.c)
 else()
-  target_compile_definitions(zlib PUBLIC "-DCPU_NO_SIMD")
+  target_compile_definitions(zlib PUBLIC "CPU_NO_SIMD")
   target_sources(zlib PRIVATE inflate.c)
 endif()
