@@ -235,6 +235,8 @@ void Worker::on_resolve_local(asio::error_code ec, asio::ip::tcp::resolver::resu
 }
 
 void Worker::on_resolve_done(asio::error_code ec) {
+  resolver_.Reset();
+
   if (ec) {
     if (auto callback = std::move(start_callback_)) {
       callback(ec);
