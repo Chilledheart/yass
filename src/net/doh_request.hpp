@@ -38,7 +38,7 @@ class DoHRequest : public RefCountedThreadSafe<DoHRequest> {
   static scoped_refptr<DoHRequest> Create(Args&&... args) {
     return MakeRefCounted<DoHRequest>(std::forward<Args>(args)...);
   }
-  ~DoHRequest() { close(); }
+  ~DoHRequest();
 
   void close();
 

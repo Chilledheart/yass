@@ -48,6 +48,7 @@ class HttpRequestParser : public quiche::BalsaVisitorInterface {
   uint16_t port() const { return http_port_; }
   bool is_connect() const { return http_is_connect_; }
   uint64_t content_length() const { return content_length_; }
+  const std::string& content_type() const { return content_type_; }
 
   void ReforgeHttpRequest(std::string* header,
                           const absl::flat_hash_map<std::string, std::string>* additional_headers = nullptr);
@@ -99,6 +100,8 @@ class HttpRequestParser : public quiche::BalsaVisitorInterface {
   bool http_is_connect_ = false;
   /// copy of content length
   uint64_t content_length_ = 0;
+  /// copy of content type
+  std::string content_type_;
 
   bool first_byte_processed_ = false;
   bool headers_done_ = false;
@@ -129,6 +132,7 @@ class HttpRequestParser {
   uint16_t port() const { return http_port_; }
   bool is_connect() const { return http_is_connect_; }
   uint64_t content_length() const { return content_length_; }
+  const std::string& content_type() const { return content_type_; }
 
   int status_code() const;
 
@@ -160,6 +164,8 @@ class HttpRequestParser {
   bool http_is_connect_ = false;
   /// copy of content length
   uint64_t content_length_ = 0;
+  /// copy of content type
+  std::string content_type_;
 };
 
 class HttpResponseParser : public HttpRequestParser {
