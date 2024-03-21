@@ -722,21 +722,14 @@ std::wstring CYassFrame::GetStatusMessage() {
 }
 
 void CYassFrame::OnStarted() {
-  EnableWindow(server_host_edit_, FALSE);
-  EnableWindow(server_sni_edit_, FALSE);
-  EnableWindow(server_port_edit_, FALSE);
-  EnableWindow(username_edit_, FALSE);
-  EnableWindow(password_edit_, FALSE);
-  EnableWindow(method_combo_box_, FALSE);
-  EnableWindow(local_host_edit_, FALSE);
-  EnableWindow(local_port_edit_, FALSE);
-  EnableWindow(doh_url_edit_, FALSE);
-  EnableWindow(timeout_edit_, FALSE);
-
+  EnableWindow(start_button_, FALSE);
   EnableWindow(stop_button_, TRUE);
 }
 
 void CYassFrame::OnStartFailed() {
+  EnableWindow(start_button_, TRUE);
+  EnableWindow(stop_button_, FALSE);
+
   EnableWindow(server_host_edit_, TRUE);
   EnableWindow(server_sni_edit_, TRUE);
   EnableWindow(server_port_edit_, TRUE);
@@ -748,12 +741,14 @@ void CYassFrame::OnStartFailed() {
   EnableWindow(doh_url_edit_, TRUE);
   EnableWindow(timeout_edit_, TRUE);
 
-  EnableWindow(start_button_, TRUE);
   std::wstring start_failed_name = LoadStringStdW(m_hInstance, IDS_START_FAILED_MESSAGE);
   MessageBoxW(m_hWnd, mApp->GetStatus().c_str(), start_failed_name.c_str(), MB_ICONEXCLAMATION | MB_OK);
 }
 
 void CYassFrame::OnStopped() {
+  EnableWindow(start_button_, TRUE);
+  EnableWindow(stop_button_, FALSE);
+
   EnableWindow(server_host_edit_, TRUE);
   EnableWindow(server_sni_edit_, TRUE);
   EnableWindow(server_port_edit_, TRUE);
@@ -764,8 +759,6 @@ void CYassFrame::OnStopped() {
   EnableWindow(local_port_edit_, TRUE);
   EnableWindow(doh_url_edit_, TRUE);
   EnableWindow(timeout_edit_, TRUE);
-
-  EnableWindow(start_button_, TRUE);
 }
 
 void CYassFrame::LoadConfig() {
@@ -999,6 +992,18 @@ LRESULT CYassFrame::OnDPIChanged(WPARAM w, LPARAM l) {
 
 void CYassFrame::OnStartButtonClicked() {
   EnableWindow(start_button_, FALSE);
+  EnableWindow(stop_button_, FALSE);
+
+  EnableWindow(server_host_edit_, FALSE);
+  EnableWindow(server_sni_edit_, FALSE);
+  EnableWindow(server_port_edit_, FALSE);
+  EnableWindow(username_edit_, FALSE);
+  EnableWindow(password_edit_, FALSE);
+  EnableWindow(method_combo_box_, FALSE);
+  EnableWindow(local_host_edit_, FALSE);
+  EnableWindow(local_port_edit_, FALSE);
+  EnableWindow(doh_url_edit_, FALSE);
+  EnableWindow(timeout_edit_, FALSE);
 
   last_sync_time_ = GetMonotonicTime();
   last_rx_bytes_ = 0U;
@@ -1009,7 +1014,9 @@ void CYassFrame::OnStartButtonClicked() {
 }
 
 void CYassFrame::OnStopButtonClicked() {
+  EnableWindow(start_button_, FALSE);
   EnableWindow(stop_button_, FALSE);
+
   mApp->OnStop();
 }
 
