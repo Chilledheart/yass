@@ -147,18 +147,18 @@ void DoHResolver::AsyncResolve(const std::string& host, int port, AsyncResolveCa
     OnDoneRequest(asio::error::timed_out);
   });
 
+  // use cached dns resolve results
+  if (!endpoints_.empty()) {
+    DoRequest(Net_ipv6works(), endpoints_.front());
+    return;
+  }
+
   asio::error_code ec;
   auto addr = asio::ip::make_address(doh_host_.c_str(), ec);
   bool host_is_ip_address = !ec;
   if (host_is_ip_address) {
     VLOG(1) << "DoH Resolve resolved ip-like address (post-resolved): " << addr.to_string();
     endpoints_.emplace_back(addr, doh_port_);
-    DoRequest(Net_ipv6works(), endpoints_.front());
-    return;
-  }
-
-  // use cached dns resolve results
-  if (!endpoints_.empty()) {
     DoRequest(Net_ipv6works(), endpoints_.front());
     return;
   }
