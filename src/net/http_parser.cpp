@@ -5,6 +5,8 @@
 #include "core/utils.hpp"
 #include "url/gurl.h"
 
+#include <absl/strings/str_cat.h>
+
 #ifndef HAVE_BALSA_HTTP_PARSER
 #include <http_parser.h>
 #endif
@@ -281,6 +283,9 @@ void HttpRequestParser::ProcessHeaders(const quiche::BalsaHeaders& headers) {
       }
       content_length_ = lengthnum;
     }
+    if (key == "Content-Type") {
+      content_type_ = std::string(value);
+    }
   }
 }
 
@@ -539,10 +544,12 @@ int HttpRequestParser::OnReadHttpRequestHeaderValue(http_parser* parser, const c
     const unsigned long lengthnum = strtoul(length.c_str(), &end, 10);
     if (*end != '\0' || (errno == ERANGE && lengthnum == ULONG_MAX)) {
       VLOG(1) << "parser failed: bad http field: content-length: " << length;
-      status_ = ParserStatus::Error;
-      break;
+      return -1;
     }
-    content_length_ = lengthnum;
+    self->content_length_ = lengthnum;
+  }
+  if (self->http_field_ == "Content-Type") {
+    self->content_type_ = std::string(buf, len);
   }
   return 0;
 }

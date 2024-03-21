@@ -112,6 +112,12 @@ void addrinfo_freedup(struct addrinfo* addrinfo) {
 
 using namespace dns_message;
 
+DoHRequest::~DoHRequest() {
+  VLOG(1) << "DoH Request freed memory";
+
+  close();
+}
+
 void DoHRequest::close() {
   if (closed_) {
     return;
@@ -261,21 +267,36 @@ void DoHRequest::OnReadResult() {
     VLOG(3) << "Connection (doh resolver) "
             << " http: " << std::string(reinterpret_cast<const char*>(recv_buf_->data()), nparsed);
   }
-
-  if (ok && parser.status_code() == 200) {
-    VLOG(3) << "DoH Response Parsed: Expected body: " << parser.content_length();
-    recv_buf_->trimStart(nparsed);
-    recv_buf_->retreat(nparsed);
-
-    if (recv_buf_->length() < parser.content_length()) {
-      OnDoneRequest(asio::error::connection_refused, {});
-      return;
-    }
-    OnParseDnsResponse();
-  } else {
-    OnDoneRequest(asio::error::connection_refused, {});
+  if (!ok) {
+    LOG(WARNING) << "DoH Response Invalid HTTP Response";
+    OnDoneRequest(asio::error::connection_refused, nullptr);
     return;
   }
+
+  VLOG(3) << "DoH Response Parsed: " << nparsed << " bytes.";
+  recv_buf_->trimStart(nparsed);
+  recv_buf_->retreat(nparsed);
+
+  if (parser.status_code() != 200) {
+    LOG(WARNING) << "DoH Response Unexpected HTTP Response Status Code: " << parser.status_code();
+    OnDoneRequest(asio::error::connection_refused, nullptr);
+    return;
+  }
+
+  if (recv_buf_->length() < parser.content_length()) {
+    LOG(WARNING) << "DoH Response Expected Length: " << parser.content_length()
+                 << " but received: " << recv_buf_->length();
+    OnDoneRequest(asio::error::connection_refused, nullptr);
+    return;
+  }
+
+  if (parser.content_type() != "application/dns-message") {
+    LOG(WARNING) << "DoH Response Expected Type: application/dns-message but received: " << parser.content_type();
+    OnDoneRequest(asio::error::connection_refused, nullptr);
+    return;
+  }
+
+  OnParseDnsResponse();
 }
 
 void DoHRequest::OnParseDnsResponse() {
