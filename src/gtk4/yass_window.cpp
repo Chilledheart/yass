@@ -156,7 +156,19 @@ void YASSWindow::present() {
 }
 
 void YASSWindow::OnStartButtonClicked() {
-  gtk_widget_set_sensitive(GTK_WIDGET(impl_->start_button), false);
+  gtk_widget_set_sensitive(impl_->start_button, false);
+  gtk_widget_set_sensitive(impl_->stop_button, false);
+
+  gtk_widget_set_sensitive(impl_->server_host, false);
+  gtk_widget_set_sensitive(impl_->server_sni, false);
+  gtk_widget_set_sensitive(impl_->server_port, false);
+  gtk_widget_set_sensitive(impl_->username, false);
+  gtk_widget_set_sensitive(impl_->password, false);
+  gtk_widget_set_sensitive(impl_->method, false);
+  gtk_widget_set_sensitive(impl_->local_host, false);
+  gtk_widget_set_sensitive(impl_->local_port, false);
+  gtk_widget_set_sensitive(impl_->doh_url, false);
+  gtk_widget_set_sensitive(impl_->timeout, false);
 
   last_sync_time_ = GetMonotonicTime();
   last_rx_bytes_ = 0U;
@@ -167,7 +179,9 @@ void YASSWindow::OnStartButtonClicked() {
 }
 
 void YASSWindow::OnStopButtonClicked() {
-  gtk_widget_set_sensitive(GTK_WIDGET(impl_->stop_button), false);
+  gtk_widget_set_sensitive(impl_->start_button, false);
+  gtk_widget_set_sensitive(impl_->stop_button, false);
+
   mApp->OnStop();
 }
 
@@ -251,22 +265,17 @@ std::string YASSWindow::GetStatusMessage() {
 
 void YASSWindow::Started() {
   UpdateStatusBar();
-  gtk_widget_set_sensitive(impl_->server_host, false);
-  gtk_widget_set_sensitive(impl_->server_sni, false);
-  gtk_widget_set_sensitive(impl_->server_port, false);
-  gtk_widget_set_sensitive(impl_->username, false);
-  gtk_widget_set_sensitive(impl_->password, false);
-  gtk_widget_set_sensitive(impl_->method, false);
-  gtk_widget_set_sensitive(impl_->local_host, false);
-  gtk_widget_set_sensitive(impl_->local_port, false);
-  gtk_widget_set_sensitive(impl_->doh_url, false);
-  gtk_widget_set_sensitive(impl_->timeout, false);
 
+  gtk_widget_set_sensitive(impl_->start_button, false);
   gtk_widget_set_sensitive(impl_->stop_button, true);
 }
 
 void YASSWindow::StartFailed() {
   UpdateStatusBar();
+
+  gtk_widget_set_sensitive(impl_->start_button, true);
+  gtk_widget_set_sensitive(impl_->stop_button, false);
+
   gtk_widget_set_sensitive(impl_->server_host, true);
   gtk_widget_set_sensitive(impl_->server_sni, true);
   gtk_widget_set_sensitive(impl_->server_port, true);
@@ -277,8 +286,6 @@ void YASSWindow::StartFailed() {
   gtk_widget_set_sensitive(impl_->local_port, true);
   gtk_widget_set_sensitive(impl_->doh_url, true);
   gtk_widget_set_sensitive(impl_->timeout, true);
-
-  gtk_widget_set_sensitive(impl_->start_button, true);
 
   GtkDialog* dialog = GTK_DIALOG(gtk_message_dialog_new(GTK_WINDOW(impl_), GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING,
                                                         GTK_BUTTONS_CLOSE, "%s", mApp->GetStatus().c_str()));
@@ -288,6 +295,10 @@ void YASSWindow::StartFailed() {
 
 void YASSWindow::Stopped() {
   UpdateStatusBar();
+
+  gtk_widget_set_sensitive(impl_->start_button, true);
+  gtk_widget_set_sensitive(impl_->stop_button, false);
+
   gtk_widget_set_sensitive(impl_->server_host, true);
   gtk_widget_set_sensitive(impl_->server_sni, true);
   gtk_widget_set_sensitive(impl_->server_port, true);
@@ -298,8 +309,6 @@ void YASSWindow::Stopped() {
   gtk_widget_set_sensitive(impl_->local_port, true);
   gtk_widget_set_sensitive(impl_->doh_url, true);
   gtk_widget_set_sensitive(impl_->timeout, true);
-
-  gtk_widget_set_sensitive(impl_->start_button, true);
 }
 
 void YASSWindow::LoadChanges() {
