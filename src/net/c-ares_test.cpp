@@ -10,6 +10,7 @@
 
 #include <gmock/gmock.h>
 
+#include "config/config.hpp"
 #include "net/c-ares.hpp"
 #include "test_util.hpp"
 
@@ -34,10 +35,15 @@ TEST(CARES_TEST, LocalfileBasic) {
     resolver->AsyncResolve("localhost", "80", [&](asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
       work_guard.reset();
       ASSERT_FALSE(ec) << ec;
+      bool has_ipv6 = false;
       for (auto iter = std::begin(results); iter != std::end(results); ++iter) {
         asio::ip::tcp::endpoint endpoint = *iter;
         auto addr = endpoint.address();
         EXPECT_TRUE(addr.is_loopback()) << addr;
+        has_ipv6 |= addr.is_v6();
+      }
+      if (absl::GetFlag(FLAGS_ipv6_mode)) {
+        EXPECT_TRUE(has_ipv6) << "Expected IPv6 addresses on IPv6 mode";
       }
     });
   });
