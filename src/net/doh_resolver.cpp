@@ -186,9 +186,11 @@ void DoHResolver::AsyncResolve(const std::string& host, int port, AsyncResolveCa
 
 void DoHResolver::DoRequest(bool enable_ipv6, const asio::ip::tcp::endpoint& endpoint) {
   scoped_refptr<DoHResolver> self(this);
+  VLOG(2) << "DoH Query Request IPv4: " << host_;
   auto req = DoHRequest::Create(ssl_socket_data_index_, io_context_, endpoint, doh_host_, doh_port_, doh_path_,
                                 ssl_ctx_.get());
   req->DoRequest(DNS_TYPE_A, host_, port_, [this, self](const asio::error_code& ec, struct addrinfo* addrinfo) {
+    VLOG(2) << "DoH Query Request IPv4: " << host_ << " Done: " << ec;
     /* ipv4 address comes first */
     if (addrinfo) {
       struct addrinfo* next_addrinfo = addrinfo_;
@@ -203,9 +205,11 @@ void DoHResolver::DoRequest(bool enable_ipv6, const asio::ip::tcp::endpoint& end
   });
   reqs_.push_back(req);
   if (enable_ipv6) {
+    VLOG(2) << "DoH Query Request IPv6: " << host_;
     auto req = DoHRequest::Create(ssl_socket_data_index_, io_context_, endpoint, doh_host_, doh_port_, doh_path_,
                                   ssl_ctx_.get());
     req->DoRequest(DNS_TYPE_AAAA, host_, port_, [this, self](const asio::error_code& ec, struct addrinfo* addrinfo) {
+      VLOG(2) << "DoH Query Request IPv6: " << host_ << " Done: " << ec;
       /* ipv6 address comes later */
       if (addrinfo_) {
         struct addrinfo* prev_addrinfo = addrinfo_;
@@ -239,6 +243,7 @@ void DoHResolver::OnDoneRequest(asio::error_code ec) {
     return;
   }
   done_ = true;
+  resolve_timer_.cancel();
 
   auto* addrinfo = addrinfo_;
   addrinfo_ = nullptr;
@@ -249,14 +254,16 @@ void DoHResolver::OnDoneRequest(asio::error_code ec) {
     ec = asio::error::host_not_found;
   }
 
+  std::ostringstream ss;
   for (auto iter = std::begin(results); iter != std::end(results); ++iter) {
-    VLOG(1) << "DoH Resolve result: " << iter->endpoint();
+    const asio::ip::tcp::endpoint& endpoint = *iter;
+    ss << endpoint << " ";
   }
+  VLOG(1) << "DoH: Resolved " << host_ << ":" << port_ << " to: [ " << ss.str() << " ]";
 
   if (auto cb = std::move(cb_)) {
     cb(ec, results);
   }
-  resolve_timer_.cancel();
 }
 
 }  // namespace net
