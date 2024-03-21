@@ -130,8 +130,8 @@ YASSWindow::YASSWindow() : impl_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))
   auto method_label_ = gtk_label_new(_("Cipher/Method"));
   auto local_host_label_ = gtk_label_new(_("Local Host"));
   auto local_port_label_ = gtk_label_new(_("Local Port"));
-  auto doh_url_label_ = gtk_label_new(_("Timeout"));
-  auto timeout_label_ = gtk_label_new(_("DNS over HTTPS URL"));
+  auto doh_url_label_ = gtk_label_new(_("DNS over HTTPS URL"));
+  auto timeout_label_ = gtk_label_new(_("Timeout"));
   auto autostart_label_ = gtk_label_new(_("Auto Start"));
   auto systemproxy_label_ = gtk_label_new(_("System Proxy"));
 
