@@ -229,7 +229,7 @@ jobs:
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y ca-certificates git
       - name: Populate sysroot (golang, new distro)
-        if: ${{ env.HOST_DISTRO == 'focal' || env.HOST_DISTRO == 'jammy' || env.HOST_DISTRO == 'bookworm' || env.HOST_DISTRO == 'sid' }}
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && (env.HOST_DISTRO == 'focal' || env.HOST_DISTRO == 'jammy' || env.HOST_DISTRO == 'bookworm' || env.HOST_DISTRO == 'sid') }}
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y golang
@@ -251,7 +251,7 @@ jobs:
             apt-get install -y -f
           rm -f *.deb
       - name: Populate depedencie (cmake, new distro)
-        if: ${{ env.HOST_DISTRO == 'focal' || env.HOST_DISTRO == 'jammy' || env.HOST_DISTRO == 'bookworm' || env.HOST_DISTRO == 'sid' }}
+        if: ${{ steps.schroot-cache.outputs.cache-hit != 'true' && (env.HOST_DISTRO == 'focal' || env.HOST_DISTRO == 'jammy' || env.HOST_DISTRO == 'bookworm' || env.HOST_DISTRO == 'sid') }}
         run: |
           sudo schroot --chroot "source:${{ env.HOST_DISTRO }}-${{ env.BUILD_ARCH }}-${{ env.HOST_ARCH }}" --user root -- \
             apt-get install -y cmake
