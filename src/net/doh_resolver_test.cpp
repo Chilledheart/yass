@@ -27,20 +27,21 @@ static void DoLocalResolve(asio::io_context& io_context, scoped_refptr<DoHResolv
   io_context.restart();
 
   asio::post(io_context, [&]() {
-    resolver->AsyncResolve("doh-test.localhost", 80, [&](asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
-      work_guard.reset();
-      ASSERT_FALSE(ec) << ec;
-      bool has_ipv6 = false;
-      for (auto iter = std::begin(results); iter != std::end(results); ++iter) {
-        const asio::ip::tcp::endpoint& endpoint = *iter;
-        auto addr = endpoint.address();
-        EXPECT_TRUE(addr.is_loopback()) << addr;
-        has_ipv6 |= addr.is_v6();
-      }
-      if (absl::GetFlag(FLAGS_ipv6_mode)) {
-        EXPECT_TRUE(has_ipv6) << "Expected IPv6 addresses on IPv6 mode";
-      }
-    });
+    resolver->AsyncResolve("doh-test.localhost", 80,
+                           [&](asio::error_code ec, asio::ip::tcp::resolver::results_type results) {
+                             work_guard.reset();
+                             ASSERT_FALSE(ec) << ec;
+                             bool has_ipv6 = false;
+                             for (auto iter = std::begin(results); iter != std::end(results); ++iter) {
+                               const asio::ip::tcp::endpoint& endpoint = *iter;
+                               auto addr = endpoint.address();
+                               EXPECT_TRUE(addr.is_loopback()) << addr;
+                               has_ipv6 |= addr.is_v6();
+                             }
+                             if (absl::GetFlag(FLAGS_ipv6_mode)) {
+                               EXPECT_TRUE(has_ipv6) << "Expected IPv6 addresses on IPv6 mode";
+                             }
+                           });
   });
 
   EXPECT_NO_FATAL_FAILURE(io_context.run());
