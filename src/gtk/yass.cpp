@@ -206,8 +206,12 @@ std::string YASSApp::GetStatus() const {
   std::ostringstream ss;
   if (state_ == STARTED) {
     ss << _("Connected with conns: ") << worker_.currentConnections();
+  } else if (state_ == STARTING) {
+    ss << _("Connecting");
   } else if (state_ == START_FAILED) {
     ss << _("Failed to connect due to ") << error_msg_.c_str();
+  } else if (state_ == STOPPING) {
+    ss << _("Disconnecting");
   } else {
     ss << _("Disconnected with ") << worker_.GetRemoteDomain();
   }

@@ -95,9 +95,13 @@
   if (state_ == STARTED) {
     NSString* prefixMessage = NSLocalizedString(@"CONNECTED", @"Connected");
     ss << gurl_base::SysNSStringToUTF8(prefixMessage) << ":";
+  } else if (state_ == STARTING) {
+    ss << gurl_base::SysNSStringToUTF8(NSLocalizedString(@"CONNECTING", @"Connecting"));
   } else if (state_ == START_FAILED) {
     NSString* prefixMessage = NSLocalizedString(@"FAILED_TO_CONNECT_DUE_TO", @"Failed to connect due to ");
     ss << gurl_base::SysNSStringToUTF8(prefixMessage) << error_msg_.c_str();
+  } else if (state_ == STOPPING) {
+    ss << gurl_base::SysNSStringToUTF8(NSLocalizedString(@"DISCONNECTING", @"Disconnecting"));
   } else {
     NSString* prefixMessage = NSLocalizedString(@"DISCONNECTED_WITH", @"Disconnected with ");
     ss << gurl_base::SysNSStringToUTF8(prefixMessage) << worker_.GetRemoteDomain();
