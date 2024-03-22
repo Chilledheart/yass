@@ -118,12 +118,20 @@ msgid "_Quit"
 msgstr "Quit"
 
 #: yass.cpp:253
+msgid "Connecting"
+msgstr "Connecting"
+
+#: yass.cpp:253
 msgid "Connected with conns: "
 msgstr "Connected with conns: "
 
 #: yass.cpp:255
 msgid "Failed to connect due to "
 msgstr "Failed to connect due to "
+
+#: yass.cpp:253
+msgid "Disconnecting"
+msgstr "Disconnecting"
 
 #: yass.cpp:257
 msgid "Disconnected with "

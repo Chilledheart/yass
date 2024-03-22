@@ -146,6 +146,10 @@ msgstr "启用功能: "
 msgid "official-site"
 msgstr "官方网站"
 
+#: yass.cpp:253
+msgid "Connecting"
+msgstr "连接中"
+
 #: yass.cpp:173
 msgid "Connected with conns: "
 msgstr "已产生连接: "
@@ -153,6 +157,10 @@ msgstr "已产生连接: "
 #: yass.cpp:175
 msgid "Failed to connect due to "
 msgstr "无法连接因为 "
+
+#: yass.cpp:253
+msgid "Disconnecting"
+msgstr "断开连接中"
 
 #: yass.cpp:177
 msgid "Disconnected with "

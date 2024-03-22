@@ -285,8 +285,12 @@ std::wstring CYassApp::GetStatus() const {
   std::wostringstream ss;
   if (state_ == STARTED) {
     ss << LoadStringStdW(m_hInstance, IDS_STATUS_CONNECTED_WITH_CONNS) << worker_.currentConnections();
+  } else if (state_ == STARTING) {
+    ss << LoadStringStdW(m_hInstance, IDS_STATUS_CONNECTING);
   } else if (state_ == START_FAILED) {
     ss << LoadStringStdW(m_hInstance, IDS_STATUS_FAILED_TO_CONNECT_DUE_TO) << SysUTF8ToWide(error_msg_);
+  } else if (state_ == STOPPING) {
+    ss << LoadStringStdW(m_hInstance, IDS_STATUS_DISCONNECTING);
   } else {
     ss << LoadStringStdW(m_hInstance, IDS_STATUS_DISCONNECTED_WITH) << SysUTF8ToWide(worker_.GetRemoteDomain());
   }

@@ -11,8 +11,8 @@
     <string name="label_cipher">加密方式</string>
     <string name="status_stopped">断开连接于服务器 %s:%d</string>
     <string name="status_started">已产生连接: 0</string>
-    <string name="status_stopping">停止中</string>
-    <string name="status_starting">启动中</string>
+    <string name="status_stopping">断开连接中</string>
+    <string name="status_starting">连接中</string>
     <string name="button_start">启动</string>
     <string name="button_stop">停止</string>
     <string name="status_started_with_rate">已产生连接:  %d  上传速率:  %s 下载速率:  %s</string>

@@ -86,11 +86,11 @@
     },
     {
       "name": "status_stopping",
-      "value": "STOPPING"
+      "value": "Disconnecting"
     },
     {
       "name": "status_starting",
-      "value": "STARTING"
+      "value": "Connecting"
     },
     {
       "name": "status_stopped",
