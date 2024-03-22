@@ -145,6 +145,10 @@ msgstr "Enabled Feature: "
 msgid "official-site"
 msgstr "official-site"
 
+#: yass.cpp:253
+msgid "Connecting"
+msgstr "Connecting"
+
 #: yass.cpp:173
 msgid "Connected with conns: "
 msgstr "Connected with conns: "
@@ -152,6 +156,10 @@ msgstr "Connected with conns: "
 #: yass.cpp:175
 msgid "Failed to connect due to "
 msgstr "Failed to connect due to "
+
+#: yass.cpp:253
+msgid "Disconnecting"
+msgstr "Disconnecting"
 
 #: yass.cpp:177
 msgid "Disconnected with "

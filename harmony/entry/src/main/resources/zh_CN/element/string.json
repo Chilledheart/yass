@@ -86,11 +86,11 @@
     },
     {
       "name": "status_stopping",
-      "value": "停止中"
+      "value": "断开连接中"
     },
     {
       "name": "status_starting",
-      "value": "启动中"
+      "value": "连接中"
     },
     {
       "name": "status_stopped",

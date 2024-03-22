@@ -119,12 +119,20 @@ msgid "_Quit"
 msgstr "退出"
 
 #: yass.cpp:253
+msgid "Connecting"
+msgstr "连接中"
+
+#: yass.cpp:253
 msgid "Connected with conns: "
 msgstr "已产生连接: "
 
 #: yass.cpp:255
 msgid "Failed to connect due to "
 msgstr "无法连接因为 "
+
+#: yass.cpp:253
+msgid "Disconnecting"
+msgstr "断开连接中"
 
 #: yass.cpp:257
 msgid "Disconnected with "
