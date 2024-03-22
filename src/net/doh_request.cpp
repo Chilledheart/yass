@@ -311,16 +311,17 @@ void DoHRequest::OnSSLWritable(asio::error_code ec) {
     return;
   }
   buf_->trimStart(written);
-  if (LIKELY(buf_->empty())) {
-    VLOG(3) << "DoH Request Sent: " << written;
+  VLOG(3) << "DoH Request Sent: " << written << " bytes Remaining: " << buf_->length() << " bytes";
+  if (UNLIKELY(!buf_->empty())) {
+    scoped_refptr<DoHRequest> self(this);
+    ssl_socket_->WaitWrite([this, self](asio::error_code ec) { OnSSLWritable(ec); });
     return;
   }
-  scoped_refptr<DoHRequest> self(this);
-  ssl_socket_->WaitWrite([this, self](asio::error_code ec) { OnSSLWritable(ec); });
+  VLOG(3) << "DoH Request Fully Sent";
 }
 
 void DoHRequest::OnSSLReadable(asio::error_code ec) {
-  if (ec) {
+  if (UNLIKELY(ec)) {
     OnDoneRequest(ec, nullptr);
     return;
   }
@@ -333,17 +334,26 @@ void DoHRequest::OnSSLReadable(asio::error_code ec) {
     }
   } while (false);
 
-  if (ec && ec != asio::error::try_again && ec != asio::error::would_block) {
+  if (UNLIKELY(ec && ec != asio::error::try_again && ec != asio::error::would_block)) {
     OnDoneRequest(ec, nullptr);
     return;
   }
   recv_buf_->append(read);
-  VLOG(3) << "DoH Response Received: " << read;
 
-  OnReadResult();
+  VLOG(3) << "DoH Response Received: " << read << " bytes";
+
+  switch (read_state_) {
+    case Read_Header:
+      OnReadHeader();
+      break;
+    case Read_Body:
+      OnReadBody();
+      break;
+  }
 }
 
-void DoHRequest::OnReadResult() {
+void DoHRequest::OnReadHeader() {
+  DCHECK_EQ(read_state_, Read_Header);
   HttpResponseParser parser;
 
   bool ok;
@@ -354,30 +364,52 @@ void DoHRequest::OnReadResult() {
   }
   if (!ok) {
     LOG(WARNING) << "DoH Response Invalid HTTP Response";
-    OnDoneRequest(asio::error::connection_refused, nullptr);
+    OnDoneRequest(asio::error::operation_not_supported, nullptr);
     return;
   }
 
-  VLOG(3) << "DoH Response Parsed: " << nparsed << " bytes.";
+  VLOG(3) << "DoH Response Header Parsed: " << nparsed << " bytes";
   recv_buf_->trimStart(nparsed);
   recv_buf_->retreat(nparsed);
 
-  if (parser.status_code() != 200) {
+  if (UNLIKELY(parser.status_code() != 200)) {
     LOG(WARNING) << "DoH Response Unexpected HTTP Response Status Code: " << parser.status_code();
-    OnDoneRequest(asio::error::connection_refused, nullptr);
+    OnDoneRequest(asio::error::operation_not_supported, nullptr);
     return;
   }
 
-  if (recv_buf_->length() < parser.content_length()) {
-    LOG(WARNING) << "DoH Response Expected Length: " << parser.content_length()
-                 << " but received: " << recv_buf_->length();
-    OnDoneRequest(asio::error::connection_refused, nullptr);
-    return;
-  }
-
-  if (parser.content_type() != "application/dns-message") {
+  if (UNLIKELY(parser.content_type() != "application/dns-message")) {
     LOG(WARNING) << "DoH Response Expected Type: application/dns-message but received: " << parser.content_type();
-    OnDoneRequest(asio::error::connection_refused, nullptr);
+    OnDoneRequest(asio::error::operation_not_supported, nullptr);
+    return;
+  }
+
+  if (UNLIKELY(parser.content_length() == 0)) {
+    LOG(WARNING) << "DoH Response Missing Content Length";
+    OnDoneRequest(asio::error::operation_not_supported, nullptr);
+    return;
+  }
+
+  if (UNLIKELY(parser.content_length() >= 256 * 1024)) {
+    LOG(WARNING) << "DoH Response Too Large: " << parser.content_length() << " bytes";
+    OnDoneRequest(asio::error::operation_not_supported, nullptr);
+    return;
+  }
+
+  read_state_ = Read_Body;
+  body_length_ = parser.content_length();
+
+  OnReadBody();
+}
+
+void DoHRequest::OnReadBody() {
+  DCHECK_EQ(read_state_, Read_Body);
+  if (UNLIKELY(recv_buf_->length() < body_length_)) {
+    VLOG(3) << "DoH Response Expected Data: " << body_length_ << " bytes Current: " << recv_buf_->length() << " bytes";
+
+    scoped_refptr<DoHRequest> self(this);
+    recv_buf_->reserve(0, body_length_ - recv_buf_->length());
+    ssl_socket_->WaitRead([this, self](asio::error_code ec) { OnSSLReadable(ec); });
     return;
   }
 
@@ -385,16 +417,23 @@ void DoHRequest::OnReadResult() {
 }
 
 void DoHRequest::OnParseDnsResponse() {
+  DCHECK_EQ(read_state_, Read_Body);
+  DCHECK_GE(recv_buf_->length(), body_length_);
+
   dns_message::response_parser response_parser;
   dns_message::response response;
 
   dns_message::response_parser::result_type result;
   std::tie(result, std::ignore) =
-      response_parser.parse(response, recv_buf_->data(), recv_buf_->data(), recv_buf_->data() + recv_buf_->length());
+      response_parser.parse(response, recv_buf_->data(), recv_buf_->data(), recv_buf_->data() + body_length_);
   if (result != dns_message::response_parser::good) {
-    OnDoneRequest(asio::error::connection_refused, {});
+    LOG(WARNING) << "DoH Response Bad Format";
+    OnDoneRequest(asio::error::operation_not_supported, {});
     return;
   }
+  VLOG(3) << "DoH Response Body Parsed: " << body_length_ << " bytes";
+  recv_buf_->trimStart(body_length_);
+  recv_buf_->retreat(body_length_);
 
   struct addrinfo* addrinfo = addrinfo_dup(dns_type_ == dns_message::DNS_TYPE_AAAA, response, port_);
 
