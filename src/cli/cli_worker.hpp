@@ -66,7 +66,7 @@ class Worker {
   std::vector<std::string> remote_server_ips_v6_;
   std::string remote_server_sni_;
   std::string local_server_ips_;
-  uint16_t local_port_;
+  uint16_t local_port_ = 0;
   std::vector<asio::ip::tcp::endpoint> endpoints_;
   std::atomic_bool in_destroy_ = false;
 };
