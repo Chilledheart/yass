@@ -19,7 +19,14 @@ class WorkerPrivate {
   std::unique_ptr<CliServer> cli_server;
 };
 
-Worker::Worker() : resolver_(io_context_), private_(new WorkerPrivate) {
+Worker::Worker()
+    : resolver_(io_context_),
+      cached_server_host_(absl::GetFlag(FLAGS_server_host)),
+      cached_server_sni_(absl::GetFlag(FLAGS_server_sni)),
+      cached_server_port_(absl::GetFlag(FLAGS_server_port)),
+      cached_local_host_(absl::GetFlag(FLAGS_local_host)),
+      cached_local_port_(absl::GetFlag(FLAGS_local_port)),
+      private_(new WorkerPrivate) {
 #ifdef _WIN32
   int iResult = 0;
   WSADATA wsaData = {0};
