@@ -1,3 +1,9 @@
+yass (1.8.1-1) UNRELEASED; urgency=medium
+
+  * bump to chromium 124 dependents.
+  * miscellaneous fixes
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Tue, 26 Mar 2024 16:16:59 +0800
 yass (1.8.0-1) UNRELEASED; urgency=medium
 
   * bump to chromium 124 dependents.
