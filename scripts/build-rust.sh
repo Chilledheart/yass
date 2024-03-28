@@ -6,8 +6,8 @@ cd $PWD/..
 
 DEFAULT_TARGET=$(rustc -vV | sed -n 's|host: ||p')
 
-RUST_VER=1.76.0
-CARGO_VER=0.77.0
+RUST_VER=1.77.0
+CARGO_VER=0.78.0
 
 # https://github.com/Homebrew/homebrew-core/blob/master/Formula/r/rust.rb
 curl -L -O -C - https://static.rust-lang.org/dist/rustc-$RUST_VER-src.tar.xz
@@ -24,7 +24,7 @@ cat > rustc-$RUST_VER-src/config.toml.in << EOF
 
 profile = "compiler"
 # latest change id in src/bootstrap/src/utils/change_tracker.rs
-change-id = 118703
+change-id = 119373
 
 [build]
 # see https://github.com/llvm/llvm-project/issues/60115
