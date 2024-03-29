@@ -338,16 +338,18 @@ public class MainActivity extends Activity {
     }
 
     private void onStopVpn() {
-        int ret = tun2ProxyDestroy(tun2proxyPtr);
+        int ret = tun2ProxyShutdown(tun2proxyPtr);
         if (ret != 0) {
-            Log.e(TUN2PROXY_TAG, String.format("Unable to run tun2ProxyDestroy: %d", ret));
+            Log.e(TUN2PROXY_TAG, String.format("Unable to run tun2ProxyShutdown: %d", ret));
         }
-        tun2proxyPtr = 0;
+
         try {
             tun2proxyThread.join();
         } catch (InterruptedException e) {
             // nop
         }
+        tun2ProxyDestroy(tun2proxyPtr);
+        tun2proxyPtr = 0;
         tun2proxyThread = null;
         nativeStop();
 
@@ -370,7 +372,8 @@ public class MainActivity extends Activity {
 
     private native long tun2ProxyInit(String proxy_url, int tun_fd, int tun_mtu, int log_level, boolean dns_over_tcp);
     private native int tun2ProxyRun(long context);
-    private native int tun2ProxyDestroy(long context);
+    private native int tun2ProxyShutdown(long context);
+    private native void tun2ProxyDestroy(long context);
 
     // first connection number, then rx rate, then tx rate
 

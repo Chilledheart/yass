@@ -259,7 +259,7 @@ static std::unique_ptr<std::thread> g_tun2proxy_thread;
 // tun_fd
 // tun_mtu
 // dns_over_tcp
-static napi_value startTun2proxy(napi_env env, napi_callback_info info) {
+static napi_value initTun2proxy(napi_env env, napi_callback_info info) {
   napi_value args[4]{};
   size_t argc = std::size(args);
   auto status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
@@ -455,11 +455,14 @@ static napi_value stopTun2proxy(napi_env env, napi_callback_info info) {
     return nullptr;
   }
 
-  int ret = tun2proxy_destroy(reinterpret_cast<void*>(ptr_int));
+  int ret = tun2proxy_shutdown(reinterpret_cast<void*>(ptr_int));
   if (ret != 0) {
-    LOG(WARNING) << "tun2proxy_destroy failed: " << ret;
+    LOG(WARNING) << "tun2proxy_shutdown failed: " << ret;
   }
   g_tun2proxy_thread->join();
+  g_tun2proxy_thread.reset();
+
+  tun2proxy_destroy(reinterpret_cast<void*>(ptr_int));
   return nullptr;
 }
 
@@ -1106,7 +1109,7 @@ static napi_value Init(napi_env env, napi_value exports) {
       {"setProtectFdCallback", nullptr, setProtectFdCallback, nullptr, nullptr, nullptr, napi_default, nullptr},
       {"setProtectFdCallbackCleanup", nullptr, setProtectFdCallbackCleanup, nullptr, nullptr, nullptr, napi_default,
        nullptr},
-      {"startTun2proxy", nullptr, startTun2proxy, nullptr, nullptr, nullptr, napi_default, nullptr},
+      {"initTun2proxy", nullptr, initTun2proxy, nullptr, nullptr, nullptr, napi_default, nullptr},
       {"runTun2proxy", nullptr, runTun2proxy, nullptr, nullptr, nullptr, napi_default, nullptr},
       {"stopTun2proxy", nullptr, stopTun2proxy, nullptr, nullptr, nullptr, napi_default, nullptr},
       {"startWorker", nullptr, startWorker, nullptr, nullptr, nullptr, napi_default, nullptr},

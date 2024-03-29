@@ -229,10 +229,11 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
   stopped_ = true;
   worker_.Stop([=] {
     NSLog(@"worker stopped");
-    Tun2Proxy_Destroy(context_);
+    Tun2Proxy_Shutdown(context_);
     NSLog(@"tun2proxy destroyed");
     tun2proxy_thread_->join();
     tun2proxy_thread_.reset();
+    Tun2Proxy_Destroy(context_);
     completionHandler();
   });
 }

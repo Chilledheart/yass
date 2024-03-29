@@ -70,7 +70,9 @@ extern "C" void* tun2proxy_init(void* context,
 
 extern "C" int tun2proxy_run(void* ptr);
 
-extern "C" int tun2proxy_destroy(void* ptr);
+extern "C" int tun2proxy_shutdown(void* ptr);
+
+extern "C" void tun2proxy_destroy(void* ptr);
 
 Tun2Proxy_InitContext* Tun2Proxy_Init(NEPacketTunnelFlow* packetFlow,
                                       const std::string& proxy_url,
@@ -115,10 +117,14 @@ void Tun2Proxy_ForwardReadPackets(Tun2Proxy_InitContext* context, NSArray<NEPack
   }
 }
 
+void Tun2Proxy_Shutdown(Tun2Proxy_InitContext* context) {
+  tun2proxy_shutdown(context->tun2proxy_ptr);
+  IGNORE_EINTR(close(context->read_fd));
+}
+
 void Tun2Proxy_Destroy(Tun2Proxy_InitContext* context) {
   tun2proxy_destroy(context->tun2proxy_ptr);
-  context->tun2proxy_ptr = nullptr;
   context->packetFlow = nil;
-  IGNORE_EINTR(close(context->read_fd));
+  context->tun2proxy_ptr = nullptr;
   delete context;
 }
