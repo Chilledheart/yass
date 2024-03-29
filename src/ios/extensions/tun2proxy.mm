@@ -11,6 +11,7 @@
 struct Tun2Proxy_InitContext {
   __weak NEPacketTunnelFlow* packetFlow;
   int read_fd;
+  void* tun2proxy_ptr;
 };
 
 struct ReadPacketContext {
@@ -56,20 +57,20 @@ static void WritePackets(void* context, void* const* packets, const size_t* pack
   }
 }
 
-extern "C" int tun2proxy_init(void* context,
-                              int fd,
-                              decltype(GetReadPacketContextData),
-                              decltype(GetReadPacketContextSize),
-                              decltype(FreeReadPacketContext),
-                              decltype(WritePackets),
-                              const char* proxy_url,
-                              int tun_mtu,
-                              int log_level,
-                              int dns_over_tcp);
+extern "C" void* tun2proxy_init(void* context,
+                                int fd,
+                                decltype(GetReadPacketContextData),
+                                decltype(GetReadPacketContextSize),
+                                decltype(FreeReadPacketContext),
+                                decltype(WritePackets),
+                                const char* proxy_url,
+                                int tun_mtu,
+                                int log_level,
+                                int dns_over_tcp);
 
-extern "C" int tun2proxy_run();
+extern "C" int tun2proxy_run(void* ptr);
 
-extern "C" int tun2proxy_destroy();
+extern "C" int tun2proxy_destroy(void* ptr);
 
 Tun2Proxy_InitContext* Tun2Proxy_Init(NEPacketTunnelFlow* packetFlow,
                                       const std::string& proxy_url,
@@ -87,9 +88,10 @@ Tun2Proxy_InitContext* Tun2Proxy_Init(NEPacketTunnelFlow* packetFlow,
   fcntl(fds[1], F_SETFD, FD_CLOEXEC);  // write end
   fcntl(fds[0], F_SETFL, O_NONBLOCK | fcntl(fds[0], F_GETFL));
   context->read_fd = fds[1];  // save write end
-  int ret = tun2proxy_init(context, fds[0], GetReadPacketContextData, GetReadPacketContextSize, FreeReadPacketContext,
-                           WritePackets, proxy_url.c_str(), tun_mtu, log_level, dns_over_tcp ? 1 : 0);
-  if (ret < 0) {
+  context->tun2proxy_ptr =
+      tun2proxy_init(context, fds[0], GetReadPacketContextData, GetReadPacketContextSize, FreeReadPacketContext,
+                     WritePackets, proxy_url.c_str(), tun_mtu, log_level, dns_over_tcp ? 1 : 0);
+  if (context->tun2proxy_ptr == nullptr) {
     IGNORE_EINTR(close(fds[0]));
     IGNORE_EINTR(close(fds[1]));
     delete context;
@@ -99,7 +101,7 @@ Tun2Proxy_InitContext* Tun2Proxy_Init(NEPacketTunnelFlow* packetFlow,
 }
 
 int Tun2Proxy_Run(Tun2Proxy_InitContext* context) {
-  return tun2proxy_run();
+  return tun2proxy_run(context->tun2proxy_ptr);
 }
 
 void Tun2Proxy_ForwardReadPackets(Tun2Proxy_InitContext* context, NSArray<NEPacket*>* packets) {
@@ -114,7 +116,8 @@ void Tun2Proxy_ForwardReadPackets(Tun2Proxy_InitContext* context, NSArray<NEPack
 }
 
 void Tun2Proxy_Destroy(Tun2Proxy_InitContext* context) {
-  tun2proxy_destroy();
+  tun2proxy_destroy(context->tun2proxy_ptr);
+  context->tun2proxy_ptr = nullptr;
   context->packetFlow = nil;
   IGNORE_EINTR(close(context->read_fd));
   delete context;
