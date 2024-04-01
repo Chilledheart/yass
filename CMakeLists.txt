@@ -2611,10 +2611,6 @@ elseif (USE_MBEDTLS)
   set(MBEDTLS_FATAL_WARNINGS OFF CACHE BOOL "")
   set(DISABLE_PACKAGE_CONFIG_AND_INSTALL ON CACHE BOOL "")
   set(INSTALL_MBEDTLS_HEADERS OFF CACHE BOOL "")
-  if (OS_X86)
-    message(STATUS "Compiling with mbedtls aesni support (x86)")
-    set(ENABLE_AESNI_C_X86 ON CACHE BOOL "")
-  endif()
 
   add_subdirectory(third_party/mbedtls)
 
