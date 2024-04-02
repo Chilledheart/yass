@@ -85,4 +85,5 @@ local.properties
 /rustc-1.75.0-src
 /rustc-1.76.0-src
 /rustc-1.77.0-src
+/rustc-1.77.1-src
 /third_party/rust-ohos
