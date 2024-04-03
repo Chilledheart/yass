@@ -108,6 +108,9 @@ jobs:
           brew link --force --overwrite python@3.11
           ln -sf $(brew --prefix)/opt/python@3.11/libexec/bin/python /opt/homebrew/bin/python
           ln -sf $(brew --prefix)/opt/python@3.11/libexec/bin/python /opt/homebrew/bin/python3
+      - name: Set up Xcode to 15.3
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.3.app
       - name: Download and Build Crashpad (include depot_tools)
         if: ${{ steps.depot-cache.outputs.cache-hit != 'true' || steps.crashpad-cache.outputs.cache-hit != 'true' }}
         shell: bash
