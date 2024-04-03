@@ -1196,6 +1196,18 @@ if (LTO AND COMPILER_GCC)
     set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
     set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
   endif()
+
+  # silence lto warning on gcc
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12.0)
+    set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
+    set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
+  elseif (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 13.0)
+    set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch")
+    set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch")
+  else()
+    set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch -Wno-odr -Wno-error=uninitialized")
+    set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch -Wno-odr -Wno-error=uninitialized")
+  endif()
 endif()
 
 # skipping for coff binaries on ar fix
@@ -2287,19 +2299,6 @@ if (USE_TCMALLOC)
     tcmalloc
     ${SUPPORT_LIBS}
     )
-  # silence lto warning on gcc: tcmalloc_sampler
-  if (COMPILER_GCC AND LTO)
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12.0)
-      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
-      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
-    elseif (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 13.0)
-      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch")
-      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch")
-    else()
-      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch -Wno-odr -Wno-error=uninitialized")
-      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch -Wno-odr -Wno-error=uninitialized")
-    endif()
-  endif()
 endif()
 
 # *****************************************************************************************
