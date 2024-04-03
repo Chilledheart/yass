@@ -371,6 +371,7 @@ option(USE_ICU "Build with icu" OFF)
 option(USE_LEVELDB "Build with leveldb" OFF)
 option(USE_SQLITE "Build with sqlite" OFF)
 
+option(ENABLE_FORTIFY "Enable build with Fortify Source" ON)
 option(ENABLE_LTO "Enable build with LTO" ON)
 option(ENABLE_LLD "Enable build with LLD" ON)
 option(ENABLE_GOLD "Enable build with GOLD" ON)
@@ -394,8 +395,10 @@ if (ENABLE_CLANG_TIDY)
   set(ENABLE_LTO OFF)
 endif()
 
-# -fsanitize-blacklist doesn't work with lto
 if (ASAN OR TSAN OR UBSAN OR MSAN)
+  # msan gets confused by fortify source level 3
+  set(ENABLE_FORTIFY OFF)
+  # -fsanitize-blacklist doesn't work with lto
   set(ENABLE_LTO OFF)
 endif()
 
@@ -1195,6 +1198,18 @@ if (LTO AND COMPILER_GCC)
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.1)
     set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
     set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
+  endif()
+
+  # silence lto warning on gcc
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12.0)
+    set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
+    set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
+  elseif (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 13.0)
+    set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch")
+    set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch")
+  else()
+    set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch -Wno-odr -Wno-error=uninitialized")
+    set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch -Wno-odr -Wno-error=uninitialized")
   endif()
 endif()
 
@@ -2095,16 +2110,24 @@ if (NOT MSVC)
   ## not omit stack frame pointer for release
   set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -fno-omit-frame-pointer")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-omit-frame-pointer")
+  set(CMAKE_C_FLAGS_MINSIZEREL   "${CMAKE_C_FLAGS_MINSIZEREL} -fno-omit-frame-pointer")
+  set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -fno-omit-frame-pointer")
   set(CMAKE_C_FLAGS_RELWITHDEBINFO   "${CMAKE_C_FLAGS_RELWITHDEBINFO} -fno-omit-frame-pointer")
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -fno-omit-frame-pointer")
 
   ## fortify source code. Also, fortified build may fail when optimizations are
   ## disabled, so only do that for Release build.
-  if (NOT WIN32 AND NOT APPLE)
-    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -D_FORTIFY_SOURCE=2")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -D_FORTIFY_SOURCE=2")
-    set(CMAKE_C_FLAGS_RELWITHDEBINFO   "${CMAKE_C_FLAGS_RELWITHDEBINFO} -D_FORTIFY_SOURCE=2")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -D_FORTIFY_SOURCE=2")
+
+  string(REGEX MATCH "-D_FORTIFY_SOURCE=.*" HAS_FORTIFY_MACRO "${CMAKE_CXX_FLAGS}")
+  if (ENABLE_FORTIFY AND NOT WIN32 AND NOT APPLE AND NOT HAS_FORTIFY_MACRO)
+    # some gcc builds (depends on the distro) set _FORTIFY_SOURCE internally
+    # echo | gcc -O2 -E -dM -|grep _FORTIFY_SOURCE
+    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3")
+    set(CMAKE_C_FLAGS_MINSIZEREL   "${CMAKE_C_FLAGS_MINSIZEREL} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2")
+    set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2")
+    set(CMAKE_C_FLAGS_RELWITHDEBINFO   "${CMAKE_C_FLAGS_RELWITHDEBINFO} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2")
   endif()
 
   ## set rpath origin
@@ -2279,19 +2302,6 @@ if (USE_TCMALLOC)
     tcmalloc
     ${SUPPORT_LIBS}
     )
-  # silence lto warning on gcc: tcmalloc_sampler
-  if (COMPILER_GCC AND LTO)
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12.0)
-      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
-      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
-    elseif (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 13.0)
-      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch")
-      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch")
-    else()
-      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch -Wno-odr -Wno-error=uninitialized")
-      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch -Wno-odr -Wno-error=uninitialized")
-    endif()
-  endif()
 endif()
 
 # *****************************************************************************************
