@@ -371,6 +371,7 @@ option(USE_ICU "Build with icu" OFF)
 option(USE_LEVELDB "Build with leveldb" OFF)
 option(USE_SQLITE "Build with sqlite" OFF)
 
+option(ENABLE_FORTIFY "Enable build with Fortify Source" ON)
 option(ENABLE_LTO "Enable build with LTO" ON)
 option(ENABLE_LLD "Enable build with LLD" ON)
 option(ENABLE_GOLD "Enable build with GOLD" ON)
@@ -394,8 +395,10 @@ if (ENABLE_CLANG_TIDY)
   set(ENABLE_LTO OFF)
 endif()
 
-# -fsanitize-blacklist doesn't work with lto
 if (ASAN OR TSAN OR UBSAN OR MSAN)
+  # msan gets confused by fortify source level 3
+  set(ENABLE_FORTIFY OFF)
+  # -fsanitize-blacklist doesn't work with lto
   set(ENABLE_LTO OFF)
 endif()
 
@@ -2116,7 +2119,7 @@ if (NOT MSVC)
   ## disabled, so only do that for Release build.
 
   string(REGEX MATCH "-D_FORTIFY_SOURCE=.*" HAS_FORTIFY_MACRO "${CMAKE_CXX_FLAGS}")
-  if (NOT WIN32 AND NOT APPLE AND NOT HAS_FORTIFY_MACRO)
+  if (ENABLE_FORTIFY AND NOT WIN32 AND NOT APPLE AND NOT HAS_FORTIFY_MACRO)
     # some gcc builds (depends on the distro) set _FORTIFY_SOURCE internally
     # echo | gcc -O2 -E -dM -|grep _FORTIFY_SOURCE
     set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3")
