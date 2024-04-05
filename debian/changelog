@@ -1,3 +1,8 @@
+yass (1.7.7-1) UNRELEASED; urgency=medium
+
+  * fix (nghttp2) CVE-2024-30255
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Fri, 5 Apr 2024 16:13:05 +0800
 yass (1.7.6-1) UNRELEASED; urgency=medium
 
   * net: add doh support
