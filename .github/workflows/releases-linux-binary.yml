@@ -59,6 +59,8 @@ jobs:
             qemu_suffix: mips64el
           - arch: loongarch64
             qemu_suffix: loongarch64
+          - arch: riscv64
+            qemu_suffix: riscv64
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v4
@@ -73,13 +75,17 @@ jobs:
           cd third_party/libc++abi
           patch -p1 < v8-6.7.17-fix-gcc-unwind-header.patch
       - name: Set SDK_ROOT
-        if: ${{ matrix.arch != 'loongarch64' }}
+        if: ${{ matrix.arch != 'loongarch64' && matrix.arch != 'riscv64' }}
         run: |
           echo "SDK_ROOT=${{ github.workspace }}/debian_bullseye_${{ matrix.arch }}-sysroot" >> $GITHUB_ENV
       - name: Set SDK_ROOT for loongarch64
         if: ${{ matrix.arch == 'loongarch64' }}
         run: |
           echo "SDK_ROOT=${{ github.workspace }}/debian_bullseye_${{ matrix.arch }}-sysroot/target" >> $GITHUB_ENV
+      - name: Set SDK_ROOT for riscv64
+        if: ${{ matrix.arch == 'riscv64' }}
+        run: |
+          echo "SDK_ROOT=${{ github.workspace }}/debian_bullseye_${{ matrix.arch }}-sysroot/sysroot" >> $GITHUB_ENV
       - name: Cache clang
         id: clang-cache
         uses: actions/cache@v4
@@ -108,8 +114,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ${{ env.SDK_ROOT }}
-          key: ${{ runner.os }}-sysroot-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-v1
+            ${{ github.workspace }}/debian_bullseye_${{ matrix.arch }}-sysroot
+          key: ${{ runner.os }}-sysroot-${{ matrix.arch }}-${{ hashFiles('scripts/sysroots.json') }}-v2
       - name: Build build tool
         run: |
           cd tools
@@ -124,7 +130,7 @@ jobs:
         run: |
           wget http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-static_8.2.2+ds-2_amd64.deb
       - name: "Install dependency: sysroot"
-        if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' && matrix.arch != 'loongarch64' }}
+        if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' && matrix.arch != 'loongarch64' && matrix.arch != 'riscv64' }}
         run: |
           ./scripts/install-sysroot.py --arch ${{ matrix.arch }}
       - name: "Install dependency: sysroot (loongarch64)"
@@ -133,7 +139,17 @@ jobs:
           mkdir -p debian_bullseye_loongarch64-sysroot
           cd debian_bullseye_loongarch64-sysroot
           curl -L https://github.com/loongson/build-tools/releases/download/2023.08.08/CLFS-loongarch64-8.1-x86_64-cross-tools-gcc-glibc.tar.xz | tar --strip-components=1 --xz -xf -
+          cp -fv ./loongarch64-unknown-linux-gnu/lib/libgcc_s.so target/lib64/
           cp -fv ./loongarch64-unknown-linux-gnu/lib/libgcc_s.so.1 target/lib64/
+          rm -rf bin include libexec loongarch64-unknown-linux-gnu share
+          cd ..
+      - name: "Install dependency: sysroot (riscv64)"
+        if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' && matrix.arch == 'riscv64' }}
+        run: |
+          mkdir -p debian_bullseye_riscv64-sysroot
+          cd debian_bullseye_riscv64-sysroot
+          curl -L https://github.com/riscv-collab/riscv-gnu-toolchain/releases/download/2023.07.07/riscv64-glibc-ubuntu-20.04-gcc-nightly-2023.07.07-nightly.tar.gz | tar --strip-components=1 --gz -xf -
+          rm -rf bin include libexec riscv64-unknown-linux-gnu share
           cd ..
       - name: Change ubuntu mirror
         run: |
@@ -154,7 +170,7 @@ jobs:
           ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
           ./tools/build --variant server --arch ${{ matrix.arch }} --system linux --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
       - name: Build TGZ packages (GUI)
-        if: ${{ matrix.arch != 'loongarch64' }}
+        if: ${{ matrix.arch != 'loongarch64' && matrix.arch != 'riscv64' }}
         run: |
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system linux --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
       - name: Run tests (i386 and amd64)
