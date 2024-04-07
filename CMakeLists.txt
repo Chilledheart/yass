@@ -529,6 +529,10 @@ if (UNIX AND CMAKE_CROSSCOMPILING AND CMAKE_SYSROOT AND COMPILER_CLANG AND NOT C
     # fix up for loongarch sysroot
     if (CMAKE_SYSTEM_PROCESSOR STREQUAL "loongarch64")
       file(GLOB _GCC_SYSROOT "${CMAKE_SYSROOT}/../../lib/gcc/*/*.*.*")
+      # required by loongarch64 sdk https://github.com/loongson/build-tools/releases
+      if (NOT _GCC_SYSROOT)
+        file(GLOB _GCC_SYSROOT "${CMAKE_SYSROOT}/../lib/gcc/*/*.*.*")
+      endif()
     endif()
     if (_GCC_SYSROOT)
       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --gcc-install-dir=${_GCC_SYSROOT}")
