@@ -534,6 +534,10 @@ if (UNIX AND CMAKE_CROSSCOMPILING AND CMAKE_SYSROOT AND COMPILER_CLANG AND NOT C
         file(GLOB _GCC_SYSROOT "${CMAKE_SYSROOT}/../lib/gcc/*/*.*.*")
       endif()
     endif()
+    # fix up for riscv64 sysroot
+    if (CMAKE_SYSTEM_PROCESSOR STREQUAL "riscv64")
+      file(GLOB _GCC_SYSROOT "${CMAKE_SYSROOT}/../lib/gcc/*/*.*.*")
+    endif()
     if (_GCC_SYSROOT)
       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --gcc-install-dir=${_GCC_SYSROOT}")
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --gcc-install-dir=${_GCC_SYSROOT}")
