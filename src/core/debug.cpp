@@ -4,6 +4,7 @@
 #include "core/debug.hpp"
 #include "core/check_op.hpp"
 
+#include <absl/time/clock.h>
 #include <base/posix/eintr_wrapper.h>
 #include <base/strings/string_util.h>
 #include <build/buildflag.h>
@@ -38,7 +39,7 @@ bool WaitForDebugger(int wait_seconds, bool silent) {
         BreakDebugger();
       return true;
     }
-    // FIXME PlatformThread::Sleep(Milliseconds(100));
+    absl::SleepFor(absl::Milliseconds(100));
   }
   return false;
 }
@@ -287,7 +288,7 @@ void DebugBreak() {
 #else
     volatile int go = 0;
     while (!go)
-      PlatformThread::Sleep(Milliseconds(100));
+      absl::SleepFor(absl::Milliseconds(100));
 #endif
   }
 }
