@@ -57,10 +57,9 @@ jobs:
             qemu_suffix: mipsel
           - arch: mips64el
             qemu_suffix: mips64el
+          - arch: loongarch64
+            qemu_suffix: loongarch64
     runs-on: ubuntu-20.04
-    env:
-      ARCH: ${{ matrix.arch }}
-      SDK_ROOT: ${{ github.workspace }}/debian_bullseye_${{ matrix.arch }}-sysroot
     steps:
       - uses: actions/checkout@v4
       - name: Checkout with shallow submodules
@@ -73,6 +72,14 @@ jobs:
         run: |
           cd third_party/libc++abi
           patch -p1 < v8-6.7.17-fix-gcc-unwind-header.patch
+      - name: Set SDK_ROOT
+        if: ${{ matrix.arch != 'loongarch64' }}
+        run: |
+          echo "SDK_ROOT=${{ github.workspace }}/debian_bullseye_${{ matrix.arch }}-sysroot" >> $GITHUB_ENV
+      - name: Set SDK_ROOT for loongarch64
+        if: ${{ matrix.arch == 'loongarch64' }}
+        run: |
+          echo "SDK_ROOT=${{ github.workspace }}/debian_bullseye_${{ matrix.arch }}-sysroot/target" >> $GITHUB_ENV
       - name: Cache clang
         id: clang-cache
         uses: actions/cache@v4
@@ -117,9 +124,17 @@ jobs:
         run: |
           wget http://ftp.us.debian.org/debian/pool/main/q/qemu/qemu-user-static_8.2.2+ds-2_amd64.deb
       - name: "Install dependency: sysroot"
-        if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' }}
+        if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' && matrix.arch != 'loongarch64' }}
         run: |
-          ./scripts/install-sysroot.py --arch ${{ env.ARCH }}
+          ./scripts/install-sysroot.py --arch ${{ matrix.arch }}
+      - name: "Install dependency: sysroot (loongarch64)"
+        if: ${{ steps.sysroot-cache.outputs.cache-hit != 'true' && matrix.arch == 'loongarch64' }}
+        run: |
+          mkdir -p debian_bullseye_loongarch64-sysroot
+          cd debian_bullseye_loongarch64-sysroot
+          curl -L https://github.com/loongson/build-tools/releases/download/2023.08.08/CLFS-loongarch64-8.1-x86_64-cross-tools-gcc-glibc.tar.xz | tar --strip-components=1 --xz -xf -
+          cp -fv ./loongarch64-unknown-linux-gnu/lib/libgcc_s.so.1 target/lib64/
+          cd ..
       - name: Change ubuntu mirror
         run: |
           sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
@@ -134,11 +149,14 @@ jobs:
           sudo apt install qemu-user
           sudo apt remove -y qemu-user-binfmt
           sudo dpkg -i qemu-user-static_*.deb
-      - name: Build TGZ packages
+      - name: Build TGZ packages (CLI and Server)
         run: |
-          ./tools/build --variant gui --arch ${{ matrix.arch }} --system linux --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
           ./tools/build --variant cli --arch ${{ matrix.arch }} --system linux --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
           ./tools/build --variant server --arch ${{ matrix.arch }} --system linux --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
+      - name: Build TGZ packages (GUI)
+        if: ${{ matrix.arch != 'loongarch64' }}
+        run: |
+          ./tools/build --variant gui --arch ${{ matrix.arch }} --system linux --sysroot ${{ env.SDK_ROOT }} -build-benchmark -build-test -nc
       - name: Run tests (i386 and amd64)
         if: ${{ matrix.arch == 'i386' ||  matrix.arch == 'amd64' }}
         run: |
