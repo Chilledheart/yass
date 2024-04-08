@@ -295,7 +295,7 @@ void DoHRequest::OnSSLConnect() {
   buf_->prepend(request_header.size());
   scoped_refptr<DoHRequest> self(this);
 
-  recv_buf_ = IOBuf::create(SOCKET_BUF_SIZE);
+  recv_buf_ = IOBuf::create(UINT16_MAX);
   ssl_socket_->WaitWrite([this, self](asio::error_code ec) { OnSSLWritable(ec); });
   ssl_socket_->WaitRead([this, self](asio::error_code ec) { OnSSLReadable(ec); });
 }
@@ -390,7 +390,7 @@ void DoHRequest::OnReadHeader() {
     return;
   }
 
-  if (UNLIKELY(parser.content_length() >= 256 * 1024)) {
+  if (UNLIKELY(parser.content_length() >= UINT16_MAX)) {
     LOG(WARNING) << "DoH Response Too Large: " << parser.content_length() << " bytes";
     OnDoneRequest(asio::error::operation_not_supported, nullptr);
     return;
