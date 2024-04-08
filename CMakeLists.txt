@@ -3650,6 +3650,7 @@ set(files
     src/net/iobuf.cpp
     src/net/hkdf_sha1.cpp
     src/net/hmac_sha1.cpp
+    src/net/dns_addrinfo_helper.cpp
     src/net/dns_message_response_parser.cpp
     src/net/socks4_request_parser.cpp
     src/net/socks5_request_parser.cpp
@@ -3657,6 +3658,8 @@ set(files
     src/net/c-ares.cpp
     src/net/doh_request.cpp
     src/net/doh_resolver.cpp
+    src/net/dot_request.cpp
+    src/net/dot_resolver.cpp
     src/net/http_parser.cpp
     src/net/padding.cpp
     src/net/resolver.cpp
@@ -3711,6 +3714,7 @@ set(hfiles
     src/net/iobuf.hpp
     src/net/hkdf_sha1.hpp
     src/net/hmac_sha1.hpp
+    src/net/dns_addrinfo_helper.hpp
     src/net/dns_message.hpp
     src/net/dns_message_request.hpp
     src/net/dns_message_response.hpp
@@ -3728,6 +3732,8 @@ set(hfiles
     src/net/c-ares.hpp
     src/net/doh_resolver.hpp
     src/net/doh_request.hpp
+    src/net/dot_resolver.hpp
+    src/net/dot_request.hpp
     src/net/http_parser.hpp
     src/net/padding.hpp
     src/net/resolver.hpp
@@ -4555,6 +4561,7 @@ if (BUILD_TESTS)
     src/net/padding_test.cpp
     src/net/dns_message_test.cpp
     src/net/doh_resolver_test.cpp
+    src/net/dot_resolver_test.cpp
     )
 
   if (IOS)
