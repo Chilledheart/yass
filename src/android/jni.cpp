@@ -77,6 +77,10 @@ JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getDoHUrl(JNIEnv* env, j
   return env->NewStringUTF(absl::GetFlag(FLAGS_doh_url).c_str());
 }
 
+JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getDoTHost(JNIEnv* env, jobject obj) {
+  return env->NewStringUTF(absl::GetFlag(FLAGS_dot_host).c_str());
+}
+
 JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getTimeout(JNIEnv* env, jobject obj) {
   return absl::GetFlag(FLAGS_connect_timeout);
 }
@@ -90,6 +94,7 @@ JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_saveConfig(JNIEnv* env,
                                                                    jobject _password,
                                                                    jint _method_idx,
                                                                    jobject _doh_url,
+                                                                   jobject _dot_host,
                                                                    jobject _timeout) {
   const char* server_host_str = env->GetStringUTFChars((jstring)_server_host, nullptr);
   std::string server_host = server_host_str != nullptr ? server_host_str : std::string();
@@ -126,12 +131,16 @@ JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_saveConfig(JNIEnv* env,
   std::string doh_url = doh_url_str != nullptr ? doh_url_str : std::string();
   env->ReleaseStringUTFChars((jstring)_doh_url, doh_url_str);
 
+  const char* dot_host_str = env->GetStringUTFChars((jstring)_dot_host, nullptr);
+  std::string dot_host = dot_host_str != nullptr ? dot_host_str : std::string();
+  env->ReleaseStringUTFChars((jstring)_dot_host, dot_host_str);
+
   const char* timeout_str = env->GetStringUTFChars((jstring)_timeout, nullptr);
   std::string timeout = timeout_str != nullptr ? timeout_str : std::string();
   env->ReleaseStringUTFChars((jstring)_timeout, timeout_str);
 
   std::string err_msg = config::ReadConfigFromArgument(server_host, server_sni, server_port, username, password, method,
-                                                       local_host, local_port, doh_url, timeout);
+                                                       local_host, local_port, doh_url, dot_host, timeout);
 
   if (err_msg.empty()) {
     return nullptr;

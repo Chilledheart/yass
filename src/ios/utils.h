@@ -19,6 +19,7 @@ constexpr const char kUsernameFieldName[] = "username";
 constexpr const char kPasswordFieldName[] = "password";
 constexpr const char kMethodStringFieldName[] = "method_string";
 constexpr const char kDoHURLFieldName[] = "doh_url";
+constexpr const char kDoTHostFieldName[] = "dot_host";
 constexpr const char kConnectTimeoutFieldName[] = "connect_timeout";
 
 #endif  //  YASS_IOS_UTILS

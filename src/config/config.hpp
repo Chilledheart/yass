@@ -90,6 +90,7 @@ std::string ReadConfigFromArgument(const std::string& server_host,
                                    const std::string& local_host,
                                    const std::string& local_port,
                                    const std::string& doh_url,
+                                   const std::string& dot_host,
                                    const std::string& connect_timeout);
 
 std::string ReadConfigFromArgument(const std::string& server_host,
@@ -101,6 +102,7 @@ std::string ReadConfigFromArgument(const std::string& server_host,
                                    const std::string& local_host,
                                    const std::string& local_port,
                                    const std::string& doh_url,
+                                   const std::string& dot_host,
                                    const std::string& connect_timeout);
 }  // namespace config
 

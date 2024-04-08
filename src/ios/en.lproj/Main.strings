@@ -22,5 +22,8 @@
 /* Class = "UILabel"; text = "DNS over HTTPS URL"; ObjectID = ""; */
 "Nki-Be-f2P.text" = "DNS over HTTPS (DoH) URL";
 
+/* Class = "UILabel"; text = "DNS over TLS Host"; ObjectID = ""; */
+"bm9-gV-Cny.text" = "DNS over TLS Host";
+
 /* Class = "UILabel"; text = "Timeout"; ObjectID = "zY6-tD-aUd"; */
 "3S5-0B-efx.text" = "Timeout";

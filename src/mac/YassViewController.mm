@@ -89,6 +89,7 @@
   [self.localHost setEnabled:FALSE];
   [self.localPort setEnabled:FALSE];
   [self.dohURL setEnabled:FALSE];
+  [self.dotHost setEnabled:FALSE];
   [self.timeout setEnabled:FALSE];
 
   YassWindowController* windowController = (YassWindowController*)self.view.window.windowController;
@@ -121,6 +122,7 @@
   [self.localHost setEnabled:TRUE];
   [self.localPort setEnabled:TRUE];
   [self.dohURL setEnabled:TRUE];
+  [self.dotHost setEnabled:TRUE];
   [self.timeout setEnabled:TRUE];
 }
 
@@ -137,6 +139,7 @@
   [self.localHost setEnabled:TRUE];
   [self.localPort setEnabled:TRUE];
   [self.dohURL setEnabled:TRUE];
+  [self.dotHost setEnabled:TRUE];
   [self.timeout setEnabled:TRUE];
 }
 
@@ -151,6 +154,7 @@
   self.localHost.stringValue = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_local_host));
   self.localPort.intValue = absl::GetFlag(FLAGS_local_port);
   self.dohURL.stringValue = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_doh_url));
+  self.dotHost.stringValue = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_dot_host));
   self.timeout.intValue = absl::GetFlag(FLAGS_connect_timeout);
 }
 
