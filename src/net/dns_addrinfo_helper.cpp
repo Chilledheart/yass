@@ -98,7 +98,11 @@ struct addrinfo* addrinfo_dup(bool is_ipv6, const net::dns_message::response& re
   // If hints.ai_flags includes the AI_CANONNAME flag, then the
   // ai_canonname field of the first of the addrinfo structures in the
   // returned list is set to point to the official name of the host.
+#ifdef _WIN32
+  char* canon_name = !response.cname().empty() ? _strdup(response.cname().front().c_str()) : nullptr;
+#else
   char* canon_name = !response.cname().empty() ? strdup(response.cname().front().c_str()) : nullptr;
+#endif
 
   // Iterate the output
   struct addrinfo* next_addrinfo = addrinfo;

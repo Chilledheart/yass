@@ -7,6 +7,7 @@
 #include "core/utils.hpp"
 #include "net/asio.hpp"
 #include "net/doh_resolver.hpp"
+#include "net/dot_resolver.hpp"
 
 #ifdef HAVE_C_ARES
 #include "net/c-ares.hpp"
@@ -27,6 +28,12 @@ class Resolver {
       }
       return;
     }
+    if (!dot_host_.empty()) {
+      if (dot_resolver_) {
+        dot_resolver_->Cancel();
+      }
+      return;
+    }
 #ifdef HAVE_C_ARES
     if (resolver_) {
       resolver_->Cancel();
@@ -41,6 +48,10 @@ class Resolver {
       doh_resolver_.reset();
       return;
     }
+    if (!dot_host_.empty()) {
+      dot_resolver_.reset();
+      return;
+    }
 #ifdef HAVE_C_ARES
     resolver_.reset();
 #endif
@@ -50,6 +61,10 @@ class Resolver {
   void AsyncResolve(const std::string& host_name, int port, AsyncResolveCallback cb) {
     if (!doh_url_.empty()) {
       doh_resolver_->AsyncResolve(host_name, port, cb);
+      return;
+    }
+    if (!dot_host_.empty()) {
+      dot_resolver_->AsyncResolve(host_name, port, cb);
       return;
     }
 #ifdef HAVE_C_ARES
@@ -63,7 +78,9 @@ class Resolver {
  private:
   asio::io_context& io_context_;
   std::string doh_url_;
+  std::string dot_host_;
   scoped_refptr<DoHResolver> doh_resolver_;
+  scoped_refptr<DoTResolver> dot_resolver_;
 
 #ifdef HAVE_C_ARES
   scoped_refptr<CAresResolver> resolver_;
