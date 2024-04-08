@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /* Copyright (c) 2024 Chilledheart  */
 
-#include "net/doh_resolver.hpp"
+#include "net/dot_resolver.hpp"
 
 #include "core/utils.hpp"
 #include "net/dns_addrinfo_helper.hpp"
@@ -16,27 +16,21 @@
 
 namespace net {
 
+static constexpr const int kDoTPort = 853;
+
 using namespace dns_message;
 
-DoHResolver::DoHResolver(asio::io_context& io_context)
+DoTResolver::DoTResolver(asio::io_context& io_context)
     : io_context_(io_context), resolver_(io_context), resolve_timer_(io_context) {}
 
-DoHResolver::~DoHResolver() {
+DoTResolver::~DoTResolver() {
   Destroy();
-  VLOG(1) << "DoH Resolver freed memory";
+  VLOG(1) << "DoT Resolver freed memory";
 }
 
-int DoHResolver::Init(const std::string& doh_url, int timeout_ms) {
+int DoTResolver::Init(const std::string& dot_host, int timeout_ms) {
   timeout_ms_ = timeout_ms ? timeout_ms : CURL_TIMEOUT_RESOLVE * 1000;
-  GURL url(doh_url);
-  if (!url.is_valid() || !url.has_host() || !url.has_scheme() || url.scheme() != "https") {
-    LOG(WARNING) << "Invalid DoH URL: " << doh_url;
-    return -1;
-  }
-  doh_url_ = doh_url;
-  doh_host_ = url.host();
-  doh_port_ = url.EffectiveIntPort();
-  doh_path_ = url.has_path() ? url.path() : "/";
+  dot_host_ = dot_host;
 
   asio::error_code ec;
   SetupSSLContext(ec);
@@ -50,7 +44,7 @@ int DoHResolver::Init(const std::string& doh_url, int timeout_ms) {
   return 0;
 }
 
-void DoHResolver::SetupSSLContext(asio::error_code& ec) {
+void DoTResolver::SetupSSLContext(asio::error_code& ec) {
   ssl_ctx_.reset(::SSL_CTX_new(::TLS_client_method()));
   SSL_CTX* ctx = ssl_ctx_.get();
   if (!ctx) {
@@ -99,7 +93,7 @@ void DoHResolver::SetupSSLContext(asio::error_code& ec) {
   load_ca_to_ssl_ctx(ctx);
 }
 
-void DoHResolver::Cancel() {
+void DoTResolver::Cancel() {
   if (!init_) {
     return;
   }
@@ -119,21 +113,21 @@ void DoHResolver::Cancel() {
   addrinfo_freedup(addrinfo);
 }
 
-void DoHResolver::Destroy() {
+void DoTResolver::Destroy() {
   if (!init_) {
     return;
   }
   Cancel();
 }
 
-void DoHResolver::AsyncResolve(const std::string& host, int port, AsyncResolveCallback cb) {
+void DoTResolver::AsyncResolve(const std::string& host, int port, AsyncResolveCallback cb) {
   DCHECK(init_) << "Init should be called before use";
   DCHECK(done_) << "Another resolve is in progress";
 
   host_ = host;
   port_ = port;
   cb_ = std::move(cb);
-  scoped_refptr<DoHResolver> self(this);
+  scoped_refptr<DoTResolver> self(this);
 
   done_ = false;
   resolve_timer_.expires_after(std::chrono::milliseconds(timeout_ms_));
@@ -144,7 +138,7 @@ void DoHResolver::AsyncResolve(const std::string& host, int port, AsyncResolveCa
     if (done_) {
       return;
     }
-    VLOG(1) << "DoH Resolver timed out";
+    VLOG(1) << "DoT Resolver timed out";
     OnDoneRequest(asio::error::timed_out);
   });
 
@@ -155,17 +149,17 @@ void DoHResolver::AsyncResolve(const std::string& host, int port, AsyncResolveCa
   }
 
   asio::error_code ec;
-  auto addr = asio::ip::make_address(doh_host_.c_str(), ec);
+  auto addr = asio::ip::make_address(dot_host_.c_str(), ec);
   bool host_is_ip_address = !ec;
   if (host_is_ip_address) {
-    VLOG(1) << "DoH Resolve resolved ip-like address (post-resolved): " << addr.to_string();
-    endpoints_.emplace_back(addr, doh_port_);
+    VLOG(1) << "DoT Resolve resolved ip-like address (post-resolved): " << addr.to_string();
+    endpoints_.emplace_back(addr, kDoTPort);
     DoRequest(Net_ipv6works(), endpoints_.front());
     return;
   }
 
   resolver_.async_resolve(
-      Net_ipv6works() ? asio::ip::tcp::unspec() : asio::ip::tcp::v4(), doh_host_, std::to_string(doh_port_),
+      Net_ipv6works() ? asio::ip::tcp::unspec() : asio::ip::tcp::v4(), dot_host_, std::to_string(kDoTPort),
       [this, self](const asio::error_code& ec, asio::ip::tcp::resolver::results_type results) {
         // Cancelled, safe to ignore
         if (UNLIKELY(ec == asio::error::operation_aborted)) {
@@ -178,20 +172,19 @@ void DoHResolver::AsyncResolve(const std::string& host, int port, AsyncResolveCa
         }
         for (auto iter = std::begin(results); iter != std::end(results); ++iter) {
           endpoints_.push_back(*iter);
-          VLOG(1) << "DoH Resolve found ip address (post-resolved): " << endpoints_.back().address().to_string();
+          VLOG(1) << "DoT Resolve found ip address (post-resolved): " << endpoints_.back().address().to_string();
         }
         DCHECK(!endpoints_.empty());
         DoRequest(Net_ipv6works(), endpoints_.front());
       });
 }
 
-void DoHResolver::DoRequest(bool enable_ipv6, const asio::ip::tcp::endpoint& endpoint) {
-  scoped_refptr<DoHResolver> self(this);
-  VLOG(2) << "DoH Query Request IPv4: " << host_;
-  auto req = DoHRequest::Create(ssl_socket_data_index_, io_context_, endpoint, doh_host_, doh_port_, doh_path_,
-                                ssl_ctx_.get());
+void DoTResolver::DoRequest(bool enable_ipv6, const asio::ip::tcp::endpoint& endpoint) {
+  scoped_refptr<DoTResolver> self(this);
+  VLOG(2) << "DoT Query Request IPv4: " << host_;
+  auto req = DoTRequest::Create(ssl_socket_data_index_, io_context_, endpoint, dot_host_, kDoTPort, ssl_ctx_.get());
   req->DoRequest(DNS_TYPE_A, host_, port_, [this, self](const asio::error_code& ec, struct addrinfo* addrinfo) {
-    VLOG(2) << "DoH Query Request IPv4: " << host_ << " Done: " << ec;
+    VLOG(2) << "DoT Query Request IPv4: " << host_ << " Done: " << ec;
     /* ipv4 address comes first */
     if (addrinfo) {
       struct addrinfo* next_addrinfo = addrinfo_;
@@ -206,11 +199,10 @@ void DoHResolver::DoRequest(bool enable_ipv6, const asio::ip::tcp::endpoint& end
   });
   reqs_.push_back(req);
   if (enable_ipv6) {
-    VLOG(2) << "DoH Query Request IPv6: " << host_;
-    auto req = DoHRequest::Create(ssl_socket_data_index_, io_context_, endpoint, doh_host_, doh_port_, doh_path_,
-                                  ssl_ctx_.get());
+    VLOG(2) << "DoT Query Request IPv6: " << host_;
+    auto req = DoTRequest::Create(ssl_socket_data_index_, io_context_, endpoint, dot_host_, kDoTPort, ssl_ctx_.get());
     req->DoRequest(DNS_TYPE_AAAA, host_, port_, [this, self](const asio::error_code& ec, struct addrinfo* addrinfo) {
-      VLOG(2) << "DoH Query Request IPv6: " << host_ << " Done: " << ec;
+      VLOG(2) << "DoT Query Request IPv6: " << host_ << " Done: " << ec;
       /* ipv6 address comes later */
       if (addrinfo_) {
         struct addrinfo* prev_addrinfo = addrinfo_;
@@ -229,7 +221,7 @@ void DoHResolver::DoRequest(bool enable_ipv6, const asio::ip::tcp::endpoint& end
   }
 }
 
-void DoHResolver::OnDoneRequest(asio::error_code ec) {
+void DoTResolver::OnDoneRequest(asio::error_code ec) {
   if (ec) {
     auto reqs = std::move(reqs_);
     for (auto req : reqs) {
@@ -237,7 +229,7 @@ void DoHResolver::OnDoneRequest(asio::error_code ec) {
     }
   }
   if (!reqs_.empty()) {
-    VLOG(3) << "DoHResolver pending on another request";
+    VLOG(3) << "DoTResolver pending on another request";
     return;
   }
   if (done_) {
@@ -260,7 +252,7 @@ void DoHResolver::OnDoneRequest(asio::error_code ec) {
     const asio::ip::tcp::endpoint& endpoint = *iter;
     ss << endpoint << " ";
   }
-  VLOG(1) << "DoH: Resolved " << host_ << ":" << port_ << " to: [ " << ss.str() << " ]";
+  VLOG(1) << "DoT: Resolved " << host_ << ":" << port_ << " to: [ " << ss.str() << " ]";
 
   if (auto cb = std::move(cb_)) {
     cb(ec, results);

@@ -74,6 +74,7 @@ ABSL_DECLARE_FLAG(bool, tls13_early_data);
 ABSL_DECLARE_FLAG(bool, redir_mode);
 
 ABSL_DECLARE_FLAG(std::string, doh_url);
+ABSL_DECLARE_FLAG(std::string, dot_host);
 
 namespace config {
 void ReadConfigFileOption(int argc, const char** argv);

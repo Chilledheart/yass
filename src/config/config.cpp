@@ -187,6 +187,7 @@ ABSL_FLAG(uint32_t, parallel_max, 512, "Maximum concurrency for parallel connect
 ABSL_FLAG(RateFlag, limit_rate, RateFlag(0), "Limit transfer speed to RATE");
 
 ABSL_FLAG(std::string, doh_url, "", "Resolve host names over DoH");
+ABSL_FLAG(std::string, dot_host, "", "Resolve host names over DoT");
 
 namespace config {
 
@@ -332,6 +333,7 @@ bool ReadConfig() {
 
   config_impl->Read("congestion_algorithm", &FLAGS_congestion_algorithm);
   config_impl->Read("doh_url", &FLAGS_doh_url);
+  config_impl->Read("dot_host", &FLAGS_dot_host);
   config_impl->Read("connect_timeout", &FLAGS_connect_timeout);
   config_impl->Read("tcp_nodelay", &FLAGS_tcp_nodelay);
 
@@ -382,6 +384,7 @@ bool SaveConfig() {
   static_cast<void>(config_impl->Delete("threads"));
   all_fields_written &= config_impl->Write("congestion_algorithm", FLAGS_congestion_algorithm);
   all_fields_written &= config_impl->Write("doh_url", FLAGS_doh_url);
+  all_fields_written &= config_impl->Write("dot_host", FLAGS_dot_host);
   all_fields_written &= config_impl->Write("timeout", FLAGS_connect_timeout);
   all_fields_written &= config_impl->Write("connect_timeout", FLAGS_connect_timeout);
   all_fields_written &= config_impl->Write("tcp_nodelay", FLAGS_tcp_nodelay);
