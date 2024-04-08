@@ -311,8 +311,9 @@ std::string YASSApp::SaveConfig() {
   auto local_host = main_window_->GetLocalHost();
   auto local_port = main_window_->GetLocalPort();
   auto doh_url = main_window_->GetDoHUrl();
+  auto dot_host = main_window_->GetDoTHost();
   auto connect_timeout = main_window_->GetTimeout();
 
   return config::ReadConfigFromArgument(server_host, server_sni, server_port, username, password, method_string,
-                                        local_host, local_port, doh_url, connect_timeout);
+                                        local_host, local_port, doh_url, dot_host, connect_timeout);
 }

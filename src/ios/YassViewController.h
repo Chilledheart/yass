@@ -23,6 +23,7 @@
 @property(weak, nonatomic) IBOutlet UITextField* password;
 @property(weak, nonatomic) IBOutlet UIPickerView* cipherMethod;
 @property(weak, nonatomic) IBOutlet UITextField* dohURL;
+@property(weak, nonatomic) IBOutlet UITextField* dotHost;
 @property(weak, nonatomic) IBOutlet UITextField* timeout;
 
 @property(strong, nonatomic) NSString* currentCiphermethod;

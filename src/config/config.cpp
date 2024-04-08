@@ -408,6 +408,7 @@ std::string ReadConfigFromArgument(const std::string& server_host,
                                    const std::string& local_host,
                                    const std::string& _local_port,
                                    const std::string& doh_url,
+                                   const std::string& dot_host,
                                    const std::string& _timeout) {
   std::ostringstream err_msg;
 
@@ -442,6 +443,15 @@ std::string ReadConfigFromArgument(const std::string& server_host,
     if (!url.is_valid() || !url.has_host() || !url.has_scheme() || url.scheme() != "https") {
       err_msg << ",Invalid DoH URL: " << doh_url;
     }
+    if (!dot_host.empty()) {
+      err_msg << ",Conflicting DoT Host: " << dot_host;
+    }
+  }
+
+  if (!dot_host.empty()) {
+    if (dot_host.size() >= _POSIX_HOST_NAME_MAX) {
+      err_msg << ",Invalid DoT Host: " << dot_host;
+    }
   }
 
   auto timeout = StringToIntegerU(_timeout);
@@ -460,6 +470,7 @@ std::string ReadConfigFromArgument(const std::string& server_host,
     absl::SetFlag(&FLAGS_local_host, local_host);
     absl::SetFlag(&FLAGS_local_port, local_port.value());
     absl::SetFlag(&FLAGS_doh_url, doh_url);
+    absl::SetFlag(&FLAGS_dot_host, dot_host);
     absl::SetFlag(&FLAGS_connect_timeout, timeout.value());
   } else {
     ret = ret.substr(1);
@@ -476,6 +487,7 @@ std::string ReadConfigFromArgument(const std::string& server_host,
                                    const std::string& local_host,
                                    const std::string& _local_port,
                                    const std::string& doh_url,
+                                   const std::string& dot_host,
                                    const std::string& _timeout) {
   std::ostringstream err_msg;
 
@@ -511,6 +523,15 @@ std::string ReadConfigFromArgument(const std::string& server_host,
     if (!url.is_valid() || !url.has_host() || !url.has_scheme() || url.scheme() != "https") {
       err_msg << ",Invalid DoH URL: " << doh_url;
     }
+    if (!dot_host.empty()) {
+      err_msg << ",Conflicting DoT Host: " << dot_host;
+    }
+  }
+
+  if (!dot_host.empty()) {
+    if (dot_host.size() >= _POSIX_HOST_NAME_MAX) {
+      err_msg << ",Invalid DoT Host: " << dot_host;
+    }
   }
 
   auto timeout = StringToIntegerU(_timeout);
@@ -529,6 +550,7 @@ std::string ReadConfigFromArgument(const std::string& server_host,
     absl::SetFlag(&FLAGS_local_host, local_host);
     absl::SetFlag(&FLAGS_local_port, local_port.value());
     absl::SetFlag(&FLAGS_doh_url, doh_url);
+    absl::SetFlag(&FLAGS_dot_host, dot_host);
     absl::SetFlag(&FLAGS_connect_timeout, timeout.value());
   } else {
     ret = ret.substr(1);

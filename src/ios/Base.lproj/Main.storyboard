@@ -21,7 +21,7 @@
                                 <rect key="frame" x="20" y="48" width="374" height="870"/>
                                 <subviews>
                                     <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="EMh-aI-fmy">
-                                        <rect key="frame" x="0.0" y="0.0" width="374" height="597.5"/>
+                                        <rect key="frame" x="0.0" y="0.0" width="374" height="643.5"/>
                                         <subviews>
                                             <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" translatesAutoresizingMaskIntoConstraints="NO" id="Ju1-Bx-M7I">
                                                 <rect key="frame" x="0.0" y="0.0" width="374" height="34"/>
@@ -112,8 +112,24 @@
                                                     </textField>
                                                 </subviews>
                                             </stackView>
-                                            <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" translatesAutoresizingMaskIntoConstraints="NO" id="j59-Ui-faY">
+                                            <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" translatesAutoresizingMaskIntoConstraints="NO" id="Wly-Qj-2G3">
                                                 <rect key="frame" x="0.0" y="490.5" width="374" height="34"/>
+                                                <subviews>
+                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="DNS over TLS Host" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="bm9-gV-Cny">
+                                                        <rect key="frame" x="0.0" y="0.0" width="187" height="34"/>
+                                                        <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                        <nil key="textColor"/>
+                                                        <nil key="highlightedColor"/>
+                                                    </label>
+                                                    <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="1.1.1.1" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="y0Y-Zh-xJe">
+                                                        <rect key="frame" x="187" y="0.0" width="187" height="34"/>
+                                                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                                        <textInputTraits key="textInputTraits" returnKeyType="next" textContentType="url"/>
+                                                    </textField>
+                                                </subviews>
+                                            </stackView>
+                                            <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" translatesAutoresizingMaskIntoConstraints="NO" id="j59-Ui-faY">
+                                                <rect key="frame" x="0.0" y="536.5" width="374" height="34"/>
                                                 <subviews>
                                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Timeout" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="3S5-0B-efx">
                                                         <rect key="frame" x="0.0" y="0.0" width="187" height="34"/>
@@ -129,13 +145,13 @@
                                                 </subviews>
                                             </stackView>
                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="READY" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="wp5-6B-wJp">
-                                                <rect key="frame" x="0.0" y="536.5" width="374" height="14.5"/>
+                                                <rect key="frame" x="0.0" y="582.5" width="374" height="14.5"/>
                                                 <fontDescription key="fontDescription" name=".AppleSystemUIFont" family=".AppleSystemUIFont" pointSize="12"/>
                                                 <nil key="textColor"/>
                                                 <nil key="highlightedColor"/>
                                             </label>
                                             <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" translatesAutoresizingMaskIntoConstraints="NO" id="paQ-LB-b98">
-                                                <rect key="frame" x="0.0" y="563" width="374" height="34.5"/>
+                                                <rect key="frame" x="0.0" y="609" width="374" height="34.5"/>
                                                 <subviews>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="mgH-S8-WUJ">
                                                         <rect key="frame" x="0.0" y="0.0" width="187" height="34.5"/>
@@ -183,6 +199,7 @@
                         <outlet property="cipherMethod" destination="lHf-f6-QZT" id="8Z3-eA-8Al"/>
                         <outlet property="contentView" destination="SS9-hV-cEA" id="IGX-hT-btt"/>
                         <outlet property="dohURL" destination="rzY-aY-W2X" id="Ast-yv-Gek"/>
+                        <outlet property="dotHost" destination="y0Y-Zh-xJe" id="Ujj-re-v4a"/>
                         <outlet property="password" destination="pfU-fE-5kl" id="x6M-3I-sMa"/>
                         <outlet property="serverHost" destination="GsR-Z4-fTf" id="mJM-Ny-yXp"/>
                         <outlet property="serverPort" destination="1hy-kK-Mai" id="oWU-M2-gfa"/>

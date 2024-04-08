@@ -17,6 +17,7 @@ extern "C" JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getPassword(J
 extern "C" JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getCipher(JNIEnv* env, jobject obj);
 extern "C" JNIEXPORT jobjectArray JNICALL Java_it_gui_yass_MainActivity_getCipherStrings(JNIEnv* env, jobject obj);
 extern "C" JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getDoHUrl(JNIEnv* env, jobject obj);
+extern "C" JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_getDoTHost(JNIEnv* env, jobject obj);
 extern "C" JNIEXPORT jint JNICALL Java_it_gui_yass_MainActivity_getTimeout(JNIEnv* env, jobject obj);
 
 extern "C" JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_saveConfig(JNIEnv* env,
@@ -28,6 +29,7 @@ extern "C" JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_saveConfig(JN
                                                                               jobject password,
                                                                               jint method_idx,
                                                                               jobject doh_url,
+                                                                              jobject dot_host,
                                                                               jobject connect_timeout);
 
 #endif  // YASS_ANDROID_JNI_HPP

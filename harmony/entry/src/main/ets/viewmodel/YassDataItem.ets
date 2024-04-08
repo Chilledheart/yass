@@ -12,5 +12,6 @@ export class YassDataItem {
   password: string = '';
   cipher: string = '';
   dohUrl: string = '';
+  dotHost: string = '';
   timeout: number = 0;
 }

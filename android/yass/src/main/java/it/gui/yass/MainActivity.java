@@ -97,11 +97,13 @@ public class MainActivity extends Activity {
 
     private native String getDoHUrl();
 
+    private native String getDoTHost();
+
     private native int getTimeout();
 
     private native String saveConfig(String serverHost, String serverSNI, String serverPort,
                                      String username, String password, int cipher, String doh_url,
-                                     String timeout);
+                                     String dot_host, String timeout);
 
     private void loadSettingsFromNative() {
         EditText serverHostEditText = findViewById(R.id.serverHostEditText);
@@ -124,6 +126,9 @@ public class MainActivity extends Activity {
 
         EditText dohUrlEditText = findViewById(R.id.dohUrlEditText);
         dohUrlEditText.setText(String.format(getLocale(), "%s", getDoHUrl()));
+
+        EditText dotHostEditText = findViewById(R.id.dotHostEditText);
+        dotHostEditText.setText(String.format(getLocale(), "%s", getDoTHost()));
 
         EditText timeoutEditText = findViewById(R.id.timeoutEditText);
         timeoutEditText.setText(String.format(getLocale(), "%d", getTimeout()));
@@ -159,6 +164,7 @@ public class MainActivity extends Activity {
         EditText passwordEditText = findViewById(R.id.passwordEditText);
         Spinner cipherSpinner = findViewById(R.id.cipherSpinner);
         EditText dohUrlEditText = findViewById(R.id.dohUrlEditText);
+        EditText dotHostEditText = findViewById(R.id.dotHostEditText);
         EditText timeoutEditText = findViewById(R.id.timeoutEditText);
 
         return saveConfig(serverHostEditText.getText().toString(),
@@ -168,6 +174,7 @@ public class MainActivity extends Activity {
                           passwordEditText.getText().toString(),
                           cipherSpinner.getSelectedItemPosition(),
                           dohUrlEditText.getText().toString(),
+                          dotHostEditText.getText().toString(),
                           timeoutEditText.getText().toString());
     }
 

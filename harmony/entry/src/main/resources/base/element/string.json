@@ -99,6 +99,10 @@
     {
       "name": "doh_url",
       "value": "DNS over HTTPS URL"
+    },
+    {
+      "name": "dot_host",
+      "value": "DNS over TLS Host"
     }
   ]
 }

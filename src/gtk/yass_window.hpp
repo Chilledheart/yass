@@ -41,6 +41,7 @@ class YASSWindow {
   GtkEntry* local_host_;
   GtkEntry* local_port_;
   GtkEntry* doh_url_;
+  GtkEntry* dot_host_;
   GtkEntry* timeout_;
   GtkCheckButton* autostart_;
   GtkCheckButton* systemproxy_;
@@ -61,6 +62,7 @@ class YASSWindow {
   std::string GetLocalHost();
   std::string GetLocalPort();
   std::string GetDoHUrl();
+  std::string GetDoTHost();
   std::string GetTimeout();
   std::string GetStatusMessage();
 
