@@ -63,6 +63,13 @@
 %global enable_lld_opt on
 %endif
 
+# force use old systemd unit files
+%if 0%{?rhel} == 7
+%global use_old_systemd_service on
+%else
+%global use_old_systemd_service off
+%endif
+
 Name:    yass
 Version: __VERSION__
 Release: __SUBVERSION__%{?dist}
@@ -138,6 +145,7 @@ cd build
 # old c-ares doesn't contain ares_getaddrinfo api
 %cmake_alias -G Ninja -DCMAKE_BUILD_TYPE=Release \
    -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DCLI=on -DSERVER=on \
+   -DUSE_OLD_SYSTEMD_SERVICE="%use_old_systemd_service" \
    -DUSE_TCMALLOC=on \
    -DUSE_SYSTEM_ZLIB=on \
    -DUSE_SYSTEM_NGHTTP2="%enable_system_nghttp2_opt" \
