@@ -104,6 +104,10 @@ std::string ReadConfigFromArgument(const std::string& server_host,
                                    const std::string& doh_url,
                                    const std::string& dot_host,
                                    const std::string& connect_timeout);
+
+void SetClientUsageMessage(const std::string& exec_path);
+void SetServerUsageMessage(const std::string& exec_path);
+
 }  // namespace config
 
 #endif  // H_CONFIG_CONFIG

@@ -9,7 +9,6 @@
 #include <absl/debugging/symbolize.h>
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
-#include <absl/flags/usage.h>
 #include <absl/strings/str_cat.h>
 #include <locale.h>
 #include <openssl/crypto.h>
@@ -58,14 +57,7 @@ int main(int argc, const char* argv[]) {
   absl::FailureSignalHandlerOptions failure_handle_options;
   absl::InstallFailureSignalHandler(failure_handle_options);
 
-  absl::SetProgramUsageMessage(absl::StrCat(
-      "Usage: ", Basename(exec_path), " [options ...]\n", " -K, --config <file> Read config from a file\n",
-      " --certificate_chain_file <file> (TLS) Certificate Chain File Path\n",
-      " --private_key_file <file> (TLS) Private Key File Path\n",
-      " --private_key_password <password> (TLS) Private Key Password\n", " --server_host <host> Server on given host\n",
-      " --server_port <port> Server on given port\n", " --username <username> Server user\n",
-      " --password <pasword> Server password\n", " --method <method> Specify encrypt of method to use"));
-
+  config::SetServerUsageMessage(exec_path);
   config::ReadConfigFileOption(argc, argv);
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
