@@ -373,11 +373,18 @@ option(USE_BALSA_HTTP_PARSER "Build with balsa http parser" ON)
 option(USE_ICU "Build with icu" OFF)
 option(USE_LEVELDB "Build with leveldb" OFF)
 option(USE_SQLITE "Build with sqlite" OFF)
+option(USE_OLD_SYSTEMD_SERVICE "Install with old systemd service files" OFF)
 
 option(ENABLE_FORTIFY "Enable build with Fortify Source" ON)
 option(ENABLE_LTO "Enable build with LTO" ON)
 option(ENABLE_LLD "Enable build with LLD" ON)
 option(ENABLE_GOLD "Enable build with GOLD" ON)
+
+# Dynamic users are supported from version 235
+# see https://0pointer.net/blog/dynamic-users-with-systemd.html
+if (USE_OLD_SYSTEMD_SERVICE)
+  set(SYSTEMD_SERVICE_SUFFIX ".old")
+endif()
 
 if (ENABLE_LLD AND (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR LINKER_LLD) AND NOT COMPILER_APPLE_CLANG)
   # skipping apple clang
@@ -3833,10 +3840,10 @@ if (CLI)
     # TODO add freebsd rc files
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID AND NOT OHOS)
       install(FILES yass.json.sample RENAME config.json DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/yass)
-      install(FILES yass.service RENAME yass.service DESTINATION lib/systemd/system)
+      install(FILES yass${SYSTEMD_SERVICE_SUFFIX}.service RENAME yass.service DESTINATION lib/systemd/system)
 
       install(FILES yass-redir.json.sample RENAME redir.json DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/yass)
-      install(FILES yass-redir.service RENAME yass-redir.service DESTINATION lib/systemd/system)
+      install(FILES yass-redir${SYSTEMD_SERVICE_SUFFIX}.service RENAME yass-redir.service DESTINATION lib/systemd/system)
     endif()
   endif()
 endif()
@@ -3874,7 +3881,7 @@ if (SERVER)
     install(FILES doc/yass_server.1 DESTINATION share/man/man1)
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID AND NOT OHOS)
       install(FILES yass-server.json.sample RENAME server.json DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/yass)
-      install(FILES yass-server.service RENAME yass-server.service DESTINATION lib/systemd/system)
+      install(FILES yass-server${SYSTEMD_SERVICE_SUFFIX}.service RENAME yass-server.service DESTINATION lib/systemd/system)
     endif()
   endif()
 endif()
