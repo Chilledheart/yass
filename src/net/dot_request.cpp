@@ -113,7 +113,7 @@ void DoTRequest::OnSSLConnect() {
 
   scoped_refptr<DoTRequest> self(this);
 
-  recv_buf_ = IOBuf::create(UINT16_MAX);
+  recv_buf_ = IOBuf::create(sizeof(length) + UINT16_MAX);
   ssl_socket_->WaitWrite([this, self](asio::error_code ec) { OnSSLWritable(ec); });
   ssl_socket_->WaitRead([this, self](asio::error_code ec) { OnSSLReadable(ec); });
 }
