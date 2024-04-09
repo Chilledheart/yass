@@ -125,7 +125,7 @@
     auto port = StringToInteger(gurl_base::SysNSStringToUTF8(textField.text));
     return port.has_value() && port.value() > 0 && port.value() < 65536 ? YES : NO;
   }
-  if (textField == self.dohURL) {
+  if (textField == self.dohURL && [textField.text length]) {
     NSURL* url = [NSURL URLWithString:textField.text];
     return url && url.scheme && [url.scheme isEqualToString:@"https"] && url.host ? YES : NO;
   }
