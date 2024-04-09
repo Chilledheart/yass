@@ -6,7 +6,8 @@ Wants=network-online.target
 [Service]
 Type=exec
 DynamicUser=yes
-ExecStart=/usr/bin/yass_server -c /etc/yass/server.json -logtostderr --private_key_file /etc/yass/private_key.pem --certificate_chain_file /etc/yass/pubkey.crt
+LogsDirectory=yass-server
+ExecStart=/usr/bin/yass_server -c /etc/yass/server.json -log_dir=/var/log/yass-server --private_key_file /etc/yass/private_key.pem --certificate_chain_file /etc/yass/pubkey.crt
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 Restart=on-failure
 RestartSec=5s

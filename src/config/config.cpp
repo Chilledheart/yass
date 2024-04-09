@@ -208,6 +208,22 @@ void ReadConfigFileOption(int argc, const char** argv) {
       argv[pos + 1] = "";
       pos += 2;
       continue;
+    } else if (pos + 1 < argc && (arg == "-log_dir" || arg == "--log_dir")) {
+      absl::SetFlag(&FLAGS_log_dir, argv[pos + 1]);
+      argv[pos] = "";
+      argv[pos + 1] = "";
+      pos += 2;
+      continue;
+    } else if (strncmp(argv[pos], "-log_dir=", sizeof("-log_dir=")-1) == 0) {
+      absl::SetFlag(&FLAGS_log_dir, argv[pos] + sizeof("-log_dir=")-1);
+      argv[pos] = "";
+      pos += 1;
+      continue;
+    } else if (strncmp(argv[pos], "--log_dir=", sizeof("--log_dir=")-1) == 0) {
+      absl::SetFlag(&FLAGS_log_dir, argv[pos] + sizeof("--log_dir=")-1);
+      argv[pos] = "";
+      pos += 1;
+      continue;
     } else if (arg == "--ipv4") {
       absl::SetFlag(&FLAGS_ipv6_mode, false);
       argv[pos] = "";
