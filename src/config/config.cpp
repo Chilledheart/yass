@@ -8,6 +8,7 @@
 
 #include <absl/flags/flag.h>
 #include <absl/flags/internal/program_name.h>
+#include <absl/flags/usage.h>
 #include <absl/strings/str_cat.h>
 
 #include "core/logging.hpp"
@@ -206,6 +207,22 @@ void ReadConfigFileOption(int argc, const char** argv) {
       argv[pos] = "";
       argv[pos + 1] = "";
       pos += 2;
+      continue;
+    } else if (pos + 1 < argc && (arg == "-log_dir" || arg == "--log_dir")) {
+      absl::SetFlag(&FLAGS_log_dir, argv[pos + 1]);
+      argv[pos] = "";
+      argv[pos + 1] = "";
+      pos += 2;
+      continue;
+    } else if (strncmp(argv[pos], "-log_dir=", sizeof("-log_dir=")-1) == 0) {
+      absl::SetFlag(&FLAGS_log_dir, argv[pos] + sizeof("-log_dir=")-1);
+      argv[pos] = "";
+      pos += 1;
+      continue;
+    } else if (strncmp(argv[pos], "--log_dir=", sizeof("--log_dir=")-1) == 0) {
+      absl::SetFlag(&FLAGS_log_dir, argv[pos] + sizeof("--log_dir=")-1);
+      argv[pos] = "";
+      pos += 1;
       continue;
     } else if (arg == "--ipv4") {
       absl::SetFlag(&FLAGS_ipv6_mode, false);
@@ -556,6 +573,35 @@ std::string ReadConfigFromArgument(const std::string& server_host,
     ret = ret.substr(1);
   }
   return ret;
+}
+
+void SetClientUsageMessage(const std::string& exec_path) {
+  absl::SetProgramUsageMessage(absl::StrCat(
+      "Usage: ", Basename(exec_path), " [options ...]\n", R"(
+  -K, --config <file> Read config from a file
+  --server_host <host> Remote server on given host
+  --server_port <port> Remote server on given port
+  --local_host <host> Local proxy server on given host
+  --local_port <port> Local proxy server on given port
+  --username <username> Server user
+  --password <pasword> Server password
+  --method <method> Specify encrypt of method to use
+)"));
+}
+
+void SetServerUsageMessage(const std::string& exec_path) {
+  absl::SetProgramUsageMessage(absl::StrCat(
+      "Usage: ", Basename(exec_path), " [options ...]\n", R"(
+  -K, --config <file> Read config from a file
+  --certificate_chain_file <file> (TLS) Certificate Chain File Path
+  --private_key_file <file> (TLS) Private Key File Path
+  --private_key_password <password> (TLS) Private Key Password
+  --server_host <host> Server on given host
+  --server_port <port> Server on given port
+  --username <username> Server user
+  --password <pasword> Server password
+  --method <method> Specify encrypt of method to use
+)"));
 }
 
 }  // namespace config

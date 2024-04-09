@@ -9,9 +9,9 @@ SERVICE_WRITE_PID=1
 SERVICE_DAEMONIZE=1
 
 start() {
-        service_start /usr/bin/$APP -c /etc/yass/redir.json --redir_mode
+        service_start /usr/bin/$APP -c /etc/yass/redir.json -log_dir=/var/log --redir_mode
 }
 
 stop() {
-        service_stop /usr/bin/$APP -c /etc/yass/redir.json --redir_mode
+        service_stop /usr/bin/$APP -c /etc/yass/redir.json -log_dir=/var/log --redir_mode
 }

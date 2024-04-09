@@ -6,7 +6,8 @@ Wants=network-online.target
 [Service]
 Type=exec
 DynamicUser=yes
-ExecStart=/usr/bin/yass_cli -c /etc/yass/redir.json -logtostderr --redir_mode
+LogsDirectory=yass-redir
+ExecStart=/usr/bin/yass_cli -c /etc/yass/redir.json -log_dir=/var/log/yass-redir --redir_mode
 Restart=on-failure
 RestartPreventExitStatus=23
 
