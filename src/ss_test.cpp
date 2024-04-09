@@ -756,7 +756,6 @@ int main(int argc, char** argv) {
   absl::InstallFailureSignalHandler(failure_handle_options);
 
   absl::SetFlag(&FLAGS_v, 0);
-  absl::SetFlag(&FLAGS_log_thread_id, 1);
   absl::SetFlag(&FLAGS_ipv6_mode, false);
 
   ::testing::InitGoogleTest(&argc, argv);
