@@ -17,7 +17,7 @@
 #include <absl/flags/flag.h>
 #include <cerrno>
 
-#include "config/config.hpp"
+#include "config/config_network.hpp"
 #include "core/logging.hpp"
 
 namespace net {

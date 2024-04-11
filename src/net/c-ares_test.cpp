@@ -10,7 +10,7 @@
 
 #include <gmock/gmock.h>
 
-#include "config/config.hpp"
+#include "config/config_network.hpp"
 #include "net/c-ares.hpp"
 #include "test_util.hpp"
 
