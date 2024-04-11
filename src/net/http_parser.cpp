@@ -260,27 +260,27 @@ void HttpRequestParser::ProcessHeaders(const quiche::BalsaHeaders& headers) {
         hostname = hostname.substr(1, hostname.size() - 2);
       }
 
-      char* end;
-      const unsigned long portnum = strtoul(port.c_str(), &end, 10);
-      if (*end != '\0' || portnum > UINT16_MAX || (errno == ERANGE && portnum == ULONG_MAX)) {
+      std::optional<unsigned> portnum_opt = StringToIntegerU(port);
+      if (!portnum_opt.has_value() || portnum_opt.value() > UINT16_MAX) {
         VLOG(1) << "parser failed: bad http field: Host: " << authority << " hostname: " << hostname
                 << " port: " << port;
         status_ = ParserStatus::Error;
         break;
       }
+      const uint16_t portnum = static_cast<uint16_t>(portnum_opt.value());
       http_host_ = hostname;
       http_port_ = portnum;
     }
     if (key == "Content-Length") {
       std::string length = std::string(value);
 
-      char* end;
-      const unsigned long lengthnum = strtoul(length.c_str(), &end, 10);
-      if (*end != '\0' || (errno == ERANGE && lengthnum == ULONG_MAX)) {
+      std::optional<uint64_t> lengthnum_opt = StringToIntegerU64(length);
+      if (!lengthnum_opt.has_value()) {
         VLOG(1) << "parser failed: bad http field: content-length: " << length;
         status_ = ParserStatus::Error;
         break;
       }
+      const uint64_t lengthnum = lengthnum_opt.value();
       content_length_ = lengthnum;
     }
     if (key == "Content-Type") {
@@ -322,14 +322,14 @@ void HttpRequestParser::OnRequestFirstLineInput(std::string_view /*line_input*/,
       hostname = hostname.substr(1, hostname.size() - 2);
     }
 
-    char* end;
-    const unsigned long portnum = strtoul(port.c_str(), &end, 10);
-    if (*end != '\0' || portnum > UINT16_MAX || (errno == ERANGE && portnum == ULONG_MAX)) {
+    std::optional<unsigned> portnum_opt = StringToIntegerU(port);
+    if (!portnum_opt.has_value() || portnum_opt.value() > UINT16_MAX) {
       VLOG(1) << "parser failed: bad http field: Host: " << authority << " hostname: " << hostname << " port: " << port;
       status_ = ParserStatus::Error;
       error_message_ = "HPE_INVALID_URL";
       return;
     }
+    const uint16_t portnum = static_cast<uint16_t>(portnum_opt.value());
     http_host_ = hostname;
     http_port_ = portnum;
   }
@@ -527,12 +527,12 @@ int HttpRequestParser::OnReadHttpRequestHeaderValue(http_parser* parser, const c
       hostname = hostname.substr(1, hostname.size() - 2);
     }
 
-    char* end;
-    const unsigned long portnum = strtoul(port.c_str(), &end, 10);
-    if (*end != '\0' || portnum > UINT16_MAX || (errno == ERANGE && portnum == ULONG_MAX)) {
+    std::optional<unsigned> portnum_opt = StringToIntegerU(port);
+    if (!portnum_opt.has_value() || portnum_opt.value() > UINT16_MAX) {
       VLOG(1) << "parser failed: bad http field: Host: " << authority << " hostname: " << hostname << " port: " << port;
       return -1;
     }
+    const uint16_t portnum = static_cast<uint16_t>(portnum_opt.value());
     self->http_host_ = hostname;
     self->http_port_ = portnum;
   }
@@ -540,12 +540,12 @@ int HttpRequestParser::OnReadHttpRequestHeaderValue(http_parser* parser, const c
   if (self->http_field_ == "Content-Length") {
     std::string length = std::string(buf, len);
 
-    char* end;
-    const unsigned long lengthnum = strtoul(length.c_str(), &end, 10);
-    if (*end != '\0' || (errno == ERANGE && lengthnum == ULONG_MAX)) {
+    std::optional<uint64_t> lengthnum_opt = StringToIntegerU64(length);
+    if (!lengthnum_opt.has_value()) {
       VLOG(1) << "parser failed: bad http field: content-length: " << length;
       return -1;
     }
+    const uint64_t lengthnum = lengthnum_opt.value();
     self->content_length_ = lengthnum;
   }
   if (self->http_field_ == "Content-Type") {

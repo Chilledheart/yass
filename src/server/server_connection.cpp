@@ -333,13 +333,13 @@ bool ServerConnection::OnEndHeadersForStream(http2::adapter::Http2StreamId strea
     hostname = hostname.substr(1, hostname.size() - 2);
   }
 
-  char* end;
-  const unsigned long portnum = strtoul(port.c_str(), &end, 10);
-  if (*end != '\0' || portnum > UINT16_MAX || (errno == ERANGE && portnum == ULONG_MAX)) {
+  std::optional<unsigned> portnum_opt = StringToIntegerU(port);
+  if (!portnum_opt.has_value() || portnum_opt.value() > UINT16_MAX) {
     LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
-              << " Unexpected authority: " << authority;
+              << " Unexpected authority: " << authority << " hostname: " << hostname << " port: " << port;
     return false;
   }
+  const uint16_t portnum = static_cast<uint16_t>(portnum_opt.value());
 
   request_ = ss::request(hostname, portnum);
 
