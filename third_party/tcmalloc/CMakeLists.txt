@@ -45,6 +45,8 @@ add_library(tcmalloc_common OBJECT
   src/tcmalloc/internal/percpu.cc
   src/tcmalloc/internal/percpu_rseq_asm.S
   src/tcmalloc/internal/percpu_rseq_unsupported.cc
+  src/tcmalloc/internal/percpu_tcmalloc.h
+  src/tcmalloc/internal/percpu_tcmalloc.cc
   src/tcmalloc/internal/proc_maps.h
   src/tcmalloc/internal/proc_maps.cc
   src/tcmalloc/internal/sysinfo.h
@@ -56,6 +58,7 @@ add_library(tcmalloc_common OBJECT
   src/tcmalloc/experiment.cc
 
   src/tcmalloc/allocation_sample.cc
+  src/tcmalloc/allocation_sampling.cc
   src/tcmalloc/arena.cc
   src/tcmalloc/arena.h
   src/tcmalloc/background.cc
@@ -80,9 +83,11 @@ add_library(tcmalloc_common OBJECT
   src/tcmalloc/huge_page_aware_allocator.cc
   src/tcmalloc/huge_page_aware_allocator.h
   src/tcmalloc/huge_page_filler.h
+  src/tcmalloc/huge_page_subrelease.h
   src/tcmalloc/huge_pages.h
   src/tcmalloc/huge_region.h
   src/tcmalloc/legacy_size_classes.cc
+  src/tcmalloc/lowfrag_size_classes.cc
   src/tcmalloc/page_allocator.cc
   src/tcmalloc/page_allocator.h
   src/tcmalloc/page_allocator_interface.cc
@@ -167,6 +172,7 @@ target_link_libraries(tcmalloc_common PUBLIC
   tcmalloc_malloc_extension
   absl::core_headers
   absl::flat_hash_map
+  absl::flat_hash_set
   absl::fixed_array
   absl::optional
   absl::span
