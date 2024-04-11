@@ -282,35 +282,102 @@ elseif(APPLE)
   endif()
   list(APPEND YASS_APP_FEATURES "arch: ${CMAKE_OSX_ARCHITECTURES}")
 else()
+  # x86
   if ((CMAKE_C_COMPILER_TARGET MATCHES "^i386-.*" OR
        CMAKE_C_COMPILER_TARGET MATCHES "^i486-.*" OR
        CMAKE_C_COMPILER_TARGET MATCHES "^i586-.*" OR
        CMAKE_C_COMPILER_TARGET MATCHES "^i686-.*"))
     set(OS_X86 TRUE)
   endif()
+  if (NOT CMAKE_C_COMPILER_TARGET AND
+      (CMAKE_SYSTEM_PROCESSOR MATCHES "^i386$" OR
+       CMAKE_SYSTEM_PROCESSOR MATCHES "^i486$" OR
+       CMAKE_SYSTEM_PROCESSOR MATCHES "^i586$" OR
+       CMAKE_SYSTEM_PROCESSOR MATCHES "^i686$"))
+    set(OS_X86 TRUE)
+  endif()
 
+  # x64
   if ((CMAKE_C_COMPILER_TARGET MATCHES "^amd64*" OR
        CMAKE_C_COMPILER_TARGET MATCHES "^x86_64*" OR
        CMAKE_C_COMPILER_TARGET MATCHES "^x64*"))
     set(OS_X64 TRUE)
   endif()
   if (NOT CMAKE_C_COMPILER_TARGET AND
-      (CMAKE_SYSTEM_PROCESSOR MATCHES "^amd64*" OR
-       CMAKE_SYSTEM_PROCESSOR MATCHES "^x86_64*" OR
-       CMAKE_SYSTEM_PROCESSOR MATCHES "^x64*"))
+      (CMAKE_SYSTEM_PROCESSOR MATCHES "^amd64$" OR
+       CMAKE_SYSTEM_PROCESSOR MATCHES "^x86_64$" OR
+       CMAKE_SYSTEM_PROCESSOR MATCHES "^x64$"))
     set(OS_X64 TRUE)
   endif()
+
+  # arm
   if (CMAKE_C_COMPILER_TARGET MATCHES "^arm-.*")
     set(OS_ARM TRUE)
   endif()
+  if (NOT CMAKE_C_COMPILER_TARGET AND
+      (CMAKE_SYSTEM_PROCESSOR MATCHES "^arm$" OR
+       CMAKE_SYSTEM_PROCESSOR MATCHES "^armel$" OR
+       CMAKE_SYSTEM_PROCESSOR MATCHES "^armhf$"))
+    set(OS_ARM TRUE)
+  endif()
+
+  # arm64
   if ((CMAKE_C_COMPILER_TARGET MATCHES "^arm64-.*" OR
        CMAKE_C_COMPILER_TARGET MATCHES "^aarch64-.*"))
     set(OS_AARCH64 TRUE)
   endif()
+  if (NOT CMAKE_C_COMPILER_TARGET AND
+      (CMAKE_SYSTEM_PROCESSOR MATCHES "^arm64$" OR
+       CMAKE_SYSTEM_PROCESSOR MATCHES "^aarch64$"))
+    set(OS_AARCH64 TRUE)
+  endif()
+
+  # mips
+  if ((CMAKE_C_COMPILER_TARGET MATCHES "^mipsel-.*" OR
+       CMAKE_C_COMPILER_TARGET MATCHES "^mips-.*"))
+    set(OS_MIPS TRUE)
+  endif()
+  if (NOT CMAKE_C_COMPILER_TARGET AND
+      (CMAKE_SYSTEM_PROCESSOR MATCHES "^mipsel$" OR
+       CMAKE_SYSTEM_PROCESSOR MATCHES "^mips$"))
+    set(OS_MIPS TRUE)
+  endif()
+
+  # mips64
+  if ((CMAKE_C_COMPILER_TARGET MATCHES "^mips64el-.*" OR
+       CMAKE_C_COMPILER_TARGET MATCHES "^mips64-.*"))
+    set(OS_MIPS64 TRUE)
+  endif()
+  if (NOT CMAKE_C_COMPILER_TARGET AND
+      (CMAKE_SYSTEM_PROCESSOR MATCHES "^mips64el$" OR
+       CMAKE_SYSTEM_PROCESSOR MATCHES "^mips64$"))
+    set(OS_MIPS64 TRUE)
+  endif()
+
+  # loongarch64
+  if (CMAKE_C_COMPILER_TARGET MATCHES "^loongarch64-.*")
+    set(OS_LOONGARCH64 TRUE)
+  endif()
+  if (NOT CMAKE_C_COMPILER_TARGET AND
+      CMAKE_SYSTEM_PROCESSOR MATCHES "^loongarch64$")
+    set(OS_LOONGARCH64 TRUE)
+  endif()
+
+  # riscv64
   if (CMAKE_C_COMPILER_TARGET MATCHES "^riscv64-.*")
     set(OS_RISCV64 TRUE)
   endif()
+  if (NOT CMAKE_C_COMPILER_TARGET AND
+      CMAKE_SYSTEM_PROCESSOR MATCHES "^riscv64$")
+    set(OS_RISCV64 TRUE)
+  endif()
+
+  # riscv32
   if (CMAKE_C_COMPILER_TARGET MATCHES "^riscv32-.*")
+    set(OS_RISCV32 TRUE)
+  endif()
+  if (NOT CMAKE_C_COMPILER_TARGET AND
+      CMAKE_SYSTEM_PROCESSOR MATCHES "^riscv32$")
     set(OS_RISCV32 TRUE)
   endif()
   # Fix MINGW (native mingw)'s CMAKE_SYSTEM_PROCESSOR
@@ -2287,30 +2354,13 @@ set(SUPPORT_LIBS
 
 # only support platform: linux
 if (USE_TCMALLOC)
-  if (NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    if (NOT (OS_X64 OR OS_AARCH64 OR OS_RISCV64))
+      message(WARNING "tcmalloc: arch ${CMAKE_SYSTEM_PROCESSOR} is not supported, disabling...")
+      set(USE_TCMALLOC OFF)
+    endif()
+  else()
     message(WARNING "tcmalloc: only Linux is supported, disabling...")
-    set(USE_TCMALLOC OFF)
-  endif()
-  if (OS_X86)
-    message(WARNING "tcmalloc: 32-bit x86 is not supported, disabling...")
-    set(USE_TCMALLOC OFF)
-  endif()
-  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "mips" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "mips64" OR
-      CMAKE_SYSTEM_PROCESSOR STREQUAL "mipsel" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "mips64el")
-    message(WARNING "tcmalloc: mips/mips64 is not supported, disabling...")
-    set(USE_TCMALLOC OFF)
-  endif()
-  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "armhf" OR
-      CMAKE_SYSTEM_PROCESSOR STREQUAL "armel")
-    message(WARNING "tcmalloc: 32-bit arm is not supported, disabling...")
-    set(USE_TCMALLOC OFF)
-  endif()
-  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "loongarch64")
-    message(WARNING "tcmalloc: loongarch64 is not supported, disabling...")
-    set(USE_TCMALLOC OFF)
-  endif()
-  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "riscv32")
-    message(WARNING "tcmalloc: riscv32 is not supported, disabling...")
     set(USE_TCMALLOC OFF)
   endif()
 endif()
