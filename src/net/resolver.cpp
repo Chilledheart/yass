@@ -2,7 +2,7 @@
 /* Copyright (c) 2024 Chilledheart  */
 
 #include "net/resolver.hpp"
-#include "config/config.hpp"
+#include "config/config_network.hpp"
 
 namespace net {
 

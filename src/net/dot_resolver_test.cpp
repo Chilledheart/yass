@@ -8,7 +8,7 @@
 
 #include <gmock/gmock.h>
 
-#include "config/config.hpp"
+#include "config/config_network.hpp"
 #include "net/dot_resolver.hpp"
 #include "test_util.hpp"
 

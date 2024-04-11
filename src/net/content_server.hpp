@@ -13,7 +13,7 @@
 #include <utility>
 #include <vector>
 
-#include "config/config.hpp"
+#include "config/config_tls.hpp"
 #include "core/logging.hpp"
 #include "core/scoped_refptr.hpp"
 #include "core/utils.hpp"

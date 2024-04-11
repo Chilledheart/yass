@@ -5,6 +5,8 @@
 
 #include <absl/flags/flag.h>
 
+ABSL_FLAG(bool, ipv6_mode, true, "Resolve names to IPv6 addresses");
+
 ABSL_FLAG(bool, reuse_port, true, "Reuse the listening port");
 ABSL_FLAG(std::string, congestion_algorithm, "bbr", "TCP Congestion Algorithm");
 ABSL_FLAG(bool, tcp_fastopen, false, "TCP fastopen");
@@ -22,3 +24,6 @@ ABSL_FLAG(int32_t,
 ABSL_FLAG(int32_t, tcp_keep_alive_interval, 75, "The number of seconds between TCP keep-alive probes.");
 ABSL_FLAG(bool, tls13_early_data, true, "Enable 0RTTI Early Data (risk at production)");
 ABSL_FLAG(bool, redir_mode, false, "Enable TCP Redir mode support (linux only)");
+
+ABSL_FLAG(std::string, doh_url, "", "Resolve host names over DoH");
+ABSL_FLAG(std::string, dot_host, "", "Resolve host names over DoT");

@@ -4,12 +4,11 @@
 #include "config/config.hpp"
 #include "config/config_impl.hpp"
 
-#include <sstream>
-
 #include <absl/flags/flag.h>
 #include <absl/flags/internal/program_name.h>
 #include <absl/flags/usage.h>
 #include <absl/strings/str_cat.h>
+#include <sstream>
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
@@ -168,8 +167,6 @@ std::string AbslUnparseFlag(const RateFlag& flag) {
   return os.str();
 }
 
-ABSL_FLAG(bool, ipv6_mode, true, "Resolve names to IPv6 addresses");
-
 ABSL_FLAG(std::string, server_host, "http2.github.io", "Remote server on given host");
 ABSL_FLAG(std::string, server_sni, "", "Remote server on given sni");
 ABSL_FLAG(PortFlag, server_port, PortFlag(443), "Remote server on given port");
@@ -186,9 +183,6 @@ ABSL_FLAG(CipherMethodFlag, method, CipherMethodFlag(CRYPTO_HTTP2), kCipherMetho
 ABSL_FLAG(uint32_t, parallel_max, 512, "Maximum concurrency for parallel connections");
 
 ABSL_FLAG(RateFlag, limit_rate, RateFlag(0), "Limit transfer speed to RATE");
-
-ABSL_FLAG(std::string, doh_url, "", "Resolve host names over DoH");
-ABSL_FLAG(std::string, dot_host, "", "Resolve host names over DoT");
 
 namespace config {
 
