@@ -1,14 +1,24 @@
-yass (1.7.7-1) UNRELEASED; urgency=medium
+yass (1.8.3-1) UNRELEASED; urgency=medium
+
+  * net: add dot support
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Mon, 8 Apr 2024 16:13:58 +0800
+yass (1.8.2-1) UNRELEASED; urgency=medium
 
   * fix (nghttp2) CVE-2024-30255
 
  -- Chilledheart <keeyou-cn@outlook.com>  Fri, 5 Apr 2024 16:13:05 +0800
-yass (1.7.6-1) UNRELEASED; urgency=medium
+yass (1.8.1-1) UNRELEASED; urgency=medium
 
-  * net: add doh support
+  * bump to chromium 124 dependents.
   * miscellaneous fixes
 
  -- Chilledheart <keeyou-cn@outlook.com>  Tue, 26 Mar 2024 16:16:59 +0800
+yass (1.8.0-1) UNRELEASED; urgency=medium
+
+  * bump to chromium 124 dependents.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Wed, 20 Mar 2024 14:34:59 +0800
 yass (1.7.5-1) UNRELEASED; urgency=medium
 
   * net: add doh support

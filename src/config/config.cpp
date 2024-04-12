@@ -4,11 +4,11 @@
 #include "config/config.hpp"
 #include "config/config_impl.hpp"
 
-#include <sstream>
-
 #include <absl/flags/flag.h>
 #include <absl/flags/internal/program_name.h>
+#include <absl/flags/usage.h>
 #include <absl/strings/str_cat.h>
+#include <sstream>
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"
@@ -167,8 +167,6 @@ std::string AbslUnparseFlag(const RateFlag& flag) {
   return os.str();
 }
 
-ABSL_FLAG(bool, ipv6_mode, true, "Resolve names to IPv6 addresses");
-
 ABSL_FLAG(std::string, server_host, "http2.github.io", "Remote server on given host");
 ABSL_FLAG(std::string, server_sni, "", "Remote server on given sni");
 ABSL_FLAG(PortFlag, server_port, PortFlag(443), "Remote server on given port");
@@ -186,8 +184,6 @@ ABSL_FLAG(uint32_t, parallel_max, 512, "Maximum concurrency for parallel connect
 
 ABSL_FLAG(RateFlag, limit_rate, RateFlag(0), "Limit transfer speed to RATE");
 
-ABSL_FLAG(std::string, doh_url, "", "Resolve host names over DoH");
-
 namespace config {
 
 void ReadConfigFileOption(int argc, const char** argv) {
@@ -195,7 +191,14 @@ void ReadConfigFileOption(int argc, const char** argv) {
   while (pos < argc) {
     std::string arg = argv[pos];
     if (pos + 1 < argc && (arg == "-v" || arg == "--v")) {
-      absl::SetFlag(&FLAGS_v, atoi(argv[pos + 1]));
+      auto v_opt = StringToIntegerU(argv[pos + 1]);
+      if (!v_opt.has_value()) {
+        fprintf(stderr, "Invalid Option: %s %s\n", argv[pos], argv[pos + 1]);
+        fflush(stderr);
+        exit(-1);
+        continue;
+      }
+      absl::SetFlag(&FLAGS_v, v_opt.value());
       argv[pos] = "";
       argv[pos + 1] = "";
       pos += 2;
@@ -205,6 +208,22 @@ void ReadConfigFileOption(int argc, const char** argv) {
       argv[pos] = "";
       argv[pos + 1] = "";
       pos += 2;
+      continue;
+    } else if (pos + 1 < argc && (arg == "-log_dir" || arg == "--log_dir")) {
+      absl::SetFlag(&FLAGS_log_dir, argv[pos + 1]);
+      argv[pos] = "";
+      argv[pos + 1] = "";
+      pos += 2;
+      continue;
+    } else if (strncmp(argv[pos], "-log_dir=", sizeof("-log_dir=") - 1) == 0) {
+      absl::SetFlag(&FLAGS_log_dir, argv[pos] + sizeof("-log_dir=") - 1);
+      argv[pos] = "";
+      pos += 1;
+      continue;
+    } else if (strncmp(argv[pos], "--log_dir=", sizeof("--log_dir=") - 1) == 0) {
+      absl::SetFlag(&FLAGS_log_dir, argv[pos] + sizeof("--log_dir=") - 1);
+      argv[pos] = "";
+      pos += 1;
       continue;
     } else if (arg == "--ipv4") {
       absl::SetFlag(&FLAGS_ipv6_mode, false);
@@ -332,6 +351,7 @@ bool ReadConfig() {
 
   config_impl->Read("congestion_algorithm", &FLAGS_congestion_algorithm);
   config_impl->Read("doh_url", &FLAGS_doh_url);
+  config_impl->Read("dot_host", &FLAGS_dot_host);
   config_impl->Read("connect_timeout", &FLAGS_connect_timeout);
   config_impl->Read("tcp_nodelay", &FLAGS_tcp_nodelay);
 
@@ -382,6 +402,7 @@ bool SaveConfig() {
   static_cast<void>(config_impl->Delete("threads"));
   all_fields_written &= config_impl->Write("congestion_algorithm", FLAGS_congestion_algorithm);
   all_fields_written &= config_impl->Write("doh_url", FLAGS_doh_url);
+  all_fields_written &= config_impl->Write("dot_host", FLAGS_dot_host);
   all_fields_written &= config_impl->Write("timeout", FLAGS_connect_timeout);
   all_fields_written &= config_impl->Write("connect_timeout", FLAGS_connect_timeout);
   all_fields_written &= config_impl->Write("tcp_nodelay", FLAGS_tcp_nodelay);
@@ -405,6 +426,7 @@ std::string ReadConfigFromArgument(const std::string& server_host,
                                    const std::string& local_host,
                                    const std::string& _local_port,
                                    const std::string& doh_url,
+                                   const std::string& dot_host,
                                    const std::string& _timeout) {
   std::ostringstream err_msg;
 
@@ -439,6 +461,15 @@ std::string ReadConfigFromArgument(const std::string& server_host,
     if (!url.is_valid() || !url.has_host() || !url.has_scheme() || url.scheme() != "https") {
       err_msg << ",Invalid DoH URL: " << doh_url;
     }
+    if (!dot_host.empty()) {
+      err_msg << ",Conflicting DoT Host: " << dot_host;
+    }
+  }
+
+  if (!dot_host.empty()) {
+    if (dot_host.size() >= _POSIX_HOST_NAME_MAX) {
+      err_msg << ",Invalid DoT Host: " << dot_host;
+    }
   }
 
   auto timeout = StringToIntegerU(_timeout);
@@ -457,6 +488,7 @@ std::string ReadConfigFromArgument(const std::string& server_host,
     absl::SetFlag(&FLAGS_local_host, local_host);
     absl::SetFlag(&FLAGS_local_port, local_port.value());
     absl::SetFlag(&FLAGS_doh_url, doh_url);
+    absl::SetFlag(&FLAGS_dot_host, dot_host);
     absl::SetFlag(&FLAGS_connect_timeout, timeout.value());
   } else {
     ret = ret.substr(1);
@@ -473,6 +505,7 @@ std::string ReadConfigFromArgument(const std::string& server_host,
                                    const std::string& local_host,
                                    const std::string& _local_port,
                                    const std::string& doh_url,
+                                   const std::string& dot_host,
                                    const std::string& _timeout) {
   std::ostringstream err_msg;
 
@@ -508,6 +541,15 @@ std::string ReadConfigFromArgument(const std::string& server_host,
     if (!url.is_valid() || !url.has_host() || !url.has_scheme() || url.scheme() != "https") {
       err_msg << ",Invalid DoH URL: " << doh_url;
     }
+    if (!dot_host.empty()) {
+      err_msg << ",Conflicting DoT Host: " << dot_host;
+    }
+  }
+
+  if (!dot_host.empty()) {
+    if (dot_host.size() >= _POSIX_HOST_NAME_MAX) {
+      err_msg << ",Invalid DoT Host: " << dot_host;
+    }
   }
 
   auto timeout = StringToIntegerU(_timeout);
@@ -526,11 +568,39 @@ std::string ReadConfigFromArgument(const std::string& server_host,
     absl::SetFlag(&FLAGS_local_host, local_host);
     absl::SetFlag(&FLAGS_local_port, local_port.value());
     absl::SetFlag(&FLAGS_doh_url, doh_url);
+    absl::SetFlag(&FLAGS_dot_host, dot_host);
     absl::SetFlag(&FLAGS_connect_timeout, timeout.value());
   } else {
     ret = ret.substr(1);
   }
   return ret;
+}
+
+void SetClientUsageMessage(const std::string& exec_path) {
+  absl::SetProgramUsageMessage(absl::StrCat("Usage: ", Basename(exec_path), " [options ...]\n", R"(
+  -K, --config <file> Read config from a file
+  --server_host <host> Remote server on given host
+  --server_port <port> Remote server on given port
+  --local_host <host> Local proxy server on given host
+  --local_port <port> Local proxy server on given port
+  --username <username> Server user
+  --password <pasword> Server password
+  --method <method> Specify encrypt of method to use
+)"));
+}
+
+void SetServerUsageMessage(const std::string& exec_path) {
+  absl::SetProgramUsageMessage(absl::StrCat("Usage: ", Basename(exec_path), " [options ...]\n", R"(
+  -K, --config <file> Read config from a file
+  --certificate_chain_file <file> (TLS) Certificate Chain File Path
+  --private_key_file <file> (TLS) Private Key File Path
+  --private_key_password <password> (TLS) Private Key Password
+  --server_host <host> Server on given host
+  --server_port <port> Server on given port
+  --username <username> Server user
+  --password <pasword> Server password
+  --method <method> Specify encrypt of method to use
+)"));
 }
 
 }  // namespace config

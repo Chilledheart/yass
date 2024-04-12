@@ -21,5 +21,15 @@ function notarize {
   gh release delete-asset -y $TAG $UNSIGNED_DMG
 }
 
+function checksum {
+  TAG=$1
+  ARCH=$2
+  SIGNED_DMG=yass-macos-release-$ARCH-$TAG.dmg
+  sha256sum $SIGNED_DMG
+}
+
 notarize $1 x64
 notarize $1 arm64
+
+checksum $1 x64
+checksum $1 arm64

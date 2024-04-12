@@ -424,10 +424,10 @@ static void GetHostName(std::string* hostname) {
   }
   *hostname = buf.nodename;
 #elif BUILDFLAG(IS_WIN)
-  char buf[MAX_COMPUTERNAME_LENGTH + 1];
+  wchar_t buf[MAX_COMPUTERNAME_LENGTH + 1];
   DWORD len = MAX_COMPUTERNAME_LENGTH + 1;
-  if (GetComputerNameA(buf, &len)) {
-    *hostname = buf;
+  if (GetComputerNameW(buf, &len)) {
+    *hostname = SysWideToUTF8(std::wstring(buf, len));
   } else {
     hostname->clear();
   }
@@ -2370,9 +2370,9 @@ static void GetTempDirectories(std::vector<std::string>* list) {
   //   C:/TEMP/
   //   C:/WINDOWS/ or C:/WINNT/
   //   .
-  char tmp[MAX_PATH];
-  if (GetTempPathA(MAX_PATH, tmp))
-    list->push_back(tmp);
+  wchar_t tmp[MAX_PATH];
+  if (DWORD len = GetTempPathW(MAX_PATH, tmp))
+    list->push_back(SysWideToUTF8(std::wstring(tmp, len)));
   list->push_back("C:\\tmp\\");
   list->push_back("C:\\temp\\");
 #else
@@ -2422,9 +2422,9 @@ const std::vector<std::string>& GetLoggingDirectories() {
     } else {
       GetTempDirectories(logging_directories_list);
 #if BUILDFLAG(IS_WIN)
-      char tmp[MAX_PATH];
-      if (GetWindowsDirectoryA(tmp, MAX_PATH)) {
-        logging_directories_list->push_back(tmp);
+      wchar_t tmp[MAX_PATH];
+      if (UINT len = GetWindowsDirectoryW(tmp, MAX_PATH)) {
+        logging_directories_list->push_back(SysWideToUTF8(std::wstring(tmp, len)));
       }
       logging_directories_list->push_back(".\\");
 #else

@@ -48,10 +48,12 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
   auto local_port = std::string("0");
   auto method_string = gurl_base::SysNSStringToUTF8(dict[@(kMethodStringFieldName)]);
   auto doh_url = gurl_base::SysNSStringToUTF8(dict[@(kDoHURLFieldName)]);
+  auto dot_host = gurl_base::SysNSStringToUTF8(dict[@(kDoTHostFieldName)]);
   auto connect_timeout = gurl_base::SysNSStringToUTF8(dict[@(kConnectTimeoutFieldName)]);
 
-  auto err_msg = config::ReadConfigFromArgument(server_host, "" /*server_sni*/, server_port, username, password,
-                                                method_string, local_host, local_port, doh_url, connect_timeout);
+  auto err_msg =
+      config::ReadConfigFromArgument(server_host, "" /*server_sni*/, server_port, username, password, method_string,
+                                     local_host, local_port, doh_url, dot_host, connect_timeout);
   if (!err_msg.empty()) {
     completionHandler([NSError errorWithDomain:@"it.gui.ios.yass"
                                           code:200
@@ -229,10 +231,11 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
   stopped_ = true;
   worker_.Stop([=] {
     NSLog(@"worker stopped");
-    Tun2Proxy_Destroy(context_);
+    Tun2Proxy_Shutdown(context_);
     NSLog(@"tun2proxy destroyed");
     tun2proxy_thread_->join();
     tun2proxy_thread_.reset();
+    Tun2Proxy_Destroy(context_);
     completionHandler();
   });
 }

@@ -107,6 +107,10 @@ msgid "DNS over HTTPS URL"
 msgstr "基于 HTTPS 的 DNS (DoH) URL"
 
 #: yass_window.cpp:156
+msgid "DNS over TLS Host"
+msgstr "基于 TLS 的 DNS (DoT) 域名"
+
+#: yass_window.cpp:156
 msgid "Timeout"
 msgstr "超时时间"
 

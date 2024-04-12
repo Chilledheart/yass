@@ -282,30 +282,103 @@ elseif(APPLE)
   endif()
   list(APPEND YASS_APP_FEATURES "arch: ${CMAKE_OSX_ARCHITECTURES}")
 else()
+  # x86
   if ((CMAKE_C_COMPILER_TARGET MATCHES "^i386-.*" OR
        CMAKE_C_COMPILER_TARGET MATCHES "^i486-.*" OR
        CMAKE_C_COMPILER_TARGET MATCHES "^i586-.*" OR
        CMAKE_C_COMPILER_TARGET MATCHES "^i686-.*"))
     set(OS_X86 TRUE)
   endif()
+  if (NOT CMAKE_C_COMPILER_TARGET AND
+      (CMAKE_SYSTEM_PROCESSOR MATCHES "^i386$" OR
+       CMAKE_SYSTEM_PROCESSOR MATCHES "^i486$" OR
+       CMAKE_SYSTEM_PROCESSOR MATCHES "^i586$" OR
+       CMAKE_SYSTEM_PROCESSOR MATCHES "^i686$"))
+    set(OS_X86 TRUE)
+  endif()
 
+  # x64
   if ((CMAKE_C_COMPILER_TARGET MATCHES "^amd64*" OR
        CMAKE_C_COMPILER_TARGET MATCHES "^x86_64*" OR
        CMAKE_C_COMPILER_TARGET MATCHES "^x64*"))
     set(OS_X64 TRUE)
   endif()
   if (NOT CMAKE_C_COMPILER_TARGET AND
-      (CMAKE_SYSTEM_PROCESSOR MATCHES "^amd64*" OR
-       CMAKE_SYSTEM_PROCESSOR MATCHES "^x86_64*" OR
-       CMAKE_SYSTEM_PROCESSOR MATCHES "^x64*"))
+      (CMAKE_SYSTEM_PROCESSOR MATCHES "^amd64$" OR
+       CMAKE_SYSTEM_PROCESSOR MATCHES "^x86_64$" OR
+       CMAKE_SYSTEM_PROCESSOR MATCHES "^x64$"))
     set(OS_X64 TRUE)
   endif()
+
+  # arm
   if (CMAKE_C_COMPILER_TARGET MATCHES "^arm-.*")
     set(OS_ARM TRUE)
   endif()
+  if (NOT CMAKE_C_COMPILER_TARGET AND
+      (CMAKE_SYSTEM_PROCESSOR MATCHES "^arm$" OR
+       CMAKE_SYSTEM_PROCESSOR MATCHES "^armel$" OR
+       CMAKE_SYSTEM_PROCESSOR MATCHES "^armhf$"))
+    set(OS_ARM TRUE)
+  endif()
+
+  # arm64
   if ((CMAKE_C_COMPILER_TARGET MATCHES "^arm64-.*" OR
        CMAKE_C_COMPILER_TARGET MATCHES "^aarch64-.*"))
     set(OS_AARCH64 TRUE)
+  endif()
+  if (NOT CMAKE_C_COMPILER_TARGET AND
+      (CMAKE_SYSTEM_PROCESSOR MATCHES "^arm64$" OR
+       CMAKE_SYSTEM_PROCESSOR MATCHES "^aarch64$"))
+    set(OS_AARCH64 TRUE)
+  endif()
+
+  # mips
+  if ((CMAKE_C_COMPILER_TARGET MATCHES "^mipsel-.*" OR
+       CMAKE_C_COMPILER_TARGET MATCHES "^mips-.*"))
+    set(OS_MIPS TRUE)
+  endif()
+  if (NOT CMAKE_C_COMPILER_TARGET AND
+      (CMAKE_SYSTEM_PROCESSOR MATCHES "^mipsel$" OR
+       CMAKE_SYSTEM_PROCESSOR MATCHES "^mips$"))
+    set(OS_MIPS TRUE)
+  endif()
+
+  # mips64
+  if ((CMAKE_C_COMPILER_TARGET MATCHES "^mips64el-.*" OR
+       CMAKE_C_COMPILER_TARGET MATCHES "^mips64-.*"))
+    set(OS_MIPS64 TRUE)
+  endif()
+  if (NOT CMAKE_C_COMPILER_TARGET AND
+      (CMAKE_SYSTEM_PROCESSOR MATCHES "^mips64el$" OR
+       CMAKE_SYSTEM_PROCESSOR MATCHES "^mips64$"))
+    set(OS_MIPS64 TRUE)
+  endif()
+
+  # loongarch64
+  if (CMAKE_C_COMPILER_TARGET MATCHES "^loongarch64-.*")
+    set(OS_LOONGARCH64 TRUE)
+  endif()
+  if (NOT CMAKE_C_COMPILER_TARGET AND
+      CMAKE_SYSTEM_PROCESSOR MATCHES "^loongarch64$")
+    set(OS_LOONGARCH64 TRUE)
+  endif()
+
+  # riscv64
+  if (CMAKE_C_COMPILER_TARGET MATCHES "^riscv64-.*")
+    set(OS_RISCV64 TRUE)
+  endif()
+  if (NOT CMAKE_C_COMPILER_TARGET AND
+      CMAKE_SYSTEM_PROCESSOR MATCHES "^riscv64$")
+    set(OS_RISCV64 TRUE)
+  endif()
+
+  # riscv32
+  if (CMAKE_C_COMPILER_TARGET MATCHES "^riscv32-.*")
+    set(OS_RISCV32 TRUE)
+  endif()
+  if (NOT CMAKE_C_COMPILER_TARGET AND
+      CMAKE_SYSTEM_PROCESSOR MATCHES "^riscv32$")
+    set(OS_RISCV32 TRUE)
   endif()
   # Fix MINGW (native mingw)'s CMAKE_SYSTEM_PROCESSOR
   if (MINGW)
@@ -367,10 +440,18 @@ option(USE_BALSA_HTTP_PARSER "Build with balsa http parser" ON)
 option(USE_ICU "Build with icu" OFF)
 option(USE_LEVELDB "Build with leveldb" OFF)
 option(USE_SQLITE "Build with sqlite" OFF)
+option(USE_OLD_SYSTEMD_SERVICE "Install with old systemd service files" OFF)
 
+option(ENABLE_FORTIFY "Enable build with Fortify Source" ON)
 option(ENABLE_LTO "Enable build with LTO" ON)
 option(ENABLE_LLD "Enable build with LLD" ON)
 option(ENABLE_GOLD "Enable build with GOLD" ON)
+
+# Dynamic users are supported from version 235
+# see https://0pointer.net/blog/dynamic-users-with-systemd.html
+if (USE_OLD_SYSTEMD_SERVICE)
+  set(SYSTEMD_SERVICE_SUFFIX ".old")
+endif()
 
 if (ENABLE_LLD AND (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR LINKER_LLD) AND NOT COMPILER_APPLE_CLANG)
   # skipping apple clang
@@ -391,8 +472,10 @@ if (ENABLE_CLANG_TIDY)
   set(ENABLE_LTO OFF)
 endif()
 
-# -fsanitize-blacklist doesn't work with lto
 if (ASAN OR TSAN OR UBSAN OR MSAN)
+  # msan gets confused by fortify source level 3
+  set(ENABLE_FORTIFY OFF)
+  # -fsanitize-blacklist doesn't work with lto
   set(ENABLE_LTO OFF)
 endif()
 
@@ -523,6 +606,14 @@ if (UNIX AND CMAKE_CROSSCOMPILING AND CMAKE_SYSROOT AND COMPILER_CLANG AND NOT C
     # fix up for loongarch sysroot
     if (CMAKE_SYSTEM_PROCESSOR STREQUAL "loongarch64")
       file(GLOB _GCC_SYSROOT "${CMAKE_SYSROOT}/../../lib/gcc/*/*.*.*")
+      # required by loongarch64 sdk https://github.com/loongson/build-tools/releases
+      if (NOT _GCC_SYSROOT)
+        file(GLOB _GCC_SYSROOT "${CMAKE_SYSROOT}/../lib/gcc/*/*.*.*")
+      endif()
+    endif()
+    # fix up for riscv64 and riscv32 sysroot
+    if (CMAKE_SYSTEM_PROCESSOR STREQUAL "riscv64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "riscv32")
+      file(GLOB _GCC_SYSROOT "${CMAKE_SYSROOT}/../lib/gcc/*/*.*.*")
     endif()
     if (_GCC_SYSROOT)
       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --gcc-install-dir=${_GCC_SYSROOT}")
@@ -1192,6 +1283,17 @@ if (LTO AND COMPILER_GCC)
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.1)
     set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
     set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
+  endif()
+  # silence lto warning on old gcc, fixed in latest gcc
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12.0)
+    set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
+    set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
+  elseif (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 13.0)
+    set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch")
+    set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch")
+  elseif (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 13.2.1)
+    set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch -Wno-odr -Wno-error=uninitialized")
+    set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch -Wno-odr -Wno-error=uninitialized")
   endif()
 endif()
 
@@ -1951,7 +2053,6 @@ elseif (OHOS AND GUI)
   set(GUI_LIBRARY_DIRS "")
   set(GUI_LIBRARIES "libace_napi.z.so")
 elseif (WIN32 AND GUI)
-  message(STATUS "Compiling with GUI support: Windows")
   set(GUI_FLAVOUR "windows")
   set(GUI_USE_FILE "")
   set(GUI_INCLUDE_DIRS "")
@@ -1964,7 +2065,6 @@ elseif (WIN32 AND GUI)
     set(GUI_LIBRARIES wininet winmm gdi32 comdlg32 ole32 comctl32 shell32)
   endif()
 elseif (APPLE AND GUI AND NOT IOS)
-  message(STATUS "Compiling with GUI support: Cocoa")
   find_library(COCOA_LIBRARY Cocoa REQUIRED)
   # Locate Interface Builder Tool, needed to build things like Storyboards outside of Xcode.
   if(NOT ${CMAKE_GENERATOR} MATCHES "^Xcode.*")
@@ -1986,7 +2086,6 @@ elseif (APPLE AND GUI AND NOT IOS)
   set(GUI_LIBRARY_DIRS "")
   set(GUI_LIBRARIES "${COCOA_LIBRARY}")
 elseif (IOS AND GUI)
-  message(STATUS "Compiling with GUI support: IOS")
   find_library(UIKIT_LIBRARY UIKit REQUIRED)
   # Locate Interface Builder Tool, needed to build things like Storyboards outside of Xcode.
   if(NOT ${CMAKE_GENERATOR} MATCHES "^Xcode.*")
@@ -2008,7 +2107,6 @@ elseif (IOS AND GUI)
   set(GUI_LIBRARY_DIRS "")
   set(GUI_LIBRARIES "${UIKIT_LIBRARY}")
 elseif (GUI)
-  message(STATUS "Compiling with GUI support: GTK+")
   find_package(PkgConfig)
   if (NOT PKG_CONFIG_FOUND)
     message(WARNING "pkg-config (required to search gtk+ path) not found, disabling GUI build")
@@ -2026,8 +2124,17 @@ elseif (GUI)
       set(GUI off)
     endif()
 
+    # fix up for loongarch gtk support
+    # see https://github.com/microcai/gentoo-zh/pull/4486
+    if (CMAKE_SYSTEM_PROCESSOR STREQUAL "loongarch64")
+      message(STATUS "Blacklist gtk4 for loongarch64 target")
+      set(BLACKLIST_GTK4 ON)
+    else()
+      set(BLACKLIST_GTK4 OFF)
+    endif()
+
     pkg_check_modules(GTK4 gtk4)
-    if (GTK4_FOUND)
+    if (GTK4_FOUND AND NOT BLACKLIST_GTK4)
       set(GUI_FLAVOUR "gtk4")
       set(GUI_OTHER_FLAGS -Wno-deprecated-declarations)
 
@@ -2068,6 +2175,12 @@ elseif (GUI)
   endif()
 endif()
 
+if (GUI)
+  message(STATUS "Compiling with GUI support: ${GUI_FLAVOUR}")
+else()
+  message(STATUS "Compiling with no GUI support")
+endif()
+
 # *****************************************************************************************
 #           Compiler compiler and link flags (common)
 # *****************************************************************************************
@@ -2092,16 +2205,24 @@ if (NOT MSVC)
   ## not omit stack frame pointer for release
   set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -fno-omit-frame-pointer")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-omit-frame-pointer")
+  set(CMAKE_C_FLAGS_MINSIZEREL   "${CMAKE_C_FLAGS_MINSIZEREL} -fno-omit-frame-pointer")
+  set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -fno-omit-frame-pointer")
   set(CMAKE_C_FLAGS_RELWITHDEBINFO   "${CMAKE_C_FLAGS_RELWITHDEBINFO} -fno-omit-frame-pointer")
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -fno-omit-frame-pointer")
 
   ## fortify source code. Also, fortified build may fail when optimizations are
   ## disabled, so only do that for Release build.
-  if (NOT WIN32 AND NOT APPLE)
-    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -D_FORTIFY_SOURCE=2")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -D_FORTIFY_SOURCE=2")
-    set(CMAKE_C_FLAGS_RELWITHDEBINFO   "${CMAKE_C_FLAGS_RELWITHDEBINFO} -D_FORTIFY_SOURCE=2")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -D_FORTIFY_SOURCE=2")
+
+  string(REGEX MATCH "-D_FORTIFY_SOURCE=.*" HAS_FORTIFY_MACRO "${CMAKE_CXX_FLAGS}")
+  if (ENABLE_FORTIFY AND NOT WIN32 AND NOT APPLE AND NOT HAS_FORTIFY_MACRO)
+    # some gcc builds (depends on the distro) set _FORTIFY_SOURCE internally
+    # echo | gcc -O2 -E -dM -|grep _FORTIFY_SOURCE
+    set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3")
+    set(CMAKE_C_FLAGS_MINSIZEREL   "${CMAKE_C_FLAGS_MINSIZEREL} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2")
+    set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2")
+    set(CMAKE_C_FLAGS_RELWITHDEBINFO   "${CMAKE_C_FLAGS_RELWITHDEBINFO} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2")
   endif()
 
   ## set rpath origin
@@ -2232,26 +2353,13 @@ set(SUPPORT_LIBS
 
 # only support platform: linux
 if (USE_TCMALLOC)
-  if (NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    if (NOT (OS_X64 OR OS_AARCH64 OR OS_RISCV64))
+      message(WARNING "tcmalloc: arch ${CMAKE_SYSTEM_PROCESSOR} is not supported, disabling...")
+      set(USE_TCMALLOC OFF)
+    endif()
+  else()
     message(WARNING "tcmalloc: only Linux is supported, disabling...")
-    set(USE_TCMALLOC OFF)
-  endif()
-  if (OS_X86)
-    message(WARNING "tcmalloc: 32-bit x86 is not supported, disabling...")
-    set(USE_TCMALLOC OFF)
-  endif()
-  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "mips" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "mips64" OR
-      CMAKE_SYSTEM_PROCESSOR STREQUAL "mipsel" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "mips64el")
-    message(WARNING "tcmalloc: mips/mips64 is not supported, disabling...")
-    set(USE_TCMALLOC OFF)
-  endif()
-  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "armhf" OR
-      CMAKE_SYSTEM_PROCESSOR STREQUAL "armel")
-    message(WARNING "tcmalloc: 32-bit arm is not supported, disabling...")
-    set(USE_TCMALLOC OFF)
-  endif()
-  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "loongarch64")
-    message(WARNING "tcmalloc: loongarch64 is not supported, disabling...")
     set(USE_TCMALLOC OFF)
   endif()
 endif()
@@ -2276,19 +2384,6 @@ if (USE_TCMALLOC)
     tcmalloc
     ${SUPPORT_LIBS}
     )
-  # silence lto warning on gcc: tcmalloc_sampler
-  if (COMPILER_GCC AND LTO)
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12.0)
-      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
-      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-error=odr")
-    elseif (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 13.0)
-      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch")
-      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch")
-    else()
-      set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch -Wno-odr -Wno-error=uninitialized")
-      set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch -Wno-odr -Wno-error=uninitialized")
-    endif()
-  endif()
 endif()
 
 # *****************************************************************************************
@@ -2608,10 +2703,6 @@ elseif (USE_MBEDTLS)
   set(MBEDTLS_FATAL_WARNINGS OFF CACHE BOOL "")
   set(DISABLE_PACKAGE_CONFIG_AND_INSTALL ON CACHE BOOL "")
   set(INSTALL_MBEDTLS_HEADERS OFF CACHE BOOL "")
-  if (OS_X86)
-    message(STATUS "Compiling with mbedtls aesni support (x86)")
-    set(ENABLE_AESNI_C_X86 ON CACHE BOOL "")
-  endif()
 
   add_subdirectory(third_party/mbedtls)
 
@@ -3037,8 +3128,8 @@ elseif (USE_NGHTTP2)
   set(ENABLE_HPACK_TOOLS OFF CACHE BOOL "")
   set(ENABLE_EXAMPLES OFF CACHE BOOL "")
   set(ENABLE_LIB_ONLY ON CACHE BOOL "")
-  set(ENABLE_SHARED_LIB OFF CACHE BOOL "")
-  set(ENABLE_STATIC_LIB ON CACHE BOOL "")
+  set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
+  set(BUILD_STATIC_LIBS ON CACHE BOOL "")
   set(ENABLE_DOC OFF CACHE BOOL "")
   set(DISABLE_INSTALL ON CACHE BOOL "")
   add_subdirectory(third_party/nghttp2)
@@ -3522,6 +3613,8 @@ add_library(yass_core STATIC
     src/config/config_impl.hpp
     src/config/config_impl_local.hpp
     src/config/config_impl_windows.hpp
+    src/config/config_network.hpp
+    src/config/config_tls.hpp
     src/core/logging.cpp
     src/core/logging.hpp
     src/core/check_op.cpp
@@ -3617,6 +3710,7 @@ set(files
     src/net/iobuf.cpp
     src/net/hkdf_sha1.cpp
     src/net/hmac_sha1.cpp
+    src/net/dns_addrinfo_helper.cpp
     src/net/dns_message_response_parser.cpp
     src/net/socks4_request_parser.cpp
     src/net/socks5_request_parser.cpp
@@ -3624,6 +3718,8 @@ set(files
     src/net/c-ares.cpp
     src/net/doh_request.cpp
     src/net/doh_resolver.cpp
+    src/net/dot_request.cpp
+    src/net/dot_resolver.cpp
     src/net/http_parser.cpp
     src/net/padding.cpp
     src/net/resolver.cpp
@@ -3678,6 +3774,7 @@ set(hfiles
     src/net/iobuf.hpp
     src/net/hkdf_sha1.hpp
     src/net/hmac_sha1.hpp
+    src/net/dns_addrinfo_helper.hpp
     src/net/dns_message.hpp
     src/net/dns_message_request.hpp
     src/net/dns_message_response.hpp
@@ -3695,6 +3792,8 @@ set(hfiles
     src/net/c-ares.hpp
     src/net/doh_resolver.hpp
     src/net/doh_request.hpp
+    src/net/dot_resolver.hpp
+    src/net/dot_request.hpp
     src/net/http_parser.hpp
     src/net/padding.hpp
     src/net/resolver.hpp
@@ -3794,10 +3893,10 @@ if (CLI)
     # TODO add freebsd rc files
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID AND NOT OHOS)
       install(FILES yass.json.sample RENAME config.json DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/yass)
-      install(FILES yass.service RENAME yass.service DESTINATION lib/systemd/system)
+      install(FILES yass${SYSTEMD_SERVICE_SUFFIX}.service RENAME yass.service DESTINATION lib/systemd/system)
 
       install(FILES yass-redir.json.sample RENAME redir.json DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/yass)
-      install(FILES yass-redir.service RENAME yass-redir.service DESTINATION lib/systemd/system)
+      install(FILES yass-redir${SYSTEMD_SERVICE_SUFFIX}.service RENAME yass-redir.service DESTINATION lib/systemd/system)
     endif()
   endif()
 endif()
@@ -3835,7 +3934,7 @@ if (SERVER)
     install(FILES doc/yass_server.1 DESTINATION share/man/man1)
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID AND NOT OHOS)
       install(FILES yass-server.json.sample RENAME server.json DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/yass)
-      install(FILES yass-server.service RENAME yass-server.service DESTINATION lib/systemd/system)
+      install(FILES yass-server${SYSTEMD_SERVICE_SUFFIX}.service RENAME yass-server.service DESTINATION lib/systemd/system)
     endif()
   endif()
 endif()
@@ -4522,6 +4621,7 @@ if (BUILD_TESTS)
     src/net/padding_test.cpp
     src/net/dns_message_test.cpp
     src/net/doh_resolver_test.cpp
+    src/net/dot_resolver_test.cpp
     )
 
   if (IOS)

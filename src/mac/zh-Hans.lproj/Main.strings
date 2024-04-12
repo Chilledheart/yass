@@ -86,6 +86,9 @@
 /* Class = "NSTextFieldCell"; title = "DNS over HTTPS URL"; ObjectID = "yxt-ql-TD8"; */
 "yxt-ql-TD8.title" = "基于 HTTPS 的 DNS (DoH) URL";
 
+/* Class = "NSTextFieldCell"; title = "DNS over TLS Host"; ObjectID = "PXx-nB-Hn1"; */
+"PXx-nB-Hn1.title" = "基于 TLS 的 DNS (DoT) 域名";
+
 /* Class = "NSTextFieldCell"; title = "Timeout"; ObjectID = "zY6-tD-aUd"; */
 "zY6-tD-aUd.title" = "超时时间";
 

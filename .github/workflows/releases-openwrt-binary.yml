@@ -35,7 +35,7 @@ concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 env:
-  CACHE_EPOCH: 123-5
+  CACHE_EPOCH: 124-1
   GOPROXY: direct
 jobs:
   openwrt-binary-release:
@@ -57,6 +57,16 @@ jobs:
             arch: aarch64
             extra_flags: '--arm-cpu=cortex-a53'
             openwrt: 'target=sunxi subtarget=cortexa53 abi=musl'
+            qemu_suffix: aarch64
+          - arch_name: aarch64_cortex-a72
+            arch: aarch64
+            extra_flags: '--arm-cpu=cortex-a72'
+            openwrt: 'target=mvebu subtarget=cortexa72 abi=musl'
+            qemu_suffix: aarch64
+          - arch_name: aarch64_generic
+            arch: aarch64
+            extra_flags: ''
+            openwrt: 'target=rockchip subtarget=armv8 abi=musl'
             qemu_suffix: aarch64
     runs-on: ubuntu-20.04
     env:

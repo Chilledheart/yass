@@ -99,6 +99,10 @@
     {
       "name": "doh_url",
       "value": "基于 HTTPS 的 DNS (DoH) URL"
+    },
+    {
+      "name": "dot_host",
+      "value": "基于 TLS 的 DNS (DoT) 域名"
     }
   ]
 }

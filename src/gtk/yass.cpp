@@ -9,7 +9,6 @@
 #include <absl/debugging/symbolize.h>
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
-#include <absl/flags/usage.h>
 #include <absl/strings/str_cat.h>
 #include <fontconfig/fontconfig.h>
 #include <glib-2.0/glib-unix.h>
@@ -60,14 +59,7 @@ int main(int argc, const char** argv) {
   absl::InstallFailureSignalHandler(failure_handle_options);
 #endif
 
-  absl::SetProgramUsageMessage(absl::StrCat(
-      "Usage: ", Basename(exec_path), " [options ...]\n", " -K, --config <file> Read config from a file\n",
-      " --server_host <host> Remote server on given host\n", " --server_port <port> Remote server on given port\n",
-      " --local_host <host> Local proxy server on given host\n"
-      " --local_port <port> Local proxy server on given port\n"
-      " --username <username> Server user\n",
-      " --password <pasword> Server password\n", " --method <method> Specify encrypt of method to use"));
-
+  config::SetClientUsageMessage(exec_path);
   config::ReadConfigFileOption(argc, argv);
   config::ReadConfig();
   absl::ParseCommandLine(argc, const_cast<char**>(argv));
@@ -311,8 +303,9 @@ std::string YASSApp::SaveConfig() {
   auto local_host = main_window_->GetLocalHost();
   auto local_port = main_window_->GetLocalPort();
   auto doh_url = main_window_->GetDoHUrl();
+  auto dot_host = main_window_->GetDoTHost();
   auto connect_timeout = main_window_->GetTimeout();
 
   return config::ReadConfigFromArgument(server_host, server_sni, server_port, username, password, method_string,
-                                        local_host, local_port, doh_url, connect_timeout);
+                                        local_host, local_port, doh_url, dot_host, connect_timeout);
 }

@@ -32,6 +32,7 @@ set(quiche_SRCS
   src/quiche/common/capsule.cc
   src/quiche/common/http/http_header_block.cc
   src/quiche/common/http/http_header_storage.cc
+  src/quiche/common/lifetime_tracking.h
   src/quiche/common/masque/connect_ip_datagram_payload.cc
   src/quiche/common/masque/connect_udp_datagram_payload.cc
   src/quiche/common/platform/api/quiche_bug_tracker.h
@@ -78,6 +79,7 @@ set(quiche_SRCS
   src/quiche/common/quiche_data_writer.cc
   src/quiche/common/quiche_data_writer.h
   src/quiche/common/quiche_endian.h
+  src/quiche/common/quiche_feature_flags_list.h
   src/quiche/common/quiche_ip_address.cc
   src/quiche/common/quiche_ip_address.h
   src/quiche/common/quiche_ip_address_family.cc
@@ -728,7 +730,6 @@ target_include_directories(quiche PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/overrides
   ${CMAKE_CURRENT_BINARY_DIR}/src
   ${CMAKE_CURRENT_BINARY_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/../googleurl
   ${CMAKE_CURRENT_SOURCE_DIR}/..
   ${CMAKE_CURRENT_SOURCE_DIR}/../../src
   ${CMAKE_CURRENT_SOURCE_DIR}/../../

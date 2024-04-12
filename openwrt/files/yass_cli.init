@@ -9,9 +9,9 @@ SERVICE_WRITE_PID=1
 SERVICE_DAEMONIZE=1
 
 start() {
-        service_start /usr/bin/$APP -c /etc/yass/config.json
+        service_start /usr/bin/$APP -c /etc/yass/config.json -log_dir=/var/log
 }
 
 stop() {
-        service_stop /usr/bin/$APP -c /etc/yass/config.json
+        service_stop /usr/bin/$APP -c /etc/yass/config.json -log_dir=/var/log
 }

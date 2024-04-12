@@ -22,4 +22,5 @@
     <string name="status_started_with_error_msg">无法连接因: %s</string>
     <string name="label_server_sni">服务器名称指示</string>
     <string name="label_doh_url">基于 HTTPS 的 DNS (DoH) URL</string>
+    <string name="label_dot_host">基于 TLS 的 DNS (DoT) 域名</string>
 </resources>

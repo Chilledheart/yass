@@ -5,8 +5,9 @@ Wants=network-online.target
 
 [Service]
 Type=exec
-User=nobody
-ExecStart=/usr/bin/yass_cli -c /etc/yass/config.json -logtostderr
+DynamicUser=yes
+LogsDirectory=yass
+ExecStart=/usr/bin/yass_cli -c /etc/yass/config.json -log_dir=/var/log/yass
 Restart=on-failure
 RestartPreventExitStatus=23
 

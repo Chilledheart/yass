@@ -2,7 +2,7 @@
 /* Copyright (c) 2023-2024 Chilledheart  */
 
 #include "net/ssl_socket.hpp"
-#include "config/config.hpp"
+#include "config/config_network.hpp"
 
 #include <absl/container/flat_hash_map.h>
 

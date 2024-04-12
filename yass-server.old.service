@@ -1,0 +1,20 @@
+[Unit]
+Description=Yet Another Shadow Socket Server
+After=network-online.target nss-lookup.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=root
+ExecStart=/usr/bin/yass_server -c /etc/yass/server.json -logtostderr --private_key_file /etc/yass/private_key.pem --certificate_chain_file /etc/yass/pubkey.crt --user nobody --group nogroup
+Restart=on-failure
+RestartSec=5s
+RestartPreventExitStatus=23
+TimeoutStopSec=5s
+LimitNOFILE=1048576
+LimitNPROC=512
+PrivateTmp=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

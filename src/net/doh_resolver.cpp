@@ -4,6 +4,7 @@
 #include "net/doh_resolver.hpp"
 
 #include "core/utils.hpp"
+#include "net/dns_addrinfo_helper.hpp"
 #include "net/dns_message.hpp"
 #include "net/ssl_socket.hpp"
 #include "net/x509_util.hpp"

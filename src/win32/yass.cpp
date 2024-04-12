@@ -11,7 +11,6 @@
 #include <absl/debugging/symbolize.h>
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
-#include <absl/flags/usage.h>
 #include <absl/strings/str_cat.h>
 #include <locale.h>
 #include <openssl/crypto.h>
@@ -58,14 +57,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     LOG(WARNING) << "Failed to set up utf-8 locale";
   }
 
-  absl::SetProgramUsageMessage(absl::StrCat(
-      "Usage: ", Basename(exec_path), " [options ...]\n", " -K, --config <file> Read config from a file\n",
-      " --server_host <host> Remote server on given host\n", " --server_port <port> Remote server on given port\n",
-      " --local_host <host> Local proxy server on given host\n"
-      " --local_port <port> Local proxy server on given port\n"
-      " --username <username> Server user\n",
-      " --password <pasword> Server password\n", " --method <method> Specify encrypt of method to use"));
-
   absl::InitializeSymbolizer(exec_path.c_str());
 #ifdef HAVE_CRASHPAD
   CHECK(InitializeCrashpad(exec_path));
@@ -92,6 +83,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   absl::SetFlag(&FLAGS_logtostderr, false);
   argv[0] = exec_path.data();
 
+  config::SetClientUsageMessage(exec_path);
   config::ReadConfigFileOption(argc, &argv[0]);
   config::ReadConfig();
   absl::ParseCommandLine(argv.size(), const_cast<char**>(&argv[0]));
@@ -165,7 +157,7 @@ BOOL CYassApp::InitInstance() {
   std::wstring frame_name = LoadStringStdW(m_hInstance, IDS_APP_TITLE);
 
   UINT uDpi = Utils::GetDpiForWindowOrSystem(nullptr);
-  RECT rect{0, 0, MULDIVDPI(530), MULDIVDPI(480)};
+  RECT rect{0, 0, MULDIVDPI(530), MULDIVDPI(510)};
 
   // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showwindow
   int nCmdShow = absl::GetFlag(FLAGS_background) ? SW_HIDE : SW_SHOW;
@@ -406,8 +398,9 @@ std::string CYassApp::SaveConfig() {
   auto local_host = frame_->GetLocalHost();
   auto local_port = frame_->GetLocalPort();
   auto doh_url = frame_->GetDoHURL();
+  auto dot_host = frame_->GetDoTHost();
   auto connect_timeout = frame_->GetTimeout();
 
   return config::ReadConfigFromArgument(server_host, server_sni, server_port, username, password, method, local_host,
-                                        local_port, doh_url, connect_timeout);
+                                        local_port, doh_url, dot_host, connect_timeout);
 }

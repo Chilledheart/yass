@@ -8,7 +8,7 @@
 #include <deque>
 
 #include "channel.hpp"
-#include "config/config.hpp"
+#include "config/config_network.hpp"
 #include "core/logging.hpp"
 #include "core/scoped_refptr.hpp"
 #include "core/utils.hpp"

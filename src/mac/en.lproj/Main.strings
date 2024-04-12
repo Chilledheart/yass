@@ -86,6 +86,9 @@
 /* Class = "NSTextFieldCell"; title = "DNS over HTTPS URL"; ObjectID = "yxt-ql-TD8"; */
 "yxt-ql-TD8.title" = "DNS over HTTPS URL";
 
+/* Class = "NSTextFieldCell"; title = "DNS over TLS Host"; ObjectID = "PXx-nB-Hn1"; */
+"PXx-nB-Hn1.title" = "DNS over TLS Host";
+
 /* Class = "NSTextFieldCell"; title = "Timeout"; ObjectID = "zY6-tD-aUd"; */
 "zY6-tD-aUd.title" = "Timeout";
 
