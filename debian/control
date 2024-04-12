@@ -12,7 +12,8 @@ Build-Depends:
  ninja-build:native,
  debhelper (>= 9),
  ca-certificates,
- pkg-config <!nogui>,
+ pkg-config,
+ zlib1g-dev,
  libglib2.0-dev <!nogui>,
  libgtk-3-dev <!nogui>
 Rules-Requires-Root: no
