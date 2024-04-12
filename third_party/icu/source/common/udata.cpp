@@ -643,7 +643,7 @@ U_NAMESPACE_END
  *----------------------------------------------------------------------*/
 #if !defined(ICU_DATA_DIR_WINDOWS)
 // When using the Windows system data, we expect only a single data file.
-extern "C" const DataHeader U_DATA_API U_ICUDATA_ENTRY_POINT;
+extern "C" const ICU_Data_Header U_DATA_API U_ICUDATA_ENTRY_POINT;
 #endif
 
 /*
@@ -696,7 +696,7 @@ openCommonData(const char *path,          /*  Path from OpenChoice?          */
 // When using the Windows system data, we expect only a single data file.
             int32_t i;
             for(i = 0; i < commonDataIndex; ++i) {
-                if(gCommonICUDataArray[i]->pHeader == &U_ICUDATA_ENTRY_POINT) {
+                if(gCommonICUDataArray[i]->pHeader == &U_ICUDATA_ENTRY_POINT.hdr) {
                     /* The linked-in data is already in the list. */
                     return nullptr;
                 }
@@ -719,7 +719,7 @@ openCommonData(const char *path,          /*  Path from OpenChoice?          */
         */
 #if !defined(ICU_DATA_DIR_WINDOWS)
 // When using the Windows system data, we expect only a single data file.
-        setCommonICUDataPointer(&U_ICUDATA_ENTRY_POINT, false, pErrorCode);
+        setCommonICUDataPointer(&U_ICUDATA_ENTRY_POINT.hdr, false, pErrorCode);
         {
             Mutex lock;
             return gCommonICUDataArray[commonDataIndex];
@@ -1196,7 +1196,7 @@ doOpenChoice(const char *path, const char *type, const char *name,
                 *p = U_FILE_SEP_CHAR;
             }
 #if defined (UDATA_DEBUG)
-            fprintf(stderr, "Changed path from [%s] to [%s]\n", path, altSepPath.s);
+            fprintf(stderr, "Changed path from [%s] to [%s]\n", path, altSepPath.data());
 #endif
             path = altSepPath.data();
         }
