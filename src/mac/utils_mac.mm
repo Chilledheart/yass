@@ -129,7 +129,7 @@ bool CheckLoginItemStatus(bool* is_hidden) {
 
 void AddToLoginItems(bool hide_on_startup) {
   NSBundle* bundle = [NSBundle mainBundle];
-  AddToLoginItems(gurl_base::SysNSStringToUTF8([bundle bundlePath]), hide_on_startup);
+  AddToLoginItems(SysNSStringToUTF8([bundle bundlePath]), hide_on_startup);
 }
 
 void AddToLoginItems(const std::string& app_bundle_file_path, bool hide_on_startup) {
@@ -175,7 +175,7 @@ void AddToLoginItems(const std::string& app_bundle_file_path, bool hide_on_start
 
 void RemoveFromLoginItems() {
   NSBundle* bundle = [NSBundle mainBundle];
-  RemoveFromLoginItems(gurl_base::SysNSStringToUTF8([bundle bundlePath]));
+  RemoveFromLoginItems(SysNSStringToUTF8([bundle bundlePath]));
 }
 
 void RemoveFromLoginItems(const std::string& app_bundle_file_path) {
@@ -407,7 +407,7 @@ std::string GetOSDisplayName() {
     os_name = "OS X";
   else
     os_name = "macOS";
-  std::string version_string = gurl_base::SysNSStringToUTF8([[NSProcessInfo processInfo] operatingSystemVersionString]);
+  std::string version_string = SysNSStringToUTF8([[NSProcessInfo processInfo] operatingSystemVersionString]);
   return os_name + " " + version_string;
 }
 
@@ -427,7 +427,7 @@ std::string GetPlatformSerialNumber() {
     return std::string();
   }
 
-  return gurl_base::SysCFStringRefToUTF8(serial_number_cfstring);
+  return SysCFStringRefToUTF8(serial_number_cfstring);
 }
 
 static std::string GetLocalAddr() {
@@ -492,7 +492,7 @@ bool QuerySystemProxy(bool* enabled, std::string* server_addr, int32_t* server_p
     CFStringRef obj;
     if (CFDictionaryGetValueIfPresent(proxies, kSCPropNetProxiesHTTPProxy, (const void**)&obj) &&
         CFGetTypeID(obj) == CFStringGetTypeID()) {
-      *server_addr = gurl_base::SysCFStringRefToUTF8(obj);
+      *server_addr = SysCFStringRefToUTF8(obj);
       LOG(INFO) << "QuerySystemProxy: server_addr " << *server_addr;
     }
   }
@@ -512,7 +512,7 @@ bool QuerySystemProxy(bool* enabled, std::string* server_addr, int32_t* server_p
       CFIndex array_count = CFArrayGetCount(obj);
       for (CFIndex i = 0; i < array_count; ++i) {
         CFStringRef str_obj = (CFStringRef)CFArrayGetValueAtIndex(obj, i);
-        *bypass_addr = *bypass_addr + gurl_base::SysCFStringRefToUTF8(str_obj) + ", ";
+        *bypass_addr = *bypass_addr + SysCFStringRefToUTF8(str_obj) + ", ";
       }
       if (array_count) {
         bypass_addr->resize(bypass_addr->size() - 2);
@@ -587,6 +587,6 @@ void SetDockIconStyle(bool hidden) {
   }
   if (err != noErr) {
     NSError* error = [NSError errorWithDomain:NSOSStatusErrorDomain code:err userInfo:nil];
-    LOG(WARNING) << "SetDockIconStyle failed: " << gurl_base::SysNSStringToUTF8([error localizedDescription]);
+    LOG(WARNING) << "SetDockIconStyle failed: " << SysNSStringToUTF8([error localizedDescription]);
   }
 }

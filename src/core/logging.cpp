@@ -990,8 +990,7 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
       // CF-1153.18/CFUtilities.c __CFLogCString().
       CFBundleRef main_bundle = CFBundleGetMainBundle();
       CFStringRef main_bundle_id_cf = main_bundle ? CFBundleGetIdentifier(main_bundle) : nullptr;
-      std::string main_bundle_id =
-          main_bundle_id_cf ? gurl_base::SysCFStringRefToUTF8(main_bundle_id_cf) : std::string("");
+      std::string main_bundle_id = main_bundle_id_cf ? SysCFStringRefToUTF8(main_bundle_id_cf) : std::string("");
 #if defined(USE_ASL)
       // The facility is set to the main bundle ID if available. Otherwise,
       // "com.apple.console" is used.

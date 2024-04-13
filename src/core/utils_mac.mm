@@ -116,14 +116,14 @@ bool GetTempDir(std::string *path) {
   if (tmp == nil) {
     return false;
   }
-  *path = gurl_base::SysNSStringToUTF8(tmp);
+  *path = SysNSStringToUTF8(tmp);
   return true;
 }
 
 std::string GetHomeDir() {
   NSString* tmp = NSHomeDirectory();
   if (tmp != nil) {
-    auto path = gurl_base::SysNSStringToUTF8(tmp);
+    auto path = SysNSStringToUTF8(tmp);
     if (!path.empty()) {
       return path;
     }

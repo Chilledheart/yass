@@ -126,7 +126,7 @@
     }
   }
   if (textField == self.serverPort) {
-    auto port = StringToInteger(gurl_base::SysNSStringToUTF8(textField.text));
+    auto port = StringToInteger(SysNSStringToUTF8(textField.text));
     return port.has_value() && port.value() > 0 && port.value() < 65536 ? YES : NO;
   }
   if (textField == self.dohURL && [textField.text length]) {
@@ -139,7 +139,7 @@
     }
   }
   if (textField == self.timeout) {
-    auto port = StringToInteger(gurl_base::SysNSStringToUTF8(textField.text));
+    auto port = StringToInteger(SysNSStringToUTF8(textField.text));
     return port.has_value() && port.value() >= 0 ? YES : NO;
   }
   return YES;
@@ -268,17 +268,17 @@
 
   std::ostringstream ss;
   NSString* message = [appDelegate getStatus];
-  ss << gurl_base::SysNSStringToUTF8(message);
+  ss << SysNSStringToUTF8(message);
   message = NSLocalizedString(@"TXRATE", @" tx rate: ");
-  ss << gurl_base::SysNSStringToUTF8(message);
+  ss << SysNSStringToUTF8(message);
   HumanReadableByteCountBin(&ss, rx_rate_);
   ss << "/s";
   message = NSLocalizedString(@"RXRATE", @" rx rate: ");
-  ss << gurl_base::SysNSStringToUTF8(message);
+  ss << SysNSStringToUTF8(message);
   HumanReadableByteCountBin(&ss, tx_rate_);
   ss << "/s";
 
-  return gurl_base::SysUTF8ToNSString(ss.str());
+  return SysUTF8ToNSString(ss.str());
 }
 
 - (void)UpdateStatusBar {
@@ -286,21 +286,21 @@
 }
 
 - (void)LoadChanges {
-  self.serverHost.text = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_server_host));
-  self.serverPort.text = gurl_base::SysUTF8ToNSString(std::to_string(absl::GetFlag(FLAGS_server_port)));
-  self.username.text = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_username));
-  self.password.text = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_password));
+  self.serverHost.text = SysUTF8ToNSString(absl::GetFlag(FLAGS_server_host));
+  self.serverPort.text = SysUTF8ToNSString(std::to_string(absl::GetFlag(FLAGS_server_port)));
+  self.username.text = SysUTF8ToNSString(absl::GetFlag(FLAGS_username));
+  self.password.text = SysUTF8ToNSString(absl::GetFlag(FLAGS_password));
 
   auto cipherMethod = absl::GetFlag(FLAGS_method).method;
-  NSUInteger row = [cipher_methods_ indexOfObject:gurl_base::SysUTF8ToNSString(to_cipher_method_str(cipherMethod))];
+  NSUInteger row = [cipher_methods_ indexOfObject:SysUTF8ToNSString(to_cipher_method_str(cipherMethod))];
   if (row != NSNotFound) {
-    self.currentCiphermethod = gurl_base::SysUTF8ToNSString(to_cipher_method_str(cipherMethod));
+    self.currentCiphermethod = SysUTF8ToNSString(to_cipher_method_str(cipherMethod));
     [self.cipherMethod selectRow:row inComponent:0 animated:NO];
   }
 
-  self.dohURL.text = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_doh_url));
-  self.dotHost.text = gurl_base::SysUTF8ToNSString(absl::GetFlag(FLAGS_dot_host));
-  self.timeout.text = gurl_base::SysUTF8ToNSString(std::to_string(absl::GetFlag(FLAGS_connect_timeout)));
+  self.dohURL.text = SysUTF8ToNSString(absl::GetFlag(FLAGS_doh_url));
+  self.dotHost.text = SysUTF8ToNSString(absl::GetFlag(FLAGS_dot_host));
+  self.timeout.text = SysUTF8ToNSString(std::to_string(absl::GetFlag(FLAGS_connect_timeout)));
 }
 
 @end

@@ -101,17 +101,17 @@
 
   std::ostringstream ss;
   NSString* message = [appDelegate getStatus];
-  ss << gurl_base::SysNSStringToUTF8(message);
+  ss << SysNSStringToUTF8(message);
   message = NSLocalizedString(@"TXRATE", @" tx rate: ");
-  ss << gurl_base::SysNSStringToUTF8(message);
+  ss << SysNSStringToUTF8(message);
   HumanReadableByteCountBin(&ss, rx_rate_);
   ss << "/s";
   message = NSLocalizedString(@"RXRATE", @" rx rate: ");
-  ss << gurl_base::SysNSStringToUTF8(message);
+  ss << SysNSStringToUTF8(message);
   HumanReadableByteCountBin(&ss, tx_rate_);
   ss << "/s";
 
-  return gurl_base::SysUTF8ToNSString(ss.str());
+  return SysUTF8ToNSString(ss.str());
 }
 
 - (void)refreshTimerExceeded {
