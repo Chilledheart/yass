@@ -66,6 +66,8 @@ std::ostream& operator<<(std::ostream& o, asio::error_code ec) {
 
 #if BUILDFLAG(IS_MAC)
 
+using namespace gurl_base::apple;
+
 namespace {
 
 // The rules for interpreting trust settings are documented at:
@@ -117,15 +119,14 @@ TrustStatus IsTrustDictionaryTrustedForPolicy(CFDictionaryRef trust_dict,
   // |target_policy_oid|. If there is no kSecTrustSettingsPolicy key, it's
   // considered a match for all policies.
   if (CFDictionaryContainsKey(trust_dict, kSecTrustSettingsPolicy)) {
-    SecPolicyRef policy_ref =
-        gurl_base::apple::GetValueFromDictionary<SecPolicyRef>(trust_dict, kSecTrustSettingsPolicy);
+    SecPolicyRef policy_ref = GetValueFromDictionary<SecPolicyRef>(trust_dict, kSecTrustSettingsPolicy);
     if (!policy_ref) {
       return TrustStatus::UNSPECIFIED;
     }
-    gurl_base::apple::ScopedCFTypeRef<CFDictionaryRef> policy_dict(SecPolicyCopyProperties(policy_ref));
+    ScopedCFTypeRef<CFDictionaryRef> policy_dict(SecPolicyCopyProperties(policy_ref));
 
     // kSecPolicyOid is guaranteed to be present in the policy dictionary.
-    CFStringRef policy_oid = gurl_base::apple::GetValueFromDictionary<CFStringRef>(policy_dict.get(), kSecPolicyOid);
+    CFStringRef policy_oid = GetValueFromDictionary<CFStringRef>(policy_dict.get(), kSecPolicyOid);
 
     if (!CFEqual(policy_oid, target_policy_oid))
       return TrustStatus::UNSPECIFIED;
@@ -135,8 +136,7 @@ TrustStatus IsTrustDictionaryTrustedForPolicy(CFDictionaryRef trust_dict,
   // kSecTrustSettingsResultTrustRoot is assumed.
   int trust_settings_result = kSecTrustSettingsResultTrustRoot;
   if (CFDictionaryContainsKey(trust_dict, kSecTrustSettingsResult)) {
-    CFNumberRef trust_settings_result_ref =
-        gurl_base::apple::GetValueFromDictionary<CFNumberRef>(trust_dict, kSecTrustSettingsResult);
+    CFNumberRef trust_settings_result_ref = GetValueFromDictionary<CFNumberRef>(trust_dict, kSecTrustSettingsResult);
     if (!trust_settings_result_ref ||
         !CFNumberGetValue(trust_settings_result_ref, kCFNumberIntType, &trust_settings_result)) {
       return TrustStatus::UNSPECIFIED;
@@ -199,7 +199,7 @@ TrustStatus IsCertificateTrustedForPolicy(const bssl::ParsedCertificate* cert,
   // Evaluate user trust domain, then admin. User settings can override
   // admin (and both override the system domain, but we don't check that).
   for (const auto& trust_domain : {kSecTrustSettingsDomainUser, kSecTrustSettingsDomainAdmin}) {
-    gurl_base::apple::ScopedCFTypeRef<CFArrayRef> trust_settings;
+    ScopedCFTypeRef<CFArrayRef> trust_settings;
     OSStatus err;
     err = SecTrustSettingsCopyTrustSettings(cert_handle, trust_domain, trust_settings.InitializeInto());
     if (err != errSecSuccess) {
@@ -570,7 +570,7 @@ out:
   size = CFArrayGetCount(certs);
   for (CFIndex i = 0; i < size; ++i) {
     SecCertificateRef sec_cert = (SecCertificateRef)CFArrayGetValueAtIndex(certs, i);
-    gurl_base::apple::ScopedCFTypeRef<CFDataRef> der_data(SecCertificateCopyData(sec_cert));
+    ScopedCFTypeRef<CFDataRef> der_data(SecCertificateCopyData(sec_cert));
 
     if (!der_data) {
       LOG(ERROR) << "SecCertificateCopyData error";

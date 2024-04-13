@@ -18,6 +18,8 @@
 
 ABSL_DECLARE_FLAG(std::string, configfile);
 
+using namespace gurl_base::apple;
+
 // Because a suite manages the defaults of a specified app group, a suite name
 // must be distinct from your app’s main bundle identifier.
 static const char* kYassSuiteName = "it.gui.yass.suite";
@@ -28,7 +30,7 @@ namespace config {
 bool ConfigImplApple::OpenImpl(bool dontread) {
   dontread_ = dontread;
 
-  gurl_base::apple::ScopedCFTypeRef<CFMutableDictionaryRef> mutable_root(CFDictionaryCreateMutable(
+  ScopedCFTypeRef<CFMutableDictionaryRef> mutable_root(CFDictionaryCreateMutable(
       kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks));
 
   // Overwrite all fields from UserDefaults
@@ -39,7 +41,7 @@ bool ConfigImplApple::OpenImpl(bool dontread) {
   if (root) {
     for (NSString* key in root) {
       id value = root[key];
-      gurl_base::apple::ScopedCFTypeRef<CFStringRef> cf_key((CFStringRef)CFBridgingRetain(key));
+      ScopedCFTypeRef<CFStringRef> cf_key((CFStringRef)CFBridgingRetain(key));
       CFDictionarySetValue(mutable_root, cf_key, (void*)value);
     }
   }
@@ -130,38 +132,38 @@ bool ConfigImplApple::ReadImpl(const std::string& key, int64_t* value) {
 }
 
 bool ConfigImplApple::WriteImpl(const std::string& key, std::string_view value) {
-  gurl_base::apple::ScopedCFTypeRef<CFStringRef> obj(CFStringCreateWithBytes(
+  ScopedCFTypeRef<CFStringRef> obj(CFStringCreateWithBytes(
       kCFAllocatorDefault, reinterpret_cast<const UInt8*>(value.data()), value.size(), kCFStringEncodingUTF8, FALSE));
   CFDictionarySetValue(write_root_, gurl_base::SysUTF8ToCFStringRef(key).get(), obj);
   return true;
 }
 
 bool ConfigImplApple::WriteImpl(const std::string& key, bool value) {
-  gurl_base::apple::ScopedCFTypeRef<CFBooleanRef> obj(value ? kCFBooleanTrue : kCFBooleanFalse);
+  ScopedCFTypeRef<CFBooleanRef> obj(value ? kCFBooleanTrue : kCFBooleanFalse);
   CFDictionarySetValue(write_root_, gurl_base::SysUTF8ToCFStringRef(key).get(), obj);
   return true;
 }
 
 bool ConfigImplApple::WriteImpl(const std::string& key, uint32_t value) {
-  gurl_base::apple::ScopedCFTypeRef<CFNumberRef> obj(CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &value));
+  ScopedCFTypeRef<CFNumberRef> obj(CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &value));
   CFDictionarySetValue(write_root_, gurl_base::SysUTF8ToCFStringRef(key).get(), obj);
   return true;
 }
 
 bool ConfigImplApple::WriteImpl(const std::string& key, int32_t value) {
-  gurl_base::apple::ScopedCFTypeRef<CFNumberRef> obj(CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &value));
+  ScopedCFTypeRef<CFNumberRef> obj(CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &value));
   CFDictionarySetValue(write_root_, gurl_base::SysUTF8ToCFStringRef(key).get(), obj);
   return true;
 }
 
 bool ConfigImplApple::WriteImpl(const std::string& key, uint64_t value) {
-  gurl_base::apple::ScopedCFTypeRef<CFNumberRef> obj(CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt64Type, &value));
+  ScopedCFTypeRef<CFNumberRef> obj(CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt64Type, &value));
   CFDictionarySetValue(write_root_, gurl_base::SysUTF8ToCFStringRef(key).get(), obj);
   return true;
 }
 
 bool ConfigImplApple::WriteImpl(const std::string& key, int64_t value) {
-  gurl_base::apple::ScopedCFTypeRef<CFNumberRef> obj(CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt64Type, &value));
+  ScopedCFTypeRef<CFNumberRef> obj(CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt64Type, &value));
   CFDictionarySetValue(write_root_, gurl_base::SysUTF8ToCFStringRef(key).get(), obj);
   return true;
 }
