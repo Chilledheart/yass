@@ -71,9 +71,9 @@ bool ConfigImplApple::CloseImpl() {
 
 bool ConfigImplApple::ReadImpl(const std::string& key, std::string* value) {
   CFStringRef obj;
-  if (CFDictionaryGetValueIfPresent(root_, gurl_base::SysUTF8ToCFStringRef(key).get(), (const void**)&obj) &&
+  if (CFDictionaryGetValueIfPresent(root_, SysUTF8ToCFStringRef(key).get(), (const void**)&obj) &&
       CFGetTypeID(obj) == CFStringGetTypeID()) {
-    *value = gurl_base::SysCFStringRefToUTF8(obj);
+    *value = SysCFStringRefToUTF8(obj);
     return true;
   }
   LOG(WARNING) << "bad field: " << key;
@@ -82,7 +82,7 @@ bool ConfigImplApple::ReadImpl(const std::string& key, std::string* value) {
 
 bool ConfigImplApple::ReadImpl(const std::string& key, bool* value) {
   CFBooleanRef obj;
-  if (CFDictionaryGetValueIfPresent(root_, gurl_base::SysUTF8ToCFStringRef(key).get(), (const void**)&obj) &&
+  if (CFDictionaryGetValueIfPresent(root_, SysUTF8ToCFStringRef(key).get(), (const void**)&obj) &&
       CFGetTypeID(obj) == CFBooleanGetTypeID()) {
     *value = CFBooleanGetValue(obj);
     return true;
@@ -93,7 +93,7 @@ bool ConfigImplApple::ReadImpl(const std::string& key, bool* value) {
 
 bool ConfigImplApple::ReadImpl(const std::string& key, uint32_t* value) {
   CFNumberRef obj;
-  if (CFDictionaryGetValueIfPresent(root_, gurl_base::SysUTF8ToCFStringRef(key).get(), (const void**)&obj) &&
+  if (CFDictionaryGetValueIfPresent(root_, SysUTF8ToCFStringRef(key).get(), (const void**)&obj) &&
       CFGetTypeID(obj) == CFNumberGetTypeID() && CFNumberGetValue(obj, kCFNumberSInt32Type, value)) {
     return true;
   }
@@ -103,7 +103,7 @@ bool ConfigImplApple::ReadImpl(const std::string& key, uint32_t* value) {
 
 bool ConfigImplApple::ReadImpl(const std::string& key, int32_t* value) {
   CFNumberRef obj;
-  if (CFDictionaryGetValueIfPresent(root_, gurl_base::SysUTF8ToCFStringRef(key).get(), (const void**)&obj) &&
+  if (CFDictionaryGetValueIfPresent(root_, SysUTF8ToCFStringRef(key).get(), (const void**)&obj) &&
       CFGetTypeID(obj) == CFNumberGetTypeID() && CFNumberGetValue(obj, kCFNumberSInt32Type, value)) {
     return true;
   }
@@ -113,7 +113,7 @@ bool ConfigImplApple::ReadImpl(const std::string& key, int32_t* value) {
 
 bool ConfigImplApple::ReadImpl(const std::string& key, uint64_t* value) {
   CFNumberRef obj;
-  if (CFDictionaryGetValueIfPresent(root_, gurl_base::SysUTF8ToCFStringRef(key).get(), (const void**)&obj) &&
+  if (CFDictionaryGetValueIfPresent(root_, SysUTF8ToCFStringRef(key).get(), (const void**)&obj) &&
       CFGetTypeID(obj) == CFNumberGetTypeID() && CFNumberGetValue(obj, kCFNumberSInt64Type, value)) {
     return true;
   }
@@ -123,7 +123,7 @@ bool ConfigImplApple::ReadImpl(const std::string& key, uint64_t* value) {
 
 bool ConfigImplApple::ReadImpl(const std::string& key, int64_t* value) {
   CFNumberRef obj;
-  if (CFDictionaryGetValueIfPresent(root_, gurl_base::SysUTF8ToCFStringRef(key).get(), (const void**)&obj) &&
+  if (CFDictionaryGetValueIfPresent(root_, SysUTF8ToCFStringRef(key).get(), (const void**)&obj) &&
       CFGetTypeID(obj) == CFNumberGetTypeID() && CFNumberGetValue(obj, kCFNumberSInt64Type, value)) {
     return true;
   }
@@ -134,43 +134,43 @@ bool ConfigImplApple::ReadImpl(const std::string& key, int64_t* value) {
 bool ConfigImplApple::WriteImpl(const std::string& key, std::string_view value) {
   ScopedCFTypeRef<CFStringRef> obj(CFStringCreateWithBytes(
       kCFAllocatorDefault, reinterpret_cast<const UInt8*>(value.data()), value.size(), kCFStringEncodingUTF8, FALSE));
-  CFDictionarySetValue(write_root_, gurl_base::SysUTF8ToCFStringRef(key).get(), obj);
+  CFDictionarySetValue(write_root_, SysUTF8ToCFStringRef(key).get(), obj);
   return true;
 }
 
 bool ConfigImplApple::WriteImpl(const std::string& key, bool value) {
   ScopedCFTypeRef<CFBooleanRef> obj(value ? kCFBooleanTrue : kCFBooleanFalse);
-  CFDictionarySetValue(write_root_, gurl_base::SysUTF8ToCFStringRef(key).get(), obj);
+  CFDictionarySetValue(write_root_, SysUTF8ToCFStringRef(key).get(), obj);
   return true;
 }
 
 bool ConfigImplApple::WriteImpl(const std::string& key, uint32_t value) {
   ScopedCFTypeRef<CFNumberRef> obj(CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &value));
-  CFDictionarySetValue(write_root_, gurl_base::SysUTF8ToCFStringRef(key).get(), obj);
+  CFDictionarySetValue(write_root_, SysUTF8ToCFStringRef(key).get(), obj);
   return true;
 }
 
 bool ConfigImplApple::WriteImpl(const std::string& key, int32_t value) {
   ScopedCFTypeRef<CFNumberRef> obj(CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &value));
-  CFDictionarySetValue(write_root_, gurl_base::SysUTF8ToCFStringRef(key).get(), obj);
+  CFDictionarySetValue(write_root_, SysUTF8ToCFStringRef(key).get(), obj);
   return true;
 }
 
 bool ConfigImplApple::WriteImpl(const std::string& key, uint64_t value) {
   ScopedCFTypeRef<CFNumberRef> obj(CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt64Type, &value));
-  CFDictionarySetValue(write_root_, gurl_base::SysUTF8ToCFStringRef(key).get(), obj);
+  CFDictionarySetValue(write_root_, SysUTF8ToCFStringRef(key).get(), obj);
   return true;
 }
 
 bool ConfigImplApple::WriteImpl(const std::string& key, int64_t value) {
   ScopedCFTypeRef<CFNumberRef> obj(CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt64Type, &value));
-  CFDictionarySetValue(write_root_, gurl_base::SysUTF8ToCFStringRef(key).get(), obj);
+  CFDictionarySetValue(write_root_, SysUTF8ToCFStringRef(key).get(), obj);
   return true;
 }
 
 bool ConfigImplApple::DeleteImpl(const std::string& key) {
-  if (CFDictionaryGetValueIfPresent(write_root_, gurl_base::SysUTF8ToCFStringRef(key).get(), nullptr)) {
-    CFDictionaryRemoveValue(write_root_, gurl_base::SysUTF8ToCFStringRef(key).get());
+  if (CFDictionaryGetValueIfPresent(write_root_, SysUTF8ToCFStringRef(key).get(), nullptr)) {
+    CFDictionaryRemoveValue(write_root_, SysUTF8ToCFStringRef(key).get());
     return true;
   }
   return false;

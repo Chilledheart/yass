@@ -133,20 +133,20 @@
 - (NSString*)getStatus {
   std::ostringstream ss;
   if (state_ == STARTED) {
-    ss << gurl_base::SysNSStringToUTF8(status_) << ":";
+    ss << SysNSStringToUTF8(status_) << ":";
   } else if (state_ == STARTING) {
-    ss << gurl_base::SysNSStringToUTF8(NSLocalizedString(@"CONNECTING", @"Connecting"));
+    ss << SysNSStringToUTF8(NSLocalizedString(@"CONNECTING", @"Connecting"));
   } else if (state_ == START_FAILED) {
     NSString* prefixMessage = NSLocalizedString(@"FAILED_TO_CONNECT_DUE_TO", @"Failed to connect due to ");
-    ss << gurl_base::SysNSStringToUTF8(prefixMessage) << error_msg_.c_str();
+    ss << SysNSStringToUTF8(prefixMessage) << error_msg_.c_str();
   } else if (state_ == STOPPING) {
-    ss << gurl_base::SysNSStringToUTF8(NSLocalizedString(@"DISCONNECTING", @"Disconnecting"));
+    ss << SysNSStringToUTF8(NSLocalizedString(@"DISCONNECTING", @"Disconnecting"));
   } else {
     NSString* prefixMessage = NSLocalizedString(@"DISCONNECTED_WITH", @"Disconnected with ");
-    ss << gurl_base::SysNSStringToUTF8(prefixMessage) << absl::GetFlag(FLAGS_server_host);
+    ss << SysNSStringToUTF8(prefixMessage) << absl::GetFlag(FLAGS_server_host);
   }
 
-  return gurl_base::SysUTF8ToNSString(ss.str());
+  return SysUTF8ToNSString(ss.str());
 }
 
 - (void)OnStart:(BOOL)quiet {
@@ -154,7 +154,7 @@
 
   if (!connectedToNetwork()) {
     NSString* message = NSLocalizedString(@"NETWORK_UNREACHABLE", @"Network unreachable");
-    [self OnStartFailed:gurl_base::SysNSStringToUTF8(message)];
+    [self OnStartFailed:SysNSStringToUTF8(message)];
     return;
   }
   auto err_msg = [self SaveConfig];
@@ -218,7 +218,7 @@
                    });
                  }];
     if (error) {
-      std::string err_msg = gurl_base::SysNSStringToUTF8([error localizedDescription]);
+      std::string err_msg = SysNSStringToUTF8([error localizedDescription]);
       LOG(WARNING) << "telemetry: send Request failed: " << err_msg;
     }
   }
@@ -354,7 +354,7 @@
 }
 
 - (void)OnStartFailedWithNSError:(NSError* _Nullable)error {
-  std::string err_msg = gurl_base::SysNSStringToUTF8([error localizedDescription]);
+  std::string err_msg = SysNSStringToUTF8([error localizedDescription]);
   [self OnStartFailed:err_msg];
 }
 
@@ -405,14 +405,14 @@
   dot_host_ = viewController.dotHost.text;
   connect_timeout_ = viewController.timeout.text;
 
-  auto server_host = gurl_base::SysNSStringToUTF8(server_host_);
-  auto server_port = gurl_base::SysNSStringToUTF8(server_port_);
-  auto username = gurl_base::SysNSStringToUTF8(username_);
-  auto password = gurl_base::SysNSStringToUTF8(password_);
-  auto method_string = gurl_base::SysNSStringToUTF8(method_string_);
-  auto doh_url = gurl_base::SysNSStringToUTF8(doh_url_);
-  auto dot_host = gurl_base::SysNSStringToUTF8(dot_host_);
-  auto connect_timeout = gurl_base::SysNSStringToUTF8(connect_timeout_);
+  auto server_host = SysNSStringToUTF8(server_host_);
+  auto server_port = SysNSStringToUTF8(server_port_);
+  auto username = SysNSStringToUTF8(username_);
+  auto password = SysNSStringToUTF8(password_);
+  auto method_string = SysNSStringToUTF8(method_string_);
+  auto doh_url = SysNSStringToUTF8(doh_url_);
+  auto dot_host = SysNSStringToUTF8(dot_host_);
+  auto connect_timeout = SysNSStringToUTF8(connect_timeout_);
 
   return config::ReadConfigFromArgument(server_host, "" /*server_sni*/, server_port, username, password, method_string,
                                         "127.0.0.1", "0", doh_url, dot_host, connect_timeout);

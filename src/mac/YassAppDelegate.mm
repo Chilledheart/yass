@@ -94,20 +94,20 @@
   std::ostringstream ss;
   if (state_ == STARTED) {
     NSString* prefixMessage = NSLocalizedString(@"CONNECTED", @"Connected");
-    ss << gurl_base::SysNSStringToUTF8(prefixMessage) << ":";
+    ss << SysNSStringToUTF8(prefixMessage) << ":";
   } else if (state_ == STARTING) {
-    ss << gurl_base::SysNSStringToUTF8(NSLocalizedString(@"CONNECTING", @"Connecting"));
+    ss << SysNSStringToUTF8(NSLocalizedString(@"CONNECTING", @"Connecting"));
   } else if (state_ == START_FAILED) {
     NSString* prefixMessage = NSLocalizedString(@"FAILED_TO_CONNECT_DUE_TO", @"Failed to connect due to ");
-    ss << gurl_base::SysNSStringToUTF8(prefixMessage) << error_msg_.c_str();
+    ss << SysNSStringToUTF8(prefixMessage) << error_msg_.c_str();
   } else if (state_ == STOPPING) {
-    ss << gurl_base::SysNSStringToUTF8(NSLocalizedString(@"DISCONNECTING", @"Disconnecting"));
+    ss << SysNSStringToUTF8(NSLocalizedString(@"DISCONNECTING", @"Disconnecting"));
   } else {
     NSString* prefixMessage = NSLocalizedString(@"DISCONNECTED_WITH", @"Disconnected with ");
-    ss << gurl_base::SysNSStringToUTF8(prefixMessage) << worker_.GetRemoteDomain();
+    ss << SysNSStringToUTF8(prefixMessage) << worker_.GetRemoteDomain();
   }
 
-  return gurl_base::SysUTF8ToNSString(ss.str());
+  return SysUTF8ToNSString(ss.str());
 }
 
 - (void)OnStart {
@@ -189,17 +189,17 @@
 - (std::string)SaveConfig {
   YassViewController* viewController =
       (YassViewController*)NSApplication.sharedApplication.mainWindow.contentViewController;
-  auto server_host = gurl_base::SysNSStringToUTF8(viewController.serverHost.stringValue);
-  auto server_sni = gurl_base::SysNSStringToUTF8(viewController.serverSNI.stringValue);
-  auto server_port = gurl_base::SysNSStringToUTF8(viewController.serverPort.stringValue);
-  auto username = gurl_base::SysNSStringToUTF8(viewController.username.stringValue);
-  auto password = gurl_base::SysNSStringToUTF8(viewController.password.stringValue);
-  auto method_string = gurl_base::SysNSStringToUTF8(viewController.cipherMethod.stringValue);
-  auto local_host = gurl_base::SysNSStringToUTF8(viewController.localHost.stringValue);
-  auto local_port = gurl_base::SysNSStringToUTF8(viewController.localPort.stringValue);
-  auto doh_url = gurl_base::SysNSStringToUTF8(viewController.dohURL.stringValue);
-  auto dot_host = gurl_base::SysNSStringToUTF8(viewController.dotHost.stringValue);
-  auto connect_timeout = gurl_base::SysNSStringToUTF8(viewController.timeout.stringValue);
+  auto server_host = SysNSStringToUTF8(viewController.serverHost.stringValue);
+  auto server_sni = SysNSStringToUTF8(viewController.serverSNI.stringValue);
+  auto server_port = SysNSStringToUTF8(viewController.serverPort.stringValue);
+  auto username = SysNSStringToUTF8(viewController.username.stringValue);
+  auto password = SysNSStringToUTF8(viewController.password.stringValue);
+  auto method_string = SysNSStringToUTF8(viewController.cipherMethod.stringValue);
+  auto local_host = SysNSStringToUTF8(viewController.localHost.stringValue);
+  auto local_port = SysNSStringToUTF8(viewController.localPort.stringValue);
+  auto doh_url = SysNSStringToUTF8(viewController.dohURL.stringValue);
+  auto dot_host = SysNSStringToUTF8(viewController.dotHost.stringValue);
+  auto connect_timeout = SysNSStringToUTF8(viewController.timeout.stringValue);
 
   return config::ReadConfigFromArgument(server_host, server_sni, server_port, username, password, method_string,
                                         local_host, local_port, doh_url, dot_host, connect_timeout);

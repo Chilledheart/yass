@@ -96,6 +96,35 @@ using gurl_base::SysMultiByteToWide;
 using gurl_base::SysWideToMultiByte;
 #endif  // _WIN32
 
+// Apple-specific ------------------------------------------------------------
+#if BUILDFLAG(IS_APPLE)
+
+// Converts between strings and CFStringRefs/NSStrings.
+
+// Converts a string to a CFStringRef. Returns null on failure.
+using gurl_base::SysUTF16ToCFStringRef;
+using gurl_base::SysUTF8ToCFStringRef;
+
+// Converts a CFStringRef to a string. Returns an empty string on failure. It is
+// not valid to call these with a null `ref`.
+using gurl_base::SysCFStringRefToUTF16;
+using gurl_base::SysCFStringRefToUTF8;
+
+#ifdef __OBJC__
+
+// Converts a string to an autoreleased NSString. Returns nil on failure.
+using gurl_base::SysUTF16ToNSString;
+using gurl_base::SysUTF8ToNSString;
+
+// Converts an NSString to a string. Returns an empty string on failure or if
+// `ref` is nil.
+using gurl_base::SysNSStringToUTF16;
+using gurl_base::SysNSStringToUTF8;
+
+#endif  // __OBJC__
+
+#endif  // BUILDFLAG(IS_APPLE)
+
 extern const char kSeparators[];
 
 // A portable interface that returns the dirname of the filename passed as an
