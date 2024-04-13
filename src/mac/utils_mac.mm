@@ -29,6 +29,8 @@
 #include <base/strings/sys_string_conversions.h>
 #include <build/build_config.h>
 
+using namespace gurl_base::apple;
+
 namespace {
 
 class LoginItemsFileList {
@@ -60,10 +62,10 @@ class LoginItemsFileList {
   // representing the specified bundle.  If such an item is found, returns a
   // retained reference to it. Caller is responsible for releasing the
   // reference.
-  gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> GetLoginItemForApp(NSURL* url) {
+  ScopedCFTypeRef<LSSharedFileListItemRef> GetLoginItemForApp(NSURL* url) {
     DCHECK(login_items_.get()) << "Initialize() failed or not called.";
 
-    gurl_base::apple::ScopedCFTypeRef<CFURLRef> cfurl((CFURLRef)(CFBridgingRetain(url)));
+    ScopedCFTypeRef<CFURLRef> cfurl((CFURLRef)(CFBridgingRetain(url)));
 
 #pragma clang diagnostic push  // https://crbug.com/1154377
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
@@ -77,31 +79,31 @@ class LoginItemsFileList {
       // kLSSharedFileListDoNotMountVolumes is used so that we don't trigger
       // mounting when it's not expected by a user. Just listing the login
       // items should not cause any side-effects.
-      gurl_base::apple::ScopedCFTypeRef<CFURLRef> item_url(
+      ScopedCFTypeRef<CFURLRef> item_url(
           LSSharedFileListItemCopyResolvedURL(item, kLSSharedFileListDoNotMountVolumes, nullptr));
 #pragma clang diagnostic pop
 
       if (item_url && CFEqual(item_url.get(), cfurl.get())) {
-        return gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef>(item, gurl_base::scoped_policy::RETAIN);
+        return ScopedCFTypeRef<LSSharedFileListItemRef>(item, gurl_base::scoped_policy::RETAIN);
       }
     }
 
-    return gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef>();
+    return ScopedCFTypeRef<LSSharedFileListItemRef>();
   }
 
-  gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> GetLoginItemForMainApp() {
+  ScopedCFTypeRef<LSSharedFileListItemRef> GetLoginItemForMainApp() {
     NSURL* url = [NSURL fileURLWithPath:[[NSBundle mainBundle] bundlePath]];
     return GetLoginItemForApp(url);
   }
 
  private:
-  gurl_base::apple::ScopedCFTypeRef<LSSharedFileListRef> login_items_;
+  ScopedCFTypeRef<LSSharedFileListRef> login_items_;
 };
 
 bool IsHiddenLoginItem(LSSharedFileListItemRef item) {
 #pragma clang diagnostic push  // https://crbug.com/1154377
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-  gurl_base::apple::ScopedCFTypeRef<CFBooleanRef> hidden(reinterpret_cast<CFBooleanRef>(
+  ScopedCFTypeRef<CFBooleanRef> hidden(reinterpret_cast<CFBooleanRef>(
       LSSharedFileListItemCopyProperty(item, reinterpret_cast<CFStringRef>(kLSSharedFileListLoginItemHidden))));
 #pragma clang diagnostic pop
 
@@ -115,7 +117,7 @@ bool CheckLoginItemStatus(bool* is_hidden) {
   if (!login_items.Initialize())
     return false;
 
-  gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> item(login_items.GetLoginItemForMainApp());
+  ScopedCFTypeRef<LSSharedFileListItemRef> item(login_items.GetLoginItemForMainApp());
   if (!item.get())
     return false;
 
@@ -137,9 +139,9 @@ void AddToLoginItems(const std::string& app_bundle_file_path, bool hide_on_start
 
   NSURL* app_bundle_url = [NSURL fileURLWithPath:@(app_bundle_file_path.c_str()) isDirectory:TRUE];
 
-  gurl_base::apple::ScopedCFTypeRef<CFURLRef> cf_app_bundle_url((CFURLRef)CFBridgingRetain(app_bundle_url));
+  ScopedCFTypeRef<CFURLRef> cf_app_bundle_url((CFURLRef)CFBridgingRetain(app_bundle_url));
 
-  gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> item(login_items.GetLoginItemForApp(app_bundle_url));
+  ScopedCFTypeRef<LSSharedFileListItemRef> item(login_items.GetLoginItemForApp(app_bundle_url));
 
   if (item.get() && (IsHiddenLoginItem(item) == hide_on_startup)) {
     return;  // Already is a login item with required hide flag.
@@ -157,9 +159,9 @@ void AddToLoginItems(const std::string& app_bundle_file_path, bool hide_on_start
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
   BOOL hide = hide_on_startup ? YES : NO;
   NSDictionary* properties = @{CFBridgingRelease(CFRetain(kLSSharedFileListLoginItemHidden)) : @(hide)};
-  gurl_base::apple::ScopedCFTypeRef<CFDictionaryRef> cfproperties((CFDictionaryRef)CFBridgingRetain(properties));
+  ScopedCFTypeRef<CFDictionaryRef> cfproperties((CFDictionaryRef)CFBridgingRetain(properties));
 
-  gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> new_item(
+  ScopedCFTypeRef<LSSharedFileListItemRef> new_item(
       LSSharedFileListInsertItemURL(login_items.GetLoginFileList(), kLSSharedFileListItemLast, nullptr, nullptr,
                                     cf_app_bundle_url, cfproperties, nullptr));
 #pragma clang diagnostic pop
@@ -182,7 +184,7 @@ void RemoveFromLoginItems(const std::string& app_bundle_file_path) {
     return;
 
   NSURL* app_bundle_url = [NSURL fileURLWithPath:@(app_bundle_file_path.c_str())];
-  gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> item(login_items.GetLoginItemForApp(app_bundle_url));
+  ScopedCFTypeRef<LSSharedFileListItemRef> item(login_items.GetLoginItemForApp(app_bundle_url));
   if (!item.get())
     return;
 
@@ -226,7 +228,7 @@ bool WasLaunchedAsLoginItemRestoreState() {
 
   CFStringRef app = CFSTR("com.apple.loginwindow");
   CFStringRef save_state = CFSTR("TALLogoutSavesState");
-  gurl_base::apple::ScopedCFTypeRef<CFPropertyListRef> plist(CFPreferencesCopyAppValue(save_state, app));
+  ScopedCFTypeRef<CFPropertyListRef> plist(CFPreferencesCopyAppValue(save_state, app));
   // According to documentation, com.apple.loginwindow.plist does not exist on a
   // fresh installation until the user changes a login window setting.  The
   // "reopen windows" option is checked by default, so the plist would exist had
@@ -249,7 +251,7 @@ bool WasLaunchedAsHiddenLoginItem() {
   if (!login_items.Initialize())
     return false;
 
-  gurl_base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> item(login_items.GetLoginItemForMainApp());
+  ScopedCFTypeRef<LSSharedFileListItemRef> item(login_items.GetLoginItemForMainApp());
   if (!item.get()) {
     // OS X can launch items for the resume feature.
     return false;
@@ -373,7 +375,7 @@ std::string GetModelIdentifier() {
   gurl_base::mac::ScopedIOObject<io_service_t> platform_expert(
       IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching("IOPlatformExpertDevice")));
   if (platform_expert) {
-    gurl_base::apple::ScopedCFTypeRef<CFDataRef> model_data(static_cast<CFDataRef>(
+    ScopedCFTypeRef<CFDataRef> model_data(static_cast<CFDataRef>(
         IORegistryEntryCreateCFProperty(platform_expert, CFSTR("model"), kCFAllocatorDefault, 0)));
     if (model_data) {
       return_string = reinterpret_cast<const char*>(CFDataGetBytePtr(model_data));
@@ -417,7 +419,7 @@ std::string GetPlatformSerialNumber() {
     return std::string();
   }
 
-  gurl_base::apple::ScopedCFTypeRef<CFTypeRef> serial_number(
+  ScopedCFTypeRef<CFTypeRef> serial_number(
       IORegistryEntryCreateCFProperty(expert_device, CFSTR(kIOPlatformSerialNumberKey), kCFAllocatorDefault, 0));
   CFStringRef serial_number_cfstring = CFCast<CFStringRef>(serial_number);
   if (!serial_number_cfstring) {
@@ -476,7 +478,7 @@ bool QuerySystemProxy(bool* enabled, std::string* server_addr, int32_t* server_p
   *server_port = 0;
   bypass_addr->clear();
 
-  gurl_base::apple::ScopedCFTypeRef<CFDictionaryRef> proxies{SCDynamicStoreCopyProxies(nullptr)};
+  ScopedCFTypeRef<CFDictionaryRef> proxies{SCDynamicStoreCopyProxies(nullptr)};
 
   {
     CFNumberRef obj;
