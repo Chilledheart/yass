@@ -29,10 +29,12 @@
 #include <absl/strings/string_view.h>
 #include <deque>
 
+#ifdef HAVE_QUICHE
 #ifdef HAVE_NGHTTP2
 #include <quiche/http2/adapter/nghttp2_adapter.h>
 #else
 #include <quiche/http2/adapter/oghttp2_adapter.h>
+#endif
 #endif
 
 namespace cli {
@@ -41,10 +43,13 @@ using IOBuf = net::IOBuf;
 using cipher = net::cipher;
 using IoQueue = net::IoQueue;
 
+#ifdef HAVE_QUICHE
 using StreamId = http2::adapter::Http2StreamId;
 template <typename T>
 using StreamMap = absl::flat_hash_map<StreamId, T>;
+#endif  // HAVE_QUICHE
 
+#ifdef HAVE_QUICHE
 class CliConnection;
 class DataFrameSource : public http2::adapter::DataFrameSource {
  public:
@@ -79,14 +84,17 @@ class DataFrameSource : public http2::adapter::DataFrameSource {
   bool last_frame_ = false;
   std::function<void()> send_completion_callback_;
 };
+#endif  // HAVE_QUICHE
 
 /// The ultimate service class to deliever the network traffic to the remote
 /// endpoint
 class CliConnection : public RefCountedThreadSafe<CliConnection>,
+#ifdef HAVE_QUICHE
+                      public http2::adapter::Http2VisitorInterface,
+#endif  // HAVE_QUICHE
                       public net::Channel,
                       public net::Connection,
-                      public net::cipher_visitor_interface,
-                      public http2::adapter::Http2VisitorInterface {
+                      public net::cipher_visitor_interface {
  public:
   /// The state of service
   enum state {
@@ -162,6 +170,7 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   /// flag to mark connection is shut down
   bool shutdown_ = false;
 
+#ifdef HAVE_QUICHE
  private:
   void SendIfNotProcessing();
   bool processing_responses_ = false;
@@ -170,12 +179,14 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
 
  public:
   StreamId blocked_stream_ = 0;
+#endif  //  HAVE_QUICHE
 
  public:
   // cipher_visitor_interface
   bool on_received_data(std::shared_ptr<IOBuf> buf) override;
   void on_protocol_error() override;
 
+#ifdef HAVE_QUICHE
  public:
   // http2::adapter::Http2VisitorInterface
   //
@@ -223,6 +234,8 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   http2::adapter::NgHttp2Adapter* adapter() { return adapter_.get(); }
 #else
   http2::adapter::OgHttp2Adapter* adapter() { return adapter_.get(); }
+#endif
+
 #endif
 
  private:
@@ -411,6 +424,7 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   /// the upstream the service bound with
   scoped_refptr<net::stream> channel_;
 
+#ifdef HAVE_QUICHE
   /// the http2 upstream adapter
 #ifdef HAVE_NGHTTP2
   std::unique_ptr<http2::adapter::NgHttp2Adapter> adapter_;
@@ -418,6 +432,7 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   std::unique_ptr<http2::adapter::OgHttp2Adapter> adapter_;
 #endif
   absl::flat_hash_map<std::string, std::string> request_map_;
+#endif
 
   /// the queue to write downstream
   IoQueue downstream_;

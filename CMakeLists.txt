@@ -441,6 +441,7 @@ option(USE_ICU "Build with icu" OFF)
 option(USE_LEVELDB "Build with leveldb" OFF)
 option(USE_SQLITE "Build with sqlite" OFF)
 option(USE_OLD_SYSTEMD_SERVICE "Install with old systemd service files" OFF)
+option(USE_QUICHE "Build with quiche support" ON)
 
 option(ENABLE_FORTIFY "Enable build with Fortify Source" ON)
 option(ENABLE_LTO "Enable build with LTO" ON)
@@ -3170,24 +3171,30 @@ endif()
 #           QUICHE Library
 # *****************************************************************************************
 
-# include both of googleurl and quiche
-# TODO:Uncomment the below line out
-add_subdirectory(third_party/quiche)
-list(APPEND YASS_APP_FEATURES "quiche")
-set(SUPPORT_DEFINITIONS
-  HAVE_QUICHE
-  ${SUPPORT_DEFINITIONS}
-)
-set(SUPPORT_LIBS url quiche ${SUPPORT_LIBS})
+set(SUPPORT_LIBS url ${SUPPORT_LIBS})
+if (USE_QUICHE)
+  add_subdirectory(third_party/quiche)
+  list(APPEND YASS_APP_FEATURES "quiche")
+  set(SUPPORT_DEFINITIONS
+    HAVE_QUICHE
+    ${SUPPORT_DEFINITIONS}
+  )
+  set(SUPPORT_LIBS quiche ${SUPPORT_LIBS})
+endif()
 
 # *****************************************************************************************
 #           http-parser Library
 # *****************************************************************************************
 
+if (NOT USE_QUICHE AND USE_BALSA_HTTP_PARSER)
+  message(STATUS "Quiche is disabled, using http-parser instead")
+  set(USE_BALSA_HTTP_PARSER FALSE)
+endif()
+
 if (USE_SYSTEM_HTTP_PARSER AND NOT USE_BALSA_HTTP_PARSER)
   check_library_exists(http_parser http_parser_init "" HAVE_HTTP_PARSER_INIT)
   if (NOT HAVE_HTTP_PARSER_INIT)
-    message(STATUS "System http_parser not found, using bundled one")
+    message(STATUS "System http-parser not found, using bundled one")
     set(USE_SYSTEM_HTTP_PARSER FALSE)
   endif()
 endif()

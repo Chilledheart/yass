@@ -23,6 +23,7 @@ using namespace net;
 
 using gurl_base::ToLowerASCII;
 
+#ifdef HAVE_QUICHE
 static void SplitHostPort(std::string* out_hostname, std::string* out_port, const std::string& hostname_and_port) {
   size_t colon_offset = hostname_and_port.find_last_of(':');
   const size_t bracket_offset = hostname_and_port.find_last_of(']');
@@ -67,10 +68,13 @@ static std::string GetProxyAuthorizationIdentity() {
   return result;
 }
 
+#endif
+
 namespace server {
 
 const char ServerConnection::http_connect_reply_[] = "HTTP/1.1 200 Connection established\r\n\r\n";
 
+#ifdef HAVE_QUICHE
 bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length) {
   std::string concatenated;
   if (payload_length) {
@@ -121,6 +125,8 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
 
   return true;
 }
+
+#endif
 
 ServerConnection::ServerConnection(asio::io_context& io_context,
                                    const std::string& remote_host_ips,
@@ -178,6 +184,7 @@ void ServerConnection::close() {
   asio::error_code ec;
   closing_ = true;
 
+#ifdef HAVE_QUICHE
   if (adapter_) {
     if (data_frame_) {
       data_frame_->set_last_frame(true);
@@ -191,6 +198,7 @@ void ServerConnection::close() {
     SendIfNotProcessing();
     WriteStreamInPipe();
   }
+#endif
   closed_ = true;
   if (enable_tls_ && !shutdown_) {
     shutdown_ = true;
@@ -206,11 +214,12 @@ void ServerConnection::close() {
 }
 
 void ServerConnection::Start() {
-  bool http2 = absl::GetFlag(FLAGS_method).method == CRYPTO_HTTP2_PLAINTEXT;
-  http2 |= absl::GetFlag(FLAGS_method).method == CRYPTO_HTTP2;
+  const auto method = absl::GetFlag(FLAGS_method).method;
+  bool http2 = CIPHER_METHOD_IS_HTTP2(method);
   if (http2 && downlink_->https_fallback()) {
     http2 = false;
   }
+#ifdef HAVE_QUICHE
   if (http2) {
 #ifdef HAVE_NGHTTP2
     adapter_ = http2::adapter::NgHttp2Adapter::CreateServerAdapter(*this);
@@ -235,11 +244,15 @@ void ServerConnection::Start() {
 
     WriteUpstreamInPipe();
     OnUpstreamWriteFlush();
-  } else if (downlink_->https_fallback()) {
+  } else
+#endif
+      if (downlink_->https_fallback()) {
+    DCHECK(!http2);
     // TODO should we support it?
     // padding_support_ = absl::GetFlag(FLAGS_padding_support);
     ReadHandshakeViaHttps();
   } else {
+    DCHECK(!http2);
     encoder_ =
         std::make_unique<cipher>("", absl::GetFlag(FLAGS_password), absl::GetFlag(FLAGS_method).method, this, true);
     decoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password), absl::GetFlag(FLAGS_method).method, this);
@@ -247,6 +260,7 @@ void ServerConnection::Start() {
   }
 }
 
+#ifdef HAVE_QUICHE
 void ServerConnection::SendIfNotProcessing() {
   if (!processing_responses_) {
     processing_responses_ = true;
@@ -254,6 +268,7 @@ void ServerConnection::SendIfNotProcessing() {
     processing_responses_ = false;
   }
 }
+#endif
 
 //
 // cipher_visitor_interface
@@ -280,6 +295,7 @@ void ServerConnection::on_protocol_error() {
   OnDisconnect(asio::error::connection_aborted);
 }
 
+#ifdef HAVE_QUICHE
 //
 // http2::adapter::Http2VisitorInterface
 //
@@ -472,6 +488,8 @@ bool ServerConnection::OnMetadataForStream(StreamId stream_id, absl::string_view
 bool ServerConnection::OnMetadataEndForStream(StreamId stream_id) {
   return true;
 }
+
+#endif
 
 void ServerConnection::ReadHandshake() {
   scoped_refptr<ServerConnection> self(this);
@@ -831,6 +849,7 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code& 
   }
   *bytes_transferred += read;
 
+#ifdef HAVE_QUICHE
   if (adapter_) {
     if (!data_frame_) {
       ec = asio::error::eof;
@@ -841,18 +860,22 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextDownstreamBuf(asio::error_code& 
       AddPadding(buf);
     }
     data_frame_->AddChunk(buf);
-  } else if (downlink_->https_fallback()) {
+  } else
+#endif
+      if (downlink_->https_fallback()) {
     downstream_.push_back(buf);
   } else {
     EncryptData(&downstream_, buf);
   }
 
 out:
+#ifdef HAVE_QUICHE
   if (data_frame_ && *bytes_transferred) {
     data_frame_->SetSendCompletionCallback(std::function<void()>());
     adapter_->ResumeStream(stream_id_);
     SendIfNotProcessing();
   }
+#endif
   if (downstream_.empty()) {
     if (!ec) {
       ec = asio::error::try_again;
@@ -957,7 +980,9 @@ std::shared_ptr<IOBuf> ServerConnection::GetNextUpstreamBuf(asio::error_code& ec
     return nullptr;
   }
 
+#ifdef HAVE_QUICHE
 try_again:
+#endif
   // RstStream might be sent in ProcessBytes
   if (closed_ || closing_) {
     ec = asio::error::eof;
@@ -986,6 +1011,7 @@ try_again:
     goto out;
   }
 
+#ifdef HAVE_QUICHE
   if (adapter_) {
     absl::string_view remaining_buffer(reinterpret_cast<const char*>(buf->data()), buf->length());
     while (!remaining_buffer.empty()) {
@@ -1001,18 +1027,22 @@ try_again:
     if (upstream_.byte_length() < H2_STREAM_WINDOW_SIZE) {
       goto try_again;
     }
-  } else if (downlink_->https_fallback()) {
+  } else
+#endif
+      if (downlink_->https_fallback()) {
     upstream_.push_back(buf);
   } else {
     decoder_->process_bytes(buf);
   }
 
 out:
+#ifdef HAVE_QUICHE
   if (adapter_ && adapter_->want_write()) {
     // Send Control Streams
     SendIfNotProcessing();
     WriteStreamInPipe();
   }
+#endif
   if (upstream_.empty()) {
     if (!ec) {
       ec = asio::error::try_again;
@@ -1127,6 +1157,7 @@ void ServerConnection::OnConnect() {
     }
     connected();
   });
+#ifdef HAVE_QUICHE
   if (adapter_) {
     // stream is ready
     std::unique_ptr<DataFrameSource> data_frame = std::make_unique<DataFrameSource>(this, stream_id_);
@@ -1148,7 +1179,9 @@ void ServerConnection::OnConnect() {
     if (submit_result != 0) {
       OnDisconnect(asio::error::connection_aborted);
     }
-  } else if (downlink_->https_fallback() && http_is_connect_) {
+  } else
+#endif
+      if (downlink_->https_fallback() && http_is_connect_) {
     std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(http_connect_reply_, sizeof(http_connect_reply_) - 1);
     OnDownstreamWrite(buf);
   }
@@ -1159,15 +1192,22 @@ void ServerConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
 }
 
 void ServerConnection::OnStreamWrite() {
+#ifdef HAVE_QUICHE
   if (blocked_stream_) {
     adapter_->ResumeStream(blocked_stream_);
     SendIfNotProcessing();
   }
+#endif
+#ifdef HAVE_QUICHE
   /* shutdown the socket if upstream is eof and all remaining data sent */
   bool nodata = !data_frame_ || !data_frame_->SelectPayloadLength(1).first;
+#else
+  bool nodata = true;
+#endif
   if (channel_ && channel_->eof() && nodata && downstream_.empty() && !shutdown_) {
     VLOG(2) << "Connection (server) " << connection_id() << " last data sent: shutting down";
     shutdown_ = true;
+#ifdef HAVE_QUICHE
     if (data_frame_) {
       data_frame_->set_last_frame(true);
       adapter_->ResumeStream(stream_id_);
@@ -1177,6 +1217,7 @@ void ServerConnection::OnStreamWrite() {
       WriteStreamInPipe();
       return;
     }
+#endif
     scoped_refptr<ServerConnection> self(this);
     downlink_->async_shutdown([this, self](asio::error_code ec) {
       if (closed_ || closing_) {
@@ -1293,10 +1334,15 @@ void ServerConnection::disconnected(asio::error_code ec) {
   upstream_writable_ = false;
   channel_->close();
   /* delay the socket's close because downstream is buffered */
+#ifdef HAVE_QUICHE
   bool nodata = !data_frame_ || !data_frame_->SelectPayloadLength(1).first;
+#else
+  bool nodata = true;
+#endif
   if (nodata && downstream_.empty() && !shutdown_) {
     VLOG(2) << "Connection (server) " << connection_id() << " upstream: last data sent: shutting down";
     shutdown_ = true;
+#ifdef HAVE_QUICHE
     if (data_frame_) {
       data_frame_->set_last_frame(true);
       adapter_->ResumeStream(stream_id_);
@@ -1306,6 +1352,7 @@ void ServerConnection::disconnected(asio::error_code ec) {
       WriteStreamInPipe();
       return;
     }
+#endif
     scoped_refptr<ServerConnection> self(this);
     downlink_->async_shutdown([this, self](asio::error_code ec) {
       if (closed_ || closing_) {
