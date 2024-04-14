@@ -35,7 +35,7 @@
 #include <asio.hpp>
 #ifndef ASIO_NO_SSL
 void print_openssl_error();
-#include <openssl/ssl.h>
+#include "third_party/boringssl/src/include/openssl/ssl.h"
 #endif
 #include "net/asio_throw_exceptions.hpp"
 

@@ -6,7 +6,7 @@
 #include <absl/flags/flag.h>
 #include <absl/strings/str_cat.h>
 #include <absl/strings/str_join.h>
-#include <openssl/crypto.h>
+#include "third_party/boringssl/src/include/openssl/crypto.h"
 
 #ifdef _WIN32
 #include <ws2tcpip.h>

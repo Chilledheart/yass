@@ -14,8 +14,8 @@
 #include <glib-2.0/glib-unix.h>
 #include <glib/gi18n.h>
 #include <locale.h>
-#include <openssl/crypto.h>
 #include <stdarg.h>
+#include "third_party/boringssl/src/include/openssl/crypto.h"
 
 #include "core/logging.hpp"
 #include "core/utils.hpp"

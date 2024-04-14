@@ -6,8 +6,8 @@
 #include "core/logging.hpp"
 
 #ifdef HAVE_BORINGSSL
-#include <openssl/aead.h>
 #include "crypto/crypter_export.hpp"
+#include "third_party/boringssl/src/include/openssl/aead.h"
 
 static const size_t kKeySize = 24;
 static const size_t kNonceSize = 12;

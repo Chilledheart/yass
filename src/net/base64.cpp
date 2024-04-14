@@ -5,7 +5,7 @@
 
 #include <stddef.h>
 
-#include <openssl/base64.h>
+#include "third_party/boringssl/src/include/openssl/base64.h"
 
 namespace net {
 

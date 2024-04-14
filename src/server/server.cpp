@@ -11,7 +11,7 @@
 #include <absl/flags/parse.h>
 #include <absl/strings/str_cat.h>
 #include <locale.h>
-#include <openssl/crypto.h>
+#include "third_party/boringssl/src/include/openssl/crypto.h"
 
 #ifndef _WIN32
 #include <grp.h>

@@ -4,9 +4,9 @@
 #ifndef H_NET_X509_UTIL
 #define H_NET_X509_UTIL
 
-#include <openssl/base.h>
-#include <openssl/pool.h>
 #include <string_view>
+#include "third_party/boringssl/src/include/openssl/base.h"
+#include "third_party/boringssl/src/include/openssl/pool.h"
 
 namespace net::x509_util {
 

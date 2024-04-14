@@ -3,7 +3,7 @@
 #ifndef H_NET_HMAC_SHA1
 #define H_NET_HMAC_SHA1
 
-#include <openssl/sha.h>
+#include "third_party/boringssl/src/include/openssl/sha.h"
 
 #define HASH_BLOCK_SIZE 128
 #define HASH_BLOCK_SIZE_256 64

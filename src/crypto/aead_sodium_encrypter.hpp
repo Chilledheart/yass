@@ -8,7 +8,7 @@
 
 #ifdef HAVE_BORINGSSL
 
-#include <openssl/aead.h>
+#include "third_party/boringssl/src/include/openssl/aead.h"
 
 namespace crypto {
 
