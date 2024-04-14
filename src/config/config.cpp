@@ -178,7 +178,7 @@ ABSL_FLAG(std::string, password, "password", "Server password");
 static const std::string kCipherMethodHelpMessage =
     absl::StrCat("Specify encrypt of method to use, one of ",
                  absl::string_view(kCipherMethodsStr, strlen(kCipherMethodsStr) - 2));
-ABSL_FLAG(CipherMethodFlag, method, CipherMethodFlag(CRYPTO_HTTP2), kCipherMethodHelpMessage);
+ABSL_FLAG(CipherMethodFlag, method, CipherMethodFlag(CRYPTO_DEFAULT), kCipherMethodHelpMessage);
 
 ABSL_FLAG(uint32_t, parallel_max, 512, "Maximum concurrency for parallel connections");
 
