@@ -5,7 +5,7 @@
 #define H_NET_SSL_SOCKET
 
 #include <absl/functional/any_invocable.h>
-#include <openssl/ssl.h>
+#include "third_party/boringssl/src/include/openssl/ssl.h"
 
 #include "core/ref_counted.hpp"
 #include "core/scoped_refptr.hpp"

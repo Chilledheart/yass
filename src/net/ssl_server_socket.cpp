@@ -3,8 +3,8 @@
 
 #include "net/ssl_server_socket.hpp"
 
-#include <openssl/err.h>
 #include "net/openssl_util.hpp"
+#include "third_party/boringssl/src/include/openssl/err.h"
 
 #define GotoState(s) next_handshake_state_ = s
 

@@ -4,10 +4,10 @@
 #include "net/openssl_util.hpp"
 #include "net/net_errors.hpp"
 
-#include <openssl/crypto.h>
-#include <openssl/err.h>
-#include <openssl/ssl.h>
 #include "core/logging.hpp"
+#include "third_party/boringssl/src/include/openssl/crypto.h"
+#include "third_party/boringssl/src/include/openssl/err.h"
+#include "third_party/boringssl/src/include/openssl/ssl.h"
 
 namespace net {
 
