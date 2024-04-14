@@ -54,10 +54,25 @@ void DoHRequest::DoRequest(dns_message::DNStype dns_type, const std::string& hos
     return;
   }
   buf_ = IOBuf::create(SOCKET_BUF_SIZE);
+
   for (auto buffer : msg.buffers()) {
     buf_->reserve(0, buffer.size());
     memcpy(buf_->mutable_tail(), buffer.data(), buffer.size());
     buf_->append(buffer.size());
+  }
+
+  {
+    std::string request_header = absl::StrFormat(
+        "POST %s HTTP/1.1\r\n"
+        "Host: %s:%d\r\n"
+        "Accept: */*\r\n"
+        "Content-Type: application/dns-message\r\n"
+        "Content-Length: %lu\r\n"
+        "\r\n",
+        doh_path_, doh_host_, doh_port_, buf_->length());
+    buf_->reserve(request_header.size(), 0);
+    memcpy(buf_->mutable_buffer(), request_header.c_str(), request_header.size());
+    buf_->prepend(request_header.size());
   }
 
   asio::error_code ec;
@@ -107,17 +122,6 @@ void DoHRequest::OnSocketConnect() {
 }
 
 void DoHRequest::OnSSLConnect() {
-  std::string request_header = absl::StrFormat(
-      "POST %s HTTP/1.1\r\n"
-      "Host: %s:%d\r\n"
-      "Accept: */*\r\n"
-      "Content-Type: application/dns-message\r\n"
-      "Content-Length: %lu\r\n"
-      "\r\n",
-      doh_path_, doh_host_, doh_port_, buf_->length());
-  buf_->reserve(request_header.size(), 0);
-  memcpy(buf_->mutable_buffer(), request_header.c_str(), request_header.size());
-  buf_->prepend(request_header.size());
   scoped_refptr<DoHRequest> self(this);
 
   recv_buf_ = IOBuf::create(UINT16_MAX);
