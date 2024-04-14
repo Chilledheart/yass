@@ -53,10 +53,18 @@ void DoTRequest::DoRequest(dns_message::DNStype dns_type, const std::string& hos
     return;
   }
   buf_ = IOBuf::create(SOCKET_BUF_SIZE);
+
   for (auto buffer : msg.buffers()) {
     buf_->reserve(0, buffer.size());
     memcpy(buf_->mutable_tail(), buffer.data(), buffer.size());
     buf_->append(buffer.size());
+  }
+
+  {
+    uint16_t length = htons(buf_->length());
+    buf_->reserve(sizeof(length), 0);
+    memcpy(buf_->mutable_buffer(), &length, sizeof(length));
+    buf_->prepend(sizeof(length));
   }
 
   asio::error_code ec;
@@ -106,14 +114,9 @@ void DoTRequest::OnSocketConnect() {
 }
 
 void DoTRequest::OnSSLConnect() {
-  uint16_t length = htons(buf_->length());
-  buf_->reserve(sizeof(length), 0);
-  memcpy(buf_->mutable_buffer(), &length, sizeof(length));
-  buf_->prepend(sizeof(length));
-
   scoped_refptr<DoTRequest> self(this);
 
-  recv_buf_ = IOBuf::create(sizeof(length) + UINT16_MAX);
+  recv_buf_ = IOBuf::create(sizeof(uint16_t) + UINT16_MAX);
   ssl_socket_->WaitWrite([this, self](asio::error_code ec) { OnSSLWritable(ec); });
   ssl_socket_->WaitRead([this, self](asio::error_code ec) { OnSSLReadable(ec); });
 }
