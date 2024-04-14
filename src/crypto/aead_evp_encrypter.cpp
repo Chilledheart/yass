@@ -6,8 +6,8 @@
 #include "net/protocol.hpp"
 
 #ifdef HAVE_BORINGSSL
-#include <openssl/crypto.h>
-#include <openssl/err.h>
+#include "third_party/boringssl/src/include/openssl/crypto.h"
+#include "third_party/boringssl/src/include/openssl/err.h"
 
 // In debug builds only, log OpenSSL error stack. Then clear OpenSSL error
 // stack.

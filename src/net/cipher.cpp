@@ -5,8 +5,8 @@
 
 #include <memory>
 
-#include <openssl/base64.h>
-#include <openssl/md5.h>
+#include "third_party/boringssl/src/include/openssl/base64.h"
+#include "third_party/boringssl/src/include/openssl/md5.h"
 
 #include "core/logging.hpp"
 #include "core/rand_util.hpp"

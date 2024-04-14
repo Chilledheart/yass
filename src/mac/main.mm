@@ -13,7 +13,7 @@
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
 #include <absl/strings/str_cat.h>
-#include <openssl/crypto.h>
+#include "third_party/boringssl/src/include/openssl/crypto.h"
 
 #include "config/config.hpp"
 #include "core/logging.hpp"

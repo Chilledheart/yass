@@ -24,10 +24,12 @@
 #include <absl/strings/string_view.h>
 #include <deque>
 
+#ifdef HAVE_QUICHE
 #ifdef HAVE_NGHTTP2
 #include <quiche/http2/adapter/nghttp2_adapter.h>
 #else
 #include <quiche/http2/adapter/oghttp2_adapter.h>
+#endif
 #endif
 
 class cipher;
@@ -37,12 +39,15 @@ using IOBuf = net::IOBuf;
 using cipher = net::cipher;
 using IoQueue = net::IoQueue;
 
+#ifdef HAVE_QUICHE
 using StreamId = http2::adapter::Http2StreamId;
 template <typename T>
 using StreamMap = absl::flat_hash_map<StreamId, T>;
+#endif
 
 class ServerConnection;
 
+#ifdef HAVE_QUICHE
 class DataFrameSource : public http2::adapter::DataFrameSource {
  public:
   explicit DataFrameSource(ServerConnection* connection, const StreamId& stream_id)
@@ -75,14 +80,17 @@ class DataFrameSource : public http2::adapter::DataFrameSource {
   bool last_frame_ = false;
   std::function<void()> send_completion_callback_;
 };
+#endif
 
 /// The ultimate service class to deliever the network traffic to the remote
 /// endpoint
 class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
+#ifdef HAVE_QUICHE
+                         public http2::adapter::Http2VisitorInterface,
+#endif
                          public net::Channel,
                          public net::Connection,
-                         public net::cipher_visitor_interface,
-                         public http2::adapter::Http2VisitorInterface {
+                         public net::cipher_visitor_interface {
  public:
   /// The state of service
   enum state {
@@ -155,6 +163,7 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   /// flag to mark connection is closed
   bool closed_ = true;
 
+#ifdef HAVE_QUICHE
  private:
   void SendIfNotProcessing();
   bool processing_responses_ = false;
@@ -163,12 +172,14 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
 
  public:
   StreamId blocked_stream_ = 0;
+#endif
 
  public:
   // cipher_visitor_interface
   bool on_received_data(std::shared_ptr<IOBuf> buf) override;
   void on_protocol_error() override;
 
+#ifdef HAVE_QUICHE
  public:
   // http2::adapter::Http2VisitorInterface
   // OnBeforeFrameSent(SETTINGS, 0, _, 0x0)
@@ -217,6 +228,7 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   http2::adapter::NgHttp2Adapter* adapter() { return adapter_.get(); }
 #else
   http2::adapter::OgHttp2Adapter* adapter() { return adapter_.get(); }
+#endif
 #endif
 
  private:
@@ -336,6 +348,7 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   /// the upstream the service bound with
   scoped_refptr<net::stream> channel_;
 
+#ifdef HAVE_QUICHE
   /// the http2 upstream adapter
 #ifdef HAVE_NGHTTP2
   std::unique_ptr<http2::adapter::NgHttp2Adapter> adapter_;
@@ -343,6 +356,7 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   std::unique_ptr<http2::adapter::OgHttp2Adapter> adapter_;
 #endif
   absl::flat_hash_map<std::string, std::string> request_map_;
+#endif
 
   /// the queue to write downstream
   IoQueue downstream_;

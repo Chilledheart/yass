@@ -15,10 +15,14 @@
 #include "net/padding.hpp"
 
 #include <build/build_config.h>
+
+#ifdef HAVE_QUICHE
 #include <quiche/spdy/core/hpack/hpack_constants.h>
+#endif
 
 using namespace net;
 
+#ifdef HAVE_QUICHE
 static std::vector<http2::adapter::Header> GenerateHeaders(std::vector<std::pair<std::string, std::string>> headers,
                                                            int status = 0) {
   std::vector<http2::adapter::Header> response_vector;
@@ -73,6 +77,7 @@ static void FillNonindexHeaderValue(uint64_t unique_bits, char* buf, int len) {
     buf[i] = g_nonindex_codes[16];
   }
 }
+#endif
 
 namespace cli {
 
@@ -91,6 +96,7 @@ static bool IsIPv4MappedIPv6(const asio::ip::tcp::endpoint& address) {
 }
 #endif
 
+#ifdef HAVE_QUICHE
 bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length) {
   std::string concatenated;
   if (payload_length) {
@@ -142,6 +148,7 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
 
   return true;
 }
+#endif
 
 CliConnection::CliConnection(asio::io_context& io_context,
                              const std::string& remote_host_ips,
@@ -190,6 +197,7 @@ void CliConnection::close() {
     VLOG(1) << "close() error: " << ec;
   }
   if (channel_) {
+#ifdef HAVE_QUICHE
     if (adapter_) {
       if (data_frame_) {
         data_frame_->set_last_frame(true);
@@ -203,11 +211,13 @@ void CliConnection::close() {
       SendIfNotProcessing();
       WriteUpstreamInPipe();
     }
+#endif
     channel_->close();
   }
   on_disconnect();
 }
 
+#ifdef HAVE_QUICHE
 void CliConnection::SendIfNotProcessing() {
   if (!processing_responses_) {
     processing_responses_ = true;
@@ -215,6 +225,7 @@ void CliConnection::SendIfNotProcessing() {
     processing_responses_ = false;
   }
 }
+#endif
 
 //
 // cipher_visitor_interface
@@ -229,6 +240,7 @@ void CliConnection::on_protocol_error() {
   disconnected(asio::error::connection_aborted);
 }
 
+#ifdef HAVE_QUICHE
 //
 // http2::adapter::Http2VisitorInterface
 //
@@ -369,6 +381,8 @@ bool CliConnection::OnMetadataForStream(StreamId stream_id, absl::string_view me
 bool CliConnection::OnMetadataEndForStream(StreamId stream_id) {
   return true;
 }
+
+#endif
 
 void CliConnection::ReadMethodSelect() {
   scoped_refptr<CliConnection> self(this);
@@ -950,7 +964,9 @@ std::shared_ptr<IOBuf> CliConnection::GetNextDownstreamBuf(asio::error_code& ec,
     return nullptr;
   }
 
+#ifdef HAVE_QUICHE
 try_again:
+#endif
   // RstStream might be sent in ProcessBytes
   if (channel_->eof()) {
     ec = asio::error::eof;
@@ -979,6 +995,7 @@ try_again:
   }
   *bytes_transferred += read;
 
+#ifdef HAVE_QUICHE
   if (adapter_) {
     absl::string_view remaining_buffer(reinterpret_cast<const char*>(buf->data()), buf->length());
     while (!remaining_buffer.empty()) {
@@ -994,7 +1011,9 @@ try_again:
     if (downstream_.byte_length() < H2_STREAM_WINDOW_SIZE) {
       goto try_again;
     }
-  } else if (upstream_https_fallback_) {
+  } else
+#endif
+      if (upstream_https_fallback_) {
     if (upstream_handshake_) {
       upstream_handshake_ = false;
       HttpResponseParser parser;
@@ -1033,11 +1052,13 @@ try_again:
   }
 
 out:
+#ifdef HAVE_QUICHE
   if (adapter_ && adapter_->want_write()) {
     // Send Control Streams
     SendIfNotProcessing();
     WriteUpstreamInPipe();
   }
+#endif
   if (downstream_.empty()) {
     if (!ec) {
       ec = asio::error::try_again;
@@ -1180,6 +1201,7 @@ std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code& ec, s
     return nullptr;
   }
 
+#ifdef HAVE_QUICHE
   if (adapter_) {
     if (!data_frame_) {
       ec = asio::error::eof;
@@ -1190,18 +1212,22 @@ std::shared_ptr<IOBuf> CliConnection::GetNextUpstreamBuf(asio::error_code& ec, s
       AddPadding(buf);
     }
     data_frame_->AddChunk(buf);
-  } else if (upstream_https_fallback_) {
+  } else
+#endif
+      if (upstream_https_fallback_) {
     upstream_.push_back(buf);
   } else {
     EncryptData(&upstream_, buf);
   }
 
 out:
+#ifdef HAVE_QUICHE
   if (data_frame_ && *bytes_transferred) {
     data_frame_->SetSendCompletionCallback(std::function<void()>());
     adapter_->ResumeStream(stream_id_);
     SendIfNotProcessing();
   }
+#endif
   if (upstream_.empty()) {
     if (!ec) {
       ec = asio::error::try_again;
@@ -1427,6 +1453,7 @@ void CliConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
     return;
   }
 
+#ifdef HAVE_QUICHE
   // SendContents
   if (adapter_) {
     if (!data_frame_) {
@@ -1440,7 +1467,9 @@ void CliConnection::OnStreamRead(std::shared_ptr<IOBuf> buf) {
     data_frame_->SetSendCompletionCallback(std::function<void()>());
     adapter()->ResumeStream(stream_id_);
     SendIfNotProcessing();
-  } else if (upstream_https_fallback_) {
+  } else
+#endif
+      if (upstream_https_fallback_) {
     upstream_.push_back(buf);
   } else {
     EncryptData(&upstream_, buf);
@@ -1527,14 +1556,15 @@ void CliConnection::connected() {
   VLOG(2) << "Connection (client) " << connection_id()
           << " remote: established upstream connection with: " << remote_domain();
 
-  bool http2 = absl::GetFlag(FLAGS_method).method == CRYPTO_HTTP2_PLAINTEXT;
-  http2 |= (absl::GetFlag(FLAGS_method).method == CRYPTO_HTTP2);
+  const auto method = absl::GetFlag(FLAGS_method).method;
+  bool http2 = CIPHER_METHOD_IS_HTTP2(method);
   if (http2 && channel_->https_fallback()) {
     http2 = false;
     upstream_https_fallback_ = true;
   }
 
   // Create adapters
+#ifdef HAVE_QUICHE
   if (http2) {
 #ifdef HAVE_NGHTTP2
     adapter_ = http2::adapter::NgHttp2Adapter::CreateClientAdapter(*this);
@@ -1544,16 +1574,20 @@ void CliConnection::connected() {
     adapter_ = http2::adapter::OgHttp2Adapter::Create(*this, options);
 #endif
     padding_support_ = absl::GetFlag(FLAGS_padding_support);
-  } else if (upstream_https_fallback_) {
+  } else
+#endif
+      if (upstream_https_fallback_) {
     // nothing to create
     // TODO should we support it?
     // padding_support_ = absl::GetFlag(FLAGS_padding_support);
   } else {
+    DCHECK(!http2);
     encoder_ =
         std::make_unique<cipher>("", absl::GetFlag(FLAGS_password), absl::GetFlag(FLAGS_method).method, this, true);
     decoder_ = std::make_unique<cipher>("", absl::GetFlag(FLAGS_password), absl::GetFlag(FLAGS_method).method, this);
   }
 
+#ifdef HAVE_QUICHE
   // Send Upstream Settings (HTTP2 Only)
   if (adapter_) {
     std::vector<http2::adapter::Http2Setting> settings{
@@ -1609,7 +1643,9 @@ void CliConnection::connected() {
     stream_id_ = adapter_->SubmitRequest(GenerateHeaders(headers), std::move(data_frame), nullptr);
     data_frame_->set_stream_id(stream_id_);
     SendIfNotProcessing();
-  } else if (upstream_https_fallback_) {
+  } else
+#endif
+      if (upstream_https_fallback_) {
     std::string hostname_and_port;
     std::string host;
     int port;
@@ -1680,17 +1716,20 @@ void CliConnection::sent() {
   WriteUpstreamInPipe();
   OnUpstreamWriteFlush();
 
+#ifdef HAVE_QUICHE
   if (blocked_stream_) {
     adapter_->ResumeStream(blocked_stream_);
     SendIfNotProcessing();
     OnUpstreamWriteFlush();
   }
+#endif
 }
 
 void CliConnection::disconnected(asio::error_code ec) {
   scoped_refptr<CliConnection> self(this);
   VLOG(1) << "Connection (client) " << connection_id() << " upstream: lost connection with: " << remote_domain()
           << " due to " << ec;
+#ifdef HAVE_QUICHE
   if (data_frame_) {
     data_frame_->set_last_frame(true);
     adapter_->ResumeStream(stream_id_);
@@ -1699,6 +1738,7 @@ void CliConnection::disconnected(asio::error_code ec) {
     stream_id_ = 0;
     WriteUpstreamInPipe();
   }
+#endif
   upstream_readable_ = false;
   upstream_writable_ = false;
   channel_->close();

@@ -6,7 +6,7 @@
 #include "android/yass.hpp"
 
 #include <jni.h>
-#include <openssl/crypto.h>
+#include "third_party/boringssl/src/include/openssl/crypto.h"
 
 #include "android/jni.hpp"
 #include "android/utils.hpp"

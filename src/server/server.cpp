@@ -11,7 +11,7 @@
 #include <absl/flags/parse.h>
 #include <absl/strings/str_cat.h>
 #include <locale.h>
-#include <openssl/crypto.h>
+#include "third_party/boringssl/src/include/openssl/crypto.h"
 
 #ifndef _WIN32
 #include <grp.h>
@@ -84,7 +84,7 @@ int main(int argc, const char* argv[]) {
 
   // raise some early warning on SSL server setups
   auto method = absl::GetFlag(FLAGS_method).method;
-  if (method == cipher_method::CRYPTO_HTTPS || method == cipher_method::CRYPTO_HTTP2) {
+  if (CIPHER_METHOD_IS_TLS(method)) {
     ssize_t ret;
     std::string private_key, private_key_path = absl::GetFlag(FLAGS_private_key_file);
     if (private_key_path.empty()) {

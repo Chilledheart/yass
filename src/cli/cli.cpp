@@ -10,9 +10,10 @@
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
 #include <absl/strings/str_cat.h>
+#include <absl/strings/str_join.h>
 #include <build/build_config.h>
 #include <locale.h>
-#include <openssl/crypto.h>
+#include "third_party/boringssl/src/include/openssl/crypto.h"
 
 #include "core/logging.hpp"
 #include "crypto/crypter_export.hpp"

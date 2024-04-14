@@ -56,12 +56,10 @@ class ContentServer {
         remote_host_ips_(remote_host_ips),
         remote_host_sni_(remote_host_sni),
         remote_port_(remote_port),
-        upstream_https_fallback_(absl::GetFlag(FLAGS_method).method == CRYPTO_HTTPS),
-        https_fallback_(absl::GetFlag(FLAGS_method).method == CRYPTO_HTTPS),
-        enable_upstream_tls_(absl::GetFlag(FLAGS_method).method == CRYPTO_HTTPS ||
-                             absl::GetFlag(FLAGS_method).method == CRYPTO_HTTP2),
-        enable_tls_(absl::GetFlag(FLAGS_method).method == CRYPTO_HTTPS ||
-                    absl::GetFlag(FLAGS_method).method == CRYPTO_HTTP2),
+        upstream_https_fallback_(CIPHER_METHOD_IS_HTTPS_FALLBACK(absl::GetFlag(FLAGS_method).method)),
+        https_fallback_(upstream_https_fallback_),
+        enable_upstream_tls_(CIPHER_METHOD_IS_TLS(absl::GetFlag(FLAGS_method).method)),
+        enable_tls_(enable_upstream_tls_),
         upstream_certificate_(upstream_certificate),
         certificate_(certificate),
         private_key_(private_key),
