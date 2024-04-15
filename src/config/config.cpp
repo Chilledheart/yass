@@ -8,13 +8,11 @@
 #include <absl/flags/internal/program_name.h>
 #include <absl/flags/usage.h>
 #include <absl/strings/str_cat.h>
+#include <iostream>
 #include <sstream>
 
-#include "core/logging.hpp"
 #include "core/utils.hpp"
-#include "feature.h"
 #include "url/gurl.h"
-#include "version.h"
 
 #ifndef _POSIX_HOST_NAME_MAX
 #define _POSIX_HOST_NAME_MAX 255
@@ -64,7 +62,7 @@ bool AbslParseFlag(absl::string_view text, CipherMethodFlag* flag, std::string* 
 // Similarly, for unparsing, we can simply invoke `absl::UnparseFlag()` on
 // the constituent types.
 std::string AbslUnparseFlag(const CipherMethodFlag& flag) {
-  DCHECK(is_valid_cipher_method(flag.method));
+  assert(is_valid_cipher_method(flag.method) && "Invalid cipher_method");
   return to_cipher_method_str(flag.method);
 }
 
@@ -185,138 +183,6 @@ ABSL_FLAG(uint32_t, parallel_max, 512, "Maximum concurrency for parallel connect
 ABSL_FLAG(RateFlag, limit_rate, RateFlag(0), "Limit transfer speed to RATE");
 
 namespace config {
-
-void ReadConfigFileOption(int argc, const char** argv) {
-  int pos = 1;
-  while (pos < argc) {
-    std::string arg = argv[pos];
-    if (pos + 1 < argc && (arg == "-v" || arg == "--v")) {
-      auto v_opt = StringToIntegerU(argv[pos + 1]);
-      if (!v_opt.has_value()) {
-        fprintf(stderr, "Invalid Option: %s %s\n", argv[pos], argv[pos + 1]);
-        fflush(stderr);
-        exit(-1);
-        continue;
-      }
-      absl::SetFlag(&FLAGS_v, v_opt.value());
-      argv[pos] = "";
-      argv[pos + 1] = "";
-      pos += 2;
-      continue;
-    } else if (pos + 1 < argc && (arg == "-vmodule" || arg == "--vmodule")) {
-      absl::SetFlag(&FLAGS_vmodule, argv[pos + 1]);
-      argv[pos] = "";
-      argv[pos + 1] = "";
-      pos += 2;
-      continue;
-    } else if (pos + 1 < argc && (arg == "-log_dir" || arg == "--log_dir")) {
-      absl::SetFlag(&FLAGS_log_dir, argv[pos + 1]);
-      argv[pos] = "";
-      argv[pos + 1] = "";
-      pos += 2;
-      continue;
-    } else if (strncmp(argv[pos], "-log_dir=", sizeof("-log_dir=") - 1) == 0) {
-      absl::SetFlag(&FLAGS_log_dir, argv[pos] + sizeof("-log_dir=") - 1);
-      argv[pos] = "";
-      pos += 1;
-      continue;
-    } else if (strncmp(argv[pos], "--log_dir=", sizeof("--log_dir=") - 1) == 0) {
-      absl::SetFlag(&FLAGS_log_dir, argv[pos] + sizeof("--log_dir=") - 1);
-      argv[pos] = "";
-      pos += 1;
-      continue;
-    } else if (arg == "--ipv4") {
-      absl::SetFlag(&FLAGS_ipv6_mode, false);
-      argv[pos] = "";
-      pos += 1;
-      continue;
-    } else if (arg == "--ipv6") {
-      absl::SetFlag(&FLAGS_ipv6_mode, true);
-      argv[pos] = "";
-      pos += 1;
-      continue;
-    } else if (arg == "-logtostderr" || arg == "-logtostderr=true" || arg == "--logtostderr" ||
-               arg == "--logtostderr=true") {
-      absl::SetFlag(&FLAGS_logtostderr, true);
-      argv[pos] = "";
-      pos += 1;
-      continue;
-    } else if (arg == "-nologtostderr" || arg == "-logtostderr=false" || arg == "--nologtostderr" ||
-               arg == "--logtostderr=false") {
-      absl::SetFlag(&FLAGS_logtostderr, false);
-      argv[pos] = "";
-      pos += 1;
-      continue;
-    } else if (arg == "-alsologtostderr" || arg == "-alsologtostderr=true" || arg == "--alsologtostderr" ||
-               arg == "--alsologtostderr=true") {
-      absl::SetFlag(&FLAGS_alsologtostderr, true);
-      argv[pos] = "";
-      pos += 1;
-      continue;
-    } else if (arg == "-noalsologtostderr" || arg == "-alsologtostderr=false" || arg == "--noalsologtostderr" ||
-               arg == "--alsologtostderr=false") {
-      absl::SetFlag(&FLAGS_alsologtostderr, false);
-      argv[pos] = "";
-      pos += 1;
-      continue;
-    } else if (arg == "-colorlogtostderr" || arg == "-colorlogtostderr=true" || arg == "--colorlogtostderr" ||
-               arg == "--colorlogtostderr=true") {
-      absl::SetFlag(&FLAGS_colorlogtostderr, true);
-      argv[pos] = "";
-      pos += 1;
-      continue;
-    } else if (arg == "-nocolorlogtostderr" || arg == "-colorlogtostderr=false" || arg == "--nocolorlogtostderr" ||
-               arg == "--colorlogtostderr=false") {
-      absl::SetFlag(&FLAGS_colorlogtostderr, false);
-      argv[pos] = "";
-      pos += 1;
-      continue;
-    } else if (arg == "-k" || arg == "--k" || arg == "-insecure_mode" || arg == "--insecure_mode") {
-      absl::SetFlag(&FLAGS_insecure_mode, true);
-      argv[pos] = "";
-      pos += 1;
-      continue;
-    } else if (arg == "-noinsecure_mode" || arg == "-insecure_mode=false" || arg == "--noinsecure_mode" ||
-               arg == "--insecure_mode=false") {
-      absl::SetFlag(&FLAGS_insecure_mode, false);
-      argv[pos] = "";
-      pos += 1;
-      continue;
-    } else if (pos + 1 < argc && (arg == "-c" || arg == "--configfile")) {
-      /* deprecated */
-      g_configfile = argv[pos + 1];
-      argv[pos] = "";
-      argv[pos + 1] = "";
-      pos += 2;
-      continue;
-    } else if (pos + 1 < argc && (arg == "-K" || arg == "--config")) {
-      g_configfile = argv[pos + 1];
-      argv[pos] = "";
-      argv[pos + 1] = "";
-      pos += 2;
-      continue;
-    } else if (arg == "-version" || arg == "--version") {
-      fprintf(stdout, "%s %s\n", absl::flags_internal::ShortProgramInvocationName().c_str(), YASS_APP_TAG);
-      fprintf(stdout, "Last Change: %s\n", YASS_APP_LAST_CHANGE);
-      fprintf(stdout, "Features: %s\n", YASS_APP_FEATURES);
-#ifndef NDEBUG
-      fprintf(stdout, "Debug build (NDEBUG not #defined)\n");
-#endif
-      fflush(stdout);
-      argv[pos] = "";
-      pos += 1;
-      exit(0);
-    }
-    ++pos;
-  }
-
-  LOG(WARNING) << "Application starting: " << YASS_APP_TAG;
-  LOG(WARNING) << "Last Change: " << YASS_APP_LAST_CHANGE;
-  LOG(WARNING) << "Features: " << YASS_APP_FEATURES;
-#ifndef NDEBUG
-  LOG(WARNING) << "Debug build (NDEBUG not #defined)\n";
-#endif
-}
 
 bool ReadConfig() {
   auto config_impl = config::ConfigImpl::Create();

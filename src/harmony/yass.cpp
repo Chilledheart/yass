@@ -1102,8 +1102,7 @@ static napi_value initRoutine(napi_env env, napi_callback_info info) {
 
   CRYPTO_library_init();
 
-  config::ReadConfigFileOption(0, nullptr);
-  config::ReadConfig();
+  config::ReadConfigFileAndArguments(0, nullptr);
 
   g_worker = std::make_unique<Worker>();
 
