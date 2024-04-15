@@ -11,7 +11,6 @@
 #include <absl/debugging/failure_signal_handler.h>
 #include <absl/debugging/symbolize.h>
 #include <absl/flags/flag.h>
-#include <absl/flags/parse.h>
 #include <absl/strings/str_cat.h>
 
 #include "config/config.hpp"
@@ -43,9 +42,7 @@ int main(int argc, const char** argv) {
 #endif
 
   config::SetClientUsageMessage(exec_path);
-  config::ReadConfigFileOption(argc, argv);
-  config::ReadConfig();
-  absl::ParseCommandLine(argc, const_cast<char**>(argv));
+  config::ReadConfigFileAndArguments(argc, argv);
 
   absl::SetFlag(&FLAGS_v, 0);
   absl::SetFlag(&FLAGS_log_thread_id, 1);

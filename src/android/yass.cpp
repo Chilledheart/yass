@@ -55,8 +55,7 @@ void Init(JNIEnv* env, jobject activity_obj) {
 
   CRYPTO_library_init();
 
-  config::ReadConfigFileOption(0, nullptr);
-  config::ReadConfig();
+  config::ReadConfigFileAndArguments(0, nullptr);
 
   // Create Main Worker after ReadConfig
   g_worker = std::make_unique<Worker>();

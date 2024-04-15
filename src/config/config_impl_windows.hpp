@@ -10,10 +10,10 @@
 
 #include <absl/strings/string_view.h>
 #include <windows.h>
+#include <iostream>
 #include <string>
 #include <vector>
 
-#include "core/logging.hpp"
 #include "core/utils.hpp"
 
 #define DEFAULT_CONFIG_KEY L"SOFTWARE\\YetAnotherShadowSocket"
@@ -105,11 +105,11 @@ class ConfigImplWindows : public ConfigImpl {
                           nullptr /*lpSecurityAttributes*/, &hkey_ /* phkResult */,
                           &disposition /* lpdwDisposition*/) == ERROR_SUCCESS) {
       if (disposition == REG_CREATED_NEW_KEY) {
-        VLOG(2) << "The key did not exist and was created: HKEY_CURRENT_USER/" << SysWideToUTF8(subkey);
+        std::cerr << "The key did not exist and was created: HKEY_CURRENT_USER/" << SysWideToUTF8(subkey) << std::endl;
       } else if (disposition == REG_OPENED_EXISTING_KEY) {
-        VLOG(2) << "The key existed and was simply opened without being "
-                   "changed: HKEY_CURRENT_USER/"
-                << SysWideToUTF8(subkey);
+        std::cerr << "The key existed and was simply opened without being "
+                     "changed: HKEY_CURRENT_USER/"
+                  << SysWideToUTF8(subkey) << std::endl;
       }
       return true;
     }
@@ -148,7 +148,7 @@ class ConfigImplWindows : public ConfigImpl {
       /* fall through */
     }
 
-    LOG(WARNING) << "bad field: " << key;
+    std::cerr << "bad field: " << key << std::endl;
     return false;
   }
 
@@ -169,7 +169,7 @@ class ConfigImplWindows : public ConfigImpl {
       return true;
     }
 
-    LOG(WARNING) << "bad field: " << key;
+    std::cerr << "bad field: " << key << std::endl;
     return false;
   }
 
@@ -187,7 +187,7 @@ class ConfigImplWindows : public ConfigImpl {
       return true;
     }
 
-    LOG(WARNING) << "bad field: " << key;
+    std::cerr << "bad field: " << key << std::endl;
     return false;
   }
 
@@ -204,7 +204,7 @@ class ConfigImplWindows : public ConfigImpl {
                          (wvalue.size() + 1) * sizeof(wchar_t) /*cbData*/) == ERROR_SUCCESS) {
       return true;
     }
-    LOG(WARNING) << "failed to write field: " << key << " with content " << value;
+    std::cerr << "failed to write field: " << key << " with content " << value << std::endl;
     return false;
   }
 
@@ -219,7 +219,7 @@ class ConfigImplWindows : public ConfigImpl {
                          reinterpret_cast<const BYTE*>(&value) /*lpData*/, sizeof(value) /*cbData*/) == ERROR_SUCCESS) {
       return true;
     }
-    LOG(WARNING) << "failed to write field: " << key << " with content " << value;
+    std::cerr << "failed to write field: " << key << " with content " << value << std::endl;
     return false;
   }
 

@@ -16,11 +16,12 @@
 #endif
 
 #include <absl/flags/flag.h>
+#include <cassert>
+#include <iostream>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <string>
 
-#include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "core/utils_fs.hpp"
 
@@ -36,21 +37,21 @@ class ConfigImplLocal : public ConfigImpl {
 
  protected:
   bool OpenImpl(bool dontread) override {
-    DCHECK(!path_.empty());
+    assert(!path_.empty() && "Opened with empty path");
     dontread_ = dontread;
 
     do {
       ssize_t size = ReadFileToBuffer(path_, read_buffer_, sizeof(read_buffer_));
       if (size < 0) {
-        PLOG(WARNING) << "configure file failed to read: " << path_;
+        std::cerr << "configure file failed to read: " << path_ << std::endl;
         break;
       }
       root_ = json::parse(read_buffer_, nullptr, false);
       if (root_.is_discarded() || !root_.is_object()) {
-        LOG(WARNING) << "bad config file: " << path_ << " content: \"" << read_buffer_ << "\"";
+        std::cerr << "bad config file: " << path_ << " content: \"" << read_buffer_ << "\"" << std::endl;
         break;
       }
-      VLOG(2) << "loaded from config file: " << path_;
+      std::cerr << "loaded from config file: " << path_ << std::endl;
       return true;
     } while (false);
 
@@ -71,17 +72,17 @@ class ConfigImplLocal : public ConfigImpl {
     auto dir_ref = Dirname(path_);
     std::string dir(dir_ref.data(), dir_ref.size());
     if (!CreateDirectories(dir)) {
-      PLOG(WARNING) << "configure dir could not create: " << dir;
+      std::cerr << "configure dir could not create: " << dir << std::endl;
       return false;
     }
 
     std::string json_content = root_.dump(4);
     if (static_cast<ssize_t>(json_content.size()) != WriteFileWithBuffer(path_, json_content)) {
-      PLOG(WARNING) << "failed to write to path: \"" << path_ << " with content \"" << json_content;
+      std::cerr << "failed to write to path: \"" << path_ << " with content \"" << json_content << "\"" << std::endl;
       return false;
     }
 
-    LOG(INFO) << "written config file at " << path_;
+    std::cerr << "written config file at " << path_ << std::endl;
 
     path_.clear();
     return true;
@@ -92,7 +93,7 @@ class ConfigImplLocal : public ConfigImpl {
       *value = root_[key].get<std::string>();
       return true;
     }
-    LOG(WARNING) << "bad field: " << key;
+    std::cerr << "bad field: " << key << std::endl;
     return false;
   }
 
@@ -101,7 +102,7 @@ class ConfigImplLocal : public ConfigImpl {
       *value = root_[key].get<bool>();
       return true;
     }
-    LOG(WARNING) << "bad field: " << key;
+    std::cerr << "bad field: " << key << std::endl;
     return false;
   }
 
@@ -110,7 +111,7 @@ class ConfigImplLocal : public ConfigImpl {
       *value = root_[key].get<uint32_t>();
       return true;
     }
-    LOG(WARNING) << "bad field: " << key;
+    std::cerr << "bad field: " << key << std::endl;
     return false;
   }
 
@@ -119,7 +120,7 @@ class ConfigImplLocal : public ConfigImpl {
       *value = root_[key].get<int32_t>();
       return true;
     }
-    LOG(WARNING) << "bad field: " << key;
+    std::cerr << "bad field: " << key << std::endl;
     return false;
   }
 
@@ -128,7 +129,7 @@ class ConfigImplLocal : public ConfigImpl {
       *value = root_[key].get<uint64_t>();
       return true;
     }
-    LOG(WARNING) << "bad field: " << key;
+    std::cerr << "bad field: " << key << std::endl;
     return false;
   }
 
@@ -137,7 +138,7 @@ class ConfigImplLocal : public ConfigImpl {
       *value = root_[key].get<int64_t>();
       return true;
     }
-    LOG(WARNING) << "bad field: " << key;
+    std::cerr << "bad field: " << key << std::endl;
     return false;
   }
 

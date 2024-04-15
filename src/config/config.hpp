@@ -42,9 +42,10 @@ struct RateFlag {
 ABSL_DECLARE_FLAG(RateFlag, limit_rate);  // bytes per second
 
 namespace config {
-void ReadConfigFileOption(int argc, const char** argv);
 bool ReadConfig();
 bool SaveConfig();
+
+void ReadConfigFileAndArguments(int argc, const char** argv);
 
 std::string ReadConfigFromArgument(const std::string& server_host,
                                    const std::string& server_sni,
