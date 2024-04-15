@@ -10,9 +10,9 @@
 #include <absl/debugging/failure_signal_handler.h>
 #include <absl/debugging/symbolize.h>
 #include <absl/flags/flag.h>
-#include <absl/flags/parse.h>
 #include <absl/strings/str_cat.h>
 #include <locale.h>
+#include <iostream>
 #include "third_party/boringssl/src/include/openssl/crypto.h"
 
 #include "core/debug.hpp"
@@ -84,9 +84,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
   argv[0] = exec_path.data();
 
   config::SetClientUsageMessage(exec_path);
-  config::ReadConfigFileOption(argc, &argv[0]);
-  config::ReadConfig();
-  absl::ParseCommandLine(argv.size(), const_cast<char**>(&argv[0]));
+  config::ReadConfigFileAndArguments(argc, &argv[0]);
 
 #ifdef HAVE_ICU
   if (!InitializeICU()) {

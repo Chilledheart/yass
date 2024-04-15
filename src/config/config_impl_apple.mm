@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022-2023 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 
 #include "config/config_impl_apple.hpp"
 
@@ -9,9 +9,9 @@
 
 #include <absl/flags/declare.h>
 #include <sys/stat.h>
+#include <iostream>
 #include <memory>
 
-#include "core/logging.hpp"
 #include "core/utils.hpp"
 
 #include <base/apple/foundation_util.h>
@@ -76,7 +76,7 @@ bool ConfigImplApple::ReadImpl(const std::string& key, std::string* value) {
     *value = SysCFStringRefToUTF8(obj);
     return true;
   }
-  LOG(WARNING) << "bad field: " << key;
+  std::cerr << "bad field: " << key << std::endl;
   return false;
 }
 
@@ -87,7 +87,7 @@ bool ConfigImplApple::ReadImpl(const std::string& key, bool* value) {
     *value = CFBooleanGetValue(obj);
     return true;
   }
-  LOG(WARNING) << "bad field: " << key;
+  std::cerr << "bad field: " << key << std::endl;
   return false;
 }
 
@@ -97,7 +97,7 @@ bool ConfigImplApple::ReadImpl(const std::string& key, uint32_t* value) {
       CFGetTypeID(obj) == CFNumberGetTypeID() && CFNumberGetValue(obj, kCFNumberSInt32Type, value)) {
     return true;
   }
-  LOG(WARNING) << "bad field: " << key;
+  std::cerr << "bad field: " << key << std::endl;
   return false;
 }
 
@@ -107,7 +107,7 @@ bool ConfigImplApple::ReadImpl(const std::string& key, int32_t* value) {
       CFGetTypeID(obj) == CFNumberGetTypeID() && CFNumberGetValue(obj, kCFNumberSInt32Type, value)) {
     return true;
   }
-  LOG(WARNING) << "bad field: " << key;
+  std::cerr << "bad field: " << key << std::endl;
   return false;
 }
 
@@ -117,7 +117,7 @@ bool ConfigImplApple::ReadImpl(const std::string& key, uint64_t* value) {
       CFGetTypeID(obj) == CFNumberGetTypeID() && CFNumberGetValue(obj, kCFNumberSInt64Type, value)) {
     return true;
   }
-  LOG(WARNING) << "bad field: " << key;
+  std::cerr << "bad field: " << key << std::endl;
   return false;
 }
 
@@ -127,7 +127,7 @@ bool ConfigImplApple::ReadImpl(const std::string& key, int64_t* value) {
       CFGetTypeID(obj) == CFNumberGetTypeID() && CFNumberGetValue(obj, kCFNumberSInt64Type, value)) {
     return true;
   }
-  LOG(WARNING) << "bad field: " << key;
+  std::cerr << "bad field: " << key << std::endl;
   return false;
 }
 

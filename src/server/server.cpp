@@ -8,7 +8,6 @@
 #include <absl/debugging/failure_signal_handler.h>
 #include <absl/debugging/symbolize.h>
 #include <absl/flags/flag.h>
-#include <absl/flags/parse.h>
 #include <absl/strings/str_cat.h>
 #include <locale.h>
 #include "third_party/boringssl/src/include/openssl/crypto.h"
@@ -58,9 +57,7 @@ int main(int argc, const char* argv[]) {
   absl::InstallFailureSignalHandler(failure_handle_options);
 
   config::SetServerUsageMessage(exec_path);
-  config::ReadConfigFileOption(argc, argv);
-  config::ReadConfig();
-  absl::ParseCommandLine(argc, const_cast<char**>(argv));
+  config::ReadConfigFileAndArguments(argc, argv);
 
 #ifdef HAVE_ICU
   if (!InitializeICU()) {
