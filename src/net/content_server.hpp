@@ -64,10 +64,10 @@ class ContentServer {
         certificate_(certificate),
         private_key_(private_key),
         delegate_(delegate) {
-    upstream_https_fallback_ &= std::string(factory_.Name()) == "client";
-    https_fallback_ &= std::string(factory_.Name()) == "server";
-    enable_upstream_tls_ &= std::string(factory_.Name()) == "client";
-    enable_tls_ &= std::string(factory_.Name()) == "server";
+    upstream_https_fallback_ &= T::Type == T::ConnectionFactoryType::CONNECTION_FACTORY_CLIENT;
+    https_fallback_ &= T::Type == T::ConnectionFactoryType::CONNECTION_FACTORY_SERVER;
+    enable_upstream_tls_ &= T::Type == T::ConnectionFactoryType::CONNECTION_FACTORY_CLIENT;
+    enable_tls_ &= T::Type == T::ConnectionFactoryType::CONNECTION_FACTORY_SERVER;
   }
 
   ~ContentServer() {
@@ -137,7 +137,7 @@ class ContentServer {
         return;
       }
     }
-    LOG(INFO) << "Listening (" << factory_.Name() << ") on " << ctx.endpoint;
+    LOG(INFO) << "Listening (" << T::Name << ") on " << ctx.endpoint;
     int listen_ctx_num = next_listen_ctx_++;
     asio::post(io_context_, [this, listen_ctx_num]() { accept(listen_ctx_num); });
   }
@@ -152,7 +152,7 @@ class ContentServer {
           ctx.acceptor->close(ec);
           ctx.acceptor.reset();
           if (ec) {
-            LOG(WARNING) << "Connections (" << factory_.Name() << ")"
+            LOG(WARNING) << "Connections (" << T::Name << ")"
                          << " acceptor (" << ctx.endpoint << ") close failed: " << ec;
           }
         }
@@ -177,7 +177,7 @@ class ContentServer {
           ctx.acceptor->close(ec);
           ctx.acceptor.reset();
           if (ec) {
-            LOG(WARNING) << "Connections (" << factory_.Name() << ")"
+            LOG(WARNING) << "Connections (" << T::Name << ")"
                          << " acceptor (" << ctx.endpoint << ") close failed: " << ec;
           }
         }
@@ -186,7 +186,7 @@ class ContentServer {
       auto connection_map = std::move(connection_map_);
       opened_connections_ = 0;
       for (auto [conn_id, conn] : connection_map) {
-        VLOG(1) << "Connections (" << factory_.Name() << ")"
+        VLOG(1) << "Connections (" << T::Name << ")"
                 << " closing Connection: " << conn_id;
         conn->close();
       }
@@ -212,7 +212,7 @@ class ContentServer {
             return;
           }
           if (ec) {
-            LOG(WARNING) << "Acceptor (" << factory_.Name() << ")"
+            LOG(WARNING) << "Acceptor (" << T::Name << ")"
                          << " failed to accept more due to: " << ec;
             work_guard_.reset();
             return;
@@ -223,9 +223,9 @@ class ContentServer {
             setup_ssl_ctx_alpn_cb(tlsext_ctx);
             setup_ssl_ctx_tlsext_cb(tlsext_ctx);
           }
-          scoped_refptr<ConnectionType> conn = factory_.Create(
-              io_context_, remote_host_ips_, remote_host_sni_, remote_port_, upstream_https_fallback_, https_fallback_,
-              enable_upstream_tls_, enable_tls_, upstream_ssl_ctx_.get(), ssl_ctx_.get());
+          scoped_refptr<ConnectionType> conn =
+              T::Create(io_context_, remote_host_ips_, remote_host_sni_, remote_port_, upstream_https_fallback_,
+                        https_fallback_, enable_upstream_tls_, enable_tls_, upstream_ssl_ctx_.get(), ssl_ctx_.get());
           on_accept(conn, std::move(socket), listen_ctx_num, tlsext_ctx);
           if (in_shutdown_) {
             return;
@@ -261,14 +261,13 @@ class ContentServer {
     if (delegate_) {
       delegate_->OnConnect(connection_id);
     }
-    VLOG(1) << "Connection (" << factory_.Name() << ") " << connection_id << " with " << conn->peer_endpoint()
-            << " connected";
+    VLOG(1) << "Connection (" << T::Name << ") " << connection_id << " with " << conn->peer_endpoint() << " connected";
     conn->start();
   }
 
   void on_disconnect(scoped_refptr<ConnectionType> conn) {
     int connection_id = conn->connection_id();
-    VLOG(1) << "Connection (" << factory_.Name() << ") " << connection_id << " disconnected (has ref " << std::boolalpha
+    VLOG(1) << "Connection (" << T::Name << ") " << connection_id << " disconnected (has ref " << std::boolalpha
             << conn->HasAtLeastOneRef() << std::noboolalpha << ")";
     auto iter = connection_map_.find(connection_id);
     if (iter != connection_map_.end()) {
@@ -428,16 +427,14 @@ class ContentServer {
       }
       auto alpn = std::string(reinterpret_cast<const char*>(in + 1), in[0]);
       if (!server->https_fallback_ && alpn == "h2") {
-        VLOG(1) << "Connection (" << server->factory_.Name() << ") " << connection_id
-                << " Alpn support (server) chosen: " << alpn;
+        VLOG(1) << "Connection (" << T::Name << ") " << connection_id << " Alpn support (server) chosen: " << alpn;
         server->set_https_fallback(connection_id, false);
         *out = in + 1;
         *outlen = in[0];
         return SSL_TLSEXT_ERR_OK;
       }
       if (alpn == "http/1.1") {
-        VLOG(1) << "Connection (" << server->factory_.Name() << ") " << connection_id
-                << " Alpn support (server) chosen: " << alpn;
+        VLOG(1) << "Connection (" << T::Name << ") " << connection_id << " Alpn support (server) chosen: " << alpn;
         server->set_https_fallback(connection_id, true);
         *out = in + 1;
         *outlen = in[0];
@@ -449,8 +446,7 @@ class ContentServer {
     }
 
   err:
-    LOG(WARNING) << "Connection (" << server->factory_.Name() << ") " << connection_id
-                 << " Alpn support (server) fatal error";
+    LOG(WARNING) << "Connection (" << T::Name << ") " << connection_id << " Alpn support (server) fatal error";
     return SSL_TLSEXT_ERR_ALERT_FATAL;
   }
 
@@ -481,7 +477,7 @@ class ContentServer {
       return SSL_TLSEXT_ERR_OK;
     }
 
-    VLOG(1) << "Connection (" << server->factory_.Name() << ") " << connection_id << " TLSEXT: Servername mismatch "
+    VLOG(1) << "Connection (" << T::Name << ") " << connection_id << " TLSEXT: Servername mismatch "
             << "(got " << server_name << "; want " << expected_server_name << ").";
     return SSL_TLSEXT_ERR_ALERT_FATAL;
   }
@@ -491,7 +487,7 @@ class ContentServer {
     if (iter != connection_map_.end()) {
       iter->second->set_https_fallback(https_fallback);
     } else {
-      VLOG(1) << "Connection (" << factory_.Name() << ") " << connection_id << " Set Https Fallback fatal error:"
+      VLOG(1) << "Connection (" << T::Name << ") " << connection_id << " Set Https Fallback fatal error:"
               << " invalid connection id";
     }
   }
@@ -652,8 +648,6 @@ class ContentServer {
 
   int next_connection_id_ = 1;
   std::atomic<size_t> opened_connections_ = 0;
-
-  T factory_;
 };
 
 template <typename T>

@@ -300,8 +300,14 @@ class Connection {
 
 class ConnectionFactory {
  public:
-  virtual const char* Name() = 0;
-  virtual const char* ShortName() = 0;
+  enum ConnectionFactoryType {
+    CONNECTION_FACTORY_UNSPEC,
+    CONNECTION_FACTORY_CLIENT,
+    CONNECTION_FACTORY_SERVER,
+    CONNECTION_FACTORY_CONTENT_PROVIDER,
+  };
+  static constexpr const ConnectionFactoryType Type = CONNECTION_FACTORY_UNSPEC;
+  static constexpr const char Name[] = "unspec";
 };
 
 }  // namespace net
