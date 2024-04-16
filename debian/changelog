@@ -1,3 +1,8 @@
+yass (1.9.0-1) UNRELEASED; urgency=medium
+
+  * bump to chromium 125 dependents.
+
+ -- Chilledheart <keeyou-cn@outlook.com>  Tue, 16 Apr 2024 10:40:00 +0800
 yass (1.8.3-1) UNRELEASED; urgency=medium
 
   * net: add dot support
