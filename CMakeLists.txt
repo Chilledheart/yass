@@ -442,6 +442,7 @@ option(USE_LEVELDB "Build with leveldb" OFF)
 option(USE_SQLITE "Build with sqlite" OFF)
 option(USE_OLD_SYSTEMD_SERVICE "Install with old systemd service files" OFF)
 option(USE_QUICHE "Build with quiche support" ON)
+option(USE_IOURING "Build with io uring support" OFF)
 
 option(ENABLE_FORTIFY "Enable build with Fortify Source" ON)
 option(ENABLE_LTO "Enable build with LTO" ON)
@@ -2749,6 +2750,16 @@ target_link_libraries(asio_core PUBLIC
   absl::flags
   url
   )
+
+if (USE_IOURING)
+  if (NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    message(FATAL_ERROR "io uring is only supported with linux")
+  endif()
+  target_compile_definitions(asio_core PUBLIC ASIO_HAS_IO_URING)
+  target_compile_definitions(asio_core PUBLIC ASIO_HAS_IO_URING_AS_DEFAULT)
+  target_link_libraries(asio_core PUBLIC uring)
+  list(APPEND YASS_APP_FEATURES "iouring")
+endif()
 
 # *****************************************************************************************
 #           asio Library
