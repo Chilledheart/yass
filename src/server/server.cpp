@@ -31,6 +31,8 @@
 ABSL_FLAG(std::string, user, "", "set non-privileged user for worker");
 ABSL_FLAG(std::string, group, "", "set non-privileged group for worker");
 
+const ProgramType pType = YASS_SERVER;
+
 using namespace server;
 
 int main(int argc, const char* argv[]) {

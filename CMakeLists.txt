@@ -3875,6 +3875,17 @@ if (ANDROID)
   target_link_libraries(yass_net PUBLIC log)
 endif()
 
+add_library(yass_cli_nogui_lib OBJECT
+  src/cli/cli_connection.cpp
+  src/cli/cli_connection.hpp
+  src/cli/cli_connection_stats.cpp
+  src/cli/cli_connection_stats.hpp
+  )
+target_include_directories(yass_cli_nogui_lib PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+target_link_libraries(yass_cli_nogui_lib PUBLIC yass_net)
+
 add_library(yass_cli_lib OBJECT
   src/cli/cli_worker.cpp
   src/cli/cli_connection.cpp
@@ -3902,7 +3913,7 @@ if (CLI)
     ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
   target_link_libraries(yass_cli PUBLIC
-    yass_cli_lib
+    yass_cli_nogui_lib
     yass_net
     )
 
@@ -4674,7 +4685,7 @@ if (BUILD_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/server
       )
   target_link_libraries(yass_test PUBLIC
-      yass_cli_lib
+      yass_cli_nogui_lib
       yass_server_lib
       yass_gtest
       )
@@ -4787,7 +4798,7 @@ if (BUILD_BENCHMARKS)
       ${CMAKE_CURRENT_SOURCE_DIR}/src/server
       )
   target_link_libraries(yass_benchmark PUBLIC
-      yass_cli_lib
+      yass_cli_nogui_lib
       yass_server_lib
       benchmark::benchmark
       )

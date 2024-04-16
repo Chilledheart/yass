@@ -9,6 +9,7 @@
 #include <absl/flags/usage.h>
 #include <stdlib.h>
 #include "core/logging.hpp"
+#include "core/utils.hpp"
 #include "feature.h"
 #include "version.h"
 
@@ -82,7 +83,7 @@ void ReadConfigFileAndArguments(int argc, const char** argv) {
   }
 
   // first line of logging
-  LOG(WARNING) << "Application starting: " << YASS_APP_TAG;
+  LOG(WARNING) << "Application starting: " << YASS_APP_TAG << " type: " << ProgramTypeToStr(pType);
   LOG(WARNING) << "Last Change: " << YASS_APP_LAST_CHANGE;
   LOG(WARNING) << "Features: " << YASS_APP_FEATURES;
 #ifndef NDEBUG

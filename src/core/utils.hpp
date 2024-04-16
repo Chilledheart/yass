@@ -231,4 +231,16 @@ void HumanReadableByteCountBin(std::ostream* ss, uint64_t bytes);
 void HumanReadableByteCountBin(std::wostream* ss, uint64_t bytes);
 #endif
 
+enum ProgramType {
+  YASS_UNSPEC,
+  YASS_CLIENT,
+  YASS_SERVER,
+  YASS_CLIENT_SLAVE,
+  YASS_UNITTEST,
+  YASS_BENCHMARK,
+};
+
+extern const ProgramType pType;
+const char* ProgramTypeToStr(ProgramType type);
+
 #endif  // YASS_UTILS
