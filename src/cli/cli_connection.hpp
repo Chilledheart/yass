@@ -482,11 +482,11 @@ class CliConnectionFactory : public net::ConnectionFactory {
  public:
   using ConnectionType = CliConnection;
   template <typename... Args>
-  scoped_refptr<ConnectionType> Create(Args&&... args) {
+  static scoped_refptr<ConnectionType> Create(Args&&... args) {
     return MakeRefCounted<ConnectionType>(std::forward<Args>(args)...);
   }
-  const char* Name() override { return "client"; }
-  const char* ShortName() override { return "client"; }
+  static constexpr const ConnectionFactoryType Type = CONNECTION_FACTORY_CLIENT;
+  static constexpr const char Name[] = "client";
 };
 
 }  // namespace cli

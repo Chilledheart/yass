@@ -403,11 +403,11 @@ class ServerConnectionFactory : public net::ConnectionFactory {
  public:
   using ConnectionType = ServerConnection;
   template <typename... Args>
-  scoped_refptr<ConnectionType> Create(Args&&... args) {
+  static scoped_refptr<ConnectionType> Create(Args&&... args) {
     return MakeRefCounted<ConnectionType>(std::forward<Args>(args)...);
   }
-  const char* Name() override { return "server"; }
-  const char* ShortName() override { return "server"; }
+  static constexpr const ConnectionFactoryType Type = CONNECTION_FACTORY_SERVER;
+  static constexpr const char Name[] = "server";
 };
 
 }  // namespace server
