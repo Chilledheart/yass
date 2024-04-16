@@ -12,6 +12,8 @@
 #include <ws2tcpip.h>
 #endif
 
+const ProgramType pType = YASS_CLIENT_SLAVE;
+
 using namespace cli;
 
 class WorkerPrivate {

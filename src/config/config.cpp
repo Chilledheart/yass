@@ -205,7 +205,7 @@ bool ReadConfig() {
   client_required_fields_loaded &= config_impl->Read("local", &FLAGS_local_host);
   client_required_fields_loaded &= config_impl->Read("local_port", &FLAGS_local_port);
 
-  if (absl::flags_internal::ShortProgramInvocationName() != "yass_server") {
+  if (pType == YASS_CLIENT || pType == YASS_CLIENT_SLAVE) {
     required_fields_loaded &= client_required_fields_loaded;
   }
 

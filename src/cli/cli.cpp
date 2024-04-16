@@ -21,6 +21,8 @@
 #include "net/resolver.hpp"
 #include "version.h"
 
+const ProgramType pType = YASS_CLIENT;
+
 using namespace cli;
 
 static asio::ip::tcp::resolver::results_type ResolveAddress(const std::string& domain_name, int port) {

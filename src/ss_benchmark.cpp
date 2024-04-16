@@ -27,6 +27,8 @@
 #include "net/iobuf.hpp"
 #include "server/server_server.hpp"
 
+const ProgramType pType = YASS_BENCHMARK;
+
 using namespace net;
 
 namespace {
