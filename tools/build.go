@@ -495,8 +495,23 @@ func getLLVMVersion() string {
 	return llvm_version
 }
 
+func getMinGWLLVMVersion(mingwDir string) string {
+	entries, err := ioutil.ReadDir(filepath.Join(mingwDir, "lib", "clang"))
+	if err != nil {
+		glog.Fatalf("%v", err)
+	}
+	var llvm_version string
+	for _, entry := range entries {
+		llvm_version = entry.Name()
+	}
+	if llvm_version == "" {
+		glog.Fatalf("toolchain not found")
+	}
+	return llvm_version
+}
+
 func getAndFixMinGWLibunwind(mingwDir string) {
-	getAndFixLibunwind(fmt.Sprintf("%s/lib/clang/16/lib/windows", mingwDir), "windows")
+	getAndFixLibunwind(fmt.Sprintf("%s/lib/clang/%s/lib/windows", mingwDir, getMinGWLLVMVersion(mingwDir)), "windows")
 }
 
 func getAndFixAndroidLibunwind(ndkDir string) {
