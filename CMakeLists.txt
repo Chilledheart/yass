@@ -444,7 +444,7 @@ option(USE_OLD_SYSTEMD_SERVICE "Install with old systemd service files" OFF)
 option(USE_QUICHE "Build with quiche support" ON)
 option(USE_IOURING "Build with io uring support" OFF)
 
-option(ENABLE_FORTIFY "Enable build with Fortify Source" ON)
+option(ENABLE_FORTIFY "Enable build with Fortify Source (linux only)" OFF)
 option(ENABLE_LTO "Enable build with LTO" ON)
 option(ENABLE_LLD "Enable build with LLD" ON)
 option(ENABLE_GOLD "Enable build with GOLD" ON)
