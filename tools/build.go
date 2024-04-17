@@ -967,6 +967,7 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_TARGET=%s%d", androidAbiTarget, androidApiLevel))
 		// FIXME patch llvm toolchain to find libunwind.a
 		getAndFixAndroidLibunwind(androidNdkDir)
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DENABLE_FORTIFY=on"))
 	}
 
 	if systemNameFlag == "harmony" {
@@ -985,6 +986,7 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DOHOS_SDK_NATIVE=%s/native", harmonyNdkDir))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DLLVM_SYSROOT=%s", clangPath))
 		getAndFixHarmonyLibunwind()
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DENABLE_FORTIFY=on"))
 	}
 
 	if systemNameFlag == "linux" && sysrootFlag != "" {
@@ -1012,6 +1014,7 @@ func buildStageGenerateBuildScript() {
 		if subsystem == "" {
 			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_TCMALLOC=on"))
 		}
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DENABLE_FORTIFY=on"))
 	}
 
 	if systemNameFlag == "freebsd" && sysrootFlag != "" {
@@ -1042,6 +1045,7 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSROOT=%s", sysrootFlag))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSTEM_PROCESSOR=%s", llvmArch))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_TARGET=%s", llvmTarget))
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DENABLE_FORTIFY=on"))
 	}
 	cmakeCmd := append([]string{"cmake", ".."}, cmakeArgs...)
 	if noConfigureFlag {
