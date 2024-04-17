@@ -158,8 +158,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            third_party/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64
-          key: ${{ runner.os }}-mingw64-third_party-llvm-20230614-ucrt
+            third_party/llvm-mingw-20231128-ucrt-ubuntu-20.04-x86_64
+          key: ${{ runner.os }}-mingw64-third_party-llvm-20231128-ucrt
       - name: Cache mingw64 curl
         id: curl-cache
         uses: actions/cache@v4
@@ -195,8 +195,8 @@ jobs:
         if: ${{ steps.mingw-cache.outputs.cache-hit != 'true' }}
         run: |
           pushd third_party
-          curl -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20230614/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64.tar.xz
-          tar -xf llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64.tar.xz
+          curl -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20231128/llvm-mingw-20231128-ucrt-ubuntu-20.04-x86_64.tar.xz
+          tar -xf llvm-mingw-20231128-ucrt-ubuntu-20.04-x86_64.tar.xz
           rm -vf llvm-mingw-*.xz
           popd
       - name: "Download dependency: curl"
@@ -212,7 +212,7 @@ jobs:
       - name: Build
         run: |
           ./tools/build --variant gui --arch ${{ matrix.arch }} --system mingw -build-test \
-            --clang-path $PWD/third_party/llvm-mingw-20230614-ucrt-ubuntu-20.04-x86_64 -no-packaging
+            --clang-path $PWD/third_party/llvm-mingw-20231128-ucrt-ubuntu-20.04-x86_64 -no-packaging
       - name: Populate depedencies (Tests-i686)
         if: ${{ matrix.arch == 'i686' }}
         run: |
@@ -262,13 +262,13 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
-      - name: Cache clang (v16.0.4)
-        id: clang16-cache
+      - name: Cache clang (v17.0.6)
+        id: clang17-cache
         uses: actions/cache@v4
         with:
           path: |
-            third_party/clang+llvm-16.0.4-x86_64-linux-gnu-ubuntu-22.04
-          key: ${{ runner.os }}-toolchain-clang16-v${{ env.CACHE_EPOCH }}
+            third_party/clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04
+          key: ${{ runner.os }}-toolchain-clang17-v${{ env.CACHE_EPOCH }}
       - name: Cache golang
         uses: actions/cache@v4
         with:
@@ -286,13 +286,13 @@ jobs:
         run: |
           sudo sed -i 's/azure.archive.ubuntu.com/azure.archive.ubuntu.com/g' /etc/apt/sources.list
           sudo apt-get update -qq
-      - name: "Install dependency: clang 16"
-        if: ${{ steps.clang16-cache.outputs.cache-hit != 'true' }}
+      - name: "Install dependency: clang 17"
+        if: ${{ steps.clang17-cache.outputs.cache-hit != 'true' }}
         run: |
-          curl -L -O https://github.com/llvm/llvm-project/releases/download/llvmorg-16.0.4/clang+llvm-16.0.4-x86_64-linux-gnu-ubuntu-22.04.tar.xz
-          tar -C third_party -xvf clang+llvm-16.0.4-x86_64-linux-gnu-ubuntu-22.04.tar.xz \
-            clang+llvm-16.0.4-x86_64-linux-gnu-ubuntu-22.04/lib/clang/16/include \
-            clang+llvm-16.0.4-x86_64-linux-gnu-ubuntu-22.04/bin/{clang,clang++,clang-16,ld.lld,lld,llvm-ar,llvm-ranlib}
+          curl -L -O https://github.com/llvm/llvm-project/releases/download/llvmorg-17.0.6/clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04.tar.xz
+          tar -C third_party -xvf clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04.tar.xz \
+            clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04/lib/clang/17/include \
+            clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04/bin/{clang,clang++,clang-17,ld.lld,lld,llvm-ar,llvm-ranlib}
           rm -f *.xz
       - name: Populate depedencies
         run: |
@@ -303,8 +303,8 @@ jobs:
       - name: Set build options
         run: |
           if [ "${{ matrix.compiler }}" = "clang" ]; then
-            echo "CC=${{ github.workspace }}/third_party/clang+llvm-16.0.4-x86_64-linux-gnu-ubuntu-22.04/bin/clang" >> $GITHUB_ENV
-            echo "CXX=${{ github.workspace }}/third_party/clang+llvm-16.0.4-x86_64-linux-gnu-ubuntu-22.04/bin/clang++" >> $GITHUB_ENV
+            echo "CC=${{ github.workspace }}/third_party/clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04/bin/clang" >> $GITHUB_ENV
+            echo "CXX=${{ github.workspace }}/third_party/clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04/bin/clang++" >> $GITHUB_ENV
           fi
           if [ "${{ matrix.cxxruntime }}" = "libc++" ]; then
             echo build_opts="${{ env.build_opts }} -use-libcxx=1" >> $GITHUB_ENV
