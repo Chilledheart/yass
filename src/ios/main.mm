@@ -22,6 +22,10 @@
 #include "ios/YassAppDelegate.h"
 #include "version.h"
 
+// In iOS, main binary doesn't link to cli_worker which contains pType symbol.
+// we need add it manully.
+const ProgramType pType = YASS_CLIENT_SLAVE;
+
 int main(int argc, const char** argv) {
   SetExecutablePath(argv[0]);
   std::string exec_path;
