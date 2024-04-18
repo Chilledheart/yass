@@ -7,6 +7,7 @@
 #endif
 #include <absl/base/dynamic_annotations.h>
 #include <absl/base/thread_annotations.h>
+#include <absl/strings/str_cat.h>
 #include <absl/strings/str_format.h>
 #include <base/posix/eintr_wrapper.h>
 #include <base/strings/string_util.h>
@@ -990,7 +991,7 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
       // CF-1153.18/CFUtilities.c __CFLogCString().
       CFBundleRef main_bundle = CFBundleGetMainBundle();
       CFStringRef main_bundle_id_cf = main_bundle ? CFBundleGetIdentifier(main_bundle) : nullptr;
-      std::string main_bundle_id = main_bundle_id_cf ? SysCFStringRefToUTF8(main_bundle_id_cf) : std::string("");
+      std::string main_bundle_id = main_bundle_id_cf ? SysCFStringRefToUTF8(main_bundle_id_cf) : std::string();
 #if defined(USE_ASL)
       // The facility is set to the main bundle ID if available. Otherwise,
       // "com.apple.console" is used.
@@ -1371,7 +1372,7 @@ bool LogFileObject::CreateLogfile(const std::string& time_pid_string) {
   if (!symlink_basename_.empty()) {
     // take directory from filename
     const char* slash = strrchr(filename, PATH_SEPARATOR);
-    const std::string linkname = symlink_basename_ + '.' + log_severity_name(severity_);
+    const std::string linkname = absl::StrCat(symlink_basename_, ".", log_severity_name(severity_));
     std::string linkpath;
     // get dirname
     if (slash)

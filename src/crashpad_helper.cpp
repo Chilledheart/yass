@@ -13,6 +13,8 @@
 
 #include "version.h"
 
+using namespace std::string_literals;
+
 #ifdef __ANDROID__
 extern struct android_app* a_app;
 extern std::string a_data_dir;
@@ -26,7 +28,7 @@ bool InitializeCrashpad(const std::string& exe_path) {
   base::FilePath reportsDir(tempDir / "crashpad");
 
   // Configure url with BugSplat’s public fred database. Replace 'fred' with the name of your BugSplat database.
-  std::string url = "https://yass.bugsplat.com/post/bp/crash/crashpad.php";
+  std::string url = "https://yass.bugsplat.com/post/bp/crash/crashpad.php"s;
 
   // Metadata that will be posted to the server with the crash report map
   std::map<std::string, std::string> annotations;
@@ -73,7 +75,7 @@ bool InitializeCrashpad(const std::string& exe_path) {
   base::FilePath metricsDir(tempDir / "crashpad");
 
   // Configure url with BugSplat’s public fred database. Replace 'fred' with the name of your BugSplat database.
-  std::string url = "https://yass.bugsplat.com/post/bp/crash/crashpad.php";
+  std::string url = "https://yass.bugsplat.com/post/bp/crash/crashpad.php"s;
 
   // Metadata that will be posted to the server with the crash report map
   std::map<std::string, std::string> annotations;

@@ -27,6 +27,8 @@
 #define G_SOURCE_FUNC(f) ((GSourceFunc)(void (*)(void))(f))
 #endif
 
+using namespace std::string_literals;
+
 using namespace yass;
 
 static constexpr const char kDefaultAutoStartName[] = "it.gui.yass";
@@ -93,7 +95,7 @@ void Utils::EnableAutoStart(bool on) {
     }
 
     // write to target
-    std::string executable_path = "yass";
+    std::string executable_path = "yass"s;
     GetExecutablePath(&executable_path);
     std::string desktop_entry = absl::StrFormat(kAutoStartFileContent, executable_path);
     if (!WriteFileWithBuffer(autostart_desktop_path, desktop_entry)) {
@@ -105,7 +107,7 @@ void Utils::EnableAutoStart(bool on) {
 
   // Update Desktop Database
   std::string _;
-  std::vector<std::string> params = {"update-desktop-database", ExpandUser("~/.local/share/applications")};
+  std::vector<std::string> params = {"update-desktop-database"s, ExpandUser("~/.local/share/applications"s)};
   if (ExecuteProcess(params, &_, &_) != 0) {
     PLOG(WARNING) << "update-desktop-database failed";
   } else {
@@ -146,7 +148,7 @@ bool Utils::SetSystemProxy(bool on) {
     ret = ::SetSystemProxy_KDE(on, server_addr, bypass_addr);
   }
   bool enabled;
-  std::string server_host, server_port, bypass_addr = "['localhost', '127.0.0.0/8', '::1']";
+  std::string server_host, server_port, bypass_addr = "['localhost', '127.0.0.0/8', '::1']"s;
   ::QuerySystemProxy(&enabled, &server_host, &server_port, &bypass_addr);
   if (on) {
     server_host = "'" + absl::GetFlag(FLAGS_local_host) + "'";
@@ -179,7 +181,7 @@ std::string Utils::GetLocalAddr() {
 
 bool QuerySystemProxy(bool* enabled, std::string* server_host, std::string* server_port, std::string* bypass_addr) {
   std::string output, _;
-  std::vector<std::string> params = {"gsettings", "get", "org.gnome.system.proxy", "mode"};
+  std::vector<std::string> params = {"gsettings"s, "get"s, "org.gnome.system.proxy"s, "mode"s};
   if (ExecuteProcess(params, &output, &_) != 0) {
     return false;
   }
@@ -226,8 +228,8 @@ bool SetSystemProxy(bool enable,
                     const std::string& server_port,
                     const std::string& bypass_addr) {
   std::string _;
-  std::vector<std::string> params = {"gsettings", "set", "org.gnome.system.proxy", "mode",
-                                     enable ? "'manual'" : "'none'"};
+  std::vector<std::string> params = {"gsettings"s, "set"s, "org.gnome.system.proxy"s, "mode"s,
+                                     enable ? "'manual'"s : "'none'"s};
   if (ExecuteProcess(params, &_, &_) != 0) {
     return false;
   }
@@ -309,9 +311,9 @@ bool QuerySystemProxy_KDE(bool* enabled, std::string* server_addr, std::string* 
 bool SetSystemProxy_KDE(bool enable, const std::string& server_addr, const std::string& bypass_addr) {
   std::string config_dir = GetConfigDir();
   std::string _;
-  std::vector<std::string> params = {"kwriteconfig5", "--file",          config_dir + "/kioslaverc",
-                                     "--group",       "Proxy Settings",  "--key",
-                                     "ProxyType",     enable ? "1" : "0"};
+  std::vector<std::string> params = {"kwriteconfig5"s, "--file"s,           config_dir + "/kioslaverc"s,
+                                     "--group"s,       "Proxy Settings"s,   "--key"s,
+                                     "ProxyType"s,     enable ? "1"s : "0"s};
   if (ExecuteProcess(params, &_, &_) != 0) {
     return false;
   }

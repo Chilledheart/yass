@@ -29,6 +29,8 @@
 #include <base/strings/sys_string_conversions.h>
 #include <build/build_config.h>
 
+using namespace std::string_literals;
+
 using namespace gurl_base::apple;
 
 namespace {
@@ -525,7 +527,7 @@ bool QuerySystemProxy(bool* enabled, std::string* server_addr, int32_t* server_p
 
 bool SetSystemProxy(bool enable, const std::string& server_addr, int32_t server_port, const std::string& bypass_addr) {
   std::string output, _;
-  std::vector<std::string> params = {"/usr/sbin/networksetup", "-listallnetworkservices"};
+  std::vector<std::string> params = {"/usr/sbin/networksetup"s, "-listallnetworkservices"s};
   if (ExecuteProcess(params, &output, &_) != 0) {
     return false;
   }

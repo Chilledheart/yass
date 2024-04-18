@@ -21,6 +21,8 @@ ABSL_FLAG(bool, no_exec_proc_tests, true, "skip execute_process tests");
 ABSL_FLAG(bool, no_exec_proc_tests, false, "skip execute_process tests");
 #endif
 
+using namespace std::string_literals;
+
 TEST(PROCESS_TEST, ExecuteProcessBasic) {
   if (absl::GetFlag(FLAGS_no_exec_proc_tests)) {
     GTEST_SKIP() << "skipped as required";
@@ -28,7 +30,7 @@ TEST(PROCESS_TEST, ExecuteProcessBasic) {
   }
   std::string main_exe;
   GetExecutablePath(&main_exe);
-  std::vector<std::string> params = {main_exe.c_str(), "--version"};
+  std::vector<std::string> params = {main_exe, "--version"s};
   std::string output, error;
   int ret = ExecuteProcess(params, &output, &error);
   EXPECT_EQ(ret, 0);

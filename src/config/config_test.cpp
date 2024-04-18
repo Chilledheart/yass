@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include <absl/flags/flag.h>
+#include <absl/strings/str_cat.h>
 #include <gmock/gmock.h>
 #include <cstdlib>
 #include "config/config_impl.hpp"
@@ -16,6 +17,8 @@ ABSL_FLAG(int64_t, test_signed_64val, 0, "Test int64_t value");
 ABSL_FLAG(uint64_t, test_unsigned_64val, 0, "Test uint64_t value");
 ABSL_FLAG(std::string, test_string, "", "Test string value");
 
+using namespace std::string_literals;
+
 class ConfigTest : public ::testing::Test {
  public:
   void SetUp() override {
@@ -24,7 +27,7 @@ class ConfigTest : public ::testing::Test {
     const char* tmpdir = getenv("TMPDIR");
     if (!tmpdir || *tmpdir == '\0')
       tmpdir = "/tmp";
-    std::string tmpdir_configfile = std::string(tmpdir) + "/" + "yass.json";
+    std::string tmpdir_configfile = absl::StrCat(tmpdir, "/", "yass.json");
     config::g_configfile = tmpdir_configfile;
 #endif
   }
@@ -167,7 +170,7 @@ TEST_F(ConfigTest, RWUint64) {
 
 TEST_F(ConfigTest, RWString) {
   auto config_impl = config::ConfigImpl::Create();
-  std::string test_string = "test-str";
+  std::string test_string = "test-str"s;
 
   absl::SetFlag(&FLAGS_test_string, test_string);
 

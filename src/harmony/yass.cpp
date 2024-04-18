@@ -30,6 +30,8 @@ typedef enum {
 
 extern "C" bool OH_LOG_IsLoggable(unsigned int domain, const char* tag, HILOG_LogLevel level);
 
+using namespace std::string_literals;
+
 static constexpr const char kLogTag[] = YASS_APP_NAME;
 static constexpr const unsigned int kLogDomain = 0x0;
 
@@ -883,8 +885,8 @@ static napi_value saveConfig(napi_env env, napi_callback_info info) {
   std::string dot_host = argList[7];
   std::string timeout = argList[8];
 
-  std::string local_host = "0.0.0.0";
-  std::string local_port = "0";
+  std::string local_host = "0.0.0.0"s;
+  std::string local_port = "0"s;
 
   std::string err_msg = config::ReadConfigFromArgument(server_host, server_sni, server_port, username, password, method,
                                                        local_host, local_port, doh_url, dot_host, timeout);
