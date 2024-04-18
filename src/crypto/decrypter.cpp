@@ -72,22 +72,4 @@ std::unique_ptr<Decrypter> Decrypter::CreateFromCipherSuite(uint32_t cipher_suit
   }
 }
 
-#if 0
-// static
-void QuicDecrypter::DiversifyPreliminaryKey(QuicStringPiece preliminary_key,
-                                            QuicStringPiece nonce_prefix,
-                                            const DiversificationNonce& nonce,
-                                            size_t key_size,
-                                            size_t nonce_prefix_size,
-                                            std::string* out_key,
-                                            std::string* out_nonce_prefix) {
-  QuicHKDF hkdf((std::string(preliminary_key)) + (std::string(nonce_prefix)),
-                QuicStringPiece(nonce.data(), nonce.size()),
-                "QUIC key diversification", 0, key_size, 0, nonce_prefix_size,
-                0);
-  *out_key = std::string(hkdf.server_write_key());
-  *out_nonce_prefix = std::string(hkdf.server_write_iv());
-}
-#endif
-
 }  // namespace crypto
