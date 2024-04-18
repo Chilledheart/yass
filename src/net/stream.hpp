@@ -148,7 +148,7 @@ class stream : public RefCountedThreadSafe<stream> {
         });
   }
 
-  std::string domain() { return absl::StrCat(host_sni_, ":", std::to_string(port_)); }
+  std::string domain() { return absl::StrCat(host_sni_, ":", port_); }
 
   bool connected() const { return connected_; }
 

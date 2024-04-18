@@ -6,6 +6,8 @@
 
 #include <absl/container/flat_hash_map.h>
 
+using namespace std::string_literals;
+
 namespace net {
 
 namespace {
@@ -76,7 +78,7 @@ SSLSocket::SSLSocket(int ssl_socket_data_index,
   SSL_set_mode(ssl_.get(), mode.set_mask);
   SSL_clear_mode(ssl_.get(), mode.clear_mask);
 
-  std::string command("ALL:!aPSK:!ECDSA+SHA1:!3DES");
+  std::string command("ALL:!aPSK:!ECDSA+SHA1:!3DES"s);
 
 #if 0
   if (ssl_config_.require_ecdhe) {

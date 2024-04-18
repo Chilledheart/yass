@@ -202,6 +202,8 @@ typedef int(__stdcall* PFNGETUSERDEFAULTLOCALENAME)(LPWSTR lpLocaleName, int cch
 #undef EnableNonClientDpiScaling
 #undef SystemParametersInfoForDpi
 
+using namespace std::string_literals;
+
 namespace {
 
 HANDLE EnsureUser32Loaded() {
@@ -897,7 +899,7 @@ std::string Utils::GetLocalAddr() {
 
 bool Utils::SetSystemProxy(bool on) {
   bool enabled;
-  std::string server_addr, bypass_addr = "<local>";
+  std::string server_addr, bypass_addr = "<local>"s;
   ::QuerySystemProxy(&enabled, &server_addr, &bypass_addr);
   if (on) {
     server_addr = GetLocalAddr();

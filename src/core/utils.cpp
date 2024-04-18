@@ -44,6 +44,8 @@ std::string h_cache_dir;
 std::string h_data_dir;
 #endif
 
+using namespace std::string_literals;
+
 std::optional<int> StringToInteger(const std::string& value) {
   int result;
 
@@ -233,7 +235,7 @@ std::string ExpandUser(const std::string& file_path) {
 
 #if !defined(__APPLE__) && !defined(_WIN32)
 
-static std::string main_exe_path = "UNKNOWN";
+static std::string main_exe_path = "UNKNOWN"s;
 
 bool GetExecutablePath(std::string* path) {
   char exe_path[PATH_MAX];
