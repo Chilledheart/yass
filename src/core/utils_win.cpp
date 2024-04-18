@@ -19,6 +19,8 @@ struct IUnknown;
 #include <base/compiler_specific.h>
 #include <build/build_config.h>
 
+using namespace std::string_literals;
+
 #define MAKE_WIN_VER(major, minor, build_number) (((major) << 24) | ((minor) << 16) | (build_number))
 
 #include "core/logging.hpp"
@@ -468,7 +470,7 @@ bool IsWindowsVersionBNOrGreater(int wMajorVersion, int wMinorVersion, int wBuil
          MAKE_WIN_VER(wMajorVersion, wMinorVersion, wBuildNumber);
 }
 
-static std::string main_exe_path = "UNKNOWN";
+static std::string main_exe_path = "UNKNOWN"s;
 
 bool GetExecutablePath(std::string* exe_path) {
   std::wstring wexe_path;

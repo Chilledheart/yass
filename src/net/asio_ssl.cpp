@@ -9,6 +9,7 @@
 #include <dirent.h>
 #endif
 
+#include <absl/strings/str_cat.h>
 #include <absl/strings/str_split.h>
 #include <base/files/memory_mapped_file.h>
 #include <base/files/platform_file.h>
@@ -398,7 +399,7 @@ static int load_ca_to_ssl_ctx_path(SSL_CTX* ssl_ctx, const std::string& dir_path
       if (dent->d_type != DT_REG && dent->d_type != DT_LNK) {
         continue;
       }
-      std::string ca_bundle = dir_path + "/" + dent->d_name;
+      std::string ca_bundle = absl::StrCat(dir_path, "/", dent->d_name);
       int result = load_ca_to_ssl_ctx_bundle(ssl_ctx, ca_bundle);
       if (result > 0) {
         VLOG(1) << "Loaded ca cert from: " << ca_bundle << " with " << result << " certificates";

@@ -3,6 +3,8 @@
 
 #include "core/process_utils.hpp"
 
+#include <absl/strings/str_cat.h>
+#include <absl/strings/str_join.h>
 #include <build/buildflag.h>
 #include "core/logging.hpp"
 
@@ -26,6 +28,8 @@
 
 #define ASIO_NO_SSL
 #include "net/asio.hpp"
+
+using namespace std::string_literals;
 
 static int Pipe2(int pipe_fds[2]) {
   int ret;
@@ -154,12 +158,7 @@ int ExecuteProcess(const std::vector<std::string>& params, std::string* output, 
   DCHECK(!params.empty()) << "ExecuteProcess empty parameters";
   output->clear();
   error->clear();
-  std::string command_line = "'";
-  for (const auto& param : params) {
-    command_line += param;
-    command_line += " ";
-  }
-  command_line[command_line.size() - 1] = '\'';
+  std::string command_line = absl::StrCat("'", absl::StrJoin(params, " "), "'");
 
   int ret;
   pid_t pid;

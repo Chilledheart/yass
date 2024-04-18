@@ -10,6 +10,7 @@
 #include <absl/debugging/symbolize.h>
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
+#include <absl/strings/str_cat.h>
 #include <absl/strings/str_format.h>
 #include "third_party/boringssl/src/include/openssl/crypto.h"
 
@@ -394,7 +395,7 @@ class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
 
     curl = curl_easy_init();
     ASSERT_TRUE(curl) << "curl initial failure";
-    std::string url = "http://localhost:" + std::to_string(content_provider_endpoint_.port());
+    std::string url = absl::StrCat("http://localhost:", content_provider_endpoint_.port());
     // TODO A bug inside curl that it doesn't respect IPRESOLVE_V6
     // https://github.com/curl/curl/issues/11465
     if (absl::GetFlag(FLAGS_proxy_type) == "socks5") {
@@ -411,7 +412,7 @@ class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
     const long ip_version = absl::GetFlag(FLAGS_ipv6_mode) ? CURL_IPRESOLVE_V6 : CURL_IPRESOLVE_V4;
     curl_easy_setopt(curl, CURLOPT_IPRESOLVE, ip_version);
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-    std::string proxy_url = "localhost:" + std::to_string(local_endpoint_.port());
+    std::string proxy_url = absl::StrCat("localhost:", local_endpoint_.port());
     curl_easy_setopt(curl, CURLOPT_PROXY, proxy_url.c_str());
     if (absl::GetFlag(FLAGS_proxy_type) == "socks4") {
       curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS4);

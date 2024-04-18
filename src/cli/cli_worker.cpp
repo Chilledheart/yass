@@ -144,11 +144,11 @@ std::vector<std::string> Worker::GetRemoteIpsV6() const {
 }
 
 std::string Worker::GetDomain() const {
-  return absl::StrCat(cached_local_host_, ":", std::to_string(cached_local_port_));
+  return absl::StrCat(cached_local_host_, ":", cached_local_port_);
 }
 
 std::string Worker::GetRemoteDomain() const {
-  return absl::StrCat(cached_server_host_, ":", std::to_string(cached_server_port_));
+  return absl::StrCat(cached_server_host_, ":", cached_server_port_);
 }
 
 int Worker::GetLocalPort() const {

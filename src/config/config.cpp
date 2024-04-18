@@ -37,7 +37,7 @@ std::string AbslUnparseFlag(const RateFlag&);
 bool AbslParseFlag(absl::string_view text, PortFlag* flag, std::string* err) {
   std::optional<uint64_t> p = StringToIntegerU64(std::string(text));
   if (!p.has_value() || p.value() > UINT16_MAX) {
-    *err = "bad port number: " + std::string(text);
+    *err = absl::StrCat("bad port number: ", text);
     return false;
   }
   flag->port = static_cast<uint16_t>(p.value());
@@ -53,7 +53,7 @@ std::string AbslUnparseFlag(const PortFlag& flag) {
 bool AbslParseFlag(absl::string_view text, CipherMethodFlag* flag, std::string* err) {
   flag->method = to_cipher_method(std::string(text));
   if (flag->method == CRYPTO_INVALID) {
-    *err = "bad cipher_method: " + std::string(text);
+    *err = absl::StrCat("bad cipher_method: ", text);
     return false;
   }
   return true;
@@ -138,7 +138,7 @@ static int64_t ngx_parse_size(const char* line, size_t len) {
 bool AbslParseFlag(absl::string_view text, RateFlag* flag, std::string* err) {
   int64_t size = ngx_parse_size(text.data(), text.size());
   if (size < 0) {
-    *err = "bad size: " + std::string(text);
+    *err = absl::StrCat("bad size: ", text);
     return false;
   }
   flag->rate = size;
