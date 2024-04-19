@@ -19,6 +19,8 @@
 ABSL_FLAG(bool, hide_via, true, "If true, the Via heaeder will not be added.");
 ABSL_FLAG(bool, hide_ip, true, "If true, the Forwarded header will not be augmented with your IP address.");
 
+static_assert(TLSEXT_MAXLEN_host_name == uint8_t(~0));
+
 using namespace net;
 
 using gurl_base::ToLowerASCII;
@@ -349,6 +351,11 @@ bool ServerConnection::OnEndHeadersForStream(http2::adapter::Http2StreamId strea
     hostname = hostname.substr(1, hostname.size() - 2);
   }
 
+  if (hostname.size() > TLSEXT_MAXLEN_host_name) {
+    LOG(WARNING) << "Connection (server) " << connection_id() << " too long domain name: " << hostname;
+    return false;
+  }
+
   std::optional<unsigned> portnum_opt = StringToIntegerU(port);
   if (!portnum_opt.has_value() || portnum_opt.value() > UINT16_MAX) {
     LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
@@ -610,6 +617,13 @@ void ServerConnection::OnReadHandshakeViaHttps() {
     http_host_ = parser.host();
     http_port_ = parser.port();
     http_is_connect_ = parser.is_connect();
+
+    if (http_host_.size() > TLSEXT_MAXLEN_host_name) {
+      LOG(WARNING) << "Connection (server) " << connection_id() << " too long domain name: " << http_host_;
+      ec = asio::error::invalid_argument;
+      OnDisconnect(ec);
+      return;
+    }
 
     request_ = {http_host_, http_port_};
 
@@ -1137,6 +1151,7 @@ void ServerConnection::OnConnect() {
   uint16_t port = request_.port();
   if (request_.address_type() == ss::domain) {
     host_name = request_.domain_name();
+    DCHECK_LE(host_name.size(), (unsigned int)TLSEXT_MAXLEN_host_name);
   } else {
     host_name = request_.endpoint().address().to_string();
   }

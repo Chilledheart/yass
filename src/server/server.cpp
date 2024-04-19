@@ -152,6 +152,10 @@ int main(int argc, const char* argv[]) {
   if (!absl::GetFlag(FLAGS_server_sni).empty()) {
     host_sni = absl::GetFlag(FLAGS_server_sni);
   }
+  if (host_sni.size() > TLSEXT_MAXLEN_host_name) {
+    LOG(WARNING) << "Invalid server name or SNI: " << host_sni;
+    return -1;
+  }
 
   ServerServer server(io_context);
   for (auto& endpoint : endpoints) {

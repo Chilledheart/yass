@@ -14,8 +14,8 @@
 #include "core/utils.hpp"
 #include "url/gurl.h"
 
-#ifndef _POSIX_HOST_NAME_MAX
-#define _POSIX_HOST_NAME_MAX 255
+#ifndef TLSEXT_MAXLEN_host_name
+#define TLSEXT_MAXLEN_host_name 255
 #endif
 
 bool AbslParseFlag(absl::string_view text, PortFlag* flag, std::string* err);
@@ -296,11 +296,11 @@ std::string ReadConfigFromArgument(const std::string& server_host,
                                    const std::string& _timeout) {
   std::ostringstream err_msg;
 
-  if (server_host.empty() || server_host.size() >= _POSIX_HOST_NAME_MAX) {
+  if (server_host.empty() || server_host.size() >= TLSEXT_MAXLEN_host_name) {
     err_msg << ",Invalid Server Host: " << server_host;
   }
 
-  if (server_sni.size() >= _POSIX_HOST_NAME_MAX) {
+  if (server_sni.size() >= TLSEXT_MAXLEN_host_name) {
     err_msg << ",Invalid Server Host: " << server_sni;
   }
 
@@ -313,7 +313,7 @@ std::string ReadConfigFromArgument(const std::string& server_host,
     err_msg << ",Invalid Cipher: " << to_cipher_method_str(method);
   }
 
-  if (local_host.empty() || local_host.size() >= _POSIX_HOST_NAME_MAX) {
+  if (local_host.empty() || local_host.size() >= TLSEXT_MAXLEN_host_name) {
     err_msg << ",Invalid Local Host: " << local_host;
   }
 
@@ -333,7 +333,7 @@ std::string ReadConfigFromArgument(const std::string& server_host,
   }
 
   if (!dot_host.empty()) {
-    if (dot_host.size() >= _POSIX_HOST_NAME_MAX) {
+    if (dot_host.size() >= TLSEXT_MAXLEN_host_name) {
       err_msg << ",Invalid DoT Host: " << dot_host;
     }
   }
@@ -375,11 +375,11 @@ std::string ReadConfigFromArgument(const std::string& server_host,
                                    const std::string& _timeout) {
   std::ostringstream err_msg;
 
-  if (server_host.empty() || server_host.size() >= _POSIX_HOST_NAME_MAX) {
+  if (server_host.empty() || server_host.size() >= TLSEXT_MAXLEN_host_name) {
     err_msg << ",Invalid Server Host: " << server_host;
   }
 
-  if (server_sni.size() >= _POSIX_HOST_NAME_MAX) {
+  if (server_sni.size() >= TLSEXT_MAXLEN_host_name) {
     err_msg << ",Invalid Server Host: " << server_sni;
   }
 
@@ -393,7 +393,7 @@ std::string ReadConfigFromArgument(const std::string& server_host,
     err_msg << ",Invalid Cipher: " << method_string;
   }
 
-  if (local_host.empty() || local_host.size() >= _POSIX_HOST_NAME_MAX) {
+  if (local_host.empty() || local_host.size() >= TLSEXT_MAXLEN_host_name) {
     err_msg << ",Invalid Local Host: " << local_host;
   }
 
@@ -413,7 +413,7 @@ std::string ReadConfigFromArgument(const std::string& server_host,
   }
 
   if (!dot_host.empty()) {
-    if (dot_host.size() >= _POSIX_HOST_NAME_MAX) {
+    if (dot_host.size() >= TLSEXT_MAXLEN_host_name) {
       err_msg << ",Invalid DoT Host: " << dot_host;
     }
   }
