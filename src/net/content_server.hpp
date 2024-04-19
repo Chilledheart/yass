@@ -70,6 +70,7 @@ class ContentServer {
     https_fallback_ &= T::Type == CONNECTION_FACTORY_SERVER;
     enable_upstream_tls_ &= T::Type == CONNECTION_FACTORY_CLIENT;
     enable_tls_ &= T::Type == CONNECTION_FACTORY_SERVER;
+    DCHECK_LE(remote_host_sni_.size(), (unsigned int)TLSEXT_MAXLEN_host_name);
   }
 
   ~ContentServer() {
@@ -93,6 +94,10 @@ class ContentServer {
               asio::error_code& ec) {
     if (next_listen_ctx_ >= MAX_LISTEN_ADDRESSES) {
       ec = asio::error::already_started;
+      return;
+    }
+    if (server_name.size() > TLSEXT_MAXLEN_host_name) {
+      ec = asio::error::invalid_argument;
       return;
     }
     ListenCtx& ctx = listen_ctxs_[next_listen_ctx_];

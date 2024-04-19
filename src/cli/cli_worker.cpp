@@ -99,6 +99,8 @@ void Worker::Start(absl::AnyInvocable<void(asio::error_code)>&& callback) {
       remote_server_sni_ = cached_server_sni_;
     }
 
+    DCHECK_LE(remote_server_sni_.size(), (unsigned int)TLSEXT_MAXLEN_host_name);
+
     asio::error_code ec;
     auto addr = asio::ip::make_address(host_name.c_str(), ec);
     bool host_is_ip_address = !ec;

@@ -20,6 +20,8 @@
 #include <quiche/spdy/core/hpack/hpack_constants.h>
 #endif
 
+static_assert(TLSEXT_MAXLEN_host_name == uint8_t(~0));
+
 using namespace net;
 
 #ifdef HAVE_QUICHE
@@ -580,13 +582,15 @@ asio::error_code CliConnection::OnReadRedirHandshake(std::shared_ptr<IOBuf> buf)
     uint16_t port = endpoint.port();
     int ret = getnameinfo(reinterpret_cast<const struct sockaddr*>(endpoint.data()), endpoint.size(), hostname,
                           sizeof(hostname), service, sizeof(service), NI_NAMEREQD);
-    if (ret == 0 && strlen(hostname) != 0) {
+    if (ret == 0 && strlen(hostname) != 0 && strlen(hostname) <= TLSEXT_MAXLEN_host_name) {
       VLOG(2) << "Connection (client) " << connection_id() << " redir stream from " << hostname << ":" << port << " to "
               << endpoint;
       OnCmdConnect(hostname, port);
     } else {
       if (ret) {
         VLOG(3) << "Connection (client) " << connection_id() << " redir getnameinfo failure: " << gai_strerror(ret);
+      } else if (strlen(hostname) > TLSEXT_MAXLEN_host_name) {
+        LOG(WARNING) << "Connection (client) " << connection_id() << " redir too long domain name: " << hostname;
       } else {
         VLOG(3) << "Connection (client) " << connection_id() << " redir getnameinfo failure: truncated host name";
       }
@@ -1255,6 +1259,7 @@ asio::error_code CliConnection::PerformCmdOpsV5(const socks5::request* request, 
       reply->mutable_status() = socks5::reply::request_granted;
 
       if (request->address_type() == socks5::domain) {
+        DCHECK_LE(request->domain_name().size(), (unsigned int)TLSEXT_MAXLEN_host_name);
         OnCmdConnect(request->domain_name(), request->port());
       } else {
         OnCmdConnect(request->endpoint());
@@ -1283,6 +1288,14 @@ asio::error_code CliConnection::PerformCmdOpsV4(const socks4::request* request, 
       reply->mutable_status() = socks4::reply::request_granted;
 
       if (request->is_socks4a()) {
+        if (request->domain_name().size() > TLSEXT_MAXLEN_host_name) {
+          LOG(WARNING) << "Connection (client) " << connection_id()
+                       << " socks4a: too long domain name: " << request->domain_name();
+          reply->mutable_status() = socks4::reply::request_failed;
+          ec = asio::error::invalid_argument;
+          break;
+        }
+
         OnCmdConnect(request->domain_name(), request->port());
       } else {
         OnCmdConnect(request->endpoint());
@@ -1301,6 +1314,11 @@ asio::error_code CliConnection::PerformCmdOpsV4(const socks4::request* request, 
 }
 
 asio::error_code CliConnection::PerformCmdOpsHttp() {
+  if (http_host_.size() > TLSEXT_MAXLEN_host_name) {
+    LOG(WARNING) << "Connection (client) " << connection_id() << " http: too long domain name: " << http_host_;
+    return asio::error::invalid_argument;
+  }
+
   OnCmdConnect(http_host_, http_port_);
 
   return asio::error_code();
@@ -1414,6 +1432,7 @@ void CliConnection::OnCmdConnect(const asio::ip::tcp::endpoint& endpoint) {
 }
 
 void CliConnection::OnCmdConnect(const std::string& domain_name, uint16_t port) {
+  DCHECK_LE(domain_name.size(), (unsigned int)TLSEXT_MAXLEN_host_name);
   ss_request_ = std::make_unique<ss::request>(domain_name, port);
   OnConnect();
 }

@@ -14,6 +14,10 @@
 #include "crypto/crypter_export.hpp"
 #include "ios/YassAppDelegate.h"
 
+#ifndef TLSEXT_MAXLEN_host_name
+#define TLSEXT_MAXLEN_host_name 255
+#endif
+
 @interface YassViewController () <UIPickerViewDataSource, UIPickerViewDelegate, UITextFieldDelegate>
 @end
 
@@ -121,7 +125,7 @@
 
 - (BOOL)textFieldShouldEndEditing:(UITextField*)textField {
   if (textField == self.serverHost) {
-    if (textField.text.length > _POSIX_HOST_NAME_MAX) {
+    if (textField.text.length > TLSEXT_MAXLEN_host_name) {
       return NO;
     }
   }
@@ -134,7 +138,7 @@
     return url.scheme && [url.scheme isEqualToString:@"https"] && url.host ? YES : NO;
   }
   if (textField == self.dotHost) {
-    if (textField.text.length > _POSIX_HOST_NAME_MAX) {
+    if (textField.text.length > TLSEXT_MAXLEN_host_name) {
       return NO;
     }
   }
