@@ -133,6 +133,7 @@ class SSLDownlink : public Downlink {
   scoped_refptr<SSLServerSocket> ssl_socket_;
 };
 
+#ifdef __cpp_concepts
 template <typename T>
 concept StartClosableConnection = requires(T t) {
   /// Enter the start phase, begin to read requests
@@ -140,6 +141,9 @@ concept StartClosableConnection = requires(T t) {
   /// Close the socket and clean up
   { t.close() };
 };
+#else
+#define StartClosableConnection typename
+#endif
 
 class Connection {
   using io_handle_t = Downlink::io_handle_t;
