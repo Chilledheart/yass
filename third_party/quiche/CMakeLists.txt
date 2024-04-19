@@ -19,8 +19,8 @@ set(quiche_SRCS
   overrides/quiche_platform_impl/quiche_time_utils_impl.cc
 
   # quiche_tool_support
-  #overrides/quiche_platform_impl/quiche_command_line_flags_impl.cc
-  #overrides/quiche_platform_impl/quiche_command_line_flags_impl.h
+  overrides/quiche_platform_impl/quiche_command_line_flags_impl.cc
+  overrides/quiche_platform_impl/quiche_command_line_flags_impl.h
   #overrides/quiche_platform_impl/quiche_default_proof_providers_impl.cc
   #overrides/quiche_platform_impl/quiche_default_proof_providers_impl.h
   overrides/quiche_platform_impl/quiche_system_event_loop_impl.h
