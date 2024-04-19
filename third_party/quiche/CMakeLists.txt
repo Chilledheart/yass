@@ -1,8 +1,6 @@
 set(quiche_SRCS
   overrides/quiche_platform_impl/quiche_stack_trace_impl.h
   overrides/quiche_platform_impl/quiche_stack_trace_impl.cc
-  overrides/quiche_platform_impl/quiche_flags_impl.cc
-  overrides/quiche_platform_impl/quiche_flags_impl.h
 
   #overrides/quiche_platform_impl/quiche_client_stats_impl.h
   overrides/quiche_platform_impl/quiche_command_line_flags_impl.h
@@ -58,8 +56,8 @@ set(quiche_SRCS
   src/quiche/common/platform/api/quiche_thread.h
   src/quiche/common/platform/api/quiche_time_utils.h
   src/quiche/common/platform/api/quiche_url_utils.h
-  # src/quiche/common/platform/default/quiche_platform_impl/quiche_flags_impl.cc
-  # src/quiche/common/platform/default/quiche_platform_impl/quiche_flags_impl.h
+  src/quiche/common/platform/default/quiche_platform_impl/quiche_flags_impl.cc
+  src/quiche/common/platform/default/quiche_platform_impl/quiche_flags_impl.h
   src/quiche/common/platform/default/quiche_platform_impl/quiche_googleurl_impl.h
   # src/quiche/common/platform/default/quiche_platform_impl/quiche_logging_impl.cc
   # src/quiche/common/platform/default/quiche_platform_impl/quiche_logging_impl.h
