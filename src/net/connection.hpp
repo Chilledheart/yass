@@ -184,8 +184,10 @@ class Connection {
         enable_tls_(enable_tls),
         upstream_ssl_ctx_(upstream_ssl_ctx) {
     if (enable_tls) {
+      DCHECK(ssl_ctx);
       downlink_ = std::make_unique<SSLDownlink>(io_context, https_fallback, ssl_ctx);
     } else {
+      DCHECK(!ssl_ctx);
       downlink_ = std::make_unique<Downlink>(io_context);
     }
   }

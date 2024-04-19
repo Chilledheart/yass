@@ -18,6 +18,7 @@ const int kDefaultOpenSSLBufferSize = 17 * 1024;
 SSLServerSocket::SSLServerSocket(asio::io_context* io_context, asio::ip::tcp::socket* socket, SSL_CTX* ssl_ctx)
     : io_context_(io_context), stream_socket_(socket) {
   DCHECK(!ssl_);
+  DCHECK(ssl_ctx);
   ssl_.reset(SSL_new(ssl_ctx));
 
   // TODO: SSL_set_app_data
