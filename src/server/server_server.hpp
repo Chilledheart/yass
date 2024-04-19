@@ -9,7 +9,8 @@
 
 namespace server {
 
-typedef net::ContentServer<ServerConnectionFactory> ServerServer;
+using ServerConnectionFactory = net::ConnectionFactory<ServerConnection>;
+using ServerServer = net::ContentServer<ServerConnectionFactory>;
 
 }  // namespace server
 

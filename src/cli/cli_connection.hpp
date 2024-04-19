@@ -96,6 +96,10 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
                       public net::Connection,
                       public net::cipher_visitor_interface {
  public:
+  static constexpr const net::ConnectionFactoryType Type = net::CONNECTION_FACTORY_CLIENT;
+  static constexpr const char Name[] = "client";
+
+ public:
   /// The state of service
   enum state {
     state_error,
@@ -158,10 +162,10 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   CliConnection& operator=(CliConnection&&) = delete;
 
   /// Enter the start phase, begin to read requests
-  void start() override;
+  void start();
 
   /// Close the socket and clean up
-  void close() override;
+  void close();
 
  private:
   /// flag to mark connection is closed
@@ -476,17 +480,6 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   bool write_inprogress_ = false;
 
   friend class DataFrameSource;
-};
-
-class CliConnectionFactory : public net::ConnectionFactory {
- public:
-  using ConnectionType = CliConnection;
-  template <typename... Args>
-  static scoped_refptr<ConnectionType> Create(Args&&... args) {
-    return MakeRefCounted<ConnectionType>(std::forward<Args>(args)...);
-  }
-  static constexpr const ConnectionFactoryType Type = CONNECTION_FACTORY_CLIENT;
-  static constexpr const char Name[] = "client";
 };
 
 }  // namespace cli

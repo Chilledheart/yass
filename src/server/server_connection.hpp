@@ -92,6 +92,10 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
                          public net::Connection,
                          public net::cipher_visitor_interface {
  public:
+  static constexpr const net::ConnectionFactoryType Type = net::CONNECTION_FACTORY_SERVER;
+  static constexpr const char Name[] = "server";
+
+ public:
   /// The state of service
   enum state {
     state_error,
@@ -145,10 +149,10 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   ServerConnection& operator=(ServerConnection&&) = delete;
 
   /// Enter the start phase, begin to read requests
-  void start() override;
+  void start();
 
   /// Close the socket and clean up
-  void close() override;
+  void close();
 
  private:
   /// Enter the start phase
@@ -397,17 +401,6 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   bool write_inprogress_ = false;
 
   friend class DataFrameSource;
-};
-
-class ServerConnectionFactory : public net::ConnectionFactory {
- public:
-  using ConnectionType = ServerConnection;
-  template <typename... Args>
-  static scoped_refptr<ConnectionType> Create(Args&&... args) {
-    return MakeRefCounted<ConnectionType>(std::forward<Args>(args)...);
-  }
-  static constexpr const ConnectionFactoryType Type = CONNECTION_FACTORY_SERVER;
-  static constexpr const char Name[] = "server";
 };
 
 }  // namespace server
