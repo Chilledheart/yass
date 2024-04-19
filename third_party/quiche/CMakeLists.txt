@@ -7,7 +7,6 @@ set(quiche_SRCS
   overrides/quiche_platform_impl/quiche_command_line_flags_impl.cc
   overrides/quiche_platform_impl/quiche_containers_impl.h
   overrides/quiche_platform_impl/quiche_export_impl.h
-  overrides/quiche_platform_impl/quiche_iovec_impl.h
   overrides/quiche_platform_impl/quiche_logging_impl.h
   overrides/quiche_platform_impl/quiche_mutex_impl.h
   overrides/quiche_platform_impl/quiche_mutex_impl.cc
@@ -58,6 +57,7 @@ set(quiche_SRCS
   src/quiche/common/platform/api/quiche_url_utils.h
   src/quiche/common/platform/default/quiche_platform_impl/quiche_flags_impl.cc
   src/quiche/common/platform/default/quiche_platform_impl/quiche_flags_impl.h
+  src/quiche/common/platform/default/quiche_platform_impl/quiche_iovec_impl.h
   src/quiche/common/platform/default/quiche_platform_impl/quiche_googleurl_impl.h
   # src/quiche/common/platform/default/quiche_platform_impl/quiche_logging_impl.cc
   # src/quiche/common/platform/default/quiche_platform_impl/quiche_logging_impl.h
