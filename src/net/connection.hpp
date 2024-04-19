@@ -133,6 +133,14 @@ class SSLDownlink : public Downlink {
   scoped_refptr<SSLServerSocket> ssl_socket_;
 };
 
+template <typename T>
+concept StartClosableConnection = requires(T t) {
+  /// Enter the start phase, begin to read requests
+  { t.start() };
+  /// Close the socket and clean up
+  { t.close() };
+};
+
 class Connection {
   using io_handle_t = Downlink::io_handle_t;
   using handle_t = Downlink::handle_t;
@@ -215,12 +223,6 @@ class Connection {
     ssl_socket_data_index_ = ssl_socket_data_index;
   }
 
-  /// Enter the start phase, begin to read requests
-  virtual void start() {}
-
-  /// Close the socket and clean up
-  virtual void close() {}
-
   /// set callback
   ///
   /// \param cb the callback function pointer when disconnect happens
@@ -298,16 +300,24 @@ class Connection {
   absl::AnyInvocable<void()> disconnect_cb_;
 };
 
+enum ConnectionFactoryType {
+  CONNECTION_FACTORY_UNSPEC,
+  CONNECTION_FACTORY_CLIENT,
+  CONNECTION_FACTORY_SERVER,
+  CONNECTION_FACTORY_CONTENT_PROVIDER,
+};
+
+template <StartClosableConnection T>
 class ConnectionFactory {
  public:
-  enum ConnectionFactoryType {
-    CONNECTION_FACTORY_UNSPEC,
-    CONNECTION_FACTORY_CLIENT,
-    CONNECTION_FACTORY_SERVER,
-    CONNECTION_FACTORY_CONTENT_PROVIDER,
-  };
-  static constexpr const ConnectionFactoryType Type = CONNECTION_FACTORY_UNSPEC;
-  static constexpr const char Name[] = "unspec";
+  using ConnectionType = T;
+
+  template <typename... Args>
+  static scoped_refptr<ConnectionType> Create(Args&&... args) {
+    return MakeRefCounted<ConnectionType>(std::forward<Args>(args)...);
+  }
+  static constexpr const ConnectionFactoryType Type = ConnectionType::Type;
+  static constexpr const char* Name = ConnectionType::Name;
 };
 
 }  // namespace net

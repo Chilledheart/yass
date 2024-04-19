@@ -101,6 +101,10 @@ void GenerateRandContent(int size) {
 
 class ContentProviderConnection : public RefCountedThreadSafe<ContentProviderConnection>, public Connection {
  public:
+  static constexpr const ConnectionFactoryType Type = CONNECTION_FACTORY_CONTENT_PROVIDER;
+  static constexpr const char Name[] = "content-provider";
+
+ public:
   ContentProviderConnection(asio::io_context& io_context,
                             const std::string& remote_host_ips,
                             const std::string& remote_host_sni,
@@ -132,7 +136,7 @@ class ContentProviderConnection : public RefCountedThreadSafe<ContentProviderCon
   ContentProviderConnection(ContentProviderConnection&&) = delete;
   ContentProviderConnection& operator=(ContentProviderConnection&&) = delete;
 
-  void start() override {
+  void start() {
     // FIXME check out why testcases fail with nonblocking mode
     asio::error_code ec;
     downlink_->socket_.native_non_blocking(false, ec);
@@ -140,7 +144,7 @@ class ContentProviderConnection : public RefCountedThreadSafe<ContentProviderCon
     do_io();
   }
 
-  void close() override {
+  void close() {
     VLOG(1) << "Connection (content-provider) " << connection_id() << " disconnected";
     asio::error_code ec;
     downlink_->socket_.close(ec);
@@ -274,18 +278,8 @@ class ContentProviderConnection : public RefCountedThreadSafe<ContentProviderCon
   }
 };
 
-class ContentProviderConnectionFactory : public ConnectionFactory {
- public:
-  using ConnectionType = ContentProviderConnection;
-  template <typename... Args>
-  static scoped_refptr<ConnectionType> Create(Args&&... args) {
-    return MakeRefCounted<ConnectionType>(std::forward<Args>(args)...);
-  }
-  static constexpr const ConnectionFactoryType Type = CONNECTION_FACTORY_CONTENT_PROVIDER;
-  static constexpr const char Name[] = "content-provider";
-};
-
-typedef ContentServer<ContentProviderConnectionFactory> ContentProviderServer;
+using ContentProviderConnectionFactory = ConnectionFactory<ContentProviderConnection>;
+using ContentProviderServer = ContentServer<ContentProviderConnectionFactory>;
 
 #ifndef HAVE_CURL
 void GenerateConnectRequest(std::string host, int port_num, IOBuf* buf) {
