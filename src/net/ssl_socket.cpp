@@ -36,6 +36,7 @@ SSLSocket::SSLSocket(int ssl_socket_data_index,
       early_data_enabled_(absl::GetFlag(FLAGS_tls13_early_data)),
       pending_read_error_(kSSLClientSocketNoPendingResult) {
   DCHECK(!ssl_);
+  DCHECK(ssl_ctx);
   ssl_.reset(SSL_new(ssl_ctx));
   CHECK_NE(0, SSL_set_ex_data(ssl_.get(), ssl_socket_data_index_, this));
 
