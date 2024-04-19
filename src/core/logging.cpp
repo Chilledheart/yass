@@ -2375,16 +2375,29 @@ static void GetTempDirectories(std::vector<std::string>* list) {
     list->push_back(SysWideToUTF8(std::wstring(tmp, len)));
   list->push_back("C:\\tmp\\");
   list->push_back("C:\\temp\\");
+#elif BUILDFLAG(IS_MAC) || BUILDFLAG(IS_IOS) || BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
+  std::string tmp_dir;
+  if (GetTempDir(&tmp_dir)) {
+    if (tmp_dir[tmp_dir.size() - 1] != '/') {
+      tmp_dir += "/";
+    }
+    list->push_back(tmp_dir);
+  }
+#if defined(__ANDROID) || defined(__OHOS__)
+  list->push_back("/data/local/tmp/");
+#else
+  list->push_back("/tmp/");
+#endif
 #else
   // Directories, in order of preference. If we find a dir that
   // exists, we stop adding other less-preferred dirs
   const char* candidates[] = {
-      // Explicitly-supplied temp dirs
-      getenv("TMPDIR"),
-      getenv("TMP"),
+    // Explicitly-supplied temp dirs
+    getenv("TMPDIR"),
+    getenv("TMP"),
 
-      // If all else fails
-      "/tmp",
+    // If all else fails
+    "/tmp",
   };
 
   for (const char* d : candidates) {
