@@ -9,7 +9,8 @@
 
 namespace cli {
 
-typedef net::ContentServer<CliConnectionFactory> CliServer;
+using CliConnectionFactory = net::ConnectionFactory<CliConnection>;
+using CliServer = net::ContentServer<CliConnectionFactory>;
 
 }  // namespace cli
 

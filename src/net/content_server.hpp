@@ -66,10 +66,10 @@ class ContentServer {
         certificate_(certificate),
         private_key_(private_key),
         delegate_(delegate) {
-    upstream_https_fallback_ &= T::Type == T::ConnectionFactoryType::CONNECTION_FACTORY_CLIENT;
-    https_fallback_ &= T::Type == T::ConnectionFactoryType::CONNECTION_FACTORY_SERVER;
-    enable_upstream_tls_ &= T::Type == T::ConnectionFactoryType::CONNECTION_FACTORY_CLIENT;
-    enable_tls_ &= T::Type == T::ConnectionFactoryType::CONNECTION_FACTORY_SERVER;
+    upstream_https_fallback_ &= T::Type == CONNECTION_FACTORY_CLIENT;
+    https_fallback_ &= T::Type == CONNECTION_FACTORY_SERVER;
+    enable_upstream_tls_ &= T::Type == CONNECTION_FACTORY_CLIENT;
+    enable_tls_ &= T::Type == CONNECTION_FACTORY_SERVER;
   }
 
   ~ContentServer() {
