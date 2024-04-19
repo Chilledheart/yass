@@ -249,7 +249,7 @@ for embedded devices and low end boxes.
 
 %changelog
 * Fri Apr 19 2024 Chilledheart <keeyou-cn@outlook.com> - 1.8.4-1
-  - net: fix cve-2024-3247
+  - net: fix cve-2024-32475
 * Mon Apr 8 2024 Chilledheart <keeyou-cn@outlook.com> - 1.8.3-1
   - net: add dot support
 * Fri Apr 5 2024 Chilledheart <keeyou-cn@outlook.com> - 1.8.2-1
