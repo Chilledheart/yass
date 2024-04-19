@@ -108,6 +108,11 @@ int main(int argc, const char* argv[]) {
   if (!absl::GetFlag(FLAGS_server_sni).empty()) {
     remote_host_sni = absl::GetFlag(FLAGS_server_sni);
   }
+  if (remote_host_sni.size() > TLSEXT_MAXLEN_host_name) {
+    LOG(WARNING) << "Invalid server name or SNI: " << remote_host_sni;
+    return -1;
+  }
+
   std::string remote_host_ips;
   uint16_t remote_port = absl::GetFlag(FLAGS_server_port);
 

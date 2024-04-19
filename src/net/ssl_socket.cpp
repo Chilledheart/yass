@@ -50,6 +50,7 @@ SSLSocket::SSLSocket(int ssl_socket_data_index,
     asio::ip::make_address(host_name.c_str(), ec);
     bool host_is_ip_address = !ec;
     if (!host_is_ip_address) {
+      DCHECK_LE(host_name.size(), (unsigned int)TLSEXT_MAXLEN_host_name);
       int ret = SSL_set_tlsext_host_name(ssl_.get(), host_name.c_str());
       CHECK_EQ(ret, 1) << "SSL_set_tlsext_host_name failure";
     }

@@ -187,6 +187,7 @@ class Connection {
         enable_upstream_tls_(enable_upstream_tls),
         enable_tls_(enable_tls),
         upstream_ssl_ctx_(upstream_ssl_ctx) {
+    DCHECK_LE(remote_host_sni_.size(), (unsigned int)TLSEXT_MAXLEN_host_name);
     if (enable_tls) {
       DCHECK(ssl_ctx);
       downlink_ = std::make_unique<SSLDownlink>(io_context, https_fallback, ssl_ctx);
