@@ -33,6 +33,13 @@ int main(int argc, const char** argv) {
     return -1;
   }
 
+  absl::SetFlag(&FLAGS_logtostderr, true);
+#ifdef NDEBUG
+  absl::SetFlag(&FLAGS_stderrthreshold, LOGGING_WARNING);
+#else
+  absl::SetFlag(&FLAGS_stderrthreshold, LOGGING_VERBOSE);
+#endif
+
   if (!SetUTF8Locale()) {
     LOG(WARNING) << "Failed to set up utf-8 locale";
   }
@@ -48,10 +55,6 @@ int main(int argc, const char** argv) {
   config::SetClientUsageMessage(exec_path);
   config::ReadConfigFileAndArguments(argc, argv);
 
-  absl::SetFlag(&FLAGS_v, 0);
-  absl::SetFlag(&FLAGS_log_thread_id, 1);
-  absl::SetFlag(&FLAGS_logtostderr, true);
-
 #ifdef HAVE_ICU
   if (!InitializeICU()) {
     LOG(WARNING) << "Failed to initialize icu component";
@@ -63,11 +66,6 @@ int main(int argc, const char** argv) {
     // Setup code that might create autoreleased objects goes here.
     appDelegateClassName = NSStringFromClass([YassAppDelegate class]);
   }
-  absl::SetFlag(&FLAGS_logtostderr, false);
-#ifdef NDEBUG
-  absl::SetFlag(&FLAGS_stderrthreshold, LOGGING_WARNING);
-#else
-  absl::SetFlag(&FLAGS_stderrthreshold, LOGGING_VERBOSE);
-#endif
+
   return UIApplicationMain(argc, (char**)argv, nil, appDelegateClassName);
 }
