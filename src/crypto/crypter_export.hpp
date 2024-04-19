@@ -11,16 +11,11 @@
 #define MAX_KEY_LENGTH 64
 #define MAX_NONCE_LENGTH 32
 
-#ifdef HAVE_BORINGSSL
 #define CIPHER_METHOD_MAP_SODIUM(XX)                       \
   XX(0x3U, AES256GCMSHA256, "aes-256-gcm")                 \
   XX(0x4U, CHACHA20POLY1305IETF, "chacha20-ietf-poly1305") \
   XX(0x5U, XCHACHA20POLY1305IETF, "xchacha20-ietf-poly1305")
-#else
-#define CIPHER_METHOD_MAP_SODIUM(XX)
-#endif
 
-#ifdef HAVE_BORINGSSL
 #define CIPHER_METHOD_MAP_BORINGSSL(XX)                               \
   XX(0x14U, CHACHA20POLY1305IETF_EVP, "chacha20-ietf-poly1305-evp")   \
   XX(0x15U, XCHACHA20POLY1305IETF_EVP, "xchacha20-ietf-poly1305-evp") \
@@ -28,9 +23,6 @@
   XX(0x17U, AES128GCM12SHA256_EVP, "aes-128-gcm12-evp")               \
   XX(0x18U, AES192GCMSHA256_EVP, "aes-192-gcm-evp")                   \
   XX(0x19U, AES256GCMSHA256_EVP, "aes-256-gcm-evp")
-#else
-#define CIPHER_METHOD_MAP_BORINGSSL(XX)
-#endif
 
 #ifdef HAVE_MBEDTLS
 #define CIPHER_METHOD_MAP_MBEDTLS(XX)             \
@@ -76,12 +68,10 @@
 
 #ifdef HAVE_QUICHE
 #define CRYPTO_DEFAULT CRYPTO_HTTP2
-#elif defined(HAVE_BORINGSSL)
-#define CRYPTO_DEFAULT CRYPTO_AES256GCMSHA256
 #elif defined(HAVE_MBEDTLS)
 #define CRYPTO_DEFAULT CHACHA20POLY1305IETF_EVP
 #else
-#error missing cipher method backend
+#define CRYPTO_DEFAULT CRYPTO_AES256GCMSHA256
 #endif
 
 #define CIPHER_METHOD_OLD_MAP(XX) \

@@ -23,7 +23,6 @@ Decrypter::~Decrypter() = default;
 
 std::unique_ptr<Decrypter> Decrypter::CreateFromCipherSuite(uint32_t cipher_suite) {
   switch (cipher_suite) {
-#ifdef HAVE_BORINGSSL
     case CRYPTO_AES256GCMSHA256:
       return std::make_unique<Aes256GcmSodiumDecrypter>();
     case CRYPTO_CHACHA20POLY1305IETF:
@@ -42,7 +41,6 @@ std::unique_ptr<Decrypter> Decrypter::CreateFromCipherSuite(uint32_t cipher_suit
       return std::make_unique<Aes192GcmEvpDecrypter>();
     case CRYPTO_AES256GCMSHA256_EVP:
       return std::make_unique<Aes256GcmEvpDecrypter>();
-#endif
 #ifdef HAVE_MBEDTLS
 #if 0
     case CRYPTO_RC4:

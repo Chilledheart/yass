@@ -24,7 +24,6 @@ Encrypter::~Encrypter() = default;
 
 std::unique_ptr<Encrypter> Encrypter::CreateFromCipherSuite(uint32_t cipher_suite) {
   switch (cipher_suite) {
-#ifdef HAVE_BORINGSSL
     case CRYPTO_AES256GCMSHA256:
       return std::make_unique<Aes256GcmSodiumEncrypter>();
     case CRYPTO_CHACHA20POLY1305IETF:
@@ -43,7 +42,6 @@ std::unique_ptr<Encrypter> Encrypter::CreateFromCipherSuite(uint32_t cipher_suit
       return std::make_unique<Aes192GcmEvpEncrypter>();
     case CRYPTO_AES256GCMSHA256_EVP:
       return std::make_unique<Aes256GcmEvpEncrypter>();
-#endif
 #ifdef HAVE_MBEDTLS
 #if 0
     case CRYPTO_RC4:

@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 
 #include "crypto/chacha20_poly1305_sodium_decrypter.hpp"
 
 #include "core/logging.hpp"
 
-#ifdef HAVE_BORINGSSL
 #include "crypto/crypter_export.hpp"
 #include "third_party/boringssl/src/include/openssl/aead.h"
 
@@ -27,5 +26,3 @@ uint32_t ChaCha20Poly1305SodiumDecrypter::cipher_id() const {
 }
 
 }  // namespace crypto
-
-#endif

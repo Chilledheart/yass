@@ -2652,10 +2652,6 @@ if (MINGW AND USE_LIBCXX)
   set(CMAKE_CXX_FLAGS "${PREVIOUS_CMAKE_CXX_FLAGS}")
 endif()
 list(APPEND YASS_APP_FEATURES "boringssl")
-set(SUPPORT_DEFINITIONS
-  HAVE_BORINGSSL
-  ${SUPPORT_DEFINITIONS}
-)
 set(SUPPORT_LIBS crypto ssl ${SUPPORT_LIBS})
 foreach(source ${BCM_ASM_SOURCES})
   set_source_files_properties(${source} PROPERTIES GENERATED true)

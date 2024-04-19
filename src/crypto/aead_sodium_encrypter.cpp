@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 #include "crypto/aead_sodium_encrypter.hpp"
 
 #include "core/logging.hpp"
 #include "net/protocol.hpp"
 
-#ifdef HAVE_BORINGSSL
-#include <openssl/crypto.h>
-#include <openssl/err.h>
+#include "third_party/boringssl/src/include/openssl/crypto.h"
+#include "third_party/boringssl/src/include/openssl/err.h"
 
 // In debug builds only, log OpenSSL error stack. Then clear OpenSSL error
 // stack.
@@ -108,5 +107,3 @@ bool SodiumAeadEncrypter::EncryptPacket(uint64_t packet_number,
 }
 
 }  // namespace crypto
-
-#endif  // HAVE_BORINGSSL
