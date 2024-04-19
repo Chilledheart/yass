@@ -33,7 +33,8 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
 
 - (void)startTunnelWithOptions:(NSDictionary*)options completionHandler:(void (^)(NSError*))completionHandler {
   stopped_ = false;
-  absl::SetFlag(&FLAGS_logtostderr, false);
+  SetExecutablePath("UNKNOWN.ext");
+  absl::SetFlag(&FLAGS_logtostderr, true);
 #ifdef NDEBUG
   absl::SetFlag(&FLAGS_stderrthreshold, LOGGING_WARNING);
 #else
