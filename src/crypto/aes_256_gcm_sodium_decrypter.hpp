@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 
 #ifndef H_CRYPTO_AES256_GCM_SODIUM_DECRYPTER
 #define H_CRYPTO_AES256_GCM_SODIUM_DECRYPTER
@@ -9,8 +9,6 @@
 #include <string>
 
 #include "crypto/aead_sodium_decrypter.hpp"
-
-#ifdef HAVE_BORINGSSL
 
 namespace crypto {
 
@@ -27,7 +25,5 @@ class Aes256GcmSodiumDecrypter : public AeadSodiumDecrypter {
 };
 
 }  // namespace crypto
-
-#endif
 
 #endif  // H_CRYPTO_AES256_GCM_SODIUM_DECRYPTER

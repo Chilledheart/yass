@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 
 #ifndef H_CRYPTO_AEAD_SODIUM_DECRYPTER
 #define H_CRYPTO_AEAD_SODIUM_DECRYPTER
 
 #include "aead_base_decrypter.hpp"
-
-#ifdef HAVE_BORINGSSL
 
 #include "third_party/boringssl/src/include/openssl/aead.h"
 
@@ -34,7 +32,5 @@ class AeadSodiumDecrypter : public AeadBaseDecrypter {
 };
 
 }  // namespace crypto
-
-#endif
 
 #endif  // H_CRYPTO_AEAD_SODIUM_DECRYPTER

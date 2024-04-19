@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 
 #include "crypto/aes_256_gcm_evp_encrypter.hpp"
 
 #include "core/logging.hpp"
 
-#ifdef HAVE_BORINGSSL
 #include "crypto/crypter_export.hpp"
 #include "third_party/boringssl/src/include/openssl/aead.h"
 
@@ -27,5 +26,3 @@ uint32_t Aes256GcmEvpEncrypter::cipher_id() const {
 }
 
 }  // namespace crypto
-
-#endif

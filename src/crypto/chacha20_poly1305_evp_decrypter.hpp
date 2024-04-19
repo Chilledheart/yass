@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 
 #ifndef H_CRYPTO_CHACHA20_POLY1305_EVP_DECRYPTER
 #define H_CRYPTO_CHACHA20_POLY1305_EVP_DECRYPTER
@@ -9,8 +9,6 @@
 #include <string>
 
 #include "crypto/aead_evp_decrypter.hpp"
-
-#ifdef HAVE_BORINGSSL
 
 namespace crypto {
 
@@ -27,7 +25,5 @@ class ChaCha20Poly1305EvpDecrypter : public AeadEvpDecrypter {
 };
 
 }  // namespace crypto
-
-#endif
 
 #endif  // H_CRYPTO_CHACHA20_POLY1305_EVP_DECRYPTER

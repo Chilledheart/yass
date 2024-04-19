@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2020 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 #include "crypto/aead_evp_decrypter.hpp"
 
 #include "core/logging.hpp"
 #include "net/protocol.hpp"
 
-#ifdef HAVE_BORINGSSL
 #include "third_party/boringssl/src/include/openssl/crypto.h"
 #include "third_party/boringssl/src/include/openssl/err.h"
 
@@ -88,5 +87,3 @@ bool AeadEvpDecrypter::DecryptPacket(uint64_t packet_number,
 }
 
 }  // namespace crypto
-
-#endif  // HAVE_BORINGSSL
