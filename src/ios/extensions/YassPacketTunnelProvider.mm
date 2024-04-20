@@ -26,7 +26,8 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
 
 @implementation YassPacketTunnelProvider {
   std::atomic_bool stopped_;
-  Worker worker_;
+  std::once_flag init_flag_;
+  std::unique_ptr<Worker> worker_;
   std::unique_ptr<std::thread> tun2proxy_thread_;
   struct Tun2Proxy_InitContext* context_;
 }
@@ -85,7 +86,10 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
                                         userInfo:@{@"Error reason" : @(err_msg.c_str())}]);
     }
   };
-  worker_.Start(std::move(callback));
+  std::call_once(init_flag_, [self](){
+    worker_ = std::make_unique<Worker>();
+  });
+  worker_->Start(std::move(callback));
 }
 
 - (void)startTunnelWithOptionsOnCallback:(void (^)(NSError*))completionHandler {
@@ -93,14 +97,14 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
 
   NSDictionary* dict = protocolConfiguration.providerConfiguration;
   NSString* local_host = @"127.0.0.1";
-  int local_port = worker_.GetLocalPort();
+  int local_port = worker_->GetLocalPort();
 
-  auto ips_v4 = worker_.GetRemoteIpsV4();
+  auto ips_v4 = worker_->GetRemoteIpsV4();
   NSMutableArray* remote_ips_v4 = [[NSMutableArray alloc] init];
   for (const auto& ip_v4 : ips_v4) {
     [remote_ips_v4 addObject:@(ip_v4.c_str())];
   }
-  auto ips_v6 = worker_.GetRemoteIpsV6();
+  auto ips_v6 = worker_->GetRemoteIpsV6();
   NSMutableArray* remote_ips_v6 = [[NSMutableArray alloc] init];
   for (const auto& ip_v6 : ips_v6) {
     [remote_ips_v6 addObject:@(ip_v6.c_str())];
@@ -221,8 +225,8 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
       return;
     }
     Tun2Proxy_ForwardReadPackets(strongSelf->context_, packets);
-    if (worker_.currentConnections() > kYieldConcurrencyOfConnections) {
-      NSLog(@"tunnel: about to yield after %zu connection", worker_.currentConnections());
+    if (worker_->currentConnections() > kYieldConcurrencyOfConnections) {
+      NSLog(@"tunnel: about to yield after %zu connection", worker_->currentConnections());
       sched_yield();  // wait for up to 10ms
     }
     [strongSelf readPackets];
@@ -232,7 +236,7 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
 - (void)stopTunnelWithReason:(NEProviderStopReason)reason completionHandler:(void (^)(void))completionHandler {
   NSLog(@"tunnel: stop with reason %ld", reason);
   stopped_ = true;
-  worker_.Stop([=] {
+  worker_->Stop([=] {
     NSLog(@"worker stopped");
     Tun2Proxy_Shutdown(context_);
     NSLog(@"tun2proxy destroyed");
