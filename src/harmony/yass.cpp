@@ -1159,6 +1159,7 @@ static napi_module yassModule = {
 };
 
 extern "C" __attribute__((constructor)) void RegisterEntryModule(void) {
+  absl::SetFlag(&FLAGS_logtostderr, true);
   napi_module_register(&yassModule);
 }
 
