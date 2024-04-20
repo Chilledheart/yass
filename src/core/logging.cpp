@@ -2392,12 +2392,12 @@ static void GetTempDirectories(std::vector<std::string>* list) {
   // Directories, in order of preference. If we find a dir that
   // exists, we stop adding other less-preferred dirs
   const char* candidates[] = {
-    // Explicitly-supplied temp dirs
-    getenv("TMPDIR"),
-    getenv("TMP"),
+      // Explicitly-supplied temp dirs
+      getenv("TMPDIR"),
+      getenv("TMP"),
 
-    // If all else fails
-    "/tmp",
+      // If all else fails
+      "/tmp",
   };
 
   for (const char* d : candidates) {
