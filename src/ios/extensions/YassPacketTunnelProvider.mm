@@ -65,8 +65,7 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
     return;
   }
 
-  absl::AnyInvocable<void(asio::error_code)> callback;
-  callback = [=](asio::error_code ec) {
+  absl::AnyInvocable<void(asio::error_code)> callback = [self, completionHandler](asio::error_code ec) {
     bool successed = false;
     std::string err_msg;
 
@@ -86,9 +85,7 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
                                         userInfo:@{@"Error reason" : @(err_msg.c_str())}]);
     }
   };
-  std::call_once(init_flag_, [self](){
-    worker_ = std::make_unique<Worker>();
-  });
+  std::call_once(init_flag_, [self]() { worker_ = std::make_unique<Worker>(); });
   worker_->Start(std::move(callback));
 }
 
@@ -236,7 +233,7 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
 - (void)stopTunnelWithReason:(NEProviderStopReason)reason completionHandler:(void (^)(void))completionHandler {
   NSLog(@"tunnel: stop with reason %ld", reason);
   stopped_ = true;
-  worker_->Stop([=] {
+  absl::AnyInvocable<void()> callback = [self, completionHandler]() {
     NSLog(@"worker stopped");
     Tun2Proxy_Shutdown(context_);
     NSLog(@"tun2proxy destroyed");
@@ -244,7 +241,8 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
     tun2proxy_thread_.reset();
     Tun2Proxy_Destroy(context_);
     completionHandler();
-  });
+  };
+  worker_->Stop(std::move(callback));
 }
 
 - (void)handleAppMessage:(NSData*)messageData completionHandler:(void (^)(NSData*))completionHandler {
