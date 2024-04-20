@@ -46,6 +46,8 @@ Visit wiki's [Usages](https://github.com/Chilledheart/yass/wiki/Usage) and [Serv
 
 #### NaïveProxy Protocol Support
 It refers to [http2 cipher](https://github.com/Chilledheart/yass/wiki/Supported-Operating-System#screenshot-on-na%C3%AFveproxy-support) as [NaïveProxy][naiveproxy]-compatible protocol support.
+#### Fix disk space occupation issue for mobile users
+Starting with release 1.9.2 and 1.8.5, it will no longer keep log file and occupy extra disk space for Android/iOS/HarmonyOS client.
 #### Android vpn service support
 Android releases from 1.5.24 are signed and have been updated to add [VpnService](https://developer.android.com/reference/android/net/VpnService) support.
 #### iOS packet tunnel support
