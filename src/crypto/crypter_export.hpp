@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2019-2023 Chilledheart  */
+/* Copyright (c) 2019-2024 Chilledheart  */
 
 #ifndef H_CRYPTO_CRYPTER_EXPORT
 #define H_CRYPTO_CRYPTER_EXPORT
 
 #include <stddef.h>
 #include <stdint.h>
-#include <string>
+#include <string_view>
 
 #define MAX_KEY_LENGTH 64
 #define MAX_NONCE_LENGTH 32
@@ -68,10 +68,16 @@
 
 #ifdef HAVE_QUICHE
 #define CRYPTO_DEFAULT CRYPTO_HTTP2
+#define CRYPTO_DEFAULT_STR CRYPTO_HTTP2_STR
+#define CRYPTO_DEFAULT_CSTR CRYPTO_HTTP2_CSTR
 #elif defined(HAVE_MBEDTLS)
 #define CRYPTO_DEFAULT CHACHA20POLY1305IETF_EVP
+#define CRYPTO_DEFAULT_STR CHACHA20POLY1305IETF_EVP_STR
+#define CRYPTO_DEFAULT_CSTR CHACHA20POLY1305IETF_EVP_CSTR
 #else
 #define CRYPTO_DEFAULT CRYPTO_AES256GCMSHA256
+#define CRYPTO_DEFAULT_STR CRYPTO_AES256GCMSHA256_STR
+#define CRYPTO_DEFAULT_CSTR CRYPTO_AES256GCMSHA256_CSTR
 #endif
 
 #define CIPHER_METHOD_OLD_MAP(XX) \
@@ -96,15 +102,19 @@ enum cipher_method : uint32_t {
 #undef XX
 };
 
-enum cipher_method to_cipher_method(const std::string& method);
-const char* to_cipher_method_name(enum cipher_method method);
-const char* to_cipher_method_str(enum cipher_method method);
+enum cipher_method to_cipher_method(const std::string_view& method);
+std::string_view to_cipher_method_name(enum cipher_method method);
+std::string_view to_cipher_method_str(enum cipher_method method);
 bool is_valid_cipher_method(enum cipher_method method);
 
-#define XX(num, name, string) extern const char* CRYPTO_##name##_STR;
+#define XX(num, name, string) constexpr const std::string_view CRYPTO_##name##_STR = string;
 CIPHER_METHOD_MAP(XX)
 #undef XX
 
-extern const char kCipherMethodsStr[];
+extern const std::string_view kCipherMethodsStr;
+
+#define XX(num, name, string) constexpr const char CRYPTO_##name##_CSTR[] = string;
+CIPHER_METHOD_MAP(XX)
+#undef XX
 
 #endif  // H_CRYPTO_CRYPTER_EXPORT
