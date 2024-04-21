@@ -38,7 +38,7 @@
     CIPHER_METHOD_VALID_MAP(XX)
 #undef XX
   ];
-  self.currentCiphermethod = @(CRYPTO_HTTP2_STR);
+  self.currentCiphermethod = @(CRYPTO_DEFAULT_CSTR);
   [self.cipherMethod setDelegate:self];
   [self.cipherMethod setDataSource:self];
   [self.cipherMethod reloadAllComponents];

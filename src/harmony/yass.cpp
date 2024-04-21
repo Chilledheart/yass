@@ -959,8 +959,8 @@ static napi_value getPassword(napi_env env, napi_callback_info info) {
 
 static napi_value getCipher(napi_env env, napi_callback_info info) {
   napi_value value;
-  auto status =
-      napi_create_string_utf8(env, to_cipher_method_str(absl::GetFlag(FLAGS_method).method), NAPI_AUTO_LENGTH, &value);
+  auto method_str = to_cipher_method_str(absl::GetFlag(FLAGS_method).method);
+  auto status = napi_create_string_utf8(env, method_str.data(), method_str.size(), &value);
   if (status != napi_ok) {
     napi_throw_error(env, nullptr, "napi_create_string_utf8 failed");
     return nullptr;

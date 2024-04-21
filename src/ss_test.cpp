@@ -716,7 +716,7 @@ INSTANTIATE_TEST_SUITE_P(Ss,
                          EndToEndTest,
                          ::testing::ValuesIn(kCiphers),
                          [](const ::testing::TestParamInfo<cipher_method>& info) -> std::string {
-                           return to_cipher_method_name(info.param);
+                           return std::string(to_cipher_method_name(info.param));
                          });
 
 #if BUILDFLAG(IS_IOS)
