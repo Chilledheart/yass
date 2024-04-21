@@ -883,8 +883,8 @@ static napi_value saveConfig(napi_env env, napi_callback_info info) {
   std::string dot_host = argList[7];
   std::string timeout = argList[8];
 
-  constexpr std::string local_host = "0.0.0.0";
-  constexpr std::string local_port = "0";
+  constexpr std::string_view local_host = "0.0.0.0";
+  constexpr std::string_view local_port = "0";
 
   std::string err_msg = config::ReadConfigFromArgument(server_host, server_sni, server_port, username, password, method,
                                                        local_host, local_port, doh_url, dot_host, timeout);
