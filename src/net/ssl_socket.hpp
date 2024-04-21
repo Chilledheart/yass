@@ -5,6 +5,7 @@
 #define H_NET_SSL_SOCKET
 
 #include <absl/functional/any_invocable.h>
+#include <string_view>
 #include "third_party/boringssl/src/include/openssl/ssl.h"
 
 #include "core/ref_counted.hpp"
@@ -15,6 +16,8 @@
 #include "net/openssl_util.hpp"
 
 namespace net {
+
+constexpr const std::string_view kSSLDefaultCiphersList = "ALL:!aPSK:!ECDSA+SHA1:!3DES";
 
 // This enum is persisted into histograms. Values may not be renumbered.
 enum class SSLHandshakeDetails {
