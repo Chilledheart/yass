@@ -111,6 +111,10 @@ bool is_valid_cipher_method(enum cipher_method method);
 CIPHER_METHOD_MAP(XX)
 #undef XX
 
+#define XX(num, name, string) constexpr const std::string_view CRYPTO_##name##_NAME = #name;
+CIPHER_METHOD_MAP(XX)
+#undef XX
+
 extern const std::string_view kCipherMethodsStr;
 
 #define XX(num, name, string) constexpr const char CRYPTO_##name##_CSTR[] = string;
