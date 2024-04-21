@@ -23,7 +23,7 @@ std::string_view to_cipher_method_name(enum cipher_method method) {
     CIPHER_METHOD_MAP(XX)
 #undef XX
     default:
-      return CRYPTO_INVALID_STR;
+      return CRYPTO_INVALID_NAME;
   }
 }
 
