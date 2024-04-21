@@ -63,10 +63,10 @@ bool IsProgramConsole(internal::fd_t fd);
 
 bool SetUTF8Locale();
 
-std::optional<int> StringToInteger(const std::string& value);
-std::optional<unsigned> StringToIntegerU(const std::string& value);
-std::optional<int64_t> StringToInteger64(const std::string& value);
-std::optional<uint64_t> StringToIntegerU64(const std::string& value);
+std::optional<int> StringToInteger(std::string_view value);
+std::optional<unsigned> StringToIntegerU(std::string_view value);
+std::optional<int64_t> StringToInteger64(std::string_view value);
+std::optional<uint64_t> StringToIntegerU64(std::string_view value);
 
 #ifdef _WIN32
 bool EnableSecureDllLoading();
