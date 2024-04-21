@@ -28,8 +28,6 @@
 
 ABSL_FLAG(bool, background, false, "start up backgroundd");
 
-using namespace std::string_literals;
-
 YASSApp* mApp = nullptr;
 
 static const char* kAppId = "it.gui.yass";
@@ -95,7 +93,8 @@ int main(int argc, const char** argv) {
   if (!SetUTF8Locale()) {
     LOG(WARNING) << "Failed to set up utf-8 locale";
   }
-  std::string locale_path = "../share/locale"s;
+  constexpr std::string_view kDefaultLocalePath = "../share/locale";
+  std::string locale_path = std::string(kDefaultLocalePath);
   size_t rpos = exec_path.rfind('/');
   if (rpos != std::string::npos)
     locale_path = exec_path.substr(0, rpos + 1) + locale_path;

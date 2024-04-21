@@ -15,8 +15,6 @@
 #include "ios/utils.h"
 #include "tun2proxy.h"
 
-using namespace std::string_literals;
-
 static constexpr const int DEFAULT_MTU = 1500;
 static const char PRIVATE_VLAN4_CLIENT[] = "172.19.0.1";
 static const char PRIVATE_VLAN4_GATEWAY[] = "172.19.0.2";
@@ -48,8 +46,8 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
   auto server_port = SysNSStringToUTF8(dict[@(kServerPortFieldName)]);
   auto username = SysNSStringToUTF8(dict[@(kUsernameFieldName)]);
   auto password = SysNSStringToUTF8(dict[@(kPasswordFieldName)]);
-  auto local_host = "127.0.0.1"s;
-  auto local_port = "0"s;
+  constexpr std::string local_host = "127.0.0.1";
+  constexpr std::string local_port = "0";
   auto method_string = SysNSStringToUTF8(dict[@(kMethodStringFieldName)]);
   auto doh_url = SysNSStringToUTF8(dict[@(kDoHURLFieldName)]);
   auto dot_host = SysNSStringToUTF8(dict[@(kDoTHostFieldName)]);

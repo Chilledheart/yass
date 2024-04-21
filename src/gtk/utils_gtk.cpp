@@ -191,7 +191,7 @@ bool QuerySystemProxy(bool* enabled, std::string* server_host, std::string* serv
   }
   *enabled = output == "'manual'";
 
-  params = {"gsettings", "get", "org.gnome.system.proxy.http", "host"};
+  params = {"gsettings"s, "get"s, "org.gnome.system.proxy.http"s, "host"s};
   if (ExecuteProcess(params, &output, &_) != 0) {
     return false;
   }
@@ -201,7 +201,7 @@ bool QuerySystemProxy(bool* enabled, std::string* server_host, std::string* serv
   }
   *server_host = output;
 
-  params = {"gsettings", "get", "org.gnome.system.proxy.http", "port"};
+  params = {"gsettings"s, "get"s, "org.gnome.system.proxy.http"s, "port"s};
   if (ExecuteProcess(params, &output, &_) != 0) {
     return false;
   }
@@ -211,7 +211,7 @@ bool QuerySystemProxy(bool* enabled, std::string* server_host, std::string* serv
   }
   *server_port = output;
 
-  params = {"gsettings", "get", "org.gnome.system.proxy", "ignore-hosts"};
+  params = {"gsettings"s, "get"s, "org.gnome.system.proxy"s, "ignore-hosts"s};
   if (ExecuteProcess(params, &output, &_) != 0) {
     return false;
   }
@@ -234,35 +234,35 @@ bool SetSystemProxy(bool enable,
     return false;
   }
 
-  static const char* kProtocol[] = {
+  static constexpr std::string_view kProtocol[] = {
       "org.gnome.system.proxy.http",
       "org.gnome.system.proxy.https",
       "org.gnome.system.proxy.ftp",
       "org.gnome.system.proxy.socks",
   };
-  for (const char* protocol : kProtocol) {
-    params = {"gsettings", "set", protocol, "host", server_host};
+  for (std::string_view protocol : kProtocol) {
+    params = {"gsettings"s, "set"s, std::string(protocol), "host"s, server_host};
     if (ExecuteProcess(params, &_, &_) != 0) {
       return false;
     }
 
-    params = {"gsettings", "set", protocol, "port", server_port};
+    params = {"gsettings"s, "set"s, std::string(protocol), "port", server_port};
     if (ExecuteProcess(params, &_, &_) != 0) {
       return false;
     }
   }
 
-  params = {"gsettings", "set", "org.gnome.system.proxy", "use-same-proxy", "true"};
+  params = {"gsettings"s, "set"s, "org.gnome.system.proxy"s, "use-same-proxy"s, "true"s};
   if (ExecuteProcess(params, &_, &_) != 0) {
     return false;
   }
 
-  params = {"gsettings", "set", "org.gnome.system.proxy", "ignore-hosts", bypass_addr};
+  params = {"gsettings"s, "set"s, "org.gnome.system.proxy"s, "ignore-hosts"s, bypass_addr};
   if (ExecuteProcess(params, &_, &_) != 0) {
     return false;
   }
 
-  params = {"gsettings", "set", "org.gnome.system.proxy", "mode", enable ? "'manual'" : "'none'"};
+  params = {"gsettings"s, "set"s, "org.gnome.system.proxy"s, "mode"s, enable ? "'manual'"s : "'none'"s};
   if (ExecuteProcess(params, &_, &_) != 0) {
     return false;
   }
@@ -275,7 +275,7 @@ bool QuerySystemProxy_KDE(bool* enabled, std::string* server_addr, std::string* 
   std::string config_dir = GetConfigDir();
   std::string output, _;
   std::vector<std::string> params = {
-      "kreadconfig5", "--file", config_dir + "/kioslaverc", "--group", "Proxy Settings", "--key", "ProxyType"};
+      "kreadconfig5"s, "--file"s, config_dir + "/kioslaverc"s, "--group"s, "Proxy Settings"s, "--key"s, "ProxyType"s};
   if (ExecuteProcess(params, &output, &_) != 0) {
     return false;
   }
@@ -285,7 +285,8 @@ bool QuerySystemProxy_KDE(bool* enabled, std::string* server_addr, std::string* 
   }
   *enabled = output == "1";
 
-  params = {"kreadconfig5", "--file", config_dir + "/kioslaverc", "--group", "Proxy Settings", "--key", "httpProxy"};
+  params = {"kreadconfig5"s, "--file"s,   config_dir + "/kioslaverc"s, "--group"s, "Proxy Settings"s,
+            "--key"s,        "httpProxy"s};
   if (ExecuteProcess(params, &output, &_) != 0) {
     return false;
   }
@@ -295,7 +296,8 @@ bool QuerySystemProxy_KDE(bool* enabled, std::string* server_addr, std::string* 
   }
   *server_addr = output;
 
-  params = {"kreadconfig5", "--file", config_dir + "/kioslaverc", "--group", "Proxy Settings", "--key", "NoProxyFor"};
+  params = {"kreadconfig5"s, "--file"s,    config_dir + "/kioslaverc"s, "--group"s, "Proxy Settings"s,
+            "--key"s,        "NoProxyFor"s};
   if (ExecuteProcess(params, &output, &_) != 0) {
     return false;
   }
@@ -318,29 +320,29 @@ bool SetSystemProxy_KDE(bool enable, const std::string& server_addr, const std::
     return false;
   }
 
-  static const char* kProtocol[] = {
+  static constexpr std::string_view kProtocol[] = {
       "httpProxy",
       "httpsProxy",
       "ftpProxy",
       "socksProxy",
   };
 
-  for (const char* protocol : kProtocol) {
-    params = {"kwriteconfig5", "--file",   config_dir + "/kioslaverc", "--group", "Proxy Settings", "--key",
-              protocol,        server_addr};
+  for (std::string_view protocol : kProtocol) {
+    params = {"kwriteconfig5"s,  "--file"s, config_dir + "/kioslaverc"s, "--group"s,
+              "Proxy Settings"s, "--key"s,  std::string(protocol),       server_addr};
     if (ExecuteProcess(params, &_, &_) != 0) {
       return false;
     }
   }
 
-  params = {"kwriteconfig5", "--file",   config_dir + "/kioslaverc", "--group", "Proxy Settings", "--key",
-            "NoProxyFor",    bypass_addr};
+  params = {"kwriteconfig5"s, "--file"s,  config_dir + "/kioslaverc"s, "--group"s, "Proxy Settings"s, "--key"s,
+            "NoProxyFor"s,    bypass_addr};
   if (ExecuteProcess(params, &_, &_) != 0) {
     return false;
   }
 
-  params = {"dbus-send", "--type=signal", "/KIO/Scheduler", "org.kde.KIO.Scheduler.reparseSlaveConfiguration",
-            "string:''"};
+  params = {"dbus-send"s, "--type=signal"s, "/KIO/Scheduler"s, "org.kde.KIO.Scheduler.reparseSlaveConfiguration"s,
+            "string:''"s};
   if (ExecuteProcess(params, &_, &_) != 0) {
     return false;
   }
