@@ -17,8 +17,6 @@ ABSL_FLAG(int64_t, test_signed_64val, 0, "Test int64_t value");
 ABSL_FLAG(uint64_t, test_unsigned_64val, 0, "Test uint64_t value");
 ABSL_FLAG(std::string, test_string, "", "Test string value");
 
-using namespace std::string_literals;
-
 class ConfigTest : public ::testing::Test {
  public:
   void SetUp() override {
@@ -170,7 +168,7 @@ TEST_F(ConfigTest, RWUint64) {
 
 TEST_F(ConfigTest, RWString) {
   auto config_impl = config::ConfigImpl::Create();
-  std::string test_string = "test-str"s;
+  constexpr std::string_view test_string = "test-str";
 
   absl::SetFlag(&FLAGS_test_string, test_string);
 

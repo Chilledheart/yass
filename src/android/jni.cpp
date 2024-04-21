@@ -9,9 +9,8 @@
 #include "config/config.hpp"
 #include "crypto/crypter_export.hpp"
 
+#include <string>
 #include <vector>
-
-using namespace std::string_literals;
 
 JavaVM* g_jvm = nullptr;
 jobject g_activity_obj = nullptr;
@@ -128,8 +127,8 @@ JNIEXPORT jobject JNICALL Java_it_gui_yass_MainActivity_saveConfig(JNIEnv* env,
   DCHECK_LT((uint32_t)_method_idx, methods_idxes.size());
   auto method = methods_idxes[_method_idx];
 
-  std::string local_host = "0.0.0.0"s;
-  std::string local_port = "0"s;
+  constexpr std::string local_host = "0.0.0.0";
+  constexpr std::string local_port = "0";
 
   const char* doh_url_str = env->GetStringUTFChars((jstring)_doh_url, nullptr);
   std::string doh_url = doh_url_str != nullptr ? doh_url_str : std::string();

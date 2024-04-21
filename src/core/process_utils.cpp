@@ -29,8 +29,6 @@
 #define ASIO_NO_SSL
 #include "net/asio.hpp"
 
-using namespace std::string_literals;
-
 static int Pipe2(int pipe_fds[2]) {
   int ret;
 #ifdef HAVE_PIPE2

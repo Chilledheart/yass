@@ -21,8 +21,6 @@
 #include <base/strings/sys_string_conversions.h>
 #include "core/logging.hpp"
 
-using namespace std::string_literals;
-
 bool SetCurrentThreadPriority(ThreadPriority priority) {
   // Changing the priority of the main thread causes performance regressions.
   // https://crbug.com/601270
@@ -80,7 +78,8 @@ bool SetUTF8Locale() {
   return true;
 }
 
-static std::string main_exe_path = "UNKNOWN"s;
+static constexpr std::string_view kDefaultExePath = "UNKNOWN";
+static std::string main_exe_path = std::string(kDefaultExePath);
 
 bool GetExecutablePath(std::string* path) {
   char exe_path[PATH_MAX];
