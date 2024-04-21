@@ -14,35 +14,43 @@ enum cipher_method to_cipher_method(const std::string_view& method) {
 }
 
 std::string_view to_cipher_method_name(enum cipher_method method) {
+  switch (method) {
 #define XX(num, name, string)                \
-  if (method == num) {                       \
+  case num: {                                \
     constexpr std::string_view _ret = #name; \
     return _ret;                             \
   }
-  CIPHER_METHOD_MAP(XX)
+    CIPHER_METHOD_MAP(XX)
 #undef XX
-  return CRYPTO_INVALID_STR;
+    default:
+      return CRYPTO_INVALID_STR;
+  }
 }
 
 std::string_view to_cipher_method_str(enum cipher_method method) {
+  switch (method) {
 #define XX(num, name, string)                 \
-  if (method == num) {                        \
+  case num: {                                 \
     constexpr std::string_view _ret = string; \
     return _ret;                              \
   }
-  CIPHER_METHOD_MAP(XX)
+    CIPHER_METHOD_MAP(XX)
 #undef XX
-  return CRYPTO_INVALID_STR;
+    default:
+      return CRYPTO_INVALID_STR;
+  }
 }
 
 bool is_valid_cipher_method(enum cipher_method method) {
+  switch (method) {
 #define XX(num, name, string) \
-  if (method == num) {        \
-    return true;              \
-  }
-  CIPHER_METHOD_MAP(XX)
+  case num:                   \
+    return true;
+    CIPHER_METHOD_MAP(XX)
 #undef XX
-  return false;
+    default:
+      return false;
+  }
 }
 
 #define XX(num, name, string) string ", "
