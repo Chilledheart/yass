@@ -28,8 +28,6 @@
 
 namespace net {
 
-using std::string_literals::operator""s;
-
 /// An interface used to provide service
 template <typename T>
 class ContentServer {
@@ -381,7 +379,7 @@ class ContentServer {
 
     // Use BoringSSL defaults, but disable 3DES and HMAC-SHA1 ciphers in ECDSA.
     // These are the remaining CBC-mode ECDSA ciphers.
-    std::string command("ALL:!aPSK:!ECDSA+SHA1:!3DES"s);
+    std::string command(kSSLDefaultCiphersList);
 
 #if 0
     // SSLPrivateKey only supports ECDHE-based ciphers because it lacks decrypt.
