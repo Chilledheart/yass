@@ -82,7 +82,7 @@
     },
     {
       "name": "status_started_with_error_msg",
-      "value": "无法连接因: %s"
+      "value": "无法连接因为 %s"
     },
     {
       "name": "status_stopping",
