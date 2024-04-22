@@ -120,6 +120,10 @@ int main(int argc, const char* argv[]) {
   std::string host_name = absl::GetFlag(FLAGS_server_host);
   std::string host_sni = host_name;
   uint16_t port = absl::GetFlag(FLAGS_server_port);
+  if (port == 0u) {
+    LOG(WARNING) << "Invalid server port: " << port;
+    return -1;
+  }
 
   asio::error_code ec;
   auto addr = asio::ip::make_address(host_name.c_str(), ec);

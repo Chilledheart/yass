@@ -139,7 +139,7 @@ std::string ReadConfigFromArgument(std::string_view server_host,
   }
 
   auto server_port = StringToIntegerU(_server_port);
-  if (!server_port.has_value() || server_port.value() > 65535u) {
+  if (!server_port.has_value() || server_port.value() == 0u || server_port.value() > 65535u) {
     err_msg << ",Invalid Server Port: " << _server_port;
   }
 
@@ -218,7 +218,7 @@ std::string ReadConfigFromArgument(std::string_view server_host,
   }
 
   auto server_port = StringToIntegerU(_server_port);
-  if (!server_port.has_value() || server_port.value() > 65535u) {
+  if (!server_port.has_value() || server_port.value() == 0u || server_port.value() > 65535u) {
     err_msg << ",Invalid Server Port: " << _server_port;
   }
 
