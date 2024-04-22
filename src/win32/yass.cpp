@@ -350,8 +350,6 @@ void CYassApp::OnStartFailed(WPARAM w, LPARAM l) {
   std::unique_ptr<std::string> message_ptr(reinterpret_cast<std::string*>(l));
 
   error_msg_ = std::move(message_ptr.operator*());
-
-  LOG(ERROR) << "worker failed due to: " << error_msg_;
   frame_->OnStartFailed();
 }
 

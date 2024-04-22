@@ -168,7 +168,6 @@
   state_ = START_FAILED;
 
   error_msg_ = error_msg;
-  LOG(ERROR) << "worker failed due to: " << error_msg_;
   YassWindowController* windowController =
       (YassWindowController*)NSApplication.sharedApplication.mainWindow.windowController;
   [windowController StartFailed];

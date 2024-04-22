@@ -377,7 +377,7 @@ void YASSWindow::StartFailed() {
   gtk_widget_set_sensitive(GTK_WIDGET(dot_host_), true);
   gtk_widget_set_sensitive(GTK_WIDGET(timeout_), true);
 
-  GtkDialog* alert_dialog = GTK_DIALOG(gtk_message_dialog_new(impl_, GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING,
+  GtkDialog* alert_dialog = GTK_DIALOG(gtk_message_dialog_new(impl_, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR,
                                                               GTK_BUTTONS_OK, "%s", mApp->GetStatus().c_str()));
 
   gtk_dialog_run(GTK_DIALOG(alert_dialog));
