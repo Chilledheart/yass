@@ -115,6 +115,10 @@ int main(int argc, const char* argv[]) {
 
   std::string remote_host_ips;
   uint16_t remote_port = absl::GetFlag(FLAGS_server_port);
+  if (remote_port == 0u) {
+    LOG(WARNING) << "Invalid server port: " << remote_port;
+    return -1;
+  }
 
   auto results = ResolveAddress(remote_host_name, remote_port);
   if (results.empty()) {
