@@ -89,6 +89,14 @@ msgstr "DNS over HTTPS URL:"
 msgid "DNS over TLS Host:"
 msgstr "DNS over TLS Host:"
 
+#: yass_window.cpp:298
+msgid "Start Failed"
+msgstr "Start Failed"
+
+#: yass_window.cpp:298
+msgid "OK"
+msgstr "OK"
+
 #: yass_window.ui:101
 msgid "Timeout:"
 msgstr "Timeout:"

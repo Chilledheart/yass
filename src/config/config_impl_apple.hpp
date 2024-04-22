@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (c) 2022-2023 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 
 #ifndef H_CONFIG_CONFIG_IMPL_APPLE
 #define H_CONFIG_CONFIG_IMPL_APPLE
