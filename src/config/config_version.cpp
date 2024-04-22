@@ -8,6 +8,7 @@
 #include <absl/flags/parse.h>
 #include <absl/flags/usage.h>
 #include <stdlib.h>
+#include <iostream>
 #include "core/logging.hpp"
 #include "core/utils.hpp"
 #include "feature.h"
