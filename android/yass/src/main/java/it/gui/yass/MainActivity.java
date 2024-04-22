@@ -3,6 +3,8 @@
 package it.gui.yass;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.UiModeManager;
 import android.content.Context;
 import android.content.Intent;
@@ -223,6 +225,12 @@ public class MainActivity extends Activity {
 
         TextView statusTextView = findViewById(R.id.statusTextView);
         statusTextView.setText(String.format(getString(R.string.status_started_with_error_msg), error_msg));
+
+        Dialog alertDialog = new AlertDialog.Builder(this)
+                .setTitle(getString(R.string.status_start_failed))
+                .setMessage(String.format(getString(R.string.status_started_with_error_msg), error_msg))
+                .create();
+        alertDialog.show();
     }
 
     private int nativeLocalPort = 0;
