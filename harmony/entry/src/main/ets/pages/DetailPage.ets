@@ -189,7 +189,7 @@ struct DetailPage {
     this.status = $r('app.string.status_started_with_error_msg', err_msg);
     this.start_btn_status = true;
     this.stop_btn_status = false;
-    AlertDialog.show({ message: 'The start failed: ' + err_msg });
+    AlertDialog.show({ message: $r('app.string.status_started_with_error_msg', err_msg) });
   }
 
   onStopClicked() {
