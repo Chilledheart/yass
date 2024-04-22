@@ -43,16 +43,18 @@ class ConfigImpl {
   /// Read the key from ConfigTree
   ///
   /// \param key the key value
-  /// \param absl flag
+  /// \param value absl flag
+  /// \param is_masked don't print directly
   template <typename T>
-  bool Read(const std::string& key, absl::Flag<T>* value);
+  bool Read(const std::string& key, absl::Flag<T>* value, bool is_masked = false);
 
   /// Write the key,value into ConfigTree
   ///
   /// \param key the key value
-  /// \param absl flag
+  /// \param value absl flag
+  /// \param is_masked don't print directly
   template <typename T>
-  bool Write(const std::string& key, const absl::Flag<T>& value);
+  bool Write(const std::string& key, const absl::Flag<T>& value, bool is_masked = false);
 
   /// Dlete the key
   ///

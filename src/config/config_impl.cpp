@@ -8,23 +8,64 @@
 #include <cassert>
 #include <iostream>
 
+#include "config/config_core.hpp"
 #include "config/config_impl_apple.hpp"
 #include "config/config_impl_local.hpp"
 #include "config/config_impl_windows.hpp"
 #include "crypto/crypter_export.hpp"
 
-struct PortFlag {
-  explicit PortFlag(uint16_t p) : port(p) {}
-  operator uint16_t() const { return port; }
-  uint16_t port;
-};
-
-struct CipherMethodFlag {
-  explicit CipherMethodFlag(cipher_method m) : method(m) {}
-  cipher_method method;
-};
+using namespace std::string_literals;
 
 namespace config {
+
+namespace {
+
+template <typename T>
+std::string to_masked_string(T value, bool is_masked);
+
+template <>
+std::string to_masked_string(std::string value, bool is_masked) {
+  if (value.empty()) {
+    value = "(nil)"s;
+  }
+  std::string mask_value = value;
+  if (is_masked) {
+    mask_value = std::string(mask_value.size(), '*');
+  }
+  return mask_value;
+}
+
+template <>
+std::string to_masked_string(std::string_view value, bool is_masked) {
+  if (value.empty()) {
+    value = "(nil)"s;
+  }
+  std::string mask_value = std::string(value);
+  if (is_masked) {
+    mask_value = std::string(mask_value.size(), '*');
+  }
+  return mask_value;
+}
+
+template <>
+std::string to_masked_string(bool value, bool is_masked) {
+  std::string mask_value = value ? "true"s : "false"s;
+  if (is_masked) {
+    mask_value = std::string(mask_value.size(), '*');
+  }
+  return mask_value;
+}
+
+template <typename T>
+std::string to_masked_string(T value, bool is_masked) {
+  std::string mask_value = std::to_string(value);
+  if (is_masked) {
+    mask_value = std::string(mask_value.size(), '*');
+  }
+  return mask_value;
+}
+
+}  // namespace
 
 std::string g_configfile;
 
@@ -79,7 +120,7 @@ bool ConfigImpl::Close() {
 }
 
 template <typename T>
-bool ConfigImpl::Read(const std::string& key, absl::Flag<T>* value) {
+bool ConfigImpl::Read(const std::string& key, absl::Flag<T>* value, bool is_masked) {
   // Use an int instead of a bool to guarantee that a non-zero value has
   // a bit set.
 
@@ -89,31 +130,31 @@ bool ConfigImpl::Read(const std::string& key, absl::Flag<T>* value) {
     return false;
   }
   absl::SetFlag(value, real_value);
-  std::cerr << "loaded option " << key << ": " << real_value << std::endl;
+  std::cerr << "loaded option " << key << ": " << to_masked_string(real_value, is_masked) << std::endl;
   return true;
 }
 
-template bool ConfigImpl::Read(const std::string& key, absl::Flag<std::string>* value);
+template bool ConfigImpl::Read(const std::string& key, absl::Flag<std::string>* value, bool is_masked);
 
 template <>
-bool ConfigImpl::Read(const std::string& key, absl::Flag<PortFlag>* value) {
+bool ConfigImpl::Read(const std::string& key, absl::Flag<PortFlag>* value, bool is_masked) {
   alignas(std::string) alignas(8) int32_t real_value;
   if (!ReadImpl(key, &real_value)) {
     std::cerr << "failed to load option " << key << std::endl;
     return false;
   }
   if (real_value < 0 || real_value > UINT16_MAX) {
-    std::cerr << "invalid value for key: " << key << " value: " << real_value << std::endl;
+    std::cerr << "invalid value for key: " << key << " value: " << to_masked_string(real_value, is_masked) << std::endl;
     return false;
   }
   PortFlag p(static_cast<uint16_t>(real_value));
   absl::SetFlag(value, p);
-  std::cerr << "loaded option " << key << ": " << real_value << std::endl;
+  std::cerr << "loaded option " << key << ": " << to_masked_string(real_value, is_masked) << std::endl;
   return true;
 }
 
 template <>
-bool ConfigImpl::Read(const std::string& key, absl::Flag<CipherMethodFlag>* value) {
+bool ConfigImpl::Read(const std::string& key, absl::Flag<CipherMethodFlag>* value, bool is_masked) {
   alignas(std::string) alignas(8) std::string real_value;
   if (!ReadImpl(key, &real_value)) {
     std::cerr << "failed to load option " << key << std::endl;
@@ -121,17 +162,17 @@ bool ConfigImpl::Read(const std::string& key, absl::Flag<CipherMethodFlag>* valu
   }
   auto cipher_method = to_cipher_method(real_value);
   if (cipher_method == CRYPTO_INVALID) {
-    std::cerr << "invalid value for key: " << key << " value: " << real_value << std::endl;
+    std::cerr << "invalid value for key: " << key << " value: " << to_masked_string(real_value, is_masked) << std::endl;
     return false;
   }
   CipherMethodFlag method(cipher_method);
   absl::SetFlag(value, method);
-  std::cerr << "loaded option " << key << ": " << real_value << std::endl;
+  std::cerr << "loaded option " << key << ": " << to_masked_string(real_value, is_masked) << std::endl;
   return true;
 }
 
 template <>
-bool ConfigImpl::Read(const std::string& key, absl::Flag<bool>* value) {
+bool ConfigImpl::Read(const std::string& key, absl::Flag<bool>* value, bool is_masked) {
   // Use an int instead of a bool to guarantee that a non-zero value has
   // a bit set.
 
@@ -141,74 +182,73 @@ bool ConfigImpl::Read(const std::string& key, absl::Flag<bool>* value) {
     return false;
   }
   absl::SetFlag(value, real_value);
-  std::cerr << "loaded option " << key << ": " << std::boolalpha << real_value << std::noboolalpha << std::endl;
+  std::cerr << "loaded option " << key << ": " << to_masked_string(real_value, is_masked) << std::endl;
   return true;
 }
 
-template bool ConfigImpl::Read(const std::string& key, absl::Flag<uint32_t>* value);
+template bool ConfigImpl::Read(const std::string& key, absl::Flag<uint32_t>* value, bool is_masked);
 
-template bool ConfigImpl::Read(const std::string& key, absl::Flag<int32_t>* value);
+template bool ConfigImpl::Read(const std::string& key, absl::Flag<int32_t>* value, bool is_masked);
 
-template bool ConfigImpl::Read(const std::string& key, absl::Flag<uint64_t>* value);
+template bool ConfigImpl::Read(const std::string& key, absl::Flag<uint64_t>* value, bool is_masked);
 
-template bool ConfigImpl::Read(const std::string& key, absl::Flag<int64_t>* value);
+template bool ConfigImpl::Read(const std::string& key, absl::Flag<int64_t>* value, bool is_masked);
 
 template <typename T>
-bool ConfigImpl::Write(const std::string& key, const absl::Flag<T>& value) {
+bool ConfigImpl::Write(const std::string& key, const absl::Flag<T>& value, bool is_masked) {
   alignas(T) alignas(8) T real_value = absl::GetFlag(value);
   if (!WriteImpl(key, real_value)) {
-    std::cerr << "failed to saved option " << key << ": " << real_value << std::endl;
+    std::cerr << "failed to saved option " << key << ": " << to_masked_string(real_value, is_masked) << std::endl;
     return false;
   }
-  std::cerr << "saved option " << key << ": " << real_value << std::endl;
+  std::cerr << "saved option " << key << ": " << to_masked_string(real_value, is_masked) << std::endl;
   return true;
 }
 
-template bool ConfigImpl::Write(const std::string& key, const absl::Flag<std::string>& value);
+template bool ConfigImpl::Write(const std::string& key, const absl::Flag<std::string>& value, bool is_masked);
 
 template <>
-bool ConfigImpl::Write(const std::string& key, const absl::Flag<PortFlag>& value) {
+bool ConfigImpl::Write(const std::string& key, const absl::Flag<PortFlag>& value, bool is_masked) {
   int32_t real_value = absl::GetFlag(value);
   if (!WriteImpl(key, real_value)) {
-    std::cerr << "failed to saved option " << key << ": " << real_value << std::endl;
+    std::cerr << "failed to saved option " << key << ": " << to_masked_string(real_value, is_masked) << std::endl;
     return false;
   }
-  std::cerr << "saved option " << key << ": " << real_value << std::endl;
+  std::cerr << "saved option " << key << ": " << to_masked_string(real_value, is_masked) << std::endl;
   return true;
 }
 
 template <>
-bool ConfigImpl::Write(const std::string& key, const absl::Flag<CipherMethodFlag>& value) {
+bool ConfigImpl::Write(const std::string& key, const absl::Flag<CipherMethodFlag>& value, bool is_masked) {
   auto cipher_method = absl::GetFlag(value).method;
   assert(is_valid_cipher_method(cipher_method) && "Invalid cipher_method");
   auto real_value = to_cipher_method_str(cipher_method);
   if (!WriteImpl(key, real_value)) {
-    std::cerr << "failed to saved option " << key << ": " << real_value << std::endl;
+    std::cerr << "failed to saved option " << key << ": " << to_masked_string(real_value, is_masked) << std::endl;
     return false;
   }
-  std::cerr << "saved option " << key << ": " << real_value << std::endl;
+  std::cerr << "saved option " << key << ": " << to_masked_string(real_value, is_masked) << std::endl;
   return true;
 }
 
 template <>
-bool ConfigImpl::Write(const std::string& key, const absl::Flag<bool>& value) {
+bool ConfigImpl::Write(const std::string& key, const absl::Flag<bool>& value, bool is_masked) {
   alignas(bool) alignas(8) bool real_value = absl::GetFlag(value);
   if (!WriteImpl(key, real_value)) {
-    std::cerr << "failed to saved option " << key << ": " << std::boolalpha << real_value << std::noboolalpha
-              << std::endl;
+    std::cerr << "failed to saved option " << key << ": " << to_masked_string(real_value, is_masked) << std::endl;
     return false;
   }
-  std::cerr << "saved option " << key << ": " << std::boolalpha << real_value << std::noboolalpha << std::endl;
+  std::cerr << "saved option " << key << ": " << to_masked_string(real_value, is_masked) << std::endl;
   return true;
 }
 
-template bool ConfigImpl::Write(const std::string& key, const absl::Flag<uint32_t>& value);
+template bool ConfigImpl::Write(const std::string& key, const absl::Flag<uint32_t>& value, bool is_masked);
 
-template bool ConfigImpl::Write(const std::string& key, const absl::Flag<int32_t>& value);
+template bool ConfigImpl::Write(const std::string& key, const absl::Flag<int32_t>& value, bool is_masked);
 
-template bool ConfigImpl::Write(const std::string& key, const absl::Flag<uint64_t>& value);
+template bool ConfigImpl::Write(const std::string& key, const absl::Flag<uint64_t>& value, bool is_masked);
 
-template bool ConfigImpl::Write(const std::string& key, const absl::Flag<int64_t>& value);
+template bool ConfigImpl::Write(const std::string& key, const absl::Flag<int64_t>& value, bool is_masked);
 
 bool ConfigImpl::Delete(const std::string& key) {
   if (DeleteImpl(key)) {
