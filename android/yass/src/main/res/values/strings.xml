@@ -22,4 +22,5 @@
     <string name="label_server_sni">Server SNI</string>
     <string name="label_doh_url">DNS over HTTPS URL</string>
     <string name="label_dot_host">DNS over TLS Host</string>
+    <string name="status_start_failed">Start Failed</string>
 </resources>
