@@ -295,10 +295,22 @@ void YASSWindow::StartFailed() {
   gtk_widget_set_sensitive(impl_->dot_host, true);
   gtk_widget_set_sensitive(impl_->timeout, true);
 
-  GtkDialog* dialog = GTK_DIALOG(gtk_message_dialog_new(GTK_WINDOW(impl_), GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING,
-                                                        GTK_BUTTONS_CLOSE, "%s", mApp->GetStatus().c_str()));
+  // Gtk4 Message Dialog is deprecated since 4.10
+#if GTK_CHECK_VERSION(4, 10, 0)
+  GtkAlertDialog* dialog = gtk_alert_dialog_new("%s", _("Start Failed"));
+  const char* buttons[] = {_("OK"), nullptr};
+  gtk_alert_dialog_set_detail(dialog, mApp->GetStatus().c_str());
+  gtk_alert_dialog_set_buttons(dialog, buttons);
+  gtk_window_present(GTK_WINDOW(impl_));
+  gtk_alert_dialog_choose(dialog, GTK_WINDOW(impl_), nullptr, nullptr, nullptr);
+#else
+  GtkDialogFlags flags = (GtkDialogFlags)(GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL);
+  GtkDialog* dialog = GTK_DIALOG(gtk_message_dialog_new(GTK_WINDOW(impl_), flags, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK,
+                                                        "%s", mApp->GetStatus().c_str()));
 
-  g_signal_connect(dialog, "response", G_CALLBACK(gtk_window_destroy), NULL);
+  g_signal_connect(dialog, "response", G_CALLBACK(gtk_window_destroy), nullptr);
+  gtk_widget_show(GTK_WIDGET(dialog));
+#endif
 }
 
 void YASSWindow::Stopped() {

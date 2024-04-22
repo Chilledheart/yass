@@ -310,7 +310,6 @@ void YASSApp::OnStartFailed(const std::string& error_msg) {
   state_ = START_FAILED;
 
   error_msg_ = error_msg;
-  LOG(ERROR) << "worker failed due to: " << error_msg_;
   main_window_->StartFailed();
 }
 
