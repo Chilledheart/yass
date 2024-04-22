@@ -2111,13 +2111,21 @@ func postStateArchives() map[string][]string {
 	if systemNameFlag == "windows" {
 		osName := "win"
 		if msvcAllowXpFlag {
-			osName = "winxp"
+			if msvcTargetArchFlag == "x86" {
+				osName = "winxp"
+			} else {
+				osName = "win7"
+			}
 		}
 		archiveFormat = fmt.Sprintf("%%s-%s-release-%s-%s-%s%%s%%s", osName, msvcTargetArchFlag, msvcCrtLinkageFlag, tag)
 	} else if systemNameFlag == "mingw" {
 		osName := "mingw"
 		if mingwAllowXpFlag {
-			osName = "mingw-winxp"
+			if archFlag == "x86" || archFlag == "i686" {
+				osName = "mingw-winxp"
+			} else {
+				osName = "mingw-win7"
+			}
 		}
 		archiveFormat = fmt.Sprintf("%%s-%s-release-%s-%s%%s%%s", osName, archFlag, tag)
 	} else if systemNameFlag == "darwin" {
