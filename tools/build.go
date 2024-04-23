@@ -54,6 +54,7 @@ var clangPath string
 var useLibCxxFlag bool
 var enableLtoFlag bool
 var useIcuFlag bool
+var useTcmallocFlag bool
 
 var clangTidyModeFlag bool
 var clangTidyExecutablePathFlag string
@@ -167,6 +168,7 @@ func InitFlag() {
 	flag.BoolVar(&useLibCxxFlag, "use-libcxx", true, "Use Custom libc++")
 	flag.BoolVar(&enableLtoFlag, "enable-lto", true, "Enable lto")
 	flag.BoolVar(&useIcuFlag, "use-icu", false, "Use ICU Feature")
+	flag.BoolVar(&useTcmallocFlag, "use-tcmalloc", true, "Use tcmalloc if possible")
 
 	flag.BoolVar(&clangTidyModeFlag, "clang-tidy-mode", getEnvBool("ENABLE_CLANG_TIDY", false), "Enable Clang Tidy Build")
 	flag.StringVar(&clangTidyExecutablePathFlag, "clang-tidy-executable-path", getEnv("CLANG_TIDY_EXECUTABLE", ""), "Path to clang-tidy, only used by Clang Tidy Build")
@@ -854,7 +856,11 @@ func buildStageGenerateBuildScript() {
 		if msvcTargetArchFlag == "arm" || msvcTargetArchFlag == "arm64" {
 			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_ASM_FLAGS=--target=%s", targetTriple))
 		}
-		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_TCMALLOC=on"))
+		if useTcmallocFlag {
+			cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=on")
+		} else {
+			cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=off")
+		}
 	}
 
 	if systemNameFlag == "darwin" {
@@ -924,7 +930,11 @@ func buildStageGenerateBuildScript() {
 		if mingwDir != clangPath {
 			getAndFixMinGWLibunwind(mingwDir)
 		}
-		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_TCMALLOC=on"))
+		if useTcmallocFlag {
+			cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=on")
+		} else {
+			cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=off")
+		}
 	}
 
 	if systemNameFlag == "ios" {
@@ -1029,7 +1039,11 @@ func buildStageGenerateBuildScript() {
 			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DARM_CPU=%s", armCpuFlag))
 		}
 		if subsystem == "" {
-			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_TCMALLOC=on"))
+			if useTcmallocFlag {
+				cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=on")
+			} else {
+				cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=off")
+			}
 		}
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DENABLE_FORTIFY=on"))
 	}
@@ -1063,7 +1077,11 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSTEM_PROCESSOR=%s", llvmArch))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_TARGET=%s", llvmTarget))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DENABLE_FORTIFY=on"))
-		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_TCMALLOC=on"))
+		if useTcmallocFlag {
+			cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=on")
+		} else {
+			cmakeArgs = append(cmakeArgs, "-DUSE_TCMALLOC=off")
+		}
 	}
 	cmakeCmd := append([]string{"cmake", ".."}, cmakeArgs...)
 	if noConfigureFlag {
