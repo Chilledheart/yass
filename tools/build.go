@@ -1061,6 +1061,7 @@ func buildStageGenerateBuildScript() {
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_SYSTEM_PROCESSOR=%s", llvmArch))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DGCC_TARGET=%s", llvmTarget))
 		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DENABLE_FORTIFY=on"))
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_TCMALLOC=on"))
 	}
 	cmakeCmd := append([]string{"cmake", ".."}, cmakeArgs...)
 	if noConfigureFlag {
