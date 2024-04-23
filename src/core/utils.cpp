@@ -398,7 +398,7 @@ void PrintTcmallocStats() {
   for (auto property : properties) {
     size_t size;
     if (MallocExtension::instance()->GetNumericProperty(property, &size)) {
-      LOG(INFO) << "TCMALLOC: " << property << " = " << size << " bytes";
+      LOG(ERROR) << "TCMALLOC: " << property << " = " << size << " bytes";
     }
   }
 }
