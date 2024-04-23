@@ -53,9 +53,6 @@
 [submodule "third_party/leveldb"]
 	path = third_party/leveldb
 	url = https://github.com/Chilledheart/leveldb
-[submodule "third_party/tcmalloc/src"]
-	path = third_party/tcmalloc/src
-	url = https://github.com/google/tcmalloc
 [submodule "third_party/snappy/src"]
 	path = third_party/snappy/src
 	url = https://github.com/google/snappy
@@ -65,3 +62,6 @@
 [submodule "third_party/tun2proxy"]
 	path = third_party/tun2proxy
 	url = https://github.com/Chilledheart/tun2proxy
+[submodule "third_party/gperftools"]
+	path = third_party/gperftools
+	url = https://github.com/Chilledheart/gperftools
