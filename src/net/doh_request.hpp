@@ -92,8 +92,6 @@ class DoHRequest : public RefCountedThreadSafe<DoHRequest> {
   std::shared_ptr<IOBuf> recv_buf_;
 };
 
-void addrinfo_freedup(struct addrinfo* addrinfo);
-
 }  // namespace net
 
 #endif  // H_NET_DOH_REQUEST_HPP

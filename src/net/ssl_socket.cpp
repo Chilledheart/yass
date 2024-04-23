@@ -202,14 +202,16 @@ void SSLSocket::Disconnect() {
 // ConfirmHandshake may only be called on a connected socket and, like other
 // socket methods, there may only be one ConfirmHandshake operation in progress
 // at once.
-int SSLSocket::ConfirmHandshake(CompletionOnceCallback callback) {
+void SSLSocket::ConfirmHandshake(CompletionOnceCallback callback) {
   CHECK(completed_connect_);
   CHECK(!in_confirm_handshake_);
   if (!SSL_in_early_data(ssl_.get())) {
+    VLOG(2) << "SSLSocket not in early data, skipping confirm handshake";
     callback(OK);
-    return OK;
+    return;
   }
 
+  VLOG(1) << "SSLSocket in early data, doing confirm handshake";
   next_handshake_state_ = STATE_HANDSHAKE;
   in_confirm_handshake_ = true;
   int rv = DoHandshakeLoop(OK, SSL_ERROR_NONE);
@@ -219,8 +221,6 @@ int SSLSocket::ConfirmHandshake(CompletionOnceCallback callback) {
     in_confirm_handshake_ = false;
     callback(rv > OK ? OK : rv);
   }
-
-  return rv > OK ? OK : rv;
 }
 
 int SSLSocket::Shutdown(WaitCallback&& callback, bool force) {

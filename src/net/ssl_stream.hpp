@@ -93,11 +93,9 @@ class ssl_stream : public stream {
         VLOG(2) << "Alpn fallback to https protocol (client)";
       }
 
-      stream::on_async_connected(channel, ec);
-
       scoped_refptr<stream> self(this);
       // Also queue a ConfirmHandshake. It should also be blocked on ServerHello.
-      auto cb = [this, self, channel](int rv) {
+      absl::AnyInvocable<void(int)> cb = [this, self, channel](int rv) {
         if (closed_) {
           DCHECK(!user_connect_callback_);
           return;
@@ -108,7 +106,13 @@ class ssl_stream : public stream {
           channel->disconnected(ec);
         }
       };
-      ssl_socket_->ConfirmHandshake(cb);
+      ssl_socket_->ConfirmHandshake(std::move(cb));
+
+      if (closed_) {
+        return;
+      }
+
+      stream::on_async_connected(channel, ec);
     });
   }
 
