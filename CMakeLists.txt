@@ -1293,7 +1293,7 @@ if (LTO AND COMPILER_GCC)
   elseif (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 13.0)
     set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch")
     set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch")
-  elseif (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 13.2.1)
+  else()
     set(CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_SHARED_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch -Wno-odr -Wno-error=uninitialized")
     set(CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE} "${CMAKE_EXE_LINKER_FLAGS_${upper_CMAKE_BUILD_TYPE}} -Wno-lto-type-mismatch -Wno-odr -Wno-error=uninitialized")
   endif()
@@ -3863,11 +3863,6 @@ target_compile_definitions(yass_net PUBLIC
   ${SUPPORT_DEFINITIONS})
 
 target_link_libraries(yass_net PUBLIC ${SUPPORT_LIBS})
-
-if (USE_LIBCXX)
-  target_link_libraries(yass_net PUBLIC
-    cxx ${libcxx_PUBLIC_LIBRARIES})
-endif()
 
 if (ANDROID)
   target_link_libraries(yass_net PUBLIC log)
