@@ -2361,7 +2361,7 @@ set(SUPPORT_LIBS
 
 # only support platform: linux
 if (USE_TCMALLOC)
-  if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+  if (WIN32 OR CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
     if (NOT (OS_X86 OR OS_X64 OR OS_ARM OR OS_AARCH64 OR OS_MIPS OR OS_MIPS64 OR OS_RISCV64 OR OS_LOONGARCH64))
       message(WARNING "tcmalloc: arch ${CMAKE_SYSTEM_PROCESSOR} is not supported, disabling...")
       set(USE_TCMALLOC OFF)
@@ -2397,6 +2397,16 @@ if (USE_TCMALLOC)
     tcmalloc_minimal_static
     ${SUPPORT_LIBS}
     )
+
+  # patching manually, see tcmalloc's README_windows.txt
+  if (MSVC)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /INCLUDE:\"__tcmalloc\"")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /INCLUDE:\"__tcmalloc\"")
+  endif()
+  if (MINGW)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-u__tcmalloc")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-u__tcmalloc")
+  endif()
 endif()
 
 # *****************************************************************************************

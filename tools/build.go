@@ -854,6 +854,7 @@ func buildStageGenerateBuildScript() {
 		if msvcTargetArchFlag == "arm" || msvcTargetArchFlag == "arm64" {
 			cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DCMAKE_ASM_FLAGS=--target=%s", targetTriple))
 		}
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_TCMALLOC=on"))
 	}
 
 	if systemNameFlag == "darwin" {
@@ -923,6 +924,7 @@ func buildStageGenerateBuildScript() {
 		if mingwDir != clangPath {
 			getAndFixMinGWLibunwind(mingwDir)
 		}
+		cmakeArgs = append(cmakeArgs, fmt.Sprintf("-DUSE_TCMALLOC=on"))
 	}
 
 	if systemNameFlag == "ios" {
