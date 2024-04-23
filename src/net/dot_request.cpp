@@ -116,6 +116,19 @@ void DoTRequest::OnSocketConnect() {
 void DoTRequest::OnSSLConnect() {
   scoped_refptr<DoTRequest> self(this);
 
+  // Also queue a ConfirmHandshake. It should also be blocked on ServerHello.
+  absl::AnyInvocable<void(int)> cb = [this, self](int rv) {
+    if (rv < 0) {
+      asio::error_code ec = asio::error::connection_refused;
+      OnDoneRequest(ec, nullptr);
+    }
+  };
+  ssl_socket_->ConfirmHandshake(std::move(cb));
+
+  if (!cb_) {
+    return;
+  }
+
   recv_buf_ = IOBuf::create(sizeof(uint16_t) + UINT16_MAX);
   ssl_socket_->WaitWrite([this, self](asio::error_code ec) { OnSSLWritable(ec); });
   ssl_socket_->WaitRead([this, self](asio::error_code ec) { OnSSLReadable(ec); });

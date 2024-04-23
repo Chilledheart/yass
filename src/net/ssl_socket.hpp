@@ -68,7 +68,7 @@ class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
   // StreamSocket implementation
   int Connect(CompletionOnceCallback callback);
   void Disconnect();
-  int ConfirmHandshake(CompletionOnceCallback callback);
+  void ConfirmHandshake(CompletionOnceCallback callback);
   int Shutdown(WaitCallback&& cb, bool force = false);
 
   SSL* native_handle() { return ssl_.get(); }
