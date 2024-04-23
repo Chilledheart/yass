@@ -2360,10 +2360,21 @@ set(SUPPORT_LIBS
 # *****************************************************************************************
 
 # only support platform: linux
+# mac: __thread limitation
 if (USE_TCMALLOC)
-  if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+  if (WIN32 OR CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
     if (NOT (OS_X86 OR OS_X64 OR OS_ARM OR OS_AARCH64 OR OS_MIPS OR OS_MIPS64 OR OS_RISCV64 OR OS_LOONGARCH64))
       message(WARNING "tcmalloc: arch ${CMAKE_SYSTEM_PROCESSOR} is not supported, disabling...")
+      set(USE_TCMALLOC OFF)
+    endif()
+    # FIXME tcmalloc's preamble patcher doesn't support arm64 assembly
+    if (WIN32 AND OS_AARCH64)
+      message(WARNING "tcmalloc: arm64 windows is not supported, disabling...")
+      set(USE_TCMALLOC OFF)
+    endif()
+    # FIXME windows binaries doesn't pass UtilsTest.GetHomeDir for both mingw and msvc builds
+    if (WIN32)
+      message(WARNING "tcmalloc: mingw and msvc builds are not supported, disabling...")
       set(USE_TCMALLOC OFF)
     endif()
   else()
@@ -2397,6 +2408,16 @@ if (USE_TCMALLOC)
     tcmalloc_minimal_static
     ${SUPPORT_LIBS}
     )
+
+  # patching manually, see tcmalloc's README_windows.txt
+  if (MSVC)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /INCLUDE:\"__tcmalloc\"")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /INCLUDE:\"__tcmalloc\"")
+  endif()
+  if (MINGW)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-u__tcmalloc")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-u__tcmalloc")
+  endif()
 endif()
 
 # *****************************************************************************************
