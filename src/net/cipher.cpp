@@ -10,7 +10,6 @@
 
 #include "core/logging.hpp"
 #include "core/rand_util.hpp"
-#include "core/sys_byteorder.h"
 #include "crypto/decrypter.hpp"
 #include "crypto/encrypter.hpp"
 #include "net/hkdf_sha1.hpp"
