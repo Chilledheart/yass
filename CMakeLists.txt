@@ -2361,7 +2361,8 @@ set(SUPPORT_LIBS
 
 # only support platform: linux
 # mac: __thread limitation
-if (USE_TCMALLOC)
+#
+if (USE_TCMALLOC AND NOT USE_SYSTEM_TCMALLOC)
   if (WIN32 OR CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
     if (NOT (OS_X86 OR OS_X64 OR OS_ARM OR OS_AARCH64 OR OS_MIPS OR OS_MIPS64 OR OS_RISCV64 OR OS_LOONGARCH64))
       message(WARNING "tcmalloc: arch ${CMAKE_SYSTEM_PROCESSOR} is not supported, disabling...")
@@ -2383,7 +2384,34 @@ if (USE_TCMALLOC)
   endif()
 endif()
 
-if (USE_TCMALLOC)
+if (USE_SYSTEM_TCMALLOC)
+  check_library_exists(tcmalloc_minimal tc_malloc "" HAVE_SYSTEM_TCMALLOC)
+  if (NOT HAVE_SYSTEM_TCMALLOC)
+    message(STATUS "System tcmalloc not found, using bundled one")
+    set(USE_SYSTEM_TCMALLOC FALSE)
+  endif()
+  if (USE_LIBCXX)
+    message(STATUS "Cannot use system tcmalloc with custom libc++, using bundled one")
+    set(USE_SYSTEM_TCMALLOC FALSE)
+  endif()
+endif()
+
+if (USE_SYSTEM_TCMALLOC AND USE_TCMALLOC)
+  message(STATUS "Compiling with system tcmalloc support")
+
+  list(APPEND YASS_APP_FEATURES "system tcmalloc_minimal")
+
+  set(TCMALLOC_LIB tcmalloc_minimal)
+
+  set(SUPPORT_DEFINITIONS
+    HAVE_TCMALLOC
+    ${SUPPORT_DEFINITIONS}
+  )
+  set(SUPPORT_LIBS
+    ${TCMALLOC_LIB}
+    ${SUPPORT_LIBS}
+    )
+elseif (USE_TCMALLOC)
   message(STATUS "Compiling with bundled tcmalloc support")
 
   set(GPERFTOOLS_BUILD_DEBUGALLOC OFF)
@@ -2396,6 +2424,9 @@ if (USE_TCMALLOC)
 
   set_target_properties(tcmalloc_minimal PROPERTIES EXCLUDE_FROM_ALL TRUE)
   list(APPEND YASS_APP_FEATURES "tcmalloc_minimal")
+
+  set(TCMALLOC_LIB tcmalloc_minimal_static)
+
   set(SUPPORT_DEFINITIONS
     HAVE_TCMALLOC
     ${SUPPORT_DEFINITIONS}
@@ -2405,7 +2436,7 @@ if (USE_TCMALLOC)
     ${SUPPORT_INCLUDE_DIRS}
   )
   set(SUPPORT_LIBS
-    tcmalloc_minimal_static
+    ${TCMALLOC_LIB}
     ${SUPPORT_LIBS}
     )
 
@@ -3729,7 +3760,7 @@ if (USE_ICU)
 endif()
 
 if (USE_TCMALLOC)
-  target_link_libraries(yass_core PUBLIC tcmalloc_minimal_static)
+  target_link_libraries(yass_core PUBLIC ${TCMALLOC_LIB})
 endif()
 
 target_include_directories(yass_core PUBLIC
