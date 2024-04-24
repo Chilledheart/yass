@@ -30,9 +30,9 @@
 %endif
 
 # test failed in copr
-%bcond_with tests_cares
-%if !%{with tests_cares}
-%global yass_test_opt --no_cares_tests
+%bcond_with tests_dns
+%if !%{with tests_dns}
+%global yass_test_opt --no_cares_tests --no_doh_tests --no_dot_tests
 %else
 %global yass_test_opt %nil
 %endif
@@ -53,6 +53,14 @@
 %else
 %global toolchain gcc
 %global enable_libcxx_opt off
+%endif
+
+# on centos 8, gperftools sits in epel repo
+# and it is not compatible with custom libc++
+%if 0%{?fedora} && !%{with toolchain_clang}
+%global enable_system_gperftools_opt on
+%else
+%global enable_system_gperftools_opt off
 %endif
 
 # lld is forced to be enabled if you are using external toolchain and so
@@ -107,6 +115,9 @@ BuildRequires: c-ares-devel
 %if 0%{?fedora} || 0%{?sle_version}
 BuildRequires: mbedtls-devel
 %endif
+%if 0%{?fedora} && !%{with toolchain_clang}
+BuildRequires: gperftools-devel
+%endif
 %if 0%{?fedora}
 BuildRequires: json-devel
 %endif
@@ -146,7 +157,7 @@ cd build
 %cmake_alias -G Ninja -DCMAKE_BUILD_TYPE=Release \
    -DBUILD_BENCHMARKS=on -DBUILD_TESTS=on -DGUI=on -DCLI=on -DSERVER=on \
    -DUSE_OLD_SYSTEMD_SERVICE="%use_old_systemd_service" \
-   -DUSE_TCMALLOC=on \
+   -DUSE_TCMALLOC=on -DUSE_SYSTEM_TCMALLOC="%enable_system_gperftools_opt" \
    -DUSE_SYSTEM_ZLIB=on \
    -DUSE_SYSTEM_NGHTTP2="%enable_system_nghttp2_opt" \
    -DUSE_SYSTEM_MBEDTLS="%enable_system_mbedtls_opt" \
