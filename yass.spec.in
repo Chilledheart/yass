@@ -30,9 +30,9 @@
 %endif
 
 # test failed in copr
-%bcond_with tests_cares
-%if !%{with tests_cares}
-%global yass_test_opt --no_cares_tests
+%bcond_with tests_dns
+%if !%{with tests_dns}
+%global yass_test_opt --no_cares_tests --no_doh_tests --no_dot_tests
 %else
 %global yass_test_opt %nil
 %endif
