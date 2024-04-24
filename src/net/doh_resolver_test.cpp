@@ -12,11 +12,7 @@
 #include "net/doh_resolver.hpp"
 #include "test_util.hpp"
 
-#if BUILDFLAG(IS_IOS) || BUILDFLAG(IS_ANDROID)
-ABSL_FLAG(bool, no_doh_tests, true, "skip doh tests");
-#else
 ABSL_FLAG(bool, no_doh_tests, false, "skip doh tests");
-#endif
 
 using namespace net;
 

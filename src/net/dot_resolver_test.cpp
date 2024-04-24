@@ -12,11 +12,7 @@
 #include "net/dot_resolver.hpp"
 #include "test_util.hpp"
 
-#if BUILDFLAG(IS_IOS) || BUILDFLAG(IS_ANDROID)
-ABSL_FLAG(bool, no_dot_tests, true, "skip dot tests");
-#else
 ABSL_FLAG(bool, no_dot_tests, false, "skip dot tests");
-#endif
 
 using namespace net;
 

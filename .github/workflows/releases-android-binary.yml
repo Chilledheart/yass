@@ -204,7 +204,7 @@ jobs:
           bwrap --die-with-parent --bind $SYSROOT / \
             --ro-bind /sys /sys \
             --proc /proc --dev /dev \
-            --unshare-all \
+            --unshare-all --share-net \
             --bind $PWD/build-android${{ matrix.apilevel }}-${{ matrix.arch }} /data/local/tmp \
             /data/local/tmp/yass_test
       - name: Run tests (non x86, under qemu emulation)
