@@ -73,7 +73,7 @@ ConfigImpl::~ConfigImpl() = default;
 
 std::unique_ptr<ConfigImpl> ConfigImpl::Create() {
   if (!g_configfile.empty()) {
-    std::cerr << "using option from file: " << std::endl;
+    std::cerr << "using option from file: " << g_configfile << std::endl;
     auto config = std::make_unique<ConfigImplLocal>(g_configfile);
     config->SetEnforceRead();
     return config;
