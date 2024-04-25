@@ -30,6 +30,7 @@
 const ProgramType pType = YASS_BENCHMARK;
 
 using namespace net;
+using namespace std::string_literals;
 using namespace std::string_view_literals;
 
 namespace {
@@ -284,7 +285,7 @@ class SsEndToEndBM : public benchmark::Fixture {
 
   asio::ip::tcp::endpoint GetEndpoint(int port_num) const {
     asio::error_code ec;
-    auto addr = asio::ip::make_address(absl::GetFlag(FLAGS_ipv6_mode) ? "::1" : "127.0.0.1", ec);
+    auto addr = asio::ip::make_address(absl::GetFlag(FLAGS_ipv6_mode) ? "::1"sv : "127.0.0.1"sv, ec);
     CHECK(!ec) << ec;
     asio::ip::tcp::endpoint endpoint;
     endpoint.address(addr);
@@ -294,7 +295,7 @@ class SsEndToEndBM : public benchmark::Fixture {
 
   void StartWorkThread() {
     thread_ = std::make_unique<std::thread>([this]() {
-      if (!SetCurrentThreadName("background")) {
+      if (!SetCurrentThreadName("background"s)) {
         PLOG(WARNING) << "failed to set thread name";
       }
       if (!SetCurrentThreadPriority(ThreadPriority::ABOVE_NORMAL)) {

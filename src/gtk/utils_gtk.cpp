@@ -129,7 +129,7 @@ bool Utils::GetSystemProxy() {
   if (!QuerySystemProxy(&enabled, &server_host, &server_port, &bypass_addr)) {
     return false;
   }
-  auto local_host = "'" + absl::GetFlag(FLAGS_local_host) + "'";
+  auto local_host = absl::StrCat("'", absl::GetFlag(FLAGS_local_host), "'");
   auto local_port = std::to_string(absl::GetFlag(FLAGS_local_port));
   return enabled && server_host == local_host && server_port == local_port;
 }
@@ -151,7 +151,7 @@ bool Utils::SetSystemProxy(bool on) {
   std::string server_host, server_port, bypass_addr = "['localhost', '127.0.0.0/8', '::1']"s;
   ::QuerySystemProxy(&enabled, &server_host, &server_port, &bypass_addr);
   if (on) {
-    server_host = "'" + absl::GetFlag(FLAGS_local_host) + "'";
+    server_host = absl::StrCat("'", absl::GetFlag(FLAGS_local_host), "'");
     server_port = std::to_string(absl::GetFlag(FLAGS_local_port));
   }
   return ::SetSystemProxy(on, server_host, server_port, bypass_addr) && ret;

@@ -42,6 +42,7 @@ ABSL_FLAG(std::string, proxy_type, "http", "proxy type, available: socks4, socks
 const ProgramType pType = YASS_UNITTEST;
 
 using namespace net;
+using namespace std::string_literals;
 using namespace std::string_view_literals;
 
 namespace {
@@ -353,7 +354,7 @@ class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
 
   asio::ip::tcp::endpoint GetEndpoint(int port_num) const {
     asio::error_code ec;
-    auto addr = asio::ip::make_address(absl::GetFlag(FLAGS_ipv6_mode) ? "::1" : "127.0.0.1", ec);
+    auto addr = asio::ip::make_address(absl::GetFlag(FLAGS_ipv6_mode) ? "::1"sv : "127.0.0.1"sv, ec);
     CHECK(!ec) << ec;
     asio::ip::tcp::endpoint endpoint;
     endpoint.address(addr);
@@ -363,7 +364,7 @@ class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
 
   void StartWorkThread() {
     thread_ = std::make_unique<std::thread>([this]() {
-      if (!SetCurrentThreadName("background")) {
+      if (!SetCurrentThreadName("background"s)) {
         PLOG(WARNING) << "failed to set thread name";
       }
       if (!SetCurrentThreadPriority(ThreadPriority::ABOVE_NORMAL)) {
@@ -393,7 +394,7 @@ class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
     std::string url = absl::StrCat("http://localhost:", content_provider_endpoint_.port());
     // TODO A bug inside curl that it doesn't respect IPRESOLVE_V6
     // https://github.com/curl/curl/issues/11465
-    if (absl::GetFlag(FLAGS_proxy_type) == "socks5") {
+    if (absl::GetFlag(FLAGS_proxy_type) == "socks5"s) {
       if (absl::GetFlag(FLAGS_ipv6_mode)) {
         url = "http://[::1]:" + std::to_string(content_provider_endpoint_.port());
       } else {
@@ -409,15 +410,15 @@ class EndToEndTest : public ::testing::TestWithParam<cipher_method> {
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
     std::string proxy_url = absl::StrCat("localhost:", local_endpoint_.port());
     curl_easy_setopt(curl, CURLOPT_PROXY, proxy_url.c_str());
-    if (absl::GetFlag(FLAGS_proxy_type) == "socks4") {
+    if (absl::GetFlag(FLAGS_proxy_type) == "socks4"s) {
       curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS4);
-    } else if (absl::GetFlag(FLAGS_proxy_type) == "socks4a") {
+    } else if (absl::GetFlag(FLAGS_proxy_type) == "socks4a"s) {
       curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS4A);
-    } else if (absl::GetFlag(FLAGS_proxy_type) == "socks5") {
+    } else if (absl::GetFlag(FLAGS_proxy_type) == "socks5"s) {
       curl_easy_setopt(curl, CURLOPT_PROXYTYPE, (long)CURLPROXY_SOCKS5);
-    } else if (absl::GetFlag(FLAGS_proxy_type) == "socks5h") {
+    } else if (absl::GetFlag(FLAGS_proxy_type) == "socks5h"s) {
       curl_easy_setopt(curl, CURLOPT_PROXYTYPE, (long)CURLPROXY_SOCKS5_HOSTNAME);
-    } else if (absl::GetFlag(FLAGS_proxy_type) == "http") {
+    } else if (absl::GetFlag(FLAGS_proxy_type) == "http"s) {
       curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
     } else {
       LOG(FATAL) << "Invalid proxy type: " << absl::GetFlag(FLAGS_proxy_type);

@@ -12,6 +12,7 @@
 #include <ws2tcpip.h>
 #endif
 
+using namespace std::string_literals;
 const ProgramType pType = YASS_CLIENT_SLAVE;
 
 using namespace cli;
@@ -158,7 +159,7 @@ int Worker::GetLocalPort() const {
 }
 
 void Worker::WorkFunc() {
-  if (!SetCurrentThreadName("background")) {
+  if (!SetCurrentThreadName("background"s)) {
     PLOG(WARNING) << "worker: failed to set thread name";
   }
   if (!SetCurrentThreadPriority(ThreadPriority::ABOVE_NORMAL)) {

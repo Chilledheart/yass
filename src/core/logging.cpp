@@ -1394,7 +1394,7 @@ bool LogFileObject::CreateLogfile(const std::string& time_pid_string) {
     // Make an additional link to the log file in a place specified by
     // FLAGS_log_link, if indicated
     if (!absl::GetFlag(FLAGS_log_link).empty()) {
-      linkpath = absl::GetFlag(FLAGS_log_link) + "/" + linkname;
+      linkpath = absl::StrCat(absl::GetFlag(FLAGS_log_link), "/", linkname);
       unlink(linkpath.c_str());  // delete old one if it exists
       if (symlink(filename, linkpath.c_str()) != 0) {
         // silently ignore failures
