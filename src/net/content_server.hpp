@@ -432,15 +432,16 @@ class ContentServer {
       if (in[0] + 1u > inlen) {
         goto err;
       }
-      auto alpn = std::string(reinterpret_cast<const char*>(in + 1), in[0]);
-      if (!server->https_fallback_ && alpn == "h2") {
+      using std::string_view_literals::operator""sv;
+      auto alpn = std::string_view(reinterpret_cast<const char*>(in + 1), in[0]);
+      if (!server->https_fallback_ && alpn == "h2"sv) {
         VLOG(1) << "Connection (" << T::Name << ") " << connection_id << " Alpn support (server) chosen: " << alpn;
         server->set_https_fallback(connection_id, false);
         *out = in + 1;
         *outlen = in[0];
         return SSL_TLSEXT_ERR_OK;
       }
-      if (alpn == "http/1.1") {
+      if (alpn == "http/1.1"sv) {
         VLOG(1) << "Connection (" << T::Name << ") " << connection_id << " Alpn support (server) chosen: " << alpn;
         server->set_https_fallback(connection_id, true);
         *out = in + 1;

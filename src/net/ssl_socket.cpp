@@ -6,6 +6,8 @@
 
 #include <absl/container/flat_hash_map.h>
 
+using namespace std::string_view_literals;
+
 namespace net {
 
 namespace {
@@ -111,9 +113,9 @@ SSLSocket::SSLSocket(int ssl_socket_data_index,
   // ALPS TLS extension is enabled and corresponding data is sent to client if
   // client also enabled ALPS, for each NextProto in |application_settings|.
   // Data might be empty.
-  const char* proto_string = https_fallback ? "http/1.1" : "h2";
+  const std::string_view proto_string = https_fallback ? "http/1.1"sv : "h2"sv;
   std::vector<uint8_t> data;
-  SSL_add_application_settings(ssl_.get(), reinterpret_cast<const uint8_t*>(proto_string), strlen(proto_string),
+  SSL_add_application_settings(ssl_.get(), reinterpret_cast<const uint8_t*>(proto_string.data()), proto_string.size(),
                                data.data(), data.size());
 
   SSL_enable_signed_cert_timestamps(ssl_.get());
