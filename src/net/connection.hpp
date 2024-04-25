@@ -135,18 +135,6 @@ class SSLDownlink : public Downlink {
   scoped_refptr<SSLServerSocket> ssl_socket_;
 };
 
-#ifdef __cpp_concepts
-template <typename T>
-concept StartClosableConnection = requires(T t) {
-  /// Enter the start phase, begin to read requests
-  { t.start() };
-  /// Close the socket and clean up
-  { t.close() };
-};
-#else
-#define StartClosableConnection typename
-#endif
-
 class Connection {
   using io_handle_t = Downlink::io_handle_t;
   using handle_t = Downlink::handle_t;
@@ -315,6 +303,27 @@ enum ConnectionFactoryType {
   CONNECTION_FACTORY_SERVER,
   CONNECTION_FACTORY_CONTENT_PROVIDER,
 };
+
+#ifdef __cpp_concepts
+#include <concepts>
+template <typename T>
+concept BasicConnection = requires(T t) {
+  /// require Name field
+  { T::Name } -> std::convertible_to<std::string_view>;
+  /// require Type field
+  { T::Type } -> std::convertible_to<ConnectionFactoryType>;
+};
+
+template <typename T>
+concept StartClosableConnection = BasicConnection<T> && requires(T t) {
+  /// Enter the start phase, begin to read requests
+  { t.start() };
+  /// Close the socket and clean up
+  { t.close() };
+};
+#else
+#define StartClosableConnection typename
+#endif
 
 template <StartClosableConnection T>
 class ConnectionFactory {
