@@ -15,6 +15,8 @@
 #include "ios/utils.h"
 #include "tun2proxy.h"
 
+using namespace std::string_literals;
+
 static constexpr const int DEFAULT_MTU = 1500;
 static const char PRIVATE_VLAN4_CLIENT[] = "172.19.0.1";
 static const char PRIVATE_VLAN4_GATEWAY[] = "172.19.0.2";
@@ -129,7 +131,7 @@ static constexpr const uint32_t kYieldConcurrencyOfConnections = 12u;
   NSLog(@"tun2proxy inited with %s remote ip %@ mtu %d dns_proxy %s", proxy_url.c_str(), remoteIp, DEFAULT_MTU, "true");
   Tun2Proxy_InitContext* context = context_;
   tun2proxy_thread_ = std::make_unique<std::thread>([context] {
-    if (!SetCurrentThreadName("tun2proxy")) {
+    if (!SetCurrentThreadName("tun2proxy"s)) {
       PLOG(WARNING) << "failed to set thread name";
     }
     if (!SetCurrentThreadPriority(ThreadPriority::ABOVE_NORMAL)) {

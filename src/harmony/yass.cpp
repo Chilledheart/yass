@@ -20,6 +20,8 @@
 #include "harmony/tun2proxy.h"
 #include "version.h"
 
+using namespace std::string_literals;
+
 typedef enum {
   HILOG_LOG_DEBUG = 3,
   HILOG_LOG_INFO = 4,
@@ -407,7 +409,7 @@ static napi_value runTun2proxy(napi_env env, napi_callback_info info) {
   }
 
   g_tun2proxy_thread = std::make_unique<std::thread>([=] {
-    if (!SetCurrentThreadName("tun2proxy")) {
+    if (!SetCurrentThreadName("tun2proxy"s)) {
       PLOG(WARNING) << "failed to set thread name";
     }
     if (!SetCurrentThreadPriority(ThreadPriority::ABOVE_NORMAL)) {
