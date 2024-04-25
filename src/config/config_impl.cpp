@@ -15,6 +15,7 @@
 #include "crypto/crypter_export.hpp"
 
 using namespace std::string_literals;
+using namespace std::string_view_literals;
 
 namespace config {
 
@@ -38,7 +39,7 @@ std::string to_masked_string(std::string value, bool is_masked) {
 template <>
 std::string to_masked_string(std::string_view value, bool is_masked) {
   if (value.empty()) {
-    value = "(nil)"s;
+    value = "(nil)"sv;
   }
   std::string mask_value = std::string(value);
   if (is_masked) {
