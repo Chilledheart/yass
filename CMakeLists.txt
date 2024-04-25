@@ -3879,12 +3879,9 @@ target_include_directories(yass_cli_nogui_lib PRIVATE
 
 target_link_libraries(yass_cli_nogui_lib PUBLIC yass_net)
 
-add_library(yass_cli_lib OBJECT
+add_library(yass_cli_lib STATIC
   src/cli/cli_worker.cpp
-  src/cli/cli_connection.cpp
-  src/cli/cli_connection.hpp
-  src/cli/cli_connection_stats.cpp
-  src/cli/cli_connection_stats.hpp
+  $<TARGET_OBJECTS:yass_cli_nogui_lib>
   )
 target_include_directories(yass_cli_lib PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src)
