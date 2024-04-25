@@ -21,6 +21,8 @@ ABSL_FLAG(bool, hide_ip, true, "If true, the Forwarded header will not be augmen
 
 static_assert(TLSEXT_MAXLEN_host_name == uint8_t(~0));
 
+using std::string_literals::operator""s;
+using std::string_view_literals::operator""sv;
 using namespace net;
 
 using gurl_base::ToLowerASCII;
@@ -38,7 +40,7 @@ static void SplitHostPort(std::string* out_hostname, std::string* out_port, cons
 
   if (colon_offset == std::string::npos) {
     *out_hostname = hostname_and_port;
-    *out_port = "443";
+    *out_port = "443"s;
   } else {
     *out_hostname = hostname_and_port.substr(0, colon_offset);
     *out_port = hostname_and_port.substr(colon_offset + 1);
@@ -55,7 +57,7 @@ static std::vector<http2::adapter::Header> GenerateHeaders(std::vector<std::pair
   for (const auto& header : headers) {
     // Connection (and related) headers are considered malformed and will
     // result in a client error
-    if (header.first == "Connection")
+    if (header.first == "Connection"sv)
       continue;
     response_vector.emplace_back(http2::adapter::HeaderRep(header.first), http2::adapter::HeaderRep(header.second));
   }
@@ -74,7 +76,7 @@ static std::string GetProxyAuthorizationIdentity() {
 
 namespace server {
 
-const char ServerConnection::http_connect_reply_[] = "HTTP/1.1 200 Connection established\r\n\r\n";
+constexpr const std::string_view ServerConnection::http_connect_reply_ = "HTTP/1.1 200 Connection established\r\n\r\n";
 
 #ifdef HAVE_QUICHE
 bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length) {
@@ -195,7 +197,7 @@ void ServerConnection::close() {
       data_frame_ = nullptr;
       stream_id_ = 0;
     }
-    adapter_->SubmitGoAway(0, http2::adapter::Http2ErrorCode::HTTP2_NO_ERROR, "");
+    adapter_->SubmitGoAway(0, http2::adapter::Http2ErrorCode::HTTP2_NO_ERROR, ""sv);
     DCHECK(adapter_->want_write());
     SendIfNotProcessing();
     WriteStreamInPipe();
@@ -316,25 +318,25 @@ http2::adapter::Http2VisitorInterface::OnHeaderResult ServerConnection::OnHeader
 
 bool ServerConnection::OnEndHeadersForStream(http2::adapter::Http2StreamId stream_id) {
   auto peer_endpoint = peer_endpoint_;
-  if (request_map_[":method"] != "CONNECT") {
+  if (request_map_[":method"s] != "CONNECT"s) {
     LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
               << " Unexpected method: " << request_map_[":method"];
     return false;
   }
-  auto auth = request_map_["proxy-authorization"];
-  if (auth != "basic " + GetProxyAuthorizationIdentity()) {
+  auto auth = request_map_["proxy-authorization"s];
+  if (auth != absl::StrCat("basic ", GetProxyAuthorizationIdentity())) {
     LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint << " Unexpected auth token.";
     return false;
   }
   // https://datatracker.ietf.org/doc/html/rfc9113
   // The recipient of an HTTP/2 request MUST NOT use the Host header field
   // to determine the target URI if ":authority" is present.
-  auto authority = request_map_[":authority"];
+  auto authority = request_map_[":authority"s];
   if (authority.empty()) {
-    authority = request_map_["host"];
-  } else if (!request_map_["host"].empty() && ToLowerASCII(authority) != ToLowerASCII(request_map_["host"])) {
+    authority = request_map_["host"s];
+  } else if (!request_map_["host"s].empty() && ToLowerASCII(authority) != ToLowerASCII(request_map_["host"s])) {
     LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint
-              << " Unmatched authority: " << authority << " with host: " << request_map_["host"];
+              << " Unmatched authority: " << authority << " with host: " << request_map_["host"s];
     return false;
   }
   if (authority.empty()) {
@@ -366,7 +368,7 @@ bool ServerConnection::OnEndHeadersForStream(http2::adapter::Http2StreamId strea
 
   request_ = ss::request(hostname, portnum);
 
-  bool padding_support = request_map_.find("padding") != request_map_.end();
+  bool padding_support = request_map_.find("padding"s) != request_map_.end();
   if (padding_support_ && padding_support) {
     LOG(INFO) << "Connection (server) " << connection_id() << " from: " << peer_endpoint << " Padding support enabled.";
   } else {
@@ -383,7 +385,7 @@ bool ServerConnection::OnEndStream(StreamId stream_id) {
   if (stream_id == stream_id_) {
     data_frame_ = nullptr;
     stream_id_ = 0;
-    adapter_->SubmitGoAway(0, http2::adapter::Http2ErrorCode::HTTP2_NO_ERROR, "");
+    adapter_->SubmitGoAway(0, http2::adapter::Http2ErrorCode::HTTP2_NO_ERROR, ""sv);
     DCHECK(adapter_->want_write());
     SendIfNotProcessing();
     WriteStreamInPipe();
@@ -637,11 +639,11 @@ void ServerConnection::OnReadHandshakeViaHttps() {
         }
         std::ostringstream ss;
         ss << "for=\"" << peer_endpoint << "\"";
-        via_headers["Forwarded"] = ss.str();
+        via_headers["Forwarded"s] = ss.str();
       }
       // https://datatracker.ietf.org/doc/html/rfc7230#section-5.7.1
       if (!absl::GetFlag(FLAGS_hide_via)) {
-        via_headers["Via"] = "1.1 asio";
+        via_headers["Via"s] = "1.1 asio"s;
       }
       std::string header;
       parser.ReforgeHttpRequest(&header, &via_headers);
@@ -1187,7 +1189,7 @@ void ServerConnection::OnConnect() {
         padding[i] = "!#$()+<>?@[]^`{}"[bits & 15];
         bits = bits >> 4;
       }
-      headers.emplace_back("padding", padding);
+      headers.emplace_back("padding"s, padding);
     }
     int submit_result = adapter_->SubmitResponse(stream_id_, GenerateHeaders(headers, 200), std::move(data_frame));
     SendIfNotProcessing();
@@ -1197,7 +1199,7 @@ void ServerConnection::OnConnect() {
   } else
 #endif
       if (downlink_->https_fallback() && http_is_connect_) {
-    std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(http_connect_reply_, sizeof(http_connect_reply_) - 1);
+    std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(http_connect_reply_.data(), http_connect_reply_.size());
     OnDownstreamWrite(buf);
   }
 }

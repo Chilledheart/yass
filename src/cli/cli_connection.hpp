@@ -360,7 +360,7 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   /// copy of connect method
   bool http_is_connect_ = false;
   /// copy of connect response
-  static const char http_connect_reply_[];
+  static const std::string_view http_connect_reply_;
 
   /// copy of upstream request
   std::unique_ptr<net::ss::request> ss_request_;

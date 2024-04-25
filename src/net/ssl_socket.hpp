@@ -173,10 +173,11 @@ class SSLSocket : public RefCountedThreadSafe<SSLSocket> {
   std::string negotiated_protocol_;
 
   bool IsRenegotiationAllowed() const {
+    using std::string_literals::operator""s;
     // Prior to HTTP/2 and SPDY, some servers use TLS renegotiation to request
     // TLS client authentication after the HTTP request was sent. Allow
     // renegotiation for only those connections.
-    if (negotiated_protocol_ == "http/1.1") {
+    if (negotiated_protocol_ == "http/1.1"s) {
       return true;
     }
     // True if renegotiation should be allowed for the default application-level

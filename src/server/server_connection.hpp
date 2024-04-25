@@ -292,7 +292,7 @@ class ServerConnection : public RefCountedThreadSafe<ServerConnection>,
   /// copy of connect method
   bool http_is_connect_ = false;
   /// copy of connect response
-  static const char http_connect_reply_[];
+  static const std::string_view http_connect_reply_;
   /// copy of padding support
   bool padding_support_ = false;
   int num_padding_send_ = 0;

@@ -22,6 +22,8 @@
 
 static_assert(TLSEXT_MAXLEN_host_name == uint8_t(~0));
 
+using std::string_literals::operator""s;
+using std::string_view_literals::operator""sv;
 using namespace net;
 
 #ifdef HAVE_QUICHE
@@ -35,7 +37,7 @@ static std::vector<http2::adapter::Header> GenerateHeaders(std::vector<std::pair
   for (const auto& header : headers) {
     // Connection (and related) headers are considered malformed and will
     // result in a client error
-    if (header.first == "Connection")
+    if (header.first == "Connection"sv)
       continue;
     response_vector.emplace_back(http2::adapter::HeaderRep(header.first), http2::adapter::HeaderRep(header.second));
   }
@@ -83,7 +85,7 @@ static void FillNonindexHeaderValue(uint64_t unique_bits, char* buf, int len) {
 
 namespace cli {
 
-const char CliConnection::http_connect_reply_[] = "HTTP/1.1 200 Connection established\r\n\r\n";
+constexpr const std::string_view CliConnection::http_connect_reply_ = "HTTP/1.1 200 Connection established\r\n\r\n";
 
 #if BUILDFLAG(IS_MAC)
 #include <xnu_private/net_pfvar.h>
@@ -208,7 +210,7 @@ void CliConnection::close() {
         data_frame_ = nullptr;
         stream_id_ = 0;
       }
-      adapter_->SubmitGoAway(0, http2::adapter::Http2ErrorCode::HTTP2_NO_ERROR, "");
+      adapter_->SubmitGoAway(0, http2::adapter::Http2ErrorCode::HTTP2_NO_ERROR, ""sv);
       DCHECK(adapter_->want_write());
       SendIfNotProcessing();
       WriteUpstreamInPipe();
@@ -260,7 +262,7 @@ http2::adapter::Http2VisitorInterface::OnHeaderResult CliConnection::OnHeaderFor
 }
 
 bool CliConnection::OnEndHeadersForStream(http2::adapter::Http2StreamId stream_id) {
-  bool padding_support = request_map_.find("padding") != request_map_.end();
+  bool padding_support = request_map_.find("padding"s) != request_map_.end();
   if (padding_support_ && padding_support) {
     LOG(INFO) << "Connection (client) " << connection_id() << " for " << remote_domain() << " Padding support enabled.";
   } else {
@@ -274,7 +276,7 @@ bool CliConnection::OnEndStream(StreamId stream_id) {
   if (stream_id == stream_id_) {
     data_frame_ = nullptr;
     stream_id_ = 0;
-    adapter_->SubmitGoAway(0, http2::adapter::Http2ErrorCode::HTTP2_NO_ERROR, "");
+    adapter_->SubmitGoAway(0, http2::adapter::Http2ErrorCode::HTTP2_NO_ERROR, ""sv);
     DCHECK(adapter_->want_write());
     SendIfNotProcessing();
     WriteUpstreamInPipe();
@@ -785,7 +787,7 @@ void CliConnection::WriteHandshake() {
       SetState(state_stream);
       /// reply on CONNECT request
       if (http_is_connect_) {
-        std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(http_connect_reply_, sizeof(http_connect_reply_) - 1);
+        std::shared_ptr<IOBuf> buf = IOBuf::copyBuffer(http_connect_reply_.data(), http_connect_reply_.size());
         OnDownstreamWrite(buf);
       }
       break;
@@ -1633,23 +1635,23 @@ void CliConnection::connected() {
       host = endpoint.address().to_string();
       port = endpoint.port();
     }
-    hostname_and_port = host + ":" + std::to_string(port);
+    hostname_and_port = absl::StrCat(host, ":", port);
 
     // Handle IPv6 literals.
     asio::error_code ec;
     auto addr = asio::ip::make_address(host, ec);
     if (!ec && addr.is_v6()) {
-      hostname_and_port = "[" + host + "]" + ":" + std::to_string(port);
+      hostname_and_port = absl::StrCat("[", host, "]", ":", port);
     }
 
     std::unique_ptr<DataFrameSource> data_frame = std::make_unique<DataFrameSource>(this);
     data_frame_ = data_frame.get();
     std::vector<std::pair<std::string, std::string>> headers;
-    headers.emplace_back(":method", "CONNECT");
+    headers.emplace_back(":method"s, "CONNECT"s);
     //    authority   = [ userinfo "@" ] host [ ":" port ]
-    headers.emplace_back(":authority", hostname_and_port);
-    headers.emplace_back("host", hostname_and_port);
-    headers.emplace_back("proxy-authorization", "basic " + GetProxyAuthorizationIdentity());
+    headers.emplace_back(":authority"s, hostname_and_port);
+    headers.emplace_back("host"s, hostname_and_port);
+    headers.emplace_back("proxy-authorization"s, absl::StrCat("basic ", GetProxyAuthorizationIdentity()));
     // Send "Padding" header
     // originated from naive_proxy_delegate.go;func ServeHTTP
     if (padding_support_) {
@@ -1657,7 +1659,7 @@ void CliConnection::connected() {
       std::string padding(RandInt(16, 32), '~');
       InitializeNonindexCodes();
       FillNonindexHeaderValue(RandUint64(), &padding[0], padding.size());
-      headers.emplace_back("padding", padding);
+      headers.emplace_back("padding"s, padding);
     }
     stream_id_ = adapter_->SubmitRequest(GenerateHeaders(headers), std::move(data_frame), nullptr);
     data_frame_->set_stream_id(stream_id_);
@@ -1676,13 +1678,13 @@ void CliConnection::connected() {
       host = endpoint.address().to_string();
       port = endpoint.port();
     }
-    hostname_and_port = host + ":" + std::to_string(port);
+    hostname_and_port = absl::StrCat(host, ":", port);
 
     // Handle IPv6 literals.
     asio::error_code ec;
     auto addr = asio::ip::make_address(host, ec);
     if (!ec && addr.is_v6()) {
-      hostname_and_port = "[" + host + "]" + ":" + std::to_string(port);
+      hostname_and_port = absl::StrCat("[", host, "]", ":", port);
     }
 
     std::string hdr = absl::StrFormat(
