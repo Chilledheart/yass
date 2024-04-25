@@ -30,6 +30,7 @@
 const ProgramType pType = YASS_BENCHMARK;
 
 using namespace net;
+using namespace std::string_view_literals;
 
 namespace {
 
@@ -37,11 +38,11 @@ IOBuf g_send_buffer;
 std::mutex g_in_provider_mutex;
 std::mutex g_in_consumer_mutex;
 std::unique_ptr<IOBuf> g_recv_buffer;
-const char kConnectResponse[] = "HTTP/1.1 200 Connection established\r\n\r\n";
+constexpr const std::string_view kConnectResponse = "HTTP/1.1 200 Connection established\r\n\r\n";
 const int kIOLoopCount = 1;
 
 // openssl req -newkey rsa:1024 -keyout pkey.pem -x509 -out cert.crt -days 3650 -nodes -subj /C=XX
-constexpr const char kCertificate[] = R"(
+constexpr const std::string_view kCertificate = R"(
 -----BEGIN CERTIFICATE-----
 MIIB9jCCAV+gAwIBAgIUM03bTKd+A2WwrfolXJC+L9AsxI8wDQYJKoZIhvcNAQEL
 BQAwDTELMAkGA1UEBhMCWFgwHhcNMjMwMTI5MjA1MDU5WhcNMzMwMTI2MjA1MDU5
@@ -57,7 +58,7 @@ yyvnIm8njIJSin7Vf4tD1PfY6Obyc8ygUSw=
 -----END CERTIFICATE-----
 )";
 
-constexpr char kPrivateKey[] = R"(
+constexpr const std::string_view kPrivateKey = R"(
 -----BEGIN PRIVATE KEY-----
 MIICdQIBADANBgkqhkiG9w0BAQEFAASCAl8wggJbAgEAAoGBANxhmaUG3T4dtrgj
 CHrORlCXw6rAHWuSOyXlLdVKtCnm7ENa8TPUFIM7L1ZLWKihsWVue3Yz5XFrYX1B
@@ -92,12 +93,12 @@ void GenerateRandContent(int size) {
 class ContentProviderConnection : public RefCountedThreadSafe<ContentProviderConnection>, public Connection {
  public:
   static constexpr const ConnectionFactoryType Type = CONNECTION_FACTORY_CONTENT_PROVIDER;
-  static constexpr const char Name[] = "content-provider";
+  static constexpr const std::string_view Name = "content-provider";
 
  public:
   ContentProviderConnection(asio::io_context& io_context,
-                            const std::string& remote_host_ips,
-                            const std::string& remote_host_sni,
+                            std::string_view remote_host_ips,
+                            std::string_view remote_host_sni,
                             uint16_t remote_port,
                             bool upstream_https_fallback,
                             bool https_fallback,
@@ -214,14 +215,14 @@ class ContentProviderConnection : public RefCountedThreadSafe<ContentProviderCon
 using ContentProviderConnectionFactory = ConnectionFactory<ContentProviderConnection>;
 using ContentProviderServer = ContentServer<ContentProviderConnectionFactory>;
 
-void GenerateConnectRequest(std::string host, int port_num, IOBuf* buf) {
+void GenerateConnectRequest(std::string_view host, int port_num, IOBuf* buf) {
   std::string request_header = absl::StrFormat(
       "CONNECT %s:%d HTTP/1.1\r\n"
       "Host: packages.endpointdev.com:443\r\n"
       "User-Agent: curl/7.77.0\r\n"
       "Proxy-Connection: Keep-Alive\r\n"
       "\r\n",
-      host.c_str(), port_num);
+      host, port_num);
   buf->reserve(request_header.size(), 0);
   memcpy(buf->mutable_buffer(), request_header.c_str(), request_header.size());
   buf->prepend(request_header.size());
@@ -317,25 +318,25 @@ class SsEndToEndBM : public benchmark::Fixture {
     s.connect(endpoint, ec);
     CHECK(!ec) << "Connection (content-consumer) connect failure " << ec;
     auto request_buf = IOBuf::create(SOCKET_BUF_SIZE);
-    GenerateConnectRequest("localhost", content_provider_endpoint_.port(), request_buf.get());
+    GenerateConnectRequest("localhost"sv, content_provider_endpoint_.port(), request_buf.get());
 
     size_t written = asio::write(s, const_buffer(*request_buf), ec);
     VLOG(1) << "Connection (content-consumer) written: " << written << " bytes";
     CHECK(!ec) << "Connection (content-consumer) write failure " << ec;
 
-    constexpr const int response_len = sizeof(kConnectResponse) - 1;
+    constexpr const int kConnectResponseLength = kConnectResponse.size();
     IOBuf response_buf;
-    response_buf.reserve(0, response_len);
-    size_t read = asio::read(s, asio::mutable_buffer(response_buf.mutable_tail(), response_len), ec);
+    response_buf.reserve(0, kConnectResponseLength);
+    size_t read = asio::read(s, asio::mutable_buffer(response_buf.mutable_tail(), kConnectResponseLength), ec);
     VLOG(1) << "Connection (content-consumer) read: " << read << " bytes";
     response_buf.append(read);
-    CHECK_EQ((int)read, response_len) << "Partial read";
+    CHECK_EQ((int)read, kConnectResponseLength) << "Partial read";
 
 #if 0
     const char* buffer = reinterpret_cast<const char*>(response_buf.data());
 #endif
     size_t buffer_length = response_buf.length();
-    CHECK_EQ((int)buffer_length, response_len) << "Partial read";
+    CHECK_EQ((int)buffer_length, kConnectResponseLength) << "Partial read";
   }
 
   void SendRequestAndCheckResponse(asio::ip::tcp::socket& s, asio::io_context& io_context, benchmark::State& state) {
@@ -399,7 +400,7 @@ class SsEndToEndBM : public benchmark::Fixture {
     asio::error_code ec;
 
     content_provider_server_ = std::make_unique<ContentProviderServer>(io_context_);
-    content_provider_server_->listen(endpoint, std::string(), backlog, ec);
+    content_provider_server_->listen(endpoint, {}, backlog, ec);
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec;
       return ec;
@@ -419,10 +420,9 @@ class SsEndToEndBM : public benchmark::Fixture {
 
   asio::error_code StartServer(asio::ip::tcp::endpoint endpoint, int backlog) {
     asio::error_code ec;
-    server_server_ =
-        std::make_unique<server::ServerServer>(io_context_, std::string(), std::string(), uint16_t(), std::string(),
-                                               std::string(kCertificate), std::string(kPrivateKey));
-    server_server_->listen(endpoint, "localhost", backlog, ec);
+    server_server_ = std::make_unique<server::ServerServer>(io_context_, std::string_view(), std::string_view(),
+                                                            uint16_t(), std::string_view(), kCertificate, kPrivateKey);
+    server_server_->listen(endpoint, "localhost"sv, backlog, ec);
 
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec;
@@ -444,9 +444,9 @@ class SsEndToEndBM : public benchmark::Fixture {
   asio::error_code StartLocal(asio::ip::tcp::endpoint remote_endpoint, asio::ip::tcp::endpoint endpoint, int backlog) {
     asio::error_code ec;
 
-    local_server_ =
-        std::make_unique<cli::CliServer>(io_context_, std::string(), "localhost", remote_endpoint.port(), kCertificate);
-    local_server_->listen(endpoint, std::string(), backlog, ec);
+    local_server_ = std::make_unique<cli::CliServer>(io_context_, std::string_view(), "localhost"sv,
+                                                     remote_endpoint.port(), kCertificate);
+    local_server_->listen(endpoint, {}, backlog, ec);
 
     if (ec) {
       LOG(ERROR) << "listen failed due to: " << ec;

@@ -97,7 +97,7 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
                       public net::cipher_visitor_interface {
  public:
   static constexpr const net::ConnectionFactoryType Type = net::CONNECTION_FACTORY_CLIENT;
-  static constexpr const char Name[] = "client";
+  static constexpr const std::string_view Name = "client";
 
  public:
   /// The state of service
@@ -142,8 +142,8 @@ class CliConnection : public RefCountedThreadSafe<CliConnection>,
   /// \param upstream_ssl_ctx the ssl context object for tls data transfer (upstream)
   /// \param ssl_ctx the ssl context object for tls data transfer
   CliConnection(asio::io_context& io_context,
-                const std::string& remote_host_ips,
-                const std::string& remote_host_sni,
+                std::string_view remote_host_ips,
+                std::string_view remote_host_sni,
                 uint16_t remote_port,
                 bool upstream_https_fallback,
                 bool https_fallback,

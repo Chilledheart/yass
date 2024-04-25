@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <sys/utsname.h>
 #include <sys/xattr.h>
+#include <string_view>
 
 #include "config/config.hpp"
 #include "core/logging.hpp"
@@ -22,7 +23,6 @@
 #include "net/asio.hpp"
 
 #include <absl/strings/str_split.h>
-#include <absl/strings/string_view.h>
 #include <base/apple/foundation_util.h>
 #include <base/apple/scoped_cftyperef.h>
 #include <base/mac/scoped_ioobject.h>

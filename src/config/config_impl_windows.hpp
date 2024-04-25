@@ -8,10 +8,10 @@
 
 #ifdef _WIN32
 
-#include <absl/strings/string_view.h>
 #include <windows.h>
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "core/utils.hpp"

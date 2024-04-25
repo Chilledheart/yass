@@ -131,8 +131,8 @@ bool DataFrameSource::Send(absl::string_view frame_header, size_t payload_length
 #endif
 
 ServerConnection::ServerConnection(asio::io_context& io_context,
-                                   const std::string& remote_host_ips,
-                                   const std::string& remote_host_sni,
+                                   std::string_view remote_host_ips,
+                                   std::string_view remote_host_sni,
                                    uint16_t remote_port,
                                    bool upstream_https_fallback,
                                    bool https_fallback,

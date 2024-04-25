@@ -8,8 +8,8 @@
 
 #if defined(__APPLE__)
 
-#include <absl/strings/string_view.h>
 #include <string>
+#include <string_view>
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <base/apple/scoped_cftyperef.h>

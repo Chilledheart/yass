@@ -7,6 +7,8 @@
 #include <deque>
 #include <functional>
 #include <memory>
+#include <string>
+#include <string_view>
 #include <utility>
 
 #include "config/config.hpp"
@@ -170,8 +172,8 @@ class Connection {
   /// \param upstream_ssl_ctx the ssl context object for tls data transfer (upstream)
   /// \param ssl_ctx the ssl context object for tls data transfer
   Connection(asio::io_context& io_context,
-             const std::string& remote_host_ips,
-             const std::string& remote_host_sni,
+             std::string_view remote_host_ips,
+             std::string_view remote_host_sni,
              uint16_t remote_port,
              bool upstream_https_fallback,
              bool https_fallback,
@@ -324,7 +326,7 @@ class ConnectionFactory {
     return MakeRefCounted<ConnectionType>(std::forward<Args>(args)...);
   }
   static constexpr const ConnectionFactoryType Type = ConnectionType::Type;
-  static constexpr const char* Name = ConnectionType::Name;
+  static constexpr const std::string_view Name = ConnectionType::Name;
 };
 
 }  // namespace net
