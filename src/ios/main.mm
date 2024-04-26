@@ -34,11 +34,6 @@ int main(int argc, const char** argv) {
   }
 
   absl::SetFlag(&FLAGS_logtostderr, true);
-#ifdef NDEBUG
-  absl::SetFlag(&FLAGS_stderrthreshold, LOGGING_WARNING);
-#else
-  absl::SetFlag(&FLAGS_stderrthreshold, LOGGING_VERBOSE);
-#endif
 
   if (!SetUTF8Locale()) {
     LOG(WARNING) << "Failed to set up utf-8 locale";

@@ -212,9 +212,11 @@ typedef FILE* FileHandle;
 #if !defined(NDEBUG) || defined(_DEBUG)
 #define DEFAULT_LOGBUFLEVEL -1
 #define DEFAULT_VERBOSE_LEVEL 1
+#define DEFAULT_LOGSTDERRTHRESHOLD LOGGING_WARNING
 #else
 #define DEFAULT_LOGBUFLEVEL 0
 #define DEFAULT_VERBOSE_LEVEL 0
+#define DEFAULT_LOGSTDERRTHRESHOLD LOGGING_ERROR
 #endif
 
 namespace {
@@ -293,7 +295,7 @@ ABSL_FLAG(bool,
 // when they run a program without having to look in another file.
 ABSL_FLAG(int32_t,
           stderrthreshold,
-          LOGGING_ERROR,
+          DEFAULT_LOGSTDERRTHRESHOLD,
           "log messages at or above this level are copied to stderr in "
           "addition to logfiles.  This flag obsoletes --alsologtostderr.");
 ABSL_FLAG(int32_t,
