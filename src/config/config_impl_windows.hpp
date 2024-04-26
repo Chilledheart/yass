@@ -129,20 +129,23 @@ class ConfigImplWindows : public ConfigImpl {
     DWORD type;
     std::vector<BYTE> output;
 
-    if (ReadValue(hkey_, key, &type, &output)) {
+    if (ReadValue(hkey_, key, &type, &output) && (type == REG_SZ || type == REG_EXPAND_SZ) &&
+        output.size() % sizeof(wchar_t) == 0) {
       wchar_t* raw_value = reinterpret_cast<wchar_t*>(output.data());
       size_t raw_len = output.size() / sizeof(wchar_t);
-      if (raw_len)
+      std::wstring raw_str;
+      if (raw_len) {
         raw_value[raw_len - 1] = L'\0';
+        raw_str = std::wstring(raw_value, raw_len - 1);
+      }
 
       if (type == REG_SZ) {
-        *value = SysWideToUTF8(raw_value);
+        *value = SysWideToUTF8(raw_str);
         return true;
       }
 
       if (type == REG_EXPAND_SZ) {
-        std::wstring expanded_value = ExpandUserFromString(raw_value, raw_len);
-        *value = SysWideToUTF8(expanded_value);
+        *value = SysWideToUTF8(ExpandUserFromString(raw_str));
         return true;
       }
       /* fall through */

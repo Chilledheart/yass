@@ -41,11 +41,11 @@ TEST(UtilsTest, Basename) {
 
 #ifdef _WIN32
 TEST(UtilsTest, ExpandUserFromStringImpl) {
-  wchar_t path[] = L"C:/path/to/directory";
-  size_t path_len = std::size(path);
+  std::wstring path = L"C:/path/to/directory";
+  const size_t path_len = path.size();
   // the return value is the REQUIRED number of TCHARs,
   // including the terminating NULL character.
-  DWORD required_size = ::ExpandEnvironmentStringsW(path, nullptr, 0);
+  DWORD required_size = ::ExpandEnvironmentStringsW(path.c_str(), nullptr, 0);
 
   /* if failure or too many bytes required, documented in
    * ExpandEnvironmentStringsW */
@@ -53,17 +53,15 @@ TEST(UtilsTest, ExpandUserFromStringImpl) {
 
   std::wstring expanded_path;
   expanded_path.resize(required_size - 1);
-  ASSERT_EQ(path_len, required_size);
+  ASSERT_EQ(path_len, required_size - 1);
   /* the buffer size should be the string length plus the terminating null character */
-  ::ExpandEnvironmentStringsW(path, &expanded_path[0], required_size);
+  ::ExpandEnvironmentStringsW(path.c_str(), &expanded_path[0], required_size);
 
-  ASSERT_STREQ(path, expanded_path.c_str());
-  ASSERT_EQ(std::wstring(path, path_len - 1), expanded_path);
+  ASSERT_EQ(path, expanded_path);
 }
 
 TEST(UtilsTest, ExpandUserFromString) {
-  wchar_t path[] = L"%TEMP%/path/to/directory";
-  size_t path_len = std::size(path);
+  std::wstring path = L"%TEMP%/path/to/directory";
 
   wchar_t temp[32767];
   DWORD temp_len = GetEnvironmentVariableW(L"TEMP", temp, std::size(temp));
@@ -72,7 +70,7 @@ TEST(UtilsTest, ExpandUserFromString) {
   ASSERT_NE(0u, temp_len);
   std::wstring expected_expanded_path = std::wstring(temp, temp_len) + L"/path/to/directory";
 
-  ASSERT_EQ(expected_expanded_path, ExpandUserFromString(path, path_len));
+  ASSERT_EQ(expected_expanded_path, ExpandUserFromString(path));
 }
 #endif
 
