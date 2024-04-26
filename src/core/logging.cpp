@@ -278,7 +278,7 @@ ABSL_FLAG(bool, logtostderr, false, "log messages go to stderr instead of logfil
 ABSL_FLAG(bool, alsologtostderr, false, "log messages go to stderr in addition to logfiles");
 ABSL_FLAG(bool, colorlogtostderr, false, "color messages logged to stderr (if supported by terminal)");
 
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_FREEBSD) || BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
 ABSL_FLAG(bool,
           drop_log_memory,
           true,
@@ -1581,7 +1581,7 @@ void LogFileObject::Write(bool force_flush, uint64_t /*tick_counts*/, const char
   // or every "FLAGS_logbufsecs" seconds.
   if (force_flush || (bytes_since_flush_ >= 1000000) || (CycleClock_Now() >= next_flush_time_)) {
     FlushUnlocked();
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_FREEBSD) || BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_OHOS)
     // Only consider files >= 3MiB
     if (absl::GetFlag(FLAGS_drop_log_memory) && file_length_ >= (3 << 20)) {
       // Don't evict the most recent 1-2MiB so as not to impact a tailer
@@ -1590,12 +1590,7 @@ void LogFileObject::Write(bool force_flush, uint64_t /*tick_counts*/, const char
       uint32_t this_drop_length = total_drop_length - dropped_mem_length_;
       if (this_drop_length >= (2 << 20)) {
         // Only advise when >= 2MiB to drop
-#if BUILDFLAG(IS_ANDROID) && defined(__ANDROID_API__) && (__ANDROID_API__ < 21)
-        // 'posix_fadvise' introduced in API 21:
-        // * https://android.googlesource.com/platform/bionic/+/6880f936173081297be0dc12f687d341b86a4cfa/libc/libc.map.txt#732
-#else
         posix_fadvise(fileno(file_), dropped_mem_length_, this_drop_length, POSIX_FADV_DONTNEED);
-#endif
         dropped_mem_length_ = total_drop_length;
       }
     }
